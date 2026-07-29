@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYG Star Catalog - Cinematic Journey</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="ui-overlay">
+        <div id="info-panel">
+            <h1>Galactic Journey</h1>
+            <p id="star-info">Traveling through the Milky Way...</p>
+            <div id="stats">
+                <span id="distance">Distance: 0 ly</span>
+                <span id="speed">Speed: 0c</span>
+            </div>
+        </div>
+        <div id="controls">
+            <button id="start-btn">Start Journey</button>
+            <button id="pause-btn">Pause</button>
+        </div>
+    </div>
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <p>Loading Star Catalog...</p>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
