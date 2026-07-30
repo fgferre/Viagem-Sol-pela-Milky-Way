@@ -19,7 +19,11 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars } from './world/wrappedStars';
 import { loadGalacticAssets } from './cartography/galacticAssets';
-import { bakeDustMap } from './cartography/dustMap';
+import {
+  bakeDustMap,
+  DUST_MAP_SIZE,
+  DUST_MAP_HALF_EXTENT,
+} from './cartography/dustMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { loadStarData, WORLD } from './config';
 import type { StarsMeta } from './config';
@@ -72,6 +76,11 @@ export class Director {
   /** congela o relógio da viagem (debug/screenshots via ?freeze=1) */
   freezeJourney = false;
   private noNebula = false;
+  private deepBg = new THREE.Color(0x010208);
+  /** ?shot=1 congela o tempo visual — capturas determinísticas */
+  private shotMode = false;
+  /** prefers-reduced-motion: sem shake, sem pulso de warp/CA */
+  private reducedMotion = false;
   /** toggles de debug: ?nogal=1&nosun=1&nodust=1&nohero=1&nocat=1 */
   private hide = new Set<string>();
   private events: DirectorEvents;
@@ -89,8 +98,11 @@ export class Director {
     this.roam = new FreeRoam(canvas, this.engine.camera);
     this.engine.onQuality((quality) => {
       this.nebula.setScale(quality === 'performance' ? 0.35 : 0.5);
+      // o preset de grão era config morta — nunca chegava ao shader
+      this.post.setGrain(this.engine.preset.grain);
       this.events.onQuality(quality);
     });
+    this.post.setGrain(this.engine.preset.grain);
 
     this.engine.onResize((w, h) => {
       this.nebula.setSize(w, h);
@@ -102,6 +114,12 @@ export class Director {
     if (this.debug.has('nobloom')) {
       this.post.bloom.enabled = false;
     }
+    this.noNebula = this.debug.has('nonebula');
+    this.shotMode = this.debug.has('shot');
+    this.reducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (this.reducedMotion) this.rig.shakeScale = 0;
     for (const k of [
       'nogal', 'nosun', 'nodust', 'nohero', 'nocat', 'nomarker', 'nocart', 'nowrap',
     ]) {
@@ -143,10 +161,24 @@ export class Director {
     const cartOn = Boolean(galactic) && cartMode !== 'off';
     const dustBake = bakeDustMap(cartOn && galactic ? galactic.dustDensity : null);
     this.dustMapTexture = dustBake.texture;
-    this.galaxy = new Galaxy(buildGalaxy(), dustBake.texture);
+    this.galaxy = new Galaxy(
+      buildGalaxy(
+        20260730,
+        cartOn
+          ? {
+              data: dustBake.coverage,
+              size: DUST_MAP_SIZE,
+              halfExtentPc: DUST_MAP_HALF_EXTENT,
+            }
+          : undefined
+      ),
+      dustBake.texture
+    );
     this.galaxy.setCartography(
       this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
     );
+    // congela as lâminas (estáticas) em texturas — depois do modo
+    this.galaxy.bakeDiscLayers(this.engine.renderer);
     this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
     if (galactic && cartMode !== 'off') {
       this.observedClouds = new ObservedClouds(
@@ -271,6 +303,7 @@ export class Director {
     this.seedCloudTimer = 0;
     this.setPhase('free');
     this.events.onCaption(-1, '', '');
+    this.events.onWarp(0);
   }
 
   play() {
@@ -290,12 +323,30 @@ export class Director {
     this.rig.reset(); // a mira suavizada também salta para o instante certo
   }
 
+  get journeyDuration() {
+    return this.rig.duration;
+  }
+
+  /** pausa/retoma a viagem; retorna o novo estado (true = pausado) */
+  togglePause(): boolean {
+    if (this.phase !== 'journey') return false;
+    this.freezeJourney = !this.freezeJourney;
+    return this.freezeJourney;
+  }
+
+  /** scrub pela barra de progresso (fração 0..1) */
+  seekFraction(fraction: number) {
+    if (this.phase === 'end') this.play();
+    this.seek(THREE.MathUtils.clamp(fraction, 0, 1) * this.rig.duration);
+  }
+
   enterFreeRoam() {
     this.roam.enabled = true;
     this.roam.syncFromCamera();
     this.setPhase('free');
     this.events.onCaption(-1, '', '');
     this.events.onLabels([]);
+    this.events.onWarp(0); // a vinheta de warp ficava presa no CSS
   }
 
   setQuality(q: QualityLevel) {
@@ -307,17 +358,20 @@ export class Director {
     return this.rig.ticks;
   }
 
-  private tick(time: number, dt: number) {
+  private tick(rawTime: number, dt: number) {
+    // tempo VISUAL: congelado no modo foto (grão, pulsos, coroa e
+    // deriva da poeira idênticos entre capturas do mesmo instante)
+    const time = this.shotMode ? 0 : rawTime;
     const cam = this.engine.camera;
     let warp = 0;
 
     if (this.phase === 'journey') {
       if (!this.freezeJourney) this.journeyT += dt;
       const t = this.journeyT;
-      const r = this.rig.apply(cam, t);
+      const r = this.rig.apply(cam, t, dt);
       warp = r.warp;
       this.events.onProgress(Math.min(t / this.rig.duration, 1));
-      this.events.onWarp(warp);
+      this.events.onWarp(this.reducedMotion ? 0 : warp);
 
       const { index, key } = this.rig.captionAt(t);
       if (index !== this.lastCaptionIdx) {
@@ -334,10 +388,14 @@ export class Director {
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {
-        const r = this.rig.apply(cam, 0);
+        const r = this.rig.apply(cam, 0, dt);
         warp = r.warp;
       }
     }
+
+    // a matriz da câmera precisa estar atual ANTES de projeções e
+    // extrações de base — labels usavam a matriz do frame anterior
+    cam.updateMatrixWorld(true);
 
     // mundo
     const hPx = this.engine.renderer.domElement.height;
@@ -408,7 +466,11 @@ export class Director {
     this.farStars?.setFade(this.hide.has('nocat') ? 0 : localFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
     this.nebula.setFade(nebulaFade);
-    if (this.heroes) this.heroes.group.visible = !this.hide.has('nohero');
+    // heroes esmaecem a zero em farFade (900 pc) — além disso os 12
+    // draws são garantidamente invisíveis
+    if (this.heroes) {
+      this.heroes.group.visible = !this.hide.has('nohero') && dHome < 1200;
+    }
     this.heroes?.update(time, cam.position);
     this.sun.group.visible = !this.hide.has('nosun');
     this.sun.update(time, cam.position);
@@ -461,13 +523,13 @@ export class Director {
     }
 
     this.post.setGalaxy(galaxyFade);
-    this.post.setWarp(warp);
+    this.post.setWarp(this.reducedMotion ? 0 : warp);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
     // gate 0.02: na casca externa do fade a contribuição é invisível
     // pós-ACES, mas o raymarch custaria integral
     if (this.noNebula || nebulaFade <= 0.02) {
       // longe de casa o céu é o preto profundo — a galáxia é a luz
-      this.engine.scene.background = this.noNebula ? new THREE.Color(0x010208) : this.bgColor;
+      this.engine.scene.background = this.noNebula ? this.deepBg : this.bgColor;
     } else {
       this.engine.scene.background = this.nebula.texture;
       this.nebula.render(this.engine.renderer, cam, time);
@@ -480,8 +542,8 @@ export class Director {
     this.disposed = true;
     this.abortController.abort();
     this.roam.dispose();
-    this.post.dispose();
-    this.engine.dispose();
+    // recursos do mundo ANTES do renderer: material descartado depois
+    // de renderer.dispose() não chama deleteProgram
     this.stars?.dispose();
     this.farStars?.dispose();
     this.heroes?.dispose();
@@ -493,5 +555,7 @@ export class Director {
     this.sun.dispose();
     this.dust.dispose();
     this.nebula.dispose();
+    this.post.dispose();
+    this.engine.dispose();
   }
 }

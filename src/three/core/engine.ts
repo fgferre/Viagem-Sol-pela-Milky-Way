@@ -12,10 +12,13 @@ interface QualityPreset {
   grain: number;
 }
 
+// grain agora é DISPLAY-space (film pass pós-tonemap): 0.055 era
+// calibrado para o espaço linear onde o ACES o esmagava — em display
+// vira granulado de vídeo; cinema real fica em ~1% de swing.
 const PRESETS: Record<QualityLevel, QualityPreset> = {
-  cinema: { pixelRatio: 2.0, nebulaSteps: 56, grain: 0.055 },
-  alta: { pixelRatio: 1.5, nebulaSteps: 44, grain: 0.05 },
-  performance: { pixelRatio: 1.0, nebulaSteps: 30, grain: 0.04 },
+  cinema: { pixelRatio: 2.0, nebulaSteps: 56, grain: 0.012 },
+  alta: { pixelRatio: 1.5, nebulaSteps: 44, grain: 0.01 },
+  performance: { pixelRatio: 1.0, nebulaSteps: 30, grain: 0.008 },
 };
 
 export class Engine {
@@ -33,6 +36,10 @@ export class Engine {
   private fpsN = 0;
   private fpsTimer = 0;
   private autoQuality = true;
+  /** teto de refresh observado (proxy do monitor) — sob vsync a 60 Hz
+   *  "avg > 72" nunca acontece; os limiares de subida são relativos */
+  private peakAvg = 0;
+  private upgradeCooldown = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({
@@ -64,8 +71,13 @@ export class Engine {
    * sem isso o depth buffer colapsaria num extremo ou no outro.
    */
   updateClip(distFromSun: number) {
-    const near = THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 500);
-    const far = THREE.MathUtils.clamp(distFromSun * 12, 9000, 400000);
+    // near cap 40 pc (era 500): no free-roam profundo o near de
+    // centenas de pc comia o campo estelar envolvente. far mínimo
+    // 60 kpc: com 9 kpc, metade distante da faixa era clipada mesmo
+    // em casa. Quase tudo é aditivo sem depthWrite — a precisão de
+    // depth não é o gargalo aqui.
+    const near = THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40);
+    const far = THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000);
     if (
       Math.abs(near - this.camera.near) / near > 0.05 ||
       Math.abs(far - this.camera.far) / far > 0.05
@@ -122,13 +134,23 @@ export class Engine {
         this.fpsTimer += dt;
         if (this.fpsTimer > 2.5) {
           const avg = this.fpsN / this.fpsAcc;
-          // degrada E recupera com histerese: o custo dominante (raymarch
-          // do gás) agora liga/desliga conforme a câmera entra/sai do
-          // disco — a qualidade precisa voltar sozinha.
-          if (avg < 42 && this.quality === 'cinema') this.applyQuality('alta');
-          else if (avg < 34 && this.quality === 'alta') this.applyQuality('performance');
-          else if (avg > 60 && this.quality === 'performance') this.applyQuality('alta');
-          else if (avg > 72 && this.quality === 'alta') this.applyQuality('cinema');
+          this.peakAvg = Math.max(this.peakAvg, avg);
+          this.upgradeCooldown = Math.max(0, this.upgradeCooldown - this.fpsTimer);
+          // degrada rápido; recupera com limiar RELATIVO ao teto de
+          // refresh observado (94%) + cooldown anti-thrash — limiares
+          // absolutos (>72 fps) eram inatingíveis sob vsync a 60 Hz.
+          const nearCeiling = this.peakAvg > 20 && avg > this.peakAvg * 0.94;
+          if (avg < 42 && this.quality === 'cinema') {
+            this.applyQuality('alta');
+            this.upgradeCooldown = 15;
+          } else if (avg < 34 && this.quality === 'alta') {
+            this.applyQuality('performance');
+            this.upgradeCooldown = 15;
+          } else if (nearCeiling && this.upgradeCooldown <= 0) {
+            if (this.quality === 'performance') this.applyQuality('alta');
+            else if (this.quality === 'alta') this.applyQuality('cinema');
+            this.upgradeCooldown = 10;
+          }
           this.fpsAcc = 0;
           this.fpsN = 0;
           this.fpsTimer = 0;

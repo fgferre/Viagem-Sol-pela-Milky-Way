@@ -45,10 +45,11 @@ void main() {
   float subPix = px < 0.85 ? (px * px) / 0.7225 : 1.0;
 
   float intensity = aIntensity;
-  // Cefeidas pulsam: períodos reais são 1–70 dias; aqui a fase e o
-  // ritmo individuais vêm do seed — vivas, nunca em uníssono.
+  // Cefeidas pulsam: períodos reais são 1–70 dias — inviáveis numa
+  // sessão. Compressão temporal documentada de ~2000×: períodos de
+  // ~70–350 s, respiração lenta perceptível, nunca strobo.
   if (aType > 2.5) {
-    intensity *= 0.78 + 0.34 * sin(uTime * (0.55 + fract(aSeed * 13.7) * 1.65) + aSeed * 41.0);
+    intensity *= 0.78 + 0.34 * sin(uTime * (0.018 + fract(aSeed * 13.7) * 0.072) + aSeed * 41.0);
   }
 
   vType = aType;
@@ -113,14 +114,18 @@ export class StarForges {
       entries.push(scratch.x, scratch.y, scratch.z, size, type, intensity, seed);
     };
 
-    // H II — raio real agregado; incerteza de distância esmaece
+    // H II — raio real agregado; incerteza de distância esmaece e a
+    // CLASSE do catálogo importa: K = confirmada brilha cheia,
+    // candidatas/grupos/radio-quiet ficam mais discretas
     {
       const { data, count, stride } = assets.hiiRegions;
       for (let i = 0; i < count; i++) {
         const o = i * stride;
         const relErr = data[o + 6];
+        const classCode = data[o + 7]; // 3 = K (confirmada)
         const method = data[o + 8];
-        const confidence = 1 / (1 + Math.max(relErr, 0) * 2.2);
+        const classFactor = Math.abs(classCode - 3) < 0.5 ? 1.0 : 0.7;
+        const confidence = (classFactor / (1 + Math.max(relErr, 0) * 2.2));
         const parallaxBoost = Math.abs(method - 10) < 0.5 ? 1.25 : 1.0;
         push(
           data[o], data[o + 1], data[o + 2],

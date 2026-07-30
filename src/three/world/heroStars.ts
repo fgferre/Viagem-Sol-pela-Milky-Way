@@ -84,6 +84,7 @@ export class HeroStars {
 
   constructor(named: NamedStar[]) {
     const heroes = [...named].sort((a, b) => a.m - b.m).slice(0, HERO_COUNT);
+    let heroIndex = 0;
     for (const s of heroes) {
       const lum = Math.pow(10, -0.3 * s.m);
       const size = 0.08 * lum; // pc — raio do brilho
@@ -93,7 +94,8 @@ export class HeroStars {
         uniforms: {
           uColor: { value: spectToColor(s.s) },
           uTime: { value: 0 },
-          uSeed: { value: Math.random() * 10 },
+          // seed pelo índice: cintilação idêntica em toda visita
+          uSeed: { value: ((heroIndex++ * 0.6180339887) % 1) * 10 },
           uSize: { value: size },
           uCamDist: { value: 100 },
         },

@@ -23,6 +23,7 @@ export default function App() {
   });
   const [ticks, setTicks] = useState<number[]>([]);
   const [quality, setQuality] = useState<QualityLevel>('cinema');
+  const [paused, setPaused] = useState(false);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
@@ -86,9 +87,28 @@ export default function App() {
     };
   }, []);
 
-  const play = () => directorRef.current?.play();
+  // pausa via botão ou tecla Espaço — um filme de 3min14s precisa disso
+  const togglePause = () => {
+    setPaused(directorRef.current?.togglePause() ?? false);
+  };
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'Space' || !directorRef.current) return;
+      event.preventDefault();
+      setPaused(directorRef.current.togglePause());
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const play = () => {
+    setPaused(false);
+    directorRef.current?.play();
+  };
+  const scrub = (fraction: number) => directorRef.current?.seekFraction(fraction);
   const freeRoam = () => directorRef.current?.enterFreeRoam();
   const revealGalaxy = () => {
+    setPaused(false);
     directorRef.current?.play();
     directorRef.current?.seek(156);
   };
@@ -120,15 +140,21 @@ export default function App() {
       {/* legenda da fase */}
       {inJourney && <Caption caption={caption.text} sub={caption.sub} showKey={caption.idx} />}
 
-      {/* progresso */}
-      {inJourney && <ProgressBar progressRef={progressRef} ticks={ticks} />}
+      {/* progresso (clicável — scrub) */}
+      {inJourney && <ProgressBar progressRef={progressRef} ticks={ticks} onScrub={scrub} />}
 
       {/* dica do modo livre */}
       {phase === 'free' && (
         <div className="free-hint">
-          arrastar — olhar · wasd/qe — voar
-          <br />
-          roda do mouse — velocidade
+          {window.matchMedia?.('(pointer: coarse)').matches ? (
+            <>toque e arraste — olhar ao redor (voo requer teclado)</>
+          ) : (
+            <>
+              arrastar — olhar · wasd/qe — voar
+              <br />
+              roda do mouse — velocidade · espaço — pausar na viagem
+            </>
+          )}
         </div>
       )}
 
@@ -142,6 +168,13 @@ export default function App() {
           )}
           {inJourney && (
             <>
+              <button
+                className="hud-btn small"
+                onClick={togglePause}
+                aria-label={paused ? 'Retomar a viagem' : 'Pausar a viagem'}
+              >
+                {paused ? '⏵ Retomar' : '⏸ Pausar'}
+              </button>
               <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
                 Ver a galáxia
               </button>

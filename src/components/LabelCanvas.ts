@@ -27,11 +27,16 @@ export class LabelCanvas {
     this.context = context;
   }
 
+  private lastHadContent = false;
+
   draw(labels: StarLabel[]): void {
+    // vazio→vazio (60×/s fora da viagem): não limpar 3,7 M px à toa
+    if (labels.length === 0 && !this.lastHadContent) return;
     this.resizeIfNeeded();
     const ctx = this.context;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, this.width, this.height);
+    this.lastHadContent = labels.length > 0;
     if (labels.length === 0) return;
 
     const occupied: Rect[] = [];
@@ -52,9 +57,9 @@ export class LabelCanvas {
       const name = label.name.toLocaleUpperCase('pt-BR');
       const detail = `${label.spect.slice(0, 5)}  ·  ${formatDistance(label.distPc)}`;
 
-      ctx.font = '500 10px "Segoe UI", Arial, sans-serif';
+      ctx.font = '500 12px "Segoe UI", Arial, sans-serif';
       const nameWidth = ctx.measureText(name).width;
-      ctx.font = '400 8px "Segoe UI", Arial, sans-serif';
+      ctx.font = '400 9px "Segoe UI", Arial, sans-serif';
       const detailWidth = ctx.measureText(detail).width;
       const contentWidth = nameWidth + 9 + detailWidth;
       const left = toLeft ? textX - contentWidth : textX;
@@ -78,12 +83,12 @@ export class LabelCanvas {
       ctx.textAlign = toLeft ? 'right' : 'left';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
       ctx.shadowBlur = 7;
-      ctx.font = '500 10px "Segoe UI", Arial, sans-serif';
+      ctx.font = '500 12px "Segoe UI", Arial, sans-serif';
       ctx.fillStyle = 'rgba(240, 244, 251, 0.96)';
       ctx.fillText(name, textX, anchorY);
 
       ctx.shadowBlur = 6;
-      ctx.font = '400 8px "Segoe UI", Arial, sans-serif';
+      ctx.font = '400 9px "Segoe UI", Arial, sans-serif';
       ctx.fillStyle = 'rgba(159, 176, 201, 0.88)';
       const detailX = toLeft ? textX - nameWidth - 9 : textX + nameWidth + 9;
       ctx.fillText(detail, detailX, anchorY);

@@ -27,10 +27,15 @@ function softNoise(t: number, seed: number): number {
   );
 }
 
+const _tan1 = new THREE.Vector3();
+const _right = new THREE.Vector3();
+
 export class JourneyRig {
   private journey = new Journey();
   private lookSm = new THREE.Vector3();
   private first = true;
+  /** intensidade da câmera na mão (0 com prefers-reduced-motion) */
+  shakeScale = 1;
 
   get duration() {
     return this.journey.duration;
@@ -44,16 +49,26 @@ export class JourneyRig {
     return this.journey.captionAt(t);
   }
 
-  apply(camera: THREE.PerspectiveCamera, t: number): { warp: number; speed: number } {
+  apply(
+    camera: THREE.PerspectiveCamera,
+    t: number,
+    dt: number
+  ): { warp: number; speed: number } {
     const s = this.journey.at(t);
+    // amortecimento exponencial por TEMPO (não por frame): a 144 Hz
+    // a câmera convergia 2,4× mais rápido que a 60 Hz
+    const kLook = 1 - Math.exp(-dt / 0.36);
+    const kFov = 1 - Math.exp(-dt / 0.2);
 
-    // suavização do ponto de mira (evita saltos de lookAt);
-    // se o alvo estiver longe (salto temporal/seek), acompanha na hora
-    if (this.first || this.lookSm.distanceTo(s.look) > 0.6) {
+    // suavização do ponto de mira (evita saltos de lookAt); o limiar
+    // de snap é RELATIVO à distância câmera→alvo — 0,6 pc absoluto
+    // desligava a suavização no reframe galáctico do Ato III
+    const snapDist = Math.max(0.6, s.look.distanceTo(s.pos) * 0.05);
+    if (this.first || this.lookSm.distanceTo(s.look) > snapDist) {
       this.lookSm.copy(s.look);
       this.first = false;
     } else {
-      this.lookSm.lerp(s.look, 0.045);
+      this.lookSm.lerp(s.look, kLook);
     }
 
     camera.position.copy(s.pos);
@@ -73,22 +88,22 @@ export class JourneyRig {
     camera.lookAt(this.lookSm);
 
     // câmera na mão: rotação microscópica, cresce com o warp
-    const shake = 0.00045 + s.warp * 0.0026;
+    const shake = (0.00045 + s.warp * 0.0026) * this.shakeScale;
     camera.rotateX(softNoise(t, 1.7) * shake);
     camera.rotateY(softNoise(t * 0.87, 9.2) * shake);
 
     // roll nas curvas: tangente agora vs. daqui a pouco
     const ahead = this.journey.at(Math.min(t + 0.6, this.journey.duration));
-    const tan1 = ahead.pos.clone().sub(s.pos);
-    if (tan1.lengthSq() > 1e-8) {
-      const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
-      const roll = THREE.MathUtils.clamp(tan1.normalize().dot(right) * -0.35, -0.06, 0.06);
+    _tan1.copy(ahead.pos).sub(s.pos);
+    if (_tan1.lengthSq() > 1e-8) {
+      _right.setFromMatrixColumn(camera.matrix, 0);
+      const roll = THREE.MathUtils.clamp(_tan1.normalize().dot(_right) * -0.35, -0.06, 0.06);
       camera.rotateZ(roll * (1 - s.warp * 0.4));
     }
 
     // FOV com pontapé de velocidade
     const targetFov = s.fov + s.warp * 7;
-    camera.fov += (targetFov - camera.fov) * 0.08;
+    camera.fov += (targetFov - camera.fov) * kFov;
     camera.updateProjectionMatrix();
 
     return { warp: s.warp, speed: s.speed };
@@ -127,12 +142,29 @@ export class FreeRoam {
     canvas.addEventListener('wheel', this.onWheel, { passive: true });
   }
 
-  /** captura a orientação atual da câmera ao entrar no modo livre */
+  /**
+   * Captura a orientação ao entrar no modo livre a partir do vetor
+   * FORWARD (independente de roll): a decomposição Euler anterior
+   * descartava o roll galáctico da viagem e o horizonte saltava
+   * ~100–160° num clique em "Explorar livremente".
+   */
   syncFromCamera() {
-    const e = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
-    this.yaw = e.y;
-    // mesmo intervalo do arrasto — sem snap no primeiro movimento
-    this.pitch = THREE.MathUtils.clamp(e.x, -1.5, 1.5);
+    const fwd = new THREE.Vector3();
+    this.camera.getWorldDirection(fwd);
+    this.pitch = THREE.MathUtils.clamp(
+      Math.asin(THREE.MathUtils.clamp(fwd.y, -1, 1)),
+      -1.5,
+      1.5
+    );
+    this.yaw = Math.atan2(-fwd.x, -fwd.z);
+    this.resetMotion();
+  }
+
+  /** zera inércia/entradas — velocidade antiga não sobrevive à troca de modo */
+  resetMotion() {
+    this.vel.set(0, 0, 0);
+    this.keys.clear();
+    this.dragging = false;
   }
 
   update(dt: number) {
@@ -152,7 +184,8 @@ export class FreeRoam {
     if (this.keys.has('KeyE')) acc.add(u);
     if (this.keys.has('KeyQ')) acc.sub(u);
     if (acc.lengthSq() > 0) acc.normalize().multiplyScalar(this.speed * 3);
-    this.vel.lerp(acc, 0.06);
+    // inércia por tempo, não por frame (mesma resposta em 60/144 Hz)
+    this.vel.lerp(acc, 1 - Math.exp(-dt / 0.27));
     this.camera.position.addScaledVector(this.vel, dt);
   }
 

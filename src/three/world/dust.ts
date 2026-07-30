@@ -12,13 +12,21 @@ export class Dust {
   private material: THREE.ShaderMaterial;
 
   constructor(count = WORLD.dustCount) {
+    // RNG determinístico — mesma poeira em toda visita/captura
+    let state = 0x44555354;
+    const random = () => {
+      state = (state + 0x6d2b79f5) | 0;
+      let t = Math.imul(state ^ (state >>> 15), 1 | state);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
     const pos = new Float32Array(count * 3);
     const rand = new Float32Array(count);
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * BOX;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * BOX;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * BOX;
-      rand[i] = Math.random();
+      pos[i * 3] = (random() - 0.5) * BOX;
+      pos[i * 3 + 1] = (random() - 0.5) * BOX;
+      pos[i * 3 + 2] = (random() - 0.5) * BOX;
+      rand[i] = random();
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));

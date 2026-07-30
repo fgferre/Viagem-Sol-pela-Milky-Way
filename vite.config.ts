@@ -10,7 +10,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: false,
     // Three é o runtime da primeira cena; adiar esse vendor não reduz
     // o tempo até o primeiro frame. O chunk dedicado fica ~537 kB.
     chunkSizeWarningLimit: 600,

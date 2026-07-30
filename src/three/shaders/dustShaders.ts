@@ -92,8 +92,13 @@ export const FILM_SHADER = {
     uniform float uCA;
     varying vec2 vUv;
 
+    // hash de Hoskins por pixel: o fract(sin(dot)) anterior tinha
+    // gradiente de fase linear — virava BANDAMENTO diagonal coerente
+    // em tela cheia, não grão de filme
     float hash(vec2 p) {
-      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
     }
 
     void main() {
@@ -114,8 +119,8 @@ export const FILM_SHADER = {
       // leve elevação de negros (filme)
       col = col * 0.985 + vec3(0.012, 0.010, 0.014);
 
-      // grão animado
-      float g = hash(uv * vec2(1920.0, 1080.0) + fract(uTime) * 913.0) - 0.5;
+      // grão animado — resolução REAL do framebuffer, não 1920×1080
+      float g = hash(gl_FragCoord.xy + floor(fract(uTime) * 913.0)) - 0.5;
       col += g * uGrain * (0.35 + 0.65 * (1.0 - clamp(dot(col, vec3(0.333)), 0.0, 1.0)));
 
       gl_FragColor = vec4(col, 1.0);

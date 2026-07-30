@@ -108,17 +108,16 @@ export class ObservedClouds {
       entries.push(scratch.x, scratch.y, scratch.z, radius, alpha, seed);
     };
 
-    // nuvens CO — só as recomendadas pelo manifesto; a distância
-    // cinemática ambígua (farDistanceFlag) reduz a confiança visual
+    // nuvens CO — só as recomendadas pelo manifesto. farDistanceFlag
+    // NÃO é incerteza: é qual solução (near/far) da ambiguidade
+    // cinemática o catálogo adotou — não esmaece nada.
     {
       const { data, count, stride } = clouds;
       for (let i = 0; i < count; i++) {
         const o = i * stride;
         if (data[o + 10] < 0.5) continue; // rendererRecommended
         const surface = data[o + 5];
-        const farFlag = data[o + 8];
-        const alpha =
-          (surface / (surface + 130)) * 0.34 * (farFlag > 0.5 ? 0.55 : 1.0);
+        const alpha = (surface / (surface + 130)) * 0.34;
         if (alpha < 0.015) continue;
         push(
           data[o], data[o + 1], data[o + 2],

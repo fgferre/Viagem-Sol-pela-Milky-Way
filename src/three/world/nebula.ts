@@ -22,6 +22,11 @@ export class Nebula {
   private lutScene = new THREE.Scene();
   private lutMaterial: THREE.ShaderMaterial;
   private scratchFwd = new THREE.Vector3();
+  // o LUT depende só da POSIÇÃO da câmera (integração por direção a
+  // partir de ro): rotação pura e câmera parada reusam o do frame
+  // anterior — 786k integrações economizadas por frame parado
+  private lutCamPos = new THREE.Vector3(Infinity, Infinity, Infinity);
+  private lutDirty = true;
   /** 1×1 sem cobertura (A=128: warp neutro) — sampler válido antes dos dados. */
   private fallbackDustMap = new THREE.DataTexture(
     new Uint8Array([0, 0, 0, 128]),
@@ -135,6 +140,7 @@ export class Nebula {
     this.material.uniforms.uDustMap.value = texture;
     this.lutMaterial.uniforms.uDustMap.value = texture;
     this.lutMaterial.uniforms.uCartBlend.value = map ? blend : 0;
+    this.lutDirty = true;
   }
 
   /**
@@ -170,11 +176,14 @@ export class Nebula {
     u.uTanHalfFov.value = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     u.uAspect.value = camera.aspect;
     u.uTime.value = time;
-    (this.lutMaterial.uniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
-
     const prev = renderer.getRenderTarget();
-    renderer.setRenderTarget(this.lutRT);
-    renderer.render(this.lutScene, this.camera);
+    if (this.lutDirty || this.lutCamPos.distanceToSquared(camera.position) > 4) {
+      this.lutDirty = false;
+      this.lutCamPos.copy(camera.position);
+      (this.lutMaterial.uniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
+      renderer.setRenderTarget(this.lutRT);
+      renderer.render(this.lutScene, this.camera);
+    }
     renderer.setRenderTarget(this.rt);
     renderer.render(this.scene, this.camera);
     renderer.setRenderTarget(prev);
@@ -186,5 +195,12 @@ export class Nebula {
     this.material.dispose();
     this.lutMaterial.dispose();
     this.fallbackDustMap.dispose();
+    // as PlaneGeometry dos quads fullscreen também são GPU buffers
+    this.scene.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose();
+    });
+    this.lutScene.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose();
+    });
   }
 }

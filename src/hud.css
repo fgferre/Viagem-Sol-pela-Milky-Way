@@ -91,7 +91,20 @@
   z-index: 40;
   height: 2px;
   background: rgba(255, 255, 255, 0.13);
-  pointer-events: none;
+  /* clicável (scrub) com área de toque generosa via pseudo-elemento */
+  pointer-events: auto;
+  cursor: pointer;
+}
+.progress-wrap::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12px;
+  bottom: -12px;
+}
+.progress-wrap:hover {
+  background: rgba(255, 255, 255, 0.22);
 }
 .progress-fill {
   width: 100%;

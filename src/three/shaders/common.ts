@@ -69,15 +69,22 @@ const vec3 GAL_Y = vec3(-0.4941094, 0.4448296, -0.7469822);
 // Constrói a função de densidade com os núcleos de nuvem injetados
 // como constantes (evita uniforms extras e permite otimização do driver).
 function coresGLSL(): string {
+  // O gate espacial vem ANTES dos 2 fbm de cada núcleo: fora de ~3
+  // raios (g < 6e-7, invisível) a amostra custa uma subtração e um
+  // dot — sem ele, os 7 núcleos eram ~80% do custo do raymarch
+  // (medido por timer de GPU: 75–80 ms/frame em t=0/85).
   return WORLD.nebulaCores
     .map(
       (c, i) =>
         `  { vec3 q = (p - vec3(${c[0].toFixed(2)}, ${c[1].toFixed(2)}, ${c[2].toFixed(2)})) / ${c[3].toFixed(2)};
-     float g = exp(-dot(q, q) * 1.6);
-     // bolsões densos separados por vãos + detalhe fino (~3 pc) — estrutura fractal
-     float core = g * (0.04 + 1.5 * smoothstep(0.50, 0.85, fbm(p * 0.09 + ${(i * 13.7).toFixed(1)}, oct)));
-     core *= 0.50 + 0.95 * fbm(p * 0.30 + ${(i * 7.31).toFixed(1)}, 2);
-     d += core * 0.95; }`
+     float q2 = dot(q, q);
+     if (q2 < 9.0) {
+       float g = exp(-q2 * 1.6);
+       // bolsões densos separados por vãos + detalhe fino (~3 pc)
+       float core = g * (0.04 + 1.5 * smoothstep(0.50, 0.85, fbm(p * 0.09 + ${(i * 13.7).toFixed(1)}, oct)));
+       core *= 0.50 + 0.95 * fbm(p * 0.30 + ${(i * 7.31).toFixed(1)}, 2);
+       d += core * 0.95;
+     } }`
     )
     .join('\n');
 }
@@ -124,8 +131,13 @@ float diskGasEnvelope(vec3 p) {
   return radial * exp(-zw * zw / (2.0 * h * h)) * arms * 6.9;
 }
 
+// último envelope avaliado — o loop do raymarch reusa em vez de
+// pagar o fetch + ALU de diskGasEnvelope duas vezes pela mesma p
+float gGasEnvelope = 0.0;
+
 float nebulaDensity(vec3 p, int oct) {
   float envelope = min(diskGasEnvelope(p), 3.0);
+  gGasEnvelope = envelope;
   if (envelope < 0.004 && uSeedCloudCount == 0) return 0.0;
   float n1 = fbm(p * 0.0135, oct >= 4 ? 4 : 2);
   float n2 = fbm(p * 0.048 + 17.3, oct >= 4 ? 3 : 2);
@@ -157,7 +169,7 @@ ${coresGLSL()}
   // cavidade do observador itinerante (estilização "inferred"
   // fundamentada: superbolhas de ~300 pc povoam todo o disco)
   float cav = length(p - uCavityPos);
-  d *= mix(1.0, smoothstep(55.0, 190.0, cav), uCavityGate);
+  d *= mix(1.0, smoothstep(25.0, 240.0, cav), uCavityGate);
   return d * ${WORLD.gasDensity.toFixed(2)};
 }
 
@@ -186,7 +198,7 @@ ${coresGLSL()}
   d *= smoothstep(1.2, 6.5, length(p));
   // mesma cavidade do raymarch (coerência na faixa dHome 600–2300)
   float cav = length(p - uCavityPos);
-  d *= mix(1.0, smoothstep(55.0, 190.0, cav), uCavityGate);
+  d *= mix(1.0, smoothstep(25.0, 240.0, cav), uCavityGate);
   return d * ${WORLD.gasDensity.toFixed(2)};
 }
 

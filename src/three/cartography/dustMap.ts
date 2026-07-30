@@ -27,6 +27,9 @@ interface DustBake {
   texture: THREE.DataTexture;
   /** fração de texels do disco com cobertura > 0 (diagnóstico). */
   coverageFraction: number;
+  /** canal de cobertura cru (0..1, size²) — consumido pelo gerador
+   *  procedural para CEDER onde o observado cobre. */
+  coverage: Float32Array;
 }
 
 function boxBlurInPlace(field: Float32Array, size: number, radius: number) {
@@ -113,13 +116,15 @@ export function bakeDustChannels(
   boxBlurInPlace(regionalWeighted, size, 10);
   boxBlurInPlace(regionalWeights, size, 10);
 
-  // Peso de referência data-driven: média dos texels não vazios
-  // (no campo regional, para uma borda de cobertura suave).
+  // Peso de referência data-driven: média dos texels não vazios do
+  // campo LOCAL — a cobertura deve declarar observação apenas onde HÁ
+  // amostras locais; derivá-la do campo regional (blur de 2,6 kpc)
+  // marcava ~10% da área como "coberta" sem nenhuma amostra.
   let sumW = 0;
   let nonZero = 0;
-  for (let i = 0; i < regionalWeights.length; i++) {
-    if (regionalWeights[i] > 1e-6) {
-      sumW += regionalWeights[i];
+  for (let i = 0; i < weights.length; i++) {
+    if (weights[i] > 1e-6) {
+      sumW += weights[i];
       nonZero++;
     }
   }
@@ -135,7 +140,7 @@ export function bakeDustChannels(
     const regional = regionalWeighted[i] / wr;
     const contrast = Math.log1p(local) - Math.log1p(regional);
     density[i] = Math.min(1, Math.max(0, 0.5 + contrast * CONTRAST_GAIN));
-    const c = wr / referenceWeight;
+    const c = w / referenceWeight;
     coverage[i] = c >= 1 ? 1 : c * c * (3 - 2 * c);
   }
   return { density, coverage };
@@ -192,11 +197,18 @@ export function bakeDustMap(table: CatalogueTable | null): DustBake {
     THREE.RGBAFormat,
     THREE.UnsignedByteType
   );
-  texture.minFilter = THREE.LinearFilter;
+  // mipmaps: sem eles a minificação do mapa (vistas afastadas e a
+  // LUT da faixa) cintila; o custo é 1/3 de memória extra, uma vez
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.needsUpdate = true;
 
-  return { texture, coverageFraction: discTexels > 0 ? covered / discTexels : 0 };
+  return {
+    texture,
+    coverageFraction: discTexels > 0 ? covered / discTexels : 0,
+    coverage,
+  };
 }

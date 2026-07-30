@@ -13,6 +13,7 @@ export class Post {
   readonly composer: EffectComposer;
   readonly bloom: UnrealBloomPass;
   private film: ShaderPass;
+  private outputPass!: OutputPass;
   private renderer: THREE.WebGLRenderer;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
@@ -28,9 +29,18 @@ export class Post {
     );
     this.composer.addPass(this.bloom);
 
+    // OutputPass (ACES + sRGB) ANTES da gradação: grão, vinheta e
+    // elevação de negros operam em espaço de DISPLAY, como autorados.
+    // Antes do tonemap, o joelho do ACES esmagava o lift e o grão.
+    this.outputPass = new OutputPass();
+    this.composer.addPass(this.outputPass);
     this.film = new ShaderPass(FILM_SHADER as never);
     this.composer.addPass(this.film);
-    this.composer.addPass(new OutputPass());
+  }
+
+  /** amplitude do grão por preset de qualidade */
+  setGrain(v: number) {
+    (this.film.uniforms as Record<string, { value: number }>).uGrain.value = v;
   }
 
   setSize(w: number, h: number) {
@@ -52,8 +62,10 @@ export class Post {
   /** Pulso de bloom durante acelerações da viagem (0..1). */
   setWarp(k: number) {
     const g = this.galaxyMode;
-    this.bloom.strength = (0.72 - 0.28 * g) * (1 + k * 0.4);
-    this.bloom.threshold = 0.82 + 0.42 * g;
+    // moderação mais firme na vista externa: o bojo é uma fonte HDR
+    // enorme e virava uma bola branca que engolia barra e fendas
+    this.bloom.strength = (0.72 - 0.34 * g) * (1 + k * 0.4);
+    this.bloom.threshold = 0.82 + 0.52 * g;
     this.bloom.radius = 0.58 - 0.18 * g;
     (this.film.uniforms as Record<string, { value: number }>).uCA.value =
       0.00012 + k * 0.00042;
@@ -65,6 +77,11 @@ export class Post {
   }
 
   dispose() {
+    // EffectComposer.dispose() NÃO dispõe os passes: o UnrealBloom
+    // sozinho retém 11 render targets HDR na VRAM
+    this.bloom.dispose();
+    this.film.dispose();
+    this.outputPass.dispose();
     this.composer.dispose();
   }
 }

@@ -33,8 +33,8 @@ void main() {
 
   // brilho por magnitude aparente (expoente suavizado p/ estética)
   float lum = pow(10.0, -0.30 * aMag);
-  float px = uPointScale * lum / max(dist, 0.02);
-  px = clamp(px, 1.0, uMaxPx);
+  float pxRaw = uPointScale * lum / max(dist, 0.02);
+  float px = clamp(pxRaw, 1.0, uMaxPx);
 
   // alpha: mistura de resposta física (1/d²) com resposta artística
   float flux = pow(10.0, -0.4 * aMag) / (dist * dist + 0.05);
@@ -42,8 +42,11 @@ void main() {
   float art = clamp(pow(10.0, -0.18 * (aMag - 1.0)), 0.05, 1.0);
   float alpha = mix(art, phys, 0.45);
 
-  // extinção interestelar: gás entre a câmera e a estrela a apaga e avermelha
-  vec3 absorb = extinction(uCamPos, worldPos, uTau);
+  // extinção interestelar: gás entre a câmera e a estrela a apaga e
+  // avermelha — só para estrelas com presença real na tela; num ponto
+  // subpixel tênue o avermelhamento é ilegível e o mini-raymarch de
+  // 6 amostras custaria ~80% do custo total do campo estelar
+  vec3 absorb = pxRaw > 1.5 ? extinction(uCamPos, worldPos, uTau) : vec3(1.0);
   vec3 col = bvToColor(aCi) * absorb;
   float vis = (absorb.r + absorb.g + absorb.b) / 3.0;
   alpha *= mix(1.0, vis, 0.5);

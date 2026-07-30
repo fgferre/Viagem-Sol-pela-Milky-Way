@@ -18,11 +18,17 @@ implementado assim:
 
 ## Regra de combinação observado ↔ inferido
 
-O canal G (cobertura) do mapa de poeira decide, por texel:
+O canal G (cobertura) do mapa de poeira decide, por texel: as fendas
+procedurais CEDEM sob cobertura (atenuadas ×(1−0,65·G)) e as fendas
+medidas entram por produto — substituição gradual sem costura:
 
 ```
-absorption = mix(procedural, observado, cobertura)
+absorption = absorptionProc(atenuada por G) * mix(1, absorptionObs, G)
 ```
+
+O mesmo princípio vale para o H II procedural (alpha ×(1−0,7·G) no
+gerador de partículas) e a cobertura G só é declarada onde há amostra
+LOCAL do APOGEE — nunca derivada do baseline regional.
 
 - cobertura 1 → fendas escuras, avermelhamento e patchiness dos braços vêm
   do APOGEE; o ruído FBM só texturiza abaixo de ~65 pc/texel (a resolução
@@ -108,6 +114,20 @@ no disco externo.
 - Perfil vertical do gás: gaussiano fino (σ 70→260 pc) — fino como o gás
   molecular real, plano perto do plano (preserva o corredor local).
 - Rótulos re-projetados TODO frame (10 Hz "nadava" contra as estrelas).
+
+Rodada de auditoria multi-agente (2026-07-30, relatórios em
+`docs/audits/`): gate espacial nos 7 núcleos do raymarch (~80% do custo
+medido em t=0/85), lâminas do disco BAKEADAS em texturas no init
+(conteúdo estático), LUT da faixa só quando a câmera move >2 pc,
+auto-quality com recuperação relativa ao refresh, extinção pulada em
+estrelas subpixel, film pass movido para DEPOIS do OutputPass (grão/
+vinheta/lift em display space), hash de grão sem banding, damping de
+câmera por dt, pausa+scrub, `?shot=1` com tempo visual congelado.
+
+**Deferido (próximas rodadas, achados Codex):** fit BeSSeL das fases dos
+braços (residual mediano 1,04 kpc → 0,32 kpc possível), fotometria HYG
+com luminosidade intrínseca (`logLum` hoje descartado), macro/micro
+split completo da poeira procedural.
 
 ## Orçamento
 

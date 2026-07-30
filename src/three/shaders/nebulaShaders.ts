@@ -231,7 +231,8 @@ void main() {
   vec3 acc = vec3(0.0);
   float T = 1.0;
   vec3 galacticLight = texture2D(uBandLUT, dirToBand(rd)).rgb;
-  vec3 toSun = normalize(uSunPos - ro);
+  // +1e-4: normalize(vec3(0)) = NaN quando ?pos=0,0,0 (origem exata)
+  vec3 toSun = normalize(uSunPos - ro + vec3(1e-4));
   float phaseSun = pow(max(dot(rd, toSun), 0.0), 24.0) * 2.2 +
                    pow(max(dot(rd, toSun), 0.0), 4.0) * 0.35;
 
@@ -250,9 +251,9 @@ void main() {
     float d = nebulaDensity(p, 4);
 
     if (d > 0.003) {
-      // ambiente frio proporcional ao envelope do gás — vale em
-      // qualquer ponto do disco, não só na vizinhança solar
-      float slab = min(diskGasEnvelope(p) * 0.9, 1.0);
+      // ambiente frio proporcional ao envelope do gás — reusa o valor
+      // que nebulaDensity acabou de calcular para a MESMA amostra
+      float slab = min(gGasEnvelope * 0.9, 1.0);
 
       // auto-absorção: corações densos são escuros, bordas brilham
       // (como nas nebulosas escuras reais — Barnard 68, Pilares da Criação)
@@ -268,13 +269,17 @@ void main() {
       sampleColor += GAS_COOL * slab * 0.012;
 
       // Região HII hero no corredor para Betelgeuse: uma cavidade
-      // ionizada localizada, inspirada na emissão H-alfa da referência.
+      // ionizada localizada — o fbm dos filamentos só roda dentro
+      // do volume dela (fora, heroVolume < 1e-5 e não compra nada)
       vec3 hq = (p - vec3(5.5, 132.0, 18.0)) / 24.0;
-      float heroVolume = exp(-dot(hq, hq) * 1.25);
-      float heroFilaments = smoothstep(0.58, 0.84, fbm(p * 0.115 + 63.7, 3));
-      float heroHii = heroVolume * heroFilaments * heroFilaments;
-      sampleColor += vec3(1.0, 0.09, 0.30) * heroHii * (0.08 + rim * 0.92);
-      sampleColor += vec3(0.18, 0.48, 0.82) * heroHii * (1.0 - heroFilaments) * 0.16;
+      float hq2 = dot(hq, hq);
+      if (hq2 < 9.0) {
+        float heroVolume = exp(-hq2 * 1.25);
+        float heroFilaments = smoothstep(0.58, 0.84, fbm(p * 0.115 + 63.7, 3));
+        float heroHii = heroVolume * heroFilaments * heroFilaments;
+        sampleColor += vec3(1.0, 0.09, 0.30) * heroHii * (0.08 + rim * 0.92);
+        sampleColor += vec3(0.18, 0.48, 0.82) * heroHii * (1.0 - heroFilaments) * 0.16;
+      }
 
       // luz do Sol (local)
       float dSun = length(p - uSunPos);

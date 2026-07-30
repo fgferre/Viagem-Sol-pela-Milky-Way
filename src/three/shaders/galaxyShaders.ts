@@ -129,6 +129,32 @@ void main() {
 }
 `;
 
+// Vertex de bake: quad direto em clip space, UV 1:1 — usado uma
+// única vez no init para congelar cada lâmina numa textura.
+export const DISC_BAKE_VERT = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`;
+
+// Fragment das lâminas BAKEADAS: o conteúdo do DISC_FRAG é estático
+// (sem uTime, sem câmera) — recalculá-lo por fragmento a cada frame
+// eram ~400 M hash/frame no Ato III. Agora é um fetch.
+export const DISC_BAKED_FRAG = /* glsl */ `
+precision highp float;
+
+uniform sampler2D uBaked;
+uniform float uFade;
+uniform float uLayerAlpha;
+varying vec2 vUv;
+
+void main() {
+  gl_FragColor = vec4(texture2D(uBaked, vUv).rgb * uLayerAlpha * uFade, 1.0);
+}
+`;
+
 // Disco emissivo contínuo. Três camadas levemente separadas no
 // eixo Z conectam as partículas e evitam o aspecto de "anéis".
 // As fases e o pitch são os mesmos do gerador físico em galaxy.ts.
@@ -142,7 +168,9 @@ void main() {
   vUv = uv;
   vec3 warped = position;
   float radiusPc = length(position.xy) * uDiskRadius;
-  float theta = atan(position.y, position.x);
+  // +1e-7: atan(0,0) é indefinido e 0*NaN = NaN — o vértice central
+  // do plano existe exatamente em (0,0)
+  float theta = atan(position.y, position.x + 1e-7);
   warped.z += galWarpHeight(radiusPc, theta);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(warped, 1.0);
 }
@@ -195,7 +223,7 @@ void main() {
   if (radius > 1.0) discard;
 
   float radiusPc = radius * GAL_DISK_RADIUS;
-  float theta = atan(p.y, p.x);
+  float theta = atan(p.y, p.x + 1e-7); // NaN no texel central seria BAKEADO
   float armSharpness = mix(42.0, 105.0, smoothstep(3500.0, 15000.0, radiusPc));
   float arms = clamp(
     galMajorArms(theta, radiusPc, armSharpness) +
@@ -241,11 +269,12 @@ void main() {
   float armLight = arms * mix(0.44, 1.0, continuity);
   // formação estelar acompanha o gás denso medido (sutil)
   armLight *= mix(1.0, 0.78 + obsLanes * 0.65, obsCoverage * 0.6);
+  // Onde o APOGEE mediu, as fendas procedurais CEDEM (contrato:
+  // inferido preenche só onde não há amostragem) — a atenuação
+  // gradual evita costura na borda da cobertura.
   float absorptionProc =
-    1.0 - dustArms * smoothstep(0.52, 0.84, fineNoise) * 0.64;
-  // Composição por PRODUTO: as fendas medidas multiplicam o
-  // procedural — nada de costura na borda da cobertura, e o
-  // ruído fino só texturiza abaixo da resolução do mapa.
+    1.0 - dustArms * (1.0 - obsCoverage * 0.65) *
+      smoothstep(0.52, 0.84, fineNoise) * 0.64;
   float absorptionObs =
     1.0 - obsLanes * (0.55 + 0.45 * smoothstep(0.3, 0.8, fineNoise)) * 0.78;
   float absorption = absorptionProc * mix(1.0, absorptionObs, obsCoverage);

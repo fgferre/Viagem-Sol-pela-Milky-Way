@@ -55,7 +55,7 @@ export function TitleVeil({
             O SOL É SÓ MAIS UM PONTO DE LUZ
           </div>
           <div className="title-sub">
-            cada estrela que você viu existe de verdade no catálogo HYG
+            cada estrela nomeada que você visitou existe de verdade no catálogo HYG
           </div>
           <div className="title-rule" />
           <button className="hud-btn" onClick={onPlay}>
@@ -88,7 +88,7 @@ export function Caption({
 }) {
   if (!caption) return null;
   return (
-    <div key={showKey} className="caption-wrap show">
+    <div key={showKey} className="caption-wrap show" role="status" aria-live="polite">
       <div className="caption-rule" />
       <div className="caption-title">{caption}</div>
       {sub && <div className="caption-sub">{sub}</div>}
@@ -99,12 +99,22 @@ export function Caption({
 export function ProgressBar({
   progressRef,
   ticks,
+  onScrub,
 }: {
   progressRef: RefObject<HTMLDivElement | null>;
   ticks: number[];
+  onScrub: (fraction: number) => void;
 }) {
   return (
-    <div className="progress-wrap">
+    <div
+      className="progress-wrap"
+      role="progressbar"
+      aria-label="Progresso da viagem — clique para saltar"
+      onPointerDown={(event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        onScrub((event.clientX - rect.left) / rect.width);
+      }}
+    >
       <div ref={progressRef} className="progress-fill" />
       {ticks.map((t, i) => (
         <div key={i} className="progress-tick" style={{ left: `${t * 100}%` }} />

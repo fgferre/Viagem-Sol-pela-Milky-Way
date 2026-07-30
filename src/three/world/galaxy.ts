@@ -14,6 +14,8 @@ import {
   GLOW_FRAG,
   DISC_VERT,
   DISC_FRAG,
+  DISC_BAKE_VERT,
+  DISC_BAKED_FRAG,
 } from '../shaders/galaxyShaders';
 import {
   GALACTIC_MODEL,
@@ -107,8 +109,29 @@ export interface GalaxyBuffers {
   dustCount: number;
 }
 
-export function buildGalaxy(seed = 20260730): GalaxyBuffers {
+/** amostrador de cobertura observacional (canal G do dust map) */
+export interface CoverageField {
+  data: Float32Array;
+  size: number;
+  halfExtentPc: number;
+}
+
+export function buildGalaxy(
+  seed = 20260730,
+  coverage?: CoverageField
+): GalaxyBuffers {
   const rnd = mulberry32(seed);
+  // onde o APOGEE mediu, o preenchimento procedural CEDE (contrato:
+  // inferido só onde não há amostragem) — H II inventado não disputa
+  // com as 1.413 regiões WISE reais
+  const coverageAt = (lx: number, ly: number): number => {
+    if (!coverage) return 0;
+    const s = coverage.size;
+    const ix = Math.floor((lx / (2 * coverage.halfExtentPc) + 0.5) * s);
+    const iy = Math.floor((ly / (2 * coverage.halfExtentPc) + 0.5) * s);
+    if (ix < 0 || ix >= s || iy < 0 || iy >= s) return 0;
+    return coverage.data[iy * s + ix];
+  };
 
   const N_DISK = 170000;
   const N_BULGE = 85000;
@@ -290,7 +313,9 @@ export function buildGalaxy(seed = 20260730): GalaxyBuffers {
     const ly = r * Math.sin(theta);
     const lz =
       warpHeightPc(r, theta) + gauss(rnd) * (46 + flareAtRadius(r) * 105);
-    const armWeight = inLocalArm ? LOCAL_ARM.weight : arm.weight;
+    const armWeight =
+      (inLocalArm ? LOCAL_ARM.weight : arm.weight) *
+      (1 - coverageAt(lx, ly) * 0.7);
     if (rnd() < 0.6) {
       put(
         lx, ly, lz,
@@ -425,6 +450,7 @@ export class Galaxy {
   private discMats: THREE.ShaderMaterial[] = [];
   private discMeshes: THREE.Mesh[] = [];
   private discBaseAlphas: number[] = [];
+  private discRTs: THREE.WebGLRenderTarget[] = [];
   private markerMesh!: THREE.Mesh;
   private dustMap: THREE.Texture;
   private dustPts!: THREE.Points;
@@ -573,8 +599,9 @@ export class Galaxy {
     root.quaternion.setFromRotationMatrix(basis);
 
     // Subdivisões são necessárias para que o vertex shader curve a
-    // lâmina no warp — duas faces planas não poderiam fazê-lo.
-    const geometry = new THREE.PlaneGeometry(2, 2, 144, 144);
+    // lâmina no warp — 72² resolve o warp (feições de ~4 kpc) com
+    // 1/4 dos vértices de 144².
+    const geometry = new THREE.PlaneGeometry(2, 2, 72, 72);
     const layers: Array<[number, number, number]> = [
       [-340, 0.1, 2.1],
       [-190, 0.22, 3.7],
@@ -619,13 +646,82 @@ export class Galaxy {
   /**
    * off: só procedural · blend: observado condiciona o procedural ·
    * observed: realça o medido dimando a emissão inferida (debug A/B).
+   * Chamar ANTES de bakeDiscLayers — o modo é congelado no bake.
    */
   setCartography(mode: CartographyMode) {
     this.discMats.forEach((material, index) => {
-      material.uniforms.uCartBlend.value = mode === 'off' ? 0 : 1;
+      if (material.uniforms.uCartBlend) {
+        material.uniforms.uCartBlend.value = mode === 'off' ? 0 : 1;
+      }
       material.uniforms.uLayerAlpha.value =
         this.discBaseAlphas[index] * (mode === 'observed' ? 0.35 : 1);
     });
+  }
+
+  /**
+   * Congela cada lâmina do disco numa textura 1024² (33 pc/texel —
+   * acima da frequência útil do FBM). O conteúdo é 100% estático:
+   * por frame sobra um fetch × uLayerAlpha × uFade, em vez de
+   * 2×fbm2(5 oitavas) + 10 galArm por fragmento × 7 lâminas
+   * (~400 M hash/frame no Ato III). Roda uma vez no init.
+   */
+  bakeDiscLayers(renderer: THREE.WebGLRenderer) {
+    const bakeScene = new THREE.Scene();
+    const bakeCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
+    quad.frustumCulled = false;
+    bakeScene.add(quad);
+    const prev = renderer.getRenderTarget();
+
+    for (let i = 0; i < this.discMats.length; i++) {
+      const analytic = this.discMats[i];
+      const savedFade = analytic.uniforms.uFade.value as number;
+      const savedAlpha = analytic.uniforms.uLayerAlpha.value as number;
+      analytic.uniforms.uFade.value = 1;
+      analytic.uniforms.uLayerAlpha.value = 1;
+
+      const bakeMat = new THREE.ShaderMaterial({
+        vertexShader: DISC_BAKE_VERT,
+        fragmentShader: DISC_FRAG,
+        uniforms: analytic.uniforms, // mesmas refs (uDustMap, uSeed…)
+      });
+      quad.material = bakeMat;
+
+      const rt = new THREE.WebGLRenderTarget(1024, 1024, {
+        type: THREE.HalfFloatType,
+        depthBuffer: false,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+      });
+      renderer.setRenderTarget(rt);
+      renderer.render(bakeScene, bakeCam);
+      bakeMat.dispose();
+      analytic.uniforms.uFade.value = savedFade;
+      analytic.uniforms.uLayerAlpha.value = savedAlpha;
+
+      const baked = new THREE.ShaderMaterial({
+        vertexShader: DISC_VERT,
+        fragmentShader: DISC_BAKED_FRAG,
+        uniforms: {
+          uBaked: { value: rt.texture },
+          uFade: { value: savedFade },
+          uLayerAlpha: { value: savedAlpha },
+          uDiskRadius: { value: GAL.DISK_RADIUS },
+        },
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: true,
+        transparent: true,
+        side: THREE.DoubleSide,
+      });
+      this.discMeshes[i].material = baked;
+      analytic.dispose();
+      this.discMats[i] = baked;
+      this.discRTs.push(rt);
+    }
+
+    quad.geometry.dispose();
+    renderer.setRenderTarget(prev);
   }
 
   /**
@@ -695,6 +791,7 @@ export class Galaxy {
     this.dwarfMat.dispose();
     this.markerMat.dispose();
     this.discMats.forEach((material) => material.dispose());
+    this.discRTs.forEach((rt) => rt.dispose());
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) o.geometry.dispose();
