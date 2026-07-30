@@ -1,0 +1,337 @@
+/* ============================================================
+   HUD cinematográfico — letterbox, legendas, rótulos, títulos
+   ============================================================ */
+
+.hud-root {
+  --warp: 0;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scene-canvas,
+.label-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.scene-canvas {
+  z-index: 0;
+  touch-action: none;
+}
+
+.label-canvas {
+  z-index: 25;
+  pointer-events: none;
+}
+
+/* --- letterbox --- */
+.letterbox {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: #000;
+  z-index: 30;
+  transition: height 2.2s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.letterbox.top { top: 0; }
+.letterbox.bottom { bottom: 0; }
+.letterbox.on { height: 6.5vh; }
+
+/* --- legenda da fase --- */
+.caption-wrap {
+  position: fixed;
+  left: 6vw;
+  bottom: 11vh;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(14px);
+}
+.caption-wrap.show {
+  animation: captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes captionIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+.caption-title {
+  color: #f5f1e8;
+  font-size: clamp(1.5rem, 3.2vw, 2.6rem);
+  font-weight: 200;
+  letter-spacing: 0.42em;
+  text-shadow: 0 0 24px rgba(140, 180, 255, 0.45);
+}
+.caption-sub {
+  color: rgba(200, 214, 235, 0.82);
+  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  font-weight: 300;
+  letter-spacing: 0.28em;
+  margin-top: 0.55rem;
+  text-transform: uppercase;
+}
+.caption-rule {
+  width: 3.2rem;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 214, 150, 0.9), transparent);
+  margin-bottom: 0.8rem;
+}
+
+/* --- barra de progresso --- */
+.progress-wrap {
+  position: fixed;
+  left: 6vw;
+  right: 6vw;
+  bottom: 7.4vh;
+  z-index: 40;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.13);
+  pointer-events: none;
+}
+.progress-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 200, 130, 0.95), rgba(150, 190, 255, 0.95));
+  box-shadow: 0 0 8px rgba(180, 200, 255, 0.6);
+  transform: scaleX(var(--journey-progress, 0));
+  transform-origin: left center;
+  transition: transform 0.18s linear;
+}
+.progress-tick {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* --- telas de título --- */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(2, 4, 10, 0.55), rgba(0, 0, 2, 0.92));
+  transition: opacity 1.6s ease;
+}
+.veil.hidden-veil {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 1.6s ease,
+    visibility 0s linear 1.6s;
+}
+.title-big {
+  color: #f7f3ea;
+  font-weight: 100;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  font-size: clamp(1.5rem, 4.2vw, 3.4rem);
+  text-shadow: 0 0 40px rgba(150, 180, 255, 0.5);
+  max-width: 88vw;
+  margin: 0 auto;
+  padding: 0 3vw;
+  text-align: center;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+.title-kicker {
+  margin-bottom: 1.15rem;
+  color: rgba(177, 196, 225, 0.72);
+  font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+  font-weight: 400;
+  letter-spacing: 0.46em;
+  text-indent: 0.46em;
+}
+.error-title {
+  max-width: 24ch;
+  font-size: clamp(1.25rem, 3vw, 2.2rem);
+}
+.journey-runtime {
+  margin-top: 1rem;
+  color: rgba(165, 180, 202, 0.58);
+  font-size: 0.56rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.title-sub {
+  color: rgba(190, 205, 228, 0.85);
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  font-weight: 300;
+  font-size: clamp(0.62rem, 1.2vw, 0.9rem);
+  margin-top: 1.4rem;
+  line-height: 2;
+  text-align: center;
+}
+.title-rule {
+  width: 5rem;
+  height: 1px;
+  margin: 1.8rem 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 214, 150, 0.9), transparent);
+}
+
+/* --- botões --- */
+.hud-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1px solid rgba(220, 230, 248, 0.35);
+  background: rgba(8, 12, 22, 0.35);
+  color: rgba(235, 240, 250, 0.92);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 300;
+  padding: 0.85rem 1.9rem;
+  transition: all 0.35s ease;
+  backdrop-filter: blur(6px);
+}
+.hud-btn:focus-visible {
+  outline: 1px solid rgba(255, 219, 164, 0.95);
+  outline-offset: 4px;
+}
+.hud-btn:hover {
+  background: rgba(255, 214, 150, 0.14);
+  border-color: rgba(255, 214, 150, 0.75);
+  color: #fff;
+  box-shadow: 0 0 24px rgba(255, 200, 120, 0.18);
+}
+.hud-btn.small {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+}
+.controls-bar select.hud-btn {
+  appearance: none;
+  min-width: 9rem;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(230, 237, 248, 0.8) 50%),
+    linear-gradient(135deg, rgba(230, 237, 248, 0.8) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+
+/* --- controles fixos --- */
+.controls-bar {
+  position: fixed;
+  top: 8.5vh;
+  right: 3vw;
+  z-index: 45;
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* --- dica de voo livre --- */
+.free-hint {
+  position: fixed;
+  bottom: 11vh;
+  left: 6vw;
+  z-index: 40;
+  color: rgba(200, 214, 235, 0.75);
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  line-height: 2;
+  pointer-events: none;
+}
+
+/* --- indicador de warp --- */
+.warp-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(120, 160, 255, 0.16) 100%);
+  opacity: var(--warp);
+}
+
+/* --- loading --- */
+.loading-pulse {
+  animation: pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@media (max-width: 760px) {
+  .letterbox.on {
+    height: 4.5vh;
+  }
+
+  .title-big {
+    max-width: 94vw;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+  }
+
+  .title-sub {
+    max-width: 88vw;
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
+    line-height: 1.8;
+  }
+
+  .controls-bar {
+    top: 6.5vh;
+    right: 4vw;
+    left: 4vw;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .controls-bar .reveal-btn {
+    display: none;
+  }
+
+  .caption-wrap {
+    left: 5vw;
+    right: 5vw;
+    bottom: 10vh;
+  }
+
+  .caption-title {
+    font-size: clamp(1.15rem, 7vw, 1.8rem);
+    letter-spacing: 0.28em;
+  }
+
+  .caption-sub {
+    letter-spacing: 0.18em;
+  }
+
+  .progress-wrap {
+    left: 5vw;
+    right: 5vw;
+    bottom: 6.4vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letterbox,
+  .veil,
+  .progress-fill {
+    transition-duration: 0.01ms;
+  }
+
+  .caption-wrap.show,
+  .loading-pulse {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,0 +1,64 @@
+// ============================================================
+// Poeira próxima da câmera — paralaxe que vende o volume do gás.
+// ============================================================
+import * as THREE from 'three';
+import { WORLD } from '../config';
+import { DUST_VERT, DUST_FRAG } from '../shaders/dustShaders';
+
+const BOX = 7; // pc — aresta da caixa que envolve a câmera
+
+export class Dust {
+  readonly points: THREE.Points;
+  private material: THREE.ShaderMaterial;
+
+  constructor(count = WORLD.dustCount) {
+    const pos = new Float32Array(count * 3);
+    const rand = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * BOX;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * BOX;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * BOX;
+      rand[i] = Math.random();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aRand', new THREE.BufferAttribute(rand, 1));
+    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 10000);
+
+    this.material = new THREE.ShaderMaterial({
+      vertexShader: DUST_VERT,
+      fragmentShader: DUST_FRAG,
+      uniforms: {
+        uCamPos: { value: new THREE.Vector3() },
+        uTime: { value: 0 },
+        uScreenH: { value: 1080 },
+        uBox: { value: BOX },
+        uFade: { value: 1 },
+      },
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+    });
+
+    this.points = new THREE.Points(geo, this.material);
+    this.points.frustumCulled = false;
+    this.points.renderOrder = 4;
+  }
+
+  update(camPos: THREE.Vector3, screenH: number, time: number) {
+    const u = this.material.uniforms;
+    (u.uCamPos.value as THREE.Vector3).copy(camPos);
+    u.uScreenH.value = screenH;
+    u.uTime.value = time;
+  }
+
+  setFade(f: number) {
+    this.material.uniforms.uFade.value = f;
+    this.points.visible = f > 0.001;
+  }
+
+  dispose() {
+    this.points.geometry.dispose();
+    this.material.dispose();
+  }
+}

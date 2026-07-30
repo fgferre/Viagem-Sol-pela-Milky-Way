@@ -1,0 +1,243 @@
+// ============================================================
+// Shaders da nebulosa volumétrica — raymarching em tela cheia
+// com dupla paleta (OIII × H-alfa), espalhamento do Sol e luz
+// das supergigantes Betelgeuse/Rigel embutidas nas nuvens.
+// ============================================================
+import { WORLD } from '../config';
+import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY } from './common';
+
+const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
+const warm = WORLD.gasColorWarm.map((v) => v.toFixed(3)).join(', ');
+
+export const NEBULA_VERT = /* glsl */ `
+void main() {
+  gl_Position = vec4(position.xy, 0.999, 1.0);
+}
+`;
+
+export const NEBULA_FRAG = /* glsl */ `
+precision highp float;
+
+uniform vec3 uCamPos;
+uniform vec3 uCamRight;
+uniform vec3 uCamUp;
+uniform vec3 uCamFwd;
+uniform float uTanHalfFov;
+uniform float uAspect;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform int uSteps;
+uniform vec3 uSunPos;
+uniform float uFade;
+
+// luzes embutidas: Betelgeuse (vermelha) e Rigel (azul)
+uniform vec3 uLightPos[2];
+uniform vec3 uLightColor[2];
+
+${GLSL_NOISE}
+${GLSL_GALAXY}
+${GLSL_CARTOGRAPHY}
+${GLSL_DENSITY}
+
+const vec3 GAS_COOL = vec3(${cool});
+const vec3 GAS_WARM = vec3(${warm});
+
+vec3 palette(vec3 p, float d) {
+  float m = fbm(p * 0.035 + 7.7, 3);
+  float k = smoothstep(0.32, 0.72, m);
+  // núcleos densos → H-alfa quente; filamentos tênues → azul de reflexão
+  float byDensity = smoothstep(0.15, 1.1, d);
+  vec3 col = mix(GAS_COOL, GAS_WARM, clamp(k * 0.55 + byDensity * 0.6, 0.0, 1.0));
+  // toques magenta em filamentos densos (H-alfa + SII)
+  col = mix(col, vec3(0.62, 0.22, 0.38), smoothstep(0.75, 0.95, m) * byDensity * 0.45);
+  return col;
+}
+
+// Integra a luz do disco da Via Láctea ao longo do raio. É o equivalente
+// procedural de uma exposição astrofotográfica longa, mas toda a estrutura
+// vive no espaço galactocêntrico e responde à posição/orientação da câmera.
+vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
+  const vec3 GAL_CENTER = vec3(-442.464, -7117.423, -3945.763);
+  const vec3 GAL_X = vec3(0.0548756, 0.8734371, 0.4838350);
+  const vec3 GAL_Y = vec3(-0.4941094, 0.4448296, -0.7469822);
+  vec3 light = vec3(0.0);
+  float transmission = 1.0;
+  float previousT = 180.0;
+  int farSteps = uSteps >= 50 ? 20 : (uSteps >= 38 ? 15 : 10);
+
+  for (int j = 0; j < 20; j++) {
+    if (j >= farSteps) break;
+    float f = (float(j) + 0.62) / float(farSteps);
+    float t = 180.0 + 22000.0 * f * f;
+    float dt = max(t - previousT, 1.0);
+    previousT = t;
+
+    vec3 p = ro + rd * t;
+    vec3 q = p - GAL_CENTER;
+    float rawZ = dot(q, GAL_N);
+    vec3 inPlane = q - GAL_N * rawZ;
+    float radius = length(inPlane);
+    float theta = atan(dot(q, GAL_Y), dot(q, GAL_X));
+    float z = rawZ - galWarpHeight(radius, theta);
+    float flare = clamp((radius - 7500.0) / 9300.0, 0.0, 1.0);
+    flare *= flare;
+    float edge = 1.0 - smoothstep(15500.0, GAL_DISK_RADIUS, radius);
+
+    float thinHeight = mix(210.0, 460.0, flare);
+    float thickHeight = mix(610.0, 1080.0, flare);
+    float thinDisk =
+      exp(-radius / 5200.0) * exp(-abs(z) / thinHeight) * edge;
+    float thickDisk =
+      exp(-radius / 6500.0) * exp(-abs(z) / thickHeight) * edge * 0.105;
+
+    float cb = cos(0.506145);
+    float sb = sin(0.506145);
+    vec2 barP = mat2(cb, -sb, sb, cb) *
+      vec2(dot(q, GAL_X), dot(q, GAL_Y));
+    float bar =
+      exp(-abs(barP.x) / 2050.0) *
+      exp(-abs(barP.y) / 430.0) *
+      exp(-abs(z) / 390.0) *
+      (1.0 - smoothstep(4650.0, 5400.0, abs(barP.x)));
+    float bulge = exp(-length(q) / 1050.0) * 2.45 + bar * 0.82;
+
+    // Estrutura fractal em escalas de quiloparsecs e centenas de parsecs.
+    float broad = fbm(q * 0.00062 + 13.7, 2);
+    float filaments = fbm(q * 0.0021 + 37.1, 2);
+    float arms = clamp(
+      galMajorArms(theta, radius, 155.0) +
+      galLocalArm(theta, radius, 180.0),
+      0.0,
+      1.0
+    );
+    float stellar =
+      thinDisk *
+        mix(0.22, 1.12, broad) *
+        mix(0.58, 1.28, arms) +
+      thickDisk +
+      bulge;
+
+    // Poeira fria acumula na camada mais fina e recorta o centro em
+    // filamentos negros, como as grandes fendas da astrofotografia.
+    float dust = thinDisk * mix(0.58, 1.35, arms) *
+      smoothstep(0.44, 0.76, broad * 0.68 + filaments * 0.42);
+
+    float towardCenter = clamp(bulge * 0.6 + exp(-radius / 2600.0), 0.0, 1.0);
+    vec3 diskColor = mix(
+      vec3(0.30, 0.43, 0.78),
+      vec3(1.00, 0.72, 0.42),
+      towardCenter * 0.82 + broad * 0.18
+    );
+
+    // Bolsões H-alfa/OIII pontuais: presentes no disco, nunca como
+    // um véu magenta uniforme.
+    float hii = thinDisk * (0.22 + arms * 0.78) *
+      smoothstep(0.76, 0.94, filaments) *
+      smoothstep(1800.0, 5200.0, radius);
+    vec3 emission = diskColor * stellar;
+    emission += vec3(0.95, 0.12, 0.32) * hii * 0.72;
+    emission += vec3(0.12, 0.48, 0.72) * hii * (1.0 - broad) * 0.42;
+
+    light += transmission * emission * dt * 0.000052;
+    transmission *= exp(-dust * dt * 0.00035);
+    if (transmission < 0.02) break;
+  }
+
+  return light / (1.0 + light * 0.55);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy / uResolution) * 2.0 - 1.0;
+  vec3 rd = normalize(
+    uCamFwd +
+    uCamRight * (uv.x * uTanHalfFov * uAspect) +
+    uCamUp * (uv.y * uTanHalfFov));
+  vec3 ro = uCamPos;
+
+  // jitter anti-banding (interleaved gradient noise)
+  float jitter = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+
+  float tMax = 650.0;
+  int N = uSteps;
+
+  vec3 acc = vec3(0.0);
+  float T = 1.0;
+  vec3 galacticLight = integrateGalacticDisk(ro, rd);
+  vec3 toSun = normalize(uSunPos - ro);
+  float phaseSun = pow(max(dot(rd, toSun), 0.0), 24.0) * 2.2 +
+                   pow(max(dot(rd, toSun), 0.0), 4.0) * 0.35;
+
+  for (int i = 0; i < 96; i++) {
+    if (i >= N || T < 0.015) break;
+    // Amostragem quadrática: alta resolução perto da câmera, mas o
+    // último passo realmente alcança 650 pc. A progressão anterior
+    // percorria só ~4 pc e nunca chegava às nuvens da viagem.
+    float f0 = clamp((float(i) + jitter) / float(N), 0.0, 1.0);
+    float f1 = clamp((float(i + 1) + jitter) / float(N), 0.0, 1.0);
+    float t0 = tMax * f0 * f0;
+    float t1 = tMax * f1 * f1;
+    float t = (t0 + t1) * 0.5;
+    float dt = max(t1 - t0, 0.01);
+    vec3 p = ro + rd * t;
+    float d = nebulaDensity(p, 4);
+
+    if (d > 0.003) {
+      float gp = dot(p, GAL_N) + 5.5;
+      float slab = exp(-gp * gp / (2.0 * 95.0 * 95.0));
+
+      // auto-absorção: corações densos são escuros, bordas brilham
+      // (como nas nebulosas escuras reais — Barnard 68, Pilares da Criação)
+      float selfShadow = exp(-d * 1.65);
+      float rim = 1.0 - selfShadow; // concentra a emissão nas bordas
+
+      // Emissão bicolor integrada por alpha volumétrico. A cor se
+      // acumula sem depender do tamanho do passo e os núcleos densos
+      // preservam silhuetas escuras em vez de virar branco uniforme.
+      vec3 sampleColor = palette(p, d) * (0.22 + rim * 1.55);
+      sampleColor *= 0.55 + min(d, 1.8) * 0.72;
+      sampleColor *= exp(-max(d - 0.9, 0.0) * 0.55);
+      sampleColor += GAS_COOL * slab * 0.012;
+
+      // Região HII hero no corredor para Betelgeuse: uma cavidade
+      // ionizada localizada, inspirada na emissão H-alfa da referência.
+      vec3 hq = (p - vec3(5.5, 132.0, 18.0)) / 24.0;
+      float heroVolume = exp(-dot(hq, hq) * 1.25);
+      float heroFilaments = smoothstep(0.58, 0.84, fbm(p * 0.115 + 63.7, 3));
+      float heroHii = heroVolume * heroFilaments * heroFilaments;
+      sampleColor += vec3(1.0, 0.09, 0.30) * heroHii * (0.08 + rim * 0.92);
+      sampleColor += vec3(0.18, 0.48, 0.82) * heroHii * (1.0 - heroFilaments) * 0.16;
+
+      // luz do Sol (local)
+      float dSun = length(p - uSunPos);
+      sampleColor += vec3(1.0, 0.66, 0.3) * phaseSun * rim * exp(-dSun * 0.1) * 1.1;
+
+      // luz das supergigantes embutidas no gás (falloff suave)
+      for (int L = 0; L < 2; L++) {
+        vec3 lv = uLightPos[L] - p;
+        float ld = length(lv);
+        sampleColor += uLightColor[L] * rim * (3.2 / (1.0 + ld * ld * 0.06));
+      }
+
+      // Beer–Lambert: cada passo deposita somente sua fração óptica.
+      float alpha = 1.0 - exp(-d * dt * 0.055);
+      acc += T * sampleColor * alpha;
+      T *= 1.0 - alpha;
+    }
+  }
+
+  // A luz galáctica está atrás das nuvens locais: regiões densas
+  // realmente ocultam a faixa quando a câmera mergulha nelas.
+  acc += galacticLight * T;
+
+  // Véu tênue de fundo, limitado ao plano galáctico.
+  float gpRay = dot(rd, GAL_N);
+  acc += GAS_COOL * exp(-gpRay * gpRay * 5.0) * 0.0035 * T;
+
+  // joelho suave — preserva gradientes, evita saturação uniforme
+  acc = acc / (1.0 + acc * 0.72);
+  acc *= uFade; // crossfade para o modelo galáctico na subida
+
+  gl_FragColor = vec4(acc, 1.0);
+}
+`;
