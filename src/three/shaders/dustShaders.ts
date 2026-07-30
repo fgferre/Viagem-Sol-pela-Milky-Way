@@ -2,8 +2,7 @@
 // Poeira interestelar próxima — partículas que envolvem a câmera
 // e se acendem dentro do gás, dando paralaxe e sensação de volume.
 // ============================================================
-import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY } from './common';
-import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY_LOCAL } from './common';
 
 export const DUST_VERT = /* glsl */ `
 attribute float aRand;
@@ -19,8 +18,7 @@ varying vec3 vColor;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
-${GLSL_CARTOGRAPHY}
-${GLSL_DENSITY}
+${GLSL_DENSITY_LOCAL}
 
 void main() {
   // partículas fixas no mundo; a caixa "segue" a câmera via wrap

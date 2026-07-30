@@ -1,17 +1,19 @@
 // ============================================================
-// Bake do mapa APOGEE (Rezaei Kh. et al. 2024) em uma textura
-// galactocêntrica 2D: R = densidade de poeira tonemapeada,
-// G = cobertura observacional (0 = sem dados → procedural).
+// Bake do mapa galactocêntrico 2D (RGBA):
+//   R = contraste log-local da poeira APOGEE (0,5 = neutro)
+//   G = cobertura observacional (0 = sem dados → procedural)
+//   B = fator de braços procedural (galMajorArms+galLocalArm)
+//   A = warp do disco normalizado (±820 pc)
 //
-// A poeira galáctica é fina (~100–150 pc de escala vertical);
-// vista das distâncias de câmera deste app, a estrutura XY é o
-// que se lê. O colapso vertical usa peso exp(-|z|/220) e o perfil
-// vertical volta analiticamente no shader. Os 196k pontos são
-// amostras esparsas: o blur separável fecha os vãos de amostragem
-// sem inventar estrutura além da resolução real do mapa.
+// B/A trocam ~40 transcendentais POR AMOSTRA do raymarch por um
+// único fetch — mesma função determinística, 65 pc/texel resolve
+// a largura dos braços com folga. São canais `inferred`; R/G são
+// `derived` do APOGEE. O colapso vertical usa peso exp(-|z|/220)
+// e o perfil vertical volta analiticamente no shader.
 // ============================================================
 import * as THREE from 'three';
 import type { CatalogueTable } from './galacticAssets';
+import { glMajorArms, glLocalArm, warpHeightPc } from './galacticModel';
 
 export const DUST_MAP_SIZE = 512;
 /** meia-aresta do domínio (pc) — igual a rendererDiskRadiusPc. */
@@ -139,20 +141,44 @@ export function bakeDustChannels(
   return { density, coverage };
 }
 
-export function bakeDustMap(table: CatalogueTable): DustBake {
+/**
+ * Gera o mapa completo. `table` null (APOGEE ausente/cart=off) produz
+ * R/G zerados — os canais procedurais B/A existem sempre, pois o
+ * envelope de gás do raymarch depende deles.
+ */
+export function bakeDustMap(table: CatalogueTable | null): DustBake {
   const size = DUST_MAP_SIZE;
-  const { density, coverage } = bakeDustChannels(table);
+  const { density, coverage } = table
+    ? bakeDustChannels(table)
+    : {
+        density: new Float32Array(size * size),
+        coverage: new Float32Array(size * size),
+      };
 
-  const pixels = new Uint8Array(size * size * 2);
+  const pixels = new Uint8Array(size * size * 4);
   let covered = 0;
   let discTexels = 0;
   const half = size / 2;
+  const texelPc = (2 * DUST_MAP_HALF_EXTENT) / size;
   for (let i = 0; i < size * size; i++) {
-    pixels[i * 2] = Math.min(255, Math.round(density[i] * 255));
-    pixels[i * 2 + 1] = Math.min(255, Math.round(coverage[i] * 255));
-    // a fração reportada é sobre o DISCO inscrito, não o quadrado
     const dx = (i % size) + 0.5 - half;
     const dy = Math.floor(i / size) + 0.5 - half;
+    const xPc = dx * texelPc;
+    const yPc = dy * texelPc;
+    const radiusPc = Math.hypot(xPc, yPc);
+    const theta = Math.atan2(yPc, xPc);
+    const arms = Math.min(
+      glMajorArms(theta, radiusPc, 24) + glLocalArm(theta, radiusPc, 28),
+      1
+    );
+    const warp = warpHeightPc(radiusPc, theta) / 820; // -1..1
+
+    pixels[i * 4] = Math.min(255, Math.round(density[i] * 255));
+    pixels[i * 4 + 1] = Math.min(255, Math.round(coverage[i] * 255));
+    pixels[i * 4 + 2] = Math.min(255, Math.round(arms * 255));
+    pixels[i * 4 + 3] = Math.min(255, Math.round((warp * 0.5 + 0.5) * 255));
+
+    // a fração reportada é sobre o DISCO inscrito, não o quadrado
     if (dx * dx + dy * dy <= half * half) {
       discTexels++;
       if (coverage[i] > 0.02) covered++;
@@ -163,7 +189,7 @@ export function bakeDustMap(table: CatalogueTable): DustBake {
     pixels,
     size,
     size,
-    THREE.RGFormat,
+    THREE.RGBAFormat,
     THREE.UnsignedByteType
   );
   texture.minFilter = THREE.LinearFilter;

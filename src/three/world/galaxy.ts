@@ -431,14 +431,17 @@ export class Galaxy {
   private glowMesh!: THREE.Mesh;
   private dwarfMesh!: THREE.Mesh;
   private static dbg = new URLSearchParams(window.location.search);
+  // flags lidos UMA vez — URLSearchParams.has() por frame é lixo evitável
+  private showGDust = !Galaxy.dbg.has('nogdust');
+  private showGlow = !Galaxy.dbg.has('noglow');
 
-  /** 1×1 sem cobertura — os shaders caem 100% no procedural. */
+  /** 1×1 sem cobertura (A=128: warp neutro) — 100% procedural. */
   static emptyDustMap(): THREE.DataTexture {
     const texture = new THREE.DataTexture(
-      new Uint8Array([0, 0]),
+      new Uint8Array([0, 0, 0, 128]),
       1,
       1,
-      THREE.RGFormat,
+      THREE.RGBAFormat,
       THREE.UnsignedByteType
     );
     texture.needsUpdate = true;
@@ -597,6 +600,9 @@ export class Galaxy {
         depthWrite: false,
         depthTest: true,
         transparent: true,
+        // sem isto o hemisfério sul da galáxia não existe: vista por
+        // baixo, cada lâmina era descartada por backface culling
+        side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.z = height;
@@ -677,9 +683,9 @@ export class Galaxy {
     this.dwarfMat.uniforms.uFade.value = externalFade * 0.11;
     this.markerMat.uniforms.uTime.value = time;
     this.markerMat.uniforms.uFade.value = markerFade;
-    this.dustPts.visible = !Galaxy.dbg.has('nogdust');
-    this.glowMesh.visible = !Galaxy.dbg.has('noglow');
-    this.dwarfMesh.visible = !Galaxy.dbg.has('noglow');
+    this.dustPts.visible = this.showGDust;
+    this.glowMesh.visible = this.showGlow;
+    this.dwarfMesh.visible = this.showGlow;
   }
 
   dispose() {

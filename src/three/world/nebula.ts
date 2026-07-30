@@ -3,7 +3,7 @@
 // resolução, composta como fundo HDR da cena principal.
 // ============================================================
 import * as THREE from 'three';
-import { NEBULA_VERT, NEBULA_FRAG } from '../shaders/nebulaShaders';
+import { NEBULA_VERT, NEBULA_FRAG, NEBULA_LUT_FRAG } from '../shaders/nebulaShaders';
 
 // Luzes embutidas no gás — posições reais do catálogo HYG (pc)
 const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682); // supergigante vermelha
@@ -16,12 +16,18 @@ export class Nebula {
   private camera = new THREE.OrthographicCamera();
   private material: THREE.ShaderMaterial;
   private scale: number;
-  /** 1×1 sem cobertura — mantém o sampler válido antes dos dados. */
+  // LUT equiretangular da luz distante do disco (1 render/frame,
+  // 256×128 — substitui ~20 passos pesados POR PIXEL do raymarch)
+  private lutRT: THREE.WebGLRenderTarget;
+  private lutScene = new THREE.Scene();
+  private lutMaterial: THREE.ShaderMaterial;
+  private scratchFwd = new THREE.Vector3();
+  /** 1×1 sem cobertura (A=128: warp neutro) — sampler válido antes dos dados. */
   private fallbackDustMap = new THREE.DataTexture(
-    new Uint8Array([0, 0]),
+    new Uint8Array([0, 0, 0, 128]),
     1,
     1,
-    THREE.RGFormat,
+    THREE.RGBAFormat,
     THREE.UnsignedByteType
   );
 
@@ -35,6 +41,30 @@ export class Nebula {
       magFilter: THREE.LinearFilter,
     });
     this.texture = this.rt.texture;
+
+    this.lutRT = new THREE.WebGLRenderTarget(256, 128, {
+      type: THREE.HalfFloatType,
+      depthBuffer: false,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+    });
+    // wrap horizontal: costura invisível em lon = ±π
+    this.lutRT.texture.wrapS = THREE.RepeatWrapping;
+    this.lutRT.texture.wrapT = THREE.ClampToEdgeWrapping;
+    this.lutMaterial = new THREE.ShaderMaterial({
+      vertexShader: NEBULA_VERT,
+      fragmentShader: NEBULA_LUT_FRAG,
+      uniforms: {
+        uCamPos: { value: new THREE.Vector3() },
+        uDustMap: { value: this.fallbackDustMap },
+        uCartBlend: { value: 0 },
+      },
+      depthWrite: false,
+      depthTest: false,
+    });
+    const lutQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.lutMaterial);
+    lutQuad.frustumCulled = false;
+    this.lutScene.add(lutQuad);
     this.material = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
       fragmentShader: NEBULA_FRAG,
@@ -55,7 +85,7 @@ export class Nebula {
           value: [new THREE.Vector3(1.0, 0.34, 0.10), new THREE.Vector3(0.42, 0.62, 1.0)],
         },
         uDustMap: { value: this.fallbackDustMap },
-        uCartBlend: { value: 0 },
+        uBandLUT: { value: this.lutRT.texture },
         uSeedCloudCount: { value: 0 },
         uSeedClouds: {
           value: Array.from({ length: 32 }, () => new THREE.Vector4()),
@@ -99,10 +129,12 @@ export class Nebula {
     this.material.uniforms.uFade.value = f;
   }
 
-  /** liga o mapa de poeira APOGEE na integração da faixa galáctica */
+  /** liga o mapa galactocêntrico (APOGEE + braços/warp bakeados) */
   setDustMap(map: THREE.Texture | null, blend = 1) {
-    this.material.uniforms.uDustMap.value = map ?? this.fallbackDustMap;
-    this.material.uniforms.uCartBlend.value = map ? blend : 0;
+    const texture = map ?? this.fallbackDustMap;
+    this.material.uniforms.uDustMap.value = texture;
+    this.lutMaterial.uniforms.uDustMap.value = texture;
+    this.lutMaterial.uniforms.uCartBlend.value = map ? blend : 0;
   }
 
   /**
@@ -131,16 +163,18 @@ export class Nebula {
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera, time: number) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camera.position);
-    const fwd = new THREE.Vector3();
-    camera.getWorldDirection(fwd);
-    (u.uCamFwd.value as THREE.Vector3).copy(fwd);
+    camera.getWorldDirection(this.scratchFwd);
+    (u.uCamFwd.value as THREE.Vector3).copy(this.scratchFwd);
     (u.uCamRight.value as THREE.Vector3).setFromMatrixColumn(camera.matrixWorld, 0).normalize();
     (u.uCamUp.value as THREE.Vector3).setFromMatrixColumn(camera.matrixWorld, 1).normalize();
     u.uTanHalfFov.value = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     u.uAspect.value = camera.aspect;
     u.uTime.value = time;
+    (this.lutMaterial.uniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
 
     const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(this.lutRT);
+    renderer.render(this.lutScene, this.camera);
     renderer.setRenderTarget(this.rt);
     renderer.render(this.scene, this.camera);
     renderer.setRenderTarget(prev);
@@ -148,7 +182,9 @@ export class Nebula {
 
   dispose() {
     this.rt.dispose();
+    this.lutRT.dispose();
     this.material.dispose();
+    this.lutMaterial.dispose();
     this.fallbackDustMap.dispose();
   }
 }

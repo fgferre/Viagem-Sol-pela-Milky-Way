@@ -16,7 +16,7 @@ void main() {
 }
 `;
 
-export const NEBULA_FRAG = /* glsl */ `
+const NEBULA_FRAG_HEAD = /* glsl */ `
 precision highp float;
 
 uniform vec3 uCamPos;
@@ -35,9 +35,10 @@ uniform float uFade;
 uniform vec3 uLightPos[2];
 uniform vec3 uLightColor[2];
 
-// mapa APOGEE bakeado (R = densidade, G = cobertura observacional)
-uniform sampler2D uDustMap;
-uniform float uCartBlend;
+// LUT equiretangular da luz do disco (renderizada 1×/frame em
+// 256×128): a integração distante depende só da DIREÇÃO do raio,
+// então custa um fetch por pixel em vez de ~20 passos pesados.
+uniform sampler2D uBandLUT;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
@@ -58,19 +59,27 @@ vec3 palette(vec3 p, float d) {
   return col;
 }
 
-// Integra a luz do disco da Via Láctea ao longo do raio. É o equivalente
-// procedural de uma exposição astrofotográfica longa, mas toda a estrutura
-// vive no espaço galactocêntrico e responde à posição/orientação da câmera.
+// direção → UV equiretangular no referencial galáctico (a costura em
+// lon = ±π é resolvida pelo RepeatWrapping horizontal do LUT)
+vec2 dirToBand(vec3 rd) {
+  float lat = asin(clamp(dot(rd, GAL_N), -1.0, 1.0));
+  float lon = atan(dot(rd, GAL_Y), dot(rd, GAL_X));
+  return vec2(lon * 0.15915494 + 0.5, lat * 0.31830989 + 0.5);
+}
+`;
+
+// Integra a luz do disco da Via Láctea ao longo do raio — o equivalente
+// procedural de uma exposição astrofotográfica longa. Depende apenas de
+// (posição da câmera, direção), então roda UMA vez por frame num LUT
+// 256×128 com 24 passos (mais que os 10–20 antigos), não por pixel.
+const BAND_INTEGRATION = /* glsl */ `
 vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
-  // GAL_CENTER/GAL_X/GAL_Y vêm do chunk GLSL_GALAXY compartilhado
   vec3 light = vec3(0.0);
   float transmission = 1.0;
   float previousT = 180.0;
-  int farSteps = uSteps >= 50 ? 20 : (uSteps >= 38 ? 15 : 10);
 
-  for (int j = 0; j < 20; j++) {
-    if (j >= farSteps) break;
-    float f = (float(j) + 0.62) / float(farSteps);
+  for (int j = 0; j < 24; j++) {
+    float f = (float(j) + 0.62) / 24.0;
     float t = 180.0 + 22000.0 * f * f;
     float dt = max(t - previousT, 1.0);
     previousT = t;
@@ -160,7 +169,34 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
 
   return light / (1.0 + light * 0.55);
 }
+`;
 
+// Fragment do LUT da faixa: uma direção por texel (256×128 equirect
+// no referencial galáctico), integração distante completa.
+export const NEBULA_LUT_FRAG = /* glsl */ `
+precision highp float;
+
+uniform vec3 uCamPos;
+uniform sampler2D uDustMap;
+uniform float uCartBlend;
+
+${GLSL_NOISE}
+${GLSL_GALAXY}
+${GLSL_CARTOGRAPHY}
+${BAND_INTEGRATION}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / vec2(256.0, 128.0);
+  float lon = (uv.x - 0.5) * 6.2831853;
+  float lat = (uv.y - 0.5) * 3.14159265;
+  float cl = cos(lat);
+  vec3 rd = GAL_X * (cl * cos(lon)) + GAL_Y * (cl * sin(lon)) + GAL_N * sin(lat);
+  gl_FragColor = vec4(integrateGalacticDisk(uCamPos, rd), 1.0);
+}
+`;
+
+// Corpo principal do raymarch — concatenado ao cabeçalho no export.
+const NEBULA_MAIN = /* glsl */ `
 void main() {
   vec2 uv = (gl_FragCoord.xy / uResolution) * 2.0 - 1.0;
   vec3 rd = normalize(
@@ -173,11 +209,28 @@ void main() {
   float jitter = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
 
   float tMax = 650.0;
-  int N = uSteps;
+
+  // O gás vive numa camada |z_gal| < 1600 pc: recorta o trecho útil
+  // do raio e dimensiona os passos por ele — olhar para fora do
+  // plano fica quase de graça, sem mudar o visual dentro da camada.
+  float z0 = dot(ro - GAL_CENTER, GAL_N);
+  float dz = dot(rd, GAL_N);
+  float tLo = 0.0;
+  float tHi = tMax;
+  if (abs(dz) > 1e-4) {
+    float ta = (-1600.0 - z0) / dz;
+    float tb = (1600.0 - z0) / dz;
+    tLo = clamp(min(ta, tb), 0.0, tMax);
+    tHi = clamp(max(ta, tb), 0.0, tMax);
+  } else if (abs(z0) > 1600.0) {
+    tHi = 0.0;
+  }
+  float span = tHi - tLo;
+  int N = int(float(uSteps) * clamp(span / tMax, 0.0, 1.0) + 0.5);
 
   vec3 acc = vec3(0.0);
   float T = 1.0;
-  vec3 galacticLight = integrateGalacticDisk(ro, rd);
+  vec3 galacticLight = texture2D(uBandLUT, dirToBand(rd)).rgb;
   vec3 toSun = normalize(uSunPos - ro);
   float phaseSun = pow(max(dot(rd, toSun), 0.0), 24.0) * 2.2 +
                    pow(max(dot(rd, toSun), 0.0), 4.0) * 0.35;
@@ -189,8 +242,8 @@ void main() {
     // percorria só ~4 pc e nunca chegava às nuvens da viagem.
     float f0 = clamp((float(i) + jitter) / float(N), 0.0, 1.0);
     float f1 = clamp((float(i + 1) + jitter) / float(N), 0.0, 1.0);
-    float t0 = tMax * f0 * f0;
-    float t1 = tMax * f1 * f1;
+    float t0 = tLo + span * f0 * f0;
+    float t1 = tLo + span * f1 * f1;
     float t = (t0 + t1) * 0.5;
     float dt = max(t1 - t0, 0.01);
     vec3 p = ro + rd * t;
@@ -256,3 +309,5 @@ void main() {
   gl_FragColor = vec4(acc, 1.0);
 }
 `;
+
+export const NEBULA_FRAG = NEBULA_FRAG_HEAD + NEBULA_MAIN;

@@ -69,7 +69,6 @@ export class Director {
    */
   private leftDisk = false;
   private lastCaptionIdx = -1;
-  private labelTimer = 0;
   /** congela o relógio da viagem (debug/screenshots via ?freeze=1) */
   freezeJourney = false;
   private noNebula = false;
@@ -139,15 +138,17 @@ export class Director {
     });
     this.heroes = new HeroStars(this.meta.named);
 
-    const dustBake =
-      galactic && cartMode !== 'off' ? bakeDustMap(galactic.dustDensity) : null;
-    this.dustMapTexture = dustBake?.texture ?? null;
-    this.galaxy = new Galaxy(buildGalaxy(), dustBake?.texture ?? null);
+    // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
+    // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
+    const cartOn = Boolean(galactic) && cartMode !== 'off';
+    const dustBake = bakeDustMap(cartOn && galactic ? galactic.dustDensity : null);
+    this.dustMapTexture = dustBake.texture;
+    this.galaxy = new Galaxy(buildGalaxy(), dustBake.texture);
     this.galaxy.setCartography(
       this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
     );
+    this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
     if (galactic && cartMode !== 'off') {
-      this.nebula.setDustMap(dustBake?.texture ?? null);
       this.observedClouds = new ObservedClouds(
         galactic.molecularClouds,
         galactic.largeMolecularClouds
@@ -451,15 +452,12 @@ export class Director {
       }
     }
 
-    // rótulos (10 Hz basta)
-    this.labelTimer += dt;
-    if (this.labelTimer > 0.1) {
-      this.labelTimer = 0;
-      if ((this.phase === 'journey' || this.phase === 'free') && this.meta) {
-        this.events.onLabels(projectLabels(cam, this.meta.named));
-      } else if (this.phase !== 'journey') {
-        this.events.onLabels([]);
-      }
+    // rótulos TODO frame — a 10 Hz eles "nadavam" contra as estrelas
+    // (7 projeções + um canvas 2D pequeno: custo desprezível)
+    if ((this.phase === 'journey' || this.phase === 'free') && this.meta) {
+      this.events.onLabels(projectLabels(cam, this.meta.named));
+    } else if (this.phase !== 'journey') {
+      this.events.onLabels([]);
     }
 
     this.post.setGalaxy(galaxyFade);

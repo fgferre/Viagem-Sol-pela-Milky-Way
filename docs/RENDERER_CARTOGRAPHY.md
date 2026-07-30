@@ -90,6 +90,25 @@ volume), contraste braço/inter-braço vem de nebulosas e estrelas azuis
 (massa ≲3×), bojo dourado dominando o céu no disco interno, "fim do mundo"
 no disco externo.
 
+## Otimizações estruturais (sem perda de qualidade)
+
+- **LUT da faixa**: a integração distante do disco depende só de (posição,
+  direção) — roda 1×/frame num RT equirect 256×128 com 24 passos (mais que
+  os 10–20 antigos) e vira 1 fetch por pixel do raymarch.
+- **Braços/warp bakeados** nos canais B/A do dust map (espelhos TS exatos
+  em `galacticModel.ts`): o envelope de gás custa 1 fetch + 2 exp por
+  amostra em vez de ~40 transcendentais.
+- **Recorte raio-slab**: o raymarch só amostra o trecho do raio dentro da
+  camada |z|<1,6 kpc; olhar para fora do plano é quase grátis.
+- **Metaballs com corte por distância** antes de exp/fbm (≤2 nuvens ativas
+  por amostra na prática).
+- **Densidade local barata** (`GLSL_DENSITY_LOCAL`) para extinção das
+  estrelas HYG e poeira próxima — camadas presas à vizinhança solar não
+  pagam o envelope galactocêntrico.
+- Perfil vertical do gás: gaussiano fino (σ 70→260 pc) — fino como o gás
+  molecular real, plano perto do plano (preserva o corredor local).
+- Rótulos re-projetados TODO frame (10 Hz "nadava" contra as estrelas).
+
 ## Orçamento
 
 - Textura de poeira: 512×512 RG8 = 0,5 MB de VRAM; bake ~1 passada sobre

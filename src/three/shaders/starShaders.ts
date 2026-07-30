@@ -2,8 +2,7 @@
 // Shaders do campo estelar — pontos com tamanho/brilho por
 // magnitude, cor por B-V, extinção pelo gás e spikes de difração.
 // ============================================================
-import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, GLSL_STAR_COLOR } from './common';
-import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY_LOCAL, GLSL_STAR_COLOR } from './common';
 
 export const STAR_VERT = /* glsl */ `
 attribute float aMag;
@@ -25,8 +24,7 @@ varying float vAlpha;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
-${GLSL_CARTOGRAPHY}
-${GLSL_DENSITY}
+${GLSL_DENSITY_LOCAL}
 ${GLSL_STAR_COLOR}
 
 void main() {

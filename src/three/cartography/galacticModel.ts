@@ -180,6 +180,87 @@ export function flareAtRadius(radiusPc: number) {
   return Math.min(1, x * x);
 }
 
+// ---- Espelhos TS exatos das funções GLSL abaixo -----------------
+// Usados pelo bake do dust map (canais B/A: braços e warp) para que
+// o shader troque ~40 transcendentais por 1 fetch de textura sem
+// nenhuma divergência de contrato.
+
+function wrappedDistance(a: number, b: number) {
+  return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+}
+
+function smoothstepGl(edge0: number, edge1: number, x: number) {
+  const t = Math.min(Math.max((x - edge0) / (edge1 - edge0), 0), 1);
+  return t * t * (3 - 2 * t);
+}
+
+function glArmTarget(
+  radiusPc: number,
+  phaseAtSun: number,
+  tanPitchInner: number,
+  tanPitchOuter: number
+) {
+  const observedTan = radiusPc < 8150 ? tanPitchInner : tanPitchOuter;
+  const farBlend = smoothstepGl(9500, 15000, radiusPc);
+  const tanPitch = observedTan + (0.283 - observedTan) * farBlend;
+  const base = phaseAtSun + Math.log(Math.max(radiusPc, 180) / 8150) / tanPitch;
+  return (
+    base +
+    0.052 * Math.sin(radiusPc * 0.00115 + phaseAtSun * 2.7) +
+    0.022 * Math.sin(radiusPc * 0.0037 - phaseAtSun)
+  );
+}
+
+function glArm(
+  theta: number,
+  radiusPc: number,
+  phaseAtSun: number,
+  tanPitchInner: number,
+  tanPitchOuter: number,
+  sharpness: number
+) {
+  const d = wrappedDistance(
+    theta,
+    glArmTarget(radiusPc, phaseAtSun, tanPitchInner, tanPitchOuter)
+  );
+  return Math.exp(-d * d * sharpness);
+}
+
+/** espelho TS de galMajorArms (GLSL abaixo) — mesmos gates e pesos */
+export function glMajorArms(theta: number, radiusPc: number, sharpness: number) {
+  const perseusGate =
+    smoothstepGl(5500, 6900, radiusPc) * (1 - smoothstepGl(15500, 16800, radiusPc));
+  const sagittariusGate =
+    smoothstepGl(3500, 4900, radiusPc) * (1 - smoothstepGl(12600, 14000, radiusPc));
+  const scutumGate =
+    smoothstepGl(2000, 3400, radiusPc) * (1 - smoothstepGl(9900, 11300, radiusPc));
+  const normaInner =
+    smoothstepGl(1600, 2900, radiusPc) * (1 - smoothstepGl(7000, 8400, radiusPc));
+  const normaOuter =
+    smoothstepGl(10300, 11800, radiusPc) *
+    (1 - smoothstepGl(15900, 16800, radiusPc)) *
+    0.42;
+  return Math.min(
+    Math.max(
+      glArm(theta, radiusPc, -0.52, 0.1816, 0.1531, sharpness) * 0.86 * perseusGate +
+        glArm(theta, radiusPc, 1.02, 0.3077, 0.1781, sharpness) * 0.76 * sagittariusGate +
+        glArm(theta, radiusPc, 2.64, 0.2512, 0.2143, sharpness) * 0.82 * scutumGate +
+        glArm(theta, radiusPc, -2.15, 0.3541, 0.1655, sharpness) *
+          0.72 *
+          (normaInner + normaOuter),
+      0
+    ),
+    1
+  );
+}
+
+/** espelho TS de galLocalArm (GLSL abaixo) */
+export function glLocalArm(theta: number, radiusPc: number, sharpness: number) {
+  const radialWindow =
+    smoothstepGl(7450, 7850, radiusPc) * (1 - smoothstepGl(9250, 9650, radiusPc));
+  return glArm(theta, radiusPc, 0.035, 0.2017, 0.2017, sharpness) * radialWindow * 0.72;
+}
+
 /**
  * Mesmo contrato em GLSL. Mantê-lo aqui impede que partículas, lâminas
  * emissivas e volume de gás usem versões incompatíveis da galáxia.

@@ -82,11 +82,13 @@ function coresGLSL(): string {
     .join('\n');
 }
 
-// detail: 0 = barato (amostras de estrelas), 1 = completo (raymarch)
-// Requer GLSL_GALAXY e GLSL_CARTOGRAPHY incluídos antes.
+// Variante COMPLETA (só o raymarch da nebulosa): envelope
+// galactocêntrico via canais B/A do dust map (braços/warp bakeados
+// — 1 fetch no lugar de ~40 transcendentais POR AMOSTRA) + nuvens-
+// semente do catálogo. Requer GLSL_GALAXY e GLSL_CARTOGRAPHY antes.
 export const GLSL_DENSITY = /* glsl */ `
+uniform sampler2D uDustMap; // RGBA: poeira APOGEE + braços/warp bakeados
 // Nuvens-semente do catálogo CO perto da câmera (0 = desligado).
-// Materiais que não fornecem estes uniforms ficam com count 0.
 uniform int uSeedCloudCount;
 uniform vec4 uSeedClouds[32];   // xyz = posição na cena (pc), w = raio
 uniform float uSeedCloudAmp[32];
@@ -105,21 +107,21 @@ float diskGasEnvelope(vec3 p) {
   float z = dot(q, GAL_N);
   vec2 xy = vec2(dot(q, GAL_X), dot(q, GAL_Y));
   float radiusPc = length(xy);
-  float theta = atan(xy.y, xy.x);
-  float zw = z - galWarpHeight(radiusPc, theta);
+  // braços (B) e warp (A) pré-computados a 65 pc/texel
+  vec4 cart = texture2D(uDustMap, xy / (2.0 * GAL_DISK_RADIUS) + 0.5);
+  float zw = z - (cart.a * 2.0 - 1.0) * 820.0;
   float flare = clamp((radiusPc - 7500.0) / 9300.0, 0.0, 1.0);
   flare *= flare;
-  float h = mix(55.0, 260.0, flare);
+  // gaussiano FINO (σ 70→260 pc com flare): fino como o gás
+  // molecular real, mas plano perto do plano — a exponencial tinha
+  // cúspide que apagava o corredor local (z ≈ ±20 pc)
+  float h = mix(70.0, 260.0, flare);
   float radial = exp(-radiusPc / 5200.0) *
     (1.0 - smoothstep(15500.0, GAL_DISK_RADIUS, radiusPc));
   // braços carregam as nuvens; inter-braço é limpo
-  float arms = 0.15 + 0.85 * clamp(
-    galMajorArms(theta, radiusPc, 24.0) + galLocalArm(theta, radiusPc, 28.0),
-    0.0,
-    1.0
-  );
-  // 1/0.145 normaliza para a vizinhança solar (R=8150, braço Local)
-  return radial * exp(-abs(zw) / h) * arms * 6.9;
+  float arms = 0.15 + 0.85 * cart.b;
+  // normaliza para ≈1 na vizinhança solar (R=8150, braço Local)
+  return radial * exp(-zw * zw / (2.0 * h * h)) * arms * 6.9;
 }
 
 float nebulaDensity(vec3 p, int oct) {
@@ -131,12 +133,15 @@ float nebulaDensity(vec3 p, int oct) {
   float clumps = smoothstep(0.50, 0.90, n1 * 0.70 + n2 * 0.30);
   float d = envelope * clumps * 0.75;
 ${coresGLSL()}
-  // nuvens-semente reais: metaballs com subestrutura FBM
+  // nuvens-semente reais: metaballs com subestrutura FBM. O corte
+  // por distância vem ANTES do exp/fbm: por amostra, quase sempre
+  // só 0–2 nuvens passam — o resto custa uma subtração e um dot.
   for (int i = 0; i < 32; i++) {
     if (i >= uSeedCloudCount) break;
     vec3 cq = (p - uSeedClouds[i].xyz) / max(uSeedClouds[i].w, 8.0);
-    float g = exp(-dot(cq, cq) * 1.4);
-    if (g > 0.003) {
+    float d2c = dot(cq, cq);
+    if (d2c < 5.5) {
+      float g = exp(-d2c * 1.4);
       // fase pela IDENTIDADE da nuvem (posição estável), nunca pelo
       // slot do array — o rank muda a cada refresh de proximidade
       float phase = hash13(uSeedClouds[i].xyz) * 118.3;
@@ -151,6 +156,35 @@ ${coresGLSL()}
   d *= smoothstep(1.2, 6.5, length(p));
   // cavidade do observador itinerante (estilização "inferred"
   // fundamentada: superbolhas de ~300 pc povoam todo o disco)
+  float cav = length(p - uCavityPos);
+  d *= mix(1.0, smoothstep(55.0, 190.0, cav), uCavityGate);
+  return d * ${WORLD.gasDensity.toFixed(2)};
+}
+
+`;
+
+// Variante LOCAL barata (estrelas HYG e poeira próxima — camadas
+// gated por dHome < 2,3 kpc, onde o envelope galáctico ≈ o slab
+// solar): sem fetch de textura, sem nuvens-semente, sem cartografia.
+// Restaura o custo de vértice original do campo estelar.
+export const GLSL_DENSITY_LOCAL = /* glsl */ `
+uniform vec3 uCavityPos;
+uniform float uCavityGate;
+
+float nebulaDensity(vec3 p, int oct) {
+  // O Sol está 5,5 pc ao norte do plano médio.
+  float gp = dot(p, GAL_N) + 5.5;
+  float slab = exp(-gp * gp / (2.0 * 95.0 * 95.0));
+  float n1 = fbm(p * 0.0135, oct >= 4 ? 4 : 2);
+  float n2 = fbm(p * 0.048 + 17.3, oct >= 4 ? 3 : 2);
+  float clumps = smoothstep(0.50, 0.90, n1 * 0.70 + n2 * 0.30);
+  float d = slab * clumps * 0.75;
+${coresGLSL()}
+  float lanes = fbm(p * 0.085 + 41.0, 2);
+  d *= mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
+  // Bolha Local: os primeiros parsecs ao redor do Sol são limpos (real)
+  d *= smoothstep(1.2, 6.5, length(p));
+  // mesma cavidade do raymarch (coerência na faixa dHome 600–2300)
   float cav = length(p - uCavityPos);
   d *= mix(1.0, smoothstep(55.0, 190.0, cav), uCavityGate);
   return d * ${WORLD.gasDensity.toFixed(2)};
