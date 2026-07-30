@@ -1,46 +1,64 @@
-# Alvos de fidelidade visual
+# Alvos de fidelidade visual — o REAL como referência
 
-Estas imagens são o **alvo**, não o teto. A regra do projeto não é
-"não degradar" — é **evoluir em direção às referências**. Cuidado
-excessivo também é um defeito: uma mudança ousada que aproxima a cena
-do alvo vale mais do que dez mudanças tímidas que preservam o estado
-atual. Regressão = afastar-se da referência; evolução = fechar o vão.
-Quando a cena SUPERAR uma referência, a referência é atualizada (com
-aprovação do mantenedor) — o conjunto é vivo.
+O alvo do projeto não é preservar o próprio look, é **convergir para o
+real**: as recriações científicas oficiais (construídas pelos mesmos
+dados que nossos catálogos usam) e o céu fotografado de verdade. As
+capturas do próprio app NUNCA são referência — auto-referência circular
+congela defeitos. Cuidado excessivo também é defeito: uma mudança
+ousada que aproxima a cena destes alvos vale mais do que dez tímidas
+que preservam o estado atual.
 
-## Como usar
+## Os alvos
 
-1. Reproduza o momento com a URL determinística (GPU real, `?shot=1`).
-2. Compare lado a lado com o alvo correspondente.
-3. Julgue pelos critérios listados — não por diff de pixels: grão,
-   jitter e evoluções aprovadas mudam pixels sem mudar a fidelidade.
+### 1. Via Láctea face-on — recriação Gaia 2025 (vista externa, Ato III)
 
-## O conjunto (capturas aprovadas da direção de arte)
+- [gaia-2025-face-on-5k.jpg](gaia-2025-face-on-5k.jpg) — o alvo da
+  revelação (`?t=170&shot=1`) e de toda vista externa de cima/baixo.
+- [gaia-2025-face-on-anatomia.jpg](gaia-2025-face-on-anatomia.jpg) —
+  versão rotulada: nomes e posições dos braços (Perseus, Orion,
+  Carina-Sagittarius, Centaurus, Norma, Outer, 3-kpc), barra, Sol,
+  escala em kpc e a Anã de Sagitário. É o gabarito de ANATOMIA: nosso
+  disco deve bater braço a braço com ela.
+- O que ela estabelece: braços com interrupções e contraste moderado
+  (não grand-design), bojo/barra quentes SEM estourar, fendas de poeira
+  finas e orgânicas, disco externo azulado e tênue, halo escuro.
 
-| Alvo | Momento | URL de reprodução | O que a referência estabelece |
-|---|---|---|---|
-| [alvo-01-sol](alvo-01-sol.png) | Sol, abertura | `?t=0&shot=1` | fotosfera texturizada sem estouro; faixa da Via Láctea atravessando com fenda escura; nebulosas frias ao fundo; labels discretos |
-| [alvo-02-partida](alvo-02-partida.png) | deixando o sistema solar | `?t=25&shot=1` | Sol como estrela entre estrelas; profundidade do campo HYG; gás começando a envolver |
-| [alvo-03-mergulho](alvo-03-mergulho.png) | nuvens moleculares | `?t=52&shot=1` | volumetria com corações densos ESCUROS e bordas iluminadas; paleta OIII×H-alfa; nada de névoa uniforme |
-| [alvo-04-veus](alvo-04-veus.png) | véus da Via Láctea | `?t=74&shot=1` | filamentos estruturados em camadas com paralaxe; contraste alto sem clipping |
-| [alvo-05-hero-hii](alvo-05-hero-hii.png) | região H II hero | `?t=80&shot=1` | cavidade ionizada H-alfa localizada, filamentosa — nunca véu magenta uniforme |
-| [alvo-06-betelgeuse](alvo-06-betelgeuse.png) | Betelgeuse | `?t=85&shot=1` | supergigante dominando com halo quente; gás ao redor rico e tridimensional; pretos verdadeiros |
-| [alvo-07-galaxia](alvo-07-galaxia.png) | revelação face-on | `?t=170&shot=1` | braços legíveis com interrupções (leitura Gaia 2025, não grand-design); bojo quente com barra; fendas de poeira orgânicas; Sol marcado |
+### 2. Via Láctea edge-on — recriação Gaia 2025 (disco de perfil)
 
-Vistas ainda SEM referência aprovada (candidatas a ganhar alvo quando
-uma captura for aprovada): disco de perfil (t=158), vista por baixo do
-plano, R=3 kpc, disco externo, +800 pc acima do plano (`?pos=` na
-memória do projeto e em RENDERER_CARTOGRAPHY.md).
+- [gaia-2025-edge-on-5k.jpg](gaia-2025-edge-on-5k.jpg) — o alvo do
+  disco de perfil (`?t=158&shot=1`) e de vistas rasantes: espessura
+  relativa do disco fino, bojo em caixa/amendoim, warp sutil, lâmina de
+  poeira MAIS FINA que a lâmina estelar.
 
-## Referências do mundo real (fidelidade científica)
+Crédito (obrigatório ao citar): **ESA/Gaia/DPAC, Stefan Payne-Wardenaar
+— CC BY-SA 3.0 IGO**. Fonte:
+<https://www.cosmos.esa.int/web/gaia/milky-way>. Nota científica: é uma
+impressão artística baseada em dados (Drimmel et al. 2023); o detalhe
+próximo é medido, a aparência global é modelo — exatamente o mesmo
+contrato observado/inferido do nosso renderer.
 
-O céu simulado deve ler como estas fontes — são o alvo acima dos alvos:
+### 3. O céu real visto de dentro — panorama ESO GigaGalaxy
 
-- [ESO GigaGalaxy Zoom](https://www.eso.org/public/images/eso0932a/) —
-  a faixa vista da Terra: assimetria, Great Rift, nuvens estelares de
-  Scutum/Sagitário, acentos H II pequenos.
-- [Gaia/ESA — Milky Way 2025](https://www.cosmos.esa.int/web/gaia/milky-way)
-  — a face-on de referência: braços com interrupções, barra, contraste.
-- Checklist de direção de arte por região do disco: seção "Ambiente
-  volumétrico relocável" em `../RENDERER_CARTOGRAPHY.md` (dossiê
-  pesquisado com fontes).
+- [eso-gigagalaxy-panorama.jpg](eso-gigagalaxy-panorama.jpg) —
+  fotografia real de 360° do céu inteiro (S. Brunier). É o alvo da
+  faixa vista de qualquer ponto interno (`?t=0`, corredor, free-roam
+  no disco): assimetria bojo/anticentro, Great Rift contínuo e
+  irregular, nuvens estelares de Scutum/Sagitário, acentos H II
+  pequenos (Carina, Lagoa, Órion), cor global branco-perolada.
+
+Crédito: **ESO/S. Brunier — CC BY 4.0**. Fonte:
+<https://www.eso.org/public/images/eso0932a/>.
+
+## Como julgar
+
+1. Reproduza a vista equivalente no app (URLs determinísticas,
+   `?shot=1`, GPU real).
+2. Compare ESTRUTURA e CARÁTER com o alvo — posição/forma dos braços,
+   finura da poeira, temperatura de cor do bojo, contraste — não pixels.
+3. Divergência da anatomia rotulada = bug de cartografia; divergência
+   de caráter (cor/contraste/textura) = trabalho de direção de arte a
+   fazer. As duas são trabalho, não "gosto".
+
+O checklist por região do disco (como o céu muda em R=3 kpc,
+inter-braço, disco externo, acima do plano) está na seção "Ambiente
+volumétrico relocável" de `../RENDERER_CARTOGRAPHY.md`, com fontes.
