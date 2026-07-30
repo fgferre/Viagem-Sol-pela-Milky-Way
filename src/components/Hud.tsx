@@ -24,7 +24,7 @@ export function TitleVeil({
         <>
           <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
           <div className="title-big loading-pulse">MAR DE ESTRELAS</div>
-          <div className="title-sub">cartografando 19.115 estrelas do catálogo HYG…</div>
+          <div className="title-sub">cartografando 18.543 estrelas do catálogo HYG…</div>
         </>
       )}
       {mode === 'intro' && (
@@ -35,7 +35,7 @@ export function TitleVeil({
           <div className="title-sub">
             uma viagem do Sol às supergigantes de Órion — e à própria Via Láctea
             <br />
-            19.115 estrelas reais do catálogo HYG · gás volumétrico em tempo real
+            18.543 estrelas com distância válida no catálogo HYG · gás volumétrico em tempo real
           </div>
           <div className="title-rule" />
           <button className="hud-btn" onClick={onPlay}>

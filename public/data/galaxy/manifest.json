@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "encoding": "Float32 little-endian, tightly packed",
+  "coordinateFrame": {
+    "units": "parsec",
+    "origin": "Galactic Center",
+    "xAxis": "from Galactic Center toward the Sun",
+    "yAxis": "toward Galactic longitude l=270 degrees (right-handed project basis)",
+    "zAxis": "toward the north Galactic pole",
+    "sun": [
+      8150,
+      0,
+      5.5
+    ],
+    "rendererDiskRadiusPc": 16800
+  },
+  "policy": {
+    "measured": "Values are transformed from the cited catalogues; no procedural points are written here.",
+    "uncertainty": "Source uncertainties and distance-method codes remain in the assets. Renderers must use them.",
+    "inferred": "Unobserved space must be filled by a separately identified statistical model, never presented as measured."
+  },
+  "assets": {
+    "dustDensity": {
+      "file": "data/galaxy/dust-density.bin",
+      "count": 196503,
+      "strideFloat32": 7,
+      "byteLength": 5502084,
+      "sha256": "81437f9134972934d09b8c80fe3cffff405e8b62205be3d41cdb483090177652",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "particleDensityCm3",
+        "sigmaDensityCm3",
+        "heliocentricDistancePc",
+        "densityConfidence"
+      ]
+    },
+    "largeMolecularClouds": {
+      "file": "data/galaxy/large-molecular-clouds.bin",
+      "count": 84,
+      "strideFloat32": 9,
+      "byteLength": 3024,
+      "sha256": "068ba4e4e4fc46d2c890453256ed652a1ba10609f8023208e1e492219a535c92",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "radiusPc",
+        "particleDensityCm3",
+        "sigmaDensityCm3",
+        "heliocentricDistancePc",
+        "sigmaDistancePc",
+        "armAssociationCode"
+      ]
+    },
+    "molecularClouds": {
+      "file": "data/galaxy/molecular-clouds.bin",
+      "count": 8107,
+      "strideFloat32": 11,
+      "byteLength": 356708,
+      "sha256": "31c3149b968a64fdaf06b032b88e127e75b5ab5f0d7bcc68518318ddfc9a3de3",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "radiusPc",
+        "massSolar",
+        "surfaceDensitySolarPerPc2",
+        "sigmaVelocityKmPerS",
+        "heliocentricDistancePc",
+        "farDistanceFlag",
+        "galactocentricRadiusPc",
+        "rendererRecommended"
+      ]
+    },
+    "spiralAnchors": {
+      "file": "data/galaxy/spiral-anchors.bin",
+      "count": 199,
+      "strideFloat32": 9,
+      "byteLength": 7164,
+      "sha256": "95d408d91774f1d92a95bd63a10d6c59c81a5c1b15d02aa36712f5af9ede8113",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "heliocentricDistancePc",
+        "parallaxMas",
+        "sigmaParallaxMas",
+        "relativeParallaxError",
+        "armCode",
+        "vLsrKmPerS"
+      ]
+    },
+    "hiiRegions": {
+      "file": "data/galaxy/hii-regions.bin",
+      "count": 1413,
+      "strideFloat32": 9,
+      "byteLength": 50868,
+      "sha256": "a174607d93758fda155759c459c489f5a7dee7bf45a4ebc44d2934065a818457",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "radiusPc",
+        "heliocentricDistancePc",
+        "sigmaDistancePc",
+        "relativeDistanceError",
+        "classCode",
+        "distanceMethodCode"
+      ]
+    },
+    "gaiaYoungClusters": {
+      "file": "data/galaxy/gaia-young-clusters.bin",
+      "count": 988,
+      "strideFloat32": 10,
+      "byteLength": 39520,
+      "sha256": "c7a48ee1a4a7a87d94a2f54cbebe2444d004746ab56f21834da5c88a1b9f84f5",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "heliocentricDistancePc",
+        "parallaxMas",
+        "sigmaParallaxMas",
+        "relativeParallaxError",
+        "logAgeYears",
+        "memberCount",
+        "brightMemberCount"
+      ]
+    },
+    "gaiaYoungCepheids": {
+      "file": "data/galaxy/gaia-young-cepheids.bin",
+      "count": 2806,
+      "strideFloat32": 10,
+      "byteLength": 112240,
+      "sha256": "9ade9ca946491bf39674d8b7f2556e2d7d7549e6fe0ddcd5073cbb053a6cb3da",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "heliocentricDistancePc",
+        "sigmaDistancePc",
+        "logAgeYears",
+        "sigmaLogAgeYears",
+        "metallicityDex",
+        "sigmaMetallicityDex",
+        "inferredMetallicityFlag"
+      ]
+    }
+  },
+  "dictionaries": {
+    "largeCloudArmAssociation": {
+      "0": "unknown",
+      "1": "Loc",
+      "2": "Loc - Cygnus",
+      "3": "LoS",
+      "4": "Nor/Out",
+      "5": "Per",
+      "6": "RCW 49",
+      "7": "Sct",
+      "8": "Sct/Cen",
+      "9": "Sct/Cen - RCW 116B",
+      "10": "Sgr/Car",
+      "11": "Sgr/Car - NGC 6334",
+      "12": "Sgr/Car - W51",
+      "13": "Vela"
+    },
+    "maserArm": {
+      "0": "unknown",
+      "1": "3kF",
+      "2": "3kN",
+      "3": "AqS",
+      "4": "Con",
+      "5": "CrN",
+      "6": "CtN",
+      "7": "GC",
+      "8": "Loc",
+      "9": "LoS",
+      "10": "Nor",
+      "11": "OSC",
+      "12": "Out",
+      "13": "Per",
+      "14": "ScF",
+      "15": "ScN",
+      "16": "SgF",
+      "17": "SgN"
+    },
+    "hiiClass": {
+      "0": "unknown",
+      "1": "C",
+      "2": "G",
+      "3": "K",
+      "4": "Q"
+    },
+    "hiiDistanceMethod": {
+      "0": "unknown",
+      "1": "H2CO/Kin",
+      "2": "HIEA/Kin",
+      "3": "HIEA+HISA/Kin",
+      "4": "HISA (Mol)/Kin",
+      "5": "IRDC+HISA (Mol)/Kin",
+      "6": "Nuclear Disk",
+      "7": "Nuclear Disk (Mol)",
+      "8": "OG (Mol)/Kin",
+      "9": "OG/Kin",
+      "10": "Parallax",
+      "11": "TP/Kin",
+      "12": "TP/Kin (Mol)",
+      "13": "Visible/Kin"
+    }
+  },
+  "diagnostics": {
+    "dustNegativeSamplesClampedToZero": 48612,
+    "dustDistancePc": [
+      1004.99,
+      20000
+    ],
+    "molecularCloudsOutsideRendererBounds": 93,
+    "molecularCloudDistancePc": [
+      1.30689,
+      88463.3
+    ],
+    "hiiRowsWithoutAdoptedDistance": 6986,
+    "gaiaYoungClusterAgeCut": "log10(age/yr) < 8",
+    "gaiaYoungCepheidAgeCut": "log10(age/yr) < log10(200000000)"
+  },
+  "sources": [
+    {
+      "id": "RezaeiKh2024",
+      "role": "3D dust-density backbone and 84 large molecular clouds",
+      "catalogue": "J/A+A/692/A255",
+      "paper": "https://doi.org/10.1051/0004-6361/202449255",
+      "vizier": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A%2BA/692/A255"
+    },
+    {
+      "id": "MivilleDeschenes2017",
+      "role": "CO-derived catalogue of 8107 molecular clouds",
+      "catalogue": "J/ApJ/834/57",
+      "paper": "https://doi.org/10.3847/1538-4357/834/1/57",
+      "vizier": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/ApJ/834/57"
+    },
+    {
+      "id": "Reid2019",
+      "role": "199 high-mass star-forming regions with trigonometric parallaxes",
+      "catalogue": "J/ApJ/885/131",
+      "paper": "https://doi.org/10.3847/1538-4357/ab4a11",
+      "vizier": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/ApJ/885/131"
+    },
+    {
+      "id": "Anderson2014",
+      "role": "WISE Galactic H II regions; only rows with adopted distances are exported",
+      "catalogue": "J/ApJS/212/1",
+      "paper": "https://doi.org/10.1088/0067-0049/212/1/1",
+      "vizier": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/ApJS/212/1"
+    },
+    {
+      "id": "GaiaDrimmel2023",
+      "role": "Young open clusters and Classical Cepheids used to map spiral structure",
+      "catalogue": "J/A+A/674/A37",
+      "paper": "https://doi.org/10.1051/0004-6361/202243797",
+      "vizier": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A%2BA/674/A37"
+    }
+  ]
+}

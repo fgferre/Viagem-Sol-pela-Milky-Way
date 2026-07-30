@@ -45,8 +45,10 @@ funciona sem configuração extra — os caminhos são relativos.
 
 | Arquivo | Conteúdo |
 |---|---|
-| `public/data/stars.bin` | 19.115 estrelas do catálogo HYG em Float32 little-endian, stride 6: `x, y, z` (parsecs, coordenadas equatoriais heliocêntricas), `magnitude aparente`, `índice de cor B−V`, `log10(luminosidade)` |
+| `public/data/stars.bin` | 18.543 estrelas do catálogo HYG com distância utilizável, em Float32 little-endian, stride 6: `x, y, z` (parsecs, coordenadas equatoriais heliocêntricas), `magnitude aparente`, `índice de cor B−V`, `log10(luminosidade)` |
 | `public/data/stars_meta.json` | metadados das ~90 estrelas nomeadas (hero stars) |
+| `public/data/galaxy/manifest.json` | contrato, proveniência, incertezas, schemas e hashes dos ativos cartográficos galácticos |
+| `public/data/galaxy/*.bin` | poeira APOGEE, nuvens moleculares CO, H II WISE, masers BeSSeL e traçadores jovens Gaia DR3 |
 
 São carregados por `fetch` na inicialização. **Se faltarem, o app fica preso na
 tela “cartografando…”** — verifique o console do navegador por erros de fetch.
@@ -102,6 +104,13 @@ não fotografias externas nem uma nuvem de pontos completa da galáxia. Por isso
 o modelo combina restrições observacionais no nosso lado com síntese procedural
 no lado oculto, mantendo os braços distantes deliberadamente mais suaves.
 
+Os novos ativos de `public/data/galaxy/` são a fundação observacional para
+substituir a distribuição procedural uniforme de nuvens. Eles estão
+deliberadamente **desacoplados do renderer nesta etapa**: o próximo plano deve
+definir estruturas espaciais, LOD, streaming e amostragem volumétrica sem
+misturar medições e preenchimento inferido. O contrato completo está em
+[`docs/GALACTIC_DATA_FOUNDATION.md`](docs/GALACTIC_DATA_FOUNDATION.md).
+
 Fontes primárias usadas no contrato:
 
 - [Gaia/ESA — Milky Way map, 2025](https://www.cosmos.esa.int/web/gaia/milky-way)
@@ -110,6 +119,19 @@ Fontes primárias usadas no contrato:
 - [Wegg et al. — comprimento e inclinação da barra](https://arxiv.org/abs/1504.01401)
 - [Lallement et al. — mapa 3D contínuo da poeira local](https://arxiv.org/abs/1808.00015)
 - [ESA/XMM-Newton + Chandra — braços externos até 10% mais distantes, 2026](https://www.esa.int/Science_Exploration/Space_Science/XMM-Newton/XMM-Newton_helps_revise_distance_to_outer_spiral_arms)
+
+### Regerar e verificar a fundação cartográfica
+
+```bash
+npm run data:galaxy          # usa cache local; -- --refresh força nova consulta
+npm run data:sanitize-stars  # idempotente; exclui sentinelas HYG a 100 kpc
+npm run data:verify          # confere stride, tamanho, Float32 finitos e SHA-256
+npm run data:all             # executa as três etapas acima
+```
+
+As respostas TSV ficam em `.cache/galaxy-data/` e não são versionadas. Os
+binários compactos e o manifesto são versionados; o aplicativo continua 100%
+offline em runtime.
 
 ### Crossfades por distância ao Sol (`dHome`, em parsecs)
 
