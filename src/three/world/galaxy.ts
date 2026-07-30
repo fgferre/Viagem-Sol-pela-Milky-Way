@@ -45,16 +45,35 @@ GAL.GC_POS
   .multiplyScalar(GAL.R_SUN)
   .addScaledVector(GAL.NGP, -GALACTIC_MODEL.sunHeightPc);
 
-// base galactocêntrica: X aponta do centro para o Sol, Z é o polo norte
-const EZ = GAL.NGP.clone().normalize();
-const EX = GAL.DIR_GC.clone().negate().addScaledVector(EZ, GAL.DIR_GC.dot(EZ)).normalize();
-const EY = new THREE.Vector3().crossVectors(EZ, EX).normalize();
+// base galactocêntrica: X aponta do centro para o Sol, Z é o polo norte.
+// Exportada porque é o ÚNICO caminho válido binário→cena: os ativos de
+// public/data/galaxy usam exatamente esta base (+Y → l=270°).
+export const EZ = GAL.NGP.clone().normalize();
+export const EX = GAL.DIR_GC.clone().negate().addScaledVector(EZ, GAL.DIR_GC.dot(EZ)).normalize();
+export const EY = new THREE.Vector3().crossVectors(EZ, EX).normalize();
+
+/** Converte coordenadas galactocêntricas do projeto (pc) para a cena. */
+export function galactocentricToScene(
+  lx: number,
+  ly: number,
+  lz: number,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  return out.set(
+    GAL.GC_POS.x + EX.x * lx + EY.x * ly + EZ.x * lz,
+    GAL.GC_POS.y + EX.y * lx + EY.y * ly + EZ.y * lz,
+    GAL.GC_POS.z + EX.z * lx + EY.z * ly + EZ.z * lz
+  );
+}
 
 const SGR_L = THREE.MathUtils.degToRad(5.6);
 const SGR_B = THREE.MathUtils.degToRad(-14.2);
+// direção heliocêntrica de (l, b): +EY aponta para l=270°, logo o
+// coeficiente de EY é NEGATIVO — mesma convenção do builder dos
+// binários (galactic.mjs: y = −d·cos b·sin l).
 const SGR_DIR = EX.clone()
   .multiplyScalar(-Math.cos(SGR_B) * Math.cos(SGR_L))
-  .addScaledVector(EY, Math.cos(SGR_B) * Math.sin(SGR_L))
+  .addScaledVector(EY, -Math.cos(SGR_B) * Math.sin(SGR_L))
   .addScaledVector(EZ, Math.sin(SGR_B))
   .normalize();
 export const SGR_DWARF_POS = SGR_DIR.clone().multiplyScalar(26_000);
@@ -394,6 +413,8 @@ export function buildGalaxy(seed = 20260730): GalaxyBuffers {
   return { bright, brightCount, dust, dustCount: dN };
 }
 
+export type CartographyMode = 'blend' | 'off' | 'observed';
+
 export class Galaxy {
   readonly group = new THREE.Group();
   private brightMat: THREE.ShaderMaterial;
@@ -402,12 +423,33 @@ export class Galaxy {
   private dwarfMat: THREE.ShaderMaterial; // anã de Sagitário
   private markerMat: THREE.ShaderMaterial; // Sol ("você está aqui")
   private discMats: THREE.ShaderMaterial[] = [];
+  private discMeshes: THREE.Mesh[] = [];
+  private discBaseAlphas: number[] = [];
+  private markerMesh!: THREE.Mesh;
+  private dustMap: THREE.Texture;
   private dustPts!: THREE.Points;
   private glowMesh!: THREE.Mesh;
   private dwarfMesh!: THREE.Mesh;
   private static dbg = new URLSearchParams(window.location.search);
 
-  constructor(buffers: GalaxyBuffers) {
+  /** 1×1 sem cobertura — os shaders caem 100% no procedural. */
+  static emptyDustMap(): THREE.DataTexture {
+    const texture = new THREE.DataTexture(
+      new Uint8Array([0, 0]),
+      1,
+      1,
+      THREE.RGFormat,
+      THREE.UnsignedByteType
+    );
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  private ownsDustMap: boolean;
+
+  constructor(buffers: GalaxyBuffers, dustMap?: THREE.Texture | null) {
+    this.ownsDustMap = !dustMap;
+    this.dustMap = dustMap ?? Galaxy.emptyDustMap();
     // --- partículas brilhantes (aditivas) ---
     const geo = new THREE.BufferGeometry();
     const bd = buffers.bright;
@@ -491,6 +533,7 @@ export class Galaxy {
     marker.frustumCulled = false;
     marker.renderOrder = 6;
     this.group.add(marker);
+    this.markerMesh = marker;
   }
 
   private sharedUniforms(maxPx: number) {
@@ -547,6 +590,8 @@ export class Galaxy {
           uSeed: { value: seed },
           uLayerAlpha: { value: alpha },
           uDiskRadius: { value: GAL.DISK_RADIUS },
+          uDustMap: { value: this.dustMap },
+          uCartBlend: { value: 1 },
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -559,8 +604,22 @@ export class Galaxy {
       mesh.renderOrder = 1;
       root.add(mesh);
       this.discMats.push(material);
+      this.discMeshes.push(mesh);
+      this.discBaseAlphas.push(alpha);
     }
     this.group.add(root);
+  }
+
+  /**
+   * off: só procedural · blend: observado condiciona o procedural ·
+   * observed: realça o medido dimando a emissão inferida (debug A/B).
+   */
+  setCartography(mode: CartographyMode) {
+    this.discMats.forEach((material, index) => {
+      material.uniforms.uCartBlend.value = mode === 'off' ? 0 : 1;
+      material.uniforms.uLayerAlpha.value =
+        this.discBaseAlphas[index] * (mode === 'observed' ? 0.35 : 1);
+    });
   }
 
   /**
@@ -593,11 +652,18 @@ export class Galaxy {
       u.uTanHalfFov.value = tanHalfFov;
       u.uFade.value = layerFade;
     }
+    // As lâminas contínuas só entram na vista externa. De dentro
+    // seriam planos infinitos; a faixa local vem das partículas 3D.
+    // Com fade 0 os meshes ficam invisíveis: cada lâmina de 33,6 kpc
+    // custa milhões de fragmentos de FBM que somariam exatamente zero.
+    const discVisible = externalFade > 0.001;
     for (const material of this.discMats) {
-      // As lâminas contínuas só entram na vista externa. De dentro
-      // seriam planos infinitos; a faixa local vem das partículas 3D.
       material.uniforms.uFade.value = externalFade;
     }
+    for (const mesh of this.discMeshes) {
+      mesh.visible = discVisible;
+    }
+    this.markerMesh.visible = markerFade > 0.001;
     // o brilho contínuo do bojo só aparece de longe — perto ele
     // cobriria a tela inteira de branco
     const dGC = camPos.distanceTo(GAL.GC_POS);
@@ -623,6 +689,7 @@ export class Galaxy {
     this.dwarfMat.dispose();
     this.markerMat.dispose();
     this.discMats.forEach((material) => material.dispose());
+    if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) o.geometry.dispose();
     });

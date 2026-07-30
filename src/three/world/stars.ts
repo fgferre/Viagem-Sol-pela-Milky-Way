@@ -48,6 +48,8 @@ export class StarField {
         uTau: { value: opts.tau ?? 0.9 },
         uTime: { value: 0 },
         uFade: { value: 1 },
+        uCavityPos: { value: new THREE.Vector3() },
+        uCavityGate: { value: 0 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -69,6 +71,12 @@ export class StarField {
   setFade(f: number) {
     this.material.uniforms.uFade.value = f;
     this.points.visible = f > 0.001;
+  }
+
+  /** mesma cavidade do raymarch — a extinção vê o mesmo gás carvado */
+  setCavity(pos: THREE.Vector3, gate: number) {
+    (this.material.uniforms.uCavityPos.value as THREE.Vector3).copy(pos);
+    this.material.uniforms.uCavityGate.value = gate;
   }
 
   dispose() {

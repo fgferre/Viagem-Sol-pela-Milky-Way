@@ -35,6 +35,10 @@ uniform float uFade;
 uniform vec3 uLightPos[2];
 uniform vec3 uLightColor[2];
 
+// mapa APOGEE bakeado (R = densidade, G = cobertura observacional)
+uniform sampler2D uDustMap;
+uniform float uCartBlend;
+
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
@@ -58,9 +62,7 @@ vec3 palette(vec3 p, float d) {
 // procedural de uma exposição astrofotográfica longa, mas toda a estrutura
 // vive no espaço galactocêntrico e responde à posição/orientação da câmera.
 vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
-  const vec3 GAL_CENTER = vec3(-442.464, -7117.423, -3945.763);
-  const vec3 GAL_X = vec3(0.0548756, 0.8734371, 0.4838350);
-  const vec3 GAL_Y = vec3(-0.4941094, 0.4448296, -0.7469822);
+  // GAL_CENTER/GAL_X/GAL_Y vêm do chunk GLSL_GALAXY compartilhado
   vec3 light = vec3(0.0);
   float transmission = 1.0;
   float previousT = 180.0;
@@ -91,9 +93,10 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     float thickDisk =
       exp(-radius / 6500.0) * exp(-abs(z) / thickHeight) * edge * 0.105;
 
+    // R(+29°) — crista no azimute −29°, igual à barra do CPU
     float cb = cos(0.506145);
     float sb = sin(0.506145);
-    vec2 barP = mat2(cb, -sb, sb, cb) *
+    vec2 barP = mat2(cb, sb, -sb, cb) *
       vec2(dot(q, GAL_X), dot(q, GAL_Y));
     float bar =
       exp(-abs(barP.x) / 2050.0) *
@@ -120,8 +123,19 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
 
     // Poeira fria acumula na camada mais fina e recorta o centro em
     // filamentos negros, como as grandes fendas da astrofotografia.
-    float dust = thinDisk * mix(0.58, 1.35, arms) *
+    float dustProc = thinDisk * mix(0.58, 1.35, arms) *
       smoothstep(0.44, 0.76, broad * 0.68 + filaments * 0.42);
+    // Onde o APOGEE mediu estruturas densas (cobertura começa a
+    // ~1 kpc do Sol; as fendas locais tipo Great Rift continuam
+    // procedurais), a fenda real SOMA-SE ao procedural; o nível
+    // difuso do survey não escurece nada. Perfil vertical h ≈ 150 pc.
+    vec2 cart = texture2D(
+      uDustMap,
+      vec2(dot(q, GAL_X), dot(q, GAL_Y)) / (2.0 * GAL_DISK_RADIUS) + 0.5
+    ).rg;
+    float obsLanes = smoothstep(0.56, 0.88, cart.r);
+    float dustObs = obsLanes * exp(-abs(z) / 150.0) * 2.2 * mix(0.8, 1.15, arms);
+    float dust = dustProc + dustObs * cart.g * uCartBlend;
 
     float towardCenter = clamp(bulge * 0.6 + exp(-radius / 2600.0), 0.0, 1.0);
     vec3 diskColor = mix(
@@ -183,8 +197,9 @@ void main() {
     float d = nebulaDensity(p, 4);
 
     if (d > 0.003) {
-      float gp = dot(p, GAL_N) + 5.5;
-      float slab = exp(-gp * gp / (2.0 * 95.0 * 95.0));
+      // ambiente frio proporcional ao envelope do gás — vale em
+      // qualquer ponto do disco, não só na vizinhança solar
+      float slab = min(diskGasEnvelope(p) * 0.9, 1.0);
 
       // auto-absorção: corações densos são escuros, bordas brilham
       // (como nas nebulosas escuras reais — Barnard 68, Pilares da Criação)

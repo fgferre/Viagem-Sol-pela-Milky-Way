@@ -131,7 +131,8 @@ export class FreeRoam {
   syncFromCamera() {
     const e = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
     this.yaw = e.y;
-    this.pitch = e.x;
+    // mesmo intervalo do arrasto — sem snap no primeiro movimento
+    this.pitch = THREE.MathUtils.clamp(e.x, -1.5, 1.5);
   }
 
   update(dt: number) {

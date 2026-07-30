@@ -35,7 +35,8 @@ export function TitleVeil({
           <div className="title-sub">
             uma viagem do Sol às supergigantes de Órion — e à própria Via Láctea
             <br />
-            18.543 estrelas com distância válida no catálogo HYG · gás volumétrico em tempo real
+            18.543 estrelas HYG · poeira APOGEE · nuvens de CO · regiões H II ·
+            aglomerados e Cefeidas Gaia DR3 — cartografia real, gás volumétrico em tempo real
           </div>
           <div className="title-rule" />
           <button className="hud-btn" onClick={onPlay}>

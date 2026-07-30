@@ -154,6 +154,9 @@ precision highp float;
 uniform float uFade;
 uniform float uSeed;
 uniform float uLayerAlpha;
+// mapa APOGEE bakeado: R = densidade de poeira, G = cobertura
+uniform sampler2D uDustMap;
+uniform float uCartBlend;
 varying vec2 vUv;
 
 ${GLSL_CARTOGRAPHY}
@@ -214,20 +217,38 @@ void main() {
   float core = exp(-radius * radius * 64.0);
 
   // Barra de 5 kpc inclinada 29° em relação à linha Sol–centro.
+  // mat2 é column-major: esta é R(+29°), que traz a crista da barra
+  // para o azimute −29° — coincidente com a barra de partículas do
+  // CPU (barAngleRad = −29°) e com o referencial dos catálogos.
   float cb = cos(0.506145);
   float sb = sin(0.506145);
-  vec2 bp = mat2(cb, -sb, sb, cb) * p;
+  vec2 bp = mat2(cb, sb, -sb, cb) * p;
   float bx = bp.x / 0.298;
   float by = bp.y / 0.058;
   float bar = exp(-bx * bx * 1.05 - abs(by) * 1.65);
+
+  // Cartografia observada (APOGEE). O canal R é contraste log-local
+  // (0,5 = neutro): só estruturas mais densas que o entorno viram
+  // fendas — o nível médio do survey não escurece o disco.
+  vec2 cart = texture2D(uDustMap, p * 0.5 + 0.5).rg;
+  float obsCoverage = cart.g * uCartBlend;
+  float obsLanes = smoothstep(0.56, 0.88, cart.r);
 
   // Braços menos dominantes e com interrupções: é a leitura Gaia 2025,
   // não a velha "grand design" simétrica.
   float continuity = smoothstep(0.28, 0.62, broadNoise * 0.72 + fineNoise * 0.28);
   float clumps = mix(0.34, 1.0, broadNoise) * mix(0.58, 1.0, fineNoise);
   float armLight = arms * mix(0.44, 1.0, continuity);
-  float absorption =
+  // formação estelar acompanha o gás denso medido (sutil)
+  armLight *= mix(1.0, 0.78 + obsLanes * 0.65, obsCoverage * 0.6);
+  float absorptionProc =
     1.0 - dustArms * smoothstep(0.52, 0.84, fineNoise) * 0.64;
+  // Composição por PRODUTO: as fendas medidas multiplicam o
+  // procedural — nada de costura na borda da cobertura, e o
+  // ruído fino só texturiza abaixo da resolução do mapa.
+  float absorptionObs =
+    1.0 - obsLanes * (0.55 + 0.45 * smoothstep(0.3, 0.8, fineNoise)) * 0.78;
+  float absorption = absorptionProc * mix(1.0, absorptionObs, obsCoverage);
 
   float stellarClouds =
     0.042 + broadNoise * broadNoise * 0.155 + fineNoise * 0.014;
@@ -247,6 +268,12 @@ void main() {
     color,
     vec3(0.92, 0.22, 0.44),
     armLight * smoothstep(0.78, 0.94, fineNoise) * 0.30
+  );
+  // avermelhamento por extinção nas fendas medidas
+  color = mix(
+    color,
+    color * vec3(1.10, 0.78, 0.55),
+    obsCoverage * obsLanes * 0.6
   );
 
   gl_FragColor = vec4(color * intensity, 1.0);

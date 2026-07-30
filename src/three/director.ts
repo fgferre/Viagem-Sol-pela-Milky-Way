@@ -13,7 +13,13 @@ import { Dust } from './world/dust';
 import { projectLabels } from './world/labels';
 import type { StarLabel } from './world/labels';
 import { HeroStars } from './world/heroStars';
-import { Galaxy, buildGalaxy } from './world/galaxy';
+import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
+import type { CartographyMode } from './world/galaxy';
+import { ObservedClouds } from './world/observedClouds';
+import { StarForges } from './world/starForges';
+import { WrappedStars } from './world/wrappedStars';
+import { loadGalacticAssets } from './cartography/galacticAssets';
+import { bakeDustMap } from './cartography/dustMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { loadStarData, WORLD } from './config';
 import type { StarsMeta } from './config';
@@ -37,6 +43,14 @@ export class Director {
   private farStars!: StarField;
   private heroes!: HeroStars;
   private galaxy!: Galaxy;
+  private observedClouds: ObservedClouds | null = null;
+  private starForges: StarForges | null = null;
+  private wrappedStars!: WrappedStars;
+  private dustMapTexture: THREE.Texture | null = null;
+  /** nuvens do catálogo em coords de cena: x,y,z,raio,amp por registro */
+  private seedCloudPool: Float32Array | null = null;
+  private seedCloudScratch = new Float32Array(32 * 5);
+  private seedCloudTimer = 0;
   private sun: Sun;
   private dust: Dust;
   private bgColor = new THREE.Color(0x000106);
@@ -46,6 +60,14 @@ export class Director {
 
   private phase: Phase = 'loading';
   private journeyT = 0;
+  /**
+   * A trajetória do Ato III reatravessa o envelope do disco (t≈151–154)
+   * já a ~15 kpc do Sol; na viagem ROTEIRIZADA, uma vez fora do disco o
+   * ambiente fica desligado (latch) — o pull-back mostra o modelo da
+   * galáxia, não uma nebulosa ressuscitada. Free-roam/?pos= não usam o
+   * latch: lá o comportamento relocável instantâneo é o desejado.
+   */
+  private leftDisk = false;
   private lastCaptionIdx = -1;
   private labelTimer = 0;
   /** congela o relógio da viagem (debug/screenshots via ?freeze=1) */
@@ -66,7 +88,10 @@ export class Director {
     this.sun = new Sun();
     this.dust = new Dust();
     this.roam = new FreeRoam(canvas, this.engine.camera);
-    this.engine.onQuality((quality) => this.events.onQuality(quality));
+    this.engine.onQuality((quality) => {
+      this.nebula.setScale(quality === 'performance' ? 0.35 : 0.5);
+      this.events.onQuality(quality);
+    });
 
     this.engine.onResize((w, h) => {
       this.nebula.setSize(w, h);
@@ -78,7 +103,9 @@ export class Director {
     if (this.debug.has('nobloom')) {
       this.post.bloom.enabled = false;
     }
-    for (const k of ['nogal', 'nosun', 'nodust', 'nohero', 'nocat', 'nomarker']) {
+    for (const k of [
+      'nogal', 'nosun', 'nodust', 'nohero', 'nocat', 'nomarker', 'nocart', 'nowrap',
+    ]) {
       if (this.debug.has(k)) this.hide.add(k);
     }
 
@@ -86,7 +113,21 @@ export class Director {
   }
 
   async init() {
-    const { positions, meta } = await loadStarData(this.abortController.signal);
+    // catálogo HYG + ativos cartográficos em paralelo; os segundos
+    // são progressivos — sem eles a cena continua procedural.
+    // ?cart=off não baixa os ~6 MB que ninguém consumiria.
+    const cartMode: CartographyMode =
+      this.debug.get('cart') === 'off'
+        ? 'off'
+        : this.debug.get('cart') === 'obs'
+          ? 'observed'
+          : 'blend';
+    const [{ positions, meta }, galactic] = await Promise.all([
+      loadStarData(this.abortController.signal),
+      cartMode === 'off'
+        ? Promise.resolve(null)
+        : loadGalacticAssets(this.abortController.signal),
+    ]);
     if (this.disposed) return;
     this.meta = meta;
 
@@ -98,9 +139,34 @@ export class Director {
     });
     this.heroes = new HeroStars(this.meta.named);
 
-    this.galaxy = new Galaxy(buildGalaxy());
+    const dustBake =
+      galactic && cartMode !== 'off' ? bakeDustMap(galactic.dustDensity) : null;
+    this.dustMapTexture = dustBake?.texture ?? null;
+    this.galaxy = new Galaxy(buildGalaxy(), dustBake?.texture ?? null);
+    this.galaxy.setCartography(
+      this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
+    );
+    if (galactic && cartMode !== 'off') {
+      this.nebula.setDustMap(dustBake?.texture ?? null);
+      this.observedClouds = new ObservedClouds(
+        galactic.molecularClouds,
+        galactic.largeMolecularClouds
+      );
+      this.starForges = new StarForges(galactic);
+      this.engine.scene.add(this.observedClouds.mesh);
+      this.engine.scene.add(this.starForges.points);
+      this.buildSeedCloudPool(galactic);
+      if (dustBake) {
+        console.info(
+          `[cartografia] APOGEE ${(dustBake.coverageFraction * 100).toFixed(1)}% ` +
+            'do disco com cobertura observacional.'
+        );
+      }
+    }
     if (this.disposed) return;
 
+    this.wrappedStars = new WrappedStars();
+    this.engine.scene.add(this.wrappedStars.points);
     this.engine.scene.add(this.stars.points);
     this.engine.scene.add(this.farStars.points);
     this.engine.scene.add(this.sun.group);
@@ -119,10 +185,98 @@ export class Director {
     this.events.onPhase(p);
   }
 
+  /** nuvens CO/complexos em coords de cena para semear o raymarch */
+  private buildSeedCloudPool(galactic: {
+    molecularClouds: { data: Float32Array; count: number; stride: number };
+    largeMolecularClouds: { data: Float32Array; count: number; stride: number };
+  }) {
+    const out: number[] = [];
+    const scratch = new THREE.Vector3();
+    {
+      const { data, count, stride } = galactic.molecularClouds;
+      for (let i = 0; i < count; i++) {
+        const o = i * stride;
+        if (data[o + 10] < 0.5) continue;
+        const surface = data[o + 5];
+        const amp = (surface / (surface + 130)) * 2.0;
+        if (amp < 0.08) continue;
+        galactocentricToScene(data[o], data[o + 1], data[o + 2], scratch);
+        out.push(scratch.x, scratch.y, scratch.z, Math.max(data[o + 3] * 1.6, 14), amp);
+      }
+    }
+    {
+      const { data, count, stride } = galactic.largeMolecularClouds;
+      for (let i = 0; i < count; i++) {
+        const o = i * stride;
+        const density = data[o + 4];
+        galactocentricToScene(data[o], data[o + 1], data[o + 2], scratch);
+        out.push(
+          scratch.x, scratch.y, scratch.z,
+          Math.max(data[o + 3] * 1.2, 60),
+          (density / (density + 116)) * 1.6
+        );
+      }
+    }
+    this.seedCloudPool = new Float32Array(out);
+  }
+
+  /** seleciona as ≤32 nuvens do catálogo mais próximas da câmera */
+  private updateSeedClouds(camPos: THREE.Vector3) {
+    const pool = this.seedCloudPool;
+    if (!pool) return;
+    const reach = 900; // pc — alcance do raymarch + margem
+    // rank pela distância à SUPERFÍCIE: um complexo que envolve a
+    // câmera nunca é expulso por nuvens pequenas próximas
+    const nearest: Array<{ sd: number; o: number }> = [];
+    for (let o = 0; o < pool.length; o += 5) {
+      const dx = pool[o] - camPos.x;
+      const dy = pool[o + 1] - camPos.y;
+      const dz = pool[o + 2] - camPos.z;
+      const sd = Math.max(
+        0,
+        Math.sqrt(dx * dx + dy * dy + dz * dz) - pool[o + 3]
+      );
+      if (sd > reach) continue;
+      nearest.push({ sd, o });
+    }
+    nearest.sort((a, b) => a.sd - b.sd);
+    const n = Math.min(nearest.length, 32);
+    // amplitude → 0 na fronteira de seleção: nuvens entram e saem do
+    // conjunto invisíveis — sem popping a cada refresh de 0,25 s
+    const cut = Math.max(nearest.length > 32 ? nearest[32].sd : reach, 1);
+    for (let i = 0; i < n; i++) {
+      const o = nearest[i].o;
+      const t = i * 5;
+      const edge = 1 - THREE.MathUtils.smoothstep(nearest[i].sd, cut * 0.8, cut);
+      this.seedCloudScratch[t] = pool[o];
+      this.seedCloudScratch[t + 1] = pool[o + 1];
+      this.seedCloudScratch[t + 2] = pool[o + 2];
+      this.seedCloudScratch[t + 3] = pool[o + 3];
+      this.seedCloudScratch[t + 4] = pool[o + 4] * edge;
+    }
+    this.nebula.setSeedClouds(this.seedCloudScratch, n);
+  }
+
+  /** posiciona a câmera em modo livre (deep-links/screenshots ?pos=) */
+  placeCamera(pos: [number, number, number], look?: [number, number, number]) {
+    const cam = this.engine.camera;
+    cam.position.set(pos[0], pos[1], pos[2]);
+    if (look) cam.lookAt(look[0], look[1], look[2]);
+    this.roam.enabled = true;
+    this.roam.syncFromCamera();
+    // o primeiro frame já renderiza com as nuvens-semente do lugar —
+    // capturas ?pos= são determinísticas desde o frame 1
+    this.updateSeedClouds(cam.position);
+    this.seedCloudTimer = 0;
+    this.setPhase('free');
+    this.events.onCaption(-1, '', '');
+  }
+
   play() {
     this.journeyT = 0;
     this.lastCaptionIdx = -1;
     this.freezeJourney = false;
+    this.leftDisk = false;
     this.rig.reset();
     this.roam.enabled = false;
     this.setPhase('journey');
@@ -131,6 +285,7 @@ export class Director {
   /** salta para um instante da viagem (segundos) — usado por deep-links */
   seek(t: number) {
     this.journeyT = t;
+    this.leftDisk = false;
     this.rig.reset(); // a mira suavizada também salta para o instante certo
   }
 
@@ -188,15 +343,49 @@ export class Director {
     const dHome = cam.position.length();
     this.engine.updateClip(dHome);
 
-    // crossfade escala local ↔ galáxia (pc)
+    // A Via Láctea não é um plano: os fades de AMBIENTE respondem à
+    // posição da câmera no DISCO (R, z galactocêntricos), não à
+    // distância do Sol — o volume local existe em qualquer ponto da
+    // galáxia. Só camadas fisicamente solares continuam com dHome.
+    const qx = cam.position.x - GAL.GC_POS.x;
+    const qy = cam.position.y - GAL.GC_POS.y;
+    const qz = cam.position.z - GAL.GC_POS.z;
+    const zg = Math.abs(qx * EZ.x + qy * EZ.y + qz * EZ.z);
+    const rg = Math.hypot(
+      qx * EX.x + qy * EX.y + qz * EX.z,
+      qx * EY.x + qy * EY.y + qz * EY.z
+    );
+    const inDisk =
+      (1 - THREE.MathUtils.smoothstep(zg, 600, 2100)) *
+      (1 - THREE.MathUtils.smoothstep(rg, 16800, 20500));
+    if (this.phase === 'journey') {
+      if (inDisk <= 0.001) this.leftDisk = true;
+    } else {
+      this.leftDisk = false;
+    }
+    const env = this.leftDisk ? 0 : inDisk;
+
+    // camadas solares (HYG, poeira próxima, hero stars): dHome
     const localFade = 1 - THREE.MathUtils.smoothstep(dHome, 1100, 2300);
-    const nebulaFade = 1 - THREE.MathUtils.smoothstep(dHome, 1300, 2700);
-    const galaxyFade = THREE.MathUtils.smoothstep(dHome, 1000, 2600);
-    // Vista interna da Via Láctea: as partículas galactocêntricas são
-    // visíveis como faixa estelar enquanto ainda estamos dentro do disco.
-    const localBandFade =
-      (1 - THREE.MathUtils.smoothstep(dHome, 650, 1900)) * 0.76;
+    // gás volumétrico + faixa interna: qualquer ponto dentro do disco
+    const nebulaFade = env;
+    const galaxyFade = 1 - env;
+    const localBandFade = env * 0.76;
     const markerFade = THREE.MathUtils.smoothstep(dHome, 1700, 3300);
+
+    // nuvens-semente do raymarch + cavidade do observador itinerante
+    this.seedCloudTimer += dt;
+    if (this.seedCloudTimer > 0.25) {
+      this.seedCloudTimer = 0;
+      if (nebulaFade > 0.001) this.updateSeedClouds(cam.position);
+    }
+    // a MESMA cavidade em todos os consumidores da densidade: raymarch,
+    // extinção das estrelas e brilho da poeira próxima
+    const cavityGate = THREE.MathUtils.smoothstep(dHome, 600, 1300);
+    this.nebula.setCavity(cam.position, cavityGate);
+    this.stars?.setCavity(cam.position, cavityGate);
+    this.farStars?.setCavity(cam.position, cavityGate);
+    this.dust.setCavity(cam.position, cavityGate);
 
     if (this.debug.has('dbgfade')) {
       console.log(
@@ -208,6 +397,12 @@ export class Director {
 
     this.stars?.update(cam.position, hPx, time);
     this.farStars?.update(cam.position, hPx, time);
+    this.wrappedStars?.update(
+      cam.position,
+      hPx,
+      Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2),
+      this.hide.has('nowrap') ? 0 : 1
+    );
     this.stars?.setFade(this.hide.has('nocat') ? 0 : localFade);
     this.farStars?.setFade(this.hide.has('nocat') ? 0 : localFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
@@ -217,14 +412,30 @@ export class Director {
     this.sun.group.visible = !this.hide.has('nosun');
     this.sun.update(time, cam.position);
     this.dust.update(cam.position, hPx, time);
+    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
     this.galaxy?.update(
       cam.position,
       hPx,
-      Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2),
+      tanHalfFov,
       time,
       this.hide.has('nogal') ? 0 : galaxyFade,
       this.hide.has('nomarker') ? 0 : markerFade,
       this.hide.has('nogal') ? 0 : localBandFade
+    );
+    // camadas observacionais acompanham a galáxia: visíveis de fora e
+    // como estrutura da faixa quando ainda estamos dentro do disco
+    const cartHidden = this.hide.has('nocart') || this.hide.has('nogal');
+    this.observedClouds?.update(
+      hPx,
+      tanHalfFov,
+      cartHidden ? 0 : Math.max(galaxyFade, localBandFade * 0.72)
+    );
+    this.starForges?.update(
+      cam.position,
+      hPx,
+      tanHalfFov,
+      time,
+      cartHidden ? 0 : Math.max(galaxyFade, localBandFade * 0.6)
     );
 
     // debug: posição projetada de Betelgeuse
@@ -254,7 +465,9 @@ export class Director {
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(warp);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
-    if (this.noNebula || nebulaFade <= 0.001) {
+    // gate 0.02: na casca externa do fade a contribuição é invisível
+    // pós-ACES, mas o raymarch custaria integral
+    if (this.noNebula || nebulaFade <= 0.02) {
       // longe de casa o céu é o preto profundo — a galáxia é a luz
       this.engine.scene.background = this.noNebula ? new THREE.Color(0x010208) : this.bgColor;
     } else {
@@ -275,6 +488,10 @@ export class Director {
     this.farStars?.dispose();
     this.heroes?.dispose();
     this.galaxy?.dispose();
+    this.observedClouds?.dispose();
+    this.starForges?.dispose();
+    this.wrappedStars?.dispose();
+    this.dustMapTexture?.dispose();
     this.sun.dispose();
     this.dust.dispose();
     this.nebula.dispose();

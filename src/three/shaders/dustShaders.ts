@@ -3,6 +3,7 @@
 // e se acendem dentro do gás, dando paralaxe e sensação de volume.
 // ============================================================
 import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY } from './common';
+import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 
 export const DUST_VERT = /* glsl */ `
 attribute float aRand;
@@ -18,6 +19,7 @@ varying vec3 vColor;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
+${GLSL_CARTOGRAPHY}
 ${GLSL_DENSITY}
 
 void main() {

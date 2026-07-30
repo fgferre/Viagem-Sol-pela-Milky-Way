@@ -122,11 +122,13 @@ export class Engine {
         this.fpsTimer += dt;
         if (this.fpsTimer > 2.5) {
           const avg = this.fpsN / this.fpsAcc;
+          // degrada E recupera com histerese: o custo dominante (raymarch
+          // do gás) agora liga/desliga conforme a câmera entra/sai do
+          // disco — a qualidade precisa voltar sozinha.
           if (avg < 42 && this.quality === 'cinema') this.applyQuality('alta');
-          else if (avg < 34 && this.quality === 'alta') {
-            this.autoQuality = false;
-            this.applyQuality('performance');
-          }
+          else if (avg < 34 && this.quality === 'alta') this.applyQuality('performance');
+          else if (avg > 60 && this.quality === 'performance') this.applyQuality('alta');
+          else if (avg > 72 && this.quality === 'alta') this.applyQuality('cinema');
           this.fpsAcc = 0;
           this.fpsN = 0;
           this.fpsTimer = 0;

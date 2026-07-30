@@ -335,3 +335,14 @@
     transform: none;
   }
 }
+
+/* --- modo foto (?shot=1): capturas determinísticas sem transições --- */
+.shot-mode *,
+.shot-mode *::before,
+.shot-mode *::after {
+  transition: none !important;
+  animation: none !important;
+}
+.shot-mode .veil.hidden-veil {
+  display: none;
+}

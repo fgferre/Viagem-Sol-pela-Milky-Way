@@ -53,9 +53,21 @@ export default function App() {
           d.setQuality(qualityParam);
         }
 
+        // ?pos=x,y,z[&look=x,y,z] — câmera livre determinística em
+        // qualquer ponto da galáxia (screenshots/inspeção).
+        const parse = (s: string | null) => {
+          const v = (s ?? '').split(',').map(Number);
+          return v.length === 3 && v.every(Number.isFinite)
+            ? (v as [number, number, number])
+            : null;
+        };
+        const pos = parse(query.get('pos'));
+        if (pos) d.placeCamera(pos, parse(query.get('look')) ?? undefined);
+        else if (query.get('pos')) console.warn('?pos= inválido:', query.get('pos'));
+
         // Um único ?t= permite inspeção determinística sem URLs frágeis com "&".
         const hasTime = query.has('t');
-        if (hasTime || query.get('play')) {
+        if (!pos && (hasTime || query.get('play'))) {
           const time = Number.parseFloat(query.get('t') ?? '0');
           d.play();
           if (Number.isFinite(time) && time > 0) d.seek(time);
@@ -86,9 +98,11 @@ export default function App() {
 
   const inJourney = phase === 'journey';
   const showVeil = phase === 'loading' || phase === 'intro' || phase === 'end';
+  // ?shot=1 — modo foto: sem transições, capturas determinísticas
+  const shotMode = new URLSearchParams(window.location.search).has('shot');
 
   return (
-    <div ref={rootRef} className="hud-root">
+    <div ref={rootRef} className={`hud-root${shotMode ? ' shot-mode' : ''}`}>
       <canvas
         ref={canvasRef}
         className="scene-canvas"
