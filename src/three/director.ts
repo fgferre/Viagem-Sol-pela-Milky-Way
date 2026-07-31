@@ -515,14 +515,15 @@ export class Director {
       // As nuvens CO medidas são as fendas REAIS da Via Láctea; ficarem
       // em fade 0 na vista externa era jogar fora a tonalidade delas
       // justamente na vista que a mostra melhor.
-      cartHidden ? 0 : Math.max(galaxyFade * 0.55, localBandFade * 0.72)
+      // soma, não max: rampas complementares (ver galaxy.ts, mesmo defeito)
+      cartHidden ? 0 : galaxyFade * 0.55 + localBandFade * 0.72
     );
     this.starForges?.update(
       cam.position,
       hPx,
       tanHalfFov,
       time,
-      cartHidden ? 0 : Math.max(galaxyFade, localBandFade * 0.6)
+      cartHidden ? 0 : galaxyFade + localBandFade * 0.6
     );
 
     // debug: posição projetada de Betelgeuse

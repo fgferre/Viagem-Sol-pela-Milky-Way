@@ -77,6 +77,7 @@ function toLinearSquare(img) {
   const d = x.getImageData(0, 0, N, N).data;
   const lum = new Float32Array(N * N);
   const red = new Float32Array(N * N);
+  const grn = new Float32Array(N * N);
   const blue = new Float32Array(N * N);
   for (let i = 0; i < N * N; i++) {
     // sRGB → linear (gamma 2,2): perfil e cor só fazem sentido em luz
@@ -85,9 +86,10 @@ function toLinearSquare(img) {
     const b = Math.pow(d[i * 4 + 2] / 255, 2.2);
     lum[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     red[i] = r;
+    grn[i] = g;
     blue[i] = b;
   }
-  return { lum, red, blue };
+  return { lum, red, grn, blue };
 }
 
 /** Centro = centroide de fluxo dos 2% mais brilhantes (o bojo). */
@@ -133,7 +135,7 @@ function findR90(lum, cx, cy) {
 }
 
 function analyse(img) {
-  const { lum, red, blue } = toLinearSquare(img);
+  const { lum, red, grn, blue } = toLinearSquare(img);
   const { cx, cy } = findCentre(lum);
   const { r90 } = findR90(lum, cx, cy);
 
@@ -213,10 +215,17 @@ function analyse(img) {
   // ---- tom: perfil radial, cor e brilho absoluto ----
   const prof = [];
   const colour = [];
+  // `colour` é (R−B)/(R+B) e NÃO enxerga o verde: um cinza neutro e um
+  // púrpura saturado marcam idêntico. Púrpura é justamente G abaixo da
+  // média de R e B, então precisa de índice próprio. `purp` é a grandeza
+  // que ancora a paleta nas fotos de referência reais — ver
+  // docs/reference/VISUAL_TARGETS.md.
+  const purp = [];
   for (let i = 0; i < 24; i++) {
     const rad = (((i + 0.5) / 24) * 1.5) * r90;
     let sl = 0;
     let sr = 0;
+    let sg = 0;
     let sb = 0;
     for (let a = 0; a < 360; a++) {
       const th = (a / 360) * Math.PI * 2;
@@ -224,10 +233,12 @@ function analyse(img) {
       const py = cy + rad * Math.sin(th);
       sl += bilinear(lum, px, py);
       sr += bilinear(red, px, py);
+      sg += bilinear(grn, px, py);
       sb += bilinear(blue, px, py);
     }
     prof.push(sl / 360);
     colour.push(+((sr - sb) / (sr + sb + 1e-9)).toFixed(3));
+    purp.push(+(((sr + sb) / 2 - sg) / Math.max(sr, sg, sb, 1e-9)).toFixed(4));
   }
   const peak = Math.max(...prof);
 
@@ -266,6 +277,7 @@ function analyse(img) {
     r90Frac: +(r90 / N).toFixed(3),
     profile: prof.map((v) => +(v / peak).toFixed(4)),
     colour,
+    purp,
   };
 }
 

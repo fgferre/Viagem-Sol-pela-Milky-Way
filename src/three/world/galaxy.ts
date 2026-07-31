@@ -681,6 +681,7 @@ export class Galaxy {
   private markerMesh!: THREE.Mesh;
   private dustMap: THREE.Texture;
   private structureMap: THREE.Texture;
+  private brightPts!: THREE.Points;
   private dustPts!: THREE.Points;
   private dustScatterMat: THREE.ShaderMaterial;
   private dustScatterPts!: THREE.Points;
@@ -739,6 +740,7 @@ export class Galaxy {
     brightPts.frustumCulled = false;
     brightPts.renderOrder = 2;
     this.group.add(brightPts);
+    this.brightPts = brightPts;
 
     // --- emissão contínua dos braços em três lâminas 3D ---
     this.createDiscLayers();
@@ -1008,7 +1010,14 @@ export class Galaxy {
       externalFade > 0.001 || markerFade > 0.001 || localBandFade > 0.001;
     if (!this.group.visible) return;
 
-    const brightFade = Math.max(externalFade, localBandFade);
+    // SOMA, não max. As duas rampas são complementares por construção
+    // (director: externalFade = 1 − env, localBandFade = 0,76·env), e
+    // max() de rampas complementares tem um MÍNIMO no meio: em env=0,568
+    // as duas valem 0,432 e a galáxia escurecia 43% no meio da travessia
+    // do envelope, para clarear de novo depois. A soma dá 1 − 0,24·env:
+    // monotônica, com os dois extremos idênticos ao que já estava
+    // calibrado (env=0 → 1, env=1 → 0,76).
+    const brightFade = externalFade + localBandFade;
     // A extinção das lâminas só apaga a luz da PRÓPRIA lâmina (blend
     // aditivo) — nunca chega às faixas escuras do alvo. Os sprites de
     // poeira são multiplicativos e escurecem tudo que está atrás, então
@@ -1023,10 +1032,9 @@ export class Galaxy {
     // 5,5 aplicava um véu marrom sobre o disco INTEIRO — medido com
     // ?nogdust=1, era ele que achatava a textura estelar. A poeira tem de
     // ser fenda, não filtro: menos ganho global, mais concentração.
-    const dustFade = Math.max(
-      externalFade * THREE.MathUtils.lerp(2.0, 3.4, openness),
-      localBandFade * 0.72
-    );
+    const dustFade =
+      externalFade * THREE.MathUtils.lerp(2.0, 3.4, openness) +
+      localBandFade * 0.72;
     // Sete planos achatados descrevem o disco visto de CIMA. De raspão
     // eles viram sete listras horizontais; ali quem tem estrutura em z
     // são as partículas. Cede entre ~3° e ~17° acima do plano — só o
@@ -1062,14 +1070,16 @@ export class Galaxy {
     const dGC = camPos.distanceTo(GAL.GC_POS);
     const glowGate = THREE.MathUtils.smoothstep(dGC, 5000, 13000);
     this.glowMat.uniforms.uTime.value = time;
-    this.glowMat.uniforms.uFade.value = Math.max(
-      externalFade * glowGate * 0.32,
-      localBandFade * 0.11
-    );
+    this.glowMat.uniforms.uFade.value =
+      externalFade * glowGate * 0.32 + localBandFade * 0.11;
     this.dwarfMat.uniforms.uTime.value = time;
     this.dwarfMat.uniforms.uFade.value = externalFade * 0.11;
     this.markerMat.uniforms.uTime.value = time;
     this.markerMat.uniforms.uFade.value = markerFade;
+    // brightPts era a única camada sem gate de visibilidade: dust, scatter,
+    // glow, dwarf e marker todas têm. 2,7 M pontos eram submetidos mesmo
+    // com fade 0 (medido: as partículas aparecem no probe em ?t=0, no Sol).
+    this.brightPts.visible = brightFade > 0.001;
     this.dustPts.visible = this.showGDust;
     this.dustScatterPts.visible = this.showGDust;
     this.glowMesh.visible = this.showGlow;

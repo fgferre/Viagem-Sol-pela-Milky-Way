@@ -1,6 +1,6 @@
 # Princípios para agentes
 
-1. Leia o `README.md` e o código atual antes de editar; relatórios, prompts e planos são hipóteses, não fontes de verdade.
+1. Leia o `docs/NORTE.md`, o `README.md` e o código atual antes de editar; relatórios, prompts e planos são hipóteses, não fontes de verdade. O `NORTE.md` diz para onde o projeto vai, o que já foi decidido e o que não se repete — mantenha-o vivo: o que virou código sai de lá, o que ainda decide algo entra.
 2. Procure a implementação existente antes de criar arquivo, dependência, helper ou documentação.
 3. Faça a menor mudança coerente; não adicione abstração, compatibilidade ou feature especulativa.
 4. Mantenha uma fonte de verdade. Atualize o contrato existente em vez de duplicá-lo.

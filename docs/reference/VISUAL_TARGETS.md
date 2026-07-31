@@ -89,6 +89,29 @@ Valores da recriação Gaia 2025 face-on — este é o gabarito:
 | razão m2/m4 | 1,20 | **dois braços dominantes com quatro visíveis** |
 | discMean | 0,1175 | brilho absoluto do disco (0,25–1,05 R90, luz linear) |
 | grain | 0,075 | mosqueado de alta frequência |
+| **purp** | **+0,201** | púrpura médio na faixa 0,25–1,05 R90 |
+
+### O alvo de cor
+
+`colour` = (R−B)/(R+B) **não enxerga o verde**: um cinza neutro e um púrpura
+saturado marcam idêntico, e ele nem entra no `harmonicError`. Púrpura é
+exatamente o verde caindo abaixo da média de R e B, então tem índice próprio:
+
+```
+purp = ((R+B)/2 − G) / max(R,G,B)      por anel, em luz linear
+```
+
+Perfil radial medido na referência — o púrpura **cresce para fora**, e é essa
+forma que a paleta tem de reproduzir, não só a média:
+
+| R/R90 | 0,16 | 0,34 | 0,53 | 0,72 | 0,91 | 1,09 |
+|---|---|---|---|---|---|---|
+| alvo | +0,018 | +0,124 | +0,173 | +0,222 | +0,259 | +0,317 |
+
+Uma paleta que decide cor por raio consegue acertar a média e errar a forma;
+uma soma de populações acerta a forma porque a fração jovem realmente cresce
+com o raio. Por isso o alvo é a **curva**, não o número único.
+
 
 `harmonicError` (soma de |nosso − alvo| em m=1..6) é a nota honesta;
 menor é melhor. **Não use o composto `symmetry`**: ele é

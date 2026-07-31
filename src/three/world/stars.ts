@@ -128,7 +128,10 @@ export function buildFarStars(count: number, seed = 0x4d494c4b): Float32Array {
     data[i * 6] = p.x;
     data[i * 6 + 1] = p.y;
     data[i * 6 + 2] = p.z;
-    const mag = 7.0 + random() * 3.6;
+    // Começa em 7,2 e não em 7,0: WORLD.starMagLimit = 7,2 é o corte do
+    // HYG, que é ~93% completo até lá. Sortear a partir de 7,0 duplicava
+    // 2.333 estrelas na faixa que o catálogo real já cobre.
+    const mag = 7.2 + random() * 3.4;
     data[i * 6 + 3] = mag; // mag aparente vista do Sol
     data[i * 6 + 4] = -0.15 + random() * 1.6; // B-V
     // Mesmo schema do HYG: logLum = 0,4·(4,85 − M_V). Sorteia-se a
