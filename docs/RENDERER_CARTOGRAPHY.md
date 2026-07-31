@@ -15,6 +15,7 @@ implementado assim:
 | `spiral-anchors.bin` (199 masers BeSSeL) | mesmos consumidores + `spiralModel.json` | posições reais e ajuste offline do prior espiral |
 | `gaia-young-clusters.bin` (988) | mesmos consumidores | glitter e kernels pesados por número de membros/erro |
 | `gaia-young-cepheids.bin` (2.806) | mesmos consumidores | pontos pulsantes e kernels pesados por erro de distância |
+| `gaia-ob-proxy-stars.bin` (100.000) | `world/starForges.ts` + `cartography/structureMap.ts` | estrelas quentes e campo local de formação estelar; seleção proxy documentada, não amostra Drimmel |
 
 ## Regra de combinação observado ↔ inferido
 
@@ -37,9 +38,11 @@ resposta = inferida × (1 − suporte) + observada × suporte
 ```
 
 O mesmo R/G governa o brilho contínuo, as partículas dos braços e a extinção.
-Portanto estrelas jovens, gás e poeira deixam de formar três desenhos
-independentes. A população estelar velha permanece como disco exponencial e
-barra suaves; ela não é forçada a copiar as nuvens.
+Gás denso pode sustentar uma resposta moderada de formação estelar quando
+faltam traçadores jovens no mesmo texel; isso permanece `derived`, sem criar
+uma estrela observada. Portanto estrelas jovens, gás e poeira deixam de formar
+três desenhos independentes. A população estelar velha permanece como disco
+exponencial e barra suaves; ela não é forçada a copiar as nuvens.
 
 Este é um **modelo de resposta em um instante**, não uma simulação
 N-body/hidrodinâmica e não representa matéria escoando para o centro como água
@@ -48,7 +51,7 @@ a perturbação gravitacional não axisimétrica que organiza o gás. O deslocam
 estreito do gás em relação à espinha e o realce posterior de estrelas jovens são
 proxies explícitos enquanto não há integração dinâmica com velocidade padrão.
 
-No marco atual, 56,5% do disco têm suporte de matéria e 33,9% têm suporte de
+No marco atual, 56,5% do disco têm suporte de matéria e 36,5% têm suporte de
 traçadores jovens. A textura procedural de alta frequência resolve apenas
 subestrutura abaixo de aproximadamente 80 pc; nenhuma posição observada é
 deslocada por direção de arte.
@@ -150,10 +153,9 @@ no disco externo.
 
 - Fotometria HYG relocável baseada em `logLum`, com extinção diferencial em
   relação ao observador solar.
-- Amostra Gaia DR3 de aproximadamente 100 mil estrelas OB com distâncias
-  fotogeométricas. Os 5.406 traçadores jovens atuais ainda são esparsos demais
-  para a granularidade do alvo Gaia/ESA; adicionar assimetria de shader para
-  mascarar essa lacuna foi rejeitado.
+- Recuperação da amostra final de 579.577 estrelas OB ou do
+  `astrometric fidelity` de Rybizki. A seleção proxy atual não pode receber o
+  nome nem a completude do produto Drimmel.
 - Integração dinâmica do potencial de barra+braços com curva de rotação e
   velocidades padrão. Até isso existir, o renderer declara corretamente um
   campo de resposta estático, não uma simulação gravitacional.
@@ -164,7 +166,7 @@ no disco externo.
   2,67 MB de VRAM; bakes executados uma vez na carga.
 - Nuvens: 1 draw call instanciado (~8k quads pequenos, FBM 3 oitavas,
   fade antes de encher a tela).
-- Traçadores: 1 draw call de pontos (5.406 vértices), conservação de fluxo
-  igual às partículas da galáxia.
+- Traçadores: 1 draw call de pontos (105.406 vértices; 100 mil são a seleção
+  proxy OB), conservação de fluxo igual às partículas da galáxia.
 - Custo por frame adicional do acoplamento: nenhum draw call; 1 lookup RGBA por
   fragmento do disco. O mapa APOGEE continua compartilhado com o raymarch.

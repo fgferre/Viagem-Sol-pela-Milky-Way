@@ -147,6 +147,25 @@
         "sigmaMetallicityDex",
         "inferredMetallicityFlag"
       ]
+    },
+    "gaiaObProxyStars": {
+      "file": "data/galaxy/gaia-ob-proxy-stars.bin",
+      "count": 100000,
+      "strideFloat32": 10,
+      "byteLength": 4000000,
+      "sha256": "2f39312dd41d4655330a58904273f957d50fd71dbd40ccdea331a46dd09461cf",
+      "fields": [
+        "xPc",
+        "yPc",
+        "zPc",
+        "heliocentricDistancePc",
+        "sigmaDistancePc",
+        "photGMeanMag",
+        "bpMinusRp",
+        "effectiveTemperatureK",
+        "astrometricConfidence",
+        "randomSeed"
+      ]
     }
   },
   "dictionaries": {
@@ -223,7 +242,12 @@
     ],
     "hiiRowsWithoutAdoptedDistance": 6986,
     "gaiaYoungClusterAgeCut": "log10(age/yr) < 8",
-    "gaiaYoungCepheidAgeCut": "log10(age/yr) < log10(200000000)"
+    "gaiaYoungCepheidAgeCut": "log10(age/yr) < log10(200000000)",
+    "gaiaObProxySelection": "Drimmel hot-star cuts plus Bailer-Jones photogeometric distance, |Z| < 300 pc, RUWE < 1.4, parallax_over_error > 5, visibility_periods_used >= 10; uniform random_index subset, not the paper sample",
+    "gaiaObProxyDistancePc": [
+      54.90404,
+      10032.361
+    ]
   },
   "sources": [
     {
@@ -260,6 +284,15 @@
       "catalogue": "J/A+A/674/A37",
       "paper": "https://doi.org/10.1051/0004-6361/202243797",
       "vizier": "https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A%2BA/674/A37"
+    },
+    {
+      "id": "GaiaDr3ObProxy2026",
+      "role": "Reproducible proxy sample of hot stars; not the 579577-object Drimmel paper sample",
+      "catalogue": "gaiadr3.gaia_source + gaiadr3.astrophysical_parameters + external.gaiaedr3_distance",
+      "query": "scripts/data/queries/gaia-dr3-ob-hot-stars.sql",
+      "archive": "https://gea.esac.esa.int/archive/",
+      "paper": "https://doi.org/10.1051/0004-6361/202243797",
+      "distancePaper": "https://doi.org/10.3847/1538-3881/abd806"
     }
   ]
 }

@@ -5,6 +5,7 @@
 //   · 199 masers BeSSeL (paralaxe trigonométrica — âncoras)
 //   · 988 aglomerados jovens Gaia DR3 (glitter azul-branco)
 //   · 2.806 Cefeidas jovens Gaia DR3 (pulsando de verdade)
+//   · amostra proxy de estrelas quentes Gaia DR3
 //
 // Camada `observed`/`derived`: nenhuma posição é inventada.
 // Incerteza vira brilho: erro relativo alto = ponto mais tênue.
@@ -17,11 +18,12 @@ const TYPE_HII = 0;
 const TYPE_MASER = 1;
 const TYPE_CLUSTER = 2;
 const TYPE_CEPHEID = 3;
+const TYPE_OB_PROXY = 4;
 
 const STRIDE = 7; // x,y,z,size,type,intensity,seed
 
 const VERT = /* glsl */ `
-attribute float aSize;      // diâmetro físico (pc)
+attribute float aSize;      // diâmetro do kernel de representação (pc)
 attribute float aType;
 attribute float aIntensity;
 attribute float aSeed;
@@ -48,7 +50,7 @@ void main() {
   // Cefeidas pulsam: períodos reais são 1–70 dias — inviáveis numa
   // sessão. Compressão temporal documentada de ~2000×: períodos de
   // ~70–350 s, respiração lenta perceptível, nunca strobo.
-  if (aType > 2.5) {
+  if (aType > 2.5 && aType < 3.5) {
     intensity *= 0.78 + 0.34 * sin(uTime * (0.018 + fract(aSeed * 13.7) * 0.072) + aSeed * 41.0);
   }
 
@@ -88,10 +90,14 @@ void main() {
     // aglomerado jovem — núcleo nítido + halo frio
     profile = exp(-r2 * 5.0) + exp(-r2 * 1.8) * 0.35;
     col = mix(vec3(0.72, 0.82, 1.0), vec3(0.9, 0.94, 1.0), fract(vSeed * 5.1));
-  } else {
+  } else if (vType < 3.5) {
     // Cefeida — amarela-branca quente
     profile = exp(-r2 * 5.5);
     col = vec3(1.0, 0.9, 0.72);
+  } else {
+    // proxy OB Gaia — núcleo frio pequeno; densidade, não “pérolas” enormes
+    profile = exp(-r2 * 7.5);
+    col = mix(vec3(0.48, 0.66, 1.0), vec3(0.88, 0.94, 1.0), fract(vSeed * 7.3));
   }
 
   gl_FragColor = vec4(col * profile * vAlpha, 1.0);
@@ -185,6 +191,31 @@ export class StarForges {
           TYPE_CEPHEID,
           0.2 / (1 + Math.max(rel, 0) * 3.0),
           (i * 0.412031 + 0.47) % 1
+        );
+      }
+    }
+
+    // Seleção proxy de estrelas quentes Gaia DR3. O kernel em pc conserva
+    // fluxo na vista externa; não representa o diâmetro físico da estrela.
+    {
+      const { data, count, stride } = assets.gaiaObProxyStars;
+      for (let i = 0; i < count; i++) {
+        const o = i * stride;
+        const magnitude = data[o + 5];
+        const confidence = data[o + 8];
+        const brightness = THREE.MathUtils.clamp(
+          (17 - magnitude) / 8,
+          0.2,
+          1
+        );
+        push(
+          data[o],
+          data[o + 1],
+          data[o + 2],
+          10 + brightness * 8,
+          TYPE_OB_PROXY,
+          (0.022 + brightness * 0.038) * confidence,
+          data[o + 9]
         );
       }
     }

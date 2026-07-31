@@ -233,6 +233,29 @@ function depositCepheids(target: SplatTarget, table: CatalogueTable) {
   }
 }
 
+function depositGaiaObProxy(target: SplatTarget, table: CatalogueTable) {
+  const { data, count, stride } = table;
+  for (let index = 0; index < count; index++) {
+    const offset = index * stride;
+    const sigmaDistancePc = Math.max(0, data[offset + 4]);
+    const magnitude = data[offset + 5];
+    const confidence = THREE.MathUtils.clamp(data[offset + 8], 0.05, 1);
+    const brightnessWeight = THREE.MathUtils.clamp(
+      (17 - magnitude) / 8,
+      0.22,
+      1
+    );
+    splatGaussian(
+      target,
+      data[offset],
+      data[offset + 1],
+      THREE.MathUtils.clamp(48 + sigmaDistancePc * 0.18, 48, 190),
+      brightnessWeight,
+      confidence
+    );
+  }
+}
+
 function discCoverageFraction(support: Float32Array) {
   const half = DUST_MAP_SIZE / 2;
   let covered = 0;
@@ -275,6 +298,7 @@ export function bakeGalacticStructureMap(
     depositMasers(youngTarget, assets.spiralAnchors);
     depositYoungClusters(youngTarget, assets.gaiaYoungClusters);
     depositCepheids(youngTarget, assets.gaiaYoungCepheids);
+    depositGaiaObProxy(youngTarget, assets.gaiaObProxyStars);
   }
 
   robustNormalize(gas);

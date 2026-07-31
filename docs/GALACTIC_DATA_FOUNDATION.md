@@ -41,16 +41,19 @@ Fontes:
 - [catálogo VizieR J/A+A/674/A37](https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A%2BA/674/A37)
 
 O VizieR publica os aglomerados, Cefeidas e mapas derivados, mas não a lista
-final completa das 579.577 estrelas OB. A seleção inicial reproduzível está em
-`scripts/data/queries/gaia-dr3-ob-hot-stars.sql`; para obter a amostra do paper
-ainda é obrigatório cruzá-la com:
+final completa das 579.577 estrelas OB. A consulta reproduzível em
+`scripts/data/queries/gaia-dr3-ob-hot-stars.sql` cruza Gaia DR3 com as
+distâncias fotogeométricas de Bailer-Jones, aplica `|Z| < 300 pc` e filtros
+astrométricos disponíveis no Archive. Ela materializa uma subamostra uniforme
+de 100.000 fontes para o browser, mas continua sendo **proxy**, não a amostra
+do paper, porque substitui:
 
-- distâncias fotogeométricas de Bailer-Jones;
 - `astrometric fidelity > 0.5`, de Rybizki et al.;
-- corte vertical `|Z| < 300 pc`.
+- a lista final e os detalhes de seleção não publicados no VizieR;
 
-Sem esses três passos, chamar o resultado de “amostra OB de Drimmel” seria
-incorreto.
+por `ruwe < 1,4`, `parallax_over_error > 5` e
+`visibility_periods_used >= 10`. Chamar o resultado de “amostra OB de
+Drimmel” seria incorreto.
 
 ## Ativos já materializados
 
@@ -66,6 +69,7 @@ dicionários categóricos ficam em `public/data/galaxy/manifest.json`.
 | `hii-regions.bin` | 1.413 | subconjunto WISE com distância adotada | 6.986 fontes sem distância não foram inventadas em 3D; classe e método foram preservados |
 | `gaia-young-clusters.bin` | 988 | aglomerados Gaia DR3 com `log10(age/yr) < 8` | distância por inversão da paralaxe mediana; usar erro relativo |
 | `gaia-young-cepheids.bin` | 2.806 | Cefeidas Gaia jovens com menos de 200 Myr | distância por módulo de distância; usar `sigmaDistance` |
+| `gaia-ob-proxy-stars.bin` | 100.000 | seleção proxy de estrelas quentes Gaia DR3 com distância fotogeométrica | não chamar de amostra Drimmel; preservar a pegada local, o erro de distância e os filtros no manifesto |
 
 Fontes dos dados:
 

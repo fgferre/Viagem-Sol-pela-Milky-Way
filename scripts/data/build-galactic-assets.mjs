@@ -13,13 +13,23 @@ import {
   heliocentricGalacticToProject,
   physicalRadiusPc,
 } from './lib/galactic.mjs';
+import { fetchGaiaTapTable } from './lib/gaia-tap.mjs';
 import { fetchVizierTable, numeric } from './lib/vizier.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const outputDirectory = path.join(rootDirectory, 'public', 'data', 'galaxy');
 const cacheDirectory = path.join(rootDirectory, '.cache', 'galaxy-data');
+const gaiaObQueryPath = path.join(
+  rootDirectory,
+  'scripts',
+  'data',
+  'queries',
+  'gaia-dr3-ob-hot-stars.sql'
+);
 const refresh = process.argv.includes('--refresh');
 const finiteOr = (value, fallback = 0) => (Number.isFinite(value) ? value : fallback);
+const clamp = (value, minimum, maximum) =>
+  Math.min(maximum, Math.max(minimum, value));
 
 const catalogDefinitions = {
   dustDensity: {
@@ -126,6 +136,38 @@ const catalogEntries = await Promise.all(
   })
 );
 const catalogs = Object.fromEntries(catalogEntries);
+const gaiaOb = await fetchGaiaTapTable({
+  queryPath: gaiaObQueryPath,
+  cacheName: 'gaia-dr3-ob-proxy-stars',
+  cacheDirectory,
+  refresh,
+  expectedColumns: [
+    'source_id',
+    'random_index',
+    'l',
+    'b',
+    'r_med_photogeo',
+    'r_lo_photogeo',
+    'r_hi_photogeo',
+    'phot_g_mean_mag',
+    'bp_rp',
+    'teff_gspphot',
+    'teff_esphs',
+    'ruwe',
+    'parallax_over_error',
+    'visibility_periods_used',
+  ],
+});
+if (gaiaOb.rows.length < 80_000) {
+  throw new Error(
+    `Gaia OB proxy retornou ${gaiaOb.rows.length} registros; ` +
+      'o gate mínimo é 80.000.'
+  );
+}
+console.log(
+  `Gaia DR3 OB proxy: ${gaiaOb.rows.length} registros ` +
+    `(${gaiaOb.fromCache ? 'cache' : 'rede'}).`
+);
 
 const negativeDustSamples = catalogs.dustDensity.filter(
   (row) => numeric(row, 'Density') < 0
@@ -306,6 +348,43 @@ const youngCepheidRecords = youngCepheidRows.map((row) => {
   ];
 });
 
+const gaiaObProxyRecords = gaiaOb.rows.map((row) => {
+  const distancePc = numeric(row, 'r_med_photogeo');
+  const lowerPc = numeric(row, 'r_lo_photogeo');
+  const upperPc = numeric(row, 'r_hi_photogeo');
+  const sigmaDistancePc = Math.max(
+    distancePc - lowerPc,
+    upperPc - distancePc,
+    0
+  );
+  const [x, y, z] = heliocentricGalacticToProject(
+    numeric(row, 'l'),
+    numeric(row, 'b'),
+    distancePc
+  );
+  const ruwe = numeric(row, 'ruwe');
+  const parallaxOverError = numeric(row, 'parallax_over_error');
+  const relativeDistanceError = sigmaDistancePc / distancePc;
+  const astrometricConfidence =
+    clamp((1.4 - ruwe) / 0.4, 0.2, 1) *
+    clamp(parallaxOverError / 20, 0.25, 1);
+  const temperature = Number.isFinite(numeric(row, 'teff_esphs'))
+    ? numeric(row, 'teff_esphs')
+    : numeric(row, 'teff_gspphot');
+  return [
+    x,
+    y,
+    z,
+    distancePc,
+    sigmaDistancePc,
+    numeric(row, 'phot_g_mean_mag'),
+    finiteOr(numeric(row, 'bp_rp')),
+    temperature,
+    astrometricConfidence / (1 + relativeDistanceError * 3),
+    numeric(row, 'random_index') / 650_000_000,
+  ];
+});
+
 await mkdir(outputDirectory, { recursive: true });
 const assets = {
   dustDensity: await writeFloat32Asset(
@@ -422,6 +501,23 @@ const assets = {
       'inferredMetallicityFlag',
     ]
   ),
+  gaiaObProxyStars: await writeFloat32Asset(
+    outputDirectory,
+    'gaia-ob-proxy-stars.bin',
+    gaiaObProxyRecords,
+    [
+      'xPc',
+      'yPc',
+      'zPc',
+      'heliocentricDistancePc',
+      'sigmaDistancePc',
+      'photGMeanMag',
+      'bpMinusRp',
+      'effectiveTemperatureK',
+      'astrometricConfidence',
+      'randomSeed',
+    ]
+  ),
 };
 
 const manifest = {
@@ -459,6 +555,11 @@ const manifest = {
     hiiRowsWithoutAdoptedDistance: catalogs.hiiRegions.length - hiiRecords.length,
     gaiaYoungClusterAgeCut: 'log10(age/yr) < 8',
     gaiaYoungCepheidAgeCut: 'log10(age/yr) < log10(200000000)',
+    gaiaObProxySelection:
+      'Drimmel hot-star cuts plus Bailer-Jones photogeometric distance, |Z| < 300 pc, RUWE < 1.4, parallax_over_error > 5, visibility_periods_used >= 10; uniform random_index subset, not the paper sample',
+    gaiaObProxyDistancePc: range(
+      gaiaObProxyRecords.map((record) => record[3])
+    ),
   },
   sources: [
     {
@@ -495,6 +596,17 @@ const manifest = {
       catalogue: 'J/A+A/674/A37',
       paper: 'https://doi.org/10.1051/0004-6361/202243797',
       vizier: 'https://cdsarc.cds.unistra.fr/viz-bin/cat/J/A%2BA/674/A37',
+    },
+    {
+      id: 'GaiaDr3ObProxy2026',
+      role:
+        'Reproducible proxy sample of hot stars; not the 579577-object Drimmel paper sample',
+      catalogue:
+        'gaiadr3.gaia_source + gaiadr3.astrophysical_parameters + external.gaiaedr3_distance',
+      query: 'scripts/data/queries/gaia-dr3-ob-hot-stars.sql',
+      archive: 'https://gea.esac.esa.int/archive/',
+      paper: 'https://doi.org/10.1051/0004-6361/202243797',
+      distancePaper: 'https://doi.org/10.3847/1538-3881/abd806',
     },
   ],
 };

@@ -62,6 +62,36 @@ for (const [assetName, asset] of Object.entries(manifest.assets)) {
   }
 }
 
+const gaiaObAsset = manifest.assets.gaiaObProxyStars;
+if (
+  !gaiaObAsset ||
+  gaiaObAsset.count < 80_000 ||
+  gaiaObAsset.strideFloat32 !== 10
+) {
+  throw new Error(
+    'Gaia OB proxy ausente, abaixo de 80.000 registros ou com stride inválido.'
+  );
+}
+const gaiaObBuffer = await readFile(
+  path.join(publicDirectory, gaiaObAsset.file)
+);
+for (
+  let offset = 0;
+  offset < gaiaObBuffer.byteLength;
+  offset += gaiaObAsset.strideFloat32 * 4
+) {
+  const zPc = gaiaObBuffer.readFloatLE(offset + 2 * 4);
+  const confidence = gaiaObBuffer.readFloatLE(offset + 8 * 4);
+  if (Math.abs(zPc - 5.5) >= 300.01) {
+    throw new Error(`Gaia OB proxy viola |Z| < 300 pc no byte ${offset}.`);
+  }
+  if (confidence < 0 || confidence > 1) {
+    throw new Error(
+      `Gaia OB proxy possui confiança fora de 0..1 no byte ${offset}.`
+    );
+  }
+}
+
 const spiralAnchorAsset = manifest.assets.spiralAnchors;
 const spiralAnchorBuffer = await readFile(
   path.join(publicDirectory, spiralAnchorAsset.file)

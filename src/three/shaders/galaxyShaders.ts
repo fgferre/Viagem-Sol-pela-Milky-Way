@@ -194,6 +194,7 @@ uniform sampler2D uDustMap;
 uniform sampler2D uStructureMap;
 uniform float uCartBlend;
 uniform float uInferenceGain;
+uniform float uBackgroundGain;
 varying vec2 vUv;
 
 ${GLSL_CARTOGRAPHY}
@@ -244,7 +245,7 @@ void main() {
   // varia por lâmina; sua primeira oitava ≈65–80 pc no bake 1024².
   float microNoise = fbm2(p * 220.0 - vec2(uSeed * 1.7, uSeed));
   float edge = 1.0 - smoothstep(0.84, 1.0, radius);
-  float disk = exp(-radius * 2.05) * edge;
+  float disk = exp(-radius * 1.5) * edge;
   float core = exp(-radius * radius * 44.0);
 
   // Barra de 5 kpc inclinada 29° em relação à linha Sol–centro.
@@ -271,34 +272,43 @@ void main() {
     structure.r * mix(uInferenceGain, 1.0, gasSupport);
   float youngResponse =
     structure.g * mix(uInferenceGain, 1.0, youngSupport);
+  // Gás denso pode sustentar formação estelar mesmo onde o catálogo jovem
+  // é incompleto. É resposta derivada, não uma nova “estrela observada”.
+  float formationResponse = max(
+    youngResponse,
+    gasResponse * (0.24 + gasSupport * 0.34)
+  );
   float clumps =
-    mix(0.54, 1.0, youngResponse) * mix(0.76, 1.0, microNoise);
+    mix(0.54, 1.0, formationResponse) * mix(0.76, 1.0, microNoise);
   // A população velha é quase lisa; os quatro braços visíveis são
   // principalmente gás e estrelas jovens, como nos mapas Gaia.
   float oldStellarArm = arms * 0.16 * uInferenceGain;
-  float armLight = oldStellarArm + youngResponse * 0.78;
+  float armLight = oldStellarArm + formationResponse * 0.78;
   armLight *= mix(1.0, 0.88 + obsLanes * 0.42, obsCoverage * 0.55);
 
   // O mapa já fez o split macro observado/inferido; a mesma microtextura
   // fina apenas resolve subestrutura. APOGEE refina a extinção local.
   float dustMacro = mix(gasResponse, max(gasResponse, obsLanes), obsCoverage);
-  float microDetail = mix(
-    0.62,
-    1.0,
-    smoothstep(0.50, 0.82, microNoise)
-  );
-  float absorption = 1.0 - dustMacro * microDetail * 0.78;
+  // O kernel amplo localiza o material; só a crista sub-resolvida fica
+  // opaca. Usar toda a gaussiana como absorção desenharia “furos” redondos.
+  float dustFilament = smoothstep(0.62, 0.84, microNoise);
+  float absorption =
+    1.0 - dustMacro * dustFilament * 0.42;
 
-  float stellarClouds = (0.036 + microNoise * 0.006) * uInferenceGain;
+  // O disco velho fornece o contínuo de massa/luz. Não desaparece entre
+  // braços e não copia a seleção local Gaia.
+  float stellarClouds =
+    (0.076 + microNoise * 0.02) * uBackgroundGain;
   float intensity =
-    disk * (stellarClouds + armLight * 0.235 * clumps);
-  intensity += (core * 0.112 + bar * 0.052) * uInferenceGain;
+    disk * (stellarClouds + armLight * 0.24 * clumps);
+  intensity +=
+    (core * 0.112 + bar * 0.052) * uBackgroundGain;
   intensity *= absorption * uLayerAlpha * uFade;
 
   vec3 cold = vec3(0.42, 0.51, 0.72);
   vec3 warm = vec3(0.92, 0.70, 0.52);
   vec3 color = mix(cold, warm, clamp(1.0 - radius * 0.78, 0.12, 0.92));
-  color = mix(color, vec3(0.68, 0.80, 1.0), youngResponse * 0.24);
+  color = mix(color, vec3(0.68, 0.80, 1.0), formationResponse * 0.24);
   color = mix(
     color,
     vec3(1.0, 0.72, 0.44),
@@ -307,13 +317,13 @@ void main() {
   color = mix(
     color,
     vec3(0.92, 0.22, 0.44),
-    youngResponse * smoothstep(0.80, 0.94, microNoise) * 0.18
+    formationResponse * smoothstep(0.80, 0.94, microNoise) * 0.18
   );
   // avermelhamento por extinção nas fendas medidas
   color = mix(
     color,
     color * vec3(1.10, 0.78, 0.55),
-    obsCoverage * obsLanes * 0.6
+    obsCoverage * obsLanes * dustFilament * 0.6
   );
 
   gl_FragColor = vec4(color * intensity, 1.0);

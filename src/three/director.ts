@@ -173,6 +173,7 @@ export class Director {
       buildGalaxy(
         20260730,
         {
+          gasResponse: structureBake.gasResponse,
           gasSupport: structureBake.gasSupport,
           youngResponse: structureBake.youngResponse,
           youngSupport: structureBake.youngSupport,
@@ -498,13 +499,15 @@ export class Director {
       this.hide.has('nomarker') ? 0 : markerFade,
       this.hide.has('nogal') ? 0 : localBandFade
     );
-    // camadas observacionais acompanham a galáxia: visíveis de fora e
-    // como estrutura da faixa quando ainda estamos dentro do disco
+    // Nuvens moleculares já entram integradas no structureMap da vista
+    // externa. Billboards 3D ficam só no disco, onde a paralaxe comunica
+    // profundidade; no zoom-out duplicavam o dado como buracos circulares.
+    // Traçadores estelares continuam visíveis em ambas as escalas.
     const cartHidden = this.hide.has('nocart') || this.hide.has('nogal');
     this.observedClouds?.update(
       hPx,
       tanHalfFov,
-      cartHidden ? 0 : Math.max(galaxyFade, localBandFade * 0.72)
+      cartHidden ? 0 : localBandFade * 0.72
     );
     this.starForges?.update(
       cam.position,

@@ -48,7 +48,7 @@ funciona sem configuração extra — os caminhos são relativos.
 | `public/data/stars.bin` | 18.543 estrelas do catálogo HYG com distância utilizável, em Float32 little-endian, stride 6: `x, y, z` (parsecs, coordenadas equatoriais heliocêntricas), `magnitude aparente`, `índice de cor B−V`, `log10(luminosidade)` |
 | `public/data/stars_meta.json` | metadados das ~90 estrelas nomeadas (hero stars) |
 | `public/data/galaxy/manifest.json` | contrato, proveniência, incertezas, schemas e hashes dos ativos cartográficos galácticos |
-| `public/data/galaxy/*.bin` | poeira APOGEE, nuvens moleculares CO, H II WISE, masers BeSSeL e traçadores jovens Gaia DR3 |
+| `public/data/galaxy/*.bin` | poeira APOGEE, nuvens moleculares CO, H II WISE, masers BeSSeL e traçadores jovens Gaia DR3, incluindo uma seleção proxy de 100 mil estrelas quentes |
 
 São carregados por `fetch` na inicialização. `stars.bin` é obrigatório e sua
 ausência abre a tela de erro. Falhas nos ativos galácticos emitem um aviso e

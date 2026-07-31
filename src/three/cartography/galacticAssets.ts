@@ -46,6 +46,8 @@ export interface GalacticAssets {
   gaiaYoungClusters: CatalogueTable;
   /** 2.806 Cefeidas jovens Gaia DR3 (stride 10). */
   gaiaYoungCepheids: CatalogueTable;
+  /** Amostra proxy de estrelas quentes Gaia DR3 (stride 10). */
+  gaiaObProxyStars: CatalogueTable;
 }
 
 const REQUIRED: Array<keyof GalacticAssets> = [
@@ -56,6 +58,7 @@ const REQUIRED: Array<keyof GalacticAssets> = [
   'hiiRegions',
   'gaiaYoungClusters',
   'gaiaYoungCepheids',
+  'gaiaObProxyStars',
 ];
 
 async function fetchTable(

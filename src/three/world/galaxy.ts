@@ -111,6 +111,7 @@ interface GalaxyBuffers {
 
 /** Campos CPU iguais aos usados no bake emissivo do disco. */
 interface StructureField {
+  gasResponse: Float32Array;
   gasSupport: Float32Array;
   youngResponse: Float32Array;
   youngSupport: Float32Array;
@@ -137,10 +138,20 @@ export function buildGalaxy(
   };
   const gasSupportAt = (lx: number, ly: number) =>
     sampleAt(structure?.gasSupport, lx, ly);
+  const gasResponseAt = (lx: number, ly: number) =>
+    sampleAt(structure?.gasResponse, lx, ly);
   const youngResponseAt = (lx: number, ly: number) =>
     sampleAt(structure?.youngResponse, lx, ly);
   const youngSupportAt = (lx: number, ly: number) =>
     sampleAt(structure?.youngSupport, lx, ly);
+  const effectiveYoungResponseAt = (lx: number, ly: number) => {
+    const support = youngSupportAt(lx, ly);
+    const gasSupport = gasSupportAt(lx, ly);
+    const young = youngResponseAt(lx, ly) * (0.55 + support * 0.45);
+    const gasDerived =
+      gasResponseAt(lx, ly) * (0.24 + gasSupport * 0.34);
+    return Math.max(young, gasDerived);
+  };
 
   const N_DISK = 170000;
   const N_BULGE = 85000;
@@ -217,7 +228,7 @@ export function buildGalaxy(
       cb = cb * 0.76 + arm.tint[2] * 0.24;
     }
     const dim = 0.35 + 0.65 * rnd() * rnd();
-    const youngResponse = youngResponseAt(lx, ly);
+    const youngResponse = effectiveYoungResponseAt(lx, ly);
     const armWeight = inArm
       ? arm.weight * (0.16 + youngResponse * 0.58)
       : 0.72;
@@ -258,7 +269,7 @@ export function buildGalaxy(
       4 + rnd() * 15,
       (0.045 + rnd() * 0.105) *
         LOCAL_ARM.weight *
-        (0.22 + youngResponseAt(lx, ly) * 0.72)
+        (0.22 + effectiveYoungResponseAt(lx, ly) * 0.72)
     );
   }
 
@@ -331,7 +342,7 @@ export function buildGalaxy(
     const lz =
       warpHeightPc(r, theta) + gauss(rnd) * (46 + flareAtRadius(r) * 105);
     const youngSupport = youngSupportAt(lx, ly);
-    const youngResponse = youngResponseAt(lx, ly);
+    const youngResponse = effectiveYoungResponseAt(lx, ly);
     const armWeight =
       (inLocalArm ? LOCAL_ARM.weight : arm.weight) *
       (1 - youngSupport * 0.92) *
@@ -649,7 +660,8 @@ export class Galaxy {
           uDustMap: { value: this.dustMap },
           uStructureMap: { value: this.structureMap },
           uCartBlend: { value: 1 },
-          uInferenceGain: { value: 1 },
+          uInferenceGain: { value: 0.55 },
+          uBackgroundGain: { value: 1 },
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -683,6 +695,10 @@ export class Galaxy {
       }
       if (material.uniforms.uInferenceGain) {
         material.uniforms.uInferenceGain.value =
+          mode === 'observed' ? 0.12 : 0.55;
+      }
+      if (material.uniforms.uBackgroundGain) {
+        material.uniforms.uBackgroundGain.value =
           mode === 'observed' ? 0.24 : 1;
       }
       material.uniforms.uLayerAlpha.value = this.discBaseAlphas[index];
