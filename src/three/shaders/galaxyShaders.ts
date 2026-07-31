@@ -202,10 +202,40 @@ precision highp float;
 uniform sampler2D uBaked;
 uniform float uFade;
 uniform float uLayerAlpha;
+/** |cos| entre a visada e a normal do disco — o openness do director */
+uniform float uMu;
 varying vec2 vUv;
 
 void main() {
-  gl_FragColor = vec4(texture2D(uBaked, vUv).rgb * uLayerAlpha * uFade, 1.0);
+  vec4 b = texture2D(uBaked, vUv);
+
+  // LEI DE COMPRIMENTO DE CAMINHO. Uma coluna vista a ângulo ψ da normal é
+  // atravessada por 1/|cos ψ| vezes mais matéria: τ = τ⊥/μ, e a emissão
+  // colhida cresce na mesma proporção.
+  //
+  //   L = Σ_j · F(τ⊥/μ) / μ ,  F(x) = (1 − e^−x)/x
+  //
+  // O 1/μ parece divergir e NÃO diverge: substituindo F, os dois μ se
+  // cancelam e sobra (1 − e^{−τ⊥/μ})/τ⊥, limitado por 1/τ⊥. É o
+  // comportamento certo dos dois lados — opticamente fino brilha como
+  // 1/cos (por isso uma galáxia de perfil é brilhante), opticamente
+  // espesso satura na função-fonte e para de crescer. Nenhum clamp
+  // artificial: a saturação sai da física.
+  //
+  // Escrito já cancelado, que além de mais barato evita o 0/0 em μ→0.
+  float mu = max(uMu, 1e-3);
+  float t0 = max(b.a, 1e-4);
+  float col = (1.0 - exp(-t0 / mu)) / t0;
+
+  // O matiz é a mesma coluna por banda (CCM89, R_V = 3,1), normalizado pela
+  // luminância para que só a COR venha daqui e o fluxo continue vindo de
+  // col. Sem isso a extinção cromática mexeria no perfil radial e a
+  // métrica atribuiria à geometria um efeito que é de cor.
+  vec3 tc = max((t0 / mu) * vec3(0.75, 1.0, 1.32), 1e-4);
+  vec3 fc = (1.0 - exp(-tc)) / tc;
+  vec3 hue = fc / dot(fc, vec3(0.2126, 0.7152, 0.0722));
+
+  gl_FragColor = vec4(b.rgb * hue * col * uLayerAlpha * uFade, 1.0);
 }
 `;
 
@@ -441,7 +471,6 @@ void main() {
   // escala honesto sobre uma resposta normalizada, não uma profundidade
   // óptica medida.
   float tau = dustMacro * dustFilament * 2.39;
-  float absorption = tau > 1e-4 ? (1.0 - exp(-tau)) / tau : 1.0 - 0.5 * tau;
 
   // O núcleo já satura em branco, então subir o bojo não mexe no perfil
   // normalizado — quem desce é o disco. E medido com ?nodisc=1: estas
@@ -460,7 +489,11 @@ void main() {
   // tem um núcleo pequeno e intenso que normaliza o resto para baixo.
   intensity +=
     (core * 0.53 + bar * 0.23) * uBackgroundGain * POP_LUMA_FIX;
-  intensity *= absorption * uLayerAlpha * uFade;
+  // A absorção NÃO entra aqui. Ela depende do ângulo da visada, e isto é
+  // bakeado — o bake não conhece a câmera. O que vai para a textura é a
+  // emissão da coluna (RGB) e a profundidade óptica PERPENDICULAR (A); o
+  // fragmento bakeado aplica a coluna com o comprimento de caminho certo.
+  intensity *= uLayerAlpha * uFade;
 
   // Curva de cor do alvo: (R−B)/(R+B) ≈ +0,35 no disco interno, ~0 em
   // 1,05·R90, negativa na borda. A nossa saía chapada em +0,15 porque o
@@ -497,24 +530,11 @@ void main() {
   // Y(warm)=0,739, um gradiente radial de 1,26× que não estava em modelo
   // nenhum de intensidade. Quem decide brilho é a intensity.
   color /= max(dot(color, vec3(0.2126, 0.7152, 0.0722)), 1e-5);
-  // Avermelhamento por extinção. Antes era uma TINTA pintada só onde o
-  // survey mediu fenda; agora é o que sobra de exp(-tau) com a lei CCM89
-  // (R_V=3,1, A_R/A_V=0,75 e A_B/A_V=1,32) — a mesma dos filamentos na
-  // linha 101. Dividir pela luminância mantém o fator com L=1: quem
-  // governa o fluxo continua sendo absorption, intocado, então m=1..6
-  // e discMean não enxergam esta linha. Só o matiz muda — e é ele que
-  // faz o não-obscurecido ler azul contra a fenda dourada.
-  // Mesma coluna, por banda. Antes esta linha tinha uma escala própria (1,6)
-  // enquanto a atenuação tinha outra (0,62): duas profundidades ópticas para
-  // a mesma poeira. Agora é o mesmo tau, com a lei CCM89 (R_V = 3,1) por
-  // canal, e a mesma função-fonte — não a transmissão de uma tela.
-  // Dividir pela luminância mantém o fator com L=1: quem governa o fluxo
-  // continua sendo absorption, então m=1..6 e discMean não enxergam esta
-  // linha. Só o matiz muda.
-  vec3 tauC = max(tau * vec3(0.75, 1.0, 1.32), 1e-4);
-  vec3 Fc = (1.0 - exp(-tauC)) / tauC;
-  color *= Fc / dot(Fc, vec3(0.2126, 0.7152, 0.0722));
-
-  gl_FragColor = vec4(color * intensity, 1.0);
+  // RGB = emissão da coluna, com L≡1 na cor. A = profundidade óptica
+  // PERPENDICULAR. O avermelhamento saiu daqui junto com a atenuação: os
+  // dois dependem do comprimento de caminho, e caminho depende da câmera,
+  // que o bake não conhece. Guardar τ é o que permite o fragmento bakeado
+  // reconstruir a coluna em qualquer ângulo com um exp() só.
+  gl_FragColor = vec4(color * intensity, tau);
 }
 `;

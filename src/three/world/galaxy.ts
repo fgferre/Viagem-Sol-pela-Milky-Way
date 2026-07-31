@@ -1036,6 +1036,7 @@ export class Galaxy {
           uFade: { value: savedFade },
           uLayerAlpha: { value: savedAlpha },
           uDiskRadius: { value: GAL.DISK_RADIUS },
+          uMu: { value: 1 },
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -1121,6 +1122,10 @@ export class Galaxy {
     const discVisible = discFade > 0.001 && this.showDisc;
     for (const material of this.discMats) {
       material.uniforms.uFade.value = discFade;
+      // openness É o μ da coluna: |cos| entre a visada e a normal do disco.
+      // Já estava calculado aqui para o ganho da poeira; a lâmina agora usa
+      // o mesmo número para o comprimento de caminho, sem termo novo.
+      if (material.uniforms.uMu) material.uniforms.uMu.value = openness;
     }
     for (const mesh of this.discMeshes) {
       mesh.visible = discVisible;

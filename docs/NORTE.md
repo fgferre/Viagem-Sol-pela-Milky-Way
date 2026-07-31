@@ -62,8 +62,13 @@ integrador:
 Estado: (b) **feito** (rodadas 02–07). De (c), a **ordenação** já entrou nas lâminas —
 `F(τ) = (1−e^−τ)/τ` no lugar de atenuação linear, com uma única profundidade óptica
 servindo fluxo e matiz (rodada 08, `harmonicError` abaixo de 0,10 pela primeira vez).
-Falta de (c): o `1/|μ|`, que é o que permitiria não apagar o disco de raspão, e a
-substituição dos 430 k sprites pelo quad único. Falta (a) inteiro: a calibração offline
+Também de (c), o **comprimento de caminho** entrou (rodada 09): a lâmina baka a
+profundidade óptica PERPENDICULAR no canal A e o fragmento reconstrói a coluna no ângulo da
+visada. Escrito já cancelado — `(1 − e^{−τ⊥/μ})/τ⊥` — porque os dois μ se anulam: fino
+brilha como 1/cos, espesso satura na função-fonte, sem clamp artificial. Medido: 2,19× em
+t=162, 1,75× em t=150, 1,00× de topo. Falta de (c): a substituição dos 430 k sprites pelo
+quad único — que é também o que resolveria as sete listras de raspão, um artefato de
+DISCRETIZAÇÃO que o 1/μ não toca (por isso o fade rasante continua lá). Falta (a) inteiro: a calibração offline
 que dá significado absoluto a κ — hoje o 2,39 é escala honesta sobre resposta normalizada,
 não profundidade óptica medida.
 
