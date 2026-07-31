@@ -420,8 +420,28 @@ void main() {
   // fbm isotrópico a absorção virava um chuvisco sem direção; agora
   // desenha faixas que acompanham e cruzam o braço, como no alvo.
   float dustFilament = smoothstep(0.46, 0.80, filament);
-  float absorption =
-    1.0 - dustMacro * dustFilament * 0.62;
+  // COLUNA FECHADA no lugar de atenuação linear.
+  //
+  // A lâmina não é uma folha fina: ela representa a coluna de disco atrás
+  // daquele pixel. Emissão e poeira compartilham o perfil vertical, então a
+  // integral ∫ j·e^{−τ(z)} dz fecha em j·(1−e^{−τ})/τ, e a forma do perfil e
+  // a altura de escala CANCELAM — é por isso que as três alturas
+  // incompatíveis do projeto (70–260 / 95 / 150 pc) deixam de ser
+  // contradição aqui.
+  //
+  // O ganho não é brilho, é ORDENAÇÃO. 1 − k·d é ⟨j⟩·⟨T⟩: emissão média
+  // vezes transmissão média. A coluna é ⟨j·T⟩, que não é a mesma coisa —
+  // a poeira na FRENTE apaga o que está atrás dela, a poeira ATRÁS não apaga
+  // nada. É essa assimetria que faz a fenda ler como silhueta em vez de véu.
+  //
+  // 2,39 é o τ que reproduz exatamente a atenuação de pico anterior (0,38),
+  // para que esta mudança seja de FORMA e não de nível. A âncora física —
+  // A_V = 1,5 mag/kpc dá τ_⊥ = 0,2455 no Sol — é o alvo da calibração
+  // offline que ainda falta; enquanto ela não existe, este é um fator de
+  // escala honesto sobre uma resposta normalizada, não uma profundidade
+  // óptica medida.
+  float tau = dustMacro * dustFilament * 2.39;
+  float absorption = tau > 1e-4 ? (1.0 - exp(-tau)) / tau : 1.0 - 0.5 * tau;
 
   // O núcleo já satura em branco, então subir o bojo não mexe no perfil
   // normalizado — quem desce é o disco. E medido com ?nodisc=1: estas
@@ -484,8 +504,16 @@ void main() {
   // governa o fluxo continua sendo absorption, intocado, então m=1..6
   // e discMean não enxergam esta linha. Só o matiz muda — e é ele que
   // faz o não-obscurecido ler azul contra a fenda dourada.
-  vec3 trans = exp(-(dustMacro * dustFilament * 1.6) * vec3(0.75, 1.0, 1.32));
-  color *= trans / dot(trans, vec3(0.2126, 0.7152, 0.0722));
+  // Mesma coluna, por banda. Antes esta linha tinha uma escala própria (1,6)
+  // enquanto a atenuação tinha outra (0,62): duas profundidades ópticas para
+  // a mesma poeira. Agora é o mesmo tau, com a lei CCM89 (R_V = 3,1) por
+  // canal, e a mesma função-fonte — não a transmissão de uma tela.
+  // Dividir pela luminância mantém o fator com L=1: quem governa o fluxo
+  // continua sendo absorption, então m=1..6 e discMean não enxergam esta
+  // linha. Só o matiz muda.
+  vec3 tauC = max(tau * vec3(0.75, 1.0, 1.32), 1e-4);
+  vec3 Fc = (1.0 - exp(-tauC)) / tauC;
+  color *= Fc / dot(Fc, vec3(0.2126, 0.7152, 0.0722));
 
   gl_FragColor = vec4(color * intensity, 1.0);
 }

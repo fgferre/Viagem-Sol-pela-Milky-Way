@@ -59,6 +59,14 @@ integrador:
 | (b) Σ_j como soma de populações | ~25 linhas em `galaxyShaders.ts` + `galaxy.ts` | **todo o gap de cor** |
 | (c) o operador de coluna | shader de ~40 linhas num quad | ordenação ⟨j·T⟩, silhueta da fenda, 1/μ, e apaga os sprites |
 
+Estado: (b) **feito** (rodadas 02–07). De (c), a **ordenação** já entrou nas lâminas —
+`F(τ) = (1−e^−τ)/τ` no lugar de atenuação linear, com uma única profundidade óptica
+servindo fluxo e matiz (rodada 08, `harmonicError` abaixo de 0,10 pela primeira vez).
+Falta de (c): o `1/|μ|`, que é o que permitiria não apagar o disco de raspão, e a
+substituição dos 430 k sprites pelo quad único. Falta (a) inteiro: a calibração offline
+que dá significado absoluto a κ — hoje o 2,39 é escala honesta sobre resposta normalizada,
+não profundidade óptica medida.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.
