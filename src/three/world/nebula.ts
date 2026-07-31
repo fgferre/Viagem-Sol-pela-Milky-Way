@@ -16,8 +16,8 @@ export class Nebula {
   private camera = new THREE.OrthographicCamera();
   private material: THREE.ShaderMaterial;
   private scale: number;
-  // LUT equiretangular da luz distante do disco (1 render/frame,
-  // 256×128 — substitui ~20 passos pesados POR PIXEL do raymarch)
+  // LUT equiretangular 256×128 da luz distante do disco; recalcula
+  // somente após a câmera mover >2 pc.
   private lutRT: THREE.WebGLRenderTarget;
   private lutScene = new THREE.Scene();
   private lutMaterial: THREE.ShaderMaterial;

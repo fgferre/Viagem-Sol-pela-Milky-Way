@@ -7,7 +7,7 @@
 // ============================================================
 import * as THREE from 'three';
 
-export interface Keyframe {
+interface Keyframe {
   t: number; // segundos
   pos: [number, number, number];
   look: [number, number, number];
@@ -19,7 +19,7 @@ export interface Keyframe {
 // Posições (pc) usam as coordenadas reais do catálogo:
 // Sirius (-0.49, 2.48, -0.76) · Bellatrix (11.66, 76.04, 8.56)
 // Betelgeuse (3.19, 151.36, 19.68) · Rigel (51.60, 256.71, -37.74)
-export const KEYFRAMES: Keyframe[] = [
+const KEYFRAMES: Keyframe[] = [
   { t: 0, pos: [0.045, 0.024, 0.105], look: [0, 0, 0], fov: 58, caption: 'SOL', sub: 'anã amarela G2V · a nossa estrela' },
   { t: 11, pos: [0.12, 0.07, 0.18], look: [0, 0, 0], fov: 57, caption: 'SOL', sub: 'fotosfera · 5.500 °C' },
   { t: 20, pos: [0.55, 0.85, -0.25], look: [-0.494, 2.477, -0.758], fov: 58, caption: 'PARTIDA', sub: 'deixando o sistema solar' },
@@ -41,9 +41,9 @@ export const KEYFRAMES: Keyframe[] = [
   { t: 182, pos: [-11429, -7864, 29651], look: [-442, -7117, -3946], fov: 55, caption: 'CASA', sub: 'o Sol, na borda interna do braço Local' },
 ];
 
-export const JOURNEY_DURATION = 194;
+const JOURNEY_DURATION = 194;
 
-export interface JourneySample {
+interface JourneySample {
   pos: THREE.Vector3;
   look: THREE.Vector3;
   fov: number;

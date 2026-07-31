@@ -50,6 +50,21 @@ na carga, via `galactocentricToScene()` (`world/galaxy.ts`), a mesma base
 `EX/EY/EZ` do gerador procedural. O bake da poeira permanece galactocêntrico
 porque o disco emissivo e o raymarch já trabalham nesse plano.
 
+## Braços ancorados pelos masers BeSSeL
+
+As fases do preenchimento inferido são ajustadas offline contra 146 regiões de
+formação estelar com erro relativo de paralaxe `< 0,2`. Pitches, larguras e
+janelas radiais permanecem os do contrato Reid; nenhuma posição catalogada é
+movida. A continuação Outer recebe uma fase própria porque não há suporte
+observacional no hiato que a separa da Norma interna.
+
+`src/three/cartography/spiralModel.json` é a fonte única das constantes usadas
+por partículas, bake e GLSL. `npm run data:fit` reproduz o ajuste robusto
+ponderado pela incerteza; `npm run data:verify` barra regressões acima de
+350 pc de residual mediano, 1 kpc no p90 ou menos de 70 âncoras dentro de uma
+largura de braço. O marco atual mede 307,7 pc de mediana e 870,8 pc no p90
+(antes: 1,039 kpc e 2,326 kpc).
+
 ## Falha graciosa e debug
 
 - Sem `manifest.json` ou binário corrompido → aviso no console e cena
@@ -99,8 +114,8 @@ no disco externo.
 ## Otimizações estruturais (sem perda de qualidade)
 
 - **LUT da faixa**: a integração distante do disco depende só de (posição,
-  direção) — roda 1×/frame num RT equirect 256×128 com 24 passos (mais que
-  os 10–20 antigos) e vira 1 fetch por pixel do raymarch.
+  direção) — usa um RT equirect 256×128 com 24 passos e só é recalculada
+  quando a câmera se move mais de 2 pc; o raymarch faz 1 fetch por pixel.
 - **Braços/warp bakeados** nos canais B/A do dust map (espelhos TS exatos
   em `galacticModel.ts`): o envelope de gás custa 1 fetch + 2 exp por
   amostra em vez de ~40 transcendentais.
@@ -113,21 +128,15 @@ no disco externo.
   pagam o envelope galactocêntrico.
 - Perfil vertical do gás: gaussiano fino (σ 70→260 pc) — fino como o gás
   molecular real, plano perto do plano (preserva o corredor local).
-- Rótulos re-projetados TODO frame (10 Hz "nadava" contra as estrelas).
+- Rótulos re-projetados a cada frame (a atualização a 10 Hz os fazia
+  "nadar" contra as estrelas).
 
-Rodada de auditoria multi-agente (2026-07-30, relatórios em
-`docs/audits/`): gate espacial nos 7 núcleos do raymarch (~80% do custo
-medido em t=0/85), lâminas do disco BAKEADAS em texturas no init
-(conteúdo estático), LUT da faixa só quando a câmera move >2 pc,
-auto-quality com recuperação relativa ao refresh, extinção pulada em
-estrelas subpixel, film pass movido para DEPOIS do OutputPass (grão/
-vinheta/lift em display space), hash de grão sem banding, damping de
-câmera por dt, pausa+scrub, `?shot=1` com tempo visual congelado.
+## Deferido
 
-**Deferido (próximas rodadas, achados Codex):** fit BeSSeL das fases dos
-braços (residual mediano 1,04 kpc → 0,32 kpc possível), fotometria HYG
-com luminosidade intrínseca (`logLum` hoje descartado), macro/micro
-split completo da poeira procedural.
+- Fotometria HYG relocável baseada em `logLum`, com extinção diferencial em
+  relação ao observador solar.
+- Separação completa entre macroestrutura de poeira condicionada pelos dados e
+  microtextura procedural de alta frequência.
 
 ## Orçamento
 

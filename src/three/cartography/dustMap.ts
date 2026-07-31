@@ -68,7 +68,7 @@ function boxBlurInPlace(field: Float32Array, size: number, radius: number) {
  * Núcleo puro do bake (testável sem WebGL): retorna os canais
  * densidade (0..1) e cobertura (0..1) num grid size×size.
  */
-export function bakeDustChannels(
+function bakeDustChannels(
   table: CatalogueTable,
   size = DUST_MAP_SIZE,
   halfExtent = DUST_MAP_HALF_EXTENT

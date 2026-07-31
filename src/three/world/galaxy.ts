@@ -78,7 +78,7 @@ const SGR_DIR = EX.clone()
   .addScaledVector(EY, -Math.cos(SGR_B) * Math.sin(SGR_L))
   .addScaledVector(EZ, Math.sin(SGR_B))
   .normalize();
-export const SGR_DWARF_POS = SGR_DIR.clone().multiplyScalar(26_000);
+const SGR_DWARF_POS = SGR_DIR.clone().multiplyScalar(26_000);
 
 function localToWorld(lx: number, ly: number, lz: number, out: Float32Array, o: number) {
   out[o] = GAL.GC_POS.x + EX.x * lx + EY.x * ly + EZ.x * lz;
@@ -102,7 +102,7 @@ function gauss(rnd: () => number) {
   return (rnd() + rnd() + rnd() - 1.5) * 0.8165; // ~N(0, 1/2²) prático
 }
 
-export interface GalaxyBuffers {
+interface GalaxyBuffers {
   bright: Float32Array; // stride 8: x,y,z,r,g,b,size,alpha
   brightCount: number;
   dust: Float32Array; // stride 8
@@ -110,7 +110,7 @@ export interface GalaxyBuffers {
 }
 
 /** amostrador de cobertura observacional (canal G do dust map) */
-export interface CoverageField {
+interface CoverageField {
   data: Float32Array;
   size: number;
   halfExtentPc: number;

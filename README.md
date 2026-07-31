@@ -50,8 +50,9 @@ funciona sem configuração extra — os caminhos são relativos.
 | `public/data/galaxy/manifest.json` | contrato, proveniência, incertezas, schemas e hashes dos ativos cartográficos galácticos |
 | `public/data/galaxy/*.bin` | poeira APOGEE, nuvens moleculares CO, H II WISE, masers BeSSeL e traçadores jovens Gaia DR3 |
 
-São carregados por `fetch` na inicialização. **Se faltarem, o app fica preso na
-tela “cartografando…”** — verifique o console do navegador por erros de fetch.
+São carregados por `fetch` na inicialização. `stars.bin` é obrigatório e sua
+ausência abre a tela de erro. Falhas nos ativos galácticos emitem um aviso e
+mantêm a cena com o preenchimento procedural.
 
 ## 5. Arquitetura (mapa para navegar o código)
 
@@ -63,10 +64,12 @@ src/
 ├─ three/
 │  ├─ director.ts           ORQUESTRADOR: instancia mundos, crossfades por distância, loop principal
 │  ├─ cartography/
-│  │  └─ galacticModel.ts   contrato único: braços, Local, barra, warp, flare e constantes GLSL
+│  │  ├─ galacticModel.ts   contrato único: braços, Local, barra, warp, flare e constantes GLSL
+│  │  ├─ galacticAssets.ts  carrega e valida o manifesto e os binários observacionais
+│  │  └─ dustMap.ts         bake da poeira APOGEE e da cobertura observacional
 │  ├─ core/
 │  │  ├─ engine.ts          renderer WebGL2, câmera, clip planes dinâmicos (updateClip)
-│  │  └─ post.ts            EffectComposer: UnrealBloomPass + aberracão cromática/vinheta (setWarp, setGalaxy)
+│  │  └─ post.ts            compositor: bloom, output e acabamento em display space
 │  ├─ world/
 │  │  ├─ sun.ts             o Sol (perto da câmera no início)
 │  │  ├─ stars.ts           catálogo HYG (point sprites com conservação de fluxo)
@@ -74,6 +77,9 @@ src/
 │  │  ├─ nebula.ts          gás local + integração volumétrica do disco galáctico
 │  │  ├─ dust.ts            poeira local
 │  │  ├─ galaxy.ts          A VIA LÁCTEA: ~380k partículas (disco, barra/bojo, HII, halo, poeira, Sgr dSph)
+│  │  ├─ observedClouds.ts   nuvens moleculares observadas
+│  │  ├─ starForges.ts       H II, masers, aglomerados e Cefeidas observados
+│  │  ├─ wrappedStars.ts     campo estelar inferido e relocável dentro do disco
 │  │  └─ labels.ts          rótulos projetados (vira “SOL” quando dHome > 2000 pc)
 │  ├─ cinematic/
 │  │  ├─ journey.ts         keyframes da viagem (atos I–III, JOURNEY_DURATION = 194s)
@@ -92,7 +98,7 @@ não uma das quatro famílias principais.
 
 | Camada | Parâmetros usados |
 |---|---|
-| braços | quatro famílias, pitches locais 7–20°, kinks, largura `w(R)=336+36(R[kpc]−8,15)` pc e alcance radial por segmento |
+| braços | quatro famílias, pitches locais 7–20°, fases ajustadas em 146 masers BeSSeL, kinks, largura `w(R)=336+36(R[kpc]−8,15)` pc e alcance radial por segmento |
 | lado distante | continuação procedural mais aberta e menos contrastada; não é apresentada como medição direta da Gaia |
 | disco | raio de 16,8 kpc, escala exponencial 2,6 kpc, flare externo e warp senoidal de até ~820 pc |
 | barra/bojo | barra de 5 kpc inclinada 29°, componente box/peanut e bojo central |
@@ -104,12 +110,12 @@ não fotografias externas nem uma nuvem de pontos completa da galáxia. Por isso
 o modelo combina restrições observacionais no nosso lado com síntese procedural
 no lado oculto, mantendo os braços distantes deliberadamente mais suaves.
 
-Os novos ativos de `public/data/galaxy/` são a fundação observacional para
-substituir a distribuição procedural uniforme de nuvens. Eles estão
-deliberadamente **desacoplados do renderer nesta etapa**: o próximo plano deve
-definir estruturas espaciais, LOD, streaming e amostragem volumétrica sem
-misturar medições e preenchimento inferido. O contrato completo está em
-[`docs/GALACTIC_DATA_FOUNDATION.md`](docs/GALACTIC_DATA_FOUNDATION.md).
+Os ativos de `public/data/galaxy/` já alimentam a textura de poeira, as nuvens
+moleculares e os traçadores jovens. Posições observadas não são deslocadas; o
+preenchimento inferido cede conforme a cobertura dos catálogos. O contrato dos
+dados está em [`docs/GALACTIC_DATA_FOUNDATION.md`](docs/GALACTIC_DATA_FOUNDATION.md)
+e sua implementação em
+[`docs/RENDERER_CARTOGRAPHY.md`](docs/RENDERER_CARTOGRAPHY.md).
 
 Fontes primárias usadas no contrato:
 
@@ -124,9 +130,10 @@ Fontes primárias usadas no contrato:
 
 ```bash
 npm run data:galaxy          # usa cache local; -- --refresh força nova consulta
+npm run data:fit             # reajusta as fases dos braços às âncoras BeSSeL
 npm run data:sanitize-stars  # idempotente; exclui sentinelas HYG a 100 kpc
-npm run data:verify          # confere stride, tamanho, Float32 finitos e SHA-256
-npm run data:all             # executa as três etapas acima
+npm run data:verify          # confere binários, hashes e o residual dos braços
+npm run data:all             # executa saneamento, ativos, fit e verificação
 ```
 
 As respostas TSV ficam em `.cache/galaxy-data/` e não são versionadas. Os

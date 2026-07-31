@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { STAR_VERT, STAR_FRAG } from '../shaders/starShaders';
 
-export interface StarFieldOptions {
+interface StarFieldOptions {
   pointScale?: number;
   tau?: number; // coeficiente de extinção
   maxPx?: number;

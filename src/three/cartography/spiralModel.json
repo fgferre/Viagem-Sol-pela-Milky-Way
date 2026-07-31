@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "Reid2019",
+    "catalogue": "J/ApJ/885/131",
+    "paper": "https://doi.org/10.3847/1538-4357/ab4a11"
+  },
+  "selection": {
+    "maxRelativeParallaxError": 0.2,
+    "uncertaintyFloor": 0.05,
+    "huberK": 1.5
+  },
+  "arms": [
+    {
+      "id": "perseus",
+      "phaseAtSunRad": -1.365089,
+      "pitchInnerDeg": 10.3,
+      "pitchOuterDeg": 8.7,
+      "weight": 0.86,
+      "minRadiusPc": 6200,
+      "maxRadiusPc": 16200,
+      "tint": [
+        0.68,
+        0.79,
+        1
+      ],
+      "catalogueCodes": [
+        "Per"
+      ],
+      "fitRangePc": [
+        5500,
+        16800
+      ],
+      "gate": {
+        "risePc": [
+          5500,
+          6900
+        ],
+        "fallPc": [
+          15500,
+          16800
+        ]
+      }
+    },
+    {
+      "id": "sagittarius-carina",
+      "phaseAtSunRad": 0.406792,
+      "pitchInnerDeg": 17.1,
+      "pitchOuterDeg": 10.1,
+      "weight": 0.76,
+      "minRadiusPc": 4200,
+      "maxRadiusPc": 13300,
+      "tint": [
+        0.78,
+        0.76,
+        1
+      ],
+      "catalogueCodes": [
+        "SgF",
+        "SgN"
+      ],
+      "fitRangePc": [
+        3500,
+        14000
+      ],
+      "gate": {
+        "risePc": [
+          3500,
+          4900
+        ],
+        "fallPc": [
+          12600,
+          14000
+        ]
+      }
+    },
+    {
+      "id": "scutum-centaurus",
+      "phaseAtSunRad": 1.617258,
+      "pitchInnerDeg": 14.1,
+      "pitchOuterDeg": 12.1,
+      "weight": 0.82,
+      "minRadiusPc": 2700,
+      "maxRadiusPc": 10600,
+      "tint": [
+        0.72,
+        0.82,
+        1
+      ],
+      "catalogueCodes": [
+        "ScF",
+        "ScN"
+      ],
+      "fitRangePc": [
+        2000,
+        11300
+      ],
+      "gate": {
+        "risePc": [
+          2000,
+          3400
+        ],
+        "fallPc": [
+          9900,
+          11300
+        ]
+      }
+    },
+    {
+      "id": "norma-outer",
+      "phaseAtSunRad": 1.41428,
+      "pitchInnerDeg": 19.5,
+      "pitchOuterDeg": 9.4,
+      "weight": 0.72,
+      "minRadiusPc": 2200,
+      "maxRadiusPc": 7700,
+      "tint": [
+        0.63,
+        0.74,
+        1
+      ],
+      "catalogueCodes": [
+        "Nor"
+      ],
+      "fitRangePc": [
+        1600,
+        8400
+      ],
+      "gate": {
+        "risePc": [
+          1600,
+          2900
+        ],
+        "fallPc": [
+          7000,
+          8400
+        ]
+      },
+      "outerContinuation": {
+        "phaseAtSunRad": -1.942969,
+        "weight": 0.42,
+        "catalogueCodes": [
+          "Out",
+          "OSC"
+        ],
+        "fitRangePc": [
+          10300,
+          16800
+        ],
+        "gate": {
+          "risePc": [
+            10300,
+            11800
+          ],
+          "fallPc": [
+            15900,
+            16800
+          ]
+        }
+      }
+    }
+  ],
+  "localArm": {
+    "id": "local",
+    "phaseAtSunRad": -0.233808,
+    "pitchInnerDeg": 11.4,
+    "pitchOuterDeg": 11.4,
+    "weight": 0.72,
+    "minRadiusPc": 7450,
+    "maxRadiusPc": 9650,
+    "catalogueCodes": [
+      "Loc"
+    ],
+    "fitRangePc": [
+      7450,
+      9650
+    ],
+    "gate": {
+      "risePc": [
+        7450,
+        7850
+      ],
+      "fallPc": [
+        9250,
+        9650
+      ]
+    }
+  },
+  "gate": {
+    "expectedSampleCount": 146,
+    "maxMedianResidualPc": 350,
+    "maxP90ResidualPc": 1000,
+    "minWithinOneWidth": 70
+  },
+  "lastFit": {
+    "sampleCount": 146,
+    "medianResidualPc": 307.7,
+    "p90ResidualPc": 870.8,
+    "withinOneWidth": 76
+  }
+}

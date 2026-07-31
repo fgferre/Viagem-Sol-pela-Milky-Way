@@ -14,11 +14,10 @@ A cena deve, portanto, manter duas camadas que nunca sejam confundidas:
    amostragem, condicionada pelos dados observados e identificada no código como
    tal.
 
-O renderer atual ainda produz o disco, os braços e as nuvens distantes
-proceduralmente. Os ativos desta etapa foram preparados e verificados, mas não
-foram ligados ao shader ou ao roteiro de câmera. Isso evita solidificar uma
-estratégia de render antes de decidir LOD, streaming e representação
-volumétrica.
+O renderer combina as duas camadas: a poeira APOGEE condiciona o campo
+volumétrico, e nuvens CO, H II, masers, aglomerados e Cefeidas entram em suas
+posições catalogadas. O preenchimento procedural permanece apenas onde falta
+cobertura. A implementação está documentada em `RENDERER_CARTOGRAPHY.md`.
 
 ## O que a imagem Gaia/ESA realmente contém
 
@@ -92,10 +91,8 @@ O sinal de `Y` torna a base dextrógira e corresponde a `EX/EY/EZ` em
 inferida pelo nome da coluna.
 
 As escalas e a posição solar correspondem ao contrato de
-`src/three/cartography/galacticModel.ts`.
-Quando os ativos entrarem no renderer, a conversão para a base equatorial da
-cena deve ocorrer uma vez no upload/streaming, nunca de maneira divergente em
-cada shader.
+`src/three/cartography/galacticModel.ts`. A conversão para a base equatorial da
+cena ocorre uma vez na carga, por `galactocentricToScene()`.
 
 ## Auditoria do HYG atual
 
@@ -144,21 +141,11 @@ resolver a ambiguidade cinemática criaria falsa cartografia.
 - [CfA — Composite CO Survey](https://lweb.cfa.harvard.edu/rtdc/CO/CompositeSurveys/)
 - [NASA LAMBDA — HI4PI](https://lambda.gsfc.nasa.gov/product/foreground/fg_hi4pi_info.html)
 
-## Contrato obrigatório para o próximo plano
+## Contrato permanente
 
-O plano de renderização deve:
-
-1. tratar o mapa APOGEE como um campo amostrado esparso, não como 196 mil
-   billboards;
-2. criar uma representação espacial paginada (por exemplo, bricks/tiles
-   galactocêntricos) com LOD e orçamento explícito de GPU;
-3. usar nuvens CO, H II, Cefeidas, aglomerados e masers como condicionadores e
-   pontos de validação;
-4. carregar alta resolução local apenas perto da câmera;
-5. marcar cada contribuição como `observed`, `derived` ou `inferred`;
-6. manter densidade, brilho e cor fisicamente separáveis para que a direção de
-   arte não destrua a cartografia;
-7. incluir testes de transformação de coordenadas, contagens, hashes,
-   continuidade entre LODs e orçamento de frame;
-8. não alterar roteiro de câmera, magnitudes estelares ou geração procedural de
-   objetos próximos nesta fase.
+1. posições observadas nunca são deslocadas por direção de arte;
+2. preenchimento `inferred` cede onde existe cobertura `observed` ou `derived`;
+3. coordenadas são convertidas uma vez na carga;
+4. dados ausentes degradam para o renderer procedural sem quebrar a viagem;
+5. qualquer alteração de ativo atualiza schema, proveniência e hash no
+   `manifest.json` e passa por `npm run data:verify`.

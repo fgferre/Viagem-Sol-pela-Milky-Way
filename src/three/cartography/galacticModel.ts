@@ -10,6 +10,7 @@
 // - Reid et al. 2019: https://arxiv.org/abs/1910.03357
 // - Wegg et al. 2015 (barra): https://arxiv.org/abs/1504.01401
 // ============================================================
+import spiralModel from './spiralModel.json';
 
 export const GALACTIC_MODEL = {
   sunRadiusPc: 8_150,
@@ -23,7 +24,7 @@ export const GALACTIC_MODEL = {
   warpPhaseRad: (5 * Math.PI) / 180,
 } as const;
 
-export interface SpiralArmDefinition {
+interface SpiralArmDefinition {
   readonly id: 'perseus' | 'sagittarius-carina' | 'scutum-centaurus' | 'norma-outer';
   readonly phaseAtSunRad: number;
   readonly pitchInnerDeg: number;
@@ -32,65 +33,58 @@ export interface SpiralArmDefinition {
   readonly minRadiusPc: number;
   readonly maxRadiusPc: number;
   readonly tint: readonly [number, number, number];
+  readonly gate: {
+    readonly risePc: readonly number[];
+    readonly fallPc: readonly number[];
+  };
+  readonly outerContinuation?: {
+    readonly phaseAtSunRad: number;
+    readonly weight: number;
+    readonly gate: {
+      readonly risePc: readonly number[];
+      readonly fallPc: readonly number[];
+    };
+  };
 }
 
 /**
- * Quatro famílias principais. As fases põem o Sol entre Sagittarius-Carina
- * e Perseus; pitches individuais ficam dentro do intervalo observado
- * (~7–20°) e mudam no raio solar para introduzir os "kinks" medidos.
+ * Quatro famílias principais. Pitches e janelas seguem Reid et al.; as fases
+ * vêm do fit robusto versionado em spiralModel.json. Norma e a continuação
+ * Outer têm fases independentes porque não há suporte observado no hiato entre
+ * os dois segmentos — esse kink evita forçar uma espiral fictícia pelos dados.
  */
-export const SPIRAL_ARMS: readonly SpiralArmDefinition[] = [
-  {
-    id: 'perseus',
-    phaseAtSunRad: -0.52,
-    pitchInnerDeg: 10.3,
-    pitchOuterDeg: 8.7,
-    weight: 0.86,
-    minRadiusPc: 6_200,
-    maxRadiusPc: 16_200,
-    tint: [0.68, 0.79, 1.0],
-  },
-  {
-    id: 'sagittarius-carina',
-    phaseAtSunRad: 1.02,
-    pitchInnerDeg: 17.1,
-    pitchOuterDeg: 10.1,
-    weight: 0.76,
-    minRadiusPc: 4_200,
-    maxRadiusPc: 13_300,
-    tint: [0.78, 0.76, 1.0],
-  },
-  {
-    id: 'scutum-centaurus',
-    phaseAtSunRad: 2.64,
-    pitchInnerDeg: 14.1,
-    pitchOuterDeg: 12.1,
-    weight: 0.82,
-    minRadiusPc: 2_700,
-    maxRadiusPc: 10_600,
-    tint: [0.72, 0.82, 1.0],
-  },
-  {
-    id: 'norma-outer',
-    phaseAtSunRad: -2.15,
-    pitchInnerDeg: 19.5,
-    pitchOuterDeg: 9.4,
-    weight: 0.72,
-    minRadiusPc: 2_200,
-    maxRadiusPc: 7_700,
-    tint: [0.63, 0.74, 1.0],
-  },
-] as const;
+export const SPIRAL_ARMS: readonly SpiralArmDefinition[] =
+  spiralModel.arms.map((arm) => ({
+    id: arm.id as SpiralArmDefinition['id'],
+    phaseAtSunRad: arm.phaseAtSunRad,
+    pitchInnerDeg: arm.pitchInnerDeg,
+    pitchOuterDeg: arm.pitchOuterDeg,
+    weight: arm.weight,
+    minRadiusPc: arm.minRadiusPc,
+    maxRadiusPc: arm.maxRadiusPc,
+    tint: arm.tint as [number, number, number],
+    gate: arm.gate,
+    outerContinuation: arm.outerContinuation,
+  }));
 
 export const LOCAL_ARM = {
-  phaseAtSunRad: 0.035,
-  pitchDeg: 11.4,
-  minRadiusPc: 7_450,
-  maxRadiusPc: 9_650,
-  weight: 0.72,
+  phaseAtSunRad: spiralModel.localArm.phaseAtSunRad,
+  pitchDeg: spiralModel.localArm.pitchInnerDeg,
+  minRadiusPc: spiralModel.localArm.minRadiusPc,
+  maxRadiusPc: spiralModel.localArm.maxRadiusPc,
+  weight: spiralModel.localArm.weight,
+  gate: spiralModel.localArm.gate,
 } as const;
 
+function armPhaseAtRadius(radiusPc: number, arm: SpiralArmDefinition) {
+  const outer = arm.outerContinuation;
+  return outer && radiusPc >= outer.gate.risePc[0]
+    ? outer.phaseAtSunRad
+    : arm.phaseAtSunRad;
+}
+
 export function armThetaAtRadius(radiusPc: number, arm: SpiralArmDefinition) {
+  const phaseAtSunRad = armPhaseAtRadius(radiusPc, arm);
   const observedPitchDeg =
     radiusPc < GALACTIC_MODEL.sunRadiusPc ? arm.pitchInnerDeg : arm.pitchOuterDeg;
   // Gaia ainda não cartografou o lado oculto com a mesma precisão.
@@ -101,26 +95,30 @@ export function armThetaAtRadius(radiusPc: number, arm: SpiralArmDefinition) {
   const pitchDeg =
     observedPitchDeg + (15.8 - observedPitchDeg) * easedFarBlend;
   const base =
-    arm.phaseAtSunRad +
+    phaseAtSunRad +
     Math.log(Math.max(radiusPc, 180) / GALACTIC_MODEL.sunRadiusPc) /
       Math.tan((pitchDeg * Math.PI) / 180);
   // Kinks/ondulações suaves quebram a perfeição matemática sem
   // deslocar o braço além da sua largura observacional.
   return (
     base +
-    0.052 * Math.sin(radiusPc * 0.00115 + arm.phaseAtSunRad * 2.7) +
-    0.022 * Math.sin(radiusPc * 0.0037 - arm.phaseAtSunRad)
+    0.052 * Math.sin(radiusPc * 0.00115 + phaseAtSunRad * 2.7) +
+    0.022 * Math.sin(radiusPc * 0.0037 - phaseAtSunRad)
   );
 }
 
-function smoothWindow(x: number, lo: number, hi: number, feather: number) {
-  const smooth = (v: number) => {
-    const c = Math.min(1, Math.max(0, v));
-    return c * c * (3 - 2 * c);
-  };
+function smoothstepTs(edge0: number, edge1: number, value: number) {
+  const c = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
+  return c * c * (3 - 2 * c);
+}
+
+function gateActivity(
+  radiusPc: number,
+  gate: SpiralArmDefinition['gate']
+) {
   return (
-    smooth((x - (lo - feather)) / (feather * 2)) *
-    (1 - smooth((x - (hi - feather)) / (feather * 2)))
+    smoothstepTs(gate.risePc[0], gate.risePc[1], radiusPc) *
+    (1 - smoothstepTs(gate.fallPc[0], gate.fallPc[1], radiusPc))
   );
 }
 
@@ -128,18 +126,11 @@ export function armActivityAtRadius(
   radiusPc: number,
   arm: SpiralArmDefinition
 ) {
-  const measured = smoothWindow(
-    radiusPc,
-    arm.minRadiusPc,
-    arm.maxRadiusPc,
-    700
-  );
-  // Norma reaparece como a continuação externa mapeada, mas com
-  // confiança/contraste menores no lado distante.
-  const outerContinuation =
-    arm.id === 'norma-outer'
-      ? smoothWindow(radiusPc, 11_100, GALACTIC_MODEL.diskRadiusPc, 750) * 0.42
-      : 0;
+  const measured = gateActivity(radiusPc, arm.gate);
+  const outerContinuation = arm.outerContinuation
+    ? gateActivity(radiusPc, arm.outerContinuation.gate) *
+      arm.outerContinuation.weight
+    : 0;
   return Math.min(1, measured + outerContinuation);
 }
 
@@ -226,28 +217,94 @@ function glArm(
   return Math.exp(-d * d * sharpness);
 }
 
+function armById(id: SpiralArmDefinition['id']) {
+  const arm = SPIRAL_ARMS.find((candidate) => candidate.id === id);
+  if (!arm) throw new Error(`Braço galáctico ausente: ${id}.`);
+  return arm;
+}
+
+function tanPitch(degrees: number) {
+  return Math.tan((degrees * Math.PI) / 180);
+}
+
+function glGate(
+  radiusPc: number,
+  gate: SpiralArmDefinition['gate']
+) {
+  return (
+    smoothstepGl(gate.risePc[0], gate.risePc[1], radiusPc) *
+    (1 - smoothstepGl(gate.fallPc[0], gate.fallPc[1], radiusPc))
+  );
+}
+
+const PERSEUS = armById('perseus');
+const SAGITTARIUS_CARINA = armById('sagittarius-carina');
+const SCUTUM_CENTAURUS = armById('scutum-centaurus');
+const NORMA_OUTER = armById('norma-outer');
+function requireOuterContinuation(arm: SpiralArmDefinition) {
+  const continuation = arm.outerContinuation;
+  if (!continuation) {
+    throw new Error('Continuação Outer ausente do modelo galáctico.');
+  }
+  return continuation;
+}
+const NORMA_CONTINUATION = requireOuterContinuation(NORMA_OUTER);
+
 /** espelho TS de galMajorArms (GLSL abaixo) — mesmos gates e pesos */
 export function glMajorArms(theta: number, radiusPc: number, sharpness: number) {
-  const perseusGate =
-    smoothstepGl(5500, 6900, radiusPc) * (1 - smoothstepGl(15500, 16800, radiusPc));
-  const sagittariusGate =
-    smoothstepGl(3500, 4900, radiusPc) * (1 - smoothstepGl(12600, 14000, radiusPc));
-  const scutumGate =
-    smoothstepGl(2000, 3400, radiusPc) * (1 - smoothstepGl(9900, 11300, radiusPc));
-  const normaInner =
-    smoothstepGl(1600, 2900, radiusPc) * (1 - smoothstepGl(7000, 8400, radiusPc));
-  const normaOuter =
-    smoothstepGl(10300, 11800, radiusPc) *
-    (1 - smoothstepGl(15900, 16800, radiusPc)) *
-    0.42;
   return Math.min(
     Math.max(
-      glArm(theta, radiusPc, -0.52, 0.1816, 0.1531, sharpness) * 0.86 * perseusGate +
-        glArm(theta, radiusPc, 1.02, 0.3077, 0.1781, sharpness) * 0.76 * sagittariusGate +
-        glArm(theta, radiusPc, 2.64, 0.2512, 0.2143, sharpness) * 0.82 * scutumGate +
-        glArm(theta, radiusPc, -2.15, 0.3541, 0.1655, sharpness) *
-          0.72 *
-          (normaInner + normaOuter),
+      glArm(
+        theta,
+        radiusPc,
+        PERSEUS.phaseAtSunRad,
+        tanPitch(PERSEUS.pitchInnerDeg),
+        tanPitch(PERSEUS.pitchOuterDeg),
+        sharpness
+      ) *
+        PERSEUS.weight *
+        glGate(radiusPc, PERSEUS.gate) +
+        glArm(
+          theta,
+          radiusPc,
+          SAGITTARIUS_CARINA.phaseAtSunRad,
+          tanPitch(SAGITTARIUS_CARINA.pitchInnerDeg),
+          tanPitch(SAGITTARIUS_CARINA.pitchOuterDeg),
+          sharpness
+        ) *
+          SAGITTARIUS_CARINA.weight *
+          glGate(radiusPc, SAGITTARIUS_CARINA.gate) +
+        glArm(
+          theta,
+          radiusPc,
+          SCUTUM_CENTAURUS.phaseAtSunRad,
+          tanPitch(SCUTUM_CENTAURUS.pitchInnerDeg),
+          tanPitch(SCUTUM_CENTAURUS.pitchOuterDeg),
+          sharpness
+        ) *
+          SCUTUM_CENTAURUS.weight *
+          glGate(radiusPc, SCUTUM_CENTAURUS.gate) +
+        glArm(
+          theta,
+          radiusPc,
+          NORMA_OUTER.phaseAtSunRad,
+          tanPitch(NORMA_OUTER.pitchInnerDeg),
+          tanPitch(NORMA_OUTER.pitchOuterDeg),
+          sharpness
+        ) *
+          NORMA_OUTER.weight *
+          glGate(radiusPc, NORMA_OUTER.gate) +
+        glArm(
+          theta,
+          radiusPc,
+          NORMA_CONTINUATION.phaseAtSunRad,
+          tanPitch(NORMA_OUTER.pitchInnerDeg),
+          tanPitch(NORMA_OUTER.pitchOuterDeg),
+          sharpness
+        ) *
+          NORMA_OUTER.weight *
+          NORMA_CONTINUATION.weight *
+          glGate(radiusPc, NORMA_CONTINUATION.gate),
       0
     ),
     1
@@ -256,9 +313,49 @@ export function glMajorArms(theta: number, radiusPc: number, sharpness: number) 
 
 /** espelho TS de galLocalArm (GLSL abaixo) */
 export function glLocalArm(theta: number, radiusPc: number, sharpness: number) {
-  const radialWindow =
-    smoothstepGl(7450, 7850, radiusPc) * (1 - smoothstepGl(9250, 9650, radiusPc));
-  return glArm(theta, radiusPc, 0.035, 0.2017, 0.2017, sharpness) * radialWindow * 0.72;
+  return (
+    glArm(
+      theta,
+      radiusPc,
+      LOCAL_ARM.phaseAtSunRad,
+      tanPitch(LOCAL_ARM.pitchDeg),
+      tanPitch(LOCAL_ARM.pitchDeg),
+      sharpness
+    ) *
+    glGate(radiusPc, LOCAL_ARM.gate) *
+    LOCAL_ARM.weight
+  );
+}
+
+function glslNumber(value: number) {
+  return value.toFixed(7);
+}
+
+function glslGate(
+  name: string,
+  gate: SpiralArmDefinition['gate'],
+  weight = 1
+) {
+  return `float ${name} =
+    smoothstep(${glslNumber(gate.risePc[0])}, ${glslNumber(gate.risePc[1])}, radiusPc) *
+    (1.0 - smoothstep(${glslNumber(gate.fallPc[0])}, ${glslNumber(gate.fallPc[1])}, radiusPc)) *
+    ${glslNumber(weight)};`;
+}
+
+function glslArmCall(
+  arm: SpiralArmDefinition,
+  phaseAtSunRad: number,
+  gateName: string,
+  weight = arm.weight
+) {
+  return `galArm(
+      theta,
+      radiusPc,
+      ${glslNumber(phaseAtSunRad)},
+      ${glslNumber(tanPitch(arm.pitchInnerDeg))},
+      ${glslNumber(tanPitch(arm.pitchOuterDeg))},
+      sharpness
+    ) * ${glslNumber(weight)} * ${gateName}`;
 }
 
 /**
@@ -292,7 +389,11 @@ float galArmTarget(
   float observedTan =
     radiusPc < GAL_SUN_RADIUS ? tanPitchInner : tanPitchOuter;
   float farBlend = smoothstep(9500.0, 15000.0, radiusPc);
-  float tanPitch = mix(observedTan, 0.2830, farBlend);
+  float tanPitch = mix(
+    observedTan,
+    ${glslNumber(tanPitch(15.8))},
+    farBlend
+  );
   float base =
     phaseAtSun + log(max(radiusPc, 180.0) / GAL_SUN_RADIUS) / tanPitch;
   return base +
@@ -316,40 +417,47 @@ float galArm(
 }
 
 float galMajorArms(float theta, float radiusPc, float sharpness) {
-  float perseusGate =
-    smoothstep(5500.0, 6900.0, radiusPc) *
-    (1.0 - smoothstep(15500.0, 16800.0, radiusPc));
-  float sagittariusGate =
-    smoothstep(3500.0, 4900.0, radiusPc) *
-    (1.0 - smoothstep(12600.0, 14000.0, radiusPc));
-  float scutumGate =
-    smoothstep(2000.0, 3400.0, radiusPc) *
-    (1.0 - smoothstep(9900.0, 11300.0, radiusPc));
-  float normaInner =
-    smoothstep(1600.0, 2900.0, radiusPc) *
-    (1.0 - smoothstep(7000.0, 8400.0, radiusPc));
-  float normaOuter =
-    smoothstep(10300.0, 11800.0, radiusPc) *
-    (1.0 - smoothstep(15900.0, 16800.0, radiusPc)) * 0.42;
+  ${glslGate('perseusGate', PERSEUS.gate)}
+  ${glslGate('sagittariusGate', SAGITTARIUS_CARINA.gate)}
+  ${glslGate('scutumGate', SCUTUM_CENTAURUS.gate)}
+  ${glslGate('normaInnerGate', NORMA_OUTER.gate)}
+  ${glslGate(
+    'normaOuterGate',
+    NORMA_CONTINUATION.gate,
+    NORMA_CONTINUATION.weight
+  )}
   return clamp(
-      galArm(theta, radiusPc, -0.52, 0.1816, 0.1531, sharpness)
-        * 0.86 * perseusGate
-    + galArm(theta, radiusPc,  1.02, 0.3077, 0.1781, sharpness)
-        * 0.76 * sagittariusGate
-    + galArm(theta, radiusPc,  2.64, 0.2512, 0.2143, sharpness)
-        * 0.82 * scutumGate
-    + galArm(theta, radiusPc, -2.15, 0.3541, 0.1655, sharpness)
-        * 0.72 * (normaInner + normaOuter),
+      ${glslArmCall(PERSEUS, PERSEUS.phaseAtSunRad, 'perseusGate')}
+    + ${glslArmCall(
+      SAGITTARIUS_CARINA,
+      SAGITTARIUS_CARINA.phaseAtSunRad,
+      'sagittariusGate'
+    )}
+    + ${glslArmCall(
+      SCUTUM_CENTAURUS,
+      SCUTUM_CENTAURUS.phaseAtSunRad,
+      'scutumGate'
+    )}
+    + ${glslArmCall(NORMA_OUTER, NORMA_OUTER.phaseAtSunRad, 'normaInnerGate')}
+    + ${glslArmCall(
+      NORMA_OUTER,
+      NORMA_CONTINUATION.phaseAtSunRad,
+      'normaOuterGate'
+    )},
     0.0,
     1.0
   );
 }
 
 float galLocalArm(float theta, float radiusPc, float sharpness) {
-  float radialWindow =
-    smoothstep(7450.0, 7850.0, radiusPc) *
-    (1.0 - smoothstep(9250.0, 9650.0, radiusPc));
-  return galArm(theta, radiusPc, 0.035, 0.2017, 0.2017, sharpness)
-    * radialWindow * 0.72;
+  ${glslGate('localGate', LOCAL_ARM.gate)}
+  return galArm(
+    theta,
+    radiusPc,
+    ${glslNumber(LOCAL_ARM.phaseAtSunRad)},
+    ${glslNumber(tanPitch(LOCAL_ARM.pitchDeg))},
+    ${glslNumber(tanPitch(LOCAL_ARM.pitchDeg))},
+    sharpness
+  ) * localGate * ${glslNumber(LOCAL_ARM.weight)};
 }
 `;

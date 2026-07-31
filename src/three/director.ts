@@ -30,7 +30,7 @@ import type { StarsMeta } from './config';
 
 export type Phase = 'loading' | 'intro' | 'journey' | 'end' | 'free';
 
-export interface DirectorEvents {
+interface DirectorEvents {
   onPhase: (p: Phase) => void;
   onCaption: (index: number, caption: string, sub?: string) => void;
   onProgress: (k: number) => void;
@@ -514,7 +514,7 @@ export class Director {
       }
     }
 
-    // rótulos TODO frame — a 10 Hz eles "nadavam" contra as estrelas
+    // rótulos a cada frame — a 10 Hz eles "nadavam" contra as estrelas
     // (7 projeções + um canvas 2D pequeno: custo desprezível)
     if ((this.phase === 'journey' || this.phase === 'free') && this.meta) {
       this.events.onLabels(projectLabels(cam, this.meta.named));

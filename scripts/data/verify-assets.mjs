@@ -3,11 +3,27 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from './lib/binary.mjs';
 import { heliocentricGalacticToProject } from './lib/galactic.mjs';
+import {
+  decodeSpiralAnchors,
+  evaluateSpiralModel,
+} from './lib/spiral-fit.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const publicDirectory = path.join(rootDirectory, 'public');
 const manifestPath = path.join(publicDirectory, 'data', 'galaxy', 'manifest.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+const spiralModel = JSON.parse(
+  await readFile(
+    path.join(
+      rootDirectory,
+      'src',
+      'three',
+      'cartography',
+      'spiralModel.json'
+    ),
+    'utf8'
+  )
+);
 
 const coordinateCases = [
   { input: [0, 0, 100], expected: [8_050, 0, 5.5] },
@@ -46,6 +62,36 @@ for (const [assetName, asset] of Object.entries(manifest.assets)) {
   }
 }
 
+const spiralAnchorAsset = manifest.assets.spiralAnchors;
+const spiralAnchorBuffer = await readFile(
+  path.join(publicDirectory, spiralAnchorAsset.file)
+);
+const spiralAnchors = decodeSpiralAnchors(
+  spiralAnchorBuffer,
+  spiralAnchorAsset,
+  manifest.dictionaries.maserArm
+);
+const spiralMetrics = evaluateSpiralModel(spiralModel, spiralAnchors);
+const spiralGate = spiralModel.gate;
+if (spiralMetrics.sampleCount !== spiralGate.expectedSampleCount) {
+  throw new Error(
+    `Fit BeSSeL usa ${spiralMetrics.sampleCount} âncoras; ` +
+      `esperadas ${spiralGate.expectedSampleCount}.`
+  );
+}
+if (
+  spiralMetrics.medianResidualPc > spiralGate.maxMedianResidualPc ||
+  spiralMetrics.p90ResidualPc > spiralGate.maxP90ResidualPc ||
+  spiralMetrics.withinOneWidth < spiralGate.minWithinOneWidth
+) {
+  throw new Error(
+    `Fit BeSSeL fora do gate: mediana ` +
+      `${spiralMetrics.medianResidualPc.toFixed(1)} pc, p90 ` +
+      `${spiralMetrics.p90ResidualPc.toFixed(1)} pc, ` +
+      `${spiralMetrics.withinOneWidth} dentro de uma largura.`
+  );
+}
+
 const [starBinary, starMetadataText] = await Promise.all([
   readFile(path.join(publicDirectory, 'data', 'stars.bin')),
   readFile(path.join(publicDirectory, 'data', 'stars_meta.json'), 'utf8'),
@@ -64,5 +110,7 @@ if (
 
 console.log(
   `Dados verificados: ${Object.keys(manifest.assets).length} ativos galácticos, ` +
-    `${starMetadata.count} estrelas HYG utilizáveis.`
+    `${starMetadata.count} estrelas HYG utilizáveis; fit BeSSeL ` +
+    `${spiralMetrics.medianResidualPc.toFixed(1)} pc (p90 ` +
+    `${spiralMetrics.p90ResidualPc.toFixed(1)} pc).`
 );

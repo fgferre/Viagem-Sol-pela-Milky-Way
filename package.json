@@ -10,9 +10,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "data:galaxy": "node scripts/data/build-galactic-assets.mjs",
+    "data:fit": "node scripts/data/fit-spiral-model.mjs",
     "data:sanitize-stars": "node scripts/data/sanitize-stars.mjs",
     "data:verify": "node scripts/data/verify-assets.mjs",
-    "data:all": "npm run data:sanitize-stars && npm run data:galaxy && npm run data:verify"
+    "data:all": "npm run data:sanitize-stars && npm run data:galaxy && npm run data:fit && npm run data:verify"
   },
   "dependencies": {
     "react": "^19.2.8",

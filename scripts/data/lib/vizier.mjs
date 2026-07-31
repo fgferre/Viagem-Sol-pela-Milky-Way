@@ -9,7 +9,7 @@ function dataLines(text) {
     .filter((line) => line.length > 0 && !line.startsWith('#'));
 }
 
-export function parseVizierTsv(text, expectedColumns = []) {
+function parseVizierTsv(text, expectedColumns = []) {
   const lines = dataLines(text);
   const headerIndex = lines.findIndex(
     (line) =>
