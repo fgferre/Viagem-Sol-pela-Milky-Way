@@ -4,9 +4,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Director } from './three/director';
 import type { Phase } from './three/director';
-import type { QualityLevel } from './three/core/engine';
+import type { QualityLevel, ToneMapMode } from './three/core/engine';
+import { TONE_MAPPINGS } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
 import { TitleVeil, Caption, ProgressBar } from './components/Hud';
+import { Ajustes } from './components/Ajustes';
 import './hud.css';
 
 export default function App() {
@@ -25,6 +27,11 @@ export default function App() {
   const [quality, setQuality] = useState<QualityLevel>('cinema');
   const [paused, setPaused] = useState(false);
   const [loadError, setLoadError] = useState('');
+  // ?ajustes=1 abre o painel direto: uma configuração inteira cabe num link,
+  // inclusive com o painel visível para conferência.
+  const [ajustes, setAjustes] = useState(
+    new URLSearchParams(window.location.search).has('ajustes')
+  );
 
   useEffect(() => {
     if (!canvasRef.current || !labelCanvasRef.current) return;
@@ -53,6 +60,13 @@ export default function App() {
         if (qualityParam && ['cinema', 'alta', 'performance'].includes(qualityParam)) {
           d.setQuality(qualityParam);
         }
+
+        // ?tone= e ?exp= — os ajustes de gosto também são URL, para que uma
+        // configuração vire link e a captura headless veja o mesmo que a tela.
+        const tone = query.get('tone') as ToneMapMode | null;
+        if (tone && tone in TONE_MAPPINGS) d.engine.setToneMapping(tone);
+        const exposure = Number(query.get('exp'));
+        if (Number.isFinite(exposure) && exposure > 0) d.engine.setExposure(exposure);
 
         // ?pos=x,y,z[&look=x,y,z] — câmera livre determinística em
         // qualquer ponto da galáxia (screenshots/inspeção).
@@ -201,8 +215,24 @@ export default function App() {
             <option value="alta">◇ Alta</option>
             <option value="performance">◦ Performance</option>
           </select>
+          <button
+            className="hud-btn small"
+            onClick={() => setAjustes((v) => !v)}
+            aria-label="Ajustes de renderização"
+          >
+            ⚙ Ajustes
+          </button>
         </div>
       )}
+
+      <Ajustes
+        aberto={ajustes}
+        onFechar={() => setAjustes(false)}
+        qualidade={quality}
+        onQualidade={changeQuality}
+        onTom={(t) => directorRef.current?.engine.setToneMapping(t)}
+        onExposicao={(v) => directorRef.current?.engine.setExposure(v)}
+      />
 
       {/* tela de título / loading / fim */}
       <TitleVeil

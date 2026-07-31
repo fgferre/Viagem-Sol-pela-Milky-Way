@@ -41,7 +41,8 @@ interface DirectorEvents {
 }
 
 export class Director {
-  private engine: Engine;
+  /** o painel de ajustes mexe em tom e exposição ao vivo */
+  readonly engine: Engine;
   private post: Post;
   private nebula: Nebula;
   private stars!: StarField;

@@ -6,6 +6,15 @@ import * as THREE from 'three';
 
 export type QualityLevel = 'cinema' | 'alta' | 'performance';
 
+export type ToneMapMode = 'aces' | 'agx' | 'neutral' | 'linear';
+
+export const TONE_MAPPINGS: Record<ToneMapMode, THREE.ToneMapping> = {
+  aces: THREE.ACESFilmicToneMapping,
+  agx: THREE.AgXToneMapping,
+  neutral: THREE.NeutralToneMapping,
+  linear: THREE.LinearToneMapping,
+};
+
 interface QualityPreset {
   pixelRatio: number;
   nebulaSteps: number;
@@ -64,6 +73,30 @@ export class Engine {
 
   get preset(): QualityPreset {
     return PRESETS[this.quality];
+  }
+
+  /**
+   * Curva de tom. É GOSTO, não física: cada operador decide o que fazer com
+   * o que passa de 1, e isso muda croma e faixa dinâmica. O ACES comprime e
+   * dessatura os altos — bom para pele, discutível para uma galáxia, onde a
+   * cor dos altos é justamente o dado. AgX preserva mais croma e escurece;
+   * Neutral fica no meio; Linear não faz nada e estoura, mas serve para ver
+   * o que a cena realmente produz antes de qualquer curva.
+   *
+   * O modo entra na chave de cache do programa, então trocar exige recompilar
+   * os materiais — daí o traverse. A exposição é uniform e muda de graça.
+   */
+  setToneMapping(mode: ToneMapMode) {
+    this.renderer.toneMapping = TONE_MAPPINGS[mode];
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material;
+      if (!m) return;
+      for (const mat of Array.isArray(m) ? m : [m]) mat.needsUpdate = true;
+    });
+  }
+
+  setExposure(v: number) {
+    this.renderer.toneMappingExposure = v;
   }
 
   /**
