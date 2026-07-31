@@ -218,19 +218,29 @@ vec3 extinction(vec3 from, vec3 to, float baseTau) {
 }
 `;
 
-// Cor de corpo negro aproximada a partir do índice de cor B-V
+// Cor estelar: Planck × CIE 1931 → sRGB linear, normalizado a Y = 1.
+//
+// As cinco âncoras pintadas à mão que existiam aqui tinham dois defeitos
+// que se somavam: nenhuma delas punha o verde abaixo da média de R e B
+// (logo NENHUMA estrela do projeto podia puxar para o púrpura), e as
+// cinco tinham luminância quase igual (Y entre 0,69 e 0,98) — então a
+// cor não modulava o brilho, que é metade do que faz um campo estelar
+// real ter faixa dinâmica. O ajuste quadrático abaixo tem RMS 0,010 de
+// 2500 K a 40000 K e custa 3 mads contra 4 mix + 4 smoothstep: é mais
+// barato que o que substitui.
 export const GLSL_STAR_COLOR = /* glsl */ `
+vec3 blackbodyLinear(float T) {
+  float u = clamp(5000.0 / T, 0.125, 2.0);
+  return vec3(0.640 + 0.420 * u + 0.150 * u * u,
+              0.980 + 0.080 * u - 0.100 * u * u,
+              2.300 - 1.980 * u + 0.450 * u * u);
+}
+
+// Ballesteros 2012: B−V → T_eff. Erra acima de ~10.000 K (B−V = −0,30
+// devolve 16.600 K em vez dos ~30.000 K de uma O), o que afeta ~100 das
+// 18.543 do HYG — todas já no extremo azul, onde a cor satura.
 vec3 bvToColor(float bv) {
-  // B-V: -0.4 (azul quente) → 0.0 (branco) → 0.65 (solar) → 2.0 (vermelha fria)
-  vec3 c0 = vec3(0.61, 0.69, 1.00); // O/B
-  vec3 c1 = vec3(0.79, 0.84, 1.00); // A
-  vec3 c2 = vec3(1.00, 0.98, 0.95); // F/G branco
-  vec3 c3 = vec3(1.00, 0.88, 0.68); // K
-  vec3 c4 = vec3(1.00, 0.62, 0.42); // M
-  vec3 col = mix(c0, c1, smoothstep(-0.40, -0.02, bv));
-  col = mix(col, c2, smoothstep(-0.02, 0.45, bv));
-  col = mix(col, c3, smoothstep(0.45, 1.05, bv));
-  col = mix(col, c4, smoothstep(1.05, 1.90, bv));
-  return col;
+  float t = 4600.0 * (1.0 / (0.92 * bv + 1.70) + 1.0 / (0.92 * bv + 0.62));
+  return blackbodyLinear(t);
 }
 `;

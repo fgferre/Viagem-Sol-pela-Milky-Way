@@ -6,9 +6,11 @@ import * as THREE from 'three';
 import { STAR_VERT, STAR_FRAG } from '../shaders/starShaders';
 
 interface StarFieldOptions {
-  pointScale?: number;
+  /** magnitude aparente que satura o pico da PSF — o "tempo de exposição" */
+  expoM0?: number;
+  /** largura da PSF em px a 1080p — o "instrumento" */
+  sigmaPx?: number;
   tau?: number; // coeficiente de extinção
-  maxPx?: number;
 }
 
 export class StarField {
@@ -19,22 +21,30 @@ export class StarField {
     const count = Math.floor(data.length / stride);
     const geo = new THREE.BufferGeometry();
     // stride 6: x,y,z,mag,ci,logLum
+    //
+    // logLum é a LUMINOSIDADE (0,4·(4,85 − M_V)) e o índice 3 é a
+    // magnitude APARENTE vista do Sol — já contém 1/d☉². Usar o índice 3
+    // como se fosse brilho intrínseco e depois dividir pela distância à
+    // câmera aplicava a distância duas vezes: cada estrela errava pelo
+    // seu próprio módulo de distância (Sirius 2,9 mag brilhante demais,
+    // Rigel 7,1 fraca demais — 10 mag de erro relativo entre as duas).
+    // Com logLum a magnitude aparente é recalculada a partir de onde a
+    // câmera está, que é o que faz aproximar-se de uma estrela significar
+    // alguma coisa. Assets sem o campo (halo procedural, stride < 6)
+    // caem no fallback que reconstrói M_V a partir da mag do Sol.
     const pos = new Float32Array(count * 3);
-    const mag = new Float32Array(count);
+    const logLum = new Float32Array(count);
     const ci = new Float32Array(count);
-    const rand = new Float32Array(count);
     for (let i = 0; i < count; i++) {
       pos[i * 3] = data[i * stride];
       pos[i * 3 + 1] = data[i * stride + 1];
       pos[i * 3 + 2] = data[i * stride + 2];
-      mag[i] = data[i * stride + 3];
       ci[i] = data[i * stride + 4];
-      rand[i] = Math.random();
+      logLum[i] = data[i * stride + 5];
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('aMag', new THREE.BufferAttribute(mag, 1));
+    geo.setAttribute('aLogLum', new THREE.BufferAttribute(logLum, 1));
     geo.setAttribute('aCi', new THREE.BufferAttribute(ci, 1));
-    geo.setAttribute('aRand', new THREE.BufferAttribute(rand, 1));
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 6000);
 
     this.material = new THREE.ShaderMaterial({
@@ -43,8 +53,8 @@ export class StarField {
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uScreenH: { value: 1080 },
-        uPointScale: { value: opts.pointScale ?? 2.3 },
-        uMaxPx: { value: opts.maxPx ?? 26 },
+        uExpoM0: { value: opts.expoM0 ?? 3.5 },
+        uSigmaPx: { value: opts.sigmaPx ?? 0.85 },
         uTau: { value: opts.tau ?? 0.9 },
         uTime: { value: 0 },
         uFade: { value: 1 },
@@ -118,9 +128,14 @@ export function buildFarStars(count: number, seed = 0x4d494c4b): Float32Array {
     data[i * 6] = p.x;
     data[i * 6 + 1] = p.y;
     data[i * 6 + 2] = p.z;
-    data[i * 6 + 3] = 7.0 + random() * 3.6; // mag
+    const mag = 7.0 + random() * 3.6;
+    data[i * 6 + 3] = mag; // mag aparente vista do Sol
     data[i * 6 + 4] = -0.15 + random() * 1.6; // B-V
-    data[i * 6 + 5] = 0;
+    // Mesmo schema do HYG: logLum = 0,4·(4,85 − M_V). Sorteia-se a
+    // magnitude APARENTE (é ela que define a densidade do céu visto
+    // daqui) e converte-se para intrínseca com a distância do próprio
+    // ponto — assim o halo responde à câmera como o catálogo responde.
+    data[i * 6 + 5] = 0.4 * (4.85 - (mag - 5 * Math.log10(r / 10)));
   }
   return data;
 }

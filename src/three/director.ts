@@ -150,11 +150,15 @@ export class Director {
     if (this.disposed) return;
     this.meta = meta;
 
-    this.stars = new StarField(positions, 6, { pointScale: 6.0, tau: 0.045, maxPx: 48 });
+    // expoM0 é o "tempo de exposição": a magnitude aparente cujo pico de
+    // PSF chega a 1. Com 3,5 as ~40 estrelas mais brilhantes do céu
+    // saturam e ganham disco e spikes; o resto fica sub-saturado, que é
+    // o que devolve ao campo os 8,6 mag de faixa dinâmica do catálogo.
+    this.stars = new StarField(positions, 6, { expoM0: 3.5, sigmaPx: 0.85, tau: 0.045 });
     this.farStars = new StarField(buildFarStars(WORLD.farStarsCount), 6, {
-      pointScale: 1.5,
+      expoM0: 3.5,
+      sigmaPx: 0.7,
       tau: 0.04,
-      maxPx: 3,
     });
     this.heroes = new HeroStars(this.meta.named);
 
