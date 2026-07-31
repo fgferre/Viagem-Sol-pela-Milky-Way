@@ -40,12 +40,24 @@ inteiras da célula, densidade decidindo **existência** e não alpha, anti-dupl
 por magnitude aparente vista do Sol. Exige floating origin junto (ver Decisões).
 
 **3. Um meio volumétrico.** Hoje a poeira tem duas representações que não se conhecem:
-~430 k sprites na vista externa e um raymarch local, ligados por crossfade. A visão pede
-**um** meio, visto com profundidades de integração diferentes. É o maior item em aberto e
-o único que ainda precisa de decisão arquitetural. Não começado.
+~430 k sprites na vista externa e um raymarch local, ligados por crossfade. O dado já é
+único (mesmo campo de densidade); o que está duplicado é o **integrador**. Decidido:
+**coluna fechada sobre um Σ único**, `L = Σ_j·F(τ)/|μ|` com `F = (1−e^−τ)/τ` — a integral
+fecha em elementar e a altura de escala não aparece, o que dissolve as três alturas
+incompatíveis do projeto. O `1/|μ|` é a lei de caminho que as 7 lâminas não têm e por cuja
+falta elas são desligadas de raspão.
 
 Ordem entre elas: 1 antes de 3, porque calibrar cor com fotometria torta é calibrar duas
 variáveis ao mesmo tempo. 2 é independente de 3.
+
+**Só um terço da unificação 3 é arquitetura**, e a parte que entrega a cor não é o
+integrador:
+
+| peça | o que é | o que entrega |
+|---|---|---|
+| (a) um κ e um Σ | uma constante + calibração offline | nada visual; sem ela (c) não significa nada |
+| (b) Σ_j como soma de populações | ~25 linhas em `galaxyShaders.ts` + `galaxy.ts` | **todo o gap de cor** |
+| (c) o operador de coluna | shader de ~40 linhas num quad | ordenação ⟨j·T⟩, silhueta da fenda, 1/μ, e apaga os sprites |
 
 ## Decisões fechadas
 
@@ -72,8 +84,18 @@ renderizar e a linha não mede nada.
   `?nodisc=1` não (p99 268) ⇒ caminho cartografia/`observedClouds`. Próximo passo:
   separar `?nocart` em `?noco` e `?noforge` e bissecar **antes** de escrever correção.
 - **Vértices por frame são quase constantes na viagem:** 3,84 M no Sol, 4,00 M de fora.
+- **Raymarch = 6,9 ms**, 29% do frame (1600×900, no Sol: 23,6 ms contra 16,7 com
+  `?nonebula=1`). A alavanca dominante é `pixelRatio`, não o número de passos: em
+  `?q=performance` (30 passos, ratio 1,0) o raymarch some dentro do vsync. Custo por
+  amostra-pixel ≈ 22 ps ⇒ **campo distante a 1440p com 32 passos ≈ 2,6 ms**. Há orçamento.
 - **Cor:** púrpura medido na faixa 0,25–1,05 R90 é **+0,084 contra alvo +0,201**. A forma
   radial está certa (cresce para fora); a amplitude é 42% do alvo.
+- **O teto de cor é a GAMUT da paleta, não o `clamp`.** `mix(cold, warm, t)` com
+  `cold=(0,56,0,58,0,74)` e `warm=(0,98,0,70,0,42)`: purp vale +0,0828 no piso atual
+  (t=0,20) e só +0,0946 com `cold` puro (t=0) — o alvo do anel externo é **+0,317**, fora
+  do segmento que os dois pontos definem. Alcançam-no os componentes de população:
+  `POP_HII=(1,664,0,807,0,957)` tem purp **+0,303**; espalhamento por campo jovem 18 kK
+  ×λ^−1,3 dá **+0,213**. Mexer no `clamp` é desperdício de rodada.
 - **Espirais:** `harmonicError` 0,125 (era 0,165). m=3 e m=5 seguem ~50% acima do alvo.
 
 ## Becos sem saída
