@@ -24,6 +24,7 @@ import {
   DUST_MAP_SIZE,
   DUST_MAP_HALF_EXTENT,
 } from './cartography/dustMap';
+import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { loadStarData, WORLD } from './config';
 import type { StarsMeta } from './config';
@@ -51,6 +52,7 @@ export class Director {
   private starForges: StarForges | null = null;
   private wrappedStars!: WrappedStars;
   private dustMapTexture: THREE.Texture | null = null;
+  private structureMapTexture: THREE.Texture | null = null;
   /** nuvens do catálogo em coords de cena: x,y,z,raio,amp por registro */
   private seedCloudPool: Float32Array | null = null;
   private seedCloudScratch = new Float32Array(32 * 5);
@@ -161,18 +163,25 @@ export class Director {
     const cartOn = Boolean(galactic) && cartMode !== 'off';
     const dustBake = bakeDustMap(cartOn && galactic ? galactic.dustDensity : null);
     this.dustMapTexture = dustBake.texture;
+    const structureBake = bakeGalacticStructureMap(
+      cartOn ? galactic : null,
+      dustBake.density,
+      dustBake.coverage
+    );
+    this.structureMapTexture = structureBake.texture;
     this.galaxy = new Galaxy(
       buildGalaxy(
         20260730,
-        cartOn
-          ? {
-              data: dustBake.coverage,
-              size: DUST_MAP_SIZE,
-              halfExtentPc: DUST_MAP_HALF_EXTENT,
-            }
-          : undefined
+        {
+          gasSupport: structureBake.gasSupport,
+          youngResponse: structureBake.youngResponse,
+          youngSupport: structureBake.youngSupport,
+          size: DUST_MAP_SIZE,
+          halfExtentPc: DUST_MAP_HALF_EXTENT,
+        }
       ),
-      dustBake.texture
+      dustBake.texture,
+      structureBake.texture
     );
     this.galaxy.setCartography(
       this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
@@ -192,7 +201,11 @@ export class Director {
       if (dustBake) {
         console.info(
           `[cartografia] APOGEE ${(dustBake.coverageFraction * 100).toFixed(1)}% ` +
-            'do disco com cobertura observacional.'
+            'do disco; campo acoplado com ' +
+            `${(structureBake.gasCoverageFraction * 100).toFixed(1)}% ` +
+            'de suporte material e ' +
+            `${(structureBake.youngCoverageFraction * 100).toFixed(1)}% ` +
+            'de suporte em traçadores jovens.'
         );
       }
     }
@@ -552,6 +565,7 @@ export class Director {
     this.starForges?.dispose();
     this.wrappedStars?.dispose();
     this.dustMapTexture?.dispose();
+    this.structureMapTexture?.dispose();
     this.sun.dispose();
     this.dust.dispose();
     this.nebula.dispose();

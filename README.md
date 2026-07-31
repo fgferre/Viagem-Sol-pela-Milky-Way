@@ -66,7 +66,8 @@ src/
 │  ├─ cartography/
 │  │  ├─ galacticModel.ts   contrato único: braços, Local, barra, warp, flare e constantes GLSL
 │  │  ├─ galacticAssets.ts  carrega e valida o manifesto e os binários observacionais
-│  │  └─ dustMap.ts         bake da poeira APOGEE e da cobertura observacional
+│  │  ├─ dustMap.ts         bake da poeira APOGEE e da cobertura observacional
+│  │  └─ structureMap.ts    acopla gás/poeira e traçadores jovens no mesmo campo de resposta
 │  ├─ core/
 │  │  ├─ engine.ts          renderer WebGL2, câmera, clip planes dinâmicos (updateClip)
 │  │  └─ post.ts            compositor: bloom, output e acabamento em display space

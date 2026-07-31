@@ -9,38 +9,53 @@ implementado assim:
 | Ativo | Consumidor | Representação |
 |---|---|---|
 | `dust-density.bin` (APOGEE, 196k) | `cartography/dustMap.ts` → `DISC_FRAG` e `NEBULA_FRAG` | textura 2D galactocêntrica 512² (R = contraste log-local de densidade, 0,5 = neutro; G = cobertura) |
-| `molecular-clouds.bin` (8.107, filtro `rendererRecommended`) | `world/observedClouds.ts` | billboards FBM instanciados, blending multiplicativo |
-| `large-molecular-clouds.bin` (84) | `world/observedClouds.ts` | idem, raios maiores |
-| `hii-regions.bin` (1.413) | `world/starForges.ts` | pontos H-alfa, brilho ∝ 1/erro de distância |
-| `spiral-anchors.bin` (199 masers BeSSeL) | `world/starForges.ts` | núcleos azul-brancos compactos |
-| `gaia-young-clusters.bin` (988) | `world/starForges.ts` | glitter, tamanho ∝ √membros |
-| `gaia-young-cepheids.bin` (2.806) | `world/starForges.ts` | pontos quentes **pulsantes** (fase/ritmo por seed) |
+| `molecular-clouds.bin` (8.107, filtro `rendererRecommended`) | `world/observedClouds.ts` + `cartography/structureMap.ts` | billboards FBM e kernels de gás dimensionados pelo raio físico |
+| `large-molecular-clouds.bin` (84) | mesmos consumidores | raios, densidade e erros pesam a resposta de gás |
+| `hii-regions.bin` (1.413) | `world/starForges.ts` + `cartography/structureMap.ts` | pontos H-alfa e kernels de formação estelar pesados por classe/erro |
+| `spiral-anchors.bin` (199 masers BeSSeL) | mesmos consumidores + `spiralModel.json` | posições reais e ajuste offline do prior espiral |
+| `gaia-young-clusters.bin` (988) | mesmos consumidores | glitter e kernels pesados por número de membros/erro |
+| `gaia-young-cepheids.bin` (2.806) | mesmos consumidores | pontos pulsantes e kernels pesados por erro de distância |
 
 ## Regra de combinação observado ↔ inferido
 
-O canal G (cobertura) do mapa de poeira decide, por texel: as fendas
-procedurais CEDEM sob cobertura (atenuadas ×(1−0,65·G)) e as fendas
-medidas entram por produto — substituição gradual sem costura:
+`structureMap.ts` transforma os catálogos em um campo RGBA 512²:
+
+- R = resposta de gás/poeira;
+- G = resposta de formação estelar jovem;
+- B = suporte observado/derivado do gás;
+- A = suporte observado/derivado dos traçadores jovens.
+
+Cada objeto é espalhado por um kernel gaussiano proporcional ao raio físico,
+à resolução ou à incerteza de distância; confiança, classe, densidade e número
+de membros viram pesos. Onde B/A têm suporte, os canais R/G vêm dos catálogos.
+Onde não têm, um prior `inferred` usa exclusivamente a espinha espiral ajustada
+aos masers BeSSeL e fragmentação determinística na escala de complexos
+moleculares não resolvidos. A combinação por texel é:
 
 ```
-absorption = absorptionProc(atenuada por G) * mix(1, absorptionObs, G)
+resposta = inferida × (1 − suporte) + observada × suporte
 ```
 
-O mesmo princípio vale para o H II procedural (alpha ×(1−0,7·G) no
-gerador de partículas) e a cobertura G só é declarada onde há amostra
-LOCAL do APOGEE — nunca derivada do baseline regional.
+O mesmo R/G governa o brilho contínuo, as partículas dos braços e a extinção.
+Portanto estrelas jovens, gás e poeira deixam de formar três desenhos
+independentes. A população estelar velha permanece como disco exponencial e
+barra suaves; ela não é forçada a copiar as nuvens.
 
-- cobertura 1 → fendas escuras, avermelhamento e patchiness dos braços vêm
-  do APOGEE; o ruído FBM só texturiza abaixo de ~65 pc/texel (a resolução
-  do bake);
-- cobertura 0 → o disco segue 100% procedural (`inferred`), idêntico ao
-  comportamento anterior;
-- incertezas viram brilho/alpha: `relativeParallaxError`, `sigmaDistance`,
-  `farDistanceFlag` e `densityConfidence` esmaecem os objetos menos seguros.
+Este é um **modelo de resposta em um instante**, não uma simulação
+N-body/hidrodinâmica e não representa matéria escoando para o centro como água
+num ralo. A rotação quase circular sustenta o disco; barra e braços representam
+a perturbação gravitacional não axisimétrica que organiza o gás. O deslocamento
+estreito do gás em relação à espinha e o realce posterior de estrelas jovens são
+proxies explícitos enquanto não há integração dinâmica com velocidade padrão.
 
-Nenhuma posição observada é deslocada por direção de arte; a arte só regula
-brilho, cor e agregação de material não resolvido (fatores documentados em
-`observedClouds.ts`).
+No marco atual, 56,5% do disco têm suporte de matéria e 33,9% têm suporte de
+traçadores jovens. A textura procedural de alta frequência resolve apenas
+subestrutura abaixo de aproximadamente 80 pc; nenhuma posição observada é
+deslocada por direção de arte.
+
+Não há ondulação senoidal adicionada para “quebrar simetria”. A assimetria
+macroscópica vem das fases/janelas BeSSeL e, principalmente, da distribuição
+observada de gás, poeira e população jovem.
 
 ## Coordenadas
 
@@ -135,16 +150,21 @@ no disco externo.
 
 - Fotometria HYG relocável baseada em `logLum`, com extinção diferencial em
   relação ao observador solar.
-- Separação completa entre macroestrutura de poeira condicionada pelos dados e
-  microtextura procedural de alta frequência.
+- Amostra Gaia DR3 de aproximadamente 100 mil estrelas OB com distâncias
+  fotogeométricas. Os 5.406 traçadores jovens atuais ainda são esparsos demais
+  para a granularidade do alvo Gaia/ESA; adicionar assimetria de shader para
+  mascarar essa lacuna foi rejeitado.
+- Integração dinâmica do potencial de barra+braços com curva de rotação e
+  velocidades padrão. Até isso existir, o renderer declara corretamente um
+  campo de resposta estático, não uma simulação gravitacional.
 
 ## Orçamento
 
-- Textura de poeira: 512×512 RG8 = 0,5 MB de VRAM; bake ~1 passada sobre
-  196k amostras + blur separável (uma vez, na carga).
+- Texturas de poeira e resposta: 2 × 512×512 RGBA8 com mipmaps, cerca de
+  2,67 MB de VRAM; bakes executados uma vez na carga.
 - Nuvens: 1 draw call instanciado (~8k quads pequenos, FBM 3 oitavas,
   fade antes de encher a tela).
 - Traçadores: 1 draw call de pontos (5.406 vértices), conservação de fluxo
   igual às partículas da galáxia.
-- Custo por frame adicional: 2 draw calls + 1 lookup de textura por texel
-  do disco e por passo distante do raymarch.
+- Custo por frame adicional do acoplamento: nenhum draw call; 1 lookup RGBA por
+  fragmento do disco. O mapa APOGEE continua compartilhado com o raymarch.

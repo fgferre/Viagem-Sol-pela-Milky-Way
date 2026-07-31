@@ -25,6 +25,8 @@ const CONTRAST_GAIN = 0.55;
 
 interface DustBake {
   texture: THREE.DataTexture;
+  /** contraste log-local de poeira (0..1, 0,5 = neutro). */
+  density: Float32Array;
   /** fração de texels do disco com cobertura > 0 (diagnóstico). */
   coverageFraction: number;
   /** canal de cobertura cru (0..1, size²) — consumido pelo gerador
@@ -208,6 +210,7 @@ export function bakeDustMap(table: CatalogueTable | null): DustBake {
 
   return {
     texture,
+    density,
     coverageFraction: discTexels > 0 ? covered / discTexels : 0,
     coverage,
   };

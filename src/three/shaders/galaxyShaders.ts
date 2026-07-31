@@ -73,16 +73,20 @@ varying float vSeed;
 
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
-  // deforma o sprite para nuvens irregulares (barato, sem textura)
+  // Fragmentos finos e curvos: poeira externa deve ler como filamento,
+  // não como discos pretos destacados sobre a galáxia.
   float ang = vSeed * 6.2831;
   mat2 rot = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
   uv = rot * uv;
-  uv.x *= 0.55 + vSeed * 0.6;
-  float r = length(uv);
+  uv.x *= 0.72 + vSeed * 0.34;
+  float r = length(vec2(uv.x * 0.72, uv.y));
   if (r > 1.0) discard;
-  // smoothstep invertido (edge0 > edge1) é undefined em GLSL — NaN em alguns drivers
-  float i = 1.0 - smoothstep(0.1, 1.0, r);
-  i = i * i * (3.0 - 2.0 * i);
+  float bend = uv.y + sin(uv.x * (3.4 + vSeed * 2.1) + ang) * 0.16;
+  float width = 0.10 + vSeed * 0.075;
+  float filament = 1.0 - smoothstep(width, width + 0.18, abs(bend));
+  float envelope = 1.0 - smoothstep(0.52, 1.0, r);
+  float knots = 0.70 + 0.30 * sin(uv.x * 8.0 + ang);
+  float i = filament * envelope * knots;
   vec3 factor = mix(vec3(1.0), uDustColor, i * vAlpha);
   gl_FragColor = vec4(factor, 1.0);
 }
@@ -155,8 +159,9 @@ void main() {
 }
 `;
 
-// Disco emissivo contínuo. Três camadas levemente separadas no
-// eixo Z conectam as partículas e evitam o aspecto de "anéis".
+// Disco emissivo contínuo. Sete camadas levemente separadas no
+// eixo Z conectam as partículas; a macroestrutura é compartilhada
+// verticalmente para que as lacunas dos braços não se preencham.
 // As fases e o pitch são os mesmos do gerador físico em galaxy.ts.
 export const DISC_VERT = /* glsl */ `
 varying vec2 vUv;
@@ -184,7 +189,11 @@ uniform float uSeed;
 uniform float uLayerAlpha;
 // mapa APOGEE bakeado: R = densidade de poeira, G = cobertura
 uniform sampler2D uDustMap;
+// resposta acoplada: R=gás/poeira, G=traçadores jovens,
+// B/A=suporte espacial observado de cada família
+uniform sampler2D uStructureMap;
 uniform float uCartBlend;
+uniform float uInferenceGain;
 varying vec2 vUv;
 
 ${GLSL_CARTOGRAPHY}
@@ -231,18 +240,12 @@ void main() {
     0.0,
     1.0
   );
-  float dustArms = clamp(
-    galMajorArms(theta - 0.065, radiusPc, armSharpness * 2.3) +
-    galLocalArm(theta - 0.045, radiusPc, armSharpness * 2.1),
-    0.0,
-    1.0
-  );
-
-  float broadNoise = fbm2(p * 8.0 + vec2(uSeed, -uSeed));
-  float fineNoise = fbm2(p * 31.0 - vec2(uSeed * 1.7, uSeed));
+  // A macroestrutura acoplada já vem da textura CPU. Só a microtextura
+  // varia por lâmina; sua primeira oitava ≈65–80 pc no bake 1024².
+  float microNoise = fbm2(p * 220.0 - vec2(uSeed * 1.7, uSeed));
   float edge = 1.0 - smoothstep(0.84, 1.0, radius);
   float disk = exp(-radius * 2.05) * edge;
-  float core = exp(-radius * radius * 64.0);
+  float core = exp(-radius * radius * 44.0);
 
   // Barra de 5 kpc inclinada 29° em relação à linha Sol–centro.
   // mat2 é column-major: esta é R(+29°), que traz a crista da barra
@@ -261,33 +264,41 @@ void main() {
   vec2 cart = texture2D(uDustMap, p * 0.5 + 0.5).rg;
   float obsCoverage = cart.g * uCartBlend;
   float obsLanes = smoothstep(0.56, 0.88, cart.r);
+  vec4 structure = texture2D(uStructureMap, p * 0.5 + 0.5);
+  float gasSupport = structure.b * uCartBlend;
+  float youngSupport = structure.a * uCartBlend;
+  float gasResponse =
+    structure.r * mix(uInferenceGain, 1.0, gasSupport);
+  float youngResponse =
+    structure.g * mix(uInferenceGain, 1.0, youngSupport);
+  float clumps =
+    mix(0.54, 1.0, youngResponse) * mix(0.76, 1.0, microNoise);
+  // A população velha é quase lisa; os quatro braços visíveis são
+  // principalmente gás e estrelas jovens, como nos mapas Gaia.
+  float oldStellarArm = arms * 0.16 * uInferenceGain;
+  float armLight = oldStellarArm + youngResponse * 0.78;
+  armLight *= mix(1.0, 0.88 + obsLanes * 0.42, obsCoverage * 0.55);
 
-  // Braços menos dominantes e com interrupções: é a leitura Gaia 2025,
-  // não a velha "grand design" simétrica.
-  float continuity = smoothstep(0.28, 0.62, broadNoise * 0.72 + fineNoise * 0.28);
-  float clumps = mix(0.34, 1.0, broadNoise) * mix(0.58, 1.0, fineNoise);
-  float armLight = arms * mix(0.44, 1.0, continuity);
-  // formação estelar acompanha o gás denso medido (sutil)
-  armLight *= mix(1.0, 0.78 + obsLanes * 0.65, obsCoverage * 0.6);
-  // Onde o APOGEE mediu, as fendas procedurais CEDEM (contrato:
-  // inferido preenche só onde não há amostragem) — a atenuação
-  // gradual evita costura na borda da cobertura.
-  float absorptionProc =
-    1.0 - dustArms * (1.0 - obsCoverage * 0.65) *
-      smoothstep(0.52, 0.84, fineNoise) * 0.64;
-  float absorptionObs =
-    1.0 - obsLanes * (0.55 + 0.45 * smoothstep(0.3, 0.8, fineNoise)) * 0.78;
-  float absorption = absorptionProc * mix(1.0, absorptionObs, obsCoverage);
+  // O mapa já fez o split macro observado/inferido; a mesma microtextura
+  // fina apenas resolve subestrutura. APOGEE refina a extinção local.
+  float dustMacro = mix(gasResponse, max(gasResponse, obsLanes), obsCoverage);
+  float microDetail = mix(
+    0.62,
+    1.0,
+    smoothstep(0.50, 0.82, microNoise)
+  );
+  float absorption = 1.0 - dustMacro * microDetail * 0.78;
 
-  float stellarClouds =
-    0.042 + broadNoise * broadNoise * 0.155 + fineNoise * 0.014;
-  float intensity = disk * (stellarClouds + armLight * 0.13 * clumps);
-  intensity += core * 0.132 + bar * 0.046;
+  float stellarClouds = (0.036 + microNoise * 0.006) * uInferenceGain;
+  float intensity =
+    disk * (stellarClouds + armLight * 0.235 * clumps);
+  intensity += (core * 0.112 + bar * 0.052) * uInferenceGain;
   intensity *= absorption * uLayerAlpha * uFade;
 
-  vec3 cold = vec3(0.28, 0.40, 0.72);
-  vec3 warm = vec3(0.92, 0.62, 0.40);
-  vec3 color = mix(cold, warm, broadNoise * 0.46);
+  vec3 cold = vec3(0.42, 0.51, 0.72);
+  vec3 warm = vec3(0.92, 0.70, 0.52);
+  vec3 color = mix(cold, warm, clamp(1.0 - radius * 0.78, 0.12, 0.92));
+  color = mix(color, vec3(0.68, 0.80, 1.0), youngResponse * 0.24);
   color = mix(
     color,
     vec3(1.0, 0.72, 0.44),
@@ -296,7 +307,7 @@ void main() {
   color = mix(
     color,
     vec3(0.92, 0.22, 0.44),
-    armLight * smoothstep(0.78, 0.94, fineNoise) * 0.30
+    youngResponse * smoothstep(0.80, 0.94, microNoise) * 0.18
   );
   // avermelhamento por extinção nas fendas medidas
   color = mix(

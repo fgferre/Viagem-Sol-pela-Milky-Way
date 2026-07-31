@@ -98,13 +98,10 @@ export function armThetaAtRadius(radiusPc: number, arm: SpiralArmDefinition) {
     phaseAtSunRad +
     Math.log(Math.max(radiusPc, 180) / GALACTIC_MODEL.sunRadiusPc) /
       Math.tan((pitchDeg * Math.PI) / 180);
-  // Kinks/ondulações suaves quebram a perfeição matemática sem
-  // deslocar o braço além da sua largura observacional.
-  return (
-    base +
-    0.052 * Math.sin(radiusPc * 0.00115 + phaseAtSunRad * 2.7) +
-    0.022 * Math.sin(radiusPc * 0.0037 - phaseAtSunRad)
-  );
+  // A espinha inferida permanece lisa. Quebras macroscópicas só podem vir
+  // das fases/janelas ajustadas aos masers ou do campo de matéria observado;
+  // não se adiciona assimetria senoidal apenas por direção de arte.
+  return base;
 }
 
 function smoothstepTs(edge0: number, edge1: number, value: number) {

@@ -109,34 +109,46 @@ interface GalaxyBuffers {
   dustCount: number;
 }
 
-/** amostrador de cobertura observacional (canal G do dust map) */
-interface CoverageField {
-  data: Float32Array;
+/** Campos CPU iguais aos usados no bake emissivo do disco. */
+interface StructureField {
+  gasSupport: Float32Array;
+  youngResponse: Float32Array;
+  youngSupport: Float32Array;
   size: number;
   halfExtentPc: number;
 }
 
 export function buildGalaxy(
   seed = 20260730,
-  coverage?: CoverageField
+  structure?: StructureField
 ): GalaxyBuffers {
   const rnd = mulberry32(seed);
-  // onde o APOGEE mediu, o preenchimento procedural CEDE (contrato:
-  // inferido só onde não há amostragem) — H II inventado não disputa
-  // com as 1.413 regiões WISE reais
-  const coverageAt = (lx: number, ly: number): number => {
-    if (!coverage) return 0;
-    const s = coverage.size;
-    const ix = Math.floor((lx / (2 * coverage.halfExtentPc) + 0.5) * s);
-    const iy = Math.floor((ly / (2 * coverage.halfExtentPc) + 0.5) * s);
+  const sampleAt = (
+    field: Float32Array | undefined,
+    lx: number,
+    ly: number
+  ): number => {
+    if (!structure || !field) return 0;
+    const s = structure.size;
+    const ix = Math.floor((lx / (2 * structure.halfExtentPc) + 0.5) * s);
+    const iy = Math.floor((ly / (2 * structure.halfExtentPc) + 0.5) * s);
     if (ix < 0 || ix >= s || iy < 0 || iy >= s) return 0;
-    return coverage.data[iy * s + ix];
+    return field[iy * s + ix];
   };
+  const gasSupportAt = (lx: number, ly: number) =>
+    sampleAt(structure?.gasSupport, lx, ly);
+  const youngResponseAt = (lx: number, ly: number) =>
+    sampleAt(structure?.youngResponse, lx, ly);
+  const youngSupportAt = (lx: number, ly: number) =>
+    sampleAt(structure?.youngSupport, lx, ly);
 
   const N_DISK = 170000;
   const N_BULGE = 85000;
   const N_LOCAL = 14000;
-  const N_HII = 2200;
+  // Preenchimento inferido só completa o lado sem catálogo. O layer
+  // observado já contém 1.413 regiões WISE; milhares de nós sintéticos
+  // desenhavam os braços como pontilhados perfeitamente contínuos.
+  const N_HII = 900;
   const N_HALO = 5000;
   const N_SAGITTARIUS_DWARF = 6500;
   const N_DUST = 100000;
@@ -205,7 +217,10 @@ export function buildGalaxy(
       cb = cb * 0.76 + arm.tint[2] * 0.24;
     }
     const dim = 0.35 + 0.65 * rnd() * rnd();
-    const armWeight = inArm ? arm.weight * 0.48 : 0.78;
+    const youngResponse = youngResponseAt(lx, ly);
+    const armWeight = inArm
+      ? arm.weight * (0.16 + youngResponse * 0.58)
+      : 0.72;
     put(
       lx, ly, lz,
       cr * dim, cg * dim, cb * dim,
@@ -241,7 +256,9 @@ export function buildGalaxy(
       0.80 * dim,
       1.0 * dim,
       4 + rnd() * 15,
-      (0.045 + rnd() * 0.105) * LOCAL_ARM.weight
+      (0.045 + rnd() * 0.105) *
+        LOCAL_ARM.weight *
+        (0.22 + youngResponseAt(lx, ly) * 0.72)
     );
   }
 
@@ -313,22 +330,25 @@ export function buildGalaxy(
     const ly = r * Math.sin(theta);
     const lz =
       warpHeightPc(r, theta) + gauss(rnd) * (46 + flareAtRadius(r) * 105);
+    const youngSupport = youngSupportAt(lx, ly);
+    const youngResponse = youngResponseAt(lx, ly);
     const armWeight =
       (inLocalArm ? LOCAL_ARM.weight : arm.weight) *
-      (1 - coverageAt(lx, ly) * 0.7);
+      (1 - youngSupport * 0.92) *
+      (0.14 + youngResponse * 0.86);
     if (rnd() < 0.6) {
       put(
         lx, ly, lz,
         1.0, 0.38, 0.55,
         35 + rnd() * 140,
-        (0.035 + rnd() * 0.09) * armWeight
+        (0.018 + rnd() * 0.052) * armWeight
       );
     } else {
       put(
         lx, ly, lz,
         0.62, 0.78, 1.0,
         35 + rnd() * 140,
-        (0.035 + rnd() * 0.085) * armWeight
+        (0.018 + rnd() * 0.048) * armWeight
       );
     }
   }
@@ -382,7 +402,7 @@ export function buildGalaxy(
     dust[o + 4] = 1;
     dust[o + 5] = 1;
     dust[o + 6] = size;
-    dust[o + 7] = alpha;
+    dust[o + 7] = alpha * (1 - gasSupportAt(lx, ly) * 0.8);
     dN++;
   };
   for (let i = 0; i < N_DUST; i++) {
@@ -453,6 +473,7 @@ export class Galaxy {
   private discRTs: THREE.WebGLRenderTarget[] = [];
   private markerMesh!: THREE.Mesh;
   private dustMap: THREE.Texture;
+  private structureMap: THREE.Texture;
   private dustPts!: THREE.Points;
   private glowMesh!: THREE.Mesh;
   private dwarfMesh!: THREE.Mesh;
@@ -476,9 +497,14 @@ export class Galaxy {
 
   private ownsDustMap: boolean;
 
-  constructor(buffers: GalaxyBuffers, dustMap?: THREE.Texture | null) {
+  constructor(
+    buffers: GalaxyBuffers,
+    dustMap: THREE.Texture,
+    structureMap: THREE.Texture
+  ) {
     this.ownsDustMap = !dustMap;
     this.dustMap = dustMap ?? Galaxy.emptyDustMap();
+    this.structureMap = structureMap;
     // --- partículas brilhantes (aditivas) ---
     const geo = new THREE.BufferGeometry();
     const bd = buffers.bright;
@@ -541,8 +567,8 @@ export class Galaxy {
       vertexShader: GALAXY_VERT,
       fragmentShader: GALAXY_DUST_FRAG,
       uniforms: {
-        ...this.sharedUniforms(22),
-        uDustColor: { value: new THREE.Vector3(0.4, 0.36, 0.33) },
+        ...this.sharedUniforms(10),
+        uDustColor: { value: new THREE.Vector3(0.69, 0.61, 0.54) },
       },
       blending: THREE.MultiplyBlending,
       depthWrite: false,
@@ -621,7 +647,9 @@ export class Galaxy {
           uLayerAlpha: { value: alpha },
           uDiskRadius: { value: GAL.DISK_RADIUS },
           uDustMap: { value: this.dustMap },
+          uStructureMap: { value: this.structureMap },
           uCartBlend: { value: 1 },
+          uInferenceGain: { value: 1 },
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -653,8 +681,11 @@ export class Galaxy {
       if (material.uniforms.uCartBlend) {
         material.uniforms.uCartBlend.value = mode === 'off' ? 0 : 1;
       }
-      material.uniforms.uLayerAlpha.value =
-        this.discBaseAlphas[index] * (mode === 'observed' ? 0.35 : 1);
+      if (material.uniforms.uInferenceGain) {
+        material.uniforms.uInferenceGain.value =
+          mode === 'observed' ? 0.24 : 1;
+      }
+      material.uniforms.uLayerAlpha.value = this.discBaseAlphas[index];
     });
   }
 
@@ -743,7 +774,10 @@ export class Galaxy {
     if (!this.group.visible) return;
 
     const brightFade = Math.max(externalFade, localBandFade);
-    const dustFade = Math.max(externalFade, localBandFade * 0.72);
+    // Na vista externa as lâminas já contêm a extinção integrada. Sprites
+    // de poeira 3D ficam só no ambiente interno, onde dão paralaxe; de
+    // cima pareciam furos circulares sem contraparte no alvo Gaia.
+    const dustFade = localBandFade * 0.72;
     for (const [m, layerFade] of [
       [this.brightMat, brightFade],
       [this.dustMat, dustFade],
