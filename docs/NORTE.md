@@ -113,3 +113,13 @@ Já medidos e refutados — a lista completa das hipóteses de espiral está em
 - Desacoplar a fase da poeira da fase da luz: piora muito.
 - Cor do disco decidida por raio (`mix(cold, warm)` com piso de dourado): torna o disco
   geometricamente incapaz de púrpura. É o que a unificação 1→3 substitui.
+- **Pesar H II para subir o púrpura: não funciona.** O raciocínio é tentador — H II tem o
+  purp mais alto da cena (+0,303) — e foi medido nas rodadas 06/07: com fluxo conservado,
+  purp fica em 0,1205 contra 0,1206 sem a mudança. Os 9.000 nós são área pequena demais, e
+  o termo H II das lâminas é normalizado em luminância, então só desloca matiz onde o
+  portão de ruído abre. O ganho aparente da rodada 06 era fluxo extra sobre os braços
+  disfarçado de cor — e custou m=1, m=3, m=5 e m=6 piorando juntos, a assinatura de
+  intermodulação que `reference/VISUAL_TARGETS.md` já registra.
+- **Lição de método que vale além deste caso:** trocar a cor de uma população por outra de
+  luminância diferente é uma mudança de FLUXO disfarçada. Normalize por Y e compense no
+  alpha, ou a medição atribui à cor um efeito que é de brilho.

@@ -464,7 +464,13 @@ void main() {
   float outward = clamp((radiusPc - 3000.0) / 7500.0, 0.0, 1.0);
   float wOld = disk * 0.80 * structureLight + core * 0.53 + bar * 0.23;
   float wYoung = (formationResponse * 0.55 + outward * 0.35) * disk * structureLight;
-  float wHii = formationResponse * smoothstep(0.80, 0.94, microNoise) * 0.34 * disk;
+  // Onde existe região H II a emissão é DOMINADA por linha — o gás ionizado
+  // não é um tempero sobre o contínuo estelar, ele é a luz. Com peso 0,34
+  // contra um wOld de ordem 1, o nó contribuía ~6% da cor e o purp +0,303 do
+  // H II não chegava à média do anel. O limiar também era alto demais: os
+  // 20% mais altos de um ruído dão pulverização, e nas fotos de referência
+  // os nós H II são contas enfiadas ao longo do braço.
+  float wHii = formationResponse * smoothstep(0.66, 0.90, microNoise) * 1.2 * disk;
   vec3 color = (POP_OLD * wOld + POP_YOUNG * wYoung + POP_HII * wHii)
              / max(wOld + wYoung + wHii, 1e-5);
   // L ≡ 1: a paleta antiga escondia brilho na cor — Y(cold)=0,587 contra

@@ -29,7 +29,7 @@ import {
   localArmThetaAtRadius,
   warpHeightPc,
 } from '../cartography/galacticModel';
-import { blackbodyLinear } from '../shaders/common';
+import { blackbodyLinear, POP_HII } from '../shaders/common';
 
 // As três populações do disco, por temperatura efetiva. Y ≈ 1 nas três, então
 // a escolha de população muda MATIZ e não brilho — brilho é a lei de
@@ -473,22 +473,36 @@ export function buildGalaxy(
       (0.85 + youngResponse * 0.30);
     // Nós compactos (25–120 pc) leem como pontos vermelhos/azuis nos
     // braços; 35–175 pc viravam manchas difusas que sumiam no fundo.
+    // O nó ionizado e o aglomerado que o ioniza, cada um com o espectro que
+    // tem. Eram (1,00 0,30 0,44) e (0,55 0,74 1,00): o primeiro com purp
+    // +0,420 — mais púrpura que a física — mas Y = 0,459, ou seja ESCURO,
+    // e o segundo com purp +0,035, um "azul jovem" quase neutro que puxava
+    // a média para baixo. Trocados pelas populações de verdade, o nó perde
+    // um pouco de matiz e ganha 2,2× de fluxo (Y = 1), e o aglomerado sobe
+    // de +0,035 para +0,164. O peso da cor na média do anel é o fluxo.
+    // Os fatores 0,459 e 0,716 são os Y das cores antigas: as populações têm
+    // Y = 1, então trocar a cor sozinha multiplicava o fluxo destes nós por
+    // 2,2× e 1,4×. Como eles moram sobre os braços, isso é contraste de braço
+    // disfarçado de mudança de cor — medido na rodada 06: m=1, m=3, m=5 e m=6
+    // pioraram JUNTOS, que é a assinatura de intermodulação que
+    // VISUAL_TARGETS.md já registra como beco. Cor decide matiz, alpha decide
+    // fluxo, e nunca os dois na mesma medição.
     if (rnd() < 0.62) {
       put(
         lx, ly, lz,
-        1.0, 0.30, 0.44,
+        POP_HII[0], POP_HII[1], POP_HII[2],
         30 + rnd() * 110,
         // De 33 kpc um nó de 70 pc tem ~2,7 px: para LER como ponto
         // vermelho precisa de contraste, não de tamanho — aumentar o
         // raio só o dissolveria no fundo.
-        (0.05 + rnd() * 0.115) * armWeight
+        (0.05 + rnd() * 0.115) * armWeight * 0.459
       );
     } else {
       put(
         lx, ly, lz,
-        0.55, 0.74, 1.0,
+        POP_YOUNG[0], POP_YOUNG[1], POP_YOUNG[2],
         30 + rnd() * 110,
-        (0.05 + rnd() * 0.11) * armWeight
+        (0.05 + rnd() * 0.11) * armWeight * 0.716
       );
     }
   }

@@ -18,3 +18,5 @@ final, as imagens locais e esta tabela se leem juntas.
 | 03 | 0.1056 | 0.1167 | 0.1386 | 0.1195 | recalibrar nivel: paleta nao carrega mais brilho (POP_LUMA_FIX) |
 | 04 | 0.1025 | 0.1169 | 0.1372 | 0.1151 | campo iluminante do espalhamento: populacao jovem observada no lugar de rampa por raio |
 | 05 | 0.1007 | 0.1171 | 0.1373 | 0.1206 | campo de radiacao difuso: piso no disco + gradiente de idade + realce dos bracos |
+| 06 | 0.1104 | 0.1169 | 0.1397 | 0.1231 | H II com o espectro e o peso que tem: nos e laminas |
+| 07 | 0.1015 | 0.1172 | 0.1373 | 0.1205 | conservar fluxo dos nos H II: cor decide matiz, alpha decide fluxo |
