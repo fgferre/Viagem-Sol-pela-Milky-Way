@@ -88,10 +88,14 @@ renderizar e a linha não mede nada.
   `?nonebula=1`). A alavanca dominante é `pixelRatio`, não o número de passos: em
   `?q=performance` (30 passos, ratio 1,0) o raymarch some dentro do vsync. Custo por
   amostra-pixel ≈ 22 ps ⇒ **campo distante a 1440p com 32 passos ≈ 2,6 ms**. Há orçamento.
-- **Cor:** púrpura na faixa 0,25–1,05 R90 é **+0,120 contra alvo +0,201** depois da soma de
-  populações (era +0,084 com a paleta pintada). 59% do alvo. O que falta é espalhamento e
-  H II com peso, não mais matiz na emissão do disco. Histórico em
+- **Cor:** púrpura na faixa 0,25–1,05 R90 é **+0,121 contra alvo +0,201** (era +0,084 com a
+  paleta pintada). 60% do alvo. Emissão e espalhamento já saem de temperatura de população;
+  o componente que falta pesar é **H II**, que tem o purp mais alto da cena (+0,303) e hoje
+  só existe onde `microNoise` passa de 0,80 — área pequena. Histórico em
   `reference/EVOLUCAO.md`.
+- **O campo de radiação é não-local.** Keyar a cor do espalhamento só no traçador jovem
+  local zerou o azul no interbraço e derrubou purp (rodada 04). A luz de O/B atravessa o
+  interbraço: o modelo precisa de piso difuso + gradiente + realce de braço.
 - **O teto de cor é a GAMUT da paleta, não o `clamp`.** `mix(cold, warm, t)` com
   `cold=(0,56,0,58,0,74)` e `warm=(0,98,0,70,0,42)`: purp vale +0,0828 no piso atual
   (t=0,20) e só +0,0946 com `cold` puro (t=0) — o alvo do anel externo é **+0,317**, fora

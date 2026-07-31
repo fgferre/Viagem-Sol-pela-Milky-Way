@@ -564,9 +564,39 @@ export function buildGalaxy(
     // justamente onde a poeira é mais densa (disco interno).
     const g = gasResponseAt(lx, ly);
     const shield = g * Math.exp(-g * 2.2) * 2.72;
-    const fr = 0.3 + 0.7 * towardCenter;
-    const fg = 0.43 + 0.29 * towardCenter;
-    const fb = 0.78 - 0.36 * towardCenter;
+    // A cor do que ILUMINA o grão decide a cor do que ele espalha. Isto eram
+    // três rampas pintadas em `towardCenter`, ou seja: o matiz da poeira era
+    // função do RAIO. Agora é a mistura das mesmas duas populações da emissão,
+    // pesada pelos traçadores jovens OBSERVADOS — a poeira fica azul onde há
+    // formação estelar de verdade, não a tantos kpc do centro.
+    //
+    // A fração satura rápido de propósito: uma O/B é ~10⁴ vezes mais luminosa
+    // que uma gigante K, então mesmo uma fração ínfima em NÚMERO domina o
+    // campo de radiação. O bojo puxa de volta para o velho porque ali não há
+    // jovens e a luz é de gigantes.
+    // O campo de radiação é uma INTEGRAL sobre ~kpc, não uma amostra local:
+    // o interbraço é iluminado pelos braços vizinhos. Keyar só no traçador
+    // local zerava o azul entre os braços e derrubou purp de 0,1195 para
+    // 0,1151 na rodada 04. Por isso três termos: um piso difuso em todo o
+    // disco, o gradiente de idade que a emissão já usa, e o realce local dos
+    // braços. Só o bojo volta ao velho, e ali é verdade — não há jovens.
+    const outwardD = Math.min(1, Math.max(0, (rPc - 3_000) / 7_500));
+    const fYoung =
+      (1 - towardCenter) *
+      Math.min(
+        1,
+        0.55 + outwardD * 0.35 + effectiveYoungResponseAt(lx, ly) * 0.8
+      );
+    const jr = POP_OLD[0] + (POP_YOUNG[0] - POP_OLD[0]) * fYoung;
+    const jg = POP_OLD[1] + (POP_YOUNG[1] - POP_OLD[1]) * fYoung;
+    const jb = POP_OLD[2] + (POP_YOUNG[2] - POP_OLD[2]) * fYoung;
+    // As populações têm Y ≈ 1 e as rampas antigas tinham Y médio 0,569: sem
+    // este fator o espalhamento ficaria 1,8× mais brilhante só por trocar a
+    // cor. Nível é `field × shield`, não a escolha de matiz.
+    const jY = Math.max(0.2126 * jr + 0.7152 * jg + 0.0722 * jb, 1e-5);
+    const fr = (jr / jY) * 0.569;
+    const fg = (jg / jY) * 0.569;
+    const fb = (jb / jY) * 0.569;
     dust[o + 3] = fr * field * shield * 0.72;
     dust[o + 4] = fg * field * shield * 1.0;
     dust[o + 5] = fb * field * shield * 1.34;
