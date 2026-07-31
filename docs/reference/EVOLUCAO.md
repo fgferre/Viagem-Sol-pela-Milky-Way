@@ -14,3 +14,5 @@ final, as imagens locais e esta tabela se leem juntas.
 |---|---|---|---|---|---|
 | — | 0 | 0.1175 | 0.0679 | 0.2010 | **alvo (foto real)** |
 | 01 | 0.1233 | 0.1078 | 0.1336 | 0.0840 | baseline: espalhamento religado, fotometria logLum+PSF, fades somados |
+| 02 | 0.1186 | 0.1522 | 0.1083 | 0.1076 | soma de populacoes: corpo negro por temperatura no lugar dos tripletos pintados |
+| 03 | 0.1056 | 0.1167 | 0.1386 | 0.1195 | recalibrar nivel: paleta nao carrega mais brilho (POP_LUMA_FIX) |

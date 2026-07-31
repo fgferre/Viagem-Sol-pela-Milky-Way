@@ -29,6 +29,14 @@ import {
   localArmThetaAtRadius,
   warpHeightPc,
 } from '../cartography/galacticModel';
+import { blackbodyLinear } from '../shaders/common';
+
+// As três populações do disco, por temperatura efetiva. Y ≈ 1 nas três, então
+// a escolha de população muda MATIZ e não brilho — brilho é a lei de
+// luminosidade em potência, mais abaixo.
+const POP_YOUNG = blackbodyLinear(20_000); // O/B nos braços
+const POP_OLD = blackbodyLinear(4_800); // K/G, o corpo do disco
+const POP_GIANT = blackbodyLinear(3_500); // gigantes M do ramo
 
 // ---- Geometria galáctica real no referencial da cena (pc) ----
 export const GAL = {
@@ -296,9 +304,18 @@ export function buildGalaxy(
     // borda saía cinza-escura. Fisicamente o disco externo é mais JOVEM
     // e tem razão luz/massa maior: mais fração azul e mais brilho por
     // partícula, com a massa ainda seguindo Rd = 2,6 kpc.
-    if (p < 0.07 + 0.55 * outward) [cr, cg, cb] = [0.72, 0.83, 1.0];
-    else if (p < 0.80) [cr, cg, cb] = [0.96, 0.89, 0.82];
-    else [cr, cg, cb] = [1.0, 0.66, 0.45];
+    // Cor por TEMPERATURA, não por tripleto pintado. As três cores antigas
+    // eram (0,72 0,83 1,00), (0,96 0,89 0,82) e (1,00 0,66 0,45), com purp
+    // +0,030 / −0,000 / +0,065 — o alvo do anel externo é +0,317, fora do
+    // que qualquer mistura delas alcança. O corpo negro real a 20000 K tem
+    // purp +0,164, cinco vezes o azul pintado, porque um espectro quente de
+    // verdade tem o verde bem abaixo da média de R e B.
+    // Elas também carregavam brilho escondido (Y de 0,717 a 0,900): quem
+    // decide brilho é `lum` logo abaixo, não a escolha de cor. blackbodyLinear
+    // é Y ≈ 1 por construção, então isso some junto.
+    if (p < 0.07 + 0.55 * outward) [cr, cg, cb] = POP_YOUNG;
+    else if (p < 0.80) [cr, cg, cb] = POP_OLD;
+    else [cr, cg, cb] = POP_GIANT;
     if (inArm) {
       cr = cr * 0.82 + arm.tint[0] * 0.18;
       cg = cg * 0.82 + arm.tint[1] * 0.18;

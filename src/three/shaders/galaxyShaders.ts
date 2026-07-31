@@ -4,6 +4,7 @@
 // que escurece o fundo e billboards de brilho (bojo / marcador).
 // ============================================================
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GLSL_STAR_COLOR } from './common';
 
 // Vértice compartilhado pelas partículas brilhantes e pela poeira.
 export const GALAXY_VERT = /* glsl */ `
@@ -247,6 +248,7 @@ uniform float uBackgroundGain;
 varying vec2 vUv;
 
 ${GLSL_CARTOGRAPHY}
+${GLSL_STAR_COLOR}
 
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -426,12 +428,18 @@ void main() {
   // lâminas eram 95% da luz do disco, por isso a granulação travava em
   // 0,048 (alvo 0,075) — luz analítica lisa não granula. O fluxo migra
   // para as partículas, que é onde a estrutura fina existe.
-  float intensity = disk * 0.80 * structureLight * uBackgroundGain;
+  // A paleta antiga carregava luminância na cor (Y de 0,587 a 0,739). Com a
+  // soma de populações normalizada a L≡1 esse brilho voltou de uma vez:
+  // discMean medido saltou de 0,1078 para 0,1522 contra alvo 0,1175. O fator
+  // devolve o NÍVEL sem devolver o gradiente radial, que não estava em modelo
+  // nenhum de intensidade e por isso não deve voltar.
+  const float POP_LUMA_FIX = 0.772;
+  float intensity = disk * 0.80 * structureLight * uBackgroundGain * POP_LUMA_FIX;
   // O perfil medido ficava 1,5× acima do alvo em TODO o disco, com o
   // pico igual: é bojo fraco demais, não disco brilhante demais. O alvo
   // tem um núcleo pequeno e intenso que normaliza o resto para baixo.
   intensity +=
-    (core * 0.53 + bar * 0.23) * uBackgroundGain;
+    (core * 0.53 + bar * 0.23) * uBackgroundGain * POP_LUMA_FIX;
   intensity *= absorption * uLayerAlpha * uFade;
 
   // Curva de cor do alvo: (R−B)/(R+B) ≈ +0,35 no disco interno, ~0 em
@@ -439,25 +447,30 @@ void main() {
   // “warm” era pálido demais e o tonemap ACES dessatura os altos.
   // O alvo é LAVANDA acinzentado no disco, não azul saturado; misturado
   // com o quente, azul saturado vira marrom.
-  vec3 cold = vec3(0.56, 0.58, 0.74);
-  vec3 warm = vec3(0.98, 0.70, 0.42);
-  // O quente fica no miolo: a 5 kpc o alvo já é lavanda. Com 1.05 o
-  // disco inteiro saía sépia (medido: +0,24 em 8 kpc contra +0,17).
-  vec3 color = mix(cold, warm, clamp(1.0 - (radius - 0.06) * 1.55, 0.20, 0.95));
-  // halo quente do bojo: no alvo o bege se estende a ~3 kpc, bem além do
-  // núcleo saturado. Só cor — não entra na intensidade.
-  color = mix(color, vec3(1.0, 0.78, 0.52), exp(-radius * radius * 40.0) * 0.55);
-  color = mix(color, vec3(0.68, 0.80, 1.0), formationResponse * 0.24);
-  color = mix(
-    color,
-    vec3(1.0, 0.66, 0.34),
-    clamp(core + bar, 0.0, 1.0) * 0.92
-  );
-  color = mix(
-    color,
-    vec3(0.92, 0.22, 0.44),
-    formationResponse * smoothstep(0.80, 0.94, microNoise) * 0.18
-  );
+  // SOMA DE POPULAÇÕES, não paleta. A antiga era mix(cold, warm) por RAIO:
+  // um segmento entre dois pontos do espaço de cor, e o alvo do anel externo
+  // (purp +0,317) fica FORA desse segmento — cold puro dá só +0,095, então
+  // nem remover o piso do clamp resolvia. Quem alcança são componentes com o
+  // verde fundo de verdade: H II tem purp +0,303, uma O/B a 20000 K +0,164.
+  //
+  // Os pesos NÃO são novos: são as mesmas grandezas que a intensidade logo
+  // acima já usa. A cor deixa de ser uma decisão e passa a ser consequência
+  // de quem está emitindo ali.
+  vec3 POP_OLD = blackbodyLinear(4800.0);    // K/G, corpo do disco e bojo
+  vec3 POP_YOUNG = blackbodyLinear(20000.0); // O/B nos braços
+  vec3 POP_HII = vec3(1.664, 0.807, 0.957);  // Hα+[NII] e [OIII]+Hβ
+  // fração jovem crescendo para fora: mesmo gradiente de idade do gerador
+  // de partículas (galaxy.ts), (r − 3 kpc)/7,5 kpc
+  float outward = clamp((radiusPc - 3000.0) / 7500.0, 0.0, 1.0);
+  float wOld = disk * 0.80 * structureLight + core * 0.53 + bar * 0.23;
+  float wYoung = (formationResponse * 0.55 + outward * 0.35) * disk * structureLight;
+  float wHii = formationResponse * smoothstep(0.80, 0.94, microNoise) * 0.34 * disk;
+  vec3 color = (POP_OLD * wOld + POP_YOUNG * wYoung + POP_HII * wHii)
+             / max(wOld + wYoung + wHii, 1e-5);
+  // L ≡ 1: a paleta antiga escondia brilho na cor — Y(cold)=0,587 contra
+  // Y(warm)=0,739, um gradiente radial de 1,26× que não estava em modelo
+  // nenhum de intensidade. Quem decide brilho é a intensity.
+  color /= max(dot(color, vec3(0.2126, 0.7152, 0.0722)), 1e-5);
   // Avermelhamento por extinção. Antes era uma TINTA pintada só onde o
   // survey mediu fenda; agora é o que sobra de exp(-tau) com a lei CCM89
   // (R_V=3,1, A_R/A_V=0,75 e A_B/A_V=1,32) — a mesma dos filamentos na

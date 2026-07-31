@@ -244,3 +244,26 @@ vec3 bvToColor(float bv) {
   return blackbodyLinear(t);
 }
 `;
+
+/**
+ * Espelho CPU de `blackbodyLinear`, mesmo polinômio. Fica coladinho no GLSL
+ * de propósito: as cores das partículas da galáxia são decididas na CPU no
+ * build e as das lâminas no shader — se as duas fórmulas se separarem em
+ * arquivos distintos, divergem em silêncio e ninguém vê.
+ */
+export function blackbodyLinear(T: number): [number, number, number] {
+  const u = Math.min(2, Math.max(0.125, 5000 / T));
+  return [
+    0.64 + 0.42 * u + 0.15 * u * u,
+    0.98 + 0.08 * u - 0.1 * u * u,
+    2.3 - 1.98 * u + 0.45 * u * u,
+  ];
+}
+
+/**
+ * Emissão de região H II em sRGB linear, Y = 1: Hα 656 nm e [N II] dominam o
+ * vermelho, [O III] 501 nm e Hβ levantam o azul-verde. O verde fica ABAIXO da
+ * média de R e B — é essa a assinatura do púrpura, e é o único componente da
+ * cena que a tem forte (purp = +0,303 contra +0,164 de uma O/B).
+ */
+export const POP_HII: [number, number, number] = [1.664, 0.807, 0.957];
