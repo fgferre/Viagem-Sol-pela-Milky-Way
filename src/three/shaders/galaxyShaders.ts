@@ -458,12 +458,15 @@ void main() {
     vec3(0.92, 0.22, 0.44),
     formationResponse * smoothstep(0.80, 0.94, microNoise) * 0.18
   );
-  // avermelhamento por extinção nas fendas medidas
-  color = mix(
-    color,
-    color * vec3(1.10, 0.78, 0.55),
-    obsCoverage * obsLanes * dustFilament * 0.6
-  );
+  // Avermelhamento por extinção. Antes era uma TINTA pintada só onde o
+  // survey mediu fenda; agora é o que sobra de exp(-tau) com a lei CCM89
+  // (R_V=3,1, A_R/A_V=0,75 e A_B/A_V=1,32) — a mesma dos filamentos na
+  // linha 101. Dividir pela luminância mantém o fator com L=1: quem
+  // governa o fluxo continua sendo absorption, intocado, então m=1..6
+  // e discMean não enxergam esta linha. Só o matiz muda — e é ele que
+  // faz o não-obscurecido ler azul contra a fenda dourada.
+  vec3 trans = exp(-(dustMacro * dustFilament * 1.6) * vec3(0.75, 1.0, 1.32));
+  color *= trans / dot(trans, vec3(0.2126, 0.7152, 0.0722));
 
   gl_FragColor = vec4(color * intensity, 1.0);
 }

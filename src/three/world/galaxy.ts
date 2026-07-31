@@ -1037,7 +1037,7 @@ export class Galaxy {
       [this.brightMat, brightFade],
       [this.dustMat, dustFade],
       // o espalhamento é mais fraco que a extinção: 1/3 do fluxo
-      [this.dustScatterMat, dustFade * 0.034],
+      [this.dustScatterMat, dustFade * 0.34],
     ] as const) {
       const u = m.uniforms;
       (u.uCamPos.value as THREE.Vector3).copy(camPos);
