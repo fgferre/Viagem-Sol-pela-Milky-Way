@@ -10,6 +10,7 @@ import {
   GALAXY_VERT,
   GALAXY_FRAG,
   GALAXY_DUST_FRAG,
+  GALAXY_DUST_SCATTER_FRAG,
   GLOW_VERT,
   GLOW_FRAG,
   DISC_VERT,
@@ -20,7 +21,7 @@ import {
 import {
   GALACTIC_MODEL,
   LOCAL_ARM,
-  SPIRAL_ARMS,
+  ALL_ARMS,
   armActivityAtRadius,
   armThetaAtRadius,
   armWidthPc,
@@ -121,7 +122,15 @@ interface StructureField {
 
 export function buildGalaxy(
   seed = 20260730,
-  structure?: StructureField
+  structure?: StructureField,
+  /**
+   * Fração da população do disco. 1 = cinema/alta. O buffer de 2,6 M
+   * partículas custa 83 MB e uma passada de vértices por frame; em
+   * `performance` (mobile) isso não cabe. Decidido no build e não muda
+   * com troca de qualidade em runtime — regerar 2,6 M no meio da viagem
+   * seria pior que a diferença visual.
+   */
+  populationScale = 1
 ): GalaxyBuffers {
   const rnd = mulberry32(seed);
   const sampleAt = (
@@ -153,22 +162,48 @@ export function buildGalaxy(
     return Math.max(young, gasDerived);
   };
 
-  const N_DISK = 170000;
+  // A granulação é a assinatura do alvo: um mar de pontos sub-pixel, não
+  // uma névoa analítica. 170k davam ~0,2 ponto/px² no disco de 1000 px.
+  const N_DISK = Math.round(2_600_000 * populationScale);
   const N_BULGE = 85000;
   const N_LOCAL = 14000;
   // Preenchimento inferido só completa o lado sem catálogo. O layer
   // observado já contém 1.413 regiões WISE; milhares de nós sintéticos
   // desenhavam os braços como pontilhados perfeitamente contínuos.
-  const N_HII = 900;
+  // O alvo mostra centenas de nós H II vermelhos ao longo dos braços; com
+  // 900 sujeitos a um peso que os apagava, sobrava nenhum visível.
+  const N_HII = 9000;
   const N_HALO = 5000;
   const N_SAGITTARIUS_DWARF = 6500;
-  const N_DUST = 100000;
+  // A poeira do alvo é uma REDE de muitas nuvens pequenas somando coluna,
+  // não poucas nuvens escuras. Com 200k sobre 16 kpc de disco a cobertura
+  // é rala, e subir τ escurece em vez de adensar. 600k com τ menor em
+  // cada dá a mesma extinção total com cobertura 3× maior.
+  const N_DUST = Math.round(430_000 * populationScale);
 
   const brightCount =
     N_DISK + N_LOCAL + N_BULGE + N_HII + N_HALO + N_SAGITTARIUS_DWARF;
   const bright = new Float32Array(brightCount * 8);
   const dust = new Float32Array(N_DUST * 8);
   let b = 0;
+
+  // Sorteio de braço proporcional à ÁREA do segmento (extensão radial ×
+  // raio médio). Com sorteio uniforme os braços de 3 kpc — curtos e
+  // internos — recebiam 1/6 de toda a poeira dentro de um anel minúsculo
+  // e apareciam como arcos pretos sólidos em vez de faixas.
+  const armArea = ALL_ARMS.map(
+    (a) =>
+      (a.maxRadiusPc - a.minRadiusPc) * (a.maxRadiusPc + a.minRadiusPc) * 0.5
+  );
+  const armAreaTotal = armArea.reduce((s, v) => s + v, 0);
+  const pickArm = () => {
+    let t = rnd() * armAreaTotal;
+    for (let i = 0; i < armArea.length; i++) {
+      t -= armArea[i];
+      if (t <= 0) return i;
+    }
+    return armArea.length - 1;
+  };
 
   const put = (
     lx: number, ly: number, lz: number,
@@ -186,6 +221,17 @@ export function buildGalaxy(
   };
 
   // ---- disco fino com braços ----
+  // Estrelas não são sorteio uniforme: nascem em complexos e os complexos
+  // se agrupam. Sem isso o disco é um creme liso — a granulação medida
+  // ficava em 0,048 contra 0,075 do alvo, e AUMENTAR a contagem só alisava
+  // mais. As N_SEED primeiras partículas viram sementes; o resto se
+  // aglutina em volta delas, mantendo a mesma distribuição ρ(R,θ).
+  const N_SEED = Math.round(9_000 * populationScale);
+  const seedX = new Float32Array(N_SEED);
+  const seedY = new Float32Array(N_SEED);
+  const seedZ = new Float32Array(N_SEED);
+  const seedR = new Float32Array(N_SEED);
+  let seedCount = 0;
   for (let i = 0; i < N_DISK; i++) {
     // Disco exponencial (Rd ≈ 2,6 kpc) truncado sem acumular uma
     // borda artificial. O raio de 16,8 kpc inclui a revisão de 2026
@@ -199,44 +245,92 @@ export function buildGalaxy(
         -GALACTIC_MODEL.stellarScaleLengthPc *
         Math.log(Math.max(rnd() * rnd(), 1e-7));
     } while (r > GALACTIC_MODEL.diskRadiusPc);
-    const k = Math.floor(rnd() * SPIRAL_ARMS.length);
-    const arm = SPIRAL_ARMS[k];
+    const k = pickArm();
+    const arm = ALL_ARMS[k];
     const activity = armActivityAtRadius(r, arm);
-    const inArm = rnd() < 0.52 * activity;
+    const inArm = rnd() < 0.40 * activity;
     const sigmaPerp = armWidthPc(r);
+    // 2,8σ deixava a população estelar 2× mais estreita que o braço das
+    // lâminas: uma fita brilhante dentro de um brilho largo. No alvo o
+    // braço estelar é largo e a fenda de poeira é que é fina.
     const theta = inArm
       ? armThetaAtRadius(r, arm) +
-        (gauss(rnd) * sigmaPerp * 2.8) / Math.max(r, 180)
+        (gauss(rnd) * sigmaPerp * 11.0) / Math.max(r, 180)
       : rnd() * Math.PI * 2;
     const flare = flareAtRadius(r);
     // A população jovem começa em σz≈20 pc; a velha produz o
     // componente fino de ~200 pc e ambos abrem no disco externo.
     const hz = inArm ? 50 + flare * 210 : 510 + flare * 670;
-    const lx = r * Math.cos(theta);
-    const ly = r * Math.sin(theta);
-    const lz = warpHeightPc(r, theta) + gauss(rnd) * hz;
+    let lx = r * Math.cos(theta);
+    let ly = r * Math.sin(theta);
+    let lz = warpHeightPc(r, theta) + gauss(rnd) * hz;
 
-    // cor por população estelar; braços ligeiramente mais azuis
+    if (seedCount < N_SEED) {
+      seedX[seedCount] = lx;
+      seedY[seedCount] = ly;
+      seedZ[seedCount] = lz;
+      seedR[seedCount] = r;
+      seedCount++;
+    } else if (rnd() < 0.72) {
+      // Complexo: σ 120 pc–1 kpc, a escala das associações OB, das nuvens
+      // gigantes e dos complexos que o alvo mostra como manchas. Com σ até
+      // 420 pc as nuvens ficavam abaixo da resolução do quadro externo.
+      // A semente já está distribuída por ρ, então aglutinar em volta dela
+      // não desloca o perfil radial nem o desenho dos braços.
+      const s = (rnd() * seedCount) | 0;
+      const sigma = 120 + rnd() * rnd() * 900;
+      lx = seedX[s] + gauss(rnd) * sigma;
+      ly = seedY[s] + gauss(rnd) * sigma;
+      lz = seedZ[s] + gauss(rnd) * sigma * 0.45;
+      r = seedR[s];
+    }
+
+    // Gradiente de população: a cor medida do alvo vai de (R−B)/(R+B)
+    // ≈ +0,35 no disco interno a ≈ −0,05 na borda. Com 25% de azuis em
+    // TODO raio a nossa curva ficava chapada em +0,14. A fração jovem
+    // cresce para fora, como o gradiente de idade/metalicidade real.
+    const outward = Math.min(1, Math.max(0, (r - 3_000) / 7_500));
     const p = rnd();
     let cr: number, cg: number, cb: number;
-    if (p < 0.25) [cr, cg, cb] = [0.78, 0.87, 1.0];
-    else if (p < 0.8) [cr, cg, cb] = [1.0, 0.87, 0.72];
-    else [cr, cg, cb] = [1.0, 0.72, 0.55];
+    // O disco externo do alvo é um halo azul-lavanda nítido, e a nossa
+    // borda saía cinza-escura. Fisicamente o disco externo é mais JOVEM
+    // e tem razão luz/massa maior: mais fração azul e mais brilho por
+    // partícula, com a massa ainda seguindo Rd = 2,6 kpc.
+    if (p < 0.07 + 0.55 * outward) [cr, cg, cb] = [0.72, 0.83, 1.0];
+    else if (p < 0.80) [cr, cg, cb] = [0.96, 0.89, 0.82];
+    else [cr, cg, cb] = [1.0, 0.66, 0.45];
     if (inArm) {
       cr = cr * 0.82 + arm.tint[0] * 0.18;
       cg = cg * 0.82 + arm.tint[1] * 0.18;
       cb = cb * 0.76 + arm.tint[2] * 0.24;
     }
+    // Função de luminosidade em lei de potência. Todas as partículas com
+    // brilho parecido dão um creme liso: a granulação medida ficava em
+    // 0,051 contra 0,075 do alvo, e MAIS partículas só alisavam mais. O
+    // alvo é um mar de pontos fracos com algumas estrelas resolvidas.
+    // u^-0.55 tem média 2,22; dividir por ela conserva o fluxo total.
+    const lum = Math.min(7, Math.pow(Math.max(rnd(), 1e-4), -0.42)) / 1.72;
     const dim = 0.35 + 0.65 * rnd() * rnd();
     const youngResponse = effectiveYoungResponseAt(lx, ly);
+    // O braço tem de ser MAIS brilhante que o interbraço — mas por pouco.
+    // Com (0.16 + young·0.58) contra 0.72 fixo a partícula de braço saía
+    // entre 0,19× e 0,89× do campo: o desenho espiral apagado. Com 0.14
+    // no interbraço ia ao outro extremo (contraste medido 10–44 contra
+    // 2–4 do alvo). O catálogo modula dentro do braço, não o cria.
     const armWeight = inArm
-      ? arm.weight * (0.16 + youngResponse * 0.58)
-      : 0.72;
+      ? (arm.renderWeight ?? arm.weight) * (0.72 + youngResponse * 0.38)
+      : 0.70;
     put(
       lx, ly, lz,
       cr * dim, cg * dim, cb * dim,
       4 + rnd() * 16,
-      (0.04 + rnd() * 0.1) * armWeight
+      // (1 + 1.2·outward): as partículas seguem Rd = 2,6 kpc (massa), mas
+      // o perfil de LUZ do alvo é mais raso — o disco externo é mais jovem
+      // e brilha mais por unidade de massa. Mesmo gradiente que já governa
+      // a cor; sem ele o meio do disco saía 25% escuro demais.
+      // /populationScale: menos partículas, cada uma mais forte — o fluxo
+      // total do disco não pode depender do preset de qualidade
+      (0.094 / populationScale) * lum * armWeight * (1 + 2.1 * outward)
     );
   }
 
@@ -269,7 +363,7 @@ export function buildGalaxy(
       4 + rnd() * 15,
       (0.045 + rnd() * 0.105) *
         LOCAL_ARM.weight *
-        (0.22 + effectiveYoungResponseAt(lx, ly) * 0.72)
+        (0.62 + effectiveYoungResponseAt(lx, ly) * 0.38)
     );
   }
 
@@ -283,9 +377,12 @@ export function buildGalaxy(
     let lz: number;
     if (rnd() < 0.74) {
       const sign = rnd() < 0.5 ? -1 : 1;
+      // O ramo 0.72 empurrava um quarto das partículas para as pontas da
+      // barra a 5 kpc, engordando o bojo medido. A barra existe, mas a
+      // massa mora perto do centro.
       const along =
         GALACTIC_MODEL.barHalfLengthPc *
-        Math.pow(rnd(), rnd() < 0.72 ? 1.55 : 0.72);
+        Math.pow(rnd(), rnd() < 0.72 ? 1.9 : 1.05);
       lx = sign * along;
       const end = Math.abs(lx) / GALACTIC_MODEL.barHalfLengthPc;
       ly = gauss(rnd) * (730 - end * 310);
@@ -314,8 +411,8 @@ export function buildGalaxy(
       ly,
       lz,
       1.0 * dim,
-      0.78 * dim,
-      0.56 * dim,
+      0.72 * dim,
+      0.46 * dim,
       3 + rnd() * 9,
       0.025 + rnd() * 0.06
     );
@@ -324,19 +421,24 @@ export function buildGalaxy(
   // ---- regiões HII — nós rosados/azuis colados nos braços ----
   for (let i = 0; i < N_HII; i++) {
     const inLocalArm = i < N_HII * 0.16;
-    const k = Math.floor(rnd() * SPIRAL_ARMS.length);
-    const arm = SPIRAL_ARMS[k];
+    const k = pickArm();
+    const arm = ALL_ARMS[k];
     const r = inLocalArm
       ? THREE.MathUtils.lerp(LOCAL_ARM.minRadiusPc, LOCAL_ARM.maxRadiusPc, rnd())
-      : THREE.MathUtils.lerp(
-          arm.minRadiusPc,
-          arm.maxRadiusPc,
-          Math.pow(rnd(), 0.88)
+      : // uniforme em ÁREA. pow(rnd, 0.88) empilhava os nós no raio
+        // máximo de cada braço e desenhava um arco rosado na borda.
+        Math.sqrt(
+          arm.minRadiusPc * arm.minRadiusPc +
+            rnd() *
+              (arm.maxRadiusPc * arm.maxRadiusPc -
+                arm.minRadiusPc * arm.minRadiusPc)
         );
     const sigmaPerp = armWidthPc(r);
     const theta = inLocalArm
-      ? localArmThetaAtRadius(r) + (gauss(rnd) * sigmaPerp * 0.8) / r
-      : armThetaAtRadius(r, arm) + (gauss(rnd) * sigmaPerp * 0.9) / r;
+      // 0,9σ contra os 11σ da população estelar: os nós saíam como uma
+      // FITA rosa fina na crista, não como pontos espalhados pelo braço.
+      ? localArmThetaAtRadius(r) + (gauss(rnd) * sigmaPerp * 3.2) / r
+      : armThetaAtRadius(r, arm) + (gauss(rnd) * sigmaPerp * 3.8) / r;
     const lx = r * Math.cos(theta);
     const ly = r * Math.sin(theta);
     const lz =
@@ -344,22 +446,32 @@ export function buildGalaxy(
     const youngSupport = youngSupportAt(lx, ly);
     const youngResponse = effectiveYoungResponseAt(lx, ly);
     const armWeight =
-      (inLocalArm ? LOCAL_ARM.weight : arm.weight) *
-      (1 - youngSupport * 0.92) *
-      (0.14 + youngResponse * 0.86);
-    if (rnd() < 0.6) {
+      (inLocalArm ? LOCAL_ARM.weight : arm.renderWeight ?? arm.weight) *
+      // A supressão por youngSupport evita contar duas vezes com as 1.413
+      // regiões WISE de starForges — mas essas são heliocêntricas, só do
+      // nosso lado. O piso (0,45) ainda amarrava o resto do disco ao
+      // catálogo: onde ele cala, o nó sumia. Mesma inversão do resto —
+      // o braço define que HÁ formação estelar, o catálogo modula quanta.
+      (1 - youngSupport * 0.55) *
+      (0.85 + youngResponse * 0.30);
+    // Nós compactos (25–120 pc) leem como pontos vermelhos/azuis nos
+    // braços; 35–175 pc viravam manchas difusas que sumiam no fundo.
+    if (rnd() < 0.62) {
       put(
         lx, ly, lz,
-        1.0, 0.38, 0.55,
-        35 + rnd() * 140,
-        (0.018 + rnd() * 0.052) * armWeight
+        1.0, 0.30, 0.44,
+        30 + rnd() * 110,
+        // De 33 kpc um nó de 70 pc tem ~2,7 px: para LER como ponto
+        // vermelho precisa de contraste, não de tamanho — aumentar o
+        // raio só o dissolveria no fundo.
+        (0.05 + rnd() * 0.115) * armWeight
       );
     } else {
       put(
         lx, ly, lz,
-        0.62, 0.78, 1.0,
-        35 + rnd() * 140,
-        (0.018 + rnd() * 0.048) * armWeight
+        0.55, 0.74, 1.0,
+        30 + rnd() * 110,
+        (0.05 + rnd() * 0.11) * armWeight
       );
     }
   }
@@ -409,16 +521,50 @@ export function buildGalaxy(
   const putDust = (lx: number, ly: number, lz: number, size: number, alpha: number) => {
     const o = dN * 8;
     localToWorld(lx, ly, lz, dust, o);
-    dust[o + 3] = 1;
-    dust[o + 4] = 1;
-    dust[o + 5] = 1;
+    // Cor do ESPALHAMENTO (a extinção usa uniform e ignora isto). Mesma
+    // mistura do raymarch interno em nebulaShaders: azul-violeta
+    // (0.30,0.43,0.78) longe do bojo, quente (1.00,0.72,0.42) perto. Sem
+    // este termo a poeira vista de fora só podia ser dourada, e o disco
+    // púrpura que aparece nos voos por dentro não tinha contraparte.
+    // A INTENSIDADE do espalhamento é densidade × campo de radiação
+    // local; o campo cai com o raio como a luz do disco. Sem isso a
+    // poeira do disco externo — que é a maioria — devolvia tanto quanto
+    // a do miolo e virava um véu azul cobrindo a borda.
+    // Espalhamento = (cor do campo de radiação que ilumina o grão)
+    //              × (eficiência de espalhamento, que sobe para o azul)
+    //              × (intensidade do campo local).
+    // A eficiência ∝ λ^−1,3 para grão interestelar é a razão pela qual
+    // uma nebulosa de reflexão é MAIS AZUL que a estrela que a ilumina —
+    // e é o que faz a poeira devolver púrpura mesmo iluminada por um
+    // disco amarelado.
+    const rPc = Math.hypot(lx, ly);
+    const towardCenter = Math.exp(-rPc / 2_600);
+    const field = 0.08 + 0.92 * Math.exp(-rPc / 4_500);
+    // AUTO-BLINDAGEM: o interior de uma nuvem densa não recebe luz, então
+    // o espalhamento emergente é g·exp(−g·2,2) — cresce com a coluna e
+    // depois cai. É por isso que nebulosa de reflexão é fenômeno de
+    // BORDA. Sem esse termo o espalhamento saturava em manchas azul-aço
+    // justamente onde a poeira é mais densa (disco interno).
+    const g = gasResponseAt(lx, ly);
+    const shield = g * Math.exp(-g * 2.2) * 2.72;
+    const fr = 0.3 + 0.7 * towardCenter;
+    const fg = 0.43 + 0.29 * towardCenter;
+    const fb = 0.78 - 0.36 * towardCenter;
+    dust[o + 3] = fr * field * shield * 0.72;
+    dust[o + 4] = fg * field * shield * 1.0;
+    dust[o + 5] = fb * field * shield * 1.34;
     dust[o + 6] = size;
-    dust[o + 7] = alpha * (1 - gasSupportAt(lx, ly) * 0.8);
+    // 0.8 apagava a poeira justo onde o survey a MEDIU — existia para não
+    // contar duas vezes com observedClouds, que na vista externa está em
+    // fade 0. Sobrava só perda.
+    dust[o + 7] = alpha * (1 - gasSupportAt(lx, ly) * 0.35);
     dN++;
   };
   for (let i = 0; i < N_DUST; i++) {
-    if (rnd() < 0.15) {
-      // poeira da barra
+    if (rnd() < 0.09) {
+      // Poeira da barra. Alpha PRÓPRIO: com o ganho externo em 7,0 os
+      // mesmos 0,008–0,026 de antes empilhavam num risco preto sólido
+      // atravessando o bojo (visível em t=176).
       const lx =
         (rnd() * 2 - 1) * GALACTIC_MODEL.barHalfLengthPc * 0.88;
       const ly = gauss(rnd) * 430;
@@ -429,39 +575,89 @@ export function buildGalaxy(
         ry,
         gauss(rnd) * 125,
         65 + rnd() * 145,
-        0.008 + rnd() * 0.018
+        0.0028 + rnd() * 0.0062
       );
-    } else {
-      const inLocalArm = rnd() < 0.12;
-      const k = Math.floor(rnd() * SPIRAL_ARMS.length);
-      const arm = SPIRAL_ARMS[k];
-      const r = inLocalArm
-        ? THREE.MathUtils.lerp(LOCAL_ARM.minRadiusPc, LOCAL_ARM.maxRadiusPc, rnd())
-        : THREE.MathUtils.lerp(
-            arm.minRadiusPc,
-            arm.maxRadiusPc,
-            Math.pow(rnd(), 0.94)
-          );
-      const sigmaPerp = armWidthPc(r);
-      // deslocada para a borda côncava (interna) do braço
-      const centerTheta = inLocalArm
-        ? localArmThetaAtRadius(r)
-        : armThetaAtRadius(r, arm);
-      const laneSide = rnd() < 0.82 ? 1 : -0.55;
-      const theta =
-        centerTheta +
-        (laneSide *
-          sigmaPerp *
-          (0.55 + Math.abs(gauss(rnd)) * 2.65)) /
-          r;
+    } else if (structure) {
+      // Amostragem por REJEIÇÃO no campo de gás 2-D.
+      //
+      // Antes a poeira era sorteada AO LONGO da espinha do braço, com um
+      // desvio gaussiano perpendicular. Uma curva só sabe desenhar arco:
+      // saíam riscos longos e lisos concêntricos, nada parecido com a
+      // rede de filamentos curtos e ramificados do alvo. O campo
+      // `gasResponse` já é bidimensional e turbulento (nuvens observadas
+      // + preenchimento fragmentado por fbm seguindo os braços) — usá-lo
+      // como densidade de probabilidade dá a rede de graça, e a poeira
+      // passa a morar onde o gás está em vez de onde a fórmula está.
+      let lx = 0;
+      let ly = 0;
+      let accepted = false;
+      for (let tries = 0; tries < 28 && !accepted; tries++) {
+        // O gás molecular da Via Láctea NÃO é uniforme em área: tem um
+        // anel em R ~ 4 kpc e cai rápido para fora. Amostrando uniforme,
+        // só ~1,5% da poeira caía dentro de 4 kpc e o terço interno —
+        // onde o alvo é mais denso e mais marrom — ficava limpo.
+        // Gamma(k=2) com escala 4,2 kpc: pico em 4,2, cauda até a borda.
+        // REAMOSTRA em vez de clampar: Math.max(1400, …) empilhava toda a
+        // cauda interna exatamente em 1,4 kpc e desenhava um anel delta
+        // (aparecia como arco duro junto ao bojo). Clamp em amostragem é
+        // sempre uma delta na borda.
+        let rr = 0;
+        do {
+          rr = -4_200 * Math.log(Math.max(rnd() * rnd(), 1e-7));
+        } while (rr < 1_400 || rr > 16_500);
+        // ÂNGULO por distribuição perpendicular, não por sorteio uniforme
+        // filtrado pelo campo.
+        //
+        // Rejeição pura no campo prendia a poeira a UMA linha por braço:
+        // o campo tem seu máximo na crista, e nem alargar o braço nem
+        // baixar o limiar mudava isso — o sorteio uniforme só encontra
+        // material onde o campo já é alto. Agora a largura vem da
+        // distribuição (±2,4σ da largura de Reid, com o centro deslocado
+        // −0,5σ para a borda côncava, que é onde a poeira mora) e o campo
+        // entra como PESO da probabilidade, dando a subestrutura sem
+        // decidir a geometria. Mesma inversão de sempre.
+        const arm = ALL_ARMS[pickArm()];
+        const sigmaPerp = armWidthPc(rr);
+        // A poeira usa a MESMA fase do braço estelar (espinha + correção de
+        // maser). Testado desacoplá-la para a espinha pura, achando que a
+        // correção de um lado só pusesse m=1 na absorção: piorou muito
+        // (m=5 0,095→0,126, erro total 0,086→0,151). Poeira e luz têm de
+        // compartilhar a geometria; separá-las quebra o alinhamento
+        // fenda-ao-lado-da-crista.
+        // escala comparável à da população estelar (sigmaPerp * 11): com
+        // 2,4 a poeira ficava 13× mais estreita que o braço e voltava a
+        // ler como linha. O −1,8 desloca o centro para a borda côncava.
+        // POSITIVO é a borda côncava — mesma convenção do offset de
+        // dustArms em structureMap. Os dois precisam ficar do MESMO lado:
+        // estavam opostos e se anulavam, sobrando poeira em cima da crista.
+        //
+        // DUAS componentes: a poeira não SOME no lado convexo, só é menos
+        // densa. Uma gaussiana só de um lado dá um perfil azimutal
+        // dente-de-serra, e dente-de-serra é rico em harmônicos ímpares
+        // por construção — candidato ao m=1/m=3 que sobrou.
+        const lane =
+          (rnd() < 0.66 ? 4.8 : -3.6) + gauss(rnd) * 5.6;
+        const th = armThetaAtRadius(rr, arm) + (lane * sigmaPerp) / rr;
+        lx = rr * Math.cos(th);
+        ly = rr * Math.sin(th);
+        const g = gasResponseAt(lx, ly);
+        // Testado g² com piso baixo para concentrar a coluna nas fendas:
+        // piorou (m=2 0,207→0,189, m=4 0,202→0,180). A crista do gás
+        // COINCIDE com a do braço, então concentrar nela escurece
+        // justamente o que deveria brilhar. Linear é melhor aqui.
+        accepted = rnd() < 0.22 + 0.78 * g;
+      }
+      if (!accepted) continue;
+      const r = Math.hypot(lx, ly);
+      const theta = Math.atan2(ly, lx);
       const clumpAlpha = rnd() < 0.52 ? 1 : 0.18;
       putDust(
-        r * Math.cos(theta),
-        r * Math.sin(theta),
+        lx,
+        ly,
         warpHeightPc(r, theta) +
           gauss(rnd) * (58 + flareAtRadius(r) * 120),
         65 + rnd() * 155,
-        (0.008 + rnd() * 0.022) * clumpAlpha
+        (0.018 + rnd() * 0.048) * clumpAlpha
       );
     }
   }
@@ -486,12 +682,17 @@ export class Galaxy {
   private dustMap: THREE.Texture;
   private structureMap: THREE.Texture;
   private dustPts!: THREE.Points;
+  private dustScatterMat: THREE.ShaderMaterial;
+  private dustScatterPts!: THREE.Points;
   private glowMesh!: THREE.Mesh;
   private dwarfMesh!: THREE.Mesh;
+  private static scratch = new THREE.Vector3();
   private static dbg = new URLSearchParams(window.location.search);
   // flags lidos UMA vez — URLSearchParams.has() por frame é lixo evitável
   private showGDust = !Galaxy.dbg.has('nogdust');
   private showGlow = !Galaxy.dbg.has('noglow');
+  /** ?nodisc=1 — só as partículas, para medir a divisão de fluxo */
+  private showDisc = !Galaxy.dbg.has('nodisc');
 
   /** 1×1 sem cobertura (A=128: warp neutro) — 100% procedural. */
   static emptyDustMap(): THREE.DataTexture {
@@ -543,7 +744,7 @@ export class Galaxy {
     this.createDiscLayers();
 
     // --- brilho contínuo do bojo ---
-    this.glowMat = this.makeGlow(new THREE.Vector3(1.0, 0.68, 0.42), 2700, 0.5);
+    this.glowMat = this.makeGlow(new THREE.Vector3(1.0, 0.62, 0.32), 2700, 0.5);
     const glow = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.glowMat);
     glow.position.copy(GAL.GC_POS);
     glow.frustumCulled = false;
@@ -579,7 +780,7 @@ export class Galaxy {
       fragmentShader: GALAXY_DUST_FRAG,
       uniforms: {
         ...this.sharedUniforms(10),
-        uDustColor: { value: new THREE.Vector3(0.69, 0.61, 0.54) },
+        uTau: { value: 1.15 },
       },
       blending: THREE.MultiplyBlending,
       depthWrite: false,
@@ -591,6 +792,24 @@ export class Galaxy {
     dustPts.renderOrder = 5;
     this.group.add(dustPts);
     this.dustPts = dustPts;
+
+    // --- espalhamento da poeira (aditivo, DEPOIS da extinção) ---
+    // Mesma geometria, segundo draw: um único blend mode não faz
+    // multiplicativo e aditivo ao mesmo tempo, e a poeira precisa dos
+    // dois — absorve o que passa e devolve azul espalhado.
+    this.dustScatterMat = new THREE.ShaderMaterial({
+      vertexShader: GALAXY_VERT,
+      fragmentShader: GALAXY_DUST_SCATTER_FRAG,
+      uniforms: this.sharedUniforms(10),
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+    });
+    const scatterPts = new THREE.Points(dGeo, this.dustScatterMat);
+    scatterPts.frustumCulled = false;
+    scatterPts.renderOrder = 6;
+    this.group.add(scatterPts);
+    this.dustScatterPts = scatterPts;
 
     // --- marcador do Sol ---
     this.markerMat = this.makeGlow(new THREE.Vector3(1.0, 0.9, 0.7), 125, 1);
@@ -790,13 +1009,35 @@ export class Galaxy {
     if (!this.group.visible) return;
 
     const brightFade = Math.max(externalFade, localBandFade);
-    // Na vista externa as lâminas já contêm a extinção integrada. Sprites
-    // de poeira 3D ficam só no ambiente interno, onde dão paralaxe; de
-    // cima pareciam furos circulares sem contraparte no alvo Gaia.
-    const dustFade = localBandFade * 0.72;
+    // A extinção das lâminas só apaga a luz da PRÓPRIA lâmina (blend
+    // aditivo) — nunca chega às faixas escuras do alvo. Os sprites de
+    // poeira são multiplicativos e escurecem tudo que está atrás, então
+    // valem na vista externa também.
+    // De 33 kpc cada sprite vira ~5 px e a conservação de fluxo derruba
+    // vAlpha para ~0,003: invisível. De dentro os mesmos sprites cobrem
+    // dezenas de px e 0,72 é o certo. O ganho externo compensa a razão —
+    // menor de perfil, onde a visada já atravessa o disco inteiro.
+    // openness: 1 = de cima, 0 = no plano.
+    const toCam = Galaxy.scratch.copy(camPos).sub(GAL.GC_POS);
+    const openness = Math.abs(toCam.dot(EZ)) / Math.max(toCam.length(), 1);
+    // 5,5 aplicava um véu marrom sobre o disco INTEIRO — medido com
+    // ?nogdust=1, era ele que achatava a textura estelar. A poeira tem de
+    // ser fenda, não filtro: menos ganho global, mais concentração.
+    const dustFade = Math.max(
+      externalFade * THREE.MathUtils.lerp(2.0, 3.4, openness),
+      localBandFade * 0.72
+    );
+    // Sete planos achatados descrevem o disco visto de CIMA. De raspão
+    // eles viram sete listras horizontais; ali quem tem estrutura em z
+    // são as partículas. Cede entre ~3° e ~17° acima do plano — só o
+    // suficiente para as listras ficarem abaixo do granulado.
+    const discFade =
+      externalFade * THREE.MathUtils.smoothstep(openness, 0.05, 0.30);
     for (const [m, layerFade] of [
       [this.brightMat, brightFade],
       [this.dustMat, dustFade],
+      // o espalhamento é mais fraco que a extinção: 1/3 do fluxo
+      [this.dustScatterMat, dustFade * 0.034],
     ] as const) {
       const u = m.uniforms;
       (u.uCamPos.value as THREE.Vector3).copy(camPos);
@@ -808,9 +1049,9 @@ export class Galaxy {
     // seriam planos infinitos; a faixa local vem das partículas 3D.
     // Com fade 0 os meshes ficam invisíveis: cada lâmina de 33,6 kpc
     // custa milhões de fragmentos de FBM que somariam exatamente zero.
-    const discVisible = externalFade > 0.001;
+    const discVisible = discFade > 0.001 && this.showDisc;
     for (const material of this.discMats) {
-      material.uniforms.uFade.value = externalFade;
+      material.uniforms.uFade.value = discFade;
     }
     for (const mesh of this.discMeshes) {
       mesh.visible = discVisible;
@@ -830,6 +1071,7 @@ export class Galaxy {
     this.markerMat.uniforms.uTime.value = time;
     this.markerMat.uniforms.uFade.value = markerFade;
     this.dustPts.visible = this.showGDust;
+    this.dustScatterPts.visible = this.showGDust;
     this.glowMesh.visible = this.showGlow;
     this.dwarfMesh.visible = this.showGlow;
   }
@@ -837,6 +1079,7 @@ export class Galaxy {
   dispose() {
     this.brightMat.dispose();
     this.dustMat.dispose();
+    this.dustScatterMat.dispose();
     this.glowMat.dispose();
     this.dwarfMat.dispose();
     this.markerMat.dispose();

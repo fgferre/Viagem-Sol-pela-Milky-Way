@@ -359,3 +359,8 @@
 .shot-mode .veil.hidden-veil {
   display: none;
 }
+/* ?shot=2 — só a cena. Botões, rótulos e barra de progresso contaminam
+   qualquer medida de perfil/contraste contra a referência. */
+.bare-mode > *:not(.scene-canvas) {
+  display: none !important;
+}

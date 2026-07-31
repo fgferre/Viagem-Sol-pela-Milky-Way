@@ -1,0 +1,301 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Semelhança com a referência — perfil, cor e estrutura espiral</title>
+<body style="background:#111;color:#ddd;font:12px/1.5 monospace;margin:16px">
+<pre id="out">medindo…</pre>
+<script>
+// ============================================================
+// GATE VISUAL — mede a semelhança de um quadro renderizado com a
+// recriação Gaia 2025 face-on.
+//
+// Uso:
+//   1) capture o quadro (GPU real, sem HUD):
+//      chrome --headless=new --enable-gpu --use-gl=angle --use-angle=d3d11 \
+//        --window-size=1400,1400 --hide-scrollbars \
+//        --user-data-dir=<scratch>/chrome-profile --virtual-time-budget=35000 \
+//        --screenshot=<dir>/agora.png "http://127.0.0.1:5173/?t=170&shot=2"
+//   2) rode esta página apontando para os dois arquivos:
+//      chrome --headless=new --enable-gpu --allow-file-access-from-files \
+//        --window-size=900,900 --virtual-time-budget=12000 --dump-dom \
+//        "file:///<abs>/scripts/visual/measure-similarity.html?a=<quadro>.png"
+//   `a` é relativo a ESTA pasta; `b` tem como padrão a referência em
+//   docs/reference/. --allow-file-access-from-files é obrigatório: sem
+//   ele o canvas não deixa ler o pixel de volta.
+//
+// POR QUE ESTA MÉTRICA E NÃO OUTRA
+// Perfil radial, contraste azimutal, cor e granulação são todos
+// médias azimutais ou globais: um disco borrado e uma espiral
+// coerente podem ter valores idênticos. Eles medem TOM, não
+// ESTRUTURA. A estrutura sai da decomposição de Fourier azimutal em
+// coordenadas log-polares — o padrão de morfologia de galáxias.
+//
+// Para uma espiral logarítmica de m braços, a fase da harmônica m
+// cresce linearmente com ln R:  φ_m = m·θ0 + m·lnR/tan(pitch).
+// Logo pitch = atan(m / dφ/dlnR), e o R² dessa reta diz se o padrão
+// é espiral de verdade ou manchas soltas.
+//
+// CADA HARMÔNICA APONTA UMA CAUSA (verificado nesta base):
+//   m=1 alto  → braços não equiespaçados · correção observada
+//               alcançando longe demais · nível médio do campo
+//               observado maior que o do inferido
+//   m=3, m=5  → INTERMODULAÇÃO: intensidade é produto
+//               (emissão × absorção), então m=4 × m=1 gera 4±1.
+//               Também: fenda de poeira de um lado só = perfil
+//               dente-de-serra, rico em ímpares por construção
+//   m2/m4     → quantos braços DOMINAM (alvo 1,20 = dois dominantes
+//               com quatro visíveis, o quadro aceito da Via Láctea)
+//
+// NÃO use o composto `symmetry` como nota final: ele é
+// A_dom/(A_dom + resto), então ESTOURAR a dominante o infla sem
+// aproximar do alvo. A nota honesta é `harmonicError`, a soma de
+// |nossa − alvo| em m=1..6, que esta página já calcula.
+//
+// E confirme SEMPRE olhando: a métrica é cega para textura da
+// poeira, granulação e artefatos locais.
+// ============================================================
+
+const N = 900;   // resolução de trabalho
+const NA = 512;  // amostras azimutais por anel
+const NR = 56;   // anéis log-espaçados
+
+const load = (src) =>
+  new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('não consegui carregar ' + src));
+    i.src = src;
+  });
+
+/** Recorta o maior quadrado central e devolve luminância linear. */
+function toLinearSquare(img) {
+  const c = document.createElement('canvas');
+  c.width = N;
+  c.height = N;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  const s = Math.min(img.width, img.height);
+  x.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, N, N);
+  const d = x.getImageData(0, 0, N, N).data;
+  const lum = new Float32Array(N * N);
+  const red = new Float32Array(N * N);
+  const blue = new Float32Array(N * N);
+  for (let i = 0; i < N * N; i++) {
+    // sRGB → linear (gamma 2,2): perfil e cor só fazem sentido em luz
+    const r = Math.pow(d[i * 4] / 255, 2.2);
+    const g = Math.pow(d[i * 4 + 1] / 255, 2.2);
+    const b = Math.pow(d[i * 4 + 2] / 255, 2.2);
+    lum[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    red[i] = r;
+    blue[i] = b;
+  }
+  return { lum, red, blue };
+}
+
+/** Centro = centroide de fluxo dos 2% mais brilhantes (o bojo). */
+function findCentre(lum) {
+  const sorted = Float32Array.from(lum).sort();
+  const cut = sorted[Math.floor(sorted.length * 0.98)];
+  let cx = 0;
+  let cy = 0;
+  let w = 0;
+  for (let y = 0; y < N; y++) {
+    for (let px = 0; px < N; px++) {
+      const v = lum[y * N + px];
+      if (v >= cut) {
+        cx += px * v;
+        cy += y * v;
+        w += v;
+      }
+    }
+  }
+  return { cx: cx / w, cy: cy / w };
+}
+
+/** R90 = raio que contém 90% do fluxo. Normaliza escalas diferentes. */
+function findR90(lum, cx, cy) {
+  const maxR = Math.min(cx, cy, N - cx, N - cy);
+  const hist = new Float64Array(512);
+  let total = 0;
+  for (let y = 0; y < N; y++) {
+    for (let px = 0; px < N; px++) {
+      const r = Math.hypot(px - cx, y - cy);
+      if (r >= maxR) continue;
+      const k = Math.floor((r / maxR) * 511);
+      hist[k] += lum[y * N + px];
+      total += lum[y * N + px];
+    }
+  }
+  let acc = 0;
+  for (let k = 0; k < 512; k++) {
+    acc += hist[k];
+    if (acc >= 0.9 * total) return { r90: (k / 511) * maxR, maxR };
+  }
+  return { r90: maxR, maxR };
+}
+
+function analyse(img) {
+  const { lum, red, blue } = toLinearSquare(img);
+  const { cx, cy } = findCentre(lum);
+  const { r90 } = findR90(lum, cx, cy);
+
+  const bilinear = (f, px, py) => {
+    const ix = Math.floor(px);
+    const iy = Math.floor(py);
+    if (ix < 0 || iy < 0 || ix >= N - 1 || iy >= N - 1) return 0;
+    const fx = px - ix;
+    const fy = py - iy;
+    return (
+      (f[iy * N + ix] * (1 - fx) + f[iy * N + ix + 1] * fx) * (1 - fy) +
+      (f[(iy + 1) * N + ix] * (1 - fx) + f[(iy + 1) * N + ix + 1] * fx) * fy
+    );
+  };
+
+  // ---- estrutura espiral: Fourier azimutal em log-polar ----
+  const lnR0 = Math.log(0.3 * r90);
+  const lnR1 = Math.log(1.25 * r90);
+  const amp = {};
+  const phase = {};
+  for (let m = 1; m <= 6; m++) {
+    amp[m] = [];
+    phase[m] = [];
+  }
+  const lnRs = [];
+  for (let ri = 0; ri < NR; ri++) {
+    const lnR = lnR0 + ((lnR1 - lnR0) * ri) / (NR - 1);
+    const rad = Math.exp(lnR);
+    lnRs.push(lnR);
+    const ring = new Float64Array(NA);
+    let a0 = 0;
+    for (let a = 0; a < NA; a++) {
+      const th = (a / NA) * Math.PI * 2;
+      ring[a] = bilinear(lum, cx + rad * Math.cos(th), cy + rad * Math.sin(th));
+      a0 += ring[a];
+    }
+    a0 /= NA;
+    for (let m = 1; m <= 6; m++) {
+      let re = 0;
+      let im = 0;
+      for (let a = 0; a < NA; a++) {
+        const th = (a / NA) * Math.PI * 2;
+        re += ring[a] * Math.cos(m * th);
+        im += ring[a] * Math.sin(m * th);
+      }
+      re /= NA;
+      im /= NA;
+      amp[m].push(a0 > 1e-9 ? (2 * Math.hypot(re, im)) / a0 : 0);
+      phase[m].push(Math.atan2(im, re));
+    }
+  }
+  const mean = (v) => v.reduce((s, q) => s + q, 0) / v.length;
+  const harmonics = {};
+  for (let m = 1; m <= 6; m++) harmonics[m] = +mean(amp[m]).toFixed(4);
+
+  // m=1 é lopsidedness, não braço: a dominante procura-se de 2 a 6
+  let mBest = 2;
+  for (let m = 3; m <= 6; m++) if (harmonics[m] > harmonics[mBest]) mBest = m;
+
+  const ph = phase[mBest].slice();
+  for (let i = 1; i < ph.length; i++) {
+    while (ph[i] - ph[i - 1] > Math.PI) ph[i] -= 2 * Math.PI;
+    while (ph[i] - ph[i - 1] < -Math.PI) ph[i] += 2 * Math.PI;
+  }
+  const mx = mean(lnRs);
+  const my = mean(ph);
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (let i = 0; i < ph.length; i++) {
+    sxy += (lnRs[i] - mx) * (ph[i] - my);
+    sxx += (lnRs[i] - mx) ** 2;
+    syy += (ph[i] - my) ** 2;
+  }
+  const slope = sxy / sxx;
+
+  // ---- tom: perfil radial, cor e brilho absoluto ----
+  const prof = [];
+  const colour = [];
+  for (let i = 0; i < 24; i++) {
+    const rad = (((i + 0.5) / 24) * 1.5) * r90;
+    let sl = 0;
+    let sr = 0;
+    let sb = 0;
+    for (let a = 0; a < 360; a++) {
+      const th = (a / 360) * Math.PI * 2;
+      const px = cx + rad * Math.cos(th);
+      const py = cy + rad * Math.sin(th);
+      sl += bilinear(lum, px, py);
+      sr += bilinear(red, px, py);
+      sb += bilinear(blue, px, py);
+    }
+    prof.push(sl / 360);
+    colour.push(+((sr - sb) / (sr + sb + 1e-9)).toFixed(3));
+  }
+  const peak = Math.max(...prof);
+
+  let discSum = 0;
+  let discN = 0;
+  let hf = 0;
+  let lo = 0;
+  for (let y = 1; y < N - 1; y++) {
+    for (let px = 1; px < N - 1; px++) {
+      const rr = Math.hypot(px - cx, y - cy) / r90;
+      const v = lum[y * N + px];
+      if (rr >= 0.25 && rr <= 1.05) {
+        discSum += v;
+        discN++;
+      }
+      if (rr >= 0.3 && rr <= 0.9) {
+        const m4 =
+          (lum[y * N + px - 1] +
+            lum[y * N + px + 1] +
+            lum[(y - 1) * N + px] +
+            lum[(y + 1) * N + px]) /
+          4;
+        hf += Math.abs(v - m4);
+        lo += v;
+      }
+    }
+  }
+
+  return {
+    harmonics,
+    armsDominant: mBest,
+    pitchDeg: +Math.abs((Math.atan(mBest / slope) * 180) / Math.PI).toFixed(1),
+    coherence: +(syy > 1e-12 ? (sxy * sxy) / (sxx * syy) : 0).toFixed(3),
+    discMean: +(discSum / Math.max(discN, 1)).toFixed(4),
+    grain: +(hf / (lo + 1e-9)).toFixed(4),
+    r90Frac: +(r90 / N).toFixed(3),
+    profile: prof.map((v) => +(v / peak).toFixed(4)),
+    colour,
+  };
+}
+
+(async () => {
+  const out = document.getElementById('out');
+  try {
+    const q = new URLSearchParams(location.search);
+    const aSrc = q.get('a');
+    const bSrc = q.get('b') || '../../docs/reference/gaia-2025-face-on-5k.jpg';
+    if (!aSrc) throw new Error('faltou ?a=<quadro.png>');
+    const ours = analyse(await load(aSrc));
+    const ref = analyse(await load(bSrc));
+    let harmonicError = 0;
+    for (let m = 1; m <= 6; m++) {
+      harmonicError += Math.abs(ours.harmonics[m] - ref.harmonics[m]);
+    }
+    out.textContent = JSON.stringify(
+      {
+        // NOTA HONESTA: menor é melhor, 0 = idêntico ao alvo
+        harmonicError: +harmonicError.toFixed(4),
+        discMeanRatio: +(ours.discMean / ref.discMean).toFixed(3),
+        ours,
+        ref,
+      },
+      null,
+      1
+    );
+  } catch (e) {
+    out.textContent = 'ERRO: ' + e.message;
+  }
+})();
+</script>
+</body>

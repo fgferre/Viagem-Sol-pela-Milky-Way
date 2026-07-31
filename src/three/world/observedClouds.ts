@@ -61,7 +61,7 @@ void main() {
 const FRAG = /* glsl */ `
 precision highp float;
 
-uniform vec3 uDustColor;
+uniform float uTau;
 
 varying vec2 vUv;
 varying float vAlpha;
@@ -87,8 +87,13 @@ void main() {
   float texture3 = fbm(vec3(uv * 2.2, vSeed * 19.7), vPx < 24.0 ? 2 : 3);
   float shape = body * smoothstep(0.34, 0.72, texture3 * 0.8 + body * 0.2);
 
-  vec3 factor = mix(vec3(1.0), uDustColor, shape * vAlpha);
-  gl_FragColor = vec4(factor, 1.0);
+  // Mesma LEI DE EXTINÇÃO da poeira galáctica (R_V = 3,1): transmissão
+  // por canal = exp(−τ·[0.75, 1.0, 1.32]). Uma cor fixa multiplicando
+  // tudo pinta de marrom mesmo onde a coluna é rala — a nuvem molecular
+  // real avermelha antes de escurecer. Uma física de poeira só, nos dois
+  // consumidores.
+  float tau = shape * vAlpha * uTau;
+  gl_FragColor = vec4(exp(-tau * vec3(0.75, 1.0, 1.32)), 1.0);
 }
 `;
 
@@ -173,7 +178,7 @@ export class ObservedClouds {
         uFade: { value: 0 },
         uScreenH: { value: 1080 },
         uTanHalfFov: { value: 0.55 },
-        uDustColor: { value: new THREE.Vector3(0.38, 0.35, 0.33) },
+        uTau: { value: 2.4 },
       },
       blending: THREE.MultiplyBlending,
       depthWrite: false,

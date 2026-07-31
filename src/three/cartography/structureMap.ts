@@ -115,6 +115,54 @@ function fbm2(x: number, y: number) {
   return sum;
 }
 
+/**
+ * Ruído RIDGED: `1 − |2n − 1|` elevado ao quadrado. O fbm comum tem
+ * máximos arredondados e produz borrão; o ridged tem cristas finas, que é
+ * o que lê como filamento. Somar gaussianas nunca gera filamento —
+ * gaussiana é lisa por construção.
+ */
+function ridged(x: number, y: number) {
+  let sum = 0;
+  let amplitude = 0.5;
+  let weight = 1;
+  for (let octave = 0; octave < 5; octave++) {
+    const n = 1 - Math.abs(2 * valueNoise(x, y) - 1);
+    const shaped = n * n * weight;
+    weight = Math.min(1, shaped * 1.6);
+    sum += amplitude * shaped;
+    x = x * 2.11 + 5.3;
+    y = y * 2.11 + 13.7;
+    amplitude *= 0.52;
+  }
+  return Math.min(1, sum * 1.35);
+}
+
+/**
+ * Rede filamentar no REFERENCIAL ESPIRAL. Com u = ln R e v = θ − u/tan(p)
+ * os braços viram retas horizontais; ruído de baixa frequência em u e alta
+ * em v vira filamento ESTICADO ao longo do braço. O domain warping dobra e
+ * ramifica as cristas, dando a rede curta e torta do alvo em vez de arcos
+ * concêntricos.
+ */
+const SPIRAL_TAN_PITCH = Math.tan((12.5 * Math.PI) / 180);
+function filamentField(radiusPc: number, theta: number) {
+  const u = Math.log(Math.max(radiusPc, 300) / 8_150);
+  const v = theta - u / SPIRAL_TAN_PITCH;
+  // su > sv é o que importa: com a frequência ao longo do braço MENOR que
+  // a transversal, cada crista se estende pela espiral inteira e o campo
+  // vira riscos concêntricos (foi o primeiro resultado). Invertido, sai a
+  // rede curta e ramificada. Calibrado olhando o campo direto, não o render.
+  // sv=12 punha UMA crista na largura do braço, então a poeira saía como
+  // uma linha fina por braço por mais que se alargasse o braço ou se
+  // baixasse o limiar de aceitação. Com 26 cabem várias lado a lado: a
+  // rede trançada do alvo.
+  const su = u * 30.0;
+  const sv = v * 26.0;
+  const warpX = fbm2(su * 1.9 + 31.2, sv * 1.2 - 12.4) - 0.5;
+  const warpY = fbm2(su * 1.9 - 7.9, sv * 1.2 + 22.1) - 0.5;
+  return ridged(su + warpX * 1.4, sv + warpY * 1.4);
+}
+
 function depositMolecularClouds(
   target: SplatTarget,
   table: CatalogueTable
@@ -309,6 +357,17 @@ export function bakeGalacticStructureMap(
   // turbulência apenas na escala de complexos moleculares não resolvidos.
   const half = DUST_MAP_SIZE / 2;
   const texelPc = (2 * DUST_MAP_HALF_EXTENT) / DUST_MAP_SIZE;
+  // Primeira passada calcula o campo inferido e acumula as médias; a
+  // mistura só acontece na segunda, quando a escala já é conhecida.
+  const inferredGasField = new Float32Array(length);
+  const inferredYoungField = new Float32Array(length);
+  let observedGasSum = 0;
+  let observedGasCount = 0;
+  let observedYoungSum = 0;
+  let observedYoungCount = 0;
+  let inferredGasSum = 0;
+  let inferredYoungSum = 0;
+  let discCount = 0;
   for (let index = 0; index < length; index++) {
     const xPc = ((index % DUST_MAP_SIZE) + 0.5 - half) * texelPc;
     const yPc =
@@ -334,24 +393,107 @@ export function bakeGalacticStructureMap(
       glMajorArms(theta, radiusPc, 24) +
         glLocalArm(theta, radiusPc, 28)
     );
+    // 55/59 é uma crista de 0,13 rad — três vezes mais estreita que o
+    // braço estelar (24). A poeira ficava colada numa linha e lia como
+    // arco fino; no alvo ela ocupa a largura do braço, com a rede
+    // filamentar fazendo a subestrutura. O deslocamento de fase (borda
+    // côncava) continua.
+    // Deslocamento de UMA meia-largura do braço estelar (~0,29 rad), não
+    // 0,065: com o campo quase em cima da crista, a poeira cobria o braço
+    // em vez de esculpi-lo pela borda côncava, e adensar custava
+    // contraste. Este offset e o centro da distribuição em galaxy.ts
+    // precisam ficar do MESMO lado — estavam opostos.
     const dustArms = Math.min(
       1,
-      glMajorArms(theta - 0.065, radiusPc, 55) +
-        glLocalArm(theta - 0.045, radiusPc, 59)
+      glMajorArms(theta - 0.20, radiusPc, 26) +
+        glLocalArm(theta - 0.19, radiusPc, 30)
     );
-    const inferredYoung = arms * (0.1 + 0.9 * continuity);
+    // A fragmentação do gás agora vem da rede filamentar no referencial
+    // espiral. `gasFragment` era smoothstep sobre fbm isotrópico: dava
+    // manchas redondas, e a poeira amostrada nele saía como véu difuso
+    // (ou, quando amostrada ao longo da espinha, como arco liso).
+    const filament = filamentField(radiusPc, theta);
+    // A formação estelar segue o gás: usar o MESMO campo aqui é o que dá
+    // textura DENTRO do braço (complexos brilhantes alternando com vazios)
+    // em vez de uma faixa lisa.
+    const inferredYoung =
+      arms * (0.1 + 0.9 * (continuity * 0.45 + filament * 0.55));
     const gasFragment = THREE.MathUtils.smoothstep(
-      complexNoise * 0.42 + cloudNoise * 0.58,
-      0.43,
-      0.73
+      filament * 0.74 + cloudNoise * 0.26,
+      0.30,
+      0.64
     );
     const inferredGas = dustArms * gasFragment;
+    // TETO na influência do observado. A cobertura APOGEE/CO é uma
+    // pegada de survey heliocêntrica, não uma afirmação de que o outro
+    // lado não tem poeira. Deixá-la dominar 100% onde cobre punha m=1 na
+    // ABSORÇÃO — e como a intensidade é um produto (emissão × absorção),
+    // m=4 × m=1 gera m=3 e m=5, que a medição mostrava em 0,157 e 0,109
+    // contra 0,071 e 0,062 do alvo. O medido continua visível; só deixa
+    // de ditar a simetria global.
+    inferredGasField[index] = inferredGas;
+    inferredYoungField[index] = inferredYoung;
+    if (gasSupport[index] > 0.05) {
+      observedGasSum += gas[index];
+      observedGasCount++;
+    }
+    inferredGasSum += inferredGas;
+    if (youngSupport[index] > 0.05) {
+      observedYoungSum += young[index];
+      observedYoungCount++;
+    }
+    inferredYoungSum += inferredYoung;
+    discCount++;
+  }
+
+  // CASAR O NÍVEL MÉDIO antes de misturar.
+  //
+  // O survey diz ONDE a estrutura está, não que a nossa vizinhança tenha
+  // mais poeira que o resto da galáxia. Mas os splats observados são
+  // muito mais densos que o campo inferido (a normalização robusta usa o
+  // percentil global, e os splats dominam esse percentil), então a região
+  // coberta entrava sistematicamente mais escura — a mancha sob o bojo, e
+  // um m=1 na absorção que intermodula com o m=4 e vaza para m=3.
+  // Igualando as médias, sobra só a DIFERENÇA DE ESTRUTURA, que é a
+  // informação real do catálogo.
+  const gasLevel =
+    observedGasCount > 0 && observedGasSum > 1e-6
+      ? THREE.MathUtils.clamp(
+          inferredGasSum / Math.max(discCount, 1) /
+            (observedGasSum / observedGasCount),
+          0.35,
+          2.5
+        )
+      : 1;
+  const youngLevel =
+    observedYoungCount > 0 && observedYoungSum > 1e-6
+      ? THREE.MathUtils.clamp(
+          inferredYoungSum / Math.max(discCount, 1) /
+            (observedYoungSum / observedYoungCount),
+          0.35,
+          2.5
+        )
+      : 1;
+
+  for (let index = 0; index < length; index++) {
+    if (inferredGasField[index] === 0 && gas[index] === 0) continue;
+    // TETO na influência do observado. A cobertura APOGEE/CO é uma
+    // pegada de survey heliocêntrica, não uma afirmação de que o outro
+    // lado não tem poeira. Deixá-la dominar 100% onde cobre punha m=1 na
+    // ABSORÇÃO — e como a intensidade é um produto (emissão × absorção),
+    // m=4 × m=1 gera m=3 e m=5.
+    // Testado 0,45 achando que a pegada do survey explicasse o m=1 que
+    // subiu ao alinhar a poeira ao braço: não moveu (0,130→0,128). A
+    // assimetria vem do alinhamento em si, não do catálogo, então fica
+    // em 0,6, que respeita mais o medido.
+    const gasMix = gasSupport[index] * 0.6;
+    const youngMix = youngSupport[index] * 0.72;
     gas[index] =
-      inferredGas * (1 - gasSupport[index]) +
-      gas[index] * gasSupport[index];
+      inferredGasField[index] * (1 - gasMix) +
+      gas[index] * gasLevel * gasMix;
     young[index] =
-      inferredYoung * (1 - youngSupport[index]) +
-      young[index] * youngSupport[index];
+      inferredYoungField[index] * (1 - youngMix) +
+      young[index] * youngLevel * youngMix;
   }
 
   const pixels = new Uint8Array(length * 4);

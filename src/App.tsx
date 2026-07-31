@@ -119,10 +119,18 @@ export default function App() {
   const inJourney = phase === 'journey';
   const showVeil = phase === 'loading' || phase === 'intro' || phase === 'end';
   // ?shot=1 — modo foto: sem transições, capturas determinísticas
-  const shotMode = new URLSearchParams(window.location.search).has('shot');
+  // ?shot=2 — só a cena: sem HUD, para medir o quadro contra a referência
+  const shotParam = new URLSearchParams(window.location.search).get('shot');
+  const shotMode = shotParam !== null;
+  const bareMode = shotParam === '2';
 
   return (
-    <div ref={rootRef} className={`hud-root${shotMode ? ' shot-mode' : ''}`}>
+    <div
+      ref={rootRef}
+      className={`hud-root${shotMode ? ' shot-mode' : ''}${
+        bareMode ? ' bare-mode' : ''
+      }`}
+    >
       <canvas
         ref={canvasRef}
         className="scene-canvas"

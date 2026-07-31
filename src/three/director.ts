@@ -179,7 +179,8 @@ export class Director {
           youngSupport: structureBake.youngSupport,
           size: DUST_MAP_SIZE,
           halfExtentPc: DUST_MAP_HALF_EXTENT,
-        }
+        },
+        this.engine.quality === 'performance' ? 0.28 : 1
       ),
       dustBake.texture,
       structureBake.texture
@@ -507,7 +508,10 @@ export class Director {
     this.observedClouds?.update(
       hPx,
       tanHalfFov,
-      cartHidden ? 0 : localBandFade * 0.72
+      // As nuvens CO medidas são as fendas REAIS da Via Láctea; ficarem
+      // em fade 0 na vista externa era jogar fora a tonalidade delas
+      // justamente na vista que a mostra melhor.
+      cartHidden ? 0 : Math.max(galaxyFade * 0.55, localBandFade * 0.72)
     );
     this.starForges?.update(
       cam.position,

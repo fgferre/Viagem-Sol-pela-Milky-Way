@@ -100,6 +100,9 @@ não uma das quatro famílias principais.
 | Camada | Parâmetros usados |
 |---|---|
 | braços | quatro famílias, pitches locais 7–20°, fases ajustadas em 146 masers BeSSeL, kinks, largura `w(R)=336+36(R[kpc]−8,15)` pc e alcance radial por segmento |
+| espinha simétrica | a geometria GLOBAL são 4 cristas equiespaçadas (2π/4) de pitch comum 12,5°, vivas de 3 a 16,3 kpc. As fases medidas corrigem cada braço só dentro de ~6 kpc do Sol, onde a BeSSeL tem paralaxe; fora disso o braço relaxa para o slot simétrico. Sem isso o padrão media m=1 (assimetria) = 0,23 contra 0,10 do alvo — metade da "estrutura espiral" era galáxia torta. `spiralModel.json` não muda: o fit segue sendo a restrição local |
+| rede filamentar | gás, poeira e formação estelar são fragmentados por ruído *ridged* com domain warping no referencial espiral (u=ln R, v=θ−u/tan p), frequência alta ao longo do braço e baixa através dele. Gaussianas somadas não fazem filamento — fazem borrão |
+| braços de 3 kpc | Near e Far, par quase simétrico ancorado nas pontas da barra entre 2,4 e 5,9 kpc. **Não saem do fit de masers** (BeSSeL não cobre R<3 kpc): vêm do gabarito de anatomia Gaia 2025 e de Dame & Thaddeus (2008) |
 | lado distante | continuação procedural mais aberta e menos contrastada; não é apresentada como medição direta da Gaia |
 | disco | raio de 16,8 kpc, escala exponencial 2,6 kpc, flare externo e warp senoidal de até ~820 pc |
 | barra/bojo | barra de 5 kpc inclinada 29°, componente box/peanut e bojo central |
@@ -156,6 +159,9 @@ offline em runtime.
 | Param | Efeito |
 |---|---|
 | `?t=150` | pula a intro, congela e mostra o segundo `t` da viagem |
+| `&shot=1` | modo foto: zera transições CSS (capturas determinísticas) |
+| `&shot=2` | idem, **sem HUD** — obrigatório para medir perfil/contraste contra a referência |
+| `&nodisc=1` | esconde as lâminas emissivas; sobra só a população de partículas |
 | `?play=1` | pula a intro e inicia a viagem automaticamente |
 | `&freeze=1` | congela o relógio (screenshots reproduzíveis) |
 | `&q=performance` | qualidade reduzida (mobile); `alta`, `cinema` também valem |
@@ -184,6 +190,10 @@ Estas três regras custaram dias de depuração; violá-las quebra a cena inteir
 3. **Um único pixel NaN + `UnrealBloomPass` = tela 100% branca**, porque o blur
    das mips espalha o NaN. Diagnóstico: `?nobloom=1` — se a cena aparece normal
    sem bloom, há NaN/Inf em algum shader. Isole com os parâmetros `&no*=1` acima.
+4. **Nunca use crase dentro do GLSL.** Os shaders vivem em template literals
+   TypeScript; uma crase num COMENTÁRIO encerra a string e o erro que aparece
+   é `TS1005: ',' expected` numa linha de comentário — some do shader e não
+   parece um problema de GLSL. Cite identificadores sem crase.
 
 Outras invariantes do projeto:
 
