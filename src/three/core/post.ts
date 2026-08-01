@@ -77,11 +77,14 @@ export class Post {
     );
     this.composer.addPass(this.bloom);
 
-    // knee asinh no HDR composto (depois do bloom, antes do ACES) —
-    // liga só via ?knee= por enquanto (varredura da rodada 19)
+    // knee asinh no HDR composto (depois do bloom, antes do ACES).
+    // Default LIGADO com β=0,45 (rodada 20: com chromsat=0,5 na extinção,
+    // knee 0,45 + exp 1,05 venceu os DOIS gates — edge 0,8275, face
+    // 0,0517). ?knee=0 desliga; ?knee=β varre; ?kneemode=lum|rgb.
     this.knee = new ShaderPass(KNEE_SHADER as never);
     const q = new URLSearchParams(window.location.search);
-    const beta = parseFloat(q.get('knee') ?? '');
+    const raw = q.get('knee');
+    const beta = raw === null ? 0.45 : parseFloat(raw);
     this.kneeOn = Number.isFinite(beta) && beta > 0;
     if (this.kneeOn) {
       (this.knee.uniforms as Record<string, { value: number }>).uBeta.value = beta;

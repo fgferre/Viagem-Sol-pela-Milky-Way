@@ -30,6 +30,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 15 | 0.0800 | 0.1364 | 0.1076 | 0.1093 | faixa escura edge-on: extincao por caminho amostrado (4 VTF no segmento particula-camera, sem piso de mu), piso difuso axissimetrico (tau_perp 0,125 no Sol), fenda no glow do bojo, braco -10%; laneDepth -0,07 -> ~0,3 |
 | 16 | 0.0615 | 0.1349 | 0.1033 | 0.1087 | faixa+vantagem: 16 amostras no caminho, t158 pelos nós do warp a z=500 |
 | 18 | 0.0595 | 0.1781 | 0.0989 | 0.1044 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
+| 20 | 0.0526 | 0.1314 | 0.1018 | 0.1077 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |
 
 ## Edge-on
 
@@ -45,3 +46,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 15 | 1.4780 | 0.0315 | 0.0338 | 0.2944 | 0.0059 | faixa escura edge-on: extincao por caminho amostrado (4 VTF no segmento particula-camera, sem piso de mu), piso difuso axissimetrico (tau_perp 0,125 no Sol), fenda no glow do bojo, braco -10%; laneDepth -0,07 -> ~0,3 |
 | 16 | 0.8741 | 0.0223 | 0.0357 | 0.6613 | 0.0104 | faixa+vantagem: 16 amostras no caminho, t158 pelos nós do warp a z=500 |
 | 18 | 0.8380 | 0.0229 | 0.0347 | 0.6355 | 0.0120 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
+| 20 | 0.8282 | 0.0228 | 0.0355 | 0.6699 | 0.0109 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |

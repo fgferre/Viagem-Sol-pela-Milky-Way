@@ -83,8 +83,17 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    prefere A porque exp 1,4 DESSATURA via ACES o plano vermelho — a MESMA
    deficiência (colourZ baixo 0,33 vs 0,19) que a rodada 17 tentou tratar com rim
    light. **Consertado o vermelho do plano na fonte, o knee (C) deve virar vitória
-   dupla** — é a ordem de ataque; até lá, a escolha A/B/C é direção de arte e fica
-   com o usuário. Nenhum default mudou na rodada 19.
+   dupla** — era a ordem de ataque, e a **rodada 20 confirmou em uma tacada**:
+   `chromsat` (o matiz da extinção satura para NEUTRO em τ alto — nuvem densa real
+   é cinza-escura, não infinitamente vermelha; `1−e^(−τ·0,5)` misturando o expoente
+   cromático para 1,0) tirou o colourZ do plano de 0,30 para 0,24 sem adicionar
+   luz, e com ele o conjunto **chromsat 0,5 + knee 0,45 + exp 1,05 venceu os dois
+   gates: edge 0,8380 → 0,8282 e face 0,0595 → 0,0526 (oficiais), discMean
+   0,178 → 0,131, laneDepth 0,670, warpAsym −0,033**. Defaults adotados (rampa de
+   exposição agora 1,02 → 1,05; knee ligado por padrão; `?chromsat= ?knee= ?exp=`
+   seguem soberanos para varredura); custo t=0 inalterado (mean 18,5 ms).
+   Pendência de coerência: starForges ainda usa o expoente cromático SEM
+   saturação — unificar quando as forges entrarem na lei única (unificação 2).
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de

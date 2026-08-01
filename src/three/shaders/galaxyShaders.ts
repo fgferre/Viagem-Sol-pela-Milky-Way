@@ -7,6 +7,21 @@ import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { GLSL_STAR_COLOR } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
+// Taxa de saturação do matiz da extinção — a τ alto a cor da coluna vira
+// NEUTRA (nuvem densa real é cinza-escura, não infinitamente vermelha; o
+// vermelho transmitido também morre abaixo da detecção). Default 0,5
+// medido na rodada 20: colourZ do plano 0,30→0,24, edge recorde, e foi o
+// que DISSOLVEU a fronteira knee×exposição da rodada 19 (o edge dependia
+// da dessaturação ACES do exp 1,4 para esconder o plano vermelho).
+// ?chromsat= varre; 0 = cromática plena em qualquer τ (estado antigo).
+const CHROMSAT = (() => {
+  if (typeof window === 'undefined') return 0.5;
+  const v = parseFloat(
+    new URLSearchParams(window.location.search).get('chromsat') ?? ''
+  );
+  return Number.isFinite(v) ? v : 0.5;
+})();
+
 // Vértice das partículas brilhantes — com extinção pela MESMA coluna τ
 // das lâminas, amostrada do bake (VTF). É o herdeiro dos 430 k sprites
 // multiplicativos: em vez de quads escurecendo o que calha de estar
@@ -108,7 +123,9 @@ void main() {
     tau += tp * g / (2.5066283 * sigmaD);
   }
   tau *= dTau;
-  vec3 extinct = exp(-tau * vec3(0.75, 1.0, 1.32));
+  // matiz da coluna satura para neutro em τ alto (?chromsat=; 0 = nunca)
+  float chromSat = 1.0 - exp(-tau * ${CHROMSAT.toFixed(3)});
+  vec3 extinct = exp(-tau * mix(vec3(0.75, 1.0, 1.32), vec3(1.0), chromSat));
 
   vColor = aColor * extinct;
   // handoff da unificação 2: a fração da luz que as cascas resolvem

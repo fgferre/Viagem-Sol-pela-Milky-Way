@@ -499,14 +499,14 @@ export class Director {
     this.sun.update(time, cam.position);
     this.dust.update(cam.position, hPx, time);
     const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
-    // AUTO-EXPOSIÇÃO (rodada 18): a vista externa é outro assunto
-    // fotográfico — a recriação-alvo é tone-mapped ~1,5–2 dex mais
-    // comprimida que fotometria linear, e exposição 1,4 lá fora foi o
-    // vencedor varrido (edge 0,8731→0,8378, face 0,0615→0,0597; 1,8+
-    // degrada as harmônicas). Dentro do disco (fade 0) fica o 1,02 de
-    // sempre — a vista interna não tem gate e satura fácil de branco.
+    // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
+    // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
+    // asinh no pós e chromsat na extinção assumindo a compressão, mediu
+    // o ótimo CONJUNTO em 1,05 (edge 0,8275, face 0,0517 — os dois
+    // recordes). Dentro do disco (fade 0) fica o 1,02 de sempre — a
+    // vista interna não tem gate e satura fácil de branco.
     if (!this.expOverride) {
-      this.engine.setExposure(1.02 + 0.38 * galaxyFade);
+      this.engine.setExposure(1.02 + 0.03 * galaxyFade);
     }
     this.galaxy?.update(
       cam.position,
