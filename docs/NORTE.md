@@ -47,13 +47,22 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    Estado: laneDepth 0,29 → **0,66** (alvo 0,94), warpAmp 0,004 → 0,010, laneOffset
    0,56, axialRatio 0,036. O face-on MELHOROU junto: 0,0800 → **0,0601, recorde** — a
    extinção limpa ajudou de cima também.
-   **O que falta da faixa, com mecanismo:** o plano ficou vermelho demais (colourZ
-   baixo 0,34 vs alvo 0,19) — o ingrediente ausente é a luz AZUL na frente da poeira
-   (rim do lado de cá), que na referência mantém a faixa escura porém neutra. E a
-   janela do warp (0,7–1,1·R90) cai abaixo do início do warp (8,4 kpc): nosso R90
-   edge-on é ~7,3 kpc = 0,43·R_disco vs ~0,55 na referência — perfil radial de brilho
-   concentrado demais, que é trabalho da **unificação 1** (exposição/tonemap, faixa
-   dinâmica 2,3 mag vs 8,6).
+   **O que falta da faixa, com mecanismo (revisto na rodada 17):** o vermelho do
+   plano (colourZ 0,34 vs 0,19) NÃO se conserta somando luz azul — refutado duas
+   vezes por medição (abaixo): a aritmética do gate é estrutural, laneDepth paga
+   ~1:1 em luminância o que a cor ganha a ~1:3 (média de curva). A faixa neutra e
+   profunda da referência vem de PROFUNDIDADE: com corte quase total o resíduo
+   vermelho some sozinho. E o diagnóstico `?noglow=1` da rodada 17 fechou o mapa:
+   sem o glow o warpAsym das partículas é **+0,337** (sinal certo, quase no alvo) —
+   o S existe e o glow o esconde por CONCENTRAÇÃO DE FLUXO (R90 encolhe, a janela
+   0,7–1,1·R90 do gate cai abaixo dos 8,4 kpc onde o warp começa); mas o glow é
+   insubstituível como halo quente (colourZ alto 0,48→0,01 sem ele), flancos e
+   espessura (axialRatio 0,036→0,019). **A alavanca com ganho duplo previsto:
+   escurecer o brilho interno** (bojo/disco interno das partículas) — empurra o R90
+   edge para fora (destrava warpAsym, ~0,21 disponível) E baixa o discMean face-on,
+   que está 15% ACIMA do alvo (0,1349 vs 0,1175). É a ponta concreta da
+   **unificação 1** (exposição/perfil radial; faixa dinâmica 2,3 mag vs 8,6), com os
+   dois gates medindo cada passo.
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
@@ -148,9 +157,9 @@ em 4 medições — mesmo o pior sorteio segue recorde; deltas menores que ~0,01
 rodadas são ruído de captura, não sinal. m=4 não cravou os 0,208 do alvo (+8%), mas TODOS
 os harmônicos melhoraram contra a rodada 11 e a nota honesta é a melhor já medida — sem
 truque de sprite. **Mergeada em `main` (2026-08-01)** — "sem truques de sprite" está
-concluído. A fila agora é: a faixa edge-on (rim light azul do lado de cá da poeira;
-fenda do glow seguindo o warp) e as etapas restantes da unificação 2 (star forges e
-partículas sob a lei única).
+concluído. A fila agora é: escurecer o brilho interno das partículas (a alavanca de
+ganho duplo da lacuna 1 — R90 edge para fora + discMean face-on para baixo) e as
+etapas restantes da unificação 2 (star forges e partículas sob a lei única).
 
 Na vista INTERNA (sem gate — lacuna 2) a emissão estelar segue com 4 braços de gás de
 propósito: raymarch da faixa e wrapped stars usam a variante uniforme, porque o par fraco
@@ -179,6 +188,17 @@ amostras); tirar atan/sin do galWarpHeight pela identidade sin(atan(y,x)−φ) =
 (y·cosφ−x·sinφ)/r é exato e não move o frame (o custo do loop é fetch, não ALU);
 afastar a câmera para R=36 kpc mantendo z=500 não achata a perspectiva do rim —
 elevação 0,8° reentra no regime dentro-da-lâmina (edgeError 1,77, faixa morta).
+
+Becos medidos na rodada 17 (não repetir — nenhum mudou o código, tudo revertido):
+rim light azul ADITIVO no caminho de extinção (campo × λ^−1,3 × atenuação, a lei do
+bake) estoura com qualquer ganho útil — ∝ caminho: edgeError 1,32, colourZ do plano
+passa do alvo (0,10) e laneDepth 0,66→0,37; a forma SATURANTE (véu ∝ 1−e^−τ, ganho
+0,4) acerta o plano (0,207) mas azula mid/high que pedem QUENTE — cor líquida zero,
+laneDepth paga 0,06: edgeError 0,97. A aritmética é estrutural (cor ganha ~1:3,
+faixa paga ~1:1) — véu aditivo não fecha esta conta em nenhuma dosagem. Fenda do
+glow SEGUINDO o warp: inútil — não há fluxo de glow em r > 8,4 kpc para a curva
+cortar (quiralidade ± medidas idênticas, 0,913/0,916), e o τ0 = 5,0 que pagava na
+vantagem z=901 NÃO transfere para z=500 (laneDepth não sobe e axialRatio paga).
 
 ## Decisões fechadas
 
