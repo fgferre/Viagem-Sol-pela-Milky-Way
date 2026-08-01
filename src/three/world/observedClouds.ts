@@ -82,9 +82,21 @@ void main() {
 
   // silhueta irregular: fbm esculpe a borda e abre vãos internos —
   // erosão forte para que nuvens vizinhas se fundam em fendas, não
-  // em bolinhas isoladas; quads pequenos usam 2 oitavas (LOD)
+  // em bolinhas isoladas.
+  //
+  // DUAS OITAVAS, FIXAS — correção de um stall de driver, por medição.
+  // A 3ª oitava deste fbm, neste shader (multiply + instanced), dispara
+  // um stall periódico de ~210–280 ms no p99 a partir de 1440p de
+  // altura. Bissecado em janela real 2560×1440, ~1400 frames por caso:
+  // frag trivial 18,3 ms · 2 oitavas fixas 18,3 · ternário vPx<24?2:3
+  // 240–278 · 3 oitavas fixas 209. Zero longtasks — o stall é do lado
+  // GPU/driver (ANGLE/D3D11), mecanismo não identificado; o custo ALU
+  // de uma oitava não explica, é patologia, não desempenho.
+  // A oitava perdida era textura de alta frequência que o grain medido
+  // já tinha em DOBRO do alvo (0,1376 vs 0,0679) — perdê-la aponta para
+  // o alvo. Não subir de 2 oitavas sem medir p99 em janela real 1440p.
   float body = 1.0 - smoothstep(0.05, 0.95, r);
-  float texture3 = fbm(vec3(uv * 2.2, vSeed * 19.7), vPx < 24.0 ? 2 : 3);
+  float texture3 = fbm(vec3(uv * 2.2, vSeed * 19.7), 2);
   float shape = body * smoothstep(0.34, 0.72, texture3 * 0.8 + body * 0.2);
 
   // Mesma LEI DE EXTINÇÃO da poeira galáctica (R_V = 3,1): transmissão

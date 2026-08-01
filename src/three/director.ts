@@ -125,6 +125,8 @@ export class Director {
     if (this.reducedMotion) this.rig.shakeScale = 0;
     for (const k of [
       'nogal', 'nosun', 'nodust', 'nohero', 'nocat', 'nomarker', 'nocart', 'nowrap',
+      // bissecção do ?nocart: nuvens CO e forjas separadamente
+      'noco', 'noforge',
     ]) {
       if (this.debug.has(k)) this.hide.add(k);
     }
@@ -517,14 +519,18 @@ export class Director {
       // em fade 0 na vista externa era jogar fora a tonalidade delas
       // justamente na vista que a mostra melhor.
       // soma, não max: rampas complementares (ver galaxy.ts, mesmo defeito)
-      cartHidden ? 0 : galaxyFade * 0.55 + localBandFade * 0.72
+      cartHidden || this.hide.has('noco')
+        ? 0
+        : galaxyFade * 0.55 + localBandFade * 0.72
     );
     this.starForges?.update(
       cam.position,
       hPx,
       tanHalfFov,
       time,
-      cartHidden ? 0 : galaxyFade + localBandFade * 0.6
+      cartHidden || this.hide.has('noforge')
+        ? 0
+        : galaxyFade + localBandFade * 0.6
     );
 
     // debug: posição projetada de Betelgeuse

@@ -93,9 +93,13 @@ frame). Repetir com **≥1000 frames** e conferindo `callsPerFrame`: janela curt
 renderizar e a linha não mede nada.
 
 - **Não há gargalo.** 2560×1440, vista externa: mediana 17,4 ms com 4,0 M de pontos.
-- **O defeito real é um hitch de ~250 ms no p99**, que `?nocart=1` mata (p99 18,3) e
-  `?nodisc=1` não (p99 268) ⇒ caminho cartografia/`observedClouds`. Próximo passo:
-  separar `?nocart` em `?noco` e `?noforge` e bissecar **antes** de escrever correção.
+- **O hitch de ~250 ms no p99 foi bissecado e corrigido** (rodada 10): a 3ª oitava do fbm
+  das nuvens CO, naquele shader (multiply + instanced), dispara um stall periódico de
+  driver a partir de 1440p de altura — frag trivial 18,3 ms · 2 oitavas fixas 18,3 ·
+  ternário 240–278 · 3 oitavas fixas 209. Zero longtasks: lado GPU/ANGLE, mecanismo não
+  identificado, correção por medição (2 oitavas fixas → p99 28,5 em janela real 2560×1440).
+  Não subir de 2 oitavas ali sem medir p99 em janela real 1440p. Flags `?noco`/`?noforge`
+  ficaram para bissecções futuras.
 - **Vértices por frame são quase constantes na viagem:** 3,84 M no Sol, 4,00 M de fora.
 - **Raymarch = 6,9 ms**, 29% do frame (1600×900, no Sol: 23,6 ms contra 16,7 com
   `?nonebula=1`). A alavanca dominante é `pixelRatio`, não o número de passos: em
