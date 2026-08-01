@@ -25,15 +25,17 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
 única foto real é o panorama ESO, visto de DENTRO.
 
 **Lacunas conhecidas do gate (a fechar):**
-1. ~~Edge-on sem número~~ — **fechada na rodada 12**: `?mode=edge` em
-   `measure-similarity.html` mede espessura por raio, faixa escura, warp, razão axial e
-   cor por altura contra `gaia-2025-edge-on-5k.jpg`; alvos e fórmula exata em
-   `VISUAL_TARGETS.md`, tabela própria no `EVOLUCAO.md` (baseline 2,0258). O que ela
-   revelou vira dívida do operador de coluna (3c): de perfil **não existe faixa escura**
-   (laneDepth −0,07 vs 0,94 do alvo), o disco está 2,3× fino demais (axialRatio 0,026 vs
-   0,060) e o warp não faz o S (warpAsym −0,46 vs +0,48) — a extinção por partícula usa
-   τ⊥ da posição da partícula, e de perfil a coluna real na linha de visada atravessa o
-   disco inteiro.
+1. ~~Edge-on sem número~~ — **fechada na rodada 12** (`?mode=edge`, alvos e fórmula em
+   `VISUAL_TARGETS.md`, tabela no `EVOLUCAO.md`) e **atacada na rodada 15**: a extinção
+   por partícula virou **caminho amostrado** (4 amostras VTF no segmento
+   partícula→câmera, sem piso de μ — de cima recupera τ⊥·ΔCDF, de raspão o caminho vira
+   quilo-parsecs), com piso difuso axissimétrico (metade da âncora A_V = 1,5 mag/kpc ⇒
+   τ⊥ 0,125 no Sol; a outra metade é a Σ estruturada do mapa) e fenda no glow do bojo.
+   edgeError 2,0258 → **1,4780**; laneDepth −0,07 → **0,29** (alvo 0,94), axialRatio
+   0,026 → 0,034 (alvo 0,060), warpAsym −0,46 → −0,25. O face-on pagou dentro do ruído
+   (0,0800, banda 0,0696–0,0823). O que resta da faixa: luz do lado de cá da poeira
+   (rim do disco) e o ruído de 4 amostras numa Σ recortada; espessura e o S do warp
+   seguem abertos.
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
@@ -144,6 +146,11 @@ Becos medidos na rodada 12 (não repetir): piso da espinha 0,78 → 0,86 SOBE m=
 3 kpc abaixo de 0,43 piora (harmonicError intermediário 0,0751 → 0,0779 com 0,37, medição
 `med.mjs` no MESMO quadro — comparável entre si, não com o 0,0696 oficial de outra
 captura).
+
+Becos medidos na rodada 15 (não repetir): interbraço de partícula 0,70 → 0,76 não move
+m=4 e piora m=1/grain; termo largo do bake τ 0,31 → 0,10 move o face-on só −0,002 e
+custa +0,054 no edge-on (a faixa perde profundidade — o termo largo É parte da coluna
+que a faixa precisa).
 
 ## Decisões fechadas
 

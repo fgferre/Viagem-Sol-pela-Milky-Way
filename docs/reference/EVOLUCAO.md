@@ -27,6 +27,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 12 | 0.0696 | 0.1361 | 0.1092 | 0.1092 | emissao 2 bracos: Sct-Cen+Perseu dominantes (prof. 1,0 base 0,42), gas/H II/jovens uniformes em 4, braco ~12% mais largo (sharpness -20%), 3kpc 0,43; gate edge-on novo |
 | 13 | 0.0739 | 0.1364 | 0.1096 | 0.1089 | unificacao 2 etapa 1: cascas por bin de M_V (hash de celula, existencia por densidade, m_sun>7,2, reconstrucao relativa a camera), PSF unica em GLSL_STAR_PSF, buildFarStars deletado; gates externos inalterados por construcao |
 | 14 | 0.0740 | 0.1366 | 0.1100 | 0.1090 | unificacao 2 etapa 2: handoff unresolved(d) nas particulas e no termo estelar da LUT (identidade 1,0 alem de 5,2 kpc); densidade das cascas pelos canais B/A do dust map (+5,3 ms -> +0,3 ms medidos por CDP a 1440p) |
+| 15 | 0.0800 | 0.1364 | 0.1076 | 0.1093 | faixa escura edge-on: extincao por caminho amostrado (4 VTF no segmento particula-camera, sem piso de mu), piso difuso axissimetrico (tau_perp 0,125 no Sol), fenda no glow do bojo, braco -10%; laneDepth -0,07 -> ~0,3 |
 
 ## Edge-on
 
@@ -39,3 +40,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 12 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | emissao 2 bracos: Sct-Cen+Perseu dominantes (prof. 1,0 base 0,42), gas/H II/jovens uniformes em 4, braco ~12% mais largo (sharpness -20%), 3kpc 0,43; gate edge-on novo |
 | 13 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | unificacao 2 etapa 1: cascas por bin de M_V (hash de celula, existencia por densidade, m_sun>7,2, reconstrucao relativa a camera), PSF unica em GLSL_STAR_PSF, buildFarStars deletado; gates externos inalterados por construcao |
 | 14 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | unificacao 2 etapa 2: handoff unresolved(d) nas particulas e no termo estelar da LUT (identidade 1,0 alem de 5,2 kpc); densidade das cascas pelos canais B/A do dust map (+5,3 ms -> +0,3 ms medidos por CDP a 1440p) |
+| 15 | 1.4780 | 0.0315 | 0.0338 | 0.2944 | 0.0059 | faixa escura edge-on: extincao por caminho amostrado (4 VTF no segmento particula-camera, sem piso de mu), piso difuso axissimetrico (tau_perp 0,125 no Sol), fenda no glow do bojo, braco -10%; laneDepth -0,07 -> ~0,3 |

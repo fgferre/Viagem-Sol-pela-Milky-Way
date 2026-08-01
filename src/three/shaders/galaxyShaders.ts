@@ -49,27 +49,59 @@ void main() {
   float shrink = min(1.0, 9.0 / max(px * px, 1e-4));
   float subPix = px < 0.7 ? (px * px) / 0.49 : 1.0;
 
-  // EXTINÇÃO PELA COLUNA REAL. τ⊥ vem do mapa; a fração C da coluna que
-  // está entre a estrela e a câmera vem da posição da estrela DENTRO da
-  // camada de poeira (CDF gaussiana; a logística erra < 2% em ±3σ).
-  // NÃO é meia-coluna fixa: a população velha mora FORA da camada fina
-  // de poeira, e meia-coluna apagaria estrelas na FRENTE da fenda.
-  // O 1/μ é a mesma lei de caminho das lâminas — é ele que faz o Great
-  // Rift emergir de dentro (μ pequeno no plano) sem código separado.
+  // EXTINÇÃO POR CAMINHO AMOSTRADO — rodada 15. A coluna entre a
+  // partícula e a câmera é ∫κρ ds com ρ(x,y,z) = τ⊥(x,y)·G(z̃)/(√2π σ):
+  // 4 amostras VTF ao longo do trecho do segmento dentro da camada.
+  // De cima, o trecho é a própria coluna vertical e a fórmula recupera
+  // τ⊥·ΔCDF (o antigo C·τ⊥ — a fração near/far virou geometria do
+  // segmento). De RASPÃO, o trecho vira quilo-parsecs e a faixa escura
+  // emerge: o piso μ ≥ 0,05 antigo capava o caminho em ~20 alturas de
+  // escala, e era por isso que o perfil edge-on media laneDepth −0,07
+  // contra 0,94 do alvo — a lâmina de perfil não tinha fenda nenhuma.
+  // 4 amostras são grossas para um caminho de 20 kpc, mas 2,6 M
+  // partículas médias entre si — o mesmo argumento estocástico dos
+  // sprites antigos.
+  vec3 toCam = uCamPos - position;
+  float D = length(toCam);
   vec3 qv = position - uGC;
-  vec2 xy = vec2(dot(qv, uEX), dot(qv, uEY));
-  float rG = length(xy);
-  float thG = atan(xy.y, xy.x + 1e-7);
-  float tauPerp = texture2D(uTauMap, xy / (2.0 * GAL_DISK_RADIUS) + 0.5).a;
-  float zTil = dot(qv, uEZ) - galWarpHeight(rG, thG);
-  // σz da camada de poeira, com o flare do disco externo (galaxy.ts)
-  float fx = clamp((rG - 7500.0) / 9300.0, 0.0, 1.0);
-  float sigmaD = 58.0 + fx * fx * 120.0;
-  float camSide = sign(dot(uCamPos - uGC, uEZ));
-  float cArg = clamp(2.35 * camSide * zTil / sigmaD, -20.0, 20.0);
-  float C = 1.0 / (1.0 + exp(cArg));
-  float mu = max(abs(dot(normalize(uCamPos - position), uEZ)), 0.05);
-  vec3 extinct = exp(-(tauPerp * C / mu) * vec3(0.75, 1.0, 1.32));
+  float zP = dot(qv, uEZ);
+  float zC = dot(uCamPos - uGC, uEZ);
+  // trecho do segmento dentro da banda |z| < 1700 pc (folga para warp
+  // e flare; fora dela G(z̃) mata a amostra de qualquer jeito)
+  float dzSeg = zC - zP;
+  float s0 = 0.0;
+  float s1 = 1.0;
+  if (abs(dzSeg) > 1e-3) {
+    float ta = (-1700.0 - zP) / dzSeg;
+    float tb = (1700.0 - zP) / dzSeg;
+    s0 = clamp(min(ta, tb), 0.0, 1.0);
+    s1 = clamp(max(ta, tb), 0.0, 1.0);
+  }
+  float tau = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float s = s0 + (s1 - s0) * (float(i) + 0.5) * 0.25;
+    vec3 sp = position + toCam * s - uGC;
+    vec2 sxy = vec2(dot(sp, uEX), dot(sp, uEY));
+    float rS = length(sxy);
+    float fx = clamp((rS - 7500.0) / 9300.0, 0.0, 1.0);
+    float sigmaD = 58.0 + fx * fx * 120.0;
+    float zTil = dot(sp, uEZ) -
+      galWarpHeight(rS, atan(sxy.y, sxy.x + 1e-7));
+    float g = exp(-zTil * zTil / (2.0 * sigmaD * sigmaD));
+    float tp = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).a;
+    // PISO DIFUSO da poeira. A âncora do NORTE (A_V = 1,5 mag/kpc ⇒
+    // τ⊥ = 0,2455 no Sol) é a coluna TOTAL; o mapa já carrega a parte
+    // estruturada (filamentos/fendas), então o piso é só a fração
+    // difusa, ~metade (0,125 no Sol, perfil radial do gás R_d 5,2 kpc).
+    // Sem piso nenhum, 4 amostras de uma Σ recortada acham vão com
+    // frequência de raspão — a lâmina do plano sobrevivia inteira e a
+    // faixa escura ficava rasa (medido: laneDepth 0,12 sem, 0,37 com o
+    // piso cheio — que por sua vez tirou o face-on da banda de ruído).
+    tp += 0.6 * exp(-rS / 5200.0);
+    tau += tp * g / (2.5066283 * sigmaD);
+  }
+  tau *= (s1 - s0) * D * 0.25;
+  vec3 extinct = exp(-tau * vec3(0.75, 1.0, 1.32));
 
   vColor = aColor * extinct;
   // handoff da unificação 2: a fração da luz que as cascas resolvem
@@ -105,10 +137,18 @@ void main() {
 // brilho do bojo e o marcador do Sol.
 export const GLOW_VERT = /* glsl */ `
 varying vec2 vUv;
+varying float vZgal;
 uniform float uSize;
+// polo norte galáctico na cena — para a fenda da faixa no bojo
+uniform vec3 uEZ;
 
 void main() {
   vUv = position.xy;
+  // altura galáctica do fragmento: o offset do billboard é view-space,
+  // então projeta-se EZ para view com a rotação do MV (o mesh só tem
+  // translação). Linear no quad ⇒ o varying interpola exato.
+  vec3 ezView = mat3(modelViewMatrix) * uEZ;
+  vZgal = uSize * dot(position.xy, ezView.xy);
   vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
   c.xy += position.xy * uSize;
   gl_Position = projectionMatrix * c;
@@ -122,14 +162,23 @@ uniform vec3 uColor;
 uniform float uTime;
 uniform float uFade;
 uniform float uPulse; // 0 = bojo estático · 1 = marcador pulsante
+// fenda da faixa: 1 = vista rasante (a poeira do plano corta o bojo,
+// como nas fotos edge-on); 0 = de cima ou billboards sem fenda
+uniform float uLaneGate;
 
 varying vec2 vUv;
+varying float vZgal;
 
 void main() {
   float r = length(vUv);
   if (r > 1.0) discard;
   float edgeFade = 1.0 - smoothstep(0.68, 1.0, r);
   float glow = (exp(-r * 3.6) * 0.85 + exp(-r * 14.0) * 0.7) * edgeFade;
+  // A faixa escura atravessa o bojo de perfil: extinção por uma lâmina
+  // fina de poeira em |z| galáctico. τ0 = 2,5 dá corte quase total no
+  // plano; h = 130 pc casa com a σ da camada de poeira.
+  float laneTau = 2.5 * exp(-vZgal * vZgal / (2.0 * 130.0 * 130.0));
+  glow *= mix(1.0, exp(-laneTau), uLaneGate);
   float a = glow * uFade;
   if (uPulse > 0.5) {
     float pulse = 0.75 + 0.25 * sin(uTime * 2.2);
@@ -316,7 +365,9 @@ void main() {
   // Rodada 12 (−20%): com o par dominante puro (profundidade 1,0), a
   // razão m2/m4 é ĝ(2)/ĝ(4) da própria crista — alargar o braço sobe
   // m=2 em relação a m=4 sem tocar na base.
-  float armSharpness = mix(5.2, 9.0, smoothstep(3500.0, 15000.0, radiusPc));
+  // Rodada 15: −10% adicionais (5,2→4,7 · 9,0→8,1) para reabsorver o
+  // m=4 que a extinção por caminho devolveu ao face-on (0,225→0,231).
+  float armSharpness = mix(4.7, 8.1, smoothstep(3500.0, 15000.0, radiusPc));
   float arms = clamp(
     galMajorArms(theta, radiusPc, armSharpness) +
     galLocalArm(theta, radiusPc, armSharpness * 1.4),
@@ -468,6 +519,10 @@ void main() {
   //   NÃO pode entrar nas lâminas: absorção arm-locked de área grande
   //   modula o perfil inteiro do braço e bombeia m=4 (medido: +0,06).
   float tauCrest = (dustMacro * dustFilament + tauBar * 0.04) * 2.39;
+  // Rodada 15, medido e revertido: cortar o termo largo 0,31 → 0,10
+  // (hipótese: arm-locked bombearia m=4 na lei de caminho) moveu o
+  // face-on só −0,002 e custou +0,054 no edge-on (a faixa perdeu
+  // profundidade). O termo fica.
   float tauPart =
     (dustMacro * (dustFilament + 0.31) + tauBar * 0.04) * 2.39;
   float tau = mix(tauCrest, tauPart, uTauExport);

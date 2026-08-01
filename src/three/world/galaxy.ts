@@ -326,6 +326,9 @@ export function buildGalaxy(
     // 2 braços; o gás é quem os desenha). É orçamento morto de ~10⁵
     // partículas por build; realocar o sorteio é trabalho da unificação
     // 2, que reescreve a população inteira.
+    // Rodada 15, medido e revertido: subir o interbraço para 0,76 não
+    // moveu m=4 e piorou m=1 e grain — o m=4 residual não é vale de
+    // partícula.
     const armWeight = inArm
       ? (arm.renderWeight ?? arm.weight) * (0.72 + youngResponse * 0.38)
       : 0.70;
@@ -698,6 +701,8 @@ export class Galaxy {
         uTime: { value: 0 },
         uFade: { value: 0 },
         uPulse: { value: pulse },
+        uEZ: { value: EZ.clone() },
+        uLaneGate: { value: 0 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -945,6 +950,10 @@ export class Galaxy {
     this.glowMat.uniforms.uTime.value = time;
     this.glowMat.uniforms.uFade.value =
       externalFade * glowGate * 0.32 + localBandFade * 0.11;
+    // a fenda no bojo abre exatamente onde as lâminas fecham (vista
+    // rasante) — mesma rampa do discFade, invertida
+    this.glowMat.uniforms.uLaneGate.value =
+      1 - THREE.MathUtils.smoothstep(openness, 0.05, 0.3);
     this.dwarfMat.uniforms.uTime.value = time;
     this.dwarfMat.uniforms.uFade.value = externalFade * 0.11;
     this.markerMat.uniforms.uTime.value = time;
