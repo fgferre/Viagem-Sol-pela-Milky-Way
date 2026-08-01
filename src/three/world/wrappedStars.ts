@@ -1,38 +1,124 @@
 // ============================================================
-// Campo estelar envolvente — uma caixa de ~2,4 kpc que acompanha
-// a câmera com wrap determinístico no ESPAÇO-MUNDO: cada estrela
-// tem posição fixa no universo (offset ≡ mod caixa), então não há
-// popping nem nuvem que "anda junto". O brilho de cada estrela é
-// modulado pela densidade estelar galactocêntrica real (disco fino
-// + espesso + bojo + braços), então voar para o disco interno é
-// mergulhar num céu em chamas e o disco externo é o fim do mundo.
+// Cascas de população estelar por bin de magnitude absoluta —
+// unificação 2, etapa 1. Substitui a caixa única de 2,4 kpc.
 //
-// Camada `inferred` — população estatística; perto do Sol ela se
-// desliga e o catálogo HYG (real) assume.
+// O número que dissolve o problema: nunca é preciso gerar 10¹¹
+// estrelas — de qualquer ponto do disco o céu RESOLVÍVEL tem
+// ~10⁴–10⁵, porque N(<m) ∝ 10^0,6m e a extinção corta o alcance.
+// O resto já está representado: é a luz integrada do disco.
+//
+// Cada bin de M_V tem a sua caixa de wrap com lado 2·d_max do
+// membro mais brilhante ⇒ toda troca de célula acontece abaixo do
+// piso de visibilidade ⇒ sem popping por construção. A identidade
+// da estrela é o hash das coordenadas INTEIRAS da célula (+ bin):
+// determinística, sobrevive a reload, ?pos= e ao wrap. A densidade
+// galactocêntrica decide EXISTÊNCIA (rejeição), não alpha; onde
+// ρ·prob satura em 1 (bojo, braços, bins brilhantes de longo
+// alcance) o excedente permanece luz não resolvida — o limite de
+// confusão de verdade.
+//
+// Anti-dupla-contagem vs HYG: corte por magnitude aparente vista
+// do SOL (m_sun < 7,2 é território do catálogo) — teste fixo,
+// independente da câmera. O halo buildFarStars morreu junto: era
+// estático no Sol e este campo cobre o papel dele em qualquer
+// ponto do disco.
+//
+// FLOATING ORIGIN da unificação 2: a posição nunca soma 25 kpc em
+// f32 — o vértice reconstrói tudo relativo à câmera (célula
+// inteira + fração de célula) e projeta com SÓ a rotação do MV.
+// O quantum f32 a 25 kpc é 1,5e-3 pc ≈ 1,7 px de tremor numa
+// estrela a 1 pc; aqui nenhum operando grande entra no caminho da
+// posição. Por isso o Points NÃO pode ganhar transform próprio.
 // ============================================================
 import * as THREE from 'three';
-import { GLSL_GALAXY, GLSL_STAR_COLOR } from '../shaders/common';
+import {
+  GLSL_NOISE,
+  GLSL_GALAXY,
+  GLSL_STAR_COLOR,
+  GLSL_STAR_PSF,
+} from '../shaders/common';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { STAR_FRAG } from '../shaders/starShaders';
 
-const BOX = 2400; // pc — aresta da caixa de wrap
-const COUNT = 60000;
+// m em que a PSF morre na nossa exposição (expoM0 3,5):
+// peak(11,75) ≈ 1,6e-4 — abaixo de qualquer depósito perceptível.
+// É o teto que dimensiona as caixas.
+const M_FAINT = 11.75;
+// Extinção média no plano, usada no ALCANCE (CPU) e na m (shader) —
+// o MESMO número dos dois lados, senão a borda da caixa pisca.
+// ponytail: escalar isotrópico; extinção cromática por raymarch fica
+// só no campo HYG (lá é gated por tamanho; aqui seriam 250 k × 6
+// amostras por frame).
+const EXT_MAG_PER_PC = 0.0008;
+// teto de células por eixo — limita o orçamento de vértices; nos bins
+// brilhantes a célula fica maior que 1/n^⅓ e prob satura (undersample
+// deliberado do campo distante, que é o regime de confusão)
+const GRID_MAX = 36;
+
+interface MagBin {
+  mLo: number;
+  mHi: number;
+  /** estrelas/pc³ no bin (função de luminosidade local, ≈Wielen) */
+  n: number;
+}
+// A soma dá ≈ 0,014/pc³ resolvível + o resto na luz integrada; o total
+// real local é ~0,1/pc³ — a diferença é anã demais para a nossa
+// exposição (M_V > 11 nunca passa de m 11,75 além de ~10 pc).
+const BINS: readonly MagBin[] = [
+  { mLo: -6, mHi: -2, n: 3e-6 },
+  { mLo: -2, mHi: 0, n: 2e-5 },
+  { mLo: 0, mHi: 2, n: 1.6e-4 },
+  { mLo: 2, mHi: 4, n: 5e-4 },
+  { mLo: 4, mHi: 6, n: 1.2e-3 },
+  { mLo: 6, mHi: 8, n: 2.4e-3 },
+  { mLo: 8, mHi: 11, n: 9e-3 },
+];
+const NB = BINS.length;
+
+/**
+ * d onde o membro mais brilhante do bin atinge M_FAINT, resolvendo
+ * m(d) = M + 5·log10(d) − 5 + ext·d = M_FAINT por bisseção (f é
+ * monótona crescente em d; a cota superior é o alcance sem extinção).
+ */
+function reachPc(mAbs: number) {
+  const target = M_FAINT - mAbs + 5;
+  let lo = 1;
+  let hi = Math.pow(10, target / 5);
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    const f = 5 * Math.log10(mid) + EXT_MAG_PER_PC * mid - target;
+    if (f > 0) hi = mid;
+    else lo = mid;
+  }
+  return (lo + hi) / 2;
+}
 
 const VERT = /* glsl */ `
-attribute float aMag;
-attribute float aCi;
-attribute float aSeed;
+attribute vec3 aOffset; // offset inteiro na treliça do bin
+attribute float aBin;
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
-uniform float uTanHalfFov;
 uniform float uFade;
+uniform float uExpoM0;
+uniform float uSigmaPx;
+uniform float uCell[${NB}];
+uniform float uProb[${NB}];
+uniform float uMagLo[${NB}];
+uniform float uMagSpan[${NB}];
+uniform vec3 uCamCell[${NB}]; // floor(camPos/célula) — inteiro exato
+uniform vec3 uCamFrac[${NB}]; // fração da célula, em [0,1)
 
 varying vec3 vColor;
-varying float vAlpha;
+varying float vSat;
+varying float vSigma;
+varying float vPeak;
 
+${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
 ${GLSL_STAR_COLOR}
+${GLSL_STAR_PSF}
 
 // densidade estelar relativa (≈1 na vizinhança solar)
 float stellarDensity(vec3 p, out float armGate, out float bulgeGate) {
@@ -61,104 +147,157 @@ float stellarDensity(vec3 p, out float armGate, out float bulgeGate) {
   armGate = arms;
   bulgeGate = clamp(bulge, 0.0, 1.0);
   float edge = 1.0 - smoothstep(15500.0, GAL_DISK_RADIUS + 2500.0, radiusPc);
-  // 1/0.0436 normaliza para R=8150, z=0
   return (thin * (0.75 + 0.55 * arms) + thick) * edge * 22.9 + bulge * 0.02;
 }
 
 void main() {
-  // wrap determinístico: wp ≡ position (mod BOX), dentro da caixa
-  // centrada na câmera — a estrela é fixa no mundo
-  vec3 wp = position - ${BOX.toFixed(1)} *
-    floor((position - uCamPos) / ${BOX.toFixed(1)} + 0.5);
-
-  float dist = length(wp - uCamPos);
+  int b = int(aBin + 0.5);
+  float c = uCell[b];
+  // coordenadas INTEIRAS da célula no mundo — a identidade da estrela.
+  // Exatas em f32 até 2^24; o maior índice real é ~6e3.
+  vec3 cell = uCamCell[b] + aOffset;
+  float hExist = hash13(cell * 0.7193 + float(b) * 17.17);
+  vec3 jit = vec3(
+    hash13(cell + 0.31),
+    hash13(cell + 7.77),
+    hash13(cell + 3.53)
+  );
+  // reconstrução relativa à câmera: só operandos pequenos
+  vec3 rel = (aOffset + jit - uCamFrac[b]) * c;
+  float dist = length(rel);
+  // worldPos só alimenta densidade e m_sun (escalas de kpc — o erro de
+  // 3e-3 pc do uCamPos f32 é irrelevante aqui, e NUNCA entra na posição)
+  vec3 worldPos = uCamPos + rel;
   float armGate;
   float bulgeGate;
-  float density = stellarDensity(wp, armGate, bulgeGate);
+  float density = stellarDensity(worldPos, armGate, bulgeGate);
+  // densidade decide EXISTÊNCIA, não alpha
+  float exists = step(hExist, clamp(density * uProb[b], 0.0, 1.0));
+  float MV = uMagLo[b] + hash13(cell + 23.7) * uMagSpan[b];
+  // anti-dupla-contagem: o HYG é ~completo até V=7,2 visto do Sol —
+  // o que o catálogo já mostra, a casca não repete
+  float dSun = length(worldPos);
+  float mSun = MV + 5.0 * log2(max(dSun, 1.0)) * 0.30103 - 5.0 +
+    ${EXT_MAG_PER_PC.toFixed(6)} * dSun;
+  exists *= step(7.2, mSun);
+  if (exists < 0.5 || uFade < 0.001) {
+    gl_Position = vec4(0.0, 0.0, 2.0, 1.0); // fora do clip — morta
+    gl_PointSize = 0.0;
+    vPeak = 0.0;
+    vSat = 0.0;
+    vSigma = 1.0;
+    vColor = vec3(0.0);
+    return;
+  }
+  float m = MV + 5.0 * log2(max(dist, 0.5)) * 0.30103 - 5.0 +
+    ${EXT_MAG_PER_PC.toFixed(6)} * dist;
+  // cor: sequência principal por M_V; na ponta brilhante metade vira
+  // gigante vermelha (o céu brilhante real é dominado por elas); o bojo
+  // puxa velho/dourado
+  float bvMs = clamp(-0.05 + 0.155 * MV, -0.30, 1.75);
+  float giant = step(0.5, hash13(cell + 41.9)) * smoothstep(2.0, -1.0, MV);
+  float bv = mix(bvMs, 1.05 + 0.5 * hash13(cell + 5.7), giant);
+  bv = mix(bv, 1.15, bulgeGate * 0.4);
+  vColor = bvToColor(bv);
 
-  // perto do Sol o HYG real assume — sem dupla contagem
-  float sunGate = smoothstep(900.0, 2100.0, length(wp));
-  // esconde a costura do wrap na borda da caixa
-  float edgeFade = 1.0 - smoothstep(${(BOX * 0.36).toFixed(1)}, ${(BOX * 0.5).toFixed(1)}, dist);
+  float size;
+  float peak;
+  float sat;
+  float sigmaFrac;
+  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
+  vSat = sat;
+  vSigma = sigmaFrac;
+  vPeak = peak * uFade;
 
-  // população: braços ganham estrelas jovens azuis (20% dos seeds),
-  // o bojo puxa para velha e dourada
-  float youngPick = step(0.8, fract(aSeed * 7.31)) * armGate;
-  float ci = mix(aCi, -0.18, youngPick * 0.85);
-  ci = mix(ci, 1.15, bulgeGate * 0.55);
-  vColor = bvToColor(ci);
-
-  float lum = pow(10.0, -0.3 * aMag);
-  float px = 900.0 * lum * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0)) * 0.002;
-  float clamped = clamp(px, 0.8, 5.0);
-  float shrink = min(1.0, 4.0 / max(px * px, 1e-4));
-  float subPix = px < 0.8 ? (px * px) / 0.64 : 1.0;
-
-  vAlpha = (0.16 + 0.5 * lum) * min(density, 2.6) * sunGate * edgeFade *
-    shrink * subPix * uFade;
-
-  vec4 mv = modelViewMatrix * vec4(wp, 1.0);
-  gl_Position = projectionMatrix * mv;
-  gl_PointSize = clamped;
-}
-`;
-
-const FRAG = /* glsl */ `
-precision highp float;
-
-varying vec3 vColor;
-varying float vAlpha;
-
-void main() {
-  if (vAlpha < 0.002) discard;
-  vec2 uv = gl_PointCoord * 2.0 - 1.0;
-  float r2 = dot(uv, uv);
-  if (r2 > 1.0) discard;
-  float i = exp(-r2 * 4.0);
-  gl_FragColor = vec4(vColor * i * vAlpha, 1.0);
+  // projeção com SÓ a rotação do modelView: a posição em view-space de
+  // (camPos + rel) É R·rel — nenhuma soma com quilo-parsecs em f32.
+  vec3 viewPos = mat3(modelViewMatrix) * rel;
+  gl_Position = projectionMatrix * vec4(viewPos, 1.0);
+  gl_PointSize = size;
 }
 `;
 
 export class WrappedStars {
   readonly points: THREE.Points;
   private material: THREE.ShaderMaterial;
+  private cellSizes: number[] = [];
 
-  constructor(seed = 0x57524150) {
-    let state = seed >>> 0;
-    const random = () => {
-      state = (state + 0x6d2b79f5) | 0;
-      let t = Math.imul(state ^ (state >>> 15), 1 | state);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-
-    const pos = new Float32Array(COUNT * 3);
-    const mag = new Float32Array(COUNT);
-    const ci = new Float32Array(COUNT);
-    const sd = new Float32Array(COUNT);
-    for (let i = 0; i < COUNT; i++) {
-      pos[i * 3] = (random() - 0.5) * BOX;
-      pos[i * 3 + 1] = (random() - 0.5) * BOX;
-      pos[i * 3 + 2] = (random() - 0.5) * BOX;
-      mag[i] = 4.5 + random() * 6.0;
-      ci[i] = -0.15 + random() * 1.6;
-      sd[i] = random();
+  constructor() {
+    const cells: number[] = [];
+    const probs: number[] = [];
+    const magLo: number[] = [];
+    const magSpan: number[] = [];
+    const grids: number[] = [];
+    let total = 0;
+    for (const bin of BINS) {
+      const dMax = reachPc(bin.mLo);
+      // célula com ~0,85 estrela esperada onde ρ=1 — acima disso o
+      // clamp da rejeição vira limite de confusão
+      let cell = Math.cbrt(0.85 / bin.n);
+      let grid = Math.ceil((2 * dMax) / cell);
+      if (grid > GRID_MAX) {
+        grid = GRID_MAX;
+        cell = (2 * dMax) / grid;
+      }
+      if (grid < 3) grid = 3;
+      this.cellSizes.push(cell);
+      cells.push(cell);
+      probs.push(bin.n * cell * cell * cell);
+      magLo.push(bin.mLo);
+      magSpan.push(bin.mHi - bin.mLo);
+      grids.push(grid);
+      total += grid * grid * grid;
     }
+
+    const offsets = new Float32Array(total * 3);
+    const binAttr = new Float32Array(total);
+    let v = 0;
+    for (let b = 0; b < NB; b++) {
+      const grid = grids[b];
+      const half = Math.floor(grid / 2);
+      for (let x = 0; x < grid; x++) {
+        for (let y = 0; y < grid; y++) {
+          for (let z = 0; z < grid; z++) {
+            offsets[v * 3] = x - half;
+            offsets[v * 3 + 1] = y - half;
+            offsets[v * 3 + 2] = z - half;
+            binAttr[v] = b;
+            v++;
+          }
+        }
+      }
+    }
+
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('aMag', new THREE.BufferAttribute(mag, 1));
-    geo.setAttribute('aCi', new THREE.BufferAttribute(ci, 1));
-    geo.setAttribute('aSeed', new THREE.BufferAttribute(sd, 1));
+    geo.setAttribute('aOffset', new THREE.BufferAttribute(offsets, 3));
+    geo.setAttribute('aBin', new THREE.BufferAttribute(binAttr, 1));
+    // position é obrigatório para THREE.Points; a projeção não o usa
+    geo.setAttribute(
+      'position',
+      new THREE.BufferAttribute(new Float32Array(total * 3), 3)
+    );
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
 
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERT,
-      fragmentShader: FRAG,
+      fragmentShader: STAR_FRAG, // a MESMA PSF do catálogo
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uScreenH: { value: 1080 },
-        uTanHalfFov: { value: 0.55 },
         uFade: { value: 1 },
+        // a mesma exposição/instrumento do campo HYG — uma cadeia
+        uExpoM0: { value: 3.5 },
+        uSigmaPx: { value: 0.85 },
+        uCell: { value: new Float32Array(cells) },
+        uProb: { value: new Float32Array(probs) },
+        uMagLo: { value: new Float32Array(magLo) },
+        uMagSpan: { value: new Float32Array(magSpan) },
+        uCamCell: {
+          value: Array.from({ length: NB }, () => new THREE.Vector3()),
+        },
+        uCamFrac: {
+          value: Array.from({ length: NB }, () => new THREE.Vector3()),
+        },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -168,14 +307,32 @@ export class WrappedStars {
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;
     this.points.renderOrder = 2;
+    // O shader projeta relativo à câmera assumindo modelMatrix identidade
+    // — este objeto NÃO pode ganhar position/rotation/scale.
+    this.points.matrixAutoUpdate = false;
   }
 
-  update(camPos: THREE.Vector3, screenH: number, tanHalfFov: number, fade: number) {
+  update(camPos: THREE.Vector3, screenH: number, _tanHalfFov: number, fade: number) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camPos);
     u.uScreenH.value = screenH;
-    u.uTanHalfFov.value = tanHalfFov;
     u.uFade.value = fade;
+    const camCells = u.uCamCell.value as THREE.Vector3[];
+    const camFracs = u.uCamFrac.value as THREE.Vector3[];
+    for (let b = 0; b < NB; b++) {
+      const c = this.cellSizes[b];
+      // floor em f64 na CPU: o inteiro da célula é exato; só a fração
+      // (pequena) desce ao shader
+      const cx = Math.floor(camPos.x / c);
+      const cy = Math.floor(camPos.y / c);
+      const cz = Math.floor(camPos.z / c);
+      camCells[b].set(cx, cy, cz);
+      camFracs[b].set(
+        camPos.x / c - cx,
+        camPos.y / c - cy,
+        camPos.z / c - cz
+      );
+    }
     this.points.visible = fade > 0.001;
   }
 

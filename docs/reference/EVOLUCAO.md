@@ -25,6 +25,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 10 | 0.1026 | 0.1163 | 0.1382 | 0.1219 | hitch de driver corrigido: fbm das nuvens CO em 2 oitavas fixas; flags noco/noforge |
 | 11 | 0.1718 | 0.1388 | 0.1104 | 0.1081 | sprites de poeira removidos: extincao por particula (VTF da coluna tau) + espalhamento por texel + fenda da barra no bake |
 | 12 | 0.0696 | 0.1361 | 0.1092 | 0.1092 | emissao 2 bracos: Sct-Cen+Perseu dominantes (prof. 1,0 base 0,42), gas/H II/jovens uniformes em 4, braco ~12% mais largo (sharpness -20%), 3kpc 0,43; gate edge-on novo |
+| 13 | 0.0739 | 0.1364 | 0.1096 | 0.1089 | unificacao 2 etapa 1: cascas por bin de M_V (hash de celula, existencia por densidade, m_sun>7,2, reconstrucao relativa a camera), PSF unica em GLSL_STAR_PSF, buildFarStars deletado; gates externos inalterados por construcao |
 
 ## Edge-on
 
@@ -35,3 +36,4 @@ final, as imagens locais e esta tabela se leem juntas.
 |---|---|---|---|---|---|---|
 | — | 0 | 0.0502 | 0.0598 | 0.9386 | 0.0187 | **alvo (foto real)** |
 | 12 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | emissao 2 bracos: Sct-Cen+Perseu dominantes (prof. 1,0 base 0,42), gas/H II/jovens uniformes em 4, braco ~12% mais largo (sharpness -20%), 3kpc 0,43; gate edge-on novo |
+| 13 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | unificacao 2 etapa 1: cascas por bin de M_V (hash de celula, existencia por densidade, m_sun>7,2, reconstrucao relativa a camera), PSF unica em GLSL_STAR_PSF, buildFarStars deletado; gates externos inalterados por construcao |

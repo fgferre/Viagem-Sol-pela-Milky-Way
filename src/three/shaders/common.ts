@@ -218,6 +218,31 @@ vec3 extinction(vec3 from, vec3 to, float baseTau) {
 }
 `;
 
+// A LEI fotométrica do ponto estelar — UMA para todas as camadas que
+// desenham estrela resolvida (HYG em starShaders, cascas em
+// wrappedStars). Estrela é fonte PONTUAL: a imagem é a PSF do
+// instrumento, com sigma fixo em PIXELS; a distância entra só na
+// energia, e o disco visível cresce com sqrt(ln E) quando o pico
+// satura. Extraída de STAR_VERT na unificação 2 — duplicá-la era
+// divergência silenciosa garantida (as cascas antigas tinham uma
+// fotometria própria de fluxo→tamanho que apagava estrela ao chegar
+// perto).
+export const GLSL_STAR_PSF = /* glsl */ `
+void starPSF(
+  float m, float expoM0, float sigmaPx, float screenH,
+  out float size, out float peak, out float sat, out float sigmaFrac
+) {
+  float sigma = sigmaPx * screenH / 1080.0;
+  float E = pow(10.0, -0.4 * (m - expoM0));
+  peak = E / (6.2831853 * sigma * sigma);
+  float rSat = peak > 1.0 ? sigma * sqrt(2.0 * log(peak)) : 0.0;
+  size = 2.0 * (2.2 * sigma + rSat);
+  // a saturação é o gatilho FÍSICO dos spikes de difração
+  sat = clamp(0.5 * log2(max(peak, 1.0)), 0.0, 1.0);
+  sigmaFrac = sigma / max(0.5 * size, 1e-4);
+}
+`;
+
 // Cor estelar: Planck × CIE 1931 → sRGB linear, normalizado a Y = 1.
 //
 // As cinco âncoras pintadas à mão que existiam aqui tinham dois defeitos

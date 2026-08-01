@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { Engine } from './core/engine';
 import type { QualityLevel } from './core/engine';
 import { Post } from './core/post';
-import { StarField, buildFarStars } from './world/stars';
+import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { Sun } from './world/sun';
 import { Dust } from './world/dust';
@@ -26,7 +26,7 @@ import {
 } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
-import { loadStarData, WORLD } from './config';
+import { loadStarData } from './config';
 import type { StarsMeta } from './config';
 
 export type Phase = 'loading' | 'intro' | 'journey' | 'end' | 'free';
@@ -46,7 +46,6 @@ export class Director {
   private post: Post;
   private nebula: Nebula;
   private stars!: StarField;
-  private farStars!: StarField;
   private heroes!: HeroStars;
   private galaxy!: Galaxy;
   private observedClouds: ObservedClouds | null = null;
@@ -157,12 +156,10 @@ export class Director {
     // PSF chega a 1. Com 3,5 as ~40 estrelas mais brilhantes do céu
     // saturam e ganham disco e spikes; o resto fica sub-saturado, que é
     // o que devolve ao campo os 8,6 mag de faixa dinâmica do catálogo.
+    // O halo buildFarStars (mag 7,2–10,6 estático no Sol) morreu na
+    // unificação 2: as cascas de wrappedStars cobrem essa população em
+    // QUALQUER ponto do disco, com a mesma PSF e anti-dupla-contagem.
     this.stars = new StarField(positions, 6, { expoM0: 3.5, sigmaPx: 0.85, tau: 0.045 });
-    this.farStars = new StarField(buildFarStars(WORLD.farStarsCount), 6, {
-      expoM0: 3.5,
-      sigmaPx: 0.7,
-      tau: 0.04,
-    });
     this.heroes = new HeroStars(this.meta.named);
 
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
@@ -226,7 +223,6 @@ export class Director {
     this.wrappedStars = new WrappedStars();
     this.engine.scene.add(this.wrappedStars.points);
     this.engine.scene.add(this.stars.points);
-    this.engine.scene.add(this.farStars.points);
     this.engine.scene.add(this.sun.group);
     this.engine.scene.add(this.dust.points);
     this.engine.scene.add(this.heroes.group);
@@ -468,7 +464,6 @@ export class Director {
     const cavityGate = THREE.MathUtils.smoothstep(dHome, 600, 1300);
     this.nebula.setCavity(cam.position, cavityGate);
     this.stars?.setCavity(cam.position, cavityGate);
-    this.farStars?.setCavity(cam.position, cavityGate);
     this.dust.setCavity(cam.position, cavityGate);
 
     if (this.debug.has('dbgfade')) {
@@ -480,7 +475,6 @@ export class Director {
     }
 
     this.stars?.update(cam.position, hPx, time);
-    this.farStars?.update(cam.position, hPx, time);
     this.wrappedStars?.update(
       cam.position,
       hPx,
@@ -488,7 +482,6 @@ export class Director {
       this.hide.has('nowrap') ? 0 : 1
     );
     this.stars?.setFade(this.hide.has('nocat') ? 0 : localFade);
-    this.farStars?.setFade(this.hide.has('nocat') ? 0 : localFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
     this.nebula.setFade(nebulaFade);
     // heroes esmaecem a zero em farFade (900 pc) — além disso os 12
@@ -580,7 +573,6 @@ export class Director {
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
     this.stars?.dispose();
-    this.farStars?.dispose();
     this.heroes?.dispose();
     this.galaxy?.dispose();
     this.observedClouds?.dispose();

@@ -28,7 +28,6 @@ export const WORLD = {
 
   // Campos estelares
   starMagLimit: 7.2, // deve bater com o binário gerado
-  farStarsCount: 42000,
   dustCount: 2200,
 };
 

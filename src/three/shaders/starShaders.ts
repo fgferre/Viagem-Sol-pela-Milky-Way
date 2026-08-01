@@ -2,7 +2,13 @@
 // Shaders do campo estelar — pontos com tamanho/brilho por
 // magnitude, cor por B-V, extinção pelo gás e spikes de difração.
 // ============================================================
-import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY_LOCAL, GLSL_STAR_COLOR } from './common';
+import {
+  GLSL_NOISE,
+  GLSL_GALAXY,
+  GLSL_DENSITY_LOCAL,
+  GLSL_STAR_COLOR,
+  GLSL_STAR_PSF,
+} from './common';
 
 export const STAR_VERT = /* glsl */ `
 attribute float aLogLum;
@@ -25,6 +31,7 @@ ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_DENSITY_LOCAL}
 ${GLSL_STAR_COLOR}
+${GLSL_STAR_PSF}
 
 void main() {
   vec3 worldPos = position;
@@ -37,18 +44,10 @@ void main() {
   // caro no desenho antigo não era a conta, era a resposta errada.
   float m = -0.15 - 2.5 * aLogLum + 5.0 * (log2(max(dist, 1e-3)) * 0.30103);
 
-  // Uma estrela é fonte PONTUAL: a imagem dela é a PSF do instrumento,
-  // cuja largura é fixa em PIXELS — não encolhe nem cresce com a
-  // distância. O desenho antigo derivava o tamanho do fluxo, então
-  // aproximar-se de uma estrela a APAGAVA (o shrink de conservação de
-  // fluxo comia o pico). Aqui a distância entra só na energia; o disco
-  // visível só cresce quando o pico satura, e cresce com sqrt(ln E) —
-  // que é exatamente por que Sirius parece "grande" numa foto.
-  float sigma = uSigmaPx * uScreenH / 1080.0;
-  float E = pow(10.0, -0.4 * (m - uExpoM0));
-  float peak = E / (6.2831853 * sigma * sigma);
-  float rSat = peak > 1.0 ? sigma * sqrt(2.0 * log(peak)) : 0.0;
-  float size = 2.0 * (2.2 * sigma + rSat);
+  // A lei da PSF é compartilhada (GLSL_STAR_PSF, common.ts) — a mesma
+  // para o catálogo e para as cascas procedurais.
+  float size; float peak; float sat; float sigmaFrac;
+  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
   float alpha = 1.0;
 
   // extinção interestelar: gás entre a câmera e a estrela a apaga e
@@ -62,10 +61,8 @@ void main() {
   alpha *= uFade; // some ao deixar a vizinhança solar
 
   vColor = col;
-  // A saturação é o gatilho FÍSICO dos spikes: difração e halo aparecem
-  // porque o núcleo estourou, não porque a estrela está perto.
-  vSat = clamp(0.5 * log2(max(peak, 1.0)), 0.0, 1.0);
-  vSigma = sigma / max(0.5 * size, 1e-4);
+  vSat = sat;
+  vSigma = sigmaFrac;
   vPeak = peak * alpha;
 
   vec4 mv = modelViewMatrix * vec4(worldPos, 1.0);

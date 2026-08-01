@@ -50,12 +50,26 @@ de largura fixa em px. *Falta:* exposição compartilhada entre camadas, e o ton
 medido travando a faixa dinâmica em 2,3 mag contra os 8,6 do catálogo, hoje o teto real
 do campo estelar.
 
-**2. Uma lei de população estelar.** Hoje "estrela" tem quatro representações com
-regras diferentes: HYG, star forges, wrapped stars e as 2,7 M partículas da galáxia.
-*Alvo:* cascas de wrap por bin de magnitude absoluta (lado = 2× o alcance de
-visibilidade do bin ⇒ sem popping por construção), identidade por hash das coordenadas
-inteiras da célula, densidade decidindo **existência** e não alpha, anti-dupla-contagem
-por magnitude aparente vista do Sol. Exige floating origin junto (ver Decisões).
+**2. Uma lei de população estelar.** "Estrela" tinha quatro representações com regras
+diferentes: HYG, star forges, wrapped stars e as 2,7 M partículas da galáxia.
+*Etapa 1 FEITA (rodada 13):* `wrappedStars.ts` reescrito como **cascas por bin de M_V**
+(7 bins, lado = 2× o alcance do membro mais brilhante com M_FAINT 11,75 e extinção
+0,0008 mag/pc ⇒ sem popping por construção), identidade por hash das coordenadas
+inteiras da célula, densidade decidindo **existência** (rejeição; onde ρ·prob satura,
+o excedente é luz não resolvida — limite de confusão), anti-dupla-contagem por
+m_sun < 7,2 (o corte vs HYG), e **uma só lei fotométrica** (`GLSL_STAR_PSF` em
+common.ts, compartilhada com o catálogo — também um passo da unificação 1).
+`buildFarStars` deletado: era um halo estático no Sol; as cascas cobrem o papel dele em
+qualquer ponto do disco. O floating origin entrou como reconstrução relativa à câmera
+(célula inteira f64 na CPU + fração no shader, projeção só com a rotação do MV) — nenhum
+operando de kpc no caminho da posição. Gates externos inalterados por construção
+(edge-on 2,0258 bit-idêntico; face-on no ruído de captura).
+*Falta (etapa 2):* o handoff `unresolved(d) = L(<M_res(d))/L_tot` escurecendo partículas
+e a LUT da faixa — hoje a luz das cascas SOMA sobre a integrada (dupla contagem pequena
+mas não nula); a 30 kpc `unresolved = 1` exato é o gate. E MEDIR o custo de vértice
+(296 k vértices com galMajorArmsGas por vértice — método em frame-cost-measured; não
+subir tier de qualidade sem esse número). Star forges e partículas ainda são leis
+próprias — etapas seguintes.
 
 **3. Um meio volumétrico.** Hoje a poeira tem duas representações que não se conhecem:
 ~430 k sprites na vista externa e um raymarch local, ligados por crossfade. O dado já é
@@ -130,7 +144,7 @@ Não reabrir sem que a condição listada mude.
 | Decisão | Por quê | Reabre se |
 |---|---|---|
 | **Octree: não** | Serve para podar conjunto fixo e grande. Aqui o VBO é estático e a árvore podaria ~3,7% dos vértices ao custo de ~193 draw calls | Conjunto estático > 2 M pontos **e** `WEBGL_multi_draw` plumbado |
-| **Floating origin: sim, junto da unificação 2** | A 25 kpc da origem o quantum f32 é 1,5·10⁻³ pc; com estrelas a 1 pc da câmera isso é ~1,7 px de tremor por frame. Hoje não aparece porque nada resolvido fica perto da câmera longe do Sol — a unificação 2 destrói essa premissa | — |
+| **Floating origin: feito por reconstrução relativa à câmera (rodada 13), não por rebase global** | A 25 kpc o quantum f32 é 1,5·10⁻³ pc ≈ 1,7 px de tremor a 1 pc. As cascas — a única geometria resolvida perto da câmera longe do Sol — reconstroem posição por célula inteira + fração e projetam com só a rotação do MV: nenhum operando de kpc no caminho. Rebase global do grafo não é necessário | Outra camada passar a resolver geometria perto da câmera longe do Sol |
 | **Log-depth: não** | A cena tem um único objeto opaco com `depthWrite`; z-fighting precisa de dois | Entrar geometria resolvida (planetas, malhas) |
 | **LUT de cor (Mamajek / CIE 401): não** | O ajuste de 3 mads em `common.ts` tem RMS 0,009; o erro real afeta ~51 das 18.543 estrelas | Precisão exigida abaixo de 2500 K ou acima de 40 kK |
 | **Saturação/lift no pós para "consertar" cor: não** | É maquiagem. A cor tem de emergir da física; croma se recupera por **exposição**, não por saturação | — |
