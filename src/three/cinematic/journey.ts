@@ -36,7 +36,12 @@ const KEYFRAMES: Keyframe[] = [
   // Centro galáctico real na cena: (-442, -7117, -3946) pc
   { t: 134, pos: [-350, 260, 220], look: [0, 0, 0], fov: 58, caption: 'DE SUBIDA', sub: 'deixando o plano galáctico' },
   { t: 146, pos: [-2600, 1100, 1500], look: [0, 0, 0], fov: 58, caption: 'O SOL JÁ É UM PONTO ENTRE MILHARES', sub: '3.200 parsecs de casa' },
-  { t: 158, pos: [10635, -17972, 14392], look: [-442, -7117, -3946], fov: 58, caption: 'A VIA LÁCTEA', sub: 'um disco fino, curvo e vivo' },
+  // t=158: visada ao longo da linha de nós do warp (azimute ≈185° vs fase
+  // 5° — de outro azimute o S projetado cancela na integral da visada) e
+  // elevação 500 pc, varrida na rodada 16 (100/400/500/901 pc, R 24/36 kpc):
+  // mais baixo entra no regime dentro-da-lâmina e a faixa escura morre no
+  // branco extinto; mais alto dilui faixa, espessura e warp.
+  { t: 158, pos: [-597, 14597, 6287], look: [-442, -7117, -3946], fov: 58, caption: 'A VIA LÁCTEA', sub: 'um disco fino, curvo e vivo' },
   { t: 170, pos: [-25573, -13060, 15832], look: [-442, -7117, -3946], fov: 57, caption: 'NOSSA GALÁXIA', sub: 'quatro grandes braços · um esporão chamado casa' },
   { t: 182, pos: [-11429, -7864, 29651], look: [-442, -7117, -3946], fov: 55, caption: 'CASA', sub: 'o Sol, na borda interna do braço Local' },
 ];

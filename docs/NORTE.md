@@ -26,16 +26,34 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
 
 **Lacunas conhecidas do gate (a fechar):**
 1. ~~Edge-on sem número~~ — **fechada na rodada 12** (`?mode=edge`, alvos e fórmula em
-   `VISUAL_TARGETS.md`, tabela no `EVOLUCAO.md`) e **atacada na rodada 15**: a extinção
-   por partícula virou **caminho amostrado** (4 amostras VTF no segmento
-   partícula→câmera, sem piso de μ — de cima recupera τ⊥·ΔCDF, de raspão o caminho vira
-   quilo-parsecs), com piso difuso axissimétrico (metade da âncora A_V = 1,5 mag/kpc ⇒
-   τ⊥ 0,125 no Sol; a outra metade é a Σ estruturada do mapa) e fenda no glow do bojo.
-   edgeError 2,0258 → **1,4780**; laneDepth −0,07 → **0,29** (alvo 0,94), axialRatio
-   0,026 → 0,034 (alvo 0,060), warpAsym −0,46 → −0,25. O face-on pagou dentro do ruído
-   (0,0800, banda 0,0696–0,0823). O que resta da faixa: luz do lado de cá da poeira
-   (rim do disco) e o ruído de 4 amostras numa Σ recortada; espessura e o S do warp
-   seguem abertos.
+   `VISUAL_TARGETS.md`, tabela no `EVOLUCAO.md`), **atacada na rodada 15** (extinção por
+   caminho amostrado no segmento partícula→câmera, sem piso de μ; piso difuso
+   axissimétrico = metade da âncora A_V 1,5 mag/kpc; fenda no glow do bojo —
+   edgeError 2,0258 → 1,4780) e **na rodada 16: 1,4780 → 0,8731**, por duas causas:
+   **(a) o ruído de poucas amostras era VIÉS** — subamostrar uma Σ com estrutura de
+   ~1 kpc não faz média entre 2,6 M partículas: E[e^−τ̂] > e^−E[τ̂] (convexidade), o viés
+   enche a faixa e suja o centroide vertical por coluna. 16 amostras são o joelho
+   (fronteira 4/16/32 no gate: 0,928/0,873/0,881; custo t=0 2560×1440: 17,7/18,8/20,0 ms
+   de média — o custo é latência de fetch com cache frio nos caminhos de meia-galáxia,
+   t=170 fica no vsync com as mesmas 16; candidata a devolver o p90: `textureLod`
+   mip 2–3 nas amostras do caminho, conferindo antes se o uTauMap tem mips).
+   **(b) a vantagem de t=158 era cega ao que o gate mede** — azimute da visada 90° ≈
+   linha de nós do warp (fase 5°): o S projetado cancelava na integral da visada
+   (fator 0,087); e elevação 901 pc diluía faixa e espessura. Keyframe novo: visada
+   pelos nós (az 185°, recuo radial reto desde t=146) e z=500 pc, varrido — abaixo de
+   ~400 pc entra o regime DENTRO-da-lâmina (o plano inteiro se extingue, a faixa morre
+   no branco; em z=100 o warp aparece pleno, warpAsym +0,48 = alvo, provando que faixa
+   e S são acoplados: o S só emerge quando a faixa corta a luz reta do plano).
+   Estado: laneDepth 0,29 → **0,66** (alvo 0,94), warpAmp 0,004 → 0,010, laneOffset
+   0,56, axialRatio 0,036. O face-on MELHOROU junto: 0,0800 → **0,0601, recorde** — a
+   extinção limpa ajudou de cima também.
+   **O que falta da faixa, com mecanismo:** o plano ficou vermelho demais (colourZ
+   baixo 0,34 vs alvo 0,19) — o ingrediente ausente é a luz AZUL na frente da poeira
+   (rim do lado de cá), que na referência mantém a faixa escura porém neutra. E a
+   janela do warp (0,7–1,1·R90) cai abaixo do início do warp (8,4 kpc): nosso R90
+   edge-on é ~7,3 kpc = 0,43·R_disco vs ~0,55 na referência — perfil radial de brilho
+   concentrado demais, que é trabalho da **unificação 1** (exposição/tonemap, faixa
+   dinâmica 2,3 mag vs 8,6).
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
@@ -130,9 +148,9 @@ em 4 medições — mesmo o pior sorteio segue recorde; deltas menores que ~0,01
 rodadas são ruído de captura, não sinal. m=4 não cravou os 0,208 do alvo (+8%), mas TODOS
 os harmônicos melhoraram contra a rodada 11 e a nota honesta é a melhor já medida — sem
 truque de sprite. **Mergeada em `main` (2026-08-01)** — "sem truques de sprite" está
-concluído. A fila agora é: unificação 2 (cascas de wrap por bin de magnitude absoluta,
-com floating origin junto — desenho completo em `memory/procedural-star-population.md`
-do agente e resumido acima).
+concluído. A fila agora é: a faixa edge-on (rim light azul do lado de cá da poeira;
+fenda do glow seguindo o warp) e as etapas restantes da unificação 2 (star forges e
+partículas sob a lei única).
 
 Na vista INTERNA (sem gate — lacuna 2) a emissão estelar segue com 4 braços de gás de
 propósito: raymarch da faixa e wrapped stars usam a variante uniforme, porque o par fraco
@@ -151,6 +169,16 @@ Becos medidos na rodada 15 (não repetir): interbraço de partícula 0,70 → 0,
 m=4 e piora m=1/grain; termo largo do bake τ 0,31 → 0,10 move o face-on só −0,002 e
 custa +0,054 no edge-on (a faixa perde profundidade — o termo largo É parte da coluna
 que a faixa precisa).
+
+Becos medidos na rodada 16 (não repetir): fenda RETA do glow τ0 2,5 → 5,0 aprofunda a
+faixa (+0,067) mas imprime um anti-S no centroide vertical por coluna (warpAsym
+−0,01 → −0,21, saldo pior — a fenda é uma reta em z de view-space sobre um plano
+curvo; uma fenda que SIGA o warp destravaria esse ganho); early-exit por saturação no
+loop de amostras não paga (divergência de warp de GPU — 0,2 ms de ganho com 32
+amostras); tirar atan/sin do galWarpHeight pela identidade sin(atan(y,x)−φ) =
+(y·cosφ−x·sinφ)/r é exato e não move o frame (o custo do loop é fetch, não ALU);
+afastar a câmera para R=36 kpc mantendo z=500 não achata a perspectiva do rim —
+elevação 0,8° reentra no regime dentro-da-lâmina (edgeError 1,77, faixa morta).
 
 ## Decisões fechadas
 

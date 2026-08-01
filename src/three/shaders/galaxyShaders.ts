@@ -49,18 +49,24 @@ void main() {
   float shrink = min(1.0, 9.0 / max(px * px, 1e-4));
   float subPix = px < 0.7 ? (px * px) / 0.49 : 1.0;
 
-  // EXTINÇÃO POR CAMINHO AMOSTRADO — rodada 15. A coluna entre a
+  // EXTINÇÃO POR CAMINHO AMOSTRADO — rodadas 15/16. A coluna entre a
   // partícula e a câmera é ∫κρ ds com ρ(x,y,z) = τ⊥(x,y)·G(z̃)/(√2π σ):
-  // 4 amostras VTF ao longo do trecho do segmento dentro da camada.
+  // 16 amostras VTF ao longo do trecho do segmento dentro da camada.
   // De cima, o trecho é a própria coluna vertical e a fórmula recupera
   // τ⊥·ΔCDF (o antigo C·τ⊥ — a fração near/far virou geometria do
   // segmento). De RASPÃO, o trecho vira quilo-parsecs e a faixa escura
   // emerge: o piso μ ≥ 0,05 antigo capava o caminho em ~20 alturas de
   // escala, e era por isso que o perfil edge-on media laneDepth −0,07
   // contra 0,94 do alvo — a lâmina de perfil não tinha fenda nenhuma.
-  // 4 amostras são grossas para um caminho de 20 kpc, mas 2,6 M
-  // partículas médias entre si — o mesmo argumento estocástico dos
-  // sprites antigos.
+  // 16 amostras, não 4: subamostrar uma Σ com estrutura de ~1 kpc NÃO
+  // faz média entre partículas — E[e^(−τ̂)] > e^(−E[τ̂]) (convexidade), o
+  // viés é sistemático, enche a faixa e suja o centroide vertical por
+  // coluna. Fronteira medida na rodada 16 (edgeError t=158 · custo t=0
+  // 2560×1440): 4 → 0,928 · 17,7 ms; 16 → 0,873 · 18,8; 32 → 0,881 ·
+  // 20,0. O joelho é 16. O custo é latência de fetch (caminhos de meia
+  // galáxia espalham as amostras pelo mapa — cache frio; em t=170 os
+  // mesmos 16 fetches ficam no vsync); early-exit por saturação não
+  // paga (divergência de warp, medido). Candidata: textureLod mip 2–3.
   vec3 toCam = uCamPos - position;
   float D = length(toCam);
   vec3 qv = position - uGC;
@@ -77,9 +83,10 @@ void main() {
     s0 = clamp(min(ta, tb), 0.0, 1.0);
     s1 = clamp(max(ta, tb), 0.0, 1.0);
   }
+  float dTau = (s1 - s0) * D * 0.0625; // peso de UMA amostra no τ final
   float tau = 0.0;
-  for (int i = 0; i < 4; i++) {
-    float s = s0 + (s1 - s0) * (float(i) + 0.5) * 0.25;
+  for (int i = 0; i < 16; i++) {
+    float s = s0 + (s1 - s0) * (float(i) + 0.5) * 0.0625;
     vec3 sp = position + toCam * s - uGC;
     vec2 sxy = vec2(dot(sp, uEX), dot(sp, uEY));
     float rS = length(sxy);
@@ -100,7 +107,7 @@ void main() {
     tp += 0.6 * exp(-rS / 5200.0);
     tau += tp * g / (2.5066283 * sigmaD);
   }
-  tau *= (s1 - s0) * D * 0.25;
+  tau *= dTau;
   vec3 extinct = exp(-tau * vec3(0.75, 1.0, 1.32));
 
   vColor = aColor * extinct;
