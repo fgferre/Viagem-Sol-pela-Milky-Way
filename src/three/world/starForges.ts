@@ -12,7 +12,8 @@
 // ============================================================
 import * as THREE from 'three';
 import type { GalacticAssets } from '../cartography/galacticAssets';
-import { galactocentricToScene } from './galaxy';
+import { galactocentricToScene, EX, EY, EZ, GAL } from './galaxy';
+import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 
 const TYPE_HII = 0;
 const TYPE_MASER = 1;
@@ -33,10 +34,21 @@ uniform float uScreenH;
 uniform float uTanHalfFov;
 uniform float uFade;
 uniform float uTime;
+// extinção pela coluna de poeira bakeada — mesmo bloco de GALAXY_VERT.
+// Os forges têm renderOrder 3: os sprites multiplicativos (order 5) os
+// escureciam, e o herdeiro precisa escurecê-los também.
+uniform sampler2D uTauMap;
+uniform vec3 uEX;
+uniform vec3 uEY;
+uniform vec3 uEZ;
+uniform vec3 uGC;
 
 varying float vType;
 varying float vAlpha;
 varying float vSeed;
+varying vec3 vExtinct;
+
+${GLSL_CARTOGRAPHY}
 
 void main() {
   float dist = length(position - uCamPos);
@@ -58,6 +70,20 @@ void main() {
   vAlpha = intensity * uFade * shrink * subPix;
   vSeed = aSeed;
 
+  // mesma extinção por coluna de GALAXY_VERT (comentário completo lá)
+  vec3 qv = position - uGC;
+  vec2 xy = vec2(dot(qv, uEX), dot(qv, uEY));
+  float rG = length(xy);
+  float tauPerp = texture2D(uTauMap, xy / (2.0 * GAL_DISK_RADIUS) + 0.5).a;
+  float zTil = dot(qv, uEZ) - galWarpHeight(rG, atan(xy.y, xy.x + 1e-7));
+  float fxE = clamp((rG - 7500.0) / 9300.0, 0.0, 1.0);
+  float sigmaD = 58.0 + fxE * fxE * 120.0;
+  float camSide = sign(dot(uCamPos - uGC, uEZ));
+  float cArg = clamp(2.35 * camSide * zTil / sigmaD, -20.0, 20.0);
+  float Cfrac = 1.0 / (1.0 + exp(cArg));
+  float muE = max(abs(dot(normalize(uCamPos - position), uEZ)), 0.05);
+  vExtinct = exp(-(tauPerp * Cfrac / muE) * vec3(0.75, 1.0, 1.32));
+
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = clamped;
@@ -70,6 +96,7 @@ precision highp float;
 varying float vType;
 varying float vAlpha;
 varying float vSeed;
+varying vec3 vExtinct;
 
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
@@ -100,7 +127,7 @@ void main() {
     col = mix(vec3(0.48, 0.66, 1.0), vec3(0.88, 0.94, 1.0), fract(vSeed * 7.3));
   }
 
-  gl_FragColor = vec4(col * profile * vAlpha, 1.0);
+  gl_FragColor = vec4(col * vExtinct * profile * vAlpha, 1.0);
 }
 `;
 
@@ -230,11 +257,24 @@ export class StarForges {
     geometry.setAttribute('aSeed', new THREE.InterleavedBufferAttribute(buffer, 1, 6));
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 60000);
 
+    // nasce sem extinção (1×1 A=0); o director liga o mapa depois do bake
+    const tauMap = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
+    tauMap.needsUpdate = true;
+    const exBase = EX.clone();
+    const eyBase = EY.clone();
+    const ezBase = EZ.clone();
+    const gcBase = GAL.GC_POS.clone();
+
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERT,
       fragmentShader: FRAG,
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
+        uTauMap: { value: tauMap },
+        uEX: { value: exBase },
+        uEY: { value: eyBase },
+        uEZ: { value: ezBase },
+        uGC: { value: gcBase },
         uScreenH: { value: 1080 },
         uTanHalfFov: { value: 0.55 },
         uFade: { value: 0 },
@@ -248,6 +288,11 @@ export class StarForges {
     this.points = new THREE.Points(geometry, this.material);
     this.points.frustumCulled = false;
     this.points.renderOrder = 3;
+  }
+
+  /** liga o τ⊥ bakeado — chamado pelo director depois do bake das lâminas */
+  setTauMap(t: THREE.Texture) {
+    this.material.uniforms.uTauMap.value = t;
   }
 
   update(

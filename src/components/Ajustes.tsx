@@ -29,7 +29,7 @@ const QUALIDADES: QualityLevel[] = ['cinema', 'alta', 'performance'];
 const CAMADAS: { flag: string; nome: string }[] = [
   { flag: 'nogal', nome: 'Galáxia (tudo)' },
   { flag: 'nodisc', nome: 'Lâminas do disco' },
-  { flag: 'nogdust', nome: 'Poeira + espalhamento' },
+  { flag: 'nogdust', nome: 'Extinção por partícula' },
   { flag: 'noglow', nome: 'Brilho do bojo' },
   { flag: 'nocart', nome: 'Cartografia observada' },
   { flag: 'nonebula', nome: 'Nebulosa volumétrica' },

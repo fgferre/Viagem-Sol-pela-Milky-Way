@@ -72,6 +72,20 @@ DISCRETIZAÇÃO que o 1/μ não toca (por isso o fade rasante continua lá). Fal
 que dá significado absoluto a κ — hoje o 2,39 é escala honesta sobre resposta normalizada,
 não profundidade óptica medida.
 
+**Remoção dos sprites: implementada na branch `quad-unico`, gate reprovado, causa
+identificada.** Toda a herança está de pé (extinção por partícula via VTF do 8º bake com
+fração C da coluna e 1/μ; espalhamento por texel; fenda da barra; feathering na crista) e
+grain caiu ao melhor valor da série (0,108). Mas m=4 fica cravado em 0,259 (alvo 0,208)
+contra 0,188 com sprites — dez medições, nenhum botão de poeira o move (S0 ×½ e ×2,
+extinção off, barra off, crista ×0,42/×1/×2, feathering, offset côncavo ±). Conclusão por
+eliminação: **o excesso de m=4 é da EMISSÃO** — o modelo estelar dá amplitude igual aos 4
+braços — e os sprites o mascaravam multiplicando a cena inteira em screen-space, inclusive
+partículas na FRENTE da poeira (eficaz e não-físico; a extinção correta poupa a frente,
+como deve). O caminho físico, com respaldo: no infravermelho estelar a Via Láctea é
+**2 braços dominantes** (Sct-Cen + Perseu, par ~antipodal ⇒ m=1 neutro) com 4 no gás
+(Drimmel) — dar peso por braço à emissão estelar (lâminas + partículas), mantendo o gás
+com 4. É mudança de modelo com rodada própria, não constante.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.

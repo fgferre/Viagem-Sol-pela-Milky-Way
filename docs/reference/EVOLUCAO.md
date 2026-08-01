@@ -23,3 +23,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 08 | 0.0998 | 0.1150 | 0.1398 | 0.1217 | coluna fechada nas laminas: F(tau)=(1-e^-tau)/tau no lugar de atenuacao linear, e uma so profundidade optica |
 | 09 | 0.0989 | 0.1169 | 0.1376 | 0.1206 | lei de comprimento de caminho: tau perpendicular no bake, coluna reconstruida por 1/mu no runtime |
 | 10 | 0.1026 | 0.1163 | 0.1382 | 0.1219 | hitch de driver corrigido: fbm das nuvens CO em 2 oitavas fixas; flags noco/noforge |
+| 11 | 0.1718 | 0.1388 | 0.1104 | 0.1081 | sprites de poeira removidos: extincao por particula (VTF da coluna tau) + espalhamento por texel + fenda da barra no bake |

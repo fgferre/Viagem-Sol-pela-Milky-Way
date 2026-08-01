@@ -197,6 +197,9 @@ export class Director {
     );
     // congela as lâminas (estáticas) em texturas — depois do modo
     this.galaxy.bakeDiscLayers(this.engine.renderer);
+    // forges sofrem a mesma extinção por coluna que as partículas
+    const tauTex = this.galaxy.tauMapTexture;
+    if (tauTex) this.starForges?.setTauMap(tauTex);
     this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
     if (galactic && cartMode !== 'off') {
       this.observedClouds = new ObservedClouds(

@@ -6,7 +6,11 @@
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { GLSL_STAR_COLOR } from './common';
 
-// Vértice compartilhado pelas partículas brilhantes e pela poeira.
+// Vértice das partículas brilhantes — com extinção pela MESMA coluna τ
+// das lâminas, amostrada do bake (VTF). É o herdeiro dos 430 k sprites
+// multiplicativos: em vez de quads escurecendo o que calha de estar
+// atrás, cada partícula é extinta pela fração da coluna de poeira que
+// está DE FATO entre ela e a câmera.
 export const GALAXY_VERT = /* glsl */ `
 attribute vec3 aColor;
 attribute float aSize;   // diâmetro físico em pc
@@ -17,10 +21,19 @@ uniform float uScreenH;
 uniform float uTanHalfFov;
 uniform float uFade;
 uniform float uMaxPx;
+// canal A da lâmina central bakeada: τ⊥ da coluna de poeira
+uniform sampler2D uTauMap;
+// base galactocêntrica da cena (EX/EY/EZ) e posição do centro galáctico
+uniform vec3 uEX;
+uniform vec3 uEY;
+uniform vec3 uEZ;
+uniform vec3 uGC;
 
 varying vec3 vColor;
 varying float vAlpha;
 varying float vSeed;
+
+${GLSL_CARTOGRAPHY}
 
 void main() {
   float dist = length(position - uCamPos);
@@ -34,7 +47,29 @@ void main() {
   float shrink = min(1.0, 9.0 / max(px * px, 1e-4));
   float subPix = px < 0.7 ? (px * px) / 0.49 : 1.0;
 
-  vColor = aColor;
+  // EXTINÇÃO PELA COLUNA REAL. τ⊥ vem do mapa; a fração C da coluna que
+  // está entre a estrela e a câmera vem da posição da estrela DENTRO da
+  // camada de poeira (CDF gaussiana; a logística erra < 2% em ±3σ).
+  // NÃO é meia-coluna fixa: a população velha mora FORA da camada fina
+  // de poeira, e meia-coluna apagaria estrelas na FRENTE da fenda.
+  // O 1/μ é a mesma lei de caminho das lâminas — é ele que faz o Great
+  // Rift emergir de dentro (μ pequeno no plano) sem código separado.
+  vec3 qv = position - uGC;
+  vec2 xy = vec2(dot(qv, uEX), dot(qv, uEY));
+  float rG = length(xy);
+  float thG = atan(xy.y, xy.x + 1e-7);
+  float tauPerp = texture2D(uTauMap, xy / (2.0 * GAL_DISK_RADIUS) + 0.5).a;
+  float zTil = dot(qv, uEZ) - galWarpHeight(rG, thG);
+  // σz da camada de poeira, com o flare do disco externo (galaxy.ts)
+  float fx = clamp((rG - 7500.0) / 9300.0, 0.0, 1.0);
+  float sigmaD = 58.0 + fx * fx * 120.0;
+  float camSide = sign(dot(uCamPos - uGC, uEZ));
+  float cArg = clamp(2.35 * camSide * zTil / sigmaD, -20.0, 20.0);
+  float C = 1.0 / (1.0 + exp(cArg));
+  float mu = max(abs(dot(normalize(uCamPos - position), uEZ)), 0.05);
+  vec3 extinct = exp(-(tauPerp * C / mu) * vec3(0.75, 1.0, 1.32));
+
+  vColor = aColor * extinct;
   vAlpha = aAlpha * uFade * shrink * subPix;
   vSeed = fract(aSize * 0.371 + aAlpha * 7.13);
 
@@ -58,87 +93,6 @@ void main() {
   float i = exp(-r2 * 4.5);
   vec3 col = vColor * i * vAlpha;
   gl_FragColor = vec4(col, 1.0);
-}
-`;
-
-// Poeira galáctica — blending multiplicativo: escurece a luz
-// acumulada atrás, desenhando as faixas escuras dos braços.
-export const GALAXY_DUST_FRAG = /* glsl */ `
-precision highp float;
-
-// Profundidade óptica de pico de um grão; a COR da extinção não é
-// escolhida, sai da lei de avermelhamento.
-uniform float uTau;
-
-varying vec3 vColor; // não usado — a extinção não depende da cor do grão
-varying float vAlpha;
-varying float vSeed;
-
-void main() {
-  vec2 uv = gl_PointCoord * 2.0 - 1.0;
-  // Fragmentos finos e curvos: poeira externa deve ler como filamento,
-  // não como discos pretos destacados sobre a galáxia.
-  float ang = vSeed * 6.2831;
-  mat2 rot = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
-  uv = rot * uv;
-  uv.x *= 0.72 + vSeed * 0.34;
-  float r = length(vec2(uv.x * 0.72, uv.y));
-  if (r > 1.0) discard;
-  float bend = uv.y + sin(uv.x * (3.4 + vSeed * 2.1) + ang) * 0.16;
-  float width = 0.10 + vSeed * 0.075;
-  float filament = 1.0 - smoothstep(width, width + 0.18, abs(bend));
-  float envelope = 1.0 - smoothstep(0.52, 1.0, r);
-  float knots = 0.70 + 0.30 * sin(uv.x * 8.0 + ang);
-  float i = filament * envelope * knots;
-  // LEI DE EXTINÇÃO, não uma cor escolhida. Para poeira interestelar com
-  // R_V = 3,1 a extinção relativa é A_B/A_V = 1,32 e A_R/A_V = 0,75:
-  // a transmissão por canal é exp(−τ·razão). Um uDustColor fixo era um
-  // tingimento — pintava de marrom até onde a coluna é fininha. Com a
-  // lei, poeira rala apenas AVERMELHA e só a coluna espessa escurece,
-  // que é o que separa o marrom-avermelhado das fendas do véu dourado
-  // que cobria o disco inteiro. exp() nunca passa de 1 nem fica negativo,
-  // então o clamp do mix deixou de ser necessário.
-  float tau = max(i, 0.0) * vAlpha * uTau;
-  vec3 factor = exp(-tau * vec3(0.75, 1.0, 1.32));
-  gl_FragColor = vec4(factor, 1.0);
-}
-`;
-
-// Espalhamento da poeira — o par ADITIVO da extinção acima.
-//
-// Grão de poeira faz duas coisas com a luz: absorve (avermelha o que
-// passa — é o GALAXY_DUST_FRAG) e ESPALHA. O espalhamento é seletivo no
-// azul: é a física da nebulosa de reflexão. Modelando só a extinção, a
-// vista externa só podia ficar dourada, enquanto o raymarch interno —
-// que integra espalhamento — mostrava o disco púrpura e azulado. Mesma
-// poeira, duas aparências, porque faltava metade do modelo.
-//
-// A cor vem por vértice (aColor), calculada em galaxy.ts com a MESMA
-// mistura do raymarch: azul-violeta longe do bojo, quente perto.
-export const GALAXY_DUST_SCATTER_FRAG = /* glsl */ `
-precision highp float;
-
-varying vec3 vColor;
-varying float vAlpha;
-varying float vSeed;
-
-void main() {
-  vec2 uv = gl_PointCoord * 2.0 - 1.0;
-  float ang = vSeed * 6.2831;
-  mat2 rot = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
-  uv = rot * uv;
-  uv.x *= 0.72 + vSeed * 0.34;
-  float r = length(vec2(uv.x * 0.72, uv.y));
-  if (r > 1.0) discard;
-  // envelope mais largo que o da extinção: o halo espalhado extravasa
-  // a crista opaca, como na borda iluminada de uma nuvem real
-  // segue a MESMA crista da extinção, só que mais macia: o halo
-  // espalhado extravasa a fenda opaca sem virar bolha isolada
-  float bend = uv.y + sin(uv.x * (3.4 + vSeed * 2.1) + ang) * 0.16;
-  float width = 0.16 + vSeed * 0.10;
-  float lane = 1.0 - smoothstep(width, width + 0.34, abs(bend));
-  float envelope = exp(-r * r * 2.2);
-  gl_FragColor = vec4(vColor * lane * envelope * vAlpha, 1.0);
 }
 `;
 
@@ -275,6 +229,8 @@ uniform sampler2D uStructureMap;
 uniform float uCartBlend;
 uniform float uInferenceGain;
 uniform float uBackgroundGain;
+// 0 = alpha carrega o τ das lâminas · 1 = o τ das partículas (8º bake)
+uniform float uTauExport;
 varying vec2 vUv;
 
 ${GLSL_CARTOGRAPHY}
@@ -449,7 +405,18 @@ void main() {
   // A fenda escura É a crista da rede filamentar. Com smoothstep sobre
   // fbm isotrópico a absorção virava um chuvisco sem direção; agora
   // desenha faixas que acompanham e cruzam o braço, como no alvo.
-  float dustFilament = smoothstep(0.46, 0.80, filament);
+  // FEATHERING — o herdeiro da função estrutural dos 430 k sprites.
+  // Medido por eliminação (8 medições): remover os sprites subiu m=4 de
+  // 0,188 para 0,259 e NENHUM botão de nível o moveu (S0 ×½, extinção
+  // off, barra off, crista ×0,42 e ×2). O que os sprites faziam de
+  // estrutural era DECOERÊNCIA: 430 k borrões jitterados quebravam o
+  // alinhamento perfeito da fenda com o esqueleto de 4 braços. As fendas
+  // reais fazem o mesmo — serpenteiam com espículas (feathering), não
+  // traçam a espiral com régua. Jitter de campo no ângulo, só no caminho
+  // da POEIRA (a emissão continua limpa, como era com sprites).
+  float thJit = theta + (fbm2(p * 9.0 + vec2(3.7, 8.1)) - 0.5) * 0.24;
+  float filamentD = spiralFilament(radiusPc, thJit);
+  float dustFilament = smoothstep(0.46, 0.80, filamentD);
   // COLUNA FECHADA no lugar de atenuação linear.
   //
   // A lâmina não é uma folha fina: ela representa a coluna de disco atrás
@@ -470,7 +437,29 @@ void main() {
   // offline que ainda falta; enquanto ela não existe, este é um fator de
   // escala honesto sobre uma resposta normalizada, não uma profundidade
   // óptica medida.
-  float tau = dustMacro * dustFilament * 2.39;
+  // Fenda da BARRA — herdeira do ramo da barra de putDust. A poeira da
+  // barra só existia nos sprites; sem este termo, removê-los deixaria o
+  // bojo sem a fenda que atravessa o núcleo nas fotos de referência.
+  // Meia-extensão 0,88·5000 pc = 0,262 em unidades do disco; σ⊥ 430 pc
+  // = 0,0256. O microNoise quebra o risco liso — sem ele a barra vira
+  // um traço de régua.
+  float tauBar = exp(-0.5 * pow(bp.y / 0.0256, 2.0))
+               * (1.0 - smoothstep(0.22, 0.28, abs(bp.x)))
+               * mix(0.6, 1.0, microNoise);
+  // DOIS τ, DOIS DESTINOS — calibrado por eliminação (4 medições):
+  // · tauCrest é a fórmula EXATA da rodada 8, que fixou m2/m4. É o que as
+  //   lâminas usam em F(τ⊥/μ). Mexer nela quebrou as harmônicas duas
+  //   vezes (κ=5: m2/m4 inverteu; crista 0,42: idem) — não mexer.
+  // · tauPart vai para o mapa das PARTÍCULAS (8º bake, uTauExport=1):
+  //   crista suavizada, porque a lâmina já escava a mesma crista e
+  //   escavar duas vezes dobra a profundidade líquida; mais o termo
+  //   largo que herda a absorção difusa dos 430 k sprites. O termo largo
+  //   NÃO pode entrar nas lâminas: absorção arm-locked de área grande
+  //   modula o perfil inteiro do braço e bombeia m=4 (medido: +0,06).
+  float tauCrest = (dustMacro * dustFilament + tauBar * 0.04) * 2.39;
+  float tauPart =
+    (dustMacro * (dustFilament + 0.31) + tauBar * 0.04) * 2.39;
+  float tau = mix(tauCrest, tauPart, uTauExport);
 
   // O núcleo já satura em branco, então subir o bojo não mexe no perfil
   // normalizado — quem desce é o disco. E medido com ?nodisc=1: estas
@@ -482,6 +471,28 @@ void main() {
   // discMean medido saltou de 0,1078 para 0,1522 contra alvo 0,1175. O fator
   // devolve o NÍVEL sem devolver o gradiente radial, que não estava em modelo
   // nenhum de intensidade e por isso não deve voltar.
+  // ESPALHAMENTO POR TEXEL — herdeiro do draw aditivo dos 430 k sprites.
+  // Mesma física do putDust (campo de radiação × auto-blindagem ×
+  // eficiência λ^−1,3), avaliada por texel do bake em vez de por sprite:
+  // cobre o disco inteiro em vez de 430 k amostras esparsas, e passa a
+  // sofrer F(τ⊥/μ) no view-time — entra na ordenação ⟨j·T⟩, que é onde
+  // um fenômeno de borda como nebulosa de reflexão pertence.
+  float outward = clamp((radiusPc - 3000.0) / 7500.0, 0.0, 1.0);
+  float fieldS = 0.08 + 0.92 * exp(-radiusPc / 4500.0);
+  // auto-blindagem: o interior denso não recebe luz — a borda brilha
+  float shieldS = gasResponse * exp(-gasResponse * 2.2) * 2.72;
+  float fYoungS = (1.0 - exp(-radiusPc / 2600.0))
+                * min(1.0, 0.55 + outward * 0.35 + formationResponse * 0.8);
+  // envelope MAIS LARGO que a fenda E DESLOCADO para o lado côncavo do
+  // braço (~0,5σ da largura Reid). O deslocamento é a função estrutural:
+  // luz centrada na crista reforça a periodicidade de 4 braços (medido:
+  // m=4 +0,06 com envelope centrado); luz no lado côncavo preenche o
+  // dente-de-serra da fenda unilateral — é o que segura m=3/m=5.
+  float filamentS =
+    spiralFilament(radiusPc, theta - 170.0 / max(radiusPc, 1000.0));
+  float envS = smoothstep(0.30, 0.62, filamentS);
+  float wScat = 0.12 * dustMacro * envS * fieldS * shieldS;
+
   const float POP_LUMA_FIX = 0.772;
   float intensity = disk * 0.80 * structureLight * uBackgroundGain * POP_LUMA_FIX;
   // O perfil medido ficava 1,5× acima do alvo em TODO o disco, com o
@@ -489,6 +500,9 @@ void main() {
   // tem um núcleo pequeno e intenso que normaliza o resto para baixo.
   intensity +=
     (core * 0.53 + bar * 0.23) * uBackgroundGain * POP_LUMA_FIX;
+  // fluxo do espalhamento — separado do matiz (lição anti-intermodulação
+  // do NORTE: cor decide matiz, quem decide fluxo decide fluxo)
+  intensity += wScat * uBackgroundGain * POP_LUMA_FIX;
   // A absorção NÃO entra aqui. Ela depende do ângulo da visada, e isto é
   // bakeado — o bake não conhece a câmera. O que vai para a textura é a
   // emissão da coluna (RGB) e a profundidade óptica PERPENDICULAR (A); o
@@ -512,9 +526,9 @@ void main() {
   vec3 POP_OLD = blackbodyLinear(4800.0);    // K/G, corpo do disco e bojo
   vec3 POP_YOUNG = blackbodyLinear(20000.0); // O/B nos braços
   vec3 POP_HII = vec3(1.664, 0.807, 0.957);  // Hα+[NII] e [OIII]+Hβ
-  // fração jovem crescendo para fora: mesmo gradiente de idade do gerador
-  // de partículas (galaxy.ts), (r − 3 kpc)/7,5 kpc
-  float outward = clamp((radiusPc - 3000.0) / 7500.0, 0.0, 1.0);
+  // a cor do que o grão espalha: campo iluminante × λ^−1,3, L≡1
+  vec3 hueScat = mix(POP_OLD, POP_YOUNG, fYoungS) * vec3(0.72, 1.0, 1.34);
+  hueScat /= max(dot(hueScat, vec3(0.2126, 0.7152, 0.0722)), 1e-5);
   float wOld = disk * 0.80 * structureLight + core * 0.53 + bar * 0.23;
   float wYoung = (formationResponse * 0.55 + outward * 0.35) * disk * structureLight;
   // Onde existe região H II a emissão é DOMINADA por linha — o gás ionizado
@@ -524,8 +538,8 @@ void main() {
   // 20% mais altos de um ruído dão pulverização, e nas fotos de referência
   // os nós H II são contas enfiadas ao longo do braço.
   float wHii = formationResponse * smoothstep(0.66, 0.90, microNoise) * 1.2 * disk;
-  vec3 color = (POP_OLD * wOld + POP_YOUNG * wYoung + POP_HII * wHii)
-             / max(wOld + wYoung + wHii, 1e-5);
+  vec3 color = (POP_OLD * wOld + POP_YOUNG * wYoung + POP_HII * wHii + hueScat * wScat)
+             / max(wOld + wYoung + wHii + wScat, 1e-5);
   // L ≡ 1: a paleta antiga escondia brilho na cor — Y(cold)=0,587 contra
   // Y(warm)=0,739, um gradiente radial de 1,26× que não estava em modelo
   // nenhum de intensidade. Quem decide brilho é a intensity.
