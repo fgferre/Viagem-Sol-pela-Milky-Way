@@ -16,10 +16,26 @@ se pode viajar até qualquer ponto e ainda sentir um universo vivo e denso:
   brilho corretos, respondendo à posição do observador.
 - **Determinístico, eficiente no browser, LOD de verdade.** Sem truques de sprite.
 
-O árbitro visual não é captura do próprio app: são as fotos reais em
+O árbitro visual não é captura do próprio app: são as referências em
 [`reference/`](reference/), com alvos numéricos em
 [`reference/VISUAL_TARGETS.md`](reference/VISUAL_TARGETS.md). Toda mudança de imagem
-passa por `scripts/visual/measure-similarity.html` contra elas.
+passa por `scripts/visual/measure-similarity.html` contra elas. Honestidade sobre o que
+são: as vistas externas (face-on/edge-on) são **recriações científicas** ancoradas em
+Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas embutidas; a
+única foto real é o panorama ESO, visto de DENTRO.
+
+**Lacunas conhecidas do gate (a fechar):**
+1. **Edge-on sem número** — capturada toda rodada, medida nunca. Os modos de falha das
+   duas vistas são disjuntos: a lateral é a única que testa a física vertical (espessura,
+   warp, faixa escura, 1/μ — a rodada 09 mudou 2,19× em t=162 e a métrica face-on moveu
+   0,002). Precisa de medidas próprias contra `gaia-2025-edge-on-5k.jpg`: perfil de
+   espessura por raio, profundidade/posição da faixa escura, warp, razão axial, gradiente
+   vertical de cor. Construir JUNTO com a rodada de emissão 2 braços, que mexe nas duas
+   vistas.
+2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
+3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
+   pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
+   incerteza para cor absoluta.
 
 ## As três unificações
 
