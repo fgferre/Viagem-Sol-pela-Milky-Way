@@ -85,6 +85,8 @@ export class Director {
   private reducedMotion = false;
   /** toggles de debug: ?nogal=1&nosun=1&nodust=1&nohero=1&nocat=1 */
   private hide = new Set<string>();
+  /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
+  private expOverride = false;
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
@@ -118,6 +120,7 @@ export class Director {
     }
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
+    this.expOverride = this.debug.has('exp');
     this.reducedMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -496,6 +499,15 @@ export class Director {
     this.sun.update(time, cam.position);
     this.dust.update(cam.position, hPx, time);
     const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
+    // AUTO-EXPOSIÇÃO (rodada 18): a vista externa é outro assunto
+    // fotográfico — a recriação-alvo é tone-mapped ~1,5–2 dex mais
+    // comprimida que fotometria linear, e exposição 1,4 lá fora foi o
+    // vencedor varrido (edge 0,8731→0,8378, face 0,0615→0,0597; 1,8+
+    // degrada as harmônicas). Dentro do disco (fade 0) fica o 1,02 de
+    // sempre — a vista interna não tem gate e satura fácil de branco.
+    if (!this.expOverride) {
+      this.engine.setExposure(1.02 + 0.38 * galaxyFade);
+    }
     this.galaxy?.update(
       cam.position,
       hPx,

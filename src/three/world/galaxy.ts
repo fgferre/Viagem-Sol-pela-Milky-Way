@@ -124,6 +124,15 @@ interface StructureField {
   halfExtentPc: number;
 }
 
+// Knobs de varredura por query (?cnt=1.5&idim=0.6&ir0=3500&hzs=1.2&glowgain=0.8):
+// medir perfis sem editar código entre capturas (rodada 18). Ausentes, os
+// defaults são identidades exatas — geração e glow saem bit a bit iguais.
+const TUNE_Q = new URLSearchParams(window.location.search);
+const tune = (k: string, d: number) => {
+  const v = parseFloat(TUNE_Q.get(k) ?? '');
+  return Number.isFinite(v) ? v : d;
+};
+
 export function buildGalaxy(
   seed = 20260730,
   structure?: StructureField,
@@ -136,6 +145,12 @@ export function buildGalaxy(
    */
   populationScale = 1
 ): GalaxyBuffers {
+  populationScale *= tune('cnt', 1);
+  const IDIM = tune('idim', 0);
+  const IR0 = Math.max(tune('ir0', 3000), 1);
+  // escurecimento interno: gaussiana em r — 1 no disco externo, 1−idim no centro
+  const innerDim = (r: number) => 1 - IDIM * Math.exp(-(r * r) / (2 * IR0 * IR0));
+  const HZS = tune('hzs', 1);
   const rnd = mulberry32(seed);
   const sampleAt = (
     field: Float32Array | undefined,
@@ -257,7 +272,7 @@ export function buildGalaxy(
     const flare = flareAtRadius(r);
     // A população jovem começa em σz≈20 pc; a velha produz o
     // componente fino de ~200 pc e ambos abrem no disco externo.
-    const hz = inArm ? 50 + flare * 210 : 510 + flare * 670;
+    const hz = (inArm ? 50 + flare * 210 : 510 + flare * 670) * HZS;
     let lx = r * Math.cos(theta);
     let ly = r * Math.sin(theta);
     let lz = warpHeightPc(r, theta) + gauss(rnd) * hz;
@@ -342,7 +357,8 @@ export function buildGalaxy(
       // a cor; sem ele o meio do disco saía 25% escuro demais.
       // /populationScale: menos partículas, cada uma mais forte — o fluxo
       // total do disco não pode depender do preset de qualidade
-      (0.094 / populationScale) * lum * armWeight * (1 + 2.1 * outward)
+      (0.094 / populationScale) * lum * armWeight * (1 + 2.1 * outward) *
+        innerDim(r)
     );
   }
 
@@ -363,7 +379,7 @@ export function buildGalaxy(
     const lx = r * Math.cos(theta);
     const ly = r * Math.sin(theta);
     const lz =
-      warpHeightPc(r, theta) + gauss(rnd) * (48 + flare * 100);
+      warpHeightPc(r, theta) + gauss(rnd) * (48 + flare * 100) * HZS;
     const dim = 0.4 + 0.6 * rnd() * rnd();
     put(
       lx,
@@ -426,7 +442,7 @@ export function buildGalaxy(
       0.72 * dim,
       0.46 * dim,
       3 + rnd() * 9,
-      0.025 + rnd() * 0.06
+      (0.025 + rnd() * 0.06) * innerDim(Math.hypot(lx, ly))
     );
   }
 
@@ -454,7 +470,7 @@ export function buildGalaxy(
     const lx = r * Math.cos(theta);
     const ly = r * Math.sin(theta);
     const lz =
-      warpHeightPc(r, theta) + gauss(rnd) * (46 + flareAtRadius(r) * 105);
+      warpHeightPc(r, theta) + gauss(rnd) * (46 + flareAtRadius(r) * 105) * HZS;
     const youngSupport = youngSupportAt(lx, ly);
     const youngResponse = effectiveYoungResponseAt(lx, ly);
     // 0,82 uniforme, não renderWeight: nós H II são GÁS ionizado e o gás
@@ -635,7 +651,11 @@ export class Galaxy {
     this.createDiscLayers();
 
     // --- brilho contínuo do bojo ---
-    this.glowMat = this.makeGlow(new THREE.Vector3(1.0, 0.62, 0.32), 2700, 0.5);
+    this.glowMat = this.makeGlow(
+      new THREE.Vector3(1.0, 0.62, 0.32).multiplyScalar(tune('glowgain', 1)),
+      2700,
+      0.5
+    );
     const glow = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.glowMat);
     glow.position.copy(GAL.GC_POS);
     glow.frustumCulled = false;

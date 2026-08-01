@@ -57,12 +57,23 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    o S existe e o glow o esconde por CONCENTRAÇÃO DE FLUXO (R90 encolhe, a janela
    0,7–1,1·R90 do gate cai abaixo dos 8,4 kpc onde o warp começa); mas o glow é
    insubstituível como halo quente (colourZ alto 0,48→0,01 sem ele), flancos e
-   espessura (axialRatio 0,036→0,019). **A alavanca com ganho duplo previsto:
-   escurecer o brilho interno** (bojo/disco interno das partículas) — empurra o R90
-   edge para fora (destrava warpAsym, ~0,21 disponível) E baixa o discMean face-on,
-   que está 15% ACIMA do alvo (0,1349 vs 0,1175). É a ponta concreta da
-   **unificação 1** (exposição/perfil radial; faixa dinâmica 2,3 mag vs 8,6), com os
-   dois gates medindo cada passo.
+   espessura (axialRatio 0,036→0,019). ~~A alavanca com ganho duplo previsto:
+   escurecer o brilho interno~~ — **medida e substituída na rodada 18**. A campanha
+   de varredura (14 configs; knobs por query `?exp= ?glowgain= ?idim= ?ir0= ?cnt=
+   ?hzs= ?warpamp=`, harness `sweep.mjs` no scratchpad) estabeleceu, com memorando
+   de fotometria por trás: **nosso R90 edge 0,43·R_disco é o valor CORRETO de
+   fotometria linear** (disco exp h_R 2,6 kpc + bojo B/T 0,15 edge-on dá 0,40–0,46;
+   van der Kruit & Searle 1981) — o 0,55 da referência vem do TONE MAP de divulgação
+   (asinh/filmic, knee ~3% do pico, 1,5–2 dex de compressão). O gap era curva de
+   tom, não perfil de massa: escurecer o interior de verdade (idim) só removia os
+   flancos da faixa (edge 0,884) e o glow é intocável (0,85× → 0,926).
+   **O que fechou a rodada 18: auto-exposição 1,02 → 1,40 pela rampa `galaxyFade`**
+   no director (a vista externa é outro assunto fotográfico; `?exp=` segue
+   soberano): edge 0,8741 → **0,8380**, face 0,0615 → **0,0595**, grain
+   0,103 → 0,099, laneOffset 0,56 → 0,40. Custo aceito e documentado: discMean
+   face-on deriva para 0,178 (alvo 0,1175) — o conserto honesto é knee/asinh POR
+   CAMADA pré-ACES (a unificação 1 de verdade), não mais exposição global (1,8+
+   degrada as harmônicas face-on).
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
@@ -188,6 +199,18 @@ amostras); tirar atan/sin do galWarpHeight pela identidade sin(atan(y,x)−φ) =
 (y·cosφ−x·sinφ)/r é exato e não move o frame (o custo do loop é fetch, não ALU);
 afastar a câmera para R=36 kpc mantendo z=500 não achata a perspectiva do rim —
 elevação 0,8° reentra no regime dentro-da-lâmina (edgeError 1,77, faixa morta).
+
+Becos e achados medidos na rodada 18 (campanha de varredura, não repetir os becos):
+qualquer escurecimento do glow paga caro no edge (0,85× → 0,926; 0,7× → 1,017 — ele é
+flanco, halo quente e espessura ao mesmo tempo); idim (gaussiana interna nas
+partículas) ganha só no face e paga a faixa; exposição ≥ 1,8 degrada as harmônicas
+face-on (0,096 em 1,8); **warpamp 1,2–1,4× faz o S emergir de verdade (warpAsym
+−0,07 → +0,11) mas laneDepth paga 0,64 → 0,54 e o saldo é pior** — questão ABERTA:
+nosso warp está no piso da literatura (220 pc em R=12 kpc vs 360–480 de Chen/Skowron
+2019) e o multiplicador volta ao jogo quando o acoplamento faixa↔warp for entendido
+(suspeita: lâmina de partículas warpada × fenda reta do glow se desalinham).
+Densidade 1,6× (cnt, alpha compensado): grain 0,099 → 0,084 (alvo 0,068) com gates
+neutros — candidata real quando grain for o alvo ativo, custo de vértice a medir.
 
 Becos medidos na rodada 17 (não repetir — nenhum mudou o código, tudo revertido):
 rim light azul ADITIVO no caminho de extinção (campo × λ^−1,3 × atenuação, a lei do

@@ -29,6 +29,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 14 | 0.0740 | 0.1366 | 0.1100 | 0.1090 | unificacao 2 etapa 2: handoff unresolved(d) nas particulas e no termo estelar da LUT (identidade 1,0 alem de 5,2 kpc); densidade das cascas pelos canais B/A do dust map (+5,3 ms -> +0,3 ms medidos por CDP a 1440p) |
 | 15 | 0.0800 | 0.1364 | 0.1076 | 0.1093 | faixa escura edge-on: extincao por caminho amostrado (4 VTF no segmento particula-camera, sem piso de mu), piso difuso axissimetrico (tau_perp 0,125 no Sol), fenda no glow do bojo, braco -10%; laneDepth -0,07 -> ~0,3 |
 | 16 | 0.0615 | 0.1349 | 0.1033 | 0.1087 | faixa+vantagem: 16 amostras no caminho, t158 pelos nós do warp a z=500 |
+| 18 | 0.0595 | 0.1781 | 0.0989 | 0.1044 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
 
 ## Edge-on
 
@@ -43,3 +44,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 14 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | unificacao 2 etapa 2: handoff unresolved(d) nas particulas e no termo estelar da LUT (identidade 1,0 alem de 5,2 kpc); densidade das cascas pelos canais B/A do dust map (+5,3 ms -> +0,3 ms medidos por CDP a 1440p) |
 | 15 | 1.4780 | 0.0315 | 0.0338 | 0.2944 | 0.0059 | faixa escura edge-on: extincao por caminho amostrado (4 VTF no segmento particula-camera, sem piso de mu), piso difuso axissimetrico (tau_perp 0,125 no Sol), fenda no glow do bojo, braco -10%; laneDepth -0,07 -> ~0,3 |
 | 16 | 0.8741 | 0.0223 | 0.0357 | 0.6613 | 0.0104 | faixa+vantagem: 16 amostras no caminho, t158 pelos nós do warp a z=500 |
+| 18 | 0.8380 | 0.0229 | 0.0347 | 0.6355 | 0.0120 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
