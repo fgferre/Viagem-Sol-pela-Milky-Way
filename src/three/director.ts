@@ -220,7 +220,9 @@ export class Director {
     }
     if (this.disposed) return;
 
-    this.wrappedStars = new WrappedStars();
+    // canais B/A do dust map alimentam a densidade das cascas (1 fetch
+    // no lugar dos braços/warp analíticos por vértice — medido +5 ms)
+    this.wrappedStars = new WrappedStars(this.dustMapTexture);
     this.engine.scene.add(this.wrappedStars.points);
     this.engine.scene.add(this.stars.points);
     this.engine.scene.add(this.sun.group);

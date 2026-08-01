@@ -6,6 +6,7 @@
 import { WORLD } from '../config';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY } from './common';
+import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
 const warm = WORLD.gasColorWarm.map((v) => v.toFixed(3)).join(', ');
@@ -131,12 +132,16 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
       0.0,
       1.0
     );
+    // handoff da unificação 2: a fração da luz estelar que as cascas
+    // resolvem como estrelas individuais a esta distância sai da
+    // integrada — mesmo fator das partículas (GLSL_UNRESOLVED). Os
+    // termos de gás (dust/hii) não entram: casca não desenha gás.
     float stellar =
-      thinDisk *
+      (thinDisk *
         mix(0.22, 1.12, broad) *
         mix(0.58, 1.28, arms) +
       thickDisk +
-      bulge;
+      bulge) * unresolved(t);
 
     // Poeira fria acumula na camada mais fina e recorta o centro em
     // filamentos negros, como as grandes fendas da astrofotografia.
@@ -191,6 +196,7 @@ uniform float uCartBlend;
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
+${GLSL_UNRESOLVED}
 ${BAND_INTEGRATION}
 
 void main() {

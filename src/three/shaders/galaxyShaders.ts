@@ -5,6 +5,7 @@
 // ============================================================
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { GLSL_STAR_COLOR } from './common';
+import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
 // Vértice das partículas brilhantes — com extinção pela MESMA coluna τ
 // das lâminas, amostrada do bake (VTF). É o herdeiro dos 430 k sprites
@@ -34,6 +35,7 @@ varying float vAlpha;
 varying float vSeed;
 
 ${GLSL_CARTOGRAPHY}
+${GLSL_UNRESOLVED}
 
 void main() {
   float dist = length(position - uCamPos);
@@ -70,7 +72,10 @@ void main() {
   vec3 extinct = exp(-(tauPerp * C / mu) * vec3(0.75, 1.0, 1.32));
 
   vColor = aColor * extinct;
-  vAlpha = aAlpha * uFade * shrink * subPix;
+  // handoff da unificação 2: a fração da luz que as cascas resolvem
+  // como estrelas individuais a esta distância sai da integrada.
+  // Além de ~5 kpc unresolved ≡ 1,0 — a vista externa não move.
+  vAlpha = aAlpha * uFade * shrink * subPix * unresolved(dist);
   vSeed = fract(aSize * 0.371 + aAlpha * 7.13);
 
   vec4 mv = modelViewMatrix * vec4(position, 1.0);

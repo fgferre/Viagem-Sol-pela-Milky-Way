@@ -37,7 +37,6 @@ import {
   GLSL_STAR_COLOR,
   GLSL_STAR_PSF,
 } from '../shaders/common';
-import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { STAR_FRAG } from '../shaders/starShaders';
 
 // m em que a PSF morre na nossa exposição (expoM0 3,5):
@@ -93,6 +92,67 @@ function reachPc(mAbs: number) {
   return (lo + hi) / 2;
 }
 
+// ---- geometria e handoff derivados dos bins — calculados UMA vez ----
+// cell/grid/prob dimensionam a treliça; reach é o raio de atividade do
+// bin; amp é a fração da LUZ TOTAL que o bin de fato resolve
+// (quota de luminosidade × completude do clamp em ρ=1) — o que a luz
+// integrada (partículas + LUT da faixa) deve descontar dentro do reach.
+interface BinDerived {
+  cell: number;
+  grid: number;
+  prob: number;
+  reach: number;
+  amp: number;
+}
+const GRID = (() => {
+  const out: BinDerived[] = [];
+  // luminosidade média do bin com sorteio uniforme em M:
+  // (1/ΔM)∫10^{0,4(4,85−M)}dM
+  const meanL = (b: MagBin) =>
+    (Math.pow(10, 0.4 * 4.85) / ((b.mHi - b.mLo) * 0.4 * Math.LN10)) *
+    (Math.pow(10, -0.4 * b.mLo) - Math.pow(10, -0.4 * b.mHi));
+  const lDens = BINS.map((b) => b.n * meanL(b));
+  const lTot = lDens.reduce((s, v) => s + v, 0);
+  for (let k = 0; k < NB; k++) {
+    const bin = BINS[k];
+    const reach = reachPc(bin.mLo);
+    let cell = Math.cbrt(0.85 / bin.n);
+    let grid = Math.ceil((2 * reach) / cell);
+    if (grid > GRID_MAX) {
+      grid = GRID_MAX;
+      cell = (2 * reach) / grid;
+    }
+    if (grid < 3) grid = 3;
+    const prob = bin.n * cell * cell * cell;
+    // completude do clamp em ρ=1; a dependência de ρ é ignorada (efeito
+    // total ≤ ~4% da luz — não vale o custo de modelar)
+    const comp = Math.min(1, 1 / prob);
+    out.push({ cell, grid, prob, reach, amp: (lDens[k] / lTot) * comp });
+  }
+  return out;
+})();
+
+/**
+ * Fração NÃO resolvida da luz integrada a uma distância d da câmera —
+ * o handoff da unificação 2 (etapa 2): dentro do alcance de cada bin,
+ * as cascas desenham amp_k da luz total como estrelas individuais, e a
+ * luz integrada (partículas da galáxia e termo estelar da LUT da faixa)
+ * desconta exatamente isso. Além do maior alcance (~5 kpc) devolve
+ * 1,0 EXATO — a vista externa fica bit-idêntica, que é o gate.
+ * O degrau é suavizado nos últimos 25% do alcance, onde os membros do
+ * bin já estão morrendo em m→M_FAINT de qualquer jeito.
+ */
+export const GLSL_UNRESOLVED = /* glsl */ `
+float unresolved(float d) {
+  return 1.0${GRID.map(
+    (g) =>
+      `
+    - ${g.amp.toFixed(6)} *
+      (1.0 - smoothstep(${(g.reach * 0.75).toFixed(1)}, ${g.reach.toFixed(1)}, d))`
+  ).join('')};
+}
+`;
+
 const VERT = /* glsl */ `
 attribute vec3 aOffset; // offset inteiro na treliça do bin
 attribute float aBin;
@@ -116,37 +176,37 @@ varying float vPeak;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
-${GLSL_CARTOGRAPHY}
 ${GLSL_STAR_COLOR}
 ${GLSL_STAR_PSF}
 
-// densidade estelar relativa (≈1 na vizinhança solar)
+// canais B/A do dust map: braços (variante de GÁS uniforme + braço
+// Local, rodada 12) e warp, bakeados a 65 pc/texel
+uniform sampler2D uDustMap;
+
+// densidade estelar relativa (≈1 na vizinhança solar).
+// Braços e warp vêm do BAKE (1 fetch) em vez de galMajorArmsGas +
+// galWarpHeight analíticos: ~40 transcendentais × 296 k vértices eram
+// +5 ms/frame medidos a 1440p (probe CDP, t=0: média 31,0 → 25,7 sem
+// as cascas). Mesmo padrão do envelope de gás do raymarch. O texel de
+// 65 pc é 30× menor que a largura do braço — nenhuma perda real.
+// A variante de gás (não a pesada) é decisão da rodada 12: par fraco
+// com peso 0 exato decorrelacionaria estrelas e gás na vista interna;
+// reequilibrar é trabalho do gate do panorama ESO (lacuna 2).
 float stellarDensity(vec3 p, out float armGate, out float bulgeGate) {
   vec3 q = p - GAL_CENTER;
   float z = dot(q, GAL_N);
   vec2 xy = vec2(dot(q, GAL_X), dot(q, GAL_Y));
   float radiusPc = length(xy);
-  float theta = atan(xy.y, xy.x);
-  float zw = z - galWarpHeight(radiusPc, theta);
+  vec4 cart = texture2D(uDustMap, xy / 33600.0 + 0.5);
+  float zw = z - (cart.a * 2.0 - 1.0) * 820.0;
   float thin = exp(-radiusPc / 2600.0) * exp(-abs(zw) / 300.0);
   float thick = exp(-radiusPc / 3600.0) * exp(-abs(zw) / 1000.0) * 0.12;
   float bulge = exp(-length(q) / 900.0) * 14.0;
-  // braços: contraste de massa modesto (≲3x); o brilho azul vem da cor.
-  // Variante de GÁS (4 braços parecidos), não a pesada: com renderWeight
-  // 0,42·(1±1) o par fraco zera EXATO, e um campo de massa com dois
-  // braços ausentes — enquanto o raymarch de gás desenha braço pleno no
-  // mesmo ponto — decorrelaciona estrelas e gás na vista interna. A
-  // dominância 2-braços da vista externa fica nas lâminas/partículas;
-  // reequilibrar por aqui é trabalho do gate da vista interna (panorama
-  // ESO, lacuna 2 do NORTE).
-  float arms = clamp(
-    galMajorArmsGas(theta, radiusPc, 22.0) + galLocalArm(theta, radiusPc, 26.0),
-    0.0,
-    1.0
-  );
+  // braços: contraste de massa modesto (≲3x); o brilho azul vem da cor
+  float arms = cart.b;
   armGate = arms;
   bulgeGate = clamp(bulge, 0.0, 1.0);
-  float edge = 1.0 - smoothstep(15500.0, GAL_DISK_RADIUS + 2500.0, radiusPc);
+  float edge = 1.0 - smoothstep(15500.0, 19300.0, radiusPc);
   return (thin * (0.75 + 0.55 * arms) + thick) * edge * 22.9 + bulge * 0.02;
 }
 
@@ -222,32 +282,16 @@ export class WrappedStars {
   private material: THREE.ShaderMaterial;
   private cellSizes: number[] = [];
 
-  constructor() {
-    const cells: number[] = [];
-    const probs: number[] = [];
-    const magLo: number[] = [];
-    const magSpan: number[] = [];
-    const grids: number[] = [];
-    let total = 0;
-    for (const bin of BINS) {
-      const dMax = reachPc(bin.mLo);
-      // célula com ~0,85 estrela esperada onde ρ=1 — acima disso o
-      // clamp da rejeição vira limite de confusão
-      let cell = Math.cbrt(0.85 / bin.n);
-      let grid = Math.ceil((2 * dMax) / cell);
-      if (grid > GRID_MAX) {
-        grid = GRID_MAX;
-        cell = (2 * dMax) / grid;
-      }
-      if (grid < 3) grid = 3;
-      this.cellSizes.push(cell);
-      cells.push(cell);
-      probs.push(bin.n * cell * cell * cell);
-      magLo.push(bin.mLo);
-      magSpan.push(bin.mHi - bin.mLo);
-      grids.push(grid);
-      total += grid * grid * grid;
-    }
+  constructor(dustMap: THREE.Texture) {
+    // treliças e probabilidades vêm de GRID (derivado uma vez no módulo,
+    // junto com o handoff GLSL_UNRESOLVED — uma só fonte para os dois)
+    this.cellSizes = GRID.map((g) => g.cell);
+    const total = GRID.reduce((s, g) => s + g.grid ** 3, 0);
+    const magLo = BINS.map((b) => b.mLo);
+    const magSpan = BINS.map((b) => b.mHi - b.mLo);
+    const grids = GRID.map((g) => g.grid);
+    const cells = GRID.map((g) => g.cell);
+    const probs = GRID.map((g) => g.prob);
 
     const offsets = new Float32Array(total * 3);
     const binAttr = new Float32Array(total);
@@ -285,6 +329,7 @@ export class WrappedStars {
         uCamPos: { value: new THREE.Vector3() },
         uScreenH: { value: 1080 },
         uFade: { value: 1 },
+        uDustMap: { value: dustMap },
         // a mesma exposição/instrumento do campo HYG — uma cadeia
         uExpoM0: { value: 3.5 },
         uSigmaPx: { value: 0.85 },

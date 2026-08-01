@@ -64,12 +64,20 @@ qualquer ponto do disco. O floating origin entrou como reconstrução relativa �
 (célula inteira f64 na CPU + fração no shader, projeção só com a rotação do MV) — nenhum
 operando de kpc no caminho da posição. Gates externos inalterados por construção
 (edge-on 2,0258 bit-idêntico; face-on no ruído de captura).
-*Falta (etapa 2):* o handoff `unresolved(d) = L(<M_res(d))/L_tot` escurecendo partículas
-e a LUT da faixa — hoje a luz das cascas SOMA sobre a integrada (dupla contagem pequena
-mas não nula); a 30 kpc `unresolved = 1` exato é o gate. E MEDIR o custo de vértice
-(296 k vértices com galMajorArmsGas por vértice — método em frame-cost-measured; não
-subir tier de qualidade sem esse número). Star forges e partículas ainda são leis
-próprias — etapas seguintes.
+*Etapa 2 FEITA (rodada 14):* handoff `unresolved(d)` — as cascas resolvem 3,8% da luz
+total em d→0 (quota de luminosidade × completude do clamp, por bin), e exatamente essa
+fração sai das partículas (`GALAXY_VERT`) e do termo estelar da LUT da faixa; além de
+5,2 kpc a função é 1,0 EXATO, e o edge-on saiu bit-idêntico (2,0258 em todos os campos).
+O custo foi MEDIDO por CDP a 2560×1440: as cascas analíticas custavam +5,3 ms de média
+(metade dos frames a 30 Hz); com a densidade pelos canais B/A do dust map (1 fetch no
+lugar de ~40 transcendentais × 296 k vértices — o mesmo padrão do envelope do raymarch)
+o custo caiu para +0,3 ms, p90 de volta a 16,7 ms. Limitações aceitas e comentadas: a
+completude do clamp usa ρ=1 (efeito total ≤4%), nós H II e anã de Sagitário dimam junto
+(casca não os desenha — sobre-desconto ≤4% local), extinção cromática por raymarch só no
+HYG. *Falta:* star forges e partículas ainda são leis próprias — etapas seguintes.
+Descoberto no caminho: a captura headless tem NÃO-DETERMINISMO intermitente (duas
+capturas do mesmo estado diferem em md5 às vezes; é a fonte do ruído ~0,013 do ledger) —
+md5 igual prova igualdade, md5 diferente não prova nada.
 
 **3. Um meio volumétrico.** Hoje a poeira tem duas representações que não se conhecem:
 ~430 k sprites na vista externa e um raymarch local, ligados por crossfade. O dado já é
