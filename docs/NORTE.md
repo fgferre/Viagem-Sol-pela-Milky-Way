@@ -16,10 +16,28 @@ se pode viajar até qualquer ponto e ainda sentir um universo vivo e denso:
   brilho corretos, respondendo à posição do observador.
 - **Determinístico, eficiente no browser, LOD de verdade.** Sem truques de sprite.
 
-O árbitro visual não é captura do próprio app: são as fotos reais em
+O árbitro visual não é captura do próprio app: são as referências em
 [`reference/`](reference/), com alvos numéricos em
 [`reference/VISUAL_TARGETS.md`](reference/VISUAL_TARGETS.md). Toda mudança de imagem
-passa por `scripts/visual/measure-similarity.html` contra elas.
+passa por `scripts/visual/measure-similarity.html` contra elas. Honestidade sobre o que
+são: as vistas externas (face-on/edge-on) são **recriações científicas** ancoradas em
+Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas embutidas; a
+única foto real é o panorama ESO, visto de DENTRO.
+
+**Lacunas conhecidas do gate (a fechar):**
+1. ~~Edge-on sem número~~ — **fechada na rodada 12**: `?mode=edge` em
+   `measure-similarity.html` mede espessura por raio, faixa escura, warp, razão axial e
+   cor por altura contra `gaia-2025-edge-on-5k.jpg`; alvos e fórmula exata em
+   `VISUAL_TARGETS.md`, tabela própria no `EVOLUCAO.md` (baseline 2,0258). O que ela
+   revelou vira dívida do operador de coluna (3c): de perfil **não existe faixa escura**
+   (laneDepth −0,07 vs 0,94 do alvo), o disco está 2,3× fino demais (axialRatio 0,026 vs
+   0,060) e o warp não faz o S (warpAsym −0,46 vs +0,48) — a extinção por partícula usa
+   τ⊥ da posição da partícula, e de perfil a coluna real na linha de visada atravessa o
+   disco inteiro.
+2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
+3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
+   pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
+   incerteza para cor absoluta.
 
 ## As três unificações
 
@@ -72,19 +90,38 @@ DISCRETIZAÇÃO que o 1/μ não toca (por isso o fade rasante continua lá). Fal
 que dá significado absoluto a κ — hoje o 2,39 é escala honesta sobre resposta normalizada,
 não profundidade óptica medida.
 
-**Remoção dos sprites: implementada na branch `quad-unico`, gate reprovado, causa
-identificada.** Toda a herança está de pé (extinção por partícula via VTF do 8º bake com
-fração C da coluna e 1/μ; espalhamento por texel; fenda da barra; feathering na crista) e
-grain caiu ao melhor valor da série (0,108). Mas m=4 fica cravado em 0,259 (alvo 0,208)
-contra 0,188 com sprites — dez medições, nenhum botão de poeira o move (S0 ×½ e ×2,
-extinção off, barra off, crista ×0,42/×1/×2, feathering, offset côncavo ±). Conclusão por
-eliminação: **o excesso de m=4 é da EMISSÃO** — o modelo estelar dá amplitude igual aos 4
-braços — e os sprites o mascaravam multiplicando a cena inteira em screen-space, inclusive
-partículas na FRENTE da poeira (eficaz e não-físico; a extinção correta poupa a frente,
-como deve). O caminho físico, com respaldo: no infravermelho estelar a Via Láctea é
-**2 braços dominantes** (Sct-Cen + Perseu, par ~antipodal ⇒ m=1 neutro) com 4 no gás
-(Drimmel) — dar peso por braço à emissão estelar (lâminas + partículas), mantendo o gás
-com 4. É mudança de modelo com rodada própria, não constante.
+**Remoção dos sprites: branch `quad-unico`, gate REVERTIDO NA RODADA 12 para o melhor
+valor da série.** A rodada 11 tinha reprovado com m=4 cravado em 0,259 (dez medições
+provaram que era da EMISSÃO — os sprites mascaravam multiplicando a cena em screen-space).
+A **rodada de emissão 2 braços** (aprovada e feita em 2026-08-01) resolveu por modelo:
+emissão estelar com par dominante **Sct-Cen + Perseu** (symIndex ímpar; modulação pura,
+base 0,42 × (1 ± 1,0)) e **gás/H II/jovens uniformes em 4** (Drimmel) — `uniformWeights`
+agora de fato ligado nos mapas, `galMajorArmsGas` no raymarch, nós H II a 0,82 fixo.
+Mais dois ajustes medidos: braço das lâminas ~12% mais largo (sharpness −20%; largura ∝
+1/√sharpness — a razão m2/m4 com modulação pura é ĝ(2)/ĝ(4) da crista) e par de 3 kpc
+0,51 → 0,43. Resultado (rodada 12): `harmonicError` **0,0696 — recorde da série** (melhor
+anterior 0,0989 na era dos sprites; a rodada 11 estava em 0,1718), m=4 0,225, m2/m4 1,09,
+grain mantido em 0,109. A variância captura-a-captura do MESMO estado mediu 0,0696–0,0823
+em 4 medições — mesmo o pior sorteio segue recorde; deltas menores que ~0,013 entre
+rodadas são ruído de captura, não sinal. m=4 não cravou os 0,208 do alvo (+8%), mas TODOS
+os harmônicos melhoraram contra a rodada 11 e a nota honesta é a melhor já medida — sem
+truque de sprite. **Mergeada em `main` (2026-08-01)** — "sem truques de sprite" está
+concluído. A fila agora é: unificação 2 (cascas de wrap por bin de magnitude absoluta,
+com floating origin junto — desenho completo em `memory/procedural-star-population.md`
+do agente e resumido acima).
+
+Na vista INTERNA (sem gate — lacuna 2) a emissão estelar segue com 4 braços de gás de
+propósito: raymarch da faixa e wrapped stars usam a variante uniforme, porque o par fraco
+com peso 0 exato apagaria as nuvens estelares de Sagitário e decorrelacionaria estrelas do
+gás. Reequilibrar a vista interna para 2 braços (com piso > 0) é trabalho de quando o gate
+do panorama ESO existir — os comentários em `nebulaShaders.ts` e `wrappedStars.ts` marcam
+o ponto.
+
+Becos medidos na rodada 12 (não repetir): piso da espinha 0,78 → 0,86 SOBE m=1
+(0,120 → 0,129); aditivo `formationResponse` 0,16 → 0,10 não move m=4 (0,0015); par de
+3 kpc abaixo de 0,43 piora (harmonicError intermediário 0,0751 → 0,0779 com 0,37, medição
+`med.mjs` no MESMO quadro — comparável entre si, não com o 0,0696 oficial de outra
+captura).
 
 ## Decisões fechadas
 
@@ -133,7 +170,9 @@ renderizar e a linha não mede nada.
   do segmento que os dois pontos definem. Alcançam-no os componentes de população:
   `POP_HII=(1,664,0,807,0,957)` tem purp **+0,303**; espalhamento por campo jovem 18 kK
   ×λ^−1,3 dá **+0,213**. Mexer no `clamp` é desperdício de rodada.
-- **Espirais:** `harmonicError` 0,125 (era 0,165). m=3 e m=5 seguem ~50% acima do alvo.
+- **Espirais:** `harmonicError` 0,0696 na rodada 12 (recorde; era 0,1007 na rodada 05 e
+  0,1718 na 11). m=3 e m=5 seguem acima do alvo (+16% e +30%) — intermodulação, ver
+  `VISUAL_TARGETS.md`.
 
 ## Becos sem saída
 

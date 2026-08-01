@@ -388,9 +388,12 @@ export function bakeGalacticStructureMap(
       0.36,
       0.66
     );
+    // uniformWeights: traçadores jovens seguem o GÁS, que é 4 braços
+    // parecidos (Drimmel) — a dominância de 2 braços é só da emissão
+    // estelar evoluída (renderWeight), que multiplica DEPOIS.
     const arms = Math.min(
       1,
-      glMajorArms(theta, radiusPc, 24) +
+      glMajorArms(theta, radiusPc, 24, true) +
         glLocalArm(theta, radiusPc, 28)
     );
     // 55/59 é uma crista de 0,13 rad — três vezes mais estreita que o
@@ -405,7 +408,7 @@ export function bakeGalacticStructureMap(
     // precisam ficar do MESMO lado — estavam opostos.
     const dustArms = Math.min(
       1,
-      glMajorArms(theta - 0.20, radiusPc, 26) +
+      glMajorArms(theta - 0.20, radiusPc, 26, true) +
         glLocalArm(theta - 0.19, radiusPc, 30)
     );
     // A fragmentação do gás agora vem da rede filamentar no referencial

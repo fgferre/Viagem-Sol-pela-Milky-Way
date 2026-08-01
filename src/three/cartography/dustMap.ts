@@ -174,8 +174,9 @@ export function bakeDustMap(table: CatalogueTable | null): DustBake {
     const yPc = dy * texelPc;
     const radiusPc = Math.hypot(xPc, yPc);
     const theta = Math.atan2(yPc, xPc);
+    // envelope de GÁS do raymarch: 4 braços parecidos (uniformWeights)
     const arms = Math.min(
-      glMajorArms(theta, radiusPc, 24) + glLocalArm(theta, radiusPc, 28),
+      glMajorArms(theta, radiusPc, 24, true) + glLocalArm(theta, radiusPc, 28),
       1
     );
     const warp = warpHeightPc(radiusPc, theta) / 820; // -1..1

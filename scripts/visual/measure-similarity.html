@@ -281,13 +281,336 @@ function analyse(img) {
   };
 }
 
+// ============================================================
+// MODO EDGE-ON (?mode=edge) — o gate da física VERTICAL, que a
+// face-on não testa: espessura por raio, faixa escura, warp,
+// razão axial e gradiente vertical de cor, contra
+// gaia-2025-edge-on-5k.jpg. Os modos de falha das duas vistas são
+// disjuntos (a rodada 09 mudou 2,19× o brilho rasante e a métrica
+// face-on moveu 0,002) — por isso o número próprio.
+// ============================================================
+
+/** Quadro INTEIRO reduzido (sem recorte quadrado — cortaria o disco). */
+function toLinearFull(img, maxDim = 1200) {
+  const s = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const w = Math.round(img.width * s);
+  const h = Math.round(img.height * s);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(img, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data;
+  const lum = new Float32Array(w * h);
+  const red = new Float32Array(w * h);
+  const grn = new Float32Array(w * h);
+  const blue = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    const r = Math.pow(d[i * 4] / 255, 2.2);
+    const g = Math.pow(d[i * 4 + 1] / 255, 2.2);
+    const b = Math.pow(d[i * 4 + 2] / 255, 2.2);
+    lum[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    red[i] = r;
+    grn[i] = g;
+    blue[i] = b;
+  }
+  return { lum, red, grn, blue, w, h };
+}
+
+function analyseEdge(img) {
+  const { lum, red, grn, blue, w, h } = toLinearFull(img);
+  // Fundo = mediana da moldura de 4%: o nosso quadro tem campo estelar
+  // onde a referência tem preto; sem subtrair, todo centroide vertical
+  // seria puxado para o meio geométrico da imagem.
+  const bw = Math.max(2, Math.round(Math.min(w, h) * 0.04));
+  const border = [];
+  const borderR = [];
+  const borderG = [];
+  const borderB = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (x < bw || x >= w - bw || y < bw || y >= h - bw) {
+        border.push(lum[y * w + x]);
+        borderR.push(red[y * w + x]);
+        borderG.push(grn[y * w + x]);
+        borderB.push(blue[y * w + x]);
+      }
+    }
+  }
+  const median = (v) => v.sort((a, b) => a - b)[Math.floor(v.length / 2)];
+  const bg = median(border);
+  // fundo POR CANAL: a cor das bandas altas era medida no pixel cru, então
+  // em alto-z (sinal fraco) o índice media o tom do campo estelar do NOSSO
+  // quadro contra o preto da referência — viés assimétrico
+  const bgR = median(borderR);
+  const bgG = median(borderG);
+  const bgB = median(borderB);
+  const L = (x, y) => Math.max(lum[y * w + x] - bg, 0);
+
+  // centro = centroide dos 2% mais brilhantes (o bojo), como na face-on
+  const sorted = Float32Array.from(lum).sort();
+  const cut = sorted[Math.floor(sorted.length * 0.98)];
+  let cx = 0;
+  let cy = 0;
+  let cw = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const v = lum[y * w + x];
+      if (v >= cut) {
+        cx += x * v;
+        cy += y * v;
+        cw += v;
+      }
+    }
+  }
+  cx /= cw;
+  cy /= cw;
+
+  // fluxo e centroide vertical por coluna
+  const colFlux = new Float64Array(w);
+  const colZ = new Float64Array(w);
+  let total = 0;
+  for (let x = 0; x < w; x++) {
+    let f = 0;
+    let fz = 0;
+    for (let y = 0; y < h; y++) {
+      const v = L(x, y);
+      f += v;
+      fz += v * y;
+    }
+    colFlux[x] = f;
+    colZ[x] = f > 1e-9 ? fz / f : cy;
+    total += f;
+  }
+
+  // R90 horizontal — o normalizador de escala entre quadros
+  const maxR = Math.min(cx, w - cx);
+  const hist = new Float64Array(512);
+  let inR = 0;
+  for (let x = 0; x < w; x++) {
+    const r = Math.abs(x - cx);
+    if (r >= maxR) continue;
+    hist[Math.floor((r / maxR) * 511)] += colFlux[x];
+    inR += colFlux[x];
+  }
+  let acc = 0;
+  let r90 = maxR;
+  for (let k = 0; k < 512; k++) {
+    acc += hist[k];
+    if (acc >= 0.9 * inR) {
+      r90 = ((k + 0.5) / 512) * maxR;
+      break;
+    }
+  }
+
+  // Coluna VÁLIDA = fluxo acima de 5% da coluna média do disco. Sem o
+  // limiar, o resíduo positivo do NOSSO quadro (halo de partículas, meia
+  // onda do grão, pedestal da vinheta — ausentes na referência preta)
+  // puxava colZ para o meio da imagem nas colunas fracas: warp diluído e
+  // bandas de cor contaminadas só de um lado da comparação.
+  const meanCol = inR / Math.max(2 * r90, 1);
+  const valid = (x) => colFlux[x] > 0.05 * meanCol;
+
+  // Tendência do plano médio no MIOLO (|x| ≤ 0,5·R90): remove inclinação
+  // de câmera e offset vertical — senão qualquer tilt vira "warp".
+  let sw = 0;
+  let sx = 0;
+  let sy = 0;
+  let sxx = 0;
+  let sxy = 0;
+  for (let x = 0; x < w; x++) {
+    const u = (x - cx) / r90;
+    if (Math.abs(u) > 0.5 || !valid(x)) continue;
+    const wgt = colFlux[x];
+    sw += wgt;
+    sx += wgt * u;
+    sy += wgt * colZ[x];
+    sxx += wgt * u * u;
+    sxy += wgt * u * colZ[x];
+  }
+  const slope = (sw * sxy - sx * sy) / Math.max(sw * sxx - sx * sx, 1e-9);
+  const zc0 = (sy - slope * sx) / Math.max(sw, 1e-9);
+  const trendAt = (u) => zc0 + slope * u;
+
+  // h50 por coluna-bin: meia-altura que contém 50% do fluxo da coluna,
+  // centrada no plano médio LOCAL (aguenta warp por construção)
+  const h50At = (u0, u1) => {
+    const prof = new Float64Array(h);
+    let f = 0;
+    for (let x = 0; x < w; x++) {
+      const u = (x - cx) / r90;
+      if (u < u0 || u >= u1 || !valid(x)) continue;
+      const zc = colZ[x];
+      for (let y = 0; y < h; y++) {
+        const dz = Math.round(y - zc + h / 2);
+        if (dz >= 0 && dz < h) {
+          prof[dz] += L(x, y);
+          f += L(x, y);
+        }
+      }
+    }
+    if (f <= 1e-9) return 0;
+    let s = prof[Math.round(h / 2)] || 0;
+    let k = 0;
+    while (s < 0.5 * f && k < h / 2) {
+      k++;
+      s += (prof[Math.round(h / 2) + k] || 0) + (prof[Math.round(h / 2) - k] || 0);
+    }
+    return k;
+  };
+
+  // perfil de espessura em 12 bins de 0,15·R90, dos dois lados somados.
+  // Lado sem dado (fora da moldura ou sem coluna válida) NÃO entra como
+  // zero na média — cortaria pela metade um valor unilateral e faria a
+  // nota depender do enquadramento, que é o que a normalização promete
+  // evitar.
+  const NB = 12;
+  const thickness = [];
+  for (let i = 0; i < NB; i++) {
+    const u0 = i * 0.15;
+    const sides = [h50At(u0, u0 + 0.15), h50At(-u0 - 0.15, -u0)].filter(
+      (v) => v > 0
+    );
+    thickness.push(
+      +((sides.length ? sides.reduce((a, b) => a + b, 0) / sides.length : 0) / r90).toFixed(4)
+    );
+  }
+  // escalar: espessura relativa média no disco (0,3–0,9·R90), fora do bojo
+  const mid = thickness.slice(2, 6);
+  const thickRatio = +(mid.reduce((a, b) => a + b, 0) / mid.length).toFixed(4);
+  const h50core = Math.max(h50At(-0.25, 0.25), 2);
+  const axialRatio = +((h50At(-1, 1) / r90)).toFixed(4);
+
+  // FAIXA ESCURA: perfil vertical médio no miolo (|x| ≤ 0,25·R90),
+  // RECENTRADO pelo plano local de cada coluna (colZ) — como o h50At e as
+  // bandas de cor. Somar em y bruto deixava um tilt de câmera (o rig tem
+  // roll de até ~3° no keyframe) espalhar a faixa por vários pixels e
+  // encher o mínimo, subestimando laneDepth só num dos quadros.
+  // Profundidade = 1 − mínimo/pico; posição = offset do mínimo em h50.
+  const prof = new Float64Array(h);
+  for (let x = 0; x < w; x++) {
+    const u = (x - cx) / r90;
+    if (Math.abs(u) > 0.25 || !valid(x)) continue;
+    for (let y = 0; y < h; y++) {
+      const dz = Math.round(y - colZ[x] + h / 2);
+      if (dz >= 0 && dz < h) prof[dz] += L(x, y);
+    }
+  }
+  const zMid = Math.round(h / 2);
+  const span = Math.round(1.4 * h50core);
+  let zMin = zMid;
+  for (let y = zMid - span; y <= zMid + span; y++) {
+    if (y >= 0 && y < h && prof[y] < prof[zMin]) zMin = y;
+  }
+  let peakAbove = 0;
+  let peakBelow = 0;
+  for (let y = zMin - 3 * h50core; y < zMin; y++) {
+    if (y >= 0) peakBelow = Math.max(peakBelow, prof[y]);
+  }
+  for (let y = zMin + 1; y <= zMin + 3 * h50core; y++) {
+    if (y < h) peakAbove = Math.max(peakAbove, prof[y]);
+  }
+  const flank = Math.min(peakAbove, peakBelow);
+  const laneDepth = +(flank > 1e-9 ? 1 - prof[zMin] / flank : 0).toFixed(4);
+  const laneOffset = +(((zMin - zMid) / h50core)).toFixed(4);
+
+  // WARP: desvio do plano médio detrended nas pontas (0,7–1,1·R90).
+  // warpAmp = média de |desvio|; warpAsym > 0 = forma de S (lados opostos).
+  const warpSide = (sgn) => {
+    let f = 0;
+    let dz = 0;
+    for (let x = 0; x < w; x++) {
+      const u = (x - cx) / r90;
+      if (u * sgn < 0.7 || u * sgn > 1.1 || !valid(x)) continue;
+      f += colFlux[x];
+      dz += colFlux[x] * (colZ[x] - trendAt(u));
+    }
+    return f > 1e-9 ? dz / f : 0;
+  };
+  const wPlus = warpSide(1);
+  const wMinus = warpSide(-1);
+  const warpAmp = +(((Math.abs(wPlus) + Math.abs(wMinus)) / 2) / r90).toFixed(4);
+  const warpAsym = +((-wPlus * wMinus) / Math.max(r90 * r90 * 1e-6, wPlus * wPlus + wMinus * wMinus)).toFixed(3);
+
+  // GRADIENTE VERTICAL DE COR: colour=(R−B)/(R+B) e purp por banda de
+  // altura — [0, 0,8) plano · [0,8, 2) acima da poeira · [2, 4) halo.
+  // A altura é |z|/h50core (a meia-altura do MIOLO, global — não uma h50
+  // por coluna); só o CENTRO (colZ) é local. Cor com fundo POR CANAL
+  // subtraído, senão em alto-z o índice mede o campo estelar do quadro.
+  const bandC = [0, 0, 0];
+  const bandP = [0, 0, 0];
+  const bandW = [0, 0, 0];
+  for (let x = 0; x < w; x++) {
+    const u = (x - cx) / r90;
+    if (Math.abs(u) > 0.9 || !valid(x)) continue;
+    for (let y = 0; y < h; y++) {
+      const az = Math.abs(y - colZ[x]) / h50core;
+      const k = az < 0.8 ? 0 : az < 2 ? 1 : az < 4 ? 2 : -1;
+      if (k < 0) continue;
+      const v = L(x, y);
+      if (v <= 1e-9) continue;
+      const i = y * w + x;
+      const r = Math.max(red[i] - bgR, 0);
+      const g = Math.max(grn[i] - bgG, 0);
+      const b = Math.max(blue[i] - bgB, 0);
+      bandC[k] += v * ((r - b) / (r + b + 1e-9));
+      bandP[k] += v * (((r + b) / 2 - g) / Math.max(r, g, b, 1e-9));
+      bandW[k] += v;
+    }
+  }
+  const colourZ = bandC.map((s, k) => +(s / Math.max(bandW[k], 1e-9)).toFixed(4));
+  const purpZ = bandP.map((s, k) => +(s / Math.max(bandW[k], 1e-9)).toFixed(4));
+
+  return {
+    r90Frac: +(r90 / w).toFixed(3),
+    thickness,
+    thickRatio,
+    axialRatio,
+    laneDepth,
+    laneOffset,
+    warpAmp,
+    warpAsym,
+    colourZ,
+    purpZ,
+  };
+}
+
 (async () => {
   const out = document.getElementById('out');
   try {
     const q = new URLSearchParams(location.search);
     const aSrc = q.get('a');
-    const bSrc = q.get('b') || '../../docs/reference/gaia-2025-face-on-5k.jpg';
     if (!aSrc) throw new Error('faltou ?a=<quadro.png>');
+    if (q.get('mode') === 'edge') {
+      const bSrc = q.get('b') || '../../docs/reference/gaia-2025-edge-on-5k.jpg';
+      const ours = analyseEdge(await load(aSrc));
+      const ref = analyseEdge(await load(bSrc));
+      // nota honesta do perfil — a fórmula EXATA (documentada também em
+      // VISUAL_TARGETS.md; mudou aqui, muda lá):
+      //   edgeError = |Δthick| + |Δaxial| + |ΔlaneDepth| + 0,2·|ΔlaneOffset|
+      //             + |ΔwarpAmp| + 0,5·|ΔwarpAsym|
+      //             + média|Δ| das curvas (espessura, colourZ, purpZ)
+      // laneOffset entra a 0,2 porque sem faixa o mínimo flutua no span e
+      // o termo viraria ruído O(1); warpAsym entra a 0,5 — o S do warp é
+      // deficiência-manchete e o gate não pode ser cego a ela, mas o
+      // termo é limitado a ±0,5 por construção e range 1,0 dominaria.
+      const curve = (a, b) =>
+        a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
+      const edgeError = +(
+        Math.abs(ours.thickRatio - ref.thickRatio) +
+        Math.abs(ours.axialRatio - ref.axialRatio) +
+        Math.abs(ours.laneDepth - ref.laneDepth) +
+        Math.abs(ours.laneOffset - ref.laneOffset) * 0.2 +
+        Math.abs(ours.warpAmp - ref.warpAmp) +
+        Math.abs(ours.warpAsym - ref.warpAsym) * 0.5 +
+        curve(ours.thickness, ref.thickness) +
+        curve(ours.colourZ, ref.colourZ) +
+        curve(ours.purpZ, ref.purpZ)
+      ).toFixed(4);
+      out.textContent = JSON.stringify({ edgeError, ours, ref }, null, 1);
+      return;
+    }
+    const bSrc = q.get('b') || '../../docs/reference/gaia-2025-face-on-5k.jpg';
     const ours = analyse(await load(aSrc));
     const ref = analyse(await load(bSrc));
     let harmonicError = 0;

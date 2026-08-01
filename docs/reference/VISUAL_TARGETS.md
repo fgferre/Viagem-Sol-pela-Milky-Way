@@ -119,6 +119,50 @@ A_dominante/(A_dominante + resto), então estourar a dominante o infla
 sem aproximar do alvo — um estado com m=2 8% acima marcou `symmetry`
 mais alto que outro com m=2 e m=4 casados exatamente.
 
+### O gate edge-on (física vertical)
+
+A face-on não testa espessura, faixa escura, warp nem cor por altura — a
+rodada 09 mudou o brilho rasante 2,19× e a métrica face-on moveu 0,002.
+`?mode=edge` na mesma página mede o quadro `?t=158&shot=2` contra
+`gaia-2025-edge-on-5k.jpg`. Tudo normalizado por R90 horizontal ou pela
+meia-altura h50, então independe de enquadramento.
+
+| grandeza | alvo | o que significa |
+|---|---|---|
+| thickRatio | 0,0502 | h50/R90 médio no disco (0,3–0,9 R90) |
+| axialRatio | 0,0598 | h50 global / R90 — a "gordura" total da lâmina |
+| laneDepth | 0,9386 | profundidade da faixa escura no miolo (1 = corte total) |
+| laneOffset | 0,05 | posição do mínimo em h50 a partir do plano médio local |
+| warpAmp | 0,0187 | desvio médio do plano nas pontas (0,7–1,1 R90) |
+| warpAsym | +0,481 | >0 = forma de S (lados opostos), como deve ser |
+| colourZ | 0,19 / 0,30 / 0,66 | (R−B)/(R+B) por banda de altura — o alto-z é dominado pelo halo quente do bojo |
+| purpZ | 0,09 / 0,08 / 0,13 | púrpura por banda de altura |
+
+A fórmula EXATA (espelho do código; mudou lá, muda aqui):
+
+```
+edgeError = |Δthick| + |Δaxial| + |ΔlaneDepth| + 0,2·|ΔlaneOffset|
+          + |ΔwarpAmp| + 0,5·|ΔwarpAsym|
+          + média|Δ| das curvas (espessura, colourZ, purpZ)
+```
+
+laneOffset pesa 0,2 (sem faixa, o mínimo flutua e o termo viraria ruído);
+warpAsym pesa 0,5 (o S é deficiência-manchete, o gate não pode ser cego a
+ela; o termo é limitado a ±0,5 e com peso 1 dominaria). Robustez: fundo
+por canal subtraído, só colunas com >5% do fluxo médio contam, perfil da
+faixa recentrado pelo plano local (aguenta o roll de ~3° do rig no
+keyframe), bins de espessura unilaterais não fazem média com zero. Perfil
+de espessura do alvo DECRESCE para fora (0,071 no bojo → 0,027 na borda):
+o bojo domina o miolo e o disco externo é fino mesmo com flare.
+
+Baseline medida (rodada 12, quad-único): edgeError 2,0258 — dominado por
+**laneDepth −0,07 (não existe faixa escura de perfil)**, warpAsym −0,46
+(sem o S, ~0,47 na soma), axialRatio 0,026 (disco 2,3× fino demais) e o
+gradiente de cor achatado (colourZ 0,19/0,18/0,26 contra 0,19/0,30/0,66).
+A extinção por partícula usa τ⊥·C/μ da posição da PARTÍCULA — de perfil,
+a coluna real na linha de visada atravessa o disco inteiro e não é essa;
+é o que o operador de coluna do quad único (silhueta da fenda) ainda deve.
+
 ### Cada harmônica aponta uma causa
 
 Verificado nesta base, com as hipóteses que caíram no caminho:

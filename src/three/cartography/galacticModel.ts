@@ -83,12 +83,19 @@ export const SPIRAL_ARMS: readonly SpiralArmDefinition[] =
     // Peso de RENDER — não é o peso do fit (esse fica em spiralModel.json
     // e alimenta o data:verify). Pesos desiguais e arbitrários
     // (0,86/0,76/0,82/0,72) injetam m=1 e m=3. Aqui a modulação é
-    // puramente m=2: pares opostos alternam ±68%, o que reproduz a razão
-    // m2/m4 = 1,20 medida na referência — ela é uma espiral de dois
-    // braços dominantes com quatro visíveis, não quatro iguais.
-    // A base 0,74 fixa a escala absoluta dos dois harmônicos.
+    // puramente m=2: pares opostos alternam — a referência é uma espiral
+    // de dois braços dominantes com quatro visíveis, não quatro iguais.
+    // A base fixa a escala absoluta dos dois harmônicos (m=4 ∝ base,
+    // m=2 ∝ base·profundidade). Com profundidade 1,0 a modulação está
+    // SATURADA: a razão m2/m4 passa a ser ĝ(2)/ĝ(4) da largura da crista
+    // (armSharpness nas lâminas) — rodada 12 mediu 1,10 contra alvo
+    // 1,20; o que falta vem de largura, não daqui.
+    // O par dominante é Sct-Cen + Perseu (symIndex ÍMPAR), como no
+    // infravermelho estelar (Drimmel/GLIMPSE); par ~antipodal ⇒ m=1
+    // neutro. Estava invertido (Sgr-Car + Norma), que a métrica de
+    // amplitude não vê mas o gabarito de anatomia sim.
     renderWeight:
-      0.74 * (1 + 0.68 * ([3, 0, 1, 2][index] % 2 === 0 ? 1 : -1)),
+      0.42 * (1 + 1.0 * ([3, 0, 1, 2][index] % 2 === 1 ? 1 : -1)),
   }));
 
 /**
@@ -144,7 +151,10 @@ export const INNER_ARMS: readonly SpiralArmDefinition[] = [
     // PAR SIMÉTRICO. Pesos e portas desiguais (0,54/0,48 e janelas
     // diferentes) injetavam m=1 no anel interno, que intermodula com a
     // espinha de 4 dobras e sai medido como m=3 (|4−1|).
-    weight: 0.51,
+    // 0,51 → 0,43 na rodada 12: o par contribui m=4 no anel interno via
+    // ĝ(4) da crista; com a emissão estelar em 2 braços ele virou uma
+    // fração maior do m=4 residual.
+    weight: 0.43,
     minRadiusPc: 2_500,
     maxRadiusPc: 5_750,
     tint: THREE_KPC_TINT,
@@ -155,7 +165,7 @@ export const INNER_ARMS: readonly SpiralArmDefinition[] = [
     phaseAtSunRad: BAR_AXIS - Math.PI / 2 + 3.975,
     pitchInnerDeg: 12,
     pitchOuterDeg: 12,
-    weight: 0.51,
+    weight: 0.43,
     minRadiusPc: 2_500,
     maxRadiusPc: 5_750,
     tint: THREE_KPC_TINT,
@@ -285,6 +295,8 @@ export function armActivityAtRadius(
   const observed = Math.min(1, measured + outerContinuation);
   // braços internos de 3 kpc não participam da espinha de 4 dobras
   if (arm.symIndex === undefined) return observed;
+  // Rodada 12, medido e revertido: subir este piso para 0,86 SUBIU m=1
+  // (0,120→0,129) — o m=1 residual não é o contraste medido-vs-espinha.
   return Math.min(1, Math.max(observed, backboneActivity(radiusPc) * 0.78));
 }
 
@@ -648,6 +660,29 @@ ${SPIRAL_ARMS.map(
       0.0
 ${SPIRAL_ARMS.map(
   (arm, i) => `    + ${glslArmCall(arm, arm.phaseAtSunRad, `gate${i}`)}`
+).join('\n')}
+${INNER_ARMS.map(
+  (arm, i) => `    + ${glslArmCall(arm, arm.phaseAtSunRad, `inner${i}Gate`)}`
+).join('\n')},
+    0.0,
+    1.0
+  );
+}
+
+// GÁS: 4 braços parecidos (espelho de glMajorArms com uniformWeights).
+// A dominância de 2 braços (renderWeight) é da emissão estelar evoluída;
+// o gás carrega os 4 (Drimmel) — mesma razão do uniformWeights do TS.
+float galMajorArmsGas(float theta, float radiusPc, float sharpness) {
+  float backbone = galBackboneGate(radiusPc);
+${SPIRAL_ARMS.map(
+  (arm, i) => `  ${glslGate(`measured${i}`, arm.gate)}
+  float gate${i} = min(1.0, max(measured${i}, backbone));`
+).join('\n')}
+  ${INNER_ARMS.map((arm, i) => glslGate(`inner${i}Gate`, arm.gate)).join('\n  ')}
+  return clamp(
+      0.0
+${SPIRAL_ARMS.map(
+  (arm, i) => `    + ${glslArmCall(arm, arm.phaseAtSunRad, `gate${i}`, 0.82)}`
 ).join('\n')}
 ${INNER_ARMS.map(
   (arm, i) => `    + ${glslArmCall(arm, arm.phaseAtSunRad, `inner${i}Gate`)}`

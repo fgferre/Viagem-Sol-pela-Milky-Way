@@ -318,11 +318,14 @@ export function buildGalaxy(
     const lum = Math.min(7, Math.pow(Math.max(rnd(), 1e-4), -0.42)) / 1.72;
     const dim = 0.35 + 0.65 * rnd() * rnd();
     const youngResponse = effectiveYoungResponseAt(lx, ly);
-    // O braço tem de ser MAIS brilhante que o interbraço — mas por pouco.
-    // Com (0.16 + young·0.58) contra 0.72 fixo a partícula de braço saía
-    // entre 0,19× e 0,89× do campo: o desenho espiral apagado. Com 0.14
-    // no interbraço ia ao outro extremo (contraste medido 10–44 contra
-    // 2–4 do alvo). O catálogo modula dentro do braço, não o cria.
+    // O braço DOMINANTE tem de ser mais brilhante que o interbraço — mas
+    // por pouco (contraste 2–4 do alvo; calibrado na era dos 4 braços).
+    // Desde a rodada 12 o par fraco (Sgr-Car, Norma) tem renderWeight 0:
+    // as partículas sorteadas para ele nascem com alpha 0 — a crista
+    // deles na emissão estelar é deliberadamente ausente (modelo Drimmel
+    // 2 braços; o gás é quem os desenha). É orçamento morto de ~10⁵
+    // partículas por build; realocar o sorteio é trabalho da unificação
+    // 2, que reescreve a população inteira.
     const armWeight = inArm
       ? (arm.renderWeight ?? arm.weight) * (0.72 + youngResponse * 0.38)
       : 0.70;
@@ -451,8 +454,19 @@ export function buildGalaxy(
       warpHeightPc(r, theta) + gauss(rnd) * (46 + flareAtRadius(r) * 105);
     const youngSupport = youngSupportAt(lx, ly);
     const youngResponse = effectiveYoungResponseAt(lx, ly);
+    // 0,82 uniforme, não renderWeight: nós H II são GÁS ionizado e o gás
+    // carrega 4 braços parecidos (Drimmel) — a dominância de 2 braços é
+    // da emissão estelar evoluída, não da formação estelar. O par de
+    // 3 kpc NÃO entra no 0,82: fica no peso do envelope de gás (0,43),
+    // como nas variantes uniformes dos mapas — são braços de gás sem
+    // formação estelar, e 0,82 ali devolveria ao anel interno o m=4 que
+    // o ajuste 0,51→0,43 removeu.
     const armWeight =
-      (inLocalArm ? LOCAL_ARM.weight : arm.renderWeight ?? arm.weight) *
+      (inLocalArm
+        ? LOCAL_ARM.weight
+        : arm.symIndex === undefined
+          ? arm.weight
+          : 0.82) *
       // A supressão por youngSupport evita contar duas vezes com as 1.413
       // regiões WISE de starForges — mas essas são heliocêntricas, só do
       // nosso lado. O piso (0,45) ainda amarrava o resto do disco ao

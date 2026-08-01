@@ -308,7 +308,10 @@ void main() {
   // Braços LARGOS, como na recriação Gaia: a razão largura/espaçamento é
   // ~1/3. Fitas finas (sharpness 42–105) davam vales rasos; o contraste
   // vem do vale escuro entre braços largos, não de uma linha brilhante.
-  float armSharpness = mix(6.5, 11.0, smoothstep(3500.0, 15000.0, radiusPc));
+  // Rodada 12 (−20%): com o par dominante puro (profundidade 1,0), a
+  // razão m2/m4 é ĝ(2)/ĝ(4) da própria crista — alargar o braço sobe
+  // m=2 em relação a m=4 sem tocar na base.
+  float armSharpness = mix(5.2, 9.0, smoothstep(3500.0, 15000.0, radiusPc));
   float arms = clamp(
     galMajorArms(theta, radiusPc, armSharpness) +
     galLocalArm(theta, radiusPc, armSharpness * 1.4),
@@ -389,6 +392,9 @@ void main() {
   // satura, ela injeta harmônicos ímpares que a medição via em m=3 e
   // m=5. x/(1+x^6)^(1/6) é idêntica abaixo de ~0,8 e assintota a 1 sem
   // canto nenhum. max() obrigatório: pow de base negativa é NaN.
+  // Rodada 12, medido e revertido: cortar o aditivo 0,16→0,10 moveu
+  // m=4 em 0,0015 — este termo NÃO é o piso de m=4. Fica no valor
+  // calibrado.
   float rawDensity =
     arms * (0.74 + 0.26 * formationResponse) + formationResponse * 0.16;
   float armDensity =

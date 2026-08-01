@@ -117,8 +117,16 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     // Estrutura fractal em escalas de quiloparsecs e centenas de parsecs.
     float broad = fbm(q * 0.00062 + 13.7, 2);
     float filaments = fbm(q * 0.0021 + 37.1, 2);
+    // Variante de GÁS (4 braços parecidos) para TODO o raymarch,
+    // inclusive o termo estelar logo abaixo — decisão, não descuido:
+    // com renderWeight 0,42·(1±1) o par fraco zera, e um realce estelar
+    // 2-braços-com-zeros apagaria as nuvens estelares de Sagitário da
+    // faixa e decorrelacionaria estrelas do gás na vista interna, que
+    // ainda não tem gate (panorama ESO, lacuna 2 do NORTE). Quando o
+    // gate existir, o termo estelar é o candidato a voltar para
+    // galMajorArms pesado, com um piso > 0 no par fraco.
     float arms = clamp(
-      galMajorArms(theta, radius, 155.0) +
+      galMajorArmsGas(theta, radius, 155.0) +
       galLocalArm(theta, radius, 180.0),
       0.0,
       1.0

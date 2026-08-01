@@ -24,3 +24,14 @@ final, as imagens locais e esta tabela se leem juntas.
 | 09 | 0.0989 | 0.1169 | 0.1376 | 0.1206 | lei de comprimento de caminho: tau perpendicular no bake, coluna reconstruida por 1/mu no runtime |
 | 10 | 0.1026 | 0.1163 | 0.1382 | 0.1219 | hitch de driver corrigido: fbm das nuvens CO em 2 oitavas fixas; flags noco/noforge |
 | 11 | 0.1718 | 0.1388 | 0.1104 | 0.1081 | sprites de poeira removidos: extincao por particula (VTF da coluna tau) + espalhamento por texel + fenda da barra no bake |
+| 12 | 0.0696 | 0.1361 | 0.1092 | 0.1092 | emissao 2 bracos: Sct-Cen+Perseu dominantes (prof. 1,0 base 0,42), gas/H II/jovens uniformes em 4, braco ~12% mais largo (sharpness -20%), 3kpc 0,43; gate edge-on novo |
+
+## Edge-on
+
+`edgeError` menor é melhor (medida `?mode=edge` contra
+`gaia-2025-edge-on-5k.jpg`); as outras buscam o alvo.
+
+| rodada | edgeError | thickRatio | axialRatio | laneDepth | warpAmp | o que mudou |
+|---|---|---|---|---|---|---|
+| — | 0 | 0.0502 | 0.0598 | 0.9386 | 0.0187 | **alvo (foto real)** |
+| 12 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | emissao 2 bracos: Sct-Cen+Perseu dominantes (prof. 1,0 base 0,42), gas/H II/jovens uniformes em 4, braco ~12% mais largo (sharpness -20%), 3kpc 0,43; gate edge-on novo |

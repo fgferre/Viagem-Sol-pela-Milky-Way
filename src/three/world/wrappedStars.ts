@@ -45,9 +45,16 @@ float stellarDensity(vec3 p, out float armGate, out float bulgeGate) {
   float thin = exp(-radiusPc / 2600.0) * exp(-abs(zw) / 300.0);
   float thick = exp(-radiusPc / 3600.0) * exp(-abs(zw) / 1000.0) * 0.12;
   float bulge = exp(-length(q) / 900.0) * 14.0;
-  // braços: contraste de massa modesto (≲3x); o brilho azul vem da cor
+  // braços: contraste de massa modesto (≲3x); o brilho azul vem da cor.
+  // Variante de GÁS (4 braços parecidos), não a pesada: com renderWeight
+  // 0,42·(1±1) o par fraco zera EXATO, e um campo de massa com dois
+  // braços ausentes — enquanto o raymarch de gás desenha braço pleno no
+  // mesmo ponto — decorrelaciona estrelas e gás na vista interna. A
+  // dominância 2-braços da vista externa fica nas lâminas/partículas;
+  // reequilibrar por aqui é trabalho do gate da vista interna (panorama
+  // ESO, lacuna 2 do NORTE).
   float arms = clamp(
-    galMajorArms(theta, radiusPc, 22.0) + galLocalArm(theta, radiusPc, 26.0),
+    galMajorArmsGas(theta, radiusPc, 22.0) + galLocalArm(theta, radiusPc, 26.0),
     0.0,
     1.0
   );
