@@ -70,10 +70,21 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    **O que fechou a rodada 18: auto-exposição 1,02 → 1,40 pela rampa `galaxyFade`**
    no director (a vista externa é outro assunto fotográfico; `?exp=` segue
    soberano): edge 0,8741 → **0,8380**, face 0,0615 → **0,0595**, grain
-   0,103 → 0,099, laneOffset 0,56 → 0,40. Custo aceito e documentado: discMean
-   face-on deriva para 0,178 (alvo 0,1175) — o conserto honesto é knee/asinh POR
-   CAMADA pré-ACES (a unificação 1 de verdade), não mais exposição global (1,8+
-   degrada as harmônicas face-on).
+   0,103 → 0,099, laneOffset 0,56 → 0,40. Custo: discMean face-on deriva para
+   0,178 (alvo 0,1175).
+   **Rodada 19 — knee asinh pré-ACES construído e varrido (12 configs): os dois
+   gates DISCORDAM da curva de tom.** O passe existe em `post.ts` (compósito HDR
+   entre bloom e OutputPass — por camada não funciona: sprite aditivo é minúsculo e
+   asinh(x)≈x, a compressão tem de ver a SOMA; rampa `galaxyFade`, knobs `?knee=`
+   β e `?kneemode=lum|rgb`, rgb vence, default DESLIGADO). Fronteira de Pareto
+   medida: A sem-knee/exp1,4 = edge 0,8380 · face 0,0595 · disc 0,178; B knee
+   0,45/exp 1,05 = 0,8442 · 0,0516 · 0,131; C knee 0,6/exp 1,1 = 0,8467 ·
+   **0,0487** · 0,141. Não há ganha-ganha, e o mecanismo é conhecido: o edge só
+   prefere A porque exp 1,4 DESSATURA via ACES o plano vermelho — a MESMA
+   deficiência (colourZ baixo 0,33 vs 0,19) que a rodada 17 tentou tratar com rim
+   light. **Consertado o vermelho do plano na fonte, o knee (C) deve virar vitória
+   dupla** — é a ordem de ataque; até lá, a escolha A/B/C é direção de arte e fica
+   com o usuário. Nenhum default mudou na rodada 19.
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
