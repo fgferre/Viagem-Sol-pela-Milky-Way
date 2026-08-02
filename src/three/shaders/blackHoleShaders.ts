@@ -191,7 +191,12 @@ void main(){
   // (a costura entre os dois fica dentro da banda de mistura)
   if(b > uMarchB){
     vec3 pv = dirToUv(bentWeak);
-    gl_FragColor = vec4(texture2D(tScene, clamp(pv.xy, 0.0, 1.0)).rgb, 1.0);
+    vec2 cuv = clamp(pv.xy, 0.0, 1.0);
+    float ok = smoothstep(0.0, 0.06, pv.z) *
+      (1.0 - smoothstep(0.0, 0.2, length(pv.xy - cuv)));
+    vec3 lensed = texture2D(tScene, cuv).rgb;
+    vec3 fallback = texture2D(tScene, vUv).rgb;
+    gl_FragColor = vec4(mix(fallback, lensed, ok), 1.0);
     return;
   }
 
@@ -250,19 +255,25 @@ void main(){
     }
   }
 
-  // fundo REAL dobrado: a cena amostrada na direção de escape. Raios
-  // que mergulham fundo escurecem; o horizonte fica preto puro.
+  // fundo REAL dobrado: a cena amostrada na direção de escape. A tela
+  // só cobre parte do céu — raio dobrado para fora dela (ou para trás
+  // da câmera) NÃO pode virar preto: pintado de preto, o conjunto
+  // dessas direções desenhava BOLAS ESCURAS sobrepostas ao redor da
+  // sombra (visto pelo usuário). Sem dado direcional, a melhor
+  // aproximação dentro do núcleo é a névoa LOCAL (atrás da câmera
+  // também é névoa dourada): cai-se para a cena reta do próprio pixel.
+  // A sombra de verdade continua preta por física (trans = 0).
   vec3 bg = vec3(0.0);
   if(trans > 0.0){
     float deep = clamp((lastR-1.03)*0.45, 0.45, 1.0);
     col += haloCol * deep;
     vec3 pv = dirToUv(vel);
-    // dobrado para trás da câmera ou muito fora da tela: sem cena para
-    // ler — esmaece para preto (a região é o poço fundo, lê natural)
-    float valid = smoothstep(0.02, 0.10, pv.z);
     vec2 cuv = clamp(pv.xy, 0.0, 1.0);
-    valid *= 1.0 - smoothstep(0.0, 0.25, length(pv.xy - cuv) * 4.0);
-    bg = texture2D(tScene, cuv).rgb * valid * trans * deep;
+    float ok = smoothstep(0.0, 0.08, pv.z) *
+      (1.0 - smoothstep(0.0, 0.3, length(pv.xy - cuv) * 2.0));
+    vec3 lensed = texture2D(tScene, cuv).rgb;
+    vec3 fallback = texture2D(tScene, vUv).rgb;
+    bg = mix(fallback, lensed, ok) * trans * deep;
   }
   // anel de fótons a partir do perigeu rastreado
   col += vec3(1.0,0.92,0.80) * exp(-pow((minR-1.55)*4.0, 2.0)) * 0.05;
@@ -290,9 +301,13 @@ void main(){
     outCol = texture2D(tMarch, vUv).rgb;
   } else {
     // zona fraca: deflexão analítica em resolução NATIVA — estrelas
-    // continuam nítidas; custo de 1 fetch
+    // continuam nítidas; custo de 1 fetch. Amostra fora da tela cai
+    // para a cena reta do pixel (mesma regra anti-bola-preta do march)
     vec3 pv = dirToUv(bent);
-    vec3 weak = texture2D(tScene, clamp(pv.xy, 0.0, 1.0)).rgb;
+    vec2 cuv = clamp(pv.xy, 0.0, 1.0);
+    float ok = smoothstep(0.0, 0.06, pv.z) *
+      (1.0 - smoothstep(0.0, 0.2, length(pv.xy - cuv)));
+    vec3 weak = mix(base, texture2D(tScene, cuv).rgb, ok);
     if(b < uMarchB){
       float k = (uMarchB - b) / 6.0; // costura march ↔ analítico
       outCol = mix(weak, texture2D(tMarch, vUv).rgb, k);
