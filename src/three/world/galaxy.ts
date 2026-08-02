@@ -681,6 +681,9 @@ export class Galaxy {
       tune('halosize', 6000),
       0.5
     );
+    // o halo extenso tem τ0 de fenda próprio: os OMBROS da fenda dele são
+    // a maior luz nova junto ao plano (?haloslit= varre; glow fica em 2,5)
+    this.haloMat.uniforms.uSlitTau.value = tune('haloslit', 2.5);
     const halo = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.haloMat);
     halo.position.copy(GAL.GC_POS);
     halo.frustumCulled = false;
@@ -748,6 +751,7 @@ export class Galaxy {
         uPulse: { value: pulse },
         uEZ: { value: EZ.clone() },
         uLaneGate: { value: 0 },
+        uSlitTau: { value: 2.5 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,

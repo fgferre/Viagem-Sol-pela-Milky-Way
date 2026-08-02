@@ -117,6 +117,24 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    colourZ 0,27/0,35/0,62 (médio passou do alvo 0,298 — pagamento aceito; alto
    quase lá). Restam do edge: laneDepth 0,73→0,94 (~0,21), warpAsym (o halo
    mascara parte do S de novo — ~0,29 com o termo), colourZ médio, laneOffset.
+   **Rodada 23 (becos, zero default):** τ0 próprio do halo 5/8 piora (os ombros
+   da fenda dele são enchimento E flancos ao mesmo tempo); fenda seguindo o warp
+   é no-op DEFINITIVO (±1 bit-idênticos — nem o halo de 6 kpc alcança os 8,4 kpc
+   com fluxo; morta em dois componentes e dois regimes); afastar a câmera COM
+   ângulo preservado (R=30 kpc, 1,19°) mata a faixa por SUB-RESOLUÇÃO — o que
+   levou à descoberta da rodada 24.
+   **Rodada 24 — QUEBRA DE PROTOCOLO (aprovada pelo usuário): capturas 1800×1800.**
+   O analisador edge reduz tudo a 1200; a referência 5k sempre caiu nessa grade e
+   a captura de 900 era analisada em 900 — protocolo assimétrico que sub-resolvia
+   a fenda (laneDepth 0,73 medido onde o render tem 0,90) e inflava o grain por
+   aliasing (0,102 → 0,070 real, alvo 0,068 CRAVADO). Re-baseline oficial, zero
+   mudança de render: **edge 0,6992 · face 0,0339** — números NÃO comparáveis aos
+   anteriores. A verdade nova do edge: laneDepth 0,9044 (quase alvo), laneOffset
+   0,05 (cravado), MAS axialRatio 0,0958 vs 0,060 e warpAmp 0,0323 vs 0,0187 —
+   **as doses do halo (0,3) e do warp (1310) foram calibradas contra a métrica
+   aliasada que subestimava espessura e warp; re-dosar sob o protocolo novo é a
+   próxima rodada** (halo ~0,15–0,2?; warpamp ~0,8 = 1048 pc, ainda dentro da
+   faixa 1,0–1,6× da literatura).
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de

@@ -24,7 +24,11 @@ const CHROMSAT = qnum('chromsat', 0.5);
 // rodada 16 SOB O REGIME VELHO; re-preçável). ?slittau= — τ0 da fenda do
 // glow (2,5; o 5,0 foi rejeitado sob o regime velho, idem).
 const NSAMP = Math.max(2, Math.round(qnum('samples', 16)));
-const SLITTAU = qnum('slittau', 2.5);
+// ?warpslit= — a fenda do glow/halo segue o warp (±1 = quiralidade, 0 =
+// reta). Na rodada 17 era inútil (só o glow compacto existia — sem fluxo
+// além de 8,4 kpc); com o halo de 6–9 kpc a fenda reta voltou a imprimir
+// anti-S no centroide vertical, e agora HÁ o que cortar curvado.
+const WARPSLIT = qnum('warpslit', 0);
 
 // Vértice das partículas brilhantes — com extinção pela MESMA coluna τ
 // das lâminas, amostrada do bake (VTF). É o herdeiro dos 430 k sprites
@@ -166,6 +170,7 @@ void main() {
 export const GLOW_VERT = /* glsl */ `
 varying vec2 vUv;
 varying float vZgal;
+varying float vXgal;
 uniform float uSize;
 // polo norte galáctico na cena — para a fenda da faixa no bojo
 uniform vec3 uEZ;
@@ -177,6 +182,10 @@ void main() {
   // translação). Linear no quad ⇒ o varying interpola exato.
   vec3 ezView = mat3(modelViewMatrix) * uEZ;
   vZgal = uSize * dot(position.xy, ezView.xy);
+  // coordenada no plano do disco (⊥ a EZ na tela) — raio do ponto
+  // tangente da coluna, para a fenda poder seguir o warp
+  vec2 h = normalize(vec2(-ezView.y, ezView.x) + 1e-6);
+  vXgal = uSize * dot(position.xy, h);
   vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
   c.xy += position.xy * uSize;
   gl_Position = projectionMatrix * c;
@@ -193,9 +202,13 @@ uniform float uPulse; // 0 = bojo estático · 1 = marcador pulsante
 // fenda da faixa: 1 = vista rasante (a poeira do plano corta o bojo,
 // como nas fotos edge-on); 0 = de cima ou billboards sem fenda
 uniform float uLaneGate;
+// τ0 da fenda — POR MATERIAL: 2,5 no glow compacto (τ0 maior é beco
+// medido); o halo extenso tem o seu próprio (?haloslit=)
+uniform float uSlitTau;
 
 varying vec2 vUv;
 varying float vZgal;
+varying float vXgal;
 
 void main() {
   float r = length(vUv);
@@ -203,9 +216,13 @@ void main() {
   float edgeFade = 1.0 - smoothstep(0.68, 1.0, r);
   float glow = (exp(-r * 3.6) * 0.85 + exp(-r * 14.0) * 0.7) * edgeFade;
   // A faixa escura atravessa o bojo de perfil: extinção por uma lâmina
-  // fina de poeira em |z| galáctico. τ0 = 2,5 dá corte quase total no
-  // plano; h = 130 pc casa com a σ da camada de poeira.
-  float laneTau = ${SLITTAU.toFixed(2)} * exp(-vZgal * vZgal / (2.0 * 130.0 * 130.0));
+  // fina de poeira em |z| galáctico, com o CENTRO seguindo o warp do
+  // ponto tangente quando ?warpslit=±1 (0 = reta); h = 130 pc casa com
+  // a σ da camada de poeira. Amplitude/forma = galWarpHeight (1310 pc).
+  float wx = clamp((abs(vXgal) - 8400.0) / 8400.0, 0.0, 1.0);
+  float dz = vZgal -
+    ${WARPSLIT.toFixed(2)} * sign(vXgal) * 1310.0 * pow(wx, 1.55);
+  float laneTau = uSlitTau * exp(-dz * dz / (2.0 * 130.0 * 130.0));
   glow *= mix(1.0, exp(-laneTau), uLaneGate);
   float a = glow * uFade;
   if (uPulse > 0.5) {

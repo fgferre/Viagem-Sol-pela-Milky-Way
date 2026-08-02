@@ -64,9 +64,16 @@ try {
   }
 
   for (const v of VIEWS) {
-    // shot=2 = modo foto SEM HUD: botões e rótulos entrariam no cálculo
+    // shot=2 = modo foto SEM HUD: botões e rótulos entrariam no cálculo.
+    // 1800×1800 desde a rodada 24: toLinearFull analisa TUDO em maxDim
+    // 1200 — a referência 5k sempre caiu nessa grade, e a captura de 900
+    // era analisada em 900: protocolo assimétrico que sub-resolvia a
+    // fenda (~4 px, meio-enchida pelo PSF de px fixo — laneDepth media
+    // 0,73 no que o render real tem em 0,90). Capturar ≥1200 põe os dois
+    // lados na MESMA grade; 1800 ainda ganha o supersampling que o 5k da
+    // referência tem no downscale.
     chrome([
-      '--window-size=900,900', '--virtual-time-budget=16000',
+      '--window-size=1800,1800', '--virtual-time-budget=16000',
       `--screenshot=${resolve(OUT, `rodada_${round}_${v.nome}.png`)}`,
       `${APP}/?t=${v.t}&shot=2`,
     ]);

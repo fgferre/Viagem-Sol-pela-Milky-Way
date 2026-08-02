@@ -72,9 +72,19 @@ implementada em [`scripts/visual/measure-similarity.html`](../../scripts/visual/
 
 ```bash
 chrome --headless=new --enable-gpu --allow-file-access-from-files \
-  --window-size=900,900 --virtual-time-budget=14000 --dump-dom \
+  --window-size=1800,1800 --virtual-time-budget=14000 --dump-dom \
   "file:///<abs>/scripts/visual/measure-similarity.html?a=<quadro>.png"
 ```
+
+**PROTOCOLO desde a rodada 24: capturas em 1800×1800.** O analisador edge
+(`toLinearFull`) reduz tudo a maxDim 1200 — a referência 5k sempre caiu
+nessa grade, mas a captura antiga de 900 era analisada em 900: protocolo
+ASSIMÉTRICO que sub-resolvia a fenda (~4 px, meio-enchida pelo PSF de
+pixel fixo; laneDepth media 0,73 onde o render real tem 0,90) e inflava o
+grain face-on por aliasing (0,102 medido → 0,070 real). Capturar ≥1200
+põe os dois lados na mesma grade; 1800 ganha o mesmo supersampling que o
+5k da referência tem no downscale. Números anteriores à rodada 24 no
+`EVOLUCAO.md` NÃO são comparáveis aos novos (quebra marcada lá).
 
 Valores da recriação Gaia 2025 face-on — este é o gabarito:
 

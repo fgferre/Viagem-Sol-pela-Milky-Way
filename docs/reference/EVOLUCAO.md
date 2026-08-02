@@ -33,6 +33,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 20 | 0.0526 | 0.1314 | 0.1018 | 0.1077 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |
 | 21 | 0.0467 | 0.1314 | 0.1016 | 0.1077 | warp da literatura: amplitude 820 → 1310 pc (Skowron 2019 na borda; o S entra sob o regime chromsat) |
 | 22 | 0.0480 | 0.1311 | 0.1020 | 0.1077 | halo térmico oblato (ganho 0,3, 6 kpc, lei 1/μ): a luz quente que faltava às bandas altas |
+| 24 | 0.0339 | 0.1284 | 0.0704 | 0.1053 | PROTOCOLO: captura 1800px (analise simetrica em 1200 com a referencia); re-baseline, zero mudanca de render |
 
 ## Edge-on
 
@@ -51,3 +52,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 20 | 0.8282 | 0.0228 | 0.0355 | 0.6699 | 0.0109 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |
 | 21 | 0.7895 | 0.0274 | 0.0374 | 0.6197 | 0.0154 | warp da literatura: amplitude 820 → 1310 pc (Skowron 2019 na borda; o S entra sob o regime chromsat) |
 | 22 | 0.6535 | 0.0392 | 0.0581 | 0.7345 | 0.0191 | halo térmico oblato (ganho 0,3, 6 kpc, lei 1/μ): a luz quente que faltava às bandas altas |
+| 24 | 0.6992 | 0.0586 | 0.0958 | 0.9044 | 0.0323 | PROTOCOLO: captura 1800px (analise simetrica em 1200 com a referencia); re-baseline, zero mudanca de render |
