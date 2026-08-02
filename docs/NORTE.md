@@ -135,6 +135,19 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    aliasada que subestimava espessura e warp; re-dosar sob o protocolo novo é a
    próxima rodada** (halo ~0,15–0,2?; warpamp ~0,8 = 1048 pc, ainda dentro da
    faixa 1,0–1,6× da literatura).
+   **Rodada 25 — re-dosagem sob a régua honesta: o warp VOLTOU ao 820 original.**
+   Varrido: 1,0×(1310)→0,699 · 0,8×→0,677 · 0,63×(≈820)→**0,645** — o gate quer o
+   piso da literatura, e o impulso da rodada 21 era artefato do protocolo
+   aliasado (ironia simétrica: a régua torta pedia o teto). Reduzir o halo NÃO
+   paga (0,15→0,748, 0,2→0,717 — os flancos dele valem mais na faixa do que a
+   espessura cobra); halo fica em 0,3. Oficiais: **edge 0,6441 · face 0,0333**;
+   thickRatio 0,0494 CRAVA (alvo 0,0502), laneDepth 0,9100 (alvo 0,9386),
+   grain 0,0701 segue cravado. Termos abertos da era nova: axialRatio 0,0924 vs
+   0,0598 (o h50 global — bojo/halo verticais demais na régua honesta, mas o
+   knob simples do halo não resolve sem pagar a faixa) e warpAmp/warpAsym
+   medidos (0,033/−0,46) que agora capturam estrutura vertical que a régua velha
+   borrava — entender ANTES de mexer (pode ser flare, anã de Sgr, ou assinatura
+   real do perfil de espessura da referência).
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de

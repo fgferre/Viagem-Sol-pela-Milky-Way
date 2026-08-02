@@ -13,11 +13,13 @@
 import spiralModel from './spiralModel.json';
 
 // ?warpamp= — multiplicador de varredura da amplitude do warp.
-// Base 1310 pc na borda (rodada 21): os 820 antigos eram o PISO da
-// literatura (220 pc em R=12 kpc vs 360–480 de Chen/Skowron 2019); 1310
-// casa com a extrapolação de Skowron (8 pc·(R−4,23)² ⇒ 1264 pc em
-// R=16,8 kpc, Δ4%) e é o teto defensável — o gate ainda melhorava ali
-// (edge 0,8282→0,8005), mas acima disso é ficção.
+// Base 820 pc na borda = PISO da literatura (Chen/Skowron 2019 vão de
+// ~820 a ~1310 na borda). História: a rodada 21 subiu para 1310 (teto)
+// porque o gate pedia — mas o protocolo de captura de 900px sub-resolvia
+// a fenda e SUBESTIMAVA o warp medido; sob o protocolo simétrico de
+// 1800px (rodada 24) a régua honesta devolveu o valor original (varrido:
+// 1,0×→0,699, 0,8×→0,677, 0,63×≈820 pc→0,645 — o gate quer o piso, e
+// abaixo do piso é ficção; a recriação-alvo desenha um warp sutil).
 const WARP_TUNE = (() => {
   if (typeof window === 'undefined') return 1;
   const v = parseFloat(
@@ -34,7 +36,7 @@ export const GALACTIC_MODEL = {
   barHalfLengthPc: 5_000,
   barAngleRad: (-29 * Math.PI) / 180,
   warpStartPc: 8_400,
-  warpAmplitudePc: 1310 * WARP_TUNE,
+  warpAmplitudePc: 820 * WARP_TUNE,
   warpPhaseRad: (5 * Math.PI) / 180,
 } as const;
 
@@ -583,7 +585,7 @@ float galWarpHeight(float radiusPc, float theta) {
     0.0,
     1.0
   );
-  return ${(1310 * WARP_TUNE).toFixed(1)} * pow(x, 1.55) * sin(theta - 0.0872665);
+  return ${(820 * WARP_TUNE).toFixed(1)} * pow(x, 1.55) * sin(theta - 0.0872665);
 }
 
 // ---- espinha simétrica (espelho de BACKBONE / backboneThetaAtRadius) ----
