@@ -9,11 +9,16 @@ import { GLSL_NOISE } from '../shaders/common';
 const VERT = /* glsl */ `
 varying vec2 vUv;
 uniform float uSize;
+// clarão é artefato de olho/instrumento: não cresce com a lente. Sob
+// teleobjetiva (fov < 58) o billboard encolhe na mesma razão e o
+// tamanho NA TELA fica o da lente padrão — mesma filosofia do PSF de
+// px fixo do catálogo. uZoom ≤ 1 (lente aberta não infla).
+uniform float uZoom;
 
 void main() {
   vUv = position.xy; // -1..1
   vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-  c.xy += position.xy * uSize;
+  c.xy += position.xy * uSize * uZoom;
   gl_Position = projectionMatrix * c;
 }
 `;
@@ -100,6 +105,7 @@ export class HeroStars {
           // seed pelo índice: cintilação idêntica em toda visita
           uSeed: { value: ((heroIndex++ * 0.6180339887) % 1) * 10 },
           uSize: { value: size },
+          uZoom: { value: 1 },
           uCamDist: { value: 100 },
         },
         blending: THREE.AdditiveBlending,
@@ -115,11 +121,15 @@ export class HeroStars {
     }
   }
 
-  update(time: number, camPos: THREE.Vector3) {
+  private static readonly TAN_REF = Math.tan(THREE.MathUtils.degToRad(58 / 2));
+
+  update(time: number, camPos: THREE.Vector3, tanHalfFov: number) {
+    const zoom = Math.min(1, tanHalfFov / HeroStars.TAN_REF);
     let i = 0;
     for (const child of this.group.children) {
       const m = this.mats[i++];
       m.uniforms.uTime.value = time;
+      m.uniforms.uZoom.value = zoom;
       m.uniforms.uCamDist.value = (child as THREE.Mesh).position.distanceTo(camPos);
     }
   }

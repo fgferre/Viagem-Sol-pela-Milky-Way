@@ -590,12 +590,13 @@ export class Director {
     this.stars?.setFade(this.hide.has('nocat') ? 0 : localFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
     this.nebula.setFade(nebulaFade);
-    // heroes esmaecem a zero em farFade (900 pc) — além disso os 12
+    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
+    // heroes esmaecem a zero em farFade (900 pc) — além disso os
     // draws são garantidamente invisíveis
     if (this.heroes) {
       this.heroes.group.visible = !this.hide.has('nohero') && dHome < 1200;
     }
-    this.heroes?.update(time, cam.position);
+    this.heroes?.update(time, cam.position, tanHalfFov);
     this.sun.group.visible = !this.hide.has('nosun');
     this.sun.update(time, cam.position);
     this.dust.update(cam.position, hPx, time);
@@ -607,7 +608,6 @@ export class Director {
       time,
       this.hide.has('nobh') ? 0 : 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400)
     );
-    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
     // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
     // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
     // asinh no pós e chromsat na extinção assumindo a compressão, mediu
