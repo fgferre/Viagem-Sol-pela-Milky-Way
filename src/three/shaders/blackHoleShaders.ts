@@ -1,50 +1,71 @@
 // ============================================================
 // Sagittarius A* — raytracer de geodésicas nulas (Schwarzschild)
-// adaptado do estudo "Gargantua" (referência do usuário). O disco
-// de acreção, o beaming relativístico, o redshift gravitacional e
-// o anel de fótons são integrados por fragmento num billboard.
+// adaptado do estudo "Gargantua" (referência do usuário), como
+// PASSE DE PÓS: o fundo que a lente dobra é a NOSSA cena real
+// (bojo, poeira, estrelas), amostrada na direção de escape do
+// raio — o que a demo faz com o céu procedural dela.
 //
-// Diferenças deliberadas contra a referência:
-// - SEM céu próprio (starfield/milkyway da demo): raios que escapam
-//   devolvem alpha — a cena real (bojo, partículas, poeira) é o fundo,
-//   composta por blend premultiplicado (ONE, ONE_MINUS_SRC_ALPHA).
-//   O que se perde é a LENTE sobre o fundo real (amostrado reto);
-//   o que se mantém é o icônico: o disco raytraçado por cima/baixo
-//   do horizonte e a sombra pura.
-// - Saída em HDR linear; tonemap/knee/bloom são do pós do app.
-// - Sem modos de debug nem composite próprio.
+// Dois estágios (o truque de custo da própria demo, que limita o
+// buffer a ~3,8 MP no modo cinematic):
+//  - MARCH: a integração pesada, num alvo de resolução LIMITADA
+//    (orçamento de pixels por qualidade), só na zona b < uMarchB.
+//  - COMPOSITE: em resolução nativa; usa o alvo do march perto do
+//    horizonte e a deflexão analítica fraca (α ≈ 2RS/b, 1 fetch)
+//    no resto — estrelas continuam nítidas fora da zona forte.
 //
-// Escala: o RS real de Sgr A* (4,15e6 M☉) é 4e-7 pc — invisível por
-// natureza a qualquer distância de voo. uSize/uSizeRs definem a
-// ESCALA ARTÍSTICA (documentada em blackHole.ts); a física em RS=1
-// independe dela.
+// O passe inteiro fica DESLIGADO longe do centro (custo zero,
+// shader nem compila) — ver blackHole.ts.
 // ============================================================
 
-export const BH_VERT = /* glsl */ `
-varying vec2 vUv;
-uniform float uSize;
-
-void main() {
-  vUv = position.xy;
-  vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-  c.xy += position.xy * uSize;
-  gl_Position = projectionMatrix * c;
-}
-`;
-
-export const BH_FRAG = /* glsl */ `
+const COMMON = /* glsl */ `
 precision highp float;
 
 varying vec2 vUv;
 
+uniform vec3  uRoL;      // câmera no referencial do disco (RS; y = polo)
+uniform vec3  uRightL;   // base da câmera no mesmo referencial
+uniform vec3  uUpL;
+uniform vec3  uFwdL;
+uniform float uTanHalf;  // tan(fov/2) vertical
+uniform float uAspect;
+uniform float uFade;
+uniform float uMarchB;   // fronteira zona integrada ↔ analítica (RS)
+
+// raio da câmera pelo pixel uv (0..1), no referencial local
+vec3 rayAt(vec2 uv) {
+  vec2 ndc = uv * 2.0 - 1.0;
+  return normalize(
+    uFwdL + uRightL * (ndc.x * uTanHalf * uAspect) + uUpL * (ndc.y * uTanHalf)
+  );
+}
+
+// direção local → uv de tela (para amostrar a cena na direção dobrada)
+vec3 dirToUv(vec3 d) {
+  float z = dot(d, uFwdL);
+  vec2 uv = vec2(
+    0.5 + 0.5 * dot(d, uRightL) / (max(z, 1e-4) * uTanHalf * uAspect),
+    0.5 + 0.5 * dot(d, uUpL) / (max(z, 1e-4) * uTanHalf)
+  );
+  // z: validade (raio dobrado para trás da câmera não tem cena para ler)
+  return vec3(uv, z);
+}
+
+// deflexão fraca: α ≈ 2·RS/b, curvando na direção da massa. Válida a
+// poucos % para b ≳ 40 RS — é a metade barata da lente.
+vec3 weakBend(vec3 rd, out float b) {
+  vec3 c = uRoL - rd * dot(uRoL, rd); // BH → ponto de maior aproximação
+  b = max(length(c), 1e-3);
+  return normalize(rd - (c / b) * (2.0 / b));
+}
+`;
+
+export const BH_MARCH_FRAG = /* glsl */ `
+${COMMON}
+
+uniform sampler2D tScene;
 uniform float uTime;
-uniform float uFade;      // 0..1 — distância ao GC (o app decide)
-uniform float uGain;      // acopla o HDR do disco à exposição da cena
+uniform float uGain;
 uniform int   uSteps;
-uniform float uSizeRs;    // meia-largura do billboard em RS
-uniform vec3  uRoL;       // câmera no referencial local (RS; y = normal do disco)
-uniform vec3  uRightL;    // eixo x do billboard no referencial local
-uniform vec3  uUpL;       // eixo y do billboard no referencial local
 uniform float uRotSign;
 uniform float uDin;
 uniform float uDout;
@@ -88,7 +109,6 @@ float fbm(vec3 p){
   return v;
 }
 
-// ------------------------------------------------------ pseudo-blackbody ----
 vec3 blackbody(float t){
   vec3 c = mix(vec3(0.55,0.06,0.01), vec3(1.00,0.42,0.10), smoothstep(0.00,0.55,t));
   c = mix(c, vec3(1.00,0.86,0.55), smoothstep(0.50,1.05,t));
@@ -96,15 +116,14 @@ vec3 blackbody(float t){
   return c;
 }
 
-// Aceleração da geodésica nula de Schwarzschild (c = G = 1, RS = 1)
+// aceleração da geodésica nula de Schwarzschild (c = G = 1, RS = 1)
 vec3 accAt(vec3 p, vec3 v){
   vec3 h = cross(p, v);
   float r2 = dot(p, p);
   return -1.5*RS*dot(h, h)/(r2*r2*sqrt(r2))*p;
 }
 
-// Cruzamento com o plano do disco (múltiplos cruzamentos permitidos).
-// true quando a opacidade front-to-back satura (raio absorvido).
+// cruzamento com o plano do disco; true quando a opacidade satura
 bool diskCross(vec3 a, vec3 b, vec3 rayDir, inout vec3 col, inout float trans){
   if(a.y*b.y > 0.0) return false;
   float t = abs(a.y)/(abs(a.y) + abs(b.y) + 1e-5);
@@ -142,7 +161,9 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir, inout vec3 col, inout float trans){
 
   float I = flux*11.0*turb*streak*laneMask*radialGain;
   I += exp(-pow((qr-3.1)*3.0, 2.0))*2.8;              // brilho interno
-  float outerFade = 1.0 - smoothstep(uDout-14.0, uDout, qr);
+  // rampa externa mais curta que a da demo (era uDout-14): com o disco
+  // compacto de 26 RS ela comia o meio do disco
+  float outerFade = 1.0 - smoothstep(uDout-10.0, uDout, qr);
   I *= outerFade;
 
   // beaming relativístico + redshift gravitacional
@@ -161,27 +182,26 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir, inout vec3 col, inout float trans){
   return false;
 }
 
-// ------------------------------------------------------------------ main ----
 void main(){
-  vec3 ro = uRoL;
-  vec3 target = (uRightL*vUv.x + uUpL*vUv.y) * uSizeRs;
-  vec3 rd = normalize(target - ro);
+  vec3 rd = rayAt(vUv);
+  float b;
+  vec3 bentWeak = weakBend(rd, b);
 
-  // parâmetro de impacto: raio reto que passaria longe do disco e do
-  // horizonte não precisa integrar nada (a deflexão a b>1.3·uDout é <2%)
-  float b = length(cross(ro, rd));
-  if(b > uDout*1.3){
-    gl_FragColor = vec4(0.0);
+  // fora da zona forte, o march devolve o MESMO analítico do composite
+  // (a costura entre os dois fica dentro da banda de mistura)
+  if(b > uMarchB){
+    vec3 pv = dirToUv(bentWeak);
+    gl_FragColor = vec4(texture2D(tScene, clamp(pv.xy, 0.0, 1.0)).rgb, 1.0);
     return;
   }
 
-  vec3 pos = ro;
+  vec3 pos = uRoL;
   vec3 vel = rd;
-  vec3 col = vec3(0.0);              // acumulador do disco (front-to-back)
-  vec3 haloCol = vec3(0.0);          // halo volumétrico (some se capturado)
+  vec3 col = vec3(0.0);
+  vec3 haloCol = vec3(0.0);
   float trans = 1.0;
   float minR = 1e5;
-  float lastR = length(ro);
+  float lastR = length(uRoL);
 
   for(int i=0;i<600;i++){
     if(i >= uSteps) break;
@@ -230,19 +250,64 @@ void main(){
     }
   }
 
-  // raios que escapam devolvem a CENA (alpha), continuamente escurecida
-  // no poço profundo — o horizonte fica preto puro
-  float deep = 1.0;
+  // fundo REAL dobrado: a cena amostrada na direção de escape. Raios
+  // que mergulham fundo escurecem; o horizonte fica preto puro.
+  vec3 bg = vec3(0.0);
   if(trans > 0.0){
-    deep = clamp((lastR-1.03)*0.45, 0.45, 1.0);
+    float deep = clamp((lastR-1.03)*0.45, 0.45, 1.0);
     col += haloCol * deep;
+    vec3 pv = dirToUv(vel);
+    // dobrado para trás da câmera ou muito fora da tela: sem cena para
+    // ler — esmaece para preto (a região é o poço fundo, lê natural)
+    float valid = smoothstep(0.02, 0.10, pv.z);
+    vec2 cuv = clamp(pv.xy, 0.0, 1.0);
+    valid *= 1.0 - smoothstep(0.0, 0.25, length(pv.xy - cuv) * 4.0);
+    bg = texture2D(tScene, cuv).rgb * valid * trans * deep;
   }
-  // anel de fótons a partir do perigeu rastreado (curva crítica fina)
+  // anel de fótons a partir do perigeu rastreado
   col += vec3(1.0,0.92,0.80) * exp(-pow((minR-1.55)*4.0, 2.0)) * 0.05;
 
-  float alpha = 1.0 - trans*deep;
-  col = clamp(max(col, vec3(0.0)), vec3(0.0), vec3(64.0)) * uGain;
-  // premultiplicado; uFade esmaece luz E oclusão juntas
-  gl_FragColor = vec4(col * uFade, alpha * uFade);
+  gl_FragColor = vec4(col * uGain + bg, 1.0);
+}
+`;
+
+export const BH_COMPOSITE_FRAG = /* glsl */ `
+${COMMON}
+
+uniform sampler2D tScene;
+uniform sampler2D tMarch;
+
+void main(){
+  vec3 base = texture2D(tScene, vUv).rgb;
+  vec3 rd = rayAt(vUv);
+  float b;
+  vec3 bent = weakBend(rd, b);
+
+  vec3 outCol;
+  if(b < uMarchB - 6.0){
+    // zona forte: resultado integrado (alvo de resolução limitada — o
+    // conteúdo aqui é disco/redemoinho, suave por natureza)
+    outCol = texture2D(tMarch, vUv).rgb;
+  } else {
+    // zona fraca: deflexão analítica em resolução NATIVA — estrelas
+    // continuam nítidas; custo de 1 fetch
+    vec3 pv = dirToUv(bent);
+    vec3 weak = texture2D(tScene, clamp(pv.xy, 0.0, 1.0)).rgb;
+    if(b < uMarchB){
+      float k = (uMarchB - b) / 6.0; // costura march ↔ analítico
+      outCol = mix(weak, texture2D(tMarch, vUv).rgb, k);
+    } else {
+      outCol = weak;
+    }
+  }
+  gl_FragColor = vec4(mix(base, outCol, uFade), 1.0);
+}
+`;
+
+export const BH_VERT = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;

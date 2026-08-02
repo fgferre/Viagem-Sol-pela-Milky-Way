@@ -309,14 +309,24 @@ revelação externa → "você está aqui"). O que ainda decide algo:
   medido reproduzindo o rig antigo congelado até convergência
   (0,041510 rad no perfil, 0,060000 no face) e ASSADO nos holds. Mudar
   qualquer um desses números descompara os gates com todo o histórico.
-- **Sagittarius A* existe como objeto** (`blackHole.ts`): raytracer de
-  geodésicas Schwarzschild (adaptado da referência Gargantua do
-  usuário), disco em ESCALA ARTÍSTICA documentada (RS 0,05 pc ≈ 1,2e5×
-  o real — o RS real de 4e-7 pc é invisível por natureza; a física do
-  shader é adimensional em RS). Fade a zero além de ~2,4 kpc do GC
-  (mesh sai da cena): os gates externos ficam intactos por construção,
-  e a extinção real (~30 mag no visível até o centro) justifica o fade.
-  Knobs: `?nobh=1`, `?bhgain=`, `?bhsteps=`.
+- **Sagittarius A* existe como PASSE DE PÓS** (`blackHole.ts`,
+  retrabalhado após feedback do usuário sobre custo e fidelidade):
+  raytracer de geodésicas Schwarzschild em dois estágios — MARCH num
+  alvo com ORÇAMENTO de pixels (2,6/1,7/1,0 MP por qualidade; o truque
+  da própria demo de referência, que limita o buffer a 3,8 MP) +
+  COMPOSITE em resolução nativa com deflexão analítica fraca (α≈2RS/b)
+  fora da zona forte. A lente dobra a CENA REAL (tDiffuse do composer)
+  — o que a demo fazia com céu procedural. Passe `enabled` só a
+  <2,4 kpc do GC: custo ZERO de longe (o composer o pula; shader nem
+  compila) e os gates externos ficam intactos por construção; a
+  extinção real (~30 mag no visível) justifica o fade. Escala artística
+  documentada: RS 0,05 pc (≈1,2e5× o real, que é invisível por
+  natureza); a física é adimensional em RS. Doses ANTI-demo medidas em
+  captura: disco 26 RS (não 40) e opacidade externa 0,55 (não 0,8) —
+  sobre o fundo DOURADO do nosso núcleo o anel externo não brilha,
+  vira silhueta; e a rasante passa a 30 RS (1,5 pc — os presets da
+  demo orbitam a 24–28 RS: é a PROXIMIDADE que enche o quadro, não o
+  tamanho). Knobs: `?nobh=1`, `?bhgain=`, `?bhsteps=`.
 - **O near-clip agora segue min(dHome, dGC)** — sem isso o near de
   ~32 pc comia o buraco negro na rasante (e qualquer geometria local
   perto do GC).

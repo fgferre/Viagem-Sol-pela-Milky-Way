@@ -27,7 +27,7 @@ import {
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { REVEAL_T } from './cinematic/journey';
-import { BlackHole } from './world/blackHole';
+import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
 import type { StarsMeta } from './config';
 
@@ -61,7 +61,7 @@ export class Director {
   private seedCloudTimer = 0;
   private sun: Sun;
   private dust: Dust;
-  private blackHole: BlackHole | null = null;
+  private blackHole: BlackHolePass | null = null;
   private bgColor = new THREE.Color(0x000106);
   private rig = new JourneyRig();
   private roam: FreeRoam;
@@ -245,10 +245,12 @@ export class Director {
     // no lugar dos braços/warp analíticos por vértice — medido +5 ms)
     this.wrappedStars = new WrappedStars(this.dustMapTexture);
     this.engine.scene.add(this.wrappedStars.points);
-    // Sagittarius A* — só existe de perto; ver blackHole.ts
-    this.blackHole = new BlackHole();
+    // Sagittarius A* — passe de pós que só liga perto do centro
+    // (custo ZERO desligado: o composer o pula; shader compila na
+    // primeira aproximação). Ver blackHole.ts.
+    this.blackHole = new BlackHolePass();
     this.blackHole.setQuality(this.engine.quality);
-    this.engine.scene.add(this.blackHole.mesh);
+    this.post.addBlackHole(this.blackHole);
     this.engine.scene.add(this.stars.points);
     this.engine.scene.add(this.sun.group);
     this.engine.scene.add(this.dust.points);
@@ -598,8 +600,8 @@ export class Director {
     this.sun.update(time, cam.position);
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
-    // as capturas de medição ficam a 24/33 kpc — fade 0, mesh invisível
-    this.blackHole?.update(
+    // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado
+    this.blackHole?.updateFrame(
       cam.position,
       cam,
       time,

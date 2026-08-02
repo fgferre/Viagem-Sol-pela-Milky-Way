@@ -1,117 +1,188 @@
 // ============================================================
-// Sagittarius A* — billboard com raytracing de geodésicas
-// (shaders/blackHoleShaders.ts). Vive no centro galáctico e só
-// existe de perto: o fade zera além de ~2,4 kpc e o mesh sai da
-// cena (visible=false) — as capturas de medição (16/33 kpc) são
-// bit-idênticas por construção. ?nobh=1 desliga; ?bhgain= varre.
+// Sagittarius A* — passe de pós-processamento em dois estágios
+// (shaders/blackHoleShaders.ts): MARCH em alvo com orçamento de
+// pixels (o truque de custo da demo de referência, que limita o
+// buffer a ~3,8 MP) + COMPOSITE em resolução nativa com deflexão
+// analítica. A lente dobra a CENA REAL (é o tScene do composer).
 //
-// ESCALA ARTÍSTICA (documentada): o RS real de Sgr A* é 4e-7 pc —
-// invisível a qualquer distância de voo plausível. Adotamos
-// RS = 0,05 pc (~10 dias-luz, ×1,2e5 do real) para que o disco de
-// acreção (40 RS = 2 pc) leia como Gargantua na curva rasante do
-// roteiro (periastro 4,6 pc ≈ 92 RS). A física do shader (lente,
-// beaming, redshift) é adimensional em RS e não muda com a escala.
-// A extinção real até o centro (~30 mag no visível) justifica o
-// fade: de longe, ninguém vê o coração da galáxia em luz visível.
+// Custo longe do centro: ZERO — o passe fica enabled=false (o
+// EffectComposer o pula por inteiro) e os shaders só compilam na
+// primeira aproximação (~2,4 kpc, no meio do warp do mergulho —
+// um hitch de um frame escondido pelo movimento).
+//
+// ESCALA ARTÍSTICA (documentada): o RS real de Sgr A* (4,15e6 M☉)
+// é 4e-7 pc — invisível a qualquer distância de voo. Adotamos
+// RS = 0,05 pc (~1,2e5× o real) para o disco de acreção (40 RS =
+// 2 pc) ler como Gargantua no periastro de 4,6 pc (≈ 92 RS). A
+// física do shader é adimensional em RS e não muda com a escala.
+// A extinção real (~30 mag no visível até o centro) justifica o
+// fade por distância. ?nobh=1 desliga; ?bhgain= e ?bhsteps= varrem.
 // ============================================================
 import * as THREE from 'three';
-import { BH_VERT, BH_FRAG } from '../shaders/blackHoleShaders';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { BH_VERT, BH_MARCH_FRAG, BH_COMPOSITE_FRAG } from '../shaders/blackHoleShaders';
 import { GAL, EX, EY, EZ } from './galaxy';
 import type { QualityLevel } from '../core/engine';
 
 const RS_PC = 0.05;
-const DISK_OUT_RS = 40; // borda externa do disco (RS)
-const QUAD_HALF_RS = DISK_OUT_RS * 1.35; // margem para a luz lenteada
-const STEPS: Record<QualityLevel, number> = {
-  cinema: 340,
-  alta: 240,
-  performance: 150,
-};
+// 26 RS (a demo usa 40 sobre céu PRETO): contra o fundo dourado do
+// nosso núcleo, o anel externo do disco não brilha — vira silhueta; um
+// disco mais compacto e mais translúcido lê como objeto, não mancha
+const DISK_OUT_RS = 26;
+const MARCH_B_RS = 60; // fronteira integrado ↔ analítico
+// passos como os perfis da demo; orçamento de pixels do alvo do march
+const STEPS: Record<QualityLevel, number> = { cinema: 460, alta: 320, performance: 200 };
+const BUDGET: Record<QualityLevel, number> = { cinema: 2.6e6, alta: 1.7e6, performance: 1.0e6 };
 
 const _q = new THREE.Vector3();
 const _r = new THREE.Vector3();
 
-export class BlackHole {
-  readonly mesh: THREE.Mesh;
-  private mat: THREE.ShaderMaterial;
+function toLocal(v: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
+  // referencial do disco: y = polo galáctico (EZ da cena)
+  return out.set(v.dot(EX), v.dot(EZ), v.dot(EY));
+}
+
+export class BlackHolePass extends Pass {
+  private rtMarch: THREE.WebGLRenderTarget;
+  private matMarch: THREE.ShaderMaterial;
+  private matComposite: THREE.ShaderMaterial;
+  private quad: FullScreenQuad;
+  private quality: QualityLevel = 'cinema';
+  private width = 1;
+  private height = 1;
+  private stepsOverride: number | null;
 
   constructor() {
+    super();
+    this.enabled = false;
+    this.needsSwap = true;
     const query = new URLSearchParams(window.location.search);
     const gain = Number.parseFloat(query.get('bhgain') ?? '');
-    const stepsOverride = Number.parseInt(query.get('bhsteps') ?? '', 10);
-    this.mat = new THREE.ShaderMaterial({
+    const steps = Number.parseInt(query.get('bhsteps') ?? '', 10);
+    this.stepsOverride = Number.isFinite(steps) ? steps : null;
+
+    const shared = {
+      uRoL: { value: new THREE.Vector3() },
+      uRightL: { value: new THREE.Vector3() },
+      uUpL: { value: new THREE.Vector3() },
+      uFwdL: { value: new THREE.Vector3() },
+      uTanHalf: { value: 0.55 },
+      uAspect: { value: 16 / 9 },
+      uFade: { value: 0 },
+      uMarchB: { value: MARCH_B_RS },
+    };
+    // uniforms COMPARTILHADOS por referência: um set alimenta os dois materiais
+    this.matMarch = new THREE.ShaderMaterial({
       vertexShader: BH_VERT,
-      fragmentShader: BH_FRAG,
+      fragmentShader: BH_MARCH_FRAG,
       uniforms: {
-        uSize: { value: QUAD_HALF_RS * RS_PC },
-        uSizeRs: { value: QUAD_HALF_RS },
+        ...shared,
+        tScene: { value: null },
         uTime: { value: 0 },
-        uFade: { value: 0 },
-        uGain: { value: Number.isFinite(gain) ? gain : 1.3 },
-        uSteps: { value: Number.isFinite(stepsOverride) ? stepsOverride : STEPS.cinema },
-        uRoL: { value: new THREE.Vector3() },
-        uRightL: { value: new THREE.Vector3() },
-        uUpL: { value: new THREE.Vector3() },
+        // sobre o fundo claro do núcleo o disco precisa OFUSCAR a névoa
+        uGain: { value: Number.isFinite(gain) ? gain : 2.4 },
+        uSteps: { value: this.stepsOverride ?? STEPS.cinema },
         uRotSign: { value: 1 },
         uDin: { value: 2.75 },
         uDout: { value: DISK_OUT_RS },
         uDopMax: { value: 1.85 },
         uOpNear: { value: 0.9 },
-        uOpFar: { value: 0.8 },
+        uOpFar: { value: 0.55 },
         uDiskBright: { value: 1.0 },
         uRotSpeed: { value: 1.0 },
       },
-      transparent: true,
-      depthWrite: false,
-      depthTest: false,
-      // premultiplicado: rgb já traz o próprio alpha; a sombra oclui a
-      // cena (dst × (1−α)) e o disco soma por cima
-      blending: THREE.CustomBlending,
-      blendSrc: THREE.OneFactor,
-      blendDst: THREE.OneMinusSrcAlphaFactor,
     });
-    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat);
-    this.mesh.position.copy(GAL.GC_POS);
-    this.mesh.frustumCulled = false;
-    // por último entre as camadas da galáxia: a sombra precisa ocluir o
-    // que está atrás. Sprites À FRENTE do quad também são cobertos — raro
-    // e breve na rasante; aceito (nenhuma camada escreve depth).
-    this.mesh.renderOrder = 30;
-    this.mesh.visible = false;
+    this.matComposite = new THREE.ShaderMaterial({
+      vertexShader: BH_VERT,
+      fragmentShader: BH_COMPOSITE_FRAG,
+      uniforms: {
+        ...shared,
+        tScene: { value: null },
+        tMarch: { value: null },
+      },
+    });
+    this.quad = new FullScreenQuad(this.matMarch);
+    this.rtMarch = new THREE.WebGLRenderTarget(2, 2, {
+      type: THREE.HalfFloatType,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+    });
   }
 
-  private stepsOverridden = new URLSearchParams(window.location.search).has('bhsteps');
+  /** distância BH↔câmera em RS por pc (o director calcula o fade) */
+  static readonly RS_PC = RS_PC;
 
   setQuality(q: QualityLevel) {
-    if (!this.stepsOverridden) this.mat.uniforms.uSteps.value = STEPS[q];
+    this.quality = q;
+    if (this.stepsOverride === null) {
+      this.matMarch.uniforms.uSteps.value = STEPS[q];
+    }
+    this.resizeMarchTarget();
   }
 
-  /**
-   * fade externo é responsabilidade do director (distância ao GC);
-   * camera/time alimentam o raytracer no referencial local (RS).
-   */
-  update(camPos: THREE.Vector3, camera: THREE.PerspectiveCamera, time: number, fade: number) {
-    this.mat.uniforms.uFade.value = fade;
-    this.mesh.visible = fade > 0.001;
-    if (!this.mesh.visible) return;
-    this.mat.uniforms.uTime.value = time;
+  setSize(width: number, height: number) {
+    this.width = Math.max(width, 1);
+    this.height = Math.max(height, 1);
+    this.resizeMarchTarget();
+  }
 
-    // câmera no referencial do disco (y = polo galáctico), em RS
-    _q.copy(camPos).sub(GAL.GC_POS);
-    (this.mat.uniforms.uRoL.value as THREE.Vector3).set(
-      _q.dot(EX) / RS_PC,
-      _q.dot(EZ) / RS_PC,
-      _q.dot(EY) / RS_PC
+  private resizeMarchTarget() {
+    // alvo do march limitado pelo orçamento; nunca maior que a tela
+    const px = this.width * this.height;
+    const s = Math.min(1, Math.sqrt(BUDGET[this.quality] / Math.max(px, 1)));
+    this.rtMarch.setSize(
+      Math.max(2, Math.round(this.width * s)),
+      Math.max(2, Math.round(this.height * s))
     );
-    // eixos do billboard (right/up da câmera) no mesmo referencial
+  }
+
+  /** chamado pelo director a cada frame em que o passe está vivo */
+  updateFrame(
+    camPos: THREE.Vector3,
+    camera: THREE.PerspectiveCamera,
+    time: number,
+    fade: number
+  ) {
+    this.enabled = fade > 0.001;
+    if (!this.enabled) return;
+    const u = this.matMarch.uniforms;
+    u.uFade.value = fade;
+    u.uTime.value = time;
+    u.uTanHalf.value = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+    u.uAspect.value = camera.aspect;
+    _q.copy(camPos).sub(GAL.GC_POS).divideScalar(RS_PC);
+    toLocal(_q, u.uRoL.value as THREE.Vector3);
     _r.setFromMatrixColumn(camera.matrixWorld, 0);
-    (this.mat.uniforms.uRightL.value as THREE.Vector3).set(_r.dot(EX), _r.dot(EZ), _r.dot(EY));
+    toLocal(_r, u.uRightL.value as THREE.Vector3);
     _r.setFromMatrixColumn(camera.matrixWorld, 1);
-    (this.mat.uniforms.uUpL.value as THREE.Vector3).set(_r.dot(EX), _r.dot(EZ), _r.dot(EY));
+    toLocal(_r, u.uUpL.value as THREE.Vector3);
+    _r.setFromMatrixColumn(camera.matrixWorld, 2).negate(); // câmera olha por −z
+    toLocal(_r, u.uFwdL.value as THREE.Vector3);
+  }
+
+  render(
+    renderer: THREE.WebGLRenderer,
+    writeBuffer: THREE.WebGLRenderTarget,
+    readBuffer: THREE.WebGLRenderTarget
+  ) {
+    // estágio 1: integração no alvo orçado
+    this.matMarch.uniforms.tScene.value = readBuffer.texture;
+    this.quad.material = this.matMarch;
+    renderer.setRenderTarget(this.rtMarch);
+    this.quad.render(renderer);
+
+    // estágio 2: composição em resolução nativa
+    this.matComposite.uniforms.tScene.value = readBuffer.texture;
+    this.matComposite.uniforms.tMarch.value = this.rtMarch.texture;
+    this.quad.material = this.matComposite;
+    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+    this.quad.render(renderer);
   }
 
   dispose() {
-    this.mesh.geometry.dispose();
-    this.mat.dispose();
+    this.rtMarch.dispose();
+    this.matMarch.dispose();
+    this.matComposite.dispose();
+    this.quad.dispose();
   }
 }

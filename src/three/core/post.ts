@@ -7,6 +7,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import type { Pass } from 'three/addons/postprocessing/Pass.js';
 import { FILM_SHADER } from '../shaders/dustShaders';
 
 // KNEE pré-ACES (rodada 19): compressão asinh do compósito HDR — o tone
@@ -101,6 +102,17 @@ export class Post {
     this.composer.addPass(this.outputPass);
     this.film = new ShaderPass(FILM_SHADER as never);
     this.composer.addPass(this.film);
+  }
+
+  /**
+   * Sgr A* entra logo depois da cena e ANTES do bloom: o disco de
+   * acreção floresce como qualquer fonte HDR. O insertPass não
+   * dimensiona o passe novo — repassamos o tamanho atual do buffer.
+   */
+  addBlackHole(pass: Pass) {
+    this.composer.insertPass(pass, 1);
+    const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+    pass.setSize(size.x, size.y);
   }
 
   /** amplitude do grão por preset de qualidade */

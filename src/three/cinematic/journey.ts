@@ -185,12 +185,14 @@ const DIVE_3 = gal(3900, 20, -24); // Scutum-Centaurus
 const DIVE_4 = gal(1500, 27, -14); // reta final, bojo enchendo o quadro
 const CORE_IN = gal(120, 30, -4); // dentro do aglomerado central
 
-// Sagittarius A*: curva rasante — arco de ~150° a 4,6 pc do horizonte,
-// subindo de -1,2 a +1,8 pc de altura (o disco de acreção gira de
-// quase-de-perfil para levemente de cima: o anel de Einstein varre).
+// Sagittarius A*: curva rasante — arco de ~150° a 1,5 pc do centro
+// (≈30 RS na escala artística — a distância dos presets da demo: é a
+// proximidade, não o tamanho, que faz o disco encher o quadro),
+// subindo de -0,3 a +0,55 pc (o disco gira de quase-de-perfil para
+// levemente de cima: o anel de Einstein varre).
 const BH_ARC_IN = 38; // graus
 const BH_ARC_OUT = 190;
-const BH_R = 4.6;
+const BH_R = 1.5;
 
 // Ato IV — estilingue e subida olhando PARA TRÁS (o disco se constrói
 // de dentro para fora), pouso no quadro de perfil, travessia em arco
@@ -396,12 +398,12 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.9 * (1 - k) * (1 - k),
   },
   {
-    // aproximação final: de 120 pc a 4,6 pc do horizonte
+    // aproximação final: de 120 pc a 1,5 pc do centro
     dur: 8,
     pos: (k, out) => {
       const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(32, BH_ARC_IN, k));
       const r = THREE.MathUtils.lerp(120, BH_R, k);
-      const z = THREE.MathUtils.lerp(-4, -1.2, k);
+      const z = THREE.MathUtils.lerp(-4, -0.3, k);
       out.copy(GAL.GC_POS);
       out.addScaledVector(EX, Math.cos(a) * r);
       out.addScaledVector(EY, Math.sin(a) * r);
@@ -420,7 +422,7 @@ const SHOTS: Shot[] = [
     dur: 20,
     pos: (k, out) => {
       const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(BH_ARC_IN, BH_ARC_OUT, k));
-      const z = THREE.MathUtils.lerp(-1.2, 1.8, k);
+      const z = THREE.MathUtils.lerp(-0.3, 0.55, k);
       out.copy(GAL.GC_POS);
       out.addScaledVector(EX, Math.cos(a) * BH_R);
       out.addScaledVector(EY, Math.sin(a) * BH_R);
@@ -447,7 +449,7 @@ const SHOTS: Shot[] = [
           .copy(GAL.GC_POS)
           .addScaledVector(EX, Math.cos(a) * BH_R)
           .addScaledVector(EY, Math.sin(a) * BH_R)
-          .addScaledVector(EZ, 1.8);
+          .addScaledVector(EZ, 0.55);
       })(),
       SLING_C1,
       SLING_C2,
