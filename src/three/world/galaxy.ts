@@ -591,6 +591,9 @@ export class Galaxy {
   private structureMap: THREE.Texture;
   private brightPts!: THREE.Points;
   private glowMesh!: THREE.Mesh;
+  private haloMat!: THREE.ShaderMaterial;
+  private haloMesh!: THREE.Mesh;
+  private haloGain = 0;
   private dwarfMesh!: THREE.Mesh;
   private static scratch = new THREE.Vector3();
   private static dbg = new URLSearchParams(window.location.search);
@@ -662,6 +665,28 @@ export class Galaxy {
     glow.renderOrder = 3;
     this.group.add(glow);
     this.glowMesh = glow;
+
+    // HALO TÉRMICO (rodada 22): a componente quente EXTENSA que falta às
+    // bandas altas — bojo estendido/disco espesso não resolvidos. Sem ele
+    // colourZ médio/alto media 0,23/0,42 contra 0,30/0,66 do alvo e
+    // axialRatio 0,037 vs 0,060: o glow compacto (2,7 kpc) não alcança.
+    // Só na vista externa (uFade sem termo localBand — o interior não
+    // ganha névoa) e só de raspão (lei 1/μ do oblato, no update). Varrido
+    // na rodada 22: ganho 0,3 × 6000 pc é o joelho (0,2→0,7187,
+    // 0,3→0,6743, 0,4→0,705 no edge; face fica na banda de ruído porque
+    // de cima o halo some por física). ?halo= e ?halosize= varrem.
+    this.haloGain = tune('halo', 0.3);
+    this.haloMat = this.makeGlow(
+      new THREE.Vector3(1.0, 0.62, 0.32).multiplyScalar(this.haloGain),
+      tune('halosize', 6000),
+      0.5
+    );
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.haloMat);
+    halo.position.copy(GAL.GC_POS);
+    halo.frustumCulled = false;
+    halo.renderOrder = 3;
+    this.group.add(halo);
+    this.haloMesh = halo;
 
     // --- brilho integrado da galáxia anã de Sagitário --------
     this.dwarfMat = this.makeGlow(
@@ -974,6 +999,16 @@ export class Galaxy {
     // rasante) — mesma rampa do discFade, invertida
     this.glowMat.uniforms.uLaneGate.value =
       1 - THREE.MathUtils.smoothstep(openness, 0.05, 0.3);
+    this.haloMat.uniforms.uTime.value = time;
+    // lei de caminho do oblato: a coluna pelo disco espesso é ∝1/μ — de
+    // cima ela é curta e o halo some (senão vira bolha central face-on,
+    // medido: face 0,0467→0,0573); de raspão é quilo-parsecs e ele É a
+    // luz quente das bandas altas. Mesma rampa da fenda/lâminas.
+    const grazing = 1 - THREE.MathUtils.smoothstep(openness, 0.05, 0.3);
+    this.haloMat.uniforms.uFade.value =
+      externalFade * glowGate * 0.32 * grazing;
+    this.haloMat.uniforms.uLaneGate.value =
+      this.glowMat.uniforms.uLaneGate.value;
     this.dwarfMat.uniforms.uTime.value = time;
     this.dwarfMat.uniforms.uFade.value = externalFade * 0.11;
     this.markerMat.uniforms.uTime.value = time;
@@ -983,12 +1018,14 @@ export class Galaxy {
     // com fade 0 (medido: as partículas aparecem no probe em ?t=0, no Sol).
     this.brightPts.visible = brightFade > 0.001;
     this.glowMesh.visible = this.showGlow;
+    this.haloMesh.visible = this.showGlow && this.haloGain > 0;
     this.dwarfMesh.visible = this.showGlow;
   }
 
   dispose() {
     this.brightMat.dispose();
     this.glowMat.dispose();
+    this.haloMat.dispose();
     this.dwarfMat.dispose();
     this.markerMat.dispose();
     this.discMats.forEach((material) => material.dispose());

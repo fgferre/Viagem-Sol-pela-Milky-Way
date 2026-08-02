@@ -14,13 +14,17 @@ import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 // que DISSOLVEU a fronteira knee×exposição da rodada 19 (o edge dependia
 // da dessaturação ACES do exp 1,4 para esconder o plano vermelho).
 // ?chromsat= varre; 0 = cromática plena em qualquer τ (estado antigo).
-const CHROMSAT = (() => {
-  if (typeof window === 'undefined') return 0.5;
-  const v = parseFloat(
-    new URLSearchParams(window.location.search).get('chromsat') ?? ''
-  );
-  return Number.isFinite(v) ? v : 0.5;
-})();
+const qnum = (k: string, d: number) => {
+  if (typeof window === 'undefined') return d;
+  const v = parseFloat(new URLSearchParams(window.location.search).get(k) ?? '');
+  return Number.isFinite(v) ? v : d;
+};
+const CHROMSAT = qnum('chromsat', 0.5);
+// ?samples= — nº de amostras do caminho de extinção (joelho 16 medido na
+// rodada 16 SOB O REGIME VELHO; re-preçável). ?slittau= — τ0 da fenda do
+// glow (2,5; o 5,0 foi rejeitado sob o regime velho, idem).
+const NSAMP = Math.max(2, Math.round(qnum('samples', 16)));
+const SLITTAU = qnum('slittau', 2.5);
 
 // Vértice das partículas brilhantes — com extinção pela MESMA coluna τ
 // das lâminas, amostrada do bake (VTF). É o herdeiro dos 430 k sprites
@@ -98,10 +102,10 @@ void main() {
     s0 = clamp(min(ta, tb), 0.0, 1.0);
     s1 = clamp(max(ta, tb), 0.0, 1.0);
   }
-  float dTau = (s1 - s0) * D * 0.0625; // peso de UMA amostra no τ final
+  float dTau = (s1 - s0) * D * ${(1 / NSAMP).toFixed(7)}; // peso de UMA amostra
   float tau = 0.0;
-  for (int i = 0; i < 16; i++) {
-    float s = s0 + (s1 - s0) * (float(i) + 0.5) * 0.0625;
+  for (int i = 0; i < ${NSAMP}; i++) {
+    float s = s0 + (s1 - s0) * (float(i) + 0.5) * ${(1 / NSAMP).toFixed(7)};
     vec3 sp = position + toCam * s - uGC;
     vec2 sxy = vec2(dot(sp, uEX), dot(sp, uEY));
     float rS = length(sxy);
@@ -201,7 +205,7 @@ void main() {
   // A faixa escura atravessa o bojo de perfil: extinção por uma lâmina
   // fina de poeira em |z| galáctico. τ0 = 2,5 dá corte quase total no
   // plano; h = 130 pc casa com a σ da camada de poeira.
-  float laneTau = 2.5 * exp(-vZgal * vZgal / (2.0 * 130.0 * 130.0));
+  float laneTau = ${SLITTAU.toFixed(2)} * exp(-vZgal * vZgal / (2.0 * 130.0 * 130.0));
   glow *= mix(1.0, exp(-laneTau), uLaneGate);
   float a = glow * uFade;
   if (uPulse > 0.5) {

@@ -103,6 +103,20 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    face 0,0526 → 0,0467**; warpAsym +0,14, warpAmp 0,0154 (alvo 0,0187), axial
    0,0374. laneDepth 0,62 segue o maior termo do edge (~0,32), com laneOffset
    0,63 acoplado (~0,12).
+   **Rodada 22 — o halo térmico oblato: edge 0,7895 → 0,6535.** Re-precificação
+   sob o regime novo confirmou os becos da fenda (τ0 4/6 pioram) e das 32 amostras
+   (idem) como transversais a regimes; `?pos=` NÃO reproduz a câmera do rig (roll
+   e composição — vantagem só por keyframe); bloom inocentado da faixa
+   (?nobloom idêntico). O que faltava às bandas altas era um COMPONENTE: um
+   segundo billboard quente (bojo estendido/disco espesso não resolvidos, ganho
+   0,3 × 6 kpc, joelho varrido 0,05–0,4) com **lei de caminho 1/μ do oblato** —
+   de cima a coluna é curta e ele some (face fica na banda de ruído POR FÍSICA;
+   sem o gate, virava bolha central e o face pagava +0,011), de raspão ele é a
+   luz quente. Oficiais: **edge 0,6535 / face 0,0480**; axialRatio 0,0581 (alvo
+   0,0598 ≈ cravado), warpAmp 0,0191 (alvo 0,0187, CRAVADO), laneDepth 0,73,
+   colourZ 0,27/0,35/0,62 (médio passou do alvo 0,298 — pagamento aceito; alto
+   quase lá). Restam do edge: laneDepth 0,73→0,94 (~0,21), warpAsym (o halo
+   mascara parte do S de novo — ~0,29 com o termo), colourZ médio, laneOffset.
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de

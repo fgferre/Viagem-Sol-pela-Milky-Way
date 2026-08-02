@@ -32,6 +32,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 18 | 0.0595 | 0.1781 | 0.0989 | 0.1044 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
 | 20 | 0.0526 | 0.1314 | 0.1018 | 0.1077 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |
 | 21 | 0.0467 | 0.1314 | 0.1016 | 0.1077 | warp da literatura: amplitude 820 → 1310 pc (Skowron 2019 na borda; o S entra sob o regime chromsat) |
+| 22 | 0.0480 | 0.1311 | 0.1020 | 0.1077 | halo térmico oblato (ganho 0,3, 6 kpc, lei 1/μ): a luz quente que faltava às bandas altas |
 
 ## Edge-on
 
@@ -49,3 +50,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 18 | 0.8380 | 0.0229 | 0.0347 | 0.6355 | 0.0120 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
 | 20 | 0.8282 | 0.0228 | 0.0355 | 0.6699 | 0.0109 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |
 | 21 | 0.7895 | 0.0274 | 0.0374 | 0.6197 | 0.0154 | warp da literatura: amplitude 820 → 1310 pc (Skowron 2019 na borda; o S entra sob o regime chromsat) |
+| 22 | 0.6535 | 0.0392 | 0.0581 | 0.7345 | 0.0191 | halo térmico oblato (ganho 0,3, 6 kpc, lei 1/μ): a luz quente que faltava às bandas altas |
