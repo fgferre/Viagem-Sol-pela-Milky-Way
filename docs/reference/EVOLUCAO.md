@@ -31,6 +31,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 16 | 0.0615 | 0.1349 | 0.1033 | 0.1087 | faixa+vantagem: 16 amostras no caminho, t158 pelos nós do warp a z=500 |
 | 18 | 0.0595 | 0.1781 | 0.0989 | 0.1044 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
 | 20 | 0.0526 | 0.1314 | 0.1018 | 0.1077 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |
+| 21 | 0.0467 | 0.1314 | 0.1016 | 0.1077 | warp da literatura: amplitude 820 → 1310 pc (Skowron 2019 na borda; o S entra sob o regime chromsat) |
 
 ## Edge-on
 
@@ -47,3 +48,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 16 | 0.8741 | 0.0223 | 0.0357 | 0.6613 | 0.0104 | faixa+vantagem: 16 amostras no caminho, t158 pelos nós do warp a z=500 |
 | 18 | 0.8380 | 0.0229 | 0.0347 | 0.6355 | 0.0120 | auto-exposição 1,02→1,40 pela galaxyFade (campanha de varredura: exp vence, glow/idim/warpamp rejeitados) |
 | 20 | 0.8282 | 0.0228 | 0.0355 | 0.6699 | 0.0109 | chromsat 0,5 + knee asinh 0,45 + exp 1,05: o vermelho na fonte dissolve a fronteira (vitória dupla) |
+| 21 | 0.7895 | 0.0274 | 0.0374 | 0.6197 | 0.0154 | warp da literatura: amplitude 820 → 1310 pc (Skowron 2019 na borda; o S entra sob o regime chromsat) |

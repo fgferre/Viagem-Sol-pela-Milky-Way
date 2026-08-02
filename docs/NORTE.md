@@ -94,6 +94,15 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    seguem soberanos para varredura); custo t=0 inalterado (mean 18,5 ms).
    Pendência de coerência: starForges ainda usa o expoente cromático SEM
    saturação — unificar quando as forges entrarem na lei única (unificação 2).
+   **Rodada 21 — o warp da literatura entrou: amplitude 820 → 1310 pc** (o preço
+   em laneDepth que barrou o multiplicador na rodada 18 CAIU pela metade sob o
+   regime chromsat — medir o preço de novo quando o regime muda é a lição). 1310
+   casa com Skowron 2019 extrapolado à borda (1264 pc em 16,8 kpc, Δ4%) e é o teto
+   defensável; o gate ainda melhorava ali (gradiente negativo), acima é ficção.
+   Oficiais: **edge 0,8282 → 0,7895 (primeiro <0,80; era 2,0258 na rodada 12) e
+   face 0,0526 → 0,0467**; warpAsym +0,14, warpAmp 0,0154 (alvo 0,0187), axial
+   0,0374. laneDepth 0,62 segue o maior termo do edge (~0,32), com laneOffset
+   0,63 acoplado (~0,12).
 2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de

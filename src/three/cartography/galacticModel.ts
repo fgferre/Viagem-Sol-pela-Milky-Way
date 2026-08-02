@@ -12,9 +12,12 @@
 // ============================================================
 import spiralModel from './spiralModel.json';
 
-// ?warpamp= — multiplicador de varredura da amplitude do warp (rodada 18).
-// 820 pc está no PISO da literatura (Chen 2019: ~410 pc em R=12 kpc vs
-// nossos 220; Skowron 2019 idem); 1,3–1,4× é o meio da faixa medida.
+// ?warpamp= — multiplicador de varredura da amplitude do warp.
+// Base 1310 pc na borda (rodada 21): os 820 antigos eram o PISO da
+// literatura (220 pc em R=12 kpc vs 360–480 de Chen/Skowron 2019); 1310
+// casa com a extrapolação de Skowron (8 pc·(R−4,23)² ⇒ 1264 pc em
+// R=16,8 kpc, Δ4%) e é o teto defensável — o gate ainda melhorava ali
+// (edge 0,8282→0,8005), mas acima disso é ficção.
 const WARP_TUNE = (() => {
   if (typeof window === 'undefined') return 1;
   const v = parseFloat(
@@ -31,7 +34,7 @@ export const GALACTIC_MODEL = {
   barHalfLengthPc: 5_000,
   barAngleRad: (-29 * Math.PI) / 180,
   warpStartPc: 8_400,
-  warpAmplitudePc: 820 * WARP_TUNE,
+  warpAmplitudePc: 1310 * WARP_TUNE,
   warpPhaseRad: (5 * Math.PI) / 180,
 } as const;
 
@@ -580,7 +583,7 @@ float galWarpHeight(float radiusPc, float theta) {
     0.0,
     1.0
   );
-  return ${(820 * WARP_TUNE).toFixed(1)} * pow(x, 1.55) * sin(theta - 0.0872665);
+  return ${(1310 * WARP_TUNE).toFixed(1)} * pow(x, 1.55) * sin(theta - 0.0872665);
 }
 
 // ---- espinha simétrica (espelho de BACKBONE / backboneThetaAtRadius) ----
