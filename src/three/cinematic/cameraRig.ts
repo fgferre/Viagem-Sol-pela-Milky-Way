@@ -1,12 +1,14 @@
 // ============================================================
-// Rig de câmera — aplica a viagem à câmera com câmera na mão
-// sutil, inclinação (roll) nas curvas e modo de voo livre.
+// Rig de câmera — documentário espacial: zero tremor, banking
+// vindo do roteiro, mira amortecida, pausar-e-olhar. E o voo
+// livre no REFERENCIAL GALÁCTICO (o mesmo "norte" da viagem —
+// era a diferença de norte que invertia o horizonte ao entrar).
 // ============================================================
 import * as THREE from 'three';
 import { Journey } from './journey';
 
 // Manter o polo galáctico no alto faz o plano da Via Láctea ler como
-// uma faixa coerente, em vez de girar arbitrariamente entre keyframes.
+// uma faixa coerente, em vez de girar arbitrariamente entre shots.
 const GALACTIC_NORTH = new THREE.Vector3(
   -0.867666149,
   -0.1980763734,
@@ -18,24 +20,32 @@ const GALACTIC_FACE_ON_UP = new THREE.Vector3(
   -0.4838350155
 ).normalize();
 
-// ruído suave barato (soma de senos irracionais)
-function softNoise(t: number, seed: number): number {
-  return (
-    Math.sin(t * 0.31 + seed) * 0.5 +
-    Math.sin(t * 0.73 + seed * 2.1) * 0.3 +
-    Math.sin(t * 1.37 + seed * 4.7) * 0.2
-  );
-}
+// base ortonormal ⊥ ao polo — os "leste/norte" do horizonte galáctico
+const FRAME_A = new THREE.Vector3(0.0548755604, 0.8734370902, 0.4838350155); // anticentro
+const FRAME_B = new THREE.Vector3().crossVectors(GALACTIC_NORTH, FRAME_A).normalize();
 
-const _tan1 = new THREE.Vector3();
-const _right = new THREE.Vector3();
+const _tmpV = new THREE.Vector3();
+const _tmpQ = new THREE.Quaternion();
+
+/** up compartilhado viagem/voo: polo galáctico, cedendo ao eixo
+ *  centro→Sol em visadas quase face-on (evita o flip do lookAt) */
+function galacticUp(viewDir: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
+  const faceOn = THREE.MathUtils.smoothstep(
+    Math.abs(viewDir.dot(GALACTIC_NORTH)),
+    0.86,
+    0.975
+  );
+  return out.copy(GALACTIC_NORTH).lerp(GALACTIC_FACE_ON_UP, faceOn).normalize();
+}
 
 export class JourneyRig {
   private journey = new Journey();
   private lookSm = new THREE.Vector3();
   private first = true;
-  /** intensidade da câmera na mão (0 com prefers-reduced-motion) */
-  shakeScale = 1;
+  /** olhar-ao-redor durante a pausa (radianos, decai sozinho no play) */
+  private lookYaw = 0;
+  private lookPitch = 0;
+  paused = false;
 
   get duration() {
     return this.journey.duration;
@@ -49,6 +59,12 @@ export class JourneyRig {
     return this.journey.captionAt(t);
   }
 
+  /** arrasto do usuário com a viagem pausada */
+  addLookDelta(dx: number, dy: number) {
+    this.lookYaw = THREE.MathUtils.clamp(this.lookYaw - dx * 0.0022, -2.6, 2.6);
+    this.lookPitch = THREE.MathUtils.clamp(this.lookPitch - dy * 0.0022, -1.2, 1.2);
+  }
+
   apply(
     camera: THREE.PerspectiveCamera,
     t: number,
@@ -57,14 +73,13 @@ export class JourneyRig {
     const s = this.journey.at(t);
     // amortecimento exponencial por TEMPO (não por frame): a 144 Hz
     // a câmera convergia 2,4× mais rápido que a 60 Hz
-    const kLook = 1 - Math.exp(-dt / 0.36);
+    const kLook = 1 - Math.exp(-dt / 0.4);
     const kFov = 1 - Math.exp(-dt / 0.2);
 
-    // suavização do ponto de mira (evita saltos de lookAt); o limiar
-    // de snap é RELATIVO à distância câmera→alvo — 0,6 pc absoluto
-    // desligava a suavização no reframe galáctico do Ato III
-    const snapDist = Math.max(0.6, s.look.distanceTo(s.pos) * 0.05);
-    if (this.first || this.lookSm.distanceTo(s.look) > snapDist) {
+    // suavização do ponto de mira. Sem limiar de snap: os shots são
+    // contínuos por construção; saltos só existem em seek(), que chama
+    // reset() e cai no primeiro-quadro.
+    if (this.first) {
       this.lookSm.copy(s.look);
       this.first = false;
     } else {
@@ -72,37 +87,26 @@ export class JourneyRig {
     }
 
     camera.position.copy(s.pos);
-    const viewDir = this.lookSm.clone().sub(s.pos).normalize();
-    // Em uma tomada quase face-on, o polo galáctico fica paralelo à
-    // direção de visão e não pode servir de "up". A transição para o
-    // eixo centro→Sol evita o singularity flip do lookAt.
-    const faceOn = THREE.MathUtils.smoothstep(
-      Math.abs(viewDir.dot(GALACTIC_NORTH)),
-      0.86,
-      0.975
-    );
-    camera.up
-      .copy(GALACTIC_NORTH)
-      .lerp(GALACTIC_FACE_ON_UP, faceOn)
-      .normalize();
+    const viewDir = _tmpV.copy(this.lookSm).sub(s.pos).normalize();
+    galacticUp(viewDir, camera.up);
     camera.lookAt(this.lookSm);
 
-    // câmera na mão: rotação microscópica, cresce com o warp
-    const shake = (0.00045 + s.warp * 0.0026) * this.shakeScale;
-    camera.rotateX(softNoise(t, 1.7) * shake);
-    camera.rotateY(softNoise(t * 0.87, 9.2) * shake);
+    // banking do roteiro (decisão por shot; zero nos holds por contrato)
+    if (s.roll !== 0) camera.rotateZ(s.roll);
 
-    // roll nas curvas: tangente agora vs. daqui a pouco
-    const ahead = this.journey.at(Math.min(t + 0.6, this.journey.duration));
-    _tan1.copy(ahead.pos).sub(s.pos);
-    if (_tan1.lengthSq() > 1e-8) {
-      _right.setFromMatrixColumn(camera.matrix, 0);
-      const roll = THREE.MathUtils.clamp(_tan1.normalize().dot(_right) * -0.35, -0.06, 0.06);
-      camera.rotateZ(roll * (1 - s.warp * 0.4));
+    // pausar-e-olhar: offsets locais que decaem suavemente no play
+    if (!this.paused) {
+      const decay = Math.exp(-dt / 0.5);
+      this.lookYaw *= decay;
+      this.lookPitch *= decay;
+    }
+    if (Math.abs(this.lookYaw) > 1e-5 || Math.abs(this.lookPitch) > 1e-5) {
+      camera.rotateY(this.lookYaw);
+      camera.rotateX(this.lookPitch);
     }
 
-    // FOV com pontapé de velocidade
-    const targetFov = s.fov + s.warp * 7;
+    // FOV do roteiro, com pontapé sutil de velocidade (documentário)
+    const targetFov = s.fov + s.warp * 3.5;
     camera.fov += (targetFov - camera.fov) * kFov;
     camera.updateProjectionMatrix();
 
@@ -111,13 +115,26 @@ export class JourneyRig {
 
   reset() {
     this.first = true;
+    this.lookYaw = 0;
+    this.lookPitch = 0;
   }
 }
 
 // ============================================================
-// Voo livre — arrastar para olhar, WASD/QE para voar,
-// roda do mouse ajusta velocidade (escala logarítmica em pc/s).
+// Voo livre — arrastar para olhar, WASD/QE para voar, roda do
+// mouse ajusta velocidade. Yaw/pitch no referencial galáctico;
+// a entrada faz um slerp curto da orientação atual para a
+// orientação canônica: nada de horizonte saltando.
+// Clique curto em estrela nomeada → mini-viagem cinematográfica.
 // ============================================================
+
+export interface VisitTarget {
+  name: string;
+  pos: THREE.Vector3;
+  /** distância de chegada (pc) */
+  arriveDist: number;
+}
+
 export class FreeRoam {
   enabled = false;
   private camera: THREE.PerspectiveCamera;
@@ -128,8 +145,23 @@ export class FreeRoam {
   private speed = 4; // pc/s
   private keys = new Set<string>();
   private dragging = false;
+  private dragMoved = 0;
+  private downAt = 0;
   private lastX = 0;
   private lastY = 0;
+  /** transição de entrada: slerp da orientação herdada para a canônica */
+  private blend = 0; // 1 → puro herdado, 0 → puro yaw/pitch
+  private fromQ = new THREE.Quaternion();
+  /** voo de visita em curso (clicar-para-visitar) */
+  private visit: {
+    p0: THREE.Vector3; c1: THREE.Vector3; c2: THREE.Vector3; p1: THREE.Vector3;
+    look0: THREE.Vector3; look1: THREE.Vector3;
+    t: number; dur: number;
+  } | null = null;
+  /** callback de clique curto (x,y normalizados 0..1) */
+  onTap: ((x: number, y: number) => void) | null = null;
+  /** cancelamento de visita por input do usuário */
+  onVisitEnd: (() => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement, camera: THREE.PerspectiveCamera) {
     this.canvas = canvas;
@@ -142,21 +174,22 @@ export class FreeRoam {
     canvas.addEventListener('wheel', this.onWheel, { passive: true });
   }
 
-  /**
-   * Captura a orientação ao entrar no modo livre a partir do vetor
-   * FORWARD (independente de roll): a decomposição Euler anterior
-   * descartava o roll galáctico da viagem e o horizonte saltava
-   * ~100–160° num clique em "Explorar livremente".
-   */
+  /** captura a orientação ao entrar no modo livre */
   syncFromCamera() {
     const fwd = new THREE.Vector3();
     this.camera.getWorldDirection(fwd);
-    this.pitch = THREE.MathUtils.clamp(
-      Math.asin(THREE.MathUtils.clamp(fwd.y, -1, 1)),
-      -1.5,
-      1.5
-    );
-    this.yaw = Math.atan2(-fwd.x, -fwd.z);
+    // yaw/pitch no referencial do polo galáctico — o MESMO norte da
+    // viagem. A decomposição em Y do mundo descartava o up galáctico
+    // e o horizonte saltava ao clicar em "Explorar livremente".
+    const p = fwd.dot(GALACTIC_NORTH);
+    this.pitch = Math.asin(THREE.MathUtils.clamp(p, -0.999, 0.999));
+    this.yaw = Math.atan2(fwd.dot(FRAME_B), fwd.dot(FRAME_A));
+    // slerp de entrada: qualquer resíduo (roll do banking, up blendado)
+    // se dissolve em ~0,7 s em vez de saltar
+    this.fromQ.copy(this.camera.quaternion);
+    this.blend = 1;
+    // velocidade inicial proporcional à escala do lugar
+    this.speed = THREE.MathUtils.clamp(this.camera.position.length() * 0.02, 2, 600);
     this.resetMotion();
   }
 
@@ -165,24 +198,114 @@ export class FreeRoam {
     this.vel.set(0, 0, 0);
     this.keys.clear();
     this.dragging = false;
+    this.visit = null;
+  }
+
+  /** mini-viagem cinematográfica até uma estrela nomeada */
+  startVisit(target: VisitTarget) {
+    const p0 = this.camera.position.clone();
+    const toTarget = target.pos.clone().sub(p0);
+    const dist = toTarget.length();
+    if (dist < target.arriveDist * 1.6) return; // já estamos lá
+    const dir = toTarget.clone().normalize();
+    // chegada: para ANTES da estrela, deslocada para o lado — composição
+    // em terço, não um frontal de colisão
+    const side = new THREE.Vector3().crossVectors(dir, GALACTIC_NORTH);
+    if (side.lengthSq() < 1e-6) side.crossVectors(dir, GALACTIC_FACE_ON_UP);
+    side.normalize();
+    const p1 = target.pos
+      .clone()
+      .addScaledVector(dir, -target.arriveDist)
+      .addScaledVector(side, target.arriveDist * 0.35)
+      .addScaledVector(GALACTIC_NORTH, target.arriveDist * 0.2);
+    // arco suave com leve ganho de altura no meio
+    const c1 = p0.clone().lerp(p1, 0.33).addScaledVector(GALACTIC_NORTH, dist * 0.06);
+    const c2 = p0.clone().lerp(p1, 0.72).addScaledVector(GALACTIC_NORTH, dist * 0.03);
+    const look0 = new THREE.Vector3();
+    this.camera.getWorldDirection(look0);
+    look0.multiplyScalar(Math.max(dist * 0.25, 1)).add(p0);
+    this.visit = {
+      p0, c1, c2, p1,
+      look0, look1: target.pos.clone(),
+      t: 0,
+      dur: THREE.MathUtils.clamp(4 + dist / 90, 5, 14),
+    };
+  }
+
+  get visiting(): boolean {
+    return this.visit !== null;
+  }
+
+  private applyVisit(dt: number) {
+    const v = this.visit;
+    if (!v) return;
+    v.t += dt;
+    const k = THREE.MathUtils.clamp(v.t / v.dur, 0, 1);
+    const e = THREE.MathUtils.smoothstep(k, 0, 1);
+    const i = 1 - e;
+    const pos = _tmpV
+      .copy(v.p0).multiplyScalar(i * i * i)
+      .addScaledVector(v.c1, 3 * i * i * e)
+      .addScaledVector(v.c2, 3 * i * e * e)
+      .addScaledVector(v.p1, e * e * e);
+    this.camera.position.copy(pos);
+    const lookK = THREE.MathUtils.smoothstep(Math.min(k * 2.2, 1), 0, 1);
+    const look = v.look0.clone().lerp(v.look1, lookK);
+    const viewDir = look.clone().sub(pos).normalize();
+    galacticUp(viewDir, this.camera.up);
+    this.camera.lookAt(look);
+    if (k >= 1) {
+      this.visit = null;
+      this.syncFromCamera();
+      this.onVisitEnd?.();
+    }
+  }
+
+  private cancelVisit() {
+    if (!this.visit) return;
+    this.visit = null;
+    this.syncFromCamera();
+    this.onVisitEnd?.();
   }
 
   update(dt: number) {
     if (!this.enabled) return;
-    this.camera.quaternion.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
+    if (this.visit) {
+      this.applyVisit(dt);
+      return;
+    }
+
+    // orientação canônica a partir de yaw/pitch galácticos
+    const cp = Math.cos(this.pitch);
+    const fwd = _tmpV
+      .set(0, 0, 0)
+      .addScaledVector(FRAME_A, cp * Math.cos(this.yaw))
+      .addScaledVector(FRAME_B, cp * Math.sin(this.yaw))
+      .addScaledVector(GALACTIC_NORTH, Math.sin(this.pitch));
+    const up = new THREE.Vector3();
+    galacticUp(fwd, up);
+    const target = new THREE.Vector3().copy(this.camera.position).add(fwd);
+    this.camera.up.copy(up);
+    this.camera.lookAt(target);
+
+    // entrada suave: dissolve o quaternion herdado sobre o canônico
+    if (this.blend > 0.001) {
+      this.blend *= Math.exp(-dt / 0.24);
+      _tmpQ.copy(this.camera.quaternion);
+      this.camera.quaternion.copy(this.fromQ).slerp(_tmpQ, 1 - this.blend);
+    }
 
     const f = new THREE.Vector3();
     this.camera.getWorldDirection(f);
     const r = new THREE.Vector3().setFromMatrixColumn(this.camera.matrix, 0);
-    const u = new THREE.Vector3(0, 1, 0);
 
     const acc = new THREE.Vector3();
     if (this.keys.has('KeyW')) acc.add(f);
     if (this.keys.has('KeyS')) acc.sub(f);
     if (this.keys.has('KeyD')) acc.add(r);
     if (this.keys.has('KeyA')) acc.sub(r);
-    if (this.keys.has('KeyE')) acc.add(u);
-    if (this.keys.has('KeyQ')) acc.sub(u);
+    if (this.keys.has('KeyE')) acc.add(GALACTIC_NORTH);
+    if (this.keys.has('KeyQ')) acc.sub(GALACTIC_NORTH);
     if (acc.lengthSq() > 0) acc.normalize().multiplyScalar(this.speed * 3);
     // inércia por tempo, não por frame (mesma resposta em 60/144 Hz)
     this.vel.lerp(acc, 1 - Math.exp(-dt / 0.27));
@@ -202,19 +325,34 @@ export class FreeRoam {
   private onPointerDown = (event: PointerEvent) => {
     if (!this.enabled) return;
     this.dragging = true;
+    this.dragMoved = 0;
+    this.downAt = performance.now();
     this.lastX = event.clientX;
     this.lastY = event.clientY;
   };
 
-  private onPointerUp = () => {
+  private onPointerUp = (event: PointerEvent) => {
+    if (this.dragging && this.enabled) {
+      // clique curto e parado = tentativa de visita
+      if (this.dragMoved < 6 && performance.now() - this.downAt < 400) {
+        this.onTap?.(
+          event.clientX / window.innerWidth,
+          event.clientY / window.innerHeight
+        );
+      }
+    }
     this.dragging = false;
   };
 
   private onPointerMove = (event: PointerEvent) => {
     if (!this.enabled || !this.dragging) return;
-    this.yaw -= (event.clientX - this.lastX) * 0.0022;
+    const dx = event.clientX - this.lastX;
+    const dy = event.clientY - this.lastY;
+    this.dragMoved += Math.abs(dx) + Math.abs(dy);
+    if (this.visit && this.dragMoved > 8) this.cancelVisit();
+    this.yaw -= dx * 0.0022;
     this.pitch = THREE.MathUtils.clamp(
-      this.pitch - (event.clientY - this.lastY) * 0.0022,
+      this.pitch - dy * 0.0022,
       -1.5,
       1.5
     );
@@ -223,6 +361,7 @@ export class FreeRoam {
   };
 
   private onKeyDown = (event: KeyboardEvent) => {
+    if (this.visit) this.cancelVisit();
     this.keys.add(event.code);
   };
 

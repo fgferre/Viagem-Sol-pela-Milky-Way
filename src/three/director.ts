@@ -26,6 +26,8 @@ import {
 } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
+import { REVEAL_T } from './cinematic/journey';
+import { BlackHole } from './world/blackHole';
 import { loadStarData } from './config';
 import type { StarsMeta } from './config';
 
@@ -59,10 +61,17 @@ export class Director {
   private seedCloudTimer = 0;
   private sun: Sun;
   private dust: Dust;
+  private blackHole: BlackHole | null = null;
   private bgColor = new THREE.Color(0x000106);
   private rig = new JourneyRig();
   private roam: FreeRoam;
   private meta!: StarsMeta;
+  /** última projeção de rótulos — alvo do clicar-para-visitar */
+  private lastLabels: StarLabel[] = [];
+  private prevLabelKeys = new Set<string>();
+  private pauseDragging = false;
+  private pauseLastX = 0;
+  private pauseLastY = 0;
 
   private phase: Phase = 'loading';
   private journeyT = 0;
@@ -104,6 +113,7 @@ export class Director {
       this.nebula.setScale(quality === 'performance' ? 0.35 : 0.5);
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
+      this.blackHole?.setQuality(quality);
       this.events.onQuality(quality);
     });
     this.post.setGrain(this.engine.preset.grain);
@@ -124,14 +134,22 @@ export class Director {
     this.reducedMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (this.reducedMotion) this.rig.shakeScale = 0;
     for (const k of [
       'nogal', 'nosun', 'nodust', 'nohero', 'nocat', 'nomarker', 'nocart', 'nowrap',
       // bissecção do ?nocart: nuvens CO e forjas separadamente
-      'noco', 'noforge',
+      'noco', 'noforge', 'nobh',
     ]) {
       if (this.debug.has(k)) this.hide.add(k);
     }
+
+    // pausar-e-olhar: com a viagem pausada, arrastar olha ao redor;
+    // no play a mira volta sozinha ao enquadramento do filme
+    canvas.addEventListener('pointerdown', this.onPausePointerDown);
+    window.addEventListener('pointermove', this.onPausePointerMove);
+    window.addEventListener('pointerup', this.onPausePointerUp);
+
+    // clique curto no voo livre → mini-viagem até a estrela nomeada
+    this.roam.onTap = (x, y) => this.tryVisit(x, y);
 
     this.engine.onTick((t, dt) => this.tick(t, dt));
   }
@@ -227,6 +245,10 @@ export class Director {
     // no lugar dos braços/warp analíticos por vértice — medido +5 ms)
     this.wrappedStars = new WrappedStars(this.dustMapTexture);
     this.engine.scene.add(this.wrappedStars.points);
+    // Sagittarius A* — só existe de perto; ver blackHole.ts
+    this.blackHole = new BlackHole();
+    this.blackHole.setQuality(this.engine.quality);
+    this.engine.scene.add(this.blackHole.mesh);
     this.engine.scene.add(this.stars.points);
     this.engine.scene.add(this.sun.group);
     this.engine.scene.add(this.dust.points);
@@ -338,6 +360,7 @@ export class Director {
     this.freezeJourney = false;
     this.leftDisk = false;
     this.rig.reset();
+    this.rig.paused = false;
     this.roam.enabled = false;
     this.setPhase('journey');
   }
@@ -357,7 +380,80 @@ export class Director {
   togglePause(): boolean {
     if (this.phase !== 'journey') return false;
     this.freezeJourney = !this.freezeJourney;
+    this.rig.paused = this.freezeJourney;
     return this.freezeJourney;
+  }
+
+  /** início do Ato IV — o botão "Ver a galáxia" salta para cá */
+  get revealTime() {
+    return REVEAL_T;
+  }
+
+  // ---- pausar-e-olhar (viagem congelada) -------------------------
+  private get pauseLookActive() {
+    return this.phase === 'journey' && this.freezeJourney;
+  }
+
+  private onPausePointerDown = (event: PointerEvent) => {
+    if (!this.pauseLookActive) return;
+    this.pauseDragging = true;
+    this.pauseLastX = event.clientX;
+    this.pauseLastY = event.clientY;
+  };
+
+  private onPausePointerMove = (event: PointerEvent) => {
+    if (!this.pauseDragging || !this.pauseLookActive) return;
+    this.rig.addLookDelta(
+      event.clientX - this.pauseLastX,
+      event.clientY - this.pauseLastY
+    );
+    this.pauseLastX = event.clientX;
+    this.pauseLastY = event.clientY;
+  };
+
+  private onPausePointerUp = () => {
+    this.pauseDragging = false;
+  };
+
+  /** clique curto no voo livre: viaja até o rótulo mais próximo */
+  private tryVisit(x: number, y: number) {
+    if (this.phase !== 'free' || !this.meta) return;
+    let best: StarLabel | null = null;
+    let bestD = 0.0035; // ~6% da tela ao quadrado
+    for (const label of this.lastLabels) {
+      if (label.opacity < 0.15) continue;
+      const dx = label.x - x;
+      const dy = label.y - y;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) {
+        bestD = d;
+        best = label;
+      }
+    }
+    if (!best) return;
+    if (best.key === 'sgr-a') {
+      this.roam.startVisit({
+        name: best.name,
+        pos: GAL.GC_POS.clone(),
+        arriveDist: 7,
+      });
+      return;
+    }
+    const star =
+      best.key === 'sol-home'
+        ? { n: 'Sol', x: 0, y: 0, z: 0 }
+        : this.meta.named.find((s) => s.n === best.name);
+    if (!star) return;
+    const pos = new THREE.Vector3(star.x, star.y, star.z);
+    this.roam.startVisit({
+      name: star.n,
+      pos,
+      arriveDist: THREE.MathUtils.clamp(
+        pos.distanceTo(this.engine.camera.position) * 0.08,
+        0.8,
+        9
+      ),
+    });
   }
 
   /** scrub pela barra de progresso (fração 0..1) */
@@ -426,7 +522,10 @@ export class Director {
     // mundo
     const hPx = this.engine.renderer.domElement.height;
     const dHome = cam.position.length();
-    this.engine.updateClip(dHome);
+    const dGC = cam.position.distanceTo(GAL.GC_POS);
+    // o near acompanha a âncora mais PRÓXIMA (Sol ou centro galáctico):
+    // na rasante de Sgr A* o near de dezenas de pc comeria o buraco negro
+    this.engine.updateClip(Math.min(dHome, dGC));
 
     // A Via Láctea não é um plano: os fades de AMBIENTE respondem à
     // posição da câmera no DISCO (R, z galactocêntricos), não à
@@ -498,6 +597,14 @@ export class Director {
     this.sun.group.visible = !this.hide.has('nosun');
     this.sun.update(time, cam.position);
     this.dust.update(cam.position, hPx, time);
+    // Sgr A*: só de perto (a extinção real esconde o centro de longe);
+    // as capturas de medição ficam a 24/33 kpc — fade 0, mesh invisível
+    this.blackHole?.update(
+      cam.position,
+      cam,
+      time,
+      this.hide.has('nobh') ? 0 : 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400)
+    );
     const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
     // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
     // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
@@ -557,10 +664,32 @@ export class Director {
     }
 
     // rótulos a cada frame — a 10 Hz eles "nadavam" contra as estrelas
-    // (7 projeções + um canvas 2D pequeno: custo desprezível)
+    // (7 projeções + um canvas 2D pequeno: custo desprezível).
+    // Na viagem, menos rótulos (cinema); no voo livre, mais (são os
+    // alvos do clicar-para-visitar).
     if ((this.phase === 'journey' || this.phase === 'free') && this.meta) {
-      this.events.onLabels(projectLabels(cam, this.meta.named));
+      this.lastLabels = projectLabels(
+        cam,
+        this.meta.named,
+        this.phase === 'journey' ? 4 : 7,
+        this.prevLabelKeys
+      );
+      if (this.phase === 'journey') {
+        // cinema: nada de etiqueta em cima do assunto (a legenda já o
+        // nomeia) nem durante o close de abertura no Sol
+        this.lastLabels =
+          dHome < 1.5
+            ? []
+            : this.lastLabels.filter((l) => {
+                const dx = l.x - 0.5;
+                const dy = l.y - 0.5;
+                return dx * dx + dy * dy > 0.03; // ~17% do quadro
+              });
+      }
+      this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
+      this.events.onLabels(this.lastLabels);
     } else if (this.phase !== 'journey') {
+      this.lastLabels = [];
       this.events.onLabels([]);
     }
 
@@ -584,6 +713,10 @@ export class Director {
     this.disposed = true;
     this.abortController.abort();
     this.roam.dispose();
+    this.engine.renderer.domElement.removeEventListener('pointerdown', this.onPausePointerDown);
+    window.removeEventListener('pointermove', this.onPausePointerMove);
+    window.removeEventListener('pointerup', this.onPausePointerUp);
+    this.blackHole?.dispose();
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
     this.stars?.dispose();

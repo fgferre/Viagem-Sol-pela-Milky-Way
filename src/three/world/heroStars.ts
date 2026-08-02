@@ -76,7 +76,10 @@ function spectToColor(s: string): THREE.Color {
   return new THREE.Color(rgb[0], rgb[1], rgb[2]);
 }
 
-const HERO_COUNT = 12;
+// 16 desde o roteiro da rodada 26: inclui Antares (16ª mais brilhante),
+// o portão do mergulho ao centro — o close dela precisa de corpo, não
+// de PSF. Custa 4 draws, todos invisíveis além de 1.200 pc de casa.
+const HERO_COUNT = 16;
 
 export class HeroStars {
   readonly group = new THREE.Group();

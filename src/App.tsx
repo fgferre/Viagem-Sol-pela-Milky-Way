@@ -24,6 +24,7 @@ export default function App() {
     text: '',
   });
   const [ticks, setTicks] = useState<number[]>([]);
+  const [runtime, setRuntime] = useState(0);
   const [quality, setQuality] = useState<QualityLevel>('cinema');
   const [paused, setPaused] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -55,6 +56,7 @@ export default function App() {
       .then(() => {
         if (cancelled) return;
         setTicks(d.progressTicks);
+        setRuntime(d.journeyDuration);
         const query = new URLSearchParams(window.location.search);
         const qualityParam = query.get('q') as QualityLevel | null;
         if (qualityParam && ['cinema', 'alta', 'performance'].includes(qualityParam)) {
@@ -123,8 +125,10 @@ export default function App() {
   const freeRoam = () => directorRef.current?.enterFreeRoam();
   const revealGalaxy = () => {
     setPaused(false);
-    directorRef.current?.play();
-    directorRef.current?.seek(156);
+    const d = directorRef.current;
+    if (!d) return;
+    d.play();
+    d.seek(d.revealTime);
   };
   const changeQuality = (q: QualityLevel) => {
     directorRef.current?.setQuality(q);
@@ -169,14 +173,21 @@ export default function App() {
       {phase === 'free' && (
         <div className="free-hint">
           {window.matchMedia?.('(pointer: coarse)').matches ? (
-            <>toque e arraste — olhar ao redor (voo requer teclado)</>
+            <>toque e arraste — olhar · toque num nome — visitar</>
           ) : (
             <>
-              arrastar — olhar · wasd/qe — voar
+              arrastar — olhar · wasd/qe — voar · roda — velocidade
               <br />
-              roda do mouse — velocidade · espaço — pausar na viagem
+              clique num nome — viajar até a estrela
             </>
           )}
+        </div>
+      )}
+
+      {/* dica do pausar-e-olhar */}
+      {inJourney && paused && (
+        <div className="free-hint">
+          arraste — olhar ao redor · espaço — retomar a viagem
         </div>
       )}
 
@@ -241,6 +252,8 @@ export default function App() {
           loadError ? 'error' : phase === 'loading' ? 'loading' : phase === 'intro' ? 'intro' : 'end'
         }
         onPlay={play}
+        onExplore={freeRoam}
+        runtime={runtime}
         error={loadError}
       />
     </div>

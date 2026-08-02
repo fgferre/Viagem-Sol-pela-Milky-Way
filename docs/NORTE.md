@@ -297,6 +297,33 @@ glow SEGUINDO o warp: inútil — não há fluxo de glow em r > 8,4 kpc para a c
 cortar (quiralidade ± medidas idênticas, 0,913/0,916), e o τ0 = 5,0 que pagava na
 vantagem z=901 NÃO transfere para z=500 (laneDepth não sobe e axialRatio paga).
 
+## O roteiro cinematográfico (rodada 26)
+
+Reescrito do zero como SHOTS paramétricos (`journey.ts`): 4 atos, ~5min21
+(Sol em hélice → Órion → mergulho de 8 kpc ao centro → Sagittarius A* →
+revelação externa → "você está aqui"). O que ainda decide algo:
+
+- **Os quadros de medição são HOLDS exatos** (t=261 perfil, t=293
+  face-on; câmera idêntica às rodadas 16–25). O rig antigo inclinava a
+  câmera nas curvas e as capturas oficiais saíram com esse roll —
+  medido reproduzindo o rig antigo congelado até convergência
+  (0,041510 rad no perfil, 0,060000 no face) e ASSADO nos holds. Mudar
+  qualquer um desses números descompara os gates com todo o histórico.
+- **Sagittarius A* existe como objeto** (`blackHole.ts`): raytracer de
+  geodésicas Schwarzschild (adaptado da referência Gargantua do
+  usuário), disco em ESCALA ARTÍSTICA documentada (RS 0,05 pc ≈ 1,2e5×
+  o real — o RS real de 4e-7 pc é invisível por natureza; a física do
+  shader é adimensional em RS). Fade a zero além de ~2,4 kpc do GC
+  (mesh sai da cena): os gates externos ficam intactos por construção,
+  e a extinção real (~30 mag no visível até o centro) justifica o fade.
+  Knobs: `?nobh=1`, `?bhgain=`, `?bhsteps=`.
+- **O near-clip agora segue min(dHome, dGC)** — sem isso o near de
+  ~32 pc comia o buraco negro na rasante (e qualquer geometria local
+  perto do GC).
+- Voo livre no MESMO referencial galáctico da viagem (era a diferença
+  de "norte" que invertia o horizonte ao entrar no modo livre) +
+  clicar-num-rótulo viaja até a estrela.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.

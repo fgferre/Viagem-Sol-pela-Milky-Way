@@ -35,6 +35,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 22 | 0.0480 | 0.1311 | 0.1020 | 0.1077 | halo térmico oblato (ganho 0,3, 6 kpc, lei 1/μ): a luz quente que faltava às bandas altas |
 | 24 | 0.0339 | 0.1284 | 0.0704 | 0.1053 | PROTOCOLO: captura 1800px (analise simetrica em 1200 com a referencia); re-baseline, zero mudanca de render |
 | 25 | 0.0333 | 0.1293 | 0.0701 | 0.1049 | re-dosagem sob o protocolo honesto: warp volta ao 820 original (o impulso a 1310 era artefato da regua aliasada) |
+| 26 | 0.0346 | 0.1286 | 0.0703 | 0.1050 | roteiro novo em shots: 4 atos, Sgr A* Gargantua, holds de medição com roll do rig antigo assado (t 261/293) |
 
 ## Edge-on
 
@@ -55,3 +56,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 22 | 0.6535 | 0.0392 | 0.0581 | 0.7345 | 0.0191 | halo térmico oblato (ganho 0,3, 6 kpc, lei 1/μ): a luz quente que faltava às bandas altas |
 | 24 | 0.6992 | 0.0586 | 0.0958 | 0.9044 | 0.0323 | PROTOCOLO: captura 1800px (analise simetrica em 1200 com a referencia); re-baseline, zero mudanca de render |
 | 25 | 0.6441 | 0.0494 | 0.0924 | 0.9100 | 0.0326 | re-dosagem sob o protocolo honesto: warp volta ao 820 original (o impulso a 1310 era artefato da regua aliasada) |
+| 26 | 0.6456 | 0.0503 | 0.0929 | 0.9052 | 0.0329 | roteiro novo em shots: 4 atos, Sgr A* Gargantua, holds de medição com roll do rig antigo assado (t 261/293) |

@@ -13,7 +13,9 @@ que preservam o estado atual.
 ### 1. Via Láctea face-on — recriação Gaia 2025 (vista externa, Ato III)
 
 - [gaia-2025-face-on-5k.jpg](gaia-2025-face-on-5k.jpg) — o alvo da
-  revelação (`?t=170&shot=1`) e de toda vista externa de cima/baixo.
+  revelação (`?t=293&shot=1`, meio do hold face-on desde o roteiro da
+  rodada 26; era `?t=170` até a 25) e de toda vista externa de
+  cima/baixo.
 - [gaia-2025-face-on-anatomia.jpg](gaia-2025-face-on-anatomia.jpg) —
   versão rotulada: nomes e posições dos braços (Perseus, Orion,
   Carina-Sagittarius, Centaurus, Norma, Outer, 3-kpc), barra, Sol,
@@ -26,9 +28,12 @@ que preservam o estado atual.
 ### 2. Via Láctea edge-on — recriação Gaia 2025 (disco de perfil)
 
 - [gaia-2025-edge-on-5k.jpg](gaia-2025-edge-on-5k.jpg) — o alvo do
-  disco de perfil (`?t=158&shot=1`) e de vistas rasantes: espessura
-  relativa do disco fino, bojo em caixa/amendoim, warp sutil, lâmina de
-  poeira MAIS FINA que a lâmina estelar.
+  disco de perfil (`?t=261&shot=1`, meio do hold de perfil desde o
+  roteiro da rodada 26; era `?t=158` até a 25) e de vistas rasantes:
+  espessura relativa do disco fino, bojo em caixa/amendoim, warp sutil,
+  lâmina de poeira MAIS FINA que a lâmina estelar. A câmera do hold é
+  IDÊNTICA à das rodadas 16–25 (pos −597, 14597, 6287 · mira −442,
+  −7117, −3946 · fov 58): os gates seguem comparáveis entre rodadas.
 
 Crédito (obrigatório ao citar): **ESA/Gaia/DPAC, Stefan Payne-Wardenaar
 — CC BY-SA 3.0 IGO**. Fonte:
@@ -133,9 +138,10 @@ mais alto que outro com m=2 e m=4 casados exatamente.
 
 A face-on não testa espessura, faixa escura, warp nem cor por altura — a
 rodada 09 mudou o brilho rasante 2,19× e a métrica face-on moveu 0,002.
-`?mode=edge` na mesma página mede o quadro `?t=158&shot=2` contra
-`gaia-2025-edge-on-5k.jpg`. Tudo normalizado por R90 horizontal ou pela
-meia-altura h50, então independe de enquadramento.
+`?mode=edge` na mesma página mede o quadro `?t=261&shot=2` (o hold de
+perfil do roteiro da rodada 26; era `?t=158` até a 25 — a câmera é a
+mesma) contra `gaia-2025-edge-on-5k.jpg`. Tudo normalizado por R90
+horizontal ou pela meia-altura h50, então independe de enquadramento.
 
 | grandeza | alvo | o que significa |
 |---|---|---|

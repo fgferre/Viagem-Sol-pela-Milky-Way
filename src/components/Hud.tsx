@@ -7,13 +7,19 @@ export function TitleVeil({
   visible,
   mode,
   onPlay,
+  onExplore,
+  runtime,
   error,
 }: {
   visible: boolean;
   mode: 'loading' | 'intro' | 'end' | 'error';
   onPlay: () => void;
+  onExplore?: () => void;
+  runtime?: number;
   error?: string;
 }) {
+  const minutes = runtime ? Math.floor(runtime / 60) : 0;
+  const seconds = runtime ? Math.round(runtime % 60) : 0;
   return (
     <div
       className={`veil ${visible ? '' : 'hidden-veil'}`}
@@ -33,7 +39,7 @@ export function TitleVeil({
           <div className="title-big">MAR DE ESTRELAS</div>
           <div className="title-rule" />
           <div className="title-sub">
-            uma viagem do Sol às supergigantes de Órion — e à própria Via Láctea
+            do Sol às supergigantes de Órion, ao coração da galáxia — e além
             <br />
             18.543 estrelas HYG · poeira APOGEE · nuvens de CO · regiões H II ·
             aglomerados e Cefeidas Gaia DR3 — cartografia real, gás volumétrico em tempo real
@@ -42,25 +48,34 @@ export function TitleVeil({
           <button className="hud-btn" onClick={onPlay}>
             Iniciar a viagem
           </button>
-          <div className="journey-runtime">experiência cinematográfica · 3 min 14 s</div>
+          <div className="journey-runtime">
+            experiência cinematográfica{minutes > 0 ? ` · ${minutes} min ${seconds} s` : ''}
+          </div>
         </>
       )}
       {mode === 'end' && (
         <>
           <div className="title-sub" style={{ letterSpacing: '0.42em' }}>
-            20 mil parsecs acima de casa
+            25 mil parsecs acima de casa
           </div>
           <div className="title-rule" />
           <div className="title-big" style={{ fontSize: 'clamp(1.2rem, 3vw, 2.2rem)' }}>
             O SOL É SÓ MAIS UM PONTO DE LUZ
           </div>
           <div className="title-sub">
-            cada estrela nomeada que você visitou existe de verdade no catálogo HYG
+            cada estrela nomeada — e o buraco negro — existem de verdade, nas posições reais
           </div>
           <div className="title-rule" />
-          <button className="hud-btn" onClick={onPlay}>
-            Reviver a viagem
-          </button>
+          <div style={{ display: 'flex', gap: '0.8rem' }}>
+            <button className="hud-btn" onClick={onPlay}>
+              Reviver a viagem
+            </button>
+            {onExplore && (
+              <button className="hud-btn" onClick={onExplore}>
+                Explorar livremente
+              </button>
+            )}
+          </div>
         </>
       )}
       {mode === 'error' && (
@@ -86,6 +101,8 @@ export function Caption({
   sub?: string;
   showKey: number;
 }) {
+  // cinema: a legenda entra, respira (~7 s) e SAI — não fica pendurada
+  // até a próxima (animações puras em CSS; a key remonta e reinicia)
   if (!caption) return null;
   return (
     <div key={showKey} className="caption-wrap show" role="status" aria-live="polite">

@@ -20,10 +20,13 @@ const LEDGER = resolve(ROOT, 'docs/reference/EVOLUCAO.md');
 const METRIC = resolve(ROOT, 'scripts/visual/measure-similarity.html');
 const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
 
-// As duas vistas espelham docs/reference/gaia-2025-{face-on,edge-on}-5k.jpg
+// As duas vistas espelham docs/reference/gaia-2025-{face-on,edge-on}-5k.jpg.
+// Os tempos são o MEIO dos holds de medição do roteiro (journey.ts,
+// CAPTURE_T): posição/mira/fov idênticos aos das rodadas 16–25 — só o
+// instante na linha do tempo mudou com o roteiro novo (rodada 26).
 const VIEWS = [
-  { nome: 'faceon', t: 170 },
-  { nome: 'edgeon', t: 158 },
+  { nome: 'faceon', t: 293 },
+  { nome: 'edgeon', t: 261 },
 ];
 
 const CHROME = [

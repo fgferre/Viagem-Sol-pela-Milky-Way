@@ -55,10 +55,16 @@
   transform: translateY(14px);
 }
 .caption-wrap.show {
-  animation: captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation:
+    captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    captionOut 1.6s ease 7s forwards;
 }
 @keyframes captionIn {
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes captionOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
 }
 .caption-title {
   color: #f5f1e8;
