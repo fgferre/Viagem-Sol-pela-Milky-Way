@@ -362,6 +362,8 @@ export class Director {
     if (look) cam.lookAt(look[0], look[1], look[2]);
     this.roam.enabled = true;
     this.roam.syncFromCamera();
+    // captura/deep-link: sem slerp de entrada — orientação exata no frame 1
+    this.roam.snapCanonical();
     // o primeiro frame já renderiza com as nuvens-semente do lugar —
     // capturas ?pos= são determinísticas desde o frame 1
     this.updateSeedClouds(cam.position);

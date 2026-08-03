@@ -151,7 +151,25 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    medidos (0,033/−0,46) que agora capturam estrutura vertical que a régua velha
    borrava — entender ANTES de mexer (pode ser flare, anã de Sgr, ou assinatura
    real do perfil de espessura da referência).
-2. **Vista interna sem gate** — o panorama ESO (a única foto real) não está no loop.
+2. **Vista interna sem gate** — ~~o panorama ESO (a única foto real) não está no loop~~ —
+   **gate protótipo RODOU (2026-08-02): skyError 3,7027, a baseline da série.**
+   Harness oficializado em `scripts/visual/sky-capture.mjs` (6 faces do cubo em
+   `?pos=0,0,0&look=&fov=90&nosun=1&shot=2`, 1440²) + `scripts/visual/sky-measure.html`
+   (costura equiretangular 1440×720 replicando a canonização EXATA do FreeRoam,
+   orientação l do panorama resolvida SOZINHA pelas Nuvens de Magalhães — refFlip=true).
+   Pré-requisito que caiu: o slerp de entrada do FreeRoam não convergia sob
+   virtual time e as faces saíam com orientação intermediária (faixa diagonal
+   ~38°); `placeCamera` agora encaixa a orientação canônica no frame 1
+   (`snapCanonical`, cameraRig.ts) — `?pos=` é determinístico em orientação de
+   verdade. Diagnóstico da primeira medição (alvos = coluna ref):
+   **bulgeAnti 18,9 vs 5,6** (bojo domina 3,4×; a faixa do anticentro é fraca
+   demais), espessura por longitude irregular (1,75–13,5° vs 3–6,5°; onde a
+   faixa apaga, o fundo domina a meia-altura), rift 0,18 vs 0,24, colour 0,088
+   vs 0,064, purp 0,049 vs 0,078 (o déficit de púrpura aparece também de
+   dentro). Picos isolados no perfil (bins l≈−131° e −41°) sugerem glare de
+   estrelas-herói contaminando a fotometria da faixa — conferir antes de
+   dosar qualquer coisa. O reequilíbrio 2-braços da vista interna (marcado em
+   `nebulaShaders.ts`/`wrappedStars.ts`) agora TEM juiz.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
    incerteza para cor absoluta.

@@ -1,0 +1,250 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Juiz da vista interna — céu do app vs panorama ESO</title>
+<body style="background:#111;color:#ddd;font:12px/1.5 monospace;margin:16px">
+<pre id="out">medindo…</pre>
+<script>
+// ============================================================
+// PROTÓTIPO do gate da vista interna (lacuna 2 do NORTE).
+// Costura 6 faces (?pos=0,0,0&fov=90, capturadas por sky-capture.mjs)
+// num mapa equiretangular galáctico e compara com o panorama ESO
+// GigaGalaxy (a única FOTO real do projeto).
+//
+// Métricas v1 (VISUAL_TARGETS §3): perfil da faixa por longitude,
+// assimetria bojo/anticentro, espessura da faixa, profundidade do
+// Great Rift, cor global e púrpura da faixa.
+//
+// Uso:
+//   chrome --headless=new --enable-gpu --allow-file-access-from-files \
+//     --window-size=900,900 --virtual-time-budget=20000 --dump-dom \
+//     "file:///<este>.html?dir=<pasta com face_*.png>&ref=<eso.jpg>"
+// ============================================================
+
+const W = 1440, H = 720; // equiretangular de trabalho (0,25°/px)
+
+// base galáctica (idêntica a galaxy.ts / cameraRig.ts)
+const N = [-0.867666149, -0.1980763734, 0.4559837762];
+const DIRGC = [-0.0548755604, -0.8734370902, -0.4838350155];
+const A = DIRGC.map(v => -v);
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const dot = (a, b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const norm = (a) => { const l = Math.hypot(...a); return a.map(v => v/l); };
+const mix = (a, b, k) => a.map((v, i) => v*(1-k)+b[i]*k);
+const B = cross(N, A);
+const smoothstep = (x, a, b) => { const t = Math.min(Math.max((x-a)/(b-a), 0), 1); return t*t*(3-2*t); };
+
+// réplica EXATA da orientação canônica do FreeRoam para um look dado
+function faceBasis(dir) {
+  const p = Math.asin(Math.min(Math.max(dot(dir, N), -0.999), 0.999));
+  const yaw = Math.atan2(dot(dir, B), dot(dir, A));
+  const cp = Math.cos(p);
+  const fwd = norm([0,1,2].map(i => A[i]*cp*Math.cos(yaw) + B[i]*cp*Math.sin(yaw) + N[i]*Math.sin(p)));
+  const faceOn = smoothstep(Math.abs(dot(fwd, N)), 0.86, 0.975);
+  const up0 = norm(mix(N, DIRGC, faceOn));
+  const right = norm(cross(fwd, up0));
+  const camUp = cross(right, fwd);
+  return { fwd, right, camUp };
+}
+
+const FACES = [
+  { nome: 'gc', dir: DIRGC },
+  { nome: 'anti', dir: A },
+  { nome: 'l90', dir: B.map(v => -v) },
+  { nome: 'l270', dir: B },
+  { nome: 'npole', dir: N },
+  { nome: 'spole', dir: N.map(v => -v) },
+].map(f => ({ ...f, ...faceBasis(norm(f.dir)) }));
+
+const load = (src) => new Promise((res, rej) => {
+  const i = new Image();
+  i.onload = () => res(i);
+  i.onerror = () => rej(new Error('não carregou ' + src));
+  i.src = src;
+});
+
+function pixels(img, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(img, 0, 0, w, h);
+  return x.getImageData(0, 0, w, h).data;
+}
+
+// direção heliocêntrica de (l, b) — convenção do projeto (galaxy.ts):
+// v = EX·(−cosb·cosl) + EY·(−cosb·sinl) + EZ·sinb, com EX=A, EY=B, EZ=N
+function dirOf(l, b) {
+  const cb = Math.cos(b);
+  return [0,1,2].map(i => A[i]*(-cb*Math.cos(l)) + B[i]*(-cb*Math.sin(l)) + N[i]*Math.sin(b));
+}
+
+(async () => {
+  const out = document.getElementById('out');
+  try {
+    const q = new URLSearchParams(location.search);
+    const dir = q.get('dir');
+    const refSrc = q.get('ref');
+    if (!dir || !refSrc) throw new Error('faltou ?dir= e ?ref=');
+
+    // ---- nosso céu: costura das 6 faces ----
+    const F = 1440; // resolução da face
+    const faceData = {};
+    for (const f of FACES) {
+      faceData[f.nome] = pixels(await load(`${dir}/face_${f.nome}.png`), F, F);
+    }
+    // sRGB→linear por LUT
+    const lut = new Float32Array(256);
+    for (let i = 0; i < 256; i++) lut[i] = Math.pow(i / 255, 2.2);
+
+    const ours = { r: new Float32Array(W*H), g: new Float32Array(W*H), b: new Float32Array(W*H) };
+    for (let y = 0; y < H; y++) {
+      const bb = (0.5 - (y + 0.5) / H) * Math.PI; // +90° no topo
+      for (let x = 0; x < W; x++) {
+        const ll = ((x + 0.5) / W - 0.5) * 2 * Math.PI; // l=0 no centro, cresce à direita (hipótese testada abaixo p/ ref)
+        const v = dirOf(ll, bb);
+        // melhor face = maior projeção no fwd
+        let best = null, bd = -2;
+        for (const f of FACES) {
+          const d = dot(v, f.fwd);
+          if (d > bd) { bd = d; best = f; }
+        }
+        const z = dot(v, best.fwd);
+        const px = (dot(v, best.right) / z + 1) / 2 * F;
+        const py = (1 - dot(v, best.camUp) / z) / 2 * F;
+        const ix = Math.min(Math.max(Math.round(px), 0), F - 1);
+        const iy = Math.min(Math.max(Math.round(py), 0), F - 1);
+        const o = (iy * F + ix) * 4;
+        const d4 = faceData[best.nome];
+        const k = y * W + x;
+        ours.r[k] = lut[d4[o]];
+        ours.g[k] = lut[d4[o + 1]];
+        ours.b[k] = lut[d4[o + 2]];
+      }
+    }
+
+    // ---- referência: reamostra o equiretangular do ESO ----
+    const refImg = await load(refSrc);
+    const rd = pixels(refImg, W, H);
+    const mkRef = (flip) => {
+      const r = { r: new Float32Array(W*H), g: new Float32Array(W*H), b: new Float32Array(W*H) };
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        // hipóteses: l cresce p/ direita (flip=false) ou esquerda (true)
+        const sx = flip ? (W - 1 - x) : x;
+        const o = (y * W + sx) * 4;
+        const k = y * W + x;
+        r.r[k] = lut[rd[o]]; r.g[k] = lut[rd[o+1]]; r.b[k] = lut[rd[o+2]];
+      }
+      return r;
+    };
+    // teste de orientação: LMC (l=280,5° b=−32,9°) e SMC (l=302,8° b=−44,3°)
+    // são manchas brilhantes; a hipótese certa as encontra
+    const lum = (m, k) => 0.2126*m.r[k] + 0.7152*m.g[k] + 0.0722*m.b[k];
+    const at = (m, ldeg, bdeg, rad) => {
+      let s = 0, n = 0;
+      for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
+        let l = ldeg + dx * 360 / W;
+        if (l > 180) l -= 360;
+        const x = Math.round((l / 360 + 0.5) * W) % W;
+        const y = Math.round((0.5 - (bdeg + dy * 180 / H) / 180) * H);
+        if (y >= 0 && y < H) { s += lum(m, y * W + x); n++; }
+      }
+      return s / Math.max(n, 1);
+    };
+    const refA = mkRef(false), refB = mkRef(true);
+    const score = (m) => at(m, 280.5 - 360, -32.9, 8) + at(m, 302.8 - 360, -44.3, 8);
+    const ref = score(refA) >= score(refB) ? refA : refB;
+    const refFlip = score(refA) < score(refB);
+
+    // ---- métricas ----
+    function bandMetrics(m) {
+      const NB = 48;
+      const prof = new Float64Array(NB);
+      const cnt = new Float64Array(NB);
+      let bulge = 0, nb = 0, anti = 0, na = 0;
+      let cR = 0, cB = 0, cG = 0, cW = 0;
+      for (let y = 0; y < H; y++) {
+        const bdeg = (0.5 - (y + 0.5) / H) * 180;
+        if (Math.abs(bdeg) > 10) continue;
+        for (let x = 0; x < W; x++) {
+          const k = y * W + x;
+          const v = lum(m, k);
+          const ldeg = ((x + 0.5) / W - 0.5) * 360;
+          const bin = Math.min(Math.floor((ldeg / 360 + 0.5) * NB), NB - 1);
+          prof[bin] += v; cnt[bin]++;
+          if (Math.abs(ldeg) < 30) { bulge += v; nb++; }
+          if (Math.abs(Math.abs(ldeg) - 180) < 30) { anti += v; na++; }
+          cR += m.r[k] * v; cG += m.g[k] * v; cB += m.b[k] * v; cW += v;
+        }
+      }
+      const p = [...prof].map((s, i) => s / Math.max(cnt[i], 1));
+      const pm = p.reduce((a, b) => a + b, 0) / NB;
+      const nprof = p.map(v => +(v / pm).toFixed(4));
+      const r = cR / cW, g = cG / cW, b2 = cB / cW;
+      // espessura: meia-altura de meio-fluxo por longitude (24 bins, |b|<25°)
+      const NT = 24;
+      const thick = [];
+      for (let i = 0; i < NT; i++) {
+        const x0 = Math.floor(i * W / NT), x1 = Math.floor((i + 1) * W / NT);
+        const col = new Float64Array(H);
+        for (let y = 0; y < H; y++) {
+          const bdeg = (0.5 - (y + 0.5) / H) * 180;
+          if (Math.abs(bdeg) > 25) continue;
+          for (let x = x0; x < x1; x++) col[y] += lum(m, y * W + x);
+        }
+        const tot = col.reduce((a, b) => a + b, 0);
+        const yc = Math.round(H / 2);
+        let s = col[yc], k = 0;
+        while (s < 0.5 * tot && k < H / 4) { k++; s += (col[yc+k]||0) + (col[yc-k]||0); }
+        thick.push(+(k * 180 / H).toFixed(2)); // graus
+      }
+      // Great Rift: l ∈ [−35°, 45°], perfil em b recentrado no pico —
+      // profundidade do vale escuro contra os flancos
+      let riftAcc = 0, riftN = 0;
+      for (let i = 0; i < NB; i++) {
+        const lc = (i + 0.5) / NB * 360 - 180;
+        if (lc < -35 || lc > 45) continue;
+        const x0 = Math.floor(i * W / NB), x1 = Math.floor((i + 1) * W / NB);
+        const col = new Float64Array(H);
+        for (let y = 0; y < H; y++) {
+          const bdeg = (0.5 - (y + 0.5) / H) * 180;
+          if (Math.abs(bdeg) > 16) continue;
+          for (let x = x0; x < x1; x++) col[y] += lum(m, y * W + x);
+        }
+        const yc = Math.round(H / 2);
+        const span = Math.round(10 * H / 180);
+        let ymin = yc;
+        for (let y = yc - span; y <= yc + span; y++) if (col[y] < col[ymin]) ymin = y;
+        let above = 0, below = 0;
+        for (let y = ymin - 2*span; y < ymin; y++) if (y >= 0) below = Math.max(below, col[y]);
+        for (let y = ymin + 1; y <= ymin + 2*span; y++) if (y < H) above = Math.max(above, col[y]);
+        const flank = Math.min(above, below);
+        if (flank > 1e-9) { riftAcc += 1 - col[ymin] / flank; riftN++; }
+      }
+      return {
+        nprof,
+        bulgeAnti: +((bulge / Math.max(nb,1)) / Math.max(anti / Math.max(na,1), 1e-9)).toFixed(3),
+        thick,
+        rift: +(riftAcc / Math.max(riftN, 1)).toFixed(4),
+        colour: +((r - b2) / (r + b2 + 1e-9)).toFixed(4),
+        purp: +(((r + b2) / 2 - g) / Math.max(r, g, b2, 1e-9)).toFixed(4),
+      };
+    }
+
+    const O = bandMetrics(ours);
+    const R = bandMetrics(ref);
+    const curve = (a, b) => a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
+    const skyError = +(
+      Math.abs(O.bulgeAnti - R.bulgeAnti) / Math.max(R.bulgeAnti, 1e-9) +
+      curve(O.nprof, R.nprof) +
+      curve(O.thick, R.thick) / Math.max(R.thick.reduce((a,b)=>a+b,0)/R.thick.length, 1e-9) +
+      Math.abs(O.rift - R.rift) +
+      Math.abs(O.colour - R.colour) +
+      Math.abs(O.purp - R.purp)
+    ).toFixed(4);
+
+    out.textContent = JSON.stringify({ skyError, refFlip, ours: O, ref: R }, null, 1);
+  } catch (e) {
+    out.textContent = 'ERRO: ' + e.message;
+  }
+})();
+</script>
+</body>

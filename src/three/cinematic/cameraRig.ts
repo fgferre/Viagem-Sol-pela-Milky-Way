@@ -83,7 +83,8 @@ export class JourneyRig {
     // suavização do ponto de mira. Sem limiar de snap: os shots são
     // contínuos por construção; saltos só existem em seek(), que chama
     // reset() e cai no primeiro-quadro.
-    if (this.first) {
+    const snap = this.first;
+    if (snap) {
       this.lookSm.copy(s.look);
       this.first = false;
     } else {
@@ -109,9 +110,11 @@ export class JourneyRig {
       camera.rotateX(this.lookPitch);
     }
 
-    // FOV do roteiro, com pontapé sutil de velocidade (documentário)
+    // FOV do roteiro, com pontapé sutil de velocidade (documentário).
+    // No primeiro quadro pós-seek o fov SALTA como a mira: sem isso,
+    // capturas ?t= rendiam o fov ainda amortecendo (28° onde pedia 15°).
     const targetFov = s.fov + s.warp * 3.5;
-    camera.fov += (targetFov - camera.fov) * kFov;
+    camera.fov = snap ? targetFov : camera.fov + (targetFov - camera.fov) * kFov;
     camera.updateProjectionMatrix();
 
     return { warp: s.warp };
@@ -194,6 +197,13 @@ export class FreeRoam {
     // velocidade inicial proporcional à escala do lugar
     this.speed = THREE.MathUtils.clamp(this.camera.position.length() * 0.02, 2, 600);
     this.resetMotion();
+  }
+
+  /** deep-links ?pos=: orientação canônica JÁ no frame 1 — o slerp de
+   *  entrada sob captura com virtual time congelava no meio do caminho
+   *  (faixa diagonal ~38° nas faces do céu) */
+  snapCanonical() {
+    this.blend = 0;
   }
 
   /** zera inércia/entradas — velocidade antiga não sobrevive à troca de modo */
