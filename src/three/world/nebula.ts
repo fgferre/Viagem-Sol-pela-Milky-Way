@@ -3,7 +3,13 @@
 // resolução, composta como fundo HDR da cena principal.
 // ============================================================
 import * as THREE from 'three';
-import { NEBULA_VERT, NEBULA_FRAG, NEBULA_LUT_FRAG } from '../shaders/nebulaShaders';
+import {
+  NEBULA_VERT,
+  NEBULA_FRAG,
+  NEBULA_LUT_FRAG,
+  NEBULA_BLUR_FRAG,
+} from '../shaders/nebulaShaders';
+import { makeBlueNoiseTexture } from './blueNoise';
 
 // Luzes embutidas no gás — posições reais do catálogo HYG (pc)
 const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682); // supergigante vermelha
@@ -12,6 +18,10 @@ const RIGEL = new THREE.Vector3(51.601, 256.71, -37.74); // supergigante azul
 export class Nebula {
   readonly texture: THREE.Texture;
   private rt: THREE.WebGLRenderTarget;
+  // suavização do jitter blue-noise: raymarch → rt → blur 4 taps → rtBlur
+  private rtBlur: THREE.WebGLRenderTarget;
+  private blurScene = new THREE.Scene();
+  private blurMaterial: THREE.ShaderMaterial;
   private scene = new THREE.Scene();
   private camera = new THREE.OrthographicCamera();
   private material: THREE.ShaderMaterial;
@@ -45,7 +55,26 @@ export class Nebula {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
     });
-    this.texture = this.rt.texture;
+    this.rtBlur = new THREE.WebGLRenderTarget(960, 540, {
+      type: THREE.HalfFloatType,
+      depthBuffer: false,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+    });
+    this.blurMaterial = new THREE.ShaderMaterial({
+      vertexShader: NEBULA_VERT,
+      fragmentShader: NEBULA_BLUR_FRAG,
+      uniforms: {
+        uSrc: { value: this.rt.texture },
+        uTexel: { value: new THREE.Vector2(1 / 960, 1 / 540) },
+      },
+      depthWrite: false,
+      depthTest: false,
+    });
+    const blurQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.blurMaterial);
+    blurQuad.frustumCulled = false;
+    this.blurScene.add(blurQuad);
+    this.texture = this.rtBlur.texture;
 
     this.lutRT = new THREE.WebGLRenderTarget(256, 128, {
       type: THREE.HalfFloatType,
@@ -90,6 +119,7 @@ export class Nebula {
         },
         uDustMap: { value: this.fallbackDustMap },
         uBandLUT: { value: this.lutRT.texture },
+        uBlueNoise: { value: makeBlueNoiseTexture() },
         uSeedCloudCount: { value: 0 },
         uSeedClouds: {
           value: Array.from({ length: 32 }, () => new THREE.Vector4()),
@@ -115,7 +145,9 @@ export class Nebula {
     const rw = Math.max(2, Math.floor(w * this.scale));
     const rh = Math.max(2, Math.floor(h * this.scale));
     this.rt.setSize(rw, rh);
+    this.rtBlur.setSize(rw, rh);
     (this.material.uniforms.uResolution.value as THREE.Vector2).set(rw, rh);
+    (this.blurMaterial.uniforms.uTexel.value as THREE.Vector2).set(1 / rw, 1 / rh);
   }
 
   /** alavanca do auto-quality sobre o custo do raymarch (~2× extra) */
@@ -184,20 +216,29 @@ export class Nebula {
     }
     renderer.setRenderTarget(this.rt);
     renderer.render(this.scene, this.camera);
+    renderer.setRenderTarget(this.rtBlur);
+    renderer.render(this.blurScene, this.camera);
     renderer.setRenderTarget(prev);
   }
 
   dispose() {
     this.rt.dispose();
+    this.rtBlur.dispose();
     this.lutRT.dispose();
     this.material.dispose();
+    this.blurMaterial.dispose();
     this.lutMaterial.dispose();
     this.fallbackDustMap.dispose();
+    const bn = this.material.uniforms.uBlueNoise.value as THREE.Texture;
+    bn.dispose();
     // as PlaneGeometry dos quads fullscreen também são GPU buffers
     this.scene.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
     this.lutScene.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose();
+    });
+    this.blurScene.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
   }

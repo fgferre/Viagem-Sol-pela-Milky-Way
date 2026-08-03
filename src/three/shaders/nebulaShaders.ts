@@ -40,6 +40,8 @@ uniform vec3 uLightColor[2];
 // 256×128): a integração distante depende só da DIREÇÃO do raio,
 // então custa um fetch por pixel em vez de ~20 passos pesados.
 uniform sampler2D uBandLUT;
+// tile 64×64 de blue noise (blueNoise.ts) — jitter do raymarch
+uniform sampler2D uBlueNoise;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
@@ -184,6 +186,24 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
 }
 `;
 
+// Passe de suavização do raymarch: 4 taps em ±meio-texel (com filtro
+// linear = tent 3×3 efetivo). O blue noise do jitter vive SÓ na alta
+// frequência — este blur o apaga onde o conteúdo (nuvem) é liso por
+// natureza; borda de nuvem perde ~2 px de tela em meia-res, invisível.
+export const NEBULA_BLUR_FRAG = /* glsl */ `
+precision highp float;
+uniform sampler2D uSrc;
+uniform vec2 uTexel;
+void main() {
+  vec2 uv = gl_FragCoord.xy * uTexel;
+  vec3 c = texture2D(uSrc, uv + uTexel * vec2( 0.5,  0.5)).rgb
+         + texture2D(uSrc, uv + uTexel * vec2(-0.5,  0.5)).rgb
+         + texture2D(uSrc, uv + uTexel * vec2( 0.5, -0.5)).rgb
+         + texture2D(uSrc, uv + uTexel * vec2(-0.5, -0.5)).rgb;
+  gl_FragColor = vec4(c * 0.25, 1.0);
+}
+`;
+
 // Fragment do LUT da faixa: uma direção por texel (256×128 equirect
 // no referencial galáctico), integração distante completa.
 export const NEBULA_LUT_FRAG = /* glsl */ `
@@ -219,8 +239,13 @@ void main() {
     uCamUp * (uv.y * uTanHalfFov));
   vec3 ro = uCamPos;
 
-  // jitter anti-banding (interleaved gradient noise)
-  float jitter = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+  // jitter anti-banding por BLUE NOISE (medido nas capturas t=110): IGN
+  // imprimia xadrez estático ~2 px (estrutura periódica; sem TAA não se
+  // dissolve, meia-res amplia), hash branco virava manchas de baixa
+  // frequência que o upsample não remove. Blue noise = erro só em alta
+  // frequência, sem período — o ótimo estático. Deslocamento COERENTE da
+  // partição preservado (variância por pixel baixa, só termos de borda).
+  float jitter = texture2D(uBlueNoise, gl_FragCoord.xy / 64.0).r;
 
   float tMax = 650.0;
 
@@ -255,6 +280,9 @@ void main() {
     // Amostragem quadrática: alta resolução perto da câmera, mas o
     // último passo realmente alcança 650 pc. A progressão anterior
     // percorria só ~4 pc e nunca chegava às nuvens da viagem.
+    // (amostra por passo com hash próprio foi testada e granula demais:
+    // uma amostra independente por célula grande = variância alta; o
+    // deslocamento coerente da partição erra pouco e sem estrutura)
     float f0 = clamp((float(i) + jitter) / float(N), 0.0, 1.0);
     float f1 = clamp((float(i + 1) + jitter) / float(N), 0.0, 1.0);
     float t0 = tLo + span * f0 * f0;
