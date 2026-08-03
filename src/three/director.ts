@@ -12,7 +12,7 @@ import { NovoSol } from './world/novoSol';
 import { Dust } from './world/dust';
 import { projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
-import { HeroStars } from './world/heroStars';
+import { HeroStars, SunStar } from './world/heroStars';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
@@ -51,6 +51,7 @@ export class Director {
   private nebula: Nebula;
   private stars!: StarField;
   private heroes!: HeroStars;
+  private sunStar!: SunStar;
   private galaxy!: Galaxy;
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
@@ -190,6 +191,10 @@ export class Director {
     // QUALQUER ponto do disco, com a mesma PSF e anti-dupla-contagem.
     this.stars = new StarField(positions, 6, { expoM0: 3.5, sigmaPx: 0.85, tau: 0.045 });
     this.heroes = new HeroStars(this.meta.named);
+    // o Sol sob a mesma lei dos heróis: de longe é estrela, não bola
+    // (magnitude viva pela distância; o nearFade cede ao disco de perto)
+    this.sunStar = new SunStar();
+    this.engine.scene.add(this.sunStar.quad);
 
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
@@ -736,6 +741,8 @@ export class Director {
     }
     this.heroes?.update(time, cam.position, tanHalfFov);
     this.sun.group.visible = !this.hide.has('nosun');
+    this.sunStar.quad.visible = this.sun.group.visible;
+    this.sunStar.update(time, dHome, tanHalfFov);
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice)
     this.sun.update(time, this.engine.camera, this.journeyT);
     this.dust.update(cam.position, hPx, time);
@@ -885,6 +892,7 @@ export class Director {
     this.dustMapTexture?.dispose();
     this.structureMapTexture?.dispose();
     this.sun.dispose();
+    this.sunStar.dispose();
     this.dust.dispose();
     this.nebula.dispose();
     this.post.dispose();

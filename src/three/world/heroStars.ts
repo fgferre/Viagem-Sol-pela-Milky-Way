@@ -121,7 +121,7 @@ export class HeroStars {
     }
   }
 
-  private static readonly TAN_REF = Math.tan(THREE.MathUtils.degToRad(58 / 2));
+  static readonly TAN_REF = Math.tan(THREE.MathUtils.degToRad(58 / 2));
 
   update(time: number, camPos: THREE.Vector3, tanHalfFov: number) {
     const zoom = Math.min(1, tanHalfFov / HeroStars.TAN_REF);
@@ -139,5 +139,65 @@ export class HeroStars {
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
+  }
+}
+
+// ============================================================
+// O Sol sob a MESMA lei (unificação 2): de longe ele é uma estrela
+// como as outras — mesma PSF dos heróis, mas com magnitude VIVA
+// (M=4,83 + 5·log10(d/10)): a 0,5 pc vale −1,7, o brilho de Sirius
+// vista da Terra. O nearFade do shader faz o crossfade sozinho: de
+// perto o clarão some (o disco estruturado do NovoSol é a vista), no
+// recuo da hélice ele acende e engole o disco — como a física manda.
+// ============================================================
+export class SunStar {
+  readonly quad: THREE.Mesh;
+  private mat: THREE.ShaderMaterial;
+
+  constructor() {
+    this.mat = new THREE.ShaderMaterial({
+      vertexShader: VERT,
+      fragmentShader: FRAG,
+      uniforms: {
+        uColor: { value: spectToColor('G') },
+        uTime: { value: 0 },
+        uSeed: { value: 4.83 },
+        uSize: { value: 0.01 },
+        uZoom: { value: 1 },
+        uCamDist: { value: 100 },
+      },
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      // o glare é artefato de olho/lente: nunca é ocluído pelo próprio
+      // disco (com depthTest o disco opaco furava um buraco no clarão)
+      depthTest: false,
+      transparent: true,
+    });
+    this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat);
+    this.quad.frustumCulled = false;
+    this.quad.renderOrder = 3;
+  }
+
+  update(time: number, camDist: number, tanHalfFov: number) {
+    const d = Math.max(camDist, 1e-4);
+    const m = 4.83 + 5 * Math.log10(d / 10);
+    // lei ANGULAR: 1,75°·10^(−0,3m) — em m=−1,46 dá o look de Sirius
+    // vista da Terra; teto de 40° (a lei de mundo dos heróis explodia
+    // para ~d^−2,5 de ângulo vista de dentro do sub-parsec)
+    const ang = Math.min(40, 1.75 * Math.pow(10, -0.3 * m));
+    // portão de proximidade: com o disco resolvido (d < ~0,3 pc) o
+    // assunto é a superfície — o clarão cede ao NovoSol
+    const k = Math.min(1, Math.max(0, (d - 0.28) / 0.22));
+    const gate = k * k * (3 - 2 * k);
+    const u = this.mat.uniforms;
+    u.uSize.value = d * Math.tan((ang * Math.PI) / 180) * gate;
+    u.uCamDist.value = d;
+    u.uTime.value = time;
+    u.uZoom.value = Math.min(1, tanHalfFov / HeroStars.TAN_REF);
+  }
+
+  dispose() {
+    this.mat.dispose();
+    this.quad.geometry.dispose();
   }
 }

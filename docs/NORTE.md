@@ -507,9 +507,21 @@ ainda decide algo:
   até as cargas fracas do mínimo — com 48 passos o disco nascia com
   filamentos de campo inexistente). Depois de t≈29 o ciclo segue em 1×.
 - **Eventos provados ao vivo (CDP, ?t=20 sem shot):** flare natural
-  flagrado (w 0,83 e 0,70 em duas vigílias de ~15 s), CME completa
+  flagrado (w 0,83 e 0,70 em duas vigilias de ~15 s), CME completa
   fotografada (casca de 3 partes + ejecta por transform feedback,
   cinemática 0→3,3 R em ~8 s), cvolReady e bake ciclando.
+- **De longe o Sol é ESTRELA, não bola (feedback do dono: "vista
+  afastada irreal").** `SunStar` em heroStars.ts: a MESMA PSF dos
+  heróis com magnitude VIVA (M=4,83 + 5·log10(d/10) — a 0,5 pc vale
+  −1,7, o brilho de Sirius vista da Terra), na lei ANGULAR
+  1,75°·10^(−0,3m) com teto 40° (a lei de mundo dos heróis explode
+  ~d^−2,5 de ângulo vista de dentro do sub-parsec) e portão de
+  proximidade 0,28→0,50 pc (com o disco resolvido, o assunto é a
+  superfície). `depthTest:false` obrigatório: o glare é artefato de
+  olho — com depth o disco opaco furava um buraco no clarão. O disco
+  âmbar H-alfa é estética de telescópio: correta de perto, e de longe
+  o clarão branco a engole — unificação 2 avançou (o Sol entrou na
+  lei fotométrica única).
 - **Tier congelado no init** (cinema→high, alta→mid, performance→low), mesmo
   precedente do populationScale; mudar qualidade ao vivo não reconstrói o Sol.
 - **Gates provados intocados nas DUAS fases**: edge 0,4396 com todos os
