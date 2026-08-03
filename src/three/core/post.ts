@@ -92,6 +92,13 @@ export class Post {
       (this.knee.uniforms as Record<string, { value: number }>).uMode.value =
         q.get('kneemode') === 'lum' ? 0 : 1;
     }
+    // ?kneeamt= força o amount (a rampa galaxyFade zera o knee DENTRO
+    // da galáxia; o gate do céu interno precisa varrê-lo de dentro)
+    const rawAmt = q.get('kneeamt');
+    this.forcedAmt = rawAmt === null ? null : parseFloat(rawAmt);
+    if (this.kneeOn && this.forcedAmt !== null && Number.isFinite(this.forcedAmt)) {
+      (this.knee.uniforms as Record<string, { value: number }>).uAmt.value = this.forcedAmt;
+    }
     this.knee.enabled = this.kneeOn;
     this.composer.addPass(this.knee);
 
@@ -126,6 +133,7 @@ export class Post {
   }
 
   private galaxyMode = 0;
+  private forcedAmt: number | null = null;
 
   /**
    * Modo galáxia (0..1): o bojo é uma fonte HDR enorme — sem
@@ -136,7 +144,8 @@ export class Post {
     this.galaxyMode = k;
     // o knee segue a mesma rampa da vista externa que a auto-exposição
     if (this.kneeOn) {
-      (this.knee.uniforms as Record<string, { value: number }>).uAmt.value = k;
+      (this.knee.uniforms as Record<string, { value: number }>).uAmt.value =
+        this.forcedAmt ?? k;
     }
   }
 

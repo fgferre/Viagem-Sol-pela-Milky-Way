@@ -41,8 +41,12 @@ for (const f of FACES) {
     '--window-size=1440,1440', '--virtual-time-budget=16000',
     `--screenshot=${resolve(OUT, `face_${f.nome}.png`)}`,
     // nohero=1: os clarões das estrelas-herói são camada CINEMATOGRÁFICA;
-    // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa
-    `${APP}/?pos=0,0,0&look=${look}&fov=90&nosun=1&nohero=1&shot=2`,
+    // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa.
+    // kneeamt=1&knee=0.02&exp=4.4: REVELAÇÃO fotométrica do gate (não é o
+    // look do app!) — o panorama ESO é astrofoto com stretch asinh a ~3% do
+    // pico; medir sem o stretch equivalente compara curva de tom, não céu
+    // (provado 2026-08-03: bulgeAnti 19,1→5,52 com alvo 5,57; zero clipping)
+    `${APP}/?pos=0,0,0&look=${look}&fov=90&nosun=1&nohero=1&kneeamt=1&knee=0.02&exp=4.4&shot=2`,
   ], { encoding: 'utf8', timeout: 120000 });
   console.log(`face_${f.nome}.png exit=${r.status}`);
 }

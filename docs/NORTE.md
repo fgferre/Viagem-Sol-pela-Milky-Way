@@ -174,10 +174,28 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    **bulgeAnti 18,9 vs 5,6** (bojo domina 3,4×; a faixa do anticentro é fraca
    demais), espessura por longitude irregular (1,75–13,5° vs 3–6,5°; onde a
    faixa apaga, o fundo domina a meia-altura), rift 0,18 vs 0,24, colour 0,088
-   vs 0,064, purp 0,068 vs 0,078. **O termo mestre é bulgeAnti: rumo ao
-   anticentro a faixa DIFUSA quase não existe** (face_anti mostra só farrapos
-   e estrelas resolvidas onde a foto tem faixa contínua — falta luz
-   não-resolvida, não pontos). O reequilíbrio 2-braços da vista interna
+   vs 0,064, purp 0,068 vs 0,078. **E o termo mestre CAIU no mesmo dia
+   (2026-08-03): o bulgeAnti 19,1 vs 5,6 era CURVA DE TOM, não modelo de
+   massa — a mesma descoberta da rodada 18 no edge, agora de dentro.**
+   Atribuição por ablação primeiro: nowrap NÃO move nada (cascas ≈ zero
+   na fotometria da faixa), nonebula derruba bulgeAnti para 1,7 (a faixa
+   difusa INTEIRA é o raymarch/LUT), nocat sobe para 29,7 (parte do pouco
+   anticentro é estrela de primeiro plano). Aí a régua: o panorama ESO é
+   astrofoto com stretch asinh a ~3% do pico (o memo da r18); nosso céu
+   interno vive em x≲0,3 pré-ACES, onde o knee default (β=0,45, e amt=0
+   dentro pela rampa) nem morde. Com REVELAÇÃO no protocolo de captura
+   (`kneeamt=1&knee=0.02&exp=4.4`, knob novo `?kneeamt=` em post.ts;
+   zero clipping, p99 147/255): **bulgeAnti 5,524 vs alvo 5,568 CRAVA, e
+   skyError 3,719 → 1,1093 — baseline OFICIAL do protocolo v3.** O look
+   do app segue soberano (olho nu ≠ astrofoto); a revelação é do GATE.
+   Deficiências honestas que sobram, em ordem: **(1) rift 0,036 vs 0,244**
+   — o stretch expõe que o vale do Great Rift tem piso luminoso demais
+   (falta profundidade óptica real nas fendas internas — o análogo interno
+   do τ0 da fenda edge); **(2) colour −0,065 vs 0,064** — a revelação
+   per-RGB dessatura além do alvo (β=0,1 dá +0,071 quase exato; o par
+   dose↔cor precisa de uma rodada própria, e chromsat interno é candidato);
+   **(3) purp 0,062 vs 0,078** — independe do tom: população (H II /
+   espalhamento), como a vista externa já sabia. O reequilíbrio 2-braços
    (marcado em `nebulaShaders.ts`/`wrappedStars.ts`) agora TEM juiz.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
