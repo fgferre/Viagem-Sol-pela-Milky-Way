@@ -3,10 +3,11 @@
 //
 // Duas classes de ajuste, tratadas diferente de propósito:
 //
-//   ao vivo   tom e exposição. São escolha estética e precisam de
-//             realimentação imediata; nenhum dos dois exige rebuild.
-//   recarrega camadas e qualidade de build. As flags são lidas uma vez na
-//             construção do Director, e o mundo é gerado no init.
+//   ao vivo   tom, exposição, qualidade e as camadas com viva:true —
+//             o tick do Director lê essas flags a cada quadro
+//             (setLayerHidden), então a troca é imediata, sem reload.
+//   recarrega só nodisc/nogdust/noglow: lidas no BAKE do mundo, na
+//             construção — religá-las exige reconstruir.
 //
 // A URL continua sendo a fonte de verdade: o painel escreve nela em vez de
 // guardar estado próprio. Assim qualquer configuração vira link, e a captura
@@ -26,17 +27,20 @@ const TONS: { id: ToneMapMode; nome: string; nota: string }[] = [
 const QUALIDADES: QualityLevel[] = ['cinema', 'alta', 'performance'];
 
 // Cada flag desliga uma família. Os nomes são os que o Director já lê.
-const CAMADAS: { flag: string; nome: string }[] = [
-  { flag: 'nogal', nome: 'Galáxia (tudo)' },
-  { flag: 'nodisc', nome: 'Lâminas do disco' },
-  { flag: 'nogdust', nome: 'Extinção por partícula' },
-  { flag: 'noglow', nome: 'Brilho do bojo' },
-  { flag: 'nocart', nome: 'Cartografia observada' },
-  { flag: 'nonebula', nome: 'Nebulosa volumétrica' },
-  { flag: 'nowrap', nome: 'Campo envolvente' },
-  { flag: 'nocat', nome: 'Catálogo HYG' },
-  { flag: 'nohero', nome: 'Estrelas nomeadas' },
-  { flag: 'nomarker', nome: 'Marcador do Sol' },
+// `viva`: o tick lê a flag a cada quadro — troca AO VIVO, sem recarregar.
+// As três restantes são lidas no BAKE do mundo e exigem reload de verdade.
+const CAMADAS: { flag: string; nome: string; viva: boolean }[] = [
+  { flag: 'nogal', nome: 'Galáxia (tudo)', viva: true },
+  { flag: 'nodisc', nome: 'Lâminas do disco', viva: false },
+  { flag: 'nogdust', nome: 'Extinção por partícula', viva: false },
+  { flag: 'noglow', nome: 'Brilho do bojo', viva: false },
+  { flag: 'nocart', nome: 'Cartografia observada', viva: true },
+  { flag: 'nonebula', nome: 'Nebulosa volumétrica', viva: true },
+  { flag: 'nowrap', nome: 'Campo envolvente', viva: true },
+  { flag: 'nocat', nome: 'Catálogo HYG', viva: true },
+  { flag: 'nohero', nome: 'Estrelas nomeadas', viva: true },
+  { flag: 'nomarker', nome: 'Marcador do Sol', viva: true },
+  { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', viva: true },
 ];
 
 /** Reescreve a query preservando tudo que não é o parâmetro tocado. */
@@ -55,6 +59,7 @@ export function Ajustes({
   onQualidade,
   onTom,
   onExposicao,
+  onCamada,
 }: {
   aberto: boolean;
   onFechar: () => void;
@@ -62,6 +67,7 @@ export function Ajustes({
   onQualidade: (q: QualityLevel) => void;
   onTom: (t: ToneMapMode) => void;
   onExposicao: (v: number) => void;
+  onCamada: (flag: string, escondida: boolean) => void;
 }) {
   const query = new URLSearchParams(window.location.search);
   const [tom, setTom] = useState<ToneMapMode>(
@@ -69,6 +75,11 @@ export function Ajustes({
   );
   const [exp, setExp] = useState(Number(query.get('exp') ?? 1.02));
   const [copiado, setCopiado] = useState(false);
+  // estado local das camadas: a URL segue sendo a fonte de verdade, mas
+  // as flags vivas mudam sem reload — o estado dá o re-render do painel
+  const [escondidas, setEscondidas] = useState<Set<string>>(
+    () => new Set(CAMADAS.filter((c) => query.has(c.flag)).map((c) => c.flag))
+  );
 
   // O painel NÃO aplica ?tone=/?exp= na montagem: efeito de filho roda antes
   // do efeito do pai, então o Director ainda não existe aqui. Quem aplica é o
@@ -95,9 +106,20 @@ export function Ajustes({
     window.history.replaceState(null, '', comParam('exp', v === 1.02 ? null : String(v)));
   };
 
-  const alternarCamada = (flag: string, ligado: boolean) => {
-    // recarrega: as flags são lidas na construção do Director
-    window.location.assign(comParam(flag, ligado ? null : '1'));
+  const alternarCamada = (c: (typeof CAMADAS)[number], ligar: boolean) => {
+    if (!c.viva) {
+      // lidas no bake do mundo — reload de verdade
+      window.location.assign(comParam(c.flag, ligar ? null : '1'));
+      return;
+    }
+    onCamada(c.flag, !ligar);
+    setEscondidas((prev) => {
+      const s = new Set(prev);
+      if (ligar) s.delete(c.flag);
+      else s.add(c.flag);
+      return s;
+    });
+    window.history.replaceState(null, '', comParam(c.flag, ligar ? null : '1'));
   };
 
   return (
@@ -160,18 +182,19 @@ export function Ajustes({
       <div className="ajustes-secao">
         <h3>Camadas</h3>
         <p className="ajustes-nota">
-          Recarrega a página — elas são decididas na construção do mundo.
+          Trocam ao vivo; as marcadas com ↻ recarregam a página (são
+          decididas na construção do mundo).
         </p>
         {CAMADAS.map((c) => {
-          const ligado = !query.has(c.flag);
+          const ligado = !escondidas.has(c.flag);
           return (
             <label key={c.flag} className="ajustes-check">
               <input
                 type="checkbox"
                 checked={ligado}
-                onChange={() => alternarCamada(c.flag, !ligado)}
+                onChange={() => alternarCamada(c, !ligado)}
               />
-              <span>{c.nome}</span>
+              <span>{c.viva ? c.nome : `${c.nome} ↻`}</span>
             </label>
           );
         })}

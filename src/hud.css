@@ -288,6 +288,69 @@
   50% { opacity: 1; }
 }
 
+/* --- loader: Sagittarius A* em CSS puro ------------------------------
+   Disco de acreção = gradiente cônico girando, deitado em 3D (rotateX);
+   anel de fótons e sombra por cima, retos — como a lente de verdade faz
+   no app. Com prefers-reduced-motion o giro para e vira um emblema. */
+.bh-loader {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 2.2rem;
+}
+.bh-tilt {
+  position: absolute;
+  inset: -14px;
+  transform: perspective(260px) rotateX(66deg);
+}
+.bh-accretion {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 20deg,
+    transparent 4%,
+    rgba(255, 176, 96, 0.12) 16%,
+    rgba(255, 205, 130, 0.75) 34%,
+    rgba(255, 244, 224, 0.98) 47%,
+    rgba(255, 196, 116, 0.55) 60%,
+    rgba(180, 90, 40, 0.15) 76%,
+    transparent 92%
+  );
+  filter: blur(5px);
+  animation: bhSpin 2.8s linear infinite;
+}
+/* a imagem do disco lenteada POR CIMA da sombra — o "chapéu" do Gargantua */
+.bh-arc {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 16px;
+  height: 44px;
+  border-radius: 50%;
+  border-top: 2.5px solid rgba(255, 226, 180, 0.85);
+  filter: blur(1.2px);
+  box-shadow: 0 -3px 10px rgba(255, 200, 130, 0.35);
+}
+.bh-photon {
+  position: absolute;
+  inset: 30px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 236, 208, 0.95);
+  box-shadow:
+    0 0 14px rgba(255, 214, 150, 0.85),
+    inset 0 0 9px rgba(255, 214, 150, 0.55);
+}
+.bh-core {
+  position: absolute;
+  inset: 33px;
+  border-radius: 50%;
+  background: #000;
+}
+@keyframes bhSpin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 760px) {
   .letterbox.on {
     height: 4.5vh;

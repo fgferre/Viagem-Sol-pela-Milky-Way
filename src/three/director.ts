@@ -86,6 +86,8 @@ export class Director {
   private lastCaptionIdx = -1;
   /** congela o relógio da viagem (debug/screenshots via ?freeze=1) */
   freezeJourney = false;
+  /** multiplicador do relógio da viagem (1× · 2× · 4×) */
+  playbackRate = 1;
   private noNebula = false;
   private deepBg = new THREE.Color(0x010208);
   /** ?shot=1 congela o tempo visual — capturas determinísticas */
@@ -215,9 +217,7 @@ export class Director {
     );
     // congela as lâminas (estáticas) em texturas — depois do modo
     this.galaxy.bakeDiscLayers(this.engine.renderer);
-    // forges sofrem a mesma extinção por coluna que as partículas
     const tauTex = this.galaxy.tauMapTexture;
-    if (tauTex) this.starForges?.setTauMap(tauTex);
     this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
     if (galactic && cartMode !== 'off') {
       this.observedClouds = new ObservedClouds(
@@ -225,6 +225,17 @@ export class Director {
         galactic.largeMolecularClouds
       );
       this.starForges = new StarForges(galactic);
+      // Extinção por coluna das forjas: a auditoria da rodada 26 achou a
+      // chamada ANTES da criação (?. engolia em silêncio) — ela NUNCA
+      // ligou, e toda a dosagem edge das rodadas 15–25 foi calibrada com
+      // as forjas sem extinção. Ligar sob a dosagem atual foi MEDIDO:
+      // edge 0,6441 → 0,7862 (thickRatio 0,050→0,040 quebra) e face
+      // 0,0333 → 0,0301 (melhora). Fica DESLIGADA por padrão até a
+      // rodada de re-dosagem sob o regime corrigido; ?forgetau=1 liga
+      // para varrer. Detalhe no NORTE.
+      if (tauTex && this.debug.has('forgetau')) {
+        this.starForges.setTauMap(tauTex);
+      }
       this.engine.scene.add(this.observedClouds.mesh);
       this.engine.scene.add(this.starForges.points);
       this.buildSeedCloudPool(galactic);
@@ -360,6 +371,7 @@ export class Director {
     this.journeyT = 0;
     this.lastCaptionIdx = -1;
     this.freezeJourney = false;
+    this.playbackRate = 1;
     this.leftDisk = false;
     this.rig.reset();
     this.rig.paused = false;
@@ -389,6 +401,20 @@ export class Director {
   /** início do Ato IV — o botão "Ver a galáxia" salta para cá */
   get revealTime() {
     return REVEAL_T;
+  }
+
+  /**
+   * Troca AO VIVO uma camada cuja flag o tick lê a cada quadro — o
+   * painel de ajustes não precisa recarregar a página para elas.
+   * (nodisc/nogdust/noglow seguem exigindo reload: são lidas no bake.)
+   */
+  setLayerHidden(flag: string, hidden: boolean) {
+    if (flag === 'nonebula') {
+      this.noNebula = hidden;
+      return;
+    }
+    if (hidden) this.hide.add(flag);
+    else this.hide.delete(flag);
   }
 
   // ---- pausar-e-olhar (viagem congelada) -------------------------
@@ -434,11 +460,7 @@ export class Director {
     }
     if (!best) return;
     if (best.key === 'sgr-a') {
-      this.roam.startVisit({
-        name: best.name,
-        pos: GAL.GC_POS.clone(),
-        arriveDist: 7,
-      });
+      this.roam.startVisit({ pos: GAL.GC_POS.clone(), arriveDist: 7 });
       return;
     }
     const star =
@@ -448,7 +470,6 @@ export class Director {
     if (!star) return;
     const pos = new THREE.Vector3(star.x, star.y, star.z);
     this.roam.startVisit({
-      name: star.n,
       pos,
       arriveDist: THREE.MathUtils.clamp(
         pos.distanceTo(this.engine.camera.position) * 0.08,
@@ -462,6 +483,27 @@ export class Director {
   seekFraction(fraction: number) {
     if (this.phase === 'end') this.play();
     this.seek(THREE.MathUtils.clamp(fraction, 0, 1) * this.rig.duration);
+  }
+
+  /** setas ←/→: salta para o capítulo anterior/seguinte (as legendas) */
+  skipChapter(dir: 1 | -1) {
+    if (this.phase !== 'journey') return;
+    const times = this.rig.ticks.map((f) => f * this.rig.duration);
+    if (dir > 0) {
+      const next = times.find((x) => x > this.journeyT + 0.5);
+      if (next !== undefined) this.seek(next);
+    } else {
+      // como em players de vídeo: volta ao início do capítulo atual;
+      // apertando de novo (perto do início), ao anterior
+      const prevs = times.filter((x) => x < this.journeyT - 2.5);
+      this.seek(prevs.length ? prevs[prevs.length - 1] : 0);
+    }
+  }
+
+  /** 1× → 2× → 4× → 1× */
+  cyclePlaybackRate(): number {
+    this.playbackRate = this.playbackRate >= 4 ? 1 : this.playbackRate * 2;
+    return this.playbackRate;
   }
 
   enterFreeRoam() {
@@ -490,7 +532,7 @@ export class Director {
     let warp = 0;
 
     if (this.phase === 'journey') {
-      if (!this.freezeJourney) this.journeyT += dt;
+      if (!this.freezeJourney) this.journeyT += dt * this.playbackRate;
       const t = this.journeyT;
       const r = this.rig.apply(cam, t, dt);
       warp = r.warp;
@@ -580,7 +622,7 @@ export class Director {
       );
     }
 
-    this.stars?.update(cam.position, hPx, time);
+    this.stars?.update(cam.position, hPx);
     this.wrappedStars?.update(
       cam.position,
       hPx,
@@ -632,7 +674,6 @@ export class Director {
     // Traçadores estelares continuam visíveis em ambas as escalas.
     const cartHidden = this.hide.has('nocart') || this.hide.has('nogal');
     this.observedClouds?.update(
-      hPx,
       tanHalfFov,
       // As nuvens CO medidas são as fendas REAIS da Via Láctea; ficarem
       // em fade 0 na vista externa era jogar fora a tonalidade delas
@@ -677,15 +718,19 @@ export class Director {
         this.prevLabelKeys
       );
       if (this.phase === 'journey') {
-        // cinema: nada de etiqueta em cima do assunto (a legenda já o
-        // nomeia) nem durante o close de abertura no Sol
+        // cinema: etiqueta de estrela comum não gruda no assunto da cena
+        // (a legenda já o nomeia) nem aparece no close de abertura. SOL e
+        // Sagittarius A✱ são EXCEÇÃO: são o "você está aqui/ali" — o
+        // filtro matava o tag do Sol exatamente no final, quando a mira
+        // desliza para ele (visto pelo usuário).
         this.lastLabels =
           dHome < 1.5
             ? []
             : this.lastLabels.filter((l) => {
+                if (l.key === 'sol-home' || l.key === 'sgr-a') return true;
                 const dx = l.x - 0.5;
                 const dy = l.y - 0.5;
-                return dx * dx + dy * dy > 0.03; // ~17% do quadro
+                return dx * dx + dy * dy > 0.012; // ~11% do quadro
               });
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
@@ -705,7 +750,7 @@ export class Director {
       this.engine.scene.background = this.noNebula ? this.deepBg : this.bgColor;
     } else {
       this.engine.scene.background = this.nebula.texture;
-      this.nebula.render(this.engine.renderer, cam, time);
+      this.nebula.render(this.engine.renderer, cam);
     }
     this.post.render(time);
   }

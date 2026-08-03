@@ -9,11 +9,13 @@
 // recriação Gaia 2025 face-on.
 //
 // Uso:
-//   1) capture o quadro (GPU real, sem HUD):
+//   1) capture o quadro (GPU real, sem HUD; protocolo 1800px da rodada
+//      24; t=293 é o hold face-on desde a rodada 26 — o edge é t=261,
+//      medido com &mode=edge na URL desta página):
 //      chrome --headless=new --enable-gpu --use-gl=angle --use-angle=d3d11 \
-//        --window-size=1400,1400 --hide-scrollbars \
+//        --window-size=1800,1800 --hide-scrollbars \
 //        --user-data-dir=<scratch>/chrome-profile --virtual-time-budget=35000 \
-//        --screenshot=<dir>/agora.png "http://127.0.0.1:5173/?t=170&shot=2"
+//        --screenshot=<dir>/agora.png "http://127.0.0.1:5173/?t=293&shot=2"
 //   2) rode esta página apontando para os dois arquivos:
 //      chrome --headless=new --enable-gpu --allow-file-access-from-files \
 //        --window-size=900,900 --virtual-time-budget=12000 --dump-dom \

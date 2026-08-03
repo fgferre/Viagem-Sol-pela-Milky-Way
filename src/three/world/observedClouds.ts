@@ -28,13 +28,11 @@ attribute float aAlpha;
 attribute float aSeed;
 
 uniform float uFade;
-uniform float uScreenH;
 uniform float uTanHalfFov;
 
 varying vec2 vUv;
 varying float vAlpha;
 varying float vSeed;
-varying float vPx;
 
 void main() {
   vUv = position.xy; // -1..1 no quad base
@@ -52,7 +50,6 @@ void main() {
   float visible = step(0.003, vAlpha);
   float radius = min(aRadius, 0.6 * uTanHalfFov * dist);
   center.xy += position.xy * radius * visible;
-  vPx = radius * uScreenH / (uTanHalfFov * max(dist, 1.0));
 
   gl_Position = projectionMatrix * center;
 }
@@ -66,7 +63,6 @@ uniform float uTau;
 varying vec2 vUv;
 varying float vAlpha;
 varying float vSeed;
-varying float vPx;
 
 ${GLSL_NOISE}
 
@@ -188,7 +184,6 @@ export class ObservedClouds {
       fragmentShader: FRAG,
       uniforms: {
         uFade: { value: 0 },
-        uScreenH: { value: 1080 },
         uTanHalfFov: { value: 0.55 },
         uTau: { value: 2.4 },
       },
@@ -203,8 +198,7 @@ export class ObservedClouds {
     this.mesh.renderOrder = 5; // junto da poeira galáctica multiplicativa
   }
 
-  update(screenH: number, tanHalfFov: number, fade: number) {
-    this.material.uniforms.uScreenH.value = screenH;
+  update(tanHalfFov: number, fade: number) {
     this.material.uniforms.uTanHalfFov.value = tanHalfFov;
     this.material.uniforms.uFade.value = fade;
     this.mesh.visible = fade > 0.001;

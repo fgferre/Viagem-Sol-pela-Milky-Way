@@ -6,7 +6,6 @@
 export const WORLD = {
   // Sol artístico (escala real seria invisível: 2.3e-8 pc)
   sunRadius: 0.011,
-  sunStart: [0.028, 0.014, 0.065] as [number, number, number],
 
   // "Corações" de nuvens ao longo do corredor da viagem: [x, y, z, raio pc]
   // Posicionados no corredor Sol → Sirius → Bellatrix → Betelgeuse → Rigel
@@ -23,11 +22,9 @@ export const WORLD = {
   // Paleta de gás (astrofotografia: OIII teal × H-alfa magenta)
   gasColorCool: [0.12, 0.38, 0.56] as [number, number, number],
   gasColorWarm: [0.88, 0.18, 0.34] as [number, number, number],
-  gasAmbient: 0.15,
   gasDensity: 1.0,
 
   // Campos estelares
-  starMagLimit: 7.2, // deve bater com o binário gerado
   dustCount: 2200,
 };
 

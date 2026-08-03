@@ -69,7 +69,7 @@ export class JourneyRig {
     camera: THREE.PerspectiveCamera,
     t: number,
     dt: number
-  ): { warp: number; speed: number } {
+  ): { warp: number } {
     const s = this.journey.at(t);
     // amortecimento exponencial por TEMPO (não por frame): a 144 Hz
     // a câmera convergia 2,4× mais rápido que a 60 Hz
@@ -110,7 +110,7 @@ export class JourneyRig {
     camera.fov += (targetFov - camera.fov) * kFov;
     camera.updateProjectionMatrix();
 
-    return { warp: s.warp, speed: s.speed };
+    return { warp: s.warp };
   }
 
   reset() {
@@ -129,7 +129,6 @@ export class JourneyRig {
 // ============================================================
 
 export interface VisitTarget {
-  name: string;
   pos: THREE.Vector3;
   /** distância de chegada (pc) */
   arriveDist: number;
@@ -141,6 +140,8 @@ export class FreeRoam {
   private canvas: HTMLCanvasElement;
   private yaw = 0;
   private pitch = 0;
+  /** rolagem manual no próprio eixo (Z/X); persiste até o piloto nivelar */
+  private rollAngle = 0;
   private vel = new THREE.Vector3();
   private speed = 4; // pc/s
   private keys = new Set<string>();
@@ -160,8 +161,6 @@ export class FreeRoam {
   } | null = null;
   /** callback de clique curto (x,y normalizados 0..1) */
   onTap: ((x: number, y: number) => void) | null = null;
-  /** cancelamento de visita por input do usuário */
-  onVisitEnd: (() => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement, camera: THREE.PerspectiveCamera) {
     this.canvas = canvas;
@@ -199,6 +198,7 @@ export class FreeRoam {
     this.keys.clear();
     this.dragging = false;
     this.visit = null;
+    this.rollAngle = 0;
   }
 
   /** mini-viagem cinematográfica até uma estrela nomeada */
@@ -232,10 +232,6 @@ export class FreeRoam {
     };
   }
 
-  get visiting(): boolean {
-    return this.visit !== null;
-  }
-
   private applyVisit(dt: number) {
     const v = this.visit;
     if (!v) return;
@@ -257,7 +253,6 @@ export class FreeRoam {
     if (k >= 1) {
       this.visit = null;
       this.syncFromCamera();
-      this.onVisitEnd?.();
     }
   }
 
@@ -265,7 +260,6 @@ export class FreeRoam {
     if (!this.visit) return;
     this.visit = null;
     this.syncFromCamera();
-    this.onVisitEnd?.();
   }
 
   update(dt: number) {
@@ -287,6 +281,12 @@ export class FreeRoam {
     const target = new THREE.Vector3().copy(this.camera.position).add(fwd);
     this.camera.up.copy(up);
     this.camera.lookAt(target);
+
+    // rolagem no próprio eixo (Z/X) — aplicada por cima do horizonte
+    // galáctico; contínua enquanto a tecla estiver pressionada
+    if (this.keys.has('KeyZ')) this.rollAngle += dt * 1.1;
+    if (this.keys.has('KeyX')) this.rollAngle -= dt * 1.1;
+    if (Math.abs(this.rollAngle) > 1e-4) this.camera.rotateZ(this.rollAngle);
 
     // entrada suave: dissolve o quaternion herdado sobre o canônico
     if (this.blend > 0.001) {

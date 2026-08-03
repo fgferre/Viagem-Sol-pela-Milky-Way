@@ -28,6 +28,16 @@ export function TitleVeil({
     >
       {mode === 'loading' && (
         <>
+          {/* buraco negro em CSS puro: disco de acreção inclinado girando,
+              anel de fótons e a sombra — o destino da viagem como loader */}
+          <div className="bh-loader" aria-hidden="true">
+            <div className="bh-tilt">
+              <div className="bh-accretion" />
+            </div>
+            <div className="bh-arc" />
+            <div className="bh-photon" />
+            <div className="bh-core" />
+          </div>
           <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
           <div className="title-big loading-pulse">MAR DE ESTRELAS</div>
           <div className="title-sub">cartografando 18.543 estrelas do catálogo HYG…</div>

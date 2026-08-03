@@ -56,7 +56,6 @@ export class StarField {
         uExpoM0: { value: opts.expoM0 ?? 3.5 },
         uSigmaPx: { value: opts.sigmaPx ?? 0.85 },
         uTau: { value: opts.tau ?? 0.9 },
-        uTime: { value: 0 },
         uFade: { value: 1 },
         uCavityPos: { value: new THREE.Vector3() },
         uCavityGate: { value: 0 },
@@ -71,11 +70,10 @@ export class StarField {
     this.points.renderOrder = 2;
   }
 
-  update(camPos: THREE.Vector3, screenH: number, time: number) {
+  update(camPos: THREE.Vector3, screenH: number) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camPos);
     u.uScreenH.value = screenH;
-    u.uTime.value = time;
   }
 
   setFade(f: number) {

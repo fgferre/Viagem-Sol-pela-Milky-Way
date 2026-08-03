@@ -41,18 +41,6 @@ float fbm(vec3 p, int oct) {
   return s;
 }
 
-// ruído "ridged" — filamentos de poeira
-float ridged(vec3 p, int oct) {
-  float s = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 4; i++) {
-    if (i >= oct) break;
-    s += a * abs(2.0 * vnoise(p) - 1.0);
-    p = p * 2.13 + vec3(7.3, 3.1, 9.7);
-    a *= 0.5;
-  }
-  return s;
-}
 `;
 
 // Base galactocêntrica completa no referencial da cena (mesma base

@@ -192,7 +192,7 @@ uniform sampler2D uDustMap;
 // A variante de gás (não a pesada) é decisão da rodada 12: par fraco
 // com peso 0 exato decorrelacionaria estrelas e gás na vista interna;
 // reequilibrar é trabalho do gate do panorama ESO (lacuna 2).
-float stellarDensity(vec3 p, out float armGate, out float bulgeGate) {
+float stellarDensity(vec3 p, out float bulgeGate) {
   vec3 q = p - GAL_CENTER;
   float z = dot(q, GAL_N);
   vec2 xy = vec2(dot(q, GAL_X), dot(q, GAL_Y));
@@ -204,7 +204,6 @@ float stellarDensity(vec3 p, out float armGate, out float bulgeGate) {
   float bulge = exp(-length(q) / 900.0) * 14.0;
   // braços: contraste de massa modesto (≲3x); o brilho azul vem da cor
   float arms = cart.b;
-  armGate = arms;
   bulgeGate = clamp(bulge, 0.0, 1.0);
   float edge = 1.0 - smoothstep(15500.0, 19300.0, radiusPc);
   return (thin * (0.75 + 0.55 * arms) + thick) * edge * 22.9 + bulge * 0.02;
@@ -228,14 +227,16 @@ void main() {
   // worldPos só alimenta densidade e m_sun (escalas de kpc — o erro de
   // 3e-3 pc do uCamPos f32 é irrelevante aqui, e NUNCA entra na posição)
   vec3 worldPos = uCamPos + rel;
-  float armGate;
   float bulgeGate;
-  float density = stellarDensity(worldPos, armGate, bulgeGate);
+  float density = stellarDensity(worldPos, bulgeGate);
   // densidade decide EXISTÊNCIA, não alpha
   float exists = step(hExist, clamp(density * uProb[b], 0.0, 1.0));
   float MV = uMagLo[b] + hash13(cell + 23.7) * uMagSpan[b];
   // anti-dupla-contagem: o HYG é ~completo até V=7,2 visto do Sol —
-  // o que o catálogo já mostra, a casca não repete
+  // o que o catálogo já mostra, a casca não repete. O 7,2 é o corte do
+  // binário gerado (public/data/stars.bin, sanitize-stars.mjs): se o
+  // binário for regerado com outro corte, o step abaixo acompanha
+  // (era WORLD.starMagLimit — um knob que nunca foi lido; removido)
   float dSun = length(worldPos);
   float mSun = MV + 5.0 * log2(max(dSun, 1.0)) * 0.30103 - 5.0 +
     ${EXT_MAG_PER_PC.toFixed(6)} * dSun;

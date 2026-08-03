@@ -21,8 +21,10 @@ const qnum = (k: string, d: number) => {
 };
 const CHROMSAT = qnum('chromsat', 0.5);
 // ?samples= — nº de amostras do caminho de extinção (joelho 16 medido na
-// rodada 16 SOB O REGIME VELHO; re-preçável). ?slittau= — τ0 da fenda do
-// glow (2,5; o 5,0 foi rejeitado sob o regime velho, idem).
+// rodada 16 SOB O REGIME VELHO; re-preçável). O τ0 da fenda do glow é
+// uniform por material desde a rodada 24 (uSlitTau; fixo 2,5 no glow
+// compacto, ?haloslit= varre o do halo; o 5,0 foi rejeitado sob o
+// regime velho, idem).
 const NSAMP = Math.max(2, Math.round(qnum('samples', 16)));
 // ?warpslit= — a fenda do glow/halo segue o warp (±1 = quiralidade, 0 =
 // reta). Na rodada 17 era inútil (só o glow compacto existia — sem fluxo
@@ -55,7 +57,6 @@ uniform vec3 uGC;
 
 varying vec3 vColor;
 varying float vAlpha;
-varying float vSeed;
 
 ${GLSL_CARTOGRAPHY}
 ${GLSL_UNRESOLVED}
@@ -140,7 +141,6 @@ void main() {
   // como estrelas individuais a esta distância sai da integrada.
   // Além de ~5 kpc unresolved ≡ 1,0 — a vista externa não move.
   vAlpha = aAlpha * uFade * shrink * subPix * unresolved(dist);
-  vSeed = fract(aSize * 0.371 + aAlpha * 7.13);
 
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
@@ -153,7 +153,6 @@ precision highp float;
 
 varying vec3 vColor;
 varying float vAlpha;
-varying float vSeed;
 
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;

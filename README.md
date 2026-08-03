@@ -83,7 +83,7 @@ src/
 │  │  ├─ wrappedStars.ts     campo estelar inferido e relocável dentro do disco
 │  │  └─ labels.ts          rótulos projetados (vira “SOL” quando dHome > 2000 pc)
 │  ├─ cinematic/
-│  │  ├─ journey.ts         keyframes da viagem (atos I–III, JOURNEY_DURATION = 194s)
+│  │  ├─ journey.ts         shots da viagem (atos I–IV, ~321 s desde a rodada 26)
 │  │  └─ cameraRig.ts       interpolação de câmera + free-roam
 │  └─ shaders/              GLSL puro, um arquivo por família (starShaders, galaxyShaders, …)
 └─ hud.css                  estilos do HUD (tipografia cinematográfica)

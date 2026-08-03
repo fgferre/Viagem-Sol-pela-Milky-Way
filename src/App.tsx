@@ -27,6 +27,7 @@ export default function App() {
   const [runtime, setRuntime] = useState(0);
   const [quality, setQuality] = useState<QualityLevel>('cinema');
   const [paused, setPaused] = useState(false);
+  const [rate, setRate] = useState(1);
   const [loadError, setLoadError] = useState('');
   // ?ajustes=1 abre o painel direto: uma configuração inteira cabe num link,
   // inclusive com o painel visível para conferência.
@@ -70,8 +71,9 @@ export default function App() {
         const exposure = Number(query.get('exp'));
         if (Number.isFinite(exposure) && exposure > 0) d.engine.setExposure(exposure);
 
-        // ?pos=x,y,z[&look=x,y,z] — câmera livre determinística em
-        // qualquer ponto da galáxia (screenshots/inspeção).
+        // ?pos=x,y,z[&look=x,y,z][&fov=graus] — câmera livre determinística
+        // em qualquer ponto da galáxia (screenshots/inspeção; o fov só faz
+        // sentido aqui — na viagem o roteiro comanda a lente).
         const parse = (s: string | null) => {
           const v = (s ?? '').split(',').map(Number);
           return v.length === 3 && v.every(Number.isFinite)
@@ -79,8 +81,14 @@ export default function App() {
             : null;
         };
         const pos = parse(query.get('pos'));
-        if (pos) d.placeCamera(pos, parse(query.get('look')) ?? undefined);
-        else if (query.get('pos')) console.warn('?pos= inválido:', query.get('pos'));
+        if (pos) {
+          d.placeCamera(pos, parse(query.get('look')) ?? undefined);
+          const fov = Number(query.get('fov'));
+          if (Number.isFinite(fov) && fov >= 15 && fov <= 140) {
+            d.engine.camera.fov = fov;
+            d.engine.camera.updateProjectionMatrix();
+          }
+        } else if (query.get('pos')) console.warn('?pos= inválido:', query.get('pos'));
 
         // Um único ?t= permite inspeção determinística sem URLs frágeis com "&".
         const hasTime = query.has('t');
@@ -103,15 +111,24 @@ export default function App() {
     };
   }, []);
 
-  // pausa via botão ou tecla Espaço — um filme de 3min14s precisa disso
+  // pausa via botão ou tecla Espaço — um filme de mais de 5 min precisa disso
   const togglePause = () => {
     setPaused(directorRef.current?.togglePause() ?? false);
   };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.code !== 'Space' || !directorRef.current) return;
-      event.preventDefault();
-      setPaused(directorRef.current.togglePause());
+      const d = directorRef.current;
+      if (!d) return;
+      if (event.code === 'Space') {
+        event.preventDefault();
+        setPaused(d.togglePause());
+      } else if (event.code === 'ArrowRight') {
+        event.preventDefault();
+        d.skipChapter(1);
+      } else if (event.code === 'ArrowLeft') {
+        event.preventDefault();
+        d.skipChapter(-1);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -119,6 +136,7 @@ export default function App() {
 
   const play = () => {
     setPaused(false);
+    setRate(1);
     directorRef.current?.play();
   };
   const scrub = (fraction: number) => directorRef.current?.seekFraction(fraction);
@@ -176,7 +194,7 @@ export default function App() {
             <>toque e arraste — olhar · toque num nome — visitar</>
           ) : (
             <>
-              arrastar — olhar · wasd/qe — voar · roda — velocidade
+              arrastar — olhar · wasd/qe — voar · z/x — rolar · roda — velocidade
               <br />
               clique num nome — viajar até a estrela
             </>
@@ -207,6 +225,16 @@ export default function App() {
                 aria-label={paused ? 'Retomar a viagem' : 'Pausar a viagem'}
               >
                 {paused ? '⏵ Retomar' : '⏸ Pausar'}
+              </button>
+              <button
+                className="hud-btn small"
+                onClick={() =>
+                  setRate(directorRef.current?.cyclePlaybackRate() ?? 1)
+                }
+                aria-label="Velocidade de reprodução"
+                title="← → pulam de capítulo"
+              >
+                {rate}×
               </button>
               <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
                 Ver a galáxia
@@ -243,6 +271,9 @@ export default function App() {
         onQualidade={changeQuality}
         onTom={(t) => directorRef.current?.engine.setToneMapping(t)}
         onExposicao={(v) => directorRef.current?.engine.setExposure(v)}
+        onCamada={(flag, escondida) =>
+          directorRef.current?.setLayerHidden(flag, escondida)
+        }
       />
 
       {/* tela de título / loading / fim */}

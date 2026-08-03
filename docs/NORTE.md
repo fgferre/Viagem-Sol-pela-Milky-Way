@@ -35,9 +35,12 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    enche a faixa e suja o centroide vertical por coluna. 16 amostras são o joelho
    (fronteira 4/16/32 no gate: 0,928/0,873/0,881; custo t=0 2560×1440: 17,7/18,8/20,0 ms
    de média — o custo é latência de fetch com cache frio nos caminhos de meia-galáxia,
-   t=170 fica no vsync com as mesmas 16; candidata a devolver o p90: `textureLod`
-   mip 2–3 nas amostras do caminho, conferindo antes se o uTauMap tem mips).
-   **(b) a vantagem de t=158 era cega ao que o gate mede** — azimute da visada 90° ≈
+   t=170 fica no vsync com as mesmas 16 (t da linha do tempo até a r25; o
+   quadro equivalente hoje é o hold face-on t=293); candidata a devolver o
+   p90: `textureLod` mip 2–3 nas amostras do caminho, conferindo antes se o
+   uTauMap tem mips).
+   **(b) a vantagem de t=158 era cega ao que o gate mede** (t=158/146: linha
+   do tempo até a r25 — o quadro de perfil hoje é o hold t=261) — azimute da visada 90° ≈
    linha de nós do warp (fase 5°): o S projetado cancelava na integral da visada
    (fator 0,087); e elevação 901 pc diluía faixa e espessura. Keyframe novo: visada
    pelos nós (az 185°, recuo radial reto desde t=146) e z=500 pc, varrido — abaixo de
@@ -220,7 +223,8 @@ Também de (c), o **comprimento de caminho** entrou (rodada 09): a lâmina baka 
 profundidade óptica PERPENDICULAR no canal A e o fragmento reconstrói a coluna no ângulo da
 visada. Escrito já cancelado — `(1 − e^{−τ⊥/μ})/τ⊥` — porque os dois μ se anulam: fino
 brilha como 1/cos, espesso satura na função-fonte, sem clamp artificial. Medido: 2,19× em
-t=162, 1,75× em t=150, 1,00× de topo. Falta de (c): a substituição dos 430 k sprites pelo
+t=162, 1,75× em t=150, 1,00× de topo (instantes da linha do tempo pré-r26 — medições da
+rodada 09). Falta de (c): a substituição dos 430 k sprites pelo
 quad único — que é também o que resolveria as sete listras de raspão, um artefato de
 DISCRETIZAÇÃO que o 1/μ não toca (por isso o fade rasante continua lá). Falta (a) inteiro: a calibração offline
 que dá significado absoluto a κ — hoje o 2,39 é escala honesta sobre resposta normalizada,
@@ -333,6 +337,16 @@ revelação externa → "você está aqui"). O que ainda decide algo:
 - Voo livre no MESMO referencial galáctico da viagem (era a diferença
   de "norte" que invertia o horizonte ao entrar no modo livre) +
   clicar-num-rótulo viaja até a estrela.
+
+**Bug latente achado pela auditoria da rodada 26 (workflow adversarial): a
+extinção por coluna das forjas NUNCA ligou** — o director chamava setTauMap
+antes de criar as forjas e o `?.` engolia. A dosagem edge inteira (r15–25)
+foi calibrada com as forjas sem extinção. Ligar sob a dosagem atual foi
+medido: **edge 0,6441 → 0,7862 (thickRatio 0,050 → 0,040) e face
+0,0333 → 0,0301 (melhor da era 1800px)**. Decisão: fica desligada por
+padrão (`?forgetau=1` liga), e a **rodada futura de re-dosagem sob o regime
+corrigido** é candidata forte — o ganho no face sugere que o ótimo global
+mudou de lugar. Não repetir: ligar sem re-dosar halo/warp.
 
 ## Decisões fechadas
 

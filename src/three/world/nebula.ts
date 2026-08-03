@@ -81,7 +81,6 @@ export class Nebula {
         uTanHalfFov: { value: 0.5 },
         uAspect: { value: 16 / 9 },
         uResolution: { value: new THREE.Vector2(960, 540) },
-        uTime: { value: 0 },
         uSteps: { value: 44 },
         uSunPos: { value: new THREE.Vector3(0, 0, 0) },
         uFade: { value: 1 },
@@ -166,7 +165,7 @@ export class Nebula {
     this.material.uniforms.uCavityGate.value = gate;
   }
 
-  render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera, time: number) {
+  render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camera.position);
     camera.getWorldDirection(this.scratchFwd);
@@ -175,7 +174,6 @@ export class Nebula {
     (u.uCamUp.value as THREE.Vector3).setFromMatrixColumn(camera.matrixWorld, 1).normalize();
     u.uTanHalfFov.value = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     u.uAspect.value = camera.aspect;
-    u.uTime.value = time;
     const prev = renderer.getRenderTarget();
     if (this.lutDirty || this.lutCamPos.distanceToSquared(camera.position) > 4) {
       this.lutDirty = false;

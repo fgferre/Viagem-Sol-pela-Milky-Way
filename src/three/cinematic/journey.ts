@@ -1,18 +1,18 @@
 // ============================================================
 // A Viagem — roteiro cinematográfico em SHOTS parametrizados.
 //
-// Quatro atos, ~5 min:
-//   I   CASA (0–52s)        — parede de fogo, hélice ao redor do Sol
+// Quatro atos, ~5min21 (os intervalos abaixo derivam de STARTS):
+//   I   CASA (0–48s)        — parede de fogo, hélice ao redor do Sol
 //                             (o céu inteiro gira; o bojo passa em
 //                             contraluz atrás do Sol), Sirius de raspão.
-//   II  ÓRION (52–118s)     — Betelgeuse em espiral orbital, o desfile
+//   II  ÓRION (48–116s)     — Betelgeuse em espiral orbital, o desfile
 //                             das Três Marias (o alinhamento se forma e
 //                             se desfaz por paralaxe), Rigel de passagem,
 //                             o olhar-para-trás: o Sol já é invisível.
-//   III O MERGULHO (118–212s) — Antares como portão, corrida de 8 kpc em
+//   III O MERGULHO (116–229s) — Antares como portão, corrida de 8 kpc em
 //                             ondas (braços como muralhas), Sagittarius A*
 //                             com curva rasante ao redor do horizonte.
-//   IV  A REVELAÇÃO (212–312s) — subida olhando para trás, pouso no
+//   IV  A REVELAÇÃO (229–321s) — subida olhando para trás, pouso no
 //                             enquadramento de perfil, travessia em arco
 //                             ao face-on, "você está aqui".
 //
@@ -538,13 +538,9 @@ interface JourneySample {
   pos: THREE.Vector3;
   look: THREE.Vector3;
   fov: number;
-  speed: number; // pc/s
   warp: number; // 0..1 para pós-processamento
   roll: number; // radianos
 }
-
-const _pA = new THREE.Vector3();
-const _pB = new THREE.Vector3();
 
 export class Journey {
   readonly duration = JOURNEY_DURATION;
@@ -562,12 +558,6 @@ export class Journey {
     return { i, k: clamp01((t - STARTS[i]) / SHOTS[i].dur) };
   }
 
-  private posAt(t: number, out: THREE.Vector3): THREE.Vector3 {
-    const { i, k } = this.shotAt(t);
-    const s = SHOTS[i];
-    return s.pos((s.ease ?? glide)(k), out);
-  }
-
   at(t: number): JourneySample {
     const { i, k } = this.shotAt(t);
     const s = SHOTS[i];
@@ -576,17 +566,10 @@ export class Journey {
     const look = s.look(ke, new THREE.Vector3());
     const fov = THREE.MathUtils.lerp(s.fov0, s.fov1, ke);
 
-    // velocidade real por diferença central (para HUD/efeitos)
-    const eps = 0.06;
-    this.posAt(Math.max(t - eps, 0), _pA);
-    this.posAt(Math.min(t + eps, JOURNEY_DURATION), _pB);
-    const speed = _pB.distanceTo(_pA) / (2 * eps);
-
     return {
       pos,
       look,
       fov,
-      speed,
       warp: clamp01(s.warp ? s.warp(k) : 0),
       roll: s.roll ? s.roll(k) : 0,
     };
