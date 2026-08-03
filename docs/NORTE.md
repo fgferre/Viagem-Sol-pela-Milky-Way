@@ -457,6 +457,42 @@ estrutura vertical que a régua honesta já mede acima do alvo. O resíduo
 25 — ANTES de nova tentativa de ligar o forgetau.** Não repetir: halo >0,4
 sob forgetau (axial explode), glowgain 1,1, ligar sem re-dosar.
 
+## O Sol procedural (transplante 2026-08-03)
+
+O Sol simples (esfera fbm + 3 coroas) foi substituído pelo Sol procedural do
+projeto irmão `Novo-Sol-Fable-3d` (mesmo autor, three 0.185, zero deps). O que
+ainda decide algo:
+
+- **Núcleo VENDORIZADO VERBATIM em `world/sol/`** (fábricas `createX(ctx)`),
+  adaptador + orquestração por frame em `world/novoSol.ts` (porta do animate()
+  original: sim de convecção fatiada, bake da cromosfera 8 Hz/8 fatias, ciclo
+  de 11 anos, manchas com vida, flares two-ribbon, proeminências instanced,
+  espículas, loops RK4, coroa de raias). Corrigir bug do núcleo = corrigir LÁ
+  e re-copiar; o wrapper é nosso.
+- **Escala/tempo**: núcleo em unidades de doador (R=2,2) dentro de um group
+  com `scale = sunRadius/2,2`; `uCamDist` alimentado em unidades de doador
+  ×correção de fov (o LOD do disco foi calibrado a fov 42°). O relógio é o
+  VISUAL do director (0 sob `?shot=`): o construtor faz um PRIME síncrono
+  (semente+48 passos do sim + 1 bake completo) para t=0 nascer apresentável —
+  sem ele a captura fotografa disco sem cromosfera.
+- **Pipeline**: o pós do doador (bloom/AgX próprios) NÃO viajou; o Sol
+  atravessa o nosso composer (ACES 1,02 + UnrealBloom 0,82). O look aguenta —
+  dose fina fica para quando o dono julgar ao vivo.
+- **Knobs congelados** nos defaults de fábrica de lá (tabela `KNOBS` no
+  wrapper): fprom 0,55, loops 0,55, cycle 1, spots 1… `cvol`/`cme` = 0 —
+  **fase 2 pendente**: coroa volumétrica (sampler3D) e CME (transform
+  feedback), as duas camadas GLSL3 que ficaram de fora.
+- **Tier congelado no init** (cinema→high, alta→mid, performance→low), mesmo
+  precedente do populationScale; mudar qualidade ao vivo não reconstrói o Sol.
+- **Gates provados intocados**: edge 0,4396 com todos os termos idênticos;
+  face BIT-IDÊNTICO (md5 igual à captura pré-transplante). O céu usa
+  `?nosun=1` por protocolo. Perf headless t=1: p50 16,7 segura; cauda p99
+  66 ms a re-medir em janela real (candidatos: fatia de bake, RK4 dos loops).
+- **Réguas do doador que valem manter**: A/B mesma-cena (edição on/off no
+  mesmo seed) — "ganhos" cruzando seeds diferentes são variância; ruído
+  sempre em espaço de OBJETO (padrão gira com a esfera); macro-evolução
+  desacelerada (MACRO_SLOW 0,15) sem tocar a vida fina.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.

@@ -8,7 +8,7 @@ import type { QualityLevel } from './core/engine';
 import { Post } from './core/post';
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
-import { Sun } from './world/sun';
+import { NovoSol } from './world/novoSol';
 import { Dust } from './world/dust';
 import { projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
@@ -61,7 +61,7 @@ export class Director {
   private seedCloudPool: Float32Array | null = null;
   private seedCloudScratch = new Float32Array(32 * 5);
   private seedCloudTimer = 0;
-  private sun: Sun;
+  private sun: NovoSol;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
   private bgColor = new THREE.Color(0x000106);
@@ -112,7 +112,9 @@ export class Director {
     this.engine = new Engine(canvas);
     this.post = new Post(this.engine.renderer, this.engine.scene, this.engine.camera);
     this.nebula = new Nebula(0.5);
-    this.sun = new Sun();
+    // Sol procedural transplantado (vivo: sim + bake + ciclo); o prime
+    // do construtor compila os quads offscreen com RT amarrado
+    this.sun = new NovoSol(this.engine.renderer, this.engine.quality);
     this.dust = new Dust();
     this.roam = new FreeRoam(canvas, this.engine.camera);
     this.engine.onQuality((quality) => {
@@ -734,7 +736,7 @@ export class Director {
     }
     this.heroes?.update(time, cam.position, tanHalfFov);
     this.sun.group.visible = !this.hide.has('nosun');
-    this.sun.update(time, cam.position);
+    this.sun.update(time, this.engine.camera);
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado
