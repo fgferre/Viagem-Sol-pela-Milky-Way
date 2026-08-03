@@ -161,6 +161,11 @@ export class Nebula {
     this.material.uniforms.uSteps.value = n;
   }
 
+  /** raymarch, LUT e blur, para a pré-compilação sob o véu (director.init) */
+  get warmupMaterials(): THREE.Material[] {
+    return [this.material, this.lutMaterial, this.blurMaterial];
+  }
+
   setFade(f: number) {
     this.material.uniforms.uFade.value = f;
   }

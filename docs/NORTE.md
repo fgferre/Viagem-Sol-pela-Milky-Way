@@ -468,6 +468,21 @@ renderizar e a linha não mede nada.
   identificado, correção por medição (2 oitavas fixas → p99 28,5 em janela real 2560×1440).
   Não subir de 2 oitavas ali sem medir p99 em janela real 1440p. Flags `?noco`/`?noforge`
   ficaram para bissecções futuras.
+- **A cauda de hitches em t=1/t=216 (mean 37 vs p50 16,7) era UM frame:
+  compilação síncrona de shader no primeiro uso de cada programa** (ANGLE/FXC,
+  esperas de até 4 s por programa, 14–15 s somadas a frio) — mais o BH, que
+  compilava sozinho ao cruzar 2,4 kpc (t≈187, hitch no meio do mergulho).
+  Resolvido (2026-08-03): pré-compilação sob o véu em `director.init` com
+  `KHR_parallel_shader_compile` (compileAsync da cena + quads da nebulosa e do
+  BH). Duas pegadinhas de chave de programa, medidas por diff de `cacheKey`:
+  compilar com um render target amarrado (senão a variante sai com colorSpace
+  de TELA e o frame real, dentro do composer, recompila tudo — 8,7 s) e
+  geometria SEM atributo `normal` para os quads do BH (bit `vertexNormals`;
+  o FullScreenQuad é triângulo position+uv). Captura `?shot=` PULA o warm-up:
+  o polling do compileAsync queimaria o `--virtual-time-budget`. Pós-correção
+  a frio: pior frame 383 ms no arranque, nada acima de 67 ms depois; sobra
+  1,5 s de compile do shader de bake sob o véu (aceito). Os platôs de 33 ms
+  do headless são contaminação (downclock de GPU em background), não defeito.
 - **Vértices por frame são quase constantes na viagem:** 3,84 M no Sol, 4,00 M de fora.
 - **Raymarch = 6,9 ms**, 29% do frame (1600×900, no Sol: 23,6 ms contra 16,7 com
   `?nonebula=1`). A alavanca dominante é `pixelRatio`, não o número de passos: em

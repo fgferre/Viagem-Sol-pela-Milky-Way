@@ -112,6 +112,11 @@ export class BlackHolePass extends Pass {
   /** distância BH↔câmera em RS por pc (o director calcula o fade) */
   static readonly RS_PC = RS_PC;
 
+  /** os dois estágios, para a pré-compilação sob o véu (director.init) */
+  get warmupMaterials(): THREE.Material[] {
+    return [this.matMarch, this.matComposite];
+  }
+
   setQuality(q: QualityLevel) {
     this.quality = q;
     if (this.stepsOverride === null) {

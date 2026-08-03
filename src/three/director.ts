@@ -274,6 +274,49 @@ export class Director {
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
 
+    // Pré-compilação sob o véu: sem ela, o primeiro uso de cada programa
+    // espera o link do ANGLE/FXC bloqueando a thread (medido a frio:
+    // ~10–15 s congelados na intro; e o BH compilava sozinho no meio do
+    // mergulho, t≈187). KHR_parallel_shader_compile compila em threads
+    // do driver — aqui só se espera, com a thread viva. Os quads de pós
+    // (nebulosa, BH) não estão na cena: entram por uma cena descartável.
+    // Captura (?shot=) pula: o polling queimaria o virtual-time-budget,
+    // e sob tempo virtual o stall síncrono de sempre não custa nada.
+    if (!this.shotMode) {
+      const warm = new THREE.Scene();
+      // a chave de programa inclui a PRESENÇA do atributo normal
+      // (vertexNormals): o quad da nebulosa é PlaneGeometry (tem normal),
+      // o FullScreenQuad do BH é um triângulo só com position+uv — cada
+      // material precisa compilar contra a geometria que vai usá-lo
+      const warmGeo = new THREE.PlaneGeometry(2, 2);
+      const warmGeoBH = new THREE.PlaneGeometry(2, 2);
+      warmGeoBH.deleteAttribute('normal');
+      for (const m of this.nebula.warmupMaterials) {
+        warm.add(new THREE.Mesh(warmGeo, m));
+      }
+      for (const m of this.blackHole?.warmupMaterials ?? []) {
+        warm.add(new THREE.Mesh(warmGeoBH, m));
+      }
+      // A chave de programa do three inclui o colorSpace de SAÍDA, que é
+      // "tela" quando nenhum render target está amarrado — e no frame real
+      // tudo renderiza DENTRO do composer (linear). Compilar sem RT gera a
+      // variante errada e o primeiro frame re-linka tudo (medido: 8,7 s).
+      const warmRt = new THREE.WebGLRenderTarget(2, 2);
+      this.engine.renderer.setRenderTarget(warmRt);
+      try {
+        await Promise.all([
+          this.engine.renderer.compileAsync(this.engine.scene, this.engine.camera),
+          this.engine.renderer.compileAsync(warm, this.engine.camera),
+        ]);
+      } finally {
+        this.engine.renderer.setRenderTarget(null);
+        warmRt.dispose();
+        warmGeo.dispose();
+        warmGeoBH.dispose();
+      }
+      if (this.disposed) return;
+    }
+
     this.setPhase('intro');
     this.engine.start();
   }
