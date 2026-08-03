@@ -37,7 +37,12 @@ export const GALACTIC_MODEL = {
   barAngleRad: (-29 * Math.PI) / 180,
   warpStartPc: 8_400,
   warpAmplitudePc: 820 * WARP_TUNE,
-  warpPhaseRad: (5 * Math.PI) / 180,
+  // 185°, não 5°: a quiralidade do S contra a recriação-alvo estava
+  // INVERTIDA — provado por ablação em 2026-08-03 (warpamp −1 ≡ fase
+  // +180°: edge 0,6456 → 0,4396, warpAsym −0,353 → +0,219; a câmera do
+  // gate está na linha de nós, onde a fase certa projeta o S certo).
+  // Conferir contra a convenção de Skowron/Chen 2019 na próxima rodada.
+  warpPhaseRad: (185 * Math.PI) / 180,
 } as const;
 
 interface SpiralArmDefinition {
@@ -585,7 +590,7 @@ float galWarpHeight(float radiusPc, float theta) {
     0.0,
     1.0
   );
-  return ${(820 * WARP_TUNE).toFixed(1)} * pow(x, 1.55) * sin(theta - 0.0872665);
+  return ${(820 * WARP_TUNE).toFixed(1)} * pow(x, 1.55) * sin(theta - 3.2288591);
 }
 
 // ---- espinha simétrica (espelho de BACKBONE / backboneThetaAtRadius) ----

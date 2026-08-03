@@ -151,6 +151,26 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    medidos (0,033/−0,46) que agora capturam estrutura vertical que a régua velha
    borrava — entender ANTES de mexer (pode ser flare, anã de Sgr, ou assinatura
    real do perfil de espessura da referência).
+   **Rodada 27 (2026-08-03) — a questão vertical da r25 RESOLVIDA em mecanismo,
+   e o maior salto da série: edge 0,6456 → 0,4396.** Ablação por componente
+   (halo=0 / noglow / warpamp=0) + probe de linearidade (0,5×/−1×) provaram:
+   (a) o warpAsym −0,353 era NOSSO warp com a QUIRALIDADE INVERTIDA contra a
+   recriação-alvo — warpAsym escala linear com o multiplicador e inverte com o
+   sinal; a câmera do gate está na linha de nós, onde a fase certa projeta o S
+   certo (+0,219, na direção do "+0,48 alvo" da r16). Como o face-on ancora o
+   ponto de vista (quiralidade dos braços casada na r12), o sinal errado era do
+   warp: **fase 5° → 185°** nos dois espelhos (galacticModel.ts TS+GLSL).
+   Conferir a convenção contra Skowron/Chen 2019 numa rodada futura.
+   (b) o termo warpAmp medido (0,032→0,0425) NÃO responde ao knob warpamp —
+   mede estrutura vertical de outra origem (a leitura de "sobredose" da r24/25
+   era mal-atribuída). (c) halo é dono de ~2/3 do excesso de axialRatio
+   (0,093→0,052 sem ele) mas paga thickRatio/laneDepth — não é alavanca
+   isolada. Custos honestos da r27: face 0,0333 → 0,0370 (3 sorteios idênticos;
+   dentro do ±0,01), laneDepth 0,9052 → 0,8506, thickRatio 0,0503 → 0,0393 —
+   os termos de faixa pagaram um pouco pelo S certo; re-dosagem sob a fase
+   corrigida é a candidata natural da próxima rodada de edge (inclusive
+   re-precificar o forgetau, cujo bloqueio era justamente o termo warp). O gate
+   do céu não se moveu (1,1099) e a prova tripla está no ledger.
 2. **Vista interna sem gate** — ~~o panorama ESO (a única foto real) não está no loop~~ —
    **gate protótipo RODOU (2026-08-02): skyError 3,719, a baseline da série
    (protocolo com `nohero=1`).** A primeira medição (3,7027, COM heróis) estava
