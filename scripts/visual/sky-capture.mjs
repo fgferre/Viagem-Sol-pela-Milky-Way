@@ -40,7 +40,9 @@ for (const f of FACES) {
     `--user-data-dir=${resolve(OUT, '.p' + seq++)}`,
     '--window-size=1440,1440', '--virtual-time-budget=16000',
     `--screenshot=${resolve(OUT, `face_${f.nome}.png`)}`,
-    `${APP}/?pos=0,0,0&look=${look}&fov=90&nosun=1&shot=2`,
+    // nohero=1: os clarões das estrelas-herói são camada CINEMATOGRÁFICA;
+    // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa
+    `${APP}/?pos=0,0,0&look=${look}&fov=90&nosun=1&nohero=1&shot=2`,
   ], { encoding: 'utf8', timeout: 120000 });
   console.log(`face_${f.nome}.png exit=${r.status}`);
 }

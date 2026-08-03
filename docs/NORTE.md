@@ -152,9 +152,18 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    borrava — entender ANTES de mexer (pode ser flare, anã de Sgr, ou assinatura
    real do perfil de espessura da referência).
 2. **Vista interna sem gate** — ~~o panorama ESO (a única foto real) não está no loop~~ —
-   **gate protótipo RODOU (2026-08-02): skyError 3,7027, a baseline da série.**
-   Harness oficializado em `scripts/visual/sky-capture.mjs` (6 faces do cubo em
-   `?pos=0,0,0&look=&fov=90&nosun=1&shot=2`, 1440²) + `scripts/visual/sky-measure.html`
+   **gate protótipo RODOU (2026-08-02): skyError 3,719, a baseline da série
+   (protocolo com `nohero=1`).** A primeira medição (3,7027, COM heróis) estava
+   contaminada: os clarões cinematográficos de Sirius (l≈229°) e αCen (l≈319°)
+   eram picos de 3,8×/3,5× no perfil — provado por ablação (somem com nohero;
+   o calombo de l≈161° PERSISTE, é conteúdo real a identificar). Régua limpa
+   revelou: rift e purp estavam sendo LAVADOS pelos flares (0,18→0,21 e
+   0,049→0,068, mais perto do alvo), e a cor global é francamente vermelha
+   demais (**colour 0,148 vs 0,064 da foto**) — suspeita: a cadeia de
+   extinção da vista interna não tem chromsat (a pendência de coerência das
+   forjas vale também aqui). Harness oficializado em
+   `scripts/visual/sky-capture.mjs` (6 faces do cubo em
+   `?pos=0,0,0&look=&fov=90&nosun=1&nohero=1&shot=2`, 1440²) + `scripts/visual/sky-measure.html`
    (costura equiretangular 1440×720 replicando a canonização EXATA do FreeRoam,
    orientação l do panorama resolvida SOZINHA pelas Nuvens de Magalhães — refFlip=true).
    Pré-requisito que caiu: o slerp de entrada do FreeRoam não convergia sob
@@ -165,11 +174,11 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    **bulgeAnti 18,9 vs 5,6** (bojo domina 3,4×; a faixa do anticentro é fraca
    demais), espessura por longitude irregular (1,75–13,5° vs 3–6,5°; onde a
    faixa apaga, o fundo domina a meia-altura), rift 0,18 vs 0,24, colour 0,088
-   vs 0,064, purp 0,049 vs 0,078 (o déficit de púrpura aparece também de
-   dentro). Picos isolados no perfil (bins l≈−131° e −41°) sugerem glare de
-   estrelas-herói contaminando a fotometria da faixa — conferir antes de
-   dosar qualquer coisa. O reequilíbrio 2-braços da vista interna (marcado em
-   `nebulaShaders.ts`/`wrappedStars.ts`) agora TEM juiz.
+   vs 0,064, purp 0,068 vs 0,078. **O termo mestre é bulgeAnti: rumo ao
+   anticentro a faixa DIFUSA quase não existe** (face_anti mostra só farrapos
+   e estrelas resolvidas onde a foto tem faixa contínua — falta luz
+   não-resolvida, não pontos). O reequilíbrio 2-braços da vista interna
+   (marcado em `nebulaShaders.ts`/`wrappedStars.ts`) agora TEM juiz.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
    incerteza para cor absoluta.
