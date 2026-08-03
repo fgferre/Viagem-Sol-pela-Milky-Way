@@ -171,6 +171,23 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    corrigida é a candidata natural da próxima rodada de edge (inclusive
    re-precificar o forgetau, cujo bloqueio era justamente o termo warp). O gate
    do céu não se moveu (1,1099) e a prova tripla está no ledger.
+   **Pós-r27 (2026-08-03, sweep de re-precificação — becos e decomposição,
+   zero default mudado):** (a) **forgetau segue bloqueado sob a fase 185°**:
+   edge 0,4396 → 0,5371 (thick 0,0393→0,0281, wAmp 0,0425→0,0488, lane e
+   lOff pioram juntos) — o bloqueio não era só o termo warp; não religar sem
+   re-dosagem conjunta. (b) Ablação por componente no edge: `nowrap` é
+   BIT-IDÊNTICO (cascas = zero na fotometria do edge, como no céu);
+   halo=0 confirma o dono do axial (0,0810→0,0433) pagando lane/thick;
+   **noglow revela que o excesso de warpAmp mora no GLOW: 0,0425→0,0195 ≈
+   alvo 0,0187, com wAsym 0,219→0,425 ≈ o "+0,48 alvo" da r16** — o glow
+   imprime estrutura vertical reta que o termo lê como falso warp E mascara
+   o S verdadeiro. (c) **A dose do glow não é a alavanca**: glowgain
+   0,92×/0,85× deixa wAmp CRAVADO (0,0427/0,0428) e paga lane/thick
+   (edge 0,4406/0,4529) — o excesso é FORMA (perfil vertical/fenda reta do
+   billboard), não fluxo. A rodada candidata é geométrica: o perfil
+   vertical do glow sob o gate (lembrando os becos r17/r23: fenda seguindo
+   o warp é no-op por falta de fluxo além de 8,4 kpc — o que sobra é a
+   forma INTERNA do perfil, não a curva da fenda).
 2. **Vista interna sem gate** — ~~o panorama ESO (a única foto real) não está no loop~~ —
    **gate protótipo RODOU (2026-08-02): skyError 3,719, a baseline da série
    (protocolo com `nohero=1`).** A primeira medição (3,7027, COM heróis) estava
