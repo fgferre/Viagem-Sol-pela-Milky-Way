@@ -741,7 +741,9 @@ export class Director {
     }
     this.heroes?.update(time, cam.position, tanHalfFov);
     this.sun.group.visible = !this.hide.has('nosun');
-    this.sunStar.quad.visible = this.sun.group.visible;
+    // a PSF do Sol vive FORA do group (o group some no crossfade) — só
+    // ?nosun a desliga
+    this.sunStar.quad.visible = !this.hide.has('nosun');
     this.sunStar.update(time, dHome, tanHalfFov);
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice)
     this.sun.update(time, this.engine.camera, this.journeyT);

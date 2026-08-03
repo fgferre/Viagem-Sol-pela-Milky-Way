@@ -407,6 +407,7 @@ export function createSunUniforms(ctx){
     // desligado/det: todos os termos que o consomem colapsam bit-exatos
     // ao baseline (mesmo racional do uSpotsK).
     uMaxK: { value: ctx.solarMaxK || 0 },
+    uWorldFade: { value: 1 }, // transplante: crossfade disco→estrela
     uSimTex: { value: simRTs[0].texture },
     uSimTexel: { value: simUniforms.uTexel.value },
     // FASE 6 (B1) — manchas virtuais: array VIVO de 10 Vector4
@@ -489,6 +490,7 @@ export function createSunMesh(ctx){
     'uniform float uCamDist;',
     'uniform float uPlageEm;',
     'uniform float uMaxK;',
+    'uniform float uWorldFade;', // transplante: ver gl_FragColor
     'uniform vec4 uFlare;',
     'uniform vec4 uFlareGeo;',
     'uniform vec4 uFlarePerp;',
@@ -827,7 +829,11 @@ export function createSunMesh(ctx){
     // p-mode: a crista da onda acústica é levemente mais quente/brilhante
     // (perturbação de temperatura acompanha a de deslocamento)
     '  color *= 1.0 + vPm * 0.10;',
-    '  gl_FragColor = vec4(color, 1.0);',
+    // transplante: crossfade disco→estrela. O raio do disco é escala
+    // ARTÍSTICA (0,011 pc ≈ 5e5× o real): a partir de ~0,2 pc ele seria
+    // um disco de graus onde a física manda um ponto. O wrapper baixa
+    // uWorldFade e a PSF estelar assume. 1,0 = comportamento original.
+    '  gl_FragColor = vec4(color * uWorldFade, 1.0);',
     '}'
   ].join('\n');
 

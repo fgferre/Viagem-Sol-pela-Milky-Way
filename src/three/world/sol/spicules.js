@@ -20,6 +20,7 @@ export function createSpicules(ctx){
   // viewDir (mundo) ao espaço do objeto antes da projeção contra vPosObj.
   var spiculeUniforms = { uTime: { value: 0 }, uMu0: { value: SPICULE_MU0 },
                           uSimTex: { value: simRTs[0].texture },
+                          uWorldFade: { value: 1 }, // transplante: ver sun.js
                           uSunInvRot: { value: ctx.sunInvRot } };
   ctx.spiculeUniforms = spiculeUniforms;
   var spiculeMat = new THREE.ShaderMaterial({
@@ -39,6 +40,7 @@ export function createSpicules(ctx){
     fragmentShader: NOISE_GLSL + '\n' + [
       'uniform float uTime;',
       'uniform float uMu0;',
+      'uniform float uWorldFade;',
       'uniform sampler2D uSimTex;',
       'uniform mat3 uSunInvRot;',
       'varying vec3 vNormalW;',
@@ -100,7 +102,7 @@ export function createSpicules(ctx){
       '  float a = fringe * (0.22 + 0.42*smoothstep(0.35, 0.85, threads)) * 0.55 * dens;',
       // pontas mais escuras: a franja derrete no céu, não brilha mais que o disco
       '  vec3 col = mix(vec3(0.85,0.24,0.07), vec3(0.38,0.06,0.02), smoothstep(0.0, 1.0, max(h,0.0)));',
-      '  gl_FragColor = vec4(col, a);',
+      '  gl_FragColor = vec4(col, a) * uWorldFade;', // transplante: ver sun.js
       '}'
     ].join('\n'),
     transparent: true,

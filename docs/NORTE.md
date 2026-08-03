@@ -510,6 +510,25 @@ ainda decide algo:
   flagrado (w 0,83 e 0,70 em duas vigilias de ~15 s), CME completa
   fotografada (casca de 3 partes + ejecta por transform feedback,
   cinemática 0→3,3 R em ~8 s), cvolReady e bake ciclando.
+- **CROSSFADE disco→estrela (2ª volta, feedback do dono: "círculos que
+  indicam").** O que o dono leu como retículo de UI era artefato: o
+  NÚCLEO da PSF (`exp(-r²·90)` + espinhos) é muito mais apertado que o
+  disco nessas distâncias, então imprimia um PONTO BRANCO no meio dele.
+  Provado por ablação — e a ablação só funcionou depois de neutralizar
+  os escritores por frame (`sunStar.update`, `group.visible` e os
+  uniforms são reescritos todo frame; `visible=false` via console é
+  desfeito no frame seguinte e a primeira leitura mentiu). Três peças:
+  (a) `uWorldFade` no disco e nas espículas + `uRayBoost`/`uHalo`
+  escalados — o disco (escala ARTÍSTICA, 0,011 pc ≈ 5e5× o real) sai de
+  cena entre 0,16 e 0,34 pc, onde a física manda um ponto; (b) o clarão
+  entra por GANHO (`uGain`), não por tamanho — clarão pequeno sobre
+  disco grande é ponto de mira, clarão do tamanho certo subindo em
+  brilho é o disco estourando de luz; (c) `uCore` só acende depois que
+  o disco saiu (0,30→0,42 pc). Fades em pc REAIS, não na régua do
+  doador: o fov varia 26°→56° na hélice e a régua corrigida por lente
+  balançaria o fade junto com o zoom. Sequência conferida: 0,14 pc
+  disco pleno → 0,22 disco com halo → 0,32 estouro branco → 0,39
+  estrela com espinhos.
 - **De longe o Sol é ESTRELA, não bola (feedback do dono: "vista
   afastada irreal").** `SunStar` em heroStars.ts: a MESMA PSF dos
   heróis com magnitude VIVA (M=4,83 + 5·log10(d/10) — a 0,5 pc vale

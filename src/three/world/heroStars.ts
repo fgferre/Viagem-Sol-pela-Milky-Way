@@ -3,7 +3,7 @@
 // de brilho dedicados com tamanho angular real (flybys AAA).
 // ============================================================
 import * as THREE from 'three';
-import type { NamedStar } from '../config';
+import { WORLD, type NamedStar } from '../config';
 import { GLSL_NOISE } from '../shaders/common';
 
 const VERT = /* glsl */ `
@@ -31,6 +31,17 @@ uniform float uTime;
 uniform float uSeed;
 uniform float uCamDist;
 uniform float uSize;
+// núcleo pontual + espinhos SÓ quando a estrela é um ponto. Com o disco
+// resolvido na tela (só o Sol chega lá) o núcleo apertado imprime um
+// PONTO BRANCO no meio do disco — lê como retículo de mira, não como
+// estrela. Aí fica só o halo largo, que é o que uma fonte brilhante
+// resolvida faz de verdade. 1,0 nos heróis (sempre pontos).
+uniform float uCore;
+// intensidade do clarão. O tamanho angular NÃO é atenuado na entrada:
+// um clarão pequeno sobre um disco grande vira ponto de mira; um
+// clarão do tamanho certo, subindo em BRILHO, lê como o disco
+// estourando de luz. 1,0 nos heróis.
+uniform float uGain;
 
 varying vec2 vUv;
 
@@ -47,13 +58,13 @@ void main() {
   float farFade = 1.0 - smoothstep(320.0, 900.0, uCamDist);
 
   // núcleo estelar + brilho radial
-  float core = exp(-r * r * 90.0) * 3.0;
+  float core = exp(-r * r * 90.0) * 3.0 * uCore;
   float glow = exp(-r * 4.5) * 0.9;
 
   // spikes de difração
   float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
   float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
-  float spikes = (ax + ay) * 0.8;
+  float spikes = (ax + ay) * 0.8 * uCore;
 
   // cintilação sutil de plasma
   float tw = 0.92 + 0.08 * vnoise(vec3(uSeed * 10.0, uTime * 0.5, uSeed));
@@ -61,7 +72,7 @@ void main() {
   vec3 col = (vec3(1.0, 0.98, 0.95) * core + uColor * (glow + spikes)) * tw;
   float a = clamp(core + glow + spikes, 0.0, 1.0);
 
-  gl_FragColor = vec4(col * nearFade * farFade, a * nearFade * farFade);
+  gl_FragColor = vec4(col * nearFade * farFade * uGain, a * nearFade * farFade * uGain);
 }
 `;
 
@@ -107,6 +118,8 @@ export class HeroStars {
           uSize: { value: size },
           uZoom: { value: 1 },
           uCamDist: { value: 100 },
+          uCore: { value: 1 },
+          uGain: { value: 1 },
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -165,6 +178,8 @@ export class SunStar {
         uSize: { value: 0.01 },
         uZoom: { value: 1 },
         uCamDist: { value: 100 },
+        uCore: { value: 0 },
+        uGain: { value: 0 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -185,15 +200,23 @@ export class SunStar {
     // vista da Terra; teto de 40° (a lei de mundo dos heróis explodia
     // para ~d^−2,5 de ângulo vista de dentro do sub-parsec)
     const ang = Math.min(40, 1.75 * Math.pow(10, -0.3 * m));
-    // portão de proximidade: com o disco resolvido (d < ~0,3 pc) o
-    // assunto é a superfície — o clarão cede ao NovoSol
-    const k = Math.min(1, Math.max(0, (d - 0.28) / 0.22));
+    // portão de proximidade CASADO com o crossfade do disco
+    // (novoSol.ts, DISC_FADE0/1 = 0,16→0,34 pc): o clarão sobe enquanto
+    // o disco sai, e o disco é o assunto enquanto ele existe
+    const k = Math.min(1, Math.max(0, (d - 0.14) / 0.16));
     const gate = k * k * (3 - 2 * k);
     const u = this.mat.uniforms;
-    u.uSize.value = d * Math.tan((ang * Math.PI) / 180) * gate;
+    // tamanho SEMPRE cheio; quem entra é o ganho (ver uGain no shader)
+    u.uSize.value = d * Math.tan((ang * Math.PI) / 180);
+    u.uGain.value = gate;
     u.uCamDist.value = d;
     u.uTime.value = time;
     u.uZoom.value = Math.min(1, tanHalfFov / HeroStars.TAN_REF);
+    // o núcleo pontual (+ espinhos) só acende DEPOIS que o disco saiu
+    // de cena — sobrepostos, o núcleo apertado imprime um ponto branco
+    // no meio do disco e a coisa lê como retículo de mira
+    const c = Math.min(1, Math.max(0, (d - 0.3) / 0.12));
+    u.uCore.value = c * c * (3 - 2 * c);
   }
 
   dispose() {

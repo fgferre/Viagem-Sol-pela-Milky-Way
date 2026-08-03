@@ -78,6 +78,13 @@ const KNOBS: Record<string, number> = {
 // DE VIAGEM, então seek e capturas ?t= veem a fase certa daquele
 // instante. Depois da janela o ciclo segue vivo em 1× a partir do
 // máximo (decai devagar pelo resto da viagem).
+// Crossfade disco→estrela, em pc. Abaixo de DISC_FADE0 o disco é o
+// assunto (parede de fogo, início da hélice); acima de DISC_FADE1 só
+// existe a PSF estelar. As rampas do SunStar (heroStars.ts) casam com
+// estas — o núcleo pontual só acende DEPOIS que o disco sai.
+const DISC_FADE0 = 0.16;
+const DISC_FADE1 = 0.34;
+
 const CYCLE_PHASE_MIN = 0.02;
 const CYCLE_PHASE_MAX = 0.5;
 const DRAMA_T0 = 5; // s de viagem (fim da parede de fogo)
@@ -104,6 +111,7 @@ export class NovoSol {
   private scale: number;
   private camDirN = new THREE.Vector3(0, 0, 1);
   private limboFade = 1;
+  private kn: Record<string, number>;
   private sunRotM4 = new THREE.Matrix4();
   private camRightTmp = new THREE.Vector3();
   private camUpTmp = new THREE.Vector3();
@@ -128,6 +136,7 @@ export class NovoSol {
       const v = Number.parseFloat(q.get('sol' + k) ?? '');
       if (Number.isFinite(v)) kn[k] = v;
     }
+    this.kn = kn;
     const ctx: any = {
       renderer,
       // as fábricas fazem ctx.scene.add(mesh) — um Group serve
@@ -311,6 +320,23 @@ export class NovoSol {
     this.limboFade = fk <= 0 ? 1 : fk >= 1 ? 0 : 1 - fk * fk * (3 - 2 * fk);
     ctx.prominenceGroup.visible = this.limboFade > 0.01;
     ctx.loopGroup.visible = this.limboFade > 0.01;
+
+    // CROSSFADE DISCO→ESTRELA (em pc REAIS, não na régua do doador: o
+    // fov varia 26°→56° na hélice e a régua corrigida por lente
+    // balançaria o fade junto com o zoom). O raio do disco é escala
+    // artística; além de ~0,34 pc quem manda é a PSF estelar (SunStar,
+    // heroStars.ts) — as duas rampas são complementares.
+    const dPc = camera.position.length();
+    const wk = (dPc - DISC_FADE0) / (DISC_FADE1 - DISC_FADE0);
+    const world = wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
+    ctx.sunUniforms.uWorldFade.value = world;
+    ctx.spiculeUniforms.uWorldFade.value = world;
+    ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray * world;
+    ctx.coronaRaysUniforms.uHalo.value = this.kn.halo * world;
+    // gate de custo: sumido, nada do Sol é submetido (o director já
+    // aplicou ?nosun aqui — o && preserva a flag)
+    this.group.visible = this.group.visible && world > 0.02;
+    if (!this.group.visible) return;
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---
     this.simAccum += delta;
