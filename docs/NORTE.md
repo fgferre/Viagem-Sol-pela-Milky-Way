@@ -221,6 +221,22 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    pós-escolhas-do-artista; irrelevante para harmônicas (razões normalizadas), camada de
    incerteza para cor absoluta.
 
+**Auditoria científica externa (2026-08-03, 3 auditores independentes refazendo
+contas):** posições/fotometria/cor aprovadas (frame galáctico bate a 4e-8; curva
+T→cor a 1-2% do corpo negro+CIE; inflações de tamanho todas documentadas).
+Quatro inconsistências INTERNAS registradas como candidatas de rodada:
+(1) **quatro leis de extinção coexistem** — CCM89 literal nas partículas
+(galaxyShaders 137/286), λ^−2,6 exagerada no campo HYG (common.ts:204, ~50%
+mais íngreme que a natureza), 0,8 mag/kpc isotrópica nas cascas
+(wrappedStars.ts:51), âncora 1,5 mag/kpc no bake — unificar É a pauta da
+unificação 1; (2) luz estelar com duas escalas radiais — partículas 2600 pc
+vs LUT da faixa 5200 pc (nebulaShaders.ts:102; direção defensável, 2× não
+documentado); (3) disco espesso das cascas com R_d 3600 pc — literatura ~2000,
+MAIS CURTO que o fino, não mais longo (wrappedStars.ts:203); (4) pitch externo
+de Sgr-Carina 10,1° vs ~1,0° de Reid 2019 (suavização sem registro). A fase
+185° do warp (r27) CONFERE com o warp real: máximo norte no quadrante l≈90°,
+nó a ~−5° do eixo Sol-GC vs +17,5° de Chen 2019 — desvio aceitável.
+
 ## As três unificações
 
 A visão não se decompõe em features, e sim em três coisas que hoje existem em
