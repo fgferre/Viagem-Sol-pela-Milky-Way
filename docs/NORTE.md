@@ -478,16 +478,45 @@ ainda decide algo:
 - **Pipeline**: o pós do doador (bloom/AgX próprios) NÃO viajou; o Sol
   atravessa o nosso composer (ACES 1,02 + UnrealBloom 0,82). O look aguenta —
   dose fina fica para quando o dono julgar ao vivo.
-- **Knobs congelados** nos defaults de fábrica de lá (tabela `KNOBS` no
-  wrapper): fprom 0,55, loops 0,55, cycle 1, spots 1… `cvol`/`cme` = 0 —
-  **fase 2 pendente**: coroa volumétrica (sampler3D) e CME (transform
-  feedback), as duas camadas GLSL3 que ficaram de fora.
+- **Knobs nos defaults de fábrica de lá** (tabela `KNOBS` no wrapper),
+  overridáveis por URL (`?solcvol=0`, `?solcme=1.5`…). Exceção dosada:
+  cme 1,4 (doador 0,9 — calibrado contra a exposição 0,418 de lá; no
+  nosso ACES a casca competia com a coroa e mal aparecia).
+- **Fase 2 FEITA (2026-08-03): coroa volumétrica + CME.** Três pontes de
+  escala medidas: (a) os raymarch correm em ESPAÇO DE MUNDO
+  (cameraPosition/vWorld) — `#define SUN_R` dos fragments usa
+  `ctx.SUN_RADIUS_WORLD` (parsec), o vertex das partículas segue no raio
+  do doador (atravessa o modelViewMatrix escalado); (b) `uZScale` no
+  gl_PointSize (o piso `max(0.1, -mv.z)` estourava em parsec); (c)
+  inversas de rotação SEM matrixWorld (herdaria a escala do group) —
+  sempre da quaternion. **Armadilha que custou uma rodada de diagnóstico:
+  os gates de knob do núcleo leem `ctx.subToggle.<camada>` — campo
+  faltante = camada morta SILENCIOSA** (a CME rodava o relógio com casca
+  invisível; grep `subToggle\.` no vendorizado lista o contrato).
+- **Camadas de limbo com fade por distância (wrapper):** o zoom do
+  doador parava em ~14 R e proeminências+bloom viravam BOLAS no recuo
+  da hélice (regime que lá não existia). `limboFade` 35→60 unidades de
+  doador zera proeminências/loops — fisicamente honesto (invisíveis a
+  distâncias estelares) e os close-ups ficam intactos.
+- **Dramaturgia do arranque (pedido do dono): mínimo→máximo na hélice.**
+  Fase 0,02 em t=0 (disco quase limpo) → 0,50 em t≈29 (solarMaxK pleno),
+  dirigida por journeyT com easing — determinística sob seek e captura.
+  Salto de fase >20 unidades (seek/?t=) dispara catch-up síncrono:
+  sim + re-bake completos, senão a foto mostra fase nova com cromosfera
+  velha. Prime alongado para 320 passos (o Br semeado precisa RELAXAR
+  até as cargas fracas do mínimo — com 48 passos o disco nascia com
+  filamentos de campo inexistente). Depois de t≈29 o ciclo segue em 1×.
+- **Eventos provados ao vivo (CDP, ?t=20 sem shot):** flare natural
+  flagrado (w 0,83 e 0,70 em duas vigílias de ~15 s), CME completa
+  fotografada (casca de 3 partes + ejecta por transform feedback,
+  cinemática 0→3,3 R em ~8 s), cvolReady e bake ciclando.
 - **Tier congelado no init** (cinema→high, alta→mid, performance→low), mesmo
   precedente do populationScale; mudar qualidade ao vivo não reconstrói o Sol.
-- **Gates provados intocados**: edge 0,4396 com todos os termos idênticos;
-  face BIT-IDÊNTICO (md5 igual à captura pré-transplante). O céu usa
-  `?nosun=1` por protocolo. Perf headless t=1: p50 16,7 segura; cauda p99
-  66 ms a re-medir em janela real (candidatos: fatia de bake, RK4 dos loops).
+- **Gates provados intocados nas DUAS fases**: edge 0,4396 com todos os
+  termos idênticos; face BIT-IDÊNTICO (md5 igual à captura pré-transplante,
+  3 medições em 3 estados do código). O céu usa `?nosun=1` por protocolo.
+  Perf headless t=1 (fase 2): p50 16,7 segura; cauda p99 66 ms a re-medir
+  em janela real (candidatos: fatia de bake, RK4 dos loops, cvol).
 - **Réguas do doador que valem manter**: A/B mesma-cena (edição on/off no
   mesmo seed) — "ganhos" cruzando seeds diferentes são variância; ruído
   sempre em espaço de OBJETO (padrão gira com a esfera); macro-evolução

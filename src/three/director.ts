@@ -114,7 +114,7 @@ export class Director {
     this.nebula = new Nebula(0.5);
     // Sol procedural transplantado (vivo: sim + bake + ciclo); o prime
     // do construtor compila os quads offscreen com RT amarrado
-    this.sun = new NovoSol(this.engine.renderer, this.engine.quality);
+    this.sun = new NovoSol(this.engine.renderer, this.engine.camera, this.engine.quality);
     this.dust = new Dust();
     this.roam = new FreeRoam(canvas, this.engine.camera);
     this.engine.onQuality((quality) => {
@@ -736,7 +736,8 @@ export class Director {
     }
     this.heroes?.update(time, cam.position, tanHalfFov);
     this.sun.group.visible = !this.hide.has('nosun');
-    this.sun.update(time, this.engine.camera);
+    // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice)
+    this.sun.update(time, this.engine.camera, this.journeyT);
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado

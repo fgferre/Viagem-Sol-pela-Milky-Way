@@ -1,0 +1,479 @@
+// atmosphere/coronaVolume.js — coroa volumétrica raymarched (densidade em
+// sampler3D 64³ bakeada em CPU, espelho do bFieldJS). Corpo verbatim;
+// estado mutável do bake fatiado (ctx.cvol*) compartilhado com o animate.
+
+import * as THREE from 'three';
+
+export function createCoronaVolume(ctx){
+  var scene = ctx.scene, TP = ctx.TP, NOISE_GLSL = ctx.NOISE_GLSL,
+      SUN_RADIUS = ctx.SUN_RADIUS, CORONA_SIZE = ctx.CORONA_SIZE,
+      charges = ctx.charges;
+  // ---------------------------------------------------------------
+  // FASE 4 — "a coroa de verdade": coroa volumétrica raymarched.
+  // A densidade coronal vive num sampler3D 64³ (payoff do WebGL2)
+  // bakeado na CPU pelo MESMO campo de cargas (bFieldJS), fatiado como
+  // o bake da cromosfera (1 fatia z/frame, snapshot de cargas no
+  // início do ciclo, upload atômico no fim — sem tearing). A topologia
+  // aberta/fechada sai de um proxy físico barato, a UNIPOLARIDADE
+  // |B·r̂|/|B|: folhas de helmet streamer nascem na superfície neutra
+  // (unip≈0) e afinam com a altura (cúspide); buracos coronais são as
+  // regiões unipolares fortes perto da superfície (polos no mínimo do
+  // ciclo — emergente do dipolo polar da F3, sem heurística nova). No
+  // máximo a superfície neutra ondula por todas as latitudes = coroa
+  // "cheia" (refs 09/12); no mínimo sobra o cinturão equatorial +
+  // buracos polares. Tier-gated (cstep=0 => o plano de raias segue
+  // sozinho como fallback); knob cvol default 0 = mesh invisível.
+  // ---------------------------------------------------------------
+  var CVOL_STEPS = TP.cstep | 0;
+  var CVOL_N = 64, CVOL_VR = 3.0, CVOL_ROUT = 2.88;
+  // PR2 — scheduler assíncrono do bake: ritmo em fatias/s (independe do
+  // refresh — o budget consome rawDelta) e descanso APÓS a publicação.
+  // 64/30 + 0.9 ≈ 3.03s início-a-início em qualquer Hz de 30 a 120.
+  var CVOL_RATE = 30, CVOL_COOLDOWN = 0.9;
+  ctx.cvolStep = -1, ctx.cvolAccum = 0, ctx.cvolReady = false, ctx.cvolKilled = false, ctx.cvolCycles = 0;
+  // PR2 — estado da máquina idle|baking|cooldown (vive no ctx mesmo com
+  // CVOL_STEPS=0: coronaInfo() lê em qualquer tier sem guarda):
+  //   cvolPhase   fase corrente; baking = staging em voo (cvolStep>=0)
+  //   cvolBudget  acumulador de fatias (+= rawDelta*30; 1 fatia por
+  //               unidade inteira, teto de 1 fatia/frame)
+  //   cvolPending pedido do rebakeCorona() ainda não atendido
+  //   cvolForced  o staging em voo veio de rebakeCorona() (sobrevive ao
+  //               desligar do efeito — QA baka com o volume oculto)
+  ctx.cvolPhase = 'idle', ctx.cvolBudget = 0, ctx.cvolPending = false, ctx.cvolForced = false;
+  ctx.CVOL_RATE = CVOL_RATE, ctx.CVOL_COOLDOWN = CVOL_COOLDOWN;
+  // PR-10 (Série Museu) — marcador SEMÂNTICO do buraco coronal, publicado
+  // junto de cada upload atômico do volume. Vive no ctx mesmo com
+  // CVOL_STEPS=0 (phenomena.corona.hole() lê em qualquer tier sem guarda):
+  //   coronaHoleDir        direção média (unit, espaço do OBJETO) das
+  //                        células mais unipolares/rarefeitas das cascas
+  //                        1.02–1.30R e 1.30–1.70R do ÚLTIMO bake publicado
+  //   coronaHoleStrength   0..1 — quão unipolar/vazia é essa região
+  //                        (min entre as duas cascas do resultante
+  //                        ponderado pela janela de unipolaridade,
+  //                        normalizado pelas células do setor)
+  //   coronaHoleGeneration incrementa a CADA publicação (o consumidor
+  //                        decide inércia; aqui só física do snapshot)
+  ctx.coronaHoleDir = new THREE.Vector3(0, 1, 0);
+  ctx.coronaHoleStrength = 0; ctx.coronaHoleGeneration = 0;
+  var coronaVol = null, cvolUniforms = null, cvolTex = null;
+  var cvolData = null, cvolStage = null;
+  var cvolQ = new Float32Array(40);       // snapshot das 10 cargas (x,y,z,w)
+  var cvolInvRot = new THREE.Matrix3();
+  function snapshotCvolCharges(){
+    for (var i = 0; i < charges.length; i++){
+      cvolQ[i*4]   = charges[i].x; cvolQ[i*4+1] = charges[i].y;
+      cvolQ[i*4+2] = charges[i].z; cvolQ[i*4+3] = charges[i].w;
+    }
+  }
+  // pesos da mistura de densidade — ajustáveis em runtime pelo hook
+  // setCvolShape (sweep de calibração sem rebuild); os defaults são o
+  // resultado do painel de juízes da rodada. FASE 6 B4: folha v2
+  // "forte" (sheet 1.15 / base 0.20 — nota técnica do juiz físico da
+  // F4, aprovada UNÂNIME no painel do B2). Só visíveis com cvol>0
+  // (knob-gated): o frame default segue bit-exato.
+  ctx.cvolWBase = 0.20, ctx.cvolWSheet = 1.15, ctx.cvolWLoop = 0.55, ctx.cvolWHole = 0.62;
+  // FASE 6 B2 — cúspide do helmet streamer: peso do termo QUADRÁTICO de
+  // altura no expoente da folha (a folha AFUNILA em ponta e segue como
+  // haste fina — refs 10/12; nota técnica do juiz físico da F4). Peso
+  // CPU-side (entra no bake da densidade): setCvolShape({cusp}) precisa
+  // de rebakeCorona() para surtir efeito. B4: default 0.6 = veredito
+  // unânime do painel de 3 juízes (0.9+ trunca as pétalas); com peso 0
+  // a folha da F4 é bit-exata (somar 0.0 ao expoente não muda double).
+  ctx.cvolWCusp = 0.6;
+  // PR-10 — canal lateral do bake p/ o marcador de buraco coronal: a cada
+  // célula, cvolDensity deixa aqui o raio e a unipolaridade |B·r̂|/|B| que
+  // ELA MESMA acabou de computar (leitura pelo bakeCvolSlice — zero
+  // refação do campo de 10 cargas, zero mudança na matemática da
+  // densidade). O marcador aplica sua própria janela, MAIS ESTRITA que a
+  // do carve de densidade (0.75–0.95 vs 0.60–0.90) — o mesmo padrão do
+  // gate de plumas do shader (0.74–0.92): o cartão só deve nascer de um
+  // buraco CLARAMENTE aberto.
+  var cvolCellR = 0, cvolCellUnip = 0;
+  // acumuladores do marcador, por SETOR de eixo dominante (±x,±y,±z — 6
+  // regiões congruentes da esfera) e por DUAS cascas de altura: baixa
+  // 1.02–1.30R (onde o termo de buraco rarefaz a coroa VISÍVEL) e alta
+  // 1.30–1.70R (persistência do campo aberto — o mesmo raciocínio do min()
+  // de duas alturas do gate de plumas do shader: campo fechado sobre pares
+  // bipolares perde a radialidade com a altura, buraco não). Dois buracos
+  // polares opostos no mínimo não se cancelam: cada polo acumula no seu
+  // setor e a publicação escolhe o melhor min(baixa,alta). Zerados a cada
+  // início de staging.
+  var holeLoX = new Float64Array(6), holeLoY = new Float64Array(6),
+      holeLoZ = new Float64Array(6), holeLoN = new Int32Array(6);
+  var holeHiX = new Float64Array(6), holeHiY = new Float64Array(6),
+      holeHiZ = new Float64Array(6), holeHiN = new Int32Array(6);
+  // densidade coronal num ponto do espaço do objeto (esfera unitária)
+  function cvolDensity(x, y, z){
+    var r = Math.sqrt(x*x + y*y + z*z);
+    cvolCellR = r; cvolCellUnip = 0;
+    if (r < 1.005 || r > CVOL_ROUT) return 0;
+    var bx = 0, by = 0, bz = 0;
+    for (var i = 0; i < 10; i++){
+      var dx = x - cvolQ[i*4], dy = y - cvolQ[i*4+1], dz = z - cvolQ[i*4+2];
+      var r2 = dx*dx + dy*dy + dz*dz + 1e-3;
+      var k = cvolQ[i*4+3] / (r2 * Math.sqrt(r2));
+      bx += dx*k; by += dy*k; bz += dz*k;
+    }
+    var bm = Math.sqrt(bx*bx + by*by + bz*bz) + 1e-9;
+    var unip = Math.abs((bx*x + by*y + bz*z) / (r * bm));
+    // base hidrostática (escala de altura 0.42R: satura na base e morre
+    // em ~2.5-3R como nas fotos de eclipse — refs 09/12)
+    var base = Math.exp(-(r - 1.0) * 2.38);
+    // folha de streamer na superfície neutra; o expoente cresce com a
+    // altura => a folha afunila (base larga ~30-40°, cúspide estreita).
+    // FASE 6 B2: termo quadrático de altura (peso cusp) fecha o capacete
+    // em PONTA — a meia-largura cai ~1/h em vez de ~1/sqrt(h) — e o
+    // espinho da folha (unip=0) sobrevive como haste fina (ref-10)
+    var h = r - 1.0;
+    var sheet = Math.exp(-unip*unip * (6.0 + 18.0*h + ctx.cvolWCusp*130.0*h*h));
+    // coroa baixa presa às regiões ativas (|B| alto, só perto da base)
+    var loopBase = Math.min(1.1, bm*0.5) * Math.exp(-(r - 1.0) * 6.2);
+    // buraco coronal: unipolar forte perto da superfície rarefaz
+    // (interior quase preto na ref-11)
+    var hu = (unip - 0.60) / 0.30;
+    hu = hu < 0 ? 0 : (hu > 1 ? 1 : hu);
+    hu = hu*hu*(3.0 - 2.0*hu);
+    var hole = hu * Math.exp(-(r - 1.0) * 3.3);
+    cvolCellUnip = unip;
+    var dens = base * (ctx.cvolWBase + ctx.cvolWSheet*sheet + ctx.cvolWLoop*loopBase) * (1.0 - ctx.cvolWHole*hole);
+    // fade externo: o shell de marcha não corta seco em ROUT
+    var fo = (CVOL_ROUT - 0.06 - r) * 4.0;
+    if (fo < 0) fo = 0; else if (fo > 1) fo = 1;
+    dens *= fo;
+    return dens <= 0 ? 0 : (dens > 1 ? 1 : dens);
+  }
+  function bakeCvolSlice(iz){
+    if (iz >= CVOL_N) return;
+    var inv = (2.0*CVOL_VR) / CVOL_N, off = -CVOL_VR + 0.5*inv;
+    var z = off + iz*inv, rowBase = iz * CVOL_N * CVOL_N;
+    for (var iy = 0; iy < CVOL_N; iy++){
+      var y = off + iy*inv, idx = rowBase + iy*CVOL_N;
+      for (var ix = 0; ix < CVOL_N; ix++){
+        var x = off + ix*inv;
+        var d = cvolDensity(x, y, z);
+        // sqrt-encode: 8 bits rendem melhor onde a coroa é tênue
+        cvolStage[idx + ix] = (Math.sqrt(d) * 255) | 0;
+        // PR-10 — acumulação do marcador de buraco coronal DURANTE o
+        // trabalho que já acontece: células das duas cascas entram no
+        // setor do seu eixo dominante; o peso é a janela ESTRITA de
+        // unipolaridade do marcador (smoothstep 0.75–0.95 sobre o MESMO
+        // unip que a densidade acabou de computar). Só leitura do canal
+        // lateral — a densidade bakeada não muda um bit. (Por que duas
+        // cascas: na calibração, uma casca baixa sozinha era poluída
+        // pelos picos de unip sobre as cargas do máximo, e uma casca
+        // alta sozinha via o eixo do dipolo residual sem rarefação
+        // visível embaixo — só o min(baixa,alta) da publicação separa
+        // o buraco de verdade.)
+        if (cvolCellR >= 1.02 && cvolCellR <= 1.70){
+          var hax = x < 0 ? -x : x, hay = y < 0 ? -y : y, haz = z < 0 ? -z : z;
+          var hb = hax >= hay && hax >= haz ? (x >= 0 ? 0 : 1)
+                 : hay >= haz ? (y >= 0 ? 2 : 3) : (z >= 0 ? 4 : 5);
+          var hw = (cvolCellUnip - 0.75) / 0.20;
+          hw = hw < 0 ? 0 : (hw > 1 ? 1 : hw);
+          hw = hw*hw*(3.0 - 2.0*hw);
+          var hinv = hw > 0 ? hw / cvolCellR : 0;
+          if (cvolCellR <= 1.30){
+            holeLoN[hb]++;
+            if (hinv > 0){ holeLoX[hb] += x*hinv; holeLoY[hb] += y*hinv; holeLoZ[hb] += z*hinv; }
+          } else {
+            holeHiN[hb]++;
+            if (hinv > 0){ holeHiX[hb] += x*hinv; holeHiY[hb] += y*hinv; holeHiZ[hb] += z*hinv; }
+          }
+        }
+      }
+    }
+  }
+  // PR2 — início de um ciclo de staging: snapshot das cargas AGORA e
+  // fatias a partir do frame corrente. Um pedido forçado (rebakeCorona)
+  // REINICIA staging em voo: a publicação seguinte sai sempre do
+  // snapshot mais novo (o QA salta fase do ciclo e re-baka em cima).
+  function cvolStartCycle(forced){
+    snapshotCvolCharges();
+    // PR-10: staging novo = acumuladores zerados (um restart forçado em
+    // voo descarta a acumulação parcial junto com as fatias parciais)
+    for (var hz = 0; hz < 6; hz++){
+      holeLoX[hz] = 0; holeLoY[hz] = 0; holeLoZ[hz] = 0; holeLoN[hz] = 0;
+      holeHiX[hz] = 0; holeHiY[hz] = 0; holeHiZ[hz] = 0; holeHiN[hz] = 0;
+    }
+    ctx.cvolStep = 0; ctx.cvolBudget = 0;
+    ctx.cvolPhase = 'baking';
+    ctx.cvolForced = !!forced; ctx.cvolPending = false;
+    ctx.diagEvent('cvol-start', ctx.cvolCycles + 1);
+  }
+  // PR2 — máquina de estados do bake, 1 chamada por frame do animate.
+  //   on       efeito ligado (knob + kill + toggles) — cadência natural
+  //   rawDelta tempo REAL do frame (independe de TIME_SCALE; 0 sob hold)
+  //   held     DET_HOLD ativo: bake JÁ INICIADO avança com passo
+  //            sintético 1/60; o cooldown fica congelado (rawDelta=0)
+  // O hitch do bake integral morre aqui: nunca mais de 1 fatia/frame,
+  // publicação única e atômica após a 64ª fatia, cooldown só DEPOIS de
+  // publicar (o duty cycle de 100% do achado 3 vira ~70%: 2.13s de bake
+  // + 0.9s de descanso).
+  function cvolFrame(on, rawDelta, held){
+    // desligar o efeito cancela o staging NÃO-forçado e preserva o
+    // último volume publicado (cvolReady/textura intocados); religar
+    // cai no ramo idle e inicia snapshot novo
+    if (!on && ctx.cvolPhase === 'baking' && !ctx.cvolForced){
+      ctx.cvolStep = -1; ctx.cvolBudget = 0; ctx.cvolPhase = 'idle';
+      ctx.diagEvent('cvol-cancel', ctx.cvolCycles);
+    }
+    if (!on && ctx.cvolPhase === 'cooldown') ctx.cvolPhase = 'idle';
+    if (ctx.cvolPending){
+      // rebakeCorona(): forçado — parte mesmo desligado ou sob hold
+      cvolStartCycle(true);
+    } else if (on){
+      if (ctx.cvolPhase === 'idle'){
+        // inicialização/religada: fatiado como qualquer bake — até a
+        // 1ª publicação o plano de raias segue integral como fallback
+        cvolStartCycle(false);
+      } else if (ctx.cvolPhase === 'cooldown'){
+        // cooldown acumula APENAS aqui (nunca durante baking — era o
+        // bug do duty cycle) e congela sob hold (rawDelta chega 0)
+        ctx.cvolAccum += rawDelta;
+        if (ctx.cvolAccum >= CVOL_COOLDOWN) cvolStartCycle(false);
+      }
+    }
+    if (ctx.cvolPhase === 'baking'){
+      // 30 fatias/s com teto de 1 fatia/frame; clamp do budget em 1
+      // impede catch-up em rajada após aba em background. Em det
+      // (rawDelta=1/60) o budget é exato: (1/60)*30 === 0.5 em double
+      // — 1 fatia a cada 2 frames, publicação no frame 128 do ciclo.
+      ctx.cvolBudget += (held ? (1/60) : rawDelta) * CVOL_RATE;
+      if (ctx.cvolBudget > 1) ctx.cvolBudget = 1;
+      if (ctx.cvolBudget >= 1){
+        ctx.cvolBudget -= 1;
+        bakeCvolSlice(ctx.cvolStep);
+        ctx.cvolStep += 1;
+        if (ctx.cvolStep >= CVOL_N){
+          cvolData.set(cvolStage);          // publicação atômica: sem tearing
+          cvolTex.needsUpdate = true;
+          // PR-10 — o marcador semântico publica JUNTO do volume (mesma
+          // atomicidade: dir/strength descrevem exatamente a textura que
+          // acabou de subir, derivados do MESMO snapshot de cargas).
+          // Por setor: resultante normalizado de cada casca (0..1 por
+          // construção: |Σ w·dir| ≤ Σ w ≤ nº de células) e score =
+          // min(baixa, alta) — rarefação VISÍVEL embaixo E campo aberto
+          // em cima. Setor vencedor = maior score; dir = resultante das
+          // duas cascas somadas. Coroa cheia (máximo, sem buraco
+          // coerente) publica strength baixo — o emissor não dispara.
+          var hbBest = -1, hbScore = 0;
+          for (var hbi = 0; hbi < 6; hbi++){
+            if (!holeLoN[hbi] || !holeHiN[hbi]) continue;
+            var hlo = Math.sqrt(holeLoX[hbi]*holeLoX[hbi] + holeLoY[hbi]*holeLoY[hbi] + holeLoZ[hbi]*holeLoZ[hbi]) / holeLoN[hbi];
+            var hhi = Math.sqrt(holeHiX[hbi]*holeHiX[hbi] + holeHiY[hbi]*holeHiY[hbi] + holeHiZ[hbi]*holeHiZ[hbi]) / holeHiN[hbi];
+            var hsc = hlo < hhi ? hlo : hhi;
+            if (hsc > hbScore){ hbScore = hsc; hbBest = hbi; }
+          }
+          if (hbBest >= 0 && hbScore > 0){
+            var hbX = holeLoX[hbBest] + holeHiX[hbBest];
+            var hbY = holeLoY[hbBest] + holeHiY[hbBest];
+            var hbZ = holeLoZ[hbBest] + holeHiZ[hbBest];
+            var hbLen = Math.sqrt(hbX*hbX + hbY*hbY + hbZ*hbZ);
+            if (hbLen > 1e-9) ctx.coronaHoleDir.set(hbX/hbLen, hbY/hbLen, hbZ/hbLen);
+            ctx.coronaHoleStrength = hbScore > 1 ? 1 : hbScore;
+          } else ctx.coronaHoleStrength = 0;
+          ctx.coronaHoleGeneration++;
+          ctx.cvolStep = -1; ctx.cvolForced = false;
+          ctx.cvolReady = true; ctx.cvolCycles++;
+          ctx.cvolPhase = 'cooldown'; ctx.cvolAccum = 0;
+          ctx.diagEvent('cvol-upload', ctx.cvolCycles);
+        }
+      }
+    }
+  }
+  if (CVOL_STEPS > 0){
+    cvolData = new Uint8Array(CVOL_N*CVOL_N*CVOL_N);
+    cvolStage = new Uint8Array(CVOL_N*CVOL_N*CVOL_N);
+    cvolTex = new THREE.Data3DTexture(cvolData, CVOL_N, CVOL_N, CVOL_N);
+    cvolTex.format = THREE.RedFormat;
+    cvolTex.type = THREE.UnsignedByteType;
+    cvolTex.minFilter = THREE.LinearFilter;
+    cvolTex.magFilter = THREE.LinearFilter;
+    cvolTex.wrapS = cvolTex.wrapT = cvolTex.wrapR = THREE.ClampToEdgeWrapping;
+    cvolTex.unpackAlignment = 1;
+    cvolTex.needsUpdate = true;
+    cvolUniforms = {
+      uVol: { value: cvolTex },
+      uInvRot: { value: cvolInvRot },
+      uCvol: { value: 0 },
+      uActivity: { value: 0.5 },
+      uTime: { value: 0 },
+      // contraste das raias finas procedurais sobre o volume (0 =
+      // liso). 0.55 = v1-fil-suave, vencedora do painel de 3 juízes
+      // da F4 (mediana 7.8: leitura orgânica de eclipse, sem o padrão
+      // "penteado" CG do contraste cheio) — sweep 6×2 via
+      // setCvolFil/setCvolShape, sem rebuild por variante
+      uFil: { value: 0.55 },
+      // FASE 6 B2 — plumas polares (ref-09/11): peso UNIFORM (efeito
+      // imediato no sweep, zero rebake — modulação procedural angular
+      // por PIXEL, o volume 64³ não resolve fios finos). B4: default
+      // 0.6 = veredito unânime do painel (0.9+ vira "godray"); com
+      // peso 0 o bloco é pulado no shader (imagem F4 bit-idêntica) e
+      // com cvol=0 a mesh nem desenha. Ajuste via setCvolShape({plume}).
+      uPlume: { value: 0.6 },
+      // cargas VIVAS (o mesmo array de Vector4 do disco/coronaRays; o
+      // three re-flatten por frame) — o gate de buraco coronal das
+      // plumas reavalia a unipolaridade no pé da linha radial do pixel
+      uCharges: { value: charges }
+    };
+    var cvolMat = new THREE.ShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      uniforms: cvolUniforms,
+      vertexShader: [
+        'varying vec3 vWorld;',
+        'void main(){',
+        '  vec4 w = modelMatrix * vec4(position, 1.0);',
+        '  vWorld = w.xyz;',
+        '  gl_Position = projectionMatrix * viewMatrix * w;',
+        '}'
+      ].join('\n'),
+      fragmentShader: NOISE_GLSL + '\n' + [
+        'precision highp sampler3D;',
+        '#define CVOL_STEPS ' + CVOL_STEPS,
+        // transplante: o raymarch corre em ESPAÇO DE MUNDO (cameraPosition/
+        // vWorld) — no app receptor o mundo é parsec e o raio vem de
+        // ctx.SUN_RADIUS_WORLD; no original os dois coincidem (2.2)
+        '#define SUN_R ' + (ctx.SUN_RADIUS_WORLD || SUN_RADIUS).toFixed(6),
+        'uniform sampler3D uVol;',
+        'uniform mat3 uInvRot;',
+        'uniform float uCvol;',
+        'uniform float uActivity;',
+        'uniform float uTime;',
+        'uniform float uFil;',
+        'uniform float uPlume;',
+        'uniform vec4 uCharges[10];',
+        'varying vec3 vWorld;',
+        // GLSL3: sem gl_FragColor — saída explícita
+        'out vec4 fragColor;',
+        'void main(){',
+        // raio de PERSPECTIVA real (não a aproximação angular do plano
+        // de raias): da câmera pelo vértice do billboard
+        '  vec3 ro = cameraPosition;',
+        '  vec3 rd = normalize(vWorld - cameraPosition);',
+        '  float b = dot(ro, rd);',
+        '  float R = SUN_R * ' + CVOL_ROUT.toFixed(3) + ';',
+        '  float disc = b*b - (dot(ro,ro) - R*R);',
+        '  if (disc <= 0.0){ fragColor = vec4(0.0); return; }',
+        '  float sq = sqrt(disc);',
+        '  float t0 = max(-b - sq, 0.0);',
+        '  float t1 = -b + sq;',
+        // raio que atinge o DISCO não contribui: a coroa à frente do
+        // disco é ~1e-6 do brilho dele (invisível na realidade), e os
+        // transparentes desenham DEPOIS dos opacos — sem este corte o
+        // segmento frontal somaria brilho por cima do disco (QA G1)
+        '  float di = b*b - (dot(ro,ro) - SUN_R*SUN_R);',
+        '  if (di > 0.0){ fragColor = vec4(0.0); return; }',
+        '  if (t1 <= t0 + 1e-4){ fragColor = vec4(0.0); return; }',
+        '  float dt = (t1 - t0) / float(CVOL_STEPS);',
+        // jitter determinístico por pixel (esconde banding; det=ok)
+        '  float jit = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);',
+        '  float t = t0 + dt*jit;',
+        '  float sum = 0.0; float hsum = 0.0;',
+        '  for (int i = 0; i < CVOL_STEPS; i++){',
+        '    vec3 pO = (uInvRot * (ro + rd*t)) * (1.0/SUN_R);',
+        '    float d = texture(uVol, pO*' + (0.5/CVOL_VR).toFixed(6) + ' + 0.5).r;',
+        '    d = d*d;',                       // decode do sqrt-encode
+        '    sum += d;',
+        '    hsum += d*length(pO);',
+        '    t += dt;',
+        '  }',
+        '  if (sum <= 1e-5){ fragColor = vec4(0.0); return; }',
+        '  float hMean = hsum / sum;',
+        // raias finas + flicker 1/f no referencial do objeto — a mesma
+        // vida do plano de raias (uma avaliação por pixel, não por passo)
+        '  vec3 dirO = normalize(uInvRot * normalize(vWorld));',
+        '  float f1 = fbmLight(dirO*3.1 + vec3(0.0, 0.0, uTime*0.030));',
+        '  float f2 = fbmLight(dirO*7.3 + vec3(5.1, 2.2, uTime*0.045));',
+        '  float flick = fbmLight(dirO*1.9 + vec3(3.7, 8.2, uTime*0.55));',
+        '  float fil = (0.62 + 0.55*f1) * (0.80 + 0.34*f2) * (0.90 + 0.20*flick);',
+        '  fil = 1.0 + (fil - 1.0)*uFil;',
+        // paleta quente do projeto, esfriando com a altura média da luz
+        '  vec3 col = mix(vec3(1.0,0.72,0.42), vec3(1.0,0.46,0.20), clamp((hMean-1.0)*0.75, 0.0, 1.0));',
+        '  float amp = sum * dt * (1.0/SUN_R) * 0.14 * uCvol * fil * (0.70 + 0.60*uActivity);',
+        '  vec3 rgb = col * amp;',
+        // ------------------------------------------------------------
+        // FASE 6 B2 — plumas polares (ref-09 eclipse, ref-11 buraco
+        // coronal): fios FINOS e RETOS dentro dos buracos. Termo
+        // ADITIVO por pixel gateado por uPlume>0 (peso 0 contribui
+        // exatamente nada => look atual bit-idêntico). dirO é constante
+        // ao longo de cada linha radial da imagem (billboard passa pelo
+        // centro) => ruído angular em dirO dá fios retos e radiais que,
+        // confinados ao buraco, abrem em leque a partir do centro dele.
+        // Early-outs em ordem de custo: perfil de altura (rp) -> gate
+        // de buraco (2x10 cargas) -> só então os 2 fbm dos fios.
+        // ------------------------------------------------------------
+        '  if (uPlume > 0.0){',
+        // pé da linha radial: vWorld ~ ponto de máxima aproximação do
+        // raio; rp = altura no plano do céu em unidades de R
+        '    vec3 pO0 = (uInvRot * vWorld) * (1.0/SUN_R);',
+        '    float rp = length(pO0);',
+        // nasce na base (r~1.0-1.1), afina e some até ~1.5R
+        '    float hk = 1.0 - smoothstep(1.06, 1.52, rp);',
+        '    hk *= hk;',
+        '    if (hk > 0.001){',
+        // buraco coronal = campo ABERTO: unipolaridade alta em DUAS
+        // alturas (1.06 e 1.35) na radial do pixel — o min() mata os
+        // picos locais de unip sobre cargas bipolares (loops fechados
+        // perdem a radialidade com a altura; o buraco não). Janela
+        // 0.74-0.92, mais estrita que a do bake (0.60-0.90): plumas
+        // estritamente DENTRO do buraco visível
+        '      float ug = 1.0;',
+        '      for (int s = 0; s < 2; s++){',
+        '        vec3 fp = dirO * (s == 0 ? 1.06 : 1.35);',
+        '        vec3 B = vec3(0.0);',
+        '        for (int i = 0; i < 10; i++){',
+        '          vec3 dv = fp - uCharges[i].xyz;',
+        '          float r2 = dot(dv, dv) + 1e-3;',
+        '          B += dv * (uCharges[i].w / (r2 * sqrt(r2)));',
+        '        }',
+        '        ug = min(ug, abs(dot(B, dirO)) / (length(B) + 1e-9));',
+        '      }',
+        '      float hg = smoothstep(0.74, 0.92, ug);',
+        '      if (hg > 0.001){',
+        // fios: 2 oitavas angulares ESTÁTICAS no referencial do objeto
+        // (giram com o Sol; sem uTime — nada de cintilação nova, flags
+        // temporais são do Bloco C). O limiar sobe com a altura => os
+        // fios AFINAM ao longo do comprimento.
+        // BLOCO C (rodada de movimento, flag F6 confirmada): fios com
+        // FWHM 1.6-2.6px estroboscopavam sob rotação+pan (delta-p99
+        // polar +0.194 vs controle). Piso engrossado por A/B de flicker
+        // no qa-motion2: oitava alta 18->14 (fio ~1.3x mais largo) +
+        // topo do smoothstep 0.46->0.54 (a PONTA sub-pixel amolece;
+        // alargar por baixo só ADICIONAVA fios fracos e piorava o
+        // flicker). Medido: FWHM mediana 2.45->3.82px em 960x600,
+        // delta-p99 polar 0.194->0.084. Confinamento aos buracos (hg)
+        // e P-checks do qa:phase6 intactos (P1 +0.364/866px verdes).
+        '        float p1 = fbmLight(dirO*9.0 + vec3(7.7, 1.3, 0.0));',
+        '        float p2 = fbmLight(dirO*14.0 + vec3(3.1, 12.9, 0.0));',
+        '        float strand = smoothstep(0.12 + 0.20*(rp - 1.0), 0.54, p1*0.55 + p2*0.65);',
+        // ganho calibrado na rodada: plume=0.9 soma ~+8-14% no setor do
+        // cap polar do mínimo (medido) — visível e ainda "bem mais
+        // fraco que os streamers equatoriais" (ref-09)
+        '        float pl = uPlume * hg * hk * strand * uCvol * 0.28;',
+        '        rgb += mix(vec3(1.0,0.72,0.42), vec3(1.0,0.52,0.26), clamp((rp-1.0)*1.4, 0.0, 1.0)) * pl;',
+        '      }',
+        '    }',
+        '  }',
+        '  fragColor = vec4(rgb, 1.0);',
+        '}'
+      ].join('\n'),
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false
+    });
+    coronaVol = new THREE.Mesh(new THREE.PlaneGeometry(CORONA_SIZE, CORONA_SIZE), cvolMat);
+    coronaVol.renderOrder = -1;
+    coronaVol.visible = false;
+    scene.add(coronaVol);
+    // PR2: fim do bake integral síncrono de carga (26.2ms de hitch —
+    // achado 3). Com o knob ligado desde a carga, o 1º ciclo fatiado
+    // parte no 1º frame do animate (idle -> baking) e o plano de raias
+    // cobre o visual até a 1ª publicação (~2.13s).
+  }
+  ctx.coronaVol = coronaVol; ctx.cvolUniforms = cvolUniforms;
+  ctx.CVOL_STEPS = CVOL_STEPS; ctx.CVOL_N = CVOL_N;
+  ctx.cvolFrame = cvolFrame; ctx.bakeCvolSlice = bakeCvolSlice;
+  ctx.snapshotCvolCharges = snapshotCvolCharges; ctx.cvolData = cvolData;
+  ctx.cvolStage = cvolStage; ctx.cvolTex = cvolTex; ctx.cvolInvRot = cvolInvRot;
+}

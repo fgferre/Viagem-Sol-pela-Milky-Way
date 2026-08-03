@@ -38,6 +38,8 @@ import { createCoronaRays } from './sol/coronaRays.js';
 import { createSpicules } from './sol/spicules.js';
 import { createProminences } from './sol/prominences.js';
 import { createLoops } from './sol/loops.js';
+import { createCoronaVolume } from './sol/coronaVolume.js';
+import { createCME } from './sol/cme.js';
 
 const DONOR_RADIUS = 2.2; // SUN_RADIUS do projeto original
 const DONOR_FIT = 6.59; // fitDist de lá (fov 42°, landscape)
@@ -64,8 +66,22 @@ const TIER_FOR: Record<QualityLevel, keyof typeof TIERS> = {
 const KNOBS: Record<string, number> = {
   spots: 1, cycle: 1, lapse: 0, speed: 1, pmode: 0,
   plageglow: 0.35, halo: 0.55, ray: 0.9, cact: 0.5,
-  loops: 0.55, fprom: 0.55, cvol: 0, cme: 0, edu: 0,
+  // cme 1,4 (doador: 0,9): a casca foi calibrada contra a exposição
+  // 0,418 do pipeline de lá; no nosso ACES ela compete com a coroa
+  // mais clara — 0,9 mal aparecia, 1,4 lê a estrutura de 3 partes
+  loops: 0.55, fprom: 0.55, cvol: 0.5, cme: 1.4, edu: 0,
 };
+
+// Dramaturgia do arranque (pedido do dono): o Sol acorda do MÍNIMO
+// (fase 0,02, disco quase limpo) na parede de fogo e chega ao MÁXIMO
+// (fase 0,50, solarMaxK pleno) no fim da hélice — dirigido pelo TEMPO
+// DE VIAGEM, então seek e capturas ?t= veem a fase certa daquele
+// instante. Depois da janela o ciclo segue vivo em 1× a partir do
+// máximo (decai devagar pelo resto da viagem).
+const CYCLE_PHASE_MIN = 0.02;
+const CYCLE_PHASE_MAX = 0.5;
+const DRAMA_T0 = 5; // s de viagem (fim da parede de fogo)
+const DRAMA_T1 = 29; // s de viagem (fim da hélice)
 
 function mulberry32(seed: number) {
   let s = seed >>> 0;
@@ -87,23 +103,40 @@ export class NovoSol {
   private chromoAccum = 0;
   private scale: number;
   private camDirN = new THREE.Vector3(0, 0, 1);
+  private limboFade = 1;
   private sunRotM4 = new THREE.Matrix4();
   private camRightTmp = new THREE.Vector3();
   private camUpTmp = new THREE.Vector3();
   private promNormal = new THREE.Vector3();
   private promWorldTmp = new THREE.Vector3();
 
-  constructor(renderer: THREE.WebGLRenderer, quality: QualityLevel) {
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    camera: THREE.PerspectiveCamera,
+    quality: QualityLevel
+  ) {
     this.scale = WORLD.sunRadius / DONOR_RADIUS;
     this.group.scale.setScalar(this.scale);
 
     const tier = TIERS[TIER_FOR[quality]];
     const srand = mulberry32(20260803);
+    // knobs por URL (?solcvol=0 etc.) — a URL é a fonte de verdade,
+    // como no resto do app; sem query, os defaults de fábrica valem
+    const kn: Record<string, number> = { ...KNOBS };
+    const q = new URLSearchParams(window.location.search);
+    for (const k of Object.keys(kn)) {
+      const v = Number.parseFloat(q.get('sol' + k) ?? '');
+      if (Number.isFinite(v)) kn[k] = v;
+    }
     const ctx: any = {
       renderer,
       // as fábricas fazem ctx.scene.add(mesh) — um Group serve
       scene: this.group,
-      camera: null,
+      // o CME captura ctx.camera na CRIAÇÃO (cme.js:10) — tem de ser a real
+      camera,
+      // raio em unidades de MUNDO para os raymarches de cvol/cme
+      // (cameraPosition/vWorld são parsec — ver patches "transplante:")
+      SUN_RADIUS_WORLD: WORLD.sunRadius,
       TP: tier,
       TIER: TIER_FOR[quality],
       FBM_OCTAVES: tier.fbm,
@@ -117,14 +150,17 @@ export class NovoSol {
       spotRand: mulberry32(20260803 ^ 0x59075eed),
       loopRand: mulberry32(20260803 ^ 0x5eedc0de),
       cmeRand: mulberry32(20260803 ^ 0x00c0e5ed),
-      knob: (name: string) => KNOBS[name] ?? 0,
-      getControl: (name: string) => KNOBS[name] ?? 0,
-      getAppliedControl: (name: string) => KNOBS[name] ?? 0,
-      TIME_SCALE: 1, EDU_K: 0, CYCLE_K: KNOBS.cycle, LAPSE_K: 0,
-      FPROM_K: KNOBS.fprom, SPOTS_K: KNOBS.spots, LOOP_K: KNOBS.loops,
-      CVOL_K: 0, CME_K: 0,
+      knob: (name: string) => kn[name] ?? 0,
+      getControl: (name: string) => kn[name] ?? 0,
+      getAppliedControl: (name: string) => kn[name] ?? 0,
+      TIME_SCALE: 1, EDU_K: 0, CYCLE_K: kn.cycle, LAPSE_K: 0,
+      FPROM_K: kn.fprom, SPOTS_K: kn.spots, LOOP_K: kn.loops,
+      CVOL_K: kn.cvol, CME_K: kn.cme,
       DET: false,
-      subToggle: { sim: true, bake: true, corona: true, corona3d: true, loops: true, spots: true, prom: true },
+      subToggle: {
+        sim: true, bake: true, corona: true, corona3d: true,
+        loops: true, spots: true, prom: true, cme: true, cmepts: true,
+      },
       eduEvent: () => false,
       diagEvent: () => {},
       markInteraction: () => {},
@@ -132,7 +168,8 @@ export class NovoSol {
       launchCME: () => {},
       maybeLaunchCME: () => {},
       elapsed: 0,
-      cycleTime: 0,
+      // fase inicial 0,02 (mínimo profundo): tot = 0,35 + 1206/1800 = 1,02
+      cycleTime: (1 + CYCLE_PHASE_MIN - 0.35) * 1800,
       cycleWarp: 0,
       solarMaxK: 0,
       surfFlareT: 999,
@@ -182,6 +219,12 @@ export class NovoSol {
     createSunMesh(ctx);
     ctx.sunInvRot = new THREE.Matrix3();
     createCoronaRays(ctx);
+    createCoronaVolume(ctx);
+    createCME(ctx);
+    // partículas do CME: -mv.z em parsec de volta à régua do doador
+    for (const m of ctx.cmePts?.meshes ?? []) {
+      if (m.material?.uniforms?.uZScale) m.material.uniforms.uZScale.value = 1 / this.scale;
+    }
     createSpicules(ctx);
     ctx.prom = createProminences(ctx);
     createLoops(ctx);
@@ -196,25 +239,44 @@ export class NovoSol {
     this.prime(renderer);
   }
 
-  // Estado apresentável ANTES do primeiro frame (e do t=0 das capturas):
-  // semente + evolução do sim, um bake completo (8 fatias chromo+smear)
-  // e os uniforms de textura apontados. Roda sob o véu de carregamento.
-  private prime(renderer: THREE.WebGLRenderer) {
+  // Sim + bake síncronos: evolui o Br na direção das cargas ATUAIS e
+  // publica um retrato completo da cromosfera. Usado pelo prime e pelo
+  // catch-up de saltos de fase (seek/captura, quando delta=0 e o bake
+  // fatiado nunca rodaria).
+  private bakeNow(simSteps: number) {
     const ctx = this.ctx;
-    const prev = renderer.getRenderTarget();
-    if (ctx.gran.seedSimulation) ctx.gran.seedSimulation();
-    for (let i = 0; i < 48; i++) ctx.gran.stepSimulation(SIM_DT);
-    ctx.act.updateActiveRegions(0);
+    const prevRT = ctx.renderer.getRenderTarget();
+    for (let i = 0; i < simSteps; i++) ctx.gran.stepSimulation(SIM_DT);
+    ctx.act.updateActiveRegions(ctx.elapsed + ctx.cycleWarp);
     ctx.chromo.snapshotBakeInputs();
-    for (let s = 0; s < 8; s++) ctx.chromo.bakeChromoSlice(s, 0);
+    for (let s = 0; s < 8; s++) ctx.chromo.bakeChromoSlice(s, ctx.elapsed);
     ctx.bakePrev = ctx.bakeCur = ctx.bakeWrite;
     ctx.bakeWrite = (ctx.bakeCur + 1) % 3;
+    ctx.bakeSwapT = ctx.elapsed;
     const set = ctx.bakeSets[ctx.bakeCur];
     ctx.sunUniforms.uChromoTex.value = set.s.texture;
     ctx.sunUniforms.uChromoFar.value = set.c.texture;
     ctx.sunUniforms.uChromoTexP.value = set.s.texture;
     ctx.sunUniforms.uChromoFarP.value = set.c.texture;
     ctx.sunUniforms.uBakeMix.value = 1;
+    ctx.renderer.setRenderTarget(prevRT);
+  }
+
+  // Estado apresentável ANTES do primeiro frame (e do t=0 das capturas):
+  // semente + relaxamento LONGO do sim (o Br semeado precisa convergir
+  // para as cargas fracas do mínimo — senão o disco nasce com filamentos
+  // de campo que não existe) + um bake completo. Sob o véu.
+  private prime(renderer: THREE.WebGLRenderer) {
+    const ctx = this.ctx;
+    const prev = renderer.getRenderTarget();
+    if (ctx.gran.seedSimulation) ctx.gran.seedSimulation();
+    this.bakeNow(320);
+    // coroa volumétrica: corre a máquina de fatias até a 1ª publicação —
+    // sem isto, capturas ?shot= (delta 0) nunca a veriam
+    for (let i = 0; i < 220 && !ctx.cvolReady; i++) {
+      if (ctx.CVOL_STEPS > 0) ctx.cvolFrame(true, 1 / 30, false);
+      else break;
+    }
     renderer.setRenderTarget(prev);
   }
 
@@ -222,8 +284,8 @@ export class NovoSol {
   // com RT amarrado — a variante certa; os meshes do group entram na
   // cena antes do compileAsync do director e são cobertos por ele)
 
-  /** relógio visual do director (0 sob ?shot=) + câmera do frame */
-  update(time: number, camera: THREE.PerspectiveCamera) {
+  /** relógio visual do director (0 sob ?shot=) + câmera + tempo de viagem */
+  update(time: number, camera: THREE.PerspectiveCamera, journeyT?: number) {
     const ctx = this.ctx;
     ctx.camera = camera;
     const delta = this.lastTime < 0 ? 0 : Math.min(Math.max(time - this.lastTime, 0), 0.1);
@@ -240,6 +302,15 @@ export class NovoSol {
     ctx.sunUniforms.uCamDist.value = ctx.camDist;
     this.camDirN.copy(camera.position).normalize();
     ctx.camDirN = this.camDirN;
+
+    // Fade das camadas de LIMBO além do regime do doador: o zoom de lá
+    // parava em ~14 R e a dose proeminência+bloom nunca foi calibrada
+    // para vista afastada (viravam bolas de bloom no recuo da hélice).
+    // Fisicamente proeminências/loops somem a distâncias estelares.
+    const fk = (ctx.camDist - 35) / 25;
+    this.limboFade = fk <= 0 ? 1 : fk >= 1 ? 0 : 1 - fk * fk * (3 - 2 * fk);
+    ctx.prominenceGroup.visible = this.limboFade > 0.01;
+    ctx.loopGroup.visible = this.limboFade > 0.01;
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---
     this.simAccum += delta;
@@ -292,6 +363,27 @@ export class NovoSol {
       const cycMul = ctx.act.cycleMultiplier();
       ctx.cycleTime += delta * cycMul;
       if (cycMul > 1.0) ctx.cycleWarp += delta * (cycMul - 1.0);
+      // dramaturgia do arranque: mínimo→máximo dirigido pelo tempo de
+      // viagem (só empurra para FRENTE; depois da janela o relógio
+      // natural assume e o snap vira no-op)
+      if (journeyT !== undefined) {
+        const k = Math.min(1, Math.max(0, (journeyT - DRAMA_T0) / (DRAMA_T1 - DRAMA_T0)));
+        const eased = k * k * (3 - 2 * k);
+        const desired =
+          (1 + CYCLE_PHASE_MIN + (CYCLE_PHASE_MAX - CYCLE_PHASE_MIN) * eased - 0.35) * 1800;
+        if (desired > ctx.cycleTime) {
+          const jump = desired - ctx.cycleTime;
+          ctx.cycleWarp += jump;
+          ctx.cycleTime = desired;
+          // salto grande (seek/captura, não o avanço suave do play):
+          // o Sol "vive" o salto na hora — sim + bake síncronos, senão
+          // a fotografia mostra fase nova com cromosfera velha
+          if (jump > 20) {
+            ctx.act.updateCycleState();
+            this.bakeNow(120);
+          }
+        }
+      }
       ctx.act.updateCycleState();
     } else if (ctx.solarMaxK !== 0) ctx.solarMaxK = 0;
     ctx.sunUniforms.uMaxK.value = ctx.solarMaxK;
@@ -301,7 +393,11 @@ export class NovoSol {
     if (delta > 0) {
       ctx.surfFlareCooldown -= delta;
       if (ctx.surfFlareCooldown <= 0) {
-        if (ctx.triggerSurfaceFlare()) ctx.surfFlareT = 0;
+        if (ctx.triggerSurfaceFlare()) {
+          ctx.surfFlareT = 0;
+          // flare grande pode soltar CME (sorteio no stream próprio)
+          ctx.maybeLaunchCME();
+        }
         ctx.surfFlareCooldown =
           (12 + ctx.srand() * 14) / (0.5 + 1.1 * ctx.coronaRaysUniforms.uActivity.value);
       }
@@ -325,6 +421,13 @@ export class NovoSol {
 
     // --- loops coronais + arcada pós-flare ---
     ctx.updateLoops(delta);
+
+    // --- CME: relógio, casca e partículas (episódico; custo ~zero fora) ---
+    if (ctx.cmePts?.on) {
+      ctx.cmePts.meshes[0].rotation.y = ctx.sunMesh.rotation.y;
+      ctx.cmePts.meshes[1].rotation.y = ctx.sunMesh.rotation.y;
+    }
+    ctx.updateCME(delta);
 
     // --- proeminências: ciclo de vida, campo, agitação, orientação ---
     ctx.promStates.forEach((ps: any) => {
@@ -364,7 +467,8 @@ export class NovoSol {
         fu.uAgit.value = ps.agit;
         fu.uPTime.value = ps.drift;
         fu.uTime.value = ctx.elapsed;
-        fu.uAbsorb.value = Math.min(1.0, ctx.FPROM_K) * 0.45 * sF * Math.min(1.0, ps.fieldK);
+        fu.uAbsorb.value =
+          Math.min(1.0, ctx.FPROM_K) * 0.45 * sF * Math.min(1.0, ps.fieldK) * this.limboFade;
       } else if (ps.flat.visible) ps.flat.visible = false;
     });
     ctx.prominenceMeshes.forEach((m: any) => {
@@ -386,7 +490,7 @@ export class NovoSol {
       s = s * s * (3.0 - 2.0 * s);
       base *= 0.05 + 0.95 * (1.0 - s);
       base *= ps.orient[m.userData.twinIdx] * ps.orientNorm;
-      m.material.uniforms.uIntensity.value = base;
+      m.material.uniforms.uIntensity.value = base * this.limboFade;
       m.material.uniforms.uTime.value = ctx.elapsed;
     });
     ctx.flushProminences();
@@ -401,6 +505,23 @@ export class NovoSol {
     let actSum = 0;
     for (let ai = 0; ai < ctx.pairStates.length; ai++) actSum += Math.abs(ctx.pairStates[ai].lead.w);
     ctx.coronaRaysUniforms.uActivity.value = Math.min(1.0, actSum / 4.0);
+
+    // --- coroa volumétrica: uniforms + scheduler fatiado do sampler3D ---
+    if (ctx.CVOL_STEPS > 0) {
+      const cvolOn = ctx.CVOL_K > 0.001 && !ctx.cvolKilled;
+      const cvolShow = cvolOn && ctx.cvolReady;
+      ctx.coronaVol.visible = cvolShow;
+      ctx.coronaRaysUniforms.uCvolMix.value = cvolShow ? Math.min(1.0, ctx.CVOL_K) : 0.0;
+      if (cvolShow) {
+        ctx.coronaVol.quaternion.copy(camera.quaternion);
+        ctx.cvolUniforms.uCvol.value = ctx.CVOL_K;
+        ctx.cvolUniforms.uTime.value = ctx.elapsed;
+        ctx.cvolUniforms.uActivity.value = ctx.coronaRaysUniforms.uActivity.value;
+        // rotação PURA (matrixWorld herdaria a escala do group)
+        ctx.cvolInvRot.copy(ctx.sunInvRot);
+      }
+      ctx.cvolFrame(cvolOn, delta, false);
+    }
   }
 
   dispose() {
