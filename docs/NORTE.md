@@ -362,9 +362,20 @@ antes de criar as forjas e o `?.` engolia. A dosagem edge inteira (r15–25)
 foi calibrada com as forjas sem extinção. Ligar sob a dosagem atual foi
 medido: **edge 0,6441 → 0,7862 (thickRatio 0,050 → 0,040) e face
 0,0333 → 0,0301 (melhor da era 1800px)**. Decisão: fica desligada por
-padrão (`?forgetau=1` liga), e a **rodada futura de re-dosagem sob o regime
-corrigido** é candidata forte — o ganho no face sugere que o ótimo global
-mudou de lugar. Não repetir: ligar sem re-dosar halo/warp.
+padrão (`?forgetau=1` liga), e a ~~rodada futura de re-dosagem sob o regime
+corrigido~~ — **rodada FEITA (2026-08-02, sweep de 6 configs): halo/glow NÃO
+fecham a conta.** Série (edge · thickRatio · axialRatio · warpAmp):
+ft só 0,7862·0,040·0,093·0,039 → ft-h35 0,7667·0,047·0,101·0,041 →
+ft-h40 0,7482·0,055·0,109·0,044; glowgain 1,1 é neutro-negativo (edge ~igual,
+face paga 0,031→0,034). Mecanismo: o halo recompra a espessura MAS infla
+axialRatio (já o pior termo aberto), e o forgetau SOBE o warpAmp medido
+(0,033→0,039-0,045 vs alvo 0,019) — a luz não-extinta das forjas mascarava
+estrutura vertical que a régua honesta já mede acima do alvo. O resíduo
+(~0,10 mesmo com thickRatio recomprado) mora nos termos warp/axial.
+**Alavanca seguinte nomeada: ENTENDER a estrutura vertical da era 1800px
+(axialRatio 0,092 vs 0,060 e warpAmp/wAsym) — a questão aberta da rodada
+25 — ANTES de nova tentativa de ligar o forgetau.** Não repetir: halo >0,4
+sob forgetau (axial explode), glowgain 1,1, ligar sem re-dosar.
 
 ## Decisões fechadas
 
