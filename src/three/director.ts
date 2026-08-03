@@ -10,7 +10,7 @@ import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { Sun } from './world/sun';
 import { Dust } from './world/dust';
-import { projectLabels } from './world/labels';
+import { projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
@@ -40,6 +40,8 @@ interface DirectorEvents {
   onLabels: (labels: StarLabel[]) => void;
   onWarp: (k: number) => void;
   onQuality: (quality: QualityLevel) => void;
+  /** linha de rumo ("→ DESTINO · distância viva"); vazio = esconder */
+  onDest: (text: string) => void;
 }
 
 export class Director {
@@ -69,6 +71,8 @@ export class Director {
   /** última projeção de rótulos — alvo do clicar-para-visitar */
   private lastLabels: StarLabel[] = [];
   private prevLabelKeys = new Set<string>();
+  private lastDest = '';
+  private destTimer = 0;
   private pauseDragging = false;
   private pauseLastX = 0;
   private pauseLastY = 0;
@@ -443,6 +447,50 @@ export class Director {
     this.pauseDragging = false;
   };
 
+  /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | nome HYG) */
+  private resolveForcedLabel(cam: THREE.PerspectiveCamera, name: string): StarLabel | null {
+    if (name === 'SOL') {
+      return projectForced(cam, 'SOL', 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
+    }
+    if (name === 'SGR') {
+      return projectForced(cam, 'Sagittarius A✱', 'SMBH', GAL.GC_POS, 'sgr-a');
+    }
+    const star = this.meta.named.find((s) => s.n === name);
+    return star ? projectForced(cam, star.n, star.s, star, star.n) : null;
+  }
+
+  /** "→ DESTINO · distância viva" — só emite quando o texto muda */
+  private emitDest(dest: string | undefined, camPos: THREE.Vector3) {
+    let text = '';
+    if (dest) {
+      const target =
+        dest === 'SGR' ? GAL.GC_POS : this.meta?.named.find((s) => s.n === dest);
+      if (target) {
+        const d = camPos.distanceTo(
+          target instanceof THREE.Vector3
+            ? target
+            : new THREE.Vector3(target.x, target.y, target.z)
+        );
+        const al = d * 3.262;
+        const fmt =
+          al < 100
+            ? `${al.toFixed(1)} AL`
+            : al < 10_000
+              ? `${Math.round(al)} AL`
+              : `${(al / 1000).toFixed(1)} MIL AL`;
+        const label = dest === 'SGR' ? 'SAGITTARIUS A✱' : dest.toUpperCase();
+        text = `→ ${label} · ${fmt}`;
+      }
+    }
+    // aparecer/sumir é imediato; o contador vivo atualiza a 4 Hz
+    const changedKind = (text === '') !== (this.lastDest === '');
+    if (text !== this.lastDest && (changedKind || this.destTimer > 0.25)) {
+      this.lastDest = text;
+      this.destTimer = 0;
+      this.events.onDest(text);
+    }
+  }
+
   /** clique curto no voo livre: viaja até o rótulo mais próximo */
   private tryVisit(x: number, y: number) {
     if (this.phase !== 'free' || !this.meta) return;
@@ -601,6 +649,7 @@ export class Director {
     const localBandFade = env * 0.76;
     const markerFade = THREE.MathUtils.smoothstep(dHome, 1700, 3300);
 
+    this.destTimer += dt;
     // nuvens-semente do raymarch + cavidade do observador itinerante
     this.seedCloudTimer += dt;
     if (this.seedCloudTimer > 0.25) {
@@ -711,33 +760,46 @@ export class Director {
     // Na viagem, menos rótulos (cinema); no voo livre, mais (são os
     // alvos do clicar-para-visitar).
     if ((this.phase === 'journey' || this.phase === 'free') && this.meta) {
-      this.lastLabels = projectLabels(
-        cam,
-        this.meta.named,
-        this.phase === 'journey' ? 4 : 7,
-        this.prevLabelKeys
-      );
       if (this.phase === 'journey') {
-        // cinema: etiqueta de estrela comum não gruda no assunto da cena
-        // (a legenda já o nomeia) nem aparece no close de abertura. SOL e
-        // Sagittarius A✱ são EXCEÇÃO: são o "você está aqui/ali" — o
-        // filtro matava o tag do Sol exatamente no final, quando a mira
-        // desliza para ele (visto pelo usuário).
-        this.lastLabels =
-          dHome < 1.5
-            ? []
-            : this.lastLabels.filter((l) => {
+        // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
+        // (target, etiqueta forçada, sem fades) e o fundo fica mudo
+        // (quiet) ou limitado a 2 durante o beat. SOL e Sagittarius A✱
+        // são sempre isentos do filtro de centro.
+        const meta = this.rig.metaAt(this.journeyT);
+        let labels = meta.quiet
+          ? []
+          : projectLabels(cam, this.meta.named, 4, this.prevLabelKeys).filter(
+              (l) => {
                 if (l.key === 'sol-home' || l.key === 'sgr-a') return true;
                 const dx = l.x - 0.5;
                 const dy = l.y - 0.5;
                 return dx * dx + dy * dy > 0.012; // ~11% do quadro
-              });
+              }
+            );
+        if (dHome < 1.5 && !meta.target) labels = [];
+        if (meta.target) {
+          const forced: StarLabel[] = [];
+          for (const name of meta.target) {
+            const l = this.resolveForcedLabel(cam, name);
+            if (l) forced.push(l);
+          }
+          const keys = new Set(forced.map((l) => l.key));
+          labels = labels.filter((l) => !keys.has(l.key)).slice(0, 2);
+          labels.push(...forced);
+        }
+        this.lastLabels = labels;
+        // linha de rumo com distância viva
+        this.emitDest(meta.dest, cam.position);
+      } else {
+        this.lastLabels = projectLabels(cam, this.meta.named, 7, this.prevLabelKeys);
+        this.emitDest(undefined, cam.position);
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
       this.events.onLabels(this.lastLabels);
     } else if (this.phase !== 'journey') {
       this.lastLabels = [];
       this.events.onLabels([]);
+      this.emitDest(undefined, cam.position);
     }
 
     this.post.setGalaxy(galaxyFade);

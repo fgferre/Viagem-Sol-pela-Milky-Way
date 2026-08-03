@@ -5,22 +5,29 @@
 //   I   CASA (0–48s)        — parede de fogo, hélice ao redor do Sol
 //                             (o céu inteiro gira; o bojo passa em
 //                             contraluz atrás do Sol), Sirius de raspão.
-//   II  ÓRION (48–116s)     — Betelgeuse em espiral orbital, o desfile
-//                             das Três Marias (o alinhamento se forma e
-//                             se desfaz por paralaxe), Rigel de passagem,
+//   II  ÓRION (48–116s)     — a TRAVA das Três Marias perto de casa (é
+//                             só de perto que a fila é fila — a 55 pc a
+//                             paralaxe ainda preserva o alinhamento),
+//                             espiral em Betelgeuse, Rigel de raspão,
 //                             o olhar-para-trás: o Sol já é invisível.
 //   III O MERGULHO (116–229s) — Antares como portão, corrida de 8 kpc em
 //                             ondas (braços como muralhas), Sagittarius A*
 //                             com curva rasante ao redor do horizonte.
-//   IV  A REVELAÇÃO (229–321s) — subida olhando para trás, pouso no
-//                             enquadramento de perfil, travessia em arco
-//                             ao face-on, "você está aqui".
+//   IV  A REVELAÇÃO (229–321s) — estilingue, pouso no quadro de perfil,
+//                             travessia ao face-on, "você está aqui" com
+//                             congelamento final.
 //
-// Cada shot é uma função paramétrica (posição/mira/fov/warp/roll) com
-// easing próprio: holds são EXATOS por construção — é isso que garante
-// os dois quadros de medição (edge/face) bit-a-bit reproduzíveis.
-// Princípio do painel de direção: um hold nunca é um corte — a câmera
-// chega em movimento e POUSA no enquadramento.
+// Sistema editorial (revisão "outros olhos" da rodada 26):
+//   - legendas são JANELAS em tempo de viagem (captions[], com dur) —
+//     função pura de t: seek/scrub/2× mostram a legenda certa;
+//   - o ASSUNTO do shot sempre tem etiqueta (target), o fundo fica
+//     mudo ou limitado durante o beat (quiet);
+//   - a linha de DESTINO (dest) diz para onde se vai, com distância viva.
+//
+// Holds de medição são EXATOS por construção — posição, mira, fov e
+// roll idênticos às rodadas 16–25 (roll do rig antigo assado; ver
+// GATE_*). Um hold nunca é um corte: a câmera chega em movimento e
+// POUSA no enquadramento.
 // ============================================================
 import * as THREE from 'three';
 import { GAL, EX, EY, EZ } from '../world/galaxy';
@@ -46,7 +53,6 @@ const GATE_FACE_ROLL = 0.06;
 
 // Estrelas-âncora (coordenadas HYG reais, pc)
 const SIRIUS = new THREE.Vector3(-0.494, 2.477, -0.758);
-const BELLATRIX = new THREE.Vector3(11.659, 76.036, 8.56);
 const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682);
 const ALNILAM = new THREE.Vector3(62.8, 602.7, -12.7);
 const RIGEL = new THREE.Vector3(51.601, 256.71, -37.74);
@@ -65,6 +71,9 @@ const glide: Ease = (x) => THREE.MathUtils.smoothstep(x, 0, 1);
 const launch: Ease = (x) => Math.pow(x, 2.6);
 /** pouso longo: chega com energia e assenta como tripé travando */
 const settle: Ease = (x) => 1 - Math.pow(1 - x, 2.2);
+/** pousa aos 88% e CONGELA — o ponto final do filme (revisão: o
+ *  arremate não pode acabar em movimento) */
+const settleFreeze: Ease = (x) => settle(Math.min(x / 0.88, 1));
 
 // ---- primitivas de trajetória ------------------------------------------
 type PosFn = (k: number, out: THREE.Vector3) => THREE.Vector3;
@@ -108,9 +117,25 @@ function orbit(
     return out;
   };
 }
+/** ponto galactocêntrico no referencial da cena */
+const galPoint = (r: number, aRad: number, h: number, out: THREE.Vector3) =>
+  out
+    .copy(GAL.GC_POS)
+    .addScaledVector(EX, Math.cos(aRad) * r)
+    .addScaledVector(EY, Math.sin(aRad) * r)
+    .addScaledVector(EZ, h);
 /** mira que desliza entre dois pontos (para virar o olhar sem saltos) */
 const panLook = (a: THREE.Vector3, b: THREE.Vector3, ease: Ease = smooth): PosFn =>
   (k, out) => out.copy(a).lerp(b, ease(k));
+
+interface ShotCaption {
+  /** fração do shot em que a legenda ENTRA */
+  at: number;
+  text: string;
+  sub?: string;
+  /** janela de exibição em segundos de VIAGEM (padrão 8,6) */
+  dur?: number;
+}
 
 interface Shot {
   dur: number;
@@ -123,7 +148,14 @@ interface Shot {
   warp?: (k: number) => number;
   /** banking em radianos (positivo = horário); 0 nos holds por contrato */
   roll?: (k: number) => number;
-  caption?: { at: number; text: string; sub?: string };
+  captions?: ShotCaption[];
+  /** o(s) ASSUNTO(s) do shot: etiqueta forçada, nunca sofre culling.
+   *  'SOL' e 'SGR' são pseudo-alvos; o resto é nome de estrela do HYG. */
+  target?: string[];
+  /** silencia as etiquetas de fundo durante o beat */
+  quiet?: boolean;
+  /** linha de destino com distância viva: 'SGR' ou nome de estrela */
+  dest?: string;
 }
 
 // ---- pontos calculados do roteiro ---------------------------------------
@@ -146,17 +178,24 @@ const SIRIUS_C2 = new THREE.Vector3(-0.35, 2.2, -0.45);
 const POST_SIRIUS = new THREE.Vector3(0.4, 4.6, -0.6);
 const LOOKBACK_1 = new THREE.Vector3(1.1, 7.2, 0.1);
 
-// Ato II — chegada a Betelgeuse POR BAIXO (ela "nasce" do bordo inferior),
-// espiral orbital com as Três Marias ao fundo, desfile lateral do cinturão.
-const BET_BELOW = BETELGEUSE.clone()
-  .addScaledVector(EZ, -7)
-  .add(new THREE.Vector3(2.5, -16, 0));
-const BET_ORBIT_CENTER = BETELGEUSE;
-// desfile: paralelo ao cinturão, ligeiramente abaixo; o alinhamento
-// Alnitak–Alnilam–Mintaka se FORMA quando a câmera cruza o eixo Terra→
-// cinturão e se desfaz em seguida (paralaxe de 200–600 pc de profundidade)
-const BELT_IN = new THREE.Vector3(44, 186, -20);
-const BELT_OUT = new THREE.Vector3(-14, 232, 4);
+// Ato II — a TRAVA das Três Marias vem ANTES de Betelgeuse: o ponto de
+// vista fica no eixo Terra→Alnilam a 55 pc de casa, onde a paralaxe
+// ainda preserva a fila que se vê da Terra (a 150+ pc a geometria já
+// desmonta — Mintaka/Alnitak estão a 212/226 pc, Alnilam a 606).
+const BELT_AXIS = ALNILAM.clone().normalize();
+const BELT_VIEW = BELT_AXIS.clone().multiplyScalar(55);
+const BELT_BREAK = BELT_VIEW.clone().add(new THREE.Vector3(-8, 2, 4));
+// espiral orbital de Betelgeuse (entrada por baixo, fecha o raio)
+const BET_ORBIT_IN = new THREE.Vector3()
+  .copy(BETELGEUSE)
+  .addScaledVector(EX, Math.cos(1.9) * 14)
+  .addScaledVector(EY, Math.sin(1.9) * 14)
+  .addScaledVector(EZ, -6);
+const BET_ORBIT_OUT = new THREE.Vector3()
+  .copy(BETELGEUSE)
+  .addScaledVector(EX, Math.cos(-0.4) * 7)
+  .addScaledVector(EY, Math.sin(-0.4) * 7)
+  .addScaledVector(EZ, 3.5);
 // Rigel de raspão (fly-under: passamos 6 pc abaixo dela, sem parar)
 const RIGEL_PASS = RIGEL.clone().add(new THREE.Vector3(-4, 14, -9));
 const LOOKBACK_2 = new THREE.Vector3(52, 296, -52); // a parada do vazio
@@ -171,14 +210,8 @@ const ANT_PASS = ANTARES.clone().add(new THREE.Vector3(4, -6, 1.5));
 // ~25 pc ABAIXO do plano — a poeira vira um teto de tempestade. Três
 // ondas: braço de Sagitário (~6,5 kpc), travessia de nuvem (~5 kpc),
 // Scutum-Centaurus (~4 kpc) — cada crista com respiro depois.
-const gal = (R: number, azDeg: number, z: number) => {
-  const a = THREE.MathUtils.degToRad(azDeg);
-  return new THREE.Vector3()
-    .copy(GAL.GC_POS)
-    .addScaledVector(EX, Math.cos(a) * R)
-    .addScaledVector(EY, Math.sin(a) * R)
-    .addScaledVector(EZ, z);
-};
+const gal = (R: number, azDeg: number, z: number) =>
+  galPoint(R, THREE.MathUtils.degToRad(azDeg), z, new THREE.Vector3());
 const DIVE_1 = gal(6600, 6, -14); // muralha de Sagitário
 const DIVE_2 = gal(5100, 13, -8); // dentro da lâmina — travessia de nuvem
 const DIVE_3 = gal(3900, 20, -24); // Scutum-Centaurus
@@ -210,24 +243,31 @@ const FINAL_LOOK = new THREE.Vector3(-155, -2491, -1381); // GC→Sol a 65%
 const SHOTS: Shot[] = [
   // ================= ATO I — CASA =================
   {
-    // parede de fogo: 8 s imóveis. A gramática do filme nos primeiros
-    // segundos: aqui a quietude é a promessa.
-    dur: 8,
+    // parede de fogo: 6 s imóveis (a revisão cortou a estática de 8).
+    // A gramática do filme nos primeiros segundos: quietude é promessa.
+    dur: 6,
     pos: still(SUN_WALL),
     look: still(SOL),
     fov0: 26, fov1: 26,
-    caption: { at: 0.45, text: 'SOL', sub: 'uma estrela comum' },
+    quiet: true,
+    captions: [{ at: 0.3, text: 'SOL', sub: 'uma estrela comum', dur: 9 }],
   },
   {
     // hélice ascendente: o Sol fica, o céu inteiro gira. O bojo dourado
     // (Sagitário) cruza atrás do Sol no meio do shot — casa em contraluz
-    // contra o destino. Uma volta de ~210° em 22 s (< 10°/s: documentário).
-    dur: 22,
+    // contra o destino. ~210° em 24 s (< 9°/s: documentário).
+    dur: 24,
     pos: orbit(SOL, 0.062, 0.55, THREE.MathUtils.degToRad(-150), THREE.MathUtils.degToRad(60), 0.012, 0.17),
     look: still(SOL),
     fov0: 26, fov1: 56,
     ease: glide,
-    caption: { at: 0.52, text: 'A VIA LÁCTEA, DE DENTRO', sub: 'aquela faixa no céu é o nosso destino' },
+    target: ['SOL'],
+    quiet: true,
+    captions: [
+      // entra quando a faixa já está franca no quadro (revisão: em
+      // k≈0,5 ela ainda estava espremida na borda)
+      { at: 0.64, text: 'A VIA LÁCTEA, DE DENTRO', sub: 'aquela faixa no céu é o nosso destino' },
+    ],
   },
   {
     // partida — Sirius cruza o quadro de raspão, sem ser centralizada
@@ -237,7 +277,8 @@ const SHOTS: Shot[] = [
     fov0: 56, fov1: 63,
     ease: glide,
     warp: (k) => 0.25 * Math.sin(Math.PI * k),
-    caption: { at: 0.4, text: 'SIRIUS', sub: 'a luz dela chega à Terra em 8 anos' },
+    target: ['Sirius', 'SOL'],
+    captions: [{ at: 0.4, text: 'SIRIUS', sub: 'a luz dela chega à Terra em 8 anos' }],
   },
   {
     // primeira guinada: o Sol à popa já é um ponto amarelo modesto
@@ -246,34 +287,83 @@ const SHOTS: Shot[] = [
     look: panLook(SIRIUS.clone().multiplyScalar(2.4), SOL, smooth),
     fov0: 63, fov1: 52,
     ease: glide,
+    target: ['SOL'],
   },
 
   // ================= ATO II — ÓRION =================
   {
-    // cruzeiro pelo corredor de nuvens até Órion; Betelgeuse por baixo
-    dur: 14,
+    // cruzeiro pelo corredor de nuvens até o mirante do cinturão
+    dur: 12,
     pos: bezier(
       LOOKBACK_1,
-      new THREE.Vector3(6, 46, -4),
-      BELLATRIX.clone().add(new THREE.Vector3(-6, -18, -10)),
-      BET_BELOW
+      new THREE.Vector3(3, 22, -2),
+      new THREE.Vector3(5, 40, -1.5),
+      BELT_VIEW
     ),
-    look: panLook(SOL, BETELGEUSE, smooth),
-    fov0: 52, fov1: 62,
+    look: panLook(SOL, ALNILAM, smooth),
+    fov0: 52, fov1: 54,
     ease: glide,
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
-    caption: { at: 0.3, text: 'O MAR INTERESTELAR', sub: 'gás e poeira entre as estrelas' },
+    dest: 'Alnilam',
+    captions: [{ at: 0.25, text: 'O MAR INTERESTELAR', sub: 'gás e poeira entre as estrelas' }],
+  },
+  {
+    // A TRAVA DAS TRÊS MARIAS (queixa literal do dono, resolvida): a
+    // câmera POUSA no eixo Terra→cinturão e FECHA a lente na fila —
+    // gesto de telescópio; a 54° a fila era minúscula e as etiquetas
+    // colidiam. As três em linha, como no céu de casa, NOMEADAS.
+    dur: 12,
+    pos: still(BELT_VIEW),
+    look: still(ALNILAM),
+    fov0: 54, fov1: 15,
+    ease: settle,
+    target: ['Alnitak', 'Alnilam', 'Mintaka'],
+    quiet: true,
+    captions: [
+      { at: 0.12, text: 'AS TRÊS MARIAS', sub: 'Alnitak · Alnilam · Mintaka — em fila só vistas daqui', dur: 10 },
+    ],
+  },
+  {
+    // o passo ao lado: a fila se desfaz diante dos olhos — a
+    // constelação é um acidente de ponto de vista, demonstrado
+    dur: 6,
+    pos: line(BELT_VIEW, BELT_BREAK),
+    look: still(ALNILAM),
+    fov0: 15, fov1: 50,
+    ease: glide,
+    target: ['Alnitak', 'Alnilam', 'Mintaka'],
+    quiet: true,
+    captions: [
+      { at: 0.08, text: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista', dur: 7 },
+    ],
+  },
+  {
+    // aproximação de Betelgeuse por baixo (ela "nasce" do bordo inferior)
+    dur: 6,
+    pos: bezier(
+      BELT_BREAK,
+      new THREE.Vector3(-4, 80, 0),
+      new THREE.Vector3(0, 125, -2),
+      BET_ORBIT_IN
+    ),
+    look: panLook(ALNILAM, BETELGEUSE, smooth),
+    fov0: 50, fov1: 62,
+    ease: glide,
+    warp: (k) => 0.35 * Math.sin(Math.PI * k),
+    target: ['Betelgeuse'],
+    dest: 'Betelgeuse',
   },
   {
     // Betelgeuse: espiral orbital FECHANDO (r 14→7 pc), sentido oposto à
-    // hélice solar. A supergigante em primeiro plano, as Três Marias ao
-    // fundo se deformando por paralaxe: a constelação morre em cena.
-    dur: 20,
+    // hélice solar. A supergigante em primeiro plano, o fundo desfilando
+    // por paralaxe. Encurtada de 20 s para 12 (revisão: o filme parava
+    // demais aqui e de menos nas Três Marias).
+    dur: 12,
     pos: (k, out) => {
       const r = THREE.MathUtils.lerp(14, 7, k);
       const a = THREE.MathUtils.lerp(1.9, -0.4, k); // sentido horário
       const h = THREE.MathUtils.lerp(-6, 3.5, k);
-      out.copy(BET_ORBIT_CENTER);
+      out.copy(BETELGEUSE);
       out.addScaledVector(EX, Math.cos(a) * r);
       out.addScaledVector(EY, Math.sin(a) * r);
       out.addScaledVector(EZ, h);
@@ -282,43 +372,41 @@ const SHOTS: Shot[] = [
     look: still(BETELGEUSE),
     fov0: 62, fov1: 38,
     ease: glide,
-    caption: { at: 0.35, text: 'BETELGEUSE', sub: 'no lugar do Sol, engoliria a órbita de Júpiter' },
+    target: ['Betelgeuse'],
+    quiet: true,
+    captions: [
+      { at: 0.12, text: 'BETELGEUSE', sub: 'no lugar do Sol, engoliria a órbita de Júpiter', dur: 9 },
+    ],
   },
   {
-    // o desfile das Três Marias: travelling lateral abaixo do cinturão.
-    // No meio do shot a câmera cruza o eixo Terra→cinturão e por ~2 s
-    // as três se ALINHAM como no céu de casa — e se desfazem.
-    dur: 14,
-    pos: line(BELT_IN, BELT_OUT),
-    look: panLook(BETELGEUSE, ALNILAM, easeOut),
-    fov0: 38, fov1: 54,
-    ease: glide,
-    caption: { at: 0.42, text: 'AS TRÊS MARIAS', sub: 'alinhadas apenas vistas da Terra' },
-  },
-  {
-    // Rigel de raspão — silhueta azul cruzando, sem parar
+    // Rigel de raspão — silhueta azul cruzando, agora com nome
     dur: 8,
     pos: bezier(
-      BELT_OUT,
-      new THREE.Vector3(18, 244, -18),
+      BET_ORBIT_OUT,
+      new THREE.Vector3(18, 190, 6),
       RIGEL.clone().add(new THREE.Vector3(-10, -6, -14)),
       RIGEL_PASS
     ),
-    look: panLook(ALNILAM, RIGEL, smooth),
-    fov0: 54, fov1: 60,
+    look: panLook(BETELGEUSE, RIGEL, smooth),
+    fov0: 38, fov1: 60,
     ease: glide,
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
+    target: ['Rigel'],
+    captions: [{ at: 0.3, text: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis', dur: 7 }],
   },
   {
-    // a dobradiça: desacelera até quase zero, meia-volta de 180° e
-    // 4 s de VAZIO — o quadro onde o Sol deveria estar. O fim do giro
+    // a dobradiça: desacelera até quase zero, meia-volta de 180° e o
+    // VAZIO — o quadro onde o Sol deveria estar, com a etiqueta SOL
+    // marcando o ponto exato (a prova visual da legenda). O fim do giro
     // já entrega o Escorpião pela borda: sem segundo começo.
     dur: 12,
     pos: line(RIGEL_PASS, LOOKBACK_2),
     look: panLook(RIGEL, SOL, smooth),
     fov0: 60, fov1: 34,
     ease: settle,
-    caption: { at: 0.55, text: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu' },
+    target: ['SOL'],
+    quiet: true,
+    captions: [{ at: 0.5, text: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu', dur: 9 }],
   },
 
   // ================= ATO III — O MERGULHO =================
@@ -335,7 +423,9 @@ const SHOTS: Shot[] = [
     fov0: 34, fov1: 50,
     ease: glide,
     warp: (k) => 0.45 * Math.sin(Math.PI * k),
-    caption: { at: 0.5, text: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz' },
+    target: ['Antares'],
+    dest: 'Antares',
+    captions: [{ at: 0.5, text: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz' }],
   },
   {
     // quase-parada diante da brasa — e o lançamento mais forte do filme
@@ -350,10 +440,13 @@ const SHOTS: Shot[] = [
     fov0: 50, fov1: 58,
     ease: launch,
     warp: (k) => 0.85 * Math.pow(k, 2),
+    target: ['Antares'],
+    quiet: true,
   },
   {
     // ONDA 1 — até a muralha de Sagitário. O bojo cravado no terço
-    // superior, imóvel enquanto tudo flui.
+    // superior, imóvel enquanto tudo flui; a linha de destino conta a
+    // distância caindo.
     dur: 18,
     pos: bezier(ANT_PASS, gal(7700, 2, -30), gal(7100, 4, -26), DIVE_1),
     look: still(GAL.GC_POS),
@@ -361,11 +454,13 @@ const SHOTS: Shot[] = [
     ease: glide,
     warp: (k) => 0.55 + 0.4 * Math.sin(Math.PI * k),
     roll: (k) => 0.10 * Math.sin(Math.PI * k),
-    caption: { at: 0.55, text: 'O MERGULHO', sub: 'oito mil parsecs até o coração' },
+    dest: 'SGR',
+    captions: [{ at: 0.45, text: 'O MERGULHO', sub: 'oito mil parsecs até o coração' }],
   },
   {
-    // ONDA 2 — respiro, e a travessia POR DENTRO da lâmina de poeira
-    // (2–3 s de interior púrpura; o único túnel escuro do filme)
+    // ONDA 2 — a desaceleração É o braço de Sagitário: a poeira
+    // engrossa, atravessamos POR DENTRO da lâmina (o único túnel escuro
+    // do filme). Legenda descreve a EXPERIÊNCIA, não um nome invisível.
     dur: 14,
     pos: bezier(DIVE_1, gal(6100, 9, -2), gal(5600, 11, 2), DIVE_2),
     look: still(GAL.GC_POS),
@@ -373,10 +468,14 @@ const SHOTS: Shot[] = [
     ease: glide,
     warp: (k) => 0.5 + 0.45 * Math.sin(Math.PI * k),
     roll: (k) => -0.12 * Math.sin(Math.PI * k),
+    dest: 'SGR',
+    captions: [
+      { at: 0.25, text: 'BRAÇO DE SAGITÁRIO', sub: 'a poeira engrossa — estamos dentro de um braço espiral', dur: 9 },
+    ],
   },
   {
-    // ONDA 3 — Scutum-Centaurus e a reta final: aceleração exponencial,
-    // a densidade e o dourado crescendo sem parar
+    // ONDA 3 — Scutum-Centaurus na desaceleração de entrada, e a reta
+    // final: aceleração exponencial, o dourado crescendo sem parar
     dur: 20,
     pos: bezier(DIVE_2, gal(4600, 16, -30), DIVE_3, DIVE_4),
     look: still(GAL.GC_POS),
@@ -384,7 +483,10 @@ const SHOTS: Shot[] = [
     ease: glide,
     warp: (k) => 0.6 + 0.4 * Math.sin(Math.PI * k * 0.9),
     roll: (k) => 0.14 * Math.sin(Math.PI * k),
-    caption: { at: 0.45, text: 'BRAÇO DE SCUTUM-CENTAURUS', sub: 'a luz daqui só chegará à Terra no ano 15.000' },
+    dest: 'SGR',
+    captions: [
+      { at: 0.06, text: 'SCUTUM-CENTAURUS', sub: 'a última muralha de estrelas antes do coração', dur: 8 },
+    ],
   },
   {
     // desaceleração no aglomerado central: e... nada aparece. Sgr A* só
@@ -396,6 +498,10 @@ const SHOTS: Shot[] = [
     fov0: 70, fov1: 55,
     ease: settle,
     warp: (k) => 0.9 * (1 - k) * (1 - k),
+    dest: 'SGR',
+    captions: [
+      { at: 0.5, text: 'SAGITTARIUS A✱', sub: 'quatro milhões de sóis dentro da órbita de Mercúrio', dur: 9 },
+    ],
   },
   {
     // aproximação final: de 120 pc a 1,5 pc do centro
@@ -404,35 +510,34 @@ const SHOTS: Shot[] = [
       const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(32, BH_ARC_IN, k));
       const r = THREE.MathUtils.lerp(120, BH_R, k);
       const z = THREE.MathUtils.lerp(-4, -0.3, k);
-      out.copy(GAL.GC_POS);
-      out.addScaledVector(EX, Math.cos(a) * r);
-      out.addScaledVector(EY, Math.sin(a) * r);
-      out.addScaledVector(EZ, z);
-      return out;
+      return galPoint(r, a, z, out);
     },
     look: still(GAL.GC_POS),
     fov0: 55, fov1: 50,
     ease: glide,
-    caption: { at: 0.5, text: 'SAGITTARIUS A✱', sub: 'quatro milhões de sóis dentro da órbita de Mercúrio' },
+    dest: 'SGR',
+    quiet: true,
   },
   {
     // A CURVA RASANTE: ~150° ao redor do horizonte, periastro no mínimo
     // de velocidade de todo o ato — a física faz a coreografia (anel de
-    // Einstein varrendo o campo estelar). Plano contínuo, sem cortes.
+    // Einstein varrendo o campo estelar). Plano contínuo, sem cortes,
+    // agora NOMEADO no clímax (revisão: o leigo via o Gargantua sem
+    // saber o que era).
     dur: 20,
     pos: (k, out) => {
       const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(BH_ARC_IN, BH_ARC_OUT, k));
       const z = THREE.MathUtils.lerp(-0.3, 0.55, k);
-      out.copy(GAL.GC_POS);
-      out.addScaledVector(EX, Math.cos(a) * BH_R);
-      out.addScaledVector(EY, Math.sin(a) * BH_R);
-      out.addScaledVector(EZ, z);
-      return out;
+      return galPoint(BH_R, a, z, out);
     },
     look: still(GAL.GC_POS),
     fov0: 50, fov1: 52,
     ease: glide,
     roll: (k) => 0.22 * Math.sin(Math.PI * k),
+    quiet: true,
+    captions: [
+      { at: 0.15, text: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra', dur: 12 },
+    ],
   },
 
   // ================= ATO IV — A REVELAÇÃO =================
@@ -443,14 +548,7 @@ const SHOTS: Shot[] = [
     // perfil: o hold é o fim de um gesto, não uma pausa.
     dur: 28,
     pos: bezier(
-      (() => {
-        const a = THREE.MathUtils.degToRad(BH_ARC_OUT);
-        return new THREE.Vector3()
-          .copy(GAL.GC_POS)
-          .addScaledVector(EX, Math.cos(a) * BH_R)
-          .addScaledVector(EY, Math.sin(a) * BH_R)
-          .addScaledVector(EZ, 0.55);
-      })(),
+      galPoint(BH_R, THREE.MathUtils.degToRad(BH_ARC_OUT), 0.55, new THREE.Vector3()),
       SLING_C1,
       SLING_C2,
       GATE_EDGE_POS
@@ -461,6 +559,10 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.65 * Math.sin(Math.PI * Math.min(k * 1.6, 1)) * (1 - k),
     // banking do estilingue assenta EXATAMENTE no roll do quadro de medição
     roll: (k) => 0.16 * Math.sin(Math.PI * k) * (1 - k) + GATE_EDGE_ROLL * smooth(k),
+    captions: [
+      { at: 0.22, text: 'O ESTILINGUE', sub: 'do coração para fora do disco', dur: 6 },
+      { at: 0.6, text: 'A VIA LÁCTEA, POR FORA', sub: 'nenhum ser humano jamais viu isto', dur: 8 },
+    ],
   },
   {
     // HOLD DE MEDIÇÃO — perfil (t 257–265; captura em t=261)
@@ -470,7 +572,9 @@ const SHOTS: Shot[] = [
     fov0: GATE_EDGE_FOV, fov1: GATE_EDGE_FOV,
     ease: linear,
     roll: () => GATE_EDGE_ROLL,
-    caption: { at: 0.12, text: 'A VIA LÁCTEA', sub: 'ela não é plana — ela ondula' },
+    captions: [
+      { at: 0.12, text: 'ELA NÃO É PLANA', sub: 'repare nas pontas — o disco ondula' },
+    ],
   },
   {
     // a travessia: um único arco com a galáxia sempre no centro do
@@ -492,12 +596,15 @@ const SHOTS: Shot[] = [
     fov0: GATE_FACE_FOV, fov1: GATE_FACE_FOV,
     ease: linear,
     roll: () => GATE_FACE_ROLL,
-    caption: { at: 0.12, text: 'NOSSA GALÁXIA', sub: 'quatro grandes braços · 400 bilhões de estrelas' },
+    captions: [
+      { at: 0.12, text: 'NOSSA GALÁXIA', sub: '400 bilhões de estrelas' },
+    ],
   },
   {
     // deriva final: NUNCA aproximar do marcador — a pequenez é a
-    // mensagem. A mira desliza do centro para perto de casa; o
-    // marcador do Sol deriva até o terço direito e pulsa, minúsculo.
+    // mensagem. A mira desliza do centro para perto de casa; o marcador
+    // do Sol pulsa, minúsculo. Pousa aos ~318 s e CONGELA: o filme
+    // termina parado, com a última legenda persistindo até o fim.
     dur: 24,
     pos: bezier(
       GATE_FACE_POS,
@@ -507,9 +614,12 @@ const SHOTS: Shot[] = [
     ),
     look: panLook(GATE_LOOK, FINAL_LOOK, smooth),
     fov0: GATE_FACE_FOV, fov1: 54,
-    ease: settle,
-    roll: (k) => GATE_FACE_ROLL * (1 - smooth(k)),
-    caption: { at: 0.58, text: 'VOCÊ ESTÁ AQUI', sub: 'uma estrela comum — a nossa' },
+    ease: settleFreeze,
+    roll: (k) => GATE_FACE_ROLL * (1 - smooth(Math.min(k / 0.88, 1))),
+    target: ['SOL'],
+    captions: [
+      { at: 0.5, text: 'VOCÊ ESTÁ AQUI', sub: 'uma estrela comum — a nossa', dur: 60 },
+    ],
   },
 ];
 
@@ -524,9 +634,19 @@ const STARTS: number[] = [];
 }
 const JOURNEY_DURATION = STARTS[STARTS.length - 1] + SHOTS[SHOTS.length - 1].dur;
 
+// legendas achatadas em janelas absolutas [t0, t0+dur)
+const CAPTION_WINDOWS = SHOTS.flatMap((s, i) =>
+  (s.captions ?? []).map((c) => ({
+    t0: STARTS[i] + c.at * s.dur,
+    t1: STARTS[i] + c.at * s.dur + (c.dur ?? 8.6),
+    text: c.text,
+    sub: c.sub,
+  }))
+).sort((a, b) => a.t0 - b.t0);
+
 /** shot do hold de perfil / face-on — capturas no MEIO do hold */
-const EDGE_HOLD = SHOTS.findIndex((s) => s.caption?.text === 'A VIA LÁCTEA');
-const FACE_HOLD = SHOTS.findIndex((s) => s.caption?.text === 'NOSSA GALÁXIA');
+const EDGE_HOLD = SHOTS.findIndex((s) => s.captions?.[0]?.text === 'ELA NÃO É PLANA');
+const FACE_HOLD = SHOTS.findIndex((s) => s.captions?.[0]?.text === 'NOSSA GALÁXIA');
 export const CAPTURE_T = {
   edge: Math.round(STARTS[EDGE_HOLD] + SHOTS[EDGE_HOLD].dur / 2),
   face: Math.round(STARTS[FACE_HOLD] + SHOTS[FACE_HOLD].dur / 2),
@@ -540,6 +660,15 @@ interface JourneySample {
   fov: number;
   warp: number; // 0..1 para pós-processamento
   roll: number; // radianos
+}
+
+export interface JourneyMeta {
+  /** assunto(s) do shot — etiqueta forçada ('SOL' | 'SGR' | nome HYG) */
+  target?: string[];
+  /** fundo mudo durante o beat */
+  quiet: boolean;
+  /** destino da linha de rumo ('SGR' | nome HYG) */
+  dest?: string;
 }
 
 export class Journey {
@@ -575,28 +704,26 @@ export class Journey {
     };
   }
 
+  /**
+   * Legenda ativa como FUNÇÃO PURA de t (janela [entrada, entrada+dur)):
+   * seek, scrub e 2× mostram exatamente o que o espectador deve ver.
+   */
   captionAt(t: number): { index: number; key: { caption: string; sub?: string } } {
-    let index = -1;
-    let caption = '';
-    let sub: string | undefined;
-    for (let s = 0; s < SHOTS.length; s++) {
-      const c = SHOTS[s].caption;
-      if (!c) continue;
-      if (t >= STARTS[s] + c.at * SHOTS[s].dur) {
-        index++;
-        caption = c.text;
-        sub = c.sub;
-      } else break;
+    for (let i = CAPTION_WINDOWS.length - 1; i >= 0; i--) {
+      const w = CAPTION_WINDOWS[i];
+      if (t >= w.t0 && t < w.t1) {
+        return { index: i, key: { caption: w.text, sub: w.sub } };
+      }
     }
-    return { index, key: { caption, sub } };
+    return { index: -1, key: { caption: '' } };
+  }
+
+  metaAt(t: number): JourneyMeta {
+    const s = SHOTS[this.shotAt(t).i];
+    return { target: s.target, quiet: s.quiet ?? false, dest: s.dest };
   }
 
   get tickTimes(): number[] {
-    const ticks: number[] = [];
-    for (let s = 0; s < SHOTS.length; s++) {
-      const c = SHOTS[s].caption;
-      if (c) ticks.push((STARTS[s] + c.at * SHOTS[s].dur) / JOURNEY_DURATION);
-    }
-    return ticks;
+    return CAPTION_WINDOWS.map((w) => w.t0 / JOURNEY_DURATION);
   }
 }

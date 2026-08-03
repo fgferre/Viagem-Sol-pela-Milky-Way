@@ -25,6 +25,7 @@ export default function App() {
   });
   const [ticks, setTicks] = useState<number[]>([]);
   const [runtime, setRuntime] = useState(0);
+  const [dest, setDest] = useState('');
   const [quality, setQuality] = useState<QualityLevel>('cinema');
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -50,8 +51,13 @@ export default function App() {
         rootRef.current?.style.setProperty('--warp', `${warp}`);
       },
       onQuality: setQuality,
+      onDest: setDest,
     });
     directorRef.current = d;
+    // gancho de inspeção (só dev): estado da câmera/fase no console
+    if (import.meta.env.DEV) {
+      (window as unknown as { __director?: Director }).__director = d;
+    }
     void d
       .init()
       .then(() => {
@@ -183,6 +189,9 @@ export default function App() {
 
       {/* legenda da fase */}
       {inJourney && <Caption caption={caption.text} sub={caption.sub} showKey={caption.idx} />}
+
+      {/* linha de rumo: para onde estamos indo, com distância viva */}
+      {inJourney && dest && <div className="dest-line">{dest}</div>}
 
       {/* progresso (clicável — scrub) */}
       {inJourney && <ProgressBar progressRef={progressRef} ticks={ticks} onScrub={scrub} />}

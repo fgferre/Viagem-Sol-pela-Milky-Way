@@ -59,6 +59,10 @@ export class JourneyRig {
     return this.journey.captionAt(t);
   }
 
+  metaAt(t: number) {
+    return this.journey.metaAt(t);
+  }
+
   /** arrasto do usuário com a viagem pausada */
   addLookDelta(dx: number, dy: number) {
     this.lookYaw = THREE.MathUtils.clamp(this.lookYaw - dx * 0.0022, -2.6, 2.6);

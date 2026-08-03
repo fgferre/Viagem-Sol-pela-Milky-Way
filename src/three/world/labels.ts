@@ -41,8 +41,10 @@ export function projectLabels(
   const dHome = camPos.length();
   const dGC = camPos.distanceTo(GAL.GC_POS);
 
-  // o coração da galáxia tem nome quando estamos perto dele
-  if (dGC > 6 && dGC < 2600) {
+  // o coração da galáxia tem nome quando estamos perto dele. O teto
+  // caiu de 2,6 kpc para 1,2 (revisão: na fuga do centro a etiqueta
+  // ficava flutuando sobre névoa, apontando um objeto já invisível).
+  if (dGC > 6 && dGC < 1200) {
     const p = projectPoint(camera, GAL.GC_POS);
     if (p) {
       out.push({
@@ -52,7 +54,7 @@ export function projectLabels(
         x: p.x,
         y: p.y,
         opacity:
-          (1 - THREE.MathUtils.smoothstep(dGC, 1700, 2600)) *
+          (1 - THREE.MathUtils.smoothstep(dGC, 800, 1200)) *
           THREE.MathUtils.smoothstep(dGC, 6, 16) *
           0.95,
         key: 'sgr-a',
@@ -99,10 +101,45 @@ export function projectLabels(
     });
   }
 
+  // o Sol tem nome em QUALQUER recuo (revisão: ele virava um pontinho
+  // anônimo já no Ato I, e o fio "nossa estrela vira um ponto" se perdia)
+  if (dHome > 0.12) {
+    const p = projectPoint(camera, { x: 0, y: 0, z: 0 });
+    if (p) {
+      out.push({
+        name: 'SOL',
+        spect: 'G2V',
+        distPc: dHome,
+        x: p.x,
+        y: p.y,
+        opacity: THREE.MathUtils.smoothstep(dHome, 0.12, 0.5) * 0.92,
+        key: 'sol-home',
+      });
+    }
+  }
+
   // histerese: quem já estava na tela ganha bônus — sem isso a seleção
   // "pisca" quando estrelas disputam as últimas vagas em movimento
   const rank = (l: StarLabel) =>
     l.distPc * (prevKeys?.has(l.key) ? 0.8 : 1);
   out.sort((a, b) => rank(a) - rank(b));
   return out.slice(0, maxLabels);
+}
+
+/**
+ * Etiqueta FORÇADA do assunto do shot: projeta sem os fades de
+ * distância — o alvo do beat nunca fica anônimo (regra editorial da
+ * revisão: "o assunto sempre tem nome; o fundo fica mudo").
+ */
+export function projectForced(
+  camera: THREE.PerspectiveCamera,
+  name: string,
+  spect: string,
+  pos: { x: number; y: number; z: number },
+  key: string
+): StarLabel | null {
+  const p = projectPoint(camera, pos);
+  if (!p) return null;
+  const dist = _v.set(pos.x, pos.y, pos.z).distanceTo(camera.position);
+  return { name, spect, distPc: dist, x: p.x, y: p.y, opacity: 0.95, key };
 }

@@ -54,17 +54,13 @@
   opacity: 0;
   transform: translateY(14px);
 }
+/* a VIDA da legenda agora é do roteiro (janelas em tempo de viagem no
+   journey.ts) — o CSS só anima a entrada; a saída é a janela fechando */
 .caption-wrap.show {
-  animation:
-    captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    captionOut 1.6s ease 7s forwards;
+  animation: captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes captionIn {
   to { opacity: 1; transform: translateY(0); }
-}
-@keyframes captionOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-8px); }
 }
 .caption-title {
   color: #f5f1e8;
@@ -255,6 +251,21 @@
   gap: 0.6rem;
 }
 
+/* --- linha de rumo (destino com distância viva) --- */
+.dest-line {
+  position: fixed;
+  right: 6vw;
+  bottom: 9.6vh;
+  z-index: 40;
+  pointer-events: none;
+  color: rgba(255, 214, 150, 0.78);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+
 /* --- dica de voo livre --- */
 .free-hint {
   position: fixed;
@@ -424,6 +435,13 @@
 .shot-mode *::after {
   transition: none !important;
   animation: none !important;
+}
+/* a legenda ativa aparece nas capturas ?shot=1 (a janela é decidida
+   pelo roteiro; sem isto a animação zerada a deixava em opacity 0 e as
+   auditorias de sincronia não enxergavam legenda nenhuma) */
+.shot-mode .caption-wrap.show {
+  opacity: 1;
+  transform: none;
 }
 .shot-mode .veil.hidden-veil {
   display: none;
