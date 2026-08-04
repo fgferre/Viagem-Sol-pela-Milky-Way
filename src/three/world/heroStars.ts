@@ -3,7 +3,7 @@
 // de brilho dedicados com tamanho angular real (flybys AAA).
 // ============================================================
 import * as THREE from 'three';
-import { WORLD, type NamedStar } from '../config';
+import type { NamedStar } from '../config';
 import { GLSL_NOISE } from '../shaders/common';
 
 const VERT = /* glsl */ `
