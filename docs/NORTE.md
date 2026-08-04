@@ -685,6 +685,39 @@ LÂMINAS, não da população (`?nodisc=1` prova). E `clumpInner` em 0,199 contr
 0,231: o miolo tem estrutura de menos, provavelmente contraste de poeira.
 Nenhum dos dois se resolve mexendo em partícula.
 
+## Rodada 29 (2026-08-04) — o retículo escuro era paralaxe das 7 lâminas
+
+Aberta pelo dono ("artefatos escuros que não vejo na referência"): trem
+diagonal de 5–6 manchas escuras duras, equiespaçadas, no meio do disco
+face-on. Cadeia de atribuição que vale guardar:
+
+- **Não nasceu na rodada 28** (recorte 5,4× bit-comparável antes/depois) — o
+  fundo mais limpo só o revelou. `?cart=off` o some, MAS isso não culpa a
+  cartografia: remove o CONTEÚDO nítido que torna o mecanismo visível.
+- **Becos descartados por medição:** nuvens CO (`?noco` idêntico); grade de
+  texel (o mapa 512² tem filtro linear + mips); reticulado no DADO (Rezaei
+  2024 vem em grade, mas os texels-fenda do bake são CONTÍGUOS — vizinho
+  mais próximo 1 texel, manchas conectadas); picote do microNoise (hipótese
+  da primeira análise, morta pela contagem: o trem tem 5–6 cópias
+  PARALELAS EQUIESPAÇADAS, ruído não faz isso).
+- **O mecanismo: as 7 lâminas (−340…380 pc) leem o MESMO dust map.** Fora
+  do eixo, cada lâmina projeta a mesma fenda nítida num ponto deslocado —
+  5–6 cópias visíveis (as 2 externas têm alpha 0,08/0,1). É o primo
+  face-on das "listras de raspão" (mesma discretização que o quad único
+  da unificação 3 dissolve de vez).
+- **A correção é física, não cosmética: a poeira é FINA.** `obsLanes` agora
+  pesa `exp(−|z_lâmina|/220)` — a mesma escala do colapso do mapa. A fenda
+  mora nas lâminas centrais (−75/0/+85), que quase coincidem em projeção:
+  o trem colapsa numa mancha única e suave (conferido no recorte). O mapa
+  de τ das partículas usa a lâmina central (peso 1) — intocado por
+  construção.
+- **Custo medido:** edge 0,4156 BIT-ESTÁVEL em 3 estados — o gate de perfil
+  é CEGO a este termo por geometria (lâminas horizontais têm área projetada
+  ~zero de lado). Face: harmonic 0,0310→0,0331 (dentro do ruído ±0,013),
+  clumpError 0,2780→0,2886 (custo real pequeno; critério AAA: artefato
+  visível > dívida numérica). Escala 130 pc é pior nos dois (apaga as
+  centrais junto). `?lanethin=0` desliga, `=pc` varre.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.

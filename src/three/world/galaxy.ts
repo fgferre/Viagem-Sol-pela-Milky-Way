@@ -859,6 +859,12 @@ export class Galaxy {
           uInferenceGain: { value: 0.55 },
           uBackgroundGain: { value: 1 },
           uTauExport: { value: 0 },
+          // fenda observada pesada pela altura da lâmina: a poeira é FINA
+          // (mesma escala 220 pc do colapso do dust map). Sem o peso, as 7
+          // cópias da mesma fenda viravam trem de manchas fora do eixo (o
+          // retículo diagonal da rodada 29). ?lanethin=0 desliga, =pc varre.
+          uLayerHeight: { value: height },
+          uLaneThin: { value: tune('lanethin', 220) },
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,

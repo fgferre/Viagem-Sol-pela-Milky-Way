@@ -325,6 +325,9 @@ uniform sampler2D uDustMap;
 // B/A=suporte espacial observado de cada família
 uniform sampler2D uStructureMap;
 uniform float uCartBlend;
+// altura da lâmina (pc) e chave do peso fino da fenda observada
+uniform float uLayerHeight;
+uniform float uLaneThin;
 uniform float uInferenceGain;
 uniform float uBackgroundGain;
 // 0 = alpha carrega o τ das lâminas · 1 = o τ das partículas (8º bake)
@@ -453,6 +456,14 @@ void main() {
   vec2 cart = texture2D(uDustMap, p * 0.5 + 0.5).rg;
   float obsCoverage = cart.g * uCartBlend;
   float obsLanes = smoothstep(0.56, 0.88, cart.r);
+  // A poeira é FINA (h~100-150 pc; o colapso do mapa usa 220): pintar a
+  // MESMA fenda nas 7 lâminas (-340..380 pc) põe poeira onde não há, e
+  // fora do eixo cada lâmina projeta a fenda num ponto — a mancha vira um
+  // trem de 5-6 cópias (o retículo diagonal visto na rodada 28; primo
+  // face-on das "listras de raspão"). Peso exp(-|z|/220) por lâmina:
+  // a fenda mora nas lâminas centrais, que quase coincidem em projeção.
+  // uLaneThin é a ESCALA em pc (0 = desligado, sem peso)
+  obsLanes *= uLaneThin > 0.5 ? exp(-abs(uLayerHeight) / uLaneThin) : 1.0;
   vec4 structure = texture2D(uStructureMap, p * 0.5 + 0.5);
   float gasSupport = structure.b * uCartBlend;
   float youngSupport = structure.a * uCartBlend;
