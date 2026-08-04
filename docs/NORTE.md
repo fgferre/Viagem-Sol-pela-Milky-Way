@@ -543,6 +543,8 @@ ainda decide algo:
   lei fotométrica única).
 - **Tier congelado no init** (cinema→high, alta→mid, performance→low), mesmo
   precedente do populationScale; mudar qualidade ao vivo não reconstrói o Sol.
+  O tier `low` só passou a ser ALCANÇÁVEL em 2026-08-04 (ver auditoria abaixo)
+  — antes disso `?q=` chegava depois do init e nunca tinha sido exercitado.
 - **Gates provados intocados nas DUAS fases**: edge 0,4396 com todos os
   termos idênticos; face BIT-IDÊNTICO (md5 igual à captura pré-transplante,
   3 medições em 3 estados do código). O céu usa `?nosun=1` por protocolo.
@@ -552,6 +554,46 @@ ainda decide algo:
   mesmo seed) — "ganhos" cruzando seeds diferentes são variância; ruído
   sempre em espaço de OBJETO (padrão gira com a esfera); macro-evolução
   desacelerada (MACRO_SLOW 0,15) sem tocar a vida fina.
+
+## Auditoria de engenharia (2026-08-04) — o que sobrou como regra
+
+Rodada de corretude, **sem mudança de imagem: os dois quadros de medição
+saíram BIT-IDÊNTICOS** (md5 igual antes/depois em face-on t=293 e edge-on
+t=261, 1800², o padrão de prova do projeto). O que ainda decide algo:
+
+- **Ordem de aplicação de `?q=` é contrato, não detalhe.** O parâmetro é lido
+  agora no construtor do `Engine`; lido depois do `init()` (como estava) ele
+  não alcançava NEM a população da galáxia NEM o tier do Sol — os dois maiores
+  custos, decididos antes. Medido depois do conserto, vértices do grupo da
+  galáxia: cinema 2.756.819 · performance 884.819, e tier do Sol `high` →
+  `low` (antes o performance ficava nos dois números do cinema).
+  **Regra: knob que decide ALOCAÇÃO tem de ser lido
+  antes de quem aloca.** O mesmo vale para qualquer knob futuro de custo.
+- **Bug destapado pelo conserto acima:** `ctx.cmePts.meshes` nasce `[null,
+  null]` e o tier `low` (cmen=0) nunca as preenche — a ponte `uZScale` do
+  wrapper estourava o construtor inteiro. Consertado com `m?.`. A lição é a
+  mesma armadilha do `subToggle` da fase 2: **o núcleo vendorizado degrada por
+  campos ausentes/nulos, em silêncio**; toda ponte nossa para dentro dele
+  precisa assumir peça ausente.
+- **Exposição manual agora LATCHA** (`director.setExposure`): o tick reescrevia
+  a auto-exposição por rampa todo quadro e o controle ao vivo não fazia nada —
+  o link com `?exp=` só valia recarregando. `?exp=` segue soberano nos gates.
+- **`setToneMapping` não precisa de traverse.** A cena só renderiza dentro do
+  composer; com render target amarrado o three compila tudo com `NoToneMapping`
+  e o operador é do `OutputPass`. O traverse recompilava a cena inteira sem
+  efeito visual — era o hitch que o warm-up existe para evitar. Removido.
+- **Os harness de gate agora GRITAM.** `rodada.mjs` e `sky-capture.mjs` apagam
+  o PNG antes e exigem status 0 + arquivo depois: um Chrome que morre deixava
+  a captura da rodada anterior no lugar, ela passava pela rede "face ≠ edge" e
+  o ledger recebia número plausível da imagem errada.
+- **Seis violações das regras de GLSL do README corrigidas** (3 `pow(x,2.0)`
+  com base possivelmente negativa, 3 `smoothstep` com bordas invertidas). Não
+  havia falha reproduzida neste driver — é portabilidade. Duas moram no núcleo
+  vendorizado (`sol/sun.js`): **divergência do doador, levar na re-cópia**.
+- **Não tratado, de propósito:** `npm audit` acusa 10 vulnerabilidades, todas
+  em ferramenta de desenvolvimento (`--omit=dev` dá zero). Não é o bundle nem
+  o runtime; atualizar arrasta Vite/Rollup e o custo é maior que o risco de um
+  dev server local.
 
 ## Decisões fechadas
 

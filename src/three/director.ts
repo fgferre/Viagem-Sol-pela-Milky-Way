@@ -620,6 +620,16 @@ export class Director {
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
   }
 
+  /**
+   * Exposição escolhida à mão (painel ou ?exp=) DESLIGA a auto-exposição por
+   * rampa — sem o latch o tick reescrevia o valor no quadro seguinte e o
+   * controle ao vivo não fazia nada (o link com ?exp= só funcionava recarregando).
+   */
+  setExposure(v: number) {
+    this.expOverride = true;
+    this.engine.setExposure(v);
+  }
+
   get progressTicks(): number[] {
     return this.rig.ticks;
   }

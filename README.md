@@ -72,12 +72,13 @@ src/
 │  │  ├─ engine.ts          renderer WebGL2, câmera, clip planes dinâmicos (updateClip)
 │  │  └─ post.ts            compositor: bloom, output e acabamento em display space
 │  ├─ world/
-│  │  ├─ sun.ts             o Sol (perto da câmera no início)
+│  │  ├─ novoSol.ts         o Sol procedural: adaptador + orquestração por frame
+│  │  ├─ sol/               núcleo do Sol VENDORIZADO do Novo-Sol-Fable-3d (não editar sem re-copiar)
 │  │  ├─ stars.ts           catálogo HYG (point sprites com conservação de fluxo)
 │  │  ├─ heroStars.ts       estrelas nomeadas com billboards difractados
 │  │  ├─ nebula.ts          gás local + integração volumétrica do disco galáctico
 │  │  ├─ dust.ts            poeira local
-│  │  ├─ galaxy.ts          A VIA LÁCTEA: ~380k partículas (disco, barra/bojo, HII, halo, poeira, Sgr dSph)
+│  │  ├─ galaxy.ts          A VIA LÁCTEA: ~2,7 M partículas (disco, barra/bojo, HII, halo, poeira, Sgr dSph)
 │  │  ├─ observedClouds.ts   nuvens moleculares observadas
 │  │  ├─ starForges.ts       H II, masers, aglomerados e Cefeidas observados
 │  │  ├─ wrappedStars.ts     campo estelar inferido e relocável dentro do disco
@@ -144,15 +145,24 @@ As respostas TSV ficam em `.cache/galaxy-data/` e não são versionadas. Os
 binários compactos e o manifesto são versionados; o aplicativo continua 100%
 offline em runtime.
 
-### Crossfades por distância ao Sol (`dHome`, em parsecs)
+### Crossfades
 
-| Sistema | aparece/some |
-|---|---|
-| estrelas do catálogo (`localFade`) | some 1.100 → 2.300 |
-| nebulosa volumétrica (`nebulaFade`) | some 1.300 → 2.700 |
-| faixa interna da Via Láctea (`localBandFade`) | partículas 3D; some 650 → 1.900 |
-| Via Láctea (`galaxyFade`) | aparece 1.000 → 2.600 |
-| marcador do Sol (`markerFade`) | aparece 1.700 → 3.300 |
+Duas réguas, e a diferença é de modelo: o que é fisicamente SOLAR mede
+distância ao Sol (`dHome`, em parsecs); o que é AMBIENTE mede a posição no
+disco (`R`, `z` galactocêntricos), porque o volume local existe em qualquer
+ponto da galáxia — não só perto de casa. `env` combina as duas bordas do
+disco e trava em 0 depois que a viagem sai dele (`leftDisk`).
+
+| Sistema | régua | aparece/some |
+|---|---|---|
+| estrelas do catálogo (`localFade`) | `dHome` | some 1.100 → 2.300 |
+| marcador do Sol (`markerFade`) | `dHome` | aparece 1.700 → 3.300 |
+| cavidade do observador (`cavityGate`) | `dHome` | abre 600 → 1.300 |
+| nebulosa volumétrica (`nebulaFade`) | `env` | = `env` |
+| faixa interna da Via Láctea (`localBandFade`) | `env` | = `env`×0,76 |
+| Via Láctea (`galaxyFade`) | `env` | = 1 − `env` |
+
+`env` = (1 − smoothstep(`z`, 600, 2100)) × (1 − smoothstep(`R`, 16800, 20500)).
 
 ## 6. Parâmetros de URL (debug e deep-link — ferramenta essencial)
 
@@ -200,8 +210,9 @@ Outras invariantes do projeto:
 - **Conservação de fluxo** nos point sprites: acima de 3 px, o pico cai com
   `1/px²` (`shrink = min(1, 9/px²)`); abaixo de 0,7 px, `subPix = px²/0.49`.
   Não remova — sem isso a galáxia vira sopa branca de longe.
-- **Clip planes dinâmicos**: `near = clamp(dist×0.004, 0.001, 500)`,
-  `far = clamp(dist×12, 9000, 400000)` (`engine.updateClip`). A viagem cobre
+- **Clip planes dinâmicos**: `near = clamp(dist×0.004, 0.001, 40)`,
+  onde `dist` é a âncora mais próxima entre o Sol e o centro galáctico,
+  `far = clamp(dist×12, 60000, 400000)` (`engine.updateClip`). A viagem cobre
   0,01 pc → 25.000 pc; clip fixo causa z-fighting ou corte.
 - RNG da galáxia é **determinístico** (`mulberry32(20260730)`) — não troque por
   `Math.random()`, ou cada reload gera uma galáxia diferente.

@@ -1,5 +1,5 @@
-// Captura de rodada: as duas vistas que correspondem às fotos de referência
-// reais (face-on e edge-on), mais a linha de números que vai para o git.
+// Captura de rodada: as duas vistas que correspondem às imagens de referência
+// (face-on e edge-on), mais a linha de números que vai para o git.
 //
 // As imagens ficam em capturas/ (fora do git — AGENTS.md regra 5). O que se
 // versiona é docs/reference/EVOLUCAO.md: uma linha por rodada, diffável, que
@@ -10,7 +10,7 @@
 // Requer o vite dev em 127.0.0.1:5173. Sobe UMA instância de Chrome e a mata
 // no fim, inclusive se der erro — GPU headless esquecida viva é caro.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,12 +47,22 @@ mkdirSync(OUT, { recursive: true });
 // a linha de comando ao processo já vivo e a segunda captura sai idêntica à
 // primeira, silenciosamente. Custa alguns MB de disco e vale a corretude.
 let seq = 0;
-function chrome(args) {
+// `saida`: o PNG que esta invocação DEVE produzir. Apagar antes e exigir
+// depois é o que separa medida de lixo — sem isso, um Chrome que morre deixa
+// o PNG da rodada anterior no lugar, ele passa pela rede "face ≠ edge" e a
+// métrica devolve números plausíveis para a imagem errada.
+function chrome(args, saida) {
+  if (saida && existsSync(saida)) rmSync(saida);
   const r = spawnSync(CHROME, [
     '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
     '--hide-scrollbars', '--no-first-run', `--user-data-dir=${PROFILE}-${seq++}`,
     ...args,
   ], { encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024 });
+  if (r.error) throw new Error(`Chrome não executou: ${r.error.message}`);
+  if (r.status !== 0) {
+    throw new Error(`Chrome saiu com status ${r.status}: ${(r.stderr || '').trim().slice(-400)}`);
+  }
+  if (saida && !existsSync(saida)) throw new Error(`Chrome não gravou ${saida}`);
   return r.stdout || '';
 }
 
@@ -75,11 +85,12 @@ try {
     // 0,73 no que o render real tem em 0,90). Capturar ≥1200 põe os dois
     // lados na MESMA grade; 1800 ainda ganha o supersampling que o 5k da
     // referência tem no downscale.
+    const png = resolve(OUT, `rodada_${round}_${v.nome}.png`);
     chrome([
       '--window-size=1800,1800', '--virtual-time-budget=16000',
-      `--screenshot=${resolve(OUT, `rodada_${round}_${v.nome}.png`)}`,
+      `--screenshot=${png}`,
       `${APP}/?t=${v.t}&shot=2`,
-    ]);
+    ], png);
     process.stdout.write(`rodada_${round}_${v.nome}.png\n`);
   }
 
@@ -111,12 +122,14 @@ try {
     + `${m.ours.grain.toFixed(4)} | ${faixa(m.ours.purp).toFixed(4)} | ${nota} |`;
 
   const alvos = `| — | 0 | ${m.ref.discMean.toFixed(4)} | ${m.ref.grain.toFixed(4)} | `
-    + `${faixa(m.ref.purp).toFixed(4)} | **alvo (foto real)** |`;
+    + `${faixa(m.ref.purp).toFixed(4)} | **alvo (recriação científica)** |`;
 
   let doc = existsSync(LEDGER) ? readFileSync(LEDGER, 'utf8') : `# Evolução por rodada
 
-Uma linha por rodada de implementação, medida contra as fotos reais em
-\`gaia-2025-face-on-5k.jpg\` pela métrica de \`measure-similarity.html\`.
+Uma linha por rodada de implementação, medida contra \`gaia-2025-face-on-5k.jpg\`
+pela métrica de \`measure-similarity.html\`. As vistas externas são **recriações
+científicas** ancoradas em Gaia, não fotos — ninguém fotografou a Via Láctea de
+fora (NORTE.md). A única foto real do projeto é o panorama ESO, visto de DENTRO.
 Gerado por \`node scripts/visual/rodada.mjs <n> "nota"\`.
 
 As capturas ficam em \`capturas/\` e **não** são versionadas (AGENTS.md regra 5):
@@ -144,7 +157,7 @@ ${alvos}
     + `${e.ours.axialRatio.toFixed(4)} | ${e.ours.laneDepth.toFixed(4)} | `
     + `${e.ours.warpAmp.toFixed(4)} | ${nota} |`;
   const alvosE = `| — | 0 | ${e.ref.thickRatio.toFixed(4)} | ${e.ref.axialRatio.toFixed(4)} | `
-    + `${e.ref.laneDepth.toFixed(4)} | ${e.ref.warpAmp.toFixed(4)} | **alvo (foto real)** |`;
+    + `${e.ref.laneDepth.toFixed(4)} | ${e.ref.warpAmp.toFixed(4)} | **alvo (recriação científica)** |`;
   if (!doc.includes('## Edge-on')) {
     doc = doc.trimEnd() + `
 

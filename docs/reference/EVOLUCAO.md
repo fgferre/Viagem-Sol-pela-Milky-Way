@@ -1,7 +1,9 @@
 # Evolução por rodada
 
-Uma linha por rodada de implementação, medida contra as fotos reais em
-`gaia-2025-face-on-5k.jpg` pela métrica de `measure-similarity.html`.
+Uma linha por rodada de implementação, medida contra `gaia-2025-face-on-5k.jpg`
+pela métrica de `measure-similarity.html`. As vistas externas são **recriações
+científicas** ancoradas em Gaia, não fotos — ninguém fotografou a Via Láctea de
+fora (NORTE.md). A única foto real do projeto é o panorama ESO, visto de DENTRO.
 Gerado por `node scripts/visual/rodada.mjs <n> "nota"`.
 
 As capturas ficam em `capturas/` e **não** são versionadas (AGENTS.md regra 5):
@@ -12,7 +14,7 @@ final, as imagens locais e esta tabela se leem juntas.
 
 | rodada | harmonicError | discMean | grain | purp | o que mudou |
 |---|---|---|---|---|---|
-| — | 0 | 0.1175 | 0.0679 | 0.2010 | **alvo (foto real)** |
+| — | 0 | 0.1175 | 0.0679 | 0.2010 | **alvo (recriação científica)** |
 | 01 | 0.1233 | 0.1078 | 0.1336 | 0.0840 | baseline: espalhamento religado, fotometria logLum+PSF, fades somados |
 | 02 | 0.1186 | 0.1522 | 0.1083 | 0.1076 | soma de populacoes: corpo negro por temperatura no lugar dos tripletos pintados |
 | 03 | 0.1056 | 0.1167 | 0.1386 | 0.1195 | recalibrar nivel: paleta nao carrega mais brilho (POP_LUMA_FIX) |
@@ -45,7 +47,7 @@ final, as imagens locais e esta tabela se leem juntas.
 
 | rodada | edgeError | thickRatio | axialRatio | laneDepth | warpAmp | o que mudou |
 |---|---|---|---|---|---|---|
-| — | 0 | 0.0502 | 0.0598 | 0.9386 | 0.0187 | **alvo (foto real)** |
+| — | 0 | 0.0502 | 0.0598 | 0.9386 | 0.0187 | **alvo (recriação científica)** |
 | 12 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | emissao 2 bracos: Sct-Cen+Perseu dominantes (prof. 1,0 base 0,42), gas/H II/jovens uniformes em 4, braco ~12% mais largo (sharpness -20%), 3kpc 0,43; gate edge-on novo |
 | 13 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | unificacao 2 etapa 1: cascas por bin de M_V (hash de celula, existencia por densidade, m_sun>7,2, reconstrucao relativa a camera), PSF unica em GLSL_STAR_PSF, buildFarStars deletado; gates externos inalterados por construcao |
 | 14 | 2.0258 | 0.0244 | 0.0263 | -0.0729 | 0.0089 | unificacao 2 etapa 2: handoff unresolved(d) nas particulas e no termo estelar da LUT (identidade 1,0 alem de 5,2 kpc); densidade das cascas pelos canais B/A do dust map (+5,3 ms -> +0,3 ms medidos por CDP a 1440p) |

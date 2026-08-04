@@ -10,8 +10,8 @@
 // em 8 fatias, ciclo de 11 anos, flares, proeminências, loops,
 // coroa). O que NÃO viaja: pipeline de pós deles (bloom/ACES
 // próprios — aqui o Sol atravessa o NOSSO composer), céu, UI,
-// câmera, museu. Fase 2 pendente: coroa volumétrica (sampler3D)
-// e CME (transform feedback).
+// câmera, museu. Fase 2 FEITA: coroa volumétrica (sampler3D) e CME
+// (transform feedback) — as três pontes de escala estão no NORTE.
 //
 // ESCALA: o núcleo trabalha em "unidades de doador" (raio 2.2);
 // o group leva scale = sunRadius/2.2 e o uCamDist é alimentado
@@ -231,8 +231,12 @@ export class NovoSol {
     createCoronaVolume(ctx);
     createCME(ctx);
     // partículas do CME: -mv.z em parsec de volta à régua do doador
+    // meshes NASCE [null, null] (cme.js) e o tier low nunca as preenche
+    // (cmen=0 desliga o subsistema inteiro) — sem o m?. o construtor
+    // estourava em ?q=performance. Ficou escondido porque o ?q= só era
+    // aplicado DEPOIS do init: o tier low nunca tinha rodado.
     for (const m of ctx.cmePts?.meshes ?? []) {
-      if (m.material?.uniforms?.uZScale) m.material.uniforms.uZScale.value = 1 / this.scale;
+      if (m?.material?.uniforms?.uZScale) m.material.uniforms.uZScale.value = 1 / this.scale;
     }
     createSpicules(ctx);
     ctx.prom = createProminences(ctx);

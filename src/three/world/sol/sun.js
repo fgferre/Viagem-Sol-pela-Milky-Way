@@ -520,7 +520,10 @@ export function createSunMesh(ctx){
     // --- estrutura baked: R=larga escala, G=filamento, B=plage.
     // De longe usa o passe calmo (o seeing borraria os feixes); de perto
     // o passe com LIC iterado, onde tudo é feito de fios varridos ---
-    '  float close = smoothstep(6.2, 3.4, uCamDist);',
+    // divergência do doador: smoothstep com bordas invertidas é indefinido
+    // na GLSL (regra 2 do README) — forma equivalente, levar para lá na
+    // próxima re-cópia do núcleo
+    '  float close = 1.0 - smoothstep(3.4, 6.2, uCamDist);',
     '  float kNear = clamp(close*1.2 + 0.15, 0.0, 1.0);',
     // FERVURA contínua (feature nº1 da auditoria de movimento): o bake
     // dá a EVOLUÇÃO do conteúdo (~8Hz + crossfade), mas entre poses nada
@@ -583,7 +586,7 @@ export function createSunMesh(ctx){
     '    float fibF = licFibril(sp, fdir, uGranFreq*3.5, 0.22, t*1.3);',
     '    heat += close * fibF * 0.16;',
     // camada micro: só em zoom máximo, fios finíssimos
-    '    float closer = smoothstep(4.8, 3.5, uCamDist);',
+    '    float closer = 1.0 - smoothstep(3.5, 4.8, uCamDist);', // idem regra 2
     '    if (closer > 0.003){',
     '      heat += closer * licFibril(sp, fdir, uGranFreq*7.0, 0.08, t*1.6) * 0.20;',
     '    }',

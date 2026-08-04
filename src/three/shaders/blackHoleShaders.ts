@@ -160,7 +160,8 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir, inout vec3 col, inout float trans){
   float radialGain = mix(0.38, 1.0, innerDetail);
 
   float I = flux*11.0*turb*streak*laneMask*radialGain;
-  I += exp(-pow((qr-3.1)*3.0, 2.0))*2.8;              // brilho interno
+  float qg = (qr-3.1)*3.0;                            // regra 1 do README: quadrado é multiplicação
+  I += exp(-qg*qg)*2.8;                               // brilho interno
   // rampa externa mais curta que a da demo (era uDout-14): com o disco
   // compacto de 26 RS ela comia o meio do disco
   float outerFade = 1.0 - smoothstep(uDout-10.0, uDout, qr);
@@ -276,7 +277,8 @@ void main(){
     bg = mix(fallback, lensed, ok) * trans * deep;
   }
   // anel de fótons a partir do perigeu rastreado
-  col += vec3(1.0,0.92,0.80) * exp(-pow((minR-1.55)*4.0, 2.0)) * 0.05;
+  float pg = (minR-1.55)*4.0;
+  col += vec3(1.0,0.92,0.80) * exp(-pg*pg) * 0.05;
 
   gl_FragColor = vec4(col * uGain + bg, 1.0);
 }

@@ -256,7 +256,7 @@ void main() {
   // gigante vermelha (o céu brilhante real é dominado por elas); o bojo
   // puxa velho/dourado
   float bvMs = clamp(-0.05 + 0.155 * MV, -0.30, 1.75);
-  float giant = step(0.5, hash13(cell + 41.9)) * smoothstep(2.0, -1.0, MV);
+  float giant = step(0.5, hash13(cell + 41.9)) * (1.0 - smoothstep(-1.0, 2.0, MV));
   float bv = mix(bvMs, 1.05 + 0.5 * hash13(cell + 5.7), giant);
   bv = mix(bv, 1.15, bulgeGate * 0.4);
   vColor = bvToColor(bv);

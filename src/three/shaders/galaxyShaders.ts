@@ -549,7 +549,8 @@ void main() {
   // Meia-extensão 0,88·5000 pc = 0,262 em unidades do disco; σ⊥ 430 pc
   // = 0,0256. O microNoise quebra o risco liso — sem ele a barra vira
   // um traço de régua.
-  float tauBar = exp(-0.5 * pow(bp.y / 0.0256, 2.0))
+  float barZ = bp.y / 0.0256;
+  float tauBar = exp(-0.5 * barZ * barZ)
                * (1.0 - smoothstep(0.22, 0.28, abs(bp.x)))
                * mix(0.6, 1.0, microNoise);
   // DOIS τ, DOIS DESTINOS — calibrado por eliminação (4 medições):

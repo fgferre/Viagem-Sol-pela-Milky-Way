@@ -4,7 +4,7 @@
 // referencial galáctico + up galáctico), e o harness replica essa
 // matemática exata para costurar.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync, existsSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const OUT = resolve(process.cwd(), 'sky');
@@ -34,12 +34,16 @@ const FACES = [
 let seq = Date.now() % 100000;
 for (const f of FACES) {
   const look = f.dir.map((v) => v.toFixed(9)).join(',');
+  // mesma rede do rodada.mjs: face velha no lugar costura um céu que não é
+  // o deste código e o skyError sai plausível
+  const png = resolve(OUT, `face_${f.nome}.png`);
+  if (existsSync(png)) rmSync(png);
   const r = spawnSync(CHROME, [
     '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
     '--hide-scrollbars', '--no-first-run',
     `--user-data-dir=${resolve(OUT, '.p' + seq++)}`,
     '--window-size=1440,1440', '--virtual-time-budget=16000',
-    `--screenshot=${resolve(OUT, `face_${f.nome}.png`)}`,
+    `--screenshot=${png}`,
     // nohero=1: os clarões das estrelas-herói são camada CINEMATOGRÁFICA;
     // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa.
     // kneeamt=1&knee=0.02&exp=4.4: REVELAÇÃO fotométrica do gate (não é o
@@ -48,5 +52,10 @@ for (const f of FACES) {
     // (provado 2026-08-03: bulgeAnti 19,1→5,52 com alvo 5,57; zero clipping)
     `${APP}/?pos=0,0,0&look=${look}&fov=90&nosun=1&nohero=1&kneeamt=1&knee=0.02&exp=4.4&shot=2`,
   ], { encoding: 'utf8', timeout: 120000 });
-  console.log(`face_${f.nome}.png exit=${r.status}`);
+  if (r.error) throw new Error(`Chrome não executou: ${r.error.message}`);
+  if (r.status !== 0) {
+    throw new Error(`face ${f.nome}: Chrome saiu com status ${r.status}: ${(r.stderr || '').trim().slice(-400)}`);
+  }
+  if (!existsSync(png)) throw new Error(`face ${f.nome}: Chrome não gravou ${png}`);
+  console.log(`face_${f.nome}.png ok`);
 }

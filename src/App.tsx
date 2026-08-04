@@ -75,7 +75,7 @@ export default function App() {
         const tone = query.get('tone') as ToneMapMode | null;
         if (tone && tone in TONE_MAPPINGS) d.engine.setToneMapping(tone);
         const exposure = Number(query.get('exp'));
-        if (Number.isFinite(exposure) && exposure > 0) d.engine.setExposure(exposure);
+        if (Number.isFinite(exposure) && exposure > 0) d.setExposure(exposure);
 
         // ?pos=x,y,z[&look=x,y,z][&fov=graus] — câmera livre determinística
         // em qualquer ponto da galáxia (screenshots/inspeção; o fov só faz
@@ -279,7 +279,7 @@ export default function App() {
         qualidade={quality}
         onQualidade={changeQuality}
         onTom={(t) => directorRef.current?.engine.setToneMapping(t)}
-        onExposicao={(v) => directorRef.current?.engine.setExposure(v)}
+        onExposicao={(v) => directorRef.current?.setExposure(v)}
         onCamada={(flag, escondida) =>
           directorRef.current?.setLayerHidden(flag, escondida)
         }

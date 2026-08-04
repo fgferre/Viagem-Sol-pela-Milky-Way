@@ -16,7 +16,8 @@ import { FILM_SHADER } from '../shaders/dustShaders';
 // massa) que faz o R90 dela chegar a 0,55·R_disco. Por camada não
 // funciona: cada sprite aditivo é minúsculo e asinh(x)≈x — a compressão
 // tem de ver a soma. uAmt segue a rampa da galáxia (interior intocado).
-// ?knee= (β em luz linear; ausente = desligado) e ?kneemode=lum|rgb —
+// ?knee= (β em luz linear; ausente = β 0,45, o default LIGADO da rodada 20;
+// ?knee=0 desliga) e ?kneemode=lum|rgb —
 // rgb dessatura altas-luzes como filme; lum preserva o matiz do halo.
 const KNEE_SHADER = {
   uniforms: {

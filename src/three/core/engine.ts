@@ -66,7 +66,13 @@ export class Engine {
     this.camera.position.set(0.03, 0.015, 0.07);
     this.timer.connect(document);
 
-    this.applyQuality('cinema');
+    // ?q= tem de valer ANTES do init: o tier do Sol congela no construtor do
+    // Director e a população da galáxia é decidida durante o init. Aplicado
+    // só depois (App.tsx), performance ficava com as 2,7 M partículas e o Sol
+    // em high — exatamente onde a economia é necessária.
+    const qParam = new URLSearchParams(window.location.search).get('q');
+    const q = (['cinema', 'alta', 'performance'] as const).find((v) => v === qParam);
+    this.applyQuality(q ?? 'cinema', q !== undefined);
     this.resize();
     window.addEventListener('resize', this.resize);
   }
@@ -83,16 +89,14 @@ export class Engine {
    * Neutral fica no meio; Linear não faz nada e estoura, mas serve para ver
    * o que a cena realmente produz antes de qualquer curva.
    *
-   * O modo entra na chave de cache do programa, então trocar exige recompilar
-   * os materiais — daí o traverse. A exposição é uniform e muda de graça.
+   * Não precisa de traverse: a cena SÓ é renderizada dentro do composer, e
+   * com render target amarrado o three compila os materiais com NoToneMapping
+   * (o operador é do OutputPass, que recompila o próprio shader sozinho).
+   * O traverse que havia aqui recompilava a cena inteira sem efeito visual —
+   * é o hitch de compilação que o warm-up do director existe para evitar.
    */
   setToneMapping(mode: ToneMapMode) {
     this.renderer.toneMapping = TONE_MAPPINGS[mode];
-    this.scene.traverse((o) => {
-      const m = (o as THREE.Mesh).material;
-      if (!m) return;
-      for (const mat of Array.isArray(m) ? m : [m]) mat.needsUpdate = true;
-    });
   }
 
   setExposure(v: number) {
