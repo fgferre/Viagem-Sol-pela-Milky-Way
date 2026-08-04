@@ -109,7 +109,17 @@ try {
     ]);
     const bloco = dom.match(/\{\s*"(harmonicError|edgeError)"[\s\S]*?\n\}/);
     if (!bloco) throw new Error('métrica não devolveu JSON — o dev server está de pé?');
-    return JSON.parse(bloco[0].replace(/<[^>]*>/g, ''));
+    const j = JSON.parse(bloco[0].replace(/<[^>]*>/g, ''));
+    // terceira rede: quadro PRETO. Acontece (visto na rodada 28) quando o
+    // app não chega a desenhar dentro do virtual-time — o PNG existe, o
+    // Chrome sai 0, as duas vistas diferem, e a métrica devolve zeros
+    // perfeitamente formatados. Sem esta linha o ledger recebe "0,0000" e
+    // parece recorde.
+    const brilho = j.ours?.discMean ?? j.ours?.thickRatio ?? 0;
+    if (!(brilho > 0.001)) {
+      throw new Error(`captura preta (discMean ${brilho}) — a cena não desenhou`);
+    }
+    return j;
   };
   const m = medir(resolve(OUT, `rodada_${round}_faceon.png`));
   const e = medir(resolve(OUT, `rodada_${round}_edgeon.png`), '&mode=edge');

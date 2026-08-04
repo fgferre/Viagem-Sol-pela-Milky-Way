@@ -145,15 +145,14 @@ export function buildGalaxy(
    */
   populationScale = 1
 ): GalaxyBuffers {
-  // 1,3 desde a rodada da textura: a granulação do anel EXTERNO (régua nova)
-  // media 0,179 contra 0,124 do alvo — o disco externo lia como pincelada
-  // gorda e espaçada em vez do tapete fino da referência. 1,3 leva a 0,166
-  // com os dois gates de recorde parados (harmonicError 0,0370 → 0,0372,
-  // edge 0,4396 → 0,4399; ruído de captura é ±0,013). Acima disso o grão do
-  // MIOLO estoura para baixo (1,6× → 0,061, 2,5× → 0,053, alvo 0,068) e
-  // harmonicError degrada de verdade. ?cnt=1 recupera o estado anterior.
-  // Custo: +780 k vértices ≈ +0,25 ms pela medida de ?nogal (320 k = 0,1 ms).
-  populationScale *= tune('cnt', 1.3);
+  // 1,5 e RBIAS 3 andam JUNTOS (rodada 28): sozinha, densidade estoura o
+  // grão do miolo para baixo (1,6× → 0,061, 2,5× → 0,053, alvo 0,068) porque
+  // adensa onde já estava certo; com o viés radial tirando partícula do
+  // miolo, 1,5× repõe exatamente o que ele levou. Os dois grãos cravam:
+  // miolo 0,0667 (alvo 0,0679) e borda 0,1278 (alvo 0,1236).
+  // Custo: +1,3 M vértices ≈ +0,4 ms pela medida de ?nogal (320 k = 0,1 ms).
+  // ?cnt=1&rbias=1 recupera o estado anterior à rodada.
+  populationScale *= tune('cnt', 1.5);
   const IDIM = tune('idim', 0);
   const IR0 = Math.max(tune('ir0', 3000), 1);
   // escurecimento interno: gaussiana em r — 1 no disco externo, 1−idim no centro
@@ -163,7 +162,20 @@ export function buildGalaxy(
   // complexo pelo cisalhamento (σ_θ/σ_R). Defaults = identidade exata.
   const CLUMP = tune('clump', 0.72);
   const SHEAR = tune('shear', 1);
-  const RBIAS = Math.max(tune('rbias', 1), 1);
+  // AMOSTRAGEM ≠ MASSA: sortear partículas COM o perfil de massa deixa a
+  // borda com poucas por pixel, cada uma forte demais — o disco externo lia
+  // como pincelada gorda e espaçada em vez do tapete fino do alvo. 3 é o
+  // joelho medido (3,5× e 4× pioram harmônicas e grão sem ganhar borda).
+  const RBIAS = Math.max(tune('rbias', 3), 1);
+  // Constantes do viés radial de sorteio (ver o bloco no laço do disco).
+  // ∫₀^Rmax r·e^(−r/a) dr = a²·[1 − (1+x)·e^(−x)], x = Rmax/a.
+  const RD_SAMPLE = GALACTIC_MODEL.stellarScaleLengthPc * RBIAS;
+  const gammaZ = (a: number) => {
+    const x = GALACTIC_MODEL.diskRadiusPc / a;
+    return a * a * (1 - (1 + x) * Math.exp(-x));
+  };
+  const W0 = gammaZ(RD_SAMPLE) / gammaZ(GALACTIC_MODEL.stellarScaleLengthPc);
+  const INV_DR = 1 / GALACTIC_MODEL.stellarScaleLengthPc - 1 / RD_SAMPLE;
   const rnd = mulberry32(seed);
   const sampleAt = (
     field: Float32Array | undefined,
@@ -273,18 +285,10 @@ export function buildGalaxy(
     // estava certo. Aqui o SORTEIO usa uma escala mais longa e o peso de
     // cada partícula devolve a razão massa/sorteio — importance sampling
     // clássico: mais amostras onde falta resolução, fluxo total intacto.
-    const RD_SAMPLE = GALACTIC_MODEL.stellarScaleLengthPc * RBIAS;
     let r = 0;
     do {
       r = -RD_SAMPLE * Math.log(Math.max(rnd() * rnd(), 1e-7));
     } while (r > GALACTIC_MODEL.diskRadiusPc);
-    // p_massa/p_sorteio para a Gamma(k=2): a parte em r se cancela, sobra a
-    // exponencial. RBIAS = 1 dá 1 exato em todo raio (identidade).
-    const rWeight =
-      RBIAS === 1
-        ? 1
-        : RBIAS *
-          Math.exp(-r * (1 / GALACTIC_MODEL.stellarScaleLengthPc - 1 / RD_SAMPLE));
     const k = pickArm();
     const arm = ALL_ARMS[k];
     const activity = armActivityAtRadius(r, arm);
@@ -349,6 +353,15 @@ export function buildGalaxy(
       lz = seedZ[s] + g3 * sigma * 0.45;
       r = seedR[s];
     }
+
+    // p_massa/p_sorteio para a Gamma(k=2): a parte em r se cancela, sobra a
+    // exponencial vezes a razão das NORMALIZAÇÕES (Z fecha em elementar
+    // porque a Gamma é truncada em diskRadiusPc). DEPOIS da aglutinação de
+    // propósito: 72% das partículas terminam no raio da SEMENTE, e pesar
+    // pelo raio sorteado descorrelacionava peso e posição — o disco perdia
+    // fluxo e a granulação da borda SUBIA (0,179 → 0,256), com cara de
+    // "a ideia não paga". A ideia pagava; a conta é que estava no lugar errado.
+    const rWeight = RBIAS === 1 ? 1 : W0 * Math.exp(-r * INV_DR);
 
     // Gradiente de população: a cor medida do alvo vai de (R−B)/(R+B)
     // ≈ +0,35 no disco interno a ≈ −0,05 na borda. Com 25% de azuis em

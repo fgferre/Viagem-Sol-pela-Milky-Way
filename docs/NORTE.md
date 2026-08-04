@@ -640,18 +640,50 @@ importance sampling radial (`rbias`, sorteio com escala mais longa e peso
 devolvendo massa/sorteio) NÃO paga — 1,4× e 2,0× baixam discMean
 (0,129 → 0,122/0,119) e o grão do miolo junto, com harmonicError em 0,050.
 
-**O que entrou:** `cnt` default 1 → **1,3**. grainOuter 0,1793 → **0,1661**,
-clumpError 0,4162 → **0,3898**, grain 0,0699 → 0,0650 (era 3% acima do alvo,
-ficou 4% abaixo — troca lateral), com **harmonicError 0,0370 → 0,0372 e
-edgeError 0,4396 → 0,4399**, as duas dentro do ruído de ±0,013. Knobs novos
-com default de IDENTIDADE EXATA (controle conferido campo a campo nos dois
-gates): `?clump=` fração colada em complexos, `?shear=` alongamento σ_θ/σ_R
-do complexo pelo cisalhamento, `?rbias=` viés radial do sorteio.
+**O QUE FECHOU A RODADA: amostragem ≠ massa (`rbias` 3 + `cnt` 1,5).** A massa
+segue Rd = 2,6 kpc, mas SORTEAR partículas com esse perfil deixa a borda com
+poucas por pixel, cada uma forte demais. O sorteio passa a usar uma escala
+3× mais longa e o peso de cada partícula devolve p_massa/p_sorteio —
+importance sampling clássico, fluxo total intacto (discMean 0,129 → 0,129).
+Densidade e viés andam JUNTOS: sozinha, `cnt` estoura o grão do miolo para
+baixo porque adensa onde já estava certo; com o viés tirando partícula do
+miolo, 1,5× repõe exatamente o que ele levou.
 
-**Ainda aberto, e é a próxima alavanca:** o termo `clumpOuter` grande segue
-em 0,444 contra 0,371 do alvo e é das LÂMINAS. E `clumpInner` segue em 0,200
-contra 0,231 — o miolo tem estrutura de menos, provavelmente contraste de
-poeira, não de estrela. Nenhum dos dois se resolve mexendo em partícula.
+| termo | antes | depois | alvo |
+|---|---|---|---|
+| harmonicError | 0,0370 | **0,0310** | 0 |
+| edgeError | 0,4396 | **0,4156** | 0 |
+| clumpError | 0,4162 | **0,2780** | 0 |
+| grain (miolo) | 0,0699 | **0,0667** | 0,0679 |
+| grainOuter (borda) | 0,1793 | **0,1278** | 0,1236 |
+
+93% da distância da borda fechada, o grão do miolo cravado, e os DOIS gates
+antigos melhoraram junto — o edge por 0,024, além do ruído. Custo +1,3 M
+vértices ≈ +0,4 ms pela medida de `?nogal`. `?cnt=1&rbias=1` recupera o
+estado anterior à rodada (conferido: devolve 0,0370 / 0,4162 exatos).
+
+**Duas contas erradas no caminho, as duas achadas por resultado absurdo — a
+lição é que "a ideia não paga" quase sempre é "a conta está no lugar
+errado":** (a) a constante de normalização do peso não é RBIAS, é a razão
+das integrais da Gamma truncada (para RBIAS 2 vale 3,37, não 2) — com o valor
+errado o disco perdia 41% do fluxo de partícula; (b) o peso era calculado no
+raio SORTEADO, mas 72% das partículas terminam no raio da SEMENTE, e peso
+descorrelacionado da posição fazia a granulação da borda SUBIR para 0,256.
+Com as duas certas, o mesmo knob virou a maior alavanca da rodada.
+
+Knobs com default de identidade quando postos em 1 (controle conferido campo
+a campo nos dois gates): `?clump=` fração colada em complexos, `?shear=`
+alongamento σ_θ/σ_R pelo cisalhamento, `?rbias=` viés radial do sorteio.
+
+**Rede nova no `rodada.mjs`: quadro PRETO.** Aconteceu nesta rodada — o app
+não desenha dentro do virtual-time, o PNG existe, o Chrome sai 0, as duas
+vistas diferem, e a métrica devolve zeros bem formatados que entrariam no
+ledger como recorde. Agora `discMean` ≤ 0,001 aborta.
+
+**Ainda aberto:** `clumpOuter` grande em 0,429 contra 0,371 do alvo — é das
+LÂMINAS, não da população (`?nodisc=1` prova). E `clumpInner` em 0,199 contra
+0,231: o miolo tem estrutura de menos, provavelmente contraste de poeira.
+Nenhum dos dois se resolve mexendo em partícula.
 
 ## Decisões fechadas
 
