@@ -595,6 +595,64 @@ t=261, 1800², o padrão de prova do projeto). O que ainda decide algo:
   o runtime; atualizar arrasta Vite/Rollup e o custo é maior que o risco de um
   dev server local.
 
+## A textura da população (rodada 28, 2026-08-04)
+
+Aberta por observação do dono na vista externa: o disco EXTERNO lê como
+"toques leves de pincel espaçados" sobre o vazio, coisa que a referência não
+tem. Diagnóstico e refutações valem mais que o ganho desta rodada.
+
+**A régua nova, porque não havia nenhuma ali.** `grain` para em 0,9 R90 e
+`discMean` em 1,05 — o defeito morava inteiro fora das duas, e podia crescer
+com o gate marcando "cravado". Entraram em `measure-similarity.html`:
+`grainOuter` (anel 1,00–1,22 R90) e `clumpInner`/`clumpOuter`
+(contagem-em-células em 4 escalas, σ/μ entre células após normalizar pelo
+perfil radial), somados em `clumpError`. **Duas armadilhas de construção,
+as duas medidas:** (a) normalizar por perfil em DEGRAUS de bin faz a queda
+radial do disco vazar como se fosse agrupamento — a régua respondia ao
+CONTRÁRIO aos knobs até o perfil virar interpolado; (b) célula maior que
+~1/3 da espessura do anel vira gradiente, então o anel externo usa escalas
+próprias (0,01–0,07 R90).
+
+**O mecanismo do defeito, quantificado:** 72% das 2,6 M partículas do disco
+são coladas em volta de apenas 9.000 sementes, em bolhas de σ 120 pc–1 kpc
+(208 partículas por bolha). As sementes seguem o mesmo disco exponencial, e
+a distância entre elas cruza o σ da bolha por volta de 11 kpc: a 3 kpc elas
+distam 122 pc e se encavalam numa pasta lisa; a 14 kpc distam 1.008 pc e
+viram ilhas. **Um mecanismo, dois sintomas opostos** — o miolo tem estrutura
+DE MENOS (clumpInner 0,199 contra 0,231) e a borda DE MAIS.
+
+**O achado que reorganiza a fila: as lâminas assadas carregam 97,7% da luz
+do disco** (`?nodisc=1` derruba discMean de 0,129 para 0,003). As partículas
+são 2,3% do fluxo — e 100% do que o olho lê como pincelada. Por isso a régua
+se decompõe: `grainOuter` e `grain` são partícula (respondem a `cnt`),
+`clumpOuter` em escala grande é LÂMINA (não responde a nada que se faça com
+partícula). Atacar o termo grande é trabalho de lâmina, não de população.
+
+**Becos medidos (não repetir):** densidade sozinha não move o agrupamento
+grande (cnt 1,6×/2,5× deixam o termo em 0,445/0,449 contra 0,447 da base) e
+acima de ~1,3 estoura o grão do miolo para baixo (0,061/0,053, alvo 0,068)
+pagando harmonicError; reduzir a fração aglomerada PIORA a borda
+(clump 0,45 → grainOuter 0,185; 0,25 → 0,186) e custa harmônicas
+(0,037 → 0,0415 → 0,0521), embora melhore o miolo — sinal de que a fração
+certa não é global; cisalhamento σ_θ/σ_R = 3 é neutro no gate (0,4468 →
+0,4011 no termo grande sob a régua velha, ≈ nulo sob a corrigida);
+importance sampling radial (`rbias`, sorteio com escala mais longa e peso
+devolvendo massa/sorteio) NÃO paga — 1,4× e 2,0× baixam discMean
+(0,129 → 0,122/0,119) e o grão do miolo junto, com harmonicError em 0,050.
+
+**O que entrou:** `cnt` default 1 → **1,3**. grainOuter 0,1793 → **0,1661**,
+clumpError 0,4162 → **0,3898**, grain 0,0699 → 0,0650 (era 3% acima do alvo,
+ficou 4% abaixo — troca lateral), com **harmonicError 0,0370 → 0,0372 e
+edgeError 0,4396 → 0,4399**, as duas dentro do ruído de ±0,013. Knobs novos
+com default de IDENTIDADE EXATA (controle conferido campo a campo nos dois
+gates): `?clump=` fração colada em complexos, `?shear=` alongamento σ_θ/σ_R
+do complexo pelo cisalhamento, `?rbias=` viés radial do sorteio.
+
+**Ainda aberto, e é a próxima alavanca:** o termo `clumpOuter` grande segue
+em 0,444 contra 0,371 do alvo e é das LÂMINAS. E `clumpInner` segue em 0,200
+contra 0,231 — o miolo tem estrutura de menos, provavelmente contraste de
+poeira, não de estrela. Nenhum dos dois se resolve mexendo em partícula.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.

@@ -145,12 +145,25 @@ export function buildGalaxy(
    */
   populationScale = 1
 ): GalaxyBuffers {
-  populationScale *= tune('cnt', 1);
+  // 1,3 desde a rodada da textura: a granulação do anel EXTERNO (régua nova)
+  // media 0,179 contra 0,124 do alvo — o disco externo lia como pincelada
+  // gorda e espaçada em vez do tapete fino da referência. 1,3 leva a 0,166
+  // com os dois gates de recorde parados (harmonicError 0,0370 → 0,0372,
+  // edge 0,4396 → 0,4399; ruído de captura é ±0,013). Acima disso o grão do
+  // MIOLO estoura para baixo (1,6× → 0,061, 2,5× → 0,053, alvo 0,068) e
+  // harmonicError degrada de verdade. ?cnt=1 recupera o estado anterior.
+  // Custo: +780 k vértices ≈ +0,25 ms pela medida de ?nogal (320 k = 0,1 ms).
+  populationScale *= tune('cnt', 1.3);
   const IDIM = tune('idim', 0);
   const IR0 = Math.max(tune('ir0', 3000), 1);
   // escurecimento interno: gaussiana em r — 1 no disco externo, 1−idim no centro
   const innerDim = (r: number) => 1 - IDIM * Math.exp(-(r * r) / (2 * IR0 * IR0));
   const HZS = tune('hzs', 1);
+  // textura da população: fração colada em complexos e alongamento do
+  // complexo pelo cisalhamento (σ_θ/σ_R). Defaults = identidade exata.
+  const CLUMP = tune('clump', 0.72);
+  const SHEAR = tune('shear', 1);
+  const RBIAS = Math.max(tune('rbias', 1), 1);
   const rnd = mulberry32(seed);
   const sampleAt = (
     field: Float32Array | undefined,
@@ -251,12 +264,27 @@ export function buildGalaxy(
     // Em uma superfície exponencial Σ∝e^(-R/Rd), a distribuição
     // radial é R·e^(-R/Rd): uma Gamma(k=2). Isso preenche o disco
     // inteiro em vez de colapsar quase todas as estrelas no núcleo.
+    // AMOSTRAGEM ≠ MASSA (RBIAS): a massa segue Rd = 2,6 kpc, mas sortear
+    // partículas COM esse perfil deixa a borda com poucas partículas por
+    // pixel — cada uma forte demais, e o disco externo lê como pontinhos
+    // gordos e espaçados em vez do tapete fino do alvo. Medido: granulação
+    // do anel externo 0,179 contra 0,124. Subir cnt conserta lá mas estoura
+    // o grão do miolo (0,070 → 0,053, alvo 0,068), porque adensa onde já
+    // estava certo. Aqui o SORTEIO usa uma escala mais longa e o peso de
+    // cada partícula devolve a razão massa/sorteio — importance sampling
+    // clássico: mais amostras onde falta resolução, fluxo total intacto.
+    const RD_SAMPLE = GALACTIC_MODEL.stellarScaleLengthPc * RBIAS;
     let r = 0;
     do {
-      r =
-        -GALACTIC_MODEL.stellarScaleLengthPc *
-        Math.log(Math.max(rnd() * rnd(), 1e-7));
+      r = -RD_SAMPLE * Math.log(Math.max(rnd() * rnd(), 1e-7));
     } while (r > GALACTIC_MODEL.diskRadiusPc);
+    // p_massa/p_sorteio para a Gamma(k=2): a parte em r se cancela, sobra a
+    // exponencial. RBIAS = 1 dá 1 exato em todo raio (identidade).
+    const rWeight =
+      RBIAS === 1
+        ? 1
+        : RBIAS *
+          Math.exp(-r * (1 / GALACTIC_MODEL.stellarScaleLengthPc - 1 / RD_SAMPLE));
     const k = pickArm();
     const arm = ALL_ARMS[k];
     const activity = armActivityAtRadius(r, arm);
@@ -283,17 +311,42 @@ export function buildGalaxy(
       seedZ[seedCount] = lz;
       seedR[seedCount] = r;
       seedCount++;
-    } else if (rnd() < 0.72) {
+    } else if (rnd() < CLUMP) {
       // Complexo: σ 120 pc–1 kpc, a escala das associações OB, das nuvens
       // gigantes e dos complexos que o alvo mostra como manchas. Com σ até
       // 420 pc as nuvens ficavam abaixo da resolução do quadro externo.
       // A semente já está distribuída por ρ, então aglutinar em volta dela
       // não desloca o perfil radial nem o desenho dos braços.
+      //
+      // CLUMP era 0,72 fixo, e as 9.000 sementes seguem o mesmo disco
+      // exponencial: a 3 kpc elas distam 122 pc e se encavalam numa pasta
+      // lisa; a 14 kpc distam 1.008 pc contra σ ~420 e viram ILHAS com
+      // vazio entre elas. Medido no anel externo: agrupamento em escala
+      // grande 0,400 contra 0,316 do alvo, granulação 0,179 contra 0,124.
+      // Não é falta de amostra — cnt 1,6×/2,5× deixou o termo em
+      // 0,406/0,417 (subiu) e ainda pagou harmonicError. É estrutura.
       const s = (rnd() * seedCount) | 0;
       const sigma = 120 + rnd() * rnd() * 900;
-      lx = seedX[s] + gauss(rnd) * sigma;
-      ly = seedY[s] + gauss(rnd) * sigma;
-      lz = seedZ[s] + gauss(rnd) * sigma * 0.45;
+      const g1 = gauss(rnd);
+      const g2 = gauss(rnd);
+      const g3 = gauss(rnd);
+      if (SHEAR === 1) {
+        lx = seedX[s] + g1 * sigma;
+        ly = seedY[s] + g2 * sigma;
+      } else {
+        // Rotação diferencial: com curva plana (v ≈ 220 km/s) a borda de
+        // dentro do complexo corre mais que a de fora, e um grumo de 400 pc
+        // é esticado em ~640 pc a cada 100 Ma. Bola redonda só é honesta
+        // abaixo de ~50 Ma. SHEAR = σ_θ/σ_R estica no sentido do giro.
+        const inv = 1 / Math.max(seedR[s], 1);
+        const ct = seedX[s] * inv;
+        const st = seedY[s] * inv;
+        const dR = g1 * sigma;
+        const dT = g2 * sigma * SHEAR;
+        lx = seedX[s] + dR * ct - dT * st;
+        ly = seedY[s] + dR * st + dT * ct;
+      }
+      lz = seedZ[s] + g3 * sigma * 0.45;
       r = seedR[s];
     }
 
@@ -357,7 +410,7 @@ export function buildGalaxy(
       // a cor; sem ele o meio do disco saía 25% escuro demais.
       // /populationScale: menos partículas, cada uma mais forte — o fluxo
       // total do disco não pode depender do preset de qualidade
-      (0.094 / populationScale) * lum * armWeight * (1 + 2.1 * outward) *
+      (0.094 / populationScale) * rWeight * lum * armWeight * (1 + 2.1 * outward) *
         innerDim(r)
     );
   }
