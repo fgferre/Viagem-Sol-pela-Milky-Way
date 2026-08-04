@@ -162,7 +162,13 @@ disco e trava em 0 depois que a viagem sai dele (`leftDisk`).
 | faixa interna da Via Láctea (`localBandFade`) | `env` | = `env`×0,76 |
 | Via Láctea (`galaxyFade`) | `env` | = 1 − `env` |
 
-`env` = (1 − smoothstep(`z`, 600, 2100)) × (1 − smoothstep(`R`, 16800, 20500)).
+`env` = (1 − `THREE.MathUtils.smoothstep(z, 600, 2100)`) ×
+(1 − `THREE.MathUtils.smoothstep(R, 16800, 20500)`).
+
+⚠️ Ordem dos argumentos: a versão do three é `smoothstep(x, min, max)` — o
+valor vem PRIMEIRO. A do GLSL é `smoothstep(edge0, edge1, x)`, com o valor por
+último (regra 2 da seção 7). Transplantar a ordem de uma para a outra inverte
+a rampa em silêncio.
 
 ## 6. Parâmetros de URL (debug e deep-link — ferramenta essencial)
 

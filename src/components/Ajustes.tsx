@@ -172,6 +172,7 @@ export function Ajustes({
               key={q}
               className={qualidade === q ? 'on' : ''}
               onClick={() => onQualidade(q)}
+              title="Recarrega: o tier do Sol e a população da galáxia são decididos na construção"
             >
               {q}
             </button>

@@ -154,8 +154,22 @@ export default function App() {
     d.play();
     d.seek(d.revealTime);
   };
+  /**
+   * Metade da qualidade é VIVA (pixelRatio, passos do raymarch) e metade é
+   * ASSADA na construção: o tier do Sol congela no construtor do Director e a
+   * população da galáxia é decidida no init (regerar 2,6 M partículas no meio
+   * da viagem seria pior que a diferença). Trocar só ao vivo entregava um
+   * "performance" pela METADE — engine em performance, Sol ainda em high e
+   * 2,7 M vértices — e ainda deixava o link copiado sem a qualidade.
+   * Mesmo tratamento que o painel já dá às camadas não-vivas: grava na URL e
+   * recarrega. Serve os dois controles (seletor do HUD e botões do painel).
+   */
   const changeQuality = (q: QualityLevel) => {
-    directorRef.current?.setQuality(q);
+    if (q === quality) return;
+    const url = new URL(window.location.href);
+    if (q === 'cinema') url.searchParams.delete('q');
+    else url.searchParams.set('q', q);
+    window.location.assign(url.toString());
   };
 
   const inJourney = phase === 'journey';

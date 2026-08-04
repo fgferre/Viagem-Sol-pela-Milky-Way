@@ -696,7 +696,7 @@ Não reabrir sem que a condição listada mude.
 | **Log-depth: não** | A cena tem um único objeto opaco com `depthWrite`; z-fighting precisa de dois | Entrar geometria resolvida (planetas, malhas) |
 | **LUT de cor (Mamajek / CIE 401): não** | O ajuste de 3 mads em `common.ts` tem RMS 0,009; o erro real afeta ~51 das 18.543 estrelas | Precisão exigida abaixo de 2500 K ou acima de 40 kK |
 | **Saturação/lift no pós para "consertar" cor: não** | É maquiagem. A cor tem de emergir da física; croma se recupera por **exposição**, não por saturação | — |
-| **Reduzir contagem de vértices por performance: não** | Medido: `?nogal=1` tira 320 k vértices e move a mediana em 0,1 ms | Alvo passar a ser GPU de baixo tier, com medição própria |
+| **Reduzir vértices para ganhar QUADRO em cinema/alta: não** | Medido: `?nogal=1` tira 320 k vértices e move a mediana em 0,1 ms — vértice não é o gargalo. Não confundir com o `populationScale` 0,28 do preset **performance**, que é APROVADO e existe por MEMÓRIA (o buffer de 2,6 M custa 83 MB e não cabe em mobile), nem com a rodada 28, que SUBIU a contagem 1,5× por IMAGEM e não por custo | Alvo passar a ser GPU de baixo tier, com medição própria |
 
 ## Medições que sustentam o acima
 
