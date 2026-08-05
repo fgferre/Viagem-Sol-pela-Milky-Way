@@ -29,6 +29,28 @@ const DH1 = (DUSTH * (460 / 210)).toFixed(1);
 // de `dust` do integrador.
 const BANDAV = qnum('bandav', 0.15);
 const DIFFUSE = (BANDAV * 2.6316).toFixed(4);
+// A poeira do disco tem escala radial PRÓPRIA, mais curta que a das
+// estrelas: o código herdava os 5200 pc do disco fino estelar sem
+// justificativa, e o disco de poeira medido vale h_R ≈ 2,26 kpc
+// (Drimmel & Spergel 2001, a partir do COBE/DIRBE). Concentrar a poeira no
+// interior põe a extinção a 4–6 kpc de distância, onde a camada de 70 pc
+// subtende ~1° em vez dos ~10° da poeira local: fenda funda onde o rift
+// mede, barata onde a espessura mede. ?dustrd= varre; 5200 devolve o
+// estado da rodada 32.
+const DUSTRD = qnum('dustrd', 2100).toFixed(1);
+// ACHATAMENTO DO BOJO (?bulgeq= = razão de eixos c/a; 1 = esfera = estado
+// da rodada 32 EXATO, o mesmo código GLSL). O bojo real é boxy/peanut e
+// achatado, não esférico: Wegg & Gerhard 2013 (aglomerado vermelho do VVV)
+// mede escalas (700, 440, 180) pc, c/a ≈ 0,26; Dwek 1995 (COBE/DIRBE G2) dá
+// 0,23; Kent 1992, mais antigo, 0,6. LUMINOSIDADE CONSERVADA: a massa de
+// exp(−m/h) achatado vale ∝ c/a, então a amplitude sobe 1/q — só a FORMA
+// muda, como a poeira da rodada 32. Sem a conservação o gate desaba
+// (bulgeAnti 3,82 contra 5,07): medido, não suposto.
+const BULGEQ = qnum('bulgeq', 0.3);
+const SPHEROID =
+  BULGEQ === 1
+    ? 'exp(-length(q) / 1050.0) * 2.45'
+    : `exp(-sqrt(radius * radius + rawZ * rawZ * ${(1 / (BULGEQ * BULGEQ)).toFixed(6)}) / 1050.0) * ${(2.45 / BULGEQ).toFixed(4)}`;
 
 export const NEBULA_VERT = /* glsl */ `
 void main() {
@@ -143,7 +165,7 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
       exp(-abs(barP.y) / 430.0) *
       exp(-abs(z) / 390.0) *
       (1.0 - smoothstep(4650.0, 5400.0, abs(barP.x)));
-    float bulge = exp(-length(q) / 1050.0) * 2.45 + bar * 0.82;
+    float bulge = ${SPHEROID} + bar * 0.82;
 
     // Estrutura fractal em escalas de quiloparsecs e centenas de parsecs.
     float broad = fbm(q * 0.00062 + 13.7, 2);
@@ -186,7 +208,7 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     // fenda pode existir: extinção que não chega a τ~1 não escurece
     // nada, por mais bem desenhada que seja.
     float dustDiffuse = ${DIFFUSE} *
-      exp(-(radius - 8150.0) / 5200.0) * exp(-abs(z) / dustHeight) * edge;
+      exp(-(radius - 8150.0) / ${DUSTRD}) * exp(-abs(z) / dustHeight) * edge;
     // Onde o APOGEE mediu estruturas densas (cobertura começa a
     // ~1 kpc do Sol; as fendas locais tipo Great Rift continuam
     // procedurais), a fenda real SOMA-SE ao procedural; o nível

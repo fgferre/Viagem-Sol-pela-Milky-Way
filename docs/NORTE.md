@@ -231,10 +231,19 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    da faixa integrava 0,004 mag/kpc contra ~1,5 do meio real), com a
    poeira herdando o perfil vertical das ESTRELAS — j/κ constante em z,
    fenda impossível por construção. rift 0,0369 → **0,1807** e skyError
-   1,1230 → **1,0767**; o que sobra do termo é poeira LOCAL (Aquila
-   Rift, 150–600 pc) nos bins l = −34°…−19°, mais a re-dosagem conjunta
-   bojo↔poeira. A espessura da faixa (6,58° vs 4,41°) passa a ser o
-   maior termo do gate; **(2) colour −0,065 vs 0,064** — a revelação
+   1,1230 → **1,0767**; e a re-dosagem conjunta bojo↔poeira que ela
+   encomendou virou a **rodada 33** (seção própria): o bojo da LUT era
+   uma exponencial ESFÉRICA e respondia por 88,5% da luz espúria em
+   10° a 20° de |b| no miolo — achatado para c/a = 0,30 (Wegg &
+   Gerhard 2013) com luminosidade conservada, e com a poeira difusa
+   ganhando a escala radial que é DELA (2,1 kpc, Drimmel & Spergel 2001,
+   contra os 5,2 kpc estelares que herdava), **skyError 1,0767 →
+   0,9459 e rift 0,2555 contra o alvo 0,2444**. A espessura (0,416)
+   segue o maior termo, e agora com endereço: 41% do desvio mora nos
+   quatro bins do ANTICENTRO, onde a ablação apontou o **complexo de
+   Órion do raymarch local** (93% da luz fora do plano) — é a próxima
+   alavanca, junto com a poeira local do Aquila Rift (150–600 pc) nos
+   bins l = −34°…−19°; **(2) colour −0,071 vs 0,064** — a revelação
    per-RGB dessatura além do alvo (β=0,1 dá +0,071 quase exato; o par
    dose↔cor precisa de uma rodada própria, e chromsat interno é candidato);
    **(3) purp 0,062 vs 0,078** — independe do tom: população (H II /
@@ -989,6 +998,136 @@ skyError 1,185: multiplica também as fendas APOGEE, que já estavam em
 nível físico); `?dustk=24` passa do alvo (0,3173) e custa 1,4638.
 Knobs: `?bandav=` (0 = estado da rodada 31 EXATO, conferido termo a
 termo) e `?dusth=` (210 = idem).
+
+## Rodada 33 (2026-08-05) — o bojo era uma ESFERA, e a poeira usava a régua das estrelas
+
+A re-dosagem acoplada bojo↔poeira que a rodada 32 encomendou. A
+hipótese registrada era “o perfil de EMISSÃO da faixa não é físico e é
+ele que trava a dose”. **Estava certa, e o culpado tinha nome: o bojo
+da LUT era `exp(−|q|/1050)`, uma exponencial ESFÉRICA.**
+
+**O passo 0 achou o dono antes de qualquer dose.** Decompor a espessura
+POR LONGITUDE mostrou que o erro não é uniforme: nos 6 bins de |l| < 40°
+o desvio somava 17,75° dos 54,75° totais, e o perfil em latitude
+explicava por quê — em l = −7,5° nosso céu vale **0,60 da luz do plano
+em 10° < |b| < 20°, contra 0,124 da foto** (fator 4,9). No anticentro
+(l = 170°…210°) o desvio soma outros 22,5°, mas ali a razão passa de
+1,0: há mais luz FORA do plano que nele.
+
+**Ablação, um componente por vez, na luz em 10° < |b| < 20° a l = −7,5°:**
+
+| desligado | luz | fração do pedestal |
+|---|---|---|
+| nada (base) | 0,1323 | — |
+| **bojo** | **0,0152** | **88,5%** |
+| disco espesso | 0,1258 | 4,9% |
+| disco fino | 0,1285 | 2,9% |
+| raymarch local | 0,1294 | 2,2% |
+| véu `GAS_COOL` | 0,1299 | 1,8% |
+| estrelas (`nocat`+`nowrap`) | 0,1309 | 1,1% |
+| compressor do LUT `L/(1+0,55L)` | 0,1346 | **−1,7%** |
+
+Sem o bojo a razão cai para 0,137 — **o valor da foto (0,124)**. Os
+outros oito candidatos, juntos, não chegam a 13%. O compressor, que os
+três consultores externos apontaram como suspeito de alargar qualquer
+perfil, PIORA o número quando desligado: refutado por medição. No
+anticentro a mesma ablação dá o dono oposto — `localk=0` tira 93% da luz
+em 10° < |b| < 20° a l = 202,5°: é o complexo de Órion do raymarch
+local (Betelgeuse l = 199,8°, Rigel l = 209,2°), não o bojo.
+
+**O mecanismo, em uma conta.** Uma exponencial esférica de 1050 pc vista
+de 8,15 kpc tem e-folding angular de 7,4°: o miolo do céu brilha até
+|b| ≈ 25°. O bojo real é boxy/peanut e ACHATADO — Wegg & Gerhard 2013
+(aglomerado vermelho do VVV) mede escalas (700, 440, 180) pc, c/a ≈ 0,26;
+Dwek 1995 (COBE/DIRBE G2) dá 0,23. Achatar para c/a = 0,30 **com a
+luminosidade conservada** (a massa de exp(−m/h) achatado vale ∝ c/a,
+então a amplitude sobe 1/q — só a FORMA muda, a mesma disciplina da
+poeira da rodada 32) tira a luz das asas e a põe no plano.
+
+**E aí o par se fecha.** Só o achatamento derruba a espessura
+(0,5178 → 0,3830) e crava o bulgeAnti (5,116 → 5,612, alvo 5,568) — mas
+**mata o rift** (0,1807 → −0,030): a crista brilhante no plano é
+justamente o que a poeira a 1/10 da dose física não consegue cortar.
+Subir `bandav` NÃO é a saída, e a série mede por quê: 0,15 → 0,4 → 0,8 →
+1,5 leva o rift a −0,030 → 0,044 → 0,542 → 0,723 enquanto a faixa engorda
+5,97° → 6,42° → 6,93° → 7,48°. **Poeira LOCAL faz uma fenda LARGA**
+(coluna ∝ h/sin b), e a régua da espessura acumula a partir de b = 0:
+cava o vale e a nota piora.
+
+**A saída é ONDE a poeira mora, não quanta.** A componente difusa herdava
+`exp(−(R−8150)/5200)` — a escala radial das ESTRELAS, copiada sem
+justificativa. O disco de poeira medido é muito mais concentrado:
+**h_R ≈ 2,26 kpc (Drimmel & Spergel 2001, do COBE/DIRBE)**. Poeira em
+R ≲ 4 kpc está a 4–6 kpc de distância, onde a camada de 70 pc subtende
+~1° em vez dos ~10° da poeira local: **fenda funda onde o rift mede,
+barata onde a espessura mede.** A 2100 pc o rift sai a 0,2555 (alvo
+0,2444) por 0,04° de espessura, contra os 0,45° que a mesma fenda custa
+pela via da dose local.
+
+| termo | antes (r32) | depois (r33) | alvo |
+|---|---|---|---|
+| **skyError** (A/B na MESMA sessão) | 1,0767 | **0,9459** | 0 |
+| espessura (termo) | 0,5178 | **0,4160** | 0 |
+| espessura (média das 24 longitudes) | 6,583° | 6,135° | 4,406° |
+| rift | 0,1807 | **0,2555** | 0,2444 |
+| perfil por longitude | 0,2700 | 0,2813 | 0 |
+| bulgeAnti | 5,116 | 5,069 | 5,568 |
+| colour | −0,0668 | −0,0708 | +0,0641 |
+| purp | 0,0652 | 0,0655 | 0,0784 |
+| harmonicError · edgeError · clumpError · discMean | 0,0371 · 0,4181 · 0,0587 · 0,1299 | **bit-idênticos** | — |
+
+**−12,1% no skyError, e o rift praticamente crava.** Os gates externos
+saem bit-idênticos por construção (a mudança vive só em
+`BAND_INTEGRATION`, o fragment do LUT) e desta vez está PROVADO:
+md5 das duas capturas de 1800² igual antes e depois
+(`873e64b2…` face-on, `c0743465…` edge-on). O `NEBULA_MAIN` — os 6,9 ms —
+não tem uma linha alterada; o LUT (256×128, 1×/frame) troca um
+`length()` por um `sqrt` de três termos.
+
+**O que a foto ainda cobra, em ordem.** A espessura segue o maior termo
+(0,416) e agora se sabe onde: dos 54,75° de desvio somados, os quatro
+bins do ANTICENTRO (l = ±172,5°, −157,5°, −142,5°) valem 22,5° — e a
+ablação já provou que ali o dono é o **complexo de Órion do raymarch
+local**, brilhante demais e espalhado demais (em l = 202,5° o céu é 1,5×
+mais claro em |b| = 10–20° que no plano; na foto é 0,17×). Os bins do
+miolo, que a rodada consertou, agora casam com a foto quase termo a
+termo (fluxo cumulativo em |b| < 3°/5°/10° a l = −7,5°: 0,337/0,549/0,866
+contra 0,338/0,554/0,872 da foto). **A próxima alavanca tem nome:
+Órion.** Depois dela, colour (0,135, o segundo maior) — a revelação
+per-RGB do gate dessatura além do alvo, e `chromsat` interno segue
+candidato.
+
+**Becos medidos (não repetir):** dose local de poeira como via para o
+rift (`bandav` 0,4/0,8/1,5 com o bojo achatado: 1,1883/1,4954/1,9540,
+todos piores que 1,0767 — a fenda larga engorda a faixa mais rápido do
+que aprofunda o vale); achatar o bojo SEM conservar a luminosidade
+(`bulgek=0,5` a c/a 0,26: bulgeAnti desaba a 3,817 e o skyError vai a
+1,2381 — a conservação é a peça, não um detalhe); **depressão interna da
+poeira** dentro de 3 kpc (o anel molecular de 4 kpc; Dame 2001) para
+proteger o bojo — `dusthole=3000` devolveu só +0,075 de bulgeAnti e
+matou o rift (0,1886 → 0,0396), skyError 1,1384: **a extinção que come o
+centro mora ALÉM de 3 kpc, o buraco é o lugar errado** (era o critério de
+refutação declarado pelos consultores, e ele disparou); escala radial da
+poeira longa demais (3500 pc: 1,1215; 5200 original com bojo achatado:
+1,0998) ou curta demais (1400 pc: 1,2898); achatamento fora da janela
+(c/a 0,60/0,45/0,35/0,23/0,33 sozinhos: 1,0860/1,1419/1,1640/1,0960/
+1,0353). O ótimo em c/a se DESLOCA quando a poeira muda — 0,26 vencia com
+a poeira antiga, 0,30 vence com a nova: re-precificar quando o regime
+muda segue valendo (lição da rodada 21).
+
+**Sobre a régua, medido e registrado:** o termo da espessura acumula
+meio-fluxo a partir de **b = 0 fixo**, então uma fenda mais funda —
+física melhor — ALARGA a medida e piora a nota. Os dois termos são
+antagonistas por construção. O harness de diagnóstico passou a reportar
+também a meia-altura em torno do PICO da coluna (nosso 5,67° contra
+3,91° da foto no estado da r32); o gate oficial NÃO foi mexido, para não
+quebrar a comparabilidade com o histórico. Trocá-lo é uma decisão de
+re-baseline, não uma correção de rodada.
+
+**Knobs:** `?bulgeq=` (razão de eixos c/a do esferoide; **1 = esfera =
+estado da rodada 32 EXATO**, o mesmo GLSL, conferido campo a campo na
+sonda de face única) e `?dustrd=` (escala radial da poeira difusa;
+**5200 = estado da rodada 32**).
 
 ## Decisões fechadas
 

@@ -39,6 +39,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 25 | 0.0333 | 0.1293 | 0.0701 | 0.1049 | re-dosagem sob o protocolo honesto: warp volta ao 820 original (o impulso a 1310 era artefato da regua aliasada) |
 | 26 | 0.0346 | 0.1286 | 0.0703 | 0.1050 | roteiro novo em shots: 4 atos, Sgr A* Gargantua, holds de medição com roll do rig antigo assado (t 261/293) |
 | 27 | 0.0370 | 0.1293 | 0.0699 | 0.1044 | warp com a fase certa: 185 e nao 5 — a quiralidade do S contra a recriacao-alvo estava invertida (ablacao: warpAsym -0,35 -> +0,22; maior salto da serie) |
+| 33 | 0.0371 | 0.1299 | 0.0663 | 0.1047 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
 
 ## Edge-on
 
@@ -61,3 +62,4 @@ final, as imagens locais e esta tabela se leem juntas.
 | 25 | 0.6441 | 0.0494 | 0.0924 | 0.9100 | 0.0326 | re-dosagem sob o protocolo honesto: warp volta ao 820 original (o impulso a 1310 era artefato da regua aliasada) |
 | 26 | 0.6456 | 0.0503 | 0.0929 | 0.9052 | 0.0329 | roteiro novo em shots: 4 atos, Sgr A* Gargantua, holds de medição com roll do rig antigo assado (t 261/293) |
 | 27 | 0.4396 | 0.0393 | 0.0810 | 0.8506 | 0.0425 | warp com a fase certa: 185 e nao 5 — a quiralidade do S contra a recriacao-alvo estava invertida (ablacao: warpAsym -0,35 -> +0,22; maior salto da serie) |
+| 33 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
