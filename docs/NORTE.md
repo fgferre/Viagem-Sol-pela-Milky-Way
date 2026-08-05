@@ -688,6 +688,56 @@ mudança de imagem: face-on t=293 e edge-on t=261 saíram bit-idênticos**
   pesa mais que qualquer ALU — mas o conserto é dar teste próprio ao caminho
   analítico, não mexer no limiar.
 
+## O catálogo cresceu 17,7× (rodada 35, 2026-08-05)
+
+**skyError 0,8134 → 0,7885, recorde** (A/B na mesma máquina, mesma sessão; a
+baseline reproduziu 0,8134 exato). Vistas externas **bit-idênticas** — o
+`localFade` zera o campo de catálogo muito antes dos 24/33 kpc dos holds.
+18.543 → **328.749 estrelas** e 90 → **1.726 nomeadas**, por +2,5 MB.
+
+- **O 18.543 nunca foi limitação: era CONTRATO.** A magnitude máxima do binário
+  antigo era 7,200 cravada e `wrappedStars` tinha `step(7.2, mSun)` literal —
+  catálogo até 7,2, procedural a partir de 7,2. A bolha de 1 kpc era
+  consequência (a distribuição de distâncias não tinha degrau, só acabava).
+- **Havia um BURACO no céu, e ele tinha três anos de idade.** O corte antigo só
+  olhava magnitude: a casca proibia qualquer estrela com m☉ < 7,2 em QUALQUER
+  distância, mas o catálogo parava numa parede de paralaxe em 1.000 pc. Toda
+  supergigante entre 1 e 2 kpc não era desenhada por ninguém — as 572
+  "sentinelas" que o `sanitize` descartava (103 delas mais brilhantes que
+  magnitude 6, visíveis a olho nu) eram a amostra concreta. **Regra que fica:
+  cobertura é magnitude E horizonte E presença** — `covered = uCatFade ·
+  (m☉ < uCatMag) · (d☉ < uCatHorizon)`, os três lidos de `stars_meta.json`.
+  O terceiro termo é o que impede o viajante de carregar um vazio esférico
+  junto consigo: o corte é heliocêntrico e a câmera anda.
+- **AT-HYG sozinho NÃO serve: ele normaliza tudo para Tycho.** `mag_src` é "T"
+  em 330.868 das 332.178 linhas — VT, não V, e o `ci` é BT−VT. No extremo
+  brilhante o Tycho satura: Sirius sai −1,088 contra o V real −1,44, e o BT−VT
+  das ~100 mais brilhantes vem VAZIO. A junção pelo id HYG (108.410 estrelas
+  com fotometria do Hipparcos, 220.947 com Tycho→Johnson) é o que mantém os
+  16 heróis **idênticos, na mesma ordem e com as mesmas magnitudes**.
+- **Formato `sc1`, 9 bytes/estrela em cinco seções.** Float32 stride 6 custaria
+  7,6 MiB e comprime mal (gzip tira só 17%). A direção vai em ÂNGULO porque o
+  erro que importa é angular. A magnitude aparente saiu: o shader a recalcula
+  da câmera, então guardá-la era peso morto — a mesma razão que faz `logLum`
+  ser o único campo fotométrico que viaja. Armadilha paga em uma rodada:
+  faixa de quantização apertada CLAMPA em silêncio (a de `logLum` nasceu
+  −2,5..5,5 e o erro real foi 3,02 dex até `verify-assets` ganhar o gate).
+- **Custo medido, não estimado:** +0,3 ms na mediana a 2560×1440 (21,3 → 21,6;
+  ~1.150 quadros por lado, `callsPerFrame` 54,7 nos dois). Confirma a lição de
+  2026-07-31: contagem de vértice não é o eixo travado deste app.
+- **Rótulo é para o que se VÊ.** Com 575 nomes próprios da IAU no lugar de 90
+  curados, a regra de proximidade passou a apontar anãs vermelhas: Ross 614
+  (m 11) tomava a vaga de Betelgeuse. Duas correções: tier (nome próprio antes
+  de Bayer) e corte de olho nu na magnitude **recalculada da câmera** — quem
+  se aproxima acende, como no shader.
+- **Termos do gate:** bulgeAnti 5,735 → **5,584** contra o alvo 5,568 (o termo
+  mestre praticamente CRAVA: 3,0% → 0,29%), nprof 0,2766 → 0,2691, rift
+  0,0111 → 0,0087, purp 0,0132 → 0,0126. Paga a espessura: 0,3499 → 0,3617 —
+  as estrelas reais somam fluxo nas asas da faixa, e ela segue o maior termo
+  aberto. `colour` não se moveu (0,1326 → 0,1335): a hipótese de que anãs
+  K/M do preenchimento empurrariam a cor está **refutada** — segue sendo
+  rodada própria.
+
 ## A textura da população (rodada 28, 2026-08-04)
 
 Aberta por observação do dono na vista externa: o disco EXTERNO lê como

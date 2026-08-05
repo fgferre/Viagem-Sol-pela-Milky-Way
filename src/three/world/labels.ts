@@ -14,9 +14,16 @@ export interface StarLabel {
   y: number; // 0..1
   opacity: number;
   key: string;
+  /** 0 = nome próprio, 1 = designação de Bayer. Só ordena a disputa
+   *  pelas vagas; o Sol e Sgr A✱ entram como 0. */
+  tier?: number;
 }
 
 const _v = new THREE.Vector3();
+
+/** limite do olho nu — as 90 nomeadas do catálogo antigo iam só até 2,56,
+ *  então este corte não tira nenhuma etiqueta que já existia */
+const NAKED_EYE_MAG = 6.5;
 
 function projectPoint(
   camera: THREE.PerspectiveCamera,
@@ -83,6 +90,12 @@ export function projectLabels(
     _v.set(s.x, s.y, s.z);
     const dist = _v.distanceTo(camPos);
     if (dist < 0.35 || dist > 320) continue;
+    // Rótulo é para o que se VÊ. O catálogo grande trouxe 575 nomes
+    // próprios da IAU, e entre eles anãs vermelhas vizinhas: Ross 614
+    // (m 11) ganhava a vaga de Betelgeuse por estar mais perto, e o filme
+    // apontava um nome onde não há estrela visível. A magnitude é
+    // recalculada da CÂMERA — quem se aproxima acende, como no shader.
+    if (s.m + 5 * Math.log10(dist / Math.max(s.d, 1e-6)) > NAKED_EYE_MAG) continue;
 
     const p = projectPoint(camera, s);
     if (!p) continue;
@@ -98,6 +111,7 @@ export function projectLabels(
       y: p.y,
       opacity: Math.min(oNear, oFar) * 0.92,
       key: s.n,
+      tier: s.t ?? 0,
     });
   }
 
@@ -118,11 +132,14 @@ export function projectLabels(
     }
   }
 
-  // histerese: quem já estava na tela ganha bônus — sem isso a seleção
-  // "pisca" quando estrelas disputam as últimas vagas em movimento
+  // Nome próprio antes de Bayer: a disputa é por PROXIMIDADE, e com o
+  // catálogo grande (1,7 k nomeadas contra as 90 curadas de antes) uma
+  // "κ Dra" a 30 pc expulsaria Deneb da tela. Dentro do mesmo tier vale
+  // a distância, com histerese — quem já estava na tela ganha bônus,
+  // senão a seleção "pisca" quando estrelas disputam as últimas vagas.
   const rank = (l: StarLabel) =>
     l.distPc * (prevKeys?.has(l.key) ? 0.8 : 1);
-  out.sort((a, b) => rank(a) - rank(b));
+  out.sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0) || rank(a) - rank(b));
   return out.slice(0, maxLabels);
 }
 

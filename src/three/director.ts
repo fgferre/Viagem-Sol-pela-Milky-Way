@@ -107,6 +107,8 @@ export class Director {
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
   private disposed = false;
+  /** pré-compilação em voo; o dispose do renderer espera por ela */
+  private warmup: Promise<unknown> | null = null;
 
   constructor(canvas: HTMLCanvasElement, events: DirectorEvents) {
     this.events = events;
@@ -173,7 +175,7 @@ export class Director {
         : this.debug.get('cart') === 'obs'
           ? 'observed'
           : 'blend';
-    const [{ positions, meta }, galactic] = await Promise.all([
+    const [{ stars: starArrays, meta }, galactic] = await Promise.all([
       loadStarData(this.abortController.signal),
       cartMode === 'off'
         ? Promise.resolve(null)
@@ -189,7 +191,7 @@ export class Director {
     // O halo buildFarStars (mag 7,2–10,6 estático no Sol) morreu na
     // unificação 2: as cascas de wrappedStars cobrem essa população em
     // QUALQUER ponto do disco, com a mesma PSF e anti-dupla-contagem.
-    this.stars = new StarField(positions, 6, { expoM0: 3.5, sigmaPx: 0.85, tau: 0.045 });
+    this.stars = new StarField(starArrays, { expoM0: 3.5, sigmaPx: 0.85, tau: 0.045 });
     this.heroes = new HeroStars(this.meta.named);
     // o Sol sob a mesma lei dos heróis: de longe é estrela, não bola
     // (magnitude viva pela distância; o nearFade cede ao disco de perto)
@@ -266,7 +268,10 @@ export class Director {
 
     // canais B/A do dust map alimentam a densidade das cascas (1 fetch
     // no lugar dos braços/warp analíticos por vértice — medido +5 ms)
-    this.wrappedStars = new WrappedStars(this.dustMapTexture);
+    this.wrappedStars = new WrappedStars(this.dustMapTexture, {
+      magLimit: this.meta.magLimit,
+      horizonPc: this.meta.horizonPc,
+    });
     this.engine.scene.add(this.wrappedStars.points);
     // Sagittarius A* — passe de pós que só liga perto do centro
     // (custo ZERO desligado: o composer o pula; shader compila na
@@ -312,11 +317,18 @@ export class Director {
       const warmRt = new THREE.WebGLRenderTarget(2, 2);
       this.engine.renderer.setRenderTarget(warmRt);
       try {
-        await Promise.all([
+        // guardado porque o dispose PRECISA esperar por ele: o
+        // compileAsync do three faz polling por setTimeout lendo
+        // `materialProperties.currentProgram`, e renderer.dispose()
+        // apaga essas propriedades — o polling seguinte estoura com
+        // "isReady of undefined", fora de qualquer try/catch nosso
+        this.warmup = Promise.all([
           this.engine.renderer.compileAsync(this.engine.scene, this.engine.camera),
           this.engine.renderer.compileAsync(warm, this.engine.camera),
         ]);
+        await this.warmup;
       } finally {
+        this.warmup = null;
         this.engine.renderer.setRenderTarget(null);
         warmRt.dispose();
         warmGeo.dispose();
@@ -735,13 +747,15 @@ export class Director {
     }
 
     this.stars?.update(cam.position, hPx);
+    const catFade = this.hide.has('nocat') ? 0 : localFade;
     this.wrappedStars?.update(
       cam.position,
       hPx,
       Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2),
-      this.hide.has('nowrap') ? 0 : 1
+      this.hide.has('nowrap') ? 0 : 1,
+      catFade
     );
-    this.stars?.setFade(this.hide.has('nocat') ? 0 : localFade);
+    this.stars?.setFade(catFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
     this.nebula.setFade(nebulaFade);
     const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
@@ -888,6 +902,24 @@ export class Director {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    // aborta JÁ (os fetches em voo não interessam mais); o resto pode
+    // esperar
+    this.abortController.abort();
+    // A pré-compilação do three faz polling por setTimeout lendo
+    // `materialProperties.currentProgram` de cada material da lista.
+    // Qualquer material.dispose() nosso remove essas propriedades e o
+    // polling seguinte estoura com "isReady of undefined" — dentro de um
+    // timer, fora de qualquer try/catch. Então o teardown INTEIRO espera
+    // o warm-up assentar. (Só aparecia em dev: a limpeza do efeito do
+    // React durante o Fast Refresh caía no meio da carga.)
+    if (this.warmup) {
+      void this.warmup.catch(() => {}).then(() => this.teardown());
+      return;
+    }
+    this.teardown();
+  }
+
+  private teardown() {
     // `disposed` já está travado: um passo que estoure NÃO pode levar
     // junto o resto do teardown. Sem isto, uma exceção no meio deixava
     // o Engine vivo — RAF rodando uma cena zumbi e o contexto WebGL
@@ -899,7 +931,6 @@ export class Director {
         console.warn(`[dispose] ${label} falhou; seguindo.`, error);
       }
     };
-    step('abort', () => this.abortController.abort());
     step('roam', () => this.roam.dispose());
     step('listeners', () => {
       this.engine.renderer.domElement.removeEventListener('pointerdown', this.onPausePointerDown);

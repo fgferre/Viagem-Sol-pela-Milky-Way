@@ -17,11 +17,12 @@
 // alcance) o excedente permanece luz não resolvida — o limite de
 // confusão de verdade.
 //
-// Anti-dupla-contagem vs HYG: corte por magnitude aparente vista
-// do SOL (m_sun < 7,2 é território do catálogo) — teste fixo,
-// independente da câmera. O halo buildFarStars morreu junto: era
-// estático no Sol e este campo cobre o papel dele em qualquer
-// ponto do disco.
+// Anti-dupla-contagem vs catálogo: a casca cede onde o catálogo
+// REALMENTE desenha, e os três termos vêm de stars_meta.json —
+// magnitude limite, raio da bolha e o fade vivo. Nenhum número de
+// catálogo é literal aqui: regerar o binário move o contrato
+// sozinho. O halo buildFarStars morreu junto: era estático no Sol
+// e este campo cobre o papel dele em qualquer ponto do disco.
 //
 // FLOATING ORIGIN da unificação 2: a posição nunca soma 25 kpc em
 // f32 — o vértice reconstrói tudo relativo à câmera (célula
@@ -168,6 +169,11 @@ uniform float uMagLo[${NB}];
 uniform float uMagSpan[${NB}];
 uniform vec3 uCamCell[${NB}]; // floor(camPos/célula) — inteiro exato
 uniform vec3 uCamFrac[${NB}]; // fração da célula, em [0,1)
+// contrato com o catálogo real (stars_meta.json): limite de magnitude,
+// raio da bolha heliocreu que ele cobre, e o quanto ele está VISÍVEL agora
+uniform float uCatMag;
+uniform float uCatHorizon;
+uniform float uCatFade;
 
 varying vec3 vColor;
 varying float vSat;
@@ -232,15 +238,25 @@ void main() {
   // densidade decide EXISTÊNCIA, não alpha
   float exists = step(hExist, clamp(density * uProb[b], 0.0, 1.0));
   float MV = uMagLo[b] + hash13(cell + 23.7) * uMagSpan[b];
-  // anti-dupla-contagem: o HYG é ~completo até V=7,2 visto do Sol —
-  // o que o catálogo já mostra, a casca não repete. O 7,2 é o corte do
-  // binário gerado (public/data/stars.bin, sanitize-stars.mjs): se o
-  // binário for regerado com outro corte, o step abaixo acompanha
-  // (era WORLD.starMagLimit — um knob que nunca foi lido; removido)
   float dSun = length(worldPos);
   float mSun = MV + 5.0 * log2(max(dSun, 1.0)) * 0.30103 - 5.0 +
     ${EXT_MAG_PER_PC.toFixed(6)} * dSun;
-  exists *= step(7.2, mSun);
+  // Anti-dupla-contagem: a casca não repete o que o catálogo desenha.
+  // TRÊS condições, não uma — o corte antigo só olhava a magnitude e
+  // abria dois buracos por onde não passava estrela nenhuma:
+  //   (1) magnitude: o catálogo é completo até uCatMag visto do Sol;
+  //   (2) horizonte: ele é uma BOLHA heliocêntrica finita — além de
+  //       uCatHorizon não há catálogo para repetir. Sem este termo, toda
+  //       estrela luminosa além da parede do binário sumia do céu (com o
+  //       binário antigo, tudo entre 1 e 2 kpc);
+  //   (3) presença: o catálogo esmaece com a distância de CASA
+  //       (localFade). Fora dela quem desenha é a casca — e o corte é
+  //       heliocêntrico, então sem este termo o viajante levava um vazio
+  //       esférico junto consigo.
+  float covered = uCatFade *
+    (1.0 - step(uCatMag, mSun)) *
+    (1.0 - smoothstep(uCatHorizon * 0.85, uCatHorizon, dSun));
+  exists *= 1.0 - covered;
   if (exists < 0.5 || uFade < 0.001) {
     gl_Position = vec4(0.0, 0.0, 2.0, 1.0); // fora do clip — morta
     gl_PointSize = 0.0;
@@ -283,7 +299,7 @@ export class WrappedStars {
   private material: THREE.ShaderMaterial;
   private cellSizes: number[] = [];
 
-  constructor(dustMap: THREE.Texture) {
+  constructor(dustMap: THREE.Texture, catalogue: { magLimit: number; horizonPc: number }) {
     // treliças e probabilidades vêm de GRID (derivado uma vez no módulo,
     // junto com o handoff GLSL_UNRESOLVED — uma só fonte para os dois)
     this.cellSizes = GRID.map((g) => g.cell);
@@ -344,6 +360,9 @@ export class WrappedStars {
         uCamFrac: {
           value: Array.from({ length: NB }, () => new THREE.Vector3()),
         },
+        uCatMag: { value: catalogue.magLimit },
+        uCatHorizon: { value: catalogue.horizonPc },
+        uCatFade: { value: 1 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -358,11 +377,20 @@ export class WrappedStars {
     this.points.matrixAutoUpdate = false;
   }
 
-  update(camPos: THREE.Vector3, screenH: number, _tanHalfFov: number, fade: number) {
+  update(
+    camPos: THREE.Vector3,
+    screenH: number,
+    _tanHalfFov: number,
+    fade: number,
+    /** o MESMO fade do campo de catálogo — a supressão tem de acompanhar
+     *  quem está desenhando, senão o viajante leva um vazio junto */
+    catFade: number
+  ) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camPos);
     u.uScreenH.value = screenH;
     u.uFade.value = fade;
+    u.uCatFade.value = catFade;
     const camCells = u.uCamCell.value as THREE.Vector3[];
     const camFracs = u.uCamFrac.value as THREE.Vector3[];
     for (let b = 0; b < NB; b++) {

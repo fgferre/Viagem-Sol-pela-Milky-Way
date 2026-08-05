@@ -9,7 +9,7 @@ lerna-debug.log*
 
 node_modules
 .vite
-.cache/galaxy-data
+.cache/
 dist
 dist-ssr
 output

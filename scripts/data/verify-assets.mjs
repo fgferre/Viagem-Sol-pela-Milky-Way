@@ -127,20 +127,33 @@ const [starBinary, starMetadataText] = await Promise.all([
   readFile(path.join(publicDirectory, 'data', 'stars_meta.json'), 'utf8'),
 ]);
 const starMetadata = JSON.parse(starMetadataText);
-const starStrideBytes = 6 * Float32Array.BYTES_PER_ELEMENT;
-if (starBinary.byteLength !== starMetadata.count * starStrideBytes) {
+if (starMetadata.format !== 'sc1') {
+  throw new Error(`stars_meta.json com formato "${starMetadata.format}"; esperado "sc1".`);
+}
+if (starBinary.byteLength !== starMetadata.count * starMetadata.bytesPerStar) {
   throw new Error('stars.bin diverge de stars_meta.json.');
 }
-if (
-  starMetadata.sourceCount !==
-  starMetadata.count + starMetadata.excluded.missingDistanceSentinel
-) {
-  throw new Error('A contabilidade do saneamento HYG está inconsistente.');
+// o contrato que as cascas procedurais leem para NÃO repetir o catálogo
+if (!(starMetadata.magLimit > 0) || !(starMetadata.horizonPc > 0)) {
+  throw new Error('stars_meta.json sem magLimit/horizonPc — o corte das cascas fica cego.');
+}
+if (!starMetadata.sources?.every((s) => s.sha256 && s.license && s.url)) {
+  throw new Error('stars_meta.json sem proveniência completa (url, licença, sha256).');
+}
+// a quantização é o único ponto onde o catálogo perde informação: se
+// alguém apertar uma faixa em build-star-catalog.mjs, ela CLAMPA em
+// silêncio e o erro explode. Aqui ele grita.
+if (starMetadata.quantization.maxPositionErrorPc > 1) {
+  throw new Error('Erro de posição da quantização acima de 1 pc.');
+}
+if (starMetadata.quantization.maxLogLumError > 0.001) {
+  throw new Error('Erro de luminosidade da quantização acima de 0,001 dex.');
 }
 
 console.log(
   `Dados verificados: ${Object.keys(manifest.assets).length} ativos galácticos, ` +
-    `${starMetadata.count} estrelas HYG utilizáveis; fit BeSSeL ` +
+    `${starMetadata.count} estrelas de catálogo (${starMetadata.named.length} nomeadas, ` +
+    `horizonte ${starMetadata.horizonPc} pc); fit BeSSeL ` +
     `${spiralMetrics.medianResidualPc.toFixed(1)} pc (p90 ` +
     `${spiralMetrics.p90ResidualPc.toFixed(1)} pc).`
 );

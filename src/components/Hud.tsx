@@ -40,7 +40,7 @@ export function TitleVeil({
           </div>
           <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
           <div className="title-big loading-pulse">MAR DE ESTRELAS</div>
-          <div className="title-sub">cartografando 18.543 estrelas do catálogo HYG…</div>
+          <div className="title-sub">cartografando 328.749 estrelas de catálogo…</div>
         </>
       )}
       {mode === 'intro' && (
@@ -51,7 +51,7 @@ export function TitleVeil({
           <div className="title-sub">
             do Sol às supergigantes de Órion, ao coração da galáxia — e além
             <br />
-            18.543 estrelas HYG · poeira APOGEE · nuvens de CO · regiões H II ·
+            328.749 estrelas de catálogo · poeira APOGEE · nuvens de CO · regiões H II ·
             aglomerados e Cefeidas Gaia DR3 — cartografia real, gás volumétrico em tempo real
           </div>
           <div className="title-rule" />

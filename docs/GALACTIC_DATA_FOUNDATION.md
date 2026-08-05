@@ -98,21 +98,33 @@ As escalas e a posição solar correspondem ao contrato de
 `src/three/cartography/galacticModel.ts`. A conversão para a base equatorial da
 cena ocorre uma vez na carga, por `galactocentricToScene()`.
 
-## Auditoria do HYG atual
+## O campo estelar de catálogo (migrado em 2026-08-05)
 
-O binário original tinha 19.115 registros. Desses, 572 estavam sobre a esfera de
-aproximadamente 100.000 pc usada pelo HYG quando a posição angular é conhecida,
-mas a distância não é. Eles não eram estrelas distantes cartografadas e
-produziam uma falsa população na escala galáctica.
+O binário original tinha 19.115 registros com dois cortes assados que o
+repositório não sabia reproduzir: magnitude aparente ≤ 7,20 e uma parede de
+paralaxe em 1.000 pc, mais 572 sentinelas sobre a esfera de ~100.000 pc que o
+HYG usa quando a direção é conhecida e a distância não
+([Waterloo — HYG e a esfera de 100.000 pc](https://www.math.uwaterloo.ca/tsp/star/hyg119614.html)).
+A pendência registrada aqui — "a próxima migração deve registrar release,
+consulta, licença e checksum" — está **fechada**: `scripts/data/build-star-catalog.mjs`
+baixa as fontes, grava sha256 e licença de cada uma em `stars_meta.json`, e
+`verify-assets.mjs` recusa um binário sem proveniência completa.
 
-`scripts/data/sanitize-stars.mjs` os removeu de forma idempotente. O runtime
-agora contém 18.543 registros com distância utilizável, e
-`stars_meta.json` guarda a contabilidade da exclusão. O repositório ainda não
-contém o CSV de origem nem sua versão exata; por isso a próxima migração do campo
-estelar deve registrar release, consulta, licença e checksum da fonte.
+Duas fontes, porque nenhuma sozinha serve:
 
-Referência independente sobre a sentinela do HYG:
-[Universidade de Waterloo — HYG e a esfera de 100.000 pc](https://www.math.uwaterloo.ca/tsp/star/hyg119614.html).
+| fonte | papel | por quê |
+|---|---|---|
+| AT-HYG v4.0 (subset V ≤ 10) | lista mestre: posição, distância, nomes | 99% com distância Gaia DR3 — sem a parede de 1 kpc |
+| HYG v4.4 | fotometria (V e B−V) onde existe | o AT-HYG normaliza tudo para Tycho, que SATURA no extremo brilhante (Sirius VT −1,088 contra V −1,44) e devolve cor vazia nas ~100 mais brilhantes |
+
+Resultado: 328.749 estrelas (2,82 MiB no formato `sc1`), horizonte 4.998 pc,
+1.726 nomeadas. Excluídas e contabilizadas em `stars_meta.json`: 2.317 sem
+distância, 832 sem cor em nenhuma das fontes, 279 além do horizonte de 5 kpc
+(onde a paralaxe Gaia DR3 não sustenta posição 3D) e o Sol, que aqui é outro
+assunto.
+
+O corte não é mais um número no shader: `magLimit` e `horizonPc` viajam no
+metadado e `wrappedStars.ts` lê os dois. Ver a rodada 35 no `NORTE.md`.
 
 ## Fontes avaliadas, mas ainda não empacotadas
 

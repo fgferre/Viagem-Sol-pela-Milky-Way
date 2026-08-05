@@ -45,24 +45,84 @@ export const WORLD = {
   dustCount: 2200,
 };
 
-export type NamedStar = { n: string; x: number; y: number; z: number; m: number; s: string; d: number };
-export type StarsMeta = { count: number; named: NamedStar[] };
+/** `t`: 0 = nome próprio (IAU), 1 = designação de Bayer. O rótulo do HUD
+ *  escolhe por PROXIMIDADE, então sem o tier uma "κ Dra" perto empurraria
+ *  Deneb para fora das sete vagas. */
+export type NamedStar = {
+  n: string; x: number; y: number; z: number; m: number; s: string; d: number; t?: number;
+};
+export type StarsMeta = {
+  count: number;
+  named: NamedStar[];
+  /** raio coberto pelo catálogo (pc) — as cascas procedurais param de
+   *  suprimir estrela real além dele (ver wrappedStars.ts) */
+  horizonPc: number;
+  /** magnitude aparente limite da fonte, vista do Sol */
+  magLimit: number;
+  ranges: { logd: [number, number]; lum: [number, number]; ci: [number, number] };
+};
 
-export async function loadStarData(signal?: AbortSignal): Promise<{ positions: Float32Array; meta: StarsMeta }> {
+/** atributos já prontos para a GPU — nada é reempacotado depois */
+export interface StarArrays {
+  position: Float32Array; // 3N
+  logLum: Float32Array; // N
+  ci: Float32Array; // N
+}
+
+/**
+ * Decodifica o formato "sc1" (scripts/data/build-star-catalog.mjs): 9 bytes
+ * por estrela em CINCO SEÇÕES contíguas — lon u16, lat u16, log10(d) u16,
+ * logLum u16, B−V u8. Direção em ângulo (não em x,y,z) porque o erro que
+ * importa é ANGULAR: 65.536 passos dão ~20″, invisíveis numa PSF cujo piso
+ * é 3,7 px. Float32 stride 6 custaria 24 B/estrela e comprime mal.
+ */
+function decodeStars(bin: ArrayBuffer, meta: StarsMeta): StarArrays {
+  const n = meta.count;
+  if (bin.byteLength !== n * 9) {
+    throw new Error('O catálogo estelar está incompleto ou possui formato inválido.');
+  }
+  const lon = new Uint16Array(bin, 0, n);
+  const lat = new Uint16Array(bin, n * 2, n);
+  const logd = new Uint16Array(bin, n * 4, n);
+  const lum = new Uint16Array(bin, n * 6, n);
+  const ciRaw = new Uint8Array(bin, n * 8, n);
+
+  const position = new Float32Array(n * 3);
+  const logLum = new Float32Array(n);
+  const ci = new Float32Array(n);
+  const [logdMin, logdMax] = meta.ranges.logd;
+  const [lumMin, lumMax] = meta.ranges.lum;
+  const [ciMin, ciMax] = meta.ranges.ci;
+  const kLogd = (logdMax - logdMin) / 65535;
+  const kLum = (lumMax - lumMin) / 65535;
+  const kCi = (ciMax - ciMin) / 255;
+  for (let i = 0; i < n; i++) {
+    const ra = lon[i] * (2 * Math.PI / 65535);
+    const dec = lat[i] * (Math.PI / 65535) - Math.PI / 2;
+    const d = 10 ** (logdMin + logd[i] * kLogd);
+    const cosDec = Math.cos(dec);
+    position[i * 3] = d * cosDec * Math.cos(ra);
+    position[i * 3 + 1] = d * cosDec * Math.sin(ra);
+    position[i * 3 + 2] = d * Math.sin(dec);
+    logLum[i] = lumMin + lum[i] * kLum;
+    ci[i] = ciMin + ciRaw[i] * kCi;
+  }
+  return { position, logLum, ci };
+}
+
+export async function loadStarData(
+  signal?: AbortSignal
+): Promise<{ stars: StarArrays; meta: StarsMeta }> {
   const base = import.meta.env.BASE_URL;
   const [bin, meta] = await Promise.all([
     fetch(`${base}data/stars.bin`, { signal }).then((response) => {
-      if (!response.ok) throw new Error(`Catálogo HYG indisponível (${response.status}).`);
+      if (!response.ok) throw new Error(`Catálogo estelar indisponível (${response.status}).`);
       return response.arrayBuffer();
     }),
     fetch(`${base}data/stars_meta.json`, { signal }).then((response) => {
-      if (!response.ok) throw new Error(`Metadados HYG indisponíveis (${response.status}).`);
+      if (!response.ok) throw new Error(`Metadados do catálogo indisponíveis (${response.status}).`);
       return response.json() as Promise<StarsMeta>;
     }),
   ]);
-  const positions = new Float32Array(bin);
-  if (positions.length % 6 !== 0 || positions.length / 6 !== meta.count) {
-    throw new Error('O catálogo HYG está incompleto ou possui formato inválido.');
-  }
-  return { positions, meta };
+  return { stars: decodeStars(bin, meta), meta };
 }

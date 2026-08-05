@@ -45,8 +45,8 @@ funciona sem configuração extra — os caminhos são relativos.
 
 | Arquivo | Conteúdo |
 |---|---|
-| `public/data/stars.bin` | 18.543 estrelas do catálogo HYG com distância utilizável, em Float32 little-endian, stride 6: `x, y, z` (parsecs, coordenadas equatoriais heliocêntricas), `magnitude aparente`, `índice de cor B−V`, `log10(luminosidade)` |
-| `public/data/stars_meta.json` | metadados das ~90 estrelas nomeadas (hero stars) |
+| `public/data/stars.bin` | 328.749 estrelas de catálogo (AT-HYG v4.0 até V = 10, posições Gaia DR3; fotometria do HYG v4.4 no extremo brilhante). Formato `sc1`: 9 bytes por estrela em CINCO seções contíguas — `lon` u16, `lat` u16, `log10(distância)` u16, `log10(luminosidade)` u16, `B−V` u8. Direção em ângulo porque o erro que importa é angular (~20″); a magnitude aparente NÃO é guardada — o shader a recalcula da posição da câmera |
+| `public/data/stars_meta.json` | contrato do binário (contagem, faixas de quantização, horizonte, limite de magnitude), proveniência com licença e sha256 das fontes, e as 1.726 estrelas nomeadas — 575 nomes próprios da IAU (`t: 0`) e 1.151 designações de Bayer (`t: 1`) |
 | `public/data/galaxy/manifest.json` | contrato, proveniência, incertezas, schemas e hashes dos ativos cartográficos galácticos |
 | `public/data/galaxy/*.bin` | poeira APOGEE, nuvens moleculares CO, H II WISE, masers BeSSeL e traçadores jovens Gaia DR3, incluindo uma seleção proxy de 100 mil estrelas quentes |
 
@@ -134,16 +134,21 @@ Fontes primárias usadas no contrato:
 ### Regerar e verificar a fundação cartográfica
 
 ```bash
+npm run data:stars           # baixa AT-HYG + HYG e reescreve stars.bin (sc1)
 npm run data:galaxy          # usa cache local; -- --refresh força nova consulta
 npm run data:fit             # reajusta as fases dos braços às âncoras BeSSeL
-npm run data:sanitize-stars  # idempotente; exclui sentinelas HYG a 100 kpc
 npm run data:verify          # confere binários, hashes e o residual dos braços
-npm run data:all             # executa saneamento, ativos, fit e verificação
+npm run data:all             # executa os quatro na ordem
 ```
 
-As respostas TSV ficam em `.cache/galaxy-data/` e não são versionadas. Os
-binários compactos e o manifesto são versionados; o aplicativo continua 100%
-offline em runtime.
+As respostas TSV e os CSV das fontes estelares ficam em `.cache/` e não são
+versionados. Os binários compactos e o manifesto são versionados; o aplicativo
+continua 100% offline em runtime.
+
+**O corte do catálogo é um CONTRATO, não um detalhe.** `stars_meta.json` publica
+`magLimit` e `horizonPc`, e `wrappedStars.ts` lê os dois para não repetir a
+estrela que o catálogo já desenha. Regerar o binário com outro corte move o
+contrato sozinho — nenhum número de catálogo é literal no shader.
 
 ### Crossfades
 
