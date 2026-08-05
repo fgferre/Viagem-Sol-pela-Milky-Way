@@ -710,6 +710,15 @@ export class Galaxy {
     const geo = new THREE.BufferGeometry();
     const bd = buffers.bright;
     const brightBuffer = new THREE.InterleavedBuffer(bd, 8);
+    // 122,7 MiB (cinema) ficavam no heap JS DEPOIS do upload, espelhando
+    // a VRAM pelo resto do filme. A geometria é estática (nenhum
+    // needsUpdate), a boundingSphere é dada à mão logo abaixo e os pontos
+    // não são raycast nem frustum-culled: ninguém volta a ler o array.
+    // Preço aceito: uma perda de contexto WebGL não reconstrói a galáxia
+    // — e o app já não trata perda de contexto em lugar nenhum.
+    brightBuffer.onUpload(function (this: THREE.InterleavedBuffer) {
+      (this as unknown as { array: Float32Array | null }).array = null;
+    });
     geo.setAttribute('position', new THREE.InterleavedBufferAttribute(brightBuffer, 3, 0));
     geo.setAttribute('aColor', new THREE.InterleavedBufferAttribute(brightBuffer, 3, 3));
     geo.setAttribute('aSize', new THREE.InterleavedBufferAttribute(brightBuffer, 1, 6));
@@ -1103,13 +1112,20 @@ export class Galaxy {
     this.dwarfMat.uniforms.uFade.value = externalFade * 0.11;
     this.markerMat.uniforms.uTime.value = time;
     this.markerMat.uniforms.uFade.value = markerFade;
-    // brightPts era a única camada sem gate de visibilidade: dust, scatter,
-    // glow, dwarf e marker todas têm. 2,7 M pontos eram submetidos mesmo
-    // com fade 0 (medido: as partículas aparecem no probe em ?t=0, no Sol).
+    // Gate de visibilidade em TODA camada cujo uFade multiplica a saída
+    // linearmente (blend aditivo de zero é no-op). O glow segue vivo por
+    // dentro do disco — tem termo próprio de localBandFade; halo e anã
+    // não, e sem gate desenhavam um billboard quase de tela cheia
+    // somando exatamente zero durante toda a viagem interna.
     this.brightPts.visible = brightFade > 0.001;
-    this.glowMesh.visible = this.showGlow;
-    this.haloMesh.visible = this.showGlow && this.haloGain > 0;
-    this.dwarfMesh.visible = this.showGlow;
+    this.glowMesh.visible =
+      this.showGlow && (this.glowMat.uniforms.uFade.value as number) > 0.001;
+    this.haloMesh.visible =
+      this.showGlow &&
+      this.haloGain > 0 &&
+      (this.haloMat.uniforms.uFade.value as number) > 0.001;
+    this.dwarfMesh.visible =
+      this.showGlow && (this.dwarfMat.uniforms.uFade.value as number) > 0.001;
   }
 
   dispose() {

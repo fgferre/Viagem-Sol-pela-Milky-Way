@@ -69,9 +69,12 @@ function splatGaussian(
 }
 
 function robustNormalize(field: Float32Array, fraction = 0.985) {
-  const positive = Array.from(field).filter((value) => value > 0);
+  // Float32Array.sort() é numérico e sem boxing. Array.from(field) criava
+  // 262.144 doubles boxados e um segundo array no filter, para depois
+  // ordenar pelo caminho de comparador do V8 — mesma resposta, ~5× o
+  // tempo, duas vezes por bake, no meio do congelamento de carga.
+  const positive = field.filter((value) => value > 0).sort();
   if (positive.length === 0) return;
-  positive.sort((a, b) => a - b);
   const scale =
     positive[Math.floor((positive.length - 1) * fraction)] || 1;
   for (let index = 0; index < field.length; index++) {
@@ -323,7 +326,10 @@ function discCoverageFraction(support: Float32Array) {
 export function bakeGalacticStructureMap(
   assets: GalacticAssets | null,
   dustDensity: Float32Array,
-  dustCoverage: Float32Array
+  dustCoverage: Float32Array,
+  /** crista de braços de gás já calculada pelo bake da poeira, na mesma
+   *  grade e com os mesmos parâmetros (24/28, uniformWeights) */
+  dustArmsField: Float64Array
 ): StructureBake {
   const length = DUST_MAP_SIZE * DUST_MAP_SIZE;
   const gas = new Float32Array(length);
@@ -391,11 +397,9 @@ export function bakeGalacticStructureMap(
     // uniformWeights: traçadores jovens seguem o GÁS, que é 4 braços
     // parecidos (Drimmel) — a dominância de 2 braços é só da emissão
     // estelar evoluída (renderWeight), que multiplica DEPOIS.
-    const arms = Math.min(
-      1,
-      glMajorArms(theta, radiusPc, 24, true) +
-        glLocalArm(theta, radiusPc, 28)
-    );
+    // Vem pronto do bakeDustMap: mesma grade, mesmos parâmetros, mesma
+    // expressão — recalcular aqui era ~215 ms de aritmética repetida.
+    const arms = dustArmsField[index];
     // 55/59 é uma crista de 0,13 rad — três vezes mais estreita que o
     // braço estelar (24). A poeira ficava colada numa linha e lia como
     // arco fino; no alvo ela ocupa a largura do braço, com a rede

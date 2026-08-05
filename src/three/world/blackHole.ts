@@ -12,8 +12,8 @@
 //
 // ESCALA ARTÍSTICA (documentada): o RS real de Sgr A* (4,15e6 M☉)
 // é 4e-7 pc — invisível a qualquer distância de voo. Adotamos
-// RS = 0,05 pc (~1,2e5× o real) para o disco de acreção (40 RS =
-// 2 pc) ler como Gargantua no periastro de 4,6 pc (≈ 92 RS). A
+// RS = 0,05 pc (~1,2e5× o real) para o disco de acreção (26 RS =
+// 1,3 pc) ler como Gargantua no periastro de 1,5 pc (≈ 30 RS). A
 // física do shader é adimensional em RS e não muda com a escala.
 // A extinção real (~30 mag no visível até o centro) justifica o
 // fade por distância. ?nobh=1 desliga; ?bhgain= e ?bhsteps= varrem.
@@ -29,7 +29,15 @@ const RS_PC = 0.05;
 // nosso núcleo, o anel externo do disco não brilha — vira silhueta; um
 // disco mais compacto e mais translúcido lê como objeto, não mancha
 const DISK_OUT_RS = 26;
-const MARCH_B_RS = 60; // fronteira integrado ↔ analítico
+// Fronteira integrado ↔ analítico. Ela trabalha na APROXIMAÇÃO e na
+// saída (câmera a milhares de RS: quase a tela inteira pega o ramo
+// barato) e é INERTE dentro de ~3 pc, DE PROPÓSITO: com o olhar preso
+// no GC, b = |ro|·sin(φ) e o canto da tela dá b_max ≈ 22 RS no
+// periastro — abaixo de DISK_OUT_RS (26) e da rampa externa do disco
+// (começa em 16). Baixá-la o bastante para "acender" no clímax
+// recortaria a borda do disco nos cantos. Duas auditorias já
+// recomendaram recalibrar; a resposta medida é NÃO.
+const MARCH_B_RS = 60;
 // passos como os perfis da demo; orçamento de pixels do alvo do march
 const STEPS: Record<QualityLevel, number> = { cinema: 460, alta: 320, performance: 200 };
 const BUDGET: Record<QualityLevel, number> = { cinema: 2.6e6, alta: 1.7e6, performance: 1.0e6 };
@@ -106,6 +114,10 @@ export class BlackHolePass extends Pass {
       type: THREE.HalfFloatType,
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
+      // quad de tela cheia: não há profundidade a testar, e o alvo vive
+      // do início ao fim do filme com o orçamento de pixels inteiro
+      depthBuffer: false,
+      stencilBuffer: false,
     });
   }
 

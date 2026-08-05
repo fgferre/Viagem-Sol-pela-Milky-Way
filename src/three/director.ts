@@ -204,7 +204,8 @@ export class Director {
     const structureBake = bakeGalacticStructureMap(
       cartOn ? galactic : null,
       dustBake.density,
-      dustBake.coverage
+      dustBake.coverage,
+      dustBake.arms
     );
     this.structureMapTexture = structureBake.texture;
     this.galaxy = new Galaxy(
@@ -887,27 +888,42 @@ export class Director {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
-    this.abortController.abort();
-    this.roam.dispose();
-    this.engine.renderer.domElement.removeEventListener('pointerdown', this.onPausePointerDown);
-    window.removeEventListener('pointermove', this.onPausePointerMove);
-    window.removeEventListener('pointerup', this.onPausePointerUp);
-    this.blackHole?.dispose();
+    // `disposed` já está travado: um passo que estoure NÃO pode levar
+    // junto o resto do teardown. Sem isto, uma exceção no meio deixava
+    // o Engine vivo — RAF rodando uma cena zumbi e o contexto WebGL
+    // preso para sempre, porque a segunda chamada retorna no início.
+    const step = (label: string, fn: () => void) => {
+      try {
+        fn();
+      } catch (error) {
+        console.warn(`[dispose] ${label} falhou; seguindo.`, error);
+      }
+    };
+    step('abort', () => this.abortController.abort());
+    step('roam', () => this.roam.dispose());
+    step('listeners', () => {
+      this.engine.renderer.domElement.removeEventListener('pointerdown', this.onPausePointerDown);
+      window.removeEventListener('pointermove', this.onPausePointerMove);
+      window.removeEventListener('pointerup', this.onPausePointerUp);
+    });
+    step('blackHole', () => this.blackHole?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
-    this.stars?.dispose();
-    this.heroes?.dispose();
-    this.galaxy?.dispose();
-    this.observedClouds?.dispose();
-    this.starForges?.dispose();
-    this.wrappedStars?.dispose();
-    this.dustMapTexture?.dispose();
-    this.structureMapTexture?.dispose();
-    this.sun.dispose();
-    this.sunStar.dispose();
-    this.dust.dispose();
-    this.nebula.dispose();
-    this.post.dispose();
-    this.engine.dispose();
+    step('stars', () => this.stars?.dispose());
+    step('heroes', () => this.heroes?.dispose());
+    step('galaxy', () => this.galaxy?.dispose());
+    step('observedClouds', () => this.observedClouds?.dispose());
+    step('starForges', () => this.starForges?.dispose());
+    step('wrappedStars', () => this.wrappedStars?.dispose());
+    step('dustMap', () => this.dustMapTexture?.dispose());
+    step('structureMap', () => this.structureMapTexture?.dispose());
+    step('sun', () => this.sun.dispose());
+    // sunStar nasce depois do await do init: falha de carga chega aqui
+    // com ele indefinido
+    step('sunStar', () => this.sunStar?.dispose());
+    step('dust', () => this.dust.dispose());
+    step('nebula', () => this.nebula.dispose());
+    step('post', () => this.post.dispose());
+    step('engine', () => this.engine.dispose());
   }
 }

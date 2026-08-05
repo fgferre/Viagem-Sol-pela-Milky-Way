@@ -556,16 +556,24 @@ export class NovoSol {
 
   dispose() {
     const ctx = this.ctx;
+    // As proeminências são Object3D-PROXY com `material = { uniforms }`
+    // (prominences.js): objeto simples, SEM dispose. Chamar dispose() em
+    // qualquer material truthy estourava aqui e abortava todo o teardown
+    // — inclusive os RTs abaixo e o Engine (ver director.dispose).
+    const free = (x: any) => x?.dispose?.();
     this.group.traverse((o: any) => {
-      if (o.geometry) o.geometry.dispose();
+      free(o.geometry);
       const m = o.material;
-      if (Array.isArray(m)) m.forEach((x) => x.dispose());
-      else if (m) m.dispose();
+      if (Array.isArray(m)) m.forEach(free);
+      else free(m);
     });
     for (const rt of ctx.simRTs ?? []) rt.dispose();
     for (const set of ctx.bakeSets ?? []) {
       set.c?.dispose?.();
       set.s?.dispose?.();
     }
+    // Data3DTexture da coroa volumétrica: material.dispose() NÃO dispõe
+    // texturas, e esta não pertence a nenhum material do traverse.
+    free(ctx.cvolTex);
   }
 }

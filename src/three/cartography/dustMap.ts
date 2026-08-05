@@ -32,6 +32,12 @@ interface DustBake {
   /** canal de cobertura cru (0..1, size²) — consumido pelo gerador
    *  procedural para CEDER onde o observado cobre. */
   coverage: Float32Array;
+  /** crista de braços de GÁS (0..1, size²) na MESMA grade. O structure
+   *  map recalculava este campo idêntico — ~90 transcendentais por
+   *  texel, 262 k texels, duas vezes, no bloqueio de carga. Float64
+   *  porque lá o valor entra em conta como double: Float32 arredondaria
+   *  e a mudança deixaria de ser bit-idêntica. */
+  arms: Float64Array;
 }
 
 function boxBlurInPlace(field: Float32Array, size: number, radius: number) {
@@ -163,6 +169,7 @@ export function bakeDustMap(table: CatalogueTable | null): DustBake {
       };
 
   const pixels = new Uint8Array(size * size * 4);
+  const armsField = new Float64Array(size * size);
   let covered = 0;
   let discTexels = 0;
   const half = size / 2;
@@ -179,6 +186,7 @@ export function bakeDustMap(table: CatalogueTable | null): DustBake {
       glMajorArms(theta, radiusPc, 24, true) + glLocalArm(theta, radiusPc, 28),
       1
     );
+    armsField[i] = arms;
     const warp = warpHeightPc(radiusPc, theta) / 820; // -1..1
 
     pixels[i * 4] = Math.min(255, Math.round(density[i] * 255));
@@ -214,5 +222,6 @@ export function bakeDustMap(table: CatalogueTable | null): DustBake {
     density,
     coverageFraction: discTexels > 0 ? covered / discTexels : 0,
     coverage,
+    arms: armsField,
   };
 }

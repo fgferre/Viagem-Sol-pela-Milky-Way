@@ -108,6 +108,9 @@ export default function App() {
       .catch((error: unknown) => {
         if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) return;
         console.error(error);
+        // a tela de erro fica; o contexto WebGL e os render targets já
+        // criados no construtor, não — a sessão morta não renderiza mais
+        d.dispose();
         setLoadError(error instanceof Error ? error.message : 'Não foi possível iniciar a simulação.');
       });
     return () => {

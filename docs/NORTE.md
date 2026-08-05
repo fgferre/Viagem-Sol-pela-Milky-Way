@@ -617,6 +617,77 @@ t=261, 1800², o padrão de prova do projeto). O que ainda decide algo:
   o runtime; atualizar arrasta Vite/Rollup e o custo é maior que o risco de um
   dev server local.
 
+## Auditoria de otimização (2026-08-05) — o que sobrou como regra
+
+Duas auditorias externas (uma original, uma re-auditando a primeira) foram
+conferidas contra o código por sete verificadores independentes. **Nenhuma
+mudança de imagem: face-on t=293 e edge-on t=261 saíram bit-idênticos**
+(md5 igual antes/depois, 1800²). O que ainda decide algo:
+
+- **Teardown não pode ser uma cadeia frágil.** As proeminências são
+  `Object3D`-PROXY com `material = { uniforms }` (objeto simples, sem
+  `dispose`); o traverse de `novoSol.dispose` chamava `m.dispose()` em
+  qualquer material truthy e estourava — e como `director.dispose` já tinha
+  travado `disposed = true` sem `try/catch`, **o Engine nunca era descartado:
+  RAF vivo desenhando uma cena zumbi e contexto WebGL preso para sempre**
+  (reproduzido ao vivo: `TypeError: m.dispose is not a function`). Agora o
+  traverse só chama `dispose` se for função e cada passo do director roda
+  isolado. **Regra: passo de teardown que falha não pode levar os outros
+  junto — quem trava a flag antes assume a responsabilidade de terminar.**
+  Provado depois: `dispose()` completa sem erro nem aviso, RAF cancelado,
+  texturas 18 → 2.
+- **Knob que decide alocação, lido cedo (2026-08-04) — e agora: campo caro,
+  calculado uma vez.** `bakeDustMap` e `bakeGalacticStructureMap` recalculavam
+  o MESMO campo de braços de gás (mesma grade, mesmos 24/28, mesmo
+  `uniformWeights`): ~90 transcendentais × 262 k texels, duas vezes. O campo
+  agora sai do bake da poeira em **Float64** (Float32 arredondaria o valor que
+  o structure map usa como double e a mudança deixaria de ser bit-idêntica) —
+  **386 ms medidos** fora do congelamento de carga. Junto, `robustNormalize`
+  deixou de boxear 262 k doubles num Array só para ordenar por comparador:
+  `Float32Array.filter().sort()` dá o **mesmo percentil bit a bit** e custa
+  ~28 ms no lugar de ~69, duas vezes por bake.
+- **Gate de visibilidade em toda camada cujo `uFade` multiplica a saída.**
+  Faltava em halo e anã de Sagitário da galáxia: um billboard quase de tela
+  cheia somando exatamente zero durante ~200 s dos 321 do filme (verificado
+  por varredura t=30…300: apagam de 30 a 200, reacendem a 240/260, e o hold
+  face-on não muda). O glow NÃO entra: ele tem termo próprio de
+  `localBandFade` e vale 0,0836 por dentro do disco.
+- **A cópia de CPU da galáxia morria de velhice.** 122,7 MiB (cinema) ficavam
+  no heap JS depois do upload, espelhando a VRAM pelo resto do filme.
+  `onUpload` solta o array; o preço é não reconstruir a galáxia numa perda de
+  contexto WebGL — que o app já não trata em lugar nenhum.
+- **`MARCH_B_RS` (60 RS) NÃO deve ser recalibrado** — as duas auditorias
+  recomendaram, as duas erraram. Com o olhar preso no GC, `b = |ro|·sin(φ)` e
+  o canto da tela dá b_max ≈ 22 RS no periastro: qualquer limiar baixo o
+  bastante para "acender" no clímax entra dentro de `DISK_OUT_RS` (26) e
+  recorta a borda do disco. Ele trabalha na aproximação e na saída, e é
+  inerte dentro de ~3 pc DE PROPÓSITO. O cabeçalho de `blackHole.ts` estava
+  desatualizado em dois pontos (periastro 4,6 pc/92 RS e disco 40 RS) e foi
+  disso que as duas tiraram a conclusão errada — **comentário podre custa
+  rodada de auditoria**.
+- **Fila medida que sobra, com o que falta para cada uma:** (1) `wrappedStars`
+  é a única camada com fade fixo em 1 — 296 k vértices com fetch dependente
+  submetidos no Ato IV, onde a própria ablação `?nowrap` já saiu bit-idêntica
+  nos dois gates; falta escolher a rampa (`leftDisk` corta seco e pode dar
+  pop; `env` é suave mas muda brilho na travessia) e medir. (2) A cadeia
+  inteira de carga (assets → bakes → `buildGalaxy`) cabe num Worker: 3,27 s
+  de `buildGalaxy` + 1,6 s de bakes, tudo CPU pura e determinística — mas
+  `galaxy.ts:132` e `:679` leem `window.location.search` sem guarda (os
+  irmãos `galacticModel.ts` e `shaders/common.ts` já têm) e os knobs
+  precisam ir por mensagem, não por `location` do worker. (3) Os 6 RTs da
+  cromosfera em RGBA8 valem 48 MiB no tier cinema (12 no alta, 3 no
+  performance) mas o canal G (`fil`) é escrito SEM clamp — exige
+  `min(fil,1.0)` antes, o que é mudança de pixel no Sol de perto, e sobra
+  risco de banding. (4) 30% dos bytes cartográficos são colunas mortas
+  (número exato conferido: 3.021.712/10.071.608) — mas é migração de schema
+  em ~8 arquivos com falha SILENCIOSA (offset errado devolve Float32
+  plausível); o 80% seguro é podar só `gaiaObProxyStars[3,6,7]` e
+  `dustDensity[4,5]` (2,77 MB), e `spiralAnchors[7]` NÃO pode sair (alimenta
+  o fit espiral offline). (5) Acima de 1440p o clímax inteiro é upscale do
+  buffer de 2,6 MP do march (b_max 22 < `uMarchB−6`), o que pela régua UX AAA
+  pesa mais que qualquer ALU — mas o conserto é dar teste próprio ao caminho
+  analítico, não mexer no limiar.
+
 ## A textura da população (rodada 28, 2026-08-04)
 
 Aberta por observação do dono na vista externa: o disco EXTERNO lê como
