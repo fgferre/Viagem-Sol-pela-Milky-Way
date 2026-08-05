@@ -333,7 +333,8 @@ valor da série.** A rodada 11 tinha reprovado com m=4 cravado em 0,259 (dez med
 provaram que era da EMISSÃO — os sprites mascaravam multiplicando a cena em screen-space).
 A **rodada de emissão 2 braços** (aprovada e feita em 2026-08-01) resolveu por modelo:
 emissão estelar com par dominante **Sct-Cen + Perseu** (symIndex ímpar; modulação pura,
-base 0,42 × (1 ± 1,0)) e **gás/H II/jovens uniformes em 4** (Drimmel) — `uniformWeights`
+base 0,42 × (1 ± profundidade) — a profundidade era 1,0 em todo raio até a rodada 30,
+que a fez cair a 0,5 entre 7,6 e 11,5 kpc) e **gás/H II/jovens uniformes em 4** (Drimmel) — `uniformWeights`
 agora de fato ligado nos mapas, `galMajorArmsGas` no raymarch, nós H II a 0,82 fixo.
 Mais dois ajustes medidos: braço das lâminas ~12% mais largo (sharpness −20%; largura ∝
 1/√sharpness — a razão m2/m4 com modulação pura é ĝ(2)/ĝ(4) da crista) e par de 3 kpc
@@ -680,10 +681,12 @@ não desenha dentro do virtual-time, o PNG existe, o Chrome sai 0, as duas
 vistas diferem, e a métrica devolve zeros bem formatados que entrariam no
 ledger como recorde. Agora `discMean` ≤ 0,001 aborta.
 
-**Ainda aberto:** `clumpOuter` grande em 0,429 contra 0,371 do alvo — é das
-LÂMINAS, não da população (`?nodisc=1` prova). E `clumpInner` em 0,199 contra
-0,231: o miolo tem estrutura de menos, provavelmente contraste de poeira.
-Nenhum dos dois se resolve mexendo em partícula.
+**Ficou aberto e foi FECHADO na rodada 30:** `clumpOuter` grande em 0,429
+contra 0,371 do alvo — a atribuição "é das LÂMINAS, não da população"
+(`?nodisc=1`) estava certa no componente e errada no NOME: não era textura,
+era o contraste braço/interbraço do disco externo. A suspeita de contraste
+de poeira no `clumpInner` continua não testada, e a rodada 30 mostrou por
+medição que ela é o suspeito errado (ver lá).
 
 ## Rodada 29 (2026-08-04) — o retículo escuro era paralaxe das 7 lâminas
 
@@ -717,6 +720,89 @@ face-on. Cadeia de atribuição que vale guardar:
   clumpError 0,2780→0,2886 (custo real pequeno; critério AAA: artefato
   visível > dívida numérica). Escala 130 pc é pior nos dois (apaga as
   centrais junto). `?lanethin=0` desliga, `=pc` varre.
+
+## Rodada 30 (2026-08-04) — o disco externo tinha dois braços demais
+
+Aberta pelos dois termos que a rodada 28 deixou (`clumpOuter` grande 0,4317
+contra 0,3705; `clumpInner` grande 0,1987 contra 0,2314). A atribuição
+mudou o NOME do problema antes de mudar qualquer dose.
+
+- **`clumpInner`/`clumpOuter` não medem "textura": medem a razão
+  braço/interbraço.** Ablação componente a componente na lâmina, todas com
+  default de identidade e controle conferido campo a campo: achatar o
+  ESQUELETO dos braços derruba tudo (clumpOuter 0,4317 → 0,2188, clumpInner
+  0,1987 → 0,0582); achatar a textura multiplicativa (fbm + filamento
+  espiral, o `mix(0,52; 1,24)`) move clumpOuter em 0,007 e clumpInner em
+  NADA; achatar a fenda filamentar do τ é neutro (0,4377, dentro do ruído).
+  O motivo é da régua: σ/μ entre células capta TODA estrutura de escala
+  ≥ L, então a variância mora na maior escala presente — e a textura,
+  medida, é só ~6,6% RMS em ~230 pc. **Não gastar rodada dosando textura
+  fina para mover agrupamento.**
+- **A régua nova enxerga um erro que a antiga integrava fora.**
+  `harmonicError` é a MÉDIA de A_m sobre 0,30–1,25 R90. Dumpando o perfil
+  RADIAL de A_2 (harness `prof.mjs`, cópia da métrica com `amp[2]` exposto):
+  nosso disco externo tinha m=2 = 0,40 contra 0,20 da recriação-alvo em
+  1,0–1,22 R90, e m=4 = 0,30 contra 0,35. Erro de FORMA RADIAL que a média
+  escondia porque o miolo compensava na direção contrária. R90 do quadro
+  face-on ≈ 9,0 kpc (câmera 32,5 kpc, fov 57°): o anel externo da régua é
+  9,0–11,0 kpc e o interno 3,2–7,7 kpc.
+- **O mecanismo, e é físico.** A dominância de dois braços é da população
+  estelar EVOLUÍDA (`renderWeight = 0,42·(1 ± 1)`, Drimmel/GLIMPSE), que é
+  concentrada; fora do círculo solar quem desenha o padrão é gás e
+  população jovem — quatro braços, o mesmo motivo do `uniformWeights` que
+  a poeira já usava. O modelo mantinha a modulação SATURADA (2 contra 0)
+  até 16,8 kpc. Agora a profundidade cai por rampa 7,6 → 11,5 kpc até 0,5:
+  na borda o par forte vale 3× o fraco em vez de infinito. **A soma dos
+  quatro pesos não depende da profundidade — o fluxo azimutal é conservado
+  por construção**, e o discMean confirma (0,1292 → 0,1301).
+- **Partícula e lâmina sob a MESMA lei.** As ~10⁵ partículas sorteadas para
+  o par fraco nasciam com alpha 0 em TODO raio (o "orçamento morto" da
+  rodada 12); agora existem além de ~9 kpc. Sem isso ficaria pincelada de
+  dois braços sobre luz de quatro — e a coerência PAGOU: clumpError
+  0,0929 → 0,0877 e grainOuter 0,1280 → 0,1257 (alvo 0,1236). Zero vértice
+  a mais: só peso.
+
+| termo | antes | depois | alvo |
+|---|---|---|---|
+| clumpError | 0,2886 | **0,0877** | 0 |
+| harmonicError | 0,0331 | **0,0289** | 0 |
+| edgeError | 0,4156 | 0,4170 | 0 |
+| skyError | 1,1231 | 1,1231 | 0 |
+| clumpOuter (4 escalas) | 0,496 / 0,479 / 0,462 / 0,432 | **0,439 / 0,421 / 0,402 / 0,384** | 0,449 / 0,423 / 0,401 / 0,371 |
+| grainOuter | 0,1275 | **0,1257** | 0,1236 |
+| discMean | 0,1292 | 0,1301 | 0,1175 |
+
+Os SEIS harmônicos andaram para o alvo (m=2 0,2602 → 0,2408 contra 0,2490;
+m=5 0,0651 → 0,0624 contra 0,0620, cravado). O edge é cego ao termo
+(+0,0014, um décimo do ruído): de perfil, redistribuição AZIMUTAL some na
+integral da visada. O céu foi medido A/B na MESMA sessão (o harness de
+captura clonado com `&armpair=1`) e deu 1,1231 nos dois estados — a faixa
+interna é o raymarch, não estas partículas; o 1,1093 do ledger anterior é
+deriva de sessão, não desta rodada. `?armpair=1` devolve o estado anterior
+EXATO nos dois gates (0,0331 / 0,2886 / 0,4156, campo a campo), lâminas e
+partículas juntas; `?armpr0= ?armpr1=` varrem a rampa.
+
+**Becos medidos (não repetir):** profundidade 0 (quatro braços iguais) passa
+do ponto — clumpError 0,2112 e harmonicError 0,0473, o disco externo fica
+MENOS agrupado que o alvo; a série é 1,0 → 0,2886 · 0,6 → 0,1204 · 0,5 →
+0,0929 · 0,45 → 0,0901 · 0,3 → 0,1190 · 0,0 → 0,2112, e entre 0,45 e 0,5 a
+diferença já é o ruído da régua. Rampa começando em 6 kpc morde o miolo
+(0,1603); rampa 9–13 kpc quase não age (0,2284). Amplitude da textura
+multiplicativa e da fenda filamentar do τ não são alavanca de agrupamento
+em escala nenhuma (medido acima) — e o espalhamento por texel tampouco.
+
+**O que sobra, com mecanismo novo: o miolo é problema de ESPECTRO, não de
+contraste.** `clumpInner` não se moveu (0,1987 contra 0,2314) e agora é 68%
+do clumpError restante. Não é falta de contraste de braço: as três escalas
+pequenas já batem (0,283 / 0,272 / 0,252 contra 0,295 / 0,279 / 0,260) e só
+a maior erra. Subir contraste sobe as quatro juntas e estoura as três que
+estão certas — a conta foi feita antes de tentar. O sinal está na queda de
+σ/μ de 135 pc para 1,1 kpc: o alvo perde 22%, nós perdemos 30%. A variância
+do alvo está concentrada em escalas GRANDES (complexos de 1–3 kpc, braços
+com quebras e esporões, arm strength variando com o raio — o A_2 da
+referência oscila de 0,41 a 0,02 dentro do próprio anel interno) e a nossa
+em escalas pequenas. Alavanca nomeada para a próxima: quebrar a
+CONTINUIDADE radial das cristas (segmentos e esporões), não somar textura.
 
 ## Decisões fechadas
 

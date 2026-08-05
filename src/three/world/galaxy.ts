@@ -21,6 +21,7 @@ import {
   LOCAL_ARM,
   ALL_ARMS,
   armActivityAtRadius,
+  armPairDepth,
   armThetaAtRadius,
   armWidthPc,
   flareAtRadius,
@@ -401,17 +402,23 @@ export function buildGalaxy(
     const youngResponse = effectiveYoungResponseAt(lx, ly);
     // O braço DOMINANTE tem de ser mais brilhante que o interbraço — mas
     // por pouco (contraste 2–4 do alvo; calibrado na era dos 4 braços).
-    // Desde a rodada 12 o par fraco (Sgr-Car, Norma) tem renderWeight 0:
-    // as partículas sorteadas para ele nascem com alpha 0 — a crista
-    // deles na emissão estelar é deliberadamente ausente (modelo Drimmel
-    // 2 braços; o gás é quem os desenha). É orçamento morto de ~10⁵
-    // partículas por build; realocar o sorteio é trabalho da unificação
-    // 2, que reescreve a população inteira.
+    // Desde a rodada 12 o par fraco (Sgr-Car, Norma) tinha renderWeight 0
+    // em TODO raio: as partículas sorteadas para ele nasciam com alpha 0
+    // (modelo Drimmel 2 braços; o gás é quem os desenha). Na rodada 30 a
+    // profundidade da modulação passou a cair no disco externo — mesma
+    // lei das lâminas, `armPairDepth` — e essas partículas voltam a
+    // existir além de ~9 kpc, onde a população evoluída já não impõe os
+    // dois braços. Deixar partícula e lâmina com leis diferentes seria
+    // pincelada em dois braços sobre luz de quatro.
     // Rodada 15, medido e revertido: subir o interbraço para 0,76 não
     // moveu m=4 e piorou m=1 e grain — o m=4 residual não é vale de
     // partícula.
+    const pairWeight =
+      arm.pairSign !== undefined
+        ? 0.42 * (1 + armPairDepth(r) * arm.pairSign)
+        : arm.renderWeight ?? arm.weight;
     const armWeight = inArm
-      ? (arm.renderWeight ?? arm.weight) * (0.72 + youngResponse * 0.38)
+      ? pairWeight * (0.72 + youngResponse * 0.38)
       : 0.70;
     put(
       lx, ly, lz,

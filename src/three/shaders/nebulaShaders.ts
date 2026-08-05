@@ -122,7 +122,9 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     float filaments = fbm(q * 0.0021 + 37.1, 2);
     // Variante de GÁS (4 braços parecidos) para TODO o raymarch,
     // inclusive o termo estelar logo abaixo — decisão, não descuido:
-    // com renderWeight 0,42·(1±1) o par fraco zera, e um realce estelar
+    // com o peso estelar 0,42·(1±profundidade) o par fraco zera dentro
+    // do círculo solar (rodada 30: a profundidade só cai de 7,6 a
+    // 11,5 kpc, e o Sol está em 8,15), e um realce estelar
     // 2-braços-com-zeros apagaria as nuvens estelares de Sagitário da
     // faixa e decorrelacionaria estrelas do gás na vista interna, que
     // ainda não tem gate (panorama ESO, lacuna 2 do NORTE). Quando o

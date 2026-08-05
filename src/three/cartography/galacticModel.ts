@@ -28,6 +28,38 @@ const WARP_TUNE = (() => {
   return Number.isFinite(v) ? v : 1;
 })();
 
+const qnum = (key: string, fallback: number) => {
+  if (typeof window === 'undefined') return fallback;
+  const v = parseFloat(new URLSearchParams(window.location.search).get(key) ?? '');
+  return Number.isFinite(v) ? v : fallback;
+};
+/**
+ * PROFUNDIDADE da modulação m=2 no disco EXTERNO (rodada 30).
+ *
+ * A dominância de dois braços é da população estelar EVOLUÍDA, que é
+ * concentrada: fora do círculo solar quem desenha o padrão é gás e
+ * população jovem, e essa é de quatro braços (Drimmel; o mesmo motivo
+ * do `uniformWeights`). Manter a modulação saturada até a borda dava
+ * um disco externo de dois braços fortes sobre vazio — medido no
+ * quadro face-on: m=2 0,40 contra 0,20 da recriação-alvo em
+ * 1,0–1,22 R90, com m=4 0,30 contra 0,35.
+ *
+ * A modulação é `0,42 · (1 ± profundidade)`: a SOMA dos quatro braços
+ * não depende da profundidade, então o fluxo azimutal é conservado por
+ * construção — o que muda é só a repartição entre o par forte e o
+ * fraco. `?armpair=1` recupera o estado anterior EXATO.
+ *
+ * 0,5 = o par forte vale 3× o fraco na borda, contra ∞ (2 contra 0)
+ * antes. Varrido: 1,0 → clumpError 0,2886 · 0,6 → 0,1204 · 0,5 →
+ * 0,0929 · 0,45 → 0,0901 · 0,3 → 0,1190 · 0,0 → 0,2112 (passa do
+ * ponto: aí o disco externo fica MENOS agrupado que o alvo). A rampa
+ * 7,6–11,5 kpc também é varrida: 6–10 kpc morde o miolo (0,1603) e
+ * 9–13 kpc quase não age (0,2284). `?armpr0= ?armpr1=` varrem.
+ */
+const ARM_PAIR_DEPTH = qnum('armpair', 0.5);
+const ARM_PAIR_R0 = qnum('armpr0', 7600);
+const ARM_PAIR_R1 = qnum('armpr1', 11500);
+
 export const GALACTIC_MODEL = {
   sunRadiusPc: 8_150,
   sunHeightPc: 5.5,
@@ -66,6 +98,8 @@ interface SpiralArmDefinition {
   };
   /** posição do braço na espinha simétrica (0..armCount-1) */
   readonly symIndex?: number;
+  /** lado do par dominante: +1 forte, −1 fraco (só as 4 famílias) */
+  readonly pairSign?: 1 | -1;
   /** peso usado no render; ver SPIRAL_ARMS */
   readonly renderWeight?: number;
   readonly outerContinuation?: {
@@ -115,9 +149,25 @@ export const SPIRAL_ARMS: readonly SpiralArmDefinition[] =
     // infravermelho estelar (Drimmel/GLIMPSE); par ~antipodal ⇒ m=1
     // neutro. Estava invertido (Sgr-Car + Norma), que a métrica de
     // amplitude não vê mas o gabarito de anatomia sim.
+    // sinal do par: +1 no dominante (symIndex ímpar), −1 no fraco. A
+    // profundidade deixou de ser constante — ver ARM_PAIR_DEPTH e
+    // armPairDepth(radiusPc).
+    pairSign: ([3, 0, 1, 2][index] % 2 === 1 ? 1 : -1) as 1 | -1,
     renderWeight:
       0.42 * (1 + 1.0 * ([3, 0, 1, 2][index] % 2 === 1 ? 1 : -1)),
   }));
+
+/**
+ * Profundidade da modulação m=2 no raio. 1 dentro (par dominante puro),
+ * ARM_PAIR_DEPTH fora. Espelho exato do `galArmPairDepth` em GLSL.
+ */
+export function armPairDepth(radiusPc: number) {
+  const x = Math.min(
+    1,
+    Math.max(0, (radiusPc - ARM_PAIR_R0) / (ARM_PAIR_R1 - ARM_PAIR_R0))
+  );
+  return 1 + (ARM_PAIR_DEPTH - 1) * (x * x * (3 - 2 * x));
+}
 
 /**
  * ESPINHA SIMÉTRICA — a geometria global.
@@ -503,7 +553,11 @@ export function glMajorArms(
         sharpness,
         arm.symIndex
       ) *
-      (uniformWeights ? 0.82 : arm.renderWeight ?? arm.weight) *
+      (uniformWeights
+        ? 0.82
+        : arm.pairSign !== undefined
+          ? 0.42 * (1 + armPairDepth(radiusPc) * arm.pairSign)
+          : arm.renderWeight ?? arm.weight) *
       gate;
   }
   for (const arm of INNER_ARMS) {
@@ -554,12 +608,20 @@ function glslGate(
     ${glslNumber(weight)};`;
 }
 
+/** peso de render em GLSL: expressão viva no par dominante, número nos demais */
+function glslArmWeight(arm: SpiralArmDefinition) {
+  return arm.pairSign === undefined
+    ? glslNumber(arm.renderWeight ?? arm.weight)
+    : `(0.42 * (1.0 + galArmPairDepth(radiusPc) * ${glslNumber(arm.pairSign)}))`;
+}
+
 function glslArmCall(
   arm: SpiralArmDefinition,
   phaseAtSunRad: number,
   gateName: string,
-  weight = arm.renderWeight ?? arm.weight
+  weight: string | number = glslArmWeight(arm)
 ) {
+  const w = typeof weight === 'number' ? glslNumber(weight) : weight;
   return `galArm(
       theta,
       radiusPc,
@@ -568,7 +630,7 @@ function glslArmCall(
       ${glslNumber(tanPitch(arm.pitchOuterDeg))},
       sharpness,
       ${glslNumber(arm.symIndex ?? -1)}
-    ) * ${glslNumber(weight)} * ${gateName}`;
+    ) * ${w} * ${gateName}`;
 }
 
 /**
@@ -668,6 +730,17 @@ float galArm(
   );
   float d = galWrappedDistance(theta, target);
   return exp(-d * d * sharpness * galInnerTaper(radiusPc));
+}
+
+// Espelho de armPairDepth(): a modulação m=2 é da população evoluída,
+// concentrada — no disco externo os quatro braços tendem a se igualar.
+// A soma dos quatro pesos não depende dela: fluxo azimutal conservado.
+float galArmPairDepth(float radiusPc) {
+  return mix(
+    1.0,
+    ${glslNumber(ARM_PAIR_DEPTH)},
+    smoothstep(${glslNumber(ARM_PAIR_R0)}, ${glslNumber(ARM_PAIR_R1)}, radiusPc)
+  );
 }
 
 float galMajorArms(float theta, float radiusPc, float sharpness) {
