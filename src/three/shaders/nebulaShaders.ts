@@ -11,6 +11,25 @@ import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
 const warm = WORLD.gasColorWarm.map((v) => v.toFixed(3)).join(', ');
 
+const qnum = (k: string, d: number) => {
+  if (typeof window === 'undefined') return d;
+  const v = parseFloat(new URLSearchParams(window.location.search).get(k) ?? '');
+  return Number.isFinite(v) ? v : d;
+};
+// A POEIRA da faixa mora na camada de GÁS, não na das estrelas: mesma
+// altura de escala que `diskGasEnvelope` já usa no raymarch (70 pc, com
+// flare) em vez dos 210 pc do disco fino estelar. ?dusth= varre; 210
+// devolve o estado anterior à rodada 32.
+const DUSTH = qnum('dusth', 70);
+const DH0 = DUSTH.toFixed(1);
+const DH1 = (DUSTH * (460 / 210)).toFixed(1);
+// Extinção DIFUSA da faixa, em A_V mag/kpc no plano ao raio solar
+// (?bandav=; 0 devolve o estado anterior à rodada 32). O fator
+// 2,6316 = 1/(1000 · 1,0857 · 0,00035) converte mag/kpc nas unidades
+// de `dust` do integrador.
+const BANDAV = qnum('bandav', 0.15);
+const DIFFUSE = (BANDAV * 2.6316).toFixed(4);
+
 export const NEBULA_VERT = /* glsl */ `
 void main() {
   gl_Position = vec4(position.xy, 0.999, 1.0);
@@ -102,6 +121,15 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     float thickHeight = mix(610.0, 1080.0, flare);
     float thinDisk =
       exp(-radius / 5200.0) * exp(-abs(z) / thinHeight) * edge;
+    // A POEIRA mora numa camada mais FINA que as estrelas. Enquanto a
+    // poeira herdava o perfil vertical estelar, emissão e absorção eram
+    // proporcionais em TODA altura: a função-fonte j/κ ficava constante
+    // em z e a faixa saturava no MESMO valor em qualquer latitude —
+    // nenhuma fenda podia existir, por construção. Coluna perpendicular
+    // preservada (thinHeight/dustHeight), então só a FORMA muda.
+    float dustHeight = mix(${DH0}, ${DH1}, flare);
+    float dustDisk = exp(-radius / 5200.0) * exp(-abs(z) / dustHeight) *
+      edge * (thinHeight / dustHeight);
     float thickDisk =
       exp(-radius / 6500.0) * exp(-abs(z) / thickHeight) * edge * 0.105;
 
@@ -149,8 +177,16 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
 
     // Poeira fria acumula na camada mais fina e recorta o centro em
     // filamentos negros, como as grandes fendas da astrofotografia.
-    float dustProc = thinDisk * mix(0.58, 1.35, arms) *
+    float dustProc = dustDisk * mix(0.58, 1.35, arms) *
       smoothstep(0.44, 0.76, broad * 0.68 + filaments * 0.42);
+    // Componente DIFUSA, ancorada em A_V: a poeira acima é filamentar
+    // (o smoothstep deixa passar ~5% do volume) e integrava 0,004
+    // mag/kpc no plano — duas ordens de grandeza abaixo do meio
+    // interestelar real. Sem ela a faixa é opticamente FINA e nenhuma
+    // fenda pode existir: extinção que não chega a τ~1 não escurece
+    // nada, por mais bem desenhada que seja.
+    float dustDiffuse = ${DIFFUSE} *
+      exp(-(radius - 8150.0) / 5200.0) * exp(-abs(z) / dustHeight) * edge;
     // Onde o APOGEE mediu estruturas densas (cobertura começa a
     // ~1 kpc do Sol; as fendas locais tipo Great Rift continuam
     // procedurais), a fenda real SOMA-SE ao procedural; o nível
@@ -161,7 +197,7 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     ).rg;
     float obsLanes = smoothstep(0.56, 0.88, cart.r);
     float dustObs = obsLanes * exp(-abs(z) / 150.0) * 2.2 * mix(0.8, 1.15, arms);
-    float dust = dustProc + dustObs * cart.g * uCartBlend;
+    float dust = dustProc + dustDiffuse + dustObs * cart.g * uCartBlend;
 
     float towardCenter = clamp(bulge * 0.6 + exp(-radius / 2600.0), 0.0, 1.0);
     vec3 diskColor = mix(

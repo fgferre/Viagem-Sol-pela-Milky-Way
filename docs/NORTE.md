@@ -225,10 +225,16 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    zero clipping, p99 147/255): **bulgeAnti 5,524 vs alvo 5,568 CRAVA, e
    skyError 3,719 → 1,1093 — baseline OFICIAL do protocolo v3.** O look
    do app segue soberano (olho nu ≠ astrofoto); a revelação é do GATE.
-   Deficiências honestas que sobram, em ordem: **(1) rift 0,036 vs 0,244**
-   — o stretch expõe que o vale do Great Rift tem piso luminoso demais
-   (falta profundidade óptica real nas fendas internas — o análogo interno
-   do τ0 da fenda edge); **(2) colour −0,065 vs 0,064** — a revelação
+   Deficiências honestas que sobram, em ordem: ~~**(1) rift 0,036 vs
+   0,244**~~ — **FECHADO EM MECANISMO NA RODADA 32** (seção própria):
+   não era piso luminoso no vale e sim faixa opticamente FINA (a poeira
+   da faixa integrava 0,004 mag/kpc contra ~1,5 do meio real), com a
+   poeira herdando o perfil vertical das ESTRELAS — j/κ constante em z,
+   fenda impossível por construção. rift 0,0369 → **0,1807** e skyError
+   1,1230 → **1,0767**; o que sobra do termo é poeira LOCAL (Aquila
+   Rift, 150–600 pc) nos bins l = −34°…−19°, mais a re-dosagem conjunta
+   bojo↔poeira. A espessura da faixa (6,58° vs 4,41°) passa a ser o
+   maior termo do gate; **(2) colour −0,065 vs 0,064** — a revelação
    per-RGB dessatura além do alvo (β=0,1 dá +0,071 quase exato; o par
    dose↔cor precisa de uma rodada própria, e chromsat interno é candidato);
    **(3) purp 0,062 vs 0,078** — independe do tom: população (H II /
@@ -877,6 +883,112 @@ a janela radial até 10,5 kpc não melhora o anel externo (0,0618 contra
 0,0612 com 9,2 kpc). Knobs: `?armbrk=` amplitude (0 = estado da rodada
 30 EXATO, conferido campo a campo), `?armbrkl=` comprimento de onda ao
 longo do braço a 5,5 kpc, `?armbrkr0= ?armbrkr1=` janela radial.
+
+## Rodada 32 (2026-08-05) — o Great Rift não existia porque a faixa era opticamente FINA
+
+O pior termo de qualquer gate do projeto (rift 0,036 contra 0,244) e a
+primeira rodada com **conselho externo multi-modelo**: três consultores
+independentes (Grok, Kimi K3, Qwen 3.8 Max) leram o mesmo dossiê e o
+mesmo código. Todos os três convergiram na mesma família de hipóteses —
+“sobra luz no vale” — e **os três erraram**. A régua da casa (nenhuma
+hipótese entra sem ablação) devolveu o dono em seis capturas.
+
+**O passo 0 que ninguém pediu e decidiu tudo.** Antes de qualquer
+ablação, despejar o rift POR BIN e o perfil em b (33 amostras de −16° a
++16°) mostrou que em **10 dos 11 bins o mínimo caía na BORDA da janela
+de busca (|b| = 10°)**, não numa fenda: a faixa é tão larga que ainda
+está subindo em ±10°, o mínimo sai no limite e o termo lê ≈ 0. Não era
+“vale raso” — era **vale nenhum**. E onde havia uma fenda de verdade
+(l = 26,3°, b = +4°: 1,21 contra flanco 1,64), o mínimo global da janela
+a ignorava. O painel inteiro estava respondendo à pergunta errada.
+
+**Placar do conselho** (hipótese × quem propôs × o que a medição disse):
+
+| hipótese | Grok | Kimi | Qwen | veredito medido |
+|---|---|---|---|---|
+| estrelas aditivas não extintas enchem o vale | H3 | **H1** | H3 | **REFUTADA** — `?nocat=1&nowrap=1` rift 0,0369 → **0,0107**: sem estrelas o termo PIORA |
+| a poeira local do raymarch emite em vez de só extinguir | **H1** | H3 | H2 | **REFUTADA como dona** — `?emisk=0` rende +0,013 e destrói bulgeAnti (5,47 → 11,6) |
+| bloom / lift / compressão levantam o piso | H5 | H4 | H4 | **REFUTADA** — `?nobloom=1`: 0,0369 → 0,0368 |
+| véu de fundo `GAS_COOL` | citado | citado | H4 | **REFUTADA** — `?veilk=0`: +0,0015 |
+| falta τ na faixa (a suspeita da equipe) | contestada | H2 | **H1** | **CONFIRMADA** — `?dustk=3` sozinho: 0,0369 → 0,0909, e é o único knob que MELHORA o skyError junto |
+| handoff `ObservedClouds`/nearFade | H2 | — | — | não medido: o dono apareceu antes |
+| métrica com lane estreita/deslocada | — | — | H5 | **PARCIAL** — não é desalinhamento, é a borda da janela (passo 0) |
+
+**O mecanismo, em uma conta.** A poeira procedural da faixa integra
+**0,004 mag/kpc** no plano (porte exato de `fbm`/`vnoise` para Node,
+24 passos quadráticos, média em l ∈ [−35°, 45°]) contra ~1,5 mag/kpc do
+meio interestelar real — **duas ordens de grandeza**. Extinção que nunca
+chega a τ ~ 1 não escurece nada, por melhor que seja o desenho: o
+`smoothstep(0,44; 0,76)` deixa passar ~5% do volume e o que sobra é
+filamento sem coluna. A faixa era opticamente fina, e nenhuma fenda pode
+se formar numa faixa opticamente fina.
+
+**A correção, duas peças que só funcionam juntas.**
+
+1. **Componente DIFUSA ancorada em A_V** (`?bandav=`, mag/kpc no plano
+   ao raio solar; o fator 2,6316 = 1/(1000 · 1,0857 · 0,00035) converte
+   para as unidades de `dust`). É matéria que faltava, não escurecimento
+   pintado.
+2. **A poeira mora na camada de GÁS, não na das estrelas** — h = 70 pc
+   (a mesma altura que `diskGasEnvelope` já usa no raymarch), não os
+   210 pc do disco fino estelar, com a coluna perpendicular preservada.
+   **Enquanto poeira e estrelas dividiam o mesmo perfil vertical, a
+   função-fonte j/κ era constante em z e a faixa saturava no MESMO valor
+   em qualquer latitude: fenda impossível por construção.**
+
+A peça 2 sozinha é ruído (`?dusth=105/75` movem 0,0004) — porque molda
+uma componente que não carrega τ. A peça 1 sozinha, a h = 210 pc, custa
+o dobro em bulgeAnti pelo mesmo rift. Juntas, a altura vira alavanca de
+primeira ordem: a **bandav = 0,8** o mesmo rift sai com bulgeAnti 2,441
+(h = 210), 3,354 (h = 125) e 3,895 (h = 90) — concentrar a poeira dá
+MAIS fenda e MENOS dano, que é a assinatura do mecanismo certo.
+
+| termo | antes | depois | alvo |
+|---|---|---|---|
+| **rift** | 0,0369 | **0,1807** | 0,2444 |
+| skyError (A/B na MESMA sessão) | 1,1230 | **1,0767** | 0 |
+| bulgeAnti | 5,468 | 5,116 | 5,568 |
+| espessura (média das 24 longitudes) | 6,198° | 6,583° | 4,406° |
+| colour | −0,0649 | −0,0668 | 0,0641 |
+| purp | 0,0620 | 0,0652 | 0,0784 |
+| perfil por longitude (erro médio) | 0,2746 | 0,2700 | 0 |
+| harmonicError · edgeError · clumpError · discMean | 0,0371 · 0,4181 · 0,0587 · 0,1299 | **idênticos** | — |
+
+**Rift 4,9× e o skyError cai junto** — os gates externos ficam
+bit-idênticos por construção (a mudança vive só em `BAND_INTEGRATION`,
+o fragment do LUT da faixa; fora do disco `uFade = 0` zera o raymarch
+inteiro), e o `NEBULA_MAIN` — os 6,9 ms — não tem uma linha alterada,
+então não há custo novo no caminho quente. O LUT (256×128, re-renderizado
+só quando a câmera anda > 2 pc) ganha ~5 ALU por passo.
+
+**O custo honesto é o bulgeAnti**: 1,8% → 8,1% de desvio. É físico e
+esperado — extinção real escurece o centro mais que o anticentro — e
+significa que o **bojo intrínseco da LUT (amplitude 2,45) foi calibrado
+sob extinção quase nula**. Re-dosar bojo e poeira JUNTOS é a rodada
+seguinte, e é o mesmo par que trava a dose completa: a 1,5 mag/kpc
+(o valor real) o gate explode (bulgeAnti 2,61, skyError 2,28), porque o
+perfil de EMISSÃO da faixa ainda não é físico (espessura 6,2° contra
+4,4°). Ancoramos a poeira em 0,15 mag/kpc — **um décimo do real, ainda
+conservador** — e a distância até o valor físico é agora um número
+conhecido, não uma suspeita.
+
+**O que a fenda virou, bin a bin:** nos bins centrais o mínimo agora é
+encontrado em b ≈ 0 com flancos de verdade — l = −3,8° passou de −0,010
+para **0,494**, l = +3,8° de 0,281 para **0,564**, l = −11,3° de −0,019
+para **0,391**. Os bins externos (l = −34° a −19°) seguem com o mínimo
+na borda: é lá que o panorama ESO tem o Aquila Rift em b ≈ +3°…+9°, e é
+poeira LOCAL (150–600 pc) que o modelo ainda não tem — o próximo alvo do
+termo.
+
+**Becos medidos (não repetir):** altura de escala da poeira sozinha
+(ruído enquanto a componente difusa não existe); comprimento de escala
+radial estelar da faixa `?bandrd=2600` (bulgeAnti sobe para 6,955 mas
+skyError vai a 1,4934 — o perfil por longitude paga); dose alta da
+poeira já existente `?dustk=12` (rift 0,235 mas bulgeAnti 4,542 e
+skyError 1,185: multiplica também as fendas APOGEE, que já estavam em
+nível físico); `?dustk=24` passa do alvo (0,3173) e custa 1,4638.
+Knobs: `?bandav=` (0 = estado da rodada 31 EXATO, conferido termo a
+termo) e `?dusth=` (210 = idem).
 
 ## Decisões fechadas
 
