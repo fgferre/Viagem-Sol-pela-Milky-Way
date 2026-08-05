@@ -60,6 +60,63 @@ const ARM_PAIR_DEPTH = qnum('armpair', 0.5);
 const ARM_PAIR_R0 = qnum('armpr0', 7600);
 const ARM_PAIR_R1 = qnum('armpr1', 11500);
 
+/**
+ * QUEBRAS DA CRISTA (rodada 31) — amplitude modulada AO LONGO do braço.
+ *
+ * O miolo do disco não erra por falta de contraste braço/interbraço: as
+ * três escalas pequenas do `clumpInner` já batem e só a maior (1,1 kpc)
+ * fica baixa. É erro de ESPECTRO — o alvo perde 22% de σ/μ de 135 pc a
+ * 1,1 kpc e nós perdíamos 30%, porque nossos braços eram FITAS
+ * CONTÍNUAS e a variância do alvo mora em estruturas de 1–3 kpc.
+ *
+ * Braço real é segmentado: HI/CO mostram quebras, ramificações e
+ * esporões a cada poucos kpc (a de Perseu é a famosa). A crista ganha um
+ * ganho multiplicativo de média zero.
+ *
+ * A COORDENADA é o que importa, e custou uma ablação: com o ganho escrito
+ * em RAIO (`n(R)`) ele varia na direção ATRAVÉS do braço, a célula de
+ * 1,1 kpc da régua o integra fora e o termo grande CAI. O eixo certo é o
+ * conjugado de `v = θ − ln R/tan p` no plano:
+ *
+ *     a = ln R + θ/tan p     (∇a ⟂ ∇v)
+ *
+ * `a` é constante ao atravessar o braço e cresce ao percorrê-lo. Com
+ * K adimensional o comprimento de onda FÍSICO ao longo do braço é
+ * 2π·R·sin p/K — cresce com o raio, como a estrutura do disco.
+ *
+ * O campo é ÚNICO para o disco inteiro, não um por braço: as curvas
+ * `a = const` cortam os quatro braços em RAIOS diferentes (a razão entre
+ * raios de corte de braços vizinhos é e^(π·sin p·cos p) ≈ 1,39), então a
+ * mesma senoide já entrega quebras escalonadas — sem anel, sem fase por
+ * braço.
+ *
+ * ONDE se aplica é metade do achado: sobre `galMajorArms` a modulação
+ * bate no `clamp(…, 0, 1)` do próprio esqueleto (a crista do par forte já
+ * vale 0,84 de 1), o corte come a metade CLARA e sobra perda de contraste
+ * — m=2/m=4/m=6 caíram junto (0,2360/0,1958/0,0833 contra 0,2398/0,2004/
+ * 0,0872 do estado anterior, todos indo para longe do alvo). Ela mora
+ * onde a luz do braço é LINEAR: o excesso sobre o piso de interbraço na
+ * lâmina e o alpha da partícula. No domínio linear a mesma amplitude
+ * 0,8 deixa m=2/m=4 intactos.
+ *
+ * Amplitude varrida com λ 4200 (clumpError): 0,40 → 0,0598 · 0,45 →
+ * 0,0587 · 0,50 → 0,0612 · 0,60 → 0,0665 · 0,80 → 0,0845 (aí as três
+ * escalas pequenas passam do alvo). λ varrido a 0,8: 2200 → 0,0856 ·
+ * 3000 → 0,0908 · 4200 → 0,0845 · 5600 → 0,0816 mas com m=6 em 0,1068
+ * (o comprimento de onda entra na banda medida m ≤ 6 — 4200 fica em
+ * m ≈ 8 e é neutro nas harmônicas). `?armbrk=0` devolve o estado da
+ * rodada 30 EXATO; `?armbrkl= ?armbrkr0= ?armbrkr1=` varrem.
+ */
+const ARM_BREAK = qnum('armbrk', 0.45);
+/** comprimento de onda ao longo do braço (pc) medido a R = 5,5 kpc */
+const ARM_BREAK_LAMBDA = Math.max(qnum('armbrkl', 4200), 200);
+const ARM_BREAK_R0 = qnum('armbrkr0', 7600);
+const ARM_BREAK_R1 = qnum('armbrkr1', 9200);
+/** 1/tan(12,5°) — o mesmo pitch da espinha e do referencial espiral */
+const ARM_BREAK_INV_TAN = 1 / 0.2216947;
+/** K adimensional: λ é medido a 5,5 kpc e vale 2π·R·sin(12,5°)/K */
+const ARM_BREAK_K = (2 * Math.PI * 5_500 * 0.2164396) / ARM_BREAK_LAMBDA;
+
 export const GALACTIC_MODEL = {
   sunRadiusPc: 8_150,
   sunHeightPc: 5.5,
@@ -167,6 +224,24 @@ export function armPairDepth(radiusPc: number) {
     Math.max(0, (radiusPc - ARM_PAIR_R0) / (ARM_PAIR_R1 - ARM_PAIR_R0))
   );
   return 1 + (ARM_PAIR_DEPTH - 1) * (x * x * (3 - 2 * x));
+}
+
+/**
+ * Ganho da crista ao longo do braço — média zero, janela radial que
+ * termina antes do anel externo da régua (que já mede no alvo).
+ * Espelho exato de `galArmBreak` em GLSL.
+ */
+export function armBreakGain(radiusPc: number, theta: number) {
+  if (ARM_BREAK === 0) return 1;
+  const t =
+    ARM_BREAK_K *
+    (Math.log(Math.max(radiusPc, 180) / GALACTIC_MODEL.sunRadiusPc) +
+      theta * ARM_BREAK_INV_TAN);
+  const gate =
+    smoothstepTs(2_500, 3_800, radiusPc) *
+    (1 - smoothstepTs(ARM_BREAK_R0, ARM_BREAK_R1, radiusPc));
+  const n = 0.62 * Math.sin(t) + 0.38 * Math.sin(1.61 * t + 2.1);
+  return Math.max(0, 1 + ARM_BREAK * gate * n);
 }
 
 /**
@@ -741,6 +816,30 @@ float galArmPairDepth(float radiusPc) {
     ${glslNumber(ARM_PAIR_DEPTH)},
     smoothstep(${glslNumber(ARM_PAIR_R0)}, ${glslNumber(ARM_PAIR_R1)}, radiusPc)
   );
+}
+
+// Espelho de armBreakGain(): a crista do braço é SEGMENTADA. O eixo é
+// a = ln R + θ/tan p, o conjugado de v no plano — constante ao
+// ATRAVESSAR o braço, crescente ao percorrê-lo. NÃO entra no esqueleto:
+// lá bate no clamp e come a metade clara da modulação. Quem chama é a
+// lâmina, sobre o excesso de luz do braço, que é linear.
+// Com amplitude 0 esta função é a constante 1 e some do shader.
+${
+  ARM_BREAK === 0
+    ? 'float galArmBreak(float radiusPc, float theta) { return 1.0; }'
+    : `float galArmBreak(float radiusPc, float theta) {
+  float t = ${glslNumber(ARM_BREAK_K)} *
+    (log(max(radiusPc, 180.0) / GAL_SUN_RADIUS) +
+     theta * ${glslNumber(ARM_BREAK_INV_TAN)});
+  float gate = smoothstep(2500.0, 3800.0, radiusPc) *
+    (1.0 - smoothstep(
+      ${glslNumber(ARM_BREAK_R0)},
+      ${glslNumber(ARM_BREAK_R1)},
+      radiusPc
+    ));
+  float n = 0.62 * sin(t) + 0.38 * sin(1.61 * t + 2.1);
+  return max(0.0, 1.0 + ${glslNumber(ARM_BREAK)} * gate * n);
+}`
 }
 
 float galMajorArms(float theta, float radiusPc, float sharpness) {

@@ -21,6 +21,7 @@ import {
   LOCAL_ARM,
   ALL_ARMS,
   armActivityAtRadius,
+  armBreakGain,
   armPairDepth,
   armThetaAtRadius,
   armWidthPc,
@@ -417,8 +418,14 @@ export function buildGalaxy(
       arm.pairSign !== undefined
         ? 0.42 * (1 + armPairDepth(r) * arm.pairSign)
         : arm.renderWeight ?? arm.weight;
+    // Rodada 31: a crista é SEGMENTADA. A mesma lei das lâminas —
+    // partícula e lâmina sob o mesmo contrato, como na rodada 30 — só
+    // que aqui o ganho pesa o brilho da partícula de braço em vez da
+    // densidade da lâmina. Fora do braço não há crista para quebrar.
     const armWeight = inArm
-      ? pairWeight * (0.72 + youngResponse * 0.38)
+      ? pairWeight *
+        (0.72 + youngResponse * 0.38) *
+        armBreakGain(r, Math.atan2(ly, lx))
       : 0.70;
     put(
       lx, ly, lz,

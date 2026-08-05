@@ -514,7 +514,14 @@ void main() {
   // O braço é uma sobredensidade de ~2×, não um filamento sobre o vazio;
   // quem separa os braços é o perfil radial íngreme e a poeira. Zerar o
   // interbraço dava contraste 10–44 e um disco de fitas sobre preto.
-  float structureLight = mix(0.50, 1.0, armDensity) * clumps;
+  // QUEBRAS DA CRISTA (rodada 31): o EXCESSO do braço sobre o piso de
+  // interbraço é modulado ao longo da crista, com média 1. Aqui, e não
+  // dentro de galMajorArms: lá a modulação bate no clamp do esqueleto,
+  // que corta a metade clara e vira perda de contraste (m=2/m=4/m=6
+  // caindo juntos, medido). Este ponto é linear — o piso 0,50 não se
+  // move e o fluxo do braço é conservado por construção.
+  float structureLight =
+    mix(0.50, 1.0, armDensity * galArmBreak(radiusPc, theta)) * clumps;
 
   // O mapa já fez o split macro observado/inferido; a mesma microtextura
   // fina apenas resolve subestrutura. APOGEE refina a extinção local.

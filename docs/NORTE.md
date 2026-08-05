@@ -803,6 +803,80 @@ com quebras e esporões, arm strength variando com o raio — o A_2 da
 referência oscila de 0,41 a 0,02 dentro do próprio anel interno) e a nossa
 em escalas pequenas. Alavanca nomeada para a próxima: quebrar a
 CONTINUIDADE radial das cristas (segmentos e esporões), não somar textura.
+**Executada na rodada 31 — a alavanca era essa mesmo, mas nem a
+coordenada nem o ponto de aplicação eram os óbvios (ver abaixo).**
+
+## Rodada 31 (2026-08-04) — os braços eram fitas contínuas
+
+A alavanca que a rodada 30 nomeou, executada. Braço real é SEGMENTADO
+(HI/CO mostram quebras, ramificações e esporões a cada poucos kpc; a de
+Perseu é a famosa), e a crista passou a levar um ganho multiplicativo de
+média zero ao longo de si mesma. **Duas ablações refutadas antes de a
+terceira pagar — e as duas ensinam mais que a dose.**
+
+- **A COORDENADA. Ganho escrito em RAIO não serve.** Parece natural —
+  seguir a crista de um espiral logarítmico é andar em R — mas o campo
+  `n(R)` varia na direção ATRAVÉS do braço, e a célula de 1,1 kpc da
+  régua o integra fora: `clumpInner` grande CAIU (0,1987 → 0,1935) e
+  `clumpOuter` subiu junto. O eixo certo é o conjugado de
+  `v = θ − ln R/tan p` no plano, `a = ln R + θ/tan p` (∇a ⟂ ∇v):
+  constante ao atravessar o braço, crescente ao percorrê-lo. Com o eixo
+  trocado e nada mais, o mesmo knob subiu as quatro escalas do miolo.
+  **Um campo só serve para o disco inteiro**: as curvas `a = const`
+  cortam braços vizinhos em raios que diferem por e^(π·sin p·cos p) ≈
+  1,39×, então as quebras já saem escalonadas — sem anel, sem fase por
+  braço, e a fase por braço foi medida e não paga.
+- **O LUGAR. Sobre `galMajorArms` a modulação bate no clamp.** A crista
+  do par forte já vale 0,84 de 1: com ganho 1,8 o topo é cortado, sobra
+  só a metade escura e o resultado líquido é PERDA de contraste — m=2,
+  m=4 e m=6 caindo juntos (0,2360/0,1958/0,0833 contra 0,2398/0,2004/
+  0,0872), todos para longe do alvo, com harmonicError em 0,047. É o
+  mesmo mecanismo que o NORTE já registra como “canto na derivada
+  injeta harmônico”, aqui em forma de teto. A quebra mora onde a luz do
+  braço é LINEAR: o EXCESSO sobre o piso de interbraço na lâmina
+  (`mix(0,50; 1,0; armDensity·quebra)`) e o alpha da partícula de braço.
+  No domínio linear a mesma amplitude 0,8 deixa m=2 e m=4 intactos.
+- **Consequência boa de estar no lugar certo: o esqueleto não muda.**
+  Dust map, structure map, `galMajorArmsGas` e o raymarch da vista
+  interna ficam bit-idênticos — zero custo de frag no raymarch e o céu
+  medido A/B na MESMA sessão deu 1,1231 → 1,1230.
+
+| termo | antes | depois | alvo |
+|---|---|---|---|
+| clumpError | 0,0877 | **0,0587** | 0 |
+| clumpInner (4 escalas) | 0,283 / 0,272 / 0,252 / 0,199 | **0,291 / 0,281 / 0,262 / 0,205** | 0,295 / 0,279 / 0,260 / 0,231 |
+| clumpOuter (4 escalas) | 0,439 / 0,421 / 0,402 / 0,384 | 0,441 / 0,423 / 0,404 / 0,383 | 0,449 / 0,423 / 0,401 / 0,371 |
+| harmonicError | 0,0289 | 0,0371 | 0 |
+| edgeError | 0,4170 | 0,4181 | 0 |
+| skyError (A/B na sessão) | 1,1231 | 1,1230 | 0 |
+| discMean | 0,1301 | 0,1299 | 0,1175 |
+
+33% do clumpError fechado, e o miolo passou a ser o termo MENOR: as
+três escalas pequenas cravam (desvios 0,0039 / 0,0016 / 0,0016) e o que
+sobra é a maior, ainda 0,027 abaixo. **O teto dessa alavanca foi
+calculado, não adivinhado**: para qualquer campo estacionário
+σ(célula grande) ≤ σ(célula pequena), então a variância adicionada nunca
+sobe mais na escala de 1,1 kpc do que na de 135 pc — o mínimo teórico do
+somatório do miolo com adição perfeitamente plana é 0,028 contra os
+0,034 que a dose escolhida entrega. Fechar o resto exige TIRAR variância
+das escalas pequenas, não somar nas grandes.
+
+O custo é +0,0082 em harmonicError (m=1 +0,0029 e m=5 +0,0023; m=2/m=4
+inalterados), dentro do ruído ±0,013 — mas a série de dose mostra o
+número oscilando sem tendência entre 0,0278 e 0,0386, então é ruído da
+régua e não uma dívida direcional. Edge cego ao termo (+0,0011, um
+décimo do ruído), discMean conservado (−0,0002), grainOuter intocado.
+
+**Becos medidos (não repetir):** ganho em função do raio (a ablação
+acima, dupla penalidade); modulação dentro do esqueleto (clamp);
+fase por braço com pares antipodais em oposição para “blindar” m=1 —
+custou mais harmônica e rendeu menos agrupamento que o campo único
+(0,0664 contra 0,0583 sob a régua da época); λ 5600 pc põe a modulação
+na banda medida e estoura m=6 (0,1068 contra 0,0937 do alvo); estender
+a janela radial até 10,5 kpc não melhora o anel externo (0,0618 contra
+0,0612 com 9,2 kpc). Knobs: `?armbrk=` amplitude (0 = estado da rodada
+30 EXATO, conferido campo a campo), `?armbrkl=` comprimento de onda ao
+longo do braço a 5,5 kpc, `?armbrkr0= ?armbrkr1=` janela radial.
 
 ## Decisões fechadas
 
