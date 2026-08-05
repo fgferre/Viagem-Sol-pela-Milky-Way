@@ -5,7 +5,7 @@
 // ============================================================
 import { WORLD } from '../config';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
-import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY } from './common';
+import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
@@ -47,6 +47,8 @@ const DUSTRD = qnum('dustrd', 2100).toFixed(1);
 // muda, como a poeira da rodada 32. Sem a conservação o gate desaba
 // (bulgeAnti 3,82 contra 5,07): medido, não suposto.
 const BULGEQ = qnum('bulgeq', 0.3);
+// A cavidade H II "hero" é o 5º núcleo do corredor visto por dentro.
+const HERO = corridorCore(4);
 const SPHEROID =
   BULGEQ === 1
     ? 'exp(-length(q) / 1050.0) * 2.45'
@@ -373,7 +375,9 @@ void main() {
       // Região HII hero no corredor para Betelgeuse: uma cavidade
       // ionizada localizada — o fbm dos filamentos só roda dentro
       // do volume dela (fora, heroVolume < 1e-5 e não compra nada)
-      vec3 hq = (p - vec3(5.5, 132.0, 18.0)) / 24.0;
+      // mora NO 5º núcleo do corredor: posição e raio vêm de lá, então
+      // ela anda junto quando o corredor se desloca (rodada 34)
+      vec3 hq = (p - vec3(${HERO[0].toFixed(2)}, ${HERO[1].toFixed(2)}, ${HERO[2].toFixed(2)})) / ${HERO[3].toFixed(2)};
       float hq2 = dot(hq, hq);
       if (hq2 < 9.0) {
         float heroVolume = exp(-hq2 * 1.25);

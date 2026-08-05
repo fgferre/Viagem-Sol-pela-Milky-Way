@@ -54,6 +54,24 @@ const vec3 GAL_X = vec3(0.0548756, 0.8734371, 0.4838350);
 const vec3 GAL_Y = vec3(-0.4941094, 0.4448296, -0.7469822);
 `;
 
+// ?corewall= desloca cada núcleo do corredor ao longo da PRÓPRIA direção,
+// somando N pc à distância do Sol — l, b e raio físico ficam intactos.
+// 0 = as posições de `WORLD.nebulaCores`; **−130 devolve o corredor da
+// rodada 33** (o que começava dentro da Bolha Local).
+const COREWALL = (() => {
+  if (typeof window === 'undefined') return 0;
+  const v = parseFloat(new URLSearchParams(window.location.search).get('corewall') ?? '');
+  return Number.isFinite(v) ? v : 0;
+})();
+const pushCore = (c: readonly number[]): number[] => {
+  const d = Math.hypot(c[0], c[1], c[2]);
+  const k = (d + COREWALL) / d;
+  return [c[0] * k, c[1] * k, c[2] * k, c[3]];
+};
+
+/** Núcleo `i` do corredor já deslocado — a posição que o shader usa. */
+export const corridorCore = (i: number): number[] => pushCore(WORLD.nebulaCores[i]);
+
 // Constrói a função de densidade com os núcleos de nuvem injetados
 // como constantes (evita uniforms extras e permite otimização do driver).
 function coresGLSL(): string {
@@ -62,6 +80,7 @@ function coresGLSL(): string {
   // dot — sem ele, os 7 núcleos eram ~80% do custo do raymarch
   // (medido por timer de GPU: 75–80 ms/frame em t=0/85).
   return WORLD.nebulaCores
+    .map(pushCore)
     .map(
       (c, i) =>
         `  { vec3 q = (p - vec3(${c[0].toFixed(2)}, ${c[1].toFixed(2)}, ${c[2].toFixed(2)})) / ${c[3].toFixed(2)};

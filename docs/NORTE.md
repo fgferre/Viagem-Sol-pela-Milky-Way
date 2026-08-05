@@ -239,11 +239,17 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    ganhando a escala radial que é DELA (2,1 kpc, Drimmel & Spergel 2001,
    contra os 5,2 kpc estelares que herdava), **skyError 1,0767 →
    0,9459 e rift 0,2555 contra o alvo 0,2444**. A espessura (0,416)
-   segue o maior termo, e agora com endereço: 41% do desvio mora nos
+   segue o maior termo, e agora com endereço: 50,6% do desvio mora nos
    quatro bins do ANTICENTRO, onde a ablação apontou o **complexo de
-   Órion do raymarch local** (93% da luz fora do plano) — é a próxima
-   alavanca, junto com a poeira local do Aquila Rift (150–600 pc) nos
-   bins l = −34°…−19°; **(2) colour −0,071 vs 0,064** — a revelação
+   Órion do raymarch local** — **FECHADO NA RODADA 34** (seção própria):
+   os sete núcleos artísticos do corredor da viagem moravam dentro da
+   **Bolha Local**, e deslocá-los +130 pc ao longo da própria direção
+   levou **skyError 0,9459 → 0,8134** e a espessura a 0,3499, com os
+   gates externos bit-idênticos. Segue aberta a poeira local do Aquila
+   Rift (150–600 pc) nos bins l = −34°…−19°, e o resíduo do anticentro
+   passou a ter dois donos medidos (envelope de gás local e disco
+   espesso da LUT — ver rodada 34);
+   **(2) colour −0,071 vs 0,064** — a revelação
    per-RGB dessatura além do alvo (β=0,1 dá +0,071 quase exato; o par
    dose↔cor precisa de uma rodada própria, e chromsat interno é candidato);
    **(3) purp 0,062 vs 0,078** — independe do tom: população (H II /
@@ -1085,15 +1091,17 @@ não tem uma linha alterada; o LUT (256×128, 1×/frame) troca um
 `length()` por um `sqrt` de três termos.
 
 **O que a foto ainda cobra, em ordem.** A espessura segue o maior termo
-(0,416) e agora se sabe onde: dos 54,75° de desvio somados, os quatro
-bins do ANTICENTRO (l = ±172,5°, −157,5°, −142,5°) valem 22,5° — e a
+(0,416) e agora se sabe onde: os quatro bins do ANTICENTRO
+(l = ±172,5°, −157,5°, −142,5°) valem 22,25° dos 44,00° somados — e a
 ablação já provou que ali o dono é o **complexo de Órion do raymarch
 local**, brilhante demais e espalhado demais (em l = 202,5° o céu é 1,5×
 mais claro em |b| = 10–20° que no plano; na foto é 0,17×). Os bins do
 miolo, que a rodada consertou, agora casam com a foto quase termo a
 termo (fluxo cumulativo em |b| < 3°/5°/10° a l = −7,5°: 0,337/0,549/0,866
 contra 0,338/0,554/0,872 da foto). **A próxima alavanca tem nome:
-Órion.** Depois dela, colour (0,135, o segundo maior) — a revelação
+Órion** — e ela virou a **rodada 34** (seção própria): os sete núcleos
+moravam dentro da Bolha Local, deslocá-los +130 pc levou o skyError a
+**0,8134**. Depois dela, colour (0,135, o segundo maior) — a revelação
 per-RGB do gate dessatura além do alvo, e `chromsat` interno segue
 candidato.
 
@@ -1128,6 +1136,114 @@ re-baseline, não uma correção de rodada.
 estado da rodada 32 EXATO**, o mesmo GLSL, conferido campo a campo na
 sonda de face única) e `?dustrd=` (escala radial da poeira difusa;
 **5200 = estado da rodada 32**).
+
+## Rodada 34 (2026-08-05) — o corredor de Órion começava dentro da Bolha Local
+
+A alavanca que a rodada 33 deixou nomeada. O passo 0 desta vez não mudou o
+alvo — confirmou-o e o AUMENTOU: os quatro bins do anticentro valem **22,25°
+dos 44,00° somados (50,6%)**, não os 41% que o NORTE registrava (aqueles
+usavam o denominador da r32, 54,75°; a r33 baixou o total sem tocar no
+anticentro).
+
+**O defeito, em uma linha: o PICO da faixa no anticentro saía 10–12° ABAIXO
+do plano.** Em l = 202,5° o céu era 3,03× mais claro em b = −12° que em b = 0;
+na foto é 0,13×. E o excesso era só no hemisfério SUL — o lado norte já casava.
+
+**O dono, por ablação (face `anti`, luz em 10° < |b| < 20°):**
+
+| desligado | l = 202,5° | fração |
+|---|---|---|
+| nada (base) | 0,04908 | — |
+| **os 7 núcleos do corredor** | **0,01567** | **68%** |
+| envelope de gás local | 0,03573 | 27% |
+| supergigantes embutidas | 0,04845 | 1,3% |
+| nuvens-semente CO | 0,04897 | 0,2% |
+| região H II hero | 0,04908 | 0,0% |
+
+`WORLD.nebulaCores` são sete nuvens ARTÍSTICAS postas no corredor da viagem —
+e todas caem em l 196–210°, b −10° a −29°, a 8–218 pc do Sol. É a direção de
+Órion, e é **a Bolha Local**: uma cavidade com n ≈ 0,02 cm⁻³ contra 10²–10⁴ de
+nuvem molecular, raio médio ~170 pc (O'Neill et al. 2024). A linha de visada
+para Órion "não vê muita poeira até 250 pc", e a primeira estrutura está em
+~350 pc (Rezaei Kh. & Kainulainen 2020); Orion A/B ficam em 390–460 pc. O
+corredor inteiro morava no vazio.
+
+**A correção é de LUGAR, e a conta diz por que não pode ser de brilho.** Brilho
+de superfície de fonte extensa NÃO depende da distância (`sampleColor` não tem
+termo de distância; o porte numérico reproduz a integral em 0,97–1,02 de 8 a
+218 pc). O que decide o orçamento é **ângulo sólido**: o núcleo de 8,4 pc tem o
+Sol dentro do próprio gate e cobre o céu inteiro; o de 218 pc cobre 3,3%. Uma
+nuvem de raio 24 pc a 133 pc não PODE produzir uma estrutura de 4,4° de
+meia-altura — a geometria proíbe, em qualquer dosagem. Cada núcleo foi
+deslocado **+130 pc ao longo da própria direção**, l, b e raio físico intactos:
+o corredor vai de 138 a 348 pc, começando na parede da bolha.
+
+| termo | antes (r33) | depois (r34) | alvo |
+|---|---|---|---|
+| **skyError** (A/B na MESMA sessão) | 0,9459 | **0,8134** | 0 |
+| espessura (termo) | 0,4160 | **0,3499** | 0 |
+| espessura (soma dos 4 bins do anticentro) | 22,25° | **15,50°** | 0 |
+| bulgeAnti | 5,069 | **5,735** | 5,568 |
+| perfil por longitude | 0,2813 | 0,2766 | 0 |
+| colour | −0,0708 | −0,0685 | +0,0641 |
+| purp · rift | 0,0655 · 0,2555 | 0,0652 · 0,2555 | 0,0784 · 0,2444 |
+| harmonicError · edgeError · clumpError · discMean | 0,0371 · 0,4181 · 0,0587 · 0,1299 | **bit-idênticos** | — |
+
+**−14,0% no skyError**, e os gates externos saem PROVADOS bit-idênticos: md5
+`873e64b2…` (face-on t=293) e `c0743465…` (edge-on t=261), os MESMOS da rodada
+33. Zero custo de frame — mesmo número de núcleos, mesmo gate `q2 < 9`, só as
+constantes mudaram.
+
+**A régua do céu é DETERMINÍSTICA** — três repetições de três configurações
+diferentes reproduziram os seis termos a 4 casas. Consequência de método: a
+série de dose de `corewall` (60 → 0,8467 · 90 → 0,8081 · 110 → 0,8238 · 130 →
+0,8134 · 180 → 0,8310) **não é ruído, é sorteio de fbm** — deslocar um núcleo o
+reamostra no campo de ruído, que é avaliado em `p` de mundo. Não calibrar
+`corewall` pelo ótimo do gate: o valor foi escolhido pela literatura e a nota
+foi aceita como veio.
+
+**O que a foto ainda cobra, com o dono já medido.** A espessura segue o maior
+termo (0,3499) e o resíduo do anticentro tem dois endereços: (a) em l = 202,5°
+o pico ainda sai em b = −8,9°, e ali o dono é o **envelope de gás local**
+(`diskGasEnvelope`) — a Bolha Local NÃO o alcança: `?lbr=` de 80/120/160 pc
+sobre o estado sem núcleos moveu a luz fora do plano em 0,5%, porque a emissão
+do envelope mora entre 200 e 650 pc, onde a camada de h = 70 pc ainda está
+cheia; (b) o disco espesso da LUT (h 610–1080 pc, ×0,105) entrega razão
+asas/plano 0,294 contra 0,17 da foto e passa o disco fino acima de |b| ≈ 12° —
+mas ele sustenta as bandas altas do edge-on, então mexer nele é rodada com os
+DOIS gates na mesma bateria. Depois disso, colour (0,135, o segundo maior).
+
+**Becos medidos (não repetir):** **a Bolha Local realista como alavanca**
+(`?lbr=` 40/80/120/160 pc) — parece a correção mais honesta de todas (o código
+limpa 6,5 pc, a real tem ~170) e não é: com os núcleos ligados ela só age
+DIMINUINDO os núcleos, e com os núcleos desligados move 0,5%; **apagar os sete
+núcleos** (`coremask=0`: skyError 0,8305) — pior que deslocá-los porque
+bulgeAnti passa do alvo (5,933) e o quadro t=66 da viagem fica vazio;
+**transformá-los em nuvem ESCURA** conservando a absorção (emissão própria
+zerada, iluminação externa mantida: 0,8864) — melhor que apagar na luz fora do
+plano, mas a absorção que sobra come o anticentro em |b| < 10 e estoura o
+bulgeAnti (6,238); **cirurgia num núcleo só** (`coremask=119`, o de 106 pc, que
+sozinho responde por 65% do excesso fora do plano em l = 202,5°): rende apenas
+22% do ganho do bloco — a atribuição por banda de latitude e a atribuição pelo
+GATE são perguntas diferentes, porque quem move o gate é o bulgeAnti, e esse
+responde aos quatro juntos; **empurrar demais** (`corewall=180`, corredor
+188–398 pc, que põe o núcleo externo na distância REAL de Órion): 0,8310, e
+tira a nebulosidade de perto de Betelgeuse (152,7 pc) — o ato II fica seco.
+
+**Trava que vale para as próximas rodadas do céu:** `bulgeAnti` é medido só em
+|b| < 10° e hoje está do lado CERTO do alvo. Ele crava cortando ~9% da luz do
+anticentro nessa janela e EMPATA em ~16%; qualquer dose global no raymarch
+local passa disso muito antes de a espessura pagar (o `?emisk=0` da r32 levou
+bulgeAnti a 11,6). Toda rodada que mexer na camada local tem de reportar o
+bulgeAnti junto.
+
+**Knob:** `?corewall=` (deslocamento em pc a partir das posições de
+`WORLD.nebulaCores`; **0 = estado atual, −130 = corredor da rodada 33 EXATO**,
+conferido termo a termo: devolve 0,9459 com os seis termos idênticos).
+
+**Cuidado de ferramenta descoberto aqui:** `npx tsc --noEmit` na raiz é um
+NO-OP — o `tsconfig.json` tem `"files": []` com project references. Passou num
+arquivo com erro de sintaxe. A checagem real é `npm run typecheck` (`tsc -b`).
 
 ## Decisões fechadas
 

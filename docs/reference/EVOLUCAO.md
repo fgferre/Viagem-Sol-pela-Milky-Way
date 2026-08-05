@@ -63,3 +63,19 @@ final, as imagens locais e esta tabela se leem juntas.
 | 26 | 0.6456 | 0.0503 | 0.0929 | 0.9052 | 0.0329 | roteiro novo em shots: 4 atos, Sgr A* Gargantua, holds de medição com roll do rig antigo assado (t 261/293) |
 | 27 | 0.4396 | 0.0393 | 0.0810 | 0.8506 | 0.0425 | warp com a fase certa: 185 e nao 5 — a quiralidade do S contra a recriacao-alvo estava invertida (ablacao: warpAsym -0,35 -> +0,22; maior salto da serie) |
 | 33 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
+
+## Céu interno (panorama ESO)
+
+`skyError` menor é melhor: soma de seis termos medidos contra
+`eso-gigagalaxy-panorama.jpg`, a única foto REAL do projeto, vista de dentro
+(protocolo v3 — `scripts/visual/sky-capture.mjs` + `sky-measure.html`, 6 faces
+de 1440² com revelação `kneeamt=1&knee=0.02&exp=4.4`). O absoluto deriva entre
+sessões: comparar sempre A/B na MESMA sessão.
+
+| rodada | skyError | espessura | bulgeAnti | rift | colour | o que mudou |
+|---|---|---|---|---|---|---|
+| — | 0 | 0 | 5.568 | 0.2444 | 0.0641 | **alvo (foto ESO)** |
+| 31 | 1.1230 | 0.5178 | 5.468 | 0.0369 | -0.0649 | baseline do protocolo v3 (o gate do céu não movia nas rodadas de vista externa) |
+| 32 | 1.0767 | 0.5178 | 5.116 | 0.1807 | -0.0668 | a faixa era opticamente FINA: componente difusa ancorada em A_V (0,15 mag/kpc) na camada de gás (h 70 pc) |
+| 33 | 0.9459 | 0.4160 | 5.069 | 0.2555 | -0.0708 | bojo achatado (c/a 0,30, luminosidade conservada) + poeira com escala radial própria (2,1 kpc) |
+| 34 | 0.8134 | 0.3499 | 5.735 | 0.2555 | -0.0685 | o corredor de Órion começava DENTRO da Bolha Local: os 7 núcleos deslocados +130 pc ao longo da própria direção (138–348 pc); face-on e edge-on bit-idênticos |
