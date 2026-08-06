@@ -276,18 +276,26 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    l = −90…−45** (Carina 282° e Centauro 310°, os tangentes brilhantes
    do céu real). Ou seja: a Grande Fenda / Aquila Rift (150–600 pc) que
    já estava anotada acima como pendência pequena vale, medida, um
-   terço do erro do céu. Rodada candidata: pôr a nuvem no LUGAR e na
-   DISTÂNCIA certos — a assinatura das três correções que pagaram
-   (r32 poeira, r33 bojo, r34 corredor) é mudar onde a matéria está,
-   não quanto ela brilha.
-   **CONFERIR O SINAL ANTES DE DOSAR — a rodada inteira depende disto.**
-   A anotação antiga acima diz Aquila Rift "nos bins l = −34°…−19°"; a
-   medição de 2026-08-06 põe o excesso em **l = +11°…+41°**, o espelho.
-   Um dos dois usa a convenção trocada, e pôr a nuvem no lado errado
-   PIORA os dois lados de uma vez. A régua usa a base galáctica do
-   `galaxy.ts` com `refFlip` resolvido pelas Nuvens de Magalhães (LMC
-   l=280,5°), então o teste barato é: renderizar uma face, achar a LMC
-   e conferir em que bin de longitude ela cai antes de mexer em poeira;
+   terço do erro do céu. ~~Rodada candidata: pôr a nuvem no LUGAR e na
+   DISTÂNCIA certos~~ — **FEITA e NÃO ADOTADA na rodada 36** (seção
+   própria): a nuvem no lugar certo leva o perfil a 0,2057, o melhor
+   movimento que este termo já teve, mas 84% do excesso mora em
+   |l| < 30°, onde tirar luz custa 2,14× o que rende no gate atual.
+   A próxima alavanca desta linha não é mais poeira: é o termo `rift`
+   deixar de ser cego ao LUGAR do vale.
+   **A convenção de longitude está CERTA — fechado em 2026-08-06, e sem
+   render.** As 1.726 estrelas nomeadas de `stars_meta.json` carregam a
+   posição de cena; converter 11 delas para (l,b) com a base de
+   `sky-measure.html` (b = asin(v·N), l = atan2(−v·B, −v·A)) reproduz a
+   longitude galáctica REAL a duas casas: Sirius 227,23/−8,89 · Deneb
+   84,28/+2,00 · Antares 351,95/+15,06 · αCen 315,7 · Polaris 123,28/+26,46
+   · Canopus 261,21/−25,29. Logo o excesso medido em **l = +11°…+41°** é o
+   lado certo (Aquila/Scutum) e o déficit em l = −34°…−79° é Carina 283° /
+   Crux-Centauro 310° / Norma 328° — a anotação velha que punha o Aquila
+   Rift em "l = −34°…−19°" é que estava espelhada. **O teste de convenção
+   não precisa de GPU: é uma conta sobre o binário do catálogo.**
+   A causa da fenda foi ATACADA e MEDIDA na rodada 36 (seção própria): o
+   mecanismo está certo e o gate atual a recusa;
    **(3) colour −0,069 vs 0,064** — a revelação
    per-RGB dessatura além do alvo (β=0,1 dá +0,071 quase exato; o par
    dose↔cor precisa de uma rodada própria, e chromsat interno é candidato).
@@ -1406,6 +1414,127 @@ conferido termo a termo: devolve 0,9459 com os seis termos idênticos).
 **Cuidado de ferramenta descoberto aqui:** `npx tsc --noEmit` na raiz é um
 NO-OP — o `tsconfig.json` tem `"files": []` com project references. Passou num
 arquivo com erro de sintaxe. A checagem real é `npm run typecheck` (`tsc -b`).
+
+## Rodada 36 (2026-08-06) — a Grande Fenda existe, o mecanismo está certo, e o gate a recusa
+
+A rodada que a fila mandava fazer. Ela **não entrou** — nenhuma das nove
+configurações medidas bate o 0,7885 da linha de base. O que fica é o
+mecanismo provado, a lei que o bloqueia e dois becos caros já pagos.
+
+**Passo 0: onde em LATITUDE.** Despejar o perfil em b por bin de longitude
+(sonda sobre as MESMAS capturas do gate, sem GPU nova) mostrou que o excesso
+de l = +11…+41 não está espalhado: em l = +19° a razão nosso/foto vale
+1,4–2,5 abaixo do plano e **7,0 / 10,8 / 12,1 / 9,7 / 7,5 em b = +2/+4/+6/
++8/+10**. É uma cunha ACIMA do plano, exatamente onde Su et al. 2020 e
+Straižys et al. 2003 põem o Aquila Rift. Dito de outro jeito, e é a frase
+que resume a deficiência: **o nosso céu é quase simétrico em torno do centro
+(l=+19 vale 2,29 e l=−19 vale 2,35) e a foto é 2,6× mais escura do lado
+positivo.**
+
+**A componente construída** (`?riftav=`, revertida ao fim da rodada; a
+especificação abaixo permite refazê-la numa edição): quatro gaussianas
+esféricas em posição FIXA de cena, com a coluna resolvida em fórmula
+FECHADA e aplicada FORA do laço de 24 passos — entre 150 e 700 pc o laço só
+tem três amostras (t = 195 / 280 / 442) e uma nuvem de 30 pc cai entre elas.
+`light *= exp(−A_V/1,0857)` no fim de `integrateGalacticDisk`: absorção pura
+(o `dust` do LUT não emite, ao contrário do raymarch local, onde a mesma
+`alpha` que atenua também acende) e gates externos idênticos por construção.
+
+| l | b | d (pc) | σ (pc) | σ angular | A_V de pico |
+|---|---|---|---|---|---|
+| 13,0 | +7,0 | 260 | 30 | 6,6° | 1,2 |
+| 23,0 | +5,0 | 250 | 26 | 5,9° | 1,5 |
+| 32,0 | +3,0 | 440 | 36 | 4,7° | 2,2 |
+| 39,0 | +1,5 | 650 | 42 | 3,7° | 1,4 |
+
+| configuração | skyError | espessura | perfil | cor | fenda | bojoAnti | rift | bulgeAnti |
+|---|---|---|---|---|---|---|---|---|
+| **base** | **0,7885** | 0,3617 | 0,2691 | 0,1335 | 0,0087 | 0,0029 | 0,2531 | 5,584 |
+| riftav 1 | 1,0321 | 0,3948 | **0,2057** | 0,1388 | 0,1350 | 0,1476 | 0,3794 | 4,746 |
+| riftav 2 | 1,1760 | 0,4137 | 0,2033 | 0,1444 | 0,1838 | 0,2220 | 0,4282 | 4,332 |
+| riftav 3 | 1,2614 | 0,4255 | 0,2217 | 0,1490 | 0,1924 | 0,2651 | 0,4368 | 4,092 |
+| riftav 1 · bandav 0,11 | 0,8758 | 0,3712 | 0,2085 | 0,1348 | 0,0357 | 0,1139 | 0,2801 | 4,934 |
+| riftav 1 · bandav 0,08 | 0,9057 | 0,3570 | 0,2112 | 0,1307 | 0,1104 | 0,0830 | 0,1340 | 5,106 |
+| riftav 1 · bandav 0,05 | 0,8800 | 0,3333 | 0,2149 | 0,1258 | 0,1435 | 0,0465 | 0,1009 | 5,309 |
+| bandav 0,05 sozinho | 1,1288 | **0,3097** | 0,2834 | **0,1214** | 0,2781 | 0,1178 | −0,0337 | 6,224 |
+| armcon 2 | 0,7856 | 0,3617 | 0,2673 | 0,1347 | 0,0082 | 0,0013 | 0,2526 | 5,561 |
+| armcon 4 | 0,7940 | 0,3593 | 0,2668 | 0,1358 | 0,0075 | 0,0124 | 0,2519 | 5,499 |
+
+**O mecanismo está CERTO — a prova está na linha de baixo da tabela.** Com a
+MESMA poeira total, posta axissimetricamente (`bandav 0,05` sozinho) o gate
+dá 1,1288; posta no LUGAR real (mais `riftav 1`) dá **0,8800** — o perfil vai
+de 0,2834 para 0,2149 e o bulgeAnti de 6,224 para 5,309. É a quarta
+confirmação seguida de que **mudar o LUGAR conservando a quantidade paga**
+(r32 poeira, r33 bojo, r34 corredor, r36 fenda). E o perfil por longitude
+nunca se moveu tanto: 0,2691 → 0,2057, −24%.
+
+**A LEI que bloqueia, e ela vale para toda rodada futura do céu.** O perfil
+é normalizado pela própria média e `bulgeAnti` é a razão entre duas janelas
+de 60° em |b| < 10°. Por unidade de nprof removida:
+
+- ganho no perfil = 1,03/48 = **0,0215**, em qualquer longitude;
+- custo em bojoAnti tirando de **|l| < 30°** = (1/5,568)·(5,584/21,80) = **0,0460** — **2,14× o que rende**;
+- custo tirando de **||l|−180| < 30°** = **0,2569** — **12× o que rende**;
+- em **30° < |l| < 150° o custo é ZERO** (a razão bojo/anticentro é invariante lá), e o mesmo vale para ADICIONAR luz.
+
+Os bins +11, +19 e +26 — 84% do excesso do Aquila — estão dentro de |l| < 30.
+Não existe dose útil: a série riftav 1/2/3 é monotonicamente pior.
+
+**Por que o gate resiste: ele já tem uma fenda, só que de mentira.** A poeira
+axissimétrica das rodadas 32/33 produz um vale em b ≈ 0 em TODAS as
+longitudes, e o termo `rift` (0,2531 contra alvo 0,2444) não pergunta ONDE.
+O `bulgeAnti` crava pelo mesmo tipo de sorte: as duas janelas estão 15,6%
+claras demais ao mesmo tempo (bojo 21,80/18,83 = 1,158, anticentro
+3,904/3,382 = 1,154) e a razão sobrevive. **Pôr a estrutura verdadeira no
+lugar verdadeiro quebra os dois proxies de uma vez, e o gate cobra mais do
+que paga.** Sensibilidade medida: 0,010 de skyError por 1% de deslocamento
+relativo entre as duas janelas — `bojoAnti` é o termo mais APERTADO do gate,
+não o mais folgado. Destravar isto é decisão de RE-BASELINE da régua (a
+mesma classe do antagonismo espessura↔rift já registrado na r33), não
+correção de rodada.
+
+**A alavanca nova que a rodada destapou, e é grande.** `bandav` está
+sobredosado para os dois maiores termos: a 0,05 a espessura cai para
+**0,3097** (o melhor valor já medido do maior termo, 46% do erro) e a cor
+para **0,1214** (o segundo). Quem trava é só o termo `rift`, que despenca a
+−0,034 sem a poeira axissimétrica. A rodada que junta "fenda local no lugar
+certo" com "bandav baixo" já está a 0,8800 com espessura 0,3333 e cor
+0,1258 — falta o termo `rift` deixar de ser cego ao lugar.
+
+**Becos medidos (não repetir):** **contraste braço/interbraço do LUT**
+(`armcon`, o termo estelar `mix(0,58; 1,28; arms)` → contraste 3,8× e 9,5×)
+como via para as tangentes de Carina/Crux/Norma — o perfil move 0,0018 e
+0,0023, autoridade NENHUMA sobre as tangentes; o 0,7856 do armcon 2 é
+−0,003 sem mecanismo, e calibrar por ele seria ajustar à régua sem causa.
+`riftav` em qualquer dose com `bandav` no default. `bandav 0,05` sozinho
+(a fenda desaparece: rift −0,034).
+
+**Ferramenta, dois cuidados novos:**
+- **`?exp=` não sonda a curva de tom do gate.** `App.tsx:77` → `engine.ts:103`
+  → `renderer.toneMappingExposure`, que o three só aplica DENTRO do
+  `OutputPass` — depois do knee asinh (`post.ts:104`). Varrer `exp` mede o
+  pé do ACES, não a compressão do knee.
+- **A cadeia do gate AMPLIFICA contraste no pé, não comprime.** Medido com
+  a mesma face a exp 2,2/3,1/4,4/6,2: d ln(medido)/d ln(pós-knee) = **1,446**
+  na faixa (bate com a derivada do ACES de Narkowicz ali, 1,56 × 0,917 da
+  decodificação ^2,2 contra o encode sRGB). O knee entra por
+  `tanh(w)/w` com w = y/0,02 — 0,89 no céu tênue, 0,37 no miolo da faixa.
+  Composto, a dose FÍSICA que a régua pedia era **A_V ≈ 1,0–1,5 mag**, o
+  valor real do Aquila Rift. A suspeita de que o τ pedido era artefato de
+  stretch (e portanto de 3,5 a 12 mag) está **REFUTADA por medição**.
+
+**Achado lateral, sem rodada:** as nuvens-semente do raymarch estão famintas.
+`molecular-clouds.bin` tem **210 nuvens em l = 15°…45° a 380–700 pc** (o
+complexo Aquila/Serpens), mas `director.updateSeedClouds` escolhe as **32
+mais próximas** e com a câmera no Sol as 32 ficam todas entre 101 e 155 pc
+(corte em 140 pc de distância à superfície). Nada do Aquila entra. Alimentar
+não paga pela conta de cobertura (raio no piso de 14 pc a 400 pc = 12,6 deg²
+contra 768 deg² da janela; seriam ~370 nuvens empilhadas para A_V 1), e o
+corpo do laço em `common.ts:158-161` roda SEMPRE por slot. Fica nomeado.
+
+**Bug visual achado no caminho (não é de gate):** `nebulaShaders.ts:312`
+(`tMax = 650`) corta pela metade, DENTRO DO QUADRO, qualquer volume de
+150–600 pc no plano t = 104–116 do filme — um arco de truncamento no ar.
 
 ## Decisões fechadas
 
