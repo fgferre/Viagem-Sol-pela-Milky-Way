@@ -279,7 +279,15 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    terço do erro do céu. Rodada candidata: pôr a nuvem no LUGAR e na
    DISTÂNCIA certos — a assinatura das três correções que pagaram
    (r32 poeira, r33 bojo, r34 corredor) é mudar onde a matéria está,
-   não quanto ela brilha;
+   não quanto ela brilha.
+   **CONFERIR O SINAL ANTES DE DOSAR — a rodada inteira depende disto.**
+   A anotação antiga acima diz Aquila Rift "nos bins l = −34°…−19°"; a
+   medição de 2026-08-06 põe o excesso em **l = +11°…+41°**, o espelho.
+   Um dos dois usa a convenção trocada, e pôr a nuvem no lado errado
+   PIORA os dois lados de uma vez. A régua usa a base galáctica do
+   `galaxy.ts` com `refFlip` resolvido pelas Nuvens de Magalhães (LMC
+   l=280,5°), então o teste barato é: renderizar uma face, achar a LMC
+   e conferir em que bin de longitude ela cai antes de mexer em poeira;
    **(3) colour −0,069 vs 0,064** — a revelação
    per-RGB dessatura além do alvo (β=0,1 dá +0,071 quase exato; o par
    dose↔cor precisa de uma rodada própria, e chromsat interno é candidato).
