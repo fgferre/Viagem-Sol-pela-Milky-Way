@@ -14,6 +14,16 @@
 // assimetria bojo/anticentro, espessura da faixa, profundidade do
 // Great Rift, cor global e púrpura da faixa.
 //
+// RE-BASELINE 2026-08-06 (rodada 37): o termo da fenda era o ESCALAR
+// `|média(nossa) − média(ref)|` e por isso era CEGO AO LUGAR. Medido: ele
+// dava 0,0087 (quase cravado) enquanto a comparação bin a bin dá 0,5241 —
+// a média cancelava uma anticorrelação quase perfeita. Tínhamos um vale
+// FUNDO cortando o centro galáctico (l = −4°/+4°: 0,76 e 0,81) onde a foto
+// não tem nenhum (−0,16 e −0,11), e vale NENHUM em l = +26°/+34° onde a
+// foto tem o mais fundo de todos (0,76 e 0,82). O termo agora compara a
+// CURVA, como `nprof` e `thick` já faziam. Números do céu a partir daqui
+// NÃO são comparáveis com o histórico anterior.
+//
 // Uso:
 //   chrome --headless=new --enable-gpu --allow-file-access-from-files \
 //     --window-size=900,900 --virtual-time-budget=20000 --dump-dom \
@@ -199,6 +209,17 @@ function dirOf(l, b) {
       // Great Rift: l ∈ [−35°, 45°], perfil em b recentrado no pico —
       // profundidade do vale escuro contra os flancos
       let riftAcc = 0, riftN = 0;
+      // riftProf = profundidade POR LONGITUDE (é ela que entra na nota) e
+      // riftB = a latitude onde o vale foi encontrado.
+      // ponytail: só a profundidade por longitude entra no skyError; a
+      // latitude fica exposta como diagnóstico. Um vale certo em longitude
+      // e espelhado em b passaria — mas para isso a poeira teria de deixar
+      // de ser simétrica em b, e aí a curva de profundidade já acusa (um
+      // aprofundamento simétrico cava também l = ±4°, onde a foto não tem
+      // vale). Se algum dia esse caso aparecer, `riftB` vira termo.
+      // O escalar `rift` fica só como diagnóstico: ele era a nota até a
+      // rodada 37 e é a média — cega ao lugar por construção.
+      const riftProf = [], riftB = [];
       for (let i = 0; i < NB; i++) {
         const lc = (i + 0.5) / NB * 360 - 180;
         if (lc < -35 || lc > 45) continue;
@@ -217,10 +238,15 @@ function dirOf(l, b) {
         for (let y = ymin - 2*span; y < ymin; y++) if (y >= 0) below = Math.max(below, col[y]);
         for (let y = ymin + 1; y <= ymin + 2*span; y++) if (y < H) above = Math.max(above, col[y]);
         const flank = Math.min(above, below);
-        if (flank > 1e-9) { riftAcc += 1 - col[ymin] / flank; riftN++; }
+        const depth = flank > 1e-9 ? 1 - col[ymin] / flank : 0;
+        if (flank > 1e-9) { riftAcc += depth; riftN++; }
+        riftProf.push(+depth.toFixed(4));
+        riftB.push(+((0.5 - (ymin + 0.5) / H) * 180).toFixed(2));
       }
       return {
         nprof,
+        riftProf,
+        riftB,
         bulgeAnti: +((bulge / Math.max(nb,1)) / Math.max(anti / Math.max(na,1), 1e-9)).toFixed(3),
         thick,
         rift: +(riftAcc / Math.max(riftN, 1)).toFixed(4),
@@ -236,7 +262,7 @@ function dirOf(l, b) {
       Math.abs(O.bulgeAnti - R.bulgeAnti) / Math.max(R.bulgeAnti, 1e-9) +
       curve(O.nprof, R.nprof) +
       curve(O.thick, R.thick) / Math.max(R.thick.reduce((a,b)=>a+b,0)/R.thick.length, 1e-9) +
-      Math.abs(O.rift - R.rift) +
+      curve(O.riftProf, R.riftProf) +
       Math.abs(O.colour - R.colour) +
       Math.abs(O.purp - R.purp)
     ).toFixed(4);

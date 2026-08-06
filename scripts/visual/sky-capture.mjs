@@ -112,7 +112,10 @@ const termos = {
   perfil: curva(O.nprof, R.nprof),
   cor: Math.abs(O.colour - R.colour),
   purpura: Math.abs(O.purp - R.purp),
-  fenda: Math.abs(O.rift - R.rift),
+  // a fenda é comparada bin a bin desde a rodada 37: o escalar
+  // (média das profundidades) era cego ao LUGAR do vale e cancelava
+  // uma anticorrelação quase perfeita — ver o cabeçalho do sky-measure
+  fenda: curva(O.riftProf, R.riftProf),
   bojoAnti: Math.abs(O.bulgeAnti - R.bulgeAnti) / R.bulgeAnti,
 };
 const total = Object.values(termos).reduce((a, b) => a + b, 0);
@@ -137,6 +140,22 @@ if (comPerfil) {
     console.log(
       `  ${String(lon(i)).padStart(5)} ${O.nprof[i].toFixed(2).padStart(7)}` +
         ` ${R.nprof[i].toFixed(2).padStart(7)} ${(d > 0 ? '+' : '') + d.toFixed(2)}  ${barra}`
+    );
+  }
+  // a fenda por longitude, com a latitude do vale ao lado. b = ±10,1°
+  // significa que o mínimo caiu na BORDA da busca — ou seja, vale nenhum.
+  const lr = [];
+  for (let i = 0; i < n; i++) {
+    const l = ((i + 0.5) / n) * 360 - 180;
+    if (l >= -35 && l <= 45) lr.push(Math.round(l));
+  }
+  console.log('\n  l    fenda   ref     dif   |   b do vale (nosso/ref)');
+  for (let k = 0; k < lr.length; k++) {
+    const d = O.riftProf[k] - R.riftProf[k];
+    console.log(
+      `  ${String(lr[k]).padStart(5)} ${O.riftProf[k].toFixed(3).padStart(7)}` +
+        ` ${R.riftProf[k].toFixed(3).padStart(7)} ${(d > 0 ? '+' : '') + d.toFixed(3)}` +
+        `   |  ${O.riftB[k].toFixed(1).padStart(6)} ${R.riftB[k].toFixed(1).padStart(6)}`
     );
   }
 }

@@ -262,6 +262,11 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    0,3617 (46%) · **perfil 0,2691 (34%)** · cor 0,1335 (17%) · purp
    0,0126 · rift 0,0087 · bulgeAnti 0,0029. A ordem desta lista estava
    errada por omissão: o perfil é o segundo maior e ninguém o atacou.
+   **PESOS HISTÓRICOS — a rodada 37 re-baselinou a régua** (o termo da
+   fenda passou a comparar a curva por longitude) e o estado atual é
+   skyError **0,8693**: espessura 0,3239 · perfil 0,2180 · fenda 0,1854 ·
+   cor 0,1192 · purp 0,0207 · bojoAnti 0,0022. Os números acima e abaixo
+   nesta seção são da era anterior e não se comparam com os de hoje.
    Três testes fecham o diagnóstico, nesta ordem: (a) **não é rotação** —
    deslocar o nosso perfil varre um mínimo raso em −7,5° (0,2604 contra
    0,2691), sem vale; e espelhar l → −l dá 0,4216, então a quiralidade
@@ -1535,6 +1540,80 @@ corpo do laço em `common.ts:158-161` roda SEMPRE por slot. Fica nomeado.
 **Bug visual achado no caminho (não é de gate):** `nebulaShaders.ts:312`
 (`tMax = 650`) corta pela metade, DENTRO DO QUADRO, qualquer volume de
 150–600 pc no plano t = 104–116 do filme — um arco de truncamento no ar.
+
+## Rodada 37 (2026-08-06) — o termo da fenda era cego ao LUGAR, e a Grande Fenda entrou
+
+A rodada 36 terminou dizendo que a Grande Fenda estava certa e o gate a
+recusava. O dono autorizou consertar a régua. Consertada, a fenda entrou —
+e o que ela destapou é maior do que ela.
+
+**O termo estava mentindo, e o número é grosseiro.** `rift` era o ESCALAR
+`|média(nossa) − média(ref)|` sobre as 11 longitudes de l ∈ [−35°, +45°]:
+0,0087, quase cravado. Comparando bin a bin, a mesma captura dá **0,5241** —
+a média cancelava uma **anticorrelação quase perfeita**:
+
+| l | nossa | foto | l | nossa | foto |
+|---|---|---|---|---|---|
+| −11 | **0,683** | −0,049 | +19 | −0,070 | 0,224 |
+| −4 | **0,756** | −0,158 | +26 | −0,029 | **0,758** |
+| +4 | **0,810** | −0,110 | +34 | −0,077 | **0,817** |
+
+Tínhamos um vale FUNDO cortando o centro galáctico, onde a foto não tem
+nenhum, e vale NENHUM em l = +26°/+34°, onde a foto tem o mais escuro do
+céu. A latitude confirma: em l = +26°/+34° o mínimo da foto está em
+b = +4,1°/+2,4° (o Aquila) e o nosso está preso em −10,1°, a BORDA da
+janela de busca — o código de "não existe vale aqui".
+
+**A correção é a menor possível: comparar a CURVA, como `nprof` e `thick` já
+faziam.** `riftProf` (profundidade por longitude) entra no skyError;
+`riftB` (a latitude do vale) fica exposta como diagnóstico e é impressa por
+`--perfil`. *ponytail: a latitude não entra na nota — um vale certo em
+longitude e espelhado em b passaria, mas para isso a poeira teria de deixar
+de ser simétrica em b, e aí a curva de profundidade já acusa. Se o caso
+aparecer, `riftB` vira termo.*
+
+**RE-BASELINE: os números do céu a partir daqui NÃO são comparáveis com o
+histórico.** Mesma imagem, régua nova: **0,7885 → 1,3039**, e a fenda vira o
+maior termo (0,5241, 40%).
+
+**E aí a rodada 36 pagou.** Duas mudanças, um mecanismo: a poeira
+axissimétrica das rodadas 32/33 (`bandav 0,15`) sai, e as quatro nuvens do
+Aquila Rift entram no lugar dela. **skyError 1,3039 → 0,8693, −33%.**
+
+| termo | antes | depois | alvo |
+|---|---|---|---|
+| **fenda** (curva) | 0,5241 | **0,1854** | 0 |
+| espessura | 0,3617 | **0,3239** | 0 |
+| perfil por longitude | 0,2691 | **0,2180** | 0 |
+| cor | 0,1335 | **0,1192** | 0 |
+| bojoAnti | 0,0029 | **0,0022** | 0 |
+| púrpura | 0,0126 | 0,0207 | 0 |
+| **skyError** | **1,3039** | **0,8693** | 0 |
+
+Cinco dos seis termos melhoram, e os dois maiores da era anterior
+(espessura e cor) melhoram JUNTO — eram eles que a poeira axissimétrica
+pagava. Só o púrpura piora (+0,008), e ele é 2% do erro.
+
+**Série de dose medida (21 capturas; `riftav` × `bandav`):** 1,2×0 →
+**0,8693** · 1,5×0 → 0,8595 · 1,8×0 → 0,8981 · 2,2×0 → 0,9477 · 1,5×0,015 →
+0,8929 · 1,2×0,04 → 0,9042 · 1,5×0,03 → 0,9151 · 1,5×0,05 → 0,9511 ·
+1×0,05 → 0,9342 · 2×0,05 → 1,0168 · 1,5×0,08 → 1,0196 · 2,5×0,05 → 1,0770 ·
+1×0,15 → 1,3015 · 2×0,15 → 1,4039. **A dose 1,5 vence por 0,0098 e NÃO foi
+tomada**: 1,2 é o valor conservador da literatura (picos de 1,44 a 2,64 mag
+contra o A_V ≤ 3 de Straižys) e deixa o bulgeAnti cravado. A dose vem da
+física, a nota se aceita como vem — a mesma disciplina do `corewall` da r34.
+
+**Pendência honesta declarada:** com `bandav = 0` a faixa DISTANTE volta a
+ser opticamente fina (só `dustProc`, 0,004 mag/kpc, e as fendas APOGEE), o
+que é física pior que 0,15 mag/kpc. O gate prefere assim porque a
+componente axissimétrica cavava o centro; a saída certa não é zero, é
+re-dosar **`bandav`, `dustrd` e `bulgeq` JUNTOS sob a régua nova** — os três
+foram calibrados contra o termo quebrado. É a rodada seguinte, e agora ela
+tem juiz.
+
+**Knobs / identidade:** `?riftav=` (multiplicador dos A_V da tabela;
+**0 + `bandav=0.15` devolve o estado da rodada 36 EXATO**, mesmo GLSL,
+conferido por md5) e `?bandav=` (0,15 = a poeira difusa das r32/33).
 
 ## Decisões fechadas
 

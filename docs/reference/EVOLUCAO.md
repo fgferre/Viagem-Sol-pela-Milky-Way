@@ -40,6 +40,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 26 | 0.0346 | 0.1286 | 0.0703 | 0.1050 | roteiro novo em shots: 4 atos, Sgr A* Gargantua, holds de medição com roll do rig antigo assado (t 261/293) |
 | 27 | 0.0370 | 0.1293 | 0.0699 | 0.1044 | warp com a fase certa: 185 e nao 5 — a quiralidade do S contra a recriacao-alvo estava invertida (ablacao: warpAsym -0,35 -> +0,22; maior salto da serie) |
 | 33 | 0.0371 | 0.1299 | 0.0663 | 0.1047 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
+| 37 | 0.0371 | 0.1299 | 0.0663 | 0.1047 | regua da fenda por longitude + Grande Fenda no lugar real |
 
 ## Edge-on
 
@@ -79,3 +80,4 @@ sessões: comparar sempre A/B na MESMA sessão.
 | 32 | 1.0767 | 0.5178 | 5.116 | 0.1807 | -0.0668 | a faixa era opticamente FINA: componente difusa ancorada em A_V (0,15 mag/kpc) na camada de gás (h 70 pc) |
 | 33 | 0.9459 | 0.4160 | 5.069 | 0.2555 | -0.0708 | bojo achatado (c/a 0,30, luminosidade conservada) + poeira com escala radial própria (2,1 kpc) |
 | 34 | 0.8134 | 0.3499 | 5.735 | 0.2555 | -0.0685 | o corredor de Órion começava DENTRO da Bolha Local: os 7 núcleos deslocados +130 pc ao longo da própria direção (138–348 pc); face-on e edge-on bit-idênticos |
+| 37 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | regua da fenda por longitude + Grande Fenda no lugar real |

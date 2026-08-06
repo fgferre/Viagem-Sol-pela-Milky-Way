@@ -24,10 +24,22 @@ const DUSTH = qnum('dusth', 70);
 const DH0 = DUSTH.toFixed(1);
 const DH1 = (DUSTH * (460 / 210)).toFixed(1);
 // Extinção DIFUSA da faixa, em A_V mag/kpc no plano ao raio solar
-// (?bandav=; 0 devolve o estado anterior à rodada 32). O fator
-// 2,6316 = 1/(1000 · 1,0857 · 0,00035) converte mag/kpc nas unidades
-// de `dust` do integrador.
-const BANDAV = qnum('bandav', 0.15);
+// (?bandav=). O fator 2,6316 = 1/(1000 · 1,0857 · 0,00035) converte
+// mag/kpc nas unidades de `dust` do integrador.
+// **DESLIGADA na rodada 37, e a razão é a régua.** O 0,15 das rodadas
+// 32/33 foi dosado contra o termo de fenda ESCALAR, que era cego ao lugar
+// do vale: esta componente axissimétrica cavava uma fenda em b ≈ 0 em
+// TODA longitude e marcava ponto por isso. Com o termo comparando a curva
+// por longitude, ela passou a ser um defeito medido — é ela que cava o
+// centro galáctico (l = ±4°: 0,76/0,81 contra −0,16/−0,11 da foto), onde
+// a foto não tem vale nenhum. A coluna que a faixa precisa agora vem de
+// onde ela vem de verdade: nuvens. **?riftav=0&bandav=0.15 devolve o
+// estado da rodada 36 EXATO** (mesmo GLSL, conferido por md5).
+// Pendência honesta: com 0 a faixa distante volta a ser opticamente fina
+// (só `dustProc` 0,004 mag/kpc e as fendas APOGEE), o que é física pior
+// que 0,15. Re-dosar `bandav`, `dustrd` e `bulgeq` JUNTOS sob a régua nova
+// é a rodada seguinte — os três foram calibrados contra o termo quebrado.
+const BANDAV = qnum('bandav', 0);
 const DIFFUSE = (BANDAV * 2.6316).toFixed(4);
 // A poeira do disco tem escala radial PRÓPRIA, mais curta que a das
 // estrelas: o código herdava os 5200 pc do disco fino estelar sem
@@ -47,6 +59,62 @@ const DUSTRD = qnum('dustrd', 2100).toFixed(1);
 // muda, como a poeira da rodada 32. Sem a conservação o gate desaba
 // (bulgeAnti 3,82 contra 5,07): medido, não suposto.
 const BULGEQ = qnum('bulgeq', 0.3);
+// A GRANDE FENDA (?riftav=; 0 devolve o estado anterior EXATO — o template
+// não emite uma linha, provado por md5 face a face). O panorama ESO mostra
+// uma cunha escura subindo do plano entre l = +8° e +45°, com o núcleo em
+// b ≈ +5°: é o Aquila Rift, poeira LOCAL entre 200 e 700 pc. O nosso céu não
+// a tinha — o perfil por longitude era quase SIMÉTRICO (l=+19 vale 2,29 e
+// l=−19 vale 2,35) enquanto a foto é 2,6× mais escura do lado positivo.
+// Cada nuvem é uma gaussiana esférica em posição FIXA de cena (não segue a
+// câmera): (l°, b°, distância pc, raio gaussiano pc, A_V de pico mag).
+// Distâncias e A_V da literatura — Straižys 2003 (borda frontal 225±55 pc,
+// A_V até 3), Ortiz-León 2017 (W40/Serpens 436±9 pc por VLBA), Su 2020
+// (CO 12/13 em l 26–50: 93% da coluna vem de 400–770 pc, não dos 250).
+// Dose 1,2 = os A_V da tabela ×1,2 (picos de 1,44 a 2,64 mag), dentro do
+// A_V ≤ 3 que Straižys mede. O gate preferia 1,5 por 0,0098 (0,8595 contra
+// 0,8693) — não tomado: 1,2 é o valor conservador da literatura E deixa o
+// bulgeAnti cravado (0,0022 contra 0,0526 em 1,8). Mesma disciplina do
+// `corewall` da rodada 34: a dose vem da física, a nota se aceita como vem.
+const RIFTAV = qnum('riftav', 1.2);
+const RIFT_CLOUDS: ReadonlyArray<readonly [number, number, number, number, number]> = [
+  [13.0, 7.0, 260, 30, 1.2],
+  [23.0, 5.0, 250, 26, 1.5],
+  [32.0, 3.0, 440, 36, 2.2],
+  [39.0, 1.5, 650, 42, 1.4],
+];
+// A coluna é ANALÍTICA e fica FORA do laço de 24 passos: entre 150 e 700 pc
+// o laço só tem três amostras (t = 195, 280, 442) e uma nuvem de 30 pc
+// cairia entre elas — aliasing garantido, e a fenda piscaria com a câmera.
+// A integral de uma gaussiana ao longo do raio fecha em elementar
+// (∫ρ dl = ρ₀·σ·√2π·e^(−h²/2σ²)), então guardamos direto o A_V de pico e só
+// falta a queda com a distância PERPENDICULAR h ao centro. Aqui a extinção
+// é PURA: o `dust` do LUT só atenua, ao contrário do raymarch local, onde a
+// mesma `alpha` que apaga também acende. `smoothstep(-σ, σ, t0)` é a fração
+// da nuvem que está À FRENTE — ela para de escurecer quando a câmera a
+// ultrapassa (o mergulho do ato III passa a ~50 pc da borda).
+const riftGLSL = (): string =>
+  RIFTAV === 0
+    ? ''
+    : `  float riftAv = 0.0;\n` +
+      RIFT_CLOUDS.map(([l, b, dist, sigma, av]) => {
+        const lr = (l * Math.PI) / 180;
+        const br = (b * Math.PI) / 180;
+        // direção heliocêntrica de (l, b) na base da cena: +GAL_Y aponta
+        // para l=270°, logo os coeficientes de GAL_X e GAL_Y são negativos
+        // (mesma convenção de galaxy.ts:85 e do builder dos binários)
+        const kx = -Math.cos(br) * Math.cos(lr);
+        const ky = -Math.cos(br) * Math.sin(lr);
+        const kz = Math.sin(br);
+        return `  { vec3 c = GAL_X * ${(kx * dist).toFixed(4)} + GAL_Y * ${(ky * dist).toFixed(4)} +
+      GAL_N * ${(kz * dist).toFixed(4)} - ro;
+    float t0 = dot(c, rd);
+    float h2 = max(dot(c, c) - t0 * t0, 0.0);
+    riftAv += ${(av * RIFTAV).toFixed(4)} * exp(-h2 * ${(1 / (2 * sigma * sigma)).toExponential(6)}) *
+      smoothstep(${(-sigma).toFixed(1)}, ${sigma.toFixed(1)}, t0); }`;
+      }).join('\n') +
+      // A_V → profundidade óptica: τ = A_V / 1,0857
+      `\n  light *= exp(-riftAv * 0.921065);\n`;
+
 // A cavidade H II "hero" é o 5º núcleo do corredor visto por dentro.
 const HERO = corridorCore(4);
 const SPHEROID =
@@ -244,6 +312,7 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     if (transmission < 0.02) break;
   }
 
+${riftGLSL()}
   return light / (1.0 + light * 0.55);
 }
 `;
