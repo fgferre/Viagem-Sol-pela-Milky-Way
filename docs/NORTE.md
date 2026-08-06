@@ -1628,13 +1628,20 @@ triangular a segunda é sempre ≥ a primeira, **com igualdade se e só se o
 sinal do erro for constante**. A razão entre as duas é a medida exata do
 que a média está escondendo: 1,00 = nada; a fenda antes da r37 dava 60×.
 
-**E há uma identidade que dá a forma certa DE GRAÇA, sem inventar peso.**
-Uma razão de somas *é* a média ponderada das razões locais: para
-`cor = (Σr·V − Σb·V)/(Σr·V + Σb·V)` vale `cor = Σ_k w_k c_k` com
-`w_k = Σ_bin (r+b)·V` e `c_k` a cor do bin. Então o termo honesto é
-`Σ_k w_k^ref · |c_k^nosso − c_k^ref|` — **os mesmos pesos, as mesmas
-unidades, e o peso vem da REFERÊNCIA** (com o nosso, um modelo ganharia
-nota escurecendo o bin em que erra).
+**E há uma identidade útil, mas ela NÃO é de graça.** Uma razão de somas *é*
+a média ponderada das razões locais: para `cor = (Σr·V − Σb·V)/(Σr·V + Σb·V)`
+vale `cor = Σ_k w_k c_k` com `w_k = Σ_bin (r+b)·V`. Tenta-se então escrever o
+termo honesto como `Σ_k w_k^ref · |c_k^nosso − c_k^ref|`. **Cuidado: a
+desigualdade triangular NÃO se aplica aqui**, porque o termo de hoje usa
+`w^nosso` de um lado e `w^ref` do outro, e a forma proposta usa `w^ref` nos
+dois. Contraexemplo de uma linha: se `c^nosso = c^ref` em todo bin mas os
+pesos diferirem, a forma nova dá 0 e a antiga não. A troca mexe em
+**ponderação e agregação ao mesmo tempo**, e o re-baseline tem sinal
+desconhecido. Usar o peso da REFERÊNCIA continua defensável por outro motivo
+— tira do termo de cor o peso de luminância, que o `perfil` já mede — mas é
+uma decisão, não um teorema. **A desigualdade só vale limpa quando os dois
+lados compartilham o peso** (é o caso de `fenda`, `perfil` e `espessura`,
+onde os bins têm contagem igual).
 
 | termo | gate | razão média\|Δ\| / \|médiaΔ\| | veredito |
 |---|---|---|---|
@@ -1660,14 +1667,16 @@ DUPLO a 16 dos 48 bins do perfil. Ele fica impresso porque afere a
 que o stretch asinh do protocolo está certo, e essa prova não se perde.
 skyError **0,8693 → 0,8672** (o termo valia 0,0022).
 
-**A COR é honesta, e isso corrige um erro meu.** A primeira decomposição
-usou média SIMPLES entre os 48 bins e deu 0,2682 — "2,3× o escalar". Está
-errado: dar o mesmo peso ao miolo brilhante e às bordas escuras infla o
-número com razões de bins quase pretos. Com o peso da referência,
-`cor' = 0,1264` contra 0,1191 do escalar — **1,06×**, e a razão é essa
-porque **os 48 bins erram todos para o MESMO lado**. Nada escondido.
-**Regra que fica: decompor um termo ponderado usando média simples não é
-auditá-lo, é trocá-lo por outro termo.**
+**A COR não está escondendo cancelamento, e a prova é DIRETA, não o
+teorema.** A primeira decomposição usou média SIMPLES entre os 48 bins e deu
+0,2682 — "2,3× o escalar". Está errado: dar o mesmo peso ao miolo brilhante
+e às bordas escuras infla o número com razões de bins quase pretos. Com o
+peso da referência, `cor' = 0,1264` contra 0,1191 — 1,06×. Mas a evidência
+que fecha a questão é olhar a tabela: **os 48 bins erram TODOS para o mesmo
+lado** (somos azuis demais em cada um deles). Onde o sinal é constante não
+há o que cancelar, e isso se vê sem nenhuma álgebra. **Regra que fica:
+decompor um termo ponderado usando média simples não é auditá-lo, é
+trocá-lo por outro termo.**
 
 **Mas o achado FÍSICO da decomposição é grande, e é do modelo, não da
 régua:** fora do miolo o nosso céu é grosseiramente azul demais —
@@ -1687,12 +1696,25 @@ da `espessura` e da `fenda`. Abrir viraria a doença do `bojoAnti` — peso
 duplo. A fatoração certa é ortogonal por construção: `perfil` = amplitude
 azimutal, `espessura` = forma em b, `fenda` = mínimo local contra flancos.
 
-**Controle que valida o termo novo da fenda:** estrelas podem fabricar
-profundidade (uma no flanco sobe o `flank`) ou apagá-la (uma no mínimo).
-Medido com `?nocat=1&nowrap=1`: o movimento médio é **0,0236 contra um
-sinal de 0,1854 — razão 0,127**. O termo é decidido por poeira. Dois bins
-são sensíveis e devem ser lidos com cuidado: l = −34° (0,096) e
-l = +11° (0,055).
+**Controle de ESTRELA, e ele vale para todos os termos.** Estrelas podem
+fabricar profundidade de fenda (uma no flanco sobe o `flank`) ou apagá-la
+(uma no mínimo), e a coluna da fenda soma só **30 px** contra os 2.400 px de
+um bin do `nprof` — 80× mais frágil, com `min` e `max`, as duas estatísticas
+de ordem mais sensíveis a outlier do projeto. Medido com `?nocat=1&nowrap=1`:
+
+| termo | base | sem estrelas | movimento |
+|---|---|---|---|
+| espessura | 0,3239 | 0,2979 | −8,0% |
+| perfil | 0,2180 | 0,2429 | **+11,4%** (8 dos 48 bins) |
+| **fenda** | 0,1854 | 0,1871 | **+0,9%** (0 dos 11 bins) |
+| cor | 0,1192 | 0,1170 | −1,8% |
+| purpura | 0,0207 | 0,0216 | +4,3% |
+| bojoAnti | 0,0022 | 0,2347 | **×107** |
+
+**A fenda passa** — o mecanismo frágil é real mas não aparece, porque
+`nohero=1` e o stretch `knee=0.02&exp=4.4` comprimem exatamente o pico. Quem
+tem sensibilidade real é o `perfil` (11%) e a `espessura` (8%). E o ×107 do
+`bojoAnti` é mais um motivo para ele ter saído da soma.
 
 **Cuidado de método que a auditoria destapou — a régua "determinística"
 prova menos do que parece.** O NORTE registra 3 repetições × 3
@@ -1717,11 +1739,32 @@ costuras em l = ±45° caem exatamente em fronteira de bin.
 `harmonicError` e `thickRatio` no gate EXTERNO. Os dois são o mesmo caso já
 provado aqui, e o `harmonicError` já tinha sido diagnosticado na rodada 30
 (“a média escondia erro de FORMA radial porque o miolo compensava a borda”)
-sem nunca ser trocado. Estimativa a partir dos números que a r30 registra:
-só o m=2 daria `média|Δ| ≈ 0,048` contra os 0,0112 que entram hoje —
-fator ~4,3, e o re-baseline do face-on iria de 0,0371 para algo entre 0,12
-e 0,20. **É um re-baseline do OUTRO gate, que quebra a comparabilidade de
-~30 rodadas do `EVOLUCAO.md`: decisão do dono, não de rodada.**
+sem nunca ser trocado. **A magnitude, porém, NÃO se estima dos números da
+r30**: aqueles são de ANTES da correção dela, que mexeu exatamente no anel
+1,0–1,22 R90 e deixou m=2 em 0,2408 contra 0,2490 — com o sinal invertido.
+O cancelamento segue estruturalmente possível e documentado como medido,
+mas qualquer número de re-baseline hoje é extrapolação. O caminho é barato e
+sem GPU: `analyse` já calcula `amp[m]` por anel e o descarta — basta guardar
+e comparar como curva, do mesmo jeito que a `fenda`. **É um re-baseline do
+OUTRO gate, que quebra a comparabilidade de ~30 rodadas do `EVOLUCAO.md`:
+decisão do dono, não de rodada.**
+
+**O buraco que a auditoria destapou e que é MAIOR que qualquer
+cancelamento:** no gate face-on, `profile`, `colour` e `purp` são
+calculados e **não entram em score nenhum** — nem em `harmonicError` (que
+só usa `harmonics`) nem em `clumpError` (clump + `grainOuter`). O
+`EVOLUCAO.md` mostra `purp` em **0,1047 contra alvo 0,2010 — metade, e
+parado desde a rodada 20**, dezessete rodadas sem juiz. Nenhum termo mal
+formado desta auditoria custa isso.
+
+**Bug de ledger consertado aqui, e é da ferramenta:** `rodada.mjs` apendava
+a linha do edge-on no fim do ARQUIVO. Isso valia quando Edge-on era a última
+tabela; com a tabela “Céu interno” abaixo dela, a linha do edge-on caía
+dentro da tabela do céu (aconteceu na r37 e foi commitado). A linha agora
+entra no fim da PRÓPRIA seção, e a checagem de duplicata olha só ela — o
+regex antigo era guloso e achava a rodada em qualquer tabela abaixo, o que
+mascarava o erro. **Regra: escrita em documento com seções nunca apenda no
+fim do arquivo.**
 
 ## Decisões fechadas
 

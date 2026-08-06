@@ -64,6 +64,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 26 | 0.6456 | 0.0503 | 0.0929 | 0.9052 | 0.0329 | roteiro novo em shots: 4 atos, Sgr A* Gargantua, holds de medição com roll do rig antigo assado (t 261/293) |
 | 27 | 0.4396 | 0.0393 | 0.0810 | 0.8506 | 0.0425 | warp com a fase certa: 185 e nao 5 — a quiralidade do S contra a recriacao-alvo estava invertida (ablacao: warpAsym -0,35 -> +0,22; maior salto da serie) |
 | 33 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
+| 37 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | régua da fenda + Grande Fenda: BIT-IDÊNTICO à rodada 33 (md5 `c0743465`), como manda a construção — a mudança vive só no LUT da faixa e `nebulaFade = 0` nos dois holds |
 
 ## Céu interno (panorama ESO)
 
@@ -80,4 +81,6 @@ sessões: comparar sempre A/B na MESMA sessão.
 | 32 | 1.0767 | 0.5178 | 5.116 | 0.1807 | -0.0668 | a faixa era opticamente FINA: componente difusa ancorada em A_V (0,15 mag/kpc) na camada de gás (h 70 pc) |
 | 33 | 0.9459 | 0.4160 | 5.069 | 0.2555 | -0.0708 | bojo achatado (c/a 0,30, luminosidade conservada) + poeira com escala radial própria (2,1 kpc) |
 | 34 | 0.8134 | 0.3499 | 5.735 | 0.2555 | -0.0685 | o corredor de Órion começava DENTRO da Bolha Local: os 7 núcleos deslocados +130 pc ao longo da própria direção (138–348 pc); face-on e edge-on bit-idênticos |
-| 37 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | regua da fenda por longitude + Grande Fenda no lugar real |
+| 35 | 0.7885 | 0.3617 | 5.584 | 0.2531 | -0.0694 | catálogo estelar 18.543 → 328.749 (cobertura = magnitude E horizonte E presença) |
+| 37 | 0.8693 | 0.3239 | 5.580 | 0.1122 | -0.0551 | **RÉGUA NOVA — não comparar com as linhas acima**: o termo da fenda passou a comparar a curva POR LONGITUDE (o escalar cancelava uma anticorrelação quase perfeita: 0,0087 contra 0,5241 reais). A mesma imagem da linha 35 marca 1,3039 nesta régua. Na régua nova, a poeira axissimétrica saiu (`bandav` 0,15 → 0) e as quatro nuvens do Aquila Rift entraram: 1,3039 → 0,8693 |
+| 37b | 0.8672 | 0.3239 | 5.580 | 0.1122 | -0.0551 | auditoria dos termos: `bojoAnti` saiu da soma (é função EXATA do `perfil` — peso duplo em 16 dos 48 bins); segue impresso porque afere a RÉGUA |

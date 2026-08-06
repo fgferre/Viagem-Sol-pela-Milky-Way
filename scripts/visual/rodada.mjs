@@ -181,8 +181,18 @@ ${alvos}
 ${alvosE}
 `;
   }
-  if (!doc.match(new RegExp(`## Edge-on[\\s\\S]*\\n\\| ${round} \\|`))) {
-    doc = doc.trimEnd() + '\n' + linhaE + '\n';
+  // A MESMA armadilha que o comentário da face-on descreve, e ela mordeu na
+  // rodada 37: apendar no fim do ARQUIVO punha a linha do edge-on DENTRO da
+  // tabela "Céu interno", que entrou depois — cinco números do edge-on numa
+  // tabela de seis colunas do céu, e o ledger passou por commit assim. A
+  // linha entra no fim da PRÓPRIA seção, e a checagem de duplicata olha só
+  // ela (o regex antigo era guloso e encontrava a rodada em QUALQUER tabela
+  // abaixo, o que também mascarava o erro).
+  const ini = doc.indexOf('\n## Edge-on');
+  const prox = doc.indexOf('\n## ', ini + 1);
+  const fim = prox < 0 ? doc.length : prox;
+  if (!doc.slice(ini, fim).includes(`\n| ${round} |`)) {
+    doc = doc.slice(0, fim).trimEnd() + '\n' + linhaE + '\n' + doc.slice(fim);
   }
   writeFileSync(LEDGER, doc);
   process.stdout.write('\n' + linha + '\n' + alvos + '\n' + linhaE + '\n' + alvosE + '\n');
