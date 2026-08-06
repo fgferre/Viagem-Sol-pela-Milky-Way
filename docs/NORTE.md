@@ -203,6 +203,14 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    `?pos=0,0,0&look=&fov=90&nosun=1&nohero=1&shot=2`, 1440²) + `scripts/visual/sky-measure.html`
    (costura equiretangular 1440×720 replicando a canonização EXATA do FreeRoam,
    orientação l do panorama resolvida SOZINHA pelas Nuvens de Magalhães — refFlip=true).
+   **Um comando só desde 2026-08-06** — capturar e medir eram dois, e o
+   segundo (Chrome com `file://` + `--dump-dom`) foi reescrito do zero em
+   duas rodadas por viver no scratchpad. Agora:
+   `node scripts/visual/sky-capture.mjs [tag] ["&query"] [--perfil]`,
+   que imprime o skyError, os seis termos com o peso de cada um e,
+   opcionalmente, o perfil bin a bin. Ablação é `sky-capture.mjs nowrap
+   "&nowrap=1"`. Lembrete de leitura: o perfil é NORMALIZADO pela própria
+   média, então ablação redistribui — comparar bin a bin, nunca só o agregado.
    Pré-requisito que caiu: o slerp de entrada do FreeRoam não convergia sob
    virtual time e as faces saíam com orientação intermediária (faixa diagonal
    ~38°); `placeCamera` agora encaixa a orientação canônica no frame 1
@@ -249,10 +257,35 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    Rift (150–600 pc) nos bins l = −34°…−19°, e o resíduo do anticentro
    passou a ter dois donos medidos (envelope de gás local e disco
    espesso da LUT — ver rodada 34);
-   **(2) colour −0,071 vs 0,064** — a revelação
+   **(2) o PERFIL por longitude — 34% do erro, e nunca esteve nesta
+   lista.** Medido em 2026-08-06 sobre o skyError 0,7885: espessura
+   0,3617 (46%) · **perfil 0,2691 (34%)** · cor 0,1335 (17%) · purp
+   0,0126 · rift 0,0087 · bulgeAnti 0,0029. A ordem desta lista estava
+   errada por omissão: o perfil é o segundo maior e ninguém o atacou.
+   Três testes fecham o diagnóstico, nesta ordem: (a) **não é rotação** —
+   deslocar o nosso perfil varre um mínimo raso em −7,5° (0,2604 contra
+   0,2691), sem vale; e espelhar l → −l dá 0,4216, então a quiralidade
+   está certa. (b) **Não é componente sobrando** — `nonebula` 0,5123,
+   `nogal` 0,3011, `nocat` 0,2869, `nowrap` 0,2692 (≈ nulo, como sempre):
+   TODA ablação piora, logo o defeito é a FORMA da faixa dominante (o
+   raymarch/LUT), não um intruso aditivo. (c) **É poeira faltando, e a
+   assinatura é a inclinação**: a referência cai 60% em 7,5° perto de
+   l = +19° (2,02 → 0,81), um degrau que ponta de braço não faz e faixa
+   de poeira na frente faz; a nossa desce lisa (3,18 → 2,29). Saldo por
+   setor: **+2,98 sobrando em l = +15…+45** e **−2,60 faltando em
+   l = −90…−45** (Carina 282° e Centauro 310°, os tangentes brilhantes
+   do céu real). Ou seja: a Grande Fenda / Aquila Rift (150–600 pc) que
+   já estava anotada acima como pendência pequena vale, medida, um
+   terço do erro do céu. Rodada candidata: pôr a nuvem no LUGAR e na
+   DISTÂNCIA certos — a assinatura das três correções que pagaram
+   (r32 poeira, r33 bojo, r34 corredor) é mudar onde a matéria está,
+   não quanto ela brilha;
+   **(3) colour −0,069 vs 0,064** — a revelação
    per-RGB dessatura além do alvo (β=0,1 dá +0,071 quase exato; o par
-   dose↔cor precisa de uma rodada própria, e chromsat interno é candidato);
-   **(3) purp 0,062 vs 0,078** — independe do tom: população (H II /
+   dose↔cor precisa de uma rodada própria, e chromsat interno é candidato).
+   **Refutado na rodada 35:** o catálogo 17,7× maior, cheio de anãs K/M,
+   NÃO moveu o termo (0,1326 → 0,1335) — não é população, é curva;
+   **(4) purp 0,066 vs 0,078** — independe do tom: população (H II /
    espalhamento), como a vista externa já sabia. O reequilíbrio 2-braços
    (marcado em `nebulaShaders.ts`/`wrappedStars.ts`) agora TEM juiz.
 3. **Tonemap da referência** — comparamos nossa imagem pós-ACES com a recriação
