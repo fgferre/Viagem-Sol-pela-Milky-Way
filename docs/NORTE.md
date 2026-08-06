@@ -2073,6 +2073,51 @@ intactos — aquele azul vem do raymarch, não desta constante. O contraste
 entre faixa e nuvem aumentou. Gates externos bit-idênticos pela terceira
 rodada seguida (`873e64b2` face-on, `c0743465` edge-on).
 
+## Diagnóstico da espessura do anticentro (2026-08-06) — o dono é o volume LOCAL
+
+O maior termo do gate do céu (espessura 0,3097, 40% da nota) concentra 22,4%
+do skyError inteiro em dez bins de |l| ≥ 112°, e eles são cegos a tudo que as
+rodadas 39 e 40 mexeram — bit-idênticos entre `bandav`, `bulgeq`, `riftav` e
+`coldt`. Nenhuma ablação existente separava os suspeitos: `?nonebula=1`
+derruba a LUT distante E o raymarch local de uma vez. Entrou `?nolocal=1`
+(diagnóstico, nunca default): apaga o laço de raymarch e o véu do plano e
+deixa **só a LUT da faixa**.
+
+| l | foto | base | só a LUT | sem estrelas |
+|---|---|---|---|---|
+| 188° | 4,50 | 6,50 | 5,00 | 5,50 |
+| **203°** | 4,50 | **9,75** | **5,75** | 9,75 |
+| 218° | 3,75 | 6,75 | 5,00 | 6,00 |
+| 233° | 3,50 | 5,50 | 6,50 | **3,75** |
+| 128° | 5,25 | 6,50 | 3,50 | 6,50 |
+| **173°** | 3,50 | **8,00** | **4,25** | 8,00 |
+
+**Soma de |erro| nos dez bins: base 20,25 · só a LUT 11,00 · sem estrelas
+17,25.** Ou seja: **o raymarch LOCAL carrega 46% do excesso, as estrelas 15%,
+e o resto é da LUT.** As duas hipóteses que a leitura de código sugeria estão
+REFUTADAS como donas: nem o disco espesso da LUT (escala radial 6500 pc) nem
+o `flare` explicam os dois piores bins, que caem de 9,75→5,75 e 8,00→4,25
+quando só o local sai. A lente adversária que apostou nas estrelas também
+erra o tamanho — mas acerta em UM bin: l = 233° vai a 3,75 contra 3,50 da
+foto quando o catálogo sai, e é inteiramente dele.
+
+**O mecanismo, e ele casa com o `perfil`:** no anticentro a faixa DISTANTE é
+fraca (nprof 0,44 contra 0,58 em l = 203°, 0,35 contra 0,45 em l = 173°),
+então a coluna passa a ser dominada pelo gás LOCAL, que a 200–800 pc subtende
+7–27° de latitude com a laje de 95 pc. Miolo fraco, asas claras — os dois
+termos dizem a mesma coisa por caminhos diferentes. **A pergunta da rodada
+seguinte não é "afinar o gás local" (95 pc é a espessura real do MI local) e
+sim por que o disco EXTERNO é pouco luminoso** — candidatos com endereço: o
+`edge` que trunca em 15,5 kpc e a escala radial 5200 pc do `thinDisk`.
+
+**Achado lateral que incomoda e fica registrado sem rodada:** `?nocat=1&nowrap=1`
+mede skyError **0,7689**, MELHOR que a baseline 0,7811 — o catálogo estelar
+piora a nota do céu. Ele paga espessura (0,3097 → 0,2837) e cor
+(0,0084 → 0,0017) e só compra perfil (0,2164 → 0,2344). Tirar o catálogo não
+é opção (ele é metade do projeto), mas o sinal é de que as estrelas estão
+largas ou brilhantes demais em |b| alto — a mesma família da PSF de largura
+fixa da unificação 1.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.

@@ -529,13 +529,23 @@ void main() {
     }
   }
 
-  // A luz galáctica está atrás das nuvens locais: regiões densas
+${
+  // DIAGNÓSTICO ?nolocal=1: apaga TUDO que é local (o laço de raymarch e o
+  // véu do plano) e deixa só a LUT da faixa distante. Existe porque o maior
+  // termo do gate do céu — a espessura no anticentro, 22% da nota — tem dois
+  // suspeitos que nenhuma ablação existente separa: `?nonebula=1` derruba os
+  // dois de uma vez, e `?nocat=1&nowrap=1` já provou que não são as estrelas
+  // (move só −8%). Nunca é default; é uma linha morta no template.
+  qnum('nolocal', 0) > 0 ? '  acc = vec3(0.0); T = 1.0;\n' : ''
+}  // A luz galáctica está atrás das nuvens locais: regiões densas
   // realmente ocultam a faixa quando a câmera mergulha nelas.
   acc += galacticLight * T;
 
   // Véu tênue de fundo, limitado ao plano galáctico.
   float gpRay = dot(rd, GAL_N);
-  acc += GAS_COOL * exp(-gpRay * gpRay * 5.0) * 0.0035 * T;
+  acc += GAS_COOL * exp(-gpRay * gpRay * 5.0) * 0.0035 * ${
+    qnum('nolocal', 0) > 0 ? '0.0' : 'T'
+  };
 
   // joelho suave — preserva gradientes, evita saturação uniforme
   acc = acc / (1.0 + acc * 0.72);
