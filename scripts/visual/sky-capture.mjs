@@ -116,7 +116,8 @@ const termos = {
   // (média das profundidades) era cego ao LUGAR do vale e cancelava
   // uma anticorrelação quase perfeita — ver o cabeçalho do sky-measure
   fenda: curva(O.riftProf, R.riftProf),
-  bojoAnti: Math.abs(O.bulgeAnti - R.bulgeAnti) / R.bulgeAnti,
+  // bojoAnti NÃO entra: é função exata do `perfil` (auditoria 2026-08-06).
+  // Segue impresso na linha de diagnóstico abaixo — ele afere a RÉGUA.
 };
 const total = Object.values(termos).reduce((a, b) => a + b, 0);
 console.log(`\nskyError ${j.skyError}  (${tag}${extra ? ' ' + extra : ''})`);

@@ -258,8 +258,17 @@ function dirOf(l, b) {
     const O = bandMetrics(ours);
     const R = bandMetrics(ref);
     const curve = (a, b) => a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
+    // bojoAnti SAIU da soma na auditoria de 2026-08-06: ele é função EXATA
+    // do `nprof`. bulgeAnti = média(nprof nos 8 bins de |l|<30) / média(nprof
+    // nos 8 bins do anticentro) — as janelas caem em fronteira de bin e a
+    // contagem de pixels por bin é a mesma, então a normalização por `pm`
+    // cancela na razão. Reconstruído do nprof da captura da r36 dá 5,590
+    // contra os 5,584 que o gate reportava (diferença = arredondamento a 4
+    // casas). Somá-lo era dar PESO DUPLO a 16 dos 48 bins do perfil.
+    // Continua calculado e IMPRESSO: ele afere a RÉGUA, não o modelo — os
+    // 5,58 contra 5,57 são a prova de 2026-08-03 de que o stretch asinh do
+    // protocolo está certo, e essa prova não se perde.
     const skyError = +(
-      Math.abs(O.bulgeAnti - R.bulgeAnti) / Math.max(R.bulgeAnti, 1e-9) +
       curve(O.nprof, R.nprof) +
       curve(O.thick, R.thick) / Math.max(R.thick.reduce((a,b)=>a+b,0)/R.thick.length, 1e-9) +
       curve(O.riftProf, R.riftProf) +

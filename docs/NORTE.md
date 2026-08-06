@@ -262,11 +262,12 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    0,3617 (46%) · **perfil 0,2691 (34%)** · cor 0,1335 (17%) · purp
    0,0126 · rift 0,0087 · bulgeAnti 0,0029. A ordem desta lista estava
    errada por omissão: o perfil é o segundo maior e ninguém o atacou.
-   **PESOS HISTÓRICOS — a rodada 37 re-baselinou a régua** (o termo da
-   fenda passou a comparar a curva por longitude) e o estado atual é
-   skyError **0,8693**: espessura 0,3239 · perfil 0,2180 · fenda 0,1854 ·
-   cor 0,1192 · purp 0,0207 · bojoAnti 0,0022. Os números acima e abaixo
-   nesta seção são da era anterior e não se comparam com os de hoje.
+   **PESOS HISTÓRICOS — a régua mudou duas vezes em 2026-08-06** (a r37 pôs
+   a fenda para comparar a curva por longitude; a auditoria tirou o
+   `bojoAnti` da soma por ser função exata do perfil). O estado atual é
+   skyError **0,8672** em CINCO termos: espessura 0,3239 · perfil 0,2180 ·
+   fenda 0,1854 · cor 0,1192 · purp 0,0207. Os números acima e abaixo nesta
+   seção são da era anterior e não se comparam com os de hoje.
    Três testes fecham o diagnóstico, nesta ordem: (a) **não é rotação** —
    deslocar o nosso perfil varre um mínimo raso em −7,5° (0,2604 contra
    0,2691), sem vale; e espelhar l → −l dá 0,4216, então a quiralidade
@@ -1614,6 +1615,113 @@ tem juiz.
 **Knobs / identidade:** `?riftav=` (multiplicador dos A_V da tabela;
 **0 + `bandav=0.15` devolve o estado da rodada 36 EXATO**, mesmo GLSL,
 conferido por md5) e `?bandav=` (0,15 = a poeira difusa das r32/33).
+
+## Auditoria dos termos dos dois gates (2026-08-06) — o que sobrou como regra
+
+Aberta pela r37: se o termo da fenda estava cravado por cancelamento, os
+outros podiam estar. Auditados os SEIS do céu e os do gate externo.
+
+**O TESTE, e ele é de uma linha.** Todo termo que resume uma FAMÍLIA (bins,
+anéis, escalas, bandas) pode ser escrito de duas formas: `|média(Δ)|`
+(o módulo depois) ou `média(|Δ|)` (o módulo dentro). Pela desigualdade
+triangular a segunda é sempre ≥ a primeira, **com igualdade se e só se o
+sinal do erro for constante**. A razão entre as duas é a medida exata do
+que a média está escondendo: 1,00 = nada; a fenda antes da r37 dava 60×.
+
+**E há uma identidade que dá a forma certa DE GRAÇA, sem inventar peso.**
+Uma razão de somas *é* a média ponderada das razões locais: para
+`cor = (Σr·V − Σb·V)/(Σr·V + Σb·V)` vale `cor = Σ_k w_k c_k` com
+`w_k = Σ_bin (r+b)·V` e `c_k` a cor do bin. Então o termo honesto é
+`Σ_k w_k^ref · |c_k^nosso − c_k^ref|` — **os mesmos pesos, as mesmas
+unidades, e o peso vem da REFERÊNCIA** (com o nosso, um modelo ganharia
+nota escurecendo o bin em que erra).
+
+| termo | gate | razão média\|Δ\| / \|médiaΔ\| | veredito |
+|---|---|---|---|
+| **fenda** | céu | **60×** antes da r37 | estava quebrado, consertado |
+| **bojoAnti** | céu | função EXATA do `perfil` | **peso duplo — SAIU da soma** |
+| purpura | céu | 1,56× | subestimado, mas vale 2% do erro |
+| espessura | céu | **1,12×** | honesto hoje |
+| cor | céu | **1,06×** | honesto: o sinal é constante |
+| perfil | céu | 1,91× se aberto em latitude | honesto na sua função (ver abaixo) |
+| **harmonicError** | externo | `Σ_m \|média sobre 56 anéis\|` | **quebrado, mesma doença da fenda** |
+| **thickRatio** | externo | média de 4 dos 12 bins de `thickness` | **peso duplo: os 12 já entram como curva** |
+| warpAmp | externo | \|·\| depois da média por lado | suspeito, não medido |
+| clumpInner/Outer | externo | curva elemento a elemento | honesto |
+
+**`bojoAnti` saiu do skyError e continua impresso.** A prova é aritmética
+fechada: `bulgeAnti` = média(`nprof` nos 8 bins de |l|<30) / média(`nprof`
+nos 8 bins do anticentro) — as janelas caem em fronteira de bin, a contagem
+de pixels por bin é igual e a normalização por `pm` cancela na razão.
+Reconstruído do `nprof` da r36 dá 5,590 contra os 5,584 que o gate
+reportava (a diferença é arredondamento a 4 casas). Somá-lo era dar peso
+DUPLO a 16 dos 48 bins do perfil. Ele fica impresso porque afere a
+**RÉGUA**, não o modelo: os 5,58 contra 5,57 são a prova de 2026-08-03 de
+que o stretch asinh do protocolo está certo, e essa prova não se perde.
+skyError **0,8693 → 0,8672** (o termo valia 0,0022).
+
+**A COR é honesta, e isso corrige um erro meu.** A primeira decomposição
+usou média SIMPLES entre os 48 bins e deu 0,2682 — "2,3× o escalar". Está
+errado: dar o mesmo peso ao miolo brilhante e às bordas escuras infla o
+número com razões de bins quase pretos. Com o peso da referência,
+`cor' = 0,1264` contra 0,1191 do escalar — **1,06×**, e a razão é essa
+porque **os 48 bins erram todos para o MESMO lado**. Nada escondido.
+**Regra que fica: decompor um termo ponderado usando média simples não é
+auditá-lo, é trocá-lo por outro termo.**
+
+**Mas o achado FÍSICO da decomposição é grande, e é do modelo, não da
+régua:** fora do miolo o nosso céu é grosseiramente azul demais —
+l = +154° dá −0,406 contra +0,132 da foto, l = −146° dá −0,465 contra
+−0,016 — enquanto no centro quase crava (+0,087 contra +0,121). A causa
+tem endereço de uma linha: o extremo FRIO de `diskColor`
+(`nebulaShaders.ts`, `vec3(0.30, 0.43, 0.78)`) vale exatamente
+**−0,4444** na métrica de cor, e é ele que pinta todo o disco longe do
+centro. É a dívida que o NORTE já registra em "Becos sem saída" como
+*cor do disco decidida por raio* — e que a unificação 1→3 substitui.
+Controle: `?nocat=1&nowrap=1` PIORA o desvio (0,2682 → 0,3251), então as
+estrelas mascaravam o defeito em vez de criá-lo.
+
+**Não abrir o `perfil` em latitude.** Ele erra 1,91× mais quando aberto em
+5 faixas de b, mas essa informação é a FORMA em latitude, que é o objeto
+da `espessura` e da `fenda`. Abrir viraria a doença do `bojoAnti` — peso
+duplo. A fatoração certa é ortogonal por construção: `perfil` = amplitude
+azimutal, `espessura` = forma em b, `fenda` = mínimo local contra flancos.
+
+**Controle que valida o termo novo da fenda:** estrelas podem fabricar
+profundidade (uma no flanco sobe o `flank`) ou apagá-la (uma no mínimo).
+Medido com `?nocat=1&nowrap=1`: o movimento médio é **0,0236 contra um
+sinal de 0,1854 — razão 0,127**. O termo é decidido por poeira. Dois bins
+são sensíveis e devem ser lidos com cuidado: l = −34° (0,096) e
+l = +11° (0,055).
+
+**Cuidado de método que a auditoria destapou — a régua "determinística"
+prova menos do que parece.** O NORTE registra 3 repetições × 3
+configurações reproduzindo seis termos a 4 casas. Isso não valida a
+métrica: o jitter do raymarch é `texture2D(uBlueNoise, gl_FragCoord.xy/64)`
+— tile FIXO indexado por coordenada de tela, sem `uTime` — e `?shot=`
+congela o relógio, então repetir é bit-idêntico **por construção**. Pior:
+o padrão fixo tem período de 64 px em meia-res = ~8° no centro da face,
+quase a escala do bin de 7,5°. **Afirmação sobre uma célula individual
+exige ablação do próprio ruído (deslocar o tile ou mudar N do raymarch),
+não repetição.**
+
+**Refutado pelo próprio adversário (não repetir a suspeita):** subamostragem
+de croma no JPEG da referência. O arquivo é **4:4:4** (SOF0, três
+componentes h=1 v=1, qualidade ~93); o erro de quantização na cor média de
+uma célula de 30°×20° é ~8·10⁻⁶ contra `cor` ≈ 0,12 — quatro ordens de
+grandeza abaixo. Os polos também não contaminam |b| < 10 (a face é
+escolhida por maior `dot(v, fwd)` e as equatoriais ganham sempre lá), e as
+costuras em l = ±45° caem exatamente em fronteira de bin.
+
+**O que a auditoria NÃO fez, e é a próxima decisão:** consertar
+`harmonicError` e `thickRatio` no gate EXTERNO. Os dois são o mesmo caso já
+provado aqui, e o `harmonicError` já tinha sido diagnosticado na rodada 30
+(“a média escondia erro de FORMA radial porque o miolo compensava a borda”)
+sem nunca ser trocado. Estimativa a partir dos números que a r30 registra:
+só o m=2 daria `média|Δ| ≈ 0,048` contra os 0,0112 que entram hoje —
+fator ~4,3, e o re-baseline do face-on iria de 0,0371 para algo entre 0,12
+e 0,20. **É um re-baseline do OUTRO gate, que quebra a comparabilidade de
+~30 rodadas do `EVOLUCAO.md`: decisão do dono, não de rodada.**
 
 ## Decisões fechadas
 
