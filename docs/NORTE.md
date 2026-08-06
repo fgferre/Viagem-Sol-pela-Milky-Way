@@ -265,10 +265,11 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    **PESOS HISTÓRICOS — a régua mudou TRÊS vezes em 2026-08-06** (a r37 pôs
    a fenda para comparar a curva por longitude; a auditoria tirou o
    `bojoAnti` da soma por ser função exata do perfil; a r39 pôs a fenda para
-   medir na latitude da FOTO). O estado atual é skyError **0,8783** em CINCO
-   termos: espessura 0,3097 · perfil 0,2172 · fenda 0,2100 · cor 0,1208 ·
-   purp 0,0206. Os números acima e abaixo nesta seção são de eras anteriores
-   e não se comparam com os de hoje.
+   medir na latitude da FOTO). O estado atual é skyError **0,7811** em CINCO
+   termos: espessura 0,3097 · perfil 0,2164 · fenda 0,2102 · purpura 0,0364 ·
+   cor 0,0084. Os números acima e abaixo nesta seção são de eras anteriores
+   e não se comparam com os de hoje. **A `cor` deixou de ser problema na r40
+   (0,1208 → 0,0084) e o `purpura` passou a ser o quarto termo.**
    Três testes fecham o diagnóstico, nesta ordem: (a) **não é rotação** —
    deslocar o nosso perfil varre um mínimo raso em −7,5° (0,2604 contra
    0,2691), sem vale; e espelhar l → −l dá 0,4216, então a quiralidade
@@ -2009,6 +2010,69 @@ e a **cor (+0,139/unidade)**. Segunda rodada seguida em que o adversário
 fecha o veredito por aritmética antes da GPU e erra o mecanismo: **usar o
 veredito dele, nunca a atribuição.**
 
+## Rodada 40 (2026-08-06) — a cor fria do disco era um corpo negro de 25.000 K
+
+A dívida que o NORTE registrava havia rodadas como "cor do disco decidida por
+raio" tinha um número e um endereço de uma linha: o extremo frio de
+`diskColor`, `vec3(0.30, 0.43, 0.78)`, valia **−0,4444** na métrica de cor e
+pintava TODO o disco longe do centro. Fora do miolo o céu media −0,406 em
+l = +154° contra +0,132 da foto.
+
+**O achado que decidiu a rodada: aquela constante É corpo negro.** Rodando a
+`blackbodyLinear` do próprio projeto (a mesma lei das estrelas, `common.ts`)
+e normalizando à luminância dela, 25.000 K devolve **(0,2977; 0,4302;
+0,7838)** contra os (0,30; 0,43; 0,78) pintados à mão — três casas. Ou seja:
+alguém escolheu, sem saber, a cor de um corpo negro **mais quente que uma
+estrela O**. Nenhuma população estelar INTEGRADA chega perto: as regiões mais
+azuis de uma Sc ficam em B−V ≈ 0,25 (~8.000 K), e um disco Sbc inteiro
+integra B−V ≈ 0,6, que Ballesteros converte em **5.968 K**.
+
+**A construção, e ela é o teste da hipótese.** `?coldt=` em kelvin, com duas
+quantidades da constante antiga CONSERVADAS:
+- **luminância Y = 0,4276** — a rodada não move um fóton de lugar, então
+  `espessura`, `perfil` e `fenda` TÊM de ficar parados. Ficaram, nas quatro
+  casas, nas oito capturas. Nenhuma outra rodada do céu teve controle assim.
+- **púrpura 0,141** — o G abaixo da média de R e B não é erro de corpo negro,
+  é o espalhamento λ^−1,3 e a emissão nebular que o projeto modela de
+  propósito. Sem conservar, o termo `purpura` (já baixo) pagaria mais.
+
+| T do extremo frio | 25.000 | 12.000 | 9.800 | 8.000 | 7.000 | 6.400 | **6.000** | 5.400 |
+|---|---|---|---|---|---|---|---|---|
+| skyError | 0,8796 | 0,8464 | 0,8319 | 0,8148 | 0,8014 | 0,7910 | **0,7811** | 0,7822 |
+| `cor` | 0,1220 | 0,0867 | 0,0700 | 0,0486 | 0,0315 | 0,0185 | **0,0084** | 0,0097 |
+
+**skyError 0,8783 → 0,7811, −11%**, e o termo `cor` praticamente zerou
+(`colour` +0,0557 contra +0,0641 da foto). O mínimo do gate cai **dentro da
+janela física** (B−V 0,5–0,75 ⇒ 5.400–6.400 K) e em cima do valor central —
+mesma situação do `bulgeq` na r39: a literatura dá o intervalo, o gate
+escolhe dentro dele.
+
+**Cuidado de método que a rodada ensina, e vale para qualquer constante
+pintada: rode a lei física do projeto sobre ela antes de discutir a dose.**
+Se a constante estiver na curva, você descobre de graça o parâmetro que
+alguém escolheu sem declarar — e aqui o parâmetro era absurdo. O knob passou
+a ser a TEMPERATURA, não três floats: `?coldt=25000` devolve o estado antigo
+(em 3 casas, não bit-exato — a normalização mexe no quarto decimal).
+
+**O preço, declarado:** `purpura` 0,0206 → 0,0364 (`purp` 0,0577 → 0,0420
+contra alvo 0,0784). A cor ganha ~7× o que o púrpura perde, mas a rodada
+AFASTA o púrpura do alvo, e ele é a mesma deficiência que a vista externa
+carrega desde a r20. Não é dívida nova, é a mesma — e a resposta dela
+continua sendo população (H II, espalhamento), não paleta.
+
+**O que NÃO se resolveu, e continua em "Becos sem saída":** a cor do disco
+ainda é decidida por RAIO (`mix(cold, warm)` com `towardCenter`), então o
+disco segue geometricamente incapaz de púrpura onde a física o pede. A r40
+troca um extremo errado por um extremo defensável; **a unificação 1→3
+continua sendo o conserto de verdade.**
+
+**Olhar, não só medir (critério do dono):** comparadas as faces do
+anticentro antes e depois, o véu azul da faixa distante virou um brilho
+pálido e neutro, e as nuvens LOCAIS mantiveram azul-petróleo e púrpura
+intactos — aquele azul vem do raymarch, não desta constante. O contraste
+entre faixa e nuvem aumentou. Gates externos bit-idênticos pela terceira
+rodada seguida (`873e64b2` face-on, `c0743465` edge-on).
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.
@@ -2083,7 +2147,10 @@ Já medidos e refutados — a lista completa das hipóteses de espiral está em
 - Subir contraste geral dos braços: amplifica todos os harmônicos junto.
 - Desacoplar a fase da poeira da fase da luz: piora muito.
 - Cor do disco decidida por raio (`mix(cold, warm)` com piso de dourado): torna o disco
-  geometricamente incapaz de púrpura. É o que a unificação 1→3 substitui.
+  geometricamente incapaz de púrpura. É o que a unificação 1→3 substitui. **A rodada 40
+  NÃO fecha isto** — ela só trocou o extremo FRIO (um corpo negro de 25.000 K, mais quente
+  que uma estrela O) pelos 6.000 K de um disco Sbc real, com luminância e púrpura
+  conservados. O `mix` por raio segue lá, e o púrpura segue baixo.
 - **Pesar H II para subir o púrpura: não funciona.** O raciocínio é tentador — H II tem o
   purp mais alto da cena (+0,303) — e foi medido nas rodadas 06/07: com fluxo conservado,
   purp fica em 0,1205 contra 0,1206 sem a mudança. Os 9.000 nós são área pequena demais, e

@@ -65,6 +65,7 @@ raios que antes ninguém cobrava. `discMean` fica FORA das notas de propósito:
 |---|---|---|---|---|---|---|---|
 | 38 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | auditoria: harmonicas anel a anel, toneError novo, thickRatio fora da soma |
 | 39 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | bojo c/a 0,30 -> 0,26 (Wegg & Gerhard); regua da fenda mede na latitude da foto |
+| 40 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
 
 ## Edge-on
 
@@ -91,6 +92,7 @@ raios que antes ninguém cobrava. `discMean` fica FORA das notas de propósito:
 | 37 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | régua da fenda + Grande Fenda: BIT-IDÊNTICO à rodada 33 (md5 `c0743465`), como manda a construção — a mudança vive só no LUT da faixa e `nebulaFade = 0` nos dois holds |
 | 38 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | auditoria: harmonicas anel a anel, toneError novo, thickRatio fora da soma |
 | 39 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | bojo c/a 0,30 -> 0,26 (Wegg & Gerhard); regua da fenda mede na latitude da foto |
+| 40 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
 
 ## Céu interno (panorama ESO)
 
@@ -111,4 +113,5 @@ sessões: comparar sempre A/B na MESMA sessão.
 | 37 | 0.8693 | 0.3239 | 5.580 | 0.1122 | -0.0551 | **RÉGUA NOVA — não comparar com as linhas acima**: o termo da fenda passou a comparar a curva POR LONGITUDE (o escalar cancelava uma anticorrelação quase perfeita: 0,0087 contra 0,5241 reais). A mesma imagem da linha 35 marca 1,3039 nesta régua. Na régua nova, a poeira axissimétrica saiu (`bandav` 0,15 → 0) e as quatro nuvens do Aquila Rift entraram: 1,3039 → 0,8693 |
 | 37b | 0.8672 | 0.3239 | 5.580 | 0.1122 | -0.0551 | auditoria dos termos: `bojoAnti` saiu da soma (é função EXATA do `perfil` — peso duplo em 16 dos 48 bins); segue impresso porque afere a RÉGUA |
 | 39a | 0.8874 | 0.3239 | 5.580 | 0.0817 | -0.0551 | **RÉGUA DE NOVO — a linha 37b é a MESMA imagem** (nada foi capturado): a fenda passou a medir a NOSSA profundidade na latitude onde a FOTO tem o vale, em vez de cada um no seu próprio mínimo. O buraco estava pré-registrado na r37 e apareceu: com `bandav=0,05` o bin l=+41° marcava 0,311 contra 0,300 da foto com o vale nosso em b=+0,4° e o dela em b=+9,9° — um bin invertia o veredito de uma rodada inteira |
+| 40 | **0.7811** | 0.3097 | 5.455 | 0.0760 | **0.0557** | extremo frio de `diskColor`: a constante pintada `vec3(0.30,0.43,0.78)` ERA corpo negro de ~25.000 K (conferido: `?coldt=25000` a reproduz em 3 casas) — mais quente que qualquer população integrada e que uma estrela O. Agora sai da `blackbodyLinear` das estrelas a **6.000 K** (B−V 0,60, disco Sbc), com luminância e púrpura conservados. Oito doses: 25k→0,8796 · 12k→0,8464 · 9,8k→0,8319 · 8k→0,8148 · 7k→0,8014 · 6,4k→0,7910 · **6k→0,7811** · 5,4k→0,7822. `cor` 0,1208 → **0,0084**; espessura/perfil/fenda PARADOS nas 4 casas nas oito (o teste da hipótese). Gates externos bit-idênticos |
 | 39 | 0.8783 | 0.3097 | 5.475 | 0.0754 | -0.0567 | bojo c/a 0,30 → **0,26** (o valor que Wegg & Gerhard medem; 0,30 era arredondamento) — o ganho é no maior termo. `bandav` e `dustrd` re-dosados e FECHADOS: 7 doses monótonas dão zero como ótimo, e `dustrd` é inerte com `bandav=0`. Gates externos bit-idênticos (md5 `873e64b2` / `c0743465`) |

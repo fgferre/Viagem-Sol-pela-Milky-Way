@@ -5,7 +5,7 @@
 // ============================================================
 import { WORLD } from '../config';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
-import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore } from './common';
+import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore, blackbodyLinear } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
@@ -99,6 +99,38 @@ const BULGEQ = qnum('bulgeq', 0.26);
 // bulgeAnti cravado (0,0022 contra 0,0526 em 1,8). Mesma disciplina do
 // `corewall` da rodada 34: a dose vem da física, a nota se aceita como vem.
 const RIFTAV = qnum('riftav', 1.2);
+// O EXTREMO FRIO de `diskColor` — a cor que a LUT pinta em TODO o disco
+// longe do centro (?coldt=, em kelvin).
+// **A constante antiga, `vec3(0.30, 0.43, 0.78)`, era uma cor de ~25.000 K**
+// — mais quente que qualquer população estelar INTEGRADA e mais quente que
+// o corpo negro de uma O. Nenhuma região de disco real integra tão azul: as
+// mais azuis de uma Sc chegam a B−V ≈ 0,25 (~8.000 K). O preço estava
+// medido: fora do miolo o nosso céu dá −0,406 em l = +154° contra +0,132 da
+// foto, e −0,465 em l = −146° contra −0,016, enquanto no centro quase crava
+// (+0,087 contra +0,121) — o erro é do extremo frio, e ele sozinho valia
+// −0,4444 na métrica de cor contra os +0,4085 do extremo quente.
+// A cor sai da MESMA `blackbodyLinear` das estrelas (unificação 1: uma lei
+// fotométrica), com duas quantidades da constante antiga CONSERVADAS:
+//   • luminância Y = 0,4276 — a rodada não move um fóton de lugar, então
+//     `espessura`, `perfil` e `fenda` têm de ficar parados. É o teste.
+//   • púrpura 0,141 — o G abaixo da média de R e B não é erro de corpo
+//     negro: é o espalhamento λ^−1,3 e a emissão nebular que o projeto
+//     modela de propósito (POP_HII tem purp +0,303). Tirá-lo pagaria no
+//     termo `purpura`, que já está BAIXO (0,0577 contra alvo 0,0784).
+const COLDT = qnum('coldt', 6000);
+const coldRGB = (): [number, number, number] => {
+  const c = blackbodyLinear(COLDT);
+  const rho = (c[0] - c[2]) / (c[0] + c[2]);
+  const k = (1 + rho) / (1 - rho); // R = k·B
+  // G = g·B, do púrpura conservado. O denominador do púrpura é max(R,G,B):
+  // é B enquanto a cor é azul (k < 1) e vira R quando ela esquenta (k > 1).
+  const g = (1 + k) / 2 - 0.141 * Math.max(k, 1);
+  const b = 0.4276 / (0.2126 * k + 0.7152 * g + 0.0722); // Y conservada
+  return [k * b, g * b, b];
+};
+const COLD = coldRGB()
+  .map((v) => v.toFixed(4))
+  .join(', ');
 const RIFT_CLOUDS: ReadonlyArray<readonly [number, number, number, number, number]> = [
   [13.0, 7.0, 260, 30, 1.2],
   [23.0, 5.0, 250, 26, 1.5],
@@ -316,7 +348,7 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
 
     float towardCenter = clamp(bulge * 0.6 + exp(-radius / 2600.0), 0.0, 1.0);
     vec3 diskColor = mix(
-      vec3(0.30, 0.43, 0.78),
+      vec3(${COLD}),
       vec3(1.00, 0.72, 0.42),
       towardCenter * 0.82 + broad * 0.18
     );
