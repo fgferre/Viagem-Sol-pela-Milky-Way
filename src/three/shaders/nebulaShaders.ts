@@ -35,10 +35,18 @@ const DH1 = (DUSTH * (460 / 210)).toFixed(1);
 // a foto não tem vale nenhum. A coluna que a faixa precisa agora vem de
 // onde ela vem de verdade: nuvens. **?riftav=0&bandav=0.15 devolve o
 // estado da rodada 36 EXATO** (mesmo GLSL, conferido por md5).
-// Pendência honesta: com 0 a faixa distante volta a ser opticamente fina
-// (só `dustProc` 0,004 mag/kpc e as fendas APOGEE), o que é física pior
-// que 0,15. Re-dosar `bandav`, `dustrd` e `bulgeq` JUNTOS sob a régua nova
-// é a rodada seguinte — os três foram calibrados contra o termo quebrado.
+// **RE-DOSADA E FECHADA na rodada 39: zero é o ótimo, e não por pouco.**
+// Sete doses medidas (0 · 0,02 · 0,03 · 0,05 · 0,07 · 0,10 · 0,15) dão
+// skyError 0,8874 · 0,8977 · 0,8928 · 0,8974 · 0,9072 · 0,9236 · 0,9506 —
+// monótono. A troca é sempre a mesma: a coluna difusa compra `perfil` e
+// `purpura` (juntos ~0,022 até 0,15) e paga `espessura` e `cor` (juntos
+// ~0,097), quatro a um. Nenhum `dustrd` reverte o sinal (medido).
+// **E a "dívida física" de manter 0 é retórica: o modelo integra ~0,01
+// mag/kpc de `dustProc` no plano, então 0,15 já era 10× menor que o
+// ~1,5 mag/kpc do meio real.** A LUT é limitada por EMISSÃO, não por
+// extinção — a calibração de `light` não é absoluta —, então não há
+// âncora de literatura que decida este knob e o gate decide sozinho.
+// Fechar a conta de verdade é a unificação 3 (κ e Σ absolutos), não uma dose.
 const BANDAV = qnum('bandav', 0);
 const DIFFUSE = (BANDAV * 2.6316).toFixed(4);
 // A poeira do disco tem escala radial PRÓPRIA, mais curta que a das
@@ -49,6 +57,15 @@ const DIFFUSE = (BANDAV * 2.6316).toFixed(4);
 // subtende ~1° em vez dos ~10° da poeira local: fenda funda onde o rift
 // mede, barata onde a espessura mede. ?dustrd= varre; 5200 devolve o
 // estado da rodada 32.
+// **CUIDADO, medido na rodada 39: com `bandav = 0` este knob é INERTE** —
+// ele só multiplica `dustDiffuse`, e `dustProc` (a única poeira viva hoje)
+// carrega `exp(-radius/5200)` FIXO, a escala do disco fino ESTELAR. Ou
+// seja: o conserto da rodada 33 ("a poeira tem escala radial própria") foi
+// aplicado exatamente à componente que a rodada 37 desligou, e a poeira que
+// sobrou segue com a escala das estrelas. `?dustrd=5200` mede 0,8874, os
+// cinco termos idênticos à baseline a 4 casas. Dar a DUSTRD ao `dustProc`
+// (com a coluna conservada no raio solar) é rodada própria, e a peneira diz
+// que ela concentra extinção em |l| < 30, onde já sobra luz — medir antes.
 const DUSTRD = qnum('dustrd', 2100).toFixed(1);
 // ACHATAMENTO DO BOJO (?bulgeq= = razão de eixos c/a; 1 = esfera = estado
 // da rodada 32 EXATO, o mesmo código GLSL). O bojo real é boxy/peanut e
@@ -58,7 +75,13 @@ const DUSTRD = qnum('dustrd', 2100).toFixed(1);
 // exp(−m/h) achatado vale ∝ c/a, então a amplitude sobe 1/q — só a FORMA
 // muda, como a poeira da rodada 32. Sem a conservação o gate desaba
 // (bulgeAnti 3,82 contra 5,07): medido, não suposto.
-const BULGEQ = qnum('bulgeq', 0.3);
+// **0,30 → 0,26 na rodada 39.** Os 0,3 eram arredondamento; 0,26 é o valor
+// que Wegg & Gerhard medem, e o gate concorda: skyError 0,8874 → **0,8783**,
+// com o ganho no maior termo (espessura 0,3239 → 0,3097). Curva fechada em
+// quatro doses — 0,23 → 0,8790 · 0,26 → 0,8783 · 0,30 → 0,8874 ·
+// 0,40 → 0,9124 —, e o mínimo cai em cima da literatura. Achatar além de
+// 0,23 (Dwek) só troca espessura por fenda e não é medida de ninguém.
+const BULGEQ = qnum('bulgeq', 0.26);
 // A GRANDE FENDA (?riftav=; 0 devolve o estado anterior EXATO — o template
 // não emite uma linha, provado por md5 face a face). O panorama ESO mostra
 // uma cunha escura subindo do plano entre l = +8° e +45°, com o núcleo em

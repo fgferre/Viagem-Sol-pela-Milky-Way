@@ -4,6 +4,12 @@
 //   node scripts/visual/sky-capture.mjs                 # baseline
 //   node scripts/visual/sky-capture.mjs nowrap "&nowrap=1"   # ablação
 //   node scripts/visual/sky-capture.mjs --perfil        # + perfil por longitude
+//   node scripts/visual/sky-capture.mjs av05 --so-medir # re-mede PNGs já capturados
+//
+// `--so-medir` existe porque a RÉGUA muda mais que o render: toda vez que
+// um termo é consertado (r37, auditoria, r38) o histórico inteiro precisa
+// ser re-baselinado, e re-capturar dez configurações é meia hora de GPU
+// para produzir bytes idênticos aos que já estão em disco. Sem dev server.
 //
 // Cada face: ?pos=0,0,0&look=<dir>&fov=90&shot=2 em janela quadrada — o
 // FreeRoam canoniza a orientação (yaw/pitch no referencial galáctico +
@@ -29,8 +35,10 @@ const CHROME = [
 ].find((p) => existsSync(p));
 if (!CHROME) throw new Error('Chrome não encontrado');
 
-const args = process.argv.slice(2).filter((a) => a !== '--perfil');
+const FLAGS = ['--perfil', '--so-medir'];
+const args = process.argv.slice(2).filter((a) => !FLAGS.includes(a));
 const comPerfil = process.argv.includes('--perfil');
+const soMedir = process.argv.includes('--so-medir');
 const tag = args[0] || 'base';
 const extra = args[1] || '';
 const OUT = resolve(process.cwd(), tag === 'base' ? 'sky' : `sky_${tag}`);
@@ -76,11 +84,13 @@ const chrome = (extraArgs, saida) => {
   return r;
 };
 
-const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
-if (!/<div id="root"/.test(ping)) throw new Error(`o app não respondeu em ${APP} — suba o dev server`);
+if (!soMedir) {
+  const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
+  if (!/<div id="root"/.test(ping)) throw new Error(`o app não respondeu em ${APP} — suba o dev server`);
+}
 
 let seq = 0;
-for (const f of FACES) {
+for (const f of (soMedir ? [] : FACES)) {
   const png = resolve(OUT, `face_${f.nome}.png`);
   chrome([
     `--user-data-dir=${PERFIS}/p${seq++}`,
@@ -95,6 +105,12 @@ for (const f of FACES) {
       `&fov=90&nosun=1&nohero=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
   ], png);
   process.stdout.write(`face_${f.nome}.png ok\n`);
+}
+
+if (soMedir) {
+  const faltando = FACES.filter((f) => !existsSync(resolve(OUT, `face_${f.nome}.png`)));
+  if (faltando.length) throw new Error(`--so-medir sem captura em ${OUT}: falta ${faltando.map((f) => f.nome).join(', ')}`);
+  process.stdout.write(`(--so-medir) as 6 faces de ${OUT}\n`);
 }
 
 const dom = resolve(OUT, 'dom.html');

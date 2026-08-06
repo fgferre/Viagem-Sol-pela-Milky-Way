@@ -165,7 +165,7 @@ function dirOf(l, b) {
     const refFlip = score(refA) < score(refB);
 
     // ---- métricas ----
-    function bandMetrics(m) {
+    function bandMetrics(m, refYmin) {
       const NB = 48;
       const prof = new Float64Array(NB);
       const cnt = new Float64Array(NB);
@@ -210,16 +210,27 @@ function dirOf(l, b) {
       // profundidade do vale escuro contra os flancos
       let riftAcc = 0, riftN = 0;
       // riftProf = profundidade POR LONGITUDE (é ela que entra na nota) e
-      // riftB = a latitude onde o vale foi encontrado.
-      // ponytail: só a profundidade por longitude entra no skyError; a
-      // latitude fica exposta como diagnóstico. Um vale certo em longitude
-      // e espelhado em b passaria — mas para isso a poeira teria de deixar
-      // de ser simétrica em b, e aí a curva de profundidade já acusa (um
-      // aprofundamento simétrico cava também l = ±4°, onde a foto não tem
-      // vale). Se algum dia esse caso aparecer, `riftB` vira termo.
+      // riftB = a latitude do NOSSO vale (diagnóstico).
+      //
+      // A NOTA MEDE A NOSSA PROFUNDIDADE ONDE A FOTO TEM O VALE (`refYmin`),
+      // não onde cada um tem o seu. A rodada 37 deixou isto pré-registrado
+      // como o buraco conhecido do termo — "um vale certo em longitude e
+      // espelhado em b passaria" — e o caso apareceu na rodada 39: com
+      // `bandav=0,05` o bin l = +41° saltou de 0,023 para 0,311 contra a
+      // foto em 0,300, MAS o vale da foto está em b = +9,9° e o nosso em
+      // b = +0,4°. Profundidade parecida, estrutura outra. Esse único bin
+      // valia −0,027 no termo e sozinho invertia o veredito de uma rodada
+      // inteira (0,8672 → 0,8530), enquanto os quatro termos honestos
+      // pioravam monotonicamente. Comparar cada imagem no seu próprio
+      // mínimo compara DUAS coisas diferentes.
+      // ponytail: a foto define o lugar, nós reportamos a profundidade lá —
+      // sem termo novo e sem peso arbitrário entre grau e adimensional, que
+      // é o que "riftB vira termo" custaria. Onde a foto não tem vale
+      // (riftB na borda da busca) a conta segue valendo: mede-se a nossa
+      // profundidade naquele mesmo lugar, e um vale nosso ali é cobrado.
       // O escalar `rift` fica só como diagnóstico: ele era a nota até a
       // rodada 37 e é a média — cega ao lugar por construção.
-      const riftProf = [], riftB = [];
+      const riftProf = [], riftB = [], riftYmin = [];
       for (let i = 0; i < NB; i++) {
         const lc = (i + 0.5) / NB * 360 - 180;
         if (lc < -35 || lc > 45) continue;
@@ -234,6 +245,10 @@ function dirOf(l, b) {
         const span = Math.round(10 * H / 180);
         let ymin = yc;
         for (let y = yc - span; y <= yc + span; y++) if (col[y] < col[ymin]) ymin = y;
+        riftB.push(+((0.5 - (ymin + 0.5) / H) * 180).toFixed(2));
+        // a referência decide ONDE medir; ela mesma roda sem refYmin
+        if (refYmin) ymin = refYmin[riftYmin.length];
+        riftYmin.push(ymin);
         let above = 0, below = 0;
         for (let y = ymin - 2*span; y < ymin; y++) if (y >= 0) below = Math.max(below, col[y]);
         for (let y = ymin + 1; y <= ymin + 2*span; y++) if (y < H) above = Math.max(above, col[y]);
@@ -241,12 +256,12 @@ function dirOf(l, b) {
         const depth = flank > 1e-9 ? 1 - col[ymin] / flank : 0;
         if (flank > 1e-9) { riftAcc += depth; riftN++; }
         riftProf.push(+depth.toFixed(4));
-        riftB.push(+((0.5 - (ymin + 0.5) / H) * 180).toFixed(2));
       }
       return {
         nprof,
         riftProf,
         riftB,
+        riftYmin,
         bulgeAnti: +((bulge / Math.max(nb,1)) / Math.max(anti / Math.max(na,1), 1e-9)).toFixed(3),
         thick,
         rift: +(riftAcc / Math.max(riftN, 1)).toFixed(4),
@@ -255,8 +270,10 @@ function dirOf(l, b) {
       };
     }
 
-    const O = bandMetrics(ours);
+    // ORDEM IMPORTA: a referência primeiro, porque é ela que decide em que
+    // latitude a profundidade da fenda é medida nos dois lados.
     const R = bandMetrics(ref);
+    const O = bandMetrics(ours, R.riftYmin);
     const curve = (a, b) => a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
     // bojoAnti SAIU da soma na auditoria de 2026-08-06: ele é função EXATA
     // do `nprof`. bulgeAnti = média(nprof nos 8 bins de |l|<30) / média(nprof

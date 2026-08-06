@@ -262,12 +262,13 @@ Gaia — ninguém fotografou a Via Láctea de fora — com escolhas artísticas 
    0,3617 (46%) · **perfil 0,2691 (34%)** · cor 0,1335 (17%) · purp
    0,0126 · rift 0,0087 · bulgeAnti 0,0029. A ordem desta lista estava
    errada por omissão: o perfil é o segundo maior e ninguém o atacou.
-   **PESOS HISTÓRICOS — a régua mudou duas vezes em 2026-08-06** (a r37 pôs
+   **PESOS HISTÓRICOS — a régua mudou TRÊS vezes em 2026-08-06** (a r37 pôs
    a fenda para comparar a curva por longitude; a auditoria tirou o
-   `bojoAnti` da soma por ser função exata do perfil). O estado atual é
-   skyError **0,8672** em CINCO termos: espessura 0,3239 · perfil 0,2180 ·
-   fenda 0,1854 · cor 0,1192 · purp 0,0207. Os números acima e abaixo nesta
-   seção são da era anterior e não se comparam com os de hoje.
+   `bojoAnti` da soma por ser função exata do perfil; a r39 pôs a fenda para
+   medir na latitude da FOTO). O estado atual é skyError **0,8783** em CINCO
+   termos: espessura 0,3097 · perfil 0,2172 · fenda 0,2100 · cor 0,1208 ·
+   purp 0,0206. Os números acima e abaixo nesta seção são de eras anteriores
+   e não se comparam com os de hoje.
    Três testes fecham o diagnóstico, nesta ordem: (a) **não é rotação** —
    deslocar o nosso perfil varre um mínimo raso em −7,5° (0,2604 contra
    0,2691), sem vale; e espelhar l → −l dá 0,4216, então a quiralidade
@@ -1474,9 +1475,12 @@ confirmação seguida de que **mudar o LUGAR conservando a quantidade paga**
 (r32 poeira, r33 bojo, r34 corredor, r36 fenda). E o perfil por longitude
 nunca se moveu tanto: 0,2691 → 0,2057, −24%.
 
-**A LEI que bloqueia, e ela vale para toda rodada futura do céu.** O perfil
-é normalizado pela própria média e `bulgeAnti` é a razão entre duas janelas
-de 60° em |b| < 10°. Por unidade de nprof removida:
+**A LEI que bloqueia — ⚠ REVOGADA na rodada 39: o custo era inteiramente o
+termo `bojoAnti`, que a auditoria tirou da soma no mesmo dia. Ver a seção da
+r39 para a lei nova, medida, que inverteu os sinais.** O texto abaixo fica
+porque explica o mecanismo e porque a aritmética segue certa para o gate
+DAQUELE dia. O perfil é normalizado pela própria média e `bulgeAnti` é a
+razão entre duas janelas de 60° em |b| < 10°. Por unidade de nprof removida:
 
 - ganho no perfil = 1,03/48 = **0,0215**, em qualquer longitude;
 - custo em bojoAnti tirando de **|l| < 30°** = (1/5,568)·(5,584/21,80) = **0,0460** — **2,14× o que rende**;
@@ -1810,6 +1814,200 @@ entra no fim da PRÓPRIA seção, e a checagem de duplicata olha só ela — o
 regex antigo era guloso e achava a rodada em qualquer tabela abaixo, o que
 mascarava o erro. **Regra: escrita em documento com seções nunca apenda no
 fim do arquivo.**
+
+## Rodada 39 (2026-08-06) — a re-dosagem fechou em zero, e o que ela destapou foi a régua de novo
+
+A fila mandava re-dosar `bandav`, `dustrd` e `bulgeq` JUNTOS, porque os três
+tinham sido calibrados contra o termo de fenda quebrado. Feito, com 16
+capturas. **Dos três, um estava errado por arredondamento, um é inerte e um
+já estava no ótimo — e no meio apareceu um buraco na régua que sozinho
+invertia o veredito da rodada.**
+
+**`dustrd` é INERTE, e isso é um achado sobre o código, não sobre a dose.**
+Ele só multiplica `dustDiffuse`; com `bandav = 0` (o default desde a r37) o
+template emite `0.0000 * exp(...)` e o compilador dobra. Medido:
+`?dustrd=5200` dá 0,8874, os cinco termos idênticos a 4 casas. **A
+consequência incomoda: o conserto da r33 — "a poeira tem escala radial
+própria, 2,1 kpc" — foi aplicado exatamente à componente que a r37
+desligou, e o `dustProc`, a única poeira viva hoje, carrega
+`exp(-radius/5200)` FIXO, a escala do disco fino ESTELAR.** A afirmação do
+NORTE de que a poeira usa a escala dela não é verdade no código de hoje.
+
+**`bandav` fecha em ZERO, com sete doses e sem ambiguidade:**
+
+| bandav | 0 | 0,02 | 0,03 | 0,05 | 0,07 | 0,10 | 0,15 |
+|---|---|---|---|---|---|---|---|
+| skyError | **0,8874** | 0,8977 | 0,8928 | 0,8974 | 0,9072 | 0,9236 | 0,9506 |
+
+A troca é sempre a mesma e é de quatro para um: a coluna difusa compra
+`perfil` (0,2180 → 0,2014) e `purpura` (0,0207 → 0,0099), junto ~0,022 até
+0,15, e paga `espessura` (0,3239 → 0,3995) e `cor` (0,1192 → 0,1400), junto
+~0,097. `dustrd = 5200` não reverte o sinal (0,9028 contra 0,8974 em
+bandav 0,05) — ele muda ONDE a coluna cai, não o balanço.
+
+**E a "dívida física" que justificava a rodada era retórica.** O argumento
+era que `bandav = 0` deixa a faixa distante opticamente fina, "física pior
+que 0,15". A conta desmonta: o modelo integra ~0,01 mag/kpc de `dustProc` no
+plano, então **0,15 já era 10× menor que o ~1,5 mag/kpc do meio real** — os
+dois lados da discussão estavam uma ou duas ordens de grandeza abaixo da
+física. A LUT da faixa é limitada por EMISSÃO, não por extinção: a
+calibração de `light` (`* 0.000052`) não é absoluta, então **não existe
+âncora de literatura que decida este knob** e o gate decide sozinho. Pagar a
+dívida de verdade é a unificação 3 (κ e Σ absolutos), não uma dose. Uma
+faixa com A_V 1,5 mag/kpc de verdade satura em τ ≈ 1 a 750 pc e seria outro
+céu — o que, aliás, é o céu real.
+
+**`bulgeq` 0,30 → 0,26, e é o único ganho de imagem da rodada.** Os 0,30 da
+r33 eram arredondamento; 0,26 é o valor que Wegg & Gerhard 2013 medem no
+aglomerado vermelho do VVV. Curva fechada em quatro doses — 0,23 → 0,8790 ·
+**0,26 → 0,8783** · 0,30 → 0,8874 · 0,40 → 0,9124 — com o mínimo em cima da
+literatura e o ganho no maior termo (espessura 0,3239 → **0,3097**). O
+default novo reproduz a varredura com as **seis faces bit-idênticas por
+md5**, e os gates externos ficaram intactos (`873e64b2` face-on,
+`c0743465` edge-on) — `nebulaFade = env` e `env = 0` nos dois holds, então o
+passe da faixa nem roda lá.
+
+### O buraco da régua, e ele estava pré-registrado
+
+Antes do conserto, `bandav = 0,05` marcava **0,8530** contra 0,8672 da
+baseline — a rodada parecia paga. Não estava. Abrindo a fenda bin a bin:
+
+| l | foto | nós (bandav 0) | nós (0,05) | b do vale: foto / nós |
+|---|---|---|---|---|
+| +41 | 0,300 | 0,023 | **0,311** | **+9,9° / +0,4°** |
+
+**Um bin.** Todos os outros dez se moviam ≤0,006. A profundidade batia e a
+estrutura era outra: o vale da foto sobe a b ≈ +10°, o nosso é a poeira
+axissimétrica cavando o plano. Esse único bin valia −0,027 no termo,
+enquanto os quatro termos honestos pioravam monotonicamente
+(0,6818 → 0,6889 → 0,6948 → 0,7227).
+
+O comentário `ponytail:` da r37 tinha escrito a hipótese e a condição de
+disparo: *"um vale certo em longitude e espelhado em b passaria… Se algum
+dia esse caso aparecer, `riftB` vira termo."* O caso apareceu.
+
+**O conserto não fez `riftB` virar termo, e a razão é ponytail: isso
+custaria um peso arbitrário entre grau e adimensional.** Em vez disso, a
+**foto define ONDE medir** — `bandMetrics(ours, R.riftYmin)` avalia a nossa
+profundidade na latitude do vale da referência. Sem termo novo, sem
+constante, e o buraco fecha por construção: um vale nosso no lugar errado
+deixa de render, e onde a foto não tem vale a conta segue valendo (mede-se a
+nossa profundidade ali, e um vale nosso é cobrado). Comparar cada imagem no
+seu próprio mínimo comparava duas coisas diferentes.
+
+**RE-BASELINE (o terceiro do dia): a mesma imagem vai de 0,8672 a 0,8874**,
+só a fenda muda (0,1854 → 0,2056). Nada foi capturado — o harness ganhou
+`--so-medir`, que re-mede PNGs já em disco sem GPU e sem dev server. Ele
+existe porque a régua muda mais que o render, e re-capturar dez
+configurações para produzir bytes idênticos é meia hora de GPU por nada.
+
+**Conferência do que a r37 adotou, sob a régua consertada:** `riftav = 0`
+mede **1,0496** contra 0,8874 — a Grande Fenda segue pagando −0,16, a
+decisão se sustenta. `riftav = 1,5` mede 0,8723 e a preferência do gate
+CRESCEU (0,0151 contra os 0,0098 de antes); segue não tomada, porque ×1,5
+põe a nuvem mais funda em A_V 3,3 e Straižys mede ≤ 3. Se alguém quiser
+reabrir, o que decide é o A_V do componente de 440 pc em Su 2020, não o gate.
+
+### A LEI de custo por longitude MORREU — e ninguém tinha percebido
+
+O NORTE manda toda proposta do céu passar pela peneira da r36: tirar luz de
+|l| < 30° custa 2,14× o que rende, do anticentro 12×, e só 30° < |l| < 150°
+é de graça. **Esse custo era INTEIRAMENTE o termo `bojoAnti`, que a
+auditoria de 2026-08-06 tirou da soma.** Com ele fora, `skyError` é a soma
+dos cinco e `bojoAnti` contribui exatamente zero (conferido: soma5 = 0,8874
+= skyError). A peneira que bloqueou a r36 não existe mais.
+
+Re-derivada da própria captura, sem GPU (multiplicar a luz bruta de um setor
+por 0,9 e renormalizar):
+
+| setor | Δ no termo `perfil` |
+|---|---|
+| \|l\| < 30° | **−0,0140** (ajuda — antes custava 2,14×) |
+| anticentro (\|\|l\|−180\| < 30°) | −0,0024 e −0,0001 (neutro — antes 12×) |
+| l = 30…150° | −0,0058 |
+| **l = 210…330°** | **+0,0328 (proibido)** |
+
+A inversão é completa: o lugar caro agora é **Carina/Centauro/Norma**, onde
+falta luz (l = −34…−79 mede −0,30 a −0,57 contra a foto), e o lugar barato é
+o miolo, onde sobra. **A r36 foi barrada por um custo que hoje é zero** —
+mas isso não a ressuscita: a série `riftav` 1,2/1,5/1,8/2,2 já foi remedida
+sob a régua nova e 1,8/2,2 seguem piores, porque o excesso do miolo é
+SIMÉTRICO (l = −26/−19/−11 erram +0,47/+0,74/+0,60, tanto quanto +11/+19) e
+o Aquila só cobre um lado.
+
+### A alavanca seguinte, com endereço e tamanho
+
+`espessura` é 35% do erro, e a decomposição por longitude diz onde ela mora.
+**Somos GROSSOS demais em 21 dos 24 bins**, e a conta se concentra:
+
+| l | foto | nós | % do skyError |
+|---|---|---|---|
+| 203° | 4,50° | **9,75°** | 5,7% |
+| 173° | 3,50° | **8,00°** | 4,9% |
+| 218° | 3,75° | 6,75° | 3,3% |
+| 188° | 4,50° | 6,50° | 2,2% |
+| 233° | 3,50° | 5,50° | 2,2% |
+
+**Cinco bins do anticentro somam 18% do skyError inteiro** (os dez de
+|l| ≥ 112° somam 22,4%) — mais que o termo `cor` completo. E eles são
+**CEGOS a tudo que esta rodada mexeu**: entre `bandav` 0 e 0,05 não se
+moveram um único quantum (a régua tem passo de 0,25°), e são bit-idênticos
+entre base, `bq026`, `rift15` e `av05`.
+
+Dois fatos apontam a mesma direção: `nprof` (|b| < 10°) diz que ali somos
+fracos demais e `thick` (|b| < 25°) diz que somos largos demais — ou seja,
+**miolo fraco e asas claras**. **Não são as estrelas: a auditoria já mediu
+`?nocat=1&nowrap=1` movendo a espessura de 0,3239 para 0,2979, −8,0% —
+quem carrega 61% do termo não cabe em 8%.** A |b| = 10–25° a 2 kpc a única
+coisa nossa que sobra é o **disco espesso da LUT**, cuja escala radial é
+**6500 pc contra 5200 do fino**. Mais longa que a do fino, quando a
+literatura põe o espesso em ~2000 pc, MAIS CURTO — é a inconsistência (3)
+que a auditoria externa de 2026-08-03 registrou em `wrappedStars.ts` e que
+vale igual aqui. A conta estimada: a 4 kpc no anticentro o disco espesso
+carrega 31% do fluxo da coluna; com escala curta cairia para ~10%. O
+concorrente é o `flare` (`mix(210, 460, flare)`, quadrático a partir de
+7500 pc), que também só morde no anticentro. **`?nonebula=1` separa os dois
+do resto numa captura**, e nenhum dos dois toca os gates externos por
+construção.
+
+### O que as cinco lentes acrescentaram (workflow só-leitura, ~1,1 M tokens)
+
+Três coisas que a medição sozinha não teria dado, e uma refutada acima:
+
+1. **O termo `fenda` mede, na maioria dos bins, CONCENTRAÇÃO VERTICAL, não
+   vale.** A janela de busca é ±10° e o mínimo da FOTO cai na borda (b =
+   −10,1 ou +9,9) em l = −34, −11, −4 e +41, com mais três a menos de 1° da
+   borda (−26, −19, +19). **Só três dos onze bins medem vale de verdade:**
+   l = +11 (b +3,6), +26 (+4,1) e +34 (+2,4) — e são exatamente a Grande
+   Fenda. Nos outros, `1 − col[ymin]/flank` compara b ≈ ±10 contra o máximo
+   do núcleo. Não é erro (o número é bem definido e a comparação é justa
+   depois do conserto da r39), mas **é outra grandeza**, e somada à
+   `espessura` diz que ~metade da nota do céu é um defeito só: *a faixa não
+   se concentra em b, e o pior pedaço é o anticentro*.
+2. **A cor tem dose fechada, não busca.** `colour` é razão de somas, logo é
+   AFIM na cor da população fria: com ρ_quente = +0,4085 e o medido −0,0551
+   sai a fração f = 0,543, e bater a foto (+0,0641) exige **ρ_frio = −0,225**
+   — contra os −0,4444 de hoje. O `vec3(0.39, 0.42, 0.62)` casa as três
+   condições ao mesmo tempo: luminância 0,4278 (idêntica à de hoje), púrpura
+   0,140 (idêntica) e ρ = −0,225. **Conserva luminância pixel a pixel, então
+   move ZERO luz em qualquer longitude** e espessura/perfil/fenda deveriam
+   ficar parados por construção — o que é o próprio teste da hipótese.
+   Predição: cor 0,1208 → 0,00–0,05, skyError → 0,78 ± 0,03. Cuidado: isto é
+   remendo sobre a dívida "cor do disco decidida por raio" que a unificação
+   1→3 substitui, e não a quita.
+3. **A dívida da faixa fina tem diagnóstico melhor do que "o gate não
+   deixa": a componente que falta é LOCAL e GRUMOSA.** Os vales que a foto
+   mostra vivem em b = 2,4–9,9°, latitude que só poeira a menos de 1 kpc
+   ocupa; uma laje axissimétrica de 70 pc a kiloparsecs de distância não
+   chega lá em ângulo nenhum. **A laje é o instrumento errado para o defeito
+   medido** — é por isso que sete doses de `bandav` só pagam.
+
+O adversário acertou o veredito ("a rodada não paga") e errou de novo a
+razão — previa que quem cobraria seria a `fenda` (+0,571/unidade); medido,
+a fenda até melhora de leve e quem cobra é a **espessura (+0,504/unidade)**
+e a **cor (+0,139/unidade)**. Segunda rodada seguida em que o adversário
+fecha o veredito por aritmética antes da GPU e erra o mecanismo: **usar o
+veredito dele, nunca a atribuição.**
 
 ## Decisões fechadas
 
