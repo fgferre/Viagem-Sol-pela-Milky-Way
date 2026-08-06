@@ -29,3 +29,6 @@ output
 
 # Capturas de rodada (regra 5: captura nao se versiona)
 capturas/
+# Idem para o gate do ceu: sky/ na baseline, sky_<tag>/ nas ablacoes
+sky/
+sky_*/

@@ -15,6 +15,7 @@
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, existsSync, rmSync, readFileSync, openSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -34,6 +35,13 @@ const tag = args[0] || 'base';
 const extra = args[1] || '';
 const OUT = resolve(process.cwd(), tag === 'base' ? 'sky' : `sky_${tag}`);
 mkdirSync(OUT, { recursive: true });
+// Os perfis do Chrome vão para o TEMP do sistema, não para dentro do repo:
+// cada perfil tem alguns milhares de arquivos, e uma bateria de doze capturas
+// enchia a pasta do projeto com mais de cem mil — o VS Code passa do limite
+// do `git.statusLimit` e desliga metade das funções de Git. Só os 6 PNGs e o
+// dom.html ficam em OUT, que é o produto da medição.
+const PERFIS = resolve(tmpdir(), `sky-capture-${process.pid}`);
+mkdirSync(PERFIS, { recursive: true });
 
 // base galáctica (idêntica a galaxy.ts)
 const N = [-0.867666149, -0.1980763734, 0.4559837762]; // polo norte
@@ -75,7 +83,7 @@ let seq = 0;
 for (const f of FACES) {
   const png = resolve(OUT, `face_${f.nome}.png`);
   chrome([
-    `--user-data-dir=${OUT}/.p${seq++}`,
+    `--user-data-dir=${PERFIS}/p${seq++}`,
     '--window-size=1440,1440', '--virtual-time-budget=16000', `--screenshot=${png}`,
     // nohero=1: os clarões das estrelas-herói são camada CINEMATOGRÁFICA;
     // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa.
@@ -93,7 +101,7 @@ const dom = resolve(OUT, 'dom.html');
 if (existsSync(dom)) rmSync(dom);
 spawnSync(CHROME, [
   '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
-  '--allow-file-access-from-files', '--no-first-run', `--user-data-dir=${OUT}/.pm`,
+  '--allow-file-access-from-files', '--no-first-run', `--user-data-dir=${PERFIS}/pm`,
   '--window-size=900,900', '--virtual-time-budget=25000', '--dump-dom',
   `file:///${MEASURE.replace(/\\/g, '/')}?dir=${OUT.replace(/\\/g, '/')}` +
     `&ref=${REF.replace(/\\/g, '/')}`,

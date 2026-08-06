@@ -12,6 +12,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -40,7 +41,12 @@ const round = String(process.argv[2] || '').padStart(2, '0');
 const nota = process.argv.slice(3).join(' ') || '';
 if (!round || round === '00') throw new Error('uso: node scripts/visual/rodada.mjs <n> "nota"');
 
-const PROFILE = resolve(OUT, '.chrome-profile');
+// Perfil do Chrome no TEMP do sistema, NUNCA dentro do repo: cada perfil tem
+// alguns milhares de arquivos e o script cria um por captura. Em `capturas/`
+// eles ficavam ignorados pelo git mas contados pelo VS Code, que passa do
+// `git.statusLimit` e desliga metade das funções de Git com um aviso de
+// "too many active changes". Em `capturas/` fica só o PNG, que é o produto.
+const PROFILE = resolve(tmpdir(), `rodada-${process.pid}`);
 mkdirSync(OUT, { recursive: true });
 
 // Perfil NOVO por invocação: com user-data-dir compartilhado o Chrome entrega
