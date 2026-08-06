@@ -192,6 +192,14 @@ function analyse(img) {
   const mean = (v) => v.reduce((s, q) => s + q, 0) / v.length;
   const harmonics = {};
   for (let m = 1; m <= 6; m++) harmonics[m] = +mean(amp[m]).toFixed(4);
+  // A_m ANEL A ANEL. O `harmonics[m]` acima é a média sobre os 56 anéis, e
+  // somar |Δ| das MÉDIAS é a mesma doença que o termo da fenda tinha até a
+  // rodada 37: um excesso no anel externo cancela contra um déficit no
+  // miolo e o gate marca cravado. A rodada 30 já tinha MEDIDO esse
+  // cancelamento (m=2 valia 0,40 contra 0,20 do alvo em 1,0–1,22 R90
+  // enquanto a média fechava) e o termo nunca tinha sido trocado.
+  const harmonicProf = {};
+  for (let m = 1; m <= 6; m++) harmonicProf[m] = amp[m].map((v) => +v.toFixed(5));
 
   // m=1 é lopsidedness, não braço: a dominante procura-se de 2 a 6
   let mBest = 2;
@@ -359,6 +367,7 @@ function analyse(img) {
     clumpOuter: cells(1.0, 1.22, ESC_OUT),
     grainOuter: +(hfOut / (loOut + 1e-9)).toFixed(4),
     harmonics,
+    harmonicProf,
     armsDominant: mBest,
     pitchDeg: +Math.abs((Math.atan(mBest / slope) * 180) / Math.PI).toFixed(1),
     coherence: +(syy > 1e-12 ? (sxy * sxy) / (sxx * syy) : 0).toFixed(3),
@@ -686,8 +695,14 @@ function analyseEdge(img) {
       // termo é limitado a ±0,5 por construção e range 1,0 dominaria.
       const curve = (a, b) =>
         a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
+      // `thickRatio` SAIU da soma na auditoria de 2026-08-06: ele é a MÉDIA
+      // de `thickness[2..5]`, e os 12 bins de `thickness` já entram como
+      // curva LOGO ABAIXO, no mesmo somatório. Era peso duplo em 4 dos 12
+      // bins, e na forma colapsada — a média cancela um bin grosso contra um
+      // fino, exatamente a doença do termo da fenda. Segue calculado e
+      // impresso, como o `bulgeAnti` do gate do céu: ele é o número curto
+      // que o ledger usa para "espessura relativa do disco".
       const edgeError = +(
-        Math.abs(ours.thickRatio - ref.thickRatio) +
         Math.abs(ours.axialRatio - ref.axialRatio) +
         Math.abs(ours.laneDepth - ref.laneDepth) +
         Math.abs(ours.laneOffset - ref.laneOffset) * 0.2 +
@@ -703,25 +718,46 @@ function analyseEdge(img) {
     const bSrc = q.get('b') || '../../docs/reference/gaia-2025-face-on-5k.jpg';
     const ours = analyse(await load(aSrc));
     const ref = analyse(await load(bSrc));
+    const curve = (a, b) =>
+      a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
+    // ANEL A ANEL desde 2026-08-06, não |Δ das médias| — ver o comentário em
+    // `harmonicProf`. Re-baseline: os números NÃO se comparam com o
+    // histórico anterior do `EVOLUCAO.md`.
     let harmonicError = 0;
     for (let m = 1; m <= 6; m++) {
-      harmonicError += Math.abs(ours.harmonics[m] - ref.harmonics[m]);
+      harmonicError += curve(ours.harmonicProf[m], ref.harmonicProf[m]);
     }
     // Nota da TEXTURA, independente da nota das harmônicas: soma das
     // diferenças de agrupamento nas 4 escalas × 2 anéis, mais a granulação
-    // do anel externo. Separada de propósito — harmonicError responde
+    // dos DOIS anéis. Separada de propósito — harmonicError responde
     // "onde está a matéria", clumpError responde "com que textura".
+    // `grain` (miolo) entrou junto na auditoria de 2026-08-06: ele tem alvo
+    // em VISUAL_TARGETS e o `grainOuter` já era cobrado — deixá-lo de fora
+    // era assimetria, não decisão.
     let clumpError = 0;
     for (let k = 0; k < ours.clumpInner.length; k++) {
       clumpError += Math.abs(ours.clumpInner[k] - ref.clumpInner[k]);
       clumpError += Math.abs(ours.clumpOuter[k] - ref.clumpOuter[k]);
     }
     clumpError += Math.abs(ours.grainOuter - ref.grainOuter);
+    clumpError += Math.abs(ours.grain - ref.grain);
+    // TERCEIRA nota do face-on, nova em 2026-08-06. `profile`, `colour` e
+    // `purp` são curvas de 24 raios, têm alvo em VISUAL_TARGETS e eram
+    // calculadas e DESCARTADAS — não entravam em score nenhum. O `purp`
+    // ficou em 0,1047 contra alvo 0,2010 (metade) desde a rodada 20:
+    // dezessete rodadas sem juiz. `discMean` fica de fora de propósito —
+    // é brilho absoluto e depende da exposição, que é knob soberano.
+    const toneError = +(
+      curve(ours.profile, ref.profile) +
+      curve(ours.colour, ref.colour) +
+      curve(ours.purp, ref.purp)
+    ).toFixed(4);
     out.textContent = JSON.stringify(
       {
         // NOTA HONESTA: menor é melhor, 0 = idêntico ao alvo
         harmonicError: +harmonicError.toFixed(4),
         clumpError: +clumpError.toFixed(4),
+        toneError,
         discMeanRatio: +(ours.discMean / ref.discMean).toFixed(3),
         ours,
         ref,

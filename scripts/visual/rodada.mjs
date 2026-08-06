@@ -128,10 +128,15 @@ try {
     const s = a.filter((_, i) => { const r = ((i + 0.5) / 24) * 1.5; return r >= 0.25 && r <= 1.05; });
     return s.reduce((x, y) => x + y, 0) / s.length;
   };
-  const linha = `| ${round} | ${m.harmonicError.toFixed(4)} | ${m.ours.discMean.toFixed(4)} | `
+  // As TRÊS notas do face-on desde 2026-08-06: harmônicas anel a anel,
+  // textura, e tom (perfil+cor+púrpura, que antes não entravam em score
+  // nenhum). `purp` continua na linha como diagnóstico — é o número que o
+  // VISUAL_TARGETS usa —, mas agora tem juiz dentro do `toneError`.
+  const linha = `| ${round} | ${m.harmonicError.toFixed(4)} | ${m.clumpError.toFixed(4)} | `
+    + `${m.toneError.toFixed(4)} | ${m.ours.discMean.toFixed(4)} | `
     + `${m.ours.grain.toFixed(4)} | ${faixa(m.ours.purp).toFixed(4)} | ${nota} |`;
 
-  const alvos = `| — | 0 | ${m.ref.discMean.toFixed(4)} | ${m.ref.grain.toFixed(4)} | `
+  const alvos = `| — | 0 | 0 | 0 | ${m.ref.discMean.toFixed(4)} | ${m.ref.grain.toFixed(4)} | `
     + `${faixa(m.ref.purp).toFixed(4)} | **alvo (recriação científica)** |`;
 
   let doc = existsSync(LEDGER) ? readFileSync(LEDGER, 'utf8') : `# Evolução por rodada

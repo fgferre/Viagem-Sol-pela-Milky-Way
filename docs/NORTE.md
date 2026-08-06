@@ -1735,27 +1735,72 @@ grandeza abaixo. Os polos também não contaminam |b| < 10 (a face é
 escolhida por maior `dot(v, fwd)` e as equatoriais ganham sempre lá), e as
 costuras em l = ±45° caem exatamente em fronteira de bin.
 
-**O que a auditoria NÃO fez, e é a próxima decisão:** consertar
-`harmonicError` e `thickRatio` no gate EXTERNO. Os dois são o mesmo caso já
-provado aqui, e o `harmonicError` já tinha sido diagnosticado na rodada 30
+**O GATE EXTERNO foi consertado no mesmo dia — e era o pior dos dois.**
+Imagens **bit-idênticas** (md5 `873e64b2` face-on e `c0743465` edge-on, os
+mesmos desde a r33): só a régua mudou.
+
+| nota | régua velha | régua honesta |
+|---|---|---|
+| **harmonicError** | 0,0371 | **0,3920 — 10,6×** |
+| **toneError** | *não existia* | **0,1753** |
+| clumpError | 0,0587 | 0,0603 (entrou o `grain` do miolo) |
+| edgeError | 0,4181 | 0,4124 (saiu o `thickRatio`) |
+
+**As SEIS harmônicas escondiam cancelamento, nenhuma escapou:**
+m=1 8,2× · m=2 **13,3×** · m=3 **23,7×** · m=4 7,0× · m=5 16,2× · m=6 7,6×.
+E o A₂ anel a anel diz o defeito real, que a média tornava invisível:
+
+| raio | nosso A₂ | alvo |
+|---|---|---|
+| 0,30 R90 | 0,207 | 0,104 |
+| 0,41 R90 | **0,104** | **0,412** |
+| 0,65 R90 | 0,275 | 0,150 |
+| 0,76 R90 | **0,337** | **0,029** |
+| 1,04 R90 | 0,195 | 0,258 |
+
+**A nossa espiral tem a força média certa e a DISTRIBUIÇÃO RADIAL errada** —
+forte onde a recriação-alvo é lisa, lisa onde ela é forte. É a mesma
+assinatura de anticorrelação da fenda, agora no eixo radial, e é a alavanca
+nomeada para a próxima rodada do face-on. A r30 tinha visto a ponta disto
+(m=2 0,40 contra 0,20 no anel externo) e consertado UM anel; o resto ficou.
+
+**`toneError` (0,1753) por parte:** púrpura **0,0833** · cor 0,0581 · perfil
+radial 0,0338. O púrpura é o maior, o que confirma pela primeira vez com
+juiz o que o ledger já mostrava sem juiz: 0,1047 contra alvo 0,2010.
+
+**O que ficou de FORA de propósito:** `discMean` (brilho absoluto — depende
+da exposição, que é knob soberano); `warpAmp` (a média COM SINAL antes do
+módulo é a definição física do warp — deslocamento coerente da ponta, não
+espalhamento; trocar mediria outra coisa); `laneDepth`/`laneOffset` (sem
+resolução radial dentro de |u| ≤ 0,25 — suspeita nomeada, não medida).
+
+Histórico de como se chegou aqui: o `harmonicError` já tinha sido
+diagnosticado na rodada 30
 (“a média escondia erro de FORMA radial porque o miolo compensava a borda”)
 sem nunca ser trocado. **A magnitude, porém, NÃO se estima dos números da
 r30**: aqueles são de ANTES da correção dela, que mexeu exatamente no anel
 1,0–1,22 R90 e deixou m=2 em 0,2408 contra 0,2490 — com o sinal invertido.
-O cancelamento segue estruturalmente possível e documentado como medido,
-mas qualquer número de re-baseline hoje é extrapolação. O caminho é barato e
-sem GPU: `analyse` já calcula `amp[m]` por anel e o descarta — basta guardar
-e comparar como curva, do mesmo jeito que a `fenda`. **É um re-baseline do
-OUTRO gate, que quebra a comparabilidade de ~30 rodadas do `EVOLUCAO.md`:
-decisão do dono, não de rodada.**
+O cancelamento era estruturalmente possível e documentado como medido, e a
+estimativa que eu tinha feito (fator ~4,3) estava errada por baixo: medido,
+é **10,6×**. O conserto foi barato e sem GPU — `analyse` já calculava
+`amp[m]` por anel e o descartava; passou a guardar (`harmonicProf`) e a
+comparar como curva, do mesmo jeito que a `fenda`. O `EVOLUCAO.md` ganhou
+uma tabela própria para a era da régua honesta e a antiga ficou marcada
+como não-comparável.
 
-**O buraco que a auditoria destapou e que é MAIOR que qualquer
-cancelamento:** no gate face-on, `profile`, `colour` e `purp` são
-calculados e **não entram em score nenhum** — nem em `harmonicError` (que
-só usa `harmonics`) nem em `clumpError` (clump + `grainOuter`). O
-`EVOLUCAO.md` mostra `purp` em **0,1047 contra alvo 0,2010 — metade, e
-parado desde a rodada 20**, dezessete rodadas sem juiz. Nenhum termo mal
-formado desta auditoria custa isso.
+**O buraco que era MAIOR que qualquer cancelamento, também fechado:** no
+face-on, `profile`, `colour` e `purp` eram calculados e **não entravam em
+score nenhum** — nem em `harmonicError` (que só usava `harmonics`) nem em
+`clumpError` (clump + `grainOuter`). O `purp` ficou em **0,1047 contra alvo
+0,2010, metade, desde a rodada 20 — dezessete rodadas sem juiz**. Agora os
+três são a terceira nota, `toneError`. Junto entrou o `grain` do miolo no
+`clumpError`: ele tem alvo e o `grainOuter` já era cobrado, então ficar de
+fora era assimetria, não decisão.
+
+**A regra que fecha a auditoria, e vale para toda régua futura: um número
+comparável e ERRADO vale menos que um número novo e HONESTO.** Segurar o
+conserto para preservar a comparabilidade foi o instinto errado — o
+histórico não se perde, fica marcado como era anterior.
 
 **Bug de ledger consertado aqui, e é da ferramenta:** `rodada.mjs` apendava
 a linha do edge-on no fim do ARQUIVO. Isso valia quando Edge-on era a última

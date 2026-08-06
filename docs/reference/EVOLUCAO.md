@@ -12,6 +12,17 @@ final, as imagens locais e esta tabela se leem juntas.
 
 `harmonicError` menor é melhor; as outras três buscam o alvo.
 
+### Régua ATÉ 2026-08-06 — números históricos, não comparáveis com os de baixo
+
+A auditoria de 2026-08-06 achou dois defeitos aqui. (1) `harmonicError` era
+`Σ_m |média(A_m nossa sobre 56 anéis) − média(A_m do alvo)|`: o módulo DEPOIS
+da média, então um excesso no anel externo cancelava contra um déficit no
+miolo. A rodada 30 já tinha MEDIDO esse cancelamento e o termo nunca fora
+trocado. (2) `profile`, `colour` e `purp` eram calculados e **não entravam em
+score nenhum** — a coluna `purp` abaixo mostra 0,1047 contra alvo 0,2010,
+metade, parada desde a rodada 20. Agora as harmônicas são comparadas anel a
+anel e existe uma terceira nota, `toneError`.
+
 | rodada | harmonicError | discMean | grain | purp | o que mudou |
 |---|---|---|---|---|---|
 | — | 0 | 0.1175 | 0.0679 | 0.2010 | **alvo (recriação científica)** |
@@ -42,6 +53,18 @@ final, as imagens locais e esta tabela se leem juntas.
 | 33 | 0.0371 | 0.1299 | 0.0663 | 0.1047 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
 | 37 | 0.0371 | 0.1299 | 0.0663 | 0.1047 | regua da fenda por longitude + Grande Fenda no lugar real |
 
+### Régua a partir de 2026-08-06 — três notas, todas menores é melhor
+
+`harmonicError` = soma sobre m=1..6 da média |Δ| ANEL A ANEL (56 anéis).
+`clumpError` = agrupamento nas 4 escalas × 2 anéis + granulação dos dois
+anéis. `toneError` = perfil radial + cor + púrpura, as três curvas de 24
+raios que antes ninguém cobrava. `discMean` fica FORA das notas de propósito:
+é brilho absoluto e depende da exposição, que é knob soberano.
+
+| rodada | harmonicError | clumpError | toneError | discMean | grain | purp | o que mudou |
+|---|---|---|---|---|---|---|---|
+| 38 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | auditoria: harmonicas anel a anel, toneError novo, thickRatio fora da soma |
+
 ## Edge-on
 
 `edgeError` menor é melhor (medida `?mode=edge` contra
@@ -65,6 +88,7 @@ final, as imagens locais e esta tabela se leem juntas.
 | 27 | 0.4396 | 0.0393 | 0.0810 | 0.8506 | 0.0425 | warp com a fase certa: 185 e nao 5 — a quiralidade do S contra a recriacao-alvo estava invertida (ablacao: warpAsym -0,35 -> +0,22; maior salto da serie) |
 | 33 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
 | 37 | 0.4181 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | régua da fenda + Grande Fenda: BIT-IDÊNTICO à rodada 33 (md5 `c0743465`), como manda a construção — a mudança vive só no LUT da faixa e `nebulaFade = 0` nos dois holds |
+| 38 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | auditoria: harmonicas anel a anel, toneError novo, thickRatio fora da soma |
 
 ## Céu interno (panorama ESO)
 
