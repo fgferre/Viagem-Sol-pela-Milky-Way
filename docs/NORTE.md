@@ -2369,7 +2369,53 @@ que hoje tem 13,54. Em t=0 o teto é 5,1 de 15,33. **É a maior peça solta do p
 não é troca de qualidade: os pontos estão fora da tela.** No face-on o ganho é zero,
 como tem de ser.
 
-**Primeiro experimento antes de escrever bucketizador: `?galsplit=1|8|32|64`**, partindo
+**FEITO (2026-08-07) — e o conserto certo não era o bucketizador.** A ideia veio de uma
+sessão externa (Codex) rodando em paralelo, e é melhor que a minha: em vez de reduzir a
+CONTAGEM submetida (que exige reordenar 4 M pontos e N draws), **sobe a projeção para
+ANTES do laço de extinção e retorna cedo quando o sprite inteiro está fora da tela**. Não
+tira ponto nenhum da imagem — quem sai já não virava fragmento — e não muda arquitetura:
+um draw, mesma ordem, mesmos atributos.
+
+| instante | galáxia antes | depois | quadro antes | depois |
+|---|---:|---:|---:|---:|
+| t=0 | 5,19 | **2,19** (−58%) | 15,33 | **11,89** |
+| t=100 | 4,88 | **2,09** (−57%) | 13,54 | **10,82** |
+| t=180 | ~5,0 | **3,26** | 14,23 | **11,68** |
+| t=293 face-on | 6,08 | **6,08** | 6,89 | 6,89 |
+
+O face-on não se mover é a checagem causal: lá 99,98% dos pontos estão na tela.
+**Gate do céu cravado: `skyError` 0,7811, cinco termos idênticos a 4 casas.** Imagem:
+**1 pixel de 3.041.720 em 1 nível** (paisagem 1800×1800) e **0 pixels** em retrato.
+
+**A MARGEM EM X É O ÚNICO PONTO DELICADO, e a primeira versão errava.** O ponto é
+rasterizado como QUADRADO em espaço de janela, então o centro pode estar fora e a borda
+ainda depositar — corte NDC puro apaga ponto visível. A margem certa em Y é
+`(clamped + 4)/uScreenH`; em X ela depende do ASPECTO, e o aspecto já mora na projeção:
+**`margemX = margemY * P[0][0] / P[1][1]`** (razão invertida piora justamente o caso que
+ela cobre). Usar a margem de Y nos dois eixos parece conservador e **não é**: abaixo de
+aspecto 0,4167 (janela de ~500 px num monitor 4K) ela fica curta e apaga ponto de borda.
+Confirmado por captura em 700×1800 (aspecto 0,40): com a fórmula corrigida, zero difença.
+
+**⚠ PONTO CEGO ESTRUTURAL DOS GATES, e ele quase deixou isso passar: os TRÊS harnesses
+capturam em 1:1** — `rodada.mjs` 1800×1800, `ab-identidade.mjs` 1800×1800,
+`sky-capture.mjs` 1440×1440. **Nenhum defeito que dependa do aspecto da tela é
+detectável por eles**, nem se a margem estivesse 4× errada. Por isso `ab-identidade.mjs`
+ganhou `JANELA=700x1800`: qualquer mudança que toque projeção, tamanho de sprite ou
+recorte lateral tem de rodar também fora de 1:1.
+
+**Não portar para `starForges.ts` sem refazer a conta:** lá o bloco é CÓPIA literal, paga
+1 fetch em vez de 16, e o teto é `clamp(px, 0.85, 26.0)` — o limiar de aspecto muda.
+
+**O que sobra do bucketizador:** o teto medido de recorte por contagem era 4,8 ms e esta
+guarda entregou 2,8; a diferença é o custo irredutível de submeter o vértice. Um bucket
+espacial ainda poderia colher parte dela, a um custo de complexidade muito maior.
+Medido antes de descartar: **partir em N faixas contíguas é de graça** (`?galsplit=`,
+1/8/32/64 draws deram 4,877/4,884/4,961/4,776 ms, tudo dentro de ±0,13) — mas 64 malhas
+transparentes no mesmo `renderOrder` deixam o three reordená-las por distância e a soma
+aditiva em float perde associatividade: ~50 px de 1 nível variando ENTRE execuções. Se
+alguém voltar a isso, ordem explícita por faixa é pré-requisito, não detalhe.
+
+~~Primeiro experimento antes de escrever bucketizador: `?galsplit=1|8|32|64`~~, partindo
 o `THREE.Points` em N faixas contíguas com `setDrawRange`, sem reordenar nada. Ele
 responde as duas únicas coisas que podem matar a ideia — se N draws custam o mesmo que 1
 num passe ponto-bound, e se o `sortObjects` do three reordena e quebra o md5 das vistas.

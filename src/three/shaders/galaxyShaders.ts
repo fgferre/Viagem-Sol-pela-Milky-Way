@@ -73,6 +73,48 @@ void main() {
   float shrink = min(1.0, 9.0 / max(px * px, 1e-4));
   float subPix = px < 0.7 ? (px * px) / 0.49 : 1.0;
 
+  // PROJEÇÃO ANTES DA EXTINÇÃO — o recorte que faltava.
+  // As 16 amostras VTF abaixo custam 1,22 ms por milhão de pontos (medido
+  // por setDrawRange: 100/75/50/25/10% dá 4,924/3,647/2,394/1,099/0,337 ms,
+  // reta com intercepto zero), e em ?t=100 apenas 2,00% dos 4.019.500
+  // pontos estão dentro do frustum (medido, ?galstat=1; 2,55% em t=0,
+  // 99,98% no face-on). Ou seja: 98% pagavam a integral inteira para serem
+  // descartados pelo clipper depois.
+  // Isto NÃO tira ponto nenhum da imagem: quem sai daqui já não virava
+  // fragmento. Só sobe a projeção — px, clamped, shrink e subPix não
+  // dependem de tau, então não há circularidade — e pula o que sobra.
+  // A MARGEM É OBRIGATÓRIA: ES rasteriza ponto como QUADRADO em espaço de
+  // JANELA, então o centro pode estar fora e a borda ainda depositar. Um
+  // corte NDC puro apaga ponto visível — foi medido e rejeitado.
+  // A margem exata em Y é (clamped/2 + 2 px) convertida para NDC, e uScreenH
+  // é a ALTURA do buffer. Em X ela NÃO é a mesma: depende do aspecto, e o
+  // aspecto já está dentro da projeção (P[0][0] = f/aspecto, P[1][1] = f),
+  // então P[0][0]/P[1][1] = altura/largura converte uma na outra sem gastar
+  // um uniform novo. Usar a margem de Y nos dois eixos parece conservador e
+  // NÃO é: em retrato estreito (janela de ~500 px num monitor 4K, aspecto
+  // abaixo de 1:2,4) ela fica CURTA e apaga ponto de borda — e nenhum gate
+  // do repo enxergaria, porque os três capturam em 1:1, onde sobra 2,4x.
+  // A razão certa é P[0][0]/P[1][1]; invertida, piora exatamente o caso que
+  // ela existe para cobrir.
+  // Modo de falha, se ainda assim faltar margem: vColor e vAlpha ficam em
+  // zero e o blend aditivo deposita nada — ponto some, nunca cor errada.
+  // Nenhum outro passe usa este material sob outra câmera: o bake tem cena
+  // própria com um quad (bakeScene em galaxy.ts), roda ANTES de o grupo da
+  // galáxia entrar na cena (director.ts), e GALAXY_VERT é consumidor do
+  // tauRT, não produtor. Há um único RenderPass e nenhum overrideMaterial.
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = clamped;
+  vColor = vec3(0.0);
+  vAlpha = 0.0;
+  // w <= 0 é subconjunto estrito do que o clipper já descarta, e o "=" é o
+  // que impede 0/0 = NaN passar batido por toda comparação abaixo.
+  if (gl_Position.w <= 0.0) return;
+  vec2 ndc = gl_Position.xy / gl_Position.w;
+  float margemY = (clamped + 4.0) / uScreenH;
+  float margemX = margemY * projectionMatrix[0][0] / projectionMatrix[1][1];
+  if (abs(ndc.x) > 1.0 + margemX || abs(ndc.y) > 1.0 + margemY) return;
+
   // EXTINÇÃO POR CAMINHO AMOSTRADO — rodadas 15/16. A coluna entre a
   // partícula e a câmera é ∫κρ ds com ρ(x,y,z) = τ⊥(x,y)·G(z̃)/(√2π σ):
   // 16 amostras VTF ao longo do trecho do segmento dentro da camada.
@@ -150,10 +192,6 @@ void main() {
   // como estrelas individuais a esta distância sai da integrada.
   // Além de ~5 kpc unresolved ≡ 1,0 — a vista externa não move.
   vAlpha = aAlpha * uFade * shrink * subPix * unresolved(dist);
-
-  vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  gl_Position = projectionMatrix * mv;
-  gl_PointSize = clamped;
 }
 `;
 

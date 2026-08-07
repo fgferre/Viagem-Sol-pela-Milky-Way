@@ -41,6 +41,14 @@ const VISTAS = [
   ['faceon', '?t=293&shot=2'],
 ];
 const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
+// EXTRA=&knob=1 anexa um parâmetro a TODAS as vistas — o A/B de um knob se faz
+// com o mesmo binário dos dois lados, sem editar nada entre as capturas.
+const EXTRA = process.env.EXTRA || '';
+// JANELA=700x1800 muda o tamanho da captura. Existe porque os TRÊS harnesses do
+// repo capturam em 1:1 (rodada 1800x1800, sky 1440x1440, este 1800x1800), e
+// qualquer defeito que dependa do ASPECTO da tela é invisível para todos eles —
+// o corte lateral de sprite é exatamente desse tipo.
+const [JW, JH] = (process.env.JANELA || '1800x1800').split('x');
 const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}.json`);
 const CHROME = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -70,7 +78,7 @@ async function capturar(query, porta, png) {
   const chrome = spawn(CHROME, [
     '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
     '--hide-scrollbars', '--no-first-run', '--mute-audio',
-    '--force-device-scale-factor=1', '--window-size=1800,1800',
+    '--force-device-scale-factor=1', `--window-size=${JW},${JH}`,
     `--user-data-dir=${perfil}`, `--remote-debugging-port=${porta}`, 'about:blank',
   ], { stdio: 'ignore' });
   try {
@@ -132,7 +140,7 @@ for (const [nome, query] of VISTAS) {
   md5[nome] = [];
   for (let k = 0; k < N; k++) {
     const png = SO ? resolve(ROOT, 'capturas', `ab-${LADO}-${nome}-${k}.png`) : null;
-    md5[nome].push(await capturar(query, porta++, png));
+    md5[nome].push(await capturar(query + EXTRA, porta++, png));
   }
   console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}`);
 }
