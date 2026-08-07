@@ -2214,18 +2214,26 @@ capítulos nomeados, `?t=`+`play=1`, guarda de teclado, mobile). O que falta:
    de produto. **Decidir e registrar aqui antes de qualquer código.**
 
 **Medir antes de decidir (nesta ordem):**
-6. **Precificar a cadeia de pós** — é pré-requisito de tudo abaixo. Há número
-   para nebulosa (6,9 ms), cascas (+0,3 ms) e laço τ (~1,1 ms), e **zero** para
-   o pós, a única camada always-on que escala com pixelRatio².
+6. ~~**Precificar a cadeia de pós**~~ **FEITO (2026-08-07): 0,29–0,34 ms, 2%
+   do quadro.** Números e método na seção "Medições que sustentam o acima"; o
+   instrumento é `scripts/visual/gpu-profile.mjs`. **O que essa medida mudou é
+   maior que o item:** ela derrubou o "não há gargalo" (era vsync), reordenou a
+   fila inteira de performance e reabriu uma decisão fechada. A ordem real dos
+   alvos passou a ser **nebulosa (58% do quadro) → galáxia (31%) → todo o
+   resto (11%, do qual o pós é 2)**.
 7. **`backdrop-filter: blur(6px)` em `.hud-btn`** — seis botões sobre o canvas
    a viagem inteira, cada um obrigando o compositor a reler e desfocar a região
    TODO frame; e `--warp` é escrito no elemento RAIZ a 60 Hz, invalidando
    estilo na subárvore inteira do HUD. Custo fora do WebGL que ninguém
    contabilizou. Não é bit-exato remover; o teste é de um minuto.
-8. **O degrau `alta` é quase no-op em dPR 1** (`pixelRatio` é TETO: `min(dPR,
-   2.0)`, então cinema e alta dão o mesmo 1,0). Sobra `nebulaSteps` 56→44, ~5%
-   — e queima 15 s de cooldown antes do degrau que funciona. Quem está a 35 fps
-   não é socorrido. Menor mudança coerente: escala de render própria do preset.
+8. ~~**O degrau `alta` é quase no-op em dPR 1**~~ **MEDIDO e o contrário é
+   verdade: vale 13,7% do tempo de GPU** (16,00 → 13,81 ms), todo ele de
+   `nebulaSteps` 56→44 — `pixelRatio` contribui zero a dPR 1, como o item
+   dizia, mas o que sobra não é "~5%", é o degrau inteiro. **Não dar escala de
+   render própria ao preset**: resolução não é o eixo (a galáxia é ponto-bound
+   e o raymarch é imune a `pixelRatio`). O que sobra do item é o **cooldown de
+   15 s**, agora sem desculpa: quem está a 35 fps espera 15 s por um degrau que
+   já sabemos que funciona.
 9. **`size > 3.0` da extinção estelar nunca dispara** acima de ~867 px de
    buffer (`size_mín` = 3,74·screenH/1080), então o mini-raymarch de 6 amostras
    que o gate existia para evitar roda nas 328.749 estrelas — mas só nos Atos
@@ -2233,7 +2241,9 @@ capítulos nomeados, `?t=`+`play=1`, guarda de teclado, mobile). O que falta:
    bit-exato.
 10. `textureLod`/mips no `tauRT` — **teto realista ≤0,7 ms (~4%)**, não
     "impacto máximo"; e mip 2 = 132 pc/texel morde justamente `laneDepth` e o
-    centroide vertical. Exige gate edge/face.
+    centroide vertical. Exige gate edge/face. Continua valendo, mas agora com
+    ordem: **é o terceiro alvo, não o primeiro** — os dois primeiros são o
+    número de passos do raymarch e a contagem de pontos da galáxia.
 11. Compressão do payload: 13,3 MB, e `gzip` puro já daria `stars.bin`
     2,96→2,31 e `dust-density.bin` 5,50→3,13. O `vite.config.ts` não
     pré-comprime. Some com o item (4) da fila de 2026-08-05 (2,77 MB de colunas
@@ -2250,16 +2260,42 @@ Não reabrir sem que a condição listada mude.
 | **Log-depth: não** | A cena tem um único objeto opaco com `depthWrite`; z-fighting precisa de dois | Entrar geometria resolvida (planetas, malhas) |
 | **LUT de cor (Mamajek / CIE 401): não** | O ajuste de 3 mads em `common.ts` tem RMS 0,009; o erro real afeta ~51 das 18.543 estrelas | Precisão exigida abaixo de 2500 K ou acima de 40 kK |
 | **Saturação/lift no pós para "consertar" cor: não** | É maquiagem. A cor tem de emergir da física; croma se recupera por **exposição**, não por saturação | — |
-| **Reduzir vértices para ganhar QUADRO em cinema/alta: não** | Medido: `?nogal=1` tira 320 k vértices e move a mediana em 0,1 ms — vértice não é o gargalo. Não confundir com o `populationScale` 0,28 do preset **performance**, que é APROVADO e existe por MEMÓRIA (o buffer de 2,6 M custa 83 MB e não cabe em mobile), nem com a rodada 28, que SUBIU a contagem 1,5× por IMAGEM e não por custo | Alvo passar a ser GPU de baixo tier, com medição própria |
+| **Reduzir vértices para ganhar QUADRO em cinema/alta: ⚠ REABERTA (2026-08-07)** | A prova era "`?nogal=1` move a mediana em 0,1 ms", e essa mediana era o vsync — não media nada. Medido na GPU, a nuvem de pontos custa **4,77 ms, 31% do quadro**, e `?nogal=1` tira 5,33 ms do total (inclui a cartografia junto). A condição de reabertura ("medição própria") está cumprida. **Isto NÃO autoriza podar pontos**: contagem é IMAGEM (a rodada 28 subiu 1,5× por imagem, e o `populationScale` 0,28 do `performance` existe por MEMÓRIA, não por quadro) — o que caiu foi só o argumento de que sair custa zero | — (já reaberta; entra na fila como troca imagem×quadro, com dose medida) |
 
 ## Medições que sustentam o acima
 
-Método em `scratchpad` do agente (CDP: embrulha `getContext`, conta draws, rAF mede
-frame). Repetir com **≥1000 frames** e conferindo `callsPerFrame`: janela curta dá
-"mediana" que é só pico de arranque, e `callsPerFrame ≈ 0` significa que o app parou de
-renderizar e a linha não mede nada.
+Método: **`scripts/visual/gpu-profile.mjs`** — CDP, embrulha `getContext` e mede cada
+draw com `EXT_disjoint_timer_query_webgl2`, rotulando pelo programa ligado (em pós, um
+programa é exatamente um passe). Repetir com **≥600 quadros** e conferindo
+`calls/quadro`: janela curta dá "mediana" que é só pico de arranque, e
+`calls/quadro ≈ 0` significa que o app parou de renderizar e a linha não mede nada.
+Mede DRAWS — `clear`, blit e upload ficam de fora.
 
-- **Não há gargalo.** 2560×1440, vista externa: mediana 17,4 ms com 4,0 M de pontos.
+- **⚠ "Não há gargalo" está REFUTADO: a mediana de 17,4 ms era o VSYNC, não o
+  trabalho.** Sob vsync o rAF devolve 16,7 ms para qualquer quadro que CAIBA no
+  orçamento, então ablação medida por relógio de apresentação não mede nada enquanto o
+  app não estiver quebrado — e foi assim que se concluiu "há folga" de um quadro que usa
+  96% da GPU. Medido na GPU (2026-08-07, 1904×985, `?t=100`, `cinema`): **15,6–16,0 dos
+  16,7 ms**. Em dPR 2 (buffer 3808×1970) o total vai a 16,9 ms e o app **cai para
+  56,3 fps**. A escala absoluta se valida sozinha: o total cruza 16,67 ms exatamente
+  onde os quadros começam a cair, e o instrumento não é o dono da queda — com e sem ele,
+  676 contra 675 quadros em 12 s.
+- **Dois donos levam 88% do quadro:** raymarch da nebulosa **9,07 ms (58%)** e a nuvem
+  de pontos da galáxia **4,77 ms (31%)**. Todo o resto somado é 1,7 ms.
+- **A galáxia é ponto-bound, não fill-bound.** `uScreenH` vem do drawing buffer
+  (`domElement.height`), então em dPR 2 cada ponto dobra de lado e a área rasterizada é
+  4× — e o custo vai de 6,04 para 6,40 ms, **+6%**. O eixo é CONTAGEM, não pixel; é por
+  isso que o `populationScale` 0,28 do `performance` derruba 5,00 → 1,41 ms.
+- **Cadeia de pós precificada — 0,29–0,34 ms, 1,9–4,3% do tempo de GPU a dPR 1**
+  (0,55 ms em `alta`/dPR 2, 0,80–0,95 em `cinema`/dPR 2). Repartição a dPR 1: bloom
+  inteiro (prefiltro + 10 blurs + composite + blend) 0,23 · output ACES+sRGB 0,06 ·
+  film 0,04 · knee 0,04, e o knee só existe na vista externa. É a única camada
+  always-on que escala com resolução, mas **sub-quadraticamente: 4× pixels dão 3,25×**.
+  Conferido por ablação — `?nobloom=1` tira 0,386 ms do total contra 0,510 atribuídos
+  aos quatro passes, dentro dos ±0,13 de ruído dos programas de cena. **Não há rodada de
+  performance a ganhar aqui**, e os itens da fila que esperavam este número podem ser
+  julgados: qualquer conta que trate o pós como camada cara está errada por uma ordem
+  de grandeza.
 - **O hitch de ~250 ms no p99 foi bissecado e corrigido** (rodada 10): a 3ª oitava do fbm
   das nuvens CO, naquele shader (multiply + instanced), dispara um stall periódico de
   driver a partir de 1440p de altura — frag trivial 18,3 ms · 2 oitavas fixas 18,3 ·
@@ -2283,10 +2319,19 @@ renderizar e a linha não mede nada.
   1,5 s de compile do shader de bake sob o véu (aceito). Os platôs de 33 ms
   do headless são contaminação (downclock de GPU em background), não defeito.
 - **Vértices por frame são quase constantes na viagem:** 3,84 M no Sol, 4,00 M de fora.
-- **Raymarch = 6,9 ms**, 29% do frame (1600×900, no Sol: 23,6 ms contra 16,7 com
-  `?nonebula=1`). A alavanca dominante é `pixelRatio`, não o número de passos: em
-  `?q=performance` (30 passos, ratio 1,0) o raymarch some dentro do vsync. Custo por
-  amostra-pixel ≈ 22 ps ⇒ **campo distante a 1440p com 32 passos ≈ 2,6 ms**. Há orçamento.
+- **Raymarch = 6,88 ms dentro do disco e 9,07 ms na travessia** (`?t=100`, `cinema`) —
+  o maior item do quadro. **A alavanca é PASSOS, não `pixelRatio`:** o RT é dimensionado
+  em px CSS × `setScale`, então 4× pixels de tela movem 6,88 → 6,97 ms. A leitura antiga
+  atribuía a `pixelRatio` o que era, junto e sem separar, o `setScale` 0,5→0,35 mais os
+  56→30 passos do preset `performance`. `nebulaSteps` 56→44 vale **1,90 ms**; o preset
+  `performance` inteiro leva o raymarch a 2,63 ms. Ablação: `?nonebula=1` em `?t=100`
+  tira 8,84 ms do total (15,52 → 6,68), contra 9,15 atribuídos.
+- **O degrau `alta` NÃO é no-op: vale 13,7% do tempo de GPU** mesmo a dPR 1 (16,00 →
+  13,81 ms em `?t=100`) — e é INTEIRO da nebulosa (9,05 → 7,15). `pixelRatio` contribui
+  exatamente zero ali, como o item 8 da auditoria previa; o que o item errou foi o
+  tamanho (estimou "~5%") e o alvo: **o decorativo é o `pixelRatio` do preset, não o
+  degrau**. Em dPR 2 o degrau vale 15,3% e é a diferença entre 56,3 e 60,0 fps.
+  `performance` vale −65% (5,66 ms).
 - **Cor:** púrpura na faixa 0,25–1,05 R90 é **+0,121 contra alvo +0,201** (era +0,084 com a
   paleta pintada). 60% do alvo. Emissão e espalhamento já saem de temperatura de população;
   o componente que falta pesar é **H II**, que tem o purp mais alto da cena (+0,303) e hoje
