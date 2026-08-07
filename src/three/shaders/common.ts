@@ -142,7 +142,50 @@ float diskGasEnvelope(vec3 p) {
 // pagar o fetch + ALU de diskGasEnvelope duas vezes pela mesma p
 float gGasEnvelope = 0.0;
 
-float nebulaDensity(vec3 p, int oct) {
+// Intervalo em t onde ALGUMA nuvem-semente pode contribuir, calculado UMA
+// vez por raio em vez de uma vez por amostra. O laço lá embaixo roda
+// uSeedCloudCount iterações em CADA amostra e isso custa **1,20 ms dos
+// 9,12 do raymarch (13%)**, medido por sonda — enquanto em t=100 nenhuma
+// das 32 nuvens escolhidas encosta no raio.
+// Conservador por construção: a nuvem só entra em d2c < 5.5, ou seja
+// |p−c| < √5,5·r, e o intervalo é a UNIÃO das interseções raio-esfera desse
+// raio. Dilatado em 1 pc porque p = ro + rd·t acumula erro de ponto
+// flutuante que a forma analítica não vê: falso positivo custa só GPU,
+// falso negativo apagaria nuvem e mudaria a imagem.
+float gSeedLo = 1e9;
+float gSeedHi = -1e9;
+
+void seedSpan(vec3 ro, vec3 rd) {
+  gSeedLo = 1e9;
+  gSeedHi = -1e9;
+  for (int i = 0; i < 32; i++) {
+    if (i >= uSeedCloudCount) break;
+    vec3 c = uSeedClouds[i].xyz - ro;
+    float r = max(uSeedClouds[i].w, 8.0);
+    float r2 = 5.5 * r * r;
+    float tc = dot(c, rd);
+    float h2 = dot(c, c) - tc * tc;
+    if (h2 < r2) {
+      float semi = sqrt(r2 - h2);
+      gSeedLo = min(gSeedLo, tc - semi - 1.0);
+      gSeedHi = max(gSeedHi, tc + semi + 1.0);
+    }
+  }
+}
+
+float nebulaDensity(vec3 p, int oct, float t) {
+  // uCavityPos É a posição da câmera — director.ts passa a mesma
+  // cam.position que vira uCamPos —, logo esta distância é o próprio t
+  // do laço, que a função recalculava por amostra lá no fim. Com o portão em
+  // 1 (dHome > 1300 pc, Ato III em diante) o trecho de 0 a 25 pc tem
+  // densidade ZERO provada: smoothstep(25, 240, cav) satura em 0 e
+  // mix(1, 0, 1) zera tudo, inclusive nuvens-semente e núcleos, porque o
+  // fator multiplica o d final. E a amostragem quadrática põe ~20% dos
+  // passos justamente aí. Bit-exato: quem sai por aqui sairia 0 no fim, e
+  // gGasEnvelope só é lido dentro de d > 0.003. Medido: −1,43 ms em
+  // t=180 (8,797 → 7,369), zero em t=100 e t=140, onde o portão está fechado.
+  vec3 cav0 = p - uCavityPos;
+  if (uCavityGate >= 1.0 && dot(cav0, cav0) <= 625.0) return 0.0;
   float envelope = min(diskGasEnvelope(p), 3.0);
   gGasEnvelope = envelope;
   if (envelope < 0.004 && uSeedCloudCount == 0) return 0.0;
@@ -154,19 +197,23 @@ float nebulaDensity(vec3 p, int oct) {
 ${coresGLSL()}
   // nuvens-semente reais: metaballs com subestrutura FBM. O corte
   // por distância vem ANTES do exp/fbm: por amostra, quase sempre
-  // só 0–2 nuvens passam — o resto custa uma subtração e um dot.
-  for (int i = 0; i < 32; i++) {
-    if (i >= uSeedCloudCount) break;
-    vec3 cq = (p - uSeedClouds[i].xyz) / max(uSeedClouds[i].w, 8.0);
-    float d2c = dot(cq, cq);
-    if (d2c < 5.5) {
-      float g = exp(-d2c * 1.4);
-      // fase pela IDENTIDADE da nuvem (posição estável), nunca pelo
-      // slot do array — o rank muda a cada refresh de proximidade
-      float phase = hash13(uSeedClouds[i].xyz) * 118.3;
-      float subst =
-        0.35 + 1.35 * smoothstep(0.45, 0.85, fbm(p * 0.11 + phase, 2));
-      d += g * uSeedCloudAmp[i] * subst;
+  // só 0–2 nuvens passam — o resto custava uma subtração e um dot, e
+  // essas subtrações somavam 13% do raymarch. seedSpan já provou, uma
+  // vez por raio, que fora deste intervalo nenhuma nuvem alcança.
+  if (t >= gSeedLo && t <= gSeedHi) {
+    for (int i = 0; i < 32; i++) {
+      if (i >= uSeedCloudCount) break;
+      vec3 cq = (p - uSeedClouds[i].xyz) / max(uSeedClouds[i].w, 8.0);
+      float d2c = dot(cq, cq);
+      if (d2c < 5.5) {
+        float g = exp(-d2c * 1.4);
+        // fase pela IDENTIDADE da nuvem (posição estável), nunca pelo
+        // slot do array — o rank muda a cada refresh de proximidade
+        float phase = hash13(uSeedClouds[i].xyz) * 118.3;
+        float subst =
+          0.35 + 1.35 * smoothstep(0.45, 0.85, fbm(p * 0.11 + phase, 2));
+        d += g * uSeedCloudAmp[i] * subst;
+      }
     }
   }
   float lanes = fbm(p * 0.085 + 41.0, 2);

@@ -454,6 +454,10 @@ void main() {
 
   vec3 acc = vec3(0.0);
   float T = 1.0;
+  // uma vez por raio: fora do intervalo devolvido aqui, nenhuma das 32
+  // nuvens-semente alcança, e o laço de teste por amostra é provadamente
+  // inútil (ver seedSpan em common.ts)
+  seedSpan(ro, rd);
   vec3 galacticLight = texture2D(uBandLUT, dirToBand(rd)).rgb;
   // +1e-4: normalize(vec3(0)) = NaN quando ?pos=0,0,0 (origem exata)
   vec3 toSun = normalize(uSunPos - ro + vec3(1e-4));
@@ -475,7 +479,7 @@ void main() {
     float t = (t0 + t1) * 0.5;
     float dt = max(t1 - t0, 0.01);
     vec3 p = ro + rd * t;
-    float d = nebulaDensity(p, 4);
+    float d = nebulaDensity(p, 4, t);
 
     if (d > 0.003) {
       // ambiente frio proporcional ao envelope do gás — reusa o valor

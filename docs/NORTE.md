@@ -2258,8 +2258,8 @@ o que está na tabela é medida, não alegação. Nada disso está implementado 
 
 | # | mudança | ganho MEDIDO | imagem | alegado antes |
 |---|---|---:|---|---|
-| 1 | **guarda da cavidade içada ao topo de `nebulaDensity`** | **−1,43 ms em t=180** (16%) | bit-exata | 0,9–1,25 (swarm) |
-| 2 | **teste das 32 sementes hoisted para uma vez por RAIO** | **−1,20 ms** (13%) | bit-exata | 4,4 (Codex), 1,0–1,5 (swarm) |
+| 1 | ~~guarda da cavidade~~ **FEITA** | **−1,43 ms em t=180** (16%) | bit-exata (provada) | 0,9–1,25 (swarm) |
+| 2 | ~~teste das 32 sementes por RAIO~~ **FEITA** | **−1,92 ms em t=100** (21%) | 55 px de 3 M em 1 nível | 4,4 (Codex), 1,0–1,5 (swarm) |
 | 3 | `if (d == 0.0) return 0.0;` antes das `lanes` | −0,32 (t=100), −0,52 (t=40) | bit-exata | 0,50–0,70 (swarm) |
 | 4 | early-out do vácuo local às sementes | −0,45 (teto) | bit-exata, **exige (2)** | 0,30–0,65 (swarm) |
 | 5 | gate dos núcleos `q2<9` → `q2<7` | não medido, ~1,0 alegado | **NÃO** bit-exata | 0,95–1,2 (swarm) |
@@ -2292,12 +2292,39 @@ cache a invalidar em cada corte). O teto de pular vazio pelo envelope está medi
 **0,45 ms**, porque a amostragem quadrática já concentra as amostras dentro da camada de
 gás. Complexidade grande demais para prêmio pequeno demais.
 
-**Ordem sugerida:** (1) e (2) primeiro — juntas ~2,6 ms, ambas bit-exatas, provadas por
-md5 das seis vistas. (3) e (4) de carona. (5) fora desta rodada: é a única não bit-exata
-e mexe no corredor de Órion, suspeito ativo do maior termo do `skyError`; e `coresGLSL()`
-é injetado DUAS vezes (`common.ts` e a variante local), então mexer nele muda também a
-extinção das 328 mil estrelas. **A soma realista não é 3,4 ms e sim ~2,5–3,0** — (4)
-apaga amostras que (3) também cobriria.
+**(1) e (2) foram FEITAS (2026-08-07).** Resultado medido, com as duas juntas:
+
+| instante | raymarch antes | depois | quadro antes | depois |
+|---|---:|---:|---:|---:|
+| t=40 | 6,88 | **5,20** (−24%) | 13,20 | 11,50 |
+| t=100 | 9,12 | **7,20** (−21%) | 15,79 | 13,54 |
+| t=180 | 8,80 | **7,51** (−15%) | — | 14,23 |
+
+E o que o espectador sente: **em dPR 2 o filme voltou a 60,0 fps** (720 quadros em 12 s),
+contra 56,3 antes — o quadro caiu de 17,04 para 15,04 ms e parou de estourar o vsync.
+
+**Verificação, e ela tem uma ressalva honesta.** Bit-idênticas: face-on, edge-on,
+travessia (t=100) e mergulho (t=180). **A vista interna (t=40) NÃO é bit-idêntica: 55
+pixels de 3.036.528 (0,002%), todos com delta de exatamente 1 nível em 255, espalhados
+por toda a imagem.** Isso é assinatura de **1 ULP do compilador** — envolver o laço num
+`if` muda a ordem/fusão da aritmética que o driver gera —, não de conteúdo que sumiu:
+uma nuvem culada daria mancha localizada com delta grande. A guarda da cavidade sozinha
+é bit-exata (isolada por ablação: t=40 volta ao md5 anterior). **O gate do céu não se
+move: `skyError` 0,7811 com os cinco termos idênticos a quatro casas** (espessura
+0,3097 · perfil 0,2164 · fenda 0,2102 · púrpura 0,0364 · cor 0,0084).
+
+**Ferramenta nova, e a razão dela:** `scripts/visual/ab-identidade.mjs`. O
+`--virtual-time-budget` de `rodada.mjs` acelera TIMERS mas não a REDE, então a
+cartografia e o pool de nuvens-semente chegam antes ou depois dele conforme a sorte —
+medido, a mesma vista no MESMO commit deu três md5 distintos (com e sem `?q=cinema`,
+com 16 s e com 32 s de orçamento). A captura nova espera pelo log da cartografia e mais
+700 quadros; com isso as cinco vistas repetem md5. **Qualquer A/B feito com o harness
+antigo mediu, em parte, a sorte do carregamento.**
+
+(3) e (4) seguem na fila. (5) fora: é a única com mudança de imagem de verdade e mexe no
+corredor de Órion, suspeito ativo do maior termo do `skyError`; e `coresGLSL()` é
+injetado DUAS vezes (`common.ts` e a variante local), então mexer nele muda também a
+extinção das 328 mil estrelas.
 
 ## Decisões fechadas
 
