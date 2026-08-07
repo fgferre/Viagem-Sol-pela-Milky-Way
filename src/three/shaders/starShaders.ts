@@ -19,7 +19,6 @@ uniform float uScreenH;
 uniform float uExpoM0;  // magnitude aparente que satura o pico da PSF
 uniform float uSigmaPx; // largura da PSF em px a 1080p (o "instrumento")
 uniform float uTau;
-uniform float uTime;
 uniform float uFade;
 
 varying vec3 vColor;

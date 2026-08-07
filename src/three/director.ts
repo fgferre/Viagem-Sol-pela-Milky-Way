@@ -109,10 +109,22 @@ export class Director {
   private disposed = false;
   /** pré-compilação em voo; o dispose do renderer espera por ela */
   private warmup: Promise<unknown> | null = null;
+  /** download disparado no construtor, consumido pelo init */
+  private readonly assets: ReturnType<Director['startLoading']>;
 
   constructor(canvas: HTMLCanvasElement, events: DirectorEvents) {
     this.events = events;
     this.engine = new Engine(canvas);
+    // A REDE PRIMEIRO. O prime do Sol (logo abaixo) são ~550 draws
+    // offscreen síncronos, e ele não depende de um byte dos ativos — mas
+    // como os fetches só nasciam no init(), os dois trabalhos rodavam em
+    // SÉRIE. Disparados aqui, o prime e a compilação passam a acontecer
+    // POR CIMA do download. init() só espera esta promise.
+    this.assets = this.startLoading();
+    // a promise agora nasce ANTES de quem a consome: se um dispose() vier
+    // entre o construtor e o init(), o abort rejeitaria sem ninguém
+    // ouvindo. Este ramo só cala o warning; o init continua vendo o erro.
+    void this.assets.catch(() => {});
     this.post = new Post(this.engine.renderer, this.engine.scene, this.engine.camera);
     this.nebula = new Nebula(0.5);
     // Sol procedural transplantado (vivo: sim + bake + ciclo); o prime
@@ -122,11 +134,19 @@ export class Director {
     this.roam = new FreeRoam(canvas, this.engine.camera);
     this.engine.onQuality((quality) => {
       this.nebula.setScale(quality === 'performance' ? 0.35 : 0.5);
+      // passos do raymarch: aqui e não no tick. Reescrever o mesmo valor
+      // 60×/s era ruído; quem muda o preset é quem tem de aplicá-lo — o
+      // auto-quality passa por aqui, e o default do Nebula (44) NÃO é o
+      // do cinema (56), então o valor inicial também vem daqui.
+      this.nebula.setSteps(this.engine.preset.nebulaSteps);
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
       this.blackHole?.setQuality(quality);
       this.events.onQuality(quality);
     });
+    // o Engine já aplicou a qualidade no próprio construtor, antes destes
+    // ouvintes existirem — o estado inicial precisa ser semeado à mão
+    this.nebula.setSteps(this.engine.preset.nebulaSteps);
     this.post.setGrain(this.engine.preset.grain);
 
     this.engine.onResize((w, h) => {
@@ -165,22 +185,32 @@ export class Director {
     this.engine.onTick((t, dt) => this.tick(t, dt));
   }
 
-  async init() {
-    // catálogo HYG + ativos cartográficos em paralelo; os segundos
-    // são progressivos — sem eles a cena continua procedural.
-    // ?cart=off não baixa os ~6 MB que ninguém consumiria.
+  /**
+   * catálogo HYG + ativos cartográficos em paralelo; os segundos são
+   * progressivos — sem eles a cena continua procedural.
+   * ?cart=off não baixa os ~6 MB que ninguém consumiria.
+   */
+  private startLoading() {
     const cartMode: CartographyMode =
       this.debug.get('cart') === 'off'
         ? 'off'
         : this.debug.get('cart') === 'obs'
           ? 'observed'
           : 'blend';
-    const [{ stars: starArrays, meta }, galactic] = await Promise.all([
+    return Promise.all([
       loadStarData(this.abortController.signal),
       cartMode === 'off'
         ? Promise.resolve(null)
         : loadGalacticAssets(this.abortController.signal),
-    ]);
+    ]).then(([stars, galactic]) => ({ stars, galactic, cartMode }));
+  }
+
+  async init() {
+    const {
+      stars: { stars: starArrays, meta },
+      galactic,
+      cartMode,
+    } = await this.assets;
     if (this.disposed) return;
     this.meta = meta;
 
@@ -307,7 +337,10 @@ export class Director {
       for (const m of this.nebula.warmupMaterials) {
         warm.add(new THREE.Mesh(warmGeo, m));
       }
-      for (const m of this.blackHole?.warmupMaterials ?? []) {
+      for (const m of [
+        ...(this.blackHole?.warmupMaterials ?? []),
+        ...this.post.warmupMaterials,
+      ]) {
         warm.add(new THREE.Mesh(warmGeoBH, m));
       }
       // A chave de programa do three inclui o colorSpace de SAÍDA, que é
@@ -459,6 +492,11 @@ export class Director {
     return this.rig.duration;
   }
 
+  /** instante atual da viagem — para gravar o momento num link */
+  get currentTime() {
+    return this.journeyT;
+  }
+
   /** pausa/retoma a viagem; retorna o novo estado (true = pausado) */
   togglePause(): boolean {
     if (this.phase !== 'journey') return false;
@@ -601,7 +639,7 @@ export class Director {
   /** setas ←/→: salta para o capítulo anterior/seguinte (as legendas) */
   skipChapter(dir: 1 | -1) {
     if (this.phase !== 'journey') return;
-    const times = this.rig.ticks.map((f) => f * this.rig.duration);
+    const times = this.rig.ticks.map((k) => k.t * this.rig.duration);
     if (dir > 0) {
       const next = times.find((x) => x > this.journeyT + 0.5);
       if (next !== undefined) this.seek(next);
@@ -643,7 +681,7 @@ export class Director {
     this.engine.setExposure(v);
   }
 
-  get progressTicks(): number[] {
+  get progressTicks(): { t: number; text: string }[] {
     return this.rig.ticks;
   }
 
@@ -729,7 +767,10 @@ export class Director {
     this.seedCloudTimer += dt;
     if (this.seedCloudTimer > 0.25) {
       this.seedCloudTimer = 0;
-      if (nebulaFade > 0.001) this.updateSeedClouds(cam.position);
+      // o MESMO 0,02 do gate do raymarch lá embaixo: abaixo dele o
+      // `nebula.render` não roda, e varrer o pool de nuvens-semente
+      // alimentava um shader que ninguém ia executar
+      if (nebulaFade > 0.02) this.updateSeedClouds(cam.position);
     }
     // a MESMA cavidade em todos os consumidores da densidade: raymarch,
     // extinção das estrelas e brilho da poeira próxima
@@ -746,19 +787,18 @@ export class Director {
       );
     }
 
+    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
     this.stars?.update(cam.position, hPx);
     const catFade = this.hide.has('nocat') ? 0 : localFade;
     this.wrappedStars?.update(
       cam.position,
       hPx,
-      Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2),
       this.hide.has('nowrap') ? 0 : 1,
       catFade
     );
     this.stars?.setFade(catFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
     this.nebula.setFade(nebulaFade);
-    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
     // heroes esmaecem a zero em farFade (900 pc) — além disso os
     // draws são garantidamente invisíveis
     if (this.heroes) {
@@ -886,7 +926,6 @@ export class Director {
 
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
-    this.nebula.setSteps(this.engine.preset.nebulaSteps);
     // gate 0.02: na casca externa do fade a contribuição é invisível
     // pós-ACES, mas o raymarch custaria integral
     if (this.noNebula || nebulaFade <= 0.02) {

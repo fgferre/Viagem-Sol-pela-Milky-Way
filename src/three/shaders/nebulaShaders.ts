@@ -193,7 +193,6 @@ uniform vec3 uCamFwd;
 uniform float uTanHalfFov;
 uniform float uAspect;
 uniform vec2 uResolution;
-uniform float uTime;
 uniform int uSteps;
 uniform vec3 uSunPos;
 uniform float uFade;

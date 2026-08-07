@@ -90,7 +90,9 @@
   left: 6vw;
   right: 6vw;
   bottom: 7.4vh;
-  z-index: 40;
+  /* acima do véu (50): na tela final a barra continua de pé, e é por ela
+     que se volta a um momento preferido em vez de reiniciar do zero */
+  z-index: 60;
   height: 2px;
   background: rgba(255, 255, 255, 0.13);
   /* clicável (scrub) com área de toque generosa via pseudo-elemento */
@@ -136,6 +138,15 @@
   justify-content: center;
   background: radial-gradient(ellipse at center, rgba(2, 4, 10, 0.55), rgba(0, 0, 2, 0.92));
   transition: opacity 1.6s ease;
+}
+/* O último plano É a tese do filme ("o Sol é só mais um ponto de luz") e a
+   câmera congela ~2,9 s antes do fim; o véu subia quase em cima dele. Estes
+   2,4 s a mais são GOSTO — o número está aqui sozinho para poder mudar. */
+.veil.veil-end {
+  transition-delay: 2.4s;
+}
+.veil.veil-end.hidden-veil {
+  transition-delay: 0s;
 }
 .veil.hidden-veil {
   opacity: 0;
@@ -388,8 +399,13 @@
     flex-wrap: wrap;
   }
 
-  .controls-bar .reveal-btn {
-    display: none;
+  /* "Ver a galáxia" NÃO some no celular: é a única saída visível dos
+     ~48 s quase parados do Ato I, e a barra já quebra linha (flex-wrap).
+     Quem cede espaço é o seletor de qualidade — o rótulo do preset é
+     legível cortado, e escolher qualidade é raro; pular para o clímax não. */
+  .controls-bar select.hud-btn {
+    min-width: 0;
+    max-width: 5.6rem;
   }
 
   .caption-wrap {

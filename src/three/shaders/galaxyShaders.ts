@@ -109,6 +109,14 @@ void main() {
   }
   float dTau = (s1 - s0) * D * ${(1 / NSAMP).toFixed(7)}; // peso de UMA amostra
   float tau = 0.0;
+  // Segmento inteiro fora da banda (câmera E partícula do mesmo lado de
+  // |z| = 1700 — halo, anã de Sagitário, parte do bojo): s1 == s0, logo
+  // dTau == 0 e o "tau *= dTau" lá embaixo zeraria a soma de qualquer
+  // jeito. Pular as ${NSAMP} amostras é BIT-EXATO: o ramo evitado só
+  // produz o zero que já sairia. O if envolve o laço em vez de entrar na
+  // condição dele — a regra de laço da GLSL ES 1.00 exige
+  // "índice op constante", e condição composta é portabilidade perdida.
+  if (s1 > s0) {
   for (int i = 0; i < ${NSAMP}; i++) {
     float s = s0 + (s1 - s0) * (float(i) + 0.5) * ${(1 / NSAMP).toFixed(7)};
     vec3 sp = position + toCam * s - uGC;
@@ -130,6 +138,7 @@ void main() {
     // piso cheio — que por sua vez tirou o face-on da banda de ruído).
     tp += 0.6 * exp(-rS / 5200.0);
     tau += tp * g / (2.5066283 * sigmaD);
+  }
   }
   tau *= dTau;
   // matiz da coluna satura para neutro em τ alto (?chromsat=; 0 = nunca)
@@ -260,6 +269,15 @@ varying vec2 vUv;
 
 void main() {
   vec4 b = texture2D(uBaked, vUv);
+
+  // O quad é quadrado e o disco é inscrito nele: ~21% da área bakeada é
+  // canto preto (o bake tem discard em radius > 1, DISC_FRAG). Com
+  // b.rgb == 0 a saída é exatamente 0 — hue é sempre finito, porque tc
+  // tem piso 1e-4 — e somar 0 em blend aditivo é identidade. Sair aqui
+  // poupa ~6 transcendentais por fragmento, BIT-EXATO.
+  // O teste é pelo TEXEL e não por radius > 1: o RT usa LinearFilter, e
+  // a borda do disco sangra meio texel para fora do raio 1.
+  if (dot(b.rgb, b.rgb) <= 0.0) discard;
 
   // LEI DE COMPRIMENTO DE CAMINHO. Uma coluna vista a ângulo ψ da normal é
   // atravessada por 1/|cos ψ| vezes mais matéria: τ = τ⊥/μ, e a emissão

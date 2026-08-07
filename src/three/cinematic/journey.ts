@@ -723,7 +723,12 @@ export class Journey {
     return { target: s.target, quiet: s.quiet ?? false, dest: s.dest };
   }
 
-  get tickTimes(): number[] {
-    return CAPTION_WINDOWS.map((w) => w.t0 / JOURNEY_DURATION);
+  /** cada marca da barra É uma legenda — leva o título junto, para o HUD
+   *  poder nomear o capítulo em vez de mostrar um traço anônimo */
+  get tickTimes(): { t: number; text: string }[] {
+    return CAPTION_WINDOWS.map((w) => ({
+      t: w.t0 / JOURNEY_DURATION,
+      text: w.text,
+    }));
   }
 }

@@ -22,7 +22,7 @@ export function TitleVeil({
   const seconds = runtime ? Math.round(runtime % 60) : 0;
   return (
     <div
-      className={`veil ${visible ? '' : 'hidden-veil'}`}
+      className={`veil veil-${mode} ${visible ? '' : 'hidden-veil'}`}
       aria-live="polite"
       aria-hidden={!visible}
     >
@@ -55,9 +55,19 @@ export function TitleVeil({
             aglomerados e Cefeidas Gaia DR3 — cartografia real, gás volumétrico em tempo real
           </div>
           <div className="title-rule" />
-          <button className="hud-btn" onClick={onPlay}>
-            Iniciar a viagem
-          </button>
+          {/* o "Explorar livremente" já estava ligado aqui (App passa
+              onExplore ao véu) e só era desenhado no fim — quem não quer
+              5 min de filme fechava a aba em vez de entrar na galáxia */}
+          <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button className="hud-btn" onClick={onPlay}>
+              Iniciar a viagem
+            </button>
+            {onExplore && (
+              <button className="hud-btn" onClick={onExplore}>
+                Explorar livremente
+              </button>
+            )}
+          </div>
           <div className="journey-runtime">
             experiência cinematográfica{minutes > 0 ? ` · ${minutes} min ${seconds} s` : ''}
           </div>
@@ -127,24 +137,72 @@ export function ProgressBar({
   progressRef,
   ticks,
   onScrub,
+  onSkipChapter,
+  capituloAtual,
 }: {
   progressRef: RefObject<HTMLDivElement | null>;
-  ticks: number[];
+  ticks: { t: number; text: string }[];
   onScrub: (fraction: number) => void;
+  onSkipChapter: (dir: 1 | -1) => void;
+  /** índice da legenda no ar; -1 entre capítulos */
+  capituloAtual: number;
 }) {
+  const scrubDoEvento = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    onScrub((event.clientX - rect.left) / rect.width);
+  };
   return (
     <div
       className="progress-wrap"
-      role="progressbar"
-      aria-label="Progresso da viagem — clique para saltar"
+      role="slider"
+      tabIndex={0}
+      aria-label="Progresso da viagem"
+      // a régua é o CAPÍTULO, não a fração: o progresso fino anda a 60 Hz
+      // por custom property justamente para o React ficar fora do caminho
+      // quente, e o índice da legenda já re-renderiza — de graça e no
+      // ritmo certo para quem ouve a tela
+      aria-valuemin={0}
+      aria-valuemax={ticks.length}
+      aria-valuenow={capituloAtual + 1}
+      aria-valuetext={
+        ticks[capituloAtual]
+          ? `${capituloAtual + 1} de ${ticks.length} — ${ticks[capituloAtual].text}`
+          : `${ticks.length} capítulos`
+      }
       onPointerDown={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        onScrub((event.clientX - rect.left) / rect.width);
+        // setPointerCapture: o arrasto continua valendo mesmo quando o
+        // ponteiro sai da barra — sem ele o scrub era um clique só
+        event.currentTarget.setPointerCapture(event.pointerId);
+        scrubDoEvento(event);
+      }}
+      onPointerMove={(event) => {
+        // buttons > 0 = ainda apertado. Vale para mouse e para toque, e
+        // não depende do capture ter pegado — a captura acima serve para
+        // o arrasto sobreviver a sair da barra (que tem 2 px de altura)
+        if (event.buttons > 0) scrubDoEvento(event);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          onSkipChapter(1);
+        } else if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          onSkipChapter(-1);
+        }
       }}
     >
       <div ref={progressRef} className="progress-fill" />
-      {ticks.map((t, i) => (
-        <div key={i} className="progress-tick" style={{ left: `${t * 100}%` }} />
+      {ticks.map((k, i) => (
+        // o título do capítulo já existia (é a legenda daquele beat) e era
+        // jogado fora; title= nativo basta — nada de componente de tooltip
+        <div
+          key={i}
+          className="progress-tick"
+          style={{ left: `${k.t * 100}%` }}
+          title={k.text}
+        />
       ))}
     </div>
   );

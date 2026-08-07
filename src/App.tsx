@@ -23,7 +23,7 @@ export default function App() {
     idx: -1,
     text: '',
   });
-  const [ticks, setTicks] = useState<number[]>([]);
+  const [ticks, setTicks] = useState<{ t: number; text: string }[]>([]);
   const [runtime, setRuntime] = useState(0);
   const [dest, setDest] = useState('');
   const [quality, setQuality] = useState<QualityLevel>('cinema');
@@ -102,7 +102,11 @@ export default function App() {
           const time = Number.parseFloat(query.get('t') ?? '0');
           d.play();
           if (Number.isFinite(time) && time > 0) d.seek(time);
-          d.freezeJourney = hasTime || query.has('freeze');
+          // ?t= sozinho continua CONGELANDO (contrato das capturas: o
+          // harness usa ?t=…&shot=2, sem play). Com &play=1 o mesmo ?t= vira
+          // retomada viva — é assim que a troca de qualidade e o link
+          // compartilhado devolvem o espectador ao momento em que estava.
+          d.freezeJourney = (hasTime && !query.has('play')) || query.has('freeze');
         }
       })
       .catch((error: unknown) => {
@@ -128,6 +132,17 @@ export default function App() {
     const onKey = (event: KeyboardEvent) => {
       const d = directorRef.current;
       if (!d) return;
+      // Espaço e ←/→ são atalhos da JANELA, com preventDefault. Sem esta
+      // guarda eles roubam as teclas de quem está num controle: no painel
+      // de Ajustes, o slider de exposição não andava com as setas e as
+      // caixas não marcavam com Espaço — as teclas iam para o filme.
+      if (
+        (event.target as HTMLElement | null)?.closest(
+          'input, select, textarea, button, [contenteditable]'
+        )
+      ) {
+        return;
+      }
       if (event.code === 'Space') {
         event.preventDefault();
         setPaused(d.togglePause());
@@ -158,6 +173,24 @@ export default function App() {
     d.seek(d.revealTime);
   };
   /**
+   * A URL de agora, com o MOMENTO da viagem dentro. Era o buraco comum de
+   * três incômodos: trocar a qualidade recarregava e devolvia o espectador à
+   * tela de título, "copiar link" copiava a configuração sem o instante, e
+   * quem recarregava perdia onde estava. `play=1` acompanha o `t=` para a
+   * viagem voltar ANDANDO — `?t=` sozinho congela, e assim continua, porque
+   * é o contrato das capturas headless.
+   */
+  const urlComMomento = () => {
+    const url = new URL(window.location.href);
+    const d = directorRef.current;
+    if (d && (phase === 'journey' || phase === 'end') && d.currentTime > 0.5) {
+      url.searchParams.set('t', d.currentTime.toFixed(1));
+      url.searchParams.set('play', '1');
+    }
+    return url;
+  };
+
+  /**
    * Metade da qualidade é VIVA (pixelRatio, passos do raymarch) e metade é
    * ASSADA na construção: o tier do Sol congela no construtor do Director e a
    * população da galáxia é decidida no init (regerar 2,6 M partículas no meio
@@ -169,7 +202,7 @@ export default function App() {
    */
   const changeQuality = (q: QualityLevel) => {
     if (q === quality) return;
-    const url = new URL(window.location.href);
+    const url = urlComMomento();
     if (q === 'cinema') url.searchParams.delete('q');
     else url.searchParams.set('q', q);
     window.location.assign(url.toString());
@@ -210,8 +243,18 @@ export default function App() {
       {/* linha de rumo: para onde estamos indo, com distância viva */}
       {inJourney && dest && <div className="dest-line">{dest}</div>}
 
-      {/* progresso (clicável — scrub) */}
-      {inJourney && <ProgressBar progressRef={progressRef} ticks={ticks} onScrub={scrub} />}
+      {/* progresso (arrastável — scrub). Fica de pé na tela final também:
+          seekFraction já sabe retomar a partir da fase 'end', e sem a barra
+          o único caminho de volta era "Reviver", que reinicia do zero */}
+      {(inJourney || phase === 'end') && (
+        <ProgressBar
+          progressRef={progressRef}
+          ticks={ticks}
+          onScrub={scrub}
+          onSkipChapter={(dir) => directorRef.current?.skipChapter(dir)}
+          capituloAtual={caption.idx}
+        />
+      )}
 
       {/* dica do modo livre */}
       {phase === 'free' && (
@@ -300,6 +343,7 @@ export default function App() {
         onCamada={(flag, escondida) =>
           directorRef.current?.setLayerHidden(flag, escondida)
         }
+        urlParaCopiar={() => urlComMomento().toString()}
       />
 
       {/* tela de título / loading / fim */}

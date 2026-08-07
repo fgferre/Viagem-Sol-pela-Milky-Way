@@ -9,6 +9,19 @@
     />
     <meta name="theme-color" content="#010208" />
     <link rel="icon" href="data:," />
+    <!--
+      Os 13 MB de dados só nasciam quando o bundle terminava de baixar,
+      parsear e executar — e os .bin da galáxia ainda esperavam a viagem do
+      manifesto. Os nomes são fixos, então a rede pode começar junto com o JS.
+      O crossorigin é OBRIGATÓRIO: o código usa fetch() puro (modo cors) e,
+      sem ele, o preload não casa com a requisição e o browser baixa TUDO
+      duas vezes. Nada muda no que é renderizado — só quando os bytes chegam.
+    -->
+    <link rel="preload" as="fetch" crossorigin href="./data/stars.bin" />
+    <link rel="preload" as="fetch" crossorigin href="./data/stars_meta.json" />
+    <link rel="preload" as="fetch" crossorigin href="./data/galaxy/manifest.json" />
+    <link rel="preload" as="fetch" crossorigin href="./data/galaxy/dust-density.bin" />
+    <link rel="preload" as="fetch" crossorigin href="./data/galaxy/gaia-ob-proxy-stars.bin" />
     <title>Mar de Estrelas — Viagem pela Via Láctea</title>
   </head>
   <body>

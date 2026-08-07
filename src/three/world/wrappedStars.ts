@@ -380,7 +380,6 @@ export class WrappedStars {
   update(
     camPos: THREE.Vector3,
     screenH: number,
-    _tanHalfFov: number,
     fade: number,
     /** o MESMO fade do campo de catálogo — a supressão tem de acompanhar
      *  quem está desenhando, senão o viajante leva um vazio junto */

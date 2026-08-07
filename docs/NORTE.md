@@ -2118,6 +2118,127 @@ piora a nota do céu. Ele paga espessura (0,3097 → 0,2837) e cor
 largas ou brilhantes demais em |b| alto — a mesma família da PSF de largura
 fixa da unificação 1.
 
+## Auditoria de UX e desperdício (2026-08-06) — o que sobrou como regra
+
+Três auditorias externas (Gemini, Kimi e uma terceira) conferidas contra o
+código por um workflow só-leitura de 14 agentes. **Nenhuma mudança de imagem:
+SEIS vistas saíram bit-idênticas** — face-on t=293 (`873e64b2…`), edge-on t=261
+(`c0743465…`), duas faces do gate do céu com `?kneeamt=1` e duas da vista
+interna (t=40 e t=100), cada uma capturada 2–3× dos dois lados contra um
+worktree do HEAD. O que ainda decide algo:
+
+- **A conta do desperdício não fecha em gargalo.** Somando os ganhos REAIS de
+  todos os itens de performance das três auditorias dá menos de 10% do quadro.
+  Os números que o projeto já tinha: laço τ inteiro ≈1,1 ms (da fronteira
+  4/16/32 = 17,7/18,8/20,0), cascas +0,3 ms, `projectLabels` 155 µs no Ato I e
+  ZERO nos Atos III–V (`labels.ts` retorna cedo em `dHome > 2000`). **Onde as
+  auditorias escreveram "ALTO" e "impacto máximo", a medida diz 2–6%** — e a
+  linha "Não há gargalo, mediana 17,4 ms" continua valendo. O valor delas era
+  de UX, não de milissegundos.
+- **O gate do knee tem UMA forma correta e as três erraram.** É
+  `this.knee.enabled = this.kneeOn && (this.forcedAmt ?? k) > 0`. Limiar
+  `> 1e-3` (o que duas propuseram) NÃO é bit-exato: a rampa atravessa
+  (0, 1e-3] em toda travessia do disco. E o amount tem de ser o `forcedAmt`
+  quando existe, senão `?kneeamt=` morre — e **`sky-capture.mjs` roda com
+  `&kneeamt=1&knee=0.02&exp=4.4`**, ou seja toda a série de `skyError` perderia
+  comparabilidade em silêncio. Regra: **gate novo em passe de pós entra junto
+  com o material no warm-up** — o knee agora liga só na vista externa, e sem
+  isso o primeiro uso do programa cairia no MEIO do filme (o mesmo hitch que o
+  BH dava ao cruzar 2,4 kpc).
+- **`discard` por TEXEL, não por raio.** As lâminas bakeadas desperdiçavam ~21%
+  de área em canto preto. Cortar em `radius > 1.0` (a forma proposta) NÃO é
+  bit-exato: o RT usa `LinearFilter` e a borda do disco sangra meio texel para
+  fora. `if (dot(b.rgb, b.rgb) <= 0.0) discard;` é exato em toda parte e
+  dispensa constante mágica.
+- **Laço de GLSL ES 1.00 não aceita condição composta.** O guard do segmento
+  fora da banda (`s1 > s0`, que poupa as 16 amostras quando `dTau == 0`) tem de
+  envolver o laço num `if`, não entrar na condição dele — a regra é
+  "índice op constante", e o driver que aceita hoje é sorte, não contrato.
+- **Três bugs de UX que eram o MESMO buraco:** trocar qualidade recarregava e
+  voltava ao título, "copiar link" copiava sem o instante, e recarregar perdia
+  o lugar. Ninguém escrevia `journeyT` na URL. **Armadilha:** `?t=` sozinho
+  CONGELA (`App.tsx`) — é o contrato das capturas, `rodada.mjs` usa
+  `?t=…&shot=2` sem `play`. A retomada viva é `t=` **+** `play=1`, e a leitura
+  virou `hasTime && !query.has('play')`: o caminho de captura fica intocado
+  (provado pelas seis capturas acima).
+- **`role="progressbar"` sem `aria-valuenow` era violação de ARIA, e o
+  Espaço/setas globais tornavam o painel de Ajustes inoperável por teclado**
+  (`range`, `radio` e `checkbox` lá dentro nunca recebiam a tecla). A régua
+  acessível certa é o CAPÍTULO, não a fração: o índice da legenda já
+  re-renderiza, então sai de graça sem pôr o React no caminho quente.
+- **Serialização de carga, não banda.** O prime do Sol (~550 draws offscreen
+  síncronos) rodava no construtor ANTES de qualquer fetch, e o `index.html` não
+  tinha um único `preload` — os 13,3 MB só nasciam depois do bundle executar, e
+  os `.bin` ainda esperavam a viagem do manifesto. Medido depois: os cinco
+  arquivos maiores começam em **729 ms em vez de 2392 ms**, um transfer cada
+  (Resource Timing). **`crossorigin` é obrigatório no preload** — o código usa
+  `fetch()` puro (modo cors) e sem ele o browser baixa TUDO duas vezes.
+- **Refutado e não repetir:** `Post.setSize` NÃO tem bug de resize
+  (`EffectComposer.setSize` itera os passes); `novoSol` JÁ tem early-out
+  (`world > 0.02`); o CA do film com `uCA < 1e-5` é ramo MORTO (o piso é
+  1,2e-4); a pirâmide do bloom JÁ é pirâmide e o RT do raymarch JÁ é imune ao
+  pixelRatio (dimensionado em px CSS); fundir o knee no composite do bloom é
+  impossível como descrito (o blend é aditivo no ROP, nenhum fragmento vê a
+  soma); gate `if (v !== old)` em uniform não economiza nada (o upload é no
+  draw). **`pixelRatio: 2.0` é TETO, não fator** — em monitor dPR 1 o app
+  renderiza 1920×1080 exatos e, com `antialias: false`, sem AA nenhum; toda
+  conta de banda feita a "3840×2160" está 4× inflada.
+### Fila que sobra desta auditoria (o que já foi FEITO está acima)
+
+Feito e provado bit-idêntico: gate do knee, `discard` das lâminas, guard do
+laço τ, gate do `updateSeedClouds`, `GLSL` órfão, preload + fetch antes do
+prime do Sol, e o pacote de HUD (Explorar na intro, barra no fim, arrasto,
+capítulos nomeados, `?t=`+`play=1`, guarda de teclado, mobile). O que falta:
+
+**UX (o espectador sente, nenhum gate se move):**
+1. **Legendas nos vãos.** A travessia perfil→face-on tem **23,4 s sem uma
+   palavra** (o shot de `dur: 24` não tem `captions`), e o mergulho são ~90 s
+   com a mira cravada em `GAL.GC_POS` com dois silêncios de ~16 s. Bit-exato
+   **enquanto nenhum `dur` mudar** — mexer em `dur` desloca t=261/293 e quebra
+   a comparabilidade dos gates.
+2. **Loading em estágios, com yield.** O `init` é síncrono no main thread
+   (bakes 1,6 s + `buildGalaxy` 3,27 s): o loader CONGELA junto, e é por isso
+   que parece travado. Barra de porcentagem por byte não conserta — a rede é a
+   fatia pequena e ficaria parada em 100%. Rótulo por etapa + `await` que ceda
+   ao browser; o conserto de verdade é o Worker, item (2) da fila de 2026-08-05.
+3. **Qualidade inicial por dispositivo.** Sempre começa em `cinema`: o celular
+   assa 4,02 M partículas e o Sol no tier alto, e o auto-quality nunca desfaz o
+   que já foi assado. Gates não mudam (rodam sem `?q=` em desktop headless).
+4. Toast do auto-quality (a imagem muda sozinha e ninguém avisa); painel de
+   Ajustes público vs. `?ajustes=1` (três caixas dele RECARREGAM o filme);
+   locomoção no free-roam por toque (hoje o fim manda todo mundo para uma sala
+   sem porta — o detector de toque curto já mede tempo e deslocamento).
+5. **Som: não existe, e não há registro de que seja decisão.** Zero ocorrência
+   de `audio|AudioContext|trilha` em `src`, `docs`, `package.json`. Para um
+   filme de 5 min 21 vendido como experiência cinematográfica, é a maior lacuna
+   de produto. **Decidir e registrar aqui antes de qualquer código.**
+
+**Medir antes de decidir (nesta ordem):**
+6. **Precificar a cadeia de pós** — é pré-requisito de tudo abaixo. Há número
+   para nebulosa (6,9 ms), cascas (+0,3 ms) e laço τ (~1,1 ms), e **zero** para
+   o pós, a única camada always-on que escala com pixelRatio².
+7. **`backdrop-filter: blur(6px)` em `.hud-btn`** — seis botões sobre o canvas
+   a viagem inteira, cada um obrigando o compositor a reler e desfocar a região
+   TODO frame; e `--warp` é escrito no elemento RAIZ a 60 Hz, invalidando
+   estilo na subárvore inteira do HUD. Custo fora do WebGL que ninguém
+   contabilizou. Não é bit-exato remover; o teste é de um minuto.
+8. **O degrau `alta` é quase no-op em dPR 1** (`pixelRatio` é TETO: `min(dPR,
+   2.0)`, então cinema e alta dão o mesmo 1,0). Sobra `nebulaSteps` 56→44, ~5%
+   — e queima 15 s de cooldown antes do degrau que funciona. Quem está a 35 fps
+   não é socorrido. Menor mudança coerente: escala de render própria do preset.
+9. **`size > 3.0` da extinção estelar nunca dispara** acima de ~867 px de
+   buffer (`size_mín` = 3,74·screenH/1080), então o mini-raymarch de 6 amostras
+   que o gate existia para evitar roda nas 328.749 estrelas — mas só nos Atos
+   I–II (`stars.ts` apaga o campo além de ~2300 pc). Mudar o limiar NÃO é
+   bit-exato.
+10. `textureLod`/mips no `tauRT` — **teto realista ≤0,7 ms (~4%)**, não
+    "impacto máximo"; e mip 2 = 132 pc/texel morde justamente `laneDepth` e o
+    centroide vertical. Exige gate edge/face.
+11. Compressão do payload: 13,3 MB, e `gzip` puro já daria `stars.bin`
+    2,96→2,31 e `dust-density.bin` 5,50→3,13. O `vite.config.ts` não
+    pré-comprime. Some com o item (4) da fila de 2026-08-05 (2,77 MB de colunas
+    mortas seguras de podar).
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.

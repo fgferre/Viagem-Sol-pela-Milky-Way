@@ -100,7 +100,10 @@ export class Post {
     if (this.kneeOn && this.forcedAmt !== null && Number.isFinite(this.forcedAmt)) {
       (this.knee.uniforms as Record<string, { value: number }>).uAmt.value = this.forcedAmt;
     }
-    this.knee.enabled = this.kneeOn;
+    // com uAmt = 0 o shader é identidade (mix(x, knee, 0) === x) e o passe
+    // vira uma cópia HDR de tela cheia. O gate segue o MESMO amount que o
+    // frame vai usar — ver setGalaxy.
+    this.knee.enabled = this.kneeOn && (this.forcedAmt ?? 0) > 0;
     this.composer.addPass(this.knee);
 
     // OutputPass (ACES + sRGB) ANTES da gradação: grão, vinheta e
@@ -114,13 +117,25 @@ export class Post {
 
   /**
    * Sgr A* entra logo depois da cena e ANTES do bloom: o disco de
-   * acreção floresce como qualquer fonte HDR. O insertPass não
-   * dimensiona o passe novo — repassamos o tamanho atual do buffer.
+   * acreção floresce como qualquer fonte HDR. O setSize aqui é cinto de
+   * segurança: o EffectComposer já repassa o tamanho a todos os passes
+   * (setSize itera this.passes), inclusive aos inseridos depois.
    */
   addBlackHole(pass: Pass) {
     this.composer.insertPass(pass, 1);
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
     pass.setSize(size.x, size.y);
+  }
+
+  /**
+   * O knee agora liga só na vista externa (setGalaxy), então o primeiro uso
+   * do programa dele cairia no MEIO do filme — o mesmo hitch de compilação
+   * síncrona que o warm-up existe para evitar (era o que o BH fazia ao
+   * cruzar 2,4 kpc). Entra no warm-up junto com os quads de pós; a
+   * geometria tem de ser a do FullScreenQuad (position+uv, sem normal).
+   */
+  get warmupMaterials(): THREE.Material[] {
+    return this.kneeOn ? [this.knee.material] : [];
   }
 
   /** amplitude do grão por preset de qualidade */
@@ -145,8 +160,15 @@ export class Post {
     this.galaxyMode = k;
     // o knee segue a mesma rampa da vista externa que a auto-exposição
     if (this.kneeOn) {
-      (this.knee.uniforms as Record<string, { value: number }>).uAmt.value =
-        this.forcedAmt ?? k;
+      const amt = this.forcedAmt ?? k;
+      (this.knee.uniforms as Record<string, { value: number }>).uAmt.value = amt;
+      // Dentro do disco (galaxyFade = 0) o passe só copia o buffer HDR.
+      // Desligá-lo é bit-exato: mix(x, knee, 0) === x, e o knee é finito
+      // para qualquer half-float. Limiar EXATAMENTE 0, não 1e-3 — a rampa
+      // atravessa (0, 1e-3] em toda travessia do disco, e ali a
+      // contribuição existe. E o amount é o forcedAmt quando há: o gate do
+      // céu varre o knee de DENTRO com ?kneeamt=, onde k vale 0.
+      this.knee.enabled = amt > 0;
     }
   }
 

@@ -60,6 +60,7 @@ export function Ajustes({
   onTom,
   onExposicao,
   onCamada,
+  urlParaCopiar,
 }: {
   aberto: boolean;
   onFechar: () => void;
@@ -68,6 +69,8 @@ export function Ajustes({
   onTom: (t: ToneMapMode) => void;
   onExposicao: (v: number) => void;
   onCamada: (flag: string, escondida: boolean) => void;
+  /** a URL de agora COM o instante da viagem (App.urlComMomento) */
+  urlParaCopiar: () => string;
 }) {
   const query = new URLSearchParams(window.location.search);
   const [tom, setTom] = useState<ToneMapMode>(
@@ -206,13 +209,13 @@ export function Ajustes({
           type="button"
           className="ajustes-copiar"
           onClick={() => {
-            void navigator.clipboard.writeText(window.location.href).then(() => {
+            void navigator.clipboard.writeText(urlParaCopiar()).then(() => {
               setCopiado(true);
               setTimeout(() => setCopiado(false), 1500);
             });
           }}
         >
-          {copiado ? 'copiado' : 'copiar link desta configuração'}
+          {copiado ? 'copiado' : 'copiar link deste instante'}
         </button>
       </div>
     </div>
