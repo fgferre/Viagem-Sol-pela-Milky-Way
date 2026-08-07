@@ -2335,7 +2335,7 @@ limpa.** Ordem por (ms × em quantos instantes existe):
 
 | # | o que | ms | onde | classe |
 |---|---|---:|---|---|
-| 1 | **galáxia sem recorte algum** | **1,4–4,0** | `galaxy.ts:736-737` | ausência de culling |
+| 1 | **galáxia sem recorte algum** | **teto 4,8–5,1 MEDIDO** | `galaxy.ts:736-737` | ausência de culling |
 | 2 | **nebulosa integrada atrás da fotosfera** | 1,2 (só t=0..12) | `nebulaShaders.ts`, topo do `main` | desenhar o que será coberto |
 | 3 | **a coroa avalia a MESMA linha duas vezes** | 0,55 (enquanto o Sol aparece) | `coronaRays.js:123` = `coronaVolume.js:387` | valor recalculado |
 
@@ -2352,17 +2352,34 @@ serve os dois.
 
 **(1) é de outra classe: não é conta repetida, é trabalho para vértice que o hardware
 descarta.** UM draw de 4.019.500 pontos, `frustumCulled = false`, e a integral de
-extinção de 16 fetches VTF é paga por ponto que nunca vira fragmento. **É a única peça
-que custa 4,8–5,5 ms em TODOS os instantes medidos, do Sol ao face-on** — e a única que
-toca o quadro que de fato cai (t=100 a dPR 2). Os itens do Sol valem ZERO lá.
+extinção de 16 fetches VTF é paga por ponto que nunca vira fragmento.
+
+**MEDIDO (2026-08-07), e o número é maior do que qualquer estimativa da auditoria.**
+Duas sondas, e o produto delas é a resposta:
+- **O custo é LINEAR na contagem submetida, com intercepto ZERO.** Varredura por
+  `setDrawRange` em `?t=100`: 100% → 4,924 ms · 75% → 3,647 · 50% → 2,394 · 25% → 1,099
+  · 10% → 0,337. Ajuste: **1,22 ms por milhão de pontos**, custo fixo dentro do ruído.
+  Não há nada estrutural a atacar — só contagem.
+- **A fração DENTRO do frustum (`?galstat=1`, esfera de 50 pc de folga para o tamanho
+  do ponto):** **t=0 → 2,55% · t=100 → 2,00% · t=180 → 49,3% · face-on t=293 → 99,98%.**
+
+Ou seja: **em t=100, 98% dos 4,02 milhões de pontos são submetidos, passam pela integral
+de extinção de 16 fetches, e são descartados pelo clipper. Teto de 4,8 ms** — num quadro
+que hoje tem 13,54. Em t=0 o teto é 5,1 de 15,33. **É a maior peça solta do projeto, e
+não é troca de qualidade: os pontos estão fora da tela.** No face-on o ganho é zero,
+como tem de ser.
+
 **Primeiro experimento antes de escrever bucketizador: `?galsplit=1|8|32|64`**, partindo
 o `THREE.Points` em N faixas contíguas com `setDrawRange`, sem reordenar nada. Ele
 responde as duas únicas coisas que podem matar a ideia — se N draws custam o mesmo que 1
 num passe ponto-bound, e se o `sortObjects` do three reordena e quebra o md5 das vistas.
-**Reabre a decisão "Octree: não"**: os 3,7% de poda de lá são número de vista EXTERNA;
-dentro do disco a poda calculada é 81–91%. A segunda metade da condição de reabertura
-(`WEBGL_multi_draw`) **não está cumprida** — bucket grosso dispensa a extensão, mas isso
-tem de ser escrito, não renomeado.
+Depois disso o que decide o ganho REAL é a granularidade: `?galstat=1` mede a fração
+ideal (2%), e um bucket de B células retém mais que isso — a distância entre 2% e o que
+o bucket retiver é o que separa 4,8 ms de 2 ms.
+**Reabre a decisão "Octree: não"**: os 3,7% de poda de lá são número de vista EXTERNA —
+e agora está medido que dentro do disco a poda é **97,5%**. A segunda metade da condição
+de reabertura (`WEBGL_multi_draw`) **não está cumprida** — bucket grosso dispensa a
+extensão, mas isso tem de ser escrito, não renomeado.
 
 **Onde procuramos e está LIMPO — vale tanto quanto a lista acima:**
 - **O raymarch já foi drenado.** O que sobra é trabalho por amostra genuíno (98% por

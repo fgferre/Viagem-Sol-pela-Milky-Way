@@ -830,6 +830,34 @@ export class Director {
     if (!this.expOverride) {
       this.engine.setExposure(1.02 + 0.03 * galaxyFade);
     }
+    // ?galstat=1 — quantos dos 4,02 M pontos da galáxia estão DENTRO do
+    // frustum. Roda uma vez, no primeiro quadro, e guarda em window.__galstat.
+    // Existe porque o custo do passe é LINEAR na contagem submetida (medido:
+    // 1,22 ms por milhão, intercepto zero), então esta fração é o outro fator
+    // do produto — e sem ela qualquer conta sobre recorte é fé. Medido:
+    // 2,55% em t=0 · 2,00% em t=100 · 49,3% em t=180 · 99,98% no face-on.
+    if (this.debug.has('galstat') && !(window as unknown as { __galstat?: unknown }).__galstat) {
+      const pts = (this.galaxy as unknown as { brightPts?: THREE.Points })?.brightPts;
+      if (pts) {
+        const fr = new THREE.Frustum().setFromProjectionMatrix(
+          new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
+        );
+        const pos = pts.geometry.attributes.position;
+        const v = new THREE.Vector3();
+        // margem: ponto FORA do frustum ainda aparece pelo tamanho dele (até
+        // uMaxPx = 20 px). A 8 kpc, 10 px valem ~37 pc; 50 é folga honesta.
+        const sp = new THREE.Sphere(new THREE.Vector3(), 50);
+        let dentro = 0;
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i);
+          sp.center.copy(v);
+          if (fr.intersectsSphere(sp)) dentro++;
+        }
+        (window as unknown as { __galstat: unknown }).__galstat = {
+          total: pos.count, dentro, pct: +((100 * dentro) / pos.count).toFixed(2),
+        };
+      }
+    }
     this.galaxy?.update(
       cam.position,
       hPx,
