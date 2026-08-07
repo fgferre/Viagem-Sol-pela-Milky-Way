@@ -2326,6 +2326,58 @@ corredor de Órion, suspeito ativo do maior termo do `skyError`; e `coresGLSL()`
 injetado DUAS vezes (`common.ts` e a variante local), então mexer nele muda também a
 extinção das 328 mil estrelas.
 
+## Onde MAIS há gordura, e onde está limpo (2026-08-07)
+
+A pergunta era "a nebulosa era caso especial, ou o resto tem a mesma gordura?".
+Medido primeiro, depois cinco lentes com adversário. **Resposta: não era caso especial,
+mas a gordura que sobra é de DUAS classes diferentes e a maior parte do filme está
+limpa.** Ordem por (ms × em quantos instantes existe):
+
+| # | o que | ms | onde | classe |
+|---|---|---:|---|---|
+| 1 | **galáxia sem recorte algum** | **1,4–4,0** | `galaxy.ts:736-737` | ausência de culling |
+| 2 | **nebulosa integrada atrás da fotosfera** | 1,2 (só t=0..12) | `nebulaShaders.ts`, topo do `main` | desenhar o que será coberto |
+| 3 | **a coroa avalia a MESMA linha duas vezes** | 0,55 (enquanto o Sol aparece) | `coronaRays.js:123` = `coronaVolume.js:387` | valor recalculado |
+
+**O quadro do ato do Sol (t=0) é 15,33 ms, o mais apertado que já medi** — e o Sol
+inteiro, com as dez camadas, é só **3,0 ms dele**. Nebulosa 6,04 e galáxia 5,19 fazem
+73% de um quadro cujo assunto é o Sol.
+
+**(3) é literalmente o defeito do `seedSpan` outra vez.** `flick = fbmLight(dirO*1.9 +
+vec3(3.7, 8.2, uTime*0.55))` aparece idêntica **caractere por caractere** nos dois
+arquivos, e `dirO` é constante ao longo de cada linha radial — o comentário de
+`coronaVolume.js:398-400` já diz isso e o código não colhe. Uma oitava tripla avaliada
+duas vezes por pixel, em dois passes de tela cheia. Cabe numa LUT angular 1×8192 que
+serve os dois.
+
+**(1) é de outra classe: não é conta repetida, é trabalho para vértice que o hardware
+descarta.** UM draw de 4.019.500 pontos, `frustumCulled = false`, e a integral de
+extinção de 16 fetches VTF é paga por ponto que nunca vira fragmento. **É a única peça
+que custa 4,8–5,5 ms em TODOS os instantes medidos, do Sol ao face-on** — e a única que
+toca o quadro que de fato cai (t=100 a dPR 2). Os itens do Sol valem ZERO lá.
+**Primeiro experimento antes de escrever bucketizador: `?galsplit=1|8|32|64`**, partindo
+o `THREE.Points` em N faixas contíguas com `setDrawRange`, sem reordenar nada. Ele
+responde as duas únicas coisas que podem matar a ideia — se N draws custam o mesmo que 1
+num passe ponto-bound, e se o `sortObjects` do three reordena e quebra o md5 das vistas.
+**Reabre a decisão "Octree: não"**: os 3,7% de poda de lá são número de vista EXTERNA;
+dentro do disco a poda calculada é 81–91%. A segunda metade da condição de reabertura
+(`WEBGL_multi_draw`) **não está cumprida** — bucket grosso dispensa a extensão, mas isso
+tem de ser escrito, não renomeado.
+
+**Onde procuramos e está LIMPO — vale tanto quanto a lista acima:**
+- **O raymarch já foi drenado.** O que sobra é trabalho por amostra genuíno (98% por
+  amostra, 0,18 ms de custo fixo). Cinco caminhos de "achar mais" morreram.
+- **Pós-processamento:** fechado em 0,29–0,34 ms, com ablação.
+- **Proeminências:** vasculhadas, rendem ~0,06 ms; a absorção do hemisfério de trás já é
+  grátis por early-Z e o readback da PIL roda ~1,7 vez em 321 s.
+- **CPU (HUD, `labels`, `emitDest`):** limpo e já medido; e o projeto **não tem
+  instrumento que leia CPU** — `gpu-profile.mjs` é timer query por draw.
+- **`heroStars`/SunStar:** o quad não cobre a tela (`uZoom` = 0,4165, o canto cai em
+  r = 1,44, fora do quad).
+
+**Descartado com número:** varredura de catálogo por quadro (já medido, 155 µs);
+corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,13).
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.
