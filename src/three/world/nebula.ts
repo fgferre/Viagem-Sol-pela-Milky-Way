@@ -157,8 +157,21 @@ export class Nebula {
     this.setSize(this.lastW, this.lastH);
   }
 
+  /**
+   * ?nebsteps= força o número de passos, ignorando o preset. Existe porque
+   * `uSteps` é a única alavanca linear medida do raymarch (o maior item do
+   * quadro, 58%) e sem ele a única ablação possível era trocar de preset —
+   * que muda passos, `setScale` e `populationScale` de uma vez. Ausente, o
+   * caminho é o do preset, byte por byte: as capturas não passam por aqui.
+   */
+  private stepsOverride = (() => {
+    if (typeof window === 'undefined') return 0;
+    const v = parseInt(new URLSearchParams(window.location.search).get('nebsteps') ?? '', 10);
+    return Number.isFinite(v) && v > 0 ? Math.min(v, 96) : 0;
+  })();
+
   setSteps(n: number) {
-    this.material.uniforms.uSteps.value = n;
+    this.material.uniforms.uSteps.value = this.stepsOverride || n;
   }
 
   /** raymarch, LUT e blur, para a pré-compilação sob o véu (director.init) */

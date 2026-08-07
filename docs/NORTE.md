@@ -2249,6 +2249,56 @@ capítulos nomeados, `?t=`+`play=1`, guarda de teclado, mobile). O que falta:
     pré-comprime. Some com o item (4) da fila de 2026-08-05 (2,77 MB de colunas
     mortas seguras de podar).
 
+## Fila do raymarch da nebulosa (2026-08-07) — tudo abaixo já foi MEDIDO
+
+Três fontes independentes (um swarm de 6 lentes com adversário por proposta, um
+relatório externo do Codex e as sondas do coordenador) convergiram no mesmo lugar. As
+estimativas das duas primeiras foram **conferidas contra as sondas e várias caíram** —
+o que está na tabela é medida, não alegação. Nada disso está implementado ainda.
+
+| # | mudança | ganho MEDIDO | imagem | alegado antes |
+|---|---|---:|---|---|
+| 1 | **guarda da cavidade içada ao topo de `nebulaDensity`** | **−1,43 ms em t=180** (16%) | bit-exata | 0,9–1,25 (swarm) |
+| 2 | **teste das 32 sementes hoisted para uma vez por RAIO** | **−1,20 ms** (13%) | bit-exata | 4,4 (Codex), 1,0–1,5 (swarm) |
+| 3 | `if (d == 0.0) return 0.0;` antes das `lanes` | −0,32 (t=100), −0,52 (t=40) | bit-exata | 0,50–0,70 (swarm) |
+| 4 | early-out do vácuo local às sementes | −0,45 (teto) | bit-exata, **exige (2)** | 0,30–0,65 (swarm) |
+| 5 | gate dos núcleos `q2<9` → `q2<7` | não medido, ~1,0 alegado | **NÃO** bit-exata | 0,95–1,2 (swarm) |
+
+**(1) é o achado da rodada e vale mais que o milissegundo.** `director.ts:778` passa
+`cam.position` como `uCavityPos`, e `nebula.ts` põe a MESMA posição em `uCamPos` — logo
+`cav = length(p - uCavityPos)` **é exatamente `t`**, recalculado por amostra. Com o
+portão em 1 (`smoothstep(dHome, 600, 1300)`, ou seja Ato III em diante) todo o trecho de
+0 a 25 pc do raio tem densidade **provadamente zero**, e a amostragem quadrática põe
+~20% dos passos justamente ali. Medido: t=100 e t=140 não movem (portão desligado),
+**t=180 vai de 8,797 para 7,369**.
+E há a versão que **melhora a imagem pelo mesmo custo**: `tLo = max(tLo, 25.0)` quando o
+portão está em 1 redistribui os mesmos 56 passos sobre gás que existe. Não é bit-exata,
+mas o trecho que ela abandona contribui zero por prova — é quadratura estritamente
+melhor do mesmo integral, pelo mesmo preço. **Antes dela, medir `?nebsteps=80` nas seis
+faces**: se o espectador não vê diferença entre 56 e 80 passos, o reinvestimento não
+compra imagem e a economia deve virar folga de p99.
+
+**REFUTADO por quatro caminhos independentes — não ressuscitar: LOD de oitavas / ruído
+band-limited por `dt`.** Era a aposta favorita do coordenador E do relatório externo, e
+morre por dois motivos que só se enxergam neste código: (a) todos os consumidores do
+ruído são `smoothstep` operando na CAUDA da distribuição (média 0,4594 contra joelho em
+0,50), então reduzir variância não preserva a densidade — corta o gás distante e alisa
+as nuvens até virarem bolhas; (b) o repo já mediu, no mesmo padrão de `fbm`, que
+contagem de oitava DINÂMICA dispara stall de driver (p99 240–278 ms contra 18,3 com
+oitavas fixas — ver o hitch da rodada 10 acima).
+
+**Também descartado: clipmap de majorantes** (4 níveis 96³, ~13,5 MiB, travessia DDA,
+cache a invalidar em cada corte). O teto de pular vazio pelo envelope está medido em
+**0,45 ms**, porque a amostragem quadrática já concentra as amostras dentro da camada de
+gás. Complexidade grande demais para prêmio pequeno demais.
+
+**Ordem sugerida:** (1) e (2) primeiro — juntas ~2,6 ms, ambas bit-exatas, provadas por
+md5 das seis vistas. (3) e (4) de carona. (5) fora desta rodada: é a única não bit-exata
+e mexe no corredor de Órion, suspeito ativo do maior termo do `skyError`; e `coresGLSL()`
+é injetado DUAS vezes (`common.ts` e a variante local), então mexer nele muda também a
+extinção das 328 mil estrelas. **A soma realista não é 3,4 ms e sim ~2,5–3,0** — (4)
+apaga amostras que (3) também cobriria.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.
@@ -2282,6 +2332,22 @@ Mede DRAWS — `clear`, blit e upload ficam de fora.
   676 contra 675 quadros em 12 s.
 - **Dois donos levam 88% do quadro:** raymarch da nebulosa **9,07 ms (58%)** e a nuvem
   de pontos da galáxia **4,77 ms (31%)**. Todo o resto somado é 1,7 ms.
+- **Anatomia do raymarch (2026-08-07, `?t=100`, 9,12 ms) — abrir por sonda, uma de cada
+  vez, revertendo entre elas.** Duas réguas de conversão, ambas retas medidas:
+  **0,16 ms por passo** (varredura 56/48/40/32/24/16, custo fixo de só **0,18 ms** — não
+  há overhead estrutural a atacar, 98% é trabalho por amostra) e **0,72 ms por oitava de
+  `fbm`** (cap em 3/2/1 oitava: 8,15/6,80/4,73 ms; ajuste linear dá 2,53 ms de custo
+  não-ruído). Daí:
+  | peça | ms | fatia | como foi isolada |
+  |---|---:|---:|---|
+  | ruído (todas as oitavas) | ~6,5 | 71% | ajuste da varredura de oitavas |
+  | **teste das 32 sementes, por amostra** | **1,20** | **13%** | corpo trivial com efeito colateral |
+  | corpo das sementes que passam | 1,13 | 12% | laço inteiro morto (6,79 ms) |
+  | sombreamento (cor, hero, luzes) | 0,40 | 4% | `acc += T*vec3(0.5)*alpha` (morte por DCE) |
+  **Armadilha de sonda medida na pele:** matar o corpo do laço com `if (d2c < 0.0)` faz o
+  compilador apagar o laço INTEIRO por DCE e a sonda mede a mesma coisa que apagá-lo à
+  mão (6,784 contra 6,790). Para manter o teste vivo é preciso um efeito colateral
+  (`if (d2c < 5.5) { d += 1e-24; }`).
 - **A galáxia é ponto-bound, não fill-bound.** `uScreenH` vem do drawing buffer
   (`domElement.height`), então em dPR 2 cada ponto dobra de lado e a área rasterizada é
   4× — e o custo vai de 6,04 para 6,40 ms, **+6%**. O eixo é CONTAGEM, não pixel; é por
