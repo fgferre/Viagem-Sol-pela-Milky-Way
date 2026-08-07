@@ -39,6 +39,15 @@ const VISTAS = [
   ['mergulho', '?t=180&shot=2'],
   ['edgeon', '?t=261&shot=2'],
   ['faceon', '?t=293&shot=2'],
+  // RETRATO POR PADRÃO, não opt-in. Os três harnesses do repo capturam em 1:1
+  // (rodada 1800x1800, sky 1440x1440, este 1800x1800), e defeito que dependa
+  // do ASPECTO da tela é invisível para todos eles. Foi exatamente o caso da
+  // margem lateral do recorte de sprite da galáxia: a versão errada passava
+  // nas cinco vistas quadradas. Uma sonda que alguém precisa lembrar de rodar
+  // não fecha buraco nenhum — por isso esta linha, e não uma variável de
+  // ambiente. 700x1800 dá aspecto 0,40, abaixo do limiar onde a margem
+  // derivada só da altura começa a apagar ponto.
+  ['retrato', '?t=100&shot=2', '700x1800'],
 ];
 const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
 // EXTRA=&knob=1 anexa um parâmetro a TODAS as vistas — o A/B de um knob se faz
@@ -48,7 +57,7 @@ const EXTRA = process.env.EXTRA || '';
 // repo capturam em 1:1 (rodada 1800x1800, sky 1440x1440, este 1800x1800), e
 // qualquer defeito que dependa do ASPECTO da tela é invisível para todos eles —
 // o corte lateral de sprite é exatamente desse tipo.
-const [JW, JH] = (process.env.JANELA || '1800x1800').split('x');
+// JANELA=LxA sobrescreve o tamanho de TODAS as vistas, para varredura ad hoc.
 const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}.json`);
 const CHROME = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -73,12 +82,14 @@ function rpc(ws, onEvent) {
   });
 }
 
-async function capturar(query, porta, png) {
+async function capturar(query, porta, png, janela) {
+  const [jw, jh] = (janela || process.env.JANELA || '1800x1800').split('x');
+  let efetivo = '?';
   const perfil = resolve(tmpdir(), `ab-${process.pid}-${porta}`);
   const chrome = spawn(CHROME, [
     '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
     '--hide-scrollbars', '--no-first-run', '--mute-audio',
-    '--force-device-scale-factor=1', `--window-size=${JW},${JH}`,
+    '--force-device-scale-factor=1', `--window-size=${jw},${jh}`,
     `--user-data-dir=${perfil}`, `--remote-debugging-port=${porta}`, 'about:blank',
   ], { stdio: 'ignore' });
   try {
@@ -117,12 +128,21 @@ async function capturar(query, porta, png) {
       if (Date.now() - t0 > 180000) throw new Error(`não assentou (cart=${cartografiaChegou}, f=${f})`);
       await sleep(250);
     }
+    // buffer EFETIVO, não a janela pedida: 700x1800 vira 684x1705 depois da
+    // barra de rolagem e do chrome do headless, e é o buffer que decide o
+    // aspecto que o shader vê
+    const buf0 = await send('Runtime.evaluate', {
+      expression: "(()=>{const c=document.querySelector('canvas');"
+        + "return c?c.width+'x'+c.height:'?'})()",
+      returnByValue: true,
+    });
+    efetivo = buf0.result.value;
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     const buf = Buffer.from(shot.data, 'base64');
     // captura preta ou página de erro: um md5 estável de NADA passaria no teste
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
     if (png) writeFileSync(png, buf);
-    return createHash('md5').update(buf).digest('hex').slice(0, 12);
+    return createHash('md5').update(buf).digest('hex').slice(0, 12) + '@' + efetivo;
   } finally {
     chrome.kill();
     await sleep(400);
@@ -135,12 +155,12 @@ if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu
 
 const md5 = {};
 let porta = 9500 + (process.pid % 100);
-for (const [nome, query] of VISTAS) {
+for (const [nome, query, janela] of VISTAS) {
   if (SO && nome !== SO) continue;
   md5[nome] = [];
   for (let k = 0; k < N; k++) {
     const png = SO ? resolve(ROOT, 'capturas', `ab-${LADO}-${nome}-${k}.png`) : null;
-    md5[nome].push(await capturar(query + EXTRA, porta++, png));
+    md5[nome].push(await capturar(query + EXTRA, porta++, png, janela));
   }
   console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}`);
 }

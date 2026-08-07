@@ -2376,18 +2376,36 @@ ANTES do laço de extinção e retorna cedo quando o sprite inteiro está fora d
 tira ponto nenhum da imagem — quem sai já não virava fragmento — e não muda arquitetura:
 um draw, mesma ordem, mesmos atributos.
 
-| instante | galáxia antes | depois | quadro antes | depois |
-|---|---:|---:|---:|---:|
-| t=0 | 5,19 | **2,19** (−58%) | 15,33 | **11,89** |
-| t=100 | 4,88 | **2,09** (−57%) | 13,54 | **10,82** |
-| t=180 | ~5,0 | **3,26** | 14,23 | **11,68** |
-| t=293 face-on | 6,08 | **6,08** | 6,89 | 6,89 |
+| instante | galáxia antes | depois |
+|---|---:|---:|
+| t=0 | 5,19 | **2,19** (−58%) |
+| t=100 | 4,88 | **2,09** (−57%) |
+| t=180 | ~5,0 | **3,26** |
+| t=293 face-on | 6,08 | **6,08** |
+
+**Só o número POR PASSE é reprodutível** (uma sessão externa repetiu 2,200 / 2,095 /
+6,112 na mesma máquina). O TOTAL do quadro varia ~0,5–0,8 ms entre rodadas e entre
+viewports — aqui ele foi de 15,33 para 11,89 ms em t=0 e de 13,54 para 10,82 em t=100,
+mas isso vale como comparação DENTRO da sessão, não como constante documental. O piso de
+±0,13 ms medido é por passe; no total ele acumula.
 
 O face-on não se mover é a checagem causal: lá 99,98% dos pontos estão na tela.
-**Gate do céu cravado: `skyError` 0,7811, cinco termos idênticos a 4 casas.** Imagem:
-**1 pixel de 3.041.720 em 1 nível** (paisagem 1800×1800) e **0 pixels** em retrato.
+**Gate do céu cravado: `skyError` 0,7811, cinco termos idênticos a 4 casas.**
 
-**A MARGEM EM X É O ÚNICO PONTO DELICADO, e a primeira versão errava.** O ponto é
+**Imagem — e a leitura honesta é mais chata que "1 pixel".** Em t=100, paisagem
+1800×1800: o par mais favorável dá 1 pixel de 3.041.720, o menos favorável dá 66. O
+motivo está numa medida que só apareceu quando se comparou cada lado CONTRA SI MESMO:
+**a baseline repete exata (0 px) e a versão com a guarda tem 65 px de tremor ENTRE
+EXECUÇÕES**, sempre 1 nível num canal. Ou seja, a diferença cruzada está dentro do
+próprio tremor que a guarda introduziu, e citar "1 pixel" é escolher a repetição que
+ajuda. O que se pode afirmar: **nenhum sinal de perda visual, e o gate não se moveu.**
+Em retrato 700×1800 (buffer efetivo 684×1705) o cruzado dá 0 px.
+**Regra que sai daí: comparar cada lado consigo mesmo ANTES de comparar os lados**, senão
+o A/B mede a repetição sorteada.
+
+**A MARGEM EM X É O ÚNICO PONTO DELICADO, e a primeira versão — MINHA, escrita a partir
+da descrição em prosa da sessão externa, não do código dela — errava** (está em
+`33ec6ee`, o stash: `margem = (clamped + 4.0) * 2.0 / uScreenH` nos dois eixos). O ponto é
 rasterizado como QUADRADO em espaço de janela, então o centro pode estar fora e a borda
 ainda depositar — corte NDC puro apaga ponto visível. A margem certa em Y é
 `(clamped + 4)/uScreenH`; em X ela depende do ASPECTO, e o aspecto já mora na projeção:
@@ -2399,9 +2417,11 @@ Confirmado por captura em 700×1800 (aspecto 0,40): com a fórmula corrigida, ze
 **⚠ PONTO CEGO ESTRUTURAL DOS GATES, e ele quase deixou isso passar: os TRÊS harnesses
 capturam em 1:1** — `rodada.mjs` 1800×1800, `ab-identidade.mjs` 1800×1800,
 `sky-capture.mjs` 1440×1440. **Nenhum defeito que dependa do aspecto da tela é
-detectável por eles**, nem se a margem estivesse 4× errada. Por isso `ab-identidade.mjs`
-ganhou `JANELA=700x1800`: qualquer mudança que toque projeção, tamanho de sprite ou
-recorte lateral tem de rodar também fora de 1:1.
+detectável por eles**, nem se a margem estivesse 4× errada. `ab-identidade.mjs` passou a
+capturar uma vista **`retrato` 700×1800 POR PADRÃO** (não por variável de ambiente: sonda
+que alguém precisa lembrar de rodar não fecha buraco) e a registrar o **buffer EFETIVO**
+junto do md5 — 700×1800 vira 684×1705, e é esse número que decide o aspecto que o shader
+vê. `JANELA=LxA` continua existindo para varredura ad hoc.
 
 **Não portar para `starForges.ts` sem refazer a conta:** lá o bloco é CÓPIA literal, paga
 1 fetch em vez de 16, e o teto é `clamp(px, 0.85, 26.0)` — o limiar de aspecto muda.
