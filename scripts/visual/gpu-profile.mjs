@@ -22,6 +22,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { CHROME, GPU_FLAGS, matarPerfil } from './chrome.mjs';
 
 const QUERY = process.argv[2] || '?t=100';
 const SECONDS = Number(process.argv[3] || 15);
@@ -34,12 +35,6 @@ const CRU = process.argv[7] === 'cru';
 const PORT = 9300 + (process.pid % 200);
 const APP = (process.env.APP_URL || 'http://127.0.0.1:5173') + '/' + QUERY;
 
-const CHROME = [
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  '/usr/bin/google-chrome',
-].find((p) => existsSync(p));
-if (!CHROME) throw new Error('Chrome não encontrado');
 
 // Roda ANTES de qualquer script da página: embrulha getContext e, dentro dele,
 // cada draw entre beginQuery/endQuery. O rótulo vem do PROGRAMA ligado no
@@ -158,7 +153,7 @@ const INSTRUMENT = `(() => {
 
 const PROFILE = resolve(tmpdir(), `gpuprof-${process.pid}`);
 const chrome = spawn(CHROME, [
-  '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
+  ...GPU_FLAGS,
   '--hide-scrollbars', '--no-first-run', '--mute-audio',
   `--force-device-scale-factor=${DPR}`, `--window-size=${W},${H}`,
   `--user-data-dir=${PROFILE}`, `--remote-debugging-port=${PORT}`,
@@ -258,6 +253,7 @@ try {
   }
 } finally {
   chrome.kill();
+  matarPerfil(PROFILE);
   await sleep(500);
   try { rmSync(PROFILE, { recursive: true, force: true }); } catch { /* perfil preso */ }
 }

@@ -24,16 +24,24 @@
 // ao mudar um `if` já basta), não conteúdo que sumiu.
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { CHROME, GPU_FLAGS, matarPerfil } from './chrome.mjs';
 
 const LADO = process.argv[2] || 'antes';
 const SO = process.argv[3];
 const N = 2;
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const VISTAS = [
+  // O ATO DO SOL não tinha vista, e as duas alavancas que sobram na fila de
+  // performance (nebulosa atrás da fotosfera, LUT do flick da coroa) vivem
+  // inteiras aqui: t=0..12 para uma, t=0..~20 para a outra. Com a lista
+  // começando em t=40, o gate era cego justamente para elas — e é o trecho
+  // mais olhado do filme. t=6 pega o Sol grande na tela, com coroa, raias e
+  // proeminências vivas.
+  ['sol', '?t=6&shot=2'],
   ['interno', '?t=40&shot=2'],
   ['travessia', '?t=100&shot=2'],
   ['mergulho', '?t=180&shot=2'],
@@ -50,6 +58,16 @@ const VISTAS = [
   ['retrato', '?t=100&shot=2', '700x1800'],
 ];
 const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
+// TIER FIXO, e ele não é preferência: sem `?q=` o `autoQuality` do engine
+// rebaixa cinema→alta→performance sozinho assim que a média cai de 42 fps
+// (engine.ts), e isso troca `nebulaSteps` 56→30 e o `pixelRatio` NO MEIO da
+// espera de 700 quadros. Numa máquina que segura 60 fps o degrau nunca dispara
+// e `q=cinema` é BIT-EXATO (mesmo tier, mesmo preset — só desliga o
+// automático); numa que não segura, sem ele o gate compara duas imagens
+// tiradas em qualidades diferentes e chama a diferença de regressão. Medido
+// aqui: o app assenta em `performance` (raymarch de 30 passos) em toda
+// captura, e o `nearCeiling` do engine ainda pode reacelerar para `alta`.
+const PIN = '&q=cinema';
 // EXTRA=&knob=1 anexa um parâmetro a TODAS as vistas — o A/B de um knob se faz
 // com o mesmo binário dos dois lados, sem editar nada entre as capturas.
 const EXTRA = process.env.EXTRA || '';
@@ -59,12 +77,6 @@ const EXTRA = process.env.EXTRA || '';
 // o corte lateral de sprite é exatamente desse tipo.
 // JANELA=LxA sobrescreve o tamanho de TODAS as vistas, para varredura ad hoc.
 const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}.json`);
-const CHROME = [
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  '/usr/bin/google-chrome',
-].find((p) => existsSync(p));
-if (!CHROME) throw new Error('Chrome não encontrado');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let id = 0;
@@ -87,7 +99,7 @@ async function capturar(query, porta, png, janela) {
   let efetivo = '?';
   const perfil = resolve(tmpdir(), `ab-${process.pid}-${porta}`);
   const chrome = spawn(CHROME, [
-    '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
+    ...GPU_FLAGS,
     '--hide-scrollbars', '--no-first-run', '--mute-audio',
     '--force-device-scale-factor=1', `--window-size=${jw},${jh}`,
     `--user-data-dir=${perfil}`, `--remote-debugging-port=${porta}`, 'about:blank',
@@ -103,7 +115,16 @@ async function capturar(query, porta, png, janela) {
     }
     if (!url) throw new Error('CDP não respondeu');
     const ws = new WebSocket(url);
-    await new Promise((r, j) => { ws.addEventListener('open', r); ws.addEventListener('error', j); });
+    // COM TIMEOUT, e ele já custou uma bateria inteira: se o alvo do CDP morre
+    // entre o /json/list e o handshake, nem `open` nem `error` disparam. A
+    // promessa fica pendente para sempre, o Node fica sem handles, e o processo
+    // SAI com um aviso de "unsettled top-level await" — três vistas capturadas,
+    // nenhuma gravada, e um veredito que nunca vem.
+    await new Promise((r, j) => {
+      const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
+      ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
+      ws.addEventListener('error', (e) => { clearTimeout(relogio); j(new Error('WebSocket: ' + e.message)); });
+    });
     let cartografiaChegou = false;
     const send = rpc(ws, (m) => {
       if (m.method === 'Runtime.consoleAPICalled') {
@@ -145,6 +166,7 @@ async function capturar(query, porta, png, janela) {
     return createHash('md5').update(buf).digest('hex').slice(0, 12) + '@' + efetivo;
   } finally {
     chrome.kill();
+    matarPerfil(perfil);
     await sleep(400);
     try { rmSync(perfil, { recursive: true, force: true }); } catch { /* perfil preso */ }
   }
@@ -153,16 +175,44 @@ async function capturar(query, porta, png, janela) {
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
-const md5 = {};
+// RETOMA o que já está em disco em vez de começar do zero. Uma bateria são
+// ~20 min de GPU, e antes disto uma captura travada no meio jogava fora TODAS
+// as vistas já medidas — inclusive as boas. Com o estado gravado por vista,
+// re-rodar o mesmo lado só refaz o que falta, e `ab-identidade.mjs antes
+// edgeon` deixa de apagar as outras cinco (o filtro `SO` escrevia um estado
+// com uma vista só).
+const md5 = existsSync(ESTADO) && !process.env.DOZERO
+  ? JSON.parse(readFileSync(ESTADO, 'utf8'))
+  : {};
 let porta = 9500 + (process.pid % 100);
 for (const [nome, query, janela] of VISTAS) {
   if (SO && nome !== SO) continue;
+  if (md5[nome]?.length === N && !SO) {
+    console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}  (de disco)`);
+    continue;
+  }
   md5[nome] = [];
   for (let k = 0; k < N; k++) {
+    // capturas/ é gitignored e não existe em clone novo — criar aqui, senão
+    // a única forma de OLHAR a diferença (o diff de pixel) morre no open()
     const png = SO ? resolve(ROOT, 'capturas', `ab-${LADO}-${nome}-${k}.png`) : null;
-    md5[nome].push(await capturar(query + EXTRA, porta++, png, janela));
+    if (png) mkdirSync(resolve(ROOT, 'capturas'), { recursive: true });
+    // uma segunda chance por captura: o Chrome headless morre no arranque de
+    // vez em quando, e perder a bateria por isso é caro demais
+    let hash = null;
+    for (let tent = 1; tent <= 2 && hash === null; tent++) {
+      try {
+        hash = await capturar(query + PIN + EXTRA, porta++, png, janela);
+      } catch (e) {
+        console.log(`  ${nome} ${k} tentativa ${tent} falhou: ${e.message}`);
+        if (tent === 2) throw e;
+      }
+    }
+    md5[nome].push(hash);
   }
   console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}`);
+  // por VISTA, não no fim: o estado sobrevive a uma queda no meio
+  writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
 }
 writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
 

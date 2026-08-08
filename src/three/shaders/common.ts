@@ -188,7 +188,15 @@ float nebulaDensity(vec3 p, int oct, float t) {
   if (uCavityGate >= 1.0 && dot(cav0, cav0) <= 625.0) return 0.0;
   float envelope = min(diskGasEnvelope(p), 3.0);
   gGasEnvelope = envelope;
-  if (envelope < 0.004 && uSeedCloudCount == 0) return 0.0;
+  // Vácuo. O teste uSeedCloudCount == 0 era conservador demais: bastava UMA
+  // nuvem no pool, em qualquer lugar do céu, para toda amostra de envelope
+  // vazio seguir pagando n1, n2, clumps, núcleos e lanes até o fim. O que a
+  // guarda precisa saber não é se EXISTE nuvem, e sim se alguma alcança ESTA
+  // amostra — e o span do seedSpan já responde isso uma vez por raio. É o
+  // mesmo teste que gateia o laço lá embaixo, então quem sai por aqui sairia
+  // com d <= 0,003 de qualquer forma e o teste d > 0.003 do raymarch
+  // descartaria: mesma exatidão da guarda que já estava aqui.
+  if (envelope < 0.004 && (uSeedCloudCount == 0 || t < gSeedLo || t > gSeedHi)) return 0.0;
   float n1 = fbm(p * 0.0135, oct >= 4 ? 4 : 2);
   float n2 = fbm(p * 0.048 + 17.3, oct >= 4 ? 3 : 2);
   // grumos raros e compactos — gás molecular ocupa ≪1% do volume
@@ -216,6 +224,12 @@ ${coresGLSL()}
       }
     }
   }
+  // Zero é zero: daqui para baixo só há MULTIPLICAÇÃO (lanes, Bolha Local,
+  // cavidade, gasDensity), então a amostra que chega aqui em 0 sai em 0 — e o
+  // fbm de 2 oitavas das lanes é o preço de redescobrir isso. Não é caso
+  // raro: clumps é um smoothstep(0.50, 0.90) sobre um ruído de média
+  // 0,4594, ou seja mais da metade das amostras zera antes de chegar aqui.
+  if (d == 0.0) return 0.0;
   float lanes = fbm(p * 0.085 + 41.0, 2);
   d *= mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
   // Bolha Local: os primeiros parsecs ao redor do Sol são limpos (real)
@@ -246,6 +260,8 @@ float nebulaDensity(vec3 p, int oct) {
   float clumps = smoothstep(0.50, 0.90, n1 * 0.70 + n2 * 0.30);
   float d = slab * clumps * 0.75;
 ${coresGLSL()}
+  // mesma guarda da variante completa: só multiplicação daqui para baixo
+  if (d == 0.0) return 0.0;
   float lanes = fbm(p * 0.085 + 41.0, 2);
   d *= mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
   // Bolha Local: os primeiros parsecs ao redor do Sol são limpos (real)

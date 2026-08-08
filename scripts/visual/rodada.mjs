@@ -60,7 +60,7 @@ let seq = 0;
 function chrome(args, saida) {
   if (saida && existsSync(saida)) rmSync(saida);
   const r = spawnSync(CHROME, [
-    '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
+    ...GPU_FLAGS,
     '--hide-scrollbars', '--no-first-run', `--user-data-dir=${PROFILE}-${seq++}`,
     ...args,
   ], { encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024 });
@@ -209,11 +209,5 @@ ${alvosE}
   process.stdout.write('\n' + linha + '\n' + alvos + '\n' + linhaE + '\n' + alvosE + '\n');
 } finally {
   // mata só o que este script subiu — casa pelo user-data-dir
-  if (process.platform === 'win32') {
-    spawn('powershell', ['-NoProfile', '-Command',
-      `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | ` +
-      `Where-Object { $_.CommandLine -like '*${PROFILE.replace(/\\/g, '\\\\')}*' } | ` +
-      `ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`,
-    ], { stdio: 'ignore', detached: true }).unref();
-  }
+  matarPerfil(PROFILE);
 }

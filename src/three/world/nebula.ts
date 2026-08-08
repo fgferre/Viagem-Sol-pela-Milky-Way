@@ -127,6 +127,8 @@ export class Nebula {
         uSeedCloudAmp: { value: new Float32Array(32) },
         uCavityPos: { value: new THREE.Vector3() },
         uCavityGate: { value: 0 },
+        uSunDir: { value: new THREE.Vector3(0, 0, 1) },
+        uSunCos: { value: 2 },
       },
       depthWrite: false,
       depthTest: false,
@@ -215,6 +217,48 @@ export class Nebula {
     this.material.uniforms.uCavityGate.value = gate;
   }
 
+  private occluderPos = new THREE.Vector3();
+  private occluderR = 0;
+
+  /**
+   * A fotosfera, que é opaca e tapa o fundo. `raio = 0` desliga (é o que o
+   * director manda quando o grupo do Sol some ou ?nosun está ligado).
+   */
+  setSunOccluder(pos: THREE.Vector3, raio: number) {
+    this.occluderPos.copy(pos);
+    this.occluderR = raio;
+  }
+
+  /**
+   * Cosseno do meio-ângulo SEGURO do cone da fotosfera. Três encolhimentos, e
+   * o do meio é o que morde:
+   *  - a malha é uma esfera TESSELADA, cuja silhueta é o polígono INSCRITO, não
+   *    o círculo: raio efetivo R·cos(π/N). Usa-se o pior tier (N = 96), porque
+   *    errar para menos aqui só custa GPU e errar para mais apaga pixel visível;
+   *  - entre o raymarch e o consumo há um blur de 4 taps a ±meio-texel E o
+   *    upsample linear do RT de meia-res: os dois ESPALHAM o preto para fora do
+   *    disco. É o encolhimento grande, e é em texel do RT, não em raio;
+   *  - uma folga final de 1 texel, porque a conversão texel→ângulo é de ângulo
+   *    pequeno e o Sol de perto não é ângulo pequeno.
+   */
+  private sunCone(camera: THREE.PerspectiveCamera): number {
+    if (this.occluderR <= 0) return 2;
+    const d = this.occluderPos.distanceTo(camera.position);
+    // câmera dentro (ou quase) da esfera: não há cone, e a fotosfera nem cobre
+    // a tela toda de forma previsível
+    if (d <= this.occluderR * 1.02) return 2;
+    const rMalha = this.occluderR * Math.cos(Math.PI / 96);
+    const theta = Math.asin(Math.min(rMalha / d, 1));
+    const texel = (2 * (this.material.uniforms.uTanHalfFov.value as number)) / this.rt.height;
+    const seguro = theta - 3 * texel;
+    if (seguro <= 0) return 2;
+    (this.material.uniforms.uSunDir.value as THREE.Vector3)
+      .copy(this.occluderPos)
+      .sub(camera.position)
+      .normalize();
+    return Math.cos(seguro);
+  }
+
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camera.position);
@@ -224,6 +268,8 @@ export class Nebula {
     (u.uCamUp.value as THREE.Vector3).setFromMatrixColumn(camera.matrixWorld, 1).normalize();
     u.uTanHalfFov.value = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     u.uAspect.value = camera.aspect;
+    // depois do tanHalfFov: sunCone lê o uniform para converter texel em ângulo
+    u.uSunCos.value = this.sunCone(camera);
     const prev = renderer.getRenderTarget();
     if (this.lutDirty || this.lutCamPos.distanceToSquared(camera.position) > 4) {
       this.lutDirty = false;

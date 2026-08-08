@@ -18,23 +18,17 @@
 // A MEDIÇÃO mora aqui de propósito. Capturar e medir eram dois comandos,
 // e o segundo (um Chrome com file:// e --dump-dom) foi reescrito do zero
 // em pelo menos duas rodadas porque vivia no scratchpad. Um comando só.
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, existsSync, rmSync, readFileSync, openSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { mkdirSync, existsSync, rmSync, readFileSync, writeFileSync, openSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { CHROME, GPU_FLAGS, matarPerfil, capturarCDP } from './chrome.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const MEASURE = resolve(ROOT, 'scripts/visual/sky-measure.html');
 const REF = resolve(ROOT, 'docs/reference/eso-gigagalaxy-panorama.jpg');
 const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
-const CHROME = [
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  '/usr/bin/google-chrome',
-].find((p) => existsSync(p));
-if (!CHROME) throw new Error('Chrome não encontrado');
-
 const FLAGS = ['--perfil', '--so-medir'];
 const args = process.argv.slice(2).filter((a) => !FLAGS.includes(a));
 const comPerfil = process.argv.includes('--perfil');
@@ -70,40 +64,37 @@ const FACES = [
   { nome: 'spole', dir: N.map((v) => -v) }, // b=-90
 ];
 
-const chrome = (extraArgs, saida) => {
-  if (saida && existsSync(saida)) rmSync(saida);
-  const r = spawnSync(CHROME, [
-    '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
-    '--hide-scrollbars', '--no-first-run', ...extraArgs,
-  ], { encoding: 'utf8', timeout: 180000, maxBuffer: 64 * 1024 * 1024 });
-  if (r.error) throw new Error(`Chrome não executou: ${r.error.message}`);
-  if (r.status !== 0) {
-    throw new Error(`Chrome saiu com status ${r.status}: ${(r.stderr || '').trim().slice(-400)}`);
-  }
-  if (saida && !existsSync(saida)) throw new Error(`Chrome não gravou ${saida}`);
-  return r;
-};
+// Teto da MEDIÇÃO (a página file:// que costura e compara). As faces não
+// passam mais por aqui: elas são capturadas por CDP, que espera a cena
+// assentar em vez de apostar num orçamento de tempo virtual — ver capturarCDP
+// em chrome.mjs para o porquê (o `--virtual-time-budget --screenshot` não
+// termina neste Chrome/macOS: 6 min sem sair numa janela de 400×400).
+const TIMEOUT = Number(process.env.SKY_TIMEOUT || 600000);
 
 if (!soMedir) {
   const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
   if (!/<div id="root"/.test(ping)) throw new Error(`o app não respondeu em ${APP} — suba o dev server`);
 }
 
-let seq = 0;
+let porta = 9700 + (process.pid % 100);
 for (const f of (soMedir ? [] : FACES)) {
   const png = resolve(OUT, `face_${f.nome}.png`);
-  chrome([
-    `--user-data-dir=${PERFIS}/p${seq++}`,
-    '--window-size=1440,1440', '--virtual-time-budget=16000', `--screenshot=${png}`,
+  if (existsSync(png)) rmSync(png);
+  writeFileSync(png, await capturarCDP({
+    largura: 1440, altura: 1440, porta: porta++,
     // nohero=1: os clarões das estrelas-herói são camada CINEMATOGRÁFICA;
     // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa.
     // kneeamt=1&knee=0.02&exp=4.4: REVELAÇÃO fotométrica do gate (não é o
     // look do app!) — o panorama ESO é astrofoto com stretch asinh a ~3% do
     // pico; medir sem o stretch equivalente compara curva de tom, não céu
     // (provado 2026-08-03: bulgeAnti 19,1→5,52 com alvo 5,57; zero clipping)
-    `${APP}/?pos=0,0,0&look=${f.dir.map((v) => v.toFixed(9)).join(',')}` +
-      `&fov=90&nosun=1&nohero=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
-  ], png);
+    // q=cinema: sem ele o auto-quality do engine rebaixa o tier durante a
+    // captura em qualquer máquina que não segure 42 fps, e `nebulaSteps`
+    // 56→30 muda o raymarch local — que é 46% do excesso do termo
+    // `espessura`. Bit-exato onde o degrau nunca dispara. Ver ab-identidade.
+    url: `${APP}/?pos=0,0,0&look=${f.dir.map((v) => v.toFixed(9)).join(',')}` +
+      `&fov=90&q=cinema&nosun=1&nohero=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
+  }));
   process.stdout.write(`face_${f.nome}.png ok\n`);
 }
 
@@ -115,13 +106,27 @@ if (soMedir) {
 
 const dom = resolve(OUT, 'dom.html');
 if (existsSync(dom)) rmSync(dom);
-spawnSync(CHROME, [
-  '--headless=new', '--enable-gpu', '--use-gl=angle', '--use-angle=d3d11',
+// A medição roda com `--dump-dom`, e AQUI o tempo virtual serve: a página é
+// estática (lê 6 PNGs e conta), sem laço de rAF para segurar o relógio. O que
+// ela não faz é SAIR — o Chrome fica vivo depois de despejar o DOM, e esperar
+// o processo custava os 600 s do teto inteiro por execução. O produto é o
+// arquivo, então o critério de pronto é o arquivo: assim que o bloco <pre>
+// aparece, o resto do processo não interessa e morre.
+const medidor = spawn(CHROME, [
+  ...GPU_FLAGS,
   '--allow-file-access-from-files', '--no-first-run', `--user-data-dir=${PERFIS}/pm`,
   '--window-size=900,900', '--virtual-time-budget=25000', '--dump-dom',
   `file:///${MEASURE.replace(/\\/g, '/')}?dir=${OUT.replace(/\\/g, '/')}` +
     `&ref=${REF.replace(/\\/g, '/')}`,
-], { timeout: 180000, stdio: ['ignore', openSync(dom, 'w'), 'ignore'] });
+], { stdio: ['ignore', openSync(dom, 'w'), 'ignore'] });
+const prazo = Date.now() + TIMEOUT;
+for (;;) {
+  await new Promise((r) => setTimeout(r, 1000));
+  const pronto = existsSync(dom) && /<pre[^>]*>[\s\S]*?<\/pre>/i.test(readFileSync(dom, 'utf8'));
+  if (pronto || Date.now() > prazo || medidor.exitCode !== null) break;
+}
+medidor.kill();
+matarPerfil(`${PERFIS}/pm`);
 
 const bloco = readFileSync(dom, 'utf8').match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
 if (!bloco) throw new Error('a métrica não devolveu resultado — confira o dev server e a referência');
@@ -184,3 +189,7 @@ if (comPerfil) {
     );
   }
 }
+
+// os spawnSync retornam quando o browser sai, mas os helpers de GPU podem
+// sobreviver a ele e disputar a GPU da próxima medição — ver chrome.mjs
+matarPerfil(PERFIS);

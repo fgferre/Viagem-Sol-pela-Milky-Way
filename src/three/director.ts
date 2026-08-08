@@ -28,8 +28,11 @@ import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
-import { loadStarData } from './config';
+import { loadStarData, WORLD } from './config';
 import type { StarsMeta } from './config';
+
+// A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
+const ORIGEM = new THREE.Vector3(0, 0, 0);
 
 export type Phase = 'loading' | 'intro' | 'journey' | 'end' | 'free';
 
@@ -812,6 +815,13 @@ export class Director {
     this.sunStar.update(time, dHome, tanHalfFov);
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice)
     this.sun.update(time, this.engine.camera, this.journeyT);
+    // DEPOIS do update, porque é lá que o `world > 0.02` decide se o grupo
+    // some. A fotosfera está na ORIGEM (o grupo do Sol só é escalado, nunca
+    // posicionado) e seu raio de mundo é WORLD.sunRadius por construção
+    // (esfera de 2,2 do doador × escala WORLD.sunRadius/2,2). Enquanto ela
+    // estiver na cena, o raymarch da nebulosa não precisa integrar o que ela
+    // cobre — ver o cone em nebula.ts.
+    this.nebula.setSunOccluder(ORIGEM, this.sun.group.visible ? WORLD.sunRadius : 0);
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado

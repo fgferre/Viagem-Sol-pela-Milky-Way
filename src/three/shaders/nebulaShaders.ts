@@ -196,6 +196,11 @@ uniform vec2 uResolution;
 uniform int uSteps;
 uniform vec3 uSunPos;
 uniform float uFade;
+// Cone da FOTOSFERA: direção do centro do Sol e cosseno do meio-ângulo já
+// encolhido. 2.0 = desligado (nenhum dot de unitários alcança). Ver nebula.ts
+// para de onde sai o ângulo — e por que ele é conservador.
+uniform vec3 uSunDir;
+uniform float uSunCos;
 
 // luzes embutidas: Betelgeuse (vermelha) e Rigel (azul)
 uniform vec3 uLightPos[2];
@@ -423,6 +428,22 @@ void main() {
     uCamRight * (uv.x * uTanHalfFov * uAspect) +
     uCamUp * (uv.y * uTanHalfFov));
   vec3 ro = uCamPos;
+
+  // ATRÁS DA FOTOSFERA NÃO SE INTEGRA NADA. O RT desta passagem é o
+  // scene.background, e a fotosfera é opaca por construção (vec4(color, 1.0)
+  // em ShaderMaterial sem transparent, com depthWrite): tudo que ela cobre é
+  // sobrescrito antes de virar pixel. As camadas aditivas do Sol (coroa,
+  // raias, proeminências) são transparentes e desenham DEPOIS dela, somando
+  // sobre a fotosfera e não sobre este fundo — por isso zerar aqui é exato, e
+  // não "quase".
+  // O teste é em DIREÇÃO, não em tela: a silhueta de uma esfera é um cone
+  // exato em torno da direção do centro, enquanto em espaço de tela ela é uma
+  // elipse deslocada quando o Sol sai do eixo — o erro que a margem da galáxia
+  // já ensinou a não repetir. Medido: no ato do Sol o raymarch é 60% do quadro.
+  if (dot(rd, uSunDir) > uSunCos) {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
 
   // jitter anti-banding por BLUE NOISE (medido nas capturas t=110): IGN
   // imprimia xadrez estático ~2 px (estrutura periódica; sem TAA não se

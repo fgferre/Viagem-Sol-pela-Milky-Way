@@ -2260,8 +2260,8 @@ o que está na tabela é medida, não alegação. Nada disso está implementado 
 |---|---|---:|---|---|
 | 1 | ~~guarda da cavidade~~ **FEITA** | **−1,43 ms em t=180** (16%) | bit-exata (provada) | 0,9–1,25 (swarm) |
 | 2 | ~~teste das 32 sementes por RAIO~~ **FEITA** | **−1,92 ms em t=100** (21%) | 55 px de 3 M em 1 nível | 4,4 (Codex), 1,0–1,5 (swarm) |
-| 3 | `if (d == 0.0) return 0.0;` antes das `lanes` | −0,32 (t=100), −0,52 (t=40) | bit-exata | 0,50–0,70 (swarm) |
-| 4 | early-out do vácuo local às sementes | −0,45 (teto) | bit-exata, **exige (2)** | 0,30–0,65 (swarm) |
+| 3 | ~~`if (d == 0.0) return 0.0;` antes das `lanes`~~ **FEITA** | ver 2026-08-08 | bit-exata (provada) | 0,50–0,70 (swarm) |
+| 4 | ~~early-out do vácuo local às sementes~~ **FEITA** | ver 2026-08-08 | bit-exata (provada) | 0,30–0,65 (swarm) |
 | 5 | gate dos núcleos `q2<9` → `q2<7` | não medido, ~1,0 alegado | **NÃO** bit-exata | 0,95–1,2 (swarm) |
 
 **(1) é o achado da rodada e vale mais que o milissegundo.** `director.ts:778` passa
@@ -2336,7 +2336,7 @@ limpa.** Ordem por (ms × em quantos instantes existe):
 | # | o que | ms | onde | classe |
 |---|---|---:|---|---|
 | 1 | **galáxia sem recorte algum** | **teto 4,8–5,1 MEDIDO** | `galaxy.ts:736-737` | ausência de culling |
-| 2 | **nebulosa integrada atrás da fotosfera** | 1,2 (só t=0..12) | `nebulaShaders.ts`, topo do `main` | desenhar o que será coberto |
+| 2 | ~~**nebulosa integrada atrás da fotosfera**~~ **FEITA (2026-08-08)** | 1,2 (só t=0..12) | `nebulaShaders.ts`, topo do `main` | desenhar o que será coberto |
 | 3 | **a coroa avalia a MESMA linha duas vezes** | 0,55 (enquanto o Sol aparece) | `coronaRays.js:123` = `coronaVolume.js:387` | valor recalculado |
 
 **O quadro do ato do Sol (t=0) é 15,33 ms, o mais apertado que já medi** — e o Sol
@@ -2460,6 +2460,152 @@ extensão, mas isso tem de ser escrito, não renomeado.
 
 **Descartado com número:** varredura de catálogo por quadro (já medido, 155 µs);
 corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,13).
+
+## Os gates não rodavam nesta máquina (2026-08-08) — e o que sobrou como regra
+
+Um clone macOS não conseguia rodar **um** gate do projeto: os quatro harnesses
+procuravam `chrome.exe` e `/usr/bin/google-chrome` e passavam `--use-angle=d3d11`.
+Consertar isso destapou quatro defeitos de ferramental, e a lista vale mais que os dois
+itens de fila que entraram junto — porque **três deles contaminavam medida em vez de
+quebrar**, que é o modo caro de falhar.
+
+- **`chrome.kill()` não mata o Chrome.** O processo que o Node gera é só o browser; os
+  helpers de GPU e renderer são filhos e sobrevivem ao pai. Medido: depois de quatro
+  invocações do `gpu-profile` havia **14 Chrome órfãos vivos**, e eles não são inertes —
+  disputam a MESMA GPU que o harness está medindo. A baseline foi de **20,0 para 8,0 fps**
+  entre a primeira e a quarta execução, e a mesma vista devolveu **196 e 588 ms** de
+  total. `rodada.mjs` já tinha a limpeza certa, só que dentro de `if (win32)`; os outros
+  três morriam em silêncio. Agora é `matarPerfil()` em `scripts/visual/chrome.mjs`, que
+  casa pelo `user-data-dir` (nunca pelo nome — o Chrome do usuário não pode ser tocado).
+  **Regra: quem sobe Chrome mata pelo perfil, sempre.**
+- **Gate de imagem tem de FIXAR o tier.** Sem `?q=`, o `autoQuality` do `engine.ts`
+  rebaixa cinema→alta→performance sozinho quando a média cai de 42 fps, e isso troca
+  `nebulaSteps` **56→30** e o `pixelRatio` NO MEIO da espera de 700 quadros. Numa máquina
+  que segura 60 fps o degrau nunca dispara e `q=cinema` é **bit-exato** (mesmo tier, mesmo
+  preset — só desliga o automático); numa que não segura, sem ele o gate compara duas
+  imagens tiradas em qualidades diferentes e chama a diferença de regressão. `ab-identidade`
+  e `sky-capture` agora fixam. **A linha antiga "os gates rodam sem `?q=` em desktop
+  headless" só valia para hardware rápido.**
+- **`--virtual-time-budget` + `--screenshot` NÃO TERMINA neste Chrome/macOS.** Não é
+  lentidão: uma janela de **400×400 com 8 s de orçamento** ficou 6 min sem sair e sem
+  gravar PNG. O laço de rAF do app nunca deixa o tempo virtual alcançar o teto, e o
+  `--screenshot` só dispara quando ele alcança. As seis faces do gate do céu passaram para
+  o caminho CDP (`capturarCDP` em `chrome.mjs`), que espera o log da cartografia e mais
+  700 quadros DESENHADOS — o mesmo critério que já fazia o `ab-identidade` repetir md5.
+  A medição (`--dump-dom`) continua com tempo virtual, porque a página é estática, mas o
+  critério de pronto virou **o arquivo**, não o processo: o Chrome também não sai de lá, e
+  esperá-lo custava os 600 s do teto por execução.
+- **Captura travada matava a bateria inteira.** A espera do WebSocket do CDP não tinha
+  timeout: quando o alvo morre entre o `/json/list` e o handshake, nem `open` nem `error`
+  disparam, o Node fica sem handles e o processo SAI com um aviso de "unsettled top-level
+  await". Três vistas medidas, nenhuma gravada, nenhum veredito. Agora há timeout, uma
+  segunda tentativa por captura, e o estado é gravado **por vista** — re-rodar o mesmo lado
+  retoma o que falta em vez de refazer 20 min de GPU.
+
+**Como ler milissegundo em Apple/Metal — e isto muda a leitura de qualquer medida futura
+feita aqui.** O `EXT_disjoint_timer_query_webgl2` existe e o headless está mesmo na GPU
+(`ANGLE Metal Renderer: Apple M1`), mas **a atribuição por draw infla e não é aditiva**: a
+soma dos passes deu 178 ms num quadro cujo relógio marcava 50 ms, e um passe de tela cheia
+do pós aparecia empatado com o raymarch. O que o instrumento faz bem é **rastrear trabalho
+real de um passe**: calibrado contra a alavanca conhecida, `nebsteps` 56/28/14 devolveu
+41,2/22,1/12,0 ms — reta de 0,70 ms por passo com 2,2 de intercepto. Já o **contador de
+quadros aqui é honesto**, e pelo motivo oposto ao da máquina de referência: o app roda a
+9–14 fps, muito longe do vsync, então o relógio de apresentação mede trabalho em vez de
+devolver 16,7 ms. **Nesta máquina a régua é quadros; lá era timer query.** Quem misturar as
+duas vai concluir bobagem — foi o que quase aconteceu aqui: os itens (3) e (4) fizeram o
+quadro acelerar nos quatro instantes E a atribuição do raymarch SUBIR em t=100.
+
+**Itens (3) e (4) da fila do raymarch: FEITOS, e bit-exatos provados.**
+
+| instante | quadros/10 s antes | depois | ganho |
+|---|---|---|---:|
+| t=0 | 92 · 86 | 100 · 98 | **+11,2%** |
+| t=40 | 132 · 132 | 144 · 144 | **+9,1%** |
+| t=100 | 97 · 97 | 101 · 101 | **+4,1%** |
+| t=180 | 86 · 85 | 91 · 91 | **+6,4%** |
+
+(1920×1080, `cinema` fixado, duas repetições por instante; as repetições batem exatas em
+t=40/100/180.) **Imagem: `>>> BIT-IDÊNTICO` nas seis vistas**, incluindo o retrato
+700×1800 — md5 igual antes e depois, e cada lado repetindo consigo mesmo. **Gate do céu
+cravado: `skyError` 0,7853 com os cinco termos idênticos a quatro casas** (espessura
+0,3144 · fenda 0,2216 · perfil 0,2031 · púrpura 0,0341 · cor 0,0121).
+
+**A baseline do céu DESTA máquina é 0,7853, não os 0,7811 do registro** — 0,5% acima, com
+a mesma estrutura de termos. A diferença é de GPU e do ponto de assentamento novo da
+captura; comparação de rodada continua valendo, comparação com número documental de outra
+máquina não.
+
+O argumento de exatidão de cada um, porque é ele que autoriza não olhar pixel:
+**(3)** daqui para baixo `nebulaDensity` só MULTIPLICA (lanes, Bolha Local, cavidade,
+`gasDensity`), então a amostra que chega em 0 sai em 0 — e o fbm de 2 oitavas das `lanes`
+era o preço de redescobrir isso. Não é caso raro: `clumps` é um `smoothstep(0.50, 0.90)`
+sobre ruído de média 0,4594, ou seja **mais da metade das amostras zera antes**. Vale nas
+DUAS variantes (a local, de `starShaders`/`dustShaders`, não tinha guarda nenhuma).
+**(4)** o `uSeedCloudCount == 0` da guarda de vácuo era conservador demais: bastava UMA
+nuvem no pool, em qualquer lugar, para toda amostra de envelope vazio pagar n1, n2,
+clumps, núcleos e lanes. O que a guarda precisa saber não é se EXISTE nuvem e sim se
+alguma alcança ESTA amostra — e o span da (2) já responde isso uma vez por raio. É o mesmo
+teste que gateia o laço, então quem sai por aqui sairia com d ≤ 0,003 e o `d > 0.003` do
+raymarch descartaria. `GLSL_DENSITY` só é consumido por `nebulaShaders.ts`, que chama
+`seedSpan` uma vez por raio antes do laço: o span está sempre válido.
+
+**A nebulosa atrás da fotosfera: FEITA, e o ato do Sol não era o que a auditoria dizia.**
+A auditoria de 2026-08-07 precificou o item em **1,2 ms**, tratando-o como sobra. Medido
+aqui com ablação (`?nonebula=1` em t=6): **o raymarch é 61 ms de um quadro de 101 ms —
+60%**, e o Sol inteiro com as dez camadas é 21. O ato do Sol é tão dominado pela nebulosa
+quanto a travessia, e a fração que a fotosfera TAPA é ~19% do trabalho dela.
+
+| instante | quadros/10 s antes | depois | ganho | raymarch |
+|---|---|---|---:|---|
+| t=0 | 100 · 98 | 114 · 111 | **+13,6%** | 74,0 → 59,7 ms (−19%) |
+| t=6 | 99 | 113 · 111 | **+13,1%** | 73,0 → 59,4 ms (−19%) |
+| **t=100 (controle)** | 101 · 101 | 100 | −1% (ruído) | 86,7 → 86,6 |
+
+O controle é a checagem causal: em t=100 o Sol não está na tela e nada se move.
+
+**O teste é em DIREÇÃO, não em espaço de tela, e isso não é preferência.** A silhueta de
+uma esfera é um cone EXATO em torno da direção do centro; em espaço de tela ela é uma
+elipse DESLOCADA assim que o Sol sai do eixo óptico. Um disco em pixels centrado na
+projeção do centro erraria exatamente como a margem em X do recorte da galáxia errou —
+`dot(rd, uSunDir) > uSunCos` não tem esse modo de falha, e o `rd` o shader já calcula.
+**Três encolhimentos, e o do meio é o que morde:** a malha é uma esfera TESSELADA e sua
+silhueta é o polígono INSCRITO (raio efetivo R·cos(π/N); usa-se N = 96, o pior tier); e
+entre o raymarch e o consumo há um blur de 4 taps a ±meio-texel MAIS o upsample linear do
+RT de meia-res, e **os dois espalham o preto para FORA do disco** — este é em texel do RT,
+não em raio, e vale 3 texels.
+
+**A exatidão vem da ordem de desenho, não da margem:** o RT é o `scene.background`, a
+fotosfera é opaca por construção (`vec4(color, 1.0)`, `ShaderMaterial` sem `transparent`,
+com `depthWrite`), e as camadas aditivas do Sol são `transparent` — three as desenha DEPOIS
+da opaca, somando sobre a fotosfera e não sobre este fundo.
+
+**Verificação: 12 pixels de 3.083.400 (0,00039%), todos de exatamente 1 nível**, espalhados
+por 9 blocos de 16×16 numa caixa de 1162×1311 — sem concentração nenhuma. Perda de conteúdo
+daria mancha COMPACTA com delta grande. **E os dois lados repetem EXATO (0 px de tremor
+entre execuções)**, o que é evidência mais forte que a da guarda da cavidade, onde o tremor
+do próprio lado era 65 px. As outras seis vistas são bit-idênticas e **o gate do céu não se
+move: `skyError` 0,7853 com os cinco termos idênticos a quatro casas** (lá `?nosun=1`
+desliga o cone, e o desvio novo não muda nem o codegen que a métrica enxerga).
+
+**Ferramenta nova, e ela faltava havia três rodadas: `scripts/visual/diff-pixel.mjs`.** O
+cabeçalho do `ab-identidade` manda rodar o diff de pixel quando dá "DIFERE", e o projeto já
+tinha precisado dessa conta pelo menos três vezes (os 55 px da cavidade, o 1 px do recorte
+da galáxia, os ~50 px do `galsplit`) sempre refazendo à mão no scratchpad. Ele imprime
+histograma por delta, caixa envolvente e mapa de blocos 16×16 — porque é a CONCENTRAÇÃO, e
+não a contagem, que separa ULP de conteúdo perdido.
+
+**O que sobra da fila:**
+- **(5) `q2<9` → `q2<7`: segue FORA** pelos motivos de 2026-08-07 (única com mudança de
+  imagem de verdade, mexe no corredor de Órion, e `coresGLSL()` é injetado duas vezes).
+- **LUT angular do `flick` da coroa (0,55 ms) — NÃO FEITA.** A premissa foi CONFERIDA e é verdadeira:
+  `ctx.cvolInvRot.copy(ctx.sunInvRot)` (novoSol.ts:551) e o grupo do Sol nunca sai da
+  origem, então o `dirO` de `coronaRays` (do ângulo de tela) e o de `coronaVolume` (de
+  `normalize(vWorld)`) são o MESMO vetor — a LUT de 1×8192 pode servir os dois, indexada
+  pelo ângulo no plano do céu. Não é bit-exata (quantização + filtro), e cai nos 12 s mais
+  vistos do filme: exige A/B com diff de pixel, não só md5. **O gate agora enxerga o ato do
+  Sol** (a vista `sol`, t=6, entrou no `ab-identidade`), então ela é verificável — o que
+  não era verdade antes desta rodada: a lista começava em t=40 e era CEGA para as duas
+  alavancas que sobravam.
 
 ## Decisões fechadas
 
