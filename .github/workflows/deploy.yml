@@ -1,0 +1,58 @@
+# Publica o filme no GitHub Pages a cada commit na main.
+#
+# O site de PROJETO fica num subcaminho (/Viagem-Sol-pela-Milky-Way/), e é por
+# isso que o `base: './'` do vite.config.ts não é detalhe: com ele o
+# `import.meta.env.BASE_URL` vira './', os fetch de `data/` resolvem relativo ao
+# documento e os preload do index.html também. Trocar esse `base` para '/'
+# quebra os 13 MB de cartografia em produção sem quebrar nada no dev server —
+# falha que só aparece publicada.
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # permite republicar sem commit novo (útil depois de mexer em Settings)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Deploy não se atropela: uma publicação por vez, e a fila NÃO cancela a que
+# está no meio — cancelar um deploy de Pages deixa o site num estado meio
+# trocado.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # `npm run build` é `tsc -b && vite build`: o typecheck já é o portão.
+      # Se o TypeScript não passar, nada é publicado.
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
