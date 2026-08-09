@@ -30,6 +30,7 @@ export default function App() {
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
   const [loadError, setLoadError] = useState('');
+  const [loadStage, setLoadStage] = useState('cartografando 328.749 estrelas de catálogo…');
   // ?ajustes=1 abre o painel direto: uma configuração inteira cabe num link,
   // inclusive com o painel visível para conferência.
   const [ajustes, setAjustes] = useState(
@@ -52,6 +53,7 @@ export default function App() {
       },
       onQuality: setQuality,
       onDest: setDest,
+      onStage: setLoadStage,
     });
     directorRef.current = d;
     // gancho de inspeção (só dev): estado da câmera/fase no console
@@ -356,6 +358,7 @@ export default function App() {
         onExplore={freeRoam}
         runtime={runtime}
         error={loadError}
+        stage={loadStage}
       />
     </div>
   );

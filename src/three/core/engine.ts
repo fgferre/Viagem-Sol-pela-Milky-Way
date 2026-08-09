@@ -30,6 +30,23 @@ const PRESETS: Record<QualityLevel, QualityPreset> = {
   performance: { pixelRatio: 1.0, nebulaSteps: 30, grain: 0.008 },
 };
 
+// Tier INICIAL sem ?q=: decidido pelo dispositivo, não por uma constante.
+// A assimetria que justifica errar para BAIXO no touch: o tier inicial
+// decide ALOCAÇÃO (a população da galáxia — 4,02 M partículas em cinema —
+// e o tier do Sol congelam no init), e o auto-quality nunca desfaz o que
+// já foi assado. Começar baixo e subir é barato (o nearCeiling sobe passos
+// e pixelRatio em segundos); começar alto e cair deixa a memória de cinema
+// num celular para sempre. Desktop segue em cinema: os gates capturam em
+// headless sem touch e com ?q=cinema fixado — este caminho nem roda lá.
+function defaultQualityForDevice(): QualityLevel {
+  const touch =
+    navigator.maxTouchPoints > 1 || window.matchMedia('(pointer: coarse)').matches;
+  if (!touch) return 'cinema';
+  // lado curto da TELA (não da janela): tablet deitado continua tablet
+  const shortSide = Math.min(window.screen.width, window.screen.height);
+  return shortSide < 820 ? 'performance' : 'alta';
+}
+
 export class Engine {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
@@ -72,7 +89,7 @@ export class Engine {
     // em high — exatamente onde a economia é necessária.
     const qParam = new URLSearchParams(window.location.search).get('q');
     const q = (['cinema', 'alta', 'performance'] as const).find((v) => v === qParam);
-    this.applyQuality(q ?? 'cinema', q !== undefined);
+    this.applyQuality(q ?? defaultQualityForDevice(), q !== undefined);
     this.resize();
     window.addEventListener('resize', this.resize);
   }

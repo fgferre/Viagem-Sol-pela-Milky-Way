@@ -11,6 +11,7 @@
 // A falha é graciosa: sem manifesto ou com binário corrompido a
 // cena continua 100% procedural (camada `inferred`), como antes.
 // ============================================================
+import { fetchBinary } from '../config';
 
 interface ManifestAsset {
   file: string;
@@ -66,11 +67,9 @@ async function fetchTable(
   asset: ManifestAsset,
   signal?: AbortSignal
 ): Promise<CatalogueTable> {
-  const response = await fetch(`${base}${asset.file}`, { signal });
-  if (!response.ok) {
-    throw new Error(`${asset.file}: HTTP ${response.status}`);
-  }
-  const buffer = await response.arrayBuffer();
+  // pelo .gz com fallback para o cru (fetchBinary); a checagem de tamanho
+  // logo abaixo é quem valida a descompressão — byte a mais ou a menos barra
+  const buffer = await fetchBinary(`${base}${asset.file}`, signal);
   const expected = asset.count * asset.strideFloat32 * 4;
   if (buffer.byteLength !== expected) {
     throw new Error(

@@ -17,11 +17,15 @@
       sem ele, o preload não casa com a requisição e o browser baixa TUDO
       duas vezes. Nada muda no que é renderizado — só quando os bytes chegam.
     -->
-    <link rel="preload" as="fetch" crossorigin href="./data/stars.bin" />
+    <!-- Os .bin viajam como .gz (o Pages não comprime octet-stream; o app
+         descomprime no cliente — fetchBinary em config.ts). O preload tem de
+         apontar para o MESMO arquivo que o fetch pede, senão vira download
+         dobrado. JSON fica cru: a borda já o comprime. -->
+    <link rel="preload" as="fetch" crossorigin href="./data/stars.bin.gz" />
     <link rel="preload" as="fetch" crossorigin href="./data/stars_meta.json" />
     <link rel="preload" as="fetch" crossorigin href="./data/galaxy/manifest.json" />
-    <link rel="preload" as="fetch" crossorigin href="./data/galaxy/dust-density.bin" />
-    <link rel="preload" as="fetch" crossorigin href="./data/galaxy/gaia-ob-proxy-stars.bin" />
+    <link rel="preload" as="fetch" crossorigin href="./data/galaxy/dust-density.bin.gz" />
+    <link rel="preload" as="fetch" crossorigin href="./data/galaxy/gaia-ob-proxy-stars.bin.gz" />
     <title>Mar de Estrelas — Viagem pela Via Láctea</title>
   </head>
   <body>

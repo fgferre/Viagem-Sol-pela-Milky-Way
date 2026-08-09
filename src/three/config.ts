@@ -110,14 +110,60 @@ function decodeStars(bin: ArrayBuffer, meta: StarsMeta): StarArrays {
   return { position, logLum, ci };
 }
 
+/**
+ * Busca um .bin pelo irmão .gz e descomprime no CLIENTE. Existe porque o
+ * GitHub Pages comprime texto e JSON na borda mas serve
+ * application/octet-stream cru — e os .bin são 12,3 dos 13,3 MB do payload
+ * (−26% medido com gzip nível 9; `npm run data:pack` gera os .gz).
+ *
+ * DecompressionStream devolve os MESMOS bytes do .bin original — os gates de
+ * imagem não enxergam a troca. Qualquer falha do caminho comprimido (API
+ * ausente, .gz não publicado, stream corrompido) cai para o arquivo cru, que
+ * continua no lugar: o pior caso é voltar ao custo de ontem, nunca quebrar.
+ */
+export async function fetchBinary(url: string, signal?: AbortSignal): Promise<ArrayBuffer> {
+  if (typeof DecompressionStream === 'function') {
+    try {
+      const response = await fetch(`${url}.gz`, { signal });
+      if (response.ok) {
+        // QUEM decide se ainda há gzip a desfazer são os BYTES, nunca um
+        // header. O Vite serve .gz com Content-Encoding: gzip (o browser já
+        // entrega descomprimido); o Pages serve o .gz opaco (chega cru de
+        // verdade). A primeira versão assumia o segundo caso sempre — e no
+        // dev o DecompressionStream estourava no que já era .bin, o catch
+        // caía para o arquivo cru, e cada catálogo baixava DUAS vezes: o
+        // fallback "seguro" custando mais que a ausência da feature.
+        // Nenhum .bin do projeto começa com 1f 8b (conferido), e mesmo um
+        // falso positivo só cai no catch e degrada para o cru.
+        const buffer = await response.arrayBuffer();
+        const head = new Uint8Array(buffer, 0, 2);
+        if (head[0] !== 0x1f || head[1] !== 0x8b) return buffer;
+        const stream = new Blob([buffer])
+          .stream()
+          .pipeThrough(new DecompressionStream('gzip'));
+        return await new Response(stream).arrayBuffer();
+      }
+    } catch (error) {
+      // aborto é do chamador e tem de subir; o resto degrada para o cru
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    }
+  }
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+  return response.arrayBuffer();
+}
+
 export async function loadStarData(
   signal?: AbortSignal
 ): Promise<{ stars: StarArrays; meta: StarsMeta }> {
   const base = import.meta.env.BASE_URL;
   const [bin, meta] = await Promise.all([
-    fetch(`${base}data/stars.bin`, { signal }).then((response) => {
-      if (!response.ok) throw new Error(`Catálogo estelar indisponível (${response.status}).`);
-      return response.arrayBuffer();
+    fetchBinary(`${base}data/stars.bin`, signal).catch((error: Error) => {
+      // o aborto tem de continuar SENDO aborto: o StrictMode monta o App duas
+      // vezes em dev, e o dispose do primeiro Director aborta este fetch —
+      // embrulhá-lo viraria tela de erro para um cancelamento de rotina
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      throw new Error(`Catálogo estelar indisponível (${error.message}).`);
     }),
     fetch(`${base}data/stars_meta.json`, { signal }).then((response) => {
       if (!response.ok) throw new Error(`Metadados do catálogo indisponíveis (${response.status}).`);

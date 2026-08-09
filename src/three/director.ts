@@ -45,6 +45,8 @@ interface DirectorEvents {
   onQuality: (quality: QualityLevel) => void;
   /** linha de rumo ("→ DESTINO · distância viva"); vazio = esconder */
   onDest: (text: string) => void;
+  /** etapa viva do carregamento — o rótulo que o véu mostra */
+  onStage: (text: string) => void;
 }
 
 export class Director {
@@ -208,7 +210,23 @@ export class Director {
     ]).then(([stars, galactic]) => ({ stars, galactic, cartMode }));
   }
 
+  /**
+   * Rótulo de etapa + fôlego para o browser PINTAR o rótulo. O init tem
+   * ~5 s de CPU síncrona (bakes 1,6 s + buildGalaxy 3,27 s) e o loader
+   * congelava junto — parecia travado exatamente enquanto mais trabalhava.
+   * Barra por byte não conserta (a rede é a fatia pequena; ela pararia em
+   * 100%). setTimeout(0) e não rAF: em aba de fundo o rAF é estrangulado
+   * e o init nunca terminaria. O conserto DEFINITIVO é o Worker (fila
+   * 2026-08-05, item 2); isto é o que dá para honestamente prometer sem ele:
+   * o espectador vê O QUE está acontecendo, entre um congelamento e outro.
+   */
+  private async stage(text: string) {
+    this.events.onStage(text);
+    await new Promise<void>((r) => setTimeout(r, 0));
+  }
+
   async init() {
+    await this.stage('recebendo os catálogos…');
     const {
       stars: { stars: starArrays, meta },
       galactic,
@@ -216,6 +234,7 @@ export class Director {
     } = await this.assets;
     if (this.disposed) return;
     this.meta = meta;
+    await this.stage('acordando 328.749 estrelas…');
 
     // expoM0 é o "tempo de exposição": a magnitude aparente cujo pico de
     // PSF chega a 1. Com 3,5 as ~40 estrelas mais brilhantes do céu
@@ -234,8 +253,10 @@ export class Director {
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
     const cartOn = Boolean(galactic) && cartMode !== 'off';
+    await this.stage('assando a poeira do disco…');
     const dustBake = bakeDustMap(cartOn && galactic ? galactic.dustDensity : null);
     this.dustMapTexture = dustBake.texture;
+    await this.stage('acoplando braços e warp…');
     const structureBake = bakeGalacticStructureMap(
       cartOn ? galactic : null,
       dustBake.density,
@@ -243,6 +264,7 @@ export class Director {
       dustBake.arms
     );
     this.structureMapTexture = structureBake.texture;
+    await this.stage('semeando quatro milhões de estrelas…');
     this.galaxy = new Galaxy(
       buildGalaxy(
         20260730,
@@ -263,6 +285,7 @@ export class Director {
       this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
     );
     // congela as lâminas (estáticas) em texturas — depois do modo
+    await this.stage('revelando as lâminas do disco…');
     this.galaxy.bakeDiscLayers(this.engine.renderer);
     const tauTex = this.galaxy.tauMapTexture;
     this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
@@ -329,6 +352,7 @@ export class Director {
     // Captura (?shot=) pula: o polling queimaria o virtual-time-budget,
     // e sob tempo virtual o stall síncrono de sempre não custa nada.
     if (!this.shotMode) {
+      await this.stage('compilando os shaders…');
       const warm = new THREE.Scene();
       // a chave de programa inclui a PRESENÇA do atributo normal
       // (vertexNormals): o quad da nebulosa é PlaneGeometry (tem normal),

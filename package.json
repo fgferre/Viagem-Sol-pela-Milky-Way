@@ -13,7 +13,8 @@
     "data:galaxy": "node scripts/data/build-galactic-assets.mjs",
     "data:fit": "node scripts/data/fit-spiral-model.mjs",
     "data:verify": "node scripts/data/verify-assets.mjs",
-    "data:all": "npm run data:stars && npm run data:galaxy && npm run data:fit && npm run data:verify"
+    "data:pack": "node scripts/data/compress-assets.mjs",
+    "data:all": "npm run data:stars && npm run data:galaxy && npm run data:fit && npm run data:verify && npm run data:pack"
   },
   "dependencies": {
     "react": "^19.2.8",

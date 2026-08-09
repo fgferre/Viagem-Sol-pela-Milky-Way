@@ -10,6 +10,7 @@ export function TitleVeil({
   onExplore,
   runtime,
   error,
+  stage,
 }: {
   visible: boolean;
   mode: 'loading' | 'intro' | 'end' | 'error';
@@ -17,6 +18,8 @@ export function TitleVeil({
   onExplore?: () => void;
   runtime?: number;
   error?: string;
+  /** etapa viva do carregamento (onStage do director) */
+  stage?: string;
 }) {
   const minutes = runtime ? Math.floor(runtime / 60) : 0;
   const seconds = runtime ? Math.round(runtime % 60) : 0;
@@ -40,7 +43,10 @@ export function TitleVeil({
           </div>
           <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
           <div className="title-big loading-pulse">MAR DE ESTRELAS</div>
-          <div className="title-sub">cartografando 328.749 estrelas de catálogo…</div>
+          {/* aria-live no véu já anuncia a troca; o rótulo vem do director,
+              etapa por etapa — a resposta honesta a "travou?" é dizer o que
+              está sendo feito agora */}
+          <div className="title-sub">{stage ?? 'cartografando 328.749 estrelas de catálogo…'}</div>
         </>
       )}
       {mode === 'intro' && (

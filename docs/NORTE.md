@@ -2196,22 +2196,34 @@ capítulos nomeados, `?t=`+`play=1`, guarda de teclado, mobile). O que falta:
    com a mira cravada em `GAL.GC_POS` com dois silêncios de ~16 s. Bit-exato
    **enquanto nenhum `dur` mudar** — mexer em `dur` desloca t=261/293 e quebra
    a comparabilidade dos gates.
-2. **Loading em estágios, com yield.** O `init` é síncrono no main thread
-   (bakes 1,6 s + `buildGalaxy` 3,27 s): o loader CONGELA junto, e é por isso
-   que parece travado. Barra de porcentagem por byte não conserta — a rede é a
-   fatia pequena e ficaria parada em 100%. Rótulo por etapa + `await` que ceda
-   ao browser; o conserto de verdade é o Worker, item (2) da fila de 2026-08-05.
-3. **Qualidade inicial por dispositivo.** Sempre começa em `cinema`: o celular
-   assa 4,02 M partículas e o Sol no tier alto, e o auto-quality nunca desfaz o
-   que já foi assado. Gates não mudam (rodam sem `?q=` em desktop headless).
+2. ~~**Loading em estágios, com yield.**~~ **FEITO (2026-08-09, rodada do
+   visitante).** Rótulo por etapa (`onStage` → véu) + `setTimeout(0)` entre as
+   etapas — não rAF, que é estrangulado em aba de fundo e travaria o init.
+   O conserto DEFINITIVO segue sendo o Worker, item (2) da fila de 2026-08-05.
+3. ~~**Qualidade inicial por dispositivo.**~~ **FEITO (2026-08-09).** Sem `?q=`:
+   touch com tela curta < 820 px → `performance`, touch grande → `alta`, resto →
+   `cinema` (`defaultQualityForDevice`, engine.ts). A assimetria que decide o
+   sentido do erro: o tier inicial fixa ALOCAÇÃO (população da galáxia e tier do
+   Sol congelam no init) e o auto-quality nunca desfaz o que foi assado — subir
+   é barato, descer não desassa. Gates intocados: capturam com `?q=cinema` e
+   headless não tem touch.
 4. Toast do auto-quality (a imagem muda sozinha e ninguém avisa); painel de
    Ajustes público vs. `?ajustes=1` (três caixas dele RECARREGAM o filme);
    locomoção no free-roam por toque (hoje o fim manda todo mundo para uma sala
    sem porta — o detector de toque curto já mede tempo e deslocamento).
-5. **Som: não existe, e não há registro de que seja decisão.** Zero ocorrência
-   de `audio|AudioContext|trilha` em `src`, `docs`, `package.json`. Para um
-   filme de 5 min 21 vendido como experiência cinematográfica, é a maior lacuna
-   de produto. **Decidir e registrar aqui antes de qualquer código.**
+5. **Som: DECIDIDO (2026-08-09) — sim, e procedural.** A decisão que este
+   item pedia: o filme GANHA trilha, como camada ambiente gerada por WebAudio
+   (drone grave + textura filtrada + brilhos esparsos, parametrizada por ato e
+   pela dHome que o director já emite), em rodada própria. O porquê de
+   procedural e não faixa gravada: zero payload (os 9,2 MB de catálogo já são o
+   orçamento), zero licenciamento, e o mesmo princípio da imagem — a cor emerge
+   da física, o som emerge do estado da viagem. Restrições que já ficam
+   decididas: só nasce depois de GESTO (política de autoplay; o clique em
+   "Iniciar a viagem" é o gesto), botão de mudo no HUD, `?mute=1` para capturas
+   e vídeo, e volume que respeita `prefers-reduced-motion` como proxy de
+   sensibilidade. Régua AAA do item: som ruim é pior que silêncio — a rodada
+   entra com referências (Interstellar, ambient de planetário) e sai se não
+   passar de "não envergonha".
 
 **Medir antes de decidir (nesta ordem):**
 6. ~~**Precificar a cadeia de pós**~~ **FEITO (2026-08-07): 0,29–0,34 ms, 2%
@@ -2606,6 +2618,42 @@ não a contagem, que separa ULP de conteúdo perdido.
   Sol** (a vista `sol`, t=6, entrou no `ab-identidade`), então ela é verificável — o que
   não era verdade antes desta rodada: a lista começava em t=40 e era CEGA para as duas
   alavancas que sobravam.
+
+## Rodada do visitante (2026-08-09) — o link público mudou a régua
+
+O projeto foi publicado (GitHub Pages, workflow em `.github/workflows/deploy.yml` —
+push na main publica sozinho; `base: './'` no vite.config é o que faz o subcaminho
+funcionar, trocar para `/` quebra produção sem quebrar o dev). Com alguém do outro
+lado do link, a régua AAA vale mais que milissegundo: **o caminho do visitante —
+baixar, esperar, abrir no aparelho que for — é sagrado.** Três itens da fila de UX
+entraram de uma vez; o que cada um ensinou:
+
+- **Payload −26% (12,4 → 9,2 MB): o Pages não comprime `octet-stream`.** Texto e
+  JSON saem gzipados da borda; os `.bin` — 12,3 dos 13,3 MB — viajavam crus. Agora
+  `npm run data:pack` (último passo do `data:all`) gera `.gz` nível 9 ao lado de
+  cada `.bin`, e `fetchBinary` (config.ts) busca o `.gz` e descomprime com
+  `DecompressionStream`; os crus ficam como fallback para navegador sem a API.
+  **A armadilha que a primeira versão comeu: quem decide se ainda há gzip a
+  desfazer são os BYTES, nunca um header.** O Vite serve `.gz` com
+  `Content-Encoding: gzip` (o browser entrega já descomprimido); o Pages serve o
+  `.gz` opaco. Assumir um dos dois casos fez o dev estourar o
+  `DecompressionStream` e o catch baixar TUDO em dobro — o fallback "seguro"
+  custando mais que a ausência da feature. O teste é o magic `1f 8b` no início do
+  buffer (nenhum `.bin` do projeto começa assim — conferido), e a checagem de
+  `byteLength` do manifesto valida a descompressão logo depois.
+- **Qualidade inicial por dispositivo e loading em estágios**: riscados na fila de
+  2026-08-06 acima, com o racional lá.
+- **gaia-ob-proxy quase não comprime** (3,81 → 3,55 MB): Float32 de posição é
+  entropia alta. O ganho real de payload que sobra está no item (4) da fila de
+  2026-08-05 — as colunas mortas (2,77 MB seguros) — e em quantizar, não em
+  comprimir mais forte.
+
+**Verificação:** as sete vistas do `ab-identidade` bit-idênticas e `skyError`
+cravado (a descompressão devolve os MESMOS bytes; o tier por dispositivo não roda
+em headless sem touch; o rótulo de etapa só existe durante o loading, que as
+capturas atravessam). Vivo no browser: rede só com `.gz` (sem download dobrado),
+desktop abre em `cinema`, viewport mobile emulada abre em `performance`, e o véu
+troca de rótulo etapa a etapa.
 
 ## Decisões fechadas
 
