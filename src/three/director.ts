@@ -264,7 +264,9 @@ export class Director {
       dustBake.arms
     );
     this.structureMapTexture = structureBake.texture;
-    await this.stage('semeando quatro milhões de estrelas…');
+    // sem contagem no rótulo: cinema semeia 4,02 M, performance 1,1 M — um
+    // número fixo mentiria em metade dos aparelhos
+    await this.stage('semeando o disco galáctico…');
     this.galaxy = new Galaxy(
       buildGalaxy(
         20260730,
