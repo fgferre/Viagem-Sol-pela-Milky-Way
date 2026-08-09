@@ -2473,6 +2473,30 @@ extensão, mas isso tem de ser escrito, não renomeado.
 **Descartado com número:** varredura de catálogo por quadro (já medido, 155 µs);
 corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,13).
 
+## Como retomar os gates numa sessão nova (leia antes de medir)
+
+O `ab-identidade` guarda os md5 em `TMPDIR/ab-identidade-{antes,depois}.json`, fora do
+repo e fora do git. Duas consequências que já quase custaram um diagnóstico errado:
+
+1. **O "antes" da rodada seguinte é o "depois" da anterior.** Ao terminar uma rodada,
+   `cp` o `depois` por cima do `antes` e apague o `depois`. Quem esquecer compara a
+   rodada nova contra uma baseline de duas rodadas atrás e vê `DIFERE` em tudo.
+2. **TMPDIR não sobrevive a reboot.** Sem o arquivo, `antes` tem de ser recapturado —
+   ~25 min de GPU. A baseline do HEAD `ccf209e` nesta máquina, para conferência rápida
+   sem recapturar: `sol 0ddeb977138a` · `interno 0247a75a26bd` ·
+   `travessia 3a726580f4c5` · `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` ·
+   `faceon d05591e27ea4` · `retrato 59ada90fed3d` (todas @1800x1713, retrato @700x1713).
+   **Esses md5 são desta GPU** — noutra máquina servem só como sinal de que a captura
+   assentou, nunca como valor esperado.
+
+Os PNGs do gate do céu ficam em `sky/` e as capturas nomeadas em `capturas/` (ambos
+gitignored, ambos sobrevivem à sessão): `sky-capture.mjs base --so-medir` re-mede sem
+recapturar nada, e é assim que se confere a régua sem gastar GPU.
+
+**A melhoria que fecharia isto de vez e ainda não foi feita:** baseline indexada pela
+string do renderer da GPU, gravada fora do TMPDIR, mais um `doctor` que confira o
+ambiente antes de qualquer gate rodar. Enquanto não existir, o ritual acima é manual.
+
 ## Os gates não rodavam nesta máquina (2026-08-08) — e o que sobrou como regra
 
 Um clone macOS não conseguia rodar **um** gate do projeto: os quatro harnesses
