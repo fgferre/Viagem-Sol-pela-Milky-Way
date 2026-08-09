@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import type { GalacticAssets } from '../cartography/galacticAssets';
 import { galactocentricToScene, EX, EY, EZ, GAL } from './galaxy';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GLSL_STAR_COLOR } from '../shaders/common';
 
 const TYPE_HII = 0;
 const TYPE_MASER = 1;
@@ -21,7 +22,10 @@ const TYPE_CLUSTER = 2;
 const TYPE_CEPHEID = 3;
 const TYPE_OB_PROXY = 4;
 
-const STRIDE = 7; // x,y,z,size,type,intensity,seed
+// x,y,z,size,type,intensity,seed — e no proxy OB o "seed" carrega a
+// TEMPERATURA medida (K) em vez de um sorteio: ver a cor do tipo 4 no FRAG.
+// O slot é o mesmo porque, para essa população, ele só alimentava a cor.
+const STRIDE = 7;
 
 const VERT = /* glsl */ `
 attribute float aSize;      // diâmetro do kernel de representação (pc)
@@ -98,6 +102,8 @@ varying float vAlpha;
 varying float vSeed;
 varying vec3 vExtinct;
 
+${GLSL_STAR_COLOR}
+
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
   float r2 = dot(uv, uv);
@@ -122,9 +128,20 @@ void main() {
     profile = exp(-r2 * 5.5);
     col = vec3(1.0, 0.9, 0.72);
   } else {
-    // proxy OB Gaia — núcleo frio pequeno; densidade, não “pérolas” enormes
+    // proxy OB Gaia — núcleo frio pequeno; densidade, não “pérolas” enormes.
+    // A COR VEM DA TEMPERATURA MEDIDA (vSeed = Teff em K), pela mesma
+    // blackbodyLinear das 328.749 do HYG — unificação 1, uma lei fotométrica.
+    // Antes era mix(azul, quase-branco, fract(seed*7.3)): um sorteio, com a
+    // Teff de cada estrela parada no arquivo que o visitante já baixava.
     profile = exp(-r2 * 7.5);
-    col = mix(vec3(0.48, 0.66, 1.0), vec3(0.88, 0.94, 1.0), fract(vSeed * 7.3));
+    vec3 bb = blackbodyLinear(vSeed);
+    // LUMINÂNCIA CONSERVADA, e isto não é detalhe: a lição da rodada 06/07 é
+    // que trocar a cor de uma população por outra de Y diferente é mudança de
+    // FLUXO disfarçada de cor, e a medição atribui à cor o que é de brilho.
+    // 0,7889 é o Y MÉDIO da paleta antiga (mix em k=0,5, o valor esperado do
+    // sorteio uniforme): assim só a MATIZ se move, e se espessura ou perfil
+    // mexerem no gate, é defeito e não consequência.
+    col = bb * (0.7889 / dot(bb, vec3(0.2126, 0.7152, 0.0722)));
   }
 
   gl_FragColor = vec4(col * vExtinct * profile * vAlpha, 1.0);
@@ -230,6 +247,14 @@ export class StarForges {
         const o = i * stride;
         const magnitude = data[o + 5];
         const confidence = data[o + 8];
+        // [7] = effectiveTemperatureK (Gaia teff_esphs, com teff_gspphot de
+        // reserva). Estava no arquivo desde sempre, baixada por todo
+        // visitante, e o shader pintava estas 100.000 com um SORTEIO.
+        // NÃO se usa [6] bpMinusRp: aquela é a cor OBSERVADA, já avermelhada
+        // pela poeira — e o renderer aplica a própria extinção pelo tauMap
+        // (vExtinct, no VERT). Usá-la avermelharia duas vezes. A mediana
+        // medida é +0,76 justamente por causa do avermelhamento.
+        const temperaturaK = data[o + 7];
         const brightness = THREE.MathUtils.clamp(
           (17 - magnitude) / 8,
           0.2,
@@ -242,7 +267,7 @@ export class StarForges {
           10 + brightness * 8,
           TYPE_OB_PROXY,
           (0.022 + brightness * 0.038) * confidence,
-          data[o + 9]
+          temperaturaK
         );
       }
     }

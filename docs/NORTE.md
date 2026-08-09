@@ -2655,6 +2655,88 @@ capturas atravessam). Vivo no browser: rede só com `.gz` (sem download dobrado)
 desktop abre em `cinema`, viewport mobile emulada abre em `performance`, e o véu
 troca de rótulo etapa a etapa.
 
+## A cor das 100.000 OB vinha de um SORTEIO (2026-08-09)
+
+A pergunta que abriu isto não era de cor, era de payload: quais colunas dos `.bin`
+ninguém lê, para podá-las. A resposta separou as colunas mortas em três casos, e o
+terceiro mudou a rodada de assunto.
+
+- **Já usada, pré-digerida:** `dustDensity[4] sigmaDensityCm3`. O build faz
+  `confidence = density / (density + sigma)`, e o renderer lê `confidence`. A
+  incerteza CHEGA, mastigada — a política do manifesto ("renderers must use them")
+  está satisfeita, e guardar o número cru ao lado do resultado é redundância, não
+  preservação. **Correção de uma leitura minha anterior, que via conflito aqui.**
+- **Derivável:** `heliocentricDistancePc` nos dois arquivos. A posição está no
+  registro e o Sol tem lugar conhecido — é uma subtração guardada em disco.
+- **Medida real, ignorada:** `gaiaObProxyStars[7] effectiveTemperatureK`. E o
+  renderer pintava as cem mil com
+  `mix(vec3(0.48,0.66,1.0), vec3(0.88,0.94,1.0), fract(vSeed * 7.3))` — um número
+  aleatório entre dois azuis pintados à mão, com a Teff de cada estrela parada no
+  arquivo que o visitante já baixava. Coluna morta aqui não era "não contribui", era
+  **"decidimos não olhar"**.
+
+**O que o Gaia mede** (100.000 registros, todos com Teff válida): mediana **11.739 K**,
+p75 14.142, p95 20.000, máx 54.843; **79,7% entre 10 e 15 kK e só 0,6% acima de
+30 kK**. Isso REFUTA a objeção que eu mesmo levantei antes de medir — que O reais de
+30–40 kK empurrariam azul demais. A amostra é de B tardias, não de O.
+
+**As duas paletas, normalizadas por luminância** (purp = quanto o verde fica abaixo da
+média de R e B): o sorteio cobre purp **0 a +0,124**; a física dá **+0,162 (p05) a
++0,300 (p95)**. **A faixa inteira do sorteio fica abaixo do p05 físico** — não era
+imprecisão, era um viés unilateral em todas as cem mil. Média da população
+**+0,0507 → +0,2115**, quatro vezes, com o mesmo fluxo.
+
+**NÃO se usa `[6] bpMinusRp`**, que também estava morta: é a cor OBSERVADA, já
+avermelhada (mediana +0,76, máx +3,65), e o renderer aplica a própria extinção pelo
+`tauMap` — usá-la avermelharia duas vezes. `effectiveTemperatureK` é a estimativa
+desavermelhada, e é o que `blackbodyLinear` pede.
+
+**Implementação:** o slot `aSeed` passa a carregar a Teff para o tipo 4 (para essa
+população ele só alimentava a cor — nenhum atributo novo, `STRIDE` intocado), e a cor
+sai do `GLSL_STAR_COLOR` que as 328.749 do HYG já usam (unificação 1, uma lei
+fotométrica). **Luminância conservada em Y = 0,7889**, o Y médio da paleta antiga:
+sem isso, a rodada 06/07 já ensinou, trocar a cor de uma população por outra de Y
+diferente é mudança de FLUXO disfarçada de cor.
+
+| termo | antes | depois | |
+|---|---:|---:|---|
+| espessura | 0,3144 | 0,3144 | cravado |
+| fenda | 0,2216 | 0,2217 | ruído |
+| perfil | 0,2031 | 0,2031 | cravado |
+| púrpura | 0,0341 | **0,0322** | −0,0019, para o alvo |
+| cor | 0,0121 | **0,0142** | +0,0021, para longe |
+| **skyError** | **0,7853** | **0,7857** | **+0,0004 (0,05% pior)** |
+
+**Espessura e perfil cravados a quatro casas são a PROVA da conservação de
+luminância** — a troca é matiz pura, e se eles tivessem mexido seria defeito, não
+consequência. Diagnóstico: `purp` 0,0443 → 0,0462 (alvo 0,0784), `colour` 0,052 →
+0,0499 (alvo 0,0641).
+
+**Imagem:** face-on 21.845 px de 3.083.400 (0,71%), delta máx 12/255; edge-on 27.729 px
+(0,90%), delta máx 24/255 — e a caixa envolvente do edge-on é **1731×136 px**, um risco
+fino colado no plano galáctico. A mudança pousa exatamente onde as O/B moram e em
+lugar nenhum além; é a checagem causal desta rodada.
+
+**DECISÃO: manter, contra o gate.** Pela regra que o projeto já aplicou duas vezes —
+na rodada 37 o gate preferia dose 1,5 por **0,0098** e o valor da literatura foi
+mantido; o `corewall` da rodada 34 idem; a frase registrada é "a dose vem da física, a
+nota se aceita como vem". Aqui o custo é **0,0004**, 25× menor, e nem dose existe: é
+trocar um número aleatório por uma medida. O que melhorou é o défice conhecido (púrpura
+em 60% do alvo há rodadas). **O contra-argumento fica registrado porque é legítimo:** o
+gate é o juiz e disse pior; régua que só vale quando agrada não é régua.
+
+**Suspeita com endereço para a próxima rodada, não remendo agora:** o termo `cor`
+piorar é provavelmente CONTAGEM DUPLA — as OB agora puxam azul corretamente num lugar
+onde o modelo difuso do disco já compensava a ausência delas. É o mesmo terreno da
+rodada do disco externo (termo `espessura`, 40% da nota), que terá de desfazer isso de
+qualquer forma.
+
+**O que sobra de poda**, agora que `[7]` foi promovida a fonte de cor: `dustDensity[4]`
+e `[5]` mais `gaiaObProxy[3]` e `[6]` — 2,37 MB crus. E a separação que dissolve a
+tensão com a política do manifesto continua valendo: o `data:all` gera uma versão de
+RENDERIZAÇÃO (podada e quantizada) para `public/`, e os arquivos científicos completos
+ficam versionados fora dele. Nada de dado se perde, e o visitante baixa menos.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.
