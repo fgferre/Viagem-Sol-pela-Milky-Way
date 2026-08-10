@@ -149,6 +149,31 @@ if (starMetadata.quantization.maxPositionErrorPc > 1) {
 if (starMetadata.quantization.maxLogLumError > 0.001) {
   throw new Error('Erro de luminosidade da quantização acima de 0,001 dex.');
 }
+// Onda 1a/1g: toda nomeada carrega ci (é a lei de cor única — sem ele a
+// hero volta à tabela por classe), e a identidade, quando presente, tem
+// de ser plausível (HD/HIP inteiros positivos, Gliese com prefixo).
+{
+  const [ciMin, ciMax] = starMetadata.ranges.ci;
+  for (const s of starMetadata.named) {
+    if (!Number.isFinite(s.ci) || s.ci < ciMin - 0.5 || s.ci > ciMax + 0.5) {
+      throw new Error(`Nomeada "${s.n}" sem ci plausível (${s.ci}).`);
+    }
+    if (s.hd !== undefined && (!Number.isInteger(s.hd) || s.hd <= 0)) {
+      throw new Error(`Nomeada "${s.n}" com HD inválido (${s.hd}).`);
+    }
+    if (s.hip !== undefined && (!Number.isInteger(s.hip) || s.hip <= 0)) {
+      throw new Error(`Nomeada "${s.n}" com HIP inválido (${s.hip}).`);
+    }
+    if (s.gl !== undefined && !/^(Gl|GJ|NN|Wo)\s/.test(s.gl)) {
+      throw new Error(`Nomeada "${s.n}" com Gliese sem prefixo canônico ("${s.gl}").`);
+    }
+  }
+  // âncora de regressão: se Sirius perder a identidade, o build quebrou
+  const sirius = starMetadata.named.find((s) => s.n === 'Sirius');
+  if (!sirius || sirius.hd !== 48915 || sirius.hip !== 32349) {
+    throw new Error('Sirius sem HD 48915 / HIP 32349 — identidade do sidecar quebrada.');
+  }
+}
 
 console.log(
   `Dados verificados: ${Object.keys(manifest.assets).length} ativos galácticos, ` +

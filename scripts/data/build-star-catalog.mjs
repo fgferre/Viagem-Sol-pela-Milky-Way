@@ -158,6 +158,13 @@ for (let k = 1; k < hyg.lines.length; k++) {
     v,
     ci: number(c[hyg.index.ci]),
     spect: (c[hyg.index.spect] ?? '').trim(),
+    // identidade de catálogo (Onda 1g): o HYG v4.4 é a AUTORIDADE dos ids.
+    // Medido contra o AT-HYG nas nomeadas: HIP crava 100%, mas o HD diverge
+    // em 28 (o AT-HYG dá 148479 para Antares — o HD da componente B) e o
+    // Gliese do AT-HYG vem sem o prefixo ("244A" em vez de "Gl 244A").
+    hd: number(c[hyg.index.hd]),
+    hip: number(c[hyg.index.hip]),
+    gl: (c[hyg.index.gl] ?? '').trim(),
   });
 }
 process.stdout.write(`HYG v4.4: ${photometry.size} estrelas com V.\n`);
@@ -238,14 +245,27 @@ for (let k = 1; k < athyg.lines.length; k++) {
   const con = (c[A.con] ?? '').trim();
   const label = proper || (bayer ? greekName(bayer, con) : '');
   if (label) {
-    named.push({
+    // ci nas nomeadas (Onda 1a): o mesmo B-V que já vai ao binário — é ele
+    // que unifica a cor das heroes com a lei do catálogo (bvToColor).
+    // Identidade de catálogo (Onda 1g): HD/HIP numéricos e Gliese textual,
+    // lidos das colunas que o AT-HYG já carrega. Emitida SÓ para as
+    // nomeadas — o default declarado da Decisão 2; as 328k esperam.
+    const entry = {
       n: label,
       x, y, z,
       m: Number(v.toFixed(3)),
       s: (ref?.spect || c[A.spect] || '').trim(),
       d: Number(dist.toFixed(4)),
       t: proper ? 0 : 1,
-    });
+      ci: Number(ci.toFixed(3)),
+    };
+    const hd = ref?.hd ?? number(c[A.hd]);
+    const hip = ref?.hip ?? number(c[A.hip]);
+    const gl = ref?.gl || (c[A.gl] ?? '').trim();
+    if (hd !== null) entry.hd = hd;
+    if (hip !== null) entry.hip = hip;
+    if (gl) entry.gl = gl;
+    named.push(entry);
   }
 }
 

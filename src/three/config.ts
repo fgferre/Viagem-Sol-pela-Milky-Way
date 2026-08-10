@@ -47,9 +47,13 @@ export const WORLD = {
 
 /** `t`: 0 = nome próprio (IAU), 1 = designação de Bayer. O rótulo do HUD
  *  escolhe por PROXIMIDADE, então sem o tier uma "κ Dra" perto empurraria
- *  Deneb para fora das sete vagas. */
+ *  Deneb para fora das sete vagas.
+ *  `ci`: B-V (Onda 1a) — a cor das nomeadas vem da MESMA lei do catálogo
+ *  (bvToColor), não de tabela por classe. `hd`/`hip`/`gl` (Onda 1g):
+ *  identidade de catálogo, só nas nomeadas até a Decisão 2. */
 export type NamedStar = {
   n: string; x: number; y: number; z: number; m: number; s: string; d: number; t?: number;
+  ci?: number; hd?: number; hip?: number; gl?: string;
 };
 export type StarsMeta = {
   count: number;
