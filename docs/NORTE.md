@@ -2983,10 +2983,60 @@ para números específicos; uma citação comprovadamente malcasada), não anota
 vividas do doador. Valem como MAPA de técnicas; **nenhum número deles se cita sem
 reverificar**. Vereditos: **4 migram, 2 aposentam** — detalhe por documento, fase
 consumidora e avisos na matriz do [`PLANO-ATLAS.md`](PLANO-ATLAS.md) (§2.4, §3
-item 11). Aviso que viaja junto com os que migram: seções que recomendam piso de
+item 11). Os 4 aprovados estão copiados um a um (nunca a pasta em bloco), cada
+qual com cabeçalho de veredito + avisos, em `docs/reference/atlas-estudo-*.md`;
+os anti-padrões de luz/UI em
+[`reference/ATLAS-ANTIPADROES.md`](reference/ATLAS-ANTIPADROES.md); o
+conhecimento operacional dos scripts em
+[`reference/ATLAS-CHECKLIST-PRE-FUSAO.md`](reference/ATLAS-CHECKLIST-PRE-FUSAO.md)
+(18 itens, não os 13 esperados) e as licenças em
+[`reference/ATLAS-LICENCAS.md`](reference/ATLAS-LICENCAS.md) (o "11" do plano
+confere por grep). Aviso que viaja junto com os que migram: seções que recomendam piso de
 luz ambiente (anti-padrão §7.1 do plano), SPICE em runtime (contradiz o pipeline
 VSOP amostrado da Onda 2) ou catálogo Hipparcos (regressão contra o Gaia DR3 em
 produção) NÃO orientam decisão — contrariam decisões já fechadas da casa.
+
+### Sonhos herdados do atlas (garimpo do ROADMAP + sweeps, 2026-08-10)
+
+Garimpados de ~4.300 linhas de sweeps e hunts do doador com um filtro dito:
+sonho é o que o VISITANTE sentiria, nunca realizado, que sobrevive à morte do
+atlas e que a matriz da fusão ainda não cobre. **Sem onda atribuída — entram
+quando o dono quiser.** O material descartado tinha três caras: bugs e infra do
+código do doador (morrem com ele), paridade visual com Gaia Sky (excluída por
+doutrina) e ~15 ideias que são instâncias da camada de fatos relacionais que a
+matriz já cobre (tempo de luz, peso no planeta, zona habitável…) — backlog de um
+item decidido, não sonho novo.
+
+- **Pisar num rochoso** *(já na matriz como Reabre, custeado)*: céu e câmera são
+  baratos — o céu de Marte é literalmente o céu que o motor já desenha (paralaxe
+  nula, PSF, extinção e disco solar certo já pagos); o custo inteiro é o
+  TERRENO: elevação MOLA (463 m/px, público) + regolito. Uma onda, não um sprint.
+- **Caçador de fenômenos**: perguntar "quando", não só "onde" — a próxima
+  conjunção Vênus-Júpiter, a oposição de Marte, a visibilidade de um eclipse — e
+  a máquina do tempo leva até lá. A máquina do tempo da matriz é scrub passivo;
+  isto é busca ATIVA sobre as efemérides que a Onda 2 já traz.
+- **Céu profundo honesto**: nebulosas, aglomerados e galáxias como categoria
+  própria de objeto, em tamanho angular REAL — Andrômeda ocupa ~3° do céu, 6× a
+  Lua. Expansão de CONTEÚDO (catálogo OpenNGC/Messier), não de render.
+- **Vizinhança estelar**: da estrela focada, a lista das vizinhas por distância
+  real, saltável uma a uma — ataca de frente a ilusão da cúpula achatada.
+- **A Lua conferível hoje à noite**: fase e fração iluminada do instante
+  simulado; quando o instante é "agora", o visitante sai de casa e confere no
+  céu. É o único objeto com verificação pessoal imediata. *(Confiança moderada:
+  pode ser absorvido pela camada de fatos relacionais — o valor único é a ponte
+  com o céu real.)*
+- **Catálogo explorável por propriedade**: filtrar por excentricidade, ano de
+  descoberta, rotação retrógrada — descobrir PADRÕES, não só achar por nome.
+  Ensina a investigar: perguntar → filtrar → comparar.
+
+### Dívida declarada: redundância do canal de cor (herança da Onda 0)
+
+O atlas prometia modos colorblind/alto-contraste e nunca os teve (3 campos
+órfãos de store — o placeholder morreu na matriz). **A dívida não morre com
+ele**: num produto onde a COR é o dado (temperatura, classe espectral, poeira),
+acessibilidade não é filtro de UI — é decidir se a informação que a cor carrega
+tem um canal redundante (forma, rótulo, brilho). Sem onda atribuída; pesa de
+verdade quando a UI do modo Atlas nascer (Onda 5+).
 
 ## Decisões fechadas
 

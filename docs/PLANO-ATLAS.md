@@ -172,7 +172,7 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 | CreditsModal → **Créditos (dados de atribuição)** | Migra | Ler a linha pelo dado, não pelo modal: **o dado de licença migra, o componente React não**. Créditos no HUD + README — atribuição é dado |
 | **`useDialogFocus` + reduced-motion + aria-live** | **Renasce (reescrita com espec herdada)** *(era Migra)* | `src/hooks/useDialogFocus.ts` é hook React amarrado à árvore de componentes do atlas; o HUD da Viagem é outra árvore. Migra o **contrato de a11y**, que é o que importa e é verificável: foco preso no diálogo, devolução do foco ao gatilho no fechamento, `Esc`, região `aria-live` para mudança de estado, e respeito a `prefers-reduced-motion`. A ideia estrutural — **um lugar só para foco preso e Escape** — atravessa. Smoke de foco/aria no `rodada.mjs` é o juiz |
 | **UI Scale** | **Renasce (reescrita com espec herdada)** *(era Migra)* | O trabalho real nunca foram as ~12 linhas de slider — é a **auditoria dos 37 `px` que carregam texto** no `hud.css` (contra 73 `rem` e 51 `clamp/vw`). Migra a evidência da medição e o contrato `?ui=` + `font-size` no root. O componente é escrito no `Ajustes.tsx` da casa |
-| Colorblind / High Contrast | Aposenta | Nunca houve implementação: 3 campos de store órfãos e um tipo. **Mas a dívida fica**: num produto onde a cor É o dado, isso não é filtro de UI — é decidir se o canal de cor carrega informação redundante. Nota de dívida no NORTE |
+| Colorblind / High Contrast | Aposenta | Nunca houve implementação: 3 campos de store órfãos e um tipo. **Mas a dívida fica**: num produto onde a cor É o dado, isso não é filtro de UI — é decidir se o canal de cor carrega informação redundante. Nota de dívida no NORTE *(registrada na Onda 0)* |
 
 ### 2.4 Conteúdo — 10 linhas
 
@@ -182,13 +182,13 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 |---|---|---|
 | `celestialBodies.ts` — 45 corpos × 6 campos editoriais | Melhora | `public/data/atlas/corpos.json` `{pt,en}`; tradução curada **e redação de Miranda** = trabalho editorial do dono, declarado |
 | **`i18n/common.json`** | Migra | O `fidelityBadge` é a **tese do produto em copy, já em pt-BR**: "O que nesta vista é ajustado e o que é medido"; FORA DE ESCALA vs ESCALA REAL; BRILHO REAL vs ASSISTIDO. Mais o `estimatedNote`, que separa modelado de medido, **e as 6 chaves do sub-bloco `wikipedia`, que seguem a integração revertida (Onda 8)**. Copy direta no HUD; **i18next não entra**; `en/common.json` guardado em `docs/` como referência de tradução. Prosa, não código |
-| **4 estudos de `public/Docs/` lidos e aprovados na Onda 0** — *Implementação Visual Espacial Didática*; *Otimização de Visualização em Simulador Solar*; *Tecnologia NASA Eyes: Câmera e Navegação*; *Visualização de Órbitas e UX Espacial* | Migra | `docs/reference/`, com fase consumidora e aviso POR documento: o 1º → Onda 4 + Decisão 3 (PSC, log-z, reversed-z, clamp de 2–5 px para billboard; AVISO: a seção "cheats visuais" recomenda o piso de luz ambiente que §7.1 condena). O 2º → Ondas 4–5 (declutter de rótulos/órbitas: corte por magnitude aparente, tesselagem adaptativa 16 seg/ε 2 px, LOD 50/5/2 px, clustering em grade 50×50 px com histerese +20% — problema que a casa ainda não resolveu em lugar nenhum; o pseudocódigo Unity/C# NÃO atravessa). O 3º → Ondas 5/4 (SLERP + dynamic parenting + damping ≈ espec da câmera com foco da Onda 5; atribuições "o Eyes faz X" são inferência de fórum, não fato). O 4º → Decisão 3 da Onda 6 (log-z E reversed-z com fórmula; a seção SPICE reabriria a decisão de dados já fechada — não seguir). **Achado comum: os seis são relatórios de deep-research por IA** (datas de acesso uniformes, fontes secundárias para números específicos, uma citação malcasada) — valem como mapa, nenhum número se cita sem reverificar |
+| **4 estudos de `public/Docs/` lidos e aprovados na Onda 0** — *Implementação Visual Espacial Didática*; *Otimização de Visualização em Simulador Solar*; *Tecnologia NASA Eyes: Câmera e Navegação*; *Visualização de Órbitas e UX Espacial* | Migra | `docs/reference/`, com fase consumidora e aviso POR documento: o 1º → Onda 4 + Decisão 3 (PSC, log-z, reversed-z, clamp de 2–5 px para billboard; AVISO: a seção "cheats visuais" recomenda o piso de luz ambiente que §7.1 condena). O 2º → Ondas 4–5 (declutter de rótulos/órbitas: corte por magnitude aparente, tesselagem adaptativa 16 seg/ε 2 px, LOD 50/5/2 px, clustering em grade 50×50 px com histerese +20% — problema que a casa ainda não resolveu em lugar nenhum; o pseudocódigo Unity/C# NÃO atravessa). O 3º → Ondas 5/4 (SLERP + dynamic parenting + damping ≈ espec da câmera com foco da Onda 5; atribuições "o Eyes faz X" são inferência de fórum, não fato). O 4º → Decisão 3 da Onda 6 (log-z E reversed-z com fórmula; a seção SPICE reabriria a decisão de dados já fechada — não seguir). **Achado comum: os seis são relatórios de deep-research por IA** (datas de acesso uniformes, fontes secundárias para números específicos, uma citação malcasada) — valem como mapa, nenhum número se cita sem reverificar. **FEITO na Onda 0**: copiados um a um com cabeçalho de veredito + avisos em `docs/reference/atlas-estudo-*.md` |
 | **2 `.txt` de sessão em `public/Docs/`** | Aposenta | Documentam abordagens **rejeitadas**; o `rotationOffsetDegrees` sobrevive só como lápide num comentário |
 | **2 estudos de `public/Docs/` lidos e reprovados na Onda 0** — *Otimização da Posição da Câmera em Visualização*; *Replicando Starfield NASA Eyes* | Aposenta | Custo declarado em §3, item 11: o da câmera está inteiramente superado pela linha `PrivilegedPosition` (§2.3), que julgou o CÓDIGO real com testes e valores medidos — o `.md` era a pesquisa de fundo, e o código é o oráculo mais forte; o do starfield recomenda o que a casa já superou (Hipparcos ~118k contra o Gaia DR3 328k em produção; SPICE/WASM contra o VSOP amostrado da Onda 2) e seu único gancho real (log-depth/floating origin) se repete nos 4 irmãos que migram |
 | `APRESENTACAO.md` | Migra | `docs/reference/` |
-| `README.md`/`HANDOFF.md` | Aposenta | O procedimento **não mora neles** — mora nos cabeçalhos dos scripts e no manifest. Vira checklist de 13 itens (Onda 0) |
+| `README.md`/`HANDOFF.md` | Aposenta | O procedimento **não mora neles** — mora nos cabeçalhos dos scripts e no manifest. **Virou checklist na Onda 0 — com 18 itens, não os 13 previstos** (`docs/reference/ATLAS-CHECKLIST-PRE-FUSAO.md`) |
 | `lessons.md` — triagem completa M1–M6, L37–L42 | Melhora | Cada lição vira regra com SHA ou linha histórica na jurisprudência. Nenhuma morre fora da ata. **FEITA na Onda 0 (2026-08-10):** 13 lições registradas na jurisprudência do NORTE — correção de fato: eram **13, não 10** (L37–L41 vivem aninhadas DENTRO de M1, e o id L41 está duplicado no doador: duas lições distintas com o mesmo número, registradas como L41-a/L41-b; L1–L32 só existem no git do atlas, dobradas nas M-regras). 12 viraram regra, 1 linha histórica (L41-a, precedente da própria doutrina) |
-| ROADMAP + sweeps de oportunidade | Melhora | Seção "sonhos herdados" no NORTE |
+| ROADMAP + sweeps de oportunidade | Melhora | Seção "sonhos herdados" no NORTE. **FEITA na Onda 0**: 5 sonhos garimpados de ~4.300 linhas (caçador de fenômenos; céu profundo honesto; vizinhança estelar; Lua conferível; catálogo explorável por propriedade) + "pisar num rochoso" custeado; descartes registrados com motivo |
 | Roteiros de tour | Renasce | Shots roteirizados do Director |
 
 ### 2.5 Itens novos descobertos pela revisão — 6 linhas
@@ -275,7 +275,7 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 7. **Colorblind / High Contrast** — custo: 3 campos órfãos. Morre o placeholder, **não a dívida**.
 8. **Modo Superfície 1ª pessoa** — custo ≈ 0, porque o modo nunca entregou o que o nome promete: o chão era inalcançável por construção (`minDistance = raio × 1,1`, 339 km sobre Marte), e o modo faz três chamadas de rotação e nenhuma translação. O que valia — a captura de ponteiro — renasce como linha própria.
 9. **Os 2 `.txt` de sessão de `public/Docs/`** — custo zero no produto: documentam abordagens **rejeitadas** (o `rotationOffsetDegrees` sobrevive só como lápide num comentário). Ação positiva associada: não copiar o diretório em bloco, porque o site publica a cada commit. *(Os 6 `.md` do mesmo diretório foram lidos na Onda 0: 4 migram; os 2 reprovados são o item 11.)*
-10. **`README`/`HANDOFF`** — custo zero **depois** do checklist de 13 itens: `HORIZONS_MODE=subpoint` como único oráculo de orientação, o risco de mistranscrição do kernel NAIF (um W₀ errado renderiza um planeta perfeitamente plausível), `bake:earth-pbr` pela Wayback Machine, a allowlist de WebP que desperdiçou 53 MB, e `download-textures.js` órfão que abre o write stream antes de checar o HTTP.
+10. **`README`/`HANDOFF`** — custo zero **depois** do checklist de 13 itens: `HORIZONS_MODE=subpoint` como único oráculo de orientação, o risco de mistranscrição do kernel NAIF (um W₀ errado renderiza um planeta perfeitamente plausível), `bake:earth-pbr` pela Wayback Machine, a allowlist de WebP que desperdiçou 53 MB, e `download-textures.js` órfão que abre o write stream antes de checar o HTTP. **Checklist FEITO na Onda 0 — com 18 itens, não 13** (`docs/reference/ATLAS-CHECKLIST-PRE-FUSAO.md`); os cinco acima estão todos lá, com `arquivo:linha`.
 11. **Os 2 estudos de `public/Docs/` reprovados na leitura da Onda 0** — *Otimização da Posição da Câmera em Visualização* e *Replicando Starfield NASA Eyes*. Custo ≈ zero, dito na cara: do primeiro, cada número reaproveitável (d = r/sin(θ/2), margem 1,2, fase 30°, teto solar 70°, viés 0,78, blend de up-vector, oclusão por raycast) já está — com mais fidelidade — na linha `PrivilegedPosition` (§2.3), que julgou o CÓDIGO real, testado e comentado; o `.md` era a pesquisa de fundo, e o código é o oráculo mais forte. Do segundo, as recomendações centrais REGREDIRIAM a casa (catálogo Hipparcos ~118k contra o Gaia DR3 328k já em produção com gates; SPICE via WASM contra o VSOP amostrado da Onda 2), e o único gancho real (log-depth/floating origin) se repete nos quatro irmãos que migram. Perdem-se fórmulas de manual (Ballesteros, Pogson) que estão a uma busca de distância.
 
 **Nenhuma das onze tem custo sentível pelo visitante.** As três perdas que o plano anterior chorava se dissolveram: Superfície morre sem dor porque nunca existiu; Wikipedia migra (sob condição declarada); a busca por catálogo renasce para as nomeadas e o resto vira decisão de payload e de algoritmo, não perda.
@@ -294,24 +294,32 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 
 **Onda 0 — Registro.** Decisão "O Atlas vive aqui" + pilar motor estelar no NORTE; **doutrina de travessia (§0) registrada como decisão de projeto, com o testemunho do dono citado**; triagem completa do `lessons.md`; sonhos herdados — **incluindo "pisar num rochoso" com o custeio da revisão: céu e câmera baratos (paralaxe Terra–Marte nula, PSF, extinção e disco solar já pagos), terreno com elevação MOLA (463 m/px) é uma onda inteira**; estudos em `docs/reference/`. **Novo:** checklist de pré-fusão de 13 itens; **os anti-padrões registrados (§7) copiados para `docs/reference/` como leitura obrigatória de quem for escrever a lei de luz**; nota de dívida "redundância do canal de cor"; regra de auditoria (uma linha = um artefato; certo-pelo-motivo-errado é falha; arquivo não lido não recebe veredito; **se o destino já existe na casa, atravessa o requisito e não o código**); **não copiar `public/Docs/` nem `public/textures/` em bloco**; arrumação das 11 entradas de licença no manifest — o dono já confirmou que **todas as imagens são livres**, então isto é anotação, não bloqueio; preservar as atribuições dos regimes que as pedem (CC BY, CC BY-SA do HYG). *Gate:* dez lições contabilizadas; **os 6 `.md` de `public/Docs/` abertos e sentenciados** — sem isso o inventário não está completo.
 
-> **Estado da Onda 0 (2026-08-10): o núcleo de registro está FEITO; a onda segue
-> ABERTA com pendências nomeadas.** Feito nesta data: (1) decisão "O Atlas vive
-> aqui" + doutrina de travessia (com o testemunho do dono) + pilar do motor
-> estelar registrados no NORTE, inclusive como linha na tabela de Decisões
-> fechadas; (2) triagem completa do `lessons.md` na jurisprudência do NORTE —
-> e o gate "dez lições" estava errado por baixo: são **13** (correção de fato em
-> §2.4), todas contabilizadas, 12 regras + 1 linha histórica; (3) os 6 `.md`
-> abertos e sentenciados por leitores independentes — **4 Migra, 2 Aposenta**,
-> com matriz, placar e §3 atualizados (o gate dos `.md` está CUMPRIDO, e derrubou
-> a contagem dupla registrada em §2.6). Pendências que continuam DENTRO da onda:
-> copiar os 4 estudos aprovados para `docs/reference/` com os avisos anexados
-> (lembrando: **não copiar `public/Docs/` em bloco** — o site do doador publica a
-> cada commit); anti-padrões de §7 copiados para `docs/reference/` como leitura
-> obrigatória da lei de luz; sonhos herdados no NORTE (ROADMAP + sweeps + "pisar
-> num rochoso" com o custeio da revisão); checklist de pré-fusão de 13 itens;
-> nota de dívida "redundância do canal de cor" no NORTE; anotação das 11
-> entradas de licença no manifest (anotação, não bloqueio — o dono confirmou que
-> todas as imagens são livres).
+> **Estado da Onda 0 (2026-08-10): FEITA, com gate cumprido e três correções de
+> fato.** O registro: (1) decisão "O Atlas vive aqui" + doutrina de travessia
+> (com o testemunho do dono) + pilar do motor estelar no NORTE, inclusive como
+> linha na tabela de Decisões fechadas; (2) triagem completa do `lessons.md` na
+> jurisprudência do NORTE — **correção de fato nº 1: são 13 lições, não as dez
+> do gate** (L37–L41 aninhadas dentro de M1; id L41 duplicado no doador), todas
+> contabilizadas, 12 regras + 1 linha histórica; (3) os 6 `.md` abertos e
+> sentenciados — **4 Migra, 2 Aposenta**, derrubando a contagem dupla registrada
+> em §2.6; os 4 aprovados copiados um a um (nunca a pasta em bloco) para
+> `docs/reference/atlas-estudo-*.md`, cada qual com cabeçalho de veredito +
+> avisos; (4) anti-padrões de §7 extraídos verbatim em
+> `docs/reference/ATLAS-ANTIPADROES.md`; (5) sonhos herdados no NORTE — 5
+> garimpados de ~4.300 linhas de sweeps/hunts, mais "pisar num rochoso"
+> custeado; o descarte está registrado (bugs/infra do doador morrem com ele;
+> ~15 ideias eram instâncias da camada de fatos relacionais já coberta); (6)
+> nota de dívida "redundância do canal de cor" no NORTE; (7) checklist de
+> pré-fusão em `docs/reference/ATLAS-CHECKLIST-PRE-FUSAO.md` — **correção de
+> fato nº 2: são 18 itens, não ~13** (as armadilhas vinham acopladas em trios
+> nos mesmos scripts; os 5 itens nomeados pelo plano estão todos lá), 13 para a
+> Onda 2, 4 para a Onda 6, 1 de doutrina; (8) licenças anotadas em
+> `docs/reference/ATLAS-LICENCAS.md` — **o "11" do plano CONFERE por grep**
+> (`license: "not documented in repo"` aparece exatamente 11×; no sentido amplo
+> são 14), com as atribuições a preservar listadas (DAMIT/ESO/SSS CC BY, USGS
+> cite-os-autores, e o HYG CC BY-SA que NÃO mora no manifest e vale para a casa
+> já hoje). Ressalva honesta do checklist: o `textureVariantManifest.ts` do
+> doador não foi pente-fineado — a bancada da Onda 6 deve abri-lo.
 
 **Onda 1 — Fundação de perf, consistência interna e HUD invisível.** (a) sidecar regenerado com `ci` e `ids`; (b) F0: `bvToColor(ci)` com tabela literal de B-V das heroes; (c) badge de honestidade + 3 tiers de label; (d) **fallback de WebGL reescrito** sobre o `LoadingVeil`/`onRetry` da casa, herdando só o contrato (detectar antes do init, mensagem acionável, retry); **(e) teto de GL aplicado ANTES do init** — reescrito com as 4 defesas herdadas por extenso (memoizar o probe; `webgl2` e depois `webgl` na mesma canvas; `loseContext()` + `canvas.remove()`; `catch` para browsers que lançam), e a regra "só rebaixa quando o renderer se nomeia software"; é onde a alocação congela; **(f) `preferencias.ts`, lido no construtor do engine** junto do `?q=` (aqui e não na Onda 5 porque o tier tem de valer antes do bake); **(g) seção de identidade no `sc1`** — *default declarado: sem a Decisão 2, a Onda 1 emite identidade só para as 1.726 nomeadas (~17 KB), e o recorte das 328k (+3,3 MB crus) espera a decisão sem segurar a onda*. *Gate:* `sky-capture.mjs` — só heroes e Sol-distante mudam; diff do sidecar auditado; **num contexto SwiftShader forçado o tier nasce performance**; **num contexto sem GL o card aparece e o retry funciona**; **a seção de identidade valida contra a fonte — HD/HIP/Gliese conferidos por amostra contra o HYG v4.4, e o tamanho do `sc1` medido pelo build antes e depois**; a URL continua sendo a fonte de verdade e a captura headless enxerga o mesmo que a tela; **revisão de olhos frescos antes do merge**.
 
