@@ -2912,12 +2912,89 @@ do GLSL — e expõe lado a lado o `hR` 5200 contra os 2600 das partículas (aud
 2026-08-03, item 2) e o `hRThick` maior que o `hR` (item 3). O template imprime
 exatamente os mesmos literais; a prova é o `catsub=0` bit-idêntico.
 
+## O Atlas vive aqui (fusão atlas-orbital → Viagem, Onda 0, 2026-08-10)
+
+O plano completo é [`docs/PLANO-ATLAS.md`](PLANO-ATLAS.md) — matriz de 84 linhas,
+roadmap em ondas 0–9, riscos e anti-padrões. Aqui fica só o que decide:
+
+- **A decisão.** O produto é um só — **Mar de Estrelas**: o filme de 5min21 leva o
+  visitante do Sol a Sgr A*, e perto de casa (janela `DISC_FADE0/1` de
+  `world/novoSol.ts`) vive **o Atlas** — o sistema solar explorável, didático e
+  cientificamente honesto do atlas-orbital, renascido como modo do mesmo Director,
+  sem loading e sem segundo motor. Ao final da fusão (Onda 9) o repositório
+  atlas-orbital vira read-only. Frase de identidade: *"a jornada te leva; o Atlas
+  te deixa ficar."*
+- **A doutrina de travessia** (decisão do dono, registrada como fato de projeto): o
+  atlas foi feito no impulso, com modelos de IA anteriores; a iluminação de lá é
+  super bugada; várias escolhas de interface são pobres. Logo, **o código do atlas
+  é a especificação do problema, não o fornecedor da solução**. Régua de três
+  categorias: (1) dados e oráculos — efemérides, coeficientes IAU, fixtures,
+  testes de regressão — **migram verbatim**; (2) ferramentas offline cuja saída um
+  gate confere contra fonte externa **podem migrar**; (3) código de runtime e UI
+  **renasce por padrão** — só diz "Migra" exibindo duas provas: qualidade medida
+  com o arquivo aberto E revisão de olhos frescos na hora do merge. Contrapeso
+  igualmente vinculante: **reescrever o que um oráculo externo já protege é
+  adicionar risco sem ganho** — mistranscrição de um W₀ renderiza um planeta
+  perfeitamente plausível e nenhum olho pega.
+- **O pilar novo: o motor estelar.** O NovoSol (14 módulos de `world/sol/`, 4.960
+  linhas: convecção GPU, ciclo, flares, CME, coroa volumétrica) deixa de ser um
+  singleton esculpido para o Sol e vira `stellarBody.ts` parametrizado por
+  `{teffK, radiusPc, rotPeriodDays, activityLevel, convective}`. O Sol vira a
+  instância nº 1, com gate pixel-igual. A peça que fecha o desenho vem do atlas:
+  `descriptorFromCatalog` (TS puro, zero import de render) roda com exatamente os
+  dois campos que o `sc1` já carrega — `ci` e `logLum` — e entrega temperatura
+  (Ballesteros), classe MK, classe de luminosidade e raio (Stefan-Boltzmann) para
+  as 328.749 estrelas por **zero byte de payload novo**. Oráculo: 7
+  verdades-terreno publicadas (Sol G2V, Sirius A1V, Vega A0V, Proxima M5.5V,
+  Betelgeuse M2Ia, Antares, Sirius B DA2).
+
+### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
+
+**Correção de fato na triagem:** o gate da Onda 0 falava em "dez lições"; o
+arquivo tem **13** — M1–M6 no topo, L41/L42 soltas e L37–L41 aninhadas DENTRO de
+M1, com o id **L41 duplicado no doador** (duas lições distintas com o mesmo
+número; aqui L41-a e L41-b). As lições antigas L1–L32 só existem no histórico
+git do atlas — cada M-regra declara quais dobrou ("Folds"); ficam registradas
+como camada histórica, sem linha própria. Nenhuma lição morreu fora da ata:
+**12 viram regra, 1 vira linha histórica.**
+
+| Lição | Veredito | O que fica |
+|---|---|---|
+| **M1 — a verdade é o runtime ligado, não a prosa** | Regra | Toda afirmação sobre comportamento (docstring, síntese de agente, mensagem de commit, memória) é hipótese até verificada no artefato executado; nada se declara fechado sem percorrer o caminho real do usuário em runtime. Para PORTES: ler fonte E alvo no estado atual, diff literal (nunca paráfrase), `file:line` para toda constante. Cicatriz do doador: f16ca78 declarou "MVP CLOSED" com um early-return vivo; auditoria externa fria achou 3+4 bugs que o verify interno tinha aprovado — **revisor que compartilha o modelo mental do implementador não é revisor**, que é exatamente por que os gates de travessia exigem olhos frescos |
+| **M2 — menor mudança; faxina não é opcional** | Regra | Um diff = um sintoma, defendido pela evidência daquele sintoma; colateral é commit separado. Ao trocar estratégia, grep pelos símbolos da antiga e apagar chamadores mortos NO MESMO commit — código morto entregue é dívida não paga |
+| **M3 — portam-se pixels, não fórmulas** | Regra | Efeito visual portado se valida contra a SAÍDA da referência (que pixel/alfa ela emite para entradas de amostra), não contra equivalência matemática — as constantes de calibração moram nos wrappers host-side, não no shader. Regra viva de TODA travessia atlas→casa |
+| **M4 — higiene de hot path 60 Hz** | Regra (generalizada; os exemplos são do stack do doador) | Código por-frame não aloca, não constrói, não percorre e não escreve estado a menos que uma saída observável tenha mudado (fingerprint antes de escrever; scratch em escopo de módulo, reutilizado) |
+| **M5 — um gate só pega desvio dentro do próprio escopo** | Regra | Para cada instrumento, nomear o que ele NÃO vê e cobrir o ponto cego; instrumento novo se valida rodando num estado sabidamente bom E num sabidamente quebrado — leituras iguais = o instrumento é o bug. A casa já pagou a mesma lição sozinha (harness que gritam; md5 igual prova igualdade, diferente não prova nada) — agora é regra dita |
+| **M6 — unidades explícitas em toda fronteira** | Regra | Valor numérico não cruza fronteira de módulo sem conversão nomeada e centralizada; para conferir número de terceiro, IMPORTAR o conversor do projeto (re-derivar é onde o bug novo entra); fonte legível por máquina não se transcreve à mão. Cicatriz do doador: viés de ~77 s / ~1,0° em Phobos por `Date.parse` (UT) contra provider em TDB. Vale ouro na Onda 2 (efemérides) |
+| **L37 — alegação de render exige smoke de runtime** | Regra | Mudança visual não se declara entregue sem smoke em navegador real exercitando o caminho do usuário; "verificação adiada para o usuário" não é aceitável para alegação visual |
+| **L38 — consistência entre documentos é passo próprio** | Regra | Cada fato vive num lugar canônico e os demais linkam; depois de editar um detalhe, grep cross-documento pelas referências antes de declarar pronto (editar a wave não propaga sozinho para o resumo) |
+| **L39 — reusar padrão resolvido; helper dormente não conta** | Regra (a metade Gaia-específica fica histórica) | Antes de inventar infra nova para precisão/escala, mapear ao padrão que o motor já tem; e conferir que um helper construído para o problema está LIGADO ao caminho que precisa dele — o atlas entregou o Vector3Q dormente por meses enquanto o Sol falhava em silêncio na escala de parsec |
+| **L40 — "conferido com a fonte" exige nome E semântica** | Regra | Portar valor = traçá-lo da declaração até o consumidor real e conferir unidades/dimensões dos dois lados; nunca confiar no nome (o `getSolidAngle()` da fonte devolvia raio angular, não esterradianos — regressão 2× na distância de pouso por 4 commits) |
+| **L41-a — a constituição do produto vence a fonte-guia** | **Linha histórica** (precedente da doutrina) | O atlas já tinha aprendido com o Gaia Sky exatamente o que a doutrina de travessia agora aplica ao próprio atlas: fonte externa é referência opcional, não lei de produto; paridade histórica com o doador nunca é gate. Registrada como precedente, não como regra nova — a doutrina (acima) já a contém |
+| **L41-b — portar constante ≠ portar experiência** | Regra | Antes de ajustar um número copiado, andar o grafo de chamadas da fonte do evento de entrada à mutação final e espelhar a FORMA do fluxo (loop de controle, estado de momentum, condição de parada); constante vem por último. Cicatriz: 5 commits ajustando um sigmoide (12→60→60+17) sem mudar o "snap" relatado — a reescrita no nível de FLUXO resolveu |
+| **L42 — mensagem de commit também é prosa** | Regra | Reabrir item concluído só contra o DIFF (`git log --all -S "<marcador>"` + ~30 s de checagem do código), nunca contra mensagem de commit ou linha de tabela — reabrir errado custa como fechar errado (o doador reabriu por 6 dias um estágio já entregue) |
+
+### Os 6 estudos de `public/Docs/` — sentenciados (gate da Onda 0, 2026-08-10)
+
+Lidos um a um por leitores independentes, com arquivo aberto. Achado comum: **os
+seis são relatórios de "deep research" gerados por IA** (notas de rodapé com data
+de acesso uniforme; fontes secundárias — Reddit, StackOverflow, YouTube — citadas
+para números específicos; uma citação comprovadamente malcasada), não anotações
+vividas do doador. Valem como MAPA de técnicas; **nenhum número deles se cita sem
+reverificar**. Vereditos: **4 migram, 2 aposentam** — detalhe por documento, fase
+consumidora e avisos na matriz do [`PLANO-ATLAS.md`](PLANO-ATLAS.md) (§2.4, §3
+item 11). Aviso que viaja junto com os que migram: seções que recomendam piso de
+luz ambiente (anti-padrão §7.1 do plano), SPICE em runtime (contradiz o pipeline
+VSOP amostrado da Onda 2) ou catálogo Hipparcos (regressão contra o Gaia DR3 em
+produção) NÃO orientam decisão — contrariam decisões já fechadas da casa.
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.
 
 | Decisão | Por quê | Reabre se |
 |---|---|---|
+| **O Atlas vive aqui; o código do atlas é especificação, não fornecedor** | Testemunho do dono sobre a qualidade do doador + crítica de olhos frescos que o confirmou arquivo a arquivo (PLANO-ATLAS §7: nove anti-padrões de luz com `arquivo:linha`) | Uma linha específica da matriz, com arquivo aberto e medição na mão — nunca por atacado |
 | **Octree: não** | Serve para podar conjunto fixo e grande. Aqui o VBO é estático e a árvore podaria ~3,7% dos vértices ao custo de ~193 draw calls | Conjunto estático > 2 M pontos **e** `WEBGL_multi_draw` plumbado |
 | **Floating origin: feito por reconstrução relativa à câmera (rodada 13), não por rebase global** | A 25 kpc o quantum f32 é 1,5·10⁻³ pc ≈ 1,7 px de tremor a 1 pc. As cascas — a única geometria resolvida perto da câmera longe do Sol — reconstroem posição por célula inteira + fração e projetam com só a rotação do MV: nenhum operando de kpc no caminho. Rebase global do grafo não é necessário | Outra camada passar a resolver geometria perto da câmera longe do Sol |
 | **Log-depth: não** | A cena tem um único objeto opaco com `depthWrite`; z-fighting precisa de dois | Entrar geometria resolvida (planetas, malhas) |
