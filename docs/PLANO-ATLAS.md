@@ -321,7 +321,53 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 > já hoje). Ressalva honesta do checklist: o `textureVariantManifest.ts` do
 > doador não foi pente-fineado — a bancada da Onda 6 deve abri-lo.
 
-**Onda 1 — Fundação de perf, consistência interna e HUD invisível.** (a) sidecar regenerado com `ci` e `ids`; (b) F0: `bvToColor(ci)` com tabela literal de B-V das heroes; (c) badge de honestidade + 3 tiers de label; (d) **fallback de WebGL reescrito** sobre o `LoadingVeil`/`onRetry` da casa, herdando só o contrato (detectar antes do init, mensagem acionável, retry); **(e) teto de GL aplicado ANTES do init** — reescrito com as 4 defesas herdadas por extenso (memoizar o probe; `webgl2` e depois `webgl` na mesma canvas; `loseContext()` + `canvas.remove()`; `catch` para browsers que lançam), e a regra "só rebaixa quando o renderer se nomeia software"; é onde a alocação congela; **(f) `preferencias.ts`, lido no construtor do engine** junto do `?q=` (aqui e não na Onda 5 porque o tier tem de valer antes do bake); **(g) seção de identidade no `sc1`** — *default declarado: sem a Decisão 2, a Onda 1 emite identidade só para as 1.726 nomeadas (~17 KB), e o recorte das 328k (+3,3 MB crus) espera a decisão sem segurar a onda*. *Gate:* `sky-capture.mjs` — só heroes e Sol-distante mudam; diff do sidecar auditado; **num contexto SwiftShader forçado o tier nasce performance**; **num contexto sem GL o card aparece e o retry funciona**; **a seção de identidade valida contra a fonte — HD/HIP/Gliese conferidos por amostra contra o HYG v4.4, e o tamanho do `sc1` medido pelo build antes e depois**; a URL continua sendo a fonte de verdade e a captura headless enxerga o mesmo que a tela; **revisão de olhos frescos antes do merge**.
+**Onda 1 — Fundação de perf, consistência interna e HUD invisível.** (a) sidecar regenerado com `ci` e `ids`; (b) F0: `bvToColor(ci)` com tabela literal de B-V das heroes; (c) ~~badge de honestidade + 3 tiers de label~~ — **ADIADO para a Onda 5 por decisão do dono (2026-08-10)**: o item estava subespecificado (nenhuma seção do plano diz o que o selo afirmaria ANTES de existir o modo Atlas, nem o que seria o 3º tier de rótulo — e nem o gate desta onda o cobrava), e selo sem eixo para reportar é exatamente a "diluição do wow" que §6 teme; (d) **fallback de WebGL reescrito** sobre o `LoadingVeil`/`onRetry` da casa, herdando só o contrato (detectar antes do init, mensagem acionável, retry); **(e) teto de GL aplicado ANTES do init** — reescrito com as 4 defesas herdadas por extenso (memoizar o probe; `webgl2` e depois `webgl` na mesma canvas; `loseContext()` + `canvas.remove()`; `catch` para browsers que lançam), e a regra "só rebaixa quando o renderer se nomeia software"; é onde a alocação congela; **(f) `preferencias.ts`, lido no construtor do engine** junto do `?q=` (aqui e não na Onda 5 porque o tier tem de valer antes do bake); **(g) seção de identidade no `sc1`** — *default declarado: sem a Decisão 2, a Onda 1 emite identidade só para as 1.726 nomeadas (~17 KB), e o recorte das 328k (+3,3 MB crus) espera a decisão sem segurar a onda*. *Gate:* `sky-capture.mjs` — só heroes e Sol-distante mudam; diff do sidecar auditado; **num contexto SwiftShader forçado o tier nasce performance**; **num contexto sem GL o card aparece e o retry funciona**; **a seção de identidade valida contra a fonte — HD/HIP/Gliese conferidos por amostra contra o HYG v4.4, e o tamanho do `sc1` medido pelo build antes e depois**; a URL continua sendo a fonte de verdade e a captura headless enxerga o mesmo que a tela; **revisão de olhos frescos antes do merge**.
+
+> **Estado da Onda 1 (2026-08-10): FEITA** — (c) adiado para a Onda 5 por
+> decisão do dono (acima); os outros seis itens entregues na branch `onda-1`
+> e mergeados com o gate integral cumprido:
+> **Gate de ambiente:** SwiftShader forçado → o app nasce `performance`
+> (headless CDP, sonda detectou o renderer software antes da alocação);
+> sem GL → o véu mostra "A VIAGEM NÃO PÔDE COMEÇAR" com mensagem acionável,
+> `role="alert"` e retry.
+> **Gate de dados:** `stars.bin` BIT-IDÊNTICO em três regenerações
+> (md5 b6d21b82…, 2.958.741 bytes); 1.726 nomeadas com nomes/ordem/campos
+> velhos intactos; sidecar 287.782 → 394.139 bytes (o "~17 KB" do plano era
+> estimativa de seção binária; em JSON custa mais — pago e dito); ci em
+> 1.726/1.726; ids validados por amostra contra o HYG v4.4 (Sirius
+> HD 48915/HIP 32349 virou âncora de regressão no `verify-assets`).
+> **Correção de fato na travessia dos ids:** AT-HYG e HYG v4.4 DIVERGEM —
+> 28 HDs errados no AT-HYG (dava a Antares o HD da componente B) e Gliese
+> sem prefixo canônico; o HYG v4.4 virou a autoridade ÚNICA (após a revisão,
+> sem nem fallback: hd 1.671 · hip 1.679 · gl 310 — estrela sem par fica com
+> o campo ausente, honesto).
+> **Gate de imagem:** ab-identidade com o "antes" REPRODUZINDO a baseline
+> oficial duas vezes (sol 950f… e travessia 3a67… exatos); 4 das 7 vistas
+> bit-idênticas (interno/mergulho/edgeon/faceon); as 3 que diferem
+> (sol/travessia/retrato) passaram pelo diff de pixel: **delta máximo de
+> 1 nível** (99 e 2.264 px) — assinatura de ULP, não de conteúdo; a mudança
+> de cor só é VISÍVEL nos close-ups de hero, que as vistas do gate não
+> exercitam. `skyError` 0,7782 com os cinco termos idênticos a quatro casas
+> ao registro oficial (protocolo exclui Sol e heroes por construção). A lei
+> nova está VIVA, provada por uniform ao vivo: Sirius [0,884, 0,995, 1,432]
+> = bvToColor(0,00) exato; SunStar [1,117, 0,974, 0,922] = bvToColor(0,653)
+> — T_eff 5.771 K, o Sol real.
+> **Revisão de olhos frescos (dois revisores independentes): ata ASSINADA**
+> — nos cinco itens o que atravessou foi espec, constante medida, cicatriz
+> ou dado de fonte primária; zero cópia de implementação de runtime do
+> doador. A caça adversarial achou 1 bug bloqueante (o React não era
+> semeado com o tier inicial — painel mentia quando o tier vinha do
+> storage/teto; verificado ao vivo) e 4 achados menores — TODOS corrigidos
+> no mesmo dia e re-verificados (painel agora acompanha o engine, Director
+> devolve o Engine se a construção falhar no meio, ids sem fallback,
+> maxTex blindado na sonda).
+> **Notas para ondas futuras:** `maxTextureSize` é medido e guardado pela
+> sonda mas ainda sem consumidor (a metade do teto do doador que promove
+> texturas espera a Onda 6); `conviteVisto`/`wikipediaLigada` são campos
+> reservados no envelope de preferências (Ondas 5 e 8). Bônus fora do
+> escopo do doador: consertado um bug pré-existente da casa — a nebulosa
+> nascia com `setScale` 0,5 em tier `performance` (0,35 só chegava na
+> primeira troca de tier).
 
 **Onda 2 — Dados antes de pixels.** Vendorizar `derive-iau-orientation.js` (**ferramenta offline, migra**), coeficientes IAU dos 45 corpos + tipos + 26 termos periódicos (**dado, migra**), fixtures Horizons, VSOP amostrado (**a conversão runtime→offline é o que autoriza o Migra**), **`stellarPhysics.ts` com seus 1.194 de teste**, elementos osculantes da Hygiea; **escrever novo** o avaliador `bodyOrientation` + adaptador Y-up→galáctico e o consumidor de runtime das efemérides (interpolador, provider, cache); gerar `corpos.json`; fundir `artistCalibration.ts`. *Gate:* erro vs. Horizons sob limiar; **sub-ponto solar do avaliador novo idêntico ao do doador contra Horizons**; matriz eclíptica→galáctica validada contra Sgr A* **e** polo eclíptico; **`getCacheStats`/`resetCacheStats` preservadas na travessia do motor orbital**; Miranda aparece como pendência nomeada; zero mudança visual; **revisão de olhos frescos antes do merge**.
 
@@ -329,7 +375,7 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 
 **Onda 4 — Domínio de escala aninhado + céu com planetas.** Frame local em UA no crossfade `DISC_FADE`; planetas como sprites, época fixa, fades acoplados. *Gate:* posição projetada vs. efeméride; `rodada.mjs` inalterada de longe. *(Onda de trabalho novo na casa; não atravessa código do doador.)*
 
-**Onda 5 — Modo Atlas navegável.** `Phase 'atlas'`, `AtlasRig`, portal do pause-look, saída "Partir", **busca renascida** (~60 linhas sobre `meta.named`), tempo, deep-link, contrato de a11y (foco preso, devolução ao gatilho, `Esc`, `aria-live`, reduced-motion) escrito na árvore do HUD da casa; **`Spotlight.tsx` + convite de 3 passos** no vocabulário da legenda (arrastar para olhar · WASD/QE para voar · clicar numa estrela para visitar), disparado só na primeira entrada, lendo `conviteVisto`; **captura de ponteiro opt-in** no FreeRoam; **UI Scale (`?ui=`)** depois da auditoria dos 37 `px` que carregam texto; **enquadramento privilegiado como função pura no `AtlasRig`** (`d = r/sin(θ/2)`, `max(distVertical, distHorizontal)`, retângulo utilizável do HUD) reaproveitando os quatro ângulos medidos (30°, 70°, 0,78, 1,2); **gradação por contexto**: os 5 eixos que variam (bloom, saturação, contraste, brilho, guia), limiares em UA (3,5/50) herdados e os de câmera (200/2000) re-derivados na escala da viagem; **visita instantânea sob `prefers-reduced-motion` no `cameraRig`**.
+**Onda 5 — Modo Atlas navegável.** **Herdado da Onda 1 por decisão do dono (2026-08-10): badge de honestidade + 3 tiers de label** — especificar AQUI, quando a UI do Atlas existir e o selo tiver eixos de verdade para reportar (escala, luz), no vocabulário da legenda; `Phase 'atlas'`, `AtlasRig`, portal do pause-look, saída "Partir", **busca renascida** (~60 linhas sobre `meta.named`), tempo, deep-link, contrato de a11y (foco preso, devolução ao gatilho, `Esc`, `aria-live`, reduced-motion) escrito na árvore do HUD da casa; **`Spotlight.tsx` + convite de 3 passos** no vocabulário da legenda (arrastar para olhar · WASD/QE para voar · clicar numa estrela para visitar), disparado só na primeira entrada, lendo `conviteVisto`; **captura de ponteiro opt-in** no FreeRoam; **UI Scale (`?ui=`)** depois da auditoria dos 37 `px` que carregam texto; **enquadramento privilegiado como função pura no `AtlasRig`** (`d = r/sin(θ/2)`, `max(distVertical, distHorizontal)`, retângulo utilizável do HUD) reaproveitando os quatro ângulos medidos (30°, 70°, 0,78, 1,2); **gradação por contexto**: os 5 eixos que variam (bloom, saturação, contraste, brilho, guia), limiares em UA (3,5/50) herdados e os de câmera (200/2000) re-derivados na escala da viagem; **visita instantânea sob `prefers-reduced-motion` no `cameraRig`**.
 
 > **Regra de UI desta onda (nova):** *a UI é desenhada na linguagem da casa; as ideias vêm do atlas, a implementação é nova.* Atravessam as **semânticas** que a crítica aprovou — um selo que agrega desvios e cujas linhas são os próprios controles; uma linha de contexto permanente que nunca chuta; uma gaveta com ícone + rótulo e seletores centralizados; procedência por asset; tour ancorado no alvo e reabrível; um lugar só para foco preso e Escape. **Não atravessam** a estética de HUD sci-fi (tech-corners, ghost-border, `font-orbitron`, `uppercase tracking-[0.16em]`, `animate-pulse`), o painel de 18 controles de debug, os 44 degraus de tempo escritos à mão nem a copy em inglês cravada em componente.
 

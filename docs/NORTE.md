@@ -2527,14 +2527,16 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    `cp` o `depois` por cima do `antes` e apague o `depois`. Quem esquecer compara a
    rodada nova contra uma baseline de duas rodadas atrás e vê `DIFERE` em tudo.
 2. **TMPDIR não sobrevive a reboot.** Sem o arquivo, `antes` tem de ser recapturado —
-   ~25 min de GPU. A baseline **depois da rodada do desconto do catálogo
-   (2026-08-09)** nesta máquina, para conferência rápida sem recapturar:
-   `sol 950f930d0138` · `interno d98cbef70849` · `travessia 3a67b1764558` ·
+   ~25 min de GPU. A baseline **depois da Onda 1 (2026-08-10)** nesta máquina,
+   para conferência rápida sem recapturar:
+   `sol a4fbf427778a` · `interno d98cbef70849` · `travessia 145263085c23` ·
    `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` ·
-   `retrato 18ba748879dc` (todas @1800x1713, retrato @700x1713). As três últimas
-   são as MESMAS de `ccf209e` por construção — o desconto só existe onde há
-   catálogo. As anteriores eram `sol 0ddeb977138a` · `interno 0247a75a26bd` ·
-   `travessia 3a726580f4c5` · `retrato 59ada90fed3d`.
+   `retrato 615452579a2a` (todas @1800x1713, retrato @700x1713). As três vistas
+   que mudaram contra a era anterior (sol/travessia/retrato) diferem por ULP
+   (±1 nível — diff de pixel na ata da Onda 1), não por conteúdo. A baseline
+   anterior (rodada do desconto do catálogo, 2026-08-09) era `sol 950f930d0138`
+   · `interno d98cbef70849` · `travessia 3a67b1764558` · `mergulho 6876e851031a`
+   · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` · `retrato 18ba748879dc`.
    **Esses md5 são desta GPU** — noutra máquina servem só como sinal de que a captura
    assentou, nunca como valor esperado.
 
@@ -2947,6 +2949,28 @@ roadmap em ondas 0–9, riscos e anti-padrões. Aqui fica só o que decide:
   as 328.749 estrelas por **zero byte de payload novo**. Oráculo: 7
   verdades-terreno publicadas (Sol G2V, Sirius A1V, Vega A0V, Proxima M5.5V,
   Betelgeuse M2Ia, Antares, Sirius B DA2).
+
+### Onda 1 — FEITA (2026-08-10)
+
+A primeira onda de código da fusão, mergeada com gate integral e ata de olhos
+frescos assinada (registro completo: PLANO-ATLAS, "Estado da Onda 1"). O que
+ainda decide algo por aqui:
+
+- **O boot agora tem três autoridades, nesta ordem: URL > storage > detecção**
+  — e um teto de GL que só rebaixa quando o renderer se NOMEIA software.
+  `?q=` segue soberano (inclusive sobre o teto): gate com `?q=` desliga o
+  auto-quality e por isso NUNCA contamina o storage. O storage
+  (`src/lib/preferencias.ts`) guarda só ALOCAÇÃO medida (tierQueRodou),
+  jamais gosto — tom/exposição/camadas seguem sendo URL.
+- **Heroes e SunStar entraram na lei de cor única** (bvToColor com espelho
+  CPU em `common.ts` — mais um passo da unificação 2). A tabela literal
+  `HERO_BV` em `heroStars.ts` é a autoridade de B-V das 16 (a fonte HYG erra
+  Betelgeuse: 1,50 lá, 1,85 medido); mudança visível SÓ em close-up de hero
+  — as 7 vistas do gate moveram no máximo 1 nível de ULP.
+- **Identidade de catálogo**: as 1.726 nomeadas carregam ci + HD/HIP/Gliese
+  no sidecar, EXCLUSIVAMENTE do HYG v4.4 (o AT-HYG diverge em 28 HDs e traz
+  Gliese sem prefixo — medido; sem fallback, campo ausente é honesto).
+  Consumidores futuros: busca e deep-link (Onda 5).
 
 ### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
 
