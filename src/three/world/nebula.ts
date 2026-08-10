@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import {
   NEBULA_VERT,
   NEBULA_FRAG,
-  NEBULA_LUT_FRAG,
+  nebulaLutFrag,
   NEBULA_BLUR_FRAG,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
@@ -87,11 +87,12 @@ export class Nebula {
     this.lutRT.texture.wrapT = THREE.ClampToEdgeWrapping;
     this.lutMaterial = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
-      fragmentShader: NEBULA_LUT_FRAG,
+      fragmentShader: nebulaLutFrag(null),
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uDustMap: { value: this.fallbackDustMap },
         uCartBlend: { value: 0 },
+        uCatFade: { value: 0 },
       },
       depthWrite: false,
       depthTest: false,
@@ -183,6 +184,32 @@ export class Nebula {
 
   setFade(f: number) {
     this.material.uniforms.uFade.value = f;
+  }
+
+  /**
+   * A curva medida do catálogo (ver `resolvedCatalogCurve`). Recompila o
+   * fragment do LUT UMA vez, no init: a curva só existe depois que o
+   * binário chega, e a Nebula nasce antes. É de propósito antes do
+   * warm-up de shaders do director, para a variante final ser a que ele
+   * pré-compila — senão o primeiro uso cairia no meio do filme, que é o
+   * hitch que o warm-up existe para evitar.
+   */
+  setResolvedCurve(curva: Parameters<typeof nebulaLutFrag>[0]) {
+    this.lutMaterial.fragmentShader = nebulaLutFrag(curva);
+    this.lutMaterial.needsUpdate = true;
+    this.lutDirty = true;
+  }
+
+  /**
+   * O quanto do catálogo está visível: o mesmo `catFade` das cascas —
+   * zero fora da bolha heliocêntrica e zero com `?nocat=1`, para a
+   * ablação tirar as estrelas sem abrir um buraco no lugar delas.
+   * Suja a LUT só quando muda de verdade.
+   */
+  setCatalogueFade(fade: number) {
+    if (this.lutMaterial.uniforms.uCatFade.value === fade) return;
+    this.lutMaterial.uniforms.uCatFade.value = fade;
+    this.lutDirty = true;
   }
 
   /** liga o mapa galactocêntrico (APOGEE + braços/warp bakeados) */

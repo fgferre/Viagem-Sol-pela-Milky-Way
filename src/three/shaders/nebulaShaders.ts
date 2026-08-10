@@ -4,9 +4,9 @@
 // das supergigantes Betelgeuse/Rigel embutidas nas nuvens.
 // ============================================================
 import { WORLD } from '../config';
-import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GLSL_CARTOGRAPHY, LUT_DISK } from '../cartography/galacticModel';
 import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore, blackbodyLinear } from './common';
-import { GLSL_UNRESOLVED } from '../world/wrappedStars';
+import { GLSL_UNRESOLVED, glslResolvedCatalog } from '../world/wrappedStars';
 
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
 const warm = WORLD.gasColorWarm.map((v) => v.toFixed(3)).join(', ');
@@ -82,6 +82,58 @@ const DUSTRD = qnum('dustrd', 2100).toFixed(1);
 // 0,40 → 0,9124 —, e o mínimo cai em cima da literatura. Achatar além de
 // 0,23 (Dwek) só troca espessura por fenda e não é medida de ninguém.
 const BULGEQ = qnum('bulgeq', 0.26);
+// DIAGNÓSTICO da rodada do disco externo (?nothick=1 e ?lutnear=<pc>).
+// Ambos são linha MORTA no template por padrão — o GLSL default sai
+// caractere por caractere igual, que é o contrato das ablações aqui.
+//
+// O termo `espessura` é 40% do skyError e o excesso é quase todo de um
+// sinal só (soma +31,25 contra −2,00 nos 24 bins): a faixa é GROSSA
+// demais em 21 deles. A métrica é meia-largura de meio-fluxo centrada
+// em b=0, então quem a infla é PEDESTAL — luz larga em b, e larga em b
+// é luz PERTO (uma camada de altura h a distância t subtende h/t).
+// Os dois suspeitos que nenhuma ablação existente isolava, com o que a
+// medição de 2026-08-09 respondeu sobre cada um:
+//   `nothick` — o disco espesso da LUT tem h_R 6500 contra 5200 do fino,
+//     ou seja MAIS LONGO, quando a literatura dá o contrário (BH&G 2016:
+//     fino 2,6 kpc, espesso 2,0); a auditoria de 2026-08-03 já tinha
+//     registrado a mesma inversão nas cascas. A hipótese era que ele
+//     entrasse como pedestal no anticentro, já que a razão espesso/fino
+//     CRESCE com o raio e ele é 2,3-2,9× mais alto em z. **REFUTADA:
+//     tirá-lo PIORA a espessura (0,3144 → 0,3215) e o skyError vai a
+//     0,8547** — ele também sustenta o meio-fluxo que a métrica mede. A
+//     inversão continua sendo inconsistência real e continua aberta, mas
+//     não é a alavanca deste termo.
+//   `lutnear` — quanto do pedestal é da própria LUT perto do Sol. Corta
+//     só a EMISSÃO abaixo de t, preservando extinção e quadratura: o que
+//     se mede é a contribuição, não outro integrador. **Confirmou o
+//     campo próximo como dono**: com 1000 pc a espessura vai a 0,2884, o
+//     melhor movimento isolado que o termo já teve. Não vira default —
+//     é corte cego, e a versão física do mesmo corte é o `catsub` abaixo
+//     (skyError 0,7782 contra os 0,7844 deste).
+const NOTHICK = qnum('nothick', 0) > 0;
+const LUTNEAR = qnum('lutnear', 0);
+// DESCONTO DO CATÁLOGO (?catsub=; 0 devolve o estado anterior EXATO —
+// com 0 o template não emite fator nenhum, do mesmo jeito que ?riftav=0
+// e ?nolocal=0; as seis faces saem bit-idênticas, provado duas vezes).
+//
+// LIGADO por padrão desde 2026-08-09, e não é dose: é uma dupla
+// contagem que estava lá. `unresolved()` desconta da LUT os 3,8% que as
+// CASCAS desenham; as 328.749 estrelas do catálogo nunca entraram nesse
+// handoff, então perto do Sol a mesma população era desenhada duas
+// vezes. A fração vem MEDIDA do próprio binário (`resolvedCatalogCurve`
+// em wrappedStars.ts) — física e gate concordam: skyError 0,7857 →
+// 0,7782, com o maior termo caindo 0,3144 → 0,3026 e o bulgeAnti indo
+// de 5,215 para 5,497 contra o alvo 5,568.
+//
+// **A armadilha desta rodada, porque ela custou uma bateria de GPU:** a
+// primeira versão derivava a fração da função de luminosidade de 7 bins
+// das cascas em vez de medi-la, e deu skyError 0,8259 — PIOR. O bin de
+// topo daquela LF (M_V −6 a −2, 51,6% da luz) é uniforme em M ao longo
+// de quatro magnitudes, e prevê 0,635 a 1 kpc onde o catálogo real tem
+// 0,058. Ela tirava o pedestal abaixo de 1 kpc (o que se queria) E o
+// NÚCLEO da faixa entre 1 e 3,6 kpc (o que a arruinava). Aproximação
+// boa num uso não é boa em outro.
+const CATSUB = qnum('catsub', 1);
 // A GRANDE FENDA (?riftav=; 0 devolve o estado anterior EXATO — o template
 // não emite uma linha, provado por md5 face a face). O panorama ESO mostra
 // uma cunha escura subindo do plano entre l = +8° e +45°, com o núcleo em
@@ -264,14 +316,14 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     float radius = length(inPlane);
     float theta = atan(dot(q, GAL_Y), dot(q, GAL_X));
     float z = rawZ - galWarpHeight(radius, theta);
-    float flare = clamp((radius - 7500.0) / 9300.0, 0.0, 1.0);
+    float flare = clamp((radius - ${LUT_DISK.flareR0.toFixed(1)}) / ${LUT_DISK.flareSpan.toFixed(1)}, 0.0, 1.0);
     flare *= flare;
     float edge = 1.0 - smoothstep(15500.0, GAL_DISK_RADIUS, radius);
 
-    float thinHeight = mix(210.0, 460.0, flare);
-    float thickHeight = mix(610.0, 1080.0, flare);
+    float thinHeight = mix(${LUT_DISK.hz[0].toFixed(1)}, ${LUT_DISK.hz[1].toFixed(1)}, flare);
+    float thickHeight = mix(${LUT_DISK.hzThick[0].toFixed(1)}, ${LUT_DISK.hzThick[1].toFixed(1)}, flare);
     float thinDisk =
-      exp(-radius / 5200.0) * exp(-abs(z) / thinHeight) * edge;
+      exp(-radius / ${LUT_DISK.hR.toFixed(1)}) * exp(-abs(z) / thinHeight) * edge;
     // A POEIRA mora numa camada mais FINA que as estrelas. Enquanto a
     // poeira herdava o perfil vertical estelar, emissão e absorção eram
     // proporcionais em TODA altura: a função-fonte j/κ ficava constante
@@ -282,8 +334,8 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     float dustDisk = exp(-radius / 5200.0) * exp(-abs(z) / dustHeight) *
       edge * (thinHeight / dustHeight);
     float thickDisk =
-      exp(-radius / 6500.0) * exp(-abs(z) / thickHeight) * edge * 0.105;
-
+      exp(-radius / ${LUT_DISK.hRThick.toFixed(1)}) * exp(-abs(z) / thickHeight) * edge * ${LUT_DISK.thickAmp.toFixed(3)};
+${NOTHICK ? '    thickDisk = 0.0;\n' : ''}
     // R(+29°) — crista no azimute −29°, igual à barra do CPU
     float cb = cos(0.506145);
     float sb = sin(0.506145);
@@ -319,12 +371,25 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     // resolvem como estrelas individuais a esta distância sai da
     // integrada — mesmo fator das partículas (GLSL_UNRESOLVED). Os
     // termos de gás (dust/hii) não entram: casca não desenha gás.
+    //
+    // E o MESMO desconto para o catálogo, que faltava: unresolved()
+    // tira 3,8% (o que as cascas desenham) e o catálogo desenha 97% da
+    // luz da população a 100 pc — as duas cópias somavam quase o dobro
+    // do modelo no campo próximo. A distância aqui é HELIOCÊNTRICA (o
+    // catálogo é uma bolha em torno do Sol, que está na origem da cena),
+    // não a distância à câmera de unresolved(). Ver o cabeçalho de
+    // GLSL_RESOLVED_CATALOG em wrappedStars.ts.
     float stellar =
       (thinDisk *
         mix(0.22, 1.12, broad) *
         mix(0.58, 1.28, arms) +
       thickDisk +
-      bulge) * unresolved(t);
+      bulge) * unresolved(t)${
+        CATSUB > 0
+          ? ` *
+      (1.0 - ${CATSUB.toFixed(4)} * uCatFade * resolvedByCatalog(length(p)))`
+          : ''
+      };
 
     // Poeira fria acumula na camada mais fina e recorta o centro em
     // filamentos negros, como as grandes fendas da astrofotografia.
@@ -365,7 +430,7 @@ vec3 integrateGalacticDisk(vec3 ro, vec3 rd) {
     vec3 emission = diskColor * stellar;
     emission += vec3(0.95, 0.12, 0.32) * hii * 0.72;
     emission += vec3(0.12, 0.48, 0.72) * hii * (1.0 - broad) * 0.42;
-
+${LUTNEAR > 0 ? `    emission *= step(${LUTNEAR.toFixed(1)}, t);\n` : ''}
     light += transmission * emission * dt * 0.000052;
     transmission *= exp(-dust * dt * 0.00035);
     if (transmission < 0.02) break;
@@ -396,17 +461,27 @@ void main() {
 
 // Fragment do LUT da faixa: uma direção por texel (256×128 equirect
 // no referencial galáctico), integração distante completa.
-export const NEBULA_LUT_FRAG = /* glsl */ `
+/**
+ * O fragment do LUT é FUNÇÃO da curva do catálogo porque ela só existe
+ * depois que o binário é decodificado, e a `Nebula` nasce antes disso
+ * (director.ts:134, no construtor). Sem curva, `resolvedByCatalog`
+ * devolve 0 e o desconto não existe — que é também o estado de
+ * `?catsub=0`. Ver `resolvedCatalogCurve` em wrappedStars.ts.
+ */
+export const nebulaLutFrag = (curva: Parameters<typeof glslResolvedCatalog>[0]) => /* glsl */ `
 precision highp float;
 
 uniform vec3 uCamPos;
 uniform sampler2D uDustMap;
 uniform float uCartBlend;
+// o quanto do catálogo está VISÍVEL agora (localFade; 0 com ?nocat=1)
+uniform float uCatFade;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
 ${GLSL_UNRESOLVED}
+${glslResolvedCatalog(curva)}
 ${BAND_INTEGRATION}
 
 void main() {

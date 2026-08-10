@@ -17,7 +17,7 @@ import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './w
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
-import { WrappedStars } from './world/wrappedStars';
+import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -267,6 +267,13 @@ export class Director {
     // unificação 2: as cascas de wrappedStars cobrem essa população em
     // QUALQUER ponto do disco, com a mesma PSF e anti-dupla-contagem.
     this.stars = new StarField(starArrays, { expoM0: 3.5, sigmaPx: 0.85, tau: 0.045 });
+    // ...e a LUT da faixa deixa de emitir de novo a luz que este campo
+    // acabou de desenhar. A curva é MEDIDA nestes mesmos arrays, então
+    // não tem como divergir do binário — regerar o catálogo a move
+    // sozinha, o mesmo contrato que as cascas já têm com magLimit.
+    this.nebula.setResolvedCurve(
+      resolvedCatalogCurve(starArrays.position, starArrays.logLum)
+    );
     this.heroes = new HeroStars(this.meta.named);
     // o Sol sob a mesma lei dos heróis: de longe é estrela, não bola
     // (magnitude viva pela distância; o nearFade cede ao disco de perto)
@@ -851,6 +858,9 @@ export class Director {
     this.stars?.setFade(catFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
     this.nebula.setFade(nebulaFade);
+    // o MESMO catFade das cascas: a LUT da faixa desconta do termo
+    // estelar a luz que o catálogo já desenha como estrela individual
+    this.nebula.setCatalogueFade(catFade);
     // heroes esmaecem a zero em farFade (900 pc) — além disso os
     // draws são garantidamente invisíveis
     if (this.heroes) {

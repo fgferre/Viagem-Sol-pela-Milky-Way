@@ -159,6 +159,37 @@ console.log(
 );
 
 if (comPerfil) {
+  // A ESPESSURA bin a bin. Ela é o maior termo do gate desde que o gate
+  // existe e era a única curva da soma que ninguém imprimia — a tabela do
+  // diagnóstico de 2026-08-06 foi montada à mão no scratchpad e por isso
+  // envelheceu sem ninguém notar (ela dizia "anticentro pouco luminoso"
+  // quando hoje o anticentro está 1,18× BRILHANTE demais). Aqui ela sai
+  // junto com o resto, e o sinal de cada bin sai com ela: a soma dos
+  // desvios positivos contra a dos negativos é o teste de cancelamento
+  // que a auditoria de 2026-08-06 tornou obrigatório para todo termo de
+  // família (média|Δ| / |médiaΔ| = 1 quer dizer erro de um sinal só).
+  const nt = O.thick.length;
+  const lont = (i) => Math.round(-180 + (360 * (i + 0.5)) / nt);
+  console.log('\n  l    espess    ref     dif');
+  let somaPos = 0;
+  let somaNeg = 0;
+  for (let i = 0; i < nt; i++) {
+    const d = O.thick[i] - R.thick[i];
+    if (d > 0) somaPos += d;
+    else somaNeg += d;
+    console.log(
+      `  ${String(lont(i)).padStart(5)} ${O.thick[i].toFixed(2).padStart(7)}` +
+        ` ${R.thick[i].toFixed(2).padStart(7)} ${(d > 0 ? '+' : '') + d.toFixed(2)}` +
+        `  ${(d > 0 ? '+' : '-').repeat(Math.min(24, Math.round(Math.abs(d) * 4)))}`
+    );
+  }
+  const mediaAbs = (somaPos - somaNeg) / nt;
+  console.log(
+    `  soma dif>0 ${somaPos.toFixed(2)} · dif<0 ${somaNeg.toFixed(2)} · ` +
+      `media|d| ${mediaAbs.toFixed(3)} · ` +
+      `media|d|/|media d| ${(mediaAbs / Math.abs((somaPos + somaNeg) / nt)).toFixed(2)}`
+  );
+
   // o perfil é NORMALIZADO pela própria média: comparação de FORMA.
   // Ablação redistribui — ler bin a bin, nunca só o agregado.
   const n = O.nprof.length;
@@ -193,3 +224,12 @@ if (comPerfil) {
 // os spawnSync retornam quando o browser sai, mas os helpers de GPU podem
 // sobreviver a ele e disputar a GPU da próxima medição — ver chrome.mjs
 matarPerfil(PERFIS);
+// e MATAR não é APAGAR: cada perfil do medidor deixa 8,4 MB para trás, e a
+// pasta é nomeada pelo PID, então nunca é reusada. Uma sessão de sweeps
+// tinha 472 MB parados no TEMP quando isto foi notado. O `capturarCDP` já
+// apaga o dele (chrome.mjs); este era o único que só matava.
+try {
+  rmSync(PERFIS, { recursive: true, force: true });
+} catch {
+  /* perfil preso por helper que ainda não morreu — o TEMP do SO recolhe */
+}

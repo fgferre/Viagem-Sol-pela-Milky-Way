@@ -117,6 +117,38 @@ const ARM_BREAK_INV_TAN = 1 / 0.2216947;
 /** K adimensional: λ é medido a 5,5 kpc e vale 2π·R·sin(12,5°)/K */
 const ARM_BREAK_K = (2 * Math.PI * 5_500 * 0.2164396) / ARM_BREAK_LAMBDA;
 
+/**
+ * O disco estelar como a LUT da faixa o integra, em UM lugar só. Estes
+ * sete números eram literais dentro do GLSL de `nebulaShaders.ts`, e
+ * saíram de lá porque a curva do desconto do catálogo precisa dos MESMOS
+ * números para transformar uma densidade medida em FRAÇÃO do modelo
+ * (`resolvedCatalogCurve` em `wrappedStars.ts`). Duas cópias divergiriam
+ * na primeira re-dosagem; o template imprime exatamente estes literais.
+ *
+ * Duas inconsistências conhecidas ficam VISÍVEIS aqui, ambas registradas
+ * na auditoria de 2026-08-03 e nenhuma consertada: `hR` é 2× o
+ * `stellarScaleLengthPc` das partículas, e `hRThick` é MAIOR que `hR`
+ * quando a literatura dá o espesso mais curto que o fino (BH&G 2016:
+ * 2,6 e 2,0 kpc). Medido em 2026-08-09: tirar o espesso PIORA o gate do
+ * céu (espessura 0,3144 → 0,3215), então a inversão não é a alavanca que
+ * parecia — mexer nela exige rodada própria.
+ */
+export const LUT_DISK = {
+  /** escala radial do disco fino (pc) */
+  hR: 5_200,
+  /** escala radial do disco espesso (pc) */
+  hRThick: 6_500,
+  /** peso do disco espesso contra o fino, no plano */
+  thickAmp: 0.105,
+  /** altura de escala fina: sem flare, com flare pleno (pc) */
+  hz: [210, 460],
+  /** idem para o espesso (pc) */
+  hzThick: [610, 1080],
+  /** o flare cresce a partir de flareR0 e satura em flareR0 + flareSpan */
+  flareR0: 7_500,
+  flareSpan: 9_300,
+} as const;
+
 export const GALACTIC_MODEL = {
   sunRadiusPc: 8_150,
   sunHeightPc: 5.5,

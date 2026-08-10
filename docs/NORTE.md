@@ -2105,10 +2105,19 @@ foto quando o catálogo sai, e é inteiramente dele.
 fraca (nprof 0,44 contra 0,58 em l = 203°, 0,35 contra 0,45 em l = 173°),
 então a coluna passa a ser dominada pelo gás LOCAL, que a 200–800 pc subtende
 7–27° de latitude com a laje de 95 pc. Miolo fraco, asas claras — os dois
-termos dizem a mesma coisa por caminhos diferentes. **A pergunta da rodada
+termos dizem a mesma coisa por caminhos diferentes. ~~**A pergunta da rodada
 seguinte não é "afinar o gás local" (95 pc é a espessura real do MI local) e
 sim por que o disco EXTERNO é pouco luminoso** — candidatos com endereço: o
-`edge` que trunca em 15,5 kpc e a escala radial 5200 pc do `thinDisk`.
+`edge` que trunca em 15,5 kpc e a escala radial 5200 pc do `thinDisk`.~~
+**⚠ ESTA CONCLUSÃO ENVELHECEU E ESTAVA ERRADA EM 2026-08-09** (ver "A faixa e o
+catálogo desenhavam a mesma luz duas vezes"): re-medido, o anticentro está
+**1,176× BRILHANTE demais**, não fraco, e as duas alavancas nomeadas teriam
+piorado o `perfil`. A tabela acima foi montada à mão no scratchpad e ficou
+sem juiz enquanto quatro rodadas passavam por cima do modelo. O `perfil` por
+setor de HOJE (nosso/foto, 1,000 = cravado) é: **miolo |l|<30 → 1,101 ·
+30–60 → 0,831 · 60–150 → 0,944 · anticentro >150 → 1,176**. A leitura certa
+é a mesma que o `sky-capture.mjs --perfil` agora imprime sozinho; **não
+reconstruir esta seção à mão de novo.**
 
 **Achado lateral que incomoda e fica registrado sem rodada:** `?nocat=1&nowrap=1`
 mede skyError **0,7689**, MELHOR que a baseline 0,7811 — o catálogo estelar
@@ -2518,10 +2527,14 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    `cp` o `depois` por cima do `antes` e apague o `depois`. Quem esquecer compara a
    rodada nova contra uma baseline de duas rodadas atrás e vê `DIFERE` em tudo.
 2. **TMPDIR não sobrevive a reboot.** Sem o arquivo, `antes` tem de ser recapturado —
-   ~25 min de GPU. A baseline do HEAD `ccf209e` nesta máquina, para conferência rápida
-   sem recapturar: `sol 0ddeb977138a` · `interno 0247a75a26bd` ·
-   `travessia 3a726580f4c5` · `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` ·
-   `faceon d05591e27ea4` · `retrato 59ada90fed3d` (todas @1800x1713, retrato @700x1713).
+   ~25 min de GPU. A baseline **depois da rodada do desconto do catálogo
+   (2026-08-09)** nesta máquina, para conferência rápida sem recapturar:
+   `sol 950f930d0138` · `interno d98cbef70849` · `travessia 3a67b1764558` ·
+   `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` ·
+   `retrato 18ba748879dc` (todas @1800x1713, retrato @700x1713). As três últimas
+   são as MESMAS de `ccf209e` por construção — o desconto só existe onde há
+   catálogo. As anteriores eram `sol 0ddeb977138a` · `interno 0247a75a26bd` ·
+   `travessia 3a726580f4c5` · `retrato 59ada90fed3d`.
    **Esses md5 são desta GPU** — noutra máquina servem só como sinal de que a captura
    assentou, nunca como valor esperado.
 
@@ -2796,6 +2809,108 @@ e `[5]` mais `gaiaObProxy[3]` e `[6]` — 2,37 MB crus. E a separação que diss
 tensão com a política do manifesto continua valendo: o `data:all` gera uma versão de
 RENDERIZAÇÃO (podada e quantizada) para `public/`, e os arquivos científicos completos
 ficam versionados fora dele. Nada de dado se perde, e o visitante baixa menos.
+
+## A faixa e o catálogo desenhavam a mesma luz duas vezes (2026-08-09)
+
+A rodada do disco externo, que o diagnóstico de 2026-08-06 tinha encomendado, virou
+outra coisa logo na primeira medida — e o motivo é uma lição de método antes de ser
+de física.
+
+**A premissa encomendada estava VELHA.** O diagnóstico mandava perguntar "por que o
+disco EXTERNO é pouco luminoso". Medido hoje, o anticentro está **1,176× BRILHANTE
+demais** (0,497 contra 0,423 da foto): a alavanca que ele nomeava — `edge` em 15,5 kpc
+e a escala radial 5200 — teria piorado o `perfil`. Aquela tabela foi montada à mão no
+scratchpad e envelheceu sem juiz. **Conserto de processo, não de número: o
+`sky-capture.mjs --perfil` passou a imprimir a curva de `espessura` bin a bin**, com a
+soma dos desvios de cada sinal — o maior termo do gate era a única curva da soma que
+ninguém imprimia, e por isso a única que podia envelhecer em silêncio.
+
+**A forma do erro.** O termo é meia-largura de meio-fluxo centrada em b=0, então quem
+o infla é PEDESTAL — e largo em b é luz PERTO (uma camada de altura h a distância t
+subtende h/t). O excesso é de um sinal só: **+31,25 contra −2,00** nos 24 bins,
+grossa demais em 21 deles (média|Δ|/|médiaΔ| = 1,14, o termo é honesto). Piores:
+l = −157° (9,50 contra 4,50) e l = +173° (7,75 contra 3,50).
+
+**O buraco, e ele estava num handoff que o projeto já tinha construído.**
+`unresolved()` (unificação 2, etapa 2) desconta da luz integrada os 3,8% que as
+CASCAS desenham. As 328.749 estrelas do catálogo — completo a m=10 dentro de 5 kpc —
+**nunca entraram nesse handoff**: a LUT da faixa emitia 96,2% do modelo e o catálogo
+desenhava a mesma população por cima. Perto do Sol as duas cópias somam quase o dobro.
+Isso explica, com mecanismo, o "achado lateral que incomoda" registrado sem causa em
+2026-08-06: `?nocat=1&nowrap=1` MELHORAVA a nota do céu porque tirava uma das cópias.
+E como a fração duplicada é função da DISTÂNCIA, nenhuma calibração global da LUT
+podia absorvê-la — é defeito de forma, no lugar exato onde o pedestal mora.
+
+**A armadilha que custou uma bateria de GPU, e ela é o achado transferível.** A
+primeira versão DERIVOU a fração da função de luminosidade de 7 bins das cascas em
+vez de medi-la. Aquele bin de topo (M_V −6 a −2, 51,6% da luz) é uniforme em M ao
+longo de QUATRO magnitudes — dentro dele o brilho varia 58×. Para os `amp` das cascas
+a grosseria nunca apareceu porque a completude o esmaga (comp 0,0138); para esta
+fração a 1–3 kpc é justamente ele que decide o número. Previa 0,635 a 1 kpc onde o
+catálogo real tem **0,058**. Ligada assim: **skyError 0,7857 → 0,8259**, porque tirava
+o pedestal abaixo de 1 kpc (o que se queria) E o NÚCLEO da faixa entre 1 e 3,6 kpc (a
+3 kpc uma camada de 250 pc subtende 4,8°, a espessura inteira da referência).
+**Aproximação boa num uso não é boa em outro** — e o sintoma foi o gate discordar da
+física, que aqui era sinal de curva errada, não de régua errada.
+
+**A curva certa é MEDIDA no próprio binário**, em runtime, das mesmas posições e
+luminosidades que o renderer desenha (`resolvedCatalogCurve`, wrappedStars.ts):
+densidade de luminosidade por casca dividida pelo perfil do modelo naquela casca,
+saturando em 1. Medida: ~1,0 até 150 pc · 0,95 (175) · 0,68 (250) · 0,46 (400) ·
+0,29 (600) · 0,145 (850) · 0,058 (1250) · 0,026 (1750) · 0,015 (2500) · 0,003 (4000)
+· 0 no horizonte. **A dupla contagem real morre em ~500 pc.** Custo: 63,5 ms uma vez,
+no init, sob o véu. De lambuja, a densidade local medida do catálogo — **0,0447
+L_sun/pc³** — cai entre a LF de 7 bins do projeto (0,0337) e a literatura
+(0,05–0,07): a LF subestima em ~30%, o que vale saber quando ela for re-dosada.
+
+**Resultado (o melhor da série do céu nesta máquina):**
+
+| termo | antes | depois | |
+|---|---:|---:|---|
+| espessura | 0,3144 | **0,3026** | −0,0118, o maior termo |
+| fenda | 0,2217 | 0,2240 | +0,0023 |
+| perfil | 0,2031 | 0,2047 | +0,0016 |
+| purpura | 0,0322 | 0,0336 | +0,0014 |
+| cor | 0,0142 | **0,0132** | −0,0010 |
+| **skyError** | **0,7857** | **0,7782** | **−0,0075** |
+
+E o `bulgeAnti`, que afere a RÉGUA e não o modelo, foi de 5,215 para **5,497** contra
+o alvo 5,568 — de 6,3% abaixo para 1,3%. É o contraste que o mecanismo previa: tirar
+um pedestal quase uniforme sobe o pico contra a média.
+
+**Verificação, e ela tem uma previsão causal cumprida.** `?catsub=0` reproduz as seis
+faces **bit-idênticas** à baseline — duas vezes, antes e depois da refatoração inteira
+—, então tudo que se mediu é do desconto. No `ab-identidade`: **`mergulho`, `edgeon` e
+`faceon` BIT-IDÊNTICAS**, `sol`/`interno`/`travessia`/`retrato` diferem. Isto é o
+teste, não um detalhe: `mergulho` está a 8 kpc do Sol, onde `catFade` já é zero — se
+ela tivesse se movido, o desconto estaria vazando para onde não há catálogo para
+duplicar. Diff de pixel nas faces do gate: 95–99,8% dos pixels mexem com **delta
+máximo de 3 em 255** (1:689k · 2:1056k · 3:105k), assinatura de véu fino removido, e
+isso sob o stretch de revelação, que amplifica o fraco. A olho, no look do app, as
+duas vistas são quase indistinguíveis.
+
+**Becos medidos nesta rodada (não repetir):**
+- **`nothick`** (disco espesso da LUT fora): espessura 0,3144 → **0,3215**, PIORA;
+  skyError 0,8547. A inversão de escala radial dele contra a literatura (`hRThick`
+  6500 > `hR` 5200, quando BH&G 2016 dá o espesso mais CURTO) é inconsistência real e
+  segue aberta, mas **não é a alavanca da espessura**.
+- **`nolocal`** (só a LUT distante): compra 0,073 de espessura pagando 0,136 de
+  perfil — skyError 0,8857.
+- **`lutnear=1000`** (corta toda a emissão da LUT abaixo de 1 kpc): espessura 0,2884,
+  o melhor movimento isolado do termo, mas skyError 0,7844, pior que a curva medida.
+  É diagnóstico, não modelo — fica como knob.
+
+**O que sobra da espessura, com endereço:** nos três piores bins (l = −157°, −172°,
++173°) o desconto do catálogo não ajuda — ali o pedestal que resta é **gás local**
+(raymarch + o véu do plano, que é `exp(−5·sin²b)`, 26° de largura somados a TODA
+longitude). Esse véu nunca foi ablacionado sozinho: `?nolocal=1` derruba ele e o
+raymarch juntos. É a primeira sonda da próxima rodada deste termo.
+
+**Duas dívidas ficaram VISÍVEIS onde não dá para não ver:** `LUT_DISK`
+(galacticModel.ts) reúne os sete números do disco da LUT que estavam literais dentro
+do GLSL — e expõe lado a lado o `hR` 5200 contra os 2600 das partículas (auditoria de
+2026-08-03, item 2) e o `hRThick` maior que o `hR` (item 3). O template imprime
+exatamente os mesmos literais; a prova é o `catsub=0` bit-idêntico.
 
 ## Decisões fechadas
 

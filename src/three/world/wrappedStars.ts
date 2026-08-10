@@ -39,6 +39,7 @@ import {
   GLSL_STAR_PSF,
 } from '../shaders/common';
 import { STAR_FRAG } from '../shaders/starShaders';
+import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
 
 // m em que a PSF morre na nossa exposição (expoM0 3,5):
 // peak(11,75) ≈ 1,6e-4 — abaixo de qualquer depósito perceptível.
@@ -103,6 +104,8 @@ interface BinDerived {
   grid: number;
   prob: number;
   reach: number;
+  /** fração da luz local que o bin CONTÉM (independe de quem a desenha) */
+  quota: number;
   amp: number;
 }
 const GRID = (() => {
@@ -128,7 +131,8 @@ const GRID = (() => {
     // completude do clamp em ρ=1; a dependência de ρ é ignorada (efeito
     // total ≤ ~4% da luz — não vale o custo de modelar)
     const comp = Math.min(1, 1 / prob);
-    out.push({ cell, grid, prob, reach, amp: (lDens[k] / lTot) * comp });
+    const quota = lDens[k] / lTot;
+    out.push({ cell, grid, prob, reach, quota, amp: quota * comp });
   }
   return out;
 })();
@@ -153,6 +157,153 @@ float unresolved(float d) {
   ).join('')};
 }
 `;
+
+// ---- handoff que faltava: o CATÁLOGO ----------------------------------
+//
+// `unresolved` acima desconta da luz integrada os 3,8% que as CASCAS
+// desenham. As 328.749 estrelas do catálogo real, completas até m=10
+// dentro de 5 kpc, nunca entraram nesse handoff: a LUT da faixa emitia
+// 96,2% do modelo e o catálogo desenhava mais uma vez, por cima, a
+// mesma população. Perto do Sol as duas cópias somam quase o dobro.
+//
+// Isso explica o "achado lateral que incomoda" que o NORTE registrava
+// sem causa desde 2026-08-06: `?nocat=1&nowrap=1` MELHORAVA a nota do
+// céu. Tirava uma das duas cópias.
+//
+// A CURVA É MEDIDA NO PRÓPRIO BINÁRIO, não derivada da função de
+// luminosidade dos bins acima — e isso é a lição cara desta rodada. A
+// primeira versão usava a LF de 7 bins, cujo bin de topo (M_V −6 a −2,
+// 51,6% da luz) é uniforme em M ao longo de QUATRO magnitudes: dentro
+// dele o brilho varia 58×. Para os `amp` das cascas a grosseria nunca
+// apareceu, porque a completude esmaga aquele bin (comp 0,0138). Para
+// esta fração a 1–3 kpc é justamente ele que decide o número, e errava
+// por uma ordem de grandeza — 0,635 contra os 0,058 medidos a 1 kpc.
+// Ligada assim, ela tirava pedestal abaixo de 1 kpc (o que se queria) E
+// núcleo da faixa entre 1 e 3,6 kpc (o que a arruinava): skyError
+// 0,7857 → 0,8259. **Aproximação boa num uso não é boa em outro.**
+//
+// Medir aqui, em runtime, e não no build: a curva sai das MESMAS
+// posições e luminosidades que o renderer desenha, então não há como
+// ela divergir do binário — regerar o catálogo move o contrato sozinho,
+// que é a regra que as cascas já seguem para `magLimit` e `horizonPc`.
+// Custo: uma passada por 328.749 estrelas, ~5 ms, uma vez no init.
+
+/** bordas das cascas de distância, em pc (log-espaçadas até o horizonte) */
+const CAT_SHELLS = [
+  0, 20, 40, 70, 100, 150, 200, 300, 500, 700, 1000, 1500, 2000, 3000, 5000,
+];
+
+/**
+ * O perfil do disco da LUT (fino + espesso), normalizado em 1 no Sol.
+ * Só a geometria: `radius` e `|z|` galactocêntricos de um ponto a
+ * (dx, dy, dz) do Sol, com o Sol no plano e no eixo x. O warp é
+ * ignorado de propósito — ele começa em 8,4 kpc e estas cascas nunca
+ * passam de 5.
+ */
+function lutDiskProfile(dx: number, dy: number, dz: number) {
+  const x = GALACTIC_MODEL.sunRadiusPc + dx;
+  const radius = Math.hypot(x, dy);
+  const z = Math.abs(dz);
+  const fl = Math.min(Math.max((radius - LUT_DISK.flareR0) / LUT_DISK.flareSpan, 0), 1) ** 2;
+  const hz = LUT_DISK.hz[0] + (LUT_DISK.hz[1] - LUT_DISK.hz[0]) * fl;
+  const hzT = LUT_DISK.hzThick[0] + (LUT_DISK.hzThick[1] - LUT_DISK.hzThick[0]) * fl;
+  const R0 = GALACTIC_MODEL.sunRadiusPc;
+  const thin = Math.exp(-(radius - R0) / LUT_DISK.hR) * Math.exp(-z / hz);
+  const thick =
+    Math.exp(-(radius - R0) / LUT_DISK.hRThick) * Math.exp(-z / hzT) * LUT_DISK.thickAmp;
+  return (thin + thick) / (1 + LUT_DISK.thickAmp);
+}
+
+/** média do perfil sobre uma casca, por amostragem uniforme em volume */
+function shellProfile(r0: number, r1: number) {
+  let acc = 0;
+  let seed = 12345; // determinístico: a curva não pode sortear diferente
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const N_AMOSTRAS = 20000;
+  for (let i = 0; i < N_AMOSTRAS; i++) {
+    const r = Math.cbrt(r0 ** 3 + rnd() * (r1 ** 3 - r0 ** 3));
+    const ct = 2 * rnd() - 1;
+    const ph = 2 * Math.PI * rnd();
+    const st = Math.sqrt(1 - ct * ct);
+    acc += lutDiskProfile(r * st * Math.cos(ph), r * st * Math.sin(ph), r * ct);
+  }
+  return acc / N_AMOSTRAS;
+}
+
+/**
+ * Fração da emissividade do modelo que o catálogo JÁ desenha, por
+ * distância do Sol: densidade de luminosidade medida na casca, dividida
+ * pela densidade que o modelo põe ali (densidade local medida × perfil
+ * médio da casca). Satura em 1 — dentro de ~150 pc o catálogo desenha
+ * tudo que o modelo tem, e o resíduo não pode ser negativo.
+ *
+ * Limitação assumida, a mesma de `unresolved`: é função só de d. A
+ * completude do catálogo é mesmo quase isotrópica (é limite de
+ * magnitude), mas a estrutura local não é — o Cinturão de Gould e a
+ * Bolha Local entram na média sem aparecer no nome.
+ */
+export function resolvedCatalogCurve(position: Float32Array, logLum: Float32Array) {
+  const nShell = CAT_SHELLS.length - 1;
+  const lum = new Float64Array(nShell);
+  for (let i = 0; i < logLum.length; i++) {
+    const d = Math.hypot(position[i * 3], position[i * 3 + 1], position[i * 3 + 2]);
+    // busca linear: 14 cascas, e o laço já é dominado pelo hypot
+    for (let k = 1; k <= nShell; k++) {
+      if (d < CAT_SHELLS[k]) {
+        lum[k - 1] += 10 ** logLum[i];
+        break;
+      }
+    }
+  }
+  const volume = (k: number) =>
+    (4 / 3) * Math.PI * (CAT_SHELLS[k + 1] ** 3 - CAT_SHELLS[k] ** 3);
+  // densidade local: as quatro cascas de dentro de 100 pc, onde o
+  // catálogo é completo de sobra (a m=10, alcança M_V ≈ 4,9 a 100 pc)
+  let dentro = 0;
+  for (let k = 0; k < 4; k++) dentro += lum[k];
+  const densLocal = dentro / ((4 / 3) * Math.PI * 100 ** 3);
+  const d: number[] = [];
+  const f: number[] = [];
+  for (let k = 0; k < nShell; k++) {
+    d.push((CAT_SHELLS[k] + CAT_SHELLS[k + 1]) / 2);
+    f.push(Math.min(1, lum[k] / volume(k) / (densLocal * shellProfile(CAT_SHELLS[k], CAT_SHELLS[k + 1]))));
+  }
+  // nó final em ZERO no horizonte: sem ele a interpolação segura o último
+  // valor (~0,003) para sempre e passa a descontar 0,3% da faixa INTEIRA,
+  // a 20 kpc do Sol, onde não existe catálogo nenhum para duplicar.
+  d.push(CAT_SHELLS[nShell]);
+  f.push(0);
+  return { d, f, densLocal };
+}
+
+/**
+ * A curva acima como GLSL. Linear por partes e EXATA nos nós — sem
+ * ajuste, sem constante mágica, e sem indexar array de uniform (que
+ * GLSL ES 1.00 proíbe no fragment). Fora do último nó devolve 0: além
+ * de ~4 kpc nem a estrela mais luminosa do modelo passa de m=10.
+ */
+export function glslResolvedCatalog(curva: { d: number[]; f: number[] } | null) {
+  if (!curva) return 'float resolvedByCatalog(float d) { return 0.0; }\n';
+  const { d, f } = curva;
+  const termos = d
+    .slice(0, -1)
+    .map(
+      (di, k) =>
+        `\n    + ${(f[k + 1] - f[k]).toFixed(6)} * clamp((d - ${di.toFixed(1)}) * ${(
+          1 /
+          (d[k + 1] - di)
+        ).toExponential(6)}, 0.0, 1.0)`
+    )
+    .join('');
+  return /* glsl */ `
+float resolvedByCatalog(float d) {
+  return clamp(${f[0].toFixed(6)}${termos}, 0.0, 1.0);
+}
+`;
+}
 
 const VERT = /* glsl */ `
 attribute vec3 aOffset; // offset inteiro na treliça do bin
