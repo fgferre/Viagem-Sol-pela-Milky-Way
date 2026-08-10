@@ -356,6 +356,17 @@ export function blackbodyLinear(T: number): [number, number, number] {
 }
 
 /**
+ * Espelho CPU de `bvToColor`, mesma fórmula (Ballesteros 2012), mesmo
+ * contrato anti-divergência do espelho acima. Consumidor: a cor das
+ * heroes e do SunStar é decidida na CPU uma vez, na construção — com
+ * este espelho elas obedecem à MESMA lei do catálogo (Onda 1b).
+ */
+export function bvToColor(bv: number): [number, number, number] {
+  const t = 4600 * (1 / (0.92 * bv + 1.7) + 1 / (0.92 * bv + 0.62));
+  return blackbodyLinear(t);
+}
+
+/**
  * Emissão de região H II em sRGB linear, Y = 1: Hα 656 nm e [N II] dominam o
  * vermelho, [O III] 501 nm e Hβ levantam o azul-verde. O verde fica ABAIXO da
  * média de R e B — é essa a assinatura do púrpura, e é o único componente da

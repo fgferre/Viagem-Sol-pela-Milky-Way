@@ -1,10 +1,10 @@
 // ============================================================
-// Hero stars — as 12 estrelas mais brilhantes ganham billboards
+// Hero stars — as 16 estrelas mais brilhantes ganham billboards
 // de brilho dedicados com tamanho angular real (flybys AAA).
 // ============================================================
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
-import { GLSL_NOISE } from '../shaders/common';
+import { GLSL_NOISE, bvToColor } from '../shaders/common';
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -76,20 +76,38 @@ void main() {
 }
 `;
 
-// B-V aproximado pela classe espectral
-function spectToColor(s: string): THREE.Color {
-  const c = s.charAt(0).toUpperCase();
-  const table: Record<string, [number, number, number]> = {
-    O: [0.61, 0.69, 1.0],
-    B: [0.72, 0.79, 1.0],
-    A: [0.85, 0.89, 1.0],
-    F: [1.0, 0.96, 0.85],
-    G: [1.0, 0.88, 0.68],
-    K: [1.0, 0.72, 0.45],
-    M: [1.0, 0.55, 0.35],
-  };
-  const rgb = table[c] ?? [0.9, 0.9, 0.95];
-  return new THREE.Color(rgb[0], rgb[1], rgb[2]);
+// Tabela literal de B-V MEDIDO das 16 heroes (Onda 1b, valores
+// publicados — SIMBAD/Hipparcos). O `ci` do sidecar (HYG v4.4) acerta
+// 15 delas dentro de ±0,03 do publicado, mas erra onde mais se vê:
+// Betelgeuse vem 1,50 lá contra 1,85 medido — e a supergigante é o
+// retrato do Ato II. A tabela é a autoridade; o `ci` do sidecar cobre
+// qualquer nomeada fora dela; a string espectral não decide mais cor
+// (a da Capella é "M1: comp" — a lei antiga de baldes a pintava de M).
+const HERO_BV: Record<string, number> = {
+  Sirius: 0.0,
+  Canopus: 0.15,
+  Arcturus: 1.23,
+  'Rigil Kentaurus': 0.71,
+  Vega: 0.0,
+  Capella: 0.8,
+  Rigel: -0.03,
+  Procyon: 0.42,
+  Achernar: -0.16,
+  Betelgeuse: 1.85,
+  Hadar: -0.23,
+  Altair: 0.22,
+  Acrux: -0.26,
+  Aldebaran: 1.54,
+  Spica: -0.23,
+  Antares: 1.83,
+};
+
+/** B-V do Sol (medido): a cor do clarão distante sai da MESMA lei. */
+const SOL_BV = 0.653;
+
+function heroColor(bv: number): THREE.Color {
+  const [r, g, b] = bvToColor(bv);
+  return new THREE.Color(r, g, b);
 }
 
 // 16 desde o roteiro da rodada 26: inclui Antares (16ª mais brilhante),
@@ -111,7 +129,7 @@ export class HeroStars {
         vertexShader: VERT,
         fragmentShader: FRAG,
         uniforms: {
-          uColor: { value: spectToColor(s.s) },
+          uColor: { value: heroColor(HERO_BV[s.n] ?? s.ci ?? SOL_BV) },
           uTime: { value: 0 },
           // seed pelo índice: cintilação idêntica em toda visita
           uSeed: { value: ((heroIndex++ * 0.6180339887) % 1) * 10 },
@@ -172,7 +190,7 @@ export class SunStar {
       vertexShader: VERT,
       fragmentShader: FRAG,
       uniforms: {
-        uColor: { value: spectToColor('G') },
+        uColor: { value: heroColor(SOL_BV) },
         uTime: { value: 0 },
         uSeed: { value: 4.83 },
         uSize: { value: 0.01 },
