@@ -36,6 +36,28 @@ const ORIGEM = new THREE.Vector3(0, 0, 0);
 
 export type Phase = 'loading' | 'intro' | 'journey' | 'end' | 'free';
 
+/**
+ * As etapas do carregamento, na ordem. Fonte ÚNICA: o director as emite,
+ * o `?loader=<id>` do QA fixa uma delas e o HUD desenha o trilho a partir
+ * desta mesma lista — o "07" do "etapa NN / 07" não é literal em lugar
+ * nenhum, e acrescentar uma etapa aqui move rótulo, trilho e ARIA juntos.
+ */
+export const LOAD_STAGES = (
+  [
+    ['catalogs', 'recebendo os catálogos…'],
+    ['stars', 'acordando 328.749 estrelas…'],
+    ['dust', 'assando a poeira do disco…'],
+    ['structure', 'acoplando braços e warp…'],
+    ['galaxy', 'semeando o disco galáctico…'],
+    ['layers', 'revelando as lâminas do disco…'],
+    ['shaders', 'compilando os shaders…'],
+  ] as const
+).map(([id, label], i, all) => ({ id, label, index: i + 1, total: all.length }));
+
+/** etapa viva do carregamento: `{ id, index, total, label }`, index 1…total */
+export type LoadStage = (typeof LOAD_STAGES)[number];
+export type LoadStageId = LoadStage['id'];
+
 interface DirectorEvents {
   onPhase: (p: Phase) => void;
   onCaption: (index: number, caption: string, sub?: string) => void;
@@ -45,8 +67,8 @@ interface DirectorEvents {
   onQuality: (quality: QualityLevel) => void;
   /** linha de rumo ("→ DESTINO · distância viva"); vazio = esconder */
   onDest: (text: string) => void;
-  /** etapa viva do carregamento — o rótulo que o véu mostra */
-  onStage: (text: string) => void;
+  /** etapa viva do carregamento — a mesma que o HUD desenha */
+  onStage: (stage: LoadStage) => void;
 }
 
 export class Director {
@@ -220,13 +242,14 @@ export class Director {
    * 2026-08-05, item 2); isto é o que dá para honestamente prometer sem ele:
    * o espectador vê O QUE está acontecendo, entre um congelamento e outro.
    */
-  private async stage(text: string) {
-    this.events.onStage(text);
+  private async stage(id: LoadStageId) {
+    const stage = LOAD_STAGES.find((s) => s.id === id);
+    if (stage) this.events.onStage(stage);
     await new Promise<void>((r) => setTimeout(r, 0));
   }
 
   async init() {
-    await this.stage('recebendo os catálogos…');
+    await this.stage('catalogs');
     const {
       stars: { stars: starArrays, meta },
       galactic,
@@ -234,7 +257,7 @@ export class Director {
     } = await this.assets;
     if (this.disposed) return;
     this.meta = meta;
-    await this.stage('acordando 328.749 estrelas…');
+    await this.stage('stars');
 
     // expoM0 é o "tempo de exposição": a magnitude aparente cujo pico de
     // PSF chega a 1. Com 3,5 as ~40 estrelas mais brilhantes do céu
@@ -253,10 +276,10 @@ export class Director {
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
     const cartOn = Boolean(galactic) && cartMode !== 'off';
-    await this.stage('assando a poeira do disco…');
+    await this.stage('dust');
     const dustBake = bakeDustMap(cartOn && galactic ? galactic.dustDensity : null);
     this.dustMapTexture = dustBake.texture;
-    await this.stage('acoplando braços e warp…');
+    await this.stage('structure');
     const structureBake = bakeGalacticStructureMap(
       cartOn ? galactic : null,
       dustBake.density,
@@ -266,7 +289,7 @@ export class Director {
     this.structureMapTexture = structureBake.texture;
     // sem contagem no rótulo: cinema semeia 4,02 M, performance 1,1 M — um
     // número fixo mentiria em metade dos aparelhos
-    await this.stage('semeando o disco galáctico…');
+    await this.stage('galaxy');
     this.galaxy = new Galaxy(
       buildGalaxy(
         20260730,
@@ -287,7 +310,7 @@ export class Director {
       this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
     );
     // congela as lâminas (estáticas) em texturas — depois do modo
-    await this.stage('revelando as lâminas do disco…');
+    await this.stage('layers');
     this.galaxy.bakeDiscLayers(this.engine.renderer);
     const tauTex = this.galaxy.tauMapTexture;
     this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
@@ -354,7 +377,7 @@ export class Director {
     // Captura (?shot=) pula: o polling queimaria o virtual-time-budget,
     // e sob tempo virtual o stall síncrono de sempre não custa nada.
     if (!this.shotMode) {
-      await this.stage('compilando os shaders…');
+      await this.stage('shaders');
       const warm = new THREE.Scene();
       // a chave de programa inclui a PRESENÇA do atributo normal
       // (vertexNormals): o quad da nebulosa é PlaneGeometry (tem normal),

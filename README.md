@@ -59,7 +59,8 @@ mantêm a cena com o preenchimento procedural.
 ```
 src/
 ├─ App.tsx                  React root: fases (loading → intro → journey → end), HUD, deep-links
-├─ components/Hud.tsx       HUD: títulos, legendas, botões e progresso
+├─ components/Hud.tsx       HUD: títulos, legendas, botões, progresso e a tela de carregamento
+├─ components/CartografiaCanvas.ts a composição da loading em Canvas 2D (grade, halo, espiral, poeira)
 ├─ components/LabelCanvas.ts labels em um único Canvas 2D, com colisão e culling
 ├─ three/
 │  ├─ director.ts           ORQUESTRADOR: instancia mundos, crossfades por distância, loop principal
@@ -190,6 +191,19 @@ a rampa em silêncio.
 | `&nogal=1` `&nosun=1` `&nohero=1` `&nocat=1` `&nodust=1` `&nonebula=1` `&nomarker=1` | esconde cada sistema isoladamente |
 | `&nogdust=1` `&noglow=1` | esconde poeira / brilho-do-bojo **da galáxia** |
 | `&dbgfade=1` | loga fades e distâncias no console |
+| `?loader=<etapa>` | fixa uma etapa da tela de carregamento e a mantém no ar depois do init |
+
+`?loader=` aceita os ids de `LOAD_STAGES` (`director.ts`), na ordem:
+`catalogs` · `stars` · `dust` · `structure` · `galaxy` · `layers` · `shaders`.
+Com `&shot=1` a composição fica ESTÁTICA (sem rotação, varredura nem pulso) e
+o relógio visual congela — é assim que cada etapa vira captura determinística:
+
+```bash
+open "http://localhost:5173/?loader=galaxy&shot=1"
+```
+
+`&shot=2` continua removendo todo o HUD, e a tela de carregamento nem monta
+nesse modo (o laço do canvas 2D disputaria a thread com a captura).
 
 Exemplo de QA headless (Chromium):
 

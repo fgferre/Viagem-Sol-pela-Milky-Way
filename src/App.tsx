@@ -2,14 +2,17 @@
 // App — canvas WebGL + HUD cinematográfico sobre a simulação.
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
-import { Director } from './three/director';
-import type { Phase } from './three/director';
+import { Director, LOAD_STAGES } from './three/director';
+import type { LoadStage, Phase } from './three/director';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
 import { TONE_MAPPINGS } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
-import { TitleVeil, Caption, ProgressBar } from './components/Hud';
+import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import { Ajustes } from './components/Ajustes';
 import './hud.css';
+
+/** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
+const MERGE_MS = 2200;
 
 export default function App() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -30,11 +33,27 @@ export default function App() {
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
   const [loadError, setLoadError] = useState('');
-  const [loadStage, setLoadStage] = useState('cartografando 328.749 estrelas de catálogo…');
+  const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
+  // a loading é camada persistente: só desmonta DEPOIS do merge terminar
+  const [loadingMontada, setLoadingMontada] = useState(true);
   // ?ajustes=1 abre o painel direto: uma configuração inteira cabe num link,
   // inclusive com o painel visível para conferência.
   const [ajustes, setAjustes] = useState(
     new URLSearchParams(window.location.search).has('ajustes')
+  );
+
+  // ?loader=<id> fixa uma etapa da tela de carregamento e a mantém no ar
+  // depois que o init termina — com &shot=1 (que congela transições e o
+  // relógio visual) a captura de cada etapa é determinística.
+  const [loaderFixo] = useState(
+    () =>
+      LOAD_STAGES.find(
+        (s) => s.id === new URLSearchParams(window.location.search).get('loader')
+      ) ?? null
+  );
+  // prefers-reduced-motion: composição estática, crossfade simples
+  const [movimentoReduzido] = useState(
+    () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   );
 
   useEffect(() => {
@@ -126,6 +145,21 @@ export default function App() {
     };
   }, []);
 
+  // estado da camada de carregamento; `done` é o que dispara o merge.
+  // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado
+  // tem de MOSTRAR a falha, não a etapa congelada por cima dela.
+  const loaderState: 'loading' | 'done' | 'error' = loadError
+    ? 'error'
+    : loaderFixo || phase === 'loading'
+      ? 'loading'
+      : 'done';
+
+  useEffect(() => {
+    if (loaderState !== 'done') return;
+    const id = window.setTimeout(() => setLoadingMontada(false), MERGE_MS);
+    return () => window.clearTimeout(id);
+  }, [loaderState]);
+
   // pausa via botão ou tecla Espaço — um filme de mais de 5 min precisa disso
   const togglePause = () => {
     setPaused(directorRef.current?.togglePause() ?? false);
@@ -211,7 +245,7 @@ export default function App() {
   };
 
   const inJourney = phase === 'journey';
-  const showVeil = phase === 'loading' || phase === 'intro' || phase === 'end';
+  const showVeil = phase === 'intro' || phase === 'end';
   // ?shot=1 — modo foto: sem transições, capturas determinísticas
   // ?shot=2 — só a cena: sem HUD, para medir o quadro contra a referência
   const shotParam = new URLSearchParams(window.location.search).get('shot');
@@ -348,18 +382,30 @@ export default function App() {
         urlParaCopiar={() => urlComMomento().toString()}
       />
 
-      {/* tela de título / loading / fim */}
+      {/* tela de título / fim — montada desde o primeiro frame, por baixo
+          da loading: é o crossfade entre camadas persistentes que tira o
+          flash da troca */}
       <TitleVeil
-        visible={showVeil || Boolean(loadError)}
-        mode={
-          loadError ? 'error' : phase === 'loading' ? 'loading' : phase === 'intro' ? 'intro' : 'end'
-        }
+        visible={showVeil}
+        mode={phase === 'end' ? 'end' : 'intro'}
         onPlay={play}
         onExplore={freeRoam}
         runtime={runtime}
-        error={loadError}
-        stage={loadStage}
       />
+
+      {/* cartografia viva do carregamento (por cima: o núcleo dela expande
+          sobre o Sol WebGL quando a viagem começa). Em ?shot=2 ela nem
+          monta: esconder por CSS deixaria o laço do canvas disputando a
+          thread com a captura que a medição depende */}
+      {loadingMontada && !bareMode && (
+        <LoadingVeil
+          stage={loaderFixo ?? loadStage}
+          state={loaderState}
+          still={movimentoReduzido || shotMode}
+          error={loadError}
+          onRetry={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

@@ -2200,6 +2200,42 @@ capítulos nomeados, `?t=`+`play=1`, guarda de teclado, mobile). O que falta:
    visitante).** Rótulo por etapa (`onStage` → véu) + `setTimeout(0)` entre as
    etapas — não rAF, que é estrangulado em aba de fundo e travaria o init.
    O conserto DEFINITIVO segue sendo o Worker, item (2) da fila de 2026-08-05.
+   **A tela de carregamento foi refeita em 2026-08-09 — "Cartografia Viva".**
+   Antes havia um buraco negro desenhado em CSS e o título piscando. Agora a
+   galáxia vai se desenhando enquanto o app carrega: cada etapa acende uma
+   camada nova (primeiro o halo de estrelas, depois o miolo, a poeira, os
+   braços, as regiões de gás e o núcleo), com um trilho embaixo mostrando
+   "etapa 05 / 07". O desenho é feito num canvas comum, de duas dimensões
+   (`components/CartografiaCanvas.ts`) — desenho barato, porque o caro é a
+   cena 3D que está sendo montada ao mesmo tempo. A lista das sete etapas
+   fica num lugar só, `LOAD_STAGES` no `director.ts`; o número 7 não está
+   escrito em nenhum outro canto, então acrescentar uma etapa ali muda o
+   texto, o trilho e a leitura em voz alta de uma vez.
+
+   O que ainda decide alguma coisa, tudo medido nesta máquina:
+   - **A galáxia se revela pelo relógio, não por quadro desenhado.** Enquanto
+     monta a cena, o app trava a tela por vários segundos seguidos e quase
+     nenhum quadro é desenhado. Na primeira versão a revelação avançava um
+     pouco a cada quadro — e o resultado apareceu numa captura: a etapa 7 já
+     estava no ar com a tela ainda vazia. Agora ela usa o tempo real que
+     passou. O giro da galáxia continua andando por quadro, de propósito: se
+     ele também pulasse, o salto apareceria como um corte feio.
+   - **Redesenhar a galáxia inteira custa ~19 ms** (são 18 mil pontinhos, e o
+     número foi medido no próprio navegador). Por isso ela não é redesenhada a
+     cada quadro: só quando o progresso passa de um degrau para o próximo —
+     são 100 degraus no carregamento todo, o valor `BAKE_STEPS`. E uma camada
+     que já terminou de acender para de ser redesenhada, o que zera o custo na
+     parte final. Se um dia o carregamento ficar mais curto que o tempo de
+     acender as camadas, baixar esse número é a alavanca.
+   - **O fundo preto da tela de carregamento some no mesmo ritmo em que a tela
+     de título aparece — 1,6 segundo nos dois.** Quando o preto saía mais
+     rápido, o Sol aparecia cru por meio segundo no meio da troca. A tela só
+     fica escura o tempo todo se as duas curvas forem iguais.
+   - **Com `?shot=2` a tela de carregamento nem chega a ser criada.** Só
+     escondê-la não bastava: ela continuaria desenhando e roubando tempo da
+     captura que serve para medir a imagem.
+   - Para conferir uma etapa parada na tela: `?loader=<nome da etapa>`, e
+     `&shot=1` junto se quiser sem nenhum movimento. Está no README.
 3. ~~**Qualidade inicial por dispositivo.**~~ **FEITO (2026-08-09).** Sem `?q=`:
    touch com tela curta < 820 px → `performance`, touch grande → `alta`, resto →
    `cinema` (`defaultQualityForDevice`, engine.ts). A assimetria que decide o

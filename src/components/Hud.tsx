@@ -1,7 +1,172 @@
 // ============================================================
 // Componentes do HUD — telas de título, legendas e progresso.
 // ============================================================
+import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { LOAD_STAGES } from '../three/director';
+import type { LoadStage } from '../three/director';
+import { CartografiaCanvas } from './CartografiaCanvas';
+
+/** telas curtas escondem só a telemetria dos cantos */
+const ehCompacto = () => window.innerWidth < 760 || window.innerHeight < 480;
+
+/**
+ * A tela de carregamento: uma camada PERSISTENTE por baixo do véu de
+ * título. A cartografia (canvas 2D) e o núcleo solar ficam montados do
+ * primeiro frame ao fim da transição — quando a viagem começa, o núcleo
+ * desliza ao centro e expande sobre o Sol WebGL enquanto o resto some.
+ * Montar e desmontar isso no meio da troca é o que dava flash.
+ */
+export function LoadingVeil({
+  stage,
+  state,
+  still,
+  error,
+  onRetry,
+}: {
+  /** etapa viva do director (ou a fixada por `?loader=`) */
+  stage: LoadStage;
+  /** `done` dispara a expansão do núcleo; `error` esfria a cena */
+  state: 'loading' | 'done' | 'error';
+  /** prefers-reduced-motion ou `?shot=`: sem rotação, varredura ou expansão */
+  still: boolean;
+  /** mensagem técnica da falha */
+  error?: string;
+  onRetry: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cartografia = useRef<CartografiaCanvas | null>(null);
+  const [compacto, setCompacto] = useState(ehCompacto);
+  const falhou = state === 'error';
+  const p = stage.index / stage.total;
+  const anuncio = `Etapa ${stage.index} de ${stage.total} — ${stage.label}`;
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const cv = new CartografiaCanvas(canvasRef.current);
+    cartografia.current = cv;
+    return () => {
+      cv.dispose();
+      cartografia.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    cartografia.current?.setState({
+      index: stage.index,
+      total: stage.total,
+      error: state === 'error',
+      still,
+      merging: state === 'done',
+    });
+  }, [stage, state, still]);
+
+  useEffect(() => {
+    const aoRedimensionar = () => setCompacto(ehCompacto());
+    window.addEventListener('resize', aoRedimensionar);
+    return () => window.removeEventListener('resize', aoRedimensionar);
+  }, []);
+
+  return (
+    <div className={`cv-veil cv-${state}`}>
+      <div className="cv-scene">
+        <canvas ref={canvasRef} className="cv-canvas" aria-hidden="true" />
+      </div>
+
+      {/* o núcleo galáctico quente: o único elemento que sobrevive à
+          transição — vira o Sol da intro ao expandir */}
+      <div className="cv-core" aria-hidden="true">
+        <div className="cv-core-glow" style={{ opacity: falhou ? 0.06 : 0.05 + p * 0.24 }} />
+        <div className="cv-core-scale" style={{ transform: `scale(${(0.4 + p * 0.6).toFixed(3)})` }}>
+          <div
+            className="cv-core-body"
+            style={{
+              boxShadow: falhou
+                ? '0 0 26px rgba(140,160,200,.3)'
+                : `0 0 ${Math.round(26 + p * 46)}px rgba(255,200,130,${(0.25 + p * 0.4).toFixed(2)})`,
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="cv-hud">
+        {!compacto && (
+          <>
+            <div className="cv-telemetria esquerda">
+              <div>HYG · 328.749 estrelas</div>
+              <div>poeira APOGEE · CO · H II</div>
+            </div>
+            <div className="cv-telemetria direita">
+              <div>aglomerados · Cefeidas Gaia DR3</div>
+              <div>RA 17h 45m · DEC −29° 00′</div>
+            </div>
+          </>
+        )}
+        <div className="cv-titulo">
+          <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
+          <div className="title-big">MAR DE ESTRELAS</div>
+          <div className="cv-etapa-rotulo">{stage.label}</div>
+        </div>
+        <div className="cv-trilho">
+          <div className="cv-trilho-conta">
+            etapa {String(stage.index).padStart(2, '0')} / {String(stage.total).padStart(2, '0')}
+          </div>
+          {/* progressbar discreto: a régua é a ETAPA, e o rótulo dela já
+              vai no aria-valuetext — sem porcentagem, que mentiria (a rede
+              é a fatia pequena do carregamento) */}
+          <div
+            className="cv-trilho-marcos"
+            role="progressbar"
+            aria-label="Progresso do carregamento"
+            aria-valuemin={1}
+            aria-valuemax={stage.total}
+            aria-valuenow={stage.index}
+            aria-valuetext={anuncio}
+          >
+            {LOAD_STAGES.map((s) => (
+              <div
+                key={s.id}
+                className={`cv-marco${
+                  s.index < stage.index ? ' feito' : s.index === stage.index ? ' agora' : ''
+                }`}
+                // os marcos concluídos são FATIAS de um único gradiente
+                // âmbar→azul (o mesmo da barra da viagem): fundo 700% de
+                // largura, deslocado i/(total−1) — juntos formam a barra
+                style={
+                  s.index < stage.index
+                    ? { backgroundPosition: `${((s.index - 1) / (stage.total - 1)) * 100}% 0%` }
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* só a MUDANÇA de etapa é anunciada — ler o véu inteiro a cada
+          troca era o que fazia o leitor de tela repetir título e kicker */}
+      <div className="cv-anuncio" aria-live="polite">
+        {state === 'loading' ? anuncio : ''}
+      </div>
+
+      {falhou && (
+        <div className="cv-falha" role="alert">
+          <div className="title-kicker">FALHA DE INICIALIZAÇÃO</div>
+          <div className="title-big error-title">A VIAGEM NÃO PÔDE COMEÇAR</div>
+          <div className="title-sub">
+            a cartografia parou na etapa {String(stage.index).padStart(2, '0')}/
+            {String(stage.total).padStart(2, '0')} — {stage.label}
+          </div>
+          {error && <div className="cv-falha-detalhe">{error}</div>}
+          <div className="title-rule cv-falha-regua" />
+          <button className="hud-btn" onClick={onRetry}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TitleVeil({
   visible,
@@ -9,17 +174,12 @@ export function TitleVeil({
   onPlay,
   onExplore,
   runtime,
-  error,
-  stage,
 }: {
   visible: boolean;
-  mode: 'loading' | 'intro' | 'end' | 'error';
+  mode: 'intro' | 'end';
   onPlay: () => void;
   onExplore?: () => void;
   runtime?: number;
-  error?: string;
-  /** etapa viva do carregamento (onStage do director) */
-  stage?: string;
 }) {
   const minutes = runtime ? Math.floor(runtime / 60) : 0;
   const seconds = runtime ? Math.round(runtime % 60) : 0;
@@ -29,26 +189,6 @@ export function TitleVeil({
       aria-live="polite"
       aria-hidden={!visible}
     >
-      {mode === 'loading' && (
-        <>
-          {/* buraco negro em CSS puro: disco de acreção inclinado girando,
-              anel de fótons e a sombra — o destino da viagem como loader */}
-          <div className="bh-loader" aria-hidden="true">
-            <div className="bh-tilt">
-              <div className="bh-accretion" />
-            </div>
-            <div className="bh-arc" />
-            <div className="bh-photon" />
-            <div className="bh-core" />
-          </div>
-          <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
-          <div className="title-big loading-pulse">MAR DE ESTRELAS</div>
-          {/* aria-live no véu já anuncia a troca; o rótulo vem do director,
-              etapa por etapa — a resposta honesta a "travou?" é dizer o que
-              está sendo feito agora */}
-          <div className="title-sub">{stage ?? 'cartografando 328.749 estrelas de catálogo…'}</div>
-        </>
-      )}
       {mode === 'intro' && (
         <>
           <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
@@ -102,16 +242,6 @@ export function TitleVeil({
               </button>
             )}
           </div>
-        </>
-      )}
-      {mode === 'error' && (
-        <>
-          <div className="title-kicker">FALHA DE INICIALIZAÇÃO</div>
-          <div className="title-big error-title">A VIAGEM NÃO PÔDE COMEÇAR</div>
-          <div className="title-sub">{error}</div>
-          <button className="hud-btn" onClick={() => window.location.reload()}>
-            Tentar novamente
-          </button>
         </>
       )}
     </div>

@@ -301,76 +301,246 @@
   opacity: var(--warp);
 }
 
-/* --- loading --- */
-.loading-pulse {
-  animation: pulse 2.2s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 1; }
+/* --- loading: Cartografia Viva ---------------------------------------
+   Camada persistente montada desde o primeiro frame. O desenho pesado
+   (grade, halo, espiral, poeira) vive no canvas 2D de CartografiaCanvas;
+   aqui fora só transform e opacity animam — inclusive na transição, em
+   que o núcleo desliza ao centro e expande sobre o Sol WebGL. */
+.cv-veil {
+  position: fixed;
+  inset: 0;
+  /* acima do véu de título (50): é a loading que cobre a intro e sai */
+  z-index: 52;
+  pointer-events: none;
 }
 
-/* --- loader: Sagittarius A* em CSS puro ------------------------------
-   Disco de acreção = gradiente cônico girando, deitado em 3D (rotateX);
-   anel de fótons e sombra por cima, retos — como a lente de verdade faz
-   no app. Com prefers-reduced-motion o giro para e vira um emblema. */
-.bh-loader {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin-bottom: 2.2rem;
-}
-.bh-tilt {
-  position: absolute;
-  inset: -14px;
-  transform: perspective(260px) rotateX(66deg);
-}
-.bh-accretion {
+/* O fundo preto viaja com o canvas: a cena WebGL nasce por baixo e é este
+   fade que a revela, sem o flash do primeiro quadro. A duração é a MESMA
+   do véu de título (1,6 s) de propósito — é o que mantém a soma das duas
+   camadas escuras constante durante a troca; com o preto saindo mais
+   rápido que o véu entrando, o Sol aparecia cru por meio segundo. */
+.cv-scene {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 20deg,
-    transparent 4%,
-    rgba(255, 176, 96, 0.12) 16%,
-    rgba(255, 205, 130, 0.75) 34%,
-    rgba(255, 244, 224, 0.98) 47%,
-    rgba(255, 196, 116, 0.55) 60%,
-    rgba(180, 90, 40, 0.15) 76%,
-    transparent 92%
-  );
-  filter: blur(5px);
-  animation: bhSpin 2.8s linear infinite;
-}
-/* a imagem do disco lenteada POR CIMA da sombra — o "chapéu" do Gargantua */
-.bh-arc {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 16px;
-  height: 44px;
-  border-radius: 50%;
-  border-top: 2.5px solid rgba(255, 226, 180, 0.85);
-  filter: blur(1.2px);
-  box-shadow: 0 -3px 10px rgba(255, 200, 130, 0.35);
-}
-.bh-photon {
-  position: absolute;
-  inset: 30px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 236, 208, 0.95);
-  box-shadow:
-    0 0 14px rgba(255, 214, 150, 0.85),
-    inset 0 0 9px rgba(255, 214, 150, 0.55);
-}
-.bh-core {
-  position: absolute;
-  inset: 33px;
-  border-radius: 50%;
   background: #000;
+  opacity: 1;
+  transition: opacity 1.6s ease;
 }
-@keyframes bhSpin {
-  to { transform: rotate(360deg); }
+.cv-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cv-error .cv-scene {
+  opacity: 0.55;
+}
+.cv-done .cv-scene {
+  opacity: 0;
+}
+
+/* --- núcleo galáctico quente (50% x, 40% y — o centro da composição) --- */
+.cv-core {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 0;
+  height: 0;
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  transition:
+    transform 1.8s cubic-bezier(0.55, 0, 0.3, 1),
+    opacity 1.3s ease 0.5s;
+}
+.cv-done .cv-core {
+  /* 40% + 10vh = o centro da tela, onde o Sol da intro está */
+  transform: translateY(10vh) scale(17);
+  opacity: 0;
+}
+.cv-core-glow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 46vmin;
+  height: 46vmin;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  /* a intensidade é a OPACIDADE do elemento (inline, por etapa): gradiente
+     não interpola de forma confiável entre navegadores */
+  background: radial-gradient(closest-side, rgb(255, 205, 140), rgba(255, 176, 96, 0) 70%);
+  transition: opacity 1s ease;
+}
+.cv-core-scale {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: transform 0.9s ease;
+}
+.cv-core-body {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6.5vmin;
+  height: 6.5vmin;
+  margin: -3.25vmin 0 0 -3.25vmin;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 42% 36%,
+    #fff2dc,
+    rgba(255, 205, 130, 0.98) 45%,
+    rgba(250, 170, 92, 0.95) 76%,
+    rgba(200, 110, 40, 0.85)
+  );
+  filter: blur(0.5px);
+  transition: box-shadow 1s ease;
+  animation: cvBreathe 5s ease-in-out infinite;
+}
+/* núcleo frio: a cartografia parou. Recua junto com a cena — ele fica no
+   meio do título da falha, e ali o assunto é a mensagem, não a galáxia */
+.cv-error .cv-core {
+  opacity: 0.45;
+}
+.cv-error .cv-core-body {
+  background: radial-gradient(circle at 42% 36%, #cfd8ea, #7e93bd 55%, #45536f);
+  animation: none;
+}
+@keyframes cvBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* --- HUD da loading --- */
+.cv-hud {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.8s ease;
+}
+/* visibility junto: com opacity 0 sozinha o trilho continuava no leitor de
+   tela ("etapa 1 de 7") depois de a viagem já ter começado */
+.cv-done .cv-hud,
+.cv-error .cv-hud {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.8s ease,
+    visibility 0s linear 0.8s;
+}
+
+.cv-telemetria {
+  position: absolute;
+  top: 3.4vh;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: rgba(165, 180, 202, 0.58);
+  font-size: 0.56rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.cv-telemetria.esquerda { left: 3vw; text-align: left; }
+.cv-telemetria.direita { right: 3vw; text-align: right; }
+
+.cv-titulo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 62%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0 6vw;
+  text-align: center;
+}
+/* o kicker já tem margem própria na intro; aqui o gap do flex resolve */
+.cv-titulo .title-kicker { margin-bottom: 0; }
+.cv-titulo .title-big { white-space: nowrap; }
+.cv-etapa-rotulo {
+  color: rgba(190, 205, 228, 0.85);
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  font-weight: 300;
+  font-size: clamp(0.62rem, 1.1vw, 0.82rem);
+}
+
+/* trilho inferior: "etapa NN / 07" + um marco por etapa */
+.cv-trilho {
+  position: absolute;
+  left: 6vw;
+  right: 6vw;
+  bottom: 7.4vh;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+.cv-trilho-conta {
+  color: rgba(165, 180, 202, 0.58);
+  font-size: 0.56rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cv-trilho-marcos {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+}
+.cv-marco {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.13);
+  transition: background 0.6s ease, box-shadow 0.6s ease;
+}
+/* concluídos: fatias do MESMO gradiente âmbar→azul da barra da viagem —
+   700% de largura, cada marco deslocado para a sua fatia (inline) */
+.cv-marco.feito {
+  background-image: linear-gradient(90deg, rgba(255, 200, 130, 0.95), rgba(150, 190, 255, 0.95));
+  background-size: 700% 100%;
+  background-repeat: no-repeat;
+}
+.cv-marco.agora {
+  background: rgba(255, 226, 180, 0.95);
+  box-shadow: 0 0 8px rgba(255, 214, 150, 0.6);
+}
+.cv-error .cv-marco.agora {
+  background: rgba(255, 140, 110, 0.9);
+  box-shadow: none;
+}
+
+/* região viva só com a etapa: sem reler título e kicker a cada troca */
+.cv-anuncio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* --- falha de inicialização --- */
+.cv-falha {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 6vw;
+  background: radial-gradient(ellipse at center, rgba(2, 4, 10, 0.55), rgba(0, 0, 2, 0.92));
+}
+.cv-falha-detalhe {
+  margin-top: 1.1rem;
+  max-width: 60ch;
+  color: rgba(190, 205, 228, 0.6);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  line-height: 1.8;
+}
+.cv-falha-regua {
+  background: linear-gradient(90deg, transparent, rgba(255, 140, 110, 0.9), transparent);
 }
 
 @media (max-width: 760px) {
@@ -428,6 +598,47 @@
     right: 5vw;
     bottom: 6.4vh;
   }
+
+  .cv-trilho {
+    left: 5vw;
+    right: 5vw;
+    bottom: 6.4vh;
+    gap: 0.9rem;
+  }
+
+  .cv-titulo {
+    top: 58%;
+    gap: 0.8rem;
+  }
+
+  .cv-titulo .title-big {
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+  }
+
+  .cv-etapa-rotulo {
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
+  }
+}
+
+/* paisagem baixa (844×390): a composição sobe e o bloco de texto encolhe
+   para caber entre a galáxia e o trilho */
+@media (max-height: 480px) and (orientation: landscape) {
+  .cv-titulo {
+    top: 56%;
+    gap: 0.55rem;
+  }
+
+  .cv-titulo .title-big {
+    font-size: clamp(1rem, 3.4vw, 1.6rem);
+    letter-spacing: 0.38em;
+    text-indent: 0.38em;
+  }
+
+  .cv-trilho {
+    bottom: 5vh;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -437,11 +648,26 @@
     transition-duration: 0.01ms;
   }
 
-  .caption-wrap.show,
-  .loading-pulse {
+  .caption-wrap.show {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  /* a loading vira crossfade simples: nada gira, pulsa ou expande — só
+     as opacidades atravessam (o canvas já fica estático pelo `still`) */
+  .cv-core-body {
+    animation: none;
+  }
+
+  .cv-core-scale {
+    transition: none;
+  }
+
+  .cv-core,
+  .cv-done .cv-core {
+    transform: none;
+    transition: opacity 0.8s ease;
   }
 }
 
