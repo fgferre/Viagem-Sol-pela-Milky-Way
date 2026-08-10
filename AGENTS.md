@@ -9,4 +9,4 @@
 7. Valide a mudança com os gates relevantes. Renderização só está pronta depois de verificação no navegador.
 8. Registre apenas o resultado, os testes e os limites reais. Não deixe diários, prompts ou relatórios já consumidos no projeto.
 
-Não faça commit ou push sem pedido explícito.
+Crie um commit local a cada checkpoint coerente de implementação validada — sem esperar pedido. Não faça push sem pedido explícito.
