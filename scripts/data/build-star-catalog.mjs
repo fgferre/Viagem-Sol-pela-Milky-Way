@@ -259,9 +259,14 @@ for (let k = 1; k < athyg.lines.length; k++) {
       t: proper ? 0 : 1,
       ci: Number(ci.toFixed(3)),
     };
-    const hd = ref?.hd ?? number(c[A.hd]);
-    const hip = ref?.hip ?? number(c[A.hip]);
-    const gl = ref?.gl || (c[A.gl] ?? '').trim();
+    // EXCLUSIVAMENTE do HYG v4.4 — sem fallback para as colunas do AT-HYG:
+    // o fallback reintroduziria em silêncio, numa regeneração futura, o
+    // exato bug que esta onda corrigiu (28 HDs divergentes — o AT-HYG dá o
+    // HD da componente B de Antares — e Gliese sem prefixo canônico).
+    // Estrela sem par no HYG fica sem id, com o campo AUSENTE — honesto.
+    const hd = ref?.hd ?? null;
+    const hip = ref?.hip ?? null;
+    const gl = ref?.gl || '';
     if (hd !== null) entry.hd = hd;
     if (hip !== null) entry.hip = hip;
     if (gl) entry.gl = gl;

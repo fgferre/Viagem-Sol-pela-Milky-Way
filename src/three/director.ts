@@ -142,6 +142,11 @@ export class Director {
   constructor(canvas: HTMLCanvasElement, events: DirectorEvents) {
     this.events = events;
     this.engine = new Engine(canvas);
+    // Se QUALQUER coisa abaixo lançar (o prime do Sol são ~550 draws numa
+    // GPU que pode estar caindo), o contexto WebGL e o listener de resize
+    // do Engine não podem ficar órfãos atrás do véu de erro — o catch
+    // devolve o Engine e relança para o App mostrar a falha (Onda 1d).
+    try {
     // A REDE PRIMEIRO. O prime do Sol (logo abaixo) são ~550 draws
     // offscreen síncronos, e ele não depende de um byte dos ativos — mas
     // como os fetches só nasciam no init(), os dois trabalhos rodavam em
@@ -179,6 +184,11 @@ export class Director {
     this.nebula.setScale(this.engine.quality === 'performance' ? 0.35 : 0.5);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
     this.post.setGrain(this.engine.preset.grain);
+    // e o React TAMBÉM é ouvinte tardio: sem esta semente, um tier inicial
+    // vindo do storage ou do teto de GL (sem ?q=) deixava o painel de
+    // Ajustes mostrando "cinema" — e o clique nele virava no-op (achado
+    // da revisão de olhos frescos da Onda 1, verificado ao vivo).
+    this.events.onQuality(this.engine.quality);
 
     this.engine.onResize((w, h) => {
       this.nebula.setSize(w, h);
@@ -214,6 +224,10 @@ export class Director {
     this.roam.onTap = (x, y) => this.tryVisit(x, y);
 
     this.engine.onTick((t, dt) => this.tick(t, dt));
+    } catch (e) {
+      this.engine.dispose();
+      throw e;
+    }
   }
 
   /**

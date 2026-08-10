@@ -52,8 +52,15 @@ export function sondarGl(): GlCapacidades {
     } catch {
       /* renderer ilegível: fica undefined */
     }
-    // todo getParameter tem de rodar ANTES de soltar o contexto
-    const maxTex = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    // todo getParameter tem de rodar ANTES de soltar o contexto — e cada
+    // leitura com a própria blindagem: uma falha aqui não pode rebaixar
+    // um aparelho com WebGL utilizável para o véu fatal de "sem WebGL"
+    let maxTex = 0;
+    try {
+      maxTex = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    } catch {
+      /* ilegível: fica de fora do veredito */
+    }
     gl.getExtension('WEBGL_lose_context')?.loseContext();
     cache = { suportado: true };
     if (Number.isFinite(maxTex) && maxTex > 0) cache.maxTextureSize = maxTex;
