@@ -7,6 +7,7 @@ import type { LoadStage, Phase } from './three/director';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
 import { TONE_MAPPINGS } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
+import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import { Ajustes } from './components/Ajustes';
 import './hud.css';
@@ -32,7 +33,16 @@ export default function App() {
   const [quality, setQuality] = useState<QualityLevel>('cinema');
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
-  const [loadError, setLoadError] = useState('');
+  // Sonda de GL na PRIMEIRA renderização (Onda 1d/1e): o construtor do
+  // Engine cria o WebGLRenderer sincronamente e o three LANÇA quando não
+  // há contexto — uma exceção síncrona que o .catch() do init() nunca
+  // pegava. Sondar antes deixa o véu mostrar a falha com retry em vez de
+  // tela preta muda. A sonda é memoizada: o Engine reusa este veredito.
+  const [loadError, setLoadError] = useState(() =>
+    sondarGl().suportado
+      ? ''
+      : 'Este navegador está sem WebGL utilizável — a Viagem precisa dele para desenhar a galáxia. Atualize o navegador ou ative a aceleração de hardware e tente de novo.'
+  );
   const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
   // a loading é camada persistente: só desmonta DEPOIS do merge terminar
   const [loadingMontada, setLoadingMontada] = useState(true);
@@ -58,9 +68,14 @@ export default function App() {
 
   useEffect(() => {
     if (!canvasRef.current || !labelCanvasRef.current) return;
+    // sem GL utilizável (veredito da sonda, já no estado inicial): não há
+    // Director a construir — o véu de erro com retry já está na tela
+    if (!sondarGl().suportado) return;
     let cancelled = false;
     const labels = new LabelCanvas(labelCanvasRef.current);
-    const d = new Director(canvasRef.current, {
+    let d: Director;
+    try {
+      d = new Director(canvasRef.current, {
       onPhase: setPhase,
       onCaption: (idx, text, sub) => setCaption({ idx, text, sub }),
       onProgress: (progress) => {
@@ -73,7 +88,19 @@ export default function App() {
       onQuality: setQuality,
       onDest: setDest,
       onStage: setLoadStage,
-    });
+      });
+    } catch (error) {
+      // a sonda passou mas a criação real falhou (contexto despejado,
+      // driver caindo): mesmo véu de erro, mesmo retry. O microtask tira
+      // o setState do corpo síncrono do effect (regra do lint).
+      console.error(error);
+      queueMicrotask(() =>
+        setLoadError(
+          error instanceof Error ? error.message : 'Não foi possível criar o renderizador.'
+        )
+      );
+      return () => labels.clear();
+    }
     directorRef.current = d;
     // gancho de inspeção (só dev): estado da câmera/fase no console
     if (import.meta.env.DEV) {

@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '127.0.0.1',
-    port: 5173,
+    // PORT vem do harness de preview quando a 5173 está ocupada por outra
+    // sessão; sem a variável, o default segue 5173.
+    port: Number(process.env.PORT) || 5173,
   },
   build: {
     target: 'es2022',

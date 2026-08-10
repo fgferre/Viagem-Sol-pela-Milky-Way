@@ -3,6 +3,8 @@
 // adaptativa (degrada pixel ratio / passos do raymarch se cair fps).
 // ============================================================
 import * as THREE from 'three';
+import { sondarGl } from '../../lib/glProbe';
+import { gravarPreferencia, lerPreferencias } from '../../lib/preferencias';
 
 export type QualityLevel = 'cinema' | 'alta' | 'performance';
 
@@ -87,9 +89,19 @@ export class Engine {
     // Director e a população da galáxia é decidida durante o init. Aplicado
     // só depois (App.tsx), performance ficava com as 2,7 M partículas e o Sol
     // em high — exatamente onde a economia é necessária.
+    //
+    // Precedência URL > storage > detecção (Onda 1f): a URL segue soberana —
+    // inclusive sobre o teto de GL, porque os gates fixam ?q= e a captura tem
+    // de enxergar o que a tela enxerga. Sem ?q=, vale o último veredito
+    // MEDIDO sobre este aparelho (tierQueRodou, gravado pelo monitor de fps);
+    // por fim, a detecção por touch/tela. O teto de GL (Onda 1e) só REBAIXA,
+    // e só quando o renderer se NOMEIA software (SwiftShader, llvmpipe…) —
+    // string ilegível não é veredito.
     const qParam = new URLSearchParams(window.location.search).get('q');
     const q = (['cinema', 'alta', 'performance'] as const).find((v) => v === qParam);
-    this.applyQuality(q ?? defaultQualityForDevice(), q !== undefined);
+    let inicial = q ?? lerPreferencias().tierQueRodou ?? defaultQualityForDevice();
+    if (!q && sondarGl().rendererSoftware === true) inicial = 'performance';
+    this.applyQuality(inicial, q !== undefined);
     this.resize();
     window.addEventListener('resize', this.resize);
   }
@@ -194,6 +206,7 @@ export class Engine {
           // refresh observado (94%) + cooldown anti-thrash — limiares
           // absolutos (>72 fps) eram inatingíveis sob vsync a 60 Hz.
           const nearCeiling = this.peakAvg > 20 && avg > this.peakAvg * 0.94;
+          const antes = this.quality;
           if (avg < 42 && this.quality === 'cinema') {
             this.applyQuality('alta');
             this.upgradeCooldown = 15;
@@ -205,6 +218,10 @@ export class Engine {
             else if (this.quality === 'alta') this.applyQuality('cinema');
             this.upgradeCooldown = 10;
           }
+          // o veredito MEDIDO sobrevive à recarga: é ele que decide a
+          // alocação da próxima visita (Onda 1f). Só o monitor grava —
+          // ?q= explícito e detecção não são medição.
+          if (this.quality !== antes) gravarPreferencia('tierQueRodou', this.quality);
           this.fpsAcc = 0;
           this.fpsN = 0;
           this.fpsTimer = 0;

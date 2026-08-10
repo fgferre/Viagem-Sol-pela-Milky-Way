@@ -172,7 +172,11 @@ export class Director {
       this.events.onQuality(quality);
     });
     // o Engine já aplicou a qualidade no próprio construtor, antes destes
-    // ouvintes existirem — o estado inicial precisa ser semeado à mão
+    // ouvintes existirem — o estado inicial precisa ser semeado à mão.
+    // O setScale faltava desta lista: em performance inicial o raymarch
+    // rodava a 0,5 (o default do construtor) em vez de 0,35 até a primeira
+    // troca de tier — exatamente onde a economia mais importa (Onda 1e).
+    this.nebula.setScale(this.engine.quality === 'performance' ? 0.35 : 0.5);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
     this.post.setGrain(this.engine.preset.grain);
 
