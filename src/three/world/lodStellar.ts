@@ -762,29 +762,37 @@ export function heroDominanceFade(ratio: number): number {
 }
 
 /**
- * A CHAVE DA CESSÃO. Hoje `false` — a política inteira está instalada,
- * provada e ligada, mas escreve NEUTRO por decisão de PROCESSO, não por
- * defeito. A razão é o achado da fase 3: a previsão da fase 2 ("só a
- * vista de 8 pc muda") valia para Betelgeuse e não para as 16. PERTO DE
- * CASA A DOMINÂNCIA É A REGRA — a 0,06 pc de casa oito das 16 dominam o
- * próprio ponto (Sirius com 248 px de clarão contra 11 px de ponto).
- * MEDIDO com `?dom=1` nas quinze vistas do `ab-identidade`: mudam CINCO,
- * não uma. As quatro do Sol, por causa de α Centauri (1,4 pc, ponto
- * DENTRO do quadro ao lado do Sol — 5,2% dos pixels, delta máximo de 2
- * níveis, invisível mas real), e a `hero8` (48,7% dos pixels, delta
- * máximo de 19 — o clarão de Betelgeuse cede 22,7% do ponto e o bloom
- * espalha a diferença). As dez restantes ficam bit-idênticas, inclusive
- * a `sol` e a `interno`: lá as heroes que cedem estão FORA do frustum e
- * quem pinta é só o clarão delas, que esta política não toca — o pixel
- * só muda quando o PONTO está no quadro.
- * Ligar isso por conta própria seria mexer nas quatro vistas do gate do
- * Sol sem o dono ter visto o diff. Com a chave em `false` as quinze
- * saem bit-idênticas e o mecanismo espera a decisão.
- * `?dom=1` liga ao vivo (é assim que o A/B foi medido, com o MESMO
- * binário dos dois lados); `?nodom=1` desliga quando esta constante
- * virar `true` — e virar `true` é a única edição necessária.
+ * A CHAVE DA CESSÃO. `true` desde a fase 4a da Onda 3 — a dupla-luz
+ * hero↔catálogo está DESFEITA por padrão. A chave nasceu em `false` na
+ * fase 3 por disciplina de gate (o mecanismo inteiro instalado e provado,
+ * escrevendo neutro), porque o achado daquela fase derrubou a previsão da
+ * fase 2 ("só a vista de 8 pc muda"): ela valia para Betelgeuse e não
+ * para as 16. PERTO DE CASA A DOMINÂNCIA É A REGRA — a 0,06 pc de casa
+ * oito das 16 dominam o próprio ponto (Sirius com 248 px de clarão contra
+ * 11 px de ponto).
+ * O QUE O A/B MEDIU com `?dom=1` nas quinze vistas do `ab-identidade`
+ * (mesmo binário dos dois lados): mudam CINCO, não uma. As quatro do Sol,
+ * por causa de α Centauri (1,4 pc, ponto DENTRO do quadro ao lado do Sol
+ * — 5,2% dos pixels em `soldisco`, delta máximo de 2 níveis: real, mas
+ * invisível lado a lado), e a `hero8` (48,7% dos pixels, delta máximo de
+ * 19 — o clarão de Betelgeuse cede 22,7% do ponto e o bloom espalha a
+ * diferença). As dez restantes ficam bit-idênticas, inclusive a `sol` e a
+ * `interno`: lá as heroes que cedem estão FORA do frustum e quem pinta é
+ * só o clarão delas, que esta política não toca — o pixel só muda quando
+ * o PONTO está no quadro.
+ * A DECISÃO (D11 do desenho da onda, coordenador, 2026-08-11, com as
+ * imagens abertas): o colateral nas quatro vistas do Sol é imperceptível
+ * e o disco solar sai idêntico; a `hero8` é MELHORIA — o núcleo branco de
+ * dupla-luz vira supergigante quente. Logo a chave liga por padrão e as
+ * quinze capturas com ela ligada viram as baselines oficiais da casa
+ * (md5 no `NORTE.md`). O pixel-igual que o plano pede foi cumprido duas
+ * vezes com a chave desligada (fases 2 e 3) — ele era o instrumento, e
+ * esta mudança é melhoria auditada, não regressão acidental (D1).
+ * `?nodom=1` desliga ao vivo (é o caminho de volta e o lado "antes" de
+ * qualquer A/B futuro); `?dom=1` continua ligando mesmo com esta
+ * constante em `false`, para o A/B ser sempre feito com o MESMO binário.
  */
-export const DOMINANCE_DEFAULT_ON = false;
+export const DOMINANCE_DEFAULT_ON = true;
 
 /** O que a política precisa saber de UM par hero↔ponto, num quadro. */
 export interface HeroFadeInputs {

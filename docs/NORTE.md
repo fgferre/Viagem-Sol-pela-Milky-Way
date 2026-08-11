@@ -2539,6 +2539,43 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` · `retrato 18ba748879dc`.
    **Esses md5 são desta GPU** — noutra máquina servem só como sinal de que a captura
    assentou, nunca como valor esperado.
+3. **A baseline VIGENTE é a da Onda 3 (2026-08-11) e tem QUINZE vistas.** A lista do
+   item 2 é das SETE clássicas e continua valendo para elas; a Onda 3 acrescentou OITO,
+   porque o gate não tinha vista nenhuma do motor estelar — 4 do Sol por DISTÂNCIA
+   (`?pos=`, não `?t=`: o instante amarra a distância ao trajeto da hélice) e 4 de
+   Betelgeuse. Condições da captura: dev server em `127.0.0.1:5173`, `?q=cinema`
+   FIXADO, janela padrão (1800×1800 pedidos = 1800×1713 efetivos; `retrato` 700×1800 =
+   700×1713), duas capturas por vista repetindo md5.
+   `sol a4fbf427778a` · `interno d98cbef70849` · `travessia 145263085c23` ·
+   `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` ·
+   `retrato 615452579a2a` · **`soldisco 7a2e6d1f4620`** · **`solrampa ff2b7b4d353a`** ·
+   **`solestouro 3dc8706149b4`** · **`solestrela 22f5fab0992e`** ·
+   `hero200 20fdcb99a240` · `hero600 4311d0ccbc15` · `hero950 d11a8df86b68` ·
+   **`hero8 94b1136950ce`**.
+   **As CINCO em negrito mudaram de propósito**, na fase 4a da onda, quando
+   `DOMINANCE_DEFAULT_ON` (`lodStellar.ts`) virou `true` e o ponto do catálogo passou a
+   ceder sob o hero que o DOMINA na tela — o fim da dupla-luz hero↔catálogo, em que as
+   16 mais brilhantes desenhavam luz duas vezes no mesmo lugar. Não é regressão: é a
+   melhoria auditada da decisão D11 do desenho da onda, com o diff de pixel medido
+   ANTES de ligar e o veredito visual dado com as imagens abertas. Os números:
+   `soldisco` 158.917 px (5,154%) com delta máximo de **2 níveis** — real, e invisível
+   lado a lado (é α Centauri, a 1,4 pc, com o PONTO dentro do quadro; o disco solar sai
+   idêntico); `hero8` 1.500.453 px (48,662%) com delta máximo de **19**, dos quais
+   1.051.273 em ≤3 — o clarão de Betelgeuse deixa de somar com o próprio ponto e o
+   núcleo branco de dupla-luz vira supergigante quente, com o bloom espalhando o resto.
+   As outras DEZ saem bit-idênticas à era anterior, inclusive `sol` e `interno`: lá as
+   heroes que cedem estão FORA do frustum e quem pinta é só o clarão delas, que a
+   política não toca — o pixel só muda quando o PONTO está no quadro.
+   **O caminho de volta é `?nodom=1`, e é EXATO**: `hero8` capturada com ele devolve
+   `5ea6d9a15e79`, o md5 da baseline antiga, bit a bit. A baseline anterior das oito
+   novas (fases 2 e 3, com a chave desligada) era `soldisco 1a1b46040ff4` ·
+   `solrampa b1430b098de1` · `solestouro 6f009aa701b4` · `solestrela 2229da9080c8` ·
+   `hero8 5ea6d9a15e79` (as três de hero restantes não mudaram).
+   **O gate do céu NÃO se mexeu, e por construção:** o protocolo roda com `nohero=1`,
+   que desliga o grupo dos heroes e faz a política escrever o valor neutro. Medido, não
+   suposto — as SEIS faces saem BIT-IDÊNTICAS e o `skyError` fica em **0,7782** com os
+   cinco termos iguais até a quarta casa (espessura 0,3026 · fenda 0,2240 ·
+   perfil 0,2047 · purpura 0,0336 · cor 0,0132).
 
 Os PNGs do gate do céu ficam em `sky/` e as capturas nomeadas em `capturas/` (ambos
 gitignored, ambos sobrevivem à sessão): `sky-capture.mjs base --so-medir` re-mede sem

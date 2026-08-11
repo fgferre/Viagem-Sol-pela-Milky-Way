@@ -1326,22 +1326,30 @@ describe('o casamento hero↔catálogo', () => {
   });
 });
 
-describe('a CHAVE da cessão (achado da fase 3)', () => {
-  it('nasce em false, e o consumidor lê a chave — não a política direto', () => {
-    expect(DOMINANCE_DEFAULT_ON).toBe(false);
+describe('a CHAVE da cessão (achado da fase 3, virada na fase 4a)', () => {
+  it('está LIGADA, e o consumidor lê a chave — não a política direto', () => {
+    // Fase 4a, decisão D11 do coordenador (veredito visual de 2026-08-11):
+    // a dupla-luz hero↔catálogo fica desfeita por padrão. A chave nasceu
+    // `false` na fase 3 só para o gate daquela fase sair bit-idêntico; o
+    // CONTRATO da política (g(r≤1)=0, monotonia, invariante de soma) não
+    // depende dela e não mudou nesta virada.
+    expect(DOMINANCE_DEFAULT_ON).toBe(true);
     const director = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
     // as duas portas de URL do A/B, e a chave no meio delas
     expect(director).toContain('DOMINANCE_DEFAULT_ON');
     expect(director).toContain("this.debug.has('dom')");
     expect(director).toContain("!this.hide.has('nodom')");
-    // e o que se escreve com a chave desligada é o NEUTRO
+    // e o que se escreve com a cessão desligada continua sendo o NEUTRO
     expect(director).toContain(': FADE_NEUTRAL;');
+    // `?nodom` segue registrado como chave de URL viva (o caminho de volta)
+    expect(director).toContain("'nodom',");
   });
 
-  it('com a chave desligada, as 15 vistas veem o campo de sempre', () => {
-    // o estado entregue: atributo instalado, política provada, escrita
-    // neutra. `spriteAttenuation(FADE_NEUTRAL)` é 1 — o campo desenha
-    // exatamente o que desenhava antes da fase.
+  it('desligada por `?nodom=1`, o campo volta a ser o de sempre', () => {
+    // o que o caminho de volta escreve é o NEUTRO, e
+    // `spriteAttenuation(FADE_NEUTRAL)` é 1 — o campo desenha exatamente
+    // o que desenhava antes da onda. É esta identidade que sustenta as
+    // duas provas de pixel-igual das fases 2 e 3.
     expect(spriteAttenuationWithFocus(FADE_NEUTRAL, FOCUS_OFF)).toBe(1);
   });
 });

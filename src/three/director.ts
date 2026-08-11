@@ -231,11 +231,12 @@ export class Director {
       // bissecção do ?nocart: nuvens CO e forjas separadamente
       'noco', 'noforge', 'nobh',
       // ?nodom=1 — desliga a CESSÃO do ponto do catálogo sob o hero
-      // dominante (Onda 3, fase 3). Enquanto `DOMINANCE_DEFAULT_ON` for
-      // `false` quem LIGA é `?dom=1`; este par existe para o A/B ser
+      // dominante (Onda 3, fase 3; ligada por padrão desde a fase 4a).
+      // Com `DOMINANCE_DEFAULT_ON = true` este é o caminho de VOLTA — o
+      // lado "antes" de qualquer A/B — e `?dom=1` continua ligando mesmo
+      // se a constante voltar a `false`. O par existe para o A/B ser
       // feito com o MESMO binário dos dois lados (o `EXTRA=` do
-      // ab-identidade anexa o parâmetro a todas as vistas) e para o
-      // caminho de volta continuar existindo quando o default virar.
+      // ab-identidade anexa o parâmetro a todas as vistas).
       'nodom',
     ]) {
       if (this.debug.has(k)) this.hide.add(k);
@@ -1116,10 +1117,10 @@ export class Director {
    * Escreve `aFade` nos 16 pontos do catálogo casados com as heroes: o
    * ponto cede na medida em que o billboard DOMINA a representação na
    * tela (razão de tamanhos em px — `lodStellar` seção 5), e fica
-   * inteiro enquanto o hero for menor que ele. É por isso que só a
-   * vista de 8 pc muda: a 200/600/950 pc o billboard de Betelgeuse tem
-   * menos de 1 px contra os 5,9 px do ponto, a razão nem chega a 1 e o
-   * fade é 0 EXATO.
+   * inteiro enquanto o hero for menor que ele. É por isso que das quatro
+   * vistas de Betelgeuse só a de 8 pc muda: a 200/600/950 pc o billboard
+   * tem menos de 1 px contra os 5,9 px do ponto, a razão nem chega a 1 e
+   * o fade é 0 EXATO.
    *
    * As duas redes de segurança que são estado de runtime moram aqui: com
    * `?nohero=1` ou além de 1.200 pc de casa o grupo inteiro está
@@ -1127,25 +1128,25 @@ export class Director {
    * inteiro no mesmo quadro, e o gate do céu (que roda com `nohero=1`)
    * continua medindo exatamente o que media. A terceira (o hero apagado
    * pelo `farFade` além de 900 pc) é da própria política, por
-   * construção. A quarta é a CHAVE: enquanto `DOMINANCE_DEFAULT_ON` for
-   * `false` (ver a razão medida ao lado dela, em `lodStellar`) o que se
-   * escreve é sempre o neutro e `?dom=1` é quem liga — o mecanismo está
-   * inteiro, provado e a uma linha de valer.
+   * construção. A quarta é a CHAVE `DOMINANCE_DEFAULT_ON`, `true` desde
+   * a fase 4a (ver a decisão e o A/B medido ao lado dela, em
+   * `lodStellar`): `?nodom=1` é o caminho de volta e `?dom=1` liga mesmo
+   * se a constante voltar a `false`.
    *
    * ONDE ISSO MUDA A TELA (medido com `?dom=1`, não suposto): das 15
    * vistas do `ab-identidade`, cinco. As quatro do Sol (α Centauri, a
    * 1,4 pc, com o PONTO dentro do quadro) e a `hero8`. As outras dez
    * ficam bit-idênticas — inclusive a `sol` e a `interno`, onde as
    * heroes que cedem estão fora do frustum e só o clarão delas sangra
-   * para dentro. Custo: 16 comparações por quadro; a escrita é no-op
-   * enquanto nada muda (C2).
+   * para dentro. As cinco viraram BASELINE nova na fase 4a. Custo: 16
+   * comparações por quadro; a escrita é no-op enquanto nada muda (C2).
    */
   private writeHeroFades(screenH: number, tanHalfFov: number) {
     const stars = this.stars;
     const heroes = this.heroes;
     if (!stars || !heroes) return;
     // a chave da cessão mora em `lodStellar` (DOMINANCE_DEFAULT_ON), com
-    // a razão de estar em `false` escrita ao lado dela; aqui ficam só as
+    // a decisão de estar em `true` escrita ao lado dela; aqui ficam só as
     // duas portas de URL que a auditoria usa
     const cessao = this.debug.has('dom') || (DOMINANCE_DEFAULT_ON && !this.hide.has('nodom'));
     const ligado = heroes.group.visible && cessao;
