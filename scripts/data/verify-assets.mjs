@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from './lib/binary.mjs';
@@ -236,6 +237,102 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
         'deixou de ser verdadeira; remova-a de _pendencias em gera-corpos.mjs.'
     );
   }
+}
+
+// Onda 2: atlas/efemerides — tabelas Hermite geradas por
+// amostra-efemerides.mjs. O auto-gate do gerador já lançou se o erro
+// medido estourou; aqui o ARTEFATO publicado é cobrado de novo, para
+// pegar .bin editado/corrompido, meta dessincronizado ou .gz velho.
+{
+  let efemeridesMeta;
+  try {
+    efemeridesMeta = JSON.parse(
+      await readFile(
+        path.join(publicDirectory, 'data', 'atlas', 'efemerides_meta.json'),
+        'utf8'
+      )
+    );
+  } catch (error) {
+    throw new Error(
+      `atlas/efemerides_meta.json ausente ou inválido (${error.message}) — ` +
+        'rode npm run data:atlas.'
+    );
+  }
+  const efemeridesBin = await readFile(
+    path.join(publicDirectory, 'data', 'atlas', 'efemerides.bin')
+  );
+  if (sha256(efemeridesBin) !== efemeridesMeta.sha256) {
+    throw new Error('atlas/efemerides.bin: SHA-256 diverge do manifesto.');
+  }
+  const { jdInicio, jdFim } = efemeridesMeta.janela ?? {};
+  if (!Number.isFinite(jdInicio) || !Number.isFinite(jdFim) || jdFim <= jdInicio) {
+    throw new Error('atlas/efemerides: janela (jdInicio/jdFim) não declarada.');
+  }
+  // Offsets e contagens coerentes com o tamanho: os blocos por corpo
+  // têm de cobrir o buffer inteiro, sem furo nem sobreposição.
+  const totalFloats = efemeridesBin.byteLength / 4;
+  const blocos = Object.entries(efemeridesMeta.corpos).sort(
+    ([, a], [, b]) => a.offsetFloats - b.offsetFloats
+  );
+  let cursor = 0;
+  for (const [id, corpo] of blocos) {
+    if (corpo.offsetFloats !== cursor) {
+      throw new Error(
+        `atlas/efemerides: "${id}" em offsetFloats ${corpo.offsetFloats}; ` +
+          `esperado ${cursor} (furo ou sobreposição).`
+      );
+    }
+    // A tabela precisa cobrir a janela inteira declarada.
+    if ((corpo.n - 1) * corpo.passoDias < jdFim - jdInicio) {
+      throw new Error(
+        `atlas/efemerides: tabela de "${id}" (n=${corpo.n}, passo ` +
+          `${corpo.passoDias} d) não cobre a janela declarada.`
+      );
+    }
+    if (!(corpo.erroMedidoAu <= corpo.orcamentoErroAu)) {
+      throw new Error(
+        `atlas/efemerides: "${id}" com erro medido ${corpo.erroMedidoAu} AU ` +
+          `acima do orçamento ${corpo.orcamentoErroAu} AU.`
+      );
+    }
+    cursor += corpo.n * 6;
+  }
+  if (cursor !== totalFloats) {
+    throw new Error(
+      `atlas/efemerides: corpos somam ${cursor} floats; o .bin tem ${totalFloats}.`
+    );
+  }
+  for (let offset = 0; offset < efemeridesBin.byteLength; offset += 4) {
+    if (!Number.isFinite(efemeridesBin.readFloatLE(offset))) {
+      throw new Error(`atlas/efemerides.bin: Float32 não finito no byte ${offset}.`);
+    }
+  }
+  // O .gz é o que o visitante baixa (compress-assets.mjs); tem de
+  // existir, ser menor e descomprimir BIT-IDÊNTICO — um .gz velho de
+  // um .bin regenerado mentiria com cara de válido.
+  let efemeridesGz;
+  try {
+    efemeridesGz = await readFile(
+      path.join(publicDirectory, 'data', 'atlas', 'efemerides.bin.gz')
+    );
+  } catch {
+    throw new Error('atlas/efemerides.bin.gz ausente — rode npm run data:pack.');
+  }
+  if (efemeridesGz.byteLength >= efemeridesBin.byteLength) {
+    throw new Error('atlas/efemerides.bin.gz não é menor que o .bin.');
+  }
+  if (sha256(gunzipSync(efemeridesGz)) !== efemeridesMeta.sha256) {
+    throw new Error(
+      'atlas/efemerides.bin.gz descomprime diferente do .bin — .gz velho; ' +
+        'rode npm run data:pack.'
+    );
+  }
+  console.log(
+    `atlas/efemerides: ${blocos.length} corpos, ${(efemeridesBin.byteLength / 1048576).toFixed(2)} MB, ` +
+      `pior interpolação ${Math.max(
+        ...blocos.map(([, c]) => c.erroMedidoAu)
+      ).toExponential(2)} AU dentro dos orçamentos.`
+  );
 }
 
 console.log(

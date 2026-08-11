@@ -1,0 +1,148 @@
+{
+  "formato": "ef1",
+  "frame": "ecliptica-J2000",
+  "escalaTempo": "TDB",
+  "unidades": {
+    "posicao": "AU",
+    "velocidade": "AU/dia"
+  },
+  "layout": "[x,y,z,vx,vy,vz] Float32 × n por corpo, corpos concatenados",
+  "janela": {
+    "jdInicio": 2433282.5,
+    "jdFim": 2469807.5,
+    "isoInicio": "1950-01-01T00:00:00 TDB",
+    "isoFim": "2050-01-01T00:00:00 TDB"
+  },
+  "corpos": {
+    "mercury": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 4,
+      "n": 9133,
+      "offsetFloats": 0,
+      "orcamentoErroAu": 0.00005,
+      "erroMedidoAu": 0.000031496923207709124,
+      "amostrasGate": 200,
+      "sementeGate": 101
+    },
+    "venus": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 12,
+      "n": 3045,
+      "offsetFloats": 54798,
+      "orcamentoErroAu": 0.00005,
+      "erroMedidoAu": 0.000024920712432470994,
+      "amostrasGate": 200,
+      "sementeGate": 102
+    },
+    "earth": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 12,
+      "n": 3045,
+      "offsetFloats": 73068,
+      "orcamentoErroAu": 0.00005,
+      "erroMedidoAu": 0.000010457384525489361,
+      "amostrasGate": 200,
+      "sementeGate": 103
+    },
+    "mars": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 24,
+      "n": 1523,
+      "offsetFloats": 91338,
+      "orcamentoErroAu": 0.00005,
+      "erroMedidoAu": 0.000019033815359300505,
+      "amostrasGate": 200,
+      "sementeGate": 104
+    },
+    "jupiter": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 48,
+      "n": 762,
+      "offsetFloats": 100476,
+      "orcamentoErroAu": 0.0001,
+      "erroMedidoAu": 6.134007253009907e-7,
+      "amostrasGate": 200,
+      "sementeGate": 105
+    },
+    "saturn": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 48,
+      "n": 762,
+      "offsetFloats": 105048,
+      "orcamentoErroAu": 0.0001,
+      "erroMedidoAu": 4.778372892500422e-7,
+      "amostrasGate": 200,
+      "sementeGate": 106
+    },
+    "uranus": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 48,
+      "n": 762,
+      "offsetFloats": 109620,
+      "orcamentoErroAu": 0.0001,
+      "erroMedidoAu": 0.0000010291576384305427,
+      "amostrasGate": 200,
+      "sementeGate": 107
+    },
+    "neptune": {
+      "teoria": "VSOP87D",
+      "centro": "sun",
+      "passoDias": 48,
+      "n": 762,
+      "offsetFloats": 114192,
+      "orcamentoErroAu": 0.0001,
+      "erroMedidoAu": 0.0000011880851246511713,
+      "amostrasGate": 200,
+      "sementeGate": 108
+    },
+    "pluto": {
+      "teoria": "Pluto-Meeus",
+      "centro": "sun",
+      "passoDias": 48,
+      "n": 762,
+      "offsetFloats": 118764,
+      "orcamentoErroAu": 0.0001,
+      "erroMedidoAu": 0.0000012908566773091072,
+      "amostrasGate": 200,
+      "sementeGate": 109
+    },
+    "moon": {
+      "teoria": "ELP-MPP02-trunc",
+      "centro": "earth",
+      "passoDias": 3,
+      "n": 12176,
+      "offsetFloats": 123336,
+      "orcamentoErroAu": 0.000005,
+      "erroMedidoAu": 0.000002557854811616168,
+      "amostrasGate": 200,
+      "sementeGate": 110
+    }
+  },
+  "proveniencia": {
+    "pacote": "astronomia@4.2.0",
+    "teorias": {
+      "planetas": "VSOP87D (position2000, heliocêntrico esférico → cartesiano)",
+      "pluto": "Pluto-Meeus (Meeus cap. 37, heliocêntrico)",
+      "moon": "ELP-MPP02-trunc (geocêntrica, km → AU com AU_KM=149597870.7)"
+    },
+    "linhasNaNFiltradas": {
+      "vsop87Dmercury": 0,
+      "vsop87Dvenus": 0,
+      "vsop87Dearth": 0,
+      "vsop87Dmars": 0,
+      "vsop87Djupiter": 0,
+      "vsop87Dsaturn": 0,
+      "vsop87Duranus": 1,
+      "vsop87Dneptune": 3
+    },
+    "velocidade": "diferença central ±0,01 dia sobre a teoria"
+  },
+  "sha256": "93d9d19419c097d6dee8f6263232f782bd4e5404547a8ed8fa215368672cb4c3"
+}
