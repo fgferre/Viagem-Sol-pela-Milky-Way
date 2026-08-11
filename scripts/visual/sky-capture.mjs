@@ -5,6 +5,7 @@
 //   node scripts/visual/sky-capture.mjs nowrap "&nowrap=1"   # ablação
 //   node scripts/visual/sky-capture.mjs --perfil        # + perfil por longitude
 //   node scripts/visual/sky-capture.mjs av05 --so-medir # re-mede PNGs já capturados
+//   FALLBACK_OK=1 node scripts/visual/sky-capture.mjs   # aceita o modo lento
 //
 // `--so-medir` existe porque a RÉGUA muda mais que o render: toda vez que
 // um termo é consertado (r37, auditoria, r38) o histórico inteiro precisa
@@ -23,12 +24,12 @@ import { mkdirSync, existsSync, rmSync, readFileSync, writeFileSync, openSync } 
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { CHROME, GPU_FLAGS, matarPerfil, capturarCDP } from './chrome.mjs';
+import { CHROME, GPU_FLAGS, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO } from './chrome.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const MEASURE = resolve(ROOT, 'scripts/visual/sky-measure.html');
 const REF = resolve(ROOT, 'docs/reference/eso-gigagalaxy-panorama.jpg');
-const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
+const APP = process.env.APP_URL || APP_PADRAO;
 const FLAGS = ['--perfil', '--so-medir'];
 const args = process.argv.slice(2).filter((a) => !FLAGS.includes(a));
 const comPerfil = process.argv.includes('--perfil');
@@ -77,10 +78,13 @@ if (!soMedir) {
 }
 
 let porta = 9700 + (process.pid % 100);
+// por qual caminho cada face assentou; o veredito sai no fim da leva, com
+// `julgarProntidao` — uma face por `quadros` no dev server é sinal quebrado
+const vias = [];
 for (const f of (soMedir ? [] : FACES)) {
   const png = resolve(OUT, `face_${f.nome}.png`);
   if (existsSync(png)) rmSync(png);
-  writeFileSync(png, await capturarCDP({
+  const cap = await capturarCDP({
     largura: 1440, altura: 1440, porta: porta++,
     // nohero=1: os clarões das estrelas-herói são camada CINEMATOGRÁFICA;
     // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa.
@@ -94,9 +98,19 @@ for (const f of (soMedir ? [] : FACES)) {
     // `espessura`. Bit-exato onde o degrau nunca dispara. Ver ab-identidade.
     url: `${APP}/?pos=0,0,0&look=${f.dir.map((v) => v.toFixed(9)).join(',')}` +
       `&fov=90&q=cinema&nosun=1&nohero=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
-  }));
-  process.stdout.write(`face_${f.nome}.png ok\n`);
+  });
+  writeFileSync(png, cap.png);
+  vias.push(cap.via);
+  process.stdout.write(`face_${f.nome}.png ok (via=${cap.via})\n`);
 }
+
+// O JUÍZO é calculado aqui, com a leva ainda fresca, e COBRADO no fim do
+// arquivo: o produto desta invocação é a linha do `skyError`, e um erro que
+// abortasse antes dela esconderia a régua de quem precisa dela para consertar.
+// O bloco (e a saída ≠ 0) fica sendo a última palavra na tela.
+const prontidao = julgarProntidao({
+  vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
+});
 
 if (soMedir) {
   const faltando = FACES.filter((f) => !existsSync(resolve(OUT, `face_${f.nome}.png`)));
@@ -233,3 +247,9 @@ try {
 } catch {
   /* perfil preso por helper que ainda não morreu — o TEMP do SO recolhe */
 }
+
+// DEPOIS da limpeza, e por último: o gate GRITA e SAI ≠ 0. Os PNGs e a régua
+// já estão em disco e na tela — o que a saída ≠ 0 diz é "não valide nada com
+// isto", no mesmo protocolo do apaga-antes/exige-status-0-depois.
+if (prontidao.mensagem) process.stderr.write(prontidao.mensagem);
+if (prontidao.erro) process.exit(1);

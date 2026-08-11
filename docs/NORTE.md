@@ -2550,6 +2550,17 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
   `APP_URL=http://127.0.0.1:4173` (o `vite preview` do `dist`) devolve `sol
   a4fbf427778a` — o md5 oficial — por `via=quadros/87s`. Cada linha da leva imprime o
   `via=`, e **uma leva inteira em `via=quadros` é sinal quebrado, não hardware lento**.
+- **E o teto de segurança agora GRITA, não engata em silêncio** (2026-08-11). No alvo
+  padrão (`APP_URL` ausente ou apontando para o próprio dev server), **qualquer** captura
+  por `via=quadros` — a leva toda ou uma só, porque sinal intermitente é pior que sinal
+  morto — faz `ab-identidade` e `sky-capture` imprimirem o bloco "SINAL DE PRONTIDÃO
+  QUEBRADO" e **saírem com status ≠ 0**, no mesmo protocolo do apaga-antes/exige-status-0
+  (`julgarProntidao` em `chrome.mjs`, puro e testado em `chrome.test.mjs`). Sem isso o
+  fallback devolve a MESMA imagem e a quebra do sinal apareceria só como os ~45 min de
+  antes, com o gate passando "funcionando" — o modo caro de falhar. `APP_URL` apontado de
+  propósito para outro alvo (o `vite preview` do `dist`, onde `window.__director`
+  legitimamente não existe) recebe **só aviso**; **`FALLBACK_OK=1` aceita o modo lento**
+  conscientemente e devolve o status 0.
 - **`JOBS=N` reparte a LISTA entre N processos-filhos** (padrão 3), cada um com o seu
   Chrome e o seu perfil; o dev server é um só. Nunca N abas ou contextos num Chrome só:
   a bit-exatidão sob GPU compartilhada dentro de um processo não está documentada em

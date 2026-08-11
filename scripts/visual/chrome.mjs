@@ -53,6 +53,79 @@ export const GPU_FLAGS = [
 const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * O ALVO PADRÃO dos harnesses: o dev server do vite. Todo script de
+ * `scripts/visual/` resolve o app do mesmo jeito (`APP_URL || APP_PADRAO`), e
+ * a regra do fallback (`julgarProntidao`) precisa da constante para saber se
+ * está mirando ESTE alvo — onde `window.__director` é publicado e o sinal de
+ * prontidão é OBRIGATÓRIO — ou um alvo que o operador apontou de propósito.
+ */
+export const APP_PADRAO = 'http://127.0.0.1:5173';
+
+// `localhost` e `127.0.0.1` na mesma porta são o MESMO dev server; quem
+// exporta `APP_URL=http://localhost:5173` não está apontando para outro lugar
+// e não pode ganhar o perdão que existe só para alvo de produção.
+const canonico = (u) => String(u).trim().replace(/\/+$/, '').replace('://localhost:', '://127.0.0.1:');
+
+/**
+ * O CONTADOR E O JUÍZO do fallback, puro para poder ser testado sem GPU
+ * (`chrome.test.mjs`).
+ *
+ * A brecha que ele fecha: `esperarAssentar` cai no teto de segurança
+ * (`via=quadros`) sem reclamar quando o sinal do app some. Como o fallback
+ * devolve a MESMA imagem, uma quebra futura de `window.__director.captura`
+ * não apareceria como erro — apareceria como os ~70 s por captura de antes da
+ * reforma, com o gate passando "funcionando". É o modo caro de falhar que a
+ * casa já pagou duas vezes (helpers de GPU órfãos, `--use-angle` errado): o
+ * instrumento degrada em silêncio e contamina a medida em vez de quebrar.
+ *
+ * A regra:
+ * - Alvo PADRÃO (`APP_URL` ausente, ou apontando para o próprio dev server) e
+ *   QUALQUER captura por `quadros` → ERRO, saída ≠ 0. Inclusive parcial: sinal
+ *   intermitente é pior que sinal morto, porque metade da leva mediu por um
+ *   critério e metade por outro.
+ * - Alvo EXPLÍCITO e diferente (o `vite preview` do `dist`, por exemplo) →
+ *   só aviso: ali `window.__director` legitimamente não existe (é publicado
+ *   sob `import.meta.env.DEV`), e cair no teto é o comportamento correto.
+ * - `FALLBACK_OK=1` aceita conscientemente: imprime o mesmo bloco e não falha.
+ * - Nenhuma captura nesta invocação (tudo veio de disco, ou `--so-medir`) →
+ *   nada a julgar.
+ */
+export function julgarProntidao({ vias = [], appUrl = '', fallbackOk = false }) {
+  const total = vias.length;
+  const quadros = vias.filter((v) => v === 'quadros').length;
+  const alvoPadrao = !appUrl || canonico(appUrl) === canonico(APP_PADRAO);
+  if (!total || !quadros) return { total, quadros, alvoPadrao, erro: false, mensagem: null };
+  const cerca = '!'.repeat(74);
+  if (!alvoPadrao) {
+    return {
+      total, quadros, alvoPadrao, erro: false,
+      mensagem:
+        `\naviso: ${quadros} de ${total} capturas assentaram por via=quadros `
+        + '(o teto de segurança, ~70 s cada).\n'
+        + `  É o esperado em APP_URL=${appUrl}, que não é o dev server padrão —\n`
+        + '  window.__director só existe no bundle de DEV. No alvo padrão isto seria ERRO.\n',
+    };
+  }
+  const bloco =
+    `\n${cerca}\n`
+    + '!! SINAL DE PRONTIDÃO QUEBRADO — o harness caiu no modo lento em\n'
+    + `!! ${quadros} de ${total} capturas (via=quadros, o teto de segurança dos 700 quadros).\n`
+    + '!! O fallback devolve a MESMA imagem: o sintoma é só a lentidão de antes da\n'
+    + '!! reforma (~70 s por captura), e o gate passaria "funcionando".\n'
+    + '!! Conserte window.__director.captura (o getter `captura` em\n'
+    + '!! src/three/director.ts) antes de validar qualquer coisa.\n'
+    + '!! Para aceitar conscientemente, rode com FALLBACK_OK=1.\n'
+    + `${cerca}\n`;
+  if (fallbackOk) {
+    return {
+      total, quadros, alvoPadrao, erro: false,
+      mensagem: `${bloco}!! ACEITO por FALLBACK_OK=1 — o gate não falha, o modo lento segue ligado.\n`,
+    };
+  }
+  return { total, quadros, alvoPadrao, erro: true, mensagem: bloco };
+}
+
+/**
  * A PORTA que o Chrome escolheu, lida do `DevToolsActivePort` que ele grava
  * no próprio perfil. Existe para o harness poder subir N browsers em
  * paralelo sem aritmética de porta: com `--remote-debugging-port=0` quem
@@ -137,6 +210,10 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
  * antigo — cartografia + `quadros` quadros desenhados — como teto de
  * segurança. As seis faces do gate do céu saem BIT-IDÊNTICAS pelos dois
  * caminhos (medido 2026-08-11, `skyError` 0,7782 nos dois).
+ *
+ * Devolve `{ png, via, ms }` e não só o PNG: quem chama TEM de saber por qual
+ * caminho a captura assentou, senão o teto de segurança engata em silêncio —
+ * ver `julgarProntidao`.
  */
 export async function capturarCDP({ url, largura, altura, porta, quadros = 700, teto = 300000 }) {
   const perfil = resolve(tmpdir(), `cdp-${process.pid}-${porta}`);
@@ -192,7 +269,7 @@ export async function capturarCDP({ url, largura, altura, porta, quadros = 700, 
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     const buf = Buffer.from(shot.data, 'base64');
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
-    return buf;
+    return { png: buf, via: assentou.via, ms: assentou.ms };
   } finally {
     chrome.kill();
     matarPerfil(perfil);

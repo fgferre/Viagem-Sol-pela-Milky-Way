@@ -33,7 +33,10 @@
 //   existir (bundle de produção — `window.__director` só é publicado em DEV)
 //   ou não subir, a captura cai nos 700 quadros em vez de travar. A coluna
 //   `via=` de cada linha diz por qual caminho ela assentou; uma leva inteira
-//   em `via=quadros` é sinal quebrado, não lentidão de hardware.
+//   em `via=quadros` é sinal quebrado, não lentidão de hardware — e desde
+//   2026-08-11 isso não é só um aviso no rodapé: no alvo padrão, QUALQUER
+//   captura por `quadros` faz o gate imprimir o bloco de erro e SAIR ≠ 0
+//   (`julgarProntidao` em chrome.mjs). `FALLBACK_OK=1` aceita de propósito.
 //
 // PARALELISMO POR DIVISÃO DA LISTA (`JOBS=N`, padrão 3): o pai reparte as
 // vistas entre N processos-filhos independentes, cada um com o SEU Chrome e o
@@ -56,7 +59,9 @@ import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'node
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { CHROME, GPU_FLAGS, matarPerfil, portaDoPerfil, esperarAssentar } from './chrome.mjs';
+import {
+  CHROME, GPU_FLAGS, matarPerfil, portaDoPerfil, esperarAssentar, julgarProntidao, APP_PADRAO,
+} from './chrome.mjs';
 
 const LADO = process.argv[2] || 'antes';
 const SO = process.argv[3];
@@ -141,7 +146,7 @@ const VISTAS = [
 // continua sendo a leva COMPLETA das 15 — três vistas não cobrem o aspecto
 // (retrato), nem a travessia, nem o mergulho, nem os regimes do farFade.
 const SENTINELAS = ['sol', 'soldisco', 'hero8'];
-const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
+const APP = process.env.APP_URL || APP_PADRAO;
 // TIER FIXO, e ele não é preferência: sem `?q=` o `autoQuality` do engine
 // rebaixa cinema→alta→performance sozinho assim que a média cai de 42 fps
 // (engine.ts), e isso troca `nebulaSteps` 56→30 e o `pixelRatio` NO MEIO da
@@ -273,12 +278,16 @@ async function capturar(query, png, janela) {
  * e ele precisa ser reescrito junto a cada vista, senão uma queda no meio da
  * leva deixaria em disco só as vistas desta rodada — a retomada perderia
  * justamente as boas que já custaram GPU.
+ *
+ * Devolve `{ out, vias }`: `vias` é uma entrada por CAPTURA (não por vista),
+ * 'sinal' ou 'quadros', e é o que `julgarProntidao` julga no fim da leva.
  */
 async function capturarLista(vistas, arquivo, marca = '', base = {}) {
   const out = { ...base };
+  const vias = [];
   for (const [nome, query, janela] of vistas) {
     out[nome] = [];
-    const vias = [];
+    const daVista = [];
     for (let k = 0; k < N; k++) {
       // capturas/ é gitignored e não existe em clone novo — criar aqui, senão
       // a única forma de OLHAR a diferença (o diff de pixel) morre no open()
@@ -296,24 +305,34 @@ async function capturarLista(vistas, arquivo, marca = '', base = {}) {
         }
       }
       out[nome].push(r.hash);
-      vias.push(`${r.via}/${(r.ms / 1000).toFixed(0)}s`);
+      vias.push(r.via);
+      daVista.push(`${r.via}/${(r.ms / 1000).toFixed(0)}s`);
     }
-    console.log(`${marca}${nome.padEnd(10)} ${out[nome].join(' ')}  via=${vias.join(' ')}`);
+    console.log(`${marca}${nome.padEnd(10)} ${out[nome].join(' ')}  via=${daVista.join(' ')}`);
     // por VISTA, não no fim: o estado sobrevive a uma queda no meio
     writeFileSync(arquivo, JSON.stringify(out, null, 1));
   }
   writeFileSync(arquivo, JSON.stringify(out, null, 1));
-  return out;
+  return { out, vias };
 }
+
+// O arquivo de `via` de cada filho, ao LADO do arquivo de md5 e não dentro
+// dele: o de md5 tem o formato exato do estado de retomada (`{vista: [hash]}`)
+// e o pai o funde com um `Object.assign` — enfiar metadado ali contaminaria a
+// baseline que sobrevive entre sessões por uma economia de um arquivo.
+const viasDoFilho = (k) => resolve(tmpdir(), `ab-identidade-${LADO}-j${k}-vias.json`);
 
 // ---- FILHO: uma fatia da lista, um Chrome de cada vez, arquivo próprio ----
 if (FILHO !== null) {
   const nomes = new Set((process.env.AB_VISTAS || '').split(',').filter(Boolean));
-  await capturarLista(
+  const { vias } = await capturarLista(
     VISTAS.filter(([n]) => nomes.has(n)),
     resolve(tmpdir(), `ab-identidade-${LADO}-j${FILHO}.json`),
     `[j${FILHO}] `
   );
+  // o filho NÃO julga: quem vê a leva inteira é o pai, e "todas caíram no
+  // fallback" só tem sentido somando os três baldes
+  writeFileSync(viasDoFilho(FILHO), JSON.stringify(vias));
   process.exit(0);
 }
 
@@ -346,10 +365,16 @@ const pendentes = lista.filter(([nome]) => {
 
 const t0 = Date.now();
 const jobs = Math.min(JOBS, pendentes.length);
+// uma entrada por CAPTURA desta invocação, dos dois ramos. Vista que veio de
+// disco não entra: ela não capturou nada agora, e julgar o que não se mediu
+// seria inventar sinal.
+const vias = [];
 if (jobs <= 1) {
   // SERIAL, em processo — o caminho de sempre, e o que isola a prova do
   // sinal de prontidão da prova do paralelismo
-  Object.assign(md5, await capturarLista(pendentes, ESTADO, '', md5));
+  const serial = await capturarLista(pendentes, ESTADO, '', md5);
+  Object.assign(md5, serial.out);
+  vias.push(...serial.vias);
   writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
 } else {
   // DIVISÃO DA LISTA em N processos independentes, cada um com o seu Chrome.
@@ -379,6 +404,10 @@ if (jobs <= 1) {
   const fim = await Promise.allSettled(filhos);
   for (let k = 0; k < jobs; k++) {
     const arq = resolve(tmpdir(), `ab-identidade-${LADO}-j${k}.json`);
+    if (existsSync(viasDoFilho(k))) {
+      vias.push(...JSON.parse(readFileSync(viasDoFilho(k), 'utf8')));
+      rmSync(viasDoFilho(k), { force: true });
+    }
     if (!existsSync(arq)) continue;
     Object.assign(md5, JSON.parse(readFileSync(arq, 'utf8')));
     rmSync(arq, { force: true });
@@ -408,3 +437,14 @@ if (LADO === 'depois') {
   }
   console.log(ok ? '\n>>> BIT-IDÊNTICO' : '\n>>> NÃO é bit-idêntico — rodar o diff de pixel antes de concluir');
 }
+
+// POR ÚLTIMO, depois do veredito: o gate GRITA e SAI ≠ 0 se o sinal de
+// prontidão não subiu no dev server. Os md5 já estão em disco e na tela — o
+// que a saída ≠ 0 diz é "não valide nada com isto", no mesmo protocolo do
+// apaga-o-PNG-antes/exige-status-0-depois. Sem esta linha, uma quebra futura
+// do sinal voltaria a leva para os ~45 min e passaria por hardware lento.
+const prontidao = julgarProntidao({
+  vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
+});
+if (prontidao.mensagem) process.stderr.write(prontidao.mensagem);
+if (prontidao.erro) process.exit(1);
