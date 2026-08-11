@@ -18,6 +18,7 @@ import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
+import { Planetas, PLANETAS_DEFAULT_ON } from './world/planetas/planetas';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -105,6 +106,9 @@ export class Director {
   /** saída de `fadesDoQuadro`, REUSADA entre quadros (zero alocação) */
   private readonly heroFades: number[] = [];
   private galaxy!: Galaxy;
+  /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
+   *  camada IRMÃ do `sun.group`, nunca filha dele */
+  private planetas: Planetas | null = null;
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
   private wrappedStars!: WrappedStars;
@@ -255,6 +259,11 @@ export class Director {
       // feito com o MESMO binário dos dois lados (o `EXTRA=` do
       // ab-identidade anexa o parâmetro a todas as vistas).
       'nodom',
+      // ?noplan=1 — desliga a CAMADA de planetas (Onda 4, D3/D7). Par de
+      // `?plan=1`, no mesmo precedente. Governa a camada e SÓ ela: o
+      // domínio profundo (janelas deep, near piecewise, voo proporcional)
+      // é fundação sem porta, como o near — emenda D11a.
+      'noplan',
     ]) {
       if (this.debug.has(k)) this.hide.add(k);
     }
@@ -459,6 +468,13 @@ export class Director {
     this.engine.scene.add(this.dust.points);
     this.engine.scene.add(this.heroes.group);
     this.engine.scene.add(this.galaxy.group);
+    // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena, ao
+    // lado do `sunStar.quad` e NUNCA dentro de `sun.group` — de lá
+    // herdaria a escala 0,005 do doador e o `return` antecipado quando o
+    // disco apaga. A PSF vem do campo (`stars` publica expoM0/sigmaPx):
+    // é o que faz a fotometria planeta↔estrela ser relativa de verdade.
+    this.planetas = new Planetas(this.stars);
+    this.engine.scene.add(this.planetas.points);
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
 
@@ -1051,6 +1067,16 @@ export class Director {
     // estiver na cena, o raymarch da nebulosa não precisa integrar o que ela
     // cobre — ver o cone em nebula.ts.
     this.nebula.setSunOccluder(ORIGEM, this.sun.group.visible ? WORLD.sunRadius : 0);
+    // A CAMADA DE PLANETAS (Onda 4, D3/D7), logo depois do Sol porque é
+    // a continuação dele: abaixo de 0,05 pc o disco artístico se dissolve
+    // (`solWorldFade`) e quem desenha o Sol é o vértice 0 desta camada,
+    // com `uGain = deepPointGain(dHome)`. A chave mora em `planetas.ts`
+    // (`PLANETAS_DEFAULT_ON`); aqui ficam só as duas portas de URL.
+    if (this.planetas) {
+      this.planetas.ligado =
+        (PLANETAS_DEFAULT_ON || this.debug.has('plan')) && !this.hide.has('noplan');
+      this.planetas.update(dHome, hPx, cam.position);
+    }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado
@@ -1142,6 +1168,14 @@ export class Director {
             `dist=${cam.position.distanceTo(new THREE.Vector3(b.x, b.y, b.z)).toFixed(2)}`
         );
       }
+    }
+
+    // debug: a régua 2 da Onda 4 (D10) — posição projetada dos 10 corpos
+    // lida do Float32Array REAL do atributo, com a câmera DESTE quadro.
+    // Um `console.log` por quadro com o bloco inteiro (e não dez): o
+    // leitor por CDP recebe a tabela em UMA mensagem.
+    if (this.debug.has('dbgplan') && this.planetas) {
+      console.log(this.planetas.dbg(cam, this.engine.renderer.domElement.width, hPx));
     }
 
     // rótulos a cada frame — a 10 Hz eles "nadavam" contra as estrelas
@@ -1321,6 +1355,8 @@ export class Director {
     // sunStar nasce depois do await do init: falha de carga chega aqui
     // com ele indefinido
     step('sunStar', () => this.sunStar?.dispose());
+    // idem: a camada nasce depois do await do init
+    step('planetas', () => this.planetas?.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());
     step('post', () => this.post.dispose());

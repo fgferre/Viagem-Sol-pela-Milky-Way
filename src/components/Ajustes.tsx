@@ -40,6 +40,7 @@ const CAMADAS: { flag: string; nome: string; viva: boolean }[] = [
   { flag: 'nocat', nome: 'Catálogo HYG', viva: true },
   { flag: 'nohero', nome: 'Estrelas nomeadas', viva: true },
   { flag: 'nomarker', nome: 'Marcador do Sol', viva: true },
+  { flag: 'noplan', nome: 'Planetas', viva: true },
   { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', viva: true },
 ];
 
