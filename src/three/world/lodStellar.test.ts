@@ -1533,8 +1533,15 @@ describe('D3 — o par de atributos nasce inerte no shader novo', () => {
       'float atten = mix(clamp(1.0 - aFade, 0.0, 1.0), 1.0, step(0.5, aFocus));'
     );
     expect(vert).toContain('alpha *= atten;');
-    // e o vSat cede junto, senão os espinhos de difração ficavam por cima
-    expect(vert).toContain('vSat = sat * atten;');
+    // E o vSat cede junto, senão os espinhos de difração ficavam por cima —
+    // pela atenuação TOTAL (alpha), não só pela cessão por estrela (atten):
+    // alpha nasce 1.0 e acumula extinção + uFade + atten, então é o MESMO
+    // fator que vPeak recebe. A pinagem é de FIAÇÃO: se alguém devolver a
+    // linha para `atten`, os espinhos voltam a ficar com força cheia sobre um
+    // núcleo já esmaecido (achado da caçada adversarial da Onda 3).
+    expect(vert).toContain('vSat = sat * alpha;');
+    // e a ordem importa: alpha já tem os três fatores quando vSat o usa
+    expect(vert.indexOf('alpha *= atten;')).toBeLessThan(vert.indexOf('vSat = sat * alpha;'));
   });
 
   it('(0, 0) devolve atenuação 1: o campo desenha o que desenhava', () => {

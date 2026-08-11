@@ -2539,19 +2539,34 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` · `retrato 18ba748879dc`.
    **Esses md5 são desta GPU** — noutra máquina servem só como sinal de que a captura
    assentou, nunca como valor esperado.
-3. **A baseline VIGENTE é a da Onda 3 (2026-08-11) e tem QUINZE vistas.** A lista do
-   item 2 é das SETE clássicas e continua valendo para elas; a Onda 3 acrescentou OITO,
+3. **A baseline VIGENTE é a da Onda 3 (2026-08-11) e tem QUINZE vistas — a lista deste
+   item, não a do item 2.** O item 2 é HISTÓRIA da era da Onda 1 (e já divergiu em
+   `travessia` e `retrato`, pelo conserto do `vSat` abaixo); a Onda 3 acrescentou OITO,
    porque o gate não tinha vista nenhuma do motor estelar — 4 do Sol por DISTÂNCIA
    (`?pos=`, não `?t=`: o instante amarra a distância ao trajeto da hélice) e 4 de
    Betelgeuse. Condições da captura: dev server em `127.0.0.1:5173`, `?q=cinema`
    FIXADO, janela padrão (1800×1800 pedidos = 1800×1713 efetivos; `retrato` 700×1800 =
    700×1713), duas capturas por vista repetindo md5.
-   `sol a4fbf427778a` · `interno d98cbef70849` · `travessia 145263085c23` ·
+   `sol a4fbf427778a` · `interno d98cbef70849` · `travessia b85162ede6cf`† ·
    `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` ·
-   `retrato 615452579a2a` · **`soldisco 7a2e6d1f4620`** · **`solrampa ff2b7b4d353a`** ·
+   `retrato 23bb22402f40`† · **`soldisco 7a2e6d1f4620`** · **`solrampa ff2b7b4d353a`** ·
    **`solestouro 3dc8706149b4`** · **`solestrela 22f5fab0992e`** ·
-   `hero200 20fdcb99a240` · `hero600 4311d0ccbc15` · `hero950 d11a8df86b68` ·
-   **`hero8 94b1136950ce`**.
+   `hero200 b4a2d03ed3e9`† · `hero600 4311d0ccbc15` · `hero950 d11a8df86b68` ·
+   **`hero8 d7c1d2d12726`**†.
+   **As QUATRO com † mudaram no conserto do `vSat`** (2026-08-11, depois do fecho da
+   onda): os espinhos de difração e o núcleo esbranquiçado passam a obedecer à
+   atenuação TOTAL — extinção e `uFade` —, e não só à cessão por estrela. Delta
+   máximo de **1 nível** em todas as quatro, ≤0,03% dos pixels
+   (`travessia` 624 px · `retrato` 374 · `hero200` 151 · `hero8` 672). Os md5 dessas
+   quatro na era anterior (a que a fase 4a fechou) eram `travessia 145263085c23` ·
+   `retrato 615452579a2a` · `hero200 20fdcb99a240` · `hero8 94b1136950ce`.
+   **1 nível NÃO é ULP aqui, e a mensagem enlatada do `diff-pixel` engana neste
+   caso**: medido o SINAL, 1.818 px escureceram contra 3 que clarearam — atenuação
+   real, unidirecional. As outras onze saem bit-idênticas porque a mudança só toca
+   estrela SATURADA atrás de gás: nas quatro do Sol as saturadas são as vizinhas
+   dentro da Bolha Local (`nebulaDensity` devolve 0 exato, `vis` = 1), em
+   `hero600`/`hero950` Betelgeuse já tem `peak` < 1 (logo `sat` = 0), e `uFade` vale 1
+   nas quinze — nenhuma vista do gate cai na faixa 1100–2300 pc da rampa.
    **As CINCO em negrito mudaram de propósito**, na fase 4a da onda, quando
    `DOMINANCE_DEFAULT_ON` (`lodStellar.ts`) virou `true` e o ponto do catálogo passou a
    ceder sob o hero que o DOMINA na tela — o fim da dupla-luz hero↔catálogo, em que as
@@ -2576,6 +2591,13 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    suposto — as SEIS faces saem BIT-IDÊNTICAS e o `skyError` fica em **0,7782** com os
    cinco termos iguais até a quarta casa (espessura 0,3026 · fenda 0,2240 ·
    perfil 0,2047 · purpura 0,0336 · cor 0,0132).
+   **O conserto do `vSat` também não moveu a régua do céu**, e aí a prova é mais fina
+   que "bit-idêntico": UMA face mudou — `face_anti` (o anticentro, Órion/Touro, que é
+   onde há estrela saturada atrás de gás), 4.959 px (0,2545%) com delta máximo de 1 e
+   4.956 deles escurecendo. As outras cinco saem bit-idênticas, e o `skyError` fica nos
+   MESMOS **0,7782**, com os cinco termos e os quatro brutos
+   (bulgeAnti 5,497 · rift 0,0694 · colour 0,0509 · purp 0,0448) iguais até a quarta
+   casa. Ou seja: a mudança é real e fica ABAIXO da resolução da régua fotométrica.
 
 Os PNGs do gate do céu ficam em `sky/` e as capturas nomeadas em `capturas/` (ambos
 gitignored, ambos sobrevivem à sessão): `sky-capture.mjs base --so-medir` re-mede sem
@@ -3112,6 +3134,30 @@ que ainda **decide** algo fica aqui:
   doador clampava). O clamp mora no shader; clampar também no JS esconderia um
   chamador errado em vez de o denunciar, e `fadeAt()` deixaria de dizer a
   verdade sobre o que a tela usou.
+- **A dívida do `vSat` foi PAGA (2026-08-11, logo depois do fecho).** Era o
+  achado 3 da caçada adversarial da revisão de olhos frescos: `vSat` recebia só
+  a cessão por estrela, enquanto a extinção e o `uFade` da saída da vizinhança
+  solar iam parar apenas no `vPeak`. Consequência: os espinhos de difração e o
+  núcleo esbranquiçado ficavam com força cheia sobre um núcleo gaussiano já
+  esmaecido, e sumiam DE GOLPE quando `points.visible` desligava. O conserto é
+  uma palavra em `starShaders.ts` — `vSat = sat * alpha` no lugar de
+  `sat * atten` —, porque `alpha` nasce 1,0 e só acumula atenuação: é a
+  atenuação TOTAL, a mesma que o `vPeak` recebe. **A regra que fica é a forma,
+  não a linha: atenuação se fatora num lugar só, e quem acrescentar um fator
+  novo a `alpha` o dá aos dois varyings sem precisar lembrar.** Auditado com o
+  protocolo completo (15 vistas antes/depois + gate do céu) — os números no item
+  3 da seção de gates.
+- **Nas cascas o MESMO desenho não é defeito, e conserto análogo NÃO é
+  recomendado.** `wrappedStars.ts:436` também faz `vSat = sat` contra
+  `vPeak = peak * uFade` (:438), mas a assimetria é **inalcançável**: o `uFade`
+  das cascas não é rampa, é binário (`director.ts:929-933` passa
+  `this.hide.has('nowrap') ? 0 : 1`), e o vertex já tem kill duro em
+  `uFade < 0.001` que zera o `vSat` e joga o vértice para fora do clip
+  (`wrappedStars.ts:411-419`). A extinção, lá, entra na MAGNITUDE antes da PSF
+  (`EXT_MAG_PER_PC * dist`, `:421`), então `sat` e `peak` já a carregam juntos.
+  **A frase que importa para o leitor futuro: se algum dia o fade das cascas
+  virar rampa contínua, o defeito acorda** — e aí o conserto é o mesmo, com A/B
+  próprio (as cascas pintam o céu inteiro; nada nelas muda sem gate).
 
 ### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
 

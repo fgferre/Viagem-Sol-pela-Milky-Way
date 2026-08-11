@@ -93,7 +93,19 @@ void main() {
   // core*core*vSat). Atenuar só o alfa deixaria a cruz de
   // difração intacta por cima do hero — a dupla-luz mais visível de
   // todas continuaria lá.
-  vSat = sat * atten;
+  //
+  // E cede pela atenuação TOTAL, que é o próprio alpha: ele nasce 1.0 e
+  // daqui para trás SÓ acumula atenuação — a extinção mix(1.0, vis, 0.5),
+  // o uFade da saída da vizinhança solar e a cessão por estrela (atten).
+  // É por isso que a linha é alpha e não atten: com atten sozinho, os
+  // espinhos e o núcleo branco ficavam com força CHEIA enquanto o núcleo
+  // gaussiano esmaecia — e sumiam de golpe quando setFade derruba
+  // points.visible em fade < 0.001 (stars.ts). Achado da caçada
+  // adversarial da Onda 3; o defeito é herdado, não da onda. Fatorar a
+  // atenuação num só lugar (alpha) em vez de repetir a expressão é o que
+  // impede a assimetria de voltar: quem acrescentar um fator novo a
+  // alpha o dá aos dois varyings sem pensar nisso.
+  vSat = sat * alpha;
   vSigma = sigmaFrac;
   vPeak = peak * alpha;
 
