@@ -20,7 +20,9 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { WORLD } from '../config';
+import { WORLD, decodeStars } from '../config';
+import type { StarArrays, StarsMeta } from '../config';
+import { HeroStars } from './heroStars';
 import {
   DISC_ENTER_RAD,
   DISC_EXIT_RAD,
@@ -28,19 +30,28 @@ import {
   FADE_NEUTRAL,
   FOCUS_OFF,
   FOCUS_ON,
+  HERO_DOMINANCE,
+  HERO_MATCH_REL_TOL,
+  HERO_ZOOM_TAN_REF,
   LOD_HERO,
   LOD_SOL,
   POINT_SIZE_CEILING_PX,
   RAMP_DURATION_MS,
+  catalogApparentMag,
   clearFocus,
   computeSolidAngle,
   discWorldFade,
   distanceForSolidAngle,
+  heroCatalogFade,
+  heroDominanceFade,
+  heroDominanceRatio,
   heroFarFade,
   heroNearFade,
   heroPresence,
+  heroSizePx,
   isDiscGroupVisible,
   isFocusBypassActive,
+  matchHeroesToCatalog,
   maxSpriteSolidAngleRad,
   needsAttributeWrite,
   projectedRadiusPx,
@@ -48,6 +59,7 @@ import {
   resetRamp,
   shouldDiscBeActive,
   spriteAttenuation,
+  spriteAttenuationWithFocus,
   stepRampToward,
   sunStarCore,
   sunStarGain,
@@ -850,5 +862,486 @@ describe('D3 — os atributos nascem NEUTROS', () => {
       const fade = i / 100;
       expect(spriteAttenuation(fade) + fade).toBeCloseTo(1, 12);
     }
+  });
+});
+
+// ------------------------------------------------------------
+// 9. A POLÍTICA DE DOMINÂNCIA (fase 3) — espelhos, curva, redes
+// ------------------------------------------------------------
+//
+// O regime destes testes é o do gate visual: `screenH = 1713` é a ALTURA
+// EFETIVA do buffer nas capturas do `ab-identidade` (janela 1800×1800
+// menos o chrome do headless — o próprio harness reporta `@1800x1713`), e
+// 3,5/0,85 são o `uExpoM0`/`uSigmaPx` com que o `director.ts:295`
+// constrói o campo. Os números abaixo são, por isso, os MESMOS que a
+// fase 2 mediu na tela (achado A9) — se um deles se mover, a vista
+// correspondente se move junto.
+const SCREEN_H = 1713;
+const EXPO = 3.5;
+const SIGMA = 0.85;
+/** a lente da hélice: 26°→56°, sempre igual ou mais fechada que a de referência */
+const TAN_HELICE = Math.tan(28 * DEG);
+
+/** O catálogo REAL do repo, decodificado pelo decodificador REAL. */
+let cacheCatalogo: { meta: StarsMeta; stars: StarArrays } | null = null;
+function catalogo() {
+  if (!cacheCatalogo) {
+    const meta = JSON.parse(
+      readFileSync(new URL('../../../public/data/stars_meta.json', import.meta.url), 'utf8')
+    ) as StarsMeta;
+    const buf = readFileSync(new URL('../../../public/data/stars.bin', import.meta.url));
+    const bin = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+    cacheCatalogo = { meta, stars: decodeStars(bin, meta) };
+  }
+  return cacheCatalogo;
+}
+
+/** As 16 heroes DE VERDADE: quem escolhe é a classe, não este teste. */
+let cacheHeroes: { chosen: { n: string; m: number; d: number; x: number; y: number; z: number }[]; sizePc: number[]; idx: number[] } | null = null;
+function heroes16() {
+  if (!cacheHeroes) {
+    const { meta, stars } = catalogo();
+    const h = new HeroStars(meta.named);
+    cacheHeroes = {
+      chosen: h.chosen,
+      sizePc: h.sizePc,
+      idx: matchHeroesToCatalog(h.chosen, stars.position, stars.logLum),
+    };
+    h.dispose();
+  }
+  return cacheHeroes;
+}
+
+function entradaDe(nome: string, dPc: number) {
+  const { stars } = catalogo();
+  const { chosen, sizePc, idx } = heroes16();
+  const j = chosen.findIndex((s) => s.n === nome);
+  return {
+    camDistPc: dPc,
+    heroSizePc: sizePc[j],
+    catalogLogLum: stars.logLum[idx[j]],
+    screenH: SCREEN_H,
+    tanHalfFov: TAN_HELICE,
+    expoM0: EXPO,
+    sigmaPx: SIGMA,
+  };
+}
+
+describe('espelhos em JS das duas contas de tela', () => {
+  it('a lente de referência do uZoom é bit-idêntica à de heroStars', () => {
+    // a associação importa: 29*(π/180) é o que MathUtils.degToRad faz
+    expect(HERO_ZOOM_TAN_REF).toBe(Math.tan(29 * (Math.PI / 180)));
+    expect(HeroStars.TAN_REF).toBe(HERO_ZOOM_TAN_REF);
+    // e o consumidor IMPORTA em vez de redigitar (o elo que a fase 2
+    // estabeleceu para as rampas do Sol, aqui para a lente)
+    const src = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
+    expect(src).toContain('HERO_ZOOM_TAN_REF');
+    expect(src).toContain('static readonly TAN_REF = HERO_ZOOM_TAN_REF;');
+  });
+
+  it('a magnitude aparente é a MESMA linha do vertex do catálogo', () => {
+    const vert = readFileSync(new URL('../shaders/starShaders.ts', import.meta.url), 'utf8');
+    expect(vert).toContain(
+      'float m = -0.15 - 2.5 * aLogLum + 5.0 * (log2(max(dist, 1e-3)) * 0.30103);'
+    );
+    // logLum 0 é M_V = 4,85; a 10 pc a aparente tem de dar a absoluta
+    expect(catalogApparentMag(0, 10)).toBeCloseTo(4.85, 5);
+    // 10× mais longe = 5 magnitudes a mais
+    expect(catalogApparentMag(1.3583, 100) - catalogApparentMag(1.3583, 10)).toBeCloseTo(5, 5);
+    // e a guarda do shader (max(dist,1e-3)) impede o −∞ em d = 0
+    expect(Number.isFinite(catalogApparentMag(1, 0))).toBe(true);
+  });
+
+  it('o tamanho do billboard: o fov se CANCELA em toda a lente da hélice', () => {
+    const size = 0.0586; // ~Betelgeuse
+    const canonico = (size * SCREEN_H) / (200 * HERO_ZOOM_TAN_REF);
+    for (const fovGraus of [26, 40, 56, 58]) {
+      expect(heroSizePx(size, 200, SCREEN_H, Math.tan((fovGraus / 2) * DEG))).toBeCloseTo(
+        canonico,
+        9
+      );
+    }
+    // lente MAIS ABERTA que a de referência volta a depender do fov
+    expect(heroSizePx(size, 200, SCREEN_H, Math.tan(45 * DEG))).toBeLessThan(canonico);
+  });
+
+  it('o billboard cresce com 1/d e a PSF do ponto com √log — o cruzamento é inevitável', () => {
+    const size = 0.0586;
+    const px = (d: number) => heroSizePx(size, d, SCREEN_H, TAN_HELICE);
+    expect(px(8) / px(80)).toBeCloseTo(10, 9); // 1/d exato
+    const ll = 4.1275;
+    const psf = (d: number) => psfPointSizePx(catalogApparentMag(ll, d), EXPO, SIGMA, SCREEN_H);
+    // a PSF anda 1,43× no mesmo trecho em que o billboard anda 10×
+    expect(psf(8) / psf(80)).toBeCloseTo(1.426, 3);
+  });
+
+  it('guardas: entrada inválida devolve 0 (billboard ausente), nunca NaN', () => {
+    expect(heroSizePx(0, 200, SCREEN_H, TAN_HELICE)).toBe(0);
+    expect(heroSizePx(0.05, 0, SCREEN_H, TAN_HELICE)).toBe(0);
+    expect(heroSizePx(0.05, 200, 0, TAN_HELICE)).toBe(0);
+    expect(heroSizePx(0.05, 200, SCREEN_H, 0)).toBe(0);
+    expect(heroSizePx(NaN, 200, SCREEN_H, TAN_HELICE)).toBe(0);
+    expect(heroSizePx(0.05, Infinity, SCREEN_H, TAN_HELICE)).toBe(0);
+  });
+
+  it('o piso da PSF no regime do gate são os 5,93 px que a fase 2 mediu', () => {
+    // com peak < 1 não há termo de saturação: size = 2·2,2·σ
+    expect(psfPointSizePx(20, EXPO, SIGMA, SCREEN_H)).toBeCloseTo(5.932, 3);
+    expect(psfPointSizePx(20, EXPO, SIGMA, SCREEN_H)).toBe(
+      2 * 2.2 * ((SIGMA * SCREEN_H) / 1080)
+    );
+  });
+});
+
+describe('g — a curva da cessão do ponto', () => {
+  it('as bordas: 1 é a definição de dominância, 2,5 é DERIVADA da continuidade', () => {
+    expect(HERO_DOMINANCE.enterRatio).toBe(1);
+    expect(HERO_DOMINANCE.fullRatio).toBe(2.5);
+    // a derivada máxima do smoothstep é 1,5/(hi−1); a compensação
+    // disponível (dr/dr) é 1. Em 2,5 elas empatam — é a MENOR borda que
+    // ainda garante φ′ = 1 − g′ ≥ 0 (ver a prova no módulo).
+    expect(1.5 / (HERO_DOMINANCE.fullRatio - HERO_DOMINANCE.enterRatio)).toBe(1);
+  });
+
+  it('r ≤ 1 devolve 0 EXATO — é o que mantém as vistas bit-idênticas', () => {
+    for (const r of [0, 0.1, 0.5, 0.9, 0.999999, 1]) expect(heroDominanceFade(r)).toBe(0);
+    expect(spriteAttenuation(heroDominanceFade(1))).toBe(1);
+  });
+
+  it('r ≥ 2,5 devolve 1: o ponto virou detalhe dentro do clarão', () => {
+    for (const r of [2.5, 3, 10, 1e6]) expect(heroDominanceFade(r)).toBe(1);
+  });
+
+  it('é monotônica e contínua — sem degrau em nenhum ponto da faixa', () => {
+    const passo = 1e-4;
+    let anterior = heroDominanceFade(0);
+    for (let r = 0; r <= 4; r += passo) {
+      const g = heroDominanceFade(r);
+      expect(g).toBeGreaterThanOrEqual(anterior);
+      // continuidade: o salto por passo é limitado pela derivada máxima
+      expect(Math.abs(g - anterior)).toBeLessThanOrEqual(1.0 * passo + 1e-12);
+      anterior = g;
+    }
+  });
+
+  it('a derivada zera nas DUAS bordas (C¹): a cessão entra e sai sem quina', () => {
+    const h = 1e-6;
+    const d = (r: number) => (heroDominanceFade(r + h) - heroDominanceFade(r - h)) / (2 * h);
+    expect(d(1)).toBeCloseTo(0, 4);
+    expect(d(2.5)).toBeCloseTo(0, 4);
+    expect(d(1.75)).toBeCloseTo(1, 4); // o máximo, exatamente 1
+    // e nunca passa de 1 — a prova numérica da borda superior
+    for (let r = 1; r <= 2.5; r += 1e-3) expect(d(r)).toBeLessThanOrEqual(1 + 1e-6);
+  });
+
+  it('entrada não-finita cede ZERO (direção segura: ponto inteiro)', () => {
+    expect(heroDominanceFade(NaN)).toBe(0);
+    expect(heroDominanceFade(Infinity)).toBe(0);
+    expect(heroDominanceFade(-Infinity)).toBe(0);
+  });
+});
+
+describe('as 4 vistas de hero — os números que a fase 2 mediu (A9)', () => {
+  it('a 200 pc o PONTO domina: 0,91 px de billboard contra 5,93 do ponto', () => {
+    const e = entradaDe('Betelgeuse', 200);
+    expect(heroSizePx(e.heroSizePc, 200, SCREEN_H, TAN_HELICE)).toBeCloseTo(0.906, 3);
+    expect(psfPointSizePx(catalogApparentMag(e.catalogLogLum, 200), EXPO, SIGMA, SCREEN_H))
+      .toBeCloseTo(5.932, 3);
+    expect(heroDominanceRatio(e)).toBeCloseTo(0.1527, 4);
+    // e por isso hero200 sai BIT-IDÊNTICA
+    expect(heroCatalogFade(e)).toBe(0);
+  });
+
+  it('a 600 e a 950 pc o billboard é sub-pixel: fade 0 nas duas', () => {
+    expect(heroDominanceRatio(entradaDe('Betelgeuse', 600))).toBeLessThan(0.06);
+    expect(heroCatalogFade(entradaDe('Betelgeuse', 600))).toBe(0);
+    expect(heroDominanceRatio(entradaDe('Betelgeuse', 950))).toBeLessThan(0.04);
+    expect(heroCatalogFade(entradaDe('Betelgeuse', 950))).toBe(0);
+  });
+
+  it('a 8 pc o HERO domina: 22,6 px contra 15,5 — e só aí o ponto cede', () => {
+    const e = entradaDe('Betelgeuse', 8);
+    expect(heroSizePx(e.heroSizePc, 8, SCREEN_H, TAN_HELICE)).toBeCloseTo(22.647, 3);
+    expect(psfPointSizePx(catalogApparentMag(e.catalogLogLum, 8), EXPO, SIGMA, SCREEN_H))
+      .toBeCloseTo(15.482, 3);
+    expect(heroDominanceRatio(e)).toBeCloseTo(1.4628, 4);
+    // a cessão da vista hero8: ~23% do ponto, não o apagamento dele
+    expect(heroCatalogFade(e)).toBeCloseTo(0.2269, 4);
+  });
+
+  it('a dominância de Betelgeuse começa em ~12,2 pc e é plena em ~4,4 pc', () => {
+    const r = (d: number) => heroDominanceRatio(entradaDe('Betelgeuse', d));
+    expect(r(12.3)).toBeLessThan(1);
+    expect(r(12.2)).toBeGreaterThan(1);
+    expect(heroCatalogFade(entradaDe('Betelgeuse', 4.3))).toBe(1);
+    expect(heroCatalogFade(entradaDe('Betelgeuse', 4.5))).toBeLessThan(1);
+  });
+});
+
+describe('as redes de segurança da D2', () => {
+  it('D2a — NENHUM dos 16 domina além de 320 pc, quanto mais de 900', () => {
+    // a razão é monotônica decrescente em d, então bastam as bordas: se
+    // ninguém domina em 320, ninguém domina depois. É por isso que a rede
+    // "além de 900 pc o fade volta a 0" é REDUNDANTE por construção.
+    const { chosen } = heroes16();
+    for (const s of chosen) {
+      expect(heroDominanceRatio(entradaDe(s.n, LOD_HERO.far.startPc))).toBeLessThan(1);
+      expect(heroCatalogFade(entradaDe(s.n, LOD_HERO.far.startPc))).toBe(0);
+      expect(heroCatalogFade(entradaDe(s.n, LOD_HERO.far.endPc))).toBe(0);
+      expect(heroCatalogFade(entradaDe(s.n, 5000))).toBe(0);
+    }
+  });
+
+  it('D2a — a dominância morre no MÁXIMO em 113 pc (Sirius, a maior das 16)', () => {
+    const { chosen } = heroes16();
+    let pior = 0;
+    for (const s of chosen) {
+      let lo = 1e-4;
+      let hi = 2000;
+      for (let k = 0; k < 100; k++) {
+        const mid = (lo + hi) / 2;
+        if (heroDominanceRatio(entradaDe(s.n, mid)) > 1) lo = mid;
+        else hi = mid;
+      }
+      if (lo > pior) pior = lo;
+    }
+    expect(pior).toBeGreaterThan(100);
+    expect(pior).toBeLessThan(120); // 2,8× de folga até os 320 pc do farFade
+  });
+
+  it('PERTO DE CASA A DOMINÂNCIA É A REGRA — 8 das 16 no Ato do Sol', () => {
+    // O achado que a fase 3 mediu e que a fase 2 não tinha visto (A9 só
+    // olhou Betelgeuse): na vista `sol` do ab-identidade (t=6) a câmera
+    // está a 0,06 pc de casa, então a distância câmera↔hero é a própria
+    // distância ao Sol — e aí OITO das 16 têm billboard maior que o
+    // ponto. Sirius: 248 px de clarão contra 11 px de ponto. É por isso
+    // que as vistas do Ato do Sol mudam nesta fase, e é o que o
+    // relatório da fase declara ao coordenador.
+    const { chosen } = heroes16();
+    const dominam = chosen.filter((s) => heroCatalogFade(entradaDe(s.n, s.d)) > 0);
+    expect(dominam.map((s) => s.n).sort()).toEqual(
+      [
+        'Aldebaran',
+        'Altair',
+        'Arcturus',
+        'Capella',
+        'Procyon',
+        'Rigil Kentaurus',
+        'Sirius',
+        'Vega',
+      ].sort()
+    );
+    const sirius = chosen.find((s) => s.n === 'Sirius')!;
+    expect(heroDominanceRatio(entradaDe('Sirius', sirius.d))).toBeGreaterThan(20);
+    expect(heroCatalogFade(entradaDe('Sirius', sirius.d))).toBe(1);
+    // ...e a 221 pc de casa (a vista `travessia`, t=100) nenhuma domina
+    for (const s of chosen) {
+      const d = Math.abs(s.d - 221) + 1; // ordem de grandeza da distância à câmera
+      if (d > 100) expect(heroCatalogFade(entradaDe(s.n, d))).toBe(0);
+    }
+  });
+
+  it('D2d/rede da presença — onde g > 0 a presença vale 1: o fator é inerte', () => {
+    const { chosen } = heroes16();
+    for (const s of chosen) {
+      for (let d = 0.5; d < 200; d += 0.25) {
+        const e = entradaDe(s.n, d);
+        const g = heroDominanceFade(heroDominanceRatio(e));
+        if (g > 0) {
+          expect(heroPresence(d, e.heroSizePc)).toBe(1);
+          expect(heroCatalogFade(e)).toBe(g);
+        }
+      }
+    }
+  });
+
+  it('...e colado na estrela o billboard some e o PONTO VOLTA inteiro', () => {
+    // regime absurdo (dentro de 1,4× o tamanho do clarão), que a viagem
+    // não visita — mas a garantia é da conta, não da varredura
+    const e = entradaDe('Betelgeuse', 0.02);
+    expect(heroDominanceFade(heroDominanceRatio(e))).toBe(1); // domina de sobra
+    expect(heroPresence(e.camDistPc, e.heroSizePc)).toBe(0); // ...e não desenha
+    expect(heroCatalogFade(e)).toBe(0); // logo o ponto fica
+  });
+
+  it('guardas do consumidor: entrada podre não escurece ninguém', () => {
+    const base = entradaDe('Betelgeuse', 8);
+    expect(heroCatalogFade({ ...base, camDistPc: NaN })).toBe(FADE_NEUTRAL);
+    expect(heroCatalogFade({ ...base, heroSizePc: 0 })).toBe(FADE_NEUTRAL);
+    expect(heroCatalogFade({ ...base, screenH: 0 })).toBe(FADE_NEUTRAL);
+    expect(heroCatalogFade({ ...base, tanHalfFov: NaN })).toBe(FADE_NEUTRAL);
+  });
+
+  it('a razão quase não depende da resolução (a política é da IMAGEM)', () => {
+    const e = entradaDe('Betelgeuse', 8);
+    const r1080 = heroDominanceRatio({ ...e, screenH: 1080 });
+    const r4320 = heroDominanceRatio({ ...e, screenH: 4320 });
+    expect(r4320 / r1080).toBeGreaterThan(0.8);
+    expect(r4320 / r1080).toBeLessThan(1.3);
+  });
+});
+
+describe('D2d — a luz combinada não dá um passo para trás na aproximação', () => {
+  // A grandeza do invariante é a PRESENÇA COMBINADA em px:
+  //     P(d) = ponto_px · (1 − fade) + billboard_px
+  // (as duas camadas não têm normalização radiométrica comum — ver o
+  // módulo —, e px é a régua que as duas compartilham). O que a D2d
+  // proíbe é P andar para trás enquanto a câmera se aproxima: seria a
+  // estrela piscando para baixo no meio do voo.
+  const combinada = (nome: string, d: number) => {
+    const e = entradaDe(nome, d);
+    const ponto = psfPointSizePx(catalogApparentMag(e.catalogLogLum, d), EXPO, SIGMA, SCREEN_H);
+    const hero = heroSizePx(e.heroSizePc, d, SCREEN_H, TAN_HELICE);
+    return ponto * (1 - heroCatalogFade(e)) + hero;
+  };
+
+  it('varredura fina em Betelgeuse: monotônica de 1.200 pc até 0,5 pc', () => {
+    let anterior = combinada('Betelgeuse', 1200);
+    for (let d = 1200; d >= 0.5; d -= 0.05) {
+      const p = combinada('Betelgeuse', d);
+      expect(p).toBeGreaterThanOrEqual(anterior - 1e-9);
+      anterior = p;
+    }
+  });
+
+  it('e é CONTÍNUA: nenhum passo de 0,05 pc mexe mais de 5% na luz', () => {
+    let anterior = combinada('Betelgeuse', 200);
+    for (let d = 200; d >= 1; d -= 0.05) {
+      const p = combinada('Betelgeuse', d);
+      expect(Math.abs(p - anterior)).toBeLessThan(0.05 * anterior);
+      anterior = p;
+    }
+  });
+
+  it('nas 16, e no ponto mais perigoso (o meio da rampa, r = 1,75)', () => {
+    // é onde g′ é máxima: se a política fosse cair rápido demais, quebra aqui
+    const { chosen } = heroes16();
+    for (const s of chosen) {
+      let lo = 1e-3;
+      let hi = 2000;
+      for (let k = 0; k < 100; k++) {
+        const mid = (lo + hi) / 2;
+        if (heroDominanceRatio(entradaDe(s.n, mid)) > 1.75) lo = mid;
+        else hi = mid;
+      }
+      const d = hi;
+      expect(combinada(s.n, d * 0.99)).toBeGreaterThanOrEqual(combinada(s.n, d));
+      expect(combinada(s.n, d)).toBeGreaterThanOrEqual(combinada(s.n, d * 1.01));
+    }
+  });
+
+  it('com a política DESLIGADA a luz seria a de hoje — a dobrada', () => {
+    // contraprova: sem cessão, P é maior (é a soma das duas luzes) em
+    // todo o regime de dominância. A melhoria é medível, não retórica.
+    const semCessao = (d: number) => {
+      const e = entradaDe('Betelgeuse', d);
+      return (
+        psfPointSizePx(catalogApparentMag(e.catalogLogLum, d), EXPO, SIGMA, SCREEN_H) +
+        heroSizePx(e.heroSizePc, d, SCREEN_H, TAN_HELICE)
+      );
+    };
+    expect(semCessao(8)).toBeGreaterThan(combinada('Betelgeuse', 8));
+    expect(semCessao(200)).toBe(combinada('Betelgeuse', 200)); // fora da dominância, igual
+  });
+});
+
+describe('o casamento hero↔catálogo', () => {
+  it('as 16 acham par no catálogo REAL do repo', () => {
+    const { idx, chosen } = heroes16();
+    expect(idx.length).toBe(16);
+    expect(idx.every((i) => i >= 0)).toBe(true);
+    expect(new Set(idx).size).toBe(16); // sem dois heroes no mesmo ponto
+    expect(chosen.map((s) => s.n)).toContain('Betelgeuse');
+  });
+
+  it('o par casa em posição E em luminosidade', () => {
+    const { stars } = catalogo();
+    const { idx, chosen } = heroes16();
+    for (let j = 0; j < idx.length; j++) {
+      const s = chosen[j];
+      const i = idx[j];
+      const dx = stars.position[i * 3] - s.x;
+      const dy = stars.position[i * 3 + 1] - s.y;
+      const dz = stars.position[i * 3 + 2] - s.z;
+      // dentro do erro de quantização declarado pelo próprio build
+      expect(Math.hypot(dx, dy, dz)).toBeLessThan(HERO_MATCH_REL_TOL * s.d);
+      const esperado = 0.4 * (4.85 - (s.m - 5 * Math.log10(s.d) + 5));
+      expect(Math.abs(stars.logLum[i] - esperado)).toBeLessThan(1e-3);
+    }
+  });
+
+  it('as DUPLAS: Acrux e Rigil Kentaurus têm duas entradas no mesmo lugar', () => {
+    // α Cru A/B caem no MESMO ponto quantizado (separação idêntica até o
+    // último bit): posição sozinha escolheria por sorte de ordenação. É
+    // a luminosidade que decide, e por 0,32 dex de margem.
+    const { stars } = catalogo();
+    const { idx, chosen } = heroes16();
+    const jA = chosen.findIndex((s) => s.n === 'Acrux');
+    const jR = chosen.findIndex((s) => s.n === 'Rigil Kentaurus');
+    for (const [j, nome] of [[jA, 'Acrux'], [jR, 'Rigil Kentaurus']] as const) {
+      const s = chosen[j];
+      const tol = HERO_MATCH_REL_TOL * s.d;
+      let candidatos = 0;
+      for (let i = 0; i < stars.logLum.length; i++) {
+        const dx = stars.position[i * 3] - s.x;
+        if (dx > tol || dx < -tol) continue;
+        const dy = stars.position[i * 3 + 1] - s.y;
+        const dz = stars.position[i * 3 + 2] - s.z;
+        if (dx * dx + dy * dy + dz * dz <= tol * tol) candidatos++;
+      }
+      expect(candidatos).toBe(2); // a companheira está lá
+      const esperado = 0.4 * (4.85 - (s.m - 5 * Math.log10(s.d) + 5));
+      expect(Math.abs(stars.logLum[idx[j]] - esperado)).toBeLessThan(1e-3);
+      expect(nome).toBeTruthy();
+    }
+  });
+
+  it('sem par é DECLARAÇÃO (−1), nunca o vizinho mais próximo', () => {
+    const pos = new Float32Array([0, 0, 10, 0, 0, 20]);
+    const lum = new Float32Array([1, 2]);
+    // alvo a 10 pc do primeiro ponto: fora da tolerância relativa
+    const longe = [{ x: 0, y: 0, z: 30, m: 5, d: 30 }];
+    expect(matchHeroesToCatalog(longe, pos, lum)).toEqual([-1]);
+    // e entrada inválida também não chuta
+    expect(matchHeroesToCatalog([{ x: 0, y: 0, z: 10, m: 5, d: 0 }], pos, lum)).toEqual([-1]);
+    expect(matchHeroesToCatalog([{ x: NaN, y: 0, z: 10, m: 5, d: 10 }], pos, lum)).toEqual([-1]);
+  });
+
+  it('empate de posição é desfeito pela luminosidade, não pela ordem', () => {
+    // dois pontos no MESMO lugar, luminosidades diferentes
+    const pos = new Float32Array([0, 0, 10, 0, 0, 10]);
+    const lum = new Float32Array([0.5, 2.5]);
+    // alvo cuja logLum esperada é 2,5: m tal que 0,4·(4,85 − M) = 2,5
+    const m = (10 - 4.85) / -2.5 + 4.85 + 0; // M = 4,85 − 2,5·2,5 = −1,4
+    expect(m).toBeTruthy();
+    const alvo = [{ x: 0, y: 0, z: 10, m: -1.4 + 5 * Math.log10(10) - 5, d: 10 }];
+    expect(matchHeroesToCatalog(alvo, pos, lum)).toEqual([1]);
+    const alvo2 = [{ x: 0, y: 0, z: 10, m: 3.6 + 5 * Math.log10(10) - 5, d: 10 }];
+    expect(matchHeroesToCatalog(alvo2, pos, lum)).toEqual([0]);
+  });
+});
+
+describe('D3 — o par de atributos nasce inerte no shader novo', () => {
+  it('a linha do STAR_VERT é a que o espelho descreve', () => {
+    const vert = readFileSync(new URL('../shaders/starShaders.ts', import.meta.url), 'utf8');
+    expect(vert).toContain('attribute float aFade;');
+    expect(vert).toContain('attribute float aFocus;');
+    expect(vert).toContain(
+      'float atten = mix(clamp(1.0 - aFade, 0.0, 1.0), 1.0, step(0.5, aFocus));'
+    );
+    expect(vert).toContain('alpha *= atten;');
+    // e o vSat cede junto, senão os espinhos de difração ficavam por cima
+    expect(vert).toContain('vSat = sat * atten;');
+  });
+
+  it('(0, 0) devolve atenuação 1: o campo desenha o que desenhava', () => {
+    expect(spriteAttenuationWithFocus(FADE_NEUTRAL, FOCUS_OFF)).toBe(1);
+  });
+
+  it('o bypass de foco ignora QUALQUER fade (o corpo chega na Onda 7)', () => {
+    expect(spriteAttenuationWithFocus(1, FOCUS_ON)).toBe(1);
+    expect(spriteAttenuationWithFocus(0.5, FOCUS_ON)).toBe(1);
+    expect(spriteAttenuationWithFocus(0.5, FOCUS_OFF)).toBe(0.5);
+    expect(spriteAttenuationWithFocus(0.5, 0.5)).toBe(0.5); // fronteira: fora
   });
 });

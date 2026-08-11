@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GLSL_NOISE, bvToColor } from '../shaders/common';
-import { sunStarCore, sunStarGain } from './lodStellar';
+import { HERO_ZOOM_TAN_REF, sunStarCore, sunStarGain } from './lodStellar';
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -119,6 +119,17 @@ const HERO_COUNT = 16;
 export class HeroStars {
   readonly group = new THREE.Group();
   private mats: THREE.ShaderMaterial[] = [];
+  /** QUAIS são as 16, na ordem dos filhos do grupo. Publicado desde a
+   *  fase 3 da Onda 3: quem escreve o `aFade` do ponto do catálogo
+   *  precisa da identidade (para achar o índice) e do `uSize` (para
+   *  saber o tamanho na tela) — e ler daqui é a única forma de não
+   *  reordenar/redigitar a escolha das 16 do outro lado. */
+  readonly chosen: NamedStar[] = [];
+  /** `uSize` de cada uma, em pc (o mesmo valor do uniform). */
+  readonly sizePc: number[] = [];
+  /** distância câmera↔estrela do ÚLTIMO `update`, em pc — o mesmo
+   *  número que foi para `uCamDist`, sem recalcular do outro lado. */
+  readonly camDistPc: number[] = [];
 
   constructor(named: NamedStar[]) {
     const heroes = [...named].sort((a, b) => a.m - b.m).slice(0, HERO_COUNT);
@@ -126,6 +137,9 @@ export class HeroStars {
     for (const s of heroes) {
       const lum = Math.pow(10, -0.3 * s.m);
       const size = 0.08 * lum; // pc — raio do brilho
+      this.chosen.push(s);
+      this.sizePc.push(size);
+      this.camDistPc.push(Infinity); // até o primeiro update: "longe"
       const mat = new THREE.ShaderMaterial({
         vertexShader: VERT,
         fragmentShader: FRAG,
@@ -153,16 +167,25 @@ export class HeroStars {
     }
   }
 
-  static readonly TAN_REF = Math.tan(THREE.MathUtils.degToRad(58 / 2));
+  /** A lente de referência do `uZoom`. Vinha de
+   *  `Math.tan(THREE.MathUtils.degToRad(58 / 2))`; desde a fase 3 da
+   *  Onda 3 vem de `lodStellar`, que precisa do MESMO número para
+   *  prever o tamanho do billboard na tela. A expressão de lá é
+   *  bit-idêntica a esta (`29 * (Math.PI / 180)`, a mesma associação de
+   *  `degToRad`) — um ULP aqui seria um ULP no pixel. */
+  static readonly TAN_REF = HERO_ZOOM_TAN_REF;
 
   update(time: number, camPos: THREE.Vector3, tanHalfFov: number) {
     const zoom = Math.min(1, tanHalfFov / HeroStars.TAN_REF);
     let i = 0;
     for (const child of this.group.children) {
-      const m = this.mats[i++];
+      const m = this.mats[i];
       m.uniforms.uTime.value = time;
       m.uniforms.uZoom.value = zoom;
-      m.uniforms.uCamDist.value = (child as THREE.Mesh).position.distanceTo(camPos);
+      const dist = (child as THREE.Mesh).position.distanceTo(camPos);
+      m.uniforms.uCamDist.value = dist;
+      this.camDistPc[i] = dist;
+      i++;
     }
   }
 

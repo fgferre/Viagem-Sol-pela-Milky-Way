@@ -143,8 +143,13 @@ export interface StarArrays {
  * logLum u16, B−V u8. Direção em ângulo (não em x,y,z) porque o erro que
  * importa é ANGULAR: 65.536 passos dão ~20″, invisíveis numa PSF cujo piso
  * é 3,7 px. Float32 stride 6 custaria 24 B/estrela e comprime mal.
+ *
+ * EXPORTADA desde a Onda 3 (fase 3) só para o oráculo do casamento
+ * hero↔catálogo, que precisa decodificar o binário REAL do repo com o
+ * MESMO decodificador do runtime — redigitar estas 20 linhas no teste
+ * seria testar a cópia contra si mesma.
  */
-function decodeStars(bin: ArrayBuffer, meta: StarsMeta): StarArrays {
+export function decodeStars(bin: ArrayBuffer, meta: StarsMeta): StarArrays {
   const n = meta.count;
   if (bin.byteLength !== n * 9) {
     throw new Error('O catálogo estelar está incompleto ou possui formato inválido.');

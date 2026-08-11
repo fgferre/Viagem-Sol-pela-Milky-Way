@@ -10,9 +10,26 @@ import {
   GLSL_STAR_PSF,
 } from './common';
 
+// STAR_VERT é do CAMPO DE CATÁLOGO e só dele (`stars.ts:36`). As cascas
+// procedurais têm vertex próprio e compartilham só o STAR_FRAG
+// (`wrappedStars.ts:495`) — é por isso que os dois atributos por estrela
+// da Onda 3 entram aqui sem tocar em `wrappedStars.ts` (risco 6 do mapa
+// da casa: as cascas têm fade fixo em 1 e a cadeia catálogo↔cascas não
+// pode mudar).
 export const STAR_VERT = /* glsl */ `
 attribute float aLogLum;
 attribute float aCi;
+// --- os dois canais por estrela (Onda 3, fase 3) ---
+// aFade: quanto ESTA estrela cede, 0 = ponto inteiro, 1 = apagada. Quem
+// escreve são as 16 heroes, por quadro, e só quando o billboard passa a
+// DOMINAR a representação na tela (política de dominância, lodStellar.ts
+// seção 5) — até lá o catálogo continua sendo a estrela, e o buffer
+// zerado é o estado de 328.733 das 328.749.
+// aFocus: canal de IDENTIDADE, instalado e inerte (D3). O bypass existe
+// para a estrela em foco não ceder a nada; o corpo dele chega na Onda 7,
+// com a malha da estrela focada. Ninguém escreve 1 aqui hoje.
+attribute float aFade;
+attribute float aFocus;
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
@@ -59,8 +76,23 @@ void main() {
   alpha *= mix(1.0, vis, 0.5);
   alpha *= uFade; // some ao deixar a vizinhança solar
 
+  // A CESSÃO DO PONTO. Multiplicação por 1 enquanto aFade = 0, que é o
+  // estado de nascimento e o de quase todo o campo — a neutralidade é
+  // por construção, não por dosagem.
+  // O mix com step em vez de um if: o bypass de identidade não
+  // ramifica o vertex (mix(a,b,0) é exatamente a, mix(a,b,1) é
+  // exatamente b), e o caminho aritmético fica o mesmo para todo vértice.
+  float atten = mix(clamp(1.0 - aFade, 0.0, 1.0), 1.0, step(0.5, aFocus));
+  alpha *= atten;
+
   vColor = col;
-  vSat = sat;
+  // vSat cede JUNTO, e isso não é detalhe: o alfa só governa o vPeak
+  // (núcleo + halo gaussianos), enquanto os espinhos de difração e o
+  // núcleo esbranquiçado das estouradas saem de vSat no fragment
+  // (starShaders STAR_FRAG:96-104). Atenuar só o alfa deixaria a cruz de
+  // difração intacta por cima do hero — a dupla-luz mais visível de
+  // todas continuaria lá.
+  vSat = sat * atten;
   vSigma = sigmaFrac;
   vPeak = peak * alpha;
 

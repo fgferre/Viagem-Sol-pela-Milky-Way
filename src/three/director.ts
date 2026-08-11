@@ -28,6 +28,7 @@ import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
+import { FADE_NEUTRAL, heroCatalogFade, matchHeroesToCatalog } from './world/lodStellar';
 import { loadStarData, WORLD } from './config';
 import type { StarsMeta } from './config';
 
@@ -79,6 +80,12 @@ export class Director {
   private stars!: StarField;
   private heroes!: HeroStars;
   private sunStar!: SunStar;
+  /** índice no catálogo de cada uma das 16 heroes (−1 = sem par
+   *  declarado). Resolvido uma vez no init — ver `matchHeroesToCatalog`. */
+  private heroCatalogIdx: number[] = [];
+  /** `aLogLum` do ponto casado, lido do catálogo no init: é constante e
+   *  é ele (não a magnitude do sidecar) que a GPU usa para a PSF. */
+  private heroCatalogLogLum: number[] = [];
   private galaxy!: Galaxy;
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
@@ -218,6 +225,13 @@ export class Director {
       'nogal', 'nosun', 'nodust', 'nohero', 'nocat', 'nomarker', 'nocart', 'nowrap',
       // bissecção do ?nocart: nuvens CO e forjas separadamente
       'noco', 'noforge', 'nobh',
+      // ?nodom=1 — desliga a CESSÃO do ponto do catálogo sob o hero
+      // dominante (Onda 3, fase 3). Não é preferência: é o A/B da
+      // decisão D2 com o MESMO binário dos dois lados (o `EXTRA=` do
+      // ab-identidade anexa o parâmetro a todas as vistas), e é o
+      // caminho de volta imediato se a cessão não agradar — com ele o
+      // campo desenha exatamente o que desenhava antes desta fase.
+      'nodom',
     ]) {
       if (this.debug.has(k)) this.hide.add(k);
     }
@@ -301,6 +315,30 @@ export class Director {
       resolvedCatalogCurve(starArrays.position, starArrays.logLum)
     );
     this.heroes = new HeroStars(this.meta.named);
+    // FIM DA DUPLA-LUZ hero↔catálogo (Onda 3, fase 3 — decisão D2). Até
+    // aqui as 16 mais brilhantes desenhavam luz DUAS vezes na mesma
+    // posição: o ponto do campo de catálogo e o billboard do hero por
+    // cima, somados em blending aditivo. O casamento é POSICIONAL porque
+    // o formato sc1 não carrega identidade (9 bytes, sem id) — posição
+    // com tolerância de quantização, desempate por luminosidade.
+    this.heroCatalogIdx = matchHeroesToCatalog(
+      this.heroes.chosen,
+      starArrays.position,
+      starArrays.logLum
+    );
+    this.heroCatalogLogLum = this.heroCatalogIdx.map((i) =>
+      i >= 0 ? starArrays.logLum[i] : 0
+    );
+    // sem par é DECLARAÇÃO, não chute: o slot é pulado e a estrela do
+    // catálogo fica inteira (o hero continua desenhando por cima, como
+    // antes desta fase). Hoje as 16 casam; o aviso existe para o dia em
+    // que o catálogo for regerado com outro corte.
+    const semPar = this.heroCatalogIdx
+      .map((idx, i) => (idx < 0 ? this.heroes.chosen[i].n : null))
+      .filter(Boolean);
+    if (semPar.length) {
+      console.warn(`[heroes] sem par no catálogo: ${semPar.join(', ')}`);
+    }
     // o Sol sob a mesma lei dos heróis: de longe é estrela, não bola
     // (magnitude viva pela distância; o nearFade cede ao disco de perto)
     this.sunStar = new SunStar();
@@ -893,6 +931,7 @@ export class Director {
       this.heroes.group.visible = !this.hide.has('nohero') && dHome < 1200;
     }
     this.heroes?.update(time, cam.position, tanHalfFov);
+    this.escreverFadeDasHeroes(hPx, tanHalfFov);
     this.sun.group.visible = !this.hide.has('nosun');
     // a PSF do Sol vive FORA do group (o group some no crossfade) — só
     // ?nosun a desliga
@@ -1059,6 +1098,56 @@ export class Director {
       this.nebula.render(this.engine.renderer, cam);
     }
     this.post.render(time);
+  }
+
+  /**
+   * O FIM DA DUPLA-LUZ hero↔catálogo, por quadro (decisão D2 da Onda 3).
+   * Escreve `aFade` nos 16 pontos do catálogo casados com as heroes: o
+   * ponto cede na medida em que o billboard DOMINA a representação na
+   * tela (razão de tamanhos em px — `lodStellar` seção 5), e fica
+   * inteiro enquanto o hero for menor que ele. É por isso que só a
+   * vista de 8 pc muda: a 200/600/950 pc o billboard de Betelgeuse tem
+   * menos de 1 px contra os 5,9 px do ponto, a razão nem chega a 1 e o
+   * fade é 0 EXATO.
+   *
+   * As duas redes de segurança que são estado de runtime moram aqui: com
+   * `?nohero=1` ou além de 1.200 pc de casa o grupo inteiro está
+   * desligado (`:922`) e o que se escreve é o NEUTRO — o catálogo volta
+   * inteiro no mesmo quadro, e o gate do céu (que roda com `nohero=1`)
+   * continua medindo exatamente o que media. A terceira (o hero apagado
+   * pelo `farFade` além de 900 pc) é da própria política, por
+   * construção. `?nodom=1` é a quarta, esta de auditoria: desliga só a
+   * cessão, mantendo tudo o mais igual.
+   *
+   * ONDE ISSO MUDA A TELA (medido, não suposto): perto de casa a
+   * dominância é a REGRA, não a exceção — a 0,06 pc (t=6) oito das 16
+   * dominam, Sirius com 248 px de billboard contra 11 px de ponto; a
+   * 4,5 pc (t=40), sete. A 221 pc (t=100) nenhuma domina. É por isso que
+   * as vistas do Ato do Sol mudam de propósito nesta fase, e as outras
+   * não. Custo: 16 comparações por quadro; a escrita é no-op enquanto
+   * nada muda (C2).
+   */
+  private escreverFadeDasHeroes(screenH: number, tanHalfFov: number) {
+    const stars = this.stars;
+    const heroes = this.heroes;
+    if (!stars || !heroes) return;
+    const ligado = heroes.group.visible && !this.hide.has('nodom');
+    for (let i = 0; i < this.heroCatalogIdx.length; i++) {
+      const idx = this.heroCatalogIdx[i];
+      if (idx < 0) continue;
+      const fade = ligado
+        ? heroCatalogFade({
+            camDistPc: heroes.camDistPc[i],
+            heroSizePc: heroes.sizePc[i],
+            catalogLogLum: this.heroCatalogLogLum[i],
+            screenH,
+            tanHalfFov,
+            expoM0: stars.expoM0,
+            sigmaPx: stars.sigmaPx,
+          })
+        : FADE_NEUTRAL;
+      stars.writeFade(idx, fade);
+    }
   }
 
   dispose() {

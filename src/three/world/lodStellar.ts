@@ -43,14 +43,24 @@
 //    estado). Os números saem da conta documentada em "A CONTA DO
 //    HANDOFF", abaixo.
 //
+// 4. A POLÍTICA DE DOMINÂNCIA (seção 5, fase 3 da Onda 3) — a decisão
+//    D2 do desenho, na forma que a medição da fase 2 corrigiu. Espelhos
+//    em JS de duas contas que só existiam em GLSL (a PSF do ponto do
+//    catálogo e o tamanho do billboard do hero) e a curva `g` que decide
+//    quanto o ponto cede quando o hero o domina na tela — mais o
+//    casamento hero↔índice do catálogo, que é a metade de identidade da
+//    mesma política. Consumidor: `director.ts`, que escreve `aFade` nas
+//    16 por quadro.
+//
 // FIAÇÃO (fase 2 da Onda 3): `stellarBody.ts` consome `discWorldFade`
 // e `isDiscGroupVisible`; `heroStars.ts` (classe SunStar) consome
 // `sunStarGain` e `sunStarCore`. A troca saiu BIT-IDÊNTICA nas 15
 // vistas do `ab-identidade` — as 7 fixas mais as 8 novas por distância
 // (4 condições do Sol, 4 de hero) — porque as funções daqui repetem a
 // expressão do consumidor operação por operação, na mesma ordem. As
-// duas janelas das 16 heroes genéricas (LOD_HERO) seguem no GLSL do
-// shader e ainda não têm consumidor JS: elas são da fase 3.
+// duas janelas das 16 heroes genéricas (LOD_HERO) ficaram sem
+// consumidor JS até a fase 3, quando entraram na política de
+// dominância como rede de segurança (`heroPresence`, seção 5).
 // ============================================================
 import { WORLD } from '../config';
 
@@ -496,11 +506,13 @@ export function maxSpriteSolidAngleRad(
 
 /**
  * Espelho em TS da conta de tamanho de `GLSL_STAR_PSF`
- * (`shaders/common.ts:300-313`) — existe SÓ para a derivação (d)/(e) e
- * seu teste. NÃO é caminho de runtime: o valor que a GPU usa sai do
- * shader. Se a PSF mudar lá, este espelho e o teste do teto quebram —
- * ele é o ALARME, não a fonte. Devolve `size` (o `gl_PointSize` que o
- * vertex emitiria), em px.
+ * (`shaders/common.ts:300-313`). Nasceu na fase 1 só para a derivação
+ * (d)/(e) e seu teste; desde a fase 3 ele é CAMINHO DE RUNTIME — a
+ * política de dominância (seção 5) precisa saber, em JS, quantos px o
+ * ponto do catálogo vai ocupar para decidir se o hero o domina.
+ * Continua sendo espelho, não fonte: o valor que a GPU usa sai do
+ * shader, e se a PSF mudar lá esta função e seus testes quebram — é o
+ * ALARME. Devolve `size` (o `gl_PointSize` que o vertex emitiria), em px.
  */
 export function psfPointSizePx(
   m: number,
@@ -595,4 +607,324 @@ export function spriteAttenuation(fade: number): number {
  */
 export function isFocusBypassActive(focus: number): boolean {
   return focus > 0.5;
+}
+
+/**
+ * Espelho da linha INTEIRA que a fase 3 escreveu em `STAR_VERT`:
+ * `mix(clamp(1.0 - aFade, 0.0, 1.0), 1.0, step(0.5, aFocus))`.
+ * O ternário é mirror EXATO do `mix` porque o `step` só devolve 0 ou 1 e
+ * `mix(a,b,0) === a`, `mix(a,b,1) === b` sem arredondamento. Em
+ * (0, 0) devolve 1: a prova de que os dois atributos nascem inertes.
+ */
+export function spriteAttenuationWithFocus(fade: number, focus: number): number {
+  return isFocusBypassActive(focus) ? 1 : spriteAttenuation(fade);
+}
+
+// ------------------------------------------------------------
+// 5. A POLÍTICA DE DOMINÂNCIA — o fim da dupla-luz hero↔catálogo
+//    (decisão D2 do desenho da onda, na forma corrigida pela medição
+//    da fase 2). PURO: espelhos em JS de duas contas que hoje só
+//    existem em GLSL, mais a curva que decide quanto o ponto cede.
+// ------------------------------------------------------------
+//
+// O PROBLEMA. As 16 mais brilhantes desenham luz DUAS vezes: o ponto do
+// campo de catálogo (`stars.ts`) e o billboard do hero (`heroStars.ts`)
+// na mesma posição, somados em `AdditiveBlending`, sem nenhuma supressão
+// entre as camadas (mapa da casa §3 — o vazio que esta fase fecha).
+//
+// A PRIMEIRA FORMA DA D2 ESTAVA ERRADA, e quem a derrubou foi a medição
+// da fase 2 (achado A9): escrever `aFade = presença do hero` apagaria o
+// ponto já a 200 pc, onde o billboard tem 0,91 px de diâmetro e o ponto
+// tem 5,93 px — trocar-se-ia uma estrela legível por um sub-pixel, e as
+// 16 mais brilhantes ESCURECERIAM em quase toda a faixa útil. Presença
+// não é dominância.
+//
+// A FORMA CERTA. O catálogo só cede na medida em que o hero DOMINA a
+// representação na tela:
+//     r    = diâmetro_px(hero) / diâmetro_px(ponto do catálogo)
+//     fade = g(r),  g(r ≤ 1) = 0
+// Enquanto o billboard não é maior que o ponto, o ponto fica INTEIRO
+// (r ≤ 1 ⇒ fade 0 exato — é por isso que hero200/600/950 saem
+// bit-idênticas). Quando o billboard cresce por cima, o ponto cede na
+// medida em que virou redundante.
+//
+// POR QUE COMPARAR TAMANHO E NÃO BRILHO. As duas camadas não têm
+// normalização radiométrica comum: o ponto do catálogo é fotométrico
+// (a integral da PSF É o fluxo, `starShaders.ts:86-92`) e o billboard do
+// hero é artefato de olho/instrumento com ganho artístico
+// (`heroStars.ts:62-68`). Somar as duas em "brilho" exigiria calibrar
+// uma na outra — trabalho de tela, não de conta, e fica para a Onda 7.
+// O tamanho na tela, esse, é a MESMA régua para as duas (px), é o que
+// decide quem representa a estrela, e é medível dos dois lados sem
+// constante livre nenhuma. É a régua que esta política usa.
+
+/**
+ * `tan(58°/2)` — a lente de referência do `uZoom` dos heroes
+ * (`heroStars.ts:159`). Escrita com a MESMA associação de
+ * `Math.tan(THREE.MathUtils.degToRad(58/2))` (`29 * (Math.PI/180)`, não
+ * `(29*Math.PI)/180`): o `heroStars.ts` importa esta constante desde a
+ * fase 3, e um ULP aqui é um ULP no tamanho do billboard na tela.
+ */
+export const HERO_ZOOM_TAN_REF = Math.tan(29 * (Math.PI / 180));
+
+/**
+ * Diâmetro em px do billboard de um hero — espelho da cadeia
+ * `VERT` (`heroStars.ts:19-24`) + `uZoom` (`:159`):
+ *   meia-extensão em espaço de vista = uSize · uZoom
+ *   uZoom = min(1, tan(fov/2) / tan(29°))
+ *   px = 2 · (meia-extensão / (d · tan(fov/2))) · (screenH/2)
+ *
+ * O FOV SE CANCELA DE PROPÓSITO enquanto a lente for igual ou mais
+ * fechada que a de referência (`tan(fov/2) ≤ tan(29°)`, todo o regime da
+ * hélice, que varia 26°→56°): o `uZoom` encolhe o quad na mesma razão em
+ * que a teleobjetiva o ampliaria, e sobra
+ *     diâmetro_px = uSize · screenH / (d · tan(29°)).
+ * Lente MAIS ABERTA que 58° (só `?fov=90` do gate do céu, que já roda com
+ * `nohero=1`) volta a depender do fov, e por isso o parâmetro continua na
+ * assinatura em vez de virar constante.
+ *
+ * APROXIMAÇÃO DECLARADA: usa a distância câmera↔estrela como
+ * profundidade. Fora do eixo a profundidade verdadeira é `d·cosθ` e o
+ * quad projeta um pouco MAIOR; a política erra então para o lado de
+ * ceder de menos (o ponto do catálogo fica mais tempo inteiro), que é a
+ * direção segura.
+ */
+export function heroSizePx(
+  sizePc: number,
+  camDistPc: number,
+  screenH: number,
+  tanHalfFov: number
+): number {
+  if (
+    !Number.isFinite(sizePc) ||
+    !Number.isFinite(camDistPc) ||
+    !Number.isFinite(screenH) ||
+    !Number.isFinite(tanHalfFov) ||
+    sizePc <= 0 ||
+    camDistPc <= 0 ||
+    screenH <= 0 ||
+    tanHalfFov <= 0
+  ) {
+    return 0;
+  }
+  const zoom = Math.min(1, tanHalfFov / HERO_ZOOM_TAN_REF);
+  return (sizePc * zoom * screenH) / (camDistPc * tanHalfFov);
+}
+
+/**
+ * Magnitude aparente que o vertex do catálogo recalcula da posição da
+ * câmera — espelho de `starShaders.ts:44`:
+ *   `m = -0.15 - 2.5*aLogLum + 5.0*(log2(max(dist,1e-3)) * 0.30103)`
+ * O `log2 · 0,30103` fica como está (não vira `Math.log10`): é a conta
+ * QUE A GPU FAZ, e o espelho existe para prever o pixel dela. A
+ * igualdade com o shader é de curva e de número, não de bit — float32 lá,
+ * float64 aqui (achado A7 da fase 1).
+ */
+export function catalogApparentMag(logLum: number, distPc: number): number {
+  return -0.15 - 2.5 * logLum + 5.0 * (Math.log2(Math.max(distPc, 1e-3)) * 0.30103);
+}
+
+/**
+ * As bordas de `g`. A INFERIOR não é escolha: `r = 1` é a definição de
+ * dominância (o billboard passa a ser maior que o ponto).
+ *
+ * A SUPERIOR é DERIVADA da prova de continuidade, não de gosto. Com
+ * `g = smoothstep(1, hi, r)`, a presença combinada na tela é
+ *     P(d) = C(d)·(1 − g(r)) + H(d),  com H = r·C por definição de r,
+ *     P(d) = C(d)·(1 − g(r) + r) = C(d)·φ(r),
+ * e φ′(r) = 1 − g′(r). O máximo de `6t(1−t)` é 1,5, logo
+ *     max g′ = 1,5/(hi − 1) ≤ 1  ⟺  hi ≥ 2,5.
+ * Na aproximação, C cresce (a PSF cresce com o fluxo) e r cresce (o
+ * billboard cresce com 1/d, mais rápido que a PSF, que cresce com
+ * √log). Com φ′ ≥ 0 o produto de dois fatores não-decrescentes é
+ * não-decrescente: **2,5 é a MENOR borda superior em que a luz combinada
+ * nunca dá um passo para trás enquanto se chega perto**. Abaixo dela o
+ * ponto cederia mais rápido do que o hero cresce, e o par piscaria para
+ * baixo no meio da aproximação — o defeito que a D2d proíbe.
+ * Bônus geométrico do mesmo número: em r = 2,5 o sprite INTEIRO do
+ * catálogo (diâmetro 2·raio) cabe dentro do RAIO do billboard com folga —
+ * o ponto virou, de fato, um detalhe dentro do clarão.
+ */
+export const HERO_DOMINANCE = { enterRatio: 1, fullRatio: 2.5 } as const;
+
+/**
+ * `g(r)` — quanto o ponto do catálogo cede a um hero que mede `r` vezes
+ * o tamanho dele na tela. Smoothstep cúbico, a mesma forma que a casa
+ * usa em toda rampa (C¹ nas duas bordas: sem degrau e sem quina, a
+ * derivada é `6t(1−t)`, que zera em t=0 e t=1).
+ * `r ≤ 1` devolve 0 EXATO (não "quase 0"): é o que mantém as vistas onde
+ * o hero é sub-dominante bit-idênticas.
+ * Entrada não-finita devolve 0 — direção segura (ponto inteiro).
+ */
+export function heroDominanceFade(ratio: number): number {
+  if (!Number.isFinite(ratio)) return 0;
+  return glslSmoothstep(HERO_DOMINANCE.enterRatio, HERO_DOMINANCE.fullRatio, ratio);
+}
+
+/** O que a política precisa saber de UM par hero↔ponto, num quadro. */
+export interface HeroFadeInputs {
+  /** distância câmera↔estrela, em pc (a mesma que vai em `uCamDist`) */
+  camDistPc: number;
+  /** `uSize` do billboard em pc (`heroStars.ts:128`) */
+  heroSizePc: number;
+  /** `aLogLum` do ponto do catálogo CASADO (quantizado — é o que a GPU lê) */
+  catalogLogLum: number;
+  /** altura do buffer de desenho em px (`uScreenH`) */
+  screenH: number;
+  /** `tan(fov/2)` da câmera do quadro */
+  tanHalfFov: number;
+  /** `uExpoM0` do campo de catálogo */
+  expoM0: number;
+  /** `uSigmaPx` do campo de catálogo */
+  sigmaPx: number;
+}
+
+/**
+ * `r` — a razão de dominância do quadro. Os dois lados são DIÂMETROS na
+ * tela: `gl_PointSize` é a aresta do sprite de ponto e `heroSizePx`
+ * devolve a largura cheia do quad, então a comparação é da mesma
+ * grandeza. Ponto inexistente (PSF ≤ 0) devolve 0 = "não domina".
+ *
+ * QUASE INDEPENDENTE DA RESOLUÇÃO, e isso é propriedade, não acaso: o
+ * numerador é ∝ screenH e o denominador também (σ = sigmaPx·screenH/1080
+ * multiplica a PSF inteira), sobrando screenH só dentro do `ln peak` do
+ * termo de saturação. Dobrar a tela não muda quem representa a estrela.
+ */
+export function heroDominanceRatio(i: HeroFadeInputs): number {
+  const catPx = psfPointSizePx(
+    catalogApparentMag(i.catalogLogLum, i.camDistPc),
+    i.expoM0,
+    i.sigmaPx,
+    i.screenH
+  );
+  if (!(catPx > 0)) return 0;
+  return heroSizePx(i.heroSizePc, i.camDistPc, i.screenH, i.tanHalfFov) / catPx;
+}
+
+/**
+ * A POLÍTICA INTEIRA, num número: o `aFade` que o ponto do catálogo
+ * casado com este hero recebe neste quadro.
+ *
+ * `g(r) · presença(hero)`. O segundo fator é a rede de segurança
+ * analítica "hero apagado ⇒ ponto inteiro". Em toda a faixa que a
+ * viagem visita ele é INERTE por construção, e o teste prova as duas
+ * pontas: acima de 0,31 pc (= 1,4 × o maior `uSize` dos 16) o
+ * `nearFade` já vale 1, e o `farFade` só começa a cair em 320 pc,
+ * enquanto a dominância morre em 113 pc no pior dos 16 (Sirius) — ou
+ * seja, onde `g > 0` a presença vale exatamente 1. O fator existe para
+ * que a garantia venha da CONTA e não da varredura que por acaso se
+ * fez, e ele fecha o único regime onde as duas curvas se cruzariam: o
+ * de colar na estrela (abaixo de ~0,3 pc), onde o billboard some pelo
+ * `nearFade` e o ponto do catálogo tem de voltar inteiro.
+ * As outras duas redes da D2 são do CHAMADOR, porque são estado de
+ * runtime e não de geometria: `?nohero=1` e o corte `dHome ≥ 1200`
+ * (`director.ts:893`) desligam o grupo inteiro, e aí o fade escrito é
+ * `FADE_NEUTRAL`.
+ */
+export function heroCatalogFade(i: HeroFadeInputs): number {
+  const dominance = heroDominanceFade(heroDominanceRatio(i));
+  if (dominance <= 0) return FADE_NEUTRAL;
+  return dominance * heroPresence(i.camDistPc, i.heroSizePc);
+}
+
+// ------------------------------------------------------------
+// 5b. O CASAMENTO hero↔catálogo (a metade de IDENTIDADE da mesma
+//     política: sem índice não há o que escrever)
+// ------------------------------------------------------------
+//
+// O formato "sc1" NÃO carrega identidade: são 9 bytes por estrela —
+// lon, lat, log10(d), logLum, B−V (`config.ts:147-179`) — e nenhum id.
+// Os 16 heroes vêm do sidecar `stars_meta.json` (`named`), que tem
+// nome, HD/HIP/Gliese e posição, mas NÃO tem o índice da estrela no
+// binário: o gerador emite as nomeadas ordenadas e deduplicadas por
+// nome (`build-star-catalog.mjs:279-281`), o que destrói a ordem do
+// array de estrelas.
+//
+// O que o gerador GARANTE (`build-star-catalog.mjs:237-273`) é que toda
+// nomeada saiu da MESMA linha que empurrou uma estrela para o binário —
+// com o mesmo x,y,z e a mesma luminosidade. Logo o casamento existe
+// sempre; o que ele não pode ser é por igualdade exata, porque o
+// binário guarda a versão QUANTIZADA (o próprio build mede o erro:
+// `quantization.maxPositionErrorPc`).
+//
+// Casa-se então por POSIÇÃO com tolerância relativa e desempata-se por
+// LUMINOSIDADE — e o desempate não é luxo: Acrux (α Cru A e B, 4″ de
+// separação) tem DUAS entradas no binário que caem no MESMO ponto
+// quantizado, separação idêntica até o último bit, e Rigil Kentaurus
+// (α Cen A e B) tem duas a 8,9e-5 pc e 6,7e-5 pc. Posição sozinha
+// escolheria a companheira fraca em Acrux por sorte de ordenação; a
+// luminosidade separa as duas por 0,32 dex, contra 1e-4 dex de erro de
+// quantização — 3 ordens de grandeza de margem.
+
+/** O que o casamento precisa saber de uma nomeada (subconjunto de `NamedStar`). */
+export interface CatalogMatchTarget {
+  x: number;
+  y: number;
+  z: number;
+  /** magnitude aparente vista do Sol */
+  m: number;
+  /** distância ao Sol, pc */
+  d: number;
+}
+
+/**
+ * Tolerância de posição, RELATIVA à distância da estrela. O erro de
+ * quantização é relativo por construção — angular (20″ ⇒ 4,8e-5·d) e
+ * radial (o passo de log10(d) ⇒ 7,9e-5·d) — então uma tolerância
+ * absoluta seria frouxa perto e apertada longe. 3e-4 é ~4× a pior
+ * separação MEDIDA nos 16 (8e-5·d, em Aldebaran) e ~2× o pior caso
+ * teórico da soma dos dois erros.
+ */
+export const HERO_MATCH_REL_TOL = 3e-4;
+
+/**
+ * Índice de cada alvo no catálogo, ou −1 para "sem par" — que é
+ * declaração, não chute: o consumidor pula o slot e ninguém escreve
+ * `aFade` numa estrela errada.
+ * Uma passada só sobre o catálogo (16 × 328.749 com rejeição por eixo:
+ * ~40 ms medidos, uma vez no init).
+ */
+export function matchHeroesToCatalog(
+  targets: readonly CatalogMatchTarget[],
+  position: Float32Array,
+  logLum: Float32Array
+): number[] {
+  const k = targets.length;
+  const best = new Array<number>(k).fill(-1);
+  const bestScore = new Array<number>(k).fill(Infinity);
+  const tol = new Array<number>(k).fill(0);
+  const wantLum = new Array<number>(k).fill(0);
+  for (let j = 0; j < k; j++) {
+    const t = targets[j];
+    if (!Number.isFinite(t.x) || !Number.isFinite(t.y) || !Number.isFinite(t.z)) continue;
+    if (!Number.isFinite(t.d) || !Number.isFinite(t.m) || t.d <= 0) continue;
+    tol[j] = HERO_MATCH_REL_TOL * t.d;
+    // a MESMA conta do gerador (`build-star-catalog.mjs:225,237`):
+    // M = m − 5·log10(d) + 5 e logLum = 0,4·(4,85 − M).
+    wantLum[j] = 0.4 * (4.85 - (t.m - 5 * Math.log10(t.d) + 5));
+  }
+  const n = logLum.length;
+  for (let i = 0; i < n; i++) {
+    const x = position[i * 3];
+    const y = position[i * 3 + 1];
+    const z = position[i * 3 + 2];
+    for (let j = 0; j < k; j++) {
+      const t = tol[j];
+      if (t <= 0) continue;
+      const target = targets[j];
+      const dx = x - target.x;
+      if (dx > t || dx < -t) continue;
+      const dy = y - target.y;
+      if (dy > t || dy < -t) continue;
+      const dz = z - target.z;
+      if (dz > t || dz < -t) continue;
+      if (dx * dx + dy * dy + dz * dz > t * t) continue;
+      const score = Math.abs(logLum[i] - wantLum[j]);
+      if (score < bestScore[j]) {
+        bestScore[j] = score;
+        best[j] = i;
+      }
+    }
+  }
+  return best;
 }
