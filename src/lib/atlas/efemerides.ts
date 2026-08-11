@@ -112,6 +112,15 @@ export function decodeEfemerides(
   const totalFloats = buffer.byteLength / Float32Array.BYTES_PER_ELEMENT;
   const corpos = new Map<string, TabelaCorpo>();
   for (const [id, corpo] of Object.entries(meta.corpos)) {
+    // A Hermite precisa de DOIS nós: com n < 2 o índice do segmento
+    // clampa a n−2 < 0 e leria fora da view (achado da revisão) — um
+    // manifest doente lança aqui, não vira NaN na interpolação.
+    if (!Number.isInteger(corpo.n) || corpo.n < 2) {
+      throw new Error(
+        `decodeEfemerides: tabela de "${id}" com n=${corpo.n} — a Hermite ` +
+          `exige pelo menos 2 nós`
+      );
+    }
     const fim = corpo.offsetFloats + corpo.n * 6;
     if (!Number.isInteger(corpo.offsetFloats) || fim > totalFloats) {
       throw new Error(
@@ -235,11 +244,19 @@ export class MotorEfemerides {
     jdTdb: number,
     parentId?: string
   ): PosicaoEcliptica {
-    if (bodyId === 'sun') {
-      this.bypassed++;
-      return { x: 0, y: 0, z: 0 };
+    // NaN atravessa a checagem de janela em silêncio (NaN < jdInicio e
+    // NaN > jdFim são ambos false) e a Hermite devolveria {NaN,NaN,NaN}
+    // cacheado sob "corpo@NaN" — a classe de bug "corpo some sem erro"
+    // que este motor existe para proibir (achado da revisão).
+    if (!Number.isFinite(jdTdb)) {
+      throw new Error(
+        `MotorEfemerides.posicao: jdTdb não-finito (${jdTdb}) para "${bodyId}"`
+      );
     }
 
+    // A validação de parentId vem ANTES do bypass do Sol: sem isso,
+    // posicao('sun', jd, 'earth') devolvia a origem em silêncio
+    // (achado da revisão). O bypass segue sem tocar cache/hits/misses.
     const registro = this.registroDe(bodyId);
     if (parentId !== undefined && parentId !== registro.centro) {
       throw new Error(
@@ -247,6 +264,10 @@ export class MotorEfemerides {
           `"${registro.centro}", não em "${parentId}" — para outro centro ` +
           `componha com posicaoHeliocentrica()`
       );
+    }
+    if (bodyId === 'sun') {
+      this.bypassed++;
+      return { x: 0, y: 0, z: 0 };
     }
 
     const chave = `${bodyId}@${jdTdb.toFixed(5)}`;
@@ -302,6 +323,14 @@ export class MotorEfemerides {
    * geocêntrica; satélite = pai + relativo. Cada elo passa pelo cache.
    */
   posicaoHeliocentrica(bodyId: string, jdTdb: number): PosicaoEcliptica {
+    // Mesmo guarda de jd não-finito da posicao() — a recursão abaixo
+    // passa por ela, mas o ramo do Sol retornaria origem em silêncio.
+    if (!Number.isFinite(jdTdb)) {
+      throw new Error(
+        `MotorEfemerides.posicaoHeliocentrica: jdTdb não-finito (${jdTdb}) ` +
+          `para "${bodyId}"`
+      );
+    }
     if (bodyId === 'sun') {
       this.bypassed++;
       return { x: 0, y: 0, z: 0 };

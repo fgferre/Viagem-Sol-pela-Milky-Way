@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 
 // ============================================================
-// VENDORIZADO VERBATIM do atlas-orbital (scripts/derive-iau-orientation.js).
+// VENDORIZADO do atlas-orbital (scripts/derive-iau-orientation.js).
 // Ferramenta offline julgada por oráculo (PLANO-ATLAS §0.2): a saída é
 // conferível contra o kernel pck00011.tpc da NAIF e contra o oráculo
-// sub-ponto solar. Zero adaptação de conteúdo. O consumidor na casa é
+// sub-ponto solar. O consumidor na casa é
 // `src/lib/atlas/iauOrientation.ts` (o bloco impresso cola lá).
+// UMA adaptação declarada, marcada com "// Casa:" em loadKernel: o
+// fetch recusa redirect para OUTRO host — é o item 13 do checklist
+// pré-fusão (o download-hyg do doador seguia redirects para qualquer
+// host; a auditoria mandou allowlist e a falha existia aqui também,
+// achado da revisão de olhos frescos). Todo o resto é verbatim.
 // ============================================================
 
 /**
@@ -263,6 +268,15 @@ async function loadKernel() {
   const response = await fetch(PCK_URL);
   if (!response.ok) {
     throw new Error(`${PCK_URL} → HTTP ${response.status}`);
+  }
+  // Casa: um redirect que troque de host entregaria um "kernel" de outra
+  // origem sob a URL da NAIF (checklist pré-fusão, item 13).
+  const hostPedido = new URL(PCK_URL).host;
+  const hostFinal = new URL(response.url).host;
+  if (hostFinal !== hostPedido) {
+    throw new Error(
+      `${PCK_URL} redirecionou para ${response.url} — host diferente do pedido, recusado`
+    );
   }
   const text = await response.text();
   // A proxy error page would parse to zero assignments and emit an empty

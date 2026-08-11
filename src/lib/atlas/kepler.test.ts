@@ -228,7 +228,10 @@ describe('kepler / elementosParaCartesiano', () => {
 
 // Vanth e Weywot são Kepler de catálogo com Ω/ω/M0 fabricados e sem
 // efeméride Horizons — não há fixture que os julgue (declarado no dado).
-const SEM_FIXTURE = new Set(['vanth', 'weywot']);
+// Orcus e Quaoar (os pais, adicionados pela revisão de olhos frescos
+// para fechar a composição heliocêntrica) estão na MESMA categoria: a
+// escala deles é julgada no teste de fechamento de efemerides.test.ts.
+const SEM_FIXTURE = new Set(['vanth', 'weywot', 'orcus', 'quaoar']);
 const idsComFixture = IDS_KEPLER.filter((id) => !SEM_FIXTURE.has(id));
 
 describe('kepler / inversão na época (fixtures 2025-01-01)', () => {

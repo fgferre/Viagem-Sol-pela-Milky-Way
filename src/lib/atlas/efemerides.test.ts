@@ -306,3 +306,62 @@ describe('decodeEfemerides / interpolação Hermite', () => {
     expect(() => motor.posicao('moon', JD, 'sun')).toThrow(/centrado em/);
   });
 });
+
+// Consertos da revisão de olhos frescos da Onda 2 — cada teste abaixo é a
+// regressão de um achado verificado por reprodução (ata no PLANO-ATLAS).
+describe('achados da revisão de olhos frescos', () => {
+  // O achado importante: posicaoHeliocentrica('vanth') compunha até o pai
+  // e morria em 'corpo desconhecido "orcus"'. A regressão é de FECHAMENTO,
+  // não de um corpo: todo id do registro compõe até o Sol sem lançar.
+  it('posicaoHeliocentrica resolve para TODO corpo do registro (fechamento)', async () => {
+    const { REGISTRO_ORBITAL } = await import('./registroOrbital');
+    const motor = criarMotor();
+    for (const id of Object.keys(REGISTRO_ORBITAL)) {
+      const p = motor.posicaoHeliocentrica(id, JD);
+      expect(Number.isFinite(p.x + p.y + p.z), `${id} devolveu não-finito`).toBe(
+        true
+      );
+    }
+  });
+
+  it('vanth e weywot compõem até o Sol na distância dos pais TNO (~39/44 UA)', () => {
+    const motor = criarMotor();
+    const vanth = motor.posicaoHeliocentrica('vanth', JD);
+    const weywot = motor.posicaoHeliocentrica('weywot', JD);
+    // Órbitas de catálogo com fase fabricada: só a ESCALA é testável
+    // (r entre periélio e afélio do pai; a lua desloca < 1e-4 UA).
+    const rV = Math.hypot(vanth.x, vanth.y, vanth.z);
+    const rW = Math.hypot(weywot.x, weywot.y, weywot.z);
+    expect(rV).toBeGreaterThan(39.4 * 0.78 - 0.001);
+    expect(rV).toBeLessThan(39.4 * 1.22 + 0.001);
+    expect(rW).toBeGreaterThan(43.7 * 0.962 - 0.001);
+    expect(rW).toBeLessThan(43.7 * 1.038 + 0.001);
+  });
+
+  it('jdTdb não-finito lança nas duas entradas públicas, nunca NaN em silêncio', () => {
+    const motor = criarMotor();
+    for (const jd of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => motor.posicao('earth', jd)).toThrow(/não-finito/);
+      expect(() => motor.posicaoHeliocentrica('moon', jd)).toThrow(/não-finito/);
+      expect(() => motor.posicaoHeliocentrica('sun', jd)).toThrow(/não-finito/);
+    }
+  });
+
+  it('decodeEfemerides recusa tabela com n < 2 (a Hermite exige dois nós)', () => {
+    const corpoEarth = meta.corpos['earth'];
+    const doente: MetaEfemerides = {
+      ...meta,
+      corpos: { earth: { ...corpoEarth, n: 1 } },
+    };
+    expect(() => decodeEfemerides(bufferBin, doente)).toThrow(/pelo menos 2 nós/);
+  });
+
+  it('posicao("sun", jd, parentId) valida o parentId antes do bypass', () => {
+    const motor = criarMotor();
+    expect(() => motor.posicao('sun', JD, 'earth')).toThrow(/centrado em/);
+    // E o bypass legítimo continua sem tocar o cache:
+    motor.posicao('sun', JD);
+    expect(motor.getCacheStats().bypassed).toBe(1);
+    expect(motor.getCacheStats().size).toBe(0);
+  });
+});

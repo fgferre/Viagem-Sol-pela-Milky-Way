@@ -42,7 +42,12 @@
 //      família, pipeline derive-elements-from-fixtures idêntica.
 // ============================================================
 
-import { ASTEROIDS, CATALOG_MOONS, SATELLITES } from './elementosOrbitais';
+import {
+  ASTEROIDS,
+  CATALOG_MOONS,
+  CATALOG_TNOS,
+  SATELLITES,
+} from './elementosOrbitais';
 
 export interface JanelaAnos {
   anoInicio: number;
@@ -180,17 +185,22 @@ export const REGISTRO_ORBITAL: Record<string, RegistroCorpo> = {
     ])
   ),
 
-  // Luas de catálogo: sem janela (INDEFINIDA) — Ω/ω/M0 fabricados,
-  // nunca houve fixture para medir (elementosOrbitais.ts declara).
+  // Luas de catálogo E seus pais TNO: sem janela (INDEFINIDA) — Ω/ω/M0
+  // fabricados, nunca houve fixture para medir (elementosOrbitais.ts
+  // declara). Os pais entraram pela revisão de olhos frescos: a
+  // composição heliocêntrica exige fechamento — todo centro citado por
+  // um corpo coberto precisa ser ele mesmo coberto.
   ...Object.fromEntries(
-    Object.entries(CATALOG_MOONS).map(([id, { parent }]) => [
-      id,
-      {
-        modelo: 'Kepler',
-        fonte: 'kepler',
-        centro: parent,
-        nota: 'Catalog Kepler orbit; plane orientation and phase fabricated (Ω/ω/M0 = 0) — draws a plausible orbit, never predicts a position',
-      } satisfies RegistroCorpo,
-    ])
+    Object.entries({ ...CATALOG_MOONS, ...CATALOG_TNOS }).map(
+      ([id, { parent }]) => [
+        id,
+        {
+          modelo: 'Kepler',
+          fonte: 'kepler',
+          centro: parent,
+          nota: 'Catalog Kepler orbit; plane orientation and phase fabricated (Ω/ω/M0 = 0) — draws a plausible orbit, never predicts a position',
+        } satisfies RegistroCorpo,
+      ]
+    )
   ),
 };

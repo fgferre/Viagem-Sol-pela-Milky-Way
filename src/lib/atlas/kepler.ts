@@ -30,12 +30,22 @@
 //      orçamento de 12 iterações + corte em |Δ| < 1e-12 — a mesma
 //      semântica que os oráculos do doador julgaram (confortável até
 //      e ≈ 0,99; nossa maior excentricidade embarcada é 0,23).
+//
+// COINCIDÊNCIA TEXTUAL DECLARADA (achado da revisão de olhos frescos):
+// os corpos de resolverKepler, perifocalParaEcliptica e
+// elementosParaCartesiano saem quase idênticos aos de coordUtils.ts do
+// doador porque são a matemática CANÔNICA (Newton no Kepler,
+// Rz(Ω)·Rx(i)·Rz(ω) de Vallado/Curtis) — duas escritas honestas da
+// mesma fórmula convergem para o mesmo texto. O que renasceu é o
+// contrato (tuplas puras, zero three) e a arquitetura; a fórmula não
+// tem autor.
 // ============================================================
 
 import type { EclipticElements, SatelliteEntry } from './elementosOrbitais';
 import {
   ASTEROIDS,
   CATALOG_MOONS,
+  CATALOG_TNOS,
   MU_PARENT,
   SATELLITES,
 } from './elementosOrbitais';
@@ -123,11 +133,14 @@ export function elementosParaCartesiano(params: {
 }
 
 // Registro unificado: 20 satélites analíticos + 2 luas de catálogo +
-// 4 heliocêntricos (os asteroides ganham parent "sun" aqui — no dado
-// migrado eles são uma tabela achatada, fiel ao doador).
+// 2 TNOs de catálogo (os pais das luas — fechamento da composição
+// heliocêntrica, achado da revisão) + 4 asteroides (ganham parent
+// "sun" aqui — no dado migrado eles são uma tabela achatada, fiel ao
+// doador).
 const CORPOS: Record<string, SatelliteEntry> = {
   ...SATELLITES,
   ...CATALOG_MOONS,
+  ...CATALOG_TNOS,
   ...Object.fromEntries(
     Object.entries(ASTEROIDS).map(([id, elements]) => [
       id,
@@ -167,6 +180,13 @@ function movimentoMedioDegPorDia(
  * corpo parado na origem do pai.
  */
 export function posicaoKepler(bodyId: string, jdTdb: number): PosicaoEcliptica {
+  // NaN atravessa qualquer comparação de janela em silêncio (NaN < x e
+  // NaN > x são ambos false) e viraria {NaN,NaN,NaN} cacheável — a
+  // classe de bug "corpo some sem erro" que este módulo existe para
+  // proibir (achado da revisão de olhos frescos).
+  if (!Number.isFinite(jdTdb)) {
+    throw new Error(`posicaoKepler: jdTdb não-finito (${jdTdb}) para "${bodyId}"`);
+  }
   const corpo = CORPOS[bodyId];
   if (!corpo) {
     throw new Error(

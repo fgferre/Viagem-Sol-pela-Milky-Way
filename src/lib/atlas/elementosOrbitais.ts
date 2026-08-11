@@ -597,3 +597,49 @@ export const CATALOG_MOONS: Record<string, SatelliteEntry> = {
     },
   },
 };
+
+/**
+ * Casa: os PAIS heliocêntricos das luas de catálogo acima — Orcus e
+ * Quaoar como Kepler de catálogo, copiados verbatim do mesmo
+ * `celestialBodies.ts` do doador (orcus ~l.2470, quaoar ~l.2416,
+ * `orbit: { a, e, i, O, w, M0, n }`). Entraram na revisão de olhos
+ * frescos da Onda 2: sem eles, `posicaoHeliocentrica("vanth")` compunha
+ * até o pai e MORRIA em "corpo desconhecido" — a composição recursiva
+ * exige fechamento: todo centro citado por um corpo coberto precisa ser
+ * ele mesmo coberto.
+ *
+ * MESMA janela INDEFINIDA das luas: a, e, i e n são medidos
+ * (Orcus P≈245 a → n 0,004°/dia; Quaoar P≈289 a → n 0,0035°/dia — os n
+ * do doador batem os períodos publicados), mas Ω/ω/M0 = 0 são
+ * FABRICADOS. Órbita plausível, nunca previsão de posição; sem fixture
+ * Horizons para julgá-los, por decisão de escopo (os TNOs resolvidos
+ * são assunto da Onda 6).
+ */
+export const CATALOG_TNOS: Record<string, SatelliteEntry> = {
+  orcus: {
+    parent: "sun",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 39.4,
+      e: 0.22,
+      iDeg: 20.6,
+      OmegaDeg: 0,
+      omegaDeg: 0,
+      M0Deg: 0,
+      nDegPerDay: 0.004,
+    },
+  },
+  quaoar: {
+    parent: "sun",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 43.7,
+      e: 0.038,
+      iDeg: 8.0,
+      OmegaDeg: 0,
+      omegaDeg: 0,
+      M0Deg: 0,
+      nDegPerDay: 0.0035,
+    },
+  },
+};
