@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { sondarGl } from '../../lib/glProbe';
 import { gravarPreferencia, lerPreferencias } from '../../lib/preferencias';
+import { DEEP_LIMIAR_PC } from '../world/lodStellar';
 
 export type QualityLevel = 'cinema' | 'alta' | 'performance';
 
@@ -47,6 +48,63 @@ function defaultQualityForDevice(): QualityLevel {
   // lado curto da TELA (não da janela): tablet deitado continua tablet
   const shortSide = Math.min(window.screen.width, window.screen.height);
   return shortSide < 820 ? 'performance' : 'alta';
+}
+
+/**
+ * Guarda mínima do near no domínio profundo: 1e-8 pc = 2,06e-3 UA ≈
+ * 308 mil km (0,8× a distância Terra–Lua). Não é janela nem
+ * calibração — é o anteparo contra `near = 0`, que a projeção não
+ * suporta (a câmera pode parar na origem exata, onde o Sol está).
+ * ONDE ELE MANDA, dito por extenso: a proporção `d·0,004` só fica
+ * abaixo dele com a câmera a menos de 2,5e-6 pc = 0,52 UA do Sol —
+ * dentro da órbita de Vênus. Acima disso quem governa é a proporção,
+ * e é ela que abre o sistema solar.
+ */
+export const DEEP_NEAR_MIN_PC = 1e-8;
+
+/**
+ * NEAR PLANE, PIECEWISE PELO LIMIAR DO DOMÍNIO PROFUNDO (decisão D5 da
+ * Onda 4). Puro e exportado para o oráculo: o gate desta fase é a
+ * IGUALDADE BIT A BIT acima do limiar, e ela se prova sem GPU.
+ *
+ * ACIMA de `DEEP_LIMIAR_PC` a fórmula é a de sempre, verbatim, com os
+ * três literais intocados — inclusive o piso de 0,001 pc (= 206,3 UA),
+ * que é o que faz as 15 vistas antigas e o filme inteiro (piso
+ * 0,0631506 pc) saírem sem um pixel de diferença:
+ *   near cap 40 pc (era 500): no free-roam profundo o near de
+ *   centenas de pc comia o campo estelar envolvente. far mínimo
+ *   60 kpc: com 9 kpc, metade distante da faixa era clipada mesmo
+ *   em casa. Quase tudo é aditivo sem depthWrite — a precisão de
+ *   depth não é o gargalo aqui.
+ *
+ * ABAIXO do limiar o piso SAI: a 150 UA da câmera o near de 206 UA
+ * clipava o sistema solar inteiro — era o obstáculo mais duro do
+ * domínio de escala aninhado, e some com esta linha. Sobra a mesma
+ * proporcionalidade de sempre (0,4% da distância), agora até o fim.
+ *
+ * O DEGRAU NA FRONTEIRA é declarado, não acidental: em 0,05 pc o near
+ * cai de 0,001 para 0,0002 pc de uma vez (o piso deixa de valer).
+ * Ninguém vê: entre 41 e 206 UA da câmera não há geometria nenhuma
+ * nesta fase (a camada de planetas é a fase seguinte, e o disco
+ * artístico do Sol tem 2.269 UA de raio, muito além dos dois). O que o
+ * degrau custa é uma reconstrução de matriz de projeção ao cruzar o
+ * limiar — a mesma que o guarda de 5% do `updateClip` já dosa.
+ */
+export function nearPlanePc(distFromSun: number): number {
+  if (distFromSun >= DEEP_LIMIAR_PC) {
+    return THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40);
+  }
+  return Math.max(distFromSun * 0.004, DEEP_NEAR_MIN_PC);
+}
+
+/**
+ * FAR PLANE — inalterado pela Onda 4, e é de propósito: o que muda no
+ * domínio profundo é o quão PERTO se enxerga, não o quão longe. Fica
+ * como função só para o oráculo poder julgar o PAR (near, far) que o
+ * `updateClip` entrega, que é o que o gate promete.
+ */
+export function farPlanePc(distFromSun: number): number {
+  return THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000);
 }
 
 export class Engine {
@@ -137,13 +195,8 @@ export class Engine {
    * sem isso o depth buffer colapsaria num extremo ou no outro.
    */
   updateClip(distFromSun: number) {
-    // near cap 40 pc (era 500): no free-roam profundo o near de
-    // centenas de pc comia o campo estelar envolvente. far mínimo
-    // 60 kpc: com 9 kpc, metade distante da faixa era clipada mesmo
-    // em casa. Quase tudo é aditivo sem depthWrite — a precisão de
-    // depth não é o gargalo aqui.
-    const near = THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40);
-    const far = THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000);
+    const near = nearPlanePc(distFromSun);
+    const far = farPlanePc(distFromSun);
     if (
       Math.abs(near - this.camera.near) / near > 0.05 ||
       Math.abs(far - this.camera.far) / far > 0.05

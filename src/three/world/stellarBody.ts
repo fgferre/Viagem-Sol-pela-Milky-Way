@@ -39,7 +39,7 @@
 import * as THREE from 'three';
 import { WORLD } from '../config';
 import type { QualityLevel } from '../core/engine';
-import { discWorldFade, isDiscGroupVisible } from './lodStellar';
+import { isDiscGroupVisible, solWorldFade } from './lodStellar';
 import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
 import { createPIL } from './sol/pil.js';
@@ -487,8 +487,18 @@ export class StellarBody {
     // heroStars.ts) — as duas rampas são complementares, e desde a
     // Onda 3 vêm da MESMA tabela (`lodStellar.ts`), não de dois
     // conjuntos de números redigitados.
+    //
+    // Desde a Onda 4 (decisão D2) o fade vem da COMPOSIÇÃO
+    // `solWorldFade = discWorldFade × deepDiscFade`: o disco também se
+    // dissolve INDO PARA DENTRO, abaixo de 0,05 pc, onde a fotosfera de
+    // raio artístico (2.269 UA) engolfaria o sistema solar de verdade.
+    // A atenuação total é UMA só e sai de uma função só — é a lição do
+    // conserto do vSat (2e16689), e é por isso que os quatro
+    // consumidores abaixo leem a MESMA variável `world`. Acima de
+    // 0,05 pc a composição é identidade bit a bit, e é assim que o
+    // filme inteiro (piso 0,0631506 pc) fica sem um pixel de diferença.
     const dPc = camera.position.length();
-    const world = discWorldFade(dPc);
+    const world = solWorldFade(dPc);
     ctx.sunUniforms.uWorldFade.value = world;
     ctx.spiculeUniforms.uWorldFade.value = world;
     ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray * world;

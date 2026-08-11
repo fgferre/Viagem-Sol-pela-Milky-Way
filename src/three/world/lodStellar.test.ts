@@ -24,6 +24,7 @@ import { WORLD, decodeStars } from '../config';
 import type { StarArrays, StarsMeta } from '../config';
 import { HeroStars } from './heroStars';
 import {
+  DEEP_LIMIAR_PC,
   DISC_ENTER_RAD,
   DISC_EXIT_RAD,
   DISC_VISIBLE_MIN,
@@ -41,6 +42,8 @@ import {
   catalogApparentMag,
   clearFocus,
   computeSolidAngle,
+  deepDiscFade,
+  deepPointGain,
   discWorldFade,
   distanceForSolidAngle,
   fadesDoQuadro,
@@ -60,6 +63,7 @@ import {
   psfPointSizePx,
   resetRamp,
   shouldDiscBeActive,
+  solWorldFade,
   spriteAttenuation,
   spriteAttenuationWithFocus,
   stepRampToward,
@@ -219,12 +223,22 @@ describe('janelas de LOD do Sol — pinagem verbatim da casa', () => {
     // fez a fiação, então o teste mudou de alvo: agora ele guarda o
     // CONSUMO. Se alguém reescrever uma rampa à mão em vez de chamar
     // daqui, o número volta a poder divergir em silêncio — e quebra aqui.
+    //
+    // A STRING DO SOL MUDOU DELIBERADAMENTE NA ONDA 4 (decisão D2 do
+    // `docs/onda-4-desenho.md`): o `stellarBody` deixou de chamar
+    // `discWorldFade` e passou a chamar a COMPOSIÇÃO `solWorldFade`, que
+    // é `discWorldFade × deepDiscFade` — a atenuação total do disco
+    // fatorada num lugar só (lição do conserto do vSat, commit 2e16689).
+    // O que se pina aqui é a fiação NOVA, e o `not.toContain` proíbe a
+    // volta da antiga: com ela de volta o disco artístico voltaria a
+    // desenhar pleno dentro do sistema solar.
     const stellarBody = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
     const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
 
-    expect(stellarBody).toMatch(/import \{[^}]*\bdiscWorldFade\b[^}]*\} from '\.\/lodStellar'/);
+    expect(stellarBody).toMatch(/import \{[^}]*\bsolWorldFade\b[^}]*\} from '\.\/lodStellar'/);
     expect(stellarBody).toMatch(/import \{[^}]*\bisDiscGroupVisible\b[^}]*\} from '\.\/lodStellar'/);
-    expect(stellarBody).toContain('discWorldFade(dPc)');
+    expect(stellarBody).toContain('solWorldFade(dPc)');
+    expect(stellarBody).not.toContain('discWorldFade(dPc)');
     expect(stellarBody).toContain('isDiscGroupVisible(world)');
 
     expect(heroStars).toMatch(/import \{[^}]*\bsunStarGain\b[^}]*\} from '\.\/lodStellar'/);
@@ -1553,5 +1567,313 @@ describe('D3 — o par de atributos nasce inerte no shader novo', () => {
     expect(spriteAttenuationWithFocus(0.5, FOCUS_ON)).toBe(1);
     expect(spriteAttenuationWithFocus(0.5, FOCUS_OFF)).toBe(0.5);
     expect(spriteAttenuationWithFocus(0.5, 0.5)).toBe(0.5); // fronteira: fora
+  });
+});
+
+// ------------------------------------------------------------
+// 10. O DOMÍNIO PROFUNDO (Onda 4, fase 2) — as duas rampas novas, a
+//     composição, e o gate desta fase: ACIMA DO LIMIAR NADA MUDA.
+// ------------------------------------------------------------
+//
+// A janela `deep` (decisão D2 do `docs/onda-4-desenho.md`) é a única
+// coisa da Onda 4 que já toca pixel — e ela existe para NÃO tocar
+// nenhum, enquanto a câmera não descer abaixo de 0,05 pc. A prova é
+// bit a bit: acima do limiar `solWorldFade` tem de ser o MESMO double
+// que `discWorldFade` sempre devolveu, nas 18 vistas do gate visual e
+// em toda a faixa que o filme percorre.
+
+/**
+ * As distâncias de casa (pc) das SETE vistas por `?t=` do
+ * `ab-identidade`, medidas amostrando o `Journey` nesta sessão. Aqui
+ * elas entram como literais de propósito: `journey.ts` importa
+ * `world/galaxy.ts`, que lê `window.location.search` NO TOPO do módulo,
+ * e o vitest roda em `node` — a varredura do roteiro inteiro (com o stub
+ * de window declarado) mora em `cinematic/cameraRig.test.ts`, ao lado do
+ * rig. O que se guarda aqui é o alcance: da mais próxima (o piso do
+ * filme, t=0/t=6) à mais distante (o face-on).
+ */
+const VISTAS_T: readonly (readonly [string, number])[] = [
+  ['sol', 0.06315061361538779],
+  ['interno', 4.486971350060561],
+  ['travessia', 221.22434784471977],
+  ['retrato', 221.22434784471977],
+  ['mergulho', 4275.53796810298],
+  ['edgeon', 15904.56497361685],
+  ['faceon', 32790.153293328774],
+];
+
+/** As ONZE vistas por `?pos=`, lidas do PRÓPRIO script do gate visual. */
+const VISTAS_POS: { nome: string; dPc: number }[] = [];
+{
+  const ab = readFileSync(
+    new URL('../../../scripts/visual/ab-identidade.mjs', import.meta.url),
+    'utf8'
+  );
+  for (const m of ab.matchAll(/\['(\w+)', '\?pos=([-\d.,]+)&/g)) {
+    const [x, y, z] = m[2].split(',').map(Number);
+    VISTAS_POS.push({ nome: m[1], dPc: Math.sqrt(x * x + y * y + z * z) });
+  }
+}
+
+/** As três que o desenho declara ABAIXO do limiar (D9) — a exceção. */
+const PROFUNDAS = ['ua500', 'ua150', 'ua40'];
+
+/** 0,05 → 40.000 pc: o limiar, a faixa do filme e o além dela. */
+const ACIMA: number[] = [];
+for (let i = 0; i <= 2000; i++) ACIMA.push(DEEP_LIMIAR_PC + i * 0.0001);
+for (let i = 1; i <= 1000; i++) ACIMA.push(i * 0.05);
+for (let i = 1; i <= 1000; i++) ACIMA.push(i * 40);
+
+/** varredura fina DENTRO da janela deep (0,019 → 0,051 pc) */
+const DENTRO: number[] = [];
+for (let i = 0; i <= 32000; i++) DENTRO.push(0.019 + i * 1e-6);
+
+describe('janela deep — a tabela e o limiar (D2)', () => {
+  it('a janela é {0,02 → 0,05} pc, e o limiar É a borda de cima', () => {
+    expect(LOD_SOL.deep.fade0Pc).toBe(0.02);
+    expect(LOD_SOL.deep.fade1Pc).toBe(0.05);
+    expect(DEEP_LIMIAR_PC).toBe(LOD_SOL.deep.fade1Pc);
+    expect(DEEP_LIMIAR_PC).toBe(0.05);
+  });
+
+  it('o piso do filme fica FORA da janela, com 26% de folga', () => {
+    const piso = VISTAS_T[0][1]; // 0,0631506 pc, medido em t=0
+    expect(piso).toBeGreaterThan(DEEP_LIMIAR_PC);
+    expect(piso / DEEP_LIMIAR_PC - 1).toBeCloseTo(0.263, 3);
+  });
+
+  it('a janela cabe INTEIRA abaixo de todas as outras do Sol', () => {
+    // as janelas de longe começam em 0,14 pc; a deep termina em 0,05 —
+    // as duas nunca estão em rampa ao mesmo tempo, e é por isso que a
+    // composição `solWorldFade` é identidade em cada uma das faixas.
+    expect(LOD_SOL.deep.fade1Pc).toBeLessThan(LOD_SOL.starGain.startPc);
+    expect(LOD_SOL.deep.fade1Pc).toBeLessThan(LOD_SOL.disc.fade0Pc);
+  });
+
+  it('ARMADILHA DE FLOAT espelhada: a SUBTRAÇÃO mente, a soma não', () => {
+    // na janela do disco quem mentia era a diferença (0,34−0,16 ≠ 0,18);
+    // aqui é a mesma doença com outros números: 0,05−0,02 não é 0,03,
+    // embora 0,02+0,03 feche 0,05 exato. A rampa faz a SUBTRAÇÃO, então
+    // é ela que tem de ser recalculada — nunca a largura digitada.
+    expect(LOD_SOL.deep.fade1Pc - LOD_SOL.deep.fade0Pc).not.toBe(0.03);
+    expect(LOD_SOL.deep.fade1Pc - LOD_SOL.deep.fade0Pc).toBe(0.030000000000000002);
+    expect(LOD_SOL.deep.fade0Pc + 0.03).toBe(LOD_SOL.deep.fade1Pc);
+
+    const larguraDigitada = (d: number) => {
+      const wk = (d - LOD_SOL.deep.fade0Pc) / 0.03;
+      return wk <= 0 ? 0 : wk >= 1 ? 1 : wk * wk * (3 - 2 * wk);
+    };
+    expect(DENTRO.some((d) => larguraDigitada(d) !== deepDiscFade(d))).toBe(true);
+  });
+});
+
+describe('deepDiscFade — o disco se dissolve INDO PARA DENTRO', () => {
+  // oráculo: a forma transcrita de novo, como as outras rampas da casa
+  const oraculo = (d: number) => {
+    const wk = (d - 0.02) / (0.05 - 0.02);
+    return wk <= 0 ? 0 : wk >= 1 ? 1 : wk * wk * (3 - 2 * wk);
+  };
+
+  it('bate o oráculo em toda a varredura da janela (igualdade exata)', () => {
+    for (const d of DENTRO) expect(deepDiscFade(d)).toBe(oraculo(d));
+  });
+
+  it('1 EXATO na borda de cima e acima dela (Object.is, não "quase 1")', () => {
+    expect(Object.is(deepDiscFade(DEEP_LIMIAR_PC), 1)).toBe(true);
+    expect(Object.is(deepDiscFade(0.0500000001), 1)).toBe(true);
+    expect(Object.is(deepDiscFade(0.06315061361538779), 1)).toBe(true);
+    expect(Object.is(deepDiscFade(40000), 1)).toBe(true);
+  });
+
+  it('0 EXATO na borda de baixo e abaixo dela', () => {
+    expect(Object.is(deepDiscFade(LOD_SOL.deep.fade0Pc), 0)).toBe(true);
+    expect(Object.is(deepDiscFade(0.00072722), 0)).toBe(true);
+    expect(Object.is(deepDiscFade(0), 0)).toBe(true);
+  });
+
+  it('meio da janela é 0,5 (a cúbica é simétrica)', () => {
+    expect(deepDiscFade(0.035)).toBeCloseTo(0.5, 12);
+  });
+
+  it('é monotônica ASCENDENTE (ao contrário da rampa do disco)', () => {
+    for (let i = 1; i < DENTRO.length; i++) {
+      expect(deepDiscFade(DENTRO[i])).toBeGreaterThanOrEqual(deepDiscFade(DENTRO[i - 1]));
+    }
+  });
+
+  it('NaN devolve NaN, como `discWorldFade` — o veneno aparece', () => {
+    expect(Number.isNaN(deepDiscFade(NaN))).toBe(true);
+    expect(Number.isNaN(discWorldFade(NaN))).toBe(true);
+  });
+});
+
+describe('deepPointGain — o reverso exato (alpha do Sol-ponto)', () => {
+  it('0 na borda de cima e acima, 1 na de baixo e abaixo (Object.is)', () => {
+    expect(Object.is(deepPointGain(DEEP_LIMIAR_PC), 0)).toBe(true);
+    expect(Object.is(deepPointGain(1), 0)).toBe(true);
+    expect(Object.is(deepPointGain(LOD_SOL.deep.fade0Pc), 1)).toBe(true);
+    expect(Object.is(deepPointGain(0.00019393), 1)).toBe(true);
+    expect(Object.is(deepPointGain(0), 1)).toBe(true);
+  });
+
+  it('COMPLEMENTARIDADE EXATA: as duas somam 1 em toda a varredura', () => {
+    // não é "aproximadamente 1": é 1 bit a bit, e o docstring do módulo
+    // diz por quê (o erro de `1 − a` é ≤ 2⁻⁵⁴ e some no arredondamento).
+    // A ordem importa para o consumidor da fase 3: o alpha do ponto é
+    // exatamente o que o disco deixou de ter.
+    for (const d of DENTRO) {
+      expect(Object.is(deepDiscFade(d) + deepPointGain(d), 1)).toBe(true);
+    }
+    for (const d of [0, 0.02, 0.035, 0.05, 1, 40000]) {
+      expect(Object.is(deepDiscFade(d) + deepPointGain(d), 1)).toBe(true);
+    }
+  });
+
+  it('é monotônica DESCENDENTE e vale 0,5 no meio', () => {
+    for (let i = 1; i < DENTRO.length; i++) {
+      expect(deepPointGain(DENTRO[i])).toBeLessThanOrEqual(deepPointGain(DENTRO[i - 1]));
+    }
+    expect(deepPointGain(0.035)).toBeCloseTo(0.5, 12);
+  });
+
+  it('NaN devolve NaN (mesma guarda da rampa gêmea)', () => {
+    expect(Number.isNaN(deepPointGain(NaN))).toBe(true);
+  });
+});
+
+describe('solWorldFade — a atenuação TOTAL do disco, num lugar só', () => {
+  it('é o produto das duas rampas, em toda a faixa', () => {
+    for (const d of [...DENTRO, ...ACIMA]) {
+      expect(solWorldFade(d)).toBe(discWorldFade(d) * deepDiscFade(d));
+    }
+  });
+
+  it('PERTO DE CASA o disco APAGA, mesmo com a rampa de longe em 1', () => {
+    // é a lição que justifica as duas rampas: `discWorldFade` não sabe
+    // nada do domínio profundo e devolveria disco PLENO a 150 UA
+    for (const { nome, dPc } of VISTAS_POS.filter((v) => PROFUNDAS.includes(v.nome))) {
+      expect(discWorldFade(dPc), nome).toBe(1);
+      expect(Object.is(solWorldFade(dPc), 0), nome).toBe(true);
+      // e o corte duro de custo acompanha: nada do Sol é submetido
+      expect(isDiscGroupVisible(solWorldFade(dPc)), nome).toBe(false);
+    }
+  });
+
+  it('o corte duro cai dentro da janela deep (~0,0225 pc), não na borda', () => {
+    // resolvendo a cúbica em DISC_VISIBLE_MIN: o grupo do Sol volta a
+    // ser submetido um pouco acima de 0,0224 pc — bem abaixo do limiar,
+    // então o disco ainda desenha (fraco) na maior parte da janela
+    expect(isDiscGroupVisible(solWorldFade(0.0224))).toBe(false);
+    expect(isDiscGroupVisible(solWorldFade(0.0226))).toBe(true);
+    expect(isDiscGroupVisible(solWorldFade(DEEP_LIMIAR_PC))).toBe(true);
+  });
+
+  it('no meio da janela é o disco pleno atenuado pela rampa nova', () => {
+    expect(solWorldFade(0.035)).toBeCloseTo(0.5, 12);
+    expect(solWorldFade(0.035)).toBe(deepDiscFade(0.035)); // discWorldFade = 1
+  });
+});
+
+describe('O GATE DA F2 — acima do limiar NADA muda, bit a bit', () => {
+  it('as 11 vistas por `?pos=` saem do script, e só TRÊS caem no domínio', () => {
+    // ALARME: uma vista nova por `?pos=` dentro do domínio profundo tem
+    // de ser declarada aqui, senão o gate visual passaria a comparar
+    // uma vista que a onda MUDA contra uma baseline que ela não mudou.
+    expect(VISTAS_POS.length).toBe(11);
+    const dentro = VISTAS_POS.filter((v) => v.dPc < DEEP_LIMIAR_PC).map((v) => v.nome);
+    expect(dentro).toEqual(PROFUNDAS);
+  });
+
+  it('nas 15 vistas acima do limiar, `solWorldFade` É `discWorldFade`', () => {
+    const acima = [
+      ...VISTAS_T.map(([nome, d]) => ({ nome, dPc: d })),
+      ...VISTAS_POS.filter((v) => !PROFUNDAS.includes(v.nome)),
+    ];
+    expect(acima.length).toBe(15);
+    for (const { nome, dPc } of acima) {
+      expect(dPc, nome).toBeGreaterThanOrEqual(DEEP_LIMIAR_PC);
+      expect(Object.is(deepDiscFade(dPc), 1), nome).toBe(true);
+      expect(Object.is(solWorldFade(dPc), discWorldFade(dPc)), nome).toBe(true);
+    }
+  });
+
+  it('e em TODA a faixa de 0,05 a 40.000 pc, ponto a ponto', () => {
+    for (const d of ACIMA) {
+      expect(Object.is(deepDiscFade(d), 1)).toBe(true);
+      expect(Object.is(solWorldFade(d), discWorldFade(d))).toBe(true);
+    }
+  });
+
+  it('a igualdade vale para os DOIS zeros e o 1 do disco (× 1 é exato)', () => {
+    // as bordas da rampa de longe são os valores que o md5 mais vê:
+    // 1 (disco pleno), 0 (apagado) e o meio da rampa
+    for (const d of [0.05, 0.1, 0.16, 0.25, 0.32, 0.34, 0.5, 1]) {
+      expect(Object.is(solWorldFade(d), discWorldFade(d))).toBe(true);
+    }
+  });
+
+  it('abaixo do limiar a igualdade CAI — o gate não é tautologia', () => {
+    // 0,0499 pc: a rampa já saiu de 1 e as duas divergem. É o que a onda
+    // vai usar; sem esta ponta, o gate acima seria só uma identidade
+    // algébrica se disfarçando de medição.
+    expect(deepDiscFade(0.0499)).toBeLessThan(1);
+    expect(Object.is(solWorldFade(0.0499), discWorldFade(0.0499))).toBe(false);
+  });
+
+  it('e ela não morre num precipício: a cúbica dá 1,1e-10 pc de folga', () => {
+    // ACHADO desta fase, medido por bisseção: como o smoothstep tem
+    // derivada ZERO na borda (1 − 3δ² perto de wk=1), em double o valor
+    // continua sendo 1 EXATO até 1,1176e-10 pc abaixo do limiar —
+    // 2,3e-5 UA, ou 3,4 km. Não afrouxa nada (nenhuma vista mora aí), e
+    // é o que garante que a fronteira não vira um degrau de 1 ULP com a
+    // câmera tremendo em cima dela.
+    expect(Object.is(deepDiscFade(DEEP_LIMIAR_PC - 1e-12), 1)).toBe(true);
+    expect(Object.is(deepDiscFade(DEEP_LIMIAR_PC - 1.1e-10), 1)).toBe(true);
+    expect(Object.is(deepDiscFade(DEEP_LIMIAR_PC - 1.2e-10), 1)).toBe(false);
+  });
+});
+
+describe('a FIAÇÃO da F2 — o limiar atravessa três módulos sem redigitação', () => {
+  const engine = readFileSync(new URL('../core/engine.ts', import.meta.url), 'utf8');
+  const rig = readFileSync(new URL('../cinematic/cameraRig.ts', import.meta.url), 'utf8');
+
+  it('o engine importa o limiar daqui e compara com ELE, não com 0.05', () => {
+    expect(engine).toMatch(/import \{[^}]*\bDEEP_LIMIAR_PC\b[^}]*\} from '\.\.\/world\/lodStellar'/);
+    expect(engine).toContain('distFromSun >= DEEP_LIMIAR_PC');
+    expect(engine).not.toMatch(/distFromSun >= 0\.05/);
+  });
+
+  it('e a fórmula ANTIGA do near/far continua literal, verbatim', () => {
+    // o gate da fase é a igualdade bit a bit acima do limiar: se alguém
+    // mexer num destes literais, ela morre em silêncio
+    expect(engine).toContain('THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40)');
+    expect(engine).toContain('THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000)');
+    expect(engine).toContain('const near = nearPlanePc(distFromSun);');
+    expect(engine).toContain('const far = farPlanePc(distFromSun);');
+  });
+
+  it('o rig importa o limiar daqui e guarda a fórmula antiga da velocidade', () => {
+    expect(rig).toMatch(/import \{[^}]*\bDEEP_LIMIAR_PC\b[^}]*\} from '\.\.\/world\/lodStellar'/);
+    expect(rig).toContain('dPc >= DEEP_LIMIAR_PC');
+    expect(rig).toContain('THREE.MathUtils.clamp(dPc * 0.02, 2, 600)');
+    expect(rig).toContain('this.speed = velocidadeDeVoo(this.camera.position.length());');
+    expect(rig).not.toMatch(/clamp\(this\.camera\.position\.length\(\) \* 0\.02/);
+  });
+
+  it('e a roda do mouse não grampeia por fora: o piso vem da mesma lei', () => {
+    // o outro lugar que clampa velocidade (onWheel) — sem ele, a D6
+    // seria letra morta na prática
+    expect(rig).toContain('pisoDaRoda(this.camera.position.length()),');
+    expect(rig).not.toMatch(/this\.speed \* \(event\.deltaY > 0 \? 0\.85 : 1\.18\),\s*0\.01,/);
+  });
+
+  it('o SunStar NÃO foi tocado: as janelas de longe seguem as de sempre', () => {
+    // decisão D2: o clarão de hero fica intocado (morto abaixo de 0,14 pc)
+    const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
+    expect(heroStars).not.toContain('deepDiscFade');
+    expect(heroStars).not.toContain('deepPointGain');
+    expect(heroStars).not.toContain('solWorldFade');
+    expect(heroStars).toContain('sunStarGain(d)');
+    expect(heroStars).toContain('sunStarCore(d)');
   });
 });
