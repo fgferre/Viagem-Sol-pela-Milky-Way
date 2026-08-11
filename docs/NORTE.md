@@ -2972,6 +2972,45 @@ ainda decide algo por aqui:
   Gliese sem prefixo — medido; sem fallback, campo ausente é honesto).
   Consumidores futuros: busca e deep-link (Onda 5).
 
+### Onda 2 — FEITA (2026-08-11)
+
+"Dados antes de pixels": efemérides, orientação IAU, física estelar e conteúdo
+editorial do atlas entraram SEM tocar um pixel (7 vistas bit-idênticas contra
+main, capturadas frescas dos dois lados). Registro completo no PLANO-ATLAS
+("Estado da Onda 2"); o que ainda decide algo fica aqui:
+
+- **`src/lib/atlas/` é física pura, zero three, frame eclíptica J2000 em UA.**
+  Quem consumir (render das Ondas 4/6, máquina do tempo da 5) remapeia na
+  borda com `frameGalactico.ts` — validado contra Sgr A* e o polo eclíptico.
+  O conversor ÚNICO de tempo é `time.ts` (regra M6); toda chamada de posição
+  recebe jdTDB, nunca Date/UT cru.
+- **A janela das tabelas é 1950–2050 TDB e é DECISÃO DE PAYLOAD, não física**
+  (efemerides.bin 0,75 MB; o amostrador regenera janela maior quando a
+  Decisão 2 fixar orçamento). 9 fixtures sub-solares fora dela estão pulados
+  com inventário pinado por asserção — o teste ACUSA quando a janela crescer.
+- **Regra nova, comprada com bug achado na revisão: a composição
+  heliocêntrica exige FECHAMENTO** — todo centro citado por um corpo coberto
+  precisa ser ele mesmo coberto (Vanth compunha até Orcus e morria). O teste
+  de fechamento varre o registro inteiro; corpo novo sem pai coberto quebra o
+  teste, não o produto.
+- **A lição do passo-cede-não-o-limiar:** o passo de Mercúrio caiu 6→4 dias
+  porque o erro Hermite medido estourava o orçamento do auto-gate — os
+  números de aceitação moram no DADO (manifest), o amostrador THROW se
+  estourar, e limiar de oráculo nunca afrouxa para passar.
+- **O kernel completo venceu a curadoria manual:** iauOrientation.ts é
+  EMITIDO do pck00011 pelo derive vendorizado (86 termos; o doador truncava
+  23 à mão) e nunca se edita número ali — regenerar e colar. Os escalares dos
+  31 corpos conferem com o doador a divergência zero.
+- **Divergência declarada que não se "conserta":** o companion
+  derive-elements guarda seu próprio isoToTDB_JD clampado (2,6 s vs time.ts,
+  medido) porque foi ele quem gerou os epochJD embarcados — trocar o
+  conversor lá quebraria a reprodução exata dos blocos. O checklist item 7
+  pedia "casar exatamente"; o doador nunca casou, e o desvio registrado é a
+  herança honesta.
+- **vitest é o primeiro runner do projeto** (586 testes): oráculos numéricos
+  grandes demais para o padrão verify-*.mjs moram em src/**/*.test.ts; o
+  verify segue dono da integridade dos artefatos de public/data/.
+
 ### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
 
 **Correção de fato na triagem:** o gate da Onda 0 falava em "dez lições"; o

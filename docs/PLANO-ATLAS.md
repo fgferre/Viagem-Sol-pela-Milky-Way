@@ -129,7 +129,7 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 | Sondas (`explorationMilestone`) | Migra | Conteúdo de `labels.ts`/painel na Onda 8; nenhum modelo 3D — declarado. Conteúdo editorial |
 | `artistCalibration.ts` | Migra | Funde em `config.ts` com os comentários. Dado e conteúdo editorial; sem código de runtime |
 
-### 2.3 Funcionalidades e infraestrutura — 38 linhas
+### 2.3 Funcionalidades e infraestrutura — 39 linhas
 
 *Em uma frase: o que o visitante faz com as mãos — navegar, buscar, entender, ajustar — e a fundação medida que segura isso por baixo; é aqui que a doutrina de travessia mais morde.*
 
@@ -173,6 +173,7 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 | **`useDialogFocus` + reduced-motion + aria-live** | **Renasce (reescrita com espec herdada)** *(era Migra)* | `src/hooks/useDialogFocus.ts` é hook React amarrado à árvore de componentes do atlas; o HUD da Viagem é outra árvore. Migra o **contrato de a11y**, que é o que importa e é verificável: foco preso no diálogo, devolução do foco ao gatilho no fechamento, `Esc`, região `aria-live` para mudança de estado, e respeito a `prefers-reduced-motion`. A ideia estrutural — **um lugar só para foco preso e Escape** — atravessa. Smoke de foco/aria no `rodada.mjs` é o juiz |
 | **UI Scale** | **Renasce (reescrita com espec herdada)** *(era Migra)* | O trabalho real nunca foram as ~12 linhas de slider — é a **auditoria dos 37 `px` que carregam texto** no `hud.css` (contra 73 `rem` e 51 `clamp/vw`). Migra a evidência da medição e o contrato `?ui=` + `font-size` no root. O componente é escrito no `Ajustes.tsx` da casa |
 | Colorblind / High Contrast | Aposenta | Nunca houve implementação: 3 campos de store órfãos e um tipo. **Mas a dívida fica**: num produto onde a cor É o dado, isso não é filtro de UI — é decidir se o canal de cor carrega informação redundante. Nota de dívida no NORTE *(registrada na Onda 0)* |
+| **`time.ts` — sistema de tempo (JD/TT/TDB/GMST + tabela ΔT Espenak–Meeus)** *(linha NOVA, descoberta pela Onda 2)* | **Migra sob a exceção das duas provas — ASSINADA (Onda 2)** | O plano não tinha linha para o sistema de tempo, e a onda o descobriu obrigatório: o checklist (item 7) e a regra M6 exigem UM conversor, e reescrever a tabela ΔT de 16 faixas seria o risco de mistranscrição que §0.4 condena. **1ª prova, medida**: zero imports, TS puro; a tabela ΔT é dado publicado (Espenak & Meeus, Five Millennium Canon) e o oráculo de 253 linhas ancora em valores publicados (GMST = Meeus Ex. 12.a a 1e-7°; ΔT −500..2000). **2ª prova: ata de olhos frescos da Onda 2, assinada.** Destino: `src/lib/atlas/time.ts`, conversor ÚNICO do runtime. Divergência declarada e mantida: o companion vendorizado (`derive-elements-from-fixtures.js`) guarda o próprio `isoToTDB_JD` clampado — 2,6 s de diferença MEDIDA — porque foi ele quem gerou os `epochJD` embarcados nas tabelas; reproduzibilidade vence, com o desvio no preâmbulo |
 
 ### 2.4 Conteúdo — 10 linhas
 
@@ -208,23 +209,31 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 
 *Em uma frase: a conta que o gate final vai cobrar — quantas linhas existem, quantas de cada veredito, e de onde veio cada linha nova.*
 
-**84 linhas: 20 melhoram, 15 migram, 37 renascem, 11 aposentam, 1 reabre, 0 pendentes** *(placar pós-Onda 0; o da Versão 2 era 20/15/37/10/1/1 — movimento abaixo)*.
+**85 linhas: 20 melhoram, 16 migram, 37 renascem, 11 aposentam, 1 reabre, 0 pendentes** *(placar pós-Onda 2; o pós-Onda 0 era 20/15/37/11/1/0 — movimento abaixo)*.
 
-**Conferência da soma (recontada após a Onda 0):**
+**Conferência da soma (recontada após a Onda 2):**
 
-- **Linhas:** 82 do consolidado anterior + **2 splits** (`iauOrientation` coeficientes | avaliador `bodyOrientation`; 21 texturas de luas + eclipse | `airlessRegolith`) = **84**.
-- **Por seção:** 9 (2.1) + 21 (2.2) + 38 (2.3) + 10 (2.4) + 6 (2.5) = **84**. ✓
-- **Por veredito:** 20 + 15 + 37 + 11 + 1 + 0 = **84**. ✓
+- **Linhas:** 82 do consolidado anterior + **2 splits** (`iauOrientation` coeficientes | avaliador `bodyOrientation`; 21 texturas de luas + eclipse | `airlessRegolith`) + **1 linha nova da Onda 2** (`time.ts`) = **85**.
+- **Por seção:** 9 (2.1) + 21 (2.2) + 39 (2.3) + 10 (2.4) + 6 (2.5) = **85**. ✓
+- **Por veredito:** 20 + 16 + 37 + 11 + 1 + 0 = **85**. ✓
 - **Por seção e veredito, conferido linha a linha:**
 
 | Seção | Melhora | Migra | Renasce | Aposenta | Reabre | Pendente | Total |
 |---|---|---|---|---|---|---|---|
 | 2.1 | 3 | 2 | 3 | 1 | — | — | 9 |
 | 2.2 | 7 | 7 | 7 | — | — | — | 21 |
-| 2.3 | 6 | 3 | 22 | 7 | — | — | 38 |
+| 2.3 | 6 | 4 | 22 | 7 | — | — | 39 |
 | 2.4 | 3 | 3 | 1 | 3 | — | — | 10 |
 | 2.5 | 1 | — | 4 | — | 1 | — | 6 |
-| **Total** | **20** | **15** | **37** | **11** | **1** | **0** | **84** |
+| **Total** | **20** | **16** | **37** | **11** | **1** | **0** | **85** |
+
+> **Movimento da Onda 2 (2026-08-11).** Uma linha NOVA em §2.3: `time.ts`
+> (sistema de tempo), Migra sob a exceção das duas provas, ambas cumpridas —
+> a onda descobriu que o plano não tinha linha para o artefato que o
+> checklist item 7 e a regra M6 tornam obrigatório. Nenhuma linha existente
+> mudou de veredito; o placar vai a 85 pela adição. As duas provas de
+> `stellarPhysics.ts` (§2.1, que já era Migra) também foram assinadas na
+> mesma ata.
 
 > **Movimento da Onda 0 (2026-08-10), com correção de fato.** Os 6 `.md` de
 > `public/Docs/` foram abertos e sentenciados: **4 Migra, 2 Aposenta**. A leitura
@@ -371,6 +380,69 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 
 **Onda 2 — Dados antes de pixels.** Vendorizar `derive-iau-orientation.js` (**ferramenta offline, migra**), coeficientes IAU dos 45 corpos + tipos + 26 termos periódicos (**dado, migra**), fixtures Horizons, VSOP amostrado (**a conversão runtime→offline é o que autoriza o Migra**), **`stellarPhysics.ts` com seus 1.194 de teste**, elementos osculantes da Hygiea; **escrever novo** o avaliador `bodyOrientation` + adaptador Y-up→galáctico e o consumidor de runtime das efemérides (interpolador, provider, cache); gerar `corpos.json`; fundir `artistCalibration.ts`. *Gate:* erro vs. Horizons sob limiar; **sub-ponto solar do avaliador novo idêntico ao do doador contra Horizons**; matriz eclíptica→galáctica validada contra Sgr A* **e** polo eclíptico; **`getCacheStats`/`resetCacheStats` preservadas na travessia do motor orbital**; Miranda aparece como pendência nomeada; zero mudança visual; **revisão de olhos frescos antes do merge**.
 
+> **Estado da Onda 2 (2026-08-11): FEITA** — branch `onda-2`, gate integral
+> cumprido, ata de olhos frescos assinada (três revisores independentes:
+> travessia, caçada adversarial, auditoria de gate — todos "aprova-com-achados",
+> achados corrigidos no mesmo dia com testes de regressão).
+> **Entregas:** as 3 ferramentas offline vendorizadas (derive-iau, gerador de
+> fixtures, companion RV→COE) com adaptações declaradas "// Casa:"; 255
+> fixtures Horizons (124+3 de vetores com a Hygiea, 127 sub-solares + index);
+> `iauOrientation.ts` EMITIDO do kernel pck00011 vivo pelo derive vendorizado;
+> `time.ts` e o subconjunto de `stellarPhysics.ts` verbatim com seus oráculos;
+> `elementosOrbitais.ts` (20 satélites + 4 asteroides + Vanth/Weywot +
+> Orcus/Quaoar de catálogo) com conferência numérica zero-divergência;
+> amostrador → `efemerides.bin` 0,75 MB (10 corpos, Hermite f32, 1950–2050 TDB,
+> auto-gate no dado com semente fixa); reescritos puros e zero-three: `kepler.ts`,
+> `efemerides.ts` (Motor com o contrato de cache EXATO do doador),
+> `registroOrbital.ts`, `orientacao.ts`, `frameGalactico.ts`; `corpos.json`
+> determinístico (45 corpos, sha estável); `CALIBRACAO_ATLAS` no config com a
+> lápide do rotation-offset; vitest entra como primeiro runner (586 testes).
+> **Gate, item a item:** (a) 157 comparações de vetores contra Horizons com os
+> limiares VERBATIM do doador (mais Hygiea nas 3 épocas e ceres@1890 <60%);
+> (b) sub-ponto solar: 118 comparações em 30 corpos, protocolo fiel (tempo-luz
+> retardado, sentido de longitude por fixture, latitude planetodética,
+> relógio compartilhado <2 s, controle negativo de 72 s) — piores resíduos
+> praticamente idênticos aos do doador (Terra 0,0607° vs 0,061°); (c) Sgr A*
+> E polo eclíptico cravados a 0,01° com matriz construída da definição;
+> (d) contrato getCacheStats/resetCacheStats campo a campo (bypassed fora do
+> denominador, reset preserva Map, clear preserva contadores, teto 2000);
+> (e) Miranda como pendência nomeada em `_pendencias` do corpos.json, cobrada
+> pelo verify; (f) zero mudança visual: **7 vistas BIT-IDÊNTICAS** contra
+> baseline de main capturada fresca (ab-identidade, md5 igual nos dois lados);
+> (g) esta ata.
+> **Três correções de fato:** (1) a "Hygiea osculante" NÃO existia no doador —
+> era Kepler-only de catálogo (registry.ts:413); o pipeline foi CRIADO na casa
+> (3 fixtures novas + bloco derivado pelo companion; o epochJD reproduz o
+> das tabelas do doador, provando o conversor). (2) Os "26 termos periódicos"
+> da matriz eram "até 26 POR CORPO" (header do doador); o dado real no TS do
+> doador são 63 termos inline — e a casa embarca os **86 do kernel completo**
+> (o doador truncava 23 pequenos à mão, declarando; escalares dos 31 corpos
+> conferidos a divergência ZERO). (3) O `isoToTDB_JD` clampado que o checklist
+> (item 7) mandava "casar exatamente" com o conversor da casa **nunca casou no
+> próprio doador** — 2,6 s de diferença medida contra o time.ts; mantido no
+> companion com o desvio declarado (foi ele quem gerou os epochJD embarcados),
+> e o time.ts é o conversor único do runtime (linha nova da matriz, §2.3).
+> **Decisões de escopo declaradas:** janela da tabela 1950–2050 (regenera
+> quando a Decisão 2 fixar orçamento de payload; 9 fixtures sub-solares fora
+> dela pulados com inventário PINADO por asserção); a dualidade
+> provider-analítico vs fallback-Kepler dos satélites COLAPSOU por construção
+> (era a mesma matemática; a cicatriz do setup.ts do doador — Miranda deitada
+> 104,6° — morre sem herdeiro); `massFromSpectAbsmag` ficou fora (exportada e
+> sem teste no doador, sem consumidor na matriz); corpo de tabela fora da
+> janela LANÇA (sem consumidor nesta onda). **Achado importante da revisão,
+> corrigido:** a composição heliocêntrica exige FECHAMENTO (todo centro citado
+> por corpo coberto precisa ser coberto) — Orcus e Quaoar entraram como
+> Kepler de catálogo para fechar Vanth/Weywot, com teste de fechamento sobre o
+> registro inteiro. Consertos menores da mesma ata: jd não-finito lança
+> (NaN atravessava a janela em silêncio), decode recusa n<2, posicao('sun')
+> valida parentId antes do bypass, derive-iau recusa redirect cross-host
+> (item 13 do checklist — a falha do doador existia no vendorizado também).
+> **Nota de precisão:** o commit da fase 2 fala em "181 comparações"; o número
+> exato é 157 comparações de vetores (181 é o total de testes do arquivo,
+> incluindo o porte de heliocentric.test). **Consumidores futuros:** o render
+> dos planetas (Ondas 4/6) e a máquina do tempo (Onda 5) leem daqui; nada
+> desta onda toca pixel — por construção e por prova.
+
 **Onda 3 — Motor estelar F1–F2.** `stellarBody.ts` (Sol = instância 1); `lodStellar.ts` com janelas em pc por instância; **as 4 cicatrizes do crossfade** e os dois atributos por estrela (`aFade` + `aFocus`, 1,3 MB cada); **critério de LOD por ângulo sólido reescrito**, com limiares **recalculados** contra a PSF da casa e o teto de `gl_PointSize` no cálculo; `hygMeshFadeRamp.ts` transcrito com o comentário do clamp de `dt`. *Gate:* Sol pixel-igual em 4 condições e heroes em 3 distâncias; **nenhuma faixa de distância em que nada renderiza**; trocar de qualidade não faz o sprite reaparecer sob o disco; **revisão de olhos frescos antes do merge**.
 
 **Onda 4 — Domínio de escala aninhado + céu com planetas.** Frame local em UA no crossfade `DISC_FADE`; planetas como sprites, época fixa, fades acoplados. *Gate:* posição projetada vs. efeméride; `rodada.mjs` inalterada de longe. *(Onda de trabalho novo na casa; não atravessa código do doador.)*
@@ -395,7 +467,7 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 
 *Gate:* `verify-assets` sem corpo incompleto; troca de idioma sem recarga; **com Wikipedia desligada, zero requisições de rede na captura**; **ata da 2ª prova anexada, com veredito final da linha**; **revisão de olhos frescos antes do merge**. *Ao fechar esta onda, gatilho marcado: revisitar de uma vez só os sonhos herdados do NORTE — é o momento em que Ondas 2, 5 e 8 já baratearam a maioria deles — e o dono decide se algum vira onda própria.*
 
-**Onda 9 — Arquivamento.** atlas-orbital vira read-only. *Gate:* auditoria das **84 linhas** — nenhuma sem destino cumprido ou re-registrado como pendência nomeada; nenhuma cobrindo mais de um artefato; **justificativa errada conta como falha**, ainda que o veredito esteja certo; e cada linha responde, com evidência colável:
+**Onda 9 — Arquivamento.** atlas-orbital vira read-only. *Gate:* auditoria das **85 linhas** — nenhuma sem destino cumprido ou re-registrado como pendência nomeada; nenhuma cobrindo mais de um artefato; **justificativa errada conta como falha**, ainda que o veredito esteja certo; e cada linha responde, com evidência colável:
 
 1. *estava viva no doador?* (`grep` por call site);
 2. *o destino realmente tem o equivalente?* (`grep` no destino, não memória);
