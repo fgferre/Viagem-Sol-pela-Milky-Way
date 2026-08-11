@@ -67,7 +67,11 @@ const LADO = process.argv[2] || 'antes';
 const SO = process.argv[3];
 const N = 2;
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const VISTAS = [
+// EXPORTADA porque a régua 3 (`planeta-pixel.mjs`) mede as MESMAS vistas
+// profundas com as MESMAS strings de deep-link. Redigitar `?pos=0,0,0.00072722`
+// num segundo arquivo compraria uma divergência silenciosa: a régua diria
+// "medido a 0,5 px" de uma câmera que não é a do md5 oficial.
+export const VISTAS = [
   // O ATO DO SOL não tinha vista, e as duas alavancas que sobram na fila de
   // performance (nebulosa atrás da fotosfera, LUT do flick da coroa) vivem
   // inteiras aqui: t=0..12 para uma, t=0..~20 para a outra. Com a lista
@@ -187,7 +191,7 @@ const APP = process.env.APP_URL || APP_PADRAO;
 // diferentes e chama a diferença de regressão. Medido aqui: o app assenta em
 // `performance` (raymarch de 30 passos) em toda captura, e o `nearCeiling`
 // do engine ainda pode reacelerar para `alta`.
-const PIN = '&q=cinema';
+export const PIN = '&q=cinema';
 // EXTRA=&knob=1 anexa um parâmetro a TODAS as vistas — o A/B de um knob se faz
 // com o mesmo binário dos dois lados, sem editar nada entre as capturas.
 const EXTRA = process.env.EXTRA || '';

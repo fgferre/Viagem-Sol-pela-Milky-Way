@@ -204,6 +204,35 @@ export function magDoVertice(aMagBasePc: number, dPc: number, fase: number): num
   return aMagBasePc + 5 * (Math.log2(d) * LOG10_DE_2) - 2.5 * (Math.log2(f) * LOG10_DE_2);
 }
 
+/**
+ * O PICO DA PSF, espelhado de `GLSL_STAR_PSF` (`shaders/common.ts`) — o
+ * terceiro e último elo entre a magnitude e o PIXEL, e o único número
+ * que responde "este corpo pode acender alguma coisa nesta tela?".
+ *
+ * Existe porque a RÉGUA 3 (`scripts/visual/planeta-pixel.mjs`) precisa
+ * dele para classificar o que NÃO aparece no diff: sem o pico previsto,
+ * "não medi Netuno" e "Netuno está fisicamente sob o limiar de 8 bits"
+ * viram a mesma linha na tabela — e a primeira é um defeito, a segunda é
+ * a fotometria honesta funcionando. Fica AQUI, e não redigitado no
+ * `.mjs`, porque quem tem os uniformes verdadeiros (`uExpoM0`,
+ * `uSigmaPx`, `uScreenH`) é a camada; o readout do `?dbgplan` os publica
+ * junto, e a régua 3 lê o que o app calculou.
+ *
+ * Espelho, não fonte — as mesmas constantes literais do GLSL, inclusive
+ * o `6.2831853` truncado (2π como o shader o escreve): a régua tem de
+ * prever o que a GPU faz, não o que a matemática exata faria.
+ */
+export function picoDaPsf(
+  m: number,
+  expoM0: number,
+  sigmaPx: number,
+  screenH: number
+): { E: number; pico: number } {
+  const sigma = (sigmaPx * screenH) / 1080;
+  const E = Math.pow(10, -0.4 * (m - expoM0));
+  return { E, pico: E / (6.2831853 * sigma * sigma) };
+}
+
 const PLANETAS_VERT = /* glsl */ `
 attribute float aMagBase; // magnitude a 1 pc, fase zero (convenção única)
 attribute vec3 aCor;      // RGB linear da F1 (iluminante × razão de banda)
@@ -396,11 +425,15 @@ export class Planetas {
     const mag = this.points.geometry.getAttribute('aMagBase') as THREE.BufferAttribute;
     const c = camera.position;
     const dHome = c.length();
+    const u = this.material.uniforms;
+    const expoM0 = u.uExpoM0.value as number;
+    const sigmaPx = u.uSigmaPx.value as number;
     const linhas = [
       `[dbgplan] época ${EPOCA_ISO} = JD ${EPOCA_JD_TDB} TDB · ` +
         `câmera a ${(dHome * UA_POR_PC).toFixed(3)} UA ` +
         `(${(dHome * AL_POR_PC).toFixed(6)} anos-luz; ${dHome} pc, régua interna) · ` +
-        `tela ${larguraPx}×${alturaPx} px · uGain=${this.material.uniforms.uGain.value} · ` +
+        `tela ${larguraPx}×${alturaPx} px · uGain=${u.uGain.value} · ` +
+        `expoM0=${expoM0} · sigmaPx=${sigmaPx} · ` +
         `visível=${this.points.visible}`,
     ];
     for (let i = 0; i < pos.count; i++) {
@@ -414,6 +447,11 @@ export class Planetas {
       const dObs = Math.hypot(c.x - x, c.y - y, c.z - z);
       const fase = i === 0 ? 1 : faseDoVertice(x, y, z, c.x, c.y, c.z);
       const m = magDoVertice(mag.getX(i), dObs, fase);
+      // o alpha do Sol-ponto é o `uGain` (crossfade reverso da D2); os nove
+      // entram com 1. O pico PUBLICADO já leva o alpha, senão a régua 3 leria
+      // "o Sol pode acender" numa distância em que ele está apagado.
+      const alpha = i === 0 ? (u.uGain.value as number) : 1;
+      const psf = picoDaPsf(m, expoM0, sigmaPx, alturaPx);
       const ua = id === 'sun' ? ([0, 0, 0] as const) : RETRATO_2026[id].vetorUA;
       linhas.push(
         `[dbgplan] ${id.padEnd(8)} ` +
@@ -422,7 +460,8 @@ export class Planetas {
           `ndc=(${ndc.x.toFixed(9)}, ${ndc.y.toFixed(9)}, ${ndc.z.toFixed(9)}) · ` +
           `px=(${px.toFixed(6)}, ${py.toFixed(6)}) · ` +
           `dObs=${(dObs * UA_POR_PC).toFixed(6)} UA · fase=${fase.toFixed(9)} · ` +
-          `m=${m.toFixed(6)}`
+          `m=${m.toFixed(6)} · E=${psf.E.toExponential(6)} · ` +
+          `pico=${(psf.pico * alpha).toExponential(6)}`
       );
     }
     return linhas.join('\n');
