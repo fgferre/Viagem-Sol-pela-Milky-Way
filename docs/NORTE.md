@@ -2521,9 +2521,10 @@ corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,
 ## Como retomar os gates numa sessão nova (leia antes de medir)
 
 **Como rodar, desde a reforma do harness (2026-08-11).** O método não mudou — md5
-bit-exato, N=2 capturas por vista, navegador limpo por captura, `?q=cinema` pinado, as
-mesmas 15 vistas, os mesmos md5 oficiais do item 3. O que mudou é **o que a captura
-espera** e **quantos processos capturam**:
+bit-exato, N=2 capturas por vista, navegador limpo por captura, `?q=cinema` pinado, os
+mesmos md5 oficiais do item 3. O que mudou é **o que a captura espera** e **quantos
+processos capturam** — e, na fase 0 da Onda 4, o tamanho da lista: **18 vistas**, as 15
+do item 3 mais as três do item 4:
 
 ```
 node scripts/visual/ab-identidade.mjs antes     # leva completa (JOBS=3 por padrão)
@@ -2568,10 +2569,11 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
   funde no JSON de sempre. A porta de depuração de cada Chrome é **escolhida pelo SO**
   (`--remote-debugging-port=0`, lida do `DevToolsActivePort` do perfil) — era a única
   corrida de verdade da divisão.
-- **`SMOKE=1` captura três vistas-sentinela** (`sol`, `soldisco`, `hero8`: o disco solar,
-  o campo com a cessão de dominância e o hero de perto). **Sentinela é para ITERAR** — o
-  gate de fechamento continua sendo a leva completa das 15, porque três vistas não cobrem
-  o aspecto (`retrato`), nem a travessia, nem o mergulho, nem os regimes do `farFade`.
+- **`SMOKE=1` captura quatro vistas-sentinela** (`sol`, `soldisco`, `hero8` e, desde a
+  Onda 4, `ua150`: o disco solar, o campo com a cessão de dominância, o hero de perto e o
+  domínio profundo a 150 UA). **Sentinela é para ITERAR** — o gate de fechamento continua
+  sendo a leva completa (18 vistas desde a Onda 4), porque quatro vistas não cobrem o
+  aspecto (`retrato`), nem a travessia, nem o mergulho, nem os regimes do `farFade`.
 - **Os tempos medidos nesta máquina (2026-08-11), com as 15 vistas × 2 capturas
   reproduzindo os 15 md5 oficiais bit a bit:** leva completa **1,9 min** com `JOBS=3`
   (duas rodadas seguidas, 15/15 `IGUAL` nas duas), **3,8 min** com `JOBS=1` — que isola a
@@ -2658,6 +2660,20 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    MESMOS **0,7782**, com os cinco termos e os quatro brutos
    (bulgeAnti 5,497 · rift 0,0694 · colour 0,0509 · purp 0,0448) iguais até a quarta
    casa. Ou seja: a mudança é real e fica ABAIXO da resolução da régua fotométrica.
+4. **A Onda 4 acrescentou TRÊS (fase 0, 2026-08-11), e a lista foi a 18.** Elas caem
+   ABAIXO do piso do filme (a vista mais próxima até aqui era `sol`, a 0,063151 pc =
+   ~13.000 UA), no domínio profundo onde a onda dissolve a fotosfera artística e acende
+   os planetas por fotometria: `ua500` (`?pos=0,0,0.0024241` = 500,01 UA) · `ua150`
+   (`0.00072722` = 150,00 UA, o desfile a olho nu, também SENTINELA) · `ua40`
+   (`0.00019393` = 40,00 UA, cruzando a órbita de Netuno). Entraram na lista **antes de
+   qualquer código da onda**, de propósito: é o que desarma a armadilha do veredito
+   (vista sem "antes" era pulada em silêncio — hoje `julgarVistas` emite NOVA/AUSENTE).
+   O "antes" delas, capturado no HEAD sem a onda, mostra **só o fundo** — o `near` atual
+   clipa tudo a menos de ~206 UA da câmera —, e é baseline legítima do diff:
+   **`ua500 5fa91638704b` · `ua150 64efef464d97` · `ua40 ed732b0cffa6`** (todas
+   @1800x1713). Ao contrário das 15 do item 3, **estas TÊM de mudar** quando a camada
+   dos planetas ligar (fase 4 da onda) — e só elas. Na mesma leva as 15 antigas saíram
+   **bit-idênticas ao item 3**, 18/18 por `via=sinal`, 2,3 min com `JOBS=3`.
 
 Os PNGs do gate do céu ficam em `sky/` e as capturas nomeadas em `capturas/` (ambos
 gitignored, ambos sobrevivem à sessão): `sky-capture.mjs base --so-medir` re-mede sem
@@ -2691,13 +2707,21 @@ quebrar**, que é o modo caro de falhar.
   preset — só desliga o automático); numa que não segura, sem ele o gate compara duas
   imagens tiradas em qualidades diferentes e chama a diferença de regressão. `ab-identidade`
   e `sky-capture` agora fixam. **A linha antiga "os gates rodam sem `?q=` em desktop
-  headless" só valia para hardware rápido.**
+  headless" só valia para hardware rápido.** O `rodada.mjs` era o único que faltava e
+  passou a fixar na Onda 4, fase 0 — e o degrau APARECEU nesta máquina: entre a rodada 40
+  e a 42, sem uma linha de render tocada, `clumpError` foi de 0,0603 a **0,1160** e
+  `grain` de 0,0663 a **0,0844** (as duas colunas que leem textura, que é o que 30 passos
+  de raymarch contra 56 mudam), enquanto `harmonicError` e `discMean` ficaram parados.
+  Descontinuidade declarada no `EVOLUCAO.md`: a comparação válida é **42 ↔ 43**.
 - **`--virtual-time-budget` + `--screenshot` NÃO TERMINA neste Chrome/macOS.** Não é
   lentidão: uma janela de **400×400 com 8 s de orçamento** ficou 6 min sem sair e sem
   gravar PNG. O laço de rAF do app nunca deixa o tempo virtual alcançar o teto, e o
   `--screenshot` só dispara quando ele alcança. As seis faces do gate do céu passaram para
   o caminho CDP (`capturarCDP` em `chrome.mjs`), que espera o log da cartografia e mais
   700 quadros DESENHADOS — o mesmo critério que já fazia o `ab-identidade` repetir md5.
+  (O `rodada.mjs` ficou de fora e por isso **estava morto**: ele seguia no tempo virtual e
+  nem chegava lá, porque procurava `chrome.exe`. Migrado na Onda 4, fase 0 — as duas
+  vistas da rodada 42 assentaram por `via=sinal` em 4,1 s e 3,9 s.)
   (Desde 2026-08-11 os 700 quadros são o **teto de segurança**: quem manda é o sinal de
   prontidão do app, e as duas rotas foram medidas bit-idênticas — ver o topo da seção
   "Como retomar os gates".)

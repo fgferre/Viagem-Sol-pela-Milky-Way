@@ -5,7 +5,7 @@
 //   ...edita...
 //   node scripts/visual/ab-identidade.mjs depois     # compara e dá o veredito
 //   node scripts/visual/ab-identidade.mjs antes interno   # uma vista só
-//   SMOKE=1 node scripts/visual/ab-identidade.mjs antes   # 3 vistas-sentinela
+//   SMOKE=1 node scripts/visual/ab-identidade.mjs antes   # 4 vistas-sentinela
 //   JOBS=1 node scripts/visual/ab-identidade.mjs antes    # serial (padrão: 3)
 //
 // POR QUE NÃO `--virtual-time-budget --screenshot`, que é como `rodada.mjs`
@@ -136,16 +136,47 @@ const VISTAS = [
   ['hero600', '?pos=15.7242,746.2254,97.0322&look=3.1895,151.3642,19.682&shot=2'],
   ['hero950', '?pos=23.0362,1093.2277,142.1532&look=3.1895,151.3642,19.682&shot=2'],
   ['hero8', '?pos=3.0224,143.4327,18.6507&look=3.1895,151.3642,19.682&shot=2'],
+  // ------------------------------------------------------------------
+  // ONDA 4 — o DOMÍNIO PROFUNDO, em UA. Nenhuma das 15 acima chega perto
+  // do Sol na escala do sistema solar: a mais próxima é `sol`, a 0,063151
+  // pc = ~13.000 UA, e o piso do filme inteiro é essa distância. As três
+  // abaixo caem ABAIXO do piso, onde a Onda 4 dissolve a fotosfera
+  // artística e acende os planetas por fotometria — a única faixa em que
+  // o gate pode enxergar o frame local em UA de dentro.
+  //
+  // `?pos=` e não `?t=`: o instante amarra a distância ao trajeto da
+  // hélice, e o que se quer cravar é a DISTÂNCIA. Câmera no eixo z da
+  // cena olhando a origem (o Sol), como as quatro do Sol acima.
+  //
+  // ELAS ENTRAM NA LISTA ANTES DE QUALQUER CÓDIGO DA ONDA, de propósito:
+  // a baseline delas nasce no HEAD sem a onda, e é isso que desarma a
+  // armadilha do veredito (vista sem "antes" saía como linha NOVA e não
+  // como comparação). No "antes" as três mostram só o fundo — o `near`
+  // atual clipa tudo a menos de ~206 UA da câmera —, e esse fundo é a
+  // baseline legítima contra a qual o "depois" vai diferir.
+  //
+  // As distâncias (o conversor é AU_PARA_PC = 1/206264,80624548031):
+  //   ua500 = 0,0024241 pc = 500,01 UA — Sol-estrela, Júpiter fraco
+  //   ua150 = 0,00072722 pc = 150,00 UA — o desfile a olho nu, sistema
+  //           inteiro em quadro (escorço 0,917, quase face-on)
+  //   ua40  = 0,00019393 pc = 40,00 UA — a família como faróis, na
+  //           travessia da órbita de Netuno
+  ['ua500', '?pos=0,0,0.0024241&look=0,0,0&shot=2'],
+  ['ua150', '?pos=0,0,0.00072722&look=0,0,0&shot=2'],
+  ['ua40', '?pos=0,0,0.00019393&look=0,0,0&shot=2'],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
 // `soldisco` é o campo com a cessão de dominância ligada a 0,1 pc — foi ela
 // que mudou quando `DOMINANCE_DEFAULT_ON` virou true; `hero8` é o hero de
 // perto, a única vista em que billboard e ponto do catálogo dividem o mesmo
-// lugar com 11,3 px de raio. SENTINELA É PARA ITERAR: o gate de fechamento
-// continua sendo a leva COMPLETA das 15 — três vistas não cobrem o aspecto
-// (retrato), nem a travessia, nem o mergulho, nem os regimes do farFade.
-const SENTINELAS = ['sol', 'soldisco', 'hero8'];
+// lugar com 11,3 px de raio. E `ua150` desde a Onda 4: é a única sentinela
+// DENTRO do domínio profundo (150 UA), com o sistema solar inteiro em quadro
+// — sem ela, iterar na onda dos planetas seria iterar às cegas.
+// SENTINELA É PARA ITERAR: o gate de fechamento continua sendo a leva
+// COMPLETA das 18 — quatro vistas não cobrem o aspecto (retrato), nem a
+// travessia, nem o mergulho, nem os regimes do farFade.
+const SENTINELAS = ['sol', 'soldisco', 'hero8', 'ua150'];
 const APP = process.env.APP_URL || APP_PADRAO;
 // TIER FIXO, e ele não é preferência: sem `?q=` o `autoQuality` do engine
 // rebaixa cinema→alta→performance sozinho assim que a média cai de 42 fps

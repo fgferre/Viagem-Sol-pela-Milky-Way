@@ -53,6 +53,32 @@ anel e existe uma terceira nota, `toneError`.
 | 33 | 0.0371 | 0.1299 | 0.0663 | 0.1047 | bojo achatado (c/a 0,30) + poeira com escala radial própria (2,1 kpc) |
 | 37 | 0.0371 | 0.1299 | 0.0663 | 0.1047 | regua da fenda por longitude + Grande Fenda no lugar real |
 
+### DESCONTINUIDADE na rodada 42 — o PROTOCOLO DE CAPTURA mudou (2026-08-11)
+
+**Vale para as DUAS tabelas abaixo (face-on e edge-on). Não compare a 42 com a
+40: a comparação válida é 42 ↔ 43 em diante.**
+
+Até a rodada 40 o `rodada.mjs` capturava com `--virtual-time-budget=16000
+--screenshot` e **sem fixar o tier**. Ele estava morto nesta máquina desde o
+clone macOS (três defeitos somados: lista de Chrome só de Windows/Linux,
+`GPU_FLAGS`/`matarPerfil` usados sem import, e o tempo virtual que neste
+Chrome/macOS não termina) — as rodadas 41 em diante nunca chegaram a ter linha
+aqui. Na Onda 4, fase 0, ele foi consertado e passou a capturar por **CDP com
+o sinal de prontidão do app** (o mesmo caminho do `ab-identidade` e do
+`sky-capture`) e com **`?q=cinema` fixado**.
+
+As duas mudanças mexem no número por motivo alheio a qualquer render:
+o orçamento de tempo virtual fotografava um estado *qualquer* da chegada dos
+~6 MB de cartografia, e sem `?q=` o `autoQuality` rebaixava o tier no meio da
+captura (`nebulaSteps` 56→30, `pixelRatio`). O efeito medido, 40 → 42, sem uma
+linha de render tocada: `clumpError` 0,0603 → 0,1160 e `grain` 0,0663 → 0,0844
+no face-on — exatamente as duas colunas que leem TEXTURA, que é o que o
+raymarch em 30 passos contra 56 passos muda. `harmonicError` (0,3920 → 0,3939),
+`discMean` (0,1299 → 0,1296) e `purp` (0,1047 → 0,1048) praticamente não se
+mexeram, e no edge-on todas as cinco andaram pouco (`edgeError` 0,4124 →
+0,3758). Ou seja: a estrutura é a mesma galáxia; o que mudou foi a qualidade
+com que ela foi fotografada.
+
 ### Régua a partir de 2026-08-06 — três notas, todas menores é melhor
 
 `harmonicError` = soma sobre m=1..6 da média |Δ| ANEL A ANEL (56 anéis).
@@ -66,11 +92,13 @@ raios que antes ninguém cobrava. `discMean` fica FORA das notas de propósito:
 | 38 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | auditoria: harmonicas anel a anel, toneError novo, thickRatio fora da soma |
 | 39 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | bojo c/a 0,30 -> 0,26 (Wegg & Gerhard); regua da fenda mede na latitude da foto |
 | 40 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
+| 42 | 0.3939 | 0.1160 | 0.1766 | 0.1296 | 0.0844 | 0.1048 | conserto do harness (CDP + tier fixo) |
 
 ## Edge-on
 
 `edgeError` menor é melhor (medida `?mode=edge` contra
-`gaia-2025-edge-on-5k.jpg`); as outras buscam o alvo.
+`gaia-2025-edge-on-5k.jpg`); as outras buscam o alvo. **A rodada 42 é
+descontínua com as de cima** — ver a nota do protocolo de captura acima.
 
 | rodada | edgeError | thickRatio | axialRatio | laneDepth | warpAmp | o que mudou |
 |---|---|---|---|---|---|---|
@@ -93,6 +121,7 @@ raios que antes ninguém cobrava. `discMean` fica FORA das notas de propósito:
 | 38 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | auditoria: harmonicas anel a anel, toneError novo, thickRatio fora da soma |
 | 39 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | bojo c/a 0,30 -> 0,26 (Wegg & Gerhard); regua da fenda mede na latitude da foto |
 | 40 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
+| 42 | 0.3758 | 0.0424 | 0.0886 | 0.8784 | 0.0486 | conserto do harness (CDP + tier fixo) |
 
 ## Céu interno (panorama ESO)
 
