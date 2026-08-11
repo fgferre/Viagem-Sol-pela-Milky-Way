@@ -573,10 +573,12 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 > lá o `nearFade` apaga o clarão e não há corpo para assumir, então a luz
 > combinada cai (Sirius: 2.297 px em 0,28 pc → 18,6 px em 0,11 pc). É
 > comportamento herdado, documentado por teste; o handoff completo é a Onda 7.
-> (3) **`vSat` não recebe `uFade` nem a extinção** — os espinhos de difração
-> saem com força cheia na saída da vizinhança solar. É dívida herdada de `main`
-> (não regressão desta onda), muda pixel, e por isso é decisão de dono com A/B
-> próprio. (4) **O casamento hero↔índice é posicional** (o `sc1` não carrega
+> (3) ~~**`vSat` não recebe `uFade` nem a extinção**~~ — **PAGA pós-onda, na
+> mesma sessão (commit `2e16689`, 2026-08-11)**: `vSat = sat * alpha` no lugar
+> de `sat * atten`, porque `alpha` nasce 1,0 e acumula a atenuação TOTAL
+> (extinção + `uFade` + cessão por dominância), a mesma que `vPeak` já recebia;
+> 11/15 vistas bit-idênticas no A/B. Registro completo no NORTE. A regra que
+> fica: atenuação se fatora num lugar só. (4) **O casamento hero↔índice é posicional** (o `sc1` não carrega
 > identidade), com desempate por luminosidade e 16/16 conferidos contra o
 > binário real; a seção de identidade por catálogo o tornaria EXATO — depende
 > da **Decisão 2**.

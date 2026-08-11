@@ -1,0 +1,67 @@
+# Onda 4 — Desenho oficial (2026-08-11)
+
+**Documento de trabalho da onda. Consumido no fecho: o resultado vai para o Estado da Onda 4 no PLANO-ATLAS e para o NORTE; este arquivo morre no merge (regra 8 do AGENTS.md).**
+
+## 0. A decisão do dono que muda a premissa
+
+No dia da abertura, o dono decidiu (registrado, palavras dele): *"eu quero ser um SpaceEngine... temos que ser honestos nessas escalas se isso é possível"* e *"quero ser MAIS que o SpaceEngine"* (a honestidade de escala dele + a galáxia procedural científica volumétrica que só a casa tem). Isso **derruba a premissa de escala ampliada** com que a espec original da onda foi escrita ("planetas como sprites" na janela do crossfade, com escalar didático) e a substitui pela leitura honesta:
+
+- **Escala 1:1.** Posições reais da efeméride, conversor único `AU_PARA_PC`. Nenhum escalar didático, nunca.
+- **Visibilidade por fotometria**, não por inflação: um planeta aparece quando o brilho aparente dele manda, como no céu de verdade. A casa já faz isso com as 328k estrelas (`catalogApparentMag`, PSF); os planetas entram na mesma lei.
+- **O filme não muda um pixel.** Da trajetória do filme (mínimo 0,062 pc = 12.788 UA), planetas reais têm m≈22: invisíveis, honestamente. As 15 vistas oficiais saem **bit-idênticas** — mais forte que o que o plano pedia.
+- A letra da espec é honrada no espelho: o **"frame local em UA"** nasce ABAIXO do piso do filme (não na janela do crossfade), e os **"fades acoplados"** são o crossfade reverso disco-artístico→ponto-fotométrico. O gate da espec fica intacto: **posição projetada vs. efeméride; harness de longe inalterado**.
+
+A dramaturgia que a física dá de graça no mergulho (voo livre, abaixo do piso do filme): a fotosfera artística se dissolve entre 10.300 e 4.125 UA; sobra um Sol-estrela brilhante; **Júpiter acende a ~1.500 UA** como pontinho; a ~200 UA é olho nu; a ~150 UA o desfile (Vênus, Terra, Saturno); a ~30 UA cruza-se a órbita de Netuno com a família como faróis; a 1 UA o Sol subtende 0,53°, como da Terra.
+
+## 1. Decisões
+
+**D1 — Escala verdadeira, conversor único.** Posição de cena = `eclipticaParaEquatorial(posicaoHeliocentrica(id, EPOCA_JD_TDB)) × AU_PARA_PC`. A cena já é heliocêntrica equatorial J2000 em pc com o Sol na origem — a ponte é uma rotação e uma multiplicação. PROIBIDO (com teste de texto-fonte): qualquer outro escalar de comprimento no módulo; o caminho galactocêntrico (`posicaoHeliocentricaEclipticaParaCena` + `galactocentricToScene`), que erra a origem em 0,1134 UA medidos.
+
+**D2 — O domínio profundo e os fades acoplados.** Janela nova na tabela de `lodStellar.ts`, ao lado das existentes: `LOD_SOL.deep = { fade1Pc: 0.05, fade0Pc: 0.02 }` (números de projeto; o A/B da fase de envelope pode movê-los ANTES de ligar a chave, precedente D11 da Onda 3). Funções puras novas:
+- `deepDiscFade(dPc)`: 1 exato para d ≥ 0,05; 0 exato para d ≤ 0,02; smoothstep entre. Multiplica o `uWorldFade` do disco artístico via composição `solWorldFade(d) = discWorldFade(d) · deepDiscFade(d)` — atenuação fatorada num lugar só (lição 2e16689).
+- `deepPointGain(dPc)`: o reverso (0 acima de 0,05, 1 abaixo de 0,02) — alpha do Sol-ponto fotométrico da camada nova.
+O piso do filme (0,062 pc) fica FORA da janela com 24% de margem: acima de 0,05 pc **nada muda, bit a bit** (testado por `Object.is(deepDiscFade(d), 1)` nas distâncias das 15 vistas e do roteiro inteiro).
+Os call-sites do `stellarBody`/`SunStar` trocam para as composições; os testes de texto-fonte que pinavam as strings antigas são REESCRITOS deliberadamente, com a justificativa neste desenho. `SunStar` (clarão de hero) NÃO é tocado — segue com as janelas atuais, morto abaixo de 0,14 pc.
+
+**D3 — A camada `planetas`: 10 pontos fotométricos.** `THREE.Points` único (Sol + 8 planetas + Plutão), grupo próprio na cena (NUNCA filho de `sun.group` — escala 0,005 do doador e return antecipado), AdditiveBlending, `depthWrite:false`, `depthTest:false`, `transparent:true`, `renderOrder 7`, `frustumCulled:false`. VERT reusa a PSF da casa (`GLSL_STAR_PSF`, `common.ts`) com os MESMOS `expoM0 = 3,5` e `sigmaPx = 0,85` do campo — fotometria RELATIVA planeta↔estrela honesta, sem exposição própria, sem compressão. Magnitude aparente por quadro NO SHADER (idioma do campo):
+- Planetas: atributo `aMagBase = H + 5·log10(r_UA)` (H = magnitude absoluta planetária, tabela Mallama com fonte por linha; r = distância heliocêntrica DA EFEMÉRIDE na época); no VERT, `m = aMagBase + 5·log10(d_obs_UA) + fase`, com `d_obs` da câmera e **fase Lambertiana declarada como aproximação** (a polinomial por corpo é pendência nomeada da Onda 6).
+- Sol: `m = 4,83 + 5·log10(d_pc/10)` — reuso direto da lei `catalogApparentMag` com logLum 0. Alpha do Sol-ponto = `deepPointGain(d)`; alpha dos planetas = 1 (a física decide o brilho).
+Cores: tabela literal de 10 RGB lineares com fonte citada por linha; invariante testado é a ORDEM dos canais (Marte r>b, Urano/Netuno b>r...). Lua e satélites FICAM DE FORA (sub-resolução; resíduos Kepler de até 5,2° sem canal de honestidade; Onda 6).
+Visibilidade de CUSTO (não de conteúdo): `points.visible = ligado && dHome < LOD_SOL.deep.fade1Pc` — em 0,05 pc o corpo mais brilhante (Júpiter) tem m ≈ 12,3, sub-limiar de tela: o corte não pisca (testado). Zero alocação por quadro; uniforms: `uCamPos`, `uScreenH`, `uGain` (três escritas).
+
+**D4 — Época fixa.** `EPOCA_JD_TDB = 2461041.5008692136` (= 2026-01-01T00:00:00Z pelo conversor da casa; igualdade pinada por teste). Literal, nunca `Date`/`dateToTDB` no runtime (anti-padrão nº 6). Escolhida por ser a mais recente com fixtures Horizons na casa (4 corpos: mercury/earth/mars/neptune — conferido em disco nesta sessão) e cair funda na janela da tabela. Tabela congelada `src/three/world/planetas/retrato2026.ts` GERADA por `scripts/data/atlas/gera-retrato-planetas.mjs` (lê `efemerides.bin`, escreve 9 vetores UA eclíptica J2000 + r_UA + proveniência: jdTDB, ISO, sha256 do .bin, comando de regeneração). **Zero byte de payload novo** — a efemerides.bin não é baixada; o fio de rede é pendência declarada da Onda 6 (tempo vivo).
+
+**D5 — Near plane profundo (piecewise, bit-exato acima).** `engine.updateClip`: para `d ≥ 0,05` a fórmula atual VERBATIM (`near = clamp(d·0,004, 0,001, 40)`); para `d < 0,05`, `near = max(d·0,004, 1e-8)`, far inalterado. Teste: nas distâncias das 15 vistas, do roteiro e do gate do céu, o par (near, far) é IDÊNTICO ao antigo. Sem log-depth: a camada é aditiva sem depth; "Log-depth: não" NÃO reabre (gatilho literal é "geometria resolvida (planetas, malhas)" — não entra malha nenhuma). A reabertura fica para a Onda 6, como o plano já diz.
+
+**D6 — Voo no domínio profundo.** `FreeRoam`: para `d < 0,05 pc` o clamp de velocidade vira proporcional (`speed = clamp(d·0,02, d·0,02, 600)`, sem o piso de 2 pc/s); acima, fórmula atual verbatim. Sem isso o mergulho é inavegável (2 pc/s = o sistema solar inteiro em 1 ms). Guardado por teste.
+
+**D7 — Flags e auditoria.** Duas portas no precedente `?dom/?nodom`: constante `PLANETAS_DEFAULT_ON` (false até o envelope), `?plan=1` liga, `?noplan=1` desliga ao vivo; 'noplan' no array literal do director e em CAMADAS do Ajustes (viva). `?dbgplan` no molde do `?dbgstar`: imprime por corpo id / UA eclíptica / pc de cena / NDC / px / m aparente, mais EPOCA_JD_TDB e ISO. Unidades voltadas ao visitante (decisão do dono): o readout fala UA e anos-luz; pc só como régua interna anotada.
+
+**D8 — Protocolo do céu.** `sky-capture.mjs` ganha `&noplan=1` na URL de protocolo (precedente exato do `nohero=1`): a câmera do céu fica na origem, DENTRO do domínio profundo, e os planetas reais estariam no céu de verdade — mas o oráculo é a recriação Gaia, que não tem planetas. Exigência: skyError **0,7782** com os cinco termos idênticos, e as 6 faces bit-idênticas (prova também que o near profundo não mexeu no fundo).
+
+**D9 — Vistas novas (3, lista 15→18).** `ua500` = `?pos=0,0,0.0024241&look=0,0,0&shot=2` (Sol-estrela + Júpiter fraco); `ua150` = `?pos=0,0,0.00072722&look=0,0,0&shot=2` (o desfile a olho nu, sistema inteiro em quadro — escorço 0,917, quase face-on); `ua40` = `?pos=0,0,0.00019393&look=0,0,0&shot=2` (a família como faróis, cruzando a órbita de Netuno). Entram na lista PRIMEIRO (fase 0, no HEAD sem a onda — desarma a armadilha do laço); `ua150` entra nas SENTINELAS (3→4). No "antes" elas mostram só o fundo (near velho clipa tudo a <206 UA) — baseline legítima do diff.
+
+**D10 — Gate de posição projetada: três réguas independentes.**
+- *Régua 1, vitest puro (~2 s):* cadeia inteira elo a elo — proveniência bit-exata da tabela contra `MotorEfemerides` (Object.is nos float64); oráculo Horizons nos 4 corpos com fixture (limiar 1e-3° contra resíduo medido ~4e-4°); orçamento do manifesto nos 4 sem fixture; rotação julgada por norma preservada (≤1e-15 relativo) e pelo plano da eclíptica (normal ajustada aos 8 a ≤0,5° do polo eclíptico em equatorial); projeção `PerspectiveCamera.project` pinada em px nas câmeras das 3 vistas novas; invariantes de near; texto-fonte (D1, D3, D8 estrutural, ausência de onQuality/alocação).
+- *Régua 2, CDP:* `?dbgplan` lê o Float32Array REAL do atributo e projeta com a câmera do quadro; comparação com a régua 1 a ≤1e-3 px.
+- *Régua 3, pixel:* `scripts/visual/planeta-pixel.mjs` — diff antes/depois de `ua150`/`ua40`, componentes conexas, centroide ponderado E centro da caixa a ≤0,5 px do previsto; instrumento validado nos dois estados (M5): zero componentes com `?noplan=1`, N esperado com `?plan=1`.
+
+**D11 — Prova "inalterada de longe" (mais forte que a espec).** (a) as **15 vistas antigas TODAS bit-idênticas** contra a tabela do NORTE (a onda não muda nenhuma — nem as 5 de perto); (b) sky 0,7782 com termos idênticos; (c) `rodada.mjs` CONSERTADO na fase 0, rodado antes (rodada 42, com descontinuidade declarada no ledger: primeira por CDP com tier fixo) e depois (43, colunas idênticas às da 42); (d) A/B das duas portas com o mesmo binário: `EXTRA='&noplan=1'` devolve as 18 do "antes"; `PLANETAS_DEFAULT_ON=false` + `EXTRA='&plan=1'` devolve as 18 do "depois".
+
+**D12 — Consertos estruturais (diretiva "sem preguiça", fase 0).** (1) `rodada.mjs`: import de CHROME/GPU_FLAGS/matarPerfil do chrome.mjs, caminho de macOS, migração para `capturarCDP`, `&q=cinema`, vias por `julgarProntidao`. (2) Laço de veredito do `ab-identidade` extraído para `julgarVistas` pura que emite NOVA/AUSENTE e reprova em silêncio nunca — com teste no caso sabidamente quebrado. (3) eslint passa a cobrir `scripts/**/*.mjs` (o alarme cuja ausência deixou o rodada quebrado 3 meses); se acender demais, escopo cai para `scripts/visual` com registro. (4) Rename da armadilha: `posicaoHeliocentricaEclipticaParaCena` → `heliocentricaEclipticaUAParaBaseGalactocentricaPc` + teste-oráculo que PINA o resíduo de 0,1134 UA do caminho composto (sem "consertar" GC_POS, que moveria a galáxia e 10 md5). (5) vSat no PLANO: **já corrigido nesta sessão** (registrado).
+
+## 2. Fases (cada uma termina em commit validado)
+
+- **F0 — O chão.** D12 inteiro + as 3 vistas novas na lista + leva "antes" completa (18 vistas, no HEAD sem a onda) + rodada 42. Valida: npm test verde; rodada roda nesta máquina; 15/15 conferem com o NORTE.
+- **F1 — O dado.** Gerador + `retrato2026.ts` + `fotometria.ts` (H, cores, fase Lambertiana; fontes por linha). Valida: régua 1 (proveniência, Horizons, orçamentos); zero pixel (SMOKE igual).
+- **F2 — O palco.** Janelas `deep` em lodStellar + composições + near piecewise + voo proporcional; testes puros de bit-igualdade acima de 0,05 pc. Valida: npm test; leva SMOKE bit-idêntica (nada muda sem a camada).
+- **F3 — A camada, desligada.** `planetas.ts` + fiação (init/tick/teardown/flags/?dbgplan/Ajustes) com `PLANETAS_DEFAULT_ON=false`. Valida: 18 vistas bit-idênticas por construção; réguas 1–2 com `?plan=1`; smoke L37 em navegador real.
+- **F4 — Envelope e chave.** Medição do envelope com `?plan=1` (glare do Sol-ponto, legibilidade do desfile, janelas deep) ANTES de ligar; ajustes só nos números de projeto declarados (janela deep), com medição registrada. Liga `PLANETAS_DEFAULT_ON=true`. Valida: leva completa — **15 antigas IGUAIS, ua500/ua150/ua40 DIFEREM do antes (e só elas)**; A/B das duas portas.
+- **F5 — Gate e fecho.** Régua 3 (pixel), sky com `&noplan=1` (0,7782), rodada 43, smoke da viagem inteira. Fecho nos registros: Estado da Onda 4 no PLANO (com a decisão de visão do dono e a emenda da espec), NORTE (decisão de visão nas Decisões fechadas; tabela de md5 com as 3 novas; pendências), este arquivo morre, merge local em main.
+
+## 3. Custos e pendências declaradas
+
+- **Payload: zero byte.** Bundle: ~2 kB de fonte gerada + a camada.
+- **md5: nenhuma das 15 muda; nascem 3.** Sky e rodada inalterados.
+- **Testes: ~760 → ~850.**
+- **Pendências nomeadas:** fixtures Horizons de venus/jupiter/saturn/uranus (rede, aprovação do dono); fase polinomial por corpo e planetas resolvidos (Onda 6); Sol resolvido em escala real abaixo de ~5 UA e starOptics do Sol-ponto (Ondas 6/7a); fio de rede da efemerides.bin + tempo vivo (Onda 5/6); selo da Onda 5 ganha o eixo "ESCALA REAL" de graça no domínio profundo; o dado de `?nosun` NÃO governa o Sol-ponto (governa `noplan`) — declarado aqui, revisitado quando o selo nascer.
