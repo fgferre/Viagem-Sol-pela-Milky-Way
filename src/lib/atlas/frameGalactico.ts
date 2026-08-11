@@ -209,8 +209,8 @@ export function radecParaGalactica(
 }
 
 /**
- * A ponte para a CENA: posição heliocêntrica eclíptica J2000 em AU →
- * [x, y, z] em pc na base do projeto — a MESMA convenção de
+ * Posição heliocêntrica eclíptica J2000 em AU → [x, y, z] em pc na BASE
+ * GALACTOCÊNTRICA DO PROJETO — a MESMA convenção de
  * heliocentricGalacticToProject (scripts/data/lib/galactic.mjs):
  *
  *   x = 8150 − d·cos b·cos l;  y = −d·cos b·sin l;  z = 5.5 + d·sin b
@@ -220,8 +220,25 @@ export function radecParaGalactica(
  * gy = d·cos b·sin l, gz = d·sin b é exata — dispensa a viagem por
  * ângulos. O teste (e) prova a equivalência contra os casos fixos de
  * verify-assets.mjs a 1e-8.
+ *
+ * O NOME MUDOU (Onda 4, fase 0) e a razão é uma armadilha medida. Ele se
+ * chamava `posicaoHeliocentricaEclipticaParaCena`, e "ParaCena" convidava
+ * a compor com `galactocentricToScene` (three/world/galaxy.ts) para
+ * chegar às coordenadas da cena. O caminho composto NÃO devolve a origem
+ * para o próprio Sol: ele erra por 5,4959e-7 pc = 0,1134 AU, porque
+ * `GAL.GC_POS` e a base (EX, EY, EZ) são construídos de versores
+ * arredondados a 10 casas, e não da mesma álgebra deste módulo. Para uma
+ * estrela a centenas de pc isso é ruído; para um PLANETA em escala real,
+ * 0,1134 AU é a distância Terra–Sol em ordem de grandeza. O resíduo está
+ * PINADO por teste (gate (f) em frameGalactico.test.ts).
+ *
+ * Ou seja: o produto desta função é a base dos BINÁRIOS de
+ * public/data/galaxy, não a cena. Quem quer posição de cena a partir da
+ * eclíptica usa `eclipticaParaEquatorial(vAU)` × `AU_PARA_PC` — a cena é
+ * heliocêntrica equatorial J2000 em pc com o Sol na origem, e essa ponte
+ * é uma rotação e uma multiplicação, sem nenhuma origem para errar.
  */
-export function posicaoHeliocentricaEclipticaParaCena(
+export function heliocentricaEclipticaUAParaBaseGalactocentricaPc(
   vAU: Vec3
 ): [number, number, number] {
   const gal = equatorialParaGalactica(eclipticaParaEquatorial(vAU));
