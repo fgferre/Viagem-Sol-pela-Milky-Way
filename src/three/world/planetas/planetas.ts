@@ -101,14 +101,27 @@ import { A_MAG_BASE, FOTOMETRIA, IDS_FOTOMETRIA } from './fotometria';
 import { EPOCA_ISO, EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
 /**
- * A CHAVE da camada (D7). Nasce `false`: a F3 entrega a camada
- * DESLIGADA, e as 18 vistas saem bit-idênticas por construção. Quem a
- * vira é a F4, depois de medir o envelope com `?plan=1`. As duas portas
- * de URL (`?plan=1` liga, `?noplan=1` desliga) existem para o A/B ser
- * feito com o MESMO binário dos dois lados — precedente `?dom/?nodom`
- * da Onda 3.
+ * A CHAVE da camada (D7), VIRADA na F4 depois do envelope medido.
+ *
+ * Nasceu `false` na F3, de propósito: a camada inteira entrou com as 18
+ * vistas bit-idênticas por construção, e só depois foi medida com
+ * `?plan=1` — régua 3 no pixel (11 corpos MEDIDOS a ≤0,20 px de
+ * centroide nas três vistas profundas, só adição de luz, par nulo em
+ * zero) e envelope visual do mergulho nas quatro distâncias. Com a
+ * chave em `true`, mudam TRÊS md5 do gate e só três: `ua500`, `ua150` e
+ * `ua40`, as vistas que caem abaixo do piso do filme. As quinze antigas
+ * saem bit-idênticas — o filme não muda um pixel, que é a promessa da
+ * onda.
+ *
+ * As duas portas de URL seguem vivas e são o caminho de VOLTA exato:
+ * `?noplan=1` desliga a camada ao vivo e devolve as três profundas aos
+ * md5 de antes dela (provado com o mesmo binário, F4); `?plan=1` liga
+ * mesmo se esta constante voltar a `false`. Precedente `?dom/?nodom` da
+ * Onda 3. Elas governam a CAMADA e só ela: o domínio profundo (janelas
+ * `deep`, near piecewise, voo proporcional) é fundação sem porta, como
+ * o near — emenda D11a.
  */
-export const PLANETAS_DEFAULT_ON = false;
+export const PLANETAS_DEFAULT_ON = true;
 
 /**
  * UA por pc, DERIVADO do conversor único (`AU_PARA_PC`,

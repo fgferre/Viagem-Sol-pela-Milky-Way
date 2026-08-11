@@ -61,6 +61,7 @@ Visibilidade de CUSTO (não de conteúdo): `points.visible = ligado && dHome < L
   - **[medido na F2, 2026-08-11] A previsão "SMOKE bit-idêntica" valeu para 3 das 4 sentinelas e FALHOU na `ua150` — porque a D2 manda.** `sol`, `soldisco` e `hero8` saíram bit-idênticas; `ua150` DIFERE (64efef464d97 → e6990475232e), e `ua500`/`ua40` também. A premissa da D9 ("no antes elas mostram só o fundo, o near velho clipa tudo a <206 UA") estava incompleta: o near clipa o que está a menos de 206 UA DA CÂMERA, mas o disco artístico tem 2.269 UA de raio, então a metade de trás dele e as raias/loops ficavam ALÉM do near e desenhavam — a 150 UA o "antes" tem riscos finos alaranjados no quadro. Com `solWorldFade = 0` o grupo do Sol apaga e eles somem. Diff de pixel da `ua150`: 13.938 px de 3.083.400 (0,45%), delta máx 197, caixa 926×1484 em (0,229) — e a direção é UNILATERAL: 13.789 px perderam luz, 1 ganhou (soma de ganho 149 contra 558.407 de perda). Ou seja: a F2 só TIROU o que a D2 mandou tirar, e o near novo não acrescentou nada (a camada é a F3). Decisão do dono pendente; se aceita, as três baselines profundas nascem na F2 e a linha da F4 passa a ler "as 3 já diferem desde a F2, e a camada muda só elas de novo".
 - **F3 — A camada, desligada.** `planetas.ts` + fiação (init/tick/teardown/flags/?dbgplan/Ajustes) com `PLANETAS_DEFAULT_ON=false`. Valida: 18 vistas bit-idênticas por construção; réguas 1–2 com `?plan=1`; smoke L37 em navegador real.
 - **F4 — Envelope e chave.** Medição do envelope com `?plan=1` (glare do Sol-ponto, legibilidade do desfile, janelas deep) ANTES de ligar; ajustes só nos números de projeto declarados (janela deep), com medição registrada. Liga `PLANETAS_DEFAULT_ON=true`. Valida: leva completa — **15 antigas IGUAIS, ua500/ua150/ua40 DIFEREM do antes (e só elas)**; A/B das duas portas.
+  - **[medido na F4] A chave está ligada e o envelope está medido — ver a seção 4 abaixo.**
 - **F5 — Gate e fecho.** Régua 3 (pixel), sky com `&noplan=1` (0,7782), rodada 43, smoke da viagem inteira. Fecho nos registros: Estado da Onda 4 no PLANO (com a decisão de visão do dono e a emenda da espec), NORTE (decisão de visão nas Decisões fechadas; tabela de md5 com as 3 novas; pendências), este arquivo morre, merge local em main.
 
 ## 3. Custos e pendências declaradas
@@ -69,3 +70,166 @@ Visibilidade de CUSTO (não de conteúdo): `points.visible = ligado && dHome < L
 - **md5: nenhuma das 15 muda; nascem 3.** Sky e rodada inalterados.
 - **Testes: ~760 → ~850.**
 - **Pendências nomeadas:** fixtures Horizons de venus/jupiter/saturn/uranus (rede, aprovação do dono); fase polinomial por corpo e planetas resolvidos (Onda 6); Sol resolvido em escala real abaixo de ~5 UA e starOptics do Sol-ponto (Ondas 6/7a); fio de rede da efemerides.bin + tempo vivo (Onda 5/6); selo da Onda 5 ganha o eixo "ESCALA REAL" de graça no domínio profundo; o dado de `?nosun` NÃO governa o Sol-ponto (governa `noplan`) — declarado aqui, revisitado quando o selo nascer.
+
+## 4. F4 — envelope medido (2026-08-11)
+
+### 4.1 A decisão do coordenador que governa esta fase
+
+**O brilho do Sol NÃO se mente.** Nenhum teto artificial entra no Sol-ponto: encarar
+o Sol de 150 UA ofusca porque é FÍSICO, e a honestidade de escala do dono (§0) vale
+também quando o resultado incomoda. Duas pendências nascem NOMEADAS daqui, com estes
+números como semente: **auto-exposição na Onda 8** e **`starOptics` do Sol-ponto na
+Onda 7a**.
+
+**Quem abla é o INSTRUMENTO.** A régua 3 captura os próprios pares com `&nobloom=1`,
+porque com o bloom ligado 31,85% do quadro satura e um quadro saturado não tem
+centroide — a régua mediria a forma do pós-processamento, não a posição dos corpos.
+Precedente exato: o protocolo do céu pina `exp=4.4&knee=0.02&kneeamt=1` pelo mesmo
+motivo (medir astrofoto sem o stretch equivalente compara curva de tom, não céu).
+**As TRÊS vistas oficiais profundas ficam com o render DEFAULT, bloom ligado** — elas
+documentam o estado verdadeiro do produto. Régua e retrato medem coisas diferentes de
+propósito.
+
+### 4.2 Os md5 novos — e só três mudaram
+
+| vista | antes (pós-F2) | depois (chave ligada) |
+|---|---|---|
+| `ua500` | `b950ae47019e` | **`5f8136c12732`** |
+| `ua150` | `e6990475232e` | **`9b3e75b2af91`** |
+| `ua40` | `5dbf3afd6274` | **`a607e3cf57ab`** |
+
+As **quinze antigas saíram bit-idênticas** à tabela do NORTE, 18/18 por `via=sinal`,
+1,9 min com `JOBS=3`. O filme não muda um pixel — a promessa da onda, cumprida.
+
+**A/B das duas portas, com o MESMO binário** (`DOZERO=1 EXTRA='&noplan=1'`, chave em
+`true`): as 18 voltam aos md5 de antes da camada, **bit a bit** — as 15 antigas e as
+três profundas nos `b950ae47019e` / `e6990475232e` / `5dbf3afd6274`. O caminho de
+volta é EXATO, e é o que prova que a camada é a única coisa que a chave move.
+
+**Diff de pixel das três** (`ab-antes-*` × `ab-depois-*`, render default com bloom):
+
+| vista | px diferentes | delta máx | sinal |
+|---|---|---|---|
+| `ua500` | 2.959.144 (95,970%) | 252 | **100% só ganharam luz** (soma +1.247.431.406 / −0) |
+| `ua150` | 3.027.475 (98,186%) | 252 | 3.027.474 ganharam, **1 perdeu** (soma +1.544.987.667 / −1) |
+| `ua40` | 3.043.292 (98,699%) | 252 | **100% só ganharam luz** (soma +1.638.469.318 / −0) |
+
+O quadro inteiro muda porque o **bloom** espalha o Sol-ponto (m = −15,84 na `ua150`);
+a concentração de ENERGIA fica no bloco central, em (960,1200) nas duas mais próximas.
+O **único pixel que perdeu** está em (78, 1623), canto escuro, vermelho 5 → 4: é
+arredondamento da própria cadeia de bloom/tonemap, não da camada — a régua 3, que
+mede com `&nobloom=1`, dá **zero pixels descendo nas três vistas**.
+
+(`diff-pixel.mjs` ganhou nesta fase a coluna de SINAL e o bloco de maior LUZ. O NORTE
+já registrava que a mensagem enlatada engana e que o sinal tinha de ser medido à mão;
+agora sai do próprio instrumento, e num quadro em que 98% dos pixels mudaram o
+"pior bloco" satura enquanto a soma de delta ainda aponta o centro.)
+
+### 4.3 A régua 3 (pixel) — tabela por corpo
+
+`scripts/visual/planeta-pixel.mjs`, 1800×1713, `q=cinema`, `&nobloom=1`, par
+`?plan=1` × `?noplan=1` com o mesmo binário. **O resultado é IDÊNTICO linha a linha
+antes e depois de virar a chave** (medido: `?plan=1` com a chave `false` e a chave
+`true` sem porta nenhuma dão a mesma tabela) — a porta e a chave dizem a mesma coisa.
+
+Validação M5 nos dois estados, antes de qualquer veredito:
+- **auto-teste sintético** (em processo, sem GPU): alvo certo MEDIDO, o MESMO par com
+  o alvo deslocado 3 px **REPROVA**, par nulo em zero componentes;
+- **par nulo real** `noplan × noplan`, duas capturas independentes: **0 px, 0
+  componentes** nas três vistas. O piso de ruído é medido, não suposto.
+
+Nas três vistas: **só adição** (321 / 403 / 563 px acesos, TODOS subindo, zero
+descendo) e **zero componente sem dono longe de um corpo previsto**. O pixel central
+do Sol é (255, 254, 255) — nem ele clipa os três canais com `nobloom`.
+
+| vista | corpo | previsto px | Δcentroide x/y | Δcaixa x/y | status |
+|---|---|---|---|---|---|
+| ua500 | sun | (900,000, 856,500) | +0,000 / +0,003 | não julgada | **MEDIDO** |
+| ua500 | mercury · venus · earth · mars | — | — | — | SOB-GLARE (dentro da mancha do Sol) |
+| ua500 | jupiter | (914,827, 854,494) | −0,177 / −0,194 | −0,327 / +0,006 | **MEDIDO** |
+| ua500 | saturn | (894,635, 885,397) | — | — | SOB-LIMIAR (2 px de faísca) |
+| ua500 | uranus · neptune · pluto | — | — | — | SOB-LIMIAR |
+| ua150 | sun | (900,000, 856,500) | +0,000 / +0,003 | não julgada | **MEDIDO** |
+| ua150 | mercury · venus · earth | — | — | — | SOB-GLARE (dentro da mancha do Sol) |
+| ua150 | mars | (886,641, 857,035) | — | — | SOB-LIMIAR (5 px de faísca) |
+| ua150 | jupiter | (949,886, 849,750) | +0,039 / +0,085 | +0,114 / +0,250 | **MEDIDO** |
+| ua150 | saturn | (882,138, 952,712) | −0,164 / +0,157 | −0,138 / +0,288 | **MEDIDO** |
+| ua150 | uranus · neptune · pluto | — | — | — | SOB-LIMIAR |
+| ua40 | sun | (900,000, 856,500) | +0,000 / +0,002 | +0,000 / +0,000 | **MEDIDO** |
+| ua40 | mercury | (887,969, 845,265) | −0,033 / −0,018 | +0,031 / −0,265 | **MEDIDO** |
+| ua40 | venus | (874,714, 854,223) | +0,034 / −0,013 | +0,286 / −0,223 | **MEDIDO** |
+| ua40 | earth | (935,277, 857,580) | −0,021 / +0,055 | −0,277 / +0,420 | **MEDIDO** |
+| ua40 | mars | (850,436, 858,485) | −0,034 / +0,064 | +0,064 / +0,015 | **MEDIDO** |
+| ua40 | jupiter | (1094,201, 830,224) | +0,000 / −0,011 | −0,201 / −0,224 | **MEDIDO** |
+| ua40 | saturn | (833,321, 1215,650) | −0,044 / −0,003 | −0,321 / −0,150 | **MEDIDO** |
+| ua40 | uranus | (1495,020, 1461,488) | — | — | SOB-LIMIAR (2 px de faísca) |
+| ua40 | neptune | (674,052, 1975,782) | — | — | FORA-DO-QUADRO (py > 1713) |
+| ua40 | pluto | (44,892, 1225,778) | — | — | SOB-LIMIAR |
+
+**Onze corpos MEDIDOS, pior erro de centroide 0,194 px num eixo.** Na `ua40` os SETE
+de dentro saem medidos, do Sol a Saturno — é o desfile que a §0 prometia.
+
+**Dois achados que mudaram o JUÍZO, não o alvo** (e que emendam a letra da D10):
+1. **A cobrança dos 0,5 px é POR EIXO.** O centro da caixa vive numa grade de meio
+   pixel por construção (`(x0+x1+1)/2`); cobrar a HIPOTENUSA ≤0,5 seria cobrar 0,35 px
+   por eixo, mais fino que a grade — reprovaria a régua, não a camada. A Terra na
+   `ua40` sai com a caixa a 0,277/0,420 px, dentro dos 0,5 em cada eixo e **0,503 na
+   hipotenusa**. O centroide passa com folga nas duas leituras.
+2. **A caixa NÃO é julgada quando outro corpo tem luz na mesma componente.** Ela é
+   propriedade da componente inteira e o vizinho a estica. Na `ua150` a Terra cai a
+   9,3 px do Sol, DENTRO do sprite dele, e estica a caixa do Sol em 2 px de um lado
+   (Δcaixa 1,000) enquanto o centroide do Sol fica em **0,003 px**. O centroide não
+   sofre disso: é ponderado pelo delta, e o vizinho pesa ordens de grandeza menos.
+
+**E uma correção de fato sobre o `SOB-LIMIAR`.** O critério (pico de PSF < 1/255) é
+LINEAR, e a tela é sRGB: um pico linear de 1,5e-4 ainda arredonda para cima em pixels
+soltos. Marte na `ua150` é o caso — 5 px acesos em três faíscas a ≤2,6 px do previsto,
+sem mancha no pixel previsto. A régua DIZ isso na linha em vez de esconder atrás de um
+`SOB-LIMIAR` seco: é o corpo em cima do degrau da tela, e o dia em que a auto-exposição
+da Onda 8 chegar, é ele que acende primeiro.
+
+### 4.4 O gate do céu (D8) — não se mexeu, e a prova é bit a bit
+
+`sky-capture.mjs` ganhou `&noplan=1` na URL de protocolo, no MESMO commit que virou a
+chave. **`skyError` 0,7782**, os cinco termos idênticos até a quarta casa (espessura
+0,3026 · fenda 0,2240 · perfil 0,2047 · púrpura 0,0336 · cor 0,0132) e os quatro
+brutos também (bulgeAnti 5,497 · rift 0,0694 · colour 0,0509 · purp 0,0448).
+
+**As SEIS faces saem BIT-IDÊNTICAS** a uma referência capturada de propósito no estado
+pré-F4 (chave `false`, protocolo sem `noplan`): `gc 845781a1…` · `anti afe5d64e…` ·
+`l90 bfaf2cfe…` · `l270 b20034a6…` · `npole 8ededf1f…` · `spole 929e645d…`. Ou seja: o
+near piecewise da F2 não mexeu no fundo, e a porta desliga a camada exatamente.
+
+### 4.5 O envelope do mergulho — o que se vê, distância a distância
+
+Capturas em `capturas/envelope-*.png` (`?pos=0,0,D&look=0,0,0&q=cinema&shot=2`, com e
+sem `nobloom`), chave ligada. A janela `deep = {0,05; 0,02}` **não foi tocada** — o que
+segue é o laudo.
+
+- **0,045 pc = 9.282 UA** (`envelope-0p045pc-9282ua-{bloom,nobloom}.png`) — a fotosfera
+  artística está praticamente inteira (granulação, manchas, proeminências no limbo) e
+  o Sol-ponto **nasce como um ponto branco minúsculo no centro exato do disco**
+  (`deepPointGain` = 0,074). Com bloom ele já é um núcleo brilhante; sem bloom é um
+  ponto de ~20 px. É o primeiro quadro em que os dois existem juntos.
+- **0,03 pc = 6.188 UA** (`…0p03pc-6188ua-…`) — meio da janela. O disco escureceu para
+  um laranja-tijolo (`solWorldFade` 0,259) sem encolher, e o ponto (ganho 0,741)
+  **domina o centro**: com bloom, um clarão branco que lava o disco de dentro para
+  fora; sem bloom, o mesmo pontinho sobre uma fotosfera apagada. A dramaturgia é a
+  fotosfera cedendo, não sumindo de golpe.
+- **0,022 pc = 4.538 UA** (`…0p022pc-4538ua-…`, capturada de propósito FORA das quatro
+  pedidas) — o teste do "buraco escuro": com o disco a 1,3% de brilho, ele poderia
+  aparecer como um CÍRCULO PRETO tapando o campo estelar. **Não aparece.** O grupo é
+  aditivo, então apagar é desaparecer: as estrelas e a Via Láctea atravessam o lugar
+  onde o disco estava, e só o Sol-ponto fica. **Sem buraco e sem pop.**
+- **0,01 pc = 2.063 UA** (`…0p01pc-2063ua-…`) — abaixo da janela. Disco em zero exato,
+  o Sol é **uma estrela**: sem bloom, um disco branco limpo de ~20 px no campo
+  estelar, com a Via Láctea ao fundo; com bloom, o clarão toma a maior parte do quadro.
+  É o "encarar o Sol ofusca" da decisão 4.1, e é físico.
+- **0,002 pc = 413 UA** (`…0p002pc-413ua-…`) — o Sol-ponto um pouco maior e mais
+  branco; Júpiter é a única companhia com pixel próprio nessa faixa (a régua 3 o mede
+  a 500 UA, a 0,19 px). O resto do desfile só acende mais para dentro.
+
+**Veredito do handoff: monótono e sem descontinuidade.** Disco pleno acima de 0,05 →
+disco esmaecendo com um ponto crescendo no centro entre 0,05 e 0,02 → ponto sozinho
+abaixo de 0,02. A única coisa a decidir mais tarde não é a janela: é a **exposição**,
+porque o que ofusca é o Sol e não a rampa. Pendência já nomeada (Onda 8).

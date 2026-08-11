@@ -311,8 +311,17 @@ describe('a camada nasce com a estrutura que a D3 manda', () => {
     p.dispose();
   });
 
-  it('a chave nasce DESLIGADA (a F4 é que liga)', () => {
-    expect(PLANETAS_DEFAULT_ON).toBe(false);
+  it('a chave está LIGADA desde a F4, e o objeto ainda nasce apagado', () => {
+    // A F3 pinava `false` aqui. A F4 virou a chave depois do envelope
+    // medido (régua 3 no pixel + as quatro distâncias do mergulho), e as
+    // três vistas profundas do gate mudaram de md5 — as quinze antigas
+    // não. A porta de volta é `?noplan=1`, e é EXATA: com ela as três
+    // devolvem os md5 de antes da camada, bit a bit, com o mesmo binário.
+    expect(PLANETAS_DEFAULT_ON).toBe(true);
+    // e o `ligado` do OBJETO segue nascendo false: quem o escreve é o
+    // director, por quadro, cruzando a constante com as duas portas. Um
+    // default `true` aqui acenderia a camada entre o construtor e o
+    // primeiro `update`.
     expect(camada().ligado).toBe(false);
   });
 
