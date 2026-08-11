@@ -94,6 +94,19 @@ describe('julgarVistas', () => {
     expect(r.resumo).toBe('>>> BIT-IDÊNTICO (2 vistas julgadas)');
   });
 
+  it('vista única (o recorte de SMOKE/`ab-identidade depois <vista>`): singular', () => {
+    const r = julgarVistas({
+      vistas: ['sol'],
+      antes: { sol: H('a4fbf427778a'), interno: H('d98cbef70849') },
+      depois: { sol: H('a4fbf427778a') },
+    });
+    // quem NÃO está na lista desta invocação não vira AUSENTE — cobrar as 18
+    // num SMOKE de 4 reprovaria o fluxo de iterar
+    expect(r.linhas).toHaveLength(1);
+    expect(r.erro).toBe(false);
+    expect(r.resumo).toBe('>>> BIT-IDÊNTICO (1 vista julgada)');
+  });
+
   it('sem lista não há juízo — e nem por isso mente', () => {
     const r = julgarVistas({});
     expect(r.linhas).toHaveLength(0);

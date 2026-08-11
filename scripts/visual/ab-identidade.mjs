@@ -375,7 +375,9 @@ const viasDoFilho = (k) => resolve(tmpdir(), `ab-identidade-${LADO}-j${k}-vias.j
  * - os dois lados presentes → `INSTÁVEL` (um dos lados não repetiu o próprio
  *   md5), `IGUAL` (interseção não vazia) ou `DIFERE`, como sempre.
  *
- * `vistas` é a lista de NOMES na ordem oficial; `antes` e `depois` são os
+ * `vistas` é a lista de NOMES que ESTA invocação cobre (a leva completa, ou o
+ * recorte de `SMOKE`/vista única) — julgar sempre as 18 faria `SMOKE=1 depois`
+ * reprovar por AUSENTE as 14 que ninguém pediu. `antes` e `depois` são os
  * mapas `{vista: [hash, ...]}` dos dois lados.
  */
 export function julgarVistas({ vistas = [], antes = {}, depois = {} }) {
@@ -409,7 +411,8 @@ export function julgarVistas({ vistas = [], antes = {}, depois = {} }) {
       + '"depois": recapture o lado que falta antes de concluir qualquer coisa'
       + sufixo;
   } else if (bitIdentico) {
-    resumo = `>>> BIT-IDÊNTICO (${julgadas} vistas julgadas)${sufixo}`;
+    const n = julgadas === 1 ? '1 vista julgada' : `${julgadas} vistas julgadas`;
+    resumo = `>>> BIT-IDÊNTICO (${n})${sufixo}`;
   } else {
     resumo = '>>> NÃO é bit-idêntico — rodar o diff de pixel antes de concluir'
       + sufixo;
@@ -522,7 +525,10 @@ async function pai() {
   let vistaAusente = false;
   if (LADO === 'depois') {
     const antes = JSON.parse(readFileSync(resolve(tmpdir(), 'ab-identidade-antes.json'), 'utf8'));
-    const juizo = julgarVistas({ vistas: VISTAS.map(([nome]) => nome), antes, depois: md5 });
+    // `lista` e não `VISTAS`: o veredito cobra o que ESTA invocação pediu.
+    // Com a leva completa são as 18; com SMOKE/vista única é o recorte, e
+    // cobrar as outras como AUSENTE reprovaria o fluxo de iterar.
+    const juizo = julgarVistas({ vistas: lista.map(([nome]) => nome), antes, depois: md5 });
     for (const l of juizo.linhas) console.log(l.texto);
     console.log('\n' + juizo.resumo);
     vistaAusente = juizo.erro;
