@@ -445,6 +445,145 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 
 **Onda 3 — Motor estelar F1–F2.** `stellarBody.ts` (Sol = instância 1); `lodStellar.ts` com janelas em pc por instância; **as 4 cicatrizes do crossfade** e os dois atributos por estrela (`aFade` + `aFocus`, 1,3 MB cada); **critério de LOD por ângulo sólido reescrito**, com limiares **recalculados** contra a PSF da casa e o teto de `gl_PointSize` no cálculo; `hygMeshFadeRamp.ts` transcrito com o comentário do clamp de `dt`. *Gate:* Sol pixel-igual em 4 condições e heroes em 3 distâncias; **nenhuma faixa de distância em que nada renderiza**; trocar de qualidade não faz o sprite reaparecer sob o disco; **revisão de olhos frescos antes do merge**.
 
+> **Estado da Onda 3 (2026-08-11): FEITA** — branch `onda-3`, oito commits
+> (`87d9b9b` → `8ca817c`), gate integral cumprido, revisão de olhos frescos
+> assinada por três revisores independentes e merge local em `main`. Esta é a
+> primeira onda da fusão que MUDA a tela de propósito, e a mudança é auditada.
+> **Entregas:** `lodStellar.ts` (1.101 linhas, PURO — zero `three`, zero DOM,
+> importa só `WORLD`) com as cinco janelas do Sol num lugar só (disco
+> {0,16→0,34}, `uGain` {0,14→0,30}, `uCore` {0,30→0,42}, mais `nearFade`
+> {0,5;1,4}×`uSize` e `farFade` {320;900} pc das 16 heroes), `stepRampToward`
+> transcrito verbatim com o comentário do clamp de `dt`, o gate por ângulo
+> sólido com os limiares DERIVADOS da casa, os espelhos em JS da PSF do
+> catálogo e do billboard do hero, a curva de dominância e o casamento
+> hero↔índice; `stellarBody.ts` (ex-`novoSol.ts` por `git mv`, história
+> preservada) construído por `StellarParams` — `nome`, `radiusPc`,
+> `rotPeriodDays` (via `rotSpeedFromPeriod`, que devolve o 0,042 de sempre sem
+> um ULP de diferença), `tiltRad`, `activityLevel`, `cyclePhaseMin/Max`,
+> `dramaT0/T1`, `seed`, `knobPrefix`, `knobs`, mais `teffK` e `convective`
+> RESERVADOS e sem consumidor (teste prova); os cinco NÃO-promovíveis ficam
+> declarados em comentário com a razão de cada um (o `SUN_RADIUS = 2.2`
+> duplicado em `sol/sun.js:13`, que obrigaria a editar os 14 vendorizados; a
+> paleta H-alfa, ~17 `vec3` inline, override declarado da instância 1 pela
+> decisão D4; o `ctx.camera` que `sol/cme.js` captura na CRIAÇÃO; o
+> `DONOR_FIT`/`HALF_FOV`, que é lente e não estrela; os `TIERS`, que são
+> custo). `aFade` + `aFocus` entram no campo de catálogo como
+> `Float32Array(328.749)` cada — **1,3 MB de RAM/GPU por canal e ZERO byte de
+> payload novo**, porque são estado de tela e não campo do `sc1`. E a
+> dominância entra como POLÍTICA VIVA, não como peça guardada.
+> **Gate, item a item:** (a) **Sol pixel-igual nas 4 condições** — as vistas
+> `soldisco` 0,10 pc / `solrampa` 0,25 / `solestouro` 0,32 / `solestrela` 0,50
+> nasceram nesta onda (o `?t=` amarra a distância ao trajeto da hélice; a
+> prova precisa de `?pos=`) e saíram bit-idênticas nas fases 2 e 3, DUAS vezes;
+> (b) **heroes em 3 distâncias** — `hero200`/`hero600`/`hero950`, os três
+> regimes do `farFade`, bit-idênticas, mais uma quarta vista (`hero8`) criada
+> porque nas três o billboard é sub-pixel e a dupla-luz não aparece em
+> nenhuma; (c) **nenhuma faixa de distância em que nada renderiza** — a
+> cicatriz C1a virou teste de propriedade: **4.991 amostras** de 0,01 a 5 pc
+> com a soma das contribuições sempre > 0 (as janelas se sobrepõem na ordem
+> 0,14 < 0,16 < 0,30 < 0,34 < 0,42); (d) **trocar de qualidade não ressuscita
+> o sprite** — a decisão D8: nenhuma camada estelar assina `onQuality`, o
+> `StarField` nem recebe o `Engine` para poder assinar, e o teste prova
+> estruturalmente (sem `setQuality`, sem `QualityLevel`) e por
+> sobrevivência de valor no ciclo de vida do quadro; (e) **limiares
+> recalculados** — ENTER = `WORLD.sunRadius / DISC_FADE0` = 0,011/0,16 =
+> 6,875e-2 rad, ~69× o do doador, EXIT = ENTER/2, que em distância dá 0,32 pc
+> e reproduz com **1,5%** o corte `world > 0.02` que a casa já achava à mão em
+> 0,32487 pc — conferência independente do cushion 2×; o teto de
+> `gl_PointSize` entra como PARÂMETRO de projeto (256 px) e a conta mostra que
+> quem obriga o handoff é a PSF, não o driver: no handoff o corpo pede 321,6 px
+> de diâmetro e o sprite de ponto entrega 9,4 px, saturando em ~21,9 px até na
+> magnitude absurda de −60; (f) **15 vistas**, das quais **10 bit-idênticas e
+> 5 mudadas DE PROPÓSITO**, cada uma dentro do envelope que a fase 3 mediu
+> ANTES de ligar a chave; (g) **o céu não se mexeu um dígito** — `skyError`
+> **0,7782** com as SEIS faces bit-idênticas e os cinco termos iguais até a
+> quarta casa, por construção (o protocolo roda com `nohero=1`, e aí a política
+> escreve o valor neutro); (h) **753 testes verdes** (586 ao fim da Onda 2 →
+> 668 → 686 → 737 → 753), `tsc` e `eslint` limpos; (i) a revisão de olhos
+> frescos, abaixo.
+> **A MELHORIA AUDITADA — o fim da dupla-luz hero↔catálogo.** As 16 mais
+> brilhantes desenhavam luz DUAS vezes no mesmo lugar: o ponto do campo de
+> catálogo e o billboard do hero por cima, somados em blending aditivo, sem
+> supressão nenhuma entre as camadas. A primeira forma da decisão D2 (o ponto
+> cede a PRESENÇA do hero) foi derrubada por medição na fase 2: a 200 pc o
+> billboard tem 0,91 px e o ponto 5,93 px — ceder ali trocaria uma estrela
+> legível por um sub-pixel, e as 16 ESCURECERIAM em quase toda a faixa útil.
+> **Presença não é dominância.** A forma certa cede na razão dos TAMANHOS na
+> tela (a única régua que as duas camadas compartilham; em brilho elas não têm
+> normalização comum): `fade = smoothstep(1; 2,5)(r)`, com `r` = diâmetro do
+> billboard sobre diâmetro do ponto. A borda superior **2,5 é DERIVADA**, não
+> escolhida: com φ′ = 1 − g′ e max g′ = 1,5/(hi−1), é a MENOR borda em que a
+> luz combinada nunca regride na aproximação (prova C¹ mais testes de monotonia
+> e de invariante). Betelgeuse passa a dominar a 12,2 pc; no pior dos 16
+> (Sirius) a dominância morre a 112,7 pc, 2,8× antes dos 320 pc do `farFade` —
+> a rede de segurança D2a é redundante POR CONSTRUÇÃO, e isso está testado nas
+> 16. O A/B com `?dom=1` (mesmo binário dos dois lados) derrubou a previsão da
+> fase 2 de que "só a `hero8` muda": perto de casa a dominância é a REGRA — a
+> 0,06 pc oito das 16 dominam o próprio ponto — e mudam CINCO vistas, as quatro
+> do Sol (por α Centauri, a 1,4 pc, com o ponto dentro do quadro: `soldisco`
+> 158.917 px, 5,154%, **delta máximo de 2 níveis**) e a `hero8` (1.500.453 px,
+> 48,662%, delta máximo de **19**, dos quais 1.051.273 em ≤3). O construtor
+> entregou a chave DESLIGADA por disciplina de gate, e o coordenador decidiu
+> com as imagens abertas (**decisão D11**, 2026-08-11): o colateral nas vistas
+> do Sol é imperceptível lado a lado e o disco solar sai idêntico; a `hero8` é
+> melhoria real — o núcleo branco de dupla-luz vira supergigante quente. A
+> chave liga por padrão, as 15 capturas com ela ligada viraram as **baselines
+> oficiais novas** (md5 no `NORTE.md`), e `?nodom=1` é o caminho de volta
+> EXATO: a `hero8` capturada com ele devolve `5ea6d9a15e79`, o md5 antigo bit a
+> bit. `?dom=1`/`?nodom=1` ficam como A/B permanente do harness.
+> **Três correções de fato.** (1) A linha :96 desta matriz chama {0,14→0,30} e
+> {0,30→0,42} de janelas "dos heroes" — no código elas são do **SOL visto de
+> longe** (a classe `SunStar`); as das 16 heroes são `nearFade` (em múltiplos
+> do próprio tamanho) e `farFade` {320;900} pc. Achado na fase 1, confirmado
+> por dois revisores independentes. (2) `hygMeshFadeRamp.ts` **não existe como
+> arquivo** na casa: o entregável é o CONTEÚDO (o integrador com o comentário
+> do clamp), transcrito verbatim para dentro de `lodStellar.ts` por decisão D9
+> do desenho — a revisão de travessia conferiu os corpos por diferença
+> mecânica e eles são idênticos byte a byte. (3) O doador **não tinha crossfade
+> em pc para o Sol**: lá o handoff sprite↔malha era corte binário em 100 UA. As
+> janelas suaves e o gate por ângulo com histerese são conquista da casa; do
+> doador atravessaram a FORMA (cushion 2×, desigualdades assimétricas
+> estritas, NaN preserva estado) e as 4 cicatrizes.
+> **Revisão de olhos frescos (três revisores independentes, todos
+> "aprova-com-achados", nenhum bloqueante).** Travessia: transcrição conferida
+> **byte a byte**, os 11 casos da rampa portados sem UMA adaptação, os 25 do
+> gate com todos os contratos de forma intactos, e os limiares do doador
+> provados AUSENTES por asserção negativa (1e-3/5e-4 só aparecem em comentário
+> explicativo e num teste que exige que não sejam os da casa). Caçada
+> adversarial: reproduziu o gate por conta própria, mediu o custo por quadro
+> dos 16 (**1,54 µs**, 0,009% de um quadro) e achou o defeito maior da onda —
+> as faixas de `addUpdateRange` cresciam SEM TETO com o campo de catálogo
+> invisível (`?nocat`), porque só o `updateBuffer` do three as consome e o
+> renderer pula objeto invisível. Auditoria de gate: recapturou o céu do zero e
+> reproduziu `skyError` 0,7782 com as 6 faces bit-idênticas, e o `hero8`
+> `94b1136950ce` duas vezes. **Onze achados; oito consertados nesta fase, cada
+> um com teste de regressão** (`8ca817c`): teto de faixas, latch de upload
+> cheio no `reset()`, injetividade do casamento hero↔catálogo, extração de
+> `fadesDoQuadro` como função pura com teste de COMPORTAMENTO (a fiação era o
+> único trecho da onda testado só por texto-fonte), escopo da prova da borda
+> 2,5 dito por extenso, 14 endereços `arquivo:linha` envelhecidos ancorados em
+> símbolo, a divergência do clamp declarada e a dormência do gate declarada. A
+> sentinela visual dos consertos: `sol` e `hero8` recapturadas devolvem
+> `a4fbf427778a` e `94b1136950ce` — nenhum conserto moveu um pixel.
+> **Pendências nomeadas.** (1) **O gate de histerese embarca DORMENTE**: o
+> corte do disco segue seco em `world > 0.02`, sem cushion, e fiá-lo mudaria
+> pixel na fronteira — a fiação é da Onda 7, quando houver corpo por estrela e
+> o handoff precisar valer para qualquer instância; o contrato está inteiro e
+> testado. (2) **Abaixo de 1,4×`uSize` o invariante de continuidade não vale**:
+> lá o `nearFade` apaga o clarão e não há corpo para assumir, então a luz
+> combinada cai (Sirius: 2.297 px em 0,28 pc → 18,6 px em 0,11 pc). É
+> comportamento herdado, documentado por teste; o handoff completo é a Onda 7.
+> (3) **`vSat` não recebe `uFade` nem a extinção** — os espinhos de difração
+> saem com força cheia na saída da vizinhança solar. É dívida herdada de `main`
+> (não regressão desta onda), muda pixel, e por isso é decisão de dono com A/B
+> próprio. (4) **O casamento hero↔índice é posicional** (o `sc1` não carrega
+> identidade), com desempate por luminosidade e 16/16 conferidos contra o
+> binário real; a seção de identidade por catálogo o tornaria EXATO — depende
+> da **Decisão 2**.
+> **O placar da matriz NÃO muda: seguem 85 linhas, nenhuma nova, nenhum
+> veredito movido** — as três correções acima são de FATO sobre linhas
+> existentes, não de destino.
+
 **Onda 4 — Domínio de escala aninhado + céu com planetas.** Frame local em UA no crossfade `DISC_FADE`; planetas como sprites, época fixa, fades acoplados. *Gate:* posição projetada vs. efeméride; `rodada.mjs` inalterada de longe. *(Onda de trabalho novo na casa; não atravessa código do doador.)*
 
 **Onda 5 — Modo Atlas navegável.** **Herdado da Onda 1 por decisão do dono (2026-08-10): badge de honestidade + 3 tiers de label** — especificar AQUI, quando a UI do Atlas existir e o selo tiver eixos de verdade para reportar (escala, luz), no vocabulário da legenda; `Phase 'atlas'`, `AtlasRig`, portal do pause-look, saída "Partir", **busca renascida** (~60 linhas sobre `meta.named`), tempo, deep-link, contrato de a11y (foco preso, devolução ao gatilho, `Esc`, `aria-live`, reduced-motion) escrito na árvore do HUD da casa; **`Spotlight.tsx` + convite de 3 passos** no vocabulário da legenda (arrastar para olhar · WASD/QE para voar · clicar numa estrela para visitar), disparado só na primeira entrada, lendo `conviteVisto`; **captura de ponteiro opt-in** no FreeRoam; **UI Scale (`?ui=`)** depois da auditoria dos 37 `px` que carregam texto; **enquadramento privilegiado como função pura no `AtlasRig`** (`d = r/sin(θ/2)`, `max(distVertical, distHorizontal)`, retângulo utilizável do HUD) reaproveitando os quatro ângulos medidos (30°, 70°, 0,78, 1,2); **gradação por contexto**: os 5 eixos que variam (bloom, saturação, contraste, brilho, guia), limiares em UA (3,5/50) herdados e os de câmera (200/2000) re-derivados na escala da viagem; **visita instantânea sob `prefers-reduced-motion` no `cameraRig`**.

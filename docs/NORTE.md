@@ -3048,6 +3048,71 @@ main, capturadas frescas dos dois lados). Registro completo no PLANO-ATLAS
   grandes demais para o padrão verify-*.mjs moram em src/**/*.test.ts; o
   verify segue dono da integridade dos artefatos de public/data/.
 
+### Onda 3 — FEITA (2026-08-11)
+
+O motor estelar F1–F2: `stellarBody.ts` (o Sol vira instância nº 1 de uma
+classe parametrizada), `lodStellar.ts` (o LOD estelar puro num lugar só) e os
+dois canais por estrela no campo de catálogo. Registro completo no
+PLANO-ATLAS ("Estado da Onda 3"), inclusive o gate e a melhoria auditada; o
+que ainda **decide** algo fica aqui:
+
+- **A dominância é lei viva, com interruptor.** As 16 mais brilhantes já não
+  desenham luz duas vezes: o ponto do catálogo cede na medida em que o
+  billboard do hero **DOMINA a tela**, `fade = smoothstep(1; 2,5)(r)` com
+  `r` = diâmetro do hero / diâmetro do ponto, em px. A régua é TAMANHO e não
+  brilho porque as duas camadas não têm normalização radiométrica comum (o
+  ponto é fotométrico, o clarão é artefato de olho com ganho artístico) —
+  calibrar uma na outra é trabalho da Onda 7. `r ≤ 1` devolve 0 EXATO: onde o
+  hero é sub-dominante o ponto fica intocado, e é isso que mantém vista
+  bit-idêntica. **Presença ≠ dominância** — a versão por presença apagaria o
+  ponto a 200 pc, onde o billboard tem 0,91 px contra 5,93 do ponto; a medição
+  derrubou o desenho, e a regra que fica é *medir antes de escrever a política*.
+  A chave é `DOMINANCE_DEFAULT_ON` (`lodStellar.ts`), hoje `true`;
+  **`?nodom=1` desliga ao vivo e `?dom=1` liga mesmo com a constante em
+  `false`** — as duas portas existem para que todo A/B futuro seja feito com o
+  MESMO binário, e são o "antes/depois" de qualquer nova discussão sobre esta
+  luz. Quem mexer na PSF do campo (`uSigmaPx`/`uExpoM0`) ou no `uSize` dos
+  heroes mexe nesta política junto: o espelho em JS existe para prever o pixel
+  da GPU, e se a PSF mudar lá o teste daqui quebra — é o alarme, não o
+  incômodo.
+- **`StellarParams` é o contrato da estrela procedural — e a lista do que NÃO
+  entrou nele vale tanto quanto.** Entraram `nome`, `radiusPc`,
+  `rotPeriodDays` (via `rotSpeedFromPeriod`, âncora na RELAÇÃO e não no
+  número), `tiltRad`, `activityLevel` (multiplica só `spots` e `cycle`),
+  `cyclePhaseMin/Max`, `dramaT0/T1`, `seed`, `knobPrefix`, `knobs`; `teffK` e
+  `convective` nascem **reservados e sem consumidor** (a lei de cor por classe
+  é da Onda 7, e o teste prova que ninguém os lê). **Ficaram de fora, com
+  razão declarada:** (1) `SUN_RADIUS = 2.2`, duplicado como literal em
+  `sol/sun.js:13` e lido por 7 dos 14 vendorizados — promovê-lo exigiria
+  editar os `sol/*.js`, que a regra M3 proíbe; os dois lados têm de continuar
+  concordando à mão; (2) a **paleta H-alfa** (~17 `vec3` inline em 8 módulos),
+  que é override declarado da instância Sol; (3) `sol/cme.js` captura
+  `ctx.camera` **na criação**, não por quadro — uma segunda instância
+  construída antes da câmera real pegaria a errada sem erro nenhum; (4)
+  `DONOR_FIT`/`HALF_FOV` e a janela do limbo, que são calibração de LENTE do
+  doador; (5) `TIERS`, que é custo. **Consequência operacional: não se
+  instancia um segundo `StellarBody` antes da Onda 7** — (1) e (3) são as duas
+  minas, e estão anotadas no próprio arquivo.
+- **Regra nova: escrita em atributo instanciado tem três obrigações.** Vale
+  para qualquer `BufferAttribute` que a casa reescreva por quadro (hoje
+  `aFade`/`aFocus` em `stars.ts`; amanhã o foco por estrela e o que vier).
+  (i) **Idempotência com `Math.fround` ANTES de decidir** — o buffer é float32
+  e quem calcula está em float64; comparar os dois direto acha "mudou" em todo
+  quadro e a GPU leva upload com a câmera parada. (ii) **Teto nas faixas**: o
+  `addUpdateRange` só é consumido dentro do `updateBuffer` do three, e o
+  renderer **pula objeto invisível** — com o campo escondido (`?nocat`) as
+  faixas cresciam sem limite; passado `UPDATE_RANGE_CAP` cai-se para upload
+  cheio, que é correto e barato. A defesa é do ESCRITOR e não de quem esconde
+  o objeto. (iii) **Latch de upload cheio**: `updateRanges` vazio + `needsUpdate`
+  é como se pede o buffer inteiro; quem faz isso (`reset()`, ou o teto)
+  precisa que as escritas seguintes NÃO recoloquem faixa antes do render,
+  senão a GPU sobe um slot e o resto fica com o valor velho. O latch baixa no
+  `onUpload` — o único sinal honesto de "subiu".
+- **Divergência declarada do doador:** `writeFade` **não clampa** [0,1] (o
+  doador clampava). O clamp mora no shader; clampar também no JS esconderia um
+  chamador errado em vez de o denunciar, e `fadeAt()` deixaria de dizer a
+  verdade sobre o que a tela usou.
+
 ### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
 
 **Correção de fato na triagem:** o gate da Onda 0 falava em "dez lições"; o
