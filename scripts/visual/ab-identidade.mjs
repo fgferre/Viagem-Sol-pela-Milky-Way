@@ -56,6 +56,45 @@ const VISTAS = [
   // ambiente. 700x1800 dá aspecto 0,40, abaixo do limiar onde a margem
   // derivada só da altura começa a apagar ponto.
   ['retrato', '?t=100&shot=2', '700x1800'],
+  // ------------------------------------------------------------------
+  // ONDA 3 — as vistas que faltavam para o motor estelar (PLANO-ATLAS.md:446
+  // pede "Sol pixel-igual em 4 condições e heroes em 3 distâncias"; nenhuma
+  // existia). `?t=` não serve: o instante amarra a distância ao trajeto da
+  // hélice, e o que se quer medir é a DISTÂNCIA. `?pos=&look=` (App.tsx:137-145)
+  // crava a câmera no ponto exato — aqui, olhando a origem (o Sol) ou a estrela.
+  //
+  // As 4 do Sol caem uma em cada regime do crossfade disco↔clarão
+  // (lodStellar.ts): 0,10 pc = disco pleno (uWorldFade 1, uGain 0); 0,25 =
+  // meio da rampa do disco (uWorldFade 0,5, uGain 0,77); 0,32 = o estouro,
+  // logo antes do corte duro de custo `world > 0.02` que cai em 0,3249 pc
+  // (uWorldFade 0,034, uGain 1, uCore 0,07 — é a vista que denuncia se
+  // alguém mover uma casa decimal); 0,50 = estrela pura (grupo do disco
+  // apagado, uGain e uCore em 1).
+  ['soldisco', '?pos=0,0,0.1&look=0,0,0&shot=2'],
+  ['solrampa', '?pos=0,0,0.25&look=0,0,0&shot=2'],
+  ['solestouro', '?pos=0,0,0.32&look=0,0,0&shot=2'],
+  ['solestrela', '?pos=0,0,0.5&look=0,0,0&shot=2'],
+  // As de hero são Betelgeuse (152,67 pc de casa, a supergigante do Ato II),
+  // a câmera na PRÓPRIA reta Sol→estrela. As três distâncias são os três
+  // regimes do `farFade` do billboard (heroStars.ts:58, 320→900 pc): 200 pc
+  // = presença 1; 600 = meio da rampa (0,526); 950 = presença 0, o hero não
+  // desenha mais e só o ponto do catálogo sobra. As três ficam com dHome
+  // abaixo de 1200, senão o corte de director.ts:885 desligaria o grupo
+  // inteiro e as três vistas mediriam a mesma coisa (nada).
+  //
+  // E `hero8`, a QUARTA: medida antes de escolher as outras três, o
+  // billboard de Betelgeuse tem RAIO de 0,45 px a 200 pc, 0,15 a 600 e 0,10
+  // a 950 — o tamanho na tela é `uSize/(d·tan29°)` e não depende da lente
+  // (o `uZoom` cancela o fov de propósito, heroStars.ts:14-16). Ou seja: as
+  // três vistas do farFade são regimes do CONTRATO, mas nelas o hero é
+  // sub-pixel, e a dupla-luz hero↔catálogo que a fase 3 vai desfazer não
+  // aparece em nenhuma. A 8 pc o mesmo billboard tem 11,3 px de raio: é a
+  // única em que se PODE ver o hero e o ponto do catálogo somando luz na
+  // mesma posição — a vista que julga a decisão D2.
+  ['hero200', '?pos=7.3677,349.6513,45.4654&look=3.1895,151.3642,19.682&shot=2'],
+  ['hero600', '?pos=15.7242,746.2254,97.0322&look=3.1895,151.3642,19.682&shot=2'],
+  ['hero950', '?pos=23.0362,1093.2277,142.1532&look=3.1895,151.3642,19.682&shot=2'],
+  ['hero8', '?pos=3.0224,143.4327,18.6507&look=3.1895,151.3642,19.682&shot=2'],
 ];
 const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
 // TIER FIXO, e ele não é preferência: sem `?q=` o `autoQuality` do engine
