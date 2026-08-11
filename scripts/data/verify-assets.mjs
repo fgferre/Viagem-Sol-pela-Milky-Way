@@ -175,10 +175,73 @@ if (starMetadata.quantization.maxLogLumError > 0.001) {
   }
 }
 
+// Onda 2: atlas/corpos — conteúdo editorial migrado verbatim do doador.
+// O contrato numérico (45 corpos, contagens por tipo) vive também em
+// gera-corpos.mjs; aqui ele é cobrado no ARTEFATO publicado, para pegar
+// edição manual do JSON ou gerador que mudou sem regenerar.
+let corposDoc;
+try {
+  corposDoc = JSON.parse(
+    await readFile(path.join(publicDirectory, 'data', 'atlas', 'corpos.json'), 'utf8')
+  );
+} catch (error) {
+  throw new Error(
+    `atlas/corpos.json ausente ou inválido (${error.message}) — ` +
+      'rode node scripts/data/atlas/gera-corpos.mjs.'
+  );
+}
+const corpos = corposDoc.corpos;
+if (!Array.isArray(corpos) || corpos.length !== 45) {
+  throw new Error(`atlas/corpos: esperados 45 corpos, obtidos ${corpos?.length ?? 0}.`);
+}
+{
+  const contagensEsperadas = { star: 1, planet: 8, moon: 23, dwarf: 5, tno: 5, asteroid: 3 };
+  const contagens = {};
+  for (const corpo of corpos) {
+    contagens[corpo.type] = (contagens[corpo.type] ?? 0) + 1;
+  }
+  for (const tipo of new Set([...Object.keys(contagensEsperadas), ...Object.keys(contagens)])) {
+    if (contagens[tipo] !== contagensEsperadas[tipo]) {
+      throw new Error(
+        `atlas/corpos: tipo "${tipo}" com ${contagens[tipo] ?? 0} corpos; ` +
+          `esperados ${contagensEsperadas[tipo] ?? 0}.`
+      );
+    }
+  }
+  if (new Set(corpos.map((c) => c.id)).size !== corpos.length) {
+    throw new Error('atlas/corpos: há ids duplicados.');
+  }
+  for (const corpo of corpos) {
+    if (typeof corpo.name?.en !== 'string' || typeof corpo.name?.pt !== 'string') {
+      throw new Error(`atlas/corpos: corpo "${corpo.id}" sem name.en/name.pt.`);
+    }
+  }
+  // a pendência de Miranda é nomeada (gate da Onda 2) e tem de continuar
+  // VERDADEIRA no dado: se um dia a redação for feita, este guarda inverte
+  // de função e manda remover a pendência — nunca as duas coisas ao mesmo
+  // tempo, nunca nenhuma.
+  if (!corposDoc._pendencias?.some((p) => typeof p === 'string' && p.includes('miranda'))) {
+    throw new Error('atlas/corpos: _pendencias não nomeia "miranda".');
+  }
+  const miranda = corpos.find((c) => c.id === 'miranda');
+  if (!miranda) {
+    throw new Error('atlas/corpos: miranda ausente do catálogo.');
+  }
+  if (
+    miranda.editorial?.en?.records !== undefined ||
+    miranda.editorial?.en?.explorationMilestone !== undefined
+  ) {
+    throw new Error(
+      'atlas/corpos: miranda ganhou records/explorationMilestone — a pendência ' +
+        'deixou de ser verdadeira; remova-a de _pendencias em gera-corpos.mjs.'
+    );
+  }
+}
+
 console.log(
   `Dados verificados: ${Object.keys(manifest.assets).length} ativos galácticos, ` +
     `${starMetadata.count} estrelas de catálogo (${starMetadata.named.length} nomeadas, ` +
     `horizonte ${starMetadata.horizonPc} pc); fit BeSSeL ` +
     `${spiralMetrics.medianResidualPc.toFixed(1)} pc (p90 ` +
-    `${spiralMetrics.p90ResidualPc.toFixed(1)} pc).`
+    `${spiralMetrics.p90ResidualPc.toFixed(1)} pc); atlas/corpos ${corpos.length} corpos.`
 );

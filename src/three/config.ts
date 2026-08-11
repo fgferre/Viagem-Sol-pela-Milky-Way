@@ -45,6 +45,70 @@ export const WORLD = {
   dustCount: 2200,
 };
 
+/**
+ * Calibração de artista herdada do atlas (`artistCalibration.ts`, migra na
+ * Onda 2 — dado e conteúdo editorial, sem código de runtime). O consumidor
+ * chega na Onda 6 (corpos resolvidos); até lá nada em runtime lê este bloco.
+ *
+ * DOUTRINA ANTI-LEVA. Estes valores viviam num painel de debug Leva no
+ * doador e foram movidos para constante exatamente para aposentar essa
+ * dependência sem perder os números: são calibração — afinados uma vez pelo
+ * autor e deixados quietos, não controles de cena. Mudar um deles é editar
+ * aqui, commitar e publicar. Se um dia o ajuste interativo voltar a ser
+ * necessário, o caminho é uma rota dev-only (parâmetro de URL ou um painel
+ * de calibração dedicado) que LÊ estes valores como iniciais — nunca
+ * reintroduzir o Leva.
+ *
+ * LÁPIDE: `EARTH_ROTATION_OFFSET_DEG`. O sétimo valor deste bloco alinhava
+ * a textura da Terra à mão. Morreu substituído pelo meridiano-zero IAU
+ * MEDIDO da Terra (W₀ = 190.147°): o alinhamento passou a ser derivado, não
+ * calibrado. NENHUMA constante deste bloco pode readquirir esse papel —
+ * ângulo calibrado à mão sobre um corpo com modelo de rotação publicado é
+ * regressão de fidelidade, não calibração. (É a lápide que o PLANO-ATLAS
+ * manda preservar.)
+ */
+export const CALIBRACAO_ATLAS = {
+  /** Multiplicador da emissão das luzes de cidade no lado noturno da Terra. */
+  EARTH_NIGHT_LIGHT_INTENSITY: 0.2,
+
+  /** Opacidade da sombra analítica dos anéis projetada na superfície de Saturno. */
+  RING_SHADOW_INTENSITY: 0.34,
+
+  /** Multiplicador sobre a cor-base do material do sol (faixa HDR). */
+  SUN_EMISSIVE_POWER: 2.7,
+
+  /** Intensidade do brilho emissivo do material dos anéis. */
+  RING_EMISSIVE_POWER: 0.2,
+
+  /** Roughness padrão para superfícies planetárias sem mapa de roughness dedicado. */
+  DEFAULT_PLANET_ROUGHNESS: 0.7,
+
+  /**
+   * Metalness padrão das superfícies planetárias.
+   *
+   * **0.0, e não é escolha artística.** Rocha, gelo e regolito são
+   * dielétricos: a refletância especular em incidência normal é F0 ≈ 0.04 —
+   * exatamente o que o BRDF do fluxo metalness assume em metalness 0. Acima
+   * de 0 o mesmo fluxo reinterpreta a textura de albedo como refletância
+   * complexa de condutor e REMOVE essa fração de energia do lobo difuso: no
+   * 0.3 anterior do doador, toda superfície planetária do catálogo perdia
+   * ~30% da resposta difusa direta para um lobo especular que nenhum
+   * silicato ou gelo d'água tem.
+   *
+   * Corrigir para 0.0 move o pico do difuso direto linear ~1,43× no global
+   * (1 / (1 − 0,3)). Foi por isso que o doador sequenciou essa correção
+   * antes de toda outra onda de look: a exposição tem de assentar ANTES de
+   * as ondas seguintes serem julgadas contra ela, para que uma mudança de
+   * aparência continue atribuível à onda que a causou — lição que vale
+   * igual quando o consumidor chegar na Onda 6.
+   *
+   * Corpo com fração de superfície genuinamente metálica (asteroide tipo M)
+   * pediria override por registro, nunca mudança deste default global;
+   * nenhum reivindica isso hoje.
+   */
+  DEFAULT_PLANET_METALNESS: 0.0,
+} as const;
+
 /** `t`: 0 = nome próprio (IAU), 1 = designação de Bayer. O rótulo do HUD
  *  escolhe por PROXIMIDADE, então sem o tier uma "κ Dra" perto empurraria
  *  Deneb para fora das sete vagas.
