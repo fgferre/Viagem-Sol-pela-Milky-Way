@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GLSL_NOISE, bvToColor } from '../shaders/common';
+import { sunStarCore, sunStarGain } from './lodStellar';
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -178,7 +179,7 @@ export class HeroStars {
 // como as outras — mesma PSF dos heróis, mas com magnitude VIVA
 // (M=4,83 + 5·log10(d/10)): a 0,5 pc vale −1,7, o brilho de Sirius
 // vista da Terra. O nearFade do shader faz o crossfade sozinho: de
-// perto o clarão some (o disco estruturado do NovoSol é a vista), no
+// perto o clarão some (o disco estruturado do StellarBody é a vista), no
 // recuo da hélice ele acende e engole o disco — como a física manda.
 // ============================================================
 export class SunStar {
@@ -218,11 +219,12 @@ export class SunStar {
     // vista da Terra; teto de 40° (a lei de mundo dos heróis explodia
     // para ~d^−2,5 de ângulo vista de dentro do sub-parsec)
     const ang = Math.min(40, 1.75 * Math.pow(10, -0.3 * m));
-    // portão de proximidade CASADO com o crossfade do disco
-    // (novoSol.ts, DISC_FADE0/1 = 0,16→0,34 pc): o clarão sobe enquanto
-    // o disco sai, e o disco é o assunto enquanto ele existe
-    const k = Math.min(1, Math.max(0, (d - 0.14) / 0.16));
-    const gate = k * k * (3 - 2 * k);
+    // portão de proximidade CASADO com o crossfade do disco: o clarão
+    // sobe enquanto o disco sai, e o disco é o assunto enquanto ele
+    // existe. A janela vem de `lodStellar.ts` — a MESMA tabela que o
+    // StellarBody lê para o disco. Até a Onda 3 os números viviam
+    // redigitados dos dois lados, ligados só por este comentário.
+    const gate = sunStarGain(d);
     const u = this.mat.uniforms;
     // tamanho SEMPRE cheio; quem entra é o ganho (ver uGain no shader)
     u.uSize.value = d * Math.tan((ang * Math.PI) / 180);
@@ -233,8 +235,7 @@ export class SunStar {
     // o núcleo pontual (+ espinhos) só acende DEPOIS que o disco saiu
     // de cena — sobrepostos, o núcleo apertado imprime um ponto branco
     // no meio do disco e a coisa lê como retículo de mira
-    const c = Math.min(1, Math.max(0, (d - 0.3) / 0.12));
-    u.uCore.value = c * c * (3 - 2 * c);
+    u.uCore.value = sunStarCore(d);
   }
 
   dispose() {

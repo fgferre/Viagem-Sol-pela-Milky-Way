@@ -198,37 +198,41 @@ describe('janelas de LOD do Sol — pinagem verbatim da casa', () => {
     expect(VARREDURA.some((d) => rampaDiscoLiteral(d) !== discWorldFade(d))).toBe(true);
   });
 
-  it('os consumidores ainda carregam os MESMOS números (ou já importam daqui)', () => {
-    // O elo que falta hoje entre novoSol.ts e heroStars.ts é só um
-    // comentário (risco 5 do mapa da casa). Enquanto a fase 2 não faz a
-    // fiação, este teste é o elo: se um lado mudar, quebra aqui.
-    const novoSol = readFileSync(new URL('./novoSol.ts', import.meta.url), 'utf8');
+  it('a FIAÇÃO existe: os consumidores importam daqui e a redigitação não voltou', () => {
+    // Na fase 1 este teste conferia NÚMERO contra número, lendo o TEXTO
+    // de `novoSol.ts` e de `heroStars.ts` — era o único elo entre dois
+    // arquivos que não se importavam (risco 5 do mapa da casa). A fase 2
+    // fez a fiação, então o teste mudou de alvo: agora ele guarda o
+    // CONSUMO. Se alguém reescrever uma rampa à mão em vez de chamar
+    // daqui, o número volta a poder divergir em silêncio — e quebra aqui.
+    const stellarBody = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
     const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
 
-    const fade0 = novoSol.match(/const DISC_FADE0 = ([\d.]+);/);
-    const fade1 = novoSol.match(/const DISC_FADE1 = ([\d.]+);/);
-    if (fade0 && fade1) {
-      expect(Number(fade0[1])).toBe(LOD_SOL.disc.fade0Pc);
-      expect(Number(fade1[1])).toBe(LOD_SOL.disc.fade1Pc);
-      expect(novoSol).toContain('world > 0.02');
-    } else {
-      expect(novoSol).toMatch(/lodStellar/);
-    }
+    expect(stellarBody).toMatch(/import \{[^}]*\bdiscWorldFade\b[^}]*\} from '\.\/lodStellar'/);
+    expect(stellarBody).toMatch(/import \{[^}]*\bisDiscGroupVisible\b[^}]*\} from '\.\/lodStellar'/);
+    expect(stellarBody).toContain('discWorldFade(dPc)');
+    expect(stellarBody).toContain('isDiscGroupVisible(world)');
 
-    const rampas = [...heroStars.matchAll(/\(d - ([\d.]+)\) \/ ([\d.]+)/g)].map((m) => [
-      Number(m[1]),
-      Number(m[2]),
-    ]);
-    if (rampas.length > 0) {
-      expect(rampas).toEqual([
-        [LOD_SOL.starGain.startPc, LOD_SOL.starGain.widthPc],
-        [LOD_SOL.starCore.startPc, LOD_SOL.starCore.widthPc],
-      ]);
-    } else {
-      expect(heroStars).toMatch(/lodStellar/);
-    }
+    expect(heroStars).toMatch(/import \{[^}]*\bsunStarGain\b[^}]*\} from '\.\/lodStellar'/);
+    expect(heroStars).toMatch(/import \{[^}]*\bsunStarCore\b[^}]*\} from '\.\/lodStellar'/);
+    expect(heroStars).toContain('sunStarGain(d)');
+    expect(heroStars).toContain('sunStarCore(d)');
 
-    // as duas janelas das 16 heroes vivem no GLSL (heroStars.ts:56,58)
+    // e nenhuma das três rampas voltou a ser digitada no consumidor: os
+    // padrões abaixo casam CÓDIGO (a divisão pela janela e a cúbica do
+    // smoothstep), não prosa de comentário
+    expect(stellarBody).not.toMatch(/\(dPc - [\d.]+\)\s*\//);
+    expect(stellarBody).not.toMatch(/wk \* wk \* \(3 - 2 \* wk\)/);
+    expect(heroStars).not.toMatch(/\(d - [\d.]+\) \/ [\d.]+/);
+    expect(heroStars).not.toMatch(/[kc] \* [kc] \* \(3 - 2 \* [kc]\)/);
+  });
+
+  it('as duas janelas das 16 heroes seguem no GLSL, com os números pinados (D7)', () => {
+    // Decisão D7: o shader dos heroes genéricos NÃO muda na fase 2 — o
+    // espelho JS puro (LOD_HERO/heroPresence) existe para a fase 3, que
+    // escreve `aFade` no ponto do catálogo. Enquanto o pixel do hero sair
+    // do FRAG, é o texto do FRAG que tem de casar com a tabela.
+    const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
     const near = heroStars.match(/smoothstep\(uSize \* ([\d.]+), uSize \* ([\d.]+), uCamDist\)/);
     const far = heroStars.match(/1\.0 - smoothstep\(([\d.]+), ([\d.]+), uCamDist\)/);
     expect(near).not.toBeNull();
@@ -237,6 +241,68 @@ describe('janelas de LOD do Sol — pinagem verbatim da casa', () => {
     expect(Number(near?.[2])).toBe(LOD_HERO.near.endFactor);
     expect(Number(far?.[1])).toBe(LOD_HERO.far.startPc);
     expect(Number(far?.[2])).toBe(LOD_HERO.far.endPc);
+  });
+});
+
+// ------------------------------------------------------------
+// 2b. As vistas do gate visual, pinadas em número
+// ------------------------------------------------------------
+describe('as 8 vistas novas do ab-identidade — o regime de cada uma', () => {
+  // `scripts/visual/ab-identidade.mjs` cravou 8 vistas por DISTÂNCIA na
+  // fase 2 (4 do Sol, 4 de Betelgeuse). O que faz cada uma valer a pena é
+  // o REGIME em que ela cai; se uma janela se mexer, a vista deixa de
+  // medir o que foi escolhida para medir — e isso tem de quebrar aqui,
+  // não passar despercebido numa bateria de 45 min de GPU.
+  it('0,10 pc é disco PLENO: o clarão ainda não começou', () => {
+    expect(discWorldFade(0.1)).toBe(1);
+    expect(sunStarGain(0.1)).toBe(0);
+    expect(sunStarCore(0.1)).toBe(0);
+    expect(isDiscGroupVisible(discWorldFade(0.1))).toBe(true);
+  });
+
+  it('0,25 pc é o MEIO da rampa do disco, com o clarão em 3/4', () => {
+    expect(discWorldFade(0.25)).toBeCloseTo(0.5, 12);
+    expect(sunStarGain(0.25)).toBeCloseTo(0.76806640625, 12);
+    expect(sunStarCore(0.25)).toBe(0);
+  });
+
+  it('0,32 pc é o ESTOURO: disco quase morto, clarão pleno, núcleo abrindo', () => {
+    expect(discWorldFade(0.32)).toBeCloseTo(0.0342935528, 9);
+    // e ainda ACIMA do corte duro (que cai em ~0,3249 pc): a vista mede
+    // o último fôlego do disco, o degrau mais sensível das quatro
+    expect(isDiscGroupVisible(discWorldFade(0.32))).toBe(true);
+    expect(sunStarGain(0.32)).toBe(1);
+    expect(sunStarCore(0.32)).toBeCloseTo(0.0740740741, 9);
+  });
+
+  it('0,50 pc é ESTRELA PURA: grupo do disco cortado, clarão e núcleo em 1', () => {
+    expect(discWorldFade(0.5)).toBe(0);
+    expect(isDiscGroupVisible(discWorldFade(0.5))).toBe(false);
+    expect(sunStarGain(0.5)).toBe(1);
+    expect(sunStarCore(0.5)).toBe(1);
+  });
+
+  it('as 3 distâncias de hero caem nos 3 regimes do farFade', () => {
+    expect(heroFarFade(200)).toBe(1); // presença cheia
+    expect(heroFarFade(600)).toBeCloseTo(0.5258518184, 9); // meio da rampa
+    expect(heroFarFade(950)).toBe(0); // apagado: só o ponto do catálogo
+  });
+
+  it('e a 4ª (8 pc) é a única em que o billboard do hero é VISÍVEL', () => {
+    // Medida antes de escolher as vistas: o raio na tela de um hero é
+    // `uSize / (d · tan(58°/2))` em meias-alturas de tela — não depende da
+    // lente, porque o uZoom cancela o fov de propósito (heroStars.ts:14-16).
+    // Betelgeuse tem uSize = 0,08·10^(−0,3·0,45) = 0,0586 pc.
+    const raioPx = (dPc: number, sizePc: number) =>
+      (sizePc / (dPc * Math.tan(29 * DEG))) * (1713 / 2);
+    const BETELGEUSE = 0.08 * Math.pow(10, -0.3 * 0.45);
+    expect(raioPx(200, BETELGEUSE)).toBeLessThan(0.5);
+    expect(raioPx(600, BETELGEUSE)).toBeLessThan(0.2);
+    expect(raioPx(950, BETELGEUSE)).toBeLessThan(0.2);
+    expect(raioPx(8, BETELGEUSE)).toBeGreaterThan(10);
+    // e nela a presença é CHEIA — é a vista que julga a dupla-luz da D2
+    expect(heroPresence(8, BETELGEUSE)).toBe(1);
+    expect(spriteAttenuation(heroPresence(8, BETELGEUSE))).toBe(0);
   });
 });
 

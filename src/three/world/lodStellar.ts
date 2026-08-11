@@ -5,14 +5,16 @@
 // Três coisas moram aqui, com origens DIFERENTES e declaradas:
 //
 // 1. AS JANELAS DA CASA (verbatim, origem-casa). As três rampas do
-//    crossfade disco↔glare do Sol viviam redigitadas em dois arquivos
-//    que não se importam — `novoSol.ts:85-86,333-335` (o disco) e
+//    crossfade disco↔glare do Sol VIVIAM redigitadas em dois arquivos
+//    que não se importavam — `novoSol.ts:85-86,333-335` (o disco) e
 //    `heroStars.ts:224-225,236-237` (uGain e uCore do SunStar) —
-//    ligadas só por COMENTÁRIO (`novoSol.ts:83`, `heroStars.ts:221-223`).
-//    Uma casa decimal movida de um lado e nada denuncia. Aqui elas
-//    ficam juntas, com os MESMOS números e a MESMA forma de conta; a
-//    fase 2 faz os dois consumidores importarem daqui e o teste de
-//    pinagem (lodStellar.test.ts) mata a redigitação.
+//    ligadas só por COMENTÁRIO. Uma casa decimal movida de um lado e
+//    nada denunciava. Aqui elas ficam juntas, com os MESMOS números e
+//    a MESMA forma de conta; desde a fase 2 da Onda 3 os dois
+//    consumidores IMPORTAM daqui (`stellarBody.ts:473,480` e
+//    `heroStars.ts:227,238` — o `novoSol.ts` das citações acima virou
+//    `stellarBody.ts` no mesmo `git mv`), e um teste de pinagem
+//    (lodStellar.test.ts) impede a redigitação de renascer.
 //    Nota do plano: `PLANO-ATLAS.md:96` chama {0,14→0,30} e
 //    {0,30→0,42} de janelas "dos heroes" — no código elas são do SOL
 //    visto de longe (a classe `SunStar`), não das 16 heroes. O código
@@ -41,9 +43,14 @@
 //    estado). Os números saem da conta documentada em "A CONTA DO
 //    HANDOFF", abaixo.
 //
-// NENHUM consumidor liga este módulo ainda (fase 1 da Onda 3): o
-// módulo nasce com seus oráculos, a fiação vem na fase 2 e a mudança
-// tem de ser pixel-igual (gate ab-identidade).
+// FIAÇÃO (fase 2 da Onda 3): `stellarBody.ts` consome `discWorldFade`
+// e `isDiscGroupVisible`; `heroStars.ts` (classe SunStar) consome
+// `sunStarGain` e `sunStarCore`. A troca saiu BIT-IDÊNTICA nas 15
+// vistas do `ab-identidade` — as 7 fixas mais as 8 novas por distância
+// (4 condições do Sol, 4 de hero) — porque as funções daqui repetem a
+// expressão do consumidor operação por operação, na mesma ordem. As
+// duas janelas das 16 heroes genéricas (LOD_HERO) seguem no GLSL do
+// shader e ainda não têm consumidor JS: elas são da fase 3.
 // ============================================================
 import { WORLD } from '../config';
 
@@ -54,7 +61,7 @@ import { WORLD } from '../config';
 // ARMADILHA DE PONTO FLUTUANTE — a razão de a tabela guardar largura E
 // fim, em vez de só os extremos. Os dois consumidores dividem por
 // coisas diferentes, e em double as duas contas NÃO dão o mesmo bit:
-//   novoSol.ts divide por (DISC_FADE1 - DISC_FADE0) = 0.18000000000000002
+//   stellarBody.ts dividia por (DISC_FADE1 - DISC_FADE0) = 0.18000000000000002
 //     (≠ 0.18) — a tabela guarda os dois extremos e a rampa recalcula
 //     a diferença, igual a lá;
 //   heroStars.ts divide pela LARGURA literal: 0.16 e 0.12 — e
@@ -67,48 +74,51 @@ import { WORLD } from '../config';
 export const LOD_SOL = {
   /**
    * Disco procedural do Sol: 1 (disco é o assunto) → 0 (só a PSF
-   * estelar). `novoSol.ts:85-86` (constantes) e `:333-335` (rampa).
+   * estelar). Consumidor: `stellarBody.ts:473` (antes do `git mv` da
+   * fase 2 os números viviam em `novoSol.ts:85-86` e a rampa em
+   * `:333-335`).
    */
   disc: { fade0Pc: 0.16, fade1Pc: 0.34 },
   /**
    * `uGain` do clarão (SunStar): 0 → 1 enquanto o disco sai de cena.
-   * `heroStars.ts:224-225`.
+   * Consumidor: `heroStars.ts:227`.
    */
   starGain: { startPc: 0.14, widthPc: 0.16, endPc: 0.3 },
   /**
    * `uCore` do clarão (SunStar): o núcleo pontual + espinhos só
-   * acendem DEPOIS que o disco saiu. `heroStars.ts:236-237`.
+   * acendem DEPOIS que o disco saiu. Consumidor: `heroStars.ts:238`.
    */
   starCore: { startPc: 0.3, widthPc: 0.12, endPc: 0.42 },
 } as const;
 
 /**
  * Piso de visibilidade do grupo do Sol: sumido, nada do Sol é
- * submetido. `novoSol.ts:342` (`world > 0.02`) — corte DURO, não
+ * submetido. Consumidor: `stellarBody.ts:480` — corte DURO, não
  * rampa, e por isso mora fora das janelas acima.
  */
 export const DISC_VISIBLE_MIN = 0.02;
 
 /**
- * Rampa do disco, forma EXATA de `novoSol.ts:334-335` (smoothstep
+ * Rampa do disco, forma EXATA da que vivia inline em `novoSol.ts:334-335`
+ * antes da fiação (smoothstep
  * cúbico DESCENDENTE, com o clamp escrito como ternário e a largura
  * recalculada de fade1-fade0 — ver a armadilha de float acima).
  * `dPc` é a distância câmera↔Sol em pc REAIS (não na régua do doador
  * corrigida por fov: o fov varia 26°→56° na hélice e balançaria o
- * fade junto com o zoom — `novoSol.ts:328-332`).
+ * fade junto com o zoom — `stellarBody.ts:465-471`).
  */
 export function discWorldFade(dPc: number): number {
   const wk = (dPc - LOD_SOL.disc.fade0Pc) / (LOD_SOL.disc.fade1Pc - LOD_SOL.disc.fade0Pc);
   return wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
 }
 
-/** O corte duro de custo do grupo do Sol (`novoSol.ts:342`). */
+/** O corte duro de custo do grupo da estrela (`stellarBody.ts:480`). */
 export function isDiscGroupVisible(worldFade: number): boolean {
   return worldFade > DISC_VISIBLE_MIN;
 }
 
 /**
- * `uGain` do SunStar, forma EXATA de `heroStars.ts:224-225`
+ * `uGain` do SunStar, forma EXATA da que vivia em `heroStars.ts:224-225`
  * (Math.min/Math.max no clamp, divisão pela largura LITERAL, depois
  * smoothstep cúbico ASCENDENTE).
  * O piso `Math.max(camDist, 1e-4)` NÃO migra para cá: em
@@ -121,7 +131,7 @@ export function sunStarGain(dPc: number): number {
   return k * k * (3 - 2 * k);
 }
 
-/** `uCore` do SunStar, forma EXATA de `heroStars.ts:236-237`. */
+/** `uCore` do SunStar, forma EXATA da de `heroStars.ts:236-237`. */
 export function sunStarCore(dPc: number): number {
   const c = Math.min(1, Math.max(0, (dPc - LOD_SOL.starCore.startPc) / LOD_SOL.starCore.widthPc));
   return c * c * (3 - 2 * c);
@@ -258,7 +268,7 @@ export function stepRampToward(
   // volta do background, para o crossfade animar em vez de saltar.
   // 0.1 s casa com o teto de dt do voo de câmera.
   // [casa] O mesmo teto de 0,1 s já existe do lado de cá, no delta do
-  // Sol (`novoSol.ts:304`) — o número atravessa confirmado dos dois
+  // Sol (`stellarBody.ts:441`) — o número atravessa confirmado dos dois
   // lados, não por autoridade do doador.
   const dt = Number.isFinite(dtSeconds)
     ? Math.min(Math.max(dtSeconds, 0), 0.1)
@@ -290,7 +300,7 @@ export function stepRampToward(
 // (b) A ÂNCORA DA CASA. O Sol tem r = WORLD.sunRadius = 0,011 pc
 //     (`config.ts:8`; raio artístico — o real, 2,3e-8 pc, seria
 //     invisível) e o disco está PLENO até DISC_FADE0 = 0,16 pc
-//     (`novoSol.ts:85`). Traduzindo essa janela para ângulo:
+//     (`LOD_SOL.disc.fade0Pc`). Traduzindo essa janela para ângulo:
 //         θ_handoff = 0,011 / 0,16 = 6,875e-2 rad  →  é o ENTER.
 //     Ou seja: "o disco é o assunto enquanto o corpo cobre mais de
 //     ~0,0687 rad de raio angular" — a mesma frase que a casa já
@@ -301,7 +311,7 @@ export function stepRampToward(
 //     EXIT = ENTER/2 = 3,4375e-2 rad. Em distância isso é
 //     d_exit = r/EXIT = 2·DISC_FADE0 = 0,32 pc — exato, por
 //     construção. CONFERÊNCIA INDEPENDENTE: a casa já apaga o grupo do
-//     Sol quando `world > 0.02` falha (`novoSol.ts:342`), e resolvendo
+//     Sol quando `isDiscGroupVisible` falha (`stellarBody.ts:480`), e resolvendo
 //     a rampa isso cai em d = 0,32487 pc. O cushion de 2× do doador
 //     reproduz, com 1,5% de diferença, o corte que a casa achou à mão
 //     — e a zona morta [0,16; 0,32] pc cabe INTEIRA dentro da janela

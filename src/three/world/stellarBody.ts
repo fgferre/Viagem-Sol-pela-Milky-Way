@@ -1,10 +1,16 @@
 // ============================================================
-// NovoSol — o Sol procedural transplantado de Novo-Sol-Fable-3d
-// (projeto irmão do mesmo autor; three 0.185, zero dependências).
+// StellarBody — o corpo estelar procedural da casa, e o Sol é a
+// instância 1. Nasceu como `novoSol.ts`: o Sol transplantado de
+// Novo-Sol-Fable-3d (projeto irmão do mesmo autor; three 0.185, zero
+// dependências). A Onda 3 não o reescreveu — promoveu a
+// `StellarParams` os literais que eram DA INSTÂNCIA, com defaults
+// (`SOL_PARAMS`) que reconstroem o objeto de antes byte a byte. O
+// `git mv` preservou a história; o diff é o que mudou de fato.
 //
 // O núcleo vive VENDORIZADO VERBATIM em ./sol/ — fábricas
 // createX(ctx) sem side-effects de import, exatamente como no
-// original. Este arquivo é (a) o adaptador de contexto que o
+// original, e a Onda 3 não tocou nenhum dos 14 (M3: portam-se
+// pixels). Este arquivo é (a) o adaptador de contexto que o
 // main.js de lá provia, e (b) a orquestração por frame portada
 // do animate() original (sim fatiada, bake da cromosfera a 8 Hz
 // em 8 fatias, ciclo de 11 anos, flares, proeminências, loops,
@@ -14,7 +20,7 @@
 // (transform feedback) — as três pontes de escala estão no NORTE.
 //
 // ESCALA: o núcleo trabalha em "unidades de doador" (raio 2.2);
-// o group leva scale = sunRadius/2.2 e o uCamDist é alimentado
+// o group leva scale = params.radiusPc/2.2 e o uCamDist é alimentado
 // em unidades de doador CORRIGIDAS por fov (o LOD do disco de
 // lá foi calibrado a fov 42° — sem a correção, o enquadramento
 // da parede de fogo a fov 26° leria como "longe").
@@ -23,10 +29,17 @@
 // ?shot=). delta<=0 congela tudo — por isso o construtor faz um
 // PRIME síncrono (semente do sim + N passos + um bake completo):
 // sem ele, captura em t=0 fotografaria o disco sem cromosfera.
+//
+// LOD: a janela do crossfade disco↔clarão não mora mais aqui. Vem de
+// `lodStellar.ts`, o MESMO módulo de onde o `SunStar` (heroStars.ts)
+// tira as duas dele. Antes eram números redigitados em dois arquivos
+// que não se importavam, ligados só por um comentário — uma casa
+// decimal movida de um lado e nada denunciava.
 // ============================================================
 import * as THREE from 'three';
 import { WORLD } from '../config';
 import type { QualityLevel } from '../core/engine';
+import { discWorldFade, isDiscGroupVisible } from './lodStellar';
 import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
 import { createPIL } from './sol/pil.js';
@@ -44,7 +57,6 @@ import { createCME } from './sol/cme.js';
 const DONOR_RADIUS = 2.2; // SUN_RADIUS do projeto original
 const DONOR_FIT = 6.59; // fitDist de lá (fov 42°, landscape)
 const DONOR_HALF_FOV = Math.tan((42 * Math.PI) / 360);
-const ROT_SPEED = 0.042;
 const MACRO_SLOW = 0.15;
 const SIM_DT = 0.6 * MACRO_SLOW;
 
@@ -63,7 +75,7 @@ const TIER_FOR: Record<QualityLevel, keyof typeof TIERS> = {
 
 // Defaults de fábrica do modo normal de lá (CONTROL_SCHEMA) — os knobs
 // que o NÚCLEO lê. Congelados: o painel/URL de lá não viaja.
-const KNOBS: Record<string, number> = {
+const SOL_KNOBS: Record<string, number> = {
   spots: 1, cycle: 1, lapse: 0, speed: 1, pmode: 0,
   plageglow: 0.35, halo: 0.55, ray: 0.9, cact: 0.5,
   // cme 1,4 (doador: 0,9): a casca foi calibrada contra a exposição
@@ -72,23 +84,137 @@ const KNOBS: Record<string, number> = {
   loops: 0.55, fprom: 0.55, cvol: 0.5, cme: 1.4, edu: 0,
 };
 
-// Dramaturgia do arranque (pedido do dono): o Sol acorda do MÍNIMO
-// (fase 0,02, disco quase limpo) na parede de fogo e chega ao MÁXIMO
-// (fase 0,50, solarMaxK pleno) no fim da hélice — dirigido pelo TEMPO
-// DE VIAGEM, então seek e capturas ?t= veem a fase certa daquele
-// instante. Depois da janela o ciclo segue vivo em 1× a partir do
-// máximo (decai devagar pelo resto da viagem).
-// Crossfade disco→estrela, em pc. Abaixo de DISC_FADE0 o disco é o
-// assunto (parede de fogo, início da hélice); acima de DISC_FADE1 só
-// existe a PSF estelar. As rampas do SunStar (heroStars.ts) casam com
-// estas — o núcleo pontual só acende DEPOIS que o disco sai.
-const DISC_FADE0 = 0.16;
-const DISC_FADE1 = 0.34;
+// ------------------------------------------------------------
+// StellarParams — o que é DA INSTÂNCIA (Onda 3, decisão D5)
+// ------------------------------------------------------------
+//
+// A regra da promoção: sobe a parâmetro o literal que (a) descreve a
+// ESTRELA, não o motor, e (b) sobe sem tocar em `sol/*.js`. Os 14
+// módulos vendorizados ficam intocados, e o que não passou por esse
+// filtro está NOMEADO aqui em vez de escondido:
+//
+//  1. `DONOR_RADIUS = 2.2`. O mesmo número vive DE NOVO, como literal
+//     independente, em `sol/sun.js:13` (`var SUN_RADIUS = 2.2`), de
+//     onde é publicado em `ctx.SUN_RADIUS` e lido por 7 dos 14 módulos
+//     (sun, coronaRays, coronaVolume, prominences, spicules, loops,
+//     cme). Promovê-lo exigiria editar `sol/*.js`. Não é perda: o
+//     parâmetro REAL da instância é `radiusPc` (o raio em pc no mundo);
+//     2.2 é só a régua interna do doador. Mas os dois lados têm de
+//     continuar concordando À MÃO — se um mudar sem o outro, quebra em
+//     silêncio. Onda 7.
+//  2. A PALETA H-alfa: ~17 tripletos `vec3()` inline em 8 dos
+//     `sol/*.js`, nenhum nomeado. É OVERRIDE DECLARADO da instância Sol
+//     (decisão D4) — a lei de cor por classe espectral é da Onda 7, e é
+//     ela que vai precisar de `teffK`.
+//  3. `sol/cme.js:10` captura `ctx.camera` NA CRIAÇÃO, não por frame.
+//     Uma segunda instância construída antes de a câmera real existir
+//     pegaria a errada, sem erro nenhum. Onda 7.
+//  4. `DONOR_FIT`/`DONOR_HALF_FOV` e a janela do limbo (35/25 em
+//     unidades de doador): calibração de LENTE e de REGIME do doador,
+//     não física da estrela.
+//  5. `TIERS`: custo, não estrela — e nem chega a ser da instância,
+//     porque nenhuma camada estelar responde a troca de qualidade
+//     (decisão D8).
 
-const CYCLE_PHASE_MIN = 0.02;
-const CYCLE_PHASE_MAX = 0.5;
-const DRAMA_T0 = 5; // s de viagem (fim da parede de fogo)
-const DRAMA_T1 = 29; // s de viagem (fim da hélice)
+/** Período de rotação do Sol — sideral médio de Carrington, em dias. */
+export const SOL_ROT_PERIOD_DAYS = 25.38;
+/**
+ * O `ROT_SPEED` do doador para o Sol: rad por segundo DE TELA. É taxa
+ * artística — o doador nunca modelou período nenhum.
+ */
+const SOL_ROT_SPEED = 0.042;
+
+/**
+ * Período (dias) → rad/s de tela. A âncora é a RELAÇÃO, não o número:
+ * o Sol devolve exatamente o 0,042 de sempre porque `25.38 / 25.38` é
+ * 1 sem resto em IEEE754 e `0.042 * 1` é o mesmo bit. A promoção não
+ * podia custar um ULP — o gate de md5 desta fase pegaria.
+ * A razão embutida é a COMPRESSÃO DE TEMPO do filme: uma volta em
+ * 2π/0,042 ≈ 149,6 s de tela para 25,38 dias ⇒ ~5,9 s por dia solar.
+ * Guarda: período inválido devolve 0 (estrela não gira), nunca NaN.
+ */
+export function rotSpeedFromPeriod(periodDays: number): number {
+  if (!Number.isFinite(periodDays) || periodDays <= 0) return 0;
+  return SOL_ROT_SPEED * (SOL_ROT_PERIOD_DAYS / periodDays);
+}
+
+/** O que descreve UMA estrela procedural desta casa. */
+export interface StellarParams {
+  /** Nome da instância — diagnóstico e registro, só. */
+  readonly nome: string;
+  /** Raio VISUAL em pc (escala artística: o real seria invisível). */
+  readonly radiusPc: number;
+  /** Período de rotação em dias → `rotSpeedFromPeriod`. */
+  readonly rotPeriodDays: number;
+  /** Inclinação do eixo, em rad. */
+  readonly tiltRad: number;
+  /**
+   * Escala global de atividade magnética: multiplica os knobs `spots` e
+   * `cycle` do doador ANTES do override de URL (a URL segue sendo a
+   * fonte de verdade). Só esses dois — `cact`/`cvol`/`fprom` são DOSE DE
+   * RENDER da coroa, calibrada contra o nosso ACES, e enfiá-los aqui
+   * seria promoção falsa.
+   */
+  readonly activityLevel: number;
+  /**
+   * RESERVADO (D4): temperatura efetiva, em K. Nasce documentado e sem
+   * consumidor — a lei de cor por classe espectral é da Onda 7. Hoje a
+   * cor sai da paleta H-alfa inline dos `sol/*.js`, que é override
+   * declarado da instância 1.
+   */
+  readonly teffK?: number;
+  /**
+   * RESERVADO: envelope convectivo (granulação). O núcleo do doador não
+   * tem caminho radiativo — `sol/granulation.js` roda incondicionalmente
+   * — e abrir um exigiria editar os 14 vendorizados. Fica declarado
+   * porque é o parâmetro que decide se uma estrela tem grânulos, e a
+   * Onda 7 vai precisar dele para as classes quentes.
+   */
+  readonly convective: boolean;
+  /** Fase do ciclo no arranque e no pico da dramaturgia. */
+  readonly cyclePhaseMin: number;
+  readonly cyclePhaseMax: number;
+  /** Janela da dramaturgia, em s de tempo de VIAGEM. */
+  readonly dramaT0: number;
+  readonly dramaT1: number;
+  /** Semente-mãe dos streams determinísticos da instância. */
+  readonly seed: number;
+  /** Prefixo dos knobs por URL (`?solcvol=0`). Por instância. */
+  readonly knobPrefix: string;
+  /** Defaults de fábrica dos knobs que o NÚCLEO lê. */
+  readonly knobs: Readonly<Record<string, number>>;
+}
+
+/**
+ * A instância 1. Todo campo aqui reproduz o literal que estava solto no
+ * módulo antes da Onda 3: a promoção é de ENDEREÇO, não de valor, e o
+ * gate de md5 desta fase é a prova.
+ *
+ * Dramaturgia do arranque (pedido do dono): o Sol acorda do MÍNIMO
+ * (fase 0,02, disco quase limpo) na parede de fogo e chega ao MÁXIMO
+ * (fase 0,50, solarMaxK pleno) no fim da hélice — dirigido pelo TEMPO
+ * DE VIAGEM, então seek e capturas ?t= veem a fase certa daquele
+ * instante. Depois da janela o ciclo segue vivo em 1× a partir do
+ * máximo (decai devagar pelo resto da viagem).
+ */
+export const SOL_PARAMS: StellarParams = {
+  nome: 'Sol',
+  // o MESMO WORLD.sunRadius de antes, não um 0,011 redigitado
+  radiusPc: WORLD.sunRadius,
+  rotPeriodDays: SOL_ROT_PERIOD_DAYS,
+  // inclinação real do eixo solar (~7,25°), como no original
+  tiltRad: 0.1265,
+  activityLevel: 1,
+  teffK: 5772,
+  convective: true,
+  cyclePhaseMin: 0.02,
+  cyclePhaseMax: 0.5,
+  dramaT0: 5, // s de viagem (fim da parede de fogo)
+  dramaT1: 29, // s de viagem (fim da hélice)
+  seed: 20260803,
+  knobPrefix: 'sol',
+  knobs: SOL_KNOBS,
+};
 
 function mulberry32(seed: number) {
   let s = seed >>> 0;
@@ -102,8 +228,11 @@ function mulberry32(seed: number) {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export class NovoSol {
+export class StellarBody {
   readonly group = new THREE.Group();
+  readonly params: StellarParams;
+  /** rad/s de tela, derivado de `params.rotPeriodDays` no construtor */
+  private readonly rotSpeed: number;
   private ctx: any;
   private lastTime = -1;
   private simAccum = 0;
@@ -119,21 +248,29 @@ export class NovoSol {
   private promWorldTmp = new THREE.Vector3();
 
   constructor(
+    params: StellarParams,
     renderer: THREE.WebGLRenderer,
     camera: THREE.PerspectiveCamera,
     quality: QualityLevel
   ) {
-    this.scale = WORLD.sunRadius / DONOR_RADIUS;
+    this.params = params;
+    this.rotSpeed = rotSpeedFromPeriod(params.rotPeriodDays);
+    this.scale = params.radiusPc / DONOR_RADIUS;
     this.group.scale.setScalar(this.scale);
 
     const tier = TIERS[TIER_FOR[quality]];
-    const srand = mulberry32(20260803);
+    const srand = mulberry32(params.seed);
     // knobs por URL (?solcvol=0 etc.) — a URL é a fonte de verdade,
-    // como no resto do app; sem query, os defaults de fábrica valem
-    const kn: Record<string, number> = { ...KNOBS };
+    // como no resto do app; sem query, os defaults de fábrica valem.
+    // `activityLevel` escala os dois knobs de atividade ANTES da URL:
+    // no Sol ele é 1, e `1 * x` é o mesmo bit que x — a instância 1 sai
+    // idêntica à de antes da parametrização.
+    const kn: Record<string, number> = { ...params.knobs };
+    kn.spots *= params.activityLevel;
+    kn.cycle *= params.activityLevel;
     const q = new URLSearchParams(window.location.search);
     for (const k of Object.keys(kn)) {
-      const v = Number.parseFloat(q.get('sol' + k) ?? '');
+      const v = Number.parseFloat(q.get(params.knobPrefix + k) ?? '');
       if (Number.isFinite(v)) kn[k] = v;
     }
     this.kn = kn;
@@ -145,7 +282,7 @@ export class NovoSol {
       camera,
       // raio em unidades de MUNDO para os raymarches de cvol/cme
       // (cameraPosition/vWorld são parsec — ver patches "transplante:")
-      SUN_RADIUS_WORLD: WORLD.sunRadius,
+      SUN_RADIUS_WORLD: params.radiusPc,
       TP: tier,
       TIER: TIER_FOR[quality],
       FBM_OCTAVES: tier.fbm,
@@ -156,9 +293,9 @@ export class NovoSol {
       // streams próprios como no config.js de lá (semeados: capturas
       // reproduzíveis; o three não consome estes streams)
       srand,
-      spotRand: mulberry32(20260803 ^ 0x59075eed),
-      loopRand: mulberry32(20260803 ^ 0x5eedc0de),
-      cmeRand: mulberry32(20260803 ^ 0x00c0e5ed),
+      spotRand: mulberry32(params.seed ^ 0x59075eed),
+      loopRand: mulberry32(params.seed ^ 0x5eedc0de),
+      cmeRand: mulberry32(params.seed ^ 0x00c0e5ed),
       knob: (name: string) => kn[name] ?? 0,
       getControl: (name: string) => kn[name] ?? 0,
       getAppliedControl: (name: string) => kn[name] ?? 0,
@@ -178,7 +315,7 @@ export class NovoSol {
       maybeLaunchCME: () => {},
       elapsed: 0,
       // fase inicial 0,02 (mínimo profundo): tot = 0,35 + 1206/1800 = 1,02
-      cycleTime: (1 + CYCLE_PHASE_MIN - 0.35) * 1800,
+      cycleTime: (1 + params.cyclePhaseMin - 0.35) * 1800,
       cycleWarp: 0,
       solarMaxK: 0,
       surfFlareT: 999,
@@ -192,7 +329,7 @@ export class NovoSol {
       camDist: DONOR_FIT,
       fitDist: DONOR_FIT,
       MACRO_SLOW,
-      ROT_SPEED,
+      ROT_SPEED: this.rotSpeed,
       rtType: THREE.HalfFloatType,
       isHDR: true,
       quadCamera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
@@ -243,11 +380,11 @@ export class NovoSol {
     createLoops(ctx);
     createFlares(ctx);
 
-    // inclinação real do eixo solar (~7,25°), como no original
-    ctx.sunMesh.rotation.z = 0.1265;
-    ctx.prominenceGroup.rotation.z = 0.1265;
-    ctx.spiculeMesh.rotation.z = 0.1265;
-    ctx.loopGroup.rotation.z = 0.1265;
+    // inclinação do eixo (Sol: ~7,25°, como no original)
+    ctx.sunMesh.rotation.z = params.tiltRad;
+    ctx.prominenceGroup.rotation.z = params.tiltRad;
+    ctx.spiculeMesh.rotation.z = params.tiltRad;
+    ctx.loopGroup.rotation.z = params.tiltRad;
 
     this.prime(renderer);
   }
@@ -328,18 +465,19 @@ export class NovoSol {
     // CROSSFADE DISCO→ESTRELA (em pc REAIS, não na régua do doador: o
     // fov varia 26°→56° na hélice e a régua corrigida por lente
     // balançaria o fade junto com o zoom). O raio do disco é escala
-    // artística; além de ~0,34 pc quem manda é a PSF estelar (SunStar,
-    // heroStars.ts) — as duas rampas são complementares.
+    // artística; passada a janela quem manda é a PSF estelar (SunStar,
+    // heroStars.ts) — as duas rampas são complementares, e desde a
+    // Onda 3 vêm da MESMA tabela (`lodStellar.ts`), não de dois
+    // conjuntos de números redigitados.
     const dPc = camera.position.length();
-    const wk = (dPc - DISC_FADE0) / (DISC_FADE1 - DISC_FADE0);
-    const world = wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
+    const world = discWorldFade(dPc);
     ctx.sunUniforms.uWorldFade.value = world;
     ctx.spiculeUniforms.uWorldFade.value = world;
     ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray * world;
     ctx.coronaRaysUniforms.uHalo.value = this.kn.halo * world;
-    // gate de custo: sumido, nada do Sol é submetido (o director já
+    // gate de custo: sumido, nada da estrela é submetido (o director já
     // aplicou ?nosun aqui — o && preserva a flag)
-    this.group.visible = this.group.visible && world > 0.02;
+    this.group.visible = this.group.visible && isDiscGroupVisible(world);
     if (!this.group.visible) return;
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---
@@ -379,7 +517,7 @@ export class NovoSol {
     ctx.sunUniforms.uBakeMix.value = Math.min(1, (ctx.elapsed - ctx.bakeSwapT) / ctx.bakeCycleDt);
 
     // --- rotação + inversa compartilhada (tilt+spin) ---
-    ctx.sunMesh.rotation.y += ROT_SPEED * delta;
+    ctx.sunMesh.rotation.y += this.rotSpeed * delta;
     ctx.prominenceGroup.rotation.y = ctx.sunMesh.rotation.y;
     ctx.spiculeMesh.rotation.y = ctx.sunMesh.rotation.y;
     ctx.loopGroup.rotation.y = ctx.sunMesh.rotation.y;
@@ -397,10 +535,11 @@ export class NovoSol {
       // viagem (só empurra para FRENTE; depois da janela o relógio
       // natural assume e o snap vira no-op)
       if (journeyT !== undefined) {
-        const k = Math.min(1, Math.max(0, (journeyT - DRAMA_T0) / (DRAMA_T1 - DRAMA_T0)));
+        const p = this.params;
+        const k = Math.min(1, Math.max(0, (journeyT - p.dramaT0) / (p.dramaT1 - p.dramaT0)));
         const eased = k * k * (3 - 2 * k);
         const desired =
-          (1 + CYCLE_PHASE_MIN + (CYCLE_PHASE_MAX - CYCLE_PHASE_MIN) * eased - 0.35) * 1800;
+          (1 + p.cyclePhaseMin + (p.cyclePhaseMax - p.cyclePhaseMin) * eased - 0.35) * 1800;
         if (desired > ctx.cycleTime) {
           const jump = desired - ctx.cycleTime;
           ctx.cycleWarp += jump;

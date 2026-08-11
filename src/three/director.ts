@@ -8,7 +8,7 @@ import type { QualityLevel } from './core/engine';
 import { Post } from './core/post';
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
-import { NovoSol } from './world/novoSol';
+import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
 import { projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
@@ -89,7 +89,7 @@ export class Director {
   private seedCloudPool: Float32Array | null = null;
   private seedCloudScratch = new Float32Array(32 * 5);
   private seedCloudTimer = 0;
-  private sun: NovoSol;
+  private sun: StellarBody;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
   private bgColor = new THREE.Color(0x000106);
@@ -160,8 +160,16 @@ export class Director {
     this.post = new Post(this.engine.renderer, this.engine.scene, this.engine.camera);
     this.nebula = new Nebula(0.5);
     // Sol procedural transplantado (vivo: sim + bake + ciclo); o prime
-    // do construtor compila os quads offscreen com RT amarrado
-    this.sun = new NovoSol(this.engine.renderer, this.engine.camera, this.engine.quality);
+    // do construtor compila os quads offscreen com RT amarrado. Desde a
+    // Onda 3 o corpo é parametrizado e o Sol é a instância 1: quem
+    // decide raio, rotação, atividade e semente é SOL_PARAMS, não
+    // literais soltos dentro da classe.
+    this.sun = new StellarBody(
+      SOL_PARAMS,
+      this.engine.renderer,
+      this.engine.camera,
+      this.engine.quality
+    );
     this.dust = new Dust();
     this.roam = new FreeRoam(canvas, this.engine.camera);
     this.engine.onQuality((quality) => {
