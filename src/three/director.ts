@@ -59,6 +59,18 @@ export const LOAD_STAGES = (
   ] as const
 ).map(([id, label], i, all) => ({ id, label, index: i + 1, total: all.length }));
 
+/**
+ * Quadros desenhados sem NENHUMA perturbação para a cena valer como
+ * estável (ver o getter `captura`). Dez, e o número tem medida atrás:
+ * `sol`, `travessia` e `soldisco` devolvem o md5 oficial já no primeiro
+ * quadro depois que o App aplica o deep-link (sonda de 2026-08-11, marcos
+ * 1/2/3/5/…/700 na mesma captura). Dez dá margem de sobra para o intervalo
+ * entre o fim do `init` e a aplicação de `?q=`/`?pos=`/`?t=`, e custa ~1 s
+ * numa vista de 1800×1800 — contra os ~70 s dos 700 quadros que este sinal
+ * aposenta.
+ */
+const QUADROS_ESTAVEIS = 10;
+
 /** etapa viva do carregamento: `{ id, index, total, label }`, index 1…total */
 export type LoadStage = (typeof LOAD_STAGES)[number];
 export type LoadStageId = LoadStage['id'];
@@ -196,6 +208,9 @@ export class Director {
       this.post.setGrain(this.engine.preset.grain);
       this.blackHole?.setQuality(quality);
       this.events.onQuality(quality);
+      // troca de tier muda pixelRatio e passos do raymarch: a contagem de
+      // estabilidade da captura recomeça (ver o getter `captura`)
+      this.perturbar();
     });
     // o Engine já aplicou a qualidade no próprio construtor, antes destes
     // ouvintes existirem — o estado inicial precisa ser semeado à mão.
@@ -214,6 +229,7 @@ export class Director {
     this.engine.onResize((w, h) => {
       this.nebula.setSize(w, h);
       this.post.setSize(w, h);
+      this.perturbar();
     });
     this.nebula.setSize(window.innerWidth, window.innerHeight);
 
@@ -507,6 +523,75 @@ export class Director {
   private setPhase(p: Phase) {
     this.phase = p;
     this.events.onPhase(p);
+    this.perturbar();
+  }
+
+  // ---- sinal de prontidão para captura -----------------------------
+  /**
+   * Quadros DESENHADOS desde a última carga/alteração de estado que muda o
+   * que a tela mostra. É o coração do `captura` logo abaixo, e ele só é
+   * escrito em dois lugares: `perturbar()` (zera) e o fim do `tick` (soma
+   * 1, depois do `post.render`).
+   */
+  private quadrosEstaveis = 0;
+
+  /** algo mudou o que a cena mostra — a contagem de estabilidade recomeça */
+  private perturbar() {
+    this.quadrosEstaveis = 0;
+  }
+
+  /**
+   * A CENA ESTÁ ESTÁVEL PARA CAPTURAR? Bandeira somente-leitura que o
+   * harness de identidade (`scripts/visual/ab-identidade.mjs`) espera no
+   * lugar de contar 700 quadros no escuro.
+   *
+   * POR QUE ELA EXISTE: o critério antigo era "o log da cartografia e mais
+   * 700 quadros" — ~70 s por captura numa vista de 1800×1800, e 700 é um
+   * número que ninguém mediu, escolhido com folga porque a alternativa
+   * (`--virtual-time-budget`) devolvia a MESMA vista em estados diferentes.
+   * Medido em 2026-08-11 nesta máquina: `sol`, `travessia` e `soldisco` já
+   * saem com o md5 oficial no PRIMEIRO quadro depois que o deep-link é
+   * aplicado. Os 700 quadros eram seguro, não critério.
+   *
+   * O QUE ELA ESPERA, e cada termo é uma condição REAL que o director
+   * conhece (nada de relógio de parede):
+   *  - `fase !== 'loading'`: o `init()` terminou — catálogo HYG e ativos
+   *    cartográficos baixados, mapas de poeira/estrutura assados, galáxia
+   *    construída, lâminas congeladas. O log `[cartografia]` que o harness
+   *    antigo farejava sai DENTRO desse init, antes de todo o resto dele.
+   *  - nada está ANDANDO: nem a viagem correndo (`journey` sem
+   *    `freezeJourney`) nem a câmera do voo livre (visita a caminho, slerp
+   *    de entrada, inércia). Aí a cena muda por construção e prontidão não
+   *    quer dizer nada. Sob `?shot=` o relógio visual é 0, o `?t=` do
+   *    harness congela e o `?pos=` entra com `snapCanonical`.
+   *  - `sun.assentado`: o Sol tem retrato completo publicado — sem bake
+   *    fatiado no meio e com a coroa volumétrica já publicada.
+   *  - `quadrosEstaveis >= QUADROS_ESTAVEIS`: quadros desenhados desde a
+   *    última perturbação (troca de fase, `?q=`, `?pos=`, `?t=`, resize,
+   *    exposição, camada ligada/desligada). Pequeno de propósito: o que
+   *    ele cobre é o intervalo entre o fim do `init` e a aplicação dos
+   *    parâmetros de URL pelo App, que acontece um tique depois.
+   *
+   * SOMENTE LEITURA: este getter não escreve nada e o único custo no
+   * caminho de render é o `++` no fim do tick. Se ele mudasse um pixel, o
+   * gate que ele serve estaria medindo a si mesmo.
+   */
+  get captura() {
+    const andando =
+      (this.phase === 'journey' && !this.freezeJourney) ||
+      (this.phase === 'free' && this.roam.animando);
+    return {
+      pronto:
+        this.phase !== 'loading' &&
+        !andando &&
+        this.sun.assentado &&
+        this.quadrosEstaveis >= QUADROS_ESTAVEIS,
+      quadros: this.quadrosEstaveis,
+      fase: this.phase,
+      andando,
+      sol: this.sun.assentado,
+      tier: this.engine.quality,
+    };
   }
 
   /** nuvens CO/complexos em coords de cena para semear o raymarch */
@@ -594,7 +679,7 @@ export class Director {
     // capturas ?pos= são determinísticas desde o frame 1
     this.updateSeedClouds(cam.position);
     this.seedCloudTimer = 0;
-    this.setPhase('free');
+    this.setPhase('free'); // e o setPhase zera a contagem de estabilidade
     this.events.onCaption(-1, '', '');
     this.events.onWarp(0);
   }
@@ -616,6 +701,7 @@ export class Director {
     this.journeyT = t;
     this.leftDisk = false;
     this.rig.reset(); // a mira suavizada também salta para o instante certo
+    this.perturbar();
   }
 
   get journeyDuration() {
@@ -632,6 +718,7 @@ export class Director {
     if (this.phase !== 'journey') return false;
     this.freezeJourney = !this.freezeJourney;
     this.rig.paused = this.freezeJourney;
+    this.perturbar();
     return this.freezeJourney;
   }
 
@@ -646,6 +733,9 @@ export class Director {
    * (nodisc/nogdust/noglow seguem exigindo reload: são lidas no bake.)
    */
   setLayerHidden(flag: string, hidden: boolean) {
+    // antes do desvio: o ramo da nebulosa também muda a tela, e sair por
+    // ele sem zerar a contagem daria cena "estável" com a camada trocando
+    this.perturbar();
     if (flag === 'nonebula') {
       this.noNebula = hidden;
       return;
@@ -799,6 +889,7 @@ export class Director {
   setQuality(q: QualityLevel) {
     this.engine.applyQuality(q, true);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
+    this.perturbar();
   }
 
   /**
@@ -809,6 +900,7 @@ export class Director {
   setExposure(v: number) {
     this.expOverride = true;
     this.engine.setExposure(v);
+    this.perturbar();
   }
 
   get progressTicks(): { t: number; text: string }[] {
@@ -1111,6 +1203,9 @@ export class Director {
       this.nebula.render(this.engine.renderer, cam);
     }
     this.post.render(time);
+    // DEPOIS do render, e é o único lugar que soma: o sinal de prontidão
+    // conta quadros DESENHADOS, não quadros agendados (ver `captura`).
+    this.quadrosEstaveis++;
   }
 
   /**

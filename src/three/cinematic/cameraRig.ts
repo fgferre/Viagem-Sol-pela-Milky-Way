@@ -206,6 +206,24 @@ export class FreeRoam {
     this.blend = 0;
   }
 
+  /**
+   * Há movimento EM CURSO: visita a caminho, slerp de entrada dissolvendo
+   * ou inércia residual/tecla pressionada. Somente leitura — quem pergunta
+   * é o sinal de prontidão para captura (`Director.captura`), que não pode
+   * declarar cena estável enquanto a câmera ainda anda. Deep-links `?pos=`
+   * caem em `false` desde o primeiro quadro: `snapCanonical` zera o blend e
+   * `resetMotion` zera velocidade e teclas.
+   */
+  get animando(): boolean {
+    return (
+      this.enabled &&
+      (this.visit !== null ||
+        this.blend > 0.001 ||
+        this.vel.lengthSq() > 1e-12 ||
+        this.keys.size > 0)
+    );
+  }
+
   /** zera inércia/entradas — velocidade antiga não sobrevive à troca de modo */
   resetMotion() {
     this.vel.set(0, 0, 0);

@@ -20,7 +20,7 @@
 // total. `rodada.mjs` já tinha a limpeza — só que só no ramo `win32`, e a
 // morte silenciosa dos outros três harnesses estava embutida no valor que
 // eles imprimiam. Regra: quem sobe Chrome mata pelo `user-data-dir`, sempre.
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, rmSync, readFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -50,6 +50,74 @@ export const GPU_FLAGS = [
   `--use-angle=${ANGLE[process.platform] ?? 'default'}`,
 ];
 
+const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * A PORTA que o Chrome escolheu, lida do `DevToolsActivePort` que ele grava
+ * no próprio perfil. Existe para o harness poder subir N browsers em
+ * paralelo sem aritmética de porta: com `--remote-debugging-port=0` quem
+ * escolhe é o SO, e duas levas simultâneas (ou dois filhos do mesmo pai)
+ * não têm como colidir. É o mesmo caminho que o puppeteer usa.
+ */
+export async function portaDoPerfil(perfil, teto = 30000) {
+  const arquivo = resolve(perfil, 'DevToolsActivePort');
+  const prazo = Date.now() + teto;
+  for (;;) {
+    try {
+      const porta = Number(readFileSync(arquivo, 'utf8').split('\n')[0]);
+      if (porta > 0) return porta;
+    } catch { /* o Chrome ainda não gravou */ }
+    if (Date.now() > prazo) throw new Error('Chrome não publicou DevToolsActivePort');
+    await dorme(100);
+  }
+}
+
+/**
+ * ESPERA A CENA ASSENTAR, com o SINAL do app na frente e o método antigo
+ * como teto de segurança.
+ *
+ * O caminho rápido é `window.__director.captura.pronto` (ver o getter
+ * `captura` em `src/three/director.ts`): o app declara ele mesmo que o
+ * `init` terminou, que nada está andando, que o Sol tem retrato completo
+ * publicado e que já desenhou N quadros sem perturbação. Numa vista de
+ * 1800×1800 isso acontece ~6 s depois do `navigate`.
+ *
+ * O caminho lento é o CRITÉRIO ANTIGO, palavra por palavra: o log da
+ * cartografia e mais `quadros` quadros desenhados depois dele (~70 s nesta
+ * máquina, porque a leva roda a ~10 fps). Ele continua aqui porque o sinal
+ * só existe no bundle de DEV (`window.__director` é publicado sob
+ * `import.meta.env.DEV`) — apontar `APP_URL` para um build de produção, ou
+ * para uma versão do app anterior a esta reforma, cai neste ramo em vez de
+ * travar. Quem chama recebe o `via` e DEVE imprimi-lo: uma leva inteira
+ * caindo no teto de segurança é sinal quebrado, e o sintoma seria só a
+ * lentidão de antes — o modo caro de falhar.
+ */
+export async function esperarAssentar({ send, cartografia, quadros = 700, teto = 180000 }) {
+  const t0 = Date.now();
+  let base = null;
+  for (;;) {
+    const r = await send('Runtime.evaluate', {
+      expression:
+        'JSON.stringify({f:window.__f|0,'
+        + 'c:(window.__director&&window.__director.captura)||null})',
+      returnByValue: true,
+    });
+    const { f, c } = JSON.parse(r.result.value);
+    if (cartografia() && base === null) base = f;
+    if (c && c.pronto) return { via: 'sinal', ms: Date.now() - t0, quadros: c.quadros };
+    // o teto de segurança é o método antigo INTEIRO, não uma aproximação
+    if (base !== null && f - base > quadros) {
+      return { via: 'quadros', ms: Date.now() - t0, quadros: f - base };
+    }
+    if (Date.now() - t0 > teto) {
+      throw new Error(
+        `não assentou (cart=${cartografia()}, f=${f}, sinal=${c ? JSON.stringify(c) : 'ausente'})`
+      );
+    }
+    await dorme(100);
+  }
+}
+
 /**
  * Mata TODO processo cuja linha de comando cite este `user-data-dir` — o
  * browser e os helpers que sobrevivem a ele. Casa pelo perfil, e não pelo
@@ -65,8 +133,10 @@ export const GPU_FLAGS = [
  * orçamento virtual é régua ruim (adianta TIMER, não REDE); aqui ele é régua
  * nenhuma.
  *
- * Espera o log da cartografia e mais `quadros` quadros DESENHADOS, que é o
- * que faz a mesma vista repetir md5.
+ * Espera o SINAL de prontidão do app (`esperarAssentar`), com o critério
+ * antigo — cartografia + `quadros` quadros desenhados — como teto de
+ * segurança. As seis faces do gate do céu saem BIT-IDÊNTICAS pelos dois
+ * caminhos (medido 2026-08-11, `skyError` 0,7782 nos dois).
  */
 export async function capturarCDP({ url, largura, altura, porta, quadros = 700, teto = 300000 }) {
   const perfil = resolve(tmpdir(), `cdp-${process.pid}-${porta}`);
@@ -76,7 +146,6 @@ export async function capturarCDP({ url, largura, altura, porta, quadros = 700, 
     '--force-device-scale-factor=1', `--window-size=${largura},${altura}`,
     `--user-data-dir=${perfil}`, `--remote-debugging-port=${porta}`, 'about:blank',
   ], { stdio: 'ignore' });
-  const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
   let seq = 0;
   try {
     let alvo = null;
@@ -116,16 +185,10 @@ export async function capturarCDP({ url, largura, altura, porta, quadros = 700, 
         + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
     });
     await send('Page.navigate', { url });
-    const t0 = Date.now();
-    let base = null;
-    for (;;) {
-      const r = await send('Runtime.evaluate', { expression: 'window.__f|0', returnByValue: true });
-      const f = r.result.value;
-      if (cartografia && base === null) base = f;
-      if (base !== null && f - base > quadros) break;
-      if (Date.now() - t0 > teto) throw new Error(`não assentou (cart=${cartografia}, f=${f})`);
-      await dorme(250);
-    }
+    const assentou = await esperarAssentar({
+      send, cartografia: () => cartografia, quadros, teto,
+    });
+    process.stdout.write(`  assentou por ${assentou.via} em ${(assentou.ms / 1000).toFixed(1)}s\n`);
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     const buf = Buffer.from(shot.data, 'base64');
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);

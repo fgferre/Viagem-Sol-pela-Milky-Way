@@ -434,6 +434,24 @@ export class StellarBody {
   // com RT amarrado — a variante certa; os meshes do group entram na
   // cena antes do compileAsync do director e são cobertos por ele)
 
+  /**
+   * O corpo tem um retrato COMPLETO publicado: nenhum bake fatiado a meio
+   * caminho (`bakeStep < 0` — as 8 fatias publicam de uma vez, e capturar
+   * no meio mostraria meia cromosfera nova sobre meia velha) e a coroa
+   * volumétrica já na primeira publicação (`cvolReady`, que o `prime` roda
+   * até acontecer justamente porque sob `?shot=` o delta é 0 e a máquina
+   * de fatias nunca giraria).
+   *
+   * SOMENTE LEITURA, e isso é contrato: quem consulta é o sinal de
+   * prontidão do harness de captura (`window.__director.captura`). Nenhum
+   * ramo daqui escreve estado nem toca no caminho de render — se tocasse,
+   * o gate de identidade estaria medindo a própria régua.
+   */
+  get assentado(): boolean {
+    const ctx = this.ctx;
+    return ctx.bakeStep < 0 && (!(ctx.CVOL_STEPS > 0) || Boolean(ctx.cvolReady));
+  }
+
   /** relógio visual do director (0 sob ?shot=) + câmera + tempo de viagem */
   update(time: number, camera: THREE.PerspectiveCamera, journeyT?: number) {
     const ctx = this.ctx;

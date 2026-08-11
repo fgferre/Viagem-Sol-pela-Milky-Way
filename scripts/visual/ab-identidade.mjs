@@ -5,6 +5,8 @@
 //   ...edita...
 //   node scripts/visual/ab-identidade.mjs depois     # compara e dá o veredito
 //   node scripts/visual/ab-identidade.mjs antes interno   # uma vista só
+//   SMOKE=1 node scripts/visual/ab-identidade.mjs antes   # 3 vistas-sentinela
+//   JOBS=1 node scripts/visual/ab-identidade.mjs antes    # serial (padrão: 3)
 //
 // POR QUE NÃO `--virtual-time-budget --screenshot`, que é como `rodada.mjs`
 // captura: o orçamento de tempo virtual acelera TIMERS, não a REDE. Os ~6 MB
@@ -12,9 +14,35 @@
 // conforme a sorte, e a MESMA vista sai em estados diferentes. Medido em
 // 2026-08-07 no mesmo commit: t=100 devolveu a60fe9ce / 40f306d2 / effb3b85 em
 // três capturas, com e sem `?q=cinema`, com orçamento de 16 s e de 32 s.
-// Aqui a captura ESPERA: o log da cartografia e mais 700 quadros desenhados
-// depois dele (~12 s, ou 45 refreshes do conjunto de nuvens-semente, que roda
-// a cada 0,25 s). Com essa espera as cinco vistas repetem md5.
+// Aqui a captura ESPERA — e o QUE ela espera mudou na reforma de 2026-08-11:
+//
+//   ANTES: o log da cartografia e mais 700 quadros desenhados depois dele.
+//   Funcionava, e custava ~70 s POR CAPTURA (a leva roda a ~10 fps numa vista
+//   de 1800×1800): 30 capturas = ~45 min, quase tudo esperando no escuro.
+//   700 nunca foi medido — era folga escolhida quando o virtual time falhou.
+//
+//   AGORA: o SINAL do próprio app, `window.__director.captura.pronto` (ver o
+//   getter `captura` em `src/three/director.ts`), que só sobe quando o `init`
+//   terminou, nada está andando, o Sol tem retrato completo publicado e a
+//   cena já desenhou 10 quadros sem perturbação. ~6 s por captura. Sondado
+//   antes de trocar: `sol`, `travessia` e `soldisco` já devolvem o md5
+//   OFICIAL no primeiro quadro depois do deep-link — nos marcos 1, 2, 3, 5,
+//   10, 30, 80, 320 e 700 o hash é o mesmo. O método NÃO afrouxou: N=2 por
+//   vista, navegador limpo por captura, tier pinado, md5 bit-exato.
+//   O critério antigo continua vivo como TETO DE SEGURANÇA: se o sinal não
+//   existir (bundle de produção — `window.__director` só é publicado em DEV)
+//   ou não subir, a captura cai nos 700 quadros em vez de travar. A coluna
+//   `via=` de cada linha diz por qual caminho ela assentou; uma leva inteira
+//   em `via=quadros` é sinal quebrado, não lentidão de hardware.
+//
+// PARALELISMO POR DIVISÃO DA LISTA (`JOBS=N`, padrão 3): o pai reparte as
+// vistas entre N processos-filhos independentes, cada um com o SEU Chrome e o
+// SEU perfil; o dev server é um só (serve estático, aguenta). Nunca N abas ou
+// contextos num Chrome só — a bit-exatidão sob GPU compartilhada não está
+// documentada em lugar nenhum, e o gate inteiro depende dela. Cada filho grava
+// o seu arquivo de estado e o pai funde no JSON de sempre, no formato exato de
+// antes. `JOBS=1` roda tudo em processo, em série — é assim que se isola a
+// prova do sinal da prova do paralelismo.
 //
 // LEIA O VEREDITO CERTO: md5 igual prova igualdade; md5 diferente NÃO prova
 // diferença — pode ser captura não assentada. Por isso N capturas por lado e
@@ -28,7 +56,7 @@ import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'node
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { CHROME, GPU_FLAGS, matarPerfil } from './chrome.mjs';
+import { CHROME, GPU_FLAGS, matarPerfil, portaDoPerfil, esperarAssentar } from './chrome.mjs';
 
 const LADO = process.argv[2] || 'antes';
 const SO = process.argv[3];
@@ -104,16 +132,25 @@ const VISTAS = [
   ['hero950', '?pos=23.0362,1093.2277,142.1532&look=3.1895,151.3642,19.682&shot=2'],
   ['hero8', '?pos=3.0224,143.4327,18.6507&look=3.1895,151.3642,19.682&shot=2'],
 ];
+// SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
+// solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
+// `soldisco` é o campo com a cessão de dominância ligada a 0,1 pc — foi ela
+// que mudou quando `DOMINANCE_DEFAULT_ON` virou true; `hero8` é o hero de
+// perto, a única vista em que billboard e ponto do catálogo dividem o mesmo
+// lugar com 11,3 px de raio. SENTINELA É PARA ITERAR: o gate de fechamento
+// continua sendo a leva COMPLETA das 15 — três vistas não cobrem o aspecto
+// (retrato), nem a travessia, nem o mergulho, nem os regimes do farFade.
+const SENTINELAS = ['sol', 'soldisco', 'hero8'];
 const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
 // TIER FIXO, e ele não é preferência: sem `?q=` o `autoQuality` do engine
 // rebaixa cinema→alta→performance sozinho assim que a média cai de 42 fps
 // (engine.ts), e isso troca `nebulaSteps` 56→30 e o `pixelRatio` NO MEIO da
-// espera de 700 quadros. Numa máquina que segura 60 fps o degrau nunca dispara
-// e `q=cinema` é BIT-EXATO (mesmo tier, mesmo preset — só desliga o
-// automático); numa que não segura, sem ele o gate compara duas imagens
-// tiradas em qualidades diferentes e chama a diferença de regressão. Medido
-// aqui: o app assenta em `performance` (raymarch de 30 passos) em toda
-// captura, e o `nearCeiling` do engine ainda pode reacelerar para `alta`.
+// espera. Numa máquina que segura 60 fps o degrau nunca dispara e `q=cinema`
+// é BIT-EXATO (mesmo tier, mesmo preset — só desliga o automático); numa que
+// não segura, sem ele o gate compara duas imagens tiradas em qualidades
+// diferentes e chama a diferença de regressão. Medido aqui: o app assenta em
+// `performance` (raymarch de 30 passos) em toda captura, e o `nearCeiling`
+// do engine ainda pode reacelerar para `alta`.
 const PIN = '&q=cinema';
 // EXTRA=&knob=1 anexa um parâmetro a TODAS as vistas — o A/B de um knob se faz
 // com o mesmo binário dos dois lados, sem editar nada entre as capturas.
@@ -124,6 +161,11 @@ const EXTRA = process.env.EXTRA || '';
 // o corte lateral de sprite é exatamente desse tipo.
 // JANELA=LxA sobrescreve o tamanho de TODAS as vistas, para varredura ad hoc.
 const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}.json`);
+// o filho recebe a sua fatia por ambiente; a linha de comando continua sendo
+// a de sempre (`lado [vista]`), para nada do ritual mudar
+const FILHO = process.env.AB_FILHO ? Number(process.env.AB_FILHO) : null;
+const JOBS = Math.max(1, Number(process.env.JOBS || 3));
+const SMOKE = process.env.SMOKE === '1' || process.env.SMOKE === 'true';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let id = 0;
@@ -141,17 +183,23 @@ function rpc(ws, onEvent) {
   });
 }
 
-async function capturar(query, porta, png, janela) {
+let seqPerfil = 0;
+async function capturar(query, png, janela) {
   const [jw, jh] = (janela || process.env.JANELA || '1800x1800').split('x');
   let efetivo = '?';
-  const perfil = resolve(tmpdir(), `ab-${process.pid}-${porta}`);
+  const perfil = resolve(tmpdir(), `ab-${process.pid}-${seqPerfil++}`);
+  // PORTA ZERO: quem escolhe é o SO, e o Chrome publica a escolha no
+  // DevToolsActivePort do próprio perfil. Com N filhos em paralelo (e duas
+  // levas simultâneas na mesma máquina) não sobra aritmética de porta para
+  // errar — era a única corrida de verdade do paralelismo por lista.
   const chrome = spawn(CHROME, [
     ...GPU_FLAGS,
     '--hide-scrollbars', '--no-first-run', '--mute-audio',
     '--force-device-scale-factor=1', `--window-size=${jw},${jh}`,
-    `--user-data-dir=${perfil}`, `--remote-debugging-port=${porta}`, 'about:blank',
+    `--user-data-dir=${perfil}`, '--remote-debugging-port=0', 'about:blank',
   ], { stdio: 'ignore' });
   try {
+    const porta = await portaDoPerfil(perfil);
     let url = null;
     for (let i = 0; i < 100 && !url; i++) {
       try {
@@ -186,16 +234,9 @@ async function capturar(query, porta, png, janela) {
         + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
     });
     await send('Page.navigate', { url: APP + '/' + query });
-    const t0 = Date.now();
-    let base = null;
-    for (;;) {
-      const r = await send('Runtime.evaluate', { expression: 'window.__f|0', returnByValue: true });
-      const f = r.result.value;
-      if (cartografiaChegou && base === null) base = f;
-      if (base !== null && f - base > 700) break;
-      if (Date.now() - t0 > 180000) throw new Error(`não assentou (cart=${cartografiaChegou}, f=${f})`);
-      await sleep(250);
-    }
+    const assentou = await esperarAssentar({
+      send, cartografia: () => cartografiaChegou, quadros: 700, teto: 180000,
+    });
     // buffer EFETIVO, não a janela pedida: 700x1800 vira 684x1705 depois da
     // barra de rolagem e do chrome do headless, e é o buffer que decide o
     // aspecto que o shader vê
@@ -210,7 +251,11 @@ async function capturar(query, porta, png, janela) {
     // captura preta ou página de erro: um md5 estável de NADA passaria no teste
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
     if (png) writeFileSync(png, buf);
-    return createHash('md5').update(buf).digest('hex').slice(0, 12) + '@' + efetivo;
+    return {
+      hash: createHash('md5').update(buf).digest('hex').slice(0, 12) + '@' + efetivo,
+      via: assentou.via,
+      ms: assentou.ms,
+    };
   } finally {
     chrome.kill();
     matarPerfil(perfil);
@@ -219,49 +264,135 @@ async function capturar(query, porta, png, janela) {
   }
 }
 
+/**
+ * Captura uma lista de vistas em SÉRIE e grava o resultado em `arquivo` a
+ * cada vista concluída. É o corpo do laço de sempre — o pai serial e cada
+ * filho do paralelo chamam exatamente este.
+ *
+ * `base` é o que JÁ estava medido: no pai serial é o estado lido do disco,
+ * e ele precisa ser reescrito junto a cada vista, senão uma queda no meio da
+ * leva deixaria em disco só as vistas desta rodada — a retomada perderia
+ * justamente as boas que já custaram GPU.
+ */
+async function capturarLista(vistas, arquivo, marca = '', base = {}) {
+  const out = { ...base };
+  for (const [nome, query, janela] of vistas) {
+    out[nome] = [];
+    const vias = [];
+    for (let k = 0; k < N; k++) {
+      // capturas/ é gitignored e não existe em clone novo — criar aqui, senão
+      // a única forma de OLHAR a diferença (o diff de pixel) morre no open()
+      const png = SO ? resolve(ROOT, 'capturas', `ab-${LADO}-${nome}-${k}.png`) : null;
+      if (png) mkdirSync(resolve(ROOT, 'capturas'), { recursive: true });
+      // uma segunda chance por captura: o Chrome headless morre no arranque de
+      // vez em quando, e perder a bateria por isso é caro demais
+      let r = null;
+      for (let tent = 1; tent <= 2 && r === null; tent++) {
+        try {
+          r = await capturar(query + PIN + EXTRA, png, janela);
+        } catch (e) {
+          console.log(`${marca}  ${nome} ${k} tentativa ${tent} falhou: ${e.message}`);
+          if (tent === 2) throw e;
+        }
+      }
+      out[nome].push(r.hash);
+      vias.push(`${r.via}/${(r.ms / 1000).toFixed(0)}s`);
+    }
+    console.log(`${marca}${nome.padEnd(10)} ${out[nome].join(' ')}  via=${vias.join(' ')}`);
+    // por VISTA, não no fim: o estado sobrevive a uma queda no meio
+    writeFileSync(arquivo, JSON.stringify(out, null, 1));
+  }
+  writeFileSync(arquivo, JSON.stringify(out, null, 1));
+  return out;
+}
+
+// ---- FILHO: uma fatia da lista, um Chrome de cada vez, arquivo próprio ----
+if (FILHO !== null) {
+  const nomes = new Set((process.env.AB_VISTAS || '').split(',').filter(Boolean));
+  await capturarLista(
+    VISTAS.filter(([n]) => nomes.has(n)),
+    resolve(tmpdir(), `ab-identidade-${LADO}-j${FILHO}.json`),
+    `[j${FILHO}] `
+  );
+  process.exit(0);
+}
+
+// ---- PAI ----------------------------------------------------------------
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
 // RETOMA o que já está em disco em vez de começar do zero. Uma bateria são
-// ~20 min de GPU, e antes disto uma captura travada no meio jogava fora TODAS
+// minutos de GPU, e antes disto uma captura travada no meio jogava fora TODAS
 // as vistas já medidas — inclusive as boas. Com o estado gravado por vista,
 // re-rodar o mesmo lado só refaz o que falta, e `ab-identidade.mjs antes
-// edgeon` deixa de apagar as outras cinco (o filtro `SO` escrevia um estado
+// edgeon` deixa de apagar as outras (o filtro `SO` escrevia um estado
 // com uma vista só).
 const md5 = existsSync(ESTADO) && !process.env.DOZERO
   ? JSON.parse(readFileSync(ESTADO, 'utf8'))
   : {};
-let porta = 9500 + (process.pid % 100);
-for (const [nome, query, janela] of VISTAS) {
-  if (SO && nome !== SO) continue;
+
+const lista = VISTAS.filter(([nome]) => {
+  if (SO) return nome === SO;
+  if (SMOKE && !SENTINELAS.includes(nome)) return false;
+  return true;
+});
+const pendentes = lista.filter(([nome]) => {
   if (md5[nome]?.length === N && !SO) {
     console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}  (de disco)`);
-    continue;
+    return false;
   }
-  md5[nome] = [];
-  for (let k = 0; k < N; k++) {
-    // capturas/ é gitignored e não existe em clone novo — criar aqui, senão
-    // a única forma de OLHAR a diferença (o diff de pixel) morre no open()
-    const png = SO ? resolve(ROOT, 'capturas', `ab-${LADO}-${nome}-${k}.png`) : null;
-    if (png) mkdirSync(resolve(ROOT, 'capturas'), { recursive: true });
-    // uma segunda chance por captura: o Chrome headless morre no arranque de
-    // vez em quando, e perder a bateria por isso é caro demais
-    let hash = null;
-    for (let tent = 1; tent <= 2 && hash === null; tent++) {
-      try {
-        hash = await capturar(query + PIN + EXTRA, porta++, png, janela);
-      } catch (e) {
-        console.log(`  ${nome} ${k} tentativa ${tent} falhou: ${e.message}`);
-        if (tent === 2) throw e;
-      }
-    }
-    md5[nome].push(hash);
-  }
-  console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}`);
-  // por VISTA, não no fim: o estado sobrevive a uma queda no meio
+  return true;
+});
+
+const t0 = Date.now();
+const jobs = Math.min(JOBS, pendentes.length);
+if (jobs <= 1) {
+  // SERIAL, em processo — o caminho de sempre, e o que isola a prova do
+  // sinal de prontidão da prova do paralelismo
+  Object.assign(md5, await capturarLista(pendentes, ESTADO, '', md5));
   writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
+} else {
+  // DIVISÃO DA LISTA em N processos independentes, cada um com o seu Chrome.
+  // Round-robin e não blocos contíguos: as vistas custam tempos diferentes
+  // (as de `?pos=` assentam antes das de `?t=`), e alternar reparte melhor.
+  const baldes = Array.from({ length: jobs }, () => []);
+  pendentes.forEach((v, i) => baldes[i % jobs].push(v));
+  console.log(
+    `${pendentes.length} vistas em ${jobs} processos: `
+    + baldes.map((b, i) => `j${i}=${b.length}`).join(' ')
+  );
+  const filhos = baldes.map((balde, k) => new Promise((res, rej) => {
+    const p = spawn(process.execPath, [fileURLToPath(import.meta.url), LADO], {
+      env: {
+        ...process.env,
+        AB_FILHO: String(k),
+        AB_VISTAS: balde.map(([n]) => n).join(','),
+      },
+      stdio: ['ignore', 'inherit', 'inherit'],
+    });
+    p.on('exit', (code) => (code === 0 ? res() : rej(new Error(`filho j${k} saiu com ${code}`))));
+    p.on('error', rej);
+  }));
+  // `allSettled` e não `all`: um filho que cai não pode fazer o pai abandonar
+  // os arquivos dos outros — o que já foi medido tem de entrar no estado, ou
+  // a retomada em disco não vale nada.
+  const fim = await Promise.allSettled(filhos);
+  for (let k = 0; k < jobs; k++) {
+    const arq = resolve(tmpdir(), `ab-identidade-${LADO}-j${k}.json`);
+    if (!existsSync(arq)) continue;
+    Object.assign(md5, JSON.parse(readFileSync(arq, 'utf8')));
+    rmSync(arq, { force: true });
+  }
+  writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
+  const caiu = fim.filter((f) => f.status === 'rejected');
+  if (caiu.length) throw new Error(caiu.map((f) => f.reason.message).join('; '));
 }
-writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
+if (pendentes.length) {
+  console.log(
+    `\n${pendentes.length} vistas × ${N} capturas em `
+    + `${((Date.now() - t0) / 60000).toFixed(1)} min (JOBS=${jobs}${SMOKE ? ', SMOKE' : ''})`
+  );
+}
 
 if (LADO === 'depois') {
   const antes = JSON.parse(readFileSync(resolve(tmpdir(), 'ab-identidade-antes.json'), 'utf8'));

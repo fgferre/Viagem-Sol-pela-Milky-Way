@@ -2520,6 +2520,55 @@ corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,
 
 ## Como retomar os gates numa sessão nova (leia antes de medir)
 
+**Como rodar, desde a reforma do harness (2026-08-11).** O método não mudou — md5
+bit-exato, N=2 capturas por vista, navegador limpo por captura, `?q=cinema` pinado, as
+mesmas 15 vistas, os mesmos md5 oficiais do item 3. O que mudou é **o que a captura
+espera** e **quantos processos capturam**:
+
+```
+node scripts/visual/ab-identidade.mjs antes     # leva completa (JOBS=3 por padrão)
+node scripts/visual/ab-identidade.mjs depois    # compara e dá o veredito
+SMOKE=1 node scripts/visual/ab-identidade.mjs antes   # 3 vistas-sentinela
+JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cada vez
+```
+
+- **O SINAL DE PRONTIDÃO no lugar da espera cega.** Antes a captura esperava o log da
+  cartografia e mais **700 quadros desenhados** — ~70 s por captura numa vista de
+  1800×1800 (a leva roda a ~10 fps), e 700 era folga escolhida no escuro, nunca medida.
+  Agora ela espera `window.__director.captura.pronto`, uma bandeira **somente-leitura**
+  que o director levanta quando o `init` terminou (catálogo, poeira, estrutura, galáxia,
+  lâminas), nada está andando (viagem correndo ou câmera do voo livre), o Sol tem retrato
+  completo publicado (`bakeStep < 0` e coroa volumétrica já na primeira publicação) e a
+  cena desenhou **10 quadros sem perturbação** — perturbação sendo troca de fase, `?q=`,
+  `?pos=`, `?t=`, resize, exposição ou camada ligada/desligada. ~6 s por captura.
+  A sonda que autorizou a troca: `sol`, `travessia` e `soldisco` capturadas nos marcos
+  1, 2, 3, 5, 10, 30, 80, 320 e 700 quadros devolvem **o mesmo md5 oficial em todos os
+  marcos** — a imagem já estava assentada no primeiro quadro depois do deep-link.
+- **O critério antigo continua vivo como TETO DE SEGURANÇA.** `window.__director` só é
+  publicado no bundle de DEV; apontar `APP_URL` para um build de produção (ou para uma
+  versão do app anterior a esta reforma) cai nos 700 quadros em vez de travar. Medido:
+  `APP_URL=http://127.0.0.1:4173` (o `vite preview` do `dist`) devolve `sol
+  a4fbf427778a` — o md5 oficial — por `via=quadros/87s`. Cada linha da leva imprime o
+  `via=`, e **uma leva inteira em `via=quadros` é sinal quebrado, não hardware lento**.
+- **`JOBS=N` reparte a LISTA entre N processos-filhos** (padrão 3), cada um com o seu
+  Chrome e o seu perfil; o dev server é um só. Nunca N abas ou contextos num Chrome só:
+  a bit-exatidão sob GPU compartilhada dentro de um processo não está documentada em
+  lugar nenhum, e o gate inteiro depende dela. Cada filho grava o seu arquivo e o pai
+  funde no JSON de sempre. A porta de depuração de cada Chrome é **escolhida pelo SO**
+  (`--remote-debugging-port=0`, lida do `DevToolsActivePort` do perfil) — era a única
+  corrida de verdade da divisão.
+- **`SMOKE=1` captura três vistas-sentinela** (`sol`, `soldisco`, `hero8`: o disco solar,
+  o campo com a cessão de dominância e o hero de perto). **Sentinela é para ITERAR** — o
+  gate de fechamento continua sendo a leva completa das 15, porque três vistas não cobrem
+  o aspecto (`retrato`), nem a travessia, nem o mergulho, nem os regimes do `farFade`.
+- **Os tempos medidos nesta máquina (2026-08-11), com as 15 vistas × 2 capturas
+  reproduzindo os 15 md5 oficiais bit a bit:** leva completa **1,9 min** com `JOBS=3`
+  (duas rodadas seguidas, 15/15 `IGUAL` nas duas), **3,8 min** com `JOBS=1` — que isola a
+  prova do sinal da prova do paralelismo —, **0,5 min** no `SMOKE=1`. A referência
+  histórica é **~45 min**. O gate do céu herdou o mesmo sinal (mesmo driver): as 6 faces
+  saem bit-idênticas, `skyError` **0,7782** com os cinco termos iguais, e a leva inteira
+  (capturar + medir) passou a levar **42 s**.
+
 O `ab-identidade` guarda os md5 em `TMPDIR/ab-identidade-{antes,depois}.json`, fora do
 repo e fora do git. Duas consequências que já quase custaram um diagnóstico errado:
 
@@ -2638,6 +2687,9 @@ quebrar**, que é o modo caro de falhar.
   `--screenshot` só dispara quando ele alcança. As seis faces do gate do céu passaram para
   o caminho CDP (`capturarCDP` em `chrome.mjs`), que espera o log da cartografia e mais
   700 quadros DESENHADOS — o mesmo critério que já fazia o `ab-identidade` repetir md5.
+  (Desde 2026-08-11 os 700 quadros são o **teto de segurança**: quem manda é o sinal de
+  prontidão do app, e as duas rotas foram medidas bit-idênticas — ver o topo da seção
+  "Como retomar os gates".)
   A medição (`--dump-dom`) continua com tempo virtual, porque a página é estática, mas o
   critério de pronto virou **o arquivo**, não o processo: o Chrome também não sai de lá, e
   esperá-lo custava os 600 s do teto por execução.
