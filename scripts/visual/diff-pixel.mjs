@@ -84,7 +84,6 @@ writeFileSync(pagina, `<!doctype html><meta charset="utf-8"><pre id="o">…</pre
 </script>`);
 
 const perfil = resolve(dir, 'perfil');
-const saida = resolve(dir, 'dom.html');
 const chrome = spawn(CHROME, [
   ...GPU_FLAGS, '--allow-file-access-from-files', '--no-first-run',
   `--user-data-dir=${perfil}`, '--window-size=600,400',

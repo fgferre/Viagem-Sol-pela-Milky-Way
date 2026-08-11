@@ -322,8 +322,72 @@ async function capturarLista(vistas, arquivo, marca = '', base = {}) {
 // baseline que sobrevive entre sessões por uma economia de um arquivo.
 const viasDoFilho = (k) => resolve(tmpdir(), `ab-identidade-${LADO}-j${k}-vias.json`);
 
+/**
+ * O VEREDITO da leva, puro — sem Chrome, sem disco, testado em
+ * `ab-identidade.test.mjs`.
+ *
+ * A ARMADILHA QUE ELE FECHA: o laço antigo abria com
+ * `if (!md5[nome] || !antes[nome]) continue;`. Uma vista ACRESCENTADA à lista
+ * depois de capturar o "antes" não tinha baseline, caía no `continue` e sumia
+ * — sem linha na tela e sem afetar o `>>> BIT-IDÊNTICO`, que saía verde tendo
+ * julgado uma vista a menos. O mesmo `continue` engolia o espelho: uma vista
+ * que o "depois" NÃO capturou (queda no meio da leva, estado de disco
+ * incompleto) também passava batido. Gate que aprova o que não mediu é pior
+ * que gate quebrado — a mesma lição do teto de segurança (`julgarProntidao`).
+ *
+ * A regra:
+ * - sem "depois" → **AUSENTE**, e é ERRO: a comparação está incompleta e o
+ *   veredito não vale. Recapture o lado que falta (o estado é retomável).
+ * - com "depois" e sem "antes" → **NOVA**: não há o que comparar, a baseline
+ *   dela nasce agora. Não é erro, mas TEM linha e entra no resumo — nunca
+ *   silêncio.
+ * - os dois lados presentes → `INSTÁVEL` (um dos lados não repetiu o próprio
+ *   md5), `IGUAL` (interseção não vazia) ou `DIFERE`, como sempre.
+ *
+ * `vistas` é a lista de NOMES na ordem oficial; `antes` e `depois` são os
+ * mapas `{vista: [hash, ...]}` dos dois lados.
+ */
+export function julgarVistas({ vistas = [], antes = {}, depois = {} }) {
+  const linhas = [];
+  const conta = { IGUAL: 0, DIFERE: 0, INSTÁVEL: 0, NOVA: 0, AUSENTE: 0 };
+  for (const nome of vistas) {
+    const a = antes[nome]?.length ? [...new Set(antes[nome])] : null;
+    const d = depois[nome]?.length ? [...new Set(depois[nome])] : null;
+    let veredito;
+    if (!d) veredito = 'AUSENTE';
+    else if (!a) veredito = 'NOVA';
+    else if (a.length > 1 || d.length > 1) veredito = 'INSTÁVEL';
+    else veredito = a.some((h) => d.includes(h)) ? 'IGUAL' : 'DIFERE';
+    conta[veredito]++;
+    linhas.push({
+      nome,
+      veredito,
+      antes: a,
+      depois: d,
+      texto: `${veredito.padEnd(9)} ${nome.padEnd(10)} `
+        + `antes=${a ? a.join(',') : '—'} depois=${d ? d.join(',') : '—'}`,
+    });
+  }
+  const julgadas = conta.IGUAL + conta.DIFERE + conta.INSTÁVEL;
+  const erro = conta.AUSENTE > 0;
+  const bitIdentico = !erro && conta.DIFERE === 0 && conta.INSTÁVEL === 0;
+  const sufixo = conta.NOVA ? ` · ${conta.NOVA} NOVA(s) sem baseline (nada a comparar)` : '';
+  let resumo;
+  if (erro) {
+    resumo = `>>> VEREDITO INVÁLIDO — ${conta.AUSENTE} vista(s) AUSENTE(s) no `
+      + '"depois": recapture o lado que falta antes de concluir qualquer coisa'
+      + sufixo;
+  } else if (bitIdentico) {
+    resumo = `>>> BIT-IDÊNTICO (${julgadas} vistas julgadas)${sufixo}`;
+  } else {
+    resumo = '>>> NÃO é bit-idêntico — rodar o diff de pixel antes de concluir'
+      + sufixo;
+  }
+  return { linhas, conta, julgadas, bitIdentico, erro, resumo };
+}
+
 // ---- FILHO: uma fatia da lista, um Chrome de cada vez, arquivo próprio ----
-if (FILHO !== null) {
+async function filho() {
   const nomes = new Set((process.env.AB_VISTAS || '').split(',').filter(Boolean));
   const { vias } = await capturarLista(
     VISTAS.filter(([n]) => nomes.has(n)),
@@ -337,114 +401,120 @@ if (FILHO !== null) {
 }
 
 // ---- PAI ----------------------------------------------------------------
-const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
-if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
+async function pai() {
+  const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
+  if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
-// RETOMA o que já está em disco em vez de começar do zero. Uma bateria são
-// minutos de GPU, e antes disto uma captura travada no meio jogava fora TODAS
-// as vistas já medidas — inclusive as boas. Com o estado gravado por vista,
-// re-rodar o mesmo lado só refaz o que falta, e `ab-identidade.mjs antes
-// edgeon` deixa de apagar as outras (o filtro `SO` escrevia um estado
-// com uma vista só).
-const md5 = existsSync(ESTADO) && !process.env.DOZERO
-  ? JSON.parse(readFileSync(ESTADO, 'utf8'))
-  : {};
+  // RETOMA o que já está em disco em vez de começar do zero. Uma bateria são
+  // minutos de GPU, e antes disto uma captura travada no meio jogava fora TODAS
+  // as vistas já medidas — inclusive as boas. Com o estado gravado por vista,
+  // re-rodar o mesmo lado só refaz o que falta, e `ab-identidade.mjs antes
+  // edgeon` deixa de apagar as outras (o filtro `SO` escrevia um estado
+  // com uma vista só).
+  const md5 = existsSync(ESTADO) && !process.env.DOZERO
+    ? JSON.parse(readFileSync(ESTADO, 'utf8'))
+    : {};
 
-const lista = VISTAS.filter(([nome]) => {
-  if (SO) return nome === SO;
-  if (SMOKE && !SENTINELAS.includes(nome)) return false;
-  return true;
-});
-const pendentes = lista.filter(([nome]) => {
-  if (md5[nome]?.length === N && !SO) {
-    console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}  (de disco)`);
-    return false;
-  }
-  return true;
-});
-
-const t0 = Date.now();
-const jobs = Math.min(JOBS, pendentes.length);
-// uma entrada por CAPTURA desta invocação, dos dois ramos. Vista que veio de
-// disco não entra: ela não capturou nada agora, e julgar o que não se mediu
-// seria inventar sinal.
-const vias = [];
-if (jobs <= 1) {
-  // SERIAL, em processo — o caminho de sempre, e o que isola a prova do
-  // sinal de prontidão da prova do paralelismo
-  const serial = await capturarLista(pendentes, ESTADO, '', md5);
-  Object.assign(md5, serial.out);
-  vias.push(...serial.vias);
-  writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
-} else {
-  // DIVISÃO DA LISTA em N processos independentes, cada um com o seu Chrome.
-  // Round-robin e não blocos contíguos: as vistas custam tempos diferentes
-  // (as de `?pos=` assentam antes das de `?t=`), e alternar reparte melhor.
-  const baldes = Array.from({ length: jobs }, () => []);
-  pendentes.forEach((v, i) => baldes[i % jobs].push(v));
-  console.log(
-    `${pendentes.length} vistas em ${jobs} processos: `
-    + baldes.map((b, i) => `j${i}=${b.length}`).join(' ')
-  );
-  const filhos = baldes.map((balde, k) => new Promise((res, rej) => {
-    const p = spawn(process.execPath, [fileURLToPath(import.meta.url), LADO], {
-      env: {
-        ...process.env,
-        AB_FILHO: String(k),
-        AB_VISTAS: balde.map(([n]) => n).join(','),
-      },
-      stdio: ['ignore', 'inherit', 'inherit'],
-    });
-    p.on('exit', (code) => (code === 0 ? res() : rej(new Error(`filho j${k} saiu com ${code}`))));
-    p.on('error', rej);
-  }));
-  // `allSettled` e não `all`: um filho que cai não pode fazer o pai abandonar
-  // os arquivos dos outros — o que já foi medido tem de entrar no estado, ou
-  // a retomada em disco não vale nada.
-  const fim = await Promise.allSettled(filhos);
-  for (let k = 0; k < jobs; k++) {
-    const arq = resolve(tmpdir(), `ab-identidade-${LADO}-j${k}.json`);
-    if (existsSync(viasDoFilho(k))) {
-      vias.push(...JSON.parse(readFileSync(viasDoFilho(k), 'utf8')));
-      rmSync(viasDoFilho(k), { force: true });
+  const lista = VISTAS.filter(([nome]) => {
+    if (SO) return nome === SO;
+    if (SMOKE && !SENTINELAS.includes(nome)) return false;
+    return true;
+  });
+  const pendentes = lista.filter(([nome]) => {
+    if (md5[nome]?.length === N && !SO) {
+      console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}  (de disco)`);
+      return false;
     }
-    if (!existsSync(arq)) continue;
-    Object.assign(md5, JSON.parse(readFileSync(arq, 'utf8')));
-    rmSync(arq, { force: true });
+    return true;
+  });
+
+  const t0 = Date.now();
+  const jobs = Math.min(JOBS, pendentes.length);
+  // uma entrada por CAPTURA desta invocação, dos dois ramos. Vista que veio de
+  // disco não entra: ela não capturou nada agora, e julgar o que não se mediu
+  // seria inventar sinal.
+  const vias = [];
+  if (jobs <= 1) {
+    // SERIAL, em processo — o caminho de sempre, e o que isola a prova do
+    // sinal de prontidão da prova do paralelismo
+    const serial = await capturarLista(pendentes, ESTADO, '', md5);
+    Object.assign(md5, serial.out);
+    vias.push(...serial.vias);
+    writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
+  } else {
+    // DIVISÃO DA LISTA em N processos independentes, cada um com o seu Chrome.
+    // Round-robin e não blocos contíguos: as vistas custam tempos diferentes
+    // (as de `?pos=` assentam antes das de `?t=`), e alternar reparte melhor.
+    const baldes = Array.from({ length: jobs }, () => []);
+    pendentes.forEach((v, i) => baldes[i % jobs].push(v));
+    console.log(
+      `${pendentes.length} vistas em ${jobs} processos: `
+      + baldes.map((b, i) => `j${i}=${b.length}`).join(' ')
+    );
+    const filhos = baldes.map((balde, k) => new Promise((res, rej) => {
+      const p = spawn(process.execPath, [fileURLToPath(import.meta.url), LADO], {
+        env: {
+          ...process.env,
+          AB_FILHO: String(k),
+          AB_VISTAS: balde.map(([n]) => n).join(','),
+        },
+        stdio: ['ignore', 'inherit', 'inherit'],
+      });
+      p.on('exit', (code) => (code === 0 ? res() : rej(new Error(`filho j${k} saiu com ${code}`))));
+      p.on('error', rej);
+    }));
+    // `allSettled` e não `all`: um filho que cai não pode fazer o pai abandonar
+    // os arquivos dos outros — o que já foi medido tem de entrar no estado, ou
+    // a retomada em disco não vale nada.
+    const fim = await Promise.allSettled(filhos);
+    for (let k = 0; k < jobs; k++) {
+      const arq = resolve(tmpdir(), `ab-identidade-${LADO}-j${k}.json`);
+      if (existsSync(viasDoFilho(k))) {
+        vias.push(...JSON.parse(readFileSync(viasDoFilho(k), 'utf8')));
+        rmSync(viasDoFilho(k), { force: true });
+      }
+      if (!existsSync(arq)) continue;
+      Object.assign(md5, JSON.parse(readFileSync(arq, 'utf8')));
+      rmSync(arq, { force: true });
+    }
+    writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
+    const caiu = fim.filter((f) => f.status === 'rejected');
+    if (caiu.length) throw new Error(caiu.map((f) => f.reason.message).join('; '));
   }
-  writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
-  const caiu = fim.filter((f) => f.status === 'rejected');
-  if (caiu.length) throw new Error(caiu.map((f) => f.reason.message).join('; '));
-}
-if (pendentes.length) {
-  console.log(
-    `\n${pendentes.length} vistas × ${N} capturas em `
-    + `${((Date.now() - t0) / 60000).toFixed(1)} min (JOBS=${jobs}${SMOKE ? ', SMOKE' : ''})`
-  );
+  if (pendentes.length) {
+    console.log(
+      `\n${pendentes.length} vistas × ${N} capturas em `
+      + `${((Date.now() - t0) / 60000).toFixed(1)} min (JOBS=${jobs}${SMOKE ? ', SMOKE' : ''})`
+    );
+  }
+
+  let vistaAusente = false;
+  if (LADO === 'depois') {
+    const antes = JSON.parse(readFileSync(resolve(tmpdir(), 'ab-identidade-antes.json'), 'utf8'));
+    const juizo = julgarVistas({ vistas: VISTAS.map(([nome]) => nome), antes, depois: md5 });
+    for (const l of juizo.linhas) console.log(l.texto);
+    console.log('\n' + juizo.resumo);
+    vistaAusente = juizo.erro;
+  }
+
+  // POR ÚLTIMO, depois do veredito: o gate GRITA e SAI ≠ 0 se o sinal de
+  // prontidão não subiu no dev server. Os md5 já estão em disco e na tela — o
+  // que a saída ≠ 0 diz é "não valide nada com isto", no mesmo protocolo do
+  // apaga-o-PNG-antes/exige-status-0-depois. Sem esta linha, uma quebra futura
+  // do sinal voltaria a leva para os ~45 min e passaria por hardware lento.
+  const prontidao = julgarProntidao({
+    vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
+  });
+  if (prontidao.mensagem) process.stderr.write(prontidao.mensagem);
+  // vista AUSENTE sai ≠ 0 pelo mesmo motivo: um veredito que não julgou a
+  // lista inteira não é veredito, e o silêncio de antes era o defeito
+  if (prontidao.erro || vistaAusente) process.exit(1);
 }
 
-if (LADO === 'depois') {
-  const antes = JSON.parse(readFileSync(resolve(tmpdir(), 'ab-identidade-antes.json'), 'utf8'));
-  let ok = true;
-  for (const [nome] of VISTAS) {
-    if (!md5[nome] || !antes[nome]) continue;
-    const a = new Set(antes[nome]);
-    const d = new Set(md5[nome]);
-    const inter = [...a].filter((h) => d.has(h));
-    const veredito = a.size > 1 || d.size > 1 ? 'INSTÁVEL' : inter.length ? 'IGUAL' : 'DIFERE';
-    if (veredito !== 'IGUAL') ok = false;
-    console.log(`${veredito.padEnd(9)} ${nome.padEnd(10)} antes=${[...a]} depois=${[...d]}`);
-  }
-  console.log(ok ? '\n>>> BIT-IDÊNTICO' : '\n>>> NÃO é bit-idêntico — rodar o diff de pixel antes de concluir');
+// SÓ A INVOCAÇÃO POR LINHA DE COMANDO roda a leva. `ab-identidade.test.mjs`
+// importa `julgarVistas` — puro, sem Chrome e sem disco — e um import não
+// pode subir 30 capturas nem pingar o dev server.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (FILHO !== null) await filho();
+  else await pai();
 }
-
-// POR ÚLTIMO, depois do veredito: o gate GRITA e SAI ≠ 0 se o sinal de
-// prontidão não subiu no dev server. Os md5 já estão em disco e na tela — o
-// que a saída ≠ 0 diz é "não valide nada com isto", no mesmo protocolo do
-// apaga-o-PNG-antes/exige-status-0-depois. Sem esta linha, uma quebra futura
-// do sinal voltaria a leva para os ~45 min e passaria por hardware lento.
-const prontidao = julgarProntidao({
-  vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
-});
-if (prontidao.mensagem) process.stderr.write(prontidao.mensagem);
-if (prontidao.erro) process.exit(1);

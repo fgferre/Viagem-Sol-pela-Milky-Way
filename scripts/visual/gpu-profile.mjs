@@ -19,7 +19,7 @@
 // é conferível — quando ele cruza 16,67 ms os quadros caem, e foi assim que
 // esta medida se validou (16,15 ms → 60,0 fps; 16,92 ms → 56,3 fps).
 import { spawn } from 'node:child_process';
-import { existsSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CHROME, GPU_FLAGS, matarPerfil } from './chrome.mjs';
