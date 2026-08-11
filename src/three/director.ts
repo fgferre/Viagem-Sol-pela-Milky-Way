@@ -28,7 +28,12 @@ import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
-import { FADE_NEUTRAL, heroCatalogFade, matchHeroesToCatalog } from './world/lodStellar';
+import {
+  DOMINANCE_DEFAULT_ON,
+  FADE_NEUTRAL,
+  heroCatalogFade,
+  matchHeroesToCatalog,
+} from './world/lodStellar';
 import { loadStarData, WORLD } from './config';
 import type { StarsMeta } from './config';
 
@@ -226,11 +231,11 @@ export class Director {
       // bissecção do ?nocart: nuvens CO e forjas separadamente
       'noco', 'noforge', 'nobh',
       // ?nodom=1 — desliga a CESSÃO do ponto do catálogo sob o hero
-      // dominante (Onda 3, fase 3). Não é preferência: é o A/B da
-      // decisão D2 com o MESMO binário dos dois lados (o `EXTRA=` do
-      // ab-identidade anexa o parâmetro a todas as vistas), e é o
-      // caminho de volta imediato se a cessão não agradar — com ele o
-      // campo desenha exatamente o que desenhava antes desta fase.
+      // dominante (Onda 3, fase 3). Enquanto `DOMINANCE_DEFAULT_ON` for
+      // `false` quem LIGA é `?dom=1`; este par existe para o A/B ser
+      // feito com o MESMO binário dos dois lados (o `EXTRA=` do
+      // ab-identidade anexa o parâmetro a todas as vistas) e para o
+      // caminho de volta continuar existindo quando o default virar.
       'nodom',
     ]) {
       if (this.debug.has(k)) this.hide.add(k);
@@ -903,10 +908,16 @@ export class Director {
     this.dust.setCavity(cam.position, cavityGate);
 
     if (this.debug.has('dbgfade')) {
+      // quem está CEDENDO agora (Onda 3, fase 3): o único jeito de ver a
+      // política de dominância viva sem abrir um profiler
+      const cedendo = this.heroCatalogIdx
+        .map((idx, i) => (idx >= 0 && this.stars?.fadeAt(idx) ? `${this.heroes.chosen[i].n}:${this.stars.fadeAt(idx).toFixed(2)}` : null))
+        .filter(Boolean);
       console.log(
         `[dbgfade] dHome=${dHome.toFixed(0)} gal=${galaxyFade.toFixed(2)} ` +
           `loc=${localFade.toFixed(2)} hide=[${[...this.hide].join(',')}] ` +
-          `galVis=${this.galaxy?.group.visible} phase=${this.phase} jt=${this.journeyT.toFixed(1)}`
+          `galVis=${this.galaxy?.group.visible} phase=${this.phase} jt=${this.journeyT.toFixed(1)} ` +
+          `cede=[${cedendo.join(' ')}]`
       );
     }
 
@@ -1116,8 +1127,10 @@ export class Director {
    * inteiro no mesmo quadro, e o gate do céu (que roda com `nohero=1`)
    * continua medindo exatamente o que media. A terceira (o hero apagado
    * pelo `farFade` além de 900 pc) é da própria política, por
-   * construção. `?nodom=1` é a quarta, esta de auditoria: desliga só a
-   * cessão, mantendo tudo o mais igual.
+   * construção. A quarta é a CHAVE: enquanto `DOMINANCE_DEFAULT_ON` for
+   * `false` (ver a razão medida ao lado dela, em `lodStellar`) o que se
+   * escreve é sempre o neutro e `?dom=1` é quem liga — o mecanismo está
+   * inteiro, provado e a uma linha de valer.
    *
    * ONDE ISSO MUDA A TELA (medido, não suposto): perto de casa a
    * dominância é a REGRA, não a exceção — a 0,06 pc (t=6) oito das 16
@@ -1131,7 +1144,11 @@ export class Director {
     const stars = this.stars;
     const heroes = this.heroes;
     if (!stars || !heroes) return;
-    const ligado = heroes.group.visible && !this.hide.has('nodom');
+    // a chave da cessão mora em `lodStellar` (DOMINANCE_DEFAULT_ON), com
+    // a razão de estar em `false` escrita ao lado dela; aqui ficam só as
+    // duas portas de URL que a auditoria usa
+    const cessao = this.debug.has('dom') || (DOMINANCE_DEFAULT_ON && !this.hide.has('nodom'));
+    const ligado = heroes.group.visible && cessao;
     for (let i = 0; i < this.heroCatalogIdx.length; i++) {
       const idx = this.heroCatalogIdx[i];
       if (idx < 0) continue;

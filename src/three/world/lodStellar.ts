@@ -761,6 +761,24 @@ export function heroDominanceFade(ratio: number): number {
   return glslSmoothstep(HERO_DOMINANCE.enterRatio, HERO_DOMINANCE.fullRatio, ratio);
 }
 
+/**
+ * A CHAVE DA CESSÃO. Hoje `false` — a política inteira está instalada,
+ * provada e ligada, mas escreve NEUTRO por decisão de PROCESSO, não por
+ * defeito. A razão está medida e é o achado da fase 3: a previsão da
+ * fase 2 (só a vista de 8 pc mudaria) valia para Betelgeuse e não para
+ * as 16. PERTO DE CASA A DOMINÂNCIA É A REGRA — a 0,06 pc oito das 16
+ * dominam, e seis das quinze vistas do `ab-identidade` mudariam: as
+ * quatro do Sol (α Centauri a 1,4 pc, clarão de 2,6° de raio, com o
+ * ponto dentro), a `sol` (Sirius, clarão de 4,6° de raio num fov de
+ * 26°) e a `hero8`. Ligar isso por conta própria seria mexer no Ato do
+ * Sol sem o dono ter visto o diff. Com a chave em `false` as quinze
+ * vistas saem bit-idênticas e o mecanismo espera a decisão.
+ * `?dom=1` liga ao vivo (é assim que o A/B do gate foi medido, com o
+ * MESMO binário dos dois lados); `?nodom=1` desliga quando esta
+ * constante virar `true` — e virar `true` é a única edição necessária.
+ */
+export const DOMINANCE_DEFAULT_ON = false;
+
 /** O que a política precisa saber de UM par hero↔ponto, num quadro. */
 export interface HeroFadeInputs {
   /** distância câmera↔estrela, em pc (a mesma que vai em `uCamDist`) */

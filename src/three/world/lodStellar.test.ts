@@ -27,6 +27,7 @@ import {
   DISC_ENTER_RAD,
   DISC_EXIT_RAD,
   DISC_VISIBLE_MIN,
+  DOMINANCE_DEFAULT_ON,
   FADE_NEUTRAL,
   FOCUS_OFF,
   FOCUS_ON,
@@ -1318,6 +1319,26 @@ describe('o casamento hero↔catálogo', () => {
     expect(matchHeroesToCatalog(alvo, pos, lum)).toEqual([1]);
     const alvo2 = [{ x: 0, y: 0, z: 10, m: 3.6 + 5 * Math.log10(10) - 5, d: 10 }];
     expect(matchHeroesToCatalog(alvo2, pos, lum)).toEqual([0]);
+  });
+});
+
+describe('a CHAVE da cessão (achado da fase 3)', () => {
+  it('nasce em false, e o consumidor lê a chave — não a política direto', () => {
+    expect(DOMINANCE_DEFAULT_ON).toBe(false);
+    const director = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    // as duas portas de URL do A/B, e a chave no meio delas
+    expect(director).toContain('DOMINANCE_DEFAULT_ON');
+    expect(director).toContain("this.debug.has('dom')");
+    expect(director).toContain("!this.hide.has('nodom')");
+    // e o que se escreve com a chave desligada é o NEUTRO
+    expect(director).toContain(': FADE_NEUTRAL;');
+  });
+
+  it('com a chave desligada, as 15 vistas veem o campo de sempre', () => {
+    // o estado entregue: atributo instalado, política provada, escrita
+    // neutra. `spriteAttenuation(FADE_NEUTRAL)` é 1 — o campo desenha
+    // exatamente o que desenhava antes da fase.
+    expect(spriteAttenuationWithFocus(FADE_NEUTRAL, FOCUS_OFF)).toBe(1);
   });
 });
 
