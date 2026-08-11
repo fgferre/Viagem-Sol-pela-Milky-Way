@@ -1115,9 +1115,13 @@ describe('as redes de segurança da D2', () => {
     // olhou Betelgeuse): na vista `sol` do ab-identidade (t=6) a câmera
     // está a 0,06 pc de casa, então a distância câmera↔hero é a própria
     // distância ao Sol — e aí OITO das 16 têm billboard maior que o
-    // ponto. Sirius: 248 px de clarão contra 11 px de ponto. É por isso
-    // que as vistas do Ato do Sol mudam nesta fase, e é o que o
-    // relatório da fase declara ao coordenador.
+    // ponto. Sirius: 248 px de clarão contra 11 px de ponto.
+    // O que MUDA pixel, porém, é mais estreito que isso, e a medição com
+    // `?dom=1` fechou a conta: só muda a vista em que o PONTO está
+    // dentro do quadro. Na `sol` (t=6) Sirius domina mas o ponto dele
+    // cai fora do frustum — entra só o clarão, que esta política não
+    // toca — e a vista sai bit-idêntica; nas quatro do Sol quem está
+    // dentro do quadro é α Centauri, e elas mudam.
     const { chosen } = heroes16();
     const dominam = chosen.filter((s) => heroCatalogFade(entradaDe(s.n, s.d)) > 0);
     expect(dominam.map((s) => s.n).sort()).toEqual(

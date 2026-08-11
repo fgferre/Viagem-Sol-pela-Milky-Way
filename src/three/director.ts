@@ -942,7 +942,7 @@ export class Director {
       this.heroes.group.visible = !this.hide.has('nohero') && dHome < 1200;
     }
     this.heroes?.update(time, cam.position, tanHalfFov);
-    this.escreverFadeDasHeroes(hPx, tanHalfFov);
+    this.writeHeroFades(hPx, tanHalfFov);
     this.sun.group.visible = !this.hide.has('nosun');
     // a PSF do Sol vive FORA do group (o group some no crossfade) — só
     // ?nosun a desliga
@@ -1132,15 +1132,15 @@ export class Director {
    * escreve é sempre o neutro e `?dom=1` é quem liga — o mecanismo está
    * inteiro, provado e a uma linha de valer.
    *
-   * ONDE ISSO MUDA A TELA (medido, não suposto): perto de casa a
-   * dominância é a REGRA, não a exceção — a 0,06 pc (t=6) oito das 16
-   * dominam, Sirius com 248 px de billboard contra 11 px de ponto; a
-   * 4,5 pc (t=40), sete. A 221 pc (t=100) nenhuma domina. É por isso que
-   * as vistas do Ato do Sol mudam de propósito nesta fase, e as outras
-   * não. Custo: 16 comparações por quadro; a escrita é no-op enquanto
-   * nada muda (C2).
+   * ONDE ISSO MUDA A TELA (medido com `?dom=1`, não suposto): das 15
+   * vistas do `ab-identidade`, cinco. As quatro do Sol (α Centauri, a
+   * 1,4 pc, com o PONTO dentro do quadro) e a `hero8`. As outras dez
+   * ficam bit-idênticas — inclusive a `sol` e a `interno`, onde as
+   * heroes que cedem estão fora do frustum e só o clarão delas sangra
+   * para dentro. Custo: 16 comparações por quadro; a escrita é no-op
+   * enquanto nada muda (C2).
    */
-  private escreverFadeDasHeroes(screenH: number, tanHalfFov: number) {
+  private writeHeroFades(screenH: number, tanHalfFov: number) {
     const stars = this.stars;
     const heroes = this.heroes;
     if (!stars || !heroes) return;

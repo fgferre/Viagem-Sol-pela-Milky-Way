@@ -91,6 +91,14 @@ const VISTAS = [
   // aparece em nenhuma. A 8 pc o mesmo billboard tem 11,3 px de raio: é a
   // única em que se PODE ver o hero e o ponto do catálogo somando luz na
   // mesma posição — a vista que julga a decisão D2.
+  //
+  // [fase 3, correção de fato] "a única" vale para BETELGEUSE, não para
+  // as 16. Perto de casa a soma de luz é a REGRA: a 0,06 pc oito das 16
+  // têm billboard maior que o próprio ponto, e nas quatro vistas do Sol
+  // é α Centauri (1,4 pc) quem soma as duas luzes dentro do quadro —
+  // medido com `?dom=1`, são elas e a hero8 que mudam quando a cessão
+  // liga. hero8 continua julgando a D2 em Betelgeuse; as do Sol julgam
+  // o caso vizinho, que é o mais comum.
   ['hero200', '?pos=7.3677,349.6513,45.4654&look=3.1895,151.3642,19.682&shot=2'],
   ['hero600', '?pos=15.7242,746.2254,97.0322&look=3.1895,151.3642,19.682&shot=2'],
   ['hero950', '?pos=23.0362,1093.2277,142.1532&look=3.1895,151.3642,19.682&shot=2'],

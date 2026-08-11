@@ -764,18 +764,25 @@ export function heroDominanceFade(ratio: number): number {
 /**
  * A CHAVE DA CESSÃO. Hoje `false` — a política inteira está instalada,
  * provada e ligada, mas escreve NEUTRO por decisão de PROCESSO, não por
- * defeito. A razão está medida e é o achado da fase 3: a previsão da
- * fase 2 (só a vista de 8 pc mudaria) valia para Betelgeuse e não para
- * as 16. PERTO DE CASA A DOMINÂNCIA É A REGRA — a 0,06 pc oito das 16
- * dominam, e seis das quinze vistas do `ab-identidade` mudariam: as
- * quatro do Sol (α Centauri a 1,4 pc, clarão de 2,6° de raio, com o
- * ponto dentro), a `sol` (Sirius, clarão de 4,6° de raio num fov de
- * 26°) e a `hero8`. Ligar isso por conta própria seria mexer no Ato do
+ * defeito. A razão é o achado da fase 3: a previsão da fase 2 ("só a
+ * vista de 8 pc muda") valia para Betelgeuse e não para as 16. PERTO DE
+ * CASA A DOMINÂNCIA É A REGRA — a 0,06 pc de casa oito das 16 dominam o
+ * próprio ponto (Sirius com 248 px de clarão contra 11 px de ponto).
+ * MEDIDO com `?dom=1` nas quinze vistas do `ab-identidade`: mudam CINCO,
+ * não uma. As quatro do Sol, por causa de α Centauri (1,4 pc, ponto
+ * DENTRO do quadro ao lado do Sol — 5,2% dos pixels, delta máximo de 2
+ * níveis, invisível mas real), e a `hero8` (48,7% dos pixels, delta
+ * máximo de 19 — o clarão de Betelgeuse cede 22,7% do ponto e o bloom
+ * espalha a diferença). As dez restantes ficam bit-idênticas, inclusive
+ * a `sol` e a `interno`: lá as heroes que cedem estão FORA do frustum e
+ * quem pinta é só o clarão delas, que esta política não toca — o pixel
+ * só muda quando o PONTO está no quadro.
+ * Ligar isso por conta própria seria mexer nas quatro vistas do gate do
  * Sol sem o dono ter visto o diff. Com a chave em `false` as quinze
- * vistas saem bit-idênticas e o mecanismo espera a decisão.
- * `?dom=1` liga ao vivo (é assim que o A/B do gate foi medido, com o
- * MESMO binário dos dois lados); `?nodom=1` desliga quando esta
- * constante virar `true` — e virar `true` é a única edição necessária.
+ * saem bit-idênticas e o mecanismo espera a decisão.
+ * `?dom=1` liga ao vivo (é assim que o A/B foi medido, com o MESMO
+ * binário dos dois lados); `?nodom=1` desliga quando esta constante
+ * virar `true` — e virar `true` é a única edição necessária.
  */
 export const DOMINANCE_DEFAULT_ON = false;
 
