@@ -30,8 +30,7 @@ import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
 import {
   DOMINANCE_DEFAULT_ON,
-  FADE_NEUTRAL,
-  heroCatalogFade,
+  fadesDoQuadro,
   matchHeroesToCatalog,
 } from './world/lodStellar';
 import { loadStarData, WORLD } from './config';
@@ -91,6 +90,8 @@ export class Director {
   /** `aLogLum` do ponto casado, lido do catálogo no init: é constante e
    *  é ele (não a magnitude do sidecar) que a GPU usa para a PSF. */
   private heroCatalogLogLum: number[] = [];
+  /** saída de `fadesDoQuadro`, REUSADA entre quadros (zero alocação) */
+  private readonly heroFades: number[] = [];
   private galaxy!: Galaxy;
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
@@ -1124,7 +1125,8 @@ export class Director {
    *
    * As duas redes de segurança que são estado de runtime moram aqui: com
    * `?nohero=1` ou além de 1.200 pc de casa o grupo inteiro está
-   * desligado (`:922`) e o que se escreve é o NEUTRO — o catálogo volta
+   * desligado (a linha `heroes.group.visible = ...` do `frame`, logo
+   * antes desta chamada) e o que se escreve é o NEUTRO — o catálogo volta
    * inteiro no mesmo quadro, e o gate do céu (que roda com `nohero=1`)
    * continua medindo exatamente o que media. A terceira (o hero apagado
    * pelo `farFade` além de 900 pc) é da própria política, por
@@ -1149,22 +1151,25 @@ export class Director {
     // a decisão de estar em `true` escrita ao lado dela; aqui ficam só as
     // duas portas de URL que a auditoria usa
     const cessao = this.debug.has('dom') || (DOMINANCE_DEFAULT_ON && !this.hide.has('nodom'));
-    const ligado = heroes.group.visible && cessao;
+    // a política inteira é PURA e mora em `lodStellar.fadesDoQuadro`
+    // (testada por comportamento); o que sobra aqui é o fio: ler o estado
+    // do quadro, entregar, escrever. `heroes.camDistPc` é do `update`
+    // logo acima — invertê-los daria o fade do quadro ANTERIOR (e
+    // `Infinity` no primeiro), e é por isso que a ORDEM está pinada no
+    // teste.
+    fadesDoQuadro(
+      this.heroCatalogIdx,
+      heroes.camDistPc,
+      heroes.sizePc,
+      this.heroCatalogLogLum,
+      { screenH, tanHalfFov, expoM0: stars.expoM0, sigmaPx: stars.sigmaPx },
+      heroes.group.visible && cessao,
+      this.heroFades
+    );
     for (let i = 0; i < this.heroCatalogIdx.length; i++) {
       const idx = this.heroCatalogIdx[i];
       if (idx < 0) continue;
-      const fade = ligado
-        ? heroCatalogFade({
-            camDistPc: heroes.camDistPc[i],
-            heroSizePc: heroes.sizePc[i],
-            catalogLogLum: this.heroCatalogLogLum[i],
-            screenH,
-            tanHalfFov,
-            expoM0: stars.expoM0,
-            sigmaPx: stars.sigmaPx,
-          })
-        : FADE_NEUTRAL;
-      stars.writeFade(idx, fade);
+      stars.writeFade(idx, this.heroFades[i]);
     }
   }
 

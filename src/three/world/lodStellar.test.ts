@@ -43,6 +43,7 @@ import {
   computeSolidAngle,
   discWorldFade,
   distanceForSolidAngle,
+  fadesDoQuadro,
   heroCatalogFade,
   heroDominanceFade,
   heroDominanceRatio,
@@ -304,7 +305,8 @@ describe('as 8 vistas novas do ab-identidade — o regime de cada uma', () => {
   it('e a 4ª (8 pc) é a única em que o billboard do hero é VISÍVEL', () => {
     // Medida antes de escolher as vistas: o raio na tela de um hero é
     // `uSize / (d · tan(58°/2))` em meias-alturas de tela — não depende da
-    // lente, porque o uZoom cancela o fov de propósito (heroStars.ts:14-16).
+    // lente, porque o uZoom cancela o fov de propósito (o comentário do
+    // `uZoom` no VERT de heroStars.ts).
     // Betelgeuse tem uSize = 0,08·10^(−0,3·0,45) = 0,0586 pc.
     const raioPx = (dPc: number, sizePc: number) =>
       (sizePc / (dPc * Math.tan(29 * DEG))) * (1713 / 2);
@@ -324,7 +326,9 @@ describe('as 8 vistas novas do ab-identidade — o regime de cada uma', () => {
 // ------------------------------------------------------------
 describe('rampas — forma exata dos consumidores atuais', () => {
   // Oráculo: as três expressões transcritas de novo, direto das linhas
-  // dos consumidores (novoSol.ts:334-335, heroStars.ts:224-225,236-237).
+  // dos consumidores COMO ELAS ERAM antes da fiação da fase 2 — o disco
+  // inline em `novoSol.ts` (hoje `stellarBody.ts`), uGain e uCore inline
+  // em `SunStar.update`.
   const oraculoDisco = (dPc: number) => {
     const wk = (dPc - 0.16) / (0.34 - 0.16);
     return wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
@@ -387,14 +391,14 @@ describe('rampas — forma exata dos consumidores atuais', () => {
 // ------------------------------------------------------------
 describe('heroes — nearFade, farFade e a curva de presença', () => {
   // Oráculo: o smoothstep do GLSL transcrito de novo, e as duas linhas
-  // do FRAG (heroStars.ts:56,58) reescritas em cima dele.
+  // `nearFade`/`farFade` do FRAG de heroStars.ts reescritas em cima dele.
   const ss = (e0: number, e1: number, x: number) => {
     const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
     return t * t * (3 - 2 * t);
   };
   const oraculoNear = (d: number, size: number) => ss(size * 0.5, size * 1.4, d);
   const oraculoFar = (d: number) => 1.0 - ss(320.0, 900.0, d);
-  /** tamanho do clarão de um hero de magnitude m (heroStars.ts:126-127) */
+  /** tamanho do clarão de um hero de magnitude m (construtor de HeroStars) */
   const tamanhoHero = (m: number) => 0.08 * Math.pow(10, -0.3 * m);
   const SIRIUS = tamanhoHero(-1.46); // ~0,219 pc de raio de clarão
   const ANTARES = tamanhoHero(1.06); // ~0,038 pc
@@ -720,10 +724,13 @@ describe('C1a — cobertura contínua do Sol (nenhuma banda morta)', () => {
 // ------------------------------------------------------------
 describe('o teto de gl_PointSize na conta do handoff', () => {
   const TAN26 = Math.tan(13 * DEG); // fov 26°, o mais fechado do regime do Sol
-  const H = 1080; // uScreenH default (stars.ts:40)
-  const EXPO_M0 = 3.5; // stars.ts:41
-  const SIGMA_PX = 0.85; // stars.ts:42
-  /** magnitude aparente do Sol a d pc (heroStars.ts:216) */
+  // os três parâmetros da PSF do campo, como o StarField nasce
+  // (`uScreenH` do material; `expoM0`/`sigmaPx` dos defaults de
+  // `StarFieldOptions`, em stars.ts)
+  const H = 1080;
+  const EXPO_M0 = 3.5;
+  const SIGMA_PX = 0.85;
+  /** magnitude aparente do Sol a d pc (lei de magnitude de `SunStar.update`) */
   const magSol = (d: number) => 4.83 + 5 * Math.log10(d / 10);
 
   it('o teto é PARÂMETRO de projeto (256 px), não medição de driver', () => {
@@ -873,8 +880,8 @@ describe('D3 — os atributos nascem NEUTROS', () => {
 // O regime destes testes é o do gate visual: `screenH = 1713` é a ALTURA
 // EFETIVA do buffer nas capturas do `ab-identidade` (janela 1800×1800
 // menos o chrome do headless — o próprio harness reporta `@1800x1713`), e
-// 3,5/0,85 são o `uExpoM0`/`uSigmaPx` com que o `director.ts:295`
-// constrói o campo. Os números abaixo são, por isso, os MESMOS que a
+// 3,5/0,85 são o `uExpoM0`/`uSigmaPx` com que o `new StarField` do
+// `director.ts` constrói o campo. Os números abaixo são, por isso, os MESMOS que a
 // fase 2 mediu na tela (achado A9) — se um deles se mover, a vista
 // correspondente se move junto.
 const SCREEN_H = 1713;
@@ -1248,6 +1255,54 @@ describe('D2d — a luz combinada não dá um passo para trás na aproximação'
     expect(semCessao(8)).toBeGreaterThan(combinada('Betelgeuse', 8));
     expect(semCessao(200)).toBe(combinada('Betelgeuse', 200)); // fora da dominância, igual
   });
+
+  it('o ESCOPO da prova: presença = 1 acima de 1,4×uSize, e é toda a faixa da dominância', () => {
+    // A álgebra da borda 2,5 supõe `H = r·C` — o hero desenhando INTEIRO.
+    // Isso vale onde `heroPresence` = 1, isto é, acima de 1,4×uSize. O
+    // maior 1,4×uSize dos 16 é o de Sirius; a dominância morre em 113 pc
+    // no pior caso. Entre os dois números não há vão: a prova cobre a
+    // viagem inteira, e é isso que o teste crava.
+    const { chosen, sizePc } = heroes16();
+    const maiorNear = Math.max(...sizePc.map((s) => s * LOD_HERO.near.endFactor));
+    expect(maiorNear).toBeCloseTo(0.3028, 4);
+    for (let j = 0; j < chosen.length; j++) {
+      expect(heroPresence(maiorNear, sizePc[j])).toBe(1);
+      // e onde a presença ainda não vale 1, a política é a rede: o fade
+      // acompanha a presença e o ponto volta na mesma medida
+      const d = sizePc[j] * 1.0; // dentro da janela do nearFade
+      expect(heroCatalogFade(entradaDe(chosen[j].n, d))).toBeLessThan(1);
+    }
+  });
+
+  it('...e ABAIXO de 1,4×uSize o invariante NÃO vale — regime herdado, documentado', () => {
+    // O achado da caçada adversarial (fase 4b): colado na estrela o
+    // `nearFade` do FRAG apaga o clarão e não há corpo nenhum para
+    // assumir, então a luz combinada DIMINUI ao chegar perto. Não é
+    // defeito desta política — é o handoff que só o Sol tem hoje, e que a
+    // Onda 7 dá às outras (pendência nomeada). O teste existe para o dia
+    // em que alguém ler a prova da borda 2,5 e achar que ela cobre isto.
+    const j = heroes16().chosen.findIndex((s) => s.n === 'Sirius');
+    const size = heroes16().sizePc[j];
+    expect(size).toBeCloseTo(0.2163, 4);
+    // a presença é a que o hero DE FATO desenha (nearFade × farFade)
+    const P = (d: number) => {
+      const e = entradaDe('Sirius', d);
+      const ponto = psfPointSizePx(catalogApparentMag(e.catalogLogLum, d), EXPO, SIGMA, SCREEN_H);
+      const hero = heroSizePx(size, d, SCREEN_H, TAN_HELICE) * heroPresence(d, size);
+      return ponto * (1 - heroCatalogFade(e)) + hero;
+    };
+    const pico = P(0.28);
+    expect(pico).toBeCloseTo(2297, 0);
+    expect(P(0.11)).toBeCloseTo(18.65, 1);
+    expect(pico / P(0.11)).toBeGreaterThan(100); // 123× medidos
+    // ...e a rede FUNCIONA: com o clarão apagado o ponto volta INTEIRO
+    expect(heroPresence(0.05, size)).toBe(0);
+    expect(heroCatalogFade(entradaDe('Sirius', 0.05))).toBe(0);
+    expect(P(0.05)).toBeCloseTo(
+      psfPointSizePx(catalogApparentMag(entradaDe('Sirius', 0.05).catalogLogLum, 0.05), EXPO, SIGMA, SCREEN_H),
+      9
+    );
+  });
 });
 
 describe('o casamento hero↔catálogo', () => {
@@ -1312,6 +1367,30 @@ describe('o casamento hero↔catálogo', () => {
     expect(matchHeroesToCatalog([{ x: NaN, y: 0, z: 10, m: 5, d: 10 }], pos, lum)).toEqual([-1]);
   });
 
+  it('INJETIVO: dois alvos no mesmo ponto não ficam com o mesmo índice', () => {
+    // conserto da revisão (fase 4b). Hoje os 16 casam um a um, mas o laço
+    // não impedia a colisão — e colisão silenciosa é a dupla-luz voltando
+    // numa das duas sem nada denunciar. UM ponto no catálogo, DOIS alvos.
+    const pos = new Float32Array([0, 0, 10]);
+    const lum = new Float32Array([2.5]);
+    const mDe = (ll: number) => 4.85 - 2.5 * ll + 5 * Math.log10(10) - 5;
+    const perto = { x: 0, y: 0, z: 10, m: mDe(2.5), d: 10 }; // casa exato
+    const longe = { x: 0, y: 0, z: 10, m: mDe(0.5), d: 10 }; // 2 dex pior
+    expect(matchHeroesToCatalog([perto, longe], pos, lum)).toEqual([0, -1]);
+    // e a ordem dos alvos não decide: quem casa melhor fica, sempre
+    expect(matchHeroesToCatalog([longe, perto], pos, lum)).toEqual([-1, 0]);
+    // −1 é o caminho seguro que já existia: o consumidor pula o slot e o
+    // ponto fica INTEIRO (o comportamento pré-onda), com o mesmo
+    // `console.warn` de "sem par no catálogo" que o director já emite.
+  });
+
+  it('empate exato de score na colisão: vence o primeiro alvo, sem oscilar', () => {
+    const pos = new Float32Array([0, 0, 10]);
+    const lum = new Float32Array([2.5]);
+    const alvo = { x: 0, y: 0, z: 10, m: 4.85 - 2.5 * 2.5 + 5 * Math.log10(10) - 5, d: 10 };
+    expect(matchHeroesToCatalog([{ ...alvo }, { ...alvo }], pos, lum)).toEqual([0, -1]);
+  });
+
   it('empate de posição é desfeito pela luminosidade, não pela ordem', () => {
     // dois pontos no MESMO lugar, luminosidades diferentes
     const pos = new Float32Array([0, 0, 10, 0, 0, 10]);
@@ -1335,14 +1414,30 @@ describe('a CHAVE da cessão (achado da fase 3, virada na fase 4a)', () => {
     // depende dela e não mudou nesta virada.
     expect(DOMINANCE_DEFAULT_ON).toBe(true);
     const director = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
-    // as duas portas de URL do A/B, e a chave no meio delas
+    // PINAGEM DELIBERADA DE FIAÇÃO, e só disso (anotação da fase 4b): o
+    // COMPORTAMENTO da política está testado logo abaixo, na função pura
+    // `fadesDoQuadro`. O que sobra aqui é o que nenhuma função pura pode
+    // provar — que as duas portas de URL existem no director com este
+    // nome exato, e que a chave passa por elas.
     expect(director).toContain('DOMINANCE_DEFAULT_ON');
     expect(director).toContain("this.debug.has('dom')");
     expect(director).toContain("!this.hide.has('nodom')");
-    // e o que se escreve com a cessão desligada continua sendo o NEUTRO
-    expect(director).toContain(': FADE_NEUTRAL;');
     // `?nodom` segue registrado como chave de URL viva (o caminho de volta)
     expect(director).toContain("'nodom',");
+    // e o fio vai para a política pura, não para uma segunda cópia dela
+    expect(director).toContain('fadesDoQuadro(');
+  });
+
+  it('a ORDEM da fiação está pinada: o update dos heroes vem ANTES da escrita', () => {
+    // não é preciosismo: `heroes.camDistPc` é preenchido no `update`, e
+    // inverter as duas linhas daria o fade da distância do quadro
+    // ANTERIOR — e `Infinity` no primeiro quadro (o valor de nascimento).
+    // Nenhum teste de função pura pega isto; este pega.
+    const director = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const update = director.indexOf('this.heroes?.update(');
+    const escrita = director.indexOf('this.writeHeroFades(');
+    expect(update).toBeGreaterThan(0);
+    expect(escrita).toBeGreaterThan(update);
   });
 
   it('desligada por `?nodom=1`, o campo volta a ser o de sempre', () => {
@@ -1351,6 +1446,81 @@ describe('a CHAVE da cessão (achado da fase 3, virada na fase 4a)', () => {
     // o que desenhava antes da onda. É esta identidade que sustenta as
     // duas provas de pixel-igual das fases 2 e 3.
     expect(spriteAttenuationWithFocus(FADE_NEUTRAL, FOCUS_OFF)).toBe(1);
+  });
+});
+
+describe('fadesDoQuadro — a fiação da onda, agora testada por COMPORTAMENTO', () => {
+  // Achado da caçada adversarial (fase 4b): `writeHeroFades` concentrava
+  // TUDO de que a política precisa para funcionar — a ordem do update, o
+  // gate do grupo, as portas de URL e a limpeza do resíduo — e o que
+  // existia de teste era leitura do texto-fonte, que quebra com um
+  // `rename` inofensivo e passa com a fiação errada. A parte pura saiu
+  // para `lodStellar` e é ela que este bloco exercita.
+  const CAM = { screenH: SCREEN_H, tanHalfFov: TAN_HELICE, expoM0: EXPO, sigmaPx: SIGMA };
+  function entradas() {
+    const { stars } = catalogo();
+    const { chosen, sizePc, idx } = heroes16();
+    return { chosen, sizePc, idx, logLum: idx.map((i) => (i >= 0 ? stars.logLum[i] : 0)) };
+  }
+  /** as 16 vistas das próprias distâncias ao Sol (a vista `sol`: 8 dominam) */
+  const dCasa = () => entradas().chosen.map((s) => s.d);
+
+  it('DESLIGADO escreve neutro em todos, mesmo onde a dominância é plena', () => {
+    const { sizePc, idx, logLum } = entradas();
+    const ligados = fadesDoQuadro(idx, dCasa(), sizePc, logLum, CAM, true);
+    expect(ligados.filter((v) => v > 0).length).toBe(8); // o achado A13
+    const desligados = fadesDoQuadro(idx, dCasa(), sizePc, logLum, CAM, false);
+    expect(desligados.every((v) => v === FADE_NEUTRAL)).toBe(true);
+  });
+
+  it('LIGADO é a MESMA política, slot a slot (não uma segunda cópia dela)', () => {
+    const { chosen, sizePc, idx, logLum } = entradas();
+    const d = dCasa();
+    const saida = fadesDoQuadro(idx, d, sizePc, logLum, CAM, true);
+    for (let i = 0; i < idx.length; i++) {
+      expect(saida[i]).toBe(heroCatalogFade(entradaDe(chosen[i].n, d[i])));
+    }
+  });
+
+  it('o resíduo do quadro anterior é limpo NO MESMO quadro em que a chave vira', () => {
+    // é o que faz `?nodom=1` (e `?nohero=1`, e o corte dHome≥1200) terem
+    // efeito imediato, e o que mantém o gate do céu medindo o de sempre
+    const { sizePc, idx, logLum } = entradas();
+    const out: number[] = [];
+    fadesDoQuadro(idx, dCasa(), sizePc, logLum, CAM, true, out);
+    expect(out.some((v) => v > 0)).toBe(true);
+    const mesmo = fadesDoQuadro(idx, dCasa(), sizePc, logLum, CAM, false, out);
+    expect(mesmo).toBe(out); // o array é reusado entre quadros
+    expect(out.every((v) => v === FADE_NEUTRAL)).toBe(true);
+  });
+
+  it('distância podre (Infinity do nascimento, NaN) não escurece ninguém', () => {
+    const { sizePc, idx, logLum } = entradas();
+    const infinitas = idx.map(() => Infinity); // o valor de `camDistPc` no init
+    expect(fadesDoQuadro(idx, infinitas, sizePc, logLum, CAM, true).every((v) => v === 0)).toBe(
+      true
+    );
+    const nans = idx.map(() => NaN);
+    expect(fadesDoQuadro(idx, nans, sizePc, logLum, CAM, true).every((v) => v === 0)).toBe(true);
+  });
+
+  it('slot SEM PAR (−1) recebe neutro — e o consumidor o pula', () => {
+    const { sizePc, idx, logLum } = entradas();
+    const semPar = idx.map((v, i) => (i === 0 ? -1 : v));
+    const saida = fadesDoQuadro(semPar, dCasa(), sizePc, logLum, CAM, true);
+    expect(saida[0]).toBe(FADE_NEUTRAL);
+    // e o resto do quadro não muda por causa dele
+    const inteiro = fadesDoQuadro(idx, dCasa(), sizePc, logLum, CAM, true);
+    expect(saida.slice(1)).toEqual(inteiro.slice(1));
+  });
+
+  it('o tamanho da saída acompanha o número de pares, sempre', () => {
+    const { sizePc, idx, logLum } = entradas();
+    const out = [1, 2, 3];
+    fadesDoQuadro(idx, dCasa(), sizePc, logLum, CAM, false, out);
+    expect(out.length).toBe(idx.length);
+    fadesDoQuadro([], [], [], [], CAM, true, out);
+    expect(out.length).toBe(0);
   });
 });
 

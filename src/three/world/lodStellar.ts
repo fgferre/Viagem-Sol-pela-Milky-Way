@@ -11,23 +11,25 @@
 //    ligadas só por COMENTÁRIO. Uma casa decimal movida de um lado e
 //    nada denunciava. Aqui elas ficam juntas, com os MESMOS números e
 //    a MESMA forma de conta; desde a fase 2 da Onda 3 os dois
-//    consumidores IMPORTAM daqui (`stellarBody.ts:473,480` e
-//    `heroStars.ts:227,238` — o `novoSol.ts` das citações acima virou
-//    `stellarBody.ts` no mesmo `git mv`), e um teste de pinagem
-//    (lodStellar.test.ts) impede a redigitação de renascer.
+//    consumidores IMPORTAM daqui (`stellarBody.ts:473,480` e o
+//    `SunStar.update` de `heroStars.ts` — o `novoSol.ts` das citações
+//    acima virou `stellarBody.ts` no mesmo `git mv`), e um teste de
+//    pinagem (lodStellar.test.ts) impede a redigitação de renascer.
 //    Nota do plano: `PLANO-ATLAS.md:96` chama {0,14→0,30} e
 //    {0,30→0,42} de janelas "dos heroes" — no código elas são do SOL
 //    visto de longe (a classe `SunStar`), não das 16 heroes. O código
 //    real vence; a divergência fica registrada aqui. As janelas que
-//    são MESMO das 16 heroes (nearFade e farFade, `heroStars.ts:56,58`)
-//    entram na tabela `LOD_HERO`, seção 1b — elas alimentam o fim da
-//    dupla-luz hero↔catálogo na fase 3 (decisão D2).
+//    são MESMO das 16 heroes (nearFade e farFade, no FRAG de
+//    `heroStars.ts`) entram na tabela `LOD_HERO`, seção 1b — elas
+//    alimentam o fim da dupla-luz hero↔catálogo na fase 3 (decisão D2).
 //
 // 2. `stepRampToward` — TRANSCRIÇÃO AUTORIZADA do doador atlas-orbital
-//    (`src/components/canvas/hygMeshFadeRamp.ts`, 48 linhas). A matriz
-//    do plano abre a exceção nominalmente (`PLANO-ATLAS.md:49,101,265`):
-//    47 linhas puras que carregam a razão do clamp de dt junto — "é
-//    mais barato copiar com o comentário do que redescobrir o bug".
+//    (`src/components/canvas/hygMeshFadeRamp.ts`: 48 linhas medidas por
+//    `wc -l`, as "47 linhas puras" da matriz mais a linha final — é
+//    contagem, não conteúdo). A matriz do plano abre a exceção
+//    nominalmente (`PLANO-ATLAS.md:49,101,265`): linhas puras que
+//    carregam a razão do clamp de dt junto — "é mais barato copiar com
+//    o comentário do que redescobrir o bug".
 //    Assinatura, corpo e TODOS os comentários vêm inteiros; só a
 //    língua muda (a casa escreve em pt-BR). Onde o comentário do
 //    doador cita o stack dele (R3F, Fast Refresh), o texto fica —
@@ -61,6 +63,24 @@
 // duas janelas das 16 heroes genéricas (LOD_HERO) ficaram sem
 // consumidor JS até a fase 3, quando entraram na política de
 // dominância como rede de segurança (`heroPresence`, seção 5).
+//
+// O QUE EMBARCA DORMENTE, e é declarado como o doador declarava o seu
+// ("module ships dormant", `stellarMeshGate.ts:36-39`): as DUAS metades
+// da cicatriz C4. (i) A rampa TEMPORAL (`stepRampToward`,
+// `RAMP_DURATION_MS`, `resetRamp`) — já dito na seção 2: o crossfade do
+// Sol é dirigido por DISTÂNCIA, e o mecanismo da rampa é o do foco por
+// estrela, que chega na Onda 7. (ii) O GATE POR ÂNGULO SÓLIDO
+// (`shouldDiscBeActive`, `computeSolidAngle`, `projectedRadiusPx`,
+// `maxSpriteSolidAngleRad`): nenhum consumidor de runtime o importa. O
+// handoff REAL do disco continua sendo o corte SECO de
+// `stellarBody.ts:480` (`world > 0.02`, d ≈ 0,3249 pc), SEM cushion —
+// com a câmera tremendo exatamente nessa distância o grupo do Sol pode
+// ligar/desligar quadro a quadro, que é o defeito que o cushion 2× foi
+// comprado para evitar. Fiar o gate ali MUDARIA pixel na fronteira, e
+// esta onda tinha gate de pixel-igual: a fiação é pendência NOMEADA da
+// Onda 7 (quando houver corpo por estrela e o handoff precisar valer
+// para qualquer instância), com A/B próprio. O contrato está inteiro e
+// testado desde a fase 1 — o que falta é o fio, não a peça.
 // ============================================================
 import { WORLD } from '../config';
 
@@ -91,12 +111,13 @@ export const LOD_SOL = {
   disc: { fade0Pc: 0.16, fade1Pc: 0.34 },
   /**
    * `uGain` do clarão (SunStar): 0 → 1 enquanto o disco sai de cena.
-   * Consumidor: `heroStars.ts:227`.
+   * Consumidor: `SunStar.update` (`heroStars.ts`), uniform `uGain`.
    */
   starGain: { startPc: 0.14, widthPc: 0.16, endPc: 0.3 },
   /**
    * `uCore` do clarão (SunStar): o núcleo pontual + espinhos só
-   * acendem DEPOIS que o disco saiu. Consumidor: `heroStars.ts:238`.
+   * acendem DEPOIS que o disco saiu. Consumidor: `SunStar.update`
+   * (`heroStars.ts`), uniform `uCore`.
    */
   starCore: { startPc: 0.3, widthPc: 0.12, endPc: 0.42 },
 } as const;
@@ -128,11 +149,12 @@ export function isDiscGroupVisible(worldFade: number): boolean {
 }
 
 /**
- * `uGain` do SunStar, forma EXATA da que vivia em `heroStars.ts:224-225`
- * (Math.min/Math.max no clamp, divisão pela largura LITERAL, depois
- * smoothstep cúbico ASCENDENTE).
- * O piso `Math.max(camDist, 1e-4)` NÃO migra para cá: em
- * `heroStars.ts:215` ele é do `d` inteiro, compartilhado com a lei de
+ * `uGain` do SunStar, forma EXATA da que vivia inline em
+ * `SunStar.update` antes da fiação da fase 2 (Math.min/Math.max no
+ * clamp, divisão pela largura LITERAL, depois smoothstep cúbico
+ * ASCENDENTE).
+ * O piso `Math.max(camDist, 1e-4)` NÃO migra para cá: na primeira linha
+ * de `SunStar.update` ele é do `d` inteiro, compartilhado com a lei de
  * magnitude (`5·log10(d/10)`, que estoura em d=0) — é guarda do
  * chamador, não da rampa.
  */
@@ -141,7 +163,8 @@ export function sunStarGain(dPc: number): number {
   return k * k * (3 - 2 * k);
 }
 
-/** `uCore` do SunStar, forma EXATA da de `heroStars.ts:236-237`. */
+/** `uCore` do SunStar, forma EXATA da que vivia inline no fim de
+ *  `SunStar.update`. */
 export function sunStarCore(dPc: number): number {
   const c = Math.min(1, Math.max(0, (dPc - LOD_SOL.starCore.startPc) / LOD_SOL.starCore.widthPc));
   return c * c * (3 - 2 * c);
@@ -153,9 +176,9 @@ export function sunStarCore(dPc: number): number {
 //
 // DIFERENÇA DE NATUREZA em relação às três rampas do Sol acima: aquelas
 // são código JS HOJE (rodam em double, e a fase 2 as importa daqui — a
-// igualdade tem de ser bit a bit). Estas duas são GLSL hoje
-// (`heroStars.ts:56,58`, dentro do FRAG compartilhado por HeroStars e
-// SunStar) e continuam sendo: o pixel do hero segue saindo do shader,
+// igualdade tem de ser bit a bit). Estas duas são GLSL hoje (as linhas
+// `nearFade`/`farFade` do FRAG de `heroStars.ts`, compartilhado por
+// HeroStars e SunStar) e continuam sendo: o pixel do hero sai do shader,
 // em float32. O que sai DAQUI é o `aFade` do ponto do catálogo,
 // calculado em JS na fase 3 (decisão D2 — fim da dupla-luz
 // hero↔catálogo: hoje as 16 mais brilhantes desenham luz duas vezes,
@@ -166,13 +189,13 @@ export const LOD_HERO = {
   /**
    * `nearFade`: o clarão esmaece se a câmera colar na estrela. A janela
    * é em MÚLTIPLOS DO PRÓPRIO TAMANHO do hero (`uSize·0,5 → uSize·1,4`),
-   * não em pc fixos — cada hero tem seu tamanho (`heroStars.ts:126-127`,
-   * `size = 0,08·10^(−0,3m)` pc). `heroStars.ts:56`.
+   * não em pc fixos — cada hero tem seu tamanho (no construtor de
+   * `HeroStars`, `size = 0,08·10^(−0,3m)` pc). Linha `nearFade` do FRAG.
    */
   near: { startFactor: 0.5, endFactor: 1.4 },
   /**
    * `farFade`: esmaece de longe, "o ponto do catálogo assume" — janela
-   * fixa {320; 900} pc. `heroStars.ts:58`. É a rede de segurança D2a:
+   * fixa {320; 900} pc (linha `farFade` do FRAG). É a rede de segurança D2a:
    * além de 900 pc o hero é ZERO, então o ponto do catálogo tem de
    * voltar inteiro, senão as 16 mais brilhantes sumiriam do céu
    * distante.
@@ -188,7 +211,7 @@ function glslSmoothstep(edge0: number, edge1: number, x: number): number {
 
 /**
  * `nearFade` do hero — `smoothstep(uSize*0.5, uSize*1.4, uCamDist)`
- * (`heroStars.ts:56`), com as duas bordas calculadas do tamanho como lá
+ * (linha `nearFade` do FRAG), com as bordas calculadas do tamanho como lá
  * (multiplicar antes de subtrair, não pré-somar 0,9·size).
  * GUARDA: fora do domínio do shader (`uSize > 0`, `uCamDist` finito) o
  * GLSL declara o resultado INDEFINIDO; aqui devolve 0 = "hero não
@@ -200,7 +223,8 @@ export function heroNearFade(camDistPc: number, sizePc: number): number {
   return glslSmoothstep(sizePc * LOD_HERO.near.startFactor, sizePc * LOD_HERO.near.endFactor, camDistPc);
 }
 
-/** `farFade` do hero — `1.0 - smoothstep(320.0, 900.0, uCamDist)` (`heroStars.ts:58`). */
+/** `farFade` do hero — `1.0 - smoothstep(320.0, 900.0, uCamDist)`
+ *  (linha `farFade` do FRAG de `heroStars.ts`). */
 export function heroFarFade(camDistPc: number): number {
   if (!Number.isFinite(camDistPc)) return 0;
   return 1 - glslSmoothstep(LOD_HERO.far.startPc, LOD_HERO.far.endPc, camDistPc);
@@ -208,8 +232,8 @@ export function heroFarFade(camDistPc: number): number {
 
 /**
  * A CURVA DE PRESENÇA do hero: o produto que o FRAG aplica na cor e no
- * alfa (`heroStars.ts:75`, `nearFade * farFade * uGain`, com uGain = 1
- * nos 16 heroes — `:140`). É esta curva que a fase 3 escreve em `aFade`
+ * alfa (`gl_FragColor`, `nearFade * farFade * uGain`, com uGain = 1 nos
+ * 16 heroes — uniform literal do construtor). É a curva que a fase 3 escreve em `aFade`
  * para o ponto do catálogo esmaecer na EXATA medida em que o hero
  * assume (D2a): presença 1 ⇒ ponto apagado; presença 0 ⇒ ponto inteiro.
  */
@@ -351,13 +375,14 @@ export function stepRampToward(
 //     máximo
 //         θ_teto = C · t / H   (raio angular; ver maxSpriteSolidAngleRad)
 //     Com C = POINT_SIZE_CEILING_PX = 256 px, H = 1080 e o fov mais
-//     fechado do regime do Sol (26°, `journey.ts:251-262`):
+//     fechado do regime do Sol (26°, `cinematic/journey.ts:251,262`):
 //         θ_teto = 256 · tan(13°) / 1080 ≈ 5,47e-2 rad  <  ENTER.
 //     SÓ QUE O TETO DO DRIVER NEM CHEGA A MANDAR. Com os parâmetros
 //     REAIS da PSF da casa (uSigmaPx 0,85, uExpoM0 3,5, uScreenH 1080
-//     — `stars.ts:40-42`), `size` satura em ~21,9 px numa magnitude
-//     absurda de −60, e vale 9,4 px para o Sol na PRÓPRIA distância do
-//     handoff (m = −4,15 pela lei de `heroStars.ts:216`). No mesmo
+//     — os defaults de `StarFieldOptions` e as uniforms do material em
+//     `stars.ts`), `size` satura em ~21,9 px numa magnitude absurda de
+//     −60, e vale 9,4 px para o Sol na PRÓPRIA distância do handoff
+//     (m = −4,15 pela lei de magnitude de `SunStar.update`). No mesmo
 //     ponto, o corpo precisa de 321,6 px de diâmetro na tela: o sprite
 //     de ponto fica 34× curto. Três consequências:
 //       1. o handoff no ENTER é obrigação, não gosto — e quem obriga é
@@ -368,12 +393,13 @@ export function stepRampToward(
 //          comum em GLES/ANGLE), com a MEDIÇÃO real de driver anotada
 //          como trabalho da Onda 7, e não como número medido;
 //       3. e é por isso que o clarão do Sol de longe é um QUAD
-//          (`heroStars.ts:209`, PlaneGeometry(2,2)) e não um ponto:
-//          ponto nenhum daria conta do teto de 40° da lei do glare
-//          (`heroStars.ts:220`). A camada que de fato emite
-//          `gl_PointSize` é o campo de catálogo (`starShaders.ts:69`),
-//          e é lá que o teto vira restrição quando a Onda 7 der disco
-//          a outras estrelas.
+//          (`PlaneGeometry(2, 2)` no construtor de `SunStar`) e não um
+//          ponto: ponto nenhum daria conta do teto de 40° da lei do
+//          glare (`Math.min(40, ...)` em `SunStar.update`). A camada
+//          que de fato emite `gl_PointSize` é o campo de catálogo (a
+//          última linha do `STAR_VERT`, `starShaders.ts`), e é lá que o
+//          teto vira restrição quando a Onda 7 der disco a outras
+//          estrelas.
 
 /**
  * ENTER do gate, em radianos de RAIO ANGULAR. Derivado, não digitado:
@@ -650,9 +676,9 @@ export function spriteAttenuationWithFocus(fade: number, focus: number): number 
 //
 // POR QUE COMPARAR TAMANHO E NÃO BRILHO. As duas camadas não têm
 // normalização radiométrica comum: o ponto do catálogo é fotométrico
-// (a integral da PSF É o fluxo, `starShaders.ts:86-92`) e o billboard do
-// hero é artefato de olho/instrumento com ganho artístico
-// (`heroStars.ts:62-68`). Somar as duas em "brilho" exigiria calibrar
+// (a integral da PSF É o fluxo — `starPSF`, `shaders/common.ts`) e o
+// billboard do hero é artefato de olho/instrumento com ganho artístico
+// (`core`/`glow`/`spikes` no FRAG de `heroStars.ts`). Somar as duas em "brilho" exigiria calibrar
 // uma na outra — trabalho de tela, não de conta, e fica para a Onda 7.
 // O tamanho na tela, esse, é a MESMA régua para as duas (px), é o que
 // decide quem representa a estrela, e é medível dos dois lados sem
@@ -660,7 +686,8 @@ export function spriteAttenuationWithFocus(fade: number, focus: number): number 
 
 /**
  * `tan(58°/2)` — a lente de referência do `uZoom` dos heroes
- * (`heroStars.ts:159`). Escrita com a MESMA associação de
+ * (`HeroStars.TAN_REF`, consumida no `update` das duas classes de
+ * `heroStars.ts`). Escrita com a MESMA associação de
  * `Math.tan(THREE.MathUtils.degToRad(58/2))` (`29 * (Math.PI/180)`, não
  * `(29*Math.PI)/180`): o `heroStars.ts` importa esta constante desde a
  * fase 3, e um ULP aqui é um ULP no tamanho do billboard na tela.
@@ -669,7 +696,7 @@ export const HERO_ZOOM_TAN_REF = Math.tan(29 * (Math.PI / 180));
 
 /**
  * Diâmetro em px do billboard de um hero — espelho da cadeia
- * `VERT` (`heroStars.ts:19-24`) + `uZoom` (`:159`):
+ * `VERT` (`heroStars.ts:19-24`) + `uZoom` (`HeroStars.update`):
  *   meia-extensão em espaço de vista = uSize · uZoom
  *   uZoom = min(1, tan(fov/2) / tan(29°))
  *   px = 2 · (meia-extensão / (d · tan(fov/2))) · (screenH/2)
@@ -713,7 +740,8 @@ export function heroSizePx(
 
 /**
  * Magnitude aparente que o vertex do catálogo recalcula da posição da
- * câmera — espelho de `starShaders.ts:44`:
+ * câmera — espelho da linha `float m = ...` do `STAR_VERT`
+ * (`starShaders.ts`):
  *   `m = -0.15 - 2.5*aLogLum + 5.0*(log2(max(dist,1e-3)) * 0.30103)`
  * O `log2 · 0,30103` fica como está (não vira `Math.log10`): é a conta
  * QUE A GPU FAZ, e o espelho existe para prever o pixel dela. A
@@ -741,6 +769,24 @@ export function catalogApparentMag(logLum: number, distPc: number): number {
  * nunca dá um passo para trás enquanto se chega perto**. Abaixo dela o
  * ponto cederia mais rápido do que o hero cresce, e o par piscaria para
  * baixo no meio da aproximação — o defeito que a D2d proíbe.
+ *
+ * O ESCOPO DA PROVA, dito por extenso (correção da revisão de olhos
+ * frescos da fase 4b): o passo `H = r·C` supõe que o hero desenha
+ * INTEIRO, isto é, que `heroPresence` vale 1 — o que é verdade acima de
+ * `1,4 × uSize`, onde o `nearFade` do FRAG já saturou. É toda a faixa em
+ * que `g > 0` para os 16 (a dominância morre em 113 pc no pior caso e o
+ * maior `1,4·uSize` dos 16 é 0,3028 pc, o de Sirius), e por isso a prova
+ * cobre a viagem inteira. ABAIXO de `1,4 × uSize` ela NÃO vale, e não é
+ * defeito desta política: lá o `nearFade` apaga o clarão (é a rede que
+ * devolve o ponto ao catálogo — ver `heroCatalogFade`), e a luz
+ * combinada de fato DIMINUI ao colar na estrela, porque não há corpo
+ * nenhum para assumir. Medido em Sirius (`uSize` 0,2163 pc, tela de
+ * 1713 px): P vai de 2.297 px em 0,28 pc para 18,6 px em 0,11 pc —
+ * queda de 123×. É comportamento HERDADO (o mesmo `nearFade` de antes da
+ * onda) — o handoff completo, com corpo por estrela como o Sol tem, é a
+ * Onda 7 (pendência nomeada no Estado da Onda 3). O teste
+ * "abaixo de 1,4×uSize" documenta o regime com estes números.
+ *
  * Bônus geométrico do mesmo número: em r = 2,5 o sprite INTEIRO do
  * catálogo (diâmetro 2·raio) cabe dentro do RAIO do billboard com folga —
  * o ponto virou, de fato, um detalhe dentro do clarão.
@@ -798,7 +844,7 @@ export const DOMINANCE_DEFAULT_ON = true;
 export interface HeroFadeInputs {
   /** distância câmera↔estrela, em pc (a mesma que vai em `uCamDist`) */
   camDistPc: number;
-  /** `uSize` do billboard em pc (`heroStars.ts:128`) */
+  /** `uSize` do billboard em pc (o `sizePc` que `HeroStars` publica) */
   heroSizePc: number;
   /** `aLogLum` do ponto do catálogo CASADO (quantizado — é o que a GPU lê) */
   catalogLogLum: number;
@@ -851,13 +897,75 @@ export function heroDominanceRatio(i: HeroFadeInputs): number {
  * `nearFade` e o ponto do catálogo tem de voltar inteiro.
  * As outras duas redes da D2 são do CHAMADOR, porque são estado de
  * runtime e não de geometria: `?nohero=1` e o corte `dHome ≥ 1200`
- * (`director.ts:893`) desligam o grupo inteiro, e aí o fade escrito é
- * `FADE_NEUTRAL`.
+ * (a linha que decide `heroes.group.visible` no `frame` do
+ * `director.ts`) desligam o grupo inteiro, e aí o fade escrito é
+ * `FADE_NEUTRAL` — ver `fadesDoQuadro`, logo abaixo.
  */
 export function heroCatalogFade(i: HeroFadeInputs): number {
   const dominance = heroDominanceFade(heroDominanceRatio(i));
   if (dominance <= 0) return FADE_NEUTRAL;
   return dominance * heroPresence(i.camDistPc, i.heroSizePc);
+}
+
+/** O que a política precisa saber da CÂMERA e do campo, num quadro. */
+export interface QuadroDaCamera {
+  /** altura do buffer de desenho em px (`uScreenH`) */
+  screenH: number;
+  /** `tan(fov/2)` da câmera do quadro */
+  tanHalfFov: number;
+  /** `uExpoM0` do campo de catálogo */
+  expoM0: number;
+  /** `uSigmaPx` do campo de catálogo */
+  sigmaPx: number;
+}
+
+/**
+ * A POLÍTICA DO QUADRO INTEIRO: os `aFade` dos 16 pares hero↔ponto de
+ * uma vez. É a função que o `director` chama por quadro, extraída do
+ * corpo dele na fase 4b por um achado da caçada adversarial — a fiação
+ * era o único trecho da onda sem teste de COMPORTAMENTO (o que havia
+ * eram asserções sobre o texto-fonte, que passam com a fiação errada).
+ * Aqui o comportamento inteiro cabe num teste sem three e sem GPU.
+ *
+ * `ligado` é a conjunção das duas redes de runtime da D2 (grupo dos
+ * heroes visível — `?nohero=1` e o corte `dHome ≥ 1200` o desligam — e a
+ * chave da cessão com suas portas `?dom`/`?nodom`). DESLIGADO ESCREVE
+ * NEUTRO, não "não escreve": é isso que limpa o resíduo do quadro
+ * anterior no MESMO quadro em que a chave vira, e é por isso que o gate
+ * do céu (que roda com `nohero=1`) mede exatamente o que sempre mediu.
+ *
+ * Slot sem par (`idx < 0`) recebe NEUTRO e o chamador o pula — não há
+ * onde escrever, e o ponto dele fica inteiro.
+ *
+ * `out` é reusado entre quadros (o chamador guarda o array): zero
+ * alocação por quadro além dos 16 literais que `heroCatalogFade` recebe,
+ * medidos em 1,54 µs por quadro na revisão.
+ */
+export function fadesDoQuadro(
+  idx: readonly number[],
+  camDistPc: readonly number[],
+  sizePc: readonly number[],
+  catalogLogLum: readonly number[],
+  cam: QuadroDaCamera,
+  ligado: boolean,
+  out: number[] = []
+): number[] {
+  out.length = idx.length;
+  for (let i = 0; i < idx.length; i++) {
+    out[i] =
+      ligado && idx[i] >= 0
+        ? heroCatalogFade({
+            camDistPc: camDistPc[i],
+            heroSizePc: sizePc[i],
+            catalogLogLum: catalogLogLum[i],
+            screenH: cam.screenH,
+            tanHalfFov: cam.tanHalfFov,
+            expoM0: cam.expoM0,
+            sigmaPx: cam.sigmaPx,
+          })
+        : FADE_NEUTRAL;
+  }
+  return out;
 }
 
 // ------------------------------------------------------------
@@ -866,7 +974,7 @@ export function heroCatalogFade(i: HeroFadeInputs): number {
 // ------------------------------------------------------------
 //
 // O formato "sc1" NÃO carrega identidade: são 9 bytes por estrela —
-// lon, lat, log10(d), logLum, B−V (`config.ts:147-179`) — e nenhum id.
+// lon, lat, log10(d), logLum, B−V (`decodeStars`, `config.ts`) — e nenhum id.
 // Os 16 heroes vêm do sidecar `stars_meta.json` (`named`), que tem
 // nome, HD/HIP/Gliese e posição, mas NÃO tem o índice da estrela no
 // binário: o gerador emite as nomeadas ordenadas e deduplicadas por
@@ -916,6 +1024,19 @@ export const HERO_MATCH_REL_TOL = 3e-4;
  * `aFade` numa estrela errada.
  * Uma passada só sobre o catálogo (16 × 328.749 com rejeição por eixo:
  * ~40 ms medidos, uma vez no init).
+ *
+ * INJETIVO POR CONSTRUÇÃO (conserto da revisão de olhos frescos, fase
+ * 4b): cada alvo elege seu melhor índice sozinho, então nada no laço
+ * impede que DOIS elejam o mesmo — hoje não acontece (os 16 casam um a
+ * um, provado contra o binário real), mas basta o catálogo ser regerado
+ * com outro corte de magnitude ou outra quantização para duas nomeadas
+ * vizinhas (as duplas de Acrux e Rigil Kentaurus) colapsarem no mesmo
+ * slot. Aí o consumidor escreveria as duas no mesmo índice por quadro, a
+ * última venceria, e a dupla-luz voltaria EM SILÊNCIO na outra. A
+ * varredura de colisão abaixo desempata pelo mesmo score de
+ * luminosidade e marca a perdedora com −1, que é o caminho seguro já
+ * existente: o `director` a reporta no MESMO `console.warn` do caso sem
+ * par e o ponto dela fica inteiro (o comportamento pré-onda).
  */
 export function matchHeroesToCatalog(
   targets: readonly CatalogMatchTarget[],
@@ -932,7 +1053,7 @@ export function matchHeroesToCatalog(
     if (!Number.isFinite(t.x) || !Number.isFinite(t.y) || !Number.isFinite(t.z)) continue;
     if (!Number.isFinite(t.d) || !Number.isFinite(t.m) || t.d <= 0) continue;
     tol[j] = HERO_MATCH_REL_TOL * t.d;
-    // a MESMA conta do gerador (`build-star-catalog.mjs:225,237`):
+    // a MESMA conta do gerador (`build-star-catalog.mjs:226,237`):
     // M = m − 5·log10(d) + 5 e logLum = 0,4·(4,85 − M).
     wantLum[j] = 0.4 * (4.85 - (t.m - 5 * Math.log10(t.d) + 5));
   }
@@ -957,6 +1078,23 @@ export function matchHeroesToCatalog(
         bestScore[j] = score;
         best[j] = i;
       }
+    }
+  }
+  // colisão: dois alvos no mesmo índice. Fica quem casa melhor em
+  // luminosidade (`<` estrito — no empate exato vence o primeiro, a
+  // mesma regra do desempate de dentro do laço); o outro vira "sem par".
+  const dono = new Map<number, number>();
+  for (let j = 0; j < k; j++) {
+    const i = best[j];
+    if (i < 0) continue;
+    const anterior = dono.get(i);
+    if (anterior === undefined) {
+      dono.set(i, j);
+    } else if (bestScore[j] < bestScore[anterior]) {
+      best[anterior] = -1;
+      dono.set(i, j);
+    } else {
+      best[j] = -1;
     }
   }
   return best;

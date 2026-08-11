@@ -7,6 +7,15 @@ import { STAR_VERT, STAR_FRAG } from '../shaders/starShaders';
 import type { StarArrays } from '../config';
 import { FADE_NEUTRAL, FOCUS_OFF, clearFocus, needsAttributeWrite } from './lodStellar';
 
+/**
+ * Teto de faixas pendentes por atributo antes de cair para UPLOAD CHEIO
+ * (conserto da revisão de olhos frescos, fase 4b da Onda 3 — ver o
+ * comentário do latch em `marcarUpload`). 64 é folgado: o pior quadro
+ * honesto tem 16 faixas (uma por hero), e só uma sequência de quadros
+ * cujo upload NUNCA acontece chega perto disto.
+ */
+export const UPDATE_RANGE_CAP = 64;
+
 interface StarFieldOptions {
   /** magnitude aparente que satura o pico da PSF — o "tempo de exposição" */
   expoM0?: number;
@@ -34,6 +43,9 @@ export class StarField {
   private readonly focusArray: Float32Array;
   private readonly fadeAttr: THREE.BufferAttribute;
   private readonly focusAttr: THREE.BufferAttribute;
+  /** latch de upload cheio por canal — ver `marcarUpload` */
+  private fadeCheio = false;
+  private focusCheio = false;
 
   constructor(data: StarArrays, opts: StarFieldOptions = {}) {
     const geo = new THREE.BufferGeometry();
@@ -56,6 +68,15 @@ export class StarField {
     this.focusAttr = new THREE.BufferAttribute(this.focusArray, 1);
     geo.setAttribute('aFade', this.fadeAttr);
     geo.setAttribute('aFocus', this.focusAttr);
+    // o latch baixa QUANDO A GPU RECEBE o buffer: o three chama este
+    // callback no fim de `createBuffer`/`updateBuffer`
+    // (WebGLAttributes.js), e é o único sinal honesto de "subiu".
+    this.fadeAttr.onUpload(() => {
+      this.fadeCheio = false;
+    });
+    this.focusAttr.onUpload(() => {
+      this.focusCheio = false;
+    });
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 6000);
 
     this.expoM0 = opts.expoM0 ?? 3.5;
@@ -113,6 +134,43 @@ export class StarField {
   // assim — custo ~zero e protege o invariante de um refactor futuro.
 
   /**
+   * Como um slot mexido pede a subida — e as DUAS defesas que a revisão
+   * de olhos frescos comprou (fase 4b da Onda 3). Devolve o novo estado
+   * do latch de upload cheio do canal.
+   *
+   * (1) TETO. `addUpdateRange` só é consumido (e as faixas só são
+   * limpas) DENTRO do `updateBuffer` do three; e o renderer pula objetos
+   * com `visible === false`. Com o campo escondido (`?nocat`, ou o
+   * toggle "Catálogo HYG" do painel) a reafirmação por quadro continua
+   * rodando e ninguém consome nada: as faixas cresciam SEM TETO, ~960
+   * objetos por segundo com a câmera em movimento perto de casa, e o
+   * `sort()` do three pegaria todas de uma vez ao reacender o campo.
+   * Passado o teto, a política é cair para upload cheio — correto e
+   * barato — em vez de guardar lista.
+   *
+   * (2) LATCH. `updateRanges` vazio + `needsUpdate` é como se pede o
+   * buffer INTEIRO (`bufferSubData` de tudo). Quem faz isso — `reset()`,
+   * ou o teto acima — precisa que as escritas seguintes NÃO recoloquem
+   * uma faixa antes do render, senão o three sobe só aquele slot e os
+   * outros 328.733 ficam com o valor velho na GPU. Enquanto o latch
+   * estiver alto, escreve-se no array e só se levanta o dirty-flag.
+   */
+  private marcarUpload(attr: THREE.BufferAttribute, cheio: boolean, index: number): boolean {
+    if (cheio) {
+      attr.needsUpdate = true;
+      return true;
+    }
+    if (attr.updateRanges.length >= UPDATE_RANGE_CAP) {
+      attr.clearUpdateRanges();
+      attr.needsUpdate = true;
+      return true;
+    }
+    attr.addUpdateRange(index, 1);
+    attr.needsUpdate = true;
+    return false;
+  }
+
+  /**
    * Grava `aFade` da estrela `index`. Devolve se a escrita ACONTECEU
    * (o teste do dirty-flag vive disso). Índice fora da faixa é ignorado.
    */
@@ -123,11 +181,15 @@ export class StarField {
     // pediu com o que ficou gravado daria "mudou" em TODO quadro, para
     // todo valor não representável — a idempotência morreria em
     // silêncio e a GPU levaria um upload por quadro com a câmera parada.
+    // DIVERGÊNCIA DECLARADA do doador (`HygStellarMesh.tsx:168` clampa
+    // em [0,1] antes de comparar): aqui NÃO se clampa de propósito — o
+    // clamp mora no shader (`clamp(1.0 - aFade, ...)` no STAR_VERT), e
+    // clampar também aqui esconderia um chamador errado em vez de o
+    // denunciar (`fadeAt` devolveria um valor que a tela nunca usou).
     const alvo = Math.fround(value);
     if (!needsAttributeWrite(this.fadeArray[index], alvo)) return false;
     this.fadeArray[index] = alvo;
-    this.fadeAttr.addUpdateRange(index, 1);
-    this.fadeAttr.needsUpdate = true;
+    this.fadeCheio = this.marcarUpload(this.fadeAttr, this.fadeCheio, index);
     return true;
   }
 
@@ -137,8 +199,7 @@ export class StarField {
     const alvo = Math.fround(value);
     if (!needsAttributeWrite(this.focusArray[index], alvo)) return false;
     this.focusArray[index] = alvo;
-    this.focusAttr.addUpdateRange(index, 1);
-    this.focusAttr.needsUpdate = true;
+    this.focusCheio = this.marcarUpload(this.focusAttr, this.focusCheio, index);
     return true;
   }
 
@@ -153,7 +214,13 @@ export class StarField {
     this.writeFocus(index, focus);
   }
 
-  /** Volta o campo INTEIRO ao estado de nascimento (os dois canais). */
+  /**
+   * Volta o campo INTEIRO ao estado de nascimento (os dois canais).
+   * Levanta o latch de upload cheio: uma escrita qualquer entre este
+   * `reset` e o render seguinte devolveria o atributo ao modo parcial e
+   * a GPU subiria só aquele slot — os outros 328.733 ficariam com o
+   * valor pré-reset (achado da caçada adversarial, fase 4b).
+   */
   reset(): void {
     this.fadeArray.fill(FADE_NEUTRAL);
     this.focusArray.fill(FOCUS_OFF);
@@ -161,6 +228,8 @@ export class StarField {
     this.focusAttr.clearUpdateRanges();
     this.fadeAttr.needsUpdate = true;
     this.focusAttr.needsUpdate = true;
+    this.fadeCheio = true;
+    this.focusCheio = true;
   }
 
   /** leitura dos canais (oráculos e depuração) */

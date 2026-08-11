@@ -14,7 +14,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
-import { StarField } from './stars';
+import { StarField, UPDATE_RANGE_CAP } from './stars';
 import type { StarArrays } from '../config';
 import { FADE_NEUTRAL, FOCUS_OFF, FOCUS_ON } from './lodStellar';
 
@@ -141,6 +141,73 @@ describe('C2 — a escrita é idempotente e o dirty-flag só sobe quando muda', 
     f.writeFade(0, 1);
     expect(foco.version).toBe(v);
     expect(f.focusAt(0)).toBe(FOCUS_OFF);
+    f.dispose();
+  });
+});
+
+describe('as faixas de upload não vazam (consertos da revisão, fase 4b)', () => {
+  // O achado: `addUpdateRange` só é CONSUMIDO dentro do `updateBuffer` do
+  // three, e o renderer pula objetos invisíveis. Com o campo escondido
+  // (`?nocat`, ou o toggle "Catálogo HYG" do painel) a reafirmação por
+  // quadro continua rodando e ninguém limpa nada — as faixas cresciam sem
+  // teto (~960 objetos/s com a câmera em movimento perto de casa).
+  it('mil escritas sem NENHUM upload não passam do teto de faixas', () => {
+    const f = campo(10);
+    const a = atributo(f, 'aFade');
+    // valores sempre novos: cada escrita é real (a idempotência não ajuda)
+    for (let k = 0; k < 1000; k++) f.writeFade(k % 10, (k + 1) / 2000);
+    expect(a.updateRanges.length).toBeLessThanOrEqual(UPDATE_RANGE_CAP);
+    // e os VALORES estão todos lá: o que se perde é a lista de faixas, o
+    // dado não — a próxima subida é do buffer inteiro, que é correta
+    expect(f.fadeAt(9)).toBe(Math.fround(1000 / 2000));
+    expect(a.needsUpdate === false || a.version > 0).toBe(true);
+    f.dispose();
+  });
+
+  it('o mesmo vale para o canal de foco', () => {
+    const f = campo(4);
+    const a = atributo(f, 'aFocus');
+    for (let k = 0; k < 500; k++) f.writeFocus(k % 4, (k + 1) / 1000);
+    expect(a.updateRanges.length).toBeLessThanOrEqual(UPDATE_RANGE_CAP);
+    f.dispose();
+  });
+
+  it('depois do teto o modo é UPLOAD CHEIO: nenhuma faixa nova é acumulada', () => {
+    const f = campo(10);
+    const a = atributo(f, 'aFade');
+    for (let k = 0; k < 200; k++) f.writeFade(k % 10, (k + 1) / 1000);
+    const depoisDoTeto = a.updateRanges.length;
+    f.writeFade(3, 0.987654);
+    expect(a.updateRanges.length).toBe(depoisDoTeto);
+    f.dispose();
+  });
+
+  it('reset() + escrita no MESMO quadro preserva o upload cheio', () => {
+    // sem o latch, o `addUpdateRange` da escrita devolveria o atributo ao
+    // modo parcial e a GPU subiria só aquele slot — os outros ficariam
+    // com o valor PRÉ-reset (o buffer inteiro nunca sobe)
+    const f = campo(6);
+    const a = atributo(f, 'aFade');
+    f.writeFade(0, 0.5);
+    f.reset();
+    expect(f.writeFade(3, 0.4)).toBe(true);
+    expect(a.updateRanges).toEqual([]);
+    expect(f.fadeAt(3)).toBe(Math.fround(0.4));
+    expect(f.fadeAt(0)).toBe(FADE_NEUTRAL);
+    f.dispose();
+  });
+
+  it('o latch baixa quando a GPU de fato recebe o buffer (onUpload)', () => {
+    // o único sinal honesto de "subiu" é o callback que o three dispara no
+    // fim de createBuffer/updateBuffer; simulá-lo aqui é o que o render faria
+    const f = campo(6);
+    const a = atributo(f, 'aFade');
+    f.reset();
+    f.writeFade(1, 0.2);
+    expect(a.updateRanges).toEqual([]); // latch alto
+    a.onUploadCallback();
+    f.writeFade(2, 0.3);
+    expect(a.updateRanges).toEqual([{ start: 2, count: 1 }]); // voltou ao parcial
     f.dispose();
   });
 });

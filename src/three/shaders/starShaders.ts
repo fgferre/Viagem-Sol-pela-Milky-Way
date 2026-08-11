@@ -89,7 +89,8 @@ void main() {
   // vSat cede JUNTO, e isso não é detalhe: o alfa só governa o vPeak
   // (núcleo + halo gaussianos), enquanto os espinhos de difração e o
   // núcleo esbranquiçado das estouradas saem de vSat no fragment
-  // (starShaders STAR_FRAG:96-104). Atenuar só o alfa deixaria a cruz de
+  // (no STAR_FRAG: o bloco guardado por vSat > 0.001 e o termo
+  // core*core*vSat). Atenuar só o alfa deixaria a cruz de
   // difração intacta por cima do hero — a dupla-luz mais visível de
   // todas continuaria lá.
   vSat = sat * atten;
