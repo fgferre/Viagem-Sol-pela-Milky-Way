@@ -9,11 +9,14 @@
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "vitest run",
     "data:stars": "node --max-old-space-size=4096 scripts/data/build-star-catalog.mjs",
     "data:galaxy": "node scripts/data/build-galactic-assets.mjs",
     "data:fit": "node scripts/data/fit-spiral-model.mjs",
     "data:verify": "node scripts/data/verify-assets.mjs",
     "data:pack": "node scripts/data/compress-assets.mjs",
+    "data:atlas": "node scripts/data/atlas/amostra-efemerides.mjs",
+    "data:corpos": "node scripts/data/atlas/gera-corpos.mjs",
     "data:all": "npm run data:stars && npm run data:galaxy && npm run data:fit && npm run data:verify && npm run data:pack"
   },
   "dependencies": {
@@ -28,12 +31,14 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^5.1.1",
+    "astronomia": "4.2.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.3.0"
+    "vite": "^7.3.0",
+    "vitest": "^3.2.7"
   }
 }
