@@ -31,6 +31,8 @@ import {
   estadoDoSelo,
 } from './selo';
 import type { EstadoDaVista } from './selo';
+import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
+import { deslocamentoEVAssistida } from '../lib/atlas/luz';
 import { DEEP_LIMIAR_PC } from './world/lodStellar';
 import { PISO_DO_CLARAO, REFERENCIA_UA, claraoDoAtlas } from './atlasConfig';
 import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
@@ -50,6 +52,11 @@ const LIMPA: EstadoDaVista = {
   tier: 'cinema',
   // 1 = o clarão do filme: a vista limpa é a do filme, sem gradação
   gradacao: 1,
+  // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
+  // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
+  // testes (bloco 2c), porque ele É desvio declarado.
+  luz: 'real',
+  evLuzDoFoco: null,
 };
 
 const com = (mudanca: Partial<EstadoDaVista>): EstadoDaVista => ({ ...LIMPA, ...mudanca });
@@ -237,6 +244,62 @@ describe('2b. a gradação por contexto se declara (F6)', () => {
     // escolhido (o resíduo é a ida e volta pc↔UA em ponto flutuante)
     expect((2000 / REFERENCIA_UA) ** 2).toBeCloseTo(PISO_DO_CLARAO, 15);
     expect(emUA(2000)).toBeCloseTo(PISO_DO_CLARAO, 15);
+  });
+});
+
+describe('2c. a política de luz se declara (Onda 6, D2/D8)', () => {
+  it('`assistida` — o default do Atlas — é desvio declarado, vivo e desfazível', () => {
+    const v = estadoDoSelo(com({ luz: 'assistida' }));
+    expect(v.brilho).toBe('assistido');
+    const linha = v.desvios.find((d) => d.chave === 'luz');
+    expect(linha, 'a política assistida não moveu o selo').toBeDefined();
+    expect(linha!.volta).toBe('vivo');
+    // a copy herdada do doador, verbatim — leiga primeiro
+    expect(linha!.rotulo).toContain('faixa comprimida');
+    expect(linha!.rotulo).toContain('A ordem de brilho é preservada.');
+  });
+
+  it('`real` não é desvio: o 1/d² cru é a posição sem assistência', () => {
+    expect(estadoDoSelo(com({ luz: 'real' })).brilho).toBe('real');
+  });
+
+  it('com corpo em foco o rótulo diz o número: "+N passos de luz (por corpo)"', () => {
+    // Netuno ~29,9 UA → ΔEV = (σ−1)·log2(E) ≈ +6,4 passos
+    const ev = deslocamentoEVAssistida(29.884744842988464);
+    const v = estadoDoSelo(com({ luz: 'assistida', evLuzDoFoco: ev }));
+    const linha = v.desvios.find((d) => d.chave === 'luz')!;
+    expect(linha.rotulo).toContain('+6,4 passos de luz (por corpo)');
+    // e o formatador puro é o mesmo caminho
+    expect(rotuloDaLuzAssistida(ev)).toBe(linha.rotulo);
+    // Mercúrio aquém de 1 UA: negativo, com o sinal dele
+    expect(rotuloDaLuzAssistida(deslocamentoEVAssistida(0.4625482713261739))).toContain(
+      '-1,4 passos de luz'
+    );
+    // sem corpo em foco (ou número envenenado): só a copy — sem inventar
+    expect(rotuloDaLuzAssistida(null)).toBe(COPY_LUZ_ASSISTIDA);
+    expect(rotuloDaLuzAssistida(Number.NaN)).toBe(COPY_LUZ_ASSISTIDA);
+  });
+
+  it('clicar volta ao real: aoVoltarAoReal escreve `real` e o selo limpa', () => {
+    const limpo = aoVoltarAoReal(com({ luz: 'assistida' }));
+    expect(limpo.luz).toBe('real');
+    expect(estadoDoSelo(limpo).brilho).toBe('real');
+  });
+
+  it('a lei da porta: só os dois literais passam (a lição do ?tone=constructor)', () => {
+    expect(lerPortaLuz('real')).toBe('real');
+    expect(lerPortaLuz('assistida')).toBe('assistida');
+    expect(lerPortaLuz('constructor')).toBeNull();
+    expect(lerPortaLuz('')).toBeNull();
+    expect(lerPortaLuz(null)).toBeNull();
+    expect(lerPortaLuz(undefined)).toBeNull();
+    expect(lerPortaLuz('REAL')).toBeNull();
+  });
+
+  it('a porta `?luz=` na URL não é desvio por presença — o estado VIVO manda', () => {
+    // `?luz=real` presente com o estado real: nada a declarar (é assim
+    // que a volta pode ESCREVER a porta sem sujar o selo)
+    expect(estadoDoSelo(com({ portas: ['luz'], luz: 'real' })).brilho).toBe('real');
   });
 });
 

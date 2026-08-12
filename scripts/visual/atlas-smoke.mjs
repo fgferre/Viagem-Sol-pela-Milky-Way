@@ -321,7 +321,11 @@ try {
     [...document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')]
       .map((e) => e.textContent.trim())
   )`));
-  conferir(camadas.length === 12, `o painel oferece ${camadas.length} camadas`);
+  // 13 desde a Onda 6/F0: o palco dos corpos resolvidos ('nocorpos')
+  // entrou na tabela única (atlasConfig.CAMADAS) — e este juiz descobriu
+  // na F2a que estava com a lista manual envelhecida (a mesma classe de
+  // defeito que o selo existe para não ter).
+  conferir(camadas.length === 13, `o painel oferece ${camadas.length} camadas`);
   conferir(
     !camadas.some((n) => n.includes('↻')),
     `nenhuma marcada com ↻ (${camadas.join(' · ')})`
@@ -349,7 +353,7 @@ try {
 
   const FLAGS = [
     'nogal', 'nodisc', 'nogdust', 'noglow', 'nocart', 'nonebula',
-    'nowrap', 'nocat', 'nohero', 'nomarker', 'noplan', 'nobh',
+    'nowrap', 'nocat', 'nohero', 'nomarker', 'noplan', 'nocorpos', 'nobh',
   ];
   let vivas = 0;
   for (let i = 0; i < FLAGS.length; i++) {
@@ -373,7 +377,7 @@ try {
         + ` url '${off.url}', selo [${off.escondidas.join(',')}] e volta`
     );
   }
-  conferir(vivas === 12, `as ${vivas} de 12 camadas do painel trocam sem reload`);
+  conferir(vivas === 13, `as ${vivas} de 13 camadas do painel trocam sem reload`);
 
   await sessao.assentar();
   const depoisDaCamada = await sessao.js(`JSON.stringify({

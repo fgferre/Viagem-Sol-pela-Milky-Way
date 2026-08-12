@@ -615,6 +615,10 @@ export default function App() {
     // isso ela sobrevive à recarga logo abaixo, em vez de o selo dizer
     // "voltei ao real" e o clarão renascer no carregamento seguinte.
     if (desvios.some((c) => c.chave === 'grad')) url.searchParams.set('grad', '0');
+    // A LUZ (Onda 6, D2) tem o MESMO contrato: o padrão é `assistida`,
+    // então apagar a chave da URL a ressuscitaria na recarga. A volta
+    // escreve `?luz=real` — a URL vira espelho do estado escolhido.
+    if (desvios.some((c) => c.chave === 'luz')) url.searchParams.set('luz', 'real');
     if (desvios.some((c) => c.volta === 'recarregar')) {
       window.location.assign(url.toString());
       return;
@@ -628,6 +632,9 @@ export default function App() {
         setTom('aces');
       } else if (c.chave === 'grad') {
         d.desligarGradacao();
+      } else if (c.chave === 'luz') {
+        // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo')
+        d.definirLuz('real');
       } else {
         d.setLayerHidden(c.chave, false);
         setEscondidas((prev) => {

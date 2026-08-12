@@ -61,6 +61,11 @@ const INSTRUMENT = `(() => {
     ['uCell', 'cena:wrappedStars'],
     ['uMarchB', 'cena:buracoNegro'],
     ['uZoom', 'cena:heroStars'],
+    // a Terra resolvida (Onda 6, F2a): os três programas do stack novo,
+    // batizados pelos uniformes/funções que só eles têm
+    ['uMapaRugosidade', 'cena:terra(superficie)'],
+    ['uMapaNuvens', 'cena:terra(nuvens)'],
+    ['escalaOtica', 'cena:terra(atmosfera)'],
   ];
   const origGet = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, attrs) {

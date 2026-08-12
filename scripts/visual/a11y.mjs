@@ -447,10 +447,16 @@ try {
   // o instrumento para o céu poder ser lido, e o selo DIZ. Um Atlas que
   // abrisse dizendo BRILHO REAL sobre uma imagem tratada seria o selo
   // mentindo — que é o defeito que ele existe para não ter.
+  // E DESDE A ONDA 6 (F2a) a abertura também declara a POLÍTICA DE LUZ:
+  // o default do Atlas é `assistida` (E^σ nos corpos resolvidos), e a
+  // linha da lei de luz — com a copy leiga herdada — tem de estar no
+  // detalhe do selo (a cobrança da emenda D2: a linha nasce no padrão
+  // das irmãs e o juiz de a11y a cobra).
   const fatorInicial = await sessao.js('window.__director.selo.gradacao');
   conferir(
     inicial !== null && inicial.escala === 'ESCALA REAL'
-      && inicial.brilho === 'BRILHO ASSISTIDO' && /clarão/.test(inicial.detalhe),
+      && inicial.brilho === 'BRILHO ASSISTIDO' && /clarão/.test(inicial.detalhe)
+      && /faixa comprimida/.test(inicial.detalhe),
     `selo na abertura: "${inicial?.escala}" · "${inicial?.brilho}" — ${inicial?.detalhe}`
   );
   conferir(
@@ -490,20 +496,24 @@ try {
       + `${camadasVivas}, clarão ${fatorDepois})`
   );
   conferir(
-    !urlLimpa.includes('nocat') && urlLimpa.includes('atlas') && urlLimpa.includes('grad=0'),
-    `selo: a volta limpa a porta, desliga a gradação e preserva o modo (${urlLimpa})`
+    !urlLimpa.includes('nocat') && urlLimpa.includes('atlas') && urlLimpa.includes('grad=0')
+      // a luz tem o MESMO contrato do grad (default vivo): a volta
+      // ESCREVE ?luz=real para sobreviver à recarga (Onda 6, D2)
+      && urlLimpa.includes('luz=real'),
+    `selo: a volta limpa a porta, desliga gradação e luz e preserva o modo (${urlLimpa})`
   );
 
-  // A LINHA-CONTROLE PRÓPRIA da gradação — todo caminho que altera o
-  // resultado tem de ter como ser desligado: `?grad=0` no link faz
-  // o Atlas abrir com o clarão do filme — e aí o selo diz REAL sobre a
-  // tela branca, que é a verdade daquela vista.
-  await sessao.ir(`atlas=1&grad=0&${PIN}`);
+  // A LINHA-CONTROLE PRÓPRIA da gradação E da luz — todo caminho que
+  // altera o resultado tem de ter como ser desligado pelo link:
+  // `?grad=0&luz=real` faz o Atlas abrir com o clarão do filme e o
+  // 1/d² cru — e aí o selo diz REAL sobre a tela branca, que é a
+  // verdade daquela vista.
+  await sessao.ir(`atlas=1&grad=0&luz=real&${PIN}`);
   const semGradacao = await lerSelo();
   const fatorSemPorta = await sessao.js('window.__director.selo.gradacao');
   conferir(
     semGradacao.brilho === 'BRILHO REAL' && fatorSemPorta === 1,
-    `?grad=0: o Atlas abre sem gradação e o selo diz "${semGradacao.brilho}" `
+    `?grad=0&luz=real: o Atlas abre sem assistência e o selo diz "${semGradacao.brilho}" `
       + `(fator ${fatorSemPorta})`
   );
 

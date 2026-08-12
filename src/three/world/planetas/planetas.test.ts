@@ -1421,3 +1421,68 @@ describe('10c. o oráculo da magnitude viva', () => {
     p.dispose();
   });
 });
+
+// ============================================================
+// 10. A CESSÃO SOB CORPO RESOLVIDO (Onda 6, F2a) — a renegociação do
+// "único alpha": o texto antigo da camada prometia que só o Sol tinha
+// alpha; o globo da F2a exige que o PONTO do corpo em quadro apague, e
+// a promessa nova (dois donos declarados, aCede binário, 1,0 exato fora
+// do corpo) entra AQUI com teste, como a emenda manda.
+// ============================================================
+describe('a cessão sob corpo resolvido (aCede, F2a)', () => {
+  it('nasce 0 em TODOS os vértices — fora do corpo resolvido nada muda', () => {
+    const p = camada();
+    const cede = p.points.geometry.getAttribute('aCede');
+    expect(cede.count).toBe(IDS_FOTOMETRIA.length);
+    for (let i = 0; i < cede.count; i++) expect(cede.getX(i)).toBe(0);
+    p.dispose();
+  });
+
+  it('o alpha do shader tem os DOIS donos: uGain do Sol e (1 − aCede)', () => {
+    // (1 − 0) = 1,0 EXATO em IEEE754: o fator novo é neutro até o gate
+    // do globo escrever — é o que sustenta as vistas profundas bit a bit
+    expect(FONTE).toContain('float alpha = mix(1.0, uGain, aEhSol) * (1.0 - aCede);');
+    expect(FONTE).toContain("attribute float aCede;");
+  });
+
+  it('escreverCessao é idempotente e só sobe upload quando MUDA', () => {
+    const p = camada();
+    const cede = p.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
+    const v0 = cede.version;
+    // reescrever o valor que já está lá (0) não sobe nada — é o que o
+    // Director faz 60×/s com o gate desarmado
+    expect(p.escreverCessao('earth', 0)).toBe(false);
+    expect(cede.version).toBe(v0);
+    // armar cede TOTALMENTE (binário nesta fase)
+    expect(p.escreverCessao('earth', 1)).toBe(true);
+    const iTerra = IDS_FOTOMETRIA.indexOf('earth');
+    expect(cede.getX(iTerra)).toBe(1);
+    expect(cede.version).toBeGreaterThan(v0);
+    // e os OUTROS vértices ficam intocados — cessão é por corpo
+    for (let i = 0; i < cede.count; i++) {
+      if (i !== iTerra) expect(cede.getX(i), IDS_FOTOMETRIA[i]).toBe(0);
+    }
+    // idempotência do 1 também
+    const v1 = cede.version;
+    expect(p.escreverCessao('earth', 1)).toBe(false);
+    expect(cede.version).toBe(v1);
+    // desarmar devolve a fotometria
+    expect(p.escreverCessao('earth', 0)).toBe(true);
+    expect(cede.getX(iTerra)).toBe(0);
+    p.dispose();
+  });
+
+  it('corpo desconhecido é recusado sem tocar o buffer', () => {
+    const p = camada();
+    const cede = p.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
+    const v0 = cede.version;
+    expect(p.escreverCessao('vulcan', 1)).toBe(false);
+    expect(cede.version).toBe(v0);
+    p.dispose();
+  });
+
+  it('a cessão mora FORA do update — método irmão, como escreverInstante', () => {
+    expect(CORPO_DO_UPDATE).not.toContain('escreverCessao');
+    expect(CORPO_DO_UPDATE).not.toContain('aCede');
+  });
+});

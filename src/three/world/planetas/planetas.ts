@@ -257,6 +257,7 @@ const PLANETAS_VERT = /* glsl */ `
 attribute float aMagBase; // magnitude a 1 pc, fase zero (convenção única)
 attribute vec3 aCor;      // RGB linear da F1 (iluminante × razão de banda)
 attribute float aEhSol;   // 1 no vértice 0, 0 nos nove — ver o alpha
+attribute float aCede;    // cessão sob corpo resolvido (Onda 6, F2a) — ver o alpha
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
@@ -295,12 +296,19 @@ void main() {
   float size; float peak; float sat; float sigmaFrac;
   starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
 
-  // O ÚNICO alpha desta camada, e ele é só do Sol: o crossfade reverso
-  // da D2 (disco artístico ↔ ponto fotométrico). Os nove entram com 1 —
-  // quem decide o brilho deles é a física, não uma rampa. E cede aos
-  // DOIS varyings juntos (lição do vSat, commit 2e16689): atenuar só o
-  // vPeak deixaria os espinhos de difração com força cheia.
-  float alpha = mix(1.0, uGain, aEhSol);
+  // O alpha desta camada tem DOIS donos declarados — o texto antigo
+  // ("o único alpha é do Sol") foi RENEGOCIADO na Onda 6/F2a, com teste:
+  //  1. o crossfade reverso do Sol (uGain, D2 da Onda 4);
+  //  2. a CESSÃO sob corpo resolvido (aCede): quando o globo da F2a está
+  //     em quadro, o ponto do MESMO corpo apaga — senão a mesma Terra
+  //     brilharia duas vezes no mesmo pixel. Binária nesta fase (0|1);
+  //     a dominância suave é F2b. Com aCede = 0 o fator (1 − aCede) é
+  //     1,0 EXATO em IEEE754 — fora do corpo resolvido nada muda, e as
+  //     vistas profundas continuam bit-idênticas.
+  // Quem decide o brilho dos nove segue sendo a física, não uma rampa.
+  // E o alpha cede aos DOIS varyings juntos (lição do vSat, commit
+  // 2e16689): atenuar só o vPeak deixaria os espinhos com força cheia.
+  float alpha = mix(1.0, uGain, aEhSol) * (1.0 - aCede);
 
   vColor = aCor;
   vSat = sat * alpha;
@@ -397,6 +405,9 @@ export class Planetas {
     geo.setAttribute('aMagBase', new THREE.BufferAttribute(magBase, 1));
     geo.setAttribute('aCor', new THREE.BufferAttribute(cor, 3));
     geo.setAttribute('aEhSol', new THREE.BufferAttribute(ehSol, 1));
+    // cessão sob corpo resolvido (Onda 6, F2a): nasce 0 em todos — só o
+    // gate do globo escreve, via `escreverCessao`, nunca o quadro
+    geo.setAttribute('aCede', new THREE.BufferAttribute(new Float32Array(n), 1));
     // Plutão, o mais distante da tabela, está a 35,4 UA = 1,72e-4 pc.
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e-3);
 
@@ -550,6 +561,26 @@ export class Planetas {
     if (moveu) pos.needsUpdate = true;
     if (brilhou) mag.needsUpdate = true;
     return moveu || brilhou;
+  }
+
+  /**
+   * A CESSÃO SOB CORPO RESOLVIDO (Onda 6, F2a) — método IRMÃO do
+   * `update`, como `escreverInstante`: quem decide é o GATE do corpo
+   * resolvido (o Director o consulta e escreve aqui), nunca o quadro
+   * desta camada. Binária nesta fase: 1 apaga o ponto do corpo (cor E
+   * espinhos, pelos dois varyings do alpha), 0 devolve a fotometria.
+   * A F2b troca o degrau pela dominância suave SEM mudar esta porta.
+   *
+   * Escrita idempotente pela mesma lei do instante (`gravar`): reescrever
+   * o mesmo valor a 60 Hz não sobe upload. Devolve se algo mudou.
+   */
+  escreverCessao(id: string, cede: number): boolean {
+    const i = (IDS_FOTOMETRIA as readonly string[]).indexOf(id);
+    if (i < 0) return false;
+    const attr = this.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
+    if (!this.gravar(attr.array as Float32Array, i, cede)) return false;
+    attr.needsUpdate = true;
+    return true;
   }
 
   /**

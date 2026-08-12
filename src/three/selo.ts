@@ -32,6 +32,7 @@
 import { deepDiscFade, deepPointGain } from './world/lodStellar';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
+import type { PoliticaDeLuz } from '../lib/atlas/luz';
 
 // ---- a copy herdada (D1). Três pares são verbatim do i18n do doador;
 // "BRILHO ASSISTIDO" é MELHORIA declarada: o doador escreve só
@@ -60,6 +61,39 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
   artistico: { rotulo: 'artístico', oQue: 'o disco do Sol e o clarão' },
 };
 
+/**
+ * A COPY da política de luz `assistida` — herdada do fidelityBadge
+ * pt-BR do doador, verbatim (D2 da Onda 6): a explicação leiga primeiro,
+ * o número como complemento.
+ */
+export const COPY_LUZ_ASSISTIDA =
+  'faixa comprimida para mundos distantes continuarem visíveis. ' +
+  'A ordem de brilho é preservada.';
+
+/**
+ * O rótulo VIVO da linha `?luz=`: a copy herdada + o deslocamento do
+ * corpo EM FOCO em "passos de luz" (não "stops" cru — copy leiga),
+ * rotulado "por corpo" porque o ganho é POR CORPO — a divergência
+ * declarada do §7.4 (a exposição de CENA é da Onda 8). Sem corpo em
+ * foco (ou número envenenado) o rótulo fica só com a copy: o selo
+ * nunca inventa um número que não mediu.
+ */
+export function rotuloDaLuzAssistida(ev: number | null): string {
+  if (ev === null || !Number.isFinite(ev)) return COPY_LUZ_ASSISTIDA;
+  const passos = `${ev >= 0 ? '+' : ''}${ev.toFixed(1).replace('.', ',')}`;
+  return `${COPY_LUZ_ASSISTIDA} ${passos} passos de luz (por corpo)`;
+}
+
+/**
+ * A LEI da porta `?luz=` (D8), no contrato de `lerPortaTom`/`lerPortaJd`:
+ * devolve a política pedida ou `null` para "nada de válido" — quem chama
+ * conhece o padrão (o Director cai em `assistida`, o default do Atlas).
+ * Comparação por literal, nunca `in`: a lição do `?tone=constructor`.
+ */
+export function lerPortaLuz(bruto: string | null | undefined): PoliticaDeLuz | null {
+  return bruto === 'real' || bruto === 'assistida' ? bruto : null;
+}
+
 /** O que o selo precisa saber da vista para se decidir. */
 export interface EstadoDaVista {
   /** distância da câmera a casa, em pc — o eixo ESCALA sai daqui */
@@ -81,6 +115,18 @@ export interface EstadoDaVista {
    * o valor VIVO do quadro, e o selo declara o que a tela mostrou.
    */
   gradacao: number;
+  /**
+   * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
+   * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
+   * clique na linha BRILHO o troca ao vivo.
+   */
+  luz: PoliticaDeLuz;
+  /**
+   * O ΔEV da assistência sobre o corpo EM FOCO, em passos de luz
+   * (`deslocamentoEVAssistida` do dUA vivo dele) — `null` quando nenhum
+   * corpo está em foco, e aí o rótulo fica sem número.
+   */
+  evLuzDoFoco: number | null;
 }
 
 /** Dá para desfazer com um clique? */
@@ -100,6 +146,12 @@ export interface CaminhoDoSelo {
   rotulo: string;
   volta: Volta;
   desvia: (e: EstadoDaVista) => boolean;
+  /**
+   * Rótulo que depende do ESTADO da vista (o "+N passos de luz" da
+   * linha `?luz=`). `estadoDoSelo` o resolve na saída — o HUD continua
+   * lendo `rotulo` e não sabe que ele é vivo.
+   */
+  rotuloVivo?: (e: EstadoDaVista) => string;
 }
 
 /**
@@ -216,6 +268,33 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotulo: 'curva de tom trocada',
     volta: 'vivo',
     desvia: (e) => e.tom !== 'aces',
+  },
+  /**
+   * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — a linha
+   * da primeira lei de luz, no eixo BRILHO existente (registro único,
+   * NUNCA eixo novo). `assistida` é o DEFAULT do Atlas: o material dos
+   * corpos resolvidos multiplica E^σ em vez do E = 1/d² cru, para os
+   * mundos distantes continuarem visíveis — a ORDEM de brilho é
+   * preservada (x^σ é estritamente crescente), a RAZÃO é comprimida, e
+   * é por isso que é DESVIO declarado e não café grátis.
+   *
+   * O rótulo é VIVO: a copy leiga herdada + o "+N passos de luz" do
+   * corpo em foco (`deslocamentoEVAssistida`), rotulado "por corpo" —
+   * a divergência declarada do §7.4 (exposição de CENA é da Onda 8).
+   *
+   * `volta: 'vivo'`: o clique escreve `real` no Director e o PRÓXIMO
+   * estado visível já sai sem compressão — a affordance que o doador
+   * não tinha. Fora do Atlas o estado é neutro POR CONSTRUÇÃO: não há
+   * superfície resolvida no filme para o escalar multiplicar (as 18
+   * vistas oficiais provam bit a bit).
+   */
+  {
+    chave: 'luz',
+    eixo: 'brilho',
+    rotulo: COPY_LUZ_ASSISTIDA,
+    volta: 'vivo',
+    desvia: (e) => e.luz === 'assistida',
+    rotuloVivo: (e) => rotuloDaLuzAssistida(e.evLuzDoFoco),
   },
   {
     chave: 'q',
@@ -412,12 +491,16 @@ export function aoVoltarAoReal(e: EstadoDaVista): EstadoDaVista {
     tom: chaves.has('tone') ? 'aces' : e.tom,
     camadasEscondidas: e.camadasEscondidas.filter((f) => !chaves.has(f)),
     gradacao: chaves.has('grad') ? 1 : e.gradacao,
+    luz: chaves.has('luz') ? 'real' : e.luz,
   };
 }
 
 /** O veredito completo, puro. */
 export function estadoDoSelo(e: EstadoDaVista): VereditoDoSelo {
-  const desvios = REGISTRO.filter((c) => c.eixo === 'brilho' && c.desvia(e));
+  const desvios = REGISTRO.filter((c) => c.eixo === 'brilho' && c.desvia(e)).map(
+    // rótulo vivo resolvido AQUI, uma vez — o HUD lê `rotulo` e pronto
+    (c) => (c.rotuloVivo ? { ...c, rotulo: c.rotuloVivo(e) } : c)
+  );
   for (const chave of e.portas) {
     if (!PORTAS_CONHECIDAS.has(chave)) desvios.push(desconhecida(chave));
   }

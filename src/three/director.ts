@@ -20,8 +20,13 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
-import { Planetas, PLANETAS_DEFAULT_ON } from './world/planetas/planetas';
+import { TerraResolvida } from './world/corpos/terra';
+import { Planetas, PLANETAS_DEFAULT_ON, UA_POR_PC } from './world/planetas/planetas';
 import type { FonteDeEfemerides } from './world/planetas/planetas';
+import { deslocamentoEVAssistida } from '../lib/atlas/luz';
+import type { PoliticaDeLuz } from '../lib/atlas/luz';
+import { lerPortaLuz } from './selo';
+import { sondarGl } from '../lib/glProbe';
 import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
 import type { IdRetrato } from './world/planetas/retrato2026';
 import {
@@ -208,6 +213,25 @@ export class Director {
    *  `palco` e não `corpos`: o nome `corpos` já é do getter público da
    *  BUSCA (os dez do retrato), que é outra coisa. */
   private readonly palco = new CorposResolvidos();
+  /** A TERRA RESOLVIDA (Onda 6, F2a) — o primeiro corpo do palco. Nasce
+   *  no init com construtor barato (zero geometria, zero textura: a
+   *  carga é preguiçosa por contrato — gate ou fase atlas). */
+  private terra: TerraResolvida | null = null;
+  /** digitais do tick anterior da Terra: pop do globo e chegada de
+   *  textura são mudança de imagem — a captura recomeça a contagem. */
+  private terraEmQuadroAntes = false;
+  private terraCarregavaAntes = false;
+  /** fetch de textura da Terra em voo — o `captura` espera por ele. */
+  private terraCarregando = false;
+  /**
+   * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8). Default
+   * `assistida` — o do Atlas; `?luz=` semeia no boot e a linha BRILHO
+   * do selo troca ao vivo (`definirLuz`). Fora do Atlas o estado é
+   * neutro por construção: não há superfície resolvida no filme.
+   */
+  private politicaDeLuz: PoliticaDeLuz = 'assistida';
+  /** o corpo em FOCO no Atlas (id do retrato) — o selo lê o ΔEV dele. */
+  private focoCorpoId: string | null = null;
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
   private wrappedStars!: WrappedStars;
@@ -415,6 +439,10 @@ export class Director {
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
     this.expOverride = this.debug.has('exp');
+    // ?luz= — a política da primeira lei de luz (Onda 6, D2/D8), pela
+    // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
+    // no default do Atlas, nunca num caminho terceiro.
+    this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
     // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
     // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
@@ -690,7 +718,17 @@ export class Director {
     this.planetas = new Planetas(this.stars);
     this.engine.scene.add(this.planetas.points);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
-    // vazio, irmão dos dois acima — os meshes chegam nas fases F2+.
+    // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
+    // Terra — construtor barato, sem geometria e sem um byte de textura
+    // (a carga é preguiçosa por contrato; as 18 vistas não fazem fetch).
+    // O tier e o teto de textura congelam AQUI, como a população da
+    // galáxia: a escada não reage a auto-quality depois do init.
+    this.terra = new TerraResolvida({
+      tier: this.engine.quality,
+      maxTextureSize: sondarGl().maxTextureSize,
+      base: import.meta.env.BASE_URL,
+    });
+    this.palco.group.add(this.terra.group);
     this.engine.scene.add(this.palco.group);
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
@@ -849,7 +887,11 @@ export class Director {
       // corrida, não a imagem.
       this.aoVivo ||
       this.sentidoDoTempo !== 0 ||
-      this.faseDaEfemeride === 'buscando';
+      this.faseDaEfemeride === 'buscando' ||
+      // A TERRA (F2a): textura em voo é uma mudança JÁ PEDIDA que ainda
+      // não chegou — capturar antes dela mediria a corrida, não a imagem
+      // (o mesmo argumento da efeméride logo acima).
+      this.terraCarregando;
     return {
       pronto:
         this.phase !== 'loading' &&
@@ -1216,6 +1258,8 @@ export class Director {
     if (this.phase === 'atlas') {
       this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()));
       this.enquadrarAgora();
+      // estrela em foco: nenhum CORPO em foco — o ΔEV do selo cala
+      this.focoCorpoId = null;
       this.events.onFoco(nome);
       this.teletransportou();
       return;
@@ -1232,6 +1276,7 @@ export class Director {
   focarNoSistema() {
     this.atlas.focarNoSistema();
     this.enquadrarAgora();
+    this.focoCorpoId = null;
     this.events.onFoco(null);
     this.teletransportou();
   }
@@ -1268,6 +1313,8 @@ export class Director {
     if (pos.lengthSq() === 0) return;
     this.atlas.focar(ORIGEM, pos.length(), pos);
     this.enquadrarAgora();
+    // o selo lê o ΔEV DESTE corpo enquanto ele estiver em foco (D2)
+    this.focoCorpoId = id;
     this.events.onFoco(CORPOS_DO_SISTEMA[i].nome);
     this.teletransportou();
   }
@@ -1722,7 +1769,39 @@ export class Director {
       // último quadro: o selo e o quadro leem a mesma câmera e não têm
       // como discordar
       gradacao: this.claraoDoQuadro,
+      luz: this.politicaDeLuz,
+      evLuzDoFoco: this.evLuzDoFoco(),
     };
+  }
+
+  /**
+   * O ΔEV da assistência sobre o corpo EM FOCO, para o rótulo vivo da
+   * linha `?luz=` do selo ("+N passos de luz · por corpo"). Lê a
+   * distância heliocêntrica VIVA do atributo da camada (a mesma que a
+   * máquina do tempo reescreve) — nunca o retrato congelado. Sem corpo
+   * em foco (ou com o Sol, que não tem assistência a declarar) devolve
+   * null e o rótulo fica só com a copy: o selo não inventa número.
+   */
+  private evLuzDoFoco(): number | null {
+    if (!this.focoCorpoId || !this.planetas) return null;
+    const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === this.focoCorpoId);
+    if (i <= 0) return null;
+    const p = this.planetas.posicoes;
+    const dUA =
+      Math.hypot(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]) * UA_POR_PC;
+    return deslocamentoEVAssistida(dUA);
+  }
+
+  /**
+   * A AÇÃO da linha `?luz=` do selo (D2): troca a política de luz dos
+   * corpos resolvidos AO VIVO — o tick entrega o escalar novo ao
+   * material no próximo quadro ("volta ao real com o próximo estado
+   * visível"). O estado mora aqui; a URL é espelho, escrita por quem
+   * clicou (App), no mesmo protocolo do `?grad=0`.
+   */
+  definirLuz(politica: PoliticaDeLuz) {
+    this.politicaDeLuz = politica;
+    this.perturbar();
   }
 
   /**
@@ -1860,6 +1939,38 @@ export class Director {
     // neutralidade em engine.test.ts; sem corpo registrado, F0, idem).
     this.palco.ligado =
       (CORPOS_DEFAULT_ON || this.debug.has('corpos')) && !this.hide.has('nocorpos');
+    // A TERRA RESOLVIDA (F2a) roda ANTES do near ler o palco: o globo
+    // que entra em quadro NESTE tick já governa o clip NESTE tick. O
+    // Director é quem registra a superfície (só corpo EM QUADRO entra
+    // no min() — de longe o registro esvazia e o par (near, far) fica
+    // no vigente bit a bit) e quem escreve a cessão do ponto na camada
+    // de planetas; a Terra não conhece nem o palco nem a camada.
+    if (this.terra) {
+      const t = this.terra.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+      });
+      if (t.emQuadro) this.palco.registrar('earth', t.raioPc, t.centroPc);
+      else this.palco.remover('earth');
+      this.planetas?.escreverCessao('earth', t.cede);
+      this.terraCarregando = t.carregando;
+      // globo entrando/saindo do quadro e textura que acabou de chegar
+      // são mudança de imagem: a contagem de estabilidade recomeça
+      if (
+        t.emQuadro !== this.terraEmQuadroAntes ||
+        (this.terraCarregavaAntes && !t.carregando)
+      ) {
+        this.perturbar();
+      }
+      this.terraEmQuadroAntes = t.emQuadro;
+      this.terraCarregavaAntes = t.carregando;
+    }
     const superficie = this.palco.superficieMaisProxima(cam.position);
     this.engine.updateClip(Math.min(dHome, dGC), superficie.dSuperficiePc, superficie.raioPc);
 
@@ -2286,6 +2397,7 @@ export class Director {
     step('sunStar', () => this.sunStar?.dispose());
     // idem: a camada nasce depois do await do init
     step('planetas', () => this.planetas?.dispose());
+    step('terra', () => this.terra?.dispose());
     step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());

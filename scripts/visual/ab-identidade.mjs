@@ -168,6 +168,30 @@ export const VISTAS = [
   ['ua500', '?pos=0,0,0.0024241&look=0,0,0&shot=2'],
   ['ua150', '?pos=0,0,0.00072722&look=0,0,0&shot=2'],
   ['ua40', '?pos=0,0,0.00019393&look=0,0,0&shot=2'],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F2a) — A TERRA RESOLVIDA, no jd PINADO da onda
+  // (2024-04-08, o mesmo do eclipse de F2c — a época viva não captura).
+  // A câmera fica a 4 raios do CENTRO da Terra viva (efeméride pelo
+  // ?jd=), do lado ILUMINADO, 35° fora do eixo Terra→Sol: mais de meio
+  // disco aceso (a lição do negate da Onda 5), terminador e lado
+  // noturno em quadro — dia, noite, nuvens e limbo da atmosfera numa
+  // captura só (~795 px de diâmetro em 1800 px). Os números saíram da
+  // MESMA cadeia do app (efemerides.bin → eclipticaParaEquatorial →
+  // AU_PARA_PC), calculados uma vez e pinados aqui como os ?pos= acima.
+  // O par &nobloom=1 é GATE (emenda T-E10): é nele que se lê o subsolar
+  // sem o clarão, contra o limiar 0,82 do bloom.
+  [
+    'terra',
+    '?pos=-0.0000045882235587153385,-0.0000014555632225072523,-6.307425015010789e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'terranb',
+    '?pos=-0.0000045882235587153385,-0.0000014555632225072523,-6.307425015010789e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
