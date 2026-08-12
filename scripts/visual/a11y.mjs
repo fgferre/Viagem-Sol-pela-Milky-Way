@@ -547,7 +547,7 @@ process.stdout.write('\nJUIZ DE A11Y: tudo verde\n');
 // texto).
 // ============================================================
 
-async function medirCobertura(s, quando) {
+async function medirCobertura(s, quando, cobra = true) {
   const cobertura = await s.js(`(() => {
     const H = window.innerHeight;
     const util = window.__director.retanguloUtil;
@@ -568,20 +568,63 @@ async function medirCobertura(s, quando) {
     const naBase = pecas.filter((p) => p.topo >= 0.5);
     return {
       util,
+      largura: window.innerWidth,
+      noTopo: noTopo.length,
+      naBase: naBase.length,
       topoMedido: Math.max(...noTopo.map((p) => p.topo)),
       baseMedida: Math.max(...naBase.map((p) => p.base)),
       pecas: pecas.map((p) => p.sel + ':' + p.topo.toFixed(3) + '/' + p.base.toFixed(3)),
     };
   })()`);
+  const sobra = 1 - cobertura.topoMedido - cobertura.baseMedida;
+  // ABAIXO DA FAIXA DECLARADA (`LARGURA_UTIL_MINIMA_PX`) a medição é
+  // REGISTRO, não gate: ali o HUD reflowa em duas e três linhas e a
+  // declaração não o cobre — é a pendência nomeada "telas estreitas",
+  // e o número dela sai daqui em vez de sair de um adjetivo.
+  if (!cobra) {
+    process.stdout.write(
+      `  ·     retângulo útil (${quando}, ${cobertura.largura} px de largura): `
+        + `topo ${cobertura.topoMedido.toFixed(3)}/${cobertura.util.topo.toFixed(3)} · `
+        + `base ${cobertura.baseMedida.toFixed(3)}/${cobertura.util.base.toFixed(3)} · `
+        + `sobra ${(sobra * 100).toFixed(1)}% — PENDÊNCIA "telas estreitas"\n`
+    );
+    return;
+  }
+  // MEDIU ALGUMA COISA? Com `noTopo` (ou `naBase`) vazio, `Math.max()`
+  // devolve −Infinity e as duas provas abaixo passam imprimindo "medido
+  // -Infinity" — HUD ausente vira indistinguível de HUD coberto, que é
+  // o modo de falha que a casa nomeou como o pior ("gate que degrada em
+  // silêncio é pior que gate que quebra", chrome.mjs). Basta `?atlas=1`
+  // deixar de entrar na fase, ou um seletor mudar de nome.
+  const onde = `${quando}, ${cobertura.largura} px de largura`;
+  conferir(
+    cobertura.noTopo > 0 && cobertura.naBase > 0,
+    `retângulo útil (${onde}): mediu ${cobertura.noTopo} peça(s) no topo e `
+      + `${cobertura.naBase} na base (${cobertura.pecas.join(' · ') || 'NENHUMA'})`
+  );
   conferir(
     cobertura.topoMedido <= cobertura.util.topo,
-    `retângulo útil (${quando}): topo declarado ${cobertura.util.topo.toFixed(3)} ≥ medido `
+    `retângulo útil (${onde}): topo declarado ${cobertura.util.topo.toFixed(3)} ≥ medido `
       + `${cobertura.topoMedido.toFixed(3)}`
   );
   conferir(
     cobertura.baseMedida <= cobertura.util.base,
-    `retângulo útil (${quando}): base declarada ${cobertura.util.base.toFixed(3)} ≥ medida `
-      + `${cobertura.baseMedida.toFixed(3)} (${cobertura.pecas.join(' · ')})`
+    `retângulo útil (${onde}): base declarada `
+      + `${cobertura.util.base.toFixed(3)} ≥ medida ${cobertura.baseMedida.toFixed(3)} `
+      + `(${cobertura.pecas.join(' · ')})`
+  );
+  // O PISO DOUTRINÁRIO, sobre o MEDIDO e não sobre a declaração. Ele
+  // vivia no vitest, cobrando o número declarado — e ali virou catraca:
+  // a declaração paga folga por cima do medido, então o piso pinava "o
+  // número de hoje menos um fio" e a próxima peça de HUD o baixaria de
+  // novo com derivação escrita, sem ninguém ver a linha ser cruzada.
+  // Aqui ele afirma o que realmente importa e não se move: o HUD REAL
+  // não come mais da metade da altura do quadro. Passar disso não é HUD,
+  // é moldura.
+  conferir(
+    sobra > 0.5,
+    `retângulo útil (${onde}): o HUD REAL deixa ${(sobra * 100).toFixed(1)}% da altura `
+      + `livre (piso doutrinário: mais da metade)`
   );
 }
 
@@ -683,6 +726,12 @@ async function julgarEscalaDaUi(s) {
         + (q.foraDaTela.length ? ` — fora: ${q.foraDaTela.join(' · ')}` : '')
         + (q.atropelos.length ? ` — atropelo: ${q.atropelos.join(' · ')}` : '')
     );
+    // E O RETÂNGULO ÚTIL AQUI TAMBÉM — como REGISTRO. Estas duas janelas
+    // (800 e 600 px de CSS) caem ABAIXO da faixa que `atlasRig.ts`
+    // declara cobrir, e é justamente por isso que elas são medidas: a
+    // pendência "telas estreitas" passa a ter número, e o dia em que o
+    // HUD ganhar um arranjo próprio para elas o número mostra o ganho.
+    await medirCobertura(s, `ui = ${GRANDE} com zoom ${zoom * 100}%`, false);
     // OS DOIS `clamp` QUE SÓ EXISTEM NA QUEBRA ESTREITA do CSS — os
     // últimos dos nove, e os únicos que nenhuma medição em tela de mesa
     // alcança. A 600×450 as duas regras estão de pé (largura ≤ 760 e
@@ -740,4 +789,35 @@ async function julgarEscalaDaUi(s) {
     await s.ir(`atlas=1&ui=${fator}&${PIN}`);
     await medirCobertura(s, `ui = ${fator}`);
   }
+
+  // ---- OS DOIS EIXOS DA DECLARAÇÃO, e não um só -------------------
+  // A quebra da barra de controles é fenômeno de LARGURA×TEXTO (o
+  // `max-width: 60vw` do hud.css), e até este conserto a declaração de
+  // `atlasRig.ts` só recebia o fator de `?ui=` — a frase "o juiz mede os
+  // extremos da faixa e cobra declarado ≥ medido" valia para os extremos
+  // do TEXTO, não para os da LARGURA, que é onde o fenômeno mora.
+  //
+  // A faixa de validade é DECLARADA no código (`LARGURA_UTIL_MINIMA_PX`)
+  // e lida DE LÁ, pelo dev server, e não redigitada aqui: o número tem
+  // um dono só. Precedente: o `busca-smoke` importa a lib da busca na
+  // própria página para medir com o módulo que a UI usa.
+  await s.js(
+    "(() => { import('/src/three/cinematic/atlasRig.ts').then((m) => { window.__rig = m; }); })()"
+  );
+  await sleep(400);
+  const minima = await s.js('window.__rig.LARGURA_UTIL_MINIMA_PX');
+  conferir(
+    Number.isFinite(minima) && minima > 0,
+    `a faixa de validade da declaração é um número: ≥ ${minima} px de largura de CSS`
+  );
+  for (const largura of [minima, 1000, 1200]) {
+    for (const fator of [1, 1.25, GRANDE]) {
+      await s.send('Emulation.setDeviceMetricsOverride', {
+        width: largura, height: 900, deviceScaleFactor: 1, mobile: false,
+      });
+      await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+      await medirCobertura(s, `ui = ${fator}`);
+    }
+  }
+  await s.send('Emulation.clearDeviceMetricsOverride');
 }

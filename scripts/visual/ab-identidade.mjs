@@ -209,7 +209,12 @@ const EXTRA = process.env.EXTRA || '';
 // este sufixo, quem rodasse o A/B do knob apagaria a baseline dos 18 md5 e
 // só descobriria na próxima leva de fechamento — ~25 min de GPU para
 // recapturar.
-const SUFIXO = EXTRA ? `-${EXTRA.replace(/[^a-z0-9]+/gi, '')}` : '';
+// ...e a JANELA entra no sufixo pelo MESMO argumento, palavra por palavra:
+// ela muda a imagem tanto quanto o EXTRA, e uma varredura ad hoc de aspecto
+// que gravasse no estado da leva oficial apagaria a mesma baseline pelo mesmo
+// preço. Era o defeito irmão, e ele tinha ficado de fora do conserto.
+const CHAVE_DO_ESTADO = `${EXTRA}${process.env.JANELA || ''}`;
+const SUFIXO = CHAVE_DO_ESTADO ? `-${CHAVE_DO_ESTADO.replace(/[^a-z0-9]+/gi, '')}` : '';
 // JANELA=700x1800 muda o tamanho da captura. Existe porque os TRÊS harnesses do
 // repo capturam em 1:1 (rodada 1800x1800, sky 1440x1440, este 1800x1800), e
 // qualquer defeito que dependa do ASPECTO da tela é invisível para todos eles —

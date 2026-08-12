@@ -9,6 +9,8 @@ import * as THREE from 'three';
 import {
   ATLAS_FOV_GRAUS,
   AtlasRig,
+  LARGURA_DE_MESA_PX,
+  LARGURA_UTIL_MINIMA_PX,
   MARGEM_DE_ENQUADRAMENTO,
   MAX_SOLAR_DEVIATION_GRAUS,
   PARENT_FRAMING_BIAS,
@@ -170,14 +172,75 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
       enquadrar({ rAlvo: 1, fovDeg: ATLAS_FOV_GRAUS, aspect: 1.6, retanguloUtil: u }).distancia;
     expect(perto(grande)).toBeGreaterThan(perto(padrao));
     expect(perto(retanguloUtilDoAtlas(0.85))).toBeLessThan(perto(padrao));
-    // e mesmo no maior degrau ainda sobra quadro de verdade. A conta
-    // re-derivada com o HUD que a onda inteira construiu (tempo na
-    // base, busca na barra): o MEDIDO a 1,4 come 0,489 do quadro
-    // (topo 0,197 + base 0,292 — juiz de a11y, 1200×900) e sobram 51%
-    // reais; a declaração paga ~3% de folga por cima disso. O trilho
-    // aqui só impede a declaração de virar moldura — quem garante que
-    // o alvo nunca cai atrás do texto é o juiz (declarado ≥ medido).
-    expect(1 - grande.topo - grande.base).toBeGreaterThan(0.47);
+  });
+
+  /**
+   * O QUE ESTE TRILHO AFIRMA, agora que ele afirma UMA coisa só. Antes
+   * ele era `1 − topo − base > 0,47` — um piso doutrinário ("um retângulo
+   * que come mais da metade da altura não é HUD, é moldura") aplicado ao
+   * número DECLARADO. Aplicado ali, o piso vira catraca: a declaração
+   * paga folga por cima do medido, então o trilho pinava o número de hoje
+   * menos um fio, e a próxima peça de HUD o baixaria de novo com
+   * derivação escrita, sem ninguém ver a linha ser cruzada.
+   *
+   * As duas afirmações foram separadas:
+   *  - o PISO DOUTRINÁRIO passou para o juiz de a11y, sobre o MEDIDO (é
+   *    lá que existe medida, e o número lá não se move);
+   *  - aqui fica a FOLGA: quanto a declaração paga a mais que o medido.
+   *    É isto que impede a declaração de inchar sem medição nova, e é
+   *    isto que uma tabela de constantes pode afirmar sozinha.
+   */
+  it('a declaração paga FOLGA sobre o medido, e a folga tem teto', () => {
+    // MEDIDO pelo juiz de a11y (2026-08-12, janela 1200×900, viewport de
+    // 813 px de altura, `?atlas=1&shot=1`). Se a CSS crescer, é o juiz
+    // que quebra primeiro (declarado ≥ medido); aqui quebra quando a
+    // DECLARAÇÃO cresce sem a medição acompanhar.
+    const MEDIDO = [
+      { ui: 0.85, topo: 0.119, base: 0.175 },
+      { ui: 1, topo: 0.125, base: 0.192 },
+      { ui: 1.4, topo: 0.197, base: 0.292 },
+    ];
+    const TETO_DA_FOLGA = 0.06;
+    for (const m of MEDIDO) {
+      const util = retanguloUtilDoAtlas(m.ui);
+      for (const [borda, medido] of [
+        ['topo', m.topo],
+        ['base', m.base],
+      ] as const) {
+        const folga = util[borda] - medido;
+        // nunca negativa: declarar menos que o medido põe o alvo atrás
+        // do texto — é o que o juiz cobra no navegador
+        expect(folga, `${borda} em ui=${m.ui}`).toBeGreaterThanOrEqual(0);
+        expect(folga, `${borda} em ui=${m.ui}`).toBeLessThanOrEqual(TETO_DA_FOLGA);
+      }
+    }
+  });
+
+  it('a quebra da barra é de LARGURA, e o degrau entra onde ela acontece', () => {
+    // a razão medida: a barra quebra abaixo de ~960 px de CSS por
+    // unidade de `?ui=`. Numa tela de mesa a 1,0 o degrau não existe;
+    // na MESMA tela a 1,4 ele existe; e numa janela estreita ele existe
+    // já em 1,0 — que é o que o limiar só-de-`?ui=` não sabia dizer.
+    const semDegrau = retanguloUtilDoAtlas(1, 1200);
+    const comDegrau = retanguloUtilDoAtlas(1, 900);
+    expect(comDegrau.topo - semDegrau.topo).toBeCloseTo(0.04, 12);
+    // e a base não depende da largura: quem quebra é a barra do topo
+    expect(comDegrau.base).toBe(semDegrau.base);
+    // o degrau a 1.200 px cai entre 1,25 e 1,26 (1.200 / 960 = 1,25) —
+    // e a quebra REAL a 1.200 px começa em 1,30, medida: a declaração
+    // entra um degrau ANTES, que é o lado seguro do erro
+    expect(retanguloUtilDoAtlas(1.25, 1200).topo).toBeCloseTo(0.065 + 0.075 * 1.25, 12);
+    expect(retanguloUtilDoAtlas(1.3, 1200).topo).toBeCloseTo(
+      0.065 + 0.075 * 1.3 + 0.04,
+      12
+    );
+    // largura envenenada cai na tela de mesa de referência, não em NaN
+    for (const cru of [Number.NaN, 0, -100, Number.POSITIVE_INFINITY]) {
+      expect(retanguloUtilDoAtlas(1, cru)).toEqual(retanguloUtilDoAtlas(1, LARGURA_DE_MESA_PX));
+    }
+    // a faixa declarada de validade é um número, não um adjetivo
+    expect(LARGURA_UTIL_MINIMA_PX).toBeGreaterThan(0);
+    expect(LARGURA_UTIL_MINIMA_PX).toBeLessThan(LARGURA_DE_MESA_PX);
   });
 
   it('painel só à direita joga o alvo para a esquerda do quadro', () => {

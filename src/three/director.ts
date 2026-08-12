@@ -135,6 +135,18 @@ const PASSO_DO_AO_VIVO_S = 1;
  */
 const PASSO_DO_MOSTRADOR_S = 0.25;
 
+/**
+ * A LARGURA DE CSS DA JANELA — a entrada de largura do retângulo útil do
+ * Atlas. `window.innerWidth` e não a do canvas de propósito: quem faz a
+ * barra de controles quebrar é o `max-width: 60vw` do `hud.css`, e o
+ * `vw` é o VIEWPORT. Fica aqui, ao lado de `escalaDaUi()`, porque as
+ * duas leituras de DOM que o enquadramento precisa são estas duas — o
+ * rig continua sem saber que existe DOM.
+ */
+function larguraDeCss(): number {
+  return window.innerWidth;
+}
+
 /** etapa viva do carregamento: `{ id, index, total, label }`, index 1…total */
 export type LoadStage = (typeof LOAD_STAGES)[number];
 export type LoadStageId = LoadStage['id'];
@@ -1174,7 +1186,7 @@ export class Director {
    * do rig, e o tick a repete no quadro seguinte com o mesmo resultado.
    */
   private enquadrarAgora() {
-    this.atlas.apply(this.engine.camera, escalaDaUi());
+    this.atlas.apply(this.engine.camera, escalaDaUi(), larguraDeCss());
   }
 
   /** scrub pela barra de progresso (fração 0..1) */
@@ -1566,7 +1578,7 @@ export class Director {
    * fontes (o número no TS e a altura no CSS) só se encontrariam a olho.
    */
   get retanguloUtil() {
-    return retanguloUtilDoAtlas(escalaDaUi());
+    return retanguloUtilDoAtlas(escalaDaUi(), larguraDeCss());
   }
 
   /**
@@ -1660,7 +1672,7 @@ export class Director {
       // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
       // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
       // amortecido do shot onde o visitante pausou
-      this.atlas.apply(cam, escalaDaUi());
+      this.atlas.apply(cam, escalaDaUi(), larguraDeCss());
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {

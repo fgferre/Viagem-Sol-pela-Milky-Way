@@ -111,24 +111,69 @@ const LETTERBOX_FRACAO = 0.065;
  * `top: 8,5vh` / `bottom: 7,4vh`), que NÃO cresce com o texto, então
  * declarar tudo escalado sobra em vez de faltar. Sobrar custa um
  * recuo de câmera; faltar põe o alvo por baixo do selo. O juiz de a11y
- * mede os extremos da faixa (`escalaDaUi`) e cobra declarado ≥ medido.
+ * mede os extremos da faixa (`escalaDaUi`) E os da LARGURA, e cobra
+ * declarado ≥ medido em cada canto (ver `LARGURA_UTIL_MINIMA_PX`).
  */
 const CONTEXTO_FRACAO = 0.075;
 
 /**
- * O DEGRAU DA BARRA QUEBRADA. Com o botão da busca (F3) a barra de
- * controles passa a QUEBRAR LINHA no extremo da escala de texto — por
- * desenho: o CSS prefere quebrar a invadir a linha de contexto
- * (garantia geométrica da F6, `hud.css`, faixa de cima do Atlas).
- * Medido a 1200×900: cresce linear até 1,35 e quebra entre 1,35 e 1,4
- * (`.controls-bar` 37,4 → 90,8 px; no estado do juiz, 0,197 de fração
- * a 1,4 contra 0,170 do modelo linear). O degrau só entra onde existe:
- * declarar a quebra em `ui = 1` empurraria a câmera por uma faixa que
- * ninguém ocupa. 0,04 cobre os 0,027 medidos com folga de ~1%.
+ * O DEGRAU DA BARRA QUEBRADA — e ele é fenômeno de LARGURA, não de
+ * `?ui=`. Com o botão da busca (F3) a barra de controles passa a QUEBRAR
+ * LINHA quando o texto não cabe nos `max-width: 60vw` que o `hud.css`
+ * lhe dá (o CSS prefere quebrar a invadir a linha de contexto —
+ * garantia geométrica da F6). Ou seja: quem quebra é a razão entre o
+ * TAMANHO DO TEXTO e a LARGURA da janela, e declarar o degrau só em
+ * função de `?ui=` deixava metade do fenômeno de fora.
+ *
+ * MEDIDO (2026-08-12, `?atlas=1&shot=1`, viewport de 813 px de altura),
+ * a menor largura de CSS em que a barra ainda NÃO quebra:
+ *
+ *   ui = 1,00 → entre 930 e 940 px      (razão 930–940)
+ *   ui = 1,15 → entre 1.050 e 1.100 px  (razão 913–957)
+ *   ui = 1,25 → entre 1.150 e 1.200 px  (razão 920–960)
+ *   ui = 1,29 → entre 1.150 e 1.200 px  (razão 891–930)
+ *   ui = 1,30 → já quebrada a 1.200 px  (`.controls-bar` 35,0 → 84,9 px
+ *               entre 1,25 e 1,30 — o degrau é de 50 px, não uma rampa)
+ *
+ * A razão é constante dentro da medição: ~930–960 px de largura por
+ * unidade de `ui`. `LARGURA_DA_QUEBRA_PX` fica no TOPO da faixa (960)
+ * porque errar para cima declara o degrau CEDO — custa um recuo de
+ * câmera — e errar para baixo põe o alvo atrás da barra.
+ *
+ * O que isto corrige, medido: o limiar anterior era `ui > 1,3` numa
+ * janela só, e a quebra a 1.200 px começa EM 1,30 — a comparação
+ * estrita deixava passar exatamente o degrau (declarado 0,163 contra
+ * 0,189 medido). Na lei nova, a 1.200 px o degrau entra a partir de
+ * `ui > 1,25`, e em janela estreita ele entra onde a quebra realmente
+ * acontece.
  */
-const BARRA_QUEBRADA_LIMIAR = 1.3;
+const LARGURA_DA_QUEBRA_PX = 960;
 const BARRA_QUEBRADA_FRACAO = 0.04;
 const SELO_FRACAO = 0.14;
+
+/**
+ * A LARGURA DE REFERÊNCIA — a tela de mesa em que as frações acima
+ * foram medidas e em que o juiz de a11y roda. É o default do produtor:
+ * quem o chama sem largura (o vitest da função pura) recebe o
+ * enquadramento desta janela, e não um caso-limite silencioso.
+ */
+export const LARGURA_DE_MESA_PX = 1200;
+
+/**
+ * ATÉ ONDE A DECLARAÇÃO VALE, em largura de CSS — medido, não estimado.
+ * De 900 px para cima o retângulo declarado cobre o HUD real em toda a
+ * faixa de `?ui=` (0,85 a 1,4); abaixo disso a BASE estoura, porque a
+ * máquina do tempo também quebra em duas e três linhas: medido em
+ * `ui = 1,4`, base 0,297 a 850 px (declarada 0,310, cabe) contra 0,328 a
+ * 800 px e 0,416 a 700 px. A 600 px nem o topo cabe (0,245 contra 0,210).
+ *
+ * PENDÊNCIA NOMEADA, com endereço em vez de adjetivo: "telas estreitas"
+ * é o HUD do Atlas reflowar abaixo de 900 px de largura de CSS — não é o
+ * enquadramento que está errado ali, é o HUD que precisa de um arranjo
+ * próprio (Onda 6). O juiz de a11y mede essas larguras e IMPRIME os
+ * números; o que ele cobra como gate é a faixa declarada aqui.
+ */
+export const LARGURA_UTIL_MINIMA_PX = 900;
 
 /**
  * A MÁQUINA DO TEMPO (F4), na BASE e à ESQUERDA — o canto oposto ao do
@@ -180,16 +225,26 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
  *
  * `fatorUi` é a escala do texto do HUD (`?ui=`, F6). As tarjas não
  * escalam — são `vh` puro —; as faixas do HUD, sim.
+ *
+ * `larguraPx` é a largura de CSS da janela (o mesmo `vw` de que o
+ * `max-width: 60vw` da barra de controles vive). Ela entra porque a
+ * quebra da barra é fenômeno de largura×texto e não de texto sozinho —
+ * ver `LARGURA_DA_QUEBRA_PX`.
  */
-export function retanguloUtilDoAtlas(fatorUi = 1): RetanguloUtil {
+export function retanguloUtilDoAtlas(
+  fatorUi = 1,
+  larguraPx = LARGURA_DE_MESA_PX
+): RetanguloUtil {
   const k = Number.isFinite(fatorUi) && fatorUi > 0 ? fatorUi : 1;
+  const largura =
+    Number.isFinite(larguraPx) && larguraPx > 0 ? larguraPx : LARGURA_DE_MESA_PX;
   return {
     esquerda: 0,
     direita: 0,
     topo:
       LETTERBOX_FRACAO +
       CONTEXTO_FRACAO * k +
-      (k > BARRA_QUEBRADA_LIMIAR ? BARRA_QUEBRADA_FRACAO : 0),
+      (largura < LARGURA_DA_QUEBRA_PX * k ? BARRA_QUEBRADA_FRACAO : 0),
     base: LETTERBOX_FRACAO + Math.max(SELO_FRACAO, TEMPO_FRACAO) * k,
   };
 }
@@ -406,16 +461,21 @@ export class AtlasRig {
    * a JourneyRig escreve a dela — inclusive o `fov`, que aqui é o pino
    * `ATLAS_FOV_GRAUS` e não o resíduo amortecido do shot anterior.
    *
-   * `fatorUi` chega de fora (o Director lê o número vivo) para o rig
-   * continuar sem saber que existe DOM: texto maior ⇒ HUD mais alto ⇒
-   * retângulo útil menor ⇒ câmera um pouco mais atrás.
+   * `fatorUi` e `larguraPx` chegam de fora (o Director lê os dois
+   * números vivos) para o rig continuar sem saber que existe DOM: texto
+   * maior ⇒ HUD mais alto ⇒ retângulo útil menor ⇒ câmera um pouco mais
+   * atrás; janela mais estreita ⇒ a barra quebra ⇒ o mesmo efeito.
    */
-  apply(camera: THREE.PerspectiveCamera, fatorUi = 1) {
+  apply(
+    camera: THREE.PerspectiveCamera,
+    fatorUi = 1,
+    larguraPx = LARGURA_DE_MESA_PX
+  ) {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: this.raio,
       fovDeg: ATLAS_FOV_GRAUS,
       aspect: camera.aspect,
-      retanguloUtil: retanguloUtilDoAtlas(fatorUi),
+      retanguloUtil: retanguloUtilDoAtlas(fatorUi, larguraPx),
     });
     direcaoPrivilegiada(
       _dir.copy(this.eixoDe).sub(SOL),
