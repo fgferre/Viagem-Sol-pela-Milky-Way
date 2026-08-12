@@ -115,6 +115,17 @@ export const LOAD_STAGES = (
 const QUADROS_ESTAVEIS = 10;
 
 /**
+ * Quadros que a captura SEGURA quando a efeméride PEDIDA está
+ * `indisponivel` com os corpos em cena (auditoria item 5c): a janela em
+ * que o tick dispara a SEGUNDA tentativa de `garantirEfemerides` (a
+ * fase 'buscando' dela já segura sozinha, pelo termo de `andando`).
+ * Esgotada a janela, a captura SOLTA — mas só depois do aviso único no
+ * console: o quadro que sair dali mostra o RETRATO congelado, e a
+ * captura nunca finge que a efeméride viva estava lá.
+ */
+const QUADROS_TENTANDO_FONTE = 10;
+
+/**
  * Duração de CADA metade do véu de entrada/saída do Atlas, em
  * segundos: fecha, reposiciona, abre. Entrar no Atlas não é travessia
  * física (D3) — não há nave voando de um lugar ao outro, e fingir isso
@@ -251,12 +262,26 @@ export class Director {
   private terraCarregavaAntes = false;
   /** fetch de textura da Terra em voo — o `captura` espera por ele. */
   private terraCarregando = false;
+  /** Terra no GATE a FRIO (armada, sem textura quente, sem fetch em voo
+   *  e com a camada ligada): o fallback frio da carga que desistiu — o
+   *  `captura` segura a prontidão em vez de fotografar o ponto fingindo
+   *  globo (auditoria item 5b; precedente `sun.assentado`). */
+  private terraFriaNoGate = false;
   /** A LUA RESOLVIDA (F2b) — o segundo morador do palco, com as mesmas
    *  digitais de estabilidade da Terra. */
   private lua: LuaResolvida | null = null;
   private luaEmQuadroAntes = false;
   private luaCarregavaAntes = false;
   private luaCarregando = false;
+  /** a Lua no gate a frio — o mesmo contrato de `terraFriaNoGate`. */
+  private luaFriaNoGate = false;
+  /** quadros já gastos segurando a captura com a efeméride pedida
+   *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
+  private quadrosTentandoFonte = 0;
+  /** a segunda tentativa de `garantirEfemerides` já foi disparada */
+  private retentouFonte = false;
+  /** o aviso único do retrato sob corpos já saiu no console */
+  private acusouRetrato = false;
   /** posição VIVA da Lua para o rótulo dela (projectCorpos) — três
    *  floats reusados; NaN sem efeméride (rótulo não desenha). */
   private readonly luaPosParaRotulo = new Float32Array([NaN, NaN, NaN]);
@@ -921,6 +946,15 @@ export class Director {
    *    harness congela e o `?pos=` entra com `snapCanonical`.
    *  - `sun.assentado`: o Sol tem retrato completo publicado — sem bake
    *    fatiado no meio e com a coroa volumétrica já publicada.
+   *  - corpos assentados (item 5b da auditoria): nenhum corpo resolvido
+   *    está no GATE a FRIO — armado, camada ligada, e nem textura quente
+   *    nem fetch em voo. Capturar assim fotografaria o ponto fingindo a
+   *    vista do globo; a carga que desistiu (3 tentativas, terra.ts)
+   *    deixa a captura REPROVAR por teto em vez de mentir.
+   *  - fonte assentada (item 5c): efeméride PEDIDA e indisponível com
+   *    corpos em cena segura a janela da retentativa
+   *    (QUADROS_TENTANDO_FONTE) — depois dela o aviso único já acusou o
+   *    RETRATO e a captura solta.
    *  - `quadrosEstaveis >= QUADROS_ESTAVEIS`: quadros desenhados desde a
    *    última perturbação (troca de fase, `?q=`, `?pos=`, `?t=`, resize,
    *    exposição, camada ligada/desligada). Pequeno de propósito: o que
@@ -957,16 +991,33 @@ export class Director {
       // A RAMPA ENTRE DEGRAUS (F2b/D7): o rig anima entre dois
       // enquadramentos — cena mudando por construção até assentar
       this.atlas.animando;
+    // CORPO NO GATE A FRIO (auditoria item 5b): o gate diz que o corpo
+    // devia estar na tela e a textura não está quente — capturar agora
+    // fotografaria o ponto (ou nada) fingindo a vista do globo. O
+    // precedente é `sun.assentado`: prontidão espera o retrato completo.
+    const corposAssentados = !this.terraFriaNoGate && !this.luaFriaNoGate;
+    // O RETRATO ACUSADO (item 5c): efeméride PEDIDA indisponível com os
+    // corpos em cena segura a janela da retentativa (o tick conta os
+    // quadros e dá o aviso único quando ela esgota — ver o bloco no tick).
+    const fonteAssentada = !(
+      this.palco.ligado &&
+      this.faseDaEfemeride === 'indisponivel' &&
+      this.quadrosTentandoFonte < QUADROS_TENTANDO_FONTE
+    );
     return {
       pronto:
         this.phase !== 'loading' &&
         !andando &&
         this.sun.assentado &&
+        corposAssentados &&
+        fonteAssentada &&
         this.quadrosEstaveis >= QUADROS_ESTAVEIS,
       quadros: this.quadrosEstaveis,
       fase: this.phase,
       andando,
       sol: this.sun.assentado,
+      corpos: corposAssentados,
+      fonte: fonteAssentada,
       tier: this.engine.quality,
     };
   }
@@ -1844,12 +1895,16 @@ export class Director {
    * tempo no HUD do Atlas, e o download é abortado pelo mesmo signal de
    * todo o resto.
    *
-   * SEM REDE NÃO HÁ GRITO. A camada continua no retrato congelado e o
-   * badge do HUD conta a verdade ao visitante — um `console.error` aqui
-   * seria ruído num caminho em que a degradação é o comportamento
-   * projetado, e o gate da fase cobra console limpo. Falhou uma vez,
-   * uma segunda tentativa é permitida: quem clicou de novo pediu de
-   * novo.
+   * SEM REDE NÃO HÁ GRITO — NESTE caminho. A camada continua no retrato
+   * congelado e o badge do HUD conta a verdade ao visitante — um
+   * `console.error` aqui seria ruído num caminho em que a degradação é
+   * o comportamento projetado. Falhou uma vez, uma segunda tentativa é
+   * permitida: quem clicou de novo pediu de novo.
+   *
+   * A ÚNICA exceção mora no tick (item 5c da auditoria): com CORPOS em
+   * cena e a fonte pedida indisponível, o RETRATO ACUSA — um aviso por
+   * sessão, depois da janela de retentativa (QUADROS_TENTANDO_FONTE).
+   * O juiz atlas-smoke pina exatamente esse aviso, e nada além dele.
    */
   private garantirEfemerides() {
     if (this.efemeride || this.faseDaEfemeride === 'buscando') return;
@@ -2321,6 +2376,10 @@ export class Director {
       // idempotente (`gravar`), então reafirmar não sobe upload
       this.planetas?.escreverCessao('earth', t.cede);
       this.terraCarregando = t.carregando;
+      // o FALLBACK FRIO (item 5b): gate armado, camada ligada e nem
+      // textura quente nem fetch em voo — o `captura` segura nisto
+      this.terraFriaNoGate =
+        this.palco.ligado && t.gateArmado && !t.emQuadro && !t.carregando;
       // globo entrando/saindo do quadro, textura que acabou de chegar e
       // a RAMPA da cessão andando são mudança de imagem: a contagem de
       // estabilidade recomeça (a captura nunca assenta no meio do fade)
@@ -2352,6 +2411,14 @@ export class Director {
       if (l.emQuadro) this.palco.registrar('moon', l.raioPc, l.centroPc);
       else this.palco.remover('moon');
       this.luaCarregando = l.carregando;
+      // o mesmo fallback frio da Terra — mas SÓ com fonte viva: sem
+      // efeméride a Lua não existe por contrato (não é falha de textura)
+      this.luaFriaNoGate =
+        this.palco.ligado &&
+        this.efemeride !== null &&
+        l.gateArmado &&
+        !l.emQuadro &&
+        !l.carregando;
       if (
         l.emQuadro !== this.luaEmQuadroAntes ||
         (this.luaCarregavaAntes && !l.carregando)
@@ -2365,6 +2432,29 @@ export class Director {
       this.luaPosParaRotulo[0] = l.centroPc.x;
       this.luaPosParaRotulo[1] = l.centroPc.y;
       this.luaPosParaRotulo[2] = l.centroPc.z;
+    }
+    // O RETRATO NUNCA FINGE EFEMÉRIDE (item 5c da auditoria): com os
+    // corpos em cena e a fonte PEDIDA indisponível, o tick tenta a fonte
+    // uma SEGUNDA vez (a permitida por `garantirEfemerides`: "quem pediu
+    // de novo") e o `captura` segura a prontidão pela janela de
+    // QUADROS_TENTANDO_FONTE; se ela ainda não veio, o aviso único ACUSA
+    // — quem ler o quadro dali em diante sabe que os corpos estão no
+    // retrato congelado, nunca numa efeméride que não chegou.
+    if (this.palco.ligado && this.faseDaEfemeride === 'indisponivel') {
+      if (!this.retentouFonte) {
+        this.retentouFonte = true;
+        this.garantirEfemerides();
+      } else if (this.quadrosTentandoFonte < QUADROS_TENTANDO_FONTE) {
+        this.quadrosTentandoFonte++;
+        if (this.quadrosTentandoFonte >= QUADROS_TENTANDO_FONTE && !this.acusouRetrato) {
+          this.acusouRetrato = true;
+          console.warn(
+            '[captura] efeméride pedida indisponível: os corpos seguem no RETRATO congelado'
+          );
+        }
+      }
+    } else if (this.faseDaEfemeride === 'viva') {
+      this.quadrosTentandoFonte = 0;
     }
     this.saltoDeCamera = false;
     const superficie = this.palco.superficieMaisProxima(cam.position);

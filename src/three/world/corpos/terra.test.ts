@@ -21,7 +21,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
@@ -29,11 +29,13 @@ import { ganhoFundido } from '../../../lib/atlas/luz';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import {
+  ALVO_DE_APOIO_CINEMA,
   ATMOSFERA,
   CANAIS_DA_TERRA,
   CUSHION_DO_GATE,
   DERIVA_DAS_NUVENS,
   LIMIAR_DO_GATE_PX,
+  RECARGAS_ATE_DESISTIR,
   RAIO_EQ_TERRA_PC,
   RAIO_POLAR_TERRA_PC,
   RAZAO_CASCA_ATMOSFERA,
@@ -184,25 +186,47 @@ describe('3. o gate binário (F2a)', () => {
 });
 
 describe('4. a escada de texturas por tier (contra o manifest REAL)', () => {
-  it('cinema pega o 8k quando o aparelho aguenta (política do dono)', () => {
-    const v = escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('cinema', 16384), true);
+  it('cinema pega o 8k no MAP quando o aparelho aguenta (política do dono)', () => {
+    const v = escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('cinema', 'map', 16384), true);
     expect(v?.larguraPx).toBe(8192);
     expect(v?.arquivo.endsWith('.webp')).toBe(true);
   });
 
+  it('A DOSE DE VRAM (lição N-9): em cinema só o map sobe a 8k; o apoio teta em 4k', () => {
+    // 5 × 8192² RGBA8 + mipmaps ≈ 1,79 GB — a tela branca do doador.
+    // Com a dose: 8192² + 4 × 4096² ≈ 0,54 GB (0,72 GB com mipmaps).
+    expect(alvoDePixels('cinema', 'map', 16384)).toBe(8192);
+    for (const canal of CANAIS_DA_TERRA.filter((c) => c !== 'map')) {
+      expect(alvoDePixels('cinema', canal, 16384), canal).toBe(ALVO_DE_APOIO_CINEMA);
+      // e a variante da dose EXISTE no manifest real, canal a canal
+      expect(
+        escolherVariante(MANIFEST.entradas, 'earth', canal, ALVO_DE_APOIO_CINEMA, true)
+          ?.larguraPx,
+        canal
+      ).toBe(4096);
+    }
+    // a regra é POR CANAL, não por corpo: a Lua (só map) mantém o 8k
+    expect(
+      escolherVariante(MANIFEST.entradas, 'moon', 'map', alvoDePixels('cinema', 'map', 16384), true)
+        ?.larguraPx
+    ).toBe(8192);
+  });
+
   it('o teto da sonda governa: cinema em maxTextureSize 4096 desce a 4k', () => {
-    const v = escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('cinema', 4096), true);
+    const v = escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('cinema', 'map', 4096), true);
     expect(v?.larguraPx).toBe(4096);
   });
 
-  it('alta = 2k, performance = 1k', () => {
+  it('alta = 2k, performance = 1k — em TODOS os canais', () => {
     expect(
-      escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('alta', 16384), true)?.larguraPx
+      escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('alta', 'map', 16384), true)?.larguraPx
     ).toBe(2048);
     expect(
-      escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('performance', 16384), true)
+      escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels('performance', 'map', 16384), true)
         ?.larguraPx
     ).toBe(1024);
+    expect(alvoDePixels('alta', 'clouds', 16384)).toBe(2048);
+    expect(alvoDePixels('performance', 'clouds', 16384)).toBe(1024);
   });
 
   it('sem webp cai no jpg da MESMA largura, nunca num degrau menor', () => {
@@ -228,8 +252,8 @@ describe('4. a escada de texturas por tier (contra o manifest REAL)', () => {
   });
 
   it('sem sonda legível o teto é 2k — errar para baixo, nunca estourar driver', () => {
-    expect(alvoDePixels('cinema', undefined)).toBe(2048);
-    expect(alvoDePixels('cinema', Number.NaN)).toBe(2048);
+    expect(alvoDePixels('cinema', 'map', undefined)).toBe(2048);
+    expect(alvoDePixels('cinema', 'map', Number.NaN)).toBe(2048);
   });
 
   it('todos os cinco canais têm variante em todos os degraus da escada', () => {
@@ -327,9 +351,13 @@ describe('5. o gatilho da carga preguiçosa (lei 4)', () => {
     expect(chamadas[0]).toBe('manifest:data/atlas/texturas.json');
     const texs = chamadas.filter((c) => c.startsWith('tex:'));
     expect(texs).toHaveLength(CANAIS_DA_TERRA.length);
-    // cinema com sonda folgada = a escada 8k, webp
+    // cinema com sonda folgada: 8k SÓ no map; o apoio desce na dose de
+    // VRAM (4k — no manifest real as nuvens 4k só existem em jpg)
     expect(texs).toContain('tex:textures/atlas/earth/map.webp');
-    expect(texs).toContain('tex:textures/atlas/earth/clouds.webp');
+    expect(texs).toContain('tex:textures/atlas/earth/clouds_4096.jpg');
+    expect(texs).toContain('tex:textures/atlas/earth/night_4096.webp');
+    expect(texs).toContain('tex:textures/atlas/earth/normal_4096.webp');
+    expect(texs).toContain('tex:textures/atlas/earth/roughness_4096.webp');
     terra.dispose();
   });
 
@@ -554,6 +582,70 @@ describe('6b. a dominância suave (F2b/D5) — a lei e as cicatrizes', () => {
   });
 });
 
+describe('6c. a falha de carga não é sentença (auditoria item 6)', () => {
+  /** Terra cujo manifest falha `falhas` vezes antes de passar. */
+  function terraQueFalha(falhas: number) {
+    let restantes = falhas;
+    const chamadas: string[] = [];
+    const terra = new TerraResolvida({
+      tier: 'cinema',
+      maxTextureSize: 16384,
+      base: '',
+      webp: true,
+      buscarManifest: async (url) => {
+        chamadas.push(`manifest:${url}`);
+        if (restantes-- > 0) throw new Error('HTTP 500');
+        return MANIFEST;
+      },
+      carregarTextura: async () => new THREE.Texture(),
+    });
+    return { terra, chamadas };
+  }
+
+  it('falha 1× volta a fria; a recarga do tick seguinte traz o globo', async () => {
+    const { terra, chamadas } = terraQueFalha(1);
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    let e = terra.atualizar(quadro(perto)); // 1ª carga dispara
+    expect(e.carregando).toBe(true);
+    await flush(); // ...e falha → 'fria' de novo, sem aviso
+    e = terra.atualizar(quadro(perto)); // o MESMO gatilho rearma (recarga)
+    expect(e.carregando).toBe(true);
+    await flush();
+    e = terra.atualizar(quadro(perto));
+    expect(e.emQuadro).toBe(true);
+    expect(chamadas.filter((c) => c.startsWith('manifest:'))).toHaveLength(2);
+    terra.dispose();
+  });
+
+  it('esgotadas as recargas o estado desiste DE VERDADE, com aviso único', async () => {
+    const avisos = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const { terra, chamadas } = terraQueFalha(Number.POSITIVE_INFINITY);
+      const perto = centroPc(JD);
+      perto.z += RAIO_EQ_TERRA_PC * 4;
+      // ticks de sobra: 1 carga + RECARGAS_ATE_DESISTIR recargas, e nada mais
+      let e = terra.atualizar(quadro(perto));
+      for (let i = 0; i < 6; i++) {
+        await flush();
+        e = terra.atualizar(quadro(perto));
+      }
+      expect(chamadas.filter((c) => c.startsWith('manifest:'))).toHaveLength(
+        1 + RECARGAS_ATE_DESISTIR
+      );
+      expect(avisos).toHaveBeenCalledTimes(1);
+      // o estado que o `captura` do Director SEGURA (item 5b): gate
+      // armado a FRIO — nem globo em quadro, nem fetch em voo
+      expect(e.gateArmado).toBe(true);
+      expect(e.emQuadro).toBe(false);
+      expect(e.carregando).toBe(false);
+      terra.dispose();
+    } finally {
+      avisos.mockRestore();
+    }
+  });
+});
+
 describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
   it('não tem relógio: o jd é do Director (D-E6)', () => {
     expect(FONTE).not.toContain('Date.now');
@@ -612,6 +704,15 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     // a porta ?luz= passa pela lei única, e a captura espera a textura
     expect(director).toContain("lerPortaLuz(this.debug.get('luz'))");
     expect(director).toContain('this.terraCarregando');
+    // ...e SEGURA o gate a FRIO (item 5b) e o retrato acusado (item 5c):
+    // corpo armado sem textura quente não captura; efeméride pedida
+    // indisponível segura a janela da retentativa e ACUSA no console
+    expect(director).toContain('this.terraFriaNoGate =');
+    expect(director).toContain('this.luaFriaNoGate =');
+    expect(director).toContain('!this.terraFriaNoGate && !this.luaFriaNoGate');
+    expect(director).toContain("this.faseDaEfemeride === 'indisponivel'");
+    expect(director).toContain('QUADROS_TENTANDO_FONTE');
+    expect(director).toContain('RETRATO congelado');
     // teardown: a Terra devolve tudo ANTES do palco esvaziar
     const stepTerra = director.indexOf("step('terra'");
     const stepPalco = director.indexOf("step('palco'");

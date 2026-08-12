@@ -144,6 +144,17 @@ export const ATMOSFERA = {
 export const CANAIS_DA_TERRA = ['map', 'night', 'clouds', 'normal', 'roughness'] as const;
 export type CanalDaTerra = (typeof CANAIS_DA_TERRA)[number];
 
+/**
+ * RECARGAS além da primeira tentativa antes de `'falhou'` virar terminal
+ * (auditoria item 6: um 404 transitório matava o globo a sessão inteira).
+ * O precedente é o backoff CONTADO dos 3 `pointerlockerror` da Onda 5
+ * (`ERROS_ATE_DESISTIR`, cameraRig.ts): 1 carga + 2 recargas = 3
+ * tentativas, e só então o estado desiste — com um aviso único, porque
+ * três falhas seguidas não são degradação projetada, são um defeito que
+ * alguém precisa ler.
+ */
+export const RECARGAS_ATE_DESISTIR = 2;
+
 // ------------------------------------------------------------
 // As contas puras (testáveis sem GPU)
 // ------------------------------------------------------------
@@ -282,19 +293,46 @@ export interface ManifestDeTexturas {
   entradas: EntradaDeTextura[];
 }
 
+/** Teto de cinema para os canais de APOIO (tudo que não é `map`) —
+ *  a dose de VRAM; a conta mora no doc de `alvoDePixels`. */
+export const ALVO_DE_APOIO_CINEMA = 4096;
+
 /**
- * O ALVO de pixels por tier — a política do dono (D4/decisão 2): cinema
- * usa a MELHOR variante que o aparelho aguenta (8k se couber no
- * `maxTextureSize` da sonda da Onda 1), alta 2k, performance 1k. Sem
- * sonda legível o teto é 2k — errar para baixo é barato, estourar o
+ * O ALVO de pixels por tier E POR CANAL — a política do dono (D4/decisão
+ * 2) com a DOSE DE VRAM da auditoria: cinema usa a MELHOR variante que o
+ * aparelho aguenta (`maxTextureSize` da sonda da Onda 1) SÓ no canal
+ * `map`, que é o que o olho lê; os canais de apoio (clouds/night/normal/
+ * roughness) tetam em 4k. Alta 2k, performance 1k, em todos os canais.
+ *
+ * A CONTA (RGBA8, como o driver aloca): 5 canais × 8192² = 1,34 GB
+ * (1,79 GB com mipmaps) para UM corpo — a lição N-9 do doador em pessoa
+ * (tela branca por 3,9 GB de texturas: o driver perde o contexto e não
+ * há catch para isso). Com a dose: 8192² + 4 × 4096² = 0,54 GB (0,72 GB
+ * com mipmaps) — e a 795 px de disco os canais de apoio em 4k já estão
+ * acima de 2 texels por pixel. A regra mora AQUI, por canal, e vale para
+ * qualquer corpo futuro: um corpo de 1 canal (a Lua) mantém o 8k no
+ * `map` de graça.
+ *
+ * Sem sonda legível o teto é 2k — errar para baixo é barato, estourar o
  * limite do driver é tela preta.
  */
-export function alvoDePixels(tier: QualityLevel, maxTextureSize?: number): number {
+export function alvoDePixels(
+  tier: QualityLevel,
+  canal: string,
+  maxTextureSize?: number
+): number {
   const teto =
     typeof maxTextureSize === 'number' && Number.isFinite(maxTextureSize) && maxTextureSize > 0
       ? maxTextureSize
       : 2048;
-  const alvo = tier === 'cinema' ? 8192 : tier === 'alta' ? 2048 : 1024;
+  const alvo =
+    tier === 'cinema'
+      ? canal === 'map'
+        ? 8192
+        : ALVO_DE_APOIO_CINEMA
+      : tier === 'alta'
+        ? 2048
+        : 1024;
   return Math.min(alvo, teto);
 }
 
@@ -591,6 +629,14 @@ export interface EstadoDaTerra {
   /** fetch de manifest/textura em voo — segura o sinal de captura. */
   carregando: boolean;
   /**
+   * O GATE está ARMADO — o corpo DEVIA estar na tela, com ou sem
+   * textura. Armado sem `emQuadro` e sem `carregando` é o FALLBACK FRIO
+   * (textura que desistiu): o `captura` do Director segura a prontidão
+   * nesse estado em vez de fotografar o ponto fingindo globo (auditoria
+   * item 5b; precedente `sun.assentado`).
+   */
+  gateArmado: boolean;
+  /**
    * A CESSÃO SUAVE do ponto da camada planetas (F2b/D5): 0 = ponto
    * inteiro, 1 = ponto apagado, contínua no meio — g(razão de
    * dominância) integrada no tempo por `stepRampToward`. 0 EXATO com o
@@ -639,6 +685,8 @@ export class TerraResolvida {
   private armado = false;
 
   private texturas: EstadoDasTexturas = 'fria';
+  /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
+  private recargas = 0;
   private readonly texturasVivas: THREE.Texture[] = [];
   private disposto = false;
 
@@ -683,6 +731,7 @@ export class TerraResolvida {
     this.estado = {
       emQuadro: false,
       carregando: false,
+      gateArmado: false,
       cede: 0,
       emRampa: false,
       raioPc: RAIO_EQ_TERRA_PC,
@@ -738,6 +787,7 @@ export class TerraResolvida {
     const emQuadro = this.armado && q.ligado && this.texturas === 'pronta';
     e.emQuadro = emQuadro;
     e.carregando = this.texturas === 'buscando';
+    e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
     // A CESSÃO SUAVE (F2b/D5). O halo do ponto sai do ESPELHO da PSF com
@@ -945,9 +995,10 @@ export class TerraResolvida {
 
     void (async () => {
       const manifest = await buscar(`${base}data/atlas/texturas.json`);
-      const alvo = alvoDePixels(tier, maxTextureSize);
       const texturas = await Promise.all(
         CANAIS_DA_TERRA.map(async (canal) => {
+          // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels`
+          const alvo = alvoDePixels(tier, canal, maxTextureSize);
           const variante = escolherVariante(manifest.entradas, 'earth', canal, alvo, webpOk);
           if (!variante) throw new Error(`terra sem variante para '${canal}' ≤ ${alvo}px`);
           const tex = await carregar(`${base}${variante.arquivo}`);
@@ -978,10 +1029,23 @@ export class TerraResolvida {
       this.texturasVivas.push(...texturas.map((t) => t.tex));
       this.texturas = 'pronta';
     })().catch(() => {
-      // sem rede/variante: o globo simplesmente não nasce e o PONTO
-      // continua brilhando com a fotometria certa — degradação honesta,
-      // no mesmo espírito do "sem efeméride: congelado no retrato".
-      if (!this.disposto) this.texturas = 'falhou';
+      if (this.disposto) return;
+      // UMA falha não é sentença (auditoria item 6): volta a 'fria' e o
+      // MESMO gatilho de sempre (gate armado ou fase atlas) rearma a
+      // carga no tick seguinte — até RECARGAS_ATE_DESISTIR. Só então
+      // 'falhou' é terminal: o globo não nasce, o PONTO continua com a
+      // fotometria certa (degradação honesta), e o aviso único deixa a
+      // falha legível — a captura da vista terra REPROVA em vez de
+      // fingir (o `captura` do Director segura com o gate armado a frio).
+      if (this.recargas < RECARGAS_ATE_DESISTIR) {
+        this.recargas++;
+        this.texturas = 'fria';
+      } else {
+        this.texturas = 'falhou';
+        console.warn(
+          `[terra] carga de texturas falhou ${1 + RECARGAS_ATE_DESISTIR}×; o globo não nasce nesta sessão`
+        );
+      }
     });
   }
 

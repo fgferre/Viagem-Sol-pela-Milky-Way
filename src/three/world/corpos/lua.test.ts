@@ -363,6 +363,34 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     expect(mat.transparent).toBe(false);
     lua.dispose();
   });
+
+  it('falha de carga volta a fria e a recarga traz a Lua — o MESMO backoff da Terra', async () => {
+    let falhas = 1;
+    const chamadas: string[] = [];
+    const lua = new LuaResolvida({
+      tier: 'cinema',
+      maxTextureSize: 16384,
+      base: '',
+      webp: true,
+      buscarManifest: async (url) => {
+        chamadas.push(`manifest:${url}`);
+        if (falhas-- > 0) throw new Error('HTTP 500');
+        return MANIFEST;
+      },
+      carregarTextura: async () => new THREE.Texture(),
+    });
+    const perto = centroPc(JD);
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto)); // 1ª carga dispara e falha
+    await flush();
+    let e = lua.atualizar(quadro(perto)); // o gatilho rearma (recarga)
+    expect(e.carregando).toBe(true);
+    await flush();
+    e = lua.atualizar(quadro(perto));
+    expect(e.emQuadro).toBe(true);
+    expect(chamadas.filter((c) => c.startsWith('manifest:'))).toHaveLength(2);
+    lua.dispose();
+  });
 });
 
 describe('5. texto-fonte (as leis pinadas) e a fiação no director', () => {

@@ -89,6 +89,7 @@ import type { QualityLevel } from '../../core/engine';
 import type { FonteDeEfemerides } from '../planetas/planetas';
 import { diametroAparentePx } from './corpos';
 import {
+  RECARGAS_ATE_DESISTIR,
   alvoDePixels,
   detectarWebp,
   escolherVariante,
@@ -181,6 +182,10 @@ export interface QuadroDaLua {
 export interface EstadoDaLua {
   emQuadro: boolean;
   carregando: boolean;
+  /** o gate está ARMADO — armado sem `emQuadro` e sem `carregando` é o
+   *  fallback frio que o `captura` do Director segura (contrato de
+   *  `EstadoDaTerra.gateArmado`, palavra por palavra). */
+  gateArmado: boolean;
   raioPc: number;
   /** centro em pc na cena — NaN enquanto não houver efeméride. */
   centroPc: THREE.Vector3;
@@ -211,6 +216,8 @@ export class LuaResolvida {
   private armado = false;
 
   private texturas: EstadoDasTexturas = 'fria';
+  /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
+  private recargas = 0;
   private readonly texturasVivas: THREE.Texture[] = [];
   private disposto = false;
 
@@ -240,6 +247,7 @@ export class LuaResolvida {
     this.estado = {
       emQuadro: false,
       carregando: false,
+      gateArmado: false,
       raioPc: RAIO_LUA_PC,
       centroPc: this.centro,
       diametroPx: Number.NaN,
@@ -293,6 +301,7 @@ export class LuaResolvida {
       this.armado && q.ligado && this.texturas === 'pronta' && q.fonte !== null;
     e.emQuadro = emQuadro;
     e.carregando = this.texturas === 'buscando';
+    e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
     if (emQuadro) this.posicionar(q);
@@ -377,7 +386,9 @@ export class LuaResolvida {
 
     void (async () => {
       const manifest = await buscar(`${base}data/atlas/texturas.json`);
-      const alvo = alvoDePixels(tier, maxTextureSize);
+      // a dose de VRAM é POR CANAL (alvoDePixels): o único canal da Lua
+      // é o `map`, que mantém o 8k de cinema — a regra não é por corpo
+      const alvo = alvoDePixels(tier, 'map', maxTextureSize);
       const variante = escolherVariante(manifest.entradas, 'moon', 'map', alvo, webpOk);
       if (!variante) throw new Error(`lua sem variante para 'map' ≤ ${alvo}px`);
       const tex = await carregar(`${base}${variante.arquivo}`);
@@ -395,9 +406,20 @@ export class LuaResolvida {
       this.texturasVivas.push(tex);
       this.texturas = 'pronta';
     })().catch(() => {
-      // sem rede/variante: a Lua simplesmente não nasce — degradação
-      // honesta, o mesmo espírito da Terra (que ao menos tem o ponto)
-      if (!this.disposto) this.texturas = 'falhou';
+      if (this.disposto) return;
+      // o MESMO backoff contado da Terra (auditoria item 6): falha volta
+      // a 'fria' e o gatilho rearma no tick seguinte, até
+      // RECARGAS_ATE_DESISTIR; só então 'falhou' é terminal, com aviso
+      // único — e a Lua não tem nem ponto para sobrar no lugar.
+      if (this.recargas < RECARGAS_ATE_DESISTIR) {
+        this.recargas++;
+        this.texturas = 'fria';
+      } else {
+        this.texturas = 'falhou';
+        console.warn(
+          `[lua] carga de textura falhou ${1 + RECARGAS_ATE_DESISTIR}×; a Lua não nasce nesta sessão`
+        );
+      }
     });
   }
 

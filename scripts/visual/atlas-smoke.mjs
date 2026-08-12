@@ -235,10 +235,17 @@ try {
     /sem efem[ée]ride/.test(badge),
     `e o badge conta a verdade ao visitante: "${badge}"`
   );
+  // ...e o ÚNICO grito permitido é o RETRATO ACUSADO (item 5c da
+  // auditoria): com corpos em cena e a efeméride PEDIDA indisponível, o
+  // Director dá UM aviso por sessão — a captura nunca finge que a fonte
+  // viva estava lá. O resto do caminho sem rede continua mudo (o badge
+  // fala com o visitante), e qualquer outro grito reprova como sempre.
   const gritos = sessao.gritos();
+  const acusacoes = gritos.filter((g) => g.includes('[captura] efeméride pedida indisponível'));
   conferir(
-    gritos.length === 0,
-    `sem rede, ZERO grito de console (${gritos.join(' | ') || 'nenhum'})`
+    acusacoes.length >= 1 && acusacoes.length === gritos.length,
+    `sem rede, só o RETRATO ACUSADO grita — 1 aviso por sessão, nada além `
+      + `(${gritos.join(' | ') || 'nenhum'})`
   );
   await sessao.bloquear([]);
 

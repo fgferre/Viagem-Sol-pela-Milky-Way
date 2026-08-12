@@ -158,12 +158,14 @@ export default function App() {
   // ?loader=<id> fixa uma etapa da tela de carregamento e a mantém no ar
   // depois que o init termina — com &shot=1 (que congela transições e o
   // relógio visual) a captura de cada etapa é determinística.
-  const [loaderFixo] = useState(
-    () =>
-      LOAD_STAGES.find(
-        (s) => s.id === new URLSearchParams(window.location.search).get('loader')
-      ) ?? null
-  );
+  // FERRAMENTA DE CAPTURA, e só isso (auditoria item 4): sem ?shot= a
+  // porta é IGNORADA — solta numa URL de visita ela deixaria o véu preto
+  // por cima da cena para sempre, sem botão nenhum para tirá-lo.
+  const [loaderFixo] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.has('shot')) return null;
+    return LOAD_STAGES.find((s) => s.id === q.get('loader')) ?? null;
+  });
   // prefers-reduced-motion: composição estática, crossfade simples
   const [movimentoReduzido] = useState(
     () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -488,6 +490,10 @@ export default function App() {
    */
   const urlComMomento = () => {
     const url = new URL(window.location.href);
+    // ferramenta de captura NÃO viaja no link copiado (auditoria item
+    // 4): `?loader=` numa URL compartilhada prenderia o véu na tela de
+    // quem a abrisse com ?shot= — e sem ?shot= seria porta morta.
+    url.searchParams.delete('loader');
     const d = directorRef.current;
     if (!d) return url;
     // de dentro do Atlas o link volta PARA o Atlas, com o momento que o
