@@ -1,0 +1,385 @@
+<!doctype html>
+<!-- ============================================================
+  BANCADA DE ASSETS — julgamento de texturas lado a lado (Onda 6 · D4)
+
+  ESTATUTO (emenda P-E16 do painel de abertura da Onda 6):
+  ferramenta INTERNA, FORA do produto e FORA dos juízes automatizados
+  (a11y.mjs, rodada.mjs, verify-assets, md5 das 18 vistas — nenhum
+  deles cobre nem deve cobrir esta página). O veredito aqui é HUMANO:
+  imagem + origem julgadas juntas. Os resultados NEGATIVOS vão para
+  docs/reference/ASSETS.md à mão — textura reprovada fica registrada
+  para não renascer por engano.
+
+  Por que existe: foi uma bancada assim, no doador (AssetStudyApp),
+  que pegou o Titã cinza e o "Júpiter" que era Io. A regra da casa:
+  resolução é o PIXEL MEDIDO (naturalWidth×Height), nunca o nome do
+  arquivo — o "2k_titan.jpg" do doador mede 1264×632.
+
+  Técnica: canvas 2D com projeção equiretangular→ortográfica por
+  pixel (zero WebGL, zero dependência, zero build). A amostragem
+  faz WRAP em U — exatamente o que o REPEAT do engine faz — então a
+  emenda de longitude 0/360 aparece como ela vai aparecer no produto.
+  Sem sombreamento de propósito: julga-se o albedo cru da textura.
+
+  USO:
+    a) servida (necessário para carregar por URL):
+         python3 -m http.server   # na raiz do repo (ou na pasta das texturas)
+         abrir http://localhost:8000/scripts/visual/bancada-assets.html
+         e apontar URLs relativas à página (ex.: ../../public/data/atlas/...)
+    b) file:// direto: abrir o arquivo no navegador e ARRASTAR as
+       imagens para a página (fetch é bloqueado em file://, drag-drop não).
+============================================================ -->
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bancada de assets — texturas lado a lado (Onda 6)</title>
+<style>
+  :root { --fundo: #000; --painel: #101014; --borda: #2a2a33; --texto: #d6d6de; --fraco: #8a8a96; --alerta: #ffb347; }
+  body.cinza { --fundo: #6e6e6e; --painel: #7a7a7a; --borda: #909090; --texto: #111; --fraco: #333; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fundo); color: var(--texto);
+         font: 13px/1.5 -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 10px 14px; border-bottom: 1px solid var(--borda); }
+  header h1 { font-size: 15px; margin: 0 0 2px; }
+  .estatuto { color: var(--fraco); font-size: 11px; max-width: 72em; }
+  .controles { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 14px;
+               border-bottom: 1px solid var(--borda); position: sticky; top: 0; background: var(--fundo); z-index: 2; }
+  .controles label { display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
+  .controles input[type="text"] { width: 26em; background: var(--painel); color: var(--texto);
+               border: 1px solid var(--borda); border-radius: 4px; padding: 4px 6px; font: inherit; }
+  button { background: var(--painel); color: var(--texto); border: 1px solid var(--borda);
+           border-radius: 4px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--fraco); }
+  .grupo { display: inline-flex; gap: 6px; align-items: center; }
+  .grupo b { font-weight: 600; color: var(--fraco); }
+  #paineis { display: flex; flex-wrap: wrap; gap: 14px; padding: 14px; align-items: flex-start; }
+  .painel { background: var(--painel); border: 1px solid var(--borda); border-radius: 8px;
+            padding: 10px; width: 404px; }
+  .painel h2 { font-size: 13px; margin: 0 0 6px; word-break: break-all; display: flex; gap: 8px; }
+  .painel h2 .fechar { margin-left: auto; padding: 0 8px; }
+  canvas.esfera { width: 380px; height: 380px; display: block; border-radius: 50%;
+                  cursor: grab; touch-action: none; }
+  canvas.esfera:active { cursor: grabbing; }
+  canvas.mapa { width: 380px; height: 190px; display: block; margin-top: 8px; border: 1px solid var(--borda); }
+  .meta { margin-top: 6px; font-size: 12px; color: var(--fraco); }
+  .meta b { color: var(--texto); font-weight: 600; }
+  .meta .alerta { color: var(--alerta); }
+  .prov { display: flex; gap: 6px; margin-top: 6px; align-items: flex-start; }
+  .prov span { color: var(--fraco); font-size: 11px; padding-top: 4px; white-space: nowrap; }
+  .prov textarea { flex: 1; background: var(--fundo); color: var(--texto); border: 1px solid var(--borda);
+                   border-radius: 4px; padding: 4px 6px; font: 12px/1.4 inherit; resize: vertical; }
+  .erro { color: var(--alerta); padding: 20px 6px; }
+  #vazio { color: var(--fraco); padding: 40px; text-align: center; width: 100%; }
+  body.arrastando { outline: 3px dashed var(--alerta); outline-offset: -6px; }
+</style>
+<body>
+<header>
+  <h1>Bancada de assets — texturas do mesmo corpo, lado a lado</h1>
+  <div class="estatuto">
+    Ferramenta interna, fora do produto e fora dos juízes automatizados (emenda P-E16).
+    O veredito é humano: imagem + proveniência juntas. Resolução é o pixel <em>medido</em>,
+    nunca o nome do arquivo. Negativos vão para <code>docs/reference/ASSETS.md</code> à mão.
+  </div>
+</header>
+
+<div class="controles">
+  <span class="grupo">
+    <input type="text" id="urls" placeholder="URLs relativas, separadas por vírgula (página servida)"
+           aria-label="URLs das texturas">
+    <button id="carregar">carregar</button>
+  </span>
+  <span class="grupo"><b>vista:</b>
+    <button data-preset="equador">equador</button>
+    <button data-preset="poloN">polo N</button>
+    <button data-preset="poloS">polo S</button>
+    <button data-preset="emenda">emenda 0/360</button>
+  </span>
+  <label><input type="checkbox" id="gamma"> levantar gamma (γ&nbsp;2,2)</label>
+  <label><input type="checkbox" id="cru"> pixels crus (nearest)</label>
+  <label><input type="checkbox" id="sinc" checked> rotação sincronizada</label>
+  <button id="fundo">fundo preto/cinza</button>
+  <button id="limpar">limpar</button>
+</div>
+
+<main id="paineis">
+  <div id="vazio">Arraste imagens equiretangulares para cá (funciona até em file://)<br>
+    ou carregue por URL com a página servida. Arrastar gira; roda do mouse dá zoom.</div>
+</main>
+
+<script>
+'use strict';
+// ---------- estado global ----------
+const paineis = [];
+const vistaGlobal = { spin: 0, tilt: 0, zoom: 1 };
+let gammaLiga = false, cruLiga = false, sincLiga = true;
+
+const LUT_ID = new Uint8ClampedArray(256), LUT_GAMMA = new Uint8ClampedArray(256);
+for (let i = 0; i < 256; i++) {
+  LUT_ID[i] = i;
+  LUT_GAMMA[i] = Math.round(255 * Math.pow(i / 255, 1 / 2.2));
+}
+
+const TAM = 380;                                   // px CSS da esfera
+const DPR = Math.min(devicePixelRatio || 1, 2);
+const BACK = Math.round(TAM * DPR);                // backing store
+const CAP_AMOSTRA = 8192;                          // teto do buffer de amostragem
+
+// ---------- formatação ----------
+const fmtBytes = (b) => b == null ? 'n/d'
+  : b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB'
+  : b >= 1024 ? (b / 1024).toFixed(0) + ' KB' : b + ' B';
+
+// O nome mente? (a lição do 2k_titan que mede 1264 px)
+function avisoDoNome(nome, w) {
+  const m = nome.match(/(\d+)\s*k/i);
+  if (!m) return '';
+  const nominal = parseInt(m[1], 10) * 1024;
+  if (Math.abs(w - nominal) / nominal > 0.2) {
+    return ` — <span class="alerta">o nome sugere ${nominal} px, medido ${w} px: o nome mente</span>`;
+  }
+  return '';
+}
+
+// ---------- criação de painel ----------
+async function criarPainel(nome, blob) {
+  document.getElementById('vazio')?.remove();
+  const sec = document.createElement('section');
+  sec.className = 'painel';
+  const cont = document.getElementById('paineis');
+  cont.appendChild(sec);
+  try {
+    const bmp = await createImageBitmap(blob);
+    const w = bmp.width, h = bmp.height;
+
+    // buffer de amostragem (reduzido só acima do teto; a resolução REAL segue reportada)
+    let aw = w, ah = h, reduzido = false;
+    if (w > CAP_AMOSTRA) { aw = CAP_AMOSTRA; ah = Math.round(h * CAP_AMOSTRA / w); reduzido = true; }
+    const oc = document.createElement('canvas');
+    oc.width = aw; oc.height = ah;
+    const octx = oc.getContext('2d', { willReadFrequently: true });
+    octx.drawImage(bmp, 0, 0, aw, ah);
+    const dados = octx.getImageData(0, 0, aw, ah);
+
+    const p = {
+      nome, dados, aw, ah, sec,
+      vista: sincLiga ? vistaGlobal : { ...vistaGlobal },
+    };
+
+    sec.innerHTML = `
+      <h2><span>${nome}</span><button class="fechar" title="fechar painel">×</button></h2>
+      <canvas class="esfera" width="${BACK}" height="${BACK}"></canvas>
+      <canvas class="mapa" width="760" height="380"></canvas>
+      <div class="meta">resolução real medida: <b>${w}×${h} px</b>${avisoDoNome(nome, w)}
+        · arquivo: <b>${fmtBytes(blob.size)}</b>${reduzido ? ` · amostragem interna reduzida a ${CAP_AMOSTRA} px` : ''}</div>
+      <div class="prov"><span>proveniência</span><textarea rows="2"
+        placeholder="fonte / licença / crédito (ex.: NASA/JPL/SSI PIA..., USGS Astrogeology, crédito redigido)"></textarea></div>`;
+
+    p.esfera = sec.querySelector('.esfera');
+    p.ctx = p.esfera.getContext('2d');
+    p.saida = p.ctx.createImageData(BACK, BACK);
+    p.mapa = sec.querySelector('.mapa');
+    // mapa plano: bitmap já reduzido para o canvas do mapa
+    p.mapaCtx = p.mapa.getContext('2d');
+    p.mapaBmp = await createImageBitmap(bmp, { resizeWidth: 760, resizeHeight: 380 });
+    bmp.close?.();
+
+    // proveniência editável, persistida por nome de arquivo
+    const chave = 'bancada-assets:prov:' + nome;
+    const ta = sec.querySelector('textarea');
+    ta.value = localStorage.getItem(chave) || '';
+    ta.addEventListener('input', () => localStorage.setItem(chave, ta.value));
+
+    sec.querySelector('.fechar').addEventListener('click', () => {
+      paineis.splice(paineis.indexOf(p), 1);
+      sec.remove();
+    });
+
+    ligarGestos(p);
+    paineis.push(p);
+    agendar(true);
+  } catch (e) {
+    sec.innerHTML = `<h2>${nome}</h2><div class="erro">falhou: ${e.message}</div>`;
+  }
+}
+
+// ---------- render: equiretangular → ortográfica, por pixel ----------
+function render(p, fino) {
+  const S = BACK, d = p.saida.data;
+  const img = p.dados.data, aw = p.aw, ah = p.ah;
+  const v = p.vista;
+  const ct = Math.cos(v.tilt), st = Math.sin(v.tilt);
+  const cs = Math.cos(v.spin), ss = Math.sin(v.spin);
+  const lut = gammaLiga ? LUT_GAMMA : LUT_ID;
+  const passo = fino ? 1 : 2;
+  const bilinear = fino && !cruLiga;
+  const invZ = 1 / v.zoom, dois = 2 / S;
+  for (let py = 0; py < S; py += passo) {
+    const y0 = -((py + 0.5) * dois - 1) * invZ;
+    for (let px = 0; px < S; px += passo) {
+      const x0 = ((px + 0.5) * dois - 1) * invZ;
+      let R = 0, G = 0, B = 0, A = 0;
+      const r2 = x0 * x0 + y0 * y0;
+      if (r2 <= 1) {
+        const z0 = Math.sqrt(1 - r2);
+        const y1 = y0 * ct - z0 * st;          // Rx(tilt)
+        const z1 = y0 * st + z0 * ct;
+        const x2 = x0 * cs + z1 * ss;          // Ry(spin)
+        const z2 = -x0 * ss + z1 * cs;
+        const lat = Math.asin(y1 > 1 ? 1 : y1 < -1 ? -1 : y1);
+        const lon = Math.atan2(x2, z2);
+        const u = lon / (2 * Math.PI) + 0.5;   // wrap em U = o REPEAT do engine
+        const vv = 0.5 - lat / Math.PI;
+        if (bilinear) {
+          const fx = u * aw - 0.5, fy = vv * ah - 0.5;
+          let ix = Math.floor(fx), iy = Math.floor(fy);
+          const tx = fx - ix, ty = fy - iy;
+          ix = ((ix % aw) + aw) % aw;
+          const ix1 = (ix + 1) % aw;           // atravessa a emenda, como o REPEAT
+          iy = iy < 0 ? 0 : iy > ah - 1 ? ah - 1 : iy;
+          const iy1 = iy + 1 > ah - 1 ? ah - 1 : iy + 1;
+          const i00 = (iy * aw + ix) * 4, i10 = (iy * aw + ix1) * 4;
+          const i01 = (iy1 * aw + ix) * 4, i11 = (iy1 * aw + ix1) * 4;
+          const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty;
+          R = lut[(img[i00] * w00 + img[i10] * w10 + img[i01] * w01 + img[i11] * w11) | 0];
+          G = lut[(img[i00 + 1] * w00 + img[i10 + 1] * w10 + img[i01 + 1] * w01 + img[i11 + 1] * w11) | 0];
+          B = lut[(img[i00 + 2] * w00 + img[i10 + 2] * w10 + img[i01 + 2] * w01 + img[i11 + 2] * w11) | 0];
+        } else {
+          let ix = Math.floor(u * aw); ix = ((ix % aw) + aw) % aw;
+          let iy = Math.floor(vv * ah); iy = iy < 0 ? 0 : iy > ah - 1 ? ah - 1 : iy;
+          const i = (iy * aw + ix) * 4;
+          R = lut[img[i]]; G = lut[img[i + 1]]; B = lut[img[i + 2]];
+        }
+        A = 255;
+      }
+      for (let by = 0; by < passo && py + by < S; by++) {
+        let o = ((py + by) * S + px) * 4;
+        for (let bx = 0; bx < passo && px + bx < S; bx++, o += 4) {
+          d[o] = R; d[o + 1] = G; d[o + 2] = B; d[o + 3] = A;
+        }
+      }
+    }
+  }
+  p.ctx.putImageData(p.saida, 0, 0);
+
+  // mapa plano + marcador do meridiano central da esfera
+  const mc = p.mapaCtx, MW = p.mapa.width, MH = p.mapa.height;
+  mc.clearRect(0, 0, MW, MH);
+  mc.drawImage(p.mapaBmp, 0, 0);
+  const uC = ((v.spin / (2 * Math.PI) + 0.5) % 1 + 1) % 1;
+  mc.strokeStyle = 'rgba(255,80,80,0.85)';
+  mc.beginPath(); mc.moveTo(uC * MW, 0); mc.lineTo(uC * MW, MH); mc.stroke();
+}
+
+// ---------- agendamento: rascunho no gesto, fino no repouso ----------
+let pedido = 0, timerFino = 0;
+function agendar(fino) {
+  cancelAnimationFrame(pedido);
+  pedido = requestAnimationFrame(() => paineis.forEach((p) => render(p, false)));
+  clearTimeout(timerFino);
+  timerFino = setTimeout(() => paineis.forEach((p) => render(p, true)), fino ? 0 : 180);
+}
+
+// ---------- gestos ----------
+function ligarGestos(p) {
+  let arrasto = null;
+  p.esfera.addEventListener('pointerdown', (e) => {
+    arrasto = { x: e.clientX, y: e.clientY };
+    p.esfera.setPointerCapture(e.pointerId);
+  });
+  p.esfera.addEventListener('pointermove', (e) => {
+    if (!arrasto) return;
+    const k = 0.006 / p.vista.zoom;
+    p.vista.spin -= (e.clientX - arrasto.x) * k;
+    p.vista.tilt = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, p.vista.tilt - (e.clientY - arrasto.y) * k));
+    arrasto = { x: e.clientX, y: e.clientY };
+    espalhar(p);
+    agendar(false);
+  });
+  p.esfera.addEventListener('pointerup', () => { arrasto = null; agendar(true); });
+  p.esfera.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    p.vista.zoom = Math.max(0.9, Math.min(40, p.vista.zoom * Math.exp(-e.deltaY * 0.0015)));
+    espalhar(p);
+    agendar(false);
+  }, { passive: false });
+}
+
+// sincronização: a vista do painel tocado vale para todos
+function espalhar(p) {
+  if (!sincLiga) return;
+  Object.assign(vistaGlobal, p.vista);
+  paineis.forEach((q) => { q.vista = vistaGlobal; });
+}
+
+// ---------- presets de julgamento ----------
+const PRESETS = {
+  equador: { spin: 0, tilt: 0, zoom: 1 },
+  poloN:  { spin: 0, tilt: -Math.PI / 2, zoom: 2.4 },   // lat +90 no centro
+  poloS:  { spin: 0, tilt: Math.PI / 2, zoom: 2.4 },
+  emenda: { spin: Math.PI, tilt: 0, zoom: 2.4 },        // longitude 0/360 de frente
+};
+document.querySelectorAll('[data-preset]').forEach((b) => {
+  b.addEventListener('click', () => {
+    const alvo = PRESETS[b.dataset.preset];
+    Object.assign(vistaGlobal, alvo);
+    paineis.forEach((p) => { p.vista = sincLiga ? vistaGlobal : { ...alvo }; });
+    agendar(true);
+  });
+});
+
+// ---------- controles globais ----------
+document.getElementById('gamma').addEventListener('change', (e) => { gammaLiga = e.target.checked; agendar(true); });
+document.getElementById('cru').addEventListener('change', (e) => { cruLiga = e.target.checked; agendar(true); });
+document.getElementById('sinc').addEventListener('change', (e) => {
+  sincLiga = e.target.checked;
+  if (sincLiga) paineis.forEach((p) => { p.vista = vistaGlobal; });
+  else paineis.forEach((p) => { p.vista = { ...p.vista }; });
+  agendar(true);
+});
+document.getElementById('fundo').addEventListener('click', () => document.body.classList.toggle('cinza'));
+document.getElementById('limpar').addEventListener('click', () => {
+  paineis.length = 0;
+  document.getElementById('paineis').innerHTML = '';
+});
+
+// ---------- entrada: drag-drop ----------
+addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('arrastando'); });
+addEventListener('dragleave', () => document.body.classList.remove('arrastando'));
+addEventListener('drop', (e) => {
+  e.preventDefault();
+  document.body.classList.remove('arrastando');
+  [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'))
+    .forEach((f) => criarPainel(f.name, f));
+});
+
+// ---------- entrada: URLs relativas (página servida) ----------
+async function carregarUrl(u) {
+  const abs = new URL(u, location.href);
+  const nome = decodeURIComponent(abs.pathname.split('/').pop());
+  try {
+    const r = await fetch(abs);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await criarPainel(nome, await r.blob());
+  } catch (e) {
+    document.getElementById('vazio')?.remove();
+    const sec = document.createElement('section');
+    sec.className = 'painel';
+    sec.innerHTML = `<h2>${nome}</h2><div class="erro">não carregou (${e.message}).
+      Em file:// o fetch é bloqueado — arraste o arquivo.</div>`;
+    document.getElementById('paineis').appendChild(sec);
+  }
+}
+document.getElementById('carregar').addEventListener('click', () => {
+  const campo = document.getElementById('urls');
+  campo.value.split(/[\s,]+/).filter(Boolean).forEach(carregarUrl);
+  campo.value = '';
+});
+document.getElementById('urls').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('carregar').click();
+});
+
+// gancho para uso programático em sessão de julgamento (não é API do produto)
+window.bancada = { carregarUrl, paineis, vistaGlobal };
+</script>
+</body>
+</html>
