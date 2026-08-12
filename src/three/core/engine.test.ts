@@ -1,5 +1,7 @@
 // ============================================================
-// Oráculo dos PLANOS DE CORTE (Onda 4, fase 2 — decisão D5).
+// Dois oráculos do `engine.ts`: os PLANOS DE CORTE (Onda 4, fase 2 —
+// decisão D5) e, no fim do arquivo, as DUAS PORTAS DE GOSTO (`?tone=` e
+// `?exp=`), que ganharam leitor único depois da auditoria de 2026-08-12.
 //
 // UMA afirmação, e ela é o gate desta fase: acima do limiar do domínio
 // profundo o par (near, far) é o MESMO PAR de doubles de antes da onda.
@@ -14,7 +16,15 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { DEEP_LIMIAR_PC } from '../world/lodStellar';
-import { DEEP_NEAR_MIN_PC, farPlanePc, nearPlanePc } from './engine';
+import {
+  DEEP_NEAR_MIN_PC,
+  TONE_MAPPINGS,
+  farPlanePc,
+  lerPortaExposicao,
+  lerPortaTom,
+  nearPlanePc,
+} from './engine';
+import type { ToneMapMode } from './engine';
 
 /** A fórmula ANTIGA, verbatim das duas linhas que viviam no `updateClip`. */
 const nearAntigo = (d: number) => THREE.MathUtils.clamp(d * 0.004, 0.001, 40);
@@ -161,6 +171,59 @@ describe('near — abaixo do limiar o piso SAI (o que a D5 comprou)', () => {
     for (const [nome, d] of PROFUNDAS) {
       expect(Object.is(farPlanePc(d), farAntigo(d)), nome).toBe(true);
       expect(farPlanePc(d), nome).toBe(60000);
+    }
+  });
+});
+
+// ============================================================
+// AS DUAS PORTAS DE GOSTO — `?tone=` e `?exp=`.
+//
+// A auditoria de 2026-08-12 achou a lei escrita DUAS vezes no `App.tsx`:
+// com guarda no caminho que fala com o engine e sem guarda nenhuma no
+// inicializador do estado React, que é quem pinta o HUD. Agora é uma lei
+// só, aqui, e o que este bloco cobra é exatamente o lixo que passava.
+// ============================================================
+describe('?tone= — só um modo que existe de verdade atravessa', () => {
+  it('os quatro modos do mapa passam, e devolvem a si mesmos', () => {
+    for (const modo of Object.keys(TONE_MAPPINGS) as ToneMapMode[]) {
+      expect(lerPortaTom(modo), modo).toBe(modo);
+    }
+  });
+
+  it('lixo devolve null — inclusive o que a versão sem guarda deixava passar', () => {
+    // `?tone=foo` era o caso do relatório: o valor entrava no estado com
+    // um `as ToneMapMode` e os quatro rádios ficavam desmarcados
+    for (const ruim of ['foo', 'ACES', 'aces ', '', ' ', '0', 'toString', null, undefined]) {
+      expect(lerPortaTom(ruim), String(ruim)).toBeNull();
+    }
+  });
+
+  it('herdado do objeto não é modo: `constructor` e `__proto__` não colam', () => {
+    // `in` anda na cadeia de protótipos — se o leitor usasse só ele sem o
+    // mapa ser um objeto de dados, isto passaria
+    expect(lerPortaTom('constructor')).toBeNull();
+    expect(lerPortaTom('__proto__')).toBeNull();
+    expect(lerPortaTom('hasOwnProperty')).toBeNull();
+  });
+});
+
+describe('?exp= — só número finito e positivo atravessa', () => {
+  it('valores de uso real passam com o mesmo double', () => {
+    for (const bom of ['1.02', '0.5', '4.4', '8', '0.001', '1e2']) {
+      expect(lerPortaExposicao(bom), bom).toBe(Number(bom));
+    }
+  });
+
+  it('`?exp=abc` devolve null — era o "Exposição · NaN" do relatório', () => {
+    for (const ruim of ['abc', 'NaN', 'Infinity', '-1', '0', '', ' ', null, undefined]) {
+      expect(lerPortaExposicao(ruim), String(ruim)).toBeNull();
+    }
+  });
+
+  it('e o que sai NUNCA é NaN — a propriedade que o slider precisa', () => {
+    for (const qualquer of ['abc', '1.02', '', '-3', null]) {
+      const v = lerPortaExposicao(qualquer);
+      expect(v === null || (Number.isFinite(v) && v > 0), String(qualquer)).toBe(true);
     }
   });
 });

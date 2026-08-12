@@ -7,7 +7,7 @@ import type { LoadStage, Phase } from './three/director';
 import type { NamedStar } from './three/config';
 import { HUD_POR_FASE } from './three/fases';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
-import { TONE_MAPPINGS } from './three/core/engine';
+import { lerPortaExposicao, lerPortaTom } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
 import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
@@ -74,11 +74,18 @@ export default function App() {
   // há contexto — uma exceção síncrona que o .catch() do init() nunca
   // pegava. Sondar antes deixa o véu mostrar a falha com retry em vez de
   // tela preta muda. A sonda é memoizada: o Engine reusa este veredito.
-  const [loadError, setLoadError] = useState(() =>
-    sondarGl().suportado
-      ? ''
-      : 'Este navegador está sem WebGL utilizável — a Viagem precisa dele para desenhar a galáxia. Atualize o navegador ou ative a aceleração de hardware e tente de novo.'
-  );
+  // ...e o véu DIZ QUAL DOS DOIS é o problema (auditoria 2026-08-12): a
+  // sonda aceitava WebGL1 como suportado e o navegador que só tem o 1
+  // caía no catch da criação do renderer, com a mensagem em inglês do
+  // three. "Sem WebGL utilizável" manda quem TEM WebGL procurar no lugar
+  // errado — a Viagem exige o 2 (three 0.185 não fala mais o 1).
+  const [loadError, setLoadError] = useState(() => {
+    const gl = sondarGl();
+    if (gl.webgl2) return '';
+    return gl.suportado
+      ? 'Este navegador só tem WebGL 1, e a Viagem precisa de WebGL 2 para desenhar a galáxia. Atualize o navegador (ou ative a aceleração de hardware) e tente de novo.'
+      : 'Este navegador está sem WebGL utilizável — a Viagem precisa dele para desenhar a galáxia. Atualize o navegador ou ative a aceleração de hardware e tente de novo.';
+  });
   const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
   // a loading é camada persistente: só desmonta DEPOIS do merge terminar
   const [loadingMontada, setLoadingMontada] = useState(true);
@@ -106,11 +113,18 @@ export default function App() {
   // sendo a fonte de verdade — e é lido por três hospedeiros: o painel de
   // Ajustes, a gaveta do Atlas e o selo de honestidade. Enquanto morava
   // dentro do painel, o segundo hospedeiro nascia mentindo.
+  // ...pela MESMA lei que o engine aplica (`lerPortaTom`/`lerPortaExposicao`
+  // em core/engine): antes o inicializador lia cru e só o caminho do
+  // Director validava, então `?tone=foo` deixava os quatro rádios
+  // desmarcados e `?exp=abc` pintava "Exposição · NaN" num slider com
+  // `value={NaN}` — o HUD mentindo sobre o que o instrumento faz.
   const [tom, setTom] = useState<ToneMapMode>(
-    () => (new URLSearchParams(window.location.search).get('tone') as ToneMapMode) || 'aces'
+    () => lerPortaTom(new URLSearchParams(window.location.search).get('tone')) ?? 'aces'
   );
   const [exposicao, setExposicao] = useState(
-    () => Number(new URLSearchParams(window.location.search).get('exp') ?? EXPOSICAO_PADRAO)
+    () =>
+      lerPortaExposicao(new URLSearchParams(window.location.search).get('exp')) ??
+      EXPOSICAO_PADRAO
   );
   const [escondidas, setEscondidas] = useState<Set<string>>(() => {
     const q = new URLSearchParams(window.location.search);
@@ -158,9 +172,9 @@ export default function App() {
 
   useEffect(() => {
     if (!canvasRef.current || !labelCanvasRef.current) return;
-    // sem GL utilizável (veredito da sonda, já no estado inicial): não há
+    // sem WebGL2 (veredito da sonda, já no estado inicial): não há
     // Director a construir — o véu de erro com retry já está na tela
-    if (!sondarGl().suportado) return;
+    if (!sondarGl().webgl2) return;
     let cancelled = false;
     const labels = new LabelCanvas(labelCanvasRef.current);
     let d: Director;
@@ -218,10 +232,10 @@ export default function App() {
 
         // ?tone= e ?exp= — os ajustes de gosto também são URL, para que uma
         // configuração vire link e a captura headless veja o mesmo que a tela.
-        const tone = query.get('tone') as ToneMapMode | null;
-        if (tone && tone in TONE_MAPPINGS) d.engine.setToneMapping(tone);
-        const exposure = Number(query.get('exp'));
-        if (Number.isFinite(exposure) && exposure > 0) d.setExposure(exposure);
+        const tone = lerPortaTom(query.get('tone'));
+        if (tone) d.engine.setToneMapping(tone);
+        const exposure = lerPortaExposicao(query.get('exp'));
+        if (exposure !== null) d.setExposure(exposure);
 
         // ?pos=x,y,z[&look=x,y,z][&fov=graus] — câmera livre determinística
         // em qualquer ponto da galáxia (screenshots/inspeção; o fov só faz

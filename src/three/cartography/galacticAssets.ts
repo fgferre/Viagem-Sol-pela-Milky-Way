@@ -13,6 +13,25 @@
 // ============================================================
 import { fetchBinary } from '../config';
 
+/**
+ * O que o runtime LÊ do manifesto — e a ausência do `sha256` aqui é
+ * deliberada: divergência de contrato ACEITA, escrita para não voltar
+ * como achado.
+ *
+ * O campo existe em cada ativo do `manifest.json` e quem o cobra é o
+ * `scripts/data/verify-assets.mjs`, OFFLINE: ele confere o sha de cada
+ * `.bin`, e desde a auditoria de 2026-08-12 também o `.bin.gz` que o
+ * visitante realmente baixa (gunzip + sha contra o cru). Aqui o runtime
+ * fica com `count × stride × 4`, que é a checagem barata que pega
+ * truncamento e `.gz` de outro tamanho.
+ *
+ * O que a divergência custa, dito por inteiro: corrupção do MESMO
+ * tamanho passa. O que a paga: hospedagem estática (nenhum
+ * intermediário reescreve bytes) e uma soma de 12 MB em WASM/JS a cada
+ * boot, que sairia do orçamento do primeiro quadro para defender um
+ * caso que a hospedagem já defende. Se um dia os ativos vierem de fonte
+ * não confiável, esta é a linha que muda.
+ */
 interface ManifestAsset {
   file: string;
   count: number;
