@@ -19,6 +19,7 @@ import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
+import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
 import { Planetas, PLANETAS_DEFAULT_ON } from './world/planetas/planetas';
 import type { FonteDeEfemerides } from './world/planetas/planetas';
 import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
@@ -201,6 +202,12 @@ export class Director {
   /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
   private planetas: Planetas | null = null;
+  /** O PALCO LOCAL (Onda 6, F0 — D1): o grupo dos corpos resolvidos,
+   *  vazio nesta fase. Irmão do `sun.group` e do `planetas.points`; a
+   *  superfície mais próxima dele entra no `updateClip` a cada tick.
+   *  `palco` e não `corpos`: o nome `corpos` já é do getter público da
+   *  BUSCA (os dez do retrato), que é outra coisa. */
+  private readonly palco = new CorposResolvidos();
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
   private wrappedStars!: WrappedStars;
@@ -442,6 +449,12 @@ export class Director {
       // domínio profundo (janelas deep, near piecewise, voo proporcional)
       // é fundação sem porta, como o near — emenda D11a.
       'noplan',
+      // ?nocorpos=1 — desliga o PALCO dos corpos resolvidos (Onda 6,
+      // F0/D8). Par de `?corpos=1`, padrão ?dom/?nodom: o A/B se faz
+      // com o MESMO binário dos dois lados. Desligado, os corpos saem
+      // do QUADRO inteiro — inclusive do min() do near, que volta ao
+      // vigente bit a bit (é o que devolve a baseline no A/B).
+      'nocorpos',
       // AS TRÊS DA GALÁXIA. Quem as LÊ é a Galaxy (por quadro, no
       // `update`); elas entram no conjunto porque o `hide` é o que o
       // SELO declara — sem esta linha, chegar com `?nodisc=1` apagava
@@ -676,6 +689,9 @@ export class Director {
     // é o que faz a fotometria planeta↔estrela ser relativa de verdade.
     this.planetas = new Planetas(this.stars);
     this.engine.scene.add(this.planetas.points);
+    // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
+    // vazio, irmão dos dois acima — os meshes chegam nas fases F2+.
+    this.engine.scene.add(this.palco.group);
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
 
@@ -1795,8 +1811,16 @@ export class Director {
     const dHome = cam.position.length();
     const dGC = cam.position.distanceTo(GAL.GC_POS);
     // o near acompanha a âncora mais PRÓXIMA (Sol ou centro galáctico):
-    // na rasante de Sgr A* o near de dezenas de pc comeria o buraco negro
-    this.engine.updateClip(Math.min(dHome, dGC));
+    // na rasante de Sgr A* o near de dezenas de pc comeria o buraco negro.
+    // E, desde a Onda 6 (F0/D1), a superfície RESOLVIDA mais próxima em
+    // quadro: a porta escreve `ligado` ANTES do getter porque camada
+    // desligada (?nocorpos) tira os corpos do quadro — o getter devolve
+    // NaN e o par (near, far) fica no vigente bit a bit (pino de
+    // neutralidade em engine.test.ts; sem corpo registrado, F0, idem).
+    this.palco.ligado =
+      (CORPOS_DEFAULT_ON || this.debug.has('corpos')) && !this.hide.has('nocorpos');
+    const superficie = this.palco.superficieMaisProxima(cam.position);
+    this.engine.updateClip(Math.min(dHome, dGC), superficie.dSuperficiePc, superficie.raioPc);
 
     // A Via Láctea não é um plano: os fades de AMBIENTE respondem à
     // posição da câmera no DISCO (R, z galactocêntricos), não à
@@ -2221,6 +2245,7 @@ export class Director {
     step('sunStar', () => this.sunStar?.dispose());
     // idem: a camada nasce depois do await do init
     step('planetas', () => this.planetas?.dispose());
+    step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());
     step('post', () => this.post.dispose());

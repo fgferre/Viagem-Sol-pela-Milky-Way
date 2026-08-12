@@ -131,17 +131,45 @@ export const DEEP_NEAR_MIN_PC = 1e-8;
  *
  * O DEGRAU NA FRONTEIRA é declarado, não acidental: em 0,05 pc o near
  * cai de 0,001 para 0,0002 pc de uma vez (o piso deixa de valer).
- * Ninguém vê: entre 41 e 206 UA da câmera não há geometria nenhuma
- * nesta fase (a camada de planetas é a fase seguinte, e o disco
- * artístico do Sol tem 2.269 UA de raio, muito além dos dois). O que o
- * degrau custa é uma reconstrução de matriz de projeção ao cruzar o
- * limiar — a mesma que o guarda de 5% do `updateClip` já dosa.
+ * Ninguém vê — e desde a Onda 6 a razão é CONTA, não premissa: a
+ * antiga ("não há geometria entre 41 e 206 UA") morreu quando o palco
+ * local pôs corpos resolvidos no domínio profundo. A conta: quem cruza
+ * a fronteira está a 0,05 pc = 10.313 UA da âncora mais próxima, e
+ * todo corpo do retrato orbita a ≤ 40 UA do Sol (Plutão, o mais
+ * distante, a 35,4) — o corpo mais próximo possível fica a ≥ 10.273 UA
+ * da câmera, 49 vezes além da faixa de 41–206 UA que o degrau
+ * toca; o disco artístico do Sol (2.269 UA de raio) fica a ≥ 8.044 UA.
+ * Pinada em `engine.test.ts`. O que o degrau custa é uma reconstrução
+ * de matriz de projeção ao cruzar o limiar — a mesma que o guarda de
+ * 5% do `updateClip` já dosa.
+ *
+ * O PALCO LOCAL (Onda 6, F0 — D1): com um corpo RESOLVIDO em quadro o
+ * near passa a acompanhar a superfície mais próxima, com a MESMA
+ * proporção de sempre (0,4% da distância) — o regime é o termo
+ * proporcional, nunca o piso. O piso deixa de ser o do Sol
+ * (`DEEP_NEAR_MIN_PC` = 308 mil km, absurdo ao lado de Fobos) e deriva
+ * do RAIO do corpo: metade dele, a mesma ordem do anteparo que a casa
+ * já usa na origem (1e-8 pc ≈ 0,44 raio solar) — para Fobos (11 km =
+ * 3,6e-13 pc) dá a rede de segurança de ~1e-13 pc do desenho da onda.
+ * É anteparo contra `d_superfície ≤ 0` (câmera tocando ou dentro do
+ * corpo), nunca calibração. `dSuperficiePc`/`raioPc` NaN ou ausentes =
+ * sem corpo em quadro, e o par (near, far) é BIT-IDÊNTICO ao vigente:
+ * NaN reprova toda comparação e o ramo novo nem executa (pino de
+ * neutralidade em `engine.test.ts` — é ele que sustenta o 18/18 da F0).
  */
-export function nearPlanePc(distFromSun: number): number {
-  if (distFromSun >= DEEP_LIMIAR_PC) {
-    return THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40);
+export function nearPlanePc(
+  distFromSun: number,
+  dSuperficiePc = Number.NaN,
+  raioPc = Number.NaN
+): number {
+  const semCorpo =
+    distFromSun >= DEEP_LIMIAR_PC
+      ? THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40)
+      : Math.max(distFromSun * 0.004, DEEP_NEAR_MIN_PC);
+  if (!(Number.isFinite(dSuperficiePc) && Number.isFinite(raioPc) && raioPc > 0)) {
+    return semCorpo;
   }
-  return Math.max(distFromSun * 0.004, DEEP_NEAR_MIN_PC);
+  return Math.min(semCorpo, Math.max(dSuperficiePc * 0.004, raioPc * 0.5));
 }
 
 /**
@@ -240,9 +268,12 @@ export class Engine {
   /**
    * Planos de corte dinâmicos — a cena vai de 0,01 pc a ~25.000 pc;
    * sem isso o depth buffer colapsaria num extremo ou no outro.
+   * Desde a Onda 6 o `min()` aceita a superfície resolvida mais
+   * próxima (o Director a lê do palco local): NaN/ausente = o par de
+   * sempre, bit a bit — ver `nearPlanePc`.
    */
-  updateClip(distFromSun: number) {
-    const near = nearPlanePc(distFromSun);
+  updateClip(distFromSun: number, dSuperficiePc = Number.NaN, raioCorpoPc = Number.NaN) {
+    const near = nearPlanePc(distFromSun, dSuperficiePc, raioCorpoPc);
     const far = farPlanePc(distFromSun);
     if (
       Math.abs(near - this.camera.near) / near > 0.05 ||

@@ -48,12 +48,12 @@ export interface Camada {
 
 /**
  * As camadas da casa, na ordem em que o painel do filme sempre as
- * mostrou. AS DOZE TROCAM AO VIVO desde 2026-08-12: as três da galáxia
+ * mostrou. TODAS TROCAM AO VIVO desde 2026-08-12: as três da galáxia
  * (lâminas, extinção por partícula, bojo) eram `viva: false` por um
  * comentário podre — `bakeDiscLayers` roda inteiro de qualquer jeito, o
  * τRT inclusive, e elas só governam `mesh.visible` e o bind de
  * `uTauMap`, que a `Galaxy` reescreve por quadro. Nenhuma opção do
- * painel recarrega a página.
+ * painel recarrega a página. A 13ª (`nocorpos`) é da Onda 6.
  */
 export const CAMADAS: readonly Camada[] = [
   { flag: 'nogal', nome: 'Galáxia (tudo)', viva: true },
@@ -67,14 +67,19 @@ export const CAMADAS: readonly Camada[] = [
   { flag: 'nohero', nome: 'Estrelas nomeadas', viva: true, icone: '✦' },
   { flag: 'nomarker', nome: 'Marcador do Sol', viva: true, icone: '⌖' },
   { flag: 'noplan', nome: 'Planetas', viva: true, icone: '◉' },
+  // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de
+  // perto, distintos dos PONTOS fotométricos de `noplan`. Entra vazio
+  // nesta fase (nenhum mesh ainda; o toggle não muda pixel até F2),
+  // mas nasce DECLARADO aqui e no selo, como a lei das portas manda.
+  { flag: 'nocorpos', nome: 'Corpos de perto', viva: true, icone: '◐' },
   { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', viva: true, icone: '✱' },
 ];
 
 /**
- * O que a gaveta do Atlas oferece: as cinco de D6, derivadas da tabela
- * acima — nunca redigitadas. Todas são `viva: true` por construção (uma
- * gaveta que recarrega a página tiraria o visitante do modo), e o teste
- * cobra isso.
+ * O que a gaveta do Atlas oferece: as cinco de D6 (Onda 5) mais a do
+ * palco local (Onda 6), derivadas da tabela acima — nunca redigitadas.
+ * Todas são `viva: true` por construção (uma gaveta que recarrega a
+ * página tiraria o visitante do modo), e o teste cobra isso.
  */
 export const CAMADAS_DO_ATLAS = CAMADAS.filter((c) => c.icone !== undefined);
 

@@ -240,6 +240,9 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('cart', 'modo de cartografia trocado'),
   porta('discoff', 'cartografia do disco desligada'),
   porta('plan', 'camada de planetas forçada'),
+  // ?corpos força o palco dos corpos resolvidos (Onda 6, F0) — par de
+  // ?nocorpos, no precedente exato de ?plan/?noplan
+  porta('corpos', 'camada de corpos forçada'),
   // --- camadas (as do painel e as só-URL) ---------------------------
   camada('nogal'),
   // as três da galáxia deixaram de recarregar em 2026-08-12: o setter da
@@ -255,6 +258,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   camada('nohero'),
   camada('nomarker'),
   camada('noplan'),
+  camada('nocorpos'),
   camada('nobh'),
   camada('nosun'),
   camada('nodust'),

@@ -413,12 +413,16 @@ export class Planetas {
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      // depthTest FALSE pelo mesmo motivo do SunStar (`heroStars.ts`): a
-      // camada SÓ soma luz. E aqui há um segundo motivo, específico: o
-      // disco artístico do Sol tem 2.269 UA de raio e engolfa o sistema
-      // solar inteiro — com depthTest, os dez pontos seriam furados por
-      // uma esfera que a D2 está justamente dissolvendo.
-      depthTest: false,
+      // depthTest TRUE desde a Onda 6 (F0, inventário de D1). O motivo
+      // do false era a esfera do Sol: o disco artístico de 2.269 UA
+      // engolfa o sistema inteiro e, se ELE escrevesse depth, furaria
+      // os dez pontos — mas ele NÃO escreve (nada escrevia). Contra o
+      // buffer novo, que só o grupo dos corpos resolvidos escreve, o
+      // teste é o comportamento correto: ponto atrás de corpo resolvido
+      // some, como no céu de verdade. Com nada escrevendo depth ainda,
+      // true é no-op por construção — as 18 vistas bit-idênticas da F0
+      // são a prova.
+      depthTest: true,
       transparent: true,
     });
 

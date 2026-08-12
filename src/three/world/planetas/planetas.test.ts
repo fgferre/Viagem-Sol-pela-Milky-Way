@@ -268,11 +268,16 @@ describe('a camada nasce com a estrutura que a D3 manda', () => {
     p.dispose();
   });
 
-  it('o material é aditivo, sem escrita E sem teste de profundidade', () => {
+  it('o material é aditivo, sem escrita e COM teste de profundidade (Onda 6)', () => {
+    // depthTest virou true na F0 da Onda 6: o motivo do false era a
+    // esfera do Sol, que não escreve depth — contra o buffer que só o
+    // grupo dos corpos resolvidos escreve, testar é o correto (ponto
+    // atrás de corpo resolvido some). depthWrite segue false: a camada
+    // só soma luz, nunca oclui ninguém.
     const p = camada();
     expect(p.material.blending).toBe(THREE.AdditiveBlending);
     expect(p.material.depthWrite).toBe(false);
-    expect(p.material.depthTest).toBe(false);
+    expect(p.material.depthTest).toBe(true);
     expect(p.material.transparent).toBe(true);
     p.dispose();
   });

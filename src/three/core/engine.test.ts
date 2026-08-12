@@ -159,18 +159,155 @@ describe('near — abaixo do limiar o piso SAI (o que a D5 comprou)', () => {
   });
 
   it('O DEGRAU NA FRONTEIRA, declarado: 5× de uma vez, e ninguém o vê', () => {
-    // em 0,05 pc o piso deixa de valer: 0,001 → 0,0002 pc. Entre 41 e
-    // 206 UA da câmera não há geometria nesta fase, então o degrau não
-    // pinta pixel; o que ele custa é uma matriz de projeção nova.
+    // em 0,05 pc o piso deixa de valer: 0,001 → 0,0002 pc. A razão de
+    // ninguém ver era PREMISSA ("não há geometria entre 41 e 206 UA")
+    // e a Onda 6 a matou ao pôr corpos resolvidos no domínio profundo;
+    // desde então é CONTA, no teste seguinte. O que o degrau custa é
+    // uma matriz de projeção nova.
     expect(nearPlanePc(DEEP_LIMIAR_PC)).toBe(0.001);
     expect(nearPlanePc(DEEP_LIMIAR_PC - 1e-15)).toBe((DEEP_LIMIAR_PC - 1e-15) * 0.004);
     expect(nearPlanePc(DEEP_LIMIAR_PC) / nearPlanePc(DEEP_LIMIAR_PC - 1e-15)).toBeCloseTo(5, 6);
+  });
+
+  it('a CONTA que substituiu a premissa: na fronteira, todo corpo está longe do degrau', () => {
+    // quem cruza 0,05 pc está a 10.313 UA da âncora; todo corpo do
+    // retrato orbita a ≤ 40 UA do Sol (Plutão, o mais distante, a
+    // 35,4 — planetas.ts), então o corpo mais próximo possível fica a
+    // ≥ 10.273 UA da câmera — 49× além dos 206 UA que o degrau toca.
+    // O disco artístico do Sol (2.269 UA de raio) fica a ≥ 8.044 UA.
+    const UA_POR_PC = 206264.80624548031;
+    const fronteiraUA = DEEP_LIMIAR_PC * UA_POR_PC;
+    expect(fronteiraUA).toBeCloseTo(10313.2, 1);
+    expect(fronteiraUA - 40).toBeGreaterThan(49 * 206.3);
+    expect(fronteiraUA - 2269).toBeGreaterThan(8000);
   });
 
   it('o far NÃO muda no domínio profundo — o que muda é o quão perto se vê', () => {
     for (const [nome, d] of PROFUNDAS) {
       expect(Object.is(farPlanePc(d), farAntigo(d)), nome).toBe(true);
       expect(farPlanePc(d), nome).toBe(60000);
+    }
+  });
+});
+
+// ============================================================
+// O PALCO LOCAL NO NEAR (Onda 6, F0 — D1). Duas promessas, nesta ordem:
+//
+//  1. PINO DE NEUTRALIDADE: sem corpo resolvido (NaN/ausente), o par
+//     (near, far) é BIT-IDÊNTICO (Object.is) ao vigente da Onda 4 — o
+//     oráculo é a lei REESCRITA verbatim aqui, no mesmo protocolo do
+//     `nearAntigo` lá de cima. É este pino que sustenta o 18/18 da F0
+//     e o skyError (a câmera do céu está em casa, onde o piso 1e-8
+//     governa).
+//  2. COM corpo em quadro: o regime é o termo proporcional (0,4% da
+//     distância à superfície), o piso deriva do RAIO (metade dele —
+//     rede de segurança ~1e-13 pc para Fobos), e corpo longe não mexe
+//     em nada.
+// ============================================================
+describe('Onda 6, F0 — pino de neutralidade: sem corpo, o par é o vigente', () => {
+  /** A lei VIGENTE (Onda 4), verbatim das linhas de antes desta onda. */
+  const nearVigente = (d: number) =>
+    d >= DEEP_LIMIAR_PC
+      ? THREE.MathUtils.clamp(d * 0.004, 0.001, 40)
+      : Math.max(d * 0.004, DEEP_NEAR_MIN_PC);
+
+  it('nas 18 vistas do gate visual, com NaN explícito E com os argumentos ausentes', () => {
+    for (const [nome, d] of [...VISTAS, ...PROFUNDAS]) {
+      expect(Object.is(nearPlanePc(d, Number.NaN, Number.NaN), nearVigente(d)), nome).toBe(true);
+      expect(Object.is(nearPlanePc(d), nearVigente(d)), nome).toBe(true);
+      expect(Object.is(farPlanePc(d), farAntigo(d)), nome).toBe(true);
+    }
+  });
+
+  it('na faixa inteira, ponto a ponto — inclusive dentro do domínio profundo', () => {
+    const AMOSTRA = [...ACIMA];
+    for (let i = 1; i <= 500; i++) AMOSTRA.push(i * 1e-7); // 1e-7 → 5e-5 pc
+    for (let i = 1; i <= 499; i++) AMOSTRA.push(i * 1e-4); // 1e-4 → 0,0499 pc
+    for (const d of AMOSTRA) {
+      expect(Object.is(nearPlanePc(d, Number.NaN, Number.NaN), nearVigente(d))).toBe(true);
+      expect(Object.is(nearPlanePc(d), nearVigente(d))).toBe(true);
+    }
+  });
+
+  it('superfície envenenada pela METADE também é neutra — só o par completo age', () => {
+    // dSuperficie sem raio (ou raio sem dSuperficie) não é corpo em
+    // quadro: é chamador quebrado, e a resposta honesta é o vigente
+    for (const d of [0.0007, 0.05, 1]) {
+      expect(Object.is(nearPlanePc(d, 1e-6, Number.NaN), nearVigente(d))).toBe(true);
+      expect(Object.is(nearPlanePc(d, Number.NaN, 1e-8), nearVigente(d))).toBe(true);
+      expect(Object.is(nearPlanePc(d, 1e-6, 0), nearVigente(d))).toBe(true);
+      expect(Object.is(nearPlanePc(d, 1e-6, -1), nearVigente(d))).toBe(true);
+      expect(Object.is(nearPlanePc(d, Number.POSITIVE_INFINITY, 1e-8), nearVigente(d))).toBe(
+        true
+      );
+    }
+  });
+});
+
+describe('Onda 6, F0 — com corpo em quadro, a superfície governa o near', () => {
+  // Fobos, o menor corpo citado pelo desenho: 11 km = 3,565e-13 pc
+  const RAIO_FOBOS_PC = 11 / 149597870.7 / 206264.80624548031;
+  // Terra, o primeiro corpo que o palco vai receber (F2a): 6.371 km
+  const RAIO_TERRA_PC = 6371 / 149597870.7 / 206264.80624548031;
+
+  it('o REGIME é o termo proporcional: 0,4% da distância à superfície', () => {
+    // câmera a 150 UA do Sol com a Terra a 1 UA dela: o near desce dos
+    // 0,6 UA do vigente para 0,004 UA — é o que abre o corpo resolvido
+    const dSup = 1 * 4.848e-6; // ~1 UA em pc
+    const near = nearPlanePc(0.00072722, dSup, RAIO_TERRA_PC);
+    expect(near).toBe(dSup * 0.004);
+    expect(near).toBeLessThan(nearPlanePc(0.00072722));
+  });
+
+  it('o piso é METADE DO RAIO — rede de segurança, nunca regime', () => {
+    // câmera TOCANDO a superfície (d=0) e DENTRO do corpo (d<0): o
+    // near não zera nem vira negativo — a projeção não aceita nenhum
+    for (const dSup of [0, -RAIO_TERRA_PC / 2]) {
+      expect(nearPlanePc(0.00072722, dSup, RAIO_TERRA_PC)).toBe(RAIO_TERRA_PC * 0.5);
+    }
+    // e o piso só assume MUITO perto: ele empata com a proporção em
+    // d_superfície = (raio/2)/0,004 = 125 raios — de 126 para fora o
+    // regime é o proporcional, como o desenho manda
+    expect(nearPlanePc(0.00072722, 126 * RAIO_TERRA_PC, RAIO_TERRA_PC)).toBe(
+      126 * RAIO_TERRA_PC * 0.004
+    );
+  });
+
+  it('para Fobos o piso é ~1,8e-13 pc — a rede de ~1e-13 do desenho da onda', () => {
+    const piso = nearPlanePc(0.00072722, 0, RAIO_FOBOS_PC);
+    expect(piso).toBeCloseTo(1.78e-13, 15);
+    expect(piso).toBeGreaterThan(1e-13 / 2);
+    expect(piso).toBeLessThan(1e-12);
+    // o piso do Sol (1e-8 pc = 308 mil km) seria 56 mil vezes maior que
+    // o corpo inteiro — é por isso que ele deriva do raio agora
+    expect(DEEP_NEAR_MIN_PC / RAIO_FOBOS_PC).toBeGreaterThan(10000);
+  });
+
+  it('corpo LONGE não mexe em nada: o min() escolhe o vigente', () => {
+    // Terra em quadro mas a 100 UA da câmera: 100 UA · 0,4% = 0,4 UA,
+    // maior que o near vigente de vistas próximas — o min devolve o de
+    // sempre, bit a bit
+    const dSup = 100 * 4.848e-6;
+    expect(Object.is(nearPlanePc(0.00019393, dSup, RAIO_TERRA_PC), nearPlanePc(0.00019393))).toBe(
+      true
+    );
+  });
+
+  it('o far NUNCA ouve o corpo: o que muda é o quão perto se vê', () => {
+    expect(Object.is(farPlanePc(0.00072722), farAntigo(0.00072722))).toBe(true);
+  });
+
+  it('o near com corpo continua > 0, finito e abaixo do far', () => {
+    for (const [dSol, dSup, raio] of [
+      [0.0007, 0, RAIO_FOBOS_PC],
+      [0.0007, -1e-9, RAIO_TERRA_PC],
+      [0.05, 1e-6, RAIO_TERRA_PC],
+      [1, 1e-5, 1e-8],
+    ] as const) {
+      const near = nearPlanePc(dSol, dSup, raio);
+      expect(near).toBeGreaterThan(0);
+      expect(Number.isFinite(near)).toBe(true);
+      expect(near).toBeLessThan(farPlanePc(dSol));
     }
   });
 });

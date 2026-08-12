@@ -31,24 +31,26 @@ describe('a tabela de camadas da casa', () => {
     }
   });
 
-  it('as DOZE trocam ao vivo — nenhuma opção do painel recarrega a página', () => {
+  it('as TREZE trocam ao vivo — nenhuma opção do painel recarrega a página', () => {
     // A régua do dono: nenhuma opção do painel de Ajustes recarrega. As
-    // três últimas (nodisc/nogdust/noglow) recarregavam por um comentário
-    // podre — `bakeDiscLayers` roda inteiro de qualquer jeito. Quem
-    // marcar uma camada como `viva: false` quebra aqui e vai ter de
-    // provar que o mundo precisa MESMO ser reconstruído.
-    expect(CAMADAS.length).toBe(12);
+    // três da galáxia (nodisc/nogdust/noglow) recarregavam por um
+    // comentário podre — `bakeDiscLayers` roda inteiro de qualquer
+    // jeito. Quem marcar uma camada como `viva: false` quebra aqui e
+    // vai ter de provar que o mundo precisa MESMO ser reconstruído.
+    // A 13ª é `nocorpos`, o palco local da Onda 6 (F0).
+    expect(CAMADAS.length).toBe(13);
     expect(CAMADAS.filter((c) => !c.viva)).toEqual([]);
   });
 });
 
 describe('a gaveta do Atlas', () => {
-  it('oferece as cinco de D6 — e as galácticas do filme ficam de fora', () => {
+  it('oferece as cinco de D6 + a do palco (Onda 6) — e as galácticas ficam de fora', () => {
     expect(CAMADAS_DO_ATLAS.map((c) => c.flag)).toEqual([
       'nocat',
       'nohero',
       'nomarker',
       'noplan',
+      'nocorpos',
       'nobh',
     ]);
     for (const galactica of ['nogal', 'nodisc', 'nogdust', 'noglow', 'nowrap', 'nocart']) {

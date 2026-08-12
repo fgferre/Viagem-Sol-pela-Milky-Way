@@ -1845,10 +1845,13 @@ describe('a FIAÇÃO da F2 — o limiar atravessa três módulos sem redigitaç�
 
   it('e a fórmula ANTIGA do near/far continua literal, verbatim', () => {
     // o gate da fase é a igualdade bit a bit acima do limiar: se alguém
-    // mexer num destes literais, ela morre em silêncio
+    // mexer num destes literais, ela morre em silêncio.
+    // RENEGOCIADO na Onda 6 (F0): a chamada do updateClip ganhou o par
+    // da superfície resolvida (palco local, D1) — com NaN o par
+    // (near, far) segue o vigente bit a bit, pinado em engine.test.ts.
     expect(engine).toContain('THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40)');
     expect(engine).toContain('THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000)');
-    expect(engine).toContain('const near = nearPlanePc(distFromSun);');
+    expect(engine).toContain('const near = nearPlanePc(distFromSun, dSuperficiePc, raioCorpoPc);');
     expect(engine).toContain('const far = farPlanePc(distFromSun);');
   });
 
