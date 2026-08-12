@@ -547,19 +547,32 @@ async function julgarEscalaDaUi(s) {
         + (q.foraDaTela.length ? ` — fora: ${q.foraDaTela.join(' · ')}` : '')
         + (q.atropelos.length ? ` — atropelo: ${q.atropelos.join(' · ')}` : '')
     );
-    // a quebra ESTREITA do CSS (os dois `clamp` que só existem lá
-    // dentro) também tem de reagir ao fator
+    // OS DOIS `clamp` QUE SÓ EXISTEM NA QUEBRA ESTREITA do CSS — os
+    // últimos dos nove, e os únicos que nenhuma medição em tela de mesa
+    // alcança. A 600×450 as duas regras estão de pé (largura ≤ 760 e
+    // altura ≤ 480 em paisagem), e a tela do carregamento é onde o
+    // título delas existe.
     if (zoom === 2) {
-      const estreito = await s.js(`(() => {
-        const e = document.querySelector('.caption-title, .cv-titulo .title-big');
-        return e ? { largura: window.innerWidth, px: parseFloat(getComputedStyle(e).fontSize) } : null;
-      })()`);
-      if (estreito) {
-        conferir(
-          estreito.largura < 768,
-          `quebra estreita alcançada a ${estreito.largura} px de CSS (título ${estreito.px} px)`
-        );
-      }
+      const medir = `(() => {
+        const e = document.querySelector('.cv-titulo .title-big');
+        const r = document.querySelector('.cv-etapa-rotulo');
+        return {
+          largura: window.innerWidth,
+          titulo: e ? parseFloat(getComputedStyle(e).fontSize) : null,
+          rotulo: r ? parseFloat(getComputedStyle(r).fontSize) : null,
+        };
+      })()`;
+      await s.ir(`loader=galaxy&ui=1&${PIN}`);
+      const um = await s.js(medir);
+      await s.ir(`loader=galaxy&ui=${GRANDE}&${PIN}`);
+      const grande = await s.js(medir);
+      conferir(
+        um.largura < 760 && um.titulo !== null
+          && Math.abs(grande.titulo / um.titulo - GRANDE) < 0.01
+          && Math.abs(grande.rotulo / um.rotulo - GRANDE) < 0.01,
+        `quebra estreita (${um.largura} px de CSS de largura): `
+          + `título ${um.titulo}→${grande.titulo} · rótulo ${um.rotulo}→${grande.rotulo}`
+      );
     }
   }
   await s.send('Emulation.clearDeviceMetricsOverride');

@@ -194,13 +194,28 @@ const APP = process.env.APP_URL || APP_PADRAO;
 export const PIN = '&q=cinema';
 // EXTRA=&knob=1 anexa um parâmetro a TODAS as vistas — o A/B de um knob se faz
 // com o mesmo binário dos dois lados, sem editar nada entre as capturas.
+//
+// É POR AQUI QUE SE PROVA NEUTRALIDADE ONDE O md5 É CEGO (Onda 4, régua 3;
+// cobrado de novo no gate da F6 da Onda 5). Perto do Sol o clarão satura o
+// quadro: `ua150` e `ua40` devolvem md5 IGUAIS com céus diferentes, e uma
+// mudança escondida atrás do branco passaria batida. O par honesto é
+//
+//   EXTRA='&nobloom=1' node scripts/visual/ab-identidade.mjs antes|depois
+//
+// com o bloom desligado dos DOIS lados. Medido na F6 (6 vistas em que o Sol
+// domina, 900×900): 6/6 bit-idênticas.
 const EXTRA = process.env.EXTRA || '';
+// ...e o estado de uma leva com EXTRA NÃO pisa no estado da leva oficial. Sem
+// este sufixo, quem rodasse o A/B do knob apagaria a baseline dos 18 md5 e
+// só descobriria na próxima leva de fechamento — ~25 min de GPU para
+// recapturar.
+const SUFIXO = EXTRA ? `-${EXTRA.replace(/[^a-z0-9]+/gi, '')}` : '';
 // JANELA=700x1800 muda o tamanho da captura. Existe porque os TRÊS harnesses do
 // repo capturam em 1:1 (rodada 1800x1800, sky 1440x1440, este 1800x1800), e
 // qualquer defeito que dependa do ASPECTO da tela é invisível para todos eles —
 // o corte lateral de sprite é exatamente desse tipo.
 // JANELA=LxA sobrescreve o tamanho de TODAS as vistas, para varredura ad hoc.
-const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}.json`);
+const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}.json`);
 // o filho recebe a sua fatia por ambiente; a linha de comando continua sendo
 // a de sempre (`lado [vista]`), para nada do ritual mudar
 const FILHO = process.env.AB_FILHO ? Number(process.env.AB_FILHO) : null;
@@ -355,7 +370,7 @@ async function capturarLista(vistas, arquivo, marca = '', base = {}) {
 // dele: o de md5 tem o formato exato do estado de retomada (`{vista: [hash]}`)
 // e o pai o funde com um `Object.assign` — enfiar metadado ali contaminaria a
 // baseline que sobrevive entre sessões por uma economia de um arquivo.
-const viasDoFilho = (k) => resolve(tmpdir(), `ab-identidade-${LADO}-j${k}-vias.json`);
+const viasDoFilho = (k) => resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}-j${k}-vias.json`);
 
 /**
  * O VEREDITO da leva, puro — sem Chrome, sem disco, testado em
@@ -429,7 +444,7 @@ async function filho() {
   const nomes = new Set((process.env.AB_VISTAS || '').split(',').filter(Boolean));
   const { vias } = await capturarLista(
     VISTAS.filter(([n]) => nomes.has(n)),
-    resolve(tmpdir(), `ab-identidade-${LADO}-j${FILHO}.json`),
+    resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}-j${FILHO}.json`),
     `[j${FILHO}] `
   );
   // o filho NÃO julga: quem vê a leva inteira é o pai, e "todas caíram no
@@ -506,7 +521,7 @@ async function pai() {
     // a retomada em disco não vale nada.
     const fim = await Promise.allSettled(filhos);
     for (let k = 0; k < jobs; k++) {
-      const arq = resolve(tmpdir(), `ab-identidade-${LADO}-j${k}.json`);
+      const arq = resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}-j${k}.json`);
       if (existsSync(viasDoFilho(k))) {
         vias.push(...JSON.parse(readFileSync(viasDoFilho(k), 'utf8')));
         rmSync(viasDoFilho(k), { force: true });
@@ -528,7 +543,9 @@ async function pai() {
 
   let vistaAusente = false;
   if (LADO === 'depois') {
-    const antes = JSON.parse(readFileSync(resolve(tmpdir(), 'ab-identidade-antes.json'), 'utf8'));
+    const antes = JSON.parse(
+      readFileSync(resolve(tmpdir(), `ab-identidade-antes${SUFIXO}.json`), 'utf8')
+    );
     // `lista` e não `VISTAS`: o veredito cobra o que ESTA invocação pediu.
     // Com a leva completa são as 18; com SMOKE/vista única é o recorte, e
     // cobrar as outras como AUSENTE reprovaria o fluxo de iterar.
