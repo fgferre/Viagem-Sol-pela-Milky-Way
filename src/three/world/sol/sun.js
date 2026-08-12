@@ -514,7 +514,18 @@ export function createSunMesh(ctx){
     'void main(){',
     '  vec3 viewDir = normalize(cameraPosition - vPositionW);',
     '  vec3 N = normalize(vNormalW);',
-    '  float mu = max(dot(N, viewDir), 0.0);',
+    // divergência do doador: o doador escrevia `max(dot(N, viewDir), 0.0)`,
+    // sem TETO. `dot` de dois normalizados passa de 1.0 por erro de f32
+    // exatamente no ponto subestelar (o pixel central do disco), e aí o
+    // `pow(1.0-mu, 1.7)` da lei de limbo e o `pow(1.0-mu, 3.5)` da
+    // cromosfera recebem base NEGATIVA — indefinido na GLSL (regra 1 do
+    // README), e um texel NaN atravessa o UnrealBloom e branqueia a tela
+    // (regra 3). Nunca explodiu nesta GPU (o driver devolve 0), o que faz
+    // dela uma falha de PORTABILIDADE: quebra no aparelho do visitante.
+    // `clamp` só difere de `max` acima de 1.0, então as 18 vistas do gate
+    // saem bit-idênticas — medido, não suposto. Levar para o
+    // Novo-Sol-Fable-3d na próxima re-cópia do núcleo.
+    '  float mu = clamp(dot(N, viewDir), 0.0, 1.0);',
     '  vec3 sp = normalize(vPosObj);',
     '  float t = uTime;',
     // --- estrutura baked: R=larga escala, G=filamento, B=plage.

@@ -548,6 +548,18 @@ ainda decide algo:
   de 11 anos, manchas com vida, flares two-ribbon, proeminências instanced,
   espículas, loops RK4, coroa de raias). Corrigir bug do núcleo = corrigir LÁ
   e re-copiar; o wrapper é nosso.
+- **DIVERGÊNCIAS DECLARADAS no `sol/sun.js`, para levar na re-cópia** (cada
+  uma tem o comentário no próprio arquivo, no ponto): o `smoothstep` de
+  bordas invertidas (regra 2 do README) e, desde 2026-08-12, o **teto do
+  `mu`** — `clamp(dot(N, viewDir), 0.0, 1.0)` no lugar do `max(…, 0.0)` do
+  doador, porque `dot` de normalizados passa de 1,0 por f32 no ponto
+  subestelar e os dois `pow(1.0-mu, …)` da lei de limbo e da cromosfera
+  recebiam base negativa (regra 1 → NaN → bloom → tela branca, regra 3).
+  Achado de auditoria externa; era o ÚNICO ponto do núcleo sem a guarda que
+  `chromo.js:61` e `common.js:155` já tinham. Nunca explodiu nesta GPU (o
+  driver devolve 0) — é portabilidade, e por isso passou despercebido.
+  **As 18 vistas saem bit-idênticas com ele** (leva de 2026-08-12, 18/18
+  `IGUAL` por `via=sinal`): `clamp` só difere de `max` acima de 1,0.
 - **Escala/tempo**: núcleo em unidades de doador (R=2,2) dentro de um group
   com `scale = sunRadius/2,2`; `uCamDist` alimentado em unidades de doador
   ×correção de fov (o LOD do disco foi calibrado a fov 42°). O relógio é o
