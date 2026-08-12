@@ -76,13 +76,19 @@ const LETTERBOX_FRACAO = 0.065;
  * retângulo útil cobre o HUD do Atlas"). Se a CSS crescer, o gate
  * quebra antes de o alvo começar a ser enquadrado por baixo do selo.
  *
- * TOPO: `.atlas-contexto` — a ContextLine, ancorada em `top: 8,5vh`
- * (a mesma linha da barra de controles) com ~5vh de altura.
- * BASE: `.atlas-selo` — o selo de honestidade, ancorado em
- * `bottom: 8,5vh` com ~7vh de altura.
+ * TOPO: `.atlas-contexto` e `.controls-bar`, ancoradas em `top: 8,5vh`
+ * (a mesma linha) — medido 12,5% da altura a 1280×720, tarja incluída.
+ * BASE: `.atlas-selo`, ancorado em `bottom: 7,4vh` — quatro blocos de
+ * texto, medido 19,6% da altura com a tarja, e é a peça mais alta do
+ * HUD do modo (a dica do Atlas fica em 13,4%).
+ *
+ * As duas frações são de tela de mesa (medidas a 1280×720 e 1200×900).
+ * A UI Scale da F6 mexe no tamanho do texto do HUD e por isso mexe
+ * NESTES números: quem mudar o `?ui=` tem de remedir aqui — o gate do
+ * juiz falha se a declaração deixar de cobrir o medido.
  */
 const CONTEXTO_FRACAO = 0.075;
-const SELO_FRACAO = 0.095;
+const SELO_FRACAO = 0.14;
 
 /**
  * O que o HUD come do quadro, em FRAÇÃO de cada borda. Um só produtor

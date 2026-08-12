@@ -15,6 +15,16 @@
 // ============================================================
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_DO_ATLAS, NOME_DO_SISTEMA } from '../three/atlasConfig';
+import {
+  BRILHO_ASSISTIDO,
+  BRILHO_REAL,
+  ESCALA_REAL,
+  FORA_DE_ESCALA,
+  PROCEDENCIA,
+  TESE_DO_SELO,
+  estadoDoSelo,
+} from '../three/selo';
+import type { EstadoDaVista } from '../three/selo';
 
 /**
  * A CONTEXTLINE: o que está EM QUADRO. Segue o padrão do `Caption` do
@@ -83,6 +93,84 @@ export function GavetaDeCamadas({
           </label>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * O SELO DE HONESTIDADE (D1). Dois eixos, duas linhas — e as linhas SÃO
+ * os controles: cada uma diz o estado de agora e, quando há o que
+ * desfazer, o que o clique vai produzir.
+ *
+ * ESCALA não tem porta de URL: ela sai da geometria (`escalaDaVista`), e
+ * o caminho de volta é enquadrar o sistema — o único enquadramento em
+ * que o que domina o quadro é 1:1. BRILHO sai do registro único de
+ * caminhos, e o clique desfaz tudo que é desfazível; o que não for, o
+ * selo continua declarando em vez de fingir que resolveu.
+ *
+ * A lista de desvios é UMA linha de altura fixa, truncada com reticências
+ * — o retângulo útil do enquadramento desconta a altura deste bloco, e um
+ * bloco que cresce com o número de desvios moveria a câmera. A lista
+ * inteira vai no nome acessível do botão, que não tem limite de largura.
+ */
+export function Selo({
+  vista,
+  onEscalaReal,
+  onBrilhoReal,
+}: {
+  vista: EstadoDaVista;
+  onEscalaReal: () => void;
+  onBrilhoReal: () => void;
+}) {
+  const { escala, brilho, desvios } = estadoDoSelo(vista);
+  const lista = desvios.map((d) => d.rotulo).join(' · ');
+  const daParaVoltar = desvios.some((d) => d.volta !== 'nenhuma');
+  return (
+    <div className="atlas-selo" aria-label="Selo de honestidade desta vista">
+      <p className="atlas-selo-tese">{TESE_DO_SELO}</p>
+
+      <button
+        type="button"
+        className={`atlas-selo-linha ${escala === 'real' ? 'real' : 'desvio'}`}
+        onClick={onEscalaReal}
+        disabled={escala === 'real'}
+        aria-label={
+          escala === 'real'
+            ? `${ESCALA_REAL}: o que domina o quadro está em 1:1`
+            : `${FORA_DE_ESCALA}: o disco do Sol nesta vista é ator. Clique para enquadrar o sistema em escala real`
+        }
+      >
+        <strong>{escala === 'real' ? ESCALA_REAL : FORA_DE_ESCALA}</strong>
+        <em>{escala === 'real' ? 'o quadro está em 1:1' : 'clique: enquadrar em escala real'}</em>
+      </button>
+
+      <button
+        type="button"
+        className={`atlas-selo-linha ${brilho === 'real' ? 'real' : 'desvio'}`}
+        onClick={onBrilhoReal}
+        disabled={brilho === 'real' || !daParaVoltar}
+        aria-label={
+          brilho === 'real'
+            ? `${BRILHO_REAL}: nada foi ajustado nesta vista`
+            : `${BRILHO_ASSISTIDO}. Ajustado: ${lista}.`
+            + (daParaVoltar ? ' Clique para voltar ao brilho real.' : '')
+        }
+      >
+        <strong>{brilho === 'real' ? BRILHO_REAL : BRILHO_ASSISTIDO}</strong>
+        <em title={lista}>
+          {brilho === 'real'
+            ? 'a fotometria da casa, sem ajuste'
+            : daParaVoltar
+              ? `clique: voltar ao real — ${lista}`
+              : lista}
+        </em>
+      </button>
+
+      <p className="atlas-selo-legenda">
+        {PROCEDENCIA.medido.rotulo}: {PROCEDENCIA.medido.oQue} ·{' '}
+        {PROCEDENCIA.derivado.rotulo}: {PROCEDENCIA.derivado.oQue} ·{' '}
+        {PROCEDENCIA.artistico.rotulo}: {PROCEDENCIA.artistico.oQue}
+      </p>
     </div>
   );
 }

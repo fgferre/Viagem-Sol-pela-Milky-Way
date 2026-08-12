@@ -18,6 +18,19 @@ export const TONE_MAPPINGS: Record<ToneMapMode, THREE.ToneMapping> = {
   linear: THREE.LinearToneMapping,
 };
 
+/**
+ * O inverso do mapa acima: qual curva está viva no renderer. Existe
+ * para o selo de honestidade poder LER o estado do instrumento em vez
+ * de guardar uma segunda cópia dele — o dia em que as duas divergissem,
+ * o selo estaria declarando o que não é.
+ */
+export function modoDoToneMapping(tm: THREE.ToneMapping): ToneMapMode {
+  return (
+    (Object.keys(TONE_MAPPINGS) as ToneMapMode[]).find((k) => TONE_MAPPINGS[k] === tm) ??
+    'aces'
+  );
+}
+
 interface QualityPreset {
   pixelRatio: number;
   nebulaSteps: number;

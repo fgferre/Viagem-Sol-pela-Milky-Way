@@ -3,8 +3,9 @@
 // API consumida pelo React: eventos de legenda/progresso/fase.
 // ============================================================
 import * as THREE from 'three';
-import { Engine } from './core/engine';
+import { Engine, modoDoToneMapping } from './core/engine';
 import type { QualityLevel } from './core/engine';
+import type { EstadoDaVista } from './selo';
 import { Post } from './core/post';
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
@@ -27,7 +28,7 @@ import {
 } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
-import { AtlasRig } from './cinematic/atlasRig';
+import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -1173,6 +1174,53 @@ export class Director {
     this.expOverride = true;
     this.engine.setExposure(v);
     this.perturbar();
+  }
+
+  /**
+   * DESLIGA a exposição escolhida à mão e devolve a auto-exposição por
+   * rampa. É o caminho de volta que o latch `expOverride` nunca teve: até
+   * a Onda 5 ele só sabia ligar, e por isso a linha BRILHO do selo não
+   * teria como cumprir "clicar volta ao real" (D1). O tick reescreve o
+   * valor no quadro seguinte — não há número a restaurar aqui, porque a
+   * rampa é função da vista.
+   */
+  limparExposicaoManual() {
+    this.expOverride = false;
+    this.perturbar();
+  }
+
+  /**
+   * O ESTADO DA VISTA que o selo de honestidade lê — somente leitura,
+   * como o getter `captura`. Ele mora aqui porque só o Director conhece
+   * os quatro donos do assunto de uma vez (o latch da exposição, o
+   * conjunto de camadas escondidas, o tier vivo e a curva do renderer),
+   * e porque a alternativa — o React guardar uma cópia de cada um —
+   * seria a segunda fonte de verdade que o selo existe para não ter.
+   *
+   * As PORTAS saem de `window.location.search` a cada leitura, e não do
+   * `this.debug` do construtor: o painel e a gaveta reescrevem a URL ao
+   * vivo (`replaceState`), e um selo lendo a URL do boot declararia
+   * desvio já desfeito — ou calaria um recém-feito.
+   */
+  /**
+   * O RETÂNGULO ÚTIL que o enquadramento está usando agora — publicado
+   * para o juiz de a11y poder comparar a declaração (`atlasRig.ts`) com
+   * as áreas REAIS que o HUD ocupa na página. Sem esta ponte, as duas
+   * fontes (o número no TS e a altura no CSS) só se encontrariam a olho.
+   */
+  get retanguloUtil() {
+    return retanguloUtilDoAtlas();
+  }
+
+  get selo(): EstadoDaVista {
+    return {
+      distanciaPc: this.engine.camera.position.length(),
+      portas: [...new URLSearchParams(window.location.search).keys()],
+      exposicaoManual: this.expOverride,
+      tom: modoDoToneMapping(this.engine.renderer.toneMapping),
+      camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
+      tier: this.engine.quality,
+    };
   }
 
   get progressTicks(): { t: number; text: string }[] {

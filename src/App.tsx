@@ -11,9 +11,10 @@ import { LabelCanvas } from './components/LabelCanvas';
 import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
-import { ContextLine, GavetaDeCamadas, BotaoDaGaveta } from './components/HudDoAtlas';
+import { ContextLine, GavetaDeCamadas, BotaoDaGaveta, Selo } from './components/HudDoAtlas';
 import { Ajustes } from './components/Ajustes';
 import { CAMADAS } from './three/atlasConfig';
+import { estadoDoSelo } from './three/selo';
 import './hud.css';
 
 /** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
@@ -380,6 +381,48 @@ export default function App() {
     );
   };
 
+  /**
+   * VOLTAR AO BRILHO REAL — a ação da linha BRILHO do selo (D1). Ela não
+   * tem lista própria de coisas a desfazer: pergunta ao registro quais
+   * caminhos estão ativos AGORA e desfaz os que têm volta.
+   *
+   * Os de volta 'vivo' são desfeitos no lugar; se houver algum que só o
+   * boot lê (`?nobloom=`, `?knee=`, as camadas do bake), o caminho é o
+   * mesmo que a troca de qualidade já usa: reescrever a URL sem eles e
+   * recarregar — e a URL sai do `urlComMomento`, que carrega o `atlas=1`
+   * e o instante guardado, para o visitante voltar exatamente para onde
+   * estava. O que não tem volta (o tier) fica, e o selo segue dizendo.
+   */
+  const voltarAoBrilhoReal = () => {
+    const d = directorRef.current;
+    if (!d) return;
+    const desvios = estadoDoSelo(d.selo).desvios.filter((c) => c.volta !== 'nenhuma');
+    if (desvios.length === 0) return;
+    const url = urlComMomento();
+    for (const c of desvios) url.searchParams.delete(c.chave);
+    if (desvios.some((c) => c.volta === 'recarregar')) {
+      window.location.assign(url.toString());
+      return;
+    }
+    for (const c of desvios) {
+      if (c.chave === 'exp') {
+        d.limparExposicaoManual();
+        setExposicao(EXPOSICAO_PADRAO);
+      } else if (c.chave === 'tone') {
+        d.engine.setToneMapping('aces');
+        setTom('aces');
+      } else {
+        d.setLayerHidden(c.chave, false);
+        setEscondidas((prev) => {
+          const s = new Set(prev);
+          s.delete(c.chave);
+          return s;
+        });
+      }
+    }
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+  };
+
   const alternarCamada = (flag: string, ligar: boolean) => {
     const camada = CAMADAS.find((c) => c.flag === flag);
     if (!camada) return;
@@ -472,6 +515,17 @@ export default function App() {
 
       {/* o que está EM QUADRO no Atlas */}
       {hud.contexto && <ContextLine foco={foco} />}
+
+      {/* O SELO. Lê o estado da vista do Director a cada render — e o
+          render acontece quando o foco muda, que é quando a vista muda
+          (dentro de um enquadramento a câmera não anda sozinha). */}
+      {hud.selo && directorRef.current && (
+        <Selo
+          vista={directorRef.current.selo}
+          onEscalaReal={() => directorRef.current?.focarNoSistema()}
+          onBrilhoReal={voltarAoBrilhoReal}
+        />
+      )}
 
       {/* dica do Atlas */}
       {phase === 'atlas' && (

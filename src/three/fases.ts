@@ -61,6 +61,8 @@ export interface HudDaFase {
   contexto: boolean;
   /** gaveta de camadas do Atlas (ícone + rótulo, config único) */
   gaveta: boolean;
+  /** selo de honestidade: ESCALA e BRILHO, e as duas são controles */
+  selo: boolean;
   /** ⏸ Pausar · velocidade · Ver a galáxia · Explorar livremente */
   botoesDaViagem: boolean;
   /** ↻ Reviver */
@@ -82,6 +84,7 @@ export const HUD_POR_FASE = {
     controles: false,
     contexto: false,
     gaveta: false,
+    selo: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -96,6 +99,7 @@ export const HUD_POR_FASE = {
     controles: false,
     contexto: false,
     gaveta: false,
+    selo: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -110,6 +114,7 @@ export const HUD_POR_FASE = {
     controles: true,
     contexto: false,
     gaveta: false,
+    selo: false,
     botoesDaViagem: true,
     botaoReviver: false,
     botaoPartir: false,
@@ -124,6 +129,7 @@ export const HUD_POR_FASE = {
     controles: false,
     contexto: false,
     gaveta: false,
+    selo: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -138,6 +144,7 @@ export const HUD_POR_FASE = {
     controles: true,
     contexto: false,
     gaveta: false,
+    selo: false,
     botoesDaViagem: false,
     botaoReviver: true,
     botaoPartir: false,
@@ -157,6 +164,7 @@ export const HUD_POR_FASE = {
     controles: true,
     contexto: true,
     gaveta: true,
+    selo: true,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: true,

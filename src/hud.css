@@ -341,6 +341,81 @@
   text-transform: uppercase;
 }
 
+/* o selo de honestidade: canto oposto ao da dica, encostado na tarja de
+   baixo. Altura FIXA — o retângulo útil do enquadramento desconta esta
+   faixa, e um selo que cresce com o número de desvios moveria a câmera. */
+.atlas-selo {
+  position: fixed;
+  right: 3vw;
+  /* encostado na tarja de baixo: cada 1vh a mais aqui é 1vh a menos de
+     quadro útil, e o enquadramento paga isso em distância */
+  bottom: 7.4vh;
+  z-index: 40;
+  width: min(21rem, 42vw);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.14rem;
+  text-align: right;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+.atlas-selo-tese {
+  margin: 0;
+  font-size: 0.5rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.55);
+}
+.atlas-selo-linha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.06rem;
+  max-width: 100%;
+  padding: 0.1rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+.atlas-selo-linha:disabled {
+  cursor: default;
+}
+.atlas-selo-linha strong {
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+.atlas-selo-linha.real strong {
+  color: rgba(190, 226, 210, 0.92);
+}
+.atlas-selo-linha.desvio strong {
+  color: rgba(255, 214, 150, 0.92);
+}
+.atlas-selo-linha em {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.54rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  color: rgba(200, 214, 235, 0.62);
+}
+.atlas-selo-linha:not(:disabled):hover em {
+  color: rgba(235, 240, 250, 0.92);
+}
+.atlas-selo-legenda {
+  margin: 0.1rem 0 0;
+  font-size: 0.46rem;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  color: rgba(190, 205, 228, 0.45);
+}
+
 /* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
    tipo de coisa (diálogo de controle), e um segundo vocabulário visual
    para a mesma função seria ruído */

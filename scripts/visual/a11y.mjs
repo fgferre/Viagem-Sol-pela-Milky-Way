@@ -209,6 +209,99 @@ try {
         + ` → "${depois.replace(/\n/g, ' ')}")`
     );
   }
+  // ---- o selo de honestidade (D1) ---------------------------------
+  // O TESTE PURO (`selo.test.ts`) cobra que nenhum controle possa
+  // desmentir o selo; aqui a mesma promessa é cobrada no navegador, com
+  // os controles de verdade: desligar uma camada na gaveta tem de mover
+  // o selo, e clicar na linha BRILHO tem de trazê-lo de volta.
+  const lerSelo = () => sessao.js(`(() => {
+    const s = document.querySelector('.atlas-selo');
+    if (!s) return null;
+    const [escala, brilho] = [...s.querySelectorAll('.atlas-selo-linha')];
+    return {
+      escala: escala.querySelector('strong').textContent,
+      brilho: brilho.querySelector('strong').textContent,
+      detalhe: brilho.querySelector('em').textContent,
+      brilhoClicavel: !brilho.disabled,
+      escalaClicavel: !escala.disabled,
+    };
+  })()`);
+
+  const inicial = await lerSelo();
+  conferir(
+    inicial !== null && inicial.escala === 'ESCALA REAL' && inicial.brilho === 'BRILHO REAL',
+    `selo na abertura: "${inicial?.escala}" · "${inicial?.brilho}"`
+  );
+  conferir(
+    inicial !== null && !inicial.brilhoClicavel && !inicial.escalaClicavel,
+    'selo: linha sem o que desfazer não é botão clicável'
+  );
+
+  await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
+  await sleep(150);
+  await sessao.js(`(() => {
+    const g = document.querySelector('[data-dialogo="camadas"]');
+    g.querySelector('input[type=checkbox]').click();
+  })()`);
+  await sleep(200);
+  const sujo = await lerSelo();
+  conferir(
+    sujo.brilho === 'BRILHO ASSISTIDO' && /camada desligada/.test(sujo.detalhe),
+    `selo depois de desligar uma camada na gaveta: "${sujo.brilho}" — ${sujo.detalhe}`
+  );
+  conferir(sujo.brilhoClicavel, 'selo: com desvio desfazível, a linha BRILHO vira controle');
+
+  await sessao.js("document.querySelector('.atlas-selo-linha:nth-of-type(2)').click()");
+  await sleep(250);
+  const voltou = await lerSelo();
+  const urlLimpa = await sessao.js('location.search');
+  const camadasVivas = await sessao.js(
+    'JSON.stringify(window.__director.selo.camadasEscondidas)'
+  );
+  conferir(
+    voltou.brilho === 'BRILHO REAL' && camadasVivas === '[]',
+    `selo: clicar na linha BRILHO volta ao real ("${voltou.brilho}", escondidas=${camadasVivas})`
+  );
+  conferir(
+    !urlLimpa.includes('nocat') && urlLimpa.includes('atlas'),
+    `selo: a volta limpa a porta e preserva o modo (${urlLimpa})`
+  );
+
+  // ---- o retângulo útil cobre o HUD REAL --------------------------
+  // A declaração vive no TS (`retanguloUtilDoAtlas`) e as alturas, no
+  // CSS. Sem esta prova as duas só se encontrariam a olho — e o alvo
+  // começaria a ser enquadrado por baixo do selo sem ninguém notar.
+  const cobertura = await sessao.js(`(() => {
+    const H = window.innerHeight;
+    const util = window.__director.retanguloUtil;
+    const medir = (sel) => {
+      const e = document.querySelector(sel);
+      if (!e) return null;
+      const b = e.getBoundingClientRect();
+      if (b.height === 0) return null;
+      return { sel, topo: b.bottom / H, base: (H - b.top) / H };
+    };
+    const pecas = ['.atlas-contexto', '.controls-bar', '.atlas-selo', '.free-hint']
+      .map(medir).filter(Boolean);
+    const noTopo = pecas.filter((p) => p.topo < 0.5);
+    const naBase = pecas.filter((p) => p.topo >= 0.5);
+    return {
+      util,
+      topoMedido: Math.max(...noTopo.map((p) => p.topo)),
+      baseMedida: Math.max(...naBase.map((p) => p.base)),
+      pecas: pecas.map((p) => p.sel + ':' + p.topo.toFixed(3) + '/' + p.base.toFixed(3)),
+    };
+  })()`);
+  conferir(
+    cobertura.topoMedido <= cobertura.util.topo,
+    `retângulo útil: topo declarado ${cobertura.util.topo} ≥ medido `
+      + `${cobertura.topoMedido.toFixed(3)}`
+  );
+  conferir(
+    cobertura.baseMedida <= cobertura.util.base,
+    `retângulo útil: base declarada ${cobertura.util.base} ≥ medida `
+      + `${cobertura.baseMedida.toFixed(3)} (${cobertura.pecas.join(' · ')})`
+  );
 } finally {
   sessao.fechar();
 }
