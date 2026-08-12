@@ -78,6 +78,9 @@ const LETTERBOX_FRACAO = 0.065;
  *
  * TOPO: `.atlas-contexto` e `.controls-bar`, ancoradas em `top: 8,5vh`
  * (a mesma linha) — medido 12,5% da altura a 1280×720, tarja incluída.
+ * Desde a F3 a barra carrega o botão da busca e QUEBRA LINHA no texto
+ * grande: medido 19,7% a 1200×900 com `?ui=1,4` — é ela, e não a linha
+ * de contexto, quem dimensiona a fração do topo.
  * BASE: `.atlas-selo`, ancorado em `bottom: 7,4vh` — quatro blocos de
  * texto, medido 19,6% da altura com a tarja, e é a peça mais alta do
  * HUD do modo (a dica do Atlas fica em 13,4%).
@@ -95,6 +98,20 @@ const LETTERBOX_FRACAO = 0.065;
  * mede os extremos da faixa (`escalaDaUi`) e cobra declarado ≥ medido.
  */
 const CONTEXTO_FRACAO = 0.075;
+
+/**
+ * O DEGRAU DA BARRA QUEBRADA. Com o botão da busca (F3) a barra de
+ * controles passa a QUEBRAR LINHA no extremo da escala de texto — por
+ * desenho: o CSS prefere quebrar a invadir a linha de contexto
+ * (garantia geométrica da F6, `hud.css`, faixa de cima do Atlas).
+ * Medido a 1200×900: cresce linear até 1,35 e quebra entre 1,35 e 1,4
+ * (`.controls-bar` 37,4 → 90,8 px; no estado do juiz, 0,197 de fração
+ * a 1,4 contra 0,170 do modelo linear). O degrau só entra onde existe:
+ * declarar a quebra em `ui = 1` empurraria a câmera por uma faixa que
+ * ninguém ocupa. 0,04 cobre os 0,027 medidos com folga de ~1%.
+ */
+const BARRA_QUEBRADA_LIMIAR = 1.3;
+const BARRA_QUEBRADA_FRACAO = 0.04;
 const SELO_FRACAO = 0.14;
 
 /**
@@ -153,7 +170,10 @@ export function retanguloUtilDoAtlas(fatorUi = 1): RetanguloUtil {
   return {
     esquerda: 0,
     direita: 0,
-    topo: LETTERBOX_FRACAO + CONTEXTO_FRACAO * k,
+    topo:
+      LETTERBOX_FRACAO +
+      CONTEXTO_FRACAO * k +
+      (k > BARRA_QUEBRADA_LIMIAR ? BARRA_QUEBRADA_FRACAO : 0),
     base: LETTERBOX_FRACAO + Math.max(SELO_FRACAO, TEMPO_FRACAO) * k,
   };
 }

@@ -161,14 +161,22 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     const grande = retanguloUtilDoAtlas(1.4);
     expect(grande.topo).toBeGreaterThan(padrao.topo);
     expect(grande.base).toBeGreaterThan(padrao.base);
-    // as TARJAS não escalam: são vh puro, não texto
-    expect(grande.topo - padrao.topo).toBeCloseTo((padrao.topo - 0.065) * 0.4, 12);
+    // as TARJAS não escalam (são vh puro, não texto) — e no extremo da
+    // faixa entra o degrau da barra quebrada em linha dupla (0,04,
+    // medido; só acima do limiar 1,3 — em ui = 1 ele NÃO existe)
+    expect(grande.topo - padrao.topo).toBeCloseTo((padrao.topo - 0.065) * 0.4 + 0.04, 12);
     const perto = (u: ReturnType<typeof retanguloUtilDoAtlas>) =>
       enquadrar({ rAlvo: 1, fovDeg: ATLAS_FOV_GRAUS, aspect: 1.6, retanguloUtil: u }).distancia;
     expect(perto(grande)).toBeGreaterThan(perto(padrao));
     expect(perto(retanguloUtilDoAtlas(0.85))).toBeLessThan(perto(padrao));
-    // e mesmo no maior degrau ainda sobra quadro de verdade
-    expect(1 - grande.topo - grande.base).toBeGreaterThan(0.5);
+    // e mesmo no maior degrau ainda sobra quadro de verdade. A conta
+    // re-derivada com o HUD que a onda inteira construiu (tempo na
+    // base, busca na barra): o MEDIDO a 1,4 come 0,489 do quadro
+    // (topo 0,197 + base 0,292 — juiz de a11y, 1200×900) e sobram 51%
+    // reais; a declaração paga ~3% de folga por cima disso. O trilho
+    // aqui só impede a declaração de virar moldura — quem garante que
+    // o alvo nunca cai atrás do texto é o juiz (declarado ≥ medido).
+    expect(1 - grande.topo - grande.base).toBeGreaterThan(0.47);
   });
 
   it('painel só à direita joga o alvo para a esquerda do quadro', () => {
