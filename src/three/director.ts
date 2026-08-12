@@ -11,7 +11,7 @@ import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
-import { projectLabels, projectForced } from './world/labels';
+import { projectCorpos, projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
 import { HeroStars, SunStar } from './world/heroStars';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
@@ -21,7 +21,8 @@ import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { Planetas, PLANETAS_DEFAULT_ON } from './world/planetas/planetas';
 import type { FonteDeEfemerides } from './world/planetas/planetas';
-import { EPOCA_JD_TDB } from './world/planetas/retrato2026';
+import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
+import type { IdRetrato } from './world/planetas/retrato2026';
 import {
   degrauValido,
   estadoDoTempo,
@@ -46,7 +47,7 @@ import {
   retanguloUtilDoAtlas,
 } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
-import { claraoDoAtlas } from './atlasConfig';
+import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, claraoDoAtlas } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -58,6 +59,7 @@ import {
 } from './world/lodStellar';
 import { carregarEfemerides, loadStarData, WORLD } from './config';
 import type { NamedStar, StarsMeta } from './config';
+import type { CorpoBuscavel } from '../lib/buscaEstrelas';
 
 // A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
 const ORIGEM = new THREE.Vector3(0, 0, 0);
@@ -1093,6 +1095,12 @@ export class Director {
       this.focarNoSistema();
       return;
     }
+    // um CORPO do sistema: enquadra pela ÓRBITA dele, que é o que o
+    // AtlasRig já sabe fazer com a abertura
+    if (best.key.startsWith(CHAVE_DE_CORPO)) {
+      this.focarNoCorpo(best.key.slice(CHAVE_DE_CORPO.length));
+      return;
+    }
     if (best.key === 'sgr-a') {
       this.irAte(GAL.GC_POS.clone(), 7, best.name);
       return;
@@ -1174,6 +1182,58 @@ export class Director {
     this.enquadrarAgora();
     this.events.onFoco(null);
     this.teletransportou();
+  }
+
+  /**
+   * OS DEZ CORPOS COMO ALVO (Onda 5) — o clique no rótulo, a escolha na
+   * paleta e o `?foco=terra` caem todos aqui.
+   *
+   * ENQUADRA A ÓRBITA, não o corpo: a esfera é centrada no SOL e tem o
+   * raio da distância heliocêntrica VIVA do alvo. É a mesma forma da
+   * vista de abertura (que é este método com o corpo mais externo), e é o
+   * que a D5 manda — corpos são pontos até a Onda 6, e uma tabela nova de
+   * raios físicos seria a segunda fonte de verdade que a Onda 7 refaria.
+   * A DIREÇÃO sai do corpo, e é ela que dá a vista privilegiada dele.
+   *
+   * A posição sai do atributo VIVO da camada, não do retrato: quem
+   * clicou num rótulo clicou onde o ponto está DESENHADO, inclusive
+   * depois de um salto de data.
+   *
+   * O Sol é o caso especial e cai na abertura: enquadrar "a órbita do
+   * Sol" seria enquadrar uma esfera de raio zero, e clicar no Sol dentro
+   * do Atlas sempre quis dizer voltar para casa.
+   */
+  focarNoCorpo(id: string) {
+    if (this.phase !== 'atlas') return;
+    if (id === 'sun') {
+      this.focarNoSistema();
+      return;
+    }
+    const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
+    if (i < 0 || !this.planetas) return;
+    const p = this.planetas.posicoes;
+    const pos = new THREE.Vector3(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+    if (pos.lengthSq() === 0) return;
+    this.atlas.focar(ORIGEM, pos.length(), pos);
+    this.enquadrarAgora();
+    this.events.onFoco(CORPOS_DO_SISTEMA[i].nome);
+    this.teletransportou();
+  }
+
+  /**
+   * OS DEZ, para o índice da busca (F3 + consertos). O `rUA` sai do
+   * retrato e não do atributo vivo porque o índice é construído UMA vez,
+   * na entrada no modo: ele é a NOTA da lista ("4,2 UA · planeta"), e o
+   * que o Atlas enquadra de fato é a órbita viva, lida na hora da
+   * escolha por `focarNoCorpo`.
+   */
+  get corpos(): readonly CorpoBuscavel[] {
+    return CORPOS_DO_SISTEMA.map((c) => ({
+      id: c.id,
+      nome: c.nome,
+      classe: c.classe,
+      rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
+    }));
   }
 
   /**
@@ -1960,7 +2020,20 @@ export class Director {
         // linha de rumo com distância viva
         this.emitDest(meta.dest, cam.position);
       } else {
-        this.lastLabels = projectLabels(cam, this.meta.named, 7, this.prevLabelKeys);
+        // OS DEZ CORPOS PRIMEIRO, e só onde eles estão DESENHADOS (a
+        // camada ligada e dentro do domínio profundo — o mesmo critério
+        // que decide `points.visible`). Primeiro na lista porque o
+        // desempate de colisão do `LabelCanvas` é a ordem: dentro do
+        // sistema solar o assunto são eles, e uma vizinha a 40 pc não
+        // pode expulsar Netuno do quadro que o Atlas abriu mostrando.
+        const corpos =
+          this.phase === 'atlas' && this.planetas?.points.visible
+            ? projectCorpos(cam, CORPOS_DO_SISTEMA, this.planetas.posicoes)
+            : [];
+        this.lastLabels = [
+          ...corpos,
+          ...projectLabels(cam, this.meta.named, 7, this.prevLabelKeys),
+        ];
         this.emitDest(undefined, cam.position);
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));

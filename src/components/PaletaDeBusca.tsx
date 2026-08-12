@@ -26,9 +26,8 @@
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { buscar } from '../lib/buscaEstrelas';
-import type { IndiceEstrelas } from '../lib/buscaEstrelas';
+import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
 import { gatilhoDoDialogo, useDialogFocus } from '../lib/dialogFocus';
-import type { NamedStar } from '../three/config';
 import { numeroPtBr } from '../three/tempoDoAtlas';
 
 /**
@@ -60,6 +59,27 @@ function distanciaEmAnosLuz(parsecs: number): string {
   return `${numeroPtBr(al / 1000)} mil ${unidade}`;
 }
 
+/** o nome que a lista mostra — de uma estrela ou de um corpo do sistema */
+function nomeDaEntrada(entrada: EntradaDaBusca): string {
+  return entrada.tipo === 'corpo' ? entrada.corpo.nome : entrada.estrela.n;
+}
+
+/**
+ * A NOTA à direita, e ela troca de RÉGUA com o alvo: anos-luz para as
+ * estrelas, UA para os corpos do sistema. É a regra de unidades da casa
+ * — perto de casa se fala em UA, longe em anos-luz, e o parsec é régua
+ * interna e não aparece. Dizer "0,0000158 anos-luz" para a Terra seria
+ * tecnicamente certo e inútil.
+ */
+function notaDaEntrada(entrada: EntradaDaBusca): string {
+  if (entrada.tipo === 'estrela') {
+    return `${distanciaEmAnosLuz(entrada.estrela.d)} · ${entrada.estrela.s}`;
+  }
+  const { rUA, classe } = entrada.corpo;
+  // o Sol não orbita nada: a nota dele é o que ele é
+  return rUA > 0 ? `${numeroPtBr(rUA)} UA · ${classe}` : classe;
+}
+
 /**
  * O ESTADO VAZIO É HONESTO, e este comentário é o porquê. A busca corre
  * sobre os nomes que o catálogo REALMENTE guarda — um por estrela, o
@@ -86,7 +106,7 @@ export function PaletaDeBusca({
   indice: IndiceEstrelas;
   /** o que a escolha FAZ nesta fase — o botão não pode prometer outra coisa */
   verbo: 'enquadrar' | 'visitar';
-  onEscolher: (estrela: NamedStar) => void;
+  onEscolher: (entrada: EntradaDaBusca) => void;
 }) {
   // MONTADA É ABERTA: quem decide a presença é o App (precedente do
   // Convite), e fechar DESMONTA. Não é detalhe de estilo — é o que faz a
@@ -121,7 +141,7 @@ export function PaletaDeBusca({
   const confirmar = (i: number) => {
     const alvo = resultados[i];
     if (!alvo) return;
-    onEscolher(alvo.estrela);
+    onEscolher(alvo.entrada);
     // FECHA NO PRÓXIMO TIQUE, e o motivo é o Enter. Fechar aqui desmonta
     // a paleta e devolve o foco ao botão que a abriu — tudo isso AINDA
     // DENTRO do evento da tecla; e aí a ação padrão do Enter cai no
@@ -162,16 +182,24 @@ export function PaletaDeBusca({
   // formatador da casa evita: esta linha só existe no navegador, onde o
   // ICU é completo — a ressalva do `numeroPtBr` é sobre o Node dos testes.
   const quantas = indice.nomeadas.length.toLocaleString('pt-BR');
+  // OS CORPOS DO SISTEMA só entram no índice na fase que sabe enquadrar
+  // órbitas (o Atlas), e a copy pergunta ao ÍNDICE em vez de perguntar à
+  // fase: quem conta o alcance é quem o tem na mão.
+  const corpos = indice.entradas.length - indice.nomeadas.length;
+  const alcance = corpos > 0
+    ? `as ${quantas} nomeadas e os ${corpos} corpos do sistema`
+    : `as ${quantas} nomeadas`;
   const aviso = vazio
-    ? `nada com esse nome entre as ${quantas} nomeadas — o catálogo guarda UM nome por `
+    ? `nada com esse nome entre ${alcance} — o catálogo guarda UM nome por `
       + `estrela, o próprio quando existe. tente ${EXEMPLOS.join(' · ')}`
     : resultados.length > 0
-      ? `${resultados.length} ${resultados.length === 1 ? 'estrela' : 'estrelas'} · `
+      ? `${resultados.length} ${resultados.length === 1 ? 'resultado' : 'resultados'} · `
         + `setas escolhem · Enter ${verbo === 'enquadrar' ? 'enquadra' : 'voa até lá'}`
-      : `nome, designação (gama vel) ou catálogo (hd 48915) · ${EXEMPLOS.join(' · ')}`;
+      : `nome, designação (gama vel) ou catálogo (hd 48915) · `
+        + `${(corpos > 0 ? ['terra', ...EXEMPLOS] : EXEMPLOS).join(' · ')}`;
 
   return (
-    <div className="atlas-busca" aria-label="Buscar estrela" {...dialogo}>
+    <div className="atlas-busca" aria-label="Buscar um alvo" {...dialogo}>
       <div className="atlas-busca-topo">
         <input
           type="text"
@@ -182,8 +210,8 @@ export function PaletaDeBusca({
             setAtivo(0);
           }}
           onKeyDown={aoTeclar}
-          placeholder="buscar uma estrela"
-          aria-label="Nome, designação ou catálogo da estrela"
+          placeholder={corpos > 0 ? 'buscar um corpo ou uma estrela' : 'buscar uma estrela'}
+          aria-label="Nome de um corpo do sistema, ou nome, designação ou catálogo da estrela"
           role="combobox"
           aria-expanded={resultados.length > 0}
           aria-controls="atlas-busca-lista"
@@ -209,7 +237,7 @@ export function PaletaDeBusca({
         className="atlas-busca-lista"
         id="atlas-busca-lista"
         role="listbox"
-        aria-label="Estrelas encontradas"
+        aria-label="Alvos encontrados"
       >
         {resultados.map((r, i) => (
           <li
@@ -223,10 +251,8 @@ export function PaletaDeBusca({
             onMouseMove={() => setAtivo(i)}
             onClick={() => confirmar(i)}
           >
-            <span className="atlas-busca-nome">{r.estrela.n}</span>
-            <span className="atlas-busca-nota">
-              {distanciaEmAnosLuz(r.estrela.d)} · {r.estrela.s}
-            </span>
+            <span className="atlas-busca-nome">{nomeDaEntrada(r.entrada)}</span>
+            <span className="atlas-busca-nota">{notaDaEntrada(r.entrada)}</span>
           </li>
         ))}
       </ul>

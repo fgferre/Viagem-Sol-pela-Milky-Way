@@ -25,10 +25,15 @@ import {
   SCORE,
   buscar,
   chaveDeLink,
+  chaveDoFoco,
   construirIndice,
   normalizarConsulta,
   resolverFoco,
 } from './buscaEstrelas';
+import type { CorpoBuscavel, EntradaDaBusca, ResultadoBusca } from './buscaEstrelas';
+import { CORPOS_DO_SISTEMA } from '../three/atlasConfig';
+import { RETRATO_2026 } from '../three/world/planetas/retrato2026';
+import type { IdRetrato } from '../three/world/planetas/retrato2026';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -36,8 +41,21 @@ const meta = JSON.parse(
 const nomeadas = meta.named;
 const indice = construirIndice(nomeadas);
 
+/**
+ * A ESTRELA de um resultado. As seções abaixo desta linha julgam a busca
+ * no CATÁLOGO, e o índice delas nasce sem corpos — então um resultado
+ * que não seja estrela aqui é o próprio defeito, e o `throw` é o alarme.
+ */
+const est = (r: ResultadoBusca | null | undefined): NamedStar => {
+  if (!r || r.entrada.tipo !== 'estrela') throw new Error('esperava uma estrela');
+  return r.entrada.estrela;
+};
+
+/** a entrada de uma estrela, para quem chama `chaveDeLink` */
+const daEstrela = (estrela: NamedStar): EntradaDaBusca => ({ tipo: 'estrela', estrela });
+
 const nomes = (consulta: string, limite?: number) =>
-  buscar(consulta, indice, limite).map((r) => r.estrela.n);
+  buscar(consulta, indice, limite).map((r) => est(r).n);
 
 describe('dado vivo', () => {
   it('as 1.726 nomeadas da Decisão 2 chegam inteiras', () => {
@@ -52,7 +70,7 @@ describe('dado vivo', () => {
 
   it('o índice devolvido aponta para a estrela certa da array', () => {
     for (const r of buscar('tau', indice, 20)) {
-      expect(nomeadas[r.indice]).toBe(r.estrela);
+      expect(nomeadas[r.indice]).toBe(est(r));
     }
   });
 });
@@ -135,7 +153,7 @@ describe('consulta numérica por acesso direto', () => {
 describe('rubrica de 4 degraus', () => {
   it('"ran": exato > prefixo > parcial, e Aldebaran fica atrás apesar do brilho', () => {
     const r = buscar('ran', indice, 8);
-    expect(r.map((x) => `${x.estrela.n} ${x.score}`)).toEqual([
+    expect(r.map((x) => `${est(x).n} ${x.score}`)).toEqual([
       `Ran ${SCORE.exato}`,
       `Rana ${SCORE.prefixo}`,
       `Rangifer ${SCORE.prefixo}`,
@@ -148,19 +166,19 @@ describe('rubrica de 4 degraus', () => {
     // o desempate por magnitude só vale DENTRO do degrau: Aldebaran
     // (m 0,87) é de longe a mais brilhante e mesmo assim vem depois de
     // Rangifer (m 5,22), que casou por prefixo
-    expect(r[2].estrela.m).toBeGreaterThan(r[3].estrela.m);
+    expect(est(r[2]).m).toBeGreaterThan(est(r[3]).m);
   });
 
   it('"tau": prefixo > palavra interna > parcial, com Rigil Kentaurus no fim', () => {
     const r = buscar('tau', indice, 500);
     const degraus = [...new Set(r.map((x) => x.score))];
     expect(degraus).toEqual([SCORE.prefixo, SCORE.palavra, SCORE.parcial]);
-    expect(r[0].estrela.n).toBe('τ Pup'); // "τ Pup" → chave irmã "tau pup"
-    expect(r.find((x) => x.score === SCORE.palavra)?.estrela.n).toBe('ο Tau');
+    expect(est(r[0]).n).toBe('τ Pup'); // "τ Pup" → chave irmã "tau pup"
+    expect(est(r.find((x) => x.score === SCORE.palavra)).n).toBe('ο Tau');
     // a terceira estrela mais brilhante do céu é a ÚLTIMA da lista:
     // "tau" só aparece dentro de "kentaurus"
-    expect(r.at(-2)?.estrela.n).toBe('Rigil Kentaurus');
-    expect(r.at(-1)?.estrela.n).toBe('Proxima Centauri');
+    expect(est(r.at(-2)).n).toBe('Rigil Kentaurus');
+    expect(est(r.at(-1)).n).toBe('Proxima Centauri');
   });
 
   it('cada degrau vale a mesma coisa para a mesma estrela, venha da chave que vier', () => {
@@ -168,7 +186,7 @@ describe('rubrica de 4 degraus', () => {
     // quando o visitante digita a designação inteira
     expect(buscar('tau cet', indice)[0].score).toBe(SCORE.exato);
     expect(buscar('τ Cet', indice)[0].score).toBe(SCORE.exato);
-    expect(buscar('cet', indice, 500).find((x) => x.estrela.n === 'τ Cet')?.score).toBe(
+    expect(buscar('cet', indice, 500).find((x) => est(x).n === 'τ Cet')?.score).toBe(
       SCORE.palavra
     );
   });
@@ -185,9 +203,9 @@ describe('a chave do link', () => {
   it('IDA E VOLTA nas 1.726: o link de cada estrela resolve NELA', () => {
     const erradas: string[] = [];
     for (const estrela of nomeadas) {
-      const volta = resolverFoco(chaveDeLink(estrela), indice);
-      if (volta?.estrela !== estrela) {
-        erradas.push(`${estrela.n} → ${volta?.estrela.n ?? 'nada'}`);
+      const volta = resolverFoco(chaveDeLink(daEstrela(estrela)), indice);
+      if (!volta || volta.entrada.tipo !== 'estrela' || volta.entrada.estrela !== estrela) {
+        erradas.push(`${estrela.n} → ${volta ? est(volta).n : 'nada'}`);
       }
     }
     expect(erradas).toEqual([]);
@@ -195,19 +213,21 @@ describe('a chave do link', () => {
 
   it('prefere o catálogo, e só cai no nome quando não há nenhum', () => {
     const sirius = nomeadas.find((s) => s.n === 'Sirius')!;
-    expect(chaveDeLink(sirius)).toBe('hd48915');
+    expect(chaveDeLink(daEstrela(sirius))).toBe('hd48915');
     // Proxima não tem HD; entra por HIP
-    expect(chaveDeLink(nomeadas.find((s) => s.n === 'Proxima Centauri')!)).toBe('hip70890');
+    expect(chaveDeLink(daEstrela(nomeadas.find((s) => s.n === 'Proxima Centauri')!))).toBe(
+      'hip70890'
+    );
     // as 37 companheiras não têm catálogo nenhum: vão pelo próprio nome
     const semCatalogo = nomeadas.filter((s) => s.hd === undefined && s.hip === undefined);
     expect(semCatalogo.length).toBe(37);
-    expect(chaveDeLink(semCatalogo[0])).toBe(semCatalogo[0].n);
+    expect(chaveDeLink(daEstrela(semCatalogo[0]))).toBe(semCatalogo[0].n);
   });
 
   it('a porta aceita o que a caixa de busca aceita — inclusive escrita à mão', () => {
-    expect(resolverFoco('hd 48915', indice)?.estrela.n).toBe('Sirius');
-    expect(resolverFoco('rigil', indice)?.estrela.n).toBe('Rigil Kentaurus');
-    expect(resolverFoco('gama vel', indice)?.estrela.n).toBe('γ² Vel');
+    expect(est(resolverFoco('hd 48915', indice)).n).toBe('Sirius');
+    expect(est(resolverFoco('rigil', indice)).n).toBe('Rigil Kentaurus');
+    expect(est(resolverFoco('gama vel', indice)).n).toBe('γ² Vel');
   });
 
   it('porta vazia ou sem correspondência devolve nada — nunca um palpite', () => {
@@ -215,5 +235,85 @@ describe('a chave do link', () => {
     expect(resolverFoco('   ', indice)).toBeNull();
     expect(resolverFoco('alfa cen', indice)).toBeNull();
     expect(resolverFoco('hd 4891', indice)).toBeNull();
+  });
+});
+
+// ============================================================
+// OS DEZ CORPOS DO SISTEMA no mesmo índice (conserto da revisão de
+// olhos frescos). Até então o "Atlas navegável do sistema solar" tinha
+// os dez desenhados e nenhum era alvo de nada: buscar "Netuno" caía no
+// estado vazio. O dado vem do config único do Atlas — este arquivo não
+// redigita nome nenhum, senão a divergência nasceria aqui.
+// ============================================================
+describe('os corpos do sistema entram no MESMO índice', () => {
+  const corpos: readonly CorpoBuscavel[] = CORPOS_DO_SISTEMA.map((c) => ({
+    id: c.id,
+    nome: c.nome,
+    classe: c.classe,
+    rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
+  }));
+  const comCorpos = construirIndice(nomeadas, corpos);
+
+  it('são dez, e o índice cresce exatamente dez', () => {
+    expect(corpos.length).toBe(10);
+    expect(comCorpos.entradas.length).toBe(indice.entradas.length + 10);
+    // as nomeadas continuam contadas à parte: é o número que a copy usa
+    expect(comCorpos.nomeadas.length).toBe(1726);
+  });
+
+  it('cada um dos dez é achado pelo nome pt-BR, por degrau EXATO', () => {
+    for (const c of corpos) {
+      const r = buscar(c.nome, comCorpos, 8)[0];
+      expect(r?.score, c.nome).toBe(SCORE.exato);
+      expect(r.entrada.tipo, c.nome).toBe('corpo');
+      expect(r.entrada.tipo === 'corpo' && r.entrada.corpo.id, c.nome).toBe(c.id);
+    }
+  });
+
+  it('sem acento e com prefixo também: "netuno", "jupiter", "plut"', () => {
+    const nome = (q: string) => {
+      const e = buscar(q, comCorpos, 1)[0]?.entrada;
+      return e && e.tipo === 'corpo' ? e.corpo.nome : null;
+    };
+    expect(nome('netuno')).toBe('Netuno');
+    expect(nome('jupiter')).toBe('Júpiter');
+    expect(nome('plut')).toBe('Plutão');
+    expect(nome('mercurio')).toBe('Mercúrio');
+    expect(nome('venus')).toBe('Vênus');
+  });
+
+  it('com o mesmo score, casa vem antes do céu', () => {
+    // "sol" casa EXATO no Sol e por prefixo/parcial em nomes do
+    // catálogo; o corpo tem de vir na frente
+    const r = buscar('sol', comCorpos, 8);
+    expect(r[0].entrada.tipo).toBe('corpo');
+    expect(r[0].entrada.tipo === 'corpo' && r[0].entrada.corpo.nome).toBe('Sol');
+  });
+
+  it('e o catálogo não muda de resposta por eles existirem', () => {
+    // o desempate por tipo só age dentro do MESMO score, então a
+    // ordenação das estrelas continua a de antes, uma a uma
+    const semCorpos = buscar('tau', indice, 500).map((r) => est(r).n);
+    const comEles = buscar('tau', comCorpos, 500).map((r) => est(r).n);
+    expect(comEles).toEqual(semCorpos);
+  });
+
+  it('a chave do link de um corpo é o nome que se escreve, e ela volta nele', () => {
+    for (const c of corpos) {
+      const chave = chaveDeLink({ tipo: 'corpo', corpo: c });
+      // ASCII e minúscula: `?foco=terra`, `?foco=jupiter`, `?foco=plutao`
+      expect(chave, c.nome).toBe(normalizarConsulta(c.nome));
+      expect(chave, c.nome).toMatch(/^[a-z ]+$/);
+      const volta = resolverFoco(chave, comCorpos);
+      expect(volta?.entrada.tipo, c.nome).toBe('corpo');
+      expect(volta?.entrada.tipo === 'corpo' && volta.entrada.corpo.id, c.nome).toBe(c.id);
+    }
+  });
+
+  it('chaveDoFoco acha pelo nome que a ContextLine mostra — corpo ou estrela', () => {
+    expect(chaveDoFoco('Terra', comCorpos)).toBe('terra');
+    expect(chaveDoFoco('Sirius', comCorpos)).toBe('hd48915');
+    // o que não está no índice não inventa porta (o Sagittarius A✱)
+    expect(chaveDoFoco('Sagittarius A✱', comCorpos)).toBeNull();
   });
 });

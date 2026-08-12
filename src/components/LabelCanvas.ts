@@ -80,7 +80,11 @@ export class LabelCanvas {
       const direction = toLeft ? -1 : 1;
       const textX = anchorX + direction * 18 * k;
       const name = label.name.toLocaleUpperCase('pt-BR');
-      const detail = `${label.spect.slice(0, 5)}  ·  ${formatDistance(label.distPc)}`;
+      // o `detalhe` é dos corpos do sistema (a classe em pt-BR, que não
+      // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é
+      // `undefined` e o desenho é o de sempre, pixel a pixel
+      const detail =
+        `${label.detalhe ?? label.spect.slice(0, 5)}  ·  ${formatDistance(label.distPc)}`;
 
       ctx.font = `500 ${12 * k}px "Segoe UI", Arial, sans-serif`;
       const nameWidth = ctx.measureText(name).width;

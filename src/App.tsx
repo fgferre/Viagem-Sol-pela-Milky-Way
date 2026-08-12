@@ -21,7 +21,8 @@ import {
 } from './components/HudDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca, BotaoDaBusca } from './components/PaletaDeBusca';
-import { chaveDeLink, construirIndice, resolverFoco } from './lib/buscaEstrelas';
+import { chaveDoFoco, construirIndice, resolverFoco } from './lib/buscaEstrelas';
+import type { EntradaDaBusca } from './lib/buscaEstrelas';
 import { Convite } from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
 import { CAMADAS } from './three/atlasConfig';
@@ -263,11 +264,11 @@ export default function App() {
             // `useMemo` que ainda não rodou (o estado das nomeadas está
             // sendo publicado neste mesmo tick), e este morre na linha
             // seguinte. A conta é uma passada nas 1.726.
-            const achado = resolverFoco(foco, construirIndice(d.nomeadas));
-            if (achado) d.visitarEstrela(achado.estrela);
+            const achado = resolverFoco(foco, construirIndice(d.nomeadas, d.corpos));
+            if (achado) escolherAlvo(achado.entrada, d);
             // sem palpite: a linha de contexto vai mostrar o sistema, que
             // é o que ficou de fato em quadro (precedente do `?pos=`)
-            else console.warn('?foco= não encontrou estrela:', foco);
+            else console.warn('?foco= não encontrou alvo:', foco);
           }
         } else if (!pos && (hasTime || query.get('play'))) {
           d.play();
@@ -461,13 +462,14 @@ export default function App() {
     // (hd/hip quando existem), e ela some da URL quando o que está em
     // quadro é o sistema — que é o enquadramento de abertura, o padrão.
     //
-    // O QUE ESTA LINHA NÃO PROMETE, declarado: o foco que NÃO é uma das
-    // 1.726 nomeadas (o Sagittarius A✱, alcançável pelo clique no
-    // rótulo) não tem chave — o link volta ao modo sem o alvo em vez de
-    // inventar uma porta que a busca não saberia resolver. É o mesmo
-    // alcance da D4, dos dois lados.
-    const emQuadro = foco === null ? null : indice.nomeadas.find((s) => s.n === foco);
-    if (phase === 'atlas' && emQuadro) url.searchParams.set('foco', chaveDeLink(emQuadro));
+    // O QUE ESTA LINHA NÃO PROMETE, declarado: o foco que NÃO está no
+    // índice (o Sagittarius A✱, alcançável pelo clique no rótulo) não tem
+    // chave — o link volta ao modo sem o alvo em vez de inventar uma
+    // porta que a busca não saberia resolver. É o mesmo alcance da D4,
+    // dos dois lados. Os dez corpos do sistema ENTRAM: a chave deles é o
+    // nome normalizado (`?foco=terra`).
+    const emQuadro = foco === null ? null : chaveDoFoco(foco, indice);
+    if (phase === 'atlas' && emQuadro) url.searchParams.set('foco', emQuadro);
     else url.searchParams.delete('foco');
     // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: a
     // troca de qualidade e o "voltar ao brilho real" RECARREGAM a página
@@ -528,9 +530,18 @@ export default function App() {
    * manda o mesmo alvo pelos dois caminhos que já existiam — no Atlas
    * ele ENQUADRA de onde está, no voo livre VOA até lá — e a paleta não
    * precisa saber qual dos dois aconteceu.
+   *
+   * O QUE A PALETA PRECISA SABER é o TIPO do alvo, e por isso ele vem
+   * etiquetado do índice: enquadrar a órbita de um corpo do sistema e
+   * visitar uma estrela são dois destinos com duas leis (`focarNoCorpo`
+   * contra `visitarEstrela`), e adivinhar qual é pelo formato do objeto
+   * seria a inferência que a etiqueta existe para não precisar.
    */
-  const escolherEstrela = (estrela: NamedStar) =>
-    directorRef.current?.visitarEstrela(estrela);
+  const escolherAlvo = (entrada: EntradaDaBusca, alvo = directorRef.current) => {
+    if (!alvo) return;
+    if (entrada.tipo === 'corpo') alvo.focarNoCorpo(entrada.corpo.id);
+    else alvo.visitarEstrela(entrada.estrela);
+  };
 
   // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
   const trocarTom = (t: ToneMapMode) => {
@@ -640,12 +651,26 @@ export default function App() {
   };
 
   /**
-   * O ÍNDICE DA BUSCA — construído UMA vez, quando as nomeadas chegam.
-   * O `useMemo` não é zelo: dentro do Atlas o mostrador da máquina do
-   * tempo re-renderiza o App a 4 Hz, e sem ele as ~5 mil chaves seriam
-   * reconstruídas quatro vezes por segundo enquanto o céu anda.
+   * O ÍNDICE DA BUSCA — construído quando as nomeadas chegam e quando a
+   * fase muda. O `useMemo` não é zelo: dentro do Atlas o mostrador da
+   * máquina do tempo re-renderiza o App a 4 Hz, e sem ele as ~5 mil
+   * chaves seriam reconstruídas quatro vezes por segundo enquanto o céu
+   * anda. Trocar de fase é raro e acontece atrás do véu — os 9 ms de
+   * reconstrução cabem lá.
+   *
+   * OS DEZ CORPOS DO SISTEMA só entram na fase que sabe enquadrar
+   * órbitas. No voo livre a escolha VOA, e a lei de aproximação de lá é
+   * de estrelas: voar até a Terra pararia a 0,8 pc dela, ou seja,
+   * prometeria um destino que a fase não entrega.
    */
-  const indice = useMemo(() => construirIndice(nomeadas), [nomeadas]);
+  const indice = useMemo(
+    () =>
+      construirIndice(
+        nomeadas,
+        phase === 'atlas' ? (directorRef.current?.corpos ?? []) : []
+      ),
+    [nomeadas, phase]
+  );
 
   const inJourney = phase === 'journey';
   // As peças que só decidem PRESENÇA por fase saem do mapa único
@@ -876,7 +901,7 @@ export default function App() {
           onFechar={() => setBusca(false)}
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
-          onEscolher={escolherEstrela}
+          onEscolher={escolherAlvo}
         />
       )}
 

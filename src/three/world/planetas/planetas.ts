@@ -430,6 +430,22 @@ export class Planetas {
   }
 
   /**
+   * AS POSIÇÕES DE CENA DOS DEZ, na ordem de `IDS_FOTOMETRIA` — o
+   * Float32Array VIVO do atributo, o mesmo que a GPU lê e o mesmo que a
+   * máquina do tempo reescreve. Somente leitura por contrato: quem
+   * escreve aqui é `escreverInstante`, e mais ninguém.
+   *
+   * Existe porque os rótulos do Atlas (Onda 5) precisam saber onde os
+   * corpos ESTÃO, e a alternativa — o rótulo ler o retrato congelado —
+   * seria a segunda fonte de verdade que a máquina do tempo desmentiria
+   * no primeiro salto de data: o nome de Marte flutuando onde Marte
+   * estava em 2026.
+   */
+  get posicoes(): Float32Array {
+    return this.points.geometry.getAttribute('position').array as Float32Array;
+  }
+
+  /**
    * O quadro inteiro da camada: um corte de custo e três uniforms.
    *
    * O CORTE não é de conteúdo, é de custo — e ele NÃO pisca: em

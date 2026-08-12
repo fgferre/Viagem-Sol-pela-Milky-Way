@@ -21,6 +21,7 @@
 // é lido pelo HUD e pelo Director, e é isso que o mantém testável.
 // ============================================================
 import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
+import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
 
 /** Uma família de coisas na cena que pode ser desligada. */
 export interface Camada {
@@ -74,6 +75,58 @@ export const CAMADAS_DO_ATLAS = CAMADAS.filter((c) => c.icone !== undefined);
  * o sistema inteiro visto de fora (ver `AtlasRig.focarNoSistema`).
  */
 export const NOME_DO_SISTEMA = 'Sistema solar';
+
+/**
+ * OS DEZ CORPOS DO RETRATO, com o nome que o visitante lê e a palavra
+ * que diz o que eles são. Até a Onda 5 a camada os DESENHAVA no Atlas e
+ * nenhum deles era alvo de nada — sem rótulo, sem clique, sem busca, sem
+ * deep-link —, num modo que se chama "Atlas navegável do sistema solar".
+ * Três linhas da matriz do PLANO tinham destino nesta onda; esta tabela é
+ * o dado que faltava às três.
+ *
+ * A ORDEM É A DA CAMADA (`IDS_FOTOMETRIA`), e é derivada dela em vez de
+ * redigitada: o índice desta lista é o índice do VÉRTICE, e é por ele que
+ * o rótulo lê a posição VIVA do atributo (a que a máquina do tempo
+ * reescreve). Um segundo array na mão aqui seria a divergência silenciosa
+ * de sempre — o rótulo de Marte sobre o ponto de Júpiter.
+ *
+ * A CLASSE é a palavra da legenda, não taxonomia: ela ocupa no rótulo o
+ * lugar que o tipo espectral ocupa numa estrela. Plutão entra como
+ * "planeta anão" porque é o que ele é desde 2006, e porque a alternativa
+ * — chamá-lo de planeta para a lista ficar uniforme — seria a casa
+ * mentindo sobre dado para caber num layout.
+ */
+export interface CorpoDoSistema {
+  /** id da camada — o mesmo de `IDS_FOTOMETRIA` e do retrato */
+  id: string;
+  /** nome pt-BR: o que se digita, o que a lista mostra, o que a
+   *  ContextLine anuncia */
+  nome: string;
+  /** a palavra que diz o que ele é, no vocabulário da legenda */
+  classe: string;
+  /** chave do rótulo — o hit-test reconhece um corpo por este prefixo */
+  chave: string;
+}
+
+const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
+  sun: { nome: 'Sol', classe: 'estrela' },
+  mercury: { nome: 'Mercúrio', classe: 'planeta' },
+  venus: { nome: 'Vênus', classe: 'planeta' },
+  earth: { nome: 'Terra', classe: 'planeta' },
+  mars: { nome: 'Marte', classe: 'planeta' },
+  jupiter: { nome: 'Júpiter', classe: 'planeta' },
+  saturn: { nome: 'Saturno', classe: 'planeta' },
+  uranus: { nome: 'Urano', classe: 'planeta' },
+  neptune: { nome: 'Netuno', classe: 'planeta' },
+  pluto: { nome: 'Plutão', classe: 'planeta anão' },
+};
+
+/** O prefixo que separa a chave de um corpo da de uma estrela. */
+export const CHAVE_DE_CORPO = 'corpo:';
+
+export const CORPOS_DO_SISTEMA: readonly CorpoDoSistema[] = IDS_FOTOMETRIA.map(
+  (id) => ({ id, ...NOMES_DOS_CORPOS[id], chave: `${CHAVE_DE_CORPO}${id}` })
+);
 
 // ============================================================
 // A GRADAÇÃO POR CONTEXTO (F6) — o que o Atlas faz com o

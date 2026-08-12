@@ -32,6 +32,9 @@
 //     nas 18 vistas oficiais).
 //  8. OS OVERLAYS SÃO DA FASE que os hospeda: sair dela e voltar não os
 //     faz renascer sozinhos, nem com o foco preso dentro deles.
+//  9. OS DEZ CORPOS DO SISTEMA são alvo de verdade: `?foco=terra`
+//     resolve, a paleta os acha pelo nome pt-BR, a escolha enquadra a
+//     ÓRBITA e o clique no rótulo faz o mesmo.
 import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -324,6 +327,83 @@ try {
   conferir(
     abriuNoAtlas && !gaveta,
     `a gaveta NÃO renasce ao reentrar no Atlas (abriu=${abriuNoAtlas}, voltou=${gaveta})`
+  );
+
+  // ---- 9: OS DEZ CORPOS SÃO ALVO — rótulo, busca e deep-link -------
+  // Até a revisão de olhos frescos o "Atlas navegável do sistema solar"
+  // tinha os dez DESENHADOS e nenhum era alvo de nada: buscar "Netuno"
+  // caía no estado vazio, `?foco=terra` não resolvia e clicar num corpo
+  // não fazia coisa alguma. Três linhas da matriz do PLANO com destino
+  // nesta onda.
+  const emUA = () =>
+    sessao.js('window.__director.engine.camera.position.length() * 206264.80624548031');
+
+  await sessao.ir(`foco=terra&${PIN}`);
+  const naTerra = await contexto(sessao);
+  const distTerra = Number(await emUA());
+  conferir(
+    naTerra === 'Terra',
+    `?foco=terra abre o Atlas com a Terra em quadro (em quadro: "${naTerra}")`
+  );
+  // enquadra a ÓRBITA (1 UA) e não o corpo: 1 × 1,2 / sen(11,06°) ≈ 6,3 UA
+  conferir(
+    distTerra > 5 && distTerra < 8,
+    `e enquadra a ÓRBITA dela: a câmera fica a ${distTerra.toFixed(2)} UA do Sol`
+  );
+
+  // a paleta acha pelo nome pt-BR, sem acento, e a escolha ENQUADRA
+  await abrirPaleta(sessao);
+  await sessao.digitar('netuno');
+  await sleep(300);
+  const listaCorpo = await sessao.js(`(() => {
+    const o = document.querySelector('[role="option"]');
+    return o ? o.textContent : '';
+  })()`);
+  await sessao.teclar('Enter');
+  await sessao.assentar();
+  const emNetuno = await contexto(sessao);
+  const distNetuno = Number(await emUA());
+  conferir(
+    emNetuno === 'Netuno' && /planeta/.test(listaCorpo) && /UA/.test(listaCorpo),
+    `a paleta acha "netuno" e a escolha ENQUADRA ("${listaCorpo}" → "${emNetuno}")`
+  );
+  conferir(
+    distNetuno > distTerra * 20,
+    `e a órbita dele é outra escala: ${distNetuno.toFixed(0)} UA contra ${distTerra.toFixed(1)}`
+  );
+  const urlDoCorpo = await sessao.js('location.search');
+  await sessao.js(`(() => {
+    const sel = document.querySelector('.controls-bar select');
+    sel.value = 'alta';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await sessao.assentar();
+  const voltouNetuno = await contexto(sessao);
+  conferir(
+    voltouNetuno === 'Netuno'
+      && (await sessao.js('location.search')).includes('foco=netuno'),
+    `e o link vivo carrega o corpo e reabre nele (${urlDoCorpo} → "${voltouNetuno}")`
+  );
+
+  // O CLIQUE. Perto do centro do retângulo útil, no enquadramento da
+  // órbita da Terra, quem está é um dos dez — o Sol na mira e os
+  // interiores em volta. Antes do conserto o clique ali não achava
+  // rótulo nenhum (não havia rótulo de corpo) e nada acontecia.
+  await sessao.ir(`foco=terra&${PIN}`);
+  const nomesDosCorpos = JSON.parse(
+    await sessao.js('JSON.stringify(window.__director.corpos.map((c) => c.nome))')
+  );
+  const tela = JSON.parse(
+    await sessao.js('JSON.stringify({ w: window.innerWidth, h: window.innerHeight })')
+  );
+  await sessao.clicar(Math.round(tela.w * 0.5), Math.round(tela.h * 0.45));
+  await sessao.assentar();
+  const depoisDoClique = await contexto(sessao);
+  conferir(
+    nomesDosCorpos.length === 10
+      && (nomesDosCorpos.includes(depoisDoClique) || depoisDoClique === 'Sistema solar')
+      && depoisDoClique !== naTerra,
+    `clicar num corpo ENQUADRA por ele ("${naTerra}" → "${depoisDoClique}")`
   );
 
   // ---- 7: a paleta não vaza no ?shot=2 -----------------------------
