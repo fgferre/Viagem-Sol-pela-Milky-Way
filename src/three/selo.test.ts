@@ -32,6 +32,8 @@ import {
 } from './selo';
 import type { EstadoDaVista } from './selo';
 import { DEEP_LIMIAR_PC } from './world/lodStellar';
+import { PISO_DO_CLARAO, REFERENCIA_UA, claraoDoAtlas } from './atlasConfig';
+import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { TONE_MAPPINGS } from './core/engine';
 import type { ToneMapMode } from './core/engine';
 
@@ -43,6 +45,8 @@ const LIMPA: EstadoDaVista = {
   tom: 'aces',
   camadasEscondidas: [],
   tier: 'cinema',
+  // 1 = o clarão do filme: a vista limpa é a do filme, sem gradação
+  gradacao: 1,
 };
 
 const com = (mudanca: Partial<EstadoDaVista>): EstadoDaVista => ({ ...LIMPA, ...mudanca });
@@ -181,6 +185,54 @@ describe('2. nenhum controle desmente o selo', () => {
     for (const chave of ['nobloom', 'knee', 'kneeamt', 'kneemode', 'fov', 'dom', 'forgetau']) {
       expect(estadoDoSelo(com({ portas: [chave] })).brilho, chave).toBe('assistido');
     }
+  });
+});
+
+describe('2b. a gradação por contexto se declara (F6)', () => {
+  it('o clarão moderado é desvio de BRILHO, nomeado e desfazível', () => {
+    const v = estadoDoSelo(com({ gradacao: PISO_DO_CLARAO }));
+    expect(v.brilho).toBe('assistido');
+    const linha = v.desvios.find((d) => d.chave === 'grad');
+    expect(linha, 'a gradação não moveu o selo').toBeDefined();
+    expect(linha!.volta, 'sem volta viva a linha BRILHO não pode desfazê-la').toBe('vivo');
+    expect(linha!.rotulo).toContain('clarão');
+  });
+
+  it('fator 1 é o clarão do filme e NÃO é desvio — é o que mantém as 18 vistas', () => {
+    expect(estadoDoSelo(com({ gradacao: 1 })).brilho).toBe('real');
+  });
+
+  it('desligar a gradação volta ao real, e o clique é o caminho', () => {
+    const comGradacao = com({ gradacao: PISO_DO_CLARAO });
+    const limpo = aoVoltarAoReal(comGradacao);
+    expect(limpo.gradacao).toBe(1);
+    expect(estadoDoSelo(limpo).brilho).toBe('real');
+  });
+
+  it('a lei do clarão: 1 exato de 20.000 UA para fora, piso dentro do sistema', () => {
+    const emUA = (ua: number) => claraoDoAtlas(ua * AU_PARA_PC);
+    // fora: 1 EXATO (é o que faz o termo ser neutro em IEEE754)
+    expect(emUA(REFERENCIA_UA)).toBe(1);
+    expect(emUA(1e6)).toBe(1);
+    expect(claraoDoAtlas(Number.NaN)).toBe(1);
+    // dentro do sistema: o piso medido
+    for (const ua of [2.2, 5.8, 30, 228, 1999]) {
+      expect(emUA(ua), `${ua} UA`).toBe(PISO_DO_CLARAO);
+    }
+    // entre os dois: a lei do inverso do quadrado, monotônica
+    expect(emUA(10000)).toBeCloseTo(0.25, 12);
+    expect(emUA(4000)).toBeCloseTo(0.04, 12);
+    let anterior = 0;
+    for (let ua = 1; ua <= 40000; ua *= 1.05) {
+      const f = emUA(ua);
+      expect(f).toBeGreaterThanOrEqual(anterior);
+      expect(f).toBeLessThanOrEqual(1);
+      anterior = f;
+    }
+    // o piso e a lei se encontram em 2.000 UA — o limiar é DERIVADO, não
+    // escolhido (o resíduo é a ida e volta pc↔UA em ponto flutuante)
+    expect((2000 / REFERENCIA_UA) ** 2).toBeCloseTo(PISO_DO_CLARAO, 15);
+    expect(emUA(2000)).toBeCloseTo(PISO_DO_CLARAO, 15);
   });
 });
 

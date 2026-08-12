@@ -150,6 +150,24 @@ export class Post {
 
   private galaxyMode = 0;
   private forcedAmt: number | null = null;
+  private gradacao = 1;
+
+  /**
+   * A GRADAÇÃO POR CONTEXTO (F6) — ESTADO do Post, como o `galaxyMode`,
+   * e pelo mesmo motivo: quem decide é o quadro (a distância da câmera
+   * ao Sol), quem escreve é o tick, e o `setWarp` já é reescrito a cada
+   * quadro. Guardar o fator aqui evita um segundo escritor disputando o
+   * mesmo `bloom.strength`.
+   *
+   * A conta e o porquê moram no config único (`atlasConfig.ts`); aqui
+   * mora só a aplicação. Fora do Atlas o Director manda 1, e 1 é NEUTRO
+   * EXATO no produto (`x * 1 === x` em IEEE754 — o precedente é o
+   * `uAmt = 0` do knee, post.ts:104-106): é isso que mantém as 18
+   * vistas oficiais do filme bit a bit.
+   */
+  setGradacao(fator: number) {
+    this.gradacao = fator;
+  }
 
   /**
    * Modo galáxia (0..1): o bojo é uma fonte HDR enorme — sem
@@ -176,8 +194,9 @@ export class Post {
   setWarp(k: number) {
     const g = this.galaxyMode;
     // moderação mais firme na vista externa: o bojo é uma fonte HDR
-    // enorme e virava uma bola branca que engolia barra e fendas
-    this.bloom.strength = (0.72 - 0.34 * g) * (1 + k * 0.4);
+    // enorme e virava uma bola branca que engolia barra e fendas.
+    // O terceiro fator é a gradação do Atlas — 1 fora dele.
+    this.bloom.strength = (0.72 - 0.34 * g) * (1 + k * 0.4) * this.gradacao;
     this.bloom.threshold = 0.82 + 0.52 * g;
     this.bloom.radius = 0.58 - 0.18 * g;
     (this.film.uniforms as Record<string, { value: number }>).uCA.value =

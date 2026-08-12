@@ -71,6 +71,13 @@ export interface EstadoDaVista {
   camadasEscondidas: readonly string[];
   /** tier vivo — o autoQuality rebaixa sozinho, e isso conta (D1) */
   tier: QualityLevel;
+  /**
+   * O FATOR DE CLARÃO que o último quadro usou (F6). 1 é o clarão do
+   * filme — nenhuma gradação; abaixo de 1, o Atlas moderou o
+   * instrumento e o selo tem de dizer. Número e não booleano porque é
+   * o valor VIVO do quadro, e o selo declara o que a tela mostrou.
+   */
+  gradacao: number;
 }
 
 /** Dá para desfazer com um clique? */
@@ -163,6 +170,34 @@ const camada = (flag: string, volta: Volta = 'vivo'): CaminhoDoSelo => ({
  */
 export const REGISTRO: readonly CaminhoDoSelo[] = [
   // --- gosto do visitante, ao vivo ---------------------------------
+  /**
+   * A GRADAÇÃO POR CONTEXTO (F6) — a linha que o desenho mandou existir
+   * antes mesmo de a gradação existir, e aqui está ela.
+   *
+   * O que a gradação faz está medido e escrito em `atlasConfig.ts`:
+   * dentro do sistema solar o clarão do Sol lava o quadro inteiro (97%
+   * dele acima de meia luz a 228 UA) e o Atlas fica sendo uma tela
+   * branca; a gradação modera o CLARÃO — o instrumento, o "artístico"
+   * do próprio vocabulário deste arquivo — e não encosta na fotometria.
+   *
+   * Mesmo assim é DESVIO, e é o primeiro da lista: o que se vê deixou
+   * de ser o que a casa produz sozinha, e quem olha tem direito de
+   * saber disso e de desfazer. `volta: 'vivo'` porque o Director
+   * desliga no quadro seguinte (`desligarGradacao`), e o `?grad=0`
+   * carrega a decisão pela recarga.
+   *
+   * A PRECEDÊNCIA de D1 está aqui de graça: a gradação não toca o latch
+   * da exposição nem a curva de tom, então o gesto do visitante (`?exp=`,
+   * o slider, o tom) continua valendo por cima dela — ela preenche o
+   * clarão, que é o único lugar onde o visitante não pôs a mão.
+   */
+  {
+    chave: 'grad',
+    eixo: 'brilho',
+    rotulo: 'clarão moderado pelo enquadramento',
+    volta: 'vivo',
+    desvia: (e) => e.gradacao !== 1,
+  },
   {
     chave: 'exp',
     eixo: 'brilho',
@@ -338,6 +373,7 @@ export function aoVoltarAoReal(e: EstadoDaVista): EstadoDaVista {
     exposicaoManual: chaves.has('exp') ? false : e.exposicaoManual,
     tom: chaves.has('tone') ? 'aces' : e.tom,
     camadasEscondidas: e.camadasEscondidas.filter((f) => !chaves.has(f)),
+    gradacao: chaves.has('grad') ? 1 : e.gradacao,
   };
 }
 

@@ -274,12 +274,33 @@ try {
       `atlas: a linha de contexto MUDA com o foco ("${antes.replace(/\n/g, ' ')}"`
         + ` → "${depois.replace(/\n/g, ' ')}")`
     );
+    // E O SELO ACOMPANHA O MESMO GESTO. Visitar uma estrela leva a
+    // câmera a dezenas de parsecs, onde quem domina o quadro é o disco
+    // artístico do Sol — o selo tem de dizer FORA DE ESCALA na hora, e
+    // não um enquadramento depois. Até a F6 ele lia a câmera do
+    // enquadramento anterior e declarava a vista velha.
+    const seloLonge = await sessao.js(`(() => {
+      const s = window.__director.selo;
+      return JSON.stringify({ pc: s.distanciaPc, clarao: s.gradacao });
+    })()`);
+    const longe = JSON.parse(seloLonge);
+    const escalaLonge = await sessao.js(
+      "document.querySelector('.atlas-selo-linha strong').textContent"
+    );
+    conferir(
+      longe.pc > 1 && escalaLonge === 'FORA DE ESCALA' && longe.clarao === 1,
+      `atlas: depois de visitar, o selo declara a vista NOVA — ${longe.pc.toFixed(1)} pc,`
+        + ` "${escalaLonge}", clarão ${longe.clarao}`
+    );
   }
   // ---- o selo de honestidade (D1) ---------------------------------
   // O TESTE PURO (`selo.test.ts`) cobra que nenhum controle possa
   // desmentir o selo; aqui a mesma promessa é cobrada no navegador, com
   // os controles de verdade: desligar uma camada na gaveta tem de mover
   // o selo, e clicar na linha BRILHO tem de trazê-lo de volta.
+  // volta ao ENQUADRAMENTO DE ABERTURA: a prova do selo é sobre a vista
+  // com que o Atlas abre, e a prova acima deixou a câmera numa estrela
+  await sessao.ir(`atlas=1&${PIN}`);
   const lerSelo = () => sessao.js(`(() => {
     const s = document.querySelector('.atlas-selo');
     if (!s) return null;
@@ -294,13 +315,25 @@ try {
   })()`);
 
   const inicial = await lerSelo();
+  // DESDE A F6 a abertura do Atlas declara a gradação por contexto: o
+  // clarão do Sol lava o quadro inteiro dentro do sistema (medido:
+  // 97,7% dele acima de meia luz a 228 UA, tela branca), o Atlas modera
+  // o instrumento para o céu poder ser lido, e o selo DIZ. Um Atlas que
+  // abrisse dizendo BRILHO REAL sobre uma imagem tratada seria o selo
+  // mentindo — que é o defeito que ele existe para não ter.
+  const fatorInicial = await sessao.js('window.__director.selo.gradacao');
   conferir(
-    inicial !== null && inicial.escala === 'ESCALA REAL' && inicial.brilho === 'BRILHO REAL',
-    `selo na abertura: "${inicial?.escala}" · "${inicial?.brilho}"`
+    inicial !== null && inicial.escala === 'ESCALA REAL'
+      && inicial.brilho === 'BRILHO ASSISTIDO' && /clarão/.test(inicial.detalhe),
+    `selo na abertura: "${inicial?.escala}" · "${inicial?.brilho}" — ${inicial?.detalhe}`
   );
   conferir(
-    inicial !== null && !inicial.brilhoClicavel && !inicial.escalaClicavel,
-    'selo: linha sem o que desfazer não é botão clicável'
+    fatorInicial > 0 && fatorInicial < 1,
+    `a gradação está viva na abertura (fator ${fatorInicial})`
+  );
+  conferir(
+    inicial !== null && inicial.brilhoClicavel && !inicial.escalaClicavel,
+    'selo: a linha com o que desfazer é controle; a que está em real, não'
   );
 
   await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
@@ -324,13 +357,27 @@ try {
   const camadasVivas = await sessao.js(
     'JSON.stringify(window.__director.selo.camadasEscondidas)'
   );
+  const fatorDepois = await sessao.js('window.__director.selo.gradacao');
   conferir(
-    voltou.brilho === 'BRILHO REAL' && camadasVivas === '[]',
-    `selo: clicar na linha BRILHO volta ao real ("${voltou.brilho}", escondidas=${camadasVivas})`
+    voltou.brilho === 'BRILHO REAL' && camadasVivas === '[]' && fatorDepois === 1,
+    `selo: clicar na linha BRILHO volta ao real ("${voltou.brilho}", escondidas=`
+      + `${camadasVivas}, clarão ${fatorDepois})`
   );
   conferir(
-    !urlLimpa.includes('nocat') && urlLimpa.includes('atlas'),
-    `selo: a volta limpa a porta e preserva o modo (${urlLimpa})`
+    !urlLimpa.includes('nocat') && urlLimpa.includes('atlas') && urlLimpa.includes('grad=0'),
+    `selo: a volta limpa a porta, desliga a gradação e preserva o modo (${urlLimpa})`
+  );
+
+  // A LINHA-CONTROLE PRÓPRIA da gradação (bit#1): `?grad=0` no link faz
+  // o Atlas abrir com o clarão do filme — e aí o selo diz REAL sobre a
+  // tela branca, que é a verdade daquela vista.
+  await sessao.ir(`atlas=1&grad=0&${PIN}`);
+  const semGradacao = await lerSelo();
+  const fatorSemPorta = await sessao.js('window.__director.selo.gradacao');
+  conferir(
+    semGradacao.brilho === 'BRILHO REAL' && fatorSemPorta === 1,
+    `?grad=0: o Atlas abre sem gradação e o selo diz "${semGradacao.brilho}" `
+      + `(fator ${fatorSemPorta})`
   );
 
   // ---- o retângulo útil cobre o HUD REAL --------------------------

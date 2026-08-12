@@ -42,6 +42,7 @@ import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
+import { claraoDoAtlas } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -293,6 +294,9 @@ export class Director {
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
+  /** a gradação por contexto do Atlas está ligada? (`?grad=0` desliga) */
+  private gradacaoLigada = true;
+
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
@@ -375,6 +379,14 @@ export class Director {
     if (this.debug.has('nobloom')) {
       this.post.bloom.enabled = false;
     }
+    // A GRADAÇÃO POR CONTEXTO do Atlas (F6) nasce LIGADA e `?grad=0` a
+    // desliga — o precedente exato é o `?knee=0` do pós. Ela precisa de
+    // porta, e não só de um clique no selo, porque o "voltar ao brilho
+    // real" pode RECARREGAR a página (quando há desvio que só o boot
+    // lê): sem a porta, o selo diria "voltei ao real" e a gradação
+    // renasceria no carregamento seguinte — o selo mentindo com a melhor
+    // das intenções, que é o defeito que ele existe para não ter.
+    this.gradacaoLigada = this.debug.get('grad') !== '0';
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
     this.expOverride = this.debug.has('exp');
@@ -1097,6 +1109,7 @@ export class Director {
   private irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
     if (this.phase === 'atlas') {
       this.atlas.focar(pos, arriveDist);
+      this.enquadrarAgora();
       this.events.onFoco(nome);
       this.teletransportou();
       return;
@@ -1112,8 +1125,22 @@ export class Director {
    */
   focarNoSistema() {
     this.atlas.focarNoSistema();
+    this.enquadrarAgora();
     this.events.onFoco(null);
     this.teletransportou();
+  }
+
+  /**
+   * ESCREVE A CÂMERA JÁ, antes de avisar o HUD. Sem esta linha o
+   * `onFoco` chega ao React com a câmera do enquadramento ANTERIOR, e o
+   * selo — que lê a vista do Director na hora de desenhar — declara a
+   * vista velha: depois de visitar uma estrela a dezenas de parsecs ele
+   * ainda dizia ESCALA REAL, e a gradação por contexto (F6) herdaria a
+   * mesma defasagem. Não há custo: o `apply` é escrita pura do estado
+   * do rig, e o tick a repete no quadro seguinte com o mesmo resultado.
+   */
+  private enquadrarAgora() {
+    this.atlas.apply(this.engine.camera, escalaDaUi());
   }
 
   /** scrub pela barra de progresso (fração 0..1) */
@@ -1446,6 +1473,17 @@ export class Director {
   }
 
   /**
+   * DESLIGA a gradação por contexto do Atlas — o gesto da linha BRILHO
+   * do selo (D1: as linhas do selo são os próprios controles). Não tem
+   * volta pelo mesmo caminho de propósito: quem quiser a gradação de
+   * volta tira o `?grad=0` da URL, que é onde o estado vive.
+   */
+  desligarGradacao() {
+    this.gradacaoLigada = false;
+    this.perturbar();
+  }
+
+  /**
    * A ESCALA DO TEXTO DO HUD mudou (`?ui=`, F6). O Director precisa
    * saber porque o HUD do Atlas é parte do enquadramento: texto maior
    * come mais quadro, o retângulo útil encolhe e a câmera recua. É
@@ -1479,6 +1517,22 @@ export class Director {
     return retanguloUtilDoAtlas(escalaDaUi());
   }
 
+  /**
+   * A GRADAÇÃO POR CONTEXTO (F6), num lugar só: o fator do clarão desta
+   * vista. Só na fase 'atlas' — fora dela é 1 EXATO, o termo do
+   * `setWarp` fica neutro em IEEE754 e o filme não perde um pixel. A
+   * conta e o porquê moram no config único (`atlasConfig.ts`).
+   *
+   * É um getter, e não um campo que o tick guarda, porque o SELO lê o
+   * mesmo número: dois lugares calculando a mesma coisa é como o selo
+   * começaria a divergir do quadro que ele declara.
+   */
+  private get claraoDoQuadro() {
+    return this.phase === 'atlas' && this.gradacaoLigada
+      ? claraoDoAtlas(this.engine.camera.position.length())
+      : 1;
+  }
+
   get selo(): EstadoDaVista {
     return {
       distanciaPc: this.engine.camera.position.length(),
@@ -1487,6 +1541,10 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
+      // a MESMA conta que o tick escreve no pós — não uma cópia do
+      // último quadro: o selo e o quadro leem a mesma câmera e não têm
+      // como discordar
+      gradacao: this.claraoDoQuadro,
     };
   }
 
@@ -1848,6 +1906,7 @@ export class Director {
       this.emitDest(undefined, cam.position);
     }
 
+    this.post.setGradacao(this.claraoDoQuadro);
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     // gate 0.02: na casca externa do fade a contribuição é invisível
