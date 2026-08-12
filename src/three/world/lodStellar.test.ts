@@ -225,7 +225,7 @@ describe('janelas de LOD do Sol — pinagem verbatim da casa', () => {
     // daqui, o número volta a poder divergir em silêncio — e quebra aqui.
     //
     // A STRING DO SOL MUDOU DELIBERADAMENTE NA ONDA 4 (decisão D2 do
-    // `docs/onda-4-desenho.md`): o `stellarBody` deixou de chamar
+    // Estado da Onda 4, PLANO-ATLAS §4): o `stellarBody` deixou de chamar
     // `discWorldFade` e passou a chamar a COMPOSIÇÃO `solWorldFade`, que
     // é `discWorldFade × deepDiscFade` — a atenuação total do disco
     // fatorada num lugar só (lição do conserto do vSat, commit 2e16689).
@@ -1575,7 +1575,7 @@ describe('D3 — o par de atributos nasce inerte no shader novo', () => {
 //     composição, e o gate desta fase: ACIMA DO LIMIAR NADA MUDA.
 // ------------------------------------------------------------
 //
-// A janela `deep` (decisão D2 do `docs/onda-4-desenho.md`) é a única
+// A janela `deep` (decisão D2 da Onda 4 — Estado no PLANO-ATLAS §4) é a única
 // coisa da Onda 4 que já toca pixel — e ela existe para NÃO tocar
 // nenhum, enquanto a câmera não descer abaixo de 0,05 pc. A prova é
 // bit a bit: acima do limiar `solWorldFade` tem de ser o MESMO double
