@@ -8,6 +8,7 @@ import { HUD_POR_FASE } from './three/fases';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
 import { TONE_MAPPINGS } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
+import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import { Ajustes } from './components/Ajustes';
@@ -454,6 +455,7 @@ export default function App() {
             className="hud-btn small"
             onClick={() => setAjustes((v) => !v)}
             aria-label="Ajustes de renderização"
+            {...gatilhoDoDialogo('ajustes', ajustes)}
           >
             ⚙ Ajustes
           </button>

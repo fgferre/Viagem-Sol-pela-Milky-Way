@@ -22,114 +22,17 @@
 // Método herdado do `ab-identidade`: `?q=cinema` pinado (senão o
 // autoQuality troca o tier no meio da espera), `?shot=2` (só a cena),
 // e o SINAL de prontidão do próprio app no lugar de espera cega.
-import { spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { resolve } from 'node:path';
-import { tmpdir } from 'node:os';
-import { rmSync } from 'node:fs';
-import {
-  CHROME, GPU_FLAGS, matarPerfil, portaDoPerfil, esperarAssentar, APP_PADRAO,
-} from './chrome.mjs';
+import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const PIN = 'shot=2&q=cinema';
 const JANELA = process.env.JANELA || '1200x900';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-let seq = 0;
-function rpc(ws, onEvent) {
-  const esperando = new Map();
-  ws.addEventListener('message', (e) => {
-    const m = JSON.parse(e.data);
-    if (m.id && esperando.has(m.id)) { esperando.get(m.id)(m); esperando.delete(m.id); }
-    else if (m.method) onEvent(m);
-  });
-  return (method, params = {}) => new Promise((res, rej) => {
-    const n = ++seq;
-    esperando.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));
-    ws.send(JSON.stringify({ id: n, method, params }));
-  });
-}
-
-async function abrir() {
-  const [w, h] = JANELA.split('x');
-  const perfil = resolve(tmpdir(), `atlas-smoke-${process.pid}`);
-  const chrome = spawn(CHROME, [
-    ...GPU_FLAGS,
-    '--hide-scrollbars', '--no-first-run', '--mute-audio',
-    '--force-device-scale-factor=1', `--window-size=${w},${h}`,
-    `--user-data-dir=${perfil}`, '--remote-debugging-port=0', 'about:blank',
-  ], { stdio: 'ignore' });
-  const porta = await portaDoPerfil(perfil);
-  let alvo = null;
-  for (let i = 0; i < 100 && !alvo; i++) {
-    try {
-      const r = await fetch(`http://127.0.0.1:${porta}/json/list`).then((x) => x.json());
-      alvo = r.find((t) => t.type === 'page')?.webSocketDebuggerUrl;
-    } catch { /* Chrome ainda subindo */ }
-    if (!alvo) await sleep(200);
-  }
-  if (!alvo) throw new Error('CDP não respondeu');
-  const ws = new WebSocket(alvo);
-  await new Promise((r, j) => {
-    const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
-    ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
-    ws.addEventListener('error', () => { clearTimeout(relogio); j(new Error('WebSocket falhou')); });
-  });
-  let cartografia = false;
-  const send = rpc(ws, (m) => {
-    if (m.method === 'Runtime.consoleAPICalled') {
-      const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
-      if (txt.includes('[cartografia]')) cartografia = true;
-    }
-  });
-  await send('Page.enable');
-  await send('Runtime.enable');
-  await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: 'window.__f=0;const o=window.requestAnimationFrame.bind(window);'
-      + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
-  });
-  const fechar = () => {
-    chrome.kill();
-    matarPerfil(perfil);
-    try { rmSync(perfil, { recursive: true, force: true }); } catch { /* preso */ }
-  };
-  return {
-    send,
-    fechar,
-    ir: async (query) => {
-      cartografia = false;
-      await send('Page.navigate', { url: `${APP}/?${query}` });
-      // o rAF contador morre com o documento; a navegação recria tudo
-      return esperarAssentar({ send, cartografia: () => cartografia, quadros: 700, teto: 180000 });
-    },
-    assentar: () =>
-      esperarAssentar({ send, cartografia: () => true, quadros: 700, teto: 180000 }),
-    // o Director lê `prefers-reduced-motion` UMA vez, no construtor —
-    // então a emulação tem de estar de pé antes da navegação seguinte
-    /** clique curto de verdade — o gesto que o Director escuta */
-    clicar: async (x, y) => {
-      const base = { x, y, button: 'left', clickCount: 1, buttons: 1, pointerType: 'mouse' };
-      await send('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
-      await send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased', buttons: 0 });
-    },
-    reduzirMovimento: () =>
-      send('Emulation.setEmulatedMedia', {
-        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
-      }),
-    js: async (expr) => {
-      const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
-      if (r.exceptionDetails) throw new Error(`js: ${r.exceptionDetails.text}`);
-      return r.result.value;
-    },
-    md5: async () => {
-      const shot = await send('Page.captureScreenshot', { format: 'png' });
-      const buf = Buffer.from(shot.data, 'base64');
-      if (buf.length < 20000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
-      return createHash('md5').update(buf).digest('hex').slice(0, 12);
-    },
-  };
-}
+// A sessão viva (subir o Chrome, falar CDP, navegar, esperar assentar,
+// clicar, ler JS, tirar md5) nasceu aqui na F1 e mora em `chrome.mjs`
+// desde a F2, quando o juiz de a11y virou o segundo consumidor.
+const abrir = () => abrirSessao({ janela: JANELA, app: APP, prefixo: 'atlas-smoke' });
 
 const falhas = [];
 const conferir = (ok, texto) => {

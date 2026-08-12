@@ -14,7 +14,8 @@
 // headless (?t=&shot=2) enxerga exatamente o que a tela mostra — que é o que
 // mantém scripts/visual/rodada.mjs honesto.
 // ============================================================
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useDialogFocus } from '../lib/dialogFocus';
 import type { QualityLevel, ToneMapMode } from '../three/core/engine';
 
 const TONS: { id: ToneMapMode; nome: string; nota: string }[] = [
@@ -88,13 +89,11 @@ export function Ajustes({
   // O painel NÃO aplica ?tone=/?exp= na montagem: efeito de filho roda antes
   // do efeito do pai, então o Director ainda não existe aqui. Quem aplica é o
   // App, junto de ?q= e ?pos=, depois do init. O painel só reflete e edita.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && aberto) onFechar();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [aberto, onFechar]);
+  //
+  // O Esc que ficava num listener de `window` aqui virou parte do módulo
+  // único (D7): o mesmo hook que prende o foco, devolve ao gatilho e
+  // declara `aria-modal` — as três coisas que este painel não tinha.
+  const dialogo = useDialogFocus('ajustes', aberto, onFechar);
 
   if (!aberto) return null;
 
@@ -127,7 +126,7 @@ export function Ajustes({
   };
 
   return (
-    <div className="ajustes" role="dialog" aria-label="Ajustes de renderização">
+    <div className="ajustes" aria-label="Ajustes de renderização" {...dialogo}>
       <div className="ajustes-topo">
         <span>Ajustes</span>
         <button type="button" onClick={onFechar} aria-label="Fechar ajustes">
