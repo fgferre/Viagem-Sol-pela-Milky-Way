@@ -232,12 +232,23 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
   let seq = 0;
   const esperando = new Map();
   let cartografia = false;
+  // O QUE O APP GRITA. Só o que o app diz por conta própria
+  // (`console.error`/`console.warn` e exceção não capturada) — falha de
+  // rede o navegador registra por conta dele, e cobrar isso do app seria
+  // cobrar o contrário do que a degradação honesta faz. É esta lista que
+  // o gate "sem rede, zero erro de console" da F4 lê.
+  const gritos = [];
   ws.addEventListener('message', (e) => {
     const m = JSON.parse(e.data);
     if (m.id && esperando.has(m.id)) { esperando.get(m.id)(m); esperando.delete(m.id); }
     else if (m.method === 'Runtime.consoleAPICalled') {
       const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
       if (txt.includes('[cartografia]')) cartografia = true;
+      if (m.params.type === 'error' || m.params.type === 'warning') {
+        gritos.push(`console.${m.params.type}: ${txt}`);
+      }
+    } else if (m.method === 'Runtime.exceptionThrown') {
+      gritos.push(`exceção: ${m.params.exceptionDetails?.text ?? '?'}`);
     }
   });
   const send = (method, params = {}) => new Promise((res, rej) => {
@@ -257,6 +268,20 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
       chrome.kill();
       matarPerfil(perfil);
       try { rmSync(perfil, { recursive: true, force: true }); } catch { /* preso */ }
+    },
+    /** o que o app gritou desde a última limpeza (ver `gritos`) */
+    gritos: () => [...gritos],
+    limparGritos: () => {
+      gritos.length = 0;
+    },
+    /**
+     * CORTA A REDE para os padrões dados — é assim que se prova o
+     * caminho "sem efeméride" com o mesmo binário, sem mexer no app nem
+     * no servidor. Lista vazia religa tudo.
+     */
+    bloquear: async (padroes) => {
+      await send('Network.enable');
+      await send('Network.setBlockedURLs', { urls: padroes });
     },
     ir: async (query) => {
       cartografia = false;

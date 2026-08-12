@@ -63,6 +63,8 @@ export interface HudDaFase {
   gaveta: boolean;
   /** selo de honestidade: ESCALA e BRILHO, e as duas são controles */
   selo: boolean;
+  /** máquina do tempo: instante do céu, sentido, taxa, AO VIVO (F4/D2) */
+  tempo: boolean;
   /** ⏸ Pausar · velocidade · Ver a galáxia · Explorar livremente */
   botoesDaViagem: boolean;
   /** ↻ Reviver */
@@ -85,6 +87,7 @@ export const HUD_POR_FASE = {
     contexto: false,
     gaveta: false,
     selo: false,
+    tempo: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -100,6 +103,7 @@ export const HUD_POR_FASE = {
     contexto: false,
     gaveta: false,
     selo: false,
+    tempo: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -115,6 +119,7 @@ export const HUD_POR_FASE = {
     contexto: false,
     gaveta: false,
     selo: false,
+    tempo: false,
     botoesDaViagem: true,
     botaoReviver: false,
     botaoPartir: false,
@@ -130,6 +135,7 @@ export const HUD_POR_FASE = {
     contexto: false,
     gaveta: false,
     selo: false,
+    tempo: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -145,6 +151,7 @@ export const HUD_POR_FASE = {
     contexto: false,
     gaveta: false,
     selo: false,
+    tempo: false,
     botoesDaViagem: false,
     botaoReviver: true,
     botaoPartir: false,
@@ -154,8 +161,9 @@ export const HUD_POR_FASE = {
   // O HUD do Atlas nasce MÍNIMO de propósito: barra de controles (que
   // é a porta dos Ajustes — sem ela a F5/F6 chegariam sem acesso) e a
   // saída. A ContextLine, a gaveta de camadas e o selo de honestidade
-  // são da F2; a barra de progresso NUNCA entra (é o slider de
-  // capítulos do filme, e daria scrub do filme dentro do Atlas).
+  // são da F2; a máquina do tempo é da F4; a barra de progresso NUNCA
+  // entra (é o slider de capítulos do filme, e daria scrub do filme
+  // dentro do Atlas — e o tempo do Atlas é OUTRO tempo: o do céu).
   atlas: {
     letterbox: true,
     legenda: false,
@@ -165,6 +173,7 @@ export const HUD_POR_FASE = {
     contexto: true,
     gaveta: true,
     selo: true,
+    tempo: true,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: true,

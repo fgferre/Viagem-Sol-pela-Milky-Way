@@ -157,8 +157,24 @@ describe('2. nenhum controle desmente o selo', () => {
   });
 
   it('as portas declaradas como neutras NÃO movem o selo', () => {
-    const neutras = ['t', 'play', 'freeze', 'atlas', 'pos', 'look', 'shot', 'ajustes', 'loader'];
+    const neutras = [
+      't', 'play', 'freeze', 'atlas', 'pos', 'look', 'shot', 'ajustes', 'loader', 'jd',
+    ];
     expect(estadoDoSelo(com({ portas: neutras })).brilho).toBe('real');
+  });
+
+  it('o TEMPO não é desvio de brilho — e a decisão está escrita no registro', () => {
+    // A máquina do tempo MUDA a imagem e mesmo assim não move o eixo
+    // BRILHO: efeméride é dado medido, do mesmo tier do catálogo. Quem
+    // quiser inverter esta decisão quebra aqui e vai ler o porquê em
+    // `selo.ts` antes de inverter — que é o ponto de escrevê-la.
+    const jd = REGISTRO.find((c) => c.chave === 'jd');
+    expect(jd, '?jd= sem entrada no registro').toBeDefined();
+    expect(jd!.eixo).toBe('nenhum');
+    expect(jd!.desvia(com({ portas: ['jd'] }))).toBe(false);
+    expect(estadoDoSelo(com({ portas: ['jd'] })).brilho).toBe('real');
+    // e o vocabulário: o tier "medido" já promete catálogo E efeméride
+    expect(PROCEDENCIA.medido.oQue).toContain('efeméride');
   });
 
   it('as portas de luz movem o selo só por estarem na URL', () => {

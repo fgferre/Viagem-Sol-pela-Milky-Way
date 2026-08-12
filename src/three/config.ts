@@ -2,6 +2,7 @@
 // Configuração central do mundo — escala em parsecs (pc)
 // Editar aqui muda o comportamento de todos os módulos.
 // ============================================================
+import type { MetaEfemerides, MotorEfemerides } from '../lib/atlas/efemerides';
 
 export const WORLD = {
   // Sol artístico (escala real seria invisível: 2.3e-8 pc)
@@ -224,6 +225,47 @@ export async function fetchBinary(url: string, signal?: AbortSignal): Promise<Ar
   const response = await fetch(url, { signal });
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
   return response.arrayBuffer();
+}
+
+/**
+ * A EFEMÉRIDE, BUSCADA TARDE (Onda 5, F4/D2) — os DOIS artefatos de
+ * `public/data/atlas/`: a tabela `efemerides.bin` (768 kB, com o irmão
+ * `.gz` que o `fetchBinary` prefere) e o manifesto que diz onde cada
+ * corpo mora dentro dela.
+ *
+ * MORA AQUI, ao lado do `loadStarData`, porque o dono do caminho de
+ * rede da casa é este arquivo — e não no boot: NENHUM byte disto é
+ * baixado para ver o filme. Quem dispara é o Director, e só quando o
+ * visitante mexe na máquina do tempo ou chega com `?jd=` na URL.
+ *
+ * O DECODIFICADOR VEM POR `import()` DINÂMICO, e isso não é elegância:
+ * `efemerides.ts` arrasta `kepler`, `registroOrbital` e os 22 kB de
+ * `elementosOrbitais` atrás de si. Estático, esse peso entraria no
+ * bundle de quem só quer o filme; dinâmico, ele vira um pedaço à parte
+ * que só é buscado junto com a tabela. O `import type` acima é apagado
+ * na compilação e não desfaz a divisão.
+ *
+ * O ERRO SOBE CRU, de propósito: quem chama é que decide o que fazer
+ * com "não deu" — e o que o Director faz é congelar a camada no retrato
+ * e acender o badge, sem uma linha de console. Aborto continua sendo
+ * aborto (mesmo motivo do `loadStarData`: o StrictMode monta duas vezes
+ * em dev).
+ */
+export async function carregarEfemerides(
+  signal?: AbortSignal
+): Promise<{ motor: MotorEfemerides; meta: MetaEfemerides }> {
+  const base = import.meta.env.BASE_URL;
+  const [modulo, bin, meta] = await Promise.all([
+    import('../lib/atlas/efemerides'),
+    fetchBinary(`${base}data/atlas/efemerides.bin`, signal),
+    fetch(`${base}data/atlas/efemerides_meta.json`, { signal }).then((response) => {
+      if (!response.ok) {
+        throw new Error(`Manifesto da efeméride indisponível (${response.status}).`);
+      }
+      return response.json() as Promise<MetaEfemerides>;
+    }),
+  ]);
+  return { motor: new modulo.MotorEfemerides(modulo.decodeEfemerides(bin, meta)), meta };
 }
 
 export async function loadStarData(

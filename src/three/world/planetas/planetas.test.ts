@@ -33,6 +33,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
 import {
   AU_PARA_PC,
@@ -49,15 +50,19 @@ import {
   solWorldFade,
   sunStarGain,
 } from '../lodStellar';
+import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
+import { MotorEfemerides, decodeEfemerides } from '../../../lib/atlas/efemerides';
 import {
   A_MAG_BASE,
   FOTOMETRIA,
   IDS_FOTOMETRIA,
+  aMagBaseDe,
   faseLambertiana,
   magAparente,
   magAparenteEstelar,
 } from './fotometria';
-import { IDS_RETRATO, RETRATO_2026 } from './retrato2026';
+import { EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
+import type { FonteDeEfemerides } from './planetas';
 import {
   A_MAG_BASE_PC,
   DESLOCAMENTO_UA_PARA_PC,
@@ -224,10 +229,15 @@ const PROJ_DO_QUADRO: Record<string, [number, number, number, number][]> = {
 
 const FONTE = readFileSync(new URL('./planetas.ts', import.meta.url), 'utf8');
 
-/** o `update` inteiro, para as afirmações de "sem alocação / sem D8" */
+/**
+ * O `update` inteiro, para as afirmações de "sem alocação / sem D8". O
+ * fim do recorte é o comentário do CAMINHO VIVO da F4, que passou a ser
+ * o método seguinte: o caminho vivo é irmão do `update`, não parte
+ * dele — ele roda na troca de instante, não no quadro.
+ */
 const CORPO_DO_UPDATE = FONTE.slice(
   FONTE.indexOf('  update(dHomePc: number'),
-  FONTE.indexOf('  /**\n   * `?dbgplan`')
+  FONTE.indexOf('  /**\n   * O CAMINHO VIVO')
 );
 
 function camada(): Planetas {
@@ -929,6 +939,30 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
     expect(CORPO_DO_UPDATE).not.toContain('.filter(');
   });
 
+  it('o caminho vivo é IRMÃO do update, nunca parte dele (D2)', () => {
+    // A D2 manda a escrita do instante morar em MÉTODO PRÓPRIO, fora do
+    // `update` que os testes de texto pinam. Se um dia alguém a mudar
+    // para dentro do quadro, é aqui que se descobre.
+    expect(FONTE).toContain('escreverInstante(jdTdb: number');
+    expect(CORPO_DO_UPDATE).not.toContain('escreverInstante');
+    expect(CORPO_DO_UPDATE).not.toContain('posicaoHeliocentrica');
+  });
+
+  it('a escrita instanciada tem `fround` ANTES de decidir, e nenhuma faixa', () => {
+    const gravar = FONTE.slice(
+      FONTE.indexOf('  private gravar(array: Float32Array'),
+      FONTE.indexOf('  /**\n   * `?dbgplan`')
+    );
+    expect(gravar).toContain('Math.fround(valor)');
+    expect(gravar).toContain('needsAttributeWrite');
+    // obrigações (ii) e (iii): sem faixa parcial não há teto a estourar
+    // nem latch a segurar — a política é upload cheio, e é declarada
+    // a CHAMADA, não a palavra: o cabeçalho cita as duas obrigações por
+    // nome para explicar por que elas viram teto zero aqui
+    expect(FONTE).not.toContain('.addUpdateRange(');
+    expect(FONTE).not.toContain('.clearUpdateRanges(');
+  });
+
   it('o gate de visibilidade importa o limiar do domínio, não um 0,05', () => {
     expect(FONTE).toContain('DEEP_LIMIAR_PC');
     expect(DEEP_LIMIAR_PC).toBe(LOD_SOL.deep.fade1Pc);
@@ -996,6 +1030,57 @@ describe('texto-fonte da fiação no director', () => {
     expect(planetas).toBeLessThan(engine);
   });
 
+  // ---- A MÁQUINA DO TEMPO, e o DESTINO DA D8 POR ESCRITO (F4) ------
+  // A D8 dizia: "esta camada não responde a qualidade e não zera a
+  // contagem de estabilidade da captura". A F4 acrescentou um caminho
+  // que MUDA a imagem — e a decisão, escrita aqui e no cabeçalho da
+  // camada, é que a D8 fica INTEIRA: quem chama `perturbar` continua
+  // sendo o Director, porque é ele que sabe quando o instante muda; a
+  // camada só obedece. Os testes de texto da camada (nenhum `Date`,
+  // nenhum `perturbar`, nenhum `QualityLevel`) seguem valendo palavra
+  // por palavra, e são estes três aqui que cobram o outro lado do fio.
+  it('quem escreve o instante é o Director, e ANTES do update do quadro', () => {
+    expect(director).toContain('this.planetas.escreverInstante(');
+    const escrita = director.indexOf('this.planetas.escreverInstante(');
+    const quadro = director.indexOf('this.planetas.update(');
+    expect(escrita).toBeGreaterThan(0);
+    expect(escrita).toBeLessThan(quadro);
+  });
+
+  it('quem chama `perturbar` na troca de instante é o Director (D8)', () => {
+    // os quatro gestos da máquina do tempo, e o `?jd=` no construtor
+    for (const metodo of [
+      'andarNoTempo(sentido: SentidoDoTempo)',
+      'ciclarDegrau(): number',
+      'alternarAoVivo()',
+      'voltarAEpoca()',
+    ]) {
+      const i = director.indexOf(`  ${metodo} {`);
+      expect(i, metodo).toBeGreaterThan(0);
+      const corpo = director.slice(i, director.indexOf('\n  }', i));
+      expect(corpo, metodo).toContain('this.perturbar()');
+    }
+    // e a chegada da efeméride também perturba: a imagem pode mudar
+    const busca = director.indexOf('private garantirEfemerides()');
+    expect(director.slice(busca, director.indexOf('\n  }\n', busca))).toContain(
+      'this.perturbar()'
+    );
+  });
+
+  it('a porta `?jd=` existe com o nome exato e o relógio entra na prontidão', () => {
+    expect(director).toContain("this.debug.has('jd')");
+    expect(director).toContain("this.debug.get('jd')");
+    // o relógio andando é cena andando: sem isto o gate capturaria no
+    // meio de um salto no tempo
+    const captura = director.slice(
+      director.indexOf('  get captura() {'),
+      director.indexOf('    return {', director.indexOf('  get captura() {'))
+    );
+    expect(captura).toContain('this.aoVivo');
+    expect(captura).toContain('this.sentidoDoTempo !== 0');
+    expect(captura).toContain("this.faseDaEfemeride === 'buscando'");
+  });
+
   it('o bloco de qualidade continua sem tocar na camada (D8)', () => {
     const i = director.indexOf('this.engine.onQuality(');
     const bloco = director.slice(i, director.indexOf('});', i));
@@ -1058,6 +1143,276 @@ describe('?dbgplan — o que a régua 2 vai ler', () => {
       expect(Number(m![1]), IDS_FOTOMETRIA[i]).toBeCloseTo(alvo[2], 3);
       expect(Number(m![2]), IDS_FOTOMETRIA[i]).toBeCloseTo(alvo[3], 3);
     });
+    p.dispose();
+  });
+});
+
+// ============================================================
+// 10. O CAMINHO VIVO (Onda 5, F4/D2) — a máquina do tempo escrevendo
+//     os DOIS atributos.
+//
+// O oráculo é o mesmo `efemerides.bin` que gerou o retrato, lido de
+// disco pelo motor de verdade (caminho de `retrato.test.ts`). Duas
+// coisas se provam aqui, e a primeira é a que sustenta o gate de
+// pixel da fase:
+//
+//  (a) NA ÉPOCA O CAMINHO VIVO É UM NÃO-EVENTO. Ele roda inteiro — o
+//      cache nasce NaN de propósito — e não muda UM bit: nem posição,
+//      nem magnitude, nem `version` de atributo. É por isso que o A/B
+//      de `?jd=EPOCA` nas três vistas profundas pode ser exigido
+//      bit-idêntico.
+//  (b) FORA DA ÉPOCA A MAGNITUDE ANDA, e anda na direção e no VALOR
+//      que a efeméride manda: o periélio e o afélio de Marte saem de
+//      uma varredura da própria tabela, não de uma data escolhida a
+//      olho, e a diferença esperada é `5·log10(r_af/r_pe)`.
+// ============================================================
+const META_EF = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL('../../../../public/data/atlas/efemerides_meta.json', import.meta.url)),
+    'utf8'
+  )
+) as MetaEfemerides;
+const BIN_EF = readFileSync(
+  fileURLToPath(new URL('../../../../public/data/atlas/efemerides.bin', import.meta.url))
+);
+const motorReal = () =>
+  new MotorEfemerides(
+    decodeEfemerides(
+      BIN_EF.buffer.slice(BIN_EF.byteOffset, BIN_EF.byteOffset + BIN_EF.byteLength),
+      META_EF
+    )
+  );
+
+/** o motor de verdade, contando quantas vezes foi consultado */
+function espiao(): FonteDeEfemerides & { chamadas: number } {
+  const motor = motorReal();
+  return {
+    chamadas: 0,
+    posicaoHeliocentrica(id: string, jd: number) {
+      this.chamadas++;
+      return motor.posicaoHeliocentrica(id, jd);
+    },
+  };
+}
+
+const copia = (p: Planetas, nome: string) =>
+  Float32Array.from(atributo(p, nome).array as Float32Array);
+
+describe('10a. na época, o caminho vivo reproduz o retrato bit a bit', () => {
+  it('nenhum float muda, e o método diz que não mudou', () => {
+    const p = camada();
+    const posAntes = copia(p, 'position');
+    const magAntes = copia(p, 'aMagBase');
+    const versaoPos = atributo(p, 'position').version;
+    const versaoMag = atributo(p, 'aMagBase').version;
+
+    const mexeu = p.escreverInstante(EPOCA_JD_TDB, motorReal());
+
+    expect(mexeu).toBe(false);
+    // Object.is elo a elo: "quase igual" aqui seria md5 diferente
+    const posDepois = copia(p, 'position');
+    const magDepois = copia(p, 'aMagBase');
+    for (let i = 0; i < posAntes.length; i++) {
+      expect(Object.is(posAntes[i], posDepois[i]), `position[${i}]`).toBe(true);
+    }
+    for (let i = 0; i < magAntes.length; i++) {
+      expect(Object.is(magAntes[i], magDepois[i]), `aMagBase[${i}]`).toBe(true);
+    }
+    // e nenhum upload foi pedido: `version` só sobe com `needsUpdate`
+    expect(atributo(p, 'position').version).toBe(versaoPos);
+    expect(atributo(p, 'aMagBase').version).toBe(versaoMag);
+    p.dispose();
+  });
+
+  it('a conta rodou mesmo — o cache não engoliu a primeira chamada', () => {
+    const p = camada();
+    const fonte = espiao();
+    p.escreverInstante(EPOCA_JD_TDB, fonte);
+    // os NOVE do retrato; o Sol é a origem em qualquer instante
+    expect(fonte.chamadas).toBe(IDS_RETRATO.length);
+    p.dispose();
+  });
+
+  it('NUNCA abre faixa de upload — a obrigação (ii) vira teto zero', () => {
+    const p = camada();
+    const versao = atributo(p, 'position').version;
+    p.escreverInstante(EPOCA_JD_TDB + 400, motorReal());
+    // upload CHEIO: `version` sobe (é o que `needsUpdate = true` faz) e
+    // nenhuma faixa parcial é aberta — sem faixa não há teto a estourar
+    // nem latch a segurar, que é o argumento das obrigações (ii) e (iii)
+    expect(atributo(p, 'position').version).toBe(versao + 1);
+    expect(atributo(p, 'position').updateRanges).toHaveLength(0);
+    expect(atributo(p, 'aMagBase').updateRanges).toHaveLength(0);
+    p.dispose();
+  });
+});
+
+describe('10b. o cache por jd', () => {
+  it('o mesmo instante duas vezes consulta a efeméride UMA vez', () => {
+    const p = camada();
+    const fonte = espiao();
+    p.escreverInstante(EPOCA_JD_TDB + 1000, fonte);
+    const depoisDaPrimeira = fonte.chamadas;
+    expect(p.escreverInstante(EPOCA_JD_TDB + 1000, fonte)).toBe(false);
+    expect(fonte.chamadas).toBe(depoisDaPrimeira);
+    p.dispose();
+  });
+
+  it('instante não-finito é recusado sem tocar na efeméride', () => {
+    const p = camada();
+    const fonte = espiao();
+    expect(p.escreverInstante(Number.NaN, fonte)).toBe(false);
+    expect(p.escreverInstante(Number.POSITIVE_INFINITY, fonte)).toBe(false);
+    expect(fonte.chamadas).toBe(0);
+    p.dispose();
+  });
+
+  it('voltar à época devolve o retrato EXATO — a ida e a volta fecham', () => {
+    const p = camada();
+    const retrato = copia(p, 'position');
+    const magRetrato = copia(p, 'aMagBase');
+    p.escreverInstante(EPOCA_JD_TDB + 3000, motorReal());
+    p.escreverInstante(EPOCA_JD_TDB, motorReal());
+    const volta = copia(p, 'position');
+    const magVolta = copia(p, 'aMagBase');
+    for (let i = 0; i < retrato.length; i++) {
+      expect(Object.is(retrato[i], volta[i]), `position[${i}]`).toBe(true);
+    }
+    for (let i = 0; i < magRetrato.length; i++) {
+      expect(Object.is(magRetrato[i], magVolta[i]), `aMagBase[${i}]`).toBe(true);
+    }
+    p.dispose();
+  });
+
+  it('o Sol é a origem em qualquer instante — o vértice 0 não se mexe', () => {
+    const p = camada();
+    p.escreverInstante(EPOCA_JD_TDB + 5000, motorReal());
+    const pos = atributo(p, 'position');
+    expect(pos.getX(0)).toBe(0);
+    expect(pos.getY(0)).toBe(0);
+    expect(pos.getZ(0)).toBe(0);
+    expect(atributo(p, 'aMagBase').getX(0)).toBe(Math.fround(PONTO_ZERO_SOL_PC));
+    p.dispose();
+  });
+});
+
+describe('10c. o oráculo da magnitude viva', () => {
+  // O periélio e o afélio de Marte na janela — VARRIDOS DA TABELA, um
+  // dia por passo ao longo de um período orbital a partir da época.
+  // Data escolhida a olho seria número chutado; isto é medida.
+  const motor = motorReal();
+  const rDe = (jd: number) => {
+    const p = motor.posicaoHeliocentrica('mars', jd);
+    return Math.hypot(p.x, p.y, p.z);
+  };
+  let jdPerielio = EPOCA_JD_TDB;
+  let jdAfelio = EPOCA_JD_TDB;
+  for (let d = 0; d <= 687; d++) {
+    const jd = EPOCA_JD_TDB + d;
+    if (rDe(jd) < rDe(jdPerielio)) jdPerielio = jd;
+    if (rDe(jd) > rDe(jdAfelio)) jdAfelio = jd;
+  }
+  const iMarte = IDS_FOTOMETRIA.indexOf('mars');
+
+  const baseEsperada = (jd: number) =>
+    aMagBaseDe(FOTOMETRIA.mars.H, rDe(jd)) + DESLOCAMENTO_UA_PARA_PC;
+
+  it('a varredura achou uma órbita de verdade (excentricidade de Marte)', () => {
+    // Marte tem e ≈ 0,0934: r vai de ~1,381 a ~1,666 UA
+    expect(rDe(jdPerielio)).toBeGreaterThan(1.35);
+    expect(rDe(jdPerielio)).toBeLessThan(1.42);
+    expect(rDe(jdAfelio)).toBeGreaterThan(1.63);
+    expect(rDe(jdAfelio)).toBeLessThan(1.70);
+  });
+
+  it('`aMagBase` escrito é o VALOR que a efeméride manda, nas duas pontas', () => {
+    for (const jd of [jdPerielio, jdAfelio]) {
+      const p = camada();
+      p.escreverInstante(jd, motorReal());
+      expect(atributo(p, 'aMagBase').getX(iMarte)).toBe(Math.fround(baseEsperada(jd)));
+      p.dispose();
+    }
+  });
+
+  it('perto do Sol o corpo fica MAIS brilhante, e por 5·log10(r_af/r_pe)', () => {
+    const esperado = 5 * Math.log10(rDe(jdAfelio) / rDe(jdPerielio));
+    expect(baseEsperada(jdAfelio) - baseEsperada(jdPerielio)).toBeCloseTo(esperado, 12);
+    // magnitude MAIOR é mais fraco: o afélio tem de estar acima
+    expect(baseEsperada(jdAfelio)).toBeGreaterThan(baseEsperada(jdPerielio));
+    expect(esperado).toBeGreaterThan(0.35);
+  });
+
+  /** o m que a GPU vai desenhar na vista `ua150`, lido dos atributos */
+  const mNaVista = (jd: number) => {
+    const cam = camera(0.00072722, UP_DO_QUADRO);
+    const p = camada();
+    p.escreverInstante(jd, motorReal());
+    const pos = atributo(p, 'position');
+    const x = pos.getX(iMarte);
+    const y = pos.getY(iMarte);
+    const z = pos.getZ(iMarte);
+    const c = cam.position;
+    const fase = faseDoVertice(x, y, z, c.x, c.y, c.z);
+    const dPc = Math.hypot(c.x - x, c.y - y, c.z - z);
+    const m = magDoVertice(atributo(p, 'aMagBase').getX(iMarte), dPc, fase);
+    p.dispose();
+    return { m, fase, dPc };
+  };
+
+  it('o m vivo é o que a LEI DA F1 devolve para a efeméride daquele instante', () => {
+    // ORÁCULO CRUZADO, o mesmo que julga a tabela congelada mais acima:
+    // a lei planetária da F1 (`magAparente`, em UA) contra o espelho do
+    // vertex (em pc). Aqui ela é alimentada com o `r` VIVO, e é isso que
+    // separa "a magnitude mudou" de "a magnitude mudou pelo motivo
+    // certo".
+    for (const jd of [jdPerielio, jdAfelio]) {
+      const vista = mNaVista(jd);
+      const esperado = magAparente(
+        aMagBaseDe(FOTOMETRIA.mars.H, rDe(jd)),
+        vista.dPc * UA_POR_PC,
+        vista.fase
+      );
+      expect(vista.m, `jd ${jd}`).toBeCloseTo(esperado, 5);
+    }
+  });
+
+  it('com a fase neutralizada, o periélio é MAIS brilhante que o afélio', () => {
+    // a fase entra na conta e anda junto (Marte muda de longitude entre
+    // as duas datas); o que o `r` sozinho manda é isto, e é medido:
+    const so = (jd: number) => {
+      const v = mNaVista(jd);
+      return magDoVertice(Math.fround(baseEsperada(jd)), v.dPc, 1);
+    };
+    expect(so(jdPerielio)).toBeLessThan(so(jdAfelio));
+    // e a diferença é EXATAMENTE os dois termos de distância: o do Sol
+    // ao corpo (o que a época congelava) mais o do corpo ao observador,
+    // que a 150 UA vale ~0,008 mag e não some por ser pequeno
+    const dPerielio = mNaVista(jdPerielio).dPc;
+    const dAfelio = mNaVista(jdAfelio).dPc;
+    expect(so(jdAfelio) - so(jdPerielio)).toBeCloseTo(
+      baseEsperada(jdAfelio)
+        - baseEsperada(jdPerielio)
+        + 5 * Math.log10(dAfelio / dPerielio),
+      5
+    );
+    // e o m COMPLETO das duas datas também difere — o corpo não fica
+    // com o brilho de janeiro o ano inteiro, que é o defeito que a D2
+    // manda não cometer
+    expect(mNaVista(jdPerielio).m).not.toBe(mNaVista(jdAfelio).m);
+  });
+
+  it('a posição também anda: nenhum corpo do retrato fica onde estava', () => {
+    const p = camada();
+    const antes = copia(p, 'position');
+    expect(p.escreverInstante(jdAfelio, motorReal())).toBe(true);
+    const depois = copia(p, 'position');
+    for (let i = 1; i < IDS_FOTOMETRIA.length; i++) {
+      const mudou =
+        antes[i * 3] !== depois[i * 3]
+        || antes[i * 3 + 1] !== depois[i * 3 + 1]
+        || antes[i * 3 + 2] !== depois[i * 3 + 2];
+      expect(mudou, IDS_FOTOMETRIA[i]).toBe(true);
+    }
     p.dispose();
   });
 });

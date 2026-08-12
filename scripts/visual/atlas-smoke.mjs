@@ -146,6 +146,70 @@ try {
     );
   }
 
+  // ---- 8: a máquina do tempo, medida em PIXEL ---------------------
+  // A vista é a `ua150` do gate (o desfile a olho nu, sentinela da leva)
+  // e não o enquadramento de abertura do Atlas: a 200 UA o Sol estoura o
+  // quadro e um planeta que anda não moveria um bit.
+  //
+  // E ELA VAI COM `&nobloom=1`, pela MESMA razão que a régua 3 da Onda 4
+  // (`planeta-pixel.mjs`): com o bloom ligado o quadro satura em volta do
+  // Sol e engole os planetas — MEDIDO aqui, a `ua150` e a `ua40` com
+  // bloom devolvem o MESMO md5 na época e em 2036, e as duas com
+  // `nobloom` DIFEREM. Sem o corte, o "bit-idêntico na época" seria um
+  // teste sem dentes: ele passaria mesmo com o caminho vivo errado.
+  // O A/B da porta no render DEFAULT (com bloom, as 18 vistas oficiais)
+  // continua sendo o da leva — lá o que se prova é outra coisa, que o
+  // filme não perde um pixel por a porta existir.
+  const UA150 = 'pos=0,0,0.00072722&look=0,0,0&nobloom=1';
+  await sessao.ir(`${UA150}&${PIN}`);
+  const semPorta = await sessao.md5();
+  await sessao.ir(`${UA150}&jd=EPOCA&${PIN}`);
+  const naEpoca = await sessao.md5();
+  conferir(
+    semPorta === naEpoca,
+    '?jd=EPOCA é NEUTRA: a efeméride viva na época reproduz o retrato bit a bit'
+      + ` (${semPorta} vs ${naEpoca})`
+  );
+  await sessao.ir(`${UA150}&jd=2465000&${PIN}`);
+  const noutroDia = await sessao.md5();
+  conferir(
+    noutroDia !== semPorta,
+    `e outro instante é OUTRO céu — os corpos andaram (${noutroDia} ≠ ${semPorta})`
+  );
+  const tempoDoLink = await sessao.js('JSON.stringify(window.__director.tempo)');
+  conferir(
+    JSON.parse(tempoDoLink).jd === 2465000 && JSON.parse(tempoDoLink).aviso === '',
+    `?jd= chega ao mostrador sem aviso: ${tempoDoLink}`
+  );
+
+  // ---- 9: SEM REDE, a camada congela no retrato e ninguém grita ----
+  // Corta só o caminho do DADO (`data/atlas/efemerides*`), nunca o do
+  // módulo: bloquear o import seria testar o empacotador, não o
+  // fallback. O mesmo binário dos dois lados, e a mesma vista sem bloom
+  // da prova 8 — que é onde a diferença aparece.
+  await sessao.bloquear(['*data/atlas/efemerides*']);
+  sessao.limparGritos();
+  await sessao.ir(`${UA150}&jd=2465000&${PIN}`);
+  const semRede = await sessao.md5();
+  conferir(
+    semRede === semPorta,
+    `sem efeméride, a camada fica EXATA no retrato (${semRede} vs ${semPorta})`
+  );
+  await sessao.ir('atlas=1&jd=2465000&q=cinema&shot=1');
+  const badge = await sessao.js(
+    "(document.querySelector('.atlas-tempo-aviso')||{}).textContent||''"
+  );
+  conferir(
+    /sem efem[ée]ride/.test(badge),
+    `e o badge conta a verdade ao visitante: "${badge}"`
+  );
+  const gritos = sessao.gritos();
+  conferir(
+    gritos.length === 0,
+    `sem rede, ZERO grito de console (${gritos.join(' | ') || 'nenhum'})`
+  );
+  await sessao.bloquear([]);
+
   await sessao.reduzirMovimento();
   await sessao.ir('t=100&q=cinema');
   await sessao.js("[...document.querySelectorAll('.controls-bar button')]"

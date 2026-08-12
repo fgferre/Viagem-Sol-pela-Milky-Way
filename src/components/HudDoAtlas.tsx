@@ -25,6 +25,7 @@ import {
   estadoDoSelo,
 } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
+import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
 
 /**
  * A CONTEXTLINE: o que está EM QUADRO. Segue o padrão do `Caption` do
@@ -170,6 +171,110 @@ export function Selo({
         {PROCEDENCIA.medido.rotulo}: {PROCEDENCIA.medido.oQue} ·{' '}
         {PROCEDENCIA.derivado.rotulo}: {PROCEDENCIA.derivado.oQue} ·{' '}
         {PROCEDENCIA.artistico.rotulo}: {PROCEDENCIA.artistico.oQue}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * A MÁQUINA DO TEMPO (F4/D2). Uma linha de leitura — o instante do céu
+ * em pt-BR — e seis controles: o sentido em três botões, a velocidade
+ * num que cicla a escada, o AO VIVO e a volta à época do retrato.
+ *
+ * O QUE ELA NÃO É: o slider de capítulos do filme. Aquele é o tempo da
+ * VIAGEM e não entra no Atlas (D6); este é o tempo do CÉU, e os dois
+ * andam em réguas que não se encontram — um mede minutos de narrativa,
+ * o outro, séculos de efeméride.
+ *
+ * ALTURA FIXA, pela mesma razão do selo: o retângulo útil do
+ * enquadramento (`atlasRig.ts`) desconta esta faixa, e um bloco que
+ * cresce quando aparece um aviso moveria a câmera. Por isso a linha do
+ * aviso está SEMPRE montada — vazia quando não há o que avisar — e é
+ * ela, e não uma que aparece e some, que carrega o `aria-live`: região
+ * viva que nasce junto com a mensagem costuma não ser anunciada.
+ *
+ * A velocidade CICLA num botão só, no precedente do `1×/2×/4×` do
+ * filme: o rótulo diz sempre em que degrau se está, e oito botões de
+ * taxa seriam um painel, não um HUD.
+ */
+export function BarraDoTempo({
+  tempo,
+  onSentido,
+  onDegrau,
+  onAoVivo,
+  onEpoca,
+}: {
+  tempo: EstadoDoTempo;
+  onSentido: (sentido: SentidoDoTempo) => void;
+  onDegrau: () => void;
+  onAoVivo: () => void;
+  onEpoca: () => void;
+}) {
+  const { data, taxa, sentido, aoVivo, naEpoca, aviso } = tempo;
+  const parado = sentido === 0 && !aoVivo;
+  return (
+    <div className="atlas-tempo">
+      <div className="atlas-tempo-linha">
+        <span className="atlas-tempo-olho">instante do céu</span>
+        <span className="atlas-tempo-data">{data}</span>
+      </div>
+      <div className="atlas-tempo-botoes" role="group" aria-label="Máquina do tempo">
+        <button
+          type="button"
+          className="hud-btn small"
+          aria-pressed={sentido === -1}
+          aria-label="Voltar no tempo"
+          onClick={() => onSentido(sentido === -1 ? 0 : -1)}
+        >
+          ⏴
+        </button>
+        <button
+          type="button"
+          className="hud-btn small"
+          aria-label="Parar o tempo"
+          disabled={parado}
+          onClick={() => onSentido(0)}
+        >
+          ⏸
+        </button>
+        <button
+          type="button"
+          className="hud-btn small"
+          aria-pressed={sentido === 1}
+          aria-label="Avançar no tempo"
+          onClick={() => onSentido(sentido === 1 ? 0 : 1)}
+        >
+          ⏵
+        </button>
+        <button
+          type="button"
+          className="hud-btn small atlas-tempo-taxa"
+          aria-label={`Velocidade do tempo: ${taxa}. Clique para o próximo degrau.`}
+          onClick={onDegrau}
+        >
+          {taxa}
+        </button>
+        <button
+          type="button"
+          className="hud-btn small"
+          aria-pressed={aoVivo}
+          aria-label="Seguir o tempo real"
+          onClick={onAoVivo}
+        >
+          Ao vivo
+        </button>
+        <button
+          type="button"
+          className="hud-btn small"
+          aria-label="Voltar ao instante do retrato de 2026"
+          disabled={naEpoca && parado}
+          onClick={onEpoca}
+        >
+          Época
+        </button>
+      </div>
+      <p className="atlas-tempo-aviso" role="status" aria-live="polite">
+        {aviso}
       </p>
     </div>
   );

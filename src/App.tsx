@@ -11,7 +11,14 @@ import { LabelCanvas } from './components/LabelCanvas';
 import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
-import { ContextLine, GavetaDeCamadas, BotaoDaGaveta, Selo } from './components/HudDoAtlas';
+import {
+  ContextLine,
+  GavetaDeCamadas,
+  BotaoDaGaveta,
+  Selo,
+  BarraDoTempo,
+} from './components/HudDoAtlas';
+import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { Ajustes } from './components/Ajustes';
 import { CAMADAS } from './three/atlasConfig';
 import { estadoDoSelo } from './three/selo';
@@ -90,6 +97,12 @@ export default function App() {
   });
   /** o que está EM QUADRO no Atlas; null = o enquadramento de abertura */
   const [foco, setFoco] = useState<string | null>(null);
+  /**
+   * O MOSTRADOR DA MÁQUINA DO TEMPO (F4). Estado e não leitura direta
+   * como a do selo: o relógio do céu anda sozinho, e é a chegada deste
+   * evento — a 4 Hz, nunca por quadro — que faz o HUD redesenhar.
+   */
+  const [tempo, setTempo] = useState<EstadoDoTempo | null>(null);
 
   // ?loader=<id> fixa uma etapa da tela de carregamento e a mantém no ar
   // depois que o init termina — com &shot=1 (que congela transições e o
@@ -133,6 +146,7 @@ export default function App() {
         rootRef.current?.style.setProperty('--veu-atlas', `${k}`);
       },
       onFoco: setFoco,
+      onTempo: setTempo,
       });
     } catch (error) {
       // a sonda passou mas a criação real falhou (contexto despejado,
@@ -524,6 +538,18 @@ export default function App() {
           vista={directorRef.current.selo}
           onEscalaReal={() => directorRef.current?.focarNoSistema()}
           onBrilhoReal={voltarAoBrilhoReal}
+        />
+      )}
+
+      {/* A MÁQUINA DO TEMPO (F4). O Director é o dono do instante; aqui
+          só chegam os quatro gestos e o mostrador que ele publica. */}
+      {hud.tempo && tempo && (
+        <BarraDoTempo
+          tempo={tempo}
+          onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
+          onDegrau={() => directorRef.current?.ciclarDegrau()}
+          onAoVivo={() => directorRef.current?.alternarAoVivo()}
+          onEpoca={() => directorRef.current?.voltarAEpoca()}
         />
       )}
 

@@ -281,8 +281,12 @@ try {
       if (b.height === 0) return null;
       return { sel, topo: b.bottom / H, base: (H - b.top) / H };
     };
-    const pecas = ['.atlas-contexto', '.controls-bar', '.atlas-selo', '.free-hint']
-      .map(medir).filter(Boolean);
+    const pecas = [
+      '.atlas-contexto', '.controls-bar', '.atlas-selo', '.free-hint',
+      // a máquina do tempo entrou na base pela F4: sem esta linha o
+      // juiz mediria um HUD que não é mais o que está na tela
+      '.atlas-tempo',
+    ].map(medir).filter(Boolean);
     const noTopo = pecas.filter((p) => p.topo < 0.5);
     const naBase = pecas.filter((p) => p.topo >= 0.5);
     return {

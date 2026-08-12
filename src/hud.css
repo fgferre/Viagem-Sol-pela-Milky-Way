@@ -416,6 +416,72 @@
   color: rgba(190, 205, 228, 0.45);
 }
 
+/* A MÁQUINA DO TEMPO (F4): canto oposto ao do selo, logo acima da dica
+   do modo. Como o selo, ela tem ALTURA FIXA — o retângulo útil do
+   enquadramento (atlasRig.ts, TEMPO_FRACAO) desconta esta faixa, e um
+   bloco que crescesse ao aparecer um aviso moveria a câmera. Por isso a
+   linha do aviso está sempre no lugar, vazia quando não há o que dizer.
+   Nada aqui pisca ou pulsa: o estado se lê no rótulo e na borda. */
+.atlas-tempo {
+  position: fixed;
+  left: 6vw;
+  bottom: 14vh;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+/* a leitura em cima, os controles embaixo. Uma linha só cabia à custa
+   de encostar no selo quando o rótulo da taxa crescia — e rótulo que
+   muda de comprimento a cada clique não pode governar o layout */
+.atlas-tempo-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.atlas-tempo-olho {
+  font-size: 0.5rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.55);
+}
+.atlas-tempo-data {
+  font-size: 0.82rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  color: rgba(235, 240, 250, 0.92);
+}
+.atlas-tempo-botoes {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.28rem;
+}
+/* largura fixa: o rótulo da taxa muda de comprimento a cada degrau, e
+   sem isto os botões vizinhos dançariam a cada clique */
+.atlas-tempo-taxa {
+  min-width: 11rem;
+  /* o rótulo é uma frase, não um selo: com o tracking dos botões da
+     casa ele passava de 240 px e a linha alcançava o selo */
+  letter-spacing: 0.1em;
+}
+.atlas-tempo-botoes .hud-btn[aria-pressed='true'] {
+  border-color: rgba(255, 214, 150, 0.85);
+  background: rgba(255, 214, 150, 0.16);
+  color: #fff;
+}
+.atlas-tempo-botoes .hud-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.atlas-tempo-aviso {
+  margin: 0.22rem 0 0;
+  min-height: 0.8rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  color: rgba(255, 214, 150, 0.85);
+}
+
 /* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
    tipo de coisa (diálogo de controle), e um segundo vocabulário visual
    para a mesma função seria ruído */
@@ -758,6 +824,24 @@
   .controls-bar select.hud-btn {
     min-width: 0;
     max-width: 5.6rem;
+  }
+
+  /* no celular a máquina do tempo quebra linha em vez de sair da tela;
+     a faixa fica mais alta, e é por isso que o retângulo útil dela é
+     declarado com a folga da medição de mesa (atlasRig.ts) */
+  .atlas-tempo {
+    left: 4vw;
+    right: 4vw;
+  }
+  .atlas-tempo-linha {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .atlas-tempo-botoes {
+    flex-wrap: wrap;
+  }
+  .atlas-tempo-taxa {
+    min-width: 0;
   }
 
   .caption-wrap {

@@ -20,6 +20,18 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { Planetas, PLANETAS_DEFAULT_ON } from './world/planetas/planetas';
+import type { FonteDeEfemerides } from './world/planetas/planetas';
+import { EPOCA_JD_TDB } from './world/planetas/retrato2026';
+import {
+  degrauValido,
+  estadoDoTempo,
+  grampearJd,
+  lerPortaJd,
+  taxaDoDegrau,
+  DEGRAUS_DE_TEMPO,
+} from './tempoDoAtlas';
+import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
+import { dateToTDB } from '../lib/atlas/time';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -38,7 +50,7 @@ import {
   fadesDoQuadro,
   matchHeroesToCatalog,
 } from './world/lodStellar';
-import { loadStarData, WORLD } from './config';
+import { carregarEfemerides, loadStarData, WORLD } from './config';
 import type { StarsMeta } from './config';
 
 // A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
@@ -100,6 +112,23 @@ const VEU_ATLAS_S = 0.45;
  */
 const ATLAS_JOURNEY_T = SOL_PARAMS.dramaT1;
 
+/**
+ * De quanto em quanto tempo o modo AO VIVO relê o relógio do visitante,
+ * em segundos. Um: é a resolução em que a máquina do tempo fala (o
+ * mostrador é minuto a minuto) e o passo em que a camada recalcula os
+ * dez corpos — reler a 60 Hz seria pagar efeméride por quadro para
+ * mostrar o mesmo minuto sessenta vezes (D2).
+ */
+const PASSO_DO_AO_VIVO_S = 1;
+
+/**
+ * De quanto em quanto tempo o mostrador do tempo é publicado para o
+ * React enquanto o relógio anda, em segundos. Mesmo remédio da linha de
+ * rumo (`updateDest`, 4 Hz): sem ele um `setState` por quadro
+ * re-renderizaria o HUD inteiro 60×/s durante toda a viagem no tempo.
+ */
+const PASSO_DO_MOSTRADOR_S = 0.25;
+
 /** etapa viva do carregamento: `{ id, index, total, label }`, index 1…total */
 export type LoadStage = (typeof LOAD_STAGES)[number];
 export type LoadStageId = LoadStage['id'];
@@ -124,6 +153,12 @@ interface DirectorEvents {
    * ContextLine lendo o nome do sistema em vez de chutar (D6).
    */
   onFoco: (nome: string | null) => void;
+  /**
+   * O MOSTRADOR DA MÁQUINA DO TEMPO. Sai no ritmo de
+   * `PASSO_DO_MOSTRADOR_S` enquanto o relógio anda, e na hora quando o
+   * visitante mexe em alguma coisa.
+   */
+  onTempo: (estado: EstadoDoTempo) => void;
 }
 
 export class Director {
@@ -192,6 +227,39 @@ export class Director {
     leftDisk: boolean;
     pausado: boolean;
   } | null = null;
+
+  // ---- a máquina do tempo (Onda 5, F4/D2) --------------------------
+  // O DIRECTOR É O DONO DO `jd`, e é dono sozinho: a camada de planetas
+  // não tem relógio (o teste de texto-fonte dela proíbe `Date`), o HUD
+  // só desenha o que este bloco publica, e a efeméride é um serviço que
+  // chega tarde. Um segundo dono aqui seria a mesma classe de defeito
+  // que a pausa já teve (dois donos, `freezeJourney` e `rig.paused`).
+
+  /**
+   * O instante PEDIDO, em JD TDB. Nasce na época do retrato — sem isso
+   * a cena não seria a mesma de ontem no primeiro quadro. O instante
+   * MOSTRADO é este grampeado na janela da tabela (`get tempo`).
+   */
+  private jdPedido = EPOCA_JD_TDB;
+  /** degrau na escada de taxas (`tempoDoAtlas`) */
+  private degrau = 0;
+  /** sentido do relógio: 0 é parado, e parado é como o Atlas abre */
+  private sentidoDoTempo: SentidoDoTempo = 0;
+  /** o relógio segue o tempo real do visitante */
+  private aoVivo = false;
+  /** a fonte viva; `null` enquanto ninguém pediu, ou se a rede faltou */
+  private efemeride: FonteDeEfemerides | null = null;
+  private faseDaEfemeride: FaseDaEfemeride = 'retrato';
+  /** acumuladores do passo do AO VIVO e do mostrador */
+  private relogioAoVivo = 0;
+  private mostradorTimer = 0;
+  /**
+   * O relógio bateu na borda da tabela e PAROU ali. Uma máquina do
+   * tempo honesta faz isso: a fita acaba, ela para na última volta e
+   * diz. A alternativa — deixar o pedido correr para fora da janela —
+   * cobraria do visitante o mesmo tempo de volta que ele gastou indo.
+   */
+  private naParede = false;
 
   /** véu do Atlas: 0 = aberto, 1 = fechado */
   private veu = 0;
@@ -309,6 +377,20 @@ export class Director {
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
     this.expOverride = this.debug.has('exp');
+    // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
+    // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
+    // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
+    // "com a porta" desse A/B — ele acende o caminho vivo INTEIRO
+    // (busca, decodificação, escrita dos dois atributos) num instante
+    // em que o resultado tem de ser o retrato bit a bit.
+    if (this.debug.has('jd')) {
+      const pedido = lerPortaJd(this.debug.get('jd'), EPOCA_JD_TDB);
+      if (pedido === null) console.warn('?jd= inválido:', this.debug.get('jd'));
+      else {
+        this.jdPedido = pedido;
+        this.garantirEfemerides();
+      }
+    }
     this.reducedMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -613,6 +695,9 @@ export class Director {
     this.escritorDeCamera = ESCRITOR_DE_CAMERA[p];
     this.roam.enabled = this.escritorDeCamera === 'voo';
     this.events.onPhase(p);
+    // o HUD da fase nova pode ter mostrador de tempo, e ele monta com o
+    // valor de agora em vez de esperar o primeiro passo do relógio
+    this.publicarTempo();
     this.perturbar();
   }
 
@@ -685,7 +770,15 @@ export class Director {
       // Atlas em si não anima — o reposicionamento acontece atrás do
       // véu —, então este é o único termo novo que a fase traz.
       this.veu > 0 ||
-      this.veuPendente !== null;
+      this.veuPendente !== null ||
+      // A MÁQUINA DO TEMPO (F4): relógio andando é cena mudando, e
+      // efeméride em voo é uma mudança JÁ PEDIDA que ainda não chegou.
+      // Sem os dois termos, o `?jd=` do gate poderia ser capturado no
+      // quadro anterior à escrita do instante — e a captura mediria a
+      // corrida, não a imagem.
+      this.aoVivo ||
+      this.sentidoDoTempo !== 0 ||
+      this.faseDaEfemeride === 'buscando';
     return {
       pronto:
         this.phase !== 'loading' &&
@@ -1127,6 +1220,158 @@ export class Director {
     return this.retomada?.journeyT ?? null;
   }
 
+  // ---- a máquina do tempo (F4/D2) ----------------------------------
+
+  /**
+   * O MOSTRADOR, somente leitura — como o `captura` e o `selo`. A conta
+   * inteira (grampo, aviso, rótulos) mora no módulo puro; aqui só se
+   * juntam os cinco campos de estado que este objeto guarda.
+   */
+  get tempo(): EstadoDoTempo {
+    return estadoDoTempo({
+      jdPedido: this.jdPedido,
+      jdDaEpoca: EPOCA_JD_TDB,
+      degrau: this.degrau,
+      sentido: this.sentidoDoTempo,
+      aoVivo: this.aoVivo,
+      efemeride: this.faseDaEfemeride,
+      naParede: this.naParede,
+    });
+  }
+
+  /**
+   * BUSCA A EFEMÉRIDE, UMA VEZ E TARDE. Ninguém que só quer ver o filme
+   * paga um byte disto: quem chama são a porta `?jd=` e os controles do
+   * tempo no HUD do Atlas, e o download é abortado pelo mesmo signal de
+   * todo o resto.
+   *
+   * SEM REDE NÃO HÁ GRITO. A camada continua no retrato congelado e o
+   * badge do HUD conta a verdade ao visitante — um `console.error` aqui
+   * seria ruído num caminho em que a degradação é o comportamento
+   * projetado, e o gate da fase cobra console limpo. Falhou uma vez,
+   * uma segunda tentativa é permitida: quem clicou de novo pediu de
+   * novo.
+   */
+  private garantirEfemerides() {
+    if (this.efemeride || this.faseDaEfemeride === 'buscando') return;
+    this.faseDaEfemeride = 'buscando';
+    this.publicarTempo();
+    carregarEfemerides(this.abortController.signal)
+      .then(({ motor }) => {
+        if (this.disposed) return;
+        this.efemeride = motor;
+        this.faseDaEfemeride = 'viva';
+        // o instante vai ser reescrito no tick seguinte: a imagem pode
+        // mudar, e a contagem de estabilidade da captura recomeça
+        this.perturbar();
+        this.publicarTempo();
+      })
+      .catch((error: unknown) => {
+        if (this.disposed) return;
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        this.faseDaEfemeride = 'indisponivel';
+        this.publicarTempo();
+      });
+  }
+
+  /**
+   * ⏴ ⏸ ⏵ — o sentido em que o relógio anda. Sair do parado desliga o
+   * AO VIVO: os dois são modos de relógio, e ter os dois ligados seria
+   * o visitante disputando a data com o próprio calendário.
+   */
+  andarNoTempo(sentido: SentidoDoTempo) {
+    this.sentidoDoTempo = sentido;
+    this.naParede = false;
+    if (sentido !== 0) {
+      this.aoVivo = false;
+      this.garantirEfemerides();
+    }
+    this.perturbar();
+    this.publicarTempo();
+  }
+
+  /** o próximo degrau da escada, dando a volta — precedente do `1×/2×/4×` */
+  ciclarDegrau(): number {
+    this.degrau = degrauValido((this.degrau + 1) % DEGRAUS_DE_TEMPO);
+    this.garantirEfemerides();
+    // troca de taxa muda o que a tela vai mostrar no quadro seguinte
+    this.perturbar();
+    this.publicarTempo();
+    return this.degrau;
+  }
+
+  /**
+   * AO VIVO: o céu no instante em que o visitante está. A data sai do
+   * conversor único da casa (`dateToTDB`, regra M6) — nunca de uma
+   * conta de milissegundos aqui dentro.
+   */
+  alternarAoVivo() {
+    this.aoVivo = !this.aoVivo;
+    this.naParede = false;
+    if (this.aoVivo) {
+      this.sentidoDoTempo = 0;
+      this.relogioAoVivo = PASSO_DO_AO_VIVO_S; // o primeiro tick já lê o relógio
+      this.garantirEfemerides();
+    }
+    this.perturbar();
+    this.publicarTempo();
+  }
+
+  /**
+   * VOLTAR À ÉPOCA — o retrato congelado de 2026, que é o que a cena
+   * mostra quando ninguém mexeu em nada. Não busca efeméride nenhuma:
+   * se ela nunca chegou, a camada já está exatamente aqui.
+   */
+  voltarAEpoca() {
+    this.jdPedido = EPOCA_JD_TDB;
+    this.sentidoDoTempo = 0;
+    this.aoVivo = false;
+    this.naParede = false;
+    this.perturbar();
+    this.publicarTempo();
+  }
+
+  /** o mostrador sai agora, e o relógio do mostrador recomeça */
+  private publicarTempo() {
+    this.mostradorTimer = 0;
+    this.events.onTempo(this.tempo);
+  }
+
+  /**
+   * O RELÓGIO, um passo. Fora de qualquer movimento no tempo o método
+   * inteiro é um teste falso — o filme não paga por ele.
+   *
+   * O grampo PARA na borda em vez de deixar o pedido correr para fora:
+   * ver `naParede`. O AO VIVO relê o calendário a 1 Hz (D2), que é a
+   * resolução em que o mostrador fala.
+   */
+  private andarORelogio(dt: number) {
+    if (!this.aoVivo && this.sentidoDoTempo === 0) return;
+    if (this.aoVivo) {
+      this.relogioAoVivo += dt;
+      if (this.relogioAoVivo >= PASSO_DO_AO_VIVO_S) {
+        this.relogioAoVivo = 0;
+        const agora = dateToTDB(new Date());
+        const grampeado = grampearJd(agora);
+        this.naParede = grampeado !== agora;
+        this.jdPedido = grampeado;
+      }
+    } else {
+      const bruto =
+        this.jdPedido + (this.sentidoDoTempo * taxaDoDegrau(this.degrau) * dt) / 86400;
+      const grampeado = grampearJd(bruto);
+      this.jdPedido = grampeado;
+      if (grampeado !== bruto) {
+        this.naParede = true;
+        this.sentidoDoTempo = 0;
+        this.publicarTempo();
+        return;
+      }
+    }
+    this.mostradorTimer += dt;
+    if (this.mostradorTimer >= PASSO_DO_MOSTRADOR_S) this.publicarTempo();
+  }
+
   /**
    * A CÂMERA SALTOU. Entrar no Atlas, partir dele e trocar de
    * enquadramento não são voo — a câmera aparece noutro lugar. Além de
@@ -1252,6 +1497,12 @@ export class Director {
       }
       this.events.onVeu(this.veu);
     }
+
+    // O RELÓGIO DO CÉU, antes de tudo que lê posição: se o instante
+    // mudar neste quadro, a camada de planetas já o vê escrito. Parado
+    // (o estado de nascimento, e o do filme inteiro) o método devolve
+    // na primeira linha.
+    this.andarORelogio(dt);
 
     if (this.phase === 'journey') {
       if (!this.freezeJourney) this.journeyT += dt * this.playbackRate;
@@ -1409,6 +1660,16 @@ export class Director {
     if (this.planetas) {
       this.planetas.ligado =
         (PLANETAS_DEFAULT_ON || this.debug.has('plan')) && !this.hide.has('noplan');
+      // A MÁQUINA DO TEMPO (F4/D2), ANTES do quadro e fora dele: o
+      // método vivo tem cache por jd e devolve na primeira linha quando
+      // o instante não mudou, que é o caso de todo quadro do filme e de
+      // todo quadro do Atlas parado. Sem efeméride carregada a camada
+      // fica exatamente no retrato — o caminho honesto do "sem rede".
+      // `grampearJd` e não `this.tempo`: o mostrador formata strings e
+      // aloca um objeto — ele é para o HUD, a 4 Hz, não para o quadro.
+      if (this.efemeride) {
+        this.planetas.escreverInstante(grampearJd(this.jdPedido), this.efemeride);
+      }
       this.planetas.update(dHome, hPx, cam.position);
     }
     this.dust.update(cam.position, hPx, time);

@@ -91,6 +91,22 @@ const CONTEXTO_FRACAO = 0.075;
 const SELO_FRACAO = 0.14;
 
 /**
+ * A MÁQUINA DO TEMPO (F4), na BASE e à ESQUERDA — o canto oposto ao do
+ * selo. Ela e o selo dividem a mesma faixa de baixo, e por isso o que
+ * entra no retângulo é o MAIOR dos dois e não a soma: descontar as
+ * duas alturas empurraria a câmera para trás por uma faixa que ninguém
+ * ocupa inteira.
+ *
+ * MEDIDO pelo juiz de a11y a 1200×900: `.atlas-tempo` (leitura em
+ * cima, seis controles embaixo, linha de aviso sempre montada) ocupa
+ * 22,0% da altura contando a tarja — 15,5% além dela. Ela PASSOU A SER
+ * a peça mais alta do modo: o selo mede 18,8% na mesma janela. 0,175
+ * declara isso com folga de ~1,5% da altura para variação de fonte, e
+ * é este número que o juiz confere contra o retângulo real.
+ */
+const TEMPO_FRACAO = 0.175;
+
+/**
  * O que o HUD come do quadro, em FRAÇÃO de cada borda. Um só produtor
  * publicado (`retanguloUtilDoAtlas`) — o Atlas não é letterboxed por
  * conta própria, ele desconta as áreas REAIS do HUD dele.
@@ -127,7 +143,7 @@ export function retanguloUtilDoAtlas(): RetanguloUtil {
     esquerda: 0,
     direita: 0,
     topo: LETTERBOX_FRACAO + CONTEXTO_FRACAO,
-    base: LETTERBOX_FRACAO + SELO_FRACAO,
+    base: LETTERBOX_FRACAO + Math.max(SELO_FRACAO, TEMPO_FRACAO),
   };
 }
 

@@ -65,12 +65,16 @@ describe('as fases e os dois mapas', () => {
     expect(atlas.contexto).toBe(true);
     expect(atlas.gaveta).toBe(true);
     expect(atlas.selo).toBe(true);
+    // e a da F4: a máquina do tempo — o tempo do CÉU, que não é o
+    // tempo do filme (esse é o `progresso`, e ele fica de fora)
+    expect(atlas.tempo).toBe(true);
   });
 
   it('as peças do Atlas não vazam para o filme', () => {
     expect(FASES.filter((f) => HUD_POR_FASE[f].contexto)).toEqual(['atlas']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].gaveta)).toEqual(['atlas']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].selo)).toEqual(['atlas']);
+    expect(FASES.filter((f) => HUD_POR_FASE[f].tempo)).toEqual(['atlas']);
   });
 
   it('só a viagem tem os botões da viagem, e só o Atlas tem o Partir', () => {

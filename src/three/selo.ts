@@ -107,6 +107,9 @@ export const ARQUIVOS_GOVERNADOS = [
   'three/core/post.ts',
   'three/atlasConfig.ts',
   'three/selo.ts',
+  // a máquina do tempo governa a imagem (ela move os dez corpos e
+  // reescreve a magnitude deles): porta nova ali tem de se declarar
+  'three/tempoDoAtlas.ts',
   'components/Ajustes.tsx',
   'components/HudDoAtlas.tsx',
 ] as const;
@@ -217,6 +220,31 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   camada('noco'),
   camada('noforge'),
   // --- portas que NÃO mexem na luz, declaradas ----------------------
+  /**
+   * `?jd=` — O INSTANTE DO CÉU (F4/D2), e a decisão fica POR ESCRITO
+   * porque ela não é óbvia: mover o tempo MUDA A IMAGEM (os planetas
+   * saem do lugar e trocam de brilho) e mesmo assim NÃO é desvio de
+   * BRILHO.
+   *
+   * O eixo BRILHO responde "o que se vê é a fotometria da casa ou uma
+   * fotometria ajustada?". Um planeta em 12 de março de 2031 está no
+   * lugar em que a efeméride diz que ele está, com a magnitude que a
+   * mesma lei de sempre calcula para o `r` daquele dia — é DADO
+   * MEDIDO, do mesmo tier do catálogo (o registro dos tiers já diz
+   * "medido: catálogo e efeméride"). Chamar isso de desvio seria dizer
+   * que o céu só é honesto em 1º de janeiro de 2026, o que é a
+   * mentira contrária.
+   *
+   * Nem por isso o tempo é mudo sobre si: a máquina tem badge PRÓPRIO
+   * — a janela 1950–2050 da tabela e o "sem efeméride: congelado no
+   * retrato" (`tempoDoAtlas.ts`). Essa é a honestidade que o assunto
+   * pede, e ela vive onde o assunto está, não pendurada num eixo que
+   * fala de outra coisa.
+   *
+   * Na mesma família de `?t=` e `?pos=`: dizem QUANDO e DE ONDE se
+   * olha, nunca com quanta luz.
+   */
+  neutra('jd', 'instante do céu (efeméride, não ajuste)'),
   neutra('t', 'instante da viagem'),
   neutra('play', 'retomar a viagem andando'),
   neutra('freeze', 'congelar o relógio da viagem'),

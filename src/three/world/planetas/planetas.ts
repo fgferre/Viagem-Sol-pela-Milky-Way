@@ -23,10 +23,17 @@
 // origem em 0,1134 UA MEDIDOS, além de morrer na quantização de float32
 // (o epsilon a 8.150 pc é ~100 UA — risco declarado no mapa da casa).
 //
-// As posições são ESTÁTICAS: escritas UMA vez no construtor, a partir
-// da época FIXA (`retrato2026.ts`, D4). Nenhum relógio de runtime,
-// nenhuma efeméride viva — o anti-padrão nº 6 da casa, também pinado
-// pela ausência.
+// As posições NASCEM ESTÁTICAS: escritas UMA vez no construtor, a
+// partir da época FIXA (`retrato2026.ts`, D4). É esse o estado do
+// filme, e ele não tem relógio nenhum — o anti-padrão nº 6 da casa
+// continua pinado pela ausência de `Date` neste arquivo.
+//
+// A MÁQUINA DO TEMPO (Onda 5, F4/D2) não desfaz isso: ela acrescenta um
+// SEGUNDO caminho, `escreverInstante`, que só roda quando alguém de
+// fora entrega um `jd` e uma fonte de efeméride. O relógio é do
+// Director — a camada nunca pergunta que horas são, e por isso o teste
+// de texto-fonte que proíbe `Date` aqui segue valendo palavra por
+// palavra. Sem esse chamador, esta camada é exatamente a da Onda 4.
 //
 // ------------------------------------------------------------
 // 2. UMA CONVENÇÃO SÓ DE MAGNITUDE — o porquê de `aMagBase` ser em pc
@@ -96,8 +103,8 @@ import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGalactico';
 import { GLSL_STAR_PSF } from '../../shaders/common';
 import { STAR_FRAG } from '../../shaders/starShaders';
-import { DEEP_LIMIAR_PC, deepPointGain } from '../lodStellar';
-import { A_MAG_BASE, FOTOMETRIA, IDS_FOTOMETRIA } from './fotometria';
+import { DEEP_LIMIAR_PC, deepPointGain, needsAttributeWrite } from '../lodStellar';
+import { A_MAG_BASE, FOTOMETRIA, IDS_FOTOMETRIA, aMagBaseDe } from './fotometria';
 import { EPOCA_ISO, EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
 /**
@@ -313,6 +320,21 @@ export interface PsfDoCampo {
   readonly sigmaPx: number;
 }
 
+/**
+ * O que a camada precisa da efeméride — e NADA além disto. O
+ * `MotorEfemerides` (`lib/atlas/efemerides.ts`) satisfaz esta forma
+ * sem saber que ela existe, e assim a camada não importa o motor: o
+ * módulo dele carrega tabela, cache, registro orbital e os elementos
+ * de Kepler, peso que o filme não paga porque o Director só o busca
+ * quando o visitante mexe no tempo. Mesmo padrão do `PsfDoCampo`.
+ */
+export interface FonteDeEfemerides {
+  posicaoHeliocentrica(
+    bodyId: string,
+    jdTdb: number
+  ): { x: number; y: number; z: number };
+}
+
 export class Planetas {
   readonly points: THREE.Points;
   readonly material: THREE.ShaderMaterial;
@@ -331,6 +353,17 @@ export class Planetas {
   private gainAnterior = NaN;
   /** rascunho da projeção do `?dbgplan` (fora do caminho do quadro). */
   private readonly rascunho = new THREE.Vector3();
+  /**
+   * O CACHE POR JD do caminho vivo. Nasce NaN e não na época, de
+   * propósito: assim o primeiro `escreverInstante(EPOCA)` roda a
+   * conta inteira em vez de ser engolido pelo cache — e é isso que faz
+   * o A/B de `?jd=EPOCA` provar alguma coisa (se a efeméride viva na
+   * época não reproduzisse o retrato bit a bit, as três vistas
+   * profundas mudariam de md5).
+   */
+  private jdEscrito = Number.NaN;
+  /** entrada da ponte de frame, reusada — ver `escreverInstante`. */
+  private readonly rascunhoUA: [number, number, number] = [0, 0, 0];
 
   constructor(psf: PsfDoCampo) {
     const n = IDS_FOTOMETRIA.length;
@@ -425,6 +458,93 @@ export class Planetas {
   }
 
   /**
+   * O CAMINHO VIVO (Onda 5, F4/D2) — o método PRÓPRIO que reescreve o
+   * instante. Mora FORA do `update` porque o `update` é o quadro (e os
+   * testes de texto o pinam como tal): isto aqui só roda quando o
+   * instante muda, e nunca é chamado se ninguém entregar uma fonte.
+   *
+   * ESCREVE OS DOIS ATRIBUTOS, e o segundo é o que quase se esquece: a
+   * efeméride está congelada em `position` E em `aMagBase`, porque o
+   * `aMagBase` carrega o `5·log10(r_UA)` do retrato dentro (seção 2 do
+   * cabeçalho). Mover o corpo sem recalcular a magnitude deixaria
+   * Marte no periélio com o brilho do afélio — o defeito silencioso
+   * que a decisão D2 nomeia. A aritmética do SHADER não muda uma
+   * vírgula: o que a GPU recebe continuam sendo dez floats por
+   * atributo, e é por isso que os md5 das três vistas profundas podem
+   * ser exigidos bit a bit.
+   *
+   * AS TRÊS OBRIGAÇÕES DA ESCRITA INSTANCIADA (NORTE, Onda 3), com o
+   * que cada uma vira num buffer de dez vértices:
+   *  (i) `Math.fround` ANTES de decidir — INTEGRAL, e é a que carrega
+   *      o peso: o buffer é float32 e a conta é float64. Sem ela, a
+   *      efeméride avaliada na época daria "mudou" em todo corpo e o
+   *      A/B de `?jd=EPOCA` subiria upload sem um bit diferente.
+   *  (ii) Teto de faixas — aqui o teto é ZERO: nunca se abre
+   *      `addUpdateRange`. Os dois atributos somados têm 160 bytes, e
+   *      o upload cheio deles é mais barato que a contabilidade das
+   *      faixas; o problema que o teto resolve (faixas crescendo sem
+   *      ninguém consumir enquanto o objeto está invisível) não pode
+   *      existir onde faixa nenhuma é aberta.
+   *  (iii) Latch de upload cheio — inaplicável pelo mesmo motivo: o
+   *      latch protege quem MISTURA upload cheio com faixa parcial, e
+   *      aqui todo upload é cheio.
+   *
+   * ALOCAÇÃO: duas por corpo e por INSTANTE — o `{x,y,z}` que o motor
+   * devolve e o vetor que a ponte de frame cria. A entrada da ponte é
+   * rascunho reusado. Elas não caem no quadro do filme: no filme este
+   * método nunca é chamado, e no Atlas parado o `jd` não muda e a
+   * primeira linha devolve `false`.
+   *
+   * Devolve se ALGUM valor mudou de verdade (o oráculo dos testes).
+   */
+  escreverInstante(jdTdb: number, fonte: FonteDeEfemerides): boolean {
+    if (!Number.isFinite(jdTdb) || jdTdb === this.jdEscrito) return false;
+    this.jdEscrito = jdTdb;
+    const pos = this.points.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const mag = this.points.geometry.getAttribute('aMagBase') as THREE.BufferAttribute;
+    const posArray = pos.array as Float32Array;
+    const magArray = mag.array as Float32Array;
+    let moveu = false;
+    let brilhou = false;
+    // o vértice 0 é o Sol: ele É a origem da cena em qualquer instante,
+    // e a magnitude dele a 1 pc não depende de efeméride nenhuma.
+    for (let i = 1; i < IDS_FOTOMETRIA.length; i++) {
+      const id = IDS_FOTOMETRIA[i];
+      const p = fonte.posicaoHeliocentrica(id, jdTdb);
+      this.rascunhoUA[0] = p.x;
+      this.rascunhoUA[1] = p.y;
+      this.rascunhoUA[2] = p.z;
+      // D1 de novo, e a MESMA ponte do construtor: uma rotação e uma
+      // multiplicação. Um segundo caminho aqui seria a segunda fonte de
+      // verdade que o teste de texto-fonte existe para proibir.
+      const eq = eclipticaParaEquatorial(this.rascunhoUA);
+      if (this.gravar(posArray, i * 3, eq[0] * AU_PARA_PC)) moveu = true;
+      if (this.gravar(posArray, i * 3 + 1, eq[1] * AU_PARA_PC)) moveu = true;
+      if (this.gravar(posArray, i * 3 + 2, eq[2] * AU_PARA_PC)) moveu = true;
+      // e o `r` VIVO entra na magnitude pelo conversor único da F1 —
+      // `aMagBaseDe`, o mesmo que produziu a tabela congelada.
+      const rUA = Math.hypot(p.x, p.y, p.z);
+      const base = aMagBaseDe(FOTOMETRIA[id].H, rUA) + DESLOCAMENTO_UA_PARA_PC;
+      if (this.gravar(magArray, i, base)) brilhou = true;
+    }
+    if (moveu) pos.needsUpdate = true;
+    if (brilhou) mag.needsUpdate = true;
+    return moveu || brilhou;
+  }
+
+  /**
+   * Uma escrita idempotente num Float32Array: `fround` ANTES de
+   * comparar (obrigação (i)), e nada acontece quando o slot já tem o
+   * valor. Devolve se escreveu.
+   */
+  private gravar(array: Float32Array, i: number, valor: number): boolean {
+    const alvo = Math.fround(valor);
+    if (!needsAttributeWrite(array[i], alvo)) return false;
+    array[i] = alvo;
+    return true;
+  }
+
+  /**
    * `?dbgplan` (D7) — a auditoria da régua 2, no molde do `?dbgstar`.
    * Lê o Float32Array REAL do atributo (é o que a GPU vai ler) e projeta
    * com a câmera DO QUADRO, para que a comparação com a régua 1 (vitest
@@ -443,6 +563,9 @@ export class Planetas {
     const sigmaPx = u.uSigmaPx.value as number;
     const linhas = [
       `[dbgplan] época ${EPOCA_ISO} = JD ${EPOCA_JD_TDB} TDB · ` +
+        // o instante VIVO, quando há um: é por ele que a régua sabe se
+        // está lendo o retrato ou a efeméride de outra data (F4)
+        `instante ${Number.isFinite(this.jdEscrito) ? this.jdEscrito : 'retrato'} · ` +
         `câmera a ${(dHome * UA_POR_PC).toFixed(3)} UA ` +
         `(${(dHome * AL_POR_PC).toFixed(6)} anos-luz; ${dHome} pc, régua interna) · ` +
         `tela ${larguraPx}×${alturaPx} px · uGain=${u.uGain.value} · ` +
