@@ -156,8 +156,12 @@ export function PaletaDeBusca({
   };
 
   const vazio = consultaLenta.trim().length > 0 && resultados.length === 0;
+  // o alcance vem CONTADO do índice, não digitado na copy: o dia em que o
+  // catálogo ganhar uma estrela, a frase que diz quantas são continua
+  // verdadeira sozinha
+  const quantas = indice.nomeadas.length.toLocaleString('pt-BR');
   const aviso = vazio
-    ? `nada com esse nome entre as 1.726 nomeadas — o catálogo guarda UM nome por `
+    ? `nada com esse nome entre as ${quantas} nomeadas — o catálogo guarda UM nome por `
       + `estrela, o próprio quando existe. tente ${EXEMPLOS.join(' · ')}`
     : resultados.length > 0
       ? `${resultados.length} ${resultados.length === 1 ? 'estrela' : 'estrelas'} · `

@@ -712,8 +712,11 @@
   padding: 0;
   /* teto em rem, não em vh: a lista tem no máximo oito linhas por
      contrato (LIMITE_TECLADO), e um teto em vh a faria rolar numa
-     janela baixa mesmo com três resultados */
-  max-height: 17rem;
+     janela baixa mesmo com três resultados. 18rem = as oito linhas
+     medidas (35,2 px cada a 16 px de raiz) e mais uma folga: com 17rem
+     a última ficava cortada por 10 px, que é o jeito de uma lista
+     parecer ter mais coisa do que tem */
+  max-height: 18rem;
   overflow-y: auto;
 }
 .atlas-busca-item {
