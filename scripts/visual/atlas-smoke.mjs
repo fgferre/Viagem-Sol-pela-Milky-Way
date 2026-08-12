@@ -182,6 +182,26 @@ try {
     `?jd= chega ao mostrador sem aviso: ${tempoDoLink}`
   );
 
+  // A BARRA DO TEMPO NÃO VAZA NO ?shot=2 (invariante arq#14 da onda): o
+  // `.bare-mode` só esconde FILHOS DIRETOS de `.hud-root`, e uma peça
+  // aninhada ou portalizada entraria nas 18 vistas oficiais. A leva não
+  // pega isto sozinha — lá o modo Atlas nem monta —, então a prova é
+  // aqui, na fase em que a barra existe.
+  await sessao.ir(`atlas=1&${PIN}`);
+  const barra = await sessao.js(`(() => {
+    const e = document.querySelector('.atlas-tempo');
+    return JSON.stringify({
+      existe: Boolean(e),
+      filhaDireta: Boolean(e && e.parentElement.classList.contains('hud-root')),
+      desenhada: Boolean(e && e.getClientRects().length > 0),
+    });
+  })()`);
+  const b = JSON.parse(barra);
+  conferir(
+    b.existe && b.filhaDireta && !b.desenhada,
+    `a barra do tempo é filha direta de .hud-root e o ?shot=2 a esconde (${barra})`
+  );
+
   // ---- 9: SEM REDE, a camada congela no retrato e ninguém grita ----
   // Corta só o caminho do DADO (`data/atlas/efemerides*`), nunca o do
   // módulo: bloquear o import seria testar o empacotador, não o

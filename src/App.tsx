@@ -338,6 +338,13 @@ export default function App() {
           : null;
     if (phase === 'atlas') url.searchParams.set('atlas', '1');
     else url.searchParams.delete('atlas');
+    // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: a
+    // troca de qualidade e o "voltar ao brilho real" RECARREGAM a página
+    // por esta URL, e sem esta linha o visitante que viajou no tempo
+    // voltaria à época sem ter pedido. Na época a porta sai da URL em
+    // vez de gravar o valor padrão.
+    if (tempo && !tempo.naEpoca) url.searchParams.set('jd', String(tempo.jd));
+    else url.searchParams.delete('jd');
     if (instante !== null && instante > 0.5) {
       url.searchParams.set('t', instante.toFixed(1));
       url.searchParams.set('play', '1');
