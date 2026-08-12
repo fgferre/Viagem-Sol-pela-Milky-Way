@@ -3539,6 +3539,152 @@ acessibilidade não é filtro de UI — é decidir se a informação que a cor c
 tem um canal redundante (forma, rótulo, brilho). Sem onda atribuída; pesa de
 verdade quando a UI do modo Atlas nascer (Onda 5+).
 
+## Ajustes 100% vivos — o menu não recarrega (pesquisa 2026-08-12, roadmap decidido)
+
+**A régua, dita pelo dono: nenhuma opção do painel de Ajustes recarrega a
+página — padrão AAA, UX em primeiro lugar.** Hoje só a QUALIDADE reinicia de
+verdade (com retomada via `?t=&play=1`), e três camadas recarregam por um motivo
+que **não existe mais**: os comentários de `Ajustes.tsx:9` e `director.ts:749`
+dizem que `nodisc`/`nogdust`/`noglow` "são lidas no bake", mas `bakeDiscLayers`
+roda incondicionalmente (galaxy.ts:941–1011, inclusive o 8º bake do τ na :974) e
+as três flags só governam `mesh.visible`/bind de uniform lidos POR QUADRO
+(galaxy.ts:1018, :1078, :1086–1088, :1121–1128). Comentário podre já custou
+rodada de auditoria uma vez (MARCH_B_RS); aqui custa três reloads.
+
+**Fase A — sem pré-requisito, fecha 3 dos 4 reloads:**
+
+1. `nodisc`/`noglow`/`nogdust` viram vivas: setter na `Galaxy` (escreve
+   `showDisc`/`showGlow`; `nogdust` troca `uTauMap` entre `tauRT.texture` e a
+   1×1 zerada — o τRT SEMPRE é assado), roteado pelo `setLayerHidden`, que já
+   chama `perturbar()`; `viva: true` no painel; comentários podres corrigidos.
+   O espelho de URL é o `replaceState` das vivas de hoje; o boot continua lendo
+   as mesmas flags — captura headless enxerga o mesmo nos dois sentidos.
+   (`?forgetau=1` segue decisão de boot: é debug de dosagem, não opção.)
+2. O latch da exposição fecha o furo URL↔tela: voltar o slider a 1,02 remove
+   `?exp=` (Ajustes.tsx:110) mas `expOverride` fica armado (director.ts:917) —
+   a tela mostra 1,02 fixo e a MESMA URL recarregada roda a auto-exposição
+   1,02+0,03·galaxyFade (1,05 na vista externa). Valor default limpa o latch.
+3. Escolha manual de qualidade grava `?q=` SEMPRE, inclusive cinema:
+   `changeQuality` apaga o parâmetro (App.tsx:269) e o boot seguinte cai para o
+   storage — um `tierQueRodou` medido `alta` sobrepõe o clique em Cinema.
+   Tom/exp podem omitir o default porque o default deles é CONSTANTE; o de
+   qualidade não é (storage/detecção decidem) — URL sem `?q=` não diz o que a
+   tela mostra.
+
+*Gate A:* as 12 camadas do painel trocam sem reload; ab-identidade bit-idêntico
+com a mesma flag nos dois caminhos (boot por URL e troca viva); `captura.pronto`
+recomeça a contagem em toda troca (o `perturbar()` já garante).
+
+**Fase B — os instrumentos, que já estão no roadmap (pré-requisitos da C):**
+
+1. **Worker da cadeia de carga** — item (2) da fila de 2026-08-05: 3,27 s de
+   `buildGalaxy` + 1,6 s de bakes, CPU pura e determinística; bloqueios já
+   mapeados (galaxy.ts:132/:679 leem `location.search` sem guarda; knobs por
+   mensagem).
+2. **Amostrador de memória** — entrega da Onda 6, cujo gate já cobra
+   "`renderer.info.memory` estável em troca de qualidade". É o instrumento do
+   risco §6 do PLANO-ATLAS ("alocação irreversível pelo tier" — tese nunca
+   medida).
+3. **Medir o hitch do upload**: os ~123 MiB do buffer cinema sobem num
+   `bufferData` só (a cópia de CPU é solta no upload — galaxy.ts:712–721). Se
+   custar mais de ~1 quadro, o buffer vira N fatias de `Points` enviadas uma
+   por quadro (o pool já não é frustum-culled; N draws a mais é ruído).
+
+**Fase C — troca de tier viva, double-buffer com swap atômico (depois da B):**
+
+- **Metade viva no clique** (percepção imediata): `applyQuality` já troca
+  pixelRatio, passos do raymarch, grão e tier do BH ao vivo — é o caminho que o
+  auto-quality usa DURANTE o filme (engine.ts:263–273). A decisão de
+  App.tsx:256–265 proibiu parar aí ("performance pela METADE"); a fase C
+  entrega a outra metade em segundo plano, sem véu e sem pausar o filme.
+- **Galáxia**: rebuild no Worker à densidade alvo → upload (inteiro ou fatiado,
+  conforme B3) → swap atômico no mesmo quadro (add/remove/dispose) →
+  `perturbar()`. VRAM transitória ~2× durante o swap — o amostrador julga; se a
+  alocação falhar, mantém o tier e diz.
+- **Sol**: segunda instância de `StellarBody` no tier alvo (FBM/SEG/SIM_W/H/
+  PROM são defines de compilação — stellarBody.ts:286–292), compilada com
+  `compileAsync` (o padrão do warmup, director.ts:489–531) e assentada
+  offscreen pela máquina de fatias que JÁ existe (bakeStep/8 fatias +
+  `assentado`); swap quando `assentado` — e IMEDIATO quando `sun.group` está
+  invisível, que é a maior parte do filme.
+- **Contrato de URL/captura**: `?q=` por `replaceState` no ato; um termo
+  "troca em voo" entra no getter `captura` (ao lado de `sun.assentado`) para o
+  harness esperar o swap fechar; storage/autoQuality como hoje (manual desliga).
+- **Opcional, só se o gate de grão aprovar**: downgrade instantâneo por prefixo
+  — o mesmo invariante que o PLANO-ATLAS §2 guarda para tiers do `sc1` ("mesmo
+  índice em todos os tiers"). Exige disco embaralhado pós-geração (ordem não
+  importa ao render) + ganho global 1/f — o alfa por partícula já é
+  `0,094/populationScale` (galaxy.ts:440), fluxo total conservado por
+  construção. Ressalva estatística dita: thinning de um build cinema NÃO é um
+  build performance nativo (as N_SEED sementes são as primeiras partículas e o
+  resto aglutina em volta — galaxy.ts:263–268; ralear satélites ≠ gerar menos
+  aglomerados). Só entra se miolo/borda medirem na banda (0,0667/0,1278). Se
+  entrar, downgrade custa 0 ms e o Worker só serve upgrade.
+
+*Gate C:* cinema↔performance em plena viagem sem véu, sem reload, sem perda de
+instante; `renderer.info.memory` volta ao patamar do tier alvo depois do
+dispose (o amostrador é o juiz — é a medição que o risco §6 espera); captura do
+link pós-troca bit-idêntica ao boot direto com o mesmo `?q=`.
+
+**Fase D — o automatismo de qualidade vira OPÇÃO (decisão do dono, 2026-08-12):**
+
+**O dono nunca pediu auto-detect de preset.** Hoje há QUATRO automatismos
+silenciosos: a detecção por toque/tela decide o tier inicial (engine.ts:44–51);
+o storage responde pelo aparelho na visita seguinte (engine.ts:160); o monitor
+de fps troca tier sozinho sempre que não há `?q=` (engine.ts:250–282); e a
+escolha manual de Cinema, por apagar o parâmetro, RELIGA o monitor sem o
+visitante pedir (App.tsx:269 + engine.ts:210–213). Do atlas fica só a semente —
+automatismo é ESCOLHA do visitante, não comportamento de fábrica; o mecanismo
+dele (score aditivo por sniffing + 15 overrides) segue aposentado pela linha da
+matriz do PLANO-ATLAS §2: score é palpite, e a casa tem o sinal MEDIDO com
+histerese e cooldown que o atlas admitia não ter. O desenho:
+
+1. **Auto é o 4º estado do seletor** (HUD e painel), nomeado: cinema/alta/
+   performance = PINADO, nenhum automatismo mexe; **Auto** = o modo adaptativo
+   com o sinal medido de sempre. `?q=auto` vira valor válido — o link copiado
+   carrega o modo; `?q=<tier>` segue soberano e pinado. Sem `?q=`: vale a
+   escolha persistida do visitante; sem escolha nenhuma, **default de produto
+   = cinema** — a identidade cinematográfica, nunca decisão por sniffing.
+2. **Doutrina de storage preservada com um campo novo**: `qualidadeEscolhida`
+   entra no envelope ao lado de `wikipediaLigada` (o precedente do opt-in
+   persistido já existe, Onda 8). `tierQueRodou` continua sendo ALOCAÇÃO
+   MEDIDA — consumida SÓ pelo Auto, como ponto de partida da visita seguinte.
+   Isto REVISA a precedência da Onda 1f (URL > storage > detecção) para
+   **URL > escolha do visitante > default de produto**, com medição e detecção
+   agindo apenas DENTRO do Auto — quando a D virar código, o registro da
+   Onda 1f atualiza junto.
+3. **Detecção nunca decide; medição sugere; o visitante escolhe; o Auto age.**
+   Fora do Auto o monitor continua MEDINDO (um acumulador — custo nada) mas
+   nunca troca: se o veredito diz que o tier pinado não roda, UMA sugestão
+   discreta e não-bloqueante por sessão ("está pesando — Performance? ligar o
+   Auto?"). No PRIMEIRO boot touch a mesma sugestão pode aparecer já no véu de
+   carregamento ("este aparelho sugere Performance — trocar?"), porque a
+   alocação acontece no init e sugerir depois é tarde enquanto a Fase C não
+   existir; um flag irmão de `conviteVisto` garante que é uma vez só.
+4. **O teto de GL fica**: renderer que se NOMEIA software não é gosto nem
+   palpite — cinema em SwiftShader é inviável, e o gate da Onda 1 já o cobre.
+   Em Auto, o seletor mostra o tier em que está rodando ("Auto · alta") — o
+   precedente do painel que mentia o tier é da Onda 1. Nada além disso:
+   configuração gráfica não tem relação com o selo de honestidade da Onda 5,
+   que é sobre CONTEÚDO (escala, luz), não sobre preferência de display.
+
+*Gate D:* com tier pinado, NENHUMA troca acontece sem clique (teste sob fps
+forçado baixo, por sobrevivência de valor); a sugestão aparece no máximo uma
+vez por sessão e recusa é respeitada; `?q=auto` e os três pinados reproduzem
+bit-idêntico o estado equivalente de hoje; captura headless sem `?q=` nasce
+cinema em qualquer aparelho — o harness deixa de depender de sniffing.
+
+**Fora do escopo, dito:** `?cart=off/obs` segue decisão de boot — o modo é
+congelado no bake das lâminas (galaxy.ts:915) e não é opção do painel; é
+ferramenta de A/B.
+
+Sequência: A pode já; B1/B2 já têm dono (fila de 2026-08-05 / Onda 6); C só
+depois da B — troca viva de tier sem o amostrador seria fé, exatamente o que o
+risco §6 proíbe. D é independente de B/C (a sugestão aceita usa o
+reload-com-retomada de hoje) e fica melhor depois da C, quando aceitar a
+sugestão vira troca viva; D também absorve o item 3 da Fase A (`?q=` explícito
+é o caso "pinado" da semântica nova).
+
 ## Decisões fechadas
 
 Não reabrir sem que a condição listada mude.
