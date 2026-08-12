@@ -3544,8 +3544,9 @@ verdade quando a UI do modo Atlas nascer (Onda 5+).
 **A régua, dita pelo dono: nenhuma opção do painel de Ajustes recarrega a
 página — padrão AAA, UX em primeiro lugar.** Hoje só a QUALIDADE reinicia de
 verdade (com retomada via `?t=&play=1`), e três camadas recarregam por um motivo
-que **não existe mais**: os comentários de `Ajustes.tsx:9` e `director.ts:749`
-dizem que `nodisc`/`nogdust`/`noglow` "são lidas no bake", mas `bakeDiscLayers`
+que **não existe mais**: os comentários de `Ajustes.tsx:9`, `atlasConfig.ts:45–46`
+(a tabela CAMADAS, que a Onda 5 mudou de casa) e `director.ts:961` dizem
+que `nodisc`/`nogdust`/`noglow` "são lidas no bake", mas `bakeDiscLayers`
 roda incondicionalmente (galaxy.ts:941–1011, inclusive o 8º bake do τ na :974) e
 as três flags só governam `mesh.visible`/bind de uniform lidos POR QUADRO
 (galaxy.ts:1018, :1078, :1086–1088, :1121–1128). Comentário podre já custou
@@ -3556,16 +3557,22 @@ rodada de auditoria uma vez (MARCH_B_RS); aqui custa três reloads.
 1. `nodisc`/`noglow`/`nogdust` viram vivas: setter na `Galaxy` (escreve
    `showDisc`/`showGlow`; `nogdust` troca `uTauMap` entre `tauRT.texture` e a
    1×1 zerada — o τRT SEMPRE é assado), roteado pelo `setLayerHidden`, que já
-   chama `perturbar()`; `viva: true` no painel; comentários podres corrigidos.
+   chama `perturbar()`; `viva: true` na tabela CAMADAS (`atlasConfig.ts:48–61`;
+   o ramo de reload é `alternarCamada`, App.tsx:630–641); comentários podres
+   corrigidos.
    O espelho de URL é o `replaceState` das vivas de hoje; o boot continua lendo
    as mesmas flags — captura headless enxerga o mesmo nos dois sentidos.
    (`?forgetau=1` segue decisão de boot: é debug de dosagem, não opção.)
-2. O latch da exposição fecha o furo URL↔tela: voltar o slider a 1,02 remove
-   `?exp=` (Ajustes.tsx:110) mas `expOverride` fica armado (director.ts:917) —
-   a tela mostra 1,02 fixo e a MESMA URL recarregada roda a auto-exposição
-   1,02+0,03·galaxyFade (1,05 na vista externa). Valor default limpa o latch.
+2. O latch da exposição fecha o furo URL↔tela — e a Onda 5 já construiu a
+   metade que faltava: `limparExposicaoManual()` existe (director.ts:1594,
+   nascido para a linha BRILHO do selo), mas só o selo o chama (App.tsx:593).
+   O slider segue armando o latch mesmo ao voltar a 1,02 (`trocarExposicao`,
+   App.tsx:553–561, remove `?exp=` mas chama `setExposure`) — a tela fica em
+   1,02 fixo e a MESMA URL recarregada roda a auto-exposição
+   1,02+0,03·galaxyFade (1,05 na vista externa, director.ts:1895). Falta uma
+   linha: valor default chama o caminho de volta em vez de `setExposure`.
 3. Escolha manual de qualidade grava `?q=` SEMPRE, inclusive cinema:
-   `changeQuality` apaga o parâmetro (App.tsx:269) e o boot seguinte cai para o
+   `changeQuality` apaga o parâmetro (App.tsx:501) e o boot seguinte cai para o
    storage — um `tierQueRodou` medido `alta` sobrepõe o clique em Cinema.
    Tom/exp podem omitir o default porque o default deles é CONSTANTE; o de
    qualidade não é (storage/detecção decidem) — URL sem `?q=` não diz o que a
@@ -3594,8 +3601,8 @@ recomeça a contagem em toda troca (o `perturbar()` já garante).
 
 - **Metade viva no clique** (percepção imediata): `applyQuality` já troca
   pixelRatio, passos do raymarch, grão e tier do BH ao vivo — é o caminho que o
-  auto-quality usa DURANTE o filme (engine.ts:263–273). A decisão de
-  App.tsx:256–265 proibiu parar aí ("performance pela METADE"); a fase C
+  auto-quality usa DURANTE o filme (engine.ts:276–286). A decisão de
+  App.tsx:485–497 proibiu parar aí ("performance pela METADE"); a fase C
   entrega a outra metade em segundo plano, sem véu e sem pausar o filme.
 - **Galáxia**: rebuild no Worker à densidade alvo → upload (inteiro ou fatiado,
   conforme B3) → swap atômico no mesmo quadro (add/remove/dispose) →
@@ -3603,7 +3610,7 @@ recomeça a contagem em toda troca (o `perturbar()` já garante).
   alocação falhar, mantém o tier e diz.
 - **Sol**: segunda instância de `StellarBody` no tier alvo (FBM/SEG/SIM_W/H/
   PROM são defines de compilação — stellarBody.ts:286–292), compilada com
-  `compileAsync` (o padrão do warmup, director.ts:489–531) e assentada
+  `compileAsync` (o padrão do warmup, director.ts:694–700) e assentada
   offscreen pela máquina de fatias que JÁ existe (bakeStep/8 fatias +
   `assentado`); swap quando `assentado` — e IMEDIATO quando `sun.group` está
   invisível, que é a maior parte do filme.
@@ -3629,11 +3636,11 @@ link pós-troca bit-idêntica ao boot direto com o mesmo `?q=`.
 **Fase D — o automatismo de qualidade vira OPÇÃO (decisão do dono, 2026-08-12):**
 
 **O dono nunca pediu auto-detect de preset.** Hoje há QUATRO automatismos
-silenciosos: a detecção por toque/tela decide o tier inicial (engine.ts:44–51);
-o storage responde pelo aparelho na visita seguinte (engine.ts:160); o monitor
-de fps troca tier sozinho sempre que não há `?q=` (engine.ts:250–282); e a
+silenciosos: a detecção por toque/tela decide o tier inicial (engine.ts:57–64);
+o storage responde pelo aparelho na visita seguinte (engine.ts:173); o monitor
+de fps troca tier sozinho sempre que não há `?q=` (engine.ts:263–295); e a
 escolha manual de Cinema, por apagar o parâmetro, RELIGA o monitor sem o
-visitante pedir (App.tsx:269 + engine.ts:210–213). Do atlas fica só a semente —
+visitante pedir (App.tsx:501 + engine.ts:223–226). Do atlas fica só a semente —
 automatismo é ESCOLHA do visitante, não comportamento de fábrica; o mecanismo
 dele (score aditivo por sniffing + 15 overrides) segue aposentado pela linha da
 matriz do PLANO-ATLAS §2: score é palpite, e a casa tem o sinal MEDIDO com
