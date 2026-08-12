@@ -9,13 +9,22 @@
 //   recarrega só nodisc/nogdust/noglow: lidas no BAKE do mundo, na
 //             construção — religá-las exige reconstruir.
 //
-// A URL continua sendo a fonte de verdade: o painel escreve nela em vez de
-// guardar estado próprio. Assim qualquer configuração vira link, e a captura
-// headless (?t=&shot=2) enxerga exatamente o que a tela mostra — que é o que
-// mantém scripts/visual/rodada.mjs honesto.
+// A URL continua sendo a fonte de verdade: quem escreve nela é o App, e o
+// painel só reflete e edita. Assim qualquer configuração vira link, e a
+// captura headless (?t=&shot=2) enxerga exatamente o que a tela mostra —
+// que é o que mantém scripts/visual/rodada.mjs honesto.
+//
+// DESDE A F2 DA ONDA 5 o painel não guarda mais tom, exposição nem
+// camadas: esse estado subiu para o App. Não foi arrumação — o Atlas
+// ganhou uma SEGUNDA porta para as mesmas camadas (a gaveta) e um selo
+// que declara desvio de brilho; com o estado aqui dentro, desligar uma
+// camada na gaveta deixava a caixa do painel marcada, e o selo dizendo
+// "voltei ao real" deixava o slider mostrando o valor antigo. Um estado,
+// um dono.
 // ============================================================
 import { useState } from 'react';
 import { useDialogFocus } from '../lib/dialogFocus';
+import { CAMADAS } from '../three/atlasConfig';
 import type { QualityLevel, ToneMapMode } from '../three/core/engine';
 
 const TONS: { id: ToneMapMode; nome: string; nota: string }[] = [
@@ -27,40 +36,16 @@ const TONS: { id: ToneMapMode; nome: string; nota: string }[] = [
 
 const QUALIDADES: QualityLevel[] = ['cinema', 'alta', 'performance'];
 
-// Cada flag desliga uma família. Os nomes são os que o Director já lê.
-// `viva`: o tick lê a flag a cada quadro — troca AO VIVO, sem recarregar.
-// As três restantes são lidas no BAKE do mundo e exigem reload de verdade.
-const CAMADAS: { flag: string; nome: string; viva: boolean }[] = [
-  { flag: 'nogal', nome: 'Galáxia (tudo)', viva: true },
-  { flag: 'nodisc', nome: 'Lâminas do disco', viva: false },
-  { flag: 'nogdust', nome: 'Extinção por partícula', viva: false },
-  { flag: 'noglow', nome: 'Brilho do bojo', viva: false },
-  { flag: 'nocart', nome: 'Cartografia observada', viva: true },
-  { flag: 'nonebula', nome: 'Nebulosa volumétrica', viva: true },
-  { flag: 'nowrap', nome: 'Campo envolvente', viva: true },
-  { flag: 'nocat', nome: 'Catálogo HYG', viva: true },
-  { flag: 'nohero', nome: 'Estrelas nomeadas', viva: true },
-  { flag: 'nomarker', nome: 'Marcador do Sol', viva: true },
-  { flag: 'noplan', nome: 'Planetas', viva: true },
-  { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', viva: true },
-];
-
-/** Reescreve a query preservando tudo que não é o parâmetro tocado. */
-function comParam(chave: string, valor: string | null) {
-  const q = new URLSearchParams(window.location.search);
-  if (valor === null) q.delete(chave);
-  else q.set(chave, valor);
-  const s = q.toString();
-  return `${window.location.pathname}${s ? `?${s}` : ''}`;
-}
-
 export function Ajustes({
   aberto,
   onFechar,
   qualidade,
   onQualidade,
+  tom,
   onTom,
+  exposicao,
   onExposicao,
+  escondidas,
   onCamada,
   urlParaCopiar,
 }: {
@@ -68,27 +53,21 @@ export function Ajustes({
   onFechar: () => void;
   qualidade: QualityLevel;
   onQualidade: (q: QualityLevel) => void;
+  tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
+  exposicao: number;
   onExposicao: (v: number) => void;
-  onCamada: (flag: string, escondida: boolean) => void;
+  /** flags das camadas ESCONDIDAS agora — o dono do estado é o App */
+  escondidas: ReadonlySet<string>;
+  onCamada: (flag: string, ligar: boolean) => void;
   /** a URL de agora COM o instante da viagem (App.urlComMomento) */
   urlParaCopiar: () => string;
 }) {
-  const query = new URLSearchParams(window.location.search);
-  const [tom, setTom] = useState<ToneMapMode>(
-    (query.get('tone') as ToneMapMode) || 'aces'
-  );
-  const [exp, setExp] = useState(Number(query.get('exp') ?? 1.02));
   const [copiado, setCopiado] = useState(false);
-  // estado local das camadas: a URL segue sendo a fonte de verdade, mas
-  // as flags vivas mudam sem reload — o estado dá o re-render do painel
-  const [escondidas, setEscondidas] = useState<Set<string>>(
-    () => new Set(CAMADAS.filter((c) => query.has(c.flag)).map((c) => c.flag))
-  );
 
   // O painel NÃO aplica ?tone=/?exp= na montagem: efeito de filho roda antes
   // do efeito do pai, então o Director ainda não existe aqui. Quem aplica é o
-  // App, junto de ?q= e ?pos=, depois do init. O painel só reflete e edita.
+  // App, junto de ?q= e ?pos=, depois do init.
   //
   // O Esc que ficava num listener de `window` aqui virou parte do módulo
   // único (D7): o mesmo hook que prende o foco, devolve ao gatilho e
@@ -96,34 +75,6 @@ export function Ajustes({
   const dialogo = useDialogFocus('ajustes', aberto, onFechar);
 
   if (!aberto) return null;
-
-  const trocarTom = (t: ToneMapMode) => {
-    setTom(t);
-    onTom(t);
-    window.history.replaceState(null, '', comParam('tone', t === 'aces' ? null : t));
-  };
-
-  const trocarExp = (v: number) => {
-    setExp(v);
-    onExposicao(v);
-    window.history.replaceState(null, '', comParam('exp', v === 1.02 ? null : String(v)));
-  };
-
-  const alternarCamada = (c: (typeof CAMADAS)[number], ligar: boolean) => {
-    if (!c.viva) {
-      // lidas no bake do mundo — reload de verdade
-      window.location.assign(comParam(c.flag, ligar ? null : '1'));
-      return;
-    }
-    onCamada(c.flag, !ligar);
-    setEscondidas((prev) => {
-      const s = new Set(prev);
-      if (ligar) s.delete(c.flag);
-      else s.add(c.flag);
-      return s;
-    });
-    window.history.replaceState(null, '', comParam(c.flag, ligar ? null : '1'));
-  };
 
   return (
     <div className="ajustes" aria-label="Ajustes de renderização" {...dialogo}>
@@ -146,7 +97,7 @@ export function Ajustes({
               type="radio"
               name="tom"
               checked={tom === t.id}
-              onChange={() => trocarTom(t.id)}
+              onChange={() => onTom(t.id)}
             />
             <span>{t.nome}</span>
             <em>{t.nota}</em>
@@ -155,14 +106,15 @@ export function Ajustes({
       </div>
 
       <div className="ajustes-secao">
-        <h3>Exposição · {exp.toFixed(2)}</h3>
+        <h3>Exposição · {exposicao.toFixed(2)}</h3>
         <input
           type="range"
           min="0.4"
           max="2.2"
           step="0.02"
-          value={exp}
-          onChange={(e) => trocarExp(Number(e.target.value))}
+          value={exposicao}
+          aria-label="Exposição"
+          onChange={(e) => onExposicao(Number(e.target.value))}
         />
       </div>
 
@@ -196,7 +148,7 @@ export function Ajustes({
               <input
                 type="checkbox"
                 checked={ligado}
-                onChange={() => alternarCamada(c, !ligado)}
+                onChange={() => onCamada(c.flag, !ligado)}
               />
               <span>{c.viva ? c.nome : `${c.nome} ↻`}</span>
             </label>

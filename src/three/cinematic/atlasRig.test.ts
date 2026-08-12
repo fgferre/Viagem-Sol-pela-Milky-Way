@@ -114,15 +114,38 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     expect(semiAnguloOcupado(1, comHud.distancia)).toBeCloseTo(esperado.v, 12);
   });
 
-  it('HUD simétrico não descentra: os dois giros são zero exato', () => {
+  it('o HUD do Atlas é simétrico na horizontal e NÃO na vertical: o alvo sobe o quanto o selo pede', () => {
+    const util = retanguloUtilDoAtlas();
     const { giroX, giroY } = enquadrar({
       rAlvo: 1,
       fovDeg: 35,
       aspect: 1.6,
-      retanguloUtil: retanguloUtilDoAtlas(),
+      retanguloUtil: util,
     });
+    // nada come as laterais: giro horizontal zero EXATO
+    expect(util.esquerda).toBe(0);
+    expect(util.direita).toBe(0);
     expect(giroY).toBe(0);
-    expect(giroX).toBe(0);
+    // o selo (base) é mais alto que a ContextLine (topo), então o
+    // retângulo útil tem o centro ACIMA do centro do quadro — e o alvo
+    // tem de subir junto. `rotateX(+)` levanta a câmera e leva o alvo
+    // para baixo; aqui o giro é NEGATIVO.
+    expect(util.base).toBeGreaterThan(util.topo);
+    expect(giroX).toBeLessThan(0);
+    expect(giroX).toBeCloseTo(
+      Math.atan(Math.tan((35 * GRAU) / 2) * (util.topo - util.base)),
+      15
+    );
+  });
+
+  it('as áreas do HUD do Atlas entram no retângulo, e sobra quadro de verdade', () => {
+    const util = retanguloUtilDoAtlas();
+    // as tarjas (0,065 em cada borda) são o piso: o HUD do modo SOMA
+    expect(util.topo).toBeGreaterThan(0.065);
+    expect(util.base).toBeGreaterThan(0.065);
+    // e o que sobra ainda é a maior parte do quadro — um retângulo útil
+    // que come mais da metade da altura não é HUD, é moldura
+    expect(1 - util.topo - util.base).toBeGreaterThan(0.6);
   });
 
   it('painel só à direita joga o alvo para a esquerda do quadro', () => {

@@ -307,6 +307,97 @@
   pointer-events: none;
 }
 
+/* --- HUD do modo Atlas ----------------------------------------------
+   As peças da fase 'atlas' (Onda 5, F2). Todas são filhas DIRETAS de
+   .hud-root no App: é a regra do .bare-mode (`> *:not(.scene-canvas)`)
+   que as apaga em ?shot=2, e ela só alcança filhos diretos.
+   NADA aqui pisca, pulsa ou anima: o modo é silencioso como o filme. */
+
+/* a ContextLine: o que está EM QUADRO. As áreas desta faixa e a do selo
+   entram no retângulo útil do enquadramento (atlasRig.ts) — se mudarem
+   de altura aqui, mudam lá, e o juiz de a11y mede as duas. */
+.atlas-contexto {
+  position: fixed;
+  top: 8.5vh;
+  left: 6vw;
+  z-index: 40;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: rgba(235, 240, 250, 0.92);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+.atlas-contexto-olho {
+  font-size: 0.54rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.62);
+}
+.atlas-contexto-nome {
+  font-size: 1.02rem;
+  font-weight: 300;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
+   tipo de coisa (diálogo de controle), e um segundo vocabulário visual
+   para a mesma função seria ruído */
+.atlas-gaveta {
+  position: absolute;
+  top: 6.4rem;
+  right: 1.6rem;
+  width: min(15rem, calc(100vw - 3.2rem));
+  pointer-events: auto;
+  z-index: 20;
+  padding: 0.9rem 1.1rem 1rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.86);
+  backdrop-filter: blur(14px);
+  color: rgba(235, 240, 250, 0.92);
+  font-size: 0.72rem;
+  font-weight: 300;
+}
+.atlas-gaveta-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  color: rgba(200, 214, 235, 0.7);
+  margin-bottom: 0.7rem;
+}
+.atlas-gaveta-topo button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+}
+.atlas-gaveta-topo button:hover {
+  color: #fff;
+}
+.atlas-gaveta-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.22rem 0;
+  cursor: pointer;
+}
+.atlas-gaveta-linha input {
+  accent-color: rgba(255, 200, 130, 0.9);
+  cursor: pointer;
+}
+.atlas-gaveta-icone {
+  width: 1.1rem;
+  text-align: center;
+  color: rgba(255, 214, 150, 0.8);
+}
+
 /* --- indicador de warp --- */
 .warp-vignette {
   position: fixed;

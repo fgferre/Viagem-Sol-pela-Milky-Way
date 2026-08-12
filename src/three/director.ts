@@ -116,6 +116,13 @@ interface DirectorEvents {
   onStage: (stage: LoadStage) => void;
   /** opacidade do véu do Atlas (0..1); custom property, não estado */
   onVeu: (k: number) => void;
+  /**
+   * O QUE ESTÁ EM QUADRO no Atlas — o nome do alvo enquadrado, ou
+   * `null` quando é o enquadramento de abertura (o sistema inteiro) ou
+   * quando o Director não tem nome para dar. `null` não é "vazio": é a
+   * ContextLine lendo o nome do sistema em vez de chutar (D6).
+   */
+  onFoco: (nome: string | null) => void;
 }
 
 export class Director {
@@ -960,12 +967,11 @@ export class Director {
     // no Atlas o Sol não é "uma estrela a 0 pc": clicar nele é voltar
     // para casa, o enquadramento de abertura
     if (best.key === 'sol-home' && this.phase === 'atlas') {
-      this.atlas.focarNoSistema();
-      this.teletransportou();
+      this.focarNoSistema();
       return;
     }
     if (best.key === 'sgr-a') {
-      this.irAte(GAL.GC_POS.clone(), 7);
+      this.irAte(GAL.GC_POS.clone(), 7, best.name);
       return;
     }
     const star =
@@ -980,7 +986,8 @@ export class Director {
         pos.distanceTo(this.engine.camera.position) * 0.08,
         0.8,
         9
-      )
+      ),
+      star.n
     );
   }
 
@@ -988,14 +995,30 @@ export class Director {
    * O mesmo alvo, os dois modos. O raio de enquadramento do Atlas reusa
    * a lei de aproximação que o voo livre já tinha (`arriveDist`) — não
    * há tabela nova de raios em lugar nenhum (D5).
+   *
+   * `nome` só serve ao Atlas: é o que a ContextLine passa a ler. No voo
+   * livre quem anuncia o destino é a linha de rumo, que já existe.
    */
-  private irAte(pos: THREE.Vector3, arriveDist: number) {
+  private irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
     if (this.phase === 'atlas') {
       this.atlas.focar(pos, arriveDist);
+      this.events.onFoco(nome);
       this.teletransportou();
       return;
     }
     this.roam.startVisit({ pos, arriveDist });
+  }
+
+  /**
+   * O ENQUADRAMENTO DE ABERTURA: o sistema inteiro, visto de fora da
+   * órbita mais externa. É a vista com que o Atlas abre, o destino do
+   * clique no Sol e — desde a F2 — a ação da linha ESCALA do selo, que
+   * é o único enquadramento em que o que domina o quadro é 1:1.
+   */
+  focarNoSistema() {
+    this.atlas.focarNoSistema();
+    this.events.onFoco(null);
+    this.teletransportou();
   }
 
   /** scrub pela barra de progresso (fração 0..1) */
@@ -1067,8 +1090,7 @@ export class Director {
             }
           : null;
     this.atravessarVeu(opcoes.instantaneo === true, () => {
-      this.atlas.focarNoSistema();
-      this.teletransportou();
+      this.focarNoSistema();
       this.setPhase('atlas');
     });
   }

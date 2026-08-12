@@ -68,6 +68,23 @@ export const ATLAS_FOV_GRAUS = 35;
 const LETTERBOX_FRACAO = 0.065;
 
 /**
+ * O que o HUD DO ATLAS come, além das tarjas, em fração da altura —
+ * espelho dos números que o `hud.css` usa, na mesma disciplina do
+ * `LETTERBOX_FRACAO`. Não são chutes de folga: o juiz de a11y mede os
+ * retângulos REAIS dos dois elementos no navegador e cobra que a
+ * declaração aqui os cubra (`scripts/visual/a11y.mjs`, prova "o
+ * retângulo útil cobre o HUD do Atlas"). Se a CSS crescer, o gate
+ * quebra antes de o alvo começar a ser enquadrado por baixo do selo.
+ *
+ * TOPO: `.atlas-contexto` — a ContextLine, ancorada em `top: 8,5vh`
+ * (a mesma linha da barra de controles) com ~5vh de altura.
+ * BASE: `.atlas-selo` — o selo de honestidade, ancorado em
+ * `bottom: 8,5vh` com ~7vh de altura.
+ */
+const CONTEXTO_FRACAO = 0.075;
+const SELO_FRACAO = 0.095;
+
+/**
  * O que o HUD come do quadro, em FRAÇÃO de cada borda. Um só produtor
  * publicado (`retanguloUtilDoAtlas`) — o Atlas não é letterboxed por
  * conta própria, ele desconta as áreas REAIS do HUD dele.
@@ -88,16 +105,23 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
 };
 
 /**
- * O ÚNICO produtor do retângulo útil do Atlas. Hoje só as tarjas
- * entram; a F2 acrescenta as áreas da ContextLine e do selo, e é aqui
- * que elas entram — não numa segunda conta dentro do componente.
+ * O ÚNICO produtor do retângulo útil do Atlas — tarjas de cinema mais
+ * as áreas REAIS do HUD do modo (F2). A conta não se repete dentro de
+ * componente nenhum: quem enquadra pergunta aqui.
+ *
+ * As duas áreas do HUD entram no eixo VERTICAL e não no horizontal
+ * mesmo estando encostadas nas laterais (ContextLine à esquerda, selo à
+ * direita): o retângulo é um recorte retangular do quadro, e descontar
+ * meia largura por causa de uma faixa que ocupa 7% da altura empurraria
+ * a câmera para trás sem necessidade. Descontar a FAIXA inteira é o
+ * corte honesto — é o que garante que nada do alvo caia atrás do texto.
  */
 export function retanguloUtilDoAtlas(): RetanguloUtil {
   return {
     esquerda: 0,
     direita: 0,
-    topo: LETTERBOX_FRACAO,
-    base: LETTERBOX_FRACAO,
+    topo: LETTERBOX_FRACAO + CONTEXTO_FRACAO,
+    base: LETTERBOX_FRACAO + SELO_FRACAO,
   };
 }
 

@@ -11,11 +11,30 @@ import { LabelCanvas } from './components/LabelCanvas';
 import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
+import { ContextLine, GavetaDeCamadas, BotaoDaGaveta } from './components/HudDoAtlas';
 import { Ajustes } from './components/Ajustes';
+import { CAMADAS } from './three/atlasConfig';
 import './hud.css';
 
 /** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
 const MERGE_MS = 2200;
+
+/** a exposição de referência da casa — o 1,02 da vista interna */
+const EXPOSICAO_PADRAO = 1.02;
+
+/**
+ * Reescreve a query preservando tudo que não é o parâmetro tocado.
+ * Estava dentro do painel de Ajustes enquanto ele era o único a escrever
+ * na URL; com a gaveta do Atlas e o selo mexendo nos mesmos parâmetros,
+ * subiu para o dono do estado.
+ */
+function comParam(chave: string, valor: string | null) {
+  const q = new URLSearchParams(window.location.search);
+  if (valor === null) q.delete(chave);
+  else q.set(chave, valor);
+  const s = q.toString();
+  return `${window.location.pathname}${s ? `?${s}` : ''}`;
+}
 
 export default function App() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -53,6 +72,23 @@ export default function App() {
   const [ajustes, setAjustes] = useState(
     new URLSearchParams(window.location.search).has('ajustes')
   );
+  const [gaveta, setGaveta] = useState(false);
+  // O ESTADO DE GOSTO, com um dono só (F2). Ele nasce da URL — que segue
+  // sendo a fonte de verdade — e é lido por três hospedeiros: o painel de
+  // Ajustes, a gaveta do Atlas e o selo de honestidade. Enquanto morava
+  // dentro do painel, o segundo hospedeiro nascia mentindo.
+  const [tom, setTom] = useState<ToneMapMode>(
+    () => (new URLSearchParams(window.location.search).get('tone') as ToneMapMode) || 'aces'
+  );
+  const [exposicao, setExposicao] = useState(
+    () => Number(new URLSearchParams(window.location.search).get('exp') ?? EXPOSICAO_PADRAO)
+  );
+  const [escondidas, setEscondidas] = useState<Set<string>>(() => {
+    const q = new URLSearchParams(window.location.search);
+    return new Set(CAMADAS.filter((c) => q.has(c.flag)).map((c) => c.flag));
+  });
+  /** o que está EM QUADRO no Atlas; null = o enquadramento de abertura */
+  const [foco, setFoco] = useState<string | null>(null);
 
   // ?loader=<id> fixa uma etapa da tela de carregamento e a mantém no ar
   // depois que o init termina — com &shot=1 (que congela transições e o
@@ -95,6 +131,7 @@ export default function App() {
       onVeu: (k) => {
         rootRef.current?.style.setProperty('--veu-atlas', `${k}`);
       },
+      onFoco: setFoco,
       });
     } catch (error) {
       // a sonda passou mas a criação real falhou (contexto despejado,
@@ -314,6 +351,53 @@ export default function App() {
   const entrarNoAtlas = () => directorRef.current?.entrarNoAtlas();
   const partirDoAtlas = () => directorRef.current?.partirDoAtlas();
 
+  // Um diálogo de cada vez: os dois se ancoram no mesmo canto e os dois
+  // se declaram `aria-modal` — dois modais abertos ao mesmo tempo seriam
+  // uma mentira para quem ouve a tela, além de sobreposição na tela.
+  const abrirGaveta = () => {
+    setAjustes(false);
+    setGaveta((v) => !v);
+  };
+  const abrirAjustes = () => {
+    setGaveta(false);
+    setAjustes((v) => !v);
+  };
+
+  // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
+  const trocarTom = (t: ToneMapMode) => {
+    setTom(t);
+    directorRef.current?.engine.setToneMapping(t);
+    window.history.replaceState(null, '', comParam('tone', t === 'aces' ? null : t));
+  };
+
+  const trocarExposicao = (v: number) => {
+    setExposicao(v);
+    directorRef.current?.setExposure(v);
+    window.history.replaceState(
+      null,
+      '',
+      comParam('exp', v === EXPOSICAO_PADRAO ? null : String(v))
+    );
+  };
+
+  const alternarCamada = (flag: string, ligar: boolean) => {
+    const camada = CAMADAS.find((c) => c.flag === flag);
+    if (!camada) return;
+    if (!camada.viva) {
+      // lidas no bake do mundo — reload de verdade
+      window.location.assign(comParam(flag, ligar ? null : '1'));
+      return;
+    }
+    directorRef.current?.setLayerHidden(flag, !ligar);
+    setEscondidas((prev) => {
+      const s = new Set(prev);
+      if (ligar) s.delete(flag);
+      else s.add(flag);
+      return s;
+    });
+    window.history.replaceState(null, '', comParam(flag, ligar ? null : '1'));
+  };
+
   const inJourney = phase === 'journey';
   // As peças que só decidem PRESENÇA por fase saem do mapa único
   // (`fases.ts`); as condições compostas continuam aqui, sobre ele.
@@ -386,6 +470,9 @@ export default function App() {
         </div>
       )}
 
+      {/* o que está EM QUADRO no Atlas */}
+      {hud.contexto && <ContextLine foco={foco} />}
+
       {/* dica do Atlas */}
       {phase === 'atlas' && (
         <div className="free-hint">
@@ -408,6 +495,9 @@ export default function App() {
             <button className="hud-btn small" onClick={entrarNoAtlas}>
               Entrar no Atlas
             </button>
+          )}
+          {hud.gaveta && (
+            <BotaoDaGaveta aberta={gaveta} onAlternar={abrirGaveta} />
           )}
           {hud.botaoPartir && (
             <button className="hud-btn small" onClick={partirDoAtlas}>
@@ -453,7 +543,7 @@ export default function App() {
           </select>
           <button
             className="hud-btn small"
-            onClick={() => setAjustes((v) => !v)}
+            onClick={abrirAjustes}
             aria-label="Ajustes de renderização"
             {...gatilhoDoDialogo('ajustes', ajustes)}
           >
@@ -462,16 +552,28 @@ export default function App() {
         </div>
       )}
 
+      {/* A GAVETA DE CAMADAS do Atlas — filha DIRETA de .hud-root, como o
+          painel de Ajustes e o véu: é assim que o ?shot=2 a esconde
+          junto com o resto do HUD (a regra do .bare-mode só alcança
+          filhos diretos). */}
+      <GavetaDeCamadas
+        aberta={gaveta && hud.gaveta}
+        onFechar={() => setGaveta(false)}
+        escondidas={escondidas}
+        onCamada={alternarCamada}
+      />
+
       <Ajustes
         aberto={ajustes}
         onFechar={() => setAjustes(false)}
         qualidade={quality}
         onQualidade={changeQuality}
-        onTom={(t) => directorRef.current?.engine.setToneMapping(t)}
-        onExposicao={(v) => directorRef.current?.setExposure(v)}
-        onCamada={(flag, escondida) =>
-          directorRef.current?.setLayerHidden(flag, escondida)
-        }
+        tom={tom}
+        onTom={trocarTom}
+        exposicao={exposicao}
+        onExposicao={trocarExposicao}
+        escondidas={escondidas}
+        onCamada={alternarCamada}
         urlParaCopiar={() => urlComMomento().toString()}
       />
 

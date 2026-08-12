@@ -61,6 +61,14 @@ describe('as fases e os dois mapas', () => {
     expect(atlas.veuDeTitulo).toBe(false);
     expect(atlas.botoesDaViagem).toBe(false);
     expect(atlas.botaoReviver).toBe(false);
+    // as peças da F2: a ContextLine e a gaveta de camadas
+    expect(atlas.contexto).toBe(true);
+    expect(atlas.gaveta).toBe(true);
+  });
+
+  it('as peças do Atlas não vazam para o filme', () => {
+    expect(FASES.filter((f) => HUD_POR_FASE[f].contexto)).toEqual(['atlas']);
+    expect(FASES.filter((f) => HUD_POR_FASE[f].gaveta)).toEqual(['atlas']);
   });
 
   it('só a viagem tem os botões da viagem, e só o Atlas tem o Partir', () => {

@@ -1009,9 +1009,17 @@ describe('texto-fonte da fiação no director', () => {
     expect(FONTE).toContain('EPOCA_ISO');
   });
 
-  it('o painel de Ajustes lista a camada como viva', () => {
+  // A tabela de camadas saiu do `Ajustes.tsx` na F2 da Onda 5: com a
+  // gaveta do Atlas ela ganhou um SEGUNDO leitor, e tabela com dois
+  // leitores dentro de um deles é a segunda fonte de verdade nascendo.
+  // O que este teste cobra é o mesmo de sempre — a camada dos planetas
+  // está listada como VIVA (troca sem reload) —, agora no config único.
+  it('o config único lista a camada como viva, e o painel desenha a tabela dele', () => {
+    const config = readFileSync(new URL('../../atlasConfig.ts', import.meta.url), 'utf8');
+    expect(config).toContain("{ flag: 'noplan', nome: 'Planetas', viva: true");
     const ajustes = readFileSync(new URL('../../../components/Ajustes.tsx', import.meta.url), 'utf8');
-    expect(ajustes).toContain("{ flag: 'noplan', nome: 'Planetas', viva: true }");
+    expect(ajustes).toContain("import { CAMADAS } from '../three/atlasConfig'");
+    expect(ajustes).toContain('CAMADAS.map(');
   });
 });
 

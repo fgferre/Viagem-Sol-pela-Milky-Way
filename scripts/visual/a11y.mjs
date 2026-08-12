@@ -172,7 +172,43 @@ try {
   await julgarPagina(sessao, 't=100', 'journey');
 
   // O ATLAS: os diálogos do modo novo, pelo mesmo contrato.
-  await julgarPagina(sessao, 'atlas=1', 'atlas');
+  const vivasAtlas = await julgarPagina(sessao, 'atlas=1', 'atlas');
+  conferir(
+    vivasAtlas.some((r) => r.papel === 'status' && r.v === 'polite' && r.texto),
+    'atlas: há região viva com role="status" e texto'
+      + ` (${vivasAtlas.map((r) => `${r.papel || '—'}:"${r.texto}"`).join(' · ')})`
+  );
+
+  // A REGIÃO VIVA É VIVA MESMO: mudar o foco do Atlas muda o que ela
+  // anuncia. Sem esta prova, um `aria-live` sobre texto imóvel passaria
+  // como acessibilidade — é o modo educado de não dizer nada.
+  const antes = await sessao.js(
+    "(document.querySelector('.atlas-contexto')||{}).innerText||''"
+  );
+  const tinta = await sessao.js(`(() => {
+    const c = document.querySelector('.label-canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    for (let y = 0; y < c.height; y += 2) {
+      for (let x = 0; x < c.width; x += 2) {
+        if (d[(y * c.width + x) * 4 + 3] > 200) return { x, y };
+      }
+    }
+    return null;
+  })()`);
+  if (!tinta) {
+    conferir(false, 'atlas: nenhum rótulo desenhado para clicar');
+  } else {
+    await sessao.clicar(tinta.x, tinta.y);
+    await sessao.assentar();
+    const depois = await sessao.js(
+      "(document.querySelector('.atlas-contexto')||{}).innerText||''"
+    );
+    conferir(
+      Boolean(antes) && depois !== antes,
+      `atlas: a linha de contexto MUDA com o foco ("${antes.replace(/\n/g, ' ')}"`
+        + ` → "${depois.replace(/\n/g, ' ')}")`
+    );
+  }
 } finally {
   sessao.fechar();
 }
