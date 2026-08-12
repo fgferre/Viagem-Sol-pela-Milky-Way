@@ -3537,10 +3537,10 @@ histerese e cooldown que o atlas admitia não ter. O desenho:
    existir; um flag irmão de `conviteVisto` garante que é uma vez só.
 4. **O teto de GL fica**: renderer que se NOMEIA software não é gosto nem
    palpite — cinema em SwiftShader é inviável, e o gate da Onda 1 já o cobre.
-5. **Proveniência no controle** (a primeira linha do selo de honestidade da
-   Onda 5 nasce aqui): o seletor DIZ de onde veio o estado — "cinema · você
-   escolheu" / "alta · URL" / "Auto · rodando em alta, medido aqui" /
-   "performance · teto de GL".
+   Em Auto, o seletor mostra o tier em que está rodando ("Auto · alta") — o
+   precedente do painel que mentia o tier é da Onda 1. Nada além disso:
+   configuração gráfica não tem relação com o selo de honestidade da Onda 5,
+   que é sobre CONTEÚDO (escala, luz), não sobre preferência de display.
 
 *Gate D:* com tier pinado, NENHUMA troca acontece sem clique (teste sob fps
 forçado baixo, por sobrevivência de valor); a sugestão aparece no máximo uma
