@@ -158,7 +158,9 @@ export function PaletaDeBusca({
   const vazio = consultaLenta.trim().length > 0 && resultados.length === 0;
   // o alcance vem CONTADO do índice, não digitado na copy: o dia em que o
   // catálogo ganhar uma estrela, a frase que diz quantas são continua
-  // verdadeira sozinha
+  // verdadeira sozinha. `Intl` aqui é seguro, ao contrário do que o
+  // formatador da casa evita: esta linha só existe no navegador, onde o
+  // ICU é completo — a ressalva do `numeroPtBr` é sobre o Node dos testes.
   const quantas = indice.nomeadas.length.toLocaleString('pt-BR');
   const aviso = vazio
     ? `nada com esse nome entre as ${quantas} nomeadas — o catálogo guarda UM nome por `

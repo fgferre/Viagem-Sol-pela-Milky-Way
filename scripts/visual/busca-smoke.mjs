@@ -21,9 +21,11 @@
 //     do formato dentro do teste.
 //  4. O ESTADO VAZIO é honesto: diz o que não achou e mostra o que
 //     funciona.
-//  5. LATÊNCIA POR TECLA, medida de dois jeitos (a conta pura sobre o
+//  5. NO VOO LIVRE a mesma paleta VOA — o verbo é da fase, e o rótulo
+//     promete o que a fase faz.
+//  6. LATÊNCIA POR TECLA, medida de dois jeitos (a conta pura sobre o
 //     índice completo e a ponta-a-ponta até a lista mudar na tela).
-//  6. A paleta NÃO VAZA no `?shot=2` (invariante arq#14 da onda).
+//  7. A paleta NÃO VAZA no `?shot=2` (invariante arq#14 da onda).
 import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -132,7 +134,39 @@ try {
     `e o vazio diz o que não achou E o que funciona: "${vazio.aviso}"`
   );
 
-  // ---- 5: a latência por tecla, das duas formas --------------------
+  // ---- 5: no VOO LIVRE, a mesma paleta VOA -------------------------
+  // O verbo é da fase, e a promessa está escrita no rótulo: no Atlas o
+  // Enter "enquadra", no voo livre ele "voa até lá". Sem esta prova a
+  // paleta poderia estar servindo a segunda fase só de enfeite — o
+  // botão prometendo um voo que ninguém dispara.
+  await sessao.ir(`pos=0,0,0.1&look=0,0,0&${PIN}`);
+  const faseDoVoo = await sessao.js('window.__director.captura.fase');
+  const antesDoVoo = await sessao.js(
+    'window.__director.engine.camera.position.toArray().join()'
+  );
+  await abrirPaleta(sessao);
+  await sessao.digitar('sirius');
+  await sleep(300);
+  // o rótulo se lê COM resultados na tela: sem eles a linha viva está
+  // ensinando o que se pode digitar, e não prometendo verbo nenhum
+  const rotulo = await sessao.js(
+    "(document.querySelector('.atlas-busca-aviso') || {}).textContent || ''"
+  );
+  await sessao.teclar('Enter');
+  await sessao.assentar();
+  const depoisDoVoo = await sessao.js(
+    'window.__director.engine.camera.position.toArray().join()'
+  );
+  conferir(
+    faseDoVoo === 'free' && antesDoVoo !== depoisDoVoo,
+    `no voo livre a escolha VOA: a câmera saiu de (${antesDoVoo}) para (${depoisDoVoo})`
+  );
+  conferir(
+    /voa at[ée] l[áa]/.test(rotulo),
+    `e o rótulo promete o verbo da fase, não o do Atlas ("${rotulo}")`
+  );
+
+  // ---- 6: a latência por tecla, das duas formas --------------------
   // (a) A CONTA PURA sobre o índice COMPLETO, medida dentro da página
   // com o mesmo módulo que a UI usa (o dev server serve o fonte, então
   // não há segunda cópia da lib no caminho) e com as 1.726 nomeadas que
@@ -221,7 +255,7 @@ try {
       + ` em ${lat.length} mudanças de ${CONSULTA.length} teclas)`
   );
 
-  // ---- 6: a paleta não vaza no ?shot=2 -----------------------------
+  // ---- 7: a paleta não vaza no ?shot=2 -----------------------------
   // Invariante arq#14: o `.bare-mode` só esconde FILHOS DIRETOS de
   // `.hud-root`. Overlay novo aninhado (ou portalizado para o body)
   // entraria nas 18 vistas oficiais e o filme perderia pixel. A leva
