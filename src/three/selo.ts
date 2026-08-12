@@ -148,6 +148,15 @@ const camada = (flag: string, volta: Volta = 'vivo'): CaminhoDoSelo => ({
 /**
  * O REGISTRO. Cada linha é um caminho pelo qual a imagem pode deixar de
  * ser o que a fotometria da casa produz sozinha.
+ *
+ * PARA A F6, DECLARADO AQUI PARA NÃO SE PERDER (D1): a gradação por
+ * contexto entra como MAIS UMA LINHA deste registro — com rótulo
+ * próprio, para o selo poder nomeá-la, e `volta: 'vivo'`, para o clique
+ * na linha BRILHO poder desligá-la. E a precedência é esta, na ordem:
+ * o GESTO DO VISITANTE vence a gradação do modo. Quem mexeu na exposição
+ * ou chegou com `?exp=` fica com o que pediu; a gradação só preenche
+ * onde o visitante não pôs a mão — que é exatamente o que a linha `exp`
+ * abaixo já modela ao olhar o latch VIVO em vez da porta.
  */
 export const REGISTRO: readonly CaminhoDoSelo[] = [
   // --- gosto do visitante, ao vivo ---------------------------------
