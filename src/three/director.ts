@@ -1725,6 +1725,47 @@ export class Director {
     };
   }
 
+  /**
+   * O AMOSTRADOR DE MEMÓRIA (Onda 6, F8/D9) — somente leitura, como
+   * `captura` e `selo`. É o que o juiz `scripts/visual/memoria.mjs` lê
+   * para provar que entrar/sair do Atlas, trocar de qualidade e focar
+   * corpos devolvem TUDO que alocaram: `renderer.info` é a contagem
+   * viva do próprio three (texturas e geometrias na GPU, draws do
+   * último quadro), e `heapMB` é o heap de JS quando o navegador o
+   * expõe (`performance.memory` é só do Chrome — `null` não é zero, é
+   * "este navegador não conta").
+   *
+   * LEITURA DIRETA POR CHAMADA, sem cadência interna: o D9 oferecia
+   * 1 Hz, mas o `renderer.info` já é mantido pelo renderer a cada
+   * quadro e o heap é uma leitura pronta do navegador — uma cadência
+   * aqui seria estado novo (timer + cópia) para economizar uma leitura
+   * que não custa nada. Custo ZERO quando ninguém lê: getter não
+   * executa sem chamada, e nenhum caminho de render passa por aqui.
+   *
+   * PUBLICADO SÓ EM DEV, de carona no objeto inteiro: quem pendura o
+   * Director em `window.__director` é o App.tsx, sob
+   * `import.meta.env.DEV` — o mesmo portão do `captura` que os juízes
+   * de CDP já usam. Em produção não há porta nenhuma.
+   */
+  get stats() {
+    const info = this.engine.renderer.info;
+    const heap = (
+      performance as Performance & { memory?: { usedJSHeapSize: number } }
+    ).memory;
+    return {
+      memory: {
+        geometries: info.memory.geometries,
+        textures: info.memory.textures,
+      },
+      render: {
+        calls: info.render.calls,
+        triangles: info.render.triangles,
+        points: info.render.points,
+      },
+      heapMB: heap ? heap.usedJSHeapSize / 1048576 : null,
+    };
+  }
+
   get progressTicks(): { t: number; text: string }[] {
     return this.rig.ticks;
   }
