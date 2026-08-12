@@ -135,7 +135,7 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 
 | Item | Veredito | Destino / o que se perde se ninguém escrever |
 |---|---|---|
-| Clique em corpo → foco | Melhora | Hit-test no `LabelCanvas.ts` → `AtlasRig` |
+| Clique em corpo → foco | Melhora | Hit-test no `LabelCanvas.ts` → `AtlasRig`. **CUMPRIDA na Onda 5:** os dez do retrato ganharam rótulo na fase 'atlas' pelo pipeline que já existia, com a posição saindo do atributo VIVO (o nome segue o ponto depois de um salto de data) e só onde a camada os desenha; o clique enquadra a **órbita** do corpo — esfera centrada no Sol, raio da distância heliocêntrica viva, direção saindo do corpo —, que é a mesma forma da vista de abertura. Sem tabela nova de raios físicos: corpos são pontos até a Onda 6 (D5) |
 | Home/Back (`focusHistory`) | Renasce | Pilha de ~10 linhas |
 | Órbita/pan/zoom | Renasce | `FreeRoam` + órbita-com-foco; um escritor de câmera por frame |
 | **`PrivilegedPosition`** | **Renasce (reescrita com espec herdada)** *(era Migra)* | O plano dizia "~40 linhas": o arquivo tem **406**, é uma `class` sobre `THREE` acoplada a `ViewportRect`, e mistura três coisas — geometria de enquadramento, direção de câmera e viés de moldura. Migra a **matemática, que é conferível**: `d = r/sin(θ/2)`, o `max(distVertical, distHorizontal)` que salva telas ultrawide (a FOV horizontal derivada de `aspect` é aritmética, não gosto) e a correção por retângulo utilizável do HUD. Migram como **valores medidos a reaproveitar, não a herdar**: `PHASE_OFFSET = 30°` (Rembrandt), `MAX_SOLAR_DEVIATION = 70°` (mais de meio disco iluminado, terminador em quadro — onde o relevo lê melhor), `PARENT_FRAMING_BIAS = 0,78`, `margin = 1,2`. A implementação é **função pura no `AtlasRig`**, com um escritor de câmera por frame; a classe estática do atlas não tem lugar num rig que já existe |
@@ -143,8 +143,8 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 | **Modo Superfície 1ª pessoa** | Aposenta | O atlas nunca entregou superfície: `minDistance = raio × 1,1` (339 km sobre Marte), três chamadas de rotação e zero translação; `surfaceLook.ts` é subconjunto estrito do `FreeRoam`. Custo ≈ 0 |
 | **Captura de ponteiro (`useSurfaceModePointerLock`)** | Renasce *(split da linha acima)* | 222 linhas de hook React com `import.meta.hot.dispose` no doador; renasce como ~40 linhas opt-in no `FreeRoam` com as 4 defesas herdadas: backoff após 3 `pointerlockerror`, dispose no HMR, soltar teclas no unlock, listeners só com lock — Onda 5 |
 | ContextLine | Renasce | `ProgressBar` ganha o nome do corpo focado. **A ideia é a melhor da UI do atlas e migra inteira: trocar branding decorativo por "onde estou" permanente, e nunca chutar** (foco desconhecido lê o nome do sistema, não um palpite). **O código não migra**: `ContextLine.tsx:43-44` cravou "Star"/"Solar System" e o `aria-label` em inglês num app que anuncia busca PT/EN — para um produto em pt-BR isso é reescrita, não port |
-| Deep link | Melhora | `?atlas=terra&jd=…` no padrão `?pos=` |
-| Busca de corpos (`SearchBar`, `bodySearch`) | Melhora | Paleta no `Hud.tsx`; índice estático de corpos + heróis + nomeadas com `ids`. **Ideias que atravessam da `SearchBar.tsx`**: busca unificada corpos + catálogo HYG num só campo, listbox acessível de verdade, `useDeferredValue` para não travar a digitação, e limites de resultado por dispositivo. **Implementação nova**, no vocabulário da legenda e em pt-BR |
+| Deep link | Melhora | `?atlas=terra&jd=…` no padrão `?pos=`. **CUMPRIDA na Onda 5, com o nome trocado e dito:** são três portas em vez de uma — `?atlas=1` (o modo), `?foco=` (o alvo) e `?jd=` (o instante do céu) —, porque cada uma existe sem a outra. **A chave do `?foco=` é o nome pt-BR normalizado** (`?foco=terra`, `?foco=netuno`) e não o id inglês do dado: a porta é para gente escrever. Para estrela vale a chave canônica da lib (`hd`/`hip` quando existem). Precedência declarada: `?pos=` > `?atlas=1`/`?foco=` > `?t=`/`?play=` |
+| Busca de corpos (`SearchBar`, `bodySearch`) | Melhora | Paleta no `Hud.tsx`; índice estático de corpos + heróis + nomeadas com `ids`. **Ideias que atravessam da `SearchBar.tsx`**: busca unificada corpos + catálogo HYG num só campo, listbox acessível de verdade, `useDeferredValue` para não travar a digitação, e limites de resultado por dispositivo. **Implementação nova**, no vocabulário da legenda e em pt-BR. **CUMPRIDA na Onda 5:** um índice ÚNICO com os dois tipos etiquetados (`corpo` \| `estrela`) em vez de dois índices ordenados por réguas diferentes — no empate de score a casa vem antes do céu, e a nota da lista troca de unidade com o alvo (UA para corpo, anos-luz para estrela). Os corpos só entram na fase que sabe enquadrar órbita: no voo livre a escolha VOA, e voar até a Terra pararia a 0,8 pc dela. Atravessaram as quatro ideias da `SearchBar.tsx` (campo único, listbox acessível, `useDeferredValue`, limite por dispositivo); o código, nenhum |
 | Quick Jumps | Renasce | Sugestões fixas da paleta vazia, lista curada de novo |
 | `hygNameIndex` | Renasce | ~60 linhas sobre `meta.named`: `normalizeHygQuery` (NFD, essencial no teclado pt-BR), rubrica de score de 4 degraus, chave dupla abreviação/glifo grego. **Ficam de fora**: a varredura linear e as chaves HD/HIP em massa — medido: 206k chaves = 27-32 ms **por tecla** no desktop; 328k = 300-450 ms no celular. **A Decisão 2 libera o dado, não a busca**: cobrir as 328k exige trocar o algoritmo — consulta numérica (`hd 48915`, `hip 32349`) por `Map` direto sem varredura, e a textual por índice ordenado com busca binária de prefixo (ou trie). *Reescrita por física, não por doutrina* |
 | Máquina do tempo (`Timeline`, LIVE) | Melhora | `jd`+`rate` no Director, ~8 degraus, `validityRange` com badge. **Anti-padrão evitado explicitamente:** o `Timeline.tsx` do atlas tem **44 degraus escritos à mão em inglês**, com escada sem lógica (3, 5, 6, 8, 10, 20, 30, 40, 50…). A casa usa **escala log contínua com rótulo formatado**, em pt-BR |
@@ -155,7 +155,7 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 | Presets + score aditivo + 15 overrides | Aposenta | Score é palpite; a viagem tem sinal **medido** de fps com histerese e cooldown, que o atlas admite não ter. Bloom é dirigido pelo filme a 60 Hz; tom/exposição já existem em `?tone=`/`?exp=`. (15 = os 16 campos de `GraphicsOverrides` menos `starOptics`, que virou item próprio) |
 | **Teto de GL medido** | **Renasce (reescrita com espec herdada)** *(era Migra como "`gpuProbe.ts`")* | **Correção de endereço: não existe `gpuProbe.ts` no doador.** São dois arquivos — `webglSupport.ts` (151 linhas, zero deps) e `resolveGlTierCeiling`, que mora em **`qualityProfile.ts:257`**, sobre uma taxonomia de tiers que não é a da Viagem. O **diagnóstico migra inteiro e é o mais urgente do plano**: hoje `defaultQualityForDevice()` não olha a GPU, SwiftShader vira "cinema", 4,02 M partículas, e a alocação congela para sempre. Migram como **espec as 4 defesas compradas com bug**: (1) memoizar o probe é correção, não micro-otimização — sem memo nasce um contexto WebGL por render e o teto de ~8–16 contextos do browser despeja o renderer de verdade; (2) tentar `webgl2` e depois `webgl` na **mesma** canvas; (3) `WEBGL_lose_context.loseContext()` + `canvas.remove()` no fim; (4) `catch`, porque alguns browsers **lançam** em vez de devolver `null` quando a GL está desabilitada por política. Regra herdada: **só rebaixa quando o renderer se nomeia software**. Aplicado como teto **antes do init** (Onda 1e) |
 | Tone mapping / bloom por contexto | Renasce | `core/post.ts` cobre **durante o filme**; fora dele não há `g` — daí a gradação por contexto (abaixo) |
-| **`visualPresets.ts`** | **Renasce (reescrita com espec herdada)** *(era Migra)* | 197 linhas, das quais o plano já condenava **7 dos 12 campos** como constantes globais fantasiadas de preset, com `shadowIntensity` inerte desde 2026-07-28. Sobram 18 linhas puras de `getPresetForContext` — abaixo do limiar em que "portar verbatim" significa alguma coisa: transcrever 18 linhas não é migração, e o rótulo protegeria um `interface VisualPreset` 58% morto. Migram os **5 eixos que variam de verdade** (bloom, saturação, contraste, brilho, guia) e os **limiares em UA (3,5/50)** como valores medidos; os de câmera (200/2000) são re-derivados na escala da Viagem. Onda 5 |
+| **`visualPresets.ts`** | **Renasce (reescrita com espec herdada)** *(era Migra)* | 197 linhas, das quais o plano já condenava **7 dos 12 campos** como constantes globais fantasiadas de preset, com `shadowIntensity` inerte desde 2026-07-28. Sobram 18 linhas puras de `getPresetForContext` — abaixo do limiar em que "portar verbatim" significa alguma coisa: transcrever 18 linhas não é migração, e o rótulo protegeria um `interface VisualPreset` 58% morto. Migram os **5 eixos que variam de verdade** (bloom, saturação, contraste, brilho, guia) e os **limiares em UA (3,5/50)** como valores medidos; os de câmera (200/2000) são re-derivados na escala da Viagem. Onda 5. **FEITA, e a medição derrubou quatro quintos da linha** (`src/three/atlasConfig.ts:82-164`): **atravessou UM eixo só, o do BLOOM** — aqui chamado pelo que ele é, o **clarão** —, porque medir mostrou que é ele, e não brilho nem croma, quem deixa o Atlas branco dentro do sistema (97,7% do quadro acima de meia luz a 228 UA; a MESMA vista com `&nobloom=1` tem luz média 0,018 e o Sol, os planetas e o campo no lugar). **NÃO nasceram**, com a razão escrita para não renascerem por engano: BRILHO (mexer na exposição mentiria sobre a luz de tudo para consertar o borrão de uma fonte só — e o NORTE proíbe teto de brilho), SATURAÇÃO e CONTRASTE (sem consumidor MEDIDO: com o clarão moderado o quadro já tem céu preto, estrelas e planetas, e num produto em que a cor É o dado um ganho de saturação seria invenção com cara de medida) e GUIA (sem sujeito — não há órbita, grade nem retícula desenhada). **Os limiares 3,5/50 UA foram REPROVADOS por medição:** de 2,2 a 228 UA o regime é UM SÓ (97–99% do quadro lavado em toda a faixa), porque em toda ela o Sol é o mesmo ponto fotométrico e o clarão é o mesmo borrão de tela cheia. Dos 200/2.000 atravessou a FORMA (uma distância onde a correção satura, outra onde ela acaba); os números da casa são **2.000 e 20.000 UA**, e os 2.000 são DERIVAÇÃO e não escolha: a lei é `(d/20.000 UA)²` com piso 0,01, e `(2.000/20.000)² = 0,01` |
 | **`assetStudyMatrix.ts`** | Migra (como prosa) | 8 dos 12 campos duplicam o `assetManifest`; o `comparison` morre. Vivem os **4 campos editoriais**, que são resultados negativos medidos: Titã oficial é monocromático e mostra emendas; Europa tem 68 linhas de no-data preto sobre a calota sul; o "candidato de Júpiter" era um mapa **de Io**. Vira `docs/reference/ASSETS.md`. Prosa, não código |
 | Exposição manual / Camera FX / LoD | Aposenta | Camera FX e LoD são **duas linhas de comentário**; o slider nunca existiu e a viagem já tem um melhor. A malha de auto-adaptação **não estava neste pacote** — virou item novo |
 | `qualityMode` legado | Aposenta | Único mantido com veredito **e** justificativa intactos |
@@ -170,7 +170,7 @@ Frase de identidade: *"a jornada te leva; o Atlas te deixa ficar."*
 | **AssetStudyApp** | Renasce | A equivalência com `ab-identidade.mjs` era **falsa**: um produz md5 de identidade temporal, o outro compara N alternativas do mesmo corpo lado a lado com a proveniência ao lado. Foi essa bancada que pegou o Titã cinza e o "Júpiter" que era Io. As 594 linhas r3f não portam — e, além do acoplamento, elas são **ferramenta de dev morando dentro de `src/components/ui/` do produto**. Renasce como **página `.html` estática** em `scripts/visual/` |
 | WebGL fallback card | **Renasce (reescrita com espec herdada)** *(era Migra)* | A própria linha já dizia que o destino é o `LoadingVeil`/`onRetry` **da Viagem** — ou seja, nada do componente React do atlas atravessa. Migra o **contrato**: detectar antes do init, mensagem acionável, botão de retry. Onda 1 |
 | CreditsModal → **Créditos (dados de atribuição)** | Migra | Ler a linha pelo dado, não pelo modal: **o dado de licença migra, o componente React não**. Créditos no HUD + README — atribuição é dado |
-| **`useDialogFocus` + reduced-motion + aria-live** | **Renasce (reescrita com espec herdada)** *(era Migra)* | `src/hooks/useDialogFocus.ts` é hook React amarrado à árvore de componentes do atlas; o HUD da Viagem é outra árvore. Migra o **contrato de a11y**, que é o que importa e é verificável: foco preso no diálogo, devolução do foco ao gatilho no fechamento, `Esc`, região `aria-live` para mudança de estado, e respeito a `prefers-reduced-motion`. A ideia estrutural — **um lugar só para foco preso e Escape** — atravessa. Smoke de foco/aria no `rodada.mjs` é o juiz |
+| **`useDialogFocus` + reduced-motion + aria-live** | **Renasce (reescrita com espec herdada)** *(era Migra)* | `src/hooks/useDialogFocus.ts` é hook React amarrado à árvore de componentes do atlas; o HUD da Viagem é outra árvore. Migra o **contrato de a11y**, que é o que importa e é verificável: foco preso no diálogo, devolução do foco ao gatilho no fechamento, `Esc`, região `aria-live` para mudança de estado, e respeito a `prefers-reduced-motion`. A ideia estrutural — **um lugar só para foco preso e Escape** — atravessa. ~~Smoke de foco/aria no `rodada.mjs` é o juiz~~ — **RE-REGISTRADO na Onda 5 (D7): o juiz é `scripts/visual/a11y.mjs`**, novo, por CDP. O destino velho era impossível por dois motivos medidos: o `rodada.mjs` captura com `?shot=2`, que liga o `.bare-mode` e **esconde o HUD inteiro** (não há diálogo para julgar numa tela sem HUD), e ele **escreve no ledger** `docs/reference/EVOLUCAO.md` a cada execução — um juiz de a11y que polui o histórico de evolução visual da casa não pode rodar a cada checkpoint. O juiz novo não toca disco nenhum. Entregue: `src/lib/dialogFocus.ts` com contrato de DOM genérico (`data-abre-dialogo` ↔ `data-dialogo`), adotado pelo Ajustes (que ganhou `aria-modal`, foco preso e devolução ao gatilho) e pelos dois diálogos novos do Atlas; **139 asserções verdes**, das quais 57 são o contrato de diálogo varrido nas três fases |
 | **UI Scale** | **Renasce (reescrita com espec herdada)** *(era Migra)* | O trabalho real nunca foram as ~12 linhas de slider — é a **auditoria dos 37 `px` que carregam texto** no `hud.css` (contra 73 `rem` e 51 `clamp/vw`). Migra a evidência da medição e o contrato `?ui=` + `font-size` no root. O componente é escrito no `Ajustes.tsx` da casa |
 | Colorblind / High Contrast | Aposenta | Nunca houve implementação: 3 campos de store órfãos e um tipo. **Mas a dívida fica**: num produto onde a cor É o dado, isso não é filtro de UI — é decidir se o canal de cor carrega informação redundante. Nota de dívida no NORTE *(registrada na Onda 0)* |
 | **`time.ts` — sistema de tempo (JD/TT/TDB/GMST + tabela ΔT Espenak–Meeus)** *(linha NOVA, descoberta pela Onda 2)* | **Migra sob a exceção das duas provas — ASSINADA (Onda 2)** | O plano não tinha linha para o sistema de tempo, e a onda o descobriu obrigatório: o checklist (item 7) e a regra M6 exigem UM conversor, e reescrever a tabela ΔT de 16 faixas seria o risco de mistranscrição que §0.4 condena. **1ª prova, medida**: zero imports, TS puro; a tabela ΔT é dado publicado (Espenak & Meeus, Five Millennium Canon) e o oráculo de 253 linhas ancora em valores publicados (GMST = Meeus Ex. 12.a a 1e-7°; ΔT −500..2000). **2ª prova: ata de olhos frescos da Onda 2, assinada.** Destino: `src/lib/atlas/time.ts`, conversor ÚNICO do runtime. Divergência declarada e mantida: o companion vendorizado (`derive-elements-from-fixtures.js`) guarda o próprio `isoToTDB_JD` clampado — 2,6 s de diferença MEDIDA — porque foi ele quem gerou os `epochJD` embarcados nas tabelas; reproduzibilidade vence, com o desvio no preâmbulo |
@@ -673,6 +673,312 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 > **Regra de UI desta onda (nova):** *a UI é desenhada na linguagem da casa; as ideias vêm do atlas, a implementação é nova.* Atravessam as **semânticas** que a crítica aprovou — um selo que agrega desvios e cujas linhas são os próprios controles; uma linha de contexto permanente que nunca chuta; uma gaveta com ícone + rótulo e seletores centralizados; procedência por asset; tour ancorado no alvo e reabrível; um lugar só para foco preso e Escape. **Não atravessam** a estética de HUD sci-fi (tech-corners, ghost-border, `font-orbitron`, `uppercase tracking-[0.16em]`, `animate-pulse`), o painel de 18 controles de debug, os 44 degraus de tempo escritos à mão nem a copy em inglês cravada em componente.
 
 *Gate:* smoke de ida-e-volta do Atlas em navegador real; `journeyT` retoma exato; convite não reaparece em recarga; foco/aria no `rodada.mjs`; **nenhuma string de UI em inglês no caminho pt-BR**; **revisão de olhos frescos antes do merge**.
+
+> **Estado da Onda 5 (2026-08-12): FEITA** — branch `onda-5`, 28 commits
+> (`2f6d0ca` → `19fa18e`), gate integral cumprido e **DOIS painéis de olhos
+> frescos**: um na ABERTURA (3 lentes, **32 emendas no desenho antes da
+> primeira linha de código**) e o obrigatório ANTES DO MERGE (3 lentes, 20
+> achados, **1 bloqueante**). O modo Atlas existe, e a promessa da onda foi
+> cumprida no pixel: **as 18 vistas oficiais saem BIT-IDÊNTICAS em todas as
+> fases que tocaram render** (F1, F2, F4, F5, F6) — o filme não perdeu um
+> ponto. **Placar final:** 981 → **1.138 testes verdes** (+157), `tsc` e
+> `eslint` limpos; quatro juízes de navegador NOVOS, todos verdes:
+> `a11y.mjs` **139/139**, `atlas-smoke` **42/42**, `voo-smoke` **25/25**,
+> `busca-smoke` **24/24**. As fases abaixo estão na ordem do desenho, não na do
+> git: duas andaram em paralelo em worktrees (dois merges na história), e por
+> isso os placares parciais não são monotônicos — cada número é o do commit que
+> o imprimiu.
+>
+> **F1 — a espinha do modo** (`1b70e64`, `5166e63`, `85e8f53`; 981 → 1.008).
+> `Phase 'atlas'` no Director, com o inventário PINADO dos **28 pontos que
+> decidiam por fase** virando `fases.ts`: dois mapas `satisfies
+> Record<Phase, …>` (quem escreve a câmera; que peças do HUD montam) mais a
+> lista dos que continuam `if` por terem lógica própria, cada um com o
+> comportamento em 'atlas' declarado. `AtlasRig` novo em `cinematic/` com a
+> função PURA `enquadrar()` (`d = r/sin(θ/2)`, `max(distVertical,
+> distHorizontal)`, retângulo útil descontando as áreas REAIS do HUD), fov e
+> `journeyT` pinados em constante nomeada — sem os pinos, cada entrada daria
+> um Sol diferente e nenhuma vista seria reproduzível. Portal no pause-look
+> (e só nele) com véu, reduced-motion instantâneo e o **quinteto**
+> salvo/restaurado (`journeyT` + `lookYaw`/`lookPitch` + `leftDisk` +
+> `paused`); `?atlas=1` com precedência declarada `?pos=` > `?atlas=1` >
+> `?t=`/`?play=`, e `urlComMomento` carregando o modo de volta. A prontidão
+> de captura aprendeu a fase: 'atlas' É capturável e sai por `via=sinal`.
+>
+> **F2 — a11y, ContextLine, gaveta e selo** (`6b5fdb7`, `f8d67df`,
+> `3606218`, `56501c7`; → 1.054; a11y 41/41). `src/lib/dialogFocus.ts` vira o
+> módulo ÚNICO de foco preso/devolução/`Esc`, com **contrato de DOM genérico**
+> (`data-abre-dialogo` ↔ `data-dialogo`) que o juiz varre sem conhecer
+> componente nenhum — diálogo novo nasce julgado, diálogo fora dele não é
+> julgável; o painel de Ajustes ganhou `aria-modal`, foco preso e devolução ao
+> gatilho, três coisas que nunca teve. ContextLine nova (`role="status"` +
+> `aria-live`), que **nunca chuta** (foco sem nome lê "Sistema solar").
+> Gaveta de camadas lendo o **config único** (`atlasConfig.ts`): a seleção do
+> Atlas é um CAMPO da tabela da casa, não uma segunda lista. E o **selo de
+> honestidade nasce de REGISTRO ÚNICO** (`selo.ts`) — 43 entradas na F2,
+> **47 hoje** —, com varredura de COMPLETUDE sobre os 9 arquivos que governam
+> a imagem (porta de URL nova sem entrada QUEBRA o teste), teste "nenhum
+> controle desmente o selo", os 3 tiers de procedência
+> (medido/derivado/artístico) e `limparExposicaoManual()` no Director, que deu
+> ao latch `expOverride` a volta que ele nunca teve. Gate da fase: **18/18
+> bit-idênticas com o HUD novo no ar** — a prova de que overlay do Atlas é
+> filho DIRETO de `.hud-root` e não vaza no `.bare-mode`.
+>
+> **F3 — busca** (`327181b`, `e894545`, `82e81e3`, `2f291cd`; → 1.105).
+> `buscaEstrelas.ts`: lib PURA sobre as 1.726 nomeadas com normalização NFD
+> (essencial no teclado pt-BR), rubrica de score de 4 degraus, chave dupla
+> abreviação/glifo grego e `Map` direto para `hd`/`hip` — sem varredura das
+> 328k (D4). `PaletaDeBusca` com listbox acessível pelo `dialogFocus`,
+> `useDeferredValue` e limite de resultados por dispositivo; o **verbo do
+> botão muda com a fase** (no Atlas a escolha ENQUADRA, no voo livre ela VOA).
+> Deep-link `?foco=` pela chave canônica. O `busca-smoke` nasce aqui e mede o
+> que faltava: o link do foco vai e volta pelo escritor VIVO, e a latência por
+> tecla passa a ter número.
+>
+> **F4 — a máquina do tempo** (`49e8f1b`, `fd74be0`; → 1.096; a11y 45/45).
+> `jd` + `rate` no Director (dono único do relógio do céu), **escada log
+> contínua** `10^i` de 8 degraus com rótulo DERIVADO do número (contra os 44
+> degraus digitados à mão do doador), modo AO VIVO, badge de `validityRange`
+> 1950–2050 TDB e badge honesto "congelado no retrato" quando não há rede.
+> **Fio lazy** dos DOIS artefatos da efeméride (`efemerides.bin` + meta) ao
+> lado do `loadStarData` em `config.ts`, com `fetchBinary`, `BASE_URL` e o
+> `signal` do Director — nunca no boot do filme, e com o decodificador vindo
+> por `import()` DINÂMICO, porque `efemerides.ts` arrasta `kepler`,
+> `registroOrbital` e os 22 kB de `elementosOrbitais` atrás de si: estático,
+> esse peso entraria no bundle de quem só quer ver o filme. O caminho vivo
+> escreve os DOIS atributos (`position` E `aMagBase` recomputado com o `r` do dia) em
+> **método próprio** (`escreverInstante`), fora do `update` pinado pelos
+> testes de texto, com cache por `jd` e as três obrigações da escrita
+> instanciada (Onda 3). Porta `?jd=`: **18/18 md5 oficiais IGUAIS com e sem a
+> porta**.
+>
+> **F5 — captura opt-in, Spotlight e convite** (`c90ec94`, `c6dd43a`; →
+> 1.058; a11y 53/53; o `voo-smoke` nasce aqui, com 24 provas — hoje 25).
+> Captura de ponteiro **opt-in** no rig,
+> com as QUATRO defesas por extenso (backoff após 3 `pointerlockerror`,
+> `dispose` no HMR, soltar TODAS as teclas no unlock, listener de movimento só
+> com lock) — o voo livre perde o teto da borda da janela e quem decide é o
+> visitante. `Spotlight` com `data-spot` + `getBoundingClientRect` + máscara
+> SVG + `ResizeObserver` (nunca `setInterval`), ancorado no alvo REAL e dentro
+> de `.hud-root`. Convite de 3 gestos na primeira entrada, lendo e gravando
+> `conviteVisto` — o campo reservado pela Onda 1 ganhou leitor.
+>
+> **F6 — UI Scale e gradação por contexto** (`79cdd6f`, `f6964da`, `7f7019e`,
+> `abf5bc0`, `2bc0735`; → 1.113). `?ui=` multiplica a **preferência de fonte
+> do visitante** no root, em %, nunca em px — e os **9 `clamp(rem, vw, rem)`**
+> que ignoravam a raiz foram tratados e provados um a um pelo juiz, inclusive
+> os dois que só existem na quebra estreita (medidos a 600 px de CSS com zoom
+> de 200%). As áreas que o HUD reserva aos rótulos passam a crescer com o
+> texto pela forma `x − c·(k−1)`, que em `ui = 1` devolve o número de sempre
+> bit a bit. A **gradação por contexto** entra como o que a medição autorizou:
+> **um eixo só, o do CLARÃO**, fator `(d / 20.000 UA)²` grampeado no piso
+> **0,01**, estado no Post (como `galaxyMode`) e **1 EXATO fora do Atlas** —
+> neutro em IEEE754, que é o que mantém as 18. Porta de volta `?grad=0`.
+> Gate: **18/18 md5 IGUAIS e 6/6 com `&nobloom=1`**.
+>
+> **Consertos de costura e da revisão** (`2bc0735`, `69e1cf5`, `f40ae2b`,
+> `fb51240`, `4717076`, `19fa18e`; → 1.138). A costura F3×F6 que o juiz pegou
+> no merge — com o botão da busca na barra, o texto grande QUEBRA A LINHA da
+> barra de controles e come altura que o enquadramento não estava descontando.
+> A primeira lei (degrau "só acima de `ui` 1,3") **foi revogada dois commits
+> depois pela própria medição**: a quebra é fenômeno de **largura × texto**,
+> não de `?ui=` sozinho — `largura < 960 × k` —, e o par vigente é
+> `.controls-bar` **35,0 → 84,9 px entre 1,25 e 1,30** (a 1.200 px de
+> largura), um degrau de 50 px e não uma rampa. E, no fim da onda, **os dez
+> corpos do sistema viram ALVO**: rótulo na fase 'atlas' pelo pipeline que já
+> existia (posição do atributo VIVO, não do retrato), entrada no MESMO índice
+> da busca
+> (`corpo` | `estrela` etiquetados, casa antes do céu no empate, UA para corpo
+> e anos-luz para estrela) e `?foco=terra`; clicar num corpo enquadra a ÓRBITA
+> dele (esfera centrada no SOL, raio da distância heliocêntrica viva) — sem
+> tabela nova de raios, que a Onda 7 refaria.
+>
+> **AS SETE DECISÕES DE ABERTURA (D1–D7), transcritas** — o desenho da onda
+> morre neste commit (regra 8) e **73 linhas de código as citam pelo nome**
+> (medido no diff da onda); sem esta transcrição as citações ficariam órfãs.
+>
+> - **D1 — Selo de honestidade e os 3 tiers de rótulo.** Um selo só (sem dois
+>   pills permanentes), vivo no HUD do Atlas, com a copy-tese herdada em
+>   pt-BR. Dois eixos: ESCALA (real ↔ fora) e BRILHO (real ↔ assistido), e o
+>   estado do BRILHO deriva de **um registro único de caminhos**, nunca de
+>   enumeração à mão no componente — o defeito do doador. As **linhas do selo
+>   são os próprios controles** e indicam o próximo estado; para "clicar volta
+>   ao real" existir, o latch da exposição ganhou volta. Precedência: o gesto
+>   do visitante vence a gradação do modo. Os 3 tiers — **medido** (catálogo e
+>   efeméride), **derivado** (modelo sobre medida) e **artístico** (canal do
+>   instrumento) — nascem como vocabulário que os consumidores da Onda 7 já
+>   herdam. `?luz=real|assistida` NÃO nasce aqui (Onda 6); o selo nasce
+>   extensível.
+> - **D2 — Recorte do tempo (5 vs 6).** A Onda 5 entrega a MÁQUINA: `jd` +
+>   `rate` no Director, que é o dono do `jd`; ~8 degraus em escala log
+>   contínua com rótulo pt-BR; AO VIVO; `validityRange` 1950–2050 TDB com
+>   badge quando fora. Fetch lazy dos dois artefatos da efeméride, nunca no
+>   boot; sem rede, a camada congela no retrato com badge honesto e zero erro.
+>   O caminho vivo escreve `position` **E** `aMagBase` (a lei inteira, não
+>   metade), em método próprio, com cache por `jd` e sem alocação por quadro.
+>   Porta `?jd=` no precedente `?plan/?noplan`, para A/B com o mesmo binário.
+>   Regra M6: `jd` TDB via `time.ts`, nunca `Date`/UT cru.
+> - **D3 — Portal, transições e estado.** Portal "entrar no Atlas" no
+>   pause-look e só nele; entrada por véu + reposicionamento (não é travessia
+>   física), instantânea sob reduced-motion. "Partir" salva e restaura o trio
+>   `journeyT` + olhar + `leftDisk` mais o `paused` (que tem dois donos), e o
+>   gate mede PIXEL, não só o escalar. `journeyT` do Sol-ator PINADO em
+>   constante nomeada, senão nenhuma vista do Atlas é reproduzível. Deep-link
+>   `?atlas=1` com precedência declarada; "Partir" sem viagem anterior volta à
+>   tela de título, o candidato honesto; a fase entra na guarda de atalhos
+>   (Espaço não vaza).
+> - **D4 — Alcance da busca.** Só as 1.726 nomeadas (default da Decisão 2).
+>   Consulta numérica `hd`/`hip` por `Map` direto; **sem varredura das 328k** —
+>   medido no doador: 206k chaves custam 27–32 ms POR TECLA no desktop.
+> - **D5 — Enquadramento: fontes únicas.** Função PURA recebendo `{rAlvo,
+>   fovDeg, aspect, retanguloUtil}` e devolvendo distância/pose; `fov` do
+>   Atlas em constante nomeada, escrita pelo AtlasRig no mesmo ponto do tick em
+>   que a JourneyRig escreve a dela; `retanguloUtil` com UM produtor publicado.
+>   **`r` é o raio ORBITAL do alvo** (rUA da efeméride/retrato): enquadra-se a
+>   órbita, não o corpo — corpos são pontos até a Onda 6, e tabela nova de
+>   raios seria a segunda fonte de verdade que a Onda 7 refaria. Os quatro
+>   valores medidos do doador (30°, 70°, 0,78, 1,2) reaproveitados como
+>   constantes nomeadas num lugar só.
+> - **D6 — Hospedeiros de UI no Atlas.** ContextLine é componente NOVO e
+>   pequeno, **não** o ProgressBar do filme (que é slider de capítulos e daria
+>   scrub do filme dentro do Atlas). A F1 já monta o acesso aos Ajustes na fase
+>   nova, senão F5/F6 chegariam sem porta. **Config único do Atlas** — um
+>   arquivo com os seletores de camada da gaveta e os eixos/limiares da
+>   gradação. Entram na gaveta as camadas que fazem sentido no modo
+>   (`nocat`, `nohero`, `nomarker`, `noplan`, `nobh`); as galácticas ficam de
+>   fora de propósito.
+> - **D7 — A11y como módulo único + juiz próprio.** `src/lib/dialogFocus.ts`
+>   (a casa não tem pasta `hooks/`): foco preso, devolução ao gatilho, `Esc` —
+>   e o Ajustes PASSA A USÁ-LO. Contrato de DOM genérico por `data-attrs` que o
+>   juiz consulta. O juiz é `scripts/visual/a11y.mjs`, novo, por CDP, **sem
+>   `shot=2` e sem tocar o ledger** `EVOLUCAO.md`.
+>
+> **CONFLITOS COM O DESENHO, declarados** (a régua da casa: um item é o que os
+> arquivos dizem, não o que o desenho prometeu):
+>
+> 1. **O convite mora no VOO LIVRE, não no Atlas.** A copy dos três gestos
+>    ("arrastar para olhar · WASD/QE para voar · clicar numa estrela para
+>    visitar") é vocabulário do voo: no Atlas o WASD não voa e clicar num nome
+>    ENQUADRA. Os três passos ali seriam falsos — decisão de conteúdo, escrita
+>    em `components/Spotlight.tsx`.
+> 2. **Os limiares herdados 3,5/50 UA foram REPROVADOS por medição.** De 2,2 a
+>    228 UA o quadro está igualmente lavado (97–99% acima de meia luz), porque
+>    em toda a faixa o Sol é o mesmo ponto fotométrico e o clarão dele é o
+>    mesmo borrão de tela cheia: 3,5 e 50 UA separariam dois regimes que nesta
+>    casa são UM SÓ. O que atravessa dos 200/2.000 do doador é a FORMA (uma
+>    distância onde a correção satura, outra onde ela acaba); os números são
+>    **2.000 e 20.000 UA**, re-derivados na escala da Viagem — e os 2.000 são
+>    derivação, não escolha: `(2.000/20.000)² = 0,01`, o piso.
+> 3. **Quatro dos cinco eixos da gradação NÃO nasceram**, e a lista está
+>    escrita para que não renasçam por engano (`atlasConfig.ts:82-164`):
+>    BRILHO (contra o NORTE — mexer na exposição mentiria sobre a luz de todo o
+>    resto para consertar o borrão de uma fonte só), SATURAÇÃO e CONTRASTE (sem
+>    consumidor MEDIDO: com o clarão moderado o quadro já tem céu preto,
+>    estrelas e planetas, e num produto em que a COR É O DADO um ganho de
+>    saturação seria invenção com cara de medida) e GUIA (sem sujeito: não há
+>    órbita, grade nem retícula desenhada). A lição dos 7 campos mortos do
+>    doador valeu mais que a lista de 5 eixos.
+> 4. **O eixo ESCALA lê a distância a CASA, não "o que domina o quadro".** O
+>    desenho escreveu "FORA DE ESCALA quando o Sol-ator artístico DOMINA"; o
+>    implementado é "fora do domínio profundo", que é outra coisa — a 8 kpc
+>    quem domina não é o Sol-ator e o selo diz FORA assim mesmo. A razão
+>    verdadeira, hoje escrita no código e no título do teste: acima do limiar o
+>    selo declara desvio porque **não sabe garantir 1:1** (a esfera de 2.269 UA
+>    existe na cena), e não porque o disco esteja em quadro. Conservadorismo
+>    declarado, mesma defesa do NaN.
+> 5. **O tier/`autoQuality` entra no selo SEM botão de desfazer.** D1 pedia que
+>    toda linha fosse controle; a linha `q` tem `volta: 'nenhuma'`, porque
+>    forçar cinema numa máquina que não dá conta seria trocar uma honestidade
+>    por outra mentira. O selo declara e não promete.
+> 6. **"BRILHO ASSISTIDO" é melhoria sobre o herdado, não verbatim.** O
+>    `i18n/common.json` do doador diz "BRILHO REAL vs ASSISTIDO"; a casa
+>    escreve o par completo, para a linha se ler sozinha. (O comentário de
+>    `selo.ts` ainda chama a copy de "verbatim" — é a palavra que está errada,
+>    não a string.)
+> 7. **A abertura do Atlas é ancorada na ÉPOCA do retrato, de propósito.** A
+>    ESCOLHA de quem é a órbita mais externa é derivada do dado, mas a POSIÇÃO
+>    e o RAIO vêm da tabela congelada de 2026 — nada nesse caminho consulta a
+>    efeméride viva. Consertar é o Director compor a posição viva, e isso
+>    pertence à onda que desenha as órbitas.
+>
+> **ATA DA REVISÃO DE OLHOS FRESCOS (painel de 3 lentes, antes do merge):
+> 20 achados, 1 BLOQUEANTE, todos consertados em cinco commits.** O
+> bloqueante: **o eixo solar estava INVERTIDO** — faltava o `negate()` que o
+> doador comprou com dor ("camera should be on the OPPOSITE side to see
+> illuminated face"), e com ele invertido os 30° herdados viravam ângulo de
+> fase de 150° (6,7% do disco iluminado) e o grampo dos 70°, que devia
+> garantir 67% de disco, garantia no máximo 33%: a câmera do enquadramento
+> privilegiado fotografava o LADO ESCURO, o oposto do que as duas docstrings
+> prometem. Não movia pixel hoje (corpos são pontos), mas era a única coisa
+> que a doutrina mandou atravessar daquela linha. Consertado em `69e1cf5`,
+> junto com os três achados que só se consertam com ele: a **esfera de
+> abertura passa a ser a do SISTEMA** (centrada no Sol, raio da órbita mais
+> externa — pendurada em Plutão ela não continha o sistema, um corpo do lado
+> oposto da mesma órbita fica a ~71 UA do centro); `PARENT_FRAMING_BIAS` volta
+> a ser peso de `lerp` entre DIREÇÕES (como fator de distância ele comia a
+> margem, 1,2 × 0,78 = 0,936 < 1, e transbordava justamente a esfera que a
+> conta promete tangenciar); e o raio de enquadramento de uma estrela passa a
+> ser função do ALVO e não de onde a câmera estava — clicar duas vezes no
+> mesmo nome dava duas vistas diferentes (8 pc, 4 pc, 2 pc…), a mesma
+> não-reprodutibilidade que o pino do fov existe para impedir. Os outros
+> quatro commits: `f40ae2b` (quatro defeitos de visitante — o relógio do céu
+> não parava no "Partir"; overlays renasciam sozinhos ao voltar à fase, com o
+> foco caindo na caixa de texto que engole o WASD; o ⏸ com AO VIVO ligado não
+> parava nada; camada ↻ pelo painel dentro do Atlas caía na tela de título),
+> `fb51240` (cinco defeitos de doutrina nos gates — `medirCobertura` PASSAVA
+> VAZIA por `Math.max()` de lista vazia, o pior modo de falhar; o degrau da
+> barra virou lei de LARGURA com número medido; a faixa `<900 px` virou
+> constante declarada; o trilho de 1,4 virou piso no juiz + folga no vitest; o
+> sufixo do harness ganhou a JANELA), `4717076` (cinco lugares em que o código
+> dizia uma coisa e fazia outra) e `19fa18e` (as três linhas da matriz cujo
+> destino a revisão apontou como não cumprido). A distribuição declarada pelos
+> corpos dos commits é 4 + 4 + 5 + 5, mais as três linhas da matriz do último —
+> é assim que os vinte se contam. **A onda teve DOIS painéis:**
+> o da ABERTURA, com 32 emendas ao desenho ANTES da primeira linha de código —
+> é dele que vêm o registro único do selo (o defeito do doador não se repete),
+> a escrita dos DOIS atributos no tempo vivo, a prontidão de captura sabendo
+> da fase nova e o quinteto guardado pelo portal.
+>
+> **PENDÊNCIAS NOMEADAS.**
+> 1. **O selo é dirigido por render.** Ele lê o estado da vista a cada render
+>    do React, e o render acontece quando o foco muda; o veredito CONVERGE
+>    sempre, mas pode atrasar ~200 ms a 3 s depois de um gesto que muda a vista
+>    sem mudar o foco. O conserto é publicar a vista pelo tick, como o
+>    `onTempo` já faz.
+> 2. **O declutter de rótulos testa ÂNCORA, não extensão.** As reservas do
+>    `LabelCanvas` crescem com o texto, mas o teste é pela âncora — com
+>    `?ui=1,4` um nome comprido pode encostar na barra. Mexer nisso muda o
+>    FILME: é decisão de composição, não de escala de UI.
+> 3. **Não há atalho de teclado para a paleta de busca.** A guarda de atalhos
+>    do App retorna cedo em 'atlas' (D3, "Espaço não vaza"), e nenhuma tecla
+>    foi reservada para abrir a busca — só o botão da barra.
+> 4. **`?foco=` não cobre Sgr A✱.** Ele está fora das 1.726 e é alcançável só
+>    pelo clique no rótulo; o link volta ao modo sem o alvo, em vez de inventar
+>    uma porta que a busca não saberia resolver. Mesmo alcance da D4 dos dois
+>    lados.
+> 5. **Telas estreitas (<900 px de CSS) pedem arranjo próprio do HUD.** Abaixo
+>    disso a base estoura porque a máquina do tempo quebra em duas e três
+>    linhas — medido em `ui = 1,4`: base 0,297 a 850 px, 0,328 a 800, 0,416 a
+>    700 (contra 0,310 declarados). O juiz reproduz sozinho as de 800 e 600 px
+>    e as imprime como REGISTRO da pendência (`cobra = false`); as de 850 e 700
+>    são medições avulsas da mesma sessão, guardadas na docstring de
+>    `LARGURA_UTIL_MINIMA_PX`. O que o juiz COBRA é a faixa declarada — 900,
+>    1.000 e 1.200 px × `ui` 1 / 1,25 / 1,4 —, com o 900 lido do próprio módulo
+>    pelo dev server, nunca redigitado.
+> 6. **`PARENT_FRAMING_BIAS` segue sem consumidor** até as luas (Onda 6) — é
+>    viés de moldura entre corpo e pai, e não há pai em quadro enquanto os
+>    corpos forem pontos.
+> 7. **A abertura na época** (item 7 dos conflitos): compor a posição viva é
+>    da onda das órbitas.
+> 8. **Fixtures Horizons de venus/jupiter/saturn/uranus** seguem pendentes —
+>    herança da Onda 4, sem consumidor novo nesta onda.
+>
+> **O placar da matriz NÃO muda: seguem 85 linhas, nenhum veredito movido.**
+> O que mudou em §2.3 foi o **estado** de cinco linhas: três saem de destino
+> declarado para destino CUMPRIDO (clique em corpo → foco; busca de corpos;
+> deep link) e duas foram RE-REGISTRADAS com o que a onda mediu
+> (`useDialogFocus`, cujo juiz deixou de ser o `rodada.mjs`; `visualPresets.ts`,
+> com os limiares reprovados por medição).
 
 **Onda 6 — Corpos resolvidos.** (1) Terra+Lua com eclipse; (2) demais rochosos; (3) gigantes + anel de Saturno; (4) luas em lote + **as 5 luas de Urano no pipeline de eclipse** + **mosaicos Titan/Europa julgados na bancada, que entram só se ganharem do incumbente** (`2k_titan.jpg` para Titã; Europa só com as 68 linhas de no-data tratadas); (5) anões/TNOs + **anéis de Urano, Netuno e Quaoar**; (6) asteroides com Lommel-Seeliger + **fotometria de regolito escrita nova**, com os parâmetros por corpo herdados.
 
