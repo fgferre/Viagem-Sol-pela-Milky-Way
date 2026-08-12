@@ -1150,6 +1150,16 @@ export class Director {
     this.events.onWarp(0); // a vinheta de warp ficava presa no CSS
   }
 
+  /**
+   * A CAPTURA DE PONTEIRO do voo livre (Onda 5, F5). O HUD é quem
+   * OFERECE o opt-in, e é por aqui que ele pede e pergunta; as quatro
+   * defesas (backoff, dispose, soltar as teclas no unlock, listener de
+   * movimento só com lock) moram no rig, que é o dono das teclas.
+   */
+  get capturaDePonteiro() {
+    return this.roam.captura;
+  }
+
   // ---- portal do Atlas ---------------------------------------------
 
   /**

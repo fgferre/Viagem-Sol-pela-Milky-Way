@@ -306,6 +306,13 @@ try {
     `retângulo útil: base declarada ${cobertura.util.base} ≥ medida `
       + `${cobertura.baseMedida.toFixed(3)} (${cobertura.pecas.join(' · ')})`
   );
+
+  // O VOO LIVRE, desde a F5: o painel de Ajustes ganhou uma seção que só
+  // existe nesta fase ("rever o convite"), e o convite dos três gestos
+  // fica na tela ao lado dele. Sem julgar a fase, uma seção nova podia
+  // quebrar o foco preso do painel sem ninguém ver; e um convite que
+  // roubasse o foco não apareceria em prova nenhuma.
+  await julgarPagina(sessao, 'pos=0,0,0.1&look=0,0,0', 'free');
 } finally {
   sessao.fechar();
 }

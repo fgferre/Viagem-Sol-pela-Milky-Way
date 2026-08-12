@@ -48,6 +48,7 @@ export function Ajustes({
   escondidas,
   onCamada,
   urlParaCopiar,
+  onReverConvite,
 }: {
   aberto: boolean;
   onFechar: () => void;
@@ -62,6 +63,12 @@ export function Ajustes({
   onCamada: (flag: string, ligar: boolean) => void;
   /** a URL de agora COM o instante da viagem (App.urlComMomento) */
   urlParaCopiar: () => string;
+  /**
+   * Reabre o convite dos três gestos (F5). Ausente fora do voo livre —
+   * uma seção que reabrisse, no meio do filme, um convite que ensina a
+   * voar seria um botão que não faz nada.
+   */
+  onReverConvite?: () => void;
 }) {
   const [copiado, setCopiado] = useState(false);
 
@@ -155,6 +162,18 @@ export function Ajustes({
           );
         })}
       </div>
+
+      {onReverConvite && (
+        <div className="ajustes-secao">
+          <h3>Convite</h3>
+          <p className="ajustes-nota">
+            Os três gestos do voo livre, apontados na própria tela.
+          </p>
+          <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
+            rever o convite
+          </button>
+        </div>
+      )}
 
       <div className="ajustes-secao">
         <button
