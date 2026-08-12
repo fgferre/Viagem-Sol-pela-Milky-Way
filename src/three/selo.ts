@@ -33,7 +33,10 @@ import { deepDiscFade, deepPointGain } from './world/lodStellar';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 
-// ---- a copy, verbatim (D1) ----------------------------------------
+// ---- a copy herdada (D1). Três pares são verbatim do i18n do doador;
+// "BRILHO ASSISTIDO" é MELHORIA declarada: o doador escreve só
+// "ASSISTIDO", e a casa iguala o padrão do eixo irmão (Estado da
+// Onda 5, conflito 6). ------------------------------------------------
 export const ESCALA_REAL = 'ESCALA REAL';
 export const FORA_DE_ESCALA = 'FORA DE ESCALA';
 export const BRILHO_REAL = 'BRILHO REAL';
