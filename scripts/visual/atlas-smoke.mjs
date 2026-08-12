@@ -107,6 +107,12 @@ async function abrir() {
       esperarAssentar({ send, cartografia: () => true, quadros: 700, teto: 180000 }),
     // o Director lê `prefers-reduced-motion` UMA vez, no construtor —
     // então a emulação tem de estar de pé antes da navegação seguinte
+    /** clique curto de verdade — o gesto que o Director escuta */
+    clicar: async (x, y) => {
+      const base = { x, y, button: 'left', clickCount: 1, buttons: 1, pointerType: 'mouse' };
+      await send('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
+      await send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased', buttons: 0 });
+    },
     reduzirMovimento: () =>
       send('Emulation.setEmulatedMedia', {
         features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
@@ -209,6 +215,33 @@ try {
       && Number(await sessao.js(veu)) === 0,
     'o véu abre de volta e a fase é a nova — o portal não fica preso'
   );
+
+  // ---- 7: a fundação da F3 — rótulos e clicar-para-enquadrar -------
+  // O Atlas herdou o ramo de rótulos do voo livre, e o clique curto
+  // passou a FOCAR em vez de voar. Sem esta prova, a busca da F3
+  // nasceria sobre um pipeline que ninguém verificou estar de pé.
+  const tinta = await sessao.js(`(() => {
+    const c = document.querySelector('.label-canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    for (let y = 0; y < c.height; y += 2) {
+      for (let x = 0; x < c.width; x += 2) {
+        if (d[(y * c.width + x) * 4 + 3] > 200) return { x, y };
+      }
+    }
+    return null;
+  })()`);
+  conferir(tinta !== null, `o pipeline de rótulos desenha em 'atlas' (tinta em ${JSON.stringify(tinta)})`);
+  if (tinta) {
+    const antesDoClique = await sessao.js('window.__director.engine.camera.position.toArray().join()');
+    await sessao.clicar(tinta.x, tinta.y);
+    await sessao.assentar();
+    const depoisDoClique = await sessao.js('window.__director.engine.camera.position.toArray().join()');
+    conferir(
+      antesDoClique !== depoisDoClique
+        && (await sessao.js('window.__director.captura.fase')) === 'atlas',
+      'clicar num nome ENQUADRA sem sair da fase (a câmera reposicionou)'
+    );
+  }
 
   await sessao.reduzirMovimento();
   await sessao.ir('t=100&q=cinema');
