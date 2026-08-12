@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { CAMADAS, CAMADAS_DO_ATLAS, NOME_DO_SISTEMA } from './atlasConfig';
 
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
+const GALAXY = readFileSync(new URL('./world/galaxy.ts', import.meta.url), 'utf8');
 
 describe('a tabela de camadas da casa', () => {
   it('não repete flag — duas linhas com a mesma flag seriam dois donos', () => {
@@ -18,15 +19,26 @@ describe('a tabela de camadas da casa', () => {
     expect(new Set(flags).size).toBe(flags.length);
   });
 
-  it('toda flag oferecida é flag que o Director LÊ', () => {
+  it('toda flag oferecida é flag que ALGUÉM lê por quadro', () => {
     for (const c of CAMADAS) {
       const lida =
         DIRECTOR.includes(`this.hide.has('${c.flag}')`) ||
         DIRECTOR.includes(`this.debug.has('${c.flag}')`) ||
-        // as três do BAKE são lidas na galáxia, não no director
-        !c.viva;
-      expect(lida, `${c.flag} não é lida pelo Director`).toBe(true);
+        // as três da galáxia são lidas LÁ: o boot semeia por `Galaxy.dbg`
+        // e a troca viva entra pelo setter que o Director roteia
+        GALAXY.includes(`'${c.flag}'`);
+      expect(lida, `${c.flag} não é lida por ninguém`).toBe(true);
     }
+  });
+
+  it('as DOZE trocam ao vivo — nenhuma opção do painel recarrega a página', () => {
+    // A régua do dono: nenhuma opção do painel de Ajustes recarrega. As
+    // três últimas (nodisc/nogdust/noglow) recarregavam por um comentário
+    // podre — `bakeDiscLayers` roda inteiro de qualquer jeito. Quem
+    // marcar uma camada como `viva: false` quebra aqui e vai ter de
+    // provar que o mundo precisa MESMO ser reconstruído.
+    expect(CAMADAS.length).toBe(12);
+    expect(CAMADAS.filter((c) => !c.viva)).toEqual([]);
   });
 });
 

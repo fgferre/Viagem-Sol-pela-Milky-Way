@@ -29,7 +29,13 @@ export interface Camada {
   flag: string;
   /** rótulo em pt-BR, o mesmo nos dois hospedeiros */
   nome: string;
-  /** o tick lê a flag por quadro (troca AO VIVO); senão, exige reload */
+  /**
+   * A flag é lida POR QUADRO (troca ao vivo); `false` exigiria recarga.
+   * Desde 2026-08-12 **todas** são vivas — as três últimas a recarregar
+   * (nodisc/nogdust/noglow) nunca foram lidas no bake, e o campo fica
+   * como contrato: quem escrever `viva: false` liga de volta o ↻ do
+   * painel e o ramo de recarga do App, os dois derivados desta linha.
+   */
   viva: boolean;
   /**
    * Presente ⇒ a camada aparece na GAVETA do Atlas, com este ícone.
@@ -42,14 +48,18 @@ export interface Camada {
 
 /**
  * As camadas da casa, na ordem em que o painel do filme sempre as
- * mostrou. `viva: false` são as lidas no BAKE do mundo (construção):
- * religá-las exige reconstruir, e o painel marca isso com ↻.
+ * mostrou. AS DOZE TROCAM AO VIVO desde 2026-08-12: as três da galáxia
+ * (lâminas, extinção por partícula, bojo) eram `viva: false` por um
+ * comentário podre — `bakeDiscLayers` roda inteiro de qualquer jeito, o
+ * τRT inclusive, e elas só governam `mesh.visible` e o bind de
+ * `uTauMap`, que a `Galaxy` reescreve por quadro. Nenhuma opção do
+ * painel recarrega a página.
  */
 export const CAMADAS: readonly Camada[] = [
   { flag: 'nogal', nome: 'Galáxia (tudo)', viva: true },
-  { flag: 'nodisc', nome: 'Lâminas do disco', viva: false },
-  { flag: 'nogdust', nome: 'Extinção por partícula', viva: false },
-  { flag: 'noglow', nome: 'Brilho do bojo', viva: false },
+  { flag: 'nodisc', nome: 'Lâminas do disco', viva: true },
+  { flag: 'nogdust', nome: 'Extinção por partícula', viva: true },
+  { flag: 'noglow', nome: 'Brilho do bojo', viva: true },
   { flag: 'nocart', nome: 'Cartografia observada', viva: true },
   { flag: 'nonebula', nome: 'Nebulosa volumétrica', viva: true },
   { flag: 'nowrap', nome: 'Campo envolvente', viva: true },

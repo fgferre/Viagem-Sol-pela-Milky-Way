@@ -2611,7 +2611,7 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
 
   ```
   node scripts/visual/a11y.mjs         # 139 asserções · 2,2 min
-  node scripts/visual/atlas-smoke.mjs  #  42 asserções · 1,7 min
+  node scripts/visual/atlas-smoke.mjs  #  68 asserções · 4,6 min
   node scripts/visual/voo-smoke.mjs    #  25 asserções · 0,7 min
   node scripts/visual/busca-smoke.mjs  #  24 asserções · 1,3 min
   ```
@@ -2632,7 +2632,12 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
     portas, o véu e o `reduced-motion`, o rótulo que desenha e o clique que
     enquadra, `?jd=EPOCA` neutro bit a bit, o caminho SEM REDE (bloqueando
     `*efemerides*`: md5 exato do retrato, badge honesto, ZERO grito de console) e o
-    relógio do céu que para junto com o "Partir".
+    relógio do céu que para junto com o "Partir". **Desde a Fase A dos
+    "Ajustes 100% vivos" (2026-08-12) ele também é o juiz do PAINEL**: as 12
+    camadas trocando sem navegação (marca na `window`, `captura.quadros`
+    10→0, URL e selo), a troca viva bit-idêntica ao boot com a mesma flag, o
+    slider de exposição devolvendo a auto-exposição com a URL reproduzindo a
+    tela, e o clique em Cinema gravando `?q=cinema`.
   - **`voo-smoke.mjs`** prova o convite dos três gestos (só na primeira entrada,
     `conviteVisto` gravado, não volta na recarga), o furo do Spotlight ancorado no
     retângulo MEDIDO do alvo, o opt-in da captura de ponteiro, o backoff depois de
@@ -3542,9 +3547,10 @@ verdade quando a UI do modo Atlas nascer (Onda 5+).
 ## Ajustes 100% vivos — o menu não recarrega (pesquisa 2026-08-12, roadmap decidido)
 
 **A régua, dita pelo dono: nenhuma opção do painel de Ajustes recarrega a
-página — padrão AAA, UX em primeiro lugar.** Hoje só a QUALIDADE reinicia de
-verdade (com retomada via `?t=&play=1`), e três camadas recarregam por um motivo
-que **não existe mais**: os comentários de `Ajustes.tsx:9`, `atlasConfig.ts:45–46`
+página — padrão AAA, UX em primeiro lugar.** Desde a Fase A (feita, abaixo) só a
+QUALIDADE reinicia de verdade (com retomada via `?t=&play=1`); até ela, três
+camadas recarregavam por um motivo que **não existia**: os comentários de
+`Ajustes.tsx:9`, `atlasConfig.ts:45–46`
 (a tabela CAMADAS, que a Onda 5 mudou de casa) e `director.ts:961` dizem
 que `nodisc`/`nogdust`/`noglow` "são lidas no bake", mas `bakeDiscLayers`
 roda incondicionalmente (galaxy.ts:941–1011, inclusive o 8º bake do τ na :974) e
@@ -3552,7 +3558,7 @@ as três flags só governam `mesh.visible`/bind de uniform lidos POR QUADRO
 (galaxy.ts:1018, :1078, :1086–1088, :1121–1128). Comentário podre já custou
 rodada de auditoria uma vez (MARCH_B_RS); aqui custa três reloads.
 
-**Fase A — sem pré-requisito, fecha 3 dos 4 reloads:**
+**Fase A — FEITA em 2026-08-12 (`e7f73da`), fechou 3 dos 4 reloads:**
 
 1. `nodisc`/`noglow`/`nogdust` viram vivas: setter na `Galaxy` (escreve
    `showDisc`/`showGlow`; `nogdust` troca `uTauMap` entre `tauRT.texture` e a
@@ -3569,8 +3575,9 @@ rodada de auditoria uma vez (MARCH_B_RS); aqui custa três reloads.
    O slider segue armando o latch mesmo ao voltar a 1,02 (`trocarExposicao`,
    App.tsx:553–561, remove `?exp=` mas chama `setExposure`) — a tela fica em
    1,02 fixo e a MESMA URL recarregada roda a auto-exposição
-   1,02+0,03·galaxyFade (1,05 na vista externa, director.ts:1895). Falta uma
-   linha: valor default chama o caminho de volta em vez de `setExposure`.
+   1,02+0,03·galaxyFade (1,05 na vista externa, director.ts:1895). Faltava uma
+   linha, e é a que a Fase A escreveu: o valor default chama o caminho de
+   volta em vez de `setExposure`.
 3. Escolha manual de qualidade grava `?q=` SEMPRE, inclusive cinema:
    `changeQuality` apaga o parâmetro (App.tsx:501) e o boot seguinte cai para o
    storage — um `tierQueRodou` medido `alta` sobrepõe o clique em Cinema.
@@ -3581,6 +3588,43 @@ rodada de auditoria uma vez (MARCH_B_RS); aqui custa três reloads.
 *Gate A:* as 12 camadas do painel trocam sem reload; ab-identidade bit-idêntico
 com a mesma flag nos dois caminhos (boot por URL e troca viva); `captura.pronto`
 recomeça a contagem em toda troca (o `perturbar()` já garante).
+
+*Gate A — CUMPRIDO, com os números (2026-08-12, nesta GPU):*
+
+- **As 12 trocam sem reload**, provado por CDP no bloco 11 do `atlas-smoke`
+  (que julgava a RECARGA e agora julga o contrário), com quatro provas por
+  camada dentro do MESMO documento: marca posta na `window` intacta depois
+  dos 24 cliques, `captura.quadros` **10→0** lido na MESMA avaliação do
+  clique (sem corrida com o rAF), URL espelhada por `replaceState` e o selo
+  declarando a camada. De dentro do Atlas, com `?jd=`/`?foco=` no ar: modo,
+  instante e alvo intactos. O juiz foi de **42 para 68 asserções**.
+- **Troca viva ≡ boot, bit a bit, nos DOIS aparelhos de medida.** Na sessão
+  do juiz (1200×900, `t=293`): `nodisc` 34a23c1ba49a · `nogdust` b11f15c37707
+  · `noglow` 83b7a796fc81, iguais pelos dois caminhos e **diferentes** da
+  vista limpa (906c28fc49e7) — sem esse terceiro veredito o teste passaria
+  comparando duas imagens que ninguém mudou. E contra o harness oficial, na
+  janela da leva (`faceon`, 1800×1713, `EXTRA='&nodisc=1'` etc., processos
+  DIFERENTES): **2f1f63810873 · 7d15f390f7fb · d9ce84c8dd07** reproduzidos
+  pela troca viva, com o `limpo` batendo o md5 oficial `d05591e27ea4`.
+- **A leva das 18 saiu BIT-IDÊNTICA** aos md5 oficiais (18/18 `IGUAL`, todas
+  por `via=sinal`, 2,9 min com `JOBS=3`) — a prova de que mexer na
+  visibilidade da galáxia não moveu o padrão um pixel.
+- **Exposição:** a vista externa nasce em **1,0500** (a rampa
+  1,02+0,03·galaxyFade); o slider em 1,40 põe a tela em 1,4000 com o latch
+  ligado e `?exp=1.4` na URL; **de volta ao 1,02 a AUTO-exposição volta
+  (1,0500), o latch desliga e a URL perde o `?exp=`** — e a mesma URL
+  recarregada reproduz a tela **pixel a pixel** (3309a4e9ac20).
+- **`?q=` sempre:** clicar em Cinema no painel com `?q=alta` no ar recarrega
+  em `?q=cinema` e o tier vivo é `cinema`.
+- **1.139 verdes** (`npm test`, +1: a tabela CAMADAS agora cobra as doze
+  vivas), `npm run typecheck` e `npx eslint .` limpos, e os quatro juízes de
+  navegador verdes (`a11y`, `atlas-smoke`, `voo-smoke`, `busca-smoke`).
+
+*O que a Fase A NÃO alcança, medido e dito:* `?forgetau=1` entrega o mesmo τ⊥
+às forjas num bind feito UMA vez no `init` (`director.ts`), então trocar
+`nogdust` ao vivo com ela ligada deixa as forjas com o mapa do carregamento. A
+porta segue sendo decisão de boot (varredura de dosagem), e o limite está
+escrito no setter da `Galaxy`.
 
 **Fase B — os instrumentos, que já estão no roadmap (pré-requisitos da C):**
 
@@ -3640,7 +3684,8 @@ silenciosos: a detecção por toque/tela decide o tier inicial (engine.ts:57–6
 o storage responde pelo aparelho na visita seguinte (engine.ts:173); o monitor
 de fps troca tier sozinho sempre que não há `?q=` (engine.ts:263–295); e a
 escolha manual de Cinema, por apagar o parâmetro, RELIGA o monitor sem o
-visitante pedir (App.tsx:501 + engine.ts:223–226). Do atlas fica só a semente —
+visitante pedir (App.tsx:501 + engine.ts:223–226) — **este quarto a Fase A
+fechou** (o `?q=` passou a ser sempre escrito), sobram TRÊS. Do atlas fica só a semente —
 automatismo é ESCOLHA do visitante, não comportamento de fábrica; o mecanismo
 dele (score aditivo por sniffing + 15 overrides) segue aposentado pela linha da
 matriz do PLANO-ATLAS §2: score é palpite, e a casa tem o sinal MEDIDO com
