@@ -244,10 +244,21 @@ const molecularCloudRecords = catalogs.molecularClouds.map((row) => {
 });
 
 const normalizedMaserArm = (arm) => (arm === '???' ? '' : arm);
+// PARALAXE POSITIVA, como nos aglomerados jovens logo abaixo. Sem o
+// filtro, `1000/plx` com plx ≤ 0 devolve distância NEGATIVA e o maser
+// aparece ESPELHADO pelo Sol — dado finito, plausível para o encoder
+// (que só rejeita NaN) e capaz de puxar o fit BeSSeL sem ninguém ver.
+// Nos 199 do snapshot de hoje toda plx é positiva (mínima 0,049 mas),
+// então isto não move um byte do publicado; é a próxima regeneração que
+// ele defende. Achado de auditoria externa (2026-08-12).
+const maserRows = catalogs.spiralAnchors.filter((row) => numeric(row, 'plx') > 0);
+// o dicionário nasce das linhas que SOBRARAM (precedente do H II logo
+// abaixo): filtrar depois de numerar deixaria código de braço sem nenhum
+// registro apontando para ele
 const maserArmDictionary = categoryDictionary(
-  catalogs.spiralAnchors.map((row) => normalizedMaserArm(row.Arm))
+  maserRows.map((row) => normalizedMaserArm(row.Arm))
 );
-const maserRecords = catalogs.spiralAnchors.map((row) => {
+const maserRecords = maserRows.map((row) => {
   const coordinates = galacticCoordinatesFromSourceName(row.Name);
   if (!coordinates) throw new Error(`Nome BeSSeL sem coordenadas galácticas: ${row.Name}`);
   const parallaxMas = numeric(row, 'plx');
