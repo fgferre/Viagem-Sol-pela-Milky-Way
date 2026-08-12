@@ -304,7 +304,12 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
      * de a11y mede.
      */
     teclar: async (nome, { shift = false } = {}) => {
-      const TECLAS = { Tab: 9, Escape: 27, Enter: 13 };
+      // as setas entraram na F3 (a listbox da paleta de busca escolhe
+      // com elas); o resto é da F2
+      const TECLAS = {
+        Tab: 9, Escape: 27, Enter: 13,
+        ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40,
+      };
       const codigo = TECLAS[nome];
       if (!codigo) throw new Error(`tecla desconhecida: ${nome}`);
       const base = {
@@ -316,6 +321,27 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
       };
       await send('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown' });
       await send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+    },
+    /**
+     * DIGITA texto tecla a tecla, com `text` no evento — que é o que faz
+     * o Chrome inserir o caractere e disparar o `input` que o React
+     * escuta. Nasceu na F3 para a paleta de busca, e é tecla a tecla de
+     * propósito: `Input.insertText` põe a palavra inteira de uma vez, e
+     * é justamente a conta POR TECLA que o gate da busca mede.
+     */
+    digitar: async (texto) => {
+      for (const ch of texto) {
+        const vk = ch.toUpperCase().charCodeAt(0);
+        const base = {
+          key: ch,
+          text: ch,
+          unmodifiedText: ch,
+          windowsVirtualKeyCode: vk,
+          nativeVirtualKeyCode: vk,
+        };
+        await send('Input.dispatchKeyEvent', { ...base, type: 'keyDown' });
+        await send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+      }
     },
     // o Director lê `prefers-reduced-motion` UMA vez, no construtor —
     // então a emulação tem de estar de pé antes da navegação seguinte

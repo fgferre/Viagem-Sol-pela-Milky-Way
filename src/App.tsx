@@ -1,9 +1,10 @@
 // ============================================================
 // App — canvas WebGL + HUD cinematográfico sobre a simulação.
 // ============================================================
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Director, LOAD_STAGES } from './three/director';
 import type { LoadStage, Phase } from './three/director';
+import type { NamedStar } from './three/config';
 import { HUD_POR_FASE } from './three/fases';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
 import { TONE_MAPPINGS } from './three/core/engine';
@@ -19,6 +20,8 @@ import {
   BarraDoTempo,
 } from './components/HudDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
+import { PaletaDeBusca, BotaoDaBusca } from './components/PaletaDeBusca';
+import { chaveDeLink, construirIndice, resolverFoco } from './lib/buscaEstrelas';
 import { Convite } from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
 import { CAMADAS } from './three/atlasConfig';
@@ -84,6 +87,14 @@ export default function App() {
     new URLSearchParams(window.location.search).has('ajustes')
   );
   const [gaveta, setGaveta] = useState(false);
+  const [busca, setBusca] = useState(false);
+  /**
+   * AS 1.726 NOMEADAS, publicadas pelo Director quando o `init` termina
+   * — a paleta da busca monta o índice sobre elas (F3). Estado e não
+   * leitura direta: o índice é `useMemo` e precisa de um render para
+   * nascer, e este é o render.
+   */
+  const [nomeadas, setNomeadas] = useState<readonly NamedStar[]>([]);
   /** passo do convite de boas-vindas ao voo livre; null = fora do ar */
   const [convite, setConvite] = useState<number | null>(null);
   /** o ponteiro está capturado AGORA? (F5 — o opt-in do voo livre) */
@@ -197,6 +208,7 @@ export default function App() {
         if (cancelled) return;
         setTicks(d.progressTicks);
         setRuntime(d.journeyDuration);
+        setNomeadas(d.nomeadas);
         const query = new URLSearchParams(window.location.search);
         const qualityParam = query.get('q') as QualityLevel | null;
         if (qualityParam && ['cinema', 'alta', 'performance'].includes(qualityParam)) {
@@ -229,16 +241,34 @@ export default function App() {
           }
         } else if (query.get('pos')) console.warn('?pos= inválido:', query.get('pos'));
 
-        // PRECEDÊNCIA DECLARADA: `?pos=` > `?atlas=1` > `?t=`/`?play=`.
+        // PRECEDÊNCIA DECLARADA: `?pos=` > `?atlas=1`/`?foco=` > `?t=`/`?play=`.
         // `?pos=` é a régua das capturas e não cede a ninguém; `?atlas=1`
         // ganha do instante porque o Atlas é MODO, e o instante que
         // vier junto vira só o momento de volta do "Partir" (é assim que
         // o link copiado de dentro do Atlas fecha o círculo).
+        //
+        // `?foco=` ENTRA NO ATLAS SOZINHA (F3), e é decisão: focar é
+        // coisa que só existe no Atlas — um link de foco que caísse no
+        // meio do filme não teria onde pousar. Ela vem depois da entrada
+        // porque enquadra a partir da vista de abertura, pelo mesmo
+        // caminho do clique num nome.
         const hasTime = query.has('t');
         const time = Number.parseFloat(query.get('t') ?? '0');
         const momento = Number.isFinite(time) && time > 0 ? time : undefined;
-        if (!pos && query.has('atlas')) {
+        const foco = query.get('foco');
+        if (!pos && (query.has('atlas') || foco)) {
           d.entrarNoAtlas({ instantaneo: true, momento });
+          if (foco) {
+            // o índice local não duplica o da paleta: aquele nasce num
+            // `useMemo` que ainda não rodou (o estado das nomeadas está
+            // sendo publicado neste mesmo tick), e este morre na linha
+            // seguinte. A conta é uma passada nas 1.726.
+            const achado = resolverFoco(foco, construirIndice(d.nomeadas));
+            if (achado) d.visitarEstrela(achado.estrela);
+            // sem palpite: a linha de contexto vai mostrar o sistema, que
+            // é o que ficou de fato em quadro (precedente do `?pos=`)
+            else console.warn('?foco= não encontrou estrela:', foco);
+          }
         } else if (!pos && (hasTime || query.get('play'))) {
           d.play();
           if (momento !== undefined) d.seek(momento);
@@ -399,6 +429,19 @@ export default function App() {
           : null;
     if (phase === 'atlas') url.searchParams.set('atlas', '1');
     else url.searchParams.delete('atlas');
+    // O ALVO EM QUADRO (F3) viaja junto, e só de dentro do Atlas: é lá
+    // que "foco" quer dizer alguma coisa. A chave é a canônica da lib
+    // (hd/hip quando existem), e ela some da URL quando o que está em
+    // quadro é o sistema — que é o enquadramento de abertura, o padrão.
+    //
+    // O QUE ESTA LINHA NÃO PROMETE, declarado: o foco que NÃO é uma das
+    // 1.726 nomeadas (o Sagittarius A✱, alcançável pelo clique no
+    // rótulo) não tem chave — o link volta ao modo sem o alvo em vez de
+    // inventar uma porta que a busca não saberia resolver. É o mesmo
+    // alcance da D4, dos dois lados.
+    const emQuadro = foco === null ? null : indice.nomeadas.find((s) => s.n === foco);
+    if (phase === 'atlas' && emQuadro) url.searchParams.set('foco', chaveDeLink(emQuadro));
+    else url.searchParams.delete('foco');
     // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: a
     // troca de qualidade e o "voltar ao brilho real" RECARREGAM a página
     // por esta URL, e sem esta linha o visitante que viajou no tempo
@@ -434,17 +477,33 @@ export default function App() {
   const entrarNoAtlas = () => directorRef.current?.entrarNoAtlas();
   const partirDoAtlas = () => directorRef.current?.partirDoAtlas();
 
-  // Um diálogo de cada vez: os dois se ancoram no mesmo canto e os dois
+  // Um diálogo de cada vez: os três se ancoram no mesmo canto e os três
   // se declaram `aria-modal` — dois modais abertos ao mesmo tempo seriam
   // uma mentira para quem ouve a tela, além de sobreposição na tela.
   const abrirGaveta = () => {
     setAjustes(false);
+    setBusca(false);
     setGaveta((v) => !v);
   };
   const abrirAjustes = () => {
     setGaveta(false);
+    setBusca(false);
     setAjustes((v) => !v);
   };
+  const abrirBusca = () => {
+    setGaveta(false);
+    setAjustes(false);
+    setBusca((v) => !v);
+  };
+
+  /**
+   * A ESCOLHA DA PALETA. O verbo é da FASE, não do botão: o Director
+   * manda o mesmo alvo pelos dois caminhos que já existiam — no Atlas
+   * ele ENQUADRA de onde está, no voo livre VOA até lá — e a paleta não
+   * precisa saber qual dos dois aconteceu.
+   */
+  const escolherEstrela = (estrela: NamedStar) =>
+    directorRef.current?.visitarEstrela(estrela);
 
   // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
   const trocarTom = (t: ToneMapMode) => {
@@ -544,6 +603,14 @@ export default function App() {
     });
     window.history.replaceState(null, '', comParam(flag, ligar ? null : '1'));
   };
+
+  /**
+   * O ÍNDICE DA BUSCA — construído UMA vez, quando as nomeadas chegam.
+   * O `useMemo` não é zelo: dentro do Atlas o mostrador da máquina do
+   * tempo re-renderiza o App a 4 Hz, e sem ele as ~5 mil chaves seriam
+   * reconstruídas quatro vezes por segundo enquanto o céu anda.
+   */
+  const indice = useMemo(() => construirIndice(nomeadas), [nomeadas]);
 
   const inJourney = phase === 'journey';
   // As peças que só decidem PRESENÇA por fase saem do mapa único
@@ -696,6 +763,7 @@ export default function App() {
               Entrar no Atlas
             </button>
           )}
+          {hud.busca && <BotaoDaBusca aberta={busca} onAlternar={abrirBusca} />}
           {hud.gaveta && (
             <BotaoDaGaveta aberta={gaveta} onAlternar={abrirGaveta} />
           )}
@@ -762,6 +830,20 @@ export default function App() {
         escondidas={escondidas}
         onCamada={alternarCamada}
       />
+
+      {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo
+          overlay da casa. Fechar DESMONTA (precedente do Convite): é o
+          que faz a consulta anterior não sobrar para a próxima abertura.
+          O verbo vem da fase: no Atlas a escolha enquadra, no voo livre
+          ela voa. */}
+      {busca && hud.busca && (
+        <PaletaDeBusca
+          onFechar={() => setBusca(false)}
+          indice={indice}
+          verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
+          onEscolher={escolherEstrela}
+        />
+      )}
 
       <Ajustes
         aberto={ajustes}

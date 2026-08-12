@@ -21,7 +21,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { NamedStar } from '../three/config';
-import { SCORE, buscar, construirIndice, normalizarConsulta } from './buscaEstrelas';
+import {
+  SCORE,
+  buscar,
+  chaveDeLink,
+  construirIndice,
+  normalizarConsulta,
+  resolverFoco,
+} from './buscaEstrelas';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -164,5 +171,49 @@ describe('rubrica de 4 degraus', () => {
     expect(buscar('cet', indice, 500).find((x) => x.estrela.n === 'τ Cet')?.score).toBe(
       SCORE.palavra
     );
+  });
+});
+
+// ============================================================
+// O DEEP-LINK (`?foco=`). O gate de verdade é o primeiro teste: a
+// ida-e-volta das 1.726, uma a uma. Uma colisão de chave — duas
+// estrelas que o mesmo link resolve — apareceria ali e em lugar
+// nenhum mais, e o sintoma no produto seria um link guardado que abre
+// na estrela errada, sem erro nenhum.
+// ============================================================
+describe('a chave do link', () => {
+  it('IDA E VOLTA nas 1.726: o link de cada estrela resolve NELA', () => {
+    const erradas: string[] = [];
+    for (const estrela of nomeadas) {
+      const volta = resolverFoco(chaveDeLink(estrela), indice);
+      if (volta?.estrela !== estrela) {
+        erradas.push(`${estrela.n} → ${volta?.estrela.n ?? 'nada'}`);
+      }
+    }
+    expect(erradas).toEqual([]);
+  });
+
+  it('prefere o catálogo, e só cai no nome quando não há nenhum', () => {
+    const sirius = nomeadas.find((s) => s.n === 'Sirius')!;
+    expect(chaveDeLink(sirius)).toBe('hd48915');
+    // Proxima não tem HD; entra por HIP
+    expect(chaveDeLink(nomeadas.find((s) => s.n === 'Proxima Centauri')!)).toBe('hip70890');
+    // as 37 companheiras não têm catálogo nenhum: vão pelo próprio nome
+    const semCatalogo = nomeadas.filter((s) => s.hd === undefined && s.hip === undefined);
+    expect(semCatalogo.length).toBe(37);
+    expect(chaveDeLink(semCatalogo[0])).toBe(semCatalogo[0].n);
+  });
+
+  it('a porta aceita o que a caixa de busca aceita — inclusive escrita à mão', () => {
+    expect(resolverFoco('hd 48915', indice)?.estrela.n).toBe('Sirius');
+    expect(resolverFoco('rigil', indice)?.estrela.n).toBe('Rigil Kentaurus');
+    expect(resolverFoco('gama vel', indice)?.estrela.n).toBe('γ² Vel');
+  });
+
+  it('porta vazia ou sem correspondência devolve nada — nunca um palpite', () => {
+    expect(resolverFoco('', indice)).toBeNull();
+    expect(resolverFoco('   ', indice)).toBeNull();
+    expect(resolverFoco('alfa cen', indice)).toBeNull();
+    expect(resolverFoco('hd 4891', indice)).toBeNull();
   });
 });

@@ -65,6 +65,14 @@ export interface HudDaFase {
   selo: boolean;
   /** máquina do tempo: instante do céu, sentido, taxa, AO VIVO (F4/D2) */
   tempo: boolean;
+  /**
+   * paleta de busca sobre as 1.726 nomeadas (F3/D4). Nas DUAS fases em
+   * que existe alvo para escolher, e o verbo muda com a fase: no Atlas
+   * a escolha ENQUADRA, no voo livre ela VOA. No filme não monta — lá
+   * quem manda na câmera é o roteiro, e uma busca sem destino possível
+   * seria um controle que não faz nada.
+   */
+  busca: boolean;
   /** ⏸ Pausar · velocidade · Ver a galáxia · Explorar livremente */
   botoesDaViagem: boolean;
   /** ↻ Reviver */
@@ -88,6 +96,7 @@ export const HUD_POR_FASE = {
     gaveta: false,
     selo: false,
     tempo: false,
+    busca: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -104,6 +113,7 @@ export const HUD_POR_FASE = {
     gaveta: false,
     selo: false,
     tempo: false,
+    busca: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -120,6 +130,7 @@ export const HUD_POR_FASE = {
     gaveta: false,
     selo: false,
     tempo: false,
+    busca: false,
     botoesDaViagem: true,
     botaoReviver: false,
     botaoPartir: false,
@@ -136,6 +147,7 @@ export const HUD_POR_FASE = {
     gaveta: false,
     selo: false,
     tempo: false,
+    busca: false,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
@@ -152,6 +164,7 @@ export const HUD_POR_FASE = {
     gaveta: false,
     selo: false,
     tempo: false,
+    busca: true,
     botoesDaViagem: false,
     botaoReviver: true,
     botaoPartir: false,
@@ -174,6 +187,7 @@ export const HUD_POR_FASE = {
     gaveta: true,
     selo: true,
     tempo: true,
+    busca: true,
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: true,

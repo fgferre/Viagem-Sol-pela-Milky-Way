@@ -106,7 +106,9 @@ export function useDialogFocus(
     if (!aberto) return;
     const caixa = ref.current;
     if (!caixa) return;
-    const gatilho = document.activeElement as HTMLElement | null;
+    // o foco de ANTES é só a reserva — quem manda é o gatilho declarado
+    // (ver a devolução, no fim deste efeito)
+    const focoAnterior = document.activeElement as HTMLElement | null;
 
     // `getClientRects` e não `offsetParent`: o HUD inteiro vive em
     // `position: fixed`, onde o offsetParent de um filho é o contêiner
@@ -150,9 +152,26 @@ export function useDialogFocus(
     caixa.addEventListener('keydown', aoTeclar);
     return () => {
       caixa.removeEventListener('keydown', aoTeclar);
+      // A DEVOLUÇÃO VAI AO GATILHO DECLARADO, e a procura é feita AGORA,
+      // na hora de fechar. Antes ela ia para o que estivesse com o foco
+      // quando o diálogo abriu, e isso bastou enquanto os diálogos da
+      // casa se fechavam um de cada vez pelo Esc. Com o terceiro (a
+      // paleta da busca) apareceu o caso em que aquilo mentia: abrir um
+      // diálogo FECHA o outro, e a devolução do que fecha corre no MESMO
+      // commit, ANTES de o que abre olhar para o foco — o diálogo novo
+      // adotava o gatilho do antigo e, ao fechar, devolvia o foco a um
+      // botão que ninguém tinha apertado. Medido no juiz de a11y: abrir
+      // a busca com a gaveta aberta terminava com o foco no ⚙ Ajustes.
+      //
+      // Procurar na hora também sobrevive a re-render: o nó do botão
+      // pode ter sido recriado desde a abertura, e um nó órfão engole o
+      // foco em silêncio (daí o `isConnected` da reserva).
+      const gatilho =
+        document.querySelector<HTMLElement>(`[${ATRIBUTO_GATILHO}="${nome}"]`) ??
+        focoAnterior;
       if (gatilho?.isConnected) gatilho.focus();
     };
-  }, [aberto]);
+  }, [aberto, nome]);
 
   return {
     ref,

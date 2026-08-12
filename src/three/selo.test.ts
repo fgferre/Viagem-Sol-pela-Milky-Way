@@ -163,6 +163,7 @@ describe('2. nenhum controle desmente o selo', () => {
   it('as portas declaradas como neutras NÃO movem o selo', () => {
     const neutras = [
       't', 'play', 'freeze', 'atlas', 'pos', 'look', 'shot', 'ajustes', 'loader', 'jd',
+      'foco',
     ];
     expect(estadoDoSelo(com({ portas: neutras })).brilho).toBe('real');
   });
