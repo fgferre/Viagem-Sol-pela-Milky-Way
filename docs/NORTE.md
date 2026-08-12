@@ -3288,6 +3288,41 @@ que ainda **decide** algo fica aqui:
   virar rampa contínua, o defeito acorda** — e aí o conserto é o mesmo, com A/B
   próprio (as cascas pintam o céu inteiro; nada nelas muda sem gate).
 
+### Onda 4 — FEITA (2026-08-11)
+
+O registro integral está no **Estado da Onda 4 do PLANO-ATLAS §4**; aqui fica o
+que governa o futuro:
+
+- **A decisão de visão do dono nasceu nesta onda e está nas Decisões fechadas**
+  (linha "Mais que um SpaceEngine"): escala 1:1 onde possível, visibilidade por
+  fotometria, artifício só no canal do instrumento — e a galáxia volumétrica
+  científica como diferencial. Toda escolha de escala/render das Ondas 5–9
+  passa por essa régua ANTES de qualquer escalar artístico novo.
+- **O domínio profundo existe**: abaixo de 0,05 pc o disco artístico se
+  dissolve (`LOD_SOL.deep`, `solWorldFade`), o Sol vira ponto fotométrico da
+  camada `planetas` (10 corpos, época fixa 2026-01-01, retrato GERADO com
+  proveniência), o near cai a `max(d·0,004; 1e-8)` e o voo fica proporcional.
+  Acima de 0,05 pc, TUDO bit-igual ao que era — provado em 32.101 instantes.
+- **A posição na tela É a efeméride projetada**, em três réguas independentes
+  (vitest puro / CDP / pixel; pior erro 0,194 px por eixo no fóton). O
+  instrumento permanente é `scripts/visual/planeta-pixel.mjs`, que se
+  autovalida nos dois estados (M5) e mede em par próprio com `&nobloom=1`.
+- **Portas**: `?plan`/`?noplan` (a camada), `?dbgplan` (leitura por corpo em
+  UA/anos-luz). O palco profundo NÃO tem porta — é fundação, como o near
+  (emenda D11a do desenho da onda).
+- **Encarar o Sol de dentro do sistema ofusca DE PROPÓSITO** (m −15,84 e pico
+  4,8e6 a 150 UA; 31,85% do quadro satura com bloom): é física sem
+  auto-exposição. NÃO "consertar" com teto de brilho — a auto-exposição da
+  Onda 8 é o conserto, e estes números são a semente medida dela.
+- **Pendências herdadas pela frente**: fixtures Horizons de
+  venus/jupiter/saturn/uranus (Vênus é a garantia mais fraca: 1,96e-3° por
+  orçamento de manifesto); fase polinomial por corpo e corpos resolvidos
+  (Onda 6); starOptics do Sol-ponto (7a); fio de rede da efemerides.bin +
+  tempo vivo (5/6); o selo da Onda 5 reporta "ESCALA REAL no domínio
+  profundo" de graça; `?nosun` não governa o Sol-ponto (governa `noplan`);
+  BV_SOL/SOL_BV e PONTO_ZERO_SOL_PC redigitados com igualdade pinada —
+  unificação é candidata da Onda 6.
+
 ### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
 
 **Correção de fato na triagem:** o gate da Onda 0 falava em "dez lições"; o
@@ -3385,6 +3420,7 @@ Não reabrir sem que a condição listada mude.
 | Decisão | Por quê | Reabre se |
 |---|---|---|
 | **O Atlas vive aqui; o código do atlas é especificação, não fornecedor** | Testemunho do dono sobre a qualidade do doador + crítica de olhos frescos que o confirmou arquivo a arquivo (PLANO-ATLAS §7: nove anti-padrões de luz com `arquivo:linha`) | Uma linha específica da matriz, com arquivo aberto e medição na mão — nunca por atacado |
+| **Mais que um SpaceEngine: escala 1:1 onde possível, visibilidade por FOTOMETRIA, artifício só no canal do instrumento (separável e desligável)** | Decisão do dono na abertura da Onda 4 (2026-08-11, palavras dele: "quero ser um SpaceEngine… temos que ser honestos nessas escalas" e "quero ser MAIS que o SpaceEngine" — a honestidade dele + a galáxia procedural científica volumétrica que só a casa tem). A Onda 4 provou a via: domínio profundo 1:1 sem custar um pixel do filme. O Sol-ator de 0,011 pc segue DENTRO do filme como exceção declarada de modo | Decisão do dono, nunca por conveniência técnica; escalar artístico novo só com rótulo explícito de modo esquemático (o selo da Onda 5 é o canal) |
 | **Octree: não** | Serve para podar conjunto fixo e grande. Aqui o VBO é estático e a árvore podaria ~3,7% dos vértices ao custo de ~193 draw calls | Conjunto estático > 2 M pontos **e** `WEBGL_multi_draw` plumbado |
 | **Floating origin: feito por reconstrução relativa à câmera (rodada 13), não por rebase global** | A 25 kpc o quantum f32 é 1,5·10⁻³ pc ≈ 1,7 px de tremor a 1 pc. As cascas — a única geometria resolvida perto da câmera longe do Sol — reconstroem posição por célula inteira + fração e projetam com só a rotação do MV: nenhum operando de kpc no caminho. Rebase global do grafo não é necessário | Outra camada passar a resolver geometria perto da câmera longe do Sol |
 | **Log-depth: não** | A cena tem um único objeto opaco com `depthWrite`; z-fighting precisa de dois | Entrar geometria resolvida (planetas, malhas) |
