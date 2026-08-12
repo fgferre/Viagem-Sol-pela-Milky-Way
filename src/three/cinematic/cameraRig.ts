@@ -213,8 +213,148 @@ export function pisoDaRoda(dPc: number): number {
   return dPc >= DEEP_LIMIAR_PC ? RODA_MIN_PC_POR_S : VOO_MIN_PC_POR_S;
 }
 
+// ---- CAPTURA DE PONTEIRO (Onda 5, F5) ------------------------------
+// O voo em 1ª pessoa com o cursor SOLTO tem um teto: o olhar acaba na
+// borda da janela e o arrasto precisa recomeçar. A captura tira esse
+// teto — e é OPT-IN, sempre: quem decide é o visitante, num botão que
+// a dica de voo hospeda, e o Esc devolve o ponteiro a qualquer momento
+// (isso é do navegador, não nosso — nenhum código daqui pede a captura
+// de volta sozinho).
+//
+// As QUATRO DEFESAS, que são o motivo de isto ser mais que uma linha:
+//  1. BACKOFF: `pointerlockerror` três vezes seguidas e a captura para
+//     de se oferecer. Sem isso, um navegador que nega (política de
+//     permissão, sandbox, aba sem gesto do usuário) receberia um pedido
+//     por clique para sempre, e o visitante veria um botão que não faz
+//     nada.
+//  2. DISPOSE: os listeners saem no `dispose` do rig — que é o que o
+//     HMR do vite chama a cada salvamento. Sem isso, um dia de trabalho
+//     deixa dezenas de listeners de `pointerlockchange` vivos, todos
+//     mexendo na câmera de sessões mortas.
+//  3. SOLTAR AS TECLAS NO UNLOCK: quando o lock cai (Esc, alt-tab, aba
+//     perdendo o foco) o `keyup` das teclas seguradas NÃO chega. Sem
+//     limpar o conjunto, a nave sai voando sozinha e nada a para.
+//  4. LISTENER DE MOVIMENTO SÓ COM O LOCK: o `mousemove` de olhar entra
+//     ao trancar e sai ao soltar. Deixá-lo pendurado somaria `movementX`
+//     de cursor solto ao yaw — o olhar giraria sem ninguém arrastar.
+
+/** Negativas seguidas do navegador até a captura parar de se oferecer. */
+export const ERROS_ATE_DESISTIR = 3;
+
+/**
+ * O ESTADO da captura, e SÓ o estado — sem DOM nenhum. Existe separado
+ * do fio que fala com o navegador porque é aqui que mora a regra que o
+ * gate cobra (o backoff), e o vitest da casa roda em `node`: um estado
+ * que só se conferisse com um `document` na mesa não seria conferido.
+ */
+export class EstadoDaCaptura {
+  /** negativas seguidas; um lock bem-sucedido zera a conta */
+  erros = 0;
+  ativa = false;
+
+  /** o navegador negou vezes demais — não se pede mais nesta sessão */
+  get desistiu(): boolean {
+    return this.erros >= ERROS_ATE_DESISTIR;
+  }
+
+  /** vale a pena pedir? (já capturado, ou já desistido, não vale) */
+  get podePedir(): boolean {
+    return !this.ativa && !this.desistiu;
+  }
+
+  errou() {
+    this.erros++;
+  }
+
+  trancou() {
+    this.ativa = true;
+    this.erros = 0;
+  }
+
+  soltou() {
+    this.ativa = false;
+  }
+}
+
+/**
+ * O FIO entre o estado acima e o navegador. Quem oferece a captura é o
+ * HUD (`Director.capturaDePonteiro`); quem sofre as consequências dela
+ * é o rig, e por isso ela nasce dentro dele: as teclas que a defesa 3
+ * solta são as do `FreeRoam`.
+ */
+export class CapturaDePonteiro {
+  readonly estado = new EstadoDaCaptura();
+  private alvo: HTMLCanvasElement;
+  private aoMover: (dx: number, dy: number) => void;
+  private aoSoltar: () => void;
+
+  constructor(
+    alvo: HTMLCanvasElement,
+    aoMover: (dx: number, dy: number) => void,
+    aoSoltar: () => void
+  ) {
+    this.alvo = alvo;
+    this.aoMover = aoMover;
+    this.aoSoltar = aoSoltar;
+    document.addEventListener('pointerlockchange', this.aoTrocar);
+    document.addEventListener('pointerlockerror', this.aoErrar);
+  }
+
+  get ativa(): boolean {
+    return this.estado.ativa;
+  }
+
+  get desistiu(): boolean {
+    return this.estado.desistiu;
+  }
+
+  /** o opt-in: só daqui sai um pedido de captura */
+  pedir() {
+    if (!this.estado.podePedir) return;
+    // a versão nova de `requestPointerLock` devolve Promise e a antiga
+    // devolve void; a rejeição vem acompanhada do evento `pointerlockerror`,
+    // que é quem conta — aqui só se evita o "unhandled rejection"
+    const pedido: unknown = this.alvo.requestPointerLock();
+    if (pedido instanceof Promise) pedido.catch(() => undefined);
+  }
+
+  /** devolve o ponteiro (o Esc do navegador faz o mesmo caminho) */
+  soltar() {
+    if (document.pointerLockElement === this.alvo) document.exitPointerLock();
+  }
+
+  dispose() {
+    document.removeEventListener('pointerlockchange', this.aoTrocar);
+    document.removeEventListener('pointerlockerror', this.aoErrar);
+    window.removeEventListener('mousemove', this.aoMoverTravado);
+    this.soltar();
+    this.estado.soltou();
+  }
+
+  private aoTrocar = () => {
+    if (document.pointerLockElement === this.alvo) {
+      this.estado.trancou();
+      window.addEventListener('mousemove', this.aoMoverTravado);
+      return;
+    }
+    this.estado.soltou();
+    window.removeEventListener('mousemove', this.aoMoverTravado);
+    this.aoSoltar();
+  };
+
+  private aoErrar = () => {
+    this.estado.errou();
+  };
+
+  private aoMoverTravado = (event: MouseEvent) => {
+    this.aoMover(event.movementX, event.movementY);
+  };
+}
+
 export class FreeRoam {
-  enabled = false;
+  /** o fio da captura de ponteiro; o HUD pede por `Director` */
+  readonly captura: CapturaDePonteiro;
+  private ligado = false;
   private camera: THREE.PerspectiveCamera;
   private canvas: HTMLCanvasElement;
   private yaw = 0;
@@ -241,9 +381,39 @@ export class FreeRoam {
   /** callback de clique curto (x,y normalizados 0..1) */
   onTap: ((x: number, y: number) => void) | null = null;
 
+  /**
+   * O ESCRITOR DE CÂMERA está com este rig? Quem escreve é o `setPhase`
+   * do Director (mapa `ESCRITOR_DE_CAMERA`). Virou acessor na F5 por
+   * uma razão só: sair do voo livre com o ponteiro CAPTURADO deixaria o
+   * visitante sem cursor numa fase que não tem para onde apontá-lo. A
+   * captura é do voo — e morre com ele.
+   */
+  get enabled(): boolean {
+    return this.ligado;
+  }
+
+  set enabled(valor: boolean) {
+    this.ligado = valor;
+    if (!valor) this.captura.soltar();
+  }
+
   constructor(canvas: HTMLCanvasElement, camera: THREE.PerspectiveCamera) {
     this.canvas = canvas;
     this.camera = camera;
+    this.captura = new CapturaDePonteiro(
+      canvas,
+      // com o ponteiro capturado TODO movimento é intenção: não há
+      // arrasto a distinguir de repouso, e por isso a visita em curso
+      // cede no primeiro pixel em vez de esperar os 8 do arrasto
+      (dx, dy) => {
+        if (!this.enabled) return;
+        if (this.visit) this.cancelVisit();
+        this.girar(dx, dy);
+      },
+      // defesa 3: o `keyup` das teclas seguradas não chega quando o
+      // lock cai — sem isto a nave sai voando sozinha
+      () => this.keys.clear()
+    );
     canvas.addEventListener('pointerdown', this.onPointerDown);
     window.addEventListener('pointerup', this.onPointerUp);
     window.addEventListener('pointermove', this.onPointerMove);
@@ -424,6 +594,9 @@ export class FreeRoam {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     this.canvas.removeEventListener('wheel', this.onWheel);
+    // defesa 2: o HMR do vite chama isto a cada salvamento — listener de
+    // captura que sobrevive mexe na câmera de uma sessão morta
+    this.captura.dispose();
     this.keys.clear();
   }
 
@@ -438,16 +611,28 @@ export class FreeRoam {
 
   private onPointerUp = (event: PointerEvent) => {
     if (this.dragging && this.enabled) {
-      // clique curto e parado = tentativa de visita
+      // clique curto e parado = tentativa de visita. Com o ponteiro
+      // CAPTURADO o `clientX/Y` congela onde o lock começou e não quer
+      // dizer mais nada: a mira passa a ser o centro da tela, que é
+      // onde o visitante está olhando.
       if (this.dragMoved < 6 && performance.now() - this.downAt < 400) {
-        this.onTap?.(
-          event.clientX / window.innerWidth,
-          event.clientY / window.innerHeight
-        );
+        if (this.captura.ativa) this.onTap?.(0.5, 0.5);
+        else {
+          this.onTap?.(
+            event.clientX / window.innerWidth,
+            event.clientY / window.innerHeight
+          );
+        }
       }
     }
     this.dragging = false;
   };
+
+  /** o giro do olhar em pixels de ponteiro — arrasto e captura entram aqui */
+  private girar(dx: number, dy: number) {
+    this.yaw -= dx * 0.0022;
+    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0022, -1.5, 1.5);
+  }
 
   private onPointerMove = (event: PointerEvent) => {
     if (!this.enabled || !this.dragging) return;
@@ -455,12 +640,7 @@ export class FreeRoam {
     const dy = event.clientY - this.lastY;
     this.dragMoved += Math.abs(dx) + Math.abs(dy);
     if (this.visit && this.dragMoved > 8) this.cancelVisit();
-    this.yaw -= dx * 0.0022;
-    this.pitch = THREE.MathUtils.clamp(
-      this.pitch - dy * 0.0022,
-      -1.5,
-      1.5
-    );
+    this.girar(dx, dy);
     this.lastX = event.clientX;
     this.lastY = event.clientY;
   };
@@ -481,7 +661,10 @@ export class FreeRoam {
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
-    if (FreeRoam.ehAlvoDeFormulario(event.target)) return;
+    // com o ponteiro capturado NÃO HÁ onde digitar: o foco pode ter
+    // ficado no botão que ofereceu a captura, e a guarda de formulário
+    // engoliria justamente o WASD que o visitante acabou de destravar
+    if (!this.captura.ativa && FreeRoam.ehAlvoDeFormulario(event.target)) return;
     if (this.visit) this.cancelVisit();
     this.keys.add(event.code);
   };
