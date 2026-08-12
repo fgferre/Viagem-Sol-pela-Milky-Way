@@ -96,8 +96,15 @@ for (const f of (soMedir ? [] : FACES)) {
     // captura em qualquer máquina que não segure 42 fps, e `nebulaSteps`
     // 56→30 muda o raymarch local — que é 46% do excesso do termo
     // `espessura`. Bit-exato onde o degrau nunca dispara. Ver ab-identidade.
+    // noplan=1 (Onda 4, D8): precedente EXATO do nohero=1 acima. A câmera do
+    // protocolo fica na ORIGEM, ou seja DENTRO do domínio profundo, e a
+    // camada de planetas acenderia aqui — no céu de verdade eles estariam
+    // lá. Só que o oráculo é a recriação Gaia do panorama ESO, que não tem
+    // planeta nenhum: medir com eles compararia o nosso céu com um céu que
+    // a referência não sabe desenhar. Entra no MESMO commit que vira a
+    // chave, para o gate do céu nunca ver a camada ligada.
     url: `${APP}/?pos=0,0,0&look=${f.dir.map((v) => v.toFixed(9)).join(',')}` +
-      `&fov=90&q=cinema&nosun=1&nohero=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
+      `&fov=90&q=cinema&nosun=1&nohero=1&noplan=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
   });
   writeFileSync(png, cap.png);
   vias.push(cap.via);

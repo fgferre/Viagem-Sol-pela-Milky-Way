@@ -211,11 +211,20 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
  * segurança. As seis faces do gate do céu saem BIT-IDÊNTICAS pelos dois
  * caminhos (medido 2026-08-11, `skyError` 0,7782 nos dois).
  *
- * Devolve `{ png, via, ms }` e não só o PNG: quem chama TEM de saber por qual
- * caminho a captura assentou, senão o teto de segurança engata em silêncio —
- * ver `julgarProntidao`.
+ * Devolve `{ png, via, ms, linhas }` e não só o PNG: quem chama TEM de saber
+ * por qual caminho a captura assentou, senão o teto de segurança engata em
+ * silêncio — ver `julgarProntidao`.
+ *
+ * `coletar` é um RegExp (NUNCA com `/g`: `lastIndex` sobrevive entre chamadas
+ * e faria o filtro alternar entre pegar e não pegar) que escolhe quais
+ * mensagens de console a captura guarda em `linhas`. Existe para a régua 3
+ * (`planeta-pixel.mjs`) ler o bloco do `?dbgplan` DO MESMO carregamento que
+ * produziu o PNG: previsto e medido têm de vir do mesmo quadro, senão a
+ * comparação de 0,5 px compara duas cenas.
  */
-export async function capturarCDP({ url, largura, altura, porta, quadros = 700, teto = 300000 }) {
+export async function capturarCDP({
+  url, largura, altura, porta, quadros = 700, teto = 300000, coletar = null,
+}) {
   const perfil = resolve(tmpdir(), `cdp-${process.pid}-${porta}`);
   const chrome = spawn(CHROME, [
     ...GPU_FLAGS,
@@ -242,12 +251,14 @@ export async function capturarCDP({ url, largura, altura, porta, quadros = 700, 
     });
     const esperando = new Map();
     let cartografia = false;
+    const linhas = [];
     ws.addEventListener('message', (e) => {
       const m = JSON.parse(e.data);
       if (m.id && esperando.has(m.id)) { esperando.get(m.id)(m); esperando.delete(m.id); }
       else if (m.method === 'Runtime.consoleAPICalled') {
         const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
         if (txt.includes('[cartografia]')) cartografia = true;
+        if (coletar && coletar.test(txt)) linhas.push(txt);
       }
     });
     const send = (method, params = {}) => new Promise((res, rej) => {
@@ -269,7 +280,7 @@ export async function capturarCDP({ url, largura, altura, porta, quadros = 700, 
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     const buf = Buffer.from(shot.data, 'base64');
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
-    return { png: buf, via: assentou.via, ms: assentou.ms };
+    return { png: buf, via: assentou.via, ms: assentou.ms, linhas };
   } finally {
     chrome.kill();
     matarPerfil(perfil);

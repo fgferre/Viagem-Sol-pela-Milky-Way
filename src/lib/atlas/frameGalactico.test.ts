@@ -8,6 +8,7 @@
 // arquivo É o elo — se a convenção mudar de um lado, quebra aqui.
 // ============================================================
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import type { Mat3, Vec3 } from './frameGalactico';
 import {
   ALTURA_SOL_PC,
@@ -21,7 +22,7 @@ import {
   equatorialParaEcliptica,
   equatorialParaGalactica,
   galacticaParaEquatorial,
-  posicaoHeliocentricaEclipticaParaCena,
+  heliocentricaEclipticaUAParaBaseGalactocentricaPc,
   radecParaGalactica,
 } from './frameGalactico';
 
@@ -84,7 +85,7 @@ describe('frameGalactico', () => {
       expect(Math.abs(bDeg - -0.04616)).toBeLessThan(0.01);
     });
 
-    it('a direção de cena, vista do Sol, aponta para a origem (o GC)', () => {
+    it('a direção na base do projeto, vista do Sol, aponta para a origem (o GC)', () => {
       // A direção independe da distância escolhida; 8178 pc é a medida
       // GRAVITY (2019), usada só para dar escala realista ao vetor.
       const dPc = 8_178;
@@ -94,12 +95,12 @@ describe('frameGalactico', () => {
         ecl[1] * dPc * PC_EM_AU,
         ecl[2] * dPc * PC_EM_AU,
       ];
-      const cena = posicaoHeliocentricaEclipticaParaCena(posAU);
+      const base = heliocentricaEclipticaUAParaBaseGalactocentricaPc(posAU);
       // O Sol na base do projeto é (8150, 0, 5.5); a origem é o GC.
       const direcao = normalizar([
-        cena[0] - RAIO_SOL_PC,
-        cena[1],
-        cena[2] - ALTURA_SOL_PC,
+        base[0] - RAIO_SOL_PC,
+        base[1],
+        base[2] - ALTURA_SOL_PC,
       ]);
       const paraOrigem = normalizar([-RAIO_SOL_PC, 0, -ALTURA_SOL_PC]);
       expect(dot(direcao, paraOrigem)).toBeGreaterThan(0.999999);
@@ -188,11 +189,84 @@ describe('frameGalactico', () => {
           eclPc[1] * PC_EM_AU,
           eclPc[2] * PC_EM_AU,
         ];
-        const cena = posicaoHeliocentricaEclipticaParaCena(eclAU);
+        const base = heliocentricaEclipticaUAParaBaseGalactocentricaPc(eclAU);
         for (let eixo = 0; eixo < 3; eixo++) {
-          expect(Math.abs(cena[eixo] - esperado[eixo])).toBeLessThan(1e-8);
+          expect(Math.abs(base[eixo] - esperado[eixo])).toBeLessThan(1e-8);
         }
       }
     );
+  });
+
+  describe('gate (f): a armadilha do caminho composto (resíduo PINADO)', () => {
+    // POR QUE ESTE TESTE EXISTE. A função acima se chamava
+    // `posicaoHeliocentricaEclipticaParaCena`, e "ParaCena" convidava a
+    // compor com `galactocentricToScene` (three/world/galaxy.ts) para
+    // chegar às coordenadas da cena. A composição parece a identidade — a
+    // ida põe o Sol em (8150, 0, 5.5) na base dos binários, a volta
+    // desfaz — mas NÃO é: as duas pontes são construídas de números
+    // diferentes. `GAL.GC_POS` sai de `DIR_GC` e `NGP`, versores literais
+    // arredondados a 10 casas em galaxy.ts:44-46; a base deste módulo sai
+    // da definição IAU (NGP + lNCP) em float64 cheio. O desencontro é
+    // MEDIDO aqui: o Sol volta a 5,4959e-7 pc da origem — 0,1134 AU.
+    //
+    // Para uma estrela a centenas de pc isso é ruído abaixo de qualquer
+    // gate. Para um PLANETA em escala real (Onda 4) é a distância
+    // Terra–Sol em ordem de grandeza: Mercúrio nasceria fora do lugar por
+    // um terço da própria órbita.
+    //
+    // O TESTE AFIRMA O RESÍDUO, e não o conserta. "Consertar" seria
+    // realinhar `GAL.GC_POS`/EX/EY/EZ com esta álgebra, o que moveria a
+    // GALÁXIA INTEIRA (todo binário de public/data/galaxy passa por
+    // `galactocentricToScene`) e portanto os md5 das 15 vistas oficiais —
+    // preço altíssimo por 0,1134 AU que nenhuma vista enxerga. O caminho
+    // dos planetas não passa por aqui: é
+    // `eclipticaParaEquatorial(vAU) × AU_PARA_PC`, uma rotação e uma
+    // multiplicação sobre uma cena que já é heliocêntrica equatorial
+    // J2000 em pc com o Sol na ORIGEM — sem origem para errar (a segunda
+    // asserção deste bloco).
+    it('o Sol composto de volta cai a 5,4959e-7 pc (0,1134 AU) da origem, não nela', async () => {
+      // `galaxy.ts` lê `window.location.search` no topo do módulo (os
+      // knobs de varredura por URL das rodadas 18+), e o ambiente do
+      // vitest é `node`. Daí o stub mínimo e o import dinâmico: nenhuma
+      // linha de render muda, só se encena o que o navegador já dá.
+      (globalThis as unknown as { window: unknown }).window = {
+        location: { search: '' },
+      };
+      const { galactocentricToScene } = await import('../../three/world/galaxy');
+
+      const base = heliocentricaEclipticaUAParaBaseGalactocentricaPc([0, 0, 0]);
+      // a ida é exata: o Sol é o (8150, 0, 5.5) dos binários. O y é −0
+      // porque o sinal deliberado da casa (+Y → l = 270°) nega um zero —
+      // e `toBe` usa Object.is, que separa os dois zeros.
+      expect(base[0]).toBe(RAIO_SOL_PC);
+      expect(base[1]).toBe(-0);
+      expect(base[2]).toBe(ALTURA_SOL_PC);
+
+      const cena = galactocentricToScene(
+        base[0],
+        base[1],
+        base[2],
+        new THREE.Vector3()
+      );
+      const residuoPc = cena.length();
+      const RESIDUO_PC = 5.495929215356232e-7; // medido 2026-08-11, V8/node
+      // TOLERÂNCIA RELATIVA de 1e-4, e ela é apertada onde importa: o
+      // resíduo é um CANCELAMENTO de números da ordem de 8150, então 1 ULP
+      // nas entradas já o move ~3e-6 em relativo — abaixo de 1e-4 o teste
+      // ficaria frágil sem julgar mais nada. E 1e-4 ainda pina quatro
+      // dígitos de um número que a composição prometia ser ZERO: o resíduo
+      // é ~5e5 vezes maior que o erro de arredondamento de um caminho
+      // exato (segunda asserção), que é o que este gate cobra.
+      expect(Math.abs(residuoPc / RESIDUO_PC - 1)).toBeLessThan(1e-4);
+      expect(residuoPc * PC_EM_AU).toBeCloseTo(0.1134, 4);
+
+      // O CAMINHO DOS PLANETAS, no mesmo teste para não ficar só no
+      // comentário: rotação + escala, e o vetor ZERO cai na origem EXATA
+      // (Object.is, não tolerância).
+      const direto = eclipticaParaEquatorial([0, 0, 0]).map(
+        (v) => v * AU_PARA_PC
+      );
+      for (const v of direto) expect(Object.is(v, 0)).toBe(true);
+    });
   });
 });

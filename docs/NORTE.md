@@ -2521,9 +2521,10 @@ corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,
 ## Como retomar os gates numa sessão nova (leia antes de medir)
 
 **Como rodar, desde a reforma do harness (2026-08-11).** O método não mudou — md5
-bit-exato, N=2 capturas por vista, navegador limpo por captura, `?q=cinema` pinado, as
-mesmas 15 vistas, os mesmos md5 oficiais do item 3. O que mudou é **o que a captura
-espera** e **quantos processos capturam**:
+bit-exato, N=2 capturas por vista, navegador limpo por captura, `?q=cinema` pinado, os
+mesmos md5 oficiais do item 3. O que mudou é **o que a captura espera** e **quantos
+processos capturam** — e, na fase 0 da Onda 4, o tamanho da lista: **18 vistas**, as 15
+do item 3 mais as três do item 4:
 
 ```
 node scripts/visual/ab-identidade.mjs antes     # leva completa (JOBS=3 por padrão)
@@ -2568,10 +2569,11 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
   funde no JSON de sempre. A porta de depuração de cada Chrome é **escolhida pelo SO**
   (`--remote-debugging-port=0`, lida do `DevToolsActivePort` do perfil) — era a única
   corrida de verdade da divisão.
-- **`SMOKE=1` captura três vistas-sentinela** (`sol`, `soldisco`, `hero8`: o disco solar,
-  o campo com a cessão de dominância e o hero de perto). **Sentinela é para ITERAR** — o
-  gate de fechamento continua sendo a leva completa das 15, porque três vistas não cobrem
-  o aspecto (`retrato`), nem a travessia, nem o mergulho, nem os regimes do `farFade`.
+- **`SMOKE=1` captura quatro vistas-sentinela** (`sol`, `soldisco`, `hero8` e, desde a
+  Onda 4, `ua150`: o disco solar, o campo com a cessão de dominância, o hero de perto e o
+  domínio profundo a 150 UA). **Sentinela é para ITERAR** — o gate de fechamento continua
+  sendo a leva completa (18 vistas desde a Onda 4), porque quatro vistas não cobrem o
+  aspecto (`retrato`), nem a travessia, nem o mergulho, nem os regimes do `farFade`.
 - **Os tempos medidos nesta máquina (2026-08-11), com as 15 vistas × 2 capturas
   reproduzindo os 15 md5 oficiais bit a bit:** leva completa **1,9 min** com `JOBS=3`
   (duas rodadas seguidas, 15/15 `IGUAL` nas duas), **3,8 min** com `JOBS=1` — que isola a
@@ -2579,6 +2581,24 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
   histórica é **~45 min**. O gate do céu herdou o mesmo sinal (mesmo driver): as 6 faces
   saem bit-idênticas, `skyError` **0,7782** com os cinco termos iguais, e a leva inteira
   (capturar + medir) passou a levar **42 s**.
+- **O protocolo do céu ganhou `&noplan=1` na Onda 4** (`sky-capture.mjs`, precedente
+  exato do `nohero=1` que já estava lá). O porquê, numa linha: a câmera do céu fica na
+  ORIGEM, dentro do domínio profundo, e o oráculo é a recriação Gaia, que não tem
+  planetas — medir com a camada ligada cobraria da régua um corpo que a foto-alvo não
+  tem. Ele entra ao lado de `nosun=1&nohero=1` na URL de protocolo (item 2 da fila lá
+  em cima, mais o stretch `kneeamt=1&knee=0.02&exp=4.4`). Com ele: `skyError`
+  **0,7782**, os cinco termos e os quatro brutos idênticos, e as **6 faces
+  BIT-IDÊNTICAS** a uma referência tirada de propósito no estado pré-chave
+  (`gc 845781a1…` · `anti afe5d64e…` · `l90 bfaf2cfe…` · `l270 b20034a6…` ·
+  `npole 8ededf1f…` · `spole 929e645d…`) — o que prova de quebra que o `near` piecewise
+  do domínio profundo não mexeu no fundo.
+- **O `rodada.mjs` também roda por CDP e com o tier fixo, desde a rodada 42**, pelo
+  mesmo driver dos outros três: `node scripts/visual/rodada.mjs <n> "nota"` grava as
+  duas vistas externas em `capturas/` e a linha em `docs/reference/EVOLUCAO.md`. Era o
+  único harness ainda morto nesta máquina, e a descontinuidade que o conserto criou no
+  ledger está declarada lá — **a comparação válida é 42 ↔ 43 em diante**. Os três
+  defeitos que o matavam, e o que cada um contaminava, estão na seção "Os gates não
+  rodavam nesta máquina", logo abaixo.
 
 O `ab-identidade` guarda os md5 em `TMPDIR/ab-identidade-{antes,depois}.json`, fora do
 repo e fora do git. Duas consequências que já quase custaram um diagnóstico errado:
@@ -2599,8 +2619,9 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` · `retrato 18ba748879dc`.
    **Esses md5 são desta GPU** — noutra máquina servem só como sinal de que a captura
    assentou, nunca como valor esperado.
-3. **A baseline VIGENTE é a da Onda 3 (2026-08-11) e tem QUINZE vistas — a lista deste
-   item, não a do item 2.** O item 2 é HISTÓRIA da era da Onda 1 (e já divergiu em
+3. **As QUINZE que a Onda 3 fechou — e que a Onda 4 NÃO moveu.** A baseline VIGENTE tem
+   DEZOITO vistas: estas quinze (md5 logo abaixo) mais as três do item 4.
+   O item 2 é HISTÓRIA da era da Onda 1 (e já divergiu em
    `travessia` e `retrato`, pelo conserto do `vSat` abaixo); a Onda 3 acrescentou OITO,
    porque o gate não tinha vista nenhuma do motor estelar — 4 do Sol por DISTÂNCIA
    (`?pos=`, não `?t=`: o instante amarra a distância ao trajeto da hélice) e 4 de
@@ -2658,6 +2679,43 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    MESMOS **0,7782**, com os cinco termos e os quatro brutos
    (bulgeAnti 5,497 · rift 0,0694 · colour 0,0509 · purp 0,0448) iguais até a quarta
    casa. Ou seja: a mudança é real e fica ABAIXO da resolução da régua fotométrica.
+4. **As TRÊS que a Onda 4 fez NASCER (2026-08-11), e a lista foi a 18.** Elas caem
+   ABAIXO do piso do filme (a vista mais próxima até aqui era `sol`, a 0,063151 pc =
+   ~13.000 UA), no domínio profundo onde a onda dissolve a fotosfera artística e acende
+   os planetas por fotometria: `ua500` (`?pos=0,0,0.0024241` = 500,01 UA — o Sol já é
+   ESTRELA e Júpiter é o único acompanhante que a régua de pixel MEDE) · `ua150`
+   (`0.00072722` = 150,00 UA, o desfile a olho nu com o sistema inteiro em quadro —
+   Sol, Júpiter e Saturno medidos, também SENTINELA) · `ua40` (`0.00019393` = 40,00 UA,
+   cruzando a órbita de Netuno, com os SETE de dentro medidos, do Sol a
+   Saturno). Entraram na lista **antes de qualquer código da onda**, de propósito: é o
+   que desarma a armadilha do veredito (vista sem "antes" era pulada em silêncio — hoje
+   `julgarVistas` emite NOVA/AUSENTE); nessa leva as 15 antigas saíram **bit-idênticas
+   ao item 3**, 18/18 por `via=sinal`, 2,3 min com `JOBS=3`.
+   **Os md5 OFICIAIS delas, desde o fecho da Onda 4** (chave `PLANETAS_DEFAULT_ON`
+   ligada, todas @1800x1713): **`ua500 5f8136c12732`** · **`ua150 9b3e75b2af91`** ·
+   **`ua40 a607e3cf57ab`**. Render DEFAULT, **com bloom** — as três documentam o estado
+   verdadeiro do produto, e é de propósito que a régua de pixel (`planeta-pixel.mjs`)
+   mede num par PRÓPRIO com `&nobloom=1`: com o bloom ligado 31,85% do quadro satura e
+   um quadro saturado não tem centroide. Na leva do FECHO, **as 15 do item 3 saíram
+   bit-idênticas e só estas três mudaram** (18/18 por `via=sinal`, 1,9 min com
+   `JOBS=3`) — o filme não muda um pixel, que é a promessa da onda cumprida.
+   **O A/B da porta tem valor esperado, e o caminho de volta é EXATO:**
+   `DOZERO=1 EXTRA='&noplan=1'` com o MESMO binário devolve as 18 de antes da camada bit
+   a bit — as 15 do item 3 e as três em **`ua500 b950ae47019e` · `ua150 e6990475232e` ·
+   `ua40 5dbf3afd6274`**, que é o estado **pós-F2/pré-chave**: o domínio profundo já
+   dentro, a camada de planetas ainda fora.
+   **Duas leituras que só a onda revelou, e que mudam como se lê este item.** (a) As
+   portas `?plan/?noplan` governam a **camada de planetas, não o palco**: o domínio
+   profundo (janelas `deep`, `near` piecewise, voo proporcional) é fundação sem porta,
+   como o próprio `near`, e a prova dele é a bit-igualdade das 15. (b) Por isso o
+   "antes" HISTÓRICO da fase 0 — **`ua500 5fa91638704b` · `ua150 64efef464d97` ·
+   `ua40 ed732b0cffa6`** — **não é alcançável por porta nenhuma**: as três já tinham
+   mudado na F2. A premissa com que elas nasceram ("no antes mostram só o fundo, o
+   `near` velho clipa tudo a menos de ~206 UA") estava incompleta — o `near` clipa o que
+   está a menos de 206 UA **da câmera**, e o disco artístico tem 2.269 UA de raio, então
+   a metade de trás dele e as raias ficavam ALÉM do near e desenhavam. Com
+   `solWorldFade = 0` elas somem: na `ua150`, 13.938 px de 3.083.400 (0,45%), **100%
+   perda de luz de artefato** (13.789 px perderam, 1 ganhou) — medido, não suposto.
 
 Os PNGs do gate do céu ficam em `sky/` e as capturas nomeadas em `capturas/` (ambos
 gitignored, ambos sobrevivem à sessão): `sky-capture.mjs base --so-medir` re-mede sem
@@ -2691,13 +2749,21 @@ quebrar**, que é o modo caro de falhar.
   preset — só desliga o automático); numa que não segura, sem ele o gate compara duas
   imagens tiradas em qualidades diferentes e chama a diferença de regressão. `ab-identidade`
   e `sky-capture` agora fixam. **A linha antiga "os gates rodam sem `?q=` em desktop
-  headless" só valia para hardware rápido.**
+  headless" só valia para hardware rápido.** O `rodada.mjs` era o único que faltava e
+  passou a fixar na Onda 4, fase 0 — e o degrau APARECEU nesta máquina: entre a rodada 40
+  e a 42, sem uma linha de render tocada, `clumpError` foi de 0,0603 a **0,1160** e
+  `grain` de 0,0663 a **0,0844** (as duas colunas que leem textura, que é o que 30 passos
+  de raymarch contra 56 mudam), enquanto `harmonicError` e `discMean` ficaram parados.
+  Descontinuidade declarada no `EVOLUCAO.md`: a comparação válida é **42 ↔ 43**.
 - **`--virtual-time-budget` + `--screenshot` NÃO TERMINA neste Chrome/macOS.** Não é
   lentidão: uma janela de **400×400 com 8 s de orçamento** ficou 6 min sem sair e sem
   gravar PNG. O laço de rAF do app nunca deixa o tempo virtual alcançar o teto, e o
   `--screenshot` só dispara quando ele alcança. As seis faces do gate do céu passaram para
   o caminho CDP (`capturarCDP` em `chrome.mjs`), que espera o log da cartografia e mais
   700 quadros DESENHADOS — o mesmo critério que já fazia o `ab-identidade` repetir md5.
+  (O `rodada.mjs` ficou de fora e por isso **estava morto**: ele seguia no tempo virtual e
+  nem chegava lá, porque procurava `chrome.exe`. Migrado na Onda 4, fase 0 — as duas
+  vistas da rodada 42 assentaram por `via=sinal` em 4,1 s e 3,9 s.)
   (Desde 2026-08-11 os 700 quadros são o **teto de segurança**: quem manda é o sinal de
   prontidão do app, e as duas rotas foram medidas bit-idênticas — ver o topo da seção
   "Como retomar os gates".)
@@ -3222,6 +3288,41 @@ que ainda **decide** algo fica aqui:
   virar rampa contínua, o defeito acorda** — e aí o conserto é o mesmo, com A/B
   próprio (as cascas pintam o céu inteiro; nada nelas muda sem gate).
 
+### Onda 4 — FEITA (2026-08-11)
+
+O registro integral está no **Estado da Onda 4 do PLANO-ATLAS §4**; aqui fica o
+que governa o futuro:
+
+- **A decisão de visão do dono nasceu nesta onda e está nas Decisões fechadas**
+  (linha "Mais que um SpaceEngine"): escala 1:1 onde possível, visibilidade por
+  fotometria, artifício só no canal do instrumento — e a galáxia volumétrica
+  científica como diferencial. Toda escolha de escala/render das Ondas 5–9
+  passa por essa régua ANTES de qualquer escalar artístico novo.
+- **O domínio profundo existe**: abaixo de 0,05 pc o disco artístico se
+  dissolve (`LOD_SOL.deep`, `solWorldFade`), o Sol vira ponto fotométrico da
+  camada `planetas` (10 corpos, época fixa 2026-01-01, retrato GERADO com
+  proveniência), o near cai a `max(d·0,004; 1e-8)` e o voo fica proporcional.
+  Acima de 0,05 pc, TUDO bit-igual ao que era — provado em 32.101 instantes.
+- **A posição na tela É a efeméride projetada**, em três réguas independentes
+  (vitest puro / CDP / pixel; pior erro 0,194 px por eixo no fóton). O
+  instrumento permanente é `scripts/visual/planeta-pixel.mjs`, que se
+  autovalida nos dois estados (M5) e mede em par próprio com `&nobloom=1`.
+- **Portas**: `?plan`/`?noplan` (a camada), `?dbgplan` (leitura por corpo em
+  UA/anos-luz). O palco profundo NÃO tem porta — é fundação, como o near
+  (emenda D11a do desenho da onda).
+- **Encarar o Sol de dentro do sistema ofusca DE PROPÓSITO** (m −15,84 e pico
+  4,8e6 a 150 UA; 31,85% do quadro satura com bloom): é física sem
+  auto-exposição. NÃO "consertar" com teto de brilho — a auto-exposição da
+  Onda 8 é o conserto, e estes números são a semente medida dela.
+- **Pendências herdadas pela frente**: fixtures Horizons de
+  venus/jupiter/saturn/uranus (Vênus é a garantia mais fraca: 1,96e-3° por
+  orçamento de manifesto); fase polinomial por corpo e corpos resolvidos
+  (Onda 6); starOptics do Sol-ponto (7a); fio de rede da efemerides.bin +
+  tempo vivo (5/6); o selo da Onda 5 reporta "ESCALA REAL no domínio
+  profundo" de graça; `?nosun` não governa o Sol-ponto (governa `noplan`);
+  BV_SOL/SOL_BV e PONTO_ZERO_SOL_PC redigitados com igualdade pinada —
+  unificação é candidata da Onda 6.
+
 ### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
 
 **Correção de fato na triagem:** o gate da Onda 0 falava em "dez lições"; o
@@ -3319,6 +3420,7 @@ Não reabrir sem que a condição listada mude.
 | Decisão | Por quê | Reabre se |
 |---|---|---|
 | **O Atlas vive aqui; o código do atlas é especificação, não fornecedor** | Testemunho do dono sobre a qualidade do doador + crítica de olhos frescos que o confirmou arquivo a arquivo (PLANO-ATLAS §7: nove anti-padrões de luz com `arquivo:linha`) | Uma linha específica da matriz, com arquivo aberto e medição na mão — nunca por atacado |
+| **Mais que um SpaceEngine: escala 1:1 onde possível, visibilidade por FOTOMETRIA, artifício só no canal do instrumento (separável e desligável)** | Decisão do dono na abertura da Onda 4 (2026-08-11, palavras dele: "quero ser um SpaceEngine… temos que ser honestos nessas escalas" e "quero ser MAIS que o SpaceEngine" — a honestidade dele + a galáxia procedural científica volumétrica que só a casa tem). A Onda 4 provou a via: domínio profundo 1:1 sem custar um pixel do filme. O Sol-ator de 0,011 pc segue DENTRO do filme como exceção declarada de modo | Decisão do dono, nunca por conveniência técnica; escalar artístico novo só com rótulo explícito de modo esquemático (o selo da Onda 5 é o canal) |
 | **Octree: não** | Serve para podar conjunto fixo e grande. Aqui o VBO é estático e a árvore podaria ~3,7% dos vértices ao custo de ~193 draw calls | Conjunto estático > 2 M pontos **e** `WEBGL_multi_draw` plumbado |
 | **Floating origin: feito por reconstrução relativa à câmera (rodada 13), não por rebase global** | A 25 kpc o quantum f32 é 1,5·10⁻³ pc ≈ 1,7 px de tremor a 1 pc. As cascas — a única geometria resolvida perto da câmera longe do Sol — reconstroem posição por célula inteira + fração e projetam com só a rotação do MV: nenhum operando de kpc no caminho. Rebase global do grafo não é necessário | Outra camada passar a resolver geometria perto da câmera longe do Sol |
 | **Log-depth: não** | A cena tem um único objeto opaco com `depthWrite`; z-fighting precisa de dois | Entrar geometria resolvida (planetas, malhas) |

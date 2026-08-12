@@ -56,35 +56,53 @@ writeFileSync(pagina, `<!doctype html><meta charset="utf-8"><pre id="o">…</pre
   const pa = px(a), pb = px(b);
   const BL = 16, bw = Math.ceil(W / BL), bh = Math.ceil(H / BL);
   const blocos = new Int32Array(bw * bh);
+  const luz = new Float64Array(bw * bh);
   const hist = {};
   let n = 0, maxDelta = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  // o SINAL, por pixel: só ganhou luz, só perdeu, ou os dois em canais
+  // diferentes. Sem isto o veredito é "mudou", e "mudou" não separa a
+  // camada que SOMA da regressão que apaga
+  let ganharam = 0, perderam = 0, mistos = 0, somaGanho = 0, somaPerda = 0;
   for (let i = 0, p = 0; i < pa.length; i += 4, p++) {
-    const d = Math.max(Math.abs(pa[i] - pb[i]), Math.abs(pa[i+1] - pb[i+1]),
-                       Math.abs(pa[i+2] - pb[i+2]));
+    const dr = pb[i] - pa[i], dg = pb[i+1] - pa[i+1], db = pb[i+2] - pa[i+2];
+    const d = Math.max(Math.abs(dr), Math.abs(dg), Math.abs(db));
     if (!d) continue;
     n++;
     hist[d] = (hist[d] || 0) + 1;
     if (d > maxDelta) maxDelta = d;
+    const sobe = dr > 0 || dg > 0 || db > 0, desce = dr < 0 || dg < 0 || db < 0;
+    if (sobe && desce) mistos++; else if (sobe) ganharam++; else perderam++;
+    for (const v of [dr, dg, db]) { if (v > 0) somaGanho += v; else somaPerda -= v; }
     const x = p % W, y = (p / W) | 0;
     if (x < x0) x0 = x; if (x > x1) x1 = x;
     if (y < y0) y0 = y; if (y > y1) y1 = y;
-    blocos[((y / BL) | 0) * bw + ((x / BL) | 0)]++;
+    const bloco = ((y / BL) | 0) * bw + ((x / BL) | 0);
+    blocos[bloco]++;
+    luz[bloco] += Math.abs(dr) + Math.abs(dg) + Math.abs(db);
   }
-  let piorBloco = 0, piorIdx = -1;
-  for (let i = 0; i < blocos.length; i++) if (blocos[i] > piorBloco) { piorBloco = blocos[i]; piorIdx = i; }
+  let piorBloco = 0, piorIdx = -1, maisLuz = 0, luzIdx = -1;
+  for (let i = 0; i < blocos.length; i++) {
+    if (blocos[i] > piorBloco) { piorBloco = blocos[i]; piorIdx = i; }
+    if (luz[i] > maisLuz) { maisLuz = luz[i]; luzIdx = i; }
+  }
   document.getElementById('o').textContent = JSON.stringify({
     W, H, total: W * H, diferentes: n, fracao: n / (W * H), maxDelta,
     histograma: hist,
+    ganharam, perderam, mistos, somaGanho, somaPerda,
     caixa: n ? { x0, y0, x1, y1, larg: x1 - x0 + 1, alt: y1 - y0 + 1 } : null,
     blocosComDiff: blocos.filter((v) => v > 0).length, blocosTotal: bw * bh,
     piorBloco: piorIdx < 0 ? null
       : { x: (piorIdx % bw) * BL, y: (((piorIdx / bw) | 0)) * BL, px: piorBloco, de: BL * BL },
+    // ONDE a mudança se concentra em ENERGIA, que é outra pergunta: num
+    // quadro em que quase todo pixel mudou, "quantos mudaram" satura e não
+    // aponta nada; a soma de delta ainda aponta
+    blocoMaisLuz: luzIdx < 0 ? null
+      : { x: (luzIdx % bw) * BL, y: (((luzIdx / bw) | 0)) * BL, luz: maisLuz },
   });
 })();
 </script>`);
 
 const perfil = resolve(dir, 'perfil');
-const saida = resolve(dir, 'dom.html');
 const chrome = spawn(CHROME, [
   ...GPU_FLAGS, '--allow-file-access-from-files', '--no-first-run',
   `--user-data-dir=${perfil}`, '--window-size=600,400',
@@ -114,14 +132,25 @@ console.log(`  ${r.W}x${r.H} = ${r.total.toLocaleString('pt-BR')} px`);
 console.log(`  diferentes  ${r.diferentes.toLocaleString('pt-BR')}  (${pct}%)`);
 if (r.diferentes) {
   console.log(`  delta máx   ${r.maxDelta} de 255`);
+  console.log(`  sinal       ${r.ganharam.toLocaleString('pt-BR')} só ganharam · ` +
+    `${r.perderam.toLocaleString('pt-BR')} só perderam · ${r.mistos.toLocaleString('pt-BR')} mistos` +
+    `  (soma +${r.somaGanho.toLocaleString('pt-BR')} / −${r.somaPerda.toLocaleString('pt-BR')})`);
   console.log(`  por delta   ${Object.entries(r.histograma).sort((a, b) => a[0] - b[0])
     .map(([d, c]) => `${d}:${c}`).join('  ')}`);
   console.log(`  caixa       ${r.caixa.larg}x${r.caixa.alt} em (${r.caixa.x0},${r.caixa.y0})`);
   console.log(`  blocos 16²  ${r.blocosComDiff} de ${r.blocosTotal} tocados · pior tem ` +
-    `${r.piorBloco.px}/${r.piorBloco.de} px em (${r.piorBloco.x},${r.piorBloco.y})`);
+    `${r.piorBloco.px}/${r.piorBloco.de} px em (${r.piorBloco.x},${r.piorBloco.y})` +
+    ` · mais LUZ em (${r.blocoMaisLuz.x},${r.blocoMaisLuz.y})`);
+  // O SINAL antes do tamanho: mudança de UM sentido só é a assinatura de
+  // luz que entrou (ou de luz que saiu), e é o que separa "a camada somou"
+  // de "alguma coisa se mexeu". Perdas e ganhos misturados pedem a caixa.
+  const soGanho = r.perderam === 0 && r.mistos === 0;
+  const soPerda = r.ganharam === 0 && r.mistos === 0;
   console.log(
-    r.maxDelta <= 1
-      ? '\n  >>> delta máximo de 1 nível: assinatura de ULP do compilador, não de conteúdo.'
-      : '\n  >>> delta acima de 1 nível: olhe a caixa e o pior bloco antes de concluir.'
+    soGanho ? '\n  >>> UNILATERAL: 100% dos pixels só GANHARAM luz — adição, nada apagado.'
+      : soPerda ? '\n  >>> UNILATERAL: 100% dos pixels só PERDERAM luz — remoção, nada acrescentado.'
+      : r.maxDelta <= 1
+        ? '\n  >>> delta máximo de 1 nível: assinatura de ULP do compilador, não de conteúdo.'
+        : '\n  >>> delta acima de 1 nível e sinal MISTO: olhe a caixa e o pior bloco antes de concluir.'
   );
 }

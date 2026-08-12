@@ -7,19 +7,43 @@
 //
 //   node scripts/visual/rodada.mjs 3 "soma de populações"
 //
-// Requer o vite dev em 127.0.0.1:5173. Sobe UMA instância de Chrome e a mata
-// no fim, inclusive se der erro — GPU headless esquecida viva é caro.
-import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+// Requer o vite dev em 127.0.0.1:5173.
+//
+// CONSERTADO NA ONDA 4 (fase 0). Este era o único harness que não rodava
+// nesta máquina, por três defeitos independentes e acumulados:
+//   1. lista de Chrome só com Windows/Linux — o `chrome.mjs` de 2026-08-08
+//      unificou os outros três e este ficou de fora;
+//   2. `GPU_FLAGS` e `matarPerfil` usados SEM import (uma meia-migração que
+//      trocou os literais pelos nomes e esqueceu o `import`) — em qualquer
+//      plataforma onde o Chrome fosse achado, morreria com ReferenceError;
+//   3. `--virtual-time-budget --screenshot`, que neste Chrome/macOS NÃO
+//      TERMINA (NORTE: 400×400 com 8 s de orçamento, 6 min sem gravar PNG).
+// A captura passou para `capturarCDP` (o mesmo caminho do `ab-identidade` e do
+// `sky-capture`: espera o SINAL de prontidão do app), a medição passou para o
+// padrão do `sky-capture` (o critério de pronto é o ARQUIVO, não o processo —
+// o Chrome do `--dump-dom` também não sai sozinho), e a URL ganhou
+// `&q=cinema`: sem fixar o tier o `autoQuality` rebaixa cinema→alta→
+// performance no meio da captura e troca `nebulaSteps` 56→30, o que mudaria
+// os números do ledger por motivo alheio à rodada medida.
+//
+// CONSEQUÊNCIA PARA QUEM LÊ O LEDGER: a rodada 42 é a primeira por este
+// caminho. Os números anteriores vieram de outro protocolo de captura (tempo
+// virtual, tier livre) — a comparação válida é 42 contra 43 em diante, e a
+// descontinuidade está declarada no próprio EVOLUCAO.md.
+import { spawn } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, openSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import {
+  CHROME, GPU_FLAGS, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO,
+} from './chrome.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = resolve(ROOT, 'capturas');
 const LEDGER = resolve(ROOT, 'docs/reference/EVOLUCAO.md');
 const METRIC = resolve(ROOT, 'scripts/visual/measure-similarity.html');
-const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
+const APP = process.env.APP_URL || APP_PADRAO;
 
 // As duas vistas espelham docs/reference/gaia-2025-{face-on,edge-on}-5k.jpg.
 // Os tempos são o MEIO dos holds de medição do roteiro (journey.ts,
@@ -30,12 +54,8 @@ const VIEWS = [
   { nome: 'edgeon', t: 261 },
 ];
 
-const CHROME = [
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  '/usr/bin/google-chrome',
-].find((p) => existsSync(p));
-if (!CHROME) throw new Error('Chrome não encontrado');
+// TIER FIXO, e não é preferência: ver o cabeçalho e `ab-identidade.mjs`.
+const PIN = '&q=cinema';
 
 const round = String(process.argv[2] || '').padStart(2, '0');
 const nota = process.argv.slice(3).join(' ') || '';
@@ -49,27 +69,57 @@ if (!round || round === '00') throw new Error('uso: node scripts/visual/rodada.m
 const PROFILE = resolve(tmpdir(), `rodada-${process.pid}`);
 mkdirSync(OUT, { recursive: true });
 
-// Perfil NOVO por invocação: com user-data-dir compartilhado o Chrome entrega
-// a linha de comando ao processo já vivo e a segunda captura sai idêntica à
-// primeira, silenciosamente. Custa alguns MB de disco e vale a corretude.
+const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+// Teto da MEDIÇÃO (a página file:// que compara com a referência). A CAPTURA
+// não passa por aqui: ela é `capturarCDP`, que espera a cena assentar.
+const TIMEOUT = Number(process.env.RODADA_TIMEOUT || 600000);
+
 let seq = 0;
-// `saida`: o PNG que esta invocação DEVE produzir. Apagar antes e exigir
-// depois é o que separa medida de lixo — sem isso, um Chrome que morre deixa
-// o PNG da rodada anterior no lugar, ele passa pela rede "face ≠ edge" e a
-// métrica devolve números plausíveis para a imagem errada.
-function chrome(args, saida) {
-  if (saida && existsSync(saida)) rmSync(saida);
-  const r = spawnSync(CHROME, [
+/**
+ * Roda `measure-similarity.html` sobre um PNG e devolve o JSON da régua.
+ *
+ * O critério de pronto é o ARQUIVO e não o processo — mesma lição do
+ * `sky-capture`: o Chrome do `--dump-dom` despeja o DOM e fica vivo, e
+ * esperá-lo custava o teto inteiro por execução. A página é estática (lê dois
+ * arquivos e conta, sem laço de rAF), então aqui o tempo virtual serve.
+ */
+async function medir(png, extra = '') {
+  const perfil = `${PROFILE}-m${seq++}`;
+  const dom = resolve(tmpdir(), `rodada-${process.pid}-dom-${seq}.html`);
+  if (existsSync(dom)) rmSync(dom);
+  const medidor = spawn(CHROME, [
     ...GPU_FLAGS,
-    '--hide-scrollbars', '--no-first-run', `--user-data-dir=${PROFILE}-${seq++}`,
-    ...args,
-  ], { encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024 });
-  if (r.error) throw new Error(`Chrome não executou: ${r.error.message}`);
-  if (r.status !== 0) {
-    throw new Error(`Chrome saiu com status ${r.status}: ${(r.stderr || '').trim().slice(-400)}`);
+    '--allow-file-access-from-files', '--no-first-run', `--user-data-dir=${perfil}`,
+    '--window-size=900,900', '--virtual-time-budget=14000', '--dump-dom',
+    `file:///${METRIC.replace(/\\/g, '/')}?a=${png.replace(/\\/g, '/')}${extra}`,
+  ], { stdio: ['ignore', openSync(dom, 'w'), 'ignore'] });
+  const prazo = Date.now() + TIMEOUT;
+  let texto = '';
+  let bloco = null;
+  for (;;) {
+    await dorme(1000);
+    texto = existsSync(dom) ? readFileSync(dom, 'utf8') : '';
+    bloco = texto.match(/\{\s*"(harmonicError|edgeError)"[\s\S]*?\n\}/);
+    if (bloco || /ERRO: /.test(texto) || Date.now() > prazo || medidor.exitCode !== null) break;
   }
-  if (saida && !existsSync(saida)) throw new Error(`Chrome não gravou ${saida}`);
-  return r.stdout || '';
+  medidor.kill();
+  matarPerfil(perfil);
+  try { rmSync(perfil, { recursive: true, force: true }); } catch { /* perfil preso */ }
+  if (!bloco) {
+    const erro = texto.match(/ERRO: [^<]*/);
+    throw new Error(`métrica não devolveu JSON${erro ? ` — ${erro[0]}` : ''}`);
+  }
+  rmSync(dom, { force: true });
+  const j = JSON.parse(bloco[0].replace(/<[^>]*>/g, ''));
+  // terceira rede: quadro PRETO. Acontece (visto na rodada 28) quando o app
+  // não chega a desenhar — o PNG existe, as duas vistas diferem, e a métrica
+  // devolve zeros perfeitamente formatados. Sem esta linha o ledger recebe
+  // "0,0000" e parece recorde.
+  const brilho = j.ours?.discMean ?? j.ours?.thickRatio ?? 0;
+  if (!(brilho > 0.001)) {
+    throw new Error(`captura preta (discMean ${brilho}) — a cena não desenhou`);
+  }
+  return j;
 }
 
 try {
@@ -82,6 +132,11 @@ try {
     throw new Error(`o app não respondeu em ${APP} — suba o dev server antes`);
   }
 
+  // por qual caminho cada vista assentou; o veredito sai no fim, com
+  // `julgarProntidao` — uma captura por `quadros` no dev server é sinal
+  // quebrado, e o ledger não pode receber número medido assim sem aviso
+  const vias = [];
+  let porta = 9600 + (process.pid % 100);
   for (const v of VIEWS) {
     // shot=2 = modo foto SEM HUD: botões e rótulos entrariam no cálculo.
     // 1800×1800 desde a rodada 24: toLinearFull analisa TUDO em maxDim
@@ -92,46 +147,33 @@ try {
     // lados na MESMA grade; 1800 ainda ganha o supersampling que o 5k da
     // referência tem no downscale.
     const png = resolve(OUT, `rodada_${round}_${v.nome}.png`);
-    chrome([
-      '--window-size=1800,1800', '--virtual-time-budget=16000',
-      `--screenshot=${png}`,
-      `${APP}/?t=${v.t}&shot=2`,
-    ], png);
-    process.stdout.write(`rodada_${round}_${v.nome}.png\n`);
+    // apagar ANTES e exigir DEPOIS é o que separa medida de lixo — sem isso,
+    // um Chrome que morre deixa o PNG da rodada anterior no lugar, ele passa
+    // pela rede "face ≠ edge" e a métrica devolve números plausíveis para a
+    // imagem errada.
+    if (existsSync(png)) rmSync(png);
+    const cap = await capturarCDP({
+      largura: 1800, altura: 1800, porta: porta++,
+      url: `${APP}/?t=${v.t}&shot=2${PIN}`,
+    });
+    writeFileSync(png, cap.png);
+    if (!existsSync(png)) throw new Error(`não gravou ${png}`);
+    vias.push(cap.via);
+    process.stdout.write(`rodada_${round}_${v.nome}.png (via=${cap.via})\n`);
   }
 
-  // segunda rede: face-on e edge-on não podem sair iguais. Se saírem, o
-  // Chrome entregou a linha de comando a um processo vivo e não navegou.
+  // segunda rede: face-on e edge-on não podem sair iguais. Se saírem, a
+  // navegação não aconteceu e as duas fotos são da mesma cena.
   const [a, b] = VIEWS.map((v) => readFileSync(resolve(OUT, `rodada_${round}_${v.nome}.png`)));
   if (a.length === b.length && a.equals(b)) {
     throw new Error('as duas vistas saíram idênticas — a navegação não aconteceu');
   }
 
-  const medir = (png, extra = '') => {
-    const dom = chrome([
-      '--allow-file-access-from-files', '--window-size=900,900',
-      '--virtual-time-budget=14000', '--dump-dom',
-      `file:///${METRIC.replace(/\\/g, '/')}?a=${png.replace(/\\/g, '/')}${extra}`,
-    ]);
-    const bloco = dom.match(/\{\s*"(harmonicError|edgeError)"[\s\S]*?\n\}/);
-    if (!bloco) throw new Error('métrica não devolveu JSON — o dev server está de pé?');
-    const j = JSON.parse(bloco[0].replace(/<[^>]*>/g, ''));
-    // terceira rede: quadro PRETO. Acontece (visto na rodada 28) quando o
-    // app não chega a desenhar dentro do virtual-time — o PNG existe, o
-    // Chrome sai 0, as duas vistas diferem, e a métrica devolve zeros
-    // perfeitamente formatados. Sem esta linha o ledger recebe "0,0000" e
-    // parece recorde.
-    const brilho = j.ours?.discMean ?? j.ours?.thickRatio ?? 0;
-    if (!(brilho > 0.001)) {
-      throw new Error(`captura preta (discMean ${brilho}) — a cena não desenhou`);
-    }
-    return j;
-  };
-  const m = medir(resolve(OUT, `rodada_${round}_faceon.png`));
-  const e = medir(resolve(OUT, `rodada_${round}_edgeon.png`), '&mode=edge');
-  const faixa = (a) => {
+  const m = await medir(resolve(OUT, `rodada_${round}_faceon.png`));
+  const e = await medir(resolve(OUT, `rodada_${round}_edgeon.png`), '&mode=edge');
+  const faixa = (arr) => {
     // mesma faixa do discMean: 0,25–1,05 R90, em anéis de 1,5·R90/24
-    const s = a.filter((_, i) => { const r = ((i + 0.5) / 24) * 1.5; return r >= 0.25 && r <= 1.05; });
+    const s = arr.filter((_, i) => { const r = ((i + 0.5) / 24) * 1.5; return r >= 0.25 && r <= 1.05; });
     return s.reduce((x, y) => x + y, 0) / s.length;
   };
   // As TRÊS notas do face-on desde 2026-08-06: harmônicas anel a anel,
@@ -207,6 +249,15 @@ ${alvosE}
   }
   writeFileSync(LEDGER, doc);
   process.stdout.write('\n' + linha + '\n' + alvos + '\n' + linhaE + '\n' + alvosE + '\n');
+
+  // POR ÚLTIMO, depois das linhas: o gate GRITA e SAI ≠ 0 se o sinal de
+  // prontidão não subiu no alvo padrão. O ledger já está escrito e na tela —
+  // o que a saída ≠ 0 diz é "não valide nada com isto".
+  const prontidao = julgarProntidao({
+    vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
+  });
+  if (prontidao.mensagem) process.stderr.write(prontidao.mensagem);
+  if (prontidao.erro) process.exitCode = 1;
 } finally {
   // mata só o que este script subiu — casa pelo user-data-dir
   matarPerfil(PROFILE);

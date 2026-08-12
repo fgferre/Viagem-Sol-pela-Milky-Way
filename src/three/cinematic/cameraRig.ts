@@ -5,6 +5,7 @@
 // era a diferença de norte que invertia o horizonte ao entrar).
 // ============================================================
 import * as THREE from 'three';
+import { DEEP_LIMIAR_PC } from '../world/lodStellar';
 import { Journey } from './journey';
 
 // Manter o polo galáctico no alto faz o plano da Via Láctea ler como
@@ -141,6 +142,55 @@ export interface VisitTarget {
   arriveDist: number;
 }
 
+/**
+ * Guarda mínima da velocidade no domínio profundo: 1e-9 pc/s = 2,06e-4
+ * UA/s = 31 km/s. Não é calibração — é o anteparo contra `speed = 0` na
+ * origem exata (câmera no centro do Sol), onde o voo travaria sem
+ * explicação. Na faixa navegável quem manda é a proporcionalidade.
+ */
+export const VOO_MIN_PC_POR_S = 1e-9;
+
+/** Piso da roda do mouse FORA do domínio profundo, verbatim de antes. */
+export const RODA_MIN_PC_POR_S = 0.01;
+
+/**
+ * VELOCIDADE DE ENTRADA DO VOO LIVRE, PIECEWISE PELO LIMIAR DO DOMÍNIO
+ * PROFUNDO (decisão D6 da Onda 4). Puro e exportado para o oráculo.
+ *
+ * ACIMA de `DEEP_LIMIAR_PC`, a fórmula de sempre, verbatim: 2% da
+ * distância de casa, entre 2 e 600 pc/s. ABAIXO, o PISO DE 2 pc/s SAI —
+ * ele é o que tornava o mergulho inavegável: 2 pc/s são 412.500 UA/s,
+ * ou seja o sistema solar inteiro atravessado em menos de 1 ms, e
+ * nenhum toque de tecla conseguiria parar dentro dele. Sobra a mesma
+ * proporcionalidade de sempre (2% da distância: a 150 UA são 3 UA/s),
+ * que é o que dá ao mergulho a escala do lugar.
+ *
+ * O DEGRAU NA FRONTEIRA, declarado: em 0,05 pc a velocidade de entrada
+ * cai de 2 pc/s (o piso) para 0,001 pc/s (a proporção) — 2.000× de uma
+ * vez. Ninguém sente isso como solavanco porque esta função NÃO roda por
+ * quadro: ela é lida ao ENTRAR no voo livre (`syncFromCamera`, e o
+ * deep-link `?pos=` que passa por ela), e daí em diante quem manda é a
+ * roda do mouse. E o degrau é do PISO, não da lei: abaixo do limiar a
+ * regra "2% da distância por segundo" passa a valer sem interrupção, que
+ * é justamente o que o piso de 2 pc/s quebrava lá dentro.
+ */
+export function velocidadeDeVoo(dPc: number): number {
+  if (dPc >= DEEP_LIMIAR_PC) return THREE.MathUtils.clamp(dPc * 0.02, 2, 600);
+  return Math.max(dPc * 0.02, VOO_MIN_PC_POR_S);
+}
+
+/**
+ * O OUTRO grampo de velocidade: a roda do mouse MULTIPLICA a velocidade
+ * corrente e reclampa. Sem tratar este piso junto, a D6 seria letra
+ * morta na prática — a roda devolveria a 0,01 pc/s (2.063 UA/s) tudo o
+ * que o piecewise de `velocidadeDeVoo` tivesse acabado de dar. O teto de
+ * 4.000 pc/s não muda: o piloto continua podendo acelerar até ver a
+ * galáxia de fora, de onde quer que esteja.
+ */
+export function pisoDaRoda(dPc: number): number {
+  return dPc >= DEEP_LIMIAR_PC ? RODA_MIN_PC_POR_S : VOO_MIN_PC_POR_S;
+}
+
 export class FreeRoam {
   enabled = false;
   private camera: THREE.PerspectiveCamera;
@@ -194,8 +244,9 @@ export class FreeRoam {
     // se dissolve em ~0,7 s em vez de saltar
     this.fromQ.copy(this.camera.quaternion);
     this.blend = 1;
-    // velocidade inicial proporcional à escala do lugar
-    this.speed = THREE.MathUtils.clamp(this.camera.position.length() * 0.02, 2, 600);
+    // velocidade inicial proporcional à escala do lugar (piecewise pelo
+    // limiar do domínio profundo desde a Onda 4 — ver `velocidadeDeVoo`)
+    this.speed = velocidadeDeVoo(this.camera.position.length());
     this.resetMotion();
   }
 
@@ -403,10 +454,12 @@ export class FreeRoam {
 
   private onWheel = (event: WheelEvent) => {
     if (!this.enabled) return;
-    // até 4.000 pc/s — dá para voar da vizinhança até ver a galáxia
+    // até 4.000 pc/s — dá para voar da vizinhança até ver a galáxia; o
+    // piso é que depende do lugar (`pisoDaRoda`, D6): 0,01 pc/s fora do
+    // domínio profundo, como sempre, e proporcional dentro dele
     this.speed = THREE.MathUtils.clamp(
       this.speed * (event.deltaY > 0 ? 0.85 : 1.18),
-      0.01,
+      pisoDaRoda(this.camera.position.length()),
       4000
     );
   };

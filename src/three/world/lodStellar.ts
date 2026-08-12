@@ -55,7 +55,9 @@
 //    16 por quadro.
 //
 // FIAÇÃO (fase 2 da Onda 3): `stellarBody.ts` consome `discWorldFade`
-// e `isDiscGroupVisible`; `heroStars.ts` (classe SunStar) consome
+// — desde a fase 2 da Onda 4 pela COMPOSIÇÃO `solWorldFade`, que é
+// `discWorldFade × deepDiscFade` (seção 1, janela `deep`) — e
+// `isDiscGroupVisible`; `heroStars.ts` (classe SunStar) consome
 // `sunStarGain` e `sunStarCore`. A troca saiu BIT-IDÊNTICA nas 15
 // vistas do `ab-identidade` — as 7 fixas mais as 8 novas por distância
 // (4 condições do Sol, 4 de hero) — porque as funções daqui repetem a
@@ -120,7 +122,44 @@ export const LOD_SOL = {
    * (`heroStars.ts`), uniform `uCore`.
    */
   starCore: { startPc: 0.3, widthPc: 0.12, endPc: 0.42 },
+  /**
+   * O DOMÍNIO PROFUNDO (Onda 4, decisão D2) — a janela que a viagem
+   * atravessa INDO PARA DENTRO, abaixo do piso do filme (0,062 pc): o
+   * disco artístico se dissolve (`deepDiscFade`) e quem assume o Sol é o
+   * ponto fotométrico da camada de planetas (`deepPointGain`). É o
+   * crossfade da fase 3 lido ao contrário: lá o disco morre AFASTANDO-SE,
+   * aqui ele morre APROXIMANDO-SE, porque uma fotosfera de raio artístico
+   * (0,011 pc = 2.269 UA) engolfaria o sistema solar inteiro.
+   *
+   * Nomes na MESMA convenção de `disc`: `fade0Pc` é onde o parâmetro da
+   * rampa vale 0 e `fade1Pc` onde vale 1 — só que aqui a rampa é
+   * ASCENDENTE em distância (`disc` é descendente), então `fade1Pc`
+   * também é onde a SAÍDA de `deepDiscFade` chega a 1.
+   *
+   * `fade1Pc` é O LIMIAR DO DOMÍNIO, e por isso tem nome próprio
+   * (`DEEP_LIMIAR_PC`, logo abaixo): acima dele NADA da Onda 4 age — nem
+   * a atenuação do disco (D2), nem o near plane (D5), nem a velocidade do
+   * voo livre (D6). Os três consumidores IMPORTAM daqui em vez de
+   * redigitar 0,05, que é a mesma disciplina que juntou as três rampas
+   * nesta tabela.
+   *
+   * NÚMEROS DE PROJETO, declarados como tais pelo desenho da onda: o piso
+   * do filme (0,0631506 pc, medido em t=0) fica 26% acima de `fade1Pc`, e
+   * é essa folga que faz a leva das 18 vistas sair bit-idêntica. A fase de
+   * envelope (F4) pode movê-los COM MEDIÇÃO antes de ligar a camada —
+   * precedente D11 da Onda 3.
+   */
+  deep: { fade1Pc: 0.05, fade0Pc: 0.02 },
 } as const;
+
+/**
+ * O limiar do domínio profundo em pc, com nome próprio porque ele
+ * atravessa três módulos: `stellarBody` (pela composição `solWorldFade`),
+ * `engine.updateClip` (near piecewise, D5) e `FreeRoam` (voo
+ * proporcional, D6). NÃO é um 0,05 redigitado: é `LOD_SOL.deep.fade1Pc`,
+ * e se a janela se mexer na F4 os três acompanham no mesmo passo.
+ */
+export const DEEP_LIMIAR_PC = LOD_SOL.deep.fade1Pc;
 
 /**
  * Piso de visibilidade do grupo do Sol: sumido, nada do Sol é
@@ -146,6 +185,70 @@ export function discWorldFade(dPc: number): number {
 /** O corte duro de custo do grupo da estrela (`stellarBody.ts:480`). */
 export function isDiscGroupVisible(worldFade: number): boolean {
   return worldFade > DISC_VISIBLE_MIN;
+}
+
+/**
+ * Rampa do domínio profundo (D2): quanto do disco artístico sobra ao se
+ * aproximar. 1 EXATO para d ≥ 0,05 (o disco é o assunto, como sempre
+ * foi), 0 EXATO para d ≤ 0,02 (dissolvido; quem desenha o Sol é o ponto
+ * fotométrico), smoothstep cúbico entre os dois.
+ *
+ * MESMA FORMA da rampa do disco (`discWorldFade`): o mesmo ternário, a
+ * mesma cúbica e a LARGURA RECALCULADA dos dois extremos — nunca o 0,03
+ * digitado. A armadilha de float do topo do arquivo tem aqui a sua
+ * versão espelhada: `0,05 − 0,02 = 0.030000000000000002` (≠ 0,03),
+ * enquanto `0,02 + 0,03 = 0,05` fecha exato — ou seja, é a SUBTRAÇÃO que
+ * mente, e é justamente ela que a rampa faz. Digitar a largura mudaria o
+ * último bit no meio da janela (testado).
+ *
+ * O 1 EXATO na borda de cima é o que sustenta a promessa da fase: em
+ * d ≥ 0,05 o numerador e o denominador de `wk` são a MESMA expressão,
+ * então `wk ≥ 1` e o ternário devolve o literal 1 — e `x * 1` é exato em
+ * IEEE754, de onde `solWorldFade(d) === discWorldFade(d)` bit a bit.
+ * Fora do domínio (NaN) devolve NaN, como `discWorldFade`: o valor
+ * envenenado aparece em vez de se disfarçar de 0 ou de 1.
+ */
+export function deepDiscFade(dPc: number): number {
+  const wk = (dPc - LOD_SOL.deep.fade0Pc) / (LOD_SOL.deep.fade1Pc - LOD_SOL.deep.fade0Pc);
+  return wk <= 0 ? 0 : wk >= 1 ? 1 : wk * wk * (3 - 2 * wk);
+}
+
+/**
+ * O REVERSO EXATO de `deepDiscFade` (D2): o alpha do Sol-ponto
+ * fotométrico da camada da fase 3. 0 para d ≥ 0,05 (longe, quem desenha
+ * o Sol é o disco/clarão de sempre), 1 para d ≤ 0,02 (perto, o ponto é o
+ * Sol inteiro).
+ *
+ * A forma é a de `discWorldFade` — `1 − wk²(3−2wk)` com o MESMO `wk` de
+ * `deepDiscFade` —, e a complementaridade sai EXATA, não aproximada:
+ * `deepDiscFade(d) + deepPointGain(d) === 1` para todo d finito. É
+ * teorema, não sorte: nas bordas os ternários devolvem os literais (0+1
+ * e 1+0), e no meio, com `a` na cúbica e `b = fl(1 − a)`, o erro de
+ * arredondamento de `b` é ≤ 2⁻⁵⁴ (porque 1 − a ∈ (0,1)), e 1 ± 2⁻⁵⁴
+ * arredonda de volta para 1 exato. Pinado por varredura no teste.
+ */
+export function deepPointGain(dPc: number): number {
+  const wk = (dPc - LOD_SOL.deep.fade0Pc) / (LOD_SOL.deep.fade1Pc - LOD_SOL.deep.fade0Pc);
+  return wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
+}
+
+/**
+ * A ATENUAÇÃO TOTAL DO DISCO, num lugar só (D2, lição do commit 2e16689
+ * — o vSat que apanhava a atenuação pela metade porque duas contas
+ * diferentes governavam a mesma luz). O `stellarBody` chama ESTA, não
+ * `discWorldFade`: o `world` que sai daqui é o mesmo número que alimenta
+ * `uWorldFade` (fotosfera e espículas), `uRayBoost`, `uHalo` e o corte
+ * duro `isDiscGroupVisible` — se a composição ficasse em um só desses
+ * quatro, o disco sumiria com a coroa inteira por cima.
+ *
+ * Acima do limiar a composição é IDENTIDADE, bit a bit (`× 1` exato) —
+ * é o que mantém as 15 vistas antigas e o filme inteiro sem um pixel de
+ * diferença. Abaixo de 0,02 pc é 0: perto de casa o disco artístico não
+ * existe mais, embora `discWorldFade` ali valha 1 (a janela de longe não
+ * sabe nada do domínio profundo — por isso são DUAS rampas e não uma).
+ */
+export function solWorldFade(dPc: number): number {
+  return discWorldFade(dPc) * deepDiscFade(dPc);
 }
 
 /**

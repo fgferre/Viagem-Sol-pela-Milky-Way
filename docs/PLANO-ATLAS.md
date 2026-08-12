@@ -573,10 +573,12 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 > lá o `nearFade` apaga o clarão e não há corpo para assumir, então a luz
 > combinada cai (Sirius: 2.297 px em 0,28 pc → 18,6 px em 0,11 pc). É
 > comportamento herdado, documentado por teste; o handoff completo é a Onda 7.
-> (3) **`vSat` não recebe `uFade` nem a extinção** — os espinhos de difração
-> saem com força cheia na saída da vizinhança solar. É dívida herdada de `main`
-> (não regressão desta onda), muda pixel, e por isso é decisão de dono com A/B
-> próprio. (4) **O casamento hero↔índice é posicional** (o `sc1` não carrega
+> (3) ~~**`vSat` não recebe `uFade` nem a extinção**~~ — **PAGA pós-onda, na
+> mesma sessão (commit `2e16689`, 2026-08-11)**: `vSat = sat * alpha` no lugar
+> de `sat * atten`, porque `alpha` nasce 1,0 e acumula a atenuação TOTAL
+> (extinção + `uFade` + cessão por dominância), a mesma que `vPeak` já recebia;
+> 11/15 vistas bit-idênticas no A/B. Registro completo no NORTE. A regra que
+> fica: atenuação se fatora num lugar só. (4) **O casamento hero↔índice é posicional** (o `sc1` não carrega
 > identidade), com desempate por luminosidade e 16/16 conferidos contra o
 > binário real; a seção de identidade por catálogo o tornaria EXATO — depende
 > da **Decisão 2**.
@@ -585,6 +587,86 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 > existentes, não de destino.
 
 **Onda 4 — Domínio de escala aninhado + céu com planetas.** Frame local em UA no crossfade `DISC_FADE`; planetas como sprites, época fixa, fades acoplados. *Gate:* posição projetada vs. efeméride; `rodada.mjs` inalterada de longe. *(Onda de trabalho novo na casa; não atravessa código do doador.)*
+
+> **Estado da Onda 4 (2026-08-11): FEITA** — branch `onda-4`, gate integral
+> cumprido. Sem passo de olhos frescos (onda sem travessia de doador), mas com
+> reconhecimento de 6 leitores + painel de 3 desenhos independentes na abertura.
+> **A onda foi reescrita pela decisão de visão do dono, tomada na abertura**
+> (registrada nas Decisões fechadas do NORTE): *"quero ser MAIS que o
+> SpaceEngine — honesto nessas escalas, e com a galáxia procedural científica
+> que ele não tem"*. A premissa de escalar didático da espec acima morreu antes
+> de virar código: **a escala é 1:1** (conversor único `AU_PARA_PC`), a
+> visibilidade é FOTOMÉTRICA (a mesma PSF e ponto-zero do campo estelar), e a
+> letra da espec foi honrada no espelho — o "frame local em UA" nasceu ABAIXO
+> do piso do filme (0,062 pc), não na janela do crossfade, e os "fades
+> acoplados" são o crossfade reverso disco-artístico→ponto-fotométrico
+> (`LOD_SOL.deep = {0,05; 0,02} pc`, funções `deepDiscFade`/`deepPointGain`
+> compostas em `solWorldFade` — atenuação num lugar só).
+> **Entregas:** camada `planetas` (10 pontos fotométricos: Sol + 8 + Plutão,
+> `THREE.Points` aditivo sem depth, renderOrder 7, grupo próprio) com magnitude
+> aparente por quadro NO SHADER (`m = aMagBase + 5·log10(d) − 2,5·log10(Φ)`,
+> fase Lambertiana declarada como aproximação; paridade JS↔GPU a 2,7e-7 mag);
+> retrato congelado de 2026-01-01 (`retrato2026.ts` GERADO da efemerides.bin
+> com sha256 e proveniência; ZERO byte de payload novo); fotometria com fonte
+> por linha (H de Mallama & Hilton 2018; cores derivadas de albedo por banda);
+> near plane piecewise (verbatim ≥0,05 pc — bit-igual provado em 32.101
+> instantes do roteiro — e `max(d·0,004; 1e-8)` abaixo); voo proporcional no
+> domínio profundo (piso de 2 pc/s morre abaixo de 0,05 pc; deslocamento por
+> pulso de 500 ms cravado em 0,36–0,42% da distância através de 62× de faixa);
+> portas `?plan`/`?noplan` no precedente ?dom/?nodom; `?dbgplan` no molde do
+> ?dbgstar com unidades de visitante (UA/anos-luz).
+> **Consertos estruturais (diretiva "sem preguiça" do dono):** rodada.mjs
+> voltou a rodar nesta máquina (5 defeitos: caminhos só-Windows/Linux,
+> GPU_FLAGS/matarPerfil sem import, captura e MEDIÇÃO por mecanismo
+> não-terminante, tier sem PIN) — rodadas 42/43 abrem a era CDP do ledger com
+> descontinuidade declarada; o veredito do ab-identidade não pula mais vista
+> nova em silêncio (`julgarVistas` pura, NOVA/AUSENTE); eslint passou a cobrir
+> scripts/**/*.mjs; a armadilha `...ParaCena` foi renomeada para
+> `heliocentricaEclipticaUAParaBaseGalactocentricaPc` com o resíduo de
+> 0,1134 UA do caminho composto PINADO em teste-oráculo.
+> **Gate, item a item:** (a) posição projetada vs. efeméride em TRÊS réguas
+> independentes — vitest puro (proveniência bit-exata por Object.is nos 24
+> float64; Horizons em 5 corpos com fixture, pior resíduo 4,1e-4° contra
+> limiar 1e-3°; orçamento do manifesto nos 4 sem fixture), CDP (?dbgplan lê o
+> Float32Array real e projeta com a câmera do quadro: pior Δ 9,4e-6 px), e
+> pixel (planeta-pixel.mjs, instrumento permanente com autovalidação M5:
+> 11 corpos MEDIDOS, pior centroide 0,194 px/eixo; par nulo 0 px; sintético
+> deslocado reprova); (b) "inalterada de longe" MAIS FORTE que a espec: as 15
+> vistas antigas bit-idênticas (nem as 5 de perto mudaram), skyError 0,7782
+> com os cinco termos e as 6 faces bit-idênticas (protocolo do céu ganhou
+> `&noplan=1`, precedente nohero), e rodada 43 IDÊNTICA à 42 nas onze colunas,
+> dígito a dígito; (c) A/B pelas duas portas com o mesmo binário: `?noplan=1`
+> devolve os 18 hashes pré-chave bit a bit; (d) smoke L37 do filme inteiro
+> (293 s, zero erro de console, camada visible=false nos 6 pontos de
+> amostragem) e do mergulho (handoff monótono, sem buraco e sem pop, testado
+> inclusive a 0,022 pc fora do roteiro de captura); (e) 760 → 981 testes
+> verdes (+221), tsc e eslint limpos. Vistas oficiais: 15 → 18 (ua500/ua150/
+> ua40, md5 no NORTE), sentinelas 3 → 4.
+> **Correções de fato da onda:** o ponto-zero do Sol no campo é M_V = 4,85
+> (não 4,83); `catalogApparentMag` satura em 206 UA por clamp interno (pinado;
+> a camada usa a lei sem o clamp); Plutão TEM fixture Horizons (o oráculo
+> externo cobre 5, não 4); no limiar de 0,05 pc o mais brilhante é Vênus
+> (m 15,37), não Júpiter — a fase Lambertiana cobra 1,27 mag dele; e a
+> premissa "no antes das vistas profundas só havia fundo" era incompleta — a
+> traseira do disco artístico de 2.269 UA vazava além do near e desenhava
+> riscos, removidos pelo palco na F2 (emenda D11a: 13.938 px de 100% perda,
+> aceitos pelo coordenador; as portas governam a CAMADA, o palco é fundação).
+> **Decisão de dosagem (coordenador):** o brilho do Sol NÃO se mente — nenhum
+> teto artificial; encará-lo de dentro do sistema ofusca (31,85% do quadro
+> satura com bloom a 150 UA) porque é físico; a régua de pixel mede em par
+> próprio com `&nobloom=1` (precedente do protocolo do céu, que pina exp/knee).
+> **Pendências nomeadas:** fixtures Horizons de venus/jupiter/saturn/uranus
+> (rede + aprovação do dono; Vênus é a garantia mais fraca, 1,96e-3° por
+> orçamento); auto-exposição bidirecional (Onda 8, agora com semente MEDIDA:
+> m=−15,84 e pico 4,8e6 a 150 UA); starOptics do Sol-ponto (Onda 7a); fase
+> polinomial por corpo e planetas resolvidos (Onda 6); fio de rede da
+> efemerides.bin + tempo vivo (Ondas 5/6); o selo da Onda 5 ganha o eixo
+> "ESCALA REAL no domínio profundo" de graça; `?nosun` não governa o Sol-ponto
+> (governa `noplan`) — revisitar quando o selo nascer; unificar
+> BV_SOL/SOL_BV e PONTO_ZERO_SOL_PC redigitados (candidato Onda 6).
+> **O placar da matriz NÃO muda: seguem 85 linhas** — onda de trabalho novo,
+> nenhuma linha de travessia consumida; a decisão de visão passa a governar as
+> escolhas de escala das Ondas 5–9.
 
 **Onda 5 — Modo Atlas navegável.** **Herdado da Onda 1 por decisão do dono (2026-08-10): badge de honestidade + 3 tiers de label** — especificar AQUI, quando a UI do Atlas existir e o selo tiver eixos de verdade para reportar (escala, luz), no vocabulário da legenda; `Phase 'atlas'`, `AtlasRig`, portal do pause-look, saída "Partir", **busca renascida** (~60 linhas sobre `meta.named`), tempo, deep-link, contrato de a11y (foco preso, devolução ao gatilho, `Esc`, `aria-live`, reduced-motion) escrito na árvore do HUD da casa; **`Spotlight.tsx` + convite de 3 passos** no vocabulário da legenda (arrastar para olhar · WASD/QE para voar · clicar numa estrela para visitar), disparado só na primeira entrada, lendo `conviteVisto`; **captura de ponteiro opt-in** no FreeRoam; **UI Scale (`?ui=`)** depois da auditoria dos 37 `px` que carregam texto; **enquadramento privilegiado como função pura no `AtlasRig`** (`d = r/sin(θ/2)`, `max(distVertical, distHorizontal)`, retângulo utilizável do HUD) reaproveitando os quatro ângulos medidos (30°, 70°, 0,78, 1,2); **gradação por contexto**: os 5 eixos que variam (bloom, saturação, contraste, brilho, guia), limiares em UA (3,5/50) herdados e os de câmera (200/2000) re-derivados na escala da viagem; **visita instantânea sob `prefers-reduced-motion` no `cameraRig`**.
 
