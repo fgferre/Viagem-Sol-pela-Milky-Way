@@ -20,7 +20,7 @@ O dono declarou, com todas as letras, o que o produto é:
 > filme dentro dessa galáxia, visualizando o sol, e seguindo aquele caminho que o
 > filme fez."
 
-E apontou o defeito: o Sol da cena tem **487.437×** o tamanho real. A justificativa
+E apontou o defeito: o Sol da cena tem **487.441×** o tamanho real. A justificativa
 escrita é uma frase — `// Sol artístico (escala real seria invisível: 2.3e-8 pc)`
 (`src/three/config.ts:8`).
 
@@ -48,8 +48,8 @@ Celestia, Stellarium: raio físico sempre, e a troca ponto↔disco decidida por
 
 | Objeto | Na cena | Real | Fator | Endereço | Veredito |
 |---|---|---|---|---|---|
-| Sol (fotosfera, opaca) | 0,011 pc | 2,2567e-8 pc | **487.437×** | `src/three/config.ts:9` | **CORRIGIR** — escreve profundidade |
-| Sgr A✱ (raio de Schwarzschild) | 0,05 pc | 3,97e-7 pc | **125.900×** | `src/three/world/blackHole.ts:27` | **CORRIGIR** — declarado no próprio cabeçalho (`:13-19`) |
+| Sol (fotosfera, opaca) | 0,011 pc | 2,2567e-8 pc | **487.441×** | `src/three/config.ts:9` | **CORRIGIR** — escreve profundidade |
+| Sgr A✱ (raio de Schwarzschild) | 0,05 pc | 3,97e-7 pc | **125.884×** | `src/three/world/blackHole.ts:27` | **CORRIGIR** — declarado no próprio cabeçalho (`:13-19`) |
 | Clarão das estrelas | `0,08 × luminosidade` pc; Sirius → 0,2194 pc | 8,2e-9 pc | ~5,7e6× | `src/three/world/heroStars.ts:139` | **DECLARAR** — é borrão de instrumento, não escreve profundidade |
 | Nuvens observadas (CO) | ×2,1 sobre o raio de catálogo | — | 2,1× | `src/three/world/observedClouds.ts:20` | **DECLARAR** — "escala artística fixa", já escrito |
 | Complexos grandes | ×1,2 | — | 1,2× | `src/three/world/observedClouds.ts:21` | **DECLARAR** |

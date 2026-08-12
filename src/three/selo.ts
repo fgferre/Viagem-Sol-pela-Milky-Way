@@ -30,6 +30,7 @@
 // Módulo PURO: sem window, sem three, sem React.
 // ============================================================
 import { deepDiscFade, deepPointGain } from './world/lodStellar';
+import { acusacaoDaEscala } from './escala';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
@@ -465,6 +466,17 @@ export interface VereditoDoSelo {
   brilho: 'real' | 'assistido';
   /** os caminhos ATIVOS agora, na ordem do registro */
   desvios: CaminhoDoSelo[];
+  /**
+   * QUEM está inflado e QUANTO — uma frase por corpo em dívida, tirada
+   * do cadastro (`escala.ts`), do pior fator para o melhor. Até aqui o
+   * eixo ESCALA dizia "FORA DE ESCALA" e calava; um selo que acusa sem
+   * dizer o quê não é honestidade, é aviso legal.
+   *
+   * VAZIO quando a escala é real: o selo não acusa quem não deve. E
+   * vazio, não uma frase de consolo — quem lê o veredito decide o que
+   * mostrar quando não há nada a declarar.
+   */
+  culpados: readonly string[];
 }
 
 /**
@@ -485,6 +497,16 @@ export interface VereditoDoSelo {
  * visível ali. É conservadorismo declarado, e a defesa dele é a mesma do
  * NaN abaixo: o selo, na dúvida, declara o desvio em vez de prometer o
  * que não sabe.
+ *
+ * O QUE MUDOU (F0 da onda do Sol real): o veredito continua o mesmo, mas
+ * ele parou de ser mudo. `VereditoDoSelo.culpados` diz QUEM está inflado
+ * e QUANTO, lendo o cadastro (`escala.ts`) — hoje, "Sol está 487.441×
+ * maior" e "Sagittarius A✱ está 125.884× maior". E a frase acima ganhou
+ * data de validade: quando a F3 e a F5 pagarem essas duas dívidas, o
+ * cadastro fica sem corpo em dívida, a acusação nasce VAZIA, e este eixo
+ * poderá deixar de ser conservador porque não haverá mais esfera
+ * inventada que possa entrar em quadro. Até lá, o conservadorismo é a
+ * resposta certa — só que agora ele diz o nome do que está temendo.
  *
  * Distância envenenada (NaN) devolve 'fora', pelo mesmo motivo.
  */
@@ -529,9 +551,13 @@ export function estadoDoSelo(e: EstadoDaVista): VereditoDoSelo {
   for (const chave of e.portas) {
     if (!PORTAS_CONHECIDAS.has(chave)) desvios.push(desconhecida(chave));
   }
+  const escala = escalaDaVista(e.distanciaPc);
   return {
-    escala: escalaDaVista(e.distanciaPc),
+    escala,
     brilho: desvios.length === 0 ? 'real' : 'assistido',
     desvios,
+    // a acusação só sai com o desvio: acusar numa vista honesta seria o
+    // erro simétrico ao de calar numa vista mentirosa
+    culpados: escala === 'fora' ? acusacaoDaEscala() : [],
   };
 }
