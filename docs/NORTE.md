@@ -3500,13 +3500,64 @@ instante; `renderer.info.memory` volta ao patamar do tier alvo depois do
 dispose (o amostrador é o juiz — é a medição que o risco §6 espera); captura do
 link pós-troca bit-idêntica ao boot direto com o mesmo `?q=`.
 
+**Fase D — o automatismo de qualidade vira OPÇÃO (decisão do dono, 2026-08-12):**
+
+**O dono nunca pediu auto-detect de preset.** Hoje há QUATRO automatismos
+silenciosos: a detecção por toque/tela decide o tier inicial (engine.ts:44–51);
+o storage responde pelo aparelho na visita seguinte (engine.ts:160); o monitor
+de fps troca tier sozinho sempre que não há `?q=` (engine.ts:250–282); e a
+escolha manual de Cinema, por apagar o parâmetro, RELIGA o monitor sem o
+visitante pedir (App.tsx:269 + engine.ts:210–213). Do atlas fica só a semente —
+automatismo é ESCOLHA do visitante, não comportamento de fábrica; o mecanismo
+dele (score aditivo por sniffing + 15 overrides) segue aposentado pela linha da
+matriz do PLANO-ATLAS §2: score é palpite, e a casa tem o sinal MEDIDO com
+histerese e cooldown que o atlas admitia não ter. O desenho:
+
+1. **Auto é o 4º estado do seletor** (HUD e painel), nomeado: cinema/alta/
+   performance = PINADO, nenhum automatismo mexe; **Auto** = o modo adaptativo
+   com o sinal medido de sempre. `?q=auto` vira valor válido — o link copiado
+   carrega o modo; `?q=<tier>` segue soberano e pinado. Sem `?q=`: vale a
+   escolha persistida do visitante; sem escolha nenhuma, **default de produto
+   = cinema** — a identidade cinematográfica, nunca decisão por sniffing.
+2. **Doutrina de storage preservada com um campo novo**: `qualidadeEscolhida`
+   entra no envelope ao lado de `wikipediaLigada` (o precedente do opt-in
+   persistido já existe, Onda 8). `tierQueRodou` continua sendo ALOCAÇÃO
+   MEDIDA — consumida SÓ pelo Auto, como ponto de partida da visita seguinte.
+   Isto REVISA a precedência da Onda 1f (URL > storage > detecção) para
+   **URL > escolha do visitante > default de produto**, com medição e detecção
+   agindo apenas DENTRO do Auto — quando a D virar código, o registro da
+   Onda 1f atualiza junto.
+3. **Detecção nunca decide; medição sugere; o visitante escolhe; o Auto age.**
+   Fora do Auto o monitor continua MEDINDO (um acumulador — custo nada) mas
+   nunca troca: se o veredito diz que o tier pinado não roda, UMA sugestão
+   discreta e não-bloqueante por sessão ("está pesando — Performance? ligar o
+   Auto?"). No PRIMEIRO boot touch a mesma sugestão pode aparecer já no véu de
+   carregamento ("este aparelho sugere Performance — trocar?"), porque a
+   alocação acontece no init e sugerir depois é tarde enquanto a Fase C não
+   existir; um flag irmão de `conviteVisto` garante que é uma vez só.
+4. **O teto de GL fica**: renderer que se NOMEIA software não é gosto nem
+   palpite — cinema em SwiftShader é inviável, e o gate da Onda 1 já o cobre.
+5. **Proveniência no controle** (a primeira linha do selo de honestidade da
+   Onda 5 nasce aqui): o seletor DIZ de onde veio o estado — "cinema · você
+   escolheu" / "alta · URL" / "Auto · rodando em alta, medido aqui" /
+   "performance · teto de GL".
+
+*Gate D:* com tier pinado, NENHUMA troca acontece sem clique (teste sob fps
+forçado baixo, por sobrevivência de valor); a sugestão aparece no máximo uma
+vez por sessão e recusa é respeitada; `?q=auto` e os três pinados reproduzem
+bit-idêntico o estado equivalente de hoje; captura headless sem `?q=` nasce
+cinema em qualquer aparelho — o harness deixa de depender de sniffing.
+
 **Fora do escopo, dito:** `?cart=off/obs` segue decisão de boot — o modo é
 congelado no bake das lâminas (galaxy.ts:915) e não é opção do painel; é
 ferramenta de A/B.
 
 Sequência: A pode já; B1/B2 já têm dono (fila de 2026-08-05 / Onda 6); C só
 depois da B — troca viva de tier sem o amostrador seria fé, exatamente o que o
-risco §6 proíbe.
+risco §6 proíbe. D é independente de B/C (a sugestão aceita usa o
+reload-com-retomada de hoje) e fica melhor depois da C, quando aceitar a
+sugestão vira troca viva; D também absorve o item 3 da Fase A (`?q=` explícito
+é o caso "pinado" da semântica nova).
 
 ## Decisões fechadas
 
