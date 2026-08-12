@@ -2581,6 +2581,24 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
   histórica é **~45 min**. O gate do céu herdou o mesmo sinal (mesmo driver): as 6 faces
   saem bit-idênticas, `skyError` **0,7782** com os cinco termos iguais, e a leva inteira
   (capturar + medir) passou a levar **42 s**.
+- **O protocolo do céu ganhou `&noplan=1` na Onda 4** (`sky-capture.mjs`, precedente
+  exato do `nohero=1` que já estava lá). O porquê, numa linha: a câmera do céu fica na
+  ORIGEM, dentro do domínio profundo, e o oráculo é a recriação Gaia, que não tem
+  planetas — medir com a camada ligada cobraria da régua um corpo que a foto-alvo não
+  tem. Ele entra ao lado de `nosun=1&nohero=1` na URL de protocolo (item 2 da fila lá
+  em cima, mais o stretch `kneeamt=1&knee=0.02&exp=4.4`). Com ele: `skyError`
+  **0,7782**, os cinco termos e os quatro brutos idênticos, e as **6 faces
+  BIT-IDÊNTICAS** a uma referência tirada de propósito no estado pré-chave
+  (`gc 845781a1…` · `anti afe5d64e…` · `l90 bfaf2cfe…` · `l270 b20034a6…` ·
+  `npole 8ededf1f…` · `spole 929e645d…`) — o que prova de quebra que o `near` piecewise
+  do domínio profundo não mexeu no fundo.
+- **O `rodada.mjs` também roda por CDP e com o tier fixo, desde a rodada 42**, pelo
+  mesmo driver dos outros três: `node scripts/visual/rodada.mjs <n> "nota"` grava as
+  duas vistas externas em `capturas/` e a linha em `docs/reference/EVOLUCAO.md`. Era o
+  único harness ainda morto nesta máquina, e a descontinuidade que o conserto criou no
+  ledger está declarada lá — **a comparação válida é 42 ↔ 43 em diante**. Os três
+  defeitos que o matavam, e o que cada um contaminava, estão na seção "Os gates não
+  rodavam nesta máquina", logo abaixo.
 
 O `ab-identidade` guarda os md5 em `TMPDIR/ab-identidade-{antes,depois}.json`, fora do
 repo e fora do git. Duas consequências que já quase custaram um diagnóstico errado:
@@ -2601,8 +2619,9 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` · `retrato 18ba748879dc`.
    **Esses md5 são desta GPU** — noutra máquina servem só como sinal de que a captura
    assentou, nunca como valor esperado.
-3. **A baseline VIGENTE é a da Onda 3 (2026-08-11) e tem QUINZE vistas — a lista deste
-   item, não a do item 2.** O item 2 é HISTÓRIA da era da Onda 1 (e já divergiu em
+3. **As QUINZE que a Onda 3 fechou — e que a Onda 4 NÃO moveu.** A baseline VIGENTE tem
+   DEZOITO vistas: estas quinze (md5 logo abaixo) mais as três do item 4.
+   O item 2 é HISTÓRIA da era da Onda 1 (e já divergiu em
    `travessia` e `retrato`, pelo conserto do `vSat` abaixo); a Onda 3 acrescentou OITO,
    porque o gate não tinha vista nenhuma do motor estelar — 4 do Sol por DISTÂNCIA
    (`?pos=`, não `?t=`: o instante amarra a distância ao trajeto da hélice) e 4 de
@@ -2660,20 +2679,43 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    MESMOS **0,7782**, com os cinco termos e os quatro brutos
    (bulgeAnti 5,497 · rift 0,0694 · colour 0,0509 · purp 0,0448) iguais até a quarta
    casa. Ou seja: a mudança é real e fica ABAIXO da resolução da régua fotométrica.
-4. **A Onda 4 acrescentou TRÊS (fase 0, 2026-08-11), e a lista foi a 18.** Elas caem
+4. **As TRÊS que a Onda 4 fez NASCER (2026-08-11), e a lista foi a 18.** Elas caem
    ABAIXO do piso do filme (a vista mais próxima até aqui era `sol`, a 0,063151 pc =
    ~13.000 UA), no domínio profundo onde a onda dissolve a fotosfera artística e acende
-   os planetas por fotometria: `ua500` (`?pos=0,0,0.0024241` = 500,01 UA) · `ua150`
-   (`0.00072722` = 150,00 UA, o desfile a olho nu, também SENTINELA) · `ua40`
-   (`0.00019393` = 40,00 UA, cruzando a órbita de Netuno). Entraram na lista **antes de
-   qualquer código da onda**, de propósito: é o que desarma a armadilha do veredito
-   (vista sem "antes" era pulada em silêncio — hoje `julgarVistas` emite NOVA/AUSENTE).
-   O "antes" delas, capturado no HEAD sem a onda, mostra **só o fundo** — o `near` atual
-   clipa tudo a menos de ~206 UA da câmera —, e é baseline legítima do diff:
-   **`ua500 5fa91638704b` · `ua150 64efef464d97` · `ua40 ed732b0cffa6`** (todas
-   @1800x1713). Ao contrário das 15 do item 3, **estas TÊM de mudar** quando a camada
-   dos planetas ligar (fase 4 da onda) — e só elas. Na mesma leva as 15 antigas saíram
-   **bit-idênticas ao item 3**, 18/18 por `via=sinal`, 2,3 min com `JOBS=3`.
+   os planetas por fotometria: `ua500` (`?pos=0,0,0.0024241` = 500,01 UA — o Sol já é
+   ESTRELA e Júpiter é o único acompanhante que a régua de pixel MEDE) · `ua150`
+   (`0.00072722` = 150,00 UA, o desfile a olho nu com o sistema inteiro em quadro —
+   Sol, Júpiter e Saturno medidos, também SENTINELA) · `ua40` (`0.00019393` = 40,00 UA,
+   cruzando a órbita de Netuno, com os SETE de dentro medidos, do Sol a
+   Saturno). Entraram na lista **antes de qualquer código da onda**, de propósito: é o
+   que desarma a armadilha do veredito (vista sem "antes" era pulada em silêncio — hoje
+   `julgarVistas` emite NOVA/AUSENTE); nessa leva as 15 antigas saíram **bit-idênticas
+   ao item 3**, 18/18 por `via=sinal`, 2,3 min com `JOBS=3`.
+   **Os md5 OFICIAIS delas, desde o fecho da Onda 4** (chave `PLANETAS_DEFAULT_ON`
+   ligada, todas @1800x1713): **`ua500 5f8136c12732`** · **`ua150 9b3e75b2af91`** ·
+   **`ua40 a607e3cf57ab`**. Render DEFAULT, **com bloom** — as três documentam o estado
+   verdadeiro do produto, e é de propósito que a régua de pixel (`planeta-pixel.mjs`)
+   mede num par PRÓPRIO com `&nobloom=1`: com o bloom ligado 31,85% do quadro satura e
+   um quadro saturado não tem centroide. Na leva do FECHO, **as 15 do item 3 saíram
+   bit-idênticas e só estas três mudaram** (18/18 por `via=sinal`, 1,9 min com
+   `JOBS=3`) — o filme não muda um pixel, que é a promessa da onda cumprida.
+   **O A/B da porta tem valor esperado, e o caminho de volta é EXATO:**
+   `DOZERO=1 EXTRA='&noplan=1'` com o MESMO binário devolve as 18 de antes da camada bit
+   a bit — as 15 do item 3 e as três em **`ua500 b950ae47019e` · `ua150 e6990475232e` ·
+   `ua40 5dbf3afd6274`**, que é o estado **pós-F2/pré-chave**: o domínio profundo já
+   dentro, a camada de planetas ainda fora.
+   **Duas leituras que só a onda revelou, e que mudam como se lê este item.** (a) As
+   portas `?plan/?noplan` governam a **camada de planetas, não o palco**: o domínio
+   profundo (janelas `deep`, `near` piecewise, voo proporcional) é fundação sem porta,
+   como o próprio `near`, e a prova dele é a bit-igualdade das 15. (b) Por isso o
+   "antes" HISTÓRICO da fase 0 — **`ua500 5fa91638704b` · `ua150 64efef464d97` ·
+   `ua40 ed732b0cffa6`** — **não é alcançável por porta nenhuma**: as três já tinham
+   mudado na F2. A premissa com que elas nasceram ("no antes mostram só o fundo, o
+   `near` velho clipa tudo a menos de ~206 UA") estava incompleta — o `near` clipa o que
+   está a menos de 206 UA **da câmera**, e o disco artístico tem 2.269 UA de raio, então
+   a metade de trás dele e as raias ficavam ALÉM do near e desenhavam. Com
+   `solWorldFade = 0` elas somem: na `ua150`, 13.938 px de 3.083.400 (0,45%), **100%
+   perda de luz de artefato** (13.789 px perderam, 1 ganhou) — medido, não suposto.
 
 Os PNGs do gate do céu ficam em `sky/` e as capturas nomeadas em `capturas/` (ambos
 gitignored, ambos sobrevivem à sessão): `sky-capture.mjs base --so-medir` re-mede sem

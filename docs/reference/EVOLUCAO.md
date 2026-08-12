@@ -93,6 +93,7 @@ raios que antes ninguém cobrava. `discMean` fica FORA das notas de propósito:
 | 39 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | bojo c/a 0,30 -> 0,26 (Wegg & Gerhard); regua da fenda mede na latitude da foto |
 | 40 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
 | 42 | 0.3939 | 0.1160 | 0.1766 | 0.1296 | 0.0844 | 0.1048 | conserto do harness (CDP + tier fixo) |
+| 43 | 0.3939 | 0.1160 | 0.1766 | 0.1296 | 0.0844 | 0.1048 | Onda 4 fechada: dominio profundo 1:1 + ceu com planetas |
 
 ## Edge-on
 
@@ -122,6 +123,7 @@ descontínua com as de cima** — ver a nota do protocolo de captura acima.
 | 39 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | bojo c/a 0,30 -> 0,26 (Wegg & Gerhard); regua da fenda mede na latitude da foto |
 | 40 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
 | 42 | 0.3758 | 0.0424 | 0.0886 | 0.8784 | 0.0486 | conserto do harness (CDP + tier fixo) |
+| 43 | 0.3758 | 0.0424 | 0.0886 | 0.8784 | 0.0486 | Onda 4 fechada: dominio profundo 1:1 + ceu com planetas |
 
 ## Céu interno (panorama ESO)
 
