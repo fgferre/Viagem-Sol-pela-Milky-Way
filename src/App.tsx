@@ -339,6 +339,11 @@ export default function App() {
     const hospeda = HUD_POR_FASE[phase];
     if (!hospeda.busca) setBusca(false);
     if (!hospeda.gaveta) setGaveta(false);
+    // e o botão da captura volta a se oferecer com o modo: o backoff é
+    // do MODO, não da sessão (`EstadoDaCaptura.desistiu`), e sem esta
+    // linha o rótulo do rig e o do React discordariam — o rig esquecia
+    // as negativas ao sair, o React continuava mostrando o botão morto.
+    setCapturaNegada(directorRef.current?.capturaDePonteiro.desistiu ?? false);
   }, [phase]);
 
   // ---- captura de ponteiro: o HUD só OFERECE (F5) ---------------------

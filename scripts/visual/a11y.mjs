@@ -494,7 +494,8 @@ try {
     `selo: a volta limpa a porta, desliga a gradação e preserva o modo (${urlLimpa})`
   );
 
-  // A LINHA-CONTROLE PRÓPRIA da gradação (bit#1): `?grad=0` no link faz
+  // A LINHA-CONTROLE PRÓPRIA da gradação — todo caminho que altera o
+  // resultado tem de ter como ser desligado: `?grad=0` no link faz
   // o Atlas abrir com o clarão do filme — e aí o selo diz REAL sobre a
   // tela branca, que é a verdade daquela vista.
   await sessao.ir(`atlas=1&grad=0&${PIN}`);
@@ -632,7 +633,7 @@ async function medirCobertura(s, quando, cobra = true) {
  * A ESCALA DA UI (`?ui=`, F6). Quatro promessas:
  *  1. o tamanho do texto MUDA, e muda pelo fator pedido, em TODO texto
  *     que está na tela — inclusive nos `clamp(rem, vw, rem)`, que antes
- *     ignoravam a raiz (ui#3);
+ *     ignoravam a raiz;
  *  2. o HUD não quebra no maior degrau, nem com o ZOOM do navegador por
  *     cima dele (que é o mesmo problema com outro nome: viewport em px
  *     de CSS encolhendo enquanto o texto não encolhe);

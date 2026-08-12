@@ -327,7 +327,7 @@ try {
   );
 
   // ---- 7: a paleta não vaza no ?shot=2 -----------------------------
-  // Invariante arq#14: o `.bare-mode` só esconde FILHOS DIRETOS de
+  // Invariante da onda: o `.bare-mode` só esconde FILHOS DIRETOS de
   // `.hud-root`. Overlay novo aninhado (ou portalizado para o body)
   // entraria nas 18 vistas oficiais e o filme perderia pixel. A leva
   // não pega isto sozinha — lá o Atlas nem monta.

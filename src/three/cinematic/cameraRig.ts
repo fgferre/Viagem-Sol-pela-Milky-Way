@@ -223,10 +223,11 @@ export function pisoDaRoda(dPc: number): number {
 //
 // As QUATRO DEFESAS, que são o motivo de isto ser mais que uma linha:
 //  1. BACKOFF: `pointerlockerror` três vezes seguidas e a captura para
-//     de se oferecer. Sem isso, um navegador que nega (política de
-//     permissão, sandbox, aba sem gesto do usuário) receberia um pedido
-//     por clique para sempre, e o visitante veria um botão que não faz
-//     nada.
+//     de se oferecer ATÉ SE SAIR DO MODO. Sem isso, um navegador que
+//     nega (política de permissão, sandbox, aba sem gesto do usuário)
+//     receberia um pedido por clique para sempre, e o visitante veria um
+//     botão que não faz nada. O escopo é o do doador — sair do voo livre
+//     zera a conta —, e não a sessão: ver `EstadoDaCaptura.desistiu`.
 //  2. DISPOSE: os listeners saem no `dispose` do rig — que é o que o
 //     HMR do vite chama a cada salvamento. Sem isso, um dia de trabalho
 //     deixa dezenas de listeners de `pointerlockchange` vivos, todos
@@ -252,9 +253,29 @@ export class EstadoDaCaptura {
   erros = 0;
   ativa = false;
 
-  /** o navegador negou vezes demais — não se pede mais nesta sessão */
+  /**
+   * O navegador negou vezes demais — não se pede mais ENQUANTO SE
+   * ESTIVER NO MODO. O escopo é o do doador, palavra por palavra
+   * (`SurfaceModeFirstPerson.tsx:88-93`: "for the remainder of the
+   * current surface-mode session. Counter resets on successful lock + on
+   * `surfaceModeActive` flipping false"), e não o da sessão inteira.
+   *
+   * A diferença não é acadêmica: o `pointerlockerror` também dispara em
+   * negativas TRANSITÓRIAS (pedido logo depois de um `exitPointerLock`,
+   * documento sem foco, gesto que o navegador não contou). Três ciclos
+   * rápidos de Esc-e-clicar bastavam para o botão do HUD ficar
+   * `disabled` com "este navegador não devolveu a captura do ponteiro"
+   * pelo resto da sessão, num navegador que suporta a captura
+   * perfeitamente — e o único caminho de volta era recarregar a página,
+   * que no Atlas custa o estado inteiro.
+   */
   get desistiu(): boolean {
     return this.erros >= ERROS_ATE_DESISTIR;
+  }
+
+  /** sair do modo esquece as negativas — ver `desistiu` */
+  saiuDoModo() {
+    this.erros = 0;
   }
 
   /** vale a pena pedir? (já capturado, ou já desistido, não vale) */
@@ -321,6 +342,16 @@ export class CapturaDePonteiro {
   /** devolve o ponteiro (o Esc do navegador faz o mesmo caminho) */
   soltar() {
     if (document.pointerLockElement === this.alvo) document.exitPointerLock();
+  }
+
+  /**
+   * O MODO ACABOU: devolve o ponteiro e ESQUECE as negativas. É o
+   * equivalente exato do `surfaceModeActive` virando falso no doador —
+   * quem volta ao voo livre volta com a captura se oferecendo de novo.
+   */
+  sairDoModo() {
+    this.soltar();
+    this.estado.saiuDoModo();
   }
 
   dispose() {
@@ -394,7 +425,7 @@ export class FreeRoam {
 
   set enabled(valor: boolean) {
     this.ligado = valor;
-    if (!valor) this.captura.soltar();
+    if (!valor) this.captura.sairDoModo();
   }
 
   constructor(canvas: HTMLCanvasElement, camera: THREE.PerspectiveCamera) {

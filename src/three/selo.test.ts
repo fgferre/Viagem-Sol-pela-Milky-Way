@@ -271,7 +271,11 @@ describe('4. o eixo ESCALA sai da geometria, não de porta', () => {
     expect(escalaDaVista(0.0007)).toBe('real');
   });
 
-  it('acima do limiar do domínio profundo quem domina é o Sol-ator', () => {
+  it('acima do limiar o eixo declara desvio porque não SABE garantir 1:1', () => {
+    // e não porque o Sol-ator esteja em quadro: a 8 kpc (Sagittarius A✱,
+    // alcançável pelo clique no rótulo dentro do Atlas) quem domina o
+    // quadro não é o disco artístico do Sol. O eixo lê a distância a
+    // CASA, e acima do limiar ele é conservador — ver `escalaDaVista`.
     expect(escalaDaVista(DEEP_LIMIAR_PC)).toBe('fora');
     expect(escalaDaVista(1)).toBe('fora');
     expect(escalaDaVista(8000)).toBe('fora');

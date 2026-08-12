@@ -526,6 +526,21 @@ export function raioDeEnquadramentoEstelar(distanciaAoSolPc: number): number {
  * externo" sai do próprio retrato, medido: pinar `pluto` aqui seria
  * uma segunda fonte de verdade que a máquina do tempo da F4 (com as
  * órbitas vivas) desmentiria no primeiro salto de data.
+ *
+ * O QUE É DERIVADO E O QUE É CONGELADO, declarado para não haver
+ * confusão: a ESCOLHA de quem é o mais externo é derivada do dado; a
+ * POSIÇÃO e o RAIO vêm da tabela congelada de 1º de janeiro de 2026
+ * (`RETRATO_2026`), e nada neste caminho consulta a efeméride viva nem
+ * o `jd` do Director. Consequência: depois de um salto de data a esfera
+ * de abertura continua a do retrato — o Sol segue no centro dela (a
+ * esfera é centrada na origem, e é essa a promessa que importa), mas o
+ * corpo que dá nome ao enquadramento não está mais onde estava.
+ *
+ * DECISÃO DA ONDA 5: fica assim, e vira PENDÊNCIA NOMEADA — "abertura
+ * ancorada na época". Consertar é o Director compor a posição viva e
+ * chamar `focar` com ela, e isso pertence à onda que também vai desenhar
+ * as órbitas (Onda 6), onde o alvo do enquadramento passa a ter forma
+ * visível e a diferença sai do papel.
  */
 export function orbitaMaisExterna(): { posicao: THREE.Vector3; raio: number } {
   const corpo = Object.values(RETRATO_2026).reduce((maior, c) =>

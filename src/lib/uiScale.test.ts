@@ -4,7 +4,8 @@
 // A segunda parte é o teste que importa, e ele é do mesmo feitio do de
 // completude do selo: varre o `hud.css` INTEIRO e cobra que TODA
 // declaração de `font-size` seja reativa à raiz. É a tranca do defeito
-// ui#3 — nove `clamp(rem, vw, rem)` nos títulos mais proeminentes, onde
+// achado do painel de UI: nove `clamp(rem, vw, rem)` nos títulos mais
+// proeminentes, onde
 // o termo do meio é fração da JANELA e ignora o `font-size` da raiz: o
 // visitante subia o tamanho do texto e justamente os títulos ficavam
 // onde estavam.

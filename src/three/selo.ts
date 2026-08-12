@@ -354,16 +354,25 @@ export interface VereditoDoSelo {
 }
 
 /**
- * O EIXO ESCALA. "Real" é o DOMÍNIO PROFUNDO (D1): a faixa em que o
- * disco artístico do Sol já cedeu lugar ao ponto fotométrico, e o que
- * domina o quadro está em 1:1. A conta não é um limiar novo — é a
- * comparação entre as DUAS rampas que a cena já usa para fazer essa
- * troca (`lodStellar`): enquanto o ponto ganha do disco, o que manda no
- * quadro é medida; quando o disco ganha, o Sol que se vê tem 2.269 UA
- * de raio e nenhuma vista pode se dizer em escala.
+ * O EIXO ESCALA — e ele lê a DISTÂNCIA A CASA, não o que domina o
+ * quadro. A conta é a comparação entre as duas rampas que a cena já usa
+ * para trocar o disco artístico do Sol pelo ponto fotométrico
+ * (`lodStellar`): "real" é o DOMÍNIO PROFUNDO, a faixa em que o ponto
+ * ganha do disco; fora dela o selo declara desvio.
  *
- * Distância envenenada (NaN) devolve 'fora': o selo, na dúvida, declara
- * o desvio em vez de prometer o que não sabe.
+ * A DIVERGÊNCIA COM A D1, dita como divergência. O desenho da onda
+ * escreveu o critério como "FORA DE ESCALA quando o Sol-ator artístico
+ * DOMINA"; o que está implementado é "fora do domínio profundo", que é
+ * outra coisa. Enquadrar Sirius (2,6 pc) ou Sagittarius A✱ (8 kpc) põe o
+ * selo em FORA DE ESCALA, e em nenhuma das duas vistas o Sol-ator está
+ * em quadro. Acima do limiar o selo declara desvio porque NÃO SABE
+ * GARANTIR 1:1 — a esfera de 2.269 UA de raio existe na cena e pode
+ * entrar em qualquer enquadramento —, e não porque o disco esteja
+ * visível ali. É conservadorismo declarado, e a defesa dele é a mesma do
+ * NaN abaixo: o selo, na dúvida, declara o desvio em vez de prometer o
+ * que não sabe.
+ *
+ * Distância envenenada (NaN) devolve 'fora', pelo mesmo motivo.
  */
 export function escalaDaVista(distanciaPc: number): 'real' | 'fora' {
   return deepPointGain(distanciaPc) >= deepDiscFade(distanciaPc) ? 'real' : 'fora';

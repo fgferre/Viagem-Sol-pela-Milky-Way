@@ -1552,25 +1552,13 @@ export class Director {
    * saber porque o HUD do Atlas é parte do enquadramento: texto maior
    * come mais quadro, o retângulo útil encolhe e a câmera recua. É
    * troca de enquadramento como qualquer outra, e por isso zera a
-   * contagem de quadros estáveis do sinal de prontidão (bit#4).
+   * contagem de quadros estáveis do sinal de prontidão — a captura do
+   * harness não pode assentar no meio de uma troca de imagem.
    */
   escalaDaUiMudou() {
     this.perturbar();
   }
 
-  /**
-   * O ESTADO DA VISTA que o selo de honestidade lê — somente leitura,
-   * como o getter `captura`. Ele mora aqui porque só o Director conhece
-   * os quatro donos do assunto de uma vez (o latch da exposição, o
-   * conjunto de camadas escondidas, o tier vivo e a curva do renderer),
-   * e porque a alternativa — o React guardar uma cópia de cada um —
-   * seria a segunda fonte de verdade que o selo existe para não ter.
-   *
-   * As PORTAS saem de `window.location.search` a cada leitura, e não do
-   * `this.debug` do construtor: o painel e a gaveta reescrevem a URL ao
-   * vivo (`replaceState`), e um selo lendo a URL do boot declararia
-   * desvio já desfeito — ou calaria um recém-feito.
-   */
   /**
    * O RETÂNGULO ÚTIL que o enquadramento está usando agora — publicado
    * para o juiz de a11y poder comparar a declaração (`atlasRig.ts`) com
@@ -1597,6 +1585,19 @@ export class Director {
       : 1;
   }
 
+  /**
+   * O ESTADO DA VISTA que o selo de honestidade lê — somente leitura,
+   * como o getter `captura`. Ele mora aqui porque só o Director conhece
+   * os quatro donos do assunto de uma vez (o latch da exposição, o
+   * conjunto de camadas escondidas, o tier vivo e a curva do renderer),
+   * e porque a alternativa — o React guardar uma cópia de cada um —
+   * seria a segunda fonte de verdade que o selo existe para não ter.
+   *
+   * As PORTAS saem de `window.location.search` a cada leitura, e não do
+   * `this.debug` do construtor: o painel e a gaveta reescrevem a URL ao
+   * vivo (`replaceState`), e um selo lendo a URL do boot declararia
+   * desvio já desfeito — ou calaria um recém-feito.
+   */
   get selo(): EstadoDaVista {
     return {
       distanciaPc: this.engine.camera.position.length(),

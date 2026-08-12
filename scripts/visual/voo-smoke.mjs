@@ -14,10 +14,12 @@
 //     do `[data-spot]`, não um número escrito à mão);
 //  3. "entendi" grava `conviteVisto` e a RECARGA não o traz de volta;
 //  4. ele é filho DIRETO de `.hud-root` e some em `?shot=2` — sem isso
-//     ele entraria nas 18 vistas oficiais (arq#14);
+//     ele entraria nas 18 vistas oficiais;
 //  5. a captura de ponteiro é OPT-IN: nada tranca sozinho;
 //  6. o BACKOFF engata de verdade — depois de três `pointerlockerror` o
-//     clique deixa de virar pedido (contado no próprio `requestPointerLock`);
+//     clique deixa de virar pedido (contado no próprio
+//     `requestPointerLock`) — e o escopo dele é o MODO, não a sessão:
+//     sair do voo livre e voltar zera a conta;
 //  7. o unlock solta TODAS as teclas — a defesa que impede a nave de sair
 //     voando sozinha quando o `keyup` não chega;
 //  8. nada nosso disputa o Esc, que é quem devolve o ponteiro;
@@ -207,6 +209,31 @@ try {
   conferir(
     n.travado === true && !n.rotulo.toLowerCase().includes('capturar o ponteiro'),
     `e a UI diz a verdade em vez de oferecer o que não entrega: "${n.rotulo}"`
+  );
+
+  // ...MAS O ESCOPO É O MODO, NÃO A SESSÃO. É o do doador, palavra por
+  // palavra ("counter resets on successful lock + on `surfaceModeActive`
+  // flipping false"), e a razão é medida: `pointerlockerror` também
+  // dispara em negativas TRANSITÓRIAS (pedido logo depois de um
+  // `exitPointerLock`, documento sem foco, gesto que o navegador não
+  // contou). Sem esta volta, três ciclos rápidos de Esc-e-clicar matavam
+  // o opt-in até a RECARGA — que dentro do Atlas custa o estado inteiro
+  // — num navegador que suporta a captura perfeitamente.
+  await js('window.__director.entrarNoAtlas({ instantaneo: true })');
+  await sleep(200);
+  await js('window.__director.enterFreeRoam()');
+  await sleep(300);
+  const reaberto = await js(`JSON.stringify({
+    erros: window.__director.capturaDePonteiro.estado.erros,
+    desistiu: window.__director.capturaDePonteiro.desistiu,
+    travado: document.querySelector('.free-hint-captura').disabled,
+    rotulo: document.querySelector('.free-hint-captura').innerText,
+  })`);
+  const r = JSON.parse(reaberto);
+  conferir(
+    r.erros === 0 && r.desistiu === false && r.travado === false
+      && r.rotulo.toLowerCase().includes('capturar o ponteiro'),
+    `SAIR DO MODO zera a conta: a captura volta a se oferecer (${reaberto})`
   );
 
   // ---- 7: o unlock solta TODAS as teclas ---------------------------

@@ -182,7 +182,7 @@ try {
     `?jd= chega ao mostrador sem aviso: ${tempoDoLink}`
   );
 
-  // A BARRA DO TEMPO NÃO VAZA NO ?shot=2 (invariante arq#14 da onda): o
+  // A BARRA DO TEMPO NÃO VAZA NO ?shot=2 — invariante da onda: o
   // `.bare-mode` só esconde FILHOS DIRETOS de `.hud-root`, e uma peça
   // portalizada para fora dele entraria nas 18 vistas oficiais. A leva
   // não pega isto sozinha — lá o modo Atlas nem monta —, então a prova é

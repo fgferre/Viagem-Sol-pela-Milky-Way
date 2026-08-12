@@ -243,12 +243,22 @@ describe('EstadoDaCaptura — o backoff das três negativas', () => {
     expect(e.podePedir).toBe(false);
   });
 
-  it('desistir é para valer: erro a mais não reabre, e soltar também não', () => {
+  it('desistiu até SAIR DO MODO: erro a mais não reabre, soltar não reabre, sair do modo reabre', () => {
     const e = new EstadoDaCaptura();
     for (let i = 0; i < ERROS_ATE_DESISTIR + 4; i++) e.errou();
     expect(e.podePedir).toBe(false);
+    // soltar o ponteiro NÃO reabre: soltar acontece o tempo todo (Esc,
+    // alt-tab), e reabrir ali devolveria o pedido por clique para sempre
     e.soltou();
     expect(e.podePedir).toBe(false);
+    // sair do modo, sim — é o escopo do doador (`surfaceModeActive`
+    // virando falso). O `pointerlockerror` dispara em negativas
+    // TRANSITÓRIAS, e sem esta volta três ciclos de Esc-e-clicar
+    // matavam o opt-in até a recarga, num navegador que suporta tudo.
+    e.saiuDoModo();
+    expect(e.erros).toBe(0);
+    expect(e.desistiu).toBe(false);
+    expect(e.podePedir).toBe(true);
   });
 
   it('um lock que dá certo ZERA a conta — negativas são SEGUIDAS', () => {
