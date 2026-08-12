@@ -8,7 +8,15 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CAMADAS, CAMADAS_DO_ATLAS, NOME_DO_SISTEMA } from './atlasConfig';
+import {
+  CAMADAS,
+  CAMADAS_DO_ATLAS,
+  CORPOS_DO_SISTEMA,
+  LUAS_DO_SISTEMA,
+  NOMES_DOS_CORPOS,
+  NOME_DO_SISTEMA,
+  tituloDeCorpo,
+} from './atlasConfig';
 
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GALAXY = readFileSync(new URL('./world/galaxy.ts', import.meta.url), 'utf8');
@@ -83,5 +91,55 @@ describe('o nome do enquadramento de abertura', () => {
     // o alvo de abertura é a órbita mais externa do retrato: o que
     // aparece é o sistema inteiro visto de fora, e é isso que se lê
     expect(NOME_DO_SISTEMA).toBe('Sistema solar');
+  });
+});
+
+// ============================================================
+// F2b (emenda P-E10b): UMA fonte de nome pt-BR. A tabela
+// `NOMES_DOS_CORPOS` é espelho declarado do `i18n.pt` de
+// `public/data/atlas/corpos.json` com o case tratado — e este teste é o
+// que impede as duas fontes de divergirem em silêncio: todo corpo
+// buscável tem nome IGUAL ao título-caso do JSON real.
+// ============================================================
+describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
+  interface CorposJson {
+    corpos: { id: string; name: { pt?: string } }[];
+  }
+  const json = JSON.parse(
+    readFileSync(
+      new URL('../../public/data/atlas/corpos.json', import.meta.url),
+      'utf8'
+    )
+  ) as CorposJson;
+  const ptPorId = new Map(json.corpos.map((c) => [c.id, c.name.pt]));
+
+  it('o título-caso trata o pt-BR de verdade — LUA→Lua, TITÃ→Titã, MERCÚRIO→Mercúrio', () => {
+    expect(tituloDeCorpo('LUA')).toBe('Lua');
+    expect(tituloDeCorpo('TITÃ')).toBe('Titã');
+    expect(tituloDeCorpo('MERCÚRIO')).toBe('Mercúrio');
+    expect(tituloDeCorpo('JÚPITER')).toBe('Júpiter');
+  });
+
+  it('TODA entrada da tabela converge com o corpos.json (case tratado)', () => {
+    for (const [id, entrada] of Object.entries(NOMES_DOS_CORPOS)) {
+      const pt = ptPorId.get(id);
+      expect(pt, `corpos.json sem i18n.pt para '${id}'`).toBeTruthy();
+      expect(entrada.nome, `nome divergente para '${id}'`).toBe(tituloDeCorpo(pt!));
+    }
+  });
+
+  it('completude: todo corpo BUSCÁVEL (os dez + as luas) tem nome e classe', () => {
+    for (const c of [...CORPOS_DO_SISTEMA, ...LUAS_DO_SISTEMA]) {
+      expect(c.nome, `'${c.id}' sem nome`).toBeTruthy();
+      expect(c.classe, `'${c.id}' sem classe`).toBeTruthy();
+      expect(NOMES_DOS_CORPOS[c.id], `'${c.id}' fora da fonte única`).toBeTruthy();
+    }
+  });
+
+  it('a Lua declara o pai — é dele que a nota mede e que o degrau enquadra', () => {
+    expect(LUAS_DO_SISTEMA).toHaveLength(1);
+    expect(LUAS_DO_SISTEMA[0]).toMatchObject({ id: 'moon', nome: 'Lua', classe: 'lua', pai: 'earth' });
+    // e a Lua NÃO entra na lista indexada ao vértice da camada de pontos
+    expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'moon')).toBe(false);
   });
 });

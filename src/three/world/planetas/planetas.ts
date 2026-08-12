@@ -299,12 +299,13 @@ void main() {
   // O alpha desta camada tem DOIS donos declarados — o texto antigo
   // ("o único alpha é do Sol") foi RENEGOCIADO na Onda 6/F2a, com teste:
   //  1. o crossfade reverso do Sol (uGain, D2 da Onda 4);
-  //  2. a CESSÃO sob corpo resolvido (aCede): quando o globo da F2a está
-  //     em quadro, o ponto do MESMO corpo apaga — senão a mesma Terra
-  //     brilharia duas vezes no mesmo pixel. Binária nesta fase (0|1);
-  //     a dominância suave é F2b. Com aCede = 0 o fator (1 − aCede) é
-  //     1,0 EXATO em IEEE754 — fora do corpo resolvido nada muda, e as
-  //     vistas profundas continuam bit-idênticas.
+  //  2. a CESSÃO sob corpo resolvido (aCede): o ponto do corpo cede na
+  //     medida em que o GLOBO domina a representação na tela — SUAVE
+  //     desde a F2b (g(razão mesh/halo) integrada no tempo; a conta
+  //     mora em terra.ts/cessaoAlvo, o precedente é o par
+  //     hero↔catálogo). Com aCede = 0 o fator (1 − aCede) é 1,0 EXATO
+  //     em IEEE754 — fora do corpo resolvido nada muda, e as vistas
+  //     profundas continuam bit-idênticas.
   // Quem decide o brilho dos nove segue sendo a física, não uma rampa.
   // E o alpha cede aos DOIS varyings juntos (lição do vSat, commit
   // 2e16689): atenuar só o vPeak deixaria os espinhos com força cheia.
@@ -564,12 +565,13 @@ export class Planetas {
   }
 
   /**
-   * A CESSÃO SOB CORPO RESOLVIDO (Onda 6, F2a) — método IRMÃO do
-   * `update`, como `escreverInstante`: quem decide é o GATE do corpo
-   * resolvido (o Director o consulta e escreve aqui), nunca o quadro
-   * desta camada. Binária nesta fase: 1 apaga o ponto do corpo (cor E
-   * espinhos, pelos dois varyings do alpha), 0 devolve a fotometria.
-   * A F2b troca o degrau pela dominância suave SEM mudar esta porta.
+   * A CESSÃO SOB CORPO RESOLVIDO (Onda 6, F2a; SUAVE desde a F2b) —
+   * método IRMÃO do `update`, como `escreverInstante`: quem decide é a
+   * DOMINÂNCIA do corpo resolvido (o Director consulta o mesh e escreve
+   * aqui, reafirmando TODO quadro — cicatriz C2), nunca o quadro desta
+   * camada. Contínua em [0,1]: 1 apaga o ponto do corpo (cor E
+   * espinhos, pelos dois varyings do alpha), 0 devolve a fotometria, e
+   * o meio é o crossfade do handoff (terra.ts/cessaoAlvo).
    *
    * Escrita idempotente pela mesma lei do instante (`gravar`): reescrever
    * o mesmo valor a 60 Hz não sobe upload. Devolve se algo mudou.

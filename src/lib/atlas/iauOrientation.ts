@@ -936,6 +936,15 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
 export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   mercury: [2440.53, 2440.53, 2438.26],
   earth: [6378.1366, 6378.1366, 6356.7519],
+  // A LUA É A EXCEÇÃO DECLARADA à regra "esférico fica de fora": o
+  // critério acima serve à conversão planetodética, mas desde a Onda 6
+  // (F2b) esta tabela é TAMBÉM a fonte única de raio físico dos corpos
+  // RESOLVIDOS (terra.ts/lua.ts — nenhum literal de raio nasce lá), e a
+  // Lua renderiza. BODY301_RADII do MESMO kernel pck00011: esfera exata
+  // (a = b = c), então a conversão de latitude segue identidade — o
+  // emitRadii do script continua pulando esferas; esta linha é mantida
+  // à mão com a citação, não regenerada.
+  moon: [1737.4, 1737.4, 1737.4],
   phobos: [13, 11.4, 9.1],
   deimos: [7.8, 6, 5.1],
   mars: [3396.19, 3396.19, 3376.2],

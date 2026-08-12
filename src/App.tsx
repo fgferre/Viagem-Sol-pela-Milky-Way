@@ -3,7 +3,7 @@
 // ============================================================
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Director, LOAD_STAGES } from './three/director';
-import type { LoadStage, Phase } from './three/director';
+import type { EstadoDaEscada, LoadStage, Phase } from './three/director';
 import type { NamedStar } from './three/config';
 import { HUD_POR_FASE } from './three/fases';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
@@ -23,6 +23,8 @@ import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca, BotaoDaBusca } from './components/PaletaDeBusca';
 import { chaveDoFoco, construirIndice, resolverFoco } from './lib/buscaEstrelas';
 import type { EntradaDaBusca } from './lib/buscaEstrelas';
+import { lerPortaVer } from './three/selo';
+import type { VerDaEscada } from './three/selo';
 import { Convite } from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
 import { CAMADAS } from './three/atlasConfig';
@@ -132,6 +134,12 @@ export default function App() {
   });
   /** o que está EM QUADRO no Atlas; null = o enquadramento de abertura */
   const [foco, setFoco] = useState<string | null>(null);
+  /** o DEGRAU da escada (F2b/D7) — decide os botões da ContextLine e o
+   *  `?ver=corpo` do link; publicado pelo Director junto com o foco */
+  const [escada, setEscada] = useState<EstadoDaEscada>({
+    degrau: 'sistema',
+    podeAproximar: false,
+  });
   /**
    * O TAMANHO DO TEXTO DO HUD (`?ui=`, F6). Nasce da URL como todo
    * gosto da casa e NUNCA vai ao storage — quem quiser o texto maior
@@ -199,6 +207,7 @@ export default function App() {
       },
       onFoco: setFoco,
       onTempo: setTempo,
+      onEscada: setEscada,
       });
     } catch (error) {
       // a sonda passou mas a criação real falhou (contexto despejado,
@@ -279,7 +288,12 @@ export default function App() {
             // sendo publicado neste mesmo tick), e este morre na linha
             // seguinte. A conta é uma passada nas 1.726.
             const achado = resolverFoco(foco, construirIndice(d.nomeadas, d.corpos));
-            if (achado) escolherAlvo(achado.entrada, d);
+            // `?ver=corpo` (F2b/D7) desce ao degrau do corpo — a lei
+            // única da porta (`lerPortaVer`); inválido cai no default
+            // `orbita`, a semântica de sempre do `?foco=`
+            if (achado) {
+              escolherAlvo(achado.entrada, d, lerPortaVer(query.get('ver')) ?? 'orbita');
+            }
             // sem palpite: a linha de contexto vai mostrar o sistema, que
             // é o que ficou de fato em quadro (precedente do `?pos=`)
             else console.warn('?foco= não encontrou alvo:', foco);
@@ -404,10 +418,26 @@ export default function App() {
     const onKey = (event: KeyboardEvent) => {
       const d = directorRef.current;
       if (!d) return;
-      // Os três atalhos são do FILME. Dentro do Atlas eles não têm
-      // sujeito — e Espaço com `preventDefault` roubaria a tecla de
-      // quem estiver navegando o modo (D3: "Espaço não vaza").
-      if (d.fase === 'atlas') return;
+      // Os três atalhos do FILME não têm sujeito dentro do Atlas — e
+      // Espaço com `preventDefault` roubaria a tecla de quem estiver
+      // navegando o modo (D3: "Espaço não vaza"). O que o Atlas TEM é o
+      // Esc da ESCADA (F2b/D7): sobe um degrau. A interação com os
+      // diálogos, por escrito: DIÁLOGO ABERTO COME O Esc PRIMEIRO — o
+      // `dialogFocus` o trata no contêiner com `preventDefault` (e o
+      // contêiner dispara antes desta janela, na fase de bubbling), e a
+      // guarda dupla (`defaultPrevented` + presença de `[data-dialogo]`
+      // no DOM) cobre o caso do foco fora do diálogo. Só o Esc que
+      // NINGUÉM reivindicou sobe a escada.
+      if (d.fase === 'atlas') {
+        if (
+          event.code === 'Escape' &&
+          !event.defaultPrevented &&
+          !document.querySelector('[data-dialogo]')
+        ) {
+          if (d.subirDegrau()) event.preventDefault();
+        }
+        return;
+      }
       // Espaço e ←/→ são atalhos da JANELA, com preventDefault. Sem esta
       // guarda eles roubam as teclas de quem está num controle: no painel
       // de Ajustes, o slider de exposição não andava com as setas e as
@@ -485,6 +515,14 @@ export default function App() {
     const emQuadro = foco === null ? null : chaveDoFoco(foco, indice);
     if (phase === 'atlas' && emQuadro) url.searchParams.set('foco', emQuadro);
     else url.searchParams.delete('foco');
+    // O DEGRAU (F2b/D7) viaja com o foco — espelho, precedente `?jd=`:
+    // `?ver=corpo` só entra quando o enquadramento está de fato no
+    // degrau do corpo (a Lua inclusive: `?foco=lua&ver=corpo` reproduz
+    // o degrau dela); na órbita a porta sai, porque órbita é o default.
+    const ver = directorRef.current?.verDaEscada;
+    if (phase === 'atlas' && emQuadro && ver === 'corpo') {
+      url.searchParams.set('ver', 'corpo');
+    } else url.searchParams.delete('ver');
     // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: a
     // troca de qualidade e o "voltar ao brilho real" RECARREGAM a página
     // por esta URL, e sem esta linha o visitante que viajou no tempo
@@ -557,9 +595,13 @@ export default function App() {
    * contra `visitarEstrela`), e adivinhar qual é pelo formato do objeto
    * seria a inferência que a etiqueta existe para não precisar.
    */
-  const escolherAlvo = (entrada: EntradaDaBusca, alvo = directorRef.current) => {
+  const escolherAlvo = (
+    entrada: EntradaDaBusca,
+    alvo = directorRef.current,
+    ver: VerDaEscada = 'orbita'
+  ) => {
     if (!alvo) return;
-    if (entrada.tipo === 'corpo') alvo.focarNoCorpo(entrada.corpo.id);
+    if (entrada.tipo === 'corpo') alvo.focarNoCorpo(entrada.corpo.id, ver);
     else alvo.visitarEstrela(entrada.estrela);
   };
 
@@ -707,13 +749,20 @@ export default function App() {
    * de estrelas: voar até a Terra pararia a 0,8 pc dela, ou seja,
    * prometeria um destino que a fase não entrega.
    */
+  // `tempo?.aviso` entra nas dependências pela LUA (F2b): a nota dela
+  // ("384 mil km") vem da efeméride, que chega TARDE — o aviso do
+  // mostrador muda exatamente quando a fonte chega ('buscando…' → ''),
+  // e é esse degrau que reconstrói o índice com o número medido. Ele
+  // NÃO muda a 4 Hz durante a viagem no tempo (é string estável), então
+  // o custo continua sendo o de trocar de fase.
   const indice = useMemo(
     () =>
       construirIndice(
         nomeadas,
         phase === 'atlas' ? (directorRef.current?.corpos ?? []) : []
       ),
-    [nomeadas, phase]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nomeadas, phase, tempo?.aviso]
   );
 
   const inJourney = phase === 'journey';
@@ -814,8 +863,16 @@ export default function App() {
         </div>
       )}
 
-      {/* o que está EM QUADRO no Atlas */}
-      {hud.contexto && <ContextLine foco={foco} />}
+      {/* o que está EM QUADRO no Atlas — e os dois gestos da escada */}
+      {hud.contexto && (
+        <ContextLine
+          foco={foco}
+          podeAproximar={escada.podeAproximar}
+          noSistema={escada.degrau === 'sistema'}
+          onAproximar={() => directorRef.current?.aproximarDoCorpo()}
+          onSistema={() => directorRef.current?.focarNoSistema()}
+        />
+      )}
 
       {/* O SELO. Lê o estado da vista do Director a cada render — e o
           render acontece quando o foco muda, que é quando a vista muda

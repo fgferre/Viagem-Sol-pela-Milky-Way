@@ -20,12 +20,14 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
-import { TerraResolvida } from './world/corpos/terra';
+import { RAIO_EQ_TERRA_PC, TerraResolvida, posicaoDaTerraUA } from './world/corpos/terra';
+import { LuaResolvida, RAIO_LUA_PC } from './world/corpos/lua';
 import { Planetas, PLANETAS_DEFAULT_ON, UA_POR_PC } from './world/planetas/planetas';
 import type { FonteDeEfemerides } from './world/planetas/planetas';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { lerPortaLuz } from './selo';
+import type { VerDaEscada } from './selo';
 import { sondarGl } from '../lib/glProbe';
 import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
 import type { IdRetrato } from './world/planetas/retrato2026';
@@ -39,6 +41,7 @@ import {
 } from './tempoDoAtlas';
 import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
 import { dateToTDB } from '../lib/atlas/time';
+import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -53,7 +56,12 @@ import {
   retanguloUtilDoAtlas,
 } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
-import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, claraoDoAtlas } from './atlasConfig';
+import {
+  CHAVE_DE_CORPO,
+  CORPOS_DO_SISTEMA,
+  LUAS_DO_SISTEMA,
+  claraoDoAtlas,
+} from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -185,6 +193,26 @@ interface DirectorEvents {
    * visitante mexe em alguma coisa.
    */
   onTempo: (estado: EstadoDoTempo) => void;
+  /**
+   * O DEGRAU DA ESCADA (F2b/D7) — sai junto com `onFoco`, sempre que o
+   * enquadramento troca. É dele que a ContextLine decide quais botões
+   * mostrar (aproximar/sistema) e que o `urlComMomento` decide se
+   * `?ver=corpo` entra no link.
+   */
+  onEscada: (estado: EstadoDaEscada) => void;
+}
+
+/**
+ * A ESCADA DE NAVEGAÇÃO (D7): em que degrau o enquadramento está.
+ * `estrela` fica fora da escada de corpos (não tem "aproximar" — o
+ * corpo resolvido dela é Onda 7), mas o botão "sistema" e o Esc valem.
+ */
+export interface EstadoDaEscada {
+  degrau: 'sistema' | 'orbita' | 'corpo' | 'lua' | 'estrela';
+  /** existe degrau abaixo alcançável pelo botão "aproximar"? Só quando
+   *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
+   *  de um ponto fotométrico enquadraria um clarão sem corpo. */
+  podeAproximar: boolean;
 }
 
 export class Director {
@@ -223,6 +251,32 @@ export class Director {
   private terraCarregavaAntes = false;
   /** fetch de textura da Terra em voo — o `captura` espera por ele. */
   private terraCarregando = false;
+  /** A LUA RESOLVIDA (F2b) — o segundo morador do palco, com as mesmas
+   *  digitais de estabilidade da Terra. */
+  private lua: LuaResolvida | null = null;
+  private luaEmQuadroAntes = false;
+  private luaCarregavaAntes = false;
+  private luaCarregando = false;
+  /** posição VIVA da Lua para o rótulo dela (projectCorpos) — três
+   *  floats reusados; NaN sem efeméride (rótulo não desenha). */
+  private readonly luaPosParaRotulo = new Float32Array([NaN, NaN, NaN]);
+  /**
+   * A CÂMERA SALTOU neste quadro (portal, enquadramento, ?pos=) — os
+   * corpos resolvidos fazem SNAP da cessão em vez de animar através do
+   * teletransporte (cicatriz "reset no salto de foco", D5). Armado por
+   * `teletransportou()` e consumido por UM tick.
+   */
+  private saltoDeCamera = false;
+  /**
+   * O DEGRAU DA ESCADA (F2b/D7): `orbita` é a semântica de sempre do
+   * `?foco=`; `corpo` é o alvo com raio físico. O degrau "lua" não é um
+   * `ver` — é o foco na Lua (`focoCorpoId === 'moon'`), sempre com o
+   * pai em quadro. A URL é ESPELHO (o `urlComMomento` escreve
+   * `?ver=corpo`), nunca painel — precedente `?jd=`.
+   */
+  private ver: VerDaEscada = 'orbita';
+  /** o foco vivo é uma ESTRELA (fora da escada de corpos)? */
+  private focoEstrela = false;
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8). Default
    * `assistida` — o do Atlas; `?luz=` semeia no boot e a linha BRILHO
@@ -729,6 +783,13 @@ export class Director {
       base: import.meta.env.BASE_URL,
     });
     this.palco.group.add(this.terra.group);
+    // A LUA (F2b): mesmo contrato — construtor barato, carga preguiçosa.
+    this.lua = new LuaResolvida({
+      tier: this.engine.quality,
+      maxTextureSize: sondarGl().maxTextureSize,
+      base: import.meta.env.BASE_URL,
+    });
+    this.palco.group.add(this.lua.group);
     this.engine.scene.add(this.palco.group);
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
@@ -888,10 +949,14 @@ export class Director {
       this.aoVivo ||
       this.sentidoDoTempo !== 0 ||
       this.faseDaEfemeride === 'buscando' ||
-      // A TERRA (F2a): textura em voo é uma mudança JÁ PEDIDA que ainda
-      // não chegou — capturar antes dela mediria a corrida, não a imagem
-      // (o mesmo argumento da efeméride logo acima).
-      this.terraCarregando;
+      // A TERRA (F2a) e A LUA (F2b): textura em voo é uma mudança JÁ
+      // PEDIDA que ainda não chegou — capturar antes dela mediria a
+      // corrida, não a imagem (o mesmo argumento da efeméride acima).
+      this.terraCarregando ||
+      this.luaCarregando ||
+      // A RAMPA ENTRE DEGRAUS (F2b/D7): o rig anima entre dois
+      // enquadramentos — cena mudando por construção até assentar
+      this.atlas.animando;
     return {
       pronto:
         this.phase !== 'loading' &&
@@ -1256,11 +1321,16 @@ export class Director {
    */
   private irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
     if (this.phase === 'atlas') {
-      this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()));
+      this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()), pos, {
+        rampa: this.rampaDaEscada(),
+      });
       this.enquadrarAgora();
       // estrela em foco: nenhum CORPO em foco — o ΔEV do selo cala
       this.focoCorpoId = null;
+      this.focoEstrela = true;
+      this.ver = 'orbita';
       this.events.onFoco(nome);
+      this.emitirEscada();
       this.teletransportou();
       return;
     }
@@ -1272,13 +1342,95 @@ export class Director {
    * órbita mais externa. É a vista com que o Atlas abre, o destino do
    * clique no Sol e — desde a F2 — a ação da linha ESCALA do selo, que
    * é o único enquadramento em que o que domina o quadro é 1:1.
+   *
+   * ABERTURA NA ÉPOCA VIVA (F2b) — OVERRIDE DECLARADO (emendas
+   * D-E5/T-E12): isto REVERTE a pendência 7 da Onda 5 ("compor a
+   * posição viva é da onda das órbitas"), com razão: a posição viva só
+   * depende da efeméride e do tempo vivo, que JÁ EXISTEM — órbitas
+   * desenhadas nunca foram pré-requisito da conta. Com a fonte
+   * carregada, quem é "o mais externo" e onde ele está saem da
+   * efeméride NO INSTANTE PEDIDO (na época o resultado reproduz o
+   * retrato — o A/B de `?jd=EPOCA` é bit a bit); sem fonte fica o
+   * retrato congelado com o badge do tempo contando a verdade — o
+   * caminho existente. O fecho da onda re-registra a pendência no
+   * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
-    this.atlas.focarNoSistema();
+    const jd = grampearJd(this.jdPedido);
+    if (this.efemeride) {
+      let raioUA = 0;
+      const externo = { x: 0, y: 0, z: 0 };
+      for (const c of CORPOS_DO_SISTEMA) {
+        if (c.id === 'sun') continue;
+        const p = this.efemeride.posicaoHeliocentrica(c.id, jd);
+        const r = Math.hypot(p.x, p.y, p.z);
+        if (r > raioUA) {
+          raioUA = r;
+          externo.x = p.x;
+          externo.y = p.y;
+          externo.z = p.z;
+        }
+      }
+      const eq = eclipticaParaEquatorial([externo.x, externo.y, externo.z]);
+      this.atlas.focar(
+        ORIGEM,
+        raioUA * AU_PARA_PC,
+        new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC),
+        { rampa: this.rampaDaEscada() }
+      );
+    } else {
+      this.atlas.focarNoSistema();
+    }
     this.enquadrarAgora();
     this.focoCorpoId = null;
+    this.focoEstrela = false;
+    this.ver = 'orbita';
     this.events.onFoco(null);
+    this.emitirEscada();
     this.teletransportou();
+  }
+
+  /**
+   * A rampa entre degraus (F2b/D7) só anima com o modo VIVO na tela:
+   * dentro da fase, sem `?shot=` e sem reduced-motion — entrada,
+   * deep-link e captura seguem instantâneos (contrato da Onda 5).
+   */
+  private rampaDaEscada(): boolean {
+    return this.phase === 'atlas' && !this.shotMode && !this.reducedMotion;
+  }
+
+  /** o degrau vivo — o que o `onEscada` publica e o `?ver=` espelha. */
+  private get escada(): EstadoDaEscada {
+    const degrau: EstadoDaEscada['degrau'] =
+      this.focoCorpoId === 'moon'
+        ? 'lua'
+        : this.focoCorpoId
+          ? this.ver === 'corpo'
+            ? 'corpo'
+            : 'orbita'
+          : this.focoEstrela
+            ? 'estrela'
+            : 'sistema';
+    return {
+      degrau,
+      // aproximar só desce para corpo com MESH resolvido — nesta fase a
+      // Terra; os demais ganham o degrau de graça quando a F3/F4 os
+      // resolver (a lista é dos corpos construídos, nunca redigitada)
+      podeAproximar: degrau === 'orbita' && this.focoCorpoId === 'earth',
+    };
+  }
+
+  /** o `ver` vivo, para o `urlComMomento` espelhar `?ver=corpo`. */
+  get verDaEscada(): VerDaEscada {
+    return this.ver;
+  }
+
+  get escadaViva(): EstadoDaEscada {
+    return this.escada;
+  }
+
+  private emitirEscada() {
+    this.events.onEscada(this.escada);
   }
 
   /**
@@ -1300,39 +1452,217 @@ export class Director {
    * Sol" seria enquadrar uma esfera de raio zero, e clicar no Sol dentro
    * do Atlas sempre quis dizer voltar para casa.
    */
-  focarNoCorpo(id: string) {
+  focarNoCorpo(id: string, ver: VerDaEscada = 'orbita') {
     if (this.phase !== 'atlas') return;
     if (id === 'sun') {
       this.focarNoSistema();
       return;
     }
+    // A LUA vai direto ao degrau dela (D7): escolher uma lua é vê-la com
+    // o pai em quadro — não existe "órbita da Lua em torno do Sol", e
+    // `?foco=lua&ver=orbita` cai aqui também (documentado: para uma lua
+    // os dois valores de ?ver= dão o mesmo degrau).
+    if (id === 'moon') {
+      this.focarNaLua();
+      return;
+    }
+    // O GESTO DA DESCIDA (D7): clicar no MESMO corpo já focado em
+    // órbita desce um degrau — é o gesto irmão do botão "aproximar".
+    if (
+      ver === 'orbita' &&
+      id === this.focoCorpoId &&
+      this.ver === 'orbita' &&
+      this.escada.podeAproximar
+    ) {
+      this.aproximarDoCorpo();
+      return;
+    }
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
     if (i < 0 || !this.planetas) return;
+    if (ver === 'corpo') {
+      // `?foco=terra&ver=corpo` — o degrau reproduzido por URL
+      this.focoCorpoId = id;
+      this.ver = 'orbita';
+      if (this.escada.podeAproximar || id === 'earth') {
+        this.aproximarDoCorpo();
+        return;
+      }
+      // corpo ainda sem mesh resolvido: o degrau pedido não existe —
+      // cai na órbita (o degrau que existe), sem fingir o que não há
+    }
     const p = this.planetas.posicoes;
     const pos = new THREE.Vector3(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
     if (pos.lengthSq() === 0) return;
-    this.atlas.focar(ORIGEM, pos.length(), pos);
+    this.atlas.focar(ORIGEM, pos.length(), pos, { rampa: this.rampaDaEscada() });
     this.enquadrarAgora();
     // o selo lê o ΔEV DESTE corpo enquanto ele estiver em foco (D2)
     this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'orbita';
     this.events.onFoco(CORPOS_DO_SISTEMA[i].nome);
+    this.emitirEscada();
     this.teletransportou();
   }
 
   /**
-   * OS DEZ, para o índice da busca (F3 + consertos). O `rUA` sai do
-   * retrato e não do atributo vivo porque o índice é construído UMA vez,
-   * na entrada no modo: ele é a NOTA da lista ("4,2 UA · planeta"), e o
-   * que o Atlas enquadra de fato é a órbita viva, lida na hora da
-   * escolha por `focarNoCorpo`.
+   * O DEGRAU "CORPO" (F2b/D7): o corpo EM FOCO enquadrado com o raio
+   * FÍSICO dele (BODY_AXES, via o estado do mesh resolvido — nenhum
+   * literal de raio nasce aqui). O centro é o do MESH (a mesma cadeia
+   * de efeméride/retrato da camada — uma fonte só).
+   */
+  aproximarDoCorpo() {
+    if (this.phase !== 'atlas') return;
+    const id = this.focoCorpoId ?? 'earth';
+    if (id !== 'earth') return; // só corpos com mesh resolvido descem
+    // o centro sai da MESMA cadeia do mesh (efeméride viva, retrato sem
+    // ela) — calculado aqui e não lido do estado do tick, porque o boot
+    // por `?ver=corpo` chega ANTES do primeiro tick (estado ainda NaN)
+    const p = posicaoDaTerraUA(grampearJd(this.jdPedido), this.efemeride);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const centro = new THREE.Vector3(
+      eq[0] * AU_PARA_PC,
+      eq[1] * AU_PARA_PC,
+      eq[2] * AU_PARA_PC
+    );
+    this.atlas.focar(centro, RAIO_EQ_TERRA_PC, centro, {
+      rampa: this.rampaDaEscada(),
+    });
+    this.enquadrarAgora();
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'corpo';
+    this.events.onFoco(CORPOS_DO_SISTEMA.find((c) => c.id === id)?.nome ?? null);
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /**
+   * O DEGRAU "LUA" (F2b/D7): a Lua com o PAI em quadro —
+   * `PARENT_FRAMING_BIAS` ganha aqui o consumidor prometido desde a
+   * Onda 5 (a direção é a MISTURA de `direcaoDaLua`, lerp entre
+   * direções, nunca fator de distância). Sem efeméride não há posição
+   * de Lua (não existe Lua no retrato): busca a fonte e reaplica o
+   * enquadramento quando ela chegar (`reenquadrarAposEfemeride`).
+   */
+  focarNaLua() {
+    if (this.phase !== 'atlas') return;
+    this.focoCorpoId = 'moon';
+    this.focoEstrela = false;
+    this.ver = 'corpo';
+    this.events.onFoco(LUAS_DO_SISTEMA[0].nome);
+    this.emitirEscada();
+    if (!this.efemeride) {
+      // a ContextLine já anuncia a Lua; o enquadramento chega com a fonte
+      // (`reenquadrarAposEfemeride`) — nenhuma posição inventada antes
+      this.garantirEfemerides();
+      return;
+    }
+    // centros pela MESMA cadeia dos meshes, calculados na hora (o boot
+    // por URL chega antes do primeiro tick — ver aproximarDoCorpo)
+    const jd = grampearJd(this.jdPedido);
+    const paraPc = (p: { x: number; y: number; z: number }) => {
+      const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+      return new THREE.Vector3(
+        eq[0] * AU_PARA_PC,
+        eq[1] * AU_PARA_PC,
+        eq[2] * AU_PARA_PC
+      );
+    };
+    const lua = paraPc(this.efemeride.posicaoHeliocentrica('moon', jd));
+    const pai = paraPc(
+      this.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd)
+    );
+    this.atlas.focar(lua, RAIO_LUA_PC, lua, {
+      rampa: this.rampaDaEscada(),
+      pai,
+    });
+    this.enquadrarAgora();
+    this.teletransportou();
+  }
+
+  /**
+   * A SUBIDA da escada (D7): Esc e o botão "sistema". Esc sobe UM
+   * degrau — lua → corpo do pai → órbita → sistema; estrela → sistema.
+   * Devolve se algum degrau foi subido (o App decide se a tecla foi
+   * consumida). A interação com diálogos está no App: diálogo aberto
+   * come o Esc PRIMEIRO (o `dialogFocus` o trata com preventDefault no
+   * contêiner), e só o Esc que sobrou chega aqui.
+   */
+  subirDegrau(): boolean {
+    if (this.phase !== 'atlas') return false;
+    const { degrau } = this.escada;
+    if (degrau === 'sistema') return false;
+    if (degrau === 'lua') {
+      // sobe para o CORPO do pai (o degrau imediatamente acima)
+      this.focoCorpoId = LUAS_DO_SISTEMA[0].pai;
+      this.aproximarDoCorpo();
+      return true;
+    }
+    if (degrau === 'corpo') {
+      this.focarNoCorpo(this.focoCorpoId!, 'orbita');
+      return true;
+    }
+    this.focarNoSistema();
+    return true;
+  }
+
+  /**
+   * REAPLICA o enquadramento do degrau vivo quando a efeméride chega
+   * TARDE (ela sempre chega tarde: o fetch nasce na entrada do modo).
+   * Na época o resultado é o mesmo bit a bit (A/B de `?jd=EPOCA`); com
+   * `?jd=` de outra data é aqui que a abertura vira a posição do DIA e
+   * que o `?foco=lua` do boot ganha finalmente uma Lua para enquadrar.
+   */
+  private reenquadrarAposEfemeride() {
+    if (this.phase !== 'atlas' || this.focoEstrela) return;
+    const { degrau } = this.escada;
+    if (degrau === 'sistema') this.focarNoSistema();
+    else if (degrau === 'lua') this.focarNaLua();
+    else if (degrau === 'corpo') this.aproximarDoCorpo();
+    else if (this.focoCorpoId) {
+      // órbita: reaplica SEM passar pelo gesto de descida (focarNoCorpo
+      // no MESMO corpo desceria a escada — aqui é correção, não gesto)
+      const id = this.focoCorpoId;
+      this.focoCorpoId = null;
+      this.focarNoCorpo(id, 'orbita');
+    }
+  }
+
+  /**
+   * OS DEZ MAIS A LUA, para o índice da busca (F3; a Lua é F2b/P-E10).
+   * O `rUA` dos dez sai do retrato e não do atributo vivo porque o
+   * índice é construído UMA vez, na entrada no modo: ele é a NOTA da
+   * lista ("4,2 UA · planeta"), e o que o Atlas enquadra de fato é a
+   * órbita viva, lida na hora da escolha por `focarNoCorpo`.
+   *
+   * A LUA É OUTRA FONTE, dita por extenso: o retrato congelado NÃO TEM
+   * luas (9 planetas — `RETRATO_2026`), então o `rUA` dela vem da
+   * EFEMÉRIDE viva, e é a distância AO PAI (`posicao('moon')` é
+   * geocêntrica por construção do motor) — a nota da lista fala
+   * "384 mil km", nunca "0,0026 UA" (o degrau de unidade sub-UA da
+   * regra da casa, emenda P-E10a). Sem efeméride carregada a Lua entra
+   * SEM nota de distância (NaN — a paleta mostra só a classe): nome
+   * honesto na lista, número só quando medido. O índice é reconstruído
+   * quando a fonte chega (o App observa a fase da efeméride).
    */
   get corpos(): readonly CorpoBuscavel[] {
-    return CORPOS_DO_SISTEMA.map((c) => ({
+    const dez = CORPOS_DO_SISTEMA.map((c) => ({
       id: c.id,
       nome: c.nome,
       classe: c.classe,
       rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
     }));
+    const jd = grampearJd(this.jdPedido);
+    const luas = LUAS_DO_SISTEMA.map((l) => {
+      let rUA = Number.NaN;
+      if (this.efemeride) {
+        const p = this.efemeride.posicaoHeliocentrica(l.id, jd);
+        const pai = this.efemeride.posicaoHeliocentrica(l.pai, jd);
+        rUA = Math.hypot(p.x - pai.x, p.y - pai.y, p.z - pai.z);
+      }
+      return { id: l.id, nome: l.nome, classe: l.classe, rUA, pai: l.pai };
+    });
+    return [...dez, ...luas];
   }
 
   /**
@@ -1426,7 +1756,17 @@ export class Director {
               pausado: this.freezeJourney,
             }
           : null;
+    // F2b: o Atlas é o modo em que o céu é VIVO — a abertura na época
+    // (o override declarado de `focarNoSistema`) e a Lua na busca/escada
+    // precisam da fonte, então o fetch nasce na entrada do modo. Sem
+    // rede a degradação é a existente: retrato congelado + badge do
+    // tempo dizendo a verdade ("sem efeméride"). O filme continua sem
+    // pagar um byte: só quem cruza o portal chega aqui.
+    this.garantirEfemerides();
     this.atravessarVeu(opcoes.instantaneo === true, () => {
+      // focar ANTES da fase virar: `rampaDaEscada()` ainda vê a fase
+      // velha e a reposição é seca — a entrada acontece atrás do véu,
+      // nunca por rampa (D3: não é travessia física)
       this.focarNoSistema();
       this.setPhase('atlas');
     });
@@ -1524,6 +1864,10 @@ export class Director {
         // mudar, e a contagem de estabilidade da captura recomeça
         this.perturbar();
         this.publicarTempo();
+        // F2b: o degrau vivo se reaplica com a fonte na mão — a
+        // abertura vira a posição do DIA e o `?foco=lua` do boot ganha
+        // a Lua que esperava (na época é bit a bit o que já estava)
+        this.reenquadrarAposEfemeride();
       })
       .catch((error: unknown) => {
         if (this.disposed) return;
@@ -1643,6 +1987,9 @@ export class Director {
    */
   private teletransportou() {
     this.nebula.invalidarLut();
+    // os corpos resolvidos fazem SNAP da cessão neste quadro — animar
+    // um crossfade através de um teletransporte é movimento inventado
+    this.saltoDeCamera = true;
     this.perturbar();
   }
 
@@ -1784,6 +2131,14 @@ export class Director {
    */
   private evLuzDoFoco(): number | null {
     if (!this.focoCorpoId || !this.planetas) return null;
+    // a Lua (F2b): o dUA é o da CADEIA heliocêntrica dela, publicado
+    // pelo próprio mesh (NaN sem efeméride ⇒ o rótulo fica sem número)
+    if (this.focoCorpoId === 'moon') {
+      const rUA = this.lua?.estadoVivo.rUA;
+      return rUA !== undefined && Number.isFinite(rUA)
+        ? deslocamentoEVAssistida(rUA)
+        : null;
+    }
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === this.focoCorpoId);
     if (i <= 0) return null;
     const p = this.planetas.posicoes;
@@ -1912,8 +2267,9 @@ export class Director {
     } else if (this.escritorDeCamera === 'atlas') {
       // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
       // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
-      // amortecido do shot onde o visitante pausou
-      this.atlas.apply(cam, escalaDaUi(), larguraDeCss());
+      // amortecido do shot onde o visitante pausou. O dt alimenta a
+      // rampa entre degraus (F2b) — fora dela é ignorado.
+      this.atlas.apply(cam, escalaDaUi(), larguraDeCss(), dt);
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {
@@ -1945,7 +2301,7 @@ export class Director {
     // no min() — de longe o registro esvazia e o par (near, far) fica
     // no vigente bit a bit) e quem escreve a cessão do ponto na camada
     // de planetas; a Terra não conhece nem o palco nem a camada.
-    if (this.terra) {
+    if (this.terra && this.stars) {
       const t = this.terra.atualizar({
         jdTdb: grampearJd(this.jdPedido),
         fonte: this.efemeride,
@@ -1955,22 +2311,62 @@ export class Director {
         ligado: this.palco.ligado,
         atlasQuente: this.phase === 'atlas',
         politica: this.politicaDeLuz,
+        dtS: dt,
+        psf: this.stars,
+        salto: this.saltoDeCamera,
       });
       if (t.emQuadro) this.palco.registrar('earth', t.raioPc, t.centroPc);
       else this.palco.remover('earth');
+      // a cessão SUAVE (F2b/D5): reafirmada TODO quadro — a escrita é
+      // idempotente (`gravar`), então reafirmar não sobe upload
       this.planetas?.escreverCessao('earth', t.cede);
       this.terraCarregando = t.carregando;
-      // globo entrando/saindo do quadro e textura que acabou de chegar
-      // são mudança de imagem: a contagem de estabilidade recomeça
+      // globo entrando/saindo do quadro, textura que acabou de chegar e
+      // a RAMPA da cessão andando são mudança de imagem: a contagem de
+      // estabilidade recomeça (a captura nunca assenta no meio do fade)
       if (
         t.emQuadro !== this.terraEmQuadroAntes ||
-        (this.terraCarregavaAntes && !t.carregando)
+        (this.terraCarregavaAntes && !t.carregando) ||
+        t.emRampa
       ) {
         this.perturbar();
       }
       this.terraEmQuadroAntes = t.emQuadro;
       this.terraCarregavaAntes = t.carregando;
     }
+    // A LUA (F2b), pelo MESMO fio — e sem cessão: ela não tem ponto
+    // fotométrico na camada (dito em lua.ts; o slot 'moon' não existe
+    // em IDS_FOTOMETRIA). Sem efeméride o corpo não nasce (não há Lua
+    // no retrato congelado — o badge do tempo conta essa verdade).
+    if (this.lua) {
+      const l = this.lua.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+      });
+      if (l.emQuadro) this.palco.registrar('moon', l.raioPc, l.centroPc);
+      else this.palco.remover('moon');
+      this.luaCarregando = l.carregando;
+      if (
+        l.emQuadro !== this.luaEmQuadroAntes ||
+        (this.luaCarregavaAntes && !l.carregando)
+      ) {
+        this.perturbar();
+      }
+      this.luaEmQuadroAntes = l.emQuadro;
+      this.luaCarregavaAntes = l.carregando;
+      // a posição viva para o RÓTULO da Lua (NaN sem efeméride ⇒ o
+      // projectCorpos não a projeta — rótulo só onde há corpo)
+      this.luaPosParaRotulo[0] = l.centroPc.x;
+      this.luaPosParaRotulo[1] = l.centroPc.y;
+      this.luaPosParaRotulo[2] = l.centroPc.z;
+    }
+    this.saltoDeCamera = false;
     const superficie = this.palco.superficieMaisProxima(cam.position);
     this.engine.updateClip(Math.min(dHome, dGC), superficie.dSuperficiePc, superficie.raioPc);
 
@@ -2250,8 +2646,19 @@ export class Director {
           this.phase === 'atlas' && this.planetas?.points.visible
             ? projectCorpos(cam, CORPOS_DO_SISTEMA, this.planetas.posicoes)
             : [];
+        // A LUA (F2b): rótulo pela posição VIVA da efeméride — ela não
+        // tem vértice na camada de pontos, então entra por uma projeção
+        // própria, e SÓ quando a posição existe (sem efeméride os três
+        // floats são NaN, e NaN passaria pelo projectPoint sem barreira)
+        const luas =
+          this.phase === 'atlas' &&
+          this.planetas?.points.visible &&
+          Number.isFinite(this.luaPosParaRotulo[0])
+            ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
+            : [];
         this.lastLabels = [
           ...corpos,
+          ...luas,
           ...projectLabels(cam, this.meta.named, 7, this.prevLabelKeys),
         ];
         this.emitDest(undefined, cam.position);
@@ -2398,6 +2805,7 @@ export class Director {
     // idem: a camada nasce depois do await do init
     step('planetas', () => this.planetas?.dispose());
     step('terra', () => this.terra?.dispose());
+    step('lua', () => this.lua?.dispose());
     step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());

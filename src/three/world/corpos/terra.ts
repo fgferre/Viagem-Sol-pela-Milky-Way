@@ -30,12 +30,25 @@
 //     fase atlas — nunca no boot do filme. As 18 vistas oficiais não fazem
 //     um fetch (o teste pina o gatilho; as capturas provam de graça).
 //
-// O GATE BINÁRIO (F2a — a dominância suave é F2b): o mesh entra quando o
+// O GATE + A DOMINÂNCIA SUAVE (F2b, decisão D5): o mesh entra quando o
 // diâmetro aparente cruza `LIMIAR_DO_GATE_PX`, sai abaixo de LIMIAR/2
 // (cushion 2×, desigualdades assimétricas, NaN preserva estado — os
-// contratos de histerese da Onda 3). Enquanto o mesh está visível o PONTO
-// da Terra na camada `planetas` cede TOTALMENTE (`escreverCessao`) — sem
-// isso a mesma Terra brilharia duas vezes no mesmo pixel.
+// contratos de histerese da Onda 3). O PONTO da camada `planetas` NÃO
+// apaga num degrau (o binário da F2a morreu aqui): ele cede por
+// DOMINÂNCIA, no precedente exato do par hero↔catálogo da Onda 3 —
+// razão r = diâmetro do MESH em px / halo PREVISTO do ponto em px
+// (`psfPointSizePx`, o espelho da PSF), cessão-alvo = g(r), a rampa
+// cúbica de 1 a 2,5 (`heroDominanceFade`, com a MESMA prova de
+// continuidade: a luz combinada nunca dá passo para trás na
+// aproximação). O mesh NASCE SOB o clarão (aos 4 px do gate, r ≈ 0,3 —
+// o ponto segue inteiro) e o ponto só cede quando o globo o domina.
+// As 4 cicatrizes do crossfade valem aqui: banda morta PROIBIDA
+// (soma > 0 em toda a faixa — teste de propriedade como o C1a),
+// reafirmação por quadro (a escrita idempotente de `escreverCessao`),
+// reset no salto de foco/data (snap, nunca lerp através de um
+// teletransporte) e clamp de dt (dentro de `stepRampToward`, o
+// integrador do doador que estava DORMENTE desde a Onda 3 — este é o
+// primeiro consumidor de runtime dele).
 //
 // PRECISÃO: a cena mede em pc e a Terra tem raio 2,07e-10 pc. Nenhuma
 // posição de mundo é reconstruída na GPU: os shaders trabalham no FRAME
@@ -53,13 +66,22 @@ import {
 } from '../../../lib/atlas/frameGalactico';
 import type { Vec3 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
+import type { IauOrientation } from '../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
 import { CALIBRACAO_ATLAS } from '../../config';
 import type { QualityLevel } from '../../core/engine';
+import {
+  RAMP_DURATION_MS,
+  heroDominanceFade,
+  psfPointSizePx,
+  stepRampToward,
+} from '../lodStellar';
 import { RETRATO_2026 } from '../planetas/retrato2026';
-import type { FonteDeEfemerides } from '../planetas/planetas';
+import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC, faseDoVertice, magDoVertice } from '../planetas/planetas';
+import type { FonteDeEfemerides, PsfDoCampo } from '../planetas/planetas';
+import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { diametroAparentePx } from './corpos';
 
 const DEG_PARA_RAD = Math.PI / 180;
@@ -143,30 +165,37 @@ export function posicaoDaTerraUA(
   return { x: v[0], y: v[1], z: v[2] };
 }
 
-/**
- * AS TRÊS COLUNAS da matriz local→cena do globo num instante — a ponte
- * entre a base IAU (equatorial J2000, que é o frame da cena) e a
- * convenção de esfera do three (+Y no polo, ver `direcaoLocalDeLonLat`).
- *
- *   colunaX = x̂(W) = nodoQ·cos W + lesteDeQ·sin W  (o meridiano-primo)
- *   colunaY = polo                                  (o eixo de spin)
- *   colunaZ = x̂(W) × polo                           (fecha a tríade, det +1)
- *
- * É o transform que o ORÁCULO de sub-ponto solar julga (terra.test.ts):
- * o mesh usa ESTA função, o teste inverte ESTA função — uma textura
- * girada 90° reprova lá antes de qualquer olho ver.
- */
-export function orientacaoDaTerraNaCena(jdTdb: number): {
+/** A saída das três colunas — ver `orientacaoDoCorpoNaCena`. */
+export interface OrientacaoNaCena {
   colunaX: Vec3;
   colunaY: Vec3;
   colunaZ: Vec3;
   /** W desenrolado em radianos — a deriva das nuvens deriva DELE. */
   wRad: number;
-} {
-  const { nodoQ, lesteDeQ, polo, wDeg } = baseCorpoEquatorial(
-    IAU_ORIENTATIONS.earth,
-    jdTdb
-  );
+}
+
+/**
+ * AS TRÊS COLUNAS da matriz local→cena de um corpo IAU num instante —
+ * a ponte entre a base IAU (equatorial J2000, que é o frame da cena) e
+ * a convenção de esfera do three (+Y no polo, `direcaoLocalDeLonLat`).
+ *
+ *   colunaX = x̂(W) = nodoQ·cos W + lesteDeQ·sin W  (o meridiano-primo)
+ *   colunaY = polo                                  (o eixo de spin)
+ *   colunaZ = x̂(W) × polo                           (fecha a tríade, det +1)
+ *
+ * GENÉRICA desde a F2b (o material comum dos corpos congela na F2 —
+ * regra de paralelização do desenho da onda): a Terra e a Lua passam
+ * pelas MESMAS colunas, cada uma com o seu registro IAU — a libração da
+ * Lua entra sozinha, porque mora nos termos periódicos do W do kernel.
+ * É o transform que os ORÁCULOS de sub-ponto solar julgam (terra.test.ts
+ * e lua.test.ts): o mesh usa ESTA função, o teste inverte ESTA função —
+ * uma textura girada 90° reprova lá antes de qualquer olho ver.
+ */
+export function orientacaoDoCorpoNaCena(
+  o: IauOrientation,
+  jdTdb: number
+): OrientacaoNaCena {
+  const { nodoQ, lesteDeQ, polo, wDeg } = baseCorpoEquatorial(o, jdTdb);
   const w = wDeg * DEG_PARA_RAD;
   const cw = Math.cos(w);
   const sw = Math.sin(w);
@@ -181,6 +210,11 @@ export function orientacaoDaTerraNaCena(jdTdb: number): {
     colunaX[0] * polo[1] - colunaX[1] * polo[0],
   ];
   return { colunaX, colunaY: polo, colunaZ, wRad: w };
+}
+
+/** A instância Terra da função acima — o nome que o oráculo pina. */
+export function orientacaoDaTerraNaCena(jdTdb: number): OrientacaoNaCena {
+  return orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.earth, jdTdb);
 }
 
 /**
@@ -209,6 +243,31 @@ export function gateBinario(armado: boolean, diametroPx: number): boolean {
   if (!Number.isFinite(diametroPx)) return armado;
   if (armado) return !(diametroPx < LIMIAR_DO_GATE_PX / CUSHION_DO_GATE);
   return diametroPx >= LIMIAR_DO_GATE_PX;
+}
+
+/**
+ * O ALVO DA CESSÃO SUAVE (F2b/D5), pura: quanto o PONTO fotométrico
+ * cede a um mesh que mede `diametroMeshPx` contra um halo previsto de
+ * `haloPontoPx`. A curva é `heroDominanceFade` IMPORTADA — a mesma
+ * rampa cúbica g(r) de 1 a 2,5 do par hero↔catálogo da Onda 3, com a
+ * mesma prova de continuidade (hi = 2,5 é a MENOR borda em que a luz
+ * combinada nunca dá passo para trás na aproximação; a régua é TAMANHO
+ * na tela, a única comum às duas representações).
+ *
+ * Mesh fora de quadro ⇒ 0 EXATO (o ponto fica inteiro — é o que mantém
+ * as vistas profundas bit-idênticas). Halo inexistente (PSF ≤ 0, ponto
+ * invisível) ⇒ razão 0 ⇒ cessão 0, o precedente de
+ * `heroDominanceRatio` ("ponto inexistente não domina nada" — e um
+ * ponto invisível também não soma luz para haver o que ceder).
+ */
+export function cessaoAlvo(
+  emQuadro: boolean,
+  diametroMeshPx: number,
+  haloPontoPx: number
+): number {
+  if (!emQuadro) return 0;
+  if (!(haloPontoPx > 0) || !Number.isFinite(diametroMeshPx)) return 0;
+  return heroDominanceFade(diametroMeshPx / haloPontoPx);
 }
 
 /** Uma entrada do manifest de texturas (public/data/atlas/texturas.json)
@@ -240,20 +299,23 @@ export function alvoDePixels(tier: QualityLevel, maxTextureSize?: number): numbe
 }
 
 /**
- * A variante de um canal para um alvo: a MAIOR largura ≤ alvo, webp
- * quando o navegador decodifica (a guarda de pessimização já morou no
- * pipeline — só existe webp vencedor no manifest). Sem candidata (canal
- * ausente, alvo abaixo do menor degrau) devolve null e o chamador decide.
+ * A variante de um canal de um CORPO para um alvo: a MAIOR largura ≤
+ * alvo, webp quando o navegador decodifica (a guarda de pessimização já
+ * morou no pipeline — só existe webp vencedor no manifest). Sem
+ * candidata (canal ausente, alvo abaixo do menor degrau) devolve null e
+ * o chamador decide. `corpo` entrou na F2b (a Lua é o segundo
+ * consumidor); a escada é a mesma para todos.
  */
 export function escolherVariante(
   entradas: readonly EntradaDeTextura[],
-  canal: CanalDaTerra,
+  corpo: string,
+  canal: string,
   alvoPx: number,
   webpOk: boolean
 ): EntradaDeTextura | null {
   let melhor: EntradaDeTextura | null = null;
   for (const e of entradas) {
-    if (e.corpo !== 'earth' || e.canal !== canal) continue;
+    if (e.corpo !== corpo || e.canal !== canal) continue;
     const ehWebp = e.arquivo.endsWith('.webp');
     if (ehWebp && !webpOk) continue;
     if (!(e.larguraPx <= alvoPx)) continue;
@@ -511,6 +573,15 @@ export interface QuadroDaTerra {
   /** fase atlas: pré-aquece a carga de textura (gatilho 2 do contrato). */
   atlasQuente: boolean;
   politica: PoliticaDeLuz;
+  /** dt do quadro em segundos — só a rampa temporal da cessão o consome
+   *  (o clamp de picos mora em `stepRampToward`, nunca aqui). */
+  dtS: number;
+  /** a PSF do campo (`StarField` publica) — o halo do ponto sai dela. */
+  psf: PsfDoCampo;
+  /** a câmera SALTOU neste quadro (portal, enquadramento, ?pos=): a
+   *  cessão faz snap para o alvo em vez de animar através do salto —
+   *  cicatriz "reset no salto de foco" do crossfade da Onda 3. */
+  salto: boolean;
 }
 
 /** O que o tick devolve — o Director registra no palco e escreve a cessão. */
@@ -519,8 +590,19 @@ export interface EstadoDaTerra {
   emQuadro: boolean;
   /** fetch de manifest/textura em voo — segura o sinal de captura. */
   carregando: boolean;
-  /** cessão do ponto da camada planetas: binária nesta fase (F2a). */
-  cede: 0 | 1;
+  /**
+   * A CESSÃO SUAVE do ponto da camada planetas (F2b/D5): 0 = ponto
+   * inteiro, 1 = ponto apagado, contínua no meio — g(razão de
+   * dominância) integrada no tempo por `stepRampToward`. 0 EXATO com o
+   * mesh fora de quadro (fator (1 − aCede) = 1 em IEEE754 — é o que
+   * mantém as vistas profundas bit-idênticas) e 1 EXATO com o globo
+   * dominando (r ≥ 2,5 — o estado das vistas `terra`/`terranb`).
+   */
+  cede: number;
+  /** a cessão ainda está ANDANDO rumo ao alvo — imagem mudando por
+   *  construção; o Director zera a contagem de estabilidade enquanto
+   *  isto for true. */
+  emRampa: boolean;
   raioPc: number;
   /** centro em pc na cena — referência VIVA, só leitura. */
   centroPc: THREE.Vector3;
@@ -577,6 +659,12 @@ export class TerraResolvida {
   private readonly mRot = new THREE.Matrix4();
   private readonly estado: EstadoDaTerra;
 
+  /** o estado do último tick, para quem enquadra (a escada, F2b) —
+   *  somente leitura; o centro é a referência VIVA. */
+  get estadoVivo(): Readonly<EstadoDaTerra> {
+    return this.estado;
+  }
+
   private readonly opcoes: OpcoesDaTerra;
 
   constructor(opcoes: OpcoesDaTerra) {
@@ -596,6 +684,7 @@ export class TerraResolvida {
       emQuadro: false,
       carregando: false,
       cede: 0,
+      emRampa: false,
       raioPc: RAIO_EQ_TERRA_PC,
       centroPc: this.centro,
       diametroPx: Number.NaN,
@@ -613,10 +702,12 @@ export class TerraResolvida {
     const e = this.estado;
     if (this.disposto) return e;
 
+    let saltoDeData = false;
     if (
       (q.jdTdb !== this.jdEscrito || q.fonte !== this.fonteEscrita) &&
       Number.isFinite(q.jdTdb)
     ) {
+      saltoDeData = true;
       this.jdEscrito = q.jdTdb;
       this.fonteEscrita = q.fonte;
       const p = posicaoDaTerraUA(q.jdTdb, q.fonte);
@@ -647,8 +738,35 @@ export class TerraResolvida {
     const emQuadro = this.armado && q.ligado && this.texturas === 'pronta';
     e.emQuadro = emQuadro;
     e.carregando = this.texturas === 'buscando';
-    e.cede = emQuadro ? 1 : 0;
     this.group.visible = emQuadro;
+
+    // A CESSÃO SUAVE (F2b/D5). O halo do ponto sai do ESPELHO da PSF com
+    // a magnitude que a camada de planetas está desenhando AGORA — mesma
+    // base (efeméride viva quando há fonte, retrato quando não há),
+    // mesma fase Lambertiana, mesma exposição do campo. A razão
+    // mesh/halo vira alvo por g(r) e o alvo vira estado por
+    // `stepRampToward` (clamp de dt lá dentro); salto de foco (portal,
+    // enquadramento, ?pos=) ou de data faz SNAP — animar um crossfade
+    // através de um teletransporte é mentir movimento que não houve.
+    const base = q.fonte
+      ? aMagBaseDe(FOTOMETRIA.earth.H, this.rUA) + DESLOCAMENTO_UA_PARA_PC
+      : A_MAG_BASE_PC.earth;
+    const fase = faseDoVertice(
+      this.centro.x, this.centro.y, this.centro.z,
+      q.camPosPc.x, q.camPosPc.y, q.camPosPc.z
+    );
+    const halo = psfPointSizePx(
+      magDoVertice(base, dPc, fase),
+      q.psf.expoM0,
+      q.psf.sigmaPx,
+      q.screenHPx
+    );
+    const alvo = cessaoAlvo(emQuadro, diametroPx, halo);
+    e.cede =
+      q.salto || saltoDeData
+        ? alvo
+        : stepRampToward(e.cede, alvo, q.dtS, RAMP_DURATION_MS);
+    e.emRampa = e.cede !== alvo;
 
     if (emQuadro) this.posicionar(q);
     return e;
@@ -830,7 +948,7 @@ export class TerraResolvida {
       const alvo = alvoDePixels(tier, maxTextureSize);
       const texturas = await Promise.all(
         CANAIS_DA_TERRA.map(async (canal) => {
-          const variante = escolherVariante(manifest.entradas, canal, alvo, webpOk);
+          const variante = escolherVariante(manifest.entradas, 'earth', canal, alvo, webpOk);
           if (!variante) throw new Error(`terra sem variante para '${canal}' ≤ ${alvo}px`);
           const tex = await carregar(`${base}${variante.arquivo}`);
           // cor em sRGB (o sampler decodifica para linear); dado

@@ -123,7 +123,29 @@ export interface CorpoDoSistema {
   chave: string;
 }
 
-const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
+/**
+ * O TÍTULO-CASO da casa: 'LUA' → 'Lua', 'TITÃ' → 'Titã' (o Unicode do
+ * pt-BR entra de graça — `toLowerCase`/`toUpperCase` do JS tratam
+ * acento). Exportado porque é a LEI de conversão entre o `i18n.pt` de
+ * `corpos.json` (que grita em caixa alta) e o nome que o visitante lê.
+ */
+export function tituloDeCorpo(nomePt: string): string {
+  return nomePt
+    .toLowerCase()
+    .replace(/(^|[\s-])(\p{L})/gu, (_, sep: string, letra: string) => sep + letra.toUpperCase());
+}
+
+/**
+ * UMA FONTE DE NOME pt-BR (emenda P-E10b): esta tabela é ESPELHO
+ * declarado do `i18n.pt` de `public/data/atlas/corpos.json`, com o case
+ * tratado por `tituloDeCorpo` — e o teste de completude em
+ * `atlasConfig.test.ts` cobra a igualdade entrada a entrada contra o
+ * JSON real (uma divergência de grafia quebra o teste, não a tela).
+ * Espelho e não fetch porque este módulo é síncrono e puro (é lido pelo
+ * HUD e pelo Director antes de qualquer rede); a CLASSE é vocabulário
+ * da legenda da casa, que o JSON não carrega.
+ */
+export const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
   sun: { nome: 'Sol', classe: 'estrela' },
   mercury: { nome: 'Mercúrio', classe: 'planeta' },
   venus: { nome: 'Vênus', classe: 'planeta' },
@@ -134,6 +156,7 @@ const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
   uranus: { nome: 'Urano', classe: 'planeta' },
   neptune: { nome: 'Netuno', classe: 'planeta' },
   pluto: { nome: 'Plutão', classe: 'planeta anão' },
+  moon: { nome: 'Lua', classe: 'lua' },
 };
 
 /** O prefixo que separa a chave de um corpo da de uma estrela. */
@@ -142,6 +165,19 @@ export const CHAVE_DE_CORPO = 'corpo:';
 export const CORPOS_DO_SISTEMA: readonly CorpoDoSistema[] = IDS_FOTOMETRIA.map(
   (id) => ({ id, ...NOMES_DOS_CORPOS[id], chave: `${CHAVE_DE_CORPO}${id}` })
 );
+
+/**
+ * AS LUAS DO ATLAS (F2b) — fora de `CORPOS_DO_SISTEMA` de propósito:
+ * aquela lista é indexada ao VÉRTICE da camada de pontos
+ * (`IDS_FOTOMETRIA`), e a Lua não tem ponto fotométrico (dito em
+ * `lua.ts`). O `pai` é o corpo cuja efeméride centra a dela — é dele
+ * que a busca mede a distância da nota ("Lua · 384 mil km") e é ele que
+ * o enquadramento do degrau "lua" mantém em quadro
+ * (`PARENT_FRAMING_BIAS`).
+ */
+export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
+  { id: 'moon', ...NOMES_DOS_CORPOS.moon, chave: `${CHAVE_DE_CORPO}moon`, pai: 'earth' },
+];
 
 // ============================================================
 // A GRADAÇÃO POR CONTEXTO (F6) — o que o Atlas faz com o

@@ -465,6 +465,20 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+/* a linha nome + escada (F2b/D7): o nome e os dois gestos de degrau
+   ("aproximar"/"sistema") lado a lado — em LINHA e não embaixo, para a
+   faixa do topo crescer o mínimo (a fração declarada em atlasRig.ts
+   cobre a altura REAL, e o juiz de a11y confere as duas). O contêiner
+   segue pointer-events: none; só os BOTÕES voltam a receber clique —
+   texto de contexto não pode engolir o arrasto do canvas. */
+.atlas-contexto-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.atlas-contexto-linha .hud-btn {
+  pointer-events: auto;
+}
 
 /* o selo de honestidade: canto oposto ao da dica, encostado na tarja de
    baixo. Altura FIXA — o retângulo útil do enquadramento desconta esta

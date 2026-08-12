@@ -192,6 +192,36 @@ export const VISTAS = [
       + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
       + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
   ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F2b) — A LUA RESOLVIDA, no MESMO jd pinado da onda (que é o
+  // dia do eclipse solar de 2024: a Lua está entre o Sol e a Terra, e o
+  // lado voltado ao Sol — o que a câmera vê — está aceso).
+  //
+  // `lua`: a câmera a 4 raios lunares, 20° fora do eixo Lua→Sol — disco
+  // de ~795 px, quase cheio. É a vista que JULGA a lei de
+  // Lommel-Seeliger a olho: o disco tem de ler CHATO com borda dura
+  // (regolito), não esfera sombreada de Lambert — o fato fotométrico
+  // que se confere contra uma fotografia.
+  //
+  // `terralua`: o primeiro PAR da casa — a câmera além da Lua (lado do
+  // Sol), 20° fora do eixo Terra→Lua, olhando a TERRA: a Lua resolvida
+  // a ~404 px em primeiro plano e a Terra a ~55 px ao fundo, sem
+  // oclusão (20° contra 7,1° de raio angular da Lua), os dois
+  // iluminados. Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC), calculados uma vez e
+  // pinados como os ?pos= acima.
+  [
+    'lua',
+    '?pos=-0.000004577765217805196,-0.0000014518586579005272,-6.2925581919652e-7'
+      + '&look=-0.000004577990409167882,-0.000001451855297832381,-6.292543536189472e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'terralua',
+    '?pos=-0.000004577540038198493,-0.0000014518632898141814,-6.292550387276077e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);

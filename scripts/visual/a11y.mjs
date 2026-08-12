@@ -517,11 +517,93 @@ try {
       + `(fator ${fatorSemPorta})`
   );
 
+  // ---- A ESCADA DE NAVEGAÇÃO (F2b/D7) -----------------------------
+  // Os dois botões novos da ContextLine com nome acessível pt-BR, o
+  // gesto de descer, o Esc que sobe UM degrau — e a interação declarada
+  // com os diálogos: diálogo aberto come o Esc PRIMEIRO.
+  await sessao.ir(`foco=terra&${PIN}`);
+  const escadaBotoes = await sessao.js(`(() => {
+    const ctx = document.querySelector('.atlas-contexto');
+    const botoes = [...ctx.querySelectorAll('button')];
+    return botoes.map((b) => b.getAttribute('aria-label'));
+  })()`);
+  conferir(
+    escadaBotoes.length === 2
+      && /^Aproximar: enquadrar Terra/.test(escadaBotoes[0] || '')
+      && /sistema solar/.test(escadaBotoes[1] || ''),
+    `escada: os dois botões têm aria-label pt-BR (${JSON.stringify(escadaBotoes)})`
+  );
+  // descer: "aproximar" enquadra o CORPO com raio físico — a câmera sai
+  // de ~6,3 UA do Sol para ~0,0006 UA da Terra
+  await sessao.js(`(() => {
+    [...document.querySelectorAll('.atlas-contexto button')]
+      .find((b) => /Aproximar/.test(b.getAttribute('aria-label'))).click();
+  })()`);
+  await sessao.assentar();
+  const desceu = await sessao.js(`JSON.stringify({
+    ver: window.__director.verDaEscada,
+    degrau: window.__director.escadaViva.degrau,
+    contexto: (document.querySelector('.atlas-contexto-nome') || {}).textContent,
+  })`);
+  const d1 = JSON.parse(desceu);
+  conferir(
+    d1.ver === 'corpo' && d1.degrau === 'corpo' && d1.contexto === 'Terra',
+    `escada: "aproximar" desce ao degrau corpo (${desceu})`
+  );
+  // o degrau reproduz por URL (espelho): a recarga com ?ver=corpo volta
+  // ao MESMO degrau
+  await sessao.ir(`foco=terra&ver=corpo&${PIN}`);
+  const porUrl = await sessao.js('window.__director.escadaViva.degrau');
+  conferir(porUrl === 'corpo', `escada: ?foco=terra&ver=corpo reproduz o degrau ('${porUrl}')`);
+  // DIÁLOGO ABERTO COME O Esc PRIMEIRO: com a gaveta aberta, Esc fecha
+  // a gaveta e o degrau NÃO se move
+  await sessao.js(`(() => {
+    const b = document.querySelector('[data-abre-dialogo="camadas"]');
+    b.focus();
+    b.click();
+  })()`);
+  await sleep(150);
+  await sessao.teclar('Escape');
+  await sleep(200);
+  const aposDialogo = await sessao.js(`JSON.stringify({
+    gaveta: Boolean(document.querySelector('[data-dialogo="camadas"]')),
+    degrau: window.__director.escadaViva.degrau,
+  })`);
+  const d2 = JSON.parse(aposDialogo);
+  conferir(
+    !d2.gaveta && d2.degrau === 'corpo',
+    `escada: o Esc com diálogo aberto fecha o DIÁLOGO e não sobe degrau (${aposDialogo})`
+  );
+  // agora sim: Esc livre sobe UM degrau por vez — corpo → órbita → sistema
+  await sessao.teclar('Escape');
+  await sessao.assentar();
+  const sub1 = await sessao.js('window.__director.escadaViva.degrau');
+  await sessao.teclar('Escape');
+  await sessao.assentar();
+  const sub2 = await sessao.js(`JSON.stringify({
+    degrau: window.__director.escadaViva.degrau,
+    contexto: (document.querySelector('.atlas-contexto-nome') || {}).textContent,
+    botoes: [...document.querySelectorAll('.atlas-contexto button')].length,
+  })`);
+  const d3 = JSON.parse(sub2);
+  conferir(
+    sub1 === 'orbita' && d3.degrau === 'sistema' && d3.contexto === 'Sistema solar'
+      && d3.botoes === 0,
+    `escada: Esc sobe um degrau por vez (corpo → '${sub1}' → '${d3.degrau}'), e no sistema os botões somem`
+  );
+
   // ---- o retângulo útil cobre o HUD REAL --------------------------
   // A declaração vive no TS (`retanguloUtilDoAtlas`) e as alturas, no
   // CSS. Sem esta prova as duas só se encontrariam a olho — e o alvo
   // começaria a ser enquadrado por baixo do selo sem ninguém notar.
+  await sessao.ir(`atlas=1&${PIN}`);
   await medirCobertura(sessao, 'ui = 1 (o de sempre)');
+  // ...e com a LINHA DA ESCADA na tela (F2b): com um corpo em foco a
+  // ContextLine carrega os dois botões e é o estado mais alto do topo —
+  // é ELE que a fração declarada tem de cobrir
+  await sessao.ir(`foco=terra&${PIN}`);
+  await medirCobertura(sessao, 'ui = 1 com a linha da escada');
+  await sessao.ir(`atlas=1&${PIN}`);
 
   // ---- A ESCALA DA UI (`?ui=`, F6) --------------------------------
   await julgarEscalaDaUi(sessao);

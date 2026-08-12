@@ -94,6 +94,23 @@ export function lerPortaLuz(bruto: string | null | undefined): PoliticaDeLuz | n
   return bruto === 'real' || bruto === 'assistida' ? bruto : null;
 }
 
+/**
+ * O DEGRAU DE ENQUADRAMENTO da escada (Onda 6 F2b, D7). `orbita` é o
+ * default e a semântica ATUAL de `?foco=` (as baselines não mudam de
+ * significado — emenda P-E2); `corpo` desce ao corpo com raio físico.
+ */
+export type VerDaEscada = 'orbita' | 'corpo';
+
+/**
+ * A LEI da porta `?ver=` (D7/D8), no mesmo contrato de `lerPortaLuz`:
+ * devolve o degrau pedido ou `null` para "nada de válido" — quem chama
+ * conhece o padrão (`orbita`). Comparação por literal, nunca `in`
+ * (a lição do `?tone=constructor`).
+ */
+export function lerPortaVer(bruto: string | null | undefined): VerDaEscada | null {
+  return bruto === 'corpo' || bruto === 'orbita' ? bruto : null;
+}
+
 /** O que o selo precisa saber da vista para se decidir. */
 export interface EstadoDaVista {
   /** distância da câmera a casa, em pc — o eixo ESCALA sai daqui */
@@ -407,6 +424,14 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    * delas errada.
    */
   neutra('foco', 'alvo em quadro (enquadramento, não ajuste)'),
+  /**
+   * `?ver=` — O DEGRAU DA ESCADA (F2b/D7): `orbita` (default, a
+   * semântica de sempre do `?foco=`) ou `corpo` (o alvo enquadrado com
+   * o raio FÍSICO dele). Mesma família de `?foco=`/`?pos=`: diz DE ONDE
+   * se olha, nunca com quanta luz — a fotometria dos dois degraus é a
+   * mesma lei, e o eixo ESCALA continua saindo da geometria sozinho.
+   */
+  neutra('ver', 'degrau do enquadramento (corpo ou órbita)'),
   neutra('t', 'instante da viagem'),
   neutra('play', 'retomar a viagem andando'),
   neutra('freeze', 'congelar o relógio da viagem'),

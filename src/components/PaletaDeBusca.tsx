@@ -25,7 +25,7 @@
 // NADA AQUI PISCA: o que muda de estado muda de borda e de rótulo.
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { buscar } from '../lib/buscaEstrelas';
+import { buscar, notaDeDistancia } from '../lib/buscaEstrelas';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
 import { gatilhoDoDialogo, useDialogFocus } from '../lib/dialogFocus';
 import { numeroPtBr } from '../three/tempoDoAtlas';
@@ -66,18 +66,21 @@ function nomeDaEntrada(entrada: EntradaDaBusca): string {
 
 /**
  * A NOTA à direita, e ela troca de RÉGUA com o alvo: anos-luz para as
- * estrelas, UA para os corpos do sistema. É a regra de unidades da casa
- * — perto de casa se fala em UA, longe em anos-luz, e o parsec é régua
- * interna e não aparece. Dizer "0,0000158 anos-luz" para a Terra seria
- * tecnicamente certo e inútil.
+ * estrelas, UA para os corpos do sistema — e QUILÔMETROS para uma lua
+ * medida do pai (F2b: "Lua · 384 mil km", nunca "0,0026 UA" — o degrau
+ * de unidade sub-UA mora em `notaDeDistancia`, na lib). É a regra de
+ * unidades da casa — perto de casa se fala em UA, longe em anos-luz, e
+ * o parsec é régua interna e não aparece.
  */
 function notaDaEntrada(entrada: EntradaDaBusca): string {
   if (entrada.tipo === 'estrela') {
     return `${distanciaEmAnosLuz(entrada.estrela.d)} · ${entrada.estrela.s}`;
   }
   const { rUA, classe } = entrada.corpo;
-  // o Sol não orbita nada: a nota dele é o que ele é
-  return rUA > 0 ? `${numeroPtBr(rUA)} UA · ${classe}` : classe;
+  const distancia = notaDeDistancia(rUA, numeroPtBr);
+  // o Sol não orbita nada (nota é a classe); uma lua sem efeméride
+  // ainda não tem distância MEDIDA — nome honesto, número só medido
+  return distancia ? `${distancia} · ${classe}` : classe;
 }
 
 /**
