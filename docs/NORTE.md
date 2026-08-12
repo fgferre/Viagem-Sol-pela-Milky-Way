@@ -2660,6 +2660,16 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
     vazio honesto, o verbo da paleta por fase, a latência POR TECLA medida de dois
     jeitos, que a paleta não vaza no `?shot=2` e que os dez corpos do sistema são
     alvo.
+  - **ESTES QUATRO SÃO O ORÁCULO DA PRECEDÊNCIA DE DEEP-LINK** — dito aqui porque
+    uma auditoria externa (2026-08-12) levantou "a regra de onde um link aterrissa
+    só é conferida por inspeção", que era verdade ANTES da Onda 5 e não é mais. Em
+    Chrome real: `?pos=…&atlas=1` cai em `free` (o `?pos=` ganhando do Atlas),
+    `?atlas=1` cai em `atlas`, `?foco=` sozinha abre o Atlas com o alvo em quadro,
+    e o `?t=` roda em três instantes com `journeyT` exato por `Object.is` e md5
+    igual antes/depois. **O que segue SEM asserção nomeada** é só a combinação
+    `?atlas=1&t=` — o Atlas ganhando do instante, com o instante virando o momento
+    de volta do "Partir". Extrair o parsing do boot para função pura (como
+    `lerPortaJd`) continua sendo higiene desejável; deixou de ser buraco de gate.
 
 - **Duas notas de protocolo que a Onda 5 comprou, e valem para toda leva futura.**
   (1) **A/B perto do Sol SÓ com `EXTRA='&nobloom=1'`**: com bloom, `ua150` e `ua40`
