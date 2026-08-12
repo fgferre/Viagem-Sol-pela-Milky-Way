@@ -105,6 +105,12 @@ async function abrir() {
     },
     assentar: () =>
       esperarAssentar({ send, cartografia: () => true, quadros: 700, teto: 180000 }),
+    // o Director lê `prefers-reduced-motion` UMA vez, no construtor —
+    // então a emulação tem de estar de pé antes da navegação seguinte
+    reduzirMovimento: () =>
+      send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      }),
     js: async (expr) => {
       const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
       if (r.exceptionDetails) throw new Error(`js: ${r.exceptionDetails.text}`);
@@ -183,6 +189,37 @@ try {
   await sessao.ir(`pos=0,0,0.1&look=0,0,0&atlas=1&${PIN}`);
   const faseComPos = await sessao.js('window.__director.captura.fase');
   conferir(faseComPos === 'free', `?pos= ganha de ?atlas=1: fase = '${faseComPos}'`);
+
+  // ---- 6: o véu, e o que reduced-motion faz com ele ----------------
+  // Sem `?shot=` o véu ANIMA: ele fecha, a troca acontece atrás dele e
+  // ele abre. Com `prefers-reduced-motion` a troca é INSTANTÂNEA e o
+  // véu nunca sai de 0 — quem interpola é o número do Director, então
+  // é nele que a promessa se mede, não numa classe de CSS.
+  const veu = "getComputedStyle(document.querySelector('.hud-root'))"
+    + ".getPropertyValue('--veu-atlas').trim()";
+  await sessao.ir('t=100&q=cinema');
+  await sessao.js("[...document.querySelectorAll('.controls-bar button')]"
+    + ".find((b) => b.innerText.toUpperCase().includes('ATLAS')).click()");
+  await sleep(150);
+  const meio = Number(await sessao.js(veu));
+  conferir(meio > 0 && meio < 1, `o véu fecha por passos (medido em ${meio.toFixed(2)})`);
+  await sessao.assentar();
+  conferir(
+    (await sessao.js('window.__director.captura.fase')) === 'atlas'
+      && Number(await sessao.js(veu)) === 0,
+    'o véu abre de volta e a fase é a nova — o portal não fica preso'
+  );
+
+  await sessao.reduzirMovimento();
+  await sessao.ir('t=100&q=cinema');
+  await sessao.js("[...document.querySelectorAll('.controls-bar button')]"
+    + ".find((b) => b.innerText.toUpperCase().includes('ATLAS')).click()");
+  await sleep(150);
+  conferir(
+    (await sessao.js('window.__director.captura.fase')) === 'atlas'
+      && Number(await sessao.js(veu)) === 0,
+    'reduced-motion: a troca é instantânea e o véu nunca acende'
+  );
 } finally {
   sessao.fechar();
 }

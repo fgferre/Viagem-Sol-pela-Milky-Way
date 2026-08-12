@@ -131,8 +131,8 @@
 /* --- véu do Atlas ---------------------------------------------------
    Filho direto de .hud-root de propósito: em ?shot=2 a regra do
    .bare-mode o esconde junto com o resto do HUD. A opacidade é escrita
-   pelo Director a cada quadro da travessia — sem `transition` e sem
-   `animation`: quem interpola é o próprio número, e é ele também que
+   pelo Director a cada quadro da travessia: quem interpola é o próprio
+   número, sem quadro-chave nenhum do CSS no caminho, e é ele também que
    fica em 0 sob prefers-reduced-motion. */
 .atlas-veu {
   position: fixed;
