@@ -65,14 +65,14 @@
 }
 .caption-title {
   color: #f5f1e8;
-  font-size: clamp(1.5rem, 3.2vw, 2.6rem);
+  font-size: clamp(1.5rem, calc(3.2vw * var(--ui)), 2.6rem);
   font-weight: 200;
   letter-spacing: 0.42em;
   text-shadow: 0 0 24px rgba(140, 180, 255, 0.45);
 }
 .caption-sub {
   color: rgba(200, 214, 235, 0.82);
-  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  font-size: clamp(0.7rem, calc(1.1vw * var(--ui)), 0.95rem);
   font-weight: 300;
   letter-spacing: 0.28em;
   margin-top: 0.55rem;
@@ -177,7 +177,7 @@
   font-weight: 100;
   letter-spacing: 0.55em;
   text-indent: 0.55em;
-  font-size: clamp(1.5rem, 4.2vw, 3.4rem);
+  font-size: clamp(1.5rem, calc(4.2vw * var(--ui)), 3.4rem);
   text-shadow: 0 0 40px rgba(150, 180, 255, 0.5);
   max-width: 88vw;
   margin: 0 auto;
@@ -189,14 +189,14 @@
 .title-kicker {
   margin-bottom: 1.15rem;
   color: rgba(177, 196, 225, 0.72);
-  font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+  font-size: clamp(0.55rem, calc(0.8vw * var(--ui)), 0.7rem);
   font-weight: 400;
   letter-spacing: 0.46em;
   text-indent: 0.46em;
 }
 .error-title {
   max-width: 24ch;
-  font-size: clamp(1.25rem, 3vw, 2.2rem);
+  font-size: clamp(1.25rem, calc(3vw * var(--ui)), 2.2rem);
 }
 .journey-runtime {
   margin-top: 1rem;
@@ -211,7 +211,7 @@
   text-indent: 0.34em;
   text-transform: uppercase;
   font-weight: 300;
-  font-size: clamp(0.62rem, 1.2vw, 0.9rem);
+  font-size: clamp(0.62rem, calc(1.2vw * var(--ui)), 0.9rem);
   margin-top: 1.4rem;
   line-height: 2;
   text-align: center;
@@ -276,6 +276,25 @@
   z-index: 45;
   display: flex;
   gap: 0.6rem;
+}
+
+/* A FAIXA DE CIMA DO ATLAS, com a mesma garantia geométrica do rodapé.
+   A linha de contexto (esquerda) e a barra de controles (direita) se
+   penduram na MESMA linha, e as duas crescem com o texto: sem limite
+   declarado elas se encontram no meio — foi o que aconteceu a 800 px de
+   largura com o texto em 140%. Aqui a linha de contexto termina no
+   máximo em 6vw + 30vw = 36vw e a barra começa no mínimo em
+   100vw − 3vw − 60vw = 37vw; entre as duas sobra 1vw em qualquer
+   tamanho de texto. A barra quebra linha em vez de crescer para a
+   esquerda, e o `:has()` mantém a regra dentro do Atlas — no filme,
+   onde não há linha de contexto, a barra é a de sempre. */
+.atlas-contexto {
+  max-width: 30vw;
+}
+.hud-root:has(.atlas-contexto) .controls-bar {
+  max-width: 60vw;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* --- linha de rumo (destino com distância viva) --- */
@@ -528,11 +547,35 @@
    bloco que crescesse ao aparecer um aviso moveria a câmera. Por isso a
    linha do aviso está sempre no lugar, vazia quando não há o que dizer.
    Nada aqui pisca ou pulsa: o estado se lê no rótulo e na borda. */
-.atlas-tempo {
+/* O RODAPÉ DO ATLAS — a máquina do tempo e a dica do modo, empilhadas.
+   Até a F6 eram duas peças `position: fixed` em dois `vh` escolhidos à
+   mão (14vh e 11vh), e a folga entre elas era de 6 px: o primeiro
+   degrau de `?ui=` punha o texto de uma dentro da outra. Numa coluna
+   quem empilha é o fluxo, e o `gap` é rem — ou seja, cresce junto com
+   o texto.
+
+   A GARANTIA CONTRA O SELO é geométrica, não medida: o selo tem no
+   máximo 42vw e fica a 3vw da borda direita, então nunca começa antes
+   de 55vw. Esta coluna começa em 6vw e não passa de 46vw, terminando
+   em 52vw. Os dois blocos não podem se tocar em NENHUM tamanho de
+   texto nem em nenhuma largura de tela — e é por isso que o número é
+   um limite declarado aqui e não uma medição que envelhece. */
+.atlas-rodape {
   position: fixed;
   left: 6vw;
-  bottom: 14vh;
+  bottom: 7.4vh;
   z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-width: 46vw;
+}
+.atlas-rodape .atlas-tempo,
+.atlas-rodape .free-hint {
+  position: static;
+  max-width: 100%;
+}
+.atlas-tempo {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -817,7 +860,7 @@
   text-indent: 0.34em;
   text-transform: uppercase;
   font-weight: 300;
-  font-size: clamp(0.62rem, 1.1vw, 0.82rem);
+  font-size: clamp(0.62rem, calc(1.1vw * var(--ui)), 0.82rem);
 }
 
 /* trilho inferior: "etapa NN / 07" + um marco por etapa */
@@ -934,10 +977,43 @@
 
   /* no celular a máquina do tempo quebra linha em vez de sair da tela;
      a faixa fica mais alta, e é por isso que o retângulo útil dela é
-     declarado com a folga da medição de mesa (atlasRig.ts) */
-  .atlas-tempo {
+     declarado com a folga da medição de mesa (atlasRig.ts). O limite de
+     46vw da coluna NÃO se afrouxa aqui: é ele que garante que o rodapé
+     nunca alcance o selo, e tela estreita é justamente onde essa
+     garantia importa. */
+  .atlas-rodape {
+    left: 4vw;
+  }
+  /* A LINHA DE CONTEXTO ANTES DOS BOTÕES. As duas peças do topo se
+     ancoram na mesma linha (`top`), e numa tela estreita a barra de
+     controles ocupa a largura inteira e passava POR CIMA do "em
+     quadro". Aqui a barra desce o que a linha de contexto ocupa — e o
+     número é em `rem` porque a altura dela é toda em `rem`: a folga
+     sobrevive a qualquer `?ui=`. O `:has()` mantém isto restrito ao
+     Atlas; no filme, onde não há linha de contexto, a barra fica onde
+     sempre esteve. */
+  .hud-root:has(.atlas-contexto) .controls-bar {
+    top: calc(6.5vh + 3.2rem);
+    /* aqui a barra é de borda a borda (`left` E `right` acima), e um
+       `max-width` sobre isso desancoraria a direita — o navegador
+       descarta o `right` quando os três brigam. A garantia horizontal
+       do bloco de cima não vale nesta faixa: quem separa as duas peças
+       é a linha, não a coluna. */
+    max-width: none;
+  }
+  .atlas-contexto {
     left: 4vw;
     right: 4vw;
+    max-width: none;
+  }
+  /* uma linha só, sempre: é a altura da linha de contexto que a barra
+     desconta acima, e um nome comprido que dobrasse de linha comeria a
+     folga. Cortado com reticências continua honesto — o nome inteiro
+     está no rótulo da estrela em quadro. */
+  .atlas-contexto-nome {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .atlas-tempo-linha {
     flex-wrap: wrap;
@@ -957,7 +1033,7 @@
   }
 
   .caption-title {
-    font-size: clamp(1.15rem, 7vw, 1.8rem);
+    font-size: clamp(1.15rem, calc(7vw * var(--ui)), 1.8rem);
     letter-spacing: 0.28em;
   }
 
@@ -997,13 +1073,22 @@
 /* paisagem baixa (844×390): a composição sobe e o bloco de texto encolhe
    para caber entre a galáxia e o trilho */
 @media (max-height: 480px) and (orientation: landscape) {
+  /* Numa tela desta altura o rodapé do Atlas não cabe inteiro com o
+     texto grande — a máquina do tempo encostava na barra de controles.
+     Quem cede é a DICA, que é ensino de gesto e se descobre arrastando;
+     fica a máquina do tempo, que é controle e não se adivinha. Mesmo
+     critério do "Ver a galáxia" no celular, logo acima. */
+  .atlas-rodape .free-hint {
+    display: none;
+  }
+
   .cv-titulo {
     top: 56%;
     gap: 0.55rem;
   }
 
   .cv-titulo .title-big {
-    font-size: clamp(1rem, 3.4vw, 1.6rem);
+    font-size: clamp(1rem, calc(3.4vw * var(--ui)), 1.6rem);
     letter-spacing: 0.38em;
     text-indent: 0.38em;
   }

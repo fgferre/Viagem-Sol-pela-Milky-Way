@@ -1,4 +1,31 @@
 :root {
+  /* ============================================================
+     A ESCALA DA UI (`?ui=`, Onda 5/F6) — UM número, UM lugar.
+
+     `--ui` é a fonte de verdade do tamanho do texto do HUD, e tem
+     DOIS consumidores que precisam andar juntos:
+
+      1. o `font-size` da raiz, logo abaixo — é ele que move os `rem`
+         de todo o `hud.css`;
+      2. o termo `vw` dos `clamp(rem, vw, rem)` do `hud.css`, que
+         IGNORA a raiz por construção (é fração da JANELA, não da
+         fonte). Lá cada termo `vw` vai multiplicado por `var(--ui)`;
+         sem isso os títulos mais proeminentes ficavam presos no
+         tamanho de sempre enquanto o resto do HUD crescia — o defeito
+         ui#3 do painel de crítica.
+
+     `calc(100% * var(--ui))` e não `calc(16px * var(--ui))`: os 100%
+     saem do tamanho que o NAVEGADOR usa (a preferência de fonte de
+     quem visita), e o fator só multiplica. Cravar px aqui apagaria
+     essa preferência — seria acessibilidade tirando acessibilidade.
+
+     Quem escreve `--ui` é o App, a partir de `?ui=` (URL, NUNCA
+     storage: gosto não se persiste — NORTE, precedência URL > storage
+     > detecção). Ausente ⇒ 1, e `calc(100% * 1)` é o tamanho de
+     sempre. ============================================================ */
+  --ui: 1;
+  font-size: calc(100% * var(--ui));
+
   color: #f5f1e8;
   background: #000;
   font-synthesis: none;

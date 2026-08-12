@@ -24,6 +24,7 @@
 // ============================================================
 import { useState } from 'react';
 import { useDialogFocus } from '../lib/dialogFocus';
+import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
 import { CAMADAS } from '../three/atlasConfig';
 import type { QualityLevel, ToneMapMode } from '../three/core/engine';
 
@@ -45,6 +46,8 @@ export function Ajustes({
   onTom,
   exposicao,
   onExposicao,
+  escalaUi,
+  onEscalaUi,
   escondidas,
   onCamada,
   urlParaCopiar,
@@ -58,6 +61,9 @@ export function Ajustes({
   onTom: (t: ToneMapMode) => void;
   exposicao: number;
   onExposicao: (v: number) => void;
+  /** fator do tamanho do texto do HUD (`?ui=`) — 1 é o de sempre */
+  escalaUi: number;
+  onEscalaUi: (v: number) => void;
   /** flags das camadas ESCONDIDAS agora — o dono do estado é o App */
   escondidas: ReadonlySet<string>;
   onCamada: (flag: string, ligar: boolean) => void;
@@ -137,6 +143,27 @@ export function Ajustes({
               title="Recarrega: o tier do Sol e a população da galáxia são decididos na construção"
             >
               {q}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ajustes-secao">
+        <h3>Tamanho do texto · {rotuloDaEscala(escalaUi)}</h3>
+        <p className="ajustes-nota">
+          Vale para o HUD inteiro — legenda, controles, selo e os nomes das
+          estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua
+          um pouco para o texto maior não cobrir o alvo.
+        </p>
+        <div className="ajustes-linha">
+          {DEGRAUS_DA_UI.map((f) => (
+            <button
+              type="button"
+              key={f}
+              className={escalaUi === f ? 'on' : ''}
+              onClick={() => onEscalaUi(f)}
+            >
+              {rotuloDaEscala(f)}
             </button>
           ))}
         </div>

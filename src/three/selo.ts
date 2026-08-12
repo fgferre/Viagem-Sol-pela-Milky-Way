@@ -245,6 +245,25 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    * olha, nunca com quanta luz.
    */
   neutra('jd', 'instante do céu (efeméride, não ajuste)'),
+  /**
+   * `?ui=` — O TAMANHO DO TEXTO DO HUD (F6), e a decisão também fica
+   * por escrito porque ela também não é óbvia: mudar o `?ui=` MOVE A
+   * CÂMERA dentro do Atlas (o HUD cresce, o retângulo útil encolhe e o
+   * enquadramento recua para o alvo não ficar por baixo do selo) — e
+   * mesmo assim NÃO é desvio de BRILHO.
+   *
+   * O eixo BRILHO responde "o que se vê é a fotometria da casa ou uma
+   * fotometria ajustada?". Recuar a câmera não mexe em fotometria
+   * nenhuma: é da mesma família de `?pos=` e `?look=`, que dizem DE
+   * ONDE se olha e nunca com quanta luz. E o eixo ESCALA sai da
+   * geometria (as rampas do `lodStellar`), que a distância nova
+   * alimenta como alimentaria qualquer outra posição de câmera — se o
+   * recuo tirar a vista do domínio profundo, o selo já diz FORA DE
+   * ESCALA sozinho, sem precisar de linha aqui.
+   *
+   * O que ele muda é o HUD, e o HUD não é a cena.
+   */
+  neutra('ui', 'tamanho do texto do HUD'),
   neutra('t', 'instante da viagem'),
   neutra('play', 'retomar a viagem andando'),
   neutra('freeze', 'congelar o relógio da viagem'),

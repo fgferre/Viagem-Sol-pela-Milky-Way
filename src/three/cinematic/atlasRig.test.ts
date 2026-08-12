@@ -148,6 +148,29 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     expect(1 - util.topo - util.base).toBeGreaterThan(0.6);
   });
 
+  it('a escala do texto do HUD (?ui=) entra no retângulo — e em 1 nada muda', () => {
+    const padrao = retanguloUtilDoAtlas();
+    // o default e o 1 explícito são o MESMO objeto de números: é o que
+    // mantém o enquadramento de sempre bit-idêntico sem `?ui=` na URL
+    expect(retanguloUtilDoAtlas(1)).toEqual(padrao);
+    // lixo (NaN, 0, negativo) NÃO envenena a matriz da câmera
+    for (const cru of [Number.NaN, 0, -2, Number.POSITIVE_INFINITY]) {
+      expect(retanguloUtilDoAtlas(cru)).toEqual(padrao);
+    }
+    // texto maior ⇒ HUD mais alto ⇒ menos quadro útil ⇒ câmera mais atrás
+    const grande = retanguloUtilDoAtlas(1.4);
+    expect(grande.topo).toBeGreaterThan(padrao.topo);
+    expect(grande.base).toBeGreaterThan(padrao.base);
+    // as TARJAS não escalam: são vh puro, não texto
+    expect(grande.topo - padrao.topo).toBeCloseTo((padrao.topo - 0.065) * 0.4, 12);
+    const perto = (u: ReturnType<typeof retanguloUtilDoAtlas>) =>
+      enquadrar({ rAlvo: 1, fovDeg: ATLAS_FOV_GRAUS, aspect: 1.6, retanguloUtil: u }).distancia;
+    expect(perto(grande)).toBeGreaterThan(perto(padrao));
+    expect(perto(retanguloUtilDoAtlas(0.85))).toBeLessThan(perto(padrao));
+    // e mesmo no maior degrau ainda sobra quadro de verdade
+    expect(1 - grande.topo - grande.base).toBeGreaterThan(0.5);
+  });
+
   it('painel só à direita joga o alvo para a esquerda do quadro', () => {
     const { giroY } = enquadrar({
       rAlvo: 1,

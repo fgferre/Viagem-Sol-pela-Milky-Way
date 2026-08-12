@@ -184,22 +184,34 @@ try {
 
   // A BARRA DO TEMPO NÃO VAZA NO ?shot=2 (invariante arq#14 da onda): o
   // `.bare-mode` só esconde FILHOS DIRETOS de `.hud-root`, e uma peça
-  // aninhada ou portalizada entraria nas 18 vistas oficiais. A leva não
-  // pega isto sozinha — lá o modo Atlas nem monta —, então a prova é
+  // portalizada para fora dele entraria nas 18 vistas oficiais. A leva
+  // não pega isto sozinha — lá o modo Atlas nem monta —, então a prova é
   // aqui, na fase em que a barra existe.
+  //
+  // A prova segue a CADEIA até `.hud-root` em vez de exigir parentesco
+  // direto: desde a F6 a barra mora dentro do rodapé do Atlas (a coluna
+  // que a empilha com a dica), e o que a invariante pede não é que a
+  // peça seja filha — é que ALGUM ancestral dela seja o filho direto que
+  // o `.bare-mode` apaga. Exigir a letra em vez do sentido proibiria
+  // qualquer agrupamento e não cobriria o único caso perigoso, que é a
+  // peça pendurada fora de `.hud-root`.
   await sessao.ir(`atlas=1&${PIN}`);
   const barra = await sessao.js(`(() => {
     const e = document.querySelector('.atlas-tempo');
+    const raiz = document.querySelector('.hud-root');
+    let anc = e;
+    while (anc && anc.parentElement !== raiz) anc = anc.parentElement;
     return JSON.stringify({
       existe: Boolean(e),
-      filhaDireta: Boolean(e && e.parentElement.classList.contains('hud-root')),
+      apagavel: Boolean(anc),
+      ancestral: anc ? anc.className : null,
       desenhada: Boolean(e && e.getClientRects().length > 0),
     });
   })()`);
   const b = JSON.parse(barra);
   conferir(
-    b.existe && b.filhaDireta && !b.desenhada,
-    `a barra do tempo é filha direta de .hud-root e o ?shot=2 a esconde (${barra})`
+    b.existe && b.apagavel && !b.desenhada,
+    `a barra do tempo pende de .hud-root e o ?shot=2 a esconde (${barra})`
   );
 
   // ---- 9: SEM REDE, a camada congela no retrato e ninguém grita ----

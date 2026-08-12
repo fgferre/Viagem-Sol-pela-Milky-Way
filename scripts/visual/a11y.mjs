@@ -49,6 +49,72 @@ const FOCAVEIS =
   'a[href], button:not([disabled]), input:not([disabled]), '
   + 'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\\"-1\\"])';
 
+/**
+ * O TAMANHO DE TODO TEXTO QUE ESTÁ NA TELA, por elemento. A chave leva
+ * o índice porque duas peças da mesma classe (os botões da barra) têm
+ * de casar uma a uma entre as duas medições — comparar conjuntos daria
+ * "mudou" com um botão a mais e "não mudou" com um a menos.
+ */
+const MEDIR_FONTES = `(() => {
+  const out = {};
+  let i = 0;
+  for (const e of document.querySelectorAll('.hud-root *')) {
+    if (e.tagName === 'CANVAS') continue;
+    const proprio = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!proprio) continue;
+    const classe = typeof e.className === 'string' ? e.className : '';
+    out[(i++) + ':' + e.tagName.toLowerCase() + '.' + (classe || '—')] =
+      parseFloat(getComputedStyle(e).fontSize);
+  }
+  return out;
+})()`;
+
+/** Os `clamp(rem, vw, rem)` do `hud.css`, onde cada um existe. */
+const MEDIR_CLAMPS = `(() => {
+  const alvos = ['.caption-title', '.caption-sub', '.title-big', '.title-kicker',
+    '.error-title', '.title-sub', '.cv-etapa-rotulo'];
+  const out = {};
+  for (const sel of alvos) {
+    const e = document.querySelector(sel);
+    if (e) out[sel] = parseFloat(getComputedStyle(e).fontSize);
+  }
+  return out;
+})()`;
+
+/** As peças do HUD que não podem sair da tela nem se atropelar. */
+const MEDIR_QUEBRAS = `(() => {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const alvos = [
+    '.controls-bar', '.atlas-contexto', '.atlas-selo', '.atlas-tempo',
+    '.free-hint', '.ajustes', '.atlas-gaveta', '.progress-wrap', '.dest-line',
+  ];
+  const pecas = [];
+  for (const sel of alvos) {
+    for (const e of document.querySelectorAll(sel)) {
+      const b = e.getBoundingClientRect();
+      if (b.width === 0 || b.height === 0) continue;
+      pecas.push({ sel, l: b.left, r: b.right, t: b.top, b: b.bottom });
+    }
+  }
+  const foraDaTela = pecas
+    .filter((p) => p.l < -1 || p.t < -1 || p.r > W + 1 || p.b > H + 1)
+    .map((p) => p.sel + ' [' + [p.l, p.t, p.r, p.b].map((v) => Math.round(v)).join(',')
+      + '] em ' + W + 'x' + H);
+  const atropelos = [];
+  for (let i = 0; i < pecas.length; i++) {
+    for (let j = i + 1; j < pecas.length; j++) {
+      const a = pecas[i];
+      const c = pecas[j];
+      // o painel de Ajustes é modal e nasce POR CIMA: sobrepor é o
+      // desenho dele, não defeito
+      if (a.sel === '.ajustes' || c.sel === '.ajustes') continue;
+      if (a.l < c.r && c.l < a.r && a.t < c.b && c.t < a.b) atropelos.push(a.sel + ' × ' + c.sel);
+    }
+  }
+  return { pecas: pecas.length, foraDaTela, atropelos };
+})()`;
+
 const dentroDoDialogo = (nome) => `(() => {
   const d = document.querySelector('[data-dialogo="${nome}"]');
   return Boolean(d && d.contains(document.activeElement));
@@ -271,7 +337,35 @@ try {
   // A declaração vive no TS (`retanguloUtilDoAtlas`) e as alturas, no
   // CSS. Sem esta prova as duas só se encontrariam a olho — e o alvo
   // começaria a ser enquadrado por baixo do selo sem ninguém notar.
-  const cobertura = await sessao.js(`(() => {
+  await medirCobertura(sessao, 'ui = 1 (o de sempre)');
+
+  // ---- A ESCALA DA UI (`?ui=`, F6) --------------------------------
+  await julgarEscalaDaUi(sessao);
+
+  // O VOO LIVRE, desde a F5: o painel de Ajustes ganhou uma seção que só
+  // existe nesta fase ("rever o convite"), e o convite dos três gestos
+  // fica na tela ao lado dele. Sem julgar a fase, uma seção nova podia
+  // quebrar o foco preso do painel sem ninguém ver; e um convite que
+  // roubasse o foco não apareceria em prova nenhuma.
+  await julgarPagina(sessao, 'pos=0,0,0.1&look=0,0,0', 'free');
+} finally {
+  sessao.fechar();
+}
+
+if (falhas.length) {
+  process.stdout.write(`\nJUIZ DE A11Y: ${falhas.length} falha(s)\n`);
+  process.exit(1);
+}
+process.stdout.write('\nJUIZ DE A11Y: tudo verde\n');
+
+// ============================================================
+// O RETÂNGULO ÚTIL e A ESCALA DA UI — as duas provas que a F6 trouxe,
+// em funções porque agora rodam mais de uma vez (uma por tamanho de
+// texto).
+// ============================================================
+
+async function medirCobertura(s, quando) {
+  const cobertura = await s.js(`(() => {
     const H = window.innerHeight;
     const util = window.__director.retanguloUtil;
     const medir = (sel) => {
@@ -298,27 +392,156 @@ try {
   })()`);
   conferir(
     cobertura.topoMedido <= cobertura.util.topo,
-    `retângulo útil: topo declarado ${cobertura.util.topo} ≥ medido `
+    `retângulo útil (${quando}): topo declarado ${cobertura.util.topo.toFixed(3)} ≥ medido `
       + `${cobertura.topoMedido.toFixed(3)}`
   );
   conferir(
     cobertura.baseMedida <= cobertura.util.base,
-    `retângulo útil: base declarada ${cobertura.util.base} ≥ medida `
+    `retângulo útil (${quando}): base declarada ${cobertura.util.base.toFixed(3)} ≥ medida `
       + `${cobertura.baseMedida.toFixed(3)} (${cobertura.pecas.join(' · ')})`
   );
-
-  // O VOO LIVRE, desde a F5: o painel de Ajustes ganhou uma seção que só
-  // existe nesta fase ("rever o convite"), e o convite dos três gestos
-  // fica na tela ao lado dele. Sem julgar a fase, uma seção nova podia
-  // quebrar o foco preso do painel sem ninguém ver; e um convite que
-  // roubasse o foco não apareceria em prova nenhuma.
-  await julgarPagina(sessao, 'pos=0,0,0.1&look=0,0,0', 'free');
-} finally {
-  sessao.fechar();
 }
 
-if (falhas.length) {
-  process.stdout.write(`\nJUIZ DE A11Y: ${falhas.length} falha(s)\n`);
-  process.exit(1);
+/**
+ * A ESCALA DA UI (`?ui=`, F6). Quatro promessas:
+ *  1. o tamanho do texto MUDA, e muda pelo fator pedido, em TODO texto
+ *     que está na tela — inclusive nos `clamp(rem, vw, rem)`, que antes
+ *     ignoravam a raiz (ui#3);
+ *  2. o HUD não quebra no maior degrau, nem com o ZOOM do navegador por
+ *     cima dele (que é o mesmo problema com outro nome: viewport em px
+ *     de CSS encolhendo enquanto o texto não encolhe);
+ *  3. o tamanho vive na URL e NUNCA no storage;
+ *  4. o retângulo útil do Atlas continua cobrindo o HUD nos extremos da
+ *     faixa — texto maior, HUD mais alto, câmera mais atrás.
+ */
+async function julgarEscalaDaUi(s) {
+  const GRANDE = 1.4;
+  // as três telas cobrem famílias diferentes de `font-size`: a
+  // cartografia do carregamento, o HUD do filme e o do Atlas
+  const TELAS = [
+    ['loader=galaxy', 'carregamento'],
+    ['t=100', 'filme'],
+    ['atlas=1', 'atlas'],
+  ];
+  let cobertos = 0;
+  for (const [query, onde] of TELAS) {
+    await s.ir(`${query}&${PIN}`);
+    const base = await s.js(MEDIR_FONTES);
+    const clampsBase = await s.js(MEDIR_CLAMPS);
+    await s.ir(`${query}&ui=${GRANDE}&${PIN}`);
+    const grande = await s.js(MEDIR_FONTES);
+    const clamps = await s.js(MEDIR_CLAMPS);
+    const chaves = Object.keys(base);
+    const fugiram = chaves.filter(
+      (k) => !(k in grande) || Math.abs(grande[k] / base[k] - GRANDE) > 0.01
+    );
+    conferir(
+      chaves.length > 0 && fugiram.length === 0,
+      `?ui=${GRANDE} em '${onde}': ${chaves.length} elementos com texto, todos ×${GRANDE}`
+        + (fugiram.length
+          ? ` — ${fugiram.length} fora: ${fugiram
+              .slice(0, 4)
+              .map((k) => `${k} ${base[k]}→${grande[k] ?? '?'}`)
+              .join(' · ')}`
+          : ` (${Math.min(...chaves.map((k) => base[k]))}–`
+            + `${Math.max(...chaves.map((k) => base[k]))} px → `
+            + `${Math.min(...chaves.map((k) => grande[k]))}–`
+            + `${Math.max(...chaves.map((k) => grande[k]))} px)`)
+    );
+    cobertos += chaves.length;
+
+    // OS NOVE `clamp` são o alvo declarado do gate: eles vivem nos
+    // títulos mais proeminentes, e eram justamente os que ficavam
+    // parados. Cobrados por seletor, um a um, onde cada um existe.
+    const seletores = Object.keys(clampsBase);
+    if (seletores.length) {
+      const parados = seletores.filter(
+        (sel) => Math.abs(clamps[sel] / clampsBase[sel] - GRANDE) > 0.01
+      );
+      conferir(
+        parados.length === 0,
+        `clamp(rem, vw, rem) em '${onde}': ${seletores.length} seletor(es) ×${GRANDE} `
+          + `(${seletores.map((sel) => `${sel} ${clampsBase[sel]}→${clamps[sel]}`).join(' · ')})`
+      );
+    }
+  }
+  conferir(cobertos > 0, `escala da UI: ${cobertos} medições de font-size nas três telas`);
+
+  // ---- o HUD não quebra ------------------------------------------
+  // com o painel ABERTO, que é a peça mais alta que a casa tem
+  for (const fator of [1, GRANDE]) {
+    await s.ir(`atlas=1&ajustes=1&ui=${fator}&${PIN}`);
+    const q = await s.js(MEDIR_QUEBRAS);
+    conferir(
+      q.foraDaTela.length === 0 && q.atropelos.length === 0,
+      `ui=${fator}: ${q.pecas} peças do HUD, nenhuma fora da tela nem atropelada`
+        + (q.foraDaTela.length ? ` — fora: ${q.foraDaTela.join(' · ')}` : '')
+        + (q.atropelos.length ? ` — atropelo: ${q.atropelos.join(' · ')}` : '')
+    );
+  }
+
+  // ---- e o ZOOM do navegador por cima do maior degrau -------------
+  // Zoom de navegador é isto: o viewport em px de CSS encolhe e o
+  // conteúdo em px de dispositivo fica do mesmo tamanho. Quem vive em
+  // `vw`/`vh` acompanha; quem vive em `rem` cresce na tela. É o pior
+  // caso do texto grande, e é onde um HUD mal ancorado sai da tela.
+  for (const zoom of [1.5, 2]) {
+    await s.send('Emulation.setDeviceMetricsOverride', {
+      width: Math.round(1200 / zoom),
+      height: Math.round(900 / zoom),
+      deviceScaleFactor: zoom,
+      mobile: false,
+    });
+    await s.ir(`atlas=1&ajustes=1&ui=${GRANDE}&${PIN}`);
+    const q = await s.js(MEDIR_QUEBRAS);
+    conferir(
+      q.foraDaTela.length === 0 && q.atropelos.length === 0,
+      `zoom ${zoom * 100}% com ui=${GRANDE}: ${q.pecas} peças inteiras na tela`
+        + (q.foraDaTela.length ? ` — fora: ${q.foraDaTela.join(' · ')}` : '')
+        + (q.atropelos.length ? ` — atropelo: ${q.atropelos.join(' · ')}` : '')
+    );
+    // a quebra ESTREITA do CSS (os dois `clamp` que só existem lá
+    // dentro) também tem de reagir ao fator
+    if (zoom === 2) {
+      const estreito = await s.js(`(() => {
+        const e = document.querySelector('.caption-title, .cv-titulo .title-big');
+        return e ? { largura: window.innerWidth, px: parseFloat(getComputedStyle(e).fontSize) } : null;
+      })()`);
+      if (estreito) {
+        conferir(
+          estreito.largura < 768,
+          `quebra estreita alcançada a ${estreito.largura} px de CSS (título ${estreito.px} px)`
+        );
+      }
+    }
+  }
+  await s.send('Emulation.clearDeviceMetricsOverride');
+
+  // ---- a URL manda, o storage não sabe de nada --------------------
+  await s.ir(`atlas=1&ajustes=1&${PIN}`);
+  await s.js(`(() => {
+    const b = [...document.querySelectorAll('[data-dialogo="ajustes"] button')]
+      .find((e) => e.textContent.trim() === '120%');
+    b.click();
+  })()`);
+  await sleep(200);
+  const depois = await s.js(`({
+    url: location.search,
+    raiz: getComputedStyle(document.documentElement).getPropertyValue('--ui').trim(),
+    storage: JSON.stringify(Object.entries(localStorage)),
+  })`);
+  conferir(
+    depois.url.includes('ui=1.2') && depois.raiz === '1.2',
+    `o painel escreve o tamanho na URL (${depois.url}) e na raiz (--ui: ${depois.raiz})`
+  );
+  conferir(
+    !depois.storage.includes('ui') && !depois.storage.includes('1.2'),
+    `o tamanho NÃO vai ao storage (${depois.storage})`
+  );
+
+  // ---- e o retângulo útil do Atlas segue cobrindo o HUD -----------
+  for (const fator of [0.85, GRANDE]) {
+    await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+    await medirCobertura(s, `ui = ${fator}`);
+  }
 }
-process.stdout.write('\nJUIZ DE A11Y: tudo verde\n');

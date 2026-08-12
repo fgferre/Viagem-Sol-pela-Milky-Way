@@ -82,10 +82,17 @@ const LETTERBOX_FRACAO = 0.065;
  * texto, medido 19,6% da altura com a tarja, e é a peça mais alta do
  * HUD do modo (a dica do Atlas fica em 13,4%).
  *
- * As duas frações são de tela de mesa (medidas a 1280×720 e 1200×900).
- * A UI Scale da F6 mexe no tamanho do texto do HUD e por isso mexe
- * NESTES números: quem mudar o `?ui=` tem de remedir aqui — o gate do
- * juiz falha se a declaração deixar de cobrir o medido.
+ * As duas frações são de tela de mesa (medidas a 1280×720 e 1200×900),
+ * e valem em `ui = 1`.
+ *
+ * A UI SCALE DA F6 MEXE NESTES NÚMEROS, e a F6 respondeu assim: o
+ * retângulo é produzido COM o fator (`retanguloUtilDoAtlas(fatorUi)`),
+ * que multiplica as frações do HUD. É de propósito conservador —
+ * parte do que cada fração cobre é âncora em `vh` (as peças começam em
+ * `top: 8,5vh` / `bottom: 7,4vh`), que NÃO cresce com o texto, então
+ * declarar tudo escalado sobra em vez de faltar. Sobrar custa um
+ * recuo de câmera; faltar põe o alvo por baixo do selo. O juiz de a11y
+ * mede os extremos da faixa (`escalaDaUi`) e cobra declarado ≥ medido.
  */
 const CONTEXTO_FRACAO = 0.075;
 const SELO_FRACAO = 0.14;
@@ -137,13 +144,17 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
  * meia largura por causa de uma faixa que ocupa 7% da altura empurraria
  * a câmera para trás sem necessidade. Descontar a FAIXA inteira é o
  * corte honesto — é o que garante que nada do alvo caia atrás do texto.
+ *
+ * `fatorUi` é a escala do texto do HUD (`?ui=`, F6). As tarjas não
+ * escalam — são `vh` puro —; as faixas do HUD, sim.
  */
-export function retanguloUtilDoAtlas(): RetanguloUtil {
+export function retanguloUtilDoAtlas(fatorUi = 1): RetanguloUtil {
+  const k = Number.isFinite(fatorUi) && fatorUi > 0 ? fatorUi : 1;
   return {
     esquerda: 0,
     direita: 0,
-    topo: LETTERBOX_FRACAO + CONTEXTO_FRACAO,
-    base: LETTERBOX_FRACAO + Math.max(SELO_FRACAO, TEMPO_FRACAO),
+    topo: LETTERBOX_FRACAO + CONTEXTO_FRACAO * k,
+    base: LETTERBOX_FRACAO + Math.max(SELO_FRACAO, TEMPO_FRACAO) * k,
   };
 }
 
@@ -329,13 +340,17 @@ export class AtlasRig {
    * Escreve a câmera do quadro. Chamada do MESMO ponto do tick em que
    * a JourneyRig escreve a dela — inclusive o `fov`, que aqui é o pino
    * `ATLAS_FOV_GRAUS` e não o resíduo amortecido do shot anterior.
+   *
+   * `fatorUi` chega de fora (o Director lê o número vivo) para o rig
+   * continuar sem saber que existe DOM: texto maior ⇒ HUD mais alto ⇒
+   * retângulo útil menor ⇒ câmera um pouco mais atrás.
    */
-  apply(camera: THREE.PerspectiveCamera) {
+  apply(camera: THREE.PerspectiveCamera, fatorUi = 1) {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: this.raio,
       fovDeg: ATLAS_FOV_GRAUS,
       aspect: camera.aspect,
-      retanguloUtil: retanguloUtilDoAtlas(),
+      retanguloUtil: retanguloUtilDoAtlas(fatorUi),
       comPai: this.comPai,
     });
     direcaoPrivilegiada(

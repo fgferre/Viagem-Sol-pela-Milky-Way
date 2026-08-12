@@ -41,6 +41,7 @@ import {
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
+import { escalaDaUi } from '../lib/uiScale';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -1445,6 +1446,17 @@ export class Director {
   }
 
   /**
+   * A ESCALA DO TEXTO DO HUD mudou (`?ui=`, F6). O Director precisa
+   * saber porque o HUD do Atlas é parte do enquadramento: texto maior
+   * come mais quadro, o retângulo útil encolhe e a câmera recua. É
+   * troca de enquadramento como qualquer outra, e por isso zera a
+   * contagem de quadros estáveis do sinal de prontidão (bit#4).
+   */
+  escalaDaUiMudou() {
+    this.perturbar();
+  }
+
+  /**
    * O ESTADO DA VISTA que o selo de honestidade lê — somente leitura,
    * como o getter `captura`. Ele mora aqui porque só o Director conhece
    * os quatro donos do assunto de uma vez (o latch da exposição, o
@@ -1464,7 +1476,7 @@ export class Director {
    * fontes (o número no TS e a altura no CSS) só se encontrariam a olho.
    */
   get retanguloUtil() {
-    return retanguloUtilDoAtlas();
+    return retanguloUtilDoAtlas(escalaDaUi());
   }
 
   get selo(): EstadoDaVista {
@@ -1538,7 +1550,7 @@ export class Director {
       // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
       // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
       // amortecido do shot onde o visitante pausou
-      this.atlas.apply(cam);
+      this.atlas.apply(cam, escalaDaUi());
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {

@@ -1,7 +1,7 @@
 // ============================================================
 // App — canvas WebGL + HUD cinematográfico sobre a simulação.
 // ============================================================
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Director, LOAD_STAGES } from './three/director';
 import type { LoadStage, Phase } from './three/director';
 import { HUD_POR_FASE } from './three/fases';
@@ -24,6 +24,7 @@ import { Ajustes } from './components/Ajustes';
 import { CAMADAS } from './three/atlasConfig';
 import { estadoDoSelo } from './three/selo';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
+import { ESCALA_PADRAO, aplicarEscalaDaUi, lerEscalaDaUi } from './lib/uiScale';
 import './hud.css';
 
 /** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
@@ -106,6 +107,14 @@ export default function App() {
   /** o que está EM QUADRO no Atlas; null = o enquadramento de abertura */
   const [foco, setFoco] = useState<string | null>(null);
   /**
+   * O TAMANHO DO TEXTO DO HUD (`?ui=`, F6). Nasce da URL como todo
+   * gosto da casa e NUNCA vai ao storage — quem quiser o texto maior
+   * leva o tamanho no link, junto do instante da viagem.
+   */
+  const [escalaUi, setEscalaUi] = useState(() =>
+    lerEscalaDaUi(new URLSearchParams(window.location.search).get('ui'))
+  );
+  /**
    * O MOSTRADOR DA MÁQUINA DO TEMPO (F4). Estado e não leitura direta
    * como a do selo: o relógio do céu anda sozinho, e é a chegada deste
    * evento — a 4 Hz, nunca por quadro — que faz o HUD redesenhar.
@@ -125,6 +134,15 @@ export default function App() {
   const [movimentoReduzido] = useState(
     () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   );
+
+  // ANTES DE PINTAR, e antes do Director existir: o `--ui` da raiz é o
+  // que move os `rem` do HUD e o termo `vw` dos `clamp`, e o número
+  // vivo é o que o retângulo útil do Atlas lê a cada quadro. Efeito de
+  // layout (não `useEffect`) para não haver um quadro com o tamanho
+  // errado quando o link já chega com `?ui=`.
+  useLayoutEffect(() => {
+    aplicarEscalaDaUi(escalaUi);
+  }, [escalaUi]);
 
   useEffect(() => {
     if (!canvasRef.current || !labelCanvasRef.current) return;
@@ -487,6 +505,21 @@ export default function App() {
     window.history.replaceState(null, '', `${url.pathname}${url.search}`);
   };
 
+  /**
+   * O tamanho do texto do HUD. Muda ao vivo (o `--ui` é lido pelo CSS a
+   * cada pintura) e conta como troca de ENQUADRAMENTO para o Atlas: o
+   * HUD cresceu, o retângulo útil encolheu, a câmera recua.
+   */
+  const trocarEscalaUi = (v: number) => {
+    setEscalaUi(v);
+    directorRef.current?.escalaDaUiMudou();
+    window.history.replaceState(
+      null,
+      '',
+      comParam('ui', v === ESCALA_PADRAO ? null : String(v))
+    );
+  };
+
   const alternarCamada = (flag: string, ligar: boolean) => {
     const camada = CAMADAS.find((c) => c.flag === flag);
     if (!camada) return;
@@ -617,22 +650,26 @@ export default function App() {
         />
       )}
 
-      {/* A MÁQUINA DO TEMPO (F4). O Director é o dono do instante; aqui
-          só chegam os quatro gestos e o mostrador que ele publica. */}
-      {hud.tempo && tempo && (
-        <BarraDoTempo
-          tempo={tempo}
-          onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
-          onDegrau={() => directorRef.current?.ciclarDegrau()}
-          onAoVivo={() => directorRef.current?.alternarAoVivo()}
-          onEpoca={() => directorRef.current?.voltarAEpoca()}
-        />
-      )}
-
-      {/* dica do Atlas */}
+      {/* O RODAPÉ DO ATLAS: a máquina do tempo (F4) e a dica do modo,
+          numa COLUNA só. Eram duas peças `position: fixed` penduradas em
+          dois `vh` escolhidos à mão, e a folga entre elas era de 6 px —
+          o primeiro degrau de `?ui=` punha uma por cima da outra (F6).
+          Numa coluna quem empilha é o fluxo, e a folga passa a ser a
+          mesma em qualquer tamanho de texto. */}
       {phase === 'atlas' && (
-        <div className="free-hint">
-          arraste — girar em torno do alvo · clique num nome — enquadrar
+        <div className="atlas-rodape">
+          {hud.tempo && tempo && (
+            <BarraDoTempo
+              tempo={tempo}
+              onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
+              onDegrau={() => directorRef.current?.ciclarDegrau()}
+              onAoVivo={() => directorRef.current?.alternarAoVivo()}
+              onEpoca={() => directorRef.current?.voltarAEpoca()}
+            />
+          )}
+          <div className="free-hint">
+            arraste — girar em torno do alvo · clique num nome — enquadrar
+          </div>
         </div>
       )}
 
@@ -728,6 +765,8 @@ export default function App() {
         onTom={trocarTom}
         exposicao={exposicao}
         onExposicao={trocarExposicao}
+        escalaUi={escalaUi}
+        onEscalaUi={trocarEscalaUi}
         escondidas={escondidas}
         onCamada={alternarCamada}
         urlParaCopiar={() => urlComMomento().toString()}
