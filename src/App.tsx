@@ -12,9 +12,11 @@ import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import { ContextLine, GavetaDeCamadas, BotaoDaGaveta, Selo } from './components/HudDoAtlas';
+import { Convite } from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
 import { CAMADAS } from './three/atlasConfig';
 import { estadoDoSelo } from './three/selo';
+import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import './hud.css';
 
 /** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
@@ -74,6 +76,12 @@ export default function App() {
     new URLSearchParams(window.location.search).has('ajustes')
   );
   const [gaveta, setGaveta] = useState(false);
+  /** passo do convite de boas-vindas ao voo livre; null = fora do ar */
+  const [convite, setConvite] = useState<number | null>(null);
+  /** o ponteiro está capturado AGORA? (F5 — o opt-in do voo livre) */
+  const [capturado, setCapturado] = useState(false);
+  /** o navegador negou a captura vezes demais e ela parou de se oferecer */
+  const [capturaNegada, setCapturaNegada] = useState(false);
   // O ESTADO DE GOSTO, com um dono só (F2). Ele nasce da URL — que segue
   // sendo a fonte de verdade — e é lido por três hospedeiros: o painel de
   // Ajustes, a gaveta do Atlas e o selo de honestidade. Enquanto morava
@@ -248,6 +256,41 @@ export default function App() {
   useEffect(() => {
     if (phase === 'journey') setPaused(directorRef.current?.pausado ?? false);
   }, [phase]);
+
+  // ---- captura de ponteiro: o HUD só OFERECE (F5) ---------------------
+  // As quatro defesas moram no rig (`cameraRig.ts`); daqui sai o pedido e
+  // vem o estado que o rótulo do botão mostra. O `pointerlockchange` é o
+  // mesmo evento que o rig escuta — ele se registra primeiro (o Director
+  // nasce no efeito acima), então quando esta linha lê `desistiu` a conta
+  // do backoff já subiu.
+  useEffect(() => {
+    const aoTrocar = () => setCapturado(document.pointerLockElement !== null);
+    const aoErrar = () =>
+      setCapturaNegada(directorRef.current?.capturaDePonteiro.desistiu ?? false);
+    document.addEventListener('pointerlockchange', aoTrocar);
+    document.addEventListener('pointerlockerror', aoErrar);
+    return () => {
+      document.removeEventListener('pointerlockchange', aoTrocar);
+      document.removeEventListener('pointerlockerror', aoErrar);
+    };
+  }, []);
+
+  // ---- o convite, na PRIMEIRA entrada no voo livre (F5) ---------------
+  // `conviteVisto` é marca de primeira visita, não gosto: ele mora no
+  // storage (que é onde a casa guarda alocação e onboarding) e não na
+  // URL. Em tela de toque o convite não abre — dois dos três gestos são
+  // de teclado e mouse, e ensinar WASD a quem não tem teclado é mentir.
+  useEffect(() => {
+    if (phase !== 'free') return;
+    if (lerPreferencias().conviteVisto) return;
+    if (window.matchMedia?.('(pointer: coarse)').matches) return;
+    setConvite(0);
+  }, [phase]);
+
+  const fecharConvite = () => {
+    setConvite(null);
+    gravarPreferencia('conviteVisto', true);
+  };
 
   // pausa via botão ou tecla Espaço — um filme de mais de 5 min precisa disso
   const togglePause = () => {
@@ -491,16 +534,42 @@ export default function App() {
         />
       )}
 
-      {/* dica do modo livre */}
+      {/* Dica do modo livre. Os `data-spot` são os alvos que o convite
+          aponta (F5): os três gestos que ele ensina são os três pedaços
+          desta linha, que fica na tela depois que o convite sai. */}
       {hud.dicaDeVoo && (
         <div className="free-hint">
           {window.matchMedia?.('(pointer: coarse)').matches ? (
-            <>toque e arraste — olhar · toque num nome — visitar</>
+            <>
+              <span data-spot="olhar">toque e arraste — olhar</span> ·{' '}
+              <span data-spot="visitar">toque num nome — visitar</span>
+            </>
           ) : (
             <>
-              arrastar — olhar · wasd/qe — voar · z/x — rolar · roda — velocidade
+              <span data-spot="olhar">arrastar — olhar</span> ·{' '}
+              <span data-spot="voar">wasd/qe — voar</span> · z/x — rolar · roda —
+              velocidade
               <br />
-              clique num nome — viajar até a estrela
+              <span data-spot="visitar">clique num nome — viajar até a estrela</span>
+              <br />
+              {/* O OPT-IN DA CAPTURA: quem decide é o visitante, e a dica
+                  é onde a decisão mora — é a linha que ele já está lendo
+                  para saber como voar. O `onMouseDown` não deixa o botão
+                  roubar o foco: com o foco nele, a guarda de alvo de
+                  formulário do rig engoliria o WASD. */}
+              <button
+                type="button"
+                className="free-hint-captura"
+                disabled={capturado || capturaNegada}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => directorRef.current?.capturaDePonteiro.pedir()}
+              >
+                {capturaNegada
+                  ? 'este navegador não devolveu a captura do ponteiro'
+                  : capturado
+                    ? 'ponteiro capturado — esc devolve'
+                    : 'capturar o ponteiro'}
+              </button>
             </>
           )}
         </div>
@@ -629,7 +698,23 @@ export default function App() {
         escondidas={escondidas}
         onCamada={alternarCamada}
         urlParaCopiar={() => urlComMomento().toString()}
+        onReverConvite={
+          hud.dicaDeVoo
+            ? () => {
+                setAjustes(false);
+                setConvite(0);
+              }
+            : undefined
+        }
       />
+
+      {/* O CONVITE — filho DIRETO de .hud-root como todo overlay da casa
+          (a regra do .bare-mode só alcança filhos diretos). Ele só existe
+          onde os três gestos são verdade: no voo livre, onde a dica que
+          ele aponta está na tela. */}
+      {convite !== null && hud.dicaDeVoo && (
+        <Convite passo={convite} onPasso={setConvite} onFechar={fecharConvite} />
+      )}
 
       {/* tela de título / fim — montada desde o primeiro frame, por baixo
           da loading: é o crossfade entre camadas persistentes que tira o

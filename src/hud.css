@@ -307,6 +307,112 @@
   pointer-events: none;
 }
 
+/* o opt-in da captura de ponteiro (F5): mora dentro da dica de voo, que
+   é a linha que o visitante já lê para saber como voar. A dica inteira é
+   `pointer-events: none` — só este botão recebe clique. */
+.free-hint-captura {
+  margin-top: 0.3rem;
+  padding: 0.18rem 0.6rem;
+  pointer-events: auto;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.5);
+  color: rgba(200, 214, 235, 0.75);
+  font: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+.free-hint-captura:hover:not(:disabled) {
+  border-color: rgba(255, 214, 150, 0.6);
+  color: rgba(235, 240, 250, 0.95);
+}
+.free-hint-captura:disabled {
+  cursor: default;
+  border-color: rgba(220, 230, 248, 0.14);
+  color: rgba(200, 214, 235, 0.5);
+}
+
+/* --- Spotlight e convite (F5) ---------------------------------------
+   Filho DIRETO de .hud-root, como o véu e o painel: é a regra do
+   .bare-mode (`> *:not(.scene-canvas)`) que os apaga em ?shot=2.
+   O véu NÃO recebe ponteiro — o visitante tem de poder arrastar o céu
+   enquanto lê "arraste para olhar em volta"; só o cartão é clicável.
+   A ÚNICA transição aqui é a opacidade da entrada, e ela some sob
+   prefers-reduced-motion (bloco lá embaixo): nada pisca nem pulsa. */
+.spotlight {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.spotlight.pronto {
+  opacity: 1;
+}
+.spotlight-mascara {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.spotlight-cartao {
+  position: fixed;
+  max-width: min(24rem, 82vw);
+  pointer-events: auto;
+  padding: 0.8rem 1rem 0.7rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.86);
+  backdrop-filter: blur(14px);
+  color: rgba(235, 240, 250, 0.92);
+}
+/* sem alvo na tela: o cartão fica no meio, sozinho */
+.spotlight-cartao.solto {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.convite-texto {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 300;
+  line-height: 1.5;
+}
+.convite-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.convite-conta {
+  margin-right: auto;
+  font-size: 0.54rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.55);
+}
+.convite-linha button {
+  padding: 0.24rem 0.7rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: none;
+  color: rgba(200, 214, 235, 0.8);
+  font: inherit;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+.convite-linha button:hover {
+  border-color: rgba(255, 214, 150, 0.6);
+  color: rgba(235, 240, 250, 0.95);
+}
+.convite-linha .convite-adiante {
+  border-color: rgba(255, 214, 150, 0.45);
+  color: rgba(255, 224, 180, 0.92);
+}
+
 /* --- HUD do modo Atlas ----------------------------------------------
    As peças da fase 'atlas' (Onda 5, F2). Todas são filhas DIRETAS de
    .hud-root no App: é a regra do .bare-mode (`> *:not(.scene-canvas)`)
@@ -850,6 +956,13 @@
   .cv-done .cv-core {
     transform: none;
     transition: opacity 0.8s ease;
+  }
+
+  /* o convite entra INSTANTÂNEO: a única transição dele é o fade de
+     entrada, e sob movimento reduzido ela não acontece — a troca de
+     passo já era instantânea (o furo não desliza de um alvo ao outro) */
+  .spotlight {
+    transition: none;
   }
 }
 
