@@ -212,6 +212,25 @@ export class Nebula {
     this.lutDirty = true;
   }
 
+  /**
+   * A CÂMERA TELETRANSPORTOU — recalcule a LUT no quadro que vem.
+   *
+   * O reuso da LUT tolera 2 pc de deriva porque foi desenhado para
+   * movimento CONTÍNUO: a 2 pc de distância a integração por direção
+   * mal muda, e são 786k integrações economizadas por quadro parado.
+   * Um salto de câmera quebra a premissa de outro jeito — a câmera pode
+   * cair a menos de 2 pc de onde a LUT foi calculada vindo de um lugar
+   * completamente diferente, e aí a vista herda a LUT do lugar ANTIGO.
+   * Medido (Onda 5): entrar no Atlas a partir de t=10 (câmera ainda
+   * dentro dos 2 pc de casa) e a partir de t=250 (a 20 kpc) devolvia a
+   * MESMA vista com 29 pixels de 1 nível de diferença — a primeira
+   * reusando a LUT do trajeto, a segunda recalculando. Quem salta,
+   * avisa; o custo é um recálculo da LUT no salto.
+   */
+  invalidarLut() {
+    this.lutDirty = true;
+  }
+
   /** liga o mapa galactocêntrico (APOGEE + braços/warp bakeados) */
   setDustMap(map: THREE.Texture | null, blend = 1) {
     const texture = map ?? this.fallbackDustMap;

@@ -27,6 +27,9 @@ import {
 } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
+import { AtlasRig } from './cinematic/atlasRig';
+import { ESCRITOR_DE_CAMERA } from './fases';
+import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
 import {
@@ -40,7 +43,11 @@ import type { StarsMeta } from './config';
 // A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
 const ORIGEM = new THREE.Vector3(0, 0, 0);
 
-export type Phase = 'loading' | 'intro' | 'journey' | 'end' | 'free';
+// A fase e o inventário de quem decide por ela moram em `fases.ts` —
+// o App também os lê, e duplicar a união aqui era o começo da segunda
+// fonte de verdade. Reexportado porque `import type { Phase } from
+// './three/director'` é o endereço que o resto da casa já usa.
+export type { Phase } from './fases';
 
 /**
  * As etapas do carregamento, na ordem. Fonte ÚNICA: o director as emite,
@@ -72,6 +79,26 @@ export const LOAD_STAGES = (
  */
 const QUADROS_ESTAVEIS = 10;
 
+/**
+ * Duração de CADA metade do véu de entrada/saída do Atlas, em
+ * segundos: fecha, reposiciona, abre. Entrar no Atlas não é travessia
+ * física (D3) — não há nave voando de um lugar ao outro, e fingir isso
+ * numa escala que vai de 1 UA a 25 kpc seria mentira de câmera. Sob
+ * `prefers-reduced-motion` a troca é INSTANTÂNEA: o véu não anima.
+ */
+const VEU_ATLAS_S = 0.45;
+
+/**
+ * O INSTANTE DE VIAGEM QUE O SOL VIVE DENTRO DO ATLAS, pinado.
+ * A dramaturgia do ciclo solar é monótona em `journeyT` (mínimo no
+ * arranque, máximo no fim da hélice — `SOL_PARAMS.dramaT0/dramaT1`);
+ * sem pino, entrar no Atlas a partir de t=10 e a partir de t=250 daria
+ * DOIS Sóis diferentes e nenhuma vista do Atlas seria reproduzível.
+ * O pino é o fim da janela — o máximo solar, o Sol mais interessante
+ * de olhar — e vem de `SOL_PARAMS`, não de um 29 redigitado.
+ */
+const ATLAS_JOURNEY_T = SOL_PARAMS.dramaT1;
+
 /** etapa viva do carregamento: `{ id, index, total, label }`, index 1…total */
 export type LoadStage = (typeof LOAD_STAGES)[number];
 export type LoadStageId = LoadStage['id'];
@@ -87,6 +114,8 @@ interface DirectorEvents {
   onDest: (text: string) => void;
   /** etapa viva do carregamento — a mesma que o HUD desenha */
   onStage: (stage: LoadStage) => void;
+  /** opacidade do véu do Atlas (0..1); custom property, não estado */
+  onVeu: (k: number) => void;
 }
 
 export class Director {
@@ -124,6 +153,9 @@ export class Director {
   private bgColor = new THREE.Color(0x000106);
   private rig = new JourneyRig();
   private roam: FreeRoam;
+  private atlas = new AtlasRig();
+  /** quem escreve a câmera AGORA — decidido pelo `setPhase` */
+  private escritorDeCamera: EscritorDeCamera = 'nenhum';
   private meta!: StarsMeta;
   /** última projeção de rótulos — alvo do clicar-para-visitar */
   private lastLabels: StarLabel[] = [];
@@ -133,6 +165,31 @@ export class Director {
   private pauseDragging = false;
   private pauseLastX = 0;
   private pauseLastY = 0;
+  /** quanto o ponteiro andou desde o pointerdown (clique curto = visita) */
+  private pauseArrasto = 0;
+  private pauseDesde = 0;
+
+  /**
+   * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
+   * inteiro quando ele parte. Não é só o `journeyT`: o `seek()` sozinho
+   * zera o olhar do pausar-e-olhar, o tick zera o latch `leftDisk` fora
+   * da viagem, e a pausa tem DOIS donos (`freezeJourney` aqui e
+   * `rig.paused` no rig). Faltando qualquer um dos cinco, "Partir"
+   * devolveria um quadro parecido — e o gate mede PIXEL.
+   */
+  private retomada: {
+    journeyT: number;
+    lookYaw: number;
+    lookPitch: number;
+    leftDisk: boolean;
+    pausado: boolean;
+  } | null = null;
+
+  /** véu do Atlas: 0 = aberto, 1 = fechado */
+  private veu = 0;
+  private veuAlvo = 0;
+  /** o que fazer quando o véu terminar de FECHAR */
+  private veuPendente: (() => void) | null = null;
 
   private phase: Phase = 'loading';
   private journeyT = 0;
@@ -536,10 +593,29 @@ export class Director {
     this.engine.start();
   }
 
+  /**
+   * A única porta de troca de fase — e, desde a Onda 5, a única DONA do
+   * escritor de câmera. Antes três lugares ligavam e desligavam o
+   * `enabled` do FreeRoam à mão (`play`, `enterFreeRoam`, `placeCamera`);
+   * com a terceira via seriam seis, e "quem manda na câmera agora" não
+   * teria resposta num lugar só. Agora tem: `ESCRITOR_DE_CAMERA`.
+   */
   private setPhase(p: Phase) {
     this.phase = p;
+    this.escritorDeCamera = ESCRITOR_DE_CAMERA[p];
+    this.roam.enabled = this.escritorDeCamera === 'voo';
     this.events.onPhase(p);
     this.perturbar();
+  }
+
+  /** a fase viva — o App precisa dela para a guarda de atalhos */
+  get fase(): Phase {
+    return this.phase;
+  }
+
+  /** a viagem está congelada? (o pause-look tem dois donos — ver D3) */
+  get pausado(): boolean {
+    return this.freezeJourney;
   }
 
   // ---- sinal de prontidão para captura -----------------------------
@@ -595,7 +671,13 @@ export class Director {
   get captura() {
     const andando =
       (this.phase === 'journey' && !this.freezeJourney) ||
-      (this.phase === 'free' && this.roam.animando);
+      (this.phase === 'free' && this.roam.animando) ||
+      // ENTRADA/SAÍDA DO ATLAS: o véu em curso (ou já pedido e ainda
+      // não fechado) é movimento na tela como qualquer outro. O rig do
+      // Atlas em si não anima — o reposicionamento acontece atrás do
+      // véu —, então este é o único termo novo que a fase traz.
+      this.veu > 0 ||
+      this.veuPendente !== null;
     return {
       pronto:
         this.phase !== 'loading' &&
@@ -687,7 +769,8 @@ export class Director {
     const cam = this.engine.camera;
     cam.position.set(pos[0], pos[1], pos[2]);
     if (look) cam.lookAt(look[0], look[1], look[2]);
-    this.roam.enabled = true;
+    // quem liga o escritor é o `setPhase` lá embaixo (mapa fase→rig);
+    // `syncFromCamera`/`snapCanonical` não dependem do `enabled`
     this.roam.syncFromCamera();
     // captura/deep-link: sem slerp de entrada — orientação exata no frame 1
     this.roam.snapCanonical();
@@ -708,7 +791,6 @@ export class Director {
     this.leftDisk = false;
     this.rig.reset();
     this.rig.paused = false;
-    this.roam.enabled = false;
     this.setPhase('journey');
   }
 
@@ -765,24 +847,50 @@ export class Director {
     return this.phase === 'journey' && this.freezeJourney;
   }
 
+  /**
+   * Os MESMOS três listeners servem o Atlas — arrastar orbita o alvo,
+   * clique curto foca o nome mais próximo. Registrar um segundo trio
+   * para a fase nova compraria dois donos do mesmo gesto no mesmo
+   * canvas; o dono muda com a fase, o listener não.
+   */
   private onPausePointerDown = (event: PointerEvent) => {
-    if (!this.pauseLookActive) return;
+    if (!this.pauseLookActive && this.phase !== 'atlas') return;
     this.pauseDragging = true;
+    this.pauseArrasto = 0;
+    this.pauseDesde = performance.now();
     this.pauseLastX = event.clientX;
     this.pauseLastY = event.clientY;
   };
 
   private onPausePointerMove = (event: PointerEvent) => {
-    if (!this.pauseDragging || !this.pauseLookActive) return;
-    this.rig.addLookDelta(
-      event.clientX - this.pauseLastX,
-      event.clientY - this.pauseLastY
-    );
+    if (!this.pauseDragging) return;
+    const dx = event.clientX - this.pauseLastX;
+    const dy = event.clientY - this.pauseLastY;
+    this.pauseArrasto += Math.abs(dx) + Math.abs(dy);
+    if (this.phase === 'atlas') {
+      this.atlas.addOrbitDelta(dx);
+      this.perturbar();
+    } else if (this.pauseLookActive) {
+      this.rig.addLookDelta(dx, dy);
+    }
     this.pauseLastX = event.clientX;
     this.pauseLastY = event.clientY;
   };
 
-  private onPausePointerUp = () => {
+  private onPausePointerUp = (event: PointerEvent) => {
+    // clique curto e parado no Atlas = focar. Os dois limiares (6 px,
+    // 400 ms) são os do voo livre, não números novos.
+    if (
+      this.pauseDragging &&
+      this.phase === 'atlas' &&
+      this.pauseArrasto < 6 &&
+      performance.now() - this.pauseDesde < 400
+    ) {
+      this.tryVisit(
+        event.clientX / window.innerWidth,
+        event.clientY / window.innerHeight
+      );
+    }
     this.pauseDragging = false;
   };
 
@@ -830,9 +938,12 @@ export class Director {
     }
   }
 
-  /** clique curto no voo livre: viaja até o rótulo mais próximo */
+  /**
+   * Clique curto no rótulo mais próximo. Duas fases, dois modos: no voo
+   * livre a câmera VOA até lá; no Atlas ela ENQUADRA de onde estiver.
+   */
   private tryVisit(x: number, y: number) {
-    if (this.phase !== 'free' || !this.meta) return;
+    if ((this.phase !== 'free' && this.phase !== 'atlas') || !this.meta) return;
     let best: StarLabel | null = null;
     let bestD = 0.0035; // ~6% da tela ao quadrado
     for (const label of this.lastLabels) {
@@ -846,8 +957,15 @@ export class Director {
       }
     }
     if (!best) return;
+    // no Atlas o Sol não é "uma estrela a 0 pc": clicar nele é voltar
+    // para casa, o enquadramento de abertura
+    if (best.key === 'sol-home' && this.phase === 'atlas') {
+      this.atlas.focarNoSistema();
+      this.teletransportou();
+      return;
+    }
     if (best.key === 'sgr-a') {
-      this.roam.startVisit({ pos: GAL.GC_POS.clone(), arriveDist: 7 });
+      this.irAte(GAL.GC_POS.clone(), 7);
       return;
     }
     const star =
@@ -856,14 +974,28 @@ export class Director {
         : this.meta.named.find((s) => s.n === best.name);
     if (!star) return;
     const pos = new THREE.Vector3(star.x, star.y, star.z);
-    this.roam.startVisit({
+    this.irAte(
       pos,
-      arriveDist: THREE.MathUtils.clamp(
+      THREE.MathUtils.clamp(
         pos.distanceTo(this.engine.camera.position) * 0.08,
         0.8,
         9
-      ),
-    });
+      )
+    );
+  }
+
+  /**
+   * O mesmo alvo, os dois modos. O raio de enquadramento do Atlas reusa
+   * a lei de aproximação que o voo livre já tinha (`arriveDist`) — não
+   * há tabela nova de raios em lugar nenhum (D5).
+   */
+  private irAte(pos: THREE.Vector3, arriveDist: number) {
+    if (this.phase === 'atlas') {
+      this.atlas.focar(pos, arriveDist);
+      this.teletransportou();
+      return;
+    }
+    this.roam.startVisit({ pos, arriveDist });
   }
 
   /** scrub pela barra de progresso (fração 0..1) */
@@ -894,12 +1026,114 @@ export class Director {
   }
 
   enterFreeRoam() {
-    this.roam.enabled = true;
     this.roam.syncFromCamera();
     this.setPhase('free');
     this.events.onCaption(-1, '', '');
     this.events.onLabels([]);
     this.events.onWarp(0); // a vinheta de warp ficava presa no CSS
+  }
+
+  // ---- portal do Atlas ---------------------------------------------
+
+  /**
+   * ENTRAR NO ATLAS. Só o pause-look e o deep-link `?atlas=1` chamam
+   * isto. Não é travessia física: o véu fecha, a câmera é reposta pelo
+   * AtlasRig e o véu abre.
+   *
+   * `momento` semeia a volta a partir da URL (`?atlas=1&t=…`): sem ele
+   * e sem viagem em curso, o portal guarda NADA — e "Partir" devolve a
+   * tela de título, que é o candidato honesto (D3).
+   */
+  entrarNoAtlas(opcoes: { instantaneo?: boolean; momento?: number } = {}) {
+    if (this.phase === 'atlas' || this.phase === 'loading') return;
+    const daViagem = this.phase === 'journey' || this.phase === 'end';
+    const olhar = this.rig.olhar;
+    this.retomada =
+      opcoes.momento !== undefined
+        ? {
+            journeyT: opcoes.momento,
+            lookYaw: 0,
+            lookPitch: 0,
+            leftDisk: false,
+            pausado: true,
+          }
+        : daViagem
+          ? {
+              journeyT: this.journeyT,
+              lookYaw: olhar.yaw,
+              lookPitch: olhar.pitch,
+              leftDisk: this.leftDisk,
+              pausado: this.freezeJourney,
+            }
+          : null;
+    this.atravessarVeu(opcoes.instantaneo === true, () => {
+      this.atlas.focarNoSistema();
+      this.teletransportou();
+      this.setPhase('atlas');
+    });
+  }
+
+  /**
+   * PARTIR. Devolve os CINCO do portal de uma vez — o instante, os dois
+   * ângulos do olhar, o latch do disco e a pausa (que tem dois donos:
+   * `freezeJourney` aqui e `rig.paused` no rig). O `reset()` antes do
+   * `restaurarOlhar` é de propósito: ele arma o salto do primeiro
+   * quadro, que recompõe mira e fov exatamente a partir do instante.
+   */
+  partirDoAtlas() {
+    if (this.phase !== 'atlas') return;
+    const volta = this.retomada;
+    this.atravessarVeu(false, () => {
+      this.rig.reset();
+      this.teletransportou();
+      if (!volta) {
+        this.setPhase('intro');
+        return;
+      }
+      this.journeyT = volta.journeyT;
+      this.rig.restaurarOlhar(volta.lookYaw, volta.lookPitch);
+      this.leftDisk = volta.leftDisk;
+      this.freezeJourney = volta.pausado;
+      this.rig.paused = volta.pausado;
+      this.setPhase('journey');
+    });
+  }
+
+  /** o instante guardado pelo portal — o link copiado de dentro o carrega */
+  get momentoGuardado(): number | null {
+    return this.retomada?.journeyT ?? null;
+  }
+
+  /**
+   * A CÂMERA SALTOU. Entrar no Atlas, partir dele e trocar de
+   * enquadramento não são voo — a câmera aparece noutro lugar. Além de
+   * recomeçar a contagem de estabilidade da captura, isto derruba a
+   * LUT do raymarch: o reuso dela tolera 2 pc de deriva de VOO, e um
+   * salto pode cair dentro dessa tolerância vindo de outro lugar do
+   * disco (ver `Nebula.invalidarLut`, com a medida que o denunciou).
+   */
+  private teletransportou() {
+    this.nebula.invalidarLut();
+    this.perturbar();
+  }
+
+  /**
+   * Fecha o véu, faz a troca, abre o véu. Instantâneo (véu nenhum) sob
+   * `prefers-reduced-motion`, sob `?shot=` e quando quem chama pede —
+   * é o que mantém a captura headless determinística.
+   */
+  private atravessarVeu(instantaneo: boolean, aoFechar: () => void) {
+    if (instantaneo || this.reducedMotion || this.shotMode) {
+      this.veu = 0;
+      this.veuAlvo = 0;
+      this.veuPendente = null;
+      this.events.onVeu(0);
+      aoFechar();
+      return;
+    }
+    this.veuPendente = aoFechar;
+    this.veuAlvo = 1;
+    this.perturbar();
   }
 
   setQuality(q: QualityLevel) {
@@ -930,6 +1164,25 @@ export class Director {
     const cam = this.engine.camera;
     let warp = 0;
 
+    // VÉU DO ATLAS, antes de tudo: se ele terminar de fechar neste
+    // quadro, a troca de fase acontece AQUI e o resto do tick já roda na
+    // fase nova. Fora da travessia o ramo inteiro é um teste falso — o
+    // filme não paga um ciclo por ele.
+    if (this.veu !== this.veuAlvo || this.veuPendente) {
+      const passo = dt / VEU_ATLAS_S;
+      this.veu =
+        this.veuAlvo > this.veu
+          ? Math.min(1, this.veu + passo)
+          : Math.max(0, this.veu - passo);
+      if (this.veu >= 1 && this.veuPendente) {
+        const acao = this.veuPendente;
+        this.veuPendente = null;
+        this.veuAlvo = 0;
+        acao();
+      }
+      this.events.onVeu(this.veu);
+    }
+
     if (this.phase === 'journey') {
       if (!this.freezeJourney) this.journeyT += dt * this.playbackRate;
       const t = this.journeyT;
@@ -948,8 +1201,13 @@ export class Director {
         this.setPhase('end');
         this.events.onWarp(0);
       }
-    } else if (this.phase === 'free') {
+    } else if (this.escritorDeCamera === 'voo') {
       this.roam.update(dt);
+    } else if (this.escritorDeCamera === 'atlas') {
+      // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
+      // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
+      // amortecido do shot onde o visitante pausou
+      this.atlas.apply(cam);
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {
@@ -1058,8 +1316,14 @@ export class Director {
     // ?nosun a desliga
     this.sunStar.quad.visible = !this.hide.has('nosun');
     this.sunStar.update(time, dHome, tanHalfFov);
-    // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice)
-    this.sun.update(time, this.engine.camera, this.journeyT);
+    // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
+    // dentro do Atlas ele é PINADO, senão cada entrada daria um Sol
+    // diferente conforme o instante da pausa (ver ATLAS_JOURNEY_T)
+    this.sun.update(
+      time,
+      this.engine.camera,
+      this.phase === 'atlas' ? ATLAS_JOURNEY_T : this.journeyT
+    );
     // DEPOIS do update, porque é lá que o `world > 0.02` decide se o grupo
     // some. A fotosfera está na ORIGEM (o grupo do Sol só é escalado, nunca
     // posicionado) e seu raio de mundo é WORLD.sunRadius por construção
@@ -1182,7 +1446,13 @@ export class Director {
     // (7 projeções + um canvas 2D pequeno: custo desprezível).
     // Na viagem, menos rótulos (cinema); no voo livre, mais (são os
     // alvos do clicar-para-visitar).
-    if ((this.phase === 'journey' || this.phase === 'free') && this.meta) {
+    // O Atlas entra pelo ramo do voo livre: rótulos fartos e sem filtro
+    // editorial de centro — lá eles são os ALVOS do clicar-para-focar,
+    // não a moldura de um beat (fundação da busca da F3).
+    if (
+      (this.phase === 'journey' || this.phase === 'free' || this.phase === 'atlas') &&
+      this.meta
+    ) {
       if (this.phase === 'journey') {
         // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
         // (target, etiqueta forçada, sem fades) e o fundo fica mudo

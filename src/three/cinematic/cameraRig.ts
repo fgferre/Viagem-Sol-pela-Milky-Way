@@ -64,6 +64,28 @@ export class JourneyRig {
     return this.journey.metaAt(t);
   }
 
+  /**
+   * O OLHAR ACUMULADO no pausar-e-olhar. O portal do Atlas guarda estes
+   * dois números na entrada e os devolve na saída: `reset()` sozinho os
+   * zera, e quem volta do Atlas voltaria olhando para o roteiro em vez
+   * de para onde estava olhando.
+   */
+  get olhar(): { yaw: number; pitch: number } {
+    return { yaw: this.lookYaw, pitch: this.lookPitch };
+  }
+
+  /**
+   * Devolve o olhar guardado. Vai SEMPRE depois de `reset()`: o salto do
+   * primeiro quadro recompõe mira e fov EXATAMENTE a partir do instante
+   * (é a mesma porta do `seek`), e o caminho amortecido não serviria —
+   * `kLook`/`kFov` dependem do `dt` do quadro, então repetir o estado
+   * por amortecimento não é reprodutível entre execuções.
+   */
+  restaurarOlhar(yaw: number, pitch: number) {
+    this.lookYaw = yaw;
+    this.lookPitch = pitch;
+  }
+
   /** arrasto do usuário com a viagem pausada */
   addLookDelta(dx: number, dy: number) {
     this.lookYaw = THREE.MathUtils.clamp(this.lookYaw - dx * 0.0022, -2.6, 2.6);
@@ -443,7 +465,23 @@ export class FreeRoam {
     this.lastY = event.clientY;
   };
 
+  /**
+   * Tecla digitada DENTRO de um controle não é comando de voo. O App já
+   * tinha esta guarda nos atalhos da janela (Espaço e ←/→ roubavam o
+   * slider de exposição); aqui ela faltava, e W/A/S/D digitados na
+   * busca da F3 sairiam voando com a nave. Mesma lista de seletores —
+   * um contrato, não dois.
+   */
+  private static ehAlvoDeFormulario(target: EventTarget | null) {
+    return Boolean(
+      (target as HTMLElement | null)?.closest?.(
+        'input, select, textarea, button, [contenteditable]'
+      )
+    );
+  }
+
   private onKeyDown = (event: KeyboardEvent) => {
+    if (FreeRoam.ehAlvoDeFormulario(event.target)) return;
     if (this.visit) this.cancelVisit();
     this.keys.add(event.code);
   };

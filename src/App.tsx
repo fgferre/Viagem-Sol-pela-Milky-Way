@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Director, LOAD_STAGES } from './three/director';
 import type { LoadStage, Phase } from './three/director';
+import { HUD_POR_FASE } from './three/fases';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
 import { TONE_MAPPINGS } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
@@ -88,6 +89,11 @@ export default function App() {
       onQuality: setQuality,
       onDest: setDest,
       onStage: setLoadStage,
+      // custom property, como o warp: o véu do Atlas anda a 60 Hz e um
+      // setState por quadro re-renderizaria o HUD inteiro à toa
+      onVeu: (k) => {
+        rootRef.current?.style.setProperty('--veu-atlas', `${k}`);
+      },
       });
     } catch (error) {
       // a sonda passou mas a criação real falhou (contexto despejado,
@@ -144,12 +150,19 @@ export default function App() {
           }
         } else if (query.get('pos')) console.warn('?pos= inválido:', query.get('pos'));
 
-        // Um único ?t= permite inspeção determinística sem URLs frágeis com "&".
+        // PRECEDÊNCIA DECLARADA: `?pos=` > `?atlas=1` > `?t=`/`?play=`.
+        // `?pos=` é a régua das capturas e não cede a ninguém; `?atlas=1`
+        // ganha do instante porque o Atlas é MODO, e o instante que
+        // vier junto vira só o momento de volta do "Partir" (é assim que
+        // o link copiado de dentro do Atlas fecha o círculo).
         const hasTime = query.has('t');
-        if (!pos && (hasTime || query.get('play'))) {
-          const time = Number.parseFloat(query.get('t') ?? '0');
+        const time = Number.parseFloat(query.get('t') ?? '0');
+        const momento = Number.isFinite(time) && time > 0 ? time : undefined;
+        if (!pos && query.has('atlas')) {
+          d.entrarNoAtlas({ instantaneo: true, momento });
+        } else if (!pos && (hasTime || query.get('play'))) {
           d.play();
-          if (Number.isFinite(time) && time > 0) d.seek(time);
+          if (momento !== undefined) d.seek(momento);
           // ?t= sozinho continua CONGELANDO (contrato das capturas: o
           // harness usa ?t=…&shot=2, sem play). Com &play=1 o mesmo ?t= vira
           // retomada viva — é assim que a troca de qualidade e o link
@@ -187,6 +200,16 @@ export default function App() {
     return () => window.clearTimeout(id);
   }, [loaderState]);
 
+  // O rótulo do botão de pausa é o TERCEIRO dono do estado de pausa (os
+  // outros dois são `freezeJourney` e `rig.paused`, no Director). Ele se
+  // ressincroniza a cada entrada em 'journey' — é o que faz "Partir"
+  // devolver a viagem PAUSADA como estava, sem o portal precisar
+  // conhecer o React, e o que conserta o `?t=` congelado que mostrava
+  // "⏸ Pausar" com a viagem parada.
+  useEffect(() => {
+    if (phase === 'journey') setPaused(directorRef.current?.pausado ?? false);
+  }, [phase]);
+
   // pausa via botão ou tecla Espaço — um filme de mais de 5 min precisa disso
   const togglePause = () => {
     setPaused(directorRef.current?.togglePause() ?? false);
@@ -195,6 +218,10 @@ export default function App() {
     const onKey = (event: KeyboardEvent) => {
       const d = directorRef.current;
       if (!d) return;
+      // Os três atalhos são do FILME. Dentro do Atlas eles não têm
+      // sujeito — e Espaço com `preventDefault` roubaria a tecla de
+      // quem estiver navegando o modo (D3: "Espaço não vaza").
+      if (d.fase === 'atlas') return;
       // Espaço e ←/→ são atalhos da JANELA, com preventDefault. Sem esta
       // guarda eles roubam as teclas de quem está num controle: no painel
       // de Ajustes, o slider de exposição não andava com as setas e as
@@ -246,8 +273,20 @@ export default function App() {
   const urlComMomento = () => {
     const url = new URL(window.location.href);
     const d = directorRef.current;
-    if (d && (phase === 'journey' || phase === 'end') && d.currentTime > 0.5) {
-      url.searchParams.set('t', d.currentTime.toFixed(1));
+    if (!d) return url;
+    // de dentro do Atlas o link volta PARA o Atlas, com o momento que o
+    // portal guardou pendurado — quem abrir o link e clicar em "Partir"
+    // cai no mesmo instante de quem o copiou
+    const instante =
+      phase === 'atlas'
+        ? d.momentoGuardado
+        : phase === 'journey' || phase === 'end'
+          ? d.currentTime
+          : null;
+    if (phase === 'atlas') url.searchParams.set('atlas', '1');
+    else url.searchParams.delete('atlas');
+    if (instante !== null && instante > 0.5) {
+      url.searchParams.set('t', instante.toFixed(1));
       url.searchParams.set('play', '1');
     }
     return url;
@@ -271,8 +310,13 @@ export default function App() {
     window.location.assign(url.toString());
   };
 
+  const entrarNoAtlas = () => directorRef.current?.entrarNoAtlas();
+  const partirDoAtlas = () => directorRef.current?.partirDoAtlas();
+
   const inJourney = phase === 'journey';
-  const showVeil = phase === 'intro' || phase === 'end';
+  // As peças que só decidem PRESENÇA por fase saem do mapa único
+  // (`fases.ts`); as condições compostas continuam aqui, sobre ele.
+  const hud = HUD_POR_FASE[phase];
   // ?shot=1 — modo foto: sem transições, capturas determinísticas
   // ?shot=2 — só a cena: sem HUD, para medir o quadro contra a referência
   const shotParam = new URLSearchParams(window.location.search).get('shot');
@@ -297,19 +341,19 @@ export default function App() {
       <div className="warp-vignette" />
 
       {/* letterbox */}
-      <div className={`letterbox top ${phase !== 'loading' ? 'on' : ''}`} />
-      <div className={`letterbox bottom ${phase !== 'loading' ? 'on' : ''}`} />
+      <div className={`letterbox top ${hud.letterbox ? 'on' : ''}`} />
+      <div className={`letterbox bottom ${hud.letterbox ? 'on' : ''}`} />
 
       {/* legenda da fase */}
-      {inJourney && <Caption caption={caption.text} sub={caption.sub} showKey={caption.idx} />}
+      {hud.legenda && <Caption caption={caption.text} sub={caption.sub} showKey={caption.idx} />}
 
       {/* linha de rumo: para onde estamos indo, com distância viva */}
-      {inJourney && dest && <div className="dest-line">{dest}</div>}
+      {hud.rumo && dest && <div className="dest-line">{dest}</div>}
 
       {/* progresso (arrastável — scrub). Fica de pé na tela final também:
           seekFraction já sabe retomar a partir da fase 'end', e sem a barra
           o único caminho de volta era "Reviver", que reinicia do zero */}
-      {(inJourney || phase === 'end') && (
+      {hud.progresso && (
         <ProgressBar
           progressRef={progressRef}
           ticks={ticks}
@@ -320,7 +364,7 @@ export default function App() {
       )}
 
       {/* dica do modo livre */}
-      {phase === 'free' && (
+      {hud.dicaDeVoo && (
         <div className="free-hint">
           {window.matchMedia?.('(pointer: coarse)').matches ? (
             <>toque e arraste — olhar · toque num nome — visitar</>
@@ -341,15 +385,35 @@ export default function App() {
         </div>
       )}
 
+      {/* dica do Atlas */}
+      {phase === 'atlas' && (
+        <div className="free-hint">
+          arraste — girar em torno do alvo · clique num nome — enquadrar
+        </div>
+      )}
+
       {/* controles */}
-      {(inJourney || phase === 'free') && (
+      {hud.controles && (
         <div className="controls-bar">
-          {phase === 'free' && (
+          {hud.botaoReviver && (
             <button className="hud-btn small" onClick={play}>
                   ↻ Reviver
             </button>
           )}
-          {inJourney && (
+          {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
+              em que o visitante já parou por conta própria e a pergunta
+              "onde é isso?" tem lugar (D3). */}
+          {inJourney && paused && (
+            <button className="hud-btn small" onClick={entrarNoAtlas}>
+              Entrar no Atlas
+            </button>
+          )}
+          {hud.botaoPartir && (
+            <button className="hud-btn small" onClick={partirDoAtlas}>
+              Partir
+            </button>
+          )}
+          {hud.botoesDaViagem && (
             <>
               <button
                 className="hud-btn small"
@@ -413,12 +477,19 @@ export default function App() {
           da loading: é o crossfade entre camadas persistentes que tira o
           flash da troca */}
       <TitleVeil
-        visible={showVeil}
+        visible={hud.veuDeTitulo}
         mode={phase === 'end' ? 'end' : 'intro'}
         onPlay={play}
         onExplore={freeRoam}
         runtime={runtime}
       />
+
+      {/* VÉU DO ATLAS — a entrada e a saída não são travessia física: o
+          véu fecha, a câmera é reposta e o véu abre. A opacidade vem por
+          custom property do Director (`--veu-atlas`), que é quem sabe
+          quando a troca aconteceu; sob reduced-motion ela nunca sai de 0
+          e a troca é instantânea. Fade, não pulso. */}
+      <div className="atlas-veu" aria-hidden="true" />
 
       {/* cartografia viva do carregamento (por cima: o núcleo dela expande
           sobre o Sol WebGL quando a viagem começa). Em ?shot=2 ela nem
