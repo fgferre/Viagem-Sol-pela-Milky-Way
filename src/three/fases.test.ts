@@ -77,6 +77,17 @@ describe('as fases e os dois mapas', () => {
     expect(FASES.filter((f) => HUD_POR_FASE[f].tempo)).toEqual(['atlas']);
   });
 
+  it('a busca (F3) monta nas DUAS fases que têm destino, e em nenhuma outra', () => {
+    // ela não é peça só do Atlas: no voo livre a escolha VOA, no Atlas
+    // ENQUADRA. No filme não monta — lá quem manda na câmera é o
+    // roteiro, e escolher um destino não teria efeito nenhum.
+    expect(FASES.filter((f) => HUD_POR_FASE[f].busca)).toEqual(['free', 'atlas']);
+    // e ela mora na barra de controles: fase com busca tem a barra
+    for (const f of FASES.filter((x) => HUD_POR_FASE[x].busca)) {
+      expect(HUD_POR_FASE[f].controles, `${f} tem busca sem barra de controles`).toBe(true);
+    }
+  });
+
   it('só a viagem tem os botões da viagem, e só o Atlas tem o Partir', () => {
     expect(FASES.filter((f) => HUD_POR_FASE[f].botoesDaViagem)).toEqual(['journey']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].botaoPartir)).toEqual(['atlas']);

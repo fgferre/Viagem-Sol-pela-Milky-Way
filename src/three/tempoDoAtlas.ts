@@ -126,8 +126,12 @@ const MESES = [
  * Número em pt-BR com no máximo uma casa, sem a casa quando ela é
  * zero: `10`, `1,7`, `115,7`. Vírgula decimal, como se escreve aqui —
  * e não `Intl`, que depende do ICU que o Node foi compilado com.
+ *
+ * EXPORTADA desde a F3: a paleta da busca escreve distâncias em
+ * anos-luz e precisa da mesma vírgula. Duas casas com a mesma regra
+ * escrita duas vezes é como um "8,6" e um "8.6" aparecem na mesma tela.
  */
-function numeroPtBr(v: number): string {
+export function numeroPtBr(v: number): string {
   return v.toFixed(1).replace(/\.0$/, '').replace('.', ',');
 }
 

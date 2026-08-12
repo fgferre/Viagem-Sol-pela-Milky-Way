@@ -162,6 +162,125 @@ async function julgarPagina(s, query, onde) {
   return vivas;
 }
 
+/**
+ * Espera uma condição VALER no navegador e devolve em quantos ms ela
+ * valeu (`null` no estouro). O número entra no log de propósito: gate
+ * que espera sem dizer quanto esperou esconde a piora do dia em que ela
+ * começar.
+ */
+async function esperarPor(s, expressao, teto = 3000) {
+  const t0 = Date.now();
+  for (;;) {
+    if (await s.js(expressao)) return Date.now() - t0;
+    if (Date.now() - t0 > teto) return null;
+    await sleep(50);
+  }
+}
+
+/**
+ * A LISTBOX DA PALETA DE BUSCA (F3), pelo teclado e só pelo teclado.
+ *
+ * O padrão é o combobox: o foco NÃO entra na lista — ele fica na caixa
+ * de texto, e a opção corrente é apontada por `aria-activedescendant`.
+ * É a escolha certa para uma lista que muda a cada tecla, e é também a
+ * que mais falha calada: basta o `aria-activedescendant` apontar para
+ * um `id` que não existe (ou parar de acompanhar as setas) para quem
+ * ouve a tela deixar de saber o que está escolhido, sem nada quebrar na
+ * tela de quem enxerga.
+ */
+async function julgarListbox(s) {
+  await s.js(`(() => {
+    const b = document.querySelector('[data-abre-dialogo="busca"]');
+    b.focus();
+    b.click();
+  })()`);
+  await sleep(150);
+  // digitação de VERDADE (tecla a tecla, com código nativo): é o único
+  // caminho que passa pelo mesmo `onChange` que o visitante usa
+  await s.digitar('tau');
+  await sleep(300);
+
+  const estado = () => s.js(`(() => {
+    const campo = document.querySelector('.atlas-busca-campo');
+    const ops = [...document.querySelectorAll('[role="option"]')];
+    const apontado = campo && campo.getAttribute('aria-activedescendant');
+    return {
+      n: ops.length,
+      valor: campo ? campo.value : null,
+      naCaixa: document.activeElement === campo,
+      apontado,
+      // o índice pelo aria-selected E o índice pelo id apontado: os dois
+      // têm de ser o mesmo, senão a tela e o leitor discordam
+      porSelecionado: ops.findIndex((o) => o.getAttribute('aria-selected') === 'true'),
+      porApontado: ops.findIndex((o) => o.id === apontado),
+      nomes: ops.map((o) => o.querySelector('.atlas-busca-nome').textContent),
+    };
+  })()`);
+
+  const inicial = await estado();
+  conferir(
+    inicial.valor === 'tau' && inicial.n > 2,
+    `busca: digitar "tau" tecla a tecla acende ${inicial.n} opções (campo="${inicial.valor}")`
+  );
+  conferir(
+    inicial.naCaixa,
+    'busca: o foco fica na CAIXA — a lista é apontada, não focada'
+  );
+  conferir(
+    inicial.porSelecionado === 0 && inicial.porApontado === 0,
+    `busca: a primeira opção nasce escolhida (aria-selected ${inicial.porSelecionado},`
+      + ` aria-activedescendant ${inicial.porApontado})`
+  );
+
+  await s.teclar('ArrowDown');
+  await s.teclar('ArrowDown');
+  const desceu = await estado();
+  conferir(
+    desceu.porSelecionado === 2 && desceu.porApontado === 2,
+    `busca: duas setas para baixo escolhem a terceira ("${desceu.nomes[2]}")`
+  );
+  await s.teclar('ArrowUp');
+  const subiu = await estado();
+  conferir(
+    subiu.porSelecionado === 1 && subiu.porApontado === 1,
+    `busca: a seta para cima volta uma ("${subiu.nomes[1]}")`
+  );
+
+  // Enter CONFIRMA: a paleta fecha, o foco volta ao gatilho e o que a
+  // linha de contexto anuncia é o nome que estava escolhido — a prova
+  // de que a tecla escolheu a estrela certa, e não a primeira da lista.
+  //
+  // ESPERA MEDIDA e não `sleep` fixo: o Enter dispara trabalho de
+  // câmera antes do fechamento, e no Atlas o quadro custa ~100 ms
+  // (1200×900 com a galáxia inteira). Um prazo cego aqui é gate que
+  // acende vermelho por carga da máquina — e, o que é pior, que acende
+  // verde quando a máquina está rápida e o defeito existe.
+  const alvo = subiu.nomes[1];
+  await s.teclar('Enter');
+  const fechouEm = await esperarPor(s, "!document.querySelector('[data-dialogo=\"busca\"]')");
+  conferir(fechouEm !== null, `busca: Enter fecha a paleta (em ${fechouEm} ms)`);
+  const devolveuEm = await esperarPor(
+    s,
+    'document.activeElement === document.querySelector(\'[data-abre-dialogo="busca"]\')'
+  );
+  // quem ficou com o foco, quando não foi o gatilho: falha que não diz
+  // onde o foco parou custa uma sessão de navegador para ser lida
+  const comOFoco = await s.js(
+    "document.activeElement.tagName + ' [' + (document.activeElement.innerText||'').trim().slice(0, 24) + ']'"
+  );
+  conferir(
+    devolveuEm !== null,
+    `busca: e devolve o foco ao gatilho (em ${devolveuEm} ms; com o foco: ${comOFoco})`
+  );
+  const contexto = await s.js(
+    "(document.querySelector('.atlas-contexto-nome') || {}).textContent || ''"
+  );
+  conferir(
+    contexto === alvo,
+    `busca: o Enter enquadrou a opção ESCOLHIDA ("${alvo}" → em quadro "${contexto}")`
+  );
+}
+
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
@@ -179,37 +298,14 @@ try {
       + ` (${vivasAtlas.map((r) => `${r.papel || '—'}:"${r.texto}"`).join(' · ')})`
   );
 
-  // A REGIÃO VIVA É VIVA MESMO: mudar o foco do Atlas muda o que ela
-  // anuncia. Sem esta prova, um `aria-live` sobre texto imóvel passaria
-  // como acessibilidade — é o modo educado de não dizer nada.
-  const antes = await sessao.js(
-    "(document.querySelector('.atlas-contexto')||{}).innerText||''"
-  );
-  const tinta = await sessao.js(`(() => {
-    const c = document.querySelector('.label-canvas');
-    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-    for (let y = 0; y < c.height; y += 2) {
-      for (let x = 0; x < c.width; x += 2) {
-        if (d[(y * c.width + x) * 4 + 3] > 200) return { x, y };
-      }
-    }
-    return null;
-  })()`);
-  if (!tinta) {
-    conferir(false, 'atlas: nenhum rótulo desenhado para clicar');
-  } else {
-    await sessao.clicar(tinta.x, tinta.y);
-    await sessao.assentar();
-    const depois = await sessao.js(
-      "(document.querySelector('.atlas-contexto')||{}).innerText||''"
-    );
-    conferir(
-      Boolean(antes) && depois !== antes,
-      `atlas: a linha de contexto MUDA com o foco ("${antes.replace(/\n/g, ' ')}"`
-        + ` → "${depois.replace(/\n/g, ' ')}")`
-    );
-  }
   // ---- o selo de honestidade (D1) ---------------------------------
+  // ORDEM IMPORTA, e desde a F3 ela está escrita: este bloco julga o
+  // selo NA ABERTURA, e por isso vem antes de qualquer coisa que mova a
+  // câmera. Enquanto a prova do foco vinha primeiro, o "selo na
+  // abertura" era lido com o alvo já enquadrado a dezenas de parsecs —
+  // ele dizia ESCALA REAL por o HUD ainda não ter sido redesenhado, e o
+  // gate passava por causa disso. Um gate que depende de o desenho
+  // atrasar não julga nada.
   // O TESTE PURO (`selo.test.ts`) cobra que nenhum controle possa
   // desmentir o selo; aqui a mesma promessa é cobrada no navegador, com
   // os controles de verdade: desligar uma camada na gaveta tem de mover
@@ -306,6 +402,49 @@ try {
     `retângulo útil: base declarada ${cobertura.util.base} ≥ medida `
       + `${cobertura.baseMedida.toFixed(3)} (${cobertura.pecas.join(' · ')})`
   );
+
+  // A REGIÃO VIVA É VIVA MESMO: mudar o foco do Atlas muda o que ela
+  // anuncia. Sem esta prova, um `aria-live` sobre texto imóvel passaria
+  // como acessibilidade — é o modo educado de não dizer nada.
+  // Fica por ÚLTIMO no Atlas porque MOVE A CÂMERA: tudo que julga a
+  // vista de abertura tem de já ter medido.
+  const antes = await sessao.js(
+    "(document.querySelector('.atlas-contexto')||{}).innerText||''"
+  );
+  const tinta = await sessao.js(`(() => {
+    const c = document.querySelector('.label-canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    for (let y = 0; y < c.height; y += 2) {
+      for (let x = 0; x < c.width; x += 2) {
+        if (d[(y * c.width + x) * 4 + 3] > 200) return { x, y };
+      }
+    }
+    return null;
+  })()`);
+  if (!tinta) {
+    conferir(false, 'atlas: nenhum rótulo desenhado para clicar');
+  } else {
+    await sessao.clicar(tinta.x, tinta.y);
+    await sessao.assentar();
+    const depois = await sessao.js(
+      "(document.querySelector('.atlas-contexto')||{}).innerText||''"
+    );
+    conferir(
+      Boolean(antes) && depois !== antes,
+      `atlas: a linha de contexto MUDA com o foco ("${antes.replace(/\n/g, ' ')}"`
+        + ` → "${depois.replace(/\n/g, ' ')}")`
+    );
+  }
+
+  // ---- a listbox da busca, pelo TECLADO (F3) ----------------------
+  // O contrato genérico do `dialogFocus` já cobrou foco preso, Esc e
+  // devolução da paleta lá em cima, junto com os outros diálogos. O que
+  // ele NÃO pode cobrar é o que só a paleta tem: uma lista que não
+  // recebe foco e é apontada por `aria-activedescendant`. Sem esta
+  // prova, a paleta poderia estar acessível "no papel" (o Tab não vaza)
+  // e inutilizável pelo teclado — que é o caminho de quem mais precisa
+  // dela.
+  await julgarListbox(sessao);
 
   // O VOO LIVRE, desde a F5: o painel de Ajustes ganhou uma seção que só
   // existe nesta fase ("rever o convite"), e o convite dos três gestos

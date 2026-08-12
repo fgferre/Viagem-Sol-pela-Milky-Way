@@ -51,7 +51,7 @@ import {
   matchHeroesToCatalog,
 } from './world/lodStellar';
 import { carregarEfemerides, loadStarData, WORLD } from './config';
-import type { StarsMeta } from './config';
+import type { NamedStar, StarsMeta } from './config';
 
 // A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
 const ORIGEM = new THREE.Vector3(0, 0, 0);
@@ -1073,7 +1073,30 @@ export class Director {
         ? { n: 'Sol', x: 0, y: 0, z: 0 }
         : this.meta.named.find((s) => s.n === best.name);
     if (!star) return;
-    const pos = new THREE.Vector3(star.x, star.y, star.z);
+    this.visitarEstrela(star);
+  }
+
+  /**
+   * AS 1.726 NOMEADAS, para quem precisa procurar entre elas (F3). A
+   * paleta da busca monta o índice sobre esta lista em vez de baixar
+   * `stars_meta.json` outra vez: o Director já a tem na memória desde o
+   * `init`, e um segundo fetch de 385 kB para ler o mesmo dado seria uma
+   * segunda fonte de verdade com custo de rede.
+   */
+  get nomeadas(): readonly NamedStar[] {
+    return this.meta?.named ?? [];
+  }
+
+  /**
+   * O MESMO destino do clique num rótulo, escolhido pelo NOME (F3). É a
+   * porta pública por onde a paleta da busca chega — e ela cai no
+   * caminho que já existia, `irAte`, de propósito: as duas fases seguem
+   * fazendo o que faziam (o Atlas ENQUADRA de onde está, o voo livre
+   * VOA até lá) e o raio de chegada continua saindo da mesma lei de
+   * aproximação, sem tabela nova em lugar nenhum (D5).
+   */
+  visitarEstrela(estrela: { n: string; x: number; y: number; z: number }) {
+    const pos = new THREE.Vector3(estrela.x, estrela.y, estrela.z);
     this.irAte(
       pos,
       THREE.MathUtils.clamp(
@@ -1081,7 +1104,7 @@ export class Director {
         0.8,
         9
       ),
-      star.n
+      estrela.n
     );
   }
 

@@ -143,3 +143,37 @@ export function buscar(
     .sort((a, b) => b.score - a.score || a.estrela.m - b.estrela.m || a.indice - b.indice)
     .slice(0, limite);
 }
+
+// ---- o DEEP-LINK (`?foco=`), os dois lados ------------------------
+//
+// A porta carrega uma CONSULTA, não um id novo: quem resolve é o
+// `buscar` acima, o mesmo que a paleta usa. Foi decisão, e o motivo é
+// que a alternativa custava caro por nada — um identificador próprio
+// (índice na array `named`, por exemplo) quebraria calado no dia em que
+// o build do catálogo mudasse a ordem, e ninguém saberia que o link
+// guardado apontava para outra estrela. Uma consulta pode no máximo não
+// achar, e aí a linha de contexto mostra o que ficou em quadro.
+//
+// O preço declarado: `?foco=sir` também acha Sirius. Não é bug — é a
+// mesma permissividade da caixa de busca, e é o que faz um link escrito
+// à mão funcionar. O que a UI ESCREVE é sempre a forma canônica abaixo.
+
+/**
+ * A chave que vai no link. `hd`/`hip` primeiro por serem curtas, ASCII e
+ * exatas (a consulta numérica é acesso direto por Map, sem ambiguidade);
+ * as 37 nomeadas sem catálogo — as companheiras "B" — vão pelo nome, que
+ * casa por degrau EXATO e portanto nunca perde para uma vizinha.
+ */
+export function chaveDeLink(estrela: NamedStar): string {
+  if (estrela.hd !== undefined) return `hd${estrela.hd}`;
+  if (estrela.hip !== undefined) return `hip${estrela.hip}`;
+  return estrela.n;
+}
+
+/** O outro lado: o valor da porta vira a estrela que ela nomeia. */
+export function resolverFoco(
+  valor: string,
+  indice: IndiceEstrelas
+): ResultadoBusca | null {
+  return buscar(valor, indice, 1)[0] ?? null;
+}

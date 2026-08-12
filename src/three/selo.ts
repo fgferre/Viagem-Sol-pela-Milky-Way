@@ -245,6 +245,25 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    * olha, nunca com quanta luz.
    */
   neutra('jd', 'instante do céu (efeméride, não ajuste)'),
+  /**
+   * `?foco=` — O ALVO EM QUADRO (F3/D4), e a decisão é a mesma família
+   * de `?pos=`: ela diz PARA ONDE se olha, nunca com quanta luz.
+   *
+   * O que a porta faz é escolher o enquadramento de abertura do Atlas —
+   * a câmera vai parar noutro lugar, apontada para outra estrela. Nada
+   * nesse caminho toca brilho, escala ou fotometria: o alvo é
+   * enquadrado pela MESMA lei de aproximação do clique num rótulo
+   * (`visitarEstrela` → `irAte`), sem tabela de raios nova e sem passar
+   * perto da exposição.
+   *
+   * E o eixo ESCALA não precisa dela para dizer a verdade: ele sai da
+   * GEOMETRIA (a distância da câmera a casa), então enquadrar uma
+   * estrela longe já move o selo para FORA DE ESCALA por conta própria
+   * — como move o clique num nome, que não tem porta nenhuma. Declarar
+   * `?foco=` como desvio seria contar a mesma coisa duas vezes, uma
+   * delas errada.
+   */
+  neutra('foco', 'alvo em quadro (enquadramento, não ajuste)'),
   neutra('t', 'instante da viagem'),
   neutra('play', 'retomar a viagem andando'),
   neutra('freeze', 'congelar o relógio da viagem'),
