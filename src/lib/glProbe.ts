@@ -18,6 +18,15 @@
 
 export interface GlCapacidades {
   suportado: boolean;
+  /**
+   * O contexto conseguido foi WebGL2? A sonda aceita WebGL1 como
+   * "suportado" de propósito — quem decide se dá para desenhar é o
+   * three, no construtor do renderer —, mas o app EXIGE WebGL2, e sem
+   * esta bandeira o véu dizia "sem WebGL utilizável" a um navegador que
+   * tem WebGL, só que o 1. Mensagem errada manda o visitante procurar o
+   * problema no lugar errado. Achado de auditoria externa (2026-08-12).
+   */
+  webgl2?: boolean;
   maxTextureSize?: number;
   rendererSoftware?: boolean;
 }
@@ -37,7 +46,8 @@ export function sondarGl(): GlCapacidades {
   let canvas: HTMLCanvasElement | undefined;
   try {
     canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+    const gl2 = canvas.getContext('webgl2');
+    const gl = gl2 ?? canvas.getContext('webgl');
     if (!gl) {
       cache = { suportado: false };
       return cache;
@@ -62,7 +72,7 @@ export function sondarGl(): GlCapacidades {
       /* ilegível: fica de fora do veredito */
     }
     gl.getExtension('WEBGL_lose_context')?.loseContext();
-    cache = { suportado: true };
+    cache = { suportado: true, webgl2: gl2 !== null };
     if (Number.isFinite(maxTex) && maxTex > 0) cache.maxTextureSize = maxTex;
     if (rendererSoftware !== undefined) cache.rendererSoftware = rendererSoftware;
   } catch {

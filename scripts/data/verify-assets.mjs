@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,6 +62,25 @@ for (const [assetName, asset] of Object.entries(manifest.assets)) {
       throw new Error(`${assetName}: Float32 não finito no byte ${offset}.`);
     }
   }
+}
+
+// O DICIONÁRIO É DATA-DEPENDENTE E O RUNTIME TEM O CÓDIGO CRAVADO.
+// `categoryDictionary` (lib/binary.mjs) ordena alfabeticamente os valores
+// PRESENTES no snapshot WISE e numera a partir de 1 — então o código de
+// cada classe depende de quais classes o catálogo trouxe. Do outro lado,
+// `structureMap.ts` e `starForges.ts` decidem "região H II confirmada"
+// com `Math.abs(classCode - 3) < 0.5`, um literal. Hoje bate; uma
+// regeneração com catálogo que inclua uma classe ordenando antes de 'K'
+// desloca todo mundo e o runtime passa a REBAIXAR as confirmadas em
+// silêncio — nem o `expectedCount` do build nem este verify viam isso.
+// Achado de auditoria externa (2026-08-12). Aqui ele grita.
+if (manifest.dictionaries?.hiiClass?.['3'] !== 'K') {
+  throw new Error(
+    `hiiClass['3'] = ${JSON.stringify(manifest.dictionaries?.hiiClass?.['3'])}; ` +
+      'esperado "K" (região H II confirmada). O código 3 está CRAVADO em ' +
+      'src/three/cartography/structureMap.ts e src/three/world/starForges.ts — ' +
+      'ou o dicionário volta a bater, ou os dois literais mudam junto.'
+  );
 }
 
 const gaiaObAsset = manifest.assets.gaiaObProxyStars;
@@ -307,31 +327,83 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
       throw new Error(`atlas/efemerides.bin: Float32 não finito no byte ${offset}.`);
     }
   }
-  // O .gz é o que o visitante baixa (compress-assets.mjs); tem de
-  // existir, ser menor e descomprimir BIT-IDÊNTICO — um .gz velho de
-  // um .bin regenerado mentiria com cara de válido.
-  let efemeridesGz;
-  try {
-    efemeridesGz = await readFile(
-      path.join(publicDirectory, 'data', 'atlas', 'efemerides.bin.gz')
-    );
-  } catch {
-    throw new Error('atlas/efemerides.bin.gz ausente — rode npm run data:pack.');
-  }
-  if (efemeridesGz.byteLength >= efemeridesBin.byteLength) {
-    throw new Error('atlas/efemerides.bin.gz não é menor que o .bin.');
-  }
-  if (sha256(gunzipSync(efemeridesGz)) !== efemeridesMeta.sha256) {
-    throw new Error(
-      'atlas/efemerides.bin.gz descomprime diferente do .bin — .gz velho; ' +
-        'rode npm run data:pack.'
-    );
-  }
+  // (o `.gz` desta tabela é conferido junto com os outros, na varredura
+  // de TODO `.bin` de public/data logo abaixo)
   console.log(
     `atlas/efemerides: ${blocos.length} corpos, ${(efemeridesBin.byteLength / 1048576).toFixed(2)} MB, ` +
       `pior interpolação ${Math.max(
         ...blocos.map(([, c]) => c.erroMedidoAu)
       ).toExponential(2)} AU dentro dos orçamentos.`
+  );
+}
+
+// ============================================================
+// TODO `.bin` TEM DE TER O `.gz` DELE, BIT-IDÊNTICO.
+//
+// O `.gz` é o que o visitante baixa: `fetchBinary` (src/three/config.ts)
+// PREFERE o comprimido e só cai no cru se a API faltar. Até 2026-08-12
+// só a efeméride era conferida — `stars.bin.gz` e os oito `galaxy/*.gz`
+// passavam sem ninguém olhar. Consequência real: regenerar dados com
+// `data:stars`/`data:galaxy` e esquecer o `data:pack` deixa um `.gz`
+// velho no lugar; se a contagem não mudou, o check de byteLength do
+// runtime passa e o app renderiza DADO VELHO com meta novo, sem erro.
+// Achado de auditoria externa.
+//
+// A varredura é a MESMA do `compress-assets.mjs` (recursiva sobre
+// public/data, todo `.bin`), de propósito: gate e gerador têm de
+// enxergar exatamente o mesmo conjunto, ou um ativo novo nasce fora do
+// alcance do gate.
+// ============================================================
+{
+  const paresConferidos = [];
+  const varrer = async (dir) => {
+    for (const entrada of await readdir(dir, { withFileTypes: true })) {
+      const alvo = path.join(dir, entrada.name);
+      if (entrada.isDirectory()) {
+        await varrer(alvo);
+        continue;
+      }
+      if (!entrada.name.endsWith('.bin')) continue;
+      const relativo = path.relative(publicDirectory, alvo);
+      const cru = await readFile(alvo);
+      let gz;
+      try {
+        gz = await readFile(`${alvo}.gz`);
+      } catch {
+        throw new Error(`${relativo}.gz ausente — rode npm run data:pack.`);
+      }
+      if (gz.byteLength >= cru.byteLength) {
+        throw new Error(`${relativo}.gz não é menor que o .bin.`);
+      }
+      if (!gunzipSync(gz).equals(cru)) {
+        throw new Error(
+          `${relativo}.gz descomprime DIFERENTE do .bin — .gz velho; ` +
+            'rode npm run data:pack.'
+        );
+      }
+      paresConferidos.push(relativo);
+    }
+  };
+  await varrer(path.join(publicDirectory, 'data'));
+  // um .gz órfão (o .bin sumiu) também mente: o `compress-assets` o
+  // apaga, e quem não rodou o packer fica com ele servindo dado de um
+  // ativo que não existe mais
+  const orfaos = [];
+  const varrerOrfaos = async (dir) => {
+    for (const entrada of await readdir(dir, { withFileTypes: true })) {
+      const alvo = path.join(dir, entrada.name);
+      if (entrada.isDirectory()) await varrerOrfaos(alvo);
+      else if (entrada.name.endsWith('.bin.gz') && !existsSync(alvo.slice(0, -3))) {
+        orfaos.push(path.relative(publicDirectory, alvo));
+      }
+    }
+  };
+  await varrerOrfaos(path.join(publicDirectory, 'data'));
+  if (orfaos.length) {
+    throw new Error(`.gz órfão (sem .bin): ${orfaos.join(', ')} — rode npm run data:pack.`);
+  }
+  console.log(
+    `${paresConferidos.length} pares .bin/.bin.gz bit-idênticos: ${paresConferidos.join(', ')}.`
   );
 }
 

@@ -31,6 +31,40 @@ export function modoDoToneMapping(tm: THREE.ToneMapping): ToneMapMode {
   );
 }
 
+/**
+ * AS DUAS PORTAS DE GOSTO, lidas num lugar só — `?tone=` e `?exp=`.
+ *
+ * Elas existiam DUAS vezes no `App.tsx`: com guarda no caminho que fala
+ * com o engine (`tone in TONE_MAPPINGS`, `Number.isFinite && > 0`) e SEM
+ * guarda no inicializador do estado React, que é quem pinta o HUD. Com
+ * `?exp=abc` o painel mostrava "Exposição · NaN" e um slider com
+ * `value={NaN}`; com `?tone=foo` os quatro rádios ficavam desmarcados —
+ * a tela mentindo sobre o que o instrumento aplica. Achado de auditoria
+ * externa; o conserto é a lei UMA SÓ, aqui, no módulo que é dono das
+ * duas (`setToneMapping`/`setExposure` moram logo abaixo).
+ *
+ * Devolvem `null` para "não pediram nada de válido" — quem chama é que
+ * conhece o padrão, e é o mesmo contrato de `lerPortaJd`.
+ */
+export function lerPortaTom(bruto: string | null | undefined): ToneMapMode | null {
+  // `Object.keys` e NÃO o `in` que a guarda antiga usava: `in` anda na
+  // cadeia de protótipos, então `?tone=constructor` passava e o engine
+  // recebia a função `Object` como curva de tonemapping. Achado ao
+  // escrever o teste desta porta — o relatório não tinha visto.
+  return (Object.keys(TONE_MAPPINGS) as ToneMapMode[]).find((m) => m === bruto) ?? null;
+}
+
+/**
+ * Exposição em multiplicador do tempo de exposição. Só positivo finito
+ * passa: 0 apagaria a tela e negativo não tem significado físico. Sem
+ * teto de propósito — quem escreve `?exp=8` está estourando o quadro a
+ * pedido, e a captura tem de poder.
+ */
+export function lerPortaExposicao(bruto: string | null | undefined): number | null {
+  const v = Number(bruto);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
 interface QualityPreset {
   pixelRatio: number;
   nebulaSteps: number;

@@ -563,10 +563,19 @@ export class Director {
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
     const cartOn = Boolean(galactic) && cartMode !== 'off';
+    // O CHECK DEPOIS DE CADA `stage` — e não só depois dos três awaits que
+    // já o tinham. Cada `stage` cede a thread por um `setTimeout(0)`, e um
+    // `dispose()` que caia nessa janela (Fast Refresh em dev, unmount no
+    // meio da carga) rodava o teardown NA HORA enquanto o init seguia:
+    // `buildGalaxy` (~3,3 s de CPU) e `bakeDiscLayers` realocavam ~2,7 M
+    // partículas e render targets num contexto já destruído, e essa Galaxy
+    // não era disposta por ninguém. Achado de auditoria externa.
     await this.stage('dust');
+    if (this.disposed) return;
     const dustBake = bakeDustMap(cartOn && galactic ? galactic.dustDensity : null);
     this.dustMapTexture = dustBake.texture;
     await this.stage('structure');
+    if (this.disposed) return;
     const structureBake = bakeGalacticStructureMap(
       cartOn ? galactic : null,
       dustBake.density,
@@ -577,6 +586,7 @@ export class Director {
     // sem contagem no rótulo: cinema semeia 4,02 M, performance 1,1 M — um
     // número fixo mentiria em metade dos aparelhos
     await this.stage('galaxy');
+    if (this.disposed) return;
     this.galaxy = new Galaxy(
       buildGalaxy(
         20260730,
@@ -604,6 +614,7 @@ export class Director {
     );
     // congela as lâminas (estáticas) em texturas — depois do modo
     await this.stage('layers');
+    if (this.disposed) return;
     this.galaxy.bakeDiscLayers(this.engine.renderer);
     const tauTex = this.galaxy.tauMapTexture;
     this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
@@ -678,6 +689,7 @@ export class Director {
     // e sob tempo virtual o stall síncrono de sempre não custa nada.
     if (!this.shotMode) {
       await this.stage('shaders');
+      if (this.disposed) return;
       const warm = new THREE.Scene();
       // a chave de programa inclui a PRESENÇA do atributo normal
       // (vertexNormals): o quad da nebulosa é PlaneGeometry (tem normal),
@@ -938,9 +950,17 @@ export class Director {
     this.setPhase('journey');
   }
 
-  /** salta para um instante da viagem (segundos) — usado por deep-links */
+  /**
+   * Salta para um instante da viagem (segundos) — usado por deep-links.
+   *
+   * O TETO É PARTE DO CONTRATO: `?t=` vem de fora e não tem limite, e sem
+   * ele o `journeyT` guardava o número cru (99999 com duração 321, medido
+   * no navegador). Ele vaza para o link de retomada, que o HUD monta a
+   * partir do `currentTime`, e faz `onProgress` depender de um `min` a
+   * jusante para não passar de 1. Achado de auditoria externa.
+   */
   seek(t: number) {
-    this.journeyT = t;
+    this.journeyT = Math.min(t, this.rig.duration);
     this.leftDisk = false;
     this.rig.reset(); // a mira suavizada também salta para o instante certo
     this.perturbar();
@@ -1739,7 +1759,15 @@ export class Director {
         this.events.onCaption(index, key.caption, key.sub);
       }
 
-      if (this.journeyT >= this.rig.duration) {
+      // ...e a viagem CONGELADA não termina sozinha. O teto do `seek`
+      // sozinho não bastava — medido: com ele `journeyT` vira `duration`
+      // exato, `>=` continua verdadeiro e a fase virava `end` no quadro
+      // seguinte. Quem chega por `?t=` (que congela, contrato das
+      // capturas) ou `?freeze=1` pediu UM QUADRO parado, e a tela final
+      // não é esse quadro. Congelado ninguém avança: só cai aqui quem
+      // pediu o fim por deep-link. Correr até o fim (`&play=1`, ou o
+      // filme rodando) segue terminando como sempre.
+      if (this.journeyT >= this.rig.duration && !this.freezeJourney) {
         this.setPhase('end');
         this.events.onWarp(0);
       }

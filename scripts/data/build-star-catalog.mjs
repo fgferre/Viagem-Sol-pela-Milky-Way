@@ -115,6 +115,20 @@ async function fetchSource(key) {
     const response = await fetch(source.url);
     if (!response.ok) throw new Error(`${source.url}: HTTP ${response.status}`);
     gz = Buffer.from(await response.arrayBuffer());
+    // VALIDA ANTES DE GRAVAR. O cache era escrito direto do socket: um
+    // download truncado (rede caindo no meio) deixava um .csv.gz
+    // corrompido no .cache, e TODAS as runs seguintes falhavam nele —
+    // até alguém descobrir o `--refresh` manual. Achado de auditoria
+    // externa (2026-08-12). O gunzip é a prova barata de que o arquivo
+    // chegou inteiro, e ele já ia rodar duas linhas abaixo.
+    try {
+      gunzipSync(gz);
+    } catch (error) {
+      throw new Error(
+        `${source.url}: download incompleto ou corrompido (${error.message}) — ` +
+          'nada foi gravado no cache; rode de novo.'
+      );
+    }
     await mkdir(cacheDirectory, { recursive: true });
     await writeFile(cached, gz);
     process.stdout.write(`${source.catalogue}: ${gz.byteLength} bytes da rede.\n`);
