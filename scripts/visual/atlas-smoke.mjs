@@ -299,31 +299,204 @@ try {
     'e o sinal de prontidão da captura volta a ficar pronto no filme'
   );
 
-  // ---- 11: a camada de BAKE recarrega SEM tirar o visitante do modo -
-  // As três camadas `viva: false` do painel (marcadas com ↻) são lidas na
-  // construção do mundo, então mexer nelas recarrega a página de verdade.
-  // O que não pode é a recarga ser pela query CRUA: de dentro do Atlas a
-  // URL costuma estar limpa, e `/?nodisc=1` devolvia a tela de título —
-  // modo, instante do céu e alvo em quadro perdidos. O caminho é o mesmo
-  // que a troca de qualidade já usa (`urlComMomento`).
+  // ---- 11: AS DOZE CAMADAS TROCAM SEM RECARREGAR --------------------
+  // A régua do dono: nenhuma opção do painel de Ajustes recarrega a
+  // página. Até 2026-08-12 três delas (nodisc/nogdust/noglow) recarregavam
+  // por um comentário podre — "são lidas no bake" —, e este bloco julgava
+  // justamente a recarga. Agora ele julga o contrário, e com quatro provas
+  // por camada, todas no MESMO documento:
+  //
+  //   1. não houve navegação  — uma marca posta na `window` sobrevive;
+  //   2. a cena reagiu        — `captura.quadros` volta a ZERO no mesmo
+  //      tique do clique (o `perturbar()` do Director), lido dentro da
+  //      MESMA avaliação para não haver corrida com o rAF;
+  //   3. a URL espelha        — `replaceState`, como as vivas de sempre;
+  //   4. o selo declara       — a camada desligada vira desvio de brilho.
+  //
+  // E de dentro do Atlas, que é onde uma recarga custa mais caro: modo,
+  // instante do céu e alvo em quadro seguem no lugar por construção.
   await sessao.ir('atlas=1&jd=2465000&foco=hd48915&ajustes=1&q=cinema&shot=1');
-  await sessao.js(`(() => {
-    const l = [...document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')]
-      .find((e) => e.textContent.includes('Lâminas do disco'));
-    l.querySelector('input').click();
+  await sessao.js('window.__semRecarga = 1');
+  const camadas = JSON.parse(await sessao.js(`JSON.stringify(
+    [...document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')]
+      .map((e) => e.textContent.trim())
+  )`));
+  conferir(camadas.length === 12, `o painel oferece ${camadas.length} camadas`);
+  conferir(
+    !camadas.some((n) => n.includes('↻')),
+    `nenhuma marcada com ↻ (${camadas.join(' · ')})`
+  );
+
+  // o clique e as leituras na MESMA avaliação: `input.click()` dispara o
+  // onChange do React sincronamente, então `captura.quadros` já é o de
+  // DEPOIS do perturbar() quando esta função retorna
+  const trocar = (indice) => sessao.js(`(() => {
+    const l = document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')[${indice}];
+    const input = l.querySelector('input');
+    const antes = window.__director.captura.quadros;
+    input.click();
+    input.blur();
+    return JSON.stringify({
+      nome: l.textContent.trim(),
+      marcado: input.checked,
+      antes,
+      depois: window.__director.captura.quadros,
+      url: location.search,
+      escondidas: window.__director.selo.camadasEscondidas,
+      recarregou: window.__semRecarga !== 1,
+    });
   })()`);
+
+  const FLAGS = [
+    'nogal', 'nodisc', 'nogdust', 'noglow', 'nocart', 'nonebula',
+    'nowrap', 'nocat', 'nohero', 'nomarker', 'noplan', 'nobh',
+  ];
+  let vivas = 0;
+  for (let i = 0; i < FLAGS.length; i++) {
+    const flag = FLAGS[i];
+    // assentar ANTES de cada clique: é o que dá sentido ao `antes >= 10`
+    // — a cena estava parada e o clique é quem a perturbou
+    await sessao.assentar();
+    const off = JSON.parse(await trocar(i));
+    await sessao.assentar();
+    const on = JSON.parse(await trocar(i));
+    const ok =
+      !off.recarregou && !on.recarregou
+      && off.antes >= 10 && on.antes >= 10 && off.depois === 0 && on.depois === 0
+      && off.marcado === false && on.marcado === true
+      && off.url.includes(`${flag}=1`) && !on.url.includes(`${flag}=1`)
+      && off.escondidas.includes(flag) && !on.escondidas.includes(flag);
+    if (ok) vivas++;
+    conferir(
+      ok,
+      `${flag} (${off.nome}) troca AO VIVO: sem navegação, quadros ${off.antes}→0,`
+        + ` url '${off.url}', selo [${off.escondidas.join(',')}] e volta`
+    );
+  }
+  conferir(vivas === 12, `as ${vivas} de 12 camadas do painel trocam sem reload`);
+
   await sessao.assentar();
   const depoisDaCamada = await sessao.js(`JSON.stringify({
     url: location.search,
     fase: window.__director.captura.fase,
     jd: window.__director.tempo.jd,
     foco: (document.querySelector('.atlas-contexto-nome') || {}).textContent || '',
+    marca: window.__semRecarga,
   })`);
   const dc = JSON.parse(depoisDaCamada);
   conferir(
-    dc.fase === 'atlas' && dc.jd === 2465000 && dc.foco === 'Sirius'
-      && dc.url.includes('nodisc=1'),
-    `camada ↻ recarrega SEM perder o modo, o instante nem o alvo (${depoisDaCamada})`
+    dc.fase === 'atlas' && dc.jd === 2465000 && dc.foco === 'Sirius' && dc.marca === 1,
+    `e o Atlas nem soube: modo, instante e alvo intactos (${depoisDaCamada})`
+  );
+
+  // ---- 12: A TROCA VIVA É BIT-IDÊNTICA AO BOOT COM A MESMA FLAG -----
+  // O protocolo do `ab-identidade`, dentro de uma sessão só: a mesma
+  // vista, o mesmo tier pinado, `?shot=2` (só a cena). Se o caminho vivo
+  // desenhasse UM pixel diferente do caminho de boot, o link copiado
+  // mentiria — e as três camadas novas mexem em `mesh.visible` e no bind
+  // do `uTauMap`, que é onde uma diferença dessas se esconderia.
+  //
+  // `t=293` é a vista de fora (a `faceon` da leva oficial): é a única em
+  // que as três TÊM efeito — lâminas do disco, bojo e extinção por
+  // partícula só pintam com a galáxia inteira em quadro. Por isso o
+  // terceiro veredito: md5 vivo ≠ md5 limpo, senão o teste passaria
+  // comparando duas imagens que ninguém mudou.
+  for (const flag of ['nodisc', 'nogdust', 'noglow']) {
+    await sessao.ir(`t=293&${PIN}&${flag}=1`);
+    const noBoot = await sessao.md5();
+    await sessao.ir(`t=293&${PIN}`);
+    const limpo = await sessao.md5();
+    await sessao.js(`window.__director.setLayerHidden('${flag}', true)`);
+    await sessao.assentar();
+    const aoVivo = await sessao.md5();
+    conferir(
+      aoVivo === noBoot,
+      `?${flag}=1: boot e troca viva dão o MESMO pixel (${noBoot} vs ${aoVivo})`
+    );
+    conferir(
+      limpo !== aoVivo,
+      `e a camada REALMENTE muda a vista de fora (limpo ${limpo})`
+    );
+  }
+
+  // ---- 13: o SLIDER DE VOLTA AO PADRÃO desarma o latch --------------
+  // `setExposure` LIGA o latch `expOverride` (é o que faz o valor
+  // escolhido sobreviver ao quadro seguinte). O slider o armava até no
+  // 1,02: a tela ficava em 1,02 fixo enquanto a MESMA URL — já sem
+  // `?exp=` — recarregava na auto-exposição 1,02+0,03·galaxyFade, que na
+  // vista externa é 1,05. Duas telas para uma URL só. As provas: o número
+  // vivo do renderer, o latch do selo, a URL, e o PIXEL da recarga.
+  const EXPOSICAO = 'window.__director.engine.renderer.toneMappingExposure';
+  const mexerNoSlider = (valor) => sessao.js(`(() => {
+    const el = document.querySelector('[data-dialogo="ajustes"] input[type=range]');
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    set.call(el, '${valor}');
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return el.value;
+  })()`);
+
+  await sessao.ir('t=293&ajustes=1&q=cinema&shot=1');
+  await sessao.assentar();
+  const autoAntes = Number(await sessao.js(EXPOSICAO));
+  conferir(
+    Math.abs(autoAntes - 1.05) < 1e-6,
+    `a vista externa nasce na auto-exposição (${autoAntes.toFixed(4)})`
+  );
+  await mexerNoSlider('1.4');
+  await sessao.assentar();
+  const manual = JSON.parse(await sessao.js(`JSON.stringify({
+    exp: ${EXPOSICAO}, latch: window.__director.selo.exposicaoManual, url: location.search })`));
+  conferir(
+    Math.abs(manual.exp - 1.4) < 1e-6 && manual.latch === true
+      && manual.url.includes('exp=1.4'),
+    `1,40 no slider: tela em ${manual.exp.toFixed(4)}, latch ligado, url '${manual.url}'`
+  );
+  await mexerNoSlider('1.02');
+  await sessao.assentar();
+  const devolta = JSON.parse(await sessao.js(`JSON.stringify({
+    exp: ${EXPOSICAO}, latch: window.__director.selo.exposicaoManual, url: location.search })`));
+  conferir(
+    Math.abs(devolta.exp - 1.05) < 1e-6 && devolta.latch === false
+      && !devolta.url.includes('exp='),
+    `de volta a 1,02: a AUTO-exposição volta (${devolta.exp.toFixed(4)}), latch desligado,`
+      + ` url '${devolta.url}'`
+  );
+  const telaDevolta = await sessao.md5();
+  await sessao.ir(devolta.url.replace(/^\?/, ''));
+  const recarregada = await sessao.md5();
+  conferir(
+    telaDevolta === recarregada,
+    `e a URL sem ?exp= reproduz a tela, pixel a pixel (${telaDevolta} vs ${recarregada})`
+  );
+
+  // ---- 14: escolha manual de qualidade grava ?q=, cinema inclusive --
+  // Tom e exposição podem omitir o padrão porque o padrão deles é
+  // CONSTANTE; o de qualidade não é — sem `?q=` quem decide na recarga é
+  // o storage (`tierQueRodou`, alocação medida) ou a detecção. Apagando o
+  // parâmetro no clique em Cinema, um `alta` medido na visita passada
+  // sobrepunha a escolha do visitante.
+  await sessao.ir('t=100&ajustes=1&q=alta&shot=1');
+  await sessao.js('window.__marcaQ = 1');
+  await sessao.js(`(() => [...document.querySelectorAll('[data-dialogo="ajustes"] button')]
+    .find((b) => b.textContent.trim() === 'cinema').click())()`);
+  // a recarga destrói o contexto de JS no meio do caminho: perguntar
+  // durante a troca ERRA, e é por isso que a espera engole o erro em vez
+  // de morrer nele. O documento novo se anuncia pela marca que sumiu.
+  for (let i = 0; i < 100; i++) {
+    const pronta = await sessao
+      .js('String(window.__marcaQ) + "|" + (window.__director ? 1 : 0)')
+      .catch(() => '');
+    if (pronta === 'undefined|1') break;
+    await sleep(200);
+  }
+  await sessao.assentar();
+  const depoisDoTier = JSON.parse(await sessao.js(`JSON.stringify({
+    url: location.search, tier: window.__director.captura.tier, marca: window.__marcaQ })`));
+  conferir(
+    depoisDoTier.url.includes('q=cinema') && depoisDoTier.tier === 'cinema'
+      && depoisDoTier.marca === undefined,
+    `clicar em Cinema grava ?q=cinema na URL (tier '${depoisDoTier.tier}',`
+      + ` url '${depoisDoTier.url}')`
   );
 
   await sessao.reduzirMovimento();

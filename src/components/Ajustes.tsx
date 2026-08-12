@@ -1,13 +1,15 @@
 // ============================================================
 // Painel de ajustes — o que é GOSTO vira controle, não constante.
 //
-// Duas classes de ajuste, tratadas diferente de propósito:
+// AO VIVO: tom, exposição, tamanho do texto e as DOZE camadas — o tick
+// lê essas flags a cada quadro (`setLayerHidden`), então a troca é
+// imediata. As três últimas a recarregar (nodisc/nogdust/noglow) viraram
+// vivas em 2026-08-12: a alegação de que eram "lidas no bake" era falsa
+// (o bake roda inteiro de qualquer jeito; elas só governam visibilidade
+// e bind por quadro).
 //
-//   ao vivo   tom, exposição, qualidade e as camadas com viva:true —
-//             o tick do Director lê essas flags a cada quadro
-//             (setLayerHidden), então a troca é imediata, sem reload.
-//   recarrega só nodisc/nogdust/noglow: lidas no BAKE do mundo, na
-//             construção — religá-las exige reconstruir.
+// RECARREGA: só a QUALIDADE, e por motivo real — o tier do Sol e a
+// população da galáxia são decididos na construção (ver `changeQuality`).
 //
 // A URL continua sendo a fonte de verdade: quem escreve nela é o App, e o
 // painel só reflete e edita. Assim qualquer configuração vira link, e a
@@ -171,9 +173,13 @@ export function Ajustes({
 
       <div className="ajustes-secao">
         <h3>Camadas</h3>
+        {/* A nota SAI DA TABELA, não de uma frase decorada à mão: hoje as
+            doze trocam ao vivo, e no dia em que voltar a haver uma
+            `viva: false` o ↻ dela e o aviso aparecem juntos. */}
         <p className="ajustes-nota">
-          Trocam ao vivo; as marcadas com ↻ recarregam a página (são
-          decididas na construção do mundo).
+          {CAMADAS.some((c) => !c.viva)
+            ? 'Trocam ao vivo; as marcadas com ↻ recarregam a página (são decididas na construção do mundo).'
+            : 'Trocam ao vivo, sem recarregar a página.'}
         </p>
         {CAMADAS.map((c) => {
           const ligado = !escondidas.has(c.flag);

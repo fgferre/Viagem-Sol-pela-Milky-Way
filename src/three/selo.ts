@@ -242,9 +242,12 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('plan', 'camada de planetas forçada'),
   // --- camadas (as do painel e as só-URL) ---------------------------
   camada('nogal'),
-  camada('nodisc', 'recarregar'),
-  camada('nogdust', 'recarregar'),
-  camada('noglow', 'recarregar'),
+  // as três da galáxia deixaram de recarregar em 2026-08-12: o setter da
+  // `Galaxy` as troca por quadro, então a linha BRILHO do selo as desfaz
+  // no lugar, como qualquer outra camada
+  camada('nodisc'),
+  camada('nogdust'),
+  camada('noglow'),
   camada('nocart'),
   camada('nonebula'),
   camada('nowrap'),

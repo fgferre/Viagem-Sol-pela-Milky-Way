@@ -492,14 +492,20 @@ export default function App() {
    * da viagem seria pior que a diferença). Trocar só ao vivo entregava um
    * "performance" pela METADE — engine em performance, Sol ainda em high e
    * 2,7 M vértices — e ainda deixava o link copiado sem a qualidade.
-   * Mesmo tratamento que o painel já dá às camadas não-vivas: grava na URL e
-   * recarrega. Serve os dois controles (seletor do HUD e botões do painel).
+   * Grava na URL e recarrega — e serve os dois controles (seletor do HUD e
+   * botões do painel).
+   *
+   * O `?q=` É SEMPRE ESCRITO, cinema inclusive. Tom e exposição podem
+   * omitir o valor padrão porque o padrão deles é CONSTANTE; o de
+   * qualidade não é — sem `?q=` quem decide é o storage (`tierQueRodou`,
+   * alocação medida) ou a detecção, e um `alta` medido na visita passada
+   * sobrepunha o clique em Cinema na recarga seguinte. URL sem `?q=` não
+   * diz o que a tela mostra, e escolha manual tem de sobreviver ao link.
    */
   const changeQuality = (q: QualityLevel) => {
     if (q === quality) return;
     const url = urlComMomento();
-    if (q === 'cinema') url.searchParams.delete('q');
-    else url.searchParams.set('q', q);
+    url.searchParams.set('q', q);
     window.location.assign(url.toString());
   };
 
@@ -550,9 +556,20 @@ export default function App() {
     window.history.replaceState(null, '', comParam('tone', t === 'aces' ? null : t));
   };
 
+  /**
+   * O SLIDER DE VOLTA AO PADRÃO DESARMA O LATCH. `setExposure` LIGA o
+   * `expOverride` do Director (é o que faz o valor escolhido sobreviver
+   * ao quadro seguinte), e o slider o armava até no 1,02 — a tela ficava
+   * em 1,02 fixo enquanto a URL, já sem `?exp=`, recarregava na
+   * auto-exposição 1,02+0,03·galaxyFade (1,05 na vista externa). Duas
+   * telas para a mesma URL. No padrão o caminho é o de volta, o mesmo que
+   * a linha BRILHO do selo usa.
+   */
   const trocarExposicao = (v: number) => {
     setExposicao(v);
-    directorRef.current?.setExposure(v);
+    const d = directorRef.current;
+    if (v === EXPOSICAO_PADRAO) d?.limparExposicaoManual();
+    else d?.setExposure(v);
     window.history.replaceState(
       null,
       '',
@@ -628,7 +645,13 @@ export default function App() {
     const camada = CAMADAS.find((c) => c.flag === flag);
     if (!camada) return;
     if (!camada.viva) {
-      // Lidas no bake do mundo — reload de verdade. E pelo `urlComMomento`,
+      // O RAMO DE RECARGA, hoje sem nenhuma camada: as três que passavam
+      // por aqui (nodisc/nogdust/noglow) viraram vivas em 2026-08-12. Ele
+      // fica como o outro lado do contrato `viva` — uma camada nova que
+      // realmente precise reconstruir o mundo cai aqui, com o ↻ do painel
+      // junto —, e é a mesma rota que a troca de qualidade usa.
+      //
+      // Reconstruir o mundo — reload de verdade. E pelo `urlComMomento`,
       // que é o que a troca de qualidade e o "voltar ao brilho real" já
       // fazem: sem ele, desmarcar uma camada ↻ de DENTRO do Atlas (onde a
       // URL costuma estar limpa) recarregava em `/?nodisc=1` e devolvia o

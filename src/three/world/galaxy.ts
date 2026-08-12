@@ -677,11 +677,25 @@ export class Galaxy {
   private dwarfMesh!: THREE.Mesh;
   private static scratch = new THREE.Vector3();
   private static dbg = new URLSearchParams(window.location.search);
-  // flags lidos UMA vez — URLSearchParams.has() por frame é lixo evitável
+  // AS TRÊS DA GALÁXIA. A URL só as SEMEIA no boot (ler `has()` por quadro
+  // seria lixo evitável); daí em diante quem manda é `setLayerHidden`, e
+  // elas são VIVAS — nenhuma é lida no bake. `bakeDiscLayers` roda
+  // incondicionalmente, o τRT inclusive; o que estas três governam é
+  // `mesh.visible` e o bind de `uTauMap`, reescritos por quadro no
+  // `update`. (Até 2026-08-12 três comentários da casa diziam o
+  // contrário e cobravam uma recarga por camada.)
   private showGDust = !Galaxy.dbg.has('nogdust');
   private showGlow = !Galaxy.dbg.has('noglow');
   /** ?nodisc=1 — só as partículas, para medir a divisão de fluxo */
   private showDisc = !Galaxy.dbg.has('nodisc');
+  /**
+   * A 1×1 zerada do `uTauMap` (τ⊥ = 0 ⇒ exp(0) = 1): o valor de REPOUSO
+   * do uniform — antes do bake e sempre que a extinção por partícula
+   * está desligada. Instância única, e não uma textura nova por troca:
+   * o setter alterna entre ELA e o τRT, e uma alocação por clique seria
+   * vazamento com cara de conveniência.
+   */
+  private readonly tauVazio = Galaxy.emptyTauMap();
 
   /** 1×1 sem cobertura (A=128: warp neutro) — 100% procedural. */
   static emptyDustMap(): THREE.DataTexture {
@@ -811,9 +825,9 @@ export class Galaxy {
       uFade: { value: 0 },
       uMaxPx: { value: maxPx },
       // extinção por partícula: canal A da lâmina central bakeada. Nasce
-      // com uma textura 1×1 A=0 (extinção nula) — o app funciona antes do
-      // bake, e ?nogdust=1 simplesmente não faz o bind.
-      uTauMap: { value: Galaxy.emptyTauMap() },
+      // com a 1×1 A=0 (extinção nula) — o app funciona antes do bake, e
+      // é para ela que `?nogdust=1` (ou o clique no painel) volta.
+      uTauMap: { value: this.tauVazio },
       uEX: { value: EX.clone() },
       uEY: { value: EY.clone() },
       uEZ: { value: EZ.clone() },
@@ -1013,11 +1027,42 @@ export class Galaxy {
     quad.geometry.dispose();
     renderer.setRenderTarget(prev);
 
-    // O 8º bake (uTauExport=1) fornece o τ⊥ das partículas.
-    // ?nogdust=1 pula o bind e mantém a 1×1 zerada.
-    if (this.showGDust && this.tauRT) {
-      this.brightMat.uniforms.uTauMap.value = this.tauRT.texture;
-    }
+    // O 8º bake (uTauExport=1) fornece o τ⊥ das partículas — ele é
+    // assado SEMPRE, esteja a camada ligada ou não. Quem decide o que o
+    // uniform enxerga é o bind, e ele tem um dono só.
+    this.ligarTauMap();
+  }
+
+  /** o bind do τ⊥ num lugar só: o mapa assado ou a 1×1 de repouso. */
+  private ligarTauMap() {
+    this.brightMat.uniforms.uTauMap.value =
+      this.showGDust && this.tauRT ? this.tauRT.texture : this.tauVazio;
+  }
+
+  /**
+   * TROCA AO VIVO uma das três camadas da galáxia. Elas são as que o
+   * painel marcava com ↻ por um motivo que nunca existiu: nada aqui é
+   * lido no bake (ver o comentário das flags, acima). Desligar é
+   * `mesh.visible = false` no quadro seguinte e, no caso da extinção por
+   * partícula, o uniform voltando à 1×1 zerada.
+   *
+   * Devolve `true` quando a flag é desta casa — é assim que o Director
+   * roteia sem repetir a lista.
+   *
+   * O QUE ELA NÃO ALCANÇA, dito: `?forgetau=1` entrega o MESMO τ⊥ às
+   * forjas, e esse bind é feito uma vez no `init` (director.ts). A porta
+   * segue sendo decisão de boot (varredura de dosagem), então trocar
+   * `nogdust` ao vivo com ela ligada deixa as forjas com o mapa que
+   * pegaram no carregamento.
+   */
+  setLayerHidden(flag: string, hidden: boolean): boolean {
+    if (flag === 'nodisc') this.showDisc = !hidden;
+    else if (flag === 'noglow') this.showGlow = !hidden;
+    else if (flag === 'nogdust') {
+      this.showGDust = !hidden;
+      this.ligarTauMap();
+    } else return false;
+    return true;
   }
 
   /** τ⊥ da coluna, para quem mais precisar da mesma extinção (forges). */
@@ -1137,6 +1182,7 @@ export class Galaxy {
     this.discMats.forEach((material) => material.dispose());
     this.discRTs.forEach((rt) => rt.dispose());
     this.tauRT?.dispose();
+    this.tauVazio.dispose();
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) o.geometry.dispose();

@@ -442,6 +442,12 @@ export class Director {
       // domínio profundo (janelas deep, near piecewise, voo proporcional)
       // é fundação sem porta, como o near — emenda D11a.
       'noplan',
+      // AS TRÊS DA GALÁXIA. Quem as LÊ é a Galaxy (por quadro, no
+      // `update`); elas entram no conjunto porque o `hide` é o que o
+      // SELO declara — sem esta linha, chegar com `?nodisc=1` apagava
+      // uma camada e o selo dizia "brilho real", enquanto o mesmo
+      // desligamento pelo painel se declarava. Uma opção, um veredito.
+      'nodisc', 'nogdust', 'noglow',
     ]) {
       if (this.debug.has(k)) this.hide.add(k);
     }
@@ -587,6 +593,12 @@ export class Director {
       dustBake.texture,
       structureBake.texture
     );
+    // O QUE JÁ ESTAVA DESLIGADO chega junto. A galáxia semeia as flags
+    // dela da URL, como sempre, e isto só cobre a corrida do painel
+    // aberto DURANTE o carregamento (`?ajustes=1`): sem esta linha, o
+    // clique sumia no objeto que ainda não existia. Idempotente para
+    // quem veio da URL, e mudo para as flags que não são da galáxia.
+    for (const f of this.hide) this.galaxy.setLayerHidden(f, true);
     this.galaxy.setCartography(
       this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
     );
@@ -958,9 +970,12 @@ export class Director {
   }
 
   /**
-   * Troca AO VIVO uma camada cuja flag o tick lê a cada quadro — o
-   * painel de ajustes não precisa recarregar a página para elas.
-   * (nodisc/nogdust/noglow seguem exigindo reload: são lidas no bake.)
+   * Troca AO VIVO uma camada — TODAS as do painel, desde 2026-08-12.
+   * As três da galáxia (nodisc/nogdust/noglow) recarregavam a página por
+   * um motivo que nunca existiu ("são lidas no bake"): o bake roda
+   * inteiro de qualquer jeito, e elas só governam visibilidade e bind
+   * por quadro. Aqui elas são ROTEADAS para quem as lê — a Galaxy —, sem
+   * o Director repetir a lista de flags dela.
    */
   setLayerHidden(flag: string, hidden: boolean) {
     // antes do desvio: o ramo da nebulosa também muda a tela, e sair por
@@ -972,6 +987,7 @@ export class Director {
     }
     if (hidden) this.hide.add(flag);
     else this.hide.delete(flag);
+    this.galaxy?.setLayerHidden(flag, hidden);
   }
 
   // ---- pausar-e-olhar (viagem congelada) -------------------------
