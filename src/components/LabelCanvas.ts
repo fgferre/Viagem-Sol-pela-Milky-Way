@@ -59,8 +59,23 @@ export class LabelCanvas {
       const anchorY = label.y * this.height;
       // O HUD é parte da composição: labels nunca disputam espaço com
       // legenda/progresso nem com os controles no canto superior direito.
-      if (anchorY > this.height * 0.76) continue;
-      if (anchorY < this.height * 0.17 && anchorX > this.width * 0.62) continue;
+      // As duas áreas reservadas CRESCEM com o tamanho do texto (F6): o
+      // que as delimita é a faixa de baixo e a barra de controles, e as
+      // duas são caixas de `rem`. A forma `x − c·(k−1)` não é enfeite: em
+      // `ui = 1` o segundo termo é ZERO e o primeiro é o número de
+      // sempre, bit a bit — o desenho do filme não muda um pixel.
+      // O teste é pela ÂNCORA, como sempre foi: um rótulo cujo TEXTO
+      // avança para dentro da área reservada ainda passa (visível com
+      // `?ui=1,4`, onde nome e barra crescem um na direção do outro).
+      // Corrigir isso é mudar onde os rótulos caem NO FILME, e essa é
+      // decisão de composição, não de escala de UI.
+      if (anchorY > this.height * (0.76 - 0.24 * (k - 1))) continue;
+      if (
+        anchorY < this.height * 0.17 * k &&
+        anchorX > this.width * (0.62 - 0.38 * (k - 1))
+      ) {
+        continue;
+      }
       const toLeft = anchorX > this.width * 0.72;
       const direction = toLeft ? -1 : 1;
       const textX = anchorX + direction * 18 * k;
