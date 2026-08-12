@@ -22,6 +22,7 @@
 // eles imprimiam. Regra: quem sobe Chrome mata pelo `user-data-dir`, sempre.
 import { existsSync, rmSync, readFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -189,6 +190,177 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
     }
     await dorme(100);
   }
+}
+
+/**
+ * UMA SESSÃO DE CHROME VIVA, dirigida por CDP — a base dos harnesses que
+ * INTERAGEM com o app (o smoke do portal, o juiz de a11y), em oposição a
+ * `capturarCDP`, que sobe um Chrome por vista e o mata em seguida.
+ *
+ * Por que uma sessão só: comparar md5 entre processos diferentes não prova
+ * portal nenhum (GPU e contexto mudam), e um juiz de foco precisa da MESMA
+ * página entre um Tab e o seguinte. Nasceu dentro do `atlas-smoke.mjs` na
+ * F1 da Onda 5 e subiu para cá na F2, quando o segundo consumidor apareceu:
+ * duas cópias do contrato de lançamento é exatamente o defeito que o
+ * cabeçalho deste arquivo existe para não repetir.
+ */
+export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefixo = 'sessao' } = {}) {
+  const [w, h] = String(janela).split('x');
+  const perfil = resolve(tmpdir(), `${prefixo}-${process.pid}`);
+  const chrome = spawn(CHROME, [
+    ...GPU_FLAGS,
+    '--hide-scrollbars', '--no-first-run', '--mute-audio',
+    '--force-device-scale-factor=1', `--window-size=${w},${h}`,
+    `--user-data-dir=${perfil}`, '--remote-debugging-port=0', 'about:blank',
+  ], { stdio: 'ignore' });
+  const porta = await portaDoPerfil(perfil);
+  let alvo = null;
+  for (let i = 0; i < 100 && !alvo; i++) {
+    try {
+      const r = await fetch(`http://127.0.0.1:${porta}/json/list`).then((x) => x.json());
+      alvo = r.find((t) => t.type === 'page')?.webSocketDebuggerUrl;
+    } catch { /* Chrome ainda subindo */ }
+    if (!alvo) await dorme(200);
+  }
+  if (!alvo) throw new Error('CDP não respondeu');
+  const ws = new WebSocket(alvo);
+  await new Promise((r, j) => {
+    const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
+    ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
+    ws.addEventListener('error', () => { clearTimeout(relogio); j(new Error('WebSocket falhou')); });
+  });
+  let seq = 0;
+  const esperando = new Map();
+  let cartografia = false;
+  // O QUE O APP GRITA. Só o que o app diz por conta própria
+  // (`console.error`/`console.warn` e exceção não capturada) — falha de
+  // rede o navegador registra por conta dele, e cobrar isso do app seria
+  // cobrar o contrário do que a degradação honesta faz. É esta lista que
+  // o gate "sem rede, zero erro de console" da F4 lê.
+  const gritos = [];
+  ws.addEventListener('message', (e) => {
+    const m = JSON.parse(e.data);
+    if (m.id && esperando.has(m.id)) { esperando.get(m.id)(m); esperando.delete(m.id); }
+    else if (m.method === 'Runtime.consoleAPICalled') {
+      const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
+      if (txt.includes('[cartografia]')) cartografia = true;
+      if (m.params.type === 'error' || m.params.type === 'warning') {
+        gritos.push(`console.${m.params.type}: ${txt}`);
+      }
+    } else if (m.method === 'Runtime.exceptionThrown') {
+      gritos.push(`exceção: ${m.params.exceptionDetails?.text ?? '?'}`);
+    }
+  });
+  const send = (method, params = {}) => new Promise((res, rej) => {
+    const n = ++seq;
+    esperando.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));
+    ws.send(JSON.stringify({ id: n, method, params }));
+  });
+  await send('Page.enable');
+  await send('Runtime.enable');
+  await send('Page.addScriptToEvaluateOnNewDocument', {
+    source: 'window.__f=0;const o=window.requestAnimationFrame.bind(window);'
+      + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
+  });
+  return {
+    send,
+    fechar: () => {
+      chrome.kill();
+      matarPerfil(perfil);
+      try { rmSync(perfil, { recursive: true, force: true }); } catch { /* preso */ }
+    },
+    /** o que o app gritou desde a última limpeza (ver `gritos`) */
+    gritos: () => [...gritos],
+    limparGritos: () => {
+      gritos.length = 0;
+    },
+    /**
+     * CORTA A REDE para os padrões dados — é assim que se prova o
+     * caminho "sem efeméride" com o mesmo binário, sem mexer no app nem
+     * no servidor. Lista vazia religa tudo.
+     */
+    bloquear: async (padroes) => {
+      await send('Network.enable');
+      await send('Network.setBlockedURLs', { urls: padroes });
+    },
+    ir: async (query) => {
+      cartografia = false;
+      await send('Page.navigate', { url: `${app}/?${query}` });
+      // o rAF contador morre com o documento; a navegação recria tudo
+      return esperarAssentar({ send, cartografia: () => cartografia, quadros: 700, teto: 180000 });
+    },
+    assentar: () =>
+      esperarAssentar({ send, cartografia: () => true, quadros: 700, teto: 180000 }),
+    /** clique curto de verdade — o gesto que o Director escuta */
+    clicar: async (x, y) => {
+      const base = { x, y, button: 'left', clickCount: 1, buttons: 1, pointerType: 'mouse' };
+      await send('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
+      await send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased', buttons: 0 });
+    },
+    /**
+     * Tecla de verdade, com código nativo — `el.dispatchEvent(new
+     * KeyboardEvent('keydown'))` não move o foco: só o evento REAL faz o
+     * Chrome andar com o Tab, e é justamente o andar do foco que o juiz
+     * de a11y mede.
+     */
+    teclar: async (nome, { shift = false } = {}) => {
+      // as setas entraram na F3 (a listbox da paleta de busca escolhe
+      // com elas); o resto é da F2
+      const TECLAS = {
+        Tab: 9, Escape: 27, Enter: 13,
+        ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40,
+      };
+      const codigo = TECLAS[nome];
+      if (!codigo) throw new Error(`tecla desconhecida: ${nome}`);
+      const base = {
+        key: nome,
+        code: nome,
+        windowsVirtualKeyCode: codigo,
+        nativeVirtualKeyCode: codigo,
+        modifiers: shift ? 8 : 0,
+      };
+      await send('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown' });
+      await send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+    },
+    /**
+     * DIGITA texto tecla a tecla, com `text` no evento — que é o que faz
+     * o Chrome inserir o caractere e disparar o `input` que o React
+     * escuta. Nasceu na F3 para a paleta de busca, e é tecla a tecla de
+     * propósito: `Input.insertText` põe a palavra inteira de uma vez, e
+     * é justamente a conta POR TECLA que o gate da busca mede.
+     */
+    digitar: async (texto) => {
+      for (const ch of texto) {
+        const vk = ch.toUpperCase().charCodeAt(0);
+        const base = {
+          key: ch,
+          text: ch,
+          unmodifiedText: ch,
+          windowsVirtualKeyCode: vk,
+          nativeVirtualKeyCode: vk,
+        };
+        await send('Input.dispatchKeyEvent', { ...base, type: 'keyDown' });
+        await send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+      }
+    },
+    // o Director lê `prefers-reduced-motion` UMA vez, no construtor —
+    // então a emulação tem de estar de pé antes da navegação seguinte
+    reduzirMovimento: () =>
+      send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      }),
+    js: async (expr) => {
+      const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
+      if (r.exceptionDetails) throw new Error(`js: ${r.exceptionDetails.text}`);
+      return r.result.value;
+    },
+    md5: async () => {
+      const shot = await send('Page.captureScreenshot', { format: 'png' });
+      const buf = Buffer.from(shot.data, 'base64');
+      if (buf.length < 20000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
+      return createHash('md5').update(buf).digest('hex').slice(0, 12);
+    },
+  };
 }
 
 /**

@@ -2600,6 +2600,60 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
   defeitos que o matavam, e o que cada um contaminava, estão na seção "Os gates não
   rodavam nesta máquina", logo abaixo.
 
+- **Os QUATRO juízes de navegador que a Onda 5 acrescentou**, ao lado do
+  `ab-identidade` e pelo mesmo driver CDP (`chrome.mjs`). O contrato de entrada é o
+  mesmo nos quatro: **o dev server já tem de estar no ar** (`npm run dev` — nenhum
+  deles sobe servidor; cada um sobe o SEU Chrome, com perfil próprio, e o mata no
+  fim), leem só `APP_URL` e `JANELA` (padrão `1200x900`), **não escrevem um byte em
+  disco** — nem no ledger `docs/reference/EVOLUCAO.md`, nem em `capturas/`: os md5
+  deles vivem em memória — e saem com status ≠ 0 na primeira falha. Os tempos são
+  desta máquina, 2026-08-12:
+
+  ```
+  node scripts/visual/a11y.mjs         # 139 asserções · 2,2 min
+  node scripts/visual/atlas-smoke.mjs  #  42 asserções · 1,7 min
+  node scripts/visual/voo-smoke.mjs    #  25 asserções · 0,7 min
+  node scripts/visual/busca-smoke.mjs  #  24 asserções · 1,3 min
+  ```
+
+  - **`a11y.mjs`** prova o contrato de `src/lib/dialogFocus.ts` em CADA
+    `[data-abre-dialogo]` que existir nas três fases (`journey`/`atlas`/`free`):
+    foco entra, foco preso, `Esc` fecha, foco volta ao gatilho, `aria-expanded`
+    volta — mais nenhum diálogo órfão, nenhuma `aria-live` inválida, a linha de
+    contexto viva de verdade, o selo dizendo o que a vista é e voltando ao real
+    pela linha-controle, e o `?ui=` crescendo os `font-size` do HUD (inclusive os
+    nove `clamp(rem, vw, rem)`, dois deles só alcançáveis a 600 px com zoom de
+    200%) sem quebrar o HUD e sem sujar o storage. Roda com `shot=1`: o `shot=2`
+    apagaria justamente o HUD que ele julga — é por isso que o juiz não é o
+    `rodada.mjs`.
+  - **`atlas-smoke.mjs`** prova o portal em PIXEL (ida e volta em t=10/100/250:
+    `journeyT` exato por `Object.is` e md5 igual antes/depois), a captura dentro do
+    Atlas por `via=sinal`, o Sol reproduzível nos três instantes, a precedência das
+    portas, o véu e o `reduced-motion`, o rótulo que desenha e o clique que
+    enquadra, `?jd=EPOCA` neutro bit a bit, o caminho SEM REDE (bloqueando
+    `*efemerides*`: md5 exato do retrato, badge honesto, ZERO grito de console) e o
+    relógio do céu que para junto com o "Partir".
+  - **`voo-smoke.mjs`** prova o convite dos três gestos (só na primeira entrada,
+    `conviteVisto` gravado, não volta na recarga), o furo do Spotlight ancorado no
+    retângulo MEDIDO do alvo, o opt-in da captura de ponteiro, o backoff depois de
+    três `pointerlockerror` e a volta ao reentrar no modo, o unlock soltando TODAS
+    as teclas e ninguém disputando o `Esc`.
+  - **`busca-smoke.mjs`** prova o `?foco=` (abre com o alvo em quadro, é idempotente
+    e não chuta quando não acha), a ida e volta pelo escritor VIVO de URL, o estado
+    vazio honesto, o verbo da paleta por fase, a latência POR TECLA medida de dois
+    jeitos, que a paleta não vaza no `?shot=2` e que os dez corpos do sistema são
+    alvo.
+
+- **Duas notas de protocolo que a Onda 5 comprou, e valem para toda leva futura.**
+  (1) **A/B perto do Sol SÓ com `EXTRA='&nobloom=1'`**: com bloom, `ua150` e `ua40`
+  devolvem md5 IGUAIS com céus DIFERENTES — o clarão satura o quadro e o md5 fica
+  cego. É a mesma régua com que a Onda 4 mede pixel de planeta, agora valendo para o
+  gate de identidade. (2) **Leva com `EXTRA` ou `JANELA` NÃO pisa na baseline
+  oficial**: o arquivo de estado passou a levar sufixo derivado das duas
+  (`ab-identidade-{lado}{sufixo}.json`, sufixo vazio na leva oficial), e os filhos do
+  `JOBS` herdam o sufixo. Antes disso, quem rodasse um A/B de knob apagava a baseline
+  dos 18 md5 e só descobria na leva de fechamento, a ~25 min de GPU de distância.
+
 O `ab-identidade` guarda os md5 em `TMPDIR/ab-identidade-{antes,depois}.json`, fora do
 repo e fora do git. Duas consequências que já quase custaram um diagnóstico errado:
 
@@ -3322,6 +3376,78 @@ que governa o futuro:
   profundo" de graça; `?nosun` não governa o Sol-ponto (governa `noplan`);
   BV_SOL/SOL_BV e PONTO_ZERO_SOL_PC redigitados com igualdade pinada —
   unificação é candidata da Onda 6.
+
+### Onda 5 — FEITA (2026-08-12)
+
+O modo **Atlas** existe: mesmo Director, mesma cena, outro escritor de câmera e
+outro HUD. O registro integral está no **Estado da Onda 5 do PLANO-ATLAS §4**
+(entregas por fase, as sete decisões de abertura transcritas, os conflitos com o
+desenho e a ata dos dois painéis); aqui fica o que **governa o futuro**:
+
+- **A fase 'atlas' é fase de verdade, e o portal devolve o filme EXATO.**
+  Entra-se pelo pause-look (e por `?atlas=1`); "Partir" restaura os cinco de uma
+  vez — `journeyT`, `lookYaw`/`lookPitch`, o latch `leftDisk` e o `paused` (que
+  tem dois donos: `freezeJourney` no Director e `paused` no rig). O gate mede
+  PIXEL, não só o escalar: md5 do quadro antes de entrar igual ao de depois de
+  partir. Quem mexer no portal recontrata esses cinco.
+- **Fase nova decide por MAPA, não por cadeia `if`.** `src/three/fases.ts` tem
+  os dois mapas `satisfies Record<Phase, …>` (quem escreve a câmera; que peças
+  do HUD montam) e o inventário PINADO dos 28 pontos que decidiam por fase, com
+  o comportamento de cada um em 'atlas' declarado. **Fase nova = o compilador
+  cobra**, em vez de a leitura atenta.
+- **O selo de honestidade deriva de REGISTRO ÚNICO com teste de completude**
+  (`src/three/selo.ts`, 47 caminhos hoje). A varredura lê os nove arquivos que
+  governam a imagem e cobra entrada para cada porta de URL lida por literal e
+  para cada camada oferecida: **porta nova na URL é OBRIGADA a se declarar**, e
+  quem criar uma porta descobre onde, porque o teste quebra com o endereço na
+  mão. Fora da tabela, parâmetro de URL desconhecido já conta como desvio — o
+  selo, na dúvida, declara em vez de prometer.
+- **Diálogo novo NASCE em `src/lib/dialogFocus.ts` ou não é julgado.** O juiz
+  (`scripts/visual/a11y.mjs`) não conhece componente nenhum: ele varre os
+  `data-abre-dialogo` que existirem, abre cada um e cobra as quatro promessas
+  (foco entra, foco preso, `Esc` fecha, foco volta ao gatilho). Quem escrever
+  diálogo fora do módulo não tem como se declarar, e o silêncio passa.
+- **Overlay novo é filho DIRETO de `.hud-root`.** A regra do `.bare-mode`
+  (`> *:not(.scene-canvas)`) só alcança filhos diretos: qualquer coisa
+  portalizada para o `body` apareceria nas 18 vistas oficiais. É a diferença
+  entre uma leva verde e um dia de diagnóstico.
+- **O relógio do céu é do Director** (`jd` + `rate`, escada log `10^i` de 8
+  degraus, AO VIVO, janela 1950–2050 TDB com badge). A **camada de planetas
+  continua sem relógio**: ela ganhou um segundo caminho (`escreverInstante`,
+  que escreve `position` E `aMagBase`) chamado de fora, e o teste de
+  texto-fonte que proíbe `Date` naquele arquivo segue valendo palavra por
+  palavra — a regra D8 da Onda 3 sai intacta. Sem chamador, a camada é
+  exatamente a da Onda 4.
+- **Enquadramento privilegiado: o eixo solar mede da direção ILUMINADA.** O
+  doador pagou esse bug com dor e deixou o comentário; a casa quase o repetiu —
+  faltava o `negate()`, e com ele invertido os 30° viravam ângulo de fase de
+  150° (6,7% do disco aceso) e o grampo dos 70°, que promete 67% de disco,
+  garantia no máximo 33%. Achado pelo painel de olhos frescos, consertado em
+  `69e1cf5` (`atlasRig.ts:353`). **Junto veio a esfera de abertura do SISTEMA**:
+  centrada no Sol e com o raio da órbita mais externa — pendurada no corpo, ela
+  não contém o sistema (um corpo do lado oposto da mesma órbita fica a ~71 UA
+  do centro dela).
+- **Gradação por contexto = ESTADO no Post, neutro EXATO em 1,0 fora do
+  Atlas.** O eixo é o **clarão** (o bloom, que o próprio selo classifica como
+  "artístico"), com fator `(d / 20.000 UA)²` e piso 0,01; da referência para
+  fora devolve `1` em IEEE754, e é isso que mantém as 18 vistas bit a bit.
+  Mexer no clarão muda a ÓPTICA e deixa a fotometria onde está; baixar a
+  exposição faria o contrário — e é o "teto de brilho" que a Onda 4 proíbe.
+- **A/B perto do Sol SÓ com `&nobloom=1`.** Com bloom, `ua150` e `ua40`
+  devolvem md5 IGUAIS com céus diferentes: o clarão satura o quadro e o md5
+  fica cego. É a lição da F6, e o harness já leva o par próprio.
+- **`?ui=` multiplica a preferência de fonte de quem visita** (`font-size:
+  calc(100% * var(--ui))` no root, faixa 0,85–1,4) — **nunca px**: cravar px
+  apagaria a preferência do navegador, que seria acessibilidade tirando
+  acessibilidade. Todo termo `vw` de `font-size` no HUD tem de vir dentro de
+  `calc(<termo> * var(--ui))`, e a tranca é uma REGRA sobre o arquivo, não uma
+  lista de seletores que envelhece calada.
+- **Números medidos novos.** A **abertura do Atlas é 221,55 UA em `ui = 1`**
+  (209,39 em 0,85 · 284,05 em 1,4) — moram na docstring de
+  `AtlasRig.focarNoSistema`, com trilho no vitest que os DERIVA de
+  `enquadrar()`: quando a próxima faixa de HUD entrar, o teste quebra em vez de
+  a docstring envelhecer. A **barra de controles quebra abaixo de ~960 px de
+  CSS por unidade de `ui`** — é lei de largura × texto, não de `?ui=` sozinho.
 
 ### Jurisprudência herdada do atlas (triagem do `tasks/lessons.md`, 2026-08-10)
 

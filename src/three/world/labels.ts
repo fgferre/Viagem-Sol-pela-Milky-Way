@@ -8,6 +8,7 @@ import { GAL } from './galaxy';
 
 export interface StarLabel {
   name: string;
+  /** tipo espectral — vazio nos corpos do sistema, que não têm um */
   spect: string;
   distPc: number;
   x: number; // 0..1
@@ -17,6 +18,14 @@ export interface StarLabel {
   /** 0 = nome próprio, 1 = designação de Bayer. Só ordena a disputa
    *  pelas vagas; o Sol e Sgr A✱ entram como 0. */
   tier?: number;
+  /**
+   * O que a etiqueta escreve ao lado do nome quando o detalhe NÃO é
+   * tipo espectral — os corpos do sistema trazem aqui a classe deles em
+   * pt-BR ("planeta", "planeta anão"). Ausente nas estrelas: lá vale o
+   * `spect` aparado em 5, que é o que as 1.726 nomeadas sempre
+   * mostraram, pixel a pixel.
+   */
+  detalhe?: string;
 }
 
 const _v = new THREE.Vector3();
@@ -141,6 +150,55 @@ export function projectLabels(
     l.distPc * (prevKeys?.has(l.key) ? 0.8 : 1);
   out.sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0) || rank(a) - rank(b));
   return out.slice(0, maxLabels);
+}
+
+/** O que o produtor de rótulos precisa saber de um corpo do sistema. */
+export interface CorpoRotulavel {
+  /** chave do rótulo — é por ela que o hit-test reconhece um corpo */
+  chave: string;
+  nome: string;
+  /** a palavra da classe, no lugar do tipo espectral */
+  classe: string;
+}
+
+/**
+ * OS RÓTULOS DOS CORPOS DO SISTEMA (Onda 5) — os alvos do
+ * clicar-para-enquadrar dentro do Atlas, do mesmo jeito que os nomes das
+ * estrelas o são desde a F1.
+ *
+ * `posicoes` é o Float32Array VIVO do atributo da camada, na ordem da
+ * tabela: o rótulo cai onde o ponto está DESENHADO, inclusive depois de
+ * um salto de data. Ler o retrato congelado aqui seria a segunda fonte
+ * de verdade que a máquina do tempo desmentiria.
+ *
+ * SEM FADE DE DISTÂNCIA, como o `projectForced`: dentro do sistema estes
+ * dez são o assunto, não a moldura. Quem decide se eles aparecem é o
+ * chamador, e o critério é o único honesto — a camada estar desenhando.
+ */
+export function projectCorpos(
+  camera: THREE.PerspectiveCamera,
+  corpos: readonly CorpoRotulavel[],
+  posicoes: Float32Array
+): StarLabel[] {
+  const out: StarLabel[] = [];
+  for (let i = 0; i < corpos.length && (i + 1) * 3 <= posicoes.length; i++) {
+    const x = posicoes[i * 3];
+    const y = posicoes[i * 3 + 1];
+    const z = posicoes[i * 3 + 2];
+    const p = projectPoint(camera, { x, y, z });
+    if (!p) continue;
+    out.push({
+      name: corpos[i].nome,
+      spect: '',
+      detalhe: corpos[i].classe,
+      distPc: _v.set(x, y, z).distanceTo(camera.position),
+      x: p.x,
+      y: p.y,
+      opacity: 0.95,
+      key: corpos[i].chave,
+    });
+  }
+  return out;
 }
 
 /**

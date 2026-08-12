@@ -31,8 +31,14 @@ import { farPlanePc, nearPlanePc } from '../core/engine';
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
   location: { search: '' },
 };
-const { RODA_MIN_PC_POR_S, VOO_MIN_PC_POR_S, pisoDaRoda, velocidadeDeVoo } =
-  await import('./cameraRig');
+const {
+  ERROS_ATE_DESISTIR,
+  EstadoDaCaptura,
+  RODA_MIN_PC_POR_S,
+  VOO_MIN_PC_POR_S,
+  pisoDaRoda,
+  velocidadeDeVoo,
+} = await import('./cameraRig');
 const { Journey } = await import('./journey');
 const { GAL } = await import('../world/galaxy');
 
@@ -203,5 +209,73 @@ describe('O ROTEIRO INTEIRO — o filme não encosta no domínio profundo', () =
     for (const a of AMOSTRAS) {
       expect(Object.is(velocidadeDeVoo(a.dHome), velocidadeAntiga(a.dHome))).toBe(true);
     }
+  });
+});
+
+// ============================================================
+// O BACKOFF DA CAPTURA DE PONTEIRO (Onda 5, F5).
+//
+// A defesa 1 das quatro: um navegador que NEGA a captura (política de
+// permissão, sandbox, gesto que não conta) negaria para sempre, e o
+// botão do opt-in ficaria oferecendo o que não pode entregar. A regra
+// mora num estado sem DOM justamente para caber aqui — o vitest da casa
+// roda em `node`, e regra que só se conferisse com um `document` na mesa
+// não seria conferida.
+// ============================================================
+describe('EstadoDaCaptura — o backoff das três negativas', () => {
+  it('nasce oferecendo: sem erro e sem lock, vale pedir', () => {
+    const e = new EstadoDaCaptura();
+    expect(e.ativa).toBe(false);
+    expect(e.desistiu).toBe(false);
+    expect(e.podePedir).toBe(true);
+  });
+
+  it('DUAS negativas ainda deixam pedir; a TERCEIRA desiste', () => {
+    const e = new EstadoDaCaptura();
+    for (let i = 1; i < ERROS_ATE_DESISTIR; i++) {
+      e.errou();
+      expect(e.desistiu).toBe(false);
+      expect(e.podePedir).toBe(true);
+    }
+    e.errou();
+    expect(e.erros).toBe(ERROS_ATE_DESISTIR);
+    expect(e.desistiu).toBe(true);
+    expect(e.podePedir).toBe(false);
+  });
+
+  it('desistiu até SAIR DO MODO: erro a mais não reabre, soltar não reabre, sair do modo reabre', () => {
+    const e = new EstadoDaCaptura();
+    for (let i = 0; i < ERROS_ATE_DESISTIR + 4; i++) e.errou();
+    expect(e.podePedir).toBe(false);
+    // soltar o ponteiro NÃO reabre: soltar acontece o tempo todo (Esc,
+    // alt-tab), e reabrir ali devolveria o pedido por clique para sempre
+    e.soltou();
+    expect(e.podePedir).toBe(false);
+    // sair do modo, sim — é o escopo do doador (`surfaceModeActive`
+    // virando falso). O `pointerlockerror` dispara em negativas
+    // TRANSITÓRIAS, e sem esta volta três ciclos de Esc-e-clicar
+    // matavam o opt-in até a recarga, num navegador que suporta tudo.
+    e.saiuDoModo();
+    expect(e.erros).toBe(0);
+    expect(e.desistiu).toBe(false);
+    expect(e.podePedir).toBe(true);
+  });
+
+  it('um lock que dá certo ZERA a conta — negativas são SEGUIDAS', () => {
+    const e = new EstadoDaCaptura();
+    e.errou();
+    e.errou();
+    e.trancou();
+    expect(e.erros).toBe(0);
+    expect(e.ativa).toBe(true);
+    // capturado, não se pede de novo: o pedido duplicado é o que o
+    // navegador contaria como erro
+    expect(e.podePedir).toBe(false);
+    e.soltou();
+    expect(e.podePedir).toBe(true);
+    // e as duas negativas de antes não somam com as de agora
+    e.errou();
+    e.errou();
+    expect(e.desistiu).toBe(false);
   });
 });

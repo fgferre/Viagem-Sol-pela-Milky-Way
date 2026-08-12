@@ -4,6 +4,7 @@
 
 .hud-root {
   --warp: 0;
+  --veu-atlas: 0;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -64,14 +65,14 @@
 }
 .caption-title {
   color: #f5f1e8;
-  font-size: clamp(1.5rem, 3.2vw, 2.6rem);
+  font-size: clamp(1.5rem, calc(3.2vw * var(--ui)), 2.6rem);
   font-weight: 200;
   letter-spacing: 0.42em;
   text-shadow: 0 0 24px rgba(140, 180, 255, 0.45);
 }
 .caption-sub {
   color: rgba(200, 214, 235, 0.82);
-  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  font-size: clamp(0.7rem, calc(1.1vw * var(--ui)), 0.95rem);
   font-weight: 300;
   letter-spacing: 0.28em;
   margin-top: 0.55rem;
@@ -127,6 +128,21 @@
   background: rgba(255, 255, 255, 0.4);
 }
 
+/* --- véu do Atlas ---------------------------------------------------
+   Filho direto de .hud-root de propósito: em ?shot=2 a regra do
+   .bare-mode o esconde junto com o resto do HUD. A opacidade é escrita
+   pelo Director a cada quadro da travessia: quem interpola é o próprio
+   número, sem quadro-chave nenhum do CSS no caminho, e é ele também que
+   fica em 0 sob prefers-reduced-motion. */
+.atlas-veu {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: #000;
+  opacity: var(--veu-atlas);
+  pointer-events: none;
+}
+
 /* --- telas de título --- */
 .veil {
   position: fixed;
@@ -161,7 +177,7 @@
   font-weight: 100;
   letter-spacing: 0.55em;
   text-indent: 0.55em;
-  font-size: clamp(1.5rem, 4.2vw, 3.4rem);
+  font-size: clamp(1.5rem, calc(4.2vw * var(--ui)), 3.4rem);
   text-shadow: 0 0 40px rgba(150, 180, 255, 0.5);
   max-width: 88vw;
   margin: 0 auto;
@@ -173,14 +189,14 @@
 .title-kicker {
   margin-bottom: 1.15rem;
   color: rgba(177, 196, 225, 0.72);
-  font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+  font-size: clamp(0.55rem, calc(0.8vw * var(--ui)), 0.7rem);
   font-weight: 400;
   letter-spacing: 0.46em;
   text-indent: 0.46em;
 }
 .error-title {
   max-width: 24ch;
-  font-size: clamp(1.25rem, 3vw, 2.2rem);
+  font-size: clamp(1.25rem, calc(3vw * var(--ui)), 2.2rem);
 }
 .journey-runtime {
   margin-top: 1rem;
@@ -195,7 +211,7 @@
   text-indent: 0.34em;
   text-transform: uppercase;
   font-weight: 300;
-  font-size: clamp(0.62rem, 1.2vw, 0.9rem);
+  font-size: clamp(0.62rem, calc(1.2vw * var(--ui)), 0.9rem);
   margin-top: 1.4rem;
   line-height: 2;
   text-align: center;
@@ -262,6 +278,25 @@
   gap: 0.6rem;
 }
 
+/* A FAIXA DE CIMA DO ATLAS, com a mesma garantia geométrica do rodapé.
+   A linha de contexto (esquerda) e a barra de controles (direita) se
+   penduram na MESMA linha, e as duas crescem com o texto: sem limite
+   declarado elas se encontram no meio — foi o que aconteceu a 800 px de
+   largura com o texto em 140%. Aqui a linha de contexto termina no
+   máximo em 6vw + 30vw = 36vw e a barra começa no mínimo em
+   100vw − 3vw − 60vw = 37vw; entre as duas sobra 1vw em qualquer
+   tamanho de texto. A barra quebra linha em vez de crescer para a
+   esquerda, e o `:has()` mantém a regra dentro do Atlas — no filme,
+   onde não há linha de contexto, a barra é a de sempre. */
+.atlas-contexto {
+  max-width: 30vw;
+}
+.hud-root:has(.atlas-contexto) .controls-bar {
+  max-width: 60vw;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 /* --- linha de rumo (destino com distância viva) --- */
 .dest-line {
   position: fixed;
@@ -289,6 +324,476 @@
   text-transform: uppercase;
   line-height: 2;
   pointer-events: none;
+}
+
+/* o opt-in da captura de ponteiro (F5): mora dentro da dica de voo, que
+   é a linha que o visitante já lê para saber como voar. A dica inteira é
+   `pointer-events: none` — só este botão recebe clique. */
+.free-hint-captura {
+  margin-top: 0.3rem;
+  padding: 0.18rem 0.6rem;
+  pointer-events: auto;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.5);
+  color: rgba(200, 214, 235, 0.75);
+  font: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+.free-hint-captura:hover:not(:disabled) {
+  border-color: rgba(255, 214, 150, 0.6);
+  color: rgba(235, 240, 250, 0.95);
+}
+.free-hint-captura:disabled {
+  cursor: default;
+  border-color: rgba(220, 230, 248, 0.14);
+  color: rgba(200, 214, 235, 0.5);
+}
+
+/* --- Spotlight e convite (F5) ---------------------------------------
+   Filho DIRETO de .hud-root, como o véu e o painel: é a regra do
+   .bare-mode (`> *:not(.scene-canvas)`) que os apaga em ?shot=2.
+   O véu NÃO recebe ponteiro — o visitante tem de poder arrastar o céu
+   enquanto lê "arraste para olhar em volta"; só o cartão é clicável.
+   A ÚNICA transição aqui é a opacidade da entrada, e ela some sob
+   prefers-reduced-motion (bloco lá embaixo): nada pisca nem pulsa. */
+.spotlight {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.spotlight.pronto {
+  opacity: 1;
+}
+.spotlight-mascara {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.spotlight-cartao {
+  position: fixed;
+  max-width: min(24rem, 82vw);
+  pointer-events: auto;
+  padding: 0.8rem 1rem 0.7rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.86);
+  backdrop-filter: blur(14px);
+  color: rgba(235, 240, 250, 0.92);
+}
+/* sem alvo na tela: o cartão fica no meio, sozinho */
+.spotlight-cartao.solto {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.convite-texto {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 300;
+  line-height: 1.5;
+}
+.convite-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.convite-conta {
+  margin-right: auto;
+  font-size: 0.54rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.55);
+}
+.convite-linha button {
+  padding: 0.24rem 0.7rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: none;
+  color: rgba(200, 214, 235, 0.8);
+  font: inherit;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+.convite-linha button:hover {
+  border-color: rgba(255, 214, 150, 0.6);
+  color: rgba(235, 240, 250, 0.95);
+}
+.convite-linha .convite-adiante {
+  border-color: rgba(255, 214, 150, 0.45);
+  color: rgba(255, 224, 180, 0.92);
+}
+
+/* --- HUD do modo Atlas ----------------------------------------------
+   As peças da fase 'atlas' (Onda 5, F2). Todas são filhas DIRETAS de
+   .hud-root no App: é a regra do .bare-mode (`> *:not(.scene-canvas)`)
+   que as apaga em ?shot=2, e ela só alcança filhos diretos.
+   NADA aqui pisca, pulsa ou anima: o modo é silencioso como o filme. */
+
+/* a ContextLine: o que está EM QUADRO. As áreas desta faixa e a do selo
+   entram no retângulo útil do enquadramento (atlasRig.ts) — se mudarem
+   de altura aqui, mudam lá, e o juiz de a11y mede as duas. */
+.atlas-contexto {
+  position: fixed;
+  top: 8.5vh;
+  left: 6vw;
+  z-index: 40;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: rgba(235, 240, 250, 0.92);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+.atlas-contexto-olho {
+  font-size: 0.54rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.62);
+}
+.atlas-contexto-nome {
+  font-size: 1.02rem;
+  font-weight: 300;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* o selo de honestidade: canto oposto ao da dica, encostado na tarja de
+   baixo. Altura FIXA — o retângulo útil do enquadramento desconta esta
+   faixa, e um selo que cresce com o número de desvios moveria a câmera. */
+.atlas-selo {
+  position: fixed;
+  right: 3vw;
+  /* encostado na tarja de baixo: cada 1vh a mais aqui é 1vh a menos de
+     quadro útil, e o enquadramento paga isso em distância */
+  bottom: 7.4vh;
+  z-index: 40;
+  width: min(21rem, 42vw);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.14rem;
+  text-align: right;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+.atlas-selo-tese {
+  margin: 0;
+  font-size: 0.5rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.55);
+}
+.atlas-selo-linha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.06rem;
+  max-width: 100%;
+  padding: 0.1rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+.atlas-selo-linha:disabled {
+  cursor: default;
+}
+.atlas-selo-linha strong {
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+.atlas-selo-linha.real strong {
+  color: rgba(190, 226, 210, 0.92);
+}
+.atlas-selo-linha.desvio strong {
+  color: rgba(255, 214, 150, 0.92);
+}
+.atlas-selo-linha em {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.54rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  color: rgba(200, 214, 235, 0.62);
+}
+.atlas-selo-linha:not(:disabled):hover em {
+  color: rgba(235, 240, 250, 0.92);
+}
+.atlas-selo-legenda {
+  margin: 0.1rem 0 0;
+  font-size: 0.46rem;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  color: rgba(190, 205, 228, 0.45);
+}
+
+/* A MÁQUINA DO TEMPO (F4): canto oposto ao do selo, logo acima da dica
+   do modo. Como o selo, ela tem ALTURA FIXA — o retângulo útil do
+   enquadramento (atlasRig.ts, TEMPO_FRACAO) desconta esta faixa, e um
+   bloco que crescesse ao aparecer um aviso moveria a câmera. Por isso a
+   linha do aviso está sempre no lugar, vazia quando não há o que dizer.
+   Nada aqui pisca ou pulsa: o estado se lê no rótulo e na borda. */
+/* O RODAPÉ DO ATLAS — a máquina do tempo e a dica do modo, empilhadas.
+   Até a F6 eram duas peças `position: fixed` em dois `vh` escolhidos à
+   mão (14vh e 11vh), e a folga entre elas era de 6 px: o primeiro
+   degrau de `?ui=` punha o texto de uma dentro da outra. Numa coluna
+   quem empilha é o fluxo, e o `gap` é rem — ou seja, cresce junto com
+   o texto.
+
+   A GARANTIA CONTRA O SELO é geométrica, não medida: o selo tem no
+   máximo 42vw e fica a 3vw da borda direita, então nunca começa antes
+   de 55vw. Esta coluna começa em 6vw e não passa de 46vw, terminando
+   em 52vw. Os dois blocos não podem se tocar em NENHUM tamanho de
+   texto nem em nenhuma largura de tela — e é por isso que o número é
+   um limite declarado aqui e não uma medição que envelhece. */
+.atlas-rodape {
+  position: fixed;
+  left: 6vw;
+  bottom: 7.4vh;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-width: 46vw;
+}
+.atlas-rodape .atlas-tempo,
+.atlas-rodape .free-hint {
+  position: static;
+  max-width: 100%;
+}
+.atlas-tempo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+/* a leitura em cima, os controles embaixo. Uma linha só cabia à custa
+   de encostar no selo quando o rótulo da taxa crescia — e rótulo que
+   muda de comprimento a cada clique não pode governar o layout */
+.atlas-tempo-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.atlas-tempo-olho {
+  font-size: 0.5rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.55);
+}
+.atlas-tempo-data {
+  font-size: 0.82rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  color: rgba(235, 240, 250, 0.92);
+}
+.atlas-tempo-botoes {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.28rem;
+}
+/* largura fixa: o rótulo da taxa muda de comprimento a cada degrau, e
+   sem isto os botões vizinhos dançariam a cada clique */
+.atlas-tempo-taxa {
+  min-width: 11rem;
+  /* o rótulo é uma frase, não um selo: com o tracking dos botões da
+     casa ele passava de 240 px e a linha alcançava o selo */
+  letter-spacing: 0.1em;
+}
+.atlas-tempo-botoes .hud-btn[aria-pressed='true'] {
+  border-color: rgba(255, 214, 150, 0.85);
+  background: rgba(255, 214, 150, 0.16);
+  color: #fff;
+}
+.atlas-tempo-botoes .hud-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.atlas-tempo-aviso {
+  margin: 0.22rem 0 0;
+  min-height: 0.8rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  color: rgba(255, 214, 150, 0.85);
+}
+
+/* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
+   tipo de coisa (diálogo de controle), e um segundo vocabulário visual
+   para a mesma função seria ruído */
+.atlas-gaveta {
+  position: absolute;
+  top: 6.4rem;
+  right: 1.6rem;
+  width: min(15rem, calc(100vw - 3.2rem));
+  pointer-events: auto;
+  z-index: 20;
+  padding: 0.9rem 1.1rem 1rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.86);
+  backdrop-filter: blur(14px);
+  color: rgba(235, 240, 250, 0.92);
+  font-size: 0.72rem;
+  font-weight: 300;
+}
+.atlas-gaveta-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  color: rgba(200, 214, 235, 0.7);
+  margin-bottom: 0.7rem;
+}
+.atlas-gaveta-topo button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+}
+.atlas-gaveta-topo button:hover {
+  color: #fff;
+}
+.atlas-gaveta-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.22rem 0;
+  cursor: pointer;
+}
+.atlas-gaveta-linha input {
+  accent-color: rgba(255, 200, 130, 0.9);
+  cursor: pointer;
+}
+.atlas-gaveta-icone {
+  width: 1.1rem;
+  text-align: center;
+  color: rgba(255, 214, 150, 0.8);
+}
+
+/* A PALETA DE BUSCA (F3): mesmo desenho da gaveta e do painel de
+   Ajustes — é o mesmo tipo de coisa (diálogo ancorado sob a barra de
+   controles), e um segundo vocabulário visual para a mesma função seria
+   ruído. Ela é a única peça daqui que serve DUAS fases: o Atlas e o voo
+   livre. Tudo em rem puro, sem termo vw: uma paleta que mudasse de
+   tamanho ao trocar de fase seria a mesma coisa parecendo outra.
+   NADA aqui pisca — o que está escolhido tem borda e fundo, não pulso. */
+.atlas-busca {
+  position: absolute;
+  /* abaixo da barra de controles, como o painel: sobrepor os botões
+     escondia justamente o botão que abre */
+  top: 6.4rem;
+  right: 1.6rem;
+  width: min(22rem, calc(100vw - 3.2rem));
+  pointer-events: auto;
+  z-index: 20;
+  padding: 0.9rem 1.1rem 1rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.86);
+  backdrop-filter: blur(14px);
+  color: rgba(235, 240, 250, 0.92);
+  font-size: 0.72rem;
+  font-weight: 300;
+}
+.atlas-busca-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* a única caixa da casa que recebe texto do visitante. Herda o desenho
+   do botão MENOS o tracking: nome de estrela com 0,22em de espaçamento
+   entre letras vira sopa, e aqui o que se lê é justamente o nome */
+.atlas-busca-campo {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(220, 230, 248, 0.35);
+  background: rgba(8, 12, 22, 0.55);
+  color: rgba(235, 240, 250, 0.95);
+  font: inherit;
+  letter-spacing: 0.06em;
+}
+.atlas-busca-campo::placeholder {
+  color: rgba(200, 214, 235, 0.45);
+}
+.atlas-busca-campo:focus-visible {
+  outline: 1px solid rgba(255, 219, 164, 0.95);
+  outline-offset: 2px;
+}
+.atlas-busca-fechar {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+}
+.atlas-busca-fechar:hover {
+  color: #fff;
+}
+.atlas-busca-lista {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  /* teto em rem, não em vh: a lista tem no máximo oito linhas por
+     contrato (LIMITE_TECLADO), e um teto em vh a faria rolar numa
+     janela baixa mesmo com três resultados. 18rem = as oito linhas
+     medidas (35,2 px cada a 16 px de raiz) e mais uma folga: com 17rem
+     a última ficava cortada por 10 px, que é o jeito de uma lista
+     parecer ter mais coisa do que tem */
+  max-height: 18rem;
+  overflow-y: auto;
+}
+.atlas-busca-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.3rem 0.45rem;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+/* a escolha corrente — o mesmo jeito que a máquina do tempo mostra o
+   botão apertado: borda e fundo, nunca movimento */
+.atlas-busca-item.ativo {
+  border-left-color: rgba(255, 214, 150, 0.85);
+  background: rgba(255, 214, 150, 0.12);
+}
+.atlas-busca-nome {
+  letter-spacing: 0.06em;
+}
+.atlas-busca-nota {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: rgba(200, 214, 235, 0.62);
+}
+/* a linha viva. Altura para DUAS linhas porque o estado vazio mora
+   aqui: "não achei, e olha o que funciona" é mais longo que "8
+   estrelas", e a caixa não pode pular de tamanho entre os dois */
+.atlas-busca-aviso {
+  margin: 0.55rem 0 0;
+  min-height: 2.4rem;
+  font-size: 0.54rem;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  color: rgba(200, 214, 235, 0.62);
 }
 
 /* --- indicador de warp --- */
@@ -463,7 +968,7 @@
   text-indent: 0.34em;
   text-transform: uppercase;
   font-weight: 300;
-  font-size: clamp(0.62rem, 1.1vw, 0.82rem);
+  font-size: clamp(0.62rem, calc(1.1vw * var(--ui)), 0.82rem);
 }
 
 /* trilho inferior: "etapa NN / 07" + um marco por etapa */
@@ -578,6 +1083,57 @@
     max-width: 5.6rem;
   }
 
+  /* no celular a máquina do tempo quebra linha em vez de sair da tela;
+     a faixa fica mais alta, e é por isso que o retângulo útil dela é
+     declarado com a folga da medição de mesa (atlasRig.ts). O limite de
+     46vw da coluna NÃO se afrouxa aqui: é ele que garante que o rodapé
+     nunca alcance o selo, e tela estreita é justamente onde essa
+     garantia importa. */
+  .atlas-rodape {
+    left: 4vw;
+  }
+  /* A LINHA DE CONTEXTO ANTES DOS BOTÕES. As duas peças do topo se
+     ancoram na mesma linha (`top`), e numa tela estreita a barra de
+     controles ocupa a largura inteira e passava POR CIMA do "em
+     quadro". Aqui a barra desce o que a linha de contexto ocupa — e o
+     número é em `rem` porque a altura dela é toda em `rem`: a folga
+     sobrevive a qualquer `?ui=`. O `:has()` mantém isto restrito ao
+     Atlas; no filme, onde não há linha de contexto, a barra fica onde
+     sempre esteve. */
+  .hud-root:has(.atlas-contexto) .controls-bar {
+    top: calc(6.5vh + 3.2rem);
+    /* aqui a barra é de borda a borda (`left` E `right` acima), e um
+       `max-width` sobre isso desancoraria a direita — o navegador
+       descarta o `right` quando os três brigam. A garantia horizontal
+       do bloco de cima não vale nesta faixa: quem separa as duas peças
+       é a linha, não a coluna. */
+    max-width: none;
+  }
+  .atlas-contexto {
+    left: 4vw;
+    right: 4vw;
+    max-width: none;
+  }
+  /* uma linha só, sempre: é a altura da linha de contexto que a barra
+     desconta acima, e um nome comprido que dobrasse de linha comeria a
+     folga. Cortado com reticências continua honesto — o nome inteiro
+     está no rótulo da estrela em quadro. */
+  .atlas-contexto-nome {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .atlas-tempo-linha {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .atlas-tempo-botoes {
+    flex-wrap: wrap;
+  }
+  .atlas-tempo-taxa {
+    min-width: 0;
+  }
+
   .caption-wrap {
     left: 5vw;
     right: 5vw;
@@ -585,7 +1141,7 @@
   }
 
   .caption-title {
-    font-size: clamp(1.15rem, 7vw, 1.8rem);
+    font-size: clamp(1.15rem, calc(7vw * var(--ui)), 1.8rem);
     letter-spacing: 0.28em;
   }
 
@@ -625,13 +1181,22 @@
 /* paisagem baixa (844×390): a composição sobe e o bloco de texto encolhe
    para caber entre a galáxia e o trilho */
 @media (max-height: 480px) and (orientation: landscape) {
+  /* Numa tela desta altura o rodapé do Atlas não cabe inteiro com o
+     texto grande — a máquina do tempo encostava na barra de controles.
+     Quem cede é a DICA, que é ensino de gesto e se descobre arrastando;
+     fica a máquina do tempo, que é controle e não se adivinha. Mesmo
+     critério do "Ver a galáxia" no celular, logo acima. */
+  .atlas-rodape .free-hint {
+    display: none;
+  }
+
   .cv-titulo {
     top: 56%;
     gap: 0.55rem;
   }
 
   .cv-titulo .title-big {
-    font-size: clamp(1rem, 3.4vw, 1.6rem);
+    font-size: clamp(1rem, calc(3.4vw * var(--ui)), 1.6rem);
     letter-spacing: 0.38em;
     text-indent: 0.38em;
   }
@@ -668,6 +1233,13 @@
   .cv-done .cv-core {
     transform: none;
     transition: opacity 0.8s ease;
+  }
+
+  /* o convite entra INSTANTÂNEO: a única transição dele é o fade de
+     entrada, e sob movimento reduzido ela não acontece — a troca de
+     passo já era instantânea (o furo não desliza de um alvo ao outro) */
+  .spotlight {
+    transition: none;
   }
 }
 

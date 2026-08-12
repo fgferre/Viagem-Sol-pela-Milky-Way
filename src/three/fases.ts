@@ -1,0 +1,249 @@
+// ============================================================
+// As FASES do Director — e o inventário PINADO de quem decide por
+// fase. Antes da Onda 5 este conhecimento estava espalhado por 28
+// cadeias `if` em dois arquivos (director.ts e App.tsx), e a fase
+// nova entrava em cada uma por leitura atenta. Aqui ficam o tipo, os
+// dois mapas `satisfies Record<Phase, …>` que substituem as cadeias
+// que eram só "esta peça monta nesta fase?", e a LISTA dos pontos que
+// continuam sendo `if` por terem lógica própria — com o comportamento
+// de cada um em 'atlas' declarado, não inferido.
+// ============================================================
+
+/**
+ * 'atlas' é a fase do modo Atlas navegável (Onda 5): o mesmo Director,
+ * outro escritor de câmera, outro HUD. Ela NÃO é uma variação de
+ * 'free' — o voo livre é pilotagem em 1ª pessoa, o Atlas é
+ * enquadramento privilegiado sobre um alvo.
+ */
+export type Phase = 'loading' | 'intro' | 'journey' | 'end' | 'free' | 'atlas';
+
+/**
+ * QUEM ESCREVE A CÂMERA em cada fase. Até a Onda 5 isto vivia em três
+ * lugares que ligavam/desligavam o `enabled` do FreeRoam à mão
+ * (`play()`, `enterFreeRoam()`, `placeCamera()`); com a terceira via
+ * (o AtlasRig) seriam seis. Agora a posse é do `setPhase`, e este mapa
+ * é a única resposta para "quem manda na câmera agora".
+ *
+ * 'nenhum' não é ausência de câmera: é a câmera PARADA onde o último
+ * escritor a deixou — é o que 'end' sempre fez (a viagem congela no
+ * último quadro do roteiro) e o que 'loading' faz antes do início.
+ */
+export type EscritorDeCamera = 'nenhum' | 'viagem' | 'voo' | 'atlas';
+
+export const ESCRITOR_DE_CAMERA = {
+  loading: 'nenhum',
+  // a intro roda o rig do roteiro em t=0 (deriva lenta contemplativa)
+  intro: 'viagem',
+  journey: 'viagem',
+  end: 'nenhum',
+  free: 'voo',
+  atlas: 'atlas',
+} satisfies Record<Phase, EscritorDeCamera>;
+
+/**
+ * QUE PEÇAS DO HUD MONTAM em cada fase. Substitui as cadeias do
+ * App.tsx que eram só presença — as que têm lógica extra (a dica do
+ * pausar-e-olhar depende de `paused`, a linha de rumo depende de haver
+ * destino) continuam como condição composta lá, sobre estes campos.
+ */
+export interface HudDaFase {
+  /** tarjas pretas de cinema (top/bottom) */
+  letterbox: boolean;
+  /** legenda do beat */
+  legenda: boolean;
+  /** linha de rumo "→ DESTINO · distância viva" */
+  rumo: boolean;
+  /** barra de capítulos do FILME (slider de scrub) */
+  progresso: boolean;
+  /** barra de controles — é ela que hospeda o ⚙ Ajustes */
+  controles: boolean;
+  /** ContextLine: o que está EM QUADRO (nunca chuta — D6) */
+  contexto: boolean;
+  /** gaveta de camadas do Atlas (ícone + rótulo, config único) */
+  gaveta: boolean;
+  /** selo de honestidade: ESCALA e BRILHO, e as duas são controles */
+  selo: boolean;
+  /** máquina do tempo: instante do céu, sentido, taxa, AO VIVO (F4/D2) */
+  tempo: boolean;
+  /**
+   * paleta de busca sobre as 1.726 nomeadas (F3/D4). Nas DUAS fases em
+   * que existe alvo para escolher, e o verbo muda com a fase: no Atlas
+   * a escolha ENQUADRA, no voo livre ela VOA. No filme não monta — lá
+   * quem manda na câmera é o roteiro, e uma busca sem destino possível
+   * seria um controle que não faz nada.
+   */
+  busca: boolean;
+  /** ⏸ Pausar · velocidade · Ver a galáxia · Explorar livremente */
+  botoesDaViagem: boolean;
+  /** ↻ Reviver */
+  botaoReviver: boolean;
+  /** Partir — a saída do Atlas */
+  botaoPartir: boolean;
+  /** dica de teclas do voo livre */
+  dicaDeVoo: boolean;
+  /** tela de título / tela final */
+  veuDeTitulo: boolean;
+}
+
+export const HUD_POR_FASE = {
+  loading: {
+    letterbox: false,
+    legenda: false,
+    rumo: false,
+    progresso: false,
+    controles: false,
+    contexto: false,
+    gaveta: false,
+    selo: false,
+    tempo: false,
+    busca: false,
+    botoesDaViagem: false,
+    botaoReviver: false,
+    botaoPartir: false,
+    dicaDeVoo: false,
+    veuDeTitulo: false,
+  },
+  intro: {
+    letterbox: true,
+    legenda: false,
+    rumo: false,
+    progresso: false,
+    controles: false,
+    contexto: false,
+    gaveta: false,
+    selo: false,
+    tempo: false,
+    busca: false,
+    botoesDaViagem: false,
+    botaoReviver: false,
+    botaoPartir: false,
+    dicaDeVoo: false,
+    veuDeTitulo: true,
+  },
+  journey: {
+    letterbox: true,
+    legenda: true,
+    rumo: true,
+    progresso: true,
+    controles: true,
+    contexto: false,
+    gaveta: false,
+    selo: false,
+    tempo: false,
+    busca: false,
+    botoesDaViagem: true,
+    botaoReviver: false,
+    botaoPartir: false,
+    dicaDeVoo: false,
+    veuDeTitulo: false,
+  },
+  end: {
+    letterbox: true,
+    legenda: false,
+    rumo: false,
+    progresso: true,
+    controles: false,
+    contexto: false,
+    gaveta: false,
+    selo: false,
+    tempo: false,
+    busca: false,
+    botoesDaViagem: false,
+    botaoReviver: false,
+    botaoPartir: false,
+    dicaDeVoo: false,
+    veuDeTitulo: true,
+  },
+  free: {
+    letterbox: true,
+    legenda: false,
+    rumo: false,
+    progresso: false,
+    controles: true,
+    contexto: false,
+    gaveta: false,
+    selo: false,
+    tempo: false,
+    busca: true,
+    botoesDaViagem: false,
+    botaoReviver: true,
+    botaoPartir: false,
+    dicaDeVoo: true,
+    veuDeTitulo: false,
+  },
+  // O HUD do Atlas nasce MÍNIMO de propósito: barra de controles (que
+  // é a porta dos Ajustes — sem ela a F5/F6 chegariam sem acesso) e a
+  // saída. A ContextLine, a gaveta de camadas e o selo de honestidade
+  // são da F2; a máquina do tempo é da F4; a barra de progresso NUNCA
+  // entra (é o slider de capítulos do filme, e daria scrub do filme
+  // dentro do Atlas — e o tempo do Atlas é OUTRO tempo: o do céu).
+  atlas: {
+    letterbox: true,
+    legenda: false,
+    rumo: false,
+    progresso: false,
+    controles: true,
+    contexto: true,
+    gaveta: true,
+    selo: true,
+    tempo: true,
+    busca: true,
+    botoesDaViagem: false,
+    botaoReviver: false,
+    botaoPartir: true,
+    dicaDeVoo: false,
+    veuDeTitulo: false,
+  },
+} satisfies Record<Phase, HudDaFase>;
+
+/**
+ * OS 28 PONTOS QUE DECIDEM POR FASE, medidos no código em 2026-08-11
+ * (15 no `director.ts`, 13 no `App.tsx`), com o comportamento de cada
+ * um em 'atlas' DECLARADO. Os marcados [mapa] deixaram de ser cadeia
+ * `if` e passaram a ler `HUD_POR_FASE`/`ESCRITOR_DE_CAMERA` acima.
+ *
+ * director.ts
+ *  1. `captura.andando` — viagem correndo .............. não vale no Atlas;
+ *     em troca o Atlas tem termo PRÓPRIO (véu de entrada/saída em curso).
+ *  2. `captura.andando` — câmera do voo livre .......... não vale no Atlas.
+ *  3. `captura.pronto` — `fase !== 'loading'` .......... 'atlas' É fase
+ *     capturável: o gate da F1 exige captura em 'atlas' por `via=sinal`.
+ *  4. `togglePause` — só em 'journey' .................. no-op no Atlas
+ *     (a viagem não corre lá; o estado dela fica guardado no portal).
+ *  5. `pauseLookActive` — 'journey' + congelada ........ falso no Atlas;
+ *     o ponteiro no Atlas é do AtlasRig (mesmos listeners, outro dono).
+ *  6. `tryVisit` — só em 'free' ........................ passa a valer em
+ *     'atlas': o clique num nome FOCA pelo AtlasRig (fundação da F3).
+ *  7. `seekFraction` — retoma a partir de 'end' ........ inalcançável no
+ *     Atlas (a barra de progresso não monta lá).
+ *  8. `skipChapter` — só em 'journey' .................. no-op no Atlas.
+ *  9. `tick` — ramo da viagem .......................... não.
+ * 10. `tick` — ramo do voo livre ....................... não.
+ * 11. `tick` — ramo da intro ........................... não; o Atlas
+ *     ganha ramo próprio, que escreve a câmera pelo AtlasRig.
+ * 12. `tick` — latch `leftDisk` ........................ cai no `else`
+ *     como todas as fases fora da viagem: sem latch, ambiente relocável.
+ * 13. `tick` — rótulos em 'journey' ou 'free' .......... ganha 'atlas'.
+ * 14. `tick` — ramo editorial de rótulos da viagem ..... não; o Atlas usa
+ *     o ramo do voo livre (7 rótulos, sem filtro de centro).
+ * 15. `tick` — limpar rótulos fora de 'journey' ........ não limpa em
+ *     'atlas' (ele está no ramo 13).
+ *
+ * App.tsx
+ * 16. `loaderState` — 'loading' ....................... 'atlas' é 'done'.
+ * 17. `urlComMomento` — 'journey' ou 'end' ............ o Atlas carrega
+ *     `atlas=1` (e o `t=` do momento guardado, quando existe).
+ * 18. `inJourney` .................................... falso.
+ * 19. `showVeil` — 'intro' ou 'end' (+ modo do véu) ... falso. [mapa]
+ * 20. letterbox — `fase !== 'loading'` ............... ligado. [mapa]
+ * 21. `Caption` ...................................... não monta. [mapa]
+ * 22. linha de rumo .................................. não monta. [mapa]
+ * 23. `ProgressBar` .................................. não monta. [mapa]
+ * 24. dica do voo livre .............................. não monta. [mapa]
+ * 25. dica do pausar-e-olhar ......................... não monta.
+ * 26. barra de controles ............................. MONTA — é a porta
+ *     dos Ajustes na fase nova. [mapa]
+ * 27. botão ↻ Reviver ................................ não monta. [mapa]
+ * 28. botões da viagem ............................... não; em lugar
+ *     deles, o botão "Partir". [mapa]
+ */

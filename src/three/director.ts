@@ -3,14 +3,15 @@
 // API consumida pelo React: eventos de legenda/progresso/fase.
 // ============================================================
 import * as THREE from 'three';
-import { Engine } from './core/engine';
+import { Engine, modoDoToneMapping } from './core/engine';
 import type { QualityLevel } from './core/engine';
+import type { EstadoDaVista } from './selo';
 import { Post } from './core/post';
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
-import { projectLabels, projectForced } from './world/labels';
+import { projectCorpos, projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
 import { HeroStars, SunStar } from './world/heroStars';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
@@ -19,6 +20,19 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { Planetas, PLANETAS_DEFAULT_ON } from './world/planetas/planetas';
+import type { FonteDeEfemerides } from './world/planetas/planetas';
+import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
+import type { IdRetrato } from './world/planetas/retrato2026';
+import {
+  degrauValido,
+  estadoDoTempo,
+  grampearJd,
+  lerPortaJd,
+  taxaDoDegrau,
+  DEGRAUS_DE_TEMPO,
+} from './tempoDoAtlas';
+import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
+import { dateToTDB } from '../lib/atlas/time';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -27,6 +41,15 @@ import {
 } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
+import {
+  AtlasRig,
+  raioDeEnquadramentoEstelar,
+  retanguloUtilDoAtlas,
+} from './cinematic/atlasRig';
+import { escalaDaUi } from '../lib/uiScale';
+import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, claraoDoAtlas } from './atlasConfig';
+import { ESCRITOR_DE_CAMERA } from './fases';
+import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
 import {
@@ -34,13 +57,18 @@ import {
   fadesDoQuadro,
   matchHeroesToCatalog,
 } from './world/lodStellar';
-import { loadStarData, WORLD } from './config';
-import type { StarsMeta } from './config';
+import { carregarEfemerides, loadStarData, WORLD } from './config';
+import type { NamedStar, StarsMeta } from './config';
+import type { CorpoBuscavel } from '../lib/buscaEstrelas';
 
 // A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
 const ORIGEM = new THREE.Vector3(0, 0, 0);
 
-export type Phase = 'loading' | 'intro' | 'journey' | 'end' | 'free';
+// A fase e o inventário de quem decide por ela moram em `fases.ts` —
+// o App também os lê, e duplicar a união aqui era o começo da segunda
+// fonte de verdade. Reexportado porque `import type { Phase } from
+// './three/director'` é o endereço que o resto da casa já usa.
+export type { Phase } from './fases';
 
 /**
  * As etapas do carregamento, na ordem. Fonte ÚNICA: o director as emite,
@@ -72,6 +100,55 @@ export const LOAD_STAGES = (
  */
 const QUADROS_ESTAVEIS = 10;
 
+/**
+ * Duração de CADA metade do véu de entrada/saída do Atlas, em
+ * segundos: fecha, reposiciona, abre. Entrar no Atlas não é travessia
+ * física (D3) — não há nave voando de um lugar ao outro, e fingir isso
+ * numa escala que vai de 1 UA a 25 kpc seria mentira de câmera. Sob
+ * `prefers-reduced-motion` a troca é INSTANTÂNEA: o véu não anima.
+ */
+const VEU_ATLAS_S = 0.45;
+
+/**
+ * O INSTANTE DE VIAGEM QUE O SOL VIVE DENTRO DO ATLAS, pinado.
+ * A dramaturgia do ciclo solar é monótona em `journeyT` (mínimo no
+ * arranque, máximo no fim da hélice — `SOL_PARAMS.dramaT0/dramaT1`);
+ * sem pino, entrar no Atlas a partir de t=10 e a partir de t=250 daria
+ * DOIS Sóis diferentes e nenhuma vista do Atlas seria reproduzível.
+ * O pino é o fim da janela — o máximo solar, o Sol mais interessante
+ * de olhar — e vem de `SOL_PARAMS`, não de um 29 redigitado.
+ */
+const ATLAS_JOURNEY_T = SOL_PARAMS.dramaT1;
+
+/**
+ * De quanto em quanto tempo o modo AO VIVO relê o relógio do visitante,
+ * em segundos. Um: é a resolução em que a máquina do tempo fala (o
+ * mostrador é minuto a minuto) e o passo em que a camada recalcula os
+ * dez corpos — reler a 60 Hz seria pagar efeméride por quadro para
+ * mostrar o mesmo minuto sessenta vezes (D2).
+ */
+const PASSO_DO_AO_VIVO_S = 1;
+
+/**
+ * De quanto em quanto tempo o mostrador do tempo é publicado para o
+ * React enquanto o relógio anda, em segundos. Mesmo remédio da linha de
+ * rumo (`updateDest`, 4 Hz): sem ele um `setState` por quadro
+ * re-renderizaria o HUD inteiro 60×/s durante toda a viagem no tempo.
+ */
+const PASSO_DO_MOSTRADOR_S = 0.25;
+
+/**
+ * A LARGURA DE CSS DA JANELA — a entrada de largura do retângulo útil do
+ * Atlas. `window.innerWidth` e não a do canvas de propósito: quem faz a
+ * barra de controles quebrar é o `max-width: 60vw` do `hud.css`, e o
+ * `vw` é o VIEWPORT. Fica aqui, ao lado de `escalaDaUi()`, porque as
+ * duas leituras de DOM que o enquadramento precisa são estas duas — o
+ * rig continua sem saber que existe DOM.
+ */
+function larguraDeCss(): number {
+  return window.innerWidth;
+}
+
 /** etapa viva do carregamento: `{ id, index, total, label }`, index 1…total */
 export type LoadStage = (typeof LOAD_STAGES)[number];
 export type LoadStageId = LoadStage['id'];
@@ -87,6 +164,21 @@ interface DirectorEvents {
   onDest: (text: string) => void;
   /** etapa viva do carregamento — a mesma que o HUD desenha */
   onStage: (stage: LoadStage) => void;
+  /** opacidade do véu do Atlas (0..1); custom property, não estado */
+  onVeu: (k: number) => void;
+  /**
+   * O QUE ESTÁ EM QUADRO no Atlas — o nome do alvo enquadrado, ou
+   * `null` quando é o enquadramento de abertura (o sistema inteiro) ou
+   * quando o Director não tem nome para dar. `null` não é "vazio": é a
+   * ContextLine lendo o nome do sistema em vez de chutar (D6).
+   */
+  onFoco: (nome: string | null) => void;
+  /**
+   * O MOSTRADOR DA MÁQUINA DO TEMPO. Sai no ritmo de
+   * `PASSO_DO_MOSTRADOR_S` enquanto o relógio anda, e na hora quando o
+   * visitante mexe em alguma coisa.
+   */
+  onTempo: (estado: EstadoDoTempo) => void;
 }
 
 export class Director {
@@ -124,6 +216,9 @@ export class Director {
   private bgColor = new THREE.Color(0x000106);
   private rig = new JourneyRig();
   private roam: FreeRoam;
+  private atlas = new AtlasRig();
+  /** quem escreve a câmera AGORA — decidido pelo `setPhase` */
+  private escritorDeCamera: EscritorDeCamera = 'nenhum';
   private meta!: StarsMeta;
   /** última projeção de rótulos — alvo do clicar-para-visitar */
   private lastLabels: StarLabel[] = [];
@@ -133,6 +228,64 @@ export class Director {
   private pauseDragging = false;
   private pauseLastX = 0;
   private pauseLastY = 0;
+  /** quanto o ponteiro andou desde o pointerdown (clique curto = visita) */
+  private pauseArrasto = 0;
+  private pauseDesde = 0;
+
+  /**
+   * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
+   * inteiro quando ele parte. Não é só o `journeyT`: o `seek()` sozinho
+   * zera o olhar do pausar-e-olhar, o tick zera o latch `leftDisk` fora
+   * da viagem, e a pausa tem DOIS donos (`freezeJourney` aqui e
+   * `rig.paused` no rig). Faltando qualquer um dos cinco, "Partir"
+   * devolveria um quadro parecido — e o gate mede PIXEL.
+   */
+  private retomada: {
+    journeyT: number;
+    lookYaw: number;
+    lookPitch: number;
+    leftDisk: boolean;
+    pausado: boolean;
+  } | null = null;
+
+  // ---- a máquina do tempo (Onda 5, F4/D2) --------------------------
+  // O DIRECTOR É O DONO DO `jd`, e é dono sozinho: a camada de planetas
+  // não tem relógio (o teste de texto-fonte dela proíbe `Date`), o HUD
+  // só desenha o que este bloco publica, e a efeméride é um serviço que
+  // chega tarde. Um segundo dono aqui seria a mesma classe de defeito
+  // que a pausa já teve (dois donos, `freezeJourney` e `rig.paused`).
+
+  /**
+   * O instante PEDIDO, em JD TDB. Nasce na época do retrato — sem isso
+   * a cena não seria a mesma de ontem no primeiro quadro. O instante
+   * MOSTRADO é este grampeado na janela da tabela (`get tempo`).
+   */
+  private jdPedido = EPOCA_JD_TDB;
+  /** degrau na escada de taxas (`tempoDoAtlas`) */
+  private degrau = 0;
+  /** sentido do relógio: 0 é parado, e parado é como o Atlas abre */
+  private sentidoDoTempo: SentidoDoTempo = 0;
+  /** o relógio segue o tempo real do visitante */
+  private aoVivo = false;
+  /** a fonte viva; `null` enquanto ninguém pediu, ou se a rede faltou */
+  private efemeride: FonteDeEfemerides | null = null;
+  private faseDaEfemeride: FaseDaEfemeride = 'retrato';
+  /** acumuladores do passo do AO VIVO e do mostrador */
+  private relogioAoVivo = 0;
+  private mostradorTimer = 0;
+  /**
+   * O relógio bateu na borda da tabela e PAROU ali. Uma máquina do
+   * tempo honesta faz isso: a fita acaba, ela para na última volta e
+   * diz. A alternativa — deixar o pedido correr para fora da janela —
+   * cobraria do visitante o mesmo tempo de volta que ele gastou indo.
+   */
+  private naParede = false;
+
+  /** véu do Atlas: 0 = aberto, 1 = fechado */
+  private veu = 0;
+  private veuAlvo = 0;
+  /** o que fazer quando o véu terminar de FECHAR */
+  private veuPendente: (() => void) | null = null;
 
   private phase: Phase = 'loading';
   private journeyT = 0;
@@ -159,6 +312,9 @@ export class Director {
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
+  /** a gradação por contexto do Atlas está ligada? (`?grad=0` desliga) */
+  private gradacaoLigada = true;
+
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
@@ -241,9 +397,31 @@ export class Director {
     if (this.debug.has('nobloom')) {
       this.post.bloom.enabled = false;
     }
+    // A GRADAÇÃO POR CONTEXTO do Atlas (F6) nasce LIGADA e `?grad=0` a
+    // desliga — o precedente exato é o `?knee=0` do pós. Ela precisa de
+    // porta, e não só de um clique no selo, porque o "voltar ao brilho
+    // real" pode RECARREGAR a página (quando há desvio que só o boot
+    // lê): sem a porta, o selo diria "voltei ao real" e a gradação
+    // renasceria no carregamento seguinte — o selo mentindo com a melhor
+    // das intenções, que é o defeito que ele existe para não ter.
+    this.gradacaoLigada = this.debug.get('grad') !== '0';
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
     this.expOverride = this.debug.has('exp');
+    // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
+    // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
+    // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
+    // "com a porta" desse A/B — ele acende o caminho vivo INTEIRO
+    // (busca, decodificação, escrita dos dois atributos) num instante
+    // em que o resultado tem de ser o retrato bit a bit.
+    if (this.debug.has('jd')) {
+      const pedido = lerPortaJd(this.debug.get('jd'), EPOCA_JD_TDB);
+      if (pedido === null) console.warn('?jd= inválido:', this.debug.get('jd'));
+      else {
+        this.jdPedido = pedido;
+        this.garantirEfemerides();
+      }
+    }
     this.reducedMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -536,10 +714,32 @@ export class Director {
     this.engine.start();
   }
 
+  /**
+   * A única porta de troca de fase — e, desde a Onda 5, a única DONA do
+   * escritor de câmera. Antes três lugares ligavam e desligavam o
+   * `enabled` do FreeRoam à mão (`play`, `enterFreeRoam`, `placeCamera`);
+   * com a terceira via seriam seis, e "quem manda na câmera agora" não
+   * teria resposta num lugar só. Agora tem: `ESCRITOR_DE_CAMERA`.
+   */
   private setPhase(p: Phase) {
     this.phase = p;
+    this.escritorDeCamera = ESCRITOR_DE_CAMERA[p];
+    this.roam.enabled = this.escritorDeCamera === 'voo';
     this.events.onPhase(p);
+    // o HUD da fase nova pode ter mostrador de tempo, e ele monta com o
+    // valor de agora em vez de esperar o primeiro passo do relógio
+    this.publicarTempo();
     this.perturbar();
+  }
+
+  /** a fase viva — o App precisa dela para a guarda de atalhos */
+  get fase(): Phase {
+    return this.phase;
+  }
+
+  /** a viagem está congelada? (o pause-look tem dois donos — ver D3) */
+  get pausado(): boolean {
+    return this.freezeJourney;
   }
 
   // ---- sinal de prontidão para captura -----------------------------
@@ -595,7 +795,21 @@ export class Director {
   get captura() {
     const andando =
       (this.phase === 'journey' && !this.freezeJourney) ||
-      (this.phase === 'free' && this.roam.animando);
+      (this.phase === 'free' && this.roam.animando) ||
+      // ENTRADA/SAÍDA DO ATLAS: o véu em curso (ou já pedido e ainda
+      // não fechado) é movimento na tela como qualquer outro. O rig do
+      // Atlas em si não anima — o reposicionamento acontece atrás do
+      // véu —, então este é o único termo novo que a fase traz.
+      this.veu > 0 ||
+      this.veuPendente !== null ||
+      // A MÁQUINA DO TEMPO (F4): relógio andando é cena mudando, e
+      // efeméride em voo é uma mudança JÁ PEDIDA que ainda não chegou.
+      // Sem os dois termos, o `?jd=` do gate poderia ser capturado no
+      // quadro anterior à escrita do instante — e a captura mediria a
+      // corrida, não a imagem.
+      this.aoVivo ||
+      this.sentidoDoTempo !== 0 ||
+      this.faseDaEfemeride === 'buscando';
     return {
       pronto:
         this.phase !== 'loading' &&
@@ -687,7 +901,8 @@ export class Director {
     const cam = this.engine.camera;
     cam.position.set(pos[0], pos[1], pos[2]);
     if (look) cam.lookAt(look[0], look[1], look[2]);
-    this.roam.enabled = true;
+    // quem liga o escritor é o `setPhase` lá embaixo (mapa fase→rig);
+    // `syncFromCamera`/`snapCanonical` não dependem do `enabled`
     this.roam.syncFromCamera();
     // captura/deep-link: sem slerp de entrada — orientação exata no frame 1
     this.roam.snapCanonical();
@@ -708,7 +923,6 @@ export class Director {
     this.leftDisk = false;
     this.rig.reset();
     this.rig.paused = false;
-    this.roam.enabled = false;
     this.setPhase('journey');
   }
 
@@ -765,24 +979,50 @@ export class Director {
     return this.phase === 'journey' && this.freezeJourney;
   }
 
+  /**
+   * Os MESMOS três listeners servem o Atlas — arrastar orbita o alvo,
+   * clique curto foca o nome mais próximo. Registrar um segundo trio
+   * para a fase nova compraria dois donos do mesmo gesto no mesmo
+   * canvas; o dono muda com a fase, o listener não.
+   */
   private onPausePointerDown = (event: PointerEvent) => {
-    if (!this.pauseLookActive) return;
+    if (!this.pauseLookActive && this.phase !== 'atlas') return;
     this.pauseDragging = true;
+    this.pauseArrasto = 0;
+    this.pauseDesde = performance.now();
     this.pauseLastX = event.clientX;
     this.pauseLastY = event.clientY;
   };
 
   private onPausePointerMove = (event: PointerEvent) => {
-    if (!this.pauseDragging || !this.pauseLookActive) return;
-    this.rig.addLookDelta(
-      event.clientX - this.pauseLastX,
-      event.clientY - this.pauseLastY
-    );
+    if (!this.pauseDragging) return;
+    const dx = event.clientX - this.pauseLastX;
+    const dy = event.clientY - this.pauseLastY;
+    this.pauseArrasto += Math.abs(dx) + Math.abs(dy);
+    if (this.phase === 'atlas') {
+      this.atlas.addOrbitDelta(dx);
+      this.perturbar();
+    } else if (this.pauseLookActive) {
+      this.rig.addLookDelta(dx, dy);
+    }
     this.pauseLastX = event.clientX;
     this.pauseLastY = event.clientY;
   };
 
-  private onPausePointerUp = () => {
+  private onPausePointerUp = (event: PointerEvent) => {
+    // clique curto e parado no Atlas = focar. Os dois limiares (6 px,
+    // 400 ms) são os do voo livre, não números novos.
+    if (
+      this.pauseDragging &&
+      this.phase === 'atlas' &&
+      this.pauseArrasto < 6 &&
+      performance.now() - this.pauseDesde < 400
+    ) {
+      this.tryVisit(
+        event.clientX / window.innerWidth,
+        event.clientY / window.innerHeight
+      );
+    }
     this.pauseDragging = false;
   };
 
@@ -830,9 +1070,12 @@ export class Director {
     }
   }
 
-  /** clique curto no voo livre: viaja até o rótulo mais próximo */
+  /**
+   * Clique curto no rótulo mais próximo. Duas fases, dois modos: no voo
+   * livre a câmera VOA até lá; no Atlas ela ENQUADRA de onde estiver.
+   */
   private tryVisit(x: number, y: number) {
-    if (this.phase !== 'free' || !this.meta) return;
+    if ((this.phase !== 'free' && this.phase !== 'atlas') || !this.meta) return;
     let best: StarLabel | null = null;
     let bestD = 0.0035; // ~6% da tela ao quadrado
     for (const label of this.lastLabels) {
@@ -846,8 +1089,20 @@ export class Director {
       }
     }
     if (!best) return;
+    // no Atlas o Sol não é "uma estrela a 0 pc": clicar nele é voltar
+    // para casa, o enquadramento de abertura
+    if (best.key === 'sol-home' && this.phase === 'atlas') {
+      this.focarNoSistema();
+      return;
+    }
+    // um CORPO do sistema: enquadra pela ÓRBITA dele, que é o que o
+    // AtlasRig já sabe fazer com a abertura
+    if (best.key.startsWith(CHAVE_DE_CORPO)) {
+      this.focarNoCorpo(best.key.slice(CHAVE_DE_CORPO.length));
+      return;
+    }
     if (best.key === 'sgr-a') {
-      this.roam.startVisit({ pos: GAL.GC_POS.clone(), arriveDist: 7 });
+      this.irAte(GAL.GC_POS.clone(), 7, best.name);
       return;
     }
     const star =
@@ -855,15 +1110,143 @@ export class Director {
         ? { n: 'Sol', x: 0, y: 0, z: 0 }
         : this.meta.named.find((s) => s.n === best.name);
     if (!star) return;
-    const pos = new THREE.Vector3(star.x, star.y, star.z);
-    this.roam.startVisit({
+    this.visitarEstrela(star);
+  }
+
+  /**
+   * AS 1.726 NOMEADAS, para quem precisa procurar entre elas (F3). A
+   * paleta da busca monta o índice sobre esta lista em vez de baixar
+   * `stars_meta.json` outra vez: o Director já a tem na memória desde o
+   * `init`, e um segundo fetch de 385 kB para ler o mesmo dado seria uma
+   * segunda fonte de verdade com custo de rede.
+   */
+  get nomeadas(): readonly NamedStar[] {
+    return this.meta?.named ?? [];
+  }
+
+  /**
+   * O MESMO destino do clique num rótulo, escolhido pelo NOME (F3). É a
+   * porta pública por onde a paleta da busca chega — e ela cai no
+   * caminho que já existia, `irAte`, de propósito: as duas fases seguem
+   * fazendo o que faziam (o Atlas ENQUADRA de onde está, o voo livre
+   * VOA até lá), cada uma com a lei que lhe cabe (ver `irAte`).
+   */
+  visitarEstrela(estrela: { n: string; x: number; y: number; z: number }) {
+    const pos = new THREE.Vector3(estrela.x, estrela.y, estrela.z);
+    // a lei de APROXIMAÇÃO do voo livre, que é onde este número é
+    // consumido: 8% do caminho a percorrer, entre 0,8 e 9 pc
+    this.irAte(
       pos,
-      arriveDist: THREE.MathUtils.clamp(
+      THREE.MathUtils.clamp(
         pos.distanceTo(this.engine.camera.position) * 0.08,
         0.8,
         9
       ),
-    });
+      estrela.n
+    );
+  }
+
+  /**
+   * O mesmo alvo, os dois modos — e DUAS leis, porque o número significa
+   * duas coisas. No voo livre `arriveDist` é a distância de CHEGADA de um
+   * voo, e sair de onde se está é o certo. No Atlas ele seria o raio da
+   * esfera ENQUADRADA, e aí depender da câmera destrói a
+   * reprodutibilidade: o `apply` move a câmera na mesma chamada, então
+   * clicar duas vezes no mesmo nome daria duas vistas e o `?foco=` do
+   * link não reproduziria a vista de quem o copiou. Por isso o Atlas tira
+   * o raio do ALVO (`raioDeEnquadramentoEstelar`, D5) e ignora o
+   * `arriveDist` que veio.
+   *
+   * `nome` só serve ao Atlas: é o que a ContextLine passa a ler. No voo
+   * livre quem anuncia o destino é a linha de rumo, que já existe.
+   */
+  private irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
+    if (this.phase === 'atlas') {
+      this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()));
+      this.enquadrarAgora();
+      this.events.onFoco(nome);
+      this.teletransportou();
+      return;
+    }
+    this.roam.startVisit({ pos, arriveDist });
+  }
+
+  /**
+   * O ENQUADRAMENTO DE ABERTURA: o sistema inteiro, visto de fora da
+   * órbita mais externa. É a vista com que o Atlas abre, o destino do
+   * clique no Sol e — desde a F2 — a ação da linha ESCALA do selo, que
+   * é o único enquadramento em que o que domina o quadro é 1:1.
+   */
+  focarNoSistema() {
+    this.atlas.focarNoSistema();
+    this.enquadrarAgora();
+    this.events.onFoco(null);
+    this.teletransportou();
+  }
+
+  /**
+   * OS DEZ CORPOS COMO ALVO (Onda 5) — o clique no rótulo, a escolha na
+   * paleta e o `?foco=terra` caem todos aqui.
+   *
+   * ENQUADRA A ÓRBITA, não o corpo: a esfera é centrada no SOL e tem o
+   * raio da distância heliocêntrica VIVA do alvo. É a mesma forma da
+   * vista de abertura (que é este método com o corpo mais externo), e é o
+   * que a D5 manda — corpos são pontos até a Onda 6, e uma tabela nova de
+   * raios físicos seria a segunda fonte de verdade que a Onda 7 refaria.
+   * A DIREÇÃO sai do corpo, e é ela que dá a vista privilegiada dele.
+   *
+   * A posição sai do atributo VIVO da camada, não do retrato: quem
+   * clicou num rótulo clicou onde o ponto está DESENHADO, inclusive
+   * depois de um salto de data.
+   *
+   * O Sol é o caso especial e cai na abertura: enquadrar "a órbita do
+   * Sol" seria enquadrar uma esfera de raio zero, e clicar no Sol dentro
+   * do Atlas sempre quis dizer voltar para casa.
+   */
+  focarNoCorpo(id: string) {
+    if (this.phase !== 'atlas') return;
+    if (id === 'sun') {
+      this.focarNoSistema();
+      return;
+    }
+    const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
+    if (i < 0 || !this.planetas) return;
+    const p = this.planetas.posicoes;
+    const pos = new THREE.Vector3(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+    if (pos.lengthSq() === 0) return;
+    this.atlas.focar(ORIGEM, pos.length(), pos);
+    this.enquadrarAgora();
+    this.events.onFoco(CORPOS_DO_SISTEMA[i].nome);
+    this.teletransportou();
+  }
+
+  /**
+   * OS DEZ, para o índice da busca (F3 + consertos). O `rUA` sai do
+   * retrato e não do atributo vivo porque o índice é construído UMA vez,
+   * na entrada no modo: ele é a NOTA da lista ("4,2 UA · planeta"), e o
+   * que o Atlas enquadra de fato é a órbita viva, lida na hora da
+   * escolha por `focarNoCorpo`.
+   */
+  get corpos(): readonly CorpoBuscavel[] {
+    return CORPOS_DO_SISTEMA.map((c) => ({
+      id: c.id,
+      nome: c.nome,
+      classe: c.classe,
+      rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
+    }));
+  }
+
+  /**
+   * ESCREVE A CÂMERA JÁ, antes de avisar o HUD. Sem esta linha o
+   * `onFoco` chega ao React com a câmera do enquadramento ANTERIOR, e o
+   * selo — que lê a vista do Director na hora de desenhar — declara a
+   * vista velha: depois de visitar uma estrela a dezenas de parsecs ele
+   * ainda dizia ESCALA REAL, e a gradação por contexto (F6) herdaria a
+   * mesma defasagem. Não há custo: o `apply` é escrita pura do estado
+   * do rig, e o tick a repete no quadro seguinte com o mesmo resultado.
+   */
+  private enquadrarAgora() {
+    this.atlas.apply(this.engine.camera, escalaDaUi(), larguraDeCss());
   }
 
   /** scrub pela barra de progresso (fração 0..1) */
@@ -894,12 +1277,293 @@ export class Director {
   }
 
   enterFreeRoam() {
-    this.roam.enabled = true;
     this.roam.syncFromCamera();
     this.setPhase('free');
     this.events.onCaption(-1, '', '');
     this.events.onLabels([]);
     this.events.onWarp(0); // a vinheta de warp ficava presa no CSS
+  }
+
+  /**
+   * A CAPTURA DE PONTEIRO do voo livre (Onda 5, F5). O HUD é quem
+   * OFERECE o opt-in, e é por aqui que ele pede e pergunta; as quatro
+   * defesas (backoff, dispose, soltar as teclas no unlock, listener de
+   * movimento só com lock) moram no rig, que é o dono das teclas.
+   */
+  get capturaDePonteiro() {
+    return this.roam.captura;
+  }
+
+  // ---- portal do Atlas ---------------------------------------------
+
+  /**
+   * ENTRAR NO ATLAS. Só o pause-look e o deep-link `?atlas=1` chamam
+   * isto. Não é travessia física: o véu fecha, a câmera é reposta pelo
+   * AtlasRig e o véu abre.
+   *
+   * `momento` semeia a volta a partir da URL (`?atlas=1&t=…`): sem ele
+   * e sem viagem em curso, o portal guarda NADA — e "Partir" devolve a
+   * tela de título, que é o candidato honesto (D3).
+   */
+  entrarNoAtlas(opcoes: { instantaneo?: boolean; momento?: number } = {}) {
+    if (this.phase === 'atlas' || this.phase === 'loading') return;
+    const daViagem = this.phase === 'journey' || this.phase === 'end';
+    const olhar = this.rig.olhar;
+    this.retomada =
+      opcoes.momento !== undefined
+        ? {
+            journeyT: opcoes.momento,
+            lookYaw: 0,
+            lookPitch: 0,
+            leftDisk: false,
+            pausado: true,
+          }
+        : daViagem
+          ? {
+              journeyT: this.journeyT,
+              lookYaw: olhar.yaw,
+              lookPitch: olhar.pitch,
+              leftDisk: this.leftDisk,
+              pausado: this.freezeJourney,
+            }
+          : null;
+    this.atravessarVeu(opcoes.instantaneo === true, () => {
+      this.focarNoSistema();
+      this.setPhase('atlas');
+    });
+  }
+
+  /**
+   * PARTIR. Devolve os CINCO do portal de uma vez — o instante, os dois
+   * ângulos do olhar, o latch do disco e a pausa (que tem dois donos:
+   * `freezeJourney` aqui e `rig.paused` no rig). O `reset()` antes do
+   * `restaurarOlhar` é de propósito: ele arma o salto do primeiro
+   * quadro, que recompõe mira e fov exatamente a partir do instante.
+   *
+   * E PARA O RELÓGIO DO CÉU, porque ele é do Atlas: o `andarORelogio`
+   * roda no topo do tick sem olhar a fase, e os controles que o param só
+   * existem no HUD do modo (`HUD_POR_FASE.atlas.tempo`). Sem esta parada,
+   * quem partisse com ⏵ ou AO VIVO ligado voltava ao filme com os dez
+   * corpos andando, o HUD re-renderizando a 4 Hz e o sinal de prontidão
+   * da captura travado em `andando` — e sem nenhum botão para desfazer,
+   * porque a barra do tempo ficou para trás.
+   *
+   * O `jdPedido` FICA: o instante escolhido é dado medido, viaja no link
+   * (`urlComMomento`) e é a data em que os planetas estão. O que para é
+   * o relógio, não o calendário.
+   */
+  partirDoAtlas() {
+    if (this.phase !== 'atlas') return;
+    const volta = this.retomada;
+    this.sentidoDoTempo = 0;
+    this.aoVivo = false;
+    this.naParede = false;
+    this.publicarTempo();
+    this.atravessarVeu(false, () => {
+      this.rig.reset();
+      this.teletransportou();
+      if (!volta) {
+        this.setPhase('intro');
+        return;
+      }
+      this.journeyT = volta.journeyT;
+      this.rig.restaurarOlhar(volta.lookYaw, volta.lookPitch);
+      this.leftDisk = volta.leftDisk;
+      this.freezeJourney = volta.pausado;
+      this.rig.paused = volta.pausado;
+      this.setPhase('journey');
+    });
+  }
+
+  /** o instante guardado pelo portal — o link copiado de dentro o carrega */
+  get momentoGuardado(): number | null {
+    return this.retomada?.journeyT ?? null;
+  }
+
+  // ---- a máquina do tempo (F4/D2) ----------------------------------
+
+  /**
+   * O MOSTRADOR, somente leitura — como o `captura` e o `selo`. A conta
+   * inteira (grampo, aviso, rótulos) mora no módulo puro; aqui só se
+   * juntam os cinco campos de estado que este objeto guarda.
+   */
+  get tempo(): EstadoDoTempo {
+    return estadoDoTempo({
+      jdPedido: this.jdPedido,
+      jdDaEpoca: EPOCA_JD_TDB,
+      degrau: this.degrau,
+      sentido: this.sentidoDoTempo,
+      aoVivo: this.aoVivo,
+      efemeride: this.faseDaEfemeride,
+      naParede: this.naParede,
+    });
+  }
+
+  /**
+   * BUSCA A EFEMÉRIDE, UMA VEZ E TARDE. Ninguém que só quer ver o filme
+   * paga um byte disto: quem chama são a porta `?jd=` e os controles do
+   * tempo no HUD do Atlas, e o download é abortado pelo mesmo signal de
+   * todo o resto.
+   *
+   * SEM REDE NÃO HÁ GRITO. A camada continua no retrato congelado e o
+   * badge do HUD conta a verdade ao visitante — um `console.error` aqui
+   * seria ruído num caminho em que a degradação é o comportamento
+   * projetado, e o gate da fase cobra console limpo. Falhou uma vez,
+   * uma segunda tentativa é permitida: quem clicou de novo pediu de
+   * novo.
+   */
+  private garantirEfemerides() {
+    if (this.efemeride || this.faseDaEfemeride === 'buscando') return;
+    this.faseDaEfemeride = 'buscando';
+    this.publicarTempo();
+    carregarEfemerides(this.abortController.signal)
+      .then(({ motor }) => {
+        if (this.disposed) return;
+        this.efemeride = motor;
+        this.faseDaEfemeride = 'viva';
+        // o instante vai ser reescrito no tick seguinte: a imagem pode
+        // mudar, e a contagem de estabilidade da captura recomeça
+        this.perturbar();
+        this.publicarTempo();
+      })
+      .catch((error: unknown) => {
+        if (this.disposed) return;
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        this.faseDaEfemeride = 'indisponivel';
+        this.publicarTempo();
+      });
+  }
+
+  /**
+   * ⏴ ⏸ ⏵ — o sentido em que o relógio anda. QUALQUER sentido desliga o
+   * AO VIVO, inclusive o zero: os dois são modos de relógio, ter os dois
+   * ligados seria o visitante disputando a data com o próprio calendário
+   * — e o ⏸ diz "parar o tempo", que é parar QUALQUER relógio. Enquanto
+   * o zero não desligava o AO VIVO, o botão ficava habilitado (o HUD lê
+   * `sentido === 0 && !aoVivo`), o visitante o apertava e a data seguia
+   * andando a 1 Hz: o rótulo prometia uma coisa e o método fazia outra.
+   */
+  andarNoTempo(sentido: SentidoDoTempo) {
+    this.sentidoDoTempo = sentido;
+    this.naParede = false;
+    this.aoVivo = false;
+    if (sentido !== 0) this.garantirEfemerides();
+    this.perturbar();
+    this.publicarTempo();
+  }
+
+  /** o próximo degrau da escada, dando a volta — precedente do `1×/2×/4×` */
+  ciclarDegrau(): number {
+    this.degrau = degrauValido((this.degrau + 1) % DEGRAUS_DE_TEMPO);
+    this.garantirEfemerides();
+    // troca de taxa muda o que a tela vai mostrar no quadro seguinte
+    this.perturbar();
+    this.publicarTempo();
+    return this.degrau;
+  }
+
+  /**
+   * AO VIVO: o céu no instante em que o visitante está. A data sai do
+   * conversor único da casa (`dateToTDB`, regra M6) — nunca de uma
+   * conta de milissegundos aqui dentro.
+   */
+  alternarAoVivo() {
+    this.aoVivo = !this.aoVivo;
+    this.naParede = false;
+    if (this.aoVivo) {
+      this.sentidoDoTempo = 0;
+      this.relogioAoVivo = PASSO_DO_AO_VIVO_S; // o primeiro tick já lê o relógio
+      this.garantirEfemerides();
+    }
+    this.perturbar();
+    this.publicarTempo();
+  }
+
+  /**
+   * VOLTAR À ÉPOCA — o retrato congelado de 2026, que é o que a cena
+   * mostra quando ninguém mexeu em nada. Não busca efeméride nenhuma:
+   * se ela nunca chegou, a camada já está exatamente aqui.
+   */
+  voltarAEpoca() {
+    this.jdPedido = EPOCA_JD_TDB;
+    this.sentidoDoTempo = 0;
+    this.aoVivo = false;
+    this.naParede = false;
+    this.perturbar();
+    this.publicarTempo();
+  }
+
+  /** o mostrador sai agora, e o relógio do mostrador recomeça */
+  private publicarTempo() {
+    this.mostradorTimer = 0;
+    this.events.onTempo(this.tempo);
+  }
+
+  /**
+   * O RELÓGIO, um passo. Fora de qualquer movimento no tempo o método
+   * inteiro é um teste falso — o filme não paga por ele.
+   *
+   * O grampo PARA na borda em vez de deixar o pedido correr para fora:
+   * ver `naParede`. O AO VIVO relê o calendário a 1 Hz (D2), que é a
+   * resolução em que o mostrador fala.
+   */
+  private andarORelogio(dt: number) {
+    if (!this.aoVivo && this.sentidoDoTempo === 0) return;
+    if (this.aoVivo) {
+      this.relogioAoVivo += dt;
+      if (this.relogioAoVivo >= PASSO_DO_AO_VIVO_S) {
+        this.relogioAoVivo = 0;
+        const agora = dateToTDB(new Date());
+        const grampeado = grampearJd(agora);
+        this.naParede = grampeado !== agora;
+        this.jdPedido = grampeado;
+      }
+    } else {
+      const bruto =
+        this.jdPedido + (this.sentidoDoTempo * taxaDoDegrau(this.degrau) * dt) / 86400;
+      const grampeado = grampearJd(bruto);
+      this.jdPedido = grampeado;
+      if (grampeado !== bruto) {
+        this.naParede = true;
+        this.sentidoDoTempo = 0;
+        this.publicarTempo();
+        return;
+      }
+    }
+    this.mostradorTimer += dt;
+    if (this.mostradorTimer >= PASSO_DO_MOSTRADOR_S) this.publicarTempo();
+  }
+
+  /**
+   * A CÂMERA SALTOU. Entrar no Atlas, partir dele e trocar de
+   * enquadramento não são voo — a câmera aparece noutro lugar. Além de
+   * recomeçar a contagem de estabilidade da captura, isto derruba a
+   * LUT do raymarch: o reuso dela tolera 2 pc de deriva de VOO, e um
+   * salto pode cair dentro dessa tolerância vindo de outro lugar do
+   * disco (ver `Nebula.invalidarLut`, com a medida que o denunciou).
+   */
+  private teletransportou() {
+    this.nebula.invalidarLut();
+    this.perturbar();
+  }
+
+  /**
+   * Fecha o véu, faz a troca, abre o véu. Instantâneo (véu nenhum) sob
+   * `prefers-reduced-motion`, sob `?shot=` e quando quem chama pede —
+   * é o que mantém a captura headless determinística.
+   */
+  private atravessarVeu(instantaneo: boolean, aoFechar: () => void) {
+    if (instantaneo || this.reducedMotion || this.shotMode) {
+      this.veu = 0;
+      this.veuAlvo = 0;
+      this.veuPendente = null;
+      this.events.onVeu(0);
+      aoFechar();
+      return;
+    }
+    this.veuPendente = aoFechar;
+    this.veuAlvo = 1;
+    this.perturbar();
   }
 
   setQuality(q: QualityLevel) {
@@ -919,6 +1583,96 @@ export class Director {
     this.perturbar();
   }
 
+  /**
+   * DESLIGA a exposição escolhida à mão e devolve a auto-exposição por
+   * rampa. É o caminho de volta que o latch `expOverride` nunca teve: até
+   * a Onda 5 ele só sabia ligar, e por isso a linha BRILHO do selo não
+   * teria como cumprir "clicar volta ao real" (D1). O tick reescreve o
+   * valor no quadro seguinte — não há número a restaurar aqui, porque a
+   * rampa é função da vista.
+   */
+  limparExposicaoManual() {
+    this.expOverride = false;
+    this.perturbar();
+  }
+
+  /**
+   * DESLIGA a gradação por contexto do Atlas — o gesto da linha BRILHO
+   * do selo (D1: as linhas do selo são os próprios controles). Não tem
+   * volta pelo mesmo caminho de propósito: quem quiser a gradação de
+   * volta tira o `?grad=0` da URL, que é onde o estado vive.
+   */
+  desligarGradacao() {
+    this.gradacaoLigada = false;
+    this.perturbar();
+  }
+
+  /**
+   * A ESCALA DO TEXTO DO HUD mudou (`?ui=`, F6). O Director precisa
+   * saber porque o HUD do Atlas é parte do enquadramento: texto maior
+   * come mais quadro, o retângulo útil encolhe e a câmera recua. É
+   * troca de enquadramento como qualquer outra, e por isso zera a
+   * contagem de quadros estáveis do sinal de prontidão — a captura do
+   * harness não pode assentar no meio de uma troca de imagem.
+   */
+  escalaDaUiMudou() {
+    this.perturbar();
+  }
+
+  /**
+   * O RETÂNGULO ÚTIL que o enquadramento está usando agora — publicado
+   * para o juiz de a11y poder comparar a declaração (`atlasRig.ts`) com
+   * as áreas REAIS que o HUD ocupa na página. Sem esta ponte, as duas
+   * fontes (o número no TS e a altura no CSS) só se encontrariam a olho.
+   */
+  get retanguloUtil() {
+    return retanguloUtilDoAtlas(escalaDaUi(), larguraDeCss());
+  }
+
+  /**
+   * A GRADAÇÃO POR CONTEXTO (F6), num lugar só: o fator do clarão desta
+   * vista. Só na fase 'atlas' — fora dela é 1 EXATO, o termo do
+   * `setWarp` fica neutro em IEEE754 e o filme não perde um pixel. A
+   * conta e o porquê moram no config único (`atlasConfig.ts`).
+   *
+   * É um getter, e não um campo que o tick guarda, porque o SELO lê o
+   * mesmo número: dois lugares calculando a mesma coisa é como o selo
+   * começaria a divergir do quadro que ele declara.
+   */
+  private get claraoDoQuadro() {
+    return this.phase === 'atlas' && this.gradacaoLigada
+      ? claraoDoAtlas(this.engine.camera.position.length())
+      : 1;
+  }
+
+  /**
+   * O ESTADO DA VISTA que o selo de honestidade lê — somente leitura,
+   * como o getter `captura`. Ele mora aqui porque só o Director conhece
+   * os quatro donos do assunto de uma vez (o latch da exposição, o
+   * conjunto de camadas escondidas, o tier vivo e a curva do renderer),
+   * e porque a alternativa — o React guardar uma cópia de cada um —
+   * seria a segunda fonte de verdade que o selo existe para não ter.
+   *
+   * As PORTAS saem de `window.location.search` a cada leitura, e não do
+   * `this.debug` do construtor: o painel e a gaveta reescrevem a URL ao
+   * vivo (`replaceState`), e um selo lendo a URL do boot declararia
+   * desvio já desfeito — ou calaria um recém-feito.
+   */
+  get selo(): EstadoDaVista {
+    return {
+      distanciaPc: this.engine.camera.position.length(),
+      portas: [...new URLSearchParams(window.location.search).keys()],
+      exposicaoManual: this.expOverride,
+      tom: modoDoToneMapping(this.engine.renderer.toneMapping),
+      camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
+      tier: this.engine.quality,
+      // a MESMA conta que o tick escreve no pós — não uma cópia do
+      // último quadro: o selo e o quadro leem a mesma câmera e não têm
+      // como discordar
+      gradacao: this.claraoDoQuadro,
+    };
+  }
+
   get progressTicks(): { t: number; text: string }[] {
     return this.rig.ticks;
   }
@@ -929,6 +1683,31 @@ export class Director {
     const time = this.shotMode ? 0 : rawTime;
     const cam = this.engine.camera;
     let warp = 0;
+
+    // VÉU DO ATLAS, antes de tudo: se ele terminar de fechar neste
+    // quadro, a troca de fase acontece AQUI e o resto do tick já roda na
+    // fase nova. Fora da travessia o ramo inteiro é um teste falso — o
+    // filme não paga um ciclo por ele.
+    if (this.veu !== this.veuAlvo || this.veuPendente) {
+      const passo = dt / VEU_ATLAS_S;
+      this.veu =
+        this.veuAlvo > this.veu
+          ? Math.min(1, this.veu + passo)
+          : Math.max(0, this.veu - passo);
+      if (this.veu >= 1 && this.veuPendente) {
+        const acao = this.veuPendente;
+        this.veuPendente = null;
+        this.veuAlvo = 0;
+        acao();
+      }
+      this.events.onVeu(this.veu);
+    }
+
+    // O RELÓGIO DO CÉU, antes de tudo que lê posição: se o instante
+    // mudar neste quadro, a camada de planetas já o vê escrito. Parado
+    // (o estado de nascimento, e o do filme inteiro) o método devolve
+    // na primeira linha.
+    this.andarORelogio(dt);
 
     if (this.phase === 'journey') {
       if (!this.freezeJourney) this.journeyT += dt * this.playbackRate;
@@ -948,8 +1727,13 @@ export class Director {
         this.setPhase('end');
         this.events.onWarp(0);
       }
-    } else if (this.phase === 'free') {
+    } else if (this.escritorDeCamera === 'voo') {
       this.roam.update(dt);
+    } else if (this.escritorDeCamera === 'atlas') {
+      // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
+      // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
+      // amortecido do shot onde o visitante pausou
+      this.atlas.apply(cam, escalaDaUi(), larguraDeCss());
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {
@@ -1058,8 +1842,14 @@ export class Director {
     // ?nosun a desliga
     this.sunStar.quad.visible = !this.hide.has('nosun');
     this.sunStar.update(time, dHome, tanHalfFov);
-    // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice)
-    this.sun.update(time, this.engine.camera, this.journeyT);
+    // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
+    // dentro do Atlas ele é PINADO, senão cada entrada daria um Sol
+    // diferente conforme o instante da pausa (ver ATLAS_JOURNEY_T)
+    this.sun.update(
+      time,
+      this.engine.camera,
+      this.phase === 'atlas' ? ATLAS_JOURNEY_T : this.journeyT
+    );
     // DEPOIS do update, porque é lá que o `world > 0.02` decide se o grupo
     // some. A fotosfera está na ORIGEM (o grupo do Sol só é escalado, nunca
     // posicionado) e seu raio de mundo é WORLD.sunRadius por construção
@@ -1075,6 +1865,16 @@ export class Director {
     if (this.planetas) {
       this.planetas.ligado =
         (PLANETAS_DEFAULT_ON || this.debug.has('plan')) && !this.hide.has('noplan');
+      // A MÁQUINA DO TEMPO (F4/D2), ANTES do quadro e fora dele: o
+      // método vivo tem cache por jd e devolve na primeira linha quando
+      // o instante não mudou, que é o caso de todo quadro do filme e de
+      // todo quadro do Atlas parado. Sem efeméride carregada a camada
+      // fica exatamente no retrato — o caminho honesto do "sem rede".
+      // `grampearJd` e não `this.tempo`: o mostrador formata strings e
+      // aloca um objeto — ele é para o HUD, a 4 Hz, não para o quadro.
+      if (this.efemeride) {
+        this.planetas.escreverInstante(grampearJd(this.jdPedido), this.efemeride);
+      }
       this.planetas.update(dHome, hPx, cam.position);
     }
     this.dust.update(cam.position, hPx, time);
@@ -1182,7 +1982,13 @@ export class Director {
     // (7 projeções + um canvas 2D pequeno: custo desprezível).
     // Na viagem, menos rótulos (cinema); no voo livre, mais (são os
     // alvos do clicar-para-visitar).
-    if ((this.phase === 'journey' || this.phase === 'free') && this.meta) {
+    // O Atlas entra pelo ramo do voo livre: rótulos fartos e sem filtro
+    // editorial de centro — lá eles são os ALVOS do clicar-para-focar,
+    // não a moldura de um beat (fundação da busca da F3).
+    if (
+      (this.phase === 'journey' || this.phase === 'free' || this.phase === 'atlas') &&
+      this.meta
+    ) {
       if (this.phase === 'journey') {
         // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
         // (target, etiqueta forçada, sem fades) e o fundo fica mudo
@@ -1214,7 +2020,20 @@ export class Director {
         // linha de rumo com distância viva
         this.emitDest(meta.dest, cam.position);
       } else {
-        this.lastLabels = projectLabels(cam, this.meta.named, 7, this.prevLabelKeys);
+        // OS DEZ CORPOS PRIMEIRO, e só onde eles estão DESENHADOS (a
+        // camada ligada e dentro do domínio profundo — o mesmo critério
+        // que decide `points.visible`). Primeiro na lista porque o
+        // desempate de colisão do `LabelCanvas` é a ordem: dentro do
+        // sistema solar o assunto são eles, e uma vizinha a 40 pc não
+        // pode expulsar Netuno do quadro que o Atlas abriu mostrando.
+        const corpos =
+          this.phase === 'atlas' && this.planetas?.points.visible
+            ? projectCorpos(cam, CORPOS_DO_SISTEMA, this.planetas.posicoes)
+            : [];
+        this.lastLabels = [
+          ...corpos,
+          ...projectLabels(cam, this.meta.named, 7, this.prevLabelKeys),
+        ];
         this.emitDest(undefined, cam.position);
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
@@ -1225,6 +2044,7 @@ export class Director {
       this.emitDest(undefined, cam.position);
     }
 
+    this.post.setGradacao(this.claraoDoQuadro);
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     // gate 0.02: na casca externa do fade a contribuição é invisível

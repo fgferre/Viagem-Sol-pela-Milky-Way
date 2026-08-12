@@ -1,3 +1,4 @@
+import { escalaDaUi } from '../lib/uiScale';
 import type { StarLabel } from '../three/world/labels';
 
 interface Rect {
@@ -39,6 +40,15 @@ export class LabelCanvas {
     this.lastHadContent = labels.length > 0;
     if (labels.length === 0) return;
 
+    // A ESCALA DA UI (F6) alcança ESTES rótulos também. Eles são texto
+    // do HUD como a legenda e o selo — só que pintados à mão, e por
+    // isso fora do alcance do `font-size` da raiz. Escalam junto o
+    // tamanho da fonte E a geometria que posiciona o texto (o traço, o
+    // recuo, o vão e a caixa de colisão): mover só a fonte deixaria o
+    // nome maior escrito por cima do próprio traço.
+    // Em `ui = 1` cada produto é exato (`x * 1 === x` em IEEE754) e o
+    // desenho é o de sempre, pixel a pixel.
+    const k = escalaDaUi();
     const occupied: Rect[] = [];
     ctx.textBaseline = 'middle';
     ctx.lineCap = 'round';
@@ -49,27 +59,46 @@ export class LabelCanvas {
       const anchorY = label.y * this.height;
       // O HUD é parte da composição: labels nunca disputam espaço com
       // legenda/progresso nem com os controles no canto superior direito.
-      if (anchorY > this.height * 0.76) continue;
-      if (anchorY < this.height * 0.17 && anchorX > this.width * 0.62) continue;
+      // As duas áreas reservadas CRESCEM com o tamanho do texto (F6): o
+      // que as delimita é a faixa de baixo e a barra de controles, e as
+      // duas são caixas de `rem`. A forma `x − c·(k−1)` não é enfeite: em
+      // `ui = 1` o segundo termo é ZERO e o primeiro é o número de
+      // sempre, bit a bit — o desenho do filme não muda um pixel.
+      // O teste é pela ÂNCORA, como sempre foi: um rótulo cujo TEXTO
+      // avança para dentro da área reservada ainda passa (visível com
+      // `?ui=1,4`, onde nome e barra crescem um na direção do outro).
+      // Corrigir isso é mudar onde os rótulos caem NO FILME, e essa é
+      // decisão de composição, não de escala de UI.
+      if (anchorY > this.height * (0.76 - 0.24 * (k - 1))) continue;
+      if (
+        anchorY < this.height * 0.17 * k &&
+        anchorX > this.width * (0.62 - 0.38 * (k - 1))
+      ) {
+        continue;
+      }
       const toLeft = anchorX > this.width * 0.72;
       const direction = toLeft ? -1 : 1;
-      const textX = anchorX + direction * 18;
+      const textX = anchorX + direction * 18 * k;
       const name = label.name.toLocaleUpperCase('pt-BR');
-      const detail = `${label.spect.slice(0, 5)}  ·  ${formatDistance(label.distPc)}`;
+      // o `detalhe` é dos corpos do sistema (a classe em pt-BR, que não
+      // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é
+      // `undefined` e o desenho é o de sempre, pixel a pixel
+      const detail =
+        `${label.detalhe ?? label.spect.slice(0, 5)}  ·  ${formatDistance(label.distPc)}`;
 
-      ctx.font = '500 12px "Segoe UI", Arial, sans-serif';
+      ctx.font = `500 ${12 * k}px "Segoe UI", Arial, sans-serif`;
       const nameWidth = ctx.measureText(name).width;
-      ctx.font = '400 9px "Segoe UI", Arial, sans-serif';
+      ctx.font = `400 ${9 * k}px "Segoe UI", Arial, sans-serif`;
       const detailWidth = ctx.measureText(detail).width;
-      const contentWidth = nameWidth + 9 + detailWidth;
+      const contentWidth = nameWidth + 9 * k + detailWidth;
       const left = toLeft ? textX - contentWidth : textX;
       const candidate: Rect = {
-        left: left - 5,
-        right: left + contentWidth + 5,
-        top: anchorY - 12,
-        bottom: anchorY + 12,
+        left: left - 5 * k,
+        right: left + contentWidth + 5 * k,
+        top: anchorY - 12 * k,
+        bottom: anchorY + 12 * k,
       };
-      if (occupied.some((rect) => intersects(candidate, rect, 8))) continue;
+      if (occupied.some((rect) => intersects(candidate, rect, 8 * k))) continue;
       occupied.push(candidate);
 
       ctx.globalAlpha = label.opacity;
@@ -77,20 +106,20 @@ export class LabelCanvas {
       ctx.lineWidth = 0.75;
       ctx.beginPath();
       ctx.moveTo(anchorX, anchorY);
-      ctx.lineTo(anchorX + direction * 10, anchorY);
+      ctx.lineTo(anchorX + direction * 10 * k, anchorY);
       ctx.stroke();
 
       ctx.textAlign = toLeft ? 'right' : 'left';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
       ctx.shadowBlur = 7;
-      ctx.font = '500 12px "Segoe UI", Arial, sans-serif';
+      ctx.font = `500 ${12 * k}px "Segoe UI", Arial, sans-serif`;
       ctx.fillStyle = 'rgba(240, 244, 251, 0.96)';
       ctx.fillText(name, textX, anchorY);
 
       ctx.shadowBlur = 6;
-      ctx.font = '400 9px "Segoe UI", Arial, sans-serif';
+      ctx.font = `400 ${9 * k}px "Segoe UI", Arial, sans-serif`;
       ctx.fillStyle = 'rgba(159, 176, 201, 0.88)';
-      const detailX = toLeft ? textX - nameWidth - 9 : textX + nameWidth + 9;
+      const detailX = toLeft ? textX - nameWidth - 9 * k : textX + nameWidth + 9 * k;
       ctx.fillText(detail, detailX, anchorY);
     }
 
