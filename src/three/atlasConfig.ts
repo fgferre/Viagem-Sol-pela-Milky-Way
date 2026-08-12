@@ -87,7 +87,10 @@ export const NOME_DO_SISTEMA = 'Sistema solar';
 //        2,2 UA                      99,0 %              0,927
 //        5,8 UA                      98,9 %              0,924
 //         30 UA                      98,6 %              0,918
-//        228 UA (a abertura)         97,7 %              0,904
+//        228 UA (a faixa da           97,7 %              0,904
+//                abertura — o número
+//                dela mora em
+//                `AtlasRig.focarNoSistema`)
 //      2.018 UA                      67,4 %              0,637
 //     10.034 UA                      28,2 %              0,304
 //     20.183 UA                       7,0 %              0,101
@@ -127,7 +130,7 @@ export const NOME_DO_SISTEMA = 'Sistema solar';
 //    exagera: a curva de tom comprime, e em 228 UA o `1/d²` pediria
 //    1,3e-4, que apaga o clarão em vez de moderá-lo. Em 0,01 o clarão
 //    volta a ser clarão: a fração do quadro acima de meia luz cai de
-//    97,7% para 22% na abertura e para 23% a 6 UA, o céu volta a ser
+//    97,7% para 22% nessa faixa e para 23% a 6 UA, o céu volta a ser
 //    preto, as estrelas aparecem e os planetas viram pontos
 //    reconhecíveis ao lado do Sol.
 //

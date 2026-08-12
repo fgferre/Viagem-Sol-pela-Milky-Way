@@ -23,26 +23,42 @@ import { RETRATO_2026 } from '../world/planetas/retrato2026';
 // pura cobra o efeito. (PLANO-ATLAS §2.3, linha `PrivilegedPosition`.)
 
 /**
- * Ângulo de fase da câmera em relação ao eixo Sol→alvo, em graus.
- * Iluminação de três quartos ("Rembrandt"): de frente para o Sol o
- * alvo lê chapado, e o relevo — quando houver relevo, na Onda 6 —
+ * Ângulo de fase da câmera medido a partir da DIREÇÃO ILUMINADA — a
+ * direção alvo→Sol, que é o lado de onde se vê a face acesa —, em
+ * graus. Iluminação de três quartos ("Rembrandt"): de frente para o Sol
+ * o alvo lê chapado, e o relevo — quando houver relevo, na Onda 6 —
  * some junto com o terminador.
+ *
+ * O SINAL importa e custou caro no doador: a câmera vai para o lado do
+ * Sol (`PrivilegedPosition.ts:208-212`, `cameraDir = sunToTarget.negate()`),
+ * nunca para além do alvo. Com o eixo trocado, os 30° viram fase de
+ * 150° — 6,7% do disco iluminado — e todo enquadramento fotografa o
+ * lado escuro.
  */
 export const PHASE_OFFSET_GRAUS = 30;
 
 /**
  * Desvio MÁXIMO que a órbita do visitante pode acumular contra a
- * direção solar, em graus. 70° ainda deixa mais de meio disco
- * iluminado com o terminador em quadro; passar disso é fotografar o
- * lado escuro do alvo.
+ * DIREÇÃO ILUMINADA (alvo→Sol), em graus. 70° ainda deixa mais de meio
+ * disco iluminado — a fração iluminada é `(1+cos φ)/2`, e em φ = 70° ela
+ * é 67% — com o terminador em quadro; passar disso é fotografar o lado
+ * escuro do alvo.
  */
 export const MAX_SOLAR_DEVIATION_GRAUS = 70;
 
 /**
- * Viés de moldura quando o PAI do alvo está no quadro (o Sol, para um
- * planeta; o planeta, para uma lua na Onda 6): aproxima a câmera a 78%
- * da distância de enquadramento isolado, para o pai entrar composto em
- * vez de tangenciar a borda.
+ * Peso da mistura "para longe do PAI" contra o enquadramento alinhado ao
+ * Sol — é o que ele é no doador (`PrivilegedPosition.ts:22-23, 248-251`):
+ * um peso de `lerp` entre DUAS DIREÇÕES unitárias, para que o planeta não
+ * domine o quadro de uma lua.
+ *
+ * SEM CONSUMIDOR NESTA ONDA, e é declaração, não esquecimento: pai em
+ * quadro só existe com as luas (Onda 6) — até a Onda 5 os alvos são
+ * corpos do sistema e estrelas, que não têm pai a compor. O número fica
+ * medido aqui para quem escrever a mistura; o que ele NÃO é (e chegou a
+ * ser por engano) é fator de DISTÂNCIA: multiplicar a distância de
+ * enquadramento por 0,78 come a margem de 1,2 (1,2 × 0,78 = 0,936 < 1) e
+ * faz transbordar exatamente a esfera que a conta promete tangenciar.
  */
 export const PARENT_FRAMING_BIAS = 0.78;
 
@@ -192,8 +208,6 @@ export interface PedidoDeEnquadramento {
   /** Largura/altura do quadro. */
   aspect: number;
   retanguloUtil: RetanguloUtil;
-  /** O pai do alvo está no quadro? (aplica `PARENT_FRAMING_BIAS`) */
-  comPai?: boolean;
 }
 
 export interface Enquadramento {
@@ -225,7 +239,7 @@ const GRAU = Math.PI / 180;
  * por cento já a 30°), e o descentramento dele vira os dois giros.
  */
 export function enquadrar(pedido: PedidoDeEnquadramento): Enquadramento {
-  const { rAlvo, fovDeg, aspect, retanguloUtil, comPai } = pedido;
+  const { rAlvo, fovDeg, aspect, retanguloUtil } = pedido;
   // lente e quadro: valores impossíveis viram os neutros mais próximos
   // em vez de NaN — este resultado vai direto para a matriz da câmera
   const fov = Number.isFinite(fovDeg) ? THREE.MathUtils.clamp(fovDeg, 1, 179) : 1;
@@ -255,16 +269,21 @@ export function enquadrar(pedido: PedidoDeEnquadramento): Enquadramento {
   // alvo sem raio (o próprio Sol, um alvo ainda não resolvido) não
   // tem escala para enquadrar: distância 0 e quem chamou decide
   const raio = Number.isFinite(rAlvo) && rAlvo > 0 ? rAlvo * MARGEM_DE_ENQUADRAMENTO : 0;
-  const distancia =
-    Math.max(raio / Math.sin(meiaV), raio / Math.sin(meiaH)) *
-    (comPai ? PARENT_FRAMING_BIAS : 1);
+  const distancia = Math.max(raio / Math.sin(meiaV), raio / Math.sin(meiaH));
 
   return { distancia, giroY, giroX };
 }
 
 /**
- * A DIREÇÃO em que a câmera se põe, vista do alvo: o eixo Sol→alvo
- * girado de `PHASE_OFFSET_GRAUS` na direção do polo. Pura.
+ * A DIREÇÃO em que a câmera se põe, vista do alvo: a DIREÇÃO ILUMINADA
+ * — o eixo Sol→alvo NEGADO, ou seja alvo→Sol — girada de
+ * `PHASE_OFFSET_GRAUS` na direção do polo. Pura.
+ *
+ * A NEGAÇÃO é a coisa toda, e é do doador: a câmera se põe ENTRE o Sol e
+ * o alvo, para ver a face acesa (`PrivilegedPosition.ts:210-212`, "Camera
+ * should be on the OPPOSITE side to see illuminated face"). Sem ela os
+ * 30° e os 70° passam a ser medidos do lado ESCURO, e o grampo que
+ * deveria garantir 67% de disco iluminado garante no máximo 33%.
  *
  * `desvioExtra` (radianos) é a órbita do visitante somada ao pino; o
  * total é grampeado em `MAX_SOLAR_DEVIATION_GRAUS` — passar disso é
@@ -276,7 +295,7 @@ export function direcaoPrivilegiada(
   desvioExtra: number,
   out: THREE.Vector3
 ): THREE.Vector3 {
-  const eixoSolar = out.copy(doSolAoAlvo);
+  const eixoSolar = out.copy(doSolAoAlvo).negate();
   if (eixoSolar.lengthSq() < 1e-30) eixoSolar.set(0, 0, 1);
   eixoSolar.normalize();
   const maximo = MAX_SOLAR_DEVIATION_GRAUS * GRAU;
@@ -317,32 +336,58 @@ export class AtlasRig {
   readonly alvo = new THREE.Vector3();
   /** raio da esfera enquadrada, em pc */
   private raio = 0;
-  private comPai = false;
   private orbita = 0;
+  /**
+   * De onde sai o EIXO SOLAR quando o próprio alvo não serve para
+   * defini-lo. Vale o alvo em todo enquadramento comum; na vista de
+   * abertura, cujo alvo é a ORIGEM (o Sol), ele é a posição do corpo
+   * mais externo — sem isso `direcaoPrivilegiada` cairia no ramo
+   * degenerado (vetor nulo) e a abertura viraria uma direção arbitrária.
+   */
+  private readonly eixoDe = new THREE.Vector3();
 
   /**
-   * O ENQUADRAMENTO DE ABERTURA: o SISTEMA inteiro. O alvo é o corpo
-   * mais externo do retrato e o raio enquadrado é a órbita dele — quem
-   * enquadra a órbita de fora enquadra tudo que está dentro dela, que
-   * é o que um atlas do sistema solar abre mostrando.
+   * O ENQUADRAMENTO DE ABERTURA: o SISTEMA inteiro, e a esfera dele é
+   * CENTRADA NO SOL com raio igual à órbita mais externa do retrato.
+   * Centrada no Sol e não no corpo: uma esfera de 35,4 UA pendurada em
+   * Plutão não contém o sistema — um corpo do lado oposto da mesma
+   * órbita fica a até ~71 UA do centro dela, e a promessa "quem enquadra
+   * a órbita de fora enquadra tudo que está dentro" seria falsa. Com o
+   * centro na origem ela é verdade por construção: toda órbita do
+   * retrato cabe dentro da mais externa.
+   *
+   * A DIREÇÃO continua saindo do corpo (`eixoDe`), porque o alvo é a
+   * origem e o eixo Sol→alvo seria nulo.
    *
    * Por que não a Terra, que seria "casa": enquadrar a órbita da Terra
    * põe a câmera a ~4 UA do Sol, e a 4 UA o Sol estoura o quadro
    * inteiro de branco — é fotometria correta (o Sol a 4 UA É ofuscante)
    * contra uma exposição de 1,02 que só a gradação por contexto da F6
-   * vai saber tratar. Daqui, a ~150 UA, o sistema aparece como o gate
-   * já conhece a vista `ua150`: o desfile a olho nu.
+   * vai saber tratar.
+   *
+   * O NÚMERO DA ABERTURA, num lugar só (quem mais precisar dele cita
+   * esta docstring em vez de repeti-lo): com o retângulo útil vigente em
+   * `ui = 1` e tela de mesa (aspecto ≥ 1, onde quem aperta é o vertical)
+   * a câmera fica a **221,55 UA do Sol** — `35,4213 UA × 1,2 / sen(11,06°)`,
+   * e como o alvo é a própria origem essa distância é a distância a casa,
+   * sem triângulo nenhum. Ela ANDA com o HUD e com `?ui=`: 209,39 UA em
+   * `ui = 0,85`, 284,05 UA em `ui = 1,4`. O trilho de `atlasRig.test.ts`
+   * deriva o número de `enquadrar()` e quebra se ele envelhecer aqui.
    */
   focarNoSistema() {
     const fora = orbitaMaisExterna();
-    this.focar(fora.posicao, fora.raio, true);
+    this.focar(SOL, fora.raio, fora.posicao);
   }
 
-  /** foca um ponto da cena, enquadrando uma esfera de `raio` pc nele */
-  focar(alvo: THREE.Vector3, raio: number, comPai = false) {
+  /**
+   * Foca um ponto da cena, enquadrando uma esfera de `raio` pc nele.
+   * `eixoDe` é o ponto de onde sai o eixo solar — o próprio alvo, salvo
+   * na abertura (ver `focarNoSistema`).
+   */
+  focar(alvo: THREE.Vector3, raio: number, eixoDe: THREE.Vector3 = alvo) {
     this.alvo.copy(alvo);
     this.raio = raio;
-    this.comPai = comPai;
+    this.eixoDe.copy(eixoDe);
     this.orbita = 0;
   }
 
@@ -371,10 +416,9 @@ export class AtlasRig {
       fovDeg: ATLAS_FOV_GRAUS,
       aspect: camera.aspect,
       retanguloUtil: retanguloUtilDoAtlas(fatorUi),
-      comPai: this.comPai,
     });
     direcaoPrivilegiada(
-      _dir.copy(this.alvo).sub(SOL),
+      _dir.copy(this.eixoDe).sub(SOL),
       POLO_ECLIPTICO,
       this.orbita,
       _dir
@@ -387,6 +431,32 @@ export class AtlasRig {
     camera.fov = ATLAS_FOV_GRAUS;
     camera.updateProjectionMatrix();
   }
+}
+
+/**
+ * O RAIO DE ENQUADRAMENTO DE UMA ESTRELA — a esfera de vizinhança que o
+ * Atlas põe em quadro em volta dela. Função do ALVO e só dele: a
+ * distância da estrela ao SOL, que é o mesmo referencial de onde
+ * `direcaoPrivilegiada` tira o eixo.
+ *
+ * POR QUE NÃO A DISTÂNCIA À CÂMERA, que era o que estava aqui: o Atlas
+ * ENQUADRA (a câmera é posta, não voa), e `apply` move a câmera na mesma
+ * chamada. Com o raio saindo da câmera, clicar duas vezes no mesmo nome
+ * dava duas vistas — a 100 pc o primeiro clique enquadrava 8 pc, o
+ * segundo 4, o terceiro 2, até o piso —, e o link `?foco=` reproduzia a
+ * vista do primeiro clique, nunca a que estava na tela. É a mesma
+ * não-reprodutibilidade que o pino de `ATLAS_FOV_GRAUS` existe para
+ * impedir, entrando por outra porta (D5: a função pura recebe o `rAlvo`
+ * como propriedade do alvo).
+ *
+ * A LEI é a que já existia — 8% da distância, entre 0,8 e 9 pc —, só que
+ * medida do Sol: o alcance segue o mesmo (uma vizinha a 1,4 pc abre com
+ * 0,8 pc de esfera, Betelgeuse a 152 pc com os 9 do teto), e no VOO
+ * LIVRE nada muda: lá o número significa outra coisa (a distância de
+ * chegada de um voo), e depender de onde se parte é o certo.
+ */
+export function raioDeEnquadramentoEstelar(distanciaAoSolPc: number): number {
+  return THREE.MathUtils.clamp(distanciaAoSolPc * 0.08, 0.8, 9);
 }
 
 /**

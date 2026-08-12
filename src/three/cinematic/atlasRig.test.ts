@@ -17,6 +17,7 @@ import {
   direcaoPrivilegiada,
   enquadrar,
   orbitaMaisExterna,
+  raioDeEnquadramentoEstelar,
   retanguloUtilDoAtlas,
 } from './atlasRig';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
@@ -265,39 +266,71 @@ describe('enquadrar — casos-limite não viram NaN na matriz da câmera', () =>
   });
 });
 
-describe('enquadrar — o viés do pai', () => {
-  it('com o pai no quadro a câmera chega a 78% da distância isolada', () => {
-    const pedido = {
+describe('o viés do pai NÃO é fator de distância', () => {
+  it('a distância é só a conta da esfera — nada a multiplica por 0,78', () => {
+    const fovDeg = 35;
+    const aspect = 1.6;
+    const { distancia } = enquadrar({
       rAlvo: 1,
-      fovDeg: 35,
-      aspect: 1.6,
+      fovDeg,
+      aspect,
       retanguloUtil: RETANGULO_CHEIO,
-    };
-    const sozinho = enquadrar(pedido);
-    const comPai = enquadrar({ ...pedido, comPai: true });
-    expect(comPai.distancia / sozinho.distancia).toBeCloseTo(PARENT_FRAMING_BIAS, 12);
+    });
+    // a tangência EXATA: `d = r·margem / sen(meia-abertura útil)`. Com o
+    // 0,78 no meio, `1,2 × 0,78 = 0,936 < 1` e a esfera que a conta
+    // promete tangenciar TRANSBORDA o quadro — foi o que aconteceu
+    // enquanto o peso de mistura do doador se disfarçou de distância.
+    const util = semiAngulosUteis(fovDeg, aspect, 1, 1);
+    expect(distancia).toBeCloseTo(MARGEM_DE_ENQUADRAMENTO / Math.sin(util.v), 12);
+    expect(distancia).not.toBeCloseTo(
+      (MARGEM_DE_ENQUADRAMENTO / Math.sin(util.v)) * PARENT_FRAMING_BIAS,
+      6
+    );
+    // e o número segue declarado, com o papel que ele tem no doador:
+    // peso de `lerp` entre direções, sem consumidor até as luas (Onda 6)
+    expect(PARENT_FRAMING_BIAS).toBeGreaterThan(0);
+    expect(PARENT_FRAMING_BIAS).toBeLessThan(1);
   });
 });
 
-describe('direcaoPrivilegiada — os 30° e o grampo dos 70°', () => {
+describe('direcaoPrivilegiada — os 30° e o grampo dos 70°, do lado ACESO', () => {
   const polo = new THREE.Vector3(0, 0, 1);
+  /** Sol→alvo: é o que a função recebe */
   const eixo = new THREE.Vector3(1, 0, 0);
+  /** alvo→Sol: a direção ILUMINADA, e é dela que os ângulos se medem */
+  const aceso = eixo.clone().negate();
+
+  it('a câmera vai para o lado do SOL, não para além do alvo', () => {
+    const out = new THREE.Vector3();
+    direcaoPrivilegiada(eixo.clone(), polo, 0, out);
+    // o produto escalar com o eixo Sol→alvo é NEGATIVO: pôr a câmera em
+    // `alvo + out·d` a deixa entre o Sol e o alvo. Com o eixo sem negar,
+    // este número seria +cos(30°) e todo enquadramento fotografaria o
+    // lado escuro (fração iluminada 6,7% em vez de 93,3%).
+    expect(out.dot(eixo)).toBeCloseTo(-Math.cos(PHASE_OFFSET_GRAUS * GRAU), 12);
+    // a fração iluminada do disco, `(1+cos φ)/2`, com φ o ângulo de fase
+    const fase = out.angleTo(aceso);
+    expect((1 + Math.cos(fase)) / 2).toBeGreaterThan(0.93);
+  });
 
   it('sem órbita do visitante, o desvio é o ângulo de fase herdado', () => {
     const out = new THREE.Vector3();
     direcaoPrivilegiada(eixo.clone(), polo, 0, out);
     expect(out.length()).toBeCloseTo(1, 12);
-    expect(out.angleTo(eixo) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS, 10);
+    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS, 10);
   });
 
   it('a órbita do visitante soma — e para no máximo solar', () => {
     const out = new THREE.Vector3();
     direcaoPrivilegiada(eixo.clone(), polo, 20 * GRAU, out);
-    expect(out.angleTo(eixo) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS + 20, 10);
+    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS + 20, 10);
     direcaoPrivilegiada(eixo.clone(), polo, 180 * GRAU, out);
-    expect(out.angleTo(eixo) / GRAU).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 10);
+    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 10);
     direcaoPrivilegiada(eixo.clone(), polo, -180 * GRAU, out);
-    expect(out.angleTo(eixo) / GRAU).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 10);
+    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 10);
+    // no extremo do grampo mais de meio disco continua aceso — é a única
+    // serventia do 70°, e é o que a docstring dele promete
+    expect((1 + Math.cos(MAX_SOLAR_DEVIATION_GRAUS * GRAU)) / 2).toBeGreaterThan(0.5);
   });
 
   it('alvo em cima do polo não devolve NaN', () => {
@@ -322,9 +355,58 @@ describe('o rig e o alvo de abertura', () => {
     for (const c of Object.values(RETRATO_2026)) {
       expect(c.rUA).toBeLessThanOrEqual(RETRATO_2026.pluto.rUA);
     }
-    // o raio é ORBITAL: o Sol, na origem, está a uma distância igual
-    // ao raio enquadrado — ou seja, dentro do quadro por construção
+    // o raio é ORBITAL, e a esfera de abertura é CENTRADA NO SOL: o
+    // corpo mais externo fica sobre a superfície dela (|posição| = raio)
+    // e tudo que orbita por dentro fica dentro — que é a promessa
     expect(posicao.length()).toBeCloseTo(raio, 15);
+  });
+
+  it('a abertura enquadra a esfera do SISTEMA, centrada no Sol', () => {
+    const camera = new THREE.PerspectiveCamera(112, 1.6, 0.001, 100);
+    const rig = new AtlasRig();
+    rig.focarNoSistema();
+    rig.apply(camera);
+    const casa = orbitaMaisExterna();
+    // o alvo é a ORIGEM: a câmera olha o Sol, e a distância a ele é a
+    // distância de enquadramento — sem o triângulo que havia quando a
+    // esfera pendia do corpo
+    expect(rig.alvo.length()).toBe(0);
+    expect(camera.position.length()).toBeCloseTo(
+      enquadrar({
+        rAlvo: casa.raio,
+        fovDeg: ATLAS_FOV_GRAUS,
+        aspect: 1.6,
+        retanguloUtil: retanguloUtilDoAtlas(),
+      }).distancia,
+      15
+    );
+    // e TODA órbita do retrato cabe: a mais externa tangencia por dentro
+    // da margem, e nenhuma outra passa dela
+    for (const c of Object.values(RETRATO_2026)) {
+      expect(c.rUA * AU_PARA_PC).toBeLessThanOrEqual(casa.raio);
+    }
+  });
+
+  it('a DISTÂNCIA DE ABERTURA é a que a docstring de focarNoSistema declara', () => {
+    // o número mora num lugar só (`AtlasRig.focarNoSistema`) e este
+    // trilho o deriva de `enquadrar()`: quando a próxima faixa de HUD
+    // entrar, ele quebra em vez de deixar a docstring envelhecer calada.
+    const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
+    const rig = new AtlasRig();
+    rig.focarNoSistema();
+    rig.apply(camera);
+    const emUA = () => camera.position.length() / AU_PARA_PC;
+    // 221,55 UA — a faixa de meio UA é o que separa "a docstring está
+    // certa" de "a docstring envelheceu"
+    expect(emUA()).toBeGreaterThan(221.3);
+    expect(emUA()).toBeLessThan(221.8);
+    // e ela ANDA com `?ui=` nos dois sentidos (209,4 e 284,1 UA)
+    rig.apply(camera, 0.85);
+    expect(emUA()).toBeGreaterThan(209.1);
+    expect(emUA()).toBeLessThan(209.6);
+    rig.apply(camera, 1.4);
+    expect(emUA()).toBeGreaterThan(283.8);
+    expect(emUA()).toBeLessThan(284.3);
   });
 
   it('o fov do Atlas é pino, não herança: o rig o escreve todo quadro', () => {
@@ -333,18 +415,18 @@ describe('o rig e o alvo de abertura', () => {
     rig.focarNoSistema();
     rig.apply(camera);
     expect(camera.fov).toBe(ATLAS_FOV_GRAUS);
-    // a câmera olha o alvo e fica à distância que a conta pediu
+  });
+
+  it('a câmera da abertura fica do lado ACESO do corpo mais externo', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 0.001, 100);
+    const rig = new AtlasRig();
+    rig.focarNoSistema();
+    rig.apply(camera);
+    // o eixo sai do CORPO (o alvo é a origem, e Sol→origem é nulo), e a
+    // câmera se põe do lado do Sol em relação a ele: o ângulo entre
+    // "para onde a câmera está" e "para onde o corpo está" passa de 90°
     const casa = orbitaMaisExterna();
-    expect(camera.position.distanceTo(casa.posicao)).toBeCloseTo(
-      enquadrar({
-        rAlvo: casa.raio,
-        fovDeg: ATLAS_FOV_GRAUS,
-        aspect: 1.6,
-        retanguloUtil: retanguloUtilDoAtlas(),
-        comPai: true,
-      }).distancia,
-      15
-    );
+    expect(camera.position.angleTo(casa.posicao) / GRAU).toBeGreaterThan(90);
   });
 
   it('a órbita do ponteiro é determinística e grampeada', () => {
@@ -357,16 +439,40 @@ describe('o rig e o alvo de abertura', () => {
     rig.apply(camera);
     const girada = camera.position.clone();
     expect(girada.distanceTo(inicial)).toBeGreaterThan(0);
-    // grampeado: o desvio contra o eixo solar nunca passa do máximo
+    // grampeado: o desvio contra a direção ILUMINADA — a que aponta do
+    // corpo mais externo para o Sol — nunca passa do máximo
     const casa = orbitaMaisExterna();
-    const eixoSolar = casa.posicao.clone().normalize();
-    const daCamera = girada.clone().sub(casa.posicao).normalize();
-    expect(daCamera.angleTo(eixoSolar) / GRAU).toBeLessThanOrEqual(
+    const aceso = casa.posicao.clone().negate().normalize();
+    const daCamera = girada.clone().sub(rig.alvo).normalize();
+    expect(daCamera.angleTo(aceso) / GRAU).toBeLessThanOrEqual(
       MAX_SOLAR_DEVIATION_GRAUS + 1e-9
     );
     // e focar de novo zera a órbita — o alvo novo nasce no pino
     rig.focarNoSistema();
     rig.apply(camera);
     expect(camera.position.distanceTo(inicial)).toBeCloseTo(0, 15);
+  });
+
+  it('o enquadramento de uma estrela é função do ALVO: clicar duas vezes dá a MESMA vista', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 0.001, 1000);
+    const rig = new AtlasRig();
+    // Sirius, a 2,64 pc: o raio sai da distância dela ao SOL
+    const sirius = new THREE.Vector3(-0.494, 2.474, -0.888);
+    const enquadra = () => {
+      rig.focar(sirius, raioDeEnquadramentoEstelar(sirius.length()));
+      rig.apply(camera);
+      return camera.position.clone();
+    };
+    const primeira = enquadra();
+    const segunda = enquadra();
+    const terceira = enquadra();
+    // idempotência EXATA: é o que faz `?foco=hd48915` reproduzir a vista
+    // de quem copiou o link, e o que o raio saído da câmera destruía
+    expect(segunda.distanceTo(primeira)).toBe(0);
+    expect(terceira.distanceTo(primeira)).toBe(0);
+    // e o raio é o piso da lei (2,64 pc × 0,08 = 0,21 < 0,8)
+    expect(raioDeEnquadramentoEstelar(sirius.length())).toBe(0.8);
+    expect(raioDeEnquadramentoEstelar(152)).toBeCloseTo(9, 12);
+    expect(raioDeEnquadramentoEstelar(8150)).toBe(9);
   });
 });

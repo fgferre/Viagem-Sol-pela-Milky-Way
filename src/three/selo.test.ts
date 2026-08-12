@@ -39,7 +39,10 @@ import type { ToneMapMode } from './core/engine';
 
 /** o estado de uma vista limpa: nada tocado, nada na URL */
 const LIMPA: EstadoDaVista = {
-  distanciaPc: 0.0007, // ~150 UA: o enquadramento de abertura do Atlas
+  // 144 UA — uma vista de DENTRO do sistema solar, a faixa em que o
+  // Atlas abre. O número exato da abertura não se repete aqui: ele mora
+  // num lugar só (`AtlasRig.focarNoSistema`) e anda com o HUD e com `?ui=`.
+  distanciaPc: 0.0007,
   portas: [],
   exposicaoManual: false,
   tom: 'aces',
@@ -264,7 +267,7 @@ describe('3. clicar volta ao real', () => {
 });
 
 describe('4. o eixo ESCALA sai da geometria, não de porta', () => {
-  it('o enquadramento de abertura (~150 UA) é ESCALA REAL', () => {
+  it('uma vista de dentro do sistema, como a de abertura, é ESCALA REAL', () => {
     expect(escalaDaVista(0.0007)).toBe('real');
   });
 

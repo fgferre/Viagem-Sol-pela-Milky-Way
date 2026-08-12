@@ -9,7 +9,9 @@
 // produto, não de acessibilidade:
 //
 //  1. `?foco=` ABRE o Atlas com a estrela em quadro (a porta implica o
-//     modo: focar é coisa que só existe lá).
+//     modo: focar é coisa que só existe lá) — e a vista é IDEMPOTENTE:
+//     enquadrar o mesmo nome de novo não move a câmera um bit. Sem isso
+//     o link não reproduz a vista de quem o copiou.
 //  2. `?foco=` que não acha NÃO CHUTA: o Atlas abre no enquadramento de
 //     abertura e a linha de contexto diz o sistema, não uma estrela
 //     parecida.
@@ -75,6 +77,26 @@ try {
   conferir(
     selo === 'FORA DE ESCALA',
     `e o selo conta a verdade da vista sem a porta se declarar ("${selo}")`
+  );
+
+  // ---- 1b: a mesma porta duas vezes dá a MESMA vista ---------------
+  // O Atlas ENQUADRA (a câmera é posta, não voa), então o raio de
+  // enquadramento tem de ser propriedade do ALVO. Enquanto ele saía da
+  // distância à CÂMERA, o segundo clique no mesmo nome enquadrava metade
+  // do raio do primeiro (a câmera já se aproximara), e o link `?foco=`
+  // reproduzia a vista do primeiro clique, nunca a que estava na tela.
+  const camera = () =>
+    sessao.js('window.__director.engine.camera.position.toArray().join()');
+  const vista1 = await camera();
+  await sessao.js("window.__director.visitarEstrela(window.__director.nomeadas.find((s) => s.hd === 48915))");
+  await sessao.assentar();
+  const vista2 = await camera();
+  await sessao.js("window.__director.visitarEstrela(window.__director.nomeadas.find((s) => s.hd === 48915))");
+  await sessao.assentar();
+  const vista3 = await camera();
+  conferir(
+    vista1 === vista2 && vista2 === vista3,
+    `enquadrar a MESMA estrela três vezes dá a MESMA câmera (${vista1} · ${vista2} · ${vista3})`
   );
 
   // ---- 2: porta que não acha não chuta -----------------------------

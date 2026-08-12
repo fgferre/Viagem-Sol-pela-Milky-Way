@@ -40,7 +40,11 @@ import {
 } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
-import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
+import {
+  AtlasRig,
+  raioDeEnquadramentoEstelar,
+  retanguloUtilDoAtlas,
+} from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
 import { claraoDoAtlas } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
@@ -1105,11 +1109,12 @@ export class Director {
    * porta pública por onde a paleta da busca chega — e ela cai no
    * caminho que já existia, `irAte`, de propósito: as duas fases seguem
    * fazendo o que faziam (o Atlas ENQUADRA de onde está, o voo livre
-   * VOA até lá) e o raio de chegada continua saindo da mesma lei de
-   * aproximação, sem tabela nova em lugar nenhum (D5).
+   * VOA até lá), cada uma com a lei que lhe cabe (ver `irAte`).
    */
   visitarEstrela(estrela: { n: string; x: number; y: number; z: number }) {
     const pos = new THREE.Vector3(estrela.x, estrela.y, estrela.z);
+    // a lei de APROXIMAÇÃO do voo livre, que é onde este número é
+    // consumido: 8% do caminho a percorrer, entre 0,8 e 9 pc
     this.irAte(
       pos,
       THREE.MathUtils.clamp(
@@ -1122,16 +1127,22 @@ export class Director {
   }
 
   /**
-   * O mesmo alvo, os dois modos. O raio de enquadramento do Atlas reusa
-   * a lei de aproximação que o voo livre já tinha (`arriveDist`) — não
-   * há tabela nova de raios em lugar nenhum (D5).
+   * O mesmo alvo, os dois modos — e DUAS leis, porque o número significa
+   * duas coisas. No voo livre `arriveDist` é a distância de CHEGADA de um
+   * voo, e sair de onde se está é o certo. No Atlas ele seria o raio da
+   * esfera ENQUADRADA, e aí depender da câmera destrói a
+   * reprodutibilidade: o `apply` move a câmera na mesma chamada, então
+   * clicar duas vezes no mesmo nome daria duas vistas e o `?foco=` do
+   * link não reproduziria a vista de quem o copiou. Por isso o Atlas tira
+   * o raio do ALVO (`raioDeEnquadramentoEstelar`, D5) e ignora o
+   * `arriveDist` que veio.
    *
    * `nome` só serve ao Atlas: é o que a ContextLine passa a ler. No voo
    * livre quem anuncia o destino é a linha de rumo, que já existe.
    */
   private irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
     if (this.phase === 'atlas') {
-      this.atlas.focar(pos, arriveDist);
+      this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()));
       this.enquadrarAgora();
       this.events.onFoco(nome);
       this.teletransportou();
