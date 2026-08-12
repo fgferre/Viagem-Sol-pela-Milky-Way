@@ -27,7 +27,11 @@
 //     promete o que a fase faz.
 //  6. LATÊNCIA POR TECLA, medida de dois jeitos (a conta pura sobre o
 //     índice completo e a ponta-a-ponta até a lista mudar na tela).
-//  7. A paleta NÃO VAZA no `?shot=2` (invariante arq#14 da onda).
+//  7. A paleta NÃO VAZA no `?shot=2` (o `.bare-mode` só esconde filhos
+//     diretos de `.hud-root` — overlay portalizado para o body entraria
+//     nas 18 vistas oficiais).
+//  8. OS OVERLAYS SÃO DA FASE que os hospeda: sair dela e voltar não os
+//     faz renascer sozinhos, nem com o foco preso dentro deles.
 import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -275,6 +279,51 @@ try {
     lat.length >= 4 && mediana < 250,
     `a lista acompanha a digitação (mediana ${mediana.toFixed(0)} ms`
       + ` em ${lat.length} mudanças de ${CONSULTA.length} teclas)`
+  );
+
+  // ---- 8: os overlays são da FASE que os hospeda -------------------
+  // A presença é `busca && hud.busca`: o `hud.*` some com a fase, e o
+  // estado de aberto NÃO sumia. Resultado medido antes do conserto: sair
+  // do voo livre com a paleta aberta e voltar a ele a fazia RENASCER —
+  // e, pior, `useDialogFocus` punha o foco na caixa de texto, onde a
+  // guarda de alvo de formulário do rig engole o WASD. O visitante
+  // entrava para voar e as teclas de voar viravam texto.
+  await sessao.ir(`pos=0,0,0.1&look=0,0,0&${PIN}`);
+  await abrirPaleta(sessao);
+  const abriuNoVoo = await sessao.js("Boolean(document.querySelector('.atlas-busca'))");
+  const clicar = (texto) =>
+    sessao.js(`(() => {
+      [...document.querySelectorAll('.controls-bar button')]
+        .find((b) => b.innerText.toUpperCase().includes(${JSON.stringify(texto.toUpperCase())}))
+        .click();
+    })()`);
+  await clicar('Reviver');
+  await sleep(300);
+  await clicar('Explorar');
+  await sleep(400);
+  const aoVoltar = await sessao.js(`JSON.stringify({
+    paleta: Boolean(document.querySelector('.atlas-busca')),
+    foco: document.activeElement ? document.activeElement.className : null,
+  })`);
+  const v = JSON.parse(aoVoltar);
+  conferir(
+    abriuNoVoo && !v.paleta && v.foco !== 'atlas-busca-campo',
+    `a paleta NÃO renasce ao reentrar na fase (${aoVoltar})`
+  );
+
+  // e o mesmo para a gaveta de camadas, que atravessava Atlas→filme→Atlas
+  await sessao.ir(`atlas=1&${PIN}`);
+  await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
+  await sleep(200);
+  const abriuNoAtlas = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
+  await sessao.js('window.__director.partirDoAtlas()');
+  await sleep(300);
+  await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
+  await sleep(400);
+  const gaveta = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
+  conferir(
+    abriuNoAtlas && !gaveta,
+    `a gaveta NÃO renasce ao reentrar no Atlas (abriu=${abriuNoAtlas}, voltou=${gaveta})`
   );
 
   // ---- 7: a paleta não vaza no ?shot=2 -----------------------------

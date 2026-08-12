@@ -242,6 +242,90 @@ try {
   );
   await sessao.bloquear([]);
 
+  // ---- 10: O RELÓGIO DO CÉU PARA quando se manda parar ------------
+  // Duas promessas que o rótulo dos controles faz e que o código não
+  // cumpria. O relógio roda no TOPO do tick, sem olhar a fase, e os
+  // botões que o param só existem no HUD do Atlas — então um relógio que
+  // não para na hora certa não tem como ser parado depois.
+  //
+  // `?shot=1` e não `shot=2`: o objeto do juízo são os botões.
+  const relogio = () => sessao.js('JSON.stringify(window.__director.tempo)');
+  const apertar = (rotulo) =>
+    sessao.js(`(() => {
+      const b = [...document.querySelectorAll('.atlas-tempo button')]
+        .find((e) => (e.getAttribute('aria-label') || '').startsWith(${JSON.stringify(rotulo)}));
+      b.click();
+    })()`);
+
+  await sessao.ir('atlas=1&q=cinema&shot=1');
+  await apertar('Seguir o tempo real');
+  await sleep(300);
+  const vivo = JSON.parse(await relogio());
+  conferir(vivo.aoVivo === true, `AO VIVO liga o relógio do calendário (${vivo.data})`);
+  // ⏸ com AO VIVO ligado: o botão está habilitado e promete "Parar o
+  // tempo". Enquanto `andarNoTempo(0)` não desligava o AO VIVO, ele
+  // apagava o sentido (que já era zero) e a data seguia andando a 1 Hz.
+  await apertar('Parar o tempo');
+  await sleep(200);
+  const parado = JSON.parse(await relogio());
+  await sleep(1600);
+  const aindaParado = JSON.parse(await relogio());
+  conferir(
+    parado.aoVivo === false && parado.sentido === 0 && aindaParado.jd === parado.jd,
+    `⏸ com AO VIVO ligado PARA de verdade (aoVivo=${parado.aoVivo},`
+      + ` jd ${parado.jd} → ${aindaParado.jd} em 1,6 s)`
+  );
+
+  // E "Partir" leva o relógio junto: o filme não tem dono para ele.
+  await sessao.ir('t=100&q=cinema&shot=1');
+  await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
+  await sleep(200);
+  await apertar('Avançar no tempo');
+  await sleep(300);
+  const andando = JSON.parse(await relogio());
+  await sessao.js('window.__director.partirDoAtlas()');
+  await sessao.assentar();
+  const noFilme = JSON.parse(await relogio());
+  await sleep(1200);
+  const depoisDoFilme = JSON.parse(await relogio());
+  conferir(
+    andando.sentido === 1 && noFilme.sentido === 0 && !noFilme.aoVivo
+      && depoisDoFilme.jd === noFilme.jd,
+    `"Partir" PARA o relógio do céu (sentido ${andando.sentido} → ${noFilme.sentido},`
+      + ` jd ${noFilme.jd} → ${depoisDoFilme.jd} em 1,2 s)`
+  );
+  conferir(
+    (await sessao.js('window.__director.captura.andando')) === false,
+    'e o sinal de prontidão da captura volta a ficar pronto no filme'
+  );
+
+  // ---- 11: a camada de BAKE recarrega SEM tirar o visitante do modo -
+  // As três camadas `viva: false` do painel (marcadas com ↻) são lidas na
+  // construção do mundo, então mexer nelas recarrega a página de verdade.
+  // O que não pode é a recarga ser pela query CRUA: de dentro do Atlas a
+  // URL costuma estar limpa, e `/?nodisc=1` devolvia a tela de título —
+  // modo, instante do céu e alvo em quadro perdidos. O caminho é o mesmo
+  // que a troca de qualidade já usa (`urlComMomento`).
+  await sessao.ir('atlas=1&jd=2465000&foco=hd48915&ajustes=1&q=cinema&shot=1');
+  await sessao.js(`(() => {
+    const l = [...document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')]
+      .find((e) => e.textContent.includes('Lâminas do disco'));
+    l.querySelector('input').click();
+  })()`);
+  await sessao.assentar();
+  const depoisDaCamada = await sessao.js(`JSON.stringify({
+    url: location.search,
+    fase: window.__director.captura.fase,
+    jd: window.__director.tempo.jd,
+    foco: (document.querySelector('.atlas-contexto-nome') || {}).textContent || '',
+  })`);
+  const dc = JSON.parse(depoisDaCamada);
+  conferir(
+    dc.fase === 'atlas' && dc.jd === 2465000 && dc.foco === 'Sirius'
+      && dc.url.includes('nodisc=1'),
+    `camada ↻ recarrega SEM perder o modo, o instante nem o alvo (${depoisDaCamada})`
+  );
+
   await sessao.reduzirMovimento();
   await sessao.ir('t=100&q=cinema');
   await sessao.js("[...document.querySelectorAll('.controls-bar button')]"

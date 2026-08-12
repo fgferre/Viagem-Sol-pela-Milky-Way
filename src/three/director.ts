@@ -1267,10 +1267,26 @@ export class Director {
    * `freezeJourney` aqui e `rig.paused` no rig). O `reset()` antes do
    * `restaurarOlhar` é de propósito: ele arma o salto do primeiro
    * quadro, que recompõe mira e fov exatamente a partir do instante.
+   *
+   * E PARA O RELÓGIO DO CÉU, porque ele é do Atlas: o `andarORelogio`
+   * roda no topo do tick sem olhar a fase, e os controles que o param só
+   * existem no HUD do modo (`HUD_POR_FASE.atlas.tempo`). Sem esta parada,
+   * quem partisse com ⏵ ou AO VIVO ligado voltava ao filme com os dez
+   * corpos andando, o HUD re-renderizando a 4 Hz e o sinal de prontidão
+   * da captura travado em `andando` — e sem nenhum botão para desfazer,
+   * porque a barra do tempo ficou para trás.
+   *
+   * O `jdPedido` FICA: o instante escolhido é dado medido, viaja no link
+   * (`urlComMomento`) e é a data em que os planetas estão. O que para é
+   * o relógio, não o calendário.
    */
   partirDoAtlas() {
     if (this.phase !== 'atlas') return;
     const volta = this.retomada;
+    this.sentidoDoTempo = 0;
+    this.aoVivo = false;
+    this.naParede = false;
+    this.publicarTempo();
     this.atravessarVeu(false, () => {
       this.rig.reset();
       this.teletransportou();
@@ -1347,17 +1363,19 @@ export class Director {
   }
 
   /**
-   * ⏴ ⏸ ⏵ — o sentido em que o relógio anda. Sair do parado desliga o
-   * AO VIVO: os dois são modos de relógio, e ter os dois ligados seria
-   * o visitante disputando a data com o próprio calendário.
+   * ⏴ ⏸ ⏵ — o sentido em que o relógio anda. QUALQUER sentido desliga o
+   * AO VIVO, inclusive o zero: os dois são modos de relógio, ter os dois
+   * ligados seria o visitante disputando a data com o próprio calendário
+   * — e o ⏸ diz "parar o tempo", que é parar QUALQUER relógio. Enquanto
+   * o zero não desligava o AO VIVO, o botão ficava habilitado (o HUD lê
+   * `sentido === 0 && !aoVivo`), o visitante o apertava e a data seguia
+   * andando a 1 Hz: o rótulo prometia uma coisa e o método fazia outra.
    */
   andarNoTempo(sentido: SentidoDoTempo) {
     this.sentidoDoTempo = sentido;
     this.naParede = false;
-    if (sentido !== 0) {
-      this.aoVivo = false;
-      this.garantirEfemerides();
-    }
+    this.aoVivo = false;
+    if (sentido !== 0) this.garantirEfemerides();
     this.perturbar();
     this.publicarTempo();
   }

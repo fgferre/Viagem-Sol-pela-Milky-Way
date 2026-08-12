@@ -319,6 +319,28 @@ export default function App() {
     if (phase === 'journey') setPaused(directorRef.current?.pausado ?? false);
   }, [phase]);
 
+  /**
+   * OS OVERLAYS SÃO DA FASE QUE OS HOSPEDA. A presença deles é
+   * `busca && hud.busca` / `gaveta && hud.gaveta` — o `hud.*` some com a
+   * fase, mas o estado de aberto NÃO sumia, e eles RENASCIAM sozinhos ao
+   * voltar. Pior que reaparecer: `useDialogFocus` põe o foco no primeiro
+   * focável, que na paleta é a caixa de texto, e a guarda de alvo de
+   * formulário do `FreeRoam` engole o WASD — o visitante entrava no voo
+   * livre e as teclas de voar viravam texto na busca.
+   *
+   * O ⚙ AJUSTES NÃO ENTRA AQUI, e é decisão escrita: ele não é o painel
+   * de uma fase, é o da casa (qualidade, tom, exposição, tamanho do
+   * texto, camadas), e o `?ajustes=1` o abre DE PROPÓSITO sobre a tela de
+   * título, onde nenhuma fase o hospeda — fechá-lo por fase mataria a
+   * porta. Ele também não sofre o defeito: fica montado sempre, então
+   * trocar de fase não o remonta nem lhe entrega o foco.
+   */
+  useEffect(() => {
+    const hospeda = HUD_POR_FASE[phase];
+    if (!hospeda.busca) setBusca(false);
+    if (!hospeda.gaveta) setGaveta(false);
+  }, [phase]);
+
   // ---- captura de ponteiro: o HUD só OFERECE (F5) ---------------------
   // As quatro defesas moram no rig (`cameraRig.ts`); daqui sai o pedido e
   // vem o estado que o rótulo do botão mostra. O `pointerlockchange` é o
@@ -590,8 +612,16 @@ export default function App() {
     const camada = CAMADAS.find((c) => c.flag === flag);
     if (!camada) return;
     if (!camada.viva) {
-      // lidas no bake do mundo — reload de verdade
-      window.location.assign(comParam(flag, ligar ? null : '1'));
+      // Lidas no bake do mundo — reload de verdade. E pelo `urlComMomento`,
+      // que é o que a troca de qualidade e o "voltar ao brilho real" já
+      // fazem: sem ele, desmarcar uma camada ↻ de DENTRO do Atlas (onde a
+      // URL costuma estar limpa) recarregava em `/?nodisc=1` e devolvia o
+      // visitante à tela de título — modo, foco, instante do céu e alvo em
+      // quadro, todos perdidos.
+      const url = urlComMomento();
+      if (ligar) url.searchParams.delete(flag);
+      else url.searchParams.set(flag, '1');
+      window.location.assign(url.toString());
       return;
     }
     directorRef.current?.setLayerHidden(flag, !ligar);
