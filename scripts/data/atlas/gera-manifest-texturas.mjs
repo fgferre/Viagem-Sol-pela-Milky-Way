@@ -145,6 +145,43 @@ const ORIGENS = {
     atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
     proveniencia: 'medido',
   },
+  // ---- F4 (gigantes + anel). Mesma linha SSS CC BY 4.0. O 8k_jupiter
+  // do SSS mede 4096 px (a armadilha do nome — o manifest re-mede).
+  'jupiter/map': {
+    fonte: 'Solar System Scope — 8k_jupiter',
+    url: 'https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
+  'saturn/map': {
+    fonte: 'Solar System Scope — 8k_saturn',
+    url: 'https://www.solarsystemscope.com/textures/download/8k_saturn.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
+  'saturn/ring': {
+    fonte: 'Solar System Scope — 8k_saturn_ring_alpha (placa alpha)',
+    url: 'https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
+  'uranus/map': {
+    fonte: 'Solar System Scope — 2k_uranus (incumbente; sem 8k SSS)',
+    url: 'https://www.solarsystemscope.com/textures/download/2k_uranus.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
+  'neptune/map': {
+    fonte: 'Solar System Scope — 2k_neptune (incumbente; sem 8k SSS)',
+    url: 'https://www.solarsystemscope.com/textures/download/2k_neptune.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS
