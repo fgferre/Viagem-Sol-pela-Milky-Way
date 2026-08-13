@@ -300,6 +300,28 @@ const FONTES = [
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'triton_nasa_3d_resource.jpg',
   },
+  // ---- F6 (anões). Plutão/Caronte: NASA 3D Resources, crédito
+  // redigido. Ceres: SSS CC BY 4.0 mas FICTIONAL na fonte (não há
+  // NASA 3D nem 2k real no SSS); mosaico Dawn USGS fica pendente.
+  // Haumea/Makemake/Eris/Quaoar NÃO baixam mapa (procedurais).
+  {
+    corpo: 'pluto',
+    canal: 'map',
+    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto',
+    nomeNoDoador: 'pluto_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'charon',
+    canal: 'map',
+    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon',
+    nomeNoDoador: 'charon_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'ceres',
+    canal: 'map',
+    url: `${SSS}/2k_ceres_fictional.jpg`,
+    nomeNoDoador: 'ceres_sss_fictional.jpg',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;

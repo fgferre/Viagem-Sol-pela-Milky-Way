@@ -304,6 +304,30 @@ const ORIGENS = {
     atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
     proveniencia: 'medido',
   },
+  // ---- F6 (anões). NASA 3D para Plutão/Caronte. Ceres SSS
+  // fictional (CC BY 4.0) — a fonte admite invenção; mosaico Dawn
+  // USGS fica pendente. Procedurais (Haumea/Makemake/Eris) sem mapa.
+  'pluto/map': {
+    fonte: 'NASA 3D Resources — Plutão (720×360)',
+    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto',
+    licenca: 'NASA 3D Resources (uso livre)',
+    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
+    proveniencia: 'medido',
+  },
+  'charon/map': {
+    fonte: 'NASA 3D Resources — Caronte (720×360)',
+    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon',
+    licenca: 'NASA 3D Resources (uso livre)',
+    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
+    proveniencia: 'medido',
+  },
+  'ceres/map': {
+    fonte: 'Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)',
+    url: 'https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS

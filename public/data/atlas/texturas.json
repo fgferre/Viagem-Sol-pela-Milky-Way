@@ -115,6 +115,86 @@
       "proveniencia": "derivado"
     },
     {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 160946,
+      "sha256": "19e3ccce84e6ba563903dc568854b769573d939549da4ef446ff69f2a3ff555c",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1127678,
+      "sha256": "ee59b2c7aa399dfdc810078c723373670133fe8505e439601dff4ce6f3cc5ad8",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 772714,
+      "sha256": "240fbbd669e4bc200ff167e2e5589dfda5210405d9ada726d9e7026eb118b103",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map.jpg",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 265536,
+      "sha256": "c1fb3c19d448c82b9cc29c769d0875250cb2731cab0bb7c8d67243cd2272570b",
+      "origem": {
+        "fonte": "NASA 3D Resources — Caronte (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map.webp",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 62204,
+      "sha256": "898bdfb666891cd6c74b604af51bdc3e2ab824ef6894a1a680edab2f1332f3f7",
+      "origem": {
+        "fonte": "NASA 3D Resources — Caronte (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
       "corpo": "deimos",
       "canal": "map",
       "arquivo": "textures/atlas/deimos/map_1024.jpg",
@@ -1853,6 +1933,38 @@
       "origem": {
         "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
         "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map.jpg",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 351885,
+      "sha256": "a921387426a506b6f6ae8fd24872eeab59b81f963cd9c010b59d825059b29c64",
+      "origem": {
+        "fonte": "NASA 3D Resources — Plutão (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map.webp",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 70652,
+      "sha256": "3b7cd87e52f5b1899378ae412279a7633e361a161d69e4fa94ac45841d9a10f2",
+      "origem": {
+        "fonte": "NASA 3D Resources — Plutão (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto",
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
       },
