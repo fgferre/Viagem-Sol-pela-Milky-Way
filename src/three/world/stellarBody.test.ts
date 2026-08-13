@@ -18,7 +18,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { WORLD } from '../config';
-import { SOL_PARAMS, SOL_ROT_PERIOD_DAYS, rotSpeedFromPeriod } from './stellarBody';
+import {
+  SOL_PARAMS,
+  SOL_ROT_PERIOD_DAYS,
+  epsilonDeSegmentoGlsl,
+  literalGlsl,
+  rotSpeedFromPeriod,
+} from './stellarBody';
 
 describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('raio: é o MESMO WORLD.sunRadius, não um 0,011 redigitado', () => {
@@ -115,5 +121,103 @@ describe('o que NÃO foi promovido está declarado, não escondido', () => {
   it('a paleta H-alfa e a captura de câmera do CME estão nomeadas', () => {
     expect(src).toContain('PALETA H-alfa');
     expect(src).toContain('sol/cme.js:10');
+  });
+});
+
+// ============================================================
+// AS DUAS PONTES DE ESCALA PARA O GLSL (F1 da onda do Sol real).
+//
+// Este bloco é o TESTE-AGULHA das duas quebras SILENCIOSAS — as que não
+// dão erro de compilação, não escrevem no console e só se manifestam
+// como ausência na tela. Sem ele, trocar o raio do Sol apaga a coroa e a
+// ejeção de massa e ninguém fica sabendo.
+//
+// A varredura textual dos dois arquivos vendorizados existe pelo mesmo
+// motivo do resto da casa: se alguém "limpar" o `||` lá dentro e voltar
+// ao `.toFixed(6)` cru, isto reprova ANTES de a GPU calar.
+// ============================================================
+describe('F1 — as pontes de escala para o texto do shader', () => {
+  const RAIO_SOL_FISICO_PC = 2.2566840209436597e-8;
+
+  describe('literalGlsl', () => {
+    it('AGULHA: o raio físico NÃO pode virar "0.000000"', () => {
+      // a quebra, escrita: é isto que o caminho herdado faz
+      expect((RAIO_SOL_FISICO_PC).toFixed(6)).toBe('0.000000');
+      // e é isto que a ponte impede
+      const literal = literalGlsl(RAIO_SOL_FISICO_PC);
+      expect(literal).not.toBe('0.000000');
+      expect(Number(literal)).toBeGreaterThan(0);
+    });
+
+    it('AGULHA: o literal volta ao MESMO float32 — senão o raio mente', () => {
+      expect(Math.fround(Number(literalGlsl(RAIO_SOL_FISICO_PC)))).toBe(
+        Math.fround(RAIO_SOL_FISICO_PC)
+      );
+    });
+
+    it('o literal é float de GLSL válido (ponto decimal E expoente)', () => {
+      expect(literalGlsl(RAIO_SOL_FISICO_PC)).toMatch(/^\d\.\d+e[-+]?\d+$/);
+    });
+
+    it('o raio ARTÍSTICO devolve a string de sempre, byte a byte', () => {
+      // é o que mantém as 24 vistas oficiais bit-idênticas com a porta
+      // desligada — bit-identidade por construção, não por sorte
+      expect(literalGlsl(WORLD.sunRadius)).toBe(WORLD.sunRadius.toFixed(6));
+      expect(literalGlsl(WORLD.sunRadius)).toBe('0.011000');
+    });
+
+    it('nem infinito, nem NaN, nem zero no denominador do cme', () => {
+      // `1.0/SUN_R` (cme.js) com SUN_R = 0 é o segundo estrago
+      expect(1 / Number(literalGlsl(RAIO_SOL_FISICO_PC))).toBeLessThan(Infinity);
+    });
+  });
+
+  describe('epsilonDeSegmentoGlsl', () => {
+    it('o raio ARTÍSTICO devolve o "1e-4" literal de sempre', () => {
+      expect(epsilonDeSegmentoGlsl(WORLD.sunRadius)).toBe('1e-4');
+    });
+
+    it('AGULHA: no raio físico o limiar cai proporcional, não fica em 1e-4', () => {
+      // a travessia do volume de coroa no raio real mede ~1,3e-7 pc;
+      // com o limiar herdado (1e-4) TODO raio desiste antes do 1º passo
+      const eps = Number(epsilonDeSegmentoGlsl(RAIO_SOL_FISICO_PC));
+      const travessiaPc = RAIO_SOL_FISICO_PC * 2 * 2.9; // ~2,9 R de CVOL_ROUT
+      expect(1e-4).toBeGreaterThan(travessiaPc); // a quebra, escrita
+      expect(eps).toBeLessThan(travessiaPc); // e a ponte
+      expect(eps).toBeGreaterThan(0);
+    });
+
+    it('a proporção com o raio é a herdada, não um número novo', () => {
+      // EM FLOAT32, que é onde o literal vai viver. O texto carrega 9
+      // casas decimais e não volta em double bit a bit (erra por ~6e-13,
+      // mil vezes abaixo de um ULP de float32 nessa faixa) — cobrar
+      // igualdade de double aqui seria exigir uma precisão que a GPU nem
+      // tem, e reprovaria a ponte certa. A primeira versão deste teste
+      // cobrava double e reprovou; o defeito era da régua, não da ponte.
+      const eps = Number(epsilonDeSegmentoGlsl(RAIO_SOL_FISICO_PC));
+      expect(Math.fround(eps / RAIO_SOL_FISICO_PC)).toBe(
+        Math.fround(1e-4 / WORLD.sunRadius)
+      );
+    });
+  });
+
+  describe('os dois arquivos vendorizados consomem as pontes', () => {
+    const ler = (f: string) =>
+      readFileSync(new URL(`./sol/${f}`, import.meta.url), 'utf8');
+
+    for (const arquivo of ['coronaVolume.js', 'cme.js']) {
+      it(`${arquivo} lê ctx.SUN_R_GLSL antes do toFixed herdado`, () => {
+        expect(ler(arquivo)).toContain('ctx.SUN_R_GLSL ||');
+      });
+
+      it(`${arquivo} lê ctx.SEG_EPS_GLSL no guarda de segmento`, () => {
+        expect(ler(arquivo)).toContain("ctx.SEG_EPS_GLSL || '1e-4'");
+      });
+
+      it(`${arquivo} NÃO tem mais o 1e-4 absoluto solto no guarda`, () => {
+        // a regressão exata que se quer impedir: alguém "limpa" o `||`
+        expect(ler(arquivo)).not.toContain('if (t1 <= t0 + 1e-4)');
+      });
+    }
   });
 });

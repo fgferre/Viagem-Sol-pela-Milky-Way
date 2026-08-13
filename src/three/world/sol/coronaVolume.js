@@ -333,7 +333,12 @@ export function createCoronaVolume(ctx){
         // transplante: o raymarch corre em ESPAÇO DE MUNDO (cameraPosition/
         // vWorld) — no app receptor o mundo é parsec e o raio vem de
         // ctx.SUN_RADIUS_WORLD; no original os dois coincidem (2.2)
-        '#define SUN_R ' + (ctx.SUN_RADIUS_WORLD || SUN_RADIUS).toFixed(6),
+        // F1 (Sol real): `.toFixed(6)` devolve "0.000000" para o raio
+        // FÍSICO (2,2567e-8 pc) e o define vira ZERO — a coroa some sem
+        // erro nenhum. O adaptador da casa manda o literal já pronto; o
+        // `||` mantém o caminho antigo intacto para quem não o passa.
+        '#define SUN_R ' +
+          (ctx.SUN_R_GLSL || (ctx.SUN_RADIUS_WORLD || SUN_RADIUS).toFixed(6)),
         'uniform sampler3D uVol;',
         'uniform mat3 uInvRot;',
         'uniform float uCvol;',
@@ -363,7 +368,14 @@ export function createCoronaVolume(ctx){
         // segmento frontal somaria brilho por cima do disco (QA G1)
         '  float di = b*b - (dot(ro,ro) - SUN_R*SUN_R);',
         '  if (di > 0.0){ fragColor = vec4(0.0); return; }',
-        '  if (t1 <= t0 + 1e-4){ fragColor = vec4(0.0); return; }',
+        // F1 (Sol real): o guarda era `1e-4` ABSOLUTO em unidade de
+        // mundo, calibrado no raio artístico. A travessia inteira do
+        // volume no raio físico mede 1,30e-7 pc — 769× menor: todo raio
+        // desistia antes do primeiro passo. O limiar passa a vir do
+        // adaptador, proporcional ao raio; `1e-4` é o mesmo de sempre.
+        '  if (t1 <= t0 + ' +
+          (ctx.SEG_EPS_GLSL || '1e-4') +
+          '){ fragColor = vec4(0.0); return; }',
         '  float dt = (t1 - t0) / float(CVOL_STEPS);',
         // jitter determinístico por pixel (esconde banding; det=ok)
         '  float jit = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);',

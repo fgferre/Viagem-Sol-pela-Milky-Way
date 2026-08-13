@@ -160,7 +160,11 @@ export function createCME(ctx){
       fragmentShader: NOISE_GLSL + '\n' + [
         '#define CME_STEPS ' + CME_STEPS,
         // transplante: raymarch em espaço de MUNDO — ver coronaVolume.js
-        '#define SUN_R ' + (ctx.SUN_RADIUS_WORLD || SUN_RADIUS).toFixed(6),
+        // F1 (Sol real): mesma ponte do cvol — `.toFixed(6)` zera o raio
+        // físico, e aqui o estrago é pior: o `1.0/SUN_R` da linha da
+        // marcha vira INFINITO e a ejeção some sem erro nenhum.
+        '#define SUN_R ' +
+          (ctx.SUN_R_GLSL || (ctx.SUN_RADIUS_WORLD || SUN_RADIUS).toFixed(6)),
         'uniform mat3 uInvRotC;',
         'uniform vec3 uCmeDir;',
         'uniform vec3 uCmeAxis;',
@@ -185,7 +189,10 @@ export function createCME(ctx){
         // desenham depois dos opacos — sem isto somaria sobre o disco)
         '  float di = b*b - (dot(ro,ro) - SUN_R*SUN_R);',
         '  if (di > 0.0){ fragColor = vec4(0.0); return; }',
-        '  if (t1 <= t0 + 1e-4){ fragColor = vec4(0.0); return; }',
+        // F1 (Sol real): guarda proporcional ao raio — ver coronaVolume.js
+        '  if (t1 <= t0 + ' +
+          (ctx.SEG_EPS_GLSL || '1e-4') +
+          '){ fragColor = vec4(0.0); return; }',
         // marcha no espaço do OBJETO (uma transformação, marcha linear)
         '  float invR = 1.0/SUN_R;',
         '  vec3 roO = (uInvRotC * ro) * invR;',

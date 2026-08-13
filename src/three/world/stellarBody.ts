@@ -185,6 +185,68 @@ export interface StellarParams {
   readonly knobs: Readonly<Record<string, number>>;
 }
 
+// ============================================================
+// AS DUAS PONTES DE ESCALA PARA O GLSL (F1 da onda do Sol real).
+//
+// Os dois raymarches vendorizados (`sol/coronaVolume.js`, `sol/cme.js`)
+// escrevem o raio DENTRO do texto do shader, e o fazem com dois números
+// que só funcionam na escala artística. Com o raio físico do Sol
+// (2,2567e-8 pc) os dois QUEBRAM EM SILÊNCIO — sem erro de compilação,
+// sem uma linha de console, sem nada na tela além da ausência:
+//
+//  1. `(2.2567e-8).toFixed(6)` devolve literalmente a string
+//     `"0.000000"`. O `#define SUN_R` vira ZERO, o `1.0/SUN_R` de
+//     `cme.js` vira infinito, e a coroa e a ejeção de massa somem.
+//  2. O guarda de segmento degenerado usa `1e-4` ABSOLUTO em unidade de
+//     mundo. A travessia inteira do volume de coroa do Sol real mede
+//     1,30e-7 pc — 769× menor que esse limiar: todo raio desiste antes
+//     de começar.
+//
+// As duas pontes moram AQUI, na casa, e não nos arquivos vendorizados:
+// lá dentro muda uma linha cada, que só lê o que este adaptador manda
+// (`ctx.SUN_R_GLSL`, `ctx.SEG_EPS_GLSL`), com o caminho antigo intacto
+// no `||` para quem construir o ctx sem elas. É a menor cirurgia
+// possível sobre a promessa de não abrir o núcleo (cabeçalho deste
+// arquivo), e ela é o oposto de silenciosa: `stellarBody.test.ts` tem
+// teste-agulha que reprova se o raio voltar a virar `"0.000000"`.
+// ============================================================
+
+/**
+ * Um literal float de GLSL que sobrevive a raio pequeno — e que devolve
+ * EXATAMENTE a string de sempre para o raio artístico, que é o que
+ * mantém as 24 vistas oficiais bit-idênticas com a porta desligada.
+ *
+ * A regra: usa-se a forma fixa de 6 casas (a herdada) SE ela voltar ao
+ * mesmo float de 32 bits; senão, notação exponencial de 9 casas, que o
+ * GLSL ES 3.0 aceita (tem ponto decimal e expoente). `Math.fround`
+ * porque é em float32 que o shader vai viver — comparar em double
+ * reprovaria formas que a GPU não distingue.
+ */
+export function literalGlsl(v: number): string {
+  const fixo = v.toFixed(6);
+  return Math.fround(Number(fixo)) === Math.fround(v) ? fixo : v.toExponential(9);
+}
+
+/**
+ * O limiar de "segmento curto demais para marchar", como texto de GLSL.
+ *
+ * O valor herdado (`1e-4`) é ABSOLUTO e foi calibrado quando o raio da
+ * cena era o artístico; o certo é ele ser PROPORCIONAL ao raio, que é o
+ * que o torna portátil para qualquer instância (a mesma lição da régua
+ * por ângulo de `lodStellar.ts:425-445`).
+ *
+ * O RAMO LITERAL para o raio artístico não é preguiça, é o gate: ele
+ * garante que a porta desligada emita o MESMO TEXTO de shader de
+ * sempre, byte a byte, em vez de um número que só é igual depois de
+ * arredondado. Bit-identidade por construção, não por arredondamento
+ * feliz. Quando a F3 tirar o raio artístico de cena, este ramo morre
+ * junto com ele.
+ */
+export function epsilonDeSegmentoGlsl(raioPc: number): string {
+  if (raioPc === WORLD.sunRadius) return '1e-4';
+  return literalGlsl(raioPc * (1e-4 / WORLD.sunRadius));
+}
+
 /**
  * A instância 1. Todo campo aqui reproduz o literal que estava solto no
  * módulo antes da Onda 3: a promoção é de ENDEREÇO, não de valor, e o
@@ -283,6 +345,11 @@ export class StellarBody {
       // raio em unidades de MUNDO para os raymarches de cvol/cme
       // (cameraPosition/vWorld são parsec — ver patches "transplante:")
       SUN_RADIUS_WORLD: params.radiusPc,
+      // as duas pontes de escala para o texto do GLSL (F1) — sem elas o
+      // raio físico vira "0.000000" e o guarda de segmento mata todo
+      // raio antes do primeiro passo. Ver o bloco acima de SOL_PARAMS.
+      SUN_R_GLSL: literalGlsl(params.radiusPc),
+      SEG_EPS_GLSL: epsilonDeSegmentoGlsl(params.radiusPc),
       TP: tier,
       TIER: TIER_FOR[quality],
       FBM_OCTAVES: tier.fbm,
