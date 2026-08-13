@@ -25,8 +25,11 @@ import {
   COR_SOLAR_LINEAR,
   FOTOMETRIA,
   IDS_FOTOMETRIA,
+  DOMINIO_MH18,
   aMagBaseDe,
+  deltaMagMh18,
   faseLambertiana,
+  fatorDeFaseMh18,
   magAparente,
   magAparenteEstelar,
 } from './fotometria';
@@ -278,6 +281,42 @@ describe('fotometria — a lei estelar do Sol e o ponto-zero do campo', () => {
   });
 });
 
+describe('fotometria — MH18 (D10, domínio e costura)', () => {
+  it('em α=0 e B=0 o fator é 1 (o H da tabela já é V(1,0))', () => {
+    for (const id of Object.keys(DOMINIO_MH18)) {
+      expect(fatorDeFaseMh18(id, 0), id).toBeCloseTo(1, 10);
+      expect(deltaMagMh18(id, 0), id).toBeCloseTo(0, 12);
+    }
+  });
+
+  it('Plutão e o Sol não têm MH18: devolvem Lambert', () => {
+    const a = Math.PI / 3;
+    expect(fatorDeFaseMh18('pluto', a)).toBeCloseTo(faseLambertiana(a), 12);
+    expect(fatorDeFaseMh18('sun', a)).toBeCloseTo(faseLambertiana(a), 12);
+  });
+
+  it('na borda do domínio a emenda é C0 — razão pinada', () => {
+    for (const [id, teto] of Object.entries(DOMINIO_MH18)) {
+      const aRad = (teto * Math.PI) / 180;
+      const dentro = fatorDeFaseMh18(id, aRad - 1e-9);
+      const fora = fatorDeFaseMh18(id, aRad + 1e-9);
+      expect(Math.abs(dentro - fora), id).toBeLessThan(1e-6);
+    }
+  });
+
+  it('Saturno: o termo de anel move o fator com B, mesmo em α=0', () => {
+    const semAnel = fatorDeFaseMh18('saturn', 0, 0);
+    const comAnel = fatorDeFaseMh18('saturn', 0, 0.3);
+    expect(semAnel).toBeCloseTo(1, 10);
+    expect(comAnel).not.toBeCloseTo(1, 2);
+  });
+
+  it('Mercúrio no domínio é mais escuro que Lambert (regolito, não esfera lisa)', () => {
+    const a = (30 * Math.PI) / 180;
+    expect(fatorDeFaseMh18('mercury', a)).toBeLessThan(faseLambertiana(a));
+  });
+});
+
 describe('fotometria — texto-fonte (D1, anti-relógio e fonte por linha)', () => {
   const fonte = readFileSync(new URL('./fotometria.ts', import.meta.url), 'utf8');
 
@@ -288,11 +327,12 @@ describe('fotometria — texto-fonte (D1, anti-relógio e fonte por linha)', () 
     expect(fonte).not.toContain('new Date(');
   });
 
-  it('cada corpo carrega fonte citada, e a aproximação da fase está dita', () => {
+  it('cada corpo carrega fonte citada, e a política de domínio MH18 está dita', () => {
     for (const marca of ['[MH18]', '[MKP17]', '[R12]', '[SBDB]', '[RBF94]']) {
       expect(fonte).toContain(marca);
     }
-    expect(fonte).toContain('APROXIMAÇÃO DECLARADA');
-    expect(fonte).toContain('Onda 6');
+    expect(fonte).toContain('emenda');
+    expect(fonte).toContain('costura');
+    expect(fonte).toContain('DOMINIO_MH18');
   });
 });

@@ -52,14 +52,12 @@
 // Urano e Netuno b>g>r, Terra b>r…), nunca o valor exato — a ordem é
 // física, o valor é calibração.
 //
-// FASE LAMBERTIANA É APROXIMAÇÃO, DITO EM VOZ ALTA. `faseLambertiana`
-// = (1+cos α)/2 é a lei de uma esfera difusora ideal. Nenhum planeta é
-// isso: Mercúrio tem retroespalhamento forte perto de α=0, Vênus tem
-// o ponto de inflexão de espalhamento frontal a ~163°, e Saturno tem
-// os anéis. As polinomiais por corpo de Mallama & Hilton (2018) são
-// PENDÊNCIA NOMEADA DA ONDA 6. Na janela desta onda o observador está
-// quase sempre entre o Sol e o corpo ou muito longe dele, onde a
-// aproximação vale bem.
+// FASE: Lambert é a esfera difusora ideal. MH18 (Mallama & Hilton
+// 2018) é a polinomial POR CORPO no ponto fotométrico, com política
+// de domínio (D10): DENTRO do α publicado, clamp na borda + emenda
+// CONTÍNUA com Lambert fora (razão Φ_MH/Φ_L pinada na costura).
+// Saturno leva o termo de anel (−1,825 sin B + …). Plutão não tem
+// MH18 — fica Lambert.
 //
 // FONTES (por linha na tabela abaixo):
 //   [MH18] Mallama, A. & Hilton, J.L. 2018, "Computing apparent
@@ -189,9 +187,8 @@ export const FOTOMETRIA: Record<string, LinhaFotometria> = {
   // Bege das bandas: V é o pico (g > r > b), com r > b.
   jupiter: linha('jupiter', 'planetaria', -9.395, razaoDeAlbedo(0.443, 0.538, 0.495)),
 
-  // H: [MH18] Eq. 10 — GLOBO + ANÉIS. Os termos de inclinação do anel
-  // e de fase da mesma equação NÃO entram nesta onda: o corpo é um
-  // ponto sub-resolvido, e a variação de anel é pendência da Onda 6.
+  // H: [MH18] Eq. 10 — GLOBO + ANÉIS em α=0, B=0. Os termos de
+  // inclinação do anel e de fase saem de `deltaMagMh18`.
   // Albedos: [MKP17] 0,339 / 0,499 / 0,568. Palha dourada: r > g > b.
   saturn: linha('saturn', 'planetaria', -8.914, razaoDeAlbedo(0.339, 0.499, 0.568)),
 
@@ -232,11 +229,95 @@ export const A_MAG_BASE: Record<IdRetrato, number> = Object.fromEntries(
 
 /**
  * Função de fase de uma esfera Lambertiana ideal: 1 em oposição
- * (α = 0), 0 em conjunção (α = π). **APROXIMAÇÃO DECLARADA** — a
- * polinomial por corpo de [MH18] é pendência da Onda 6 (ver cabeçalho).
+ * (α = 0), 0 em conjunção (α = π). Continua sendo o fallback FORA
+ * do domínio MH18 (emenda contínua, razão pinada na costura).
  */
 export function faseLambertiana(alphaRad: number): number {
   return (1 + Math.cos(alphaRad)) / 2;
+}
+
+/**
+ * Teto do domínio publicado [MH18], em graus. Fora: clamp na borda
+ * + Lambert × (Φ_MH/Φ_L)|borda.
+ */
+export const DOMINIO_MH18: Record<string, number> = {
+  mercury: 170,
+  venus: 179,
+  earth: 180,
+  mars: 50,
+  jupiter: 12,
+  saturn: 6.5,
+  uranus: 3.1,
+  neptune: 1.9,
+};
+
+const VENUS_COSTURA_DEG = 163.7;
+
+/** Δm [MH18] DENTRO do domínio. α em graus; B (Saturno) em radianos. */
+export function deltaMagMh18(
+  id: string,
+  alphaDeg: number,
+  BsatRad = 0
+): number {
+  const a = alphaDeg;
+  switch (id) {
+    case 'mercury':
+      return (
+        6.328e-2 * a -
+        1.6336e-3 * a * a +
+        3.3644e-5 * a ** 3 -
+        3.4265e-7 * a ** 4 +
+        1.6893e-9 * a ** 5 -
+        3.0334e-12 * a ** 6
+      );
+    case 'venus':
+      return a <= VENUS_COSTURA_DEG
+        ? -1.044e-3 * a + 3.687e-4 * a * a - 2.814e-6 * a ** 3 + 8.938e-9 * a ** 4
+        : 240.44228 - 2.81914 * a + 8.39034e-3 * a * a;
+    case 'earth':
+      return -1.06e-3 * a + 2.054e-4 * a * a;
+    case 'mars':
+      return 2.267e-2 * a - 1.302e-4 * a * a;
+    case 'jupiter':
+      return -3.7e-4 * a + 6.16e-4 * a * a;
+    case 'saturn': {
+      const sB = Math.sin(BsatRad);
+      return -1.825 * sB + 0.026 * a - 0.378 * sB * Math.exp(-2.25 * a);
+    }
+    case 'uranus':
+      return 6.587e-3 * a + 1.049e-4 * a * a;
+    case 'neptune':
+      return 0;
+    default:
+      return 0;
+  }
+}
+
+function phiDeDeltaMag(dm: number): number {
+  return 10 ** (-0.4 * dm);
+}
+
+/**
+ * Fator de fase Φ do PONTO (D10). Dentro do domínio: 10^(−0,4 Δm).
+ * Fora: Lambert × (Φ_MH / Φ_L) na borda — C0, razão pinada.
+ * Corpo sem MH18 (Sol, Plutão): Lambert.
+ */
+export function fatorDeFaseMh18(
+  id: string,
+  alphaRad: number,
+  BsatRad = 0
+): number {
+  if (!(id in DOMINIO_MH18)) return faseLambertiana(alphaRad);
+  const a = Math.abs(alphaRad);
+  const aDeg = (a * 180) / Math.PI;
+  const teto = DOMINIO_MH18[id];
+  if (aDeg <= teto) return phiDeDeltaMag(deltaMagMh18(id, aDeg, BsatRad));
+  const tetoRad = (teto * Math.PI) / 180;
+  const phiBorda = phiDeDeltaMag(deltaMagMh18(id, teto, BsatRad));
+  const lambertBorda = faseLambertiana(tetoRad);
+  // Na conjunção Lambert vai a 0: a razão não é definida — CLAMP.
+  if (lambertBorda < 1e-6) return phiBorda;
+  return faseLambertiana(a) * (phiBorda / lambertBorda);
 }
 
 /**
