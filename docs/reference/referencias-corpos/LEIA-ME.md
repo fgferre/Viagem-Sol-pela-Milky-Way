@@ -36,13 +36,30 @@ crescente grande no quadro (ver "Correções desta revisão", item removido).
 
 Mercúrio e Vênus foram removidos nesta revisão (fotos em falsa-cor,
 confirmado nas legendas oficiais) e ainda não têm substituto real
-verificado — ver "Correções desta revisão".
+verificado — ver "Correções desta revisão". **Atualização F3
+(2026-08-13): Mercúrio ganhou substituto real verificado (abaixo);
+Vênus segue sem — a caça está documentada ao fim da seção.**
 
 | Arquivo | O que é | Instrumento / missão | Data | Fonte | Licença |
 |---|---|---|---|---|---|
+| `mercurio-bepicolombo-mcam2-2024-12-01.png` | Mercúrio em disco quase cheio a >51.000 km, Caloris visível como mancha clara; o polo norte fica à direita, na linha do terminador. **Monocromática, sem informação de cor** (as M-CAM são câmeras de engenharia preto-e-branco 1024×1024, sem obturador mecânico — a página oficial declara o processamento leve anti-banding). Julga albedo/textura de base e a leitura fotométrica do disco; não julga cor. | M-CAM 2 (monitoring camera), BepiColombo (ESA/JAXA), aproximação do 5º flyby | 2024-12-01 11:46 CET | [esa.int/ESA_Multimedia/Images/2024/12/Mercury_during_BepiColombo_s_fifth_flyby](https://www.esa.int/ESA_Multimedia/Images/2024/12/Mercury_during_BepiColombo_s_fifth_flyby) | ESA/BepiColombo/MTM, CC BY-SA 3.0 IGO |
 | `marte-viking-disco-pia00407.jpg` | **Mapa/mosaico global, não fotografia de disco**: ~1000 imagens Viking Orbiter (filtros vermelho/violeta), projeção ortográfica centrada em 20°N, iluminação normalizada fotometricamente, cor "esticada" por processamento (confirmado na legenda oficial da NASA). Sem terminador, sem fase, sem atmosfera. Arquivo oficial JPEG 6787×6787 (não o preview 1280 px). Julga geografia/textura de base (Valles Marineris, calota); não julga luz, albedo real nem fase de disco. | Mosaico de cor global, Viking Orbiter | publicado 1998-06-08 | [science.nasa.gov/photojournal/global-color-views-of-mars](https://science.nasa.gov/photojournal/global-color-views-of-mars) (PIA00407) | NASA/JPL, domínio público |
 | `jupiter-cassini-disco-pia04866.jpg` | Júpiter, mosaico de maior aproximação em cor verdadeira — retrato mais detalhado da época. O escurecimento gradual do lado direito segue a curvatura do disco (o planeta inteiro cabe no quadro, do topo à base): é o **lado noturno (terminador)**, não um corte de campo de visão — confirmado por inspeção visual (a legenda oficial da NASA não comenta o ponto, mas não sustenta a leitura antiga de "limbo cortado"). Arquivo oficial JPEG 1920×2400 (não o preview 66 KB). | ISS NAC (Narrow Angle Camera), Cassini | publicado 2003-11-13 | [science.nasa.gov/photojournal/cassini-jupiter-portrait](https://science.nasa.gov/photojournal/cassini-jupiter-portrait) (PIA04866) | NASA/JPL-Caltech, domínio público |
 | `saturno-cassini-aneis-pia06193.jpg` | Saturno com anéis, mosaico global de imagens de outubro de 2004 — a visão mais detalhada da época, planeta inteiro + anéis de ponta a ponta. Ângulo de fase 72°, portanto iluminação parcial real (sombra do anel no globo, lado noturno visível): melhor foto do lote para julgar luz. Arquivo oficial JPEG 8888×4544 (não o preview 66 KB). | Cassini, outubro de 2004 | publicado 2005-02-24 | [science.nasa.gov/photojournal/the-greatest-saturn-portrait-yet](https://science.nasa.gov/photojournal/the-greatest-saturn-portrait-yet) (PIA06193) | NASA/JPL/Space Science Institute, domínio público |
+
+**Vênus — a caça da F3 (2026-08-13), resultado documentado:** não entrou
+arquivo. O disco cheio de Vênus em luz VISÍVEL essencialmente não existe
+(o planeta é sem feição no visível; as candidatas clássicas caíram na
+revisão de 2026-08-12 por falsa-cor: Mariner 10 é UV de 1974). As duas
+candidatas reais nomeadas para a próxima rodada de caça: (1) **Akatsuki
+UVI 365 nm** (JAXA, galeria oficial em akatsuki.isas.jaxa.jp/en/gallery —
+é UV renderizado em amarelo pela convenção da equipe, entraria com a
+natureza declarada, precedente do LRO mono; a galeria é JS-pesada e a
+extração do arquivo oficial ficou para a rodada seguinte, com os
+[termos de uso JAXA](https://akatsuki.isas.jaxa.jp/en/) a conferir na
+linha); (2) **Parker Solar Probe WISPR** (flybys 2020–2021, lado NOTURNO
+de Vênus em luz visível — foto real mas do lado errado para julgar o
+topo de nuvens diurno).
 
 Todas as licenças seguem as NASA Media Usage Guidelines: conteúdo de agência
 federal dos EUA é domínio público, uso educacional livre, sem exigência legal
@@ -56,9 +73,10 @@ linha da tabela — ver item 2 do PROTOCOLO.
 Depois desta revisão, os arquivos são os **oficiais de tela cheia** de cada
 ficha (JPEG/PNG, não TIFF — o TIFF só entraria se o JPEG fosse o preview), não
 mais o preview do Photojournal/API. O maior é `saturno-cassini-aneis-pia06193.jpg`
-(8888×4544, 5,7 MB); o total do lote fica em ≈13,9 MB, abaixo do teto de
-15 MB com folga de ~1,1 MB. Todas as dimensões foram conferidas com
-`file`/`sips` depois do download cheio, não antes.
+(8888×4544, 5,7 MB); com o BepiColombo da F3 (0,3 MB) o total fica em
+≈14,2 MB, abaixo do teto de 15 MB com folga de ~0,8 MB. Todas as
+dimensões foram conferidas com `file`/`sips` depois do download cheio,
+não antes.
 
 ## PROTOCOLO da rodada de referência
 
