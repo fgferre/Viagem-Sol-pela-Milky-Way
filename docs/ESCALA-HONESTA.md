@@ -136,18 +136,36 @@ muda.** Novo `src/three/escala.ts` + teste; `selo.ts:470-493`.
 
 ### F1 — Sol real atrás de porta `?solreal=1` — **FEITA** (commits 23dc493, 75cceab)
 
-**Medido em 2026-08-12, harness a 1800×1713, lente 58°:**
+**Medido em 2026-08-12, harness a 1800×1713, lente 58° — e RE-MEDIDO em 2026-08-13,
+na árvore mergeada com a Onda 6. A tabela traz os md5 VIGENTES.** Dois dos três se
+moveram, e **não foi esta onda que os moveu**: a branch nasceu de `af90809`, antes da
+Onda 6, e foi ela — com o ponto fotométrico MH18 — que repintou o Sol-ponto. O código
+do Sol real não mudou uma linha entre uma medição e a outra; a fotografia que a F1
+tirou continua sendo a mesma fotografia.
 
-| vista | md5 | o que a foto mostra |
-|---|---|---|
-| `solreal4mkm` | `8a43f749a632` | o Sol REAL a 4,00 milhões de km (5,74 R☉): disco de ~543 px com granulação, manchas, espículas, raias de coroa e uma proeminência. **A parede de fogo existe sem inflar nada.** |
-| `solreal1ua` | `f665b6bfe84c` | tela branca — **e não é o disco**: com `&nobloom=1` (md5 `967632e20568`) o Sol aparece como disco de 14,4 px, do tamanho que se vê da Terra, com a faixa da Via Láctea intacta atrás. Quem lava o quadro é o CLARÃO do ponto fotométrico (a "tela branca" já medida em `atlasConfig.ts:194-207`), não o corpo. |
-| `solreal40ua` | `a607e3cf57ab` | **EXATAMENTE o md5 de `ua40`.** A 40 UA o Sol real desenha bit por bit igual ao inflado: os dois são o mesmo ponto. É a prova mais forte de que a correção não custa nada onde não deve custar. |
+| vista | md5 VIGENTE (pós-merge, 2026-08-13) | md5 que MORREU | o que a foto mostra |
+|---|---|---|---|
+| `solreal4mkm` | `8a43f749a632` | — não se moveu | o Sol REAL a 4,00 milhões de km (5,74 R☉): disco de ~543 px com granulação, manchas, espículas, raias de coroa e uma proeminência. **A parede de fogo existe sem inflar nada.** |
+| `solreal1ua` | `205421df6f9c` | ~~`f665b6bfe84c`~~ (era de `af90809`) | tela branca — **e não é o disco**: com `&nobloom=1` o Sol aparece como disco de 14,4 px, do tamanho que se vê da Terra, com a faixa da Via Láctea intacta atrás. Quem lava o quadro é o CLARÃO do ponto fotométrico (a "tela branca" já medida em `atlasConfig.ts:194-207`), não o corpo. *(O md5 `967632e20568` do par `&nobloom=1` é de `af90809` e **não foi re-medido** no merge — não use como valor esperado sem recapturar.)* |
+| `solreal40ua` | `48adc0f55631` | ~~`a607e3cf57ab`~~ (era de `af90809`) | **EXATAMENTE o md5 de `ua40`.** A 40 UA o Sol real desenha bit por bit igual ao inflado: os dois são o mesmo ponto. É a prova mais forte de que a correção não custa nada onde não deve custar. |
+
+**A IGUALDADE COM `ua40` SOBREVIVEU AO MERGE — e virou prova maior do que era.** No
+merge o gate rodou dos DOIS lados, com a MESMA lista de 46 vistas: a `main` num
+servidor próprio e a árvore mergeada no nosso. `solreal40ua` e `ua40` devolvem
+`48adc0f55631` nos dois. A afirmação da F1 continua verdadeira palavra por palavra —
+a 40 UA o Sol real e o inflado são o mesmo ponto —, só que antes ela estava medida
+contra a nossa mesa e agora está medida contra a casa inteira. **Mudou o valor do
+PAR, não a relação**, e quem o mudou foi a Onda 6.
 
 **GATE PASSADO: 22/22 bit-idênticas.** Recaptura do zero (`DOZERO=1`, 25 vistas × 2,
 2,7 min) com o código da F1 — todos os md5 batem com a referência guardada,
 inclusive as quatro aceitas pelo dono no commit `1754110` (`terra ff48acbaf3a7` ·
 `terranb 1c0509b1d6cc` · `lua e54f7aa79a2a` · `terralua 7b5378507749`).
+**ESSES QUATRO VALORES SÃO HISTÓRIA DE `af90809`, e a Onda 6 os APOSENTOU** — as
+texturas reais moveram as quatro. Os vigentes, medidos na árvore mergeada em
+2026-08-13, são `terra ab40ab3b0d3b` · `terranb 1ec9120c745f` · `lua 39ce4845c9f4` ·
+`terralua fb35311ee340`. A frase acima continua verdadeira para a data em que foi
+escrita; **ela deixou de ser valor esperado hoje.**
 
 **O que a F1 provou, e é o fecho do argumento desta onda:** a frase
 `// Sol artístico (escala real seria invisível)` de `config.ts:8` está
@@ -177,6 +195,8 @@ Três fotos do mesmo motor: 533 px a 4,00 milhões de km · 14,4 px a 1 UA · 0,
 2,7 min). E mais: as **três vistas da F1 também não se mexeram** — `solreal4mkm`
 `8a43f749a632` · `solreal1ua` `f665b6bfe84c` · `solreal40ua` `a607e3cf57ab`.
 25/25 antigas idênticas; 1 vista nova (`atlas`, abaixo).
+*(Valores DA ÉPOCA. O merge da Onda 6, no fim de 2026-08-13, moveu duas delas:
+`solreal1ua` → `205421df6f9c` e `solreal40ua` → `48adc0f55631`. Ver a F1.)*
 
 **O que entrou.** O disco do Sol deixou de ser decidido por janela em parsec e passou
 pela **mesma lei que já governa Terra e Lua**: diâmetro aparente contra
@@ -395,7 +415,9 @@ símbolo só. Agora:
 - **`?solreal=1` morreu.** Uma porta que só pode estar ligada não é porta. As três
   vistas dela perderam o `&solreal=1` e **não mudaram um bit** (`solreal4mkm`
   8a43f749a632 · `solreal1ua` f665b6bfe84c · `solreal40ua` a607e3cf57ab = `ua40`) —
-  a conferência mais barata da fase.
+  a conferência mais barata da fase. *(Valores DA ÉPOCA: o merge da Onda 6 pôs
+  `solreal1ua` em `205421df6f9c` e o par `solreal40ua` = `ua40` em `48adc0f55631`.
+  A IGUALDADE entre os dois sobreviveu, medida nos dois lados do merge.)*
 - **O corpo perdeu o LOD.** `stellarBody` não importa mais `lodStellar`:
   `uWorldFade` vale 1 sempre e quem apaga o grupo é a régua do palco (4 px, cushion
   2×). Não é economia: normalizada pelo raio FÍSICO, a rampa antiga dissolveria a
@@ -710,9 +732,11 @@ Para o cadastro da F0 declarar, não para consertar nesta onda:
    **sobrevivem entre sessões** e podem estar VELHOS: a pasta é cache, não evidência.
    Em 2026-08-13 um deles — `ab-antes-solreal1ua-0.png`, md5 real `61d786c7b903` —
    foi lido como se fosse a baseline atual e levou a uma conclusão ERRADA: a de que
-   1 UA saía limpa. A baseline verdadeira de `solreal1ua` é `f665b6bfe84c`, e ela é
-   **branca**. **Regra: nunca julgar por PNG achado na pasta; recapturar antes de
-   olhar.**
+   1 UA saía limpa. A baseline verdadeira de `solreal1ua` era `f665b6bfe84c` naquela
+   hora — e é `205421df6f9c` desde o merge da Onda 6, no mesmo dia. As duas são
+   **brancas**: a armadilha não foi o valor, foi confiar num arquivo em vez de medir.
+   **Regra: nunca julgar por PNG achado na pasta; recapturar antes de olhar** — e
+   nunca citar um md5 no presente sem tê-lo medido na árvore de agora.
 7. **Mergulhar no Sol continua impossível** — abaixo de ~1,44 raios solares o corte come
    a fotosfera. Rasante estilo Parker cabe com folga.
 

@@ -2536,7 +2536,8 @@ corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,
 bit-exato, N=2 capturas por vista, navegador limpo por captura, `?q=cinema` pinado, os
 mesmos md5 oficiais do item 3. O que mudou é **o que a captura espera** e **quantos
 processos capturam** — e, na fase 0 da Onda 4, o tamanho da lista: **18 vistas**, as 15
-do item 3 mais as três do item 4:
+do item 3 mais as três do item 4. *(A lista continuou crescendo depois disso: em
+2026-08-13, no merge da onda do Sol real, ela tem **46 vistas** — item 5.)*
 
 ```
 node scripts/visual/ab-identidade.mjs antes     # leva completa (JOBS=3 por padrão)
@@ -2784,9 +2785,14 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    que desarma a armadilha do veredito (vista sem "antes" era pulada em silêncio — hoje
    `julgarVistas` emite NOVA/AUSENTE); nessa leva as 15 antigas saíram **bit-idênticas
    ao item 3**, 18/18 por `via=sinal`, 2,3 min com `JOBS=3`.
-   **Os md5 OFICIAIS delas, desde o fecho da Onda 4** (chave `PLANETAS_DEFAULT_ON`
-   ligada, todas @1800x1713): **`ua500 5f8136c12732`** · **`ua150 9b3e75b2af91`** ·
-   **`ua40 a607e3cf57ab`**. Render DEFAULT, **com bloom** — as três documentam o estado
+   **Os md5 OFICIAIS delas** (chave `PLANETAS_DEFAULT_ON` ligada, todas @1800x1713):
+   **`ua500 5f8136c12732`** · **`ua150 9b3e75b2af91`** · **`ua40 48adc0f55631`**.
+   **`ua500` e `ua150` são do fecho da Onda 4 e não se moveram desde então. `ua40`
+   MUDOU na Onda 6** — o ponto fotométrico MH18 repinta a família de faróis —, e o
+   valor `a607e3cf57ab`, oficial do fecho da Onda 4 até 2026-08-12, está
+   **APOSENTADO** desde a medição do merge de 2026-08-13 (item 5, abaixo): deixa de
+   ser valor esperado em qualquer lugar.
+   Render DEFAULT, **com bloom** — as três documentam o estado
    verdadeiro do produto, e é de propósito que a régua de pixel (`planeta-pixel.mjs`)
    mede num par PRÓPRIO com `&nobloom=1`: com o bloom ligado 31,85% do quadro satura e
    um quadro saturado não tem centroide. Na leva do FECHO, **as 15 do item 3 saíram
@@ -2809,6 +2815,39 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    a metade de trás dele e as raias ficavam ALÉM do near e desenhavam. Com
    `solWorldFade = 0` elas somem: na `ua150`, 13.938 px de 3.083.400 (0,45%), **100%
    perda de luz de artefato** (13.789 px perderam, 1 ganhou) — medido, não suposto.
+5. **A MEDIÇÃO DOS DOIS LADOS (2026-08-13), quando a onda do Sol real entrou.** A
+   branch `sol-real` nasceu de `af90809` e a Onda 6 fechou DEPOIS dela; medir só um
+   lado teria dado um veredito sem chão. Rodou-se a **MESMA lista de 46 vistas** nos
+   dois — a `main` num servidor próprio e a árvore mergeada no nosso —, cada vista
+   capturada **2×** e estável nas duas capturas. **A lista do `ab-identidade` já não
+   são 18:** os itens 3 e 4 continuam sendo a parte do FILME, e as demais vieram da
+   Onda 5, da Onda 6 e desta onda.
+   **Placar: 40 das 46 saem BIT-IDÊNTICAS à `main`. As SEIS que mudam são todas do
+   Sol** — as quatro da abertura, que o dono aprovou (`sol d3f110e281d3` ·
+   `soldisco 06d7c8d406cd` · `solrampa 1ad5c3e89220` · `solestouro 7306f0d4f044`),
+   mais `solreal4mkm 8a43f749a632` e `solreal1ua 205421df6f9c`, que são as duas
+   distâncias em que o Sol de raio FÍSICO ainda desenha diferente do inflado. **A
+   terceira do Sol real, `solreal40ua`, NÃO muda: ela devolve `48adc0f55631` nos dois
+   lados, e é o mesmo valor de `ua40`, também nos dois.** A afirmação da F1 — a 40 UA
+   o Sol real e o inflado são o mesmo ponto — passou a estar medida contra a casa
+   inteira, e não só contra a mesa da onda.
+   **E a medição destapou o que nenhum documento sabia: a Onda 6 MOVEU vistas que a
+   branch listava com valores de `af90809`.** Vigentes desde o merge, com o valor
+   aposentado ao lado: `terra ab40ab3b0d3b` (~~`ff48acbaf3a7`~~) · `terranb
+   1ec9120c745f` (~~`1c0509b1d6cc`~~) · `lua 39ce4845c9f4` (~~`e54f7aa79a2a`~~) ·
+   `terralua fb35311ee340` (~~`7b5378507749`~~), pelas **texturas reais**; e
+   `ua40 48adc0f55631` (~~`a607e3cf57ab`~~) · `solreal40ua 48adc0f55631`
+   (~~`a607e3cf57ab`~~) · `solreal1ua 205421df6f9c` (~~`f665b6bfe84c`~~), pelo **ponto
+   fotométrico MH18**. `solreal4mkm 8a43f749a632` não se moveu.
+   **Não se moveram, e continuam sendo valor esperado:** `interno d98cbef70849` ·
+   `travessia b85162ede6cf` · `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` ·
+   `faceon d05591e27ea4` · `retrato 23bb22402f40` · `solestrela 22f5fab0992e` ·
+   `hero200 b4a2d03ed3e9` · `hero600 4311d0ccbc15` · `hero950 d11a8df86b68` ·
+   `hero8 d7c1d2d12726` · `ua500 5f8136c12732` · `ua150 9b3e75b2af91` ·
+   `atlas e9544b84cca2`.
+   **Os outros juízes, todos verdes na mesma data:** `atlas-smoke`, `busca-smoke`,
+   `a11y` e `voo-smoke`; **1.543 testes**, `tsc --noEmit -p tsconfig.app.json` e
+   `eslint` limpos.
 
 Os PNGs do gate do céu ficam em `sky/` e as capturas nomeadas em `capturas/` (ambos
 gitignored, ambos sobrevivem à sessão): `sky-capture.mjs base --so-medir` re-mede sem

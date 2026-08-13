@@ -1,57 +1,66 @@
 # Retomada — onda do Sol real
 
-**Escrito em 2026-08-13, com a F3 EM VOO.** Este arquivo é o bastão de sessão: quem
+**Atualizado em 2026-08-13, com a F3 FECHADA, APROVADA e MERGEADA com a Onda 6.**
+Este arquivo é o bastão de sessão: quem
 chegar numa janela limpa lê ISTO primeiro, depois `docs/ESCALA-HONESTA.md` (que é o
 bastão da ONDA, com todo o detalhe medido). Ele morre quando a onda fechar.
 
 ---
 
-## 1. Onde o trabalho vive, e a regra que não se quebra
+## 1. Onde o trabalho vive, e o merge que ACONTECEU
 
 | | |
 |---|---|
 | **Mesa desta onda** | `/Users/fgferre/Github/.worktrees-sol-real`, branch `sol-real`, criada de `af90809` |
-| **Repo principal** | `/Users/fgferre/Github/Viagem-Sol-pela-Milky-Way`, branch `onda-6` |
+| **Repo principal** | `/Users/fgferre/Github/Viagem-Sol-pela-Milky-Way`, branch `main` (Onda 6 dentro, merge `6b7712f`) |
 | **Servidor de captura** | porta **5199**, subido a partir da mesa desta onda |
 
-**A ONDA 6 FECHOU E ESTÁ NA `main`** (merge `6b7712f`, 2026-08-13). O outro agente
-terminou; o repositório principal está na `main`, limpo, sem arquivo solto. **A
-regra "nunca escrever lá" perdeu o motivo original** — mas as duas mesas continuam
-existindo até esta branch entrar, então continue trabalhando AQUI e não lá, para
-não misturar as histórias. `node_modules` da nossa mesa segue sendo symlink para a
-do principal: **só leitura**, nunca instalar por lá.
+### O MERGE ACONTECEU — commit `c25d701`, 2026-08-13
 
-### O MERGE ESTÁ DESTRAVADO — mas NÃO faça antes de duas coisas
+A `main` inteira (Onda 6) foi trazida para DENTRO de `sol-real`, nunca o contrário.
+**As duas travas que este arquivo listava CAÍRAM, as duas:**
 
-1. ~~**O dono aprovar as 4 imagens da F3** (seção 4).~~ **CUMPRIDO em 2026-08-13** —
-   ele viu os oito PNGs e aprovou; o rebaseline desta branch está consentido, e os
-   md5 novos já são a referência oficial no `NORTE.md` (seção 4).
-2. **Re-medir a base.** Os md5 desta branch foram tirados de `af90809`. A Onda 6
-   trouxe as luas, os eclipses e o que mais entrou depois disso — **a tabela de
-   referência da `main` pode não ser mais a mesma**. Depois de trazer a `main` para
-   cá, rode o gate ANTES de concluir qualquer coisa sobre bit-identidade: os hashes
-   da seção 2 valem para a base antiga.
+1. ~~**O dono aprovar as 4 imagens da F3.**~~ **CUMPRIDA** — ele viu os oito PNGs de
+   `capturas/f3/` e disse sim. O rebaseline está consentido e os md5 novos são a
+   referência oficial no `NORTE.md`.
+2. ~~**Re-medir a base.**~~ **CUMPRIDA, e era a trava de verdade** — ela pagou. Os
+   md5 desta branch eram de `af90809`, e a Onda 6 moveu **sete** deles. A tabela
+   vigente é a da seção 2; a que estava aqui morreu.
 
-**Receita:** traga `main` para dentro de `sol-real` (não o contrário), resolva, rode
-`vitest` + `tsc` + o gate visual + `atlas-smoke`, refaça as 4 baselines com o sim do
-dono, e só então junte.
+**O gate foi medido dos DOIS lados, com a MESMA lista de 46 vistas** — a `main` num
+servidor próprio e a árvore mergeada no nosso, cada vista capturada 2× e estável.
+**40 das 46 saem bit-idênticas à `main`. As 6 que mudam são todas do Sol**, e são
+exatamente as que esta onda comprou: as quatro da abertura (`sol`, `soldisco`,
+`solrampa`, `solestouro`) mais `solreal4mkm` e `solreal1ua`. Junto: **1.543 testes
+verdes**, `tsc` e `eslint` limpos, e os quatro juízes de navegador verdes —
+`atlas-smoke`, `busca-smoke`, `a11y`, `voo-smoke`.
 
-**Os pontos de encontro conhecidos são dois:** `src/three/director.ts` e
-`scripts/visual/ab-identidade.mjs` — os dois lados escreveram em regiões diferentes.
+**Os dois pontos de encontro previstos** — `src/three/director.ts` e
+`scripts/visual/ab-identidade.mjs` — resolveram-se como o desenho dizia: os dois
+lados escreveram em regiões diferentes.
 
-**E uma AÇÃO DE MERGE já declarada no código:** `RAIO_SOL_KM = 696_340` agora existe
-nos DOIS lados — em `src/lib/atlas/eclipse.ts` (que veio com a Onda 6) e em
-`src/three/escala.ts` (nosso). **Um dos dois tem de morrer**, senão é segunda fonte
-de verdade. O endereço natural é `escala.ts`, que não depende de nada, com o eclipse
-importando de lá. Está escrito na docstring do símbolo.
+**E a AÇÃO DE MERGE declarada no código foi EXECUTADA: a constante duplicada morreu.**
+`RAIO_SOL_KM = 696_340` existia nos dois lados. Sobrou **um**, em
+`src/three/escala.ts`; `src/lib/atlas/eclipse.ts` importa de lá e RE-EXPORTA para os
+consumidores dele (o driver do eclipse e os oráculos de `eclipse.test.ts`, que não
+precisam saber de onde o número vem). A aresta não abre ciclo: `escala.ts` só depende
+de `AU_KM` e `AU_PARA_PC`, os mesmos dois que o eclipse já importava. **A física da
+umbra e o desenho do Sol não podem mais divergir nem por um km.**
+
+**A mesa continua sendo esta.** As duas árvores ainda existem; trabalhe AQUI e não no
+repo principal, para não misturar as histórias. `node_modules` da nossa mesa segue
+sendo symlink para a do principal: **só leitura**, nunca instalar por lá.
 
 ---
 
-## 2. Estado, em números
+## 2. Estado, em números — e a tabela de md5 VIGENTE
 
-- **19+ commits** na branch (`git log --oneline onda-6..sol-real`).
-- **1.448 testes verdes**, `tsc --noEmit -p tsconfig.app.json` e `eslint` limpos.
-- **22/22 vistas oficiais bit-idênticas** na última medição completa.
+- **A onda está mergeada** com a Onda 6 (`c25d701`).
+- **1.543 testes verdes**, `tsc --noEmit -p tsconfig.app.json` e `eslint` limpos.
+- **46 vistas medidas dos DOIS lados; 40 bit-idênticas à `main`**, as 6 restantes
+  todas do Sol.
+- **Quatro juízes de navegador verdes:** `atlas-smoke`, `busca-smoke`, `a11y`,
+  `voo-smoke`.
 
 **O gate visual, que é a prova da casa:**
 ```
@@ -60,16 +69,42 @@ npx vite --port 5199 --strictPort &
 DOZERO=1 APP_URL=http://127.0.0.1:5199 JOBS=3 node scripts/visual/ab-identidade.mjs antes
 pkill -f "vite --port 5199"
 ```
-Os md5 que têm de bater (fora as 4 da abertura, que a F3 muda de propósito):
-`interno d98cbef70849 · travessia b85162ede6cf · mergulho 6876e851031a · edgeon
-4fbd07002a9a · faceon d05591e27ea4 · retrato 23bb22402f40 · solestrela 22f5fab0992e
-· hero200 b4a2d03ed3e9 · hero600 4311d0ccbc15 · hero950 d11a8df86b68 · hero8
-d7c1d2d12726 · ua500 5f8136c12732 · ua150 9b3e75b2af91 · ua40 a607e3cf57ab · terra
-ff48acbaf3a7 · terranb 1c0509b1d6cc · lua e54f7aa79a2a · terralua 7b5378507749 ·
-atlas e9544b84cca2`
-E as 3 da F1: `solreal4mkm 8a43f749a632 · solreal1ua f665b6bfe84c · solreal40ua
-a607e3cf57ab` (esta última é BIT-IDÊNTICA a `ua40` — a 40 UA o Sol real e o inflado
-são o mesmo ponto).
+
+**A LISTA QUE ESTAVA AQUI ERA DE `af90809` E MORREU.** A Onda 6 entrou depois de esta
+branch nascer e moveu sete vistas — **não fomos nós**. Medido em 2026-08-13, na árvore
+mergeada:
+
+| vista | md5 VIGENTE | md5 que MORREU | quem moveu |
+|---|---|---|---|
+| `terra` | `ab40ab3b0d3b` | ~~`ff48acbaf3a7`~~ | Onda 6 (texturas reais) |
+| `terranb` | `1ec9120c745f` | ~~`1c0509b1d6cc`~~ | Onda 6 |
+| `lua` | `39ce4845c9f4` | ~~`e54f7aa79a2a`~~ | Onda 6 |
+| `terralua` | `fb35311ee340` | ~~`7b5378507749`~~ | Onda 6 |
+| `ua40` | `48adc0f55631` | ~~`a607e3cf57ab`~~ | Onda 6 (ponto fotométrico MH18) |
+| `solreal40ua` | `48adc0f55631` | ~~`a607e3cf57ab`~~ | Onda 6, idem |
+| `solreal1ua` | `205421df6f9c` | ~~`f665b6bfe84c`~~ | Onda 6, idem |
+| `solreal4mkm` | `8a43f749a632` | — | não se moveu |
+
+**NÃO se moveram, e continuam sendo valor esperado:** `interno d98cbef70849 ·
+travessia b85162ede6cf · mergulho 6876e851031a · edgeon 4fbd07002a9a · faceon
+d05591e27ea4 · retrato 23bb22402f40 · solestrela 22f5fab0992e · hero200 b4a2d03ed3e9
+· hero600 4311d0ccbc15 · hero950 d11a8df86b68 · hero8 d7c1d2d12726 · ua500
+5f8136c12732 · ua150 9b3e75b2af91 · atlas e9544b84cca2`
+
+**As QUATRO do rebaseline que o dono aprovou:** `sol d3f110e281d3 · soldisco
+06d7c8d406cd · solrampa 1ad5c3e89220 · solestouro 7306f0d4f044`
+
+**A igualdade da F1 sobreviveu ao merge, e agora vale contra a casa inteira:**
+`solreal40ua` e `ua40` devolvem `48adc0f55631` nos DOIS lados, `main` e mergeada. A
+40 UA o Sol real e o inflado continuam sendo o mesmo ponto — **mudou o valor do par,
+não a relação.**
+
+**O QUE AINDA FALTA NESTA ONDA, sem inflar:** a **F4** (descer até o Sol pela escada
+do Atlas, ~35 linhas em `director.ts`), a **F5** (Sgr A✱, com o custo em capturas
+ainda EM ABERTO) e **a onda da exposição** (a tela branca, já com causa medida, e que
+é a primeira queixa do dono ainda aberta). O detalhe de cada uma está na seção
+**"O que falta depois"** (atenção: há DUAS seções numeradas 5 neste arquivo — a
+outra é histórico).
 
 ---
 
