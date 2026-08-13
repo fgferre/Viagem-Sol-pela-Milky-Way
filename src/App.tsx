@@ -920,7 +920,8 @@ export default function App() {
               a frase diz qual é qual — a horizontal dá a volta, a
               vertical sobe e desce. */}
           <div className="free-hint">
-            arraste — dar a volta e subir/descer · clique num nome — enquadrar
+            arraste — dar a volta e subir/descer · roda — degraus · clique num
+            nome — enquadrar
           </div>
         </div>
       )}

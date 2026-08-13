@@ -68,6 +68,7 @@ import {
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { ArrastoDePonteiro } from './arrastoDePonteiro';
+import { RodaDaEscada } from './rodaDaEscada';
 import {
   AtlasRig,
   raioDeEnquadramentoEstelar,
@@ -363,6 +364,8 @@ export class Director {
    * principal e o cancelamento pelo sistema estão escritos e testados.
    */
   private arrastoDaPausa = new ArrastoDePonteiro();
+  /** roda e pinça → degraus da escada (Onda 7) */
+  private readonly roda = new RodaDaEscada();
 
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
@@ -658,6 +661,12 @@ export class Director {
     window.addEventListener('pointercancel', this.onPausePointerCancel);
     window.addEventListener('lostpointercapture', this.onPausePointerCancel);
     canvas.addEventListener('contextmenu', this.onContextMenu);
+    // A RODA E A PINÇA (Onda 7), e o `passive: false` é a coisa toda:
+    // sem ele o navegador recusa o `preventDefault` e a página rola (ou
+    // o Chrome DÁ ZOOM, que é o que a pinça faz por padrão) por baixo do
+    // Atlas. Fica no CANVAS e não na janela para o HUD — a máquina do
+    // tempo, a busca, o painel de ajustes — continuar rolando normal.
+    canvas.addEventListener('wheel', this.onRodaDoAtlas, { passive: false });
 
     // clique curto no voo livre → mini-viagem até a estrela nomeada
     this.roam.onTap = (x, y) => this.tryVisit(x, y);
@@ -969,6 +978,9 @@ export class Director {
   private setPhase(p: Phase) {
     this.phase = p;
     this.escritorDeCamera = ESCRITOR_DE_CAMERA[p];
+    // trocar de fase encerra o gesto da roda: meio empurrão guardado não
+    // pode virar degrau na próxima entrada no Atlas
+    this.roda.esquecer();
     this.roam.enabled = this.escritorDeCamera === 'voo';
     this.events.onPhase(p);
     // o HUD da fase nova pode ter mostrador de tempo, e ele monta com o
@@ -1325,6 +1337,29 @@ export class Director {
    */
   private onPausePointerCancel = (event: PointerEvent) => {
     this.arrastoDaPausa.cancelar(event);
+  };
+
+  /**
+   * A RODA E A PINÇA MOVEM A ESCADA (Onda 7) — e este é o único lugar
+   * do projeto que trata `wheel` fora do voo livre.
+   *
+   * O `preventDefault` é INCONDICIONAL dentro da fase, e vem antes de
+   * qualquer decisão de degrau: mesmo o giro que não completa um degrau
+   * (o acumulador ainda somando) tem de morrer aqui, senão metade dos
+   * eventos de um gesto rolaria a página enquanto a outra metade move a
+   * escada. E ele vale para a PINÇA pelo mesmo `wheel` — no Chrome e no
+   * Safari de Mac a pinça de trackpad chega como `wheel` com `ctrlKey`,
+   * e o padrão dela é DAR ZOOM NA PÁGINA inteira, HUD e canvas juntos.
+   *
+   * Quem traduz pixels em degrau é a `RodaDaEscada` (limiar, trava e
+   * `deltaMode`); aqui só se decide o que é subir e o que é descer.
+   */
+  private onRodaDoAtlas = (evento: WheelEvent) => {
+    if (this.phase !== 'atlas') return;
+    evento.preventDefault();
+    const passo = this.roda.girar(evento, performance.now(), window.innerHeight);
+    if (passo < 0) this.descerDegrau();
+    else if (passo > 0) this.subirDegrau();
   };
 
   /**
@@ -1760,6 +1795,49 @@ export class Director {
     }
     this.focarNoSistema();
     return true;
+  }
+
+  /**
+   * A DESCIDA da escada (Onda 7): o gesto irmão do `subirDegrau`, e o
+   * consumidor de runtime da roda e da pinça. Devolve se algum degrau
+   * foi descido.
+   *
+   * Cada ramo cai num método que JÁ EXISTIA — não há enquadramento novo
+   * nascendo aqui, só a ordem dos degraus dita uma vez:
+   *
+   *  · `sistema` → a ÓRBITA da casa. Um degrau abaixo do sistema precisa
+   *    de um alvo, e no degrau "sistema" não há nenhum escolhido; o alvo
+   *    sai do DADO e não de um literal novo — é o pai da única lua
+   *    construída (`LUAS_DO_SISTEMA`), que é o mesmo que dizer "o único
+   *    corpo cuja escada existe inteira até embaixo". Sem este ramo a
+   *    roda não faria nada justamente na vista de ABERTURA, que é onde
+   *    todo visitante a experimenta primeiro — e a queixa continuaria de
+   *    pé com o conserto no lugar.
+   *  · `orbita` → o CORPO, e só onde `podeAproximar` diz que há mesh
+   *    resolvido: fingir um degrau que não existe seria pior que não ter
+   *    roda.
+   *  · `corpo` → a LUA dele, quando o corpo em foco é o pai de uma.
+   *  · `lua` e `estrela` → não há degrau abaixo, e a roda cala.
+   */
+  descerDegrau(): boolean {
+    if (this.phase !== 'atlas') return false;
+    const { degrau, podeAproximar } = this.escada;
+    const paiDaLua = LUAS_DO_SISTEMA[0].pai;
+    if (degrau === 'sistema') {
+      this.focarNoCorpo(paiDaLua, 'orbita');
+      return true;
+    }
+    if (degrau === 'orbita') {
+      if (!podeAproximar) return false;
+      this.aproximarDoCorpo();
+      return true;
+    }
+    if (degrau === 'corpo') {
+      if (this.focoCorpoId !== paiDaLua) return false;
+      this.focarNaLua();
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -3096,6 +3174,7 @@ export class Director {
       window.removeEventListener('pointercancel', this.onPausePointerCancel);
       window.removeEventListener('lostpointercapture', this.onPausePointerCancel);
       this.engine.renderer.domElement.removeEventListener('contextmenu', this.onContextMenu);
+      this.engine.renderer.domElement.removeEventListener('wheel', this.onRodaDoAtlas);
       // o HMR do vite chama o dispose a cada salvamento: gesto vivo de
       // uma sessão morta não pode sobreviver ao próprio Director
       this.arrastoDaPausa.esquecer();
