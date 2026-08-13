@@ -106,6 +106,45 @@ const ORIGENS = {
     atribuicao: ATRIBUICAO_SSS,
     proveniencia: 'medido',
   },
+  // ---- F3 (rochosos). Vênus é o TOPO DE NUVENS (o que se vê do
+  // espaço); a superfície de radar do SSS não entra — dito na FONTES.
+  'mercury/map': {
+    fonte: 'Solar System Scope — 8k_mercury',
+    url: 'https://www.solarsystemscope.com/textures/download/8k_mercury.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
+  'venus/map': {
+    fonte: 'Solar System Scope — 4k_venus_atmosphere (topo de nuvens)',
+    url: 'https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
+  'mars/map': {
+    fonte: 'Solar System Scope — 8k_mars',
+    url: 'https://www.solarsystemscope.com/textures/download/8k_mars.jpg',
+    licenca: 'CC BY 4.0',
+    atribuicao: ATRIBUICAO_SSS,
+    proveniencia: 'medido',
+  },
+  // Fobos/Deimos: textura dos modelos 3D da NASA (a página é a fonte;
+  // o arquivo nasceu no doador por extração manual do pacote glTF).
+  'phobos/map': {
+    fonte: 'NASA 3D Resources — modelo 3D de Fobos (textura)',
+    url: 'https://science.nasa.gov/resource/phobos-mars-moon-3d-model/',
+    licenca: 'NASA 3D Resources (uso livre)',
+    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
+    proveniencia: 'medido',
+  },
+  'deimos/map': {
+    fonte: 'NASA 3D Resources — modelo 3D de Deimos (textura)',
+    url: 'https://science.nasa.gov/resource/deimos-mars-moon-3d-model/',
+    licenca: 'NASA 3D Resources (uso livre)',
+    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
+    proveniencia: 'medido',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS

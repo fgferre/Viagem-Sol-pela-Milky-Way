@@ -122,6 +122,40 @@ const FONTES = [
     url: `${SSS}/8k_moon.jpg`,
     nomeNoDoador: '8k_moon.jpg',
   },
+  // ---- F3 (rochosos). Vênus entra pelo TOPO DE NUVENS — é o que se
+  // vê do espaço; a superfície de radar (8k_venus_surface) NÃO entra:
+  // renderizá-la sob uma casca translúcida fingiria transparência que
+  // a atmosfera real não tem (dito no commit da fase).
+  {
+    corpo: 'mercury',
+    canal: 'map',
+    url: `${SSS}/8k_mercury.jpg`,
+    nomeNoDoador: '8k_mercury.jpg',
+  },
+  {
+    corpo: 'venus',
+    canal: 'map',
+    url: `${SSS}/4k_venus_atmosphere.jpg`,
+    nomeNoDoador: '4k_venus_atmosphere.jpg',
+  },
+  {
+    corpo: 'mars',
+    canal: 'map',
+    url: `${SSS}/8k_mars.jpg`,
+    nomeNoDoador: '8k_mars.jpg',
+  },
+  {
+    corpo: 'phobos',
+    canal: 'map',
+    url: 'https://science.nasa.gov/resource/phobos-mars-moon-3d-model/',
+    nomeNoDoador: 'phobos_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'deimos',
+    canal: 'map',
+    url: 'https://science.nasa.gov/resource/deimos-mars-moon-3d-model/',
+    nomeNoDoador: 'deimos_nasa_3d_resource.jpg',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;
@@ -236,8 +270,13 @@ async function main() {
     const diretorioDestino = path.join(destinoRaiz, fonte.corpo);
     await mkdir(diretorioDestino, { recursive: true });
     // A extensão do destino é sempre a do artefato final (o bake
-    // converte TIFF→jpg; as demais fontes já são jpg/png na origem).
-    const extensao = fonte.bake ? 'jpg' : path.extname(new URL(fonte.url).pathname).slice(1);
+    // converte TIFF→jpg; as demais fontes já são jpg/png na origem;
+    // URL de PÁGINA — o caso NASA 3D, que só existe no modo offline —
+    // herda a extensão do nome no doador).
+    const extensao = fonte.bake
+      ? 'jpg'
+      : path.extname(new URL(fonte.url).pathname).slice(1) ||
+        path.extname(fonte.nomeNoDoador).slice(1);
     const destino = path.join(diretorioDestino, `${fonte.canal}.${extensao}`);
 
     if (diretorioDoador) {

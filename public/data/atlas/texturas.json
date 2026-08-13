@@ -3,6 +3,70 @@
   "geradoPor": "scripts/data/atlas/gera-manifest-texturas.mjs",
   "entradas": [
     {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 48727,
+      "sha256": "b7ccdbcc3eba7ce49829e24588718f0af949ee8134ab8a04dbf349aa72ca314e",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 31266,
+      "sha256": "b4bb8e36ec35f3e439a0c6ba7fe0619d29d2ce4d5006e29442b82a302e73995f",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 480429,
+      "sha256": "204e89cc7dc128e9fa6ae5f14cc23dc7917a4a8ccab9feff1a9544d22b354dce",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 59572,
+      "sha256": "1d3ed55088688a82821a8ef4f88bbb30fdd8bafb352ad22984c34a462ea3065c",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
       "corpo": "earth",
       "canal": "clouds",
       "arquivo": "textures/atlas/earth/clouds_1024.jpg",
@@ -595,6 +659,230 @@
       "proveniencia": "derivado"
     },
     {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 147864,
+      "sha256": "d48e2c7fad19dbf9700665127eea4ae30259f32d66570d6b8e1610cfed40c8b2",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 79112,
+      "sha256": "a5c0a7cb6cc6cbc0e9e6d2eaf62d29610dd4b7e1967ea6d052658f31117741be",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 508448,
+      "sha256": "de417e87b062fa9de07c663293cb0bc6f45919eee0e72bc92e08b6305b26772f",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 287490,
+      "sha256": "04952ed071f068a9081ae45001fb0536f9f3e854e6713e58c16e26ccd743b28c",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1774945,
+      "sha256": "4ef7535e7c5343ceb57a71123bb27e7d0e3999b9ee56af73136feb82e8a3b7e6",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 969102,
+      "sha256": "4e57417cff4022f3db17ede566c0da98db6da43957954d879872da51ab72f973",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 8396951,
+      "sha256": "4cc52149924abc6ae507d63032f994e1d42a55cb82c09e002d1a567ff66c23ee",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 4211278,
+      "sha256": "29e24158c737b0d9dc503c400c0d6bbbfdca7abbb66a57cab6eb8632fdf4740b",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 108748,
+      "sha256": "37d310211c01d429179428e981f0deb30d7702cc99b690700c2aa6716528dabe",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 453175,
+      "sha256": "f18f6ff589dada68919e8b86e4e3c7109856f435ffe35bf3be8524b7f08defd0",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 447974,
+      "sha256": "dc84d2bb1eec59a115e70fd37c31eddc966bbe1c8b4726cf6a4313c8f348ab46",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2039872,
+      "sha256": "d076fa6174bdf1e7c9e7d57a4988d14295ac5430a6f14006d0edecbc42fe1365",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 15035740,
+      "sha256": "5c8bd885ae3571c6ba2cd34b3446b9c6d767e314bf0ee8c1d5c147cadd388fc3",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 12648642,
+      "sha256": "ec436e54539a08fb71ad2becc91e153f3eb1d45cb232ad92973875f87d5b47c0",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
       "corpo": "moon",
       "canal": "map",
       "arquivo": "textures/atlas/moon/map_1024.jpg",
@@ -669,6 +957,166 @@
       "origem": {
         "fonte": "Solar System Scope — 8k_moon",
         "url": "https://www.solarsystemscope.com/textures/download/8k_moon.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 97372,
+      "sha256": "d06de4aa1fbd9a5bd0a9d5a3a3bc12effda244ea30573618c1a3ed809045944e",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 88498,
+      "sha256": "54489ec0f4e11abb1c24bf3979728c0663ddf17b5c2540b50fbd41c32be02e77",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 601584,
+      "sha256": "8ec807b353eb28f44b5aa24b8a887935ee5563f5b63bde2430a9988220f71463",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 157246,
+      "sha256": "0fae14a30001853b5f8f73408d26d6dbf126ac53d420b9aef5d99857822bcb73",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 33195,
+      "sha256": "7636008c6f8691912dfaacab63ba6f884788ff2bda089cba5f3ec7004e0164d8",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 17820,
+      "sha256": "7579c92ed4e4dd3567140d208b5d4e645d2bfb3e4dc24c9d93b8c1d8459789f5",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 100550,
+      "sha256": "cd572886cae180980fdc866e57d3eaa0834e870b81486b26a6d110261ccdc6a1",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 50910,
+      "sha256": "91749193b2cab45c32e536ea76707e427adb7ef2064aea3273337f1e8f6be2fb",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1546146,
+      "sha256": "a14aeba3c6ad7a56f989bb32008dec548077aeded420495b34df98f2dc14ba91",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 199230,
+      "sha256": "22c1430d7c44478345885417ebe1e548a06dfff705ae0885983362673bd8ff49",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
