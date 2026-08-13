@@ -129,7 +129,30 @@ muda.** Novo `src/three/escala.ts` + teste; `selo.ts:470-493`.
 (inflar um corpo opaco de propósito TEM de deixar a suíte vermelha).
 **Não toca nenhum dos 7 arquivos abertos no F2c. Pode começar já.**
 
-### F1 — Sol real atrás de porta `?solreal=1`
+### F1 — Sol real atrás de porta `?solreal=1` — **FEITA** (commits 23dc493, 75cceab)
+
+**Medido em 2026-08-12, harness a 1800×1713, lente 58°:**
+
+| vista | md5 | o que a foto mostra |
+|---|---|---|
+| `solreal4mkm` | `8a43f749a632` | o Sol REAL a 4,00 milhões de km (5,74 R☉): disco de ~543 px com granulação, manchas, espículas, raias de coroa e uma proeminência. **A parede de fogo existe sem inflar nada.** |
+| `solreal1ua` | `f665b6bfe84c` | tela branca — **e não é o disco**: com `&nobloom=1` (md5 `967632e20568`) o Sol aparece como disco de 14,4 px, do tamanho que se vê da Terra, com a faixa da Via Láctea intacta atrás. Quem lava o quadro é o CLARÃO do ponto fotométrico (a "tela branca" já medida em `atlasConfig.ts:194-207`), não o corpo. |
+| `solreal40ua` | `a607e3cf57ab` | **EXATAMENTE o md5 de `ua40`.** A 40 UA o Sol real desenha bit por bit igual ao inflado: os dois são o mesmo ponto. É a prova mais forte de que a correção não custa nada onde não deve custar. |
+
+**GATE PASSADO: 22/22 bit-idênticas.** Recaptura do zero (`DOZERO=1`, 25 vistas × 2,
+2,7 min) com o código da F1 — todos os md5 batem com a referência guardada,
+inclusive as quatro aceitas pelo dono no commit `1754110` (`terra ff48acbaf3a7` ·
+`terranb 1c0509b1d6cc` · `lua e54f7aa79a2a` · `terralua 7b5378507749`).
+
+**O que a F1 provou, e é o fecho do argumento desta onda:** a frase
+`// Sol artístico (escala real seria invisível)` de `config.ts:8` está
+**refutada com imagem, pelo próprio motor, sem uma linha de baseline paga**.
+
+**A pendência que a F1 EXPÔS (não criou):** dentro do sistema solar o clarão do
+ponto do Sol lava o quadro. Já estava declarada como mentira que sobra (§5, item
+6); agora tem foto. Ela é da onda da exposição, não desta.
+
+### F1 — especificação original (mantida para o registro)
 Três fotos do mesmo motor: 533 px a 4,00 milhões de km · 14,4 px a 1 UA · 0,36 px a
 40 UA. É a resposta à frase do `config.ts:8`.
 ~90 linhas de runtime + ~250 de teste. 24/24 bit-idênticas com a porta desligada.
