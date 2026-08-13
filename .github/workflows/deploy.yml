@@ -42,8 +42,40 @@ jobs:
 
       - run: npm ci
 
-      # `npm run build` é `tsc -b && vite build`: o typecheck já é o portão.
-      # Se o TypeScript não passar, nada é publicado.
+      # OS PORTÕES QUE FALTAVAM. Até 2026-08-13 este fluxo rodava `npm run
+      # build` e MAIS NADA: os testes e o eslint só existiam se alguém
+      # lembrasse de rodá-los na própria máquina, e um vermelho ia
+      # publicado sem ninguém ver. Aqui eles são PORTÃO — um `run` que
+      # falha derruba o job `build`, e `deploy` tem `needs: build`, então
+      # nada chega ao Pages.
+      #
+      # A ORDEM é do mais barato para o mais caro: o eslint devolve em
+      # segundos e o vitest leva a leva inteira, então o lint primeiro
+      # gasta menos runner para dar a mesma notícia.
+      #
+      # O QUE NÃO ENTRA, e por quê: as capturas visuais (`scripts/visual/
+      # rodada.mjs`, `a11y.mjs`, `atlas-smoke.mjs`…) pedem GPU real e um
+      # Chrome dirigido por CDP. Num runner sem placa elas falhariam por
+      # falta de máquina e não por defeito do código — portão que acusa
+      # inocente é pior que portão nenhum. Elas seguem sendo levas de
+      # bancada, rodadas à mão.
+      - run: npm run lint
+
+      # ATENÇÃO ao que `npm test` arrasta: o `include` do vitest.config.ts
+      # é `src/**/*.test.ts` + `scripts/**/*.test.mjs`, e essas três de
+      # `scripts/visual/` (chrome, ab-identidade, planeta-pixel) importam
+      # `chrome.mjs`, que resolve o BINÁRIO do Chrome no topo do módulo e
+      # lança `Chrome não encontrado` se não achar. Elas não sobem captura
+      # nenhuma (a leva mora atrás da guarda de `process.argv[1]`) — mas o
+      # import só sobrevive porque a imagem `ubuntu-latest` já traz o
+      # Google Chrome em `/usr/bin/google-chrome`, que é um dos caminhos
+      # que `chrome.mjs` procura no `linux`. Se um dia esse fluxo virar
+      # vermelho com essa mensagem, o defeito é ESTE acoplamento, não o
+      # código de `src/`.
+      - run: npm test
+
+      # `npm run build` é `tsc -b && vite build`: o typecheck é o terceiro
+      # portão, e o último. Se o TypeScript não passar, nada é publicado.
       - run: npm run build
 
       - uses: actions/upload-pages-artifact@v5
