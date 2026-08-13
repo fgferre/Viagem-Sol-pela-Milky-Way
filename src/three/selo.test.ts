@@ -280,6 +280,16 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8)', () => {
     expect(rotuloDaLuzAssistida(Number.NaN)).toBe(COPY_LUZ_ASSISTIDA);
   });
 
+  it('o ΔEV do selo também lê anões/asteroides (não só os dez + luas)', () => {
+    const fonte = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
+    const fn = fonte.slice(
+      fonte.indexOf('private evLuzDoFoco()'),
+      fonte.indexOf('definirLuz(')
+    );
+    expect(fn).toContain('HELIO_SEM_PONTO');
+    expect(fn).toContain('deslocamentoEVAssistida');
+  });
+
   it('clicar volta ao real: aoVoltarAoReal escreve `real` e o selo limpa', () => {
     const limpo = aoVoltarAoReal(com({ luz: 'assistida' }));
     expect(limpo.luz).toBe('real');

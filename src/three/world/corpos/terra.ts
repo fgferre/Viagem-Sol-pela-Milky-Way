@@ -70,6 +70,13 @@ import type { IauOrientation } from '../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
+import {
+  GLSL_SOMBRA_ECLIPSE,
+  PARES_DE_ECLIPSE,
+  criaSombraNaCena,
+  resolveSombraNaCena,
+} from '../../../lib/atlas/eclipse';
+import type { SombraNaCena } from '../../../lib/atlas/eclipse';
 import { CALIBRACAO_ATLAS } from '../../config';
 import type { QualityLevel } from '../../core/engine';
 import {
@@ -224,6 +231,45 @@ export function orientacaoDoCorpoNaCena(
   return { colunaX, colunaY: polo, colunaZ, wRad: w };
 }
 
+/**
+ * Base INERCIAL do anel: o mesmo equador do corpo (nodoQ × polo),
+ * sem o W(t). O padrão do anel não gira uma volta por dia do
+ * planeta — está preso ao céu, não ao meridiano-primo.
+ */
+export function orientacaoInercialDoAnelNaCena(
+  o: IauOrientation,
+  jdTdb: number
+): { colunaX: Vec3; colunaY: Vec3; colunaZ: Vec3 } {
+  const { nodoQ, polo } = baseCorpoEquatorial(o, jdTdb);
+  const colunaZ: Vec3 = [
+    nodoQ[1] * polo[2] - nodoQ[2] * polo[1],
+    nodoQ[2] * polo[0] - nodoQ[0] * polo[2],
+    nodoQ[0] * polo[1] - nodoQ[1] * polo[0],
+  ];
+  return { colunaX: nodoQ, colunaY: polo, colunaZ };
+}
+
+/**
+ * Eixos unitários como o MESH os gravou (colunas da matriz, sem a
+ * escala). O oráculo D-E4 lê ISTO — não a função que escreveu a
+ * matriz. Deitar o polo no equador na malha tem de reprovar.
+ */
+export function eixosDoMesh(mesh: THREE.Object3D): {
+  colunaX: Vec3;
+  colunaY: Vec3;
+  colunaZ: Vec3;
+} {
+  const e = mesh.matrix.elements;
+  const col = (i: number): Vec3 => {
+    const x = e[i];
+    const y = e[i + 1];
+    const z = e[i + 2];
+    const n = Math.hypot(x, y, z) || 1;
+    return [x / n, y / n, z / n];
+  };
+  return { colunaX: col(0), colunaY: col(4), colunaZ: col(8) };
+}
+
 /** A instância Terra da função acima — o nome que o oráculo pina. */
 export function orientacaoDaTerraNaCena(jdTdb: number): OrientacaoNaCena {
   return orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.earth, jdTdb);
@@ -293,14 +339,14 @@ export const ALVO_DE_APOIO_CINEMA = 4096;
  * `map`, que é o que o olho lê; os canais de apoio (clouds/night/normal/
  * roughness) tetam em 4k. Alta 2k, performance 1k, em todos os canais.
  *
- * A CONTA (RGBA8, como o driver aloca): 5 canais × 8192² = 1,34 GB
- * (1,79 GB com mipmaps) para UM corpo — a lição N-9 do doador em pessoa
- * (tela branca por 3,9 GB de texturas: o driver perde o contexto e não
- * há catch para isso). Com a dose: 8192² + 4 × 4096² = 0,54 GB (0,72 GB
- * com mipmaps) — e a 795 px de disco os canais de apoio em 4k já estão
- * acima de 2 texels por pixel. A regra mora AQUI, por canal, e vale para
- * qualquer corpo futuro: um corpo de 1 canal (a Lua) mantém o 8k no
- * `map` de graça.
+ * A CONTA (RGBA8 + mipmaps 4/3). As nossas texturas são EQUIRET 2:1,
+ * não quadradas — a conta antiga (w×w) era 2× alta. Map cinema
+ * 8192×4096 = 179 MB; 4 apoios 4096×2048 = 179 MB; um corpo Terra =
+ * 0,36 GB com mip. A lição N-9 do doador (tela branca por 3,9 GB)
+ * continua válida: a dose existe para não empilhar 8k em todo canal.
+ * A 795 px de disco os apoios em 4k já estão acima de 2 texels/pixel.
+ * A regra mora AQUI, por canal, e vale para qualquer corpo futuro:
+ * um corpo de 1 canal (a Lua) mantém o 8k no `map` de graça.
  *
  * Sem sonda legível o teto é 2k — errar para baixo é barato, estourar o
  * limite do driver é tela preta.
@@ -398,6 +444,69 @@ void main() {
 `;
 
 /**
+ * OS UNIFORMS DO ECLIPSE num material de corpo resolvido (F2c/D3) — a
+ * ponte cena→local é a transposta da base IAU (as MESMAS colunas que
+ * levam o `uDirSolLocal`), e `derivaRad` desfaz o giro extra da casca
+ * das nuvens (0 na superfície). Inativo: só o flag 0 é escrito — os
+ * vetores antigos nunca são lidos, o chunk retorna 1 antes de tocá-los.
+ * Exportada para a Lua (o molde compartilhado dos corpos, F2b).
+ */
+export function escreverSombraDeEclipse(
+  u: Record<string, THREE.IUniform>,
+  s: SombraNaCena,
+  vX: THREE.Vector3,
+  vY: THREE.Vector3,
+  vZ: THREE.Vector3,
+  derivaRad: number
+) {
+  u.uEclipseAtivo.value = s.ativo ? 1 : 0;
+  if (!s.ativo) return;
+  const [ex, ey, ez] = s.eixoCena;
+  const [ox, oy, oz] = s.eclipsadorRaios;
+  // cena → local: cada componente é o dot com a coluna da base
+  let eixoLx = ex * vX.x + ey * vX.y + ez * vX.z;
+  const eixoLy = ex * vY.x + ey * vY.y + ez * vY.z;
+  let eixoLz = ex * vZ.x + ey * vZ.y + ez * vZ.z;
+  let occLx = ox * vX.x + oy * vX.y + oz * vX.z;
+  const occLy = ox * vY.x + oy * vY.y + oz * vY.z;
+  let occLz = ox * vZ.x + oy * vZ.y + oz * vZ.z;
+  if (derivaRad !== 0) {
+    // a casca das nuvens tem o frame RODADO pela deriva: desfaz Ry(θ),
+    // a mesma conta do uDirSolLocal das nuvens
+    const cosD = Math.cos(derivaRad);
+    const sinD = Math.sin(derivaRad);
+    [eixoLx, eixoLz] = [eixoLx * cosD - eixoLz * sinD, eixoLx * sinD + eixoLz * cosD];
+    [occLx, occLz] = [occLx * cosD - occLz * sinD, occLx * sinD + occLz * cosD];
+  }
+  (u.uEclipseEixo.value as THREE.Vector3).set(eixoLx, eixoLy, eixoLz);
+  (u.uEclipseEclipsador.value as THREE.Vector3).set(occLx, occLy, occLz);
+  (u.uEclipseCone.value as THREE.Vector3).set(
+    s.raioEclipsadorRaios,
+    s.inclinacaoUmbra,
+    s.inclinacaoPenumbra
+  );
+  (u.uEclipsePisoCor.value as THREE.Vector3).set(
+    s.pisoUmbral[0],
+    s.pisoUmbral[1],
+    s.pisoUmbral[2]
+  );
+  u.uEclipsePisoEscalar.value = s.minSombra;
+}
+
+/** Os uniforms do eclipse com defaults NEUTROS — nascem em todo material
+ *  de superfície resolvida (Terra, nuvens, Lua). */
+export function uniformsDeEclipseNeutros(): Record<string, THREE.IUniform> {
+  return {
+    uEclipseAtivo: { value: 0 },
+    uEclipseEixo: { value: new THREE.Vector3(1, 0, 0) },
+    uEclipseEclipsador: { value: new THREE.Vector3(0, 0, 1) },
+    uEclipseCone: { value: new THREE.Vector3(0, 0, 0) },
+    uEclipsePisoCor: { value: new THREE.Vector3(0, 0, 0) },
+    uEclipsePisoEscalar: { value: 1 },
+  };
+}
+
+/**
  * A SUPERFÍCIE. Dia (albedo × N·L), noite (linstep no terminador
  * GEOMÉTRICO — o espec do doador: smoothstep vazava 16% no lado diurno),
  * relevo (normal map em TBN analítica da esfera lat-long, com guarda de
@@ -406,9 +515,14 @@ void main() {
  * condutores; não existe ramo de condutor neste shader).
  *
  * `uLuzGanho` multiplica SÓ a componente direta; as luzes de cidade são
- * emissão e ficam fora. Não existe termo ambiente.
+ * emissão e ficam fora. Não existe termo ambiente. O ECLIPSE (F2c/D3)
+ * entra pelo chunk único da lib e multiplica SÓ a direta, depois do
+ * BRDF — as luzes de cidade ficam fora da sombra também.
+ *
+ * Exportado (como LUA_FRAG) para o needle-teste da F2c ler o shader
+ * montado, não o texto-fonte.
  */
-const TERRA_FRAG = /* glsl */ `
+export const TERRA_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
 uniform sampler2D uMapaNoite;
 uniform sampler2D uMapaNormal;
@@ -422,6 +536,7 @@ uniform vec3 uEscalaLocal;  // (1, c/a, 1): ponto real do elipsoide
 varying vec3 vLocal;
 varying vec2 vUv;
 ${GLSL_GUARDAS}
+${GLSL_SOMBRA_ECLIPSE}
 void main() {
   vec3 n = normSeguro(vLocal * uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
@@ -455,7 +570,8 @@ void main() {
   float fresnel = 0.04 + 0.96 * pow(1.0 - vdoth, 5.0);
   float espec = dEspec * fresnel * ndotl;
 
-  vec3 direta = (albedo * ndotl + vec3(espec)) * uLuzGanho;
+  vec3 direta =
+    (albedo * ndotl + vec3(espec)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo);
 
   // luzes noturnas: EMISSÃO — só no lado escuro, pelo linstep do espec
   // (o smoothstep do doador vazava 16% no lado diurno), fora do ganho.
@@ -469,7 +585,10 @@ void main() {
 /**
  * AS NUVENS — casca própria a +0,15% do raio, translúcida, com o
  * terminador do espec do doador (linstep −0,25→0,12 e piso noturno 0,03,
- * só das nuvens) multiplicado pelo MESMO uLuzGanho de tudo.
+ * só das nuvens) multiplicado pelo MESMO uLuzGanho de tudo. O eclipse é
+ * o MESMO da superfície (a casca está 0,15% acima — a geometria do cone
+ * é idêntica dentro de sub-pixel): uma nuvem dentro da umbra escurece
+ * junto com o oceano embaixo dela.
  */
 const NUVENS_FRAG = /* glsl */ `
 uniform sampler2D uMapaNuvens;
@@ -478,6 +597,7 @@ uniform float uLuzGanho;
 varying vec3 vLocal;
 varying vec2 vUv;
 ${GLSL_GUARDAS}
+${GLSL_SOMBRA_ECLIPSE}
 void main() {
   float cobertura = texture2D(uMapaNuvens, vUv).r;
   vec3 n = normSeguro(vLocal);
@@ -486,7 +606,8 @@ void main() {
     linstep(${NUVEM_TERMINADOR.lo.toFixed(2)}, ${NUVEM_TERMINADOR.hi.toFixed(2)}, ndotl),
     ${NUVEM_TERMINADOR.pisoNoturno.toFixed(2)}
   );
-  gl_FragColor = vec4(vec3(dia * uLuzGanho), cobertura);
+  vec3 sombra = fatorDeEclipse(vLocal * ${RAZAO_CASCA_NUVENS}, n, ndotl);
+  gl_FragColor = vec4(vec3(dia * uLuzGanho) * sombra, cobertura);
 }
 `;
 
@@ -673,6 +794,10 @@ export class TerraResolvida {
   private rUA = Number.NaN;
   private armado = false;
 
+  /** a sombra do eclipse (F2c), resolvida no cache de jd/fonte —
+   *  scratch único, preenchido por `resolveSombraNaCena` (out-parameter) */
+  private readonly sombra = criaSombraNaCena();
+
   private texturas: EstadoDasTexturas = 'fria';
   /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
   private recargas = 0;
@@ -754,6 +879,21 @@ export class TerraResolvida {
       // uma multiplicação — nenhum segundo caminho de comprimento.
       const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
       this.centro.set(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+      // O ECLIPSE (F2c/D3): o par da TABELA (earth ← moon), resolvido no
+      // MESMO relógio do quadro e na MESMA base da efeméride. Sem fonte
+      // viva não há Lua — e não há eclipse: o fator fica neutro.
+      const eclipsadorId = PARES_DE_ECLIPSE.earth;
+      if (q.fonte && eclipsadorId) {
+        const pEcl = q.fonte.posicaoHeliocentrica(eclipsadorId, q.jdTdb);
+        resolveSombraNaCena(
+          'earth',
+          [p.x, p.y, p.z],
+          [pEcl.x, pEcl.y, pEcl.z],
+          this.sombra
+        );
+      } else {
+        this.sombra.ativo = false;
+      }
     }
 
     const dPc = q.camPosPc.distanceTo(this.centro);
@@ -869,6 +1009,9 @@ export class TerraResolvida {
     (uS.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
     (uS.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     uS.uLuzGanho.value = ganho;
+    // a sombra do eclipse (F2c) — resolvida no cache de jd; aqui só vira
+    // uniform, no frame local pela mesma base do uDirSolLocal
+    escreverSombraDeEclipse(uS, this.sombra, this.vX, this.vY, this.vZ, 0);
 
     // a casca das nuvens tem o frame RODADO pela deriva: desfaz Ry(θ)
     const cosD = Math.cos(derivaRad);
@@ -880,6 +1023,7 @@ export class TerraResolvida {
       sLx * sinD + sLz * cosD
     );
     uN.uLuzGanho.value = ganho;
+    escreverSombraDeEclipse(uN, this.sombra, this.vX, this.vY, this.vZ, derivaRad);
 
     const uA = this.matAtmosfera!.uniforms;
     (uA.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
@@ -908,6 +1052,7 @@ export class TerraResolvida {
         uNoiteGanho: { value: CALIBRACAO_ATLAS.EARTH_NIGHT_LIGHT_INTENSITY },
         uNormalEsc: { value: new THREE.Vector3(1, 1 / achat, 1) },
         uEscalaLocal: { value: new THREE.Vector3(1, achat, 1) },
+        ...uniformsDeEclipseNeutros(),
       },
       // a composição da F0: o corpo resolvido é OPACO e escreve o único
       // depth da casa — a lista opaca desenha antes da transparente por
@@ -926,6 +1071,7 @@ export class TerraResolvida {
         uMapaNuvens: { value: null },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uLuzGanho: { value: 1 },
+        ...uniformsDeEclipseNeutros(),
       },
       // translúcida SOBRE a superfície: testa o depth do globo, nunca o
       // escreve (decisão do palco, F0)
@@ -953,6 +1099,12 @@ export class TerraResolvida {
       // fragmentos de trás morrem no depth da superfície (depthTest
       // true): o que sobra é o anel de limbo, azul-dominante e fino —
       // a dose honesta. Nunca escreve depth.
+      // ECLIPSE (F2c): a atmosfera NÃO recebe o fator — omissão
+      // declarada. Sobre o disco o depth da superfície a mata; o anel
+      // de limbo fica a ≥ ~6.000 km do eixo da sombra nos pares da
+      // tabela (além da penumbra, ~3.400 km) — fora da sombra em toda
+      // geometria alcançável. O cobre de Danjon do eclipse lunar nasce
+      // no shader da LUA (o piso umbral da lib), não aqui.
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       depthTest: true,

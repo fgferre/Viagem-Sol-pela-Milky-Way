@@ -993,9 +993,11 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
     }
   });
 
-  it('a aproximação da fase e a pendência da Onda 6 estão ditas', () => {
-    expect(FONTE).toContain('aproximação declarada');
-    expect(FONTE).toContain('Onda 6');
+  it('a fase do ponto é MH18 (D10) e a cessão continua Lambert', () => {
+    expect(FONTE).toContain('fatorDeFaseMh18');
+    expect(FONTE).toContain('aFase');
+    expect(FONTE).toContain('faseDoVertice');
+    expect(FONTE).toContain('betaEfetivoAnel');
   });
 });
 

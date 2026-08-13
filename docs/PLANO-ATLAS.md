@@ -965,11 +965,13 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 >    `LARGURA_UTIL_MINIMA_PX`. O que o juiz COBRA é a faixa declarada — 900,
 >    1.000 e 1.200 px × `ui` 1 / 1,25 / 1,4 —, com o 900 lido do próprio módulo
 >    pelo dev server, nunca redigitado.
-> 6. **`PARENT_FRAMING_BIAS` segue sem consumidor** até as luas (Onda 6) — é
->    viés de moldura entre corpo e pai, e não há pai em quadro enquanto os
->    corpos forem pontos.
-> 7. **A abertura na época** (item 7 dos conflitos): compor a posição viva é
->    da onda das órbitas.
+> 6. **`PARENT_FRAMING_BIAS` — CUMPRIDO na Onda 6 (F2b/F5):** a escada
+>    lua-com-pai consome o 0,78. A justificativa "não há pai em quadro"
+>    era da era dos pontos.
+> 7. **A abertura na época — RE-REGISTRADA na Onda 6 (F2b):** a posição
+>    viva depende da efeméride + tempo vivo (já existiam), não de órbitas
+>    desenhadas. A justificativa da Onda 5 estava errada; a onda das
+>    órbitas não era o consumidor.
 > 8. **Fixtures Horizons de venus/jupiter/saturn/uranus** seguem pendentes —
 >    herança da Onda 4, sem consumidor novo nesta onda.
 >
@@ -985,6 +987,79 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 **Novo — a primeira lei de luz da casa.** Escrita do zero sobre a espec herdada (§2.3), com **um escalar único**, entrada em **UA de efeméride** e clamps 0,05–1000 UA; **selo `?luz=real|assistida`** com a copy do `fidelityBadge` em pt-BR — **bloqueio explícito: não mergeia sem o selo**, porque é claim de conteúdo, não de display. O expoente entra como chute a **recalibrar contra ACES**, e o desenho de referência é o de §7.4: ancorar fisicamente (E = 1361/d²), derivar **um EV de cena por frame**, aplicar como ganho linear único antes do ACES que a casa já tem, e expressar a assistência como **deslocamento de EV explícito e limitado**, exibível em stops. Também nesta onda: **bancada de assets** como `.html` estático; **`ASSETS.md`** com os resultados negativos medidos; **amostrador de memória**; scripts de textura com o bug do write-stream corrigido. Reabertura do log-depth (Decisão 3).
 
 *Gate por passo:* captura no ladder por tier; `gpu-profile.mjs`; **`renderer.info.memory` estável em entra/sai do Atlas e em troca de qualidade**; z-fighting calibrado; **os 12 oráculos de irradiância verdes** (quarteia a cada dobro de distância, clampa em d=0, neutro e não NaN em não-finito, recusa distância de render, preserva a ordenação verdadeira de brilho, ponto fixo na âncora, identidade bit a bit em "real", distância vem da efeméride e não do semi-eixo maior); **o selo não pode ser desmentido por nenhum controle a jusante** — teste explícito, porque é exatamente o defeito do doador; **revisão de olhos frescos antes do merge**.
+
+> **Estado da Onda 6 (2026-08-13): FEITA e mergeada.** Branch `onda-6`
+> (`8704baa` → `04cb029`). O filme (18) segue bit-idêntico: sentinelas
+> `sol`/`soldisco`/`hero8`/`ua150` recapturadas iguais. Placar: **1.429
+> testes** (o 1.445 do fecho era número velho; o D-E4 deixou de contar
+> 2 instantes como 2 testes), typecheck limpo. Selo `?luz=` existe.
+> `docs/reference/ASSETS.md` é a fonte dos negativos.
+>
+> **Decisões do dono (não reabrir sem ele):** (1) profundidade = palco
+> local estilo NASA Eyes, gate zero z-fighting no instrumento; escalada
+> = log-depth, volta ao dono. (2) textura REAL em tudo que tem imagem,
+> a melhor possível; procedural só onde não existe; licença por linha.
+> (3) caça ao melhor asset nas F3+ (não só NASA/SSS). (4) rodada de
+> referência F8+ com 3 travas (ainda não rodada — foto é direção, 2–3
+> rodadas por herói). (5) eclipse lunar: a câmera expõe para a
+> totalidade (`EV_OBSERVADOR_ECLIPSE_LUNAR=10`, exposição declarada, o
+> piso físico 4e-4 não mudou).
+>
+> **Divergência de §7.4 declarada:** a assistência é POR CORPO dentro
+> do material (`E^σ`, σ=0,35), não um EV de cena. Razão: a exposição
+> global é da Onda 8 e as 18 não podem mover. σ×bloom medido na F3:
+> em assistida o subsolar médio fica abaixo de 0,82; o halo nos
+> texels brilhantes é ACEITO como look.
+>
+> **Correções de fato da matriz:** regolito = LS C=4/3 derivado,
+> opt-in nos 7 (sem Hapke, sem parâmetros inventados por corpo);
+> gigantes do doador são Lambert estáticos (advecção de Júpiter
+> ficou PENDENTE — perfil de ventos sem citação); anéis U/N/Q
+> inexistiam no doador (raios citados em código a partir da pesquisa
+> da onda); âncora relativa E(1 UA)=1.
+>
+> **Olhos frescos (pauta §7): ASSINA COM RESSALVAS, 0 bloqueantes.**
+> Remediado: ΔEV do selo também em anões/asteroides (`ccab58c`).
+> Recusado: Ceres `proveniencia: medido` — no vocabulário do manifest
+> isso é "bytes re-hospedados"; a invenção já está em `origem.fonte`.
+>
+> **Auditoria (15 céticos, 0 refutados) — remediada nesta ordem:**
+> (1) Rebaseline D11 com imagens abertas: F8-3 disse "bit-idênticas"
+> e 9 vistas de corpos já tinham mudado (MH18 no ponto). Hashes
+> oficiais agora são os medidos. Saturno/Quaoar anel mudaram de
+> propósito (anel inercial; Quaoar divide pelo equatorial da malha).
+> (2) Cinco dados: Ceres polar 446 (pck00011 atual); Quaoar anel
+> /640,74; Netuno Eq.17; domínio U/N 154°/133° (não o α da Terra);
+> Saturno β=√(βE βS); anéis U/N/Q/S sem W(t). (3) D-E4 lê a matriz
+> do mesh; MH18 pinado contra o paper; juiz de memória cobra teto
+> residente (120/80), não só delta. (4) VRAM da Terra cinema é
+> 0,33 GiB (equiret 2:1), não 0,72. Ganho da lua de sangue FICA
+> (observabilidade é produto); em `?luz=real` ele também fica —
+> nota, não defeito.
+>
+> **Pendências nomeadas:** advecção de Júpiter (P-E12); P-F7-MESH
+> (GLB/OBJ); bancada Titã/Europa USGS; Ceres Dawn; foto visível de
+> Vênus; super-rotação de Vênus; unificações BV_SOL/PONTO_ZERO
+> (moveriam o filme); F8+ rodadas de realismo; residual do
+> z-fighting vivo (482/37) — o instrumento não consegue reprovar
+> no braço vivo; o fato de fundo parece bom (não há duas superfícies
+> disputando profundidade), o registro não afirma zero; Lua sem
+> ponto fotométrico (mesh↔nada); HUD "cartografia real" não confessa
+> recuo procedural.
+>
+> **Números:** manifest 174 variantes, ~140 MB em disco, 0 origens
+> não resolvidas. Ladder Terra: performance 1024 / alta 2048 /
+> cinema 8192 (hash oficial `ab40ab3b0d3b`). Memória: delta ZERO +
+> teto residente. GPU do stack de corpos: custo líquido ≈0 ou
+> negativo (early-z). ua150 bit-idêntica após MH18 e após os
+> consertos. Hashes D11 desta remediação (todos @1800x1713, 2/2
+> estáveis, via=sinal): mercurio `e90080cc8ab9` · venus
+> `4bc211ff1a87` · jupiter `e456d011dd52` · saturno-anel
+> `1cc87d169e7b` · europa `0d41c6884e67` · titan `c292ca9d0337` ·
+> plutao-caronte `75383ccbc1a9` · quaoar-anel `b388506376b0` ·
+> vesta `53babc1cd2e9`.
+>
+> A pasta `docs/onda-6/` morreu neste merge (regra 8). Sem push.
 
 **Onda 7 — Motor estelar F3–F5 + encontros.** **7a (incondicional):** Teff/raio das 16 heroes; pilotos Sirius e Betelgeuse; leis de escala por classe; `radiusFromSpect` sobre o catálogo inteiro; **termo angular no `arriveDist` (raio/tan θ), agora que existe raio estelar** — hoje a câmera pousaria igual em Betelgeuse e em Proxima; **`starOptics` rotulável com interruptor** — entra aqui, e não antes, porque muda todo o campo estelar e o juiz é o painel, não o pixel-igual. **7b (condicional à Decisão 1):** encontros como beats do filme; **default declarado: sem a decisão, 7b não entra** e os encontros ficam no voo livre e no Atlas. *Gate (só 7a):* tríptico anã M/Sol/supergigante aprovado; foco-próximo em 20 estrelas sorteadas sem regressão de FPS nem payload; **revisão de olhos frescos antes do merge**.
 

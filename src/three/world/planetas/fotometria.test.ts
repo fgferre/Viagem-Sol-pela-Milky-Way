@@ -25,8 +25,12 @@ import {
   COR_SOLAR_LINEAR,
   FOTOMETRIA,
   IDS_FOTOMETRIA,
+  DOMINIO_MH18,
   aMagBaseDe,
+  betaEfetivoAnel,
+  deltaMagMh18,
   faseLambertiana,
+  fatorDeFaseMh18,
   magAparente,
   magAparenteEstelar,
 } from './fotometria';
@@ -278,6 +282,82 @@ describe('fotometria — a lei estelar do Sol e o ponto-zero do campo', () => {
   });
 });
 
+describe('fotometria — MH18 (D10, domínio e costura)', () => {
+  it('em α=0 e B=0 o fator é 1 (o H da tabela já é V(1,0))', () => {
+    for (const id of Object.keys(DOMINIO_MH18)) {
+      expect(fatorDeFaseMh18(id, 0), id).toBeCloseTo(1, 10);
+      expect(deltaMagMh18(id, 0), id).toBeCloseTo(0, 12);
+    }
+  });
+
+  it('Plutão e o Sol não têm MH18: devolvem Lambert', () => {
+    const a = Math.PI / 3;
+    expect(fatorDeFaseMh18('pluto', a)).toBeCloseTo(faseLambertiana(a), 12);
+    expect(fatorDeFaseMh18('sun', a)).toBeCloseTo(faseLambertiana(a), 12);
+  });
+
+  it('na borda do domínio a emenda é C0 — razão pinada', () => {
+    for (const [id, teto] of Object.entries(DOMINIO_MH18)) {
+      const aRad = (teto * Math.PI) / 180;
+      const dentro = fatorDeFaseMh18(id, aRad - 1e-9);
+      const fora = fatorDeFaseMh18(id, aRad + 1e-9);
+      expect(Math.abs(dentro - fora), id).toBeLessThan(1e-6);
+    }
+  });
+
+  it('Saturno: o termo de anel move o fator com B, mesmo em α=0', () => {
+    const semAnel = fatorDeFaseMh18('saturn', 0, 0);
+    const comAnel = fatorDeFaseMh18('saturn', 0, 0.3);
+    expect(semAnel).toBeCloseTo(1, 10);
+    expect(comAnel).not.toBeCloseTo(1, 2);
+  });
+
+  it('Mercúrio no domínio é mais escuro que Lambert (regolito, não esfera lisa)', () => {
+    const a = (30 * Math.PI) / 180;
+    expect(fatorDeFaseMh18('mercury', a)).toBeLessThan(faseLambertiana(a));
+  });
+
+  it('os coeficientes do paper estão pinados — ×10 num termo reprova', () => {
+    // cada esperado é a equação do paper escrita AQUI, não a função
+    expect(deltaMagMh18('mercury', 10)).toBeCloseTo(
+      6.328e-2 * 10 -
+        1.6336e-3 * 100 +
+        3.3644e-5 * 1000 -
+        3.4265e-7 * 10_000 +
+        1.6893e-9 * 100_000 -
+        3.0334e-12 * 1_000_000,
+      12
+    );
+    expect(deltaMagMh18('venus', 10)).toBeCloseTo(
+      -1.044e-3 * 10 + 3.687e-4 * 100 - 2.814e-6 * 1000 + 8.938e-9 * 10_000,
+      12
+    );
+    expect(deltaMagMh18('earth', 10)).toBeCloseTo(-1.06e-3 * 10 + 2.054e-4 * 100, 12);
+    expect(deltaMagMh18('mars', 10)).toBeCloseTo(2.267e-2 * 10 - 1.302e-4 * 100, 12);
+    expect(deltaMagMh18('jupiter', 10)).toBeCloseTo(-3.7e-4 * 10 + 6.16e-4 * 100, 12);
+    expect(deltaMagMh18('saturn', 10, 0)).toBeCloseTo(0.026 * 10, 12);
+    expect(deltaMagMh18('uranus', 10)).toBeCloseTo(6.587e-3 * 10 + 1.049e-4 * 100, 12);
+    // [MH18] Eq. 17 — sem isto Netuno devolve 0 e o ponto dobra de brilho
+    expect(deltaMagMh18('neptune', 10)).toBeCloseTo(7.944e-3 * 10 + 9.617e-5 * 100, 12);
+    expect(deltaMagMh18('neptune', 90)).toBeCloseTo(7.944e-3 * 90 + 9.617e-5 * 8100, 12);
+  });
+
+  it('o domínio de Urano/Netuno é o da equação, não o α visto da Terra', () => {
+    expect(DOMINIO_MH18.uranus).toBe(154);
+    expect(DOMINIO_MH18.neptune).toBe(133);
+    const a90 = Math.PI / 2;
+    expect(fatorDeFaseMh18('neptune', a90)).toBeLessThan(faseLambertiana(a90) * 0.7);
+  });
+
+  it('Saturno: β efetiva é √(βE βS) de mesmo sinal, senão 0 [MH18] Eq. 10', () => {
+    expect(betaEfetivoAnel(0.2, 0.2)).toBeCloseTo(0.2, 12);
+    expect(betaEfetivoAnel(0.1, 0.4)).toBeCloseTo(Math.sqrt(0.04), 12);
+    expect(betaEfetivoAnel(0.2, -0.2)).toBe(0);
+    expect(betaEfetivoAnel(-0.2, -0.8)).toBeCloseTo(-Math.sqrt(0.16), 12);
+    expect(betaEfetivoAnel(0, 0.3)).toBe(0);
+  });
+});
+
 describe('fotometria — texto-fonte (D1, anti-relógio e fonte por linha)', () => {
   const fonte = readFileSync(new URL('./fotometria.ts', import.meta.url), 'utf8');
 
@@ -288,11 +368,12 @@ describe('fotometria — texto-fonte (D1, anti-relógio e fonte por linha)', () 
     expect(fonte).not.toContain('new Date(');
   });
 
-  it('cada corpo carrega fonte citada, e a aproximação da fase está dita', () => {
+  it('cada corpo carrega fonte citada, e a política de domínio MH18 está dita', () => {
     for (const marca of ['[MH18]', '[MKP17]', '[R12]', '[SBDB]', '[RBF94]']) {
       expect(fonte).toContain(marca);
     }
-    expect(fonte).toContain('APROXIMAÇÃO DECLARADA');
-    expect(fonte).toContain('Onda 6');
+    expect(fonte).toContain('emenda');
+    expect(fonte).toContain('costura');
+    expect(fonte).toContain('DOMINIO_MH18');
   });
 });

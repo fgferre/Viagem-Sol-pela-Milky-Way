@@ -925,6 +925,65 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
     primeMeridianDeg: 302.695,
     spinRateDegPerDay: 56.3625225,
   },
+  // NAIF 2000001 — pck00011 BODY2000001_POLE_*/PM
+  ceres: {
+    poleRaDeg: 291.418,
+    poleDecDeg: 66.764,
+    primeMeridianDeg: 170.65,
+    spinRateDegPerDay: 952.1532,
+  },
+  // F6: sem IAU no pck00011. Polo = norte ECLÍPTICO em equatorial
+  // (α=270°, δ=66,5607°) — o mesmo da câmera pinada de quaoar-anel;
+  // W de 17,68 h (Pereira23 / Morgado23). Didático, declarado.
+  quaoar: {
+    poleRaDeg: 270,
+    poleDecDeg: 66.5607,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 488.6877828,
+  },
+  // F6: Haumea/Makemake/Éris sem kernel. Polo equatorial norte
+  // declarado (não há IAU no pck); W da rotação publicada do doador
+  // (3,9 h / 7,77 h / 25,9 h). Superfície procedural — o polo só
+  // orienta o −3 inventado.
+  haumea: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 2215.3846154,
+  },
+  makemake: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 1111.9691117,
+  },
+  eris: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 333.5907336,
+  },
+  // F7: Vesta/Palas pck00011 BODY2000004/2000002. Hígia sem
+  // kernel — polo equatorial norte declarado; W de 13,8 h
+  // (doador rotationPeriodHours).
+  vesta: {
+    poleRaDeg: 309.031,
+    poleDecDeg: 42.235,
+    primeMeridianDeg: 285.39,
+    spinRateDegPerDay: 1617.3329428,
+  },
+  pallas: {
+    poleRaDeg: 33,
+    poleDecDeg: -3,
+    primeMeridianDeg: 38,
+    spinRateDegPerDay: 1105.8036,
+  },
+  hygiea: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 626.0869565,
+  },
 };
 
 /**
@@ -945,11 +1004,22 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   // emitRadii do script continua pulando esferas; esta linha é mantida
   // à mão com a citação, não regenerada.
   moon: [1737.4, 1737.4, 1737.4],
+  // VÊNUS entra pela MESMA exceção da Lua (F3): esfera exata (BODY2_RADII
+  // do pck00011 — 6051,8 km nos três eixos), mantida à mão com a citação
+  // porque o emissor pula esferas e a tabela é a fonte única de raio
+  // físico dos corpos resolvidos.
+  venus: [6051.8, 6051.8, 6051.8],
   phobos: [13, 11.4, 9.1],
   deimos: [7.8, 6, 5.1],
   mars: [3396.19, 3396.19, 3376.2],
   io: [1829.4, 1819.4, 1815.7],
   europa: [1562.6, 1560.3, 1559.5],
+  // Ganimedes, Calisto, Umbriel, Titânia, Oberon e Tritão: a MESMA
+  // exceção da Lua/Vênus (F5). BODY503/504/702/703/704/801_RADII do
+  // pck00011 — esferas exatas, o emissor pula; a tabela é a fonte
+  // única de raio dos resolvidos.
+  ganymede: [2631.2, 2631.2, 2631.2],
+  callisto: [2410.3, 2410.3, 2410.3],
   jupiter: [71492, 71492, 66854],
   mimas: [207.8, 196.7, 190.6],
   enceladus: [256.6, 251.4, 248.3],
@@ -960,7 +1030,34 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   iapetus: [745.7, 745.7, 712.1],
   saturn: [60268, 60268, 54364],
   ariel: [581.1, 577.9, 577.7],
+  umbriel: [584.7, 584.7, 584.7],
+  titania: [788.9, 788.9, 788.9],
+  oberon: [761.4, 761.4, 761.4],
   miranda: [240.4, 234.2, 232.9],
   uranus: [25559, 25559, 24973],
   neptune: [24764, 24764, 24341],
+  triton: [1352.6, 1352.6, 1352.6],
+  // F6: esferas/elipsoides mão-mantidas. Plutão/Caronte BODY999/901
+  // do pck00011; Ceres BODY2000001_RADII atuais 487,3×487,3×446
+  // (o bloco "valores antigos" do kernel, IAU 2009, era 454,7 no
+  // polo — não usar). Quaoar: R=543 km [Pereira23] × shapeScale
+  // [1,18, 0,99, 0,86] em ordem de publicação (a,b,c) — c curto =
+  // eixo de rotação (cicatriz herdada; a matriz aplica (a,c,b)).
+  // Haumea Jacobi ~1161×852×513 (Lockwood et al. / IAU); Makemake
+  // 715 e Éris 1163 esferas (ocultações; donor radiusKm).
+  pluto: [1188.3, 1188.3, 1188.3],
+  charon: [606, 606, 606],
+  ceres: [487.3, 487.3, 446],
+  quaoar: [640.74, 537.57, 466.98],
+  haumea: [1161, 852, 513],
+  makemake: [715, 715, 715],
+  eris: [1163, 1163, 1163],
+  // F7: Vesta BODY2000004_RADII 289×280×229. Palas sem
+  // BODY*_RADII no pck — esfera 256 km (doador radiusKm).
+  // Hígia sem kernel — esfera 217 km (doador radiusKm /
+  // Vernazza mean). Modelos DAMIT/NASA GLB-OBJ: pendentes
+  // (sem GLTFLoader/OBJLoader na casa).
+  vesta: [289, 280, 229],
+  pallas: [256, 256, 256],
+  hygiea: [217, 217, 217],
 };

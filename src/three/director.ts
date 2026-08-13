@@ -33,6 +33,18 @@ import {
 } from './world/corpos/terra';
 import { LuaResolvida, RAIO_LUA_PC } from './world/corpos/lua';
 import {
+  ROCHOSOS,
+  RochosoResolvido,
+  posicaoDoRochosoUA,
+  raiosDoRochosoPc,
+} from './world/corpos/rochoso';
+import {
+  GIGANTES,
+  GiganteResolvido,
+  posicaoDoGiganteUA,
+  raiosDoGigantePc,
+} from './world/corpos/gigante';
+import {
   PONTO_ZERO_SOL_PC,
   Planetas,
   PLANETAS_DEFAULT_ON,
@@ -81,8 +93,12 @@ import {
   CHAVE_DE_CORPO,
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
+  ANOES_DO_SISTEMA,
+  ASTEROIDES_DO_SISTEMA,
   claraoDoAtlas,
 } from './atlasConfig';
+
+const HELIO_SEM_PONTO = [...ANOES_DO_SISTEMA, ...ASTEROIDES_DO_SISTEMA];
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -300,6 +316,32 @@ export class Director {
   private luaCarregando = false;
   /** a Lua no gate a frio — o mesmo contrato de `terraFriaNoGate`. */
   private luaFriaNoGate = false;
+  /**
+   * OS ROCHOSOS (F3+F5): planetas e luas texturadas — a classe
+   * genérica percorrida como DADO (`ROCHOSOS`), com as mesmas digitais
+   * de estabilidade das irmãs por instância (pop do mesh, chegada de
+   * textura, gate a frio e rampa de cessão recomeçam a contagem da
+   * captura).
+   */
+  private readonly rochosos: {
+    corpo: RochosoResolvido;
+    emQuadroAntes: boolean;
+    carregavaAntes: boolean;
+    carregando: boolean;
+    friaNoGate: boolean;
+  }[] = [];
+  /**
+   * OS GIGANTES (F4): Júpiter, Saturno, Urano e Netuno — a classe
+   * própria (não cabe em rochoso.ts), percorrida como DADO
+   * (`GIGANTES`), com as mesmas digitais de estabilidade.
+   */
+  private readonly gigantes: {
+    corpo: GiganteResolvido;
+    emQuadroAntes: boolean;
+    carregavaAntes: boolean;
+    carregando: boolean;
+    friaNoGate: boolean;
+  }[] = [];
   /** quadros já gastos segurando a captura com a efeméride pedida
    *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
   private quadrosTentandoFonte = 0;
@@ -307,9 +349,12 @@ export class Director {
   private retentouFonte = false;
   /** o aviso único do retrato sob corpos já saiu no console */
   private acusouRetrato = false;
-  /** posição VIVA da Lua para o rótulo dela (projectCorpos) — três
-   *  floats reusados; NaN sem efeméride (rótulo não desenha). */
-  private readonly luaPosParaRotulo = new Float32Array([NaN, NaN, NaN]);
+  /** posições VIVAS das luas para os rótulos (projectCorpos) —
+   *  3 floats por entrada de `LUAS_DO_SISTEMA`, NaN sem efeméride
+   *  (projectCorpos ignora NaN — rótulo só onde há corpo). */
+  private readonly luaPosParaRotulo = new Float32Array(
+    LUAS_DO_SISTEMA.length * 3
+  ).fill(Number.NaN);
   /**
    * A CÂMERA SALTOU neste quadro (portal, enquadramento, ?pos=) — os
    * corpos resolvidos fazem SNAP da cessão em vez de animar através do
@@ -898,6 +943,42 @@ export class Director {
       base: import.meta.env.BASE_URL,
     });
     this.palco.group.add(this.lua.group);
+    // OS ROCHOSOS (F3): a classe genérica, um por config da lista viva.
+    this.rochosos.length = 0;
+    for (const config of ROCHOSOS) {
+      const corpo = new RochosoResolvido({
+        config,
+        tier: this.engine.quality,
+        maxTextureSize: sondarGl().maxTextureSize,
+        base: import.meta.env.BASE_URL,
+      });
+      this.rochosos.push({
+        corpo,
+        emQuadroAntes: false,
+        carregavaAntes: false,
+        carregando: false,
+        friaNoGate: false,
+      });
+      this.palco.group.add(corpo.group);
+    }
+    // OS GIGANTES (F4): a classe própria, um por config da lista viva.
+    this.gigantes.length = 0;
+    for (const { id } of GIGANTES) {
+      const corpo = new GiganteResolvido({
+        id,
+        tier: this.engine.quality,
+        maxTextureSize: sondarGl().maxTextureSize,
+        base: import.meta.env.BASE_URL,
+      });
+      this.gigantes.push({
+        corpo,
+        emQuadroAntes: false,
+        carregavaAntes: false,
+        carregando: false,
+        friaNoGate: false,
+      });
+      this.palco.group.add(corpo.group);
+    }
     this.engine.scene.add(this.palco.group);
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
@@ -1069,11 +1150,14 @@ export class Director {
       this.aoVivo ||
       this.sentidoDoTempo !== 0 ||
       this.faseDaEfemeride === 'buscando' ||
-      // A TERRA (F2a) e A LUA (F2b): textura em voo é uma mudança JÁ
-      // PEDIDA que ainda não chegou — capturar antes dela mediria a
-      // corrida, não a imagem (o mesmo argumento da efeméride acima).
+      // A TERRA (F2a) e A LUA (F2b) e OS ROCHOSOS (F3): textura em voo
+      // é uma mudança JÁ PEDIDA que ainda não chegou — capturar antes
+      // dela mediria a corrida, não a imagem (o mesmo argumento da
+      // efeméride acima).
       this.terraCarregando ||
       this.luaCarregando ||
+      this.rochosos.some((r) => r.carregando) ||
+      this.gigantes.some((g) => g.carregando) ||
       // A RAMPA ENTRE DEGRAUS (F2b/D7): o rig anima entre dois
       // enquadramentos — cena mudando por construção até assentar
       this.atlas.animando;
@@ -1081,7 +1165,11 @@ export class Director {
     // devia estar na tela e a textura não está quente — capturar agora
     // fotografaria o ponto (ou nada) fingindo a vista do globo. O
     // precedente é `sun.assentado`: prontidão espera o retrato completo.
-    const corposAssentados = !this.terraFriaNoGate && !this.luaFriaNoGate;
+    const corposAssentados =
+      !this.terraFriaNoGate &&
+      !this.luaFriaNoGate &&
+      !this.rochosos.some((r) => r.friaNoGate) &&
+      !this.gigantes.some((g) => g.friaNoGate);
     // O RETRATO ACUSADO (item 5c): efeméride PEDIDA indisponível com os
     // corpos em cena segura a janela da retentativa (o tick conta os
     // quadros e dá o aviso único quando ela esgota — ver o bloco no tick).
@@ -1586,7 +1674,7 @@ export class Director {
   /** o degrau vivo — o que o `onEscada` publica e o `?ver=` espelha. */
   private get escada(): EstadoDaEscada {
     const degrau: EstadoDaEscada['degrau'] =
-      this.focoCorpoId === 'moon'
+      this.focoCorpoId !== null && LUAS_DO_SISTEMA.some((l) => l.id === this.focoCorpoId)
         ? 'lua'
         : this.focoCorpoId
           ? this.ver === 'corpo'
@@ -1597,10 +1685,17 @@ export class Director {
             : 'sistema';
     return {
       degrau,
-      // aproximar só desce para corpo com MESH resolvido — nesta fase a
-      // Terra; os demais ganham o degrau de graça quando a F3/F4 os
-      // resolver (a lista é dos corpos construídos, nunca redigitada)
-      podeAproximar: degrau === 'orbita' && this.focoCorpoId === 'earth',
+      // aproximar só desce para corpo com MESH resolvido — a lista é
+      // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a), os
+      // planetas rochosos (F3) e os gigantes (F4)
+      podeAproximar:
+        degrau === 'orbita' &&
+        (this.focoCorpoId === 'earth' ||
+          this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId) ||
+          this.rochosos.some(
+            (r) => !r.corpo.planeta && HELIO_SEM_PONTO.some((a) => a.id === r.corpo.id) && r.corpo.id === this.focoCorpoId
+          ) ||
+          this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId)),
     };
   }
 
@@ -1642,12 +1737,17 @@ export class Director {
       this.focarNoSistema();
       return;
     }
-    // A LUA vai direto ao degrau dela (D7): escolher uma lua é vê-la com
-    // o pai em quadro — não existe "órbita da Lua em torno do Sol", e
-    // `?foco=lua&ver=orbita` cai aqui também (documentado: para uma lua
-    // os dois valores de ?ver= dão o mesmo degrau).
-    if (id === 'moon') {
-      this.focarNaLua();
+    // A LUA e as luas da F3 vão direto ao degrau delas (D7): escolher
+    // uma lua é vê-la com o pai em quadro — não existe "órbita de lua
+    // em torno do Sol", e `?foco=fobos&ver=orbita` cai aqui também
+    // (documentado: para uma lua os dois valores de ?ver= dão o mesmo
+    // degrau).
+    if (LUAS_DO_SISTEMA.some((l) => l.id === id)) {
+      this.focarNaLua(id);
+      return;
+    }
+    if (HELIO_SEM_PONTO.some((a) => a.id === id)) {
+      this.focarNoAnao(id);
       return;
     }
     // O GESTO DA DESCIDA (D7): clicar no MESMO corpo já focado em
@@ -1664,10 +1764,10 @@ export class Director {
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
     if (i < 0 || !this.planetas) return;
     if (ver === 'corpo') {
-      // `?foco=terra&ver=corpo` — o degrau reproduzido por URL
+      // `?foco=marte&ver=corpo` — o degrau reproduzido por URL
       this.focoCorpoId = id;
       this.ver = 'orbita';
-      if (this.escada.podeAproximar || id === 'earth') {
+      if (this.escada.podeAproximar) {
         this.aproximarDoCorpo();
         return;
       }
@@ -1710,26 +1810,48 @@ export class Director {
   }
 
   /**
-   * O DEGRAU "CORPO" (F2b/D7): o corpo EM FOCO enquadrado com o raio
-   * FÍSICO dele (BODY_AXES, via o estado do mesh resolvido — nenhum
-   * literal de raio nasce aqui). O centro é o do MESH (a mesma cadeia
-   * de efeméride/retrato da camada — uma fonte só).
+   * O DEGRAU "CORPO" (F2b/D7; generalizado na F3): o corpo EM FOCO
+   * enquadrado com o raio FÍSICO dele (BODY_AXES, via o mesh resolvido
+   * — nenhum literal de raio nasce aqui). O centro é o da MESMA cadeia
+   * de efeméride/retrato da camada — uma fonte só.
    */
   aproximarDoCorpo() {
     if (this.phase !== 'atlas') return;
     const id = this.focoCorpoId ?? 'earth';
-    if (id !== 'earth') return; // só corpos com mesh resolvido descem
+    // só corpos com mesh resolvido descem: a Terra, os planetas da F3
+    // e os gigantes da F4 (a lista viva dos construídos)
+    const ehGigante = this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === id);
+    const ehRochoso = this.rochosos.some((r) => r.corpo.id === id);
+    const ehPlanetaResolvido =
+      id === 'earth' ||
+      this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === id) ||
+      ehGigante ||
+      (ehRochoso && HELIO_SEM_PONTO.some((a) => a.id === id));
+    if (!ehPlanetaResolvido) return;
     // o centro sai da MESMA cadeia do mesh (efeméride viva, retrato sem
     // ela) — calculado aqui e não lido do estado do tick, porque o boot
     // por `?ver=corpo` chega ANTES do primeiro tick (estado ainda NaN)
-    const p = posicaoDaTerraUA(grampearJd(this.jdPedido), this.efemeride);
+    const jd = grampearJd(this.jdPedido);
+    const p =
+      id === 'earth'
+        ? posicaoDaTerraUA(jd, this.efemeride)
+        : ehGigante
+          ? posicaoDoGiganteUA(id, jd, this.efemeride)
+          : posicaoDoRochosoUA(id, jd, this.efemeride);
+    if (!p) return;
     const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
     const centro = new THREE.Vector3(
       eq[0] * AU_PARA_PC,
       eq[1] * AU_PARA_PC,
       eq[2] * AU_PARA_PC
     );
-    this.atlas.focar(centro, RAIO_EQ_TERRA_PC, centro, {
+    const raioPc =
+      id === 'earth'
+        ? RAIO_EQ_TERRA_PC
+        : ehGigante
+          ? raiosDoGigantePc(id).a
+          : raiosDoRochosoPc(id).a;
+    this.atlas.focar(centro, raioPc, centro, {
       rampa: this.rampaDaEscada(),
       // o eixo do PLANETA no alto da tela, não o da eclíptica (Onda 7)
       polo: this.poloDoCorpo(id),
@@ -1743,23 +1865,34 @@ export class Director {
     this.teletransportou();
   }
 
+  /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
+  private escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
+    const i = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
+    if (i < 0) return;
+    this.luaPosParaRotulo[i * 3] = centro.x;
+    this.luaPosParaRotulo[i * 3 + 1] = centro.y;
+    this.luaPosParaRotulo[i * 3 + 2] = centro.z;
+  }
+
   /**
-   * O DEGRAU "LUA" (F2b/D7): a Lua com o PAI em quadro —
-   * `PARENT_FRAMING_BIAS` ganha aqui o consumidor prometido desde a
-   * Onda 5 (a direção é a MISTURA de `direcaoDaLua`, lerp entre
+   * O DEGRAU "LUA" (F2b/D7; genérico desde a F3): a lua com o PAI em
+   * quadro — `PARENT_FRAMING_BIAS` ganha aqui o consumidor prometido
+   * desde a Onda 5 (a direção é a MISTURA de `direcaoDaLua`, lerp entre
    * direções, nunca fator de distância). Sem efeméride não há posição
-   * de Lua (não existe Lua no retrato): busca a fonte e reaplica o
+   * de lua (não há luas no retrato): busca a fonte e reaplica o
    * enquadramento quando ela chegar (`reenquadrarAposEfemeride`).
    */
-  focarNaLua() {
+  focarNaLua(id: string = 'moon') {
     if (this.phase !== 'atlas') return;
-    this.focoCorpoId = 'moon';
+    const entrada = LUAS_DO_SISTEMA.find((l) => l.id === id);
+    if (!entrada) return;
+    this.focoCorpoId = id;
     this.focoEstrela = false;
     this.ver = 'corpo';
-    this.events.onFoco(LUAS_DO_SISTEMA[0].nome);
+    this.events.onFoco(entrada.nome);
     this.emitirEscada();
     if (!this.efemeride) {
-      // a ContextLine já anuncia a Lua; o enquadramento chega com a fonte
+      // a ContextLine já anuncia a lua; o enquadramento chega com a fonte
       // (`reenquadrarAposEfemeride`) — nenhuma posição inventada antes
       this.garantirEfemerides();
       return;
@@ -1775,11 +1908,12 @@ export class Director {
         eq[2] * AU_PARA_PC
       );
     };
-    const lua = paraPc(this.efemeride.posicaoHeliocentrica('moon', jd));
-    const pai = paraPc(
-      this.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd)
-    );
-    this.atlas.focar(lua, RAIO_LUA_PC, lua, {
+    const lua = paraPc(this.efemeride.posicaoHeliocentrica(id, jd));
+    const pai = paraPc(this.efemeride.posicaoHeliocentrica(entrada.pai, jd));
+    // o raio físico é o de BODY_AXES (a fonte única — a Lua dela é a
+    // exceção declarada; RAIO_LUA_PC deriva dela bit a bit)
+    const raioPc = id === 'moon' ? RAIO_LUA_PC : raiosDoRochosoPc(id).a;
+    this.atlas.focar(lua, raioPc, lua, {
       rampa: this.rampaDaEscada(),
       pai,
       polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id),
@@ -1929,7 +2063,9 @@ export class Director {
     if (degrau === 'sistema') return false;
     if (degrau === 'lua') {
       // sobe para o CORPO do pai (o degrau imediatamente acima)
-      this.focoCorpoId = LUAS_DO_SISTEMA[0].pai;
+      const entrada = LUAS_DO_SISTEMA.find((l) => l.id === this.focoCorpoId);
+      if (!entrada) return false;
+      this.focoCorpoId = entrada.pai;
       this.aproximarDoCorpo();
       return true;
     }
@@ -1995,7 +2131,7 @@ export class Director {
     if (this.phase !== 'atlas' || this.focoEstrela) return;
     const { degrau } = this.escada;
     if (degrau === 'sistema') this.focarNoSistema();
-    else if (degrau === 'lua') this.focarNaLua();
+    else if (degrau === 'lua') this.focarNaLua(this.focoCorpoId ?? 'moon');
     else if (degrau === 'corpo') this.aproximarDoCorpo();
     else if (this.focoCorpoId) {
       // órbita: reaplica SEM passar pelo gesto de descida (focarNoCorpo
@@ -2007,7 +2143,7 @@ export class Director {
   }
 
   /**
-   * OS DEZ MAIS A LUA, para o índice da busca (F3; a Lua é F2b/P-E10).
+   * OS DEZ MAIS AS LUAS, para o índice da busca (F5; a Lua é F2b/P-E10).
    * O `rUA` dos dez sai do retrato e não do atributo vivo porque o
    * índice é construído UMA vez, na entrada no modo: ele é a NOTA da
    * lista ("4,2 UA · planeta"), e o que o Atlas enquadra de fato é a
@@ -2040,7 +2176,38 @@ export class Director {
       }
       return { id: l.id, nome: l.nome, classe: l.classe, rUA, pai: l.pai };
     });
-    return [...dez, ...luas];
+    const anoes = HELIO_SEM_PONTO.map((a) => {
+      let rUA = Number.NaN;
+      if (this.efemeride) {
+        const p = this.efemeride.posicaoHeliocentrica(a.id, jd);
+        rUA = Math.hypot(p.x, p.y, p.z);
+      }
+      return { id: a.id, nome: a.nome, classe: a.classe, rUA };
+    });
+    return [...dez, ...luas, ...anoes];
+  }
+
+  /** anão ou asteroide heliocêntrico: órbita em torno do Sol, depois o globo. */
+  private focarNoAnao(id: string) {
+    const entrada = HELIO_SEM_PONTO.find((a) => a.id === id);
+    if (!entrada) return;
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'orbita';
+    this.events.onFoco(entrada.nome);
+    this.emitirEscada();
+    if (!this.efemeride) {
+      this.garantirEfemerides();
+      return;
+    }
+    const jd = grampearJd(this.jdPedido);
+    const p = this.efemeride.posicaoHeliocentrica(id, jd);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const pos = new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+    if (pos.lengthSq() === 0) return;
+    this.atlas.focar(ORIGEM, pos.length(), pos, { rampa: this.rampaDaEscada() });
+    this.enquadrarAgora();
+    this.teletransportou();
   }
 
   /**
@@ -2513,10 +2680,25 @@ export class Director {
    */
   private evLuzDoFoco(): number | null {
     if (!this.focoCorpoId || !this.planetas) return null;
-    // a Lua (F2b): o dUA é o da CADEIA heliocêntrica dela, publicado
-    // pelo próprio mesh (NaN sem efeméride ⇒ o rótulo fica sem número)
-    if (this.focoCorpoId === 'moon') {
-      const rUA = this.lua?.estadoVivo.rUA;
+    // as luas (F2b/F3): o dUA é o da CADEIA heliocêntrica dela,
+    // publicado pelo próprio mesh (NaN sem efeméride ⇒ o rótulo fica
+    // sem número)
+    if (LUAS_DO_SISTEMA.some((l) => l.id === this.focoCorpoId)) {
+      const rUA =
+        this.focoCorpoId === 'moon'
+          ? this.lua?.estadoVivo.rUA
+          : this.rochosos.find((r) => r.corpo.id === this.focoCorpoId)?.corpo
+              .estadoVivo.rUA;
+      return rUA !== undefined && Number.isFinite(rUA)
+        ? deslocamentoEVAssistida(rUA)
+        : null;
+    }
+    // anões/asteroides não têm ponto na camada: o dUA é o do mesh
+    // (Kepler/retrato). Sem este ramo o selo dizia ASSISTIDO e omitia
+    // os passos — justamente nos corpos de maior ΔEV.
+    if (HELIO_SEM_PONTO.some((a) => a.id === this.focoCorpoId)) {
+      const rUA = this.rochosos.find((r) => r.corpo.id === this.focoCorpoId)
+        ?.corpo.estadoVivo.rUA;
       return rUA !== undefined && Number.isFinite(rUA)
         ? deslocamentoEVAssistida(rUA)
         : null;
@@ -2821,9 +3003,87 @@ export class Director {
       this.luaCarregavaAntes = l.carregando;
       // a posição viva para o RÓTULO da Lua (NaN sem efeméride ⇒ o
       // projectCorpos não a projeta — rótulo só onde há corpo)
-      this.luaPosParaRotulo[0] = l.centroPc.x;
-      this.luaPosParaRotulo[1] = l.centroPc.y;
-      this.luaPosParaRotulo[2] = l.centroPc.z;
+      this.escreverPosicaoDeLua('moon', l.centroPc);
+    }
+    // OS ROCHOSOS (F3), pelo MESMO fio das irmãs — a lista viva é o
+    // dado; planeta escreve a cessão do ponto (D5), lua não tem ponto.
+    // A guarda do `stars` é a da Terra: a PSF alimenta a cessão.
+    if (this.stars) {
+      for (const r of this.rochosos) {
+      const e = r.corpo.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+        dtS: dt,
+        psf: this.stars!,
+        salto: this.saltoDeCamera,
+      });
+      if (e.emQuadro) this.palco.registrar(r.corpo.id, e.raioPc, e.centroPc);
+      else this.palco.remover(r.corpo.id);
+      if (r.corpo.planeta) this.planetas?.escreverCessao(r.corpo.id, e.cede);
+      r.carregando = e.carregando;
+      // o fallback frio das irmãs — e o da Lua, palavra por palavra,
+      // para Fobos/Deimos: sem efeméride a lua não EXISTE (não é falha
+      // de textura); planeta sem fonte cai no retrato e o frio vale
+      r.friaNoGate =
+        this.palco.ligado &&
+        (r.corpo.planeta || this.efemeride !== null) &&
+        e.gateArmado &&
+        !e.emQuadro &&
+        !e.carregando;
+      if (
+        e.emQuadro !== r.emQuadroAntes ||
+        (r.carregavaAntes && !e.carregando) ||
+        e.emRampa
+      ) {
+        this.perturbar();
+      }
+      r.emQuadroAntes = e.emQuadro;
+      r.carregavaAntes = e.carregando;
+      if (!r.corpo.planeta) this.escreverPosicaoDeLua(r.corpo.id, e.centroPc);
+      }
+    }
+    // OS GIGANTES (F4), pelo MESMO fio dos rochosos — a lista viva é o
+    // dado; os quatro são planetas (retrato + cessão do ponto).
+    if (this.stars) {
+      for (const g of this.gigantes) {
+      const e = g.corpo.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+        dtS: dt,
+        psf: this.stars!,
+        salto: this.saltoDeCamera,
+      });
+      if (e.emQuadro) this.palco.registrar(g.corpo.id, e.raioPc, e.centroPc);
+      else this.palco.remover(g.corpo.id);
+      this.planetas?.escreverCessao(g.corpo.id, e.cede);
+      g.carregando = e.carregando;
+      g.friaNoGate =
+        this.palco.ligado &&
+        e.gateArmado &&
+        !e.emQuadro &&
+        !e.carregando;
+      if (
+        e.emQuadro !== g.emQuadroAntes ||
+        (g.carregavaAntes && !e.carregando) ||
+        e.emRampa
+      ) {
+        this.perturbar();
+      }
+      g.emQuadroAntes = e.emQuadro;
+      g.carregavaAntes = e.carregando;
+      }
     }
     // O RETRATO NUNCA FINGE EFEMÉRIDE (item 5c da auditoria): com os
     // corpos em cena e a fonte PEDIDA indisponível, o tick tenta a fonte
@@ -3190,14 +3450,11 @@ export class Director {
           this.phase === 'atlas' && this.planetas?.points.visible
             ? projectCorpos(cam, CORPOS_DO_SISTEMA, this.planetas.posicoes)
             : [];
-        // A LUA (F2b): rótulo pela posição VIVA da efeméride — ela não
-        // tem vértice na camada de pontos, então entra por uma projeção
-        // própria, e SÓ quando a posição existe (sem efeméride os três
-        // floats são NaN, e NaN passaria pelo projectPoint sem barreira)
+        // AS LUAS (F2b/F5): rótulo pela posição VIVA da efeméride —
+        // não têm vértice na camada de pontos, então entram por uma
+        // projeção própria. NaN (sem efeméride) o projectCorpos ignora.
         const luas =
-          this.phase === 'atlas' &&
-          this.planetas?.points.visible &&
-          Number.isFinite(this.luaPosParaRotulo[0])
+          this.phase === 'atlas' && this.planetas?.points.visible
             ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
             : [];
         this.lastLabels = [
@@ -3357,6 +3614,12 @@ export class Director {
     step('planetas', () => this.planetas?.dispose());
     step('terra', () => this.terra?.dispose());
     step('lua', () => this.lua?.dispose());
+    step('rochosos', () => {
+      for (const r of this.rochosos) r.corpo.dispose();
+    });
+    step('gigantes', () => {
+      for (const g of this.gigantes) g.corpo.dispose();
+    });
     step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());

@@ -50,6 +50,17 @@
 //   luz em 1676.
 // ============================================================
 
+// ============================================================
+import { AU_KM } from './elementosOrbitais';
+import { eclipticaParaEquatorial } from './frameGalactico';
+import { BODY_AXES } from './iauOrientation';
+// O raio do Sol NÃO nasce aqui — ver a nota em `RAIO_SOL_KM`, mais
+// abaixo. Esta é a única aresta desta lib para fora de `lib/atlas/`, e
+// ela carrega um NÚMERO, não comportamento: `three/escala.ts` importa
+// só `frameGalactico` e `elementosOrbitais`, que este arquivo já
+// importa — a aresta liga a nós que já estão no grafo, sem ciclo.
+import { RAIO_SOL_KM } from '../../three/escala';
+
 /** Posição heliocêntrica em km — ver o contrato de entrada no cabeçalho. */
 export type Vetor3Km = readonly [number, number, number];
 
@@ -270,6 +281,29 @@ export const COR_REFRACAO_LUNAR: readonly [number, number, number] = [
  */
 export const PISO_REFRACAO_LUNAR = 4e-4;
 
+/**
+ * A EXPOSIÇÃO DO OBSERVADOR na totalidade lunar (decisão do DONO,
+ * 2026-08-12, opção A): o equivalente ao fotógrafo que abre ~10 pontos
+ * para fotografar a blood moon. O PISO FÍSICO é `PISO_REFRACAO_LUNAR` e
+ * NÃO muda — 4e-4 atravessado pela cadeia de display da casa (knee +
+ * ACES + sRGB) quantiza para ~0: a Lua eclipsada renderizava PRETA.
+ * Este ganho é a exposição do observador adaptada à totalidade — NÃO é
+ * um dado físico; é a escolha declarada de mostrar a totalidade como um
+ * observador (ou uma foto de longa exposição) a vê.
+ *
+ * Aplicação MÍNIMA: multiplica SÓ o piso umbral RGB no chunk GLSL —
+ * que é não-zero EXCLUSIVAMENTE com eclipsador Terra (o cobre de
+ * Danjon). Todo outro caminho é intocado por construção: fora de
+ * eclipse o chunk devolve vec3(1.0) antes; receptor solar tem piso
+ * [0,0,0] e 0 × ganho = 0 exato (as vistas do eclipse SOLAR não movem).
+ * Calibrado por captura na vista `eclipse-lunar` pinada: a Lua lê cobre
+ * com o albedo visível, sem estourar.
+ */
+export const EV_OBSERVADOR_ECLIPSE_LUNAR = 10;
+
+/** O ganho linear do EV acima — derivado, nunca redigitado. */
+export const GANHO_OBSERVADOR_ECLIPSE_LUNAR = 2 ** EV_OBSERVADOR_ECLIPSE_LUNAR;
+
 // Derivados uma vez, na carga do módulo — o oráculo pina que cada
 // canal é COR × PISO exato (derivado, nunca redigitado).
 const PISO_UMBRAL_TERRA: readonly [number, number, number] = [
@@ -296,7 +330,6 @@ export const pisoUmbralDoEclipsador = (
 // ============================================================
 // A tabela de pares e o contrato dos anéis.
 // ============================================================
-
 /**
  * Receptor → eclipsador: em quais corpos o driver da F2c resolve o
  * cone por quadro. A SELEÇÃO é critério de performance, não de
@@ -345,6 +378,15 @@ export const PARES_DE_ECLIPSE: Readonly<Record<string, string>> = {
   // foram como os raios e albedos dos dois corpos foram medidos).
   triton: "neptune",
   charon: "pluto",
+  // F6: o outro lado do par Plutão–Caronte (os eventos mútuos
+  // 1985–1990). Saturno/Urano/Netuno/Quaoar NÃO entram — anel.
+  pluto: "charon",
+  // Fobos e Deimos na sombra de Marte (F3, data-only — a mudança
+  // prometida no JSDoc acima): Fobos orbita a 1,4 raios marcianos de
+  // altitude no plano equatorial, então o eclipse é frequente de
+  // verdade — o caso didático irmão das uranianas.
+  phobos: "mars",
+  deimos: "mars",
 };
 
 /**
@@ -355,4 +397,235 @@ export const PARES_DE_ECLIPSE: Readonly<Record<string, string>> = {
  * nascerem — o teste do contrato lê esta lista, então a extensão é
  * uma linha aqui e a cobrança continua sozinha.
  */
-export const CORPOS_COM_ANEL: readonly string[] = ["saturn"];
+export const CORPOS_COM_ANEL: readonly string[] = [
+  "saturn",
+  "uranus",
+  "neptune",
+  "quaoar",
+];
+
+// ============================================================
+// F2c — O DRIVER POR QUADRO: da efeméride ao uniforme, e o trecho
+// GLSL único que os shaders da Terra e da Lua importam.
+// ============================================================
+
+/**
+ * Raio de catálogo do Sol, em km — o `radiusKm` do doador citado no
+ * cabeçalho. FONTE ÚNICA, e desde o merge da Onda 6 ela não fica aqui:
+ * o número mora em `three/escala.ts`, que a onda do Sol real usa
+ * para dar ao Sol o raio FÍSICO na cena. Os dois lados nasceram em
+ * paralelo com o mesmo 696.340 digitado à mão; o merge matou esta
+ * cópia e deixou o endereço mais fundo — a física do eclipse e o
+ * desenho do Sol agora não podem divergir nem por um km.
+ *
+ * O re-export continua: o driver abaixo e os oráculos de
+ * `eclipse.test.ts` importam daqui, e não é papel deles saber de onde
+ * o número vem.
+ */
+export { RAIO_SOL_KM };
+
+/**
+ * O payload de UNIFORME do eclipse, por receptor por época — a ponte
+ * entre o cone (km heliocêntricos) e o shader (frame local do receptor,
+ * em raios do receptor). Os vetores saem no frame da CENA (equatorial
+ * J2000): quem os leva ao frame local é o corpo, pela MESMA base que já
+ * leva o `uDirSolLocal` — nenhum segundo caminho de rotação.
+ */
+export interface SombraNaCena {
+  /**
+   * false ⇒ o material recebe `uEclipseAtivo = 0` e o chunk devolve
+   * vec3(1.0) EXATO: multiplicar por 1.0 é identidade bit a bit — é o
+   * que mantém as vistas oficiais intactas fora de eclipse.
+   */
+  ativo: boolean;
+  /** Eixo anti-solar da sombra (unitário), frame da cena. */
+  eixoCena: [number, number, number];
+  /**
+   * Centro do eclipsador relativo ao receptor, frame da cena, em RAIOS
+   * do receptor. Escalar pelo raio é o que permite ao shader trabalhar
+   * na esfera unitária — a invariância de similaridade do cone (oráculo
+   * da lib) garante que a geometria é a mesma nas duas unidades.
+   */
+  eclipsadorRaios: [number, number, number];
+  /** Raio do eclipsador em raios do receptor. */
+  raioEclipsadorRaios: number;
+  /** (R_sol − R_eclipsador)/d_sol_eclipsador — a inclinação da umbra. */
+  inclinacaoUmbra: number;
+  /** (R_sol + R_eclipsador)/d_sol_eclipsador — a da penumbra. */
+  inclinacaoPenumbra: number;
+  /** O piso on-axis da lib: 0 no total; o nível ANULAR vive aqui. */
+  minSombra: number;
+  /** O piso umbral RGB do eclipsador — o cobre de Danjon, só da Terra. */
+  pisoUmbral: readonly [number, number, number];
+  // O cone no centro do receptor, espelhado para teste e para o selo
+  // futuro — a leitura "há eclipse, e de que tamanho" sai DAQUI.
+  umbraKm: number;
+  penumbraKm: number;
+  distanciaAoEixoKm: number;
+}
+
+/** Estado neutro para o contrato de out-parameter (um scratch por corpo). */
+export const criaSombraNaCena = (): SombraNaCena => ({
+  ativo: false,
+  eixoCena: [1, 0, 0],
+  eclipsadorRaios: [0, 0, 0],
+  raioEclipsadorRaios: 0,
+  inclinacaoUmbra: 0,
+  inclinacaoPenumbra: 0,
+  minSombra: 1,
+  pisoUmbral: [0, 0, 0],
+  umbraKm: 0,
+  penumbraKm: 0,
+  distanciaAoEixoKm: 0,
+});
+
+// Rascunho de módulo, reusado a cada chamada e nunca retido — o mesmo
+// padrão dos `_tmpV` do rig de câmera (JS é single-threaded e o conteúdo
+// é copiado para `out` antes de qualquer chamada seguinte).
+const coneRascunho = criaGeometriaDoCone();
+
+/**
+ * O DRIVER (F2c/D3): resolve a sombra do par da TABELA
+ * ({@link PARES_DE_ECLIPSE}) para um receptor, num instante.
+ *
+ * A ENTRADA É UA ECLÍPTICA J2000 DA CADEIA DA EFEMÉRIDE
+ * (`posicaoHeliocentrica`), nunca coordenada de cena — o cone é
+ * alimentado em km (× AU_KM), o contrato do cabeçalho deste arquivo.
+ * Os raios saem de BODY_AXES (a fonte única de raio físico da casa) e o
+ * Sol de {@link RAIO_SOL_KM}.
+ *
+ * NaN, receptor sem par na tabela ou corpo fora de BODY_AXES DESATIVAM
+ * (neutro) em vez de propagar lixo para um uniform — um NaN aqui pinta
+ * o corpo de preto sem erro em lugar nenhum (pauta (a) da revisão).
+ * Escreve em `out` e devolve `out`; os vetores internos são cópias —
+ * a referência devolvida nunca é compartilhada com o rascunho.
+ */
+export const resolveSombraNaCena = (
+  receptorId: string,
+  receptorEclipticaUA: Vetor3Km,
+  eclipsadorEclipticaUA: Vetor3Km,
+  out: SombraNaCena
+): SombraNaCena => {
+  const eclipsadorId = PARES_DE_ECLIPSE[receptorId];
+  const raioReceptorKm = BODY_AXES[receptorId]?.[0] ?? Number.NaN;
+  const raioEclipsadorKm = eclipsadorId
+    ? (BODY_AXES[eclipsadorId]?.[0] ?? Number.NaN)
+    : Number.NaN;
+  const [rx, ry, rz] = receptorEclipticaUA;
+  const [ex, ey, ez] = eclipsadorEclipticaUA;
+
+  const neutro = (): SombraNaCena => {
+    out.ativo = false;
+    out.minSombra = 1;
+    out.pisoUmbral = [0, 0, 0];
+    out.umbraKm = 0;
+    out.penumbraKm = 0;
+    out.distanciaAoEixoKm = 0;
+    return out;
+  };
+
+  if (
+    !eclipsadorId ||
+    ![rx, ry, rz, ex, ey, ez, raioReceptorKm, raioEclipsadorKm].every(
+      Number.isFinite
+    )
+  ) {
+    return neutro();
+  }
+
+  // km heliocêntricos — o contrato de entrada do cone (cabeçalho)
+  const cone = resolveConeDeEclipse(
+    [ex * AU_KM, ey * AU_KM, ez * AU_KM],
+    [rx * AU_KM, ry * AU_KM, rz * AU_KM],
+    { raioSolKm: RAIO_SOL_KM, raioEclipsadorKm, raioReceptorKm },
+    coneRascunho
+  );
+  out.umbraKm = cone.umbraKm;
+  out.penumbraKm = cone.penumbraKm;
+  out.distanciaAoEixoKm = cone.distanciaAoEixoKm;
+  out.minSombra = cone.minSombra;
+  out.ativo = cone.ativo;
+  if (!cone.ativo) {
+    out.minSombra = 1;
+    out.pisoUmbral = [0, 0, 0];
+    return out;
+  }
+
+  const dSolEclipsadorUA = Math.hypot(ex, ey, ez);
+  // eixo anti-solar unitário: a direção heliocêntrica do eclipsador —
+  // rotação é linear, normalizar em UA ou em km dá no mesmo
+  const eixo = eclipticaParaEquatorial([
+    ex / dSolEclipsadorUA,
+    ey / dSolEclipsadorUA,
+    ez / dSolEclipsadorUA,
+  ]);
+  out.eixoCena[0] = eixo[0];
+  out.eixoCena[1] = eixo[1];
+  out.eixoCena[2] = eixo[2];
+
+  // eclipsador relativo ao receptor, em raios do receptor, na cena:
+  // (km / raio) e rotação comutam — escalar antes ou depois dá no mesmo
+  const uaPorRaio = raioReceptorKm / AU_KM;
+  const rel = eclipticaParaEquatorial([ex - rx, ey - ry, ez - rz]);
+  out.eclipsadorRaios[0] = rel[0] / uaPorRaio;
+  out.eclipsadorRaios[1] = rel[1] / uaPorRaio;
+  out.eclipsadorRaios[2] = rel[2] / uaPorRaio;
+
+  const dSolEclipsadorKm = dSolEclipsadorUA * AU_KM;
+  out.raioEclipsadorRaios = raioEclipsadorKm / raioReceptorKm;
+  out.inclinacaoUmbra = (RAIO_SOL_KM - raioEclipsadorKm) / dSolEclipsadorKm;
+  out.inclinacaoPenumbra = (RAIO_SOL_KM + raioEclipsadorKm) / dSolEclipsadorKm;
+  out.pisoUmbral = pisoUmbralDoEclipsador(eclipsadorId);
+  return out;
+};
+
+/**
+ * O TRECHO GLSL DO ECLIPSE — fonte única, importada pelos shaders da
+ * Terra e da Lua. O needle-teste da F2c (a lição do chunk renomeado do
+ * doador, D3) cobra exatamente isto: o chunk EXISTE nos dois shaders e
+ * interpola ESTAS constantes, nunca literais redigitados.
+ *
+ * CONTRATO DO FATOR: multiplica SÓ a componente direta da luz, DEPOIS
+ * do BRDF. Emissão (as luzes de cidade da Terra) fica fora; não existe
+ * termo ambiente para sombrear. O neutro é vec3(1.0) EXATO — a
+ * identidade bit a bit que sustenta o contrato das vistas oficiais.
+ *
+ * A MATEMÁTICA é a do cone deste arquivo, por fragmento e em raios do
+ * receptor: `s` é a cota axial do fragmento ALÉM do eclipsador e
+ * umbra/penumbra são as mesmas retas de `resolveConeDeEclipse` (a
+ * invariância de similaridade é oráculo da lib). Valem as omissões
+ * divulgadas no cabeçalho: penumbra linear, sem umbra oblata, sem
+ * alargamento atmosférico, sem tempo-luz.
+ */
+export const GLSL_SOMBRA_ECLIPSE = /* glsl */ `
+uniform float uEclipseAtivo;       // 0 = fora de eclipse: fator 1 exato (bit-neutro)
+uniform vec3 uEclipseEixo;         // eixo anti-solar da sombra, frame local do receptor
+uniform vec3 uEclipseEclipsador;   // centro do eclipsador, frame local, em raios do receptor
+uniform vec3 uEclipseCone;         // (raio do eclipsador em raios, inclinação da umbra, da penumbra)
+uniform vec3 uEclipsePisoCor;      // piso umbral RGB — o cobre de Danjon, só com eclipsador Terra
+uniform float uEclipsePisoEscalar; // minSombra: o piso anular neutro (o clamp do raio não o toca)
+
+vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo) {
+  if (uEclipseAtivo < 0.5) return vec3(1.0);
+  vec3 rel = p - uEclipseEclipsador;
+  float s = dot(rel, uEclipseEixo);
+  if (s <= 0.0) return vec3(1.0); // fragmento a montante do eclipsador
+  vec3 paraEcl = -rel / max(length(rel), 1.0e-6);
+  if (dot(n, paraEcl) <= ${GATE_LADO_PROXIMO}) return vec3(1.0); // lado oposto: o noturno
+  float perp = length(s * uEclipseEixo - rel);
+  float umbra = max(uEclipseCone.x - s * uEclipseCone.y, 0.0); // assinada → o clamp do consumidor
+  float penumbra = uEclipseCone.x + s * uEclipseCone.z;
+  float t = clamp((perp - umbra) / max(penumbra - umbra, 1.0e-6), 0.0, 1.0);
+  // o piso RGB (o cobre de Danjon) leva a EXPOSIÇÃO DO OBSERVADOR da lib
+  // (EV_OBSERVADOR_ECLIPSE_LUNAR — não é dado físico, ver o doc da
+  // constante); só o eclipsador Terra tem piso não-zero, então o ganho
+  // existe só no ramo do eclipse lunar. O piso ANULAR escalar fica fora.
+  vec3 piso = uEclipsePisoCor * ${GANHO_OBSERVADOR_ECLIPSE_LUNAR.toFixed(1)}
+    + vec3(uEclipsePisoEscalar);
+  vec3 sombra = mix(piso, vec3(1.0), t);
+  // a sombra esvai através do terminador do receptor — a borda nunca
+  // corta uma linha dura no lado noturno
+  float fade = smoothstep(${FADE_TERMINADOR_INICIO}, ${FADE_TERMINADOR_FIM}, ndotlGeo);
+  return mix(vec3(1.0), sombra, fade);
+}
+`;

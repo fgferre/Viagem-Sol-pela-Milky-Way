@@ -400,8 +400,8 @@ try {
   await sessao.assentar();
   const depoisDoClique = await contexto(sessao);
   conferir(
-    // 11 desde a F2b: os dez do retrato + a Lua (P-E10)
-    nomesDosCorpos.length === 11
+    // 11 desde a F2b; 13 F3; 30 F5; 36 F6; 39 F7 (+ Vesta/Palas/Hígia)
+    nomesDosCorpos.length === 39
       && (nomesDosCorpos.includes(depoisDoClique) || depoisDoClique === 'Sistema solar')
       && depoisDoClique !== naTerra,
     `clicar num corpo ENQUADRA por ele ("${naTerra}" → "${depoisDoClique}")`

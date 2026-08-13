@@ -40,16 +40,27 @@ import {
   RAIO_POLAR_TERRA_PC,
   RAZAO_CASCA_ATMOSFERA,
   RAZAO_CASCA_NUVENS,
+  TERRA_FRAG,
   TerraResolvida,
   alvoDePixels,
   cessaoAlvo,
   direcaoLocalDeLonLat,
   escolherVariante,
+  escreverSombraDeEclipse,
+  eixosDoMesh,
   gateBinario,
   orientacaoDaTerraNaCena,
+  orientacaoDoCorpoNaCena,
   posicaoDaTerraUA,
+  uniformsDeEclipseNeutros,
 } from './terra';
 import type { ManifestDeTexturas } from './terra';
+import {
+  criaSombraNaCena,
+  pisoUmbralDoEclipsador,
+  resolveSombraNaCena,
+} from '../../../lib/atlas/eclipse';
+import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { heroDominanceFade } from '../lodStellar';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
@@ -77,57 +88,32 @@ function grau360(deg: number): number {
   return r < 0 ? r + 360 : r;
 }
 
-/**
- * O sub-ponto solar COMO O MESH O RENDERIZA: direção corpo→Sol na cena
- * (o Sol é a origem), invertida para o frame local pelas MESMAS colunas
- * que a matriz do mesh usa, lida de volta em lon/lat pela MESMA
- * convenção uv→direção da esfera do three.
- */
-function subSolarDoMesh(jd: number): { lonEastDeg: number; latDeg: number } {
+function dirSolCena(jd: number): readonly [number, number, number] {
   const p = motor.posicaoHeliocentrica('earth', jd);
   const norma = Math.hypot(p.x, p.y, p.z);
-  const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-  const { colunaX, colunaY, colunaZ } = orientacaoDaTerraNaCena(jd);
+  return eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
+}
+
+function subSolarDosEixos(
+  eixos: { colunaX: readonly number[]; colunaY: readonly number[]; colunaZ: readonly number[] },
+  dir: readonly number[]
+): { lonEastDeg: number; latDeg: number } {
   const dot = (a: readonly number[], b: readonly number[]) =>
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const lx = dot(dir, colunaX);
-  const ly = dot(dir, colunaY);
-  const lz = dot(dir, colunaZ);
-  // a inversa de direcaoLocalDeLonLat: x = coslat·coslon, z = −coslat·sinlon
   return {
-    lonEastDeg: grau360(Math.atan2(-lz, lx) / (Math.PI / 180)),
-    latDeg: Math.asin(Math.max(-1, Math.min(1, ly))) / (Math.PI / 180),
+    lonEastDeg: grau360(Math.atan2(-dot(dir, eixos.colunaZ), dot(dir, eixos.colunaX)) / (Math.PI / 180)),
+    latDeg: Math.asin(Math.max(-1, Math.min(1, dot(dir, eixos.colunaY)))) / (Math.PI / 180),
   };
 }
 
+function malhaDaSuperficie(group: THREE.Object3D): THREE.Mesh {
+  for (const c of group.children) {
+    if (c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) return c;
+  }
+  throw new Error('malhaDaSuperficie: nenhuma esfera no grupo');
+}
+
 describe('1. o oráculo de orientação (emenda D-E4)', () => {
-  it.each(JDS)('o transform do mesh põe o Sol a pino onde o Horizons diz — jd %f', (jd) => {
-    const doMesh = subSolarDoMesh(jd);
-    const oraculo = subSolarPoint('earth', jd, motor);
-    // mesma cadeia numérica dos dois lados: a folga é de arredondamento,
-    // não de física — 1e-8° ≈ 1 mm na superfície
-    expect(doMesh.lonEastDeg).toBeCloseTo(oraculo.lonEastDeg, 8);
-    expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
-  });
-
-  it('controle negativo: o mapeamento ESPELHADO (textura girada) reprova', () => {
-    const jd = JDS[0];
-    const p = motor.posicaoHeliocentrica('earth', jd);
-    const norma = Math.hypot(p.x, p.y, p.z);
-    const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-    const { colunaX, colunaZ } = orientacaoDaTerraNaCena(jd);
-    const dot = (a: readonly number[], b: readonly number[]) =>
-      a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-    // o erro clássico: sinal do z trocado (lon espelhada) — o globo giraria
-    // plausível e TODA vista de longe passaria
-    const lonErrada = grau360(
-      Math.atan2(+dot(dir, colunaZ), dot(dir, colunaX)) / (Math.PI / 180)
-    );
-    const oraculo = subSolarPoint('earth', jd, motor);
-    const delta = Math.abs(lonErrada - oraculo.lonEastDeg);
-    expect(Math.min(delta, 360 - delta)).toBeGreaterThan(1);
-  });
-
   it('a base é ortonormal dextrógira em qualquer instante', () => {
     for (const jd of JDS) {
       const { colunaX, colunaY, colunaZ } = orientacaoDaTerraNaCena(jd);
@@ -145,6 +131,42 @@ describe('1. o oráculo de orientação (emenda D-E4)', () => {
         colunaX[2] * (colunaY[0] * colunaZ[1] - colunaY[1] * colunaZ[0]);
       expect(det).toBeCloseTo(1, 12);
     }
+  });
+
+  it.each(JDS)('o transform do MESH põe o Sol a pino onde o Horizons diz — jd %f', async (jd) => {
+    const { terra } = terraDeTeste();
+    const perto = centroPc(jd);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    const q = quadro(perto, { jdTdb: jd });
+    terra.atualizar(q);
+    await flush();
+    expect(terra.atualizar(q).emQuadro).toBe(true);
+    const doMesh = subSolarDosEixos(eixosDoMesh(malhaDaSuperficie(terra.group)), dirSolCena(jd));
+    const oraculo = subSolarPoint('earth', jd, motor);
+    expect(doMesh.lonEastDeg).toBeCloseTo(oraculo.lonEastDeg, 8);
+    expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
+    terra.dispose();
+  });
+
+  it('controle negativo: deitar o polo no equador no MESH reprova', async () => {
+    const { terra } = terraDeTeste();
+    const perto = centroPc(JDS[0]);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    const q = quadro(perto);
+    terra.atualizar(q);
+    await flush();
+    expect(terra.atualizar(q).emQuadro).toBe(true);
+    const mesh = malhaDaSuperficie(terra.group);
+    const e = mesh.matrix.elements;
+    for (let i = 0; i < 3; i++) {
+      const tmp = e[4 + i];
+      e[4 + i] = e[8 + i];
+      e[8 + i] = tmp;
+    }
+    const doMesh = subSolarDosEixos(eixosDoMesh(mesh), dirSolCena(JDS[0]));
+    const oraculo = subSolarPoint('earth', JDS[0], motor);
+    expect(Math.abs(doMesh.latDeg - oraculo.latPlanetocentricaDeg)).toBeGreaterThan(10);
+    terra.dispose();
   });
 });
 
@@ -193,8 +215,10 @@ describe('4. a escada de texturas por tier (contra o manifest REAL)', () => {
   });
 
   it('A DOSE DE VRAM (lição N-9): em cinema só o map sobe a 8k; o apoio teta em 4k', () => {
-    // 5 × 8192² RGBA8 + mipmaps ≈ 1,79 GB — a tela branca do doador.
-    // Com a dose: 8192² + 4 × 4096² ≈ 0,54 GB (0,72 GB com mipmaps).
+    // Equiret 2:1, RGBA8 + mipmaps 4/3. A conta quadrada era 2× alta.
+    const bytesEquiret = (w: number) => 4 * w * (w / 2) * (4 / 3);
+    const terraCinema = bytesEquiret(8192) + 4 * bytesEquiret(4096);
+    expect(terraCinema / 1024 ** 3).toBeCloseTo(0.333, 3);
     expect(alvoDePixels('cinema', 'map', 16384)).toBe(8192);
     for (const canal of CANAIS_DA_TERRA.filter((c) => c !== 'map')) {
       expect(alvoDePixels('cinema', canal, 16384), canal).toBe(ALVO_DE_APOIO_CINEMA);
@@ -706,10 +730,14 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(director).toContain('this.terraCarregando');
     // ...e SEGURA o gate a FRIO (item 5b) e o retrato acusado (item 5c):
     // corpo armado sem textura quente não captura; efeméride pedida
-    // indisponível segura a janela da retentativa e ACUSA no console
+    // indisponível segura a janela da retentativa e ACUSA no console —
+    // desde a F3 o selo dos frios cobre TAMBÉM os rochosos (a lista viva)
     expect(director).toContain('this.terraFriaNoGate =');
     expect(director).toContain('this.luaFriaNoGate =');
-    expect(director).toContain('!this.terraFriaNoGate && !this.luaFriaNoGate');
+    expect(director).toContain('!this.terraFriaNoGate &&');
+    expect(director).toContain('!this.luaFriaNoGate &&');
+    expect(director).toContain('!this.rochosos.some((r) => r.friaNoGate)');
+    expect(director).toContain('!this.gigantes.some((g) => g.friaNoGate)');
     expect(director).toContain("this.faseDaEfemeride === 'indisponivel'");
     expect(director).toContain('QUADROS_TENTANDO_FONTE');
     expect(director).toContain('RETRATO congelado');
@@ -733,5 +761,142 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(RAZAO_CASCA_ATMOSFERA).toBe(1.025);
     expect(RAZAO_CASCA_NUVENS).toBe(1.0015);
     expect(DERIVA_DAS_NUVENS).toBe(1.03);
+  });
+});
+
+describe('8. o eclipse na tela (F2c/D3)', () => {
+  it('o needle do GLSL: o chunk da lib está no shader MONTADO e multiplica SÓ a direta', () => {
+    // a lição do chunk renomeado do doador: lê-se o shader MONTADO
+    // (TERRA_FRAG exportado para isto), nunca só o texto-fonte
+    expect(TERRA_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
+    expect(TERRA_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
+    // o fator entra DEPOIS do BRDF, na componente direta e só nela
+    expect(TERRA_FRAG).toContain(
+      '(albedo * ndotl + vec3(espec)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo)'
+    );
+    // a emissão (luzes de cidade) soma DEPOIS do fator — fora da sombra
+    expect(TERRA_FRAG).toContain('gl_FragColor = vec4(direta + luzes, 1.0);');
+    // a casca das nuvens recebe o MESMO chunk (escurece junto): duas
+    // interpolações do chunk da lib no texto-fonte, nenhuma cópia redigitada
+    expect(FONTE.match(/\$\{GLSL_SOMBRA_ECLIPSE\}/g)).toHaveLength(2);
+  });
+
+  it('a ponte cena→local: o eixo da sombra no frame local É o anti-Sol, nos dois jd pinados', () => {
+    const dot3 = (a: readonly number[], b: readonly number[]) =>
+      a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    // no máximo de um eclipse o eixo da sombra fica a décimos de grau do
+    // anti-Sol do receptor (é a DEFINIÇÃO de máximo) — uma base transposta
+    // ou negada erra por dezenas de graus e reprova aqui, onde o md5 é cego
+    // para o LUGAR da sombra no disco
+    const casos: Array<{
+      receptor: 'earth' | 'moon';
+      eclipsador: 'earth' | 'moon';
+      jd: number;
+    }> = [
+      { receptor: 'earth', eclipsador: 'moon', jd: 2460409.26395835 }, // solar 2024
+      { receptor: 'moon', eclipsador: 'earth', jd: 2458327.34980323 }, // lunar 2018
+    ];
+    for (const { receptor, eclipsador, jd } of casos) {
+      const pR = motor.posicaoHeliocentrica(receptor, jd);
+      const pE = motor.posicaoHeliocentrica(eclipsador, jd);
+      const s = resolveSombraNaCena(
+        receptor,
+        [pR.x, pR.y, pR.z],
+        [pE.x, pE.y, pE.z],
+        criaSombraNaCena()
+      );
+      expect(s.ativo).toBe(true);
+      const u = uniformsDeEclipseNeutros();
+      const o = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS[receptor], jd);
+      escreverSombraDeEclipse(
+        u,
+        s,
+        new THREE.Vector3(...o.colunaX),
+        new THREE.Vector3(...o.colunaY),
+        new THREE.Vector3(...o.colunaZ),
+        0
+      );
+      expect(u.uEclipseAtivo.value).toBe(1);
+      const norma = Math.hypot(pR.x, pR.y, pR.z);
+      const antiSol = eclipticaParaEquatorial([pR.x / norma, pR.y / norma, pR.z / norma]);
+      const asL: [number, number, number] = [
+        dot3(antiSol, o.colunaX),
+        dot3(antiSol, o.colunaY),
+        dot3(antiSol, o.colunaZ),
+      ];
+      const eixo = u.uEclipseEixo.value as THREE.Vector3;
+      expect(eixo.x * asL[0] + eixo.y * asL[1] + eixo.z * asL[2]).toBeGreaterThan(0.999);
+    }
+  });
+
+  it('o piso umbral no uniform: neutro com a Lua eclipsando, COBRE de Danjon com a Terra', () => {
+    // solar 2024 (receptor Terra): totalidade com piso 0 e cor neutra —
+    // o tinte laranja de receptor solar morreu no doador
+    const pT = motor.posicaoHeliocentrica('earth', 2460409.26395835);
+    const pL = motor.posicaoHeliocentrica('moon', 2460409.26395835);
+    const sSolar = resolveSombraNaCena(
+      'earth',
+      [pT.x, pT.y, pT.z],
+      [pL.x, pL.y, pL.z],
+      criaSombraNaCena()
+    );
+    const uSolar = uniformsDeEclipseNeutros();
+    const oT = orientacaoDaTerraNaCena(2460409.26395835);
+    escreverSombraDeEclipse(
+      uSolar,
+      sSolar,
+      new THREE.Vector3(...oT.colunaX),
+      new THREE.Vector3(...oT.colunaY),
+      new THREE.Vector3(...oT.colunaZ),
+      0
+    );
+    expect(uSolar.uEclipsePisoEscalar.value).toBe(0);
+    expect(uSolar.uEclipsePisoCor.value).toEqual(new THREE.Vector3(0, 0, 0));
+
+    // lunar 2018 (receptor Lua): a blood moon é o piso da LIB, componente
+    // a componente — nunca uma cor inventada no consumidor
+    const pM = motor.posicaoHeliocentrica('moon', 2458327.34980323);
+    const pE = motor.posicaoHeliocentrica('earth', 2458327.34980323);
+    const sLunar = resolveSombraNaCena(
+      'moon',
+      [pM.x, pM.y, pM.z],
+      [pE.x, pE.y, pE.z],
+      criaSombraNaCena()
+    );
+    const uLunar = uniformsDeEclipseNeutros();
+    const oM = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.moon, 2458327.34980323);
+    escreverSombraDeEclipse(
+      uLunar,
+      sLunar,
+      new THREE.Vector3(...oM.colunaX),
+      new THREE.Vector3(...oM.colunaY),
+      new THREE.Vector3(...oM.colunaZ),
+      0
+    );
+    const piso = pisoUmbralDoEclipsador('earth');
+    const cor = uLunar.uEclipsePisoCor.value as THREE.Vector3;
+    expect(cor.x).toBe(piso[0]);
+    expect(cor.y).toBe(piso[1]);
+    expect(cor.z).toBe(piso[2]);
+    expect(cor.x).toBeGreaterThan(0); // cobre, não preto
+    expect(uLunar.uEclipsePisoEscalar.value).toBe(0);
+  });
+
+  it('inativo: só o flag 0 é escrito — os vetores neutros ficam intactos (o que mantém as 22)', () => {
+    const u = uniformsDeEclipseNeutros();
+    const eixo0 = (u.uEclipseEixo.value as THREE.Vector3).clone();
+    const cone0 = (u.uEclipseCone.value as THREE.Vector3).clone();
+    escreverSombraDeEclipse(
+      u,
+      criaSombraNaCena(), // ativo = false
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 1),
+      0
+    );
+    expect(u.uEclipseAtivo.value).toBe(0);
+    expect(u.uEclipseEixo.value).toEqual(eixo0);
+    expect(u.uEclipseCone.value).toEqual(cone0);
+    expect(u.uEclipsePisoEscalar.value).toBe(1);
   });
 });

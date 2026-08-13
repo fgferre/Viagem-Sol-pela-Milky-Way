@@ -69,16 +69,19 @@ export function kmParaPc(km: number): number {
 }
 
 /**
- * Raio da fotosfera solar, km. É o MESMO valor que a lib de eclipse usa
- * para a geometria de umbra e penumbra (`lib/atlas/eclipse.ts:374`,
- * `RAIO_SOL_KM`), e essa coincidência é o achado que derruba a última
- * defesa do raio inflado: a FÍSICA do produto já trata o Sol pelo
- * tamanho verdadeiro — só o DESENHO o infla.
+ * Raio da fotosfera solar, km — e a FONTE ÚNICA dele em toda a casa. É
+ * o mesmo valor que a lib de eclipse usa para a geometria de umbra e
+ * penumbra, e essa coincidência é o achado que derruba a última defesa
+ * do raio inflado: a FÍSICA do produto já tratava o Sol pelo tamanho
+ * verdadeiro — só o DESENHO o inflava.
  *
- * AÇÃO DE MERGE, declarada para não virar segunda fonte de verdade: a
- * lib de eclipse nasceu na Onda 6 (F2c) depois desta branch. No merge,
- * um dos dois símbolos morre e o outro fica — o endereço natural é
- * aqui, num módulo sem dependência nenhuma, com o eclipse importando.
+ * A AÇÃO DE MERGE ACONTECEU (merge da Onda 6). A lib de eclipse nasceu
+ * na F2c depois desta branch e digitou o próprio 696.340; as duas
+ * cópias existiram no mesmo grafo pelo tempo do merge e não sobreviveu
+ * nenhuma além desta. `lib/atlas/eclipse.ts` importa daqui e re-exporta
+ * para os seus consumidores — o endereço natural era este, um módulo
+ * que só depende de `AU_KM` e `AU_PARA_PC`, os mesmos dois que o
+ * eclipse já importava, então a aresta não abriu ciclo.
  */
 export const RAIO_SOL_KM = 696_340;
 

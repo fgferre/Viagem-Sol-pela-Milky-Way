@@ -185,6 +185,9 @@ export function projectCorpos(
     const x = posicoes[i * 3];
     const y = posicoes[i * 3 + 1];
     const z = posicoes[i * 3 + 2];
+    // NaN passaria por projectPoint sem barreira (comparações com NaN
+    // são false) e viraria rótulo com x/y inválidos.
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
     const p = projectPoint(camera, { x, y, z });
     if (!p) continue;
     out.push({

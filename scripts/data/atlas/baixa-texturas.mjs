@@ -122,6 +122,223 @@ const FONTES = [
     url: `${SSS}/8k_moon.jpg`,
     nomeNoDoador: '8k_moon.jpg',
   },
+  // ---- F3 (rochosos). Vênus entra pelo TOPO DE NUVENS — é o que se
+  // vê do espaço; a superfície de radar (8k_venus_surface) NÃO entra:
+  // renderizá-la sob uma casca translúcida fingiria transparência que
+  // a atmosfera real não tem (dito no commit da fase).
+  {
+    corpo: 'mercury',
+    canal: 'map',
+    url: `${SSS}/8k_mercury.jpg`,
+    nomeNoDoador: '8k_mercury.jpg',
+  },
+  {
+    corpo: 'venus',
+    canal: 'map',
+    url: `${SSS}/4k_venus_atmosphere.jpg`,
+    nomeNoDoador: '4k_venus_atmosphere.jpg',
+  },
+  {
+    corpo: 'mars',
+    canal: 'map',
+    url: `${SSS}/8k_mars.jpg`,
+    nomeNoDoador: '8k_mars.jpg',
+  },
+  {
+    corpo: 'phobos',
+    canal: 'map',
+    url: 'https://science.nasa.gov/resource/phobos-mars-moon-3d-model/',
+    nomeNoDoador: 'phobos_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'deimos',
+    canal: 'map',
+    url: 'https://science.nasa.gov/resource/deimos-mars-moon-3d-model/',
+    nomeNoDoador: 'deimos_nasa_3d_resource.jpg',
+  },
+  // ---- F4 (gigantes + anel). SSS CC BY 4.0, a mesma linha Terra/Lua/
+  // Mercúrio. Urano/Netuno entram pelo incumbente 2k (não há 8k SSS).
+  // A placa do anel é o alpha 8k (W5-B do doador). Júpiteres sem
+  // licença clara no doador (jupiter_vgr1_2025.jpg etc.) NÃO entram.
+  {
+    corpo: 'jupiter',
+    canal: 'map',
+    url: `${SSS}/8k_jupiter.jpg`,
+    nomeNoDoador: '8k_jupiter.jpg',
+  },
+  {
+    corpo: 'saturn',
+    canal: 'map',
+    url: `${SSS}/8k_saturn.jpg`,
+    nomeNoDoador: '8k_saturn.jpg',
+  },
+  {
+    corpo: 'saturn',
+    canal: 'ring',
+    url: `${SSS}/8k_saturn_ring_alpha.png`,
+    nomeNoDoador: '8k_saturn_ring_alpha.png',
+  },
+  {
+    corpo: 'uranus',
+    canal: 'map',
+    url: `${SSS}/2k_uranus.jpg`,
+    nomeNoDoador: '2k_uranus.jpg',
+  },
+  {
+    corpo: 'neptune',
+    canal: 'map',
+    url: `${SSS}/2k_neptune.jpg`,
+    nomeNoDoador: '2k_neptune.jpg',
+  },
+  // ---- F5 (luas em lote). NASA 3D Resources, a mesma linha
+  // Fobos/Deimos: crédito NASA/JPL-Caltech redigido. Os 2k_titan /
+  // 2k_europa do doador NÃO entram (licença não documentada). Os
+  // mosaicos USGS/Cassini ficam de fora nesta fase (bancada: Titã
+  // monocromático com costuras; Europa com 68 linhas pretas no polo
+  // sul — pendência nomeada, não promoção). Titã NASA 3D tem 49 KB
+  // (720×360): o piso de 50 KB da tabela cederia um falso-negativo.
+  {
+    corpo: 'io',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/jupiter-io-b/',
+    nomeNoDoador: 'io_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'europa',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'europa_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'ganymede',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'ganymede_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'callisto',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'callisto_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'mimas',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'mimas_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'enceladus',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'enceladus_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'tethys',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'tethys_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'dione',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'dione_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'rhea',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'rhea_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'titan',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'titan_nasa_3d_resource.jpg',
+    minimoBytes: 40_000,
+  },
+  {
+    corpo: 'iapetus',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'iapetus_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'miranda',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'miranda_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'ariel',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'ariel_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'umbriel',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'umbriel_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'titania',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'titania_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'oberon',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'oberon_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'triton',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'triton_nasa_3d_resource.jpg',
+  },
+  // ---- F6 (anões). Plutão/Caronte: NASA 3D Resources, crédito
+  // redigido. Ceres: SSS CC BY 4.0 mas FICTIONAL na fonte (não há
+  // NASA 3D nem 2k real no SSS); mosaico Dawn USGS fica pendente.
+  // Haumea/Makemake/Eris/Quaoar NÃO baixam mapa (procedurais).
+  {
+    corpo: 'pluto',
+    canal: 'map',
+    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto',
+    nomeNoDoador: 'pluto_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'charon',
+    canal: 'map',
+    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon',
+    nomeNoDoador: 'charon_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'ceres',
+    canal: 'map',
+    url: `${SSS}/2k_ceres_fictional.jpg`,
+    nomeNoDoador: 'ceres_sss_fictional.jpg',
+  },
+  // ---- F7 (asteroides). Vesta: mosaico Dawn embutido no modelo
+  // NASA Science (crédito NASA/JPL-Caltech/UCLA/MPS/DLR/IDA). Hígia:
+  // mapa VLT ESO CC BY 4.0. Palas sem mapa com licença — não entra.
+  // Modelos GLB/OBJ (DAMIT CC BY / NASA) ficam pendentes (sem
+  // GLTFLoader/OBJLoader na casa).
+  {
+    corpo: 'vesta',
+    canal: 'map',
+    url: 'https://science.nasa.gov/resource/vesta-3d-model/',
+    nomeNoDoador: 'vesta_dawn_embedded.png',
+  },
+  {
+    corpo: 'hygiea',
+    canal: 'map',
+    url: 'https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png',
+    nomeNoDoador: 'hygiea_vlt_2017_2018_map.png',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;
@@ -193,9 +410,9 @@ function baixar(url, destino, redirectsRestantes = MAXIMO_DE_REDIRECTS) {
 }
 
 /** Valida que o arquivo decodifica como imagem e tem tamanho plausível. */
-async function validarImagem(caminho) {
+async function validarImagem(caminho, minimo = MINIMO_DE_BYTES) {
   const { size } = await stat(caminho);
-  if (size < MINIMO_DE_BYTES) {
+  if (size < minimo) {
     await unlink(caminho);
     throw new Error(`${caminho}: só ${size} bytes — página de erro ou truncamento.`);
   }
@@ -236,8 +453,13 @@ async function main() {
     const diretorioDestino = path.join(destinoRaiz, fonte.corpo);
     await mkdir(diretorioDestino, { recursive: true });
     // A extensão do destino é sempre a do artefato final (o bake
-    // converte TIFF→jpg; as demais fontes já são jpg/png na origem).
-    const extensao = fonte.bake ? 'jpg' : path.extname(new URL(fonte.url).pathname).slice(1);
+    // converte TIFF→jpg; as demais fontes já são jpg/png na origem;
+    // URL de PÁGINA — o caso NASA 3D, que só existe no modo offline —
+    // herda a extensão do nome no doador).
+    const extensao = fonte.bake
+      ? 'jpg'
+      : path.extname(new URL(fonte.url).pathname).slice(1) ||
+        path.extname(fonte.nomeNoDoador).slice(1);
     const destino = path.join(diretorioDestino, `${fonte.canal}.${extensao}`);
 
     if (diretorioDoador) {
@@ -260,7 +482,7 @@ async function main() {
       await baixar(fonte.url, destino);
     }
 
-    const medido = await validarImagem(destino);
+    const medido = await validarImagem(destino, fonte.minimoBytes ?? MINIMO_DE_BYTES);
     totalBytes += medido.bytes;
     console.log(
       `${fonte.corpo}/${fonte.canal}: ${medido.largura}x${medido.altura} ` +
