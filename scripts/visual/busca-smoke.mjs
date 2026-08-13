@@ -400,10 +400,47 @@ try {
   await sessao.assentar();
   const depoisDoClique = await contexto(sessao);
   conferir(
-    nomesDosCorpos.length === 10
+    // 11 desde a F2b; 13 F3; 30 F5; 36 F6; 39 F7 (+ Vesta/Palas/Hígia)
+    nomesDosCorpos.length === 39
       && (nomesDosCorpos.includes(depoisDoClique) || depoisDoClique === 'Sistema solar')
       && depoisDoClique !== naTerra,
     `clicar num corpo ENQUADRA por ele ("${naTerra}" → "${depoisDoClique}")`
+  );
+
+  // ---- 9b: A LUA na busca (F2b, P-E10) -----------------------------
+  // A nota fala a régua do par lua↔pai — quilômetros, nunca "0,0026 UA"
+  // — e a escolha desce ao degrau "lua": a Lua em quadro COM a Terra
+  // (PARENT_FRAMING_BIAS ganhou o consumidor). O rUA vem da EFEMÉRIDE
+  // (o retrato não tem luas), então a prova espera a fonte viva.
+  await sessao.ir(`atlas=1&${PIN}`);
+  await abrirPaleta(sessao);
+  await sessao.digitar('lua');
+  await sleep(400);
+  const listaLua = await sessao.js(`(() => {
+    const ops = [...document.querySelectorAll('[role="option"]')];
+    const daLua = ops.find((o) => o.querySelector('.atlas-busca-nome').textContent === 'Lua');
+    return daLua ? daLua.textContent : '';
+  })()`);
+  conferir(
+    /mil km/.test(listaLua) && !/UA/.test(listaLua),
+    `a paleta acha a Lua com a nota em QUILÔMETROS ("${listaLua}")`
+  );
+  await sessao.teclar('Enter');
+  await sessao.assentar();
+  const naLua = await contexto(sessao);
+  conferir(naLua === 'Lua', `a escolha põe a LUA em quadro ("${naLua}")`);
+  // o link vivo carrega o degrau: foco=lua&ver=corpo (espelho, ?jd)
+  await sessao.js(`(() => {
+    const sel = document.querySelector('.controls-bar select');
+    sel.value = 'alta';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await sessao.assentar();
+  const urlDaLua = await sessao.js('location.search');
+  const voltouLua = await contexto(sessao);
+  conferir(
+    voltouLua === 'Lua' && urlDaLua.includes('foco=lua') && urlDaLua.includes('ver=corpo'),
+    `o degrau da Lua reproduz por URL (${urlDaLua} → "${voltouLua}")`
   );
 
   // ---- 7: a paleta não vaza no ?shot=2 -----------------------------

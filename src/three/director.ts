@@ -19,8 +19,28 @@ import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
-import { Planetas, PLANETAS_DEFAULT_ON } from './world/planetas/planetas';
+import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
+import { RAIO_EQ_TERRA_PC, TerraResolvida, posicaoDaTerraUA } from './world/corpos/terra';
+import { LuaResolvida, RAIO_LUA_PC } from './world/corpos/lua';
+import {
+  ROCHOSOS,
+  RochosoResolvido,
+  posicaoDoRochosoUA,
+  raiosDoRochosoPc,
+} from './world/corpos/rochoso';
+import {
+  GIGANTES,
+  GiganteResolvido,
+  posicaoDoGiganteUA,
+  raiosDoGigantePc,
+} from './world/corpos/gigante';
+import { Planetas, PLANETAS_DEFAULT_ON, UA_POR_PC } from './world/planetas/planetas';
 import type { FonteDeEfemerides } from './world/planetas/planetas';
+import { deslocamentoEVAssistida } from '../lib/atlas/luz';
+import type { PoliticaDeLuz } from '../lib/atlas/luz';
+import { lerPortaLuz } from './selo';
+import type { VerDaEscada } from './selo';
+import { sondarGl } from '../lib/glProbe';
 import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
 import type { IdRetrato } from './world/planetas/retrato2026';
 import {
@@ -33,6 +53,7 @@ import {
 } from './tempoDoAtlas';
 import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
 import { dateToTDB } from '../lib/atlas/time';
+import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -47,7 +68,16 @@ import {
   retanguloUtilDoAtlas,
 } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
-import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, claraoDoAtlas } from './atlasConfig';
+import {
+  CHAVE_DE_CORPO,
+  CORPOS_DO_SISTEMA,
+  LUAS_DO_SISTEMA,
+  ANOES_DO_SISTEMA,
+  ASTEROIDES_DO_SISTEMA,
+  claraoDoAtlas,
+} from './atlasConfig';
+
+const HELIO_SEM_PONTO = [...ANOES_DO_SISTEMA, ...ASTEROIDES_DO_SISTEMA];
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -99,6 +129,17 @@ export const LOAD_STAGES = (
  * aposenta.
  */
 const QUADROS_ESTAVEIS = 10;
+
+/**
+ * Quadros que a captura SEGURA quando a efeméride PEDIDA está
+ * `indisponivel` com os corpos em cena (auditoria item 5c): a janela em
+ * que o tick dispara a SEGUNDA tentativa de `garantirEfemerides` (a
+ * fase 'buscando' dela já segura sozinha, pelo termo de `andando`).
+ * Esgotada a janela, a captura SOLTA — mas só depois do aviso único no
+ * console: o quadro que sair dali mostra o RETRATO congelado, e a
+ * captura nunca finge que a efeméride viva estava lá.
+ */
+const QUADROS_TENTANDO_FONTE = 10;
 
 /**
  * Duração de CADA metade do véu de entrada/saída do Atlas, em
@@ -179,6 +220,26 @@ interface DirectorEvents {
    * visitante mexe em alguma coisa.
    */
   onTempo: (estado: EstadoDoTempo) => void;
+  /**
+   * O DEGRAU DA ESCADA (F2b/D7) — sai junto com `onFoco`, sempre que o
+   * enquadramento troca. É dele que a ContextLine decide quais botões
+   * mostrar (aproximar/sistema) e que o `urlComMomento` decide se
+   * `?ver=corpo` entra no link.
+   */
+  onEscada: (estado: EstadoDaEscada) => void;
+}
+
+/**
+ * A ESCADA DE NAVEGAÇÃO (D7): em que degrau o enquadramento está.
+ * `estrela` fica fora da escada de corpos (não tem "aproximar" — o
+ * corpo resolvido dela é Onda 7), mas o botão "sistema" e o Esc valem.
+ */
+export interface EstadoDaEscada {
+  degrau: 'sistema' | 'orbita' | 'corpo' | 'lua' | 'estrela';
+  /** existe degrau abaixo alcançável pelo botão "aproximar"? Só quando
+   *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
+   *  de um ponto fotométrico enquadraria um clarão sem corpo. */
+  podeAproximar: boolean;
 }
 
 export class Director {
@@ -201,6 +262,100 @@ export class Director {
   /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
   private planetas: Planetas | null = null;
+  /** O PALCO LOCAL (Onda 6, F0 — D1): o grupo dos corpos resolvidos,
+   *  vazio nesta fase. Irmão do `sun.group` e do `planetas.points`; a
+   *  superfície mais próxima dele entra no `updateClip` a cada tick.
+   *  `palco` e não `corpos`: o nome `corpos` já é do getter público da
+   *  BUSCA (os dez do retrato), que é outra coisa. */
+  private readonly palco = new CorposResolvidos();
+  /** A TERRA RESOLVIDA (Onda 6, F2a) — o primeiro corpo do palco. Nasce
+   *  no init com construtor barato (zero geometria, zero textura: a
+   *  carga é preguiçosa por contrato — gate ou fase atlas). */
+  private terra: TerraResolvida | null = null;
+  /** digitais do tick anterior da Terra: pop do globo e chegada de
+   *  textura são mudança de imagem — a captura recomeça a contagem. */
+  private terraEmQuadroAntes = false;
+  private terraCarregavaAntes = false;
+  /** fetch de textura da Terra em voo — o `captura` espera por ele. */
+  private terraCarregando = false;
+  /** Terra no GATE a FRIO (armada, sem textura quente, sem fetch em voo
+   *  e com a camada ligada): o fallback frio da carga que desistiu — o
+   *  `captura` segura a prontidão em vez de fotografar o ponto fingindo
+   *  globo (auditoria item 5b; precedente `sun.assentado`). */
+  private terraFriaNoGate = false;
+  /** A LUA RESOLVIDA (F2b) — o segundo morador do palco, com as mesmas
+   *  digitais de estabilidade da Terra. */
+  private lua: LuaResolvida | null = null;
+  private luaEmQuadroAntes = false;
+  private luaCarregavaAntes = false;
+  private luaCarregando = false;
+  /** a Lua no gate a frio — o mesmo contrato de `terraFriaNoGate`. */
+  private luaFriaNoGate = false;
+  /**
+   * OS ROCHOSOS (F3+F5): planetas e luas texturadas — a classe
+   * genérica percorrida como DADO (`ROCHOSOS`), com as mesmas digitais
+   * de estabilidade das irmãs por instância (pop do mesh, chegada de
+   * textura, gate a frio e rampa de cessão recomeçam a contagem da
+   * captura).
+   */
+  private readonly rochosos: {
+    corpo: RochosoResolvido;
+    emQuadroAntes: boolean;
+    carregavaAntes: boolean;
+    carregando: boolean;
+    friaNoGate: boolean;
+  }[] = [];
+  /**
+   * OS GIGANTES (F4): Júpiter, Saturno, Urano e Netuno — a classe
+   * própria (não cabe em rochoso.ts), percorrida como DADO
+   * (`GIGANTES`), com as mesmas digitais de estabilidade.
+   */
+  private readonly gigantes: {
+    corpo: GiganteResolvido;
+    emQuadroAntes: boolean;
+    carregavaAntes: boolean;
+    carregando: boolean;
+    friaNoGate: boolean;
+  }[] = [];
+  /** quadros já gastos segurando a captura com a efeméride pedida
+   *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
+  private quadrosTentandoFonte = 0;
+  /** a segunda tentativa de `garantirEfemerides` já foi disparada */
+  private retentouFonte = false;
+  /** o aviso único do retrato sob corpos já saiu no console */
+  private acusouRetrato = false;
+  /** posições VIVAS das luas para os rótulos (projectCorpos) —
+   *  3 floats por entrada de `LUAS_DO_SISTEMA`, NaN sem efeméride
+   *  (projectCorpos ignora NaN — rótulo só onde há corpo). */
+  private readonly luaPosParaRotulo = new Float32Array(
+    LUAS_DO_SISTEMA.length * 3
+  ).fill(Number.NaN);
+  /**
+   * A CÂMERA SALTOU neste quadro (portal, enquadramento, ?pos=) — os
+   * corpos resolvidos fazem SNAP da cessão em vez de animar através do
+   * teletransporte (cicatriz "reset no salto de foco", D5). Armado por
+   * `teletransportou()` e consumido por UM tick.
+   */
+  private saltoDeCamera = false;
+  /**
+   * O DEGRAU DA ESCADA (F2b/D7): `orbita` é a semântica de sempre do
+   * `?foco=`; `corpo` é o alvo com raio físico. O degrau "lua" não é um
+   * `ver` — é o foco na Lua (`focoCorpoId === 'moon'`), sempre com o
+   * pai em quadro. A URL é ESPELHO (o `urlComMomento` escreve
+   * `?ver=corpo`), nunca painel — precedente `?jd=`.
+   */
+  private ver: VerDaEscada = 'orbita';
+  /** o foco vivo é uma ESTRELA (fora da escada de corpos)? */
+  private focoEstrela = false;
+  /**
+   * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8). Default
+   * `assistida` — o do Atlas; `?luz=` semeia no boot e a linha BRILHO
+   * do selo troca ao vivo (`definirLuz`). Fora do Atlas o estado é
+   * neutro por construção: não há superfície resolvida no filme.
+   */
+  private politicaDeLuz: PoliticaDeLuz = 'assistida';
+  /** o corpo em FOCO no Atlas (id do retrato) — o selo lê o ΔEV dele. */
+  private focoCorpoId: string | null = null;
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
   private wrappedStars!: WrappedStars;
@@ -408,6 +563,10 @@ export class Director {
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
     this.expOverride = this.debug.has('exp');
+    // ?luz= — a política da primeira lei de luz (Onda 6, D2/D8), pela
+    // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
+    // no default do Atlas, nunca num caminho terceiro.
+    this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
     // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
     // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
@@ -442,6 +601,12 @@ export class Director {
       // domínio profundo (janelas deep, near piecewise, voo proporcional)
       // é fundação sem porta, como o near — emenda D11a.
       'noplan',
+      // ?nocorpos=1 — desliga o PALCO dos corpos resolvidos (Onda 6,
+      // F0/D8). Par de `?corpos=1`, padrão ?dom/?nodom: o A/B se faz
+      // com o MESMO binário dos dois lados. Desligado, os corpos saem
+      // do QUADRO inteiro — inclusive do min() do near, que volta ao
+      // vigente bit a bit (é o que devolve a baseline no A/B).
+      'nocorpos',
       // AS TRÊS DA GALÁXIA. Quem as LÊ é a Galaxy (por quadro, no
       // `update`); elas entram no conjunto porque o `hide` é o que o
       // SELO declara — sem esta linha, chegar com `?nodisc=1` apagava
@@ -676,6 +841,62 @@ export class Director {
     // é o que faz a fotometria planeta↔estrela ser relativa de verdade.
     this.planetas = new Planetas(this.stars);
     this.engine.scene.add(this.planetas.points);
+    // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
+    // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
+    // Terra — construtor barato, sem geometria e sem um byte de textura
+    // (a carga é preguiçosa por contrato; as 18 vistas não fazem fetch).
+    // O tier e o teto de textura congelam AQUI, como a população da
+    // galáxia: a escada não reage a auto-quality depois do init.
+    this.terra = new TerraResolvida({
+      tier: this.engine.quality,
+      maxTextureSize: sondarGl().maxTextureSize,
+      base: import.meta.env.BASE_URL,
+    });
+    this.palco.group.add(this.terra.group);
+    // A LUA (F2b): mesmo contrato — construtor barato, carga preguiçosa.
+    this.lua = new LuaResolvida({
+      tier: this.engine.quality,
+      maxTextureSize: sondarGl().maxTextureSize,
+      base: import.meta.env.BASE_URL,
+    });
+    this.palco.group.add(this.lua.group);
+    // OS ROCHOSOS (F3): a classe genérica, um por config da lista viva.
+    this.rochosos.length = 0;
+    for (const config of ROCHOSOS) {
+      const corpo = new RochosoResolvido({
+        config,
+        tier: this.engine.quality,
+        maxTextureSize: sondarGl().maxTextureSize,
+        base: import.meta.env.BASE_URL,
+      });
+      this.rochosos.push({
+        corpo,
+        emQuadroAntes: false,
+        carregavaAntes: false,
+        carregando: false,
+        friaNoGate: false,
+      });
+      this.palco.group.add(corpo.group);
+    }
+    // OS GIGANTES (F4): a classe própria, um por config da lista viva.
+    this.gigantes.length = 0;
+    for (const { id } of GIGANTES) {
+      const corpo = new GiganteResolvido({
+        id,
+        tier: this.engine.quality,
+        maxTextureSize: sondarGl().maxTextureSize,
+        base: import.meta.env.BASE_URL,
+      });
+      this.gigantes.push({
+        corpo,
+        emQuadroAntes: false,
+        carregavaAntes: false,
+        carregando: false,
+        friaNoGate: false,
+      });
+      this.palco.group.add(corpo.group);
+    }
+    this.engine.scene.add(this.palco.group);
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
 
@@ -806,6 +1027,15 @@ export class Director {
    *    harness congela e o `?pos=` entra com `snapCanonical`.
    *  - `sun.assentado`: o Sol tem retrato completo publicado — sem bake
    *    fatiado no meio e com a coroa volumétrica já publicada.
+   *  - corpos assentados (item 5b da auditoria): nenhum corpo resolvido
+   *    está no GATE a FRIO — armado, camada ligada, e nem textura quente
+   *    nem fetch em voo. Capturar assim fotografaria o ponto fingindo a
+   *    vista do globo; a carga que desistiu (3 tentativas, terra.ts)
+   *    deixa a captura REPROVAR por teto em vez de mentir.
+   *  - fonte assentada (item 5c): efeméride PEDIDA e indisponível com
+   *    corpos em cena segura a janela da retentativa
+   *    (QUADROS_TENTANDO_FONTE) — depois dela o aviso único já acusou o
+   *    RETRATO e a captura solta.
    *  - `quadrosEstaveis >= QUADROS_ESTAVEIS`: quadros desenhados desde a
    *    última perturbação (troca de fase, `?q=`, `?pos=`, `?t=`, resize,
    *    exposição, camada ligada/desligada). Pequeno de propósito: o que
@@ -833,17 +1063,49 @@ export class Director {
       // corrida, não a imagem.
       this.aoVivo ||
       this.sentidoDoTempo !== 0 ||
-      this.faseDaEfemeride === 'buscando';
+      this.faseDaEfemeride === 'buscando' ||
+      // A TERRA (F2a) e A LUA (F2b) e OS ROCHOSOS (F3): textura em voo
+      // é uma mudança JÁ PEDIDA que ainda não chegou — capturar antes
+      // dela mediria a corrida, não a imagem (o mesmo argumento da
+      // efeméride acima).
+      this.terraCarregando ||
+      this.luaCarregando ||
+      this.rochosos.some((r) => r.carregando) ||
+      this.gigantes.some((g) => g.carregando) ||
+      // A RAMPA ENTRE DEGRAUS (F2b/D7): o rig anima entre dois
+      // enquadramentos — cena mudando por construção até assentar
+      this.atlas.animando;
+    // CORPO NO GATE A FRIO (auditoria item 5b): o gate diz que o corpo
+    // devia estar na tela e a textura não está quente — capturar agora
+    // fotografaria o ponto (ou nada) fingindo a vista do globo. O
+    // precedente é `sun.assentado`: prontidão espera o retrato completo.
+    const corposAssentados =
+      !this.terraFriaNoGate &&
+      !this.luaFriaNoGate &&
+      !this.rochosos.some((r) => r.friaNoGate) &&
+      !this.gigantes.some((g) => g.friaNoGate);
+    // O RETRATO ACUSADO (item 5c): efeméride PEDIDA indisponível com os
+    // corpos em cena segura a janela da retentativa (o tick conta os
+    // quadros e dá o aviso único quando ela esgota — ver o bloco no tick).
+    const fonteAssentada = !(
+      this.palco.ligado &&
+      this.faseDaEfemeride === 'indisponivel' &&
+      this.quadrosTentandoFonte < QUADROS_TENTANDO_FONTE
+    );
     return {
       pronto:
         this.phase !== 'loading' &&
         !andando &&
         this.sun.assentado &&
+        corposAssentados &&
+        fonteAssentada &&
         this.quadrosEstaveis >= QUADROS_ESTAVEIS,
       quadros: this.quadrosEstaveis,
       fase: this.phase,
       andando,
       sol: this.sun.assentado,
+      corpos: corposAssentados,
+      fonte: fonteAssentada,
       tier: this.engine.quality,
     };
   }
@@ -1198,9 +1460,16 @@ export class Director {
    */
   private irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
     if (this.phase === 'atlas') {
-      this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()));
+      this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()), pos, {
+        rampa: this.rampaDaEscada(),
+      });
       this.enquadrarAgora();
+      // estrela em foco: nenhum CORPO em foco — o ΔEV do selo cala
+      this.focoCorpoId = null;
+      this.focoEstrela = true;
+      this.ver = 'orbita';
       this.events.onFoco(nome);
+      this.emitirEscada();
       this.teletransportou();
       return;
     }
@@ -1212,12 +1481,102 @@ export class Director {
    * órbita mais externa. É a vista com que o Atlas abre, o destino do
    * clique no Sol e — desde a F2 — a ação da linha ESCALA do selo, que
    * é o único enquadramento em que o que domina o quadro é 1:1.
+   *
+   * ABERTURA NA ÉPOCA VIVA (F2b) — OVERRIDE DECLARADO (emendas
+   * D-E5/T-E12): isto REVERTE a pendência 7 da Onda 5 ("compor a
+   * posição viva é da onda das órbitas"), com razão: a posição viva só
+   * depende da efeméride e do tempo vivo, que JÁ EXISTEM — órbitas
+   * desenhadas nunca foram pré-requisito da conta. Com a fonte
+   * carregada, quem é "o mais externo" e onde ele está saem da
+   * efeméride NO INSTANTE PEDIDO (na época o resultado reproduz o
+   * retrato — o A/B de `?jd=EPOCA` é bit a bit); sem fonte fica o
+   * retrato congelado com o badge do tempo contando a verdade — o
+   * caminho existente. O fecho da onda re-registra a pendência no
+   * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
-    this.atlas.focarNoSistema();
+    const jd = grampearJd(this.jdPedido);
+    if (this.efemeride) {
+      let raioUA = 0;
+      const externo = { x: 0, y: 0, z: 0 };
+      for (const c of CORPOS_DO_SISTEMA) {
+        if (c.id === 'sun') continue;
+        const p = this.efemeride.posicaoHeliocentrica(c.id, jd);
+        const r = Math.hypot(p.x, p.y, p.z);
+        if (r > raioUA) {
+          raioUA = r;
+          externo.x = p.x;
+          externo.y = p.y;
+          externo.z = p.z;
+        }
+      }
+      const eq = eclipticaParaEquatorial([externo.x, externo.y, externo.z]);
+      this.atlas.focar(
+        ORIGEM,
+        raioUA * AU_PARA_PC,
+        new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC),
+        { rampa: this.rampaDaEscada() }
+      );
+    } else {
+      this.atlas.focarNoSistema();
+    }
     this.enquadrarAgora();
+    this.focoCorpoId = null;
+    this.focoEstrela = false;
+    this.ver = 'orbita';
     this.events.onFoco(null);
+    this.emitirEscada();
     this.teletransportou();
+  }
+
+  /**
+   * A rampa entre degraus (F2b/D7) só anima com o modo VIVO na tela:
+   * dentro da fase, sem `?shot=` e sem reduced-motion — entrada,
+   * deep-link e captura seguem instantâneos (contrato da Onda 5).
+   */
+  private rampaDaEscada(): boolean {
+    return this.phase === 'atlas' && !this.shotMode && !this.reducedMotion;
+  }
+
+  /** o degrau vivo — o que o `onEscada` publica e o `?ver=` espelha. */
+  private get escada(): EstadoDaEscada {
+    const degrau: EstadoDaEscada['degrau'] =
+      this.focoCorpoId !== null && LUAS_DO_SISTEMA.some((l) => l.id === this.focoCorpoId)
+        ? 'lua'
+        : this.focoCorpoId
+          ? this.ver === 'corpo'
+            ? 'corpo'
+            : 'orbita'
+          : this.focoEstrela
+            ? 'estrela'
+            : 'sistema';
+    return {
+      degrau,
+      // aproximar só desce para corpo com MESH resolvido — a lista é
+      // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a), os
+      // planetas rochosos (F3) e os gigantes (F4)
+      podeAproximar:
+        degrau === 'orbita' &&
+        (this.focoCorpoId === 'earth' ||
+          this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId) ||
+          this.rochosos.some(
+            (r) => !r.corpo.planeta && HELIO_SEM_PONTO.some((a) => a.id === r.corpo.id) && r.corpo.id === this.focoCorpoId
+          ) ||
+          this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId)),
+    };
+  }
+
+  /** o `ver` vivo, para o `urlComMomento` espelhar `?ver=corpo`. */
+  get verDaEscada(): VerDaEscada {
+    return this.ver;
+  }
+
+  get escadaViva(): EstadoDaEscada {
+    return this.escada;
+  }
+
+  private emitirEscada() {
+    this.events.onEscada(this.escada);
   }
 
   /**
@@ -1239,37 +1598,289 @@ export class Director {
    * Sol" seria enquadrar uma esfera de raio zero, e clicar no Sol dentro
    * do Atlas sempre quis dizer voltar para casa.
    */
-  focarNoCorpo(id: string) {
+  focarNoCorpo(id: string, ver: VerDaEscada = 'orbita') {
     if (this.phase !== 'atlas') return;
     if (id === 'sun') {
       this.focarNoSistema();
       return;
     }
+    // A LUA e as luas da F3 vão direto ao degrau delas (D7): escolher
+    // uma lua é vê-la com o pai em quadro — não existe "órbita de lua
+    // em torno do Sol", e `?foco=fobos&ver=orbita` cai aqui também
+    // (documentado: para uma lua os dois valores de ?ver= dão o mesmo
+    // degrau).
+    if (LUAS_DO_SISTEMA.some((l) => l.id === id)) {
+      this.focarNaLua(id);
+      return;
+    }
+    if (HELIO_SEM_PONTO.some((a) => a.id === id)) {
+      this.focarNoAnao(id);
+      return;
+    }
+    // O GESTO DA DESCIDA (D7): clicar no MESMO corpo já focado em
+    // órbita desce um degrau — é o gesto irmão do botão "aproximar".
+    if (
+      ver === 'orbita' &&
+      id === this.focoCorpoId &&
+      this.ver === 'orbita' &&
+      this.escada.podeAproximar
+    ) {
+      this.aproximarDoCorpo();
+      return;
+    }
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
     if (i < 0 || !this.planetas) return;
+    if (ver === 'corpo') {
+      // `?foco=marte&ver=corpo` — o degrau reproduzido por URL
+      this.focoCorpoId = id;
+      this.ver = 'orbita';
+      if (this.escada.podeAproximar) {
+        this.aproximarDoCorpo();
+        return;
+      }
+      // corpo ainda sem mesh resolvido: o degrau pedido não existe —
+      // cai na órbita (o degrau que existe), sem fingir o que não há
+    }
     const p = this.planetas.posicoes;
     const pos = new THREE.Vector3(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
     if (pos.lengthSq() === 0) return;
-    this.atlas.focar(ORIGEM, pos.length(), pos);
+    this.atlas.focar(ORIGEM, pos.length(), pos, { rampa: this.rampaDaEscada() });
     this.enquadrarAgora();
+    // o selo lê o ΔEV DESTE corpo enquanto ele estiver em foco (D2)
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'orbita';
     this.events.onFoco(CORPOS_DO_SISTEMA[i].nome);
+    this.emitirEscada();
     this.teletransportou();
   }
 
   /**
-   * OS DEZ, para o índice da busca (F3 + consertos). O `rUA` sai do
-   * retrato e não do atributo vivo porque o índice é construído UMA vez,
-   * na entrada no modo: ele é a NOTA da lista ("4,2 UA · planeta"), e o
-   * que o Atlas enquadra de fato é a órbita viva, lida na hora da
-   * escolha por `focarNoCorpo`.
+   * O DEGRAU "CORPO" (F2b/D7; generalizado na F3): o corpo EM FOCO
+   * enquadrado com o raio FÍSICO dele (BODY_AXES, via o mesh resolvido
+   * — nenhum literal de raio nasce aqui). O centro é o da MESMA cadeia
+   * de efeméride/retrato da camada — uma fonte só.
+   */
+  aproximarDoCorpo() {
+    if (this.phase !== 'atlas') return;
+    const id = this.focoCorpoId ?? 'earth';
+    // só corpos com mesh resolvido descem: a Terra, os planetas da F3
+    // e os gigantes da F4 (a lista viva dos construídos)
+    const ehGigante = this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === id);
+    const ehRochoso = this.rochosos.some((r) => r.corpo.id === id);
+    const ehPlanetaResolvido =
+      id === 'earth' ||
+      this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === id) ||
+      ehGigante ||
+      (ehRochoso && HELIO_SEM_PONTO.some((a) => a.id === id));
+    if (!ehPlanetaResolvido) return;
+    // o centro sai da MESMA cadeia do mesh (efeméride viva, retrato sem
+    // ela) — calculado aqui e não lido do estado do tick, porque o boot
+    // por `?ver=corpo` chega ANTES do primeiro tick (estado ainda NaN)
+    const jd = grampearJd(this.jdPedido);
+    const p =
+      id === 'earth'
+        ? posicaoDaTerraUA(jd, this.efemeride)
+        : ehGigante
+          ? posicaoDoGiganteUA(id, jd, this.efemeride)
+          : posicaoDoRochosoUA(id, jd, this.efemeride);
+    if (!p) return;
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const centro = new THREE.Vector3(
+      eq[0] * AU_PARA_PC,
+      eq[1] * AU_PARA_PC,
+      eq[2] * AU_PARA_PC
+    );
+    const raioPc =
+      id === 'earth'
+        ? RAIO_EQ_TERRA_PC
+        : ehGigante
+          ? raiosDoGigantePc(id).a
+          : raiosDoRochosoPc(id).a;
+    this.atlas.focar(centro, raioPc, centro, {
+      rampa: this.rampaDaEscada(),
+    });
+    this.enquadrarAgora();
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'corpo';
+    this.events.onFoco(CORPOS_DO_SISTEMA.find((c) => c.id === id)?.nome ?? null);
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
+  private escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
+    const i = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
+    if (i < 0) return;
+    this.luaPosParaRotulo[i * 3] = centro.x;
+    this.luaPosParaRotulo[i * 3 + 1] = centro.y;
+    this.luaPosParaRotulo[i * 3 + 2] = centro.z;
+  }
+
+  /**
+   * O DEGRAU "LUA" (F2b/D7; genérico desde a F3): a lua com o PAI em
+   * quadro — `PARENT_FRAMING_BIAS` ganha aqui o consumidor prometido
+   * desde a Onda 5 (a direção é a MISTURA de `direcaoDaLua`, lerp entre
+   * direções, nunca fator de distância). Sem efeméride não há posição
+   * de lua (não há luas no retrato): busca a fonte e reaplica o
+   * enquadramento quando ela chegar (`reenquadrarAposEfemeride`).
+   */
+  focarNaLua(id: string = 'moon') {
+    if (this.phase !== 'atlas') return;
+    const entrada = LUAS_DO_SISTEMA.find((l) => l.id === id);
+    if (!entrada) return;
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'corpo';
+    this.events.onFoco(entrada.nome);
+    this.emitirEscada();
+    if (!this.efemeride) {
+      // a ContextLine já anuncia a lua; o enquadramento chega com a fonte
+      // (`reenquadrarAposEfemeride`) — nenhuma posição inventada antes
+      this.garantirEfemerides();
+      return;
+    }
+    // centros pela MESMA cadeia dos meshes, calculados na hora (o boot
+    // por URL chega antes do primeiro tick — ver aproximarDoCorpo)
+    const jd = grampearJd(this.jdPedido);
+    const paraPc = (p: { x: number; y: number; z: number }) => {
+      const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+      return new THREE.Vector3(
+        eq[0] * AU_PARA_PC,
+        eq[1] * AU_PARA_PC,
+        eq[2] * AU_PARA_PC
+      );
+    };
+    const lua = paraPc(this.efemeride.posicaoHeliocentrica(id, jd));
+    const pai = paraPc(this.efemeride.posicaoHeliocentrica(entrada.pai, jd));
+    // o raio físico é o de BODY_AXES (a fonte única — a Lua dela é a
+    // exceção declarada; RAIO_LUA_PC deriva dela bit a bit)
+    const raioPc = id === 'moon' ? RAIO_LUA_PC : raiosDoRochosoPc(id).a;
+    this.atlas.focar(lua, raioPc, lua, {
+      rampa: this.rampaDaEscada(),
+      pai,
+    });
+    this.enquadrarAgora();
+    this.teletransportou();
+  }
+
+  /**
+   * A SUBIDA da escada (D7): Esc e o botão "sistema". Esc sobe UM
+   * degrau — lua → corpo do pai → órbita → sistema; estrela → sistema.
+   * Devolve se algum degrau foi subido (o App decide se a tecla foi
+   * consumida). A interação com diálogos está no App: diálogo aberto
+   * come o Esc PRIMEIRO (o `dialogFocus` o trata com preventDefault no
+   * contêiner), e só o Esc que sobrou chega aqui.
+   */
+  subirDegrau(): boolean {
+    if (this.phase !== 'atlas') return false;
+    const { degrau } = this.escada;
+    if (degrau === 'sistema') return false;
+    if (degrau === 'lua') {
+      // sobe para o CORPO do pai (o degrau imediatamente acima)
+      const entrada = LUAS_DO_SISTEMA.find((l) => l.id === this.focoCorpoId);
+      if (!entrada) return false;
+      this.focoCorpoId = entrada.pai;
+      this.aproximarDoCorpo();
+      return true;
+    }
+    if (degrau === 'corpo') {
+      this.focarNoCorpo(this.focoCorpoId!, 'orbita');
+      return true;
+    }
+    this.focarNoSistema();
+    return true;
+  }
+
+  /**
+   * REAPLICA o enquadramento do degrau vivo quando a efeméride chega
+   * TARDE (ela sempre chega tarde: o fetch nasce na entrada do modo).
+   * Na época o resultado é o mesmo bit a bit (A/B de `?jd=EPOCA`); com
+   * `?jd=` de outra data é aqui que a abertura vira a posição do DIA e
+   * que o `?foco=lua` do boot ganha finalmente uma Lua para enquadrar.
+   */
+  private reenquadrarAposEfemeride() {
+    if (this.phase !== 'atlas' || this.focoEstrela) return;
+    const { degrau } = this.escada;
+    if (degrau === 'sistema') this.focarNoSistema();
+    else if (degrau === 'lua') this.focarNaLua(this.focoCorpoId ?? 'moon');
+    else if (degrau === 'corpo') this.aproximarDoCorpo();
+    else if (this.focoCorpoId) {
+      // órbita: reaplica SEM passar pelo gesto de descida (focarNoCorpo
+      // no MESMO corpo desceria a escada — aqui é correção, não gesto)
+      const id = this.focoCorpoId;
+      this.focoCorpoId = null;
+      this.focarNoCorpo(id, 'orbita');
+    }
+  }
+
+  /**
+   * OS DEZ MAIS AS LUAS, para o índice da busca (F5; a Lua é F2b/P-E10).
+   * O `rUA` dos dez sai do retrato e não do atributo vivo porque o
+   * índice é construído UMA vez, na entrada no modo: ele é a NOTA da
+   * lista ("4,2 UA · planeta"), e o que o Atlas enquadra de fato é a
+   * órbita viva, lida na hora da escolha por `focarNoCorpo`.
+   *
+   * A LUA É OUTRA FONTE, dita por extenso: o retrato congelado NÃO TEM
+   * luas (9 planetas — `RETRATO_2026`), então o `rUA` dela vem da
+   * EFEMÉRIDE viva, e é a distância AO PAI (`posicao('moon')` é
+   * geocêntrica por construção do motor) — a nota da lista fala
+   * "384 mil km", nunca "0,0026 UA" (o degrau de unidade sub-UA da
+   * regra da casa, emenda P-E10a). Sem efeméride carregada a Lua entra
+   * SEM nota de distância (NaN — a paleta mostra só a classe): nome
+   * honesto na lista, número só quando medido. O índice é reconstruído
+   * quando a fonte chega (o App observa a fase da efeméride).
    */
   get corpos(): readonly CorpoBuscavel[] {
-    return CORPOS_DO_SISTEMA.map((c) => ({
+    const dez = CORPOS_DO_SISTEMA.map((c) => ({
       id: c.id,
       nome: c.nome,
       classe: c.classe,
       rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
     }));
+    const jd = grampearJd(this.jdPedido);
+    const luas = LUAS_DO_SISTEMA.map((l) => {
+      let rUA = Number.NaN;
+      if (this.efemeride) {
+        const p = this.efemeride.posicaoHeliocentrica(l.id, jd);
+        const pai = this.efemeride.posicaoHeliocentrica(l.pai, jd);
+        rUA = Math.hypot(p.x - pai.x, p.y - pai.y, p.z - pai.z);
+      }
+      return { id: l.id, nome: l.nome, classe: l.classe, rUA, pai: l.pai };
+    });
+    const anoes = HELIO_SEM_PONTO.map((a) => {
+      let rUA = Number.NaN;
+      if (this.efemeride) {
+        const p = this.efemeride.posicaoHeliocentrica(a.id, jd);
+        rUA = Math.hypot(p.x, p.y, p.z);
+      }
+      return { id: a.id, nome: a.nome, classe: a.classe, rUA };
+    });
+    return [...dez, ...luas, ...anoes];
+  }
+
+  /** anão ou asteroide heliocêntrico: órbita em torno do Sol, depois o globo. */
+  private focarNoAnao(id: string) {
+    const entrada = HELIO_SEM_PONTO.find((a) => a.id === id);
+    if (!entrada) return;
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'orbita';
+    this.events.onFoco(entrada.nome);
+    this.emitirEscada();
+    if (!this.efemeride) {
+      this.garantirEfemerides();
+      return;
+    }
+    const jd = grampearJd(this.jdPedido);
+    const p = this.efemeride.posicaoHeliocentrica(id, jd);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const pos = new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+    if (pos.lengthSq() === 0) return;
+    this.atlas.focar(ORIGEM, pos.length(), pos, { rampa: this.rampaDaEscada() });
+    this.enquadrarAgora();
+    this.teletransportou();
   }
 
   /**
@@ -1363,7 +1974,17 @@ export class Director {
               pausado: this.freezeJourney,
             }
           : null;
+    // F2b: o Atlas é o modo em que o céu é VIVO — a abertura na época
+    // (o override declarado de `focarNoSistema`) e a Lua na busca/escada
+    // precisam da fonte, então o fetch nasce na entrada do modo. Sem
+    // rede a degradação é a existente: retrato congelado + badge do
+    // tempo dizendo a verdade ("sem efeméride"). O filme continua sem
+    // pagar um byte: só quem cruza o portal chega aqui.
+    this.garantirEfemerides();
     this.atravessarVeu(opcoes.instantaneo === true, () => {
+      // focar ANTES da fase virar: `rampaDaEscada()` ainda vê a fase
+      // velha e a reposição é seca — a entrada acontece atrás do véu,
+      // nunca por rampa (D3: não é travessia física)
       this.focarNoSistema();
       this.setPhase('atlas');
     });
@@ -1441,12 +2062,16 @@ export class Director {
    * tempo no HUD do Atlas, e o download é abortado pelo mesmo signal de
    * todo o resto.
    *
-   * SEM REDE NÃO HÁ GRITO. A camada continua no retrato congelado e o
-   * badge do HUD conta a verdade ao visitante — um `console.error` aqui
-   * seria ruído num caminho em que a degradação é o comportamento
-   * projetado, e o gate da fase cobra console limpo. Falhou uma vez,
-   * uma segunda tentativa é permitida: quem clicou de novo pediu de
-   * novo.
+   * SEM REDE NÃO HÁ GRITO — NESTE caminho. A camada continua no retrato
+   * congelado e o badge do HUD conta a verdade ao visitante — um
+   * `console.error` aqui seria ruído num caminho em que a degradação é
+   * o comportamento projetado. Falhou uma vez, uma segunda tentativa é
+   * permitida: quem clicou de novo pediu de novo.
+   *
+   * A ÚNICA exceção mora no tick (item 5c da auditoria): com CORPOS em
+   * cena e a fonte pedida indisponível, o RETRATO ACUSA — um aviso por
+   * sessão, depois da janela de retentativa (QUADROS_TENTANDO_FONTE).
+   * O juiz atlas-smoke pina exatamente esse aviso, e nada além dele.
    */
   private garantirEfemerides() {
     if (this.efemeride || this.faseDaEfemeride === 'buscando') return;
@@ -1461,6 +2086,10 @@ export class Director {
         // mudar, e a contagem de estabilidade da captura recomeça
         this.perturbar();
         this.publicarTempo();
+        // F2b: o degrau vivo se reaplica com a fonte na mão — a
+        // abertura vira a posição do DIA e o `?foco=lua` do boot ganha
+        // a Lua que esperava (na época é bit a bit o que já estava)
+        this.reenquadrarAposEfemeride();
       })
       .catch((error: unknown) => {
         if (this.disposed) return;
@@ -1580,6 +2209,9 @@ export class Director {
    */
   private teletransportou() {
     this.nebula.invalidarLut();
+    // os corpos resolvidos fazem SNAP da cessão neste quadro — animar
+    // um crossfade através de um teletransporte é movimento inventado
+    this.saltoDeCamera = true;
     this.perturbar();
   }
 
@@ -1706,6 +2338,102 @@ export class Director {
       // último quadro: o selo e o quadro leem a mesma câmera e não têm
       // como discordar
       gradacao: this.claraoDoQuadro,
+      luz: this.politicaDeLuz,
+      evLuzDoFoco: this.evLuzDoFoco(),
+    };
+  }
+
+  /**
+   * O ΔEV da assistência sobre o corpo EM FOCO, para o rótulo vivo da
+   * linha `?luz=` do selo ("+N passos de luz · por corpo"). Lê a
+   * distância heliocêntrica VIVA do atributo da camada (a mesma que a
+   * máquina do tempo reescreve) — nunca o retrato congelado. Sem corpo
+   * em foco (ou com o Sol, que não tem assistência a declarar) devolve
+   * null e o rótulo fica só com a copy: o selo não inventa número.
+   */
+  private evLuzDoFoco(): number | null {
+    if (!this.focoCorpoId || !this.planetas) return null;
+    // as luas (F2b/F3): o dUA é o da CADEIA heliocêntrica dela,
+    // publicado pelo próprio mesh (NaN sem efeméride ⇒ o rótulo fica
+    // sem número)
+    if (LUAS_DO_SISTEMA.some((l) => l.id === this.focoCorpoId)) {
+      const rUA =
+        this.focoCorpoId === 'moon'
+          ? this.lua?.estadoVivo.rUA
+          : this.rochosos.find((r) => r.corpo.id === this.focoCorpoId)?.corpo
+              .estadoVivo.rUA;
+      return rUA !== undefined && Number.isFinite(rUA)
+        ? deslocamentoEVAssistida(rUA)
+        : null;
+    }
+    // anões/asteroides não têm ponto na camada: o dUA é o do mesh
+    // (Kepler/retrato). Sem este ramo o selo dizia ASSISTIDO e omitia
+    // os passos — justamente nos corpos de maior ΔEV.
+    if (HELIO_SEM_PONTO.some((a) => a.id === this.focoCorpoId)) {
+      const rUA = this.rochosos.find((r) => r.corpo.id === this.focoCorpoId)
+        ?.corpo.estadoVivo.rUA;
+      return rUA !== undefined && Number.isFinite(rUA)
+        ? deslocamentoEVAssistida(rUA)
+        : null;
+    }
+    const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === this.focoCorpoId);
+    if (i <= 0) return null;
+    const p = this.planetas.posicoes;
+    const dUA =
+      Math.hypot(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]) * UA_POR_PC;
+    return deslocamentoEVAssistida(dUA);
+  }
+
+  /**
+   * A AÇÃO da linha `?luz=` do selo (D2): troca a política de luz dos
+   * corpos resolvidos AO VIVO — o tick entrega o escalar novo ao
+   * material no próximo quadro ("volta ao real com o próximo estado
+   * visível"). O estado mora aqui; a URL é espelho, escrita por quem
+   * clicou (App), no mesmo protocolo do `?grad=0`.
+   */
+  definirLuz(politica: PoliticaDeLuz) {
+    this.politicaDeLuz = politica;
+    this.perturbar();
+  }
+
+  /**
+   * O AMOSTRADOR DE MEMÓRIA (Onda 6, F8/D9) — somente leitura, como
+   * `captura` e `selo`. É o que o juiz `scripts/visual/memoria.mjs` lê
+   * para provar que entrar/sair do Atlas, trocar de qualidade e focar
+   * corpos devolvem TUDO que alocaram: `renderer.info` é a contagem
+   * viva do próprio three (texturas e geometrias na GPU, draws do
+   * último quadro), e `heapMB` é o heap de JS quando o navegador o
+   * expõe (`performance.memory` é só do Chrome — `null` não é zero, é
+   * "este navegador não conta").
+   *
+   * LEITURA DIRETA POR CHAMADA, sem cadência interna: o D9 oferecia
+   * 1 Hz, mas o `renderer.info` já é mantido pelo renderer a cada
+   * quadro e o heap é uma leitura pronta do navegador — uma cadência
+   * aqui seria estado novo (timer + cópia) para economizar uma leitura
+   * que não custa nada. Custo ZERO quando ninguém lê: getter não
+   * executa sem chamada, e nenhum caminho de render passa por aqui.
+   *
+   * PUBLICADO SÓ EM DEV, de carona no objeto inteiro: quem pendura o
+   * Director em `window.__director` é o App.tsx, sob
+   * `import.meta.env.DEV` — o mesmo portão do `captura` que os juízes
+   * de CDP já usam. Em produção não há porta nenhuma.
+   */
+  get stats() {
+    const info = this.engine.renderer.info;
+    const heap = (
+      performance as Performance & { memory?: { usedJSHeapSize: number } }
+    ).memory;
+    return {
+      memory: {
+        geometries: info.memory.geometries,
+        textures: info.memory.textures,
+      },
+      render: {
+        calls: info.render.calls,
+        triangles: info.render.triangles,
+        points: info.render.points,
+      },
+      heapMB: heap ? heap.usedJSHeapSize / 1048576 : null,
     };
   }
 
@@ -1776,8 +2504,9 @@ export class Director {
     } else if (this.escritorDeCamera === 'atlas') {
       // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
       // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
-      // amortecido do shot onde o visitante pausou
-      this.atlas.apply(cam, escalaDaUi(), larguraDeCss());
+      // amortecido do shot onde o visitante pausou. O dt alimenta a
+      // rampa entre degraus (F2b) — fora dela é ignorado.
+      this.atlas.apply(cam, escalaDaUi(), larguraDeCss(), dt);
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {
@@ -1795,8 +2524,201 @@ export class Director {
     const dHome = cam.position.length();
     const dGC = cam.position.distanceTo(GAL.GC_POS);
     // o near acompanha a âncora mais PRÓXIMA (Sol ou centro galáctico):
-    // na rasante de Sgr A* o near de dezenas de pc comeria o buraco negro
-    this.engine.updateClip(Math.min(dHome, dGC));
+    // na rasante de Sgr A* o near de dezenas de pc comeria o buraco negro.
+    // E, desde a Onda 6 (F0/D1), a superfície RESOLVIDA mais próxima em
+    // quadro: a porta escreve `ligado` ANTES do getter porque camada
+    // desligada (?nocorpos) tira os corpos do quadro — o getter devolve
+    // NaN e o par (near, far) fica no vigente bit a bit (pino de
+    // neutralidade em engine.test.ts; sem corpo registrado, F0, idem).
+    this.palco.ligado =
+      (CORPOS_DEFAULT_ON || this.debug.has('corpos')) && !this.hide.has('nocorpos');
+    // A TERRA RESOLVIDA (F2a) roda ANTES do near ler o palco: o globo
+    // que entra em quadro NESTE tick já governa o clip NESTE tick. O
+    // Director é quem registra a superfície (só corpo EM QUADRO entra
+    // no min() — de longe o registro esvazia e o par (near, far) fica
+    // no vigente bit a bit) e quem escreve a cessão do ponto na camada
+    // de planetas; a Terra não conhece nem o palco nem a camada.
+    if (this.terra && this.stars) {
+      const t = this.terra.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+        dtS: dt,
+        psf: this.stars,
+        salto: this.saltoDeCamera,
+      });
+      if (t.emQuadro) this.palco.registrar('earth', t.raioPc, t.centroPc);
+      else this.palco.remover('earth');
+      // a cessão SUAVE (F2b/D5): reafirmada TODO quadro — a escrita é
+      // idempotente (`gravar`), então reafirmar não sobe upload
+      this.planetas?.escreverCessao('earth', t.cede);
+      this.terraCarregando = t.carregando;
+      // o FALLBACK FRIO (item 5b): gate armado, camada ligada e nem
+      // textura quente nem fetch em voo — o `captura` segura nisto
+      this.terraFriaNoGate =
+        this.palco.ligado && t.gateArmado && !t.emQuadro && !t.carregando;
+      // globo entrando/saindo do quadro, textura que acabou de chegar e
+      // a RAMPA da cessão andando são mudança de imagem: a contagem de
+      // estabilidade recomeça (a captura nunca assenta no meio do fade)
+      if (
+        t.emQuadro !== this.terraEmQuadroAntes ||
+        (this.terraCarregavaAntes && !t.carregando) ||
+        t.emRampa
+      ) {
+        this.perturbar();
+      }
+      this.terraEmQuadroAntes = t.emQuadro;
+      this.terraCarregavaAntes = t.carregando;
+    }
+    // A LUA (F2b), pelo MESMO fio — e sem cessão: ela não tem ponto
+    // fotométrico na camada (dito em lua.ts; o slot 'moon' não existe
+    // em IDS_FOTOMETRIA). Sem efeméride o corpo não nasce (não há Lua
+    // no retrato congelado — o badge do tempo conta essa verdade).
+    if (this.lua) {
+      const l = this.lua.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+      });
+      if (l.emQuadro) this.palco.registrar('moon', l.raioPc, l.centroPc);
+      else this.palco.remover('moon');
+      this.luaCarregando = l.carregando;
+      // o mesmo fallback frio da Terra — mas SÓ com fonte viva: sem
+      // efeméride a Lua não existe por contrato (não é falha de textura)
+      this.luaFriaNoGate =
+        this.palco.ligado &&
+        this.efemeride !== null &&
+        l.gateArmado &&
+        !l.emQuadro &&
+        !l.carregando;
+      if (
+        l.emQuadro !== this.luaEmQuadroAntes ||
+        (this.luaCarregavaAntes && !l.carregando)
+      ) {
+        this.perturbar();
+      }
+      this.luaEmQuadroAntes = l.emQuadro;
+      this.luaCarregavaAntes = l.carregando;
+      // a posição viva para o RÓTULO da Lua (NaN sem efeméride ⇒ o
+      // projectCorpos não a projeta — rótulo só onde há corpo)
+      this.escreverPosicaoDeLua('moon', l.centroPc);
+    }
+    // OS ROCHOSOS (F3), pelo MESMO fio das irmãs — a lista viva é o
+    // dado; planeta escreve a cessão do ponto (D5), lua não tem ponto.
+    // A guarda do `stars` é a da Terra: a PSF alimenta a cessão.
+    if (this.stars) {
+      for (const r of this.rochosos) {
+      const e = r.corpo.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+        dtS: dt,
+        psf: this.stars!,
+        salto: this.saltoDeCamera,
+      });
+      if (e.emQuadro) this.palco.registrar(r.corpo.id, e.raioPc, e.centroPc);
+      else this.palco.remover(r.corpo.id);
+      if (r.corpo.planeta) this.planetas?.escreverCessao(r.corpo.id, e.cede);
+      r.carregando = e.carregando;
+      // o fallback frio das irmãs — e o da Lua, palavra por palavra,
+      // para Fobos/Deimos: sem efeméride a lua não EXISTE (não é falha
+      // de textura); planeta sem fonte cai no retrato e o frio vale
+      r.friaNoGate =
+        this.palco.ligado &&
+        (r.corpo.planeta || this.efemeride !== null) &&
+        e.gateArmado &&
+        !e.emQuadro &&
+        !e.carregando;
+      if (
+        e.emQuadro !== r.emQuadroAntes ||
+        (r.carregavaAntes && !e.carregando) ||
+        e.emRampa
+      ) {
+        this.perturbar();
+      }
+      r.emQuadroAntes = e.emQuadro;
+      r.carregavaAntes = e.carregando;
+      if (!r.corpo.planeta) this.escreverPosicaoDeLua(r.corpo.id, e.centroPc);
+      }
+    }
+    // OS GIGANTES (F4), pelo MESMO fio dos rochosos — a lista viva é o
+    // dado; os quatro são planetas (retrato + cessão do ponto).
+    if (this.stars) {
+      for (const g of this.gigantes) {
+      const e = g.corpo.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+        dtS: dt,
+        psf: this.stars!,
+        salto: this.saltoDeCamera,
+      });
+      if (e.emQuadro) this.palco.registrar(g.corpo.id, e.raioPc, e.centroPc);
+      else this.palco.remover(g.corpo.id);
+      this.planetas?.escreverCessao(g.corpo.id, e.cede);
+      g.carregando = e.carregando;
+      g.friaNoGate =
+        this.palco.ligado &&
+        e.gateArmado &&
+        !e.emQuadro &&
+        !e.carregando;
+      if (
+        e.emQuadro !== g.emQuadroAntes ||
+        (g.carregavaAntes && !e.carregando) ||
+        e.emRampa
+      ) {
+        this.perturbar();
+      }
+      g.emQuadroAntes = e.emQuadro;
+      g.carregavaAntes = e.carregando;
+      }
+    }
+    // O RETRATO NUNCA FINGE EFEMÉRIDE (item 5c da auditoria): com os
+    // corpos em cena e a fonte PEDIDA indisponível, o tick tenta a fonte
+    // uma SEGUNDA vez (a permitida por `garantirEfemerides`: "quem pediu
+    // de novo") e o `captura` segura a prontidão pela janela de
+    // QUADROS_TENTANDO_FONTE; se ela ainda não veio, o aviso único ACUSA
+    // — quem ler o quadro dali em diante sabe que os corpos estão no
+    // retrato congelado, nunca numa efeméride que não chegou.
+    if (this.palco.ligado && this.faseDaEfemeride === 'indisponivel') {
+      if (!this.retentouFonte) {
+        this.retentouFonte = true;
+        this.garantirEfemerides();
+      } else if (this.quadrosTentandoFonte < QUADROS_TENTANDO_FONTE) {
+        this.quadrosTentandoFonte++;
+        if (this.quadrosTentandoFonte >= QUADROS_TENTANDO_FONTE && !this.acusouRetrato) {
+          this.acusouRetrato = true;
+          console.warn(
+            '[captura] efeméride pedida indisponível: os corpos seguem no RETRATO congelado'
+          );
+        }
+      }
+    } else if (this.faseDaEfemeride === 'viva') {
+      this.quadrosTentandoFonte = 0;
+    }
+    this.saltoDeCamera = false;
+    const superficie = this.palco.superficieMaisProxima(cam.position);
+    this.engine.updateClip(Math.min(dHome, dGC), superficie.dSuperficiePc, superficie.raioPc);
 
     // A Via Láctea não é um plano: os fades de AMBIENTE respondem à
     // posição da câmera no DISCO (R, z galactocêntricos), não à
@@ -2074,8 +2996,16 @@ export class Director {
           this.phase === 'atlas' && this.planetas?.points.visible
             ? projectCorpos(cam, CORPOS_DO_SISTEMA, this.planetas.posicoes)
             : [];
+        // AS LUAS (F2b/F5): rótulo pela posição VIVA da efeméride —
+        // não têm vértice na camada de pontos, então entram por uma
+        // projeção própria. NaN (sem efeméride) o projectCorpos ignora.
+        const luas =
+          this.phase === 'atlas' && this.planetas?.points.visible
+            ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
+            : [];
         this.lastLabels = [
           ...corpos,
+          ...luas,
           ...projectLabels(cam, this.meta.named, 7, this.prevLabelKeys),
         ];
         this.emitDest(undefined, cam.position);
@@ -2221,6 +3151,15 @@ export class Director {
     step('sunStar', () => this.sunStar?.dispose());
     // idem: a camada nasce depois do await do init
     step('planetas', () => this.planetas?.dispose());
+    step('terra', () => this.terra?.dispose());
+    step('lua', () => this.lua?.dispose());
+    step('rochosos', () => {
+      for (const r of this.rochosos) r.corpo.dispose();
+    });
+    step('gigantes', () => {
+      for (const g of this.gigantes) g.corpo.dispose();
+    });
+    step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());
     step('post', () => this.post.dispose());

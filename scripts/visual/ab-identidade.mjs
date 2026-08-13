@@ -168,6 +168,293 @@ export const VISTAS = [
   ['ua500', '?pos=0,0,0.0024241&look=0,0,0&shot=2'],
   ['ua150', '?pos=0,0,0.00072722&look=0,0,0&shot=2'],
   ['ua40', '?pos=0,0,0.00019393&look=0,0,0&shot=2'],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F2a) — A TERRA RESOLVIDA, no jd PINADO da onda
+  // (2024-04-08, o mesmo do eclipse de F2c — a época viva não captura).
+  // A câmera fica a 4 raios do CENTRO da Terra viva (efeméride pelo
+  // ?jd=), do lado ILUMINADO, 35° fora do eixo Terra→Sol: mais de meio
+  // disco aceso (a lição do negate da Onda 5), terminador e lado
+  // noturno em quadro — dia, noite, nuvens e limbo da atmosfera numa
+  // captura só (~795 px de diâmetro em 1800 px). Os números saíram da
+  // MESMA cadeia do app (efemerides.bin → eclipticaParaEquatorial →
+  // AU_PARA_PC), calculados uma vez e pinados aqui como os ?pos= acima.
+  // O par &nobloom=1 é GATE (emenda T-E10): é nele que se lê o subsolar
+  // sem o clarão, contra o limiar 0,82 do bloom.
+  [
+    'terra',
+    '?pos=-0.0000045882235587153385,-0.0000014555632225072523,-6.307425015010789e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'terranb',
+    '?pos=-0.0000045882235587153385,-0.0000014555632225072523,-6.307425015010789e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F2b) — A LUA RESOLVIDA, no MESMO jd pinado da onda (que é o
+  // dia do eclipse solar de 2024: a Lua está entre o Sol e a Terra, e o
+  // lado voltado ao Sol — o que a câmera vê — está aceso).
+  //
+  // `lua`: a câmera a 4 raios lunares, 20° fora do eixo Lua→Sol — disco
+  // de ~795 px, quase cheio. É a vista que JULGA a lei de
+  // Lommel-Seeliger a olho: o disco tem de ler CHATO com borda dura
+  // (regolito), não esfera sombreada de Lambert — o fato fotométrico
+  // que se confere contra uma fotografia.
+  //
+  // `terralua`: o primeiro PAR da casa — a câmera além da Lua (lado do
+  // Sol), 20° fora do eixo Terra→Lua, olhando a TERRA: a Lua resolvida
+  // a ~404 px em primeiro plano e a Terra a ~55 px ao fundo, sem
+  // oclusão (20° contra 7,1° de raio angular da Lua), os dois
+  // iluminados. Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC), calculados uma vez e
+  // pinados como os ?pos= acima.
+  [
+    'lua',
+    '?pos=-0.000004577765217805196,-0.0000014518586579005272,-6.2925581919652e-7'
+      + '&look=-0.000004577990409167882,-0.000001451855297832381,-6.292543536189472e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'terralua',
+    '?pos=-0.000004577540038198493,-0.0000014518632898141814,-6.292550387276077e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F2c) — O ECLIPSE DOS DOIS LADOS, nos jd PINADOS de
+  // ECLIPSES-F2C.md (máximos segundo a NOSSA efeméride). Entram na lista
+  // ANTES do código da fase (regra da Onda 4): a baseline nasce no HEAD
+  // sem o ramo de sombra — as duas vistas DIFEREM de propósito quando o
+  // eclipse acende, e o "depois" é quem vira oficial (D11).
+  //
+  // `eclipse-solar` (?jd=2460409.26395835, o MESMO das vistas terra/lua —
+  // 2024-04-08): a câmera a 2 raios terrestres do centro, na direção de
+  // ENTRADA do eixo da sombra na superfície ((perp − √(R²−perp²)·û)/R,
+  // perp = 2.191 km do gamma 0,3431) — a mancha cai no centro do quadro.
+  // TAMANHOS DECLARADOS (projetor validado contra as capturas oficiais a
+  // 2 px, fov 58, buffer 1800×1713): umbra r ≈ 94 km ⇒ ~45 px de
+  // diâmetro centrada em (900,856); penumbra r ≈ 3.389 km ⇒ gradiente
+  // linear até ~690 px do centro (o disco tem 1.433 px — quase inteiro
+  // dentro da penumbra). O `look` REUSA o pino do centro da Terra da
+  // vista `terra` (a mesma efeméride, o mesmo jd).
+  //
+  // `eclipse-lunar` (?jd=2458327.34980323 — 2018-07-27, a mais longa do
+  // século): a câmera a 4 raios lunares do centro da Lua, do lado da
+  // TERRA (= lado diurno na lua cheia eclipsada, Sol e Terra a 0,11° um
+  // do outro vistos da Lua), olhando a Lua: o disco de ~757 px INTEIRO é
+  // o efeito — a Lua funda na umbra (folga 2.049 km), cobre de Danjon
+  // (o piso PISO_REFRACAO_LUNAR × COR_REFRACAO_LUNAR da lib) vezes a
+  // EXPOSIÇÃO DO OBSERVADOR da decisão do dono (EV_OBSERVADOR_ECLIPSE_LUNAR
+  // = 10 — declarada na lib como exposição, não dado físico; sem ela o
+  // piso honesto quantiza para ~0 e a Lua renderiza preta). Tamanho
+  // declarado: a blood moon É o disco inteiro, 757 px.
+  [
+    'eclipse-solar',
+    '?pos=-0.0000045886355123391084,-0.0000014552661812675914,-6.306556615181776e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'eclipse-lunar',
+    '?pos=0.0000027957670917923275,-0.0000037323592589660634,-0.0000016179729540998382'
+      + '&look=0.0000027958946899936873,-0.000003732529698720039,-0.0000016180463950766712'
+      + '&jd=2458327.34980323&corpos=1&shot=2',
+  ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F3) — OS ROCHOSOS, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). A câmera fica a 4 raios do centro, 20° fora do eixo
+  // corpo→Sol pelo lado ILUMINADO (o padrão da vista `lua`: disco
+  // quase cheio, ~757 px de diâmetro em 1800×1713 — é a geometria em
+  // que Lommel-Seeliger se julga a olho: o disco cheio lê CHATO, não
+  // Lambertiano). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC), pinados como os ?pos= acima.
+  //
+  // `mercurio`: regolito LS (C=4/3 derivado) a 0,4034 UA — E(real)=6,14.
+  // O par &nobloom=1 é GATE (T-E10): Mercúrio e Vênus cruzam o limiar
+  // de bloom 0,82 no subsolar, e a recalibração σ×bloom se lê AQUI, sem
+  // o clarão na frente. O px do efeito julgado: o disco INTEIRO, 757 px.
+  //
+  // `venus`: topo de nuvens a 0,7275 UA — E(real)=1,89. O albedo alto
+  // faz Vênus o caso mais brilhante da casa: é o herói da recalibração
+  // (subsolar vs o limiar 0,82), julgado no par &nobloom=1 com número,
+  // não a olho. Mesmo px declarado: 757 px de disco.
+  [
+    'mercurio',
+    '?pos=-0.0000019148588355801608,-3.9725638498650736e-7,-1.3749003726820043e-8'
+      + '&look=-0.0000019151695742340926,-3.9722379598669784e-7,-1.3699318312906234e-8'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'mercurionb',
+    '?pos=-0.0000019148588355801608,-3.9725638498650736e-7,-1.3749003726820043e-8'
+      + '&look=-0.0000019151695742340926,-3.9722379598669784e-7,-1.3699318312906234e-8'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'venus',
+    '?pos=0.0000033711554193735603,-8.460975885052472e-7,-5.940024469150652e-7'
+      + '&look=0.00000337178324480784,-8.465120134658821e-7,-5.942250012794021e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'venusnb',
+    '?pos=0.0000033711554193735603,-8.460975885052472e-7,-5.940024469150652e-7'
+      + '&look=0.00000337178324480784,-8.465120134658821e-7,-5.942250012794021e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F4) — OS GIGANTES + ANEL, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC), pinados como os ?pos= acima.
+  //
+  // `jupiter`: câmera a 4 raios equatoriais do centro, 20° fora do eixo
+  // corpo→Sol pelo lado ILUMINADO (o padrão da vista `lua`/`mercurio`:
+  // disco ~757 px em 1800×1713). E(real)=0,0399 a 5,006 UA. O par
+  // &nobloom=1 é o mesmo GATE T-E10 das irmãs.
+  //
+  // `saturno-anel`: NÃO é o disco cheio a 4 raios — a 5,73° de latitude
+  // subsolar o anel leria quase de perfil e a sombra no disco some no
+  // equador. Câmera a 6 raios equatoriais, 20° de azimute em torno do
+  // polo (a mesma receita) e +18° de elevação rumo ao polo norte
+  // (latitude da câmera 23,7°): GLOBO (~510 px) + ANEL (eixo maior
+  // ~1143 px, cabe no 1800×1713) + SOMBRA DO ANEL no disco. A sombra
+  // cai em lat −0,6° (borda interna 1,110 Re) a −7,7° (borda externa
+  // 2,326 Re) — faixa de ~31 px no meridiano central, o px DECLARADO
+  // do efeito julgado. E(real)=0,0106 a 9,710 UA.
+  [
+    'jupiter',
+    '?pos=0.000014120014161765692,0.000018255528587957974,0.00000748112563397955'
+      + '&look=0.000014127656995165159,0.000018260414310732658,0.000007483024335340463'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'jupiternb',
+    '?pos=0.000014120014161765692,0.000018255528587957974,0.00000748112563397955'
+      + '&look=0.000014127656995165159,0.000018260414310732658,0.000007483024335340463'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'saturno-anel',
+    '?pos=0.0000444068440660703,-0.000013639700232235952,-0.000007543925357433521'
+      + '&look=0.000044415067790719945,-0.000013646416397844129,-0.0000075488848424994925'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'saturno-anelnb',
+    '?pos=0.0000444068440660703,-0.000013639700232235952,-0.000007543925357433521'
+      + '&look=0.000044415067790719945,-0.000013646416397844129,-0.0000075488848424994925'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F5) — AS LUAS EM LOTE, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). Câmera a 4 raios do centro, 20° em torno do polo IAU pelo
+  // lado ILUMINADO (o padrão da vista `lua`/`mercurio`: disco ~757 px
+  // em 1800×1713). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC).
+  //
+  // `titan`: atmosfera opaca a 9,705 UA — E(real)=0,0106. O par
+  // &nobloom=1 é o GATE T-E10 das irmãs (Titã é o herói da bancada).
+  //
+  // `europa`: regolito LS (C=4/3 importado da Lua) a 5,002 UA —
+  // E(real)=0,0400. O px do efeito julgado: o disco INTEIRO, 757 px.
+  [
+    'titan',
+    '?pos=0.000044401483620258156,-0.000013608337576815957,-0.00000755020595854049'
+      + '&look=0.00004440174800605111,-0.000013608537105468783,-0.000007550247480449924'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'titannb',
+    '?pos=0.000044401483620258156,-0.000013608337576815957,-0.00000755020595854049'
+      + '&look=0.00004440174800605111,-0.000013608537105468783,-0.000007550247480449924'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'europa',
+    '?pos=0.000014125408023292846,0.000018240877731646644,0.000007473746885565305'
+      + '&look=0.00001412557512784177,0.00001824098426963711,0.0000074737888016236406'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'europanb',
+    '?pos=0.000014125408023292846,0.000018240877731646644,0.000007473746885565305'
+      + '&look=0.00001412557512784177,0.00001824098426963711,0.0000074737888016236406'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F6) — ANÕES/TNOs + ANÉIS, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC).
+  //
+  // `plutao-caronte`: os DOIS em quadro. Look no ponto médio do par
+  // (sep. 16,49 R_plutão, BODY999_RADII 1188,3 km / BODY901 606 km);
+  // câmera a 22 R_plutão do médio, −20° em torno do polo IAU pelo
+  // lado iluminado e +12° de elevação (sem a elevação o par alinha
+  // quase na linha de visada). Discos declarados: Plutão ~183 px,
+  // Caronte ~63 px; separação angular 35,4°. E(real)=0,00082 a
+  // 34,99 UA. O par &nobloom=1 é o GATE T-E10 das irmãs.
+  //
+  // `quaoar-anel`: globo + anel Q1R (7,47 R, Pereira23). Câmera a
+  // 22 R (R=543 km) do centro, −20° de azimute e +18° de elevação
+  // (o padrão saturno-anel: o anel não pode ler de perfil). Polo
+  // didático = norte eclíptico em equatorial (Quaoar sem IAU no
+  // pck00011 — o anel da F6-2 mora neste plano). GLOBO ~154 px;
+  // ANEL (eixo maior) ~1108 px — o px DECLARADO do efeito. E(real)
+  // =0,00056 a 42,29 UA.
+  [
+    'plutao-caronte',
+    '?pos=0.00008477711261100184,-0.00013105504237912263,-0.00006642962023154119'
+      + '&look=0.00008477758817176725,-0.00013105552796989695,-0.00006643012602992766'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'plutao-carontenb',
+    '?pos=0.00008477711261100184,-0.00013105504237912263,-0.00006642962023154119'
+      + '&look=0.00008477758817176725,-0.00013105552796989695,-0.00006643012602992766'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'quaoar-anel',
+    '?pos=0.00017125670258576192,0.00009621234849511725,0.000058818663740295546'
+      + '&look=0.00017125697758965395,0.00009621246017136201,0.00005881891229886131'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'quaoar-anelnb',
+    '?pos=0.00017125670258576192,0.00009621234849511725,0.000058818663740295546'
+      + '&look=0.00017125697758965395,0.00009621246017136201,0.00005881891229886131'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F7) — ASTEROIDES, no MESMO jd pinado da onda (2024-04-08).
+  // Entram ANTES do código da fase (regra da Onda 4). Câmera a 4 raios
+  // do centro (BODY2000004_RADII a=289 km), −20° em torno do polo IAU
+  // pelo lado iluminado (o padrão lua/mercurio: disco ~829 px em
+  // 1800×1713). Cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC). E(real)=0,158 a 2,517 UA.
+  // O par &nobloom=1 é o GATE T-E10 das irmãs.
+  [
+    'vesta',
+    '?pos=-0.000005058489376246491,0.000010073653329889095,0.000004679479055866578'
+      + '&look=-0.000005058494464853001,0.000010073688779328954,0.000004679490053606362'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'vestanb',
+    '?pos=-0.000005058489376246491,0.000010073653329889095,0.000004679479055866578'
+      + '&look=-0.000005058494464853001,0.000010073688779328954,0.000004679490053606362'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);

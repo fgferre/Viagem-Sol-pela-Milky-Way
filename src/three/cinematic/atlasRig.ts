@@ -52,13 +52,15 @@ export const MAX_SOLAR_DEVIATION_GRAUS = 70;
  * um peso de `lerp` entre DUAS DIREÇÕES unitárias, para que o planeta não
  * domine o quadro de uma lua.
  *
- * SEM CONSUMIDOR NESTA ONDA, e é declaração, não esquecimento: pai em
- * quadro só existe com as luas (Onda 6) — até a Onda 5 os alvos são
- * corpos do sistema e estrelas, que não têm pai a compor. O número fica
- * medido aqui para quem escrever a mistura; o que ele NÃO é (e chegou a
- * ser por engano) é fator de DISTÂNCIA: multiplicar a distância de
- * enquadramento por 0,78 come a margem de 1,2 (1,2 × 0,78 = 0,936 < 1) e
- * faz transbordar exatamente a esfera que a conta promete tangenciar.
+ * O CONSUMIDOR PROMETIDO CHEGOU na F2b da Onda 6: `direcaoDaLua`, o
+ * degrau "lua" da escada — peso de `lerp` entre DUAS DIREÇÕES unitárias
+ * (a solar privilegiada e a "para longe do pai"), renormalizado, para
+ * que o planeta não domine o quadro da lua E continue nele (a câmera
+ * fica do lado oposto ao pai, olhando a lua com o pai ao fundo). O que
+ * ele NÃO é (e chegou a ser por engano) é fator de DISTÂNCIA:
+ * multiplicar a distância de enquadramento por 0,78 come a margem de
+ * 1,2 (1,2 × 0,78 = 0,936 < 1) e faz transbordar exatamente a esfera
+ * que a conta promete tangenciar.
  */
 export const PARENT_FRAMING_BIAS = 0.78;
 
@@ -114,7 +116,13 @@ const LETTERBOX_FRACAO = 0.065;
  * mede os extremos da faixa (`escalaDaUi`) E os da LARGURA, e cobra
  * declarado ≥ medido em cada canto (ver `LARGURA_UTIL_MINIMA_PX`).
  */
-const CONTEXTO_FRACAO = 0.075;
+/**
+ * F2b: a ContextLine ganhou a linha da ESCADA (nome + botões
+ * aproximar/sistema em linha) e a faixa do topo cresceu a altura de um
+ * `.hud-btn.small` sobre a do nome — medido pelo juiz de a11y (que
+ * cobra declarado ≥ medido em toda a grade largura×ui): 0,075 → 0,09.
+ */
+const CONTEXTO_FRACAO = 0.09;
 
 /**
  * O DEGRAU DA BARRA QUEBRADA — e ele é fenômeno de LARGURA, não de
@@ -368,6 +376,70 @@ export function direcaoPrivilegiada(
   return eixoSolar.applyAxisAngle(eixo.normalize(), angulo);
 }
 
+/**
+ * A DIREÇÃO DO DEGRAU "LUA" (F2b/D7) — o consumidor de
+ * `PARENT_FRAMING_BIAS`. Pura, e a semântica é a do doador
+ * (`PrivilegedPosition.calculateContextAwareDirection`), re-expressa:
+ *
+ *  1. parte da direção solar privilegiada (30° de Rembrandt + órbita do
+ *     visitante, grampeada — `direcaoPrivilegiada`);
+ *  2. mistura com "para longe do PAI" (`(alvo − pai)` normalizado) com
+ *     peso `PARENT_FRAMING_BIAS` no termo do pai e renormaliza — a
+ *     câmera vai para o lado oposto ao pai, então olhar a lua é olhar
+ *     TAMBÉM o pai, ao fundo do mesmo quadro;
+ *  3. …mas NUNCA além do terminador (a cicatriz que o doador pagou para
+ *     aprender: com 0,78 o termo do pai vence, e quando o eixo pai→lua
+ *     passa de ~106° do Sol a mistura cai no lado NOTURNO — Japeto,
+ *     Titã e a própria Lua liam como "não carregou"): se a mistura
+ *     desvia mais que `MAX_SOLAR_DEVIATION_GRAUS` da direção iluminada,
+ *     gira-se a direção iluminada RUMO à mistura por exatamente o
+ *     máximo — o azimute "longe do pai" sobrevive onde é compatível com
+ *     luz, e onde não é fica a direção mais próxima que ainda é.
+ */
+const _solSnapshot = new THREE.Vector3();
+const _iluminada = new THREE.Vector3();
+const _longeDoPai = new THREE.Vector3();
+const _eixoDeGiro = new THREE.Vector3();
+
+export function direcaoDaLua(
+  doSolAoAlvo: THREE.Vector3,
+  doPaiAoAlvo: THREE.Vector3,
+  polo: THREE.Vector3,
+  desvioExtra: number,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  // snapshots ANTES de escrever em `out`: os chamadores da classe podem
+  // passar o mesmo rascunho nos dois papéis (o padrão de `apply`)
+  _solSnapshot.copy(doSolAoAlvo);
+  _iluminada.copy(doSolAoAlvo).negate();
+  const temSol = _iluminada.lengthSq() >= 1e-30;
+  if (temSol) _iluminada.normalize();
+
+  const solar = direcaoPrivilegiada(doSolAoAlvo, polo, desvioExtra, out);
+  if (doPaiAoAlvo.lengthSq() < 1e-30) return solar;
+  _longeDoPai.copy(doPaiAoAlvo).normalize();
+  const mistura = solar.lerp(_longeDoPai, PARENT_FRAMING_BIAS);
+  if (mistura.lengthSq() < 1e-12) return out.copy(_longeDoPai);
+  mistura.normalize();
+
+  if (!temSol) return mistura;
+  const maximo = MAX_SOLAR_DEVIATION_GRAUS * GRAU;
+  if (mistura.angleTo(_iluminada) <= maximo) return mistura;
+
+  _eixoDeGiro.crossVectors(_iluminada, mistura);
+  if (_eixoDeGiro.lengthSq() < 1e-12) {
+    // anti-paralelo exato: não há plano em que girar — não sobra
+    // componente "longe do pai" que valha preservar; volta à direção
+    // solar privilegiada pura, recomposta do snapshot (o rascunho está
+    // sujo da mistura).
+    return direcaoPrivilegiada(_solSnapshot, polo, desvioExtra, out);
+  }
+  return out
+    .copy(_iluminada)
+    .applyAxisAngle(_eixoDeGiro.normalize(), maximo)
+    .normalize();
+}
+
 /** Polo da eclíptica no frame da cena (equatorial J2000). */
 const POLO_ECLIPTICO = (() => {
   const v = eclipticaParaEquatorial([0, 0, 1]);
@@ -377,7 +449,23 @@ const POLO_ECLIPTICO = (() => {
 /** O Sol mora na origem da cena — o centro de tudo que o Atlas enquadra. */
 const SOL = new THREE.Vector3(0, 0, 0);
 
+/**
+ * A RAMPA ENTRE DEGRAUS da escada (F2b/D7), em segundos. Curta como o
+ * véu (0,45 s por metade): descer de órbita para corpo não é travessia
+ * física — a rampa existe para o olho seguir a troca de enquadramento,
+ * não para fingir voo. Sob `prefers-reduced-motion` e `?shot=` quem
+ * chama pede o salto seco (`rampa: false`) e ela nunca anima.
+ */
+export const RAMPA_DO_DEGRAU_S = 0.5;
+
 const _dir = new THREE.Vector3();
+const _dirPai = new THREE.Vector3();
+const _posDestino = new THREE.Vector3();
+const _quatDestino = new THREE.Quaternion();
+const _posPartida = new THREE.Vector3();
+const _quatPartida = new THREE.Quaternion();
+const _dirA = new THREE.Vector3();
+const _dirB = new THREE.Vector3();
 
 /**
  * O rig. Estado mínimo: um alvo, um raio de enquadramento e a órbita
@@ -400,6 +488,33 @@ export class AtlasRig {
    * degenerado (vetor nulo) e a abertura viraria uma direção arbitrária.
    */
   private readonly eixoDe = new THREE.Vector3();
+  /**
+   * O PAI do alvo, quando o alvo é uma LUA (degrau "lua" da escada,
+   * F2b/D7): com ele presente a direção sai de `direcaoDaLua` (a
+   * mistura `PARENT_FRAMING_BIAS`) em vez de `direcaoPrivilegiada`.
+   * `null` em todo enquadramento comum.
+   */
+  private pai: THREE.Vector3 | null = null;
+  private readonly paiGuardado = new THREE.Vector3();
+
+  // ---- a rampa entre degraus (F2b/D7) ------------------------------
+  // O reposicionamento de ENTRADA no Atlas segue atrás do véu (D3);
+  // esta rampa é só a troca de degrau DENTRO do modo — órbita→corpo,
+  // corpo→lua, as subidas — onde não há véu e um corte seco leria como
+  // teletransporte. Ela interpola POSES (posição por direção+distância
+  // log em torno do alvo novo, orientação por slerp), termina EXATA na
+  // pose pura do enquadramento (t ≥ 1 escreve a conta de sempre, bit a
+  // bit — é o que mantém `?foco=` reproduzível), e o snapshot de
+  // partida é a pose que a câmera MOSTRAVA no quadro da troca.
+  private rampaT = 1;
+  private readonly partida = {
+    alvo: new THREE.Vector3(),
+    raio: 0,
+    eixoDe: new THREE.Vector3(),
+    pai: new THREE.Vector3(),
+    temPai: false,
+    orbita: 0,
+  };
 
   /**
    * O ENQUADRAMENTO DE ABERTURA: o SISTEMA inteiro, e a esfera dele é
@@ -423,10 +538,12 @@ export class AtlasRig {
    * O NÚMERO DA ABERTURA, num lugar só (quem mais precisar dele cita
    * esta docstring em vez de repeti-lo): com o retângulo útil vigente em
    * `ui = 1` e tela de mesa (aspecto ≥ 1, onde quem aperta é o vertical)
-   * a câmera fica a **221,55 UA do Sol** — `35,4213 UA × 1,2 / sen(11,06°)`,
+   * a câmera fica a **226,84 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`
+   * (era 221,55 até a F2b: a linha da ESCADA na ContextLine cresceu a
+   * faixa do topo — ver CONTEXTO_FRACAO),
    * e como o alvo é a própria origem essa distância é a distância a casa,
-   * sem triângulo nenhum. Ela ANDA com o HUD e com `?ui=`: 209,39 UA em
-   * `ui = 0,85`, 284,05 UA em `ui = 1,4`. O trilho de `atlasRig.test.ts`
+   * sem triângulo nenhum. Ela ANDA com o HUD e com `?ui=`: 213,37 UA em
+   * `ui = 0,85`, 296,76 UA em `ui = 1,4`. O trilho de `atlasRig.test.ts`
    * deriva o número de `enquadrar()` e quebra se ele envelhecer aqui.
    */
   focarNoSistema() {
@@ -438,12 +555,53 @@ export class AtlasRig {
    * Foca um ponto da cena, enquadrando uma esfera de `raio` pc nele.
    * `eixoDe` é o ponto de onde sai o eixo solar — o próprio alvo, salvo
    * na abertura (ver `focarNoSistema`).
+   *
+   * `opcoes.pai` liga o degrau "lua" (direção por `direcaoDaLua`);
+   * `opcoes.rampa` pede a transição suave a partir do enquadramento
+   * ATUAL — só faz sentido com a fase já viva (as trocas de degrau);
+   * entrada no Atlas e deep-link seguem instantâneos atrás do véu.
+   * Focar o MESMO alvo com rampa é no-op (nem reinicia a rampa): é o
+   * que mantém `?foco=` idempotente — clicar de novo não move um bit.
    */
-  focar(alvo: THREE.Vector3, raio: number, eixoDe: THREE.Vector3 = alvo) {
+  focar(
+    alvo: THREE.Vector3,
+    raio: number,
+    eixoDe: THREE.Vector3 = alvo,
+    opcoes: { rampa?: boolean; pai?: THREE.Vector3 | null } = {}
+  ) {
+    const pai = opcoes.pai ?? null;
+    if (opcoes.rampa) {
+      const mesmoAlvo =
+        this.alvo.distanceToSquared(alvo) === 0 &&
+        this.raio === raio &&
+        (pai === null) === (this.pai === null);
+      if (mesmoAlvo) return;
+      // snapshot do enquadramento QUE ESTÁ NA TELA — é dele que a rampa parte
+      this.partida.alvo.copy(this.alvo);
+      this.partida.raio = this.raio;
+      this.partida.eixoDe.copy(this.eixoDe);
+      this.partida.temPai = this.pai !== null;
+      if (this.pai) this.partida.pai.copy(this.pai);
+      this.partida.orbita = this.orbita;
+      this.rampaT = 0;
+    } else {
+      this.rampaT = 1;
+    }
     this.alvo.copy(alvo);
     this.raio = raio;
     this.eixoDe.copy(eixoDe);
+    if (pai) {
+      this.paiGuardado.copy(pai);
+      this.pai = this.paiGuardado;
+    } else {
+      this.pai = null;
+    }
     this.orbita = 0;
+  }
+
+  /** a rampa entre degraus ainda está andando? (a captura espera por ela) */
+  get animando(): boolean {
+    return this.rampaT < 1;
   }
 
   /** arrasto do ponteiro: orbita o alvo dentro do grampo solar */
@@ -469,23 +627,97 @@ export class AtlasRig {
   apply(
     camera: THREE.PerspectiveCamera,
     fatorUi = 1,
-    larguraPx = LARGURA_DE_MESA_PX
+    larguraPx = LARGURA_DE_MESA_PX,
+    dt = 0
+  ) {
+    if (this.rampaT >= 1) {
+      // o caminho de SEMPRE, intocado bit a bit — é o que as provas de
+      // idempotência (?foco) e os md5 do atlas-smoke medem
+      this.escreverPose(
+        camera, fatorUi, larguraPx,
+        this.alvo, this.raio, this.eixoDe, this.pai, this.orbita
+      );
+      return;
+    }
+
+    // a rampa entre degraus: poses dos dois enquadramentos, interpoladas
+    this.rampaT = Math.min(
+      1,
+      this.rampaT + (Number.isFinite(dt) ? Math.max(dt, 0) : 0) / RAMPA_DO_DEGRAU_S
+    );
+    const t = this.rampaT;
+    // o mesmo smoothstep de toda rampa da casa (C¹ nas duas bordas)
+    const k = t * t * (3 - 2 * t);
+
+    this.escreverPose(
+      camera, fatorUi, larguraPx,
+      this.alvo, this.raio, this.eixoDe, this.pai, this.orbita
+    );
+    _posDestino.copy(camera.position);
+    _quatDestino.copy(camera.quaternion);
+    this.escreverPose(
+      camera, fatorUi, larguraPx,
+      this.partida.alvo, this.partida.raio, this.partida.eixoDe,
+      this.partida.temPai ? this.partida.pai : null, this.partida.orbita
+    );
+    _posPartida.copy(camera.position);
+    _quatPartida.copy(camera.quaternion);
+
+    // posição: direção em torno do ALVO NOVO interpolada e distância em
+    // LOG — órbita→corpo atravessa 3+ ordens de grandeza, e a distância
+    // linear gastaria a rampa inteira parada e saltaria no fim
+    _dirA.copy(_posPartida).sub(this.alvo);
+    _dirB.copy(_posDestino).sub(this.alvo);
+    const dA = Math.max(_dirA.length(), 1e-30);
+    const dB = Math.max(_dirB.length(), 1e-30);
+    _dirA.multiplyScalar(1 / dA);
+    _dirB.multiplyScalar(1 / dB);
+    _dir.lerpVectors(_dirA, _dirB, k);
+    if (_dir.lengthSq() < 1e-12) _dir.copy(_dirB);
+    _dir.normalize();
+    const d = Math.exp((1 - k) * Math.log(dA) + k * Math.log(dB));
+    camera.position.copy(this.alvo).addScaledVector(_dir, d);
+    camera.quaternion.slerpQuaternions(_quatPartida, _quatDestino, k);
+    camera.fov = ATLAS_FOV_GRAUS;
+    camera.updateProjectionMatrix();
+  }
+
+  /** a pose PURA de um enquadramento — o corpo do `apply` de sempre. */
+  private escreverPose(
+    camera: THREE.PerspectiveCamera,
+    fatorUi: number,
+    larguraPx: number,
+    alvo: THREE.Vector3,
+    raio: number,
+    eixoDe: THREE.Vector3,
+    pai: THREE.Vector3 | null,
+    orbita: number
   ) {
     const { distancia, giroY, giroX } = enquadrar({
-      rAlvo: this.raio,
+      rAlvo: raio,
       fovDeg: ATLAS_FOV_GRAUS,
       aspect: camera.aspect,
       retanguloUtil: retanguloUtilDoAtlas(fatorUi, larguraPx),
     });
-    direcaoPrivilegiada(
-      _dir.copy(this.eixoDe).sub(SOL),
-      POLO_ECLIPTICO,
-      this.orbita,
-      _dir
-    );
-    camera.position.copy(this.alvo).addScaledVector(_dir, distancia);
+    if (pai) {
+      direcaoDaLua(
+        _dir.copy(eixoDe).sub(SOL),
+        _dirPai.copy(alvo).sub(pai),
+        POLO_ECLIPTICO,
+        orbita,
+        _dir
+      );
+    } else {
+      direcaoPrivilegiada(
+        _dir.copy(eixoDe).sub(SOL),
+        POLO_ECLIPTICO,
+        orbita,
+        _dir
+      );
+    }
+    camera.position.copy(alvo).addScaledVector(_dir, distancia);
     camera.up.copy(POLO_ECLIPTICO);
-    camera.lookAt(this.alvo);
+    camera.lookAt(alvo);
     if (giroY !== 0) camera.rotateY(giroY);
     if (giroX !== 0) camera.rotateX(giroX);
     camera.fov = ATLAS_FOV_GRAUS;
@@ -536,11 +768,14 @@ export function raioDeEnquadramentoEstelar(distanciaAoSolPc: number): number {
  * esfera é centrada na origem, e é essa a promessa que importa), mas o
  * corpo que dá nome ao enquadramento não está mais onde estava.
  *
- * DECISÃO DA ONDA 5: fica assim, e vira PENDÊNCIA NOMEADA — "abertura
- * ancorada na época". Consertar é o Director compor a posição viva e
- * chamar `focar` com ela, e isso pertence à onda que também vai desenhar
- * as órbitas (Onda 6), onde o alvo do enquadramento passa a ter forma
- * visível e a diferença sai do papel.
+ * A PENDÊNCIA DA ONDA 5 ("abertura ancorada na época") FECHOU na F2b da
+ * Onda 6, com OVERRIDE DECLARADO do destino registrado: o conserto era
+ * exatamente o previsto — o Director compõe a posição viva
+ * (`Director.focarNoSistema`) — mas ele NÃO esperou as órbitas
+ * desenhadas, porque a posição viva só depende de efeméride + tempo
+ * vivo, que já existem (emendas D-E5/T-E12; "justificativa errada conta
+ * como falha", Onda 9). Esta função ficou sendo o caminho SEM efeméride:
+ * o retrato congelado, com o badge do tempo contando a verdade.
  */
 export function orbitaMaisExterna(): { posicao: THREE.Vector3; raio: number } {
   const corpo = Object.values(RETRATO_2026).reduce((maior, c) =>

@@ -447,10 +447,16 @@ try {
   // o instrumento para o céu poder ser lido, e o selo DIZ. Um Atlas que
   // abrisse dizendo BRILHO REAL sobre uma imagem tratada seria o selo
   // mentindo — que é o defeito que ele existe para não ter.
+  // E DESDE A ONDA 6 (F2a) a abertura também declara a POLÍTICA DE LUZ:
+  // o default do Atlas é `assistida` (E^σ nos corpos resolvidos), e a
+  // linha da lei de luz — com a copy leiga herdada — tem de estar no
+  // detalhe do selo (a cobrança da emenda D2: a linha nasce no padrão
+  // das irmãs e o juiz de a11y a cobra).
   const fatorInicial = await sessao.js('window.__director.selo.gradacao');
   conferir(
     inicial !== null && inicial.escala === 'ESCALA REAL'
-      && inicial.brilho === 'BRILHO ASSISTIDO' && /clarão/.test(inicial.detalhe),
+      && inicial.brilho === 'BRILHO ASSISTIDO' && /clarão/.test(inicial.detalhe)
+      && /faixa comprimida/.test(inicial.detalhe),
     `selo na abertura: "${inicial?.escala}" · "${inicial?.brilho}" — ${inicial?.detalhe}`
   );
   conferir(
@@ -490,28 +496,114 @@ try {
       + `${camadasVivas}, clarão ${fatorDepois})`
   );
   conferir(
-    !urlLimpa.includes('nocat') && urlLimpa.includes('atlas') && urlLimpa.includes('grad=0'),
-    `selo: a volta limpa a porta, desliga a gradação e preserva o modo (${urlLimpa})`
+    !urlLimpa.includes('nocat') && urlLimpa.includes('atlas') && urlLimpa.includes('grad=0')
+      // a luz tem o MESMO contrato do grad (default vivo): a volta
+      // ESCREVE ?luz=real para sobreviver à recarga (Onda 6, D2)
+      && urlLimpa.includes('luz=real'),
+    `selo: a volta limpa a porta, desliga gradação e luz e preserva o modo (${urlLimpa})`
   );
 
-  // A LINHA-CONTROLE PRÓPRIA da gradação — todo caminho que altera o
-  // resultado tem de ter como ser desligado: `?grad=0` no link faz
-  // o Atlas abrir com o clarão do filme — e aí o selo diz REAL sobre a
-  // tela branca, que é a verdade daquela vista.
-  await sessao.ir(`atlas=1&grad=0&${PIN}`);
+  // A LINHA-CONTROLE PRÓPRIA da gradação E da luz — todo caminho que
+  // altera o resultado tem de ter como ser desligado pelo link:
+  // `?grad=0&luz=real` faz o Atlas abrir com o clarão do filme e o
+  // 1/d² cru — e aí o selo diz REAL sobre a tela branca, que é a
+  // verdade daquela vista.
+  await sessao.ir(`atlas=1&grad=0&luz=real&${PIN}`);
   const semGradacao = await lerSelo();
   const fatorSemPorta = await sessao.js('window.__director.selo.gradacao');
   conferir(
     semGradacao.brilho === 'BRILHO REAL' && fatorSemPorta === 1,
-    `?grad=0: o Atlas abre sem gradação e o selo diz "${semGradacao.brilho}" `
+    `?grad=0&luz=real: o Atlas abre sem assistência e o selo diz "${semGradacao.brilho}" `
       + `(fator ${fatorSemPorta})`
+  );
+
+  // ---- A ESCADA DE NAVEGAÇÃO (F2b/D7) -----------------------------
+  // Os dois botões novos da ContextLine com nome acessível pt-BR, o
+  // gesto de descer, o Esc que sobe UM degrau — e a interação declarada
+  // com os diálogos: diálogo aberto come o Esc PRIMEIRO.
+  await sessao.ir(`foco=terra&${PIN}`);
+  const escadaBotoes = await sessao.js(`(() => {
+    const ctx = document.querySelector('.atlas-contexto');
+    const botoes = [...ctx.querySelectorAll('button')];
+    return botoes.map((b) => b.getAttribute('aria-label'));
+  })()`);
+  conferir(
+    escadaBotoes.length === 2
+      && /^Aproximar: enquadrar Terra/.test(escadaBotoes[0] || '')
+      && /sistema solar/.test(escadaBotoes[1] || ''),
+    `escada: os dois botões têm aria-label pt-BR (${JSON.stringify(escadaBotoes)})`
+  );
+  // descer: "aproximar" enquadra o CORPO com raio físico — a câmera sai
+  // de ~6,3 UA do Sol para ~0,0006 UA da Terra
+  await sessao.js(`(() => {
+    [...document.querySelectorAll('.atlas-contexto button')]
+      .find((b) => /Aproximar/.test(b.getAttribute('aria-label'))).click();
+  })()`);
+  await sessao.assentar();
+  const desceu = await sessao.js(`JSON.stringify({
+    ver: window.__director.verDaEscada,
+    degrau: window.__director.escadaViva.degrau,
+    contexto: (document.querySelector('.atlas-contexto-nome') || {}).textContent,
+  })`);
+  const d1 = JSON.parse(desceu);
+  conferir(
+    d1.ver === 'corpo' && d1.degrau === 'corpo' && d1.contexto === 'Terra',
+    `escada: "aproximar" desce ao degrau corpo (${desceu})`
+  );
+  // o degrau reproduz por URL (espelho): a recarga com ?ver=corpo volta
+  // ao MESMO degrau
+  await sessao.ir(`foco=terra&ver=corpo&${PIN}`);
+  const porUrl = await sessao.js('window.__director.escadaViva.degrau');
+  conferir(porUrl === 'corpo', `escada: ?foco=terra&ver=corpo reproduz o degrau ('${porUrl}')`);
+  // DIÁLOGO ABERTO COME O Esc PRIMEIRO: com a gaveta aberta, Esc fecha
+  // a gaveta e o degrau NÃO se move
+  await sessao.js(`(() => {
+    const b = document.querySelector('[data-abre-dialogo="camadas"]');
+    b.focus();
+    b.click();
+  })()`);
+  await sleep(150);
+  await sessao.teclar('Escape');
+  await sleep(200);
+  const aposDialogo = await sessao.js(`JSON.stringify({
+    gaveta: Boolean(document.querySelector('[data-dialogo="camadas"]')),
+    degrau: window.__director.escadaViva.degrau,
+  })`);
+  const d2 = JSON.parse(aposDialogo);
+  conferir(
+    !d2.gaveta && d2.degrau === 'corpo',
+    `escada: o Esc com diálogo aberto fecha o DIÁLOGO e não sobe degrau (${aposDialogo})`
+  );
+  // agora sim: Esc livre sobe UM degrau por vez — corpo → órbita → sistema
+  await sessao.teclar('Escape');
+  await sessao.assentar();
+  const sub1 = await sessao.js('window.__director.escadaViva.degrau');
+  await sessao.teclar('Escape');
+  await sessao.assentar();
+  const sub2 = await sessao.js(`JSON.stringify({
+    degrau: window.__director.escadaViva.degrau,
+    contexto: (document.querySelector('.atlas-contexto-nome') || {}).textContent,
+    botoes: [...document.querySelectorAll('.atlas-contexto button')].length,
+  })`);
+  const d3 = JSON.parse(sub2);
+  conferir(
+    sub1 === 'orbita' && d3.degrau === 'sistema' && d3.contexto === 'Sistema solar'
+      && d3.botoes === 0,
+    `escada: Esc sobe um degrau por vez (corpo → '${sub1}' → '${d3.degrau}'), e no sistema os botões somem`
   );
 
   // ---- o retângulo útil cobre o HUD REAL --------------------------
   // A declaração vive no TS (`retanguloUtilDoAtlas`) e as alturas, no
   // CSS. Sem esta prova as duas só se encontrariam a olho — e o alvo
   // começaria a ser enquadrado por baixo do selo sem ninguém notar.
+  await sessao.ir(`atlas=1&${PIN}`);
   await medirCobertura(sessao, 'ui = 1 (o de sempre)');
+  // ...e com a LINHA DA ESCADA na tela (F2b): com um corpo em foco a
+  // ContextLine carrega os dois botões e é o estado mais alto do topo —
+  // é ELE que a fração declarada tem de cobrir
+  await sessao.ir(`foco=terra&${PIN}`);
+  await medirCobertura(sessao, 'ui = 1 com a linha da escada');
+  await sessao.ir(`atlas=1&${PIN}`);
 
   // ---- A ESCALA DA UI (`?ui=`, F6) --------------------------------
   await julgarEscalaDaUi(sessao);

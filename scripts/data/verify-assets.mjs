@@ -407,6 +407,129 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
   );
 }
 
+// ============================================================
+// Onda 6 (F2a): texturas do atlas — manifest COMPLETO nos dois
+// sentidos. (1) Toda entrada de texturas.json tem arquivo no
+// disco com bytes, sha256 E dimensões batendo — as dimensões são
+// RE-MEDIDAS pelo sharp aqui, nunca aceitas do nome do arquivo
+// (a armadilha que cegou Júpiter/Urano no doador por três meses:
+// `8k_jupiter.jpg` tinha 4096 px). (2) Todo arquivo em
+// public/textures/atlas/ tem entrada — órfão QUEBRA, porque
+// arquivo sem linha de manifest é textura sem licença/origem
+// documentada, e a política do dono é: origem não resolvida
+// entra MARCADA, nunca invisível.
+//
+// O PRECEDENTE DOS PARES .bin/.gz NÃO SE APLICA AQUI, de
+// propósito: jpg e webp já são formatos comprimidos — um .gz
+// deles seria pessimização (mais bytes e mais CPU pela mesma
+// imagem). Ninguém estenda a varredura de pares para esta árvore.
+// ============================================================
+{
+  let texturasDoc;
+  try {
+    texturasDoc = JSON.parse(
+      await readFile(path.join(publicDirectory, 'data', 'atlas', 'texturas.json'), 'utf8')
+    );
+  } catch (error) {
+    throw new Error(
+      `atlas/texturas.json ausente ou inválido (${error.message}) — ` +
+        'rode npm run data:texturas.'
+    );
+  }
+  if (texturasDoc.formato !== 'texturas-atlas-v1') {
+    throw new Error(`atlas/texturas: formato "${texturasDoc.formato}"; esperado "texturas-atlas-v1".`);
+  }
+  // sharp entra por import dinâmico: é devDependency do pipeline de
+  // texturas e o erro tem de apontar o remédio, não um stack de resolução.
+  let sharp;
+  try {
+    sharp = (await import('sharp')).default;
+  } catch {
+    throw new Error('sharp indisponível — rode npm install (devDependency do pipeline de texturas).');
+  }
+  const PROVENIENCIAS = ['medido', 'derivado', 'nao-resolvida'];
+  const texturasRaiz = path.join(publicDirectory, 'textures', 'atlas');
+  const conferidas = new Set();
+  let totalBytes = 0;
+  for (const entrada of texturasDoc.entradas) {
+    const rotulo = `atlas/texturas["${entrada.arquivo}"]`;
+    const caminho = path.join(publicDirectory, entrada.arquivo);
+    let buffer;
+    try {
+      buffer = await readFile(caminho);
+    } catch {
+      throw new Error(`${rotulo}: arquivo ausente do disco — rode npm run data:texturas.`);
+    }
+    if (buffer.byteLength !== entrada.bytes) {
+      throw new Error(
+        `${rotulo}: ${buffer.byteLength} bytes; manifest declara ${entrada.bytes}.`
+      );
+    }
+    if (sha256(buffer) !== entrada.sha256) {
+      throw new Error(`${rotulo}: SHA-256 diverge do manifesto.`);
+    }
+    const meta = await sharp(buffer).metadata();
+    if (meta.width !== entrada.larguraPx || meta.height !== entrada.alturaPx) {
+      throw new Error(
+        `${rotulo}: mede ${meta.width}x${meta.height}; manifest declara ` +
+          `${entrada.larguraPx}x${entrada.alturaPx}.`
+      );
+    }
+    if (!PROVENIENCIAS.includes(entrada.proveniencia)) {
+      throw new Error(`${rotulo}: proveniência "${entrada.proveniencia}" desconhecida.`);
+    }
+    // Licença por entrada (política do dono): ou um nome de licença
+    // real, ou a marca explícita 'nao-resolvida' — nunca vazio. E
+    // licença que exige crédito (CC BY, USGS) sem texto de atribuição
+    // é atribuição perdida — quebra.
+    if (typeof entrada.origem?.licenca !== 'string' || entrada.origem.licenca === '') {
+      throw new Error(`${rotulo}: origem.licenca ausente ou vazia.`);
+    }
+    if (
+      (entrada.origem.licenca === 'nao-resolvida') !==
+      (entrada.proveniencia === 'nao-resolvida')
+    ) {
+      throw new Error(
+        `${rotulo}: licença e proveniência discordam sobre "nao-resolvida".`
+      );
+    }
+    if (
+      (/^CC BY/i.test(entrada.origem.licenca) || /USGS/i.test(entrada.origem.licenca)) &&
+      !entrada.origem.atribuicao
+    ) {
+      throw new Error(`${rotulo}: licença "${entrada.origem.licenca}" exige atribuição redigida.`);
+    }
+    conferidas.add(path.normalize(caminho));
+    totalBytes += entrada.bytes;
+  }
+  // Sentido 2: nenhum arquivo órfão na árvore.
+  const orfaosDeTextura = [];
+  const varrerTexturas = async (dir) => {
+    for (const entrada of await readdir(dir, { withFileTypes: true })) {
+      const alvo = path.join(dir, entrada.name);
+      if (entrada.isDirectory()) await varrerTexturas(alvo);
+      else if (!conferidas.has(path.normalize(alvo))) {
+        orfaosDeTextura.push(path.relative(publicDirectory, alvo));
+      }
+    }
+  };
+  await varrerTexturas(texturasRaiz);
+  if (orfaosDeTextura.length) {
+    throw new Error(
+      `Texturas órfãs (sem entrada no manifest): ${orfaosDeTextura.join(', ')} — ` +
+        'rode npm run data:texturas.'
+    );
+  }
+  const naoResolvidas = texturasDoc.entradas.filter(
+    (e) => e.proveniencia === 'nao-resolvida'
+  ).length;
+  console.log(
+    `atlas/texturas: ${texturasDoc.entradas.length} variantes conferidas ` +
+      `(sha + dimensões medidas), ${(totalBytes / 1048576).toFixed(2)} MB, ` +
+      `${naoResolvidas} com origem não resolvida.`
+  );
+}
+
 console.log(
   `Dados verificados: ${Object.keys(manifest.assets).length} ativos galácticos, ` +
     `${starMetadata.count} estrelas de catálogo (${starMetadata.named.length} nomeadas, ` +

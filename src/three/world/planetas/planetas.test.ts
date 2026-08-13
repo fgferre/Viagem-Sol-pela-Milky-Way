@@ -268,11 +268,16 @@ describe('a camada nasce com a estrutura que a D3 manda', () => {
     p.dispose();
   });
 
-  it('o material é aditivo, sem escrita E sem teste de profundidade', () => {
+  it('o material é aditivo, sem escrita e COM teste de profundidade (Onda 6)', () => {
+    // depthTest virou true na F0 da Onda 6: o motivo do false era a
+    // esfera do Sol, que não escreve depth — contra o buffer que só o
+    // grupo dos corpos resolvidos escreve, testar é o correto (ponto
+    // atrás de corpo resolvido some). depthWrite segue false: a camada
+    // só soma luz, nunca oclui ninguém.
     const p = camada();
     expect(p.material.blending).toBe(THREE.AdditiveBlending);
     expect(p.material.depthWrite).toBe(false);
-    expect(p.material.depthTest).toBe(false);
+    expect(p.material.depthTest).toBe(true);
     expect(p.material.transparent).toBe(true);
     p.dispose();
   });
@@ -995,9 +1000,11 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
     }
   });
 
-  it('a aproximação da fase e a pendência da Onda 6 estão ditas', () => {
-    expect(FONTE).toContain('aproximação declarada');
-    expect(FONTE).toContain('Onda 6');
+  it('a fase do ponto é MH18 (D10) e a cessão continua Lambert', () => {
+    expect(FONTE).toContain('fatorDeFaseMh18');
+    expect(FONTE).toContain('aFase');
+    expect(FONTE).toContain('faseDoVertice');
+    expect(FONTE).toContain('betaEfetivoAnel');
   });
 });
 
@@ -1414,5 +1421,70 @@ describe('10c. o oráculo da magnitude viva', () => {
       expect(mudou, IDS_FOTOMETRIA[i]).toBe(true);
     }
     p.dispose();
+  });
+});
+
+// ============================================================
+// 10. A CESSÃO SOB CORPO RESOLVIDO (Onda 6, F2a) — a renegociação do
+// "único alpha": o texto antigo da camada prometia que só o Sol tinha
+// alpha; o globo da F2a exige que o PONTO do corpo em quadro apague, e
+// a promessa nova (dois donos declarados, aCede binário, 1,0 exato fora
+// do corpo) entra AQUI com teste, como a emenda manda.
+// ============================================================
+describe('a cessão sob corpo resolvido (aCede, F2a)', () => {
+  it('nasce 0 em TODOS os vértices — fora do corpo resolvido nada muda', () => {
+    const p = camada();
+    const cede = p.points.geometry.getAttribute('aCede');
+    expect(cede.count).toBe(IDS_FOTOMETRIA.length);
+    for (let i = 0; i < cede.count; i++) expect(cede.getX(i)).toBe(0);
+    p.dispose();
+  });
+
+  it('o alpha do shader tem os DOIS donos: uGain do Sol e (1 − aCede)', () => {
+    // (1 − 0) = 1,0 EXATO em IEEE754: o fator novo é neutro até o gate
+    // do globo escrever — é o que sustenta as vistas profundas bit a bit
+    expect(FONTE).toContain('float alpha = mix(1.0, uGain, aEhSol) * (1.0 - aCede);');
+    expect(FONTE).toContain("attribute float aCede;");
+  });
+
+  it('escreverCessao é idempotente e só sobe upload quando MUDA', () => {
+    const p = camada();
+    const cede = p.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
+    const v0 = cede.version;
+    // reescrever o valor que já está lá (0) não sobe nada — é o que o
+    // Director faz 60×/s com o gate desarmado
+    expect(p.escreverCessao('earth', 0)).toBe(false);
+    expect(cede.version).toBe(v0);
+    // armar cede TOTALMENTE (binário nesta fase)
+    expect(p.escreverCessao('earth', 1)).toBe(true);
+    const iTerra = IDS_FOTOMETRIA.indexOf('earth');
+    expect(cede.getX(iTerra)).toBe(1);
+    expect(cede.version).toBeGreaterThan(v0);
+    // e os OUTROS vértices ficam intocados — cessão é por corpo
+    for (let i = 0; i < cede.count; i++) {
+      if (i !== iTerra) expect(cede.getX(i), IDS_FOTOMETRIA[i]).toBe(0);
+    }
+    // idempotência do 1 também
+    const v1 = cede.version;
+    expect(p.escreverCessao('earth', 1)).toBe(false);
+    expect(cede.version).toBe(v1);
+    // desarmar devolve a fotometria
+    expect(p.escreverCessao('earth', 0)).toBe(true);
+    expect(cede.getX(iTerra)).toBe(0);
+    p.dispose();
+  });
+
+  it('corpo desconhecido é recusado sem tocar o buffer', () => {
+    const p = camada();
+    const cede = p.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
+    const v0 = cede.version;
+    expect(p.escreverCessao('vulcan', 1)).toBe(false);
+    expect(cede.version).toBe(v0);
+    p.dispose();
+  });
+
+  it('a cessão mora FORA do update — método irmão, como escreverInstante', () => {
+    expect(CORPO_DO_UPDATE).not.toContain('escreverCessao');
+    expect(CORPO_DO_UPDATE).not.toContain('aCede');
   });
 });

@@ -1,0 +1,2790 @@
+{
+  "formato": "texturas-atlas-v1",
+  "geradoPor": "scripts/data/atlas/gera-manifest-texturas.mjs",
+  "entradas": [
+    {
+      "corpo": "ariel",
+      "canal": "map",
+      "arquivo": "textures/atlas/ariel/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 32768,
+      "sha256": "c1805f857397f1a13b5f3297efb48b2c01455f3f5a0c5ce2effd783239671ab2",
+      "origem": {
+        "fonte": "NASA 3D Resources — Ariel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "ariel",
+      "canal": "map",
+      "arquivo": "textures/atlas/ariel/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 23652,
+      "sha256": "45efe916af775f37a17d783e108f1105cb548eb16237ccd214e7bc313dfea629",
+      "origem": {
+        "fonte": "NASA 3D Resources — Ariel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "ariel",
+      "canal": "map",
+      "arquivo": "textures/atlas/ariel/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 254331,
+      "sha256": "fc0f8a59b5c29e44e4a3409e452f0427f5b53b8c9b41c89dc35d28babaae5cee",
+      "origem": {
+        "fonte": "NASA 3D Resources — Ariel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "ariel",
+      "canal": "map",
+      "arquivo": "textures/atlas/ariel/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 40904,
+      "sha256": "a2232b6e0d7be0c29d08f8559ffd5d80bc4df3a58e96e47fa68b33a5f06b1337",
+      "origem": {
+        "fonte": "NASA 3D Resources — Ariel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "callisto",
+      "canal": "map",
+      "arquivo": "textures/atlas/callisto/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 129811,
+      "sha256": "a22cbc7def5c580617ac8864c8253af9b871919189885d59cc903d8d719059d9",
+      "origem": {
+        "fonte": "NASA 3D Resources — Calisto",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Callisto",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "callisto",
+      "canal": "map",
+      "arquivo": "textures/atlas/callisto/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 783405,
+      "sha256": "b9f4fa5db94debabd12814853fd132db3449889646a490b6f95a897b2c47b121",
+      "origem": {
+        "fonte": "NASA 3D Resources — Calisto",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Callisto",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "callisto",
+      "canal": "map",
+      "arquivo": "textures/atlas/callisto/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 324238,
+      "sha256": "64655cbc44cab6b89fe4d26ea2fe1bb7d5336bad776734a44eac6376c65cdec6",
+      "origem": {
+        "fonte": "NASA 3D Resources — Calisto",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Callisto",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 160946,
+      "sha256": "19e3ccce84e6ba563903dc568854b769573d939549da4ef446ff69f2a3ff555c",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1127678,
+      "sha256": "ee59b2c7aa399dfdc810078c723373670133fe8505e439601dff4ce6f3cc5ad8",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 772714,
+      "sha256": "240fbbd669e4bc200ff167e2e5589dfda5210405d9ada726d9e7026eb118b103",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map.jpg",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 265536,
+      "sha256": "c1fb3c19d448c82b9cc29c769d0875250cb2731cab0bb7c8d67243cd2272570b",
+      "origem": {
+        "fonte": "NASA 3D Resources — Caronte (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map.webp",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 62204,
+      "sha256": "898bdfb666891cd6c74b604af51bdc3e2ab824ef6894a1a680edab2f1332f3f7",
+      "origem": {
+        "fonte": "NASA 3D Resources — Caronte (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 48727,
+      "sha256": "b7ccdbcc3eba7ce49829e24588718f0af949ee8134ab8a04dbf349aa72ca314e",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 31266,
+      "sha256": "b4bb8e36ec35f3e439a0c6ba7fe0619d29d2ce4d5006e29442b82a302e73995f",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 480429,
+      "sha256": "204e89cc7dc128e9fa6ae5f14cc23dc7917a4a8ccab9feff1a9544d22b354dce",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 59572,
+      "sha256": "1d3ed55088688a82821a8ef4f88bbb30fdd8bafb352ad22984c34a462ea3065c",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Deimos (textura)",
+        "url": "https://science.nasa.gov/resource/deimos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "map",
+      "arquivo": "textures/atlas/dione/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 75529,
+      "sha256": "8d9316a7dc04d7b3af5bf1b960e18c1d66441cc016089111f59fd7041ff4c6c3",
+      "origem": {
+        "fonte": "NASA 3D Resources — Dione",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "map",
+      "arquivo": "textures/atlas/dione/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 65200,
+      "sha256": "06b72a54099fdb30b24d282d5bcb5a413597db0326d98e5551b546e34af176fa",
+      "origem": {
+        "fonte": "NASA 3D Resources — Dione",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "map",
+      "arquivo": "textures/atlas/dione/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 574654,
+      "sha256": "c55d228900524557b6aff323f4b9391fc9816433e213a24ccf348c9b4291f89e",
+      "origem": {
+        "fonte": "NASA 3D Resources — Dione",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "dione",
+      "canal": "map",
+      "arquivo": "textures/atlas/dione/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 130488,
+      "sha256": "9dbd5b25ebc4a632a3ef8ba268fdd9207b69376067cfc18647c1780ce5a06576",
+      "origem": {
+        "fonte": "NASA 3D Resources — Dione",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "clouds",
+      "arquivo": "textures/atlas/earth/clouds_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 145393,
+      "sha256": "02dfb0a77e5af0e696550bf6e290007888a6f0570909cf5d1871eb035fae2111",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_clouds",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_clouds.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "clouds",
+      "arquivo": "textures/atlas/earth/clouds_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 547835,
+      "sha256": "a97d08475b772dd972f2f309ee9816456942d09e5f839f030a3485ac6e22a937",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_clouds",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_clouds.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "clouds",
+      "arquivo": "textures/atlas/earth/clouds_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2179294,
+      "sha256": "4f8426c0020550d9552f0145d319dd5b0300927e98c61fbb420dacf99b2d9f7f",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_clouds",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_clouds.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "clouds",
+      "arquivo": "textures/atlas/earth/clouds.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 11619184,
+      "sha256": "c792eca228989d36ebb45d3ea6ff1198be5e21a25d70d2fbcb2124ffd14ba7f5",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_clouds",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_clouds.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "earth",
+      "canal": "clouds",
+      "arquivo": "textures/atlas/earth/clouds.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 9046432,
+      "sha256": "4c6306a62c933cfa3a087b0ff447cf50f2f9bef654e2b785a494c0c3ed39c71a",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_clouds",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_clouds.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 98408,
+      "sha256": "f6a2ba43aaf35678b67fb375edfee24b92e51aca40e60ccc6dfadd749b1e83af",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 55200,
+      "sha256": "fa766f8db687e8a1db5294343bf04201c0ce7280188faf828b56318dba6cc381",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 313049,
+      "sha256": "8268e70c55de2f3129f41bf943bbac55f45546ba55087c686f1efe9163e59806",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 172700,
+      "sha256": "cac8082ee57efdbe3e90807cd68f738b81480d88770ed514bcd014cf44ddf9dc",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1034756,
+      "sha256": "47c5f59eafa8d44690bd6853395867f444b4c90204833e66a1e550e10ef03f6f",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 592564,
+      "sha256": "f5e7a07838cefd9bba0d5334ee55d1fab00bc870354390a80550e68cba75c5d4",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 4565076,
+      "sha256": "88ab060b6e7d241cfc590c69f528fab2b3247b738d40124cb590999a6fe44abc",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "earth",
+      "canal": "map",
+      "arquivo": "textures/atlas/earth/map.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 1961688,
+      "sha256": "1387cc197b70eb925c38f959ee97c222ba274380f26e19e3068c3805370a8b43",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_daymap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 36643,
+      "sha256": "8543553eb36e5d1d61b8388877fbd93fec3c9627b07481f2999b838ff2302aac",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 22458,
+      "sha256": "25bed7efdd8d041bad54c6ddf5e7f0b71f47c3a012e80ec9d784c87fbee0c3d3",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 147775,
+      "sha256": "1a5f7f4c5835a1ecaa28e5c7260be44e7d063261b5329d48086dbc407c074008",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 86756,
+      "sha256": "83de4d54b24494bb50db71acf234a4539db8734a0a7cc44e5eb9c01e09e9a13b",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 603286,
+      "sha256": "412dc6e23bc2daffdbd0e752829d9299cfa16f569b6565ce16450a07be48300e",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 330196,
+      "sha256": "fa4113cab6b566062e47cd8ad5617fbd93e3ac0b48c5ec517fe60b9d0e9e790e",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 3144468,
+      "sha256": "9894e83a585a22c1c425e7ca4f987a9ba625bf08ecee45d3c9dcacae3c2ad5f7",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "earth",
+      "canal": "night",
+      "arquivo": "textures/atlas/earth/night.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 1052436,
+      "sha256": "ef31e4a879670eaced222e29817bae53c9bec482cdf443cc6043f00aaedaa460",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_nightmap",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 8739,
+      "sha256": "777841a51d2fd9728bf167a9a0e0f531ee02673febf80cf3edc89fab67ad7ee8",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 2326,
+      "sha256": "f87aa7bec0282ca385ab00ed39a89089401239f4aebc657953bd43bd3f94ab64",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 48941,
+      "sha256": "e02ec9b51e61889c838af727a424516b48f83a7eec8fb10f0ee174327fa22c3d",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 16130,
+      "sha256": "5362276766465ae5c14ad3e13207343757cabe0a18c73bd0434520cd534f64a3",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 323491,
+      "sha256": "b04ce96559a704cffecaa680ab2b48e74e3a14665a65660c34b3551c4f2160d3",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 142670,
+      "sha256": "5c55d8cdf12a01ded673f9dfcb382aa763e5b63213fc37dc7acb584424b1236d",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 2565658,
+      "sha256": "5d190f29fc245814013e3e83a39f4f8d3015a23623feb3574f533cdbe665b458",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "normal",
+      "arquivo": "textures/atlas/earth/normal.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 983802,
+      "sha256": "9f288dd285730ec92f0eb010f8bc06f309fcefdf6b22f1923c61180e9eb32b02",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
+        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 56673,
+      "sha256": "7ff266cd4ae44f3acc22b8c8c3a83cdec64aac24803e4fccaf702990797e6301",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 40912,
+      "sha256": "eb26cb7c82fb21c28ded4c9ec37dff1017602420a89e87ecbfd12f4bf7acc171",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 153646,
+      "sha256": "4b87ffa3114ba3ee8e0d09e47a4920f246b585eca7691fc196cc138cc177b253",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 103186,
+      "sha256": "0434464ace816c614206a96f83691c1a2528410c91e9467432f9b76c1da18a88",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 398530,
+      "sha256": "ee0c86488cde23d4aa4655fec2deaae95abf293d123c9860b7c8a905d899ca66",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 263318,
+      "sha256": "eaffce79b82efa1e8793ab80f92e6f3397a6a5a101f05289594591633729e7f6",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 864372,
+      "sha256": "da2fba76ad92ee7540eec2ed1e53d11f0d65c92916817e4061c19c01aecab129",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "earth",
+      "canal": "roughness",
+      "arquivo": "textures/atlas/earth/roughness.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 652226,
+      "sha256": "482855386d237f1a3604f3592fe10ff9e137a6e99ac8d2fc16a7c7a501496fd3",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)",
+        "url": "https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "map",
+      "arquivo": "textures/atlas/enceladus/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 65121,
+      "sha256": "b18097750a86a5b1d8a5c729df8c5c38384a8faf73975a1cdde5aca8525ef337",
+      "origem": {
+        "fonte": "NASA 3D Resources — Encélado",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "map",
+      "arquivo": "textures/atlas/enceladus/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 55766,
+      "sha256": "83ddc7b50de949be5f788094dac0ca6e8ddb5f3a77b8c8e043372d2b1ca3df99",
+      "origem": {
+        "fonte": "NASA 3D Resources — Encélado",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "map",
+      "arquivo": "textures/atlas/enceladus/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 472211,
+      "sha256": "4e16d38b98b788468e4f005b56d04282ccfe2f086eebfb1c0e5d20d8fd65ebef",
+      "origem": {
+        "fonte": "NASA 3D Resources — Encélado",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "map",
+      "arquivo": "textures/atlas/enceladus/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 93154,
+      "sha256": "46111b839fa5b6cfec28094d6957095a319448cc04376c7dfbaee7f9b89b074b",
+      "origem": {
+        "fonte": "NASA 3D Resources — Encélado",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "europa",
+      "canal": "map",
+      "arquivo": "textures/atlas/europa/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 81668,
+      "sha256": "bcacec8302ed739b117d885793b4215f298ccc8ae5dadbb9633e3f4eeab0d1e2",
+      "origem": {
+        "fonte": "NASA 3D Resources — Europa (mapa global; mono declarado)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Europa",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "europa",
+      "canal": "map",
+      "arquivo": "textures/atlas/europa/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 72504,
+      "sha256": "a5bba5ab5f692b631a40577159bc10b4dca36b50922e32ed7915a9fd0bb617cd",
+      "origem": {
+        "fonte": "NASA 3D Resources — Europa (mapa global; mono declarado)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Europa",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "europa",
+      "canal": "map",
+      "arquivo": "textures/atlas/europa/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 610862,
+      "sha256": "50d01ca5c01352d1c507bb17fefd1c46ba11260305656250062c6cdac89c8ebf",
+      "origem": {
+        "fonte": "NASA 3D Resources — Europa (mapa global; mono declarado)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Europa",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "europa",
+      "canal": "map",
+      "arquivo": "textures/atlas/europa/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 154892,
+      "sha256": "5654042e7a5b00e5895b64739fcb452b828a825ec3ea85bcb6635122730231f9",
+      "origem": {
+        "fonte": "NASA 3D Resources — Europa (mapa global; mono declarado)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Europa",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "ganymede",
+      "canal": "map",
+      "arquivo": "textures/atlas/ganymede/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 112275,
+      "sha256": "13752725444aa18fcda78531d06307503e4ea08dbcb9c80fcf4f2d29e802c9b7",
+      "origem": {
+        "fonte": "NASA 3D Resources — Ganimedes",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Ganymede",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "ganymede",
+      "canal": "map",
+      "arquivo": "textures/atlas/ganymede/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 710923,
+      "sha256": "1aa9d5a6f20e72230c13ce3d78592fc056e22f1e1ee39ea7acfa7e08d09fe173",
+      "origem": {
+        "fonte": "NASA 3D Resources — Ganimedes",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Ganymede",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "ganymede",
+      "canal": "map",
+      "arquivo": "textures/atlas/ganymede/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 250546,
+      "sha256": "99692afce22bd7ddc14414c4c9c8c445e21bb4be496a600b79d845c187fc4b73",
+      "origem": {
+        "fonte": "NASA 3D Resources — Ganimedes",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Ganymede",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "hygiea",
+      "canal": "map",
+      "arquivo": "textures/atlas/hygiea/map.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 62879,
+      "sha256": "71f60a61d9eb84b90da340a32f6f6432bf82201d31f06eb8714254abbde9bf47",
+      "origem": {
+        "fonte": "ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Textura: ESO / VLT / Vernazza et al. — CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "hygiea",
+      "canal": "map",
+      "arquivo": "textures/atlas/hygiea/map.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 19328,
+      "sha256": "2c801488f5b8c19ba3cd6477de66768709112449ca7459340674b7e9bcabe51e",
+      "origem": {
+        "fonte": "ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Textura: ESO / VLT / Vernazza et al. — CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "map",
+      "arquivo": "textures/atlas/iapetus/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 45615,
+      "sha256": "bfe50b9c1ac114c0bf4cbe0ed01b8ff49bfb77365aa6d11764a520c5a91eb1ad",
+      "origem": {
+        "fonte": "NASA 3D Resources — Jápeto",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "map",
+      "arquivo": "textures/atlas/iapetus/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 30772,
+      "sha256": "a7e87764cefb8fbddc501a7b4ed615cc6c0e7fc990506392c1856efd1fd3ab00",
+      "origem": {
+        "fonte": "NASA 3D Resources — Jápeto",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "map",
+      "arquivo": "textures/atlas/iapetus/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 384551,
+      "sha256": "9acb66830defdeffcf7938976c737d772600d9bc808e8cf45829690e8d1c7405",
+      "origem": {
+        "fonte": "NASA 3D Resources — Jápeto",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "map",
+      "arquivo": "textures/atlas/iapetus/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 47828,
+      "sha256": "24add648eeafcd0723cebc105ccd7fb994c0296c6f683533390cc5af029e9c3d",
+      "origem": {
+        "fonte": "NASA 3D Resources — Jápeto",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "io",
+      "canal": "map",
+      "arquivo": "textures/atlas/io/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 123071,
+      "sha256": "2d67e2098cb867c590338fc946a9ebed96724912cb272568c6eb5d6a138f1b4d",
+      "origem": {
+        "fonte": "NASA 3D Resources — Io (B)",
+        "url": "https://science.nasa.gov/3d-resources/jupiter-io-b/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "io",
+      "canal": "map",
+      "arquivo": "textures/atlas/io/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 68740,
+      "sha256": "edacb7b4c66684db4fe135ae6af20ee577854332544ab98273b589e0176e5c67",
+      "origem": {
+        "fonte": "NASA 3D Resources — Io (B)",
+        "url": "https://science.nasa.gov/3d-resources/jupiter-io-b/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "io",
+      "canal": "map",
+      "arquivo": "textures/atlas/io/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 648170,
+      "sha256": "79239daa0ac6438d02a7b536f3eb8d044098b8cf33c8f2f91dbab4f5f054bfa7",
+      "origem": {
+        "fonte": "NASA 3D Resources — Io (B)",
+        "url": "https://science.nasa.gov/3d-resources/jupiter-io-b/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "io",
+      "canal": "map",
+      "arquivo": "textures/atlas/io/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 115860,
+      "sha256": "c15ba0a7c68436943e8817968f6212a8b1b0efc78f737ef0508b9afa2197ece6",
+      "origem": {
+        "fonte": "NASA 3D Resources — Io (B)",
+        "url": "https://science.nasa.gov/3d-resources/jupiter-io-b/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "jupiter",
+      "canal": "map",
+      "arquivo": "textures/atlas/jupiter/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 101900,
+      "sha256": "d9247618ff839929b54cd67b25e29e7f0bf533b45824c470cdbf607d8484b163",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_jupiter",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "jupiter",
+      "canal": "map",
+      "arquivo": "textures/atlas/jupiter/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 56986,
+      "sha256": "6318435afba8a258725f31caf840ef7d090b628c98d7e95165ef8a37f1f597e6",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_jupiter",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "jupiter",
+      "canal": "map",
+      "arquivo": "textures/atlas/jupiter/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 324235,
+      "sha256": "e37a73a05d0fbe48160aa4de789e6541f81a1525bb0d9ecafdffaa91f00af4e6",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_jupiter",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "jupiter",
+      "canal": "map",
+      "arquivo": "textures/atlas/jupiter/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 174494,
+      "sha256": "939af981afb14109eca214e97574f72e4a369970c1a03676971e21b5a3ee33e8",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_jupiter",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "jupiter",
+      "canal": "map",
+      "arquivo": "textures/atlas/jupiter/map.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 3080980,
+      "sha256": "0bd844bf20822c4e3e80882b077859833c0dac44c7e4e1e0cd63d1b1b6d43085",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_jupiter",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "jupiter",
+      "canal": "map",
+      "arquivo": "textures/atlas/jupiter/map.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 504558,
+      "sha256": "4d154f37d642f9b0142e50fd787b476374e548ceecf6039f03ea83389e452806",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_jupiter",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 147864,
+      "sha256": "d48e2c7fad19dbf9700665127eea4ae30259f32d66570d6b8e1610cfed40c8b2",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 79112,
+      "sha256": "a5c0a7cb6cc6cbc0e9e6d2eaf62d29610dd4b7e1967ea6d052658f31117741be",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 508448,
+      "sha256": "de417e87b062fa9de07c663293cb0bc6f45919eee0e72bc92e08b6305b26772f",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 287490,
+      "sha256": "04952ed071f068a9081ae45001fb0536f9f3e854e6713e58c16e26ccd743b28c",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1774945,
+      "sha256": "4ef7535e7c5343ceb57a71123bb27e7d0e3999b9ee56af73136feb82e8a3b7e6",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 969102,
+      "sha256": "4e57417cff4022f3db17ede566c0da98db6da43957954d879872da51ab72f973",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 8396951,
+      "sha256": "4cc52149924abc6ae507d63032f994e1d42a55cb82c09e002d1a567ff66c23ee",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "mars",
+      "canal": "map",
+      "arquivo": "textures/atlas/mars/map.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 4211278,
+      "sha256": "29e24158c737b0d9dc503c400c0d6bbbfdca7abbb66a57cab6eb8632fdf4740b",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mars",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 108748,
+      "sha256": "37d310211c01d429179428e981f0deb30d7702cc99b690700c2aa6716528dabe",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 453175,
+      "sha256": "f18f6ff589dada68919e8b86e4e3c7109856f435ffe35bf3be8524b7f08defd0",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 447974,
+      "sha256": "dc84d2bb1eec59a115e70fd37c31eddc966bbe1c8b4726cf6a4313c8f348ab46",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2039872,
+      "sha256": "d076fa6174bdf1e7c9e7d57a4988d14295ac5430a6f14006d0edecbc42fe1365",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 15035740,
+      "sha256": "5c8bd885ae3571c6ba2cd34b3446b9c6d767e314bf0ee8c1d5c147cadd388fc3",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "map",
+      "arquivo": "textures/atlas/mercury/map.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 12648642,
+      "sha256": "ec436e54539a08fb71ad2becc91e153f3eb1d45cb232ad92973875f87d5b47c0",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_mercury",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "map",
+      "arquivo": "textures/atlas/mimas/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 69317,
+      "sha256": "09a27832543fdec101144371956ac4355a9dbebc63af59a9bfdd4b079be212c2",
+      "origem": {
+        "fonte": "NASA 3D Resources — Mimas",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "map",
+      "arquivo": "textures/atlas/mimas/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 58342,
+      "sha256": "8793c6d20d0a2885ee27da882a28f1c1d2ced1a6e969cc9a5134a6de191b0b6f",
+      "origem": {
+        "fonte": "NASA 3D Resources — Mimas",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "map",
+      "arquivo": "textures/atlas/mimas/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 513028,
+      "sha256": "0836f8f98719dc1cb1ccc58b23d5f3e50cc3ba01d1a7f0535b4f7d11695a378b",
+      "origem": {
+        "fonte": "NASA 3D Resources — Mimas",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "map",
+      "arquivo": "textures/atlas/mimas/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 109864,
+      "sha256": "062cbe1e093ceb1da89510a927d93ae0f021ecf3a399ebe85c0c64a20197e4ee",
+      "origem": {
+        "fonte": "NASA 3D Resources — Mimas",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "miranda",
+      "canal": "map",
+      "arquivo": "textures/atlas/miranda/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 46692,
+      "sha256": "b6b5c7372f8b9b34fb1b018f0832b662c9562ce9c23e0bf389ee5bd2f7be7ae7",
+      "origem": {
+        "fonte": "NASA 3D Resources — Miranda",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "miranda",
+      "canal": "map",
+      "arquivo": "textures/atlas/miranda/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 38658,
+      "sha256": "a84c3c63308b67ea6c132e22e487123dc3760d569f50b006a3ca3e3f54444746",
+      "origem": {
+        "fonte": "NASA 3D Resources — Miranda",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "miranda",
+      "canal": "map",
+      "arquivo": "textures/atlas/miranda/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 321268,
+      "sha256": "844b2deb88b8dbc93142bf5b85036ce7dd45db131e6251b4e6a95e179ae44c81",
+      "origem": {
+        "fonte": "NASA 3D Resources — Miranda",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "miranda",
+      "canal": "map",
+      "arquivo": "textures/atlas/miranda/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 72500,
+      "sha256": "f0d016463ef2d47f4d42d6d40a0048816785541b05f8d471bce94c776be8317b",
+      "origem": {
+        "fonte": "NASA 3D Resources — Miranda",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "moon",
+      "canal": "map",
+      "arquivo": "textures/atlas/moon/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 144500,
+      "sha256": "37a1f3e122fc7ac1369d2d9c9d87e8fdc7ee69e4029cfd41543fa38d961b2b9e",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_moon",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_moon.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "moon",
+      "canal": "map",
+      "arquivo": "textures/atlas/moon/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 608123,
+      "sha256": "2e9946e5e17c56331e3a419ec7e28f10b7ad345a8603b760bc6ee9c816378fde",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_moon",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_moon.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "moon",
+      "canal": "map",
+      "arquivo": "textures/atlas/moon/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2585000,
+      "sha256": "1ce657cc235c303a87571307373a3ff3ff2af92b1d8ba8232db90b7084f13761",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_moon",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_moon.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "moon",
+      "canal": "map",
+      "arquivo": "textures/atlas/moon/map.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 15030356,
+      "sha256": "d1875bcec83588ca25e4802e576f6bb9f88b39e1e403cb41ff55867419c54796",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_moon",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_moon.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "moon",
+      "canal": "map",
+      "arquivo": "textures/atlas/moon/map.webp",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 12142920,
+      "sha256": "8272d723c8f330cd91c6863ae99f69a17a6f35b0398336c4d474529de9ac3e67",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_moon",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_moon.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "neptune",
+      "canal": "map",
+      "arquivo": "textures/atlas/neptune/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 15921,
+      "sha256": "d41429be836aa3a4684c23d9d1416d2216eed4108afd6dc0e82cd05e5837cf68",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_neptune (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_neptune.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "neptune",
+      "canal": "map",
+      "arquivo": "textures/atlas/neptune/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 8320,
+      "sha256": "55fa08b973714b13efeb5ab1c04772693e8dfe46fc525ebf1ff5f5ac1affb6da",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_neptune (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_neptune.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "neptune",
+      "canal": "map",
+      "arquivo": "textures/atlas/neptune/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 241580,
+      "sha256": "cb42ea82709741d28b0af44d8b283cbc6dbd0c521a7f0e1e1e010ade00977df6",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_neptune (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_neptune.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "neptune",
+      "canal": "map",
+      "arquivo": "textures/atlas/neptune/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 21678,
+      "sha256": "e8fb32eb7dc5bb691e04faab2492bdb228ba7cea9ebfdf1522cae5e0d82feb41",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_neptune (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_neptune.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "oberon",
+      "canal": "map",
+      "arquivo": "textures/atlas/oberon/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 32966,
+      "sha256": "dba2d38892fba6748584351118dd5e13209b81158b113c7adee579b350f67167",
+      "origem": {
+        "fonte": "NASA 3D Resources — Oberon",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "oberon",
+      "canal": "map",
+      "arquivo": "textures/atlas/oberon/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 22002,
+      "sha256": "900f679909f9ee669e29dd0c2e9d40d39f9e7af12738fca44e25a58ea672fdae",
+      "origem": {
+        "fonte": "NASA 3D Resources — Oberon",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "oberon",
+      "canal": "map",
+      "arquivo": "textures/atlas/oberon/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 51214,
+      "sha256": "ed29842e1b1fb96ee9626a62d4ee7bbf53756997ef33b1edda2dbead43383460",
+      "origem": {
+        "fonte": "NASA 3D Resources — Oberon",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "oberon",
+      "canal": "map",
+      "arquivo": "textures/atlas/oberon/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 36504,
+      "sha256": "c4b15b1e6bbf2bd4ed191ee9347ca336f34fbf223a0fea34bc8894cc26086ad9",
+      "origem": {
+        "fonte": "NASA 3D Resources — Oberon",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 97372,
+      "sha256": "d06de4aa1fbd9a5bd0a9d5a3a3bc12effda244ea30573618c1a3ed809045944e",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 88498,
+      "sha256": "54489ec0f4e11abb1c24bf3979728c0663ddf17b5c2540b50fbd41c32be02e77",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 601584,
+      "sha256": "8ec807b353eb28f44b5aa24b8a887935ee5563f5b63bde2430a9988220f71463",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "map",
+      "arquivo": "textures/atlas/phobos/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 157246,
+      "sha256": "0fae14a30001853b5f8f73408d26d6dbf126ac53d420b9aef5d99857822bcb73",
+      "origem": {
+        "fonte": "NASA 3D Resources — modelo 3D de Fobos (textura)",
+        "url": "https://science.nasa.gov/resource/phobos-mars-moon-3d-model/",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map.jpg",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 351885,
+      "sha256": "a921387426a506b6f6ae8fd24872eeab59b81f963cd9c010b59d825059b29c64",
+      "origem": {
+        "fonte": "NASA 3D Resources — Plutão (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map.webp",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 70652,
+      "sha256": "3b7cd87e52f5b1899378ae412279a7633e361a161d69e4fa94ac45841d9a10f2",
+      "origem": {
+        "fonte": "NASA 3D Resources — Plutão (720×360)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "map",
+      "arquivo": "textures/atlas/rhea/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 59535,
+      "sha256": "f7558d10201f7293de7a529f154bb5fbe277c447f9311e30c87858b6fac5c561",
+      "origem": {
+        "fonte": "NASA 3D Resources — Reia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "map",
+      "arquivo": "textures/atlas/rhea/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 49164,
+      "sha256": "d483c3b697826a4c58425120ef8f88c65ea7c9c1a36a67c6947a31424a1009b8",
+      "origem": {
+        "fonte": "NASA 3D Resources — Reia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "map",
+      "arquivo": "textures/atlas/rhea/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 458149,
+      "sha256": "487f642639a3a4b2e8e21c2aaf9dc5cd010e5e4a91d2e6b6ff61aff97bc157ac",
+      "origem": {
+        "fonte": "NASA 3D Resources — Reia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "map",
+      "arquivo": "textures/atlas/rhea/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 102998,
+      "sha256": "ec0bd07f11721ceda4ba4e91dbc003431053c6d1984b8b990c2840440edcaab9",
+      "origem": {
+        "fonte": "NASA 3D Resources — Reia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "map",
+      "arquivo": "textures/atlas/saturn/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 33068,
+      "sha256": "7f14e8cd2d6a5aabaf09d537a6167cb991aa786c3cab70aa4268d3d0c727eff8",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "map",
+      "arquivo": "textures/atlas/saturn/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 14564,
+      "sha256": "f56482edbf6ec743e23ec338fedcae1b49bf846735a9e972bda570fb822d298d",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "map",
+      "arquivo": "textures/atlas/saturn/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 98119,
+      "sha256": "95568e49f05b16b2de1a064f06e59eadbd93431fb745517a1fd23795bee6597b",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "map",
+      "arquivo": "textures/atlas/saturn/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 47178,
+      "sha256": "f84fb6a7e7393c4145efe9b0f1d684f4b44a3c3756bad5ddd939ae83e39cdd19",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "map",
+      "arquivo": "textures/atlas/saturn/map.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1098204,
+      "sha256": "0d39a4a490c87c3edabe00a3881a29bb3418364178c79c534fe0986e97e09853",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "map",
+      "arquivo": "textures/atlas/saturn/map.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 137808,
+      "sha256": "46cb8ce7f825e703fb6a4b03a11fc1d427c7ab466fc6d3a6d0574858e65a73fc",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 63,
+      "bytes": 9189,
+      "sha256": "f9569a9ebb2bd89c52ca77668e998802464e8f8187a0b28fccbb0857f6b18e57",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 63,
+      "bytes": 2988,
+      "sha256": "cc5298308b467f60ed0915a522890e558fa6b667f51c57e9a39a5d65e38eb1e4",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 125,
+      "bytes": 20776,
+      "sha256": "1430e0d2b51ab108b80da1b8456a2be767e967e0e14ee89630c6f2120462b57d",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 125,
+      "bytes": 6146,
+      "sha256": "e2fd1a7886344b9c21d49fd7f80c2b22e0924c1a064fcbacb3abbb6d7e29cb6b",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring_4096.png",
+      "larguraPx": 4096,
+      "alturaPx": 250,
+      "bytes": 52836,
+      "sha256": "a6fb2a0112ca394d43f78608ffb8198e04d0cb2ad2bb8b176f9f508f9b813918",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 250,
+      "bytes": 14510,
+      "sha256": "8384d14e5d45f01614bd7bf4440dddc4aab418661d56e70d1eab5ddde2ed9bb7",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring.png",
+      "larguraPx": 8192,
+      "alturaPx": 500,
+      "bytes": 64790,
+      "sha256": "f1f826933c9ff87d64ecf0518d6256b8ed990b003722794f67e96e3d2b876ae4",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "saturn",
+      "canal": "ring",
+      "arquivo": "textures/atlas/saturn/ring.webp",
+      "larguraPx": 8192,
+      "alturaPx": 500,
+      "bytes": 35886,
+      "sha256": "ac30e5f3ce96423a99574842d0340bcbfd52c4924a2c74e5c8c9c1d8fe258a62",
+      "origem": {
+        "fonte": "Solar System Scope — 8k_saturn_ring_alpha (placa alpha)",
+        "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "map",
+      "arquivo": "textures/atlas/tethys/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 97743,
+      "sha256": "64594579dcc1f0ecfa03a2f3893b2fcec17f63b2ee681d2cbf0668580543e6b6",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tétis",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "map",
+      "arquivo": "textures/atlas/tethys/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 92746,
+      "sha256": "1369524bd9a97a73f0a7ff5814552a9b4c7e8eed7df48f73c47013b18d98fe3c",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tétis",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "map",
+      "arquivo": "textures/atlas/tethys/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 597139,
+      "sha256": "84f70e3fe6fa48661df4d973f78a540771e629ebbc68e032539d2e28e1d8eea1",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tétis",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "map",
+      "arquivo": "textures/atlas/tethys/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 155058,
+      "sha256": "faee5d66d7589d63ba2f26826e84ca3b0e703d50f79a9c2e4a61d2b1ba9e1cb4",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tétis",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "titan",
+      "canal": "map",
+      "arquivo": "textures/atlas/titan/map.jpg",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 49233,
+      "sha256": "a213516e3ccbe46bfbdb576963859c82c75799612ccab775ec3cf24b451feca0",
+      "origem": {
+        "fonte": "NASA 3D Resources — Titã (720×360, névoa; mosaico Cassini fica pendente da bancada)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Titan",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "titan",
+      "canal": "map",
+      "arquivo": "textures/atlas/titan/map.webp",
+      "larguraPx": 720,
+      "alturaPx": 360,
+      "bytes": 1876,
+      "sha256": "a0d7a1f16cdaf5e918241ecf3660c4157a86a647c57cf57d7d4008ff60236b11",
+      "origem": {
+        "fonte": "NASA 3D Resources — Titã (720×360, névoa; mosaico Cassini fica pendente da bancada)",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Titan",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "titania",
+      "canal": "map",
+      "arquivo": "textures/atlas/titania/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 38590,
+      "sha256": "c737e6fa36b0efa4c4a2fadf88723cb71b8c02f6676c755306a7be571a21f9dd",
+      "origem": {
+        "fonte": "NASA 3D Resources — Titânia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "titania",
+      "canal": "map",
+      "arquivo": "textures/atlas/titania/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 29848,
+      "sha256": "3378f489e68f47c33a44b6e0396eab60a609503037f87a18a32324348cd14ebe",
+      "origem": {
+        "fonte": "NASA 3D Resources — Titânia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "titania",
+      "canal": "map",
+      "arquivo": "textures/atlas/titania/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 284122,
+      "sha256": "087425752c8f5090965f5a4fac7d50a4c450563edd50b807bbc1d45ebeedd312",
+      "origem": {
+        "fonte": "NASA 3D Resources — Titânia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "titania",
+      "canal": "map",
+      "arquivo": "textures/atlas/titania/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 56978,
+      "sha256": "40825d3d25454b92d2aaf152b150d4ad78ef0eef3ffc72958e6fcbfd8b0b7dcd",
+      "origem": {
+        "fonte": "NASA 3D Resources — Titânia",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "triton",
+      "canal": "map",
+      "arquivo": "textures/atlas/triton/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 29818,
+      "sha256": "82340484e1f93481323dfb706a8348c289b3fdd731855ffe91f81ddaf45d2c4e",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tritão",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "triton",
+      "canal": "map",
+      "arquivo": "textures/atlas/triton/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 20578,
+      "sha256": "ed0a5a6e79a603d645ebeed1b1d064f9bfae67f318fce693ec715c5a803c1098",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tritão",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "triton",
+      "canal": "map",
+      "arquivo": "textures/atlas/triton/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 242012,
+      "sha256": "6a5015beaf860426d9505f054565c9ad28ba3822054d5b750c74b4d8e61eb4f3",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tritão",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "triton",
+      "canal": "map",
+      "arquivo": "textures/atlas/triton/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 49542,
+      "sha256": "8a938e64d6e6ba3edef6f3ee195a8a4365f1d2d1d8e6fbb8e3245dfdb74faf46",
+      "origem": {
+        "fonte": "NASA 3D Resources — Tritão",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "umbriel",
+      "canal": "map",
+      "arquivo": "textures/atlas/umbriel/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 23993,
+      "sha256": "a9a3bb5717876b15a326b9db857286707d46c474e129a2e3f30822e051f6dbc3",
+      "origem": {
+        "fonte": "NASA 3D Resources — Umbriel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "umbriel",
+      "canal": "map",
+      "arquivo": "textures/atlas/umbriel/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 15412,
+      "sha256": "fc077910f2dffd89d9d33ba4d6690b529faa401f1aac55023701c722837cdd4d",
+      "origem": {
+        "fonte": "NASA 3D Resources — Umbriel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "umbriel",
+      "canal": "map",
+      "arquivo": "textures/atlas/umbriel/map.jpg",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 216661,
+      "sha256": "f1378bc2880bb0d4ddad50815083987aab38c9aae630cbd65465c6773495e511",
+      "origem": {
+        "fonte": "NASA 3D Resources — Umbriel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "umbriel",
+      "canal": "map",
+      "arquivo": "textures/atlas/umbriel/map.webp",
+      "larguraPx": 1440,
+      "alturaPx": 720,
+      "bytes": 24032,
+      "sha256": "ab56f66247e6d0475805b0e88b5cfd75894e56d10aa54dc5cb76d3ad76162d1a",
+      "origem": {
+        "fonte": "NASA 3D Resources — Umbriel",
+        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
+        "licenca": "NASA 3D Resources (uso livre)",
+        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "uranus",
+      "canal": "map",
+      "arquivo": "textures/atlas/uranus/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 8011,
+      "sha256": "d46de98ad357883a50b7500acc9b8fe2aeb0811cefd4531355819fd4e100d777",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_uranus (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "uranus",
+      "canal": "map",
+      "arquivo": "textures/atlas/uranus/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 3112,
+      "sha256": "a26e32fb5f20ab4385d9b8aeff0913a5d92cf236f7b8e38c60c2af442c32933d",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_uranus (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "uranus",
+      "canal": "map",
+      "arquivo": "textures/atlas/uranus/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 77751,
+      "sha256": "d15239d46f82d3ea13d2b260b5b29b2a382f42f2916dae0694d0387b1204a09d",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_uranus (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "uranus",
+      "canal": "map",
+      "arquivo": "textures/atlas/uranus/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 9542,
+      "sha256": "d7db7b5009e15b5c6a9ce4d87ece7adca526fe8ef431fb0c4476958ba9ce59f7",
+      "origem": {
+        "fonte": "Solar System Scope — 2k_uranus (incumbente; sem 8k SSS)",
+        "url": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 33195,
+      "sha256": "7636008c6f8691912dfaacab63ba6f884788ff2bda089cba5f3ec7004e0164d8",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 17820,
+      "sha256": "7579c92ed4e4dd3567140d208b5d4e645d2bfb3e4dc24c9d93b8c1d8459789f5",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 100550,
+      "sha256": "cd572886cae180980fdc866e57d3eaa0834e870b81486b26a6d110261ccdc6a1",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 50910,
+      "sha256": "91749193b2cab45c32e536ea76707e427adb7ef2064aea3273337f1e8f6be2fb",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1546146,
+      "sha256": "a14aeba3c6ad7a56f989bb32008dec548077aeded420495b34df98f2dc14ba91",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "venus",
+      "canal": "map",
+      "arquivo": "textures/atlas/venus/map.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 199230,
+      "sha256": "22c1430d7c44478345885417ebe1e548a06dfff705ae0885983362673bd8ff49",
+      "origem": {
+        "fonte": "Solar System Scope — 4k_venus_atmosphere (topo de nuvens)",
+        "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 139295,
+      "sha256": "6d30fd92cacd45d56aca2913c8e2133a12e48fbe328bcaa462e0faff64dc015b",
+      "origem": {
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "licenca": "NASA images and media usage guidelines",
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 736920,
+      "sha256": "454d0d2542116cb7d5257e70f303cdc7f548c64fb47cbc0af310cfce0cf1503f",
+      "origem": {
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "licenca": "NASA images and media usage guidelines",
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 578212,
+      "sha256": "dc2cc035d6cffd751e33b5cc447f08e95d2b7689cd6d0f1a96cb8efc5a768378",
+      "origem": {
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "licenca": "NASA images and media usage guidelines",
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+      },
+      "proveniencia": "derivado"
+    }
+  ]
+}

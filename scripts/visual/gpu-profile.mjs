@@ -61,11 +61,21 @@ const INSTRUMENT = `(() => {
     ['uCell', 'cena:wrappedStars'],
     ['uMarchB', 'cena:buracoNegro'],
     ['uZoom', 'cena:heroStars'],
+    // a Terra resolvida (Onda 6, F2a): os três programas do stack novo,
+    // batizados pelos uniformes/funções que só eles têm
+    ['uMapaRugosidade', 'cena:terra(superficie)'],
+    ['uMapaNuvens', 'cena:terra(nuvens)'],
+    ['escalaOtica', 'cena:terra(atmosfera)'],
   ];
   const origGet = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, attrs) {
     const gl = origGet.call(this, type, attrs);
-    if (gl && !G.ready && (type === 'webgl2' || type === 'webgl')) {
+    // isConnected: a sonda de GL da Onda 1e (sondarGl, App.tsx:83)
+    // cria um contexto webgl2 num canvas SOLTO antes de o renderer
+    // nascer — sem o filtro, o instrumento travava nele (G.ready) e
+    // media zero draws do app ('app parou de desenhar'). O canvas do
+    // renderer é o único no DOM. (Sem crases: isto vive num template.)
+    if (gl && !G.ready && this.isConnected && (type === 'webgl2' || type === 'webgl')) {
       try { instrument(gl, type === 'webgl2'); } catch (e) { G.err = String((e && e.stack) || e); }
     }
     return gl;

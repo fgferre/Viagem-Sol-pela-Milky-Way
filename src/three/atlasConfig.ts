@@ -48,12 +48,12 @@ export interface Camada {
 
 /**
  * As camadas da casa, na ordem em que o painel do filme sempre as
- * mostrou. AS DOZE TROCAM AO VIVO desde 2026-08-12: as três da galáxia
+ * mostrou. TODAS TROCAM AO VIVO desde 2026-08-12: as três da galáxia
  * (lâminas, extinção por partícula, bojo) eram `viva: false` por um
  * comentário podre — `bakeDiscLayers` roda inteiro de qualquer jeito, o
  * τRT inclusive, e elas só governam `mesh.visible` e o bind de
  * `uTauMap`, que a `Galaxy` reescreve por quadro. Nenhuma opção do
- * painel recarrega a página.
+ * painel recarrega a página. A 13ª (`nocorpos`) é da Onda 6.
  */
 export const CAMADAS: readonly Camada[] = [
   { flag: 'nogal', nome: 'Galáxia (tudo)', viva: true },
@@ -67,14 +67,19 @@ export const CAMADAS: readonly Camada[] = [
   { flag: 'nohero', nome: 'Estrelas nomeadas', viva: true, icone: '✦' },
   { flag: 'nomarker', nome: 'Marcador do Sol', viva: true, icone: '⌖' },
   { flag: 'noplan', nome: 'Planetas', viva: true, icone: '◉' },
+  // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de
+  // perto, distintos dos PONTOS fotométricos de `noplan`. Entra vazio
+  // nesta fase (nenhum mesh ainda; o toggle não muda pixel até F2),
+  // mas nasce DECLARADO aqui e no selo, como a lei das portas manda.
+  { flag: 'nocorpos', nome: 'Corpos de perto', viva: true, icone: '◐' },
   { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', viva: true, icone: '✱' },
 ];
 
 /**
- * O que a gaveta do Atlas oferece: as cinco de D6, derivadas da tabela
- * acima — nunca redigitadas. Todas são `viva: true` por construção (uma
- * gaveta que recarrega a página tiraria o visitante do modo), e o teste
- * cobra isso.
+ * O que a gaveta do Atlas oferece: as cinco de D6 (Onda 5) mais a do
+ * palco local (Onda 6), derivadas da tabela acima — nunca redigitadas.
+ * Todas são `viva: true` por construção (uma gaveta que recarrega a
+ * página tiraria o visitante do modo), e o teste cobra isso.
  */
 export const CAMADAS_DO_ATLAS = CAMADAS.filter((c) => c.icone !== undefined);
 
@@ -118,7 +123,29 @@ export interface CorpoDoSistema {
   chave: string;
 }
 
-const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
+/**
+ * O TÍTULO-CASO da casa: 'LUA' → 'Lua', 'TITÃ' → 'Titã' (o Unicode do
+ * pt-BR entra de graça — `toLowerCase`/`toUpperCase` do JS tratam
+ * acento). Exportado porque é a LEI de conversão entre o `i18n.pt` de
+ * `corpos.json` (que grita em caixa alta) e o nome que o visitante lê.
+ */
+export function tituloDeCorpo(nomePt: string): string {
+  return nomePt
+    .toLowerCase()
+    .replace(/(^|[\s-])(\p{L})/gu, (_, sep: string, letra: string) => sep + letra.toUpperCase());
+}
+
+/**
+ * UMA FONTE DE NOME pt-BR (emenda P-E10b): esta tabela é ESPELHO
+ * declarado do `i18n.pt` de `public/data/atlas/corpos.json`, com o case
+ * tratado por `tituloDeCorpo` — e o teste de completude em
+ * `atlasConfig.test.ts` cobra a igualdade entrada a entrada contra o
+ * JSON real (uma divergência de grafia quebra o teste, não a tela).
+ * Espelho e não fetch porque este módulo é síncrono e puro (é lido pelo
+ * HUD e pelo Director antes de qualquer rede); a CLASSE é vocabulário
+ * da legenda da casa, que o JSON não carrega.
+ */
+export const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
   sun: { nome: 'Sol', classe: 'estrela' },
   mercury: { nome: 'Mercúrio', classe: 'planeta' },
   venus: { nome: 'Vênus', classe: 'planeta' },
@@ -129,6 +156,35 @@ const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
   uranus: { nome: 'Urano', classe: 'planeta' },
   neptune: { nome: 'Netuno', classe: 'planeta' },
   pluto: { nome: 'Plutão', classe: 'planeta anão' },
+  moon: { nome: 'Lua', classe: 'lua' },
+  phobos: { nome: 'Fobos', classe: 'lua' },
+  deimos: { nome: 'Deimos', classe: 'lua' },
+  io: { nome: 'Io', classe: 'lua' },
+  europa: { nome: 'Europa', classe: 'lua' },
+  ganymede: { nome: 'Ganimedes', classe: 'lua' },
+  callisto: { nome: 'Calisto', classe: 'lua' },
+  mimas: { nome: 'Mimas', classe: 'lua' },
+  enceladus: { nome: 'Encélado', classe: 'lua' },
+  tethys: { nome: 'Tétis', classe: 'lua' },
+  dione: { nome: 'Dione', classe: 'lua' },
+  rhea: { nome: 'Reia', classe: 'lua' },
+  titan: { nome: 'Titã', classe: 'lua' },
+  iapetus: { nome: 'Jápeto', classe: 'lua' },
+  miranda: { nome: 'Miranda', classe: 'lua' },
+  ariel: { nome: 'Ariel', classe: 'lua' },
+  umbriel: { nome: 'Umbriel', classe: 'lua' },
+  titania: { nome: 'Titânia', classe: 'lua' },
+  oberon: { nome: 'Oberon', classe: 'lua' },
+  triton: { nome: 'Tritão', classe: 'lua' },
+  charon: { nome: 'Caronte', classe: 'lua' },
+  ceres: { nome: 'Ceres', classe: 'planeta anão' },
+  haumea: { nome: 'Haumea', classe: 'planeta anão' },
+  makemake: { nome: 'Makemake', classe: 'planeta anão' },
+  eris: { nome: 'Éris', classe: 'planeta anão' },
+  quaoar: { nome: 'Quaoar', classe: 'planeta anão' },
+  vesta: { nome: 'Vesta', classe: 'asteroide' },
+  pallas: { nome: 'Palas', classe: 'asteroide' },
+  hygiea: { nome: 'Hígia', classe: 'asteroide' },
 };
 
 /** O prefixo que separa a chave de um corpo da de uma estrela. */
@@ -137,6 +193,67 @@ export const CHAVE_DE_CORPO = 'corpo:';
 export const CORPOS_DO_SISTEMA: readonly CorpoDoSistema[] = IDS_FOTOMETRIA.map(
   (id) => ({ id, ...NOMES_DOS_CORPOS[id], chave: `${CHAVE_DE_CORPO}${id}` })
 );
+
+/**
+ * AS LUAS DO ATLAS (F2b; +Fobos/Deimos na F3; +17 na F5) — fora de
+ * `CORPOS_DO_SISTEMA` de propósito: aquela lista é indexada ao VÉRTICE
+ * da camada de pontos (`IDS_FOTOMETRIA`), e lua não tem ponto
+ * fotométrico (dito em `lua.ts`). O `pai` é o corpo cuja efeméride
+ * centra a dela — é dele que a busca mede a distância da nota ("Lua ·
+ * 384 mil km"; "Titã · 1 222 mil km") e é ele que o enquadramento do
+ * degrau "lua" mantém em quadro (`PARENT_FRAMING_BIAS`).
+ * Vanth/Weywot ficam de fora: sem textura não há mesh, e sem BODY_AXES
+ * o degrau não tem raio — o badge de validade já mora em notaDeValidade.
+ */
+export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
+  { id: 'moon', ...NOMES_DOS_CORPOS.moon, chave: `${CHAVE_DE_CORPO}moon`, pai: 'earth' },
+  { id: 'phobos', ...NOMES_DOS_CORPOS.phobos, chave: `${CHAVE_DE_CORPO}phobos`, pai: 'mars' },
+  { id: 'deimos', ...NOMES_DOS_CORPOS.deimos, chave: `${CHAVE_DE_CORPO}deimos`, pai: 'mars' },
+  { id: 'io', ...NOMES_DOS_CORPOS.io, chave: `${CHAVE_DE_CORPO}io`, pai: 'jupiter' },
+  { id: 'europa', ...NOMES_DOS_CORPOS.europa, chave: `${CHAVE_DE_CORPO}europa`, pai: 'jupiter' },
+  { id: 'ganymede', ...NOMES_DOS_CORPOS.ganymede, chave: `${CHAVE_DE_CORPO}ganymede`, pai: 'jupiter' },
+  { id: 'callisto', ...NOMES_DOS_CORPOS.callisto, chave: `${CHAVE_DE_CORPO}callisto`, pai: 'jupiter' },
+  { id: 'mimas', ...NOMES_DOS_CORPOS.mimas, chave: `${CHAVE_DE_CORPO}mimas`, pai: 'saturn' },
+  { id: 'enceladus', ...NOMES_DOS_CORPOS.enceladus, chave: `${CHAVE_DE_CORPO}enceladus`, pai: 'saturn' },
+  { id: 'tethys', ...NOMES_DOS_CORPOS.tethys, chave: `${CHAVE_DE_CORPO}tethys`, pai: 'saturn' },
+  { id: 'dione', ...NOMES_DOS_CORPOS.dione, chave: `${CHAVE_DE_CORPO}dione`, pai: 'saturn' },
+  { id: 'rhea', ...NOMES_DOS_CORPOS.rhea, chave: `${CHAVE_DE_CORPO}rhea`, pai: 'saturn' },
+  { id: 'titan', ...NOMES_DOS_CORPOS.titan, chave: `${CHAVE_DE_CORPO}titan`, pai: 'saturn' },
+  { id: 'iapetus', ...NOMES_DOS_CORPOS.iapetus, chave: `${CHAVE_DE_CORPO}iapetus`, pai: 'saturn' },
+  { id: 'miranda', ...NOMES_DOS_CORPOS.miranda, chave: `${CHAVE_DE_CORPO}miranda`, pai: 'uranus' },
+  { id: 'ariel', ...NOMES_DOS_CORPOS.ariel, chave: `${CHAVE_DE_CORPO}ariel`, pai: 'uranus' },
+  { id: 'umbriel', ...NOMES_DOS_CORPOS.umbriel, chave: `${CHAVE_DE_CORPO}umbriel`, pai: 'uranus' },
+  { id: 'titania', ...NOMES_DOS_CORPOS.titania, chave: `${CHAVE_DE_CORPO}titania`, pai: 'uranus' },
+  { id: 'oberon', ...NOMES_DOS_CORPOS.oberon, chave: `${CHAVE_DE_CORPO}oberon`, pai: 'uranus' },
+  { id: 'triton', ...NOMES_DOS_CORPOS.triton, chave: `${CHAVE_DE_CORPO}triton`, pai: 'neptune' },
+  { id: 'charon', ...NOMES_DOS_CORPOS.charon, chave: `${CHAVE_DE_CORPO}charon`, pai: 'pluto' },
+];
+
+/**
+ * ANÕES SEM PONTO FOTOMÉTRICO (F6) — fora de CORPOS_DO_SISTEMA (aquela
+ * lista é o vértice da camada) e fora de LUAS (não orbitam um planeta
+ * com mesh de pai). A busca os acha; o degrau é o de planeta
+ * (órbita em torno do Sol → aproximar o globo).
+ */
+export const ANOES_DO_SISTEMA: readonly CorpoDoSistema[] = [
+  { id: 'ceres', ...NOMES_DOS_CORPOS.ceres, chave: `${CHAVE_DE_CORPO}ceres` },
+  { id: 'haumea', ...NOMES_DOS_CORPOS.haumea, chave: `${CHAVE_DE_CORPO}haumea` },
+  { id: 'makemake', ...NOMES_DOS_CORPOS.makemake, chave: `${CHAVE_DE_CORPO}makemake` },
+  { id: 'eris', ...NOMES_DOS_CORPOS.eris, chave: `${CHAVE_DE_CORPO}eris` },
+  { id: 'quaoar', ...NOMES_DOS_CORPOS.quaoar, chave: `${CHAVE_DE_CORPO}quaoar` },
+];
+
+/**
+ * ASTEROIDES SEM PONTO FOTOMÉTRICO (F7) — o mesmo contrato dos
+ * anões: fora de CORPOS_DO_SISTEMA (vértice da camada) e fora de
+ * LUAS. A busca os acha pelo nome pt-BR; o degrau é o de planeta
+ * (órbita heliocêntrica → aproximar o globo).
+ */
+export const ASTEROIDES_DO_SISTEMA: readonly CorpoDoSistema[] = [
+  { id: 'vesta', ...NOMES_DOS_CORPOS.vesta, chave: `${CHAVE_DE_CORPO}vesta` },
+  { id: 'pallas', ...NOMES_DOS_CORPOS.pallas, chave: `${CHAVE_DE_CORPO}pallas` },
+  { id: 'hygiea', ...NOMES_DOS_CORPOS.hygiea, chave: `${CHAVE_DE_CORPO}hygiea` },
+];
 
 // ============================================================
 // A GRADAÇÃO POR CONTEXTO (F6) — o que o Atlas faz com o

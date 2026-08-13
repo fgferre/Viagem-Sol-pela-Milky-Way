@@ -18,6 +18,8 @@
     "data:atlas": "node scripts/data/atlas/amostra-efemerides.mjs",
     "data:planetas": "node scripts/data/atlas/gera-retrato-planetas.mjs",
     "data:corpos": "node scripts/data/atlas/gera-corpos.mjs",
+    "data:texturas-fontes": "node scripts/data/atlas/baixa-texturas.mjs",
+    "data:texturas": "node scripts/data/atlas/otimiza-texturas.mjs && node scripts/data/atlas/gera-manifest-texturas.mjs",
     "data:all": "npm run data:stars && npm run data:galaxy && npm run data:fit && npm run data:verify && npm run data:pack"
   },
   "dependencies": {
@@ -37,6 +39,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "sharp": "^0.35.3",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.3.0",

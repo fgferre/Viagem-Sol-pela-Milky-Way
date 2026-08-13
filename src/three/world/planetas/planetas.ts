@@ -75,13 +75,11 @@
 // lado dele. Não vira `Math.log10` no espelho TS abaixo pelo mesmo
 // motivo de lá: o espelho existe para PREVER o pixel da GPU.
 //
-// FASE LAMBERTIANA (D3, aproximação declarada). Φ = (1+cos α)/2 com α o
-// ângulo Sol–corpo–observador. Com o Sol na origem, os dois braços do
-// ângulo saem de graça: do corpo para o Sol é `−pos`, do corpo para o
-// observador é `uCamPos − pos`. A mesma matemática de
-// `faseLambertiana`/`magAparente` (F1), espelhada aqui e pinada por
-// teste de paridade. As polinomiais por corpo de Mallama & Hilton são
-// pendência NOMEADA da Onda 6.
+// FASE DO PONTO (D10 / F8): Φ sai de `fatorDeFaseMh18` (polinomial
+// por corpo, domínio + emenda contínua com Lambert fora; Saturno
+// com termo de anel). O ângulo ainda é Sol–corpo–observador (Sol
+// na origem). `faseDoVertice` CONTINUA Lambert — é o espelho
+// geométrico que a cessão do globo lê; o brilho do ponto é `aFase`.
 //
 // ------------------------------------------------------------
 // 3. O QUE ESTA CAMADA NÃO FAZ
@@ -104,7 +102,16 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGal
 import { GLSL_STAR_PSF } from '../../shaders/common';
 import { STAR_FRAG } from '../../shaders/starShaders';
 import { DEEP_LIMIAR_PC, deepPointGain, needsAttributeWrite } from '../lodStellar';
-import { A_MAG_BASE, FOTOMETRIA, IDS_FOTOMETRIA, aMagBaseDe } from './fotometria';
+import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
+import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
+import {
+  A_MAG_BASE,
+  FOTOMETRIA,
+  IDS_FOTOMETRIA,
+  aMagBaseDe,
+  betaEfetivoAnel,
+  fatorDeFaseMh18,
+} from './fotometria';
 import { EPOCA_ISO, EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
 /**
@@ -207,7 +214,7 @@ export function faseDoVertice(
   const oy = cy - py;
   const oz = cz - pz;
   const dObs = Math.max(Math.hypot(ox, oy, oz), DIST_MIN_PC);
-  const rSol = Math.max(Math.hypot(px, py, pz), 1e-30);
+  const rSol = Math.max(Math.hypot(px, py, pz), 1.0e-30);
   const cosAlfa = (-px * ox - py * oy - pz * oz) / (rSol * dObs);
   return Math.max(0.5 * (1 + cosAlfa), FASE_MIN);
 }
@@ -257,6 +264,8 @@ const PLANETAS_VERT = /* glsl */ `
 attribute float aMagBase; // magnitude a 1 pc, fase zero (convenção única)
 attribute vec3 aCor;      // RGB linear da F1 (iluminante × razão de banda)
 attribute float aEhSol;   // 1 no vértice 0, 0 nos nove — ver o alpha
+attribute float aCede;    // cessão sob corpo resolvido (Onda 6, F2a) — ver o alpha
+attribute float aFase;    // Φ MH18 (D10) — CPU; o Sol escreve 1
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
@@ -276,14 +285,8 @@ void main() {
   vec3 paraObs = uCamPos - worldPos;
   float dPc = max(length(paraObs), ${DIST_MIN_PC.toExponential(1)});
 
-  // Fase Lambertiana (aproximação declarada, D3): o Sol está na ORIGEM,
-  // então o braço corpo→Sol é -worldPos. Divisão por max(...) e não
-  // normalize(): no vértice do Sol o braço é nulo e normalize daria NaN,
-  // que o mix abaixo NÃO limparia (NaN * 0.0 = NaN).
-  float rSol = max(length(worldPos), 1.0e-30);
-  float cosAlfa = dot(-worldPos / rSol, paraObs / dPc);
-  float fase = max(0.5 * (1.0 + cosAlfa), ${FASE_MIN.toExponential(1)});
-  // o Sol é o ILUMINANTE: não tem fase (e o cosAlfa dele é lixo).
+  // Φ do ponto: atributo MH18 (D10). O Sol escreve 1 na CPU.
+  float fase = max(aFase, ${FASE_MIN.toExponential(1)});
   fase = mix(fase, 1.0, aEhSol);
 
   // m = aMagBase + 5·log10(d_pc) − 2,5·log10(Φ). log2·0,30103 é a conta
@@ -295,12 +298,20 @@ void main() {
   float size; float peak; float sat; float sigmaFrac;
   starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
 
-  // O ÚNICO alpha desta camada, e ele é só do Sol: o crossfade reverso
-  // da D2 (disco artístico ↔ ponto fotométrico). Os nove entram com 1 —
-  // quem decide o brilho deles é a física, não uma rampa. E cede aos
-  // DOIS varyings juntos (lição do vSat, commit 2e16689): atenuar só o
-  // vPeak deixaria os espinhos de difração com força cheia.
-  float alpha = mix(1.0, uGain, aEhSol);
+  // O alpha desta camada tem DOIS donos declarados — o texto antigo
+  // ("o único alpha é do Sol") foi RENEGOCIADO na Onda 6/F2a, com teste:
+  //  1. o crossfade reverso do Sol (uGain, D2 da Onda 4);
+  //  2. a CESSÃO sob corpo resolvido (aCede): o ponto do corpo cede na
+  //     medida em que o GLOBO domina a representação na tela — SUAVE
+  //     desde a F2b (g(razão mesh/halo) integrada no tempo; a conta
+  //     mora em terra.ts/cessaoAlvo, o precedente é o par
+  //     hero↔catálogo). Com aCede = 0 o fator (1 − aCede) é 1,0 EXATO
+  //     em IEEE754 — fora do corpo resolvido nada muda, e as vistas
+  //     profundas continuam bit-idênticas.
+  // Quem decide o brilho dos nove segue sendo a física, não uma rampa.
+  // E o alpha cede aos DOIS varyings juntos (lição do vSat, commit
+  // 2e16689): atenuar só o vPeak deixaria os espinhos com força cheia.
+  float alpha = mix(1.0, uGain, aEhSol) * (1.0 - aCede);
 
   vColor = aCor;
   vSat = sat * alpha;
@@ -397,6 +408,13 @@ export class Planetas {
     geo.setAttribute('aMagBase', new THREE.BufferAttribute(magBase, 1));
     geo.setAttribute('aCor', new THREE.BufferAttribute(cor, 3));
     geo.setAttribute('aEhSol', new THREE.BufferAttribute(ehSol, 1));
+    // cessão sob corpo resolvido (Onda 6, F2a): nasce 0 em todos — só o
+    // gate do globo escreve, via `escreverCessao`, nunca o quadro
+    geo.setAttribute('aCede', new THREE.BufferAttribute(new Float32Array(n), 1));
+    // Φ MH18: nasce 1 (fase zero) até o primeiro update com câmera.
+    const fase0 = new Float32Array(n);
+    fase0.fill(1);
+    geo.setAttribute('aFase', new THREE.BufferAttribute(fase0, 1));
     // Plutão, o mais distante da tabela, está a 35,4 UA = 1,72e-4 pc.
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e-3);
 
@@ -413,12 +431,16 @@ export class Planetas {
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      // depthTest FALSE pelo mesmo motivo do SunStar (`heroStars.ts`): a
-      // camada SÓ soma luz. E aqui há um segundo motivo, específico: o
-      // disco artístico do Sol tem 2.269 UA de raio e engolfa o sistema
-      // solar inteiro — com depthTest, os dez pontos seriam furados por
-      // uma esfera que a D2 está justamente dissolvendo.
-      depthTest: false,
+      // depthTest TRUE desde a Onda 6 (F0, inventário de D1). O motivo
+      // do false era a esfera do Sol: o disco artístico de 2.269 UA
+      // engolfa o sistema inteiro e, se ELE escrevesse depth, furaria
+      // os dez pontos — mas ele NÃO escreve (nada escrevia). Contra o
+      // buffer novo, que só o grupo dos corpos resolvidos escreve, o
+      // teste é o comportamento correto: ponto atrás de corpo resolvido
+      // some, como no céu de verdade. Com nada escrevendo depth ainda,
+      // true é no-op por construção — as 18 vistas bit-idênticas da F0
+      // são a prova.
+      depthTest: true,
       transparent: true,
     });
 
@@ -461,6 +483,7 @@ export class Planetas {
     if (!this.camAnterior.equals(camPos)) {
       this.camAnterior.copy(camPos);
       (u.uCamPos.value as THREE.Vector3).copy(camPos);
+      this.escreverFase(camPos);
     }
     if (screenH !== this.screenHAnterior) {
       this.screenHAnterior = screenH;
@@ -545,7 +568,71 @@ export class Planetas {
     }
     if (moveu) pos.needsUpdate = true;
     if (brilhou) mag.needsUpdate = true;
+    if ((moveu || brilhou) && Number.isFinite(this.camAnterior.x)) {
+      this.escreverFase(this.camAnterior);
+    }
     return moveu || brilhou;
+  }
+
+  /**
+   * A CESSÃO SOB CORPO RESOLVIDO (Onda 6, F2a; SUAVE desde a F2b) —
+   * método IRMÃO do `update`, como `escreverInstante`: quem decide é a
+   * DOMINÂNCIA do corpo resolvido (o Director consulta o mesh e escreve
+   * aqui, reafirmando TODO quadro — cicatriz C2), nunca o quadro desta
+   * camada. Contínua em [0,1]: 1 apaga o ponto do corpo (cor E
+   * espinhos, pelos dois varyings do alpha), 0 devolve a fotometria, e
+   * o meio é o crossfade do handoff (terra.ts/cessaoAlvo).
+   *
+   * Escrita idempotente pela mesma lei do instante (`gravar`): reescrever
+   * o mesmo valor a 60 Hz não sobe upload. Devolve se algo mudou.
+   */
+  /** Φ MH18 de cada ponto, reescrito quando a câmera ou o instante muda. */
+  private escreverFase(camPos: THREE.Vector3) {
+    const pos = this.points.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const attr = this.points.geometry.getAttribute('aFase') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    const jd = Number.isFinite(this.jdEscrito) ? this.jdEscrito : EPOCA_JD_TDB;
+    let mudou = false;
+    for (let i = 0; i < IDS_FOTOMETRIA.length; i++) {
+      const id = IDS_FOTOMETRIA[i];
+      if (id === 'sun') {
+        if (this.gravar(arr, i, 1)) mudou = true;
+        continue;
+      }
+      const px = pos.getX(i);
+      const py = pos.getY(i);
+      const pz = pos.getZ(i);
+      const ox = camPos.x - px;
+      const oy = camPos.y - py;
+      const oz = camPos.z - pz;
+      const rSol = Math.max(Math.hypot(px, py, pz), 1.0e-30);
+      const dObs = Math.max(Math.hypot(ox, oy, oz), DIST_MIN_PC);
+      const cos = Math.min(1, Math.max(-1, (-px * ox - py * oy - pz * oz) / (rSol * dObs)));
+      let B = 0;
+      if (id === 'saturn') {
+        const { polo } = baseCorpoEquatorial(IAU_ORIENTATIONS.saturn, jd);
+        const sinBetaS = Math.min(
+          1,
+          Math.max(-1, -(polo[0] * px + polo[1] * py + polo[2] * pz) / rSol)
+        );
+        const sinBetaE = Math.min(
+          1,
+          Math.max(-1, (polo[0] * ox + polo[1] * oy + polo[2] * oz) / dObs)
+        );
+        B = betaEfetivoAnel(Math.asin(sinBetaE), Math.asin(sinBetaS));
+      }
+      if (this.gravar(arr, i, fatorDeFaseMh18(id, Math.acos(cos), B))) mudou = true;
+    }
+    if (mudou) attr.needsUpdate = true;
+  }
+
+  escreverCessao(id: string, cede: number): boolean {
+    const i = (IDS_FOTOMETRIA as readonly string[]).indexOf(id);
+    if (i < 0) return false;
+    const attr = this.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
+    if (!this.gravar(attr.array as Float32Array, i, cede)) return false;
+    attr.needsUpdate = true;
+    return true;
   }
 
   /**
@@ -597,7 +684,8 @@ export class Planetas {
       const px = ((ndc.x + 1) / 2) * larguraPx;
       const py = ((1 - ndc.y) / 2) * alturaPx;
       const dObs = Math.hypot(c.x - x, c.y - y, c.z - z);
-      const fase = i === 0 ? 1 : faseDoVertice(x, y, z, c.x, c.y, c.z);
+      const faseAttr = this.points.geometry.getAttribute('aFase') as THREE.BufferAttribute;
+      const fase = i === 0 ? 1 : faseAttr.getX(i);
       const m = magDoVertice(mag.getX(i), dObs, fase);
       // o alpha do Sol-ponto é o `uGain` (crossfade reverso da D2); os nove
       // entram com 1. O pico PUBLICADO já leva o alpha, senão a régua 3 leria

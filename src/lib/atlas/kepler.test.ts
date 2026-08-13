@@ -231,7 +231,15 @@ describe('kepler / elementosParaCartesiano', () => {
 // Orcus e Quaoar (os pais, adicionados pela revisão de olhos frescos
 // para fechar a composição heliocêntrica) estão na MESMA categoria: a
 // escala deles é julgada no teste de fechamento de efemerides.test.ts.
-const SEM_FIXTURE = new Set(['vanth', 'weywot', 'orcus', 'quaoar']);
+const SEM_FIXTURE = new Set([
+  'vanth',
+  'weywot',
+  'orcus',
+  'quaoar',
+  'haumea',
+  'makemake',
+  'eris',
+]);
 const idsComFixture = IDS_KEPLER.filter((id) => !SEM_FIXTURE.has(id));
 
 describe('kepler / inversão na época (fixtures 2025-01-01)', () => {

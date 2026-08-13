@@ -16,6 +16,8 @@ import {
   PARENT_FRAMING_BIAS,
   PHASE_OFFSET_GRAUS,
   RETANGULO_CHEIO,
+  RAMPA_DO_DEGRAU_S,
+  direcaoDaLua,
   direcaoPrivilegiada,
   enquadrar,
   orbitaMaisExterna,
@@ -229,9 +231,9 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // o degrau a 1.200 px cai entre 1,25 e 1,26 (1.200 / 960 = 1,25) —
     // e a quebra REAL a 1.200 px começa em 1,30, medida: a declaração
     // entra um degrau ANTES, que é o lado seguro do erro
-    expect(retanguloUtilDoAtlas(1.25, 1200).topo).toBeCloseTo(0.065 + 0.075 * 1.25, 12);
+    expect(retanguloUtilDoAtlas(1.25, 1200).topo).toBeCloseTo(0.065 + 0.09 * 1.25, 12);
     expect(retanguloUtilDoAtlas(1.3, 1200).topo).toBeCloseTo(
-      0.065 + 0.075 * 1.3 + 0.04,
+      0.065 + 0.09 * 1.3 + 0.04,
       12
     );
     // largura envenenada cai na tela de mesa de referência, não em NaN
@@ -459,17 +461,18 @@ describe('o rig e o alvo de abertura', () => {
     rig.focarNoSistema();
     rig.apply(camera);
     const emUA = () => camera.position.length() / AU_PARA_PC;
-    // 221,55 UA — a faixa de meio UA é o que separa "a docstring está
-    // certa" de "a docstring envelheceu"
-    expect(emUA()).toBeGreaterThan(221.3);
-    expect(emUA()).toBeLessThan(221.8);
-    // e ela ANDA com `?ui=` nos dois sentidos (209,4 e 284,1 UA)
+    // 226,84 UA — a faixa de meio UA é o que separa "a docstring está
+    // certa" de "a docstring envelheceu" (era 221,55 até a linha da
+    // escada da F2b crescer a faixa do topo)
+    expect(emUA()).toBeGreaterThan(226.6);
+    expect(emUA()).toBeLessThan(227.1);
+    // e ela ANDA com `?ui=` nos dois sentidos (213,4 e 296,8 UA)
     rig.apply(camera, 0.85);
-    expect(emUA()).toBeGreaterThan(209.1);
-    expect(emUA()).toBeLessThan(209.6);
+    expect(emUA()).toBeGreaterThan(213.1);
+    expect(emUA()).toBeLessThan(213.6);
     rig.apply(camera, 1.4);
-    expect(emUA()).toBeGreaterThan(283.8);
-    expect(emUA()).toBeLessThan(284.3);
+    expect(emUA()).toBeGreaterThan(296.5);
+    expect(emUA()).toBeLessThan(297.0);
   });
 
   it('o fov do Atlas é pino, não herança: o rig o escreve todo quadro', () => {
@@ -537,5 +540,117 @@ describe('o rig e o alvo de abertura', () => {
     expect(raioDeEnquadramentoEstelar(sirius.length())).toBe(0.8);
     expect(raioDeEnquadramentoEstelar(152)).toBeCloseTo(9, 12);
     expect(raioDeEnquadramentoEstelar(8150)).toBe(9);
+  });
+});
+
+// ============================================================
+// F2b — o consumidor de PARENT_FRAMING_BIAS e a rampa entre degraus.
+// ============================================================
+describe('direcaoDaLua — o degrau "lua" (F2b/D7)', () => {
+  const polo = new THREE.Vector3(0, 0, 1);
+
+  it('sem pai degenera na direção privilegiada de sempre', () => {
+    const doSol = new THREE.Vector3(1, 0, 0);
+    const a = direcaoPrivilegiada(doSol.clone(), polo, 0, new THREE.Vector3());
+    const b = direcaoDaLua(doSol.clone(), new THREE.Vector3(), polo, 0, new THREE.Vector3());
+    expect(b.distanceTo(a)).toBeLessThan(1e-12);
+  });
+
+  it('é a MISTURA de direções com peso 0,78 no termo do pai — nunca fator de distância', () => {
+    const doSol = new THREE.Vector3(1, 0, 0); // Sol→lua
+    // longe-do-pai a ~27° da direção iluminada: a mistura fica DENTRO
+    // do grampo de 70° e sai crua (renormalizada)
+    const doPai = new THREE.Vector3(-1, 0.5, 0);
+    const out = direcaoDaLua(doSol.clone(), doPai.clone(), polo, 0, new THREE.Vector3());
+    const solar = direcaoPrivilegiada(doSol.clone(), polo, 0, new THREE.Vector3());
+    const esperado = solar
+      .clone()
+      .lerp(doPai.clone().normalize(), PARENT_FRAMING_BIAS)
+      .normalize();
+    expect(out.distanceTo(esperado)).toBeLessThan(1e-12);
+    expect(out.length()).toBeCloseTo(1, 12);
+  });
+
+  it('NUNCA além do terminador: pai do lado do Sol → grampo nos 70°', () => {
+    // pai→lua apontando PARA LONGE do Sol (lua em oposição ao pai visto
+    // do Sol): a mistura cairia no lado noturno — a cicatriz do doador
+    // (Japeto/Titã/Lua "não carregou"); o grampo gira de volta para o
+    // máximo desvio compatível com luz
+    const doSol = new THREE.Vector3(1, 0, 0);
+    const doPai = new THREE.Vector3(0.99, 0.141, 0).normalize(); // quase o eixo solar
+    const out = direcaoDaLua(doSol.clone(), doPai, polo, 0, new THREE.Vector3());
+    const iluminada = doSol.clone().negate().normalize();
+    const desvio = THREE.MathUtils.radToDeg(out.angleTo(iluminada));
+    expect(desvio).toBeLessThanOrEqual(MAX_SOLAR_DEVIATION_GRAUS + 1e-9);
+    // e mais de meio disco segue iluminado: (1+cos 70°)/2 = 67%
+    expect((1 + Math.cos(out.angleTo(iluminada))) / 2).toBeGreaterThan(0.5);
+  });
+
+  it('o azimute "longe do pai" sobrevive onde é compatível com luz', () => {
+    const doSol = new THREE.Vector3(1, 0, 0);
+    const doPai = new THREE.Vector3(0.99, 0.141, 0).normalize();
+    const out = direcaoDaLua(doSol.clone(), doPai, polo, 0, new THREE.Vector3());
+    const iluminada = doSol.clone().negate().normalize();
+    // o grampo entrega EXATAMENTE o desvio máximo (girou até a borda,
+    // não desistiu para a solar pura) e preserva o lado do pai (y > 0)
+    expect(THREE.MathUtils.radToDeg(out.angleTo(iluminada))).toBeCloseTo(
+      MAX_SOLAR_DEVIATION_GRAUS,
+      9
+    );
+    expect(out.y).toBeGreaterThan(0);
+  });
+});
+
+describe('a rampa entre degraus do rig (F2b/D7)', () => {
+  const cam = () => new THREE.PerspectiveCamera(35, 1.6, 1e-9, 100);
+
+  it('sem rampa o apply é a pose pura de sempre — bit a bit', () => {
+    const a = cam();
+    const b = cam();
+    const rig1 = new AtlasRig();
+    rig1.focarNoSistema();
+    rig1.apply(a);
+    const rig2 = new AtlasRig();
+    rig2.focarNoSistema();
+    rig2.apply(b, 1, LARGURA_DE_MESA_PX, 0.016); // dt não muda nada fora da rampa
+    expect(a.position.equals(b.position)).toBe(true);
+    expect(a.quaternion.equals(b.quaternion)).toBe(true);
+  });
+
+  it('a rampa TERMINA na pose exata do destino — ?foco= continua reproduzível', () => {
+    const seco = cam();
+    const rigSeco = new AtlasRig();
+    rigSeco.focarNoSistema();
+    const alvo = new THREE.Vector3(1e-6, 2e-6, 0.5e-6);
+    rigSeco.focar(alvo, 1e-7);
+    rigSeco.apply(seco);
+
+    const animado = cam();
+    const rig = new AtlasRig();
+    rig.focarNoSistema();
+    rig.apply(animado);
+    rig.focar(alvo, 1e-7, alvo, { rampa: true });
+    expect(rig.animando).toBe(true);
+    // meio da rampa: a câmera está ENTRE as poses (nem lá nem cá)
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S / 2);
+    expect(animado.position.equals(seco.position)).toBe(false);
+    // fim: os passos somam a duração e a pose é a PURA, bit a bit
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S);
+    expect(rig.animando).toBe(false);
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, 0.016);
+    expect(animado.position.equals(seco.position)).toBe(true);
+    expect(animado.quaternion.equals(seco.quaternion)).toBe(true);
+  });
+
+  it('focar o MESMO alvo com rampa é no-op — nem reinicia a animação', () => {
+    const rig = new AtlasRig();
+    rig.focarNoSistema();
+    rig.apply(cam());
+    const alvo = new THREE.Vector3(1e-6, 0, 0);
+    rig.focar(alvo, 1e-7, alvo, { rampa: true });
+    rig.apply(cam(), 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S);
+    expect(rig.animando).toBe(false);
+    rig.focar(alvo, 1e-7, alvo, { rampa: true });
+    expect(rig.animando).toBe(false);
   });
 });

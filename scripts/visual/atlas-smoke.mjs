@@ -235,10 +235,17 @@ try {
     /sem efem[ée]ride/.test(badge),
     `e o badge conta a verdade ao visitante: "${badge}"`
   );
+  // ...e o ÚNICO grito permitido é o RETRATO ACUSADO (item 5c da
+  // auditoria): com corpos em cena e a efeméride PEDIDA indisponível, o
+  // Director dá UM aviso por sessão — a captura nunca finge que a fonte
+  // viva estava lá. O resto do caminho sem rede continua mudo (o badge
+  // fala com o visitante), e qualquer outro grito reprova como sempre.
   const gritos = sessao.gritos();
+  const acusacoes = gritos.filter((g) => g.includes('[captura] efeméride pedida indisponível'));
   conferir(
-    gritos.length === 0,
-    `sem rede, ZERO grito de console (${gritos.join(' | ') || 'nenhum'})`
+    acusacoes.length >= 1 && acusacoes.length === gritos.length,
+    `sem rede, só o RETRATO ACUSADO grita — 1 aviso por sessão, nada além `
+      + `(${gritos.join(' | ') || 'nenhum'})`
   );
   await sessao.bloquear([]);
 
@@ -321,7 +328,11 @@ try {
     [...document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')]
       .map((e) => e.textContent.trim())
   )`));
-  conferir(camadas.length === 12, `o painel oferece ${camadas.length} camadas`);
+  // 13 desde a Onda 6/F0: o palco dos corpos resolvidos ('nocorpos')
+  // entrou na tabela única (atlasConfig.CAMADAS) — e este juiz descobriu
+  // na F2a que estava com a lista manual envelhecida (a mesma classe de
+  // defeito que o selo existe para não ter).
+  conferir(camadas.length === 13, `o painel oferece ${camadas.length} camadas`);
   conferir(
     !camadas.some((n) => n.includes('↻')),
     `nenhuma marcada com ↻ (${camadas.join(' · ')})`
@@ -349,7 +360,7 @@ try {
 
   const FLAGS = [
     'nogal', 'nodisc', 'nogdust', 'noglow', 'nocart', 'nonebula',
-    'nowrap', 'nocat', 'nohero', 'nomarker', 'noplan', 'nobh',
+    'nowrap', 'nocat', 'nohero', 'nomarker', 'noplan', 'nocorpos', 'nobh',
   ];
   let vivas = 0;
   for (let i = 0; i < FLAGS.length; i++) {
@@ -373,7 +384,7 @@ try {
         + ` url '${off.url}', selo [${off.escondidas.join(',')}] e volta`
     );
   }
-  conferir(vivas === 12, `as ${vivas} de 12 camadas do painel trocam sem reload`);
+  conferir(vivas === 13, `as ${vivas} de 13 camadas do painel trocam sem reload`);
 
   await sessao.assentar();
   const depoisDaCamada = await sessao.js(`JSON.stringify({
