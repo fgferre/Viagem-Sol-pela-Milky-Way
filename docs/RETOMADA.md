@@ -14,16 +14,35 @@ bastão da ONDA, com todo o detalhe medido). Ele morre quando a onda fechar.
 | **Repo principal** | `/Users/fgferre/Github/Viagem-Sol-pela-Milky-Way`, branch `onda-6` |
 | **Servidor de captura** | porta **5199**, subido a partir da mesa desta onda |
 
-**A REGRA: nunca escrever no repositório principal.** Há **outro agente trabalhando
-nele agora**, na F2c da Onda 6 (eclipse na tela), com 7 arquivos abertos
-(`ab-identidade.mjs`, `eclipse.ts`+teste, `lua.ts`+teste, `terra.ts`+teste). As
-portas **5173 e 5174 são dele** — não encostar. `node_modules` da nossa mesa é um
-symlink para a dele: **só leitura**, nunca instalar por lá.
+**A ONDA 6 FECHOU E ESTÁ NA `main`** (merge `6b7712f`, 2026-08-13). O outro agente
+terminou; o repositório principal está na `main`, limpo, sem arquivo solto. **A
+regra "nunca escrever lá" perdeu o motivo original** — mas as duas mesas continuam
+existindo até esta branch entrar, então continue trabalhando AQUI e não lá, para
+não misturar as histórias. `node_modules` da nossa mesa segue sendo symlink para a
+do principal: **só leitura**, nunca instalar por lá.
 
-As duas mesas se encontram em exatamente **dois** arquivos, em regiões diferentes:
-`src/three/director.ts` e `scripts/visual/ab-identidade.mjs`. O merge acontece
-depois que a Onda 6 fechar: puxa-se `main` para cá, resolvem-se os dois, roda-se a
-bateria, e só então junta.
+### O MERGE ESTÁ DESTRAVADO — mas NÃO faça antes de duas coisas
+
+1. **O dono aprovar as 4 imagens da F3** (seção 4). Sem o sim dele, esta branch
+   carrega um rebaseline não consentido.
+2. **Re-medir a base.** Os md5 desta branch foram tirados de `af90809`. A Onda 6
+   trouxe as luas, os eclipses e o que mais entrou depois disso — **a tabela de
+   referência da `main` pode não ser mais a mesma**. Depois de trazer a `main` para
+   cá, rode o gate ANTES de concluir qualquer coisa sobre bit-identidade: os hashes
+   da seção 2 valem para a base antiga.
+
+**Receita:** traga `main` para dentro de `sol-real` (não o contrário), resolva, rode
+`vitest` + `tsc` + o gate visual + `atlas-smoke`, refaça as 4 baselines com o sim do
+dono, e só então junte.
+
+**Os pontos de encontro conhecidos são dois:** `src/three/director.ts` e
+`scripts/visual/ab-identidade.mjs` — os dois lados escreveram em regiões diferentes.
+
+**E uma AÇÃO DE MERGE já declarada no código:** `RAIO_SOL_KM = 696_340` agora existe
+nos DOIS lados — em `src/lib/atlas/eclipse.ts` (que veio com a Onda 6) e em
+`src/three/escala.ts` (nosso). **Um dos dois tem de morrer**, senão é segunda fonte
+de verdade. O endereço natural é `escala.ts`, que não depende de nada, com o eclipse
+importando de lá. Está escrito na docstring do símbolo.
 
 ---
 
