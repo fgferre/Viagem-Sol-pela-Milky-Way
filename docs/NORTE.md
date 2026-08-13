@@ -3397,12 +3397,39 @@ que governa o futuro:
   Onda 8 é o conserto, e estes números são a semente medida dela.
 - **Pendências herdadas pela frente**: fixtures Horizons de
   venus/jupiter/saturn/uranus (Vênus é a garantia mais fraca: 1,96e-3° por
-  orçamento de manifesto); fase polinomial por corpo e corpos resolvidos
-  (Onda 6); starOptics do Sol-ponto (7a); fio de rede da efemerides.bin +
-  tempo vivo (5/6); o selo da Onda 5 reporta "ESCALA REAL no domínio
-  profundo" de graça; `?nosun` não governa o Sol-ponto (governa `noplan`);
-  BV_SOL/SOL_BV e PONTO_ZERO_SOL_PC redigitados com igualdade pinada —
-  unificação é candidata da Onda 6.
+  orçamento de manifesto); ~~fase polinomial por corpo e corpos resolvidos
+  (Onda 6)~~ — **cumpridas na Onda 6** (MH18 no ponto; globos resolvidos);
+  starOptics do Sol-ponto (7a); fio de rede da efemerides.bin (o tempo
+  vivo da abertura já é da Onda 6); o selo da Onda 5 reporta "ESCALA REAL
+  no domínio profundo" de graça; `?nosun` não governa o Sol-ponto (governa
+  `noplan`); BV_SOL/SOL_BV e PONTO_ZERO_SOL_PC redigitados com igualdade
+  pinada — unificação **tentada na Onda 6 e recusada**: moveria o filme.
+
+### Onda 6 — FEITA, não mergeada (2026-08-13)
+
+Corpos resolvidos + a primeira lei de luz. O registro integral está no
+**Estado da Onda 6 do PLANO-ATLAS §4**. O que **governa o futuro**:
+
+- **A lei de luz é um escalar único, por corpo, em UA de efeméride.**
+  `src/lib/atlas/luz.ts`: E(1 UA)=1, `real` ≡ E bit a bit, `assistida` =
+  E^0,35. σ=0,35 é o valor MEDIDO (F3, T-E10), não mais chute: o halo nos
+  texels brilhantes de Mercúrio/Vênus é look aceito. O EV de CENA do §7.4
+  é da Onda 8. Default no Atlas: assistida. Selo `?luz=` é linha do eixo
+  BRILHO; clique volta ao real.
+- **Palco local, sem log-depth.** Near segue a superfície resolvida mais
+  próxima. Decisão 3 do dono: critério AAA; escalada (log-depth) volta a
+  ele. O instrumento de z-fighting existe; o residual vivo não julgou o
+  palco falho.
+- **Textura real, licença por linha, escada por pixel medido.** Manifest
+  em `public/data/atlas/texturas.json`. Negativos em
+  `docs/reference/ASSETS.md`. Sem licença documentada não entra.
+- **Um relógio só:** luz, rotação IAU, nuvens, anel e eclipse leem o `jd`
+  do Director.
+- **Escada sistema → órbita → corpo → lua** (`?ver=`, Esc sobe).
+  `PARENT_FRAMING_BIAS` tem consumidor. Abertura na época viva.
+- **Não repetir:** piso de ambiente; Hapke inventado; mosaico sem
+  licença; advecção que cisalha a Mancha sem perfil citado; log-depth
+  sem o dono.
 
 ### Onda 5 — FEITA (2026-08-12)
 
