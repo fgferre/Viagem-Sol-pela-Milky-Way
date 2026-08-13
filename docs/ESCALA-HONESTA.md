@@ -349,13 +349,68 @@ linha**. Pode ser cortada sem prejuízo às F0–F4.
 Cinco queixas do dono sobre o modo Atlas, conferidas. Nenhuma depende desta onda;
 todas são baratas e **não tocam o filme nem as baselines**.
 
-| # | Defeito | Endereço | Tamanho |
+**AS CINCO ESTÃO FECHADAS.** As de ponteiro caíram em 2026-08-13 (linha 5); as
+quatro primeiras caíram na mesma data, num commit cada. Sobra a **carência de
+teclas**, nomeada na linha 5 e ainda aberta.
+
+| # | Defeito | Endereço | Estado |
 |---|---|---|---|
-| 1 | **Um eixo de arrasto só** — o vertical é calculado e descartado; o eixo que existe move em latitude, não dá a volta | `director.ts:1213`, `atlasRig.ts:607-615` | ~40–70 linhas |
-| 2 | **Roda e pinça não fazem nada e não avisam** — nenhuma linha de `wheel`/`ctrlKey`/`deltaMode` no Atlas | varredura em todo o `src/` | ~40–60 linhas |
-| 3 | **Polo do corpo nunca fica para cima** — `camera.up` é constante (polo da eclíptica); a Terra sai 4,2° a 27,8° torta | `atlasRig.ts:719` | ~40–70 linhas |
-| 4 | **O enquadramento não segue o alvo no tempo** — posição morta copiada uma vez; com a máquina do tempo o corpo sai do quadro em ~1 s | `atlasRig.ts:590`, `director.ts:1571`, religador em `:1667-1679` | ~10–20 linhas |
-| 5 | ~~**Quatro defeitos de ponteiro**~~ — **FECHADO em 2026-08-13**, junto com o #1 do §8.3: botão direito, `pointercancel`/`lostpointercapture`, menu de contexto e cursor. Sobra só a **carência de teclas** (o `Esc` é a única, e não está escrita em lugar nenhum) — essa continua aberta. | `arrastoDePonteiro.ts` (novo), `director.ts`, `cameraRig.ts`, `fases.ts`, `hud.css`, `App.tsx` | feito: ~15–25 linhas; teclas: em aberto |
+| 1 | ~~**Um eixo de arrasto só**~~ — o vertical era calculado e descartado; o eixo que existia movia em latitude | `atlasRig.ts` (`OrbitaDoVisitante`, `addOrbitDelta`), `director.ts`, `App.tsx` | **FECHADO** — ver abaixo |
+| 2 | ~~**Roda e pinça não fazem nada e não avisam**~~ | `rodaDaEscada.ts` (novo), `director.ts` (`onRodaDoAtlas`, `descerDegrau`) | **FECHADO** |
+| 3 | ~~**Polo do corpo nunca fica para cima**~~ — a Terra saía 4,2° a 27,8° torta | `atlasRig.ts` (`upDoAtlas`, campo `polo`), `director.ts` (`poloDoCorpo`) | **FECHADO** |
+| 4 | ~~**O enquadramento não segue o alvo no tempo**~~ | `atlasRig.ts` (`recompor`), `director.ts` (`enquadreVivo`, `recomporAlvo`) | **FECHADO** |
+| 5 | ~~**Quatro defeitos de ponteiro**~~ — botão direito, `pointercancel`/`lostpointercapture`, menu de contexto e cursor. Sobra só a **carência de teclas** (o `Esc` é a única, e não está escrita em lugar nenhum) — essa continua aberta. | `arrastoDePonteiro.ts` (novo), `director.ts`, `cameraRig.ts`, `fases.ts`, `hud.css`, `App.tsx` | **FECHADO**; teclas: em aberto |
+
+### O QUE FECHOU, com os números que pagaram cada conserto (2026-08-13)
+
+**#1 — dois eixos, e a volta inteira de graça.** O horizontal passou a girar em
+torno da **linha alvo→Sol**, e a conta que o autoriza é uma linha: `R(u,ψ)` deixa
+`u` fixo e é ortogonal, logo `(R(u,ψ)d)·u = d·u` — o ângulo ao Sol não muda um
+dígito, a fração iluminada `(1+cos φ)/2` fica idêntica e **o grampo de 70°
+continua valendo palavra por palavra**. O grampo virou CONE em vez de arco:
+`altura` mora em [0°, 70°] porque com 360° de volta a metade negativa é
+redundante (`(−φ,ψ) ≡ (φ,ψ+180°)`, provado em teste pelo espelho). O alcance sai
+de um arco de 140° para o cone inteiro. Os sinais são os da superfície seguindo o
+dedo, cobrados contra as colunas X e Y da câmera já escrita. Volta inteira =
+2.856 px. **A vista de repouso não se mexeu um bit.**
+
+**#2 — roda e pinça em DEGRAUS.** `LIMIAR_DO_DEGRAU_PX = 40` sai dos dois estalos
+que existem (100 px em modo pixel no Chrome/Safari; 3 linhas = 48 px no Firefox):
+um estalo é um degrau em qualquer navegador. `ctrlKey` é como a pinça de Mac
+chega, e é por causa dela que o `preventDefault` é incondicional — o padrão da
+pinça é dar zoom na página inteira. Trava de 300 ms com o acumulado ZERADO
+dentro dela (senão o embalo ressuscita quando ela abre): um empurrão de 600 ms dá
+2 degraus, não 20. A descida de "sistema" pousa na órbita da casa porque sem esse
+ramo a roda não faria nada justamente na vista de abertura.
+
+**#3 — polo do corpo, com a guarda que ele obriga.** O dado saiu de
+`baseCorpoEquatorial` (o mesmo modelo IAU que orienta a malha — nenhuma tabela
+nova). A guarda **não é capricho**: o eixo da Terra faz 66,6° com a direção do
+Sol no solstício e o grampo do arrasto vale 70°, então a mira PASSA por cima do
+polo (varredura fina: 0,002°) e o `lookAt` degenera. `upDoAtlas` mistura com o
+polo da eclíptica pelo mesmo precedente do `galacticUp`; varredura de Terra e Lua
+× um ano × o cone inteiro: a mira nunca chega a menos de **17,6°** do `up`. E não
+vaza — acima de 30° o `up` é o polo do corpo puro, com igualdade exata.
+
+**#4 — alvo vivo, e a partida da rampa junto.** O limite de frequência é o
+INSTANTE e não um teto em ms, por conta: a 116 dias/s um teto de 10 Hz deixaria
+29 milhões de km de Terra entre correções contra um enquadramento de 25 mil km. A
+pose de PARTIDA da rampa anda com o mesmo delta — sem isso, na troca corpo→lua a
+razão é 13:1 num quadro e a câmera gira **95,2°**; com isso, **1,87°**. O
+religador não passa por `teletransportou()` (que derruba a LUT do raymarch e
+reinicia a contagem da captura) porque roda sessenta vezes por segundo.
+
+**A DICA** passou a descrever os gestos reais, com orçamento medido: 68
+caracteres é o teto antes da 3ª linha em `ui = 1,4` a 900 px, e a 3ª linha
+estouraria a base declarada do retângulo útil (0,328 contra 0,310).
+
+**PROVAS.** 1.448 verdes (eram 1.422), `tsc` e `eslint` limpos, **22/22 vistas do
+filme bit-idênticas** — e a `atlas` (`e9544b84cca2`) TAMBÉM não se mexeu, porque
+ela abre no degrau "sistema", onde nenhum dos quatro consertos toca em repouso.
+`atlas-smoke` verde com três provas novas em navegador real (a roda movendo a
+escada com `defaultPrevented=true`, o `up` a 0,14° do polo celeste no degrau
+"corpo", e o alvo andando 5.904× o raio do enquadramento com a câmera junto);
+juiz de a11y verde. Cada conserto foi conferido por MUTAÇÃO.
 
 ### O PRECEDENTE DA CASA: `Novo-Sol-Fable-3d`, `src/camera/controls.js`
 
@@ -365,31 +420,39 @@ autor, o mesmo de onde os 14 arquivos de `sol/` vieram vendorizados. Consultado 
 justificativa das cinco pendências acima: deixam de se apoiar em SpaceEngine e
 passam a se apoiar em código do próprio dono.
 
-| gesto | o que o doador faz | o Atlas hoje |
-|---|---|---|
-| arrastar | orbita **nos dois eixos**, "a superfície segue o dedo" (estilo Google Earth) | um eixo só; o vertical é descartado |
-| roda do mouse | zoom, `dist × 0,0035` por unidade de delta | nada |
-| pinça de trackpad | zoom, `targetCamDist *= prev/d` (multiplicativo) | nada |
-| duplo clique | alterna enquadrar ↔ close-up | nada |
-| setas do teclado | giram **com inércia**; `+`/`−` zoom (0,82 / 1,22); `R` volta ao enquadrado | só `Esc` |
-| trava de elevação | `clamp(phi, 0,18, π−0,18)` ≈ 10°–170° — trava só no POLO, por matemática | ±70°, por iluminação |
-| amortecimento | velocidade suavizada `0,65×anterior + 0,35×instantânea`; arremesso medido em ~180 ms de histórico | nenhum |
-| distância mínima | `SUN_RADIUS × 1,5` | não há zoom |
+A coluna da direita é o estado **ANTES** dos consertos de 2026-08-13; a terceira
+diz onde cada linha parou.
+
+| gesto | o que o doador faz | o Atlas ANTES | depois |
+|---|---|---|---|
+| arrastar | orbita **nos dois eixos**, "a superfície segue o dedo" (estilo Google Earth) | um eixo só; o vertical é descartado | **dois eixos**, superfície seguindo o dedo |
+| roda do mouse | zoom, `dist × 0,0035` por unidade de delta | nada | **degraus da escada** (não zoom contínuo — o degrau vive na URL) |
+| pinça de trackpad | zoom, `targetCamDist *= prev/d` (multiplicativo) | nada | **degraus**, pelo `ctrlKey` |
+| duplo clique | alterna enquadrar ↔ close-up | nada | segue em aberto (o clique simples já enquadra; a descida é a roda) |
+| setas do teclado | giram **com inércia**; `+`/`−` zoom (0,82 / 1,22); `R` volta ao enquadrado | só `Esc` | **em aberto** — a carência de teclas da linha 5 |
+| trava de elevação | `clamp(phi, 0,18, π−0,18)` ≈ 10°–170° — trava só no POLO, por matemática | ±70°, por iluminação | cone de 70° por iluminação, com o piso em 0° pela MESMA razão do irmão (não cruzar o eixo) |
+| amortecimento | velocidade suavizada `0,65×anterior + 0,35×instantânea`; arremesso medido em ~180 ms de histórico | nenhum | **em aberto** |
+| distância mínima | `SUN_RADIUS × 1,5` | não há zoom | não se aplica: a escada tem piso (o degrau "lua") |
 
 **A leitura honesta disto:** a trava de elevação do doador existe para não passar
-pelo polo (matemática), não para proteger iluminação. O grampo de ±70° do Atlas
+pelo polo (matemática), não para proteger iluminação. O grampo de 70° do Atlas
 continua sendo escolha nossa e sem precedente — inclusive no código do próprio
-dono. A saída do eixo alvo→Sol (abaixo) segue sendo a que preserva as duas coisas.
+dono. A saída do eixo alvo→Sol (abaixo) foi a que preservou as duas coisas. E o
+conserto acabou herdando **as duas** travas do irmão pelo mesmo preço: o teto de
+70° por iluminação e um piso em 0° que existe pela razão dele — não cruzar o
+eixo, porque do outro lado o azimute corre ao contrário.
 
 **A saída para o #1 sem afrouxar o grampo de 70°** (que existe para o visitante nunca
-fotografar o lado escuro, `atlasRig.ts:40-47`): o eixo novo gira **em torno da linha
-alvo→Sol**. Um giro nesse eixo não altera o ângulo câmera↔Sol, então a fração
-iluminada continua idêntica — 360° de liberdade, mesma luz. **Refazer a conta em teste
-antes de implementar.**
+fotografar o lado escuro): o eixo novo gira **em torno da linha alvo→Sol**. Um giro
+nesse eixo não altera o ângulo câmera↔Sol, então a fração iluminada continua idêntica
+— 360° de liberdade, mesma luz. **A conta foi refeita e FECHOU** (a prova está em
+`OrbitaDoVisitante` e no teste que varre 72 azimutes a 1e-12); foi ela que se
+implementou.
 
-**Guarda para o #3:** combinado com o #1, a direção da câmera pode chegar a 0,44° do
-polo da Terra (por volta de 21/dez, no extremo do arrasto) e a mira degenera. O
-precedente da mistura suave já existe em `cameraRig.ts:33-40`.
+**Guarda para o #3:** combinado com o #1, a direção da câmera chega ao polo da Terra
+e a mira degenera. **Confirmado e pior do que o estimado**: a varredura fina mediu
+0,002° (a estimativa era 0,44°). O precedente da mistura suave de `cameraRig.ts` foi
+o que se usou — `upDoAtlas` —, e o piso medido depois dela é 17,6°.
 
 **Referências apuradas:** roda de zoom existe em **todas** as fontes sem exceção;
 nenhuma limita giro por causa de iluminação (o grampo de 70° é nosso, sem
