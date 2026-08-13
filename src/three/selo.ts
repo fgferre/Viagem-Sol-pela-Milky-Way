@@ -60,7 +60,36 @@ export type Procedencia = 'medido' | 'derivado' | 'artistico';
 export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> = {
   medido: { rotulo: 'medido', oQue: 'catálogo e efeméride' },
   derivado: { rotulo: 'derivado', oQue: 'cor e temperatura por modelo' },
-  artistico: { rotulo: 'artístico', oQue: 'o disco do Sol e o clarão' },
+  /**
+   * O TERCEIRO ARTIFÍCIO, que entrou em 2026-08-13. Esta entrada
+   * declarava DOIS — "o disco do Sol e o clarão" — e a cena desenhava
+   * TRÊS: faltavam os spikes de difração em cruz das estrelas, vivos em
+   * dois shaders independentes (`shaders/starShaders.ts`, no bloco
+   * guardado por `vSat > 0.001`, e `world/heroStars.ts`, onde o `spikes`
+   * entra em `col` e no alfa).
+   *
+   * E eles são artifício pelo critério mais duro que existe: a cruz não
+   * é propriedade nenhuma da estrela. É o padrão que as HASTES do
+   * espelho secundário de um telescópio imprimem na luz que passa por
+   * elas — não há telescópio nesta cena, e a estrela real é um ponto. O
+   * selo que enumera o que é inventado e esquece o inventado mais
+   * VISÍVEL do quadro mente pela lista curta, que é exatamente o defeito
+   * que o cabeçalho deste arquivo promete não repetir ("a lista
+   * envelhecia calada").
+   *
+   * A COPY É CURTA DE PROPÓSITO, e o motivo é medido: esta linha é a
+   * `.atlas-selo-legenda`, dentro da caixa `.atlas-selo` cuja altura o
+   * juiz de a11y MEDE (`scripts/visual/a11y.mjs`, `medirCobertura`)
+   * contra o retângulo útil do enquadramento e contra o piso doutrinário
+   * de "o HUD deixa mais da metade da altura livre". Cada linha a mais
+   * na legenda cresce a caixa e come quadro. "cruz de luz" e não
+   * "spikes de difração" pela mesma razão de todo o resto do selo: quem
+   * lê isto na tela é o visitante, não o shader.
+   */
+  artistico: {
+    rotulo: 'artístico',
+    oQue: 'o disco do Sol, o clarão e a cruz de luz das estrelas',
+  },
 };
 
 /**

@@ -383,6 +383,40 @@ describe('5. a copy do selo', () => {
       expect(t.oQue.length).toBeGreaterThan(10);
     }
   });
+
+  it('o tier ARTÍSTICO declara os TRÊS artifícios que a cena desenha', () => {
+    // ACHADO em 2026-08-13: a entrada dizia "o disco do Sol e o clarão"
+    // — DOIS — e a cena desenhava TRÊS. O que faltava eram os spikes de
+    // difração em cruz das estrelas, vivos em DOIS shaders
+    // independentes: `shaders/starShaders.ts` (o bloco guardado por
+    // `vSat > 0.001`) e `world/heroStars.ts` (o `spikes` entra em `col`
+    // e no alfa). São artifício pelo critério mais duro que existe — a
+    // cruz é o padrão que as hastes do secundário de um TELESCÓPIO
+    // imprimem na luz, e não há telescópio nesta cena.
+    //
+    // A FRASE CRESCEU por isso, e este teste existe para ela não voltar
+    // a encolher calada: artifício que entre na cena (ou saia dela) tem
+    // de passar por aqui. O teste velho acima só cobrava `length > 10`,
+    // que uma lista incompleta satisfaz sem esforço — foi por isso que
+    // o buraco durou.
+    const oQue = PROCEDENCIA.artistico.oQue;
+    expect(oQue).toContain('disco do Sol');
+    expect(oQue).toContain('clarão');
+    expect(oQue).toContain('cruz de luz');
+
+    // E CURTA, com o teto MEDIDO em vez de arbitrado. Esta linha é a
+    // `.atlas-selo-legenda`, dentro da caixa `.atlas-selo` cuja ALTURA o
+    // juiz de a11y mede (`scripts/visual/a11y.mjs`, `medirCobertura`)
+    // contra o retângulo útil do enquadramento. Medido no navegador em
+    // 2026-08-13, na janela 1200x900 do juiz (caixa de 21rem = 336 px,
+    // fonte 0,46rem = 7,36 px, entrelinha 11,04 px): a legenda só passa
+    // a ocupar TRÊS linhas quando ESTA frase chega a 86 caracteres. Com
+    // os 53 de hoje ela continua em DUAS, e a base do selo fica em
+    // 0,1769 — o MESMO número de antes da frase crescer, contra 0,24
+    // declarados (e quem domina a base é a `.atlas-tempo`, com 0,1809).
+    // Ou seja: esta redação não move um fio do juízo de a11y.
+    expect(oQue.length).toBeLessThanOrEqual(85);
+  });
 });
 
 // ============================================================
