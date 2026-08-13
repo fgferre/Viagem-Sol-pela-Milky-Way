@@ -262,6 +262,50 @@ export const VISTAS = [
       + '&look=0.0000027958946899936873,-0.000003732529698720039,-0.0000016180463950766712'
       + '&jd=2458327.34980323&corpos=1&shot=2',
   ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F3) — OS ROCHOSOS, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). A câmera fica a 4 raios do centro, 20° fora do eixo
+  // corpo→Sol pelo lado ILUMINADO (o padrão da vista `lua`: disco
+  // quase cheio, ~757 px de diâmetro em 1800×1713 — é a geometria em
+  // que Lommel-Seeliger se julga a olho: o disco cheio lê CHATO, não
+  // Lambertiano). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC), pinados como os ?pos= acima.
+  //
+  // `mercurio`: regolito LS (C=4/3 derivado) a 0,4034 UA — E(real)=6,14.
+  // O par &nobloom=1 é GATE (T-E10): Mercúrio e Vênus cruzam o limiar
+  // de bloom 0,82 no subsolar, e a recalibração σ×bloom se lê AQUI, sem
+  // o clarão na frente. O px do efeito julgado: o disco INTEIRO, 757 px.
+  //
+  // `venus`: topo de nuvens a 0,7275 UA — E(real)=1,89. O albedo alto
+  // faz Vênus o caso mais brilhante da casa: é o herói da recalibração
+  // (subsolar vs o limiar 0,82), julgado no par &nobloom=1 com número,
+  // não a olho. Mesmo px declarado: 757 px de disco.
+  [
+    'mercurio',
+    '?pos=-0.0000019148588355801608,-3.9725638498650736e-7,-1.3749003726820043e-8'
+      + '&look=-0.0000019151695742340926,-3.9722379598669784e-7,-1.3699318312906234e-8'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'mercurionb',
+    '?pos=-0.0000019148588355801608,-3.9725638498650736e-7,-1.3749003726820043e-8'
+      + '&look=-0.0000019151695742340926,-3.9722379598669784e-7,-1.3699318312906234e-8'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'venus',
+    '?pos=0.0000033711554193735603,-8.460975885052472e-7,-5.940024469150652e-7'
+      + '&look=0.00000337178324480784,-8.465120134658821e-7,-5.942250012794021e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'venusnb',
+    '?pos=0.0000033711554193735603,-8.460975885052472e-7,-5.940024469150652e-7'
+      + '&look=0.00000337178324480784,-8.465120134658821e-7,-5.942250012794021e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
