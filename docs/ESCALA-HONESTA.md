@@ -75,9 +75,11 @@ Tudo abaixo foi aberto e conferido.
    `lua.ts:111`, via `BODY_AXES`).
 
 2. **A régua certa já roda em produção.** Vira malha quando mede 4 px na tela, volta
-   a ponto abaixo de 2 — `LIMIAR_DO_GATE_PX = 4` / `CUSHION_DO_GATE = 2`
-   (`src/three/world/corpos/terra.ts:110,113`), medindo por
-   `diametroAparentePx` (`corpos.ts:196-204`). **Serve a qualquer raio, sem número novo.**
+   a ponto abaixo de 2 — `LIMIAR_DO_GATE_PX = 4` / `CUSHION_DO_GATE = 2`, medindo por
+   `diametroAparentePx`. **Serve a qualquer raio, sem número novo.**
+   *(Desde a F2 os três moram em `src/three/world/corpos/corpos.ts`, não mais em
+   `terra.ts`: a régua da Terra virou a régua do palco no dia em que o Sol entrou
+   nela. `terra.ts` reexporta.)*
 
 3. **A régua portátil do Sol foi escrita e deixada dormindo.**
    `src/three/world/lodStellar.ts:425-445` já diz por extenso: *"uma janela em pc só
@@ -85,6 +87,9 @@ Tudo abaixo foi aberto e conferido.
    (`:512`) e prova a equivalência `d = r/θ`. **Nenhum arquivo de runtime a consome**
    — `shouldDiscBeActive` só aparece na própria definição e nos testes. A peça está
    pronta na gaveta desde a Onda 3.
+   *(A F2 tentou fiá-la e NÃO fiou, com a conta na mesa: o ENTER dela vale 212 px de
+   diâmetro contra os 4 px do palco — 53× —, e fiá-la apagaria `solrampa` e
+   `solestouro`. Continua na gaveta, agora com razão medida. Ver a F2.)*
 
 4. **A física do produto já usa o Sol de verdade.** `RAIO_SOL_KM = 696_340`
    (`src/lib/atlas/eclipse.ts:374`) — toda a geometria de umbra e penumbra do F2c é
@@ -164,7 +169,99 @@ Três fotos do mesmo motor: 533 px a 4,00 milhões de km · 14,4 px a 1 UA · 0,
 > (`sol/coronaVolume.js:363`, `cme.js:187`) contra uma travessia real de 1,30e-7 pc —
 > **769× menor**: todo raio desiste antes de começar.
 
-### F2 — Sol real vira padrão dentro do sistema (o filme não muda)
+### F2 — o Sol entra na lei do palco — **FEITA** (2026-08-13)
+
+**GATE PASSADO: 22/22 bit-idênticas**, recaptura do zero (`DOZERO=1`, 26 vistas × 2,
+2,7 min). E mais: as **três vistas da F1 também não se mexeram** — `solreal4mkm`
+`8a43f749a632` · `solreal1ua` `f665b6bfe84c` · `solreal40ua` `a607e3cf57ab`.
+25/25 antigas idênticas; 1 vista nova (`atlas`, abaixo).
+
+**O que entrou.** O disco do Sol deixou de ser decidido por janela em parsec e passou
+pela **mesma lei que já governa Terra e Lua**: diâmetro aparente contra
+`LIMIAR_DO_GATE_PX` = 4 px, com o cushion 2× da histerese. A lei mudou de endereço
+junto — saiu de `terra.ts` e foi para `corpos.ts`, ao lado de `diametroAparentePx`,
+porque deixou de ser régua da Terra para ser **régua do palco** (`terra.ts` reexporta:
+nenhum importador mudou de linha, e não há segunda cópia).
+
+**A aritmética que pagou a fase** (lente 58°, buffer efetivo do harness 1713 px ⇒
+1.545,1 px/rad):
+
+| | arma | desarma |
+|---|---|---|
+| Sol de raio FÍSICO (2,2567e-8 pc) | **3,60 UA** (4 px) | 7,19 UA (2 px) |
+| disco ARTÍSTICO (0,011 pc) | 8,50 pc | 17,0 pc |
+
+O disco artístico só desenha acima de **0,02 pc = 4.125 UA** (`deepDiscFade`), e o
+corpo real só arma abaixo de 3,60 UA: **1.147× de separação — eles nunca coexistem em
+quadro.** E com o raio artístico o gate novo é **inerte por aritmética**: ele só
+desarmaria em 8,50 pc, 26× depois do corte duro de custo que já apagava o grupo
+(0,3249 pc). Varredura em `corpos.test.ts`: em toda distância em que o grupo do Sol
+artístico pode estar visível, o gate está armado. É daí que sai o pixel-igual — sem
+medição nova, por conta.
+
+**A régua-em-pc virou lei única.** `discWorldFadeDaInstancia` (o `if` da F1, que
+escolhia entre duas leis conforme o raio) morreu e virou
+`solWorldFadeDaInstancia(dPc, raioPc)`: o termo do domínio profundo recebe a distância
+**normalizada pelo raio** (`dPc × sunRadius/raioPc`), porque "engolfar o quadro" é
+tamanho na tela, não distância absoluta. Para o raio artístico a razão é `x/x` = 1
+EXATO e `d×1 === d`: a função **é** `solWorldFade` bit a bit (teorema, não tolerância —
+com teste de sabotagem de 1 ULP). O termo de LONGE fica em pc crus com razão escrita:
+normalizá-lo mataria o disco do Sol real a 14,5 raios solares, e a F1 já fotografou um
+disco legítimo de 14,4 px a 1 UA.
+
+**O Sol no palco, e o registro subiu de lugar.** Ele agora acontece junto com o da
+Terra e o da Lua — **antes** de o near ler o palco. Da F1 até aqui ele ficava depois do
+`sun.update`, e o plano de corte recebia a superfície do quadro **anterior**. A guarda
+`raio físico` continua e não é gate de fase: é doutrina do palco (ali só entra
+superfície real). Medido: registrar o Sol inflado mudaria o near em toda vista com a
+câmera além de **1,375 pc** — `interno`, `travessia`, `mergulho`, `edgeon`, `faceon` e
+as quatro de hero.
+
+**A dupla-luz ponto↔corpo desfeita, por DOMINÂNCIA.** O Sol-ponto da camada de
+planetas cede pelo `cessaoAlvo` da F2b da Onda 6 (a curva g(r) de 1 a 2,5), não por
+corte no gate: cortar no armar apagaria ~25 px de halo para pôr 4 px de disco no lugar
+— um passo para trás na luz, que é o que a prova de continuidade da Onda 3 proíbe. A
+1 UA o disco tem 14,4 px contra 25,2 px de halo ⇒ r = 0,57 ⇒ **cessão 0 exata**, e é
+por isso que `solreal1ua` continua no md5 da F1. **A tela branca não foi apagada por
+acidente: ela continua sendo o que o §5.6 diz que é.**
+
+#### O que CONTRARIA o desenho da fase (medido, não opinião)
+
+1. **`?solreal=1` NÃO pôde virar desnecessária.** O raio é parâmetro de **construção**
+   (vira escala do grupo e literal compilado no GLSL da coroa e da CME —
+   `SUN_R_GLSL`/`SEG_EPS_GLSL`), então "ser o padrão" só pode significar construir o
+   Sol pequeno SEMPRE — e o Sol pequeno sempre apaga o disco da abertura: a 0,063 pc a
+   fotosfera real mede **5,5e-4 px**. As vistas que morreriam são `sol`, `soldisco`,
+   `solrampa` e `solestouro` — **exatamente as 4 baselines que a F3 reserva**.
+   Antecipar isso aqui seria pagar a conta da F3 sem entregar o plano dela. A porta
+   fica, viva e não morta (3 vistas oficiais + os testes da lei nova), e o que ela
+   perdeu foi o papel de LIGAR o Sol como corpo: quem decide isso agora é a lei do
+   palco. Ela só escolhe QUE RAIO o Sol tem.
+2. **O gate por ângulo sólido continua dormindo, e agora com razão medida.**
+   `DISC_ENTER_RAD` e `LIMIAR_DO_GATE_PX` são o mesmo contrato com limiares **53×
+   distantes**: ENTER = 0,06875 rad de raio angular ⇒ **212 px** de diâmetro, contra os
+   **4 px** do palco. São perguntas diferentes — "o disco INFLADO ainda é o assunto?"
+   contra "este corpo já é representável como corpo?". Fiar `shouldDiscBeActive` como
+   gate do grupo do Sol **apagaria o disco em `solrampa` (0,25 pc) e `solestouro`
+   (0,32 pc)**: nos dois o θ está abaixo do ENTER e o gate, partindo de inativo, nunca
+   ligaria. Duas baselines perdidas para trocar de régua sem trocar de resposta. O que
+   a F2 fiou foi a régua do palco, que responde a pergunta certa para um corpo de raio
+   físico. O gate por ângulo fica de pé como pendência **nomeada** da Onda 7 — e o
+   número dele (212 px) vai ter de ser re-derivado do corpo real, não do disco inflado.
+
+#### A vista nova: `atlas` (`e9544b84cca2`)
+
+Fecha o defeito #5 do §8.3: **nenhuma das 22 ligava `?atlas=1`**, e a lei do clarão
+(`claraoDoAtlas`) nunca tinha sido exercida por juiz nenhum. `?atlas=1&jd=…&shot=2` —
+sem `?pos=`, que tem precedência sobre `?atlas=1` e desligaria justamente o modo.
+
+**E o que ela mostrou, na primeira vez que alguém olhou:** mesmo com o fator no PISO
+(k² = 1,29e-4 contra `PISO_DO_CLARAO` = 0,01), o clarão do Sol-ponto **ainda é uma bola
+branca que ocupa a maior parte do quadro**. A lei modera; ela não resolve. É a mesma
+pendência do §5.6, agora com imagem, juiz e md5 — e é contra esta linha de base que a
+onda da exposição vai poder provar que consertou alguma coisa. Hoje não havia como.
+
+### F2 — especificação original (mantida para o registro)
 Vira disco a partir de 3,60 UA (lente do Atlas). `lodStellar.ts`, `director.ts`,
 `planetas.ts`. ~120 linhas + ~250 de teste.
 Prova: **22 vistas bit-idênticas por aritmética** — o corpo real só arma abaixo de
@@ -435,7 +532,7 @@ no regime que comprou o conserto, com o conserto desligado.
 | 2 | **FECHADO em 2026-08-13.** ~~`pointercancel` e `lostpointercapture` não existem~~, o cursor nunca muda, o menu do botão direito não é bloqueado. Gesto cancelado pelo sistema deixa o arrasto **preso para sempre**. | junto do #1 | zero |
 | 3 | **Os 1.321 testes não rodam no CI.** O único arquivo de automação roda `npm run build` e mais nada. | 2 linhas | zero |
 | 4 | **A escada de rendição não existe.** `cvolKilled` e `cmeKilled` são **lidos e nunca escritos**: quando o quadro cai, a casa derruba a resolução da galáxia inteira e o Sol segue no custo cheio. Agravante: o tier do Sol congela no arranque, então o desligamento por subsistema é a **única** alavanca que resta. | pequeno | baixo |
-| 5 | **Nenhuma das 22 vistas oficiais liga o modo Atlas.** A lei do clarão — a única defesa construída contra a tela branca — **nunca foi exercida por juiz nenhum**. | 1 vista | conferível hoje |
+| 5 | ~~**Nenhuma das 22 vistas oficiais liga o modo Atlas.**~~ **FECHADO na F2 (2026-08-13)**: a vista `atlas` (`e9544b84cca2`) entrou e a lei do clarão passou a ter juiz. O que ela revelou está na F2 — a lei modera e não resolve. | 1 vista | feito, 0 px |
 | 6 | **Memória de vídeo paga e não usada:** a casa desenha em alvo próprio e o buffer de profundidade da tela não oculta nada — 22,9 MB a 1512×945, ~59 MB a 2560×1440. O irmão mediu 138 MiB liberados. | 1 palavra | baixo, com vigília |
 | 7 | **Rótulos afiam ao trocar de monitor, a cena 3D não** — a nitidez da cena é decidida uma vez no arranque. É a única incoerência desta lista que o visitante **vê hoje**. | médio | médio |
 | 8 | **O selo declara dois artifícios e desenha três:** os espinhos de difração das estrelas não estão declarados. | pequeno | zero |

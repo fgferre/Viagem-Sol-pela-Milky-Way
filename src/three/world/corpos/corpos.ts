@@ -202,3 +202,39 @@ export function diametroAparentePx(
   const meiaFovRad = THREE.MathUtils.degToRad(fovDeg) / 2;
   return (2 * Math.atan(raioPc / dPc) * screenHPx) / (2 * Math.tan(meiaFovRad));
 }
+
+/**
+ * O LIMIAR DO GATE, em pixels de diâmetro aparente (`diametroAparentePx`,
+ * a régua única do palco, logo acima). 4 px: abaixo disso um globo
+ * texturizado não comunica nada que o ponto fotométrico já não comunique —
+ * e o ponto tem a fotometria certa.
+ *
+ * MUDOU DE ENDEREÇO NA F2 DA ONDA DO SOL REAL, e a mudança é de doutrina,
+ * não de arrumação: enquanto o único consumidor era a Terra, a lei podia
+ * morar com ela; a partir do momento em que o SOL entra na mesma lei
+ * (`director.ts`, o gate do disco), ela deixou de ser "a régua da Terra" e
+ * passou a ser A RÉGUA DO PALCO — quem decide, para QUALQUER corpo de raio
+ * físico, se ele é representável como corpo ou só como ponto. Fica ao lado
+ * de `diametroAparentePx`, que é a outra metade da mesma conta, num módulo
+ * que não sabe o que é uma textura. `terra.ts` e `lua.ts` continuam
+ * reexportando os dois nomes: nada que já importava deles precisou mudar,
+ * e é a Onda 7 (corpo por estrela) quem colhe a portabilidade.
+ */
+export const LIMIAR_DO_GATE_PX = 4;
+/** Cushion 2× da histerese (contrato da Onda 3): sai abaixo de
+ *  LIMIAR/CUSHION = 2 px — entrar e sair nunca disputam o mesmo pixel. */
+export const CUSHION_DO_GATE = 2;
+
+/**
+ * O GATE BINÁRIO com histerese, na forma do contrato do doador
+ * (`shouldDiscBeActive`, `lodStellar.ts`): entra com `>= LIMIAR`, só sai
+ * abaixo de `LIMIAR/CUSHION`, e diâmetro envenenado PRESERVA o estado
+ * (nunca flipa por NaN). É a mesma máquina de `stellarMeshGate` — as
+ * desigualdades assimétricas existem para a câmera tremendo na fronteira
+ * não ligar/desligar o corpo quadro a quadro.
+ */
+export function gateBinario(armado: boolean, diametroPx: number): boolean {
+  if (!Number.isFinite(diametroPx)) return armado;
+  if (armado) return !(diametroPx < LIMIAR_DO_GATE_PX / CUSHION_DO_GATE);
+  return diametroPx >= LIMIAR_DO_GATE_PX;
+}

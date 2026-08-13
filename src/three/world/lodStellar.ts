@@ -71,18 +71,37 @@
 // da cicatriz C4. (i) A rampa TEMPORAL (`stepRampToward`,
 // `RAMP_DURATION_MS`, `resetRamp`) — já dito na seção 2: o crossfade do
 // Sol é dirigido por DISTÂNCIA, e o mecanismo da rampa é o do foco por
-// estrela, que chega na Onda 7. (ii) O GATE POR ÂNGULO SÓLIDO
+// estrela, que chega na Onda 7. Desde a Onda 6/F2b ela TEM consumidor
+// (a cessão suave da Terra). (ii) O GATE POR ÂNGULO SÓLIDO
 // (`shouldDiscBeActive`, `computeSolidAngle`, `projectedRadiusPx`,
-// `maxSpriteSolidAngleRad`): nenhum consumidor de runtime o importa. O
-// handoff REAL do disco continua sendo o corte SECO de
-// `stellarBody.ts:480` (`world > 0.02`, d ≈ 0,3249 pc), SEM cushion —
-// com a câmera tremendo exatamente nessa distância o grupo do Sol pode
-// ligar/desligar quadro a quadro, que é o defeito que o cushion 2× foi
-// comprado para evitar. Fiar o gate ali MUDARIA pixel na fronteira, e
-// esta onda tinha gate de pixel-igual: a fiação é pendência NOMEADA da
-// Onda 7 (quando houver corpo por estrela e o handoff precisar valer
-// para qualquer instância), com A/B próprio. O contrato está inteiro e
-// testado desde a fase 1 — o que falta é o fio, não a peça.
+// `maxSpriteSolidAngleRad`): nenhum consumidor de runtime o importa.
+//
+// ── POR QUE ELE CONTINUA DORMINDO DEPOIS DA F2 (medido em 2026-08-13) ──
+// A F2 da onda do Sol real chegou para lhe dar o primeiro consumidor e
+// NÃO deu, por uma razão que só apareceu com a conta na mesa: o
+// `DISC_ENTER_RAD` daqui e o `LIMIAR_DO_GATE_PX` do palco
+// (`corpos.ts`) são o MESMO CONTRATO com limiares 53× distantes, e não
+// duas escritas da mesma lei.
+//   ENTER = 0,06875 rad de RAIO angular ⇒ 0,1375 rad de diâmetro ⇒
+//   **212 px** de diâmetro na lente de 58° a 1713 px de altura.
+//   A régua do palco entra em **4 px** de diâmetro.
+// São perguntas diferentes: o ENTER pergunta "o disco INFLADO ainda é o
+// assunto do quadro?" (a calibração artística do crossfade para o
+// clarão do `SunStar`), e o palco pergunta "este corpo já é
+// REPRESENTÁVEL como corpo?". Fiar `shouldDiscBeActive` como gate do
+// grupo do Sol apagaria o disco em `solrampa` (0,25 pc) e `solestouro`
+// (0,32 pc) — nas duas o θ está ABAIXO do ENTER e o gate, partindo de
+// inativo, nunca ligaria —, o que são duas baselines oficiais perdidas
+// para trocar de régua sem trocar de resposta. O handoff REAL do disco
+// continua sendo o corte SECO de `stellarBody.ts` (`world > 0.02`,
+// d ≈ 0,3249 pc), SEM cushion.
+// Quem a F2 fiou foi a régua do PALCO, que é a que responde a pergunta
+// certa para um corpo de raio FÍSICO e já governa Terra e Lua
+// (`director.ts`, o gate do disco do Sol). O gate por ângulo sólido
+// fica de pé, testado e sem fio, como pendência NOMEADA da Onda 7 —
+// quando houver corpo por estrela, é ele que decide onde a estrela
+// deixa de ser PSF; e aí o número que ele carrega (212 px) vai ter de
+// ser re-derivado do corpo real, não do disco inflado.
 // ============================================================
 import { WORLD } from '../config';
 
@@ -252,35 +271,50 @@ export function solWorldFade(dPc: number): number {
 }
 
 /**
- * A MESMA ATENUAÇÃO, agora ciente do RAIO DA INSTÂNCIA (F1 da onda do
- * Sol real). É a primeira rachadura declarada na régua-em-pc, e ela não
- * é preferência: é que o termo `deepDiscFade` **perde a premissa** fora
- * do raio artístico.
+ * A MESMA ATENUAÇÃO com o RAIO DA INSTÂNCIA COMO TERMO — e não mais como
+ * um `if` que escolhe entre duas leis. É o que a F2 da onda do Sol real
+ * prometeu quando a F1 embarcou o remendo `discWorldFadeDaInstancia`
+ * ("o raioPc deixa de escolher entre duas leis e passa a ser só um dos
+ * termos de uma lei só; quando isso acontecer, esta função morre"). Ela
+ * morreu; esta é a herdeira.
  *
- * A premissa está escrita, com todas as letras, na docstring de
- * `LOD_SOL.deep` logo acima: o disco se dissolve indo para dentro
- * "porque uma fotosfera de raio artístico (0,011 pc = 2.269 UA)
- * engolfaria o sistema solar inteiro". Com raio FÍSICO (2,2567e-8 pc,
- * 487.441× menor) a fotosfera não engolfa coisa nenhuma — ela é menor
- * que a órbita de Mercúrio por cinco ordens de grandeza. Aplicar a
- * dissolução ali seria apagar o Sol para resolver um problema que o Sol
- * verdadeiro não tem, e é EXATAMENTE isso que acontece hoje: a
- * `deepDiscFade` vale 0 abaixo de 0,02 pc, então um Sol de raio real
- * nasceria invisível em todo o sistema solar.
+ * A CONTA, e ela cabe numa linha: `deepDiscFade` mede uma coisa só — o
+ * quanto o corpo ENGOLFA o quadro ao se chegar perto. A docstring de
+ * `LOD_SOL.deep` diz a premissa com todas as letras ("uma fotosfera de
+ * raio artístico, 0,011 pc = 2.269 UA, engolfaria o sistema solar
+ * inteiro"), e "engolfar" é TAMANHO NA TELA, não distância absoluta.
+ * Uma janela em pc só serve a UM raio; a mesma janela dividida pelo raio
+ * serve a qualquer um. Daí a distância NORMALIZADA
  *
- * BIT-IDENTIDADE: para o raio artístico esta função é `solWorldFade`,
- * a mesma chamada, sem um ULP de diferença — a comparação é de
- * igualdade exata contra `WORLD.sunRadius`, não uma tolerância.
+ *     dEquivalente = dPc × (WORLD.sunRadius / raioPc)
  *
- * ESTE É UM REMENDO COM DATA DE VALIDADE, e ele se declara: a F2 troca
- * a janela-em-pc pela régua de TAMANHO NA TELA (o gate por ângulo
- * sólido que dorme neste arquivo desde a Onda 3 — ver `DISC_ENTER_RAD`
- * e "A CONTA DO HANDOFF"), e aí o `raioPc` deixa de escolher entre duas
- * leis e passa a ser só um dos termos de uma lei só. Quando isso
- * acontecer, esta função morre.
+ * que é a distância a que o Sol ARTÍSTICO estaria para subtender o mesmo
+ * ângulo que esta instância subtende em `dPc`. Alimentada nas janelas de
+ * sempre, ela diz a mesma frase para todo raio.
+ *
+ * BIT-IDENTIDADE, e é teorema e não tolerância: com `raioPc ===
+ * WORLD.sunRadius` a razão é `x/x`, que em IEEE754 é 1 EXATO para todo
+ * finito não-nulo, e `dPc * 1 === dPc` sem um ULP de diferença (vale
+ * também para ±0 e NaN, que atravessam como atravessavam). Logo esta
+ * função É `solWorldFade` no raio artístico — as 22 vistas oficiais não
+ * têm por onde mudar.
+ *
+ * O QUE NÃO SE NORMALIZA, e é decisão com razão escrita: o termo
+ * `discWorldFade` (o handoff disco↔clarão de LONGE) fica em pc CRUS. Ele
+ * não é uma lei de "quando o corpo é resolvido" — é a calibração
+ * artística do crossfade para a PSF do `SunStar`, ancorada em 0,16 pc
+ * porque é lá que o DISCO INFLADO some. Normalizá-lo mataria o disco do
+ * Sol real a 14,5 raios solares (0,068 UA), e a F1 já FOTOGRAFOU um
+ * disco legítimo de 14,4 px a 1 UA. Para um corpo de raio físico quem
+ * decide o handoff de longe é a régua do palco (4 px de diâmetro,
+ * `gateBinario` em `corpos.ts`), consumida pelo `director` — a mesma que
+ * governa Terra e Lua, e a que a Onda 7 leva para as outras estrelas.
+ * Com raio físico este termo vale 1 em todo o sistema solar (ele só
+ * começa a cair em 0,16 pc = 33 mil UA), então ele não disputa nada com
+ * o gate: fica inerte, esperando a F3 aposentá-lo junto com o disco.
  */
-export function discWorldFadeDaInstancia(dPc: number, raioPc: number): number {
-  return raioPc === WORLD.sunRadius ? solWorldFade(dPc) : discWorldFade(dPc);
+export function solWorldFadeDaInstancia(dPc: number, raioPc: number): number {
+  return discWorldFade(dPc) * deepDiscFade(dPc * (WORLD.sunRadius / raioPc));
 }
 
 /**

@@ -242,6 +242,39 @@ export const VISTAS = [
       + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
       + '&jd=2460409.26395835&corpos=1&shot=2',
   ],
+  // ------------------------------------------------------------------
+  // O MODO ATLAS, e ela fecha um BURACO DE COBERTURA de três ondas:
+  // nenhuma das 22 vistas oficiais ligava `?atlas=1`, então a LEI DO
+  // CLARÃO do Atlas (`claraoDoAtlas`, src/three/atlasConfig.ts) — a
+  // única defesa que a casa construiu contra a tela branca de dentro do
+  // sistema solar — nunca foi exercida por juiz nenhum. Ela é código de
+  // runtime que só roda na fase 'atlas' (o tick não a chama fora dela),
+  // e portanto invisível para as 22, todas em fase de filme.
+  //
+  // O QUE ESTA VISTA GUARDA: a moderação MÁXIMA da lei. Na abertura
+  // (227 UA) o fator está no PISO — k = 227/20.000 dá k² = 1,29e-4, bem
+  // abaixo de `PISO_DO_CLARAO` = 0,01 —, então é aqui que a defesa está
+  // apertada ao limite. Mexer no piso, na referência de 20.000 UA ou na
+  // lei quadrática move este md5 na hora, e é isso que a vista compra.
+  //
+  // E O QUE ELA MOSTRA, dito sem maquiagem porque foi a PRIMEIRA vez que
+  // alguém olhou: mesmo no piso, o clarão do Sol-ponto ainda é uma bola
+  // branca que ocupa a maior parte do quadro. A lei modera; ela não
+  // resolve. É a MESMA pendência que o bastão já declarava por escrito
+  // (`docs/ESCALA-HONESTA.md` §5.6 — a tela branca é defeito de
+  // EXPOSIÇÃO, e a causa medida é uma das cinco escalas de borrão do
+  // clarão, não a lei do Atlas), agora com imagem, juiz e md5. Esta
+  // vista é a linha de base contra a qual a onda da exposição vai poder
+  // provar que consertou alguma coisa — hoje não há como provar.
+  //
+  // `?atlas=1` e NÃO `?pos=`: a precedência declarada em App.tsx é
+  // `?pos=` > `?atlas=1`, então cravar a câmera desligaria justamente o
+  // modo que se quer exercer. O enquadramento vem da abertura do Atlas,
+  // que é determinística.
+  // `&jd=` pelo mesmo motivo das quatro de corpo acima: o instante da
+  // efeméride é dado de imagem, e sem ele a Terra e a Lua entrariam no
+  // quadro no retrato congelado — que é outro céu.
+  ['atlas', '?atlas=1&jd=2460409.26395835&shot=2'],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);

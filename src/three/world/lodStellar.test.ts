@@ -63,8 +63,8 @@ import {
   psfPointSizePx,
   resetRamp,
   shouldDiscBeActive,
-  discWorldFadeDaInstancia,
   solWorldFade,
+  solWorldFadeDaInstancia,
   spriteAttenuation,
   spriteAttenuationWithFocus,
   stepRampToward,
@@ -236,14 +236,15 @@ describe('janelas de LOD do Sol — pinagem verbatim da casa', () => {
     const stellarBody = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
     const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
 
-    // O ALVO MUDOU DE NOVO NA F1 (onda do Sol real), e pelo mesmo tipo
-    // de razão da D2: `stellarBody` deixou de chamar `solWorldFade` e
-    // passou a chamar `discWorldFadeDaInstancia(dPc, raio)`, que é
-    // `solWorldFade` EXATO para o raio artístico e dispensa o termo do
-    // domínio profundo para qualquer outro raio — porque esse termo
-    // existe para uma fotosfera de 2.269 UA, e a de raio físico
-    // (487.441× menor) não engolfa sistema nenhum. Sem isso um Sol de
-    // tamanho real nasceria INVISÍVEL dentro de todo o sistema solar.
+    // O ALVO MUDOU NA F1 e MUDOU DE NOME NA F2 (onda do Sol real), pelo
+    // mesmo tipo de razão da D2. Na F1, `stellarBody` deixou de chamar
+    // `solWorldFade` e passou a chamar `discWorldFadeDaInstancia(dPc,
+    // raio)`, um `if` que escolhia entre duas leis conforme o raio. Na
+    // F2 o `if` morreu: `solWorldFadeDaInstancia` é UMA lei com o raio
+    // como TERMO — a janela do domínio profundo entra dividida pelo raio,
+    // porque "engolfar o quadro" é tamanho na tela e não distância
+    // absoluta. Para o raio artístico continua sendo `solWorldFade` com
+    // igualdade de BIT (a razão `x/x` é 1 exato e `d*1 === d`).
     //
     // O QUE A GUARDA CONTINUA GUARDANDO, intacto: (a) o consumo vem
     // DAQUI, por import; (b) a rampa não voltou a ser digitada no
@@ -251,13 +252,13 @@ describe('janelas de LOD do Sol — pinagem verbatim da casa', () => {
     // a `discWorldFade(dPc)` continua PROIBIDA — com ela de volta o
     // disco artístico voltaria a desenhar pleno dentro do sistema solar,
     // que é exatamente o que a D2 comprou. Repare que
-    // `discWorldFadeDaInstancia(dPc,` não casa esse `not.toContain`: o
-    // sufixo separa as duas, e é de propósito.
+    // `solWorldFadeDaInstancia(dPc,` não casa o `not.toContain` de
+    // `solWorldFade(dPc)`: o sufixo separa as duas, e é de propósito.
     expect(stellarBody).toMatch(
-      /import \{[^}]*\bdiscWorldFadeDaInstancia\b[^}]*\} from '\.\/lodStellar'/
+      /import \{[^}]*\bsolWorldFadeDaInstancia\b[^}]*\} from '\.\/lodStellar'/
     );
     expect(stellarBody).toMatch(/import \{[^}]*\bisDiscGroupVisible\b[^}]*\} from '\.\/lodStellar'/);
-    expect(stellarBody).toContain('discWorldFadeDaInstancia(dPc, this.params.radiusPc)');
+    expect(stellarBody).toContain('solWorldFadeDaInstancia(dPc, this.params.radiusPc)');
     expect(stellarBody).not.toContain('discWorldFade(dPc)');
     expect(stellarBody).not.toContain('solWorldFade(dPc)');
     expect(stellarBody).toContain('isDiscGroupVisible(world)');
@@ -1632,7 +1633,7 @@ const VISTAS_T: readonly (readonly [string, number])[] = [
  * o domínio profundo — cuja razão de existir é uma fotosfera de 2.269 UA
  * engolfando o sistema — simplesmente não se aplica. Contá-las aqui
  * faria o gate cobrar de `solWorldFade` um comportamento que aquelas
- * vistas nem consultam (elas passam por `discWorldFadeDaInstancia`).
+ * vistas nem consultam (elas passam por `solWorldFadeDaInstancia`).
  *
  * A exclusão é CONTADA logo abaixo: se alguém acrescentar uma quarta
  * vista de `?solreal=1` sem pensar, o número muda e o teste reclama.
@@ -1927,31 +1928,61 @@ describe('a FIAÇÃO da F2 — o limiar atravessa três módulos sem redigitaç�
 });
 
 // ============================================================
-// F1 — a atenuação ciente do RAIO DA INSTÂNCIA.
+// F1/F2 — a atenuação com o RAIO DA INSTÂNCIA como TERMO.
 // ============================================================
-describe('discWorldFadeDaInstancia — a primeira rachadura declarada na régua-em-pc', () => {
+describe('solWorldFadeDaInstancia — uma lei só, com o raio dentro dela', () => {
   const RAIO_FISICO_PC = 2.2566840209436597e-8;
 
   it('para o raio ARTÍSTICO é solWorldFade, com igualdade de BIT', () => {
-    // varredura, não amostra: é o que mantém o filme inteiro sem um pixel
+    // varredura, não amostra: é o que mantém o filme inteiro sem um pixel.
+    // A igualdade é TEOREMA, não tolerância: `WORLD.sunRadius/WORLD.sunRadius`
+    // é 1 exato em IEEE754 e `d * 1 === d` sem um ULP de diferença.
     for (let i = 0; i <= 400; i++) {
       const d = i * 0.0025; // 0 → 1 pc, cobrindo as quatro janelas
-      expect(discWorldFadeDaInstancia(d, WORLD.sunRadius)).toBe(solWorldFade(d));
+      expect(solWorldFadeDaInstancia(d, WORLD.sunRadius)).toBe(solWorldFade(d));
     }
+  });
+
+  it('SABOTAGEM: mover o raio um ULP já separa as duas curvas', () => {
+    // se a igualdade de bit acima passasse por tolerância escondida, este
+    // teste passaria também — e ele TEM de falhar em achar igualdade no
+    // meio da janela profunda, senão a prova de cima não vale nada.
+    const quaseArtistico = WORLD.sunRadius * (1 + 2 ** -20);
+    const d = 0.035; // meio da janela {0,02; 0,05}, onde a rampa é viva
+    expect(solWorldFadeDaInstancia(d, WORLD.sunRadius)).toBe(solWorldFade(d));
+    expect(solWorldFadeDaInstancia(d, quaseArtistico)).not.toBe(solWorldFade(d));
   });
 
   it('AGULHA: com o raio FÍSICO o Sol NÃO nasce invisível dentro do sistema', () => {
-    // a 4 milhões de km (a distância da abertura refilmada) e a 1 UA
+    // a 4 milhões de km (a distância da abertura refilmada), a 1 UA e a 50
     for (const dPc of [1.2957e-7, 4.8481e-6, 2.4241e-4]) {
       expect(solWorldFade(dPc)).toBe(0); // a quebra, escrita
-      expect(discWorldFadeDaInstancia(dPc, RAIO_FISICO_PC)).toBe(1); // e a ponte
-      expect(isDiscGroupVisible(discWorldFadeDaInstancia(dPc, RAIO_FISICO_PC))).toBe(true);
+      expect(solWorldFadeDaInstancia(dPc, RAIO_FISICO_PC)).toBe(1); // e a ponte
+      expect(isDiscGroupVisible(solWorldFadeDaInstancia(dPc, RAIO_FISICO_PC))).toBe(true);
     }
   });
 
-  it('longe, o raio físico continua obedecendo a janela do disco', () => {
-    // a rampa de longe não é do domínio profundo e continua valendo
-    expect(discWorldFadeDaInstancia(0.5, RAIO_FISICO_PC)).toBe(0);
-    expect(discWorldFadeDaInstancia(0.16, RAIO_FISICO_PC)).toBe(1);
+  it('a janela profunda ACOMPANHA o raio: dissolve nos MESMOS raios solares', () => {
+    // é o que a lei nova promete e o `if` da F1 não sabia fazer. A janela
+    // {0,02; 0,05} pc do raio artístico vale 1,818 e 4,545 raios do corpo
+    // (0,011/0,0055 = 2 e 0,011/0,0022 = 5 do CENTRO, menos o próprio
+    // raio não entra na conta — a régua é distância ao centro).
+    for (const k of [0.02, 0.035, 0.05, 0.08]) {
+      const dArtistico = k; // pc, com raio 0,011
+      const dFisico = k * (RAIO_FISICO_PC / WORLD.sunRadius);
+      expect(solWorldFadeDaInstancia(dFisico, RAIO_FISICO_PC)).toBeCloseTo(
+        solWorldFadeDaInstancia(dArtistico, WORLD.sunRadius),
+        12
+      );
+    }
+  });
+
+  it('o termo de LONGE fica em pc crus, e a razão é o disco de 1 UA', () => {
+    // normalizar `discWorldFade` também mataria o Sol real a 14,5 raios
+    // solares (0,0677 UA) — e a F1 fotografou um disco legítimo de
+    // 14,4 px a 1 UA. Com raio físico este termo vale 1 no sistema todo.
+    expect(solWorldFadeDaInstancia(4.8481e-6, RAIO_FISICO_PC)).toBe(1); // 1 UA
+    expect(solWorldFadeDaInstancia(0.5, RAIO_FISICO_PC)).toBe(0);
+    expect(solWorldFadeDaInstancia(0.16, RAIO_FISICO_PC)).toBe(1);
   });
 });

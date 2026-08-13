@@ -82,7 +82,7 @@ import { RETRATO_2026 } from '../planetas/retrato2026';
 import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC, faseDoVertice, magDoVertice } from '../planetas/planetas';
 import type { FonteDeEfemerides, PsfDoCampo } from '../planetas/planetas';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
-import { diametroAparentePx } from './corpos';
+import { CUSHION_DO_GATE, LIMIAR_DO_GATE_PX, diametroAparentePx, gateBinario } from './corpos';
 
 const DEG_PARA_RAD = Math.PI / 180;
 
@@ -94,16 +94,17 @@ export const RAIO_EQ_TERRA_PC = (BODY_AXES.earth[0] / AU_KM) * AU_PARA_PC;
 export const RAIO_POLAR_TERRA_PC = (BODY_AXES.earth[2] / AU_KM) * AU_PARA_PC;
 
 /**
- * O LIMIAR DO GATE, em pixels de diâmetro aparente (`diametroAparentePx`,
- * a régua única do palco). 4 px: abaixo disso um globo texturizado não
- * comunica nada que o ponto fotométrico já não comunique — e o ponto tem
- * a fotometria certa. A dominância contra o clarão (D5) é da F2b; aqui o
- * corte é BINÁRIO por decisão de fase.
+ * A LEI DO GATE (limiar de 4 px, cushion 2× e a máquina com histerese)
+ * MUDOU DE CASA na F2 da onda do Sol real: mora em `corpos.ts`, ao lado
+ * de `diametroAparentePx`, que é a outra metade da mesma conta. A razão
+ * longa está lá — em resumo, ela deixou de ser "a régua da Terra" no dia
+ * em que o SOL passou a ser julgado por ela.
+ *
+ * REEXPORTADA daqui, e não copiada: os endereços antigos (`terra.ts`)
+ * continuam achando o MESMO símbolo, então `terra.test.ts` e quem mais
+ * importava não mudam de linha e não existe segunda fonte de verdade.
  */
-export const LIMIAR_DO_GATE_PX = 4;
-/** Cushion 2× da histerese (contrato da Onda 3): sai abaixo de
- *  LIMIAR/CUSHION = 2 px — entrar e sair nunca disputam o mesmo pixel. */
-export const CUSHION_DO_GATE = 2;
+export { CUSHION_DO_GATE, LIMIAR_DO_GATE_PX, gateBinario };
 
 /** Casca das nuvens: +0,15% do raio — alto o bastante para o depth
  *  separar (medido: ~800× o passo de depth nesta geometria de câmera),
@@ -242,18 +243,6 @@ export function direcaoLocalDeLonLat(lonEastDeg: number, latDeg: number): Vec3 {
   const lat = latDeg * DEG_PARA_RAD;
   const cosLat = Math.cos(lat);
   return [cosLat * Math.cos(lon), Math.sin(lat), -cosLat * Math.sin(lon)];
-}
-
-/**
- * O GATE BINÁRIO com histerese (F2a). Assimétrico de propósito — entra
- * em `>= LIMIAR`, só sai ABAIXO de `LIMIAR/CUSHION`; entre os dois o
- * estado fica onde está. NaN preserva estado (o contrato da Onda 3:
- * medida envenenada nunca decide nada).
- */
-export function gateBinario(armado: boolean, diametroPx: number): boolean {
-  if (!Number.isFinite(diametroPx)) return armado;
-  if (armado) return !(diametroPx < LIMIAR_DO_GATE_PX / CUSHION_DO_GATE);
-  return diametroPx >= LIMIAR_DO_GATE_PX;
 }
 
 /**
