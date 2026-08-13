@@ -435,6 +435,26 @@ export const VISTAS = [
       + '&look=0.00017125697758965395,0.00009621246017136201,0.00005881891229886131'
       + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
   ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F7) — ASTEROIDES, no MESMO jd pinado da onda (2024-04-08).
+  // Entram ANTES do código da fase (regra da Onda 4). Câmera a 4 raios
+  // do centro (BODY2000004_RADII a=289 km), −20° em torno do polo IAU
+  // pelo lado iluminado (o padrão lua/mercurio: disco ~829 px em
+  // 1800×1713). Cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC). E(real)=0,158 a 2,517 UA.
+  // O par &nobloom=1 é o GATE T-E10 das irmãs.
+  [
+    'vesta',
+    '?pos=-0.000005058489376246491,0.000010073653329889095,0.000004679479055866578'
+      + '&look=-0.000005058494464853001,0.000010073688779328954,0.000004679490053606362'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'vestanb',
+    '?pos=-0.000005058489376246491,0.000010073653329889095,0.000004679479055866578'
+      + '&look=-0.000005058494464853001,0.000010073688779328954,0.000004679490053606362'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
