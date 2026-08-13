@@ -389,6 +389,52 @@ export const VISTAS = [
       + '&look=0.00001412557512784177,0.00001824098426963711,0.0000074737888016236406'
       + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
   ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F6) — ANÕES/TNOs + ANÉIS, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC).
+  //
+  // `plutao-caronte`: os DOIS em quadro. Look no ponto médio do par
+  // (sep. 16,49 R_plutão, BODY999_RADII 1188,3 km / BODY901 606 km);
+  // câmera a 22 R_plutão do médio, −20° em torno do polo IAU pelo
+  // lado iluminado e +12° de elevação (sem a elevação o par alinha
+  // quase na linha de visada). Discos declarados: Plutão ~183 px,
+  // Caronte ~63 px; separação angular 35,4°. E(real)=0,00082 a
+  // 34,99 UA. O par &nobloom=1 é o GATE T-E10 das irmãs.
+  //
+  // `quaoar-anel`: globo + anel Q1R (7,47 R, Pereira23). Câmera a
+  // 22 R (R=543 km) do centro, −20° de azimute e +18° de elevação
+  // (o padrão saturno-anel: o anel não pode ler de perfil). Polo
+  // didático = norte eclíptico em equatorial (Quaoar sem IAU no
+  // pck00011 — o anel da F6-2 mora neste plano). GLOBO ~154 px;
+  // ANEL (eixo maior) ~1108 px — o px DECLARADO do efeito. E(real)
+  // =0,00056 a 42,29 UA.
+  [
+    'plutao-caronte',
+    '?pos=0.00008477711261100184,-0.00013105504237912263,-0.00006642962023154119'
+      + '&look=0.00008477758817176725,-0.00013105552796989695,-0.00006643012602992766'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'plutao-carontenb',
+    '?pos=0.00008477711261100184,-0.00013105504237912263,-0.00006642962023154119'
+      + '&look=0.00008477758817176725,-0.00013105552796989695,-0.00006643012602992766'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'quaoar-anel',
+    '?pos=0.00017125670258576192,0.00009621234849511725,0.000058818663740295546'
+      + '&look=0.00017125697758965395,0.00009621246017136201,0.00005881891229886131'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'quaoar-anelnb',
+    '?pos=0.00017125670258576192,0.00009621234849511725,0.000058818663740295546'
+      + '&look=0.00017125697758965395,0.00009621246017136201,0.00005881891229886131'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
