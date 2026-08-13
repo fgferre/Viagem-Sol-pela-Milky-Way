@@ -351,6 +351,44 @@ export const VISTAS = [
       + '&look=0.000044415067790719945,-0.000013646416397844129,-0.0000075488848424994925'
       + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
   ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F5) — AS LUAS EM LOTE, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). Câmera a 4 raios do centro, 20° em torno do polo IAU pelo
+  // lado ILUMINADO (o padrão da vista `lua`/`mercurio`: disco ~757 px
+  // em 1800×1713). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC).
+  //
+  // `titan`: atmosfera opaca a 9,705 UA — E(real)=0,0106. O par
+  // &nobloom=1 é o GATE T-E10 das irmãs (Titã é o herói da bancada).
+  //
+  // `europa`: regolito LS (C=4/3 importado da Lua) a 5,002 UA —
+  // E(real)=0,0400. O px do efeito julgado: o disco INTEIRO, 757 px.
+  [
+    'titan',
+    '?pos=0.000044401483620258156,-0.000013608337576815957,-0.00000755020595854049'
+      + '&look=0.00004440174800605111,-0.000013608537105468783,-0.000007550247480449924'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'titannb',
+    '?pos=0.000044401483620258156,-0.000013608337576815957,-0.00000755020595854049'
+      + '&look=0.00004440174800605111,-0.000013608537105468783,-0.000007550247480449924'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'europa',
+    '?pos=0.000014125408023292846,0.000018240877731646644,0.000007473746885565305'
+      + '&look=0.00001412557512784177,0.00001824098426963711,0.0000074737888016236406'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'europanb',
+    '?pos=0.000014125408023292846,0.000018240877731646644,0.000007473746885565305'
+      + '&look=0.00001412557512784177,0.00001824098426963711,0.0000074737888016236406'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
