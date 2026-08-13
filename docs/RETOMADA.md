@@ -77,7 +77,50 @@ são o mesmo ponto).
 
 ---
 
-## 4. O que está EM VOO neste instante
+## 4. A F3 FECHOU — e está esperando O SEU SIM
+
+**Commits `c21ca60` (F3) e `d7cca17` (registro).** Testes 1.448 → **1.435** — a
+queda é código APAGADO: as 4 janelas de LOD do Sol viraram 1 e as suítes delas
+saíram junto. `tsc`, `eslint` e `atlas-smoke` verdes; 8 mutações conferidas.
+
+A abertura passou a ser filmada a **3,998 milhões de km (5,741 raios solares)** do
+Sol de raio físico, com a MESMA composição: o Sol subtende **19,762056°** (76,0% da
+altura na lente de 26°), com **0,72 ULP** de diferença para o plano antigo — porque
+a posição nova é a antiga multiplicada por `K = R☉/R_artístico`, e não um número
+escolhido a olho. A hélice virou exponencial (6,6477 décadas em 24 s).
+
+**Morreram:** `WORLD.sunRadius`, a porta `?solreal=1`, as 4 janelas de LOD e a
+dívida do Sol no cadastro de escala (o fator dele agora é **1**).
+
+**AS 19 BATERAM, todas.** Mais as 3 do Sol real, que perderam a porta e não moveram
+um bit. **Mudaram só as 4 reservadas:**
+
+| vista | antes | depois |
+|---|---|---|
+| `sol` | `a4fbf427778a` | `d3f110e281d3` |
+| `soldisco` | `7a2e6d1f4620` | `06d7c8d406cd` |
+| `solrampa` | `ff2b7b4d353a` | `1ad5c3e89220` |
+| `solestouro` | `3dc8706149b4` | `7306f0d4f044` |
+
+**As 8 imagens de aprovação:** `capturas/f3/F3-{ANTES,DEPOIS}-{sol,soldisco,solrampa,solestouro}.png`.
+**O rebaseline oficial só acontece com o sim do dono.** Enquanto ele não vier, a
+tabela de referência da casa segue apontando para os md5 ANTIGOS.
+
+**A tarefa extra NÃO foi feita, e a premissa dela CAIU.** `LAPSE_K` não é a chave do
+conserto das rampas de vida — é a chave do modo *lapse* inteiro: qualquer valor > 0
+multiplica o relógio por cima da dramaturgia e muda o Sol. E a aceleração da casa é
+**invisível** para o gate do conserto, porque ela empurra `cycleTime` direto e
+`cycleMultiplier()` segue devolvendo 1. O conserto certo exige um sinal novo e
+**editar `sol/activity.js`**, que a regra M3 proíbe — a exceção é a decisão §6.1,
+ainda aberta com o dono. (Números corrigidos: a aceleração é **55× no pico por
+16,3 s**, não 54× por 13 s.)
+
+**ARMADILHA OPERACIONAL, para quem for rodar o gate:** o arquivo de estado do
+`ab-identidade` vive no **tmpdir do sistema** e é COMPARTILHADO com o outro agente —
+ele foi sobrescrito no meio de uma medição. Rode sempre com `TMPDIR` isolado
+enquanto as duas mesas existirem.
+
+## 5. (histórico) O que estava em voo quando este arquivo nasceu
 
 **A F3 — a abertura refilmada.** Um agente está implementando. Ela mantém a mesma
 composição (o Sol tomando ~76% da altura do quadro na lente de 26° do filme) e a
