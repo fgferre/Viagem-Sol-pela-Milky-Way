@@ -2366,6 +2366,16 @@ export class Director {
         ? deslocamentoEVAssistida(rUA)
         : null;
     }
+    // anões/asteroides não têm ponto na camada: o dUA é o do mesh
+    // (Kepler/retrato). Sem este ramo o selo dizia ASSISTIDO e omitia
+    // os passos — justamente nos corpos de maior ΔEV.
+    if (HELIO_SEM_PONTO.some((a) => a.id === this.focoCorpoId)) {
+      const rUA = this.rochosos.find((r) => r.corpo.id === this.focoCorpoId)
+        ?.corpo.estadoVivo.rUA;
+      return rUA !== undefined && Number.isFinite(rUA)
+        ? deslocamentoEVAssistida(rUA)
+        : null;
+    }
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === this.focoCorpoId);
     if (i <= 0) return null;
     const p = this.planetas.posicoes;
