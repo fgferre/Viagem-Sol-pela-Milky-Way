@@ -137,14 +137,26 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
   });
 
   it('toda lua declara o pai — é dele que a nota mede e que o degrau enquadra', () => {
-    // F3: Fobos e Deimos entram pelo mesmo contrato (as duas marcianas)
-    expect(LUAS_DO_SISTEMA).toHaveLength(3);
+    // F5: as 17 texturadas entram pelo mesmo contrato das marcianas
+    expect(LUAS_DO_SISTEMA).toHaveLength(20);
     expect(LUAS_DO_SISTEMA[0]).toMatchObject({ id: 'moon', nome: 'Lua', classe: 'lua', pai: 'earth' });
     expect(LUAS_DO_SISTEMA[1]).toMatchObject({ id: 'phobos', nome: 'Fobos', classe: 'lua', pai: 'mars' });
     expect(LUAS_DO_SISTEMA[2]).toMatchObject({ id: 'deimos', nome: 'Deimos', classe: 'lua', pai: 'mars' });
+    expect(LUAS_DO_SISTEMA.find((l) => l.id === 'titan')).toMatchObject({
+      nome: 'Titã',
+      classe: 'lua',
+      pai: 'saturn',
+    });
+    expect(LUAS_DO_SISTEMA.find((l) => l.id === 'europa')).toMatchObject({
+      nome: 'Europa',
+      classe: 'lua',
+      pai: 'jupiter',
+    });
+    expect(LUAS_DO_SISTEMA.some((l) => l.id === 'vanth')).toBe(false);
+    expect(LUAS_DO_SISTEMA.some((l) => l.id === 'weywot')).toBe(false);
     // e lua NÃO entra na lista indexada ao vértice da camada de pontos
     expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'moon')).toBe(false);
     expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'phobos')).toBe(false);
-    expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'deimos')).toBe(false);
+    expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'titan')).toBe(false);
   });
 });

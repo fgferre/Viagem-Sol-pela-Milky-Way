@@ -442,9 +442,11 @@ describe('5. texto-fonte (as leis pinadas) e a fiação no director', () => {
     expect(director).toContain("this.palco.remover('moon')");
     // a captura espera a textura da Lua como espera a da Terra
     expect(director).toContain('this.luaCarregando');
-    // o rótulo da Lua só nasce com posição FINITA (NaN passaria pelo
-    // projectPoint sem barreira — dito no director)
-    expect(director).toContain('Number.isFinite(this.luaPosParaRotulo[0])');
+    // o buffer das luas alimenta projectCorpos; NaN o projectCorpos
+    // ignora (a barreira mora em labels.ts, não no gate do [0])
+    expect(director).toContain(
+      'projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)'
+    );
     // teardown: a Lua devolve tudo ANTES do palco esvaziar
     const stepLua = director.indexOf("step('lua'");
     const stepPalco = director.indexOf("step('palco'");

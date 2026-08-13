@@ -108,4 +108,15 @@ describe('projectCorpos', () => {
     expect(rotulos.length).toBeLessThanOrEqual(3);
     for (const l of rotulos) expect(Number.isFinite(l.x)).toBe(true);
   });
+
+  it('posição NaN não vira rótulo — o slot vazio das luas sem efeméride', () => {
+    const p = posicoes();
+    p[0] = Number.NaN;
+    p[1] = Number.NaN;
+    p[2] = Number.NaN;
+    const rotulos = projectCorpos(camera(), CORPOS_DO_SISTEMA, p);
+    expect(rotulos.some((l) => l.key === `${CHAVE_DE_CORPO}sun`)).toBe(false);
+    expect(rotulos.length).toBe(9);
+    for (const l of rotulos) expect(Number.isFinite(l.x)).toBe(true);
+  });
 });

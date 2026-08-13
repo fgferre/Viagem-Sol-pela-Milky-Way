@@ -159,6 +159,23 @@ export const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> 
   moon: { nome: 'Lua', classe: 'lua' },
   phobos: { nome: 'Fobos', classe: 'lua' },
   deimos: { nome: 'Deimos', classe: 'lua' },
+  io: { nome: 'Io', classe: 'lua' },
+  europa: { nome: 'Europa', classe: 'lua' },
+  ganymede: { nome: 'Ganimedes', classe: 'lua' },
+  callisto: { nome: 'Calisto', classe: 'lua' },
+  mimas: { nome: 'Mimas', classe: 'lua' },
+  enceladus: { nome: 'Encélado', classe: 'lua' },
+  tethys: { nome: 'Tétis', classe: 'lua' },
+  dione: { nome: 'Dione', classe: 'lua' },
+  rhea: { nome: 'Reia', classe: 'lua' },
+  titan: { nome: 'Titã', classe: 'lua' },
+  iapetus: { nome: 'Jápeto', classe: 'lua' },
+  miranda: { nome: 'Miranda', classe: 'lua' },
+  ariel: { nome: 'Ariel', classe: 'lua' },
+  umbriel: { nome: 'Umbriel', classe: 'lua' },
+  titania: { nome: 'Titânia', classe: 'lua' },
+  oberon: { nome: 'Oberon', classe: 'lua' },
+  triton: { nome: 'Tritão', classe: 'lua' },
 };
 
 /** O prefixo que separa a chave de um corpo da de uma estrela. */
@@ -169,18 +186,37 @@ export const CORPOS_DO_SISTEMA: readonly CorpoDoSistema[] = IDS_FOTOMETRIA.map(
 );
 
 /**
- * AS LUAS DO ATLAS (F2b; +Fobos/Deimos na F3) — fora de
+ * AS LUAS DO ATLAS (F2b; +Fobos/Deimos na F3; +17 na F5) — fora de
  * `CORPOS_DO_SISTEMA` de propósito: aquela lista é indexada ao VÉRTICE
  * da camada de pontos (`IDS_FOTOMETRIA`), e lua não tem ponto
  * fotométrico (dito em `lua.ts`). O `pai` é o corpo cuja efeméride
  * centra a dela — é dele que a busca mede a distância da nota ("Lua ·
- * 384 mil km"; "Fobos · 9,4 mil km") e é ele que o enquadramento do
+ * 384 mil km"; "Titã · 1 222 mil km") e é ele que o enquadramento do
  * degrau "lua" mantém em quadro (`PARENT_FRAMING_BIAS`).
+ * Vanth/Weywot ficam de fora: sem textura não há mesh, e sem BODY_AXES
+ * o degrau não tem raio — o badge de validade já mora em notaDeValidade.
  */
 export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
   { id: 'moon', ...NOMES_DOS_CORPOS.moon, chave: `${CHAVE_DE_CORPO}moon`, pai: 'earth' },
   { id: 'phobos', ...NOMES_DOS_CORPOS.phobos, chave: `${CHAVE_DE_CORPO}phobos`, pai: 'mars' },
   { id: 'deimos', ...NOMES_DOS_CORPOS.deimos, chave: `${CHAVE_DE_CORPO}deimos`, pai: 'mars' },
+  { id: 'io', ...NOMES_DOS_CORPOS.io, chave: `${CHAVE_DE_CORPO}io`, pai: 'jupiter' },
+  { id: 'europa', ...NOMES_DOS_CORPOS.europa, chave: `${CHAVE_DE_CORPO}europa`, pai: 'jupiter' },
+  { id: 'ganymede', ...NOMES_DOS_CORPOS.ganymede, chave: `${CHAVE_DE_CORPO}ganymede`, pai: 'jupiter' },
+  { id: 'callisto', ...NOMES_DOS_CORPOS.callisto, chave: `${CHAVE_DE_CORPO}callisto`, pai: 'jupiter' },
+  { id: 'mimas', ...NOMES_DOS_CORPOS.mimas, chave: `${CHAVE_DE_CORPO}mimas`, pai: 'saturn' },
+  { id: 'enceladus', ...NOMES_DOS_CORPOS.enceladus, chave: `${CHAVE_DE_CORPO}enceladus`, pai: 'saturn' },
+  { id: 'tethys', ...NOMES_DOS_CORPOS.tethys, chave: `${CHAVE_DE_CORPO}tethys`, pai: 'saturn' },
+  { id: 'dione', ...NOMES_DOS_CORPOS.dione, chave: `${CHAVE_DE_CORPO}dione`, pai: 'saturn' },
+  { id: 'rhea', ...NOMES_DOS_CORPOS.rhea, chave: `${CHAVE_DE_CORPO}rhea`, pai: 'saturn' },
+  { id: 'titan', ...NOMES_DOS_CORPOS.titan, chave: `${CHAVE_DE_CORPO}titan`, pai: 'saturn' },
+  { id: 'iapetus', ...NOMES_DOS_CORPOS.iapetus, chave: `${CHAVE_DE_CORPO}iapetus`, pai: 'saturn' },
+  { id: 'miranda', ...NOMES_DOS_CORPOS.miranda, chave: `${CHAVE_DE_CORPO}miranda`, pai: 'uranus' },
+  { id: 'ariel', ...NOMES_DOS_CORPOS.ariel, chave: `${CHAVE_DE_CORPO}ariel`, pai: 'uranus' },
+  { id: 'umbriel', ...NOMES_DOS_CORPOS.umbriel, chave: `${CHAVE_DE_CORPO}umbriel`, pai: 'uranus' },
+  { id: 'titania', ...NOMES_DOS_CORPOS.titania, chave: `${CHAVE_DE_CORPO}titania`, pai: 'uranus' },
+  { id: 'oberon', ...NOMES_DOS_CORPOS.oberon, chave: `${CHAVE_DE_CORPO}oberon`, pai: 'uranus' },
+  { id: 'triton', ...NOMES_DOS_CORPOS.triton, chave: `${CHAVE_DE_CORPO}triton`, pai: 'neptune' },
 ];
 
 // ============================================================

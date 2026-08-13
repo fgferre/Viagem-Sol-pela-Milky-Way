@@ -955,6 +955,12 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   mars: [3396.19, 3396.19, 3376.2],
   io: [1829.4, 1819.4, 1815.7],
   europa: [1562.6, 1560.3, 1559.5],
+  // Ganimedes, Calisto, Umbriel, Titânia, Oberon e Tritão: a MESMA
+  // exceção da Lua/Vênus (F5). BODY503/504/702/703/704/801_RADII do
+  // pck00011 — esferas exatas, o emissor pula; a tabela é a fonte
+  // única de raio dos resolvidos.
+  ganymede: [2631.2, 2631.2, 2631.2],
+  callisto: [2410.3, 2410.3, 2410.3],
   jupiter: [71492, 71492, 66854],
   mimas: [207.8, 196.7, 190.6],
   enceladus: [256.6, 251.4, 248.3],
@@ -965,7 +971,11 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   iapetus: [745.7, 745.7, 712.1],
   saturn: [60268, 60268, 54364],
   ariel: [581.1, 577.9, 577.7],
+  umbriel: [584.7, 584.7, 584.7],
+  titania: [788.9, 788.9, 788.9],
+  oberon: [761.4, 761.4, 761.4],
   miranda: [240.4, 234.2, 232.9],
   uranus: [25559, 25559, 24973],
   neptune: [24764, 24764, 24341],
+  triton: [1352.6, 1352.6, 1352.6],
 };

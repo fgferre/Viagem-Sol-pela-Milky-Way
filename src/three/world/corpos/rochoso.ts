@@ -1,8 +1,8 @@
 // ============================================================
-// OS ROCHOSOS RESOLVIDOS (Onda 6, F3) — Mercúrio, Vênus, Marte,
-// Fobos e Deimos sob a MESMA lei da Terra e da Lua: uma classe
-// genérica parametrizada por corpo, nascida do molde da Lua
-// (lua.ts) com os dois ramos de BRDF que a fase pede.
+// OS ROCHOSOS RESOLVIDOS (Onda 6, F3+F5) — Mercúrio, Vênus, Marte,
+// Fobos, Deimos e as ~17 luas texturadas sob a MESMA lei da Terra e
+// da Lua: uma classe genérica parametrizada por corpo, nascida do
+// molde da Lua (lua.ts) com os dois ramos de BRDF que a fase pede.
 //
 // PROVENIÊNCIA: implementação NOVA, como as irmãs. Do doador
 // atravessam como ESPEC: a lista dos 7 opt-in de Lommel-Seeliger
@@ -14,8 +14,9 @@
 // (escalar único de luz, relógio do Director, orientação IAU
 // medida, carga preguiçosa). O que muda por corpo é DADO:
 //
-//   - BRDF: 'ls' (Mercúrio — o C = 4/3 DERIVADO por quadratura da
-//     Lua, importado de lua.ts, nunca redigitado) ou 'lambert'.
+//   - BRDF: 'ls' (Mercúrio + Io, Europa, Ganimedes, Calisto, Encélado
+//     — os 5 opt-in da F5; o C = 4/3 DERIVADO por quadratura da Lua,
+//     importado de lua.ts, nunca redigitado) ou 'lambert'.
 //   - FIGURA: esfera ou elipsoide triaxial por BODY_AXES — a
 //     escala anisotrópica mora na matriz, como o achatamento da
 //     Terra. A NORMAL do elipsoide aqui é o gradiente EXATO
@@ -77,12 +78,22 @@ import {
   detectarWebp,
   escolherVariante,
   escreverSombraDeEclipse,
+  LIMIAR_DO_GATE_PX,
   gateBinario,
   orientacaoDoCorpoNaCena,
   uniformsDeEclipseNeutros,
 } from './terra';
 import type { ManifestDeTexturas } from './terra';
 
+
+/**
+ * Limiar aparente da LUA rochosa. O gate do planeta (4 px) nasceria
+ * Io/Europa/Ganimedes (37/10/11 px) no retrato oficial de Júpiter e
+ * Tétis/Titã no de Saturno — as 4 vistas da F4 deixariam de ser
+ * bit-idênticas. 64 px é ~16× o limiar do planeta: a lua só entra
+ * como assunto (a vista titan/europa mede ~829 px a 4 raios).
+ */
+export const LIMIAR_LUA_ROCHOSA_PX = 64;
 
 /** Os dois BRDFs da fase — Lommel-Seeliger (regolito) ou Lambert. */
 export type BrdfDoRochoso = 'ls' | 'lambert';
@@ -94,10 +105,11 @@ export interface ConfigDoRochoso {
 }
 
 /**
- * OS CINCO ROCHOSOS DA F3, na ordem do Sol para fora. A lista é o
+ * OS ROCHOSOS DA F3+F5, na ordem do Sol para fora. A lista é o
  * DADO VIVO que o Director percorre para construir, ticar e
  * descartar — a "lista dos corpos construídos, nunca redigitada"
  * que a escada consulta (director.ts, `podeAproximar`).
+ * Vanth/Weywot NÃO entram: sem textura/licença não nasce mesh.
  */
 export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'mercury', brdf: 'ls' },
@@ -105,6 +117,23 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'mars', brdf: 'lambert' },
   { id: 'phobos', brdf: 'lambert' },
   { id: 'deimos', brdf: 'lambert' },
+  { id: 'io', brdf: 'ls' },
+  { id: 'europa', brdf: 'ls' },
+  { id: 'ganymede', brdf: 'ls' },
+  { id: 'callisto', brdf: 'ls' },
+  { id: 'mimas', brdf: 'lambert' },
+  { id: 'enceladus', brdf: 'ls' },
+  { id: 'tethys', brdf: 'lambert' },
+  { id: 'dione', brdf: 'lambert' },
+  { id: 'rhea', brdf: 'lambert' },
+  { id: 'titan', brdf: 'lambert' },
+  { id: 'iapetus', brdf: 'lambert' },
+  { id: 'miranda', brdf: 'lambert' },
+  { id: 'ariel', brdf: 'lambert' },
+  { id: 'umbriel', brdf: 'lambert' },
+  { id: 'titania', brdf: 'lambert' },
+  { id: 'oberon', brdf: 'lambert' },
+  { id: 'triton', brdf: 'lambert' },
 ];
 
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos
@@ -158,9 +187,10 @@ vec3 normalDoCorpo(vec3 p, vec3 esc) { return normSeguro(p * esc); }
 `;
 
 /**
- * LAMBERT — Vênus, Marte, Fobos, Deimos: difusa cos(incidência) e
- * nada mais (a esfera Lambertiana estática do doador). O eclipse
- * entra pelo chunk único da lib, SÓ na direta, depois do BRDF.
+ * LAMBERT — Vênus, Marte, Fobos, Deimos e as luas sem opt-in de
+ * regolito: difusa cos(incidência) e nada mais (a esfera Lambertiana
+ * estática do doador). O eclipse entra pelo chunk único da lib, SÓ
+ * na direta, depois do BRDF.
  */
 export const ROCHOSO_LAMBERT_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -186,10 +216,11 @@ void main() {
 `;
 
 /**
- * LOMMEL-SEELIGER — Mercúrio, da lista dos 7 opt-in (correção de
- * fato 1 do desenho): a MESMA lei da Lua, com o C = 4/3 importado
- * dela (a derivação por quadratura mora em lua.test.ts e cobre os
- * DOIS consumidores — o literal é UM só).
+ * LOMMEL-SEELIGER — Mercúrio e os 5 opt-in da F5 (Io, Europa,
+ * Ganimedes, Calisto, Encélado), da lista dos 7 (correção de fato 1
+ * do desenho; a Lua consome o mesmo C em lua.ts): a MESMA lei, com
+ * o C = 4/3 importado dela (a derivação por quadratura mora em
+ * lua.test.ts e cobre TODOS os consumidores — o literal é UM só).
  */
 export const ROCHOSO_LS_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -387,7 +418,12 @@ export class RochosoResolvido {
     const diametroPx = diametroAparentePx(this.raioA, dPc, q.screenHPx, q.fovDeg);
     e.diametroPx = diametroPx;
 
-    this.armado = gateBinario(this.armado, diametroPx);
+    this.armado = gateBinario(
+      this.armado,
+      this.ehPlaneta
+        ? diametroPx
+        : diametroPx * (LIMIAR_DO_GATE_PX / LIMIAR_LUA_ROCHOSA_PX)
+    );
 
     // o MESMO gatilho duplo das irmãs (lei 4): gate armado OU fase atlas
     if (this.texturas === 'fria' && (this.armado || q.atlasQuente)) {

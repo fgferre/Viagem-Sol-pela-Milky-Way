@@ -288,7 +288,7 @@ export class Director {
   /** a Lua no gate a frio — o mesmo contrato de `terraFriaNoGate`. */
   private luaFriaNoGate = false;
   /**
-   * OS ROCHOSOS (F3): Mercúrio, Vênus, Marte, Fobos e Deimos — a classe
+   * OS ROCHOSOS (F3+F5): planetas e luas texturadas — a classe
    * genérica percorrida como DADO (`ROCHOSOS`), com as mesmas digitais
    * de estabilidade das irmãs por instância (pop do mesh, chegada de
    * textura, gate a frio e rampa de cessão recomeçam a contagem da
@@ -320,9 +320,12 @@ export class Director {
   private retentouFonte = false;
   /** o aviso único do retrato sob corpos já saiu no console */
   private acusouRetrato = false;
-  /** posição VIVA da Lua para o rótulo dela (projectCorpos) — três
-   *  floats reusados; NaN sem efeméride (rótulo não desenha). */
-  private readonly luaPosParaRotulo = new Float32Array([NaN, NaN, NaN]);
+  /** posições VIVAS das luas para os rótulos (projectCorpos) —
+   *  3 floats por entrada de `LUAS_DO_SISTEMA`, NaN sem efeméride
+   *  (projectCorpos ignora NaN — rótulo só onde há corpo). */
+  private readonly luaPosParaRotulo = new Float32Array(
+    LUAS_DO_SISTEMA.length * 3
+  ).fill(Number.NaN);
   /**
    * A CÂMERA SALTOU neste quadro (portal, enquadramento, ?pos=) — os
    * corpos resolvidos fazem SNAP da cessão em vez de animar através do
@@ -1693,6 +1696,15 @@ export class Director {
     this.teletransportou();
   }
 
+  /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
+  private escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
+    const i = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
+    if (i < 0) return;
+    this.luaPosParaRotulo[i * 3] = centro.x;
+    this.luaPosParaRotulo[i * 3 + 1] = centro.y;
+    this.luaPosParaRotulo[i * 3 + 2] = centro.z;
+  }
+
   /**
    * O DEGRAU "LUA" (F2b/D7; genérico desde a F3): a lua com o PAI em
    * quadro — `PARENT_FRAMING_BIAS` ganha aqui o consumidor prometido
@@ -1791,7 +1803,7 @@ export class Director {
   }
 
   /**
-   * OS DEZ MAIS A LUA, para o índice da busca (F3; a Lua é F2b/P-E10).
+   * OS DEZ MAIS AS LUAS, para o índice da busca (F5; a Lua é F2b/P-E10).
    * O `rUA` dos dez sai do retrato e não do atributo vivo porque o
    * índice é construído UMA vez, na entrada no modo: ele é a NOTA da
    * lista ("4,2 UA · planeta"), e o que o Atlas enquadra de fato é a
@@ -2545,9 +2557,7 @@ export class Director {
       this.luaCarregavaAntes = l.carregando;
       // a posição viva para o RÓTULO da Lua (NaN sem efeméride ⇒ o
       // projectCorpos não a projeta — rótulo só onde há corpo)
-      this.luaPosParaRotulo[0] = l.centroPc.x;
-      this.luaPosParaRotulo[1] = l.centroPc.y;
-      this.luaPosParaRotulo[2] = l.centroPc.z;
+      this.escreverPosicaoDeLua('moon', l.centroPc);
     }
     // OS ROCHOSOS (F3), pelo MESMO fio das irmãs — a lista viva é o
     // dado; planeta escreve a cessão do ponto (D5), lua não tem ponto.
@@ -2589,6 +2599,7 @@ export class Director {
       }
       r.emQuadroAntes = e.emQuadro;
       r.carregavaAntes = e.carregando;
+      if (!r.corpo.planeta) this.escreverPosicaoDeLua(r.corpo.id, e.centroPc);
       }
     }
     // OS GIGANTES (F4), pelo MESMO fio dos rochosos — a lista viva é o
@@ -2931,14 +2942,11 @@ export class Director {
           this.phase === 'atlas' && this.planetas?.points.visible
             ? projectCorpos(cam, CORPOS_DO_SISTEMA, this.planetas.posicoes)
             : [];
-        // A LUA (F2b): rótulo pela posição VIVA da efeméride — ela não
-        // tem vértice na camada de pontos, então entra por uma projeção
-        // própria, e SÓ quando a posição existe (sem efeméride os três
-        // floats são NaN, e NaN passaria pelo projectPoint sem barreira)
+        // AS LUAS (F2b/F5): rótulo pela posição VIVA da efeméride —
+        // não têm vértice na camada de pontos, então entram por uma
+        // projeção própria. NaN (sem efeméride) o projectCorpos ignora.
         const luas =
-          this.phase === 'atlas' &&
-          this.planetas?.points.visible &&
-          Number.isFinite(this.luaPosParaRotulo[0])
+          this.phase === 'atlas' && this.planetas?.points.visible
             ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
             : [];
         this.lastLabels = [

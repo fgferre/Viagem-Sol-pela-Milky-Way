@@ -1,11 +1,11 @@
 // ============================================================
-// OS ROCHOSOS (F3) — os juízes do módulo genérico:
+// OS ROCHOSOS (F3+F5) — os juízes do módulo genérico:
 //
 //  1. O ORÁCULO DE ORIENTAÇÃO (D-E4) POR CORPO: o transform do mesh
-//     de CADA um dos cinco, em dois instantes, tem de pôr o sub-ponto
-//     solar onde `subSolarPoint` (julgado por Horizons) diz — textura
-//     girada passa em md5, não passa aqui. Vênus retrógrada e Fobos
-//     triaxial incluídos.
+//     de cada rochoso texturizado, em dois instantes, tem de pôr o
+//     sub-ponto solar onde `subSolarPoint` (julgado por Horizons)
+//     diz — textura girada passa em md5, não passa aqui. Vênus
+//     retrógrada, Fobos triaxial e as luas da F5 incluídos.
 //  2. O NEEDLE dos dois GLSL montados: o chunk do eclipse existe nos
 //     dois, o C de Lommel-Seeliger é o LITERAL IMPORTADO da Lua (uma
 //     fonte só — a quadratura mora em lua.test.ts) e o fator multiplica
@@ -24,14 +24,17 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides';
-import { subSolarPoint } from '../../../lib/atlas/orientacao';
+import { PARES_DE_ECLIPSE } from '../../../lib/atlas/eclipse';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { EPOCA_JD_TDB } from '../planetas/retrato2026';
+import { subSolarPoint } from '../../../lib/atlas/orientacao';
+import { LUAS_DO_SISTEMA } from '../../atlasConfig';
+import { EPOCA_JD_TDB, RETRATO_2026 } from '../planetas/retrato2026';
 import { LS_NORMALIZACAO_GLSL } from './lua';
-import { orientacaoDoCorpoNaCena } from './terra';
+import { LIMIAR_DO_GATE_PX, orientacaoDoCorpoNaCena } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import {
+  LIMIAR_LUA_ROCHOSA_PX,
   ROCHOSOS,
   ROCHOSO_LAMBERT_FRAG,
   ROCHOSO_LS_FRAG,
@@ -92,6 +95,21 @@ describe('1. o oráculo de orientação por corpo (D-E4)', () => {
       expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
     });
   }
+
+  it('controle negativo: o mapeamento ESPELHADO (textura girada) reprova — Titã', () => {
+    const p = motor.posicaoHeliocentrica('titan', JD);
+    const norma = Math.hypot(p.x, p.y, p.z);
+    const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
+    const { colunaX, colunaZ } = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.titan, JD);
+    const dot = (a: readonly number[], b: readonly number[]) =>
+      a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const lonErrada = grau360(
+      Math.atan2(+dot(dir, colunaZ), dot(dir, colunaX)) / (Math.PI / 180)
+    );
+    const oraculo = subSolarPoint('titan', JD, motor);
+    const delta = Math.abs(lonErrada - oraculo.lonEastDeg);
+    expect(Math.min(delta, 360 - delta)).toBeGreaterThan(1);
+  });
 
   it('controle negativo: o mapeamento ESPELHADO (textura girada) reprova — Vênus retrógrada', () => {
     const p = motor.posicaoHeliocentrica('venus', JD);
@@ -316,8 +334,64 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(FONTE).not.toContain('3396');
   });
 
-  it('a tabela da fase é o dado vivo: os 5 corpos, LS só em Mercúrio', () => {
-    expect(ROCHOSOS.map((c) => c.id)).toEqual(['mercury', 'venus', 'mars', 'phobos', 'deimos']);
-    expect(ROCHOSOS.filter((c) => c.brdf === 'ls').map((c) => c.id)).toEqual(['mercury']);
+  it('a tabela da fase é o dado vivo: LS nos 6 opt-in, Vanth/Weywot fora', () => {
+    expect(ROCHOSOS.map((c) => c.id)).toEqual([
+      'mercury',
+      'venus',
+      'mars',
+      'phobos',
+      'deimos',
+      'io',
+      'europa',
+      'ganymede',
+      'callisto',
+      'mimas',
+      'enceladus',
+      'tethys',
+      'dione',
+      'rhea',
+      'titan',
+      'iapetus',
+      'miranda',
+      'ariel',
+      'umbriel',
+      'titania',
+      'oberon',
+      'triton',
+    ]);
+    expect(ROCHOSOS.filter((c) => c.brdf === 'ls').map((c) => c.id)).toEqual([
+      'mercury',
+      'io',
+      'europa',
+      'ganymede',
+      'callisto',
+      'enceladus',
+    ]);
+    expect(ROCHOSOS.some((c) => c.id === 'vanth' || c.id === 'weywot')).toBe(false);
+  });
+
+  it('lua só nasce como assunto: 64 px fica acima de Io no retrato de Júpiter', () => {
+    expect(LIMIAR_LUA_ROCHOSA_PX).toBe(64);
+    expect(LIMIAR_LUA_ROCHOSA_PX / LIMIAR_DO_GATE_PX).toBe(16);
+    // Io no retrato oficial de Júpiter (F4) mede 37 px — abaixo do limiar
+    expect(37).toBeLessThan(LIMIAR_LUA_ROCHOSA_PX);
+    // a vista titan/europa a 4 raios mede ~829 px — o assunto entra
+    expect(829).toBeGreaterThan(LIMIAR_LUA_ROCHOSA_PX);
+  });
+
+  it('todo rochoso tem IAU, BODY_AXES e textura; lua entra na busca e no eclipse do pai', () => {
+    for (const { id } of ROCHOSOS) {
+      expect(IAU_ORIENTATIONS[id], `${id} sem IAU`).toBeTruthy();
+      expect(BODY_AXES[id], `${id} sem BODY_AXES`).toBeTruthy();
+      expect(
+        MANIFEST.entradas.some((e) => e.corpo === id && e.canal === 'map'),
+        `${id} sem textura no manifest`
+      ).toBe(true);
+      if (!(id in RETRATO_2026)) {
+        const lua = LUAS_DO_SISTEMA.find((l) => l.id === id);
+        expect(lua, `${id} fora de LUAS_DO_SISTEMA`).toBeTruthy();
+        expect(PARES_DE_ECLIPSE[id], `${id} sem par de eclipse`).toBe(lua!.pai);
+      }
+    }
   });
 });
