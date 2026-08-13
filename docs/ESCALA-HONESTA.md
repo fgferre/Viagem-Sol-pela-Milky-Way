@@ -338,14 +338,30 @@ Para o cadastro da F0 declarar, não para consertar nesta onda:
    a casa roda ~2,4× mais quente.** E há uma frase no doador que é o diagnóstico
    inteiro: o limiar de 0,72 existe para "fazer o bloom LER sem lavar o disco".
 
-   **O QUE NÃO ATRAVESSA, e é o mais importante:** o doador **nunca precisa expor uma
-   galáxia e um Sol no mesmo quadro** — a cena dele é só o Sol, e por isso uma
-   exposição fixa e baixa basta e ele pode dispensar auto-exposição. A casa tem os
-   dois no mesmo quadro, e é exatamente por isso que a exposição dela é alta. **Não se
-   transplanta o 0,418.** O que atravessa é a PROVA de que um Sol enchendo o quadro é
-   exponível com ACES nessa faixa, e o ALVO: algo em torno de 2,4× abaixo da exposição
-   de hoje, quando o Sol domina o quadro. Isso é exposição POR CONTEXTO — a onda da
-   exposição —, e agora ela tem número de partida em vez de adjetivo.
+   **O QUE NÃO ATRAVESSA:** o doador **nunca precisa expor uma galáxia e um Sol no
+   mesmo quadro** — a cena dele é só o Sol, e por isso uma exposição fixa e baixa
+   basta e ele dispensa auto-exposição. A casa tem os dois no mesmo quadro.
+
+   > **CORREÇÃO (varredura profunda de 2026-08-12).** A primeira leitura desta
+   > tabela concluiu que o alvo da casa seria "~2,4× abaixo da exposição de hoje".
+   > **Isso está ERRADO e não deve ser usado.** O comentário do próprio doador diz
+   > que a exposição dele ERA 1,02/1,06 — praticamente a da casa — e caiu para
+   > 0,418 **depois que ele consertou a conversão final de cor**. Não é escolha
+   > estética: é a conta de um conserto que a casa **nunca precisou fazer**, porque
+   > ela nunca teve esse defeito (é, aliás, o único defeito grave dele que a casa
+   > não tem). Copiar o número escureceria a casa 2,44× sem corrigir nada. O par
+   > "limiar 0,72 / força 0,62" carrega o mesmo asterisco, e nem são grandezas
+   > comparáveis: o motor da casa multiplica por 3,0 fixo e soma 5 texturas, o dele
+   > multiplica 1. **O que atravessa é só a existência da prova** — um Sol enchendo
+   > o quadro É exponível com ACES —, não nenhum dos números.
+
+   **E a causa real da tela branca ficou medida, o que a tese anterior não tinha:**
+   o clarão da casa tem CINCO escalas de borrão e o Atlas as multiplica todas por um
+   fator só. Quem lava o quadro é **uma escala só** — a mais larga deposita 2,22 de
+   luz a meia tela de distância do Sol (satura branco); a seguinte deposita 0,005
+   (invisível). Existe controle público por escala que a casa nunca tocou. Moderar
+   as cinco juntas apaga 99% do borrão largo do Sol (o alvo) e junto 99% do brilho
+   apertado das 328.749 estrelas.
 7. **Mergulhar no Sol continua impossível** — abaixo de ~1,44 raios solares o corte come
    a fotosfera. Rasante estilo Parker cabe com folga.
 
@@ -379,3 +395,115 @@ com 7 arquivos abertos (`ab-identidade.mjs`, `eclipse.ts` e teste, `lua.ts` e te
   para fora. Nós dois trabalhamos em faixas de distância que não se cruzam.
 - **Ação de merge, a não esquecer:** a entrada no `NORTE.md` fica para a hora do
   merge, para não disputar o arquivo que ele reescreve no fecho da onda.
+
+---
+
+## 8. A varredura profunda do projeto irmão (2026-08-12)
+
+O dono apontou `github.com/fgferre/Novo-Sol-Fable-3d` e pediu varredura profunda.
+13 agentes, 6 frentes, todas conferidas por adversários. Os 128 arquivos do irmão
+foram lidos contra o código da casa. **Nada aqui é hipótese: o que não sobreviveu
+à conferência foi cortado.**
+
+### 8.1 A resposta à pergunta que mais podia doer
+
+**"O irmão consertou alguma coisa DEPOIS de a Viagem copiar?" — NADA.** Os 14
+arquivos foram baixados na versão mais recente dele e comparados. Diferença total:
+**99 linhas em 4.977 (2,0%)**, e as 99 são mudanças que a casa fez de propósito e
+escreveu no próprio arquivo. Quatro arquivos são **byte a byte idênticos**.
+**Nenhuma constante numérica difere.** Até a ordem de chamada por quadro é igual.
+
+E o fluxo foi ao contrário duas vezes: consertos de valor inválido em shader foram
+**daqui para lá**, e um comentário no código dele cita "auditoria do projeto Viagem".
+
+### 8.2 O que dói é o oposto: a casa copiou um conserto e o DESLIGOU
+
+O irmão mediu que, com o relógio de manchas acelerado, o nascimento e a morte das
+regiões ativas dão **solavanco**, e alargou as rampas de vida em **1,75×**. Esse
+código está na casa — e **a chave que o liga está escrita como zero literal**, sem
+nenhum outro caminho. É código morto hoje.
+
+E a casa **acelera exatamente esse relógio**: durante **13 segundos da abertura**
+ele corre entre **30 e 54 vezes** mais rápido que o natural. Ou seja: a casa está
+no regime que comprou o conserto, com o conserto desligado.
+
+### 8.3 Defeitos da casa que a varredura encontrou
+
+| # | Defeito | Tamanho | Risco de pixel |
+|---|---|---|---|
+| 1 | **Dois dedos na tela trocam o enquadramento sozinhos.** Cada evento do 2º dedo é medido contra o 1º: gira 25° de uma vez (200 px × 0,0022 rad/px) e rearma o relógio do clique curto — o Atlas foca outro nome, desce um degrau e reescreve `?foco=` sem ninguém pedir. O grampo de 140° não segura, porque 25° cabe nele. Levantar um dedo mata o arrasto do que ficou. | 15–25 linhas | zero |
+| 2 | **`pointercancel` e `lostpointercapture` não existem**, o cursor nunca muda, o menu do botão direito não é bloqueado. Gesto cancelado pelo sistema deixa o arrasto **preso para sempre**. | junto do #1 | zero |
+| 3 | **Os 1.321 testes não rodam no CI.** O único arquivo de automação roda `npm run build` e mais nada. | 2 linhas | zero |
+| 4 | **A escada de rendição não existe.** `cvolKilled` e `cmeKilled` são **lidos e nunca escritos**: quando o quadro cai, a casa derruba a resolução da galáxia inteira e o Sol segue no custo cheio. Agravante: o tier do Sol congela no arranque, então o desligamento por subsistema é a **única** alavanca que resta. | pequeno | baixo |
+| 5 | **Nenhuma das 22 vistas oficiais liga o modo Atlas.** A lei do clarão — a única defesa construída contra a tela branca — **nunca foi exercida por juiz nenhum**. | 1 vista | conferível hoje |
+| 6 | **Memória de vídeo paga e não usada:** a casa desenha em alvo próprio e o buffer de profundidade da tela não oculta nada — 22,9 MB a 1512×945, ~59 MB a 2560×1440. O irmão mediu 138 MiB liberados. | 1 palavra | baixo, com vigília |
+| 7 | **Rótulos afiam ao trocar de monitor, a cena 3D não** — a nitidez da cena é decidida uma vez no arranque. É a única incoerência desta lista que o visitante **vê hoje**. | médio | médio |
+| 8 | **O selo declara dois artifícios e desenha três:** os espinhos de difração das estrelas não estão declarados. | pequeno | zero |
+| 9 | **35 ponteiros pendurados no vazio:** os arquivos vendorizados citam 35 vezes imagens (`ref-06`, `ref-10`…) que não existem na casa. | baixar 6 arquivos | zero |
+| 10 | **Travamento na entrada do Atlas (a MEDIR):** com o Sol fora de quadro o subsistema para, mas o relógio desejado continua subindo; na volta a diferença vira salto num quadro — ~357 unidades na entrada do Atlas, 1.206 no 1º quadro da sessão. Salto > 20 dispara 120 passos de simulação num quadro só, em texturas 768×384. | 1 medição | zero para medir |
+
+### 8.4 Aprendizados sem defeito associado
+
+- **A auto-exposição da Onda 8 já existe montada e rodando no irmão**
+  (`src/main.js:1042-1055`, não no arquivo de pós — por isso ninguém a achou):
+  alvo `1/(1+0,55·(0,42·cobertura + …))` com cobertura = ângulo do corpo ao
+  quadrado, fecha em 0,5 s, abre em 3,0 s, piso 0,684, **sem ler um pixel da GPU —
+  é geometria pura**. O que não vem junto é o atuador (lá ele mexe na exposição do
+  quadro inteiro, o que o NORTE da casa proíbe). Aviso: no irmão o efeito é **zero
+  no modo de captura** — se a Onda 8 nascer assim, nenhum juiz olha para ela.
+- **Duas sondas de medição de risco zero:** a régua do borrão (reduz o quadro a
+  64×64 e devolve cobertura, energia e **raio** do clarão — a casa só mede "fração
+  acima de meia luz", que não separa quadro quente de quadro espalhado) e a sonda
+  de cor (pinta cinzas conhecidos sobre o quadro pronto: 0,18 tem de sair 118;
+  46 = falta a conversão final, 181 = ela está sendo aplicada **duas vezes**).
+- **A régua de MOVIMENTO.** Os 12 juízes da casa olham quadro congelado. O irmão
+  foi enganado **duas vezes** por isso e construiu bancada que mede tremeluzir,
+  piscar e ruído-vs-estrutura em quadros consecutivos — e ela pagou na hora
+  (confirmou as plumas polares, **refutou** os fios de coroa: 0,318% contra 0,318%
+  do controle). **Preço maior do que parece:** sob captura o relógio do Sol da casa
+  é **zero** — granulação, coroa e partículas estão congeladas em toda foto que
+  tiramos. Portar exige 4 peças novas.
+- **Seis fotos reais do Sol** passam na régua da própria casa (2 eclipses NASA, 2
+  do coronógrafo SOHO/LASCO com crédito obrigatório, 2 de disco inteiro em H-alfa
+  com natureza declarada), 1,68 MB. **E os números vêm de graça, sem imagem:**
+  manchas medem 0,005–0,086 do raio; o disco é tonalmente muito plano;
+  proeminências do dia a dia são baixas (0,03–0,08 R); a base do capacete coronal
+  tem 30–40° e afunila em 1,5–2,5 R; o brilho total da coroa é **1 milionésimo**
+  do disco.
+- **A granulação desenhada não é física em lugar nenhum:** célula de ~45 Mm no
+  tier alto e ~70 Mm no baixo, contra **~1 Mm** do grânulo real — e a escala muda
+  **55% conforme a placa de vídeo do visitante**.
+- **A dose de ejeção roda sem calibração:** a casa subiu de 0,9 para 1,4, e o alvo
+  numérico que calibrou a forma (razão frente-cavidade ≥ 2×) foi medido com 0,9 e
+  sob outra cadeia de cor. **Nenhuma medição, em nenhum dos dois projetos, tocou o
+  1,4 que rodamos.**
+
+### 8.5 O que NÃO transplanta (dizer isto poupa tanto quanto trazer)
+
+O irmão tem **um** corpo, centrado, e nada mais em cena.
+
+- **Desfoque de profundidade hexagonal** — ele deduz profundidade por geometria
+  ("dentro do disco é a esfera, fora é fundo"). Na casa, "fora do disco" são
+  estrelas a milhares de parsecs, e borrar estrela é apagar dado fotométrico.
+- **Imagens de referência versionadas** — funcionam porque ele renderiza por
+  software. A casa gasta 245,6 ms de GPU por quadro numa placa real; por software
+  não é lento, é inviável.
+- **~10 das 30 ferramentas dele** testam quiosque de museu, visita guiada bilíngue
+  e um painel de 39 botões. A casa não é isso.
+- **A torção do enquadramento (polo do corpo ≠ "cima" da tela): não há resposta
+  lá.** O irmão tem o **mesmo** defeito, de 7,25°, porque só um corpo de inclinação
+  pequena aparece. Na casa custa 27,8° na Terra, porque os corpos vão de 0,03° a
+  177°. **Quem for consertar não vai achar nada pronto no irmão** — e dizer isso
+  poupa uma rodada inteira.
+- **O ganho de arrasto dele (2,5× o nosso) e o arremesso com inércia** — a faixa
+  do Atlas tem 140° no total; com o ganho dele, 400 px varreriam 126°, 90% da
+  faixa. Só fazem sentido se existir um eixo **sem** limite.
+- **O rastro anamórfico de lente** — cabe e é barato, mas é mais um artifício num
+  produto cuja tese é separar o medido do ajustado.
+
+### 8.6 E o poço secou
+
+O roadmap do irmão está **esgotado**: as seis fases e os três blocos extras estão
+todos entregues, e o que sobra são dívidas dele — duas das quais caem justamente
+sobre a dose que a casa usa. **A partir daqui os aprendizados vêm de medir a
+Viagem, não de ler o irmão.**
