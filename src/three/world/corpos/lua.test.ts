@@ -424,6 +424,18 @@ describe('5. texto-fonte (as leis pinadas) e a fiação no director', () => {
     expect(FONTE).not.toContain('1737');
   });
 
+  it('o needle do eclipse (F2c/D3): o chunk da lib, MONTADO, multiplica SÓ a direta', () => {
+    // a lição do chunk renomeado: lê-se o shader montado, não o texto-fonte
+    expect(LUA_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
+    expect(LUA_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
+    // depois do BRDF de Lommel-Seeliger, na direta e só nela — não há
+    // outro termo no shader para o fator tocar
+    expect(LUA_FRAG).toContain(
+      'albedo * (ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal))'
+    );
+    expect(LUA_FRAG).toContain('gl_FragColor = vec4(direta, 1.0);');
+  });
+
   it('a fiação no director: registro, captura, rótulo e teardown', () => {
     const director = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
     expect(director).toContain("this.palco.registrar('moon', l.raioPc, l.centroPc)");

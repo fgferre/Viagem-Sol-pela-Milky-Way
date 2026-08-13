@@ -58,21 +58,28 @@ import { describe, expect, it } from "vitest";
 import {
   COR_REFRACAO_LUNAR,
   CORPOS_COM_ANEL,
+  EV_OBSERVADOR_ECLIPSE_LUNAR,
   FADE_TERMINADOR_FIM,
   FADE_TERMINADOR_INICIO,
+  GANHO_OBSERVADOR_ECLIPSE_LUNAR,
   GATE_LADO_PROXIMO,
+  GLSL_SOMBRA_ECLIPSE,
   PARES_DE_ECLIPSE,
   PISO_REFRACAO_LUNAR,
+  RAIO_SOL_KM,
   criaGeometriaDoCone,
+  criaSombraNaCena,
   pisoUmbralDoEclipsador,
   resolveConeDeEclipse,
+  resolveSombraNaCena,
   type CorposDoCone,
   type Vetor3Km,
 } from "./eclipse";
 import { REGISTRO_ORBITAL } from "./registroOrbital";
 
-// Raios de catálogo (radiusKm do doador; os mesmos corpos.json da casa).
-const RAIO_SOL_KM = 696_340;
+// Raios de catálogo (radiusKm do doador). O DO SOL vem da lib — fonte
+// única desde a F2c, quando o driver nasceu: redigitar aqui seria a
+// segunda cópia que o oráculo existe para proibir.
 const RAIO_LUA_KM = 1_737;
 const RAIO_TERRA_KM = 6_371;
 const UA_EM_KM = 149_597_870.7;
@@ -525,5 +532,224 @@ describe("PARES_DE_ECLIPSE — contratos da tabela", () => {
       expect(REGISTRO_ORBITAL[corpo]).toBeDefined();
       expect(PARES_DE_ECLIPSE[corpo]).toBeUndefined();
     }
+  });
+});
+
+// ============================================================
+// F2c — o driver `resolveSombraNaCena` contra a EFEMÉRIDE REAL nos jd
+// pinados de ECLIPSES-F2C.md, o needle do chunk GLSL (a lição do chunk
+// renomeado) e o relógio único. A efeméride carrega como em
+// `efemerides.test.ts` — o .bin em disco é o dado vivo da casa.
+// ============================================================
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { MetaEfemerides } from "./efemerides";
+import { decodeEfemerides, MotorEfemerides } from "./efemerides";
+import { eclipticaParaEquatorial } from "./frameGalactico";
+import { BODY_AXES } from "./iauOrientation";
+
+const DATA_DIR = fileURLToPath(
+  new URL("../../../public/data/atlas/", import.meta.url)
+);
+const motorReal = new MotorEfemerides(
+  (() => {
+    const meta = JSON.parse(
+      readFileSync(join(DATA_DIR, "efemerides_meta.json"), "utf8")
+    ) as MetaEfemerides;
+    const bin = readFileSync(join(DATA_DIR, "efemerides.bin"));
+    return decodeEfemerides(
+      bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength),
+      meta
+    );
+  })()
+);
+
+const uaDe = (id: string, jd: number): Vetor3Km => {
+  const p = motorReal.posicaoHeliocentrica(id, jd);
+  return [p.x, p.y, p.z];
+};
+
+/** Os jd PINADOS da onda (ECLIPSES-F2C.md — máximos segundo a NOSSA
+ *  efeméride) e os controles verificados fora de eclipse. */
+const JD_SOLAR = 2460409.26395835; // 2024-04-08, umbra da Lua na Terra
+const JD_LUNAR = 2458327.34980323; // 2018-07-27, Lua funda na umbra
+const JD_RETRATO = 2461041.5008692136; // 2026-01-01 — sem eclipse (verificado)
+
+const sombraDe = (receptorId: string, jd: number) => {
+  const eclipsadorId = PARES_DE_ECLIPSE[receptorId]!;
+  return resolveSombraNaCena(
+    receptorId,
+    uaDe(receptorId, jd),
+    uaDe(eclipsadorId, jd),
+    criaSombraNaCena()
+  );
+};
+
+describe("resolveSombraNaCena — os jd pinados contra a efeméride real", () => {
+  it("eclipse solar 2024: a Terra recebe a geometria de ECLIPSES-F2C.md", () => {
+    const s = sombraDe("earth", JD_SOLAR);
+    expect(s.ativo).toBe(true);
+    // os números da tabela (a faixa ±1–2 km cobre o raio equatorial de
+    // BODY_AXES no lugar do volumétrico da nota de preparação)
+    expect(s.distanciaAoEixoKm).toBeGreaterThan(2_190);
+    expect(s.distanciaAoEixoKm).toBeLessThan(2_193);
+    expect(s.umbraKm).toBeGreaterThan(64);
+    expect(s.umbraKm).toBeLessThan(68);
+    expect(s.penumbraKm).toBeGreaterThan(3_414);
+    expect(s.penumbraKm).toBeLessThan(3_420);
+    expect(s.minSombra).toBe(0); // total, sem piso anular
+    // a Lua eclipsando a Terra sombreia NEUTRO (o tinte laranja de
+    // receptor solar morreu no doador e não atravessa)
+    expect(s.pisoUmbral).toEqual([0, 0, 0]);
+    // o eclipsador a ~56 raios terrestres (359.804 km / 6.378,1 km)
+    expect(Math.hypot(...s.eclipsadorRaios)).toBeCloseTo(56.4, 1);
+    // o eixo da sombra é a direção heliocêntrica da Lua, na cena
+    const luaCena = eclipticaParaEquatorial(uaDe("moon", JD_SOLAR));
+    const norma = Math.hypot(...luaCena);
+    const dot =
+      (luaCena[0] * s.eixoCena[0] +
+        luaCena[1] * s.eixoCena[1] +
+        luaCena[2] * s.eixoCena[2]) /
+      norma;
+    expect(dot).toBeGreaterThan(1 - 1e-9);
+  });
+
+  it("eclipse lunar 2018: a Lua recebe a umbra da Terra COM o cobre de Danjon", () => {
+    const s = sombraDe("moon", JD_LUNAR);
+    expect(s.ativo).toBe(true);
+    expect(s.distanciaAoEixoKm).toBeGreaterThan(739);
+    expect(s.distanciaAoEixoKm).toBeLessThan(743);
+    // a umbra engole a Lua inteira (~2,6 R_lua — a nota tabela 4.527 km)
+    expect(s.umbraKm).toBeGreaterThan(4_530);
+    expect(s.umbraKm).toBeLessThan(4_538);
+    expect(s.umbraKm / BODY_AXES.moon[0]).toBeGreaterThan(2.2);
+    expect(s.minSombra).toBe(0);
+    // a blood moon é o piso da lib, componente a componente — nunca
+    // uma cor inventada no consumidor
+    const piso = pisoUmbralDoEclipsador("earth");
+    for (let c = 0; c < 3; c += 1) {
+      expect(Object.is(s.pisoUmbral[c], piso[c])).toBe(true);
+      expect(s.pisoUmbral[c]).toBeGreaterThan(0);
+    }
+    expect(s.raioEclipsadorRaios).toBeCloseTo(
+      BODY_AXES.earth[0] / BODY_AXES.moon[0],
+      12
+    );
+  });
+
+  it("o outro lado do MESMO alinhamento está fora de sombra (controle cruzado)", () => {
+    // no jd do eclipse solar a Lua é a OCULTADORA — como receptora, inativa
+    expect(sombraDe("moon", JD_SOLAR).ativo).toBe(false);
+    // e no jd do eclipse lunar a Terra não é sombreada pela Lua
+    expect(sombraDe("earth", JD_LUNAR).ativo).toBe(false);
+  });
+
+  it("fora de eclipse o payload é NEUTRO — o que mantém as vistas oficiais", () => {
+    for (const jd of [JD_RETRATO, JD_SOLAR + 30, JD_LUNAR - 30]) {
+      for (const receptor of ["earth", "moon"]) {
+        const s = sombraDe(receptor, jd);
+        expect(s.ativo).toBe(false);
+        expect(s.minSombra).toBe(1);
+        expect(s.pisoUmbral).toEqual([0, 0, 0]);
+      }
+    }
+  });
+
+  it("NaN desativa (nunca um uniform que pinta o corpo de preto)", () => {
+    const s = resolveSombraNaCena(
+      "earth",
+      [Number.NaN, 0, 0],
+      uaDe("moon", JD_SOLAR),
+      criaSombraNaCena()
+    );
+    expect(s.ativo).toBe(false);
+    expect(s.minSombra).toBe(1);
+    const s2 = resolveSombraNaCena(
+      "moon",
+      uaDe("moon", JD_LUNAR),
+      [Number.POSITIVE_INFINITY, 0, 0],
+      criaSombraNaCena()
+    );
+    expect(s2.ativo).toBe(false);
+  });
+
+  it("receptor sem par na tabela (Marte) é neutro", () => {
+    const s = resolveSombraNaCena(
+      "mars",
+      uaDe("mars", JD_SOLAR),
+      uaDe("moon", JD_SOLAR),
+      criaSombraNaCena()
+    );
+    expect(s.ativo).toBe(false);
+    expect(s.minSombra).toBe(1);
+  });
+
+  it("o contrato de out-parameter: a referência é estável entre chamadas", () => {
+    const out = criaSombraNaCena();
+    const primeira = resolveSombraNaCena(
+      "earth",
+      uaDe("earth", JD_SOLAR),
+      uaDe("moon", JD_SOLAR),
+      out
+    );
+    const segunda = resolveSombraNaCena(
+      "moon",
+      uaDe("moon", JD_LUNAR),
+      uaDe("earth", JD_LUNAR),
+      out
+    );
+    expect(primeira).toBe(out);
+    expect(segunda).toBe(out);
+    // e o conteúdo foi SUBSTITUÍDO (o rascunho do cone não vaza estado)
+    expect(out.ativo).toBe(true);
+    expect(out.pisoUmbral[0]).toBeGreaterThan(0);
+  });
+});
+
+describe("o needle do chunk GLSL (a lição do chunk renomeado, D3)", () => {
+  it("o chunk interpola as constantes da lib, nunca literais redigitados", () => {
+    expect(GLSL_SOMBRA_ECLIPSE).toContain(
+      `smoothstep(${FADE_TERMINADOR_INICIO}, ${FADE_TERMINADOR_FIM}, ndotlGeo)`
+    );
+    expect(GLSL_SOMBRA_ECLIPSE).toContain(`<= ${GATE_LADO_PROXIMO}`);
+  });
+
+  it("o neutro é vec3(1.0) EXATO e o clamp da umbra não toca o piso anular", () => {
+    expect(GLSL_SOMBRA_ECLIPSE).toContain(
+      "if (uEclipseAtivo < 0.5) return vec3(1.0);"
+    );
+    expect(GLSL_SOMBRA_ECLIPSE).toContain(
+      "max(uEclipseCone.x - s * uEclipseCone.y, 0.0)"
+    );
+    expect(GLSL_SOMBRA_ECLIPSE).toContain("uEclipsePisoEscalar");
+  });
+
+  it("a exposição do observador (decisão do dono, opção A): só o cobre, nunca o anular nem o solar", () => {
+    // o ganho vem da LIB interpolado — nunca um literal redigitado
+    expect(GLSL_SOMBRA_ECLIPSE).toContain(
+      `uEclipsePisoCor * ${GANHO_OBSERVADOR_ECLIPSE_LUNAR.toFixed(1)}`
+    );
+    // o piso ANULAR (escalar) fica FORA do ganho — soma-se depois
+    expect(GLSL_SOMBRA_ECLIPSE).toContain("+ vec3(uEclipsePisoEscalar)");
+    // o valor é o calibrado por captura na vista eclipse-lunar
+    expect(EV_OBSERVADOR_ECLIPSE_LUNAR).toBe(10);
+    expect(GANHO_OBSERVADOR_ECLIPSE_LUNAR).toBe(1024);
+    // o dado FÍSICO não mudou: o piso da lib continua COR × PISO exato
+    // (o oráculo acima o pina componente a componente)
+    const piso = pisoUmbralDoEclipsador("earth");
+    expect(piso[0]).toBe(COR_REFRACAO_LUNAR[0] * PISO_REFRACAO_LUNAR);
+    // receptor solar (eclipsador Lua) tem piso [0,0,0] ⇒ 0 × ganho = 0
+    // exato: as vistas do eclipse SOLAR não podem mover por causa do ganho
+    expect(pisoUmbralDoEclipsador("moon")).toEqual([0, 0, 0]);
+  });
+});
+
+describe("relógio único (D2/D-E6) — texto-fonte do módulo", () => {
+  it("eclipse.ts não conhece relógio de parede: o jd vem do Director", () => {
+    const fonte = readFileSync(new URL("./eclipse.ts", import.meta.url), "utf8");
+    expect(fonte).not.toContain("Date.now");
+    expect(fonte).not.toContain("new Date(");
+    expect(fonte).not.toContain("performance.now");
   });
 });

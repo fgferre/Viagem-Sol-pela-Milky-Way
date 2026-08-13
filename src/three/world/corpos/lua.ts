@@ -85,6 +85,12 @@ import {
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
+import {
+  PARES_DE_ECLIPSE,
+  GLSL_SOMBRA_ECLIPSE,
+  criaSombraNaCena,
+  resolveSombraNaCena,
+} from '../../../lib/atlas/eclipse';
 import type { QualityLevel } from '../../core/engine';
 import type { FonteDeEfemerides } from '../planetas/planetas';
 import { diametroAparentePx } from './corpos';
@@ -93,8 +99,10 @@ import {
   alvoDePixels,
   detectarWebp,
   escolherVariante,
+  escreverSombraDeEclipse,
   gateBinario,
   orientacaoDoCorpoNaCena,
+  uniformsDeEclipseNeutros,
 } from './terra';
 import type { ManifestDeTexturas } from './terra';
 
@@ -138,7 +146,10 @@ void main() {
  * sem piso explode). O terminador é geométrico: μ₀ = 0 zera o numerador
  * e o lado escuro é escuro — sem piso de ambiente (anti-padrões 3 e 9).
  * `uLuzGanho` multiplica SÓ esta componente direta; não existe outro
- * termo no shader.
+ * termo no shader. O ECLIPSE (F2c/D3) entra pelo chunk único da lib e
+ * multiplica SÓ a direta, depois do BRDF — na umbra da Terra a direta
+ * cai no piso cobre de Danjon (a blood moon), que é o piso umbral
+ * exportado pela lib, nunca uma cor inventada aqui.
  */
 export const LUA_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -148,6 +159,7 @@ uniform float uLuzGanho;    // ganhoFundido(dUA da CADEIA da Lua) — o escalar 
 varying vec3 vLocal;
 varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
+${GLSL_SOMBRA_ECLIPSE}
 void main() {
   vec3 n = normSeguro(vLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
@@ -156,7 +168,8 @@ void main() {
   // Lommel-Seeliger com C derivado por neutralidade de fluxo — o disco
   // cheio é CHATO (mu == mu0 ⇒ fator constante C/2), não Lambertiano.
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
-  gl_FragColor = vec4(albedo * (ls * uLuzGanho), 1.0);
+  vec3 direta = albedo * (ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal));
+  gl_FragColor = vec4(direta, 1.0);
 }
 `;
 
@@ -214,6 +227,10 @@ export class LuaResolvida {
   private fonteEscrita: FonteDeEfemerides | null = null;
   private rUA = Number.NaN;
   private armado = false;
+
+  /** a sombra do eclipse (F2c), resolvida no cache de jd/fonte —
+   *  scratch único, preenchido por `resolveSombraNaCena` (out-parameter) */
+  private readonly sombra = criaSombraNaCena();
 
   private texturas: EstadoDasTexturas = 'fria';
   /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
@@ -279,9 +296,25 @@ export class LuaResolvida {
         this.rUA = Math.hypot(p.x, p.y, p.z);
         const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
         this.centro.set(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+        // O ECLIPSE (F2c/D3): o par da TABELA (moon ← earth), no MESMO
+        // relógio do quadro. O fetch do eclipsador é pelo id DA TABELA,
+        // nunca atalho da cadeia de luz — o único 'earth' deste arquivo
+        // é o eclipsador.
+        const eclipsadorId = PARES_DE_ECLIPSE.moon;
+        if (eclipsadorId) {
+          const pEcl = q.fonte.posicaoHeliocentrica(eclipsadorId, q.jdTdb);
+          resolveSombraNaCena(
+            'moon',
+            [p.x, p.y, p.z],
+            [pEcl.x, pEcl.y, pEcl.z],
+            this.sombra
+          );
+        }
       } else {
         this.rUA = Number.NaN;
         this.centro.set(Number.NaN, Number.NaN, Number.NaN);
+        // sem efeméride não há Lua — e não há eclipse: fator neutro
+        this.sombra.ativo = false;
       }
     }
     e.rUA = this.rUA;
@@ -342,6 +375,8 @@ export class LuaResolvida {
     (u.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
     (u.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     u.uLuzGanho.value = ganho;
+    // a sombra do eclipse (F2c) — o mesmo fio da Terra
+    escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
   }
 
   /** geometria + material + mesh, UMA vez, na primeira necessidade. */
@@ -356,6 +391,7 @@ export class LuaResolvida {
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },
+        ...uniformsDeEclipseNeutros(),
       },
       // corpo resolvido OPACO: escreve e testa o depth do palco (F0) —
       // é o que faz um trânsito Lua×Terra compor certo por construção

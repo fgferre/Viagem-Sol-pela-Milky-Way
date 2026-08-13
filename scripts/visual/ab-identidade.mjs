@@ -222,6 +222,46 @@ export const VISTAS = [
       + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
       + '&jd=2460409.26395835&corpos=1&shot=2',
   ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F2c) — O ECLIPSE DOS DOIS LADOS, nos jd PINADOS de
+  // ECLIPSES-F2C.md (máximos segundo a NOSSA efeméride). Entram na lista
+  // ANTES do código da fase (regra da Onda 4): a baseline nasce no HEAD
+  // sem o ramo de sombra — as duas vistas DIFEREM de propósito quando o
+  // eclipse acende, e o "depois" é quem vira oficial (D11).
+  //
+  // `eclipse-solar` (?jd=2460409.26395835, o MESMO das vistas terra/lua —
+  // 2024-04-08): a câmera a 2 raios terrestres do centro, na direção de
+  // ENTRADA do eixo da sombra na superfície ((perp − √(R²−perp²)·û)/R,
+  // perp = 2.191 km do gamma 0,3431) — a mancha cai no centro do quadro.
+  // TAMANHOS DECLARADOS (projetor validado contra as capturas oficiais a
+  // 2 px, fov 58, buffer 1800×1713): umbra r ≈ 94 km ⇒ ~45 px de
+  // diâmetro centrada em (900,856); penumbra r ≈ 3.389 km ⇒ gradiente
+  // linear até ~690 px do centro (o disco tem 1.433 px — quase inteiro
+  // dentro da penumbra). O `look` REUSA o pino do centro da Terra da
+  // vista `terra` (a mesma efeméride, o mesmo jd).
+  //
+  // `eclipse-lunar` (?jd=2458327.34980323 — 2018-07-27, a mais longa do
+  // século): a câmera a 4 raios lunares do centro da Lua, do lado da
+  // TERRA (= lado diurno na lua cheia eclipsada, Sol e Terra a 0,11° um
+  // do outro vistos da Lua), olhando a Lua: o disco de ~757 px INTEIRO é
+  // o efeito — a Lua funda na umbra (folga 2.049 km), cobre de Danjon
+  // (o piso PISO_REFRACAO_LUNAR × COR_REFRACAO_LUNAR da lib) vezes a
+  // EXPOSIÇÃO DO OBSERVADOR da decisão do dono (EV_OBSERVADOR_ECLIPSE_LUNAR
+  // = 10 — declarada na lib como exposição, não dado físico; sem ela o
+  // piso honesto quantiza para ~0 e a Lua renderiza preta). Tamanho
+  // declarado: a blood moon É o disco inteiro, 757 px.
+  [
+    'eclipse-solar',
+    '?pos=-0.0000045886355123391084,-0.0000014552661812675914,-6.306556615181776e-7'
+      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'eclipse-lunar',
+    '?pos=0.0000027957670917923275,-0.0000037323592589660634,-0.0000016179729540998382'
+      + '&look=0.0000027958946899936873,-0.000003732529698720039,-0.0000016180463950766712'
+      + '&jd=2458327.34980323&corpos=1&shot=2',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
