@@ -43,8 +43,72 @@ export const PHASE_OFFSET_GRAUS = 30;
  * disco iluminado — a fração iluminada é `(1+cos φ)/2`, e em φ = 70° ela
  * é 67% — com o terminador em quadro; passar disso é fotografar o lado
  * escuro do alvo.
+ *
+ * DESDE O ARRASTO DE DOIS EIXOS ELE É UM CONE, não mais um arco, e a
+ * frase acima passou a valer LITERALMENTE em vez de valer num plano só:
+ * φ é o ângulo entre a câmera e a direção iluminada, e o grampo diz
+ * `φ ≤ 70°` para QUALQUER azimute em torno da linha alvo→Sol. Ver
+ * `OrbitaDoVisitante`.
  */
 export const MAX_SOLAR_DEVIATION_GRAUS = 70;
+
+/**
+ * A SENSIBILIDADE do arrasto, em radianos por pixel — o número que já
+ * governava o eixo único (0,0022 rad/px = 0,126°/px, medido na
+ * auditoria de 2026-08-12). Vale para os DOIS eixos: dizer que o mesmo
+ * dedo anda mais depressa na horizontal do que na vertical seria
+ * inventar uma assimetria que ninguém pediu.
+ */
+export const ARRASTO_RAD_POR_PX = 0.0022;
+
+/**
+ * O QUE O DEDO DO VISITANTE ACUMULA, em dois eixos — e por que os dois
+ * cabem dentro do MESMO grampo de 70°.
+ *
+ * `altura` é o eixo VELHO: some ao pino de fase (`PHASE_OFFSET_GRAUS`) e
+ * inclina a câmera na direção do polo. É ele, e só ele, que mexe no
+ * ângulo câmera↔Sol — logo é ele, e só ele, que o grampo precisa
+ * apertar.
+ *
+ * `volta` é o eixo NOVO: um giro em torno da PRÓPRIA linha alvo→Sol.
+ *
+ * A CONTA QUE O LIBERA (é ela que compra os 360° sem afrouxar nada):
+ * seja `u` a direção iluminada (unitária) e `d` a direção da câmera
+ * depois da inclinação, com `d·u = cos φ`. Uma rotação `R(u, ψ)` em
+ * torno de `u` deixa `u` fixo (`R(u,ψ)u = u`) e é ortogonal, então
+ *
+ *     (R(u,ψ)d)·u = (R(u,ψ)d)·(R(u,ψ)u) = d·u = cos φ
+ *
+ * — o ângulo ao Sol é EXATAMENTE o mesmo, para qualquer ψ. A fração
+ * iluminada `(1+cos φ)/2` não muda um dígito, e o grampo de 70°
+ * continua valendo palavra por palavra: o visitante ganha a volta
+ * inteira sem nunca ver um grau a mais de sombra. `atlasRig.test.ts`
+ * varre ψ e cobra a invariância a 1e-12.
+ *
+ * O `altura` GRAMPEADO EM [0°, 70°] e não mais em [−70°, +70°], e isto
+ * NÃO tira nada do visitante: com 360° de `volta` a metade negativa é
+ * REDUNDANTE — `(−φ, ψ)` e `(φ, ψ+180°)` são a MESMA direção, porque
+ * girar meia volta em torno de `u` espelha a inclinação. O alcance sai
+ * de um arco de 140° (uma dimensão) para o cone de 70° inteiro (duas), e
+ * o que se ganha em troca é o que todo controle de órbita ganha ao
+ * grampear o ângulo polar em vez de deixá-lo cruzar o eixo (three.js
+ * `OrbitControls`, e o `clamp(phi, 0.18, π−0.18)` do projeto irmão):
+ * atravessar φ = 0 INVERTERIA a horizontal, porque do outro lado do
+ * eixo o azimute corre ao contrário. A vista de repouso (`altura = 0`,
+ * `volta = 0`) segue sendo o pino de 30° de sempre, bit a bit.
+ */
+export interface OrbitaDoVisitante {
+  /** arrasto VERTICAL acumulado (radianos), somado ao pino de fase. */
+  altura: number;
+  /** arrasto HORIZONTAL acumulado (radianos), em torno de alvo→Sol. */
+  volta: number;
+}
+
+/** A órbita de quem ainda não arrastou nada — o repouso de todo foco. */
+export const ORBITA_PARADA: Readonly<OrbitaDoVisitante> = Object.freeze({
+  altura: 0,
+  volta: 0,
+});
 
 /**
  * Peso da mistura "para longe do PAI" contra o enquadramento alinhado ao
@@ -348,32 +412,46 @@ export function enquadrar(pedido: PedidoDeEnquadramento): Enquadramento {
  * 30° e os 70° passam a ser medidos do lado ESCURO, e o grampo que
  * deveria garantir 67% de disco iluminado garante no máximo 33%.
  *
- * `desvioExtra` (radianos) é a órbita do visitante somada ao pino; o
- * total é grampeado em `MAX_SOLAR_DEVIATION_GRAUS` — passar disso é
- * fotografar o lado escuro do alvo, e é essa a única serventia do 70°.
+ * `orbita` é o que o dedo do visitante acumulou, nos DOIS eixos (ver
+ * `OrbitaDoVisitante`): a `altura` soma ao pino e é grampeada em
+ * `MAX_SOLAR_DEVIATION_GRAUS` — passar disso é fotografar o lado escuro
+ * do alvo, e é essa a única serventia do 70° —, e a `volta` gira o
+ * resultado em torno da própria linha alvo→Sol, que é a rotação que não
+ * mexe no ângulo ao Sol e por isso não precisa de grampo nenhum.
+ *
+ * A ORDEM importa e é esta: inclina PRIMEIRO, gira DEPOIS. Girar antes
+ * seria girar o eixo em torno de si mesmo (identidade) e o eixo novo
+ * seria inerte.
  */
+const _linhaDoSol = new THREE.Vector3();
+
 export function direcaoPrivilegiada(
   doSolAoAlvo: THREE.Vector3,
   polo: THREE.Vector3,
-  desvioExtra: number,
+  orbita: Readonly<OrbitaDoVisitante>,
   out: THREE.Vector3
 ): THREE.Vector3 {
   const eixoSolar = out.copy(doSolAoAlvo).negate();
   if (eixoSolar.lengthSq() < 1e-30) eixoSolar.set(0, 0, 1);
   eixoSolar.normalize();
+  // a LINHA alvo→Sol guardada ANTES da inclinação: é ela o eixo do giro
+  // de volta, e `out` deixa de ser ela na linha seguinte
+  _linhaDoSol.copy(eixoSolar);
   const maximo = MAX_SOLAR_DEVIATION_GRAUS * GRAU;
-  const angulo = THREE.MathUtils.clamp(
-    PHASE_OFFSET_GRAUS * GRAU + (Number.isFinite(desvioExtra) ? desvioExtra : 0),
-    -maximo,
-    maximo
-  );
+  const altura = Number.isFinite(orbita.altura) ? orbita.altura : 0;
+  // o cone: 0 é a fase cheia (câmera na linha do Sol), 70° é o limite
+  // iluminado. Ver `OrbitaDoVisitante` para por que o piso é 0 e não −70°.
+  const angulo = THREE.MathUtils.clamp(PHASE_OFFSET_GRAUS * GRAU + altura, 0, maximo);
   const eixo = new THREE.Vector3().crossVectors(eixoSolar, polo);
   // alvo alinhado com o polo: qualquer perpendicular serve
   if (eixo.lengthSq() < 1e-12) {
     eixo.set(1, 0, 0).cross(eixoSolar);
     if (eixo.lengthSq() < 1e-12) eixo.set(0, 1, 0).cross(eixoSolar);
   }
-  return eixoSolar.applyAxisAngle(eixo.normalize(), angulo);
+  eixoSolar.applyAxisAngle(eixo.normalize(), angulo);
+  const volta = Number.isFinite(orbita.volta) ? orbita.volta : 0;
+  if (volta !== 0) eixoSolar.applyAxisAngle(_linhaDoSol, volta);
+  return eixoSolar;
 }
 
 /**
@@ -405,7 +483,7 @@ export function direcaoDaLua(
   doSolAoAlvo: THREE.Vector3,
   doPaiAoAlvo: THREE.Vector3,
   polo: THREE.Vector3,
-  desvioExtra: number,
+  orbita: Readonly<OrbitaDoVisitante>,
   out: THREE.Vector3
 ): THREE.Vector3 {
   // snapshots ANTES de escrever em `out`: os chamadores da classe podem
@@ -415,7 +493,7 @@ export function direcaoDaLua(
   const temSol = _iluminada.lengthSq() >= 1e-30;
   if (temSol) _iluminada.normalize();
 
-  const solar = direcaoPrivilegiada(doSolAoAlvo, polo, desvioExtra, out);
+  const solar = direcaoPrivilegiada(doSolAoAlvo, polo, orbita, out);
   if (doPaiAoAlvo.lengthSq() < 1e-30) return solar;
   _longeDoPai.copy(doPaiAoAlvo).normalize();
   const mistura = solar.lerp(_longeDoPai, PARENT_FRAMING_BIAS);
@@ -432,7 +510,7 @@ export function direcaoDaLua(
     // componente "longe do pai" que valha preservar; volta à direção
     // solar privilegiada pura, recomposta do snapshot (o rascunho está
     // sujo da mistura).
-    return direcaoPrivilegiada(_solSnapshot, polo, desvioExtra, out);
+    return direcaoPrivilegiada(_solSnapshot, polo, orbita, out);
   }
   return out
     .copy(_iluminada)
@@ -467,6 +545,16 @@ const _quatPartida = new THREE.Quaternion();
 const _dirA = new THREE.Vector3();
 const _dirB = new THREE.Vector3();
 
+/** Ângulo de volta em (−π, π] — periódico, então o número não cresce. */
+function enrolar(rad: number): number {
+  if (!Number.isFinite(rad)) return 0;
+  const volta = 2 * Math.PI;
+  const r = rad - Math.floor(rad / volta + 0.5) * volta;
+  // `floor` devolve −π quando o resto cai exatamente na borda; o
+  // intervalo fechado à direita mantém a ida e a volta simétricas
+  return r === -Math.PI ? Math.PI : r;
+}
+
 /**
  * O rig. Estado mínimo: um alvo, um raio de enquadramento e a órbita
  * que o visitante somou com o ponteiro. Não anima nada — o
@@ -479,7 +567,8 @@ export class AtlasRig {
   readonly alvo = new THREE.Vector3();
   /** raio da esfera enquadrada, em pc */
   private raio = 0;
-  private orbita = 0;
+  /** o que o dedo do visitante acumulou nos dois eixos */
+  private readonly orbita: OrbitaDoVisitante = { altura: 0, volta: 0 };
   /**
    * De onde sai o EIXO SOLAR quando o próprio alvo não serve para
    * defini-lo. Vale o alvo em todo enquadramento comum; na vista de
@@ -513,7 +602,7 @@ export class AtlasRig {
     eixoDe: new THREE.Vector3(),
     pai: new THREE.Vector3(),
     temPai: false,
-    orbita: 0,
+    orbita: { altura: 0, volta: 0 } as OrbitaDoVisitante,
   };
 
   /**
@@ -582,7 +671,8 @@ export class AtlasRig {
       this.partida.eixoDe.copy(this.eixoDe);
       this.partida.temPai = this.pai !== null;
       if (this.pai) this.partida.pai.copy(this.pai);
-      this.partida.orbita = this.orbita;
+      this.partida.orbita.altura = this.orbita.altura;
+      this.partida.orbita.volta = this.orbita.volta;
       this.rampaT = 0;
     } else {
       this.rampaT = 1;
@@ -596,7 +686,8 @@ export class AtlasRig {
     } else {
       this.pai = null;
     }
-    this.orbita = 0;
+    this.orbita.altura = 0;
+    this.orbita.volta = 0;
   }
 
   /** a rampa entre degraus ainda está andando? (a captura espera por ela) */
@@ -604,13 +695,41 @@ export class AtlasRig {
     return this.rampaT < 1;
   }
 
-  /** arrasto do ponteiro: orbita o alvo dentro do grampo solar */
-  addOrbitDelta(dx: number) {
+  /**
+   * ARRASTO DO PONTEIRO, os DOIS eixos — e cada um faz o que a tela
+   * promete:
+   *
+   *  · HORIZONTAL (`dx`) dá a VOLTA no alvo, girando em torno da linha
+   *    alvo→Sol. Não tem grampo porque não tem o que grampear: o giro
+   *    não altera o ângulo ao Sol (a conta está em `OrbitaDoVisitante`).
+   *  · VERTICAL (`dy`) sobe e desce dentro do MESMO grampo de 70° de
+   *    sempre — é ele quem mexe na fase.
+   *
+   * OS SINAIS SÃO OS DA SUPERFÍCIE SEGUINDO O DEDO (o "estilo Google
+   * Earth" do projeto irmão), e não são gosto: com `up = polo`, a base
+   * da câmera dá `direita = polo × dir` e `cima = dir × direita`, e a
+   * derivada da posição sai `∂P/∂volta ∝ −direita` e
+   * `∂P/∂altura ∝ +cima`. Ou seja, arrastar para a DIREITA leva a câmera
+   * para a esquerda e o alvo para a direita; arrastar para BAIXO leva a
+   * câmera para cima e o alvo para baixo. `atlasRig.test.ts` cobra os
+   * dois sinais contra a base REAL da câmera depois do `apply` — se
+   * alguém trocar um sinal aqui, o teste vê pelo eixo da matriz, não
+   * pela fórmula repetida.
+   *
+   * A `volta` é ENROLADA em (−π, π]: o ângulo é periódico, o alcance é
+   * a volta inteira de qualquer jeito, e um acumulador que só cresce
+   * seria um número sem teto guardado em estado de sessão.
+   */
+  addOrbitDelta(dx: number, dy: number) {
     const maximo = MAX_SOLAR_DEVIATION_GRAUS * GRAU;
-    this.orbita = THREE.MathUtils.clamp(
-      this.orbita - dx * 0.0022,
-      -maximo - PHASE_OFFSET_GRAUS * GRAU,
-      maximo - PHASE_OFFSET_GRAUS * GRAU
+    const pino = PHASE_OFFSET_GRAUS * GRAU;
+    const passoX = Number.isFinite(dx) ? dx : 0;
+    const passoY = Number.isFinite(dy) ? dy : 0;
+    this.orbita.volta = enrolar(this.orbita.volta + passoX * ARRASTO_RAD_POR_PX);
+    this.orbita.altura = THREE.MathUtils.clamp(
+      this.orbita.altura + passoY * ARRASTO_RAD_POR_PX,
+      -pino,
+      maximo - pino
     );
   }
 
@@ -691,7 +810,7 @@ export class AtlasRig {
     raio: number,
     eixoDe: THREE.Vector3,
     pai: THREE.Vector3 | null,
-    orbita: number
+    orbita: Readonly<OrbitaDoVisitante>
   ) {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: raio,

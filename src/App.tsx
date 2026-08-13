@@ -914,8 +914,13 @@ export default function App() {
               onEpoca={() => directorRef.current?.voltarAEpoca()}
             />
           )}
+          {/* A DICA DESCREVE O GESTO REAL (Onda 7). "girar em torno do
+              alvo" era promessa de um eixo que não existia: o arrasto
+              tinha um eixo só e ele subia em LATITUDE. Agora são dois, e
+              a frase diz qual é qual — a horizontal dá a volta, a
+              vertical sobe e desce. */}
           <div className="free-hint">
-            arraste — girar em torno do alvo · clique num nome — enquadrar
+            arraste — dar a volta e subir/descer · clique num nome — enquadrar
           </div>
         </div>
       )}

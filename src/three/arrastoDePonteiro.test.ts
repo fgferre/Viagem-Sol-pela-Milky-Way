@@ -442,7 +442,9 @@ describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', ()
     // e o passo FILTRADO é o que chega aos dois consumidores do gesto —
     // a órbita do Atlas e o olhar da viagem congelada. Sem este pino,
     // um `mover` chamado e depois ignorado passaria pelos de cima.
-    expect(DIRECTOR).toContain('this.atlas.addOrbitDelta(passo.dx)');
+    // (Onda 7: o passo chega INTEIRO — o `dy` era calculado e jogado
+    // fora, e era esse descarte que deixava o Atlas com um eixo só)
+    expect(DIRECTOR).toContain('this.atlas.addOrbitDelta(passo.dx, passo.dy)');
     expect(DIRECTOR).toContain('this.rig.addLookDelta(passo.dx, passo.dy)');
   });
 

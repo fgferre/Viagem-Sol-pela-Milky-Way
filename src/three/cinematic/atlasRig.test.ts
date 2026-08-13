@@ -13,6 +13,8 @@ import {
   LARGURA_UTIL_MINIMA_PX,
   MARGEM_DE_ENQUADRAMENTO,
   MAX_SOLAR_DEVIATION_GRAUS,
+  ORBITA_PARADA,
+  ARRASTO_RAD_POR_PX,
   PARENT_FRAMING_BIAS,
   PHASE_OFFSET_GRAUS,
   RETANGULO_CHEIO,
@@ -367,7 +369,7 @@ describe('direcaoPrivilegiada — os 30° e o grampo dos 70°, do lado ACESO', (
 
   it('a câmera vai para o lado do SOL, não para além do alvo', () => {
     const out = new THREE.Vector3();
-    direcaoPrivilegiada(eixo.clone(), polo, 0, out);
+    direcaoPrivilegiada(eixo.clone(), polo, ORBITA_PARADA, out);
     // o produto escalar com o eixo Sol→alvo é NEGATIVO: pôr a câmera em
     // `alvo + out·d` a deixa entre o Sol e o alvo. Com o eixo sem negar,
     // este número seria +cos(30°) e todo enquadramento fotografaria o
@@ -380,19 +382,23 @@ describe('direcaoPrivilegiada — os 30° e o grampo dos 70°, do lado ACESO', (
 
   it('sem órbita do visitante, o desvio é o ângulo de fase herdado', () => {
     const out = new THREE.Vector3();
-    direcaoPrivilegiada(eixo.clone(), polo, 0, out);
+    direcaoPrivilegiada(eixo.clone(), polo, ORBITA_PARADA, out);
     expect(out.length()).toBeCloseTo(1, 12);
     expect(out.angleTo(aceso) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS, 10);
   });
 
   it('a órbita do visitante soma — e para no máximo solar', () => {
     const out = new THREE.Vector3();
-    direcaoPrivilegiada(eixo.clone(), polo, 20 * GRAU, out);
+    direcaoPrivilegiada(eixo.clone(), polo, { altura: 20 * GRAU, volta: 0 }, out);
     expect(out.angleTo(aceso) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS + 20, 10);
-    direcaoPrivilegiada(eixo.clone(), polo, 180 * GRAU, out);
+    direcaoPrivilegiada(eixo.clone(), polo, { altura: 180 * GRAU, volta: 0 }, out);
     expect(out.angleTo(aceso) / GRAU).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 10);
-    direcaoPrivilegiada(eixo.clone(), polo, -180 * GRAU, out);
-    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 10);
+    // e o PISO do cone é a fase cheia (0°), não mais −70°: a metade
+    // negativa do arco virou redundante quando a volta ganhou 360°
+    // (ver `OrbitaDoVisitante`) — arrastar sem parar para cima para na
+    // linha do Sol em vez de atravessá-la e inverter a horizontal
+    direcaoPrivilegiada(eixo.clone(), polo, { altura: -180 * GRAU, volta: 0 }, out);
+    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(0, 10);
     // no extremo do grampo mais de meio disco continua aceso — é a única
     // serventia do 70°, e é o que a docstring dele promete
     expect((1 + Math.cos(MAX_SOLAR_DEVIATION_GRAUS * GRAU)) / 2).toBeGreaterThan(0.5);
@@ -400,10 +406,156 @@ describe('direcaoPrivilegiada — os 30° e o grampo dos 70°, do lado ACESO', (
 
   it('alvo em cima do polo não devolve NaN', () => {
     const out = new THREE.Vector3();
-    direcaoPrivilegiada(polo.clone(), polo, 0, out);
+    direcaoPrivilegiada(polo.clone(), polo, ORBITA_PARADA, out);
     expect(out.length()).toBeCloseTo(1, 12);
-    direcaoPrivilegiada(new THREE.Vector3(0, 0, 0), polo, Number.NaN, out);
+    direcaoPrivilegiada(
+      new THREE.Vector3(0, 0, 0),
+      polo,
+      { altura: Number.NaN, volta: Number.NaN },
+      out
+    );
     expect(out.length()).toBeCloseTo(1, 12);
+  });
+});
+
+// ============================================================
+// ONDA 7 — O ARRASTO DE DOIS EIXOS. O `dy` era calculado e jogado fora,
+// e o eixo que existia subia em LATITUDE enquanto a dica prometia "girar
+// em torno do alvo". Estas provas cobram as duas coisas que o conserto
+// promete: que a volta seja de verdade (360°) e que ela NÃO compre nem
+// um grau de sombra — que é o que autoriza o grampo de 70° a continuar
+// escrito do jeito que está.
+// ============================================================
+describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () => {
+  const polo = new THREE.Vector3(0, 0, 1);
+  const doSol = new THREE.Vector3(0.6, -0.8, 0).normalize(); // Sol→alvo
+  const aceso = doSol.clone().negate(); // alvo→Sol: a direção ILUMINADA
+
+  it('a VOLTA não muda um dígito da fase — é a conta que libera os 360°', () => {
+    const out = new THREE.Vector3();
+    // a faixa inteira que o dedo alcança: −30° (fase cheia) a +40° (o
+    // grampo de 70°), que é `altura` somado ao pino de 30°
+    for (const alturaG of [-30, -22.5, -7, 0, 13.25, 40]) {
+      const orbita = { altura: alturaG * GRAU, volta: 0 };
+      const semVolta = direcaoPrivilegiada(
+        doSol.clone(),
+        polo,
+        orbita,
+        new THREE.Vector3()
+      );
+      const fase = semVolta.angleTo(aceso);
+      expect(fase / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS + alturaG, 10);
+      for (let i = 1; i <= 72; i++) {
+        const volta = (i / 72) * 2 * Math.PI;
+        direcaoPrivilegiada(doSol.clone(), polo, { ...orbita, volta }, out);
+        // A INVARIÂNCIA, a 1e-12: `(R(u,ψ)d)·u = d·u`. É ela, e só ela,
+        // que deixa o grampo de 70° valer palavra por palavra com o eixo
+        // novo solto — se alguém trocar o eixo do giro por outro
+        // qualquer, é aqui que aparece.
+        expect(out.angleTo(aceso)).toBeCloseTo(fase, 12);
+        expect(out.length()).toBeCloseTo(1, 12);
+        // ...e a fração iluminada nunca desce dos 67% que o 70° promete
+        expect((1 + Math.cos(out.angleTo(aceso))) / 2).toBeGreaterThan(0.67 - 1e-9);
+      }
+    }
+  });
+
+  it('a volta é um eixo VIVO: meia volta espelha, volta inteira volta', () => {
+    const parada = direcaoPrivilegiada(
+      doSol.clone(),
+      polo,
+      ORBITA_PARADA,
+      new THREE.Vector3()
+    );
+    const meia = direcaoPrivilegiada(
+      doSol.clone(),
+      polo,
+      { altura: 0, volta: Math.PI },
+      new THREE.Vector3()
+    );
+    // o eixo NÃO é inerte (era: o `dy` nem chegava ao rig)
+    expect(meia.distanceTo(parada)).toBeGreaterThan(0.5);
+    // e meia volta é o ESPELHO da inclinação em torno da linha do Sol —
+    // a prova de que `(−φ, ψ)` e `(φ, ψ+180°)` são a mesma direção, que
+    // é o que torna o piso do cone em 0° uma restrição sem perda
+    const soma = meia.clone().add(parada).normalize();
+    expect(soma.distanceTo(aceso)).toBeLessThan(1e-12);
+    const inteira = direcaoPrivilegiada(
+      doSol.clone(),
+      polo,
+      { altura: 0, volta: 2 * Math.PI },
+      new THREE.Vector3()
+    );
+    expect(inteira.distanceTo(parada)).toBeLessThan(1e-12);
+  });
+
+  it('a SUPERFÍCIE SEGUE O DEDO nos dois eixos, medido na base da câmera', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+    const rig = new AtlasRig();
+    // o oráculo não repete a fórmula: lê os eixos da câmera JÁ escrita
+    // (coluna X = direita da tela, coluna Y = cima) e pergunta para que
+    // lado a câmera andou. Trocar um sinal em `addOrbitDelta` reprova.
+    const medir = (dx: number, dy: number) => {
+      rig.focarNoSistema();
+      rig.apply(camera);
+      const antes = camera.position.clone();
+      const direita = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      const cima = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+      rig.addOrbitDelta(dx, dy);
+      rig.apply(camera);
+      const passo = camera.position.clone().sub(antes);
+      return { x: passo.dot(direita), y: passo.dot(cima) };
+    };
+    // arrastar para a DIREITA leva a câmera para a esquerda da tela — e o
+    // alvo, portanto, para a direita, junto com o dedo
+    const horizontal = medir(40, 0);
+    expect(horizontal.x).toBeLessThan(0);
+    expect(Math.abs(horizontal.y)).toBeLessThan(Math.abs(horizontal.x) * 0.15);
+    // arrastar para BAIXO leva a câmera para cima — e o alvo para baixo
+    const vertical = medir(0, 40);
+    expect(vertical.y).toBeGreaterThan(0);
+    expect(Math.abs(vertical.x)).toBeLessThan(Math.abs(vertical.y) * 0.15);
+    // e o eixo horizontal não é o vertical disfarçado: os dois passos
+    // existem e são quase ortogonais (era o defeito — um eixo só)
+    expect(Math.abs(horizontal.x)).toBeGreaterThan(1e-12);
+    expect(Math.abs(vertical.y)).toBeGreaterThan(1e-12);
+  });
+
+  it('uma volta inteira do dedo são 2.856 px, e devolve a MESMA vista', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+    const rig = new AtlasRig();
+    rig.focarNoSistema();
+    rig.apply(camera);
+    const inicial = camera.position.clone();
+    const pxPorVolta = (2 * Math.PI) / ARRASTO_RAD_POR_PX;
+    // 0,0022 rad/px = 0,126°/px, o número medido do eixo único: a volta
+    // inteira custa 2.856 px de arrasto
+    expect(pxPorVolta).toBeCloseTo(2856, 0);
+    rig.addOrbitDelta(pxPorVolta, 0);
+    rig.apply(camera);
+    expect(camera.position.distanceTo(inicial)).toBeLessThan(1e-9 * inicial.length());
+    // meia volta é OUTRA vista, e bem outra: a corda de 60° a 30° de fase
+    rig.addOrbitDelta(pxPorVolta / 2, 0);
+    rig.apply(camera);
+    expect(camera.position.distanceTo(inicial)).toBeGreaterThan(0.5 * inicial.length());
+  });
+
+  it('o VERTICAL para no cone: 70° para um lado, a linha do Sol para o outro', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+    const rig = new AtlasRig();
+    const casa = orbitaMaisExterna();
+    const iluminada = casa.posicao.clone().negate().normalize();
+    const faseDepoisDe = (dy: number) => {
+      rig.focarNoSistema();
+      for (let i = 0; i < 500; i++) rig.addOrbitDelta(0, dy);
+      rig.apply(camera);
+      return camera.position.clone().sub(rig.alvo).normalize().angleTo(iluminada) / GRAU;
+    };
+    // para BAIXO sem parar: a câmera desce até o terminador e para lá
+    expect(faseDepoisDe(50)).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 9);
+    // para CIMA sem parar: para na fase CHEIA, sem atravessar o eixo —
+    // atravessar inverteria a horizontal do outro lado
+    expect(faseDepoisDe(-50)).toBeCloseTo(0, 6);
   });
 });
 
@@ -501,7 +653,7 @@ describe('o rig e o alvo de abertura', () => {
     rig.focarNoSistema();
     rig.apply(camera);
     const inicial = camera.position.clone();
-    for (let i = 0; i < 2000; i++) rig.addOrbitDelta(50);
+    for (let i = 0; i < 2000; i++) rig.addOrbitDelta(50, 50);
     rig.apply(camera);
     const girada = camera.position.clone();
     expect(girada.distanceTo(inicial)).toBeGreaterThan(0);
@@ -551,8 +703,14 @@ describe('direcaoDaLua — o degrau "lua" (F2b/D7)', () => {
 
   it('sem pai degenera na direção privilegiada de sempre', () => {
     const doSol = new THREE.Vector3(1, 0, 0);
-    const a = direcaoPrivilegiada(doSol.clone(), polo, 0, new THREE.Vector3());
-    const b = direcaoDaLua(doSol.clone(), new THREE.Vector3(), polo, 0, new THREE.Vector3());
+    const a = direcaoPrivilegiada(doSol.clone(), polo, ORBITA_PARADA, new THREE.Vector3());
+    const b = direcaoDaLua(
+      doSol.clone(),
+      new THREE.Vector3(),
+      polo,
+      ORBITA_PARADA,
+      new THREE.Vector3()
+    );
     expect(b.distanceTo(a)).toBeLessThan(1e-12);
   });
 
@@ -561,8 +719,14 @@ describe('direcaoDaLua — o degrau "lua" (F2b/D7)', () => {
     // longe-do-pai a ~27° da direção iluminada: a mistura fica DENTRO
     // do grampo de 70° e sai crua (renormalizada)
     const doPai = new THREE.Vector3(-1, 0.5, 0);
-    const out = direcaoDaLua(doSol.clone(), doPai.clone(), polo, 0, new THREE.Vector3());
-    const solar = direcaoPrivilegiada(doSol.clone(), polo, 0, new THREE.Vector3());
+    const out = direcaoDaLua(
+      doSol.clone(),
+      doPai.clone(),
+      polo,
+      ORBITA_PARADA,
+      new THREE.Vector3()
+    );
+    const solar = direcaoPrivilegiada(doSol.clone(), polo, ORBITA_PARADA, new THREE.Vector3());
     const esperado = solar
       .clone()
       .lerp(doPai.clone().normalize(), PARENT_FRAMING_BIAS)
@@ -578,7 +742,7 @@ describe('direcaoDaLua — o degrau "lua" (F2b/D7)', () => {
     // máximo desvio compatível com luz
     const doSol = new THREE.Vector3(1, 0, 0);
     const doPai = new THREE.Vector3(0.99, 0.141, 0).normalize(); // quase o eixo solar
-    const out = direcaoDaLua(doSol.clone(), doPai, polo, 0, new THREE.Vector3());
+    const out = direcaoDaLua(doSol.clone(), doPai, polo, ORBITA_PARADA, new THREE.Vector3());
     const iluminada = doSol.clone().negate().normalize();
     const desvio = THREE.MathUtils.radToDeg(out.angleTo(iluminada));
     expect(desvio).toBeLessThanOrEqual(MAX_SOLAR_DEVIATION_GRAUS + 1e-9);
@@ -589,7 +753,7 @@ describe('direcaoDaLua — o degrau "lua" (F2b/D7)', () => {
   it('o azimute "longe do pai" sobrevive onde é compatível com luz', () => {
     const doSol = new THREE.Vector3(1, 0, 0);
     const doPai = new THREE.Vector3(0.99, 0.141, 0).normalize();
-    const out = direcaoDaLua(doSol.clone(), doPai, polo, 0, new THREE.Vector3());
+    const out = direcaoDaLua(doSol.clone(), doPai, polo, ORBITA_PARADA, new THREE.Vector3());
     const iluminada = doSol.clone().negate().normalize();
     // o grampo entrega EXATAMENTE o desvio máximo (girou até a borda,
     // não desistiu para a solar pura) e preserva o lado do pai (y > 0)

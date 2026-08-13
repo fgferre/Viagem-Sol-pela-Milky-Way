@@ -1288,7 +1288,11 @@ export class Director {
     const passo = this.arrastoDaPausa.mover(event);
     if (!passo) return;
     if (this.phase === 'atlas') {
-      this.atlas.addOrbitDelta(passo.dx);
+      // OS DOIS EIXOS (Onda 7): o `dy` era calculado e jogado fora — a
+      // dica prometia "girar em torno do alvo" e o que existia era uma
+      // subida em latitude. Agora a horizontal dá a volta e a vertical
+      // sobe e desce, cada uma no seu eixo (ver `addOrbitDelta`).
+      this.atlas.addOrbitDelta(passo.dx, passo.dy);
       this.perturbar();
     } else if (this.pauseLookActive) {
       this.rig.addLookDelta(passo.dx, passo.dy);
