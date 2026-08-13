@@ -322,6 +322,23 @@ const FONTES = [
     url: `${SSS}/2k_ceres_fictional.jpg`,
     nomeNoDoador: 'ceres_sss_fictional.jpg',
   },
+  // ---- F7 (asteroides). Vesta: mosaico Dawn embutido no modelo
+  // NASA Science (crédito NASA/JPL-Caltech/UCLA/MPS/DLR/IDA). Hígia:
+  // mapa VLT ESO CC BY 4.0. Palas sem mapa com licença — não entra.
+  // Modelos GLB/OBJ (DAMIT CC BY / NASA) ficam pendentes (sem
+  // GLTFLoader/OBJLoader na casa).
+  {
+    corpo: 'vesta',
+    canal: 'map',
+    url: 'https://science.nasa.gov/resource/vesta-3d-model/',
+    nomeNoDoador: 'vesta_dawn_embedded.png',
+  },
+  {
+    corpo: 'hygiea',
+    canal: 'map',
+    url: 'https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png',
+    nomeNoDoador: 'hygiea_vlt_2017_2018_map.png',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;

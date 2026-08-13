@@ -1091,6 +1091,38 @@
       "proveniencia": "derivado"
     },
     {
+      "corpo": "hygiea",
+      "canal": "map",
+      "arquivo": "textures/atlas/hygiea/map.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 62879,
+      "sha256": "71f60a61d9eb84b90da340a32f6f6432bf82201d31f06eb8714254abbde9bf47",
+      "origem": {
+        "fonte": "ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Textura: ESO / VLT / Vernazza et al. — CC BY 4.0."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "hygiea",
+      "canal": "map",
+      "arquivo": "textures/atlas/hygiea/map.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 19328,
+      "sha256": "2c801488f5b8c19ba3cd6477de66768709112449ca7459340674b7e9bcabe51e",
+      "origem": {
+        "fonte": "ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png",
+        "licenca": "CC BY 4.0",
+        "atribuicao": "Textura: ESO / VLT / Vernazza et al. — CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
       "corpo": "iapetus",
       "canal": "map",
       "arquivo": "textures/atlas/iapetus/map_1024.jpg",
@@ -2703,6 +2735,54 @@
         "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 139295,
+      "sha256": "6d30fd92cacd45d56aca2913c8e2133a12e48fbe328bcaa462e0faff64dc015b",
+      "origem": {
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "licenca": "NASA images and media usage guidelines",
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 736920,
+      "sha256": "454d0d2542116cb7d5257e70f303cdc7f548c64fb47cbc0af310cfce0cf1503f",
+      "origem": {
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "licenca": "NASA images and media usage guidelines",
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 578212,
+      "sha256": "dc2cc035d6cffd751e33b5cc447f08e95d2b7689cd6d0f1a96cb8efc5a768378",
+      "origem": {
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "licenca": "NASA images and media usage guidelines",
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
       },
       "proveniencia": "derivado"
     }

@@ -328,6 +328,22 @@ const ORIGENS = {
     atribuicao: ATRIBUICAO_SSS,
     proveniencia: 'medido',
   },
+  // ---- F7 (asteroides). Vesta Dawn (NASA Science 3D model);
+  // Hígia VLT CC BY 4.0. Palas sem mapa licenciado.
+  'vesta/map': {
+    fonte: 'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D',
+    url: 'https://science.nasa.gov/resource/vesta-3d-model/',
+    licenca: 'NASA images and media usage guidelines',
+    atribuicao: 'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn.',
+    proveniencia: 'medido',
+  },
+  'hygiea/map': {
+    fonte: 'ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0',
+    url: 'https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png',
+    licenca: 'CC BY 4.0',
+    atribuicao: 'Textura: ESO / VLT / Vernazza et al. — CC BY 4.0.',
+    proveniencia: 'medido',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS
