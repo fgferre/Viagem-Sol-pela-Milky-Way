@@ -33,7 +33,7 @@ import {
 import type { EstadoDaVista } from './selo';
 import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
-import { DEEP_LIMIAR_PC } from './world/lodStellar';
+import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { PISO_DO_CLARAO, REFERENCIA_UA, claraoDoAtlas } from './atlasConfig';
 import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { TONE_MAPPINGS } from './core/engine';
@@ -339,7 +339,7 @@ describe('4. o eixo ESCALA sai da geometria, não de porta', () => {
     // alcançável pelo clique no rótulo dentro do Atlas) quem domina o
     // quadro não é o disco artístico do Sol. O eixo lê a distância a
     // CASA, e acima do limiar ele é conservador — ver `escalaDaVista`.
-    expect(escalaDaVista(DEEP_LIMIAR_PC)).toBe('fora');
+    expect(escalaDaVista(LIMIAR_SISTEMA_SOLAR_PC)).toBe('fora');
     expect(escalaDaVista(1)).toBe('fora');
     expect(escalaDaVista(8000)).toBe('fora');
   });
@@ -356,7 +356,7 @@ describe('4. o eixo ESCALA sai da geometria, não de porta', () => {
       if (agora !== anterior) {
         trocas++;
         expect(d).toBeGreaterThan(0.02);
-        expect(d).toBeLessThan(DEEP_LIMIAR_PC);
+        expect(d).toBeLessThan(LIMIAR_SISTEMA_SOLAR_PC);
       }
       anterior = agora;
     }
@@ -420,36 +420,43 @@ describe('5. a copy do selo', () => {
 });
 
 // ============================================================
-// F1 — a porta de escala `?solreal=1`.
+// F3 — a porta de escala `?solreal=1` MORREU, e a acusação sobrou com
+// um culpado só.
 // ============================================================
-describe('F1 — ?solreal=1 é porta de ESCALA, não de brilho', () => {
+describe('F3 — o Sol saiu da acusação de escala, sem porta nenhuma', () => {
   // o `com` da casa, e não um fixture novo: assim este bloco continua
   // correto quando `EstadoDaVista` ganhar campo. Foi como ele nasceu
   // ERRADO — faltavam `tier` e `evLuzDoFoco` —, e quem pegou foi o tsc.
   // 0,1 pc (a vista `soldisco`): é onde o eixo ESCALA declara desvio e a
-  // acusação sai. ACHADO ao escrever isto: a 1 UA o selo já diz ESCALA
-  // REAL sozinho — `escalaDaVista` compara as duas rampas do domínio
-  // profundo, e lá dentro o disco artístico não desenha. Ou seja, o
-  // conservadorismo do eixo não alcança o interior do sistema solar.
+  // acusação sai. ACHADO ao escrever isto na F1: a 1 UA o selo já diz
+  // ESCALA REAL sozinho — `escalaDaVista` compara as duas rampas da
+  // entrega, e lá dentro quem desenha o Sol é o ponto fotométrico. Ou
+  // seja, o conservadorismo do eixo não alcança o interior do sistema.
   const vista = (portas: string[]) => com({ distanciaPc: 0.1, portas });
 
-  it('é porta CONHECIDA — não cai no ramo "porta não declarada"', () => {
+  it('a acusação sobrou com Sgr A✱ — o Sol pagou a dívida dele na F3', () => {
+    const v = estadoDoSelo(vista([]));
+    expect(v.escala).toBe('fora');
+    expect(v.culpados).toEqual(['Sagittarius A✱ está 125.884× maior']);
+    expect(v.culpados.join(' ')).not.toContain('Sol');
+  });
+
+  it('`?solreal=1` virou porta DESCONHECIDA: quem a digitar hoje é avisado', () => {
+    // ela foi porta declarada da F1 à F3. Agora não existe caminho no
+    // código que a leia, e o selo tem de dizer isso em vez de fingir que
+    // ela ainda faz alguma coisa — é o mesmo tratamento de qualquer
+    // parâmetro inventado na barra de endereço.
     const v = estadoDoSelo(vista(['solreal']));
-    expect(v.desvios.some((c) => c.chave === 'solreal')).toBe(false);
-    expect(v.desvios.some((c) => c.rotulo.includes('não declarada'))).toBe(false);
+    expect(v.desvios.some((c) => c.chave === 'solreal')).toBe(true);
+    expect(v.desvios.some((c) => c.rotulo.includes('não declarada'))).toBe(true);
+    // e o REGISTRO não a conhece mais
+    expect(REGISTRO.some((c) => c.chave === 'solreal')).toBe(false);
   });
 
-  it('NÃO suja o eixo do brilho — ela não toca uma linha de fotometria', () => {
-    expect(estadoDoSelo(vista(['solreal'])).brilho).toBe('real');
-  });
-
-  it('com a porta, o Sol SAI da acusação de escala', () => {
-    const comPorta = estadoDoSelo(vista(['solreal']));
-    const semPorta = estadoDoSelo(vista([]));
-    expect(semPorta.culpados).toContain('Sol está 487.441× maior');
-    expect(comPorta.culpados).not.toContain('Sol está 487.441× maior');
-    // e o buraco negro continua devendo nas duas: pagar uma dívida não
-    // perdoa a outra
-    expect(comPorta.culpados).toContain('Sagittarius A✱ está 125.884× maior');
+  it('e o eixo ESCALA continua saindo da GEOMETRIA, não de porta nenhuma', () => {
+    // dentro do sistema solar o selo diz REAL; longe de casa, FORA —
+    // e nenhuma URL move isso.
+    expect(estadoDoSelo(com({ distanciaPc: 4.8481e-6, portas: [] })).escala).toBe('real');
+    expect(estadoDoSelo(com({ distanciaPc: 0.5, portas: [] })).escala).toBe('fora');
   });
 });

@@ -112,10 +112,13 @@ export const VISTAS = [
   ['solestouro', '?pos=0,0,0.32&look=0,0,0&shot=2'],
   ['solestrela', '?pos=0,0,0.5&look=0,0,0&shot=2'],
   // AS TRÊS DO SOL REAL (F1 da onda do Sol real) — a resposta com imagem
-  // à frase de `config.ts:8`, "escala real seria invisível". Elas são as
-  // únicas vistas da casa que carregam `?solreal=1`, e é por isso que
-  // NÃO entram na conta de bit-identidade das 24: o par nulo delas é a
-  // mesma URL sem a porta, e aí o Sol volta a ser o ponto de sempre.
+  // à frase de `config.ts:8`, "escala real seria invisível". Elas
+  // nasceram carregando `?solreal=1`, a porta que construía o Sol com o
+  // raio FÍSICO; a F3 tornou esse raio o PADRÃO e a porta morreu, então
+  // as três URLs perderam o `&solreal=1` e passaram a ser vistas comuns.
+  // O md5 delas NÃO se move nessa troca, e isso é aritmética: a porta só
+  // escolhia o raio, e o raio que elas pediam é o que o app agora
+  // constrói sozinho. É a conferência mais barata da fase inteira.
   //
   // As distâncias, e cada uma responde uma pergunta diferente:
   //  4 milhões de km (1,2963e-7 pc) = 5,74 raios solares — a distância
@@ -128,9 +131,9 @@ export const VISTAS = [
   //    disco sair com outro tamanho, a conta está errada em algum lugar.
   //  40 UA (1,93926e-4 pc) = a órbita de Plutão. É a foto que mostra o
   //    que "estrela longe é PONTO, não invisível" quer dizer.
-  ['solreal4mkm', '?pos=0,0,0.00000012963&look=0,0,0&solreal=1&shot=2'],
-  ['solreal1ua', '?pos=0,0,0.0000048481&look=0,0,0&solreal=1&shot=2'],
-  ['solreal40ua', '?pos=0,0,0.00019393&look=0,0,0&solreal=1&shot=2'],
+  ['solreal4mkm', '?pos=0,0,0.00000012963&look=0,0,0&shot=2'],
+  ['solreal1ua', '?pos=0,0,0.0000048481&look=0,0,0&shot=2'],
+  ['solreal40ua', '?pos=0,0,0.00019393&look=0,0,0&shot=2'],
   // As de hero são Betelgeuse (152,67 pc de casa, a supergigante do Ato II),
   // a câmera na PRÓPRIA reta Sol→estrela. As três distâncias são os três
   // regimes do `farFade` do billboard (heroStars.ts:58, 320→900 pc): 200 pc

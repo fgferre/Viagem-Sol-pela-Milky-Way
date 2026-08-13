@@ -14,9 +14,9 @@
 //
 //  3. A REGRA + a dívida — corpo (escreve profundidade) tem de ter
 //     fator 1; quem não tem, tem de ter a fase que paga escrita em
-//     `DIVIDAS_ABERTAS`. Quando a F3 e a F5 entrarem, a entrada some da
-//     tabela e este teste passa a EXIGIR o fator 1 sozinho: o oráculo
-//     aperta sem ninguém lembrar de apertá-lo.
+//     `DIVIDAS_ABERTAS`. A F3 ENTROU (2026-08-13): a entrada do Sol saiu
+//     da tabela e o oráculo apertou sozinho — o cadastro agora EXIGE
+//     fator 1 do Sol, sem ninguém lembrar de apertá-lo. Falta a F5.
 //
 // PROVA DE SABOTAGEM (a exigência que separa gate de decoração): cada
 // varredura e cada regra tem um caso que a sabota de propósito e cobra
@@ -25,7 +25,6 @@
 // ============================================================
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { WORLD } from './config';
 import {
   CADASTRO_DE_ESCALA,
   DIVIDAS_ABERTAS,
@@ -34,6 +33,8 @@ import {
   ESPELHO_ESCALA_NUVEM_CO,
   ESPELHO_RS_SGR_A_PC,
   MASSA_SGR_A_MSOL,
+  RAIO_ARTISTICO_DO_SOL_PC,
+  RAIO_DO_SOL_NA_CENA,
   RAIO_SOL_KM,
   RAIO_SOL_PC,
   acusacaoDaEscala,
@@ -83,9 +84,14 @@ describe('1. os espelhos batem com a fonte', () => {
     expect(MASSA_SGR_A_MSOL).toBe(4.15e6);
   });
 
-  it('o raio do Sol NÃO é espelho: sai de WORLD, a fonte única', () => {
+  it('o raio do Sol NÃO é espelho: sai de RAIO_DO_SOL_NA_CENA, a fonte única', () => {
+    // até a F3 saía de `WORLD.sunRadius`; o raio mudou de casa junto com
+    // o cadastro que o declara, e o fator continua DERIVADO do que a
+    // cena desenha — nunca um `1` digitado.
     const sol = CADASTRO_DE_ESCALA.find((e) => e.id === 'sol')!;
-    expect(sol.fator).toBe(WORLD.sunRadius / RAIO_SOL_PC);
+    expect(sol.fator).toBe(RAIO_DO_SOL_NA_CENA / RAIO_SOL_PC);
+    expect(sol.fator).toBe(1);
+    expect(RAIO_DO_SOL_NA_CENA).toBe(RAIO_SOL_PC);
   });
 });
 
@@ -97,6 +103,7 @@ describe('2. completude — quem confessa tem de estar no cadastro', () => {
   // teste verde).
   const CONFESSAM = [
     'src/three/config.ts',
+    'src/three/escala.ts',
     'src/three/world/blackHole.ts',
     'src/three/world/observedClouds.ts',
   ];
@@ -109,14 +116,31 @@ describe('2. completude — quem confessa tem de estar no cadastro', () => {
     }
   });
 
-  it('todo arquivo que confessa escala artística tem entrada no cadastro', () => {
+  it('todo arquivo que confessa escala artística tem entrada, ou aponta para ela', () => {
+    // A REGRA GANHOU UMA SEGUNDA PERNA NA F3, e a razão é uma lápide: o
+    // `config.ts` continua confessando (ele guarda por escrito que
+    // hospedou o raio inflado de 0,011 pc até 2026-08-13), mas o número
+    // saiu de lá. Exigir dele uma ENTRADA seria exigir que o cadastro
+    // apontasse para um endereço que não tem mais nada — a mentira de
+    // procedência que este arquivo existe para impedir. Quem confessa e
+    // não tem entrada tem de DIZER onde a entrada está.
     const cadastrados = new Set(CADASTRO_DE_ESCALA.map((e) => arquivoDe(e.endereco)));
     for (const arquivo of CONFESSAM) {
+      const apontaParaOCadastro = ler(arquivo).includes('src/three/escala.ts');
       expect(
-        cadastrados.has(arquivo),
-        `${arquivo} confessa escala artística e não tem entrada em CADASTRO_DE_ESCALA`
+        cadastrados.has(arquivo) || apontaParaOCadastro,
+        `${arquivo} confessa escala artística, não tem entrada em CADASTRO_DE_ESCALA `
+          + 'e não aponta para o cadastro'
       ).toBe(true);
     }
+  });
+
+  it('SABOTAGEM — um arquivo que confessa e não aponta para lugar nenhum reprova', () => {
+    // sem esta ponta, a perna nova da regra seria só uma porta aberta
+    const cadastrados = new Set(CADASTRO_DE_ESCALA.map((e) => arquivoDe(e.endereco)));
+    const inventado = 'src/three/world/nebula.ts'; // não está no cadastro
+    expect(cadastrados.has(inventado)).toBe(false);
+    expect(ler(inventado).includes('src/three/escala.ts')).toBe(false);
   });
 
   it('todo endereço do cadastro aponta para arquivo que existe', () => {
@@ -209,9 +233,10 @@ describe('4. os números, pinados', () => {
     expect(kmParaPc(RAIO_SOL_KM)).toBe(RAIO_SOL_PC);
   });
 
-  it('o Sol da cena está 487.441× maior', () => {
+  it('o Sol da cena está no tamanho certo — e o 487.441× fica no registro', () => {
     const sol = CADASTRO_DE_ESCALA.find((e) => e.id === 'sol')!;
-    expect(Math.round(sol.fator!)).toBe(487_441);
+    expect(sol.fator).toBe(1);
+    expect(Math.round(RAIO_ARTISTICO_DO_SOL_PC / RAIO_SOL_PC)).toBe(487_441);
   });
 
   it('Sgr A✱ está 125.884× maior, e o real SAI DA MASSA', () => {
@@ -247,16 +272,21 @@ describe('5. a copy que o visitante lê', () => {
     expect(fatorEmTexto(Infinity)).toBe('raio de autor');
   });
 
-  it('a acusação nomeia o culpado e o fator', () => {
+  it('a acusação nomeia o culpado e o fator — e sobrou UM depois da F3', () => {
     const linhas = acusacaoDaEscala();
-    expect(linhas[0]).toBe('Sol está 487.441× maior');
-    expect(linhas[1]).toBe('Sagittarius A✱ está 125.884× maior');
-    expect(linhas).toHaveLength(2);
+    expect(linhas).toEqual(['Sagittarius A✱ está 125.884× maior']);
+    // com o raio que a casa desenhava até 2026-08-13 eram DOIS, e o Sol
+    // vinha primeiro (a ordem é do pior fator para o melhor)
+    const antes = acusacaoDaEscala(RAIO_ARTISTICO_DO_SOL_PC);
+    expect(antes).toEqual([
+      'Sol está 487.441× maior',
+      'Sagittarius A✱ está 125.884× maior',
+    ]);
   });
 });
 
 // ------------------------------------------------------------
-describe('6. F1 — a acusação com o raio VIVO do Sol', () => {
+describe('6. F1/F3 — a acusação com o raio VIVO do Sol', () => {
   it('com o raio FÍSICO o Sol sai da acusação — o selo não acusa quem pagou', () => {
     const linhas = acusacaoDaEscala(RAIO_SOL_PC);
     expect(linhas.some((l) => l.startsWith('Sol '))).toBe(false);
@@ -264,9 +294,13 @@ describe('6. F1 — a acusação com o raio VIVO do Sol', () => {
     expect(linhas).toEqual(['Sagittarius A✱ está 125.884× maior']);
   });
 
-  it('sem argumento, fala pelo padrão da casa (o raio artístico)', () => {
-    expect(acusacaoDaEscala()).toEqual(acusacaoDaEscala(WORLD.sunRadius));
-    expect(acusacaoDaEscala()[0]).toBe('Sol está 487.441× maior');
+  it('sem argumento, fala pelo padrão da casa — que desde a F3 é o raio REAL', () => {
+    expect(acusacaoDaEscala()).toEqual(acusacaoDaEscala(RAIO_DO_SOL_NA_CENA));
+    expect(acusacaoDaEscala()).toEqual(['Sagittarius A✱ está 125.884× maior']);
+    // e a acusação ANTIGA continua reproduzível: passando o raio que a
+    // casa desenhava até 2026-08-13, o Sol volta à lista. É a prova de
+    // que a fase pagou uma dívida em vez de apagar o cobrador.
+    expect(acusacaoDaEscala(RAIO_ARTISTICO_DO_SOL_PC)[0]).toBe('Sol está 487.441× maior');
   });
 
   it('o fator do Sol acompanha o raio vivo, em qualquer valor', () => {

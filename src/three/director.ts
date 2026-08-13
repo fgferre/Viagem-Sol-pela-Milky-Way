@@ -60,7 +60,7 @@ import { dateToTDB } from '../lib/atlas/time';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
 import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
-import { RAIO_SOL_PC } from './escala';
+import { RAIO_DO_SOL_NA_CENA } from './escala';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -93,7 +93,7 @@ import {
   matchHeroesToCatalog,
   psfPointSizePx,
 } from './world/lodStellar';
-import { carregarEfemerides, loadStarData, WORLD } from './config';
+import { carregarEfemerides, loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
 import type { CorpoBuscavel } from '../lib/buscaEstrelas';
 
@@ -466,14 +466,15 @@ export class Director {
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
   /**
-   * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc — `WORLD.sunRadius` (o
-   * artístico) ou `RAIO_SOL_PC` (o físico) sob `?solreal=1`. Fonte única
-   * para todo mundo que precisa do tamanho do Sol depois da construção:
-   * o oclusor da nebulosa e o palco. Sem ele, cada consumidor leria
-   * `WORLD.sunRadius` direto e a porta valeria só para o mesh — o Sol
-   * seria pequeno e continuaria tapando o céu como se fosse grande.
+   * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
+   * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
+   * quando ele virou o padrão. O campo fica porque é a fonte única para
+   * todo mundo que precisa do tamanho do Sol depois da construção (o
+   * oclusor da nebulosa, o palco, o gate de 4 px e a cessão do ponto), e
+   * porque ler o raio de UM lugar é o que impediu, na F1, o Sol de
+   * encolher no mesh e continuar tapando o céu como se fosse grande.
    */
-  private readonly solRaioPc: number;
+  private readonly solRaioPc = RAIO_DO_SOL_NA_CENA;
   /**
    * O GATE DO SOL COMO CORPO (F2), estado da histerese entre quadros.
    * Nasce `false` porque o gate da casa entra por `>=` estrito e sai por
@@ -512,46 +513,26 @@ export class Director {
     // Onda 3 o corpo é parametrizado e o Sol é a instância 1: quem
     // decide raio, rotação, atividade e semente é SOL_PARAMS, não
     // literais soltos dentro da classe.
-    // A PORTA `?solreal=1` (F1 da onda do Sol real), no padrão
-    // `?dom/?nodom` da Onda 3: o A/B se faz com o MESMO binário dos dois
-    // lados, e SEM a porta nada muda — nem um bit, porque o ramo do
-    // `===` devolve o próprio `SOL_PARAMS`, o mesmo objeto de sempre.
+    // O SOL TEM RAIO FÍSICO, SEM PORTA (F3). De 2026-08-12 a 2026-08-13
+    // isto foi um ternário sobre a porta de URL, escolhendo entre o raio
+    // físico e o artístico — a porta da F1, que existia para o raio verdadeiro
+    // poder ser FOTOGRAFADO pelo mesmo motor, no mesmo dia, antes de
+    // qualquer baseline ser paga. Ela cumpriu o papel dela: refutou com
+    // imagem a frase "escala real seria invisível" de `config.ts:8` sem
+    // custar um pixel, e a F2 depois lhe tirou o papel de LIGAR o Sol
+    // como corpo (quem decide isso é a régua do palco, 4 px na tela).
     //
-    // Ela NÃO é o conserto. O conserto é a F3, que troca o raio de vez e
-    // refilma a abertura. Esta porta existe para o raio FÍSICO poder ser
-    // fotografado pelo mesmo motor, no mesmo dia, ANTES de qualquer
-    // baseline ser paga — e é a resposta à frase do `config.ts:8`
-    // ("escala real seria invisível"): não é invisível; é que ninguém
-    // chegou perto. Ver `docs/ESCALA-HONESTA.md`.
-    //
-    // F2 — POR QUE A PORTA FICA (a decisão pedida, com a razão escrita).
-    // O desenho da F2 previa que ela virasse desnecessária. Não vira, e
-    // a razão é medida, não preferência: o raio do Sol é parâmetro de
-    // CONSTRUÇÃO (ele vira escala do grupo e literal compilado dentro do
-    // GLSL da coroa e da CME — `SUN_R_GLSL`/`SEG_EPS_GLSL`, ver
-    // `stellarBody.ts`), então "ser o padrão" só pode significar
-    // construir o Sol pequeno SEMPRE. E o Sol pequeno sempre apaga o
-    // disco da ABERTURA: a 0,063 pc (o piso do filme) a fotosfera real
-    // mede 5,5e-4 px. As quatro vistas que morreriam — `sol`,
-    // `soldisco`, `solrampa`, `solestouro` — são EXATAMENTE as quatro
-    // baselines que o bastão reserva para a F3, que é a fase que refilma
-    // a abertura em lugar real. Antecipar isso aqui seria pagar a conta
-    // da F3 sem entregar o plano dela.
-    // Logo a porta fica, e não fica morta: ela é a única chave do raio
-    // até a F3, é exercida por três vistas oficiais (`solreal4mkm`,
-    // `solreal1ua`, `solreal40ua`) e pelos testes da lei nova, e o par
-    // de A/B dela é a MESMA URL sem a porta — o padrão da casa para
-    // knob que nasce desligado (`?atlas=1`, `?dbgplan`), não o de
-    // `?dom/?nodom`, que é para knob que nasce ligado.
-    // O QUE A F2 TIROU DELA: ela deixou de ser a porta que LIGA o Sol
-    // como corpo. Quem decide isso agora é a lei do palco (4 px na tela,
-    // no `frame`), a mesma da Terra e da Lua; a porta só escolhe QUE
-    // RAIO o Sol tem. É a separação que a Onda 7 precisa.
-    this.solRaioPc = this.debug.has('solreal') ? RAIO_SOL_PC : WORLD.sunRadius;
+    // A F3 tirou a última: o raio é parâmetro de CONSTRUÇÃO (vira escala
+    // do grupo e literal compilado no GLSL da coroa e da CME —
+    // `SUN_R_GLSL`/`SEG_EPS_GLSL`), então "ser o padrão" só podia
+    // significar construir o Sol pequeno SEMPRE, e é isso que se fez,
+    // junto com o único plano que dependia do contrário — a abertura,
+    // que foi refilmada a 4,00 milhões de km em vez de em volta de uma
+    // bola de 2.269 UA. Uma porta que só pode estar ligada não é porta;
+    // manter `?solreal=1` viva depois disto seria manter um caminho
+    // morto na URL e uma segunda lei de raio no construtor.
     this.sun = new StellarBody(
-      this.solRaioPc === WORLD.sunRadius
-        ? SOL_PARAMS
-        : { ...SOL_PARAMS, radiusPc: this.solRaioPc },
+      SOL_PARAMS,
       this.engine.renderer,
       this.engine.camera,
       this.engine.quality
@@ -2721,46 +2702,41 @@ export class Director {
     // raio, e é a régua de TAMANHO NA TELA que a Onda 7 (corpo por
     // estrela) pode herdar sem número novo.
     //
-    // A ARITMÉTICA QUE PAGA A FASE — as 22 vistas oficiais sobrevivem
-    // POR CONTA, não por sorte de calibração (lente de 58°, buffer
-    // efetivo do harness de 1.713 px de altura ⇒ 1.545,1 px/rad):
+    // A ARITMÉTICA — desde a F3 ela é a lei ÚNICA do grupo do Sol, e não
+    // mais uma segunda opinião por cima da janela em parsec (lente de
+    // 58°, buffer efetivo do harness de 1.713 px de altura ⇒
+    // 1.545,1 px/rad):
     //  · raio FÍSICO (2,2567e-8 pc): arma abaixo de 3,60 UA (4 px) e
-    //    desarma acima de 7,19 UA (2 px);
-    //  · disco ARTÍSTICO: só desenha acima de 0,02 pc = 4.125 UA, onde
-    //    `deepDiscFade` deixa de ser 0.
-    //    ⇒ 1.147× de separação entre as duas faixas. O corpo real e o
-    //    disco inflado NUNCA coexistem em quadro.
-    //  · e com o raio artístico (0,011 pc) este gate só desarmaria além
-    //    de 8,50 pc — 26× depois do corte duro de custo que já apagava o
-    //    grupo (`world > 0.02`, d ≈ 0,3249 pc). No filme inteiro ele é
-    //    INERTE por aritmética: nunca é ele quem decide, e por isso não
-    //    há um pixel a pagar por ligá-lo hoje (varredura em
-    //    `corpos.test.ts`: em toda distância em que o grupo do Sol
-    //    artístico pode estar visível, o gate está armado).
+    //    desarma acima de 7,19 UA (2 px).
+    // Na F2 este gate era INERTE por aritmética (o disco artístico só
+    // desenhava acima de 4.125 UA, 1.147× além de onde o corpo real
+    // arma, e as duas faixas nunca coexistiam) — foi assim que ele
+    // entrou sem custar um pixel. A F3 apagou a outra faixa, e o que era
+    // inerte virou o único juiz: é ele que faz o Sol da abertura
+    // refilmada existir a 5,74 raios solares e virar ponto por volta de
+    // t≈8,5 s da hélice, sem uma janela em parsec no caminho.
     this.solArmado = gateBinario(
       this.solArmado,
       diametroAparentePx(this.solRaioPc, dHome, hPx, cam.fov)
     );
-    // O SOL NO PALCO, e o `solRaioPc !== WORLD.sunRadius` NÃO é gate de
-    // fase: é doutrina do palco. Ali moram SUPERFÍCIES REAIS — é delas
-    // que o near deriva onde a câmera tem de parar —, e um corpo inflado
-    // não é superfície, é cenário. Medido: registrar o Sol artístico
+    // O SOL NO PALCO. Até a F3 havia aqui uma guarda a mais —
+    // `solRaioPc !== WORLD.sunRadius` —, e ela NÃO era gate de fase: era
+    // doutrina do palco. Ali moram SUPERFÍCIES REAIS (é delas que o near
+    // deriva onde a câmera tem de parar), e um corpo inflado não é
+    // superfície, é cenário. Medido na época: registrar o Sol artístico
     // poria uma superfície a 0,011 pc da origem no `min()` do near, e
-    // para a câmera além de ~1,375 pc o ramo do corpo passa a ganhar do
-    // `distFromSun × 0,004` — ou seja, mudaria o plano de corte em
-    // `interno`, `travessia`, `mergulho`, `edgeon`, `faceon` e nas
-    // quatro de hero. Com o raio físico é o contrário: é exatamente ele
-    // que faz a câmera saber parar antes da fotosfera.
+    // para a câmera além de ~1,375 pc o ramo do corpo passaria a ganhar
+    // do `distFromSun × 0,004` — mudando o plano de corte em `interno`,
+    // `travessia`, `mergulho`, `edgeon`, `faceon` e nas quatro de hero.
+    // A guarda saiu porque o corpo inflado saiu: não existe mais o caso
+    // que ela recusava, e a doutrina continua valendo por construção —
+    // o palco só recebe o raio físico porque é o único que existe.
     //
     // AQUI e não depois do `sun.update` (onde a F1 o deixou): o near lê
     // o palco umas 100 linhas abaixo, então registrar lá embaixo dava ao
     // clip a superfície do quadro ANTERIOR. É o mesmo lugar em que a
     // Terra e a Lua se registram, pela mesma razão escrita.
-    if (
-      this.solRaioPc !== WORLD.sunRadius &&
-      this.solArmado &&
-      !this.hide.has('nosun')
-    ) {
+    if (this.solArmado && !this.hide.has('nosun')) {
       this.palco.registrar('sun', this.solRaioPc, ORIGEM);
     } else {
       this.palco.remover('sun');
@@ -2978,24 +2954,26 @@ export class Director {
       this.engine.camera,
       this.phase === 'atlas' ? ATLAS_JOURNEY_T : this.journeyT
     );
-    // DEPOIS do update, porque é lá que o `world > 0.02` decide se o grupo
-    // some. A fotosfera está na ORIGEM (o grupo do Sol só é escalado, nunca
-    // posicionado) e seu raio de mundo é WORLD.sunRadius por construção
-    // (esfera de 2,2 do doador × escala WORLD.sunRadius/2,2). Enquanto ela
-    // estiver na cena, o raymarch da nebulosa não precisa integrar o que ela
-    // cobre — ver o cone em nebula.ts.
-    // `solRaioPc` e não `WORLD.sunRadius`: sob `?solreal=1` o Sol é
-    // 487.441× menor, e o oclusor tem de encolher junto — senão o
-    // raymarch da nebulosa continua pulando uma cavidade de 2.269 UA em
-    // volta de um corpo que agora cabe dentro da órbita de Mercúrio.
+    // O OCLUSOR DA NEBULOSA. A fotosfera está na ORIGEM (o grupo do Sol
+    // só é escalado, nunca posicionado) e o raio de mundo dele é
+    // `solRaioPc` por construção (esfera de 2,2 do doador × escala
+    // solRaioPc/2,2). Enquanto ela estiver na cena, o raymarch da
+    // nebulosa não precisa integrar o que ela cobre — ver o cone em
+    // nebula.ts, que já encolhe sozinho e desliga quando o ângulo seguro
+    // fica abaixo de um texel. Com o raio FÍSICO da F3 esse
+    // desligamento é a regra em quase toda a viagem: a cavidade que a
+    // casa pulava tinha 2.269 UA de raio, e a de agora cabe dentro da
+    // órbita de Mercúrio.
     this.nebula.setSunOccluder(ORIGEM, this.sun.group.visible ? this.solRaioPc : 0);
     // (o registro do Sol no palco SUBIU para junto do da Terra e da Lua
     // na F2 — o near lê o palco antes daqui, e da F1 até agora o clip
     // recebia a superfície do quadro anterior.)
     // A CAMADA DE PLANETAS (Onda 4, D3/D7), logo depois do Sol porque é
-    // a continuação dele: abaixo de 0,05 pc o disco artístico se dissolve
-    // (`solWorldFade`) e quem desenha o Sol é o vértice 0 desta camada,
-    // com `uGain = deepPointGain(dHome)`. A chave mora em `planetas.ts`
+    // a continuação dele: abaixo de 0,05 pc quem desenha o Sol é o
+    // vértice 0 desta camada, com `uGain = deepPointGain(dHome)` — e
+    // desde a F3 esse ganho é o complemento EXATO do clarão do
+    // `SunStar`, de modo que a soma dos dois é 1 em toda distância e o
+    // Sol nunca fica sem dono. A chave mora em `planetas.ts`
     // (`PLANETAS_DEFAULT_ON`); aqui ficam só as duas portas de URL.
     if (this.planetas) {
       this.planetas.ligado =
@@ -3030,12 +3008,17 @@ export class Director {
       // sendo o que o bastão diz que ela é — defeito de EXPOSIÇÃO, da
       // onda do clarão, e não desta. Esta fase não a apaga por acidente.
       //
-      // ZERO PIXEL enquanto o Sol da cena for o artístico: `emQuadro` é
-      // falso sempre (o palco recusa corpo inflado, mesma guarda), a
-      // cessão sai 0, o atributo já nasce 0 e `escreverCessao` é
-      // idempotente — não sobe nem upload.
-      const solCorpoEmQuadro =
-        this.solRaioPc !== WORLD.sunRadius && this.sun.group.visible;
+      // A F3 TIROU A GUARDA DO RAIO daqui (`solRaioPc !==
+      // WORLD.sunRadius`), que até então mantinha esta cessão em ZERO
+      // PIXEL no filme inteiro porque o Sol da cena era o inflado e o
+      // palco o recusava. Agora ela é a peça que faz a ESCADA da
+      // abertura não ter degrau: descendo, o ponto cede ao corpo por
+      // dominância; subindo, o corpo desarma nos 4 px com o ponto já
+      // inteiro (a 3,60 UA o disco tem 4 px contra ~25 px de halo,
+      // r ≈ 0,16 ⇒ cessão 0), e depois o ponto entrega ao clarão na
+      // janela de 0,02–0,05 pc. Nenhum passo para trás na luz em
+      // nenhum dos três degraus.
+      const solCorpoEmQuadro = this.sun.group.visible;
       this.planetas.escreverCessao(
         'sun',
         cessaoAlvo(

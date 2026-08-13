@@ -5,7 +5,7 @@
 // era a diferença de norte que invertia o horizonte ao entrar).
 // ============================================================
 import * as THREE from 'three';
-import { DEEP_LIMIAR_PC } from '../world/lodStellar';
+import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import { ArrastoDePonteiro } from '../arrastoDePonteiro';
 import { Journey } from './journey';
 
@@ -180,7 +180,7 @@ export const RODA_MIN_PC_POR_S = 0.01;
  * VELOCIDADE DE ENTRADA DO VOO LIVRE, PIECEWISE PELO LIMIAR DO DOMÍNIO
  * PROFUNDO (decisão D6 da Onda 4). Puro e exportado para o oráculo.
  *
- * ACIMA de `DEEP_LIMIAR_PC`, a fórmula de sempre, verbatim: 2% da
+ * ACIMA de `LIMIAR_SISTEMA_SOLAR_PC`, a fórmula de sempre, verbatim: 2% da
  * distância de casa, entre 2 e 600 pc/s. ABAIXO, o PISO DE 2 pc/s SAI —
  * ele é o que tornava o mergulho inavegável: 2 pc/s são 412.500 UA/s,
  * ou seja o sistema solar inteiro atravessado em menos de 1 ms, e
@@ -198,7 +198,7 @@ export const RODA_MIN_PC_POR_S = 0.01;
  * é justamente o que o piso de 2 pc/s quebrava lá dentro.
  */
 export function velocidadeDeVoo(dPc: number): number {
-  if (dPc >= DEEP_LIMIAR_PC) return THREE.MathUtils.clamp(dPc * 0.02, 2, 600);
+  if (dPc >= LIMIAR_SISTEMA_SOLAR_PC) return THREE.MathUtils.clamp(dPc * 0.02, 2, 600);
   return Math.max(dPc * 0.02, VOO_MIN_PC_POR_S);
 }
 
@@ -211,7 +211,7 @@ export function velocidadeDeVoo(dPc: number): number {
  * galáxia de fora, de onde quer que esteja.
  */
 export function pisoDaRoda(dPc: number): number {
-  return dPc >= DEEP_LIMIAR_PC ? RODA_MIN_PC_POR_S : VOO_MIN_PC_POR_S;
+  return dPc >= LIMIAR_SISTEMA_SOLAR_PC ? RODA_MIN_PC_POR_S : VOO_MIN_PC_POR_S;
 }
 
 // ---- CAPTURA DE PONTEIRO (Onda 5, F5) ------------------------------

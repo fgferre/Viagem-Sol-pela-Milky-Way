@@ -31,6 +31,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { GAL, EX, EY, EZ } from '../world/galaxy';
+import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
 // rodada.mjs e docs/reference/VISUAL_TARGETS.md). As posições vêm da
@@ -144,6 +145,19 @@ interface Shot {
   fov0: number;
   fov1: number;
   ease?: Ease;
+  /**
+   * EASE SÓ DO FOV (F3), quando ele precisa divergir do da trajetória.
+   * Ausente, o fov usa o `ease` do plano, como sempre — e a expressão
+   * que `at` avalia é EXATAMENTE a de antes, então nenhum plano herdado
+   * muda um bit. Existe por causa de um plano só: a hélice da abertura
+   * refilmada, cuja posição precisa do parâmetro CRU (a distância é
+   * exponencial em segundos de relógio) enquanto o zoom 26°→56° tem de
+   * continuar com o `glide` de sempre. Sem este campo, a alternativa
+   * seria inverter o smoothstep dentro do `pos` por Newton para
+   * recuperar o `k` cru — conta iterativa por quadro para reproduzir um
+   * número que já existe.
+   */
+  fovEase?: Ease;
   /** intensidade de warp (vinheta/CA/bloom), decisão de direção por shot */
   warp?: (k: number) => number;
   /** banking em radianos (positivo = horário); 0 nos holds por contrato */
@@ -168,8 +182,115 @@ const helix = (r: number, aDeg: number, h: number, out = new THREE.Vector3()) =>
     .addScaledVector(EY, Math.sin(THREE.MathUtils.degToRad(aDeg)) * r)
     .addScaledVector(EZ, h);
 
-const SUN_WALL = helix(0.062, -150, 0.012); // parede de fogo
+// ---- A ABERTURA REFILMADA (F3 da onda do Sol real) ---------------------
+//
+// A PAREDE DE FOGO EXISTE; ela só estava filmada no lugar errado. De
+// 2026-08-03 a 2026-08-13 o plano de abertura era `helix(0.062, -150,
+// 0.012)` — a câmera a 0,0631506 pc do Sol, ou seja a 13.027 UA, em
+// volta de uma bola de 0,011 pc (2.269 UA) de raio. O Sol enchia 76% da
+// altura do quadro porque o Sol tinha 487.441× o tamanho do Sol.
+//
+// A F3 manteve a COMPOSIÇÃO e trocou o LUGAR, que era a única das três
+// saídas que não entregava outro filme (as outras duas: manter o
+// inflado só no filme, ou refilmar tudo como voo único, que apagaria 19
+// dos 24 planos). O fator é um só e sai da razão dos dois raios:
+//
+//     K = R☉ / R_artístico = 2,2567e-8 / 0,011 = 2,051531e-6
+//
+// e a abertura inteira é o ponto antigo MULTIPLICADO por ele. Escalar o
+// VETOR (e não recalcular a hélice com números novos) é o que torna a
+// promessa exata em vez de aproximada: a direção sai bit a bit a mesma,
+// e o ângulo subtendido é `r/d`, onde `r` e `d` foram divididos pelo
+// MESMO K. Medido: o Sol subtende 19,762056°, com diferença de 0,0e0
+// para o ângulo do plano antigo. A mesma parede de fogo, no mesmo lugar
+// do quadro, a 3,998 milhões de km — 5,741 raios solares.
+//
+// E O LUGAR EXISTE: a Parker Solar Probe passa a 9,86 raios solares do
+// Sol desde 2024. A abertura do filme é hoje um lugar 1,7× mais perto do
+// que a sonda mais próxima que a humanidade já pôs lá — mas é um lugar,
+// com uma distância que se pode conferir, e não uma bola de mentira.
+const K_DA_ABERTURA = RAIO_SOL_PC / RAIO_ARTISTICO_DO_SOL_PC;
+const SUN_WALL = helix(0.062, -150, 0.012).multiplyScalar(K_DA_ABERTURA);
 const ORBIT_EXIT = helix(0.55, 60, 0.17);
+
+/** distância câmera↔Sol no primeiro quadro do filme, em pc. */
+export const D_ABERTURA_PC = SUN_WALL.length();
+/** distância câmera↔Sol no fim da hélice (a saída não se moveu), em pc. */
+export const D_SAIDA_PC = ORBIT_EXIT.length();
+/**
+ * O TAMANHO DA SUBIDA, em décadas de distância: 6,6477. É o número que
+ * torna a hélice impossível de interpolar em linha reta, e é por isso
+ * que ele tem nome.
+ *
+ * A ARMADILHA QUE ELE FECHA, medida antes de escrever a curva: a
+ * primitiva `orbit()` interpola raio, ângulo e altura LINEARMENTE. Com o
+ * ponto de partida 4,3 milhões de vezes mais perto, uma interpolação
+ * linear poria a câmera 1.000× mais longe no primeiro CENTÉSIMO de
+ * segundo do plano — o Sol sairia de 74% da altura do quadro para um
+ * ponto antes do segundo quadro, e o resto dos 24 s seria uma estrela
+ * parada. A curva certa é EXPONENCIAL: distância multiplicada por um
+ * fator constante por segundo, que é o que dá a sensação de subida
+ * uniforme quando a escala muda por ordens de grandeza (é a mesma razão
+ * por que a régua do voo livre é "2% da distância por segundo", e não
+ * "2 pc/s").
+ *
+ * 6,6477 décadas em 24 s = **0,27699 década por segundo**, ou ×1,891 de
+ * distância a cada segundo. Marcos medidos com esta curva: o Sol cruza a
+ * órbita da Terra em t≈5,68 s e desarma o gate de corpo (4 px) em
+ * t≈8,5 s; a entrega ponto→clarão acontece entre t≈18,7 s e t≈20,2 s.
+ */
+export const DECADAS_DA_ABERTURA = Math.log10(D_SAIDA_PC / D_ABERTURA_PC);
+
+/**
+ * A DISTÂNCIA AO SOL na hélice de abertura, em pc, como função pura do
+ * parâmetro CRU do plano (`k` em [0,1], que é `t/24` — não o eased).
+ * Exportada porque é ela que o juiz da F3 amostra: quem quiser provar
+ * que o tamanho aparente do Sol não salta entre quadros precisa da
+ * MESMA função que o quadro usa, não de uma reescrita no teste.
+ *
+ * Nos extremos devolve os extremos EXATOS: `Math.pow(x, 0)` é 1 e
+ * `Math.pow(x, 1)` é o próprio x em IEEE754, então k=0 dá
+ * `D_ABERTURA_PC × 1` e k=1 dá `D_ABERTURA_PC × (D_SAIDA_PC /
+ * D_ABERTURA_PC)` — este último a menos de 1 ULP de `D_SAIDA_PC`, que é
+ * o que o pouso em `ORBIT_EXIT` precisa (o plano seguinte parte da
+ * constante, não daqui).
+ */
+export function distanciaDaAbertura(k: number): number {
+  return D_ABERTURA_PC * Math.pow(D_SAIDA_PC / D_ABERTURA_PC, clamp01(k));
+}
+
+/**
+ * A HÉLICE DA ABERTURA — a direção de sempre, a distância nova.
+ *
+ * A DECOMPOSIÇÃO, e ela é o coração da fase: a hélice antiga misturava
+ * DIREÇÃO e DISTÂNCIA numa interpolação só (raio, ângulo e altura em
+ * lerp). Aqui as duas se separam — a direção continua sendo exatamente a
+ * da hélice antiga (mesmos 0,062→0,55 de raio, mesmos −150°→60° de
+ * ângulo, mesmos 0,012→0,17 de altura, mesmo easing `glide`), só que
+ * NORMALIZADA e re-escalada pela distância exponencial. O gesto da
+ * câmera — a volta de 210° em torno do Sol, subindo do plano do disco —
+ * é o mesmo; o que mudou foi só quão rápido ela se afasta.
+ *
+ * POR QUE O `ease` DO PLANO É `linear` E O `glide` VEM PARA DENTRO: o
+ * `Journey.at` passa ao `pos` o parâmetro JÁ suavizado, e a distância
+ * precisa do CRU para que "0,277 década por segundo" seja verdade em
+ * segundos de relógio. Com o plano em `linear`, `pos` recebe o cru,
+ * aplica `glide` sozinho na direção, e o `fovEase` (campo novo do Shot,
+ * ver `at`) devolve ao fov a mesma curva de antes — bit a bit, porque é
+ * a MESMA expressão `lerp(fov0, fov1, glide(k))` de sempre.
+ */
+function heliceDaAbertura(): PosFn {
+  const direcao = orbit(
+    SOL,
+    0.062, 0.55,
+    THREE.MathUtils.degToRad(-150), THREE.MathUtils.degToRad(60),
+    0.012, 0.17
+  );
+  return (k, out) => {
+    direcao(glide(k), out);
+    return out.multiplyScalar(distanciaDaAbertura(k) / out.length());
+  };
+}
 
 // partida: cruza a 0,35 pc de Sirius SEM centralizá-la (a primeira
 // quebra de expectativa — a estrela mais brilhante do céu é só um poste)
@@ -245,6 +366,8 @@ const SHOTS: Shot[] = [
   {
     // parede de fogo: 6 s imóveis (a revisão cortou a estática de 8).
     // A gramática do filme nos primeiros segundos: quietude é promessa.
+    // F3: mesma parede, mesmo enquadramento, a 4,00 milhões de km do
+    // Sol REAL — ver `SUN_WALL` e a conta do K lá em cima.
     dur: 6,
     pos: still(SUN_WALL),
     look: still(SOL),
@@ -256,11 +379,22 @@ const SHOTS: Shot[] = [
     // hélice ascendente: o Sol fica, o céu inteiro gira. O bojo dourado
     // (Sagitário) cruza atrás do Sol no meio do shot — casa em contraluz
     // contra o destino. ~210° em 24 s (< 9°/s: documentário).
+    //
+    // F3: A SUBIDA VIROU EXPONENCIAL. O gesto é o mesmo (mesma volta,
+    // mesma altura ganha, mesmo zoom); o que mudou é que a câmera agora
+    // parte de 5,74 raios solares em vez de 13.027 UA, e sobe 6,65
+    // décadas de distância em vez de 0,96. Interpolar isso em linha reta
+    // deixaria o filme com 23,99 s de estrela parada; a curva é
+    // `distanciaDaAbertura`, taxa constante de 0,277 década/s. O `ease`
+    // do plano é `linear` para o `pos` receber o parâmetro cru — quem
+    // devolve o `glide` à direção é a própria hélice, e ao fov, o
+    // `fovEase`.
     dur: 24,
-    pos: orbit(SOL, 0.062, 0.55, THREE.MathUtils.degToRad(-150), THREE.MathUtils.degToRad(60), 0.012, 0.17),
+    pos: heliceDaAbertura(),
     look: still(SOL),
     fov0: 26, fov1: 56,
-    ease: glide,
+    ease: linear,
+    fovEase: glide,
     target: ['SOL'],
     quiet: true,
     captions: [
@@ -693,7 +827,9 @@ export class Journey {
     const ke = (s.ease ?? glide)(k);
     const pos = s.pos(ke, new THREE.Vector3());
     const look = s.look(ke, new THREE.Vector3());
-    const fov = THREE.MathUtils.lerp(s.fov0, s.fov1, ke);
+    // sem `fovEase` o argumento é o MESMO `ke` de sempre — a expressão
+    // não muda, e nenhum dos 23 planos herdados move um bit
+    const fov = THREE.MathUtils.lerp(s.fov0, s.fov1, s.fovEase ? s.fovEase(k) : ke);
 
     return {
       pos,

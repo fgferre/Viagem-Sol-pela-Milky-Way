@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GLSL_NOISE, bvToColor } from '../shaders/common';
-import { HERO_ZOOM_TAN_REF, sunStarCore, sunStarGain } from './lodStellar';
+import { HERO_ZOOM_TAN_REF, sunStarGain } from './lodStellar';
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -242,11 +242,13 @@ export class SunStar {
     // vista da Terra; teto de 40° (a lei de mundo dos heróis explodia
     // para ~d^−2,5 de ângulo vista de dentro do sub-parsec)
     const ang = Math.min(40, 1.75 * Math.pow(10, -0.3 * m));
-    // portão de proximidade CASADO com o crossfade do disco: o clarão
-    // sobe enquanto o disco sai, e o disco é o assunto enquanto ele
-    // existe. A janela vem de `lodStellar.ts` — a MESMA tabela que o
-    // StellarBody lê para o disco. Até a Onda 3 os números viviam
-    // redigitados dos dois lados, ligados só por este comentário.
+    // O PORTÃO DE PROXIMIDADE, e desde a F3 ele é CASADO com o ponto
+    // fotométrico da camada dos dez corpos, não mais com o disco
+    // inflado: o clarão sobe na EXATA medida em que o Sol-ponto de
+    // `planetas.ts` cede (`deepPointGain = 1 − sunStarGain`, soma
+    // constante), na janela de entrega {0,02; 0,05} pc. A janela vem de
+    // `lodStellar.ts` — até a Onda 3 os números viviam redigitados dos
+    // dois lados, ligados só por este comentário.
     const gate = sunStarGain(d);
     const u = this.mat.uniforms;
     // tamanho SEMPRE cheio; quem entra é o ganho (ver uGain no shader)
@@ -255,10 +257,14 @@ export class SunStar {
     u.uCamDist.value = d;
     u.uTime.value = time;
     u.uZoom.value = Math.min(1, tanHalfFov / HeroStars.TAN_REF);
-    // o núcleo pontual (+ espinhos) só acende DEPOIS que o disco saiu
-    // de cena — sobrepostos, o núcleo apertado imprime um ponto branco
-    // no meio do disco e a coisa lê como retículo de mira
-    u.uCore.value = sunStarCore(d);
+    // O NÚCLEO ACENDE COM O GANHO desde a F3, e não mais numa segunda
+    // rampa atrasada {0,30; 0,42}. A razão da rampa atrasada era o
+    // disco ("sobrepostos, o núcleo apertado imprime um ponto branco no
+    // meio do disco e a coisa lê como retículo de mira"); sem disco não
+    // há o que sobrepor, e mantê-la deixaria o Sol como um borrão SEM
+    // ponto no meio de 0,05 a 0,30 pc — justamente onde ele já é, para
+    // todos os efeitos, uma estrela do catálogo.
+    u.uCore.value = gate;
   }
 
   dispose() {

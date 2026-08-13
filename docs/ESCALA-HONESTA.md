@@ -48,7 +48,7 @@ Celestia, Stellarium: raio físico sempre, e a troca ponto↔disco decidida por
 
 | Objeto | Na cena | Real | Fator | Endereço | Veredito |
 |---|---|---|---|---|---|
-| Sol (fotosfera, opaca) | 0,011 pc | 2,2567e-8 pc | **487.441×** | `src/three/config.ts:9` | **CORRIGIR** — escreve profundidade |
+| ~~Sol (fotosfera, opaca)~~ | 2,2567e-8 pc | 2,2567e-8 pc | **1×** | `src/three/escala.ts` (`RAIO_DO_SOL_NA_CENA`) | **PAGO na F3** (2026-08-13) |
 | Sgr A✱ (raio de Schwarzschild) | 0,05 pc | 3,97e-7 pc | **125.884×** | `src/three/world/blackHole.ts:27` | **CORRIGIR** — declarado no próprio cabeçalho (`:13-19`) |
 | Clarão das estrelas | `0,08 × luminosidade` pc; Sirius → 0,2194 pc | 8,2e-9 pc | ~5,7e6× | `src/three/world/heroStars.ts:139` | **DECLARAR** — é borrão de instrumento, não escreve profundidade |
 | Nuvens observadas (CO) | ×2,1 sobre o raio de catálogo | — | 2,1× | `src/three/world/observedClouds.ts:20` | **DECLARAR** — "escala artística fixa", já escrito |
@@ -302,29 +302,152 @@ Prova: **22 vistas bit-idênticas por aritmética** — o corpo real só arma ab
 > conferência visual quando o Sol virar padrão — argumento estrutural não dispensa
 > olhar —, mas ela deixa de ser pré-condição.
 
-### F3 — A escada em tamanho + a abertura refilmada (a fase cara)
-Mesma parede de fogo — 19,76°, **76,0% da altura do quadro** — filmada a **4,00
-milhões de km** (5,74 raios solares) em vez de em volta de uma bola de 2.269 UA.
-~460 linhas de runtime + ~450 de teste. **4 baselines mudam, e só 4**: `sol`,
-`soldisco`, `solrampa`, `solestouro`.
+### F3 — A escada em tamanho + a abertura refilmada — **FEITA, ESPERANDO O DONO** (2026-08-13)
 
-> **O buraco a fechar:** hoje, entre 0,05 e 0,14 pc, **nada além do disco inventado
-> desenha o Sol** — o ponto tem ganho 0 acima de 0,05 (`lodStellar.ts:152, :233`) e o
-> clarão tem ganho 0 abaixo de 0,14 (`:118, :262`). Tirar o disco sem fechar essa
-> faixa apaga o Sol por ~6 s do trecho mais visto do produto.
->
-> **A armadilha silenciosa:** a hélice interpola distância em **linha reta**
-> (`journey.ts:107`). De 1,3e-7 pc a 0,55 pc assim, a câmera estaria **4.245× mais
-> longe no primeiro centésimo de segundo**. A curva nova é exponencial: **6,63
-> décadas em 24 s = 0,276 década/s**. Juiz próprio que reprova salto de tamanho
-> aparente entre quadros.
->
-> **A cirurgia obrigatória:** `DEEP_LIMIAR_PC` (0,05 pc) hoje é a MESMA constante
-> para duas coisas diferentes — "onde o disco morre" e "onde começa a escala do
-> sistema solar" (lida por `engine.ts:166`, `cameraRig.ts:200,213`,
-> `planetas.ts:475`). **Fica congelada em 0,05 pc com âncora nova e escrita**
-> (10.313 UA; Plutão orbita a 35,4 UA). É isso que mantém `ua500`, `ua150`, `ua40` e
-> o Atlas inteiro sem um pixel de diferença.
+**A ABERTURA MUDOU DE LUGAR, NÃO DE ENQUADRAMENTO.** O plano de abertura era
+filmado a 0,0631506 pc (13.027 UA) em volta de uma bola de 0,011 pc — 2.269 UA de
+raio. Agora é filmado a **3,998 milhões de km (5,741 raios solares)** do Sol de
+raio FÍSICO. O fator é um só e sai da razão dos dois raios:
+
+> K = R☉ / R_artístico = 2,2567e-8 / 0,011 = **2,051531e-6**
+
+e a abertura inteira é o ponto antigo MULTIPLICADO por ele. Escalar o VETOR (em vez
+de recalcular a hélice com números novos) é o que torna a promessa exata: o Sol
+subtende **19,762056°** — 76,0% da altura na lente de 26° —, com diferença de
+**0,72 ULP de double** (1,6e-16 relativo, 3e-15 grau) para o ângulo do plano antigo.
+O lugar EXISTE: a Parker Solar Probe chega a 9,86 raios solares.
+
+**A HÉLICE VIROU EXPONENCIAL, e era isso ou o filme.** A primitiva `orbit()`
+interpola raio, ângulo e altura em linha reta. Medido: com o ponto de partida
+4,4 milhões de vezes mais perto, a interpolação linear poria a câmera **1.000× mais
+longe no primeiro CENTÉSIMO de segundo** — o Sol viraria ponto antes do segundo
+quadro e sobrariam 23,99 s de estrela parada. A curva nova é
+`distanciaDaAbertura(k)`: **6,6477 décadas em 24 s = 0,27699 década/s** (×1,891 de
+distância por segundo). A curva boa cresce **0,64%** no mesmo centésimo — quatro
+ordens de grandeza de diferença.
+
+Marcos medidos na curva (t contado do início da hélice, t=6 s do filme):
+
+| t | distância | o que acontece |
+|---|---|---|
+| 0,00 s | 5,741 R☉ | a parede de fogo — 74,7% da altura do quadro |
+| 5,68 s | 1 UA | o Sol cruza a órbita da Terra |
+| **8,58 s** | 6,1 UA | o disco cai abaixo de 4 px: **deixa de ser corpo** |
+| 18,73 s | 0,02 pc | começa a entrega ponto→clarão |
+| 20,17 s | 0,05 pc | o Sol é estrela, e a hélice sai do domínio profundo |
+| 24,00 s | 0,5757 pc | pousa em `ORBIT_EXIT` — a constante não se moveu |
+
+**O `fovEase`, campo novo do `Shot` e a única mudança na máquina do roteiro:** a
+posição precisa do parâmetro CRU (a taxa é em segundos de relógio), o zoom 26°→56°
+tem de continuar com o `glide` de sempre. Sem `fovEase`, a alternativa era inverter
+o smoothstep por Newton dentro do `pos`. Ausente, a expressão que `at` avalia é a de
+antes — os outros 23 planos não mudam um bit.
+
+#### As três cirurgias
+
+**1. O BURACO DE VISIBILIDADE, fechado por FUSÃO.** Estava medido: entre 0,05 e
+0,14 pc nada além do disco inventado desenhava o Sol. A F3 juntou as duas janelas
+numa só — `LOD_SOL.entrega` {0,02; 0,03; 0,05} —, e as quatro janelas do Sol
+viraram uma:
+
+| janela | era | virou |
+|---|---|---|
+| `disc` {0,16→0,34} | dissolvia o disco inflado ao AFASTAR | morreu com o disco |
+| `deep` {0,05→0,02} | dissolvia o disco inflado ao APROXIMAR | virou a entrega |
+| `starGain` {0,14; 0,16; 0,30} | acendia o clarão | mudou de janela |
+| `starCore` {0,30; 0,12; 0,42} | atrasava o núcleo por causa do disco | **fundiu com o ganho** |
+
+`deepPointGain(d) = 1 − sunStarGain(d)`, escrito assim e não como segunda rampa: a
+soma é **1 EXATO** em toda distância (teorema, varrido no teste), então o Sol nunca
+fica sem dono e a troca não tem degrau de luz. O núcleo fundiu porque a razão dele
+era o disco ("o núcleo apertado imprime um ponto branco no meio do disco e lê como
+retículo de mira") — sem disco, manter as duas rampas deixaria o Sol como um borrão
+SEM ponto de 0,05 a 0,30 pc, justamente onde ele já é uma estrela.
+
+**2. A ARMADILHA DA HÉLICE, com juiz próprio.** `cameraRig.test.ts` amostra os 1.441
+quadros da hélice a 60 fps e mede o **diâmetro aparente do Sol em pixels** (a régua
+do palco, `diametroAparentePx`, com a lente viva do plano) — não a distância. Nenhum
+quadro perde mais de 3% do anterior; a razão entre quadros consecutivos é constante
+a 1e-9. E o juiz REPROVA a linha reta: o oráculo com a lei antiga falha o mesmo
+critério.
+
+**3. A CONSTANTE SEPARADA.** `DEEP_LIMIAR_PC` respondia duas perguntas com um
+símbolo só. Agora:
+- **`LIMIAR_SISTEMA_SOLAR_PC`** (`escala.ts`) = 0,05 pc, **CONGELADA**, com âncora
+  escrita pela primeira vez: 0,05 pc = 10.313 UA, e Plutão orbita a 35,4 UA —
+  291× de folga. Lida por `engine.ts` (plano de corte), `cameraRig.ts` (velocidade
+  do voo livre) e `planetas.ts` (camada dos dez corpos).
+- **`LIMIAR_DA_ENTREGA_PC`** (`lodStellar.ts`) = a borda de cima da janela de LOD,
+  livre para andar. Hoje vale o mesmo número, e a IGUALDADE É OBRIGAÇÃO cobrada em
+  teste: o ganho do Sol-ponto tem de chegar a 0 exatamente onde a camada some,
+  senão o Sol apagaria aceso.
+
+#### O que mais mudou de endereço
+
+- **`WORLD.sunRadius` MORREU** (`config.ts`). O raio do Sol mora em `escala.ts`, ao
+  lado do cadastro que o declara: `RAIO_DO_SOL_NA_CENA` (o que a cena desenha) e
+  `RAIO_ARTISTICO_DO_SOL_PC` (a lápide, 0,011). Serem o mesmo símbolo que o cadastro
+  divide por `RAIO_SOL_PC` é o que faz o teste EXIGIR fator 1 sem ninguém apertá-lo.
+- **A dívida do Sol foi PAGA:** saiu de `DIVIDAS_ABERTAS`, o fator é 1 e a acusação
+  do selo ficou com um culpado só — "Sagittarius A✱ está 125.884× maior".
+- **`?solreal=1` morreu.** Uma porta que só pode estar ligada não é porta. As três
+  vistas dela perderam o `&solreal=1` e **não mudaram um bit** (`solreal4mkm`
+  8a43f749a632 · `solreal1ua` f665b6bfe84c · `solreal40ua` a607e3cf57ab = `ua40`) —
+  a conferência mais barata da fase.
+- **O corpo perdeu o LOD.** `stellarBody` não importa mais `lodStellar`:
+  `uWorldFade` vale 1 sempre e quem apaga o grupo é a régua do palco (4 px, cushion
+  2×). Não é economia: normalizada pelo raio FÍSICO, a rampa antiga dissolveria a
+  fotosfera **entre 4,5 e 1,8 raios solares** — exatamente onde a F4 quer descer.
+- **O ramo literal do epsilon do GLSL morreu**, como o comentário dele prometia
+  desde a F1. Sobra a lei proporcional: 0,909% do raio.
+
+#### O GATE (2026-08-13, harness 1800×1713, `DOZERO=1`, 26 vistas × 2)
+
+**22/22 bit-idênticas entre as que TÊM de ser** — as 19 do contrato mais as 3 do Sol
+real. **4 mudaram, e são só as 4 reservadas:**
+
+| vista | antes | depois | o que a foto passou a mostrar |
+|---|---|---|---|
+| `sol` (t=6) | `a4fbf427778a` | `d3f110e281d3` | a MESMA parede de fogo, a 4,00 milhões de km |
+| `soldisco` (0,10 pc) | `7a2e6d1f4620` | `06d7c8d406cd` | estrela pleníssima com espinhos (o clarão no teto de 40°) |
+| `solrampa` (0,25 pc) | `ff2b7b4d353a` | `1ad5c3e89220` | a mesma estrela, menor — 15,7° |
+| `solestouro` (0,32 pc) | `3dc8706149b4` | `7306f0d4f044` | menor ainda — 10,9°, sem o resto de disco |
+
+`atlas-smoke` verde. 1.435 testes (eram 1.448 — a queda é de código apagado: as
+suítes das quatro janelas mortas saíram junto com elas), `tsc` e `eslint` limpos.
+Oito MUTAÇÕES conferidas, todas vermelhas: hélice linear, abertura sem o fator K,
+`fovEase` removido, janela esticada, núcleo atrasado de novo, Sol inflado de volta,
+`uWorldFade` atenuando, camada dos dez subida para 0,3 pc.
+
+#### O que CONTRARIA o desenho da fase (medido, não opinião)
+
+1. **O buraco era MAIOR do que o desenho dizia.** O desenho falava de [0,05; 0,14] pc
+   — a faixa em que ninguém desenha o Sol. Mas o clarão só chega a ganho PLENO em
+   0,30 pc, então tirar o disco deixaria [0,05; 0,30] com o Sol subexposto, não só
+   [0,05; 0,14] com o Sol apagado. Foi por isso que a janela do clarão desceu inteira
+   para a entrega, em vez de só esticar a de baixo.
+2. **6,63 décadas era o número do RAIO; a distância dá 6,6477.** O desenho media
+   `log10(r1/r0)` (0,55 / 1,272e-7). A curva embarcada interpola a DISTÂNCIA
+   (`|ORBIT_EXIT|` / `|SUN_WALL|`), que é 6,6477 — 0,27699 década/s em vez de 0,276.
+3. **O clarão bate no TETO DE 40° e fica plano de 0,02 a 0,134 pc.** A lei do glare é
+   `min(40°, 1,75°·10^(−0,3m))`, e o teto solta só em **0,134272 pc**. Consequência:
+   entre t≈18,7 s e t≈21,5 s da hélice o clarão do Sol tem tamanho CONSTANTE enquanto
+   a lente abre — ele encolhe em relação ao quadro, mas não por si. É lei herdada
+   (Onda 1), não coisa que a F3 criou, e mexer nela recalibraria `solestouro` e
+   `solestrela` sem pedido. **Fica declarado, para a onda da exposição.**
+4. **`soldisco` deixou de medir o que foi escolhida para medir.** Ela nasceu como "o
+   disco pleno"; hoje é "o clarão no teto". O nome ficou (renomear custaria a
+   continuidade da baseline), e o que ela guarda agora é o degrau mais sensível do
+   teto de 40°.
+5. **O Sol agora é submetido DENTRO do sistema solar.** Com o gate de 4 px, o grupo
+   do Sol acende abaixo de 3,60 UA — inclusive nas vistas de Terra e Lua, onde ele
+   fica fora de quadro. As quatro saíram bit-idênticas (conferido), mas é custo de
+   GPU novo em qualquer cena a menos de 3,6 UA do Sol. **Em compensação o custo CAIU
+   no filme inteiro:** antes o grupo ficava aceso de 0,02 a 0,3249 pc (4.125 a
+   67.000 UA); agora só nos primeiros 8,6 s da hélice.
+
+**A FASE PARA AQUI.** As 4 imagens ANTES/DEPOIS estão em `capturas/f3/`. O
+rebaseline oficial só acontece depois que o dono aprovar (precedente D11 da Onda 3).
 
 ### F4 — Descer até o Sol com o dedo
 A escada do Atlas para de recusar tudo que não é Terra: `podeAproximar: … &&
@@ -341,6 +464,12 @@ vistas caem na janela. Gate: medir com `?nobh=1` como par nulo **antes de tocar 
 linha**. Pode ser cortada sem prejuízo às F0–F4.
 
 **Tempo relativo** (F0 = 1): F0 1 · F1 1,5 · F2 2 · **F3 4** · F4 0,7 · F5 1,5.
+
+**O QUE A F4 HERDA DA F3, e vale escrever antes de esquecer:** o Sol já é corpo do
+palco com raio físico, o near já sabe parar antes da fotosfera (folga de 10,7× na
+distância da abertura) e o LOD por distância não existe mais para atrapalhar a
+descida. O que falta é o gesto — `podeAproximar` e o `if (id !== 'earth') return;`
+de `director.ts`.
 
 ---
 

@@ -5,8 +5,22 @@
 import type { MetaEfemerides, MotorEfemerides } from '../lib/atlas/efemerides';
 
 export const WORLD = {
-  // Sol artístico (escala real seria invisível: 2.3e-8 pc)
-  sunRadius: 0.011,
+  // LÁPIDE — `sunRadius: 0.011` viveu aqui de 2026-08-03 a 2026-08-13,
+  // sob a frase "Sol artístico (escala real seria invisível: 2.3e-8 pc)".
+  // A FRASE ESTAVA ERRADA, e foi refutada com imagem pelo próprio motor
+  // antes de custar uma baseline (F1 da onda do Sol real): o Sol real
+  // visto de 12.800 UA tem magnitude −6,2, o objeto mais brilhante
+  // daquele céu. O que ele não é, ali, é um DISCO. Estrela longe não é
+  // invisível — é um PONTO, e quem confunde as duas coisas infla o corpo
+  // em vez de aproximar a câmera.
+  // A F3 aproximou a câmera: a abertura passou a ser filmada a 4,00
+  // milhões de km (5,74 raios solares), na MESMA composição, e o raio do
+  // Sol saiu deste arquivo. Quem precisa dele agora lê
+  // `RAIO_DO_SOL_NA_CENA` em `src/three/escala.ts`, ao lado do cadastro
+  // que mede o fator — porque é lá, e não num objeto de configuração
+  // geral, que uma escala tem de se declarar. O 0,011 continua nomeado
+  // (`RAIO_ARTISTICO_DO_SOL_PC`, mesma casa) como lápide: dois números
+  // da casa ainda estão calibrados nele e dizem isso por escrito.
 
   // "Corações" de nuvens ao longo do corredor da viagem: [x, y, z, raio pc]
   // Posicionados no corredor Sol → Sirius → Bellatrix → Betelgeuse → Rigel.

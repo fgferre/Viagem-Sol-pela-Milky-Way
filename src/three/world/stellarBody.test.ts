@@ -17,7 +17,7 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { WORLD } from '../config';
+import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA, RAIO_SOL_PC } from '../escala';
 import {
   SOL_PARAMS,
   SOL_ROT_PERIOD_DAYS,
@@ -27,11 +27,18 @@ import {
 } from './stellarBody';
 
 describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
-  it('raio: é o MESMO WORLD.sunRadius, não um 0,011 redigitado', () => {
-    expect(SOL_PARAMS.radiusPc).toBe(WORLD.sunRadius);
-    expect(SOL_PARAMS.radiusPc).toBe(0.011);
-    // e a escala do group sai igual: 0,011 / 2,2 (DONOR_RADIUS)
-    expect(SOL_PARAMS.radiusPc / 2.2).toBe(0.011 / 2.2);
+  it('raio: é o FÍSICO, pela fonte única do cadastro (F3)', () => {
+    // até 2026-08-13 esta linha cobrava `WORLD.sunRadius` = 0,011 pc, o
+    // raio artístico. A F3 trocou o raio de vez; o que o teste guarda é
+    // que ele continua vindo de UM símbolo — e que esse símbolo é o
+    // MESMO que o cadastro de escala divide por `RAIO_SOL_PC` para
+    // acusar quem infla. Digitar 2,2567e-8 aqui deixaria o cadastro
+    // cego para uma futura inflação.
+    expect(SOL_PARAMS.radiusPc).toBe(RAIO_DO_SOL_NA_CENA);
+    expect(SOL_PARAMS.radiusPc).toBe(RAIO_SOL_PC);
+    expect(SOL_PARAMS.radiusPc / 0.011).toBeCloseTo(2.0515e-6, 10);
+    // e a escala do group acompanha: raio / 2,2 (DONOR_RADIUS)
+    expect(SOL_PARAMS.radiusPc / 2.2).toBe(RAIO_SOL_PC / 2.2);
   });
 
   it('rotação: o período devolve EXATAMENTE o 0,042 do doador', () => {
@@ -159,11 +166,13 @@ describe('F1 — as pontes de escala para o texto do shader', () => {
       expect(literalGlsl(RAIO_SOL_FISICO_PC)).toMatch(/^\d\.\d+e[-+]?\d+$/);
     });
 
-    it('o raio ARTÍSTICO devolve a string de sempre, byte a byte', () => {
-      // é o que mantém as 24 vistas oficiais bit-idênticas com a porta
-      // desligada — bit-identidade por construção, não por sorte
-      expect(literalGlsl(WORLD.sunRadius)).toBe(WORLD.sunRadius.toFixed(6));
-      expect(literalGlsl(WORLD.sunRadius)).toBe('0.011000');
+    it('o raio ARTÍSTICO devolvia a string de sempre, byte a byte', () => {
+      // foi por causa desta linha que a porta da F1 pôde entrar sem
+      // custar um pixel: com o raio de então, a forma fixa de 6 casas
+      // voltava ao mesmo float32. O caso fica como registro — o raio
+      // saiu de cena, a regra do formatador não.
+      expect(literalGlsl(RAIO_ARTISTICO_DO_SOL_PC)).toBe(RAIO_ARTISTICO_DO_SOL_PC.toFixed(6));
+      expect(literalGlsl(RAIO_ARTISTICO_DO_SOL_PC)).toBe('0.011000');
     });
 
     it('nem infinito, nem NaN, nem zero no denominador do cme', () => {
@@ -173,8 +182,16 @@ describe('F1 — as pontes de escala para o texto do shader', () => {
   });
 
   describe('epsilonDeSegmentoGlsl', () => {
-    it('o raio ARTÍSTICO devolve o "1e-4" literal de sempre', () => {
-      expect(epsilonDeSegmentoGlsl(WORLD.sunRadius)).toBe('1e-4');
+    it('O RAMO LITERAL MORREU NA F3, como o comentário dele prometia', () => {
+      // "quando a F3 tirar o raio artístico de cena, este ramo morre
+      // junto com ele" — e morreu. Sobra a lei proporcional, e ela
+      // devolve para o raio artístico um texto que vale o MESMO float32
+      // que o `1e-4` de sempre: a lei generalizou o caso, não o trocou.
+      const fonte = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
+      expect(fonte).not.toContain("return '1e-4';");
+      expect(Math.fround(Number(epsilonDeSegmentoGlsl(RAIO_ARTISTICO_DO_SOL_PC)))).toBe(
+        Math.fround(1e-4)
+      );
     });
 
     it('AGULHA: no raio físico o limiar cai proporcional, não fica em 1e-4', () => {
@@ -196,7 +213,7 @@ describe('F1 — as pontes de escala para o texto do shader', () => {
       // cobrava double e reprovou; o defeito era da régua, não da ponte.
       const eps = Number(epsilonDeSegmentoGlsl(RAIO_SOL_FISICO_PC));
       expect(Math.fround(eps / RAIO_SOL_FISICO_PC)).toBe(
-        Math.fround(1e-4 / WORLD.sunRadius)
+        Math.fround(1e-4 / RAIO_ARTISTICO_DO_SOL_PC)
       );
     });
   });

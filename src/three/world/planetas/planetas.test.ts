@@ -43,13 +43,12 @@ import {
 import { farPlanePc, nearPlanePc } from '../../core/engine';
 import { StarField } from '../stars';
 import {
-  DEEP_LIMIAR_PC,
   LOD_SOL,
   catalogApparentMag,
   deepPointGain,
-  solWorldFade,
   sunStarGain,
 } from '../lodStellar';
+import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
 import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { MotorEfemerides, decodeEfemerides } from '../../../lib/atlas/efemerides';
 import {
@@ -596,7 +595,7 @@ describe('a convenção única de magnitude fecha com as DUAS leis da F1', () =>
 
   it('Sol: o m do espelho bate com `magAparenteEstelar(4,85, d)`', () => {
     let pior = 0;
-    for (const [, d] of [...VISTAS, ['limiar', DEEP_LIMIAR_PC] as const]) {
+    for (const [, d] of [...VISTAS, ['limiar', LIMIAR_SISTEMA_SOLAR_PC] as const]) {
       const mF1 = magAparenteEstelar(4.85, d);
       const mVert = magDoVertice(PONTO_ZERO_SOL_PC, d, 1);
       pior = Math.max(pior, Math.abs(mF1 - mVert));
@@ -698,61 +697,50 @@ describe('a fase Lambertiana do vertex é a mesma matemática da F1', () => {
 // 5. Continuidade: nenhuma faixa sem render
 // ============================================================
 describe('CONTINUIDADE — em nenhuma distância o Sol fica sem desenhista', () => {
-  /** os três que podem desenhar o Sol num quadro qualquer */
-  const desenhistas = (d: number) => [solWorldFade(d), deepPointGain(d), sunStarGain(d)];
+  /** os DOIS que podem desenhar o Sol de longe num quadro qualquer.
+   *  Eram três até a F3: o disco artístico saiu da lista com o raio
+   *  inflado, e quem desenha o Sol de PERTO passou a ser o próprio
+   *  corpo, pela régua do palco (`corpos.ts`), sem rampa em parsec. */
+  const desenhistas = (d: number) => [deepPointGain(d), sunStarGain(d)];
 
-  it('varredura de 1e-6 a 5 pc: os três NUNCA são zero ao mesmo tempo', () => {
+  it('varredura de 1e-6 a 5 pc: os dois NUNCA são zero ao mesmo tempo', () => {
     const passos: number[] = [];
     for (let k = 0; k <= 3000; k++) passos.push(1e-6 * Math.pow(5e6, k / 3000));
-    // e as bordas exatas das três janelas, que a varredura logarítmica
-    // pularia por um fio
-    passos.push(
-      LOD_SOL.deep.fade0Pc,
-      LOD_SOL.deep.fade1Pc,
-      LOD_SOL.disc.fade0Pc,
-      LOD_SOL.disc.fade1Pc,
-      LOD_SOL.starGain.startPc,
-      LOD_SOL.starGain.endPc,
-      0.32487,
-      5
-    );
+    // e as bordas exatas da janela, que a varredura logarítmica pularia
+    // por um fio
+    passos.push(LOD_SOL.entrega.startPc, LOD_SOL.entrega.endPc, 0.32487, 5);
     for (const d of passos) {
       const soma = desenhistas(d).reduce((a, b) => a + b, 0);
-      expect(soma, `d=${d}`).toBeGreaterThan(0);
+      expect(soma, `d=${d}`).toBe(1);
     }
   });
 
-  it('abaixo de 0,02 pc o Sol-ponto é PLENO e o disco já saiu', () => {
-    for (const d of [1e-6, 1e-4, 0.005, 0.019, LOD_SOL.deep.fade0Pc]) {
+  it('abaixo de 0,02 pc o Sol-ponto é PLENO e o clarão ainda não entrou', () => {
+    for (const d of [1e-6, 1e-4, 0.005, 0.019, LOD_SOL.entrega.startPc]) {
       expect(deepPointGain(d), `d=${d}`).toBe(1);
-      expect(solWorldFade(d), `d=${d}`).toBe(0);
+      expect(sunStarGain(d), `d=${d}`).toBe(0);
     }
   });
 
-  it('na faixa [0,02; 0,05] disco e Sol-ponto se cruzam, e a soma é 1', () => {
+  it('na faixa [0,02; 0,05] clarão e Sol-ponto se cruzam, e a soma é 1', () => {
     for (const d of [0.025, 0.03, 0.035, 0.04, 0.045]) {
-      // `discWorldFade` vale 1 inteiro nessa faixa, então solWorldFade
-      // É `deepDiscFade` — e a complementaridade é exata (D2).
-      expect(solWorldFade(d) + deepPointGain(d), `d=${d}`).toBe(1);
+      expect(sunStarGain(d) + deepPointGain(d), `d=${d}`).toBe(1);
     }
   });
 
   it('os valores nos meios ficam pinados', () => {
-    expect(solWorldFade(0.03)).toBeCloseTo(0.2592592592592592, 15);
+    expect(sunStarGain(0.03)).toBeCloseTo(0.2592592592592592, 15);
     expect(deepPointGain(0.03)).toBeCloseTo(0.7407407407407408, 15);
-    expect(solWorldFade(0.035)).toBeCloseTo(0.5, 15);
+    expect(sunStarGain(0.035)).toBeCloseTo(0.5, 15);
     expect(deepPointGain(0.035)).toBeCloseTo(0.5, 15);
-    expect(solWorldFade(0.25)).toBeCloseTo(0.5, 15);
-    expect(sunStarGain(0.25)).toBeCloseTo(0.7680664062499999, 15);
-    expect(sunStarGain(0.16)).toBeCloseTo(0.04296874999999995, 15);
+    expect(sunStarGain(0.04)).toBeCloseTo(0.7407407407407407, 15);
   });
 
-  it('acima do limiar o Sol-ponto está APAGADO: quem desenha é o palco', () => {
-    for (const d of [DEEP_LIMIAR_PC, 0.0631506, 0.1, 0.34, 1, 5]) {
+  it('acima do limiar o Sol-ponto está APAGADO: quem desenha é o clarão', () => {
+    for (const d of [LIMIAR_SISTEMA_SOLAR_PC, 0.0631506, 0.1, 0.34, 1, 5]) {
       expect(deepPointGain(d), `d=${d}`).toBe(0);
+      expect(sunStarGain(d), `d=${d}`).toBe(1);
     }
-    expect(solWorldFade(0.0631506)).toBe(1);
-    expect(sunStarGain(5)).toBe(1);
   });
 });
 
@@ -781,7 +769,7 @@ describe('o corte por distância é de CUSTO, e não aparece na tela', () => {
 
   const f64 = cadeiaFloat64();
   const noLimiar = f64.map((p, i) => {
-    const d = DEEP_LIMIAR_PC;
+    const d = LIMIAR_SISTEMA_SOLAR_PC;
     const dObs = Math.hypot(p[0], p[1], d - p[2]);
     const fase = i === 0 ? 1 : faseDoVertice(p[0], p[1], p[2], 0, 0, d);
     return magDoVertice(A_MAG_BASE_PC[IDS_FOTOMETRIA[i]], dObs, fase);
@@ -822,18 +810,18 @@ describe('o corte por distância é de CUSTO, e não aparece na tela', () => {
 
   it('o Sol seria enorme no limiar — e o uGain já o zerou, EXATO', () => {
     expect(picoPsf(noLimiar[0])).toBeGreaterThan(1000);
-    expect(deepPointGain(DEEP_LIMIAR_PC)).toBe(0);
+    expect(deepPointGain(LIMIAR_SISTEMA_SOLAR_PC)).toBe(0);
     // vPeak = peak * alpha, com alpha = uGain no vértice do Sol
-    expect(picoPsf(noLimiar[0]) * deepPointGain(DEEP_LIMIAR_PC)).toBe(0);
+    expect(picoPsf(noLimiar[0]) * deepPointGain(LIMIAR_SISTEMA_SOLAR_PC)).toBe(0);
   });
 
-  it('`visible` é `ligado && dHome < LOD_SOL.deep.fade1Pc`', () => {
+  it('`visible` é `ligado && dHome < LIMIAR_SISTEMA_SOLAR_PC`', () => {
     const p = camada();
     const cam = new THREE.Vector3(0, 0, 0.001);
     p.ligado = true;
-    p.update(DEEP_LIMIAR_PC, ALTURA_PX, cam);
+    p.update(LIMIAR_SISTEMA_SOLAR_PC, ALTURA_PX, cam);
     expect(p.points.visible).toBe(false);
-    p.update(DEEP_LIMIAR_PC - 1e-12, ALTURA_PX, cam);
+    p.update(LIMIAR_SISTEMA_SOLAR_PC - 1e-12, ALTURA_PX, cam);
     expect(p.points.visible).toBe(true);
     p.ligado = false;
     p.update(0.001, ALTURA_PX, cam);
@@ -968,9 +956,14 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
     expect(FONTE).not.toContain('.clearUpdateRanges(');
   });
 
-  it('o gate de visibilidade importa o limiar do domínio, não um 0,05', () => {
-    expect(FONTE).toContain('DEEP_LIMIAR_PC');
-    expect(DEEP_LIMIAR_PC).toBe(LOD_SOL.deep.fade1Pc);
+  it('o gate de visibilidade importa o limiar do sistema solar, não um 0,05', () => {
+    // A F3 trocou a FONTE do número, não o número: até ela vinha de
+    // `LIMIAR_SISTEMA_SOLAR_PC` (`lodStellar.ts`), o mesmo símbolo que dizia onde
+    // o disco do Sol morria; agora vem de `escala.ts`, congelado com
+    // âncora escrita (0,05 pc = 10.313 UA; Plutão a 35,4 UA).
+    expect(FONTE).toContain('LIMIAR_SISTEMA_SOLAR_PC');
+    expect(FONTE).not.toMatch(/import \{[^}]*DEEP_LIMIAR_PC/);
+    expect(LIMIAR_SISTEMA_SOLAR_PC).toBe(LOD_SOL.entrega.endPc);
     // o único 0,05 aceitável no arquivo é prosa, nunca código
     expect(FONTE).not.toContain('< 0.05');
     expect(FONTE).not.toContain('0.05;');

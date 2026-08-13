@@ -2,9 +2,9 @@
 // O CADASTRO DE ESCALA — o registro único de tudo que a cena desenha
 // fora do tamanho real, com o valor verdadeiro ao lado e o fator na cara.
 //
-// POR QUE ELE EXISTE. O Sol da cena tem raio 0,011 pc (`config.ts:9`)
-// contra 2,2567e-8 pc reais — 487 mil vezes. A justificativa escrita é
-// uma frase: "escala real seria invisível". A frase está ERRADA, e é o
+// POR QUE ELE EXISTE. O Sol da cena tinha raio 0,011 pc (`config.ts:9`)
+// contra 2,2567e-8 pc reais — 487 mil vezes. A justificativa escrita era
+// uma frase: "escala real seria invisível". A frase estava ERRADA, e é o
 // erro que este arquivo existe para não deixar acontecer de novo: o Sol
 // real visto de 12.800 UA tem magnitude −6,2 — o objeto mais brilhante
 // daquele céu. O que ele não é, ali, é um DISCO. Estrela longe não é
@@ -14,7 +14,14 @@
 // O defeito de verdade nunca foi um número errado. Foi a AUSÊNCIA DE UM
 // LUGAR onde a mentira tivesse de se declarar: sem cadastro, uma escala
 // artística nasce num arquivo, vira âncora de outras cinco decisões
-// (`lodStellar.ts` inteiro é calibrado no raio inflado) e some da vista.
+// (`lodStellar.ts` inteiro era calibrado no raio inflado) e some da
+// vista.
+//
+// A DÍVIDA DO SOL FOI PAGA NA F3 (2026-08-13): a câmera desceu a 4,00
+// milhões de km e o corpo voltou ao tamanho, com a MESMA composição de
+// abertura. O que o cadastro guarda dele agora é o fator 1, a lápide do
+// raio antigo e a prova reproduzível da acusação que ele sofria — e a
+// obrigação continua de pé para o próximo (Sgr A✱, na F5).
 //
 // A REGRA, e ela é testável por máquina:
 //
@@ -31,8 +38,10 @@
 // decidida por ÂNGULO, nunca por raio inflado.
 //
 // ESPELHOS DECLARADOS, no molde de `atlasConfig.NOMES_DOS_CORPOS`. Este
-// módulo é PURO (importa só `WORLD` e duas constantes de `lib/atlas`,
-// todos sem dependência) porque o selo o lê e o selo não conhece three.
+// módulo é PURO (importa só duas constantes de `lib/atlas`, ambas sem
+// dependência) porque o selo o lê e o selo não conhece three. Desde a F3
+// ele também não importa mais o `config.ts`: o raio do Sol saiu de lá e
+// veio para cá, que é onde a régua de escala mora.
 // Os números que moram em arquivos que importam three (`blackHole.ts`,
 // `heroStars.ts`, `observedClouds.ts`) entram aqui como ESPELHO, e
 // `escala.test.ts` cobra a igualdade contra a fonte real — divergência
@@ -47,7 +56,6 @@
 // a um nó que já está no grafo; não abre caminho novo. Se um dia a
 // Terra sair do caminho estático, esta linha vira dívida e o aviso do
 // `config.ts` volta a valer.
-import { WORLD } from './config';
 import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { AU_KM } from '../lib/atlas/elementosOrbitais';
 
@@ -77,6 +85,77 @@ export const RAIO_SOL_KM = 696_340;
 /** Raio da fotosfera solar em pc — o número que o `config.ts:8` chamou
  *  de invisível. */
 export const RAIO_SOL_PC = kmParaPc(RAIO_SOL_KM);
+
+/**
+ * A LÁPIDE DO RAIO ARTÍSTICO (F3). Foi `WORLD.sunRadius` em
+ * `config.ts:9` de 2026-08-03 a 2026-08-13: 0,011 pc = 2.269 UA,
+ * 487.441× a fotosfera real, e a âncora escondida de meia dúzia de
+ * decisões. A F3 tirou-o da cena — o Sol da casa passou a ter raio
+ * FÍSICO —, e ele sobrevive aqui, NOMEADO e sem consumidor de imagem,
+ * por três razões que não são sentimentais:
+ *
+ *  1. A ABERTURA REFILMADA nasce dele. O plano de abertura conservou a
+ *     COMPOSIÇÃO exata do antigo: o Sol subtende os mesmos 19,762° (76%
+ *     da altura na lente de 26°). Isso é `r/d` constante, e a única
+ *     forma de escrever "mesma composição" sem digitar um ângulo à mão é
+ *     dividir o raio real por este — `cinematic/journey.ts` faz
+ *     exatamente essa conta, e por isso o ângulo sai IDÊNTICO ao antigo
+ *     (diferença medida: 0,0e0).
+ *  2. Dois números da casa continuam CALIBRADOS nele e ninguém os
+ *     re-derivou ainda: o epsilon de segmento do GLSL da coroa
+ *     (`world/stellarBody.ts`, 1e-4 de mundo sobre 0,011 pc = 0,909% do
+ *     raio) e o `DISC_ENTER_RAD` do gate por ângulo sólido que dorme em
+ *     `world/lodStellar.ts` (0,011/0,16 pc). Fingir que eles saem do
+ *     raio real seria trocar a mentira de escala por uma mentira de
+ *     procedência — que é o defeito que este arquivo existe para
+ *     impedir.
+ *  3. É o valor contra o qual o fator 487.441× do cadastro foi medido, e
+ *     apagá-lo apagaria a prova do que se consertou.
+ *
+ * NADA NOVO PODE SE ANCORAR AQUI. Quem precisar do tamanho do Sol usa
+ * `RAIO_SOL_PC`; quem precisar do que a CENA desenha usa
+ * `RAIO_DO_SOL_NA_CENA`, logo abaixo — e desde a F3 os dois são o mesmo
+ * número.
+ */
+export const RAIO_ARTISTICO_DO_SOL_PC = 0.011;
+
+/**
+ * O RAIO COM QUE A CENA DESENHA O SOL — a fonte única depois da F3.
+ * `world/stellarBody.ts` constrói a instância com ele, o Director o
+ * entrega ao palco e ao oclusor da nebulosa, e o cadastro abaixo mede o
+ * fator contra `RAIO_SOL_PC` a partir dele. Serem o MESMO símbolo é o
+ * que faz o teste do cadastro exigir fator 1 sem ninguém lembrar de
+ * apertá-lo: mudar o desenho para um raio inventado quebra a suíte na
+ * hora.
+ */
+export const RAIO_DO_SOL_NA_CENA = RAIO_SOL_PC;
+
+/**
+ * ONDE COMEÇA A ESCALA DO SISTEMA SOLAR — 0,05 pc, e a F3 lhe deu nome
+ * próprio porque até ela este número era `DEEP_LIMIAR_PC`
+ * (`world/lodStellar.ts`) e respondia DUAS perguntas diferentes com uma
+ * constante só:
+ *   (i)  "onde o disco artístico do Sol morre?" — pergunta de LOD, que
+ *        morreu junto com o disco na F3;
+ *   (ii) "onde a câmera deixa de medir o mundo em parsecs e passa a
+ *        medi-lo em UA?" — esta, que não morre nunca.
+ * Enquanto as duas dividiam a mesma constante, mexer no LOD do Sol
+ * mexia no plano de corte, na velocidade do voo livre e na camada dos
+ * dez corpos — três coisas que não têm nada com o tamanho do disco.
+ *
+ * A ÂNCORA, escrita porque antes não havia nenhuma: 0,05 pc = 10.313 UA.
+ * O corpo mais distante do retrato é Plutão, que orbita a 35,4 UA — ou
+ * seja, quem cruza esta fronteira está 291× mais longe do Sol do que o
+ * último corpo da família. É folga de duas ordens de grandeza, e é ela
+ * que autoriza o degrau declarado do near (`core/engine.ts`) e o do piso
+ * de velocidade (`cinematic/cameraRig.ts`) a acontecerem aqui sem
+ * ninguém ver.
+ *
+ * CONGELADA na F3, com a razão medida: são `ua500`, `ua150`, `ua40` e o
+ * modo Atlas inteiro que dependem deste número, e eles TÊM de sair
+ * bit-idênticos da fase que refilmou a abertura.
+ */
+export const LIMIAR_SISTEMA_SOLAR_PC = 0.05;
 
 /**
  * Raio de Schwarzschild por massa solar, km: `2GM/c²`. Constante de
@@ -152,11 +231,11 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     id: 'sol',
     nome: 'Sol',
     classe: 'corpo',
-    fator: WORLD.sunRadius / RAIO_SOL_PC,
-    endereco: 'src/three/config.ts:9',
+    fator: RAIO_DO_SOL_NA_CENA / RAIO_SOL_PC,
+    endereco: 'src/three/escala.ts:106',
     razao:
-      'o disco artístico foi inflado para o plano de abertura do filme render a ' +
-      '0,062 pc; o certo era aproximar a câmera, não crescer o corpo',
+      'PAGO na F3: o disco era 487.441× maior para o plano de abertura render a ' +
+      '0,062 pc; a câmera desceu a 4,00 milhões de km e o corpo voltou ao tamanho',
   },
   {
     id: 'sgr-a',
@@ -229,7 +308,9 @@ export function deveDivida(e: EscalaDeclarada): boolean {
  * próxima escala artística de nascer calada, que foi como esta nasceu.
  */
 export const DIVIDAS_ABERTAS: Readonly<Record<string, string>> = {
-  sol: 'F3 — a escada em tamanho e a abertura refilmada',
+  // (a linha do `sol` saiu em 2026-08-13, quando a F3 entrou: o teste
+  // apertou sozinho e passou a EXIGIR fator 1 do Sol, que é o que este
+  // bloco prometia por escrito desde a F0.)
   'sgr-a': 'F5 — o raio sai da massa (4,15e6 M☉)',
 };
 
@@ -240,14 +321,19 @@ export const DIVIDAS_ABERTAS: Readonly<Record<string, string>> = {
  * acusação.
  */
 export function culpadosDaEscala(
-  raioDoSolPc: number = WORLD.sunRadius
+  raioDoSolPc: number = RAIO_DO_SOL_NA_CENA
 ): readonly EscalaDeclarada[] {
   return CADASTRO_DE_ESCALA.map((e) =>
-    // O RAIO DO SOL É VIVO desde a F1: a porta `?solreal=1` constrói o
-    // Sol com o raio FÍSICO, e nessa vista a acusação do cadastro
+    // O RAIO DO SOL É VIVO desde a F1, quando a porta `?solreal=1`
+    // podia construí-lo com o raio físico e a acusação do cadastro
     // estaria MENTINDO ao contrário — dizendo que o Sol está 487.441×
     // maior quando ele está no tamanho certo. Um selo que acusa quem já
     // pagou é tão desonesto quanto um que cala sobre quem deve.
+    // A F3 tornou o padrão o raio físico e a porta morreu; o parâmetro
+    // FICA, porque é ele que mantém a lei "o fator sai do que a cena
+    // desenha" em vez de virar um `1` digitado — e é ele que o teste de
+    // sabotagem usa para provar que inflar o Sol de novo reacende a
+    // acusação na hora.
     e.id === 'sol' ? { ...e, fator: raioDoSolPc / RAIO_SOL_PC } : e
   )
     .filter(deveDivida)

@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { sondarGl } from '../../lib/glProbe';
 import { gravarPreferencia, lerPreferencias } from '../../lib/preferencias';
-import { DEEP_LIMIAR_PC } from '../world/lodStellar';
+import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 
 export type QualityLevel = 'cinema' | 'alta' | 'performance';
 
@@ -114,7 +114,7 @@ export const DEEP_NEAR_MIN_PC = 1e-8;
  * Onda 4). Puro e exportado para o oráculo: o gate desta fase é a
  * IGUALDADE BIT A BIT acima do limiar, e ela se prova sem GPU.
  *
- * ACIMA de `DEEP_LIMIAR_PC` a fórmula é a de sempre, verbatim, com os
+ * ACIMA de `LIMIAR_SISTEMA_SOLAR_PC` a fórmula é a de sempre, verbatim, com os
  * três literais intocados — inclusive o piso de 0,001 pc (= 206,3 UA),
  * que é o que faz as 15 vistas antigas e o filme inteiro (piso
  * 0,0631506 pc) saírem sem um pixel de diferença:
@@ -163,7 +163,7 @@ export function nearPlanePc(
   raioPc = Number.NaN
 ): number {
   const semCorpo =
-    distFromSun >= DEEP_LIMIAR_PC
+    distFromSun >= LIMIAR_SISTEMA_SOLAR_PC
       ? THREE.MathUtils.clamp(distFromSun * 0.004, 0.001, 40)
       : Math.max(distFromSun * 0.004, DEEP_NEAR_MIN_PC);
   if (!(Number.isFinite(dSuperficiePc) && Number.isFinite(raioPc) && raioPc > 0)) {

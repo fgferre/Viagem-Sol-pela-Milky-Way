@@ -1,27 +1,31 @@
 // ============================================================
-// lodStellar — o LOD estelar da casa num lugar só. PURO: só importa
-// `WORLD` (config.ts, que não importa nada); zero three, zero DOM.
+// lodStellar — o LOD estelar da casa num lugar só. PURO: importa uma
+// constante de `escala.ts` (que também é puro — o selo o lê, e o selo
+// não conhece three); zero three, zero DOM. Antes da F3 o import era
+// `WORLD.sunRadius`, de `config.ts`; o raio do Sol mudou de casa junto
+// com o cadastro que o declara.
 //
 // Três coisas moram aqui, com origens DIFERENTES e declaradas:
 //
-// 1. AS JANELAS DA CASA (verbatim, origem-casa). As três rampas do
-//    crossfade disco↔glare do Sol VIVIAM redigitadas em dois arquivos
-//    que não se importavam — `novoSol.ts:85-86,333-335` (o disco) e
+// 1. AS JANELAS DA CASA (verbatim, origem-casa). As rampas do crossfade
+//    do Sol VIVIAM redigitadas em dois arquivos que não se importavam —
+//    `novoSol.ts:85-86,333-335` (o disco) e
 //    `heroStars.ts:224-225,236-237` (uGain e uCore do SunStar) —
 //    ligadas só por COMENTÁRIO. Uma casa decimal movida de um lado e
 //    nada denunciava. Aqui elas ficam juntas, com os MESMOS números e
-//    a MESMA forma de conta; desde a fase 2 da Onda 3 os dois
-//    consumidores IMPORTAM daqui (`stellarBody.ts:473,480` e o
-//    `SunStar.update` de `heroStars.ts` — o `novoSol.ts` das citações
-//    acima virou `stellarBody.ts` no mesmo `git mv`), e um teste de
-//    pinagem (lodStellar.test.ts) impede a redigitação de renascer.
+//    a MESMA forma de conta; desde a fase 2 da Onda 3 os consumidores
+//    IMPORTAM daqui, e um teste de pinagem (lodStellar.test.ts) impede
+//    a redigitação de renascer.
 //    Nota do plano: `PLANO-ATLAS.md:96` chama {0,14→0,30} e
-//    {0,30→0,42} de janelas "dos heroes" — no código elas são do SOL
+//    {0,30→0,42} de janelas "dos heroes" — no código elas eram do SOL
 //    visto de longe (a classe `SunStar`), não das 16 heroes. O código
 //    real vence; a divergência fica registrada aqui. As janelas que
 //    são MESMO das 16 heroes (nearFade e farFade, no FRAG de
 //    `heroStars.ts`) entram na tabela `LOD_HERO`, seção 1b — elas
 //    alimentam o fim da dupla-luz hero↔catálogo na fase 3 (decisão D2).
+//    A F3 DA ONDA DO SOL REAL (2026-08-13) reduziu as quatro janelas do
+//    Sol a UMA: com o Sol de raio físico não há disco inflado para
+//    dissolver, e o que sobra é a entrega ponto↔clarão. Ver `LOD_SOL`.
 //
 // 2. `stepRampToward` — TRANSCRIÇÃO AUTORIZADA do doador atlas-orbital
 //    (`src/components/canvas/hygMeshFadeRamp.ts`: 48 linhas medidas por
@@ -54,16 +58,14 @@
 //    mesma política. Consumidor: `director.ts`, que escreve `aFade` nas
 //    16 por quadro.
 //
-// FIAÇÃO (fase 2 da Onda 3): `stellarBody.ts` consome `discWorldFade`
-// — desde a fase 2 da Onda 4 pela COMPOSIÇÃO `solWorldFade`, que é
-// `discWorldFade × deepDiscFade` (seção 1, janela `deep`) — e
-// `isDiscGroupVisible`; `heroStars.ts` (classe SunStar) consome
-// `sunStarGain` e `sunStarCore`. A troca saiu BIT-IDÊNTICA nas 15
-// vistas do `ab-identidade` — as 7 fixas mais as 8 novas por distância
-// (4 condições do Sol, 4 de hero) — porque as funções daqui repetem a
-// expressão do consumidor operação por operação, na mesma ordem. As
-// duas janelas das 16 heroes genéricas (LOD_HERO) ficaram sem
-// consumidor JS até a fase 3, quando entraram na política de
+// FIAÇÃO: `heroStars.ts` (classe SunStar) consome `sunStarGain` — nos
+// DOIS uniforms desde a F3, `uGain` e `uCore` —, e `planetas.ts` consome
+// `deepPointGain`, que é o complemento exato dele. `stellarBody.ts`
+// consumia `solWorldFade`/`isDiscGroupVisible` e deixou de consumir na
+// F3: a atenuação do disco por distância morreu com o disco, e quem
+// decide se o Sol é corpo passou a ser a régua do palco em `corpos.ts`.
+// As duas janelas das 16 heroes genéricas (LOD_HERO) ficaram sem
+// consumidor JS até a fase 3 da Onda 3, quando entraram na política de
 // dominância como rede de segurança (`heroPresence`, seção 5).
 //
 // O QUE EMBARCA DORMENTE, e é declarado como o doador declarava o seu
@@ -76,34 +78,28 @@
 // (`shouldDiscBeActive`, `computeSolidAngle`, `projectedRadiusPx`,
 // `maxSpriteSolidAngleRad`): nenhum consumidor de runtime o importa.
 //
-// ── POR QUE ELE CONTINUA DORMINDO DEPOIS DA F2 (medido em 2026-08-13) ──
-// A F2 da onda do Sol real chegou para lhe dar o primeiro consumidor e
-// NÃO deu, por uma razão que só apareceu com a conta na mesa: o
-// `DISC_ENTER_RAD` daqui e o `LIMIAR_DO_GATE_PX` do palco
-// (`corpos.ts`) são o MESMO CONTRATO com limiares 53× distantes, e não
-// duas escritas da mesma lei.
+// ── POR QUE ELE CONTINUA DORMINDO DEPOIS DA F3 (medido em 2026-08-13) ──
+// A F2 chegou para lhe dar o primeiro consumidor e NÃO deu, por uma
+// razão que só apareceu com a conta na mesa: o `DISC_ENTER_RAD` daqui e
+// o `LIMIAR_DO_GATE_PX` do palco (`corpos.ts`) são o MESMO CONTRATO com
+// limiares 53× distantes, e não duas escritas da mesma lei.
 //   ENTER = 0,06875 rad de RAIO angular ⇒ 0,1375 rad de diâmetro ⇒
 //   **212 px** de diâmetro na lente de 58° a 1713 px de altura.
 //   A régua do palco entra em **4 px** de diâmetro.
-// São perguntas diferentes: o ENTER pergunta "o disco INFLADO ainda é o
-// assunto do quadro?" (a calibração artística do crossfade para o
+// São perguntas diferentes: o ENTER perguntava "o disco INFLADO ainda é
+// o assunto do quadro?" (a calibração artística do crossfade para o
 // clarão do `SunStar`), e o palco pergunta "este corpo já é
-// REPRESENTÁVEL como corpo?". Fiar `shouldDiscBeActive` como gate do
-// grupo do Sol apagaria o disco em `solrampa` (0,25 pc) e `solestouro`
-// (0,32 pc) — nas duas o θ está ABAIXO do ENTER e o gate, partindo de
-// inativo, nunca ligaria —, o que são duas baselines oficiais perdidas
-// para trocar de régua sem trocar de resposta. O handoff REAL do disco
-// continua sendo o corte SECO de `stellarBody.ts` (`world > 0.02`,
-// d ≈ 0,3249 pc), SEM cushion.
-// Quem a F2 fiou foi a régua do PALCO, que é a que responde a pergunta
-// certa para um corpo de raio FÍSICO e já governa Terra e Lua
-// (`director.ts`, o gate do disco do Sol). O gate por ângulo sólido
-// fica de pé, testado e sem fio, como pendência NOMEADA da Onda 7 —
-// quando houver corpo por estrela, é ele que decide onde a estrela
-// deixa de ser PSF; e aí o número que ele carrega (212 px) vai ter de
-// ser re-derivado do corpo real, não do disco inflado.
+// REPRESENTÁVEL como corpo?".
+// A F3 NÃO O ACORDOU, e agora a razão é mais forte do que era: o disco
+// inflado que calibrou o ENTER não existe mais, então o número que ele
+// carrega ficou ÓRFÃO — é a memória de uma calibração cuja premissa
+// morreu. Acordá-lo hoje seria fiar um limiar sem fonte. Ele fica de pé,
+// testado e sem fio, como pendência NOMEADA da Onda 7 (corpo por
+// estrela), e a primeira obrigação de quem o acordar é RE-DERIVAR o
+// ENTER de um corpo real — a âncora artística que ele ainda usa está
+// declarada como lápide, não como número vivo.
 // ============================================================
-import { WORLD } from '../config';
+import { RAIO_ARTISTICO_DO_SOL_PC } from '../escala';
 
 // ------------------------------------------------------------
 // 1. Janelas de LOD por instância (hoje só a instância Sol)
@@ -124,219 +120,126 @@ import { WORLD } from '../config';
 // silenciosa que o md5 do ab-identidade pega na fase 2.
 export const LOD_SOL = {
   /**
-   * Disco procedural do Sol: 1 (disco é o assunto) → 0 (só a PSF
-   * estelar). Consumidor: `stellarBody.ts:473` (antes do `git mv` da
-   * fase 2 os números viviam em `novoSol.ts:85-86` e a rampa em
-   * `:333-335`).
-   */
-  disc: { fade0Pc: 0.16, fade1Pc: 0.34 },
-  /**
-   * `uGain` do clarão (SunStar): 0 → 1 enquanto o disco sai de cena.
-   * Consumidor: `SunStar.update` (`heroStars.ts`), uniform `uGain`.
-   */
-  starGain: { startPc: 0.14, widthPc: 0.16, endPc: 0.3 },
-  /**
-   * `uCore` do clarão (SunStar): o núcleo pontual + espinhos só
-   * acendem DEPOIS que o disco saiu. Consumidor: `SunStar.update`
-   * (`heroStars.ts`), uniform `uCore`.
-   */
-  starCore: { startPc: 0.3, widthPc: 0.12, endPc: 0.42 },
-  /**
-   * O DOMÍNIO PROFUNDO (Onda 4, decisão D2) — a janela que a viagem
-   * atravessa INDO PARA DENTRO, abaixo do piso do filme (0,062 pc): o
-   * disco artístico se dissolve (`deepDiscFade`) e quem assume o Sol é o
-   * ponto fotométrico da camada de planetas (`deepPointGain`). É o
-   * crossfade da fase 3 lido ao contrário: lá o disco morre AFASTANDO-SE,
-   * aqui ele morre APROXIMANDO-SE, porque uma fotosfera de raio artístico
-   * (0,011 pc = 2.269 UA) engolfaria o sistema solar inteiro.
+   * A ENTREGA — desde a F3 a ÚNICA janela do Sol, e ela troca DUAS
+   * representações de PONTO, não mais um disco por um clarão.
    *
-   * Nomes na MESMA convenção de `disc`: `fade0Pc` é onde o parâmetro da
-   * rampa vale 0 e `fade1Pc` onde vale 1 — só que aqui a rampa é
-   * ASCENDENTE em distância (`disc` é descendente), então `fade1Pc`
-   * também é onde a SAÍDA de `deepDiscFade` chega a 1.
+   * O QUE MORREU AQUI, e por quê. Até a F3 esta tabela tinha quatro
+   * janelas, e três delas existiam só porque o Sol da cena era 487.441×
+   * maior que o Sol: `disc` {0,16→0,34} dissolvia o disco INFLADO ao se
+   * afastar, `deep` {0,05→0,02} dissolvia o mesmo disco ao se
+   * APROXIMAR (uma fotosfera de 2.269 UA engolfaria o sistema solar), e
+   * `starGain`/`starCore` acendiam o clarão do `SunStar` na janela em
+   * que o disco saía. Com o Sol de raio FÍSICO nenhuma delas tem o que
+   * dissolver: quem decide se o Sol é desenhado como CORPO é a régua do
+   * palco (4 px de diâmetro aparente, `corpos.ts`), a mesma que já
+   * governa Terra e Lua, e ela não precisa de janela em parsec nenhuma.
    *
-   * `fade1Pc` é O LIMIAR DO DOMÍNIO, e por isso tem nome próprio
-   * (`DEEP_LIMIAR_PC`, logo abaixo): acima dele NADA da Onda 4 age — nem
-   * a atenuação do disco (D2), nem o near plane (D5), nem a velocidade do
-   * voo livre (D6). Os três consumidores IMPORTAM daqui em vez de
-   * redigitar 0,05, que é a mesma disciplina que juntou as três rampas
-   * nesta tabela.
+   * O QUE SOBROU é o único handoff que continua sendo real, e ele é
+   * entre dois PONTOS:
+   *   • ABAIXO de 0,02 pc quem desenha o Sol é o ponto fotométrico da
+   *     camada dos dez corpos (`planetas.ts`, vértice 0) — o Sol como
+   *     membro do sistema solar, com a fotometria da família;
+   *   • ACIMA de 0,05 pc quem desenha o Sol é o clarão do `SunStar`
+   *     (`heroStars.ts`) — o Sol como estrela do catálogo, com a
+   *     magnitude viva `4,83 + 5·log10(d/10)`;
+   *   • ENTRE os dois, esta janela faz os dois trocarem de lugar com
+   *     soma constante.
    *
-   * NÚMEROS DE PROJETO, declarados como tais pelo desenho da onda: o piso
-   * do filme (0,0631506 pc, medido em t=0) fica 26% acima de `fade1Pc`, e
-   * é essa folga que faz a leva das 18 vistas sair bit-idêntica. A fase de
-   * envelope (F4) pode movê-los COM MEDIÇÃO antes de ligar a camada —
-   * precedente D11 da Onda 3.
+   * POR QUE EXATAMENTE {0,02; 0,05} e não outros dois números: 0,05 pc é
+   * onde a camada dos dez corpos deixa de ser submetida
+   * (`planetas.ts`, `LIMIAR_SISTEMA_SOLAR_PC`), então o ganho do ponto
+   * TEM de chegar a zero exatamente ali — um centímetro além e a camada
+   * some com o Sol ainda aceso, que é o pop que esta janela existe para
+   * não deixar acontecer. O 0,02 é a outra ponta da mesma janela, e vem
+   * herdado da Onda 4 pelo mesmo motivo de sempre: é a maior largura que
+   * cabe sem tocar `ua500` (0,0024241 pc), a vista oficial mais próxima
+   * da borda de baixo — 8,3× de folga.
+   *
+   * O BURACO QUE ELA FECHA, medido antes de existir: com as janelas
+   * antigas, entre 0,05 e 0,14 pc NADA além do disco inventado desenhava
+   * o Sol — o ponto tinha ganho 0 acima de 0,05 e o clarão tinha ganho 0
+   * abaixo de 0,14. Tirar o disco sem juntar as duas janelas deixaria o
+   * Sol INVISÍVEL por ~1,4 s do trecho mais olhado do produto (a faixa
+   * cai em t≈20,2 s da hélice de 24 s, na abertura refilmada). Juntando,
+   * o Sol nunca deixa de ter um dono.
+   *
+   * `startPc`/`widthPc`/`endPc` na convenção de `starGain` (a que
+   * sobreviveu), e a escolha da FORMA tem consequência de bit: a rampa
+   * divide pela LARGURA LITERAL (0,03), não pela subtração das bordas —
+   * `0,05 − 0,02 = 0.030000000000000002` (≠ 0,03), enquanto
+   * `0,02 + 0,03 = 0,05` fecha exato. É a subtração que mente. O
+   * `deepPointGain` da Onda 4 dividia pela subtração; a fusão o passou
+   * para a largura literal, e isso muda o último bit NO MEIO da janela.
+   * Nenhuma vista oficial mora lá dentro (a mais próxima é `ua500`,
+   * 8,3× abaixo da borda), então a mudança é declarada e não cobrada.
    */
-  deep: { fade1Pc: 0.05, fade0Pc: 0.02 },
+  entrega: { startPc: 0.02, widthPc: 0.03, endPc: 0.05 },
 } as const;
 
 /**
- * O limiar do domínio profundo em pc, com nome próprio porque ele
- * atravessa três módulos: `stellarBody` (pela composição `solWorldFade`),
- * `engine.updateClip` (near piecewise, D5) e `FreeRoam` (voo
- * proporcional, D6). NÃO é um 0,05 redigitado: é `LOD_SOL.deep.fade1Pc`,
- * e se a janela se mexer na F4 os três acompanham no mesmo passo.
+ * O FIM DA ENTREGA em pc — acima dele o Sol é estrela e nada mais. Tem
+ * nome próprio porque é o número que amarra esta tabela à camada dos dez
+ * corpos: ele TEM de ser igual a `LIMIAR_SISTEMA_SOLAR_PC`
+ * (`escala.ts`), e `lodStellar.test.ts` cobra a igualdade.
+ *
+ * NÃO É O MESMO SÍMBOLO, e a separação é a cirurgia da F3. Até ela,
+ * `DEEP_LIMIAR_PC` respondia duas perguntas com uma constante só — "onde
+ * o disco do Sol morre?" (LOD) e "onde começa a escala do sistema
+ * solar?" (plano de corte, velocidade do voo livre, camada dos dez).
+ * Enquanto dividissem o símbolo, mexer no LOD do Sol mexeria nas outras
+ * três de graça. Agora o de LOD é este, livre para andar; o de escala é
+ * o de `escala.ts`, CONGELADO com âncora escrita.
  */
-export const DEEP_LIMIAR_PC = LOD_SOL.deep.fade1Pc;
+export const LIMIAR_DA_ENTREGA_PC = LOD_SOL.entrega.endPc;
 
 /**
- * Piso de visibilidade do grupo do Sol: sumido, nada do Sol é
- * submetido. Consumidor: `stellarBody.ts:480` — corte DURO, não
- * rampa, e por isso mora fora das janelas acima.
- */
-export const DISC_VISIBLE_MIN = 0.02;
-
-/**
- * Rampa do disco, forma EXATA da que vivia inline em `novoSol.ts:334-335`
- * antes da fiação (smoothstep
- * cúbico DESCENDENTE, com o clamp escrito como ternário e a largura
- * recalculada de fade1-fade0 — ver a armadilha de float acima).
- * `dPc` é a distância câmera↔Sol em pc REAIS (não na régua do doador
- * corrigida por fov: o fov varia 26°→56° na hélice e balançaria o
- * fade junto com o zoom — `stellarBody.ts:465-471`).
- */
-export function discWorldFade(dPc: number): number {
-  const wk = (dPc - LOD_SOL.disc.fade0Pc) / (LOD_SOL.disc.fade1Pc - LOD_SOL.disc.fade0Pc);
-  return wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
-}
-
-/** O corte duro de custo do grupo da estrela (`stellarBody.ts:480`). */
-export function isDiscGroupVisible(worldFade: number): boolean {
-  return worldFade > DISC_VISIBLE_MIN;
-}
-
-/**
- * Rampa do domínio profundo (D2): quanto do disco artístico sobra ao se
- * aproximar. 1 EXATO para d ≥ 0,05 (o disco é o assunto, como sempre
- * foi), 0 EXATO para d ≤ 0,02 (dissolvido; quem desenha o Sol é o ponto
- * fotométrico), smoothstep cúbico entre os dois.
+ * O GANHO DA ESTRELA — `uGain` E `uCore` do `SunStar`. Forma EXATA da
+ * que vivia inline em `SunStar.update` antes da fiação da fase 2 da
+ * Onda 3 (Math.min/Math.max no clamp, divisão pela largura LITERAL,
+ * depois smoothstep cúbico ASCENDENTE); o que a F3 mudou foi a JANELA,
+ * de {0,14; 0,16; 0,30} para a entrega, e a FUSÃO com `sunStarCore`.
  *
- * MESMA FORMA da rampa do disco (`discWorldFade`): o mesmo ternário, a
- * mesma cúbica e a LARGURA RECALCULADA dos dois extremos — nunca o 0,03
- * digitado. A armadilha de float do topo do arquivo tem aqui a sua
- * versão espelhada: `0,05 − 0,02 = 0.030000000000000002` (≠ 0,03),
- * enquanto `0,02 + 0,03 = 0,05` fecha exato — ou seja, é a SUBTRAÇÃO que
- * mente, e é justamente ela que a rampa faz. Digitar a largura mudaria o
- * último bit no meio da janela (testado).
+ * POR QUE O NÚCLEO FUNDIU COM O GANHO. `sunStarCore` era uma segunda
+ * rampa, {0,30; 0,12; 0,42}, e a razão escrita dela era o disco: "o
+ * núcleo pontual (+ espinhos) só acende DEPOIS que o disco saiu de cena
+ * — sobrepostos, o núcleo apertado imprime um ponto branco no meio do
+ * disco e a coisa lê como retículo de mira". Sem disco não há o que
+ * sobrepor, e manter as duas rampas custaria uma faixa de 0,05 a 0,30 pc
+ * em que o Sol seria um borrão SEM ponto no meio — um Sol que não lê
+ * como estrela justamente onde ele já é uma. Uma rampa só, e o Sol vira
+ * estrela inteira de uma vez: núcleo, espinhos e halo na mesma medida.
  *
- * O 1 EXATO na borda de cima é o que sustenta a promessa da fase: em
- * d ≥ 0,05 o numerador e o denominador de `wk` são a MESMA expressão,
- * então `wk ≥ 1` e o ternário devolve o literal 1 — e `x * 1` é exato em
- * IEEE754, de onde `solWorldFade(d) === discWorldFade(d)` bit a bit.
- * Fora do domínio (NaN) devolve NaN, como `discWorldFade`: o valor
- * envenenado aparece em vez de se disfarçar de 0 ou de 1.
- */
-export function deepDiscFade(dPc: number): number {
-  const wk = (dPc - LOD_SOL.deep.fade0Pc) / (LOD_SOL.deep.fade1Pc - LOD_SOL.deep.fade0Pc);
-  return wk <= 0 ? 0 : wk >= 1 ? 1 : wk * wk * (3 - 2 * wk);
-}
-
-/**
- * O REVERSO EXATO de `deepDiscFade` (D2): o alpha do Sol-ponto
- * fotométrico da camada da fase 3. 0 para d ≥ 0,05 (longe, quem desenha
- * o Sol é o disco/clarão de sempre), 1 para d ≤ 0,02 (perto, o ponto é o
- * Sol inteiro).
- *
- * A forma é a de `discWorldFade` — `1 − wk²(3−2wk)` com o MESMO `wk` de
- * `deepDiscFade` —, e a complementaridade sai EXATA, não aproximada:
- * `deepDiscFade(d) + deepPointGain(d) === 1` para todo d finito. É
- * teorema, não sorte: nas bordas os ternários devolvem os literais (0+1
- * e 1+0), e no meio, com `a` na cúbica e `b = fl(1 − a)`, o erro de
- * arredondamento de `b` é ≤ 2⁻⁵⁴ (porque 1 − a ∈ (0,1)), e 1 ± 2⁻⁵⁴
- * arredonda de volta para 1 exato. Pinado por varredura no teste.
- */
-export function deepPointGain(dPc: number): number {
-  const wk = (dPc - LOD_SOL.deep.fade0Pc) / (LOD_SOL.deep.fade1Pc - LOD_SOL.deep.fade0Pc);
-  return wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
-}
-
-/**
- * A ATENUAÇÃO TOTAL DO DISCO, num lugar só (D2, lição do commit 2e16689
- * — o vSat que apanhava a atenuação pela metade porque duas contas
- * diferentes governavam a mesma luz). O `stellarBody` chama ESTA, não
- * `discWorldFade`: o `world` que sai daqui é o mesmo número que alimenta
- * `uWorldFade` (fotosfera e espículas), `uRayBoost`, `uHalo` e o corte
- * duro `isDiscGroupVisible` — se a composição ficasse em um só desses
- * quatro, o disco sumiria com a coroa inteira por cima.
- *
- * Acima do limiar a composição é IDENTIDADE, bit a bit (`× 1` exato) —
- * é o que mantém as 15 vistas antigas e o filme inteiro sem um pixel de
- * diferença. Abaixo de 0,02 pc é 0: perto de casa o disco artístico não
- * existe mais, embora `discWorldFade` ali valha 1 (a janela de longe não
- * sabe nada do domínio profundo — por isso são DUAS rampas e não uma).
- */
-export function solWorldFade(dPc: number): number {
-  return discWorldFade(dPc) * deepDiscFade(dPc);
-}
-
-/**
- * A MESMA ATENUAÇÃO com o RAIO DA INSTÂNCIA COMO TERMO — e não mais como
- * um `if` que escolhe entre duas leis. É o que a F2 da onda do Sol real
- * prometeu quando a F1 embarcou o remendo `discWorldFadeDaInstancia`
- * ("o raioPc deixa de escolher entre duas leis e passa a ser só um dos
- * termos de uma lei só; quando isso acontecer, esta função morre"). Ela
- * morreu; esta é a herdeira.
- *
- * A CONTA, e ela cabe numa linha: `deepDiscFade` mede uma coisa só — o
- * quanto o corpo ENGOLFA o quadro ao se chegar perto. A docstring de
- * `LOD_SOL.deep` diz a premissa com todas as letras ("uma fotosfera de
- * raio artístico, 0,011 pc = 2.269 UA, engolfaria o sistema solar
- * inteiro"), e "engolfar" é TAMANHO NA TELA, não distância absoluta.
- * Uma janela em pc só serve a UM raio; a mesma janela dividida pelo raio
- * serve a qualquer um. Daí a distância NORMALIZADA
- *
- *     dEquivalente = dPc × (WORLD.sunRadius / raioPc)
- *
- * que é a distância a que o Sol ARTÍSTICO estaria para subtender o mesmo
- * ângulo que esta instância subtende em `dPc`. Alimentada nas janelas de
- * sempre, ela diz a mesma frase para todo raio.
- *
- * BIT-IDENTIDADE, e é teorema e não tolerância: com `raioPc ===
- * WORLD.sunRadius` a razão é `x/x`, que em IEEE754 é 1 EXATO para todo
- * finito não-nulo, e `dPc * 1 === dPc` sem um ULP de diferença (vale
- * também para ±0 e NaN, que atravessam como atravessavam). Logo esta
- * função É `solWorldFade` no raio artístico — as 22 vistas oficiais não
- * têm por onde mudar.
- *
- * O QUE NÃO SE NORMALIZA, e é decisão com razão escrita: o termo
- * `discWorldFade` (o handoff disco↔clarão de LONGE) fica em pc CRUS. Ele
- * não é uma lei de "quando o corpo é resolvido" — é a calibração
- * artística do crossfade para a PSF do `SunStar`, ancorada em 0,16 pc
- * porque é lá que o DISCO INFLADO some. Normalizá-lo mataria o disco do
- * Sol real a 14,5 raios solares (0,068 UA), e a F1 já FOTOGRAFOU um
- * disco legítimo de 14,4 px a 1 UA. Para um corpo de raio físico quem
- * decide o handoff de longe é a régua do palco (4 px de diâmetro,
- * `gateBinario` em `corpos.ts`), consumida pelo `director` — a mesma que
- * governa Terra e Lua, e a que a Onda 7 leva para as outras estrelas.
- * Com raio físico este termo vale 1 em todo o sistema solar (ele só
- * começa a cair em 0,16 pc = 33 mil UA), então ele não disputa nada com
- * o gate: fica inerte, esperando a F3 aposentá-lo junto com o disco.
- */
-export function solWorldFadeDaInstancia(dPc: number, raioPc: number): number {
-  return discWorldFade(dPc) * deepDiscFade(dPc * (WORLD.sunRadius / raioPc));
-}
-
-/**
- * `uGain` do SunStar, forma EXATA da que vivia inline em
- * `SunStar.update` antes da fiação da fase 2 (Math.min/Math.max no
- * clamp, divisão pela largura LITERAL, depois smoothstep cúbico
- * ASCENDENTE).
  * O piso `Math.max(camDist, 1e-4)` NÃO migra para cá: na primeira linha
  * de `SunStar.update` ele é do `d` inteiro, compartilhado com a lei de
  * magnitude (`5·log10(d/10)`, que estoura em d=0) — é guarda do
  * chamador, não da rampa.
  */
 export function sunStarGain(dPc: number): number {
-  const k = Math.min(1, Math.max(0, (dPc - LOD_SOL.starGain.startPc) / LOD_SOL.starGain.widthPc));
+  const k = Math.min(1, Math.max(0, (dPc - LOD_SOL.entrega.startPc) / LOD_SOL.entrega.widthPc));
   return k * k * (3 - 2 * k);
 }
 
-/** `uCore` do SunStar, forma EXATA da que vivia inline no fim de
- *  `SunStar.update`. */
-export function sunStarCore(dPc: number): number {
-  const c = Math.min(1, Math.max(0, (dPc - LOD_SOL.starCore.startPc) / LOD_SOL.starCore.widthPc));
-  return c * c * (3 - 2 * c);
+/**
+ * O COMPLEMENTO EXATO do ganho da estrela: o alpha do Sol-ponto da
+ * camada dos dez corpos. 1 para d ≤ 0,02 (perto, o ponto é o Sol
+ * inteiro), 0 para d ≥ 0,05 (longe, quem desenha o Sol é o clarão).
+ *
+ * ESCRITO COMO `1 −` E NÃO COMO UMA SEGUNDA RAMPA, e isso é a lição da
+ * Onda 3 aplicada de novo (as três rampas que viviam redigitadas em dois
+ * arquivos que não se importavam): duas rampas espelhadas são duas
+ * chances de mover uma casa decimal de um lado só. Com esta forma a
+ * complementaridade não é convenção, é aritmética — `sunStarGain(d) +
+ * deepPointGain(d) === 1` para todo d finito, EXATO: nas bordas os
+ * clamps devolvem os literais (0+1 e 1+0), e no meio, com `a` na cúbica
+ * e `b = fl(1 − a)`, o erro de arredondamento de `b` é ≤ 2⁻⁵⁴ (porque
+ * 1 − a ∈ (0,1)), e 1 ± 2⁻⁵⁴ arredonda de volta para 1 exato. Pinado por
+ * varredura no teste.
+ *
+ * É essa soma constante que faz o crossfade não ter degrau de luz: o que
+ * um lado larga o outro pega no mesmo quadro.
+ */
+export function deepPointGain(dPc: number): number {
+  return 1 - sunStarGain(dPc);
 }
 
 // ------------------------------------------------------------
@@ -500,10 +403,15 @@ export function stepRampToward(
 //     nunca move uma decisão. Logo janela-em-pc e limiar-em-rad são a
 //     MESMA régua vista por instâncias diferentes: d = r/θ.
 //
-// (b) A ÂNCORA DA CASA. O Sol tem r = WORLD.sunRadius = 0,011 pc
-//     (`config.ts:8`; raio artístico — o real, 2,3e-8 pc, seria
-//     invisível) e o disco está PLENO até DISC_FADE0 = 0,16 pc
-//     (`LOD_SOL.disc.fade0Pc`). Traduzindo essa janela para ângulo:
+// (b) A ÂNCORA DA CASA — E ELA É UMA LÁPIDE DESDE A F3. Quando esta
+//     conta foi escrita, o Sol tinha r = 0,011 pc (raio artístico) e o
+//     disco estava PLENO até DISC_FADE0 = 0,16 pc. Hoje o Sol tem raio
+//     físico e a janela do disco não existe mais: os dois números
+//     abaixo são MEMÓRIA de uma calibração cuja premissa morreu, e
+//     estão aqui para o ENTER continuar TESTÁVEL, não para ele
+//     continuar CERTO. Ver o aviso no topo do arquivo — quem acordar o
+//     gate re-deriva o ENTER de um corpo real antes de fiá-lo.
+//     Traduzindo a janela morta para ângulo:
 //         θ_handoff = 0,011 / 0,16 = 6,875e-2 rad  →  é o ENTER.
 //     Ou seja: "o disco é o assunto enquanto o corpo cobre mais de
 //     ~0,0687 rad de raio angular" — a mesma frase que a casa já
@@ -513,9 +421,10 @@ export function stepRampToward(
 // (c) O CUSHION 2× (contrato do doador, `stellarMeshGate.ts:51,62-67`).
 //     EXIT = ENTER/2 = 3,4375e-2 rad. Em distância isso é
 //     d_exit = r/EXIT = 2·DISC_FADE0 = 0,32 pc — exato, por
-//     construção. CONFERÊNCIA INDEPENDENTE: a casa já apaga o grupo do
-//     Sol quando `isDiscGroupVisible` falha (`stellarBody.ts:480`), e resolvendo
-//     a rampa isso cai em d = 0,32487 pc. O cushion de 2× do doador
+//     construção. CONFERÊNCIA INDEPENDENTE (feita quando o disco ainda
+//     existia): a casa apagava o grupo do Sol quando `isDiscGroupVisible`
+//     falhava (`stellarBody.ts:480`), e resolvendo
+//     a rampa isso caía em d = 0,32487 pc. O cushion de 2× do doador
 //     reproduz, com 1,5% de diferença, o corte que a casa achou à mão
 //     — e a zona morta [0,16; 0,32] pc cabe INTEIRA dentro da janela
 //     do crossfade [0,16; 0,34] pc, então o gate nunca mata o disco
@@ -571,11 +480,23 @@ export function stepRampToward(
 //          estrelas.
 
 /**
- * ENTER do gate, em radianos de RAIO ANGULAR. Derivado, não digitado:
- * ver (b) da conta acima. Se `WORLD.sunRadius` ou a janela do disco
- * mudarem, o limiar acompanha — a âncora é a RELAÇÃO, não o número.
+ * A LÁPIDE DA JANELA DO DISCO: 0,16 pc era `LOD_SOL.disc.fade0Pc`, o
+ * ponto até onde o disco INFLADO do Sol era o assunto do quadro. A
+ * janela morreu na F3 com o disco; o número fica aqui, e só aqui,
+ * porque o `DISC_ENTER_RAD` dormente é derivado dele. Nada novo pode se
+ * ancorar neste valor.
  */
-export const DISC_ENTER_RAD = WORLD.sunRadius / LOD_SOL.disc.fade0Pc;
+const DISC_FADE0_ARTISTICO_PC = 0.16;
+
+/**
+ * ENTER do gate, em radianos de RAIO ANGULAR. Derivado, não digitado:
+ * ver (b) da conta acima. Os dois termos são LÁPIDES desde a F3 — o
+ * raio artístico do Sol e a janela morta do disco —, e é de propósito
+ * que ele continua saindo da RELAÇÃO entre eles em vez de virar um
+ * 0,06875 digitado: assim o número que a Onda 7 vai ter de re-derivar
+ * carrega, no próprio código, de onde veio e por que não vale mais.
+ */
+export const DISC_ENTER_RAD = RAIO_ARTISTICO_DO_SOL_PC / DISC_FADE0_ARTISTICO_PC;
 
 /** EXIT do gate: metade do ENTER (cushion 2× do doador — (c) acima). */
 export const DISC_EXIT_RAD = DISC_ENTER_RAD / 2;

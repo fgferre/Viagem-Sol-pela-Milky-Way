@@ -30,16 +30,22 @@
 // PRIME síncrono (semente do sim + N passos + um bake completo):
 // sem ele, captura em t=0 fotografaria o disco sem cromosfera.
 //
-// LOD: a janela do crossfade disco↔clarão não mora mais aqui. Vem de
-// `lodStellar.ts`, o MESMO módulo de onde o `SunStar` (heroStars.ts)
-// tira as duas dele. Antes eram números redigitados em dois arquivos
-// que não se importavam, ligados só por um comentário — uma casa
-// decimal movida de um lado e nada denunciava.
+// LOD: este arquivo NÃO TEM MAIS LOD, e isso é o que a F3 da onda do Sol
+// real entregou. Até ela, o corpo se atenuava por DISTÂNCIA — duas
+// rampas em parsec (`solWorldFade`) escurecendo fotosfera, espículas,
+// raias e halo, mais um corte duro de custo. As duas rampas existiam
+// pela mesma razão: o disco da cena era 487.441× maior que o Sol, e um
+// corpo desse tamanho precisava ser dissolvido à mão nas duas pontas
+// (afastando-se ele engolia o céu; aproximando-se ele engolia o sistema
+// solar). Com raio FÍSICO nada disso acontece — a perspectiva já faz o
+// trabalho. Quem decide se o Sol é desenhado como CORPO é a régua do
+// palco (4 px de diâmetro aparente, `corpos.ts`), aplicada pelo
+// Director, exatamente como em Terra e Lua; aqui só se lê
+// `group.visible`.
 // ============================================================
 import * as THREE from 'three';
-import { WORLD } from '../config';
+import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
 import type { QualityLevel } from '../core/engine';
-import { isDiscGroupVisible, solWorldFadeDaInstancia } from './lodStellar';
 import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
 import { createPIL } from './sol/pil.js';
@@ -233,18 +239,20 @@ export function literalGlsl(v: number): string {
  * O valor herdado (`1e-4`) é ABSOLUTO e foi calibrado quando o raio da
  * cena era o artístico; o certo é ele ser PROPORCIONAL ao raio, que é o
  * que o torna portátil para qualquer instância (a mesma lição da régua
- * por ângulo de `lodStellar.ts:425-445`).
+ * por ângulo de `lodStellar.ts`).
  *
- * O RAMO LITERAL para o raio artístico não é preguiça, é o gate: ele
- * garante que a porta desligada emita o MESMO TEXTO de shader de
- * sempre, byte a byte, em vez de um número que só é igual depois de
- * arredondado. Bit-identidade por construção, não por arredondamento
- * feliz. Quando a F3 tirar o raio artístico de cena, este ramo morre
- * junto com ele.
+ * O RAMO LITERAL PARA O RAIO ARTÍSTICO MORREU NA F3, como este
+ * comentário prometia por escrito desde a F1 ("quando a F3 tirar o raio
+ * artístico de cena, este ramo morre junto com ele"). Sobra a lei
+ * proporcional, e ela é a mesma conta que o ramo morto fazia: o epsilon
+ * vale **0,909% do raio do corpo** — `1e-4` de mundo sobre os 0,011 pc
+ * em que foi calibrado. A âncora continua sendo o raio artístico porque
+ * é dele que o 1e-4 nasceu; trocá-la pelo raio real mudaria o número
+ * fingindo que a calibração foi refeita, que é a mentira de procedência
+ * que o cadastro de escala existe para impedir.
  */
 export function epsilonDeSegmentoGlsl(raioPc: number): string {
-  if (raioPc === WORLD.sunRadius) return '1e-4';
-  return literalGlsl(raioPc * (1e-4 / WORLD.sunRadius));
+  return literalGlsl(raioPc * (1e-4 / RAIO_ARTISTICO_DO_SOL_PC));
 }
 
 /**
@@ -261,8 +269,12 @@ export function epsilonDeSegmentoGlsl(raioPc: number): string {
  */
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
-  // o MESMO WORLD.sunRadius de antes, não um 0,011 redigitado
-  radiusPc: WORLD.sunRadius,
+  // O RAIO FÍSICO DA FOTOSFERA (F3), pela fonte única do cadastro — não
+  // um 2,2567e-8 redigitado, e não mais o `WORLD.sunRadius` artístico
+  // que ficou aqui da Onda 3 até 2026-08-13. É esta linha que faz o
+  // fator do cadastro sair 1: `RAIO_DO_SOL_NA_CENA` é o MESMO símbolo
+  // que `escala.ts` divide por `RAIO_SOL_PC` para acusar quem infla.
+  radiusPc: RAIO_DO_SOL_NA_CENA,
   rotPeriodDays: SOL_ROT_PERIOD_DAYS,
   // inclinação real do eixo solar (~7,25°), como no original
   tiltRad: 0.1265,
@@ -547,40 +559,36 @@ export class StellarBody {
     ctx.prominenceGroup.visible = this.limboFade > 0.01;
     ctx.loopGroup.visible = this.limboFade > 0.01;
 
-    // CROSSFADE DISCO→ESTRELA (em pc REAIS, não na régua do doador: o
-    // fov varia 26°→56° na hélice e a régua corrigida por lente
-    // balançaria o fade junto com o zoom). O raio do disco é escala
-    // artística; passada a janela quem manda é a PSF estelar (SunStar,
-    // heroStars.ts) — as duas rampas são complementares, e desde a
-    // Onda 3 vêm da MESMA tabela (`lodStellar.ts`), não de dois
-    // conjuntos de números redigitados.
+    // O CROSSFADE DISCO→ESTRELA MORREU AQUI NA F3, e o que ficou no
+    // lugar dele é a ausência de lei: `uWorldFade` vale 1 SEMPRE.
     //
-    // Desde a Onda 4 (decisão D2) o fade vem da COMPOSIÇÃO
-    // `solWorldFade = discWorldFade × deepDiscFade`: o disco também se
-    // dissolve INDO PARA DENTRO, abaixo de 0,05 pc, onde a fotosfera de
-    // raio artístico (2.269 UA) engolfaria o sistema solar de verdade.
-    // A atenuação total é UMA só e sai de uma função só — é a lição do
-    // conserto do vSat (2e16689), e é por isso que os quatro
-    // consumidores abaixo leem a MESMA variável `world`. Acima de
-    // 0,05 pc a composição é identidade bit a bit, e é assim que o
-    // filme inteiro (piso 0,0631506 pc) fica sem um pixel de diferença.
-    // F1/F2: a atenuação recebe o RAIO DA INSTÂNCIA. Na F1 isso era um
-    // `if` que escolhia entre duas leis; desde a F2 é UMA lei com o raio
-    // como termo — o domínio profundo mede o quanto o corpo ENGOLFA o
-    // quadro, e "engolfar" é tamanho na tela, então a janela em pc entra
-    // dividida pelo raio. No raio artístico a razão é 1 EXATO e a
-    // chamada é `solWorldFade` bit a bit (é o que mantém o filme sem um
-    // pixel de diferença); num raio físico a mesma frase passa a valer
-    // em raios solares em vez de em UA. Ver `solWorldFadeDaInstancia`.
-    const dPc = camera.position.length();
-    const world = solWorldFadeDaInstancia(dPc, this.params.radiusPc);
-    ctx.sunUniforms.uWorldFade.value = world;
-    ctx.spiculeUniforms.uWorldFade.value = world;
-    ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray * world;
-    ctx.coronaRaysUniforms.uHalo.value = this.kn.halo * world;
-    // gate de custo: sumido, nada da estrela é submetido (o director já
-    // aplicou ?nosun aqui — o && preserva a flag)
-    this.group.visible = this.group.visible && isDiscGroupVisible(world);
+    // A conta que autoriza, e ela é curta. A atenuação antiga era
+    // `solWorldFade = discWorldFade × deepDiscFade`, duas rampas em
+    // parsec que só faziam sentido para um corpo de 0,011 pc de raio: a
+    // de longe (0,16→0,34 pc) apagava um disco que, inflado, ainda
+    // media 3,9° a 0,16 pc; a de perto (0,05→0,02 pc) apagava o mesmo
+    // disco antes de a fotosfera de 2.269 UA engolir a órbita de
+    // Netuno. Com raio FÍSICO o corpo mede 4 px a 3,60 UA e 5,5e-4 px no
+    // antigo piso do filme — a perspectiva apaga sozinha, e muito antes.
+    // Manter as rampas com o raio novo seria pior que inútil: normalizada
+    // pelo raio, a rampa de perto dissolveria a fotosfera entre 4,5 e
+    // 1,8 RAIOS SOLARES, ou seja exatamente onde a F4 quer descer.
+    //
+    // O gate de custo também sai daqui: quem apaga o grupo agora é o
+    // Director, pela régua do palco (4 px, com o cushion 2× da
+    // histerese) — a MESMA que governa Terra e Lua, e a única que
+    // continua fazendo uma pergunta respondível ("este corpo é
+    // representável como corpo?"). Aqui sobra ler a decisão dele.
+    //
+    // O ZERO PIXEL desta remoção nas três vistas de raio físico da F1 é
+    // aritmético e não medido: em `solreal4mkm` e `solreal1ua` as duas
+    // rampas antigas já devolviam 1 EXATO (a de perto normalizada dava
+    // 0,063 e 2,36 pc equivalentes, ambos acima de 0,05), e em
+    // `solreal40ua` o grupo já estava apagado pelo gate de 4 px.
+    ctx.sunUniforms.uWorldFade.value = 1;
+    ctx.spiculeUniforms.uWorldFade.value = 1;
+    ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
+    ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
     if (!this.group.visible) return;
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---

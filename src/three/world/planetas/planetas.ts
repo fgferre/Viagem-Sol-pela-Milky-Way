@@ -103,7 +103,8 @@ import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGalactico';
 import { GLSL_STAR_PSF } from '../../shaders/common';
 import { STAR_FRAG } from '../../shaders/starShaders';
-import { DEEP_LIMIAR_PC, deepPointGain, needsAttributeWrite } from '../lodStellar';
+import { deepPointGain, needsAttributeWrite } from '../lodStellar';
+import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
 import { A_MAG_BASE, FOTOMETRIA, IDS_FOTOMETRIA, aMagBaseDe } from './fotometria';
 import { EPOCA_ISO, EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
@@ -465,14 +466,26 @@ export class Planetas {
    * O quadro inteiro da camada: um corte de custo e três uniforms.
    *
    * O CORTE não é de conteúdo, é de custo — e ele NÃO pisca: em
-   * `DEEP_LIMIAR_PC` (0,05 pc) o corpo mais brilhante da tabela
+   * `LIMIAR_SISTEMA_SOLAR_PC` (0,05 pc) o corpo mais brilhante da tabela
    * (Júpiter) tem m ≈ 14,2, o que dá um pico de PSF na casa de 1e-6 —
    * quatro ordens abaixo de um passo de 8 bits (pinado por teste). O
    * Sol-ponto ali já está com `uGain` 0 EXATO, pelo teorema de
    * complementaridade de `deepPointGain`.
+   *
+   * A F3 SEPAROU A CONSTANTE que este corte lê, e a separação importa
+   * justamente aqui: até ela o número vinha de `DEEP_LIMIAR_PC`
+   * (`lodStellar.ts`), o MESMO símbolo que dizia onde o disco artístico
+   * do Sol morria — então mexer no LOD do Sol apagaria esta camada de
+   * graça. Agora ele vem de `escala.ts`, CONGELADO em 0,05 pc com a
+   * âncora escrita (10.313 UA; Plutão, o corpo mais distante do
+   * retrato, orbita a 35,4). O que a janela do LOD (`LOD_SOL.entrega`)
+   * ainda deve a este corte é UMA igualdade, e ela virou obrigação de
+   * teste: o ganho do Sol-ponto tem de chegar a 0 EXATAMENTE onde a
+   * camada some, senão o Sol apagaria aceso no meio da hélice. A
+   * separação é de RESPONSABILIDADE, não de valor.
    */
   update(dHomePc: number, screenH: number, camPos: THREE.Vector3) {
-    this.points.visible = this.ligado && dHomePc < DEEP_LIMIAR_PC;
+    this.points.visible = this.ligado && dHomePc < LIMIAR_SISTEMA_SOLAR_PC;
     const u = this.material.uniforms;
     if (!this.camAnterior.equals(camPos)) {
       this.camAnterior.copy(camPos);

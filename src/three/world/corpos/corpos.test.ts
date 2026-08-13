@@ -12,14 +12,8 @@ import { describe, expect, it } from 'vitest';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
-import {
-  DEEP_LIMIAR_PC,
-  DISC_VISIBLE_MIN,
-  deepDiscFade,
-  isDiscGroupVisible,
-  psfPointSizePx,
-  solWorldFade,
-} from '../lodStellar';
+import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
+import { deepPointGain, psfPointSizePx, sunStarGain } from '../lodStellar';
 import { PONTO_ZERO_SOL_PC, magDoVertice } from '../planetas/planetas';
 import { cessaoAlvo } from './terra';
 import {
@@ -147,14 +141,16 @@ describe('o contrato do registro (F0)', () => {
   });
 });
 
-describe('Sol-ator × corpo resolvido: impossível POR CONSTRUÇÃO (D1)', () => {
-  it('abaixo de 0,02 pc o disco artístico está dissolvido e o grupo dele some', () => {
-    // primeira metade da proteção: onde um corpo resolvido PODE ter
-    // pixels (a câmera perto), o disco de 2.269 UA nem é submetido
-    expect(DISC_VISIBLE_MIN).toBe(0.02);
+describe('Sol-ator × corpo resolvido: o conflito que a F3 dissolveu (D1)', () => {
+  it('não há mais Sol-ator: dentro do sistema solar quem desenha o Sol é o PONTO', () => {
+    // A F0 tinha de PROVAR que o disco de 2.269 UA e um corpo resolvido
+    // nunca dividiam quadro, porque os dois eram desenháveis. A F3
+    // apagou o disco: onde um corpo resolvido pode ter pixels, o Sol é
+    // ou o próprio corpo (raio físico, régua do palco) ou o ponto
+    // fotométrico — nunca uma esfera de 4.125 UA por cima.
     for (const d of [0.02, 0.015, 0.005, 1e-4]) {
-      expect(deepDiscFade(d), `deepDiscFade(${d})`).toBe(0);
-      expect(isDiscGroupVisible(solWorldFade(d)), `grupo em ${d} pc`).toBe(false);
+      expect(Object.is(deepPointGain(d), 1), `ponto em ${d} pc`).toBe(true);
+      expect(Object.is(sunStarGain(d), 0), `clarão em ${d} pc`).toBe(true);
     }
   });
 
@@ -166,12 +162,13 @@ describe('Sol-ator × corpo resolvido: impossível POR CONSTRUÇÃO (D1)', () =>
     expect(px).toBeLessThan(0.25);
   });
 
-  it('na faixa 0,02–0,05 pc a câmera está MIL vezes mais longe: ≤ ~2e-4 px', () => {
-    // segunda metade: com o disco visível (d ≥ 0,02 pc do Sol) a câmera
-    // está a ≥ 0,02 pc = 4.125 UA da origem, e todo corpo do retrato
-    // orbita a ≤ 40 UA (Plutão, o mais distante, a 35,4 — planetas.ts).
-    // O corpo mais largo fica então a ≥ 4.085 UA da câmera:
-    const bordaUA = DISC_VISIBLE_MIN / AU_PARA_PC; // 0,02 pc = 4.125,3 UA
+  it('na janela de entrega a câmera está MIL vezes mais longe: ≤ ~2e-4 px', () => {
+    // a mesma conta continua valendo, agora sobre a janela de ENTREGA
+    // ponto↔clarão: entrando nela (d ≥ 0,02 pc do Sol) a câmera está a
+    // ≥ 4.125 UA da origem, e todo corpo do retrato orbita a ≤ 40 UA
+    // (Plutão, o mais distante, a 35,4 — planetas.ts). O corpo mais
+    // largo fica então a ≥ 4.085 UA da câmera:
+    const bordaUA = 0.02 / AU_PARA_PC; // 0,02 pc = 4.125,3 UA
     expect(bordaUA).toBeCloseTo(4125.3, 1);
     const dMinUA = bordaUA - 40;
     const px = diametroAparentePx(RAIO_JUPITER_PC, dMinUA * AU_PARA_PC, SCREEN_H, FOV_DEG);
@@ -179,7 +176,7 @@ describe('Sol-ator × corpo resolvido: impossível POR CONSTRUÇÃO (D1)', () =>
     // e na borda de fora do crossfade (0,05 pc) é menor ainda
     const px005 = diametroAparentePx(
       RAIO_JUPITER_PC,
-      DEEP_LIMIAR_PC - 40 * AU_PARA_PC,
+      LIMIAR_SISTEMA_SOLAR_PC - 40 * AU_PARA_PC,
       SCREEN_H,
       FOV_DEG
     );
@@ -257,42 +254,33 @@ describe('a lei do palco julgando o Sol (F2)', () => {
     expect(gateBinario(false, px(5.0))).toBe(false); // …e não liga sozinho
   });
 
-  it('A PROVA DA FASE: corpo real e disco artístico nunca coexistem', () => {
-    // o disco artístico só existe acima de `DISC_VISIBLE_MIN` do domínio
-    // profundo — 0,02 pc = 4.125 UA, onde `deepDiscFade` deixa de ser 0
+  it('A PROVA DA F2, mantida como registro: as duas faixas nunca se cruzavam', () => {
+    // o disco artístico só existia acima de 0,02 pc = 4.125 UA, e o
+    // corpo real só arma abaixo de 3,60 UA — 1.147× de separação. Foi
+    // por causa desta distância que o gate do palco pôde entrar na F2
+    // sem custar um pixel; a F3 apagou a faixa de cima e o gate virou o
+    // único juiz do grupo do Sol.
     const bordaDoDiscoUA = 0.02 / AU_PARA_PC;
     const armaUA = distanciaParaPx(RAIO_SOL_FISICO_PC, LIMIAR_DO_GATE_PX, H_HARNESS) / AU_PARA_PC;
+    expect(armaUA).toBeCloseTo(3.6, 1);
     expect(bordaDoDiscoUA / armaUA).toBeGreaterThan(1000);
-    // dito nas duas direções, que é o que o gate faz de verdade:
-    // onde o corpo real arma, o disco artístico está DISSOLVIDO…
-    expect(deepDiscFade(armaUA * AU_PARA_PC)).toBe(0);
-    expect(isDiscGroupVisible(solWorldFade(armaUA * AU_PARA_PC))).toBe(false);
-    // …e onde o disco artístico desenha, o corpo real é sub-pixel
+    // e onde o disco artístico desenhava, o corpo real é sub-pixel
     expect(
       diametroAparentePx(RAIO_SOL_FISICO_PC, 0.02, H_HARNESS, FOV_DEG)
     ).toBeLessThan(0.01);
   });
 
-  it('com o raio ARTÍSTICO o gate é INERTE — nunca é ele quem decide', () => {
-    // ele só desarmaria além de 8,50 pc (entrada) / 17,0 pc (saída), e o
-    // corte duro de custo já apaga o grupo em d ≈ 0,3249 pc: 26× antes.
-    const entraPc = distanciaParaPx(RAIO_SOL_ARTISTICO_PC, LIMIAR_DO_GATE_PX, H_HARNESS);
+  it('o raio ARTÍSTICO saiu da cena: nenhum caminho de runtime o constrói', () => {
+    // com ele, este gate era INERTE — só desarmaria além de 8,50 pc,
+    // 26× depois do corte duro de custo que já apagava o grupo. Era essa
+    // inércia que pagava a F2. Hoje o número existe só como lápide, e a
+    // guarda que importa é que ninguém o use para desenhar.
+    const entraPc = distanciaParaPx(RAIO_ARTISTICO_DO_SOL_PC, LIMIAR_DO_GATE_PX, H_HARNESS);
     expect(entraPc).toBeCloseTo(8.5, 1);
-    // resolvendo o corte duro na rampa do disco: `world > 0.02`
-    let corteDuroPc = 0;
-    for (let d = 0.16; d < 0.4; d += 1e-6) {
-      if (!isDiscGroupVisible(solWorldFade(d))) { corteDuroPc = d; break; }
-    }
-    expect(corteDuroPc).toBeCloseTo(0.3249, 3);
-    expect(entraPc / corteDuroPc).toBeGreaterThan(26);
-    // varredura: em toda a faixa em que o grupo do Sol artístico pode
-    // estar visível, o gate está ARMADO — logo o `&&` do Director não
-    // muda um único quadro do filme
-    for (let d = 1e-4; d < 0.4; d *= 1.05) {
-      if (!isDiscGroupVisible(solWorldFade(d))) continue;
-      const px = diametroAparentePx(RAIO_SOL_ARTISTICO_PC, d, H_HARNESS, FOV_DEG);
-      expect(gateBinario(false, px), `d=${d}`).toBe(true);
-    }
+    expect(RAIO_SOL_ARTISTICO_PC).toBe(RAIO_ARTISTICO_DO_SOL_PC);
+    const stellarBody = readFileSync(new URL('../stellarBody.ts', import.meta.url), 'utf8');
+    expect(stellarBody).toContain('radiusPc: RAIO_DO_SOL_NA_CENA,');
+    expect(stellarBody).not.toMatch(/radiusPc:\s*(WORLD\.sunRadius|0\.011)/);
   });
 });
 
@@ -315,12 +303,17 @@ describe('a fiação do Sol no Director (F2)', () => {
     );
   });
 
-  it('SABOTAGEM: o palco recusa o Sol INFLADO — ali só entra superfície real', () => {
-    // sem esta guarda o near ganharia uma superfície a 0,011 pc da origem
-    // e o plano de corte mudaria em toda vista com a câmera além de 1,4 pc
-    expect(DIRECTOR).toContain("this.solRaioPc !== WORLD.sunRadius &&");
+  it('o palco recebe o Sol com o raio FÍSICO, e só quando ele está em quadro', () => {
+    // a guarda `solRaioPc !== WORLD.sunRadius` da F2 saiu na F3 porque
+    // saiu o caso que ela recusava (o corpo inflado). A doutrina do
+    // palco — ali só entra superfície real — passou a valer por
+    // construção: só existe um raio, e ele é o de verdade.
+    expect(DIRECTOR).toContain('private readonly solRaioPc = RAIO_DO_SOL_NA_CENA;');
+    expect(DIRECTOR).toContain("if (this.solArmado && !this.hide.has('nosun')) {");
     expect(DIRECTOR).toContain("this.palco.registrar('sun', this.solRaioPc, ORIGEM)");
     expect(DIRECTOR).toContain("this.palco.remover('sun')");
+    // e a porta que escolhia o raio morreu junto
+    expect(DIRECTOR).not.toContain("this.debug.has('solreal')");
   });
 
   it('o registro do Sol acontece ANTES de o near ler o palco', () => {
@@ -340,10 +333,8 @@ describe('a fiação do Sol no Director (F2)', () => {
     expect(DIRECTOR).toContain('cessaoAlvo(');
     expect(DIRECTOR).toContain('solCorpoEmQuadro');
     expect(DIRECTOR).toContain('magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1)');
-    // a mesma guarda do palco: corpo inflado nunca é "corpo em quadro"
-    expect(DIRECTOR).toContain(
-      "this.solRaioPc !== WORLD.sunRadius && this.sun.group.visible;"
-    );
+    // e "corpo em quadro" é agora só a decisão do gate do palco
+    expect(DIRECTOR).toContain('const solCorpoEmQuadro = this.sun.group.visible;');
   });
 
   it('a 1 UA o disco AINDA NÃO domina o halo: cessão 0 EXATA', () => {

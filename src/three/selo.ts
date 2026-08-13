@@ -29,9 +29,8 @@
 //
 // Módulo PURO: sem window, sem three, sem React.
 // ============================================================
-import { deepDiscFade, deepPointGain } from './world/lodStellar';
-import { RAIO_SOL_PC, acusacaoDaEscala } from './escala';
-import { WORLD } from './config';
+import { deepPointGain, sunStarGain } from './world/lodStellar';
+import { acusacaoDaEscala } from './escala';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
@@ -249,30 +248,20 @@ const neutra = (chave: string, rotulo: string): CaminhoDoSelo => ({
   desvia: () => false,
 });
 
-/**
- * A PORTA DE ESCALA (F1 da onda do Sol real) — o primeiro caminho da
- * casa que MUDA A IMAGEM e ainda assim não é desvio de brilho.
- *
- * `?solreal=1` constrói o Sol com o raio FÍSICO (2,2567e-8 pc) em vez do
- * artístico. Ela não toca uma linha de fotometria: nenhuma exposição,
- * nenhum tom, nenhuma camada, nenhum ganho. Declará-la no eixo BRILHO
- * seria acusar de assistir a luz quem não assistiu — o erro simétrico
- * de calar. Por isso `eixo: 'nenhum'` e `desvia: () => false`: ela é
- * conhecida (não cai no ramo "porta não declarada") e não suja o eixo
- * errado.
- *
- * E o eixo que ela REALMENTE move está tratado em `estadoDoSelo`: com a
- * porta ligada, o Sol sai da lista de culpados da escala, porque nessa
- * vista ele não deve nada. Sem isso o selo mentiria ao contrário —
- * acusando quem já pagou.
+/*
+ * LÁPIDE DA PORTA DE ESCALA. `PORTA_SOL_REAL` (`?solreal=1`) viveu aqui
+ * da F1 à F3 da onda do Sol real, e era o primeiro caminho da casa que
+ * MUDAVA A IMAGEM sem ser desvio de brilho: ela construía o Sol com o
+ * raio FÍSICO em vez do artístico, sem tocar uma linha de fotometria
+ * (`eixo: 'nenhum'`, `desvia: () => false`). O que ela realmente movia
+ * era o eixo ESCALA — com a porta ligada, o Sol saía da lista de
+ * culpados do cadastro, porque naquela vista ele não devia nada.
+ * A F3 tornou o raio físico o PADRÃO. O Sol saiu da lista de culpados de
+ * vez, e uma porta que só pode estar ligada não é porta: morreu com o
+ * caminho que ela abria. O que ela ensinou fica no cadastro
+ * (`escala.ts`, `culpadosDaEscala` continua recebendo o raio da cena
+ * como parâmetro em vez de um `1` digitado).
  */
-const PORTA_SOL_REAL: CaminhoDoSelo = {
-  chave: 'solreal',
-  eixo: 'nenhum',
-  rotulo: 'Sol em tamanho FÍSICO (porta de aferição da F1)',
-  volta: 'nenhuma',
-  desvia: () => false,
-};
 
 /** camada desligada: o que ela emitia deixou de entrar na conta da luz */
 const camada = (flag: string, volta: Volta = 'vivo'): CaminhoDoSelo => ({
@@ -297,8 +286,9 @@ const camada = (flag: string, volta: Volta = 'vivo'): CaminhoDoSelo => ({
  * abaixo já modela ao olhar o latch VIVO em vez da porta.
  */
 export const REGISTRO: readonly CaminhoDoSelo[] = [
-  // --- escala (F1) --------------------------------------------------
-  PORTA_SOL_REAL,
+  // (a linha de escala saiu na F3 junto com a porta `?solreal=1` — ver
+  // a lápide acima; o eixo ESCALA continua saindo da GEOMETRIA, que é
+  // de onde ele sempre deveria ter saído.)
   // --- gosto do visitante, ao vivo ---------------------------------
   /**
    * A GRADAÇÃO POR CONTEXTO (F6) — a linha que o desenho mandou existir
@@ -568,7 +558,7 @@ export interface VereditoDoSelo {
  * Distância envenenada (NaN) devolve 'fora', pelo mesmo motivo.
  */
 export function escalaDaVista(distanciaPc: number): 'real' | 'fora' {
-  return deepPointGain(distanciaPc) >= deepDiscFade(distanciaPc) ? 'real' : 'fora';
+  return deepPointGain(distanciaPc) >= sunStarGain(distanciaPc) ? 'real' : 'fora';
 }
 
 /**
@@ -609,18 +599,16 @@ export function estadoDoSelo(e: EstadoDaVista): VereditoDoSelo {
     if (!PORTAS_CONHECIDAS.has(chave)) desvios.push(desconhecida(chave));
   }
   const escala = escalaDaVista(e.distanciaPc);
-  // O RAIO VIVO DO SOL sai das PRÓPRIAS PORTAS — sem campo novo em
-  // `EstadoDaVista` e sem plumbing pelo App: a URL já é a fonte de
-  // verdade do selo (é o que o cabeçalho deste arquivo promete), e
-  // `?solreal=1` está nela. Com a porta ligada o Sol tem raio físico e
-  // sai da acusação; sem ela, o cadastro fala pelo padrão.
-  const raioDoSol = e.portas.includes('solreal') ? RAIO_SOL_PC : WORLD.sunRadius;
+  // O RAIO DO SOL saía das PRÓPRIAS PORTAS até a F3, porque `?solreal=1`
+  // podia trocá-lo por vista. Agora ele é um só e o cadastro fala
+  // sozinho pelo padrão — `acusacaoDaEscala()` sem argumento. O que
+  // sobra na acusação é Sagittarius A✱; o Sol pagou.
   return {
     escala,
     brilho: desvios.length === 0 ? 'real' : 'assistido',
     desvios,
     // a acusação só sai com o desvio: acusar numa vista honesta seria o
     // erro simétrico ao de calar numa vista mentirosa
-    culpados: escala === 'fora' ? acusacaoDaEscala(raioDoSol) : [],
+    culpados: escala === 'fora' ? acusacaoDaEscala() : [],
   };
 }

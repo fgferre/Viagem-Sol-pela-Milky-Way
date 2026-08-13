@@ -15,7 +15,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { DEEP_LIMIAR_PC } from '../world/lodStellar';
+import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import {
   DEEP_NEAR_MIN_PC,
   TONE_MAPPINGS,
@@ -67,14 +67,14 @@ const PROFUNDAS: readonly (readonly [string, number])[] = [
 
 /** 0,05 → 400.000 pc: o limiar, a faixa do filme e o além dela. */
 const ACIMA: number[] = [];
-for (let i = 0; i <= 2000; i++) ACIMA.push(DEEP_LIMIAR_PC + i * 0.0001);
+for (let i = 0; i <= 2000; i++) ACIMA.push(LIMIAR_SISTEMA_SOLAR_PC + i * 0.0001);
 for (let i = 1; i <= 1000; i++) ACIMA.push(i * 0.05);
 for (let i = 1; i <= 1000; i++) ACIMA.push(i * 400);
 
 describe('near/far — acima do limiar o par é IDÊNTICO ao de antes (D5)', () => {
   it('nas 15 vistas do gate visual que ficam fora do domínio profundo', () => {
     for (const [nome, d] of VISTAS) {
-      expect(d, nome).toBeGreaterThanOrEqual(DEEP_LIMIAR_PC);
+      expect(d, nome).toBeGreaterThanOrEqual(LIMIAR_SISTEMA_SOLAR_PC);
       expect(Object.is(nearPlanePc(d), nearAntigo(d)), nome).toBe(true);
       expect(Object.is(farPlanePc(d), farAntigo(d)), nome).toBe(true);
     }
@@ -99,7 +99,7 @@ describe('near/far — acima do limiar o par é IDÊNTICO ao de antes (D5)', () 
   it('o piso de 0,001 pc (206,3 UA) governa TODA a faixa do filme até 0,25 pc', () => {
     // é o que faz as vistas do Sol (0,1 / 0,25 / 0,32 / 0,5) e o piso do
     // filme saírem com o mesmo near de sempre
-    expect(nearPlanePc(DEEP_LIMIAR_PC)).toBe(0.001);
+    expect(nearPlanePc(LIMIAR_SISTEMA_SOLAR_PC)).toBe(0.001);
     expect(nearPlanePc(0.1)).toBe(0.001);
     expect(nearPlanePc(0.25)).toBe(0.001);
     expect(nearPlanePc(0.32)).toBe(0.00128);
@@ -116,7 +116,7 @@ describe('near — abaixo do limiar o piso SAI (o que a D5 comprou)', () => {
   it('nas três vistas do domínio profundo o near vira UA de verdade', () => {
     const UA_POR_PC = 206264.80624548031;
     for (const [nome, d] of PROFUNDAS) {
-      expect(d, nome).toBeLessThan(DEEP_LIMIAR_PC);
+      expect(d, nome).toBeLessThan(LIMIAR_SISTEMA_SOLAR_PC);
       expect(nearPlanePc(d), nome).toBe(d * 0.004);
       // e o antigo grampeava tudo no mesmo 0,001 pc = 206,3 UA
       expect(nearAntigo(d), nome).toBe(0.001);
@@ -164,9 +164,9 @@ describe('near — abaixo do limiar o piso SAI (o que a D5 comprou)', () => {
     // e a Onda 6 a matou ao pôr corpos resolvidos no domínio profundo;
     // desde então é CONTA, no teste seguinte. O que o degrau custa é
     // uma matriz de projeção nova.
-    expect(nearPlanePc(DEEP_LIMIAR_PC)).toBe(0.001);
-    expect(nearPlanePc(DEEP_LIMIAR_PC - 1e-15)).toBe((DEEP_LIMIAR_PC - 1e-15) * 0.004);
-    expect(nearPlanePc(DEEP_LIMIAR_PC) / nearPlanePc(DEEP_LIMIAR_PC - 1e-15)).toBeCloseTo(5, 6);
+    expect(nearPlanePc(LIMIAR_SISTEMA_SOLAR_PC)).toBe(0.001);
+    expect(nearPlanePc(LIMIAR_SISTEMA_SOLAR_PC - 1e-15)).toBe((LIMIAR_SISTEMA_SOLAR_PC - 1e-15) * 0.004);
+    expect(nearPlanePc(LIMIAR_SISTEMA_SOLAR_PC) / nearPlanePc(LIMIAR_SISTEMA_SOLAR_PC - 1e-15)).toBeCloseTo(5, 6);
   });
 
   it('a CONTA que substituiu a premissa: na fronteira, todo corpo está longe do degrau', () => {
@@ -176,7 +176,7 @@ describe('near — abaixo do limiar o piso SAI (o que a D5 comprou)', () => {
     // ≥ 10.273 UA da câmera — 49× além dos 206 UA que o degrau toca.
     // O disco artístico do Sol (2.269 UA de raio) fica a ≥ 8.044 UA.
     const UA_POR_PC = 206264.80624548031;
-    const fronteiraUA = DEEP_LIMIAR_PC * UA_POR_PC;
+    const fronteiraUA = LIMIAR_SISTEMA_SOLAR_PC * UA_POR_PC;
     expect(fronteiraUA).toBeCloseTo(10313.2, 1);
     expect(fronteiraUA - 40).toBeGreaterThan(49 * 206.3);
     expect(fronteiraUA - 2269).toBeGreaterThan(8000);
@@ -207,7 +207,7 @@ describe('near — abaixo do limiar o piso SAI (o que a D5 comprou)', () => {
 describe('Onda 6, F0 — pino de neutralidade: sem corpo, o par é o vigente', () => {
   /** A lei VIGENTE (Onda 4), verbatim das linhas de antes desta onda. */
   const nearVigente = (d: number) =>
-    d >= DEEP_LIMIAR_PC
+    d >= LIMIAR_SISTEMA_SOLAR_PC
       ? THREE.MathUtils.clamp(d * 0.004, 0.001, 40)
       : Math.max(d * 0.004, DEEP_NEAR_MIN_PC);
 
