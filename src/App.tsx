@@ -914,14 +914,23 @@ export default function App() {
               onEpoca={() => directorRef.current?.voltarAEpoca()}
             />
           )}
-          {/* A DICA DESCREVE O GESTO REAL (Onda 7). "girar em torno do
-              alvo" era promessa de um eixo que não existia: o arrasto
-              tinha um eixo só e ele subia em LATITUDE. Agora são dois, e
-              a frase diz qual é qual — a horizontal dá a volta, a
-              vertical sobe e desce. */}
+          {/* A DICA DESCREVE OS GESTOS REAIS (Onda 7). "girar em torno
+              do alvo" era promessa de um eixo que não existia: o arrasto
+              tinha um eixo só e ele subia em LATITUDE. Agora são dois —
+              a horizontal gira em torno do alvo, a vertical sobe e desce
+              — e a roda move a escada em degraus.
+
+              O COMPRIMENTO É ORÇAMENTO, não gosto: a dica mora na mesma
+              coluna da máquina do tempo, então cada linha que ela ganha
+              empurra a barra para cima e come o retângulo útil (é o juiz
+              de a11y quem cobra, `base declarada ≥ medida`). MEDIDO em
+              `ui = 1,4` e 900 px de largura — o canto mais apertado da
+              faixa declarada —, a quebra da 2ª para a 3ª linha acontece
+              entre 68 e 70 caracteres, e a 3ª linha estoura a base
+              declarada (0,328 contra 0,310). Daí "clique — enquadrar" e
+              não "clique num nome — enquadrar": 68 é o que cabe. */}
           <div className="free-hint">
-            arraste — dar a volta e subir/descer · roda — degraus · clique num
-            nome — enquadrar
+            arraste — girar e subir/descer · roda — degraus · clique — enquadrar
           </div>
         </div>
       )}
