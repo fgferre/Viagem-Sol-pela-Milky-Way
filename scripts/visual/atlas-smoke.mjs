@@ -510,6 +510,110 @@ try {
       + ` url '${depoisDoTier.url}')`
   );
 
+
+  // ---- 15: A RODA E A PINÇA MOVEM A ESCADA (Onda 7) ----------------
+  // A bancada de `rodaDaEscada.test.ts` prova a tradução de pixels em
+  // degrau; o que ela NÃO pode provar é que o evento do navegador chega
+  // — que o listener está no elemento certo, que a fase o aceita e que
+  // o degrau realmente muda. Era exatamente esse o defeito original: a
+  // lógica do voo livre existia e o Atlas nunca a via.
+  await sessao.ir('atlas=1&q=cinema&shot=1');
+  const degrauVivo = () => sessao.js('window.__director.escadaViva.degrau');
+  const rodar = (deltaY, ctrlKey = false) =>
+    sessao.js(`(() => document.querySelector('canvas').dispatchEvent(
+      new WheelEvent('wheel', { deltaY: ${deltaY}, deltaMode: 0,
+        ctrlKey: ${ctrlKey}, bubbles: true, cancelable: true })))()`);
+  const descer = [];
+  for (let i = 0; i < 4; i++) {
+    await rodar(-120);
+    // a trava de 300 ms é do produto: sem esperar por ela o gesto
+    // seguinte é engolido de propósito
+    await sleep(400);
+    descer.push(await degrauVivo());
+  }
+  conferir(
+    descer.join(' → ') === 'orbita → corpo → lua → lua',
+    `a roda DESCE a escada e para no piso: sistema → ${descer.join(' → ')}`
+  );
+  await rodar(120);
+  await sleep(400);
+  const subiu = await degrauVivo();
+  conferir(subiu === 'corpo', `e SOBE de volta um degrau por vez (lua → ${subiu})`);
+  // a PINÇA do trackpad é o mesmo `wheel` com `ctrlKey`, em eventos
+  // pequenos que somam até o limiar
+  await rodar(-30, true);
+  await rodar(-30, true);
+  await sleep(400);
+  const pincou = await degrauVivo();
+  conferir(pincou === 'lua', `a pinça (ctrlKey) faz o mesmo (corpo → ${pincou})`);
+  // e o gesto NÃO rola a página nem deixa o navegador dar zoom: o
+  // `preventDefault` só é aceito porque o listener é `passive: false`
+  const engoliu = await sessao.js(`(() => {
+    const e = new WheelEvent('wheel', { deltaY: -120, deltaMode: 0,
+      bubbles: true, cancelable: true });
+    document.querySelector('canvas').dispatchEvent(e);
+    return String(e.defaultPrevented);
+  })()`);
+  conferir(engoliu === 'true', `e a rolagem da página morre no canvas (defaultPrevented=${engoliu})`);
+
+  // ---- 16: O POLO DO CORPO NO ALTO (Onda 7) ------------------------
+  // O `up` era a constante do polo da eclíptica em toda parte. No degrau
+  // "corpo" ele passa a ser o EIXO DO PLANETA — e os dois são coisas
+  // bem diferentes: 23,4° de diferença, que é a torção que o visitante
+  // via no globo.
+  await sessao.ir('atlas=1&foco=terra&ver=corpo&q=cinema&shot=1');
+  await sessao.assentar();
+  const noCorpo = JSON.parse(await sessao.js(`JSON.stringify({
+    degrau: window.__director.escadaViva.degrau,
+    up: window.__director.engine.camera.up.toArray() })`));
+  // o eixo da Terra em EQUATORIAL J2000 é o próprio polo celeste: (0,0,1)
+  // a menos de precessão. O polo da ECLÍPTICA, no mesmo frame, é
+  // (0, −0,3977, 0,9175) — se o `up` fosse ele, o y valeria −0,4.
+  const desvioDoEixo = Math.acos(Math.min(1, Math.abs(noCorpo.up[2]))) * (180 / Math.PI);
+  conferir(
+    noCorpo.degrau === 'corpo' && desvioDoEixo < 1 && Math.abs(noCorpo.up[1]) < 0.05,
+    `no degrau "corpo" o alto da tela é o EIXO DA TERRA, a ${desvioDoEixo.toFixed(2)}° do`
+      + ` polo celeste e não os 23,4° da eclíptica (up=${noCorpo.up.map((v) => v.toFixed(4))})`
+  );
+
+  // ---- 17: O ALVO VIVO com o relógio andando (Onda 7) --------------
+  // O enquadramento copiava a posição UMA VEZ. Aqui o relógio vai à
+  // taxa mais rápida da escada e se mede quanto o ALVO andou contra o
+  // tamanho do enquadramento: se ele não fosse vivo, o corpo teria
+  // saído de quadro por milhares de vezes o próprio raio.
+  const leitura = () => sessao.js(`(() => {
+    const d = window.__director;
+    return JSON.stringify({
+      alvo: d.atlas.alvo.toArray(),
+      dist: d.engine.camera.position.distanceTo(d.atlas.alvo),
+      taxa: d.tempo.taxa });
+  })()`);
+  const antesDoRelogio = JSON.parse(await leitura());
+  for (let i = 0; i < 12; i++) {
+    if (/115/.test(JSON.parse(await sessao.js('JSON.stringify(window.__director.tempo)')).taxa)) break;
+    await sessao.js('window.__director.ciclarDegrau()');
+  }
+  await sessao.js('window.__director.andarNoTempo(1)');
+  await sleep(2000);
+  await sessao.js('window.__director.andarNoTempo(0)');
+  const depoisDoRelogio = JSON.parse(await leitura());
+  const andou = Math.hypot(
+    depoisDoRelogio.alvo[0] - antesDoRelogio.alvo[0],
+    depoisDoRelogio.alvo[1] - antesDoRelogio.alvo[1],
+    depoisDoRelogio.alvo[2] - antesDoRelogio.alvo[2]
+  );
+  const emQuadros = andou / depoisDoRelogio.dist;
+  conferir(
+    emQuadros > 100,
+    `a 115,7 dias/s o alvo andou ${(andou / 4.84813681e-6).toFixed(2)} UA em 2 s —`
+      + ` ${emQuadros.toFixed(0)}× o raio do enquadramento`
+  );
+  conferir(
+    Math.abs(depoisDoRelogio.dist - antesDoRelogio.dist) / antesDoRelogio.dist < 1e-6,
+    `...e a câmera foi junto: a distância de enquadramento é a MESMA`
+      + ` (${antesDoRelogio.dist.toExponential(6)} → ${depoisDoRelogio.dist.toExponential(6)} pc)`
+  );
+
   await sessao.reduzirMovimento();
   await sessao.ir('t=100&q=cinema');
   await sessao.js("[...document.querySelectorAll('.controls-bar button')]"
