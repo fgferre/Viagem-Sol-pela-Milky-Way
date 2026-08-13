@@ -931,6 +931,134 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
   });
 });
 
+// ============================================================
+// ONDA 7 — O ALVO VIVO. `focar` copiava a posição UMA VEZ e a câmera
+// perseguia um ponto morto: com a máquina do tempo andando (116 dias de
+// céu por segundo) a Terra saía do quadro em ~1 s. O religador é
+// CORREÇÃO, não gesto — e a pose de PARTIDA da rampa tem de virar viva
+// junto com o destino, senão a transição é reprojetada num referencial
+// que se moveu.
+// ============================================================
+describe('o alvo vivo — recompor sem quebrar o que o visitante estava fazendo', () => {
+  const cam = () => new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+  const direcaoDa = (c: THREE.PerspectiveCamera, rig: AtlasRig) =>
+    c.position.clone().sub(rig.alvo).normalize();
+
+  it('o arrasto do visitante SOBREVIVE — `focar` é que o zera', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    const casa = orbitaMaisExterna();
+    rig.focarNoSistema();
+    rig.addOrbitDelta(300, 120);
+    rig.apply(camera);
+    const antes = direcaoDa(camera, rig);
+    // recompor o MESMO enquadramento não pode mover um bit: o eixo solar
+    // é o mesmo e a órbita do dedo continua onde estava
+    rig.recompor(new THREE.Vector3(0, 0, 0), casa.raio, casa.posicao);
+    rig.apply(camera);
+    expect(direcaoDa(camera, rig).distanceTo(antes)).toBeLessThan(1e-12);
+    // ...e o GESTO, esse sim, devolve o alvo ao pino de 30°
+    rig.focar(new THREE.Vector3(0, 0, 0), casa.raio, casa.posicao);
+    rig.apply(camera);
+    expect(direcaoDa(camera, rig).distanceTo(antes)).toBeGreaterThan(1e-3);
+  });
+
+  it('recompor não reinicia a rampa entre degraus', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    const a = new THREE.Vector3(1e-6, 0, 0);
+    const b = new THREE.Vector3(1e-6, 1e-8, 0);
+    rig.focar(a, 1e-8);
+    rig.apply(camera);
+    rig.focar(b, 1e-9, b, { rampa: true });
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S / 2);
+    expect(rig.animando).toBe(true);
+    rig.recompor(b, 1e-9, b);
+    expect(rig.animando).toBe(true);
+    // a segunda metade ainda termina a rampa: o relógio dela não voltou
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S / 2);
+    expect(rig.animando).toBe(false);
+  });
+
+  it('com a rampa VIVA, o religador não dá guinada — a partida anda junto', () => {
+    // as escalas são as REAIS da troca corpo→lua, que é onde a razão
+    // aperta: a Lua está a 1,25e-8 pc do enquadramento da Terra e a
+    // Terra anda 1,6e-7 pc por quadro a 116 dias de céu por segundo —
+    // 13× mais do que a distância que a rampa está interpolando.
+    const UA_PC = 4.84813681e-6;
+    const RAIO_TERRA_PC = 2.0676e-10; // 6.378,1 km
+    const RAIO_LUA_PC = 5.6297e-11; // 1.737,4 km
+    const LUA_PC = 1.2464e-8; // 384.400 km
+    const terra = new THREE.Vector3(UA_PC, 0, 0);
+    const lua = terra.clone().add(new THREE.Vector3(0, LUA_PC, 0));
+    const passo = new THREE.Vector3(0, 0, 1.6e-7); // um quadro de relógio
+
+    // CONTROLE: a mesma recomposição com a rampa PARADA. O que ela mexe
+    // é só o que é real — o eixo solar do alvo girou 1,9° com o passo.
+    const camControle = cam();
+    const controle = new AtlasRig();
+    controle.focar(lua, RAIO_LUA_PC, lua, { pai: terra });
+    controle.apply(camControle);
+    const antesControle = direcaoDa(camControle, controle);
+    controle.recompor(
+      lua.clone().add(passo),
+      RAIO_LUA_PC,
+      lua.clone().add(passo),
+      { pai: terra.clone().add(passo) }
+    );
+    controle.apply(camControle);
+    const puro = antesControle.angleTo(direcaoDa(camControle, controle));
+    expect(puro).toBeGreaterThan(1e-3); // o controle mede alguma coisa
+
+    // O CASO: a mesma recomposição no meio da rampa corpo→lua
+    const camera = cam();
+    const rig = new AtlasRig();
+    rig.focar(terra, RAIO_TERRA_PC, terra);
+    rig.apply(camera);
+    rig.focar(lua, RAIO_LUA_PC, lua, { rampa: true, pai: terra });
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S / 2);
+    const antes = direcaoDa(camera, rig);
+    rig.recompor(lua.clone().add(passo), RAIO_LUA_PC, lua.clone().add(passo), {
+      pai: terra.clone().add(passo),
+    });
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0); // dt = 0: o mesmo ponto da rampa
+    const naRampa = antes.angleTo(direcaoDa(camera, rig));
+    // a rampa não AMPLIFICA a correção. Com a partida congelada, a
+    // direção `(posPartida − alvo)` seria reprojetada num alvo que
+    // andou 13× a própria distância e a câmera daria uma guinada de
+    // dezenas de graus; com ela transladada pelo mesmo delta, a rampa
+    // só vê a mudança do destino.
+    // A SEPARAÇÃO É MEDIDA, e é enorme: com a partida transladada pelo
+    // mesmo delta a câmera gira 1,87°; com ela congelada — a direção
+    // `(posPartida − alvo)` reprojetada num alvo que andou 13× a
+    // própria distância — gira 95,2°. A rampa vira teletransporte.
+    expect(THREE.MathUtils.radToDeg(naRampa)).toBeLessThan(5);
+    expect(THREE.MathUtils.radToDeg(naRampa)).toBeGreaterThan(0);
+  });
+
+  it('o Director religa o enquadramento quando o relógio anda, uma vez por instante', () => {
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    // o limite de frequência é o INSTANTE e não um teto em ms: a 116
+    // dias/s um teto de 10 Hz deixaria 29 milhões de km de Terra entre
+    // correções, contra um enquadramento de 25 mil km
+    expect(DIRECTOR).toContain('if (jdAgora !== this.jdDoEnquadre)');
+    expect(DIRECTOR).toContain('this.recomporAlvo();');
+    // e ele vem ANTES da escrita da câmera no mesmo tick
+    expect(DIRECTOR.indexOf('this.recomporAlvo();')).toBeLessThan(
+      DIRECTOR.indexOf('this.atlas.apply(cam,')
+    );
+    // o religador NÃO passa pelo caminho do gesto (que zera o arrasto,
+    // derruba a LUT do raymarch e reinicia a contagem da captura)
+    const corpo = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private recomporAlvo() {'),
+      DIRECTOR.indexOf('  subirDegrau()')
+    );
+    expect(corpo).toContain('this.atlas.recompor(');
+    expect(corpo).not.toContain('this.teletransportou()');
+    expect(corpo).not.toContain('this.atlas.focar(');
+  });
+});
+
 describe('a rampa entre degraus do rig (F2b/D7)', () => {
   const cam = () => new THREE.PerspectiveCamera(35, 1.6, 1e-9, 100);
 

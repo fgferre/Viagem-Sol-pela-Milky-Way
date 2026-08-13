@@ -401,6 +401,13 @@ export class Director {
    * MOSTRADO é este grampeado na janela da tabela (`get tempo`).
    */
   private jdPedido = EPOCA_JD_TDB;
+  /**
+   * O instante em que o enquadramento do Atlas foi composto pela última
+   * vez — o limite de frequência do religador (ver `recomporAlvo`).
+   * `NaN` nunca é igual a nada, então o primeiro quadro da fase sempre
+   * recompõe uma vez.
+   */
+  private jdDoEnquadre = Number.NaN;
   /** degrau na escada de taxas (`tempoDoAtlas`) */
   private degrau = 0;
   /** sentido do relógio: 0 é parado, e parado é como o Atlas abre */
@@ -1801,6 +1808,133 @@ export class Director {
   }
 
   /**
+   * A RECEITA DO ENQUADRAMENTO VIVO no instante pedido — alvo, raio,
+   * eixo, pai e polo do degrau em que a escada está AGORA (Onda 7).
+   *
+   * Ela existe para o RELIGADOR do relógio (`recomporAlvo`) e cita as
+   * mesmas cadeias dos métodos de foco, uma a uma; `null` quer dizer
+   * "nada a recompor": a estrela não anda com o relógio (o catálogo é
+   * fixo), e sem efeméride a Lua não tem posição para dar.
+   *
+   * A POSIÇÃO DE ÓRBITA SAI DA EFEMÉRIDE e não de `planetas.posicoes`,
+   * ao contrário do gesto de clique. Não é uma segunda fonte: é a MESMA
+   * (`posicaoHeliocentrica` + `eclipticaParaEquatorial × AU_PARA_PC`, a
+   * cadeia que a camada usa em `escreverInstante`), lida uma etapa
+   * antes. A camada é escrita DEPOIS da câmera dentro do mesmo tick, e
+   * ler o atributo dela aqui daria a posição do quadro ANTERIOR — um
+   * quadro de atraso que a 116 dias/s são 1,9 dias de céu, 4,8 milhões
+   * de km de Terra contra um enquadramento de 25 mil km. O quadro de
+   * atraso sozinho já tirava o alvo de quadro.
+   */
+  private enquadreVivo(): {
+    alvo: THREE.Vector3;
+    raio: number;
+    eixoDe: THREE.Vector3;
+    pai: THREE.Vector3 | null;
+    polo: THREE.Vector3 | null;
+  } | null {
+    const jd = grampearJd(this.jdPedido);
+    const paraPc = (p: { x: number; y: number; z: number }) => {
+      const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+      return new THREE.Vector3(
+        eq[0] * AU_PARA_PC,
+        eq[1] * AU_PARA_PC,
+        eq[2] * AU_PARA_PC
+      );
+    };
+    const { degrau } = this.escada;
+    if (degrau === 'estrela') return null;
+    if (degrau === 'lua') {
+      if (!this.efemeride) return null;
+      const lua = paraPc(this.efemeride.posicaoHeliocentrica('moon', jd));
+      return {
+        alvo: lua,
+        raio: RAIO_LUA_PC,
+        eixoDe: lua,
+        pai: paraPc(this.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd)),
+        polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id)?.clone() ?? null,
+      };
+    }
+    if (degrau === 'corpo') {
+      const id = this.focoCorpoId ?? LUAS_DO_SISTEMA[0].pai;
+      const centro = paraPc(posicaoDaTerraUA(jd, this.efemeride));
+      return {
+        alvo: centro,
+        raio: RAIO_EQ_TERRA_PC,
+        eixoDe: centro,
+        pai: null,
+        polo: this.poloDoCorpo(id)?.clone() ?? null,
+      };
+    }
+    if (degrau === 'orbita') {
+      const id = this.focoCorpoId;
+      if (!id) return null;
+      const pos = this.efemeride
+        ? paraPc(this.efemeride.posicaoHeliocentrica(id, jd))
+        : this.posicaoDesenhada(id);
+      if (!pos || pos.lengthSq() === 0) return null;
+      return { alvo: ORIGEM, raio: pos.length(), eixoDe: pos, pai: null, polo: null };
+    }
+    // sistema: a esfera é centrada no Sol e o raio é a órbita mais
+    // externa VIVA — o mesmo caminho de `focarNoSistema`
+    if (!this.efemeride) return null;
+    let raioUA = 0;
+    const externo = { x: 0, y: 0, z: 0 };
+    for (const c of CORPOS_DO_SISTEMA) {
+      if (c.id === 'sun') continue;
+      const p = this.efemeride.posicaoHeliocentrica(c.id, jd);
+      const r = Math.hypot(p.x, p.y, p.z);
+      if (r > raioUA) {
+        raioUA = r;
+        externo.x = p.x;
+        externo.y = p.y;
+        externo.z = p.z;
+      }
+    }
+    if (raioUA === 0) return null;
+    return {
+      alvo: ORIGEM,
+      raio: raioUA * AU_PARA_PC,
+      eixoDe: paraPc(externo),
+      pai: null,
+      polo: null,
+    };
+  }
+
+  /** a posição DESENHADA de um corpo (o retrato, quando não há fonte) */
+  private posicaoDesenhada(id: string): THREE.Vector3 | null {
+    const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
+    if (i < 0 || !this.planetas) return null;
+    const p = this.planetas.posicoes;
+    return new THREE.Vector3(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+  }
+
+  /**
+   * O RELIGADOR DO RELÓGIO (Onda 7): o enquadramento segue o corpo
+   * enquanto o tempo anda. Chamado do tick, e SÓ quando o instante do
+   * céu mudou de fato — com o relógio parado (o estado de nascimento e
+   * o de toda captura) ele nem é consultado.
+   *
+   * POR QUE NÃO HÁ TETO DE FREQUÊNCIA EM MILISSEGUNDOS, que era o
+   * primeiro reflexo: a 116 dias de céu por segundo, um teto de 10 Hz
+   * deixaria 11,6 dias entre correções — 29 milhões de km de Terra
+   * contra um enquadramento de 25 mil km, 1.100× o quadro. O alvo
+   * sairia de vista ENTRE as correções. O limite honesto é o do
+   * instante: uma recomposição por mudança de `jd`, ou seja no máximo
+   * uma por quadro, e zero quando o relógio está parado.
+   *
+   * Ele NÃO passa por `focar` nem por `teletransportou`: aquilo é
+   * gesto (zera o arrasto do visitante, derruba a LUT do raymarch,
+   * reinicia a contagem de estabilidade da captura) e isto é correção
+   * do mesmo enquadramento, sessenta vezes por segundo.
+   */
+  private recomporAlvo() {
+    const e = this.enquadreVivo();
+    if (!e) return;
+    this.atlas.recompor(e.alvo, e.raio, e.eixoDe, { pai: e.pai, polo: e.polo });
+  }
+
+  /**
    * A SUBIDA da escada (D7): Esc e o botão "sistema". Esc sobe UM
    * degrau — lua → corpo do pai → órbita → sistema; estrela → sistema.
    * Devolve se algum degrau foi subido (o App decide se a tecla foi
@@ -2502,6 +2636,19 @@ export class Director {
     // (o estado de nascimento, e o do filme inteiro) o método devolve
     // na primeira linha.
     this.andarORelogio(dt);
+
+    // ...e o ENQUADRAMENTO DO ATLAS segue o corpo no instante novo
+    // (Onda 7). Aqui, e não dentro do ramo da fase, porque tem de vir
+    // ANTES de qualquer leitura de posição — inclusive a da câmera, que
+    // é escrita logo abaixo. `jdDoEnquadre` é o limite de frequência:
+    // uma recomposição por instante de céu, zero com o relógio parado.
+    if (this.phase === 'atlas') {
+      const jdAgora = grampearJd(this.jdPedido);
+      if (jdAgora !== this.jdDoEnquadre) {
+        this.jdDoEnquadre = jdAgora;
+        this.recomporAlvo();
+      }
+    }
 
     if (this.phase === 'journey') {
       if (!this.freezeJourney) this.journeyT += dt * this.playbackRate;

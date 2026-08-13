@@ -602,6 +602,7 @@ const _quatPartida = new THREE.Quaternion();
 const _dirA = new THREE.Vector3();
 const _dirB = new THREE.Vector3();
 const _up = new THREE.Vector3();
+const _delta = new THREE.Vector3();
 
 /** Ângulo de volta em (−π, π] — periódico, então o número não cresce. */
 function enrolar(rad: number): number {
@@ -772,6 +773,58 @@ export class AtlasRig {
     this.polo.copy(polo);
     this.orbita.altura = 0;
     this.orbita.volta = 0;
+  }
+
+  /**
+   * O ALVO VIVO (Onda 7) — o mesmo enquadramento, no lugar em que o
+   * corpo está AGORA.
+   *
+   * O DEFEITO: `focar` copiava a posição UMA VEZ e a câmera perseguia
+   * um ponto morto. Com a máquina do tempo andando (até 116 dias de céu
+   * por segundo) a Terra saía do quadro em ~1 segundo — o degrau "corpo"
+   * enquadra ~4 raios terrestres, e a Terra anda 2,5 milhões de km por
+   * dia de céu. O único religador que existia era chamado num lugar só,
+   * quando a efeméride chegava da rede.
+   *
+   * O QUE ELE NÃO FAZ, e é o ponto: não zera o arrasto do visitante e
+   * não reinicia a rampa. `focar` é um GESTO (escolher outro alvo, e o
+   * alvo novo nasce no pino); isto é CORREÇÃO do mesmo enquadramento, e
+   * quem estava girando o objeto continua girando de onde estava.
+   *
+   * A POSE DE PARTIDA DA RAMPA ANDA JUNTO, e é obrigatório: a rampa
+   * interpola a direção `(posPartida − alvo)` contra a direção do
+   * destino, então mover só o alvo REPROJETA a partida num referencial
+   * que se moveu — e o quanto isso torce é medido pela razão entre o
+   * passo do relógio e a distância partida↔alvo. Na troca corpo→lua a
+   * razão é 13:1 num quadro só (a Terra anda 1,6e-7 pc por quadro a 116
+   * dias/s; a Lua está a 1,25e-8 pc do enquadramento da Terra), e a
+   * câmera daria uma guinada de dezenas de graus em torno do alvo. Com
+   * a partida transladada pelo MESMO delta, a direção de partida não se
+   * mexe um bit e a rampa só vê a mudança que é real — a do destino.
+   */
+  recompor(
+    alvo: THREE.Vector3,
+    raio: number,
+    eixoDe: THREE.Vector3,
+    opcoes: { pai?: THREE.Vector3 | null; polo?: THREE.Vector3 | null } = {}
+  ) {
+    _delta.copy(alvo).sub(this.alvo);
+    if (this.rampaT < 1) {
+      this.partida.alvo.add(_delta);
+      this.partida.eixoDe.add(_delta);
+      if (this.partida.temPai) this.partida.pai.add(_delta);
+    }
+    this.alvo.copy(alvo);
+    this.raio = raio;
+    this.eixoDe.copy(eixoDe);
+    const pai = opcoes.pai ?? null;
+    if (pai) {
+      this.paiGuardado.copy(pai);
+      this.pai = this.paiGuardado;
+    } else {
+      this.pai = null;
+    }
+    this.polo.copy(opcoes.polo ?? POLO_ECLIPTICO);
   }
 
   /** a rampa entre degraus ainda está andando? (a captura espera por ela) */
