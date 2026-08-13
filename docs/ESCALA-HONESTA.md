@@ -170,14 +170,40 @@ Vira disco a partir de 3,60 UA (lente do Atlas). `lodStellar.ts`, `director.ts`,
 Prova: **22 vistas bit-idênticas por aritmética** — o corpo real só arma abaixo de
 3,60 UA, o disco artístico só desenha acima de 4.125 UA; nunca coexistem.
 
-> **RISCO PRINCIPAL DE TODA A ONDA, e NÃO foi medido.** Com a câmera na Terra, o
-> plano de corte vem do raio da Terra e a 1 UA o menor degrau de profundidade vale
-> **418.000 km** — enquanto a casca de espículas fica a **29.246 km** da superfície
-> (`sol/spicules.js:15`). Casca e fotosfera caem no mesmo degrau e quem aparece por
-> cima vira ordem de desenho. **Hoje não acontece porque o Sol é invisível ali.
-> Nasce aqui.** Gate: medir ANTES de a porta virar padrão. Saídas baratas: limiar
-> próprio do Sol (exceção declarada) ou o Sol não escrever profundidade quando não
-> for o corpo mais próximo em quadro. **Não prometer os 14 px a 1 UA antes disso.**
+> **~~RISCO PRINCIPAL DE TODA A ONDA~~ — MEDIDO EM 2026-08-12 E DISSOLVIDO.**
+>
+> **A aritmética do risco CONFIRMA-SE, ponto por ponto.** Com a câmera a 30.000 km
+> da Terra e 1 UA do Sol, `nearPlanePc` devolve **3.189 km** — e vem do
+> `raioPc * 0.5` da Terra, não do `dSup * 0.004` (que daria 120 km). Com
+> profundidade LINEAR de 24 bits (conferido: `logarithmicDepthBuffer` não aparece
+> em lugar nenhum do `src/`), o menor degrau distinguível a 1 UA vale **418.000
+> km**, contra os **29.246 km** que separam a casca de espículas da fotosfera
+> (`SPICULE_R = SUN_RADIUS*1.042`, `sol/spicules.js:15`). As duas caem no mesmo
+> degrau — **14× dentro dele**. Até aqui, o desenho estava certo.
+>
+> **O QUE O DESENHO NÃO SABIA: não há dois escritores de profundidade.** Varredura
+> dos 14 arquivos de `sol/`: **`sun.js` é o ÚNICO com malha que não declara
+> `depthWrite: false`**. Espículas, coroa volumétrica, raias, laços, proeminências
+> e CME — todos `transparent: true` + `depthWrite: false`. A fotosfera é a única
+> superfície opaca do Sol inteiro.
+>
+> **Z-fighting exige DUAS superfícies escrevendo profundidade quase à mesma
+> distância. Aqui há UMA.** Não é mitigação, é impossibilidade estrutural.
+>
+> **E o teste de profundidade das cascas transparentes também não vira speckle,**
+> por dois fatos que se somam: (a) a quantização de profundidade é MONOTÔNICA —
+> um ponto mais perto nunca vira um valor mais longe —, então a casca, que é
+> geometricamente sempre a mais próxima na hemisfério renderizada
+> (`side: FrontSide`), nunca perde; (b) o `depthFunc` padrão do three.js é
+> `LessEqualDepth`, então quando os dois colapsam no MESMO degrau o teste passa.
+> Perder precisão aqui faz a casca deixar de ser OCLUÍDA onde ela não deveria ser
+> ocluída de qualquer jeito.
+>
+> **Consequência para o plano:** a F2 perde o gate bloqueante que a travava, e as
+> duas saídas caras que estavam reservadas (limiar próprio do Sol, ou o Sol parar
+> de escrever profundidade) **não precisam ser construídas**. A F2 mantém uma
+> conferência visual quando o Sol virar padrão — argumento estrutural não dispensa
+> olhar —, mas ela deixa de ser pré-condição.
 
 ### F3 — A escada em tamanho + a abertura refilmada (a fase cara)
 Mesma parede de fogo — 19,76°, **76,0% da altura do quadro** — filmada a **4,00
