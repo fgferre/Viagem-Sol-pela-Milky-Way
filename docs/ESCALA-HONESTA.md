@@ -156,6 +156,8 @@ inclusive as quatro aceitas pelo dono no commit `1754110` (`terra ff48acbaf3a7` 
 **A pendência que a F1 EXPÔS (não criou):** dentro do sistema solar o clarão do
 ponto do Sol lava o quadro. Já estava declarada como mentira que sobra (§5, item
 6); agora tem foto. Ela é da onda da exposição, não desta.
+**E desde 2026-08-13 tem CAUSA medida, com arquivo e linha** — não é mais sintoma
+fotografado. A conta inteira, com as três provas por eliminação, está no §5, item 6.
 
 ### F1 — especificação original (mantida para o registro)
 Três fotos do mesmo motor: 533 px a 4,00 milhões de km · 14,4 px a 1 UA · 0,36 px a
@@ -302,7 +304,7 @@ Prova: **22 vistas bit-idênticas por aritmética** — o corpo real só arma ab
 > conferência visual quando o Sol virar padrão — argumento estrutural não dispensa
 > olhar —, mas ela deixa de ser pré-condição.
 
-### F3 — A escada em tamanho + a abertura refilmada — **FEITA, ESPERANDO O DONO** (2026-08-13)
+### F3 — A escada em tamanho + a abertura refilmada — **FEITA E APROVADA PELO DONO** (2026-08-13)
 
 **A ABERTURA MUDOU DE LUGAR, NÃO DE ENQUADRAMENTO.** O plano de abertura era
 filmado a 0,0631506 pc (13.027 UA) em volta de uma bola de 0,011 pc — 2.269 UA de
@@ -404,14 +406,24 @@ símbolo só. Agora:
 #### O GATE (2026-08-13, harness 1800×1713, `DOZERO=1`, 26 vistas × 2)
 
 **22/22 bit-idênticas entre as que TÊM de ser** — as 19 do contrato mais as 3 do Sol
-real. **4 mudaram, e são só as 4 reservadas:**
+real. **4 mudaram, e são só as 4 reservadas.**
 
-| vista | antes | depois | o que a foto passou a mostrar |
+**REBASELINE APROVADO PELO DONO EM 2026-08-13.** Ele viu os oito PNGs de
+`capturas/f3/` e disse sim. Isto deixou de ser proposta: os md5 da coluna VIGENTE são
+a **referência oficial da casa** e já estão na tabela do `docs/NORTE.md`. E não são
+valores copiados de documento — os quatro foram **RE-MEDIDOS na hora da aprovação**,
+com o gate inteiro rodando outra vez a partir desta mesa: 26 vistas, cada uma
+capturada 2×, todas estáveis; as 22 que não podiam mudar não mudaram, e estas quatro
+devolveram exatamente o que está abaixo.
+
+| vista | md5 VIGENTE (desde 2026-08-13) | md5 que MORREU | o que a foto passou a mostrar |
 |---|---|---|---|
-| `sol` (t=6) | `a4fbf427778a` | `d3f110e281d3` | a MESMA parede de fogo, a 4,00 milhões de km |
-| `soldisco` (0,10 pc) | `7a2e6d1f4620` | `06d7c8d406cd` | estrela pleníssima com espinhos (o clarão no teto de 40°) |
-| `solrampa` (0,25 pc) | `ff2b7b4d353a` | `1ad5c3e89220` | a mesma estrela, menor — 15,7° |
-| `solestouro` (0,32 pc) | `3dc8706149b4` | `7306f0d4f044` | menor ainda — 10,9°, sem o resto de disco |
+| `sol` (t=6) | `d3f110e281d3` | ~~`a4fbf427778a`~~ | a MESMA parede de fogo, a 4,00 milhões de km |
+| `soldisco` (0,10 pc) | `06d7c8d406cd` | ~~`7a2e6d1f4620`~~ | estrela pleníssima com espinhos (o clarão no teto de 40°) |
+| `solrampa` (0,25 pc) | `1ad5c3e89220` | ~~`ff2b7b4d353a`~~ | a mesma estrela, menor — 15,7° |
+| `solestouro` (0,32 pc) | `7306f0d4f044` | ~~`3dc8706149b4`~~ | menor ainda — 10,9°, sem o resto de disco |
+
+**`solestrela 22f5fab0992e` NÃO mudou, e as outras 21 também não.**
 
 `atlas-smoke` verde. 1.435 testes (eram 1.448 — a queda é de código apagado: as
 suítes das quatro janelas mortas saíram junto com elas), `tsc` e `eslint` limpos.
@@ -439,6 +451,11 @@ Oito MUTAÇÕES conferidas, todas vermelhas: hélice linear, abertura sem o fato
    disco pleno"; hoje é "o clarão no teto". O nome ficou (renomear custaria a
    continuidade da baseline), e o que ela guarda agora é o degrau mais sensível do
    teto de 40°.
+   **Em 2026-08-13 tentou-se RE-APONTÁ-LA de 0,1 pc para 3,0 UA — e a mudança foi
+   DESFEITA por inteiro**, porque ninguém a pediu e porque a 3 UA a foto sai branca do
+   mesmo jeito, pelo motivo agora medido no §5, item 6. O item acima continua
+   valendo, palavra por palavra; o registro do que foi desfeito está em
+   `docs/RETOMADA.md`, §5.
 5. **O Sol agora é submetido DENTRO do sistema solar.** Com o gate de 4 px, o grupo
    do Sol acende abaixo de 3,60 UA — inclusive nas vistas de Terra e Lua, onde ele
    fica fora de quadro. As quatro saíram bit-idênticas (conferido), mas é custo de
@@ -446,8 +463,14 @@ Oito MUTAÇÕES conferidas, todas vermelhas: hélice linear, abertura sem o fato
    no filme inteiro:** antes o grupo ficava aceso de 0,02 a 0,3249 pc (4.125 a
    67.000 UA); agora só nos primeiros 8,6 s da hélice.
 
-**A FASE PARA AQUI.** As 4 imagens ANTES/DEPOIS estão em `capturas/f3/`. O
-rebaseline oficial só acontece depois que o dono aprovar (precedente D11 da Onda 3).
+**A FASE FECHOU: O DONO APROVOU EM 2026-08-13.** Ela parava em "imagens prontas" —
+as 4 imagens ANTES/DEPOIS de `capturas/f3/`, 8 PNGs — e o precedente D11 da Onda 3
+dizia que baseline só muda com o sim do dono. O sim veio, com as fotos abertas na
+frente dele. O que ele aprovou, com todas as letras: o rebaseline das quatro vistas
+da abertura — `sol`, `soldisco`, `solrampa`, `solestouro`. Os md5 novos foram
+re-medidos na aprovação e já são a referência oficial da casa no `docs/NORTE.md`; os
+antigos morreram. Os oito PNGs viram **histórico da aprovação**, não material de
+decisão.
 
 ### F4 — Descer até o Sol com o dedo
 A escada do Atlas para de recusar tudo que não é Terra: `podeAproximar: … &&
@@ -651,6 +674,45 @@ Para o cadastro da F0 declarar, não para consertar nesta onda:
    (invisível). Existe controle público por escala que a casa nunca tocou. Moderar
    as cinco juntas apaga 99% do borrão largo do Sol (o alvo) e junto 99% do brilho
    apertado das 328.749 estrelas.
+
+   **A CAUSA DA TELA BRANCA FOI LOCALIZADA (2026-08-13, por eliminação, com o
+   servidor rodando desta mesa).** Deixou de ser sintoma fotografado: tem culpado,
+   com arquivo e linha.
+
+   **A faixa que lava.** Medida em 1 · 1,25 · 1,5 · 2 · 2,5 · 3 · 3,5 · 4 · 8 UA:
+   **todas brancas**. De ~1 UA a ~8 UA o quadro não tem imagem, tem papel. Fora da
+   faixa, por baixo, não lava: a **0,0668 UA** (10 milhões de km) sai a bola laranja
+   com granulação e escurecimento de borda, como deve.
+
+   **As três provas por eliminação, todas a 3 UA:**
+   - `&noplan=1` (camada de planetas fora) → **céu preto e o disco laranja honesto de
+     4,8 px**. O CORPO está certo. Ele nunca foi o acusado.
+   - `&nosun=1` → **o branco CONTINUA**. Também não é o grupo do Sol.
+   - `&nobloom=1` → **quadro limpo**, com uma PSF branca de ~20 px e núcleo laranja.
+
+   **Quem pinta o branco é o PONTO FOTOMÉTRICO do Sol — o vértice 0 da camada de
+   planetas — espalhado pelo bloom.** Os endereços: a camada fica ligada até
+   **0,05 pc = 10.313 UA** (`planetas.ts:488`) e o ganho dela é
+   `uGain = deepPointGain(d)` (`planetas.ts:498`), que vale **1 exato em toda a
+   faixa**, porque a rampa que o baixaria só COMEÇA em 0,02 pc
+   (`lodStellar.ts:176`) — dentro do sistema solar o ponto entra em ganho PLENO,
+   sempre. O bloom que o espalha está em `post.ts:199-201`: força **0,72**, limiar
+   **0,82**, raio **0,58**. E a fonte é honesta demais para essa lente: o Sol tem
+   magnitude aparente **−26,74** a 1 UA e **−24,36** a 3 UA.
+
+   **E a ligação que importa, que nenhum documento tinha feito até aqui:** esta é a
+   **PRIMEIRA QUEIXA do dono** na sessão de origem — *"não vi o sol procedural"*, no
+   modo Atlas. Não é item cosmético de acabamento: é **o pedido mais antigo ainda
+   aberto**, e a tela branca é a resposta que ele recebeu. Continua sendo da onda da
+   exposição, não desta — mas agora com causa medida em vez de sintoma.
+
+   **ARMADILHA DE MEDIÇÃO, para quem for medir isto depois.** Os PNGs de `capturas/`
+   **sobrevivem entre sessões** e podem estar VELHOS: a pasta é cache, não evidência.
+   Em 2026-08-13 um deles — `ab-antes-solreal1ua-0.png`, md5 real `61d786c7b903` —
+   foi lido como se fosse a baseline atual e levou a uma conclusão ERRADA: a de que
+   1 UA saía limpa. A baseline verdadeira de `solreal1ua` é `f665b6bfe84c`, e ela é
+   **branca**. **Regra: nunca julgar por PNG achado na pasta; recapturar antes de
+   olhar.**
 7. **Mergulhar no Sol continua impossível** — abaixo de ~1,44 raios solares o corte come
    a fotosfera. Rasante estilo Parker cabe com folga.
 

@@ -23,8 +23,9 @@ do principal: **só leitura**, nunca instalar por lá.
 
 ### O MERGE ESTÁ DESTRAVADO — mas NÃO faça antes de duas coisas
 
-1. **O dono aprovar as 4 imagens da F3** (seção 4). Sem o sim dele, esta branch
-   carrega um rebaseline não consentido.
+1. ~~**O dono aprovar as 4 imagens da F3** (seção 4).~~ **CUMPRIDO em 2026-08-13** —
+   ele viu os oito PNGs e aprovou; o rebaseline desta branch está consentido, e os
+   md5 novos já são a referência oficial no `NORTE.md` (seção 4).
 2. **Re-medir a base.** Os md5 desta branch foram tirados de `af90809`. A Onda 6
    trouxe as luas, os eclipses e o que mais entrou depois disso — **a tabela de
    referência da `main` pode não ser mais a mesma**. Depois de trazer a `main` para
@@ -96,7 +97,7 @@ são o mesmo ponto).
 
 ---
 
-## 4. A F3 FECHOU — e está esperando O SEU SIM
+## 4. A F3 FECHOU — e VOCÊ JÁ DISSE SIM (2026-08-13)
 
 **Commits `c21ca60` (F3) e `d7cca17` (registro).** Testes 1.448 → **1.435** — a
 queda é código APAGADO: as 4 janelas de LOD do Sol viraram 1 e as suítes delas
@@ -112,18 +113,22 @@ escolhido a olho. A hélice virou exponencial (6,6477 décadas em 24 s).
 dívida do Sol no cadastro de escala (o fator dele agora é **1**).
 
 **AS 19 BATERAM, todas.** Mais as 3 do Sol real, que perderam a porta e não moveram
-um bit. **Mudaram só as 4 reservadas:**
+um bit. **Mudaram só as 4 reservadas — e são estas as que o dono aprovou:**
 
-| vista | antes | depois |
+| vista | md5 VIGENTE (desde 2026-08-13) | md5 que MORREU |
 |---|---|---|
-| `sol` | `a4fbf427778a` | `d3f110e281d3` |
-| `soldisco` | `7a2e6d1f4620` | `06d7c8d406cd` |
-| `solrampa` | `ff2b7b4d353a` | `1ad5c3e89220` |
-| `solestouro` | `3dc8706149b4` | `7306f0d4f044` |
+| `sol` | `d3f110e281d3` | ~~`a4fbf427778a`~~ |
+| `soldisco` | `06d7c8d406cd` | ~~`7a2e6d1f4620`~~ |
+| `solrampa` | `1ad5c3e89220` | ~~`ff2b7b4d353a`~~ |
+| `solestouro` | `7306f0d4f044` | ~~`3dc8706149b4`~~ |
 
-**As 8 imagens de aprovação:** `capturas/f3/F3-{ANTES,DEPOIS}-{sol,soldisco,solrampa,solestouro}.png`.
-**O rebaseline oficial só acontece com o sim do dono.** Enquanto ele não vier, a
-tabela de referência da casa segue apontando para os md5 ANTIGOS.
+**O SIM VEIO EM 2026-08-13**, depois de o dono ver os oito PNGs de
+`capturas/f3/F3-{ANTES,DEPOIS}-{sol,soldisco,solrampa,solestouro}.png` — que agora
+são **histórico da aprovação**, não material de decisão pendente. Os quatro valores
+acima foram **RE-MEDIDOS na aprovação**: o gate inteiro rodou de novo a partir desta
+mesa, 26 vistas capturadas 2× cada, todas estáveis, as 22 intocáveis bit-idênticas.
+**A tabela de referência da casa — `docs/NORTE.md` — já aponta para os md5 novos**, e
+os antigos morreram. `solestrela 22f5fab0992e` não mudou, nem as outras 21.
 
 **A tarefa extra NÃO foi feita, e a premissa dela CAIU.** `LAPSE_K` não é a chave do
 conserto das rampas de vida — é a chave do modo *lapse* inteiro: qualquer valor > 0
@@ -147,9 +152,11 @@ filma de **4,00 milhões de km (5,74 raios solares)**, um lugar que existe, em v
 em volta de uma bola de 2.269 UA. Depois o Sol encolhe continuamente até virar
 estrela, em vez do salto de hoje.
 
-**Ela NÃO fecha sozinha.** Ela para em "imagens prontas": 4 pares antes/depois em
-`capturas/`, para o **dono aprovar**. O rebaseline oficial só acontece com o sim
-dele. As 4 que mudam são `sol`, `soldisco`, `solrampa`, `solestouro`.
+**Ela NÃO fechava sozinha.** Ela parava em "imagens prontas": 4 pares antes/depois
+em `capturas/f3/`, para o **dono aprovar**, porque o rebaseline oficial só acontecia
+com o sim dele (precedente D11). As 4 que mudaram são `sol`, `soldisco`, `solrampa`,
+`solestouro`. **E fechou: o sim veio em 2026-08-13** — a seção 4 tem os md5 vigentes,
+e o `NORTE.md` já aponta para eles.
 
 **SE A SESSÃO MORREU NO MEIO — como reconstruir sem o relatório do agente:**
 
@@ -188,6 +195,22 @@ irmão e **deixou desligado** — as rampas de vida das regiões ativas alargada
   UMA (deposita 2,22 a meia tela; a seguinte, 0,005). **Não copiar a exposição
   0,418 do irmão:** ela é a conta de um conserto de cor que a casa nunca precisou
   fazer, e copiá-la escureceria tudo 2,44× sem corrigir nada.
+  **E em 2026-08-13 o culpado ficou localizado, com arquivo e linha:** de ~1 UA a
+  ~8 UA (nove distâncias medidas, todas brancas) quem lava é o **ponto fotométrico**
+  do Sol — o vértice 0 da camada de planetas, em ganho PLENO porque a rampa que o
+  baixaria só começa em 0,02 pc — espalhado pelo bloom. Provas a 3 UA: com
+  `&noplan=1` sai céu preto e o disco laranja honesto de 4,8 px, com `&nosun=1` o
+  branco continua, com `&nobloom=1` sai limpo. **E isto é a PRIMEIRA QUEIXA do dono**
+  ("não vi o sol procedural" no Atlas): o pedido mais antigo ainda aberto, não item
+  cosmético. Conta inteira em `docs/ESCALA-HONESTA.md`, §5 item 6.
+- **A tentativa de re-apontar `soldisco`, DESFEITA no mesmo dia (2026-08-13).** A
+  vista foi movida de 0,1 pc para **3,0 UA** — a fronteira do portão de 4 px — e a
+  mudança foi **desfeita por inteiro** (`git checkout`), por dois motivos: (i)
+  ninguém a pediu, e (ii) a 3 UA a foto sai branca do mesmo jeito, pelo motivo do
+  item acima. O que sobrou útil é o número: **o portão do palco arma em 3,5962 UA e
+  desarma em 7,1924 UA**, e **nenhuma vista da casa mora entre 1 e 40 UA** — a
+  fronteira mais interessante do palco não tem juiz nenhum olhando para ela. Isto é
+  material para a onda seguinte, **não pendência desta**.
 - **`Esc` continua sendo a única tecla do Atlas** e não está escrita em lugar nenhum
   da tela.
 

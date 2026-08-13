@@ -2561,7 +2561,8 @@ JOBS=1  node scripts/visual/ab-identidade.mjs antes   # serial, um Chrome de cad
   publicado no bundle de DEV; apontar `APP_URL` para um build de produção (ou para uma
   versão do app anterior a esta reforma) cai nos 700 quadros em vez de travar. Medido:
   `APP_URL=http://127.0.0.1:4173` (o `vite preview` do `dist`) devolve `sol
-  a4fbf427778a` — o md5 oficial — por `via=quadros/87s`. Cada linha da leva imprime o
+  a4fbf427778a` — o md5 oficial DAQUELA ÉPOCA, aposentado pelo rebaseline de
+  2026-08-13, que pôs a vista `sol` em `d3f110e281d3` — por `via=quadros/87s`. Cada linha da leva imprime o
   `via=`, e **uma leva inteira em `via=quadros` é sinal quebrado, não hardware lento**.
 - **E o teto de segurança agora GRITA, não engata em silêncio** (2026-08-11). No alvo
   padrão (`APP_URL` ausente ou apontando para o próprio dev server), **qualquer** captura
@@ -2709,12 +2710,23 @@ repo e fora do git. Duas consequências que já quase custaram um diagnóstico e
    Betelgeuse. Condições da captura: dev server em `127.0.0.1:5173`, `?q=cinema`
    FIXADO, janela padrão (1800×1800 pedidos = 1800×1713 efetivos; `retrato` 700×1800 =
    700×1713), duas capturas por vista repetindo md5.
-   `sol a4fbf427778a` · `interno d98cbef70849` · `travessia b85162ede6cf`† ·
+   `sol d3f110e281d3` · `interno d98cbef70849` · `travessia b85162ede6cf`† ·
    `mergulho 6876e851031a` · `edgeon 4fbd07002a9a` · `faceon d05591e27ea4` ·
-   `retrato 23bb22402f40`† · **`soldisco 7a2e6d1f4620`** · **`solrampa ff2b7b4d353a`** ·
-   **`solestouro 3dc8706149b4`** · **`solestrela 22f5fab0992e`** ·
+   `retrato 23bb22402f40`† · **`soldisco 06d7c8d406cd`** · **`solrampa 1ad5c3e89220`** ·
+   **`solestouro 7306f0d4f044`** · **`solestrela 22f5fab0992e`** ·
    `hero200 b4a2d03ed3e9`† · `hero600 4311d0ccbc15` · `hero950 d11a8df86b68` ·
    **`hero8 d7c1d2d12726`**†.
+   **REBASELINE DE 2026-08-13 — as QUATRO da abertura entraram nesta lista com md5
+   NOVO.** O dono APROVOU o rebaseline da F3 da onda do Sol real depois de ver os oito
+   PNGs de `capturas/f3/` (antes e depois de cada uma). Os valores acima foram
+   **RE-MEDIDOS na aprovação**, com o gate inteiro rodando a partir da mesa `sol-real`
+   — 26 vistas, cada uma capturada 2×, todas estáveis, e as 22 que não podiam mudar
+   não mudaram. Os md5 que MORRERAM nesse dia, e que deixam de ser valor esperado em
+   qualquer lugar: `sol a4fbf427778a` · `soldisco 7a2e6d1f4620` ·
+   `solrampa ff2b7b4d353a` · `solestouro 3dc8706149b4`. **`solestrela 22f5fab0992e`
+   NÃO mudou**, nem as outras 21: a abertura mudou de LUGAR — passou a ser filmada a
+   3,998 milhões de km do Sol de raio FÍSICO —, não de enquadramento. O detalhe
+   medido está em `docs/ESCALA-HONESTA.md`, seção F3.
    **As QUATRO com † mudaram no conserto do `vSat`** (2026-08-11, depois do fecho da
    onda): os espinhos de difração e o núcleo esbranquiçado passam a obedecer à
    atenuação TOTAL — extinção e `uFade` —, e não só à cessão por estrela. Delta
