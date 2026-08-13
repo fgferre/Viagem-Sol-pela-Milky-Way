@@ -14,9 +14,10 @@
 // (escalar único de luz, relógio do Director, orientação IAU
 // medida, carga preguiçosa). O que muda por corpo é DADO:
 //
-//   - BRDF: 'ls' (Mercúrio + Io, Europa, Ganimedes, Calisto, Encélado
-//     — os 5 opt-in da F5; o C = 4/3 DERIVADO por quadratura da Lua,
-//     importado de lua.ts, nunca redigitado) ou 'lambert'.
+//   - BRDF: 'ls' (Mercúrio + os 5 opt-in da F5 + os 4 da F7 —
+//     Vesta, Palas, Hígia, Haumea; o C = 4/3 DERIVADO por
+//     quadratura da Lua, importado de lua.ts, nunca redigitado)
+//     ou 'lambert'.
 //   - FIGURA: esfera ou elipsoide triaxial por BODY_AXES — a
 //     escala anisotrópica mora na matriz, como o achatamento da
 //     Terra. A NORMAL do elipsoide aqui é o gradiente EXATO
@@ -141,7 +142,10 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'pluto', brdf: 'lambert' },
   { id: 'charon', brdf: 'lambert' },
   { id: 'ceres', brdf: 'lambert' },
-  { id: 'haumea', brdf: 'lambert', superficie: 'procedural' },
+  { id: 'vesta', brdf: 'ls' },
+  { id: 'pallas', brdf: 'ls', superficie: 'procedural' },
+  { id: 'hygiea', brdf: 'ls' },
+  { id: 'haumea', brdf: 'ls', superficie: 'procedural' },
   { id: 'makemake', brdf: 'lambert', superficie: 'procedural' },
   { id: 'eris', brdf: 'lambert', superficie: 'procedural' },
   { id: 'quaoar', brdf: 'lambert', superficie: 'procedural' },
@@ -227,10 +231,9 @@ void main() {
 `;
 
 /**
- * LOMMEL-SEELIGER — Mercúrio e os 5 opt-in da F5 (Io, Europa,
- * Ganimedes, Calisto, Encélado), da lista dos 7 (correção de fato 1
- * do desenho; a Lua consome o mesmo C em lua.ts): a MESMA lei, com
- * o C = 4/3 importado dela (a derivação por quadratura mora em
+ * LOMMEL-SEELIGER — Mercúrio, os 5 opt-in da F5 e os 4 da F7
+ * (Vesta/Palas/Hígia + Haumea, só o BRDF): a MESMA lei, com o
+ * C = 4/3 importado da Lua (a derivação por quadratura mora em
  * lua.test.ts e cobre TODOS os consumidores — o literal é UM só).
  */
 export const ROCHOSO_LS_FRAG = /* glsl */ `
@@ -306,12 +309,65 @@ void main() {
 }
 `;
 
+/**
+ * PROCEDURAL + LS (F7) — o mesmo −3, com o C = 4/3 importado da
+ * Lua. Palas (sem mapa licenciado) e Haumea (corpo da F6, só o
+ * BRDF muda: a casa não refaz a figura).
+ */
+export const ROCHOSO_PROC_LS_FRAG = /* glsl */ `
+uniform vec3 uAlbedoBase;
+uniform vec3 uDirSolLocal;
+uniform vec3 uCamLocal;
+uniform float uLuzGanho;
+uniform vec3 uNormalEsc;
+uniform vec3 uEscalaLocal;
+varying vec3 vLocal;
+varying vec2 vUv;
+vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
+${GLSL_NORMAL_ELIPSOIDE}
+${GLSL_SOMBRA_ECLIPSE}
+float hash31(vec3 p) {
+  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+}
+float ruido(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float n000 = hash31(i);
+  float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
+  float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
+  float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
+  float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
+  float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
+  float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
+  float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+  float nx00 = mix(n000, n100, f.x);
+  float nx10 = mix(n010, n110, f.x);
+  float nx01 = mix(n001, n101, f.x);
+  float nx11 = mix(n011, n111, f.x);
+  return mix(mix(nx00, nx10, f.y), mix(nx01, nx11, f.y), f.z);
+}
+void main() {
+  vec3 n = normalDoCorpo(vLocal, uNormalEsc);
+  vec3 pElip = vLocal * uEscalaLocal;
+  float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
+  vec3 albedo = uAlbedoBase * (0.72 + 0.56 * g);
+  float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
+  float mu = clamp(dot(n, normSeguro(uCamLocal - pElip)), 0.0, 1.0);
+  float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
+  vec3 direta = albedo * (ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0);
+  gl_FragColor = vec4(direta, 1.0);
+}
+`;
+
 /** Cores-base do −3 inventado (doador proceduralSurface / celestialBodies). */
 export const ALBEDO_PROCEDURAL: Record<string, readonly [number, number, number]> = {
   haumea: [0.91, 0.835, 0.769],
   makemake: [0.831, 0.647, 0.455],
   eris: [0.941, 0.902, 0.824],
   quaoar: [0.533, 0.329, 0.259],
+  // Palas: sem mapa licenciado — o #8C8578 do doador.
+  pallas: [0.549, 0.522, 0.471],
 };
 
 // ------------------------------------------------------------
@@ -603,7 +659,9 @@ export class RochosoResolvido {
     this.matSuperficie = new THREE.ShaderMaterial({
       vertexShader: ROCHOSO_VERT,
       fragmentShader: procedural
-        ? ROCHOSO_PROC_FRAG
+        ? this.config.brdf === 'ls'
+          ? ROCHOSO_PROC_LS_FRAG
+          : ROCHOSO_PROC_FRAG
         : this.config.brdf === 'ls'
           ? ROCHOSO_LS_FRAG
           : ROCHOSO_LAMBERT_FRAG,

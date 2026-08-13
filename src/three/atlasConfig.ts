@@ -182,6 +182,9 @@ export const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> 
   makemake: { nome: 'Makemake', classe: 'planeta anão' },
   eris: { nome: 'Éris', classe: 'planeta anão' },
   quaoar: { nome: 'Quaoar', classe: 'planeta anão' },
+  vesta: { nome: 'Vesta', classe: 'asteroide' },
+  pallas: { nome: 'Palas', classe: 'asteroide' },
+  hygiea: { nome: 'Hígia', classe: 'asteroide' },
 };
 
 /** O prefixo que separa a chave de um corpo da de uma estrela. */
@@ -238,6 +241,18 @@ export const ANOES_DO_SISTEMA: readonly CorpoDoSistema[] = [
   { id: 'makemake', ...NOMES_DOS_CORPOS.makemake, chave: `${CHAVE_DE_CORPO}makemake` },
   { id: 'eris', ...NOMES_DOS_CORPOS.eris, chave: `${CHAVE_DE_CORPO}eris` },
   { id: 'quaoar', ...NOMES_DOS_CORPOS.quaoar, chave: `${CHAVE_DE_CORPO}quaoar` },
+];
+
+/**
+ * ASTEROIDES SEM PONTO FOTOMÉTRICO (F7) — o mesmo contrato dos
+ * anões: fora de CORPOS_DO_SISTEMA (vértice da camada) e fora de
+ * LUAS. A busca os acha pelo nome pt-BR; o degrau é o de planeta
+ * (órbita heliocêntrica → aproximar o globo).
+ */
+export const ASTEROIDES_DO_SISTEMA: readonly CorpoDoSistema[] = [
+  { id: 'vesta', ...NOMES_DOS_CORPOS.vesta, chave: `${CHAVE_DE_CORPO}vesta` },
+  { id: 'pallas', ...NOMES_DOS_CORPOS.pallas, chave: `${CHAVE_DE_CORPO}pallas` },
+  { id: 'hygiea', ...NOMES_DOS_CORPOS.hygiea, chave: `${CHAVE_DE_CORPO}hygiea` },
 ];
 
 // ============================================================

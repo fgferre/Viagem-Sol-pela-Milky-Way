@@ -28,7 +28,7 @@ import { PARES_DE_ECLIPSE } from '../../../lib/atlas/eclipse';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
-import { LUAS_DO_SISTEMA } from '../../atlasConfig';
+import { ANOES_DO_SISTEMA, ASTEROIDES_DO_SISTEMA, LUAS_DO_SISTEMA } from '../../atlasConfig';
 import { EPOCA_JD_TDB, RETRATO_2026 } from '../planetas/retrato2026';
 import { LS_NORMALIZACAO_GLSL } from './lua';
 import { LIMIAR_DO_GATE_PX, orientacaoDoCorpoNaCena } from './terra';
@@ -38,6 +38,7 @@ import {
   ROCHOSOS,
   ROCHOSO_LAMBERT_FRAG,
   ROCHOSO_LS_FRAG,
+  ROCHOSO_PROC_LS_FRAG,
   RochosoResolvido,
   posicaoDoRochosoUA,
   raiosDoRochosoPc,
@@ -129,13 +130,14 @@ describe('1. o oráculo de orientação por corpo (D-E4)', () => {
 
 describe('2. o needle dos GLSL montados', () => {
   it('o chunk do eclipse existe nos DOIS shaders e multiplica SÓ a direta, depois do BRDF', () => {
-    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_LAMBERT_FRAG]) {
+    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_LAMBERT_FRAG, ROCHOSO_PROC_LS_FRAG]) {
       expect(frag).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
       expect(frag).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
       expect(frag).toContain('fatorDeEclipse(pElip, n,');
       expect(frag).toContain('gl_FragColor = vec4(direta, 1.0);');
     }
     expect(ROCHOSO_LS_FRAG).toContain('albedo * (ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
+    expect(ROCHOSO_PROC_LS_FRAG).toContain('albedo * (ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
     expect(ROCHOSO_LAMBERT_FRAG).toContain(
       '(albedo * ndotl) * uLuzGanho * fatorDeEclipse(pElip, n, dot(n, uDirSolLocal))'
     );
@@ -143,6 +145,7 @@ describe('2. o needle dos GLSL montados', () => {
 
   it('o C de Lommel-Seeliger é o LITERAL da Lua — uma fonte só, nunca redigitado', () => {
     expect(ROCHOSO_LS_FRAG).toContain(`${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4)`);
+    expect(ROCHOSO_PROC_LS_FRAG).toContain(`${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4)`);
     expect(FONTE).toContain("import { LS_NORMALIZACAO_GLSL } from './lua';");
     expect(FONTE).not.toContain('1.3333');
   });
@@ -334,7 +337,7 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(FONTE).not.toContain('3396');
   });
 
-  it('a tabela da fase é o dado vivo: LS nos 6 opt-in, Vanth/Weywot fora', () => {
+  it('a tabela da fase é o dado vivo: LS nos opt-in + F7, Vanth/Weywot fora', () => {
     expect(ROCHOSOS.map((c) => c.id)).toEqual([
       'mercury',
       'venus',
@@ -361,6 +364,9 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       'pluto',
       'charon',
       'ceres',
+      'vesta',
+      'pallas',
+      'hygiea',
       'haumea',
       'makemake',
       'eris',
@@ -373,6 +379,10 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       'ganymede',
       'callisto',
       'enceladus',
+      'vesta',
+      'pallas',
+      'hygiea',
+      'haumea',
     ]);
     expect(ROCHOSOS.some((c) => c.id === 'vanth' || c.id === 'weywot')).toBe(false);
   });
@@ -395,11 +405,16 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
         MANIFEST.entradas.some((e) => e.corpo === c.id && e.canal === 'map'),
         `${c.id} sem textura no manifest`
       ).toBe(true);
-      if (!(c.id in RETRATO_2026) && c.id !== 'ceres') {
-        const lua = LUAS_DO_SISTEMA.find((l) => l.id === c.id);
-        expect(lua, `${c.id} fora de LUAS_DO_SISTEMA`).toBeTruthy();
-        if (PARES_DE_ECLIPSE[c.id]) expect(PARES_DE_ECLIPSE[c.id]).toBe(lua!.pai);
+      if (
+        c.id in RETRATO_2026 ||
+        ANOES_DO_SISTEMA.some((a) => a.id === c.id) ||
+        ASTEROIDES_DO_SISTEMA.some((a) => a.id === c.id)
+      ) {
+        continue;
       }
+      const lua = LUAS_DO_SISTEMA.find((l) => l.id === c.id);
+      expect(lua, `${c.id} fora de LUAS_DO_SISTEMA`).toBeTruthy();
+      if (PARES_DE_ECLIPSE[c.id]) expect(PARES_DE_ECLIPSE[c.id]).toBe(lua!.pai);
     }
   });
 });

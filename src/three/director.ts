@@ -73,8 +73,11 @@ import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
   ANOES_DO_SISTEMA,
+  ASTEROIDES_DO_SISTEMA,
   claraoDoAtlas,
 } from './atlasConfig';
+
+const HELIO_SEM_PONTO = [...ANOES_DO_SISTEMA, ...ASTEROIDES_DO_SISTEMA];
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
@@ -1557,7 +1560,7 @@ export class Director {
         (this.focoCorpoId === 'earth' ||
           this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId) ||
           this.rochosos.some(
-            (r) => !r.corpo.planeta && ANOES_DO_SISTEMA.some((a) => a.id === r.corpo.id) && r.corpo.id === this.focoCorpoId
+            (r) => !r.corpo.planeta && HELIO_SEM_PONTO.some((a) => a.id === r.corpo.id) && r.corpo.id === this.focoCorpoId
           ) ||
           this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId)),
     };
@@ -1610,7 +1613,7 @@ export class Director {
       this.focarNaLua(id);
       return;
     }
-    if (ANOES_DO_SISTEMA.some((a) => a.id === id)) {
+    if (HELIO_SEM_PONTO.some((a) => a.id === id)) {
       this.focarNoAnao(id);
       return;
     }
@@ -1669,7 +1672,7 @@ export class Director {
       id === 'earth' ||
       this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === id) ||
       ehGigante ||
-      (ehRochoso && ANOES_DO_SISTEMA.some((a) => a.id === id));
+      (ehRochoso && HELIO_SEM_PONTO.some((a) => a.id === id));
     if (!ehPlanetaResolvido) return;
     // o centro sai da MESMA cadeia do mesh (efeméride viva, retrato sem
     // ela) — calculado aqui e não lido do estado do tick, porque o boot
@@ -1846,7 +1849,7 @@ export class Director {
       }
       return { id: l.id, nome: l.nome, classe: l.classe, rUA, pai: l.pai };
     });
-    const anoes = ANOES_DO_SISTEMA.map((a) => {
+    const anoes = HELIO_SEM_PONTO.map((a) => {
       let rUA = Number.NaN;
       if (this.efemeride) {
         const p = this.efemeride.posicaoHeliocentrica(a.id, jd);
@@ -1857,9 +1860,9 @@ export class Director {
     return [...dez, ...luas, ...anoes];
   }
 
-  /** anão heliocêntrico: órbita em torno do Sol, depois o globo. */
+  /** anão ou asteroide heliocêntrico: órbita em torno do Sol, depois o globo. */
   private focarNoAnao(id: string) {
-    const entrada = ANOES_DO_SISTEMA.find((a) => a.id === id);
+    const entrada = HELIO_SEM_PONTO.find((a) => a.id === id);
     if (!entrada) return;
     this.focoCorpoId = id;
     this.focoEstrela = false;

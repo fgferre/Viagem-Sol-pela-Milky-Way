@@ -963,6 +963,27 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
     primeMeridianDeg: 0,
     spinRateDegPerDay: 333.5907336,
   },
+  // F7: Vesta/Palas pck00011 BODY2000004/2000002. Hígia sem
+  // kernel — polo equatorial norte declarado; W de 13,8 h
+  // (doador rotationPeriodHours).
+  vesta: {
+    poleRaDeg: 309.031,
+    poleDecDeg: 42.235,
+    primeMeridianDeg: 285.39,
+    spinRateDegPerDay: 1617.3329428,
+  },
+  pallas: {
+    poleRaDeg: 33,
+    poleDecDeg: -3,
+    primeMeridianDeg: 38,
+    spinRateDegPerDay: 1105.8036,
+  },
+  hygiea: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 626.0869565,
+  },
 };
 
 /**
@@ -1030,4 +1051,12 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   haumea: [1161, 852, 513],
   makemake: [715, 715, 715],
   eris: [1163, 1163, 1163],
+  // F7: Vesta BODY2000004_RADII 289×280×229. Palas sem
+  // BODY*_RADII no pck — esfera 256 km (doador radiusKm).
+  // Hígia sem kernel — esfera 217 km (doador radiusKm /
+  // Vernazza mean). Modelos DAMIT/NASA GLB-OBJ: pendentes
+  // (sem GLTFLoader/OBJLoader na casa).
+  vesta: [289, 280, 229],
+  pallas: [256, 256, 256],
+  hygiea: [217, 217, 217],
 };

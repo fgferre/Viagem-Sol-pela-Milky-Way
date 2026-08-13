@@ -14,6 +14,7 @@ import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
   ANOES_DO_SISTEMA,
+  ASTEROIDES_DO_SISTEMA,
   NOMES_DOS_CORPOS,
   NOME_DO_SISTEMA,
   tituloDeCorpo,
@@ -130,7 +131,12 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
   });
 
   it('completude: todo corpo BUSCÁVEL (os dez + as luas) tem nome e classe', () => {
-    for (const c of [...CORPOS_DO_SISTEMA, ...LUAS_DO_SISTEMA, ...ANOES_DO_SISTEMA]) {
+    for (const c of [
+      ...CORPOS_DO_SISTEMA,
+      ...LUAS_DO_SISTEMA,
+      ...ANOES_DO_SISTEMA,
+      ...ASTEROIDES_DO_SISTEMA,
+    ]) {
       expect(c.nome, `'${c.id}' sem nome`).toBeTruthy();
       expect(c.classe, `'${c.id}' sem classe`).toBeTruthy();
       expect(NOMES_DOS_CORPOS[c.id], `'${c.id}' fora da fonte única`).toBeTruthy();
@@ -177,6 +183,25 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
       expect(a.classe).toBe('planeta anão');
       expect(CORPOS_DO_SISTEMA.some((c) => c.id === a.id)).toBe(false);
       expect(LUAS_DO_SISTEMA.some((l) => l.id === a.id)).toBe(false);
+    }
+  });
+
+  it('os asteroides da F7 são buscáveis pelo nome pt-BR e não são lua nem vértice', () => {
+    expect(ASTEROIDES_DO_SISTEMA.map((a) => a.id)).toEqual([
+      'vesta',
+      'pallas',
+      'hygiea',
+    ]);
+    expect(ASTEROIDES_DO_SISTEMA.map((a) => a.nome)).toEqual([
+      'Vesta',
+      'Palas',
+      'Hígia',
+    ]);
+    for (const a of ASTEROIDES_DO_SISTEMA) {
+      expect(a.classe).toBe('asteroide');
+      expect(CORPOS_DO_SISTEMA.some((c) => c.id === a.id)).toBe(false);
+      expect(LUAS_DO_SISTEMA.some((l) => l.id === a.id)).toBe(false);
+      expect(ANOES_DO_SISTEMA.some((n) => n.id === a.id)).toBe(false);
     }
   });
 });
