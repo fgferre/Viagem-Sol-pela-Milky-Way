@@ -708,13 +708,54 @@ E o fluxo foi ao contrário duas vezes: consertos de valor inválido em shader f
 ### 8.2 O que dói é o oposto: a casa copiou um conserto e o DESLIGOU
 
 O irmão mediu que, com o relógio de manchas acelerado, o nascimento e a morte das
-regiões ativas dão **solavanco**, e alargou as rampas de vida em **1,75×**. Esse
-código está na casa — e **a chave que o liga está escrita como zero literal**, sem
-nenhum outro caminho. É código morto hoje.
+regiões ativas dão **solavanco**, e alargou as rampas de vida em **1,75×**
+(`sol/activity.js`, `lifeEnvelopeLapse`: nascimento 0,14→0,245, morte
+0,32→0,56). Esse código está na casa e é **código morto hoje**.
 
-E a casa **acelera exatamente esse relógio**: durante **13 segundos da abertura**
-ele corre entre **30 e 54 vezes** mais rápido que o natural. Ou seja: a casa está
-no regime que comprou o conserto, com o conserto desligado.
+E a casa **acelera exatamente esse relógio**. MEDIDO em 2026-08-13, na
+dramaturgia do arranque (`stellarBody.ts`, o empurrão de `cycleTime` dirigido por
+`journeyT` entre `dramaT0`=5 s e `dramaT1`=29 s): o relógio das regiões corre a
+**36× em média e 55× no pico**, e fica **acima de 30× por 16,3 s** (t = 8,85 a
+25,17). É exatamente o regime que comprou o conserto do irmão.
+
+#### POR QUE ELE NÃO FOI LIGADO NA F3 (investigado, medido, e PARADO)
+
+**A premissa de que "a chave é um zero literal, basta virá-la" está ERRADA, e é
+esse o achado.** O zero é `LAPSE_K` (`stellarBody.ts`), e ele não é a chave do
+conserto — é a chave do **modo lapse inteiro**. Três fatos, conferidos na fonte:
+
+1. **Virar `LAPSE_K` acelera o relógio junto.** `cycleMultiplierFor(lapse)` =
+   `1 + 39·√lapse` (`sol/cycle.js`) é lido pelo wrapper como `cycMul` para
+   avançar `cycleTime`. Qualquer valor > 0 já multiplica o relógio (1e-6 dá
+   1,039×; 1 dá 40×) POR CIMA dos 36× da dramaturgia — e o `if (desired >
+   cycleTime)` do empurrão deixaria de disparar no meio, trocando a dramaturgia
+   do arranque. Ligar o conserto e mudar o Sol seriam a mesma linha.
+2. **E ligá-lo "de leve" não liga o conserto.** A força das rampas largas é
+   `cycleEasingFor(m)` = `(m−1)/8` grampeado em [0,1]: para entrarem INTEIRAS é
+   preciso m ≥ 9, ou seja `lapse` ≥ 0,042 — que é pôr o relógio a 9× de
+   propósito. Não existe dose que compre só o conserto.
+3. **A aceleração da casa é INVISÍVEL para o gate do conserto.** O `if` de
+   `lifeEnvelopeEased` pergunta por `LAPSE_K` e pelo evento de ciclo; a casa não
+   usa nenhum dos dois — ela empurra `cycleTime`/`cycleWarp` DIRETO, e
+   `cycleMultiplier()` continua devolvendo 1. `cycleEasingFor(1)` = 0. Os 55×
+   que a casa roda não chegam à função que decidiria alargar as rampas.
+
+**O conserto certo é um sinal NOVO** — a taxa de warp do próprio relógio da casa
+alimentando `cycleEasingFor` —, e ele **exige editar `sol/activity.js`**, que a
+**regra M3 do NORTE proíbe** ("corrigir bug do núcleo = corrigir LÁ e re-copiar").
+A exceção é a **decisão 1 do §6 deste bastão, que continua ABERTA com o dono**.
+
+**E há uma bifurcação que precisa da decisão dele ANTES, não depois:** sob
+`?shot=` o `delta` é 0, mas `updateActiveRegions` roda com o warp já aplicado.
+Um conserto que valha na captura **move os md5 do Sol** — inclusive os quatro
+que a F3 acabou de pôr para aprovação; um que só valha com `delta > 0` sai
+**zero pixel e invisível para os 12 juízes da casa**, que olham quadro
+congelado. É o aviso do §8.4 repetido palavra por palavra: conserto
+ANTI-TREMELUZIR pede a régua de MOVIMENTO que a casa ainda não tem.
+
+**Recomendação:** não ligar antes de (a) o dono decidir o §6.1 e (b) existir a
+bancada de movimento. Empilhar uma segunda mudança de baseline no `sol` no exato
+momento em que a primeira espera aprovação é o pior momento possível.
 
 ### 8.3 Defeitos da casa que a varredura encontrou
 
