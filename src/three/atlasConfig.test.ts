@@ -13,6 +13,7 @@ import {
   CAMADAS_DO_ATLAS,
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
+  ANOES_DO_SISTEMA,
   NOMES_DOS_CORPOS,
   NOME_DO_SISTEMA,
   tituloDeCorpo,
@@ -129,7 +130,7 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
   });
 
   it('completude: todo corpo BUSCÁVEL (os dez + as luas) tem nome e classe', () => {
-    for (const c of [...CORPOS_DO_SISTEMA, ...LUAS_DO_SISTEMA]) {
+    for (const c of [...CORPOS_DO_SISTEMA, ...LUAS_DO_SISTEMA, ...ANOES_DO_SISTEMA]) {
       expect(c.nome, `'${c.id}' sem nome`).toBeTruthy();
       expect(c.classe, `'${c.id}' sem classe`).toBeTruthy();
       expect(NOMES_DOS_CORPOS[c.id], `'${c.id}' fora da fonte única`).toBeTruthy();
@@ -138,7 +139,7 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
 
   it('toda lua declara o pai — é dele que a nota mede e que o degrau enquadra', () => {
     // F5: as 17 texturadas entram pelo mesmo contrato das marcianas
-    expect(LUAS_DO_SISTEMA).toHaveLength(20);
+    expect(LUAS_DO_SISTEMA).toHaveLength(21);
     expect(LUAS_DO_SISTEMA[0]).toMatchObject({ id: 'moon', nome: 'Lua', classe: 'lua', pai: 'earth' });
     expect(LUAS_DO_SISTEMA[1]).toMatchObject({ id: 'phobos', nome: 'Fobos', classe: 'lua', pai: 'mars' });
     expect(LUAS_DO_SISTEMA[2]).toMatchObject({ id: 'deimos', nome: 'Deimos', classe: 'lua', pai: 'mars' });
@@ -158,5 +159,24 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
     expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'moon')).toBe(false);
     expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'phobos')).toBe(false);
     expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'titan')).toBe(false);
+    expect(LUAS_DO_SISTEMA.find((l) => l.id === 'charon')).toMatchObject({
+      nome: 'Caronte',
+      pai: 'pluto',
+    });
+  });
+
+  it('os anões da F6 são buscáveis e não são lua nem vértice', () => {
+    expect(ANOES_DO_SISTEMA.map((a) => a.id)).toEqual([
+      'ceres',
+      'haumea',
+      'makemake',
+      'eris',
+      'quaoar',
+    ]);
+    for (const a of ANOES_DO_SISTEMA) {
+      expect(a.classe).toBe('planeta anão');
+      expect(CORPOS_DO_SISTEMA.some((c) => c.id === a.id)).toBe(false);
+      expect(LUAS_DO_SISTEMA.some((l) => l.id === a.id)).toBe(false);
+    }
   });
 });

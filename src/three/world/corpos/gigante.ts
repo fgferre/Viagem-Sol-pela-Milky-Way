@@ -46,6 +46,7 @@ import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
 import {
+  CORPOS_COM_ANEL,
   GLSL_SOMBRA_ECLIPSE,
   PARES_DE_ECLIPSE,
   criaSombraNaCena,
@@ -91,6 +92,18 @@ export const GIGANTES: readonly { readonly id: string }[] = [
  * = 1,110; F-ring externo 140 180 / 60 268 = 2,326. Cicatriz W5-B.
  */
 export const ANEL_SATURNO = { rInt: 1.11, rExt: 2.326 } as const;
+
+/**
+ * Anéis U/N/Q — raios CITADOS de DADOS-ANEIS-F6.md, em unidades do
+ * raio equatorial BODY_AXES. Urano: anel 6 → ε (French24 / PDS-U).
+ * Netuno: Le Verrier → Adams (dePater18). Quaoar: Q2R → Q1R (Pereira23).
+ */
+export const ANEIS_CITADOS: Record<string, { rInt: number; rExt: number }> = {
+  saturn: ANEL_SATURNO,
+  uranus: { rInt: 41837.09 / 25559, rExt: 51149.07 / 25559 },
+  neptune: { rInt: 53200 / 24764, rExt: 62933 / 24764 },
+  quaoar: { rInt: 2520 / 543, rExt: 4057 / 543 },
+};
 
 /** Raios do corpo em pc — BODY_AXES pelos conversores únicos. */
 export function raiosDoGigantePc(id: string): { a: number; c: number; b: number } {
@@ -186,7 +199,7 @@ void main() {
 }
 `;
 
-const ANEL_VERT = /* glsl */ `
+export const ANEL_VERT = /* glsl */ `
 varying vec3 vPos;
 void main() {
   vPos = position;
@@ -238,6 +251,77 @@ void main() {
   float brilho = mesmoLado > 0.0 ? lambert : (0.18 + 1.6 * frente);
   vec3 albedo = placa.rgb;
   if (dot(albedo, albedo) < 1.0e-6) albedo = vec3(0.72, 0.68, 0.58);
+  vec3 direta = albedo * (brilho * uLuzGanho) * sombraDoPlaneta(vPos);
+  gl_FragColor = vec4(direta, alpha);
+}
+`;
+
+/**
+ * ANEL PROCEDURAL (F6) — Urano/Netuno/Quaoar. Sem placa de missão.
+ * Dosagem honesta: partículas de carvão (albedo ~0,05); Urano ε
+ * assimétrico (peri 19,7 → apo 96,4 km); Netuno só arcos
+ * Fraternité+Égalité; o resto é traço/véu.
+ */
+export const ANEL_PROC_FRAG = /* glsl */ `
+uniform vec3 uDirSolLocal;
+uniform vec3 uCamLocal;
+uniform float uLuzGanho;
+uniform float uKPolar;
+uniform vec2 uAnelRaios;
+uniform float uModo; // 0=Urano 1=Netuno 2=Quaoar
+varying vec3 vPos;
+vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
+float sombraDoPlaneta(vec3 p) {
+  vec3 dir = uDirSolLocal;
+  float k = max(uKPolar, 1.0e-4);
+  vec3 o = vec3(p.x, p.y, p.z / k);
+  vec3 d = vec3(dir.x, dir.y, dir.z / k);
+  float a = dot(d, d);
+  float b = 2.0 * dot(o, d);
+  float c = dot(o, o) - 1.0;
+  float delta = b * b - 4.0 * a * c;
+  bool hit = delta >= 0.0 && b < 0.0;
+  return hit ? 0.22 : 1.0;
+}
+void main() {
+  float r = length(vPos.xy);
+  float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
+  if (u < 0.0 || u > 1.0) discard;
+  float lon = atan(vPos.y, vPos.x);
+  float alpha = 0.04;
+  if (uModo < 0.5) {
+    // Urano: ε domina (u→1), largura cresce no apoapse (lon≈0)
+    float eps = smoothstep(0.82, 0.92, u);
+    float assim = 0.35 + 0.65 * (0.5 + 0.5 * cos(lon));
+    alpha = mix(0.03, 0.22 * assim, eps);
+  } else if (uModo < 1.5) {
+    // Netuno: traço + arcos Fraternité (0–10°) e Égalité (~11–14°)
+    float deg = degrees(lon);
+    if (deg < 0.0) deg += 360.0;
+    float arco = 0.0;
+    if (deg < 10.0) arco = 1.0;
+    else if (deg > 10.5 && deg < 14.0) arco = 0.7;
+    alpha = mix(0.02, 0.28, arco) * smoothstep(0.85, 1.0, u);
+  } else {
+    // Quaoar: Q1R (u→1) didático; um setor denso
+    float deg = degrees(lon);
+    if (deg < 0.0) deg += 360.0;
+    float setor = deg < 22.0 ? 1.0 : 0.0;
+    // didático a 42 UA: o τ real some; um anel fino + arco denso.
+    float faixa = smoothstep(0.72, 0.84, u) * (1.0 - smoothstep(0.96, 1.0, u));
+    alpha = mix(0.35, 0.9, setor) * faixa;
+  }
+  if (alpha < 0.004) discard;
+  vec3 n = vec3(0.0, 0.0, 1.0);
+  vec3 view = normSeguro(uCamLocal - vPos);
+  float nDotL = dot(n, uDirSolLocal);
+  float nDotV = dot(n, view);
+  float phase = max(dot(-uDirSolLocal, view), 0.0);
+  float mesmoLado = nDotL * nDotV;
+  float frente = pow(phase, 6.0);
+  float lambert = max(abs(nDotL), 0.12);
+  float brilho = mesmoLado > 0.0 ? lambert : (0.18 + 1.6 * frente);
+  vec3 albedo = uModo > 1.5 ? vec3(0.42, 0.34, 0.26) : vec3(0.06, 0.055, 0.05);
   vec3 direta = albedo * (brilho * uLuzGanho) * sombraDoPlaneta(vPos);
   gl_FragColor = vec4(direta, alpha);
 }
@@ -345,7 +429,7 @@ export class GiganteResolvido {
     this.razaoC = c / a;
     this.razaoB = b / a;
     this.kPolar = c / a;
-    this.temAnel = this.idCorpo === 'saturn';
+    this.temAnel = (CORPOS_COM_ANEL as readonly string[]).includes(this.idCorpo);
     this.group.visible = false;
     this.estado = {
       emQuadro: false,
@@ -511,7 +595,12 @@ export class GiganteResolvido {
         },
         uEscalaLocal: { value: new THREE.Vector3(1, this.razaoC, this.razaoB) },
         uAnelAtivo: { value: this.temAnel ? 1 : 0 },
-        uAnelRaios: { value: new THREE.Vector2(ANEL_SATURNO.rInt, ANEL_SATURNO.rExt) },
+        uAnelRaios: {
+          value: new THREE.Vector2(
+            (ANEIS_CITADOS[this.idCorpo] ?? ANEL_SATURNO).rInt,
+            (ANEIS_CITADOS[this.idCorpo] ?? ANEL_SATURNO).rExt
+          ),
+        },
         ...uniformsDeEclipseNeutros(),
       },
       depthWrite: true,
@@ -523,17 +612,21 @@ export class GiganteResolvido {
     this.group.add(this.superficie);
 
     if (this.temAnel) {
-      this.geoAnel = new THREE.RingGeometry(ANEL_SATURNO.rInt, ANEL_SATURNO.rExt, 192);
+      const anel = ANEIS_CITADOS[this.idCorpo] ?? ANEL_SATURNO;
+      const placa = this.idCorpo === 'saturn';
+      const modo = this.idCorpo === 'neptune' ? 1 : this.idCorpo === 'quaoar' ? 2 : 0;
+      this.geoAnel = new THREE.RingGeometry(anel.rInt, anel.rExt, 192);
       this.matAnel = new THREE.ShaderMaterial({
         vertexShader: ANEL_VERT,
-        fragmentShader: ANEL_FRAG,
+        fragmentShader: placa ? ANEL_FRAG : ANEL_PROC_FRAG,
         uniforms: {
           uMapaAnel: { value: this.dummyAnel },
           uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
           uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
           uLuzGanho: { value: 1 },
           uKPolar: { value: this.kPolar },
-          uAnelRaios: { value: new THREE.Vector2(ANEL_SATURNO.rInt, ANEL_SATURNO.rExt) },
+          uAnelRaios: { value: new THREE.Vector2(anel.rInt, anel.rExt) },
+          uModo: { value: modo },
         },
         transparent: true,
         depthWrite: false,
@@ -580,7 +673,7 @@ export class GiganteResolvido {
       this.matSuperficie!.uniforms.uMapaDia.value = tex;
       this.texturasVivas.push(tex);
 
-      if (this.temAnel) {
+      if (this.temAnel && id === 'saturn') {
         const varAnel = escolherVariante(manifest.entradas, id, 'ring', alvo, webpOk);
         if (!varAnel) throw new Error(`${id} sem variante para 'ring' ≤ ${alvo}px`);
         const texAnel = await carregar(`${base}${varAnel.arquivo}`);

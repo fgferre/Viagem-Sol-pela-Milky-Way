@@ -491,7 +491,7 @@ describe("registro de constantes do shader (a F2c interpola daqui)", () => {
 
 describe("PARES_DE_ECLIPSE — contratos da tabela", () => {
   it("são os 15 pares do doador + as 5 luas de Urano + as 2 marcianas da F3 (data-only)", () => {
-    expect(Object.keys(PARES_DE_ECLIPSE)).toHaveLength(22);
+    expect(Object.keys(PARES_DE_ECLIPSE)).toHaveLength(23);
     for (const lua of ["miranda", "ariel", "umbriel", "titania", "oberon"]) {
       expect(PARES_DE_ECLIPSE[lua]).toBe("uranus");
     }
@@ -499,6 +499,8 @@ describe("PARES_DE_ECLIPSE — contratos da tabela", () => {
     // pai" é cobrado pelo teste abaixo sem mudar uma linha
     expect(PARES_DE_ECLIPSE.phobos).toBe("mars");
     expect(PARES_DE_ECLIPSE.deimos).toBe("mars");
+    expect(PARES_DE_ECLIPSE.pluto).toBe("charon");
+    expect(PARES_DE_ECLIPSE.charon).toBe("pluto");
   });
 
   it("todo receptor aponta um corpo REAL do registro orbital, diferente de si mesmo", () => {

@@ -84,16 +84,18 @@ import {
   uniformsDeEclipseNeutros,
 } from './terra';
 import type { ManifestDeTexturas } from './terra';
+import { ANEIS_CITADOS, ANEL_PROC_FRAG, ANEL_VERT } from './gigante';
 
 
 /**
  * Limiar aparente da LUA rochosa. O gate do planeta (4 px) nasceria
  * Io/Europa/Ganimedes (37/10/11 px) no retrato oficial de Júpiter e
  * Tétis/Titã no de Saturno — as 4 vistas da F4 deixariam de ser
- * bit-idênticas. 64 px é ~16× o limiar do planeta: a lua só entra
- * como assunto (a vista titan/europa mede ~829 px a 4 raios).
+ * bit-idênticas. 48 px é 12× o limiar: Caronte na vista
+ * plutao-caronte (~63 px) entra; Io no retrato de Júpiter (37 px)
+ * fica de fora.
  */
-export const LIMIAR_LUA_ROCHOSA_PX = 64;
+export const LIMIAR_LUA_ROCHOSA_PX = 48;
 
 /** Os dois BRDFs da fase — Lommel-Seeliger (regolito) ou Lambert. */
 export type BrdfDoRochoso = 'ls' | 'lambert';
@@ -102,6 +104,8 @@ export type BrdfDoRochoso = 'ls' | 'lambert';
 export interface ConfigDoRochoso {
   readonly id: string;
   readonly brdf: BrdfDoRochoso;
+  /** F6: Haumea/Makemake/Éris/Quaoar — o −3 inventado; sem mapa. */
+  readonly superficie?: 'mapa' | 'procedural';
 }
 
 /**
@@ -134,6 +138,13 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'titania', brdf: 'lambert' },
   { id: 'oberon', brdf: 'lambert' },
   { id: 'triton', brdf: 'lambert' },
+  { id: 'pluto', brdf: 'lambert' },
+  { id: 'charon', brdf: 'lambert' },
+  { id: 'ceres', brdf: 'lambert' },
+  { id: 'haumea', brdf: 'lambert', superficie: 'procedural' },
+  { id: 'makemake', brdf: 'lambert', superficie: 'procedural' },
+  { id: 'eris', brdf: 'lambert', superficie: 'procedural' },
+  { id: 'quaoar', brdf: 'lambert', superficie: 'procedural' },
 ];
 
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos
@@ -246,6 +257,63 @@ void main() {
 }
 `;
 
+/**
+ * PROCEDURAL (F6) — o −3 inventado do doador, declarado. Sem mapa:
+ * albedo = cor-base + ruído 3 oitavas. Lambert + eclipse como as irmãs.
+ */
+export const ROCHOSO_PROC_FRAG = /* glsl */ `
+uniform vec3 uAlbedoBase;
+uniform vec3 uDirSolLocal;
+uniform vec3 uCamLocal;
+uniform float uLuzGanho;
+uniform vec3 uNormalEsc;
+uniform vec3 uEscalaLocal;
+varying vec3 vLocal;
+varying vec2 vUv;
+vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
+${GLSL_NORMAL_ELIPSOIDE}
+${GLSL_SOMBRA_ECLIPSE}
+float hash31(vec3 p) {
+  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+}
+float ruido(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float n000 = hash31(i);
+  float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
+  float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
+  float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
+  float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
+  float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
+  float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
+  float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+  float nx00 = mix(n000, n100, f.x);
+  float nx10 = mix(n010, n110, f.x);
+  float nx01 = mix(n001, n101, f.x);
+  float nx11 = mix(n011, n111, f.x);
+  return mix(mix(nx00, nx10, f.y), mix(nx01, nx11, f.y), f.z);
+}
+void main() {
+  vec3 n = normalDoCorpo(vLocal, uNormalEsc);
+  vec3 pElip = vLocal * uEscalaLocal;
+  float ndotl = max(dot(n, uDirSolLocal), 0.0);
+  float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
+  vec3 albedo = uAlbedoBase * (0.72 + 0.56 * g);
+  vec3 direta =
+    (albedo * ndotl) * uLuzGanho * fatorDeEclipse(pElip, n, dot(n, uDirSolLocal));
+  gl_FragColor = vec4(direta, 1.0);
+}
+`;
+
+/** Cores-base do −3 inventado (doador proceduralSurface / celestialBodies). */
+export const ALBEDO_PROCEDURAL: Record<string, readonly [number, number, number]> = {
+  haumea: [0.91, 0.835, 0.769],
+  makemake: [0.831, 0.647, 0.455],
+  eris: [0.941, 0.902, 0.824],
+  quaoar: [0.533, 0.329, 0.259],
+};
+
 // ------------------------------------------------------------
 // A classe — o molde é a Lua; o que a Terra tem a mais (cessão,
 // retrato) entra como ramo de DADO (planeta × lua), nunca cópia.
@@ -320,6 +388,10 @@ export class RochosoResolvido {
   private geometria: THREE.SphereGeometry | null = null;
   private superficie: THREE.Mesh | null = null;
   private matSuperficie: THREE.ShaderMaterial | null = null;
+  private geoAnel: THREE.RingGeometry | null = null;
+  private anel: THREE.Mesh | null = null;
+  private matAnel: THREE.ShaderMaterial | null = null;
+  private readonly mRx = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
 
   // rascunhos reusados — zero alocação por quadro (M4 da casa)
   private readonly vX = new THREE.Vector3();
@@ -508,18 +580,36 @@ export class RochosoResolvido {
     u.uLuzGanho.value = ganho;
     // a sombra do eclipse — o mesmo fio das irmãs (sem deriva: casca única)
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
+
+    if (this.anel && this.matAnel) {
+      this.anel.matrix
+        .makeBasis(this.vX, this.vY, this.vZ)
+        .scale(this.vEscala.set(this.raioA, this.raioA, this.raioA))
+        .multiply(this.mRx)
+        .setPosition(this.centro);
+      const ua = this.matAnel.uniforms;
+      (ua.uDirSolLocal.value as THREE.Vector3).set(sLx, sLz, -sLy);
+      (ua.uCamLocal.value as THREE.Vector3).set(cLx, cLz, -cLy);
+      ua.uLuzGanho.value = ganho;
+    }
   }
 
   /** geometria + material + mesh, UMA vez, na primeira necessidade. */
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
     this.geometria = new THREE.SphereGeometry(1, 128, 64);
+    const procedural = this.config.superficie === 'procedural';
+    const albedo = ALBEDO_PROCEDURAL[this.config.id] ?? [0.5, 0.5, 0.5];
     this.matSuperficie = new THREE.ShaderMaterial({
       vertexShader: ROCHOSO_VERT,
-      fragmentShader:
-        this.config.brdf === 'ls' ? ROCHOSO_LS_FRAG : ROCHOSO_LAMBERT_FRAG,
+      fragmentShader: procedural
+        ? ROCHOSO_PROC_FRAG
+        : this.config.brdf === 'ls'
+          ? ROCHOSO_LS_FRAG
+          : ROCHOSO_LAMBERT_FRAG,
       uniforms: {
         uMapaDia: { value: null },
+        uAlbedoBase: { value: new THREE.Vector3(albedo[0], albedo[1], albedo[2]) },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },
@@ -539,11 +629,40 @@ export class RochosoResolvido {
     this.superficie = new THREE.Mesh(this.geometria, this.matSuperficie);
     this.superficie.matrixAutoUpdate = false;
     this.group.add(this.superficie);
+
+    if (this.config.id === 'quaoar') {
+      const anel = ANEIS_CITADOS.quaoar;
+      this.geoAnel = new THREE.RingGeometry(anel.rInt, anel.rExt, 192);
+      this.matAnel = new THREE.ShaderMaterial({
+        vertexShader: ANEL_VERT,
+        fragmentShader: ANEL_PROC_FRAG,
+        uniforms: {
+          uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
+          uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
+          uLuzGanho: { value: 1 },
+          uKPolar: { value: this.razaoC },
+          uAnelRaios: { value: new THREE.Vector2(anel.rInt, anel.rExt) },
+          uModo: { value: 2 },
+        },
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide,
+      });
+      this.anel = new THREE.Mesh(this.geoAnel, this.matAnel);
+      this.anel.matrixAutoUpdate = false;
+      this.group.add(this.anel);
+    }
   }
 
   /** a carga preguiçosa — manifest, escada por tier, UM canal (map). */
   private iniciarCarga() {
     this.texturas = 'buscando';
+    if (this.config.superficie === 'procedural') {
+      this.garantirCasca();
+      this.texturas = 'pronta';
+      return;
+    }
     const { base, tier, maxTextureSize } = this.opcoes;
     const id = this.config.id;
     const buscar =
@@ -600,6 +719,8 @@ export class RochosoResolvido {
     this.group.clear();
     this.geometria?.dispose();
     this.matSuperficie?.dispose();
+    this.geoAnel?.dispose();
+    this.matAnel?.dispose();
     for (const t of this.texturasVivas) t.dispose();
     this.texturasVivas.length = 0;
   }

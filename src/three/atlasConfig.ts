@@ -176,6 +176,12 @@ export const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> 
   titania: { nome: 'Titânia', classe: 'lua' },
   oberon: { nome: 'Oberon', classe: 'lua' },
   triton: { nome: 'Tritão', classe: 'lua' },
+  charon: { nome: 'Caronte', classe: 'lua' },
+  ceres: { nome: 'Ceres', classe: 'planeta anão' },
+  haumea: { nome: 'Haumea', classe: 'planeta anão' },
+  makemake: { nome: 'Makemake', classe: 'planeta anão' },
+  eris: { nome: 'Éris', classe: 'planeta anão' },
+  quaoar: { nome: 'Quaoar', classe: 'planeta anão' },
 };
 
 /** O prefixo que separa a chave de um corpo da de uma estrela. */
@@ -217,6 +223,21 @@ export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
   { id: 'titania', ...NOMES_DOS_CORPOS.titania, chave: `${CHAVE_DE_CORPO}titania`, pai: 'uranus' },
   { id: 'oberon', ...NOMES_DOS_CORPOS.oberon, chave: `${CHAVE_DE_CORPO}oberon`, pai: 'uranus' },
   { id: 'triton', ...NOMES_DOS_CORPOS.triton, chave: `${CHAVE_DE_CORPO}triton`, pai: 'neptune' },
+  { id: 'charon', ...NOMES_DOS_CORPOS.charon, chave: `${CHAVE_DE_CORPO}charon`, pai: 'pluto' },
+];
+
+/**
+ * ANÕES SEM PONTO FOTOMÉTRICO (F6) — fora de CORPOS_DO_SISTEMA (aquela
+ * lista é o vértice da camada) e fora de LUAS (não orbitam um planeta
+ * com mesh de pai). A busca os acha; o degrau é o de planeta
+ * (órbita em torno do Sol → aproximar o globo).
+ */
+export const ANOES_DO_SISTEMA: readonly CorpoDoSistema[] = [
+  { id: 'ceres', ...NOMES_DOS_CORPOS.ceres, chave: `${CHAVE_DE_CORPO}ceres` },
+  { id: 'haumea', ...NOMES_DOS_CORPOS.haumea, chave: `${CHAVE_DE_CORPO}haumea` },
+  { id: 'makemake', ...NOMES_DOS_CORPOS.makemake, chave: `${CHAVE_DE_CORPO}makemake` },
+  { id: 'eris', ...NOMES_DOS_CORPOS.eris, chave: `${CHAVE_DE_CORPO}eris` },
+  { id: 'quaoar', ...NOMES_DOS_CORPOS.quaoar, chave: `${CHAVE_DE_CORPO}quaoar` },
 ];
 
 // ============================================================

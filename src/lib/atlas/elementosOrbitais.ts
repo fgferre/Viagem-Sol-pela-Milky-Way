@@ -642,4 +642,46 @@ export const CATALOG_TNOS: Record<string, SatelliteEntry> = {
       nDegPerDay: 0.0035,
     },
   },
+  // F6: Haumea/Makemake/Éris — elementos heliocêntricos do doador
+  // (celestialBodies.ts), n = Kepler III no a publicado. Sem fixture
+  // Horizons na casa; a nota do registro (família catálogo) cobre.
+  haumea: {
+    parent: "sun",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 43.218,
+      e: 0.188,
+      iDeg: 28.19,
+      OmegaDeg: 121.9,
+      omegaDeg: 240.2,
+      M0Deg: 217.7,
+      nDegPerDay: 0.0034689,
+    },
+  },
+  makemake: {
+    parent: "sun",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 45.715,
+      e: 0.159,
+      iDeg: 29.0,
+      OmegaDeg: 79.4,
+      omegaDeg: 298.4,
+      M0Deg: 165.5,
+      nDegPerDay: 0.0031891,
+    },
+  },
+  eris: {
+    parent: "sun",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 67.781,
+      e: 0.44,
+      iDeg: 44.04,
+      OmegaDeg: 35.8,
+      omegaDeg: 151.4,
+      M0Deg: 205.9,
+      nDegPerDay: 0.0017663,
+    },
+  },
 };

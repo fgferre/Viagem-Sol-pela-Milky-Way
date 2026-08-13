@@ -72,6 +72,7 @@ import {
   CHAVE_DE_CORPO,
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
+  ANOES_DO_SISTEMA,
   claraoDoAtlas,
 } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
@@ -1555,6 +1556,9 @@ export class Director {
         degrau === 'orbita' &&
         (this.focoCorpoId === 'earth' ||
           this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId) ||
+          this.rochosos.some(
+            (r) => !r.corpo.planeta && ANOES_DO_SISTEMA.some((a) => a.id === r.corpo.id) && r.corpo.id === this.focoCorpoId
+          ) ||
           this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId)),
     };
   }
@@ -1604,6 +1608,10 @@ export class Director {
     // degrau).
     if (LUAS_DO_SISTEMA.some((l) => l.id === id)) {
       this.focarNaLua(id);
+      return;
+    }
+    if (ANOES_DO_SISTEMA.some((a) => a.id === id)) {
+      this.focarNoAnao(id);
       return;
     }
     // O GESTO DA DESCIDA (D7): clicar no MESMO corpo já focado em
@@ -1656,10 +1664,12 @@ export class Director {
     // só corpos com mesh resolvido descem: a Terra, os planetas da F3
     // e os gigantes da F4 (a lista viva dos construídos)
     const ehGigante = this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === id);
+    const ehRochoso = this.rochosos.some((r) => r.corpo.id === id);
     const ehPlanetaResolvido =
       id === 'earth' ||
       this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === id) ||
-      ehGigante;
+      ehGigante ||
+      (ehRochoso && ANOES_DO_SISTEMA.some((a) => a.id === id));
     if (!ehPlanetaResolvido) return;
     // o centro sai da MESMA cadeia do mesh (efeméride viva, retrato sem
     // ela) — calculado aqui e não lido do estado do tick, porque o boot
@@ -1836,7 +1846,38 @@ export class Director {
       }
       return { id: l.id, nome: l.nome, classe: l.classe, rUA, pai: l.pai };
     });
-    return [...dez, ...luas];
+    const anoes = ANOES_DO_SISTEMA.map((a) => {
+      let rUA = Number.NaN;
+      if (this.efemeride) {
+        const p = this.efemeride.posicaoHeliocentrica(a.id, jd);
+        rUA = Math.hypot(p.x, p.y, p.z);
+      }
+      return { id: a.id, nome: a.nome, classe: a.classe, rUA };
+    });
+    return [...dez, ...luas, ...anoes];
+  }
+
+  /** anão heliocêntrico: órbita em torno do Sol, depois o globo. */
+  private focarNoAnao(id: string) {
+    const entrada = ANOES_DO_SISTEMA.find((a) => a.id === id);
+    if (!entrada) return;
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = 'orbita';
+    this.events.onFoco(entrada.nome);
+    this.emitirEscada();
+    if (!this.efemeride) {
+      this.garantirEfemerides();
+      return;
+    }
+    const jd = grampearJd(this.jdPedido);
+    const p = this.efemeride.posicaoHeliocentrica(id, jd);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const pos = new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+    if (pos.lengthSq() === 0) return;
+    this.atlas.focar(ORIGEM, pos.length(), pos, { rampa: this.rampaDaEscada() });
+    this.enquadrarAgora();
+    this.teletransportou();
   }
 
   /**

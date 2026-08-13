@@ -158,7 +158,7 @@ describe('4. o anel de Saturno (D6 / W5-B)', () => {
   });
 
   it('Saturno NÃO é receptor de eclipse — o contrato CORPOS_COM_ANEL', () => {
-    expect(CORPOS_COM_ANEL).toContain('saturn');
+    expect(CORPOS_COM_ANEL).toEqual(['saturn', 'uranus', 'neptune', 'quaoar']);
     expect(FONTE).toContain('CORPOS_COM_ANEL');
   });
 });

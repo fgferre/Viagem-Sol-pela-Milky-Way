@@ -925,6 +925,44 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
     primeMeridianDeg: 302.695,
     spinRateDegPerDay: 56.3625225,
   },
+  // NAIF 2000001 — pck00011 BODY2000001_POLE_*/PM
+  ceres: {
+    poleRaDeg: 291.418,
+    poleDecDeg: 66.764,
+    primeMeridianDeg: 170.65,
+    spinRateDegPerDay: 952.1532,
+  },
+  // F6: sem IAU no pck00011. Polo = norte ECLÍPTICO em equatorial
+  // (α=270°, δ=66,5607°) — o mesmo da câmera pinada de quaoar-anel;
+  // W de 17,68 h (Pereira23 / Morgado23). Didático, declarado.
+  quaoar: {
+    poleRaDeg: 270,
+    poleDecDeg: 66.5607,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 488.6877828,
+  },
+  // F6: Haumea/Makemake/Éris sem kernel. Polo equatorial norte
+  // declarado (não há IAU no pck); W da rotação publicada do doador
+  // (3,9 h / 7,77 h / 25,9 h). Superfície procedural — o polo só
+  // orienta o −3 inventado.
+  haumea: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 2215.3846154,
+  },
+  makemake: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 1111.9691117,
+  },
+  eris: {
+    poleRaDeg: 0,
+    poleDecDeg: 90,
+    primeMeridianDeg: 0,
+    spinRateDegPerDay: 333.5907336,
+  },
 };
 
 /**
@@ -978,4 +1016,18 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   uranus: [25559, 25559, 24973],
   neptune: [24764, 24764, 24341],
   triton: [1352.6, 1352.6, 1352.6],
+  // F6: esferas/elipsoides mão-mantidas. Plutão/Caronte BODY999/901
+  // do pck00011; Ceres BODY2000001_RADII 487,3×454,7. Quaoar:
+  // R=543 km [Pereira23] × shapeScale [1,18, 0,99, 0,86] em ordem
+  // de publicação (a,b,c) — c curto = eixo de rotação (cicatriz
+  // herdada; a matriz aplica (a,c,b)). Haumea Jacobi ~1161×852×513
+  // ( Lockwood et al. / IAU); Makemake 715 e Éris 1163 esferas
+  // (ocultações; donor radiusKm).
+  pluto: [1188.3, 1188.3, 1188.3],
+  charon: [606, 606, 606],
+  ceres: [487.3, 487.3, 454.7],
+  quaoar: [640.74, 537.57, 466.98],
+  haumea: [1161, 852, 513],
+  makemake: [715, 715, 715],
+  eris: [1163, 1163, 1163],
 };

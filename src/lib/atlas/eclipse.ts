@@ -372,6 +372,9 @@ export const PARES_DE_ECLIPSE: Readonly<Record<string, string>> = {
   // foram como os raios e albedos dos dois corpos foram medidos).
   triton: "neptune",
   charon: "pluto",
+  // F6: o outro lado do par Plutão–Caronte (os eventos mútuos
+  // 1985–1990). Saturno/Urano/Netuno/Quaoar NÃO entram — anel.
+  pluto: "charon",
   // Fobos e Deimos na sombra de Marte (F3, data-only — a mudança
   // prometida no JSDoc acima): Fobos orbita a 1,4 raios marcianos de
   // altitude no plano equatorial, então o eclipse é frequente de
@@ -388,7 +391,12 @@ export const PARES_DE_ECLIPSE: Readonly<Record<string, string>> = {
  * nascerem — o teste do contrato lê esta lista, então a extensão é
  * uma linha aqui e a cobrança continua sozinha.
  */
-export const CORPOS_COM_ANEL: readonly string[] = ["saturn"];
+export const CORPOS_COM_ANEL: readonly string[] = [
+  "saturn",
+  "uranus",
+  "neptune",
+  "quaoar",
+];
 
 // ============================================================
 // F2c — O DRIVER POR QUADRO: da efeméride ao uniforme, e o trecho

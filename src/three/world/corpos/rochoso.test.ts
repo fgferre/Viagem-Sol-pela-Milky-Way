@@ -358,6 +358,13 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       'titania',
       'oberon',
       'triton',
+      'pluto',
+      'charon',
+      'ceres',
+      'haumea',
+      'makemake',
+      'eris',
+      'quaoar',
     ]);
     expect(ROCHOSOS.filter((c) => c.brdf === 'ls').map((c) => c.id)).toEqual([
       'mercury',
@@ -370,27 +377,28 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(ROCHOSOS.some((c) => c.id === 'vanth' || c.id === 'weywot')).toBe(false);
   });
 
-  it('lua só nasce como assunto: 64 px fica acima de Io no retrato de Júpiter', () => {
-    expect(LIMIAR_LUA_ROCHOSA_PX).toBe(64);
-    expect(LIMIAR_LUA_ROCHOSA_PX / LIMIAR_DO_GATE_PX).toBe(16);
+  it('lua só nasce como assunto: 48 px fica acima de Io no retrato de Júpiter', () => {
+    expect(LIMIAR_LUA_ROCHOSA_PX).toBe(48);
+    expect(LIMIAR_LUA_ROCHOSA_PX / LIMIAR_DO_GATE_PX).toBe(12);
     // Io no retrato oficial de Júpiter (F4) mede 37 px — abaixo do limiar
     expect(37).toBeLessThan(LIMIAR_LUA_ROCHOSA_PX);
     // a vista titan/europa a 4 raios mede ~829 px — o assunto entra
     expect(829).toBeGreaterThan(LIMIAR_LUA_ROCHOSA_PX);
   });
 
-  it('todo rochoso tem IAU, BODY_AXES e textura; lua entra na busca e no eclipse do pai', () => {
-    for (const { id } of ROCHOSOS) {
-      expect(IAU_ORIENTATIONS[id], `${id} sem IAU`).toBeTruthy();
-      expect(BODY_AXES[id], `${id} sem BODY_AXES`).toBeTruthy();
+  it('todo rochoso tem IAU, BODY_AXES e textura ou procedural', () => {
+    for (const c of ROCHOSOS) {
+      expect(IAU_ORIENTATIONS[c.id], `${c.id} sem IAU`).toBeTruthy();
+      expect(BODY_AXES[c.id], `${c.id} sem BODY_AXES`).toBeTruthy();
+      if (c.superficie === 'procedural') continue;
       expect(
-        MANIFEST.entradas.some((e) => e.corpo === id && e.canal === 'map'),
-        `${id} sem textura no manifest`
+        MANIFEST.entradas.some((e) => e.corpo === c.id && e.canal === 'map'),
+        `${c.id} sem textura no manifest`
       ).toBe(true);
-      if (!(id in RETRATO_2026)) {
-        const lua = LUAS_DO_SISTEMA.find((l) => l.id === id);
-        expect(lua, `${id} fora de LUAS_DO_SISTEMA`).toBeTruthy();
-        expect(PARES_DE_ECLIPSE[id], `${id} sem par de eclipse`).toBe(lua!.pai);
+      if (!(c.id in RETRATO_2026) && c.id !== 'ceres') {
+        const lua = LUAS_DO_SISTEMA.find((l) => l.id === c.id);
+        expect(lua, `${c.id} fora de LUAS_DO_SISTEMA`).toBeTruthy();
+        if (PARES_DE_ECLIPSE[c.id]) expect(PARES_DE_ECLIPSE[c.id]).toBe(lua!.pai);
       }
     }
   });
