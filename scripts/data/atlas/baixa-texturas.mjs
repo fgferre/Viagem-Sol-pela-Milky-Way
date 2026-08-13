@@ -190,6 +190,116 @@ const FONTES = [
     url: `${SSS}/2k_neptune.jpg`,
     nomeNoDoador: '2k_neptune.jpg',
   },
+  // ---- F5 (luas em lote). NASA 3D Resources, a mesma linha
+  // Fobos/Deimos: crédito NASA/JPL-Caltech redigido. Os 2k_titan /
+  // 2k_europa do doador NÃO entram (licença não documentada). Os
+  // mosaicos USGS/Cassini ficam de fora nesta fase (bancada: Titã
+  // monocromático com costuras; Europa com 68 linhas pretas no polo
+  // sul — pendência nomeada, não promoção). Titã NASA 3D tem 49 KB
+  // (720×360): o piso de 50 KB da tabela cederia um falso-negativo.
+  {
+    corpo: 'io',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/jupiter-io-b/',
+    nomeNoDoador: 'io_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'europa',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'europa_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'ganymede',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'ganymede_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'callisto',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'callisto_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'mimas',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'mimas_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'enceladus',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'enceladus_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'tethys',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'tethys_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'dione',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'dione_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'rhea',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'rhea_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'titan',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'titan_nasa_3d_resource.jpg',
+    minimoBytes: 40_000,
+  },
+  {
+    corpo: 'iapetus',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'iapetus_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'miranda',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'miranda_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'ariel',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'ariel_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'umbriel',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'umbriel_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'titania',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'titania_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'oberon',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'oberon_nasa_3d_resource.jpg',
+  },
+  {
+    corpo: 'triton',
+    canal: 'map',
+    url: 'https://science.nasa.gov/3d-resources/',
+    nomeNoDoador: 'triton_nasa_3d_resource.jpg',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;
@@ -261,9 +371,9 @@ function baixar(url, destino, redirectsRestantes = MAXIMO_DE_REDIRECTS) {
 }
 
 /** Valida que o arquivo decodifica como imagem e tem tamanho plausível. */
-async function validarImagem(caminho) {
+async function validarImagem(caminho, minimo = MINIMO_DE_BYTES) {
   const { size } = await stat(caminho);
-  if (size < MINIMO_DE_BYTES) {
+  if (size < minimo) {
     await unlink(caminho);
     throw new Error(`${caminho}: só ${size} bytes — página de erro ou truncamento.`);
   }
@@ -333,7 +443,7 @@ async function main() {
       await baixar(fonte.url, destino);
     }
 
-    const medido = await validarImagem(destino);
+    const medido = await validarImagem(destino, fonte.minimoBytes ?? MINIMO_DE_BYTES);
     totalBytes += medido.bytes;
     console.log(
       `${fonte.corpo}/${fonte.canal}: ${medido.largura}x${medido.altura} ` +
