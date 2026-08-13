@@ -350,14 +350,14 @@ export const ALVO_DE_APOIO_CINEMA = 4096;
  * `map`, que é o que o olho lê; os canais de apoio (clouds/night/normal/
  * roughness) tetam em 4k. Alta 2k, performance 1k, em todos os canais.
  *
- * A CONTA (RGBA8, como o driver aloca): 5 canais × 8192² = 1,34 GB
- * (1,79 GB com mipmaps) para UM corpo — a lição N-9 do doador em pessoa
- * (tela branca por 3,9 GB de texturas: o driver perde o contexto e não
- * há catch para isso). Com a dose: 8192² + 4 × 4096² = 0,54 GB (0,72 GB
- * com mipmaps) — e a 795 px de disco os canais de apoio em 4k já estão
- * acima de 2 texels por pixel. A regra mora AQUI, por canal, e vale para
- * qualquer corpo futuro: um corpo de 1 canal (a Lua) mantém o 8k no
- * `map` de graça.
+ * A CONTA (RGBA8 + mipmaps 4/3). As nossas texturas são EQUIRET 2:1,
+ * não quadradas — a conta antiga (w×w) era 2× alta. Map cinema
+ * 8192×4096 = 179 MB; 4 apoios 4096×2048 = 179 MB; um corpo Terra =
+ * 0,36 GB com mip. A lição N-9 do doador (tela branca por 3,9 GB)
+ * continua válida: a dose existe para não empilhar 8k em todo canal.
+ * A 795 px de disco os apoios em 4k já estão acima de 2 texels/pixel.
+ * A regra mora AQUI, por canal, e vale para qualquer corpo futuro:
+ * um corpo de 1 canal (a Lua) mantém o 8k no `map` de graça.
  *
  * Sem sonda legível o teto é 2k — errar para baixo é barato, estourar o
  * limite do driver é tela preta.

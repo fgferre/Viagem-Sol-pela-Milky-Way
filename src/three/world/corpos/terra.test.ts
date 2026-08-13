@@ -215,8 +215,10 @@ describe('4. a escada de texturas por tier (contra o manifest REAL)', () => {
   });
 
   it('A DOSE DE VRAM (lição N-9): em cinema só o map sobe a 8k; o apoio teta em 4k', () => {
-    // 5 × 8192² RGBA8 + mipmaps ≈ 1,79 GB — a tela branca do doador.
-    // Com a dose: 8192² + 4 × 4096² ≈ 0,54 GB (0,72 GB com mipmaps).
+    // Equiret 2:1, RGBA8 + mipmaps 4/3. A conta quadrada era 2× alta.
+    const bytesEquiret = (w: number) => 4 * w * (w / 2) * (4 / 3);
+    const terraCinema = bytesEquiret(8192) + 4 * bytesEquiret(4096);
+    expect(terraCinema / 1024 ** 3).toBeCloseTo(0.333, 3);
     expect(alvoDePixels('cinema', 'map', 16384)).toBe(8192);
     for (const canal of CANAIS_DA_TERRA.filter((c) => c !== 'map')) {
       expect(alvoDePixels('cinema', canal, 16384), canal).toBe(ALVO_DE_APOIO_CINEMA);

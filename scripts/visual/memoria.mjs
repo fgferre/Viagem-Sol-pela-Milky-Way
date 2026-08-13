@@ -25,7 +25,9 @@
 //     com `?q=` usa) e é ele que pode vazar dentro de uma sessão.
 //  C. Foco em 5 corpos — `focarNoCorpo`, o MESMO ponto de pouso do
 //     `?foco=` (App.tsx: resolverFoco → escolherAlvo → focarNoCorpo).
-//     Enquadrar não aloca: delta ZERO também.
+//     Enquadrar não aloca: delta ZERO também. Além do delta, o
+//     veredito cobra um TETO residente (texturas/geometrias): Atlas
+//     quente com delta zero e 400 texturas ainda é vazamento permanente.
 //
 // O HEAP: veredito por INCLINAÇÃO, não por igualdade — o heap de V8 oscila
 // por natureza (GC, caches do JIT). O juiz força GC (HeapProfiler.
@@ -74,6 +76,12 @@ const TROCAS = 3;
 // os 5 corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=)
 const FOCOS = ['earth', 'jupiter', 'saturn', 'neptune', 'mars'];
 const LIMIAR_HEAP_MB = 12;
+// Teto RESIDENTE (não o delta). O Atlas em alta pré-aquece os 38
+// canais de corpo + pós + campo. Delta ZERO com 400 texturas ainda
+// é um vazamento permanente. Cinema usa o MESMO número de objetos
+// (os texels é que dobram) — o GB mora no comentário de alvoDePixels.
+const TETO_TEXTURAS = 120;
+const TETO_GEOMETRIAS = 80;
 const SABOTAGEM = process.argv.includes('--sabotagem');
 
 const falhas = [];
@@ -200,7 +208,9 @@ try {
     const janela = Math.max(1, Math.min(4, heaps.length >> 1));
     const inclinacao =
       mediana(heaps.slice(-janela)) - mediana(heaps.slice(0, janela));
-    return { deltaPortal, deltaResto, inclinacao };
+    const picoTextures = Math.max(...amostras.map((a) => a.textures));
+    const picoGeometries = Math.max(...amostras.map((a) => a.geometries));
+    return { deltaPortal, deltaResto, inclinacao, picoTextures, picoGeometries };
   };
 
   if (SABOTAGEM) {
@@ -257,6 +267,14 @@ try {
       v.inclinacao < LIMIAR_HEAP_MB,
       `heap pós-GC: inclinação ${v.inclinacao.toFixed(1)} MB entre medianas de janelas`
         + ` < ${LIMIAR_HEAP_MB} MB`
+    );
+    conferir(
+      v.picoTextures <= TETO_TEXTURAS,
+      `teto residente: ${v.picoTextures} texturas ≤ ${TETO_TEXTURAS}`
+    );
+    conferir(
+      v.picoGeometries <= TETO_GEOMETRIAS,
+      `teto residente: ${v.picoGeometries} geometrias ≤ ${TETO_GEOMETRIAS}`
     );
     const faseFinal = await sessao.js('window.__director.captura.fase');
     conferir(faseFinal === 'atlas', `o protocolo termina onde começou (fase '${faseFinal}')`);
