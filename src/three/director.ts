@@ -28,6 +28,12 @@ import {
   posicaoDoRochosoUA,
   raiosDoRochosoPc,
 } from './world/corpos/rochoso';
+import {
+  GIGANTES,
+  GiganteResolvido,
+  posicaoDoGiganteUA,
+  raiosDoGigantePc,
+} from './world/corpos/gigante';
 import { Planetas, PLANETAS_DEFAULT_ON, UA_POR_PC } from './world/planetas/planetas';
 import type { FonteDeEfemerides } from './world/planetas/planetas';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
@@ -290,6 +296,18 @@ export class Director {
    */
   private readonly rochosos: {
     corpo: RochosoResolvido;
+    emQuadroAntes: boolean;
+    carregavaAntes: boolean;
+    carregando: boolean;
+    friaNoGate: boolean;
+  }[] = [];
+  /**
+   * OS GIGANTES (F4): Júpiter, Saturno, Urano e Netuno — a classe
+   * própria (não cabe em rochoso.ts), percorrida como DADO
+   * (`GIGANTES`), com as mesmas digitais de estabilidade.
+   */
+  private readonly gigantes: {
+    corpo: GiganteResolvido;
     emQuadroAntes: boolean;
     carregavaAntes: boolean;
     carregando: boolean;
@@ -853,6 +871,24 @@ export class Director {
       });
       this.palco.group.add(corpo.group);
     }
+    // OS GIGANTES (F4): a classe própria, um por config da lista viva.
+    this.gigantes.length = 0;
+    for (const { id } of GIGANTES) {
+      const corpo = new GiganteResolvido({
+        id,
+        tier: this.engine.quality,
+        maxTextureSize: sondarGl().maxTextureSize,
+        base: import.meta.env.BASE_URL,
+      });
+      this.gigantes.push({
+        corpo,
+        emQuadroAntes: false,
+        carregavaAntes: false,
+        carregando: false,
+        friaNoGate: false,
+      });
+      this.palco.group.add(corpo.group);
+    }
     this.engine.scene.add(this.palco.group);
     this.engine.scene.background = this.nebula.texture;
     this.engine.scene.backgroundIntensity = 1.0;
@@ -1028,6 +1064,7 @@ export class Director {
       this.terraCarregando ||
       this.luaCarregando ||
       this.rochosos.some((r) => r.carregando) ||
+      this.gigantes.some((g) => g.carregando) ||
       // A RAMPA ENTRE DEGRAUS (F2b/D7): o rig anima entre dois
       // enquadramentos — cena mudando por construção até assentar
       this.atlas.animando;
@@ -1038,7 +1075,8 @@ export class Director {
     const corposAssentados =
       !this.terraFriaNoGate &&
       !this.luaFriaNoGate &&
-      !this.rochosos.some((r) => r.friaNoGate);
+      !this.rochosos.some((r) => r.friaNoGate) &&
+      !this.gigantes.some((g) => g.friaNoGate);
     // O RETRATO ACUSADO (item 5c): efeméride PEDIDA indisponível com os
     // corpos em cena segura a janela da retentativa (o tick conta os
     // quadros e dá o aviso único quando ela esgota — ver o bloco no tick).
@@ -1508,12 +1546,13 @@ export class Director {
     return {
       degrau,
       // aproximar só desce para corpo com MESH resolvido — a lista é
-      // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a) e os
-      // planetas rochosos (F3)
+      // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a), os
+      // planetas rochosos (F3) e os gigantes (F4)
       podeAproximar:
         degrau === 'orbita' &&
         (this.focoCorpoId === 'earth' ||
-          this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId)),
+          this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId) ||
+          this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId)),
     };
   }
 
@@ -1611,10 +1650,13 @@ export class Director {
   aproximarDoCorpo() {
     if (this.phase !== 'atlas') return;
     const id = this.focoCorpoId ?? 'earth';
-    // só corpos com mesh resolvido descem: a Terra e os planetas da F3
-    // (a lista viva dos construídos, nunca redigitada)
+    // só corpos com mesh resolvido descem: a Terra, os planetas da F3
+    // e os gigantes da F4 (a lista viva dos construídos)
+    const ehGigante = this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === id);
     const ehPlanetaResolvido =
-      id === 'earth' || this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === id);
+      id === 'earth' ||
+      this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === id) ||
+      ehGigante;
     if (!ehPlanetaResolvido) return;
     // o centro sai da MESMA cadeia do mesh (efeméride viva, retrato sem
     // ela) — calculado aqui e não lido do estado do tick, porque o boot
@@ -1623,7 +1665,9 @@ export class Director {
     const p =
       id === 'earth'
         ? posicaoDaTerraUA(jd, this.efemeride)
-        : posicaoDoRochosoUA(id, jd, this.efemeride);
+        : ehGigante
+          ? posicaoDoGiganteUA(id, jd, this.efemeride)
+          : posicaoDoRochosoUA(id, jd, this.efemeride);
     if (!p) return;
     const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
     const centro = new THREE.Vector3(
@@ -1631,7 +1675,12 @@ export class Director {
       eq[1] * AU_PARA_PC,
       eq[2] * AU_PARA_PC
     );
-    const raioPc = id === 'earth' ? RAIO_EQ_TERRA_PC : raiosDoRochosoPc(id).a;
+    const raioPc =
+      id === 'earth'
+        ? RAIO_EQ_TERRA_PC
+        : ehGigante
+          ? raiosDoGigantePc(id).a
+          : raiosDoRochosoPc(id).a;
     this.atlas.focar(centro, raioPc, centro, {
       rampa: this.rampaDaEscada(),
     });
@@ -2542,6 +2591,43 @@ export class Director {
       r.carregavaAntes = e.carregando;
       }
     }
+    // OS GIGANTES (F4), pelo MESMO fio dos rochosos — a lista viva é o
+    // dado; os quatro são planetas (retrato + cessão do ponto).
+    if (this.stars) {
+      for (const g of this.gigantes) {
+      const e = g.corpo.atualizar({
+        jdTdb: grampearJd(this.jdPedido),
+        fonte: this.efemeride,
+        camPosPc: cam.position,
+        screenHPx: hPx,
+        fovDeg: cam.fov,
+        ligado: this.palco.ligado,
+        atlasQuente: this.phase === 'atlas',
+        politica: this.politicaDeLuz,
+        dtS: dt,
+        psf: this.stars!,
+        salto: this.saltoDeCamera,
+      });
+      if (e.emQuadro) this.palco.registrar(g.corpo.id, e.raioPc, e.centroPc);
+      else this.palco.remover(g.corpo.id);
+      this.planetas?.escreverCessao(g.corpo.id, e.cede);
+      g.carregando = e.carregando;
+      g.friaNoGate =
+        this.palco.ligado &&
+        e.gateArmado &&
+        !e.emQuadro &&
+        !e.carregando;
+      if (
+        e.emQuadro !== g.emQuadroAntes ||
+        (g.carregavaAntes && !e.carregando) ||
+        e.emRampa
+      ) {
+        this.perturbar();
+      }
+      g.emQuadroAntes = e.emQuadro;
+      g.carregavaAntes = e.carregando;
+      }
+    }
     // O RETRATO NUNCA FINGE EFEMÉRIDE (item 5c da auditoria): com os
     // corpos em cena e a fonte PEDIDA indisponível, o tick tenta a fonte
     // uma SEGUNDA vez (a permitida por `garantirEfemerides`: "quem pediu
@@ -3007,6 +3093,9 @@ export class Director {
     step('lua', () => this.lua?.dispose());
     step('rochosos', () => {
       for (const r of this.rochosos) r.corpo.dispose();
+    });
+    step('gigantes', () => {
+      for (const g of this.gigantes) g.corpo.dispose();
     });
     step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
