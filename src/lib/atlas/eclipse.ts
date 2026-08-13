@@ -372,6 +372,12 @@ export const PARES_DE_ECLIPSE: Readonly<Record<string, string>> = {
   // foram como os raios e albedos dos dois corpos foram medidos).
   triton: "neptune",
   charon: "pluto",
+  // Fobos e Deimos na sombra de Marte (F3, data-only — a mudança
+  // prometida no JSDoc acima): Fobos orbita a 1,4 raios marcianos de
+  // altitude no plano equatorial, então o eclipse é frequente de
+  // verdade — o caso didático irmão das uranianas.
+  phobos: "mars",
+  deimos: "mars",
 };
 
 /**

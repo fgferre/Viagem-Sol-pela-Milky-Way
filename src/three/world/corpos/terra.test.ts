@@ -716,10 +716,13 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(director).toContain('this.terraCarregando');
     // ...e SEGURA o gate a FRIO (item 5b) e o retrato acusado (item 5c):
     // corpo armado sem textura quente não captura; efeméride pedida
-    // indisponível segura a janela da retentativa e ACUSA no console
+    // indisponível segura a janela da retentativa e ACUSA no console —
+    // desde a F3 o selo dos frios cobre TAMBÉM os rochosos (a lista viva)
     expect(director).toContain('this.terraFriaNoGate =');
     expect(director).toContain('this.luaFriaNoGate =');
-    expect(director).toContain('!this.terraFriaNoGate && !this.luaFriaNoGate');
+    expect(director).toContain('!this.terraFriaNoGate &&');
+    expect(director).toContain('!this.luaFriaNoGate &&');
+    expect(director).toContain('!this.rochosos.some((r) => r.friaNoGate)');
     expect(director).toContain("this.faseDaEfemeride === 'indisponivel'");
     expect(director).toContain('QUADROS_TENTANDO_FONTE');
     expect(director).toContain('RETRATO congelado');

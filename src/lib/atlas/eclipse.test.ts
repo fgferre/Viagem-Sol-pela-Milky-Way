@@ -490,11 +490,15 @@ describe("registro de constantes do shader (a F2c interpola daqui)", () => {
 });
 
 describe("PARES_DE_ECLIPSE — contratos da tabela", () => {
-  it("são os 15 pares do doador + as 5 luas de Urano (a exceção revertida, data-only)", () => {
-    expect(Object.keys(PARES_DE_ECLIPSE)).toHaveLength(20);
+  it("são os 15 pares do doador + as 5 luas de Urano + as 2 marcianas da F3 (data-only)", () => {
+    expect(Object.keys(PARES_DE_ECLIPSE)).toHaveLength(22);
     for (const lua of ["miranda", "ariel", "umbriel", "titania", "oberon"]) {
       expect(PARES_DE_ECLIPSE[lua]).toBe("uranus");
     }
+    // F3: Fobos e Deimos na sombra de Marte — o contrato "lua aponta o
+    // pai" é cobrado pelo teste abaixo sem mudar uma linha
+    expect(PARES_DE_ECLIPSE.phobos).toBe("mars");
+    expect(PARES_DE_ECLIPSE.deimos).toBe("mars");
   });
 
   it("todo receptor aponta um corpo REAL do registro orbital, diferente de si mesmo", () => {

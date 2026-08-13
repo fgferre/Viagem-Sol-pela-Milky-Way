@@ -157,6 +157,8 @@ export const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> 
   neptune: { nome: 'Netuno', classe: 'planeta' },
   pluto: { nome: 'Plutão', classe: 'planeta anão' },
   moon: { nome: 'Lua', classe: 'lua' },
+  phobos: { nome: 'Fobos', classe: 'lua' },
+  deimos: { nome: 'Deimos', classe: 'lua' },
 };
 
 /** O prefixo que separa a chave de um corpo da de uma estrela. */
@@ -167,16 +169,18 @@ export const CORPOS_DO_SISTEMA: readonly CorpoDoSistema[] = IDS_FOTOMETRIA.map(
 );
 
 /**
- * AS LUAS DO ATLAS (F2b) — fora de `CORPOS_DO_SISTEMA` de propósito:
- * aquela lista é indexada ao VÉRTICE da camada de pontos
- * (`IDS_FOTOMETRIA`), e a Lua não tem ponto fotométrico (dito em
- * `lua.ts`). O `pai` é o corpo cuja efeméride centra a dela — é dele
- * que a busca mede a distância da nota ("Lua · 384 mil km") e é ele que
- * o enquadramento do degrau "lua" mantém em quadro
- * (`PARENT_FRAMING_BIAS`).
+ * AS LUAS DO ATLAS (F2b; +Fobos/Deimos na F3) — fora de
+ * `CORPOS_DO_SISTEMA` de propósito: aquela lista é indexada ao VÉRTICE
+ * da camada de pontos (`IDS_FOTOMETRIA`), e lua não tem ponto
+ * fotométrico (dito em `lua.ts`). O `pai` é o corpo cuja efeméride
+ * centra a dela — é dele que a busca mede a distância da nota ("Lua ·
+ * 384 mil km"; "Fobos · 9,4 mil km") e é ele que o enquadramento do
+ * degrau "lua" mantém em quadro (`PARENT_FRAMING_BIAS`).
  */
 export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
   { id: 'moon', ...NOMES_DOS_CORPOS.moon, chave: `${CHAVE_DE_CORPO}moon`, pai: 'earth' },
+  { id: 'phobos', ...NOMES_DOS_CORPOS.phobos, chave: `${CHAVE_DE_CORPO}phobos`, pai: 'mars' },
+  { id: 'deimos', ...NOMES_DOS_CORPOS.deimos, chave: `${CHAVE_DE_CORPO}deimos`, pai: 'mars' },
 ];
 
 // ============================================================

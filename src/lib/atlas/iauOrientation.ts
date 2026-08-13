@@ -945,6 +945,11 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   // emitRadii do script continua pulando esferas; esta linha é mantida
   // à mão com a citação, não regenerada.
   moon: [1737.4, 1737.4, 1737.4],
+  // VÊNUS entra pela MESMA exceção da Lua (F3): esfera exata (BODY2_RADII
+  // do pck00011 — 6051,8 km nos três eixos), mantida à mão com a citação
+  // porque o emissor pula esferas e a tabela é a fonte única de raio
+  // físico dos corpos resolvidos.
+  venus: [6051.8, 6051.8, 6051.8],
   phobos: [13, 11.4, 9.1],
   deimos: [7.8, 6, 5.1],
   mars: [3396.19, 3396.19, 3376.2],

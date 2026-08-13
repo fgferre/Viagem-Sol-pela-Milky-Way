@@ -136,10 +136,15 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
     }
   });
 
-  it('a Lua declara o pai — é dele que a nota mede e que o degrau enquadra', () => {
-    expect(LUAS_DO_SISTEMA).toHaveLength(1);
+  it('toda lua declara o pai — é dele que a nota mede e que o degrau enquadra', () => {
+    // F3: Fobos e Deimos entram pelo mesmo contrato (as duas marcianas)
+    expect(LUAS_DO_SISTEMA).toHaveLength(3);
     expect(LUAS_DO_SISTEMA[0]).toMatchObject({ id: 'moon', nome: 'Lua', classe: 'lua', pai: 'earth' });
-    // e a Lua NÃO entra na lista indexada ao vértice da camada de pontos
+    expect(LUAS_DO_SISTEMA[1]).toMatchObject({ id: 'phobos', nome: 'Fobos', classe: 'lua', pai: 'mars' });
+    expect(LUAS_DO_SISTEMA[2]).toMatchObject({ id: 'deimos', nome: 'Deimos', classe: 'lua', pai: 'mars' });
+    // e lua NÃO entra na lista indexada ao vértice da camada de pontos
     expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'moon')).toBe(false);
+    expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'phobos')).toBe(false);
+    expect(CORPOS_DO_SISTEMA.some((c) => c.id === 'deimos')).toBe(false);
   });
 });
