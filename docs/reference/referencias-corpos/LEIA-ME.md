@@ -8,8 +8,8 @@ galáxia: **fotos reais de instrumento, domínio público ou licença aberta com
 crédito, nunca render/arte, nunca falsa-cor sem aviso**.
 8 arquivos, ≈13,9 MB no total — abaixo do teto de 15 MB.
 
-A revisão de 2026-08-12 aplicou um feedback externo (`docs/onda-6/FEEDBACK-REFERENCIAS-CORPOS.md`)
-depois de checar cada crítica na fonte oficial. O que se confirmou está
+A revisão de 2026-08-12 aplicou um feedback externo depois
+de checar cada crítica na fonte oficial. O que se confirmou está
 aplicado aqui; o que não se confirmou, ou não teve substituto real
 verificável, ficou de fora — ver "Correções desta revisão" no fim do arquivo.
 

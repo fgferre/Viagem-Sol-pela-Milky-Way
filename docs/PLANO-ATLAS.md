@@ -988,8 +988,8 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 
 *Gate por passo:* captura no ladder por tier; `gpu-profile.mjs`; **`renderer.info.memory` estável em entra/sai do Atlas e em troca de qualidade**; z-fighting calibrado; **os 12 oráculos de irradiância verdes** (quarteia a cada dobro de distância, clampa em d=0, neutro e não NaN em não-finito, recusa distância de render, preserva a ordenação verdadeira de brilho, ponto fixo na âncora, identidade bit a bit em "real", distância vem da efeméride e não do semi-eixo maior); **o selo não pode ser desmentido por nenhum controle a jusante** — teste explícito, porque é exatamente o defeito do doador; **revisão de olhos frescos antes do merge**.
 
-> **Estado da Onda 6 (2026-08-13): FEITA, não mergeada.** Branch `onda-6`
-> (`8704baa` → HEAD). O filme (18) segue bit-idêntico: sentinelas
+> **Estado da Onda 6 (2026-08-13): FEITA e mergeada.** Branch `onda-6`
+> (`8704baa` → `04cb029`). O filme (18) segue bit-idêntico: sentinelas
 > `sol`/`soldisco`/`hero8`/`ua150` recapturadas iguais. Placar: **1.429
 > testes** (o 1.445 do fecho era número velho; o D-E4 deixou de contar
 > 2 instantes como 2 testes), typecheck limpo. Selo `?luz=` existe.
@@ -1059,7 +1059,7 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 > plutao-caronte `75383ccbc1a9` · quaoar-anel `b388506376b0` ·
 > vesta `53babc1cd2e9`.
 >
-> A pasta `docs/onda-6/` morre neste fecho (regra 8). Sem push.
+> A pasta `docs/onda-6/` morreu neste merge (regra 8). Sem push.
 
 **Onda 7 — Motor estelar F3–F5 + encontros.** **7a (incondicional):** Teff/raio das 16 heroes; pilotos Sirius e Betelgeuse; leis de escala por classe; `radiusFromSpect` sobre o catálogo inteiro; **termo angular no `arriveDist` (raio/tan θ), agora que existe raio estelar** — hoje a câmera pousaria igual em Betelgeuse e em Proxima; **`starOptics` rotulável com interruptor** — entra aqui, e não antes, porque muda todo o campo estelar e o juiz é o painel, não o pixel-igual. **7b (condicional à Decisão 1):** encontros como beats do filme; **default declarado: sem a decisão, 7b não entra** e os encontros ficam no voo livre e no Atlas. *Gate (só 7a):* tríptico anã M/Sol/supergigante aprovado; foco-próximo em 20 estrelas sorteadas sem regressão de FPS nem payload; **revisão de olhos frescos antes do merge**.
 

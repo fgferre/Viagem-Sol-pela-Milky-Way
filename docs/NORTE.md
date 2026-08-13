@@ -3405,7 +3405,7 @@ que governa o futuro:
   `noplan`); BV_SOL/SOL_BV e PONTO_ZERO_SOL_PC redigitados com igualdade
   pinada — unificação **tentada na Onda 6 e recusada**: moveria o filme.
 
-### Onda 6 — FEITA, não mergeada (2026-08-13)
+### Onda 6 — FEITA e mergeada (2026-08-13)
 
 Corpos resolvidos + a primeira lei de luz. O registro integral está no
 **Estado da Onda 6 do PLANO-ATLAS §4**. O que **governa o futuro**:
