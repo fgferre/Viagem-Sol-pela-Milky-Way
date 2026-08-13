@@ -41,6 +41,32 @@ export const ESCRITOR_DE_CAMERA = {
 } satisfies Record<Phase, EscritorDeCamera>;
 
 /**
+ * ARRASTAR O CANVAS FAZ ALGUMA COISA nesta fase? É a pergunta que o
+ * CURSOR responde: até 2026-08-13 o ponteiro sobre a cena era a seta de
+ * sempre em TODAS as fases, e nada — nem o cursor, nem uma dica — dizia
+ * que dava para arrastar. Quem não tentou, não descobriu.
+ *
+ * Não é estado novo: são os MESMOS três donos do gesto já escritos no
+ * `Director`, lidos de onde eles moram. O voo livre sai do mapa
+ * `ESCRITOR_DE_CAMERA` acima (é o `roam.enabled`, `director.ts:915`), o
+ * Atlas é a fase inteira (a guarda do `onPausePointerDown`), e a viagem
+ * só cede o ponteiro quando está CONGELADA (`pauseLookActive`) — daí o
+ * segundo parâmetro. Fora desses três, arrastar não move um pixel, e
+ * prometer "agarrar" ali seria mentira: com o filme correndo quem manda
+ * na câmera é o roteiro, e o cursor de agarrar convidaria para um gesto
+ * que não responde.
+ *
+ * Mora aqui, e não no `HUD_POR_FASE`, porque não é uma PEÇA do HUD que
+ * monta — é uma propriedade da cena; e é função, não campo do mapa,
+ * porque depende de `pausada`, que um mapa por fase não sabe.
+ */
+export function arrastoFazAlgo(fase: Phase, pausada: boolean): boolean {
+  if (ESCRITOR_DE_CAMERA[fase] === 'voo') return true;
+  if (fase === 'atlas') return true;
+  return fase === 'journey' && pausada;
+}
+
+/**
  * QUE PEÇAS DO HUD MONTAM em cada fase. Substitui as cadeias do
  * App.tsx que eram só presença — as que têm lógica extra (a dica do
  * pausar-e-olhar depende de `paused`, a linha de rumo depende de haver

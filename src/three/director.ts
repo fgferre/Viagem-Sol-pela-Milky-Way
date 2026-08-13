@@ -51,6 +51,7 @@ import {
 } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
+import { ArrastoDePonteiro } from './arrastoDePonteiro';
 import {
   AtlasRig,
   raioDeEnquadramentoEstelar,
@@ -336,12 +337,15 @@ export class Director {
   private prevLabelKeys = new Set<string>();
   private lastDest = '';
   private destTimer = 0;
-  private pauseDragging = false;
-  private pauseLastX = 0;
-  private pauseLastY = 0;
-  /** quanto o ponteiro andou desde o pointerdown (clique curto = visita) */
-  private pauseArrasto = 0;
-  private pauseDesde = 0;
+  /**
+   * O GESTO de arrastar do Atlas e do pausar-e-olhar. Era um punhado de
+   * campos soltos (`pauseDragging`, `pauseLastX/Y`, `pauseArrasto`,
+   * `pauseDesde`) duplicado no `FreeRoam`, com os mesmos quatro
+   * defeitos nos dois; agora os dois trios de listeners falam com a
+   * MESMA máquina — que é onde o filtro por `pointerId`, o botão
+   * principal e o cancelamento pelo sistema estão escritos e testados.
+   */
+  private arrastoDaPausa = new ArrastoDePonteiro();
 
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
@@ -601,6 +605,11 @@ export class Director {
     canvas.addEventListener('pointerdown', this.onPausePointerDown);
     window.addEventListener('pointermove', this.onPausePointerMove);
     window.addEventListener('pointerup', this.onPausePointerUp);
+    // as DUAS outras saídas do gesto — sem elas o `pointerup` que nunca
+    // chega deixa o arrasto preso para sempre (ver `onPausePointerCancel`)
+    window.addEventListener('pointercancel', this.onPausePointerCancel);
+    window.addEventListener('lostpointercapture', this.onPausePointerCancel);
+    canvas.addEventListener('contextmenu', this.onContextMenu);
 
     // clique curto no voo livre → mini-viagem até a estrela nomeada
     this.roam.onTap = (x, y) => this.tryVisit(x, y);
@@ -1214,50 +1223,70 @@ export class Director {
   }
 
   /**
-   * Os MESMOS três listeners servem o Atlas — arrastar orbita o alvo,
-   * clique curto foca o nome mais próximo. Registrar um segundo trio
-   * para a fase nova compraria dois donos do mesmo gesto no mesmo
-   * canvas; o dono muda com a fase, o listener não.
+   * Os MESMOS listeners servem o Atlas — arrastar orbita o alvo, clique
+   * curto foca o nome mais próximo. Registrar um segundo conjunto para
+   * a fase nova compraria dois donos do mesmo gesto no mesmo canvas; o
+   * dono muda com a fase, o listener não.
    */
   private onPausePointerDown = (event: PointerEvent) => {
     if (!this.pauseLookActive && this.phase !== 'atlas') return;
-    this.pauseDragging = true;
-    this.pauseArrasto = 0;
-    this.pauseDesde = performance.now();
-    this.pauseLastX = event.clientX;
-    this.pauseLastY = event.clientY;
+    this.arrastoDaPausa.comecar(event, performance.now());
   };
 
   private onPausePointerMove = (event: PointerEvent) => {
-    if (!this.pauseDragging) return;
-    const dx = event.clientX - this.pauseLastX;
-    const dy = event.clientY - this.pauseLastY;
-    this.pauseArrasto += Math.abs(dx) + Math.abs(dy);
+    // o passo vem `null` para qualquer ponteiro que não seja o dono do
+    // gesto: é ISSO que impede o segundo dedo de girar 25° medido
+    // contra a última posição do primeiro (ver `arrastoDePonteiro.ts`)
+    const passo = this.arrastoDaPausa.mover(event);
+    if (!passo) return;
     if (this.phase === 'atlas') {
-      this.atlas.addOrbitDelta(dx);
+      this.atlas.addOrbitDelta(passo.dx);
       this.perturbar();
     } else if (this.pauseLookActive) {
-      this.rig.addLookDelta(dx, dy);
+      this.rig.addLookDelta(passo.dx, passo.dy);
     }
-    this.pauseLastX = event.clientX;
-    this.pauseLastY = event.clientY;
   };
 
   private onPausePointerUp = (event: PointerEvent) => {
     // clique curto e parado no Atlas = focar. Os dois limiares (6 px,
-    // 400 ms) são os do voo livre, não números novos.
-    if (
-      this.pauseDragging &&
-      this.phase === 'atlas' &&
-      this.pauseArrasto < 6 &&
-      performance.now() - this.pauseDesde < 400
-    ) {
+    // 400 ms) são os do voo livre, não números novos — hoje moram em
+    // `CLIQUE_PX`/`CLIQUE_MS`, um lugar só para os dois gestos.
+    const curto = this.arrastoDaPausa.soltar(event, performance.now());
+    if (curto && this.phase === 'atlas') {
       this.tryVisit(
         event.clientX / window.innerWidth,
         event.clientY / window.innerHeight
       );
     }
-    this.pauseDragging = false;
+  };
+
+  /**
+   * O SISTEMA LEVOU O PONTEIRO: gesto do iOS, palma rejeitada, trocar
+   * de janela com o botão preso. Nesses casos o `pointerup` NUNCA
+   * chega, e sem este tratador o arrasto ficava ligado para sempre — a
+   * cena passava a girar com o ponteiro solto, e o único caminho de
+   * volta era recarregar. Encerra pelo mesmo lugar do soltar, MENOS o
+   * clique curto: gesto abortado pelo sistema não é clique de ninguém.
+   * O `lostpointercapture` entra junto porque o toque tem captura
+   * IMPLÍCITA no alvo — quando ela cai sem `pointerup` (o navegador
+   * assumiu o gesto), este é o único aviso que chega.
+   */
+  private onPausePointerCancel = (event: PointerEvent) => {
+    this.arrastoDaPausa.cancelar(event);
+  };
+
+  /**
+   * O MENU DO SISTEMA NÃO ABRE SOBRE A CENA. Mora aqui, e não no
+   * `FreeRoam`, porque o canvas é UM e os dois conjuntos de listeners
+   * são dele: dois `preventDefault` no mesmo evento seriam a mesma
+   * decisão escrita em dois lugares. Vale em TODAS as fases de
+   * propósito — o canvas ocupa a tela inteira, e um menu de navegador
+   * por cima do filme é a mesma quebra de imersão em qualquer uma
+   * delas. As peças do HUD são outros nós do DOM: clicar com o direito
+   * nelas continua abrindo o menu normal.
+   */
+  private onContextMenu = (event: MouseEvent) => {
+    event.preventDefault();
   };
 
   /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | nome HYG) */
@@ -2913,6 +2942,12 @@ export class Director {
       this.engine.renderer.domElement.removeEventListener('pointerdown', this.onPausePointerDown);
       window.removeEventListener('pointermove', this.onPausePointerMove);
       window.removeEventListener('pointerup', this.onPausePointerUp);
+      window.removeEventListener('pointercancel', this.onPausePointerCancel);
+      window.removeEventListener('lostpointercapture', this.onPausePointerCancel);
+      this.engine.renderer.domElement.removeEventListener('contextmenu', this.onContextMenu);
+      // o HMR do vite chama o dispose a cada salvamento: gesto vivo de
+      // uma sessão morta não pode sobreviver ao próprio Director
+      this.arrastoDaPausa.esquecer();
     });
     step('blackHole', () => this.blackHole?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois

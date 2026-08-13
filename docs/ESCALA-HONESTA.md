@@ -258,7 +258,7 @@ todas são baratas e **não tocam o filme nem as baselines**.
 | 2 | **Roda e pinça não fazem nada e não avisam** — nenhuma linha de `wheel`/`ctrlKey`/`deltaMode` no Atlas | varredura em todo o `src/` | ~40–60 linhas |
 | 3 | **Polo do corpo nunca fica para cima** — `camera.up` é constante (polo da eclíptica); a Terra sai 4,2° a 27,8° torta | `atlasRig.ts:719` | ~40–70 linhas |
 | 4 | **O enquadramento não segue o alvo no tempo** — posição morta copiada uma vez; com a máquina do tempo o corpo sai do quadro em ~1 s | `atlasRig.ts:590`, `director.ts:1571`, religador em `:1667-1679` | ~10–20 linhas |
-| 5 | **Quatro defeitos de ponteiro** — botão direito gira a cena e abre o menu do sistema; sem `pointercancel`; cursor nunca muda; `Esc` é a única tecla e não está escrita em lugar nenhum | `director.ts:1198-1237`, `hud.css:24-27`, `App.tsx:433-441,911-913` | ~15–25 linhas |
+| 5 | ~~**Quatro defeitos de ponteiro**~~ — **FECHADO em 2026-08-13**, junto com o #1 do §8.3: botão direito, `pointercancel`/`lostpointercapture`, menu de contexto e cursor. Sobra só a **carência de teclas** (o `Esc` é a única, e não está escrita em lugar nenhum) — essa continua aberta. | `arrastoDePonteiro.ts` (novo), `director.ts`, `cameraRig.ts`, `fases.ts`, `hud.css`, `App.tsx` | feito: ~15–25 linhas; teclas: em aberto |
 
 ### O PRECEDENTE DA CASA: `Novo-Sol-Fable-3d`, `src/camera/controls.js`
 
@@ -431,8 +431,8 @@ no regime que comprou o conserto, com o conserto desligado.
 
 | # | Defeito | Tamanho | Risco de pixel |
 |---|---|---|---|
-| 1 | **Dois dedos na tela trocam o enquadramento sozinhos.** Cada evento do 2º dedo é medido contra o 1º: gira 25° de uma vez (200 px × 0,0022 rad/px) e rearma o relógio do clique curto — o Atlas foca outro nome, desce um degrau e reescreve `?foco=` sem ninguém pedir. O grampo de 140° não segura, porque 25° cabe nele. Levantar um dedo mata o arrasto do que ficou. | 15–25 linhas | zero |
-| 2 | **`pointercancel` e `lostpointercapture` não existem**, o cursor nunca muda, o menu do botão direito não é bloqueado. Gesto cancelado pelo sistema deixa o arrasto **preso para sempre**. | junto do #1 | zero |
+| 1 | **FECHADO em 2026-08-13.** ~~Dois dedos na tela trocam o enquadramento sozinhos.~~ Cada evento do 2º dedo é medido contra o 1º: gira 25° de uma vez (200 px × 0,0022 rad/px) e rearma o relógio do clique curto — o Atlas foca outro nome, desce um degrau e reescreve `?foco=` sem ninguém pedir. O grampo de 140° não segura, porque 25° cabe nele. Levantar um dedo mata o arrasto do que ficou. | 15–25 linhas | zero |
+| 2 | **FECHADO em 2026-08-13.** ~~`pointercancel` e `lostpointercapture` não existem~~, o cursor nunca muda, o menu do botão direito não é bloqueado. Gesto cancelado pelo sistema deixa o arrasto **preso para sempre**. | junto do #1 | zero |
 | 3 | **Os 1.321 testes não rodam no CI.** O único arquivo de automação roda `npm run build` e mais nada. | 2 linhas | zero |
 | 4 | **A escada de rendição não existe.** `cvolKilled` e `cmeKilled` são **lidos e nunca escritos**: quando o quadro cai, a casa derruba a resolução da galáxia inteira e o Sol segue no custo cheio. Agravante: o tier do Sol congela no arranque, então o desligamento por subsistema é a **única** alavanca que resta. | pequeno | baixo |
 | 5 | **Nenhuma das 22 vistas oficiais liga o modo Atlas.** A lei do clarão — a única defesa construída contra a tela branca — **nunca foi exercida por juiz nenhum**. | 1 vista | conferível hoje |
@@ -441,6 +441,8 @@ no regime que comprou o conserto, com o conserto desligado.
 | 8 | **O selo declara dois artifícios e desenha três:** os espinhos de difração das estrelas não estão declarados. | pequeno | zero |
 | 9 | **35 ponteiros pendurados no vazio:** os arquivos vendorizados citam 35 vezes imagens (`ref-06`, `ref-10`…) que não existem na casa. | baixar 6 arquivos | zero |
 | 10 | **Travamento na entrada do Atlas (a MEDIR):** com o Sol fora de quadro o subsistema para, mas o relógio desejado continua subindo; na volta a diferença vira salto num quadro — ~357 unidades na entrada do Atlas, 1.206 no 1º quadro da sessão. Salto > 20 dispara 120 passos de simulação num quadro só, em texturas 768×384. | 1 medição | zero para medir |
+
+**Fecho dos itens 1 e 2 (2026-08-13).** Os dois gestos da casa — o trio do `Director` (Atlas + pausar-e-olhar) e o do `FreeRoam` (voo livre) — eram cópias um do outro com os mesmos defeitos; passaram a falar com uma máquina só, `src/three/arrastoDePonteiro.ts`, sem DOM e testada em `node`: dono por `pointerId`, botão principal, e `pointercancel`/`lostpointercapture` encerrando o gesto SEM clique. O menu de contexto é bloqueado no canvas (um dono, no `Director`) e o cursor de agarrar entra só nas fases em que o arrasto move a câmera (`arrastoFazAlgo`, `three/fases.ts`). 39 testes novos (1.371 → 1.410), `tsc` limpo. **Zero pixel**: nada disso roda sem toque, botão direito ou gesto cancelado, e cursor não entra em captura de tela.
 
 ### 8.4 Aprendizados sem defeito associado
 

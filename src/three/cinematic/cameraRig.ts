@@ -6,6 +6,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { DEEP_LIMIAR_PC } from '../world/lodStellar';
+import { ArrastoDePonteiro } from '../arrastoDePonteiro';
 import { Journey } from './journey';
 
 // Manter o polo galáctico no alto faz o plano da Via Láctea ler como
@@ -395,11 +396,15 @@ export class FreeRoam {
   private vel = new THREE.Vector3();
   private speed = 4; // pc/s
   private keys = new Set<string>();
-  private dragging = false;
-  private dragMoved = 0;
-  private downAt = 0;
-  private lastX = 0;
-  private lastY = 0;
+  /**
+   * O GESTO de arrastar-para-olhar. Era o mesmo punhado de campos
+   * soltos do `Director` (`dragging`, `dragMoved`, `downAt`,
+   * `lastX/Y`), copiado com os mesmos quatro defeitos; hoje os dois
+   * gestos da casa falam com a MESMA máquina (`arrastoDePonteiro.ts`),
+   * que é onde o filtro por `pointerId`, o botão principal e o
+   * cancelamento pelo sistema estão escritos e testados.
+   */
+  private arrasto = new ArrastoDePonteiro();
   /** transição de entrada: slerp da orientação herdada para a canônica */
   private blend = 0; // 1 → puro herdado, 0 → puro yaw/pitch
   private fromQ = new THREE.Quaternion();
@@ -448,6 +453,12 @@ export class FreeRoam {
     canvas.addEventListener('pointerdown', this.onPointerDown);
     window.addEventListener('pointerup', this.onPointerUp);
     window.addEventListener('pointermove', this.onPointerMove);
+    // as DUAS outras saídas do gesto: quando o sistema toma o ponteiro
+    // (gesto do iOS, palma rejeitada, janela trocada com o botão preso)
+    // o `pointerup` NUNCA chega, e sem isto o olhar ficava girando com
+    // o ponteiro solto até a página ser recarregada
+    window.addEventListener('pointercancel', this.onPointerCancel);
+    window.addEventListener('lostpointercapture', this.onPointerCancel);
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     canvas.addEventListener('wheel', this.onWheel, { passive: true });
@@ -502,7 +513,7 @@ export class FreeRoam {
   resetMotion() {
     this.vel.set(0, 0, 0);
     this.keys.clear();
-    this.dragging = false;
+    this.arrasto.esquecer();
     this.visit = null;
     this.rollAngle = 0;
   }
@@ -622,6 +633,8 @@ export class FreeRoam {
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
     window.removeEventListener('pointerup', this.onPointerUp);
     window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('pointercancel', this.onPointerCancel);
+    window.removeEventListener('lostpointercapture', this.onPointerCancel);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     this.canvas.removeEventListener('wheel', this.onWheel);
@@ -629,34 +642,42 @@ export class FreeRoam {
     // captura que sobrevive mexe na câmera de uma sessão morta
     this.captura.dispose();
     this.keys.clear();
+    this.arrasto.esquecer();
   }
 
   private onPointerDown = (event: PointerEvent) => {
     if (!this.enabled) return;
-    this.dragging = true;
-    this.dragMoved = 0;
-    this.downAt = performance.now();
-    this.lastX = event.clientX;
-    this.lastY = event.clientY;
+    // o `comecar` recusa sozinho o que não é botão principal (arrastar
+    // com o direito girava a cena) e o segundo dedo que chega com um
+    // gesto já em curso — ver `arrastoDePonteiro.ts`
+    this.arrasto.comecar(event, performance.now());
   };
 
   private onPointerUp = (event: PointerEvent) => {
-    if (this.dragging && this.enabled) {
-      // clique curto e parado = tentativa de visita. Com o ponteiro
-      // CAPTURADO o `clientX/Y` congela onde o lock começou e não quer
-      // dizer mais nada: a mira passa a ser o centro da tela, que é
-      // onde o visitante está olhando.
-      if (this.dragMoved < 6 && performance.now() - this.downAt < 400) {
-        if (this.captura.ativa) this.onTap?.(0.5, 0.5);
-        else {
-          this.onTap?.(
-            event.clientX / window.innerWidth,
-            event.clientY / window.innerHeight
-          );
-        }
-      }
+    // clique curto e parado = tentativa de visita. Com o ponteiro
+    // CAPTURADO o `clientX/Y` congela onde o lock começou e não quer
+    // dizer mais nada: a mira passa a ser o centro da tela, que é
+    // onde o visitante está olhando.
+    //
+    // O `soltar` vem SEMPRE, mesmo desligado: quem encerra o gesto é
+    // ele, e o `enabled` só decide se o clique curto vira visita. E ele
+    // devolve `false` para dedo que não é o dono do gesto — era assim
+    // que levantar o segundo dedo disparava uma visita que ninguém
+    // pediu e matava o arrasto do dedo que tinha ficado.
+    const curto = this.arrasto.soltar(event, performance.now());
+    if (!curto || !this.enabled) return;
+    if (this.captura.ativa) this.onTap?.(0.5, 0.5);
+    else {
+      this.onTap?.(
+        event.clientX / window.innerWidth,
+        event.clientY / window.innerHeight
+      );
     }
-    this.dragging = false;
+  };
+
+  /** o sistema levou o ponteiro — encerra o gesto SEM clique curto */
+  private onPointerCancel = (event: PointerEvent) => {
+    this.arrasto.cancelar(event);
   };
 
   /** o giro do olhar em pixels de ponteiro — arrasto e captura entram aqui */
@@ -666,14 +687,14 @@ export class FreeRoam {
   }
 
   private onPointerMove = (event: PointerEvent) => {
-    if (!this.enabled || !this.dragging) return;
-    const dx = event.clientX - this.lastX;
-    const dy = event.clientY - this.lastY;
-    this.dragMoved += Math.abs(dx) + Math.abs(dy);
-    if (this.visit && this.dragMoved > 8) this.cancelVisit();
-    this.girar(dx, dy);
-    this.lastX = event.clientX;
-    this.lastY = event.clientY;
+    if (!this.enabled) return;
+    // `null` para qualquer ponteiro que não seja o dono do gesto: é
+    // esta linha que impede o segundo dedo de girar ~25° num evento só
+    // (200 px × 0,0022 rad/px), medido contra a posição do primeiro
+    const passo = this.arrasto.mover(event);
+    if (!passo) return;
+    if (this.visit && this.arrasto.percorrido > 8) this.cancelVisit();
+    this.girar(passo.dx, passo.dy);
   };
 
   /**

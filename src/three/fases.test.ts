@@ -6,7 +6,7 @@
 // da Onda 5 sobre 'atlas' não sejam desfeitas por descuido.
 // ============================================================
 import { describe, expect, it } from 'vitest';
-import { ESCRITOR_DE_CAMERA, HUD_POR_FASE } from './fases';
+import { ESCRITOR_DE_CAMERA, HUD_POR_FASE, arrastoFazAlgo } from './fases';
 import type { Phase } from './fases';
 
 const FASES = Object.keys(HUD_POR_FASE) as Phase[];
@@ -93,5 +93,51 @@ describe('as fases e os dois mapas', () => {
     expect(FASES.filter((f) => HUD_POR_FASE[f].botaoPartir)).toEqual(['atlas']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].veuDeTitulo)).toEqual(['intro', 'end']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].progresso)).toEqual(['journey', 'end']);
+  });
+});
+
+// ------------------------------------------------------------
+// O CURSOR DE AGARRAR (defeito 4 dos quatro de ponteiro): a promessa
+// tem de bater com quem responde ao arrasto. Prometer "agarrar" onde
+// nada se move é pior que a seta de sempre — o visitante arrasta, não
+// acontece nada, e conclui que a cena não se arrasta EM LUGAR NENHUM.
+// ------------------------------------------------------------
+describe('arrastoFazAlgo — a fase promete o que o arrasto entrega', () => {
+  it('a tabela inteira das seis fases, nos dois estados de pausa', () => {
+    // exaustiva de propósito: fase nova sem decisão aqui quebra o teste
+    const esperado: Record<Phase, [correndo: boolean, pausada: boolean]> = {
+      // sem cena montada, sem gesto
+      loading: [false, false],
+      // a intro é deriva contemplativa do roteiro: o ponteiro não entra
+      intro: [false, false],
+      // A ÚNICA fase em que a pausa muda a resposta — é o pausar-e-olhar
+      journey: [false, true],
+      // 'end' congela no último quadro do filme; ninguém escreve a câmera
+      end: [false, false],
+      // voo livre: arrastar OLHA (e é o `roam.enabled` do ESCRITOR_DE_CAMERA)
+      free: [true, true],
+      // Atlas: arrastar ORBITA o alvo, em qualquer estado da viagem
+      atlas: [true, true],
+    };
+    for (const fase of FASES) {
+      const [correndo, pausada] = esperado[fase];
+      expect(arrastoFazAlgo(fase, false), `${fase} sem pausa`).toBe(correndo);
+      expect(arrastoFazAlgo(fase, true), `${fase} pausada`).toBe(pausada);
+    }
+  });
+
+  it('sai do ESCRITOR_DE_CAMERA, não de uma segunda lista de fases', () => {
+    // se alguém trocar o dono da câmera de uma fase e esquecer o cursor,
+    // é aqui que a incoerência aparece — a fonte é uma só
+    for (const fase of FASES) {
+      if (ESCRITOR_DE_CAMERA[fase] === 'voo') {
+        expect(arrastoFazAlgo(fase, false), `${fase} voa e não arrasta`).toBe(true);
+      }
+    }
+  });
+
+  it('com o filme CORRENDO o cursor não convida — o dono da câmera é o roteiro', () => {
+    expect(arrastoFazAlgo('journey', false)).toBe(false);
+    expect(arrastoFazAlgo('intro', false)).toBe(false);
   });
 });

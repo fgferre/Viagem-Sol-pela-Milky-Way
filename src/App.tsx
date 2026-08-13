@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Director, LOAD_STAGES } from './three/director';
 import type { EstadoDaEscada, LoadStage, Phase } from './three/director';
 import type { NamedStar } from './three/config';
-import { HUD_POR_FASE } from './three/fases';
+import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import type { QualityLevel, ToneMapMode } from './three/core/engine';
 import { lerPortaExposicao, lerPortaTom } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
@@ -790,7 +790,13 @@ export default function App() {
     >
       <canvas
         ref={canvasRef}
-        className="scene-canvas"
+        // `.arrastavel` é SÓ o cursor (agarrar / agarrando, em hud.css):
+        // a fase em que arrastar move a câmera passa a dizer isso ao
+        // ponteiro, em vez de deixar a seta de sempre prometendo nada.
+        // A classe `scene-canvas` continua a primeira e intacta — é ela
+        // que o `.bare-mode > *:not(.scene-canvas)` poupa em ?shot=2 e a
+        // que o `voo-smoke` procura.
+        className={`scene-canvas${arrastoFazAlgo(phase, paused) ? ' arrastavel' : ''}`}
         aria-label="Simulação tridimensional da viagem pelo catálogo HYG e pela Via Láctea"
       />
       <canvas ref={labelCanvasRef} className="label-canvas" aria-hidden="true" />

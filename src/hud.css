@@ -26,6 +26,25 @@
   touch-action: none;
 }
 
+/* O CURSOR É A ÚNICA DICA de que a cena se arrasta — e ela faltava:
+   até 2026-08-13 o ponteiro sobre o canvas era a seta de sempre, em
+   todas as fases, e quem não tentou arrastar nunca soube que podia.
+   A classe vem do `arrastoFazAlgo` (three/fases.ts): só entra nas três
+   fases em que o arrasto realmente move a câmera — Atlas, voo livre e
+   a viagem CONGELADA. No filme correndo a seta fica, porque lá quem
+   manda na câmera é o roteiro e o convite seria falso.
+   `:active` é o que dá o feedback do gesto EM CURSO sem inventar
+   estado: o navegador já sabe que o botão está apertado sobre o
+   elemento — nenhuma classe nova, nenhum re-render por quadro.
+   Zero risco de pixel nas 22 vistas oficiais: cursor não entra em
+   captura de tela nem ocupa espaço de layout. */
+.scene-canvas.arrastavel {
+  cursor: grab;
+}
+.scene-canvas.arrastavel:active {
+  cursor: grabbing;
+}
+
 .label-canvas {
   z-index: 25;
   pointer-events: none;
