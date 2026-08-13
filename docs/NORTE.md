@@ -3418,8 +3418,8 @@ Corpos resolvidos + a primeira lei de luz. O registro integral está no
   BRILHO; clique volta ao real.
 - **Palco local, sem log-depth.** Near segue a superfície resolvida mais
   próxima. Decisão 3 do dono: critério AAA; escalada (log-depth) volta a
-  ele. O instrumento de z-fighting existe; o residual vivo não julgou o
-  palco falho.
+  ele. O instrumento de z-fighting existe; o residual vivo (482/37)
+  não julgou o palco falho — e não é prova de zero.
 - **Textura real, licença por linha, escada por pixel medido.** Manifest
   em `public/data/atlas/texturas.json`. Negativos em
   `docs/reference/ASSETS.md`. Sem licença documentada não entra.
@@ -3429,7 +3429,12 @@ Corpos resolvidos + a primeira lei de luz. O registro integral está no
   `PARENT_FRAMING_BIAS` tem consumidor. Abertura na época viva.
 - **Não repetir:** piso de ambiente; Hapke inventado; mosaico sem
   licença; advecção que cisalha a Mancha sem perfil citado; log-depth
-  sem o dono.
+  sem o dono; raio do bloco "valores antigos" do pck; anel que herda
+  W(t); domínio MH18 = α visto da Terra; conta de VRAM como se a
+  textura fosse quadrada.
+- **Observabilidade é produto.** Honestidade é não mentir sobre o que
+  o visitante vê — o ganho da lua de sangue fica (sem ele o disco é
+  preto). Em `?luz=real` ele também fica: nota, não defeito.
 
 ### Onda 5 — FEITA (2026-08-12)
 

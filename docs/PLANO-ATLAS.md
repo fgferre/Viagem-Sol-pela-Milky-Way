@@ -989,13 +989,11 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 *Gate por passo:* captura no ladder por tier; `gpu-profile.mjs`; **`renderer.info.memory` estável em entra/sai do Atlas e em troca de qualidade**; z-fighting calibrado; **os 12 oráculos de irradiância verdes** (quarteia a cada dobro de distância, clampa em d=0, neutro e não NaN em não-finito, recusa distância de render, preserva a ordenação verdadeira de brilho, ponto fixo na âncora, identidade bit a bit em "real", distância vem da efeméride e não do semi-eixo maior); **o selo não pode ser desmentido por nenhum controle a jusante** — teste explícito, porque é exatamente o defeito do doador; **revisão de olhos frescos antes do merge**.
 
 > **Estado da Onda 6 (2026-08-13): FEITA, não mergeada.** Branch `onda-6`
-> (`8704baa` → `ccab58c`). O filme (18 vistas) saiu bit-idêntico em
-> todas as fases. Placar final: **1.445 testes**, typecheck/eslint
-> limpos; juízes `a11y`, `atlas-smoke`, `busca-smoke`, `memoria` (M5)
-> verdes. Vistas oficiais de corpos nasceram por D11 com imagens
-> abertas (Terra/Lua/eclipse, rochosos, gigantes+anel, Titã/Europa,
-> Plutão-Caronte/Quaoar, Vesta). Selo `?luz=` existe (bloqueio do
-> plano). `docs/reference/ASSETS.md` é a fonte dos negativos.
+> (`8704baa` → HEAD). O filme (18) segue bit-idêntico: sentinelas
+> `sol`/`soldisco`/`hero8`/`ua150` recapturadas iguais. Placar: **1.429
+> testes** (o 1.445 do fecho era número velho; o D-E4 deixou de contar
+> 2 instantes como 2 testes), typecheck limpo. Selo `?luz=` existe.
+> `docs/reference/ASSETS.md` é a fonte dos negativos.
 >
 > **Decisões do dono (não reabrir sem ele):** (1) profundidade = palco
 > local estilo NASA Eyes, gate zero z-fighting no instrumento; escalada
@@ -1025,19 +1023,41 @@ Ficam **duas pendências abertas e nomeadas**: o alcance da busca além das 1.72
 > Recusado: Ceres `proveniencia: medido` — no vocabulário do manifest
 > isso é "bytes re-hospedados"; a invenção já está em `origem.fonte`.
 >
+> **Auditoria (15 céticos, 0 refutados) — remediada nesta ordem:**
+> (1) Rebaseline D11 com imagens abertas: F8-3 disse "bit-idênticas"
+> e 9 vistas de corpos já tinham mudado (MH18 no ponto). Hashes
+> oficiais agora são os medidos. Saturno/Quaoar anel mudaram de
+> propósito (anel inercial; Quaoar divide pelo equatorial da malha).
+> (2) Cinco dados: Ceres polar 446 (pck00011 atual); Quaoar anel
+> /640,74; Netuno Eq.17; domínio U/N 154°/133° (não o α da Terra);
+> Saturno β=√(βE βS); anéis U/N/Q/S sem W(t). (3) D-E4 lê a matriz
+> do mesh; MH18 pinado contra o paper; juiz de memória cobra teto
+> residente (120/80), não só delta. (4) VRAM da Terra cinema é
+> 0,33 GiB (equiret 2:1), não 0,72. Ganho da lua de sangue FICA
+> (observabilidade é produto); em `?luz=real` ele também fica —
+> nota, não defeito.
+>
 > **Pendências nomeadas:** advecção de Júpiter (P-E12); P-F7-MESH
 > (GLB/OBJ); bancada Titã/Europa USGS; Ceres Dawn; foto visível de
 > Vênus; super-rotação de Vênus; unificações BV_SOL/PONTO_ZERO
 > (moveriam o filme); F8+ rodadas de realismo; residual do
-> z-fighting vivo (482/37) não é o par superfície×nuvem; Lua sem
+> z-fighting vivo (482/37) — o instrumento não consegue reprovar
+> no braço vivo; o fato de fundo parece bom (não há duas superfícies
+> disputando profundidade), o registro não afirma zero; Lua sem
 > ponto fotométrico (mesh↔nada); HUD "cartografia real" não confessa
 > recuo procedural.
 >
 > **Números:** manifest 174 variantes, ~140 MB em disco, 0 origens
 > não resolvidas. Ladder Terra: performance 1024 / alta 2048 /
-> cinema 8192 (hash oficial `ab40ab3b0d3b`). Memória: delta ZERO em
-> textures/geometries. GPU do stack de corpos: custo líquido ≈0 ou
-> negativo (early-z). MH18 no ponto sem mover ua*.
+> cinema 8192 (hash oficial `ab40ab3b0d3b`). Memória: delta ZERO +
+> teto residente. GPU do stack de corpos: custo líquido ≈0 ou
+> negativo (early-z). ua150 bit-idêntica após MH18 e após os
+> consertos. Hashes D11 desta remediação (todos @1800x1713, 2/2
+> estáveis, via=sinal): mercurio `e90080cc8ab9` · venus
+> `4bc211ff1a87` · jupiter `e456d011dd52` · saturno-anel
+> `1cc87d169e7b` · europa `0d41c6884e67` · titan `c292ca9d0337` ·
+> plutao-caronte `75383ccbc1a9` · quaoar-anel `b388506376b0` ·
+> vesta `53babc1cd2e9`.
 >
 > A pasta `docs/onda-6/` morre neste fecho (regra 8). Sem push.
 
