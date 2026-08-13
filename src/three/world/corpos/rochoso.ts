@@ -82,6 +82,7 @@ import {
   LIMIAR_DO_GATE_PX,
   gateBinario,
   orientacaoDoCorpoNaCena,
+  orientacaoInercialDoAnelNaCena,
   uniformsDeEclipseNeutros,
 } from './terra';
 import type { ManifestDeTexturas } from './terra';
@@ -453,6 +454,9 @@ export class RochosoResolvido {
   private readonly vX = new THREE.Vector3();
   private readonly vY = new THREE.Vector3();
   private readonly vZ = new THREE.Vector3();
+  private readonly vAnelX = new THREE.Vector3();
+  private readonly vAnelY = new THREE.Vector3();
+  private readonly vAnelZ = new THREE.Vector3();
   private readonly vTmp = new THREE.Vector3();
   private readonly vEscala = new THREE.Vector3();
   private readonly estado: EstadoDoRochoso;
@@ -638,14 +642,31 @@ export class RochosoResolvido {
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 
     if (this.anel && this.matAnel) {
+      const inercial = orientacaoInercialDoAnelNaCena(
+        IAU_ORIENTATIONS[this.config.id],
+        this.jdEscrito
+      );
+      this.vAnelX.set(inercial.colunaX[0], inercial.colunaX[1], inercial.colunaX[2]);
+      this.vAnelY.set(inercial.colunaY[0], inercial.colunaY[1], inercial.colunaY[2]);
+      this.vAnelZ.set(inercial.colunaZ[0], inercial.colunaZ[1], inercial.colunaZ[2]);
       this.anel.matrix
-        .makeBasis(this.vX, this.vY, this.vZ)
+        .makeBasis(this.vAnelX, this.vAnelY, this.vAnelZ)
         .scale(this.vEscala.set(this.raioA, this.raioA, this.raioA))
         .multiply(this.mRx)
         .setPosition(this.centro);
       const ua = this.matAnel.uniforms;
-      (ua.uDirSolLocal.value as THREE.Vector3).set(sLx, sLz, -sLy);
-      (ua.uCamLocal.value as THREE.Vector3).set(cLx, cLz, -cLy);
+      const nSol = Math.max(this.centro.length(), 1e-30);
+      const solX = -this.centro.x / nSol;
+      const solY = -this.centro.y / nSol;
+      const solZ = -this.centro.z / nSol;
+      const sAx = solX * this.vAnelX.x + solY * this.vAnelX.y + solZ * this.vAnelX.z;
+      const sAy = solX * this.vAnelY.x + solY * this.vAnelY.y + solZ * this.vAnelY.z;
+      const sAz = solX * this.vAnelZ.x + solY * this.vAnelZ.y + solZ * this.vAnelZ.z;
+      const cAx = delta.dot(this.vAnelX) / this.raioA;
+      const cAy = delta.dot(this.vAnelY) / this.raioA;
+      const cAz = delta.dot(this.vAnelZ) / this.raioA;
+      (ua.uDirSolLocal.value as THREE.Vector3).set(sAx, sAz, -sAy);
+      (ua.uCamLocal.value as THREE.Vector3).set(cAx, cAz, -cAy);
       ua.uLuzGanho.value = ganho;
     }
   }

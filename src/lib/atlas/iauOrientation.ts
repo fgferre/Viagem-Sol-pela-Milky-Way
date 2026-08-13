@@ -1038,15 +1038,16 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   neptune: [24764, 24764, 24341],
   triton: [1352.6, 1352.6, 1352.6],
   // F6: esferas/elipsoides mão-mantidas. Plutão/Caronte BODY999/901
-  // do pck00011; Ceres BODY2000001_RADII 487,3×454,7. Quaoar:
-  // R=543 km [Pereira23] × shapeScale [1,18, 0,99, 0,86] em ordem
-  // de publicação (a,b,c) — c curto = eixo de rotação (cicatriz
-  // herdada; a matriz aplica (a,c,b)). Haumea Jacobi ~1161×852×513
-  // ( Lockwood et al. / IAU); Makemake 715 e Éris 1163 esferas
-  // (ocultações; donor radiusKm).
+  // do pck00011; Ceres BODY2000001_RADII atuais 487,3×487,3×446
+  // (o bloco "valores antigos" do kernel, IAU 2009, era 454,7 no
+  // polo — não usar). Quaoar: R=543 km [Pereira23] × shapeScale
+  // [1,18, 0,99, 0,86] em ordem de publicação (a,b,c) — c curto =
+  // eixo de rotação (cicatriz herdada; a matriz aplica (a,c,b)).
+  // Haumea Jacobi ~1161×852×513 (Lockwood et al. / IAU); Makemake
+  // 715 e Éris 1163 esferas (ocultações; donor radiusKm).
   pluto: [1188.3, 1188.3, 1188.3],
   charon: [606, 606, 606],
-  ceres: [487.3, 487.3, 454.7],
+  ceres: [487.3, 487.3, 446],
   quaoar: [640.74, 537.57, 466.98],
   haumea: [1161, 852, 513],
   makemake: [715, 715, 715],

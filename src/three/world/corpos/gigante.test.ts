@@ -23,11 +23,12 @@ import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides
 import { CORPOS_COM_ANEL } from '../../../lib/atlas/eclipse';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
-import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
+import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
-import { orientacaoDoCorpoNaCena } from './terra';
+import { eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import {
+  ANEIS_CITADOS,
   ANEL_FRAG,
   ANEL_SATURNO,
   GIGANTE_LAMBERT_FRAG,
@@ -62,44 +63,37 @@ function grau360(deg: number): number {
   return r < 0 ? r + 360 : r;
 }
 
-function subSolarDoMesh(id: string, jd: number): { lonEastDeg: number; latDeg: number } {
+function dirSolCena(id: string, jd: number): readonly [number, number, number] {
   const p = motor.posicaoHeliocentrica(id, jd);
   const norma = Math.hypot(p.x, p.y, p.z);
-  const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-  const { colunaX, colunaY, colunaZ } = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS[id], jd);
+  return eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
+}
+
+function subSolarDosEixos(
+  eixos: { colunaX: readonly number[]; colunaY: readonly number[]; colunaZ: readonly number[] },
+  dir: readonly number[]
+): { lonEastDeg: number; latDeg: number } {
   const dot = (a: readonly number[], b: readonly number[]) =>
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   return {
-    lonEastDeg: grau360(Math.atan2(-dot(dir, colunaZ), dot(dir, colunaX)) / (Math.PI / 180)),
-    latDeg: Math.asin(Math.max(-1, Math.min(1, dot(dir, colunaY)))) / (Math.PI / 180),
+    lonEastDeg: grau360(Math.atan2(-dot(dir, eixos.colunaZ), dot(dir, eixos.colunaX)) / (Math.PI / 180)),
+    latDeg: Math.asin(Math.max(-1, Math.min(1, dot(dir, eixos.colunaY)))) / (Math.PI / 180),
   };
 }
 
-describe('1. o oráculo de orientação por corpo (D-E4)', () => {
-  for (const { id } of GIGANTES) {
-    it.each(JDS)(`${id}: o transform do mesh põe o Sol a pino onde o Horizons diz — jd %f`, (jd) => {
-      const doMesh = subSolarDoMesh(id, jd);
-      const oraculo = subSolarPoint(id, jd, motor);
-      expect(doMesh.lonEastDeg).toBeCloseTo(oraculo.lonEastDeg, 8);
-      expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
-    });
+function malhaDaSuperficie(group: THREE.Object3D): THREE.Mesh {
+  for (const c of group.children) {
+    if (c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) return c;
   }
+  throw new Error('malhaDaSuperficie: nenhuma esfera no grupo');
+}
 
-  it('controle negativo: o mapeamento ESPELHADO (textura girada) reprova — Júpiter', () => {
-    const p = motor.posicaoHeliocentrica('jupiter', JD);
-    const norma = Math.hypot(p.x, p.y, p.z);
-    const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-    const { colunaX, colunaZ } = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.jupiter, JD);
-    const dot = (a: readonly number[], b: readonly number[]) =>
-      a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-    const lonErrada = grau360(
-      Math.atan2(+dot(dir, colunaZ), dot(dir, colunaX)) / (Math.PI / 180)
-    );
-    const oraculo = subSolarPoint('jupiter', JD, motor);
-    const delta = Math.abs(lonErrada - oraculo.lonEastDeg);
-    expect(Math.min(delta, 360 - delta)).toBeGreaterThan(1);
-  });
-});
+function malhaDoAnel(group: THREE.Object3D): THREE.Mesh {
+  for (const c of group.children) {
+    if (c instanceof THREE.Mesh && c.geometry instanceof THREE.RingGeometry) return c;
+  }
+  throw new Error('malhaDoAnel: nenhum anel no grupo');
+}
 
 describe('2. o needle dos GLSL montados', () => {
   it('o chunk do eclipse existe e multiplica SÓ a direta, depois do BRDF', () => {
@@ -157,6 +151,12 @@ describe('4. o anel de Saturno (D6 / W5-B)', () => {
     expect(FONTE).toContain('140 180');
   });
 
+  it('Quaoar: os raios do anel dividem pelo equatorial da malha, não por 543', () => {
+    expect(ANEIS_CITADOS.quaoar.rInt).toBeCloseTo(2520 / BODY_AXES.quaoar[0], 12);
+    expect(ANEIS_CITADOS.quaoar.rExt).toBeCloseTo(4057 / BODY_AXES.quaoar[0], 12);
+    expect(ANEIS_CITADOS.quaoar.rInt).not.toBeCloseTo(2520 / 543, 3);
+  });
+
   it('Saturno NÃO é receptor de eclipse — o contrato CORPOS_COM_ANEL', () => {
     expect(CORPOS_COM_ANEL).toEqual(['saturn', 'uranus', 'neptune', 'quaoar']);
     expect(FONTE).toContain('CORPOS_COM_ANEL');
@@ -196,11 +196,12 @@ function centroPc(id: string, jd: number): THREE.Vector3 {
 const PSF_FALSA = { expoM0: 0, sigmaPx: 2 };
 
 function quadro(id: string, distanciaRaios: number, extra: Record<string, unknown> = {}) {
-  const c = centroPc(id, JD);
+  const jd = typeof extra.jdTdb === 'number' ? extra.jdTdb : JD;
+  const c = centroPc(id, jd);
   const raio = raiosDoGigantePc(id).a;
   const cam = c.clone().add(new THREE.Vector3(0, 0, distanciaRaios * raio));
   return {
-    jdTdb: JD,
+    jdTdb: jd,
     fonte: motor as unknown as {
       posicaoHeliocentrica(id2: string, jd: number): { x: number; y: number; z: number };
     },
@@ -216,6 +217,63 @@ function quadro(id: string, distanciaRaios: number, extra: Record<string, unknow
     ...extra,
   };
 }
+
+describe('1. o oráculo de orientação por corpo (D-E4)', () => {
+  for (const { id } of GIGANTES) {
+    it(`${id}: o transform do MESH põe o Sol a pino nos dois instantes`, async () => {
+      const { corpo } = giganteDeTeste(id);
+      for (const jd of JDS) {
+        const q = quadro(id, 4, { jdTdb: jd });
+        corpo.atualizar(q);
+        await flush();
+        expect(corpo.atualizar(q).emQuadro, id).toBe(true);
+        const doMesh = subSolarDosEixos(eixosDoMesh(malhaDaSuperficie(corpo.group)), dirSolCena(id, jd));
+        const oraculo = subSolarPoint(id, jd, motor);
+        expect(doMesh.lonEastDeg).toBeCloseTo(oraculo.lonEastDeg, 8);
+        expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
+      }
+      corpo.dispose();
+    });
+  }
+
+  it('controle negativo: deitar o polo no equador no MESH reprova', async () => {
+    const { corpo } = giganteDeTeste('jupiter');
+    const q = quadro('jupiter', 4);
+    corpo.atualizar(q);
+    await flush();
+    expect(corpo.atualizar(q).emQuadro).toBe(true);
+    const mesh = malhaDaSuperficie(corpo.group);
+    const e = mesh.matrix.elements;
+    for (let i = 0; i < 3; i++) {
+      const tmp = e[4 + i];
+      e[4 + i] = e[8 + i];
+      e[8 + i] = tmp;
+    }
+    const doMesh = subSolarDosEixos(eixosDoMesh(mesh), dirSolCena('jupiter', JD));
+    const oraculo = subSolarPoint('jupiter', JD, motor);
+    expect(Math.abs(doMesh.latDeg - oraculo.latPlanetocentricaDeg)).toBeGreaterThan(10);
+    corpo.dispose();
+  });
+
+  it('o anel é inercial: um terço de dia não gira o padrão, e o globo sim', async () => {
+    const { corpo } = giganteDeTeste('uranus');
+    const q1 = quadro('uranus', 4, { jdTdb: JD });
+    corpo.atualizar(q1);
+    await flush();
+    expect(corpo.atualizar(q1).emQuadro).toBe(true);
+    const xAnel1 = eixosDoMesh(malhaDoAnel(corpo.group)).colunaX.slice();
+    const xGlobo1 = eixosDoMesh(malhaDaSuperficie(corpo.group)).colunaX.slice();
+    const q2 = quadro('uranus', 4, { jdTdb: JD + 0.3 });
+    expect(corpo.atualizar(q2).emQuadro).toBe(true);
+    const xAnel2 = eixosDoMesh(malhaDoAnel(corpo.group)).colunaX;
+    const xGlobo2 = eixosDoMesh(malhaDaSuperficie(corpo.group)).colunaX;
+    const dot = (a: readonly number[], b: readonly number[]) =>
+      a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    expect(dot(xAnel1, xAnel2)).toBeGreaterThan(0.999);
+    expect(dot(xGlobo1, xGlobo2)).toBeLessThan(0.5);
+    corpo.dispose();
+  });
+});
 
 describe('5. a classe — gate, carga, cessão, anel', () => {
   it('perto, o mesh nasce com a textura do manifest REAL; longe, nada carrega', async () => {

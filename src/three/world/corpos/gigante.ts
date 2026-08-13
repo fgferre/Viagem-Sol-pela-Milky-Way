@@ -73,6 +73,7 @@ import {
   escreverSombraDeEclipse,
   gateBinario,
   orientacaoDoCorpoNaCena,
+  orientacaoInercialDoAnelNaCena,
   uniformsDeEclipseNeutros,
 } from './terra';
 import type { ManifestDeTexturas } from './terra';
@@ -102,7 +103,13 @@ export const ANEIS_CITADOS: Record<string, { rInt: number; rExt: number }> = {
   saturn: ANEL_SATURNO,
   uranus: { rInt: 41837.09 / 25559, rExt: 51149.07 / 25559 },
   neptune: { rInt: 53200 / 24764, rExt: 62933 / 24764 },
-  quaoar: { rInt: 2520 / 543, rExt: 4057 / 543 },
+  // km publicados [Pereira23] sobre o raio EQUATORIAL da malha
+  // (BODY_AXES.quaoar[0] = 543×1,18). Dividir pelo raio equivalente
+  // 543 km esticava o anel 18% — a malha já está no elipsoide.
+  quaoar: {
+    rInt: 2520 / BODY_AXES.quaoar[0],
+    rExt: 4057 / BODY_AXES.quaoar[0],
+  },
 };
 
 /** Raios do corpo em pc — BODY_AXES pelos conversores únicos. */
@@ -402,6 +409,9 @@ export class GiganteResolvido {
   private readonly vX = new THREE.Vector3();
   private readonly vY = new THREE.Vector3();
   private readonly vZ = new THREE.Vector3();
+  private readonly vAnelX = new THREE.Vector3();
+  private readonly vAnelY = new THREE.Vector3();
+  private readonly vAnelZ = new THREE.Vector3();
   private readonly vTmp = new THREE.Vector3();
   private readonly vEscala = new THREE.Vector3();
   private readonly mRx = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
@@ -560,16 +570,33 @@ export class GiganteResolvido {
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 
     if (this.anel && this.matAnel) {
-      // M = Basis · S(a) · Rx(−π/2): RingGeometry no plano XY, +Z → polo
+      // M = Basis INERCIAL · S(a) · Rx(−π/2): o padrão não herda W(t)
+      const inercial = orientacaoInercialDoAnelNaCena(
+        IAU_ORIENTATIONS[this.idCorpo],
+        this.jdEscrito
+      );
+      this.vAnelX.set(inercial.colunaX[0], inercial.colunaX[1], inercial.colunaX[2]);
+      this.vAnelY.set(inercial.colunaY[0], inercial.colunaY[1], inercial.colunaY[2]);
+      this.vAnelZ.set(inercial.colunaZ[0], inercial.colunaZ[1], inercial.colunaZ[2]);
       this.anel.matrix
-        .makeBasis(this.vX, this.vY, this.vZ)
+        .makeBasis(this.vAnelX, this.vAnelY, this.vAnelZ)
         .scale(this.vEscala.set(this.raioA, this.raioA, this.raioA))
         .multiply(this.mRx)
         .setPosition(this.centro);
       const ua = this.matAnel.uniforms;
-      // frame do anel: X=vX, Y=vZ, Z=−vY (Rx(−π/2) no local do planeta)
-      (ua.uDirSolLocal.value as THREE.Vector3).set(sLx, sLz, -sLy);
-      (ua.uCamLocal.value as THREE.Vector3).set(cLx, cLz, -cLy);
+      const nSol = Math.max(this.centro.length(), 1e-30);
+      const solX = -this.centro.x / nSol;
+      const solY = -this.centro.y / nSol;
+      const solZ = -this.centro.z / nSol;
+      const sAx = solX * this.vAnelX.x + solY * this.vAnelX.y + solZ * this.vAnelX.z;
+      const sAy = solX * this.vAnelY.x + solY * this.vAnelY.y + solZ * this.vAnelY.z;
+      const sAz = solX * this.vAnelZ.x + solY * this.vAnelZ.y + solZ * this.vAnelZ.z;
+      const cAx = delta.dot(this.vAnelX) / this.raioA;
+      const cAy = delta.dot(this.vAnelY) / this.raioA;
+      const cAz = delta.dot(this.vAnelZ) / this.raioA;
+      // frame do anel: X=vAnelX, Y=vAnelZ, Z=−vAnelY (Rx(−π/2))
+      (ua.uDirSolLocal.value as THREE.Vector3).set(sAx, sAz, -sAy);
+      (ua.uCamLocal.value as THREE.Vector3).set(cAx, cAz, -cAy);
       ua.uLuzGanho.value = ganho;
     }
   }

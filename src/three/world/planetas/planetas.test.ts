@@ -1004,6 +1004,7 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
     expect(FONTE).toContain('fatorDeFaseMh18');
     expect(FONTE).toContain('aFase');
     expect(FONTE).toContain('faseDoVertice');
+    expect(FONTE).toContain('betaEfetivoAnel');
   });
 });
 

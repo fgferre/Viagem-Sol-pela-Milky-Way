@@ -104,7 +104,14 @@ import { STAR_FRAG } from '../../shaders/starShaders';
 import { DEEP_LIMIAR_PC, deepPointGain, needsAttributeWrite } from '../lodStellar';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
-import { A_MAG_BASE, FOTOMETRIA, IDS_FOTOMETRIA, aMagBaseDe, fatorDeFaseMh18 } from './fotometria';
+import {
+  A_MAG_BASE,
+  FOTOMETRIA,
+  IDS_FOTOMETRIA,
+  aMagBaseDe,
+  betaEfetivoAnel,
+  fatorDeFaseMh18,
+} from './fotometria';
 import { EPOCA_ISO, EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
 /**
@@ -604,9 +611,15 @@ export class Planetas {
       let B = 0;
       if (id === 'saturn') {
         const { polo } = baseCorpoEquatorial(IAU_ORIENTATIONS.saturn, jd);
-        B = Math.asin(
-          Math.min(1, Math.max(-1, -(polo[0] * px + polo[1] * py + polo[2] * pz) / rSol))
+        const sinBetaS = Math.min(
+          1,
+          Math.max(-1, -(polo[0] * px + polo[1] * py + polo[2] * pz) / rSol)
         );
+        const sinBetaE = Math.min(
+          1,
+          Math.max(-1, (polo[0] * ox + polo[1] * oy + polo[2] * oz) / dObs)
+        );
+        B = betaEfetivoAnel(Math.asin(sinBetaE), Math.asin(sinBetaS));
       }
       if (this.gravar(arr, i, fatorDeFaseMh18(id, Math.acos(cos), B))) mudou = true;
     }

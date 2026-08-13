@@ -41,7 +41,7 @@ import {
   LuaResolvida,
   RAIO_LUA_PC,
 } from './lua';
-import { orientacaoDoCorpoNaCena } from './terra';
+import { eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
@@ -136,59 +136,75 @@ describe('1. a normalização de Lommel-Seeliger, por QUADRATURA', () => {
 // 2. O oráculo de orientação — libração incluída, pelo kernel
 // ------------------------------------------------------------
 
-/** o sub-ponto solar COMO O MESH O RENDERIZA (o espelho de terra.test). */
-function subSolarDoMesh(jd: number): { lonEastDeg: number; latDeg: number } {
+function dirSolCena(jd: number): readonly [number, number, number] {
   const p = motor.posicaoHeliocentrica('moon', jd);
   const norma = Math.hypot(p.x, p.y, p.z);
-  const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-  const { colunaX, colunaY, colunaZ } = orientacaoDoCorpoNaCena(
-    IAU_ORIENTATIONS.moon,
-    jd
-  );
+  return eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
+}
+
+function subSolarDosEixos(
+  eixos: { colunaX: readonly number[]; colunaY: readonly number[]; colunaZ: readonly number[] },
+  dir: readonly number[]
+): { lonEastDeg: number; latDeg: number } {
   const dot = (a: readonly number[], b: readonly number[]) =>
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const lx = dot(dir, colunaX);
-  const ly = dot(dir, colunaY);
-  const lz = dot(dir, colunaZ);
   return {
-    lonEastDeg: grau360(Math.atan2(-lz, lx) / (Math.PI / 180)),
-    latDeg: Math.asin(Math.max(-1, Math.min(1, ly))) / (Math.PI / 180),
+    lonEastDeg: grau360(Math.atan2(-dot(dir, eixos.colunaZ), dot(dir, eixos.colunaX)) / (Math.PI / 180)),
+    latDeg: Math.asin(Math.max(-1, Math.min(1, dot(dir, eixos.colunaY)))) / (Math.PI / 180),
   };
 }
 
+function malhaDaSuperficie(group: THREE.Object3D): THREE.Mesh {
+  for (const c of group.children) {
+    if (c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) return c;
+  }
+  throw new Error('malhaDaSuperficie: nenhuma esfera no grupo');
+}
+
 describe('2. o oráculo de orientação da Lua (D-E4)', () => {
-  it.each(JDS)('o transform do mesh põe o Sol a pino onde o Horizons diz — jd %f', (jd) => {
-    const doMesh = subSolarDoMesh(jd);
+  it.each(JDS)('o transform do MESH põe o Sol a pino onde o Horizons diz — jd %f', async (jd) => {
+    const { lua } = luaDeTeste();
+    const perto = centroPc(jd);
+    perto.z += RAIO_LUA_PC * 4;
+    const q = quadro(perto, { jdTdb: jd });
+    lua.atualizar(q);
+    await flush();
+    expect(lua.atualizar(q).emQuadro).toBe(true);
+    const doMesh = subSolarDosEixos(eixosDoMesh(malhaDaSuperficie(lua.group)), dirSolCena(jd));
     const oraculo = subSolarPoint('moon', jd, motor);
-    // mesma cadeia numérica dos dois lados: folga de arredondamento
     expect(doMesh.lonEastDeg).toBeCloseTo(oraculo.lonEastDeg, 8);
     expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
+    lua.dispose();
   });
 
   it('a LIBRAÇÃO está no W: o sub-ponto anda em longitude ao longo do mês', () => {
-    // rotação síncrona SEM libração daria sub-ponto solar andando a
-    // ritmo constante; os termos periódicos do kernel o fazem oscilar.
-    // Prova barata: o W do modelo IAU da Lua tem termos pmAmpDeg — e o
-    // maior (3,561°) é a libração física + geométrica do nó
     const termos = IAU_ORIENTATIONS.moon.nutPrec ?? [];
     const doW = termos.filter((t) => t.pmAmpDeg !== undefined);
     expect(doW.length).toBeGreaterThanOrEqual(8);
     expect(Math.max(...doW.map((t) => Math.abs(t.pmAmpDeg ?? 0)))).toBeCloseTo(3.561, 3);
   });
 
-  it('controle negativo: o mapeamento ESPELHADO (textura girada) reprova', () => {
-    const p = motor.posicaoHeliocentrica('moon', JD);
-    const norma = Math.hypot(p.x, p.y, p.z);
-    const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-    const { colunaX, colunaZ } = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.moon, JD);
-    const dot = (a: readonly number[], b: readonly number[]) =>
-      a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-    const lonErrada = grau360(
-      Math.atan2(+dot(dir, colunaZ), dot(dir, colunaX)) / (Math.PI / 180)
-    );
+  it('controle negativo: deitar o polo no equador no MESH reprova', async () => {
+    const { lua } = luaDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_LUA_PC * 4;
+    const q = quadro(perto);
+    lua.atualizar(q);
+    await flush();
+    expect(lua.atualizar(q).emQuadro).toBe(true);
+    const mesh = malhaDaSuperficie(lua.group);
+    const e = mesh.matrix.elements;
+    // troca X↔Y: o polo cai no meridiano-primo (Y↔Z quase não mexe
+    // a latitude quando o Sol já está no equador — lua nova)
+    for (let i = 0; i < 3; i++) {
+      const tmp = e[i];
+      e[i] = e[4 + i];
+      e[4 + i] = tmp;
+    }
+    const doMesh = subSolarDosEixos(eixosDoMesh(mesh), dirSolCena(JD));
     const oraculo = subSolarPoint('moon', JD, motor);
-    const delta = Math.abs(lonErrada - oraculo.lonEastDeg);
-    expect(Math.min(delta, 360 - delta)).toBeGreaterThan(1);
+    expect(Math.abs(doMesh.latDeg - oraculo.latPlanetocentricaDeg)).toBeGreaterThan(40);
+    lua.dispose();
   });
 });
 

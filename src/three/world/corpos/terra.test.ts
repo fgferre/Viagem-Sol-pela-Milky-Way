@@ -47,6 +47,7 @@ import {
   direcaoLocalDeLonLat,
   escolherVariante,
   escreverSombraDeEclipse,
+  eixosDoMesh,
   gateBinario,
   orientacaoDaTerraNaCena,
   orientacaoDoCorpoNaCena,
@@ -87,57 +88,32 @@ function grau360(deg: number): number {
   return r < 0 ? r + 360 : r;
 }
 
-/**
- * O sub-ponto solar COMO O MESH O RENDERIZA: direção corpo→Sol na cena
- * (o Sol é a origem), invertida para o frame local pelas MESMAS colunas
- * que a matriz do mesh usa, lida de volta em lon/lat pela MESMA
- * convenção uv→direção da esfera do three.
- */
-function subSolarDoMesh(jd: number): { lonEastDeg: number; latDeg: number } {
+function dirSolCena(jd: number): readonly [number, number, number] {
   const p = motor.posicaoHeliocentrica('earth', jd);
   const norma = Math.hypot(p.x, p.y, p.z);
-  const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-  const { colunaX, colunaY, colunaZ } = orientacaoDaTerraNaCena(jd);
+  return eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
+}
+
+function subSolarDosEixos(
+  eixos: { colunaX: readonly number[]; colunaY: readonly number[]; colunaZ: readonly number[] },
+  dir: readonly number[]
+): { lonEastDeg: number; latDeg: number } {
   const dot = (a: readonly number[], b: readonly number[]) =>
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const lx = dot(dir, colunaX);
-  const ly = dot(dir, colunaY);
-  const lz = dot(dir, colunaZ);
-  // a inversa de direcaoLocalDeLonLat: x = coslat·coslon, z = −coslat·sinlon
   return {
-    lonEastDeg: grau360(Math.atan2(-lz, lx) / (Math.PI / 180)),
-    latDeg: Math.asin(Math.max(-1, Math.min(1, ly))) / (Math.PI / 180),
+    lonEastDeg: grau360(Math.atan2(-dot(dir, eixos.colunaZ), dot(dir, eixos.colunaX)) / (Math.PI / 180)),
+    latDeg: Math.asin(Math.max(-1, Math.min(1, dot(dir, eixos.colunaY)))) / (Math.PI / 180),
   };
 }
 
+function malhaDaSuperficie(group: THREE.Object3D): THREE.Mesh {
+  for (const c of group.children) {
+    if (c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) return c;
+  }
+  throw new Error('malhaDaSuperficie: nenhuma esfera no grupo');
+}
+
 describe('1. o oráculo de orientação (emenda D-E4)', () => {
-  it.each(JDS)('o transform do mesh põe o Sol a pino onde o Horizons diz — jd %f', (jd) => {
-    const doMesh = subSolarDoMesh(jd);
-    const oraculo = subSolarPoint('earth', jd, motor);
-    // mesma cadeia numérica dos dois lados: a folga é de arredondamento,
-    // não de física — 1e-8° ≈ 1 mm na superfície
-    expect(doMesh.lonEastDeg).toBeCloseTo(oraculo.lonEastDeg, 8);
-    expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
-  });
-
-  it('controle negativo: o mapeamento ESPELHADO (textura girada) reprova', () => {
-    const jd = JDS[0];
-    const p = motor.posicaoHeliocentrica('earth', jd);
-    const norma = Math.hypot(p.x, p.y, p.z);
-    const dir = eclipticaParaEquatorial([-p.x / norma, -p.y / norma, -p.z / norma]);
-    const { colunaX, colunaZ } = orientacaoDaTerraNaCena(jd);
-    const dot = (a: readonly number[], b: readonly number[]) =>
-      a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-    // o erro clássico: sinal do z trocado (lon espelhada) — o globo giraria
-    // plausível e TODA vista de longe passaria
-    const lonErrada = grau360(
-      Math.atan2(+dot(dir, colunaZ), dot(dir, colunaX)) / (Math.PI / 180)
-    );
-    const oraculo = subSolarPoint('earth', jd, motor);
-    const delta = Math.abs(lonErrada - oraculo.lonEastDeg);
-    expect(Math.min(delta, 360 - delta)).toBeGreaterThan(1);
-  });
-
   it('a base é ortonormal dextrógira em qualquer instante', () => {
     for (const jd of JDS) {
       const { colunaX, colunaY, colunaZ } = orientacaoDaTerraNaCena(jd);
@@ -155,6 +131,42 @@ describe('1. o oráculo de orientação (emenda D-E4)', () => {
         colunaX[2] * (colunaY[0] * colunaZ[1] - colunaY[1] * colunaZ[0]);
       expect(det).toBeCloseTo(1, 12);
     }
+  });
+
+  it.each(JDS)('o transform do MESH põe o Sol a pino onde o Horizons diz — jd %f', async (jd) => {
+    const { terra } = terraDeTeste();
+    const perto = centroPc(jd);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    const q = quadro(perto, { jdTdb: jd });
+    terra.atualizar(q);
+    await flush();
+    expect(terra.atualizar(q).emQuadro).toBe(true);
+    const doMesh = subSolarDosEixos(eixosDoMesh(malhaDaSuperficie(terra.group)), dirSolCena(jd));
+    const oraculo = subSolarPoint('earth', jd, motor);
+    expect(doMesh.lonEastDeg).toBeCloseTo(oraculo.lonEastDeg, 8);
+    expect(doMesh.latDeg).toBeCloseTo(oraculo.latPlanetocentricaDeg, 8);
+    terra.dispose();
+  });
+
+  it('controle negativo: deitar o polo no equador no MESH reprova', async () => {
+    const { terra } = terraDeTeste();
+    const perto = centroPc(JDS[0]);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    const q = quadro(perto);
+    terra.atualizar(q);
+    await flush();
+    expect(terra.atualizar(q).emQuadro).toBe(true);
+    const mesh = malhaDaSuperficie(terra.group);
+    const e = mesh.matrix.elements;
+    for (let i = 0; i < 3; i++) {
+      const tmp = e[4 + i];
+      e[4 + i] = e[8 + i];
+      e[8 + i] = tmp;
+    }
+    const doMesh = subSolarDosEixos(eixosDoMesh(mesh), dirSolCena(JDS[0]));
+    const oraculo = subSolarPoint('earth', JDS[0], motor);
+    expect(Math.abs(doMesh.latDeg - oraculo.latPlanetocentricaDeg)).toBeGreaterThan(10);
+    terra.dispose();
   });
 });
 

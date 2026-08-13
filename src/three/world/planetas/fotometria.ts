@@ -54,10 +54,12 @@
 //
 // FASE: Lambert é a esfera difusora ideal. MH18 (Mallama & Hilton
 // 2018) é a polinomial POR CORPO no ponto fotométrico, com política
-// de domínio (D10): DENTRO do α publicado, clamp na borda + emenda
-// CONTÍNUA com Lambert fora (razão Φ_MH/Φ_L pinada na costura).
-// Saturno leva o termo de anel (−1,825 sin B + …). Plutão não tem
-// MH18 — fica Lambert.
+// de domínio (D10): DENTRO do α da EQUAÇÃO publicada, clamp na borda
+// + emenda CONTÍNUA com Lambert fora (razão Φ_MH/Φ_L pinada na
+// costura). O teto NÃO é o α máximo visto da Terra (3,1° Urano /
+// 1,9° Netuno): a câmera voa por dentro do sistema. Saturno leva o
+// termo de anel (−1,825 sin β + …) com β = √(βE βS) de mesmo sinal
+// (Eq. 10). Plutão não tem MH18 — fica Lambert.
 //
 // FONTES (por linha na tabela abaixo):
 //   [MH18] Mallama, A. & Hilton, J.L. 2018, "Computing apparent
@@ -247,8 +249,10 @@ export const DOMINIO_MH18: Record<string, number> = {
   mars: 50,
   jupiter: 12,
   saturn: 6.5,
-  uranus: 3.1,
-  neptune: 1.9,
+  // Eq. 15 (Voyager) vale até 154°; 3,1° é só o máximo geocêntrico.
+  uranus: 154,
+  // Eq. 17 vale até 133° (último full-disk Voyager); 1,9° é geocêntrico.
+  neptune: 133,
 };
 
 const VENUS_COSTURA_DEG = 163.7;
@@ -287,10 +291,23 @@ export function deltaMagMh18(
     case 'uranus':
       return 6.587e-3 * a + 1.049e-4 * a * a;
     case 'neptune':
-      return 0;
+      // [MH18] Eq. 17, válida até 133°.
+      return 7.944e-3 * a + 9.617e-5 * a * a;
     default:
       return 0;
   }
+}
+
+/**
+ * Inclinação efetiva do anel de Saturno [MH18] Eq. 10: √(βE βS)
+ * quando βE e βS têm o mesmo sinal; 0 quando o Sol ilumina um lado
+ * e o observador vê o outro (anel de contraluz, quase apagado).
+ * Os dois ângulos entram na mesma unidade; a saída também.
+ */
+export function betaEfetivoAnel(betaE: number, betaS: number): number {
+  if (betaE === 0 || betaS === 0) return 0;
+  if (Math.sign(betaE) !== Math.sign(betaS)) return 0;
+  return Math.sign(betaE) * Math.sqrt(Math.abs(betaE * betaS));
 }
 
 function phiDeDeltaMag(dm: number): number {

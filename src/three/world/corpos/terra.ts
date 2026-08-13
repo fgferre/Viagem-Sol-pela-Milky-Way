@@ -230,6 +230,45 @@ export function orientacaoDoCorpoNaCena(
   return { colunaX, colunaY: polo, colunaZ, wRad: w };
 }
 
+/**
+ * Base INERCIAL do anel: o mesmo equador do corpo (nodoQ × polo),
+ * sem o W(t). O padrão do anel não gira uma volta por dia do
+ * planeta — está preso ao céu, não ao meridiano-primo.
+ */
+export function orientacaoInercialDoAnelNaCena(
+  o: IauOrientation,
+  jdTdb: number
+): { colunaX: Vec3; colunaY: Vec3; colunaZ: Vec3 } {
+  const { nodoQ, polo } = baseCorpoEquatorial(o, jdTdb);
+  const colunaZ: Vec3 = [
+    nodoQ[1] * polo[2] - nodoQ[2] * polo[1],
+    nodoQ[2] * polo[0] - nodoQ[0] * polo[2],
+    nodoQ[0] * polo[1] - nodoQ[1] * polo[0],
+  ];
+  return { colunaX: nodoQ, colunaY: polo, colunaZ };
+}
+
+/**
+ * Eixos unitários como o MESH os gravou (colunas da matriz, sem a
+ * escala). O oráculo D-E4 lê ISTO — não a função que escreveu a
+ * matriz. Deitar o polo no equador na malha tem de reprovar.
+ */
+export function eixosDoMesh(mesh: THREE.Object3D): {
+  colunaX: Vec3;
+  colunaY: Vec3;
+  colunaZ: Vec3;
+} {
+  const e = mesh.matrix.elements;
+  const col = (i: number): Vec3 => {
+    const x = e[i];
+    const y = e[i + 1];
+    const z = e[i + 2];
+    const n = Math.hypot(x, y, z) || 1;
+    return [x / n, y / n, z / n];
+  };
+  return { colunaX: col(0), colunaY: col(4), colunaZ: col(8) };
+}
+
 /** A instância Terra da função acima — o nome que o oráculo pina. */
 export function orientacaoDaTerraNaCena(jdTdb: number): OrientacaoNaCena {
   return orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.earth, jdTdb);
