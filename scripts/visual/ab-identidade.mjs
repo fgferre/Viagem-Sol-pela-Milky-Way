@@ -111,6 +111,26 @@ export const VISTAS = [
   ['solrampa', '?pos=0,0,0.25&look=0,0,0&shot=2'],
   ['solestouro', '?pos=0,0,0.32&look=0,0,0&shot=2'],
   ['solestrela', '?pos=0,0,0.5&look=0,0,0&shot=2'],
+  // AS TRÊS DO SOL REAL (F1 da onda do Sol real) — a resposta com imagem
+  // à frase de `config.ts:8`, "escala real seria invisível". Elas são as
+  // únicas vistas da casa que carregam `?solreal=1`, e é por isso que
+  // NÃO entram na conta de bit-identidade das 24: o par nulo delas é a
+  // mesma URL sem a porta, e aí o Sol volta a ser o ponto de sempre.
+  //
+  // As distâncias, e cada uma responde uma pergunta diferente:
+  //  4 milhões de km (1,2963e-7 pc) = 5,74 raios solares — a distância
+  //    de onde o Sol REAL enche 76% da altura do quadro, ou seja a mesma
+  //    parede de fogo da abertura, filmada num lugar que existe (a
+  //    Parker Solar Probe chega a 9,9 raios). É a foto que prova que não
+  //    é preciso inflar nada para ter o plano.
+  //  1 UA (4,84814e-6 pc) = o Sol do tamanho que se vê da janela de
+  //    casa: 0,53° de diâmetro angular. É a foto da aferição — se este
+  //    disco sair com outro tamanho, a conta está errada em algum lugar.
+  //  40 UA (1,93926e-4 pc) = a órbita de Plutão. É a foto que mostra o
+  //    que "estrela longe é PONTO, não invisível" quer dizer.
+  ['solreal4mkm', '?pos=0,0,0.00000012963&look=0,0,0&solreal=1&shot=2'],
+  ['solreal1ua', '?pos=0,0,0.0000048481&look=0,0,0&solreal=1&shot=2'],
+  ['solreal40ua', '?pos=0,0,0.00019393&look=0,0,0&solreal=1&shot=2'],
   // As de hero são Betelgeuse (152,67 pc de casa, a supergigante do Ato II),
   // a câmera na PRÓPRIA reta Sol→estrela. As três distâncias são os três
   // regimes do `farFade` do billboard (heroStars.ts:58, 320→900 pc): 200 pc

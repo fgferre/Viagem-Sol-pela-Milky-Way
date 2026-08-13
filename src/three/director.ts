@@ -42,6 +42,7 @@ import {
 import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
 import { dateToTDB } from '../lib/atlas/time';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
+import { RAIO_SOL_PC } from './escala';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -428,6 +429,15 @@ export class Director {
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
+  /**
+   * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc — `WORLD.sunRadius` (o
+   * artístico) ou `RAIO_SOL_PC` (o físico) sob `?solreal=1`. Fonte única
+   * para todo mundo que precisa do tamanho do Sol depois da construção:
+   * o oclusor da nebulosa e o palco. Sem ele, cada consumidor leria
+   * `WORLD.sunRadius` direto e a porta valeria só para o mesh — o Sol
+   * seria pequeno e continuaria tapando o céu como se fosse grande.
+   */
+  private readonly solRaioPc: number;
   private disposed = false;
   /** pré-compilação em voo; o dispose do renderer espera por ela */
   private warmup: Promise<unknown> | null = null;
@@ -459,8 +469,22 @@ export class Director {
     // Onda 3 o corpo é parametrizado e o Sol é a instância 1: quem
     // decide raio, rotação, atividade e semente é SOL_PARAMS, não
     // literais soltos dentro da classe.
+    // A PORTA `?solreal=1` (F1 da onda do Sol real), no padrão
+    // `?dom/?nodom` da Onda 3: o A/B se faz com o MESMO binário dos dois
+    // lados, e SEM a porta nada muda — nem um bit, porque o ramo do
+    // `===` devolve o próprio `SOL_PARAMS`, o mesmo objeto de sempre.
+    //
+    // Ela NÃO é o conserto. O conserto é a F3, que troca o raio de vez e
+    // refilma a abertura. Esta porta existe para o raio FÍSICO poder ser
+    // fotografado pelo mesmo motor, no mesmo dia, ANTES de qualquer
+    // baseline ser paga — e é a resposta à frase do `config.ts:8`
+    // ("escala real seria invisível"): não é invisível; é que ninguém
+    // chegou perto. Ver `docs/ESCALA-HONESTA.md`.
+    this.solRaioPc = this.debug.has('solreal') ? RAIO_SOL_PC : WORLD.sunRadius;
     this.sun = new StellarBody(
-      SOL_PARAMS,
+      this.solRaioPc === WORLD.sunRadius
+        ? SOL_PARAMS
+        : { ...SOL_PARAMS, radiusPc: this.solRaioPc },
       this.engine.renderer,
       this.engine.camera,
       this.engine.quality
@@ -2562,7 +2586,20 @@ export class Director {
     // (esfera de 2,2 do doador × escala WORLD.sunRadius/2,2). Enquanto ela
     // estiver na cena, o raymarch da nebulosa não precisa integrar o que ela
     // cobre — ver o cone em nebula.ts.
-    this.nebula.setSunOccluder(ORIGEM, this.sun.group.visible ? WORLD.sunRadius : 0);
+    // `solRaioPc` e não `WORLD.sunRadius`: sob `?solreal=1` o Sol é
+    // 487.441× menor, e o oclusor tem de encolher junto — senão o
+    // raymarch da nebulosa continua pulando uma cavidade de 2.269 UA em
+    // volta de um corpo que agora cabe dentro da órbita de Mercúrio.
+    this.nebula.setSunOccluder(ORIGEM, this.sun.group.visible ? this.solRaioPc : 0);
+    // O SOL NO PALCO (F1) — só sob a porta, e o "só" é o gate: com o
+    // raio artístico o palco daria ao `near` uma superfície a 0,011 pc
+    // da origem e o plano de corte mudaria em TODA vista do filme. Com o
+    // raio físico ele é o que faz a câmera saber parar antes da
+    // fotosfera, que é a razão de o palco existir (`corpos.ts`).
+    if (this.solRaioPc !== WORLD.sunRadius) {
+      if (this.sun.group.visible) this.palco.registrar('sun', this.solRaioPc, ORIGEM);
+      else this.palco.remover('sun');
+    }
     // A CAMADA DE PLANETAS (Onda 4, D3/D7), logo depois do Sol porque é
     // a continuação dele: abaixo de 0,05 pc o disco artístico se dissolve
     // (`solWorldFade`) e quem desenha o Sol é o vértice 0 desta camada,

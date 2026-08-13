@@ -384,3 +384,38 @@ describe('5. a copy do selo', () => {
     }
   });
 });
+
+// ============================================================
+// F1 — a porta de escala `?solreal=1`.
+// ============================================================
+describe('F1 — ?solreal=1 é porta de ESCALA, não de brilho', () => {
+  // o `com` da casa, e não um fixture novo: assim este bloco continua
+  // correto quando `EstadoDaVista` ganhar campo. Foi como ele nasceu
+  // ERRADO — faltavam `tier` e `evLuzDoFoco` —, e quem pegou foi o tsc.
+  // 0,1 pc (a vista `soldisco`): é onde o eixo ESCALA declara desvio e a
+  // acusação sai. ACHADO ao escrever isto: a 1 UA o selo já diz ESCALA
+  // REAL sozinho — `escalaDaVista` compara as duas rampas do domínio
+  // profundo, e lá dentro o disco artístico não desenha. Ou seja, o
+  // conservadorismo do eixo não alcança o interior do sistema solar.
+  const vista = (portas: string[]) => com({ distanciaPc: 0.1, portas });
+
+  it('é porta CONHECIDA — não cai no ramo "porta não declarada"', () => {
+    const v = estadoDoSelo(vista(['solreal']));
+    expect(v.desvios.some((c) => c.chave === 'solreal')).toBe(false);
+    expect(v.desvios.some((c) => c.rotulo.includes('não declarada'))).toBe(false);
+  });
+
+  it('NÃO suja o eixo do brilho — ela não toca uma linha de fotometria', () => {
+    expect(estadoDoSelo(vista(['solreal'])).brilho).toBe('real');
+  });
+
+  it('com a porta, o Sol SAI da acusação de escala', () => {
+    const comPorta = estadoDoSelo(vista(['solreal']));
+    const semPorta = estadoDoSelo(vista([]));
+    expect(semPorta.culpados).toContain('Sol está 487.441× maior');
+    expect(comPorta.culpados).not.toContain('Sol está 487.441× maior');
+    // e o buraco negro continua devendo nas duas: pagar uma dívida não
+    // perdoa a outra
+    expect(comPorta.culpados).toContain('Sagittarius A✱ está 125.884× maior');
+  });
+});

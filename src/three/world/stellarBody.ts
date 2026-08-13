@@ -39,7 +39,7 @@
 import * as THREE from 'three';
 import { WORLD } from '../config';
 import type { QualityLevel } from '../core/engine';
-import { isDiscGroupVisible, solWorldFade } from './lodStellar';
+import { discWorldFadeDaInstancia, isDiscGroupVisible } from './lodStellar';
 import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
 import { createPIL } from './sol/pil.js';
@@ -564,8 +564,13 @@ export class StellarBody {
     // consumidores abaixo leem a MESMA variável `world`. Acima de
     // 0,05 pc a composição é identidade bit a bit, e é assim que o
     // filme inteiro (piso 0,0631506 pc) fica sem um pixel de diferença.
+    // F1: a atenuação passa a receber o RAIO DA INSTÂNCIA. Para o raio
+    // artístico é `solWorldFade` bit a bit (é o que mantém o filme sem
+    // um pixel de diferença); para o raio físico o termo do domínio
+    // profundo não se aplica — ele existe porque uma fotosfera de
+    // 2.269 UA engolfaria o sistema, e a de verdade não engolfa nada.
     const dPc = camera.position.length();
-    const world = solWorldFade(dPc);
+    const world = discWorldFadeDaInstancia(dPc, this.params.radiusPc);
     ctx.sunUniforms.uWorldFade.value = world;
     ctx.spiculeUniforms.uWorldFade.value = world;
     ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray * world;

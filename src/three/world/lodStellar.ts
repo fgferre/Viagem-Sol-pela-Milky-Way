@@ -252,6 +252,38 @@ export function solWorldFade(dPc: number): number {
 }
 
 /**
+ * A MESMA ATENUAÇÃO, agora ciente do RAIO DA INSTÂNCIA (F1 da onda do
+ * Sol real). É a primeira rachadura declarada na régua-em-pc, e ela não
+ * é preferência: é que o termo `deepDiscFade` **perde a premissa** fora
+ * do raio artístico.
+ *
+ * A premissa está escrita, com todas as letras, na docstring de
+ * `LOD_SOL.deep` logo acima: o disco se dissolve indo para dentro
+ * "porque uma fotosfera de raio artístico (0,011 pc = 2.269 UA)
+ * engolfaria o sistema solar inteiro". Com raio FÍSICO (2,2567e-8 pc,
+ * 487.441× menor) a fotosfera não engolfa coisa nenhuma — ela é menor
+ * que a órbita de Mercúrio por cinco ordens de grandeza. Aplicar a
+ * dissolução ali seria apagar o Sol para resolver um problema que o Sol
+ * verdadeiro não tem, e é EXATAMENTE isso que acontece hoje: a
+ * `deepDiscFade` vale 0 abaixo de 0,02 pc, então um Sol de raio real
+ * nasceria invisível em todo o sistema solar.
+ *
+ * BIT-IDENTIDADE: para o raio artístico esta função é `solWorldFade`,
+ * a mesma chamada, sem um ULP de diferença — a comparação é de
+ * igualdade exata contra `WORLD.sunRadius`, não uma tolerância.
+ *
+ * ESTE É UM REMENDO COM DATA DE VALIDADE, e ele se declara: a F2 troca
+ * a janela-em-pc pela régua de TAMANHO NA TELA (o gate por ângulo
+ * sólido que dorme neste arquivo desde a Onda 3 — ver `DISC_ENTER_RAD`
+ * e "A CONTA DO HANDOFF"), e aí o `raioPc` deixa de escolher entre duas
+ * leis e passa a ser só um dos termos de uma lei só. Quando isso
+ * acontecer, esta função morre.
+ */
+export function discWorldFadeDaInstancia(dPc: number, raioPc: number): number {
+  return raioPc === WORLD.sunRadius ? solWorldFade(dPc) : discWorldFade(dPc);
+}
+
+/**
  * `uGain` do SunStar, forma EXATA da que vivia inline em
  * `SunStar.update` antes da fiação da fase 2 (Math.min/Math.max no
  * clamp, divisão pela largura LITERAL, depois smoothstep cúbico

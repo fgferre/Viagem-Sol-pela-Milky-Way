@@ -30,7 +30,8 @@
 // Módulo PURO: sem window, sem three, sem React.
 // ============================================================
 import { deepDiscFade, deepPointGain } from './world/lodStellar';
-import { acusacaoDaEscala } from './escala';
+import { RAIO_SOL_PC, acusacaoDaEscala } from './escala';
+import { WORLD } from './config';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
@@ -219,6 +220,31 @@ const neutra = (chave: string, rotulo: string): CaminhoDoSelo => ({
   desvia: () => false,
 });
 
+/**
+ * A PORTA DE ESCALA (F1 da onda do Sol real) — o primeiro caminho da
+ * casa que MUDA A IMAGEM e ainda assim não é desvio de brilho.
+ *
+ * `?solreal=1` constrói o Sol com o raio FÍSICO (2,2567e-8 pc) em vez do
+ * artístico. Ela não toca uma linha de fotometria: nenhuma exposição,
+ * nenhum tom, nenhuma camada, nenhum ganho. Declará-la no eixo BRILHO
+ * seria acusar de assistir a luz quem não assistiu — o erro simétrico
+ * de calar. Por isso `eixo: 'nenhum'` e `desvia: () => false`: ela é
+ * conhecida (não cai no ramo "porta não declarada") e não suja o eixo
+ * errado.
+ *
+ * E o eixo que ela REALMENTE move está tratado em `estadoDoSelo`: com a
+ * porta ligada, o Sol sai da lista de culpados da escala, porque nessa
+ * vista ele não deve nada. Sem isso o selo mentiria ao contrário —
+ * acusando quem já pagou.
+ */
+const PORTA_SOL_REAL: CaminhoDoSelo = {
+  chave: 'solreal',
+  eixo: 'nenhum',
+  rotulo: 'Sol em tamanho FÍSICO (porta de aferição da F1)',
+  volta: 'nenhuma',
+  desvia: () => false,
+};
+
 /** camada desligada: o que ela emitia deixou de entrar na conta da luz */
 const camada = (flag: string, volta: Volta = 'vivo'): CaminhoDoSelo => ({
   chave: flag,
@@ -242,6 +268,8 @@ const camada = (flag: string, volta: Volta = 'vivo'): CaminhoDoSelo => ({
  * abaixo já modela ao olhar o latch VIVO em vez da porta.
  */
 export const REGISTRO: readonly CaminhoDoSelo[] = [
+  // --- escala (F1) --------------------------------------------------
+  PORTA_SOL_REAL,
   // --- gosto do visitante, ao vivo ---------------------------------
   /**
    * A GRADAÇÃO POR CONTEXTO (F6) — a linha que o desenho mandou existir
@@ -552,12 +580,18 @@ export function estadoDoSelo(e: EstadoDaVista): VereditoDoSelo {
     if (!PORTAS_CONHECIDAS.has(chave)) desvios.push(desconhecida(chave));
   }
   const escala = escalaDaVista(e.distanciaPc);
+  // O RAIO VIVO DO SOL sai das PRÓPRIAS PORTAS — sem campo novo em
+  // `EstadoDaVista` e sem plumbing pelo App: a URL já é a fonte de
+  // verdade do selo (é o que o cabeçalho deste arquivo promete), e
+  // `?solreal=1` está nela. Com a porta ligada o Sol tem raio físico e
+  // sai da acusação; sem ela, o cadastro fala pelo padrão.
+  const raioDoSol = e.portas.includes('solreal') ? RAIO_SOL_PC : WORLD.sunRadius;
   return {
     escala,
     brilho: desvios.length === 0 ? 'real' : 'assistido',
     desvios,
     // a acusação só sai com o desvio: acusar numa vista honesta seria o
     // erro simétrico ao de calar numa vista mentirosa
-    culpados: escala === 'fora' ? acusacaoDaEscala() : [],
+    culpados: escala === 'fora' ? acusacaoDaEscala(raioDoSol) : [],
   };
 }

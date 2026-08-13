@@ -254,3 +254,28 @@ describe('5. a copy que o visitante lê', () => {
     expect(linhas).toHaveLength(2);
   });
 });
+
+// ------------------------------------------------------------
+describe('6. F1 — a acusação com o raio VIVO do Sol', () => {
+  it('com o raio FÍSICO o Sol sai da acusação — o selo não acusa quem pagou', () => {
+    const linhas = acusacaoDaEscala(RAIO_SOL_PC);
+    expect(linhas.some((l) => l.startsWith('Sol '))).toBe(false);
+    // e Sgr A✱ continua devendo: pagar uma dívida não perdoa a outra
+    expect(linhas).toEqual(['Sagittarius A✱ está 125.884× maior']);
+  });
+
+  it('sem argumento, fala pelo padrão da casa (o raio artístico)', () => {
+    expect(acusacaoDaEscala()).toEqual(acusacaoDaEscala(WORLD.sunRadius));
+    expect(acusacaoDaEscala()[0]).toBe('Sol está 487.441× maior');
+  });
+
+  it('o fator do Sol acompanha o raio vivo, em qualquer valor', () => {
+    const meio = culpadosDaEscala(RAIO_SOL_PC * 3).find((e) => e.id === 'sol')!;
+    expect(meio.fator).toBeCloseTo(3, 10);
+  });
+
+  it('AGULHA: um Sol real ainda em dívida seria contradição — e não é', () => {
+    // se algum dia `deveDivida` deixar de comparar com 1 exato, isto pega
+    expect(culpadosDaEscala(RAIO_SOL_PC).some((e) => e.id === 'sol')).toBe(false);
+  });
+});

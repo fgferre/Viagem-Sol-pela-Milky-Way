@@ -239,10 +239,19 @@ export const DIVIDAS_ABERTAS: Readonly<Record<string, string>> = {
  * de escala, é óptica, e entra na lista aberta do cadastro, não na
  * acusação.
  */
-export function culpadosDaEscala(): readonly EscalaDeclarada[] {
-  return CADASTRO_DE_ESCALA.filter(deveDivida).sort(
-    (a, b) => (b.fator ?? Infinity) - (a.fator ?? Infinity)
-  );
+export function culpadosDaEscala(
+  raioDoSolPc: number = WORLD.sunRadius
+): readonly EscalaDeclarada[] {
+  return CADASTRO_DE_ESCALA.map((e) =>
+    // O RAIO DO SOL É VIVO desde a F1: a porta `?solreal=1` constrói o
+    // Sol com o raio FÍSICO, e nessa vista a acusação do cadastro
+    // estaria MENTINDO ao contrário — dizendo que o Sol está 487.441×
+    // maior quando ele está no tamanho certo. Um selo que acusa quem já
+    // pagou é tão desonesto quanto um que cala sobre quem deve.
+    e.id === 'sol' ? { ...e, fator: raioDoSolPc / RAIO_SOL_PC } : e
+  )
+    .filter(deveDivida)
+    .sort((a, b) => (b.fator ?? Infinity) - (a.fator ?? Infinity));
 }
 
 /**
@@ -261,6 +270,8 @@ export function fatorEmTexto(fator: number | null): string {
  * A LINHA DA ACUSAÇÃO, pronta para o HUD: "o Sol está 487.437× maior".
  * Uma frase por culpado, na ordem de `culpadosDaEscala`.
  */
-export function acusacaoDaEscala(): readonly string[] {
-  return culpadosDaEscala().map((e) => `${e.nome} está ${fatorEmTexto(e.fator)} maior`);
+export function acusacaoDaEscala(raioDoSolPc?: number): readonly string[] {
+  return culpadosDaEscala(raioDoSolPc).map(
+    (e) => `${e.nome} está ${fatorEmTexto(e.fator)} maior`
+  );
 }
