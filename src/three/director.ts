@@ -58,6 +58,8 @@ import {
 import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
 import { dateToTDB } from '../lib/atlas/time';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
+import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
+import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
 import { RAIO_SOL_PC } from './escala';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
@@ -97,6 +99,9 @@ import type { CorpoBuscavel } from '../lib/buscaEstrelas';
 
 // A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
 const ORIGEM = new THREE.Vector3(0, 0, 0);
+
+/** rascunho do polo do corpo — o rig COPIA, ninguém guarda a referência */
+const POLO_DO_CORPO = new THREE.Vector3();
 
 // A fase e o inventário de quem decide por ela moram em `fases.ts` —
 // o App também os lê, e duplicar a união aqui era o começo da segunda
@@ -1696,6 +1701,27 @@ export class Director {
   }
 
   /**
+   * O POLO NORTE do corpo, no frame da CENA, no instante pedido — o
+   * `up` dos degraus "corpo" e "lua" (Onda 7).
+   *
+   * O dado já existia pronto e puro: `baseCorpoEquatorial` avalia o
+   * modelo IAU/WGCCRE do kernel `pck00011` e devolve o polo em
+   * EQUATORIAL J2000, que É o frame da cena — é a mesma função que
+   * orienta a malha da Terra (`orientacaoDoCorpoNaCena`). Nenhuma tabela
+   * nova, nenhuma conversão nova: se a câmera e a malha discordassem, o
+   * globo apareceria torto contra o próprio eixo desenhado.
+   *
+   * Corpo sem registro IAU devolve `null` e o chamador fica com a
+   * eclíptica — que é o que o Atlas sempre fez.
+   */
+  private poloDoCorpo(id: string): THREE.Vector3 | null {
+    const o = IAU_ORIENTATIONS[id];
+    if (!o) return null;
+    const p = baseCorpoEquatorial(o, grampearJd(this.jdPedido)).polo;
+    return POLO_DO_CORPO.set(p[0], p[1], p[2]);
+  }
+
+  /**
    * O DEGRAU "CORPO" (F2b/D7): o corpo EM FOCO enquadrado com o raio
    * FÍSICO dele (BODY_AXES, via o estado do mesh resolvido — nenhum
    * literal de raio nasce aqui). O centro é o do MESH (a mesma cadeia
@@ -1717,6 +1743,8 @@ export class Director {
     );
     this.atlas.focar(centro, RAIO_EQ_TERRA_PC, centro, {
       rampa: this.rampaDaEscada(),
+      // o eixo do PLANETA no alto da tela, não o da eclíptica (Onda 7)
+      polo: this.poloDoCorpo(id),
     });
     this.enquadrarAgora();
     this.focoCorpoId = id;
@@ -1766,6 +1794,7 @@ export class Director {
     this.atlas.focar(lua, RAIO_LUA_PC, lua, {
       rampa: this.rampaDaEscada(),
       pai,
+      polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id),
     });
     this.enquadrarAgora();
     this.teletransportou();

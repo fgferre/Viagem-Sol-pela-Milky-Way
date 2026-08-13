@@ -5,6 +5,7 @@
 // a borda do retângulo útil, que é o que a conta promete.
 // ============================================================
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import {
   ATLAS_FOV_GRAUS,
@@ -19,15 +20,19 @@ import {
   PHASE_OFFSET_GRAUS,
   RETANGULO_CHEIO,
   RAMPA_DO_DEGRAU_S,
+  CEDER_COMECA_GRAUS,
   direcaoDaLua,
   direcaoPrivilegiada,
+  upDoAtlas,
   enquadrar,
   orbitaMaisExterna,
   raioDeEnquadramentoEstelar,
   retanguloUtilDoAtlas,
 } from './atlasRig';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
-import { RETRATO_2026 } from '../world/planetas/retrato2026';
+import { EPOCA_JD_TDB, RETRATO_2026 } from '../world/planetas/retrato2026';
+import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
+import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
 
 const GRAU = Math.PI / 180;
 
@@ -762,6 +767,167 @@ describe('direcaoDaLua — o degrau "lua" (F2b/D7)', () => {
       9
     );
     expect(out.y).toBeGreaterThan(0);
+  });
+});
+
+// ============================================================
+// ONDA 7 — O POLO DO CORPO NO ALTO, e a GUARDA que ele obriga.
+//
+// `escreverPose` escrevia `camera.up = POLO_ECLIPTICO` sempre: a Terra
+// saía 4,2° torta na data de abertura e até 27,8° noutras. O dado
+// existia pronto e puro (o modelo IAU do kernel, o MESMO que orienta a
+// malha do planeta) — o Atlas é que não o consultava.
+//
+// A guarda não é capricho: com o polo do corpo no alto E o arrasto de
+// dois eixos solto, a direção da câmera ALCANÇA o eixo da Terra, e ali
+// o `lookAt` degenera (a imagem gira sozinha em torno da mira). Estas
+// provas medem as duas coisas: que o encontro acontece, e que a mistura
+// suave o desarma sem vazar para o caso comum.
+// ============================================================
+describe('o polo do corpo no alto, e a guarda da mira', () => {
+  const POLO_ECLIPTICO = (() => {
+    const v = eclipticaParaEquatorial([0, 0, 1]);
+    return new THREE.Vector3(v[0], v[1], v[2]).normalize();
+  })();
+  const poloDe = (id: string, jd: number) => {
+    const p = baseCorpoEquatorial(IAU_ORIENTATIONS[id], jd).polo;
+    return new THREE.Vector3(p[0], p[1], p[2]);
+  };
+  /** as direções Sol→alvo de um ano, no plano da eclíptica */
+  const direcoesDoAno = (passoGraus: number) => {
+    const fora: THREE.Vector3[] = [];
+    for (let a = 0; a < 360; a += passoGraus) {
+      const r = a * GRAU;
+      const eq = eclipticaParaEquatorial([Math.cos(r), Math.sin(r), 0]);
+      fora.push(new THREE.Vector3(eq[0], eq[1], eq[2]).normalize());
+    }
+    return fora;
+  };
+
+  it('a degenerescência é ALCANÇÁVEL: o eixo da Terra entra no cone do arrasto', () => {
+    // o eixo da Terra faz com a direção do Sol, no solstício, 90° − 23,4°
+    // = 66,6°. O grampo do arrasto vale 70°, então a inclinação passa DO
+    // OUTRO LADO do polo — e é por isso que a guarda existe.
+    const polo = poloDe('earth', EPOCA_JD_TDB);
+    let menor = 180;
+    for (const doSol of direcoesDoAno(1)) {
+      const iluminada = doSol.clone().negate();
+      menor = Math.min(menor, iluminada.angleTo(polo) / GRAU);
+    }
+    expect(menor).toBeGreaterThan(66);
+    expect(menor).toBeLessThan(67);
+    // ...e 66,6 < 70: o dedo do visitante CHEGA ao eixo do planeta
+    expect(menor).toBeLessThan(MAX_SOLAR_DEVIATION_GRAUS);
+  });
+
+  it('no encontro exato, sem guarda o up é a própria mira — com guarda são 23,4°', () => {
+    const polo = poloDe('earth', EPOCA_JD_TDB);
+    // construção EXATA: `u` (alvo→Sol) a 60° do polo e `altura` de 30°
+    // põem a direção da câmera em cima do polo, sem depender de busca
+    const t = new THREE.Vector3(1, 0, 0).cross(polo).normalize();
+    const u = polo
+      .clone()
+      .multiplyScalar(Math.cos(60 * GRAU))
+      .addScaledVector(t, Math.sin(60 * GRAU));
+    const doSol = u.clone().negate();
+    const dir = direcaoPrivilegiada(
+      doSol,
+      polo,
+      { altura: (60 - PHASE_OFFSET_GRAUS) * GRAU, volta: 0 },
+      new THREE.Vector3()
+    );
+    // a mira caiu EM CIMA do eixo do planeta
+    expect(dir.angleTo(polo) / GRAU).toBeCloseTo(0, 9);
+    // sem guarda, `up = polo` seria paralelo à mira: `direita = up × z`
+    // colapsa e a imagem gira sozinha
+    expect(Math.abs(dir.dot(polo))).toBeCloseTo(1, 12);
+    // com guarda, o up cede à eclíptica — que para a Terra fica a 23,4°
+    const up = upDoAtlas(dir, polo, new THREE.Vector3());
+    expect(up.distanceTo(POLO_ECLIPTICO)).toBeLessThan(1e-12);
+    expect(dir.angleTo(up) / GRAU).toBeCloseTo(23.44, 1);
+  });
+
+  it('a guarda NÃO vaza: longe do eixo o up é o polo do corpo, bit a bit', () => {
+    const polo = poloDe('earth', EPOCA_JD_TDB);
+    // o repouso do degrau "corpo" — 30° de fase, sem arrasto — fica a
+    // dezenas de graus do eixo em qualquer dia do ano
+    for (const doSol of direcoesDoAno(15)) {
+      const dir = direcaoPrivilegiada(
+        doSol.clone(),
+        polo,
+        ORBITA_PARADA,
+        new THREE.Vector3()
+      );
+      const separacao = 90 - Math.abs(90 - dir.angleTo(polo) / GRAU);
+      expect(separacao).toBeGreaterThan(CEDER_COMECA_GRAUS);
+      const up = upDoAtlas(dir, polo, new THREE.Vector3());
+      expect(up.distanceTo(polo.clone().normalize())).toBe(0);
+    }
+  });
+
+  it('VARREDURA: em nenhum ponto alcançável a mira encosta no up', () => {
+    // os dois corpos que têm degrau "corpo"/"lua" hoje, um ano de datas,
+    // o cone inteiro do arrasto. O piso MEDIDO nesta varredura é 17,6°
+    // (Terra) e 19,9° (Lua); 15° é o que se declara, com folga.
+    const PISO_GRAUS = 15;
+    let pior = 180;
+    for (const id of ['earth', 'moon']) {
+      for (let d = 0; d < 366; d += 11) {
+        const polo = poloDe(id, EPOCA_JD_TDB + d);
+        for (const doSol of direcoesDoAno(15)) {
+          for (let alt = -PHASE_OFFSET_GRAUS; alt <= 40; alt += 5) {
+            for (let v = 0; v < 360; v += 20) {
+              const dir = direcaoPrivilegiada(
+                doSol.clone(),
+                polo,
+                { altura: alt * GRAU, volta: v * GRAU },
+                new THREE.Vector3()
+              );
+              const up = upDoAtlas(dir, polo, new THREE.Vector3());
+              pior = Math.min(pior, dir.angleTo(up) / GRAU);
+            }
+          }
+        }
+      }
+    }
+    expect(pior).toBeGreaterThan(PISO_GRAUS);
+  });
+
+  it('o Director LIGA o polo do corpo nos dois degraus que o pedem', () => {
+    // a fiação por texto-fonte: o rig honrar o polo não adianta nada se
+    // ninguém o passar, e isso não é coisa que teste de unidade veja
+    // (o Director precisa de WebGL). A fonte do dado é cobrada junto —
+    // é a MESMA que orienta a malha, e uma segunda tabela de eixos aqui
+    // faria a câmera e o planeta discordarem sem ninguém notar.
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    expect(DIRECTOR).toContain(
+      "import { baseCorpoEquatorial } from '../lib/atlas/orientacao'"
+    );
+    expect(DIRECTOR).toContain('polo: this.poloDoCorpo(id),');
+    expect(DIRECTOR).toContain('polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id),');
+    // ...e os degraus de fora NÃO o pedem: lá o assunto é o plano do
+    // sistema, e o eixo de um corpo qualquer não governa o horizonte
+    const sistema = DIRECTOR.slice(
+      DIRECTOR.indexOf('  focarNoSistema() {'),
+      DIRECTOR.indexOf('private rampaDaEscada()')
+    );
+    expect(sistema).not.toContain('polo:');
+  });
+
+  it('o rig honra o polo pedido — e sem pedido continua a eclíptica', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+    const rig = new AtlasRig();
+    const alvo = new THREE.Vector3(1e-6, 2e-6, 0.5e-6);
+    rig.focar(alvo, 1e-9);
+    rig.apply(camera);
+    expect(camera.up.distanceTo(POLO_ECLIPTICO)).toBeLessThan(1e-12);
+    const polo = poloDe('earth', EPOCA_JD_TDB);
+    rig.focar(alvo, 1e-9, alvo, { polo });
+    rig.apply(camera);
+    expect(camera.up.distanceTo(polo.clone().normalize())).toBeLessThan(1e-12);
+    // e o eixo do planeta NÃO é o da eclíptica: 23,4° de diferença — é
+    // essa a torção que o visitante via no globo
+    expect((polo.angleTo(POLO_ECLIPTICO) / GRAU).toFixed(1)).toBe('23.4');
   });
 });
 

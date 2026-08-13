@@ -528,6 +528,63 @@ const POLO_ECLIPTICO = (() => {
 const SOL = new THREE.Vector3(0, 0, 0);
 
 /**
+ * A FAIXA EM QUE O POLO DO CORPO CEDE — a guarda da mira, e ela é
+ * OBRIGATÓRIA, não caprichosa.
+ *
+ * O `lookAt` constrói a base da câmera com `direita = up × z`. Quando o
+ * `up` chega perto da direção de vista esse produto vetorial encolhe
+ * para zero, e a normalização dele passa a amplificar ruído de float: a
+ * imagem GIRA SOZINHA em torno da mira, com o alvo parado. Trocar um
+ * globo torto por um globo que roda sozinho não é conserto.
+ *
+ * E a degenerescência é ALCANÇÁVEL, medida: com o polo do CORPO no alto
+ * e o arrasto de dois eixos solto, a direção da câmera chega a 0,44° do
+ * polo da Terra (por volta do solstício, no extremo do arrasto) — porque
+ * o eixo da Terra faz 66,6° com a direção do Sol no solstício e o
+ * grampo do arrasto vale 70°, então a inclinação passa DO OUTRO LADO do
+ * polo por 3,4°.
+ *
+ * A saída é o precedente que já existe na casa (`cameraRig.ts`,
+ * `galacticUp`): misturar suavemente com um segundo `up`. Aqui o
+ * segundo é o POLO DA ECLÍPTICA — que é o `up` que o Atlas usou a vida
+ * inteira, e que para a Terra fica a 23,4° do polo do corpo: quando a
+ * mira encosta no eixo da Terra, a eclíptica está a 23,4° dela, longe
+ * da degenerescência. A troca não vaza para o caso comum: acima de 30°
+ * de separação a mistura é ZERO e o `up` é o polo do corpo puro, bit a
+ * bit (o repouso do degrau "corpo" fica a 36,6° do polo no solstício e
+ * a 83° no equinócio — nunca dentro da faixa).
+ */
+export const CEDER_COMECA_GRAUS = 30;
+export const CEDER_TERMINA_GRAUS = 15;
+
+const _upBruto = new THREE.Vector3();
+
+/**
+ * O `up` que a câmera do Atlas escreve: o polo pedido, cedendo ao polo
+ * da eclíptica quando ele encosta na direção de vista. Pura.
+ *
+ * `dir` é a direção alvo→câmera (unitária); o sinal não importa, o que
+ * decide é |dir·polo|.
+ */
+export function upDoAtlas(
+  dir: THREE.Vector3,
+  polo: THREE.Vector3,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  const alinhamento = Math.abs(dir.dot(polo));
+  const cede = THREE.MathUtils.smoothstep(
+    Number.isFinite(alinhamento) ? alinhamento : 1,
+    Math.cos(CEDER_COMECA_GRAUS * GRAU),
+    Math.cos(CEDER_TERMINA_GRAUS * GRAU)
+  );
+  _upBruto.copy(polo).lerp(POLO_ECLIPTICO, cede);
+  // polo do corpo anti-paralelo ao da eclíptica no meio da mistura: o
+  // lerp passa pelo vetor nulo e não há direção a normalizar
+  if (_upBruto.lengthSq() < 1e-12) _upBruto.copy(POLO_ECLIPTICO);
+  return out.copy(_upBruto).normalize();
+}
+
+/**
  * A RAMPA ENTRE DEGRAUS da escada (F2b/D7), em segundos. Curta como o
  * véu (0,45 s por metade): descer de órbita para corpo não é travessia
  * física — a rampa existe para o olho seguir a troca de enquadramento,
@@ -544,6 +601,7 @@ const _posPartida = new THREE.Vector3();
 const _quatPartida = new THREE.Quaternion();
 const _dirA = new THREE.Vector3();
 const _dirB = new THREE.Vector3();
+const _up = new THREE.Vector3();
 
 /** Ângulo de volta em (−π, π] — periódico, então o número não cresce. */
 function enrolar(rad: number): number {
@@ -585,6 +643,22 @@ export class AtlasRig {
    */
   private pai: THREE.Vector3 | null = null;
   private readonly paiGuardado = new THREE.Vector3();
+  /**
+   * O POLO QUE FICA NO ALTO deste enquadramento (Onda 7). Era a
+   * constante `POLO_ECLIPTICO`, sempre, e a Terra saía 4,2° torta na
+   * data de abertura e até 27,8° noutras datas — o eixo do planeta é
+   * dado medido do kernel IAU, e o Atlas o ignorava.
+   *
+   * A LEI, decidida pelo dono: polo do CORPO nos degraus "corpo" e
+   * "lua"; eclíptica nos degraus "sistema" e "órbita" — lá o assunto é
+   * o plano do sistema, e o eixo de um corpo qualquer não teria por que
+   * governar o horizonte. O default é a eclíptica, então quem não pede
+   * nada continua com a vista de sempre, bit a bit.
+   *
+   * A RAMPA ENTRE DEGRAUS interpola os dois de graça: ela já mistura as
+   * poses por `slerp` de quaternion, e o `up` está dentro da pose.
+   */
+  private readonly polo = POLO_ECLIPTICO.clone();
 
   // ---- a rampa entre degraus (F2b/D7) ------------------------------
   // O reposicionamento de ENTRADA no Atlas segue atrás do véu (D3);
@@ -603,6 +677,7 @@ export class AtlasRig {
     pai: new THREE.Vector3(),
     temPai: false,
     orbita: { altura: 0, volta: 0 } as OrbitaDoVisitante,
+    polo: POLO_ECLIPTICO.clone(),
   };
 
   /**
@@ -656,14 +731,21 @@ export class AtlasRig {
     alvo: THREE.Vector3,
     raio: number,
     eixoDe: THREE.Vector3 = alvo,
-    opcoes: { rampa?: boolean; pai?: THREE.Vector3 | null } = {}
+    opcoes: {
+      rampa?: boolean;
+      pai?: THREE.Vector3 | null;
+      /** o polo que fica no alto; ausente = o da eclíptica (ver `polo`) */
+      polo?: THREE.Vector3 | null;
+    } = {}
   ) {
     const pai = opcoes.pai ?? null;
+    const polo = opcoes.polo ?? POLO_ECLIPTICO;
     if (opcoes.rampa) {
       const mesmoAlvo =
         this.alvo.distanceToSquared(alvo) === 0 &&
         this.raio === raio &&
-        (pai === null) === (this.pai === null);
+        (pai === null) === (this.pai === null) &&
+        this.polo.distanceToSquared(polo) === 0;
       if (mesmoAlvo) return;
       // snapshot do enquadramento QUE ESTÁ NA TELA — é dele que a rampa parte
       this.partida.alvo.copy(this.alvo);
@@ -673,6 +755,7 @@ export class AtlasRig {
       if (this.pai) this.partida.pai.copy(this.pai);
       this.partida.orbita.altura = this.orbita.altura;
       this.partida.orbita.volta = this.orbita.volta;
+      this.partida.polo.copy(this.polo);
       this.rampaT = 0;
     } else {
       this.rampaT = 1;
@@ -686,6 +769,7 @@ export class AtlasRig {
     } else {
       this.pai = null;
     }
+    this.polo.copy(polo);
     this.orbita.altura = 0;
     this.orbita.volta = 0;
   }
@@ -754,7 +838,7 @@ export class AtlasRig {
       // idempotência (?foco) e os md5 do atlas-smoke medem
       this.escreverPose(
         camera, fatorUi, larguraPx,
-        this.alvo, this.raio, this.eixoDe, this.pai, this.orbita
+        this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo
       );
       return;
     }
@@ -770,14 +854,15 @@ export class AtlasRig {
 
     this.escreverPose(
       camera, fatorUi, larguraPx,
-      this.alvo, this.raio, this.eixoDe, this.pai, this.orbita
+      this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo
     );
     _posDestino.copy(camera.position);
     _quatDestino.copy(camera.quaternion);
     this.escreverPose(
       camera, fatorUi, larguraPx,
       this.partida.alvo, this.partida.raio, this.partida.eixoDe,
-      this.partida.temPai ? this.partida.pai : null, this.partida.orbita
+      this.partida.temPai ? this.partida.pai : null, this.partida.orbita,
+      this.partida.polo
     );
     _posPartida.copy(camera.position);
     _quatPartida.copy(camera.quaternion);
@@ -810,7 +895,8 @@ export class AtlasRig {
     raio: number,
     eixoDe: THREE.Vector3,
     pai: THREE.Vector3 | null,
-    orbita: Readonly<OrbitaDoVisitante>
+    orbita: Readonly<OrbitaDoVisitante>,
+    polo: THREE.Vector3
   ) {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: raio,
@@ -818,24 +904,22 @@ export class AtlasRig {
       aspect: camera.aspect,
       retanguloUtil: retanguloUtilDoAtlas(fatorUi, larguraPx),
     });
+    // o MESMO polo governa a inclinação e o alto da tela: se a
+    // inclinação subisse rumo a um polo e a tela mostrasse outro, o
+    // arrasto vertical deixaria de ser vertical na tela
     if (pai) {
       direcaoDaLua(
         _dir.copy(eixoDe).sub(SOL),
         _dirPai.copy(alvo).sub(pai),
-        POLO_ECLIPTICO,
+        polo,
         orbita,
         _dir
       );
     } else {
-      direcaoPrivilegiada(
-        _dir.copy(eixoDe).sub(SOL),
-        POLO_ECLIPTICO,
-        orbita,
-        _dir
-      );
+      direcaoPrivilegiada(_dir.copy(eixoDe).sub(SOL), polo, orbita, _dir);
     }
     camera.position.copy(alvo).addScaledVector(_dir, distancia);
-    camera.up.copy(POLO_ECLIPTICO);
+    camera.up.copy(upDoAtlas(_dir, polo, _up));
     camera.lookAt(alvo);
     if (giroY !== 0) camera.rotateY(giroY);
     if (giroX !== 0) camera.rotateX(giroX);
