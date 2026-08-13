@@ -260,6 +260,30 @@ todas são baratas e **não tocam o filme nem as baselines**.
 | 4 | **O enquadramento não segue o alvo no tempo** — posição morta copiada uma vez; com a máquina do tempo o corpo sai do quadro em ~1 s | `atlasRig.ts:590`, `director.ts:1571`, religador em `:1667-1679` | ~10–20 linhas |
 | 5 | **Quatro defeitos de ponteiro** — botão direito gira a cena e abre o menu do sistema; sem `pointercancel`; cursor nunca muda; `Esc` é a única tecla e não está escrita em lugar nenhum | `director.ts:1198-1237`, `hud.css:24-27`, `App.tsx:433-441,911-913` | ~15–25 linhas |
 
+### O PRECEDENTE DA CASA: `Novo-Sol-Fable-3d`, `src/camera/controls.js`
+
+O dono apontou o projeto irmão (github.com/fgferre/Novo-Sol-Fable-3d) — o MESMO
+autor, o mesmo de onde os 14 arquivos de `sol/` vieram vendorizados. Consultado em
+2026-08-12. **Ele já faz, com números, tudo que o Atlas não faz** — e isso troca a
+justificativa das cinco pendências acima: deixam de se apoiar em SpaceEngine e
+passam a se apoiar em código do próprio dono.
+
+| gesto | o que o doador faz | o Atlas hoje |
+|---|---|---|
+| arrastar | orbita **nos dois eixos**, "a superfície segue o dedo" (estilo Google Earth) | um eixo só; o vertical é descartado |
+| roda do mouse | zoom, `dist × 0,0035` por unidade de delta | nada |
+| pinça de trackpad | zoom, `targetCamDist *= prev/d` (multiplicativo) | nada |
+| duplo clique | alterna enquadrar ↔ close-up | nada |
+| setas do teclado | giram **com inércia**; `+`/`−` zoom (0,82 / 1,22); `R` volta ao enquadrado | só `Esc` |
+| trava de elevação | `clamp(phi, 0,18, π−0,18)` ≈ 10°–170° — trava só no POLO, por matemática | ±70°, por iluminação |
+| amortecimento | velocidade suavizada `0,65×anterior + 0,35×instantânea`; arremesso medido em ~180 ms de histórico | nenhum |
+| distância mínima | `SUN_RADIUS × 1,5` | não há zoom |
+
+**A leitura honesta disto:** a trava de elevação do doador existe para não passar
+pelo polo (matemática), não para proteger iluminação. O grampo de ±70° do Atlas
+continua sendo escolha nossa e sem precedente — inclusive no código do próprio
+dono. A saída do eixo alvo→Sol (abaixo) segue sendo a que preserva as duas coisas.
+
 **A saída para o #1 sem afrouxar o grampo de 70°** (que existe para o visitante nunca
 fotografar o lado escuro, `atlasRig.ts:40-47`): o eixo novo gira **em torno da linha
 alvo→Sol**. Um giro nesse eixo não altera o ângulo câmera↔Sol, então a fração
@@ -296,7 +320,32 @@ Para o cadastro da F0 declarar, não para consertar nesta onda:
 6. **A tela branca do Atlas não é resolvida aqui.** Além de ~3,8 UA o disco do Sol real
    fica menor que o próprio borrão do instrumento e volta a ser ponto. O Atlas abre a
    227 UA, onde o Sol real mede 0,063 px. A lei de compensação de clarão
-   (`atlasConfig.ts:274-295`) continua obrigatória.
+   (`atlasConfig.ts:274-295`) continua obrigatória. **A F1 fotografou este defeito**
+   (`solreal1ua` lava de branco; com `&nobloom=1` o disco aparece limpo).
+
+   **O DOADOR JÁ RESOLVEU ISTO, e a diferença NÃO é de algoritmo — é de exposição.**
+   Consultado o `src/post/pipeline.js` de `Novo-Sol-Fable-3d` (2026-08-12):
+
+   | | doador (o Sol enche o quadro) | casa (hoje) |
+   |---|---|---|
+   | exposição | **0,418** (HDR) · 0,435 (SDR) | **1,02–1,05** |
+   | limiar do bloom | 0,72, com joelho e espalhamento próprios | 0,82 |
+   | força do bloom | 0,62 (HDR) · 0,55 (SDR) | 0,72 |
+   | tom | ACES, com mistura opcional para AgX | ACES + joelho asinh β 0,45 |
+   | auto-exposição | **não tem** — e não precisa | não tem |
+
+   Os limiares e as forças são quase os mesmos. **O que separa os dois é a exposição:
+   a casa roda ~2,4× mais quente.** E há uma frase no doador que é o diagnóstico
+   inteiro: o limiar de 0,72 existe para "fazer o bloom LER sem lavar o disco".
+
+   **O QUE NÃO ATRAVESSA, e é o mais importante:** o doador **nunca precisa expor uma
+   galáxia e um Sol no mesmo quadro** — a cena dele é só o Sol, e por isso uma
+   exposição fixa e baixa basta e ele pode dispensar auto-exposição. A casa tem os
+   dois no mesmo quadro, e é exatamente por isso que a exposição dela é alta. **Não se
+   transplanta o 0,418.** O que atravessa é a PROVA de que um Sol enchendo o quadro é
+   exponível com ACES nessa faixa, e o ALVO: algo em torno de 2,4× abaixo da exposição
+   de hoje, quando o Sol domina o quadro. Isso é exposição POR CONTEXTO — a onda da
+   exposição —, e agora ela tem número de partida em vez de adjetivo.
 7. **Mergulhar no Sol continua impossível** — abaixo de ~1,44 raios solares o corte come
    a fotosfera. Rasante estilo Parker cabe com folga.
 
