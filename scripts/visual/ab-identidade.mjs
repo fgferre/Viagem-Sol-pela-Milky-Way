@@ -306,6 +306,51 @@ export const VISTAS = [
       + '&look=0.00000337178324480784,-8.465120134658821e-7,-5.942250012794021e-7'
       + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
   ],
+  // ------------------------------------------------------------------
+  // ONDA 6 (F4) — OS GIGANTES + ANEL, no MESMO jd pinado da onda
+  // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
+  // baseline nasce no HEAD sem os meshes, e o "depois" vira oficial
+  // (D11). Números da MESMA cadeia do app (efemerides.bin →
+  // eclipticaParaEquatorial → AU_PARA_PC), pinados como os ?pos= acima.
+  //
+  // `jupiter`: câmera a 4 raios equatoriais do centro, 20° fora do eixo
+  // corpo→Sol pelo lado ILUMINADO (o padrão da vista `lua`/`mercurio`:
+  // disco ~757 px em 1800×1713). E(real)=0,0399 a 5,006 UA. O par
+  // &nobloom=1 é o mesmo GATE T-E10 das irmãs.
+  //
+  // `saturno-anel`: NÃO é o disco cheio a 4 raios — a 5,73° de latitude
+  // subsolar o anel leria quase de perfil e a sombra no disco some no
+  // equador. Câmera a 6 raios equatoriais, 20° de azimute em torno do
+  // polo (a mesma receita) e +18° de elevação rumo ao polo norte
+  // (latitude da câmera 23,7°): GLOBO (~510 px) + ANEL (eixo maior
+  // ~1143 px, cabe no 1800×1713) + SOMBRA DO ANEL no disco. A sombra
+  // cai em lat −0,6° (borda interna 1,110 Re) a −7,7° (borda externa
+  // 2,326 Re) — faixa de ~31 px no meridiano central, o px DECLARADO
+  // do efeito julgado. E(real)=0,0106 a 9,710 UA.
+  [
+    'jupiter',
+    '?pos=0.000014120014161765692,0.000018255528587957974,0.00000748112563397955'
+      + '&look=0.000014127656995165159,0.000018260414310732658,0.000007483024335340463'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'jupiternb',
+    '?pos=0.000014120014161765692,0.000018255528587957974,0.00000748112563397955'
+      + '&look=0.000014127656995165159,0.000018260414310732658,0.000007483024335340463'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
+  [
+    'saturno-anel',
+    '?pos=0.0000444068440660703,-0.000013639700232235952,-0.000007543925357433521'
+      + '&look=0.000044415067790719945,-0.000013646416397844129,-0.0000075488848424994925'
+      + '&jd=2460409.26395835&corpos=1&shot=2',
+  ],
+  [
+    'saturno-anelnb',
+    '?pos=0.0000444068440660703,-0.000013639700232235952,-0.000007543925357433521'
+      + '&look=0.000044415067790719945,-0.000013646416397844129,-0.0000075488848424994925'
+      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
+  ],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
