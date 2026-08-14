@@ -96,6 +96,36 @@ com teto de brilho — a auto-exposição da Onda 8 é o conserto"*
 fraco quanto uma estrela comum — bonito e mentiroso, o oposto da tese da casa.
 **Um projeto de conserto já foi reprovado exatamente por isto. Esta linha existe para
 impedir a terceira tentativa.**
+
+**E FALTA MAIS DO QUE A PUPILA — existe um VÃO.** Medido: a bola do Sol para de ser
+desenhada acima de **7,2 vezes a distância da Terra ao Sol**, e a estrela com espinhos
+só começa a acender lá pelas **4.000 vezes** essa distância. Entre os dois não há nem
+bola nem estrela — só aquele pontinho sem limite. É por isso que o Atlas, que enquadra
+o sistema inteiro a 227 vezes a distância da Terra, cai bem no meio do vão.
+
+**O DESENHO DECIDIDO (2026-08-14), e ele vale para TODAS AS ESTRELAS, não só o Sol.**
+Palavras do dono, no dia:
+
+> *"mas isso nao deveria ser so para o sol. toda estrela deveria seguir o mesmo
+> mecanismo nao acha? baseado nas magnitudes da estrela obviamente. tinhamos falado
+> disso quando geramos o plano de como fariamos o motor estelar para gerar
+> proceduralmente todas as estrelas quando nos aproximarmos delas"*
+
+Uma transição **contínua**, não três etapas. Porque na realidade existem só duas
+coisas, sempre as mesmas e sempre juntas: **o disco**, que encolhe com a distância, e
+**o clarão** que a luz faz na câmera, que acompanha o brilho aparente. Nenhuma estrela
+"vira outra coisa" em distância nenhuma. A troca interna da malha 3D por um pontinho
+existe só como economia e tem de acontecer **abaixo de um pixel**, onde ninguém vê. É
+assim que o SpaceEngine faz, e é a referência declarada dele.
+
+O Sol é o primeiro caso, não o caso especial: a mesma lei, dirigida pela magnitude,
+serve a estrela de catálogo, a estrela procedural e a ele. Isso liga direto à lei única
+que o `NORTE.md:15` já promete ("estrelas de catálogo e procedurais sob a mesma lei —
+magnitude, cor, tamanho") — o que falta é o Sol entrar nela e o vão fechar.
+
+**Então o conserto tem duas partes, nesta ordem:** fechar o vão (o clarão com espinhos
+vivo em toda a escada, e não só a 4.000 distâncias-da-Terra) e a auto-exposição (para
+que, virando estrela, ele não estoure a tela).
 → `docs/ESCALA-HONESTA.md:654-739`.
 
 **4. O Atlas desenha com o brilho apagado 100× em relação ao filme.**
