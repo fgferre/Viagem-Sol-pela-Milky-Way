@@ -21,7 +21,7 @@
 //                 0,904 a 228 UA; 0,101 a 20.183 UA). Céu honesto vive perto de
 //                 0,02; quadro lavado passa de 0,5.
 //   acimaDeMeia — fração de pixels com luminância > 0,5. É a mesma conta dos
-//                 "31,85% do quadro satura com bloom" do `NORTE.md:3487`.
+//                 "31,85% do quadro satura com bloom" (Onda 4, no NORTE antigo).
 //   borrao      — DIÂMETRO da mancha de luz no centro, em px: a maior largura,
 //                 na linha do meio, em que a luminância continua acima de 0,5.
 //                 Saturar a coluna (`>=H`) quer dizer que a mancha atravessa o

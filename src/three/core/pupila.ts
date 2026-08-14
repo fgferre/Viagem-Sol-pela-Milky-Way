@@ -56,7 +56,7 @@
 //
 // Não há leitura de pixel: a casa não tem readback de luminância, e o plano
 // registra o custo dele no projeto irmão como "a diferença entre 60 e ~30 fps"
-// (`PLANO-ATLAS.md:202`). A pupila mede o que a casa JÁ CALCULA por quadro: a
+// (`PLANO-ATLAS.md`, risco do readback). A pupila mede o que a casa JÁ CALCULA por quadro: a
 // magnitude aparente das fontes pontuais em quadro. É geometria e fotometria,
 // como a do irmão (fecha rápido, abre devagar), mas com o atuador certo.
 //
@@ -71,7 +71,7 @@
 //     ganho = min(TETO, (ALVO / pico)^KAPPA)
 //
 // (a) O TETO É 1, e a pupila portanto SÓ FECHA. Os anti-padrões de luz do
-//     plano (`PLANO-ATLAS.md:1127`) avisam que "adaptação que só escurece é
+//     plano (`PLANO-ATLAS.md`, anti-padrões) avisam que "adaptação que só escurece é
 //     inútil (CEILING = 1.0, precisa +EV)" — e o aviso é CORRETO para o
 //     problema do irmão, que era uma cena 99% preta precisando de +EV. Aqui é
 //     o contrário: a exposição de fábrica (1,02) foi calibrada ao longo de
@@ -101,7 +101,7 @@
 // NÃO É TETO DE BRILHO, e a diferença é de natureza, não de dose. Teto é
 // `min(x, C)` sobre a fonte: corta a informação e deixaria o Sol quase tão
 // fraco quanto uma estrela comum — o que a casa proíbe por escrito em três
-// lugares (`NORTE.md:3487`, `NORTE.md:3582`, `PLANO-ATLAS.md:872`). A pupila é
+// lugares (`NORTE.md`, decisões fechadas; `LEI-DA-ESTRELA.md` §7). A pupila é
 // um GANHO ÚNICO sobre todas as fontes pontuais ao mesmo tempo: nenhuma relação
 // entre elas muda, nada é cortado, e o desvio é declarável em stops — que é
 // exatamente o que o §7.4 do plano pede ("aplicar como GANHO LINEAR ÚNICO
@@ -305,7 +305,7 @@ export class Pupila {
  *
  * Um passo para trás na luz é exatamente o que a prova de continuidade da
  * Onda 3 proíbe, e é a regra que a casa provou e cobrou por três ondas
- * (`NORTE.md:3384`, `PLANO-ATLAS.md:572`). A causa está medida e tem número: a
+ * (`LEI-DA-ESTRELA.md`, o invariante de fluxo). A causa está medida e tem número: a
  * fotosfera da malha é autorada numa escala de radiância ~1, e a lei
  * fotométrica do ponto deposita, para a MESMA superfície, ~2,8e10. As duas
  * representações do Sol estão a **cerca de 26 magnitudes uma da outra**, e

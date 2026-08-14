@@ -103,6 +103,11 @@ Bit-idêntico não é objetivo nem aval, e nunca justifica desfazer melhoria.
 Quando a mudança é intencional, o veredito é a imagem aberta, o diff de
 pixel com sinal, e o rebaseline registrado.
 
+As quatro vistas da abertura do filme (`sol`, `soldisco`, `solrampa`,
+`solestouro`) só mudam de referência com o **sim do dono**, fotos abertas.
+Isso não é bit-igualdade: é composição. A revogação de 11/08 não tocou
+nesta regra.
+
 A prova tem de tocar o que a mudança tocou. As vistas oficiais rodam com
 `?shot=2` e **apagaram o HUD**. Trabalho de HUD é julgado por `a11y.mjs`
 (`?shot=1`). Se nenhum juiz cobre a mudança, cria-se a vista que cobre.

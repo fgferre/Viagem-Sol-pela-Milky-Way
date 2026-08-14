@@ -94,7 +94,7 @@ export const VISTAS = [
   // derivada só da altura começa a apagar ponto.
   ['retrato', '?t=100&shot=2', '700x1800'],
   // ------------------------------------------------------------------
-  // ONDA 3 — as vistas que faltavam para o motor estelar (PLANO-ATLAS.md:446
+  // ONDA 3 — as vistas que faltavam para o motor estelar (Estado da Onda 3
   // pede "Sol pixel-igual em 4 condições e heroes em 3 distâncias"; nenhuma
   // existia). `?t=` não serve: o instante amarra a distância ao trajeto da
   // hélice, e o que se quer medir é a DISTÂNCIA. `?pos=&look=` (App.tsx:137-145)
@@ -205,7 +205,7 @@ export const VISTAS = [
   // POR QUE ELES ENTRAM ANTES DO CONSERTO, e não depois: a regra da casa é
   // que a prova tem de TOCAR o que a mudança tocou, e que quem não tem
   // vista cobrindo a mudança é OBRIGADO a criar a vista, nunca a exibir a
-  // que não cobre (`NORTE.md:2553`). Estas cinco nascem lavadas de
+  // que não cobre (`NORTE.md`, seção “Como medir”). Estas cinco nascem lavadas de
   // propósito — é a baseline do defeito. Quando a reconciliação
   // radiométrica chegar, é contra elas que ela responde.
   //

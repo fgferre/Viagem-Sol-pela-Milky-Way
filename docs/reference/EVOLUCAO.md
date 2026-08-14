@@ -166,5 +166,11 @@ assentou, nunca como oráculo.** A fonte viva da lista de vistas é
 `ua40 48adc0f55631` · `atlas e9544b84cca2` · `terra ab40ab3b0d3b` ·
 `terranb 1ec9120c745f` · `lua 39ce4845c9f4` · `terralua fb35311ee340`
 
+Corpos da Onda 6 (remediação D11, 1800×1713, 2/2 estáveis, via=sinal):
+`mercurio e90080cc8ab9` · `venus 4bc211ff1a87` · `jupiter e456d011dd52` ·
+`saturno-anel 1cc87d169e7b` · `europa 0d41c6884e67` · `titan c292ca9d0337` ·
+`plutao-caronte 75383ccbc1a9` · `quaoar-anel b388506376b0` ·
+`vesta 53babc1cd2e9`.
+
 Céu (protocolo v3, 6 faces): `skyError` **0,7782** (espessura 0,3026 · fenda
 0,2240 · perfil 0,2047 · púrpura 0,0336 · cor 0,0132).

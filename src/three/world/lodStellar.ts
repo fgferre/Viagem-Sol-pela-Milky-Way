@@ -16,7 +16,7 @@
 //    a MESMA forma de conta; desde a fase 2 da Onda 3 os consumidores
 //    IMPORTAM daqui, e um teste de pinagem (lodStellar.test.ts) impede
 //    a redigitação de renascer.
-//    Nota do plano: `PLANO-ATLAS.md:96` chama {0,14→0,30} e
+//    Nota do plano: a matriz antiga chamava {0,14→0,30} e
 //    {0,30→0,42} de janelas "dos heroes" — no código elas eram do SOL
 //    visto de longe (a classe `SunStar`), não das 16 heroes. O código
 //    real vence; a divergência fica registrada aqui. As janelas que
@@ -31,7 +31,7 @@
 //    (`src/components/canvas/hygMeshFadeRamp.ts`: 48 linhas medidas por
 //    `wc -l`, as "47 linhas puras" da matriz mais a linha final — é
 //    contagem, não conteúdo). A matriz do plano abre a exceção
-//    nominalmente (`PLANO-ATLAS.md:49,101,265`): linhas puras que
+//    nominalmente (doutrina de travessia, transcrição autorizada): linhas puras que
 //    carregam a razão do clamp de dt junto — "é mais barato copiar com
 //    o comentário do que redescobrir o bug".
 //    Assinatura, corpo e TODOS os comentários vêm inteiros; só a
@@ -41,7 +41,7 @@
 //
 // 3. O GATE POR ÂNGULO SÓLIDO — CONTRATO do doador
 //    (`src/lib/stellarMeshGate.ts`), NÚMEROS da casa. A própria matriz
-//    (`PLANO-ATLAS.md:97`) diz que os limiares NÃO se herdam: lá o
+//    (doutrina de travessia) diz que os limiares NÃO se herdam: lá o
 //    sprite é outra PSF, e o ENTER de 1e-3 rad é ~70× menor que o
 //    handoff desta viagem. O que atravessa é o critério (LOD por
 //    ÂNGULO, não por distância) e a forma do gate (histerese com

@@ -28,8 +28,20 @@ independentes. O item 21 é memória paga e inútil (`depth: false` no engine).
 O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é o canal do
 passo E3.
 
-Publicar na `main` põe o site no ar (`.github/workflows/deploy.yml`). Push
-só com pedido explícito.
+Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
+coisas da frente"*. **A escolha ficou com ele e não foi respondida:** começar
+pelo lixo (alívio rápido: 8, 9, 10, 21) ou pela fundação (mata 3, 4, 5, 12 e
+40 de uma vez).
+
+E outra, que travou um conserto ruim no mesmo dia: *"vc nao pode consertar
+uma coisa e criar outro problema, pense nos impactos das suas decisoes"*.
+
+**Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
+estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
+no main no git spaces"* — e é isso que `.github/workflows/deploy.yml` faz.
+Segurar o push **não foi pedido dele**: foi um agente que inventou a trava.
+Qualquer push na `main` põe o site no ar. Sem pedido explícito, não se
+publica; o pedido de publicar continua de pé.
 
 Números aposentados (1, 2, 14, 29, 30, 31, 32, 35): `git show de16542 -- docs/PENDENCIAS.md`.
 
@@ -62,6 +74,13 @@ desse vão.
 
 O conserto não é teto de brilho (proibido) nem a pupila (reprovada). É a
 lei da estrela: mesma escala de brilho para bola e ponto, compressão fixa.
+
+Palavras do dono, no dia: *"mas isso nao deveria ser so para o sol. toda
+estrela deveria seguir o mesmo mecanismo nao acha? baseado nas magnitudes
+da estrela obviamente. tinhamos falado disso quando geramos o plano de como
+fariamos o motor estelar para gerar proceduralmente todas as estrelas
+quando nos aproximarmos delas"*
+
 → `docs/LEI-DA-ESTRELA.md`. Régua: `scripts/visual/luz-do-quadro.mjs`.
 
 **4. O Atlas desenha com o brilho apagado 100× em relação ao filme.**
@@ -84,17 +103,22 @@ recarregamentos; sobra a qualidade, mais três automatismos.
 → `docs/NORTE.md`, seção “Ajustes”.
 
 **39. Estrela focada apaga as outras, ligando e desligando de repente.**
-Palavras do dono: *"quando uma estrela está focada, as demais simplesmente
-desaparecem… quero que as estrelas continuem aparecendo."* E: *"independentemente
-do astro que está em foco na tela nunca se esmaeça a grandeza da cena
-galáctica e do starfield."*
+Palavras do dono: *"uma coisa que percebi é que agora quando uma estrela
+está focada, as demais simplesmente desaparecem (ligam/desligam
+abruptamente), nao quero esse efeito, quero que as estrelas continuem
+aparecendo, nao precisa ter esse efeito bizarro..."* E: *"eu quero que
+independentemente do astro/objeto que está em foco na tela nunca se
+esmaeça a grandeza da cena galáctica e do starfield, exuberante... nada de
+efeitos de pupila ou sei lá como vc chama isso..."*
 
 Medido: era a pupila (`?pupila=1`), 16 stops ao focar Sirius. No app limpo
 ela está desligada e nenhuma camada esmaece. Item fica aberto até ele
 conferir no app limpo.
 
 **40. Dois Sóis com rótulo ao mesmo tempo.**
-Palavras do dono: *"existem 2 sois (com tags) simultaneos na cena."*
+Palavras do dono: *"percebi tb que existem 2 sois (com tags) simultaneos
+na cena. será que tem mais outras duplciacoes? ou isso já está no pipeline
+para ser resovido?"*
 
 O rótulo dobrado não se reproduziu. O que existe: o Sol é **desenhado**
 duas vezes (bola 3D + ponto da camada dos dez corpos). Na abertura do

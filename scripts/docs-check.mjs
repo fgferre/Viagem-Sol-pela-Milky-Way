@@ -11,7 +11,6 @@ const RAIZ = join(import.meta.dirname, '..');
 const DOCS_VIVOS = [
   'AGENTS.md',
   'CLAUDE.md',
-  'Claude.md',
   'README.md',
   'docs/NORTE.md',
   'docs/PENDENCIAS.md',
@@ -81,7 +80,7 @@ for (const rel of DOCS_VIVOS) {
         erros.push(`${rel}:${i + 1} cita documento aposentado ${morto}`);
       }
     }
-    const ptr = linha.match(/docs\/[\w./-]+\.md:\d+/);
+    const ptr = linha.match(/\b[\w./-]+\.md:\d+/);
     if (ptr && rel !== 'docs/reference/EVOLUCAO.md') {
       erros.push(`${rel}:${i + 1} ponteiro por linha (${ptr[0]}) — cite a peça`);
     }
@@ -100,6 +99,10 @@ for (const abs of fonte) {
       if (linha.includes(morto)) {
         erros.push(`${rel}:${i + 1} cita documento aposentado ${morto}`);
       }
+    }
+    const ptr = linha.match(/\b[\w./-]+\.md:\d+/);
+    if (ptr) {
+      erros.push(`${rel}:${i + 1} ponteiro por linha (${ptr[0]}) — cite a peça`);
     }
     let m;
     const re = new RegExp(docRe.source, 'g');
