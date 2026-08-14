@@ -57,9 +57,26 @@ tem ~30 itens, mas muitos são o MESMO problema com nomes diferentes:
   Sol ficarem na mesma escala de brilho (passos F1/F2 da `LEI-DA-ESTRELA.md`).
   Cinco itens, um conserto. É onde está a dor de verdade — e é o que faz a
   abertura do Atlas ser inútil hoje.
-- **Os itens 38 e 21 são lixo puro** — 2,6 MB de canal morto e 22,9 MB de memória
-  de vídeo paga e inútil. Apagar não muda um pixel. Risco zero, saem da lista no
-  mesmo dia.
+- **O item 21 é peso morto de verdade** — o buffer de profundidade da TELA é pago
+  e não oculta nada, porque a casa desenha em alvo próprio e o composite final é
+  um quad de tela cheia (22,9 MB a 1512×945, ~59 MB a 2560×1440). Rastreado em
+  2026-08-14: os únicos `renderer.render` diretos são BAKES para render target
+  (`galaxy.ts`, `sol/chromo.js`), e o único `setRenderTarget(null)` do Director é
+  restauro depois do warm-up, sem desenho. **Mas não é "risco zero"** — é uma
+  palavra (`depth: false` em `engine.ts:206-211`, ao lado do `stencil: false` que
+  já está lá) com verificação no navegador depois. A própria régua da casa o
+  classifica como "baixo, COM VIGÍLIA".
+- **O item 38 NÃO é lixo — é DORMENTE POR DESENHO, e quase foi apagado por
+  engano.** Rastreado a pedido do dono: nenhum caminho de runtime chama
+  `writeFocus` (só testes), então o canal fica zerado e o branch do shader é
+  inerte — até aí a acusação procede. **Só que ele foi instalado de propósito
+  para o trabalho que estamos prestes a fazer:** `lodStellar.ts:655` diz, com
+  todas as letras, *"aFocus ligado — bypass de identidade (o corpo chega na Onda
+  7)"*. É o canal que apaga o PONTO de uma estrela quando ela ganha CORPO — ou
+  seja, exatamente o passo E3 da `LEI-DA-ESTRELA.md`. Apagá-lo hoje é reescrevê-lo
+  na semana que vem, e junto iriam quatro peças testadas (`FOCUS_ON/OFF`,
+  `clearFocus`, `isFocusBypassActive`, `spriteAttenuationWithFocus`) e a linha do
+  `STAR_VERT` que um teste de texto pina. **Fica onde está.**
 - **Os itens 8, 9 e 10 são HUD** — pequenos, independentes, sem risco de encostar
   em luz.
 
@@ -593,10 +610,15 @@ medição** — vale o aviso do item 36: par de capturas antes de tocar em qualq
 26. O brilho das estrelas é relativo, não absoluto.
 27. Faltam fixtures Horizons de Vênus, Júpiter, Saturno e Urano.
 28. Dívidas internas de cor a re-dosar.
-38. Peso morto: um canal por estrela que não faz nada. O `aFocus` nasce zerado,
-    ninguém nunca escreve 1 nele, e mesmo assim ocupa 1,3 MB de memória e outros
-    1,3 MB de vídeo — 2,6 MB no total (`src/three/world/stars.ts:66-70`,
-    `src/three/shaders/starShaders.ts:28-32`). Custa leitura, não imagem.
+38. ~~Peso morto: um canal por estrela que não faz nada.~~ **RECLASSIFICADO em
+    2026-08-14: DORMENTE POR DESENHO, não morto — NÃO APAGAR.** O `aFocus` nasce
+    zerado e nenhum caminho de runtime escreve 1 nele (rastreado: só os testes
+    chamam `writeFocus`), e por isso custa 2,6 MB parados. Mas ele é o canal que
+    apaga o PONTO de uma estrela quando ela ganha CORPO — o passo E3 da
+    `LEI-DA-ESTRELA.md` —, e isso está escrito nele desde que nasceu
+    (`lodStellar.ts:655`). O item vira, então, outra coisa: **ele tem de ganhar
+    consumidor, não sumir.** Se a Onda do motor estelar terminar sem fiá-lo, aí
+    sim vira peso morto e aí sim se apaga. Custa leitura, não imagem.
 
 → `ESCALA-HONESTA.md:855,858,884-897,740,647-649`; `NORTE.md:98-99,1624-1631`.
 
