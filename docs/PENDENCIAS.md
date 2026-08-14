@@ -140,10 +140,41 @@ está registrada desde 2026-08-14). *O ponteiro do `.bare-mode` acima dizia `:12
 o `de16542` cresceu o `hud.css` em 107 linhas e a regra passou para a `:1361`.*
 
 **3. A tela fica branca quando o Sol está longe.**
-De ~1 UA a ~8 UA o quadro lava inteiro. Nove distâncias medidas, todas brancas.
+De ~1 UA a ~**2.000 UA** o quadro lava inteiro. **A faixa é 250× mais larga do que
+esta linha dizia** (ela dizia "de ~1 UA a ~8 UA"): as nove medições de 2026-08-13
+pararam em 8 UA e ninguém mediu adiante. Medido em 2026-08-14 com régua nova, dez
+degraus de 0,067 a 4.000 UA, janela 900×900:
+
+| distância | luz média | quadro acima de meia luz | mancha branca | disco VERDADEIRO do Sol |
+|---|---|---|---|---|
+| 0,067 UA | 0,060 | 1,4 % | 102 px | 112,8 px |
+| 1 UA | 0,945 | **100 %** | tela inteira | 7,6 px |
+| 40 UA | 0,946 | **100 %** | tela inteira | 0,19 px |
+| 500 UA | 0,924 | **100 %** | tela inteira | 0,02 px |
+| 2.000 UA | 0,781 | 91,8 % | tela inteira | 0,004 px |
+| 4.000 UA | 0,576 | 58,1 % | 719 px | 0,002 px |
+
+É a última coluna que dá o veredito: **o Sol encolhe 4.000 vezes e a mancha na tela
+não muda de tamanho.** A régua é `scripts/visual/luz-do-quadro.mjs`, e ela não
+existia — os números que o projeto citava tinham sido medidos à mão e viviam num
+comentário (`atlasConfig.ts:262-284`), sem ninguém poder rodá-los de novo.
+
+*E agora sabemos que são DOIS defeitos, não um* — separados desligando o borrão da
+lente (`&nobloom=1`), com a mesma régua:
+1. **O depósito não encolhe.** Sem borrão, a mancha vai de 12 px a 1 UA para 8 px a
+   4.000 UA — praticamente constante, porque o ponto do Sol cresce com a RAIZ DO
+   LOGARITMO do brilho, não com a distância. A 1 UA esse ponto está por cima de um
+   disco de 7,6 px que já estava certo: o Sol é desenhado duas vezes.
+2. **O borrão da lente multiplica.** Com o borrão ligado, esses 10 px viram 900 —
+   ele recebe um número da ordem de um trilhão e espalha.
 *O que já sabemos:* o Sol é desenhado como um ponto de luz sem teto — a 1 UA ele
 deposita cem bilhões onde branco já é 1 — e o borrão da lente espalha isso. **A bola
 do Sol está certa; o brilho por cima é que está solto.**
+**E há um terceiro fato, que decide o desenho do conserto:** a exposição é aplicada
+DEPOIS do borrão, então mexer nela hoje não desfaz nada (medido no próprio
+repositório: `?exp=0,12` ainda devolve luz média 0,75, `atlasConfig.ts:293-297`).
+A pupila tem de entrar ANTES do borrão — que é, aliás, a ordem física: o diafragma
+vem antes da lente espalhar.
 **O conserto é a AUTO-EXPOSIÇÃO — a pupila —, e teto de brilho é PROIBIDO por
 escrito.** Está no `NORTE.md` em dois lugares, com todas as letras: *"NÃO 'consertar'
 com teto de brilho — a auto-exposição da Onda 8 é o conserto"*
@@ -242,6 +273,11 @@ faixas laranja (item 2, fechado em 2026-08-14) passaram — e elas só foram vis
 relógio andando, no navegador. → `docs/ESCALA-HONESTA.md:877-883`.
 
 **12. A bancada é cega entre 1 UA e 40 UA — justamente onde a tela lava.**
+*(2026-08-14 — metade resolvida.)* A régua de LUZ já enxerga a faixa inteira:
+`scripts/visual/luz-do-quadro.mjs` mede dez degraus de 0,067 a 4.000 UA e foi ela
+que reescreveu o item 3. O que continua cego é o gate de IDENTIDADE (md5): a escada
+do `ab-identidade` segue com `solreal1ua` de um lado e `solreal40ua` do outro, sem
+degrau no meio. Falta portar os degraus da régua para lá.
 *Dito com precisão, porque a versão curta é falsa:* **existe** câmera nessa faixa —
 `vesta` a 2,517 UA, `europa` a 5,002, `titan` a 9,705 —, mas todas ficam a 4 raios do
 corpo, julgando o **disco daquele corpo**. Nenhuma delas olha o Sol nem o sistema de
