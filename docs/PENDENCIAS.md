@@ -400,9 +400,29 @@ caem dentro de 12% do centro do quadro, e cinco deles no MESMO pixel:**
     ...mais 22 (as luas de Júpiter, Saturno e Urano empilhadas nos pais)
 
 Não são dois Sóis: é **o sistema solar inteiro empilhado num ponto**, com o Sol
-por cima. E o Sol ganha SEMPRE o clique porque ele é o primeiro da lista
-(`CORPOS_DO_SISTEMA[0]`) e o desempate do `LabelCanvas` é a ORDEM. Daí "sempre que
-clico nesse label centralizado a câmera voa para o sol".
+por cima.
+
+**CORREÇÃO DA LINHA ACIMA, no mesmo dia, e ela é do agente contra o agente.** A
+primeira redação deste item disse que os 27 empilhados eram alvos de clique e que
+o Sol "roubava" o clique. **É FALSO, e a casa já tinha resolvido isso** (pendência
+30). Medido na tela: dos 38 rótulos projetados na abertura, **31 são DESCARTADOS e
+só 7 chegam a existir** — Sol, Netuno, Plutão e quatro estrelas. O `LabelCanvas`
+resolve colisão com a caixa de texto MEDIDA (não com um raio chutado) e escreve
+`desenhado` no mesmo objeto que o clique lê (`director.ts:1579`), de modo que *o
+que se vê e o que se clica são a mesma lista*. Não há alvo fantasma, e **clicar no
+"Sol" centralizado e ir para o Sol é o comportamento CERTO**: aquele rótulo é o do
+Sol, e é o único ali.
+
+*O agente chegou a escrever um segundo mecanismo de cessão entre rótulos e o
+REVERTEU antes de commitar, ao descobrir o primeiro. Fica registrado porque a
+lição é a regra nº 2 da casa: procurar a implementação existente ANTES de criar.*
+
+**Então o que sobra do relato dele, e é uma coisa só:** na abertura do Atlas o
+visitante não consegue VER o que está clicando, porque o borrão branco cobre a
+tela. Não é defeito de rótulo — é o item 3 outra vez, e é ele que torna a abertura
+do Atlas inútil. O "terra, lua, sol, sol" da roda é a escada normal
+(sistema → órbita da Terra → corpo da Terra → Lua) com o rótulo do Sol parado no
+centro em todos os degraus.
 
 O "sol, sol" ao girar a roda é a mesma coisa vista em dois degraus: em `sistema`
 (242,4 UA) o Sol está no centro, e em `órbita` (**6,7 UA** — o "6,3" dele) ele
@@ -416,10 +436,10 @@ tocados (o diff de `src/` desta sessão não encosta em nenhum dos dois). É def
 antigo que só agora ficou visível, e o próprio `labels.ts:39-40` já registrava a
 família dele: *"o clique no 'SOL' escrito na tela caía em Fobos"*.
 
-**O conserto tem duas metades:** (a) rótulo de corpo que está a menos de um punhado
-de pixels de outro mais brilhante não deve nascer — funde ou cede, como as camadas
-de luz já fazem entre si; (b) o item 3, que devolve a visão de onde se está
-clicando. A (a) é barata e independente; a (b) é a onda inteira.
+**O conserto é UM SÓ, e é o item 3.** A metade (a) que este item chegou a propor —
+"rótulo que cai em cima de outro não nasce" — foi escrita, medida e DESCARTADA: já
+existe, é melhor que a proposta, e duplicá-la seria a segunda fonte de verdade que
+a casa passa a vida evitando.
 
 ---
 
