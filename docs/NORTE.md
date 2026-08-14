@@ -3488,6 +3488,39 @@ que governa o futuro:
   4,8e6 a 150 UA; 31,85% do quadro satura com bloom): é física sem
   auto-exposição. NÃO "consertar" com teto de brilho — a auto-exposição da
   Onda 8 é o conserto, e estes números são a semente medida dela.
+  - **2026-08-14 — A PUPILA EXISTE, DESLIGADA, E MOVEU O ALVO DA ONDA 8.**
+    `src/three/core/pupila.ts` + atuadores; `?pupila=1` liga, `?pupila=alvo,kappa`
+    varre, ausente/`0` é a imagem de hoje BIT A BIT (4/4 sentinelas). Ligada,
+    a faixa branca acaba (luz média 0,945 → 0,04; acima de meia luz 100% → 0,2%).
+    Três coisas que este trabalho fixa e que não estavam escritas:
+    1. **A exposição NÃO pode ser um passe de pós.** Além de o `OutputPass`
+       vir depois do bloom (já medido: `?exp=0,12` deixa luz média 0,75), os
+       RTs do composer são **half-float** e saturam em 65.504 — o ponto do Sol
+       a 1 UA deposita ~4e11 e chega ao buffer como **infinito**. A pupila entra
+       DENTRO de quem emite: para PSF é um deslocamento de `expoM0`
+       (`expoM0' = expoM0 + 2,5·log10 g` multiplica E por g exatamente); para
+       billboard é `uExposicao`.
+    2. **Expor só a fonte pontual É o teto proibido.** A primeira versão deixou
+       os 16 clarões de billboard acesos e a imagem provou a previsão do NORTE:
+       a 3,6 UA o Sol (m −23,8) saía MAIS FRACO que α Centauri (m 0,0). A
+       diferença entre pupila e teto é de natureza — a pupila é um ganho ÚNICO
+       sobre TODAS as fontes, e nenhuma relação entre elas muda.
+    3. **O QUE DESTRAVA O ITEM 3 DEIXOU DE SER A PUPILA.** Com ela ligada, o Sol
+       ESCURECE ao se aproximar: a 3,6 UA quem o desenha é o ponto (bola branca
+       com halo); a 1 UA a malha arma, e sendo opaca com escrita de profundidade
+       TAPA o ponto — sobra um disco laranja de 7,6 px sem clarão. Passo para
+       trás na luz, o que a prova de continuidade da Onda 3 proíbe. **A causa tem
+       número: a fotosfera da malha é autorada em radiância ~1 e a lei do ponto
+       deposita ~2,8e10 para a MESMA superfície — cerca de 26 magnitudes de
+       distância**, e half-float não tem essa folga. Enquanto a malha não
+       estiver na escala fotométrica da casa, o handoff disco↔ponto tem degrau
+       POR CONSTRUÇÃO. A próxima peça é a reconciliação radiométrica, não mais
+       calibração de exposição.
+  - **A régua que julga isso passou a existir**: `scripts/visual/luz-do-quadro.mjs`
+    (luz média, fração acima de meia luz, diâmetro da mancha, e o **disco
+    verdadeiro** pela geometria como coluna de controle). Os números que o repo
+    citava viviam em comentário, medidos à mão. E a escada do `ab-identidade`
+    ganhou os cinco degraus do vão (`ua2`, `ua4`, `ua8`, `ua20`, `ua2000`).
 - **Pendências herdadas pela frente**: fixtures Horizons de
   venus/jupiter/saturn/uranus (Vênus é a garantia mais fraca: 1,96e-3° por
   orçamento de manifesto); ~~fase polinomial por corpo e corpos resolvidos

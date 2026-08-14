@@ -28,6 +28,14 @@ código chama. O detalhe técnico mora nos commits, no `NORTE.md` e no
 O dono NÃO precisa reexplicar nada. Se um agente pedir para ele recontar a visão do
 projeto, o agente errou — está tudo aqui e nos documentos apontados daqui.
 
+**O BASTÃO DA PRÓXIMA CONVERSA (última rodada de 2026-08-14).** O item 3 mudou de
+dono: o que falta não é mais exposição, é **pôr a bola 3D do Sol e o ponto de luz
+na mesma escala de brilho** — hoje elas estão a ~26 magnitudes uma da outra, e é
+essa distância que faz a troca ter degrau. A pupila já está pronta e desligada
+(`?pupila=1` liga), a régua para julgar já existe
+(`scripts/visual/luz-do-quadro.mjs`) e a escada já tem os degraus que faltavam.
+Detalhe técnico no item 3, abaixo, e em `src/three/core/pupila.ts`.
+
 **O que a conversa de 2026-08-14 descobriu, e que não estava em lugar nenhum:**
 
 1. **O motor estelar JÁ ESTÁ GENERALIZADO.** Não existem três geradores de estrela.
