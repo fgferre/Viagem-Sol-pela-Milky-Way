@@ -174,11 +174,13 @@ quadro** — um orçamento, não uma lista de 16 nomes. Com isso caem, de uma ve
 `SunStar`, a identidade "as 16 heroes" e **a cessão por dominância** — que existe só
 para arbitrar uma dupla-luz que deixa de existir.
 
-### L4 — A pupila ligada, alcançando tudo
+### L4 — A compressão FIXA na emissão, alcançando tudo
 
-Já está montada, testada e desligada (`?pupila=1`). Falta ela alcançar malha,
-partículas, lâminas, glows e forjas. Aí ela deixa de ser "exposição das fontes
-pontuais" e vira o que o §7.4 pede: **um ganho linear único de cena**.
+**Não é a pupila — ela está reprovada pelo dono (ver §7).** É uma curva fixa,
+`β·asinh(x/β)`, aplicada na emissão de cada fonte: identidade no céu, logaritmo no
+Sol, e **nada que dependa do foco**. A curva já existe e está testada em
+`post.ts`; falta movê-la para a emissão e fazê-la alcançar malha, partículas,
+lâminas, glows e forjas.
 
 ### E — Todas as estrelas
 
@@ -264,12 +266,61 @@ mudar tem de reescrever o oráculo, não contorná-lo:
 
 ---
 
-## 7. A PERGUNTA QUE É DO DONO, NÃO DO AGENTE
+## 7. A PUPILA ADAPTATIVA ESTÁ REPROVADA PELO DONO (2026-08-14)
 
-Com a lei honesta, **quando o Sol enche o quadro o céu fica preto.** É o que uma
-câmera faz e é o que o SpaceEngine faz. O filme pode querer as estrelas visíveis ali.
+A pergunta em aberto era: com a lei honesta, **quando uma fonte brilhante enche o
+quadro o céu fica preto** — é o que uma câmera faz e o que o SpaceEngine faz.
+Purista ou cinematográfico?
 
-Isso é gosto, não mecânica. A casa já tem o vocabulário — a luz assistida
-(`E^0,35`) é exatamente uma compressão declarada no selo. Purista ou
-cinematográfico é decisão dele; a lei acomoda os dois, e o selo confessa qual está
-valendo.
+**Ele respondeu, e a resposta fecha a porta inteira.** Palavras dele, ao ver a
+pupila ligada numa janela de depuração:
+
+> *"eu quero que independentemente do astro/objeto que está em foco na tela nunca
+> se esmaeça a grandeza da cena galáctica e do starfield, exuberante... nada de
+> efeitos de pupila ou sei lá como vc chama isso..."*
+
+E ele tem razão com sobra. **Medido no dia:** ao focar Sirius, a pupila fechava
+**16 stops** — a cena inteira escurecida ~100.000×. As estrelas não sumiam por
+bug; a exposição as estava apagando.
+
+### A LEI, e ela vale para todo o resto deste documento
+
+1. **NADA de exposição que dependa do que está em foco.** Nem adaptativa, nem
+   por alvo, nem "medindo o corpo em quadro". A grandeza da cena galáctica e do
+   campo estelar **não é variável de estado**.
+2. **O campo estelar e a galáxia nunca esmaecem.** Qualquer mecanismo cujo efeito
+   colateral seja escurecê-los está reprovado por construção, por mais honesto que
+   seja o argumento físico.
+3. **`core/pupila.ts` fica como LÁPIDE**, não como plano. Ela nasce desligada e
+   assim continua. O que sobrevive dela é o que ela MEDIU — o vão de ~26
+   magnitudes entre a malha e o ponto (§2) — e o mecanismo de pré-exposição no
+   shader, que é a técnica correta pelo motivo half-float e não tem nada a ver com
+   adaptar por foco.
+
+### O que substitui a pupila, então
+
+O problema físico não some por decreto: a faixa é de ~15 ordens de grandeza e o
+buffer é half-float, que satura em 65.504. Sem adaptação, a saída é **comprimir o
+alto, nunca levantar o baixo** — uma curva **FIXA**, igual em todo quadro,
+aplicada **na emissão** de cada fonte:
+
+    valor_escrito = β · asinh(radiância / β)
+
+- para valores muito abaixo de `β` isto é a identidade (`asinh(x) ≈ x`): **o céu, o
+  campo estelar e a galáxia passam intocados**, que é exatamente o que ele pediu;
+- para valores muito acima, vira logaritmo: o Sol para de estourar o buffer e de
+  alimentar o bloom com infinito;
+- e como a curva é **fixa**, nada depende do foco, nada adapta, nada pisca.
+
+A casa já tem essa curva pronta e testada (o joelho asinh de `post.ts`), hoje
+desligada dentro do disco e no lugar errado da cadeia (depois do bloom, onde não
+adianta). O trabalho é movê-la para a emissão, não inventá-la.
+
+**Custo declarado, para ninguém descobrir depois:** somar em aditivo valores já
+comprimidos não é exatamente somar e comprimir. Para fontes separadas na tela a
+diferença é nula; onde duas fontes brilhantes se sobrepõem, a soma fica um pouco
+abaixo do físico. É desvio declarável no selo, e é o preço de manter o céu vivo.
+
+**O passo L4 deste documento muda de nome:** era "a pupila ligada, alcançando
+tudo"; passa a ser **"a compressão fixa na emissão, alcançando tudo"**. A ordem dos
+sete passos não muda — a fundação (F1/F2) continua sendo o que destrava tudo.

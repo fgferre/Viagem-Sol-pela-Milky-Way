@@ -3816,15 +3816,23 @@ export class Director {
       }
     }
     const alvo = ganhoDaPupila(pico, this.paramsDaPupila);
-    // SALTA SOB CAPTURA. Sob `?shot=` o relógio visual é 0 e a cena assenta;
+    // SALTA SÓ SOB CAPTURA. Sob `?shot=` o relógio visual é 0 e a cena assenta;
     // uma adaptação com constante de tempo continuaria andando depois disso e
     // toda captura viraria loteria. Saltando, o gate mede a MESMA exposição que
     // o espectador vê parado. É o oposto do que o irmão fez (lá a pupila tem
     // efeito zero sob captura, e o registro da casa já sentenciou: "se a Onda 8
     // nascer assim, nenhum juiz olha para ela").
-    // O salto de câmera também reabre e re-salta: teletransporte não é mudança
-    // de luz, é cena nova.
-    const ganho = this.pupila.passo(alvo, dtS, this.shotMode || this.saltoDeCamera);
+    //
+    // O SALTO DE CÂMERA SAIU DAQUI, e a correção é do dono (2026-08-14, item 39):
+    // *"quando uma estrela está focada, as demais simplesmente desaparecem
+    // (ligam/desligam abruptamente), nao quero esse efeito"*. A primeira versão
+    // também saltava em `saltoDeCamera`, com o argumento de que teletransporte é
+    // cena nova e não mudança de luz. O argumento é bom e a CONSEQUÊNCIA é
+    // péssima: enquadrar uma estrela É um salto, então cada foco trocava a
+    // exposição da cena inteira em UM quadro — o liga-desliga que ele viu. Um
+    // olho que muda de assunto não pisca: ele se adapta. A rampa fica, e o
+    // "cena nova" é atendido pela constante de tempo, não por um corte.
+    const ganho = this.pupila.passo(alvo, dtS, this.shotMode);
     stars.setPupila(deslocamentoDeExpoM0(ganho));
     // as outras duas camadas de PSF copiam o efetivo — a cadeia de exposição da
     // casa é uma só, e é o campo quem a publica

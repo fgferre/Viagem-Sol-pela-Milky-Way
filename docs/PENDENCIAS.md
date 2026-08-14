@@ -297,6 +297,56 @@ sobra a qualidade, mais três automatismos que decidem sozinhos sem o visitante
 escolher.
 → `docs/NORTE.md:3734-3800`.
 
+**39. Estrela focada apaga as outras, ligando e desligando de repente.**
+Palavras do dono, 2026-08-14:
+
+> *"uma coisa que percebi é que agora quando uma estrela está focada, as demais
+> simplesmente desaparecem (ligam/desligam abruptamente), nao quero esse efeito,
+> quero que as estrelas continuem aparecendo, nao precisa ter esse efeito
+> bizarro..."*
+
+O que ele quer é direto: **as outras estrelas continuam aparecendo.** Sem
+liga-desliga.
+
+*Medido logo em seguida, e a primeira coisa a dizer é de quem é a culpa:* **a
+janela em que ele viu isso era MINHA, de depuração**, e em vários momentos esteve
+com `?pupila=1` — a auto-exposição forçada, que sai desligada no produto. No app
+limpo a pupila está desligada (`stopsDaPupila` 0, `expoM0` intacto em 3,5) e
+nenhuma camada esmaece ao focar: medido durante um voo de foco, o campo do
+catálogo, as cascas, os clarões e a nebulosa ficam todos em 1.
+
+*Mas o que ele viu é um defeito REAL do meu código, e ele está certo em recusá-lo.*
+Com a pupila ligada, duas coisas se somavam:
+1. ela fechava para expor a estrela em foco e **apagava o resto do céu** — honesto
+   como câmera, e não é o que ele quer;
+2. e eu a fazia **SALTAR** no salto de câmera (o argumento era "teletransporte é
+   cena nova"). Enquadrar uma estrela É um salto — então cada foco trocava a
+   exposição da cena inteira em UM quadro. É literalmente o liga-desliga.
+
+**Fechado o (2) no mesmo dia:** a pupila só salta sob `?shot=` (captura), onde não
+há movimento para ver; em tudo mais ela ADAPTA.
+
+**E o (1) matou a pupila inteira**, por decisão dele, no mesmo dia:
+
+> *"eu quero que independentemente do astro/objeto que está em foco na tela nunca
+> se esmaeça a grandeza da cena galáctica e do starfield, exuberante... nada de
+> efeitos de pupila ou sei lá como vc chama isso..."*
+
+**MEDIDO, e o número o defende:** ao focar Sirius com `?pupila=1`, ela fechava
+**16 stops** — a cena inteira escurecida ~100.000×. Não era um defeito de
+transição; era a exposição apagando o céu.
+
+**A lei agora é:** nada de exposição que dependa do que está em foco, e o campo
+estelar e a galáxia **nunca** esmaecem. `core/pupila.ts` vira lápide — fica
+desligada, e o que sobrevive dela é o que ela MEDIU (o vão de 26 magnitudes) e a
+técnica de pré-exposição no shader, que existe pelo motivo half-float e não tem
+nada a ver com adaptar por foco. O que a substitui é uma **compressão FIXA na
+emissão** (`β·asinh(x/β)`): identidade no céu, logaritmo no Sol, igual em todo
+quadro. Detalhe em `LEI-DA-ESTRELA.md` §7.
+
+Item fica ABERTO até ele conferir no app limpo — a medição diz que hoje, sem a
+porta, nenhuma camada esmaece ao focar; mas quem julga o que ele viu é ele.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos

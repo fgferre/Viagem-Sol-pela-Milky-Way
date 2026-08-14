@@ -255,13 +255,6 @@ export class Pupila {
     return this.ganho;
   }
 
-  /** Volta ao estado de nascimento (pupila aberta). Usado no salto de câmera:
-   *  teletransporte não é mudança de luz, é cena nova — adaptar aos poucos
-   *  a partir do lugar anterior seria fingir uma continuidade que não houve. */
-  reabrir() {
-    this.ganho = 1;
-    this.stops = 0;
-  }
 }
 
 /**

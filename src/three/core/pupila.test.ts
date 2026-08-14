@@ -181,12 +181,17 @@ describe('4. Pupila — a adaptação no tempo', () => {
     expect(a.valor).toBe(b.valor);
   });
 
-  it('reabrir devolve ao nascimento', () => {
+  it('SALTO DE CÂMERA NÃO SALTA A PUPILA — a correção do item 39', () => {
+    // O dono, 2026-08-14: "quando uma estrela está focada, as demais
+    // simplesmente desaparecem (ligam/desligam abruptamente)". Enquadrar uma
+    // estrela É um salto de câmera; se a pupila saltasse junto, a exposição da
+    // cena inteira trocaria em UM quadro. Um olho que muda de assunto não
+    // pisca — ele se adapta. Só a CAPTURA (`?shot=`) ainda salta, e ali não há
+    // movimento para ver.
     const p = new Pupila();
-    p.passo(1e-8, 0, true);
-    p.reabrir();
-    expect(p.valor).toBe(1);
-    expect(p.stopsAplicados).toBe(0);
+    const passo = p.passo(1e-8, 0.016, false);
+    expect(passo).toBeGreaterThan(1e-8); // não chegou ao alvo neste quadro
+    expect(passo).toBeLessThan(1); // mas já está a caminho
   });
 });
 
