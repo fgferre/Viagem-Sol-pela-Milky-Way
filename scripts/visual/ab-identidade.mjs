@@ -192,6 +192,42 @@ export const VISTAS = [
   ['ua150', '?pos=0,0,0.00072722&look=0,0,0&shot=2'],
   ['ua40', '?pos=0,0,0.00019393&look=0,0,0&shot=2'],
   // ------------------------------------------------------------------
+  // OS DEGRAUS DO VÃO (2026-08-14) — a outra metade do item 12.
+  //
+  // A escada que OLHA O SOL tinha `solreal1ua` de um lado e `solreal40ua`
+  // do outro, SEM NENHUM DEGRAU NO MEIO — e é exatamente essa faixa que o
+  // item 3 acusa. O buraco não é acadêmico: medido com a régua da luz
+  // (`luz-do-quadro.mjs`), de 1 a 500 UA o quadro sai com 100% dos pixels
+  // acima de meia luz e a mancha branca ocupa a tela inteira, enquanto o
+  // disco VERDADEIRO do Sol cai de 7,6 px para 0,02 px. Quatro ordens de
+  // grandeza de encolhimento sem um juiz olhando.
+  //
+  // POR QUE ELES ENTRAM ANTES DO CONSERTO, e não depois: a regra da casa é
+  // que a prova tem de TOCAR o que a mudança tocou, e que quem não tem
+  // vista cobrindo a mudança é OBRIGADO a criar a vista, nunca a exibir a
+  // que não cobre (`NORTE.md:2553`). Estas cinco nascem lavadas de
+  // propósito — é a baseline do defeito. Quando a reconciliação
+  // radiométrica chegar, é contra elas que ela responde.
+  //
+  // AS CINCO, e cada uma responde uma pergunta:
+  //   ua2   — o Sol ainda é CORPO (o gate do palco arma abaixo de 3,60 UA);
+  //   ua4   — o primeiro passo depois do arme, onde o disco tem ~4 px;
+  //   ua8   — logo depois de o corpo DESARMAR (2 px, 7,19 UA): aqui só o
+  //           ponto desenha o Sol, e é o degrau em que a pupila expôs o
+  //           salto de luz entre as duas representações;
+  //   ua20  — o meio da faixa cega, sem nenhuma outra vista por perto;
+  //   ua2000 — a ponta LONGE do vão, onde o branco finalmente começa a
+  //           ceder (91,8% do quadro) e ainda faltam 2.125 UA para o
+  //           clarão com espinhos acender em 0,02 pc.
+  // Todas ficam ABAIXO da janela de entrega (a maior, ua2000, está a
+  // 0,0096963 pc — 2,06× abaixo da borda), então nenhuma passa a depender
+  // da rampa; `lodStellar.test.ts` cobra isso e conta quantas são.
+  ['ua2', '?pos=0,0,0.0000096963&look=0,0,0&shot=2'],
+  ['ua4', '?pos=0,0,0.000019393&look=0,0,0&shot=2'],
+  ['ua8', '?pos=0,0,0.000038785&look=0,0,0&shot=2'],
+  ['ua20', '?pos=0,0,0.000096963&look=0,0,0&shot=2'],
+  ['ua2000', '?pos=0,0,0.0096963&look=0,0,0&shot=2'],
+  // ------------------------------------------------------------------
   // ONDA 6 (F2a) — A TERRA RESOLVIDA, no jd PINADO da onda
   // (2024-04-08, o mesmo do eclipse de F2c — a época viva não captura).
   // A câmera fica a 4 raios do CENTRO da Terra viva (efeméride pelo

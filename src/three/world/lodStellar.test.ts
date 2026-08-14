@@ -1661,8 +1661,19 @@ const VISTAS_POS: { nome: string; dPc: number }[] = [];
   }
 }
 
-/** As que o desenho declara ABAIXO da janela — todas com ponto pleno. */
-const ABAIXO_DA_JANELA = ['solreal4mkm', 'solreal1ua', 'solreal40ua', 'ua500', 'ua150', 'ua40'];
+/**
+ * As que o desenho declara ABAIXO da janela — todas com ponto pleno.
+ *
+ * As CINCO últimas entraram em 2026-08-14 como os degraus do vão (a outra
+ * metade do item 12): a escada que olha o Sol tinha `solreal1ua` de um lado e
+ * `solreal40ua` do outro, sem nada no meio, e é justamente lá que a régua da luz
+ * mediu 100% do quadro lavado enquanto o disco verdadeiro encolhia 4 ordens de
+ * grandeza. Elas nascem lavadas de propósito: são a baseline do defeito.
+ */
+const ABAIXO_DA_JANELA = [
+  'solreal4mkm', 'solreal1ua', 'solreal40ua', 'ua500', 'ua150', 'ua40',
+  'ua2', 'ua4', 'ua8', 'ua20', 'ua2000',
+];
 
 /** varredura fina DENTRO da janela (0,019 → 0,051 pc) */
 const DENTRO: number[] = [];
@@ -1712,14 +1723,14 @@ describe('as vistas oficiais e a janela — quem se move e quem não', () => {
   it('as vistas por `?pos=` saem do script, e NENHUMA mora dentro da janela', () => {
     // ALARME: se alguém cravar uma vista entre 0,02 e 0,05 pc, ela passa
     // a depender da rampa e deixa de ser baseline estável — quebra aqui.
-    expect(VISTAS_POS.length).toBe(14);
+    expect(VISTAS_POS.length).toBe(19);
     const dentro = VISTAS_POS.filter(
       (v) => v.dPc > LOD_SOL.entrega.startPc && v.dPc < LOD_SOL.entrega.endPc
     );
     expect(dentro).toEqual([]);
   });
 
-  it('as seis vistas ABAIXO da janela têm ponto pleno e clarão zero', () => {
+  it('as onze vistas ABAIXO da janela têm ponto pleno e clarão zero', () => {
     const abaixo = VISTAS_POS.filter((v) => v.dPc <= LOD_SOL.entrega.startPc);
     expect(abaixo.map((v) => v.nome).sort()).toEqual([...ABAIXO_DA_JANELA].sort());
     for (const { nome, dPc } of abaixo) {
