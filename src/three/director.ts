@@ -64,9 +64,11 @@ import {
   estadoDoTempo,
   grampearJd,
   lerPortaJd,
+  numeroPtBr,
   taxaDoDegrau,
   DEGRAUS_DE_TEMPO,
 } from './tempoDoAtlas';
+import { notaDeDistancia } from '../lib/unidades';
 import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
 import { dateToTDB } from '../lib/atlas/time';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
@@ -1497,15 +1499,28 @@ export class Director {
             ? target
             : new THREE.Vector3(target.x, target.y, target.z)
         );
-        const al = d * 3.262;
-        const fmt =
-          al < 100
-            ? `${al.toFixed(1)} AL`
-            : al < 10_000
-              ? `${Math.round(al)} AL`
-              : `${(al / 1000).toFixed(1)} MIL AL`;
+        // A QUARTA CÓPIA DA ESCADA MORREU AQUI (2026-08-14). Esta linha
+        // fazia `d * 3.262` e escrevia "1953 AL" com ponto decimal,
+        // enquanto o rótulo da mesma estrela, um palmo acima na mesma
+        // tela, já dizia "16,9 anos-luz" — duas grafias e dois
+        // separadores convivendo. Agora é a escada única
+        // (`lib/unidades`), a mesma de `LabelCanvas` e da paleta de
+        // busca. `src/three` pode importar de `src/lib`; o contrário é
+        // que inverteria a seta, e por isso o formatador pt-BR continua
+        // entrando INJETADO.
+        //
+        // O `UA_POR_PC` usado é o que este arquivo já importava de
+        // `world/planetas` (derivado de `AU_PARA_PC`): é o MESMO número
+        // do de `lib/unidades` até a 11ª casa, e um segundo símbolo com
+        // o mesmo nome no mesmo arquivo custaria mais do que resolve.
+        //
+        // SEM MEDIDA, SEM NÚMERO: `notaDeDistancia` devolve `null`
+        // quando a distância não é positiva e finita — aí fica só o
+        // nome do destino, em vez do "0.0 AL" que a cópia antiga
+        // escrevia ao chegar em cima do alvo.
+        const nota = notaDeDistancia(d * UA_POR_PC, numeroPtBr);
         const label = dest === 'SGR' ? 'SAGITTARIUS A✱' : dest.toUpperCase();
-        text = `→ ${label} · ${fmt}`;
+        text = nota ? `→ ${label} · ${nota}` : `→ ${label}`;
       }
     }
     // aparecer/sumir é imediato; o contador vivo atualiza a 4 Hz

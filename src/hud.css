@@ -11,6 +11,22 @@
      é só a reserva das telas em que a barra não existe — título e
      intro, onde o ⚙ Ajustes ainda abre por `?ajustes=1`. */
   --barra-fim: 5.6rem;
+  /* A CAMADA DOS TRÊS DIÁLOGOS (Ajustes, Camadas, Busca), e a razão em
+     uma linha: QUEM CEDE É O SELO, porque informação permanente pode
+     esperar e ação em curso não — quem abriu um painel precisa poder
+     fechá-lo.
+     O selo mora no canto de baixo à direita e os painéis descem da barra
+     até o pé da tela pela direita: em janela apertada com o texto grande
+     é o MESMO retângulo, e não há geometria que separe os dois (foi assim
+     que a barra de controles se resolveu — ela tem altura própria e o
+     painel passou a nascer abaixo dela; aqui não existe esse "abaixo").
+     Então decide a pilha, e ela segue o que o diálogo JÁ declara de si:
+     `aria-modal`, foco preso e Esc fecha (lib/dialogFocus.ts) — enquanto
+     está aberto, ele é a tela. Estava ao contrário (20 contra os 40 do
+     selo), e o "✕" de fechar ficava debaixo do selo junto com o clique.
+     Entre a barra de controles (45) e o holofote (48), e abaixo dos véus
+     (50+): o painel cobre o HUD fixo, nunca o filme passando por cima. */
+  --camada-dialogo: 46;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -726,7 +742,8 @@
   max-height: calc(100vh - var(--barra-fim) - 2.4rem);
   overflow-y: auto;
   pointer-events: auto;
-  z-index: 20;
+  /* a camada dos diálogos, declarada uma vez em `.hud-root` */
+  z-index: var(--camada-dialogo);
   padding: 0.9rem 1.1rem 1rem;
   border: 1px solid rgba(220, 230, 248, 0.28);
   background: rgba(6, 9, 18, 0.86);
@@ -793,7 +810,8 @@
   max-height: calc(100vh - var(--barra-fim) - 2.4rem);
   overflow-y: auto;
   pointer-events: auto;
-  z-index: 20;
+  /* a camada dos diálogos, declarada uma vez em `.hud-root` */
+  z-index: var(--camada-dialogo);
   padding: 0.9rem 1.1rem 1rem;
   border: 1px solid rgba(220, 230, 248, 0.28);
   background: rgba(6, 9, 18, 0.86);
@@ -1387,7 +1405,10 @@
   max-height: min(66vh, 40rem, calc(100vh - var(--barra-fim) - 2.4rem));
   overflow-y: auto;
   pointer-events: auto;
-  z-index: 20;
+  /* a camada dos diálogos, declarada uma vez em `.hud-root` — o mesmo
+     "camada 45 contra 20" do comentário acima acontecia com o selo (40),
+     e contra o selo não há geometria: ele mora onde o painel termina */
+  z-index: var(--camada-dialogo);
   padding: 0.9rem 1.1rem 1.2rem;
   border: 1px solid rgba(220, 230, 248, 0.28);
   background: rgba(6, 9, 18, 0.86);

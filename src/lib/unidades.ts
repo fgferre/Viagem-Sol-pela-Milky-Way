@@ -16,9 +16,12 @@
 //
 // Duas grafias da mesma unidade ("AL" e "anos-luz") e dois separadores
 // decimais na MESMA tela — o rótulo da estrela dizia "8.6 AL" enquanto
-// a paleta de busca, a um palmo dele, dizia "8,6 anos-luz". As duas
-// primeiras e a terceira passam a sair daqui; a quarta mora em
-// `three/director.ts:1485` e é a mesma chamada de uma linha.
+// a paleta de busca, a um palmo dele, dizia "8,6 anos-luz". As QUATRO
+// saem daqui: as três primeiras desde 2026-08-14, e a quarta
+// (`director.emitDest`, a linha de rumo "→ ALNILAM · 1913 anos-luz")
+// no acabamento do mesmo dia — é a chamada de uma linha em
+// `three/director.ts:1521`. Não sobra cópia; se aparecer uma quinta,
+// ela é um bug, não uma exceção.
 //
 // A GRAFIA ESCOLHIDA é a por extenso. "AL" é abreviação de astrônomo, e
 // a razão de o dono ter pedido ano-luz em vez de parsec foi justamente

@@ -37,6 +37,20 @@ de não dar push, o que não é trava nenhuma.
 dos 170 commits desde a fusão do atlas. O item 0 é a causa que explica quase todos os
 outros; por isso abre a lista, mesmo sem ser o número 1.
 
+**E em 2026-08-14 SAÍRAM sete:** o **1** (rótulo do Sol dizendo "FOBOS"), o **2** (faixas
+laranja), o **14** (`?foco=sol&ver=corpo` não descia), o **30** (clique fora do nome
+escrito), o **31** (nomes por cima dos painéis) e o **35** (legenda sobre a dica, título
+dobrado) fecharam no commit `de16542`; o **32** (duas unidades de distância na mesma
+tela) fechou no acabamento que veio logo atrás, quando o quarto conversor morreu. E o
+**29** — o "✕" de fechar que não recebia clique — saiu por último, no mesmo acabamento:
+a barra tinha parado de comê-lo no `de16542`, mas quem passou a cobri-lo era o selo de
+honestidade; a disputa foi decidida com uma razão escrita em vez de um número solto
+(`--camada-dialogo`, `src/hud.css:29`), porque **informação permanente pode esperar,
+ação em curso não**. Conferido em 15 combinações de tamanho e painel, com o navegador
+devolvendo o próprio botão no ponto do clique.
+Os oito números estão **aposentados** — os buracos na sequência são exatamente isso, e
+ninguém os reaproveita. Para ler o que eram: `git show de16542 -- docs/PENDENCIAS.md`.
+
 ---
 
 ## ALTA — o dono vê e incomoda
@@ -48,7 +62,7 @@ reprovado, e todo defeito virava uma **camada nova por cima do defeito anterior*
 Sol desenhado duas vezes, o clarão só do Atlas (item 4), o limiar das luas. Cinco
 commits chegaram a exibir "18/18 vistas idênticas" como aval de trabalho de **HUD** —
 e as vistas são capturadas **sem HUD** (`?shot=2` apaga o HUD inteiro,
-`src/hud.css:1298`). Prova vazia, cinco vezes.
+`src/hud.css:1361`). Prova vazia, cinco vezes.
 **A regra foi REVOGADA pelo dono em 2026-08-11** e até hoje não estava escrita em
 lugar nenhum. As palavras dele: *"Nunca foi criada essa regra que nada muda na tela.
 Estamos sempre caminhando no sentido das melhorias, se nada muda na tela isso fica
@@ -58,23 +72,16 @@ lê-se com esta revogação ao lado — a casa aposenta, não reescreve.
 **O que ela ainda cobra hoje, três coisas:**
 - a escada que OLHA O SOL pula de 1 UA para 40 UA sem nenhum degrau no meio — a faixa
   onde a tela lava não tem juiz (item 12);
-- a bancada é cega para movimento (item 11), e foi por aí que o item 2 passou;
+- a bancada é cega para movimento (item 11) — foi por aí que as faixas laranja (item 2,
+  fechado em 2026-08-14) atravessaram meses de capturas sem ninguém as ver, e só caíram
+  quando alguém olhou a tela com o relógio andando;
 - a rodada de fotos reais do Sol nunca aconteceu (item 22) — as seis passam na régua
   da própria casa (`docs/ESCALA-HONESTA.md:884-891`), que é veredito de bancada, não
   decisão do dono; ele nunca foi consultado sobre ela.
 → `scripts/visual/ab-identidade.mjs:135-136` (`solreal1ua` e `solreal40ua`, um ao lado
 do outro), `docs/NORTE.md` (seção "Como retomar os gates", onde a revogação também
-está registrada desde 2026-08-14).
-
-**1. O rótulo do Sol diz "FOBOS".**
-Clicar no Sol no Atlas leva até ele, mas o nome que aparece na tela é o de outro
-corpo. É a primeira coisa que se vê ao chegar lá.
-→ commit `51d7777`, defeito 1.
-
-**2. Faixas laranja andando pela tela.**
-Um auditor viu faixas atravessando o quadro com o relógio andando. **Não reproduzido
-ainda** — e não é fácil, porque a bancada de medição congela o relógio (item 11).
-→ commit `51d7777`, defeito 3.
+está registrada desde 2026-08-14). *O ponteiro do `.bare-mode` acima dizia `:1298`:
+o `de16542` cresceu o `hud.css` em 107 linhas e a regra passou para a `:1361`.*
 
 **3. A tela fica branca quando o Sol está longe.**
 De ~1 UA a ~8 UA o quadro lava inteiro. Nove distâncias medidas, todas brancas.
@@ -113,34 +120,6 @@ sobra a qualidade, mais três automatismos que decidem sozinhos sem o visitante
 escolher.
 → `docs/NORTE.md:3734-3800`.
 
-**29. O painel entra por baixo da barra de botões, e o "x" de fechar não recebe
-clique.**
-Os dois se penduram em réguas diferentes: a barra desce junto com a altura da janela
-(`top: 8.5vh`, `src/hud.css:293`) e os painéis param sempre no mesmo ponto
-(`top: 6.4rem` — Ajustes em `src/hud.css:1309`, Camadas em `:672`, Busca em `:735`).
-Acima de **~881 px de altura de janela** os dois se cruzam, e quem fica por cima é a
-barra (camada 45 contra 20): ela engole o clique. Num monitor 1440p a faixa comida é
-de umas quatro dezenas de pixels — exatamente onde mora o "x". Vale para os três
-painéis.
-
-**30. O clique não bate com o nome escrito na tela.**
-Quem **desenha** os nomes joga fora o que não coube — nome colidindo com nome, faixa
-do rodapé, canto dos controles (`src/components/LabelCanvas.ts:84,99,101-104,127`).
-Mas quem **recebe o clique** lê a lista inteira, inclusive o que nunca foi desenhado
-(`src/three/director.ts:1509-1523`, que só descarta o que está quase transparente).
-Perto de Júpiter, o rótulo descartado de uma lua fica mais perto do dedo que o do
-próprio Júpiter: lê-se "Júpiter" e enquadra-se uma lua invisível. São duas listas
-onde tem de haver uma.
-
-**31. Nomes de estrela escritos por cima dos painéis.**
-A camada dos nomes está **acima** dos painéis (25 contra 20 — `src/hud.css:49` contra
-`:676`, `:739`, `:1315`), e a área que ela evita é um canto fixo no alto à direita:
-38% da largura por 17% da altura (`src/components/LabelCanvas.ts:101-104`). Os painéis
-descem muito abaixo desse canto — em 1600×900 sobra uma faixa de algumas centenas de
-pixels em que o nome da estrela é escrito por cima do texto do painel. A arqueologia
-mediu ~531×266 px; o mecanismo está confirmado, o tamanho exato depende de qual painel
-está aberto.
-
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
@@ -157,8 +136,9 @@ a interface redesenha; um gesto que muda a vista sem mudar o foco deixa o selo v
 na tela. → `docs/PLANO-ATLAS.md:943-948`.
 
 **11. A bancada de medição é cega para movimento.** Toda captura congela o relógio,
-então defeito que só aparece andando não é pego por juiz nenhum. Foi por aqui que o
-item 2 passou. → `docs/ESCALA-HONESTA.md:877-883`.
+então defeito que só aparece andando não é pego por juiz nenhum. Foi por aqui que as
+faixas laranja (item 2, fechado em 2026-08-14) passaram — e elas só foram vistas com o
+relógio andando, no navegador. → `docs/ESCALA-HONESTA.md:877-883`.
 
 **12. A bancada é cega entre 1 UA e 40 UA — justamente onde a tela lava.**
 *Dito com precisão, porque a versão curta é falsa:* **existe** câmera nessa faixa —
@@ -171,9 +151,6 @@ outro, **sem nenhum degrau no meio**. E nenhuma foto de referência mora nessa f
 
 **13. Sagittarius A✱ ainda é 125.884× maior que o real.** O segundo mentiroso de
 escala, depois do Sol. → `docs/ESCALA-HONESTA.md:503-509`.
-
-**14. `?foco=sol&ver=corpo` não desce até o Sol** — só o clique desce. O endereço
-cai no sistema inteiro. → commit `51d7777`, defeito 2.
 
 **15. Quando o quadro engasga, não há como aliviar o Sol.** As chaves de desligar
 coroa e ejeção são lidas e nunca escritas. → `docs/ESCALA-HONESTA.md:853`.
@@ -197,16 +174,6 @@ e Vênus não tem foto em luz visível. → `docs/reference/ASSETS.md:6-29`.
 sem admitir o recuo procedural — e honestidade é a tese do produto.
 → `docs/reference/ASSETS.md:40-44`.
 
-**32. Duas unidades de distância na mesma tela** — *em conserto agora, uma ponta
-ainda de pé.*
-O rótulo desenhado ao lado da estrela dizia "8.6 AL" enquanto a busca, a um palmo
-dele, dizia "8,6 anos-luz": ponto contra vírgula, sigla contra palavra. Eram
-**quatro** conversores com quatro regras. Em 2026-08-14 três deles foram unificados
-em `src/lib/unidades.ts` (busca, paleta e rótulo). **Falta a quarta**, a linha de rumo
-("→ ANTARES · 604 AL"), que segue com a régua própria e o ponto decimal em
-`src/three/director.ts:1485-1491`. O item só sai da lista quando ela também chamar a
-função única.
-
 **33. O selo e o painel discordam sobre quantas camadas existem.**
 São três tabelas para a mesma pergunta: o painel de Ajustes oferece **13**
 (`src/three/atlasConfig.ts:58-76`), a gaveta do Atlas oferece **6** (as que têm ícone)
@@ -222,26 +189,18 @@ espiral do carregamento é feita à mão com dois braços opostos
 (`src/components/CartografiaCanvas.ts:171,190,204`). A primeira imagem que o visitante
 vê da galáxia é a única que não segue o modelo.
 
-**35. Legenda e dica no mesmo lugar, e o título aparece duas vezes.**
-A legenda do filme e a dica do "pausar e olhar" moram no mesmo pixel — as duas em
-`left: 6vw; bottom: 11vh` (`src/hud.css:70-71` e `:337-338`) — e a legenda fica no ar
-durante a viagem, que é exatamente quando se pausa. Na entrada, o título
-"MAR DE ESTRELAS" fica escrito **duas vezes por 0,8 s**: o do carregamento sai num
-fade de 0,8 s (`src/hud.css:956,964-966`) enquanto o da abertura já está no ar — um a
-62% da altura, o outro no centro.
-
 **36. (SUSPEITA A MEDIR) Duas leis de poeira convivendo.**
 A extinção das estrelas avermelha com um vetor (`src/three/shaders/common.ts:286`) e
 as nuvens escuras com outro (`src/three/world/observedClouds.ts:104`) — e o comentário
 da segunda afirma ser *"a mesma lei"* da primeira. As doses base também são muito
-diferentes (0,045 em `src/three/director.ts:774` contra 2,4 em
+diferentes (0,045 em `src/three/director.ts:776` contra 2,4 em
 `src/three/world/observedClouds.ts:188`); a arqueologia falou em ~150×, e **eu não
 consegui confirmar o fator**, porque cada dose multiplica um campo de densidade
 diferente. **Medir antes de mexer.**
 **AVISO, e ele vale para este item e para o 37:** esta família de suspeita já produziu
 um falso positivo grave — a "faixa da galáxia desenhada 2×" era, na verdade, uma
 **cessão funcionando** (`src/three/world/wrappedStars.ts:248` →
-`src/three/director.ts:779` → `src/three/shaders/nebulaShaders.ts:123`). Costurar uma
+`src/three/director.ts:781` → `src/three/shaders/nebulaShaders.ts:123`). Costurar uma
 cessão que funciona quebra mecanismo bom.
 
 **37. (SUSPEITA A MEDIR) As nuvens escuras podem estar apagando o que está na frente
