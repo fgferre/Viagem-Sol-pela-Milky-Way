@@ -385,7 +385,41 @@ planeta.
 A nº 6 é a que ninguém tinha visto: as partículas e as sete lâminas emissivas do
 disco somam em aditivo no mesmo lugar, sem cessão nenhuma entre elas.
 
-Item ABERTO: esperando ele dizer onde viu os dois Sóis com rótulo.
+**ACHADO, com o gesto dele (2026-08-14).** Ele descreveu o caminho exato — Atlas,
+dois dedos no trackpad, "terra, lua, sol, sol", e "6,3 UA" num degrau e "242,4 UA"
+noutro. Reproduzido girando a roda por código e gravando os rótulos perto do centro:
+
+**Na abertura do Atlas (242,4 UA — o número dele, exato), VINTE E SETE rótulos
+caem dentro de 12% do centro do quadro, e cinco deles no MESMO pixel:**
+
+    Sol[corpo:sun]        @0,50 0,48
+    Mercúrio[corpo:mercury] @0,50 0,48
+    Vênus[corpo:venus]      @0,50 0,48
+    Terra[corpo:earth]      @0,50 0,48
+    Marte[corpo:mars]       @0,50 0,47
+    ...mais 22 (as luas de Júpiter, Saturno e Urano empilhadas nos pais)
+
+Não são dois Sóis: é **o sistema solar inteiro empilhado num ponto**, com o Sol
+por cima. E o Sol ganha SEMPRE o clique porque ele é o primeiro da lista
+(`CORPOS_DO_SISTEMA[0]`) e o desempate do `LabelCanvas` é a ORDEM. Daí "sempre que
+clico nesse label centralizado a câmera voa para o sol".
+
+O "sol, sol" ao girar a roda é a mesma coisa vista em dois degraus: em `sistema`
+(242,4 UA) o Sol está no centro, e em `órbita` (**6,7 UA** — o "6,3" dele) ele
+continua no centro. O rótulo sob o cursor é "Sol" nos dois.
+
+**E o borrão branco é o que fecha a armadilha:** com a tela lavada não dá para ver
+o que se está clicando. Os dois defeitos se alimentam.
+
+*Isto NÃO nasceu nesta sessão* — `labels.ts` e o enquadramento do Atlas não foram
+tocados (o diff de `src/` desta sessão não encosta em nenhum dos dois). É defeito
+antigo que só agora ficou visível, e o próprio `labels.ts:39-40` já registrava a
+família dele: *"o clique no 'SOL' escrito na tela caía em Fobos"*.
+
+**O conserto tem duas metades:** (a) rótulo de corpo que está a menos de um punhado
+de pixels de outro mais brilhante não deve nascer — funde ou cede, como as camadas
+de luz já fazem entre si; (b) o item 3, que devolve a visão de onde se está
+clicando. A (a) é barata e independente; a (b) é a onda inteira.
 
 ---
 
