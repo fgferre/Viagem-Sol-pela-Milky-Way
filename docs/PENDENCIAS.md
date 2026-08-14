@@ -17,6 +17,62 @@ código chama. O detalhe técnico mora nos commits, no `NORTE.md` e no
   apontamentos em silêncio. Item novo entra **no fim da sua seção**, com o próximo
   número livre — quem lê segue a ordem das seções, não a dos números.
 
+---
+
+## COMO RETOMAR NUMA CONVERSA NOVA
+
+**A primeira mensagem da próxima conversa pode ser uma linha só:**
+
+> *"Leia docs/PENDENCIAS.md e siga."*
+
+O dono NÃO precisa reexplicar nada. Se um agente pedir para ele recontar a visão do
+projeto, o agente errou — está tudo aqui e nos documentos apontados daqui.
+
+**O que a conversa de 2026-08-14 descobriu, e que não estava em lugar nenhum:**
+
+1. **O motor estelar JÁ ESTÁ GENERALIZADO.** Não existem três geradores de estrela.
+   Existe UM (os 14 módulos de `src/three/world/sol/`, vindos do projeto Novo Sol
+   Fable 3d) e UMA peça que os usa (`src/three/world/stellarBody.ts`, 829 linhas).
+   **Nenhum outro arquivo do projeto importa `sol/` diretamente** — conferido por grep.
+   E o Sol da cena já é uma instância dessa peça (`director.ts:582`,
+   `new StellarBody(...)` com `SOL_PARAMS`). Ou seja: o que o `PLANO-ATLAS.md:67`
+   promete para a Onda 7 — "o Sol deixa de ser um singleton e vira stellarBody
+   parametrizado; o Sol vira a instância nº 1" — **já foi feito**, e o plano ainda o
+   lista como futuro.
+2. **Faltam DOIS parâmetros, e os dois já estão escritos no código, sem consumidor:**
+   `teffK` (temperatura — hoje a cor sai de uma paleta H-alfa fixa dentro dos módulos,
+   feita para o Sol) e o envelope convectivo (se a estrela ferve — decide granulação,
+   manchas, coroa). Ver `stellarBody.ts:148-178`, onde os dois estão declarados como
+   RESERVADOS com a razão.
+3. **O bloqueio dos dois é a regra M3**, que proíbe editar os 14 módulos vendorizados
+   para preservar pixels — e o próprio comentário do código diz isso: *"o núcleo do
+   doador não tem caminho radiativo, a granulação roda incondicionalmente, e abrir um
+   exigiria editar os 14 vendorizados"*. **É a mesma doutrina da tela congelada do
+   item 0, revogada em 2026-08-14.** Foi o terceiro bloqueio dela achado no mesmo dia.
+4. **A ordem do trabalho, em dois passos que NÃO se misturam:**
+   **Passo 1 — parametrizar.** Constante vira parâmetro, mesma conta, MESMOS PIXELS.
+   Aqui o gate bit-idêntico é a prova legítima. Está ~80% feito (ver ponto 1).
+   **Passo 2 — a escada do desenho** (disco + clarão contínuos, espinhos,
+   auto-exposição). Este muda pixel DE PROPÓSITO e é julgado com o olho.
+   Misturar os dois destrói a prova do passo 1. Foi o erro que eu quase cometi.
+5. **A lei vale para TODAS as estrelas**, dirigida pelos parâmetros de catálogo. A casa
+   já carrega cor (`ci`) e luminosidade (`logLum`) das 328.749 estrelas — daí saem
+   temperatura e raio, sem baixar um byte novo (`PLANO-ATLAS.md:67`).
+6. **De onde vem o quê:** o motor do **Novo Sol Fable 3d** é o ponto de partida e a
+   peça boa — adapta-se, não se substitui. O gerador do **atlas-orbital** entra SÓ como
+   fonte de ideias de como parametrizar por magnitude/classe; o código de lá é
+   ultrapassado e **não deve ser copiado**. Palavras do dono, 2026-08-14.
+7. **PERGUNTA ABERTA, que só o dono destrava:** o que ficou para trás na importação do
+   Novo Sol? Aqui há 14 módulos e 5.015 linhas; o original pode ter mais parâmetros.
+   Precisa clonar `github.com/fgferre/Novo-Sol-Fable-3d` para comparar.
+8. **Uma lição para não destruir coisa boa:** no censo de duplicidade, o achado "a faixa
+   da galáxia é desenhada duas vezes" era **FALSO** — são duas camadas em que uma cede
+   lugar à outra, e funciona (`wrappedStars.ts:248` → `director.ts:779` →
+   `nebulaShaders.ts:123`). Antes de costurar qualquer "duplicidade", confira se não é
+   uma cessão que já funciona.
+
+---
+
 **Estado do projeto em 2026-08-13:** a onda do Sol real fechou e está na `main` (Sol
 com o tamanho verdadeiro, abertura refilmada e aprovada, Onda 6 integrada, a escada
 do Atlas descendo até o corpo do Sol). O repositório tem **uma branch só**. A `main`
