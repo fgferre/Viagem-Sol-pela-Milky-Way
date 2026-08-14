@@ -1,11 +1,16 @@
-# Mar de Estrelas — Simulação 3D do Catálogo HYG + Via Láctea
+# Mar de Estrelas
 
-Viagem cinematográfica em WebGL2/Three.js: do Sol (ao lado da câmera) através de
-gás e poeira volumétricos, passando pelas estrelas reais do catálogo HYG e pelas
-supergigantes de Órion, até revelar a **Via Láctea inteira como modelo 3D**
-(4 braços espirais, bojo, barra central, nós de HII, faixas de poeira) — não é skybox.
+Viagem cinematográfica em WebGL2/Three.js: do Sol, pelo sistema solar, através
+de gás e poeira volumétricos e das estrelas reais do catálogo, até revelar a
+**Via Láctea inteira como modelo 3D**. Perto de casa o mesmo universo vira o
+**Atlas** — sistema solar explorável, sem segundo motor.
 
-100% frontend: **sem backend, sem variáveis de ambiente, sem serviços externos.**
+100% frontend: sem backend, sem variáveis de ambiente, sem serviços externos
+em runtime.
+
+O que está aberto: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
+O que ainda decide: [`docs/NORTE.md`](docs/NORTE.md).
+Como uma estrela é desenhada: [`docs/LEI-DA-ESTRELA.md`](docs/LEI-DA-ESTRELA.md).
 
 ---
 
@@ -14,245 +19,134 @@ supergigantes de Órion, até revelar a **Via Láctea inteira como modelo 3D**
 | Ferramenta | Versão |
 |---|---|
 | Node.js | **≥ 20.19** (ou ≥ 22.12) — exigido pelo Vite 7 |
-| npm | ≥ 10 (vem com o Node 20) |
+| npm | ≥ 10 |
 | Navegador | moderno com **WebGL2**; desktop com GPU dedicada é a experiência recomendada |
 
-Nada mais é necessário. Não há Python, CUDA, Docker nem chaves de API.
+Nada mais. Não há Python, CUDA, Docker nem chaves de API.
 
-## 2. Instalação (passo a passo para outra AI)
+## 2. Instalação
 
 ```bash
-cd <pasta-do-projeto>     # a pasta que contém package.json
-npm ci                    # instala EXATAMENTE as versões do package-lock.json (recomendado)
+cd <pasta-do-projeto>
+npm ci
 ```
 
-Se `npm ci` falhar por ausência do lockfile, use `npm install` (resolve pelas
-faixas `^` do package.json). Não instale pacotes extras: tudo que o projeto usa
-já está declarado. Em produção, o app usa apenas Three.js, React e React DOM.
+Se `npm ci` falhar por ausência do lockfile, use `npm install`. Não instale
+pacotes extras. Em produção o app usa Three.js, React e React DOM.
 
 ## 3. Rodar
 
 ```bash
-npm run dev       # servidor de desenvolvimento Vite → http://localhost:5173
-npm run build     # checagem de tipos (tsc -b) + build de produção em dist/
-npm run preview   # serve o build de produção → http://localhost:4173
+npm run dev       # http://localhost:5173
+npm run build     # typecheck + build em dist/
+npm run preview   # serve o build → http://localhost:4173
+npm test          # vitest
+npm run docs:check
 ```
 
-Para servir o `dist/` com qualquer servidor estático (ex.: `python3 -m http.server`),
-funciona sem configuração extra — os caminhos são relativos.
+O `dist/` serve em qualquer estático — caminhos relativos.
 
-## 4. Dados obrigatórios (já inclusos no repositório)
+## 4. Dados (já no repositório)
 
 | Arquivo | Conteúdo |
 |---|---|
-| `public/data/stars.bin` | 328.749 estrelas de catálogo (AT-HYG v4.0 até V = 10, posições Gaia DR3; fotometria do HYG v4.4 no extremo brilhante). Formato `sc1`: 9 bytes por estrela em CINCO seções contíguas — `lon` u16, `lat` u16, `log10(distância)` u16, `log10(luminosidade)` u16, `B−V` u8. Direção em ângulo porque o erro que importa é angular (~20″); a magnitude aparente NÃO é guardada — o shader a recalcula da posição da câmera |
-| `public/data/stars_meta.json` | contrato do binário (contagem, faixas de quantização, horizonte, limite de magnitude), proveniência com licença e sha256 das fontes, e as 1.726 estrelas nomeadas — 575 nomes próprios da IAU (`t: 0`) e 1.151 designações de Bayer (`t: 1`) |
-| `public/data/galaxy/manifest.json` | contrato, proveniência, incertezas, schemas e hashes dos ativos cartográficos galácticos |
-| `public/data/galaxy/*.bin` | poeira APOGEE, nuvens moleculares CO, H II WISE, masers BeSSeL e traçadores jovens Gaia DR3, incluindo uma seleção proxy de 100 mil estrelas quentes |
+| `public/data/stars.bin` | 328.749 estrelas (AT-HYG + HYG). Formato `sc1`, 9 bytes/estrela |
+| `public/data/stars_meta.json` | contrato do binário + 1.726 nomeadas |
+| `public/data/galaxy/` | poeira APOGEE, CO, H II, masers BeSSeL, traçadores jovens, 100k OB proxy |
+| `public/data/atlas/` | corpos, efemérides, texturas do sistema solar |
 
-São carregados por `fetch` na inicialização. `stars.bin` é obrigatório e sua
-ausência abre a tela de erro. Falhas nos ativos galácticos emitem um aviso e
-mantêm a cena com o preenchimento procedural.
+`stars.bin` é obrigatório. Falha nos ativos galácticos avisa e segue com
+preenchimento procedural.
 
-## 5. Arquitetura (mapa para navegar o código)
+Contrato dos dados: [`docs/GALACTIC_DATA_FOUNDATION.md`](docs/GALACTIC_DATA_FOUNDATION.md).
+Como o renderer os come: [`docs/RENDERER_CARTOGRAPHY.md`](docs/RENDERER_CARTOGRAPHY.md).
+
+```bash
+npm run data:stars
+npm run data:galaxy
+npm run data:fit
+npm run data:verify
+npm run data:all
+```
+
+## 5. Mapa do código
 
 ```
 src/
-├─ App.tsx                  React root: fases (loading → intro → journey → end), HUD, deep-links
-├─ components/Hud.tsx       HUD: títulos, legendas, botões, progresso e a tela de carregamento
-├─ components/CartografiaCanvas.ts a composição da loading em Canvas 2D (grade, halo, espiral, poeira)
-├─ components/LabelCanvas.ts labels em um único Canvas 2D, com colisão e culling
+├─ App.tsx                  fases (loading → intro → journey / atlas / free)
+├─ components/
+│  ├─ Hud.tsx               HUD do filme
+│  ├─ HudDoAtlas.tsx        HUD do Atlas
+│  ├─ PaletaDeBusca.tsx     busca unificada (corpos + estrelas)
+│  └─ LabelCanvas.ts        rótulos, colisão, clique
+├─ lib/atlas/               física pura: efemérides, IAU, tempo, luz
 ├─ three/
-│  ├─ director.ts           ORQUESTRADOR: instancia mundos, crossfades por distância, loop principal
-│  ├─ cartography/
-│  │  ├─ galacticModel.ts   contrato único: braços, Local, barra, warp, flare e constantes GLSL
-│  │  ├─ galacticAssets.ts  carrega e valida o manifesto e os binários observacionais
-│  │  ├─ dustMap.ts         bake da poeira APOGEE e da cobertura observacional
-│  │  └─ structureMap.ts    acopla gás/poeira e traçadores jovens no mesmo campo de resposta
-│  ├─ core/
-│  │  ├─ engine.ts          renderer WebGL2, câmera, clip planes dinâmicos (updateClip)
-│  │  └─ post.ts            compositor: bloom, output e acabamento em display space
-│  ├─ world/
-│  │  ├─ novoSol.ts         o Sol procedural: adaptador + orquestração por frame
-│  │  ├─ sol/               núcleo do Sol VENDORIZADO do Novo-Sol-Fable-3d (não editar sem re-copiar)
-│  │  ├─ stars.ts           catálogo HYG (point sprites com conservação de fluxo)
-│  │  ├─ heroStars.ts       estrelas nomeadas com billboards difractados
-│  │  ├─ nebula.ts          gás local + integração volumétrica do disco galáctico
-│  │  ├─ dust.ts            poeira local
-│  │  ├─ galaxy.ts          A VIA LÁCTEA: ~2,7 M partículas (disco, barra/bojo, HII, halo, poeira, Sgr dSph)
-│  │  ├─ observedClouds.ts   nuvens moleculares observadas
-│  │  ├─ starForges.ts       H II, masers, aglomerados e Cefeidas observados
-│  │  ├─ wrappedStars.ts     campo estelar inferido e relocável dentro do disco
-│  │  └─ labels.ts          rótulos projetados (vira “SOL” quando dHome > 2000 pc)
-│  ├─ cinematic/
-│  │  ├─ journey.ts         shots da viagem (atos I–IV, ~321 s desde a rodada 26)
-│  │  └─ cameraRig.ts       interpolação de câmera + free-roam
-│  └─ shaders/              GLSL puro, um arquivo por família (starShaders, galaxyShaders, …)
-└─ hud.css                  estilos do HUD (tipografia cinematográfica)
+│  ├─ director.ts           orquestrador
+│  ├─ atlasConfig.ts        camadas, clarão do Atlas, knobs
+│  ├─ escala.ts             cadastro de mentiras de escala
+│  ├─ selo.ts               selo de honestidade
+│  ├─ fases.ts              o que cada fase escreve
+│  ├─ cartography/          modelo galáctico + bakes
+│  ├─ cinematic/            journey.ts (filme) + atlasRig.ts + cameraRig.ts
+│  ├─ core/                 engine, post, pupila (lápide)
+│  └─ world/
+│     ├─ stellarBody.ts     Sol = instância nº 1 (núcleo em sol/)
+│     ├─ stars.ts           catálogo
+│     ├─ heroStars.ts       clarões nomeados
+│     ├─ galaxy.ts          Via Láctea (partículas + lâminas)
+│     ├─ wrappedStars.ts    cascas procedurais
+│     ├─ nebula.ts          faixa volumétrica
+│     └─ corpos/            Terra, Lua, rochosos, gigantes
+└─ hud.css
 ```
 
-Geometria galáctica (`cartography/galacticModel.ts`): direção ICRS
-Sol→Sgr A* = `(-0.0548755604, -0.8734370902, -0.4838350155)`, Sol a 8.150 pc
-do centro e 5,5 pc acima do plano médio. O Sol está no braço Local/Órion,
-entre Sagittarius-Carina e Perseus — o braço Local é um segmento próprio,
-não uma das quatro famílias principais.
+Geometria: Sol a 8.150 pc do centro, 5,5 pc acima do plano. Quatro braços
+(Perseus, Sagittarius-Carina, Scutum-Centaurus, Norma-Outer); o Local é
+segmento próprio.
 
-### Contrato cartográfico e limites de honestidade
-
-| Camada | Parâmetros usados |
-|---|---|
-| braços | quatro famílias, pitches locais 7–20°, fases ajustadas em 146 masers BeSSeL, kinks, largura `w(R)=336+36(R[kpc]−8,15)` pc e alcance radial por segmento |
-| espinha simétrica | a geometria GLOBAL são 4 cristas equiespaçadas (2π/4) de pitch comum 12,5°, vivas de 3 a 16,3 kpc. As fases medidas corrigem cada braço só dentro de ~6 kpc do Sol, onde a BeSSeL tem paralaxe; fora disso o braço relaxa para o slot simétrico. Sem isso o padrão media m=1 (assimetria) = 0,23 contra 0,10 do alvo — metade da "estrutura espiral" era galáxia torta. `spiralModel.json` não muda: o fit segue sendo a restrição local |
-| rede filamentar | gás, poeira e formação estelar são fragmentados por ruído *ridged* com domain warping no referencial espiral (u=ln R, v=θ−u/tan p), frequência alta ao longo do braço e baixa através dele. Gaussianas somadas não fazem filamento — fazem borrão |
-| braços de 3 kpc | Near e Far, par quase simétrico ancorado nas pontas da barra entre 2,4 e 5,9 kpc. **Não saem do fit de masers** (BeSSeL não cobre R<3 kpc): vêm do gabarito de anatomia Gaia 2025 e de Dame & Thaddeus (2008) |
-| lado distante | continuação procedural mais aberta e menos contrastada; não é apresentada como medição direta da Gaia |
-| disco | raio de 16,8 kpc, escala exponencial 2,6 kpc, flare externo e warp senoidal de até ~820 pc |
-| barra/bojo | barra de 5 kpc inclinada 29°, componente box/peanut e bojo central |
-| vizinhança solar | braço Local explícito; Sol a `R0=8,15 kpc`, `z=+5,5 pc` |
-| satélite | galáxia anã de Sagitário em `l=5,6°`, `b=−14,2°`, `d≈26 kpc` |
-
-As imagens Gaia/ESA de 2025 são **impressões artísticas baseadas nos dados**,
-não fotografias externas nem uma nuvem de pontos completa da galáxia. Por isso
-o modelo combina restrições observacionais no nosso lado com síntese procedural
-no lado oculto, mantendo os braços distantes deliberadamente mais suaves.
-
-Os ativos de `public/data/galaxy/` já alimentam a textura de poeira, as nuvens
-moleculares e os traçadores jovens. Posições observadas não são deslocadas; o
-preenchimento inferido cede conforme a cobertura dos catálogos. O contrato dos
-dados está em [`docs/GALACTIC_DATA_FOUNDATION.md`](docs/GALACTIC_DATA_FOUNDATION.md)
-e sua implementação em
-[`docs/RENDERER_CARTOGRAPHY.md`](docs/RENDERER_CARTOGRAPHY.md).
-
-Fontes primárias usadas no contrato:
-
-- [Gaia/ESA — Milky Way map, 2025](https://www.cosmos.esa.int/web/gaia/milky-way)
-- [Reid et al. — paralaxes de masers e estrutura de quatro braços](https://arxiv.org/abs/1910.03357)
-- [Gaia DR3 — mapa assimétrico e braço Local](https://www.cosmos.esa.int/web/gaia/dr3-where-are-the-stars)
-- [Wegg et al. — comprimento e inclinação da barra](https://arxiv.org/abs/1504.01401)
-- [Lallement et al. — mapa 3D contínuo da poeira local](https://arxiv.org/abs/1808.00015)
-- [ESA/XMM-Newton + Chandra — braços externos até 10% mais distantes, 2026](https://www.esa.int/Science_Exploration/Space_Science/XMM-Newton/XMM-Newton_helps_revise_distance_to_outer_spiral_arms)
-
-### Regerar e verificar a fundação cartográfica
-
-```bash
-npm run data:stars           # baixa AT-HYG + HYG e reescreve stars.bin (sc1)
-npm run data:galaxy          # usa cache local; -- --refresh força nova consulta
-npm run data:fit             # reajusta as fases dos braços às âncoras BeSSeL
-npm run data:verify          # confere binários, hashes e o residual dos braços
-npm run data:all             # executa os quatro na ordem
-```
-
-As respostas TSV e os CSV das fontes estelares ficam em `.cache/` e não são
-versionados. Os binários compactos e o manifesto são versionados; o aplicativo
-continua 100% offline em runtime.
-
-**O corte do catálogo é um CONTRATO, não um detalhe.** `stars_meta.json` publica
-`magLimit` e `horizonPc`, e `wrappedStars.ts` lê os dois para não repetir a
-estrela que o catálogo já desenha. Regerar o binário com outro corte move o
-contrato sozinho — nenhum número de catálogo é literal no shader.
-
-### Crossfades
-
-Duas réguas, e a diferença é de modelo: o que é fisicamente SOLAR mede
-distância ao Sol (`dHome`, em parsecs); o que é AMBIENTE mede a posição no
-disco (`R`, `z` galactocêntricos), porque o volume local existe em qualquer
-ponto da galáxia — não só perto de casa. `env` combina as duas bordas do
-disco e trava em 0 depois que a viagem sai dele (`leftDisk`).
-
-| Sistema | régua | aparece/some |
-|---|---|---|
-| estrelas do catálogo (`localFade`) | `dHome` | some 1.100 → 2.300 |
-| marcador do Sol (`markerFade`) | `dHome` | aparece 1.700 → 3.300 |
-| cavidade do observador (`cavityGate`) | `dHome` | abre 600 → 1.300 |
-| nebulosa volumétrica (`nebulaFade`) | `env` | = `env` |
-| faixa interna da Via Láctea (`localBandFade`) | `env` | = `env`×0,76 |
-| Via Láctea (`galaxyFade`) | `env` | = 1 − `env` |
-
-`env` = (1 − `THREE.MathUtils.smoothstep(z, 600, 2100)`) ×
-(1 − `THREE.MathUtils.smoothstep(R, 16800, 20500)`).
-
-⚠️ Ordem dos argumentos: a versão do three é `smoothstep(x, min, max)` — o
-valor vem PRIMEIRO. A do GLSL é `smoothstep(edge0, edge1, x)`, com o valor por
-último (regra 2 da seção 7). Transplantar a ordem de uma para a outra inverte
-a rampa em silêncio.
-
-## 6. Parâmetros de URL (debug e deep-link — ferramenta essencial)
+## 6. URL (debug e deep-link)
 
 | Param | Efeito |
 |---|---|
-| `?t=150` | pula a intro, congela e mostra o segundo `t` da viagem |
-| `&shot=1` | modo foto: zera transições CSS (capturas determinísticas) |
-| `&shot=2` | idem, **sem HUD** — obrigatório para medir perfil/contraste contra a referência |
-| `&nodisc=1` | esconde as lâminas emissivas; sobra só a população de partículas |
-| `?play=1` | pula a intro e inicia a viagem automaticamente |
-| `&freeze=1` | congela o relógio (screenshots reproduzíveis) |
-| `&q=performance` | qualidade reduzida (mobile); `alta`, `cinema` também valem |
-| `&nobloom=1` | desliga o bloom (primeiro teste quando a tela fica branca) |
-| `&nogal=1` `&nosun=1` `&nohero=1` `&nocat=1` `&nodust=1` `&nonebula=1` `&nomarker=1` | esconde cada sistema isoladamente |
-| `&nogdust=1` `&noglow=1` | esconde poeira / brilho-do-bojo **da galáxia** |
-| `&dbgfade=1` | loga fades e distâncias no console |
-| `?loader=<etapa>` | fixa uma etapa da tela de carregamento e a mantém no ar depois do init |
+| `?t=150` | pula a intro, congela no segundo `t` do filme |
+| `?atlas=1` | abre no Atlas |
+| `?foco=terra` | enquadra o alvo (nome pt-BR; estrela por hd/hip) |
+| `?ver=corpo` | degrau da escada (sistema / órbita / corpo / lua) |
+| `?jd=` | instante do céu (1950–2050 TDB) |
+| `?luz=real` | brilho sem assistência (`assistida` é o default do Atlas) |
+| `&shot=1` | foto: zera transições CSS |
+| `&shot=2` | idem, **sem HUD** — gate visual |
+| `&play=1` | começa o filme |
+| `&q=cinema` | qualidade (`alta`, `performance`, `cinema`) |
+| `&nobloom=1` | desliga o bloom (primeiro teste se a tela lava) |
+| `&nosun=1` `&nocat=1` `&nogal=1` `&nonebula=1` `&noplan=1` | isola camadas |
+| `&nodom=1` | desliga a cessão hero↔catálogo |
+| `?pupila=1` | **lápide** — não usar; o dono reprovou |
 
-`?loader=` aceita os ids de `LOAD_STAGES` (`director.ts`), na ordem:
-`catalogs` · `stars` · `dust` · `structure` · `galaxy` · `layers` · `shaders`.
-Com `&shot=1` a composição fica ESTÁTICA (sem rotação, varredura nem pulso) e
-o relógio visual congela — é assim que cada etapa vira captura determinística:
+## 7. Regras de GLSL — leia antes de tocar em shader
 
-```bash
-open "http://localhost:5173/?loader=galaxy&shot=1"
-```
+1. `pow(x, y)` com `x` negativo é NaN. Para elevar ao quadrado, multiplique.
+2. `smoothstep(e0, e1, x)` com `e0 > e1` é indefinido. Inverta com `1.0 - smoothstep(...)`.
+3. Um pixel NaN + bloom = tela branca. Diagnóstico: `?nobloom=1`.
+4. Nunca use crase dentro do GLSL (os shaders vivem em template literals).
 
-`&shot=2` continua removendo todo o HUD, e a tela de carregamento nem monta
-nesse modo (o laço do canvas 2D disputaria a thread com a captura).
+Conservação de fluxo nos point sprites: abaixo de ~3 px o fluxo cai com a
+área (`∝ 1/d²`). O platô e o ramo que **escurece** a estrela ao aproximar
+(`1/px²` acima de 20 px) são o defeito que a `LEI-DA-ESTRELA.md` manda
+matar — não os trate como invariante.
 
-Exemplo de QA headless (Chromium):
+Clip planes dinâmicos: a viagem cobre 0,01 pc → 25.000 pc. RNG da galáxia
+é determinístico (`mulberry32(20260730)`).
 
-```bash
-chromium --headless=new --no-sandbox --use-angle=swiftshader-webgl \
-  --window-size=1280,720 --screenshot=frame.png --virtual-time-budget=8000 \
-  "http://localhost:5173/?t=176"
-```
-
-## 7. REGRAS CRÍTICAS DE GLSL — leia antes de tocar em qualquer shader
-
-Estas três regras custaram dias de depuração; violá-las quebra a cena inteira:
-
-1. **`pow(x, y)` com `x` negativo é NaN** (comportamento indefinido na GLSL).
-   Para “elevar ao quadrado”, **sempre** multiplique: `float d = v; d*d`.
-   (Bug real: anel do marcador do Sol usava `pow((r-0.55)*9.0, 2.0)` → tela branca.)
-2. **`smoothstep(e0, e1, x)` com `e0 > e1` é indefinido** — pode virar NaN.
-   Para inverter, use `1.0 - smoothstep(min, max, x)`.
-3. **Um único pixel NaN + `UnrealBloomPass` = tela 100% branca**, porque o blur
-   das mips espalha o NaN. Diagnóstico: `?nobloom=1` — se a cena aparece normal
-   sem bloom, há NaN/Inf em algum shader. Isole com os parâmetros `&no*=1` acima.
-4. **Nunca use crase dentro do GLSL.** Os shaders vivem em template literals
-   TypeScript; uma crase num COMENTÁRIO encerra a string e o erro que aparece
-   é `TS1005: ',' expected` numa linha de comentário — some do shader e não
-   parece um problema de GLSL. Cite identificadores sem crase.
-
-Outras invariantes do projeto:
-
-- **Conservação de fluxo** nos point sprites: acima de 3 px, o pico cai com
-  `1/px²` (`shrink = min(1, 9/px²)`); abaixo de 0,7 px, `subPix = px²/0.49`.
-  Não remova — sem isso a galáxia vira sopa branca de longe.
-- **Clip planes dinâmicos**: `near = clamp(dist×0.004, 0.001, 40)`,
-  onde `dist` é a âncora mais próxima entre o Sol e o centro galáctico,
-  `far = clamp(dist×12, 60000, 400000)` (`engine.updateClip`). A viagem cobre
-  0,01 pc → 25.000 pc; clip fixo causa z-fighting ou corte.
-- RNG da galáxia é **determinístico** (`mulberry32(20260730)`) — não troque por
-  `Math.random()`, ou cada reload gera uma galáxia diferente.
-
-## 8. Solução de problemas
+## 8. Problemas comuns
 
 | Sintoma | Causa provável | Ação |
 |---|---|---|
-| tela “A viagem não pôde começar” | `stars.bin` não carregou ou exceção no `init()` | console do navegador; conferir `public/data/` |
-| tela toda branca no Ato III | NaN em shader (ver §7) | `?nobloom=1`, depois isolar com `&nogal`, `&nogdust`, `&noglow` |
-| tela preta total | clip planes / câmera | `&dbgfade=1` e checar `updateClip` |
-| lento no celular | bloom + resolução | `?q=performance` (o app já sugere isso sozinho) |
-| `tsc: not found` | `node_modules` ausente | refazer o passo 2 (`npm ci`) |
+| “A viagem não pôde começar” | `stars.bin` não carregou | console; conferir `public/data/` |
+| Tela branca no filme | NaN em shader, ou o item 3 (Sol) | `?nobloom=1`, depois `&no*=1` |
+| Tela branca no Atlas | ponto do Sol + bloom (item 3) | `?nobloom=1` mostra o disco |
+| Tela preta | clip / câmera | `&dbgfade=1` |
+| Lento no celular | bloom + resolução | `?q=performance` |
 
----
-
-*Stack: Vite 7 · React 19 · TypeScript ~5.9 · Three.js 0.185 · GLSL customizado ·
-pós-processamento UnrealBloomPass.*
+*Stack: Vite 7 · React 19 · TypeScript ~5.9 · Three.js 0.185 · GLSL
+customizado · UnrealBloomPass.*

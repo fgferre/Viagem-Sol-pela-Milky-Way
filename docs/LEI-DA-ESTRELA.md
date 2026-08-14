@@ -232,7 +232,7 @@ por cima.
 | `DISC_ENTER_RAD` / `DISC_EXIT_RAD` / `shouldDiscBeActive` | `lodStellar.ts:499-560` | dormentes, ancorados no raio artístico morto; a regra de 1 px os substitui |
 | `RAIO_ARTISTICO_DO_SOL_PC` como âncora viva | `escala.ts:123` | só sobrevive porque três números nunca foram re-derivados dele |
 | `claraoDoAtlas` (o apagamento de 100×) | `atlasConfig.ts:362` | curativo do item 3; morre com ele |
-| `aFocus` (2,6 MB de canal morto) | `stars.ts:66`, `starShaders.ts:28` | nasce zerado, ninguém escreve 1 — item 38 |
+| `aFocus` | `stars.ts` (`aFocus`), `starShaders.ts` | **não sai agora** — canal do passo E3 (apaga o ponto quando nasce o corpo). Nasce zerado de propósito. Item 38 das pendências. Só vira lixo se a Onda do motor terminar sem fiá-lo |
 | platô 3–20 px e ramo `1/px²` da galáxia | `galaxyShaders.ts:68-74` | anti-estouro artístico que a compressão fixa (§7) substitui |
 | `ANCORA_UA = 1` | `luz.ts:59` | o próprio cabeçalho já diz que é provisória e que é ELA que move quando a radiometria fechar |
 
@@ -258,10 +258,10 @@ mudar tem de reescrever o oráculo, não contorná-lo:
 
 ## 6. DUAS ARMADILHAS NOMEADAS
 
-1. **`RAIO_SOL_PC` significa duas coisas.** `escala.ts:90` = 2,2567e-8 pc (a
-   fotosfera); `frameGalactico.ts:91` = 8.150 pc (o raio galactocêntrico). Onze
-   ordens de grandeza, mesmo identificador, os dois exportados, nenhum teste cobra a
-   distinção — **um import errado compila, roda e mente.** Renomear antes de F1.
+1. **Dois raios, dois nomes.** `RAIO_SOL_PC` em `escala.ts` é a fotosfera
+   (2,2567e-8 pc). `R0_PC` em `frameGalactico.ts` é a distância Sol–centro
+   (8.150 pc). Onze ordens de grandeza. Um import trocado compilava, rodava
+   e mentia — os nomes agora são distintos.
 2. **Não confundir cessão com duplicidade.** O censo de duplicidade anterior já
    produziu um falso positivo grave ("a faixa da galáxia é desenhada 2×" era uma
    cessão funcionando). Antes de costurar qualquer par, conferir se não é uma cessão

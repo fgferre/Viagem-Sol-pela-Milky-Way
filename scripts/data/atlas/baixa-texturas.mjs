@@ -36,7 +36,7 @@
 //     (fases futuras: Deimos etc.; nenhuma entrada nesta rodada).
 //   - USGS Astrogeology — https://astrogeology.usgs.gov/
 //     (fases futuras: mosaicos Titan/Europa da bancada; crédito
-//     redigido ANTES de qualquer promoção — ATLAS-LICENCAS.md).
+//     redigido ANTES de qualquer promoção — docs/reference/ASSETS.md).
 //
 // MODO OFFLINE (o desta rodada): `--offline <dir-do-doador>`
 // copia os MESMOS arquivos do doador local, ARQUIVO A ARQUIVO

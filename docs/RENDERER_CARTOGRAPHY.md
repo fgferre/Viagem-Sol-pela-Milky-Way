@@ -151,6 +151,8 @@ no disco externo.
 
 ## Deferido
 
+- A lei única de estrela (disco + clarão, compressão fixa, cessão
+  partículas↔lâminas) não mora aqui — contrato em `docs/LEI-DA-ESTRELA.md`.
 - Fotometria HYG relocável baseada em `logLum`, com extinção diferencial em
   relação ao observador solar.
 - Recuperação da amostra final de 579.577 estrelas OB ou do

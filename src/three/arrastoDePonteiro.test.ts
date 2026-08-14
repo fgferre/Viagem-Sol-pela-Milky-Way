@@ -1,7 +1,6 @@
 // ============================================================
 // OS QUATRO DEFEITOS DE PONTEIRO, um oráculo cada. Todos confirmados
-// por auditoria em 2026-08-12 (`docs/ESCALA-HONESTA.md`, §8.3 itens
-// 1-2 e §4 pendência 5) e fechados em 2026-08-13.
+// por auditoria em 2026-08-12 e fechados em 2026-08-13.
 //
 // O arquivo tem TRÊS camadas, e as três precisam existir:
 //

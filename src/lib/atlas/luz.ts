@@ -32,7 +32,7 @@
 // lados do clamp.
 //
 // SEM PISO DE AMBIENTE, por doutrina: os anti-padrões 3 e 9 de
-// docs/reference/ATLAS-ANTIPADROES.md registram o que o piso 0,02 do
+// docs/PLANO-ATLAS.md (anti-padrões) registram o que o piso 0,02 do
 // doador custou (σ calibrado contra outra alavanca de display em
 // silêncio; modo "real" sabidamente errado sem guarda). Lado escuro
 // em `real` é escuro.

@@ -64,7 +64,7 @@ topo de nuvens diurno).
 Todas as licenças seguem as NASA Media Usage Guidelines: conteúdo de agência
 federal dos EUA é domínio público, uso educacional livre, sem exigência legal
 de crédito (mas o crédito acima é mantido por postura conservadora, mesmo
-padrão adotado em `ATLAS-LICENCAS.md`). O filtro não é "só NASA": ESA, JAXA,
+padrão adotado em `ASSETS.md`). O filtro não é "só NASA": ESA, JAXA,
 USGS e outras agências entram se ganharem no fato, com a licença anotada na
 linha da tabela — ver item 2 do PROTOCOLO.
 

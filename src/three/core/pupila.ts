@@ -58,7 +58,7 @@
 // registra o custo dele no projeto irmão como "a diferença entre 60 e ~30 fps"
 // (`PLANO-ATLAS.md:202`). A pupila mede o que a casa JÁ CALCULA por quadro: a
 // magnitude aparente das fontes pontuais em quadro. É geometria e fotometria,
-// como a do irmão (`ESCALA-HONESTA.md:865`), mas com o atuador certo.
+// como a do irmão (fecha rápido, abre devagar), mas com o atuador certo.
 //
 // E a média do quadro seria o medidor ERRADO aqui, por uma razão estrutural:
 // uma fonte pontual concentra um fluxo colossal em poucos pixels. A 40 UA o
@@ -209,7 +209,7 @@ export function deslocamentoDeExpoM0(ganho: number): number {
 
 /**
  * AS DUAS CONSTANTES DE TEMPO, em segundos. Forma herdada do projeto irmão
- * (`ESCALA-HONESTA.md:865-875`: "fecha em 0,5 s, abre em 3,0 s") — o que
+ * (fecha em 0,5 s, abre em 3,0 s) — o que
  * atravessa é a CADÊNCIA e a assimetria, não os números do atuador de lá, que a
  * casa recusa por escrito.
  *
@@ -255,7 +255,7 @@ export class Pupila {
    * assentar — toda captura viraria loteria. O irmão resolveu isso deixando a
    * pupila com efeito ZERO no modo de captura, e o registro da casa já
    * sentenciou o resultado: "se a Onda 8 nascer assim, nenhum juiz olha para
-   * ela" (`ESCALA-HONESTA.md:872-874`). Aqui ela SALTA para o alvo sob captura:
+   * ela". Aqui ela SALTA para o alvo sob captura:
    * o gate vê exatamente a exposição que o espectador vê parado, e nenhum md5
    * depende de quando o obturador caiu.
    */

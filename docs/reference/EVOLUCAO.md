@@ -147,3 +147,24 @@ sessões: comparar sempre A/B na MESMA sessão.
 | 40 | **0.7811** | 0.3097 | 5.455 | 0.0760 | **0.0557** | extremo frio de `diskColor`: a constante pintada `vec3(0.30,0.43,0.78)` ERA corpo negro de ~25.000 K (conferido: `?coldt=25000` a reproduz em 3 casas) — mais quente que qualquer população integrada e que uma estrela O. Agora sai da `blackbodyLinear` das estrelas a **6.000 K** (B−V 0,60, disco Sbc), com luminância e púrpura conservados. Oito doses: 25k→0,8796 · 12k→0,8464 · 9,8k→0,8319 · 8k→0,8148 · 7k→0,8014 · 6,4k→0,7910 · **6k→0,7811** · 5,4k→0,7822. `cor` 0,1208 → **0,0084**; espessura/perfil/fenda PARADOS nas 4 casas nas oito (o teste da hipótese). Gates externos bit-idênticos |
 | 39 | 0.8783 | 0.3097 | 5.475 | 0.0754 | -0.0567 | bojo c/a 0,30 → **0,26** (o valor que Wegg & Gerhard medem; 0,30 era arredondamento) — o ganho é no maior termo. `bandav` e `dustrd` re-dosados e FECHADOS: 7 doses monótonas dão zero como ótimo, e `dustrd` é inerte com `bandav=0`. Gates externos bit-idênticos (md5 `873e64b2` / `c0743465`) |
 | 41 | **0.7782** | **0.3026** | 5.497 | 0.0694 | 0.0509 | **a LUT e o catálogo desenhavam a mesma luz duas vezes.** `unresolved()` descontava os 3,8% das CASCAS; as 328.749 estrelas do catálogo (completo a m=10) nunca entraram no handoff. Fração MEDIDA no próprio binário em runtime (`resolvedCatalogCurve`): ~1,0 até 150 pc, 0,29 a 600 pc, 0,058 a 1 kpc, 0 no horizonte — a dupla contagem morre em ~500 pc. `?catsub=0` devolve o estado anterior bit-idêntico; `mergulho`/`edgeon`/`faceon` bit-idênticas (a 8 kpc do Sol `catFade` é zero — a checagem causal). **Nota de máquina: a baseline daqui é 0,7857, não os 0,7811 da linha 40** — o A/B é 0,7857 → 0,7782. Beco medido: a mesma fração DERIVADA da LF de 7 bins das cascas dá 0,8259 (o bin de topo, uniforme em M ao longo de 4 mag, prevê 0,635 a 1 kpc contra 0,058 reais) |
+
+## Baseline vigente do gate de identidade (2026-08-13)
+
+Valores esperados desta GPU, 1800×1713, `?q=cinema`, após o merge da onda do Sol
+real com a Onda 6. **Noutra máquina servem só como sinal de que a captura
+assentou, nunca como oráculo.** A fonte viva da lista de vistas é
+`scripts/visual/ab-identidade.mjs`. O harness grava o “antes/depois” no TMPDIR
+— some no reinício; esta tabela é o que o repositório guarda.
+
+`sol d3f110e281d3` · `soldisco 06d7c8d406cd` · `solrampa 1ad5c3e89220` ·
+`solestouro 7306f0d4f044` · `solestrela 22f5fab0992e` · `solreal4mkm 8a43f749a632` ·
+`solreal1ua 205421df6f9c` · `solreal40ua 48adc0f55631` ·
+`interno d98cbef70849` · `travessia b85162ede6cf` · `mergulho 6876e851031a` ·
+`edgeon 4fbd07002a9a` · `faceon d05591e27ea4` · `retrato 23bb22402f40` ·
+`hero200 b4a2d03ed3e9` · `hero600 4311d0ccbc15` · `hero950 d11a8df86b68` ·
+`hero8 d7c1d2d12726` · `ua500 5f8136c12732` · `ua150 9b3e75b2af91` ·
+`ua40 48adc0f55631` · `atlas e9544b84cca2` · `terra ab40ab3b0d3b` ·
+`terranb 1ec9120c745f` · `lua 39ce4845c9f4` · `terralua fb35311ee340`
+
+Céu (protocolo v3, 6 faces): `skyError` **0,7782** (espessura 0,3026 · fenda
+0,2240 · perfil 0,2047 · púrpura 0,0336 · cor 0,0132).

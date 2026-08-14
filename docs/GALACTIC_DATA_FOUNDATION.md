@@ -126,6 +126,25 @@ assunto.
 O corte não é mais um número no shader: `magLimit` e `horizonPc` viajam no
 metadado e `wrappedStars.ts` lê os dois. Ver a rodada 35 no `NORTE.md`.
 
+## Backlog de dados (ainda não empacotado)
+
+Pesquisa de 2026-07-30. Ordem por esforço → impacto. O item 6 (100k OB
+proxy) já está na tabela de ativos acima. Cada entrada nova vai no
+`manifest.json` com schema, contagem, SHA-256, método de distância e
+proveniência.
+
+| # | Dataset | Fonte | Runtime | Esforço |
+|---|---|---|---|---|
+| 1 | 165 aglomerados globulares (Baumgardt & Vasiliev) | VizieR `J/MNRAS/505/5978` | ~7 KB | ~1 h |
+| 2 | LMC/SMC/M31/M33 + ~60 anãs | Pietrzyński 2019, McConnachie `J/AJ/144/4` | ~5 KB | ~2 h |
+| 3 | 7.167 aglomerados abertos (Hunt & Reffert) | VizieR `J/A+A/686/A42` | ~300 KB | ~3 h |
+| 4 | 215 SNRs com distância (Green × Ranasinghe & Leahy) | VizieR | ~10 KB | ~4 h |
+| 5 | ~1.000 nebulosas planetárias (Chornay & Walton, reliability > 0,8) | VizieR | ~40 KB | ~2 h |
+| 7 | Poeira local Edenhofer 2024 | Zenodo 10658339 | 15–50 MB | 2–3 dias |
+
+Extras avaliados: Zucker 2020 (rótulos da Edenhofer); pulsares ATNF
+(descartados: distâncias por DM modelo-dependentes).
+
 ## Fontes avaliadas, mas ainda não empacotadas
 
 ### Poeira local de alta resolução

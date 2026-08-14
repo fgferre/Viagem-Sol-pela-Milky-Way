@@ -2,7 +2,7 @@
 > **Veredito da Onda 0 (2026-08-10): Migra.** Fase consumidora: **Onda 4** (domínio de escala em UA, zoom semântico, planetas-sprite) e **Decisão 3 da Onda 6** (log-depth × reversed-Z).
 > **Procedência:** relatório de "deep research" gerado por IA — as 71 notas têm a mesma data de acesso e citam fontes secundárias (Reddit, Stack Overflow, teses) para números e nomes de API. Vale como **mapa de técnicas; nenhum número ou nome de API se cita sem reverificar na fonte primária**.
 > **Avisos específicos (não seguir sem ler):**
-> - A seção "cheats visuais" recomenda **piso de luz ambiente** (`setambient`) — é exatamente o anti-padrão de luz que a casa já condenou (`ATLAS-ANTIPADROES.md`, itens 3 e 9). Não seguir.
+> - A seção "cheats visuais" recomenda **piso de luz ambiente** (`setambient`) — é exatamente o anti-padrão de luz que a casa já condenou (`PLANO-ATLAS.md`, anti-padrões). Não seguir.
 > - Halo dimensionado por magnitude (Stellarium) desacopla brilho da física — contraria o escalar único da lei de luz; no máximo vira ideia de UI de destaque.
 > - A compressão orbital do "modo Orrery" é escala deliberadamente mentirosa — só entraria com o toggle explícito Real/Esquemático que o próprio documento recomenda.
 > **O que vale:** PSC do OpenSpace; fórmulas de log-Z e reversed-Z; clamp de 2–5 px na transição malha→billboard; equação do Automag; camera stacking; órbitas analíticas na GPU.

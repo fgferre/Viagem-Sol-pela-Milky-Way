@@ -42,3 +42,9 @@ do doador era um mapa **de Io** (NASA 3D Io B).
 `Hygiea_DAMIT_4392.obj` (DAMIT CC BY 4.0): licença fecha; a casa não
 tem `GLTFLoader`/`OBJLoader`. F7 renderiza elipsoide BODY_AXES + LS.
 Pendência **P-F7-MESH**.
+
+## Licenças vivas
+
+A autoridade de textura da casa é `public/data/atlas/texturas.json`
+(crédito por linha). Sem licença documentada não entra. O inventário
+do repositório atlas-orbital não vale aqui.

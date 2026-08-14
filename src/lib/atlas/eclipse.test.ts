@@ -543,7 +543,7 @@ describe("PARES_DE_ECLIPSE — contratos da tabela", () => {
 
 // ============================================================
 // F2c — o driver `resolveSombraNaCena` contra a EFEMÉRIDE REAL nos jd
-// pinados de ECLIPSES-F2C.md, o needle do chunk GLSL (a lição do chunk
+// pinados da onda de eclipses, o needle do chunk GLSL (a lição do chunk
 // renomeado) e o relógio único. A efeméride carrega como em
 // `efemerides.test.ts` — o .bin em disco é o dado vivo da casa.
 // ============================================================
@@ -576,7 +576,7 @@ const uaDe = (id: string, jd: number): Vetor3Km => {
   return [p.x, p.y, p.z];
 };
 
-/** Os jd PINADOS da onda (ECLIPSES-F2C.md — máximos segundo a NOSSA
+/** Os jd PINADOS da onda (máximos segundo a NOSSA
  *  efeméride) e os controles verificados fora de eclipse. */
 const JD_SOLAR = 2460409.26395835; // 2024-04-08, umbra da Lua na Terra
 const JD_LUNAR = 2458327.34980323; // 2018-07-27, Lua funda na umbra
@@ -593,7 +593,7 @@ const sombraDe = (receptorId: string, jd: number) => {
 };
 
 describe("resolveSombraNaCena — os jd pinados contra a efeméride real", () => {
-  it("eclipse solar 2024: a Terra recebe a geometria de ECLIPSES-F2C.md", () => {
+  it("eclipse solar 2024: a Terra recebe a geometria pinada da onda", () => {
     const s = sombraDe("earth", JD_SOLAR);
     expect(s.ativo).toBe(true);
     // os números da tabela (a faixa ±1–2 km cobre o raio equatorial de

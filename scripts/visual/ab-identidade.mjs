@@ -283,7 +283,7 @@ export const VISTAS = [
   ],
   // ------------------------------------------------------------------
   // ONDA 6 (F2c) — O ECLIPSE DOS DOIS LADOS, nos jd PINADOS de
-  // ECLIPSES-F2C.md (máximos segundo a NOSSA efeméride). Entram na lista
+  // da onda de eclipses (máximos segundo a NOSSA efeméride). Entram na lista
   // ANTES do código da fase (regra da Onda 4): a baseline nasce no HEAD
   // sem o ramo de sombra — as duas vistas DIFEREM de propósito quando o
   // eclipse acende, e o "depois" é quem vira oficial (D11).
@@ -533,7 +533,7 @@ export const VISTAS = [
   // alguém olhou: mesmo no piso, o clarão do Sol-ponto ainda é uma bola
   // branca que ocupa a maior parte do quadro. A lei modera; ela não
   // resolve. É a MESMA pendência que o bastão já declarava por escrito
-  // (`docs/ESCALA-HONESTA.md` §5.6 — a tela branca é defeito de
+  // (item 3 das pendências — a tela branca é defeito de
   // EXPOSIÇÃO, e a causa medida é uma das cinco escalas de borrão do
   // clarão, não a lei do Atlas), agora com imagem, juiz e md5. Esta
   // vista é a linha de base contra a qual a onda da exposição vai poder

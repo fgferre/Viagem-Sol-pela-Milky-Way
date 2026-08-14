@@ -40,7 +40,7 @@
 // COMO LER O QUE ELE IMPRIME. Duas armadilhas herdadas, as duas já registradas:
 //  1. NUNCA julgar por PNG achado em `capturas/` — a pasta é cache e sobrevive
 //     entre sessões; em 2026-08-13 um PNG velho levou à conclusão errada de que
-//     1 UA saía limpa (`ESCALA-HONESTA.md:731`). Esta régua sempre recaptura.
+//     1 UA saía limpa. Esta régua sempre recaptura.
 //  2. A luminância é medida DEPOIS do tonemap e depois do grão/vinheta do
 //     `FILM_SHADER` — é o que o olho vê, não o HDR. Para ver o HDR por baixo do
 //     clarão, rode com `EXTRA='&nobloom=1'`, que é o par honesto que o

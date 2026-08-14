@@ -88,7 +88,7 @@ export const AU_PARA_PC = 1 / 206_264.80624548031;
  * scripts/data/lib/galactic.mjs (sunRadiusPc 8150, sunHeightPc 5.5).
  * Duplicação deliberada; o elo é o oráculo de casos fixos (cabeçalho).
  */
-export const RAIO_SOL_PC = 8_150;
+export const R0_PC = 8_150;
 export const ALTURA_SOL_PC = 5.5;
 
 function versorEquatorial(raDeg: number, decDeg: number): Vec3 {
@@ -243,7 +243,7 @@ export function heliocentricaEclipticaUAParaBaseGalactocentricaPc(
 ): [number, number, number] {
   const gal = equatorialParaGalactica(eclipticaParaEquatorial(vAU));
   return [
-    RAIO_SOL_PC - gal[0] * AU_PARA_PC,
+    R0_PC - gal[0] * AU_PARA_PC,
     // sinal deliberado da casa: +Y da base → l = 270° (ver cabeçalho)
     -gal[1] * AU_PARA_PC,
     ALTURA_SOL_PC + gal[2] * AU_PARA_PC,

@@ -17,7 +17,7 @@ import {
   MATRIZ_EQUATORIAL_PARA_GALACTICA,
   NGP_DEC_DEG,
   NGP_RA_DEG,
-  RAIO_SOL_PC,
+  R0_PC,
   eclipticaParaEquatorial,
   equatorialParaEcliptica,
   equatorialParaGalactica,
@@ -98,11 +98,11 @@ describe('frameGalactico', () => {
       const base = heliocentricaEclipticaUAParaBaseGalactocentricaPc(posAU);
       // O Sol na base do projeto é (8150, 0, 5.5); a origem é o GC.
       const direcao = normalizar([
-        base[0] - RAIO_SOL_PC,
+        base[0] - R0_PC,
         base[1],
         base[2] - ALTURA_SOL_PC,
       ]);
-      const paraOrigem = normalizar([-RAIO_SOL_PC, 0, -ALTURA_SOL_PC]);
+      const paraOrigem = normalizar([-R0_PC, 0, -ALTURA_SOL_PC]);
       expect(dot(direcao, paraOrigem)).toBeGreaterThan(0.999999);
     });
   });
@@ -238,7 +238,7 @@ describe('frameGalactico', () => {
       // a ida é exata: o Sol é o (8150, 0, 5.5) dos binários. O y é −0
       // porque o sinal deliberado da casa (+Y → l = 270°) nega um zero —
       // e `toBe` usa Object.is, que separa os dois zeros.
-      expect(base[0]).toBe(RAIO_SOL_PC);
+      expect(base[0]).toBe(R0_PC);
       expect(base[1]).toBe(-0);
       expect(base[2]).toBe(ALTURA_SOL_PC);
 

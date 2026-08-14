@@ -8,7 +8,7 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
     // núcleo do Sol procedural vendorizado em JS (world/sol/) — transpila
-    // sem checagem profunda; o contrato tipado vive no wrapper novoSol.ts
+    // sem checagem profunda; o contrato tipado vive no wrapper stellarBody.ts
     "allowJs": true,
 
     "baseUrl": ".",
