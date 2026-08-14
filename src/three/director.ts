@@ -85,6 +85,7 @@ import { ArrastoDePonteiro } from './arrastoDePonteiro';
 import { RodaDaEscada } from './rodaDaEscada';
 import {
   AtlasRig,
+  orbitaMaisExterna,
   raioDeEnquadramentoEstelar,
   retanguloUtilDoAtlas,
 } from './cinematic/atlasRig';
@@ -1529,7 +1530,25 @@ export class Director {
     // um CORPO do sistema: enquadra pela ÓRBITA dele, que é o que o
     // AtlasRig já sabe fazer com a abertura
     if (best.key.startsWith(CHAVE_DE_CORPO)) {
-      this.focarNoCorpo(best.key.slice(CHAVE_DE_CORPO.length));
+      const id = best.key.slice(CHAVE_DE_CORPO.length);
+      // O GESTO DA DESCIDA NO SOL — o mesmo de todo corpo (D7: "clicar
+      // no MESMO corpo já focado desce um degrau"), traduzido para o
+      // único da casa cujo degrau de cima é a ABERTURA: a esfera do
+      // degrau `sistema` já é centrada no Sol, então quem clica no Sol
+      // estando em casa está clicando no alvo que já está em foco, e
+      // desce ao corpo dele. Clicar no Sol de QUALQUER outro degrau
+      // continua sendo voltar para casa, palavra por palavra.
+      //
+      // AQUI e não dentro de `focarNoCorpo` porque isto é GESTO: a
+      // porta `?foco=sol` também chama aquele método, e no boot ela
+      // chega com a abertura já na tela — dentro de lá as duas seriam
+      // indistinguíveis, e `?foco=sol` (sem `ver=`) passaria a cair no
+      // Sol em vez da casa, quebrando a baseline.
+      if (id === 'sun' && this.escada.degrau === 'sistema') {
+        this.focarNoCorpo('sun', 'corpo');
+        return;
+      }
+      this.focarNoCorpo(id);
       return;
     }
     if (best.key === 'sgr-a') {
@@ -1610,6 +1629,40 @@ export class Director {
   }
 
   /**
+   * A ESFERA DA CASA VIVA — raio e DIREÇÃO do enquadramento de
+   * abertura, lidos da efeméride no instante pedido. `null` quer dizer
+   * "sem fonte carregada", e aí quem chama cai no retrato congelado.
+   *
+   * Extraída de `focarNoSistema` (era o corpo dele, linha por linha)
+   * quando o degrau do CORPO DO SOL passou a precisar da MESMA direção:
+   * a descida casa→Sol é um DOLLY PURO no eixo em que o visitante já
+   * estava — só a distância muda —, e duas contas do "mais externo"
+   * seriam duas direções que divergiriam no primeiro salto de data.
+   */
+  private casaViva(): { raio: number; eixo: THREE.Vector3 } | null {
+    if (!this.efemeride) return null;
+    const jd = grampearJd(this.jdPedido);
+    let raioUA = 0;
+    const externo = { x: 0, y: 0, z: 0 };
+    for (const c of CORPOS_DO_SISTEMA) {
+      if (c.id === 'sun') continue;
+      const p = this.efemeride.posicaoHeliocentrica(c.id, jd);
+      const r = Math.hypot(p.x, p.y, p.z);
+      if (r > raioUA) {
+        raioUA = r;
+        externo.x = p.x;
+        externo.y = p.y;
+        externo.z = p.z;
+      }
+    }
+    const eq = eclipticaParaEquatorial([externo.x, externo.y, externo.z]);
+    return {
+      raio: raioUA * AU_PARA_PC,
+      eixo: new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC),
+    };
+  }
+
+  /**
    * O ENQUADRAMENTO DE ABERTURA: o sistema inteiro, visto de fora da
    * órbita mais externa. É a vista com que o Atlas abre, o destino do
    * clique no Sol e — desde a F2 — a ação da linha ESCALA do selo, que
@@ -1628,28 +1681,9 @@ export class Director {
    * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
-    const jd = grampearJd(this.jdPedido);
-    if (this.efemeride) {
-      let raioUA = 0;
-      const externo = { x: 0, y: 0, z: 0 };
-      for (const c of CORPOS_DO_SISTEMA) {
-        if (c.id === 'sun') continue;
-        const p = this.efemeride.posicaoHeliocentrica(c.id, jd);
-        const r = Math.hypot(p.x, p.y, p.z);
-        if (r > raioUA) {
-          raioUA = r;
-          externo.x = p.x;
-          externo.y = p.y;
-          externo.z = p.z;
-        }
-      }
-      const eq = eclipticaParaEquatorial([externo.x, externo.y, externo.z]);
-      this.atlas.focar(
-        ORIGEM,
-        raioUA * AU_PARA_PC,
-        new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC),
-        { rampa: this.rampaDaEscada() }
-      );
+    const casa = this.casaViva();
+    if (casa) {
+      this.atlas.focar(ORIGEM, casa.raio, casa.eixo, { rampa: this.rampaDaEscada() });
     } else {
       this.atlas.focarNoSistema();
     }
@@ -1727,14 +1761,26 @@ export class Director {
    * clicou num rótulo clicou onde o ponto está DESENHADO, inclusive
    * depois de um salto de data.
    *
-   * O Sol é o caso especial e cai na abertura: enquadrar "a órbita do
-   * Sol" seria enquadrar uma esfera de raio zero, e clicar no Sol dentro
-   * do Atlas sempre quis dizer voltar para casa.
+   * O SOL TEM OS DOIS DEGRAUS, e o `ver` é que decide qual — a escada
+   * o desviava ANTES de olhar o argumento, e era por isso que
+   * `?foco=sol&ver=corpo` não existia:
+   *
+   *  · `orbita` (o default) continua sendo a ABERTURA, palavra por
+   *    palavra do que esta docstring já dizia: enquadrar "a órbita do
+   *    Sol" seria enquadrar uma esfera de raio zero, e clicar no Sol de
+   *    dentro do Atlas sempre quis dizer voltar para casa. O contrato
+   *    de `?foco=sol` não muda um bit.
+   *  · `corpo` desce ao CORPO do Sol. O raciocínio da esfera de raio
+   *    zero valia para a órbita e não vale para o corpo: o Sol TEM raio
+   *    físico na cena desde a onda do Sol real (`RAIO_DO_SOL_NA_CENA`),
+   *    é o corpo mais bonito da casa, e era o único que a escada
+   *    recusava — o visitante não tinha caminho NENHUM até ele.
    */
   focarNoCorpo(id: string, ver: VerDaEscada = 'orbita') {
     if (this.phase !== 'atlas') return;
     if (id === 'sun') {
-      this.focarNoSistema();
+      if (ver === 'corpo') this.aproximarDoSol();
+      else this.focarNoSistema();
       return;
     }
     // A LUA e as luas da F3 vão direto ao degrau delas (D7): escolher
@@ -1865,6 +1911,57 @@ export class Director {
     this.teletransportou();
   }
 
+  /**
+   * O DEGRAU "CORPO" DO SOL — o último corpo da casa a ganhar escada, e
+   * o que o dono reclama desde a primeira mensagem ("não vi o Sol
+   * procedural"): o Atlas o desviava para 226,84 UA, onde o Sol não tem
+   * corpo desenhado (o portão de 4 px desarma em 7,19 UA) nem clarão de
+   * estrela (só começa em 0,02 pc), e o que sobrava era um ponto sem
+   * teto que o bloom espalhava.
+   *
+   * O CENTRO é a ORIGEM — o Sol não tem efeméride que o mova, ele É o
+   * centro do frame heliocêntrico —, e o RAIO é `this.solRaioPc`, a
+   * fonte única do tamanho do Sol depois da construção (a MESMA que o
+   * palco e o portão de 4 px leem). Nenhum literal de distância nasce
+   * aqui: a lente é que decide, pelo `d = r·1,2/sen(θ/2)` de todo
+   * enquadramento privilegiado. O número que sai é **6,40 raios
+   * solares — 4,46 milhões de km**, e ele é conferível: é a mesma conta
+   * que põe a abertura a 226,84 UA. Não foi ajustado à mão, e vizinha
+   * de perto o lugar de onde o FILME já filma o Sol (5,74 raios
+   * solares, 4,00 milhões de km), que é a prova medida de que a
+   * composição aguenta esta distância.
+   *
+   * A DIREÇÃO é a MESMA da abertura (`casaViva`), e é decisão: descer
+   * de casa ao Sol vira um DOLLY PURO — a rampa entre degraus só mexe
+   * na distância, e o visitante não é girado enquanto atravessa quatro
+   * ordens de grandeza.
+   *
+   * SEM `polo:`, e isto é honestidade e não esquecimento: a lei da
+   * Onda 7 é "polo do CORPO nos degraus corpo e lua" PORQUE ali o polo
+   * da câmera é o mesmo do modelo IAU que orienta a MALHA. A malha do
+   * Sol é a do corpo procedural transplantado — gira no Y da cena com
+   * a inclinação de 7,25° em Z (`stellarBody.ts`), não pelo
+   * `IAU_ORIENTATIONS.sun` —, então pedir o polo IAU aqui alinharia a
+   * câmera a um eixo que o Sol desenhado não tem. Fica a eclíptica, que
+   * é o alto de tela do degrau de onde se veio.
+   */
+  private aproximarDoSol() {
+    if (this.phase !== 'atlas') return;
+    this.atlas.focar(
+      ORIGEM,
+      this.solRaioPc,
+      this.casaViva()?.eixo ?? orbitaMaisExterna().posicao,
+      { rampa: this.rampaDaEscada() }
+    );
+    this.enquadrarAgora();
+    this.focoCorpoId = 'sun';
+    this.focoEstrela = false;
+    this.ver = 'corpo';
+    this.events.onFoco(CORPOS_DO_SISTEMA.find((c) => c.id === 'sun')?.nome ?? null);
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
   /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
   private escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
     const i = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
@@ -1972,6 +2069,20 @@ export class Director {
     }
     if (degrau === 'corpo') {
       const id = this.focoCorpoId ?? LUAS_DO_SISTEMA[0].pai;
+      // O SOL NÃO ANDA: ele É a origem do frame heliocêntrico, e o
+      // religador tem de dizer isso em vez de cair no ramo abaixo — que
+      // devolve a TERRA (e teleportaria a câmera para o globo dela no
+      // primeiro tique do relógio). O eixo segue o da casa pelo mesmo
+      // motivo do enquadramento: uma direção só para os dois degraus.
+      if (id === 'sun') {
+        return {
+          alvo: ORIGEM.clone(),
+          raio: this.solRaioPc,
+          eixoDe: this.casaViva()?.eixo ?? orbitaMaisExterna().posicao,
+          pai: null,
+          polo: null,
+        };
+      }
       const centro = paraPc(posicaoDaTerraUA(jd, this.efemeride));
       return {
         alvo: centro,
@@ -1991,29 +2102,14 @@ export class Director {
       return { alvo: ORIGEM, raio: pos.length(), eixoDe: pos, pai: null, polo: null };
     }
     // sistema: a esfera é centrada no Sol e o raio é a órbita mais
-    // externa VIVA — o mesmo caminho de `focarNoSistema`
-    if (!this.efemeride) return null;
-    let raioUA = 0;
-    const externo = { x: 0, y: 0, z: 0 };
-    for (const c of CORPOS_DO_SISTEMA) {
-      if (c.id === 'sun') continue;
-      const p = this.efemeride.posicaoHeliocentrica(c.id, jd);
-      const r = Math.hypot(p.x, p.y, p.z);
-      if (r > raioUA) {
-        raioUA = r;
-        externo.x = p.x;
-        externo.y = p.y;
-        externo.z = p.z;
-      }
-    }
-    if (raioUA === 0) return null;
-    return {
-      alvo: ORIGEM,
-      raio: raioUA * AU_PARA_PC,
-      eixoDe: paraPc(externo),
-      pai: null,
-      polo: null,
-    };
+    // externa VIVA — a MESMA conta de `focarNoSistema`, e agora
+    // literalmente a mesma função (`casaViva`): era este trecho
+    // redigitado, e duas cópias do "quem é o mais externo" divergiriam
+    // sem ninguém ver — a câmera religada iria para um lugar e o gesto
+    // para outro
+    const casa = this.casaViva();
+    if (!casa || casa.raio === 0) return null;
+    return { alvo: ORIGEM, raio: casa.raio, eixoDe: casa.eixo, pai: null, polo: null };
   }
 
   /** a posição DESENHADA de um corpo (o retrato, quando não há fonte) */
@@ -2098,6 +2194,16 @@ export class Director {
    *    roda.
    *  · `corpo` → a LUA dele, quando o corpo em foco é o pai de uma.
    *  · `lua` e `estrela` → não há degrau abaixo, e a roda cala.
+   *
+   * O CORPO DO SOL NÃO ENTRA NA DESCIDA, e a razão é que ele não é um
+   * degrau ABAIXO de `sistema`: é o outro ramo que sai dali. Este ramo
+   * já está gasto com a órbita da casa, e trocá-lo pelo Sol tiraria da
+   * roda o único caminho que ela tem até a Terra — a queixa que a
+   * Onda 7 consertou voltaria por outra porta. O corpo do Sol se
+   * alcança pelo gesto irmão, o clique no Sol estando em casa
+   * (`tryVisit`), e por `?foco=sol&ver=corpo`; a SUBIDA, essa sim,
+   * atravessa a roda: do corpo do Sol a roda para cima volta à casa
+   * pelo `subirDegrau` de sempre.
    */
   descerDegrau(): boolean {
     if (this.phase !== 'atlas') return false;
@@ -2132,7 +2238,12 @@ export class Director {
     const { degrau } = this.escada;
     if (degrau === 'sistema') this.focarNoSistema();
     else if (degrau === 'lua') this.focarNaLua(this.focoCorpoId ?? 'moon');
-    else if (degrau === 'corpo') this.aproximarDoCorpo();
+    // o corpo do SOL tem método próprio (`aproximarDoCorpo` só conhece
+    // os corpos com mesh de planeta e sairia sem fazer nada)
+    else if (degrau === 'corpo') {
+      if (this.focoCorpoId === 'sun') this.aproximarDoSol();
+      else this.aproximarDoCorpo();
+    }
     else if (this.focoCorpoId) {
       // órbita: reaplica SEM passar pelo gesto de descida (focarNoCorpo
       // no MESMO corpo desceria a escada — aqui é correção, não gesto)

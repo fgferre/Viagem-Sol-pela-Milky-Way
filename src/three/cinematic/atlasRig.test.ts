@@ -30,6 +30,7 @@ import {
   retanguloUtilDoAtlas,
 } from './atlasRig';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
+import { RAIO_DO_SOL_NA_CENA, RAIO_SOL_KM, RAIO_SOL_PC } from '../escala';
 import { EPOCA_JD_TDB, RETRATO_2026 } from '../world/planetas/retrato2026';
 import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
@@ -1110,5 +1111,179 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
     expect(rig.animando).toBe(false);
     rig.focar(alvo, 1e-7, alvo, { rampa: true });
     expect(rig.animando).toBe(false);
+  });
+});
+
+// ============================================================
+// O DEGRAU DO CORPO DO SOL — a escada do Atlas recusava exatamente um
+// corpo, e era o da casa: `focarNoCorpo` desviava o Sol para a abertura
+// ANTES de olhar o `ver`, então `?foco=sol&ver=corpo` não existia e o
+// visitante não tinha caminho NENHUM até o Sol procedural. A 226,84 UA
+// ele não tem corpo desenhado (o portão de 4 px desarma em 7,19 UA) nem
+// clarão de estrela (só começa em 0,02 pc): o que sobra é um ponto que
+// o bloom espalha — a mancha branca da queixa do dono.
+// ============================================================
+describe('o degrau do CORPO DO SOL', () => {
+  it('a distância NÃO é número novo: é o mesmo fator de enquadramento da abertura', () => {
+    // a lei é `d = r·1,2/sen(θ/2)`, e ela não sabe de que corpo se
+    // trata — o Sol entra nela pelo raio FÍSICO e sai a 6,40 raios
+    // solares. Se alguém trocar isto por um literal "bonito", a razão
+    // deixa de bater com a da abertura e este trilho quebra.
+    const pedido = (rAlvo: number) =>
+      enquadrar({
+        rAlvo,
+        fovDeg: ATLAS_FOV_GRAUS,
+        aspect: 1,
+        retanguloUtil: retanguloUtilDoAtlas(),
+      }).distancia;
+    const fatorSol = pedido(RAIO_DO_SOL_NA_CENA) / RAIO_DO_SOL_NA_CENA;
+    const casa = orbitaMaisExterna();
+    expect(fatorSol).toBeCloseTo(pedido(casa.raio) / casa.raio, 12);
+    // MEDIDO: 6,4042 raios solares = 4,459 milhões de km. Vizinho de
+    // perto do lugar de onde o FILME já filma o Sol (5,74 raios,
+    // 4,00 milhões de km, a vista `sol` do gate de md5) — a prova
+    // medida de que a composição aguenta esta distância.
+    expect(fatorSol).toBeCloseTo(6.4042, 4);
+    const km = (pedido(RAIO_DO_SOL_NA_CENA) / RAIO_SOL_PC) * RAIO_SOL_KM;
+    expect(km / 1e6).toBeCloseTo(4.459, 3);
+    // e o Sol INTEIRO cabe no que sobra do quadro: a margem de 1,2 é
+    // folga, não corte — 18,0° de disco dentro do retângulo útil
+    expect((2 * Math.asin(1 / fatorSol)) / GRAU).toBeCloseTo(17.97, 2);
+  });
+
+  it('descer da casa ao Sol é DOLLY PURO: a direção não se mexe um bit', () => {
+    // é o que compra o eixo da abertura para o degrau do corpo: a rampa
+    // atravessa quatro ordens de grandeza sem girar o visitante
+    const camera = new THREE.PerspectiveCamera(112, 1.6, 1e-12, 100);
+    const rig = new AtlasRig();
+    const casa = orbitaMaisExterna();
+    rig.focarNoSistema();
+    rig.apply(camera);
+    const deCasa = camera.position.clone().normalize();
+    const distCasa = camera.position.length();
+    // o degrau do corpo: MESMO alvo (a origem), MESMO eixo, raio do Sol
+    rig.focar(new THREE.Vector3(0, 0, 0), RAIO_DO_SOL_NA_CENA, casa.posicao);
+    rig.apply(camera);
+    expect(camera.position.clone().normalize().distanceTo(deCasa)).toBeLessThan(1e-12);
+    // só a distância muda — e muda 7.612× (226,84 UA → 0,0298 UA)
+    expect(distCasa / camera.position.length()).toBeCloseTo(7609, -1);
+    expect(camera.position.length() / RAIO_DO_SOL_NA_CENA).toBeCloseTo(6.4042, 4);
+  });
+
+  it('o Director lê o `ver` ANTES de desviar o Sol — e só o `corpo` desce', () => {
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const corpo = DIRECTOR.slice(
+      DIRECTOR.indexOf('  focarNoCorpo(id: string'),
+      DIRECTOR.indexOf('  private poloDoCorpo(')
+    );
+    const ramo = corpo.slice(corpo.indexOf("if (id === 'sun')"));
+    // o desvio deixou de ser incondicional: `corpo` desce, `orbita`
+    // (o default, e a semântica de sempre de `?foco=sol`) volta para casa
+    expect(ramo).toContain("if (ver === 'corpo') this.aproximarDoSol();");
+    expect(ramo).toContain('else this.focarNoSistema();');
+  });
+
+  it('o enquadramento do Sol sai do raio ÚNICO, sem literal de distância e sem polo', () => {
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const metodo = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private aproximarDoSol() {'),
+      DIRECTOR.indexOf('  private escreverPosicaoDeLua(')
+    );
+    expect(metodo).toContain('this.atlas.focar(');
+    // o raio é a fonte única do tamanho do Sol (a MESMA que o palco e o
+    // portão de 4 px leem), e o centro é a origem do frame heliocêntrico
+    expect(metodo).toContain('this.solRaioPc');
+    expect(metodo).toContain('ORIGEM,');
+    // NENHUM número escolhido a olho: quem decide a distância é a lente
+    expect(metodo).not.toMatch(/\d\.\d*e-\d|\d{3,}/);
+    // e SEM polo do corpo: a malha do Sol é a do corpo procedural
+    // transplantado (Y da cena + 7,25° em Z), não a do modelo IAU —
+    // pedir o polo IAU aqui alinharia a câmera a um eixo que o Sol
+    // desenhado não tem (a lei da Onda 7 vale onde câmera e malha leem
+    // a MESMA fonte)
+    expect(metodo).not.toContain('polo:');
+    // o eixo é o da CASA, e é o que faz a descida ser um dolly puro
+    expect(metodo).toContain('this.casaViva()?.eixo');
+  });
+
+  it('o degrau é alcançável por GESTO: clicar no Sol estando em casa desce', () => {
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const visita = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private tryVisit('),
+      DIRECTOR.indexOf('  get nomeadas()')
+    );
+    // o gesto irmão do "clicar no MESMO corpo já focado desce um degrau"
+    // (D7), no único corpo cujo degrau de cima é a ABERTURA
+    expect(visita).toContain("if (id === 'sun' && this.escada.degrau === 'sistema')");
+    expect(visita).toContain("this.focarNoCorpo('sun', 'corpo');");
+    // ...e de QUALQUER outro degrau o clique no Sol continua sendo
+    // voltar para casa, pelo caminho de sempre
+    expect(visita).toContain('this.focarNoCorpo(id);');
+    // o gesto mora AQUI e não dentro de `focarNoCorpo`: a porta
+    // `?foco=sol` também chama aquele método e chega com a abertura já
+    // na tela — lá dentro as duas seriam indistinguíveis, e `?foco=sol`
+    // (sem `ver=`) passaria a cair no Sol em vez da casa
+    const foco = DIRECTOR.slice(
+      DIRECTOR.indexOf('  focarNoCorpo(id: string'),
+      DIRECTOR.indexOf('  private poloDoCorpo(')
+    );
+    expect(foco).not.toContain("degrau === 'sistema'");
+  });
+
+  it('o religador do relógio conhece o Sol — senão a câmera saltaria para a Terra', () => {
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const vivo = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private enquadreVivo()'),
+      DIRECTOR.indexOf('  private posicaoDesenhada(')
+    );
+    const ramo = vivo.slice(vivo.indexOf("if (degrau === 'corpo')"));
+    // o ramo do Sol vem ANTES do de sempre (que devolve a TERRA), e o
+    // Sol não anda: ele É a origem do frame heliocêntrico
+    expect(ramo.indexOf("id === 'sun'")).toBeGreaterThan(-1);
+    expect(ramo.indexOf("id === 'sun'")).toBeLessThan(ramo.indexOf('posicaoDaTerraUA'));
+    const doSol = ramo.slice(ramo.indexOf("if (id === 'sun')"));
+    expect(doSol).toContain('raio: this.solRaioPc,');
+    expect(doSol).toContain('alvo: ORIGEM.clone(),');
+    // e a efeméride que chega tarde reaplica o degrau do Sol pelo método
+    // dele — `aproximarDoCorpo` só conhece mesh de planeta e sairia sem
+    // fazer nada
+    const tarde = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private reenquadrarAposEfemeride()'),
+      DIRECTOR.indexOf('  get corpos()')
+    );
+    expect(tarde).toContain("if (this.focoCorpoId === 'sun') this.aproximarDoSol();");
+  });
+
+  it('a SUBIDA sai do Sol pela escada de sempre, e a roda não perde a Terra', () => {
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    // do degrau `corpo` a subida chama `focarNoCorpo(foco, 'orbita')`, e
+    // para o Sol isso é a abertura — nenhum ramo novo precisou nascer
+    const sobe = DIRECTOR.slice(
+      DIRECTOR.indexOf('  subirDegrau(): boolean {'),
+      DIRECTOR.indexOf('  descerDegrau(): boolean {')
+    );
+    expect(sobe).toContain("this.focarNoCorpo(this.focoCorpoId!, 'orbita');");
+    // e a DESCIDA da roda continua indo do sistema à órbita da casa: o
+    // corpo do Sol não é um degrau abaixo do sistema, é o outro ramo que
+    // sai dali — trocar este ramo tiraria da roda o único caminho até a
+    // Terra, que é a queixa que a Onda 7 consertou
+    const desce = DIRECTOR.slice(
+      DIRECTOR.indexOf('  descerDegrau(): boolean {'),
+      DIRECTOR.indexOf('  private reenquadrarAposEfemeride()')
+    );
+    expect(desce).toContain("this.focarNoCorpo(paiDaLua, 'orbita');");
+    expect(desce).not.toContain("'sun'");
+  });
+
+  it('a abertura e o corpo do Sol leem UMA conta do "mais externo"', () => {
+    // duas contas seriam duas direções, e elas divergiriam no primeiro
+    // salto de data — a descida deixaria de ser dolly puro sem aviso
+    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    expect(DIRECTOR.split('posicaoHeliocentrica(c.id, jd)').length - 1).toBe(1);
+    const abertura = DIRECTOR.slice(
+      DIRECTOR.indexOf('  focarNoSistema() {'),
+      DIRECTOR.indexOf('  private rampaDaEscada()')
+    );
+    expect(abertura).toContain('const casa = this.casaViva();');
   });
 });
