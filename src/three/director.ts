@@ -7,6 +7,13 @@ import { Engine, modoDoToneMapping } from './core/engine';
 import type { QualityLevel } from './core/engine';
 import type { EstadoDaVista } from './selo';
 import { Post } from './core/post';
+import {
+  Pupila,
+  ganhoDaPupila,
+  picoDaPsf,
+  deslocamentoDeExpoM0,
+  lerPortaDaPupila,
+} from './core/pupila';
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { StellarBody, SOL_PARAMS } from './world/stellarBody';
@@ -365,6 +372,19 @@ export class Director {
    * `teletransportou()` e consumido por UM tick.
    */
   private saltoDeCamera = false;
+  /**
+   * A PUPILA (Onda 8) — a auto-exposição viva. A lei e a adaptação moram em
+   * `core/pupila.ts` (puras, testadas); o que fica aqui é o estado e os dois
+   * rascunhos que a medição por quadro reusa para não alocar no tick.
+   * `paramsDaPupila` nulo = `?pupila=0`, a pupila desligada de propósito.
+   */
+  private readonly pupila = new Pupila();
+  private readonly paramsDaPupila = lerPortaDaPupila(
+    new URLSearchParams(window.location.search).get('pupila')
+  );
+  private readonly frustumDaPupila = new THREE.Frustum();
+  private readonly matrizDaPupila = new THREE.Matrix4();
+  private readonly pontoDaPupila = new THREE.Vector3();
   /**
    * O DEGRAU DA ESCADA (F2b/D7): `orbita` é a semântica de sempre do
    * `?foco=`; `corpo` é o alvo com raio físico. O degrau "lua" não é um
@@ -2847,6 +2867,11 @@ export class Director {
       gradacao: this.claraoDoQuadro,
       luz: this.politicaDeLuz,
       evLuzDoFoco: this.evLuzDoFoco(),
+      // o valor VIVO da pupila, do último quadro. Ao contrário da `gradacao`
+      // (que é um getter puro da distância, e por isso o selo pode recalcular),
+      // este é ESTADO com adaptação no tempo: não há como o selo redescobri-lo
+      // sem repetir a integração. Ler o estado é o único caminho honesto.
+      stopsDaPupila: this.pupila.stopsAplicados,
     };
   }
 
@@ -3374,6 +3399,14 @@ export class Director {
       this.heroes.group.visible = !this.hide.has('nohero') && dHome < 1200;
     }
     this.heroes?.update(time, cam.position, tanHalfFov);
+    // A PUPILA (Onda 8) ENTRA AQUI, e o lugar é obrigação, não conveniência:
+    // depois do `heroes.update` (que publica `camDistPc`, insumo da medição) e
+    // ANTES do `writeHeroFades`, que prevê em JS o tamanho do ponto do catálogo
+    // com `stars.expoM0`. Escrever a pupila depois faria a política de
+    // dominância decidir com a exposição do quadro ANTERIOR — um quadro de
+    // atraso entre o que a casa prevê e o que a GPU desenha, que é exatamente a
+    // divergência que a publicação de `expoM0` existe para impedir.
+    this.aplicarPupila(cam, dHome, hPx, dt);
     this.writeHeroFades(hPx, tanHalfFov);
     // `solArmado` entra AQUI, junto do `?nosun`, e não dentro do
     // `StellarBody`: o corpo não conhece a tela (não tem altura de buffer
@@ -3702,6 +3735,109 @@ export class Director {
    * para dentro. As cinco viraram BASELINE nova na fase 4a. Custo: 16
    * comparações por quadro; a escrita é no-op enquanto nada muda (C2).
    */
+  /**
+   * A PUPILA (Onda 8) — o FIO. A lei mora em `core/pupila.ts`, pura e testada;
+   * aqui fica só o que precisa da cena: QUAIS fontes estão em quadro e qual
+   * delas manda.
+   *
+   * O QUE ELA MEDE, e por que não é a média do quadro: o pico da PSF da fonte
+   * pontual mais brilhante EM QUADRO. Fonte pontual concentra fluxo colossal em
+   * poucos pixels — a 40 UA o Sol dá média de cena ~963 e pico ~2,5e8 —, então
+   * expor pela média deixaria o pico em milhares e a tela continuaria lavada.
+   * Quem lava é o pico.
+   *
+   * MEDE COM A BASE, NUNCA COM O EFETIVO. `expoM0Base` e não `expoM0`: medir
+   * com o valor que a própria pupila acabou de escrever fecharia a malha sobre
+   * si mesma e o ganho fugiria em espiral a cada quadro. É o mesmo cuidado que
+   * o mapa da casa cobra dos 5 mips do bloom, que são pós-limiar e por isso não
+   * servem de medidor.
+   *
+   * O FRUSTUM É PARTE DA LEI, não otimização: fonte fora de quadro não é
+   * desenhada, logo não lava nada, logo não pode fechar a pupila. Sem este
+   * teste, virar a câmera para o lado escuro continuaria com o céu apagado
+   * porque o Sol "ainda existe" atrás da nuca.
+   *
+   * O LIMITE DESTA MEDIÇÃO, declarado porque é dívida e não desenho: as
+   * candidatas são o Sol e as 16 heroes. As 328.749 do catálogo NÃO entram —
+   * varrer o catálogo por quadro para achar a mais brilhante custaria a
+   * travessia inteira, e nenhuma delas foi medida estourando o quadro (o pico
+   * do Sol a 1 UA é 4e11; o de Betelgeuse a 8 pc é 9e2). O dia em que o motor
+   * estelar der corpo a uma estrela do catálogo, esta lista é o que cresce.
+   */
+  private aplicarPupila(
+    cam: THREE.PerspectiveCamera,
+    dHome: number,
+    screenH: number,
+    dtS: number
+  ) {
+    const stars = this.stars;
+    if (!stars) return;
+    if (!this.paramsDaPupila) {
+      // `?pupila=0`: desligada de propósito. O A/B do item 3 se faz com o
+      // MESMO binário dos dois lados, no molde do `?dom=`/`?nodom=`.
+      stars.setPupila(0);
+      this.planetas?.escreverExposicao(stars.expoM0);
+      this.wrappedStars?.escreverExposicao(stars.expoM0);
+      this.heroes?.escreverExposicao(1);
+      this.sunStar.escreverExposicao(1);
+      return;
+    }
+    this.frustumDaPupila.setFromProjectionMatrix(
+      this.matrizDaPupila.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
+    );
+    let pico = 0;
+    // 1. O SOL-PONTO. Só conta quando a camada dos dez corpos de fato o
+    //    desenha: acima de 0,05 pc ela some, e ali quem desenha o Sol é o
+    //    clarão do `SunStar`, que não é PSF e não entra nesta conta.
+    if (this.planetas?.points.visible && this.frustumDaPupila.containsPoint(ORIGEM)) {
+      pico = picoDaPsf(
+        // fase 1: o Sol é o ILUMINANTE, não tem fase — o mesmo argumento
+        // que a cessão por dominância já passa aqui ao lado
+        magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1),
+        stars.expoM0Base,
+        stars.sigmaPx,
+        screenH
+      );
+    }
+    // 2. AS 16 HEROES, pela lei do catálogo. A magnitude aparente da câmera sai
+    //    da de casa sem precisar de `logLum`: as duas diferem só pelo termo de
+    //    distância, `m(d) = m_casa + 5·log10(d / d_casa)`.
+    const heroes = this.heroes;
+    if (heroes?.group.visible) {
+      for (let i = 0; i < heroes.chosen.length; i++) {
+        const s = heroes.chosen[i];
+        const dCam = heroes.camDistPc[i];
+        if (!(dCam > 0) || !Number.isFinite(dCam) || !(s.d > 0)) continue;
+        this.pontoDaPupila.set(s.x, s.y, s.z);
+        if (!this.frustumDaPupila.containsPoint(this.pontoDaPupila)) continue;
+        const m = s.m + 5 * Math.log10(dCam / s.d);
+        const p = picoDaPsf(m, stars.expoM0Base, stars.sigmaPx, screenH);
+        if (p > pico) pico = p;
+      }
+    }
+    const alvo = ganhoDaPupila(pico, this.paramsDaPupila);
+    // SALTA SOB CAPTURA. Sob `?shot=` o relógio visual é 0 e a cena assenta;
+    // uma adaptação com constante de tempo continuaria andando depois disso e
+    // toda captura viraria loteria. Saltando, o gate mede a MESMA exposição que
+    // o espectador vê parado. É o oposto do que o irmão fez (lá a pupila tem
+    // efeito zero sob captura, e o registro da casa já sentenciou: "se a Onda 8
+    // nascer assim, nenhum juiz olha para ela").
+    // O salto de câmera também reabre e re-salta: teletransporte não é mudança
+    // de luz, é cena nova.
+    const ganho = this.pupila.passo(alvo, dtS, this.shotMode || this.saltoDeCamera);
+    stars.setPupila(deslocamentoDeExpoM0(ganho));
+    // as outras duas camadas de PSF copiam o efetivo — a cadeia de exposição da
+    // casa é uma só, e é o campo quem a publica
+    this.planetas?.escreverExposicao(stars.expoM0);
+    this.wrappedStars?.escreverExposicao(stars.expoM0);
+    // e os clarões de billboard, que NÃO passam pela PSF e por isso não são
+    // alcançados pelo deslocamento de `expoM0`. Sem esta linha a pupila
+    // deixaria de ser exposição de CENA e viraria teto sobre a fonte pontual:
+    // medido a 3,6 UA, o Sol (m −23,8) saindo mais fraco que α Centauri (m 0,0).
+    this.heroes?.escreverExposicao(ganho);
+    this.sunStar.escreverExposicao(ganho);
+  }
+
   private writeHeroFades(screenH: number, tanHalfFov: number) {
     const stars = this.stars;
     const heroes = this.heroes;

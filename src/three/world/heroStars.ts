@@ -43,6 +43,15 @@ uniform float uCore;
 // clarão do tamanho certo, subindo em BRILHO, lê como o disco
 // estourando de luz. 1,0 nos heróis.
 uniform float uGain;
+// A PUPILA (Onda 8). O clarão é billboard e NÃO passa pela PSF, então o
+// deslocamento de expoM0 que expõe o campo de catálogo não chega aqui — e
+// sem esta linha a pupila deixaria de ser pupila: fechá-la escureceria as
+// fontes pontuais e deixaria os 16 clarões acesos, o que é um TETO sobre uma
+// fonte só, não uma exposição de cena. Medido antes de existir: a 3,6 UA o Sol
+// (m −23,8) saía MAIS FRACO que α Centauri (m 0,0) na mesma tela — "bonito e
+// mentiroso", exatamente o que o NORTE proíbe. 1,0 = pupila aberta, neutro
+// EXATO (x·1 === x).
+uniform float uExposicao;
 
 varying vec2 vUv;
 
@@ -73,7 +82,11 @@ void main() {
   vec3 col = (vec3(1.0, 0.98, 0.95) * core + uColor * (glow + spikes)) * tw;
   float a = clamp(core + glow + spikes, 0.0, 1.0);
 
-  gl_FragColor = vec4(col * nearFade * farFade * uGain, a * nearFade * farFade * uGain);
+  // a exposição multiplica a COR e não o alfa: fechar a pupila escurece a
+  // fonte, não a dissolve. Mexer no alfa mudaria a forma do clarão (o quanto
+  // ele cobre) em vez do brilho dele, que é o que uma pupila faz.
+  gl_FragColor = vec4(col * nearFade * farFade * uGain * uExposicao,
+                      a * nearFade * farFade * uGain);
 }
 `;
 
@@ -153,6 +166,7 @@ export class HeroStars {
           uCamDist: { value: 100 },
           uCore: { value: 1 },
           uGain: { value: 1 },
+          uExposicao: { value: 1 },
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -189,6 +203,16 @@ export class HeroStars {
     }
   }
 
+  /**
+   * A PUPILA (Onda 8) do lado dos 16 clarões. Um número só para os 16: a
+   * exposição é da CENA, não da fonte — dar um ganho por hero seria voltar a
+   * ter teto por fonte, que é o que esta linha existe para não ser.
+   */
+  escreverExposicao(g: number) {
+    const v = Number.isFinite(g) && g > 0 ? g : 1;
+    for (const m of this.mats) m.uniforms.uExposicao.value = v;
+  }
+
   dispose() {
     this.mats.forEach((m) => m.dispose());
     this.group.traverse((o) => {
@@ -222,6 +246,7 @@ export class SunStar {
         uCamDist: { value: 100 },
         uCore: { value: 0 },
         uGain: { value: 0 },
+        uExposicao: { value: 1 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -265,6 +290,11 @@ export class SunStar {
     // ponto no meio de 0,05 a 0,30 pc — justamente onde ele já é, para
     // todos os efeitos, uma estrela do catálogo.
     u.uCore.value = gate;
+  }
+
+  /** A pupila, no clarão do Sol — a MESMA da cena (ver `HeroStars`). */
+  escreverExposicao(g: number) {
+    this.mat.uniforms.uExposicao.value = Number.isFinite(g) && g > 0 ? g : 1;
   }
 
   dispose() {

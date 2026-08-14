@@ -30,9 +30,25 @@ export class StarField {
   /** `uExpoM0` e `uSigmaPx` publicados: a política de dominância
    *  (lodStellar seção 5) precisa da MESMA PSF que a GPU vai desenhar, e
    *  redigitar 3,5/0,85 no consumidor seria comprar o defeito que a
-   *  fase 2 desfez nas rampas do Sol. */
-  readonly expoM0: number;
+   *  fase 2 desfez nas rampas do Sol.
+   *
+   *  DESDE A PUPILA (Onda 8) `expoM0` DEIXOU DE SER CONSTANTE, e é de
+   *  propósito que ele continua sendo UM número lido do mesmo lugar: a
+   *  auto-exposição é um deslocamento deste valor (`pupila.ts`), e o
+   *  publicado tem de ser o EFETIVO — o que a GPU vai usar neste quadro.
+   *  Publicar a base deixaria a política de dominância prevendo um pixel
+   *  que não é o desenhado, que é exatamente a divergência silenciosa que
+   *  a publicação existe para impedir. */
+  readonly expoM0Base: number;
   readonly sigmaPx: number;
+  private deslocamentoDaPupila = 0;
+
+  /** o "tempo de exposição" DESTE quadro: base + pupila. */
+  get expoM0(): number {
+    // `+ 0` é o mesmo bit: com a pupila aberta (deslocamento 0 exato) o
+    // campo desenha exatamente o que desenhava antes de ela existir.
+    return this.expoM0Base + this.deslocamentoDaPupila;
+  }
 
   // Os dois canais por estrela (Onda 3, fase 3 — ver STAR_VERT).
   // Float32Array(n) cada: 1,3 MB de RAM/GPU por canal em 328.749
@@ -79,7 +95,7 @@ export class StarField {
     });
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 6000);
 
-    this.expoM0 = opts.expoM0 ?? 3.5;
+    this.expoM0Base = opts.expoM0 ?? 3.5;
     this.sigmaPx = opts.sigmaPx ?? 0.85;
     this.material = new THREE.ShaderMaterial({
       vertexShader: STAR_VERT,
@@ -113,6 +129,25 @@ export class StarField {
   setFade(f: number) {
     this.material.uniforms.uFade.value = f;
     this.points.visible = f > 0.001;
+  }
+
+  /**
+   * O ATUADOR DA PUPILA (Onda 8): o deslocamento de `expoM0` que realiza o
+   * ganho da auto-exposição. Escrito pelo Director a cada quadro.
+   *
+   * Entra AQUI e não num passe de pós por medição, não por gosto: os render
+   * targets do composer são half-float e saturam em 65.504, e o ponto do Sol a
+   * 1 UA deposita ~4e11 — ele já chega ao buffer como infinito, e ganho
+   * aplicado depois multiplica infinito. A razão inteira está em `pupila.ts`.
+   *
+   * Escrita idempotente, no mesmo espírito do C2 da Onda 3: com a pupila aberta
+   * o deslocamento é 0 EXATO todo quadro, e o uniform não é reescrito.
+   */
+  setPupila(deslocamento: number) {
+    const d = Number.isFinite(deslocamento) ? deslocamento : 0;
+    if (d === this.deslocamentoDaPupila) return;
+    this.deslocamentoDaPupila = d;
+    this.material.uniforms.uExpoM0.value = this.expoM0;
   }
 
   // ------------------------------------------------------------

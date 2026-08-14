@@ -560,6 +560,23 @@ export class WrappedStars {
     this.points.visible = fade > 0.001;
   }
 
+  /**
+   * A PUPILA (Onda 8): o `expoM0` EFETIVO do quadro. As cascas dizem de si
+   * mesmas, no construtor, que são "a mesma exposição/instrumento do campo HYG
+   * — uma cadeia"; a auto-exposição não quebra essa cadeia, só a faz andar. Se
+   * as cascas ficassem na exposição de fábrica enquanto o campo fecha, o céu
+   * profundo continuaria aceso com o resto da cena escurecendo — a costura
+   * apareceria como um degrau de luz entre catálogo e casca.
+   *
+   * Idempotente: pupila aberta não reescreve uniform nenhum.
+   */
+  escreverExposicao(expoM0: number) {
+    if (!Number.isFinite(expoM0)) return;
+    const u = this.material.uniforms;
+    if (u.uExpoM0.value === expoM0) return;
+    u.uExpoM0.value = expoM0;
+  }
+
   dispose() {
     this.points.geometry.dispose();
     this.material.dispose();

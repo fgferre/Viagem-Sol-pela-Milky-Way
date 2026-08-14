@@ -174,7 +174,36 @@ do Sol está certa; o brilho por cima é que está solto.**
 DEPOIS do borrão, então mexer nela hoje não desfaz nada (medido no próprio
 repositório: `?exp=0,12` ainda devolve luz média 0,75, `atlasConfig.ts:293-297`).
 A pupila tem de entrar ANTES do borrão — que é, aliás, a ordem física: o diafragma
-vem antes da lente espalhar.
+vem antes da lente espalhar. **E mais fundo ainda:** as telas intermediárias
+guardam número até 65.504, e o ponto do Sol a 1 UA deposita 400 bilhões — ele já
+chega ao buffer como *infinito*. Nada que venha depois consegue desfazer infinito.
+Por isso a pupila entra DENTRO do desenho de cada fonte, não num passe no fim.
+
+---
+
+**A PUPILA ESTÁ CONSTRUÍDA, MEDIDA E DESLIGADA (2026-08-14).** Ligando com
+`?pupila=1`, a faixa branca ACABA — de 100% do quadro lavado para 0,2%, em toda a
+escada. Mesmo assim ela nasce desligada, e a razão é uma medição, não cautela:
+
+> **Ligada, o Sol fica MAIS ESCURO quando a câmera se aproxima.** A 3,6 UA ele é
+> uma bola branca com halo (quem o desenha é o ponto). A 1 UA a bola 3D "arma", e
+> como ela é opaca, TAPA o ponto — e o que sobra é um disco laranja de 7,6 px,
+> sem clarão nenhum. Chegar mais perto escurece.
+
+Isso é um **passo para trás na luz**, que é a regra que esta casa provou e cobrou
+por três ondas. Trocar a tela branca por isso seria trocar um defeito por outro.
+
+**A causa tem número, e é o achado desta rodada:** as duas maneiras de desenhar o
+Sol estão em escalas de brilho diferentes — a bola 3D foi pintada numa escala em
+que "branco" vale ~1, e a lei do ponto deposita ~28 bilhões para a MESMA
+superfície. **São cerca de 26 magnitudes de diferença** (uns 35 passos de luz).
+Enquanto isso não for reconciliado, a troca bola↔ponto tem degrau por construção,
+e nenhuma calibração de exposição fecha esse buraco.
+
+**Então o que destrava o item 3 não é mais a pupila — é pôr a bola 3D na escala
+fotométrica da casa.** A pupila fica montada, testada e a um parâmetro de
+distância (`?pupila=1`, ou `?pupila=alvo,kappa` para varrer), com régua para
+julgá-la. Ver `src/three/core/pupila.ts`, cabeçalho.
 **O conserto é a AUTO-EXPOSIÇÃO — a pupila —, e teto de brilho é PROIBIDO por
 escrito.** Está no `NORTE.md` em dois lugares, com todas as letras: *"NÃO 'consertar'
 com teto de brilho — a auto-exposição da Onda 8 é o conserto"*

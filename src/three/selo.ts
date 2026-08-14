@@ -124,6 +124,20 @@ export function lerPortaLuz(bruto: string | null | undefined): PoliticaDeLuz | n
   return bruto === 'real' || bruto === 'assistida' ? bruto : null;
 }
 
+/** A copy leiga da pupila — o que o visitante lê quando ela está fechando. */
+export const COPY_PUPILA = 'a câmera fechou o diafragma para o Sol caber na tela';
+
+/**
+ * O rótulo VIVO da pupila: a copy mais os stops APLICADOS neste quadro.
+ * Número envenenado deixa o rótulo sem número — o selo nunca inventa uma
+ * medição que não fez (a mesma regra de `rotuloDaLuzAssistida`).
+ */
+export function rotuloDaPupila(stops: number): string {
+  if (!Number.isFinite(stops) || stops === 0) return COPY_PUPILA;
+  const passos = `${stops >= 0 ? '+' : '−'}${Math.abs(stops).toFixed(1).replace('.', ',')}`;
+  return `${COPY_PUPILA} — ${passos} passos de luz (a cena inteira)`;
+}
+
 /**
  * O DEGRAU DE ENQUADRAMENTO da escada (Onda 6 F2b, D7). `orbita` é o
  * default e a semântica ATUAL de `?foco=` (as baselines não mudam de
@@ -174,6 +188,17 @@ export interface EstadoDaVista {
    * corpo está em foco, e aí o rótulo fica sem número.
    */
   evLuzDoFoco: number | null;
+  /**
+   * OS STOPS QUE A PUPILA APLICOU no último quadro (Onda 8) — `log2` do ganho,
+   * negativo quando ela fecha, 0 EXATO quando está aberta.
+   *
+   * É VALOR VIVO e não a porta, pelo mesmo motivo de `gradacao`: o selo declara
+   * o que a tela mostrou, e a pupila fecha por conta própria conforme a fonte
+   * em quadro — a URL não sabe disso. E é NÚMERO e não booleano porque o §7.4
+   * do plano pede exatamente isto: "o selo passa a reportar o EV APLICADO, não
+   * uma etiqueta de política".
+   */
+  stopsDaPupila: number;
 }
 
 /** Dá para desfazer com um clique? */
@@ -360,6 +385,33 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     volta: 'vivo',
     desvia: (e) => e.luz === 'assistida',
     rotuloVivo: (e) => rotuloDaLuzAssistida(e.evLuzDoFoco),
+  },
+  /**
+   * A PUPILA (Onda 8) — a auto-exposição, no MESMO eixo BRILHO e no MESMO
+   * molde da luz assistida: linha de registro único, rótulo VIVO, volta com um
+   * clique. É o que o §7.4 do plano pede por escrito.
+   *
+   * DECLARA PELO VALOR APLICADO, NÃO PELA PORTA (`desvia` lê os stops, não
+   * `e.portas`), e a diferença é de honestidade: a pupila fecha sozinha quando
+   * uma fonte estouraria o quadro, sem ninguém pedir na URL. Declarar pela
+   * porta faria o selo calar exatamente nos quadros em que ela mais age — que
+   * é o defeito que o próprio registro existe para não ter.
+   *
+   * E POR ISSO `?pupila=0` NÃO É DESVIO: com ela desligada a imagem é a
+   * fotometria crua da casa, sem assistência nenhuma. É o caminho purista, e o
+   * selo não tem o que declarar — os stops são 0 e a linha não nasce. Quem
+   * tinha de estar declarado é o padrão LIGADO, e está.
+   *
+   * `volta: 'vivo'`: o tick recalcula a pupila todo quadro, então desligá-la
+   * aparece no quadro seguinte.
+   */
+  {
+    chave: 'pupila',
+    eixo: 'brilho',
+    rotulo: COPY_PUPILA,
+    volta: 'vivo',
+    desvia: (e) => Number.isFinite(e.stopsDaPupila) && e.stopsDaPupila !== 0,
+    rotuloVivo: (e) => rotuloDaPupila(e.stopsDaPupila),
   },
   {
     chave: 'q',

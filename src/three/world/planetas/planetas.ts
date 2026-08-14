@@ -639,6 +639,26 @@ export class Planetas {
     if (mudou) attr.needsUpdate = true;
   }
 
+  /**
+   * A PUPILA (Onda 8), do lado desta camada: o `expoM0` EFETIVO deste quadro.
+   *
+   * A camada nunca teve exposição própria — ela recebe a do campo por contrato
+   * ("a MESMA exposição do campo (StarField publica)", no comentário do VERT).
+   * A auto-exposição não muda esse contrato: ela muda o número que o campo
+   * publica, e a camada continua copiando. Se copiasse a BASE, o Sol-ponto
+   * seria a única fonte da casa fora da pupila — e ele é justamente a fonte
+   * que lava a tela.
+   *
+   * Escrita idempotente: com a pupila aberta o valor é o de sempre e o uniform
+   * não é reescrito.
+   */
+  escreverExposicao(expoM0: number) {
+    if (!Number.isFinite(expoM0)) return;
+    const u = this.material.uniforms;
+    if (u.uExpoM0.value === expoM0) return;
+    u.uExpoM0.value = expoM0;
+  }
+
   escreverCessao(id: string, cede: number): boolean {
     const i = (IDS_FOTOMETRIA as readonly string[]).indexOf(id);
     if (i < 0) return false;
