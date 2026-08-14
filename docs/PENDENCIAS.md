@@ -347,6 +347,46 @@ quadro. Detalhe em `LEI-DA-ESTRELA.md` §7.
 Item fica ABERTO até ele conferir no app limpo — a medição diz que hoje, sem a
 porta, nenhuma camada esmaece ao focar; mas quem julga o que ele viu é ele.
 
+**40. Dois Sóis com rótulo ao mesmo tempo na cena.**
+Palavras do dono, 2026-08-14:
+
+> *"percebi tb que existem 2 sois (com tags) simultaneos na cena. será que tem
+> mais outras duplciacoes? ou isso já está no pipeline para ser resovido?"*
+
+**NÃO CONSEGUI REPRODUZIR o RÓTULO dobrado, e isso está aqui como confissão, não
+como desmentido.** Varri a lista viva de rótulos (`director.lastLabels`) em três
+frentes e em nenhuma apareceu um segundo "Sol": na abertura do Atlas (38 rótulos,
+todos com nome único), no Atlas depois de enquadrar uma estrela (a 2,6 pc e a
+104 pc) e no filme inteiro, varrendo `t` de 0 a 24 s de meio em meio segundo — zero
+nomes repetidos em qualquer amostra. O Sol também **não está no catálogo de
+nomeadas**, então não há como ele ganhar rótulo por dois caminhos. **Falta saber
+ONDE ele viu** — em que tela, que distância, que modo.
+
+**O QUE EXISTE DE VERDADE, e foi confirmado na tela ao vivo:** o Sol é **desenhado
+duas vezes ao mesmo tempo** — a bola 3D e o ponto fotométrico da camada dos dez
+corpos, os dois ligados no mesmo quadro (`corpoDoSolVisivel: true` e
+`planetasVisivel: true`). Só não se vê como dois porque a bola é opaca e TAPA o
+ponto. É a dupla-luz nº 3 do censo, é a raiz do item 3, e é ela que faz o Sol
+escurecer ao se aproximar. **Já está no plano:** morre no passo E2 de
+`LEI-DA-ESTRELA.md` — o Sol sai da camada dos dez corpos, porque ele não é um
+planeta.
+
+**RESPONDENDO A PERGUNTA DELE — o censo achou 6 duplicações, 4 já desfeitas:**
+
+| # | quem com quem | estado |
+|---|---|---|
+| 1 | clarão hero ↔ ponto do catálogo | **desfeita** (cessão por dominância) |
+| 2 | Sol-ponto ↔ clarão do Sol | **desfeita** (soma constante exata) |
+| 3 | **Sol-ponto ↔ bola do Sol** | **ABERTA** → morre no passo E2 |
+| 4 | catálogo ↔ cascas procedurais | **desfeita** (3 termos no shader) |
+| 5 | catálogo+cascas ↔ luz integrada da faixa | **desfeita** (curva medida) |
+| 6 | **partículas da galáxia ↔ lâminas do disco** | **ABERTA, sem mecanismo nenhum** → passo G2 |
+
+A nº 6 é a que ninguém tinha visto: as partículas e as sete lâminas emissivas do
+disco somam em aditivo no mesmo lugar, sem cessão nenhuma entre elas.
+
+Item ABERTO: esperando ele dizer onde viu os dois Sóis com rótulo.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
