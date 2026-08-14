@@ -80,6 +80,15 @@ export function createLoops(ctx){
     // FASE 2 — fitas com espessura de tela: resolução do viewport (px)
     // e meia-largura do tubo em unidades de MUNDO (~0.006 R☉ visual)
     uRes: { value: new THREE.Vector2(2, 2) },
+    // FICA REGISTRADO, e não é o defeito das faixas: este número está em
+    // unidades de OBJETO (SUN_RADIUS = 2,2) e o `wA` que o divide está em
+    // unidades de VISTA — que aqui carregam a escala do grupo do Sol
+    // (~1,03e-8, o Sol em parsec). O quociente `rawPx` sai ~1e-5 do que
+    // deveria, então a fita cai sempre no PISO de largura (1 a 3,2 px) e
+    // no piso de `vFade` (0,05). Corrigir é multiplicar `uLoopW` pela
+    // escala do grupo — mas isso é DOSE (largura e brilho dos loops em
+    // toda a casa, filme incluído), decisão de quem manda no visual do
+    // Sol, não conserto de artefato. O artefato era o `w` da expansão.
     uLoopW: { value: SUN_RADIUS * 0.0060 }
   };
   var loopMaterial = new THREE.ShaderMaterial({
@@ -138,7 +147,20 @@ export function createLoops(ctx){
       // AMORTECER o contraste do fluxo (que em 1px lia como cintilação
       // viva, mas numa fita larga vira "salsichas" de brilho)
       '  vWide = clamp((rawPx - 1.0)/13.0, 0.0, 1.0);',
-      '  clipA.xy += nrm * (aSide * wpx * 2.0 / uRes) * wA;',
+      // O w QUE VOLTA PARA CLIP É O VERDADEIRO, e não o `wA` grampeado
+      // (2026-08-14 — as "faixas laranja" do defeito 3 do commit
+      // `51d7777`). Um deslocamento em NDC vira clip multiplicando pelo
+      // `w` DESTE vértice, porque o rasterizador vai dividir por ele:
+      // usar outro número escala a fita por `wA/clipA.w`. No app doador
+      // o Sol media 2,2 unidades de mundo e o piso de 0,01 nunca pegava;
+      // AQUI o grupo do Sol é escalado para PARSEC (fator ~1,03e-8), o
+      // `w` de um vértice de loop vale ~1,4e-7 e o piso pega SEMPRE —
+      // a fita de 3 px saía multiplicada por 0,01/1,4e-7 ≈ 7e4 e cruzava
+      // a tela inteira. MEDIDO nesta vista (`?atlas=1&foco=sol&ver=corpo`,
+      // 6,40 raios solares, relógio andando): contraste local de coluna
+      // 5,5× e pico de 231 contra fundo 52; com esta linha, 1,2× e 58 —
+      // o mesmo número que se mede com os loops desligados.
+      '  clipA.xy += nrm * (aSide * wpx * 2.0 / uRes) * clipA.w;',
       '  gl_Position = clipA;',
       '}'
     ].join('\n'),
@@ -235,7 +257,10 @@ export function createLoops(ctx){
       '  float wMin = 1.0 + 2.2*faceK*faceK;',
       '  float wpx = clamp(rawPx, wMin, 14.0);',
       '  vFade = clamp(rawPx / wpx, 0.05, 1.0);',
-      '  clipA.xy += nrm * (aSide * wpx * 2.0 / uRes) * wA;',
+      // MESMO `clipA.w` da fita emissiva (a razão inteira está lá em
+      // cima): as duas compartilham geometria e a mesma expansão, e
+      // consertar só uma deixaria a gêmea de absorção varrendo a tela.
+      '  clipA.xy += nrm * (aSide * wpx * 2.0 / uRes) * clipA.w;',
       '  gl_Position = clipA;',
       '}'
     ].join('\n'),

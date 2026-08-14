@@ -2532,6 +2532,48 @@ corte geométrico dos cartões de proeminência (0,06 ms, abaixo do piso de ±0,
 
 ## Como retomar os gates numa sessão nova (leia antes de medir)
 
+**O QUE ESTE GATE É: um DETECTOR DE REGRESSÃO.** A partir de 2026-08-10 a casa inverteu
+isso e passou a tratar "as vistas saem bit-idênticas" como CONDIÇÃO DE APROVAR trabalho.
+O efeito foi mecânico: todo conserto que mexia em pixel era reprovado, e todo defeito
+virava uma camada nova por cima do anterior — o Sol desenhado duas vezes, o clarão só do
+Atlas, o limiar das luas em 48 px. O dono derrubou a regra por escrito em 2026-08-11:
+
+> "Nunca foi criada essa regra que nada muda na tela. Estamos sempre caminhando no
+> sentido das melhorias, se nada muda na tela isso fica impossível"
+
+**REVOGADO em 2026-08-14 pela fala acima: bit-idêntico não é objetivo nem aval, e nunca
+justifica desfazer melhoria.** O gate responde a UMA pergunta — *mudou algo que eu não
+queria que mudasse?* Quando a mudança é intencional, o veredito não é o md5: é a imagem
+aberta, o diff de pixel com SINAL (quantos escureceram, quantos clarearam, delta máximo)
+e o rebaseline registrado. Foi assim que a fase 4a e o rebaseline de 2026-08-13 passaram.
+E, em 2026-08-13, o dono: "nada é fixo, tudo sempre pode ser questionado se melhora UX".
+Registro datado anterior a esta data que trate bit-igualdade como meta lê-se com esta
+revogação ao lado — a casa aposenta, não reescreve.
+
+**A armadilha concreta, para não repetir: PROVA VAZIA.** Cinco commits exibiram "18/18
+vistas idênticas" como aval de trabalho de HUD — e **as vistas do `ab-identidade` são
+todas `shot=2`, que APAGA o HUD**. A leva não podia mudar, mudasse o HUD o que mudasse:
+provou nada, cinco vezes. A regra que sobra: **a prova tem de tocar o que a mudança
+tocou.** Quem mexe no HUD é julgado pelo `a11y.mjs`, que roda com `shot=1`. Se nenhum
+juiz existente cobre a mudança, a obrigação é CRIAR a vista que cobre — nunca exibir a
+que não cobre.
+
+**Duas cegueiras desta bancada**, declaradas para que ninguém conclua delas o que elas
+não dizem:
+- **Cega para MOVIMENTO.** Toda captura passa por `?shot=`, que congela o relógio — é o
+  que torna o md5 reprodutível. Nada que só apareça andando (animação, transição, ruído
+  temporal, acúmulo entre quadros) tem juiz aqui.
+- **Cega entre 1 UA e 40 UA.** A escada que OLHA O SOL tem `solreal1ua` numa ponta e
+  `ua40`/`solreal40ua` na outra, e **nenhum degrau entre as duas** — justamente a faixa
+  do sistema interno. Cuidado com a formulação: câmera nessa faixa EXISTE — `vesta`
+  (2,5 UA), `jupiter` e `europa` (5,0), `titan`/`saturno-anel` (9,7),
+  `plutao-caronte` (35,0) —, mas todas a 4 raios do alvo, julgando o disco do corpo,
+  nunca como o Sol e o sistema leem dali. É o item 12 de
+  [`docs/PENDENCIAS.md`](PENDENCIAS.md).
+
+O que está aberto e incomoda quem usa não se lista aqui: mora em
+[`docs/PENDENCIAS.md`](PENDENCIAS.md), primeira leitura do projeto.
+
 **Como rodar, desde a reforma do harness (2026-08-11).** O método não mudou — md5
 bit-exato, N=2 capturas por vista, navegador limpo por captura, `?q=cinema` pinado, os
 mesmos md5 oficiais do item 3. O que mudou é **o que a captura espera** e **quantos

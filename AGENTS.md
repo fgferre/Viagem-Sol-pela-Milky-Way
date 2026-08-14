@@ -6,8 +6,10 @@
 4. Mantenha uma fonte de verdade. Atualize o contrato existente em vez de duplicá-lo.
 5. Apague logs, caches, builds, capturas e temporários quando terminarem de servir.
 6. Só remova código após provar que não há import, chamada, script ou uso em runtime. Preserve dados científicos e alterações do usuário.
-7. Valide a mudança com os gates relevantes. Renderização só está pronta depois de verificação no navegador.
-8. Registre apenas o resultado, os testes e os limites reais. Não deixe diários, prompts ou relatórios já consumidos no projeto.
+7. Valide a mudança com os gates relevantes, e **a prova tem de medir o que mudou**: vista capturada sem HUD não prova trabalho de HUD; vista com o relógio parado não prova nada que só apareça em movimento. Se o gate existente não cobre a mudança, a obrigação é **criar a vista que cobre**, nunca exibir a que não cobre. Gate bit-idêntico é **detector de regressão** — nunca objetivo, nunca justificativa para desfazer melhoria. Renderização só está pronta depois de verificação no navegador.
+8. Registre apenas o resultado, os testes e os limites reais. Não deixe diários, prompts ou relatórios já consumidos no projeto. **Com o dono, fale simples** — ele é leigo em programação; densidade técnica vai para commits e documentos, nunca para o chat.
+9. **Melhoria visível é a direção do trabalho.** Palavras do dono em 2026-08-11: "Nunca foi criada essa regra que nada muda na tela. Estamos sempre caminhando no sentido das melhorias, se nada muda na tela isso fica impossível". E em 2026-08-13: "nada é fixo, tudo sempre pode ser questionado se melhora UX" — decisão herdada, número ou formato não estão protegidos quando atrapalham a experiência.
+10. **Você é o juiz da mecânica interna.** Técnica de render, arquitetura, número, formato: decida, faça, e volte com IMAGEM. Pergunte ao dono só o que é gosto, prioridade ou escopo.
 
 Crie um commit local a cada checkpoint coerente de implementação validada — sem esperar pedido. Não faça push sem pedido explícito.
 

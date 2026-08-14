@@ -25,9 +25,10 @@
 // NADA AQUI PISCA: o que muda de estado muda de borda e de rótulo.
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { buscar, notaDeDistancia } from '../lib/buscaEstrelas';
+import { buscar } from '../lib/buscaEstrelas';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
 import { gatilhoDoDialogo, useDialogFocus } from '../lib/dialogFocus';
+import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroPtBr } from '../three/tempoDoAtlas';
 
 /**
@@ -42,23 +43,6 @@ import { numeroPtBr } from '../three/tempoDoAtlas';
 export const LIMITE_TECLADO = 8;
 export const LIMITE_TOQUE = 5;
 
-/**
- * ANOS-LUZ, que é a régua desta casa para o que está longe — o parsec é
- * régua interna e não aparece na tela. A vírgula decimal vem do
- * formatador da casa (`numeroPtBr`), não de um `toFixed` local: é o que
- * impede um "8,6" e um "8.6" na mesma tela.
- *
- * Acima de 100 al a décima é ruído (a incerteza da paralaxe já é maior
- * que ela); acima de 10 mil, a conta passa a milhares.
- */
-function distanciaEmAnosLuz(parsecs: number): string {
-  const al = parsecs * 3.262;
-  const unidade = al < 2 ? 'ano-luz' : 'anos-luz';
-  if (al < 100) return `${numeroPtBr(al)} ${unidade}`;
-  if (al < 10_000) return `${numeroPtBr(Math.round(al))} ${unidade}`;
-  return `${numeroPtBr(al / 1000)} mil ${unidade}`;
-}
-
 /** o nome que a lista mostra — de uma estrela ou de um corpo do sistema */
 function nomeDaEntrada(entrada: EntradaDaBusca): string {
   return entrada.tipo === 'corpo' ? entrada.corpo.nome : entrada.estrela.n;
@@ -67,14 +51,20 @@ function nomeDaEntrada(entrada: EntradaDaBusca): string {
 /**
  * A NOTA à direita, e ela troca de RÉGUA com o alvo: anos-luz para as
  * estrelas, UA para os corpos do sistema — e QUILÔMETROS para uma lua
- * medida do pai (F2b: "Lua · 384 mil km", nunca "0,0026 UA" — o degrau
- * de unidade sub-UA mora em `notaDeDistancia`, na lib). É a regra de
- * unidades da casa — perto de casa se fala em UA, longe em anos-luz, e
- * o parsec é régua interna e não aparece.
+ * medida do pai (F2b: "Lua · 384 mil km", nunca "0,0026 UA"). É a regra
+ * de unidades da casa — perto de casa se fala em UA, longe em anos-luz,
+ * e o parsec é régua interna e não aparece.
+ *
+ * A ESCADA INTEIRA é a mesma função (`lib/unidades`), e por isso a
+ * estrela entra convertida em UA em vez de ter uma conta própria: até
+ * 2026-08-14 a paleta tinha o degrau dos anos-luz escrito à mão, e o
+ * rótulo desenhado sobre a cena tinha OUTRO — "8,6 anos-luz" aqui e
+ * "8.6 AL" a um palmo dali, na mesma tela.
  */
 function notaDaEntrada(entrada: EntradaDaBusca): string {
   if (entrada.tipo === 'estrela') {
-    return `${distanciaEmAnosLuz(entrada.estrela.d)} · ${entrada.estrela.s}`;
+    const distancia = notaDeDistancia(entrada.estrela.d * UA_POR_PC, numeroPtBr);
+    return distancia ? `${distancia} · ${entrada.estrela.s}` : entrada.estrela.s;
   }
   const { rUA, classe } = entrada.corpo;
   const distancia = notaDeDistancia(rUA, numeroPtBr);

@@ -26,6 +26,25 @@ export interface StarLabel {
    * mostraram, pixel a pixel.
    */
   detalhe?: string;
+  /**
+   * O RÓTULO CHEGOU A SER DESENHADO NESTE QUADRO? Quem escreve é o
+   * `LabelCanvas`, no MESMO objeto que o Director guarda em
+   * `lastLabels` — e é isso que faz o desenho e o CLIQUE lerem uma
+   * lista só (pendência 30, 2026-08-14).
+   *
+   * Por que a marca e não uma segunda lista: o desenho descarta por
+   * três leis suas (quase-transparente, faixa reservada do HUD e
+   * colisão com um nome que chegou antes), e na vista de abertura do
+   * Atlas ela descarta MUITO — os dez corpos e as 21 luas projetam
+   * quase no mesmo ponto e só o Sol sobrevive. Sem a marca, o clique
+   * no "SOL" escrito na tela caía em Fobos, que estava 0,4% de tela
+   * mais perto do dedo e nunca fora desenhado.
+   *
+   * `undefined` = o desenho ainda não passou por este quadro; o clique
+   * só descarta o `false` EXPLÍCITO, para nunca ficar sem alvo caso o
+   * canvas dos rótulos não exista.
+   */
+  desenhado?: boolean;
 }
 
 const _v = new THREE.Vector3();

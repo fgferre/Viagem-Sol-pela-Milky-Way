@@ -28,7 +28,6 @@ import {
   chaveDoFoco,
   construirIndice,
   normalizarConsulta,
-  notaDeDistancia,
   resolverFoco,
 } from './buscaEstrelas';
 import type { CorpoBuscavel, EntradaDaBusca, ResultadoBusca } from './buscaEstrelas';
@@ -316,37 +315,5 @@ describe('os corpos do sistema entram no MESMO índice', () => {
     expect(chaveDoFoco('Sirius', comCorpos)).toBe('hd48915');
     // o que não está no índice não inventa porta (o Sagittarius A✱)
     expect(chaveDoFoco('Sagittarius A✱', comCorpos)).toBeNull();
-  });
-});
-
-// ============================================================
-// F2b (emenda P-E10a): o degrau de unidade sub-UA da nota — o par
-// lua↔pai fala QUILÔMETROS, nunca "0,0026 UA".
-// ============================================================
-describe('notaDeDistancia — o degrau de unidade sub-UA', () => {
-  const fmt = (v: number) => String(v).replace('.', ',');
-
-  it('a Lua lê "384 mil km", nunca 0,0026 UA', () => {
-    // 384.400 km ≈ 0,002570 UA — o caso que dá nome à emenda
-    expect(notaDeDistancia(384400 / 149597870.7, fmt)).toBe('384 mil km');
-  });
-
-  it('órbita de planeta segue em UA (nenhuma é sub-UA)', () => {
-    expect(notaDeDistancia(1, fmt)).toBe('1 UA');
-    expect(notaDeDistancia(0.39, fmt)).toBe('0,39 UA');
-    expect(notaDeDistancia(35.4, fmt)).toBe('35,4 UA');
-  });
-
-  it('lua rasante fala km cheios; lua larga fala mil km', () => {
-    // Fobos: ~9.378 km do centro de Marte
-    expect(notaDeDistancia(9378 / 149597870.7, fmt)).toBe('9378 km');
-    // Japeto: ~3,56 milhões de km
-    expect(notaDeDistancia(3560000 / 149597870.7, fmt)).toBe('3560 mil km');
-  });
-
-  it('sem medida não há nota: NaN e não-positivo devolvem null', () => {
-    expect(notaDeDistancia(Number.NaN, fmt)).toBeNull();
-    expect(notaDeDistancia(0, fmt)).toBeNull();
-    expect(notaDeDistancia(-1, fmt)).toBeNull();
   });
 });

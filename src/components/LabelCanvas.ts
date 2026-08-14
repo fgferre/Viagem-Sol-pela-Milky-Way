@@ -1,4 +1,6 @@
 import { escalaDaUi } from '../lib/uiScale';
+import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
+import { numeroPtBr } from '../three/tempoDoAtlas';
 import type { StarLabel } from '../three/world/labels';
 
 interface Rect {
@@ -30,6 +32,27 @@ export class LabelCanvas {
 
   private lastHadContent = false;
 
+  /**
+   * OS RETÂNGULOS DOS DIÁLOGOS ABERTOS, em pixels de tela — o mesmo
+   * sistema de coordenadas deste canvas, que é `inset: 0`.
+   *
+   * Por que existem (2026-08-14): o rótulo cedia espaço a DOIS lugares
+   * do HUD escritos como fração da tela (a faixa de baixo e o canto dos
+   * controles) e a mais nenhum. Painel de Ajustes, gaveta de camadas e
+   * paleta de busca são caixas OPACAS que nascem no meio da direita, e
+   * os nomes das estrelas eram desenhados por cima deles — em 1600×900
+   * uma faixa de ~530×270 px de nome sobre painel. Fração de tela não
+   * resolve: os três têm largura em `rem` e altura que muda com o
+   * conteúdo (a lista da busca cresce a cada tecla), então o que vale é
+   * o retângulo MEDIDO, publicado pelo App quando ele muda.
+   */
+  private reservadas: readonly Rect[] = [];
+
+  /** Quem publica é o App; lista vazia = nenhum diálogo na tela. */
+  reservar(areas: readonly Rect[]): void {
+    this.reservadas = areas;
+  }
+
   draw(labels: StarLabel[]): void {
     // vazio→vazio (60×/s fora da viagem): não limpar 3,7 M px à toa
     if (labels.length === 0 && !this.lastHadContent) return;
@@ -49,11 +72,22 @@ export class LabelCanvas {
     // Em `ui = 1` cada produto é exato (`x * 1 === x` em IEEE754) e o
     // desenho é o de sempre, pixel a pixel.
     const k = escalaDaUi();
-    const occupied: Rect[] = [];
+    // OS DIÁLOGOS ENTRAM COMO SE FOSSEM RÓTULOS JÁ DESENHADOS: a lei de
+    // colisão que faz um nome ceder a outro é a mesma que o faz ceder a
+    // um painel. Sem caso novo, sem z-index, sem `!important` — quem
+    // chegou primeiro ocupa, e o painel sempre chega primeiro.
+    const occupied: Rect[] = [...this.reservadas];
     ctx.textBaseline = 'middle';
     ctx.lineCap = 'round';
 
     for (const label of labels) {
+      // A MARCA QUE O CLIQUE LÊ (pendência 30). Ela nasce `false` aqui e
+      // só vira `true` depois de o rótulo passar pelas TRÊS leis de
+      // descarte deste laço — é o que faz "o que se vê" e "o que se
+      // clica" serem a mesma lista, sem o Director precisar repetir
+      // nenhuma delas. O objeto é o mesmo que ele guarda em
+      // `lastLabels`, então a escrita chega lá sem plumbing.
+      label.desenhado = false;
       if (label.opacity < 0.08) continue;
       const anchorX = label.x * this.width;
       const anchorY = label.y * this.height;
@@ -81,10 +115,9 @@ export class LabelCanvas {
       const textX = anchorX + direction * 18 * k;
       const name = label.name.toLocaleUpperCase('pt-BR');
       // o `detalhe` é dos corpos do sistema (a classe em pt-BR, que não
-      // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é
-      // `undefined` e o desenho é o de sempre, pixel a pixel
-      const detail =
-        `${label.detalhe ?? label.spect.slice(0, 5)}  ·  ${formatDistance(label.distPc)}`;
+      // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é o
+      // tipo espectral
+      const detail = detalheDoRotulo(label);
 
       ctx.font = `500 ${12 * k}px "Segoe UI", Arial, sans-serif`;
       const nameWidth = ctx.measureText(name).width;
@@ -100,6 +133,8 @@ export class LabelCanvas {
       };
       if (occupied.some((rect) => intersects(candidate, rect, 8 * k))) continue;
       occupied.push(candidate);
+      // passou pelas três leis: está NA TELA, e portanto é clicável
+      label.desenhado = true;
 
       ctx.globalAlpha = label.opacity;
       ctx.strokeStyle = 'rgba(255, 211, 145, 0.72)';
@@ -153,10 +188,20 @@ function intersects(a: Rect, b: Rect, padding: number): boolean {
   );
 }
 
-function formatDistance(pc: number): string {
-  const lightYears = pc * 3.262;
-  if (lightYears < 0.1) return `${Math.round(lightYears * 63_241)} UA`;
-  if (lightYears < 100) return `${lightYears.toFixed(1)} AL`;
-  if (lightYears < 10_000) return `${Math.round(lightYears)} AL`;
-  return `${(lightYears / 1000).toFixed(1)} MIL AL`;
+/**
+ * O DETALHE À DIREITA DO NOME: o tipo espectral (ou a classe do corpo)
+ * e a distância. A distância sai da escada única da casa
+ * (`lib/unidades`) — até 2026-08-14 este arquivo tinha uma cópia dela,
+ * com `toFixed` (ponto decimal) e a abreviação "AL", enquanto a paleta
+ * de busca, aberta na mesma tela, escrevia "8,6 anos-luz".
+ *
+ * SEM MEDIDA, SEM NÚMERO: a nota vem `null` quando a distância é zero
+ * ou não finita, e aí fica só o tipo. É o caso do Sol, cujo rótulo
+ * anunciava "0 UA" — e o de um corpo a menos de meio quilômetro da
+ * câmera, que a cópia antiga arredondava para o mesmo "0 UA".
+ */
+function detalheDoRotulo(label: StarLabel): string {
+  const base = label.detalhe ?? label.spect.slice(0, 5);
+  const nota = notaDeDistancia(label.distPc * UA_POR_PC, numeroPtBr);
+  return nota ? `${base}  ·  ${nota}` : base;
 }

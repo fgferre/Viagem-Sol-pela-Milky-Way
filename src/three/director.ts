@@ -1052,6 +1052,9 @@ export class Director {
    */
   private setPhase(p: Phase) {
     this.phase = p;
+    // fase nova, tela nova: nada dela foi desenhado ainda (ver
+    // `quadrosDaFase` — é o que mantém o deep-link seco)
+    this.quadrosDaFase = 0;
     this.escritorDeCamera = ESCRITOR_DE_CAMERA[p];
     // trocar de fase encerra o gesto da roda: meio empurrão guardado não
     // pode virar degrau na próxima entrada no Atlas
@@ -1082,6 +1085,18 @@ export class Director {
    * 1, depois do `post.render`).
    */
   private quadrosEstaveis = 0;
+
+  /**
+   * Quadros DESENHADOS desde a última troca de fase — a resposta a "o
+   * visitante já viu alguma coisa NESTE modo?". Separado do
+   * `quadrosEstaveis` de propósito: aquele zera a cada gesto (é sobre
+   * estabilidade da cena), e este só zera ao trocar de fase (é sobre o
+   * modo já estar na tela). Quem o lê é `rampaDaEscada` — sem um quadro
+   * do modo desenhado não existe pose de partida para o olho seguir, e
+   * é essa a diferença entre o `?foco=` do boot (seco) e o clique do
+   * visitante (com rampa).
+   */
+  private quadrosDaFase = 0;
 
   /** algo mudou o que a cena mostra — a contagem de estabilidade recomeça */
   private perturbar() {
@@ -1505,12 +1520,28 @@ export class Director {
   /**
    * Clique curto no rótulo mais próximo. Duas fases, dois modos: no voo
    * livre a câmera VOA até lá; no Atlas ela ENQUADRA de onde estiver.
+   *
+   * SÓ O QUE ESTÁ NA TELA É ALVO (pendência 30, fechada em 2026-08-14).
+   * Este laço lia a lista INTEIRA de rótulos projetados, e o desenho
+   * (`LabelCanvas`) joga fora quase tudo dela na vista de abertura do
+   * Atlas: os dez corpos e as 21 luas projetam a menos de 1% de tela uns
+   * dos outros, e só o Sol sobrevive à colisão. O resultado medido era o
+   * defeito 1 do commit `51d7777` — clicar no "SOL" escrito na tela
+   * enquadrava FOBOS, cujo rótulo invisível estava 0,4% de tela mais
+   * perto do ponteiro (Sol em 0,500/0,458; Marte, Fobos e Deimos
+   * empilhados em 0,503/0,453). Eram duas listas onde tem de haver uma.
+   *
+   * O descarte é do `false` EXPLÍCITO e não do "não é `true`": quem
+   * marca é o desenho, e sem canvas de rótulos na tela (nenhum quadro
+   * desenhado ainda) a marca é `undefined` — aí vale a lista projetada,
+   * que é o comportamento de sempre.
    */
   private tryVisit(x: number, y: number) {
     if ((this.phase !== 'free' && this.phase !== 'atlas') || !this.meta) return;
     let best: StarLabel | null = null;
     let bestD = 0.0035; // ~6% da tela ao quadrado
     for (const label of this.lastLabels) {
+      if (label.desenhado === false) continue;
       if (label.opacity < 0.15) continue;
       const dx = label.x - x;
       const dy = label.y - y;
@@ -1697,12 +1728,35 @@ export class Director {
   }
 
   /**
-   * A rampa entre degraus (F2b/D7) só anima com o modo VIVO na tela:
-   * dentro da fase, sem `?shot=` e sem reduced-motion — entrada,
-   * deep-link e captura seguem instantâneos (contrato da Onda 5).
+   * A rampa entre degraus (F2b/D7) só anima o que o olho JÁ ESTAVA
+   * VENDO: dentro da fase, com pelo menos um quadro do modo desenhado,
+   * sem `?shot=` e sem reduced-motion — entrada, deep-link e captura
+   * seguem instantâneos (contrato da Onda 5).
+   *
+   * O QUADRO DESENHADO É A CLÁUSULA NOVA (2026-08-14), e ela é o
+   * conserto do defeito 2 do commit `51d7777` — o "`?foco=sol&ver=corpo`
+   * não desce". A entrada no modo já era seca por uma sutileza de
+   * ORDEM: `entrarNoAtlas` chama `focarNoSistema()` ANTES de
+   * `setPhase('atlas')`, então a fase velha derrubava esta guarda. O
+   * `?foco=` do boot vem DEPOIS da fase virar (o App o aplica ao voltar
+   * do `entrarNoAtlas`), então ele caía na rampa: a câmera nascia na
+   * abertura, a 226,84 UA, e só chegava ao Sol se alguém deixasse os
+   * quadros correrem. Medido: `rampaT = 0` e a câmera parada em
+   * 226,845 UA com o degrau já dizendo `corpo`/`sun` — o endereço
+   * prometia uma vista e mostrava outra. Link que não reproduz a vista
+   * não é link.
+   *
+   * A cláusula é o que a docstring sempre disse, agora escrita em
+   * código: no primeiro quadro do modo NÃO HÁ pose de partida a
+   * interpolar — não há nada na tela para o olho seguir.
    */
   private rampaDaEscada(): boolean {
-    return this.phase === 'atlas' && !this.shotMode && !this.reducedMotion;
+    return (
+      this.phase === 'atlas' &&
+      this.quadrosDaFase > 0 &&
+      !this.shotMode &&
+      !this.reducedMotion
+    );
   }
 
   /** o degrau vivo — o que o `onEscada` publica e o `?ver=` espelha. */
@@ -3599,6 +3653,8 @@ export class Director {
     // DEPOIS do render, e é o único lugar que soma: o sinal de prontidão
     // conta quadros DESENHADOS, não quadros agendados (ver `captura`).
     this.quadrosEstaveis++;
+    // e o mesmo critério — DESENHADO — para "o modo já está na tela"
+    this.quadrosDaFase++;
   }
 
   /**

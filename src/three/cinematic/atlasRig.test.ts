@@ -1287,3 +1287,125 @@ describe('o degrau do CORPO DO SOL', () => {
     expect(abertura).toContain('const casa = this.casaViva();');
   });
 });
+
+// ============================================================
+// OS DOIS DEFEITOS DECLARADOS DO DEGRAU DO SOL (`51d7777`), fechados em
+// 2026-08-14. Nenhum dos dois era o que a nota do commit supunha, e por
+// isso a causa medida está escrita ao lado de cada trilho:
+//
+//  1. "o rótulo diz FOBOS" NÃO era o degrau esquecendo de escrever o
+//     foco — `aproximarDoSol` sempre escreveu `focoCorpoId = 'sun'`. Era
+//     o CLIQUE lendo a lista inteira de rótulos projetados enquanto o
+//     desenho joga fora quase tudo (pendência 30). A prova de
+//     comportamento mora em `src/components/LabelCanvas.test.ts`; aqui
+//     fica a fiação no Director, que o runner `node` não monta.
+//  2. "`?foco=sol&ver=corpo` não desce" NÃO era o índice de busca
+//     resolvendo o Sol como estrela — ele resolve como CORPO (`sun`,
+//     score exato). Era a RAMPA: no boot a fase já é `atlas` quando o
+//     App aplica o `?foco=`, então o deep-link animava a partir da
+//     abertura em vez de nascer no degrau. Medido antes do conserto:
+//     `rampaT = 0` e câmera parada em 226,845 UA com o degrau já
+//     dizendo `corpo`/`sun`.
+// ============================================================
+describe('os dois defeitos declarados do degrau do Sol', () => {
+  const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+
+  it('o clique só mira rótulo DESENHADO — e descarta antes de medir distância', () => {
+    const visita = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private tryVisit('),
+      DIRECTOR.indexOf('  get nomeadas()')
+    );
+    expect(visita).toContain('if (label.desenhado === false) continue;');
+    expect(visita).toContain('const dx = label.x - x;');
+    // antes da conta de distância: um rótulo invisível não pode nem
+    // disputar o desempate
+    expect(visita.indexOf('label.desenhado === false')).toBeLessThan(
+      visita.indexOf('const dx = label.x - x;')
+    );
+    // e o descarte é do `false` EXPLÍCITO: sem canvas de rótulos a marca
+    // é `undefined` e vale a lista projetada, como sempre valeu
+    expect(visita).not.toContain('if (!label.desenhado) continue;');
+  });
+
+  it('quem escreve a marca é o desenho, no mesmo objeto que o clique lê', () => {
+    const CANVAS = readFileSync(
+      new URL('../../components/LabelCanvas.ts', import.meta.url),
+      'utf8'
+    );
+    const laco = CANVAS.slice(CANVAS.indexOf('for (const label of labels) {'));
+    expect(laco).toContain('label.desenhado = false;');
+    expect(laco).toContain('label.desenhado = true;');
+    // nasce `false` ANTES do primeiro descarte e vira `true` só depois
+    // do último — as três leis de descarte do desenho ficam num lugar só
+    expect(laco.indexOf('label.desenhado = false;')).toBeLessThan(
+      laco.indexOf('if (label.opacity < 0.08) continue;')
+    );
+    expect(laco.indexOf('occupied.push(candidate);')).toBeLessThan(
+      laco.indexOf('label.desenhado = true;')
+    );
+  });
+
+  it('a rampa exige um quadro do modo JÁ DESENHADO — o deep-link nasce seco', () => {
+    const rampa = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private rampaDaEscada(): boolean {'),
+      DIRECTOR.indexOf('  private get escada()')
+    );
+    expect(rampa).toContain('this.quadrosDaFase > 0');
+    // a contagem zera na troca de fase e só soma DEPOIS do render — o
+    // mesmo critério do sinal de prontidão (quadro desenhado, não
+    // quadro agendado)
+    const fase = DIRECTOR.slice(
+      DIRECTOR.indexOf('  private setPhase(p: Phase) {'),
+      DIRECTOR.indexOf('  get fase(): Phase {')
+    );
+    expect(fase).toContain('this.quadrosDaFase = 0;');
+    const fim = DIRECTOR.slice(DIRECTOR.indexOf('    this.post.render(time);'));
+    expect(fim.indexOf('this.quadrosDaFase++;')).toBeGreaterThan(0);
+    expect(fim.indexOf('this.quadrosDaFase++;')).toBeLessThan(fim.indexOf('\n  }'));
+  });
+
+  it('a ENTRADA no modo continua seca pela ordem, sem depender da cláusula nova', () => {
+    // `focarNoSistema()` ANTES de `setPhase('atlas')`: a fase velha já
+    // derrubava a rampa, e é por isso que a abertura nunca animou. As
+    // duas guardas convivem — tirar a ordem quebraria o `?atlas=1` puro
+    const entrada = DIRECTOR.slice(
+      DIRECTOR.indexOf('  entrarNoAtlas(opcoes:'),
+      DIRECTOR.indexOf('  partirDoAtlas() {')
+    );
+    expect(entrada.indexOf('this.focarNoSistema();')).toBeLessThan(
+      entrada.indexOf("this.setPhase('atlas');")
+    );
+  });
+});
+
+// ============================================================
+// AS FAIXAS LARANJA (defeito 3 de `51d7777`), medidas e fechadas em
+// 2026-08-14. A fita dos loops coronais devolvia ao clip um
+// deslocamento multiplicado pelo `w` GRAMPEADO (`max(w, 0.01)`) em vez
+// do `w` do próprio vértice. O piso de 0,01 é do app doador, onde o Sol
+// media 2,2 unidades de MUNDO; nesta casa o grupo do Sol é escalado
+// para parsec e o `w` de um vértice de loop vale ~1,4e-7 — o piso pega
+// sempre e a fita de 3 px saía ~7e4 vezes maior, cruzando a tela.
+// Só aparecia VIVO porque `?shot=` congela o tempo visual do Sol e
+// nenhum loop chega a nascer nas capturas (pendência 11).
+// ============================================================
+describe('a fita dos loops coronais volta ao clip com o w certo', () => {
+  const LOOPS = readFileSync(
+    new URL('../world/sol/loops.js', import.meta.url),
+    'utf8'
+  );
+
+  it('as DUAS fitas (emissiva e absorção) expandem pelo w do vértice', () => {
+    const usos = LOOPS.split('nrm * (aSide * wpx * 2.0 / uRes) * clipA.w;').length - 1;
+    expect(usos).toBe(2);
+    // e nenhuma sobrou com o grampeado — é a linha que fazia a faixa
+    expect(LOOPS).not.toContain('nrm * (aSide * wpx * 2.0 / uRes) * wA;');
+  });
+
+  it('o grampo continua onde ele é guarda de DIVISÃO, e só lá', () => {
+    // `wA`/`wB` seguem protegendo os quocientes (vértice atrás da
+    // câmera); o que mudou é o caminho de volta para clip
+    expect(LOOPS).toContain('float wA = max(clipA.w, 0.01);');
+    expect(LOOPS).toContain('float rawPx = uLoopW * pxScale / wA;');
+  });
+});

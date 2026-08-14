@@ -28,7 +28,6 @@
 // chaves irmãs e vira dígito ASCII na normalização.
 // ============================================================
 import type { NamedStar } from '../three/config';
-import { AU_KM } from './atlas/elementosOrbitais';
 
 /**
  * UM CORPO DO SISTEMA como alvo da busca. Ele entra no MESMO índice das
@@ -54,29 +53,12 @@ export interface CorpoBuscavel {
   pai?: string;
 }
 
-/**
- * A NOTA DE DISTÂNCIA de um corpo do sistema, com o DEGRAU DE UNIDADE
- * da casa (F2b, emenda P-E10a): a regra "UA perto de casa, anos-luz nas
- * estrelas" não cobria o par lua↔pai — agora cobre: distância SUB-UA
- * fala quilômetros ("384 mil km", nunca "0,0026 UA"). O limiar é 0,1 UA
- * — nenhuma órbita de PLANETA é sub-UA (Mercúrio: 0,39) e nenhuma lua
- * do sistema orbita a mais de 0,1 UA do pai (Iapetus, a mais larga do
- * catálogo: 0,024).
- *
- * `formatar` é o formatador pt-BR da casa (`numeroPtBr`), injetado para
- * esta lib continuar pura (o formatador mora em `tempoDoAtlas`, que é
- * do three/ — importar daqui inverteria a seta).
- */
-export function notaDeDistancia(
-  rUA: number,
-  formatar: (v: number) => string
-): string | null {
-  if (!Number.isFinite(rUA) || rUA <= 0) return null;
-  if (rUA >= 0.1) return `${formatar(rUA)} UA`;
-  const km = rUA * AU_KM; // o conversor único da casa, importado
-  if (km >= 10_000) return `${formatar(Math.round(km / 1000))} mil km`;
-  return `${formatar(Math.round(km))} km`;
-}
+// A NOTA DE DISTÂNCIA (o degrau km/UA da emenda P-E10a) MUDOU DE CASA
+// em 2026-08-14: ela era metade de uma escada cuja outra metade — o
+// degrau dos anos-luz — estava copiada em três outros arquivos, com
+// duas grafias e dois separadores decimais na mesma tela. A escada
+// inteira passou a morar em `lib/unidades.ts`, e é de lá que a paleta
+// de busca e os rótulos das estrelas a importam. Aqui ficou só a busca.
 
 /**
  * O que o índice guarda. As duas famílias de alvo do Atlas, com o TIPO

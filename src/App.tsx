@@ -59,6 +59,8 @@ export default function App() {
   const labelCanvasRef = useRef<HTMLCanvasElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const directorRef = useRef<Director | null>(null);
+  /** o pintor dos nomes das estrelas — o HUD lhe diz onde NÃO desenhar */
+  const labelsRef = useRef<LabelCanvas | null>(null);
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [caption, setCaption] = useState<{ idx: number; text: string; sub?: string }>({
@@ -187,6 +189,7 @@ export default function App() {
     if (!sondarGl().webgl2) return;
     let cancelled = false;
     const labels = new LabelCanvas(labelCanvasRef.current);
+    labelsRef.current = labels;
     let d: Director;
     try {
       d = new Director(canvasRef.current, {
@@ -321,9 +324,74 @@ export default function App() {
     return () => {
       cancelled = true;
       labels.clear();
+      labelsRef.current = null;
       d.dispose();
     };
   }, []);
+
+  /**
+   * ONDE O HUD JÁ ESTÁ OCUPADO — medido, não estimado. Um efeito só,
+   * porque as duas perguntas que ele responde são a mesma: "até onde
+   * vai a barra de controles" e "que retângulo os diálogos abertos
+   * cobrem". Ambas eram respondidas por números escritos à mão, e
+   * ambas estavam erradas (2026-08-14):
+   *
+   *  1. A BARRA E OS PAINÉIS ESTAVAM EM RÉGUAS DIFERENTES. A barra
+   *     desce com a altura da janela (`top: 8.5vh`) e os três painéis
+   *     paravam sempre no mesmo ponto (`top: 6.4rem`): acima de ~881 px
+   *     de altura os dois se cruzavam, e a barra — que está por cima —
+   *     engolia o clique no "✕" de fechar. Num monitor 1440p a faixa
+   *     comida chegava a quatro dezenas de pixels. Agora o topo dos
+   *     painéis SAI da barra (`--barra-fim`), e não de um `rem`
+   *     escolhido numa janela que já não é a de ninguém.
+   *  2. OS NOMES DAS ESTRELAS eram escritos por cima dos painéis. O
+   *     canvas dos rótulos cedia espaço a duas frações de tela fixas e
+   *     a mais nada; os painéis nascem no meio da direita, fora delas.
+   *
+   * MEDIR, e não declarar uma fração: a barra QUEBRA EM DUAS LINHAS
+   * dentro do Atlas (`flex-wrap`, teto de 60vw) e a paleta de busca
+   * cresce a cada tecla. Nenhum número escrito à mão acompanha isso —
+   * e foi tentar acompanhar à mão que criou o defeito.
+   *
+   * O ResizeObserver cobre o que muda de TAMANHO (a barra quebrando, a
+   * lista da busca crescendo, o texto do HUD mudando de escala); o
+   * `resize` da janela cobre o que muda de LUGAR sem mudar de tamanho
+   * (o `8.5vh` da barra desce quando a janela cresce). As dependências
+   * são só a presença das peças — quem entra e quem sai da tela.
+   */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const medir = () => {
+      const barra = root.querySelector('.controls-bar');
+      // sem barra na tela (título, intro), o painel volta ao topo de
+      // sempre pelo valor de reserva do `var()` no CSS
+      if (barra) {
+        const fim = barra.getBoundingClientRect().bottom;
+        root.style.setProperty('--barra-fim', `${Math.round(fim)}px`);
+      } else root.style.removeProperty('--barra-fim');
+      // O CONTRATO É O DO `dialogFocus` (D7), o mesmo que o juiz de
+      // a11y varre: todo diálogo da casa se declara com `data-dialogo`,
+      // então um diálogo novo passa a afastar os rótulos no dia em que
+      // nascer, sem uma linha a mais aqui.
+      labelsRef.current?.reservar(
+        [...root.querySelectorAll(':scope > [data-dialogo]')].map((e) => {
+          const b = e.getBoundingClientRect();
+          return { left: b.left, right: b.right, top: b.top, bottom: b.bottom };
+        })
+      );
+    };
+    medir();
+    const observador = new ResizeObserver(medir);
+    for (const e of root.querySelectorAll('.controls-bar, [data-dialogo]')) {
+      observador.observe(e);
+    }
+    window.addEventListener('resize', medir);
+    return () => {
+      observador.disconnect();
+      window.removeEventListener('resize', medir);
+    };
+  }, [phase, ajustes, gaveta, busca]);
 
   // estado da camada de carregamento; `done` é o que dispara o merge.
   // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado
@@ -808,8 +876,72 @@ export default function App() {
       <div className={`letterbox top ${hud.letterbox ? 'on' : ''}`} />
       <div className={`letterbox bottom ${hud.letterbox ? 'on' : ''}`} />
 
-      {/* legenda da fase */}
-      {hud.legenda && <Caption caption={caption.text} sub={caption.sub} showKey={caption.idx} />}
+      {/* O RODAPÉ DO FILME: a legenda do beat e a dica de gestos, numa
+          COLUNA só — o mesmo conserto que o Atlas já tinha feito no seu
+          próprio rodapé, pelo mesmo motivo. Eram duas peças
+          `position: fixed` no MESMO ponto (`left: 6vw; bottom: 11vh`),
+          e por isso a dica do pausar-e-olhar era escrita EM CIMA da
+          legenda: pausar é justamente o que se faz durante a viagem,
+          que é quando a legenda está no ar.
+          Numa coluna ancorada embaixo quem empilha é o fluxo: a dica
+          continua exatamente onde estava (ela é a última) e a legenda
+          sobe o tanto que a dica ocupa — só quando há dica. Sozinha, a
+          legenda fica no pixel de sempre. */}
+      {(hud.legenda || hud.dicaDeVoo) && (
+        <div className="filme-rodape">
+          {hud.legenda && (
+            <Caption caption={caption.text} sub={caption.sub} showKey={caption.idx} />
+          )}
+
+        {/* Dica do modo livre. Os `data-spot` são os alvos que o convite
+            aponta (F5): os três gestos que ele ensina são os três pedaços
+            desta linha, que fica na tela depois que o convite sai. */}
+        {hud.dicaDeVoo && (
+          <div className="free-hint">
+            {window.matchMedia?.('(pointer: coarse)').matches ? (
+              <>
+                <span data-spot="olhar">toque e arraste — olhar</span> ·{' '}
+                <span data-spot="visitar">toque num nome — visitar</span>
+              </>
+            ) : (
+              <>
+                <span data-spot="olhar">arrastar — olhar</span> ·{' '}
+                <span data-spot="voar">wasd/qe — voar</span> · z/x — rolar · roda —
+                velocidade
+                <br />
+                <span data-spot="visitar">clique num nome — viajar até a estrela</span>
+                <br />
+                {/* O OPT-IN DA CAPTURA: quem decide é o visitante, e a dica
+                    é onde a decisão mora — é a linha que ele já está lendo
+                    para saber como voar. O `onMouseDown` não deixa o botão
+                    roubar o foco: com o foco nele, a guarda de alvo de
+                    formulário do rig engoliria o WASD. */}
+                <button
+                  type="button"
+                  className="free-hint-captura"
+                  disabled={capturado || capturaNegada}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => directorRef.current?.capturaDePonteiro.pedir()}
+                >
+                  {capturaNegada
+                    ? 'este navegador não devolveu a captura do ponteiro'
+                    : capturado
+                      ? 'ponteiro capturado — esc devolve'
+                      : 'capturar o ponteiro'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* dica do pausar-e-olhar */}
+        {inJourney && paused && (
+          <div className="free-hint">
+            arraste — olhar ao redor · espaço — retomar a viagem
+          </div>
+        )}
+        </div>
+      )}
 
       {/* linha de rumo: para onde estamos indo, com distância viva */}
       {hud.rumo && dest && <div className="dest-line">{dest}</div>}
@@ -825,54 +957,6 @@ export default function App() {
           onSkipChapter={(dir) => directorRef.current?.skipChapter(dir)}
           capituloAtual={caption.idx}
         />
-      )}
-
-      {/* Dica do modo livre. Os `data-spot` são os alvos que o convite
-          aponta (F5): os três gestos que ele ensina são os três pedaços
-          desta linha, que fica na tela depois que o convite sai. */}
-      {hud.dicaDeVoo && (
-        <div className="free-hint">
-          {window.matchMedia?.('(pointer: coarse)').matches ? (
-            <>
-              <span data-spot="olhar">toque e arraste — olhar</span> ·{' '}
-              <span data-spot="visitar">toque num nome — visitar</span>
-            </>
-          ) : (
-            <>
-              <span data-spot="olhar">arrastar — olhar</span> ·{' '}
-              <span data-spot="voar">wasd/qe — voar</span> · z/x — rolar · roda —
-              velocidade
-              <br />
-              <span data-spot="visitar">clique num nome — viajar até a estrela</span>
-              <br />
-              {/* O OPT-IN DA CAPTURA: quem decide é o visitante, e a dica
-                  é onde a decisão mora — é a linha que ele já está lendo
-                  para saber como voar. O `onMouseDown` não deixa o botão
-                  roubar o foco: com o foco nele, a guarda de alvo de
-                  formulário do rig engoliria o WASD. */}
-              <button
-                type="button"
-                className="free-hint-captura"
-                disabled={capturado || capturaNegada}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => directorRef.current?.capturaDePonteiro.pedir()}
-              >
-                {capturaNegada
-                  ? 'este navegador não devolveu a captura do ponteiro'
-                  : capturado
-                    ? 'ponteiro capturado — esc devolve'
-                    : 'capturar o ponteiro'}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* dica do pausar-e-olhar */}
-      {inJourney && paused && (
-        <div className="free-hint">
-          arraste — olhar ao redor · espaço — retomar a viagem
-        </div>
       )}
 
       {/* o que está EM QUADRO no Atlas — e os dois gestos da escada */}
