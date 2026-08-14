@@ -15,8 +15,6 @@ Crie um commit local a cada checkpoint coerente de implementação validada — 
 
 Quando o dono reportar um problema, escreva-o em `docs/PENDENCIAS.md` **naquele momento** — não no fim da sessão, não "depois que eu confirmar". Este projeto não sofre de falta de registro; sofre de conversa que morre com a janela. Escreva com as palavras dele, não com as suas: o que ele VÊ é o item; a causa técnica, quando houver, é uma linha abaixo. Item resolvido sai da lista e vira commit — a lista é do que está aberto, não um diário.
 
-Antes de commitar prosa, rode `npm run docs:check`. Uma regra nova de documentação só vale se virar linha nesse script.
-
 ## Trazer um documento de volta
 
 A reforma de 2026-08-14 apagou diário, não ciência. O ponto de restauro é a tag `docs-antes-da-reforma`. Qualquer arquivo volta com:

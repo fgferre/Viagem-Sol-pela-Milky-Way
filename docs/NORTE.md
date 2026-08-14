@@ -251,6 +251,15 @@ Não reabrir sem que a condição listada mude.
 
 Já medidos e refutados — não repetir.
 
+- Verificador automático de prosa (`scripts/docs-check.mjs`, 2026-08-14):
+  construído, medido e **removido pelo dono no mesmo dia**. Quatro testes na
+  árvore: documento novo passa limpo mesmo com três violações (a lista de
+  documentos era digitada à mão), documento inexistente citado no código só
+  gera aviso, documento vivo citando código inexistente não é olhado. E a
+  praga que importa — documento que afirma faltar algo já pronto (43 casos
+  medidos) — é invisível para qualquer máquina. Palavras do dono: *"só mais
+  um problema para o futuro, um teste que pouco faz"*. Quem confere se o
+  escrito é verdade é gente, com auditoria por onda.
 - Subir contraste geral dos braços: amplifica todos os harmônicos junto.
 - Desacoplar a fase da poeira da fase da luz: piora muito.
 - Cor do disco decidida por raio (`mix(cold, warm)`): o disco fica

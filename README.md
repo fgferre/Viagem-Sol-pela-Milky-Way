@@ -41,7 +41,6 @@ npm run dev       # http://localhost:5173
 npm run build     # typecheck + build em dist/
 npm run preview   # serve o build → http://localhost:4173
 npm test          # vitest
-npm run docs:check
 ```
 
 O `dist/` serve em qualquer estático — caminhos relativos.

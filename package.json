@@ -10,7 +10,6 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "docs:check": "node scripts/docs-check.mjs",
     "data:stars": "node --max-old-space-size=4096 scripts/data/build-star-catalog.mjs",
     "data:galaxy": "node scripts/data/build-galactic-assets.mjs",
     "data:fit": "node scripts/data/fit-spiral-model.mjs",
