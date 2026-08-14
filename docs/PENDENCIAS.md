@@ -118,10 +118,25 @@ coisas, sempre as mesmas e sempre juntas: **o disco**, que encolhe com a distân
 existe só como economia e tem de acontecer **abaixo de um pixel**, onde ninguém vê. É
 assim que o SpaceEngine faz, e é a referência declarada dele.
 
-O Sol é o primeiro caso, não o caso especial: a mesma lei, dirigida pela magnitude,
-serve a estrela de catálogo, a estrela procedural e a ele. Isso liga direto à lei única
-que o `NORTE.md:15` já promete ("estrelas de catálogo e procedurais sob a mesma lei —
-magnitude, cor, tamanho") — o que falta é o Sol entrar nela e o vão fechar.
+**E ISSO NÃO É IDEIA NOVA — está no plano desde 2026-08-10, com detalhe.** O dono
+cobrou, com razão, que já tinha dito isso quando o motor do Sol foi trazido do projeto
+Novo Sol. Está em `docs/PLANO-ATLAS.md:67`: *"O pilar novo é o motor estelar. O NovoSol
+(14 módulos, 4.960 linhas) deixa de ser um singleton esculpido para o Sol e vira
+`stellarBody.ts` parametrizado por {teffK, radiusPc, rotPeriodDays, activityLevel,
+convective}. O Sol vira a instância nº 1"*. É a **Onda 7** (`PLANO-ATLAS.md:1064`), com
+Teff e raio das 16 heroes, pilotos Sirius e Betelgeuse, e `radiusFromSpect` sobre o
+catálogo inteiro. Mais a lei única já prometida em `NORTE.md:15`.
+
+**POR QUE NUNCA COMEÇOU — e é o item 0 de novo.** A mesma linha 67 do plano põe uma
+condição na própria peça: *"O Sol vira a instância nº 1, **com gate pixel-igual**"*.
+Tornar o Sol uma instância do motor genérico MOVE PIXEL por construção — é outra
+implementação desenhando a mesma estrela. O plano, portanto, pedia uma coisa e proibia
+o efeito inevitável dela no mesmo período. Com a revogação de 2026-08-14 (item 0) essa
+trava cai: o gate mede regressão, não imobilidade, e a Onda 7 deixa de estar
+autobloqueada.
+
+Ou seja: **o Sol é o primeiro caso, não o caso especial** — e o trabalho aqui não é
+inventar uma lei nova, é executar a que já está escrita, fechando o vão.
 
 **Então o conserto tem duas partes, nesta ordem:** fechar o vão (o clarão com espinhos
 vivo em toda a escada, e não só a 4.000 distâncias-da-Terra) e a auto-exposição (para
