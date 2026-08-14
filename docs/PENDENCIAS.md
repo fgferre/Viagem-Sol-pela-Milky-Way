@@ -36,6 +36,14 @@ essa distância que faz a troca ter degrau. A pupila já está pronta e desligad
 (`scripts/visual/luz-do-quadro.mjs`) e a escada já tem os degraus que faltavam.
 Detalhe técnico no item 3, abaixo, e em `src/three/core/pupila.ts`.
 
+> **→ O PLANO INTEIRO ESTÁ EM [`docs/LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md)**, escrito
+> em 2026-08-14 a partir de um censo do código: **18 representações de estrela**, 9
+> famílias de cor, 6 leis de magnitude, 6 pares de dupla-luz. Ele traz a lei única
+> (disco + clarão, troca abaixo de 1 px conservando fluxo, pupila), a ordem de
+> trabalho em 7 passos, a lista do que MORRE, e os testes que vão quebrar de
+> propósito. As Ondas 7 e 8 do `PLANO-ATLAS.md` continuam certas no espírito e
+> estavam erradas no alvo — a lei da estrela é quem manda agora.
+
 **O que a conversa de 2026-08-14 descobriu, e que não estava em lugar nenhum:**
 
 1. **O motor estelar JÁ ESTÁ GENERALIZADO.** Não existem três geradores de estrela.

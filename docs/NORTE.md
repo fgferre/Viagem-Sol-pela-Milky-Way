@@ -3516,6 +3516,17 @@ que governa o futuro:
        estiver na escala fotométrica da casa, o handoff disco↔ponto tem degrau
        POR CONSTRUÇÃO. A próxima peça é a reconciliação radiométrica, não mais
        calibração de exposição.
+  - **→ O CONTRATO ÚNICO PASSOU A EXISTIR: [`docs/LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md)**,
+    de um censo do código inteiro (2026-08-14). Três achados que mudam o alvo das
+    Ondas 7 e 8: (a) são **18 representações** de estrela, não 8 — os quatro glows da
+    galáxia, as sete lâminas emissivas, os splats do bake e o campo 2D do
+    carregamento nunca tinham sido listados; (b) **a galáxia já tem a lei certa E o
+    mesmo defeito** — o fluxo das 4,02 M partículas é `∝ px² ∝ 1/d²` abaixo de 3 px
+    (a troca sub-pixel conservando fluxo, exatamente a lei que queremos, rodando em
+    produção), mas acima de 20 px o ramo `1/px²` faz a estrela **escurecer ao ser
+    aproximada**, pelo mesmo motivo que o Sol; (c) o cadastro de escala **não tem
+    coluna para brilho** — só declara mentira de TAMANHO —, e é por isso que o vão
+    de 26 magnitudes nasceu calado e não quebra teste nenhum.
   - **A régua que julga isso passou a existir**: `scripts/visual/luz-do-quadro.mjs`
     (luz média, fração acima de meia luz, diâmetro da mancha, e o **disco
     verdadeiro** pela geometria como coluna de controle). Os números que o repo
