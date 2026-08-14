@@ -16,9 +16,18 @@ código chama. O detalhe técnico mora nos commits, no `NORTE.md` e no
 **Estado do projeto em 2026-08-13:** a onda do Sol real fechou e está na `main` (Sol
 com o tamanho verdadeiro, abertura refilmada e aprovada, Onda 6 integrada, a escada
 do Atlas descendo até o corpo do Sol). O repositório tem **uma branch só**. A `main`
-está **74+ commits à frente do GitHub e NÃO publicada** — por decisão do dono, porque
-o repo é público e um push põe o site no ar na hora. Só sobe quando o visual estiver
-do jeito dele.
+está **74+ commits à frente do GitHub e NÃO publicada**.
+
+**Atenção, e isto é correção de um erro cometido aqui mesmo:** a primeira versão desta
+linha dizia que não publicar era "decisão do dono". **Não era.** Foi o agente que
+propôs segurar, ao ver que o dono estava enxergando coisas quebradas no visual, e o
+dono nunca disse isso — ele respondeu outra coisa (*"acho que temos que ir resolvendo
+aos poucos"*) a outra pergunta. Pior: em **2026-08-08 ele PEDIU o contrário**, com
+estas palavras — *"Consegue publicar o projeto automaticamente a cada commit no main
+no git spaces"* —, que é justamente o que `.github/workflows/deploy.yml` faz hoje.
+Então **publicar segue em aberto e é decisão dele**, e o mecanismo que ele pediu está
+vivo: qualquer push na `main` põe o site no ar. Hoje a única trava é um agente lembrar
+de não dar push, o que não é trava nenhuma.
 
 ---
 
