@@ -27,10 +27,12 @@ pode ser ocluído pelo corpo que o causa.
 tela, não escolha. Aí entra um ponto que carrega **exatamente o mesmo fluxo** que o
 disco carregava. Feito assim, a troca é invisível por construção.
 
-**A pupila.** A faixa entre "estrela enchendo o céu" e "pontinho" é de ~15 ordens
-de grandeza; a tela tem 2. Uma câmera que se adapta não é enfeite, é a única forma
-de a física caber. Ela escurece **tudo junto** — no instante em que escurece só a
-fonte que incomoda, virou teto de brilho e virou mentira.
+**A compressão.** A faixa entre "estrela enchendo o céu" e "pontinho" é de ~15
+ordens de grandeza; a tela tem 2. Caber é obrigação, e há duas formas: adaptar
+(a pupila) ou comprimir com uma curva FIXA. **A casa usa a segunda, por decisão do
+dono — ver §7.** A curva comprime o ALTO e não levanta o baixo, então o campo
+estelar e a galáxia passam intocados e **nunca esmaecem**, aconteça o que
+acontecer em quadro. E por ser fixa, nada depende do que está em foco.
 
 ### O invariante que amarra tudo
 
@@ -103,7 +105,8 @@ A lei de tela das partículas tem **três regimes**:
 Ou seja: **o precedente exato da lei que queremos já roda em produção**, nos dois
 primeiros regimes, sobre 4 milhões de pontos. E o mesmo defeito do Sol — escurecer
 ao chegar perto — já está lá, assumido como teto anti-estouro. Os dois regimes de
-cima existem porque não havia pupila. Com pupila, eles não têm razão de existir.
+cima existem porque não havia compressão. Com a curva fixa (§7), eles não têm
+razão de existir.
 
 ---
 
@@ -137,8 +140,8 @@ Entrega:
 ### F2 — Pôr a fotosfera na unidade
 
 A malha do Sol emite ~1; tem de emitir a radiância verdadeira. Como half-float
-satura em 65.504, a multiplicação acontece **na emissão**, junto com o ganho da
-pupila — a malha entra na pupila.
+satura em 65.504, a conta acontece **na emissão**, junto com a compressão fixa
+(§7) — a malha entra na mesma curva que todo o resto.
 
 Sem abrir os 14 vendorizados: o adaptador já tem o precedente de injeção
 (`ctx.SUN_R_GLSL`, `ctx.SEG_EPS_GLSL`), e `onBeforeCompile` fecha o resto.
@@ -199,8 +202,8 @@ lâminas, glows e forjas.
 
 - **G1.** `aAlpha` deixa de ser artístico e vira fluxo na unidade da casa (um grumo
   de N estrelas não resolvidas tem fluxo integrado calculável). Aí o platô de 3–20 px
-  e o ramo que escurece acima de 20 px **morrem**: eram anti-estouro, e o
-  anti-estouro honesto é a pupila.
+  e o ramo que escurece acima de 20 px **morrem**: eram anti-estouro por camada, e
+  o anti-estouro honesto é a curva fixa de §7, igual para todos.
 - **G2.** Cessão partículas ↔ lâminas — a única dupla-luz sem mecanismo nenhum. O
   molde já existe e funciona (`unresolved`/`resolvedByCatalog`).
 - **G3.** **A promoção.** Hoje uma partícula da galáxia nunca vira estrela do
@@ -230,7 +233,7 @@ por cima.
 | `RAIO_ARTISTICO_DO_SOL_PC` como âncora viva | `escala.ts:123` | só sobrevive porque três números nunca foram re-derivados dele |
 | `claraoDoAtlas` (o apagamento de 100×) | `atlasConfig.ts:362` | curativo do item 3; morre com ele |
 | `aFocus` (2,6 MB de canal morto) | `stars.ts:66`, `starShaders.ts:28` | nasce zerado, ninguém escreve 1 — item 38 |
-| platô 3–20 px e ramo `1/px²` da galáxia | `galaxyShaders.ts:68-74` | anti-estouro artístico que a pupila substitui |
+| platô 3–20 px e ramo `1/px²` da galáxia | `galaxyShaders.ts:68-74` | anti-estouro artístico que a compressão fixa (§7) substitui |
 | `ANCORA_UA = 1` | `luz.ts:59` | o próprio cabeçalho já diz que é provisória e que é ELA que move quando a radiometria fechar |
 
 ---

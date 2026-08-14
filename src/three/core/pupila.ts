@@ -1,5 +1,28 @@
 // ============================================================
-// A PUPILA — a auto-exposição da casa (Onda 8), na parte que é conta pura.
+// ⚠ LÁPIDE — ESTA PEÇA FOI REPROVADA PELO DONO EM 2026-08-14, NO DIA EM QUE
+// NASCEU. Ela fica DESLIGADA e não é o plano. Palavras dele, ao vê-la ligada:
+//
+//   "eu quero que independentemente do astro/objeto que está em foco na tela
+//    nunca se esmaeça a grandeza da cena galáctica e do starfield, exuberante...
+//    nada de efeitos de pupila ou sei lá como vc chama isso..."
+//
+// E a medição lhe dá razão: ao enquadrar Sirius, ela fechava 16 STOPS — a cena
+// inteira ~100.000× mais escura. O defeito não era de calibração; era o conceito.
+//
+// O QUE ENTRA NO LUGAR é uma compressão FIXA na emissão (`β·asinh(x/β)`):
+// identidade no céu, logaritmo no Sol, igual em todo quadro e independente do
+// foco. Contrato em `docs/LEI-DA-ESTRELA.md` §7.
+//
+// O QUE SOBREVIVE DAQUI, e é por isso que o arquivo não foi apagado:
+//  1. A MEDIÇÃO que só ela permitiu — o vão de ~26 magnitudes entre a malha do
+//     Sol e a lei do ponto, que é o que destrava o item 3 das pendências.
+//  2. A TÉCNICA de aplicar no shader (deslocamento de `expoM0`), que existe pelo
+//     limite de half-float explicado abaixo e NÃO tem parentesco com adaptar por
+//     foco — a compressão fixa vai usar o mesmo caminho.
+// Quem for mexer aqui: NÃO religue a adaptação por foco. Leia §7 primeiro.
+// ============================================================
+//
+// A PUPILA — a auto-exposição da casa, na parte que é conta pura.
 // PURA: zero three, zero DOM. O atuador mora em `stars.ts`/`planetas.ts`/
 // `wrappedStars.ts` (um deslocamento de `expoM0`) e o fio em `director.ts`.
 //
@@ -289,9 +312,10 @@ export class Pupila {
  * meia-luz nenhuma fecha esse vão: enquanto a malha não estiver na escala
  * fotométrica da casa, o handoff disco↔ponto tem degrau por construção.
  *
- * Então a pupila fica MONTADA, medível e desligada, e o que a destrava é a
- * reconciliação radiométrica da malha — não mais calibração desta lei. Item 3
- * de `docs/PENDENCIAS.md`.
+ * E NADA A DESTRAVA: horas depois deste texto o dono a REPROVOU por inteiro (ver
+ * a lápide no topo do arquivo e o item 39 das pendências). Ela fica montada e
+ * medível porque o caminho do atuador serve à compressão fixa que a substitui —
+ * não porque exista um dia em que ela liga. Item 3 de `docs/PENDENCIAS.md`.
  */
 export function lerPortaDaPupila(bruto: string | null | undefined): ParametrosDaPupila | null {
   if (bruto === null || bruto === undefined || bruto === '' || bruto === '0') return null;

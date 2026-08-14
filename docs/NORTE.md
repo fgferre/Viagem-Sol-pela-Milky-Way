@@ -3486,9 +3486,19 @@ que governa o futuro:
   (emenda D11a do desenho da onda).
 - **Encarar o Sol de dentro do sistema ofusca DE PROPÓSITO** (m −15,84 e pico
   4,8e6 a 150 UA; 31,85% do quadro satura com bloom): é física sem
-  auto-exposição. NÃO "consertar" com teto de brilho — a auto-exposição da
-  Onda 8 é o conserto, e estes números são a semente medida dela.
-  - **2026-08-14 — A PUPILA EXISTE, DESLIGADA, E MOVEU O ALVO DA ONDA 8.**
+  auto-exposição. NÃO "consertar" com teto de brilho — e a proibição de teto
+  continua valendo INTEIRA. *(A segunda metade desta linha — "a auto-exposição da
+  Onda 8 é o conserto" — CAIU em 2026-08-14: o dono reprovou a adaptação por foco.
+  O conserto passou a ser compressão FIXA; ver logo abaixo.)*
+  - **2026-08-14 — A PUPILA FOI CONSTRUÍDA, MEDIDA E REPROVADA PELO DONO.**
+    A adaptação por foco está FORA: *"eu quero que independentemente do astro que
+    está em foco na tela nunca se esmaeça a grandeza da cena galáctica e do
+    starfield"*. Medido no dia: ao focar Sirius ela fechava **16 stops** (a cena
+    ~100.000× mais escura). `core/pupila.ts` fica como LÁPIDE, desligada. O que
+    entra no lugar é uma **compressão FIXA na emissão** (`β·asinh(x/β)`):
+    identidade no céu, logaritmo no Sol, igual em todo quadro e independente do
+    foco — contrato em [`LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md) §7. **O que
+    sobrevive dela** é o que ela mediu e a técnica de aplicar no shader:
     `src/three/core/pupila.ts` + atuadores; `?pupila=1` liga, `?pupila=alvo,kappa`
     varre, ausente/`0` é a imagem de hoje BIT A BIT (4/4 sentinelas). Ligada,
     a faixa branca acaba (luz média 0,945 → 0,04; acima de meia luz 100% → 0,2%).

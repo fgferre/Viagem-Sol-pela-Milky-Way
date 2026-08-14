@@ -31,18 +31,48 @@ projeto, o agente errou — está tudo aqui e nos documentos apontados daqui.
 **O BASTÃO DA PRÓXIMA CONVERSA (última rodada de 2026-08-14).** O item 3 mudou de
 dono: o que falta não é mais exposição, é **pôr a bola 3D do Sol e o ponto de luz
 na mesma escala de brilho** — hoje elas estão a ~26 magnitudes uma da outra, e é
-essa distância que faz a troca ter degrau. A pupila já está pronta e desligada
-(`?pupila=1` liga), a régua para julgar já existe
-(`scripts/visual/luz-do-quadro.mjs`) e a escada já tem os degraus que faltavam.
-Detalhe técnico no item 3, abaixo, e em `src/three/core/pupila.ts`.
+essa distância que faz a troca ter degrau. A régua para julgar já existe
+(`scripts/visual/luz-do-quadro.mjs`) e a escada de medição já tem os degraus que
+faltavam. Detalhe técnico no item 3, abaixo.
+
+**⚠ E A PUPILA ESTÁ REPROVADA — não a ressuscite.** `src/three/core/pupila.ts`
+existe, nasce DESLIGADA e fica como LÁPIDE: o dono a recusou por escrito no mesmo
+dia (item 39). O que sobrevive dela é o que ela MEDIU (o vão de 26 magnitudes) e a
+técnica de aplicar no shader, que existe pelo limite de half-float e nada tem a ver
+com adaptar por foco. O que entra no lugar é uma COMPRESSÃO FIXA na emissão — ver
+`LEI-DA-ESTRELA.md` §7.
 
 > **→ O PLANO INTEIRO ESTÁ EM [`docs/LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md)**, escrito
 > em 2026-08-14 a partir de um censo do código: **18 representações de estrela**, 9
 > famílias de cor, 6 leis de magnitude, 6 pares de dupla-luz. Ele traz a lei única
-> (disco + clarão, troca abaixo de 1 px conservando fluxo, pupila), a ordem de
+> (disco + clarão, troca abaixo de 1 px conservando fluxo, compressão fixa), a ordem de
 > trabalho em 7 passos, a lista do que MORRE, e os testes que vão quebrar de
 > propósito. As Ondas 7 e 8 do `PLANO-ATLAS.md` continuam certas no espírito e
 > estavam erradas no alvo — a lei da estrela é quem manda agora.
+
+**POR ONDE COMEÇAR — a triagem feita em 2026-08-14, com o dono na mesa.** A lista
+tem ~30 itens, mas muitos são o MESMO problema com nomes diferentes:
+
+- **Os itens 3, 4, 5, 12 e 40 são um só.** Todos morrem quando a bola e o ponto do
+  Sol ficarem na mesma escala de brilho (passos F1/F2 da `LEI-DA-ESTRELA.md`).
+  Cinco itens, um conserto. É onde está a dor de verdade — e é o que faz a
+  abertura do Atlas ser inútil hoje.
+- **Os itens 38 e 21 são lixo puro** — 2,6 MB de canal morto e 22,9 MB de memória
+  de vídeo paga e inútil. Apagar não muda um pixel. Risco zero, saem da lista no
+  mesmo dia.
+- **Os itens 8, 9 e 10 são HUD** — pequenos, independentes, sem risco de encostar
+  em luz.
+
+Palavras do dono no fim da rodada: *"precisamos começar a tirar as coisas da
+frente"*. A escolha entre começar pelo lixo (alívio rápido) ou pela fundação (mata
+cinco de uma vez) ficou com ele, e não foi respondida ainda.
+
+**A LIÇÃO CARA DE 2026-08-14, que custou dois erros no mesmo dia:** *procure a
+implementação existente ANTES de criar* (regra nº 2 do `AGENTS.md`). O agente
+escreveu um segundo mecanismo de cessão entre rótulos sem ver que o `LabelCanvas`
+já tinha um melhor, e só não commitou porque o dono o travou com *"vc nao pode
+consertar uma coisa e criar outro problema, pense nos impactos das suas decisoes"*.
+Antes de qualquer conserto: grep primeiro, código depois.
 
 **O que a conversa de 2026-08-14 descobriu, e que não estava em lugar nenhum:**
 
@@ -92,7 +122,10 @@ Detalhe técnico no item 3, abaixo, e em `src/three/core/pupila.ts`.
 **Estado do projeto em 2026-08-13:** a onda do Sol real fechou e está na `main` (Sol
 com o tamanho verdadeiro, abertura refilmada e aprovada, Onda 6 integrada, a escada
 do Atlas descendo até o corpo do Sol). O repositório tem **uma branch só**. A `main`
-está **74+ commits à frente do GitHub e NÃO publicada**.
+está à frente do GitHub e **NÃO publicada**. *(Medido em 2026-08-14: `git rev-list
+--count origin/main..HEAD` devolve **16**, contra o "74+" que esta linha afirmava —
+mas o `origin/main` local pode estar velho. Rodar `git fetch` antes de citar o
+número.)*
 
 **Atenção, e isto é correção de um erro cometido aqui mesmo:** a primeira versão desta
 linha dizia que não publicar era "decisão do dono". **Não era.** Foi o agente que
@@ -197,7 +230,9 @@ Por isso a pupila entra DENTRO do desenho de cada fonte, não num passe no fim.
 
 ---
 
-**A PUPILA ESTÁ CONSTRUÍDA, MEDIDA E DESLIGADA (2026-08-14).** Ligando com
+**A PUPILA FOI CONSTRUÍDA, MEDIDA E — HORAS DEPOIS — REPROVADA PELO DONO
+(2026-08-14).** Leia este bloco inteiro antes de tocar nela; o fim dele é o que
+vale. Ligando com
 `?pupila=1`, a faixa branca ACABA — de 100% do quadro lavado para 0,2%, em toda a
 escada. Mesmo assim ela nasce desligada, e a razão é uma medição, não cautela:
 
@@ -217,11 +252,17 @@ Enquanto isso não for reconciliado, a troca bola↔ponto tem degrau por constru
 e nenhuma calibração de exposição fecha esse buraco.
 
 **Então o que destrava o item 3 não é mais a pupila — é pôr a bola 3D na escala
-fotométrica da casa.** A pupila fica montada, testada e a um parâmetro de
-distância (`?pupila=1`, ou `?pupila=alvo,kappa` para varrer), com régua para
-julgá-la. Ver `src/three/core/pupila.ts`, cabeçalho.
-**O conserto é a AUTO-EXPOSIÇÃO — a pupila —, e teto de brilho é PROIBIDO por
-escrito.** Está no `NORTE.md` em dois lugares, com todas as letras: *"NÃO 'consertar'
+fotométrica da casa.** E a pupila, além de não ser mais o caminho, foi REPROVADA
+pelo dono no mesmo dia (item 39): ela escurecia a cena inteira conforme o que
+estava em foco, e ele quer o campo estelar sempre exuberante. Ela fica desligada,
+como lápide. O que entra no lugar é a compressão FIXA na emissão — a mesma curva
+para todo quadro, que comprime o alto e deixa o céu intocado
+(`LEI-DA-ESTRELA.md` §7).
+
+**O conserto era declarado como a AUTO-EXPOSIÇÃO, e teto de brilho é PROIBIDO por
+escrito.** *(A metade da auto-exposição CAIU em 2026-08-14 — ver acima e o item 39.
+A proibição de teto continua valendo INTEIRA.)* Está no `NORTE.md` em dois lugares,
+com todas as letras: *"NÃO 'consertar'
 com teto de brilho — a auto-exposição da Onda 8 é o conserto"*
 (`docs/NORTE.md:3487-3490`) e *"é o 'teto de brilho' que a Onda 4 proíbe"*
 (`docs/NORTE.md:3583-3587`). O motivo é simples: com teto, o Sol ficaria quase tão
