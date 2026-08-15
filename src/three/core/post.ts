@@ -117,6 +117,7 @@ export class Post {
       0.82 // limiar — preserva a fotosfera e faz estrelas HDR florescerem
     );
     this.composer.addPass(this.bloom);
+    this.domarOBloom();
 
     // knee asinh no HDR composto (depois do bloom, antes do ACES).
     // Default LIGADO com β=0,45 (rodada 20: com chromsat=0,5 na extinção,
@@ -152,6 +153,69 @@ export class Post {
     this.composer.addPass(this.outputPass);
     this.film = new ShaderPass(FILM_SHADER as never);
     this.composer.addPass(this.film);
+  }
+
+  /**
+   * A PORTA `?bbloom=β` — a compressão DENTRO do bloom, no filtro de
+   * passa-alta. Nasce DESLIGADA (β ausente ⇒ 0 ⇒ identidade exata).
+   *
+   * POR QUE AQUI E NÃO ANTES DO BLOOM. Medido em 15/08: um joelho aplicado ao
+   * quadro inteiro antes do bloom conserta a tela branca e RE-GRADUA O FILME —
+   * a Terra escurece até 199 de 255 em 77% do quadro e a galáxia de face perde
+   * luz em 40% dos pixels. É o preço de comprimir a imagem para conter uma
+   * fonte só.
+   *
+   * O `UnrealBloomPass` tem duas metades: o passa-alta separa o que vai
+   * florescer, borra numa pirâmide de mips e compõe; e no fim ele soma esse
+   * clarão POR CIMA do buffer de entrada, que continua intacto
+   * (`UnrealBloomPass.js`, o blend aditivo do `basic` sobre o readBuffer).
+   * Logo, comprimir DENTRO do passa-alta toca só o clarão: a imagem direta —
+   * Terra, planetas, superfícies, galáxia — não passa pela curva. É a
+   * diferença entre domar o brilho espalhado e re-graduar o filme.
+   *
+   * A restrição do dono, palavra dele: "eu nao quero que as estrelas de fundo
+   * diminuam ou morram". É contra isso que esta porta é medida — não basta o
+   * Sol encolher.
+   *
+   * A cirurgia é de texto, no molde de `ctx.tuneLic` (`world/stellarBody.ts`):
+   * o fragment do vendorizado é reescrito no ponto de uso, com agulha em
+   * `post.test`… que não existe — quem cobra é `luzDaCasa.test.ts`, por
+   * varredura, e a régua da luz, por medição.
+   */
+  private domarOBloom() {
+    const q = new URLSearchParams(window.location.search);
+    const beta = parseFloat(q.get('bbloom') ?? '');
+    if (!Number.isFinite(beta) || beta <= 0) return;
+    // O OMBRO. `?bombro=T` põe a curva para agir só ACIMA de T: abaixo dele a
+    // identidade é EXATA e todo clarão legítimo — Sirius, as heroes, a Terra,
+    // o bojo — passa bit a bit. É o que a primeira medição (asinh puro, sem
+    // ombro) provou ser necessário: com β=0,45 no quadro todo do passa-alta,
+    // Betelgeuse perdia 180 de 255 — "as estrelas diminuem", o proibido.
+    // Só o Sol vive acima de um T bem posto; é ele que o ombro doma.
+    const ombro = parseFloat(q.get('bombro') ?? '');
+    const t = Number.isFinite(ombro) && ombro > 0 ? ombro : 0;
+    const mat = (this.bloom as unknown as { materialHighPassFilter: THREE.ShaderMaterial })
+      .materialHighPassFilter;
+    const u = (this.bloom as unknown as { highPassUniforms: Record<string, { value: unknown }> })
+      .highPassUniforms;
+    u.uBetaBloom = { value: beta };
+    u.uOmbroT = { value: t };
+    mat.uniforms.uBetaBloom = u.uBetaBloom as { value: number };
+    mat.uniforms.uOmbroT = u.uOmbroT as { value: number };
+    const ALVO = 'vec4 texel = texture2D( tDiffuse, vUv );';
+    if (!mat.fragmentShader.includes(ALVO)) {
+      throw new Error('domarOBloom: o passa-alta do UnrealBloomPass mudou de forma');
+    }
+    mat.fragmentShader = mat.fragmentShader
+      .replace(
+        'uniform sampler2D tDiffuse;',
+        `uniform sampler2D tDiffuse;\nuniform float uBetaBloom;\nuniform float uOmbroT;\n${GLSL_COMPRESSAO}`
+      )
+      .replace(
+        ALVO,
+        `${ALVO}\n\ttexel.rgb = min( texel.rgb, uOmbroT ) + comprimir3( max( texel.rgb - uOmbroT, vec3( 0.0 ) ), uBetaBloom );`
+      );
+    mat.needsUpdate = true;
   }
 
   /**
