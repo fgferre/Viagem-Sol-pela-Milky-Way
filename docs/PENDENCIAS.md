@@ -29,9 +29,70 @@ O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é o canal do
 passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
-coisas da frente"*. **A escolha ficou com ele e não foi respondida:** começar
-pelo lixo (alívio rápido: 8, 9, 10, 21) ou pela fundação (mata 3, 4, 5, 12 e
-40 de uma vez).
+coisas da frente"*. **RESPONDIDA em 15/08: pela fundação.** A onda da luz
+(F0/F1/F2a) entrou; o estado dela está no bloco abaixo.
+
+---
+
+## ONDA DA LUZ — onde ela parou (15/08)
+
+**O que já está na `main` e é definitivo:**
+
+- A régua do item 3 ganhou JUIZ (`julgarEscada` em `luz-do-quadro.mjs`), com
+  limiares que saem de número que já existe na casa. O piso do céu é MEDIDO com
+  o Sol desligado (`&noplan=1`): 0,048 e 0,300% com bloom; 0,039 e 0,113% sem.
+- Nasceu `src/three/luzDaCasa.ts` — a unidade de brilho, irmã de `escala.ts`.
+- `escala.ts` ganhou a SEGUNDA COLUNA (`fatorDeBrilho`), com as três pernas
+  (espelho, completude, sabotagem). Ela já declarou cinco coisas que estavam
+  caladas, entre elas as ~26 magnitudes da fotosfera e o ponto-zero 4,83/4,85.
+- A compressão `β·asinh(x/β)` foi EXTRAÍDA de `post.ts` para `shaders/common.ts`
+  e aplicada na emissão de `STAR_FRAG`. **Nasce desligada.**
+- Existe o teste de invariante disco↔ponto, REPROVANDO de propósito
+  (`it.fails`), com o vão de hoje pinado em número.
+
+**O diagnóstico, que mudou com a medição:** a compressão na emissão **não** mata
+sozinha a tela branca — medido, nenhum β limpa o quadro sem esmaecer as
+estrelas. Sem bloom o quadro JÁ É honesto em toda a escada (borrão de 8 a 12 px).
+**Quem lava é o bloom**, que recebe o ponto do Sol quatro ordens de grandeza
+acima do próprio limiar.
+
+**A saída achada, e ela respeita a restrição do dono** — palavras dele,
+15/08: *"eu nao quero que as estrelas de fundo diminuam ou morram"*. A
+compressão entra DENTRO do passa-alta do bloom, com um OMBRO: abaixo do ombro a
+identidade é exata (todo clarão legítimo passa bit a bit), acima dele só o Sol
+vive e é comprimido. Como o `UnrealBloomPass` soma o clarão POR CIMA do buffer
+de entrada, a imagem direta — Terra, planetas, galáxia — nunca passa pela curva.
+
+Medido em `?bemis=300&bbloom=0.45&bombro=40`, contra hoje:
+
+| | hoje | proposta |
+|---|---|---|
+| 1 UA — quadro lavado | 100% | 3,8% |
+| 2000 UA — quadro lavado | 92% | 1,9% |
+| borrão (1 → 2000 UA) | 900 → 900 | 168 → 120 |
+
+E o que NÃO mudou, no pixel: `terra`, `interno`, `faceon`, `hero200`,
+`solestrela`, `soldisco` — todos com delta máximo de 1 nível (ULP de
+compilador). `hero8` muda, e mudar ali é o mecanismo funcionando: a vista está a
+0,6 pc de Betelgeuse, que é um mini-Sol com a mesma doença.
+
+**ESTÁ TUDO ATRÁS DE PORTAS DE URL, DESLIGADO POR PADRÃO.** Nenhum pixel do
+produto mudou. As três portas estão registradas no selo.
+
+**O QUE FALTA, e é decisão do dono, com as imagens em `capturas/`:**
+
+1. **Aprovar o visual** de `ITEM3-tres-caminhos.png` e, com o "sim", ligar como
+   padrão (tirar as portas) — o que fecha o item 3.
+2. **O halo do Sol fica generoso** (~170 px contra os ~40 da régua ideal). A
+   pergunta do dono que abriu isso: *"onde porque nao aparece o sol procedural a
+   1 UA isso nao seria verdadeiro?"* — e ele tem razão. A bola 3D ESTÁ
+   desenhada e no tamanho certo (7,5 px a 1 UA, prova em `SOL-A-1UA.png`); o que
+   acontece é que **o ponto continua despejando toda a luz dele por cima da
+   bola** e a engole. É o item 40 (dois Sóis) visto por dentro.
+3. **O conserto disso é a CESSÃO DO PONTO**: quando a bola assume, o ponto cede.
+   O canal já existe (`aCede` em `planetas.ts`, nasce 0 e ninguém escreve nele) e
+   é o passo E2/L2 da Lei da Estrela. Fecha o item 40 na raiz E aperta o halo.
+   **Não foi feito; é o próximo passo natural da onda.**
 
 E outra, que travou um conserto ruim no mesmo dia: *"vc nao pode consertar
 uma coisa e criar outro problema, pense nos impactos das suas decisoes"*.
@@ -64,7 +125,8 @@ O que ela ainda cobra: bancada cega a movimento (item 11); fotos reais do
 Sol nunca julgadas por ele (item 22).
 → `docs/NORTE.md`, seção “Como medir”.
 
-**3. A tela fica branca quando o Sol está longe.**
+**3. A tela fica branca quando o Sol está longe.** *(CONSERTO MEDIDO E ATRÁS DE
+PORTA — ver o bloco "ONDA DA LUZ" acima; falta o sim do dono para virar padrão.)*
 De ~1 UA a ~2.000 UA o quadro lava. O Sol encolhe 4.000 vezes e a mancha
 na tela não muda de tamanho. São dois defeitos: o ponto do Sol não encolhe,
 e o borrão da lente multiplica. A bola 3D está certa; o brilho por cima é
@@ -175,6 +237,15 @@ O modelo da casa tem quatro.
 
 **36.** (Suspeita a medir.) Duas leis de poeira convivendo. Medir antes
 de mexer — esta família já produziu um falso positivo (cessão da faixa).
+
+**41.** (Suspeita a medir.) `core/engine.test.ts:44` diz que a vista `sol`
+está a 0,063 pc; o valor vivo é 1,2955e-7 pc (`lodStellar.test.ts:1636`) —
+487.000× de diferença. O literal envelheceu na F3 e ninguém o moveu. O teste
+está VERDE só por isso: a asserção da `:77` exige que toda vista da lista
+esteja ACIMA de 0,05 pc, então trocar o número pelo certo deixa o teste
+vermelho **sem ter achado defeito nenhum**. O conserto certo é mover `sol`
+para a lista `PROFUNDAS` (`:62-66`) e medir o corte de câmera lá. Achado em
+15/08, na onda da luz; não tocado de propósito.
 
 **37.** (Suspeita a medir.) As nuvens escuras podem estar apagando o que
 está na frente delas. Par de capturas antes de tocar em qualquer linha.
