@@ -212,30 +212,49 @@ const FOLGA_COM_BLOOM = 3;
 /** O borrão é medido em px inteiros sobre uma imagem com grão e vinheta. 1 px
  *  de tremor não é o Sol deixando de encolher. */
 const TOLERANCIA_MONOTONIA_PX = 1;
-/** Abaixo de 1 UA a fotosfera enche o quadro e ser branco é HONESTO — a
- *   0,067 UA o disco sozinho tem 113 px de diâmetro. */
-const UA_DA_PAREDE = 1;
+// A PAREDE DE FOGO NÃO É MAIS CASO ESPECIAL. Havia aqui um `UA_DA_PAREDE = 1`
+// com tetos dobrados abaixo dele, porque a 0,067 UA o disco tem 113 px e ser
+// branco ali é HONESTO. Com os dois orçamentos saindo da ÁREA do borrão
+// permitido, o caso especial desapareceu sozinho: lá o disco é grande, o teto
+// cresce com ele, e a régua não precisa de exceção escrita à mão.
 /**
- * O PISO DO CÉU — a fração de pixels que já está acima de meia luz SEM o Sol
- * ter culpa: as estrelas brilhantes do campo e a galáxia.
+ * O PISO DO CÉU — o que o quadro já tem de luz SEM o Sol ter culpa: as
+ * estrelas brilhantes do campo e a galáxia.
  *
- * MEDIDO, não estimado: 1,133e-3 no par honesto (`EXTRA='&nobloom=1'`,
- * 900×900, `?q=cinema`) a 2.000 E a 4.000 UA — os dois degraus em que o clarão
- * do Sol cobre 6e-5 do quadro e portanto não é ele que está sendo contado.
- * Baseline de 15/08, `capturas/luz-do-quadro-nobloom1.json`.
+ * MEDIDO COM O SOL DESLIGADO, que é a única forma não circular de medi-lo:
+ * `EXTRA='&noplan=1'` tira a camada dos dez corpos (o vértice 0 é o Sol) e o
+ * que sobra no quadro é o céu e só ele. Leitura de 15/08, 900×900, `?q=cinema`,
+ * idêntica a 1 UA e a 2.000 UA:
  *
- * ELE EXISTE PORQUE O PRIMEIRO TETO ESTAVA ERRADO. A versão anterior cobrava
- * 1e-3 absolutos, um número derivado no papel — e o papel esqueceu o céu. Um
- * teto ABAIXO do piso do céu é critério impossível, e critério impossível
- * reprova o conserto certo, que é o pior defeito que um juiz pode ter. Como o
- * quadro com bloom está hoje em 100% (quatrocentas vezes o teto novo), a
- * correção não afrouxa nada: ela só para de cobrar do Sol o que é do céu.
+ *     com bloom:  luz média 0,048 · 0,300% acima de meia luz
+ *     sem bloom:  luz média 0,039 · 0,113% acima de meia luz
+ *
+ * O bloom espalha as estrelas brilhantes do próprio céu, e é por isso que os
+ * dois pisos são diferentes. Cobrar o piso sem bloom de um quadro com bloom
+ * seria cobrar do Sol o brilho das outras estrelas.
+ *
+ * ESTE NÚMERO JÁ ESTEVE ERRADO DUAS VEZES, e as duas ficam escritas porque a
+ * lição é a mesma: a primeira versão cobrava 1e-3 absolutos derivados no papel
+ * (e o papel esqueceu o céu); a segunda mediu o piso só no par SEM bloom e o
+ * aplicou aos dois. Teto abaixo do piso é critério impossível, e critério
+ * impossível reprova o conserto certo — o pior defeito que um juiz pode ter.
+ *
+ * E NÃO AFROUXA NADA: o quadro de hoje, com bloom, está em 100% acima de meia
+ * luz e luz média 0,945. Contra o piso do céu isso é 330× e 20×.
  */
-const PISO_DO_CEU = 1.133e-3;
-/** "Céu honesto vive perto de 0,02" (o cabeçalho desta régua). Note que NÃO há
- *  piso: exigir luz média MÍNIMA seria teto de brilho pela porta dos fundos. */
-const TETO_LUZ_MEDIA_LONGE = 0.05;
-const TETO_LUZ_MEDIA_PERTO = 0.1;
+const PISO_ACIMA_DE_MEIA_COM_BLOOM = 3.0e-3;
+const PISO_ACIMA_DE_MEIA_SEM_BLOOM = 1.133e-3;
+const PISO_LUZ_MEDIA_COM_BLOOM = 0.048;
+const PISO_LUZ_MEDIA_SEM_BLOOM = 0.039;
+/**
+ * A margem da luz média sobre o piso, e por que ela existe separada do
+ * orçamento geométrico: `acimaDeMeia` conta pixel acima de MEIA LUZ, então a
+ * área permitida do borrão a traduz direto. A luz MÉDIA não — o clarão
+ * legítimo tem uma cauda ABAIXO de meia luz que não entra no borrão e mesmo
+ * assim soma na média. 15% é a folga declarada para essa cauda; medida, ela
+ * vale ~6% no conserto de 15/08.
+ */
+const MARGEM_DA_CAUDA = 1.15;
 
 /**
  * O veredito da escada. Puro: recebe as linhas que `medirQuadro` produziu e
@@ -289,7 +308,10 @@ export function julgarEscada({
     const disco = l.disco ?? discoRealPx(l.ua, alturaPx);
     const clarao = claraoPsfPx(l.ua, alturaPx);
     const teto = folga * Math.max(disco, clarao);
-    const perto = l.ua < UA_DA_PAREDE;
+    // a área que o borrão permitido ocupa no quadro — o orçamento do Sol
+    const orcamento = (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
+    const pisoAcima = comBloom ? PISO_ACIMA_DE_MEIA_COM_BLOOM : PISO_ACIMA_DE_MEIA_SEM_BLOOM;
+    const pisoLuz = comBloom ? PISO_LUZ_MEDIA_COM_BLOOM : PISO_LUZ_MEDIA_SEM_BLOOM;
 
     // 2. teto do borrão
     if (l.borrao > teto) {
@@ -303,17 +325,21 @@ export function julgarEscada({
     //    lavar é exatamente o disco que ele tem direito de fazer. Com isso a
     //    parede de fogo deixa de precisar de caso especial: lá o disco tem 113
     //    px e o orçamento cresce sozinho.
-    const tetoAcima = PISO_DO_CEU + (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
+    const tetoAcima = pisoAcima + orcamento;
     if (l.acimaDeMeia > tetoAcima) {
       motivos.push(
         `${(100 * l.acimaDeMeia).toFixed(3)}% do quadro acima de meia luz `
-        + `(teto ${(100 * tetoAcima).toFixed(3)}% = céu ${(100 * PISO_DO_CEU).toFixed(3)}% `
+        + `(teto ${(100 * tetoAcima).toFixed(3)}% = céu ${(100 * pisoAcima).toFixed(3)}% `
         + `+ o borrão permitido)`
       );
     }
-    const tetoLuz = perto ? TETO_LUZ_MEDIA_PERTO : TETO_LUZ_MEDIA_LONGE;
+    // a luz MÉDIA sobre o piso do céu, com a margem da cauda declarada
+    const tetoLuz = pisoLuz * MARGEM_DA_CAUDA + orcamento;
     if (l.luzMedia > tetoLuz) {
-      motivos.push(`luz média ${l.luzMedia.toFixed(3)} (teto ${tetoLuz})`);
+      motivos.push(
+        `luz média ${l.luzMedia.toFixed(3)} (teto ${tetoLuz.toFixed(3)} = `
+        + `céu ${pisoLuz} × ${MARGEM_DA_CAUDA} + o borrão permitido)`
+      );
     }
 
     return {

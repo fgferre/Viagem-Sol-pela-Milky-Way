@@ -77,6 +77,39 @@ export class Post {
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(scene, camera));
 
+    // ── A PORTA DE MEDIÇÃO `?knee2=β` — o joelho ANTES do bloom ──────────
+    //
+    // NASCE DESLIGADA e é EXPERIMENTO, não decisão. Ela existe porque a
+    // varredura de 15/08 mediu uma coisa que nenhum documento previa: com a
+    // compressão na emissão do ponto (`?bemis=`), o quadro melhora de forma
+    // monótona — o borrão volta a encolher com a distância, que é a queixa
+    // literal do item 3 — mas NÃO chega ao critério com nenhum β que poupe as
+    // estrelas. Medido: β=30 (que já custa 13% em Sirius) ainda deixa 25% do
+    // quadro lavado e borrão de 473 px contra teto de 20.
+    //
+    // O par honesto (`&nobloom=1`) explica por quê: SEM BLOOM O QUADRO JÁ É
+    // HONESTO, com borrão de 8 a 12 px em toda a escada. Quem lava é o bloom,
+    // que recebe o ponto do Sol quatro ordens de grandeza acima do próprio
+    // limiar mesmo depois da compressão.
+    //
+    // A §7 da Lei já dizia isto por escrito — "no lugar errado da cadeia
+    // (depois do bloom, onde não adianta)" — e este passe é o que permite
+    // MEDIR a alternativa em vez de discutir. Ele NÃO troca a ordem da cadeia
+    // oficial: o joelho de baixo continua onde estava, com a calibração de
+    // β=0,45 que venceu os dois gates da galáxia com ele pós-bloom
+    // (rodada 20). Ligar este aqui muda o filme, e mudar o filme é decisão do
+    // dono, com foto — não de quem mede.
+    const q2 = new URLSearchParams(window.location.search);
+    const beta2 = parseFloat(q2.get('knee2') ?? '');
+    if (Number.isFinite(beta2) && beta2 > 0) {
+      const preKnee = new ShaderPass(KNEE_SHADER as never);
+      const u = preKnee.uniforms as Record<string, { value: number }>;
+      u.uBeta.value = beta2;
+      u.uAmt.value = 1;
+      u.uMode.value = q2.get('kneemode') === 'lum' ? 0 : 1;
+      this.composer.addPass(preKnee);
+    }
+
     this.bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       0.72, // força
