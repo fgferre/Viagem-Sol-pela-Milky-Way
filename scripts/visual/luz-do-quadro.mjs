@@ -14,7 +14,7 @@
 // responde "mudou?" e não "melhorou?", e perto do Sol ele fica CEGO — `ua150` e
 // `ua40` devolvem md5 IGUAIS com céus diferentes, porque o branco satura os dois.
 //
-// AS QUATRO COLUNAS, e cada uma responde uma pergunta diferente:
+// AS CINCO COLUNAS, e cada uma responde uma pergunta diferente:
 //
 //   luzMedia    — média de luminância do quadro em display (0..1). É o número
 //                 comparável aos três já registrados no repo (0,927 a 2,2 UA;
@@ -30,12 +30,20 @@
 //                 geometria e nada mais: 2·R☉/d, projetado na mesma lente e no
 //                 mesmo buffer. NÃO é medido na imagem — é a verdade contra a
 //                 qual o borrão é julgado.
+//   clarao      — o diâmetro que o clarão do Sol-ponto tem DIREITO de ter,
+//                 pela PSF que a casa já desenha (`common.ts:300-314`).
+//                 Também não é medido na imagem. Sem ele o julgamento seria
+//                 injusto: a 2.000 UA o disco vale 0,004 px, e cobrar "borrão
+//                 igual ao disco" seria cobrar o impossível.
 //
-// É a última coluna que transforma a régua em juiz. O defeito do item 3 não é
-// "a tela está clara": é que `borrao` fica GRUDADO no tamanho da tela enquanto
-// `discoReal` cai três ordens de grandeza. Um Sol honesto tem borrão que
-// acompanha o disco (mais o clarão do instrumento, que é logarítmico no fluxo e
-// portanto encolhe devagar); um Sol quebrado tem borrão constante.
+// São as duas últimas colunas que transformam a régua em juiz — e desde 15/08
+// o juiz existe de verdade, em `julgarEscada`, no molde puro e testável de
+// `julgarVistas` e `julgarProntidao`. O defeito do item 3 não é "a tela está
+// clara": é que `borrao` fica GRUDADO no tamanho da tela enquanto `discoReal`
+// cai três ordens de grandeza e o clarão legítimo só encolhe de ~14,5 px para
+// ~9,9 px. Um Sol honesto tem borrão que acompanha o maior dos dois; um Sol
+// quebrado tem borrão constante. Hoje a régua REPROVA, e reprovar é o
+// comportamento certo: é a linha de base do defeito, medida em vez de citada.
 //
 // COMO LER O QUE ELE IMPRIME. Duas armadilhas herdadas, as duas já registradas:
 //  1. NUNCA julgar por PNG achado em `capturas/` — a pasta é cache e sobrevive
@@ -54,7 +62,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { capturarCDP, APP_PADRAO } from './chrome.mjs';
+import { capturarCDP, julgarProntidao, APP_PADRAO } from './chrome.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -63,6 +71,17 @@ const [JW, JH] = (process.env.JANELA || '900x900').split('x').map(Number);
 // O MESMO PIN do `ab-identidade`: sem `?q=` o `autoQuality` rebaixa o tier no
 // meio da espera e a régua compara duas qualidades diferentes.
 const PIN = '&q=cinema';
+// ...e o MESMO SUFIXO (`ab-identidade.mjs:595-596`), pelo mesmo argumento,
+// palavra por palavra: uma leva com knob não pode pisar no arquivo da leva
+// oficial. Aqui isso não era teoria. Em 15/08 o `capturas/luz-do-quadro.json`
+// em disco tinha `"extra":"&pupila=1"` dentro — três degraus medidos com a
+// pupila REPROVADA ligada, ou seja, números bonitos que, tomados por "antes",
+// fariam o conserto do item 3 parecer piora. A régua gravava sempre no mesmo
+// caminho e não deixava rastro do knob no NOME: a culpa é dela, não de quem
+// rodou. Com o sufixo, cada modo tem o seu arquivo e o "antes" oficial é
+// intocável.
+const CHAVE_DO_ESTADO = `${EXTRA}${process.env.JANELA || ''}`;
+const SUFIXO = CHAVE_DO_ESTADO ? `-${CHAVE_DO_ESTADO.replace(/[^a-z0-9]+/gi, '')}` : '';
 
 // ── as constantes da conta, todas com procedência ─────────────────────────
 /** 1 UA em pc. O mesmo conversor de `escala.ts` (AU_PARA_PC). */
@@ -83,6 +102,55 @@ export function discoRealPx(distanciaUa, alturaPx = JH, fovGraus = FOV_GRAUS) {
   const dPc = distanciaUa * UA_EM_PC;
   const theta = (2 * RAIO_SOL_PC) / dPc; // rad de DIÂMETRO
   return (theta * alturaPx) / (2 * Math.tan((fovGraus * Math.PI) / 360));
+}
+
+// ── a segunda verdade: o clarão que o instrumento tem DIREITO de fazer ────
+/** `expoM0` — a magnitude cujo pico de PSF vale 1. `director.ts` (`new
+ *  StarField(..., { expoM0: 3.5, sigmaPx: 0.85, ... })`). */
+const EXPO_M0 = 3.5;
+/** `sigmaPx` — a largura do instrumento, na mesma chamada. */
+const SIGMA_PX = 0.85;
+/** `PONTO_ZERO_SOL_PC` — a magnitude do Sol a 1 pc, de
+ *  `src/three/world/planetas/planetas.ts:164`. */
+const PONTO_ZERO_SOL_PC = -0.15;
+/** O 2π do shader, com os dígitos DELE (`common.ts:307`). Usar `2*Math.PI`
+ *  aqui faria a régua e o shader discordarem na oitava casa por nada. */
+const DOIS_PI_DO_SHADER = 6.2831853;
+
+/**
+ * Diâmetro do clarão do Sol-ponto, em px — a coluna que faltava para a régua
+ * poder julgar sem ser injusta.
+ *
+ * "Um Sol honesto tem borrão que acompanha o disco" é armadilha se lido ao pé
+ * da letra: a 2.000 UA o disco vale 0,004 px, e qualquer clarão maior que zero
+ * daria razão infinita. O próprio cabeçalho já concedia a correção — "mais o
+ * clarão do instrumento, que é logarítmico no fluxo e portanto encolhe
+ * devagar" — e o que faltava era o NÚMERO. Ele não é parâmetro livre nem gosto
+ * de quem mede: sai da PSF que a casa já desenha, e só dela.
+ *
+ * O resultado quantifica a frase: de 1 UA a 2.000 UA o clarão legítimo encolhe
+ * de ~14,5 px para ~9,9 px enquanto a distância cresce 60.000×. É isso que
+ * "logarítmico no fluxo" quer dizer. O borrão medido hoje está DUAS ORDENS DE
+ * GRANDEZA acima disso, e é essa distância que o item 3 nomeia.
+ *
+ * PROCEDÊNCIA. As quatro constantes acima são redigitadas de `starPSF`
+ * (`src/three/shaders/common.ts:300-314`), de `director.ts` e de
+ * `planetas.ts:164`, porque esta régua roda em node puro e não importa
+ * TypeScript. As quatro têm espelho em `luz-do-quadro.test.mjs`, no molde de
+ * `escala.test.ts:63-69`: quem mover o número na fonte é obrigado, pelo teste,
+ * a mover aqui — e é o mesmo contrato que impede a lei de existir em duas
+ * versões que por acaso se parecem.
+ */
+export function claraoPsfPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigmaPx = SIGMA_PX) {
+  const dPc = distanciaUa * UA_EM_PC;
+  // a MESMA forma do vertex de `planetas.ts` (log2 · 0,30103, sem o clamp de
+  // 1e-3 pc do `catalogApparentMag` — que cai bem no meio deste domínio)
+  const m = PONTO_ZERO_SOL_PC + 5 * (Math.log2(dPc) * 0.30103);
+  const sigma = (sigmaPx * alturaPx) / 1080;
+  const E = Math.pow(10, -0.4 * (m - expoM0));
+  const pico = E / (DOIS_PI_DO_SHADER * sigma * sigma);
+  const rSat = pico > 1 ? sigma * Math.sqrt(2 * Math.log(pico)) : 0;
+  return 2 * (2.2 * sigma + rSat);
 }
 
 /**
@@ -123,6 +191,134 @@ export function medirQuadro(dados, largura, altura) {
   return { luzMedia: soma / N, acimaDeMeia: acima / N, pico, borrao: 0 };
 }
 
+// ── O JUÍZO ───────────────────────────────────────────────────────────────
+// Até aqui a régua MEDIA e não JULGAVA: imprimia seis colunas e ia embora. Um
+// instrumento sem veredito devolve a decisão para quem lê a tabela, e é assim
+// que "melhorou" vira opinião. `julgarVistas` (`ab-identidade.mjs:786`) e
+// `julgarProntidao` (`chrome.mjs:94`) já são puros e testados exatamente por
+// isso; esta é a terceira do mesmo molde.
+//
+// TODOS os limiares abaixo saem de número que já existe na casa — nenhum é
+// gosto. É a trava contra o modo de falha mais barato de todos: afrouxar o
+// juiz até o conserto passar.
+
+/** Folga do borrão sobre a verdade, no par honesto (`EXTRA='&nobloom=1'`): o
+ *  `size` da PSF é o suporte do sprite, e a largura ACIMA DE MEIA LUZ depois do
+ *  ACES e do grão do `FILM_SHADER` não é a mesma coisa. Meia folga. */
+const FOLGA_SEM_BLOOM = 1.5;
+/** Com bloom, o `UnrealBloomPass` espalha por desenho (raio 0,58,
+ *  `post.ts:74-78`). O dobro da folga — declarada, não frouxa. */
+const FOLGA_COM_BLOOM = 3;
+/** O borrão é medido em px inteiros sobre uma imagem com grão e vinheta. 1 px
+ *  de tremor não é o Sol deixando de encolher. */
+const TOLERANCIA_MONOTONIA_PX = 1;
+/** Abaixo de 1 UA a fotosfera enche o quadro e ser branco é HONESTO — a
+ *   0,067 UA o disco sozinho tem 113 px de diâmetro. */
+const UA_DA_PAREDE = 1;
+/** Orçamento de pixels lavados longe do Sol. Sai da ÁREA do que tem direito de
+ *  brilhar: o clarão de 13,5 px num buffer de 900² é 1,8e-4 do quadro, e os
+ *  nove planetas somam ~8,5e-5. Uns 2,6e-4 no total; 1e-3 dá 4× de folga. */
+const TETO_ACIMA_DE_MEIA_LONGE = 1e-3;
+/** Na parede de fogo, o disco de 113 px sozinho é 1,2e-2 do quadro. */
+const TETO_ACIMA_DE_MEIA_PERTO = 2e-2;
+/** "Céu honesto vive perto de 0,02" (o cabeçalho desta régua). Note que NÃO há
+ *  piso: exigir luz média MÍNIMA seria teto de brilho pela porta dos fundos. */
+const TETO_LUZ_MEDIA_LONGE = 0.05;
+const TETO_LUZ_MEDIA_PERTO = 0.1;
+
+/**
+ * O veredito da escada. Puro: recebe as linhas que `medirQuadro` produziu e
+ * devolve aprovação por degrau, sem subir Chrome.
+ *
+ * O QUE ELE COBRA, em ordem de dureza:
+ *
+ *  1. MONOTONIA — o borrão nunca cresce com a distância. É a asserção mais
+ *     dura e a mais barata, e é a assinatura exata do item 3: hoje o borrão é
+ *     CONSTANTE em `>=900` de 1 a 500 UA enquanto o disco cai três ordens de
+ *     grandeza. Um borrão que não encolhe é o defeito, escrito em uma linha.
+ *  2. TETO — o borrão cabe num múltiplo do maior entre o disco real e o clarão
+ *     legítimo da PSF. É o "acompanha o disco" do cabeçalho, corrigido pelo
+ *     que o instrumento tem direito de fazer.
+ *  3. ORÇAMENTO — `acimaDeMeia` e `luzMedia`, com teto diferente dentro e fora
+ *     da parede de fogo.
+ *
+ * O QUE ELE NÃO COBRA, e isto é tão importante quanto o resto: **`pico` não é
+ * critério.** No centro do disco o pico É 1 — aquilo é a fotosfera. Quem
+ * "consertar" o item 3 baixando o pico está aplicando teto de brilho, que
+ * `docs/NORTE.md:183` proíbe e que a lista de becos do NORTE já registra. O
+ * defeito é a ÁREA da mancha, nunca a altura dela. Um juiz que olhasse o pico
+ * aprovaria justamente o conserto errado.
+ */
+export function julgarEscada({ linhas = [], alturaPx = JH, comBloom = true } = {}) {
+  const folga = comBloom ? FOLGA_COM_BLOOM : FOLGA_SEM_BLOOM;
+  const ordenadas = [...linhas].sort((a, b) => a.ua - b.ua);
+  const motivosPorUa = new Map(ordenadas.map((l) => [l.ua, []]));
+
+  // 1. monotonia, degrau a degrau, do perto para o longe
+  for (let i = 1; i < ordenadas.length; i++) {
+    const ant = ordenadas[i - 1];
+    const cur = ordenadas[i];
+    if (cur.borrao > ant.borrao + TOLERANCIA_MONOTONIA_PX) {
+      motivosPorUa
+        .get(cur.ua)
+        .push(
+          `borrão CRESCEU com a distância: ${cur.borrao} px a ${cur.ua} UA `
+          + `contra ${ant.borrao} px a ${ant.ua} UA`
+        );
+    }
+  }
+
+  const julgadas = ordenadas.map((l) => {
+    const motivos = motivosPorUa.get(l.ua);
+    const disco = l.disco ?? discoRealPx(l.ua, alturaPx);
+    const clarao = claraoPsfPx(l.ua, alturaPx);
+    const teto = folga * Math.max(disco, clarao);
+    const perto = l.ua < UA_DA_PAREDE;
+
+    // 2. teto do borrão
+    if (l.borrao > teto) {
+      motivos.push(
+        `borrão ${l.borrao} px contra teto de ${teto.toFixed(1)} px `
+        + `(disco ${disco.toFixed(2)} · clarão ${clarao.toFixed(2)} · folga ${folga}×)`
+      );
+    }
+    // 3. orçamento do quadro
+    const tetoAcima = perto ? TETO_ACIMA_DE_MEIA_PERTO : TETO_ACIMA_DE_MEIA_LONGE;
+    if (l.acimaDeMeia > tetoAcima) {
+      motivos.push(
+        `${(100 * l.acimaDeMeia).toFixed(1)}% do quadro acima de meia luz `
+        + `(teto ${(100 * tetoAcima).toFixed(1)}%)`
+      );
+    }
+    const tetoLuz = perto ? TETO_LUZ_MEDIA_PERTO : TETO_LUZ_MEDIA_LONGE;
+    if (l.luzMedia > tetoLuz) {
+      motivos.push(`luz média ${l.luzMedia.toFixed(3)} (teto ${tetoLuz})`);
+    }
+
+    return {
+      ua: l.ua,
+      veredito: motivos.length ? 'REPROVA' : 'PASSA',
+      teto,
+      disco,
+      clarao,
+      motivos,
+    };
+  });
+
+  const reprovadas = julgadas.filter((j) => j.veredito === 'REPROVA');
+  const erro = reprovadas.length > 0;
+  const resumo = erro
+    ? `>>> REPROVA — ${reprovadas.length} de ${julgadas.length} degraus fora da lei`
+    : `>>> PASSA — ${julgadas.length} degraus dentro da lei`;
+  const texto = julgadas
+    .flatMap((j) => [
+      `${j.veredito.padEnd(8)} ${String(j.ua).padStart(8)} UA`,
+      ...j.motivos.map((m) => `           · ${m}`),
+    ])
+    .join('\n');
+  return { linhas: julgadas, reprovadas: reprovadas.length, erro, resumo, texto };
+}
+
 /**
  * A ESCADA PADRÃO, em UA. Os degraus não são redondos por acaso:
  *  0,067 UA = 10 M km — a parede de fogo, onde a bola sai certa hoje;
@@ -148,35 +344,68 @@ async function principal() {
   mkdirSync(saida, { recursive: true });
 
   const linhas = [];
+  const vias = [];
   let porta = 9500;
   for (const ua of escada) {
     process.stdout.write(`${String(ua).padStart(8)} UA … `);
     const { png, via } = await capturarCDP({
       url: urlDaDistancia(ua), largura: JW, altura: JH, porta: porta++,
     });
-    const arquivo = resolve(saida, `luz-${String(ua).replace('.', 'p')}ua.png`);
+    const arquivo = resolve(saida, `luz-${String(ua).replace('.', 'p')}ua${SUFIXO}.png`);
     writeFileSync(arquivo, png);
     const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const m = medirQuadro(data, info.width, info.height);
-    linhas.push({ ua, via, ...m, disco: discoRealPx(ua) });
+    vias.push(via);
+    linhas.push({ ua, via, ...m, disco: discoRealPx(ua), clarao: claraoPsfPx(ua) });
   }
 
   const num = (v, c = 3) => v.toFixed(c).replace('.', ',');
   process.stdout.write('\n');
   process.stdout.write(`janela ${JW}x${JH}${EXTRA ? `  EXTRA=${EXTRA}` : ''}\n\n`);
-  process.stdout.write('      UA   luzMedia   acimaDeMeia    pico   borrao(px)   discoReal(px)\n');
-  process.stdout.write('  ' + '─'.repeat(68) + '\n');
+  process.stdout.write(
+    '      UA   luzMedia   acimaDeMeia    pico   borrao(px)   discoReal(px)   clarao(px)\n'
+  );
+  process.stdout.write('  ' + '─'.repeat(82) + '\n');
   for (const l of linhas) {
     const borrao = l.borrao >= JW ? `>=${JW}` : String(l.borrao);
     process.stdout.write(
       `${String(l.ua).padStart(8)}   ${num(l.luzMedia).padStart(8)}   ` +
       `${num(100 * l.acimaDeMeia, 1).padStart(9)}%   ${num(l.pico, 2).padStart(5)}   ` +
-      `${borrao.padStart(10)}   ${num(l.disco, 2).padStart(13)}\n`
+      `${borrao.padStart(10)}   ${num(l.disco, 2).padStart(13)}   ` +
+      `${num(l.clarao, 2).padStart(10)}\n`
     );
   }
-  const jsonPath = resolve(saida, 'luz-do-quadro.json');
-  writeFileSync(jsonPath, JSON.stringify({ janela: [JW, JH], extra: EXTRA, linhas }, null, 2));
+  // O VEREDITO — a régua deixa de devolver a decisão para quem lê a tabela.
+  // Hoje ele REPROVA, e reprovar é o comportamento certo: é a linha de base do
+  // item 3, medida em vez de citada de comentário.
+  const comBloom = !/nobloom=1/.test(EXTRA);
+  const juizo = julgarEscada({ linhas, alturaPx: JH, comBloom });
+  process.stdout.write('\n');
+  if (juizo.texto) process.stdout.write(`${juizo.texto}\n`);
+  process.stdout.write(`${juizo.resumo}\n`);
+
+  const jsonPath = resolve(saida, `luz-do-quadro${SUFIXO}.json`);
+  writeFileSync(
+    jsonPath,
+    JSON.stringify(
+      { janela: [JW, JH], extra: EXTRA, comBloom, veredito: juizo.resumo, linhas },
+      null,
+      2
+    )
+  );
   process.stdout.write(`\n  ${jsonPath}\n`);
+
+  // e o mesmo juiz de prontidão que os outros harnesses já usam: sem ele a
+  // coluna `via` era colhida e nunca julgada, e uma leva inteira no modo lento
+  // produzia números com cara de bons (`chrome.mjs:70-92`).
+  const prontidao = julgarProntidao({
+    vias,
+    appUrl: process.env.APP_URL || '',
+    fallbackOk: process.env.FALLBACK_OK === '1',
+  });
+  if (prontidao.mensagem) process.stdout.write(prontidao.mensagem);
+  if (prontidao.erro) process.exitCode = 1;
+  else if (juizo.erro) process.exitCode = 1;
 }
 
 // Importável sem rodar: as duas contas puras (`medirQuadro` e `discoRealPx`)
