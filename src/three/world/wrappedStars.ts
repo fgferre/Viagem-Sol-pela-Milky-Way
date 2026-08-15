@@ -38,7 +38,7 @@ import {
   GLSL_STAR_COLOR,
   GLSL_STAR_PSF,
 } from '../shaders/common';
-import { STAR_FRAG } from '../shaders/starShaders';
+import { STAR_FRAG, BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
 
@@ -503,6 +503,8 @@ export class WrappedStars {
         // F1 da luz é a MESMA constante, não mais o mesmo número redigitado
         uExpoM0: { value: EXPO_M0 },
         uSigmaPx: { value: SIGMA_PX },
+        // o MESMO β do campo: as cascas compartilham o STAR_FRAG
+        uBeta: { value: BETA_DA_EMISSAO },
         uCell: { value: new Float32Array(cells) },
         uProb: { value: new Float32Array(probs) },
         uMagLo: { value: new Float32Array(magLo) },

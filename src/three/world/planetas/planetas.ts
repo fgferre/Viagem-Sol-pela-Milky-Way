@@ -100,7 +100,7 @@
 import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGalactico';
 import { GLSL_STAR_PSF } from '../../shaders/common';
-import { STAR_FRAG } from '../../shaders/starShaders';
+import { STAR_FRAG, BETA_DA_EMISSAO } from '../../shaders/starShaders';
 import { deepPointGain, needsAttributeWrite } from '../lodStellar';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
@@ -429,6 +429,9 @@ export class Planetas {
         uGain: { value: 0 },
         uExpoM0: { value: psf.expoM0 },
         uSigmaPx: { value: psf.sigmaPx },
+        // o MESMO β do campo: os dez corpos compartilham o STAR_FRAG, e o
+        // vértice 0 é o Sol — o ponto que estoura o half-float
+        uBeta: { value: BETA_DA_EMISSAO },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,

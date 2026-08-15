@@ -9,6 +9,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import type { Pass } from 'three/addons/postprocessing/Pass.js';
 import { FILM_SHADER } from '../shaders/dustShaders';
+import { GLSL_COMPRESSAO } from '../shaders/common';
 
 // KNEE pré-ACES (rodada 19): compressão asinh do compósito HDR — o tone
 // map de divulgação da referência (Lupton 2004; Filmic/AgX) comprime
@@ -39,8 +40,13 @@ const KNEE_SHADER = {
     uniform float uBeta;
     uniform float uMode;
     varying vec2 vUv;
-    // GLSL não tem asinh nativo
-    vec3 asinh3(vec3 v) { return log(v + sqrt(v * v + 1.0)); }
+    // A DEFINIÇÃO SAIU DAQUI e foi para shaders/common.ts (GLSL_COMPRESSAO),
+    // sem uma vírgula de mudança no corpo: a F2 da luz precisou da MESMA curva
+    // na emissão do ponto, e escrever a segunda cópia numa casa que já tem
+    // Ballesteros em três e a PSF em quatro seria o erro conhecido. As duas
+    // chamadas abaixo continuam exatamente como estavam — o que mudou foi o
+    // endereço da função, não o texto que o compilador recebe.
+    ${GLSL_COMPRESSAO}
     void main() {
       vec4 c = texture2D(tDiffuse, vUv);
       vec3 x = max(c.rgb, 0.0);

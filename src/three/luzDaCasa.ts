@@ -253,6 +253,50 @@ export function magnitudeDoSol(distPc: number): number {
  */
 export const SOBRETAXA_DO_HALO = 1.534;
 
+// ─── A COMPRESSÃO NA EMISSÃO ──────────────────────────────────────────────
+
+/**
+ * O β da compressão fixa na emissão do ponto estelar — o joelho de
+ * `β·asinh(x/β)` que `shaders/common.ts` define e `STAR_FRAG` aplica.
+ *
+ * NASCE ZERO, e zero é IDENTIDADE EXATA (`comprimir3` devolve `x` sem tocar em
+ * nada). É o idioma com que a casa instala mecanismo novo sem mover um pixel
+ * no dia em que ele entra — o mesmo do `uAmt = 0` do joelho do compósito.
+ *
+ * O VALOR FINAL É CALIBRAÇÃO, e ela tem duas pontas que puxam para lados
+ * opostos:
+ *  · β MENOR comprime mais → o quadro limpa, mas as estrelas mais brilhantes
+ *    esmaecem, e esmaecer o campo estelar é o que o dono proibiu por escrito;
+ *  · β MAIOR poupa as estrelas → mas o Sol pode continuar lavando a tela.
+ * Varre-se com `?bemis=` e julga-se com `scripts/visual/luz-do-quadro.mjs`.
+ *
+ * TETO DURO, derivado e não digitado: o valor escrito tem de caber no
+ * half-float do composer (65.504). Com a radiância máxima alcançável isso põe
+ * β abaixo de ~4.000, e `luzDaCasa.test.ts` escreve a conta.
+ */
+export const BETA_EMISSAO = 0;
+
+/**
+ * A porta `?bemis=` — pura, recebe a query em vez de ler `window`, para poder
+ * ser testada no ambiente `node` da suíte. Ausente ou envenenada devolve o
+ * default, que é o neutro exato.
+ */
+export function lerBetaDaEmissao(busca: string): number {
+  const v = parseFloat(new URLSearchParams(busca).get('bemis') ?? '');
+  return Number.isFinite(v) && v >= 0 ? v : BETA_EMISSAO;
+}
+
+/**
+ * O ESPELHO EM CPU de `comprimir3` (`shaders/common.ts`), palavra por palavra.
+ * Existe para o teste poder provar que a curva não é teto sem subir GPU — e
+ * fica aqui, não no shader, porque é aqui que mora a lei da luz.
+ */
+export function comprimir(x: number, beta: number): number {
+  if (beta <= 0) return x;
+  const v = Math.max(x, 0) / beta;
+  return beta * Math.log(v + Math.sqrt(v * v + 1.0));
+}
+
 // ─── O INSTRUMENTO DE REFERÊNCIA, para o cadastro poder declarar ──────────
 
 /**

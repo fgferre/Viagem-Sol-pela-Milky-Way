@@ -8,7 +8,22 @@ import {
   GLSL_DENSITY_LOCAL,
   GLSL_STAR_COLOR,
   GLSL_STAR_PSF,
+  GLSL_COMPRESSAO,
 } from './common';
+import { lerBetaDaEmissao } from '../luzDaCasa';
+
+/**
+ * O β da compressão na emissão, resolvido UMA vez — e aqui, que é o módulo
+ * dono do fragment que o consome. Os três materiais que desenham ponto
+ * estelar (`world/stars.ts`, `world/wrappedStars.ts`,
+ * `world/planetas/planetas.ts`) o leem daqui em vez de cada um ler a URL.
+ *
+ * O guarda de `window` não é paranoia: `vitest.config.ts` roda em
+ * `environment: 'node'`, e `planetas.test.ts` importa esta cadeia inteira.
+ */
+export const BETA_DA_EMISSAO = lerBetaDaEmissao(
+  typeof window === 'undefined' ? '' : window.location.search
+);
 
 // STAR_VERT é do CAMPO DE CATÁLOGO e só dele (`stars.ts:36`). As cascas
 // procedurais têm vertex próprio e compartilham só o STAR_FRAG
@@ -123,6 +138,12 @@ varying float vSat;
 varying float vSigma;
 varying float vPeak;
 
+// β da compressão na emissão (F2 da luz). ZERO por nascimento, e zero é
+// IDENTIDADE EXATA — ver comprimir3 em shaders/common.ts.
+uniform float uBeta;
+
+${GLSL_COMPRESSAO}
+
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
   float r2 = dot(uv, uv);
@@ -148,6 +169,17 @@ void main() {
   // núcleo esbranquiçado nas estouradas (saturação do sensor)
   col += vec3(0.9, 0.95, 1.0) * core * core * vSat * 0.6;
 
-  gl_FragColor = vec4(col, 1.0);
+  // A COMPRESSÃO NA EMISSÃO (Lei da Estrela §7). Ela vai no col FINAL e NÃO
+  // no peak: o pico é multiplicado pelo perfil logo acima, então comprimi-lo
+  // achataria o PERFIL em vez do VALOR — a estrela perderia o formato em vez
+  // de perder o excesso. Aqui o que fica limitado é o que se escreve no
+  // buffer, que é exatamente o problema: a 1 UA este ponto deposita pico da
+  // ordem de 4e11 num alvo half-float que satura em 65.504, e o bloom espalha
+  // o infinito resultante pela tela inteira. É esse o item 3 das pendências.
+  //
+  // O suporte do sprite não muda: com beta acima de 2 o raio comprimido é
+  // MENOR que o rSat que o vértice já calculou, então gl_PointSize continua
+  // sobrando e starPSF fica intocada.
+  gl_FragColor = vec4(comprimir3(col, uBeta), 1.0);
 }
 `;

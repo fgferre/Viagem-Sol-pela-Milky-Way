@@ -20,8 +20,11 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import {
   ALTURA_DE_REFERENCIA_PX,
+  BETA_EMISSAO,
   EXPO_M0,
   FOV_DA_CASA,
+  comprimir,
+  lerBetaDaEmissao,
   SIGMA_PX,
   M_V_SOL,
   M_V_SOL_DO_CAMPO,
@@ -329,6 +332,112 @@ describe('3. o invariante da troca — o teste que a casa não tinha', () => {
     const disco = depositoDoDisco(RADIANCIA_DA_FOTOSFERA, 1);
     const ponto = depositoDoPonto(magnitudeDoSol(d));
     expect(Math.abs(ponto / disco - 1)).toBeLessThan(1e-9);
+  });
+});
+
+// ------------------------------------------------------------
+describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () => {
+  it('NASCE NEUTRA: β = 0 é identidade EXATA, bit a bit', () => {
+    expect(BETA_EMISSAO).toBe(0);
+    for (const x of [0, 1e-6, 0.45, 1, 1e3, 3.9e11]) {
+      expect(Object.is(comprimir(x, 0), x), String(x)).toBe(true);
+      expect(Object.is(comprimir(x, -1), x), String(x)).toBe(true);
+    }
+  });
+
+  it('O CÉU PASSA INTOCADO: muito abaixo de β a curva é a identidade', () => {
+    // É a regra 2 do §7 — "o campo estelar e a galáxia nunca esmaecem", e o
+    // preço tem de ser MEDIDO, não afirmado. Com β = 300, Sirius (pico 30,6
+    // num buffer de 900 px) perde **0,17%**. Invisível, e é o número que
+    // autoriza esse β; com β = 30 a mesma estrela perderia 13%, que já é
+    // esmaecer o céu e está do lado proibido.
+    const sirius = 30.6;
+    const perdaEm300 = 1 - comprimir(sirius, 300) / sirius;
+    expect(perdaEm300).toBeCloseTo(0.0017, 4);
+    expect(perdaEm300).toBeLessThan(0.002);
+
+    const perdaEm30 = 1 - comprimir(sirius, 30) / sirius;
+    expect(perdaEm30).toBeGreaterThan(0.1);
+
+    // e o fundo do céu, cinco ordens abaixo de β, sente 5e-12 — que é o
+    // termo (x/β)²/6 da série do asinh, não zero. "Intocado" aqui quer dizer
+    // abaixo do quantum do half-float por dez ordens de grandeza.
+    expect(Math.abs(comprimir(1e-3, 300) / 1e-3 - 1)).toBeLessThan(1e-11);
+  });
+
+  it('SABOTAGEM — A CURVA NÃO É TETO, e é isto que a separa do proibido', () => {
+    // `NORTE.md:183` proíbe teto de brilho. A diferença é executável: com
+    // asinh, chegar mais perto de uma estrela CONTINUA deixando-a mais
+    // brilhante, só que devagar; com um teto, dois brilhos diferentes viram o
+    // mesmo pixel e a informação morre.
+    const beta = 300;
+    const longe = comprimir(2.4e4, beta);
+    const perto = comprimir(4e11, beta);
+    expect(perto).toBeGreaterThan(longe);
+
+    // e o mesmo par sob um TETO reprovaria — os dois saem iguais
+    const teto = (x: number, c: number) => Math.min(x, c);
+    expect(teto(2.4e4, 6.5e3)).toBe(teto(4e11, 6.5e3));
+
+    // estritamente crescente em toda a faixa, não só nos dois pontos
+    let anterior = -Infinity;
+    for (let e = -6; e <= 12; e += 0.25) {
+      const v = comprimir(Math.pow(10, e), beta);
+      expect(v).toBeGreaterThan(anterior);
+      anterior = v;
+    }
+  });
+
+  it('A GUARDA DO HALF-FLOAT — o teto de β é DERIVADO, não escolhido', () => {
+    // o composer usa HalfFloatType (EffectComposer, por omissão) e satura em
+    // 65.504. O maior valor alcançável hoje é o pico do Sol-ponto a 1 UA.
+    const UA_EM_PC = 1 / 206264.80624548031;
+    const picoDoSolA1UA = picoDaPsf(magnitudeDoSol(UA_EM_PC), EXPO_M0, SIGMA_PX, 900);
+    expect(picoDoSolA1UA).toBeGreaterThan(1e11); // é o número do item 3
+
+    const TETO_HALF_FLOAT = 65504;
+    // β = 300 (o ponto de partida da calibração) põe o Sol em ~6,5e3
+    expect(comprimir(picoDoSolA1UA, 300)).toBeLessThan(TETO_HALF_FLOAT);
+    // e existe um β acima do qual a compressão deixa de proteger o buffer
+    expect(comprimir(picoDoSolA1UA, 4000)).toBeGreaterThan(TETO_HALF_FLOAT);
+  });
+
+  it('A CURVA TEM UM ENDEREÇO SÓ — o GLSL e o espelho de CPU são a mesma', () => {
+    const glsl = ler('src/three/shaders/common.ts');
+    expect(glsl).toContain('vec3 asinh3(vec3 v) { return log(v + sqrt(v * v + 1.0)); }');
+    expect(glsl).toContain('if (b <= 0.0) return x;');
+    expect(glsl).toContain('return b * asinh3(max(x, 0.0) / b);');
+
+    // `post.ts` deixou de ter a definição própria e passou a interpolar a mesma
+    const post = ler('src/three/core/post.ts');
+    expect(post).toContain('${GLSL_COMPRESSAO}');
+    expect(post.match(/vec3 asinh3\(vec3 v\)/g)).toBeNull();
+
+    // e o STAR_FRAG aplica a curva na escrita final
+    const star = ler('src/three/shaders/starShaders.ts');
+    expect(star).toContain('${GLSL_COMPRESSAO}');
+    expect(star).toContain('gl_FragColor = vec4(comprimir3(col, uBeta), 1.0);');
+  });
+
+  it('SABOTAGEM — A PUPILA NÃO VOLTA PELA PORTA DOS FUNDOS', () => {
+    // regra 1 do §7: NADA de exposição que dependa do que está em foco. A
+    // curva é fixa, e o texto do caminho da emissão tem de provar isso — nem
+    // média do quadro, nem magnitude do alvo, nem índice de foco.
+    const PROIBIDO = /focusIndex|alvoEmFoco|mediaDoQuadro|luminanciaDoQuadro|adaptar/i;
+    for (const arquivo of ['src/three/luzDaCasa.ts', 'src/three/shaders/starShaders.ts']) {
+      expect(PROIBIDO.test(ler(arquivo)), `${arquivo} lê estado por foco na emissão`).toBe(false);
+    }
+    // e a sabotagem: o padrão ACHA de verdade quando existe
+    expect(PROIBIDO.test('const g = mediaDoQuadro();')).toBe(true);
+  });
+
+  it('a porta ?bemis= aceita número e recusa lixo — o default é o neutro', () => {
+    expect(lerBetaDaEmissao('')).toBe(BETA_EMISSAO);
+    expect(lerBetaDaEmissao('?bemis=300')).toBe(300);
+    expect(lerBetaDaEmissao('?bemis=0')).toBe(0);
+    expect(lerBetaDaEmissao('?bemis=abacaxi')).toBe(BETA_EMISSAO);
+    expect(lerBetaDaEmissao('?bemis=-5')).toBe(BETA_EMISSAO);
+    expect(lerBetaDaEmissao('?outro=1')).toBe(BETA_EMISSAO);
   });
 });
 

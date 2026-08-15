@@ -313,6 +313,41 @@ void starPSF(
 }
 `;
 
+// ============================================================
+// A COMPRESSÃO FIXA — a curva `β·asinh(x/β)`, com UM endereço.
+//
+// ELA JÁ EXISTIA, e é essa a notícia: `core/post.ts` a escreveu na rodada 19
+// para o joelho do compósito HDR, com `asinh3` definido lá dentro. Quando a
+// Lei da Estrela §7 mandou levá-la também para a EMISSÃO, o caminho fácil era
+// escrever uma segunda — e uma casa que já tem Ballesteros em três cópias e a
+// PSF em quatro sabe onde isso termina. A definição sobe para cá; `post.ts` e
+// `starShaders.ts` passam a interpolar a MESMA, e `common.test`… não existe:
+// quem cobra é `luzDaCasa.test.ts` e `starShaders`, por varredura de texto.
+//
+// POR QUE ESTA CURVA E NÃO UM TETO. A faixa entre "estrela enchendo o céu" e
+// "pontinho" é de ~15 ordens de grandeza; o buffer é half-float e satura em
+// 65.504. Caber é obrigação, e há duas saídas: ADAPTAR (a pupila, REPROVADA
+// pelo dono — ver `core/pupila.ts`) ou COMPRIMIR com curva FIXA. A fixa não
+// depende de nada em quadro, então nada pisca e nada esmaece por foco. E ela
+// não é teto: `asinh` é estritamente crescente, então chegar mais perto de uma
+// estrela continua deixando-a mais brilhante — só que devagar. Um teto faria
+// dois brilhos diferentes virarem o mesmo pixel, e é isso que `NORTE.md:183`
+// proíbe. `luzDaCasa.test.ts` tem sabotagem para separar as duas.
+//
+// `comprimir3` com `b <= 0` é IDENTIDADE EXATA, e o zero é o default: é o
+// mesmo idioma do `uAmt = 0` do joelho (`post.ts:103-106`), que é como a casa
+// instala mecanismo novo sem mover um pixel no dia em que ele entra.
+// ============================================================
+export const GLSL_COMPRESSAO = /* glsl */ `
+// GLSL não tem asinh nativo
+vec3 asinh3(vec3 v) { return log(v + sqrt(v * v + 1.0)); }
+
+vec3 comprimir3(vec3 x, float b) {
+  if (b <= 0.0) return x;
+  return b * asinh3(max(x, 0.0) / b);
+}
+`;
+
 // Cor estelar: Planck × CIE 1931 → sRGB linear, normalizado a Y = 1.
 //
 // As cinco âncoras pintadas à mão que existiam aqui tinham dois defeitos
