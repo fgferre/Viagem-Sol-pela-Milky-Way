@@ -36,6 +36,7 @@ import {
   RAIO_EQ_TERRA_PC,
   TerraResolvida,
   cessaoAlvo,
+  cessaoPeloGate,
   posicaoDaTerraUA,
 } from './world/corpos/terra';
 import { LuaResolvida, RAIO_LUA_PC } from './world/corpos/lua';
@@ -530,6 +531,9 @@ export class Director {
   private expOverride = false;
   /** a gradação por contexto do Atlas está ligada? (`?grad=0` desliga) */
   private gradacaoLigada = true;
+  /** ?bcede= — multiplicador do gate na cessão do Sol-ponto (0 = porta
+   *  fechada ⇒ a lei herdada por dominância; bancada da onda da luz) */
+  private cessaoPeloGateMult = 0;
 
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
@@ -663,6 +667,14 @@ export class Director {
     // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
     // no default do Atlas, nunca num caminho terceiro.
     this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
+    // ?bcede= — a quarta porta de medição da onda da luz (F2): re-ancora
+    // a cessão do Sol-ponto no gate do palco (valor = multiplicador do
+    // limiar de 4 px; 1 ⇒ a rampa começa no próprio gate). Ausente ou
+    // inválida ⇒ 0 ⇒ o caminho herdado por dominância, bit a bit. Irmã
+    // de bemis/bbloom/bombro no selo; a conta mora em `cessaoPeloGate`
+    // (terra.ts) e o uso no tick, junto da cessão do Sol.
+    const bcede = parseFloat(this.debug.get('bcede') ?? '');
+    this.cessaoPeloGateMult = Number.isFinite(bcede) && bcede > 0 ? bcede : 0;
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
     // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
     // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
@@ -3497,22 +3509,38 @@ export class Director {
       // janela de 0,02–0,05 pc. Nenhum passo para trás na luz em
       // nenhum dos três degraus.
       const solCorpoEmQuadro = this.sun.group.visible;
+      const solDiscoPx = diametroAparentePx(this.solRaioPc, dHome, hPx, cam.fov);
+      const alvoPorDominancia = cessaoAlvo(
+        solCorpoEmQuadro,
+        solDiscoPx,
+        this.stars
+          ? psfPointSizePx(
+              // fase 1: o Sol é o ILUMINANTE, não tem fase (é o mesmo
+              // `mix(fase, 1.0, aEhSol)` do VERT da camada)
+              magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1),
+              this.stars.expoM0,
+              this.stars.sigmaPx,
+              hPx
+            )
+          : 0
+      );
+      // A QUARTA PORTA DA ONDA DA LUZ (`?bcede=`), bancada e não
+      // produto: re-ancora a cessão no GATE DO PALCO (4 px × o
+      // multiplicador da porta) em vez do halo previsto da PSF. NÃO é o
+      // corte binário que o comentário acima proíbe: a rampa nasce
+      // 0 EXATO no armar do gate (razão 1 ⇒ g = 0) e sobe com o
+      // TAMANHO da bola — sem pop por construção, nos dois sentidos.
+      // `max` com a dominância: a porta só ADIANTA a cessão, nunca a
+      // atrasa — perto do cruzamento de 0,55 UA a lei herdada continua
+      // sendo o piso. Porta fechada (0) ⇒ o valor herdado, bit a bit.
       this.planetas.escreverCessao(
         'sun',
-        cessaoAlvo(
-          solCorpoEmQuadro,
-          diametroAparentePx(this.solRaioPc, dHome, hPx, cam.fov),
-          this.stars
-            ? psfPointSizePx(
-                // fase 1: o Sol é o ILUMINANTE, não tem fase (é o mesmo
-                // `mix(fase, 1.0, aEhSol)` do VERT da camada)
-                magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1),
-                this.stars.expoM0,
-                this.stars.sigmaPx,
-                hPx
-              )
-            : 0
-        )
+        this.cessaoPeloGateMult > 0
+          ? Math.max(
+              alvoPorDominancia,
+              cessaoPeloGate(solCorpoEmQuadro, solDiscoPx, this.cessaoPeloGateMult)
+            )
+          : alvoPorDominancia
       );
     }
     this.dust.update(cam.position, hPx, time);

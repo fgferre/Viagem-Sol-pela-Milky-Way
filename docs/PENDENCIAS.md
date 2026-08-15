@@ -49,6 +49,9 @@ coisas da frente"*. **RESPONDIDA em 15/08: pela fundação.** A onda da luz
   e aplicada na emissão de `STAR_FRAG`. **Nasce desligada.**
 - Existe o teste de invariante disco↔ponto, REPROVANDO de propósito
   (`it.fails`), com o vão de hoje pinado em número.
+- A cessão do Sol-ponto tem porta de bancada: `?bcede=` re-ancora a rampa no
+  gate do palco (`cessaoPeloGate`, terra.ts), composta por `max` com a
+  dominância — fechada por padrão, 0 ⇒ caminho herdado bit a bit.
 
 **O diagnóstico, que mudou com a medição:** a compressão na emissão **não** mata
 sozinha a tela branca — medido, nenhum β limpa o quadro sem esmaecer as
@@ -77,7 +80,7 @@ compilador). `hero8` muda, e mudar ali é o mecanismo funcionando: a vista está
 0,6 pc de Betelgeuse, que é um mini-Sol com a mesma doença.
 
 **ESTÁ TUDO ATRÁS DE PORTAS DE URL, DESLIGADO POR PADRÃO.** Nenhum pixel do
-produto mudou. As três portas estão registradas no selo.
+produto mudou. As quatro portas estão registradas no selo.
 
 **O QUE FALTA, e é decisão do dono, com as imagens em `capturas/`:**
 
@@ -89,10 +92,27 @@ produto mudou. As três portas estão registradas no selo.
    desenhada e no tamanho certo (7,5 px a 1 UA, prova em `SOL-A-1UA.png`); o que
    acontece é que **o ponto continua despejando toda a luz dele por cima da
    bola** e a engole. É o item 40 (dois Sóis) visto por dentro.
-3. **O conserto disso é a CESSÃO DO PONTO**: quando a bola assume, o ponto cede.
-   O canal já existe (`aCede` em `planetas.ts`, nasce 0 e ninguém escreve nele) e
-   é o passo E2/L2 da Lei da Estrela. Fecha o item 40 na raiz E aperta o halo.
-   **Não foi feito; é o próximo passo natural da onda.**
+3. **A CESSÃO DO PONTO foi construída e MEDIDA (15/08, segunda rodada) — e a
+   medição corrigiu o registro e devolveu a ordem da Lei.** O registro dizia
+   "ninguém escreve no canal `aCede`" e era falso: o Director já escrevia a
+   cessão por dominância todo quadro — ela é que dá 0 exato longe de ~0,55 UA,
+   por desenho. A porta nova `?bcede=` re-ancora a rampa no gate do palco
+   (4 px × o valor da porta; `cessaoPeloGate`, terra.ts), composta por `max`
+   com a dominância, neutra fechada (47/47 vistas bit-idênticas). Medido:
+   - cessão PARCIAL é impotente: 0,87 de cessão a 0,8 UA ⇒ quadro bit-idêntico
+     (o ponto está 11 ordens acima da saturação; multiplicar não aparece);
+   - cessão PLENA a 1 UA mata a tela branca SOZINHA, sem compressão nenhuma:
+     borrão 900 → 6 px, lavado 100% → 0,97% (0,71% com as b-portas) — e o céu
+     inteiro fica de pé, nada esmaece;
+   - mas a bola aparece LARANJA E FRACA (`CESSAO-1UA-tres-mundos.png`): o
+     ponto escondia o vão F2 — a fotosfera emite ~1 autorado, não a radiância
+     real da unidade da casa;
+   - e pré-F2 a rampa suave é impossível: a lei candidata cava um VALE no
+     borrão — 102 → 6 → 171 px em 0,067 → 1 → 3,6 UA — um pop espacial.
+   **A Lei tinha razão: "nada acima de F2 funciona antes de F2." O próximo
+   passo da onda é F2 — a fotosfera na unidade da casa, com a compressão na
+   emissão alcançando a malha. A cessão fecha DEPOIS, com `?bcede=` já pronta
+   como instrumento.**
 
 E outra, que travou um conserto ruim no mesmo dia: *"vc nao pode consertar
 uma coisa e criar outro problema, pense nos impactos das suas decisoes"*.

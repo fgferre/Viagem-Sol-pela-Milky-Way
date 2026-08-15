@@ -15,7 +15,7 @@ import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
 import { deepPointGain, psfPointSizePx, sunStarGain } from '../lodStellar';
 import { PONTO_ZERO_SOL_PC, magDoVertice } from '../planetas/planetas';
-import { cessaoAlvo } from './terra';
+import { cessaoAlvo, cessaoPeloGate } from './terra';
 import {
   CORPOS_DEFAULT_ON,
   CUSHION_DO_GATE,
@@ -357,5 +357,57 @@ describe('a fiação do Sol no Director (F2)', () => {
         psfPointSizePx(magDoVertice(PONTO_ZERO_SOL_PC, perto, 1), 3.5, 0.85, H_HARNESS)
       )
     ).toBeGreaterThan(0);
+  });
+});
+
+describe('a cessão pelo gate (?bcede=, bancada da onda da luz)', () => {
+  const DIRECTOR = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
+  const RAIO_SOL_FISICO_PC = (696_340 / AU_KM) * AU_PARA_PC;
+  const H_HARNESS = 1713;
+
+  it('fora de quadro, porta fechada ou diâmetro envenenado ⇒ 0 EXATO', () => {
+    expect(cessaoPeloGate(false, 500, 1)).toBe(0);
+    expect(cessaoPeloGate(true, 40, 0)).toBe(0);
+    expect(cessaoPeloGate(true, 40, Number.NaN)).toBe(0);
+    expect(cessaoPeloGate(true, Number.NaN, 1)).toBe(0);
+  });
+
+  it('no armar do gate (4 px, mult 1) a cessão é 0 EXATO — sem pop na fronteira', () => {
+    // é o que separa esta âncora do corte binário que o comentário do
+    // Director proíbe: armar o gate NÃO muda o ponto em nada
+    expect(cessaoPeloGate(true, LIMIAR_DO_GATE_PX, 1)).toBe(0);
+    // e abaixo do gate (corpo desarmado ⇒ fora de quadro) também é 0
+    expect(cessaoPeloGate(false, LIMIAR_DO_GATE_PX / CUSHION_DO_GATE, 1)).toBe(0);
+  });
+
+  it('com a bola a 2,5 gates (10 px) a cessão é 1 EXATO — a bola assumiu', () => {
+    expect(cessaoPeloGate(true, 2.5 * LIMIAR_DO_GATE_PX, 1)).toBe(1);
+  });
+
+  it('a 1 UA, com mult 1, o ponto cede INTEIRO — a bola de 14,4 px aparece', () => {
+    const dPc = 4.8481e-6; // 1 UA
+    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
+    expect(disco).toBeCloseTo(14.4, 1);
+    expect(cessaoPeloGate(true, disco, 1)).toBe(1);
+  });
+
+  it('monotônica na bola, e o multiplicador empurra a rampa inteira', () => {
+    let anterior = 0;
+    for (let px = LIMIAR_DO_GATE_PX; px <= 12; px += 0.05) {
+      const v = cessaoPeloGate(true, px, 1);
+      expect(v).toBeGreaterThanOrEqual(anterior);
+      anterior = v;
+    }
+    // mult 2 dobra a régua: 10 px ainda não é plena, 20 px é
+    expect(cessaoPeloGate(true, 10, 2)).toBeLessThan(1);
+    expect(cessaoPeloGate(true, 20, 2)).toBe(1);
+  });
+
+  it('o Director compõe por MAX com a dominância, atrás da porta', () => {
+    expect(DIRECTOR).toContain("this.debug.get('bcede')");
+    expect(DIRECTOR).toContain('cessaoPeloGate(');
+    // porta fechada ⇒ o valor herdado, bit a bit — o ramo `:` do ternário
+    expect(DIRECTOR).toContain(': alvoPorDominancia');
+    expect(DIRECTOR).toContain('this.cessaoPeloGateMult > 0');
   });
 });

@@ -316,6 +316,33 @@ export function cessaoAlvo(
   return heroDominanceFade(diametroMeshPx / haloPontoPx);
 }
 
+/**
+ * O ALVO DA CESSÃO PELO GATE (bancada da onda da luz, porta `?bcede=`):
+ * a MESMA rampa `g(r)` da irmã de cima, com a âncora trocada — em vez
+ * do halo previsto da PSF, o LIMIAR DO GATE do palco vezes o
+ * multiplicador da porta. Para o Sol a dominância é honesta e inócua
+ * (o sprite mede ~25 px e o disco só o cruza a ~0,55 UA), mas quem lava
+ * a tela não é o sprite: é a luz que o ponto DESPEJA no bloom por cima
+ * da bola já desenhada — medido na régua da luz (borrão de centenas de
+ * px sobre um disco de 14). Esta âncora pergunta outra coisa: "a bola
+ * já é corpo de verdade na tela?" — razão 1 no armar do gate (4 px ⇒
+ * g = 0 EXATO, sem pop nos dois sentidos da fronteira, porque o armar
+ * não muda o ponto em nada) e cessão plena com a bola a 2,5 gates
+ * (10 px, ~1,4 UA para o Sol).
+ *
+ * `mult` inválido ou ≤ 0 ⇒ 0 (porta fechada = lei herdada intacta);
+ * mesh fora de quadro ⇒ 0 EXATO, como na irmã.
+ */
+export function cessaoPeloGate(
+  emQuadro: boolean,
+  diametroMeshPx: number,
+  mult: number
+): number {
+  if (!emQuadro) return 0;
+  if (!(mult > 0) || !Number.isFinite(diametroMeshPx)) return 0;
+  return heroDominanceFade(diametroMeshPx / (LIMIAR_DO_GATE_PX * mult));
+}
+
 /** Uma entrada do manifest de texturas (public/data/atlas/texturas.json)
  *  — só os campos que a escada consome. */
 export interface EntradaDeTextura {
