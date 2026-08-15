@@ -153,11 +153,20 @@ describe('claraoPsfPx — o que o instrumento tem DIREITO de espalhar', () => {
     expect(glsl).toContain('float rSat = peak > 1.0 ? sigma * sqrt(2.0 * log(peak)) : 0.0;');
     expect(glsl).toContain('size = 2.0 * (2.2 * sigma + rSat);');
 
-    // o par expoM0/sigmaPx do campo, de onde ele é publicado hoje. Quando a
-    // F1 trocar os literais por constantes nomeadas, ESTA varredura quebra —
-    // e quebrar é o serviço dela: obriga a régua a seguir a fonte.
-    const dir = ler('src/three/director.ts');
-    expect(dir).toMatch(/expoM0: 3\.5, sigmaPx: 0\.85/);
+    // O PAR expoM0/sigmaPx MUDOU DE CASA, e este espelho é a prova de que a
+    // mudança não passou calada. Até a F1 da luz eles eram três literais
+    // soltos e a varredura lia `expoM0: 3.5, sigmaPx: 0.85` em `director.ts`;
+    // a F1 os juntou em `luzDaCasa.ts` e ESTE TESTE QUEBROU na hora — que é
+    // exatamente o serviço dele. Agora ele lê a fonte única.
+    const unidade = ler('src/three/luzDaCasa.ts');
+    const mExpo = unidade.match(/EXPO_M0 = ([\d.]+);/);
+    const mSigma = unidade.match(/SIGMA_PX = ([\d.]+);/);
+    expect(mExpo, 'a varredura de expoM0 perdeu o padrão').not.toBeNull();
+    expect(mSigma, 'a varredura de sigmaPx perdeu o padrão').not.toBeNull();
+    expect(Number(mExpo[1])).toBe(3.5);
+    expect(Number(mSigma[1])).toBe(0.85);
+    // e o campo consome a lei em vez de redigitá-la
+    expect(ler('src/three/director.ts')).toContain('expoM0: EXPO_M0');
 
     // e o ponto-zero do Sol na camada dos dez corpos
     const planetas = ler('src/three/world/planetas/planetas.ts');

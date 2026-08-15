@@ -58,6 +58,15 @@
 // `config.ts` volta a valer.
 import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { AU_KM } from '../lib/atlas/elementosOrbitais';
+// A UNIDADE DE LUZ (F1). A seta aponta só nesta direção: `luzDaCasa.ts` não
+// importa daqui — toda função dela que precisa de um raio o RECEBE — e é assim
+// que os dois cadastros da casa, o de tamanho e o de brilho, ficam sem ciclo.
+import {
+  M_V_SOL,
+  M_V_SOL_DO_CAMPO,
+  SOBRETAXA_DO_HALO,
+  vaoRadiometricoNaTroca,
+} from './luzDaCasa';
 
 /**
  * km → pc pela MESMA cadeia que a cena usa para pôr corpo no lugar
@@ -219,6 +228,25 @@ export interface EscalaDeclarada {
    * `null` NÃO é desculpa: é uma declaração de que o número é de autor.
    */
   fator: number | null;
+  /**
+   * A SEGUNDA COLUNA (F1 da luz): quantas vezes o que a cena EMITE é mais
+   * brilhante que a lei da casa manda, na unidade de `luzDaCasa.ts`.
+   * `1` é honesto; `null` é "não há contraparte medida", com a mesma
+   * ressalva do `fator`.
+   *
+   * POR QUE ELA NASCEU. Este cadastro tinha coluna para TAMANHO e nenhuma
+   * para BRILHO — e foi por esse buraco que a maior mentira de escala da
+   * casa entrou calada: a fotosfera do Sol é autorada em radiância ~1
+   * enquanto a lei do ponto deposita ~2,7e10 para a MESMA superfície. São
+   * ~26 magnitudes entre dois desenhos do mesmo objeto, e elas não
+   * quebravam teste nenhum, porque não havia onde declará-las.
+   *
+   * É OBRIGATÓRIA, não opcional, e a diferença não é estilo: campo
+   * opcional é campo que se pode deixar em branco, e uma coluna que se
+   * pode deixar em branco não impede nada. Quem acrescentar entrada é
+   * obrigado a olhar para o brilho dela.
+   */
+  fatorDeBrilho: number | null;
   /** arquivo:linha — a fonte única do número da cena */
   endereco: string;
   /** por que está assim, numa frase que o visitante entenderia */
@@ -235,7 +263,13 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     nome: 'Sol',
     classe: 'corpo',
     fator: RAIO_DO_SOL_NA_CENA / RAIO_SOL_PC,
-    endereco: 'src/three/escala.ts:106',
+    // A DÍVIDA QUE A SEGUNDA COLUNA REVELOU. O tamanho foi pago na F3; o
+    // brilho, não. A malha emite radiância ~1 (paleta H-alfa autorada,
+    // `world/sol/sun.js`) e a lei do ponto deposita ~2,7e10 para a mesma
+    // superfície, na troca de 1 px. O fator é o INVERSO disso: a cena emite
+    // 3,7e-11 do que deveria.
+    fatorDeBrilho: 1 / vaoRadiometricoNaTroca(RAIO_SOL_PC),
+    endereco: 'src/three/escala.ts:134',
     razao:
       'PAGO na F3: o disco era 487.441× maior para o plano de abertura render a ' +
       '0,062 pc; a câmera desceu a 4,00 milhões de km e o corpo voltou ao tamanho',
@@ -245,6 +279,7 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     nome: 'Sagittarius A✱',
     classe: 'corpo',
     fator: ESPELHO_RS_SGR_A_PC / raioDeSchwarzschildPc(MASSA_SGR_A_MSOL),
+    fatorDeBrilho: null,
     endereco: 'src/three/world/blackHole.ts:27',
     razao:
       'o disco de acreção foi inflado para ler como Gargantua no periastro do ' +
@@ -257,16 +292,49 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     fator:
       (ESPELHO_COEF_CLARAO_PC * Math.pow(10, -0.3 * SIRIUS_M)) /
       (SIRIUS_RAIO_RSOL * RAIO_SOL_PC),
-    endereco: 'src/three/world/heroStars.ts:139',
+    fatorDeBrilho: null,
+    endereco: 'src/three/world/heroStars.ts:152',
     razao:
       'é o borrão da óptica, não o corpo — sem ele nenhuma estrela apareceria, ' +
       'e ele não tapa nada (não escreve profundidade). Fator medido em Sirius',
+  },
+  {
+    id: 'halo-da-psf',
+    nome: 'halo do ponto das estrelas',
+    classe: 'instrumento',
+    fator: null,
+    // MEDIDO por integração numérica do fragment em `luzDaCasa.test.ts`, não
+    // estimado: o `STAR_FRAG` deposita o núcleo gaussiano (que É o fluxo, por
+    // construção) MAIS um halo de `exp(-r²/18s²)·0,06`, cuja integral vale
+    // 0,534 do núcleo dentro do disco do sprite. Os outros dois termos
+    // (espinhos de difração e núcleo esbranquiçado) não escalam com o pico e
+    // somem no ruído — 3e-11 do depósito na troca.
+    fatorDeBrilho: SOBRETAXA_DO_HALO,
+    endereco: 'src/three/shaders/starShaders.ts:137',
+    razao:
+      'o halo é a lente, não a estrela: uma estrela real também borra assim no ' +
+      'instrumento. O fluxo fotométrico é o núcleo; o halo soma 53% por cima',
+  },
+  {
+    id: 'ponto-zero-do-campo',
+    nome: 'ponto-zero das estrelas',
+    classe: 'instrumento',
+    fator: null,
+    // 4,85 (o campo, via `PONTO_ZERO_SOL_PC`) contra 4,83 (o `SunStar`, via
+    // `stellarPhysics.ts`). 0,02 mag em 328.749 estrelas. Declarado e NÃO
+    // consertado: unificar move pixel em todo o céu e é decisão do dono.
+    fatorDeBrilho: Math.pow(10, 0.4 * (M_V_SOL_DO_CAMPO - M_V_SOL)),
+    endereco: 'src/three/world/planetas/planetas.ts:164',
+    razao:
+      'a casa tem dois pontos-zero para a magnitude absoluta do Sol, 4,85 no ' +
+      'campo e 4,83 no clarão — 1,9% de brilho, em todas as estrelas do céu',
   },
   {
     id: 'nuvem-co',
     nome: 'nuvens de gás observadas',
     classe: 'instrumento',
     fator: ESPELHO_ESCALA_NUVEM_CO,
+    fatorDeBrilho: null,
     endereco: 'src/three/world/observedClouds.ts:20',
     razao:
       'o raio de catálogo é do centroide observado; o fator agrega o material ' +
@@ -277,6 +345,7 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     nome: 'complexos de nuvem grandes',
     classe: 'instrumento',
     fator: ESPELHO_ESCALA_COMPLEXO,
+    fatorDeBrilho: null,
     endereco: 'src/three/world/observedClouds.ts:21',
     razao: 'mesmo motivo das nuvens de CO, com dose menor',
   },
@@ -285,10 +354,22 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     nome: 'núcleos de nebulosa do corredor',
     classe: 'instrumento',
     fator: null,
+    fatorDeBrilho: null,
     endereco: 'src/three/config.ts:30',
     razao:
       'a POSIÇÃO é derivada de observação (Bolha Local, complexo de Órion); o ' +
       'raio, de 9 a 26 pc, é escolha de autor e não tem contraparte medida',
+  },
+  {
+    id: 'galaxia-particulas',
+    nome: 'estrelas não resolvidas da galáxia',
+    classe: 'instrumento',
+    fator: null,
+    fatorDeBrilho: null,
+    endereco: 'src/three/shaders/galaxyShaders.ts:64',
+    razao:
+      'o alfa das 4,02 milhões de partículas é artístico, e acima de 20 px na ' +
+      'tela a lei ESCURECE a estrela quando a câmera se aproxima dela',
   },
 ] as const;
 
@@ -316,6 +397,71 @@ export const DIVIDAS_ABERTAS: Readonly<Record<string, string>> = {
   // bloco prometia por escrito desde a F0.)
   'sgr-a': 'F5 — o raio sai da massa (4,15e6 M☉)',
 };
+
+// ------------------------------------------------------------
+// A MESMA MÁQUINA, PARA A COLUNA DE BRILHO (F1 da luz)
+//
+// Funções IRMÃS, nunca ramos dentro das de cima. A razão é prática: o selo
+// consome `acusacaoDaEscala` e um `if` a mais lá dentro faria a acusação de
+// TAMANHO mudar de comportamento numa onda que só queria acrescentar uma
+// coluna. Duas colunas, duas máquinas, o mesmo formato — e a de tamanho
+// continua verde sem uma linha de mudança.
+// ------------------------------------------------------------
+
+/**
+ * A REGRA DO BRILHO, palavra por palavra a de `deveDivida`: um CORPO que
+ * emite diferente do que a lei manda está em dívida, e um corpo que não sabe
+ * o próprio brilho (`null`) também — pelo mesmo argumento que vale para o
+ * tamanho.
+ *
+ * Instrumento não entra: o clarão, o halo da PSF e o alfa das partículas são
+ * óptica declarada, não desvio de corpo.
+ */
+export function deveDividaDeBrilho(e: EscalaDeclarada): boolean {
+  return e.classe === 'corpo' && e.fatorDeBrilho !== 1;
+}
+
+/**
+ * AS DÍVIDAS DE BRILHO ABERTAS. O mesmo placar de `DIVIDAS_ABERTAS`, e a
+ * mesma promessa: quando a fotosfera entrar na unidade, a linha do `sol` sai
+ * daqui e `escala.test.ts` passa a EXIGIR fatorDeBrilho 1 — o teste aperta
+ * sozinho, sem ninguém lembrar de apertá-lo.
+ */
+export const DIVIDAS_DE_BRILHO: Readonly<Record<string, string>> = {
+  sol:
+    'F2 da luz — a fotosfera passa a emitir a radiância verdadeira, com a ' +
+    'compressão fixa na emissão para o half-float aguentar',
+  'sgr-a':
+    'SEM FASE MARCADA — a emissão do disco de acreção é autorada e não tem ' +
+    'contraparte medida; entra quando a unidade da luz alcançar o buraco negro',
+};
+
+/** Quem deve brilho, do pior para o melhor. O `null` vai para o fim. */
+export function culpadosDoBrilho(): readonly EscalaDeclarada[] {
+  return CADASTRO_DE_ESCALA.filter(deveDividaDeBrilho).sort(
+    (a, b) => Math.abs(Math.log10(b.fatorDeBrilho ?? 1)) - Math.abs(Math.log10(a.fatorDeBrilho ?? 1))
+  );
+}
+
+/**
+ * O fator de brilho em texto. Diferente do de tamanho porque a mentira de
+ * brilho anda em ORDENS DE GRANDEZA para os dois lados: "3,7e-11×" não diz
+ * nada a ninguém, e "27 bilhões de vezes menos luz" diz.
+ */
+export function brilhoEmTexto(fator: number | null): string {
+  if (fator === null || !Number.isFinite(fator) || fator <= 0) return 'brilho de autor';
+  if (fator === 1) return 'na unidade da casa';
+  const vezes = fator > 1 ? fator : 1 / fator;
+  const lado = fator > 1 ? 'mais' : 'menos';
+  if (vezes < 100) return `${vezes.toFixed(1).replace('.', ',')}× ${lado} luz`;
+  const mag = 2.5 * Math.log10(vezes);
+  return `${mag.toFixed(1).replace('.', ',')} magnitudes de ${lado} luz`;
+}
+
+/** A linha da acusação de brilho, no formato da de escala. */
+export function acusacaoDoBrilho(): readonly string[] {
+  return culpadosDoBrilho().map((e) => `${e.nome} emite ${brilhoEmTexto(e.fatorDeBrilho)}`);
+}
 
 /**
  * O que o selo mostra quando declara FORA DE ESCALA: quem está inflado e

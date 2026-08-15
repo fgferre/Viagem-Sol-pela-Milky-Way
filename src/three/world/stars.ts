@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { STAR_VERT, STAR_FRAG } from '../shaders/starShaders';
 import type { StarArrays } from '../config';
 import { FADE_NEUTRAL, FOCUS_OFF, clearFocus, needsAttributeWrite } from './lodStellar';
+import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 
 /**
  * Teto de faixas pendentes por atributo antes de cair para UPLOAD CHEIO
@@ -95,8 +96,8 @@ export class StarField {
     });
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 6000);
 
-    this.expoM0Base = opts.expoM0 ?? 3.5;
-    this.sigmaPx = opts.sigmaPx ?? 0.85;
+    this.expoM0Base = opts.expoM0 ?? EXPO_M0;
+    this.sigmaPx = opts.sigmaPx ?? SIGMA_PX;
     this.material = new THREE.ShaderMaterial({
       vertexShader: STAR_VERT,
       fragmentShader: STAR_FRAG,

@@ -82,6 +82,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico
 import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
 import { RAIO_DO_SOL_NA_CENA } from './escala';
+import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -793,7 +794,11 @@ export class Director {
     // O halo buildFarStars (mag 7,2–10,6 estático no Sol) morreu na
     // unificação 2: as cascas de wrappedStars cobrem essa população em
     // QUALQUER ponto do disco, com a mesma PSF e anti-dupla-contagem.
-    this.stars = new StarField(starArrays, { expoM0: 3.5, sigmaPx: 0.85, tau: 0.045 });
+    this.stars = new StarField(starArrays, {
+      expoM0: EXPO_M0,
+      sigmaPx: SIGMA_PX,
+      tau: 0.045,
+    });
     // ...e a LUT da faixa deixa de emitir de novo a luz que este campo
     // acabou de desenhar. A curva é MEDIDA nestes mesmos arrays, então
     // não tem como divergir do binário — regerar o catálogo a move

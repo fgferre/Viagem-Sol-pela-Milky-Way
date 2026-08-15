@@ -39,6 +39,7 @@ import {
   GLSL_STAR_PSF,
 } from '../shaders/common';
 import { STAR_FRAG } from '../shaders/starShaders';
+import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
 
 // m em que a PSF morre na nossa exposição (expoM0 3,5):
@@ -498,9 +499,10 @@ export class WrappedStars {
         uScreenH: { value: 1080 },
         uFade: { value: 1 },
         uDustMap: { value: dustMap },
-        // a mesma exposição/instrumento do campo HYG — uma cadeia
-        uExpoM0: { value: 3.5 },
-        uSigmaPx: { value: 0.85 },
+        // a mesma exposição/instrumento do campo HYG — uma cadeia, e desde a
+        // F1 da luz é a MESMA constante, não mais o mesmo número redigitado
+        uExpoM0: { value: EXPO_M0 },
+        uSigmaPx: { value: SIGMA_PX },
         uCell: { value: new Float32Array(cells) },
         uProb: { value: new Float32Array(probs) },
         uMagLo: { value: new Float32Array(magLo) },

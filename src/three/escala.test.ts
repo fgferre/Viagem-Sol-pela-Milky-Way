@@ -37,14 +37,20 @@ import {
   RAIO_DO_SOL_NA_CENA,
   RAIO_SOL_KM,
   RAIO_SOL_PC,
+  DIVIDAS_DE_BRILHO,
   acusacaoDaEscala,
+  acusacaoDoBrilho,
+  brilhoEmTexto,
   culpadosDaEscala,
+  culpadosDoBrilho,
   deveDivida,
+  deveDividaDeBrilho,
   fatorEmTexto,
   kmParaPc,
   raioDeSchwarzschildPc,
   type EscalaDeclarada,
 } from './escala';
+import { SOBRETAXA_DO_HALO, vaoRadiometricoNaTroca } from './luzDaCasa';
 
 const ler = (caminhoDoRepo: string) =>
   readFileSync(new URL(`../../${caminhoDoRepo}`, import.meta.url), 'utf8');
@@ -194,6 +200,7 @@ describe('3. a regra: quem escreve profundidade tem raio real', () => {
       nome: 'Planeta X',
       classe: 'corpo',
       fator: 12,
+      fatorDeBrilho: 1,
       endereco: 'src/three/config.ts:9',
       razao: 'inflado de propósito para provar que o gate morde de verdade',
     };
@@ -207,6 +214,7 @@ describe('3. a regra: quem escreve profundidade tem raio real', () => {
       nome: 'corpo sem medida',
       classe: 'corpo',
       fator: null,
+      fatorDeBrilho: 1,
       endereco: 'src/three/config.ts:9',
       razao: 'um corpo que não sabe o próprio tamanho é pior que um que sabe e mente',
     };
@@ -219,10 +227,105 @@ describe('3. a regra: quem escreve profundidade tem raio real', () => {
       nome: 'Terra',
       classe: 'corpo',
       fator: 1,
+      fatorDeBrilho: 1,
       endereco: 'src/three/world/corpos/terra.ts:98',
       razao: 'raio equatorial do kernel da NASA, sem fator nenhum — a régua da casa',
     };
     expect(deveDivida(honesto)).toBe(false);
+  });
+});
+
+// ------------------------------------------------------------
+describe('3b. A SEGUNDA COLUNA: a mesma regra, para brilho', () => {
+  // As TRÊS PERNAS que a coluna de tamanho já tem — espelho, completude e
+  // sabotagem. Abrir a coluna sem elas repetiria, com outro nome, o defeito
+  // que a deixou existir: o vão de 26 magnitudes da fotosfera nasceu calado
+  // porque não havia onde declará-lo NEM quem cobrasse a declaração.
+
+  it('PERNA 1 (espelho) — o fator do Sol sai da unidade, não de um número digitado', () => {
+    const sol = CADASTRO_DE_ESCALA.find((e) => e.id === 'sol')!;
+    expect(sol.fatorDeBrilho).toBe(1 / vaoRadiometricoNaTroca(RAIO_SOL_PC));
+    // e o número, para quem quiser conferir: a cena emite ~3,7e-11 do que a
+    // lei manda — ~26 magnitudes de menos luz
+    expect(sol.fatorDeBrilho!).toBeLessThan(1e-10);
+    expect(2.5 * Math.log10(1 / sol.fatorDeBrilho!)).toBeCloseTo(26.1, 0);
+  });
+
+  it('PERNA 1 (espelho) — a sobretaxa do halo é a MEDIDA em luzDaCasa.test.ts', () => {
+    const halo = CADASTRO_DE_ESCALA.find((e) => e.id === 'halo-da-psf')!;
+    expect(halo.fatorDeBrilho).toBe(SOBRETAXA_DO_HALO);
+    expect(halo.classe).toBe('instrumento');
+  });
+
+  it('PERNA 2 (completude) — todo corpo em dívida de brilho tem fase escrita', () => {
+    for (const e of CADASTRO_DE_ESCALA.filter(deveDividaDeBrilho)) {
+      expect(
+        DIVIDAS_DE_BRILHO[e.id],
+        `${e.id} deve brilho e não tem fase declarada em DIVIDAS_DE_BRILHO`
+      ).toBeTruthy();
+    }
+  });
+
+  it('PERNA 2 (completude) — nenhuma dívida de brilho órfã', () => {
+    const emDivida = new Set(CADASTRO_DE_ESCALA.filter(deveDividaDeBrilho).map((e) => e.id));
+    for (const id of Object.keys(DIVIDAS_DE_BRILHO)) {
+      expect(
+        emDivida.has(id),
+        `${id} tem dívida de brilho declarada mas o cadastro já diz que emite certo`
+      ).toBe(true);
+    }
+  });
+
+  it('PERNA 3 (SABOTAGEM) — corpo que emite errado sem dívida declarada REPROVA', () => {
+    const sabotado: EscalaDeclarada = {
+      id: 'estrela-x',
+      nome: 'Estrela X',
+      classe: 'corpo',
+      fator: 1,
+      fatorDeBrilho: 1e6,
+      endereco: 'src/three/config.ts:9',
+      razao: 'emitindo um milhão de vezes a mais, de propósito, para o gate morder',
+    };
+    expect(deveDividaDeBrilho(sabotado)).toBe(true);
+    expect(DIVIDAS_DE_BRILHO[sabotado.id]).toBeUndefined();
+  });
+
+  it('PERNA 3 (SABOTAGEM) — corpo que não sabe o próprio brilho também deve', () => {
+    const semMedida: EscalaDeclarada = {
+      id: 'corpo-sem-luz',
+      nome: 'corpo sem luz medida',
+      classe: 'corpo',
+      fator: 1,
+      fatorDeBrilho: null,
+      endereco: 'src/three/config.ts:9',
+      razao: 'um corpo que não sabe quanto emite é pior que um que sabe e mente',
+    };
+    expect(deveDividaDeBrilho(semMedida)).toBe(true);
+  });
+
+  it('instrumento nunca entra na acusação de brilho — é óptica declarada', () => {
+    for (const e of culpadosDoBrilho()) expect(e.classe).toBe('corpo');
+    // o halo, o clarão, o ponto-zero e as partículas ficam no cadastro aberto
+    for (const id of ['halo-da-psf', 'ponto-zero-do-campo', 'galaxia-particulas']) {
+      expect(CADASTRO_DE_ESCALA.find((e) => e.id === id)!.classe).toBe('instrumento');
+    }
+  });
+
+  it('A COLUNA DE TAMANHO NÃO SENTIU NADA — duas máquinas, não um if a mais', () => {
+    // é o contrato desta onda: acrescentar a coluna não pode mexer no que o
+    // selo já diz. Se esta linha mudar, a F1 vazou.
+    expect(acusacaoDaEscala()).toEqual(['Sagittarius A✱ está 125.884× maior']);
+  });
+
+  it('a acusação de brilho fala em magnitudes quando o número é grande demais', () => {
+    // "3,7e-11×" não diz nada a ninguém; "26,1 magnitudes de menos luz" diz.
+    expect(brilhoEmTexto(1)).toBe('na unidade da casa');
+    expect(brilhoEmTexto(null)).toBe('brilho de autor');
+    expect(brilhoEmTexto(2)).toBe('2,0× mais luz');
+    expect(brilhoEmTexto(0.5)).toBe('2,0× menos luz');
+    expect(brilhoEmTexto(1e-11)).toMatch(/magnitudes de menos luz/);
+    const linhas = acusacaoDoBrilho();
+    expect(linhas.some((l) => l.startsWith('Sol emite'))).toBe(true);
   });
 });
 
