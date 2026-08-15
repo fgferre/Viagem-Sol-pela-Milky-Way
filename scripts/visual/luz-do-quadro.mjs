@@ -215,12 +215,23 @@ const TOLERANCIA_MONOTONIA_PX = 1;
 /** Abaixo de 1 UA a fotosfera enche o quadro e ser branco é HONESTO — a
  *   0,067 UA o disco sozinho tem 113 px de diâmetro. */
 const UA_DA_PAREDE = 1;
-/** Orçamento de pixels lavados longe do Sol. Sai da ÁREA do que tem direito de
- *  brilhar: o clarão de 13,5 px num buffer de 900² é 1,8e-4 do quadro, e os
- *  nove planetas somam ~8,5e-5. Uns 2,6e-4 no total; 1e-3 dá 4× de folga. */
-const TETO_ACIMA_DE_MEIA_LONGE = 1e-3;
-/** Na parede de fogo, o disco de 113 px sozinho é 1,2e-2 do quadro. */
-const TETO_ACIMA_DE_MEIA_PERTO = 2e-2;
+/**
+ * O PISO DO CÉU — a fração de pixels que já está acima de meia luz SEM o Sol
+ * ter culpa: as estrelas brilhantes do campo e a galáxia.
+ *
+ * MEDIDO, não estimado: 1,133e-3 no par honesto (`EXTRA='&nobloom=1'`,
+ * 900×900, `?q=cinema`) a 2.000 E a 4.000 UA — os dois degraus em que o clarão
+ * do Sol cobre 6e-5 do quadro e portanto não é ele que está sendo contado.
+ * Baseline de 15/08, `capturas/luz-do-quadro-nobloom1.json`.
+ *
+ * ELE EXISTE PORQUE O PRIMEIRO TETO ESTAVA ERRADO. A versão anterior cobrava
+ * 1e-3 absolutos, um número derivado no papel — e o papel esqueceu o céu. Um
+ * teto ABAIXO do piso do céu é critério impossível, e critério impossível
+ * reprova o conserto certo, que é o pior defeito que um juiz pode ter. Como o
+ * quadro com bloom está hoje em 100% (quatrocentas vezes o teto novo), a
+ * correção não afrouxa nada: ela só para de cobrar do Sol o que é do céu.
+ */
+const PISO_DO_CEU = 1.133e-3;
 /** "Céu honesto vive perto de 0,02" (o cabeçalho desta régua). Note que NÃO há
  *  piso: exigir luz média MÍNIMA seria teto de brilho pela porta dos fundos. */
 const TETO_LUZ_MEDIA_LONGE = 0.05;
@@ -249,7 +260,12 @@ const TETO_LUZ_MEDIA_PERTO = 0.1;
  * defeito é a ÁREA da mancha, nunca a altura dela. Um juiz que olhasse o pico
  * aprovaria justamente o conserto errado.
  */
-export function julgarEscada({ linhas = [], alturaPx = JH, comBloom = true } = {}) {
+export function julgarEscada({
+  linhas = [],
+  alturaPx = JH,
+  larguraPx = JW,
+  comBloom = true,
+} = {}) {
   const folga = comBloom ? FOLGA_COM_BLOOM : FOLGA_SEM_BLOOM;
   const ordenadas = [...linhas].sort((a, b) => a.ua - b.ua);
   const motivosPorUa = new Map(ordenadas.map((l) => [l.ua, []]));
@@ -282,12 +298,17 @@ export function julgarEscada({ linhas = [], alturaPx = JH, comBloom = true } = {
         + `(disco ${disco.toFixed(2)} · clarão ${clarao.toFixed(2)} · folga ${folga}×)`
       );
     }
-    // 3. orçamento do quadro
-    const tetoAcima = perto ? TETO_ACIMA_DE_MEIA_PERTO : TETO_ACIMA_DE_MEIA_LONGE;
+    // 3. orçamento do quadro. O teto é o PISO DO CÉU mais a área do borrão que
+    //    a regra 2 já permite — não um número solto: o que o Sol tem direito de
+    //    lavar é exatamente o disco que ele tem direito de fazer. Com isso a
+    //    parede de fogo deixa de precisar de caso especial: lá o disco tem 113
+    //    px e o orçamento cresce sozinho.
+    const tetoAcima = PISO_DO_CEU + (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
     if (l.acimaDeMeia > tetoAcima) {
       motivos.push(
-        `${(100 * l.acimaDeMeia).toFixed(1)}% do quadro acima de meia luz `
-        + `(teto ${(100 * tetoAcima).toFixed(1)}%)`
+        `${(100 * l.acimaDeMeia).toFixed(3)}% do quadro acima de meia luz `
+        + `(teto ${(100 * tetoAcima).toFixed(3)}% = céu ${(100 * PISO_DO_CEU).toFixed(3)}% `
+        + `+ o borrão permitido)`
       );
     }
     const tetoLuz = perto ? TETO_LUZ_MEDIA_PERTO : TETO_LUZ_MEDIA_LONGE;
@@ -379,7 +400,7 @@ async function principal() {
   // Hoje ele REPROVA, e reprovar é o comportamento certo: é a linha de base do
   // item 3, medida em vez de citada de comentário.
   const comBloom = !/nobloom=1/.test(EXTRA);
-  const juizo = julgarEscada({ linhas, alturaPx: JH, comBloom });
+  const juizo = julgarEscada({ linhas, alturaPx: JH, larguraPx: JW, comBloom });
   process.stdout.write('\n');
   if (juizo.texto) process.stdout.write(`${juizo.texto}\n`);
   process.stdout.write(`${juizo.resumo}\n`);

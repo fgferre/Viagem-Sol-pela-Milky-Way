@@ -203,6 +203,28 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     expect(j.resumo).toContain('PASSA');
   });
 
+  it('o PISO DO CÉU não é cobrado do Sol — a baseline honesta de 15/08 passa', () => {
+    // Números MEDIDOS no par `EXTRA='&nobloom=1'` (900×900, ?q=cinema,
+    // `capturas/luz-do-quadro-nobloom1.json`). Duas coisas ficam pinadas aqui:
+    //
+    //  1. o céu sozinho já põe 0,1133% do quadro acima de meia luz — as
+    //     estrelas brilhantes e a galáxia. Nada disso é culpa do Sol, e um teto
+    //     abaixo desse piso reprovaria o conserto certo para sempre;
+    //  2. a 1 UA o Sol acrescenta 1,67e-4 sobre o piso — que é, com três casas,
+    //     a área do clarão de 13,47 px que a PSF manda ele ter
+    //     (π·(13,47/2)²/810.000 = 1,76e-4). A previsão e a medida fecham.
+    //
+    // Ou seja: sem bloom o HDR por baixo JÁ É honesto. O que lava a tela é o
+    // bloom espalhando um pico infinito — e é isso que o conserto ataca.
+    const medido = [
+      { ua: 1, luzMedia: 0.039, acimaDeMeia: 0.0013, pico: 1, borrao: 12 },
+      { ua: 40, luzMedia: 0.039, acimaDeMeia: 0.001179, pico: 1, borrao: 10 },
+      { ua: 2000, luzMedia: 0.039, acimaDeMeia: 0.001133, pico: 1, borrao: 8 },
+    ].map((l) => ({ ...l, disco: discoRealPx(l.ua, 900, 58) }));
+    const j = julgarEscada({ linhas: medido, alturaPx: 900, larguraPx: 900, comBloom: false });
+    expect(j.erro, j.texto).toBe(false);
+  });
+
   it('SABOTAGEM: borrão gigante com disco minúsculo TEM de reprovar', () => {
     const linhas = honesta([2000]);
     linhas[0].borrao = 900; // a assinatura do item 3, num degrau só
