@@ -163,6 +163,26 @@ Atlas o sistema inteiro empilha num pixel e o borrão branco impede de ver
 o que se clica. O conserto é o item 3. Não criar segundo mecanismo de
 rótulos — o `LabelCanvas` já resolve colisão.
 
+**43. Planetas de longe parecem estrelas.**
+Palavras do dono, 2026-08-16: *"percebi q planetas de longe parecem
+estrelas tb... esse comportamento nao é estranho? eles nao emitem luz...
+no máximo refletem um pouco que nao causaria esse efeito similar ao de
+uma estrela..."*
+
+O que é físico e fica: ponto de luz refletida É ponto de luz — Vênus é a
+"estrela" mais brilhante do céu real (m −4,6), e a camada dos dez corpos
+divide o gaussiano e a fotometria com o campo estelar de propósito. De
+longe de verdade eles apagam com 1/d²: no limiar do sistema (~10.300 UA)
+os nove medem m 15,3–27,7, invisíveis — pinado em `planetas.test.ts`.
+
+O que é defeito e tem dono: o GRAU. O gatilho dos espinhos satura em
+pico 4 (cláusula 5.4 da Lei, o clamp `sat`), então Vênus, Júpiter e
+Sirius ganham a MESMA cruz de difração cheia — um planeta modesto fica
+tão "estrela" quanto uma estrela de verdade. Morre no **M2**, quando
+espinho e clarão passam a derivar do fluxo: planeta brilhante continuará
+virando ponto com cruz COMO NUMA CÂMERA REAL, mas na dose do brilho
+dele, não na dose única do clamp.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
