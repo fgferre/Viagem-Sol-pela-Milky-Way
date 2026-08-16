@@ -9,10 +9,19 @@
 // conhecido de antemão, mais um caso de sabotagem que tem de dar vermelho.
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { discoRealPx, claraoPsfPx, julgarEscada, medirQuadro, ESCADA_UA } from './luz-do-quadro.mjs';
+import {
+  discoRealPx,
+  claraoPsfPx,
+  claraoDaLeiPx,
+  julgarEscada,
+  medirQuadro,
+  ESCADA_UA,
+} from './luz-do-quadro.mjs';
 // a lei da casa, no endereço único do F0 — o vitest transpila o TS; a régua
 // `.mjs` em node puro continua redigitando, e É ESTE teste que cobra o acordo.
-import { EXPO_M0, SIGMA_PX, psfPointSizePx } from '../../src/three/luzDaCasa';
+import { EXPO_M0, SIGMA_PX, TEFF_SOL_K, psfPointSizePx } from '../../src/three/luzDaCasa';
+import { repartir } from '../../src/three/estrela';
+import { RAIO_SOL_PC } from '../../src/three/escala';
 
 const ler = (rel) => readFileSync(new URL(`../../${rel}`, import.meta.url), 'utf8');
 
@@ -183,10 +192,16 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
       disco: discoRealPx(ua, 900, 58),
     }));
 
-  it('a escada de HOJE reprova em todo degrau a partir de 1 UA', () => {
+  it('o desenho VELHO reprova onde o defeito mora: no halo grudado de LONGE', () => {
     // os números são os que o repo já registra em comentário
     // (`atlasConfig.ts:262-284`, `ab-identidade.mjs:199-221`): borrão grudado
     // no tamanho da tela e quadro inteiro acima de meia luz.
+    //
+    // COM O TETO DA LEI (§5.10, asas em vez de √ln) o veredito mudou de
+    // FORMA, e a mudança é doutrina: a 1 UA o quadro claro é HONESTO (âncora
+    // do dono: R ≈ 450 px de clarão legítimo) — o crime do desenho velho
+    // nunca foi o quadro branco perto, foi o MESMO quadro branco a 2.000 UA.
+    // A lei nova absolve o perto e condena exatamente o rabo do item 42.
     const hoje = [1, 3.6, 7.2, 20, 40, 150, 500, 2000].map((ua) => ({
       ua,
       luzMedia: 0.946,
@@ -197,7 +212,8 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     }));
     const j = julgarEscada({ linhas: hoje, alturaPx: 900, comBloom: true });
     expect(j.erro).toBe(true);
-    expect(j.reprovadas).toBe(hoje.length);
+    const reprovadas = j.linhas.filter((l) => l.veredito === 'REPROVA').map((l) => l.ua);
+    expect(reprovadas).toEqual([40, 150, 500, 2000]);
     expect(j.resumo).toContain('REPROVA');
   });
 
@@ -268,7 +284,8 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
 
   it('a folga com bloom é maior que sem bloom — declarada, não frouxa', () => {
     const linhas = honesta([500]);
-    linhas[0].borrao = Math.round(2 * claraoPsfPx(500, 900)); // entre 1,5× e 3×
+    // entre 1,5× e 3× do DIREITO da lei (asas) — o mesmo teste, no teto novo
+    linhas[0].borrao = Math.round(2 * claraoDaLeiPx(500, 900));
     expect(julgarEscada({ linhas, alturaPx: 900, comBloom: false }).erro).toBe(true);
     expect(julgarEscada({ linhas, alturaPx: 900, comBloom: true }).erro).toBe(false);
   });
@@ -277,5 +294,55 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     const j = julgarEscada({ linhas: [], alturaPx: 900 });
     expect(j.erro).toBe(false);
     expect(j.linhas).toEqual([]);
+  });
+});
+
+// ------------------------------------------------------------
+describe('claraoDaLeiPx — o teto derivado da LEI (§5.10)', () => {
+  const UA_EM_PC = 1 / 206264.80624548031;
+  const TAN_HALF_FOV = Math.tan((58 * Math.PI) / 360);
+  const solDaLei = {
+    id: 'sol',
+    semente: 0,
+    posicaoPc: [0, 0, 0],
+    raioPc: RAIO_SOL_PC,
+    teffK: TEFF_SOL_K,
+    tempo: 0,
+    fase: 0,
+    rotacao: { periodo: 1, eixo: [0, 0, 1] },
+    atividade: { nivel: 0 },
+  };
+
+  it('é o clarão de repartir, por NÚMERO — a régua redigita, a lei manda', () => {
+    for (const ua of ESCADA_UA) {
+      const r = repartir(
+        solDaLei,
+        { distPc: ua * UA_EM_PC, direcao: [0, 0, 1] },
+        { alturaPx: 900, tanHalfFov: TAN_HALF_FOV, expoM0: EXPO_M0, sigmaPx: SIGMA_PX, beta: 300 }
+      );
+      // dois caminhos declarados e distintos: a régua usa a lei de magnitude
+      // do vertex (ângulo pequeno); a lei usa a atan exata. Na parede de
+      // fogo (0,067 UA, r/d = 0,0695 rad) o vão é x²/3 = 1,6e-3 de ângulo,
+      // que a asa comprime por 1/(2β) para ~7e-4 de raio — a tolerância é
+      // essa física, não uma folga de gosto.
+      expect(Math.abs(claraoDaLeiPx(ua, 900) / r.claraoPx - 1), `${ua} UA`).toBeLessThan(1e-3);
+    }
+  });
+
+  it('a asa ENCOLHE com a luz: de 1 UA a 15.800 UA o direito cai mais de 40×', () => {
+    // o √ln caía 1,5× no mesmo trecho — era o juiz exigindo halo constante
+    expect(claraoDaLeiPx(1, 900) / claraoDaLeiPx(15800, 900)).toBeGreaterThan(40);
+  });
+
+  it('nunca cresce com a distância, como o núcleo já não crescia', () => {
+    for (let i = 1; i < ESCADA_UA.length; i++) {
+      expect(claraoDaLeiPx(ESCADA_UA[i], 900)).toBeLessThan(claraoDaLeiPx(ESCADA_UA[i - 1], 900));
+    }
+  });
+
+  it('a âncora do dono: a 1 UA o direito é da ordem do quadro (R ≈ 450 px)', () => {
+    const raio = claraoDaLeiPx(1, 900) / 2;
+    expect(raio).toBeGreaterThan(300);
+    expect(raio).toBeLessThan(900);
   });
 });

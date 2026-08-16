@@ -214,6 +214,12 @@ function julgar(linhas) {
   // TOLERANCIA_LAVADO: o céu vivo cintila (relógio do Sol anda entre as
   // pernas); 1 ponto percentual separa cintilação de mudança de regime
   const TOLERANCIA_LAVADO = 0.01;
+  // §5.10: o harness sempre GRAVOU luzMedia e nunca a comparou — a 0,05 UA a
+  // ida lia 0,173 e a volta 0,059 (2,94×) e o veredito saía "erros: []".
+  // A tolerância é maior que a do lavado porque a luz média integra o céu
+  // vivo inteiro (granulação, coroa, relógio do Sol entre as pernas), mas
+  // 2 pontos percentuais separam cintilação de mudança de REGIME.
+  const TOLERANCIA_LUZ_MEDIA = 0.02;
   for (const [ua, a] of ida) {
     const b = volta.get(ua);
     if (!b) continue;
@@ -223,6 +229,12 @@ function julgar(linhas) {
     }
     if (Math.abs(a.acimaDeMeia - b.acimaDeMeia) > TOLERANCIA_LAVADO && !naBanda) {
       erros.push(`${ua} UA: quadro lavado difere ida ${(a.acimaDeMeia * 100).toFixed(2)}% × volta ${(b.acimaDeMeia * 100).toFixed(2)}% FORA da banda`);
+    }
+    if (Math.abs(a.luzMedia - b.luzMedia) > TOLERANCIA_LUZ_MEDIA && !naBanda) {
+      erros.push(
+        `${ua} UA: luz média difere ida ${a.luzMedia.toFixed(3)} × volta ` +
+        `${b.luzMedia.toFixed(3)} FORA da banda (tolerância ${TOLERANCIA_LUZ_MEDIA})`
+      );
     }
   }
   // e a queixa original, nos DOIS sentidos: nenhum degrau pode cegar a tela
@@ -234,11 +246,43 @@ function julgar(linhas) {
   return erros;
 }
 
+/** §5.10: a margem da banda, ESCRITA — o PASSA do voo já dependeu de um
+ *  degrau cair 0,0035 UA dentro da borda da banda, e ninguém via. Para cada
+ *  degrau, a distância à borda mais próxima (negativa = DENTRO da banda,
+ *  isento de julgamento); no topo, a menor margem entre os degraus julgados. */
+function margensDaBanda(linhas) {
+  const porDegrau = [...new Set(linhas.map((l) => l.ua))].map((ua) => {
+    const dentro = ua >= BANDA_UA.de && ua <= BANDA_UA.ate;
+    const margemUa = dentro
+      ? -Math.min(ua - BANDA_UA.de, BANDA_UA.ate - ua)
+      : Math.min(Math.abs(ua - BANDA_UA.de), Math.abs(ua - BANDA_UA.ate));
+    return { ua, dentroDaBanda: dentro, margemUa };
+  });
+  const julgados = porDegrau.filter((d) => !d.dentroDaBanda);
+  const margemMinimaUa = julgados.length ? Math.min(...julgados.map((d) => d.margemUa)) : null;
+  return { porDegrau, margemMinimaUa };
+}
+
 const { linhas, gritos } = await voar();
 const erros = julgar(linhas);
+const margens = margensDaBanda(linhas);
 const json = resolve(CAPTURAS, `voo-ida-e-volta${SUF}.json`);
-writeFileSync(json, JSON.stringify({ janela: JANELA, extra: EXTRA, bandaUa: BANDA_UA, linhas, erros, gritos }, null, 1));
+writeFileSync(
+  json,
+  JSON.stringify(
+    { janela: JANELA, extra: EXTRA, bandaUa: BANDA_UA, margens, linhas, erros, gritos },
+    null,
+    1
+  )
+);
 console.log(`\nbanda de histerese declarada: ${BANDA_UA.de.toFixed(2)} a ${BANDA_UA.ate.toFixed(2)} UA`);
+if (margens.margemMinimaUa !== null) {
+  console.log(
+    `margem mínima até a borda da banda, entre degraus JULGADOS: ` +
+    `${margens.margemMinimaUa.toFixed(4)} UA` +
+    (margens.margemMinimaUa < 0.05 ? '  ← FINA: o veredito depende de um fio' : '')
+  );
+}
 if (gritos.length) console.log(`gritos do app: ${gritos.length}\n  ` + gritos.slice(0, 5).join('\n  '));
 if (erros.length) {
   console.log(`\n>>> REPROVA — ${erros.length} assimetria(s)/cegueira(s):`);

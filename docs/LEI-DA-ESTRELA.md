@@ -214,16 +214,18 @@ em menos de 24 h e o documento sofria a doença que denunciava.
 | segunda coluna do cadastro | `fatorDeBrilho` em `EscalaDeclarada` (`escala.ts`) | declara mentira de BRILHO | fica — e passa a declarar o valor VIVO |
 | as cinco portas | `?bemis= ?bbloom= ?bombro= ?bfoto= ?bcede=`, registradas em `selo.ts` | caminho de volta | **cada uma morre no commit que migra o que ela protege** |
 
-**Provas vivas e seus limites.** O invariante disco↔ponto está verde (a dívida F2
-foi paga: `fatorDeBrilho: 1` no Sol, exigido por teste). O voo de ida e volta passa
-em 34 degraus (0,05 → 15.800 UA e volta, mesma sessão). Mas: a régua de luz
-**REPROVA 10 de 10 degraus** no padrão
-(`capturas/luz-do-quadro-bemis300bbloom045bombro40bfoto1.json`) — a 1 UA, borrão
-182 px contra teto de 40,4 px (4,5×), 4,28% do quadro lavado contra 0,458% (9,3×),
-luz média 0,156 contra 0,057 (2,8×). E o voo carrega um degrau de item 3 vivo:
-borrão **30 px @ 0,232 UA → 277 px @ 0,341 UA (9,2×)**, nas duas pernas, com
-`acimaDeMeia` 0,42% → 8,69% — a costura filtro↔cessão, que nenhum juiz atual
-enxerga.
+**Provas vivas e seus limites (re-medidas em 16/08, juízes do §5.10).** O
+invariante disco↔ponto está verde (a dívida F2 foi paga: `fatorDeBrilho: 1` no
+Sol, exigido por teste). O voo de ida e volta passa em 34 degraus com o juiz novo
+(`luzMedia` comparada, margem da banda 0,1268 UA escrita no JSON) — a assimetria
+de 2,94× registrada em 15/08 era o forno cru, não óptica. A régua de luz, com o
+teto derivado da lei e a escada até 15.800 UA, dá o mapa exato do que o M1/M2 têm
+de matar: **REPROVA 4 de 11** (`capturas/luz-do-quadro.json`, versionado) —
+monotonia 102→182 px chegando a 1 UA, orçamento estourado a 2.000/4.000 UA
+(luz média 0,098 contra teto 0,081), e o penhasco 119→4 px em 4.000→15.800 UA. E
+o voo carrega o degrau de item 3 vivo: borrão **24 px @ 0,232 UA → 125 px @
+0,341 UA (5,2× hoje; 9,2× em 15/08)** — a costura filtro↔cessão, julgada pelo
+aceite declarado do M1 (≤ 1,5×).
 
 ### O censo É o CADASTRO_DE_REPRESENTACOES (em código desde o L1, 16/08)
 
@@ -575,17 +577,24 @@ visitante e calado quando é da casa.
 para o dono **antes do M3**. Se L1 carregar os dois, a peça que existe para acabar
 com a duplicidade nasce duplicada.
 
-**5.10 O que as réguas ainda não veem.** `julgarEscada` cobra monotonia com
-tolerância de 1 px e não tem critério de **continuidade**: um penhasco de 10× (619 →
-15,9 px) passa sem uma linha vermelha. O voo compara `solArmado`, `acimaDeMeia` (1
-p.p.) e cegueira absoluta, **nunca chama `julgarEscada`**, e grava `luzMedia` sem
-comparar — a 0,05 UA a ida lê 0,17269 e a volta 0,05883 (**2,94×**) e o harness
-devolve `"erros": []`. E o PASSA do voo depende de um degrau cair **0,0035 UA**
-dentro da borda da banda de histerese (1,70676–3,41353 UA). Antes do M1: razão
-máxima entre vizinhos no `julgarEscada`, `luzMedia` comparada com tolerância
-declarada, e a margem da banda escrita no JSON. O teto da régua passa a ser derivado
-da lei nova — hoje `teto = 3 × max(disco, clarão)` com `claraoPsfPx` sendo a MESMA
-`√ln`, ou seja, **o juiz exige um clarão quase constante**.
+**5.10 O que as réguas não viam — PAGA em 16/08, antes do M1, com números.**
+`julgarEscada` ganhou **continuidade**: razão máxima de 3× POR OITAVA de distância
+entre degraus vizinhos (a lei honesta mais íngreme, o disco 1/d, faz 2×/oitava e
+cabe) — e o penhasco do item 42 ganhou a linha vermelha que faltava: **119 px a
+4.000 UA → 4 px a 15.800 UA (14,9× em ~2 oitavas, máximo 8,8×)**, no degrau novo
+que estendeu a escada até a âncora do dono. O **teto passou a derivar da lei**
+(`claraoDaLeiPx` = núcleo + asa Moffat, conformidade numérica contra `repartir` em
+`luz-do-quadro.test.mjs`): a escada saiu de REPROVA 9/10 sob o teto-doente para
+**REPROVA 4/11 com os vermelhos certos** — monotonia 102→182 px na chegada a 1 UA,
+orçamento estourado a 2.000/4.000 UA, o penhasco de 15.800 — e os degraus do meio
+passaram, porque o juiz parou de exigir o halo constante que era a doença. O voo
+compara `luzMedia` (tolerância 0,02 declarada) e **a assimetria de 2,94× de 15/08
+não se reproduziu** no harness assentado (0,0596 × 0,0598 a 0,05 UA; maior delta
+vivo 0,0019) — era medição com o forno cru, não óptica. A margem da banda está
+ESCRITA no JSON: 0,1268 UA hoje, não mais o fio de 0,0035. O que fica de dívida
+aqui: o voo continua sem chamar `julgarEscada` — a costura 0,232→0,341 UA
+(24→125 px, 5,2× hoje) é julgada pelo aceite declarado do M1, não por juiz
+automático.
 
 **5.11 O sprite descarta 8,9% do fluxo das estrelas fracas.** Com `rSat = 0` o raio
 é 2,2σ e a fração contida do gaussiano 2D é `1 − exp(−2,2²/2) = 0,911`. As fracas

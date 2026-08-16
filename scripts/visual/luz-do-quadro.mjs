@@ -153,6 +153,38 @@ export function claraoPsfPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigmaP
   return 2 * (2.2 * sigma + rSat);
 }
 
+// ── o clarão DA LEI — o teto que o §5.10 mandou derivar da lei nova ──────
+// As quatro constantes da asa são REDIGITADAS de `src/three/estrela.ts`
+// (esta régua roda em node puro), e `luz-do-quadro.test.mjs` cobra o acordo
+// por NÚMERO contra `repartir` — o mesmo contrato de procedência de
+// `claraoPsfPx`. Antes do L1 o teto usava só o núcleo `√ln`, que é quase
+// constante: o juiz EXIGIA o halo constante que é a própria doença do
+// item 42. Agora o direito de espalhar é núcleo + asa Moffat — generoso
+// perto (o quadro honesto a 1 UA é claro mesmo, âncora do dono) e apertado
+// longe (a asa encolhe com a luz, R ∝ F^(1/2β)).
+/** fração do fluxo na asa explícita — `FRACAO_DA_ASA` de estrela.ts */
+const FRACAO_DA_ASA = 0.06;
+/** limiar de visibilidade em luz de tela — `LIMIAR_DO_CLARAO` */
+const LIMIAR_DO_CLARAO = 1 / 255;
+/** raio de dobra da asa em σ — `NUCLEO_DA_ASA_EM_SIGMAS` */
+const NUCLEO_DA_ASA_EM_SIGMAS = 2;
+/** expoente Moffat — `BETA_DA_ASA` */
+const BETA_DA_ASA = 2.4;
+
+export function claraoDaLeiPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigmaPx = SIGMA_PX) {
+  const dPc = distanciaUa * UA_EM_PC;
+  const m = PONTO_ZERO_SOL_PC + 5 * (Math.log2(dPc) * 0.30103);
+  const sigma = (sigmaPx * alturaPx) / 1080;
+  const E = Math.pow(10, -0.4 * (m - expoM0));
+  const pico = E / (DOIS_PI_DO_SHADER * sigma * sigma);
+  const excesso = (FRACAO_DA_ASA * pico) / LIMIAR_DO_CLARAO;
+  const raioDaAsa =
+    excesso > 1
+      ? NUCLEO_DA_ASA_EM_SIGMAS * sigma * Math.sqrt(Math.pow(excesso, 1 / BETA_DA_ASA) - 1)
+      : 0;
+  return Math.max(claraoPsfPx(distanciaUa, alturaPx, expoM0, sigmaPx), 2 * raioDaAsa);
+}
+
 /**
  * As três medições da imagem. `dados` é RGB entrelaçado (sem alfa), como o
  * `raw()` do sharp devolve com `.removeAlpha()`.
@@ -212,6 +244,13 @@ const FOLGA_COM_BLOOM = 3;
 /** O borrão é medido em px inteiros sobre uma imagem com grão e vinheta. 1 px
  *  de tremor não é o Sol deixando de encolher. */
 const TOLERANCIA_MONOTONIA_PX = 1;
+/** §5.10: razão máxima de borrão entre degraus vizinhos, POR OITAVA de
+ *  distância, nos dois sentidos (piso de 1 oitava para degraus densos).
+ *  3×/oitava engole a lei honesta mais íngreme (o disco, 2×/oitava) e
+ *  reprova o penhasco de dezenas de vezes num degrau curto. */
+const RAZAO_MAXIMA_POR_OITAVA = 3;
+/** abaixo disto o borrão é ruído de medição, não degrau — a razão não julga */
+const PISO_DO_BORRAO_PX = 8;
 // A PAREDE DE FOGO NÃO É MAIS CASO ESPECIAL. Havia aqui um `UA_DA_PAREDE = 1`
 // com tetos dobrados abaixo dele, porque a 0,067 UA o disco tem 113 px e ser
 // branco ali é HONESTO. Com os dois orçamentos saindo da ÁREA do borrão
@@ -301,12 +340,31 @@ export function julgarEscada({
           + `contra ${ant.borrao} px a ${ant.ua} UA`
         );
     }
+    // 1b. CONTINUIDADE (§5.10): monotonia com 1 px de tolerância deixava um
+    // penhasco de 10× (619 → 15,9 px em degraus a 1,46× de distância) passar
+    // sem uma linha vermelha. A régua é POR OITAVA de distância: entre
+    // degraus vizinhos o borrão pode variar no máximo 3× por oitava — a lei
+    // honesta mais íngreme da casa é o disco (1/d, 2× por oitava), que cabe
+    // com folga; um penhasco de dezenas de vezes num degrau curto, não.
+    const grande = Math.max(ant.borrao, cur.borrao);
+    const pequeno = Math.max(Math.min(ant.borrao, cur.borrao), PISO_DO_BORRAO_PX);
+    const oitavas = Math.max(Math.log2(cur.ua / ant.ua), 1);
+    const maximo = Math.pow(RAZAO_MAXIMA_POR_OITAVA, oitavas);
+    if (grande / pequeno > maximo && grande > PISO_DO_BORRAO_PX) {
+      motivosPorUa
+        .get(cur.ua)
+        .push(
+          `PENHASCO entre vizinhos: ${ant.borrao} px a ${ant.ua} UA → `
+          + `${cur.borrao} px a ${cur.ua} UA (${(grande / pequeno).toFixed(1)}×, `
+          + `máximo ${maximo.toFixed(1)}× para ${oitavas.toFixed(2)} oitava(s))`
+        );
+    }
   }
 
   const julgadas = ordenadas.map((l) => {
     const motivos = motivosPorUa.get(l.ua);
     const disco = l.disco ?? discoRealPx(l.ua, alturaPx);
-    const clarao = claraoPsfPx(l.ua, alturaPx);
+    const clarao = claraoDaLeiPx(l.ua, alturaPx);
     const teto = folga * Math.max(disco, clarao);
     // a área que o borrão permitido ocupa no quadro — o orçamento do Sol
     const orcamento = (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
@@ -373,11 +431,14 @@ export function julgarEscada({
  *  3,6 / 7,2 UA — as duas bordas do gate do palco (arma em 4 px, desarma em 2);
  *  20 / 40 / 150 / 500 UA — o domínio profundo, onde só o ponto desenha;
  *  2.000 UA — o meio do vão, sem juiz nenhum até hoje;
- *  4.000 UA — a véspera de 0,02 pc, onde o clarão com espinhos começa.
- * As três marcadas com ✓ têm vista oficial no `ab-identidade`; as outras seis
+ *  4.000 UA — a véspera de 0,02 pc, onde o clarão com espinhos começa;
+ *  15.800 UA — a âncora do item 42 (o alvo do dono: ~8 px de raio de clarão)
+ *  e a régua de aceite do M2 (borrão ≤ 20 px) — a escada tinha de chegar lá,
+ *  senão o defeito que a Lei nomeia vivia além do último degrau julgado.
+ * As três marcadas com ✓ têm vista oficial no `ab-identidade`; as outras
  * são exatamente a cegueira do item 12.
  */
-export const ESCADA_UA = [0.067, 1, 3.6, 7.2, 20, 40, 150, 500, 2000, 4000];
+export const ESCADA_UA = [0.067, 1, 3.6, 7.2, 20, 40, 150, 500, 2000, 4000, 15800];
 
 function urlDaDistancia(ua) {
   const z = (ua * UA_EM_PC).toPrecision(8);
@@ -403,7 +464,16 @@ async function principal() {
     const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const m = medirQuadro(data, info.width, info.height);
     vias.push(via);
-    linhas.push({ ua, via, ...m, disco: discoRealPx(ua), clarao: claraoPsfPx(ua) });
+    linhas.push({
+      ua,
+      via,
+      ...m,
+      disco: discoRealPx(ua),
+      // o DIREITO da lei (núcleo + asa) e o núcleo sozinho, lado a lado —
+      // a diferença entre os dois é exatamente o que o M2 vai construir
+      clarao: claraoDaLeiPx(ua),
+      claraoNucleo: claraoPsfPx(ua),
+    });
   }
 
   const num = (v, c = 3) => v.toFixed(c).replace('.', ',');

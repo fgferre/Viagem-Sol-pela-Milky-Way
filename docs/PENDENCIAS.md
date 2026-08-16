@@ -61,10 +61,14 @@ cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
   quatro críticos e do plano conceitual externo trazido pelo dono. O F0
   (PSF e Ballesteros num endereço só) FECHOU em 16/08 com zero pixel
   medido em 51 vistas; o L1 (`estrela.ts`, a peça única, com cadastro de
-  representações em código) FECHOU no mesmo dia, sem consumidor. A
-  próxima obra: os juízes do §5.10 (a régua ganha os critérios que ainda
-  não vê) e então o M1 — o Sol inteiro num commit, a maior demolição da
-  casa. Cada migração APAGA a lei velha no mesmo commit. Saldo contado:
+  representações em código) FECHOU no mesmo dia, sem consumidor; os
+  juízes do §5.10 FECHARAM em seguida — a escada com teto da lei REPROVA
+  4 de 11 com os vermelhos certos (monotonia a 1 UA, orçamento a
+  2.000/4.000, penhasco 119→4 px a 15.800) e o voo passa com margens
+  escritas. A próxima obra é o M1 — o Sol inteiro num commit, a maior
+  demolição da casa; o aceite intermediário declarado: a costura
+  0,232→0,341 UA cai de 5,2× para ≤ 1,5× e a escada melhora de 4/11.
+  Cada migração APAGA a lei velha no mesmo commit. Saldo contado:
   ~3.500 linhas mortas contra 400–600 novas.
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
