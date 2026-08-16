@@ -5,7 +5,8 @@
 // ============================================================
 import { WORLD } from '../config';
 import { GLSL_CARTOGRAPHY, LUT_DISK } from '../cartography/galacticModel';
-import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore, blackbodyLinear } from './common';
+import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore } from './common';
+import { blackbodyLinear } from '../luzDaCasa';
 import { GLSL_UNRESOLVED, glslResolvedCatalog } from '../world/wrappedStars';
 
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');

@@ -81,6 +81,21 @@ const PROIBIDOS: SimboloProibido[] = [
       'o literal GLSL solto morreu — conformidade de PSF é numérica ' +
       '(luzDaCasa.test.ts), nunca toContain sobre o fonte do shader',
   },
+  // ─── L1 (2026-08-16): a peça única nasce; o corpo negro muda de casa ───
+  {
+    arquivo: 'src/three/shaders/common.ts',
+    padrao: /export function blackbodyLinear/,
+    migracao: 'L1',
+    razao: 'a face CPU do corpo negro mora em luzDaCasa.ts — common.ts só gera o GLSL',
+  },
+  {
+    arquivo: 'src/three/shaders/common.ts',
+    padrao: /0\.640|1\.980/,
+    migracao: 'L1',
+    razao:
+      'os coeficientes do corpo negro são interpolados de luzDaCasa.ts — ' +
+      'redigitar um aqui recria a divergência que o L1 matou',
+  },
 ];
 
 describe('os símbolos proibidos não renasceram', () => {

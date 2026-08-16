@@ -198,6 +198,33 @@ export function psfPointSizePx(
   return 2.0 * (RAIO_DO_SPRITE_EM_SIGMAS * sigma + rSat);
 }
 
+// ─── A COR DO CORPO NEGRO — o endereço único (L1) ─────────────────────────
+//
+// Veio de `shaders/common.ts` no L1, pelo mesmo gesto do F0: o GLSL de
+// `GLSL_STAR_COLOR` passa a ser GERADO destes coeficientes, e a face CPU
+// mora aqui — uma escrita, duas faces. O ajuste quadrático tem RMS 0,010 de
+// 2500 K a 40000 K contra Planck × CIE 1931 normalizado a Y = 1 (a história
+// do ajuste está no cabeçalho de `GLSL_STAR_COLOR`).
+
+/** O u do ajuste é `5000/T`, grampeado no domínio em que o fit vale. */
+export const CORPO_NEGRO_U_REF_K = 5000;
+export const CORPO_NEGRO_U_MIN = 0.125;
+export const CORPO_NEGRO_U_MAX = 2.0;
+/** Coeficientes (a, b, c) de `a + b·u + c·u²`, canal a canal. */
+export const CORPO_NEGRO_R = [0.64, 0.42, 0.15] as const;
+export const CORPO_NEGRO_G = [0.98, 0.08, -0.1] as const;
+export const CORPO_NEGRO_B = [2.3, -1.98, 0.45] as const;
+
+/** Cor sRGB linear (Y = 1) de um corpo negro a `T` kelvin. */
+export function blackbodyLinear(T: number): [number, number, number] {
+  const u = Math.min(CORPO_NEGRO_U_MAX, Math.max(CORPO_NEGRO_U_MIN, CORPO_NEGRO_U_REF_K / T));
+  return [
+    CORPO_NEGRO_R[0] + CORPO_NEGRO_R[1] * u + CORPO_NEGRO_R[2] * u * u,
+    CORPO_NEGRO_G[0] + CORPO_NEGRO_G[1] * u + CORPO_NEGRO_G[2] * u * u,
+    CORPO_NEGRO_B[0] + CORPO_NEGRO_B[1] * u + CORPO_NEGRO_B[2] * u * u,
+  ];
+}
+
 // ─── A PONTE geometria ↔ fluxo ────────────────────────────────────────────
 
 /**
@@ -213,6 +240,56 @@ export function psfPointSizePx(
 export function radianciaDeCorpoNegro(teffK: number): number {
   return Math.pow(teffK / TEFF_SOL_K, 4);
 }
+
+/**
+ * A RADIÂNCIA NA BANDA DE RENDER — a decisão explícita da cláusula 5.5 da
+ * Lei, tomada no L1: **a lei estelar vive na banda visível**, não na
+ * bolométrica. A função acima (`T⁴`, Stefan-Boltzmann) é a face BOLOMÉTRICA
+ * e continua correta para o que ela responde; mas a cor da casa é
+ * normalizada a Y = 1, então o brilho que acompanha essa cor tem de carregar
+ * a luminância visível — senão uma O de 30.000 K entra 11× brilhante demais
+ * e uma M de 3.000 K, 4,9× fraca demais (números da cláusula).
+ *
+ * A conta: ∫ B_λ(T)·ȳ(λ) dλ, com B_λ de Planck e ȳ o CIE 1931 fotópico no
+ * ajuste de duas gaussianas de Wyman–Sloan–Shirley (2013) — o MESMO tipo de
+ * fonte do ajuste quadrático da cor. Normalizada pela integral do Sol:
+ * `radianciaVisivelDeCorpoNegro(TEFF_SOL_K)` é **1 exato** (x/x em IEEE754),
+ * a mesma âncora de toda esta régua.
+ *
+ * Sem `distância` no argumento, como a irmã — e pelo mesmo motivo de lei.
+ */
+export function radianciaVisivelDeCorpoNegro(teffK: number): number {
+  return integralPlanckCie(teffK) / INTEGRAL_PLANCK_CIE_DO_SOL;
+}
+
+/** ȳ(λ) — CIE 1931 fotópico, ajuste de Wyman–Sloan–Shirley (2013). */
+function cieYBarra(lambdaNm: number): number {
+  const lobo = (mu: number, sigmaEsq: number, sigmaDir: number): number => {
+    const s = lambdaNm < mu ? sigmaEsq : sigmaDir;
+    const t = (lambdaNm - mu) / s;
+    return Math.exp(-0.5 * t * t);
+  };
+  return 0.821 * lobo(568.8, 46.9, 40.5) + 0.286 * lobo(530.9, 16.3, 31.1);
+}
+
+/**
+ * ∫ B_λ(T)·ȳ(λ) dλ em 380–780 nm, soma de Riemann com passo de 1 nm — passo
+ * FIXO de propósito: o valor é determinístico bit a bit, como toda régua.
+ * Unidade arbitrária (a normalização pelo Sol é quem dá a unidade da casa).
+ */
+function integralPlanckCie(teffK: number): number {
+  // c2 = h·c/k em nm·K — a única constante física de que a RAZÃO precisa
+  // (c1 corta na divisão pelo Sol).
+  const C2_NM_K = 1.4387769e7;
+  let soma = 0;
+  for (let nm = 380; nm <= 780; nm += 1) {
+    const planck = 1 / (Math.pow(nm, 5) * (Math.exp(C2_NM_K / (nm * teffK)) - 1));
+    soma += planck * cieYBarra(nm);
+  }
+  return soma;
+}
+
+const INTEGRAL_PLANCK_CIE_DO_SOL = integralPlanckCie(TEFF_SOL_K);
 
 /**
  * O ângulo sólido de um disco de raio `raioPc` visto de `distPc`, em

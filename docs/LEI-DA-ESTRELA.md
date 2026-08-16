@@ -225,32 +225,15 @@ borrão **30 px @ 0,232 UA → 277 px @ 0,341 UA (9,2×)**, nas duas pernas, com
 `acimaDeMeia` 0,42% → 8,69% — a costura filtro↔cessão, que nenhum juiz atual
 enxerga.
 
-### O censo vira CADASTRO_DE_REPRESENTACOES (em código)
+### O censo É o CADASTRO_DE_REPRESENTACOES (em código desde o L1, 16/08)
 
-Em prosa o censo apodrece a cada commit — apodreceu em menos de 24 h. Ele vira uma
-tabela **em código**, no molde de `CADASTRO_DE_ESCALA`, com `id`, `arquivo`,
-`consomeL1`, `leiVelhaApagada`, `fatorDeBrilho`, `destino` e `razao`, mais um teste
-que reprova quando um arquivo da lista desenha luz sem importar a lei. Destino é
-uma de quatro palavras: **migra** (consome L1), **morre**, **instrumento** (consome
-a lei, não a implementa) ou **fora da lei** (com razão escrita).
-
-| # | representação | onde | destino |
-|---|---|---|---|
-| 1 | catálogo HYG (328.749) | `stars.ts` + `starShaders.ts` | migra — **M3** |
-| 2 | cascas procedurais | `wrappedStars.ts` | migra — **M3** (lei própria: `m = MV + 5log₁₀d − 5 + ext·d`) |
-| 3 | Sol-ponto (vértice 0) | `planetas.ts` | migra — **M1** |
-| 4 | os 9 planetas | `planetas.ts` | migra — **M4** (consomem o *instrumento*, mantêm MH18) |
-| 5 | 16 clarões hero | `heroStars.ts` | migra — **M2**; a identidade "as 16" morre |
-| 6 | SunStar | `heroStars.ts` | **morre** — M1 |
-| 7 | corpo do Sol | `stellarBody.ts` + `sol/*.js` | migra — M1, com `overrideExpoente` |
-| 8 | partículas da galáxia (4,02 M) | `galaxy.ts` + `galaxyShaders.ts` | migra — **M6** |
-| 9 | 7 lâminas emissivas | `galaxyShaders.ts` | migra — M6 (cessão G2) |
-| 10–13 | glow do bojo, halo térmico, anã de Sagitário, marcador do Sol | `galaxy.ts` (`GLOW_FRAG`) | migra — **M5** |
-| 14 | forjas (5 populações) | `starForges.ts` | migra — M5; a **cópia** da lei de tela morre junto |
-| 15 | termo `stellar` do raymarch | `nebulaShaders.ts` | migra — **M7** |
-| 16 | campo 2D do carregamento | `CartografiaCanvas.ts` | **fora da lei** — 2D, não é cena |
-| 17 | splats do bake | `structureMap.ts` | migra — M7 |
-| 18 | bloom + gradação | `post.ts` + `atlasConfig.ts` | **instrumento** — consome L1, e é onde mora metade do padrão |
+Em prosa o censo apodrecia a cada commit — apodreceu em menos de 24 h. Agora ele
+vive em `src/three/cadastroDeRepresentacoes.ts`, no molde de `CADASTRO_DE_ESCALA`,
+com `consomeL1`, `leiVelhaApagada`, `fatorDeBrilho`, `destino` e `razao` por
+representação — e o teste dele **roda a varredura de emissores de verdade**
+(`gl_PointSize` contra o fonte): o censo não pode mais ser feito de memória, que
+foi como dois emissores ficaram de fora da v1. A tabela em prosa saiu daqui para
+não existir em duas versões; quem quiser o censo lê o código, que é cobrado.
 
 ### As divergências que sobram
 
@@ -415,13 +398,14 @@ armadilha de procedência, e a casa proíbe md5 sem medir.
 *(F0 — PSF e Ballesteros num endereço só — FECHOU em 16/08, delta medido:
 zero pixel em 51 vistas. O registro é o commit; a lista é do que falta.)*
 
-### L1 — A lei única (com o L2 dissolvido)
-**Entra:** `estrela.ts` com a assinatura do §3, o clarão de asas do §1, os **três
-pesos** (ponto / esfera analítica / disco geométrico), a pegada anisotrópica, o
-ponto-zero único (gate de foto **antes do M3**), e `trocaPx` como parâmetro — o
-antigo L2 não é passo, é um campo. **Apaga:** nada ainda; L1 nasce sem consumidor e
-com teste de conformidade. **Régua:** grade numérica TS↔GLSL; nenhuma vista muda.
-**Delta declarado: zero pixel.**
+*(L1 — a lei única — FECHOU em 16/08: `estrela.ts` puro com os três contratos
+do §3, `repartir`, o clarão de asas derivado do fluxo, a radiância na banda de
+render (§5.5 decidida: a integral Planck×CIE reproduz os números da cláusula —
+30.000 K dá 65,9, não 729), o ponto-zero único 4,83 (gate de foto segue devido
+antes do M3), fallback único, e `GLSL_LEI_DA_ESTRELA` gerado das mesmas
+constantes. O corpo negro mudou de casa para `luzDaCasa.ts` no mesmo gesto do
+F0, byte-idêntico. Cadastro em código com varredura reproduzível. Sem
+consumidor: zero pixel por construção.)*
 
 ### M1 — A instância nº 1 (Sol-ponto + SunStar + corpo), num commit só
 **A maior demolição por commit da casa.** É onde moram os itens 3, 4, 5, 40 e 42.

@@ -60,9 +60,11 @@ cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
 - **A Lei da Estrela foi REESCRITA (v2, 15/08)** depois de uma banca de
   quatro críticos e do plano conceitual externo trazido pelo dono. O F0
   (PSF e Ballesteros num endereço só) FECHOU em 16/08 com zero pixel
-  medido em 51 vistas. A próxima obra: L1 (a peça única, `estrela.ts`)
-  → M1 (o Sol inteiro num commit, a maior demolição da casa) → M2…M7 —
-  cada migração APAGA a lei velha no mesmo commit. Saldo contado:
+  medido em 51 vistas; o L1 (`estrela.ts`, a peça única, com cadastro de
+  representações em código) FECHOU no mesmo dia, sem consumidor. A
+  próxima obra: os juízes do §5.10 (a régua ganha os critérios que ainda
+  não vê) e então o M1 — o Sol inteiro num commit, a maior demolição da
+  casa. Cada migração APAGA a lei velha no mesmo commit. Saldo contado:
   ~3.500 linhas mortas contra 400–600 novas.
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com

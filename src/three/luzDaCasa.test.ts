@@ -36,6 +36,7 @@ import {
   RADIANCIA_DA_FOTOSFERA,
   TEFF_SOL_K,
   anguloSolidoDeDisco,
+  blackbodyLinear,
   depositoDoDisco,
   depositoDoPonto,
   distanciaDeTrocaPc,
@@ -56,7 +57,7 @@ import {
 // `world/lodStellar.ts` morreram; o que este teste importa de fora é só o
 // que segue morando fora.
 import { RAIO_SOL_PC } from './escala';
-import { GLSL_STAR_COLOR, GLSL_STAR_PSF, blackbodyLinear, bvToColor } from './shaders/common';
+import { GLSL_STAR_COLOR, GLSL_STAR_PSF, bvToColor } from './shaders/common';
 import {
   BALLESTEROS_A,
   BALLESTEROS_B,

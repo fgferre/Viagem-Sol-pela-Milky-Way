@@ -29,7 +29,8 @@ import {
   localArmThetaAtRadius,
   warpHeightPc,
 } from '../cartography/galacticModel';
-import { blackbodyLinear, POP_HII } from '../shaders/common';
+import { POP_HII } from '../shaders/common';
+import { blackbodyLinear } from '../luzDaCasa';
 
 // As três populações do disco, por temperatura efetiva. Y ≈ 1 nas três, então
 // a escolha de população muda MATIZ e não brilho — brilho é a lei de

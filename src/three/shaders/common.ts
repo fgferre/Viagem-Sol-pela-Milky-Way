@@ -5,8 +5,15 @@
 import { WORLD } from '../config';
 import {
   ALTURA_DE_CALIBRACAO_DO_SIGMA_PX,
+  CORPO_NEGRO_B,
+  CORPO_NEGRO_G,
+  CORPO_NEGRO_R,
+  CORPO_NEGRO_U_MAX,
+  CORPO_NEGRO_U_MIN,
+  CORPO_NEGRO_U_REF_K,
   DOIS_PI_DO_SHADER,
   RAIO_DO_SPRITE_EM_SIGMAS,
+  blackbodyLinear,
 } from '../luzDaCasa';
 import {
   BALLESTEROS_A,
@@ -381,12 +388,16 @@ vec3 comprimir3(vec3 x, float b) {
 // `stellarPhysics.ts` (`temperatureFromBV`) — o endereço único da fórmula.
 // O texto gerado é o mesmo de sempre; redigitar um coeficiente aqui é
 // recriar a cópia que o F0 matou (a varredura invertida vigia).
+const polinomioDoCorpoNegro = (c: readonly [number, number, number]): string =>
+  `${c[0].toFixed(3)} ${c[1] < 0 ? '-' : '+'} ${Math.abs(c[1]).toFixed(3)} * u ` +
+  `${c[2] < 0 ? '-' : '+'} ${Math.abs(c[2]).toFixed(3)} * u * u`;
+
 export const GLSL_STAR_COLOR = /* glsl */ `
 vec3 blackbodyLinear(float T) {
-  float u = clamp(5000.0 / T, 0.125, 2.0);
-  return vec3(0.640 + 0.420 * u + 0.150 * u * u,
-              0.980 + 0.080 * u - 0.100 * u * u,
-              2.300 - 1.980 * u + 0.450 * u * u);
+  float u = clamp(${CORPO_NEGRO_U_REF_K.toFixed(1)} / T, ${CORPO_NEGRO_U_MIN}, ${CORPO_NEGRO_U_MAX.toFixed(1)});
+  return vec3(${polinomioDoCorpoNegro(CORPO_NEGRO_R)},
+              ${polinomioDoCorpoNegro(CORPO_NEGRO_G)},
+              ${polinomioDoCorpoNegro(CORPO_NEGRO_B)});
 }
 
 // Ballesteros 2012: B−V → T_eff. Erra acima de ~10.000 K (B−V = −0,30
@@ -398,20 +409,10 @@ vec3 bvToColor(float bv) {
 }
 `;
 
-/**
- * Espelho CPU de `blackbodyLinear`, mesmo polinômio. Fica coladinho no GLSL
- * de propósito: as cores das partículas da galáxia são decididas na CPU no
- * build e as das lâminas no shader — se as duas fórmulas se separarem em
- * arquivos distintos, divergem em silêncio e ninguém vê.
- */
-export function blackbodyLinear(T: number): [number, number, number] {
-  const u = Math.min(2, Math.max(0.125, 5000 / T));
-  return [
-    0.64 + 0.42 * u + 0.15 * u * u,
-    0.98 + 0.08 * u - 0.1 * u * u,
-    2.3 - 1.98 * u + 0.45 * u * u,
-  ];
-}
+// A face CPU de `blackbodyLinear` MUDOU DE CASA no L1: mora em
+// `luzDaCasa.ts`, com os coeficientes que o GLSL acima interpola — as duas
+// faces não podem mais divergir porque são a MESMA escrita. Quem consumia
+// daqui (galaxy, nebulaShaders) importa de lá.
 
 /**
  * Face CPU de `bvToColor`. Desde o F0 ela não REDIGITA a fórmula de
