@@ -79,12 +79,8 @@ import {
 import type { SombraNaCena } from '../../../lib/atlas/eclipse';
 import { CALIBRACAO_ATLAS } from '../../config';
 import type { QualityLevel } from '../../core/engine';
-import {
-  RAMP_DURATION_MS,
-  heroDominanceFade,
-  psfPointSizePx,
-  stepRampToward,
-} from '../lodStellar';
+import { RAMP_DURATION_MS, heroDominanceFade, stepRampToward } from '../lodStellar';
+import { psfPointSizePx } from '../../luzDaCasa';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC, faseDoVertice, magDoVertice } from '../planetas/planetas';
 import type { FonteDeEfemerides, PsfDoCampo } from '../planetas/planetas';

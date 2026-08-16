@@ -13,13 +13,8 @@ import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
-import {
-  deepPointGain,
-  filtroSolarAlvo,
-  heroDominanceFade,
-  psfPointSizePx,
-  sunStarGain,
-} from '../lodStellar';
+import { deepPointGain, filtroSolarAlvo, heroDominanceFade, sunStarGain } from '../lodStellar';
+import { psfPointSizePx } from '../../luzDaCasa';
 import { PONTO_ZERO_SOL_PC, magDoVertice } from '../planetas/planetas';
 import { CESSAO_PELO_GATE_MULT, cessaoAlvo, cessaoPeloGate } from './terra';
 import {

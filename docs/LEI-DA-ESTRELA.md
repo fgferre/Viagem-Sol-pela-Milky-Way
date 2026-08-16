@@ -254,14 +254,12 @@ a lei, não a implementa) ou **fora da lei** (com razão escrita).
 
 ### As divergências que sobram
 
-- **A PSF tem QUATRO cópias**, e o próprio código já escreve a lista
-  (`luzDaCasa.ts`): `psfPointSizePx` (`lodStellar.ts`), `picoDaPsf` (`core/pupila.ts`),
-  `picoDaPsf` (`planetas.ts`) e o GLSL de `common.ts`. Sem unificá-las **antes**, L1
-  nasce como cópia nº 5. É o F0.
-- **Ballesteros em três cópias** (`common.ts` GLSL, `common.ts` CPU,
-  `stellarPhysics.ts`), duas com acordo anti-divergência. Fundir no F0, com
-  conformidade **numérica** — nunca varredura textual, que é o padrão "espelho" que
-  produziu as quatro PSFs.
+*(A PSF em quatro cópias e o Ballesteros em três morreram no F0, 16/08: um
+endereço só — `picoDaPsf`/`psfPointSizePx` em `luzDaCasa.ts`,
+`temperatureFromBV` em `stellarPhysics.ts` — com o GLSL GERADO das mesmas
+constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
+`simbolosProibidos.test.ts`.)*
+
 - **Dois pontos-zero incompatíveis:** `M_V☉ = 4,85` no campo, `4,83` no `SunStar`,
   ambos declarados em `escala.ts`. L1 tem **UM**. A escolha é gate com foto para o
   dono, agendado **antes do M3** — é ele que move 328.749 pontos.
@@ -414,13 +412,8 @@ estado padrão e versionar. Hoje `capturas/luz-do-quadro.json` é de 13:57 e con
 desenho ANTIGO (borrão 900 px, REPROVA 4/4), enquanto o padrão subiu às 22:57 — é
 armadilha de procedência, e a casa proíbe md5 sem medir.
 
-### F0 — PSF e Ballesteros num endereço só (pré-requisito duro)
-**Entra:** uma PSF e uma Ballesteros, com conformidade numérica GLSL↔CPU.
-**Apaga:** `picoDaPsf` de `core/pupila.ts` e de `planetas.ts`, o literal GLSL solto,
-duas das três cópias de Ballesteros. **`picoDaPsf` muda de casa aqui** — o director
-importa a lei viva de dentro da lápide, e um módulo marcado como morto que hospeda
-uma lei viva é o cenário exato do "as AIs vão se perder".
-**Régua:** funções puras, bit-idênticas. **Delta declarado: zero pixel.**
+*(F0 — PSF e Ballesteros num endereço só — FECHOU em 16/08, delta medido:
+zero pixel em 51 vistas. O registro é o commit; a lista é do que falta.)*
 
 ### L1 — A lei única (com o L2 dissolvido)
 **Entra:** `estrela.ts` com a assinatura do §3, o clarão de asas do §1, os **três
@@ -729,16 +722,25 @@ quando a fundação mudar, e falhar é o comportamento correto — mas quem muda
 **reescreve o oráculo, nunca o contorna**, e no mesmo diff **inverte** a varredura.
 Endereços por símbolo; a v1 os deu por linha e todos envelheceram.
 
-**Já aconteceu: nada.** F1 e F2 entraram bit-neutros ou com oráculo apertado
+**Já aconteceu:** F1 e F2 entraram bit-neutros ou com oráculo apertado
 (`luzDaCasa.ts` declara por escrito "no dia 1 este módulo não move um pixel"). Duas
 previsões da v1 foram falsificadas: F1 não tocou as três linhas literais de
 `GLSL_STAR_PSF` em `pupila.test.ts` nem o `uLuzGanho` de `terra.test.ts`/`lua.test.ts`.
 
+**O F0 (16/08) quebrou o que previu — e um que o censo não via.** As três linhas
+literais de `pupila.test.ts` morreram como previsto (o bloco virou grade numérica
+em `luzDaCasa.test.ts`; o arquivo da pupila segue vivo até M2). A fiação de
+`lodStellar.test.ts` ("o SunStar pede px à lei do campo") mudou de alvo junto com
+a lei. E `luz-do-quadro.test.mjs` tinha um SEGUNDO literal GLSL solto — cinco
+linhas `toContain` que nenhum censo listava — reescrito como conformidade
+numérica contra a lei importada. Lição registrada: censo de espelho feito de
+memória perde exatamente o espelho que mais importa, o do juiz.
+
 **Vai acontecer:**
 - `escala.test.ts` casa a regex `const size = ([\d.]+) \* lum;` contra o fonte de
   `heroStars.ts` — **M2** apaga a linha.
-- `pupila.test.ts` (230 l inteiras) exige o texto literal de `GLSL_STAR_PSF` — **F0**
-  move e **M2** apaga o arquivo.
+- `pupila.test.ts` — o literal de `GLSL_STAR_PSF` já saiu (F0); **M2** apaga o
+  arquivo inteiro.
 - `lodStellar.test.ts` cobra `ponto + clarão === 1` com `Object.is` em ~22.000
   distâncias e exige o literal `return 1 - sunStarGain(dPc);` — **M1** mata os dois.
   São **332 citações** de símbolos condenados no arquivo, de 2.139 linhas.

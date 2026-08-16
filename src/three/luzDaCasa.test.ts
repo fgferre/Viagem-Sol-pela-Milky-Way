@@ -20,10 +20,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import {
+  ALTURA_DE_CALIBRACAO_DO_SIGMA_PX,
   ALTURA_DE_REFERENCIA_PX,
   BETA_EMISSAO,
+  DOIS_PI_DO_SHADER,
   EXPO_M0,
   FOV_DA_CASA,
+  RAIO_DO_SPRITE_EM_SIGMAS,
   comprimir,
   lerBetaDaEmissao,
   lerPortaFotosfera,
@@ -40,17 +43,27 @@ import {
   fluxoDeMagnitude,
   magnitudeDeFluxo,
   magnitudeDoSol,
+  picoDaPsf,
+  psfPointSizePx,
   radianciaDeCorpoNegro,
   radianciaDeTela,
   razaoDiscoPonto,
+  sigmaDaPsfPx,
   vaoEmMagnitudes,
   vaoRadiometricoNaTroca,
 } from './luzDaCasa';
-// os espelhos que JÁ existem — importados, nunca redigitados. É o contrato da
-// F1: a régua nova descreve o que a casa faz, não inventa uma segunda casa.
+// desde o F0 a PSF mora AQUI — os antigos espelhos de `core/pupila.ts` e
+// `world/lodStellar.ts` morreram; o que este teste importa de fora é só o
+// que segue morando fora.
 import { RAIO_SOL_PC } from './escala';
-import { picoDaPsf } from './core/pupila';
-import { psfPointSizePx } from './world/lodStellar';
+import { GLSL_STAR_COLOR, GLSL_STAR_PSF, blackbodyLinear, bvToColor } from './shaders/common';
+import {
+  BALLESTEROS_A,
+  BALLESTEROS_B,
+  BALLESTEROS_C,
+  BALLESTEROS_T0_K,
+  temperatureFromBV,
+} from '../lib/atlas/stellarPhysics';
 import { diametroAparentePx } from './world/corpos/corpos';
 import { PONTO_ZERO_SOL_PC } from './world/planetas/planetas';
 
@@ -570,5 +583,108 @@ describe('4. SABOTAGENS — sem elas as três seções acima são decoração', 
     const fonte = ler('src/three/luzDaCasa.ts');
     expect(fonte).not.toMatch(/from 'three'/);
     expect(fonte).not.toMatch(/import \* as THREE/);
+  });
+});
+
+// ------------------------------------------------------------
+// A PSF UNIFICADA (F0) — conformidade NUMÉRICA, nunca varredura de texto.
+//
+// Antes do F0 a casa tinha QUATRO escritas desta lei e a prova de acordo era
+// um `toContain` sobre o fonte do shader — o método que produziu as quatro
+// cópias. Agora o GLSL é GERADO das constantes daqui (uma escrita, duas
+// faces), e o que este bloco cobra é o que dá para cobrar em `node`, por
+// NÚMERO: a face TS bate BIT A BIT com uma transliteração independente do
+// corpo do GLSL, sobre uma grade de valores. Quem mudar a lei muda as duas
+// faces no mesmo lugar — e reescreve o oráculo abaixo, nunca o contorna.
+// ------------------------------------------------------------
+describe('a PSF unificada — o F0, cobrado por número', () => {
+  /** Transliteração float64 do corpo de `starPSF` (GLSL), redigitada AQUI de
+   *  propósito: o oráculo restaura a fórmula por conta própria, como o de
+   *  `planetas.test.ts` sempre fez. Se a lei mudar num lado só, isto acende. */
+  function starPsfDeReferencia(m: number, expoM0: number, sigmaPx: number, screenH: number) {
+    const sigma = (sigmaPx * screenH) / 1080.0;
+    const E = Math.pow(10.0, -0.4 * (m - expoM0));
+    const peak = E / (6.2831853 * sigma * sigma);
+    const rSat = peak > 1.0 ? sigma * Math.sqrt(2.0 * Math.log(peak)) : 0.0;
+    const size = 2.0 * (2.2 * sigma + rSat);
+    return { peak, size };
+  }
+
+  it('pico e tamanho batem BIT A BIT com a referência, na grade inteira', () => {
+    for (const h of [720, 900, 1080, 1713, 2160]) {
+      for (const expoM0 of [3.5, 4.7]) {
+        for (const sigmaPx of [0.85, 1.2]) {
+          for (const m of [-30, -26.72, -10, -1.46, 0, 3.5, 6, 12, 20, 30]) {
+            const ref = starPsfDeReferencia(m, expoM0, sigmaPx, h);
+            const rotulo = `m=${m} h=${h} expoM0=${expoM0} sigma=${sigmaPx}`;
+            expect(picoDaPsf(m, expoM0, sigmaPx, h), rotulo).toBe(ref.peak);
+            expect(psfPointSizePx(m, expoM0, sigmaPx, h), rotulo).toBe(ref.size);
+          }
+        }
+      }
+    }
+  });
+
+  it('as constantes são as do shader — o 2π TRUNCADO é contrato, não descuido', () => {
+    expect(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX).toBe(1080);
+    expect(RAIO_DO_SPRITE_EM_SIGMAS).toBe(2.2);
+    expect(DOIS_PI_DO_SHADER).toBe(6.2831853);
+    // trocar pelo 2π exato mudaria o último bit de todo pico da casa
+    expect(DOIS_PI_DO_SHADER).not.toBe(2 * Math.PI);
+    expect(sigmaDaPsfPx(SIGMA_PX, 1080)).toBe(SIGMA_PX);
+  });
+
+  it('em m = expoM0 o fluxo é 1 — o ponto-zero da exposição da casa', () => {
+    const sigma = sigmaDaPsfPx(0.85, 1080);
+    expect(picoDaPsf(3.5, 3.5, 0.85, 1080)).toBeCloseTo(1 / (DOIS_PI_DO_SHADER * sigma * sigma), 12);
+  });
+
+  it('cai 100× a cada 5 magnitudes — a definição de magnitude', () => {
+    expect(picoDaPsf(0, 3.5, 0.85, 900) / picoDaPsf(5, 3.5, 0.85, 900)).toBeCloseTo(100, 6);
+  });
+
+  it('o Sol a 1 UA deposita ~4e11 numa tela de 900 px — o número que estoura', () => {
+    // m = −0,15 + 5·log10(d_pc), d = 1 UA. 4e11 num buffer HALF-FLOAT, que
+    // satura em 65.504: é a medição que decidiu que a compressão entra no
+    // shader e não num passe de pós (herdada da lápide da pupila).
+    const m = -0.15 + 5 * Math.log10(4.84813681e-6);
+    const pico = picoDaPsf(m, 3.5, 0.85, 900);
+    expect(pico).toBeGreaterThan(1e11);
+    expect(pico).toBeGreaterThan(65504);
+  });
+
+  it('a geração do GLSL não vazou lixo de interpolação', () => {
+    // guarda barata contra template quebrado: um `${...}` errado imprime
+    // `undefined`/`NaN` no fonte do shader e só quebraria na GPU.
+    expect(GLSL_STAR_PSF).not.toMatch(/undefined|NaN/);
+    expect(GLSL_STAR_COLOR).not.toMatch(/undefined|NaN/);
+  });
+});
+
+// ------------------------------------------------------------
+// BALLESTEROS UNIFICADO (F0) — três cópias viraram uma.
+// ------------------------------------------------------------
+describe('Ballesteros unificado — uma fórmula, duas faces', () => {
+  /** A restauração independente da fórmula (Ballesteros 2012), com os
+   *  coeficientes do paper — o oráculo não importa os da casa de propósito. */
+  const tDeReferencia = (bv: number) => 4600 * (1 / (0.92 * bv + 1.7) + 1 / (0.92 * bv + 0.62));
+
+  it('temperatureFromBV bate BIT A BIT com a fórmula do paper', () => {
+    for (let bv = -0.4; bv <= 2.21; bv += 0.05) {
+      expect(temperatureFromBV(bv), `bv=${bv}`).toBe(tDeReferencia(bv));
+    }
+  });
+
+  it('a face CPU de bvToColor é EXATAMENTE blackbody(temperatureFromBV)', () => {
+    for (const bv of [-0.4, -0.3, 0, 0.65, 1.2, 1.85, 2.2]) {
+      expect(bvToColor(bv)).toEqual(blackbodyLinear(temperatureFromBV(bv)));
+    }
+  });
+
+  it('os coeficientes exportados são os do porte de Gaia', () => {
+    expect(BALLESTEROS_T0_K).toBe(4600);
+    expect(BALLESTEROS_A).toBe(0.92);
+    expect(BALLESTEROS_B).toBe(1.7);
+    expect(BALLESTEROS_C).toBe(0.62);
   });
 });

@@ -3,6 +3,18 @@
 // função de densidade da nebulosa e cor de corpo negro.
 // ============================================================
 import { WORLD } from '../config';
+import {
+  ALTURA_DE_CALIBRACAO_DO_SIGMA_PX,
+  DOIS_PI_DO_SHADER,
+  RAIO_DO_SPRITE_EM_SIGMAS,
+} from '../luzDaCasa';
+import {
+  BALLESTEROS_A,
+  BALLESTEROS_B,
+  BALLESTEROS_C,
+  BALLESTEROS_T0_K,
+  temperatureFromBV,
+} from '../../lib/atlas/stellarPhysics';
 
 export const GLSL_NOISE = /* glsl */ `
 float hash13(vec3 p) {
@@ -297,16 +309,22 @@ vec3 extinction(vec3 from, vec3 to, float baseTau) {
 // divergência silenciosa garantida (as cascas antigas tinham uma
 // fotometria própria de fluxo→tamanho que apagava estrela ao chegar
 // perto).
+//
+// Desde o F0 (LEI-DA-ESTRELA §4) os números desta lei são INTERPOLADOS
+// de `luzDaCasa.ts` — a face TS e esta face GPU saem das MESMAS
+// constantes, e a conformidade é por construção. O texto gerado é o
+// mesmo de sempre: `sigma = sigmaPx·screenH/1080`, `peak = E/(2π·σ²)`
+// com o 2π truncado do shader, núcleo de 2,2σ.
 export const GLSL_STAR_PSF = /* glsl */ `
 void starPSF(
   float m, float expoM0, float sigmaPx, float screenH,
   out float size, out float peak, out float sat, out float sigmaFrac
 ) {
-  float sigma = sigmaPx * screenH / 1080.0;
+  float sigma = sigmaPx * screenH / ${ALTURA_DE_CALIBRACAO_DO_SIGMA_PX.toFixed(1)};
   float E = pow(10.0, -0.4 * (m - expoM0));
-  peak = E / (6.2831853 * sigma * sigma);
+  peak = E / (${DOIS_PI_DO_SHADER} * sigma * sigma);
   float rSat = peak > 1.0 ? sigma * sqrt(2.0 * log(peak)) : 0.0;
-  size = 2.0 * (2.2 * sigma + rSat);
+  size = 2.0 * (${RAIO_DO_SPRITE_EM_SIGMAS} * sigma + rSat);
   // a saturação é o gatilho FÍSICO dos spikes de difração
   sat = clamp(0.5 * log2(max(peak, 1.0)), 0.0, 1.0);
   sigmaFrac = sigma / max(0.5 * size, 1e-4);
@@ -358,6 +376,11 @@ vec3 comprimir3(vec3 x, float b) {
 // real ter faixa dinâmica. O ajuste quadrático abaixo tem RMS 0,010 de
 // 2500 K a 40000 K e custa 3 mads contra 4 mix + 4 smoothstep: é mais
 // barato que o que substitui.
+//
+// Desde o F0 os coeficientes de Ballesteros são INTERPOLADOS de
+// `stellarPhysics.ts` (`temperatureFromBV`) — o endereço único da fórmula.
+// O texto gerado é o mesmo de sempre; redigitar um coeficiente aqui é
+// recriar a cópia que o F0 matou (a varredura invertida vigia).
 export const GLSL_STAR_COLOR = /* glsl */ `
 vec3 blackbodyLinear(float T) {
   float u = clamp(5000.0 / T, 0.125, 2.0);
@@ -370,7 +393,7 @@ vec3 blackbodyLinear(float T) {
 // devolve 16.600 K em vez dos ~30.000 K de uma O), o que afeta ~100 das
 // 18.543 do HYG — todas já no extremo azul, onde a cor satura.
 vec3 bvToColor(float bv) {
-  float t = 4600.0 * (1.0 / (0.92 * bv + 1.70) + 1.0 / (0.92 * bv + 0.62));
+  float t = ${BALLESTEROS_T0_K.toFixed(1)} * (1.0 / (${BALLESTEROS_A} * bv + ${BALLESTEROS_B.toFixed(2)}) + 1.0 / (${BALLESTEROS_A} * bv + ${BALLESTEROS_C}));
   return blackbodyLinear(t);
 }
 `;
@@ -391,14 +414,15 @@ export function blackbodyLinear(T: number): [number, number, number] {
 }
 
 /**
- * Espelho CPU de `bvToColor`, mesma fórmula (Ballesteros 2012), mesmo
- * contrato anti-divergência do espelho acima. Consumidor: a cor das
- * heroes e do SunStar é decidida na CPU uma vez, na construção — com
- * este espelho elas obedecem à MESMA lei do catálogo (Onda 1b).
+ * Face CPU de `bvToColor`. Desde o F0 ela não REDIGITA a fórmula de
+ * Ballesteros: chama `temperatureFromBV` (`stellarPhysics.ts`), o mesmo
+ * endereço de onde o GLSL acima interpola os coeficientes — era a segunda
+ * das três cópias, e morreu. Consumidor: a cor das heroes e do SunStar é
+ * decidida na CPU uma vez, na construção — com esta face elas obedecem à
+ * MESMA lei do catálogo (Onda 1b).
  */
 export function bvToColor(bv: number): [number, number, number] {
-  const t = 4600 * (1 / (0.92 * bv + 1.7) + 1 / (0.92 * bv + 0.62));
-  return blackbodyLinear(t);
+  return blackbodyLinear(temperatureFromBV(bv));
 }
 
 /**

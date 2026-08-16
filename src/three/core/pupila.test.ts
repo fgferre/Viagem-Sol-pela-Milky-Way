@@ -5,8 +5,6 @@
 // toda distância em que nenhuma fonte estoura o quadro. Se essa inércia não for
 // EXATA, ela deixa de ser uma peça que se pode montar sem mexer no filme.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import {
   ALVO_DE_PICO,
   KAPPA_DA_PUPILA,
@@ -17,45 +15,12 @@ import {
   deslocamentoDeExpoM0,
   ganhoDaPupila,
   lerPortaDaPupila,
-  picoDaPsf,
   stopsDaPupila,
 } from './pupila';
-
-const RAIZ = resolve(__dirname, '../../..');
-
-describe('1. picoDaPsf — o espelho da lei da GPU', () => {
-  it('é a MESMA conta do GLSL_STAR_PSF, lida do texto do shader', () => {
-    // varredura textual, no método declarado da casa: se a PSF mudar em
-    // `common.ts` e este espelho não, o alarme toca AQUI e não numa vista.
-    const glsl = readFileSync(resolve(RAIZ, 'src/three/shaders/common.ts'), 'utf8');
-    expect(glsl).toContain('float sigma = sigmaPx * screenH / 1080.0;');
-    expect(glsl).toContain('float E = pow(10.0, -0.4 * (m - expoM0));');
-    expect(glsl).toContain('peak = E / (6.2831853 * sigma * sigma);');
-  });
-
-  it('em m = expoM0 o fluxo é 1 — o ponto-zero da exposição da casa', () => {
-    // E = 10^(-0,4·0) = 1, logo pico = 1/(2πσ²) com σ = sigmaPx·screenH/1080
-    const sigma = (0.85 * 1080) / 1080;
-    expect(picoDaPsf(3.5, 3.5, 0.85, 1080)).toBeCloseTo(1 / (6.2831853 * sigma * sigma), 12);
-  });
-
-  it('cai 100× a cada 5 magnitudes — a definição de magnitude', () => {
-    const a = picoDaPsf(0, 3.5, 0.85, 900);
-    const b = picoDaPsf(5, 3.5, 0.85, 900);
-    expect(a / b).toBeCloseTo(100, 6);
-  });
-
-  it('o Sol a 1 UA deposita ~4e11 numa tela de 900 px — o número que estoura', () => {
-    // m = −0,15 + 5·log10(d_pc), d = 1 UA = 4,84813681e-6 pc  ⇒  m = −26,72.
-    // 4e11 num buffer HALF-FLOAT, que satura em 65.504: o ponto do Sol já chega
-    // ao buffer como INFINITO. É a medição que decidiu que a pupila entra no
-    // shader e não num passe de pós.
-    const m = -0.15 + 5 * Math.log10(4.84813681e-6);
-    const pico = picoDaPsf(m, 3.5, 0.85, 900);
-    expect(pico).toBeGreaterThan(1e11);
-    expect(pico).toBeGreaterThan(65504);
-  });
-});
+// A PSF não mora mais aqui (F0): a lápide devolveu a lei viva a
+// `luzDaCasa.ts`, e os testes DELA moram em `luzDaCasa.test.ts` — junto
+// com a varredura que ela substituiu por conformidade de construção.
+import { picoDaPsf } from '../luzDaCasa';
 
 describe('2. ganhoDaPupila — a lei, e a inércia exata', () => {
   it('fonte abaixo do alvo devolve 1 EXATO — a pupila não toca o que não estoura', () => {

@@ -63,7 +63,6 @@ import {
   maxSpriteSolidAngleRad,
   needsAttributeWrite,
   projectedRadiusPx,
-  psfPointSizePx,
   resetRamp,
   shouldDiscBeActive,
   spriteAttenuation,
@@ -71,6 +70,7 @@ import {
   stepRampToward,
   sunStarGain,
 } from './lodStellar';
+import { psfPointSizePx } from '../luzDaCasa';
 
 const DEG = Math.PI / 180;
 
@@ -2017,7 +2017,8 @@ describe('a costura de TAMANHO — o clarão mede o que o ponto mediria', () => 
     expect(heroStars).toMatch(
       /import \{[^}]*\bheroSizePcDePx\b[^}]*\} from '\.\/lodStellar'/
     );
-    expect(heroStars).toMatch(/import \{[^}]*\bpsfPointSizePx\b[^}]*\} from '\.\/lodStellar'/);
+    // desde o F0 a lei do campo mora em `luzDaCasa.ts` — a fiação segue a lei
+    expect(heroStars).toMatch(/import \{[^}]*\bpsfPointSizePx\b[^}]*\} from '\.\.\/luzDaCasa'/);
     expect(heroStars).toContain('psfPointSizePx(m, expoM0, sigmaPx, screenH),');
     // a lei ANGULAR não voltou: nem o coeficiente, nem o teto, nem o
     // `d · tan(ângulo)` que os transformava em pc

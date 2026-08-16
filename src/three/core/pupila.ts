@@ -109,22 +109,10 @@
 // "o selo passa a reportar o EV APLICADO").
 // ============================================================
 
-/**
- * O PICO da PSF, espelho em TS da primeira metade de `GLSL_STAR_PSF`
- * (`shaders/common.ts:300-313`). Existe uma terceira cópia deste espelho em
- * `planetas.ts:255` (`picoDaPsf`) — esta NÃO a substitui e nem deve: a de lá é
- * do `?dbgplan`, fora do caminho do quadro, e mora junto de quem tem os
- * uniformes verdadeiros. O que as duas têm de manter é a MESMA conta, e
- * `pupila.test.ts` cobra a igualdade contra o texto do GLSL.
- *
- * A igualdade com a GPU é de CURVA e de número, não de bit: float32 lá,
- * float64 aqui (o mesmo achado A7 que `lodStellar.ts` já registrou).
- */
-export function picoDaPsf(m: number, expoM0: number, sigmaPx: number, screenH: number): number {
-  const sigma = (sigmaPx * screenH) / 1080.0;
-  const E = Math.pow(10.0, -0.4 * (m - expoM0));
-  return E / (6.2831853 * sigma * sigma);
-}
+// `picoDaPsf` MORAVA AQUI e mudou de casa no F0 (LEI-DA-ESTRELA §4): a lei
+// viva não podia seguir hospedada numa lápide com data de enterro (M2).
+// O endereço único da PSF é `luzDaCasa.ts`; quem precisa do pico — o
+// director, os testes desta pupila — importa de lá.
 
 /**
  * O ALVO — o pico, em luz linear, em que a fonte mais brilhante pousa quando a

@@ -5,7 +5,8 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GLSL_NOISE, bvToColor } from '../shaders/common';
-import { HERO_ZOOM_TAN_REF, heroSizePcDePx, psfPointSizePx, sunStarGain } from './lodStellar';
+import { HERO_ZOOM_TAN_REF, heroSizePcDePx, sunStarGain } from './lodStellar';
+import { psfPointSizePx } from '../luzDaCasa';
 
 const VERT = /* glsl */ `
 varying vec2 vUv;

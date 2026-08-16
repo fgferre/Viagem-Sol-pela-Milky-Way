@@ -111,16 +111,9 @@ export const M_V_SOL_DO_CAMPO = 4.85;
 
 /**
  * O fluxo recebido de uma fonte de magnitude aparente `m`, na unidade do
- * instrumento. **É a MESMA expressão de `starPSF`** (`shaders/common.ts:306`,
+ * instrumento. **É a MESMA expressão de `starPSF`** (`shaders/common.ts`,
  * `float E = pow(10.0, -0.4 * (m - expoM0));`) — e é essa igualdade, e não uma
  * semelhança, que faz esta régua descrever o que a tela faz.
- *
- * Hoje ela já existe redigitada em quatro lugares: `world/lodStellar.ts`
- * (`psfPointSizePx`, o único de runtime), `core/pupila.ts` (`picoDaPsf`),
- * `world/planetas/planetas.ts` (`picoDaPsf`) e o GLSL. Unificar os quatro é
- * melhoria de estrutura com ganho claro, mas é ONDA PRÓPRIA: `psfPointSizePx`
- * está no caminho de render do Director e de três corpos, e trocar o endereço
- * de uma conta de runtime no meio da onda da luz é misturar dois riscos.
  */
 export function fluxoDeMagnitude(m: number, expoM0: number = EXPO_M0): number {
   return Math.pow(10, -0.4 * (m - expoM0));
@@ -131,12 +124,79 @@ export function magnitudeDeFluxo(fluxo: number, expoM0: number = EXPO_M0): numbe
   return expoM0 - 2.5 * Math.log10(fluxo);
 }
 
-// O PICO e o TAMANHO da PSF NÃO nascem aqui, e a ausência é deliberada. Eles
-// já existem como espelho em `core/pupila.ts` (`picoDaPsf`) e em
-// `world/lodStellar.ts` (`psfPointSizePx`, o único de runtime). Acrescentar
-// uma quarta cópia num módulo cuja razão de existir é acabar com lei
-// duplicada seria cometer, na primeira linha, o defeito que ele denuncia.
-// Quem precisar de pico importa de lá — inclusive o teste deste arquivo.
+// ─── A PSF DO INSTRUMENTO — o endereço ÚNICO (LEI-DA-ESTRELA, F0) ─────────
+//
+// A casa teve esta lei em QUATRO cópias: `core/pupila.ts` (`picoDaPsf`),
+// `world/planetas/planetas.ts` (`picoDaPsf`), `world/lodStellar.ts`
+// (`psfPointSizePx`) e o GLSL de `shaders/common.ts`. O F0 as fundiu AQUI —
+// e o GLSL (`GLSL_STAR_PSF`) passou a ser GERADO das três constantes abaixo:
+// uma escrita, duas faces, conformidade por construção. A prova de que a
+// fusão não moveu um bit é numérica (grade em `luzDaCasa.test.ts`), nunca
+// varredura de texto — foi a varredura-espelho que produziu as quatro cópias.
+
+/**
+ * A altura de buffer em que `sigmaPx` É `sigmaPx`. Em qualquer outra altura o
+ * σ escala proporcional (`σ = sigmaPx·screenH/1080`), o que torna a PSF quase
+ * invariante com a resolução — o resto da história está na cláusula 5.6 da
+ * Lei (o `peak` ainda cai com 1/H², dívida nomeada para L1).
+ */
+export const ALTURA_DE_CALIBRACAO_DO_SIGMA_PX = 1080;
+
+/**
+ * 2π como o shader o escreve — TRUNCADO, e o truncamento é contrato: o
+ * espelho TS tem de prever o que a GPU faz, não o que a matemática exata
+ * faria. Trocar por `2*Math.PI` mudaria o último bit de todo pico da casa.
+ */
+export const DOIS_PI_DO_SHADER = 6.2831853;
+
+/**
+ * O raio do sprite em unidades de σ — os 2,2σ que contêm 91,1% do gaussiano
+ * (cláusula 5.11 da Lei: o descarte de 8,9% nas fracas é dívida DECLARADA,
+ * não escolha desta constante).
+ */
+export const RAIO_DO_SPRITE_EM_SIGMAS = 2.2;
+
+/**
+ * O σ da PSF em px de tela, na altura `screenH`.
+ */
+export function sigmaDaPsfPx(sigmaPx: number, screenH: number): number {
+  return (sigmaPx * screenH) / ALTURA_DE_CALIBRACAO_DO_SIGMA_PX;
+}
+
+/**
+ * O PICO da PSF — o maior valor que o ponto escreve no buffer, ANTES da
+ * compressão da emissão (a curva `β·asinh` é de quem desenha; esta régua
+ * devolve o valor físico, e `comprimir` está logo abaixo para quem precisar
+ * do valor pós-curva).
+ *
+ * Veio de `core/pupila.ts` no F0 — a lei viva morava dentro de uma lápide
+ * marcada para demolição (M2), e o director a importava de lá.
+ */
+export function picoDaPsf(m: number, expoM0: number, sigmaPx: number, screenH: number): number {
+  const sigma = sigmaDaPsfPx(sigmaPx, screenH);
+  return fluxoDeMagnitude(m, expoM0) / (DOIS_PI_DO_SHADER * sigma * sigma);
+}
+
+/**
+ * O TAMANHO do sprite (`gl_PointSize`) que o vertex emite, em px: o núcleo de
+ * 2,2σ mais o raio saturado `σ·√(2·ln pico)` quando o pico passa de 1 — é o
+ * disco visível crescendo com √ln E, a assinatura gaussiana que a Lei §1
+ * condena no CLARÃO e que continua correta AQUI, no sprite que carrega o
+ * fluxo (M2 é quem separa as duas coisas).
+ *
+ * Veio de `world/lodStellar.ts` no F0, onde era espelho com vida própria.
+ */
+export function psfPointSizePx(
+  m: number,
+  expoM0: number,
+  sigmaPx: number,
+  screenH: number
+): number {
+  const sigma = sigmaDaPsfPx(sigmaPx, screenH);
+  const pico = picoDaPsf(m, expoM0, sigmaPx, screenH);
+  const rSat = pico > 1.0 ? sigma * Math.sqrt(2.0 * Math.log(pico)) : 0.0;
+  return 2.0 * (RAIO_DO_SPRITE_EM_SIGMAS * sigma + rSat);
+}
 
 // ─── A PONTE geometria ↔ fluxo ────────────────────────────────────────────
 

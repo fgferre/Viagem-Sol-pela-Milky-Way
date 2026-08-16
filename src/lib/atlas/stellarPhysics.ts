@@ -285,22 +285,27 @@ export const temperatureFromSpect = (
  *
  * **Gaia-borrowed**: 1:1 port of
  * `gaiasky/util/color/BVToTeffBallesteros.java:32-34` (MPL-2.0).
- * Constants `T0=4600, a=0.92, b=1.7, c=0.62`. Same formula already
- * mirrored at `starfieldShaderMath.ts:74` for GLSL color-conversion
- * purposes; this is the standalone TS port for the
- * stellar-physics path.
+ *
+ * O ENDEREÇO ÚNICO da fórmula na casa (LEI-DA-ESTRELA, F0). As constantes
+ * são exportadas porque o GLSL de `shaders/common.ts` (`bvToColor`) é
+ * GERADO delas — uma escrita, duas faces, conformidade por construção.
+ * A casa já teve esta fórmula em três cópias; duas morreram no F0.
  *
  * Falls back to this when `spect` is absent or unparseable. The
  * Ballesteros formula is empirically fit and has ~5% error against
  * MK calibration; sufficient for the visual-identity profile.
  */
+// Constants from BVToTeffBallesteros.java:18-23.
+export const BALLESTEROS_T0_K = 4600;
+export const BALLESTEROS_A = 0.92;
+export const BALLESTEROS_B = 1.7;
+export const BALLESTEROS_C = 0.62;
+
 export const temperatureFromBV = (bv: number): number => {
-  // Constants from BVToTeffBallesteros.java:18-23.
-  const a = 0.92;
-  const b = 1.7;
-  const c = 0.62;
-  const T0 = 4600;
-  return T0 * (1 / (a * bv + b) + 1 / (a * bv + c));
+  return (
+    BALLESTEROS_T0_K *
+    (1 / (BALLESTEROS_A * bv + BALLESTEROS_B) + 1 / (BALLESTEROS_A * bv + BALLESTEROS_C))
+  );
 };
 
 // ─── Stellar luminosity ───────────────────────────────────────────

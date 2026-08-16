@@ -69,7 +69,8 @@ import {
 } from '../planetas/planetas';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RETRATO_2026 } from '../planetas/retrato2026';
-import { RAMP_DURATION_MS, psfPointSizePx, stepRampToward } from '../lodStellar';
+import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
+import { psfPointSizePx } from '../../luzDaCasa';
 import { diametroAparentePx } from './corpos';
 import { LS_NORMALIZACAO_GLSL } from './lua';
 import {

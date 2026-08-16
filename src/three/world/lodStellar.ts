@@ -100,6 +100,7 @@
 // declarada como lápide, não como número vivo.
 // ============================================================
 import { RAIO_ARTISTICO_DO_SOL_PC } from '../escala';
+import { psfPointSizePx } from '../luzDaCasa';
 
 // ------------------------------------------------------------
 // 1. Janelas de LOD por instância (hoje só a instância Sol)
@@ -620,28 +621,10 @@ export function maxSpriteSolidAngleRad(
   return (ceilingPx * tanHalfFov) / screenH;
 }
 
-/**
- * Espelho em TS da conta de tamanho de `GLSL_STAR_PSF`
- * (`shaders/common.ts:300-313`). Nasceu na fase 1 só para a derivação
- * (d)/(e) e seu teste; desde a fase 3 ele é CAMINHO DE RUNTIME — a
- * política de dominância (seção 5) precisa saber, em JS, quantos px o
- * ponto do catálogo vai ocupar para decidir se o hero o domina.
- * Continua sendo espelho, não fonte: o valor que a GPU usa sai do
- * shader, e se a PSF mudar lá esta função e seus testes quebram — é o
- * ALARME. Devolve `size` (o `gl_PointSize` que o vertex emitiria), em px.
- */
-export function psfPointSizePx(
-  m: number,
-  expoM0: number,
-  sigmaPx: number,
-  screenH: number
-): number {
-  const sigma = (sigmaPx * screenH) / 1080.0;
-  const E = Math.pow(10.0, -0.4 * (m - expoM0));
-  const peak = E / (6.2831853 * sigma * sigma);
-  const rSat = peak > 1.0 ? sigma * Math.sqrt(2.0 * Math.log(peak)) : 0.0;
-  return 2.0 * (2.2 * sigma + rSat);
-}
+// `psfPointSizePx` MORAVA AQUI e mudou de casa no F0 (LEI-DA-ESTRELA §4):
+// era um espelho com vida própria — a quarta cópia da mesma lei — e desde
+// a fase 3 estava no caminho de runtime da dominância. O endereço único é
+// `luzDaCasa.ts`, de onde este arquivo e os corpos passaram a importar.
 
 // ------------------------------------------------------------
 // 4. Cicatrizes C2/C3 como contrato puro (a parte que a fase 3 liga

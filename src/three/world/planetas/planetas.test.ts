@@ -74,8 +74,8 @@ import {
   UA_POR_PC,
   faseDoVertice,
   magDoVertice,
-  picoDaPsf,
 } from './planetas';
+import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
 
 /**
  * O buffer EFETIVO do harness: `--window-size=1800,1800` com
@@ -750,10 +750,10 @@ describe('CONTINUIDADE — em nenhuma distância o Sol fica sem desenhista', () 
 describe('o corte por distância é de CUSTO, e não aparece na tela', () => {
   /** o pico do gaussiano que a PSF entrega — espelho de `GLSL_STAR_PSF`
    *  recomputado AQUI, como todo oráculo desta régua. A paridade com o
-   *  `picoDaPsf` exportado (que o `?dbgplan` publica e a régua 3 consome)
-   *  é cobrada logo abaixo: são duas escritas da mesma lei, e o dia em que
-   *  divergirem a régua 3 passa a classificar `SOB-LIMIAR` por um número
-   *  que a GPU não usa. */
+   *  `picoDaPsf` da casa (`luzDaCasa.ts`, o endereço único desde o F0 —
+   *  que o `?dbgplan` publica e a régua 3 consome) é cobrada logo abaixo:
+   *  são duas escritas da mesma lei, e o dia em que divergirem a régua 3
+   *  passa a classificar `SOB-LIMIAR` por um número que a GPU não usa. */
   function picoPsf(m: number): number {
     const sigma = (0.85 * ALTURA_PX) / 1080;
     return Math.pow(10, -0.4 * (m - 3.5)) / (6.2831853 * sigma * sigma);
@@ -761,9 +761,8 @@ describe('o corte por distância é de CUSTO, e não aparece na tela', () => {
 
   it('`picoDaPsf` (o que o ?dbgplan publica) é o MESMO número, bit a bit', () => {
     for (const m of [-18.71, -15.84, 0, 3.5, 12.3, 15.37, 21.18, 27.66]) {
-      const p = picoDaPsf(m, 3.5, 0.85, ALTURA_PX);
-      expect(p.pico, `m=${m}`).toBe(picoPsf(m));
-      expect(p.E, `m=${m}`).toBe(Math.pow(10, -0.4 * (m - 3.5)));
+      expect(picoDaPsf(m, 3.5, 0.85, ALTURA_PX), `m=${m}`).toBe(picoPsf(m));
+      expect(fluxoDeMagnitude(m, 3.5), `m=${m}`).toBe(Math.pow(10, -0.4 * (m - 3.5)));
     }
   });
 

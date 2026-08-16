@@ -58,10 +58,11 @@ cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
   ainda REPROVA a escada padrão. O conserto é a lei de asas da
   `LEI-DA-ESTRELA.md` v2 (migração M2), que também governa o bloom.
 - **A Lei da Estrela foi REESCRITA (v2, 15/08)** depois de uma banca de
-  quatro críticos e do plano conceitual externo trazido pelo dono. A
-  próxima obra é a dela: F0 (unificar PSF/Ballesteros) → L1 (a peça
-  única) → M1 (o Sol inteiro num commit, a maior demolição da casa) →
-  M2…M7 — cada migração APAGA a lei velha no mesmo commit. Saldo contado:
+  quatro críticos e do plano conceitual externo trazido pelo dono. O F0
+  (PSF e Ballesteros num endereço só) FECHOU em 16/08 com zero pixel
+  medido em 51 vistas. A próxima obra: L1 (a peça única, `estrela.ts`)
+  → M1 (o Sol inteiro num commit, a maior demolição da casa) → M2…M7 —
+  cada migração APAGA a lei velha no mesmo commit. Saldo contado:
   ~3.500 linhas mortas contra 400–600 novas.
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com

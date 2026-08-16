@@ -10,6 +10,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { discoRealPx, claraoPsfPx, julgarEscada, medirQuadro, ESCADA_UA } from './luz-do-quadro.mjs';
+// a lei da casa, no endereço único do F0 — o vitest transpila o TS; a régua
+// `.mjs` em node puro continua redigitando, e É ESTE teste que cobra o acordo.
+import { EXPO_M0, SIGMA_PX, psfPointSizePx } from '../../src/three/luzDaCasa';
 
 const ler = (rel) => readFileSync(new URL(`../../${rel}`, import.meta.url), 'utf8');
 
@@ -140,31 +143,23 @@ describe('claraoPsfPx — o que o instrumento tem DIREITO de espalhar', () => {
     }
   });
 
-  it('ESPELHO: a lei redigitada aqui é a MESMA de starPSF, palavra por palavra', () => {
-    // Esta régua roda em node puro e não importa TypeScript, então as quatro
-    // constantes e a fórmula são redigitadas. O molde do espelho é o de
-    // `escala.test.ts:63-69`: quem mover o número na fonte é obrigado a mover
-    // aqui. As três primeiras linhas são as MESMAS que `pupila.test.ts:31-33`
-    // fixa — duas varreduras sobre a mesma lei, de donos diferentes.
-    const glsl = ler('src/three/shaders/common.ts');
-    expect(glsl).toContain('float sigma = sigmaPx * screenH / 1080.0;');
-    expect(glsl).toContain('float E = pow(10.0, -0.4 * (m - expoM0));');
-    expect(glsl).toContain('peak = E / (6.2831853 * sigma * sigma);');
-    expect(glsl).toContain('float rSat = peak > 1.0 ? sigma * sqrt(2.0 * log(peak)) : 0.0;');
-    expect(glsl).toContain('size = 2.0 * (2.2 * sigma + rSat);');
-
-    // O PAR expoM0/sigmaPx MUDOU DE CASA, e este espelho é a prova de que a
-    // mudança não passou calada. Até a F1 da luz eles eram três literais
-    // soltos e a varredura lia `expoM0: 3.5, sigmaPx: 0.85` em `director.ts`;
-    // a F1 os juntou em `luzDaCasa.ts` e ESTE TESTE QUEBROU na hora — que é
-    // exatamente o serviço dele. Agora ele lê a fonte única.
-    const unidade = ler('src/three/luzDaCasa.ts');
-    const mExpo = unidade.match(/EXPO_M0 = ([\d.]+);/);
-    const mSigma = unidade.match(/SIGMA_PX = ([\d.]+);/);
-    expect(mExpo, 'a varredura de expoM0 perdeu o padrão').not.toBeNull();
-    expect(mSigma, 'a varredura de sigmaPx perdeu o padrão').not.toBeNull();
-    expect(Number(mExpo[1])).toBe(3.5);
-    expect(Number(mSigma[1])).toBe(0.85);
+  it('ESPELHO: a lei redigitada aqui é a MESMA da casa — cobrada por NÚMERO', () => {
+    // Esta régua roda em node puro e não importa TypeScript, então a lei é
+    // redigitada. Desde o F0 a prova de acordo é NUMÉRICA contra o endereço
+    // único (`luzDaCasa.ts`, importado por este teste via vitest) — o
+    // toContain sobre o fonte do shader morreu com as quatro cópias: o GLSL
+    // agora é GERADO das mesmas constantes que o teste importa aqui.
+    const mDoSol = (ua) => -0.15 + 5 * (Math.log2(ua * (1 / 206264.80624548031)) * 0.30103);
+    for (const h of [900, 1080]) {
+      for (const ua of ESCADA_UA) {
+        expect(claraoPsfPx(ua, h), `${ua} UA @ ${h}px`).toBe(
+          psfPointSizePx(mDoSol(ua), EXPO_M0, SIGMA_PX, h)
+        );
+      }
+    }
+    // e as constantes do instrumento que a régua redigita são as da casa
+    expect(EXPO_M0).toBe(3.5);
+    expect(SIGMA_PX).toBe(0.85);
     // e o campo consome a lei em vez de redigitá-la
     expect(ler('src/three/director.ts')).toContain('expoM0: EXPO_M0');
 

@@ -10,7 +10,6 @@ import { Post } from './core/post';
 import {
   Pupila,
   ganhoDaPupila,
-  picoDaPsf,
   deslocamentoDeExpoM0,
   lerPortaDaPupila,
 } from './core/pupila';
@@ -84,7 +83,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico
 import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
 import { RAIO_DO_SOL_NA_CENA } from './escala';
-import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
+import { EXPO_M0, SIGMA_PX, picoDaPsf, psfPointSizePx } from './luzDaCasa';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -121,7 +120,6 @@ import {
   fadesDoQuadro,
   filtroSolarAlvo,
   matchHeroesToCatalog,
-  psfPointSizePx,
 } from './world/lodStellar';
 import { carregarEfemerides, loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';

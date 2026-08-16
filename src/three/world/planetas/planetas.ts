@@ -100,6 +100,7 @@
 import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGalactico';
 import { GLSL_STAR_PSF } from '../../shaders/common';
+import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
 import { STAR_FRAG, BETA_DA_EMISSAO } from '../../shaders/starShaders';
 import { deepPointGain, needsAttributeWrite } from '../lodStellar';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
@@ -232,34 +233,11 @@ export function magDoVertice(aMagBasePc: number, dPc: number, fase: number): num
   return aMagBasePc + 5 * (Math.log2(d) * LOG10_DE_2) - 2.5 * (Math.log2(f) * LOG10_DE_2);
 }
 
-/**
- * O PICO DA PSF, espelhado de `GLSL_STAR_PSF` (`shaders/common.ts`) — o
- * terceiro e último elo entre a magnitude e o PIXEL, e o único número
- * que responde "este corpo pode acender alguma coisa nesta tela?".
- *
- * Existe porque a RÉGUA 3 (`scripts/visual/planeta-pixel.mjs`) precisa
- * dele para classificar o que NÃO aparece no diff: sem o pico previsto,
- * "não medi Netuno" e "Netuno está fisicamente sob o limiar de 8 bits"
- * viram a mesma linha na tabela — e a primeira é um defeito, a segunda é
- * a fotometria honesta funcionando. Fica AQUI, e não redigitado no
- * `.mjs`, porque quem tem os uniformes verdadeiros (`uExpoM0`,
- * `uSigmaPx`, `uScreenH`) é a camada; o readout do `?dbgplan` os publica
- * junto, e a régua 3 lê o que o app calculou.
- *
- * Espelho, não fonte — as mesmas constantes literais do GLSL, inclusive
- * o `6.2831853` truncado (2π como o shader o escreve): a régua tem de
- * prever o que a GPU faz, não o que a matemática exata faria.
- */
-export function picoDaPsf(
-  m: number,
-  expoM0: number,
-  sigmaPx: number,
-  screenH: number
-): { E: number; pico: number } {
-  const sigma = (sigmaPx * screenH) / 1080;
-  const E = Math.pow(10, -0.4 * (m - expoM0));
-  return { E, pico: E / (6.2831853 * sigma * sigma) };
-}
+// O PICO da PSF que o readout do `?dbgplan` publica (e a RÉGUA 3,
+// `scripts/visual/planeta-pixel.mjs`, consome) vem de `luzDaCasa.ts` —
+// era a segunda cópia TS da lei e morreu no F0. Quem tem os uniformes
+// verdadeiros (`uExpoM0`, `uSigmaPx`, `uScreenH`) continua sendo a
+// camada; o que mudou é que a conta tem UM endereço.
 
 const PLANETAS_VERT = /* glsl */ `
 attribute float aMagBase; // magnitude a 1 pc, fase zero (convenção única)
@@ -727,7 +705,10 @@ export class Planetas {
       // entram com 1. O pico PUBLICADO já leva o alpha, senão a régua 3 leria
       // "o Sol pode acender" numa distância em que ele está apagado.
       const alpha = i === 0 ? (u.uGain.value as number) : 1;
-      const psf = picoDaPsf(m, expoM0, sigmaPx, alturaPx);
+      const psf = {
+        E: fluxoDeMagnitude(m, expoM0),
+        pico: picoDaPsf(m, expoM0, sigmaPx, alturaPx),
+      };
       const ua = id === 'sun' ? ([0, 0, 0] as const) : RETRATO_2026[id].vetorUA;
       linhas.push(
         `[dbgplan] ${id.padEnd(8)} ` +
