@@ -13,7 +13,7 @@ import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
-import { deepPointGain, psfPointSizePx, sunStarGain } from '../lodStellar';
+import { deepPointGain, heroDominanceFade, psfPointSizePx, sunStarGain } from '../lodStellar';
 import { PONTO_ZERO_SOL_PC, magDoVertice } from '../planetas/planetas';
 import { cessaoAlvo, cessaoPeloGate } from './terra';
 import {
@@ -335,6 +335,41 @@ describe('a fiação do Sol no Director (F2)', () => {
     expect(DIRECTOR).toContain('magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1)');
     // e "corpo em quadro" é agora só a decisão do gate do palco
     expect(DIRECTOR).toContain('const solCorpoEmQuadro = this.sun.group.visible;');
+  });
+
+  it('a MESMA régua guia o filtro solar da fotosfera (F2)', () => {
+    // as duas trocas do Sol andam JUNTAS: no trecho em que o ponto cede
+    // ao corpo, o corpo troca a radiância verdadeira pela paleta autorada
+    // — mesma razão disco/clarão, mesma rampa. O halo virou SÍMBOLO para
+    // as duas leis lerem o mesmo número; se cada uma calculasse o seu,
+    // elas poderiam divergir sem ninguém ver
+    expect(DIRECTOR).toContain('const solHaloPx = this.stars');
+    expect(DIRECTOR).toContain('cessaoAlvo(solCorpoEmQuadro, solDiscoPx, solHaloPx)');
+    expect(DIRECTOR).toContain('this.sun.escreverFiltroSolar(');
+    expect(DIRECTOR).toContain(
+      '1 - heroDominanceFade(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0)'
+    );
+    // e a rampa é IMPORTADA de onde ela mora, não recopiada no Director
+    expect(DIRECTOR).toMatch(
+      /import \{[\s\S]*?\bheroDominanceFade\b[\s\S]*?\} from '\.\/world\/lodStellar'/
+    );
+    // a 1 UA o disco ainda não domina (o teste abaixo mede) ⇒ g = 1: a
+    // estrela verdadeira. O filtro NÃO apaga a vista que a F1 aprovou.
+    const dPc = 4.8481e-6;
+    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
+    const halo = psfPointSizePx(magDoVertice(PONTO_ZERO_SOL_PC, dPc, 1), 3.5, 0.85, H_HARNESS);
+    expect(1 - heroDominanceFade(disco / halo)).toBe(1);
+    // e a 0,027 UA — a distância em que a F2 crua entregou 100% branco —
+    // o disco domina com folga ⇒ g = 0: a superfície autorada de volta
+    const perto = 0.027 * 4.8481e-6;
+    const discoPerto = diametroAparentePx(RAIO_SOL_FISICO_PC, perto, H_HARNESS, FOV_DEG);
+    const haloPerto = psfPointSizePx(
+      magDoVertice(PONTO_ZERO_SOL_PC, perto, 1),
+      3.5,
+      0.85,
+      H_HARNESS
+    );
+    expect(1 - heroDominanceFade(discoPerto / haloPerto)).toBe(0);
   });
 
   it('a 1 UA o disco AINDA NÃO domina o halo: cessão 0 EXATA', () => {

@@ -279,6 +279,38 @@ export function epsilonDeSegmentoGlsl(raioPc: number): string {
 // `UnrealBloomPass` sem tocar no arquivo do vendor: âncora exata, erro
 // ALTO se ela sumir, `needsUpdate` no fim. Um shader que muda de forma
 // tem de quebrar a suíte, nunca calar a tela.
+//
+// ------------------------------------------------------------
+// O FILTRO SOLAR DECLARADO, que é a segunda metade da F2 e não um
+// enfeite dela. A F2 crua foi MEDIDA e REPROVADA pelo dono em 15/08: a
+// 1 UA a estrela verdadeira é linda, mas na aproximação a radiância
+// verdadeira cega a tela (a 0,027 UA o quadro é 100% branco) — "de
+// repente vira um clarão que ocupa a tela toda e não se vê mais nada".
+// A resposta é a que a Lei da Estrela §E3 já autorizava por escrito: a
+// paleta H-alfa continua, "como OVERRIDE DECLARADO da instância nº 1".
+// Este arquivo é onde esse override deixa de ser frase.
+//
+// COMO: a emissão exibida desce EM STOPS da radiância verdadeira (g=1)
+// para a paleta autorada (g=0), e quem manda no g é a DOMINÂNCIA do
+// disco sobre o próprio clarão — a MESMA razão `discoPx/haloPx` que
+// decide a cessão do Sol-ponto no director. Longe, o disco não domina o
+// clarão: g = 1, e a estrela é a verdadeira. Perto, o disco domina por
+// 2,5×: g = 0, e o que se vê é a superfície autorada, com granulação,
+// manchas e proeminências — que é o que a aproximação existe para
+// mostrar. As duas trocas andam JUNTAS por construção, com a mesma
+// rampa cúbica: no quadro em que o ponto acaba de ceder ao corpo, o
+// corpo já está inteiro na paleta que sabe se desenhar de perto.
+//
+// ISTO NÃO É PUPILA, e a distinção é a que separa assistência declarada
+// de teto de brilho (o que o NORTE proíbe). Uma pupila mede o QUADRO e
+// reage a ele; esta lei não mede nada — lê tamanho aparente, que é
+// geometria fixa, o mesmo número que o LOD já usa. Nada aqui depende de
+// FOCO, de exposição, de histograma ou do que mais estiver na tela: a
+// mesma distância dá o mesmo g em qualquer viagem, e as capturas
+// continuam reproduzíveis. E o que muda são SÓ os pixels do disco do
+// Sol: nenhuma estrela, nebulosa ou planeta esmaece junto — a cena
+// nunca escurece para o Sol caber, que é exatamente o defeito que um
+// teto global teria.
 // ============================================================
 
 /**
@@ -289,9 +321,36 @@ export function epsilonDeSegmentoGlsl(raioPc: number): string {
 const ESCRITA_FINAL_DO_SOL = 'gl_FragColor = vec4(color * uWorldFade, 1.0);';
 
 /**
+ * A declaração do FILTRO SOLAR, injetada junto com a curva. Um uniform,
+ * não um literal, porque este é o único número da cirurgia que muda por
+ * QUADRO — e o director é quem o escreve (ver `escreverFiltroSolar`).
+ */
+const UNIFORME_DO_FILTRO = 'uniform float uFiltroSolar;\n';
+
+/**
  * O fragment do Sol reescrito para emitir a radiância VERDADEIRA da
- * fotosfera, comprimida por `β·asinh(x/β)`. Pura: recebe texto e
- * devolve texto, para poder ser provada sem subir GPU.
+ * fotosfera, comprimida por `β·asinh(x/β)` e descida em STOPS pelo
+ * filtro solar. Pura: recebe texto e devolve texto, para poder ser
+ * provada sem subir GPU.
+ *
+ * O FILTRO ENTRA COMO EXPOENTE (`pow(fator, uFiltroSolar)`), e o lugar
+ * dele no texto é a decisão inteira. Com `g = 1` o expoente é 1 e a
+ * emissão é a radiância verdadeira, bit a bit o que a F2 crua fazia; com
+ * `g = 0` o `pow` vale 1 EXATO e sobra `comprimir3(color, β)` — a paleta
+ * H-alfa autorada de volta, e volta INTACTA, não "parecida": a cor sai
+ * da paleta entre ~1 e ~2,4, e nessa faixa `β·asinh(x/β)` com o β da
+ * bancada (300) é identidade a 1,1e-5 de erro relativo. Nada de ramo,
+ * nada de `if`: a mesma linha atende às duas pontas.
+ *
+ * POR QUE POW E NÃO UM `mix` LINEAR, e a conta é o argumento inteiro. A
+ * distância entre as duas pontas é de **26,09 magnitudes**. Num `mix`
+ * linear o MEIO da rampa vale 1,37e10 — a 0,75 mag do topo: 25 das 26
+ * magnitudes seriam gastas na última fração de por cento do caminho (a
+ * emissão só desce à casa do milhar em g ≈ 3,7e-8), e a tela ficaria
+ * branca em TODO o trecho que o dono reprovou, com o clarão morrendo de
+ * um quadro para o outro no fim. `pow` interpola em STOPS — linear no
+ * LOG: meia rampa é a raiz do fator, 1,655e5, exatamente 13,05 mag de
+ * cada ponta. É a régua do olho e a do pós-processo, não a do buffer.
  *
  * A COMPRESSÃO VEM ANTES DO FADE, e a ordem não é gosto. `uWorldFade` é
  * o crossfade disco→estrela: ele não muda o brilho da estrela, muda
@@ -327,15 +386,17 @@ export function cirurgiaDaFotosfera(
         'mudou de forma, ou a cirurgia já foi aplicada neste material'
     );
   }
-  // a curva entra ANTES de tudo, por prepend: o fragment do Sol começa
-  // com o `NOISE_GLSL` (funções soltas, sem `#version`, sem `#extension`
-  // e sem `precision` — quem prefixa precisão é o three), então não há
-  // âncora frágil a inventar aqui. Uma vez só, e o teste conta.
+  // a curva e a declaração do filtro entram ANTES de tudo, por prepend: o
+  // fragment do Sol começa com o `NOISE_GLSL` (funções soltas, sem
+  // `#version`, sem `#extension` e sem `precision` — quem prefixa precisão
+  // é o three), então não há âncora frágil a inventar aqui. Uma vez só, e
+  // o teste conta.
   return (
+    UNIFORME_DO_FILTRO +
     GLSL_COMPRESSAO +
     fragmentShader.replace(
       ESCRITA_FINAL_DO_SOL,
-      `gl_FragColor = vec4(comprimir3(color * ${literalGlsl(fator)}, ` +
+      `gl_FragColor = vec4(comprimir3(color * pow(${literalGlsl(fator)}, uFiltroSolar), ` +
         `${literalGlsl(beta)}) * uWorldFade, 1.0);`
     )
   );
@@ -406,6 +467,10 @@ export class StellarBody {
   private camUpTmp = new THREE.Vector3();
   private promNormal = new THREE.Vector3();
   private promWorldTmp = new THREE.Vector3();
+  /** a cirurgia da F2 foi aplicada NESTA instância (as duas portas) */
+  private filtroSolarLigado = false;
+  /** cache do último `uFiltroSolar` escrito — nasce no valor do uniform */
+  private filtroSolarAnterior = 1;
 
   constructor(
     params: StellarParams,
@@ -553,6 +618,14 @@ export class StellarBody {
         vaoRadiometricoNaTroca(params.radiusPc),
         BETA_DA_EMISSAO
       );
+      // O FILTRO nasce em 1 — radiância verdadeira, o comportamento da F2
+      // crua — e só desce quando o director escreve. O uniform entra no
+      // MESMO objeto que o vendorizado entregou ao material (`uniforms:
+      // sunUniforms`, sun.js:857), e ANTES do primeiro render: o three
+      // monta a lista de uniforms na COMPILAÇÃO do programa, e uma chave
+      // que aparecesse depois nunca chegaria à GPU.
+      ctx.sunUniforms.uFiltroSolar = { value: 1 };
+      this.filtroSolarLigado = true;
       mat.needsUpdate = true;
     }
     ctx.sunInvRot = new THREE.Matrix3();
@@ -642,6 +715,42 @@ export class StellarBody {
   get assentado(): boolean {
     const ctx = this.ctx;
     return ctx.bakeStep < 0 && (!(ctx.CVOL_STEPS > 0) || Boolean(ctx.cvolReady));
+  }
+
+  /**
+   * O FILTRO SOLAR DECLARADO (F2), escrito por quadro pelo director.
+   *
+   * `g = 1` ⇒ a fotosfera emite a radiância VERDADEIRA; `g = 0` ⇒ a
+   * paleta H-alfa autorada, o override que a Lei da Estrela §E3 declara.
+   * Entre as duas pontas a descida é em STOPS (o `pow` do fragment) — o
+   * porquê está escrito no cabeçalho da seção F2, junto com a conta.
+   *
+   * QUEM DECIDE O g É O DIRECTOR, e a régua dele é a MESMA da cessão do
+   * Sol-ponto: `1 − heroDominanceFade(discoPx / haloPx)`. Este método não
+   * a reproduz nem a adivinha — se a régua morasse aqui, a casa teria
+   * duas cópias de uma lei que precisa andar em passo com a cessão, e a
+   * primeira a mudar deixaria a outra para trás em silêncio.
+   *
+   * FORA DA PORTA É NO-OP SILENCIOSO, e é o contrato certo: sem
+   * `?bfoto=1` a cirurgia não rodou, `uFiltroSolar` não existe no
+   * material, e o director — que não sabe de porta nenhuma — chama isto
+   * todo quadro do mesmo jeito. Lançar aqui transformaria a porta fechada
+   * (o caso NORMAL, o de produção) em erro por quadro.
+   *
+   * A ESCRITA É CACHEADA, no precedente do `uGain` de `planetas.ts`: o g
+   * fica parado em 1 na viagem inteira, e só acorda no último trecho da
+   * aproximação — escrever mesmo assim sujaria o uniform 60×/s por nada.
+   */
+  escreverFiltroSolar(g: number) {
+    if (!this.filtroSolarLigado) return;
+    // valor envenenado NÃO é escrito: `pow(2,7e10, NaN)` pinta o disco de
+    // preto (ou de lixo), e o último valor são é melhor que qualquer
+    // fallback inventado aqui.
+    if (!Number.isFinite(g)) return;
+    const v = g <= 0 ? 0 : g >= 1 ? 1 : g;
+    if (v === this.filtroSolarAnterior) return;
+    this.filtroSolarAnterior = v;
+    this.ctx.sunUniforms.uFiltroSolar.value = v;
   }
 
   /** relógio visual do director (0 sob ?shot=) + câmera + tempo de viagem */

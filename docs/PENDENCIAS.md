@@ -134,6 +134,25 @@ produto mudou. As cinco portas estão registradas no selo.
    uma lei de luz. Desenhar esse filtro é o próximo passo natural; decidir
    se ele entra é do dono.
 
+   **O dono JULGOU a rodada em 15/08, e reprovou a forma crua.** Palavras
+   dele: *"nao ficou bom, está muito estranha a forma que transiciona do
+   sol procedural, de repente vira um clarão que ocupa a tela toda e nao
+   se vê mais nada na tela. nao faz sentido nenhum. ficou muito ruim"*.
+   O defeito apontado é a TRANSIÇÃO: a radiância verdadeira sem filtro
+   cega a tela na aproximação. O filtro solar declarado deixou de ser
+   opção e virou REQUISITO do pacote — sem ele, nada disto vira padrão.
+
+   **O FILTRO FOI CONSTRUÍDO E MEDIDO na mesma rodada.** A emissão exibida
+   desce EM STOPS (`pow(vão, uFiltroSolar)`) da radiância verdadeira para a
+   paleta H-alfa autorada, guiada pela MESMA régua de dominância da cessão
+   (`1 − g(disco/clarão)`, rampa 1→2,5 — nenhum número novo). Escrita por
+   quadro pelo Director; só os pixels do próprio disco mudam — a cena
+   nunca esmaece, nada depende de foco. Medido na aproximação
+   2 → 0,027 UA (`FILTRO-aproximacao.png`): lavado máximo 8,6% (0,35 UA),
+   pico dessatura de perto (0,948) e a granulação volta inteira — o ponto
+   cego morreu. 51 vistas bit-idênticas com a porta fechada; 1672 testes.
+   Falta o julgamento do dono sobre o filme da aproximação.
+
 E outra, que travou um conserto ruim no mesmo dia: *"vc nao pode consertar
 uma coisa e criar outro problema, pense nos impactos das suas decisoes"*.
 

@@ -118,6 +118,7 @@ import { BlackHolePass } from './world/blackHole';
 import {
   DOMINANCE_DEFAULT_ON,
   fadesDoQuadro,
+  heroDominanceFade,
   matchHeroesToCatalog,
   psfPointSizePx,
 } from './world/lodStellar';
@@ -3510,19 +3511,26 @@ export class Director {
       // nenhum dos três degraus.
       const solCorpoEmQuadro = this.sun.group.visible;
       const solDiscoPx = diametroAparentePx(this.solRaioPc, dHome, hPx, cam.fov);
-      const alvoPorDominancia = cessaoAlvo(
-        solCorpoEmQuadro,
-        solDiscoPx,
-        this.stars
-          ? psfPointSizePx(
-              // fase 1: o Sol é o ILUMINANTE, não tem fase (é o mesmo
-              // `mix(fase, 1.0, aEhSol)` do VERT da camada)
-              magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1),
-              this.stars.expoM0,
-              this.stars.sigmaPx,
-              hPx
-            )
-          : 0
+      const solHaloPx = this.stars
+        ? psfPointSizePx(
+            // fase 1: o Sol é o ILUMINANTE, não tem fase (é o mesmo
+            // `mix(fase, 1.0, aEhSol)` do VERT da camada)
+            magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1),
+            this.stars.expoM0,
+            this.stars.sigmaPx,
+            hPx
+          )
+        : 0;
+      const alvoPorDominancia = cessaoAlvo(solCorpoEmQuadro, solDiscoPx, solHaloPx);
+      // O FILTRO SOLAR DECLARADO (F2), na MESMA régua desta cessão: o
+      // ponto cede ao corpo e o corpo troca a radiância verdadeira pela
+      // paleta autorada com a mesma rampa, no mesmo trecho. Sem porta
+      // `?bfoto=1` a chamada é no-op silencioso. Halo inexistente ⇒ razão
+      // 0 ⇒ g = 1, a estrela verdadeira — o precedente de `cessaoAlvo`.
+      // O porquê da lei (stops, e por que não é pupila) mora em
+      // `world/stellarBody.ts`, seção F2.
+      this.sun.escreverFiltroSolar(
+        1 - heroDominanceFade(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0)
       );
       // A QUARTA PORTA DA ONDA DA LUZ (`?bcede=`), bancada e não
       // produto: re-ancora a cessão no GATE DO PALCO (4 px × o

@@ -438,10 +438,12 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('bombro', 'ombro da compressão do bloom forçado'),
   porta('bcede', 'cessão do Sol-ponto pelo gate do palco forçada'),
   // ?bfoto=1 é a F2 no material da malha: a fotosfera emitindo a
-  // radiância verdadeira em vez do ~1 da paleta H-alfa. INERTE sem
-  // ?bemis= > 0 (sem curva, 2,7e10 satura o half-float) — e mesmo
-  // inerte se declara, porque o selo não promete o que não conhece.
-  porta('bfoto', 'radiância verdadeira da fotosfera forçada'),
+  // radiância verdadeira em vez do ~1 da paleta H-alfa, com o FILTRO
+  // SOLAR declarado — que a devolve à paleta autorada em stops quando o
+  // disco domina o próprio clarão. INERTE sem ?bemis= > 0 (sem curva,
+  // 2,7e10 satura o half-float) — e mesmo inerte se declara, porque o
+  // selo não promete o que não conhece.
+  porta('bfoto', 'radiância verdadeira da fotosfera (com filtro solar) forçada'),
   porta('dom', 'cessão de dominância forçada'),
   porta('nodom', 'cessão de dominância desligada'),
   porta('forgetau', 'extinção por coluna das forjas ligada'),

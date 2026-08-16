@@ -299,12 +299,22 @@ export function comprimir(x: number, beta: number): number {
 
 /**
  * A PORTA `?bfoto=1` — a MALHA do Sol emitindo a radiância VERDADEIRA da
- * fotosfera, que é a F2 inteira em uma linha. Hoje a malha emite ~1 (a paleta
- * H-alfa autorada de `world/sol/sun.js`) e a lei do ponto deposita
- * `vaoRadiometricoNaTroca(RAIO_SOL_PC)` — ~2,7e10 — para a MESMA superfície.
- * Ligar a porta é multiplicar a emissão por esse fator, e é só isso: o número
- * não se digita em lugar nenhum, sai da função que o cadastro de escala já
- * usa para declarar a dívida.
+ * fotosfera COM O FILTRO SOLAR DECLARADO, que é a F2 inteira em uma linha.
+ * Hoje a malha emite ~1 (a paleta H-alfa autorada de `world/sol/sun.js`) e a
+ * lei do ponto deposita `vaoRadiometricoNaTroca(RAIO_SOL_PC)` — ~2,7e10 —
+ * para a MESMA superfície. Ligar a porta é multiplicar a emissão por esse
+ * fator, e o número não se digita em lugar nenhum: sai da função que o
+ * cadastro de escala já usa para declarar a dívida.
+ *
+ * E É MULTIPLICAR EM STOPS, não sempre por inteiro — a segunda metade da
+ * porta, que nasceu do veredito do dono sobre a forma crua (15/08: de perto
+ * "vira um clarão que ocupa a tela toda e não se vê mais nada"). O expoente
+ * do fator é o filtro solar (`world/stellarBody.ts`, `escreverFiltroSolar`):
+ * vale 1 enquanto o disco não domina o próprio clarão — e lá a estrela
+ * verdadeira é o que se vê — e desce a 0 quando o disco domina, devolvendo a
+ * paleta autorada que a Lei da Estrela §E3 declara como override da
+ * instância nº 1. A régua é a MESMA da cessão do Sol-ponto: as duas trocas
+ * andam no mesmo trecho, com a mesma rampa.
  *
  * BINÁRIA de propósito, e não um `parseFloat` como a irmã `?bemis=`. Um
  * "quanto" aqui seria um segundo botão de brilho para a malha, e a onda inteira

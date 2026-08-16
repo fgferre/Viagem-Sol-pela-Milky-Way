@@ -18,10 +18,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA, RAIO_SOL_PC } from '../escala';
-import { lerPortaFotosfera, vaoRadiometricoNaTroca } from '../luzDaCasa';
+import { comprimir, lerPortaFotosfera, vaoRadiometricoNaTroca } from '../luzDaCasa';
 import {
   SOL_PARAMS,
   SOL_ROT_PERIOD_DAYS,
+  StellarBody,
   cirurgiaDaFotosfera,
   epsilonDeSegmentoGlsl,
   literalGlsl,
@@ -274,17 +275,42 @@ describe('F2 — a fotosfera na unidade, por cirurgia de texto', () => {
     expect(() => cirurgiaDaFotosfera(sunJs, FATOR, 300)).not.toThrow();
   });
 
-  it('a cirurgia injeta a curva e o fator, e a curva entra UMA vez', () => {
+  it('a cirurgia injeta a curva, o fator e o FILTRO — cada um UMA vez', () => {
     const novo = cirurgiaDaFotosfera(fragmentFalso, FATOR, 300);
-    expect(novo).toContain('comprimir3(color * ');
-    expect(novo).toContain(literalGlsl(FATOR));
+    // o fator entra como EXPOENTE do filtro: g = 1 devolve o fator
+    // inteiro (radiância verdadeira), g = 0 devolve 1 (a paleta autorada)
+    expect(novo).toContain(`comprimir3(color * pow(${literalGlsl(FATOR)}, uFiltroSolar)`);
     expect(novo).toContain('* uWorldFade, 1.0);');
+    // e o uniform é DECLARADO junto, uma vez só — sem a declaração o
+    // fragment nem compila, e com duas também não
+    expect(novo.match(/uniform float uFiltroSolar;/g)).toHaveLength(1);
     // a definição da curva vem do endereço único (`shaders/common.ts`) e
     // entra uma vez só: duas definições de `asinh3` não compilam
     expect(novo.match(/vec3 asinh3\(vec3 v\)/g)).toHaveLength(1);
     expect(novo.match(/vec3 comprimir3\(vec3 x, float b\)/g)).toHaveLength(1);
     // e a linha antiga não sobrou junto com a nova
     expect(novo).not.toContain(ALVO);
+  });
+
+  it('as duas pontas do filtro, no espelho em CPU: verdadeira ↔ autorada', () => {
+    // g = 1: o expoente devolve o fator INTEIRO — é a F2 crua, bit a bit
+    expect(Math.pow(FATOR, 1)).toBe(FATOR);
+    // g = 0: `pow(x, 0)` é 1 EXATO, e a emissão volta a ser a cor da
+    // paleta H-alfa (o override declarado da Lei §E3). O que sobra da
+    // cirurgia é `comprimir3(color, β)` — e nessa faixa a curva é
+    // identidade a menos de um centésimo de milésimo: a superfície
+    // autorada volta INTACTA, não "parecida"
+    expect(Math.pow(FATOR, 0)).toBe(1);
+    for (const cor of [0.5, 1, 1.7, 2.4]) {
+      expect(comprimir(cor * Math.pow(FATOR, 0), 300)).toBeCloseTo(cor, 4);
+      expect(Math.abs(1 - comprimir(cor, 300) / cor)).toBeLessThan(1e-4);
+    }
+    // e o MEIO da rampa é o meio em STOPS (raiz do fator), não o meio
+    // aritmético — é toda a diferença entre `pow` e um `mix` linear:
+    // o `mix` no meio ainda estaria a menos de uma magnitude do topo
+    expect(Math.pow(FATOR, 0.5)).toBeCloseTo(Math.sqrt(FATOR), 0);
+    expect(2.5 * Math.log10(FATOR / Math.pow(FATOR, 0.5))).toBeCloseTo(13.0, 1);
+    expect(2.5 * Math.log10(FATOR / (1 + 0.5 * (FATOR - 1)))).toBeLessThan(1);
   });
 
   it('o fator é ~2,7e10 e vira literal float VÁLIDO de GLSL', () => {
@@ -331,5 +357,80 @@ describe('F2 — a fotosfera na unidade, por cirurgia de texto', () => {
     // e o β é o DOS PONTOS, importado, não uma segunda leitura da URL
     expect(src).toContain("import { BETA_DA_EMISSAO } from '../shaders/starShaders';");
     expect(src).not.toMatch(/get\(\s*'bemis'\s*\)/);
+    // o uniform do filtro nasce DENTRO do mesmo ramo das duas portas, no
+    // objeto de uniforms do material (o que `sun.js` deu ao
+    // ShaderMaterial) — e com a porta fechada ele nem existe, que é o que
+    // faz `escreverFiltroSolar` ser no-op no produto
+    expect(src).toContain('ctx.sunUniforms.uFiltroSolar = { value: 1 };');
+    expect(src).toContain('this.filtroSolarLigado = true;');
+  });
+});
+
+// ============================================================
+// F2 — O FILTRO SOLAR DECLARADO (a segunda metade da onda).
+//
+// O construtor de `StellarBody` pede WebGLRenderer e 14 subsistemas de
+// GPU; `escreverFiltroSolar`, não — ele só mexe em três campos de
+// estado. Então o teste chama o MÉTODO REAL sobre um `this` de mentira
+// com esses três campos. Não é um clone da lógica (que provaria a si
+// mesmo): é a função de produção, com o mesmo corpo que roda 60×/s.
+// ============================================================
+describe('F2 — o filtro solar: clamp, cache e no-op de porta fechada', () => {
+  /** o mínimo de `this` que o método toca */
+  const fingir = (ligado: boolean) => ({
+    filtroSolarLigado: ligado,
+    filtroSolarAnterior: 1,
+    ctx: { sunUniforms: { uFiltroSolar: { value: 1 } } },
+  });
+  type Falso = ReturnType<typeof fingir>;
+  const escrever = (alvo: Falso, g: number) =>
+    (StellarBody.prototype.escreverFiltroSolar as (this: unknown, g: number) => void).call(alvo, g);
+
+  it('escreve o g no uniform, e CLAMPA nas duas pontas', () => {
+    const s = fingir(true);
+    escrever(s, 0.25);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0.25);
+    escrever(s, -7);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0);
+    escrever(s, 42);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(1);
+    // e as pontas são EXATAS: 0 é `pow(fator, 0) = 1`, a paleta autorada
+    // intacta, e 1 é o fator inteiro. Um 0,999 na ponta deixaria a
+    // superfície 1,06× brilhante "quase" no lugar certo
+    escrever(s, 0);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0);
+  });
+
+  it('CACHEIA: valor repetido não volta a escrever no uniform', () => {
+    // o precedente é o `uGain` de `planetas.ts` — o g fica parado em 1 na
+    // viagem inteira e só acorda no fim da aproximação
+    const s = fingir(true);
+    escrever(s, 0.4);
+    s.ctx.sunUniforms.uFiltroSolar = { value: 999 }; // sentinela
+    escrever(s, 0.4);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(999);
+    escrever(s, 0.4000001);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0.4000001);
+  });
+
+  it('PORTA FECHADA é no-op SILENCIOSO — o director chama sempre', () => {
+    // sem `?bfoto=1` a cirurgia não rodou e o uniform não existe no
+    // material; lançar aqui transformaria o caso de PRODUÇÃO em erro por
+    // quadro. A prova é dupla: nada muda e nada estoura, mesmo sem o
+    // uniform no objeto
+    const s = fingir(false);
+    expect(() => escrever(s, 0)).not.toThrow();
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(1);
+    const semUniforme = { ...fingir(false), ctx: { sunUniforms: {} } };
+    expect(() => escrever(semUniforme as unknown as Falso, 0.3)).not.toThrow();
+  });
+
+  it('valor ENVENENADO não é escrito — NaN pintaria o disco de lixo', () => {
+    const s = fingir(true);
+    escrever(s, 0.6);
+    escrever(s, Number.NaN);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0.6);
+    escrever(s, Number.POSITIVE_INFINITY);
+    expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0.6);
   });
 });
