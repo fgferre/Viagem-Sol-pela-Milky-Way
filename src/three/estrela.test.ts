@@ -172,7 +172,14 @@ describe('2. as duas faces batem — conformidade numérica, molde do F0', () =>
     for (const ua of [1, 10, 100, 1000, 15800]) {
       const dist = ua * UA_EM_PC;
       const r = repartir(sol(), verDe(dist), instrumento());
-      const fluxoDeTela = depositoDoDisco(radianciaDeTela(r.radiancia, RAIO_SOL_PC, 900), r.discoPx);
+      // o clarão vê o fluxo que o INSTRUMENTO admite: o filtro solar
+      // (§5.7) corta a asa pela MESMA transmitância do corpo — a correção
+      // do M2 que as palavras do dono cobraram (o Sol procedural escondido
+      // atrás da tela branca). A transliteração divide pelo overrideFator
+      // que a própria repartição declara.
+      const fluxoDeTela =
+        depositoDoDisco(radianciaDeTela(r.radiancia, RAIO_SOL_PC, 900), r.discoPx) /
+        r.overrideFator;
       const m = EXPO_M0 - 2.5 * Math.log10(fluxoDeTela);
       const pico = picoDaPsf(m, EXPO_M0, SIGMA_PX, 900);
       const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
@@ -209,16 +216,28 @@ describe('3. o clarão deriva do FLUXO — nunca do peso do ponto (§1)', () => 
     expect(r.claraoGanho).toBeGreaterThan(0);
   });
 
-  it('mais perto ⇒ MAIS clarão — a câmera apontada para o Sol de perto', () => {
-    const perto = repartir(sol(), verDe(0.1 * UA_EM_PC), instrumento());
+  it('mais perto ⇒ MAIS clarão NO REGIME DE PONTO; com o corpo resolvido, o filtro corta', () => {
+    // no regime de ponto (disco < 4 px, filtro fora) a câmera que chega
+    // ganha clarão — a frase do §1, intacta onde ela vale
+    const perto = repartir(sol(), verDe(3.6 * UA_EM_PC), instrumento());
     const longe = repartir(sol(), verDe(10 * UA_EM_PC), instrumento());
     expect(perto.claraoGanho).toBeGreaterThan(longe.claraoGanho);
     expect(perto.claraoPx).toBeGreaterThan(longe.claraoPx);
+    // e com o corpo RESOLVIDO o filtro solar (§5.7) engata pela mesma
+    // rampa da lei e corta a asa — é o que deixa o filme mostrar a
+    // superfície de perto (correção do M2, palavras do dono: o Sol
+    // procedural escondido atrás da tela branca)
+    const colado = repartir(sol(), verDe(0.1 * UA_EM_PC), instrumento());
+    expect(colado.overrideExpoente).toBe(0); // paleta autorada = filtro pleno
+    expect(colado.claraoPx).toBeLessThan(perto.claraoPx);
   });
 
-  it('o clarão ENCOLHE monotônico com a distância — a forma do item 42', () => {
+  it('o clarão ENCOLHE monotônico com a distância no regime de ponto — item 42', () => {
+    // a partir de onde o filtro está FORA (disco < 4 px ⇔ d ≳ 1,9 UA
+    // para o Sol) a forma do item 42 vale inteira; o degrau do filtro
+    // (0,8–1,9 UA) é instrumento declarado, não quebra de monotonia
     let anterior = Infinity;
-    for (const ua of [1, 3.6, 7.2, 20, 40, 150, 500, 2000, 4000, 15800]) {
+    for (const ua of [2, 3.6, 7.2, 20, 40, 150, 500, 2000, 4000, 15800]) {
       const r = repartir(sol(), verDe(ua * UA_EM_PC), instrumento());
       expect(r.claraoPx, `${ua} UA`).toBeLessThanOrEqual(anterior);
       anterior = r.claraoPx;

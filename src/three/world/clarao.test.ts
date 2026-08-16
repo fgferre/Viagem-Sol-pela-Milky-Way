@@ -187,11 +187,16 @@ describe('2. a elegibilidade pela lei — a identidade "as 16" emerge, não se d
     expect(raioVisivelDaAsaPx(picoDe(8), sigma)).toBe(0); // fraca: sem asa
   });
 
-  it('o braço do espinho alcança MAIS longe que o halo (é o que faz a cruz ler)', () => {
+  it('o braço do espinho decai MAIS RÁPIDO que o halo — cruz que afina, nunca parede', () => {
+    // A LIÇÃO DO DONO (16/08): a primeira forma usava ¾·β ("a cruz tem de
+    // alcançar mais que o halo") e produzia braços saturados de ~2.400 px
+    // atravessando a tela — "os spikes ficaram horríveis e enormes". A
+    // cruz de câmera é o contrário: mais curta que o halo visível, com a
+    // ponta afinando. O expoente segue DERIVADO (1,5·β), nunca livre.
     const pico = picoDaPsf(-15, EXPO_M0, SIGMA_PX, 900); // fonte forte
-    expect(alcanceDoEspinhoPx(pico, sigma)).toBeGreaterThan(raioVisivelDaAsaPx(pico, sigma));
-    // e o expoente é DERIVADO da asa (¾), não um segundo número livre
-    expect(BETA_DO_ESPINHO).toBeCloseTo(0.75 * BETA_DA_ASA, 12);
+    expect(alcanceDoEspinhoPx(pico, sigma)).toBeLessThan(raioVisivelDaAsaPx(pico, sigma));
+    expect(alcanceDoEspinhoPx(pico, sigma)).toBeGreaterThan(0); // mas a cruz EXISTE
+    expect(BETA_DO_ESPINHO).toBeCloseTo(1.5 * BETA_DA_ASA, 12);
   });
 });
 
@@ -201,6 +206,10 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     screenH: 900,
     dtS: DT,
     solVisivel,
+    // filtro solar FORA e ponto INTEIRO (regime de longe) — o engate do
+    // filtro e a entrega ao bloom têm teste próprio abaixo
+    atenuacaoDoSol: 1,
+    pesoDoPontoDoSol: 1,
     expoM0: EXPO_M0,
     sigmaPx: SIGMA_PX,
   });
@@ -230,6 +239,24 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     }
     // e TODOS os assentados estão com a rampa plena
     for (const o of ocupantes) expect(o.ganho).toBe(1);
+    c.dispose();
+  });
+
+  it('o Sol RESOLVIDO entrega a óptica ao bloom: peso do ponto 0 ⇒ sem asa', () => {
+    // a segunda lição do dono (16/08): a asa modela a óptica do PONTO —
+    // aplicá-la a um disco resolvido concentrava o fluxo inteiro numa
+    // conta de PSF e desenhava um círculo branco no meio da fotosfera.
+    // Com wPonto = 0 (corpo resolvido) a asa some pela rampa da lei e o
+    // clarão do disco é a convolução do bloom sobre a imagem real.
+    const c = new ClaraoDeAsas(META.named);
+    const perto = {
+      ...quadroEmCasa(true),
+      camPos: new THREE.Vector3(0, 0, 0.1 / 206264.80624548031), // 0,1 UA
+      atenuacaoDoSol: 2.7e10, // filtro pleno (overrideFator da repartição)
+      pesoDoPontoDoSol: 0, // corpo resolvido: o ponto cedeu inteiro
+    };
+    for (let i = 0; i < 30; i++) c.atualizar(perto);
+    expect(c.ocupacao().some((o) => o.indice === 0)).toBe(false);
     c.dispose();
   });
 

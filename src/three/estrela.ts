@@ -186,12 +186,17 @@ export const FRACAO_DA_ASA = 0.06;
 /** Raio de dobra da asa (θ₀) em unidades de σ da PSF. */
 export const NUCLEO_DA_ASA_EM_SIGMAS = 2;
 
-/** Expoente Moffat do BRAÇO do espinho — ¾ do da asa, DERIVADO e não
- *  segundo número livre: braço que decai como o halo afunda dentro dele
- *  e a cruz some; braço θ⁻² (difração de borda reta pura) atravessa a
- *  tela em qualquer fonte forte. O ¾ entra no MESMO gate de foto do
- *  expoente da asa (M2) — um gate, dois números acorrentados. */
-export const BETA_DO_ESPINHO = 0.75 * BETA_DA_ASA;
+/** Expoente Moffat do BRAÇO do espinho — 1,5× o da asa, DERIVADO e não
+ *  segundo número livre, e a direção é a LIÇÃO DO DONO (16/08, ao ver o
+ *  M2 cru): a primeira forma usava ¾·β ("a cruz tem de alcançar mais que
+ *  o halo") e produzia braços SATURADOS de ~2.400 px atravessando a tela
+ *  no meio da escada — *"os spikes ficaram horríveis e enormes"*. Braço
+ *  em lei de potência com expoente MENOR que o do halo não vira cruz:
+ *  vira parede. A cruz elegante de câmera é o contrário — decai MAIS
+ *  rápido que o halo (a ponta afina e some), e o comprimento dela cresce
+ *  devagar com o fluxo. O 1,5 entra no MESMO gate de foto do expoente da
+ *  asa (M2) — um gate, dois números acorrentados. */
+export const BETA_DO_ESPINHO = 1.5 * BETA_DA_ASA;
 
 /** O limiar de visibilidade do clarão, em luz de tela: o piso de 8 bits.
  *  Abaixo dele a asa afunda no céu e estrela fraca continua um ponto. */
@@ -348,15 +353,36 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
   const wEsfera = 1 - smoothstep(0, 1, requisito);
   const wMalha = 1 - wEsfera;
 
-  // ── o CLARÃO — do fluxo, sempre; nunca do peso do ponto ──
+  // ── o OVERRIDE (o filtro solar como seção da lei) — calculado ANTES do
+  // clarão, porque o clarão o CONSOME (a lição do dono, 16/08) ──
+  const overrideExpoente =
+    1 - smoothstep(LIMIAR_DO_OVERRIDE_PX, LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE, discoPx);
+  const overrideFator = Math.pow(
+    radianciaDeTela(1, e.raioPc, i.alturaPx),
+    1 - overrideExpoente
+  );
+
+  // ── o CLARÃO — do fluxo QUE O INSTRUMENTO ADMITE; nunca do peso do ponto ──
   // A troca de unidade (casa → tela) é a DO INVARIANTE: a radiância sobe
   // pela mesma ponte da fotosfera (`radianciaDeTela`) e o depósito do disco
   // a integra sobre os pixels — é o lado "disco" da troca, escrito uma vez
   // em `luzDaCasa.ts`. Para o Sol a 1 UA isso devolve m = −26,72, o número
   // da casa; multiplicar o fluxo em esterradianos pelo vão, sem a área do
   // pixel, erraria por (px/rad)²/4 ≈ 6,6e5 — o teste da asa pegou.
+  //
+  // O FILTRO CORTA A ASA JUNTO (correção do M2, palavras do dono: *"o sol
+  // procedural não aparece mais, fica escondido atrás dessa tela branca"*).
+  // O clarão é o espalhamento da luz que ENTRA no instrumento — e quando o
+  // corpo está resolvido, quem deixa a superfície ser visível é o filtro
+  // solar (§5.7), que corta ~26 magnitudes. Uma câmera com filtro solar não
+  // tem flare: a primeira forma do M2 usava o fluxo SEM filtro e pintava a
+  // tela de branco POR CIMA do Sol procedural na abertura do filme. A asa
+  // divide pelo MESMO `overrideFator` do corpo — longe (ponto puro) o fator
+  // é 1 e nada muda; perto, o filtro engata pela mesma rampa C¹ da lei.
   const fluxoDeTela =
-    depositoDoDisco(radianciaDeTela(radiancia, e.raioPc, i.alturaPx), discoPx) * Math.exp(-tau);
+    (depositoDoDisco(radianciaDeTela(radiancia, e.raioPc, i.alturaPx), discoPx) *
+      Math.exp(-tau)) /
+    overrideFator;
   const m = magnitudeDeFluxo(fluxoDeTela, i.expoM0);
   const sigma = sigmaDaPsfPx(i.sigmaPx, i.alturaPx);
   // núcleo: o tamanho gaussiano de hoje (√ln E) — correto no SPRITE que
@@ -375,14 +401,6 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
   const ladoDoPixelPc = o.distPc * anguloPorPixel;
   const pegada: Covariancia2x2 = { xx: ladoDoPixelPc * ladoDoPixelPc, xy: 0, yy: ladoDoPixelPc * ladoDoPixelPc };
   const frequenciaMaxima = 1 / (2 * ladoDoPixelPc);
-
-  // ── o OVERRIDE (o filtro solar como seção da lei) ──
-  const overrideExpoente =
-    1 - smoothstep(LIMIAR_DO_OVERRIDE_PX, LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE, discoPx);
-  const overrideFator = Math.pow(
-    radianciaDeTela(1, e.raioPc, i.alturaPx),
-    1 - overrideExpoente
-  );
 
   return {
     discoPx,

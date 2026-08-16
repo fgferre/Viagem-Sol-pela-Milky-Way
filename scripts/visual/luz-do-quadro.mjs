@@ -171,18 +171,56 @@ const NUCLEO_DA_ASA_EM_SIGMAS = 2;
 /** expoente Moffat — `BETA_DA_ASA` */
 const BETA_DA_ASA = 2.4;
 
+// ── o FILTRO SOLAR corta a asa junto (correção do M2, §5.7 da Lei) ───────
+// Quando o corpo está resolvido, quem torna a superfície visível é o filtro
+// solar — ~26 magnitudes de transmitância — e câmera com filtro não tem
+// flare. A rampa é a MESMA do override da repartição (disco de 4 a 10 px),
+// e o vão sai da MESMA cadeia de `luzDaCasa` (d de troca de 1 px →
+// magnitude do Sol lá → depósito do ponto / depósito do disco de 1 px).
+/** limiar e largura da rampa do override — `LIMIAR_DO_OVERRIDE_PX`,
+ *  `LARGURA_DO_OVERRIDE` de estrela.ts */
+const LIMIAR_DO_OVERRIDE_PX = 4;
+const LARGURA_DO_OVERRIDE = 2.5;
+
+function suave(a, b, x) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+/** o vão radiométrico da fotosfera na troca de 1 px — espelho de
+ *  `vaoRadiometricoNaTroca`/`radianciaDeTela` (luzDaCasa.ts); a 900 px
+ *  vale 2,735e10, cobrado por teste contra a fonte */
+export function vaoDoFiltro(alturaPx = JH) {
+  const dTroca = (RAIO_SOL_PC * alturaPx) / Math.tan((FOV_GRAUS * Math.PI) / 360);
+  const m = PONTO_ZERO_SOL_PC + 5 * Math.log10(dTroca);
+  const E = Math.pow(10, -0.4 * (m - EXPO_M0));
+  return E / (Math.PI * 0.25);
+}
+
+/** a transmitância do filtro sobre o clarão, por distância (≥ 1) */
+export function fatorDoFiltro(distanciaUa, alturaPx = JH) {
+  const disco = discoRealPx(distanciaUa, alturaPx);
+  const override = 1 - suave(LIMIAR_DO_OVERRIDE_PX, LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE, disco);
+  return Math.pow(vaoDoFiltro(alturaPx), 1 - override);
+}
+
 export function claraoDaLeiPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigmaPx = SIGMA_PX) {
   const dPc = distanciaUa * UA_EM_PC;
   const m = PONTO_ZERO_SOL_PC + 5 * (Math.log2(dPc) * 0.30103);
   const sigma = (sigmaPx * alturaPx) / 1080;
   const E = Math.pow(10, -0.4 * (m - expoM0));
-  const pico = E / (DOIS_PI_DO_SHADER * sigma * sigma);
+  // o clarão vê o fluxo que o INSTRUMENTO admite: o filtro corta a asa E
+  // o núcleo saturado da mesma lei (é o que `repartir` faz — conformidade
+  // cobrada por teste)
+  const pico = E / (DOIS_PI_DO_SHADER * sigma * sigma) / fatorDoFiltro(distanciaUa, alturaPx);
+  const rSat = pico > 1 ? sigma * Math.sqrt(2 * Math.log(pico)) : 0;
+  const nucleo = 2 * (2.2 * sigma + rSat);
   const excesso = (FRACAO_DA_ASA * pico) / LIMIAR_DO_CLARAO;
   const raioDaAsa =
     excesso > 1
       ? NUCLEO_DA_ASA_EM_SIGMAS * sigma * Math.sqrt(Math.pow(excesso, 1 / BETA_DA_ASA) - 1)
       : 0;
-  return Math.max(claraoPsfPx(distanciaUa, alturaPx, expoM0, sigmaPx), 2 * raioDaAsa);
+  return Math.max(nucleo, 2 * raioDaAsa);
 }
 
 /**
@@ -353,11 +391,19 @@ export function julgarEscada({
   const ordenadas = [...linhas].sort((a, b) => a.ua - b.ua);
   const motivosPorUa = new Map(ordenadas.map((l) => [l.ua, []]));
 
-  // 1. monotonia, degrau a degrau, do perto para o longe
+  // 1. monotonia, degrau a degrau, do perto para o longe — ONDE A LEI NÃO
+  // CRESCE. O filtro solar (§5.7) desengata quando o disco cai abaixo de
+  // 4 px (~0,8 a 1,9 UA para o Sol), e ali o clarão da LEI legitimamente
+  // ENTRA — câmera que tira o filtro ganha flare. Cobrar monotonia
+  // absoluta nesse degrau seria reprovar o instrumento declarado; fora
+  // dele a régua continua a de sempre: borrão nunca cresce.
   for (let i = 1; i < ordenadas.length; i++) {
     const ant = ordenadas[i - 1];
     const cur = ordenadas[i];
-    if (cur.borrao > ant.borrao + TOLERANCIA_MONOTONIA_PX) {
+    const leiAnt = Math.max(claraoDaLeiPx(ant.ua, alturaPx), discoRealPx(ant.ua, alturaPx));
+    const leiCur = Math.max(claraoDaLeiPx(cur.ua, alturaPx), discoRealPx(cur.ua, alturaPx));
+    const leiCresce = leiCur > leiAnt * 1.001;
+    if (!leiCresce && cur.borrao > ant.borrao + TOLERANCIA_MONOTONIA_PX) {
       motivosPorUa
         .get(cur.ua)
         .push(
@@ -370,11 +416,14 @@ export function julgarEscada({
     // sem uma linha vermelha. A régua é POR OITAVA de distância: entre
     // degraus vizinhos o borrão pode variar no máximo 3× por oitava — a lei
     // honesta mais íngreme da casa é o disco (1/d, 2× por oitava), que cabe
-    // com folga; um penhasco de dezenas de vezes num degrau curto, não.
+    // com folga; um penhasco de dezenas de vezes num degrau curto, não. Onde
+    // a PRÓPRIA LEI dá um degrau (o filtro desengatando), o teto da razão
+    // escala com a razão da lei — derivado, nunca frouxo.
     const grande = Math.max(ant.borrao, cur.borrao);
     const pequeno = Math.max(Math.min(ant.borrao, cur.borrao), PISO_DO_BORRAO_PX);
     const oitavas = Math.max(Math.log2(cur.ua / ant.ua), 1);
-    const maximo = Math.pow(RAZAO_MAXIMA_POR_OITAVA, oitavas);
+    const razaoDaLei = Math.max(leiCur, leiAnt) / Math.max(Math.min(leiCur, leiAnt), 1);
+    const maximo = Math.pow(RAZAO_MAXIMA_POR_OITAVA, oitavas) * Math.max(1, razaoDaLei);
     if (grande / pequeno > maximo && grande > PISO_DO_BORRAO_PX) {
       motivosPorUa
         .get(cur.ua)

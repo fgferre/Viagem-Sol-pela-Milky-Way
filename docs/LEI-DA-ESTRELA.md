@@ -84,13 +84,23 @@ interseção com outra coisa da cena.
 fingir detalhe por motivo de distância. **A pegada controla o DETALHE; o requisito
 geométrico controla a REPRESENTAÇÃO.** Nunca o contrário, nunca o mesmo número.
 
-**O CLARÃO NUNCA É GATEADO POR `wPonto`.** A óptica age sobre a **imagem estelar
-inteira** — resolvida ou não. Uma estrela que virou disco não perde o halo: uma
-câmera apontada para o Sol de perto produz *mais* clarão, não menos. Então o ganho
-do clarão deriva **do FLUXO, sempre presente**, e o que desvanece com `wResolvido`
-é apenas **o ponto-como-objeto** (o sprite que substituía o disco), nunca a óptica.
-Ligar o clarão a `wPonto` contradiz a linha do §1 que diz "existe em toda distância"
-e reintroduz, com nome novo, o gate que este documento veio matar.
+**A ÓPTICA EXISTE EM TODO REGIME — E TEM DOIS DONOS, um por regime.** Uma
+estrela que virou disco não perde o clarão: uma câmera apontada para o Sol de
+perto produz *mais* clarão, não menos. O que a primeira forma desta cláusula
+("o clarão nunca é gateado por `wPonto`") acertava é isso: **a óptica nunca
+pode simplesmente sumir** quando a fonte resolve. O que ela errava foi medido
+pelo dono na correção do M2 (16/08, o círculo branco no meio da fotosfera): a
+**asa explícita modela a óptica de uma fonte PONTUAL** — todo o fluxo
+concentrado na PSF — e aplicar essa conta a um disco RESOLVIDO superestima por
+ordens de grandeza (o disco filtrado da abertura ainda virava um pico de
+~5.700 e desenhava um círculo branco sobre a superfície). A óptica do
+resolvido é a **convolução da imagem real** — e desde o M2 quem a faz é o
+BLOOM, cuja pirâmide deriva da MESMA asa. A lei, corrigida: **o ganho da asa
+explícita deriva do fluxo admitido pelo instrumento × `wPonto`** — no ponto,
+a asa é a dona; no resolvido, o bloom convolui a imagem que está lá; a entrega
+entre os dois é a rampa C¹ da própria repartição, nunca um booleano. O que
+continua proibido é o defeito original: resolver a fonte e ficar SEM óptica
+nenhuma.
 
 **A PARTIÇÃO DE ENERGIA da asa: UM dono.** A asa pode ser desenhada de dois jeitos —
 explicitamente, no perfil da fonte, e implicitamente, pelo kernel do bloom. Se os
@@ -457,7 +467,23 @@ para o M7 — o M2 é ÓPTICA e o CME é FONTE (campo E do §5.18, dose nunca
 calibrada), divergência escrita no cadastro; (d) o GATE DE FOTO do
 expoente da asa (2,0–3,0) segue devido ao dono — 2,4 é a semente e as
 capturas `luz-*.png` da escada são as fotos; (e) o joelho pós-bloom foi
-ABSORVIDO com a cadeia contada — quatro curvas, ordem em `post.ts`.)*
+ABSORVIDO com a cadeia contada — quatro curvas, ordem em `post.ts`.
+**A CORREÇÃO DO MESMO DIA, cobrada pelo dono ao abrir o app** (*"tela
+toda branca... o sol procedural fica escondido... os spikes horríveis e
+enormes... esse círculo branco no meio do sol é normal?"*): (1) o clarão
+passa a ver o fluxo que o INSTRUMENTO ADMITE — o filtro solar (§5.7)
+corta a asa pela mesma transmitância do corpo, e câmera com filtro não
+tem flare; (2) a asa é a óptica do PONTO e entrega ao BLOOM quando a
+fonte resolve (× `wPonto` — a emenda da cláusula do §1, acima); (3) o
+braço do espinho decai MAIS RÁPIDO que o halo (`BETA_DO_ESPINHO` =
+1,5·β, era ¾·β) — braço mais raso que o halo não é cruz, é parede de
+2.400 px. As três eram invisíveis para as réguas porque a escada e o voo
+fotografam o Sol de LONGE ou por deep-link — o juiz que faltava era o
+FILME ABERTO, e foi o dono. Os oráculos foram reescritos (nunca
+contornados): monotonia da escada só cobra onde a lei não cresce (o
+filtro desengata a ~2 UA e a âncora do quadro claro, R ≈ 450 px, vive na
+SAÍDA do filtro), e `vaoDoFiltro`/`fatorDoFiltro` entram na régua com
+espelho cobrado contra `luzDaCasa`.)*
 
 ### M3 — Catálogo + cascas
 **Gate obrigatório ANTES:** o ponto-zero único (4,83 × 4,85), decidido com foto pelo

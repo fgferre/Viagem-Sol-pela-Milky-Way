@@ -13,13 +13,21 @@ import {
   discoRealPx,
   claraoPsfPx,
   claraoDaLeiPx,
+  fatorDoFiltro,
   julgarEscada,
   medirQuadro,
+  vaoDoFiltro,
   ESCADA_UA,
 } from './luz-do-quadro.mjs';
 // a lei da casa, no endereço único do F0 — o vitest transpila o TS; a régua
 // `.mjs` em node puro continua redigitando, e É ESTE teste que cobra o acordo.
-import { EXPO_M0, SIGMA_PX, TEFF_SOL_K, psfPointSizePx } from '../../src/three/luzDaCasa';
+import {
+  EXPO_M0,
+  SIGMA_PX,
+  TEFF_SOL_K,
+  psfPointSizePx,
+  radianciaDeTela,
+} from '../../src/three/luzDaCasa';
 import { repartir } from '../../src/three/estrela';
 import { RAIO_SOL_PC } from '../../src/three/escala';
 
@@ -198,10 +206,14 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     // no tamanho da tela e quadro inteiro acima de meia luz.
     //
     // COM O TETO DA LEI (§5.10, asas em vez de √ln) o veredito mudou de
-    // FORMA, e a mudança é doutrina: a 1 UA o quadro claro é HONESTO (âncora
-    // do dono: R ≈ 450 px de clarão legítimo) — o crime do desenho velho
-    // nunca foi o quadro branco perto, foi o MESMO quadro branco a 2.000 UA.
-    // A lei nova absolve o perto e condena exatamente o rabo do item 42.
+    // FORMA, e depois da correção do M2 mudou DE NOVO, na direção que o
+    // dono cobrou: a 1 UA o disco já mede 7,6 px e o FILTRO SOLAR está
+    // engatado (§5.7) — o clarão da lei ali é pequeno, e o quadro branco
+    // do desenho velho é condenado TAMBÉM a 1 UA. A âncora do quadro
+    // claro honesto vive na SAÍDA do filtro (~2 UA, disco < 4 px), não
+    // dentro dele. Os degraus 3,6–20 seguem absolvidos pelo teto (o
+    // clarão pleno da lei ali é da ordem do quadro) e o crime continua
+    // sendo o rabo: o mesmo branco a 40–2.000 UA.
     const hoje = [1, 3.6, 7.2, 20, 40, 150, 500, 2000].map((ua) => ({
       ua,
       luzMedia: 0.946,
@@ -213,7 +225,7 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     const j = julgarEscada({ linhas: hoje, alturaPx: 900, comBloom: true });
     expect(j.erro).toBe(true);
     const reprovadas = j.linhas.filter((l) => l.veredito === 'REPROVA').map((l) => l.ua);
-    expect(reprovadas).toEqual([40, 150, 500, 2000]);
+    expect(reprovadas).toEqual([1, 40, 150, 500, 2000]);
     expect(j.resumo).toContain('REPROVA');
   });
 
@@ -329,20 +341,46 @@ describe('claraoDaLeiPx — o teto derivado da LEI (§5.10)', () => {
     }
   });
 
-  it('a asa ENCOLHE com a luz: de 1 UA a 15.800 UA o direito cai mais de 40×', () => {
-    // o √ln caía 1,5× no mesmo trecho — era o juiz exigindo halo constante
-    expect(claraoDaLeiPx(1, 900) / claraoDaLeiPx(15800, 900)).toBeGreaterThan(40);
+  it('a asa ENCOLHE com a luz: da saída do filtro (2 UA) a 15.800 UA cai mais de 40×', () => {
+    // o √ln caía 1,5× no mesmo trecho — era o juiz exigindo halo constante.
+    // A ponta de perto é a SAÍDA DO FILTRO (~2 UA, disco < 4 px): dentro
+    // dele o clarão é cortado pela transmitância (§5.7, correção do M2).
+    expect(claraoDaLeiPx(2, 900) / claraoDaLeiPx(15800, 900)).toBeGreaterThan(40);
   });
 
-  it('nunca cresce com a distância, como o núcleo já não crescia', () => {
-    for (let i = 1; i < ESCADA_UA.length; i++) {
-      expect(claraoDaLeiPx(ESCADA_UA[i], 900)).toBeLessThan(claraoDaLeiPx(ESCADA_UA[i - 1], 900));
+  it('nunca cresce com a distância NO REGIME DE PONTO (filtro fora)', () => {
+    // dentro do filtro (disco ≥ 4 px ⇔ d ≲ 1,9 UA) o clarão é cortado e
+    // REENTRA na saída — degrau de instrumento declarado, com o juiz da
+    // escada ciente (a monotonia só cobra onde a lei não cresce)
+    const regimeDePonto = ESCADA_UA.filter((ua) => ua >= 3.6);
+    for (let i = 1; i < regimeDePonto.length; i++) {
+      expect(claraoDaLeiPx(regimeDePonto[i], 900)).toBeLessThan(
+        claraoDaLeiPx(regimeDePonto[i - 1], 900)
+      );
     }
+    // e DENTRO do filtro o clarão é de fato pequeno — é o que deixa o
+    // filme mostrar o Sol procedural (palavras do dono, 16/08)
+    expect(claraoDaLeiPx(0.067, 900)).toBeLessThan(claraoDaLeiPx(3.6, 900));
+    expect(claraoDaLeiPx(1, 900)).toBeLessThan(claraoDaLeiPx(2, 900));
   });
 
-  it('a âncora do dono: a 1 UA o direito é da ordem do quadro (R ≈ 450 px)', () => {
-    const raio = claraoDaLeiPx(1, 900) / 2;
+  it('a âncora do dono vive na SAÍDA do filtro: R ≈ 450 px a ~2 UA', () => {
+    const raio = claraoDaLeiPx(2, 900) / 2;
     expect(raio).toBeGreaterThan(300);
     expect(raio).toBeLessThan(900);
+  });
+
+  it('o vão do filtro bate com a cadeia de luzDaCasa (espelho a 1e-6 relativo)', () => {
+    // contra a FONTE viva, não contra número pinado: o espelho refaz a
+    // cadeia com a mesma aproximação de ângulo pequeno e fecha a 2e-7
+    // relativo — a precisão honesta de espelho (mesma classe do A7)
+    const fonte = radianciaDeTela(1, RAIO_SOL_PC, 900);
+    expect(Math.abs(vaoDoFiltro(900) / fonte - 1)).toBeLessThan(1e-6);
+    expect(vaoDoFiltro(900)).toBeGreaterThan(2.7e10);
+    expect(vaoDoFiltro(900)).toBeLessThan(2.8e10);
+    // filtro pleno perto (disco ≥ 10 px), fora longe (disco < 4 px)
+    expect(fatorDoFiltro(0.5, 900) / vaoDoFiltro(900)).toBeCloseTo(1, 9);
+    expect(fatorDoFiltro(2, 900)).toBe(1);
+    expect(fatorDoFiltro(15800, 900)).toBe(1);
   });
 });

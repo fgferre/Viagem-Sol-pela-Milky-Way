@@ -3318,24 +3318,9 @@ export class Director {
     // o MESMO catFade das cascas: a LUT da faixa desconta do termo
     // estelar a luz que o catálogo já desenha como estrela individual
     this.nebula.setCatalogueFade(catFade);
-    // O CLARÃO DE ASAS (M2): sem janela de distância — a elegibilidade
-    // é do FLUXO (uma nomeada só ganha asa a poucos pc dela; o Sol, na
-    // escada do item 3), e é a magnitude que apaga, nunca um corte em
-    // pc. O Sol só é candidato enquanto a camada dos dez desenha o
-    // ponto dele (fonte oculta não tem óptica); a leitura é do quadro
-    // anterior por ordem de atualização, e a rampa de 300 ms engole o
-    // único quadro de atraso possível.
-    if (this.clarao) {
-      this.clarao.group.visible = !this.hide.has('noclarao');
-      this.clarao.atualizar({
-        camPos: cam.position,
-        screenH: hPx,
-        dtS: dt,
-        solVisivel: !this.hide.has('noplan') && (this.planetas?.points.visible ?? false),
-        expoM0: this.stars?.expoM0 ?? EXPO_M0,
-        sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
-      });
-    }
+    // (O CLARÃO DE ASAS desceu para DEPOIS da repartição — ele consome o
+    // `overrideFator` do quadro, a transmitância do filtro solar. Ver o
+    // bloco logo após `leiDoSol`.)
     // `solArmado` entra AQUI, junto do `?nosun`, e não dentro do
     // `StellarBody`: o corpo não conhece a tela (não tem altura de buffer
     // nem lente), e o gate do palco é medido em PIXELS. O `sun.update`
@@ -3382,6 +3367,34 @@ export class Director {
     // binário do gate do palco o peso ainda é 0, então o liga/desliga de
     // custo fica invisível em pixel, nos dois sentidos da histerese.
     this.sun.escreverPesoDaLei(leiDoSol.wResolvido * leiDoSol.wMalha);
+    // O CLARÃO DE ASAS (M2): sem janela de distância — a elegibilidade é
+    // do FLUXO (uma nomeada só ganha asa a poucos pc dela; o Sol, na
+    // escada do item 3), e é a magnitude que apaga, nunca um corte em pc.
+    // O Sol só é candidato enquanto a camada dos dez desenha o ponto dele
+    // (fonte oculta não tem óptica; leitura do quadro anterior — a rampa
+    // de 300 ms engole o único quadro de atraso). E o clarão do Sol passa
+    // pelo FILTRO SOLAR da própria repartição (`overrideFator`, §5.7):
+    // com o corpo resolvido, quem torna a superfície visível é o filtro —
+    // e câmera com filtro solar não tem flare. Foi a correção que as
+    // palavras do dono (16/08) cobraram: sem ela, a asa sem filtro
+    // pintava a abertura do filme de branco por cima do Sol procedural.
+    if (this.clarao) {
+      this.clarao.group.visible = !this.hide.has('noclarao');
+      this.clarao.atualizar({
+        camPos: cam.position,
+        screenH: hPx,
+        dtS: dt,
+        solVisivel: !this.hide.has('noplan') && (this.planetas?.points.visible ?? false),
+        atenuacaoDoSol: leiDoSol.overrideFator,
+        // a ENTREGA da óptica: a asa explícita modela o PONTO; quando o
+        // Sol resolve, quem faz o clarão é o bloom sobre a imagem real
+        // (o círculo branco no meio da fotosfera era a conta de ponto
+        // aplicada a um disco — palavras do dono, 16/08)
+        pesoDoPontoDoSol: leiDoSol.wPonto,
+        expoM0: this.stars?.expoM0 ?? EXPO_M0,
+        sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
+      });
+    }
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
     // dentro do Atlas ele é PINADO, senão cada entrada daria um Sol
     // diferente conforme o instante da pausa (ver ATLAS_JOURNEY_T)

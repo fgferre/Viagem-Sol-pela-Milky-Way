@@ -270,7 +270,15 @@ void main() {
   // perfil DALI para fora. Sem a máscara o miolo contaria duas vezes.
   float mascara = smoothstep(0.6 * uNucleoPx, uNucleoPx, sqrt(r2));
 
-  vec3 col = uCor * uPico * (asa + espinhos) * mascara * uGanho;
+  // A JANELA DA BORDA: o billboard termina onde a asa cruza o limiar de
+  // visibilidade — ou seja, a borda do quad carrega EXATAMENTE o valor
+  // do limiar, e um degrau de 1/255 sobre céu preto lê como moldura
+  // retangular (visto na correção do M2). A janela leva o perfil a ZERO
+  // EXATO na borda, C¹, tocando só os últimos ~15% do raio.
+  float borda = max(abs(vUv.x), abs(vUv.y));
+  float janela = smoothstep(1.0, 0.85, borda);
+
+  vec3 col = uCor * uPico * (asa + espinhos) * mascara * janela * uGanho;
   gl_FragColor = vec4(comprimir3(col, uBeta), 1.0);
 }
 `;
@@ -285,6 +293,30 @@ export interface QuadroDoClarao {
   dtS: number;
   /** a camada dos dez está desenhando o Sol-ponto? (fonte oculta não tem óptica) */
   solVisivel: boolean;
+  /**
+   * A TRANSMITÂNCIA DO FILTRO SOLAR sobre o clarão do Sol — o
+   * `overrideFator` da repartição deste quadro (≥ 1; 1 = filtro fora,
+   * ponto puro). O clarão é o espalhamento da luz que ENTRA no
+   * instrumento: com o corpo resolvido, quem torna a superfície visível
+   * é o filtro (§5.7, corta ~26 mag) — e uma câmera com filtro solar
+   * não tem flare. Sem este fator a camada pintava a tela de branco POR
+   * CIMA do Sol procedural na abertura do filme (palavras do dono,
+   * 16/08). Só o candidato 0 o consome; as nomeadas são pontos sempre.
+   */
+  atenuacaoDoSol: number;
+  /**
+   * O PESO DO PONTO do Sol — `wPonto` da repartição (0..1). A ENTREGA DA
+   * ÓPTICA, e a segunda lição do dono no mesmo dia (*"esse círculo
+   * branco no meio do sol é normal?"*): esta camada modela a óptica de
+   * uma fonte PONTUAL — todo o fluxo concentrado na PSF. Para uma fonte
+   * RESOLVIDA a conta superestima por ordens de grandeza (o disco
+   * filtrado da abertura ainda virava um pico de ~5.700 e desenhava um
+   * círculo branco no meio da fotosfera). A óptica do RESOLVIDO é a
+   * convolução da imagem real — trabalho do BLOOM, cuja pirâmide o M2
+   * já governa pela mesma asa. Este peso é a entrega C¹ entre os dois
+   * donos: ponto → asa explícita; resolvido → bloom sobre o quadro.
+   */
+  pesoDoPontoDoSol: number;
   expoM0: number;
   sigmaPx: number;
 }
@@ -376,6 +408,13 @@ export class ClaraoDeAsas {
     const el = this.elegiveis;
     el.length = 0;
     const sigma = sigmaDaPsfPx(q.sigmaPx, q.screenH);
+    const atenuacaoDoSol =
+      Number.isFinite(q.atenuacaoDoSol) && q.atenuacaoDoSol >= 1 ? q.atenuacaoDoSol : 1;
+    const pesoDoPontoDoSol =
+      Number.isFinite(q.pesoDoPontoDoSol) && q.pesoDoPontoDoSol >= 0 && q.pesoDoPontoDoSol <= 1
+        ? q.pesoDoPontoDoSol
+        : 1;
+    const doSol = pesoDoPontoDoSol / atenuacaoDoSol;
     const n = this.mBase.length;
     for (let i = 0; i < n; i++) {
       if (i === 0 && !q.solVisivel) continue;
@@ -387,7 +426,7 @@ export class ClaraoDeAsas {
       const m = this.mBase[i] + 2.5 * Math.log10(d2);
       // pré-filtro barato: acima de m 6 nem a asa nasce (excesso ≤ 1)
       if (!(m < 6)) continue;
-      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH);
+      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
       // elegível quando a ÓPTICA excede o que o sprite já desenha —
       // asa OU braço além do núcleo; senão o draw não acrescenta pixel
       const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
@@ -420,7 +459,7 @@ export class ClaraoDeAsas {
       const dz = this.pos[i * 3 + 2] - q.camPos.z;
       const d2 = dx * dx + dy * dy + dz * dz;
       const m = this.mBase[i] + 2.5 * Math.log10(Math.max(d2, 1e-30));
-      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH);
+      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
       const meiaPx = Math.min(
         Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma)),

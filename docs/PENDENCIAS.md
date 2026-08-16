@@ -89,12 +89,30 @@ a cruz agora vem NA DOSE do fluxo — 0,0278 por continuidade em Sirius),
 o coeficiente 0,08·10^(−0,3m) com o exemplar Sirius, e as portas
 `?pupila`/`?dom`/`?nodom`/`?nohero`(→`?noclarao`)/`?bbloom`/`?bombro`/
 `?knee2`. O juiz de cegueira do voo foi reescrito para o teto da lei
-(perto do Sol, lavar é a parede de fogo honesta — a âncora do dono é
-R ≈ 450 px já a 1 UA). A/B das 51 vistas oficiais, medido com baseline
-recapturada do zero no commit do M1: **50 mudam, 1 fica bit-idêntica**
-(`edgeon` — a única sem nada acima do limiar do bloom: o controle de que
-a repesagem só toca o que floresce). Mudar era o esperado e está
-DECLARADO: toda vista com brilho tem menos halo de kernel e mais lei.
+(perto do Sol, lavar é a parede de fogo honesta). A/B das 51 vistas
+oficiais, medido com baseline recapturada do zero no commit do M1:
+**50 mudam, 1 fica bit-idêntica** (`edgeon` — a única sem nada acima do
+limiar do bloom: o controle de que a repesagem só toca o que floresce).
+Mudar era o esperado e está DECLARADO.
+
+**E a CORREÇÃO do mesmo dia, cobrada pelo dono ao abrir o app** — as
+palavras dele, na hora: *"está totalmente bugado... o filme começa
+totalmente bugado com a tela toda branca, o sol procedural não aparece
+mais, fica escondido atrás dessa tela branca, os spikes ficaram
+horríveis e enormes"* e *"esse círculo branco no meio do sol é normal
+para você???"*. Três defeitos que as réguas não viam (elas fotografam o
+Sol de longe; o juiz que faltava era o filme aberto): (1) a asa ignorava
+o FILTRO SOLAR — de perto, quem deixa ver a superfície é o filtro
+(~26 mag), e câmera com filtro não tem flare; agora a asa é cortada pela
+mesma transmitância da repartição; (2) a asa é a óptica do PONTO — num
+disco resolvido ela concentrava o fluxo inteiro numa conta de PSF e
+desenhava o círculo branco; agora ela entrega ao BLOOM pela rampa
+`wPonto` da lei (emenda escrita na cláusula do §1); (3) o braço do
+espinho decaía mais devagar que o halo e virava parede branca de
+~2.400 px; o expoente virou 1,5·β e a cruz afina em vez de atravessar a
+tela. Verificado NA TELA desta vez: abertura com o Sol procedural
+limpo, primeiro ato limpo, 5/40/500 UA com brilho redondo decaindo —
+e os números re-medidos no registro do commit da correção.
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
 estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
