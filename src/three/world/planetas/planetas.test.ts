@@ -27,7 +27,7 @@
 //     é o que importa; o "Júpiter" da D3 era uma previsão sem a fase.
 // (3) O SOL É O ÚNICO QUE PRECISARIA DO CORTE, e ele já está apagado
 //     por outro caminho: em 0,05 pc o pico da PSF dele vale 1.010, mas
-//     `deepPointGain(0,05)` é 0 EXATO (teorema de complementaridade,
+//     `deepPointGain(0,05)` era 0 EXATO (teorema de complementaridade,
 //     `lodStellar.ts`), e o alpha zera cor e espinhos juntos.
 // ============================================================
 
@@ -43,10 +43,7 @@ import {
 import { farPlanePc, nearPlanePc } from '../../core/engine';
 import { StarField } from '../stars';
 import {
-  LOD_SOL,
   catalogApparentMag,
-  deepPointGain,
-  sunStarGain,
 } from '../lodStellar';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
 import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
@@ -235,7 +232,7 @@ const FONTE = readFileSync(new URL('./planetas.ts', import.meta.url), 'utf8');
  * dele — ele roda na troca de instante, não no quadro.
  */
 const CORPO_DO_UPDATE = FONTE.slice(
-  FONTE.indexOf('  update(dHomePc: number'),
+  FONTE.indexOf('  update(screenH: number'),
   FONTE.indexOf('  /**\n   * O CAMINHO VIVO')
 );
 
@@ -696,58 +693,34 @@ describe('a fase Lambertiana do vertex é a mesma matemática da F1', () => {
 // ============================================================
 // 5. Continuidade: nenhuma faixa sem render
 // ============================================================
-describe('CONTINUIDADE — em nenhuma distância o Sol fica sem desenhista', () => {
-  /** os DOIS que podem desenhar o Sol de longe num quadro qualquer.
-   *  Eram três até a F3: o disco artístico saiu da lista com o raio
-   *  inflado, e quem desenha o Sol de PERTO passou a ser o próprio
-   *  corpo, pela régua do palco (`corpos.ts`), sem rampa em parsec. */
-  const desenhistas = (d: number) => [deepPointGain(d), sunStarGain(d)];
+describe('CONTINUIDADE — o Sol-ponto é o desenhista único de longe (M1)', () => {
+  // Até o M1 a continuidade era um TEOREMA de duas rampas: deepPointGain
+  // + sunStarGain = 1 em ~3.000 distâncias, entregando o Sol ao SunStar
+  // na janela {0,02; 0,05} pc. As duas rampas e a classe morreram; a
+  // continuidade virou CONSTRUÇÃO: o vértice 0 desenha em toda distância
+  // de ponto (sem uGain, sem corte), o alpha dele é (1 − aCede) com
+  // aCede = wResolvido da repartição (pesos somam 1 — estrela.test.ts), e
+  // quem o apaga de longe é a magnitude, como qualquer estrela do céu.
 
-  it('varredura de 1e-6 a 5 pc: os dois NUNCA são zero ao mesmo tempo', () => {
-    const passos: number[] = [];
-    for (let k = 0; k <= 3000; k++) passos.push(1e-6 * Math.pow(5e6, k / 3000));
-    // e as bordas exatas da janela, que a varredura logarítmica pularia
-    // por um fio
-    passos.push(LOD_SOL.entrega.startPc, LOD_SOL.entrega.endPc, 0.32487, 5);
-    for (const d of passos) {
-      const soma = desenhistas(d).reduce((a, b) => a + b, 0);
-      expect(soma, `d=${d}`).toBe(1);
-    }
+  it('o shader não tem mais uGain, e o alpha é só a cessão da lei', () => {
+    const fonte = camada().material.vertexShader;
+    expect(fonte).not.toContain('uniform float uGain');
+    expect(fonte).toContain('float alpha = 1.0 - aCede;');
   });
 
-  it('abaixo de 0,02 pc o Sol-ponto é PLENO e o clarão ainda não entrou', () => {
-    for (const d of [1e-6, 1e-4, 0.005, 0.019, LOD_SOL.entrega.startPc]) {
-      expect(deepPointGain(d), `d=${d}`).toBe(1);
-      expect(sunStarGain(d), `d=${d}`).toBe(0);
-    }
-  });
-
-  it('na faixa [0,02; 0,05] clarão e Sol-ponto se cruzam, e a soma é 1', () => {
-    for (const d of [0.025, 0.03, 0.035, 0.04, 0.045]) {
-      expect(sunStarGain(d) + deepPointGain(d), `d=${d}`).toBe(1);
-    }
-  });
-
-  it('os valores nos meios ficam pinados', () => {
-    expect(sunStarGain(0.03)).toBeCloseTo(0.2592592592592592, 15);
-    expect(deepPointGain(0.03)).toBeCloseTo(0.7407407407407408, 15);
-    expect(sunStarGain(0.035)).toBeCloseTo(0.5, 15);
-    expect(deepPointGain(0.035)).toBeCloseTo(0.5, 15);
-    expect(sunStarGain(0.04)).toBeCloseTo(0.7407407407407407, 15);
-  });
-
-  it('acima do limiar o Sol-ponto está APAGADO: quem desenha é o clarão', () => {
-    for (const d of [LIMIAR_SISTEMA_SOLAR_PC, 0.0631506, 0.1, 0.34, 1, 5]) {
-      expect(deepPointGain(d), `d=${d}`).toBe(0);
-      expect(sunStarGain(d), `d=${d}`).toBe(1);
-    }
+  it('de longe a FÍSICA apaga: m 9,85 a 100 pc, m 19,4 no núcleo galáctico', () => {
+    expect(magDoVertice(A_MAG_BASE_PC.sun, 100, 1)).toBeCloseTo(9.85, 2);
+    expect(magDoVertice(A_MAG_BASE_PC.sun, 8150, 1)).toBeCloseTo(19.4, 1);
+    // e o pico de PSF a 100 pc já está sob o passo de 8 bits da tela
+    const pico = picoDaPsf(magDoVertice(A_MAG_BASE_PC.sun, 100, 1), 3.5, 0.85, ALTURA_PX);
+    expect(pico).toBeLessThan(1 / 255);
   });
 });
 
 // ============================================================
-// 6. O corte de custo não pisca
+// 6. O antigo corte de custo morreu — e os nove continuam invisíveis
 // ============================================================
-describe('o corte por distância é de CUSTO, e não aparece na tela', () => {
+describe('sem corte por distância (M1): a magnitude é quem decide', () => {
   /** o pico do gaussiano que a PSF entrega — espelho de `GLSL_STAR_PSF`
    *  recomputado AQUI, como todo oráculo desta régua. A paridade com o
    *  `picoDaPsf` da casa (`luzDaCasa.ts`, o endereço único desde o F0 —
@@ -807,78 +780,58 @@ describe('o corte por distância é de CUSTO, e não aparece na tela', () => {
     expect(1 / 255).toBeGreaterThan(1e-3);
   });
 
-  it('o Sol seria enorme no limiar — e o uGain já o zerou, EXATO', () => {
+  it('o Sol no antigo limiar CONTINUA ACESO — era o uGain que o apagava', () => {
+    // m −6,65 a 0,05 pc: dez vezes Vênus. Apagá-lo ali era o preço da
+    // entrega ao SunStar; sem entrega, o pico fica — e o M1 é isso.
+    expect(magDoVertice(A_MAG_BASE_PC.sun, LIMIAR_SISTEMA_SOLAR_PC, 1)).toBeCloseTo(-6.655, 2);
     expect(picoPsf(noLimiar[0])).toBeGreaterThan(1000);
-    expect(deepPointGain(LIMIAR_SISTEMA_SOLAR_PC)).toBe(0);
-    // vPeak = peak * alpha, com alpha = uGain no vértice do Sol
-    expect(picoPsf(noLimiar[0]) * deepPointGain(LIMIAR_SISTEMA_SOLAR_PC)).toBe(0);
   });
 
-  it('`visible` é `ligado && dHome < LIMIAR_SISTEMA_SOLAR_PC`', () => {
+  it('`visible` é só `ligado` — nenhum corte por distância', () => {
     const p = camada();
     const cam = new THREE.Vector3(0, 0, 0.001);
     p.ligado = true;
-    p.update(LIMIAR_SISTEMA_SOLAR_PC, ALTURA_PX, cam);
-    expect(p.points.visible).toBe(false);
-    p.update(LIMIAR_SISTEMA_SOLAR_PC - 1e-12, ALTURA_PX, cam);
-    expect(p.points.visible).toBe(true);
-    p.ligado = false;
-    p.update(0.001, ALTURA_PX, cam);
-    expect(p.points.visible).toBe(false);
-    p.dispose();
-  });
-
-  it('desligada, a camada não desenha em NENHUMA distância', () => {
-    const p = camada();
-    const cam = new THREE.Vector3(0, 0, 0.001);
-    for (const d of [1e-6, 0.001, 0.02, 0.04, 0.05, 1]) {
-      p.update(d, ALTURA_PX, cam);
-      expect(p.points.visible, `d=${d}`).toBe(false);
+    for (const h of [0.001, LIMIAR_SISTEMA_SOLAR_PC, 1, 100]) {
+      p.update(ALTURA_PX, cam);
+      expect(p.points.visible, `dHome=${h}`).toBe(true);
     }
+    p.ligado = false;
+    p.update(ALTURA_PX, cam);
+    expect(p.points.visible).toBe(false);
     p.dispose();
   });
 });
 
 // ============================================================
-// 7. O quadro: três uniforms, escritos só quando mudam (M4)
+// 7. O quadro: dois uniforms, escritos só quando mudam (M4)
 // ============================================================
-describe('o update escreve três uniforms e nada mais', () => {
-  it('uCamPos, uScreenH e uGain chegam ao material', () => {
+describe('o update escreve dois uniforms e nada mais', () => {
+  it('uCamPos e uScreenH chegam ao material — o uGain morreu no M1', () => {
     const p = camada();
     p.ligado = true;
-    p.update(0.03, 1713, new THREE.Vector3(0.01, 0.02, 0.03));
+    p.update(1713, new THREE.Vector3(0.01, 0.02, 0.03));
     expect((p.material.uniforms.uCamPos.value as THREE.Vector3).toArray()).toEqual([
       0.01, 0.02, 0.03,
     ]);
     expect(p.material.uniforms.uScreenH.value).toBe(1713);
-    expect(p.material.uniforms.uGain.value).toBe(deepPointGain(0.03));
+    expect(p.material.uniforms.uGain).toBeUndefined();
     p.dispose();
   });
 
   it('reafirmar o MESMO quadro não reescreve nada (M4)', () => {
     const p = camada();
     const cam = new THREE.Vector3(0, 0, 0.03);
-    p.update(0.03, 1713, cam);
+    p.update(1713, cam);
     const vetor = p.material.uniforms.uCamPos.value as THREE.Vector3;
     const marcado = { escrito: false };
     // sentinela: se o update copiar de novo, o objeto muda de conteúdo
     vetor.set(9, 9, 9);
-    p.update(0.03, 1713, cam);
+    p.update(1713, cam);
     expect(vetor.toArray()).toEqual([9, 9, 9]);
     expect(marcado.escrito).toBe(false);
     // e volta a escrever assim que a câmera de fato anda
-    p.update(0.03, 1713, new THREE.Vector3(0, 0, 0.02));
+    p.update(1713, new THREE.Vector3(0, 0, 0.02));
     expect(vetor.toArray()).toEqual([0, 0, 0.02]);
-    p.dispose();
-  });
-
-  it('o uniform do ganho segue `deepPointGain`, ponto a ponto', () => {
-    const p = camada();
-    const cam = new THREE.Vector3(0, 0, 0.03);
-    for (const d of [0.049, 0.04, 0.03, 0.021, 0.02, 0.001]) {
-      p.update(d, 1713, cam);
-      expect(p.material.uniforms.uGain.value, `d=${d}`).toBe(deepPointGain(d));
-    }
     p.dispose();
   });
 
@@ -888,7 +841,7 @@ describe('o update escreve três uniforms e nada mais', () => {
     const a = atributo(p, 'position');
     const versao = a.version;
     for (let i = 0; i < 50; i++) {
-      p.update(0.001 + i * 1e-5, 1713, new THREE.Vector3(0, 0, 0.001 + i * 1e-5));
+      p.update(1713, new THREE.Vector3(0, 0, 0.001 + i * 1e-5));
     }
     expect(p.points.geometry).toBe(geo);
     expect(atributo(p, 'position')).toBe(a);
@@ -955,14 +908,12 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
     expect(FONTE).not.toContain('.clearUpdateRanges(');
   });
 
-  it('o gate de visibilidade importa o limiar do sistema solar, não um 0,05', () => {
-    // A F3 trocou a FONTE do número, não o número: até ela vinha de
-    // `LIMIAR_SISTEMA_SOLAR_PC` (`lodStellar.ts`), o mesmo símbolo que dizia onde
-    // o disco do Sol morria; agora vem de `escala.ts`, congelado com
-    // âncora escrita (0,05 pc = 10.313 UA; Plutão a 35,4 UA).
-    expect(FONTE).toContain('LIMIAR_SISTEMA_SOLAR_PC');
+  it('o gate de visibilidade por distância MORREU no M1 — nem símbolo, nem 0,05', () => {
+    // A F3 tinha trocado a fonte do número; o M1 apagou o próprio corte:
+    // a camada não lê limiar nenhum — `visible = ligado`, e quem decide o
+    // que aparece é a magnitude de cada vértice, como o cabeçalho promete.
+    expect(FONTE).not.toMatch(/import \{[^}]*LIMIAR_SISTEMA_SOLAR_PC/);
     expect(FONTE).not.toMatch(/import \{[^}]*DEEP_LIMIAR_PC/);
-    expect(LIMIAR_SISTEMA_SOLAR_PC).toBe(LOD_SOL.entrega.endPc);
     // o único 0,05 aceitável no arquivo é prosa, nunca código
     expect(FONTE).not.toContain('< 0.05');
     expect(FONTE).not.toContain('0.05;');
@@ -1115,7 +1066,7 @@ describe('?dbgplan — o que a régua 2 vai ler', () => {
     const p = camada();
     p.ligado = true;
     const cam = camera(0.00072722, UP_DO_QUADRO);
-    p.update(0.00072722, ALTURA_PX, cam.position);
+    p.update(ALTURA_PX, cam.position);
     const texto = p.dbg(cam, LARGURA_PX, ALTURA_PX);
     const linhas = texto.split('\n');
     expect(linhas).toHaveLength(11);
@@ -1432,10 +1383,10 @@ describe('a cessão sob corpo resolvido (aCede, F2a)', () => {
     p.dispose();
   });
 
-  it('o alpha do shader tem os DOIS donos: uGain do Sol e (1 − aCede)', () => {
-    // (1 − 0) = 1,0 EXATO em IEEE754: o fator novo é neutro até o gate
-    // do globo escrever — é o que sustenta as vistas profundas bit a bit
-    expect(FONTE).toContain('float alpha = mix(1.0, uGain, aEhSol) * (1.0 - aCede);');
+  it('o alpha do shader tem UM dono desde o M1: (1 − aCede)', () => {
+    // (1 − 0) = 1,0 EXATO em IEEE754: o fator é neutro até alguém
+    // escrever — o gate do globo nos nove, a repartição da lei no Sol
+    expect(FONTE).toContain('float alpha = 1.0 - aCede;');
     expect(FONTE).toContain("attribute float aCede;");
   });
 

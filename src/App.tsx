@@ -726,12 +726,7 @@ export default function App() {
     if (desvios.length === 0) return;
     const url = urlComMomento();
     for (const c of desvios) url.searchParams.delete(c.chave);
-    // A GRADAÇÃO (F6) é a única cujo estado padrão é LIGADO: apagar a
-    // chave da URL a religaria. Aqui a volta ESCREVE `?grad=0` — e por
-    // isso ela sobrevive à recarga logo abaixo, em vez de o selo dizer
-    // "voltei ao real" e o clarão renascer no carregamento seguinte.
-    if (desvios.some((c) => c.chave === 'grad')) url.searchParams.set('grad', '0');
-    // A LUZ (Onda 6, D2) tem o MESMO contrato: o padrão é `assistida`,
+    // A LUZ (Onda 6, D2): o padrão é `assistida`,
     // então apagar a chave da URL a ressuscitaria na recarga. A volta
     // escreve `?luz=real` — a URL vira espelho do estado escolhido.
     if (desvios.some((c) => c.chave === 'luz')) url.searchParams.set('luz', 'real');
@@ -746,8 +741,6 @@ export default function App() {
       } else if (c.chave === 'tone') {
         d.engine.setToneMapping('aces');
         setTom('aces');
-      } else if (c.chave === 'grad') {
-        d.desligarGradacao();
       } else if (c.chave === 'luz') {
         // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo')
         d.definirLuz('real');

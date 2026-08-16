@@ -19,7 +19,7 @@ import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
 import { projectCorpos, projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
-import { HeroStars, SunStar } from './world/heroStars';
+import { HeroStars } from './world/heroStars';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
@@ -28,15 +28,13 @@ import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import {
   CORPOS_DEFAULT_ON,
   CorposResolvidos,
+  LIMIAR_DO_GATE_PX,
   diametroAparentePx,
   gateBinario,
 } from './world/corpos/corpos';
 import {
-  CESSAO_PELO_GATE_MULT,
   RAIO_EQ_TERRA_PC,
   TerraResolvida,
-  cessaoAlvo,
-  cessaoPeloGate,
   posicaoDaTerraUA,
 } from './world/corpos/terra';
 import { LuaResolvida, RAIO_LUA_PC } from './world/corpos/lua';
@@ -83,7 +81,13 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico
 import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
 import { RAIO_DO_SOL_NA_CENA } from './escala';
-import { EXPO_M0, SIGMA_PX, picoDaPsf, psfPointSizePx } from './luzDaCasa';
+import { EXPO_M0, SIGMA_PX, picoDaPsf } from './luzDaCasa';
+// A LEI DA ESTRELA (M1): a repartição única do Sol — quem era quatro
+// rampas (`cessaoAlvo`, `cessaoPeloGate`, `filtroSolarAlvo` e o `max`
+// delas) virou UMA função pura, e o director é o único que a chama
+// porque é o único que tem câmera e instrumento na mão.
+import { repartir } from './estrela';
+import { BETA_DA_EMISSAO } from './shaders/starShaders';
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import {
   bakeDustMap,
@@ -107,7 +111,6 @@ import {
   LUAS_DO_SISTEMA,
   ANOES_DO_SISTEMA,
   ASTEROIDES_DO_SISTEMA,
-  claraoDoAtlas,
 } from './atlasConfig';
 
 const HELIO_SEM_PONTO = [...ANOES_DO_SISTEMA, ...ASTEROIDES_DO_SISTEMA];
@@ -118,7 +121,6 @@ import { BlackHolePass } from './world/blackHole';
 import {
   DOMINANCE_DEFAULT_ON,
   fadesDoQuadro,
-  filtroSolarAlvo,
   matchHeroesToCatalog,
 } from './world/lodStellar';
 import { carregarEfemerides, loadStarData } from './config';
@@ -286,7 +288,6 @@ export class Director {
   private nebula: Nebula;
   private stars!: StarField;
   private heroes!: HeroStars;
-  private sunStar!: SunStar;
   /** índice no catálogo de cada uma das 16 heroes (−1 = sem par
    *  declarado). Resolvido uma vez no init — ver `matchHeroesToCatalog`. */
   private heroCatalogIdx: number[] = [];
@@ -529,12 +530,6 @@ export class Director {
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
-  /** a gradação por contexto do Atlas está ligada? (`?grad=0` desliga) */
-  private gradacaoLigada = true;
-  /** ?bcede= — multiplicador do gate na cessão do Sol-ponto. Padrão desde
-   *  15/08 (`CESSAO_PELO_GATE_MULT`, terra.ts); `?bcede=0` é o caminho de
-   *  volta ⇒ a lei herdada por dominância, sozinha. */
-  private cessaoPeloGateMult = CESSAO_PELO_GATE_MULT;
 
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
@@ -653,14 +648,10 @@ export class Director {
     if (this.debug.has('nobloom')) {
       this.post.bloom.enabled = false;
     }
-    // A GRADAÇÃO POR CONTEXTO do Atlas (F6) nasce LIGADA e `?grad=0` a
-    // desliga — o precedente exato é o `?knee=0` do pós. Ela precisa de
-    // porta, e não só de um clique no selo, porque o "voltar ao brilho
-    // real" pode RECARREGAR a página (quando há desvio que só o boot
-    // lê): sem a porta, o selo diria "voltei ao real" e a gradação
-    // renasceria no carregamento seguinte — o selo mentindo com a melhor
-    // das intenções, que é o defeito que ele existe para não ter.
-    this.gradacaoLigada = this.debug.get('grad') !== '0';
+    // (A GRADAÇÃO POR CONTEXTO do Atlas — `claraoDoAtlas` — e a porta
+    // `?grad=` morreram no M1 da Lei da Estrela: o clarão do Sol passou a
+    // sair da repartição única, e o curativo de apagá-lo 100× no Atlas
+    // ficou sem doença. Item 4 das pendências.)
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
     this.expOverride = this.debug.has('exp');
@@ -668,16 +659,8 @@ export class Director {
     // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
     // no default do Atlas, nunca num caminho terceiro.
     this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
-    // ?bcede= — a quarta porta da onda da luz (F2): re-ancora a cessão do
-    // Sol-ponto no gate do palco (valor = multiplicador do limiar de 4 px;
-    // 1 ⇒ a rampa começa no próprio gate). PADRÃO desde 15/08; ausente ou
-    // envenenada ⇒ `CESSAO_PELO_GATE_MULT`, e `?bcede=0` é o caminho de
-    // volta ⇒ o herdado por dominância, bit a bit. Irmã de
-    // bemis/bbloom/bombro no selo; a conta mora em `cessaoPeloGate`
-    // (terra.ts) e o uso no tick, junto da cessão do Sol.
-    const bcede = parseFloat(this.debug.get('bcede') ?? '');
-    this.cessaoPeloGateMult =
-      Number.isFinite(bcede) && bcede >= 0 ? bcede : CESSAO_PELO_GATE_MULT;
+    // (a porta `?bcede=` morreu no M1: a cessão do Sol-ponto é
+    // `wResolvido` da repartição única — regra iv do §4 da Lei.)
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
     // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
     // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
@@ -846,10 +829,9 @@ export class Director {
     if (semPar.length) {
       console.warn(`[heroes] sem par no catálogo: ${semPar.join(', ')}`);
     }
-    // o Sol sob a mesma lei dos heróis: de longe é estrela, não bola
-    // (magnitude viva pela distância; o nearFade cede ao disco de perto)
-    this.sunStar = new SunStar();
-    this.engine.scene.add(this.sunStar.quad);
+    // (o `SunStar` morreu no M1 da Lei da Estrela: o Sol de longe é o
+    // ponto fotométrico da camada dos dez, em toda distância — a mesma
+    // PSF do campo, sem clarão de autor por cima.)
 
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
@@ -960,9 +942,9 @@ export class Director {
     this.engine.scene.add(this.dust.points);
     this.engine.scene.add(this.heroes.group);
     this.engine.scene.add(this.galaxy.group);
-    // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena, ao
-    // lado do `sunStar.quad` e NUNCA dentro de `sun.group` — de lá
-    // herdaria a escala 0,005 do doador e o `return` antecipado quando o
+    // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
+    // NUNCA dentro de `sun.group` — de lá herdaria a escala 0,005 do
+    // doador e o `return` antecipado quando o
     // disco apaga. A PSF vem do campo (`stars` publica expoM0/sigmaPx):
     // é o que faz a fotometria planeta↔estrela ser relativa de verdade.
     this.planetas = new Planetas(this.stars);
@@ -2812,17 +2794,6 @@ export class Director {
   }
 
   /**
-   * DESLIGA a gradação por contexto do Atlas — o gesto da linha BRILHO
-   * do selo (D1: as linhas do selo são os próprios controles). Não tem
-   * volta pelo mesmo caminho de propósito: quem quiser a gradação de
-   * volta tira o `?grad=0` da URL, que é onde o estado vive.
-   */
-  desligarGradacao() {
-    this.gradacaoLigada = false;
-    this.perturbar();
-  }
-
-  /**
    * A ESCALA DO TEXTO DO HUD mudou (`?ui=`, F6). O Director precisa
    * saber porque o HUD do Atlas é parte do enquadramento: texto maior
    * come mais quadro, o retângulo útil encolhe e a câmera recua. É
@@ -2842,22 +2813,6 @@ export class Director {
    */
   get retanguloUtil() {
     return retanguloUtilDoAtlas(escalaDaUi(), larguraDeCss());
-  }
-
-  /**
-   * A GRADAÇÃO POR CONTEXTO (F6), num lugar só: o fator do clarão desta
-   * vista. Só na fase 'atlas' — fora dela é 1 EXATO, o termo do
-   * `setWarp` fica neutro em IEEE754 e o filme não perde um pixel. A
-   * conta e o porquê moram no config único (`atlasConfig.ts`).
-   *
-   * É um getter, e não um campo que o tick guarda, porque o SELO lê o
-   * mesmo número: dois lugares calculando a mesma coisa é como o selo
-   * começaria a divergir do quadro que ele declara.
-   */
-  private get claraoDoQuadro() {
-    return this.phase === 'atlas' && this.gradacaoLigada
-      ? claraoDoAtlas(this.engine.camera.position.length())
-      : 1;
   }
 
   /**
@@ -2881,16 +2836,11 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
-      // a MESMA conta que o tick escreve no pós — não uma cópia do
-      // último quadro: o selo e o quadro leem a mesma câmera e não têm
-      // como discordar
-      gradacao: this.claraoDoQuadro,
       luz: this.politicaDeLuz,
       evLuzDoFoco: this.evLuzDoFoco(),
-      // o valor VIVO da pupila, do último quadro. Ao contrário da `gradacao`
-      // (que é um getter puro da distância, e por isso o selo pode recalcular),
-      // este é ESTADO com adaptação no tempo: não há como o selo redescobri-lo
-      // sem repetir a integração. Ler o estado é o único caminho honesto.
+      // o valor VIVO da pupila, do último quadro: ESTADO com adaptação no
+      // tempo — não há como o selo redescobri-lo sem repetir a
+      // integração. Ler o estado é o único caminho honesto.
       stopsDaPupila: this.pupila.stopsAplicados,
     };
   }
@@ -3435,25 +3385,46 @@ export class Director {
     // (`isDiscGroupVisible`) — os dois se somam com `&&`, e no raio
     // artístico o de lá sempre fecha primeiro (ver a conta lá em cima).
     this.sun.group.visible = !this.hide.has('nosun') && this.solArmado;
-    // a PSF do Sol vive FORA do group (o group some no crossfade) — só
-    // ?nosun a desliga
-    this.sunStar.quad.visible = !this.hide.has('nosun');
-    // O CLARÃO PEDE O TAMANHO À LEI DO CAMPO (item 42), e por isso passa
-    // a receber a tela e a PSF do quadro. `stars.expoM0` é o EFETIVO (base
-    // + pupila), o mesmo que `writeHeroFades` acabou de usar duas linhas
-    // acima: o clarão tem de encolher com a exposição na mesma medida em
-    // que o ponto do catálogo encolhe, senão a costura ponto↔clarão que
-    // esta lei existe para fechar se abriria toda vez que a pupila mexesse.
-    // Sem campo carregado valem os defaults da casa — os MESMOS com que o
-    // `new StarField` acima o constrói, não um segundo par de números.
-    this.sunStar.update(
-      time,
-      dHome,
-      tanHalfFov,
-      hPx,
-      this.stars?.expoM0 ?? EXPO_M0,
-      this.stars?.sigmaPx ?? SIGMA_PX
+    // ── A REPARTIÇÃO DA LEI (M1 da LEI-DA-ESTRELA) ─────────────────────
+    // UMA função pura decide, por quadro, como o Sol é desenhado — no
+    // lugar das quatro rampas de antes (`cessaoAlvo` sobre disco/halo,
+    // `cessaoPeloGate` sobre disco/4px, `filtroSolarAlvo` em log
+    // simétrico e o `Math.max` das duas primeiras, que tinha QUINA). Os
+    // três contratos: o ESTADO vem do próprio corpo (`estadoDaLei`), a
+    // OBSERVAÇÃO é a câmera deste tick, o INSTRUMENTO é a casa —
+    // `stars.expoM0` EFETIVO (base + pupila), o mesmo que
+    // `writeHeroFades` acabou de usar, e `trocaPx` = o gate de corpo
+    // texturizado do palco (4 px), que deixou de ser uma segunda lei e
+    // virou parâmetro (§3 da Lei).
+    const leiDoSol = repartir(
+      this.sun.estadoDaLei(),
+      {
+        distPc: dHome,
+        direcao:
+          dHome > 0
+            ? [cam.position.x / dHome, cam.position.y / dHome, cam.position.z / dHome]
+            : [0, 0, 1],
+      },
+      {
+        alturaPx: hPx,
+        tanHalfFov,
+        expoM0: this.stars?.expoM0 ?? EXPO_M0,
+        sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
+        beta: BETA_DA_EMISSAO,
+        trocaPx: LIMIAR_DO_GATE_PX,
+        // a única representação resolvida do Sol hoje é a MALHA — a
+        // esfera analítica (§1) nasce no M3/E3, onde é obrigatória;
+        // a dívida está nomeada no cadastro de representações.
+        requisitoGeometrico: 1,
+      }
     );
+    // o corpo troca a radiância verdadeira pela paleta autorada com a
+    // régua da lei (mesma `discoPx`, largura própria — §5.7)...
+    this.sun.escreverFiltroSolar(leiDoSol.overrideExpoente);
+    // ...e ENTRA DO ZERO com o peso da representação resolvida: no armar
+    // binário do gate do palco o peso ainda é 0, então o liga/desliga de
+    // custo fica invisível em pixel, nos dois sentidos da histerese.
+    this.sun.escreverPesoDaLei(leiDoSol.wResolvido * leiDoSol.wMalha);
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
     // dentro do Atlas ele é PINADO, senão cada entrada daria um Sol
     // diferente conforme o instante da pausa (ver ATLAS_JOURNEY_T)
@@ -3477,12 +3448,12 @@ export class Director {
     // na F2 — o near lê o palco antes daqui, e da F1 até agora o clip
     // recebia a superfície do quadro anterior.)
     // A CAMADA DE PLANETAS (Onda 4, D3/D7), logo depois do Sol porque é
-    // a continuação dele: abaixo de 0,05 pc quem desenha o Sol é o
-    // vértice 0 desta camada, com `uGain = deepPointGain(dHome)` — e
-    // desde a F3 esse ganho é o complemento EXATO do clarão do
-    // `SunStar`, de modo que a soma dos dois é 1 em toda distância e o
-    // Sol nunca fica sem dono. A chave mora em `planetas.ts`
-    // (`PLANETAS_DEFAULT_ON`); aqui ficam só as duas portas de URL.
+    // a continuação dele: o Sol de longe É o vértice 0 desta camada, em
+    // TODA distância de ponto — a entrega ao `SunStar` e o corte de
+    // 0,05 pc morreram no M1 da Lei da Estrela. Quem apaga o Sol-ponto
+    // de longe é a magnitude; quem o cede de perto é a repartição. A
+    // chave mora em `planetas.ts` (`PLANETAS_DEFAULT_ON`); aqui ficam só
+    // as duas portas de URL.
     if (this.planetas) {
       this.planetas.ligado =
         (PLANETAS_DEFAULT_ON || this.debug.has('plan')) && !this.hide.has('noplan');
@@ -3496,82 +3467,18 @@ export class Director {
       if (this.efemeride) {
         this.planetas.escreverInstante(grampearJd(this.jdPedido), this.efemeride);
       }
-      this.planetas.update(dHome, hPx, cam.position);
-      // A CESSÃO DO SOL-PONTO (F2), na MESMA máquina da Terra (F2b/D5):
-      // o vértice 0 desta camada e a fotosfera desenham a mesma estrela
-      // no mesmo lugar, somadas em `AdditiveBlending`. É a dupla-luz que
-      // a Onda 3 desfez entre hero e catálogo, agora entre ponto e corpo.
-      //
-      // POR DOMINÂNCIA E NÃO POR GATE, e a diferença é de honestidade:
-      // um corte binário no armar do gate (4 px) apagaria um halo de
-      // ~25 px para pôr um disco de 4 no lugar — um passo para trás na
-      // luz, exatamente o que a prova de continuidade da Onda 3 proíbe.
-      // `cessaoAlvo` só faz o ponto ceder quando o disco de fato o
-      // DOMINA na tela (g(r) de 1 a 2,5), o que para o Sol real cai por
-      // volta de 0,55 UA — bem depois do gate. Até lá os dois somam, que
-      // é o comportamento herdado.
-      // MEDIDO, e é o que mantém a `solreal1ua` no md5 da F1: a 1 UA o
-      // disco tem 14,4 px contra 25,2 px de halo previsto ⇒ r = 0,57 ⇒
-      // cessão 0 EXATA. A tela branca de dentro do sistema solar continua
-      // sendo o que o bastão diz que ela é — defeito de EXPOSIÇÃO, da
-      // onda do clarão, e não desta. Esta fase não a apaga por acidente.
-      //
-      // A F3 TIROU A GUARDA DO RAIO daqui (`solRaioPc !==
-      // WORLD.sunRadius`), que até então mantinha esta cessão em ZERO
-      // PIXEL no filme inteiro porque o Sol da cena era o inflado e o
-      // palco o recusava. Agora ela é a peça que faz a ESCADA da
-      // abertura não ter degrau: descendo, o ponto cede ao corpo por
-      // dominância; subindo, o corpo desarma nos 4 px com o ponto já
-      // inteiro (a 3,60 UA o disco tem 4 px contra ~25 px de halo,
-      // r ≈ 0,16 ⇒ cessão 0), e depois o ponto entrega ao clarão na
-      // janela de 0,02–0,05 pc. Nenhum passo para trás na luz em
-      // nenhum dos três degraus.
-      const solCorpoEmQuadro = this.sun.group.visible;
-      const solDiscoPx = diametroAparentePx(this.solRaioPc, dHome, hPx, cam.fov);
-      const solHaloPx = this.stars
-        ? psfPointSizePx(
-            // fase 1: o Sol é o ILUMINANTE, não tem fase (é o mesmo
-            // `mix(fase, 1.0, aEhSol)` do VERT da camada)
-            magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1),
-            this.stars.expoM0,
-            this.stars.sigmaPx,
-            hPx
-          )
-        : 0;
-      const alvoPorDominancia = cessaoAlvo(solCorpoEmQuadro, solDiscoPx, solHaloPx);
-      // O FILTRO SOLAR DECLARADO (F2), na MESMA régua desta cessão: o
-      // ponto cede ao corpo e o corpo troca a radiância verdadeira pela
-      // paleta autorada com a mesma rampa, no mesmo trecho. Sem porta
-      // `?bfoto=1` a chamada é no-op silencioso. Halo inexistente ⇒ razão
-      // 0 ⇒ g = 1, a estrela verdadeira — o precedente de `cessaoAlvo`.
-      // O porquê da lei (stops, e por que não é pupila) mora em
-      // `world/stellarBody.ts`, seção F2.
-      //
-      // A RÉGUA É A MESMA, A RAMPA NÃO — e a diferença entrou em 15/08,
-      // com o voo de ida e volta na mão: `filtroSolarAlvo` lê exatamente
-      // esta razão, mas estica a travessia simetricamente em log (0,4 →
-      // 2,5 em vez de 1 → 2,5), porque 26 magnitudes não cabem em 2,57×
-      // de distância — o voo mediu 60% da troca entre dois degraus
-      // vizinhos (0,232 → 0,341 UA). O porquê inteiro mora ao lado da
-      // função, em `world/lodStellar.ts`.
-      this.sun.escreverFiltroSolar(filtroSolarAlvo(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0));
-      // A CESSÃO PELO GATE, padrão desde 15/08 e com `?bcede=` como
-      // caminho de volta: re-ancora a cessão no GATE DO PALCO (4 px × o
-      // multiplicador) em vez do halo previsto da PSF. NÃO é o
-      // corte binário que o comentário acima proíbe: a rampa nasce
-      // 0 EXATO no armar do gate (razão 1 ⇒ g = 0) e sobe com o
-      // TAMANHO da bola — sem pop por construção, nos dois sentidos.
-      // `max` com a dominância: esta âncora só ADIANTA a cessão, nunca a
-      // atrasa — perto do cruzamento de 0,55 UA a lei herdada continua
-      // sendo o piso. `?bcede=0` ⇒ o valor herdado, bit a bit.
+      this.planetas.update(hPx, cam.position);
+      // A CESSÃO DO SOL-PONTO É A REPARTIÇÃO (M1): aCede = wResolvido —
+      // o ponto cede na exata medida em que a fonte está RESOLVIDA na
+      // tela (rampa C¹ de 4 a 8 px de disco), e o corpo entra do zero
+      // com o mesmo peso pelo outro lado (`escreverPesoDaLei`, acima). A
+      // soma dos pesos é 1 por construção — nenhuma dupla-luz, nenhum
+      // passo para trás, nenhuma quina de `max`. Com o corpo ESCONDIDO
+      // (`?nosun`) o ponto fica inteiro: ceder a uma malha invisível
+      // cegaria o quadro, e a direção segura da lei é o ponto (§8.5).
       this.planetas.escreverCessao(
         'sun',
-        this.cessaoPeloGateMult > 0
-          ? Math.max(
-              alvoPorDominancia,
-              cessaoPeloGate(solCorpoEmQuadro, solDiscoPx, this.cessaoPeloGateMult)
-            )
-          : alvoPorDominancia
+        this.sun.group.visible ? leiDoSol.wResolvido : 0
       );
     }
     this.dust.update(cam.position, hPx, time);
@@ -3749,7 +3656,6 @@ export class Director {
       this.emitDest(undefined, cam.position);
     }
 
-    this.post.setGradacao(this.claraoDoQuadro);
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     // gate 0.02: na casca externa do fade a contribuição é invisível
@@ -3843,16 +3749,15 @@ export class Director {
       this.planetas?.escreverExposicao(stars.expoM0);
       this.wrappedStars?.escreverExposicao(stars.expoM0);
       this.heroes?.escreverExposicao(1);
-      this.sunStar.escreverExposicao(1);
       return;
     }
     this.frustumDaPupila.setFromProjectionMatrix(
       this.matrizDaPupila.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
     );
     let pico = 0;
-    // 1. O SOL-PONTO. Só conta quando a camada dos dez corpos de fato o
-    //    desenha: acima de 0,05 pc ela some, e ali quem desenha o Sol é o
-    //    clarão do `SunStar`, que não é PSF e não entra nesta conta.
+    // 1. O SOL-PONTO. Conta sempre que a camada dos dez o desenha — e
+    //    desde o M1 ela o desenha em toda distância; quem o apaga de
+    //    longe é a própria magnitude, que esta conta já carrega.
     if (this.planetas?.points.visible && this.frustumDaPupila.containsPoint(ORIGEM)) {
       pico = picoDaPsf(
         // fase 1: o Sol é o ILUMINANTE, não tem fase — o mesmo argumento
@@ -3904,10 +3809,8 @@ export class Director {
     this.wrappedStars?.escreverExposicao(stars.expoM0);
     // e os clarões de billboard, que NÃO passam pela PSF e por isso não são
     // alcançados pelo deslocamento de `expoM0`. Sem esta linha a pupila
-    // deixaria de ser exposição de CENA e viraria teto sobre a fonte pontual:
-    // medido a 3,6 UA, o Sol (m −23,8) saindo mais fraco que α Centauri (m 0,0).
+    // deixaria de ser exposição de CENA e viraria teto sobre a fonte pontual.
     this.heroes?.escreverExposicao(ganho);
-    this.sunStar.escreverExposicao(ganho);
   }
 
   private writeHeroFades(screenH: number, tanHalfFov: number) {
@@ -3997,10 +3900,8 @@ export class Director {
     step('dustMap', () => this.dustMapTexture?.dispose());
     step('structureMap', () => this.structureMapTexture?.dispose());
     step('sun', () => this.sun.dispose());
-    // sunStar nasce depois do await do init: falha de carga chega aqui
-    // com ele indefinido
-    step('sunStar', () => this.sunStar?.dispose());
-    // idem: a camada nasce depois do await do init
+    // a camada nasce depois do await do init: falha de carga chega aqui
+    // com ela indefinida
     step('planetas', () => this.planetas?.dispose());
     step('terra', () => this.terra?.dispose());
     step('lua', () => this.lua?.dispose());

@@ -1,247 +1,50 @@
 // ============================================================
-// lodStellar — o LOD estelar da casa num lugar só. PURO: importa uma
-// constante de `escala.ts` (que também é puro — o selo o lê, e o selo
-// não conhece three); zero three, zero DOM. Antes da F3 o import era
-// `WORLD.sunRadius`, de `config.ts`; o raio do Sol mudou de casa junto
-// com o cadastro que o declara.
+// lodStellar — o que sobrou do LOD estelar da casa, e o que sobrou tem
+// DATA DE ENTERRO: M2 da LEI-DA-ESTRELA. PURO: zero three, zero DOM.
 //
-// Três coisas moram aqui, com origens DIFERENTES e declaradas:
+// O M1 (2026-08-16) demoliu daqui a metade do Sol: as janelas de
+// entrega (`LOD_SOL`, `sunStarGain`, `deepPointGain`), o filtro solar
+// por razão disco/halo (`filtroSolarAlvo`) e o gate dormente por ângulo
+// sólido (`shouldDiscBeActive` e os órfãos do bloco). Quem responde por
+// tudo isso agora é a repartição única (`repartir`, `estrela.ts`) — as
+// lápides curtas estão nas seções, e a varredura invertida
+// (simbolosProibidos.test.ts) vigia os nomes.
 //
-// 1. AS JANELAS DA CASA (verbatim, origem-casa). As rampas do crossfade
-//    do Sol VIVIAM redigitadas em dois arquivos que não se importavam —
-//    `novoSol.ts:85-86,333-335` (o disco) e
-//    `heroStars.ts:224-225,236-237` (uGain e uCore do SunStar) —
-//    ligadas só por COMENTÁRIO. Uma casa decimal movida de um lado e
-//    nada denunciava. Aqui elas ficam juntas, com os MESMOS números e
-//    a MESMA forma de conta; desde a fase 2 da Onda 3 os consumidores
-//    IMPORTAM daqui, e um teste de pinagem (lodStellar.test.ts) impede
-//    a redigitação de renascer.
-//    Nota do plano: a matriz antiga chamava {0,14→0,30} e
-//    {0,30→0,42} de janelas "dos heroes" — no código elas eram do SOL
-//    visto de longe (a classe `SunStar`), não das 16 heroes. O código
-//    real vence; a divergência fica registrada aqui. As janelas que
-//    são MESMO das 16 heroes (nearFade e farFade, no FRAG de
-//    `heroStars.ts`) entram na tabela `LOD_HERO`, seção 1b — elas
-//    alimentam o fim da dupla-luz hero↔catálogo na fase 3 (decisão D2).
-//    A F3 DA ONDA DO SOL REAL (2026-08-13) reduziu as quatro janelas do
-//    Sol a UMA: com o Sol de raio físico não há disco inflado para
-//    dissolver, e o que sobra é a entrega ponto↔clarão. Ver `LOD_SOL`.
+// Duas coisas continuam morando aqui, com origens declaradas:
 //
-// 2. `stepRampToward` — TRANSCRIÇÃO AUTORIZADA do doador atlas-orbital
+// 1. `stepRampToward` — TRANSCRIÇÃO AUTORIZADA do doador atlas-orbital
 //    (`src/components/canvas/hygMeshFadeRamp.ts`: 48 linhas medidas por
-//    `wc -l`, as "47 linhas puras" da matriz mais a linha final — é
-//    contagem, não conteúdo). A matriz do plano abre a exceção
-//    nominalmente (doutrina de travessia, transcrição autorizada): linhas puras que
-//    carregam a razão do clamp de dt junto — "é mais barato copiar com
-//    o comentário do que redescobrir o bug".
-//    Assinatura, corpo e TODOS os comentários vêm inteiros; só a
-//    língua muda (a casa escreve em pt-BR). Onde o comentário do
-//    doador cita o stack dele (R3F, Fast Refresh), o texto fica —
-//    é o registro de onde o bug foi comprado — com a nota da casa ao lado.
+//    `wc -l`). Linhas puras que carregam a razão do clamp de dt junto —
+//    "é mais barato copiar com o comentário do que redescobrir o bug".
+//    Assinatura, corpo e comentários vêm inteiros; só a língua muda.
+//    Consumidor vivo: a cessão suave da Terra (Onda 6/F2b) e as rampas
+//    dos corpos resolvidos.
 //
-// 3. O GATE POR ÂNGULO SÓLIDO — CONTRATO do doador
-//    (`src/lib/stellarMeshGate.ts`), NÚMEROS da casa. A própria matriz
-//    (doutrina de travessia) diz que os limiares NÃO se herdam: lá o
-//    sprite é outra PSF, e o ENTER de 1e-3 rad é ~70× menor que o
-//    handoff desta viagem. O que atravessa é o critério (LOD por
-//    ÂNGULO, não por distância) e a forma do gate (histerese com
-//    cushion 2×, desigualdades assimétricas estritas, NaN preserva
-//    estado). Os números saem da conta documentada em "A CONTA DO
-//    HANDOFF", abaixo.
-//
-// 4. A POLÍTICA DE DOMINÂNCIA (seção 5, fase 3 da Onda 3) — a decisão
+// 2. A POLÍTICA DE DOMINÂNCIA (seção 5, fase 3 da Onda 3) — a decisão
 //    D2 do desenho, na forma que a medição da fase 2 corrigiu. Espelhos
 //    em JS de duas contas que só existiam em GLSL (a PSF do ponto do
 //    catálogo e o tamanho do billboard do hero) e a curva `g` que decide
 //    quanto o ponto cede quando o hero o domina na tela — mais o
 //    casamento hero↔índice do catálogo, que é a metade de identidade da
 //    mesma política. Consumidor: `director.ts`, que escreve `aFade` nas
-//    16 por quadro.
-//
-// FIAÇÃO: `heroStars.ts` (classe SunStar) consome `sunStarGain` — nos
-// DOIS uniforms desde a F3, `uGain` e `uCore` —, e `planetas.ts` consome
-// `deepPointGain`, que é o complemento exato dele. `stellarBody.ts`
-// consumia `solWorldFade`/`isDiscGroupVisible` e deixou de consumir na
-// F3: a atenuação do disco por distância morreu com o disco, e quem
-// decide se o Sol é corpo passou a ser a régua do palco em `corpos.ts`.
-// As duas janelas das 16 heroes genéricas (LOD_HERO) ficaram sem
-// consumidor JS até a fase 3 da Onda 3, quando entraram na política de
-// dominância como rede de segurança (`heroPresence`, seção 5).
-//
-// O QUE EMBARCA DORMENTE, e é declarado como o doador declarava o seu
-// ("module ships dormant", `stellarMeshGate.ts:36-39`): as DUAS metades
-// da cicatriz C4. (i) A rampa TEMPORAL (`stepRampToward`,
-// `RAMP_DURATION_MS`, `resetRamp`) — já dito na seção 2: o crossfade do
-// Sol é dirigido por DISTÂNCIA, e o mecanismo da rampa é o do foco por
-// estrela, que chega na Onda 7. Desde a Onda 6/F2b ela TEM consumidor
-// (a cessão suave da Terra). (ii) O GATE POR ÂNGULO SÓLIDO
-// (`shouldDiscBeActive`, `computeSolidAngle`, `projectedRadiusPx`,
-// `maxSpriteSolidAngleRad`): nenhum consumidor de runtime o importa.
-//
-// ── POR QUE ELE CONTINUA DORMINDO DEPOIS DA F3 (medido em 2026-08-13) ──
-// A F2 chegou para lhe dar o primeiro consumidor e NÃO deu, por uma
-// razão que só apareceu com a conta na mesa: o `DISC_ENTER_RAD` daqui e
-// o `LIMIAR_DO_GATE_PX` do palco (`corpos.ts`) são o MESMO CONTRATO com
-// limiares 53× distantes, e não duas escritas da mesma lei.
-//   ENTER = 0,06875 rad de RAIO angular ⇒ 0,1375 rad de diâmetro ⇒
-//   **212 px** de diâmetro na lente de 58° a 1713 px de altura.
-//   A régua do palco entra em **4 px** de diâmetro.
-// São perguntas diferentes: o ENTER perguntava "o disco INFLADO ainda é
-// o assunto do quadro?" (a calibração artística do crossfade para o
-// clarão do `SunStar`), e o palco pergunta "este corpo já é
-// REPRESENTÁVEL como corpo?".
-// A F3 NÃO O ACORDOU, e agora a razão é mais forte do que era: o disco
-// inflado que calibrou o ENTER não existe mais, então o número que ele
-// carrega ficou ÓRFÃO — é a memória de uma calibração cuja premissa
-// morreu. Acordá-lo hoje seria fiar um limiar sem fonte. Ele fica de pé,
-// testado e sem fio, como pendência NOMEADA da Onda 7 (corpo por
-// estrela), e a primeira obrigação de quem o acordar é RE-DERIVAR o
-// ENTER de um corpo real — a âncora artística que ele ainda usa está
-// declarada como lápide, não como número vivo.
+//    16 por quadro. MORRE NO M2, quando o clarão de asas por orçamento
+//    substituir a identidade "as 16" — `heroCatalogFade` e as janelas
+//    `LOD_HERO` saem junto (divergência com a lista do M1 na Lei
+//    registrada lá: eles têm consumidor de runtime até o M2).
 // ============================================================
-import { RAIO_ARTISTICO_DO_SOL_PC } from '../escala';
 import { psfPointSizePx } from '../luzDaCasa';
 
 // ------------------------------------------------------------
-// 1. Janelas de LOD por instância (hoje só a instância Sol)
+// 1. (As janelas de LOD do Sol morreram no M1 da LEI-DA-ESTRELA.)
 // ------------------------------------------------------------
 //
-// ARMADILHA DE PONTO FLUTUANTE — a razão de a tabela guardar largura E
-// fim, em vez de só os extremos. Os dois consumidores dividem por
-// coisas diferentes, e em double as duas contas NÃO dão o mesmo bit:
-//   stellarBody.ts dividia por (DISC_FADE1 - DISC_FADE0) = 0.18000000000000002
-//     (≠ 0.18) — a tabela guarda os dois extremos e a rampa recalcula
-//     a diferença, igual a lá;
-//   heroStars.ts divide pela LARGURA literal: 0.16 e 0.12 — e
-//     0.3 - 0.14 = 0.15999999999999998 (≠ 0.16), 0.14 + 0.16 =
-//     0.30000000000000004 (≠ 0.3). A tabela guarda a largura literal
-//     (é ela que a rampa usa) e o fim como documentação pinada.
-// Reduzir isso a um par {início, fim} com largura derivada mudaria o
-// último bit da rampa de uGain — que é exatamente o tipo de regressão
-// silenciosa que o md5 do ab-identidade pega na fase 2.
-export const LOD_SOL = {
-  /**
-   * A ENTREGA — desde a F3 a ÚNICA janela do Sol, e ela troca DUAS
-   * representações de PONTO, não mais um disco por um clarão.
-   *
-   * O QUE MORREU AQUI, e por quê. Até a F3 esta tabela tinha quatro
-   * janelas, e três delas existiam só porque o Sol da cena era 487.441×
-   * maior que o Sol: `disc` {0,16→0,34} dissolvia o disco INFLADO ao se
-   * afastar, `deep` {0,05→0,02} dissolvia o mesmo disco ao se
-   * APROXIMAR (uma fotosfera de 2.269 UA engolfaria o sistema solar), e
-   * `starGain`/`starCore` acendiam o clarão do `SunStar` na janela em
-   * que o disco saía. Com o Sol de raio FÍSICO nenhuma delas tem o que
-   * dissolver: quem decide se o Sol é desenhado como CORPO é a régua do
-   * palco (4 px de diâmetro aparente, `corpos.ts`), a mesma que já
-   * governa Terra e Lua, e ela não precisa de janela em parsec nenhuma.
-   *
-   * O QUE SOBROU é o único handoff que continua sendo real, e ele é
-   * entre dois PONTOS:
-   *   • ABAIXO de 0,02 pc quem desenha o Sol é o ponto fotométrico da
-   *     camada dos dez corpos (`planetas.ts`, vértice 0) — o Sol como
-   *     membro do sistema solar, com a fotometria da família;
-   *   • ACIMA de 0,05 pc quem desenha o Sol é o clarão do `SunStar`
-   *     (`heroStars.ts`) — o Sol como estrela do catálogo, com a
-   *     magnitude viva `4,83 + 5·log10(d/10)`;
-   *   • ENTRE os dois, esta janela faz os dois trocarem de lugar com
-   *     soma constante.
-   *
-   * POR QUE EXATAMENTE {0,02; 0,05} e não outros dois números: 0,05 pc é
-   * onde a camada dos dez corpos deixa de ser submetida
-   * (`planetas.ts`, `LIMIAR_SISTEMA_SOLAR_PC`), então o ganho do ponto
-   * TEM de chegar a zero exatamente ali — um centímetro além e a camada
-   * some com o Sol ainda aceso, que é o pop que esta janela existe para
-   * não deixar acontecer. O 0,02 é a outra ponta da mesma janela, e vem
-   * herdado da Onda 4 pelo mesmo motivo de sempre: é a maior largura que
-   * cabe sem tocar `ua500` (0,0024241 pc), a vista oficial mais próxima
-   * da borda de baixo — 8,3× de folga.
-   *
-   * O BURACO QUE ELA FECHA, medido antes de existir: com as janelas
-   * antigas, entre 0,05 e 0,14 pc NADA além do disco inventado desenhava
-   * o Sol — o ponto tinha ganho 0 acima de 0,05 e o clarão tinha ganho 0
-   * abaixo de 0,14. Tirar o disco sem juntar as duas janelas deixaria o
-   * Sol INVISÍVEL por ~1,4 s do trecho mais olhado do produto (a faixa
-   * cai em t≈20,2 s da hélice de 24 s, na abertura refilmada). Juntando,
-   * o Sol nunca deixa de ter um dono.
-   *
-   * `startPc`/`widthPc`/`endPc` na convenção de `starGain` (a que
-   * sobreviveu), e a escolha da FORMA tem consequência de bit: a rampa
-   * divide pela LARGURA LITERAL (0,03), não pela subtração das bordas —
-   * `0,05 − 0,02 = 0.030000000000000002` (≠ 0,03), enquanto
-   * `0,02 + 0,03 = 0,05` fecha exato. É a subtração que mente. O
-   * `deepPointGain` da Onda 4 dividia pela subtração; a fusão o passou
-   * para a largura literal, e isso muda o último bit NO MEIO da janela.
-   * Nenhuma vista oficial mora lá dentro (a mais próxima é `ua500`,
-   * 8,3× abaixo da borda), então a mudança é declarada e não cobrada.
-   */
-  entrega: { startPc: 0.02, widthPc: 0.03, endPc: 0.05 },
-} as const;
-
-/**
- * O FIM DA ENTREGA em pc — acima dele o Sol é estrela e nada mais. Tem
- * nome próprio porque é o número que amarra esta tabela à camada dos dez
- * corpos: ele TEM de ser igual a `LIMIAR_SISTEMA_SOLAR_PC`
- * (`escala.ts`), e `lodStellar.test.ts` cobra a igualdade.
- *
- * NÃO É O MESMO SÍMBOLO, e a separação é a cirurgia da F3. Até ela,
- * `DEEP_LIMIAR_PC` respondia duas perguntas com uma constante só — "onde
- * o disco do Sol morre?" (LOD) e "onde começa a escala do sistema
- * solar?" (plano de corte, velocidade do voo livre, camada dos dez).
- * Enquanto dividissem o símbolo, mexer no LOD do Sol mexeria nas outras
- * três de graça. Agora o de LOD é este, livre para andar; o de escala é
- * o de `escala.ts`, CONGELADO com âncora escrita.
- */
-export const LIMIAR_DA_ENTREGA_PC = LOD_SOL.entrega.endPc;
-
-/**
- * O GANHO DA ESTRELA — `uGain` E `uCore` do `SunStar`. Forma EXATA da
- * que vivia inline em `SunStar.update` antes da fiação da fase 2 da
- * Onda 3 (Math.min/Math.max no clamp, divisão pela largura LITERAL,
- * depois smoothstep cúbico ASCENDENTE); o que a F3 mudou foi a JANELA,
- * de {0,14; 0,16; 0,30} para a entrega, e a FUSÃO com `sunStarCore`.
- *
- * POR QUE O NÚCLEO FUNDIU COM O GANHO. `sunStarCore` era uma segunda
- * rampa, {0,30; 0,12; 0,42}, e a razão escrita dela era o disco: "o
- * núcleo pontual (+ espinhos) só acende DEPOIS que o disco saiu de cena
- * — sobrepostos, o núcleo apertado imprime um ponto branco no meio do
- * disco e a coisa lê como retículo de mira". Sem disco não há o que
- * sobrepor, e manter as duas rampas custaria uma faixa de 0,05 a 0,30 pc
- * em que o Sol seria um borrão SEM ponto no meio — um Sol que não lê
- * como estrela justamente onde ele já é uma. Uma rampa só, e o Sol vira
- * estrela inteira de uma vez: núcleo, espinhos e halo na mesma medida.
- *
- * O piso `Math.max(camDist, 1e-4)` NÃO migra para cá: na primeira linha
- * de `SunStar.update` ele é do `d` inteiro, compartilhado com a lei de
- * magnitude (`5·log10(d/10)`, que estoura em d=0) — é guarda do
- * chamador, não da rampa.
- */
-export function sunStarGain(dPc: number): number {
-  const k = Math.min(1, Math.max(0, (dPc - LOD_SOL.entrega.startPc) / LOD_SOL.entrega.widthPc));
-  return k * k * (3 - 2 * k);
-}
-
-/**
- * O COMPLEMENTO EXATO do ganho da estrela: o alpha do Sol-ponto da
- * camada dos dez corpos. 1 para d ≤ 0,02 (perto, o ponto é o Sol
- * inteiro), 0 para d ≥ 0,05 (longe, quem desenha o Sol é o clarão).
- *
- * ESCRITO COMO `1 −` E NÃO COMO UMA SEGUNDA RAMPA, e isso é a lição da
- * Onda 3 aplicada de novo (as três rampas que viviam redigitadas em dois
- * arquivos que não se importavam): duas rampas espelhadas são duas
- * chances de mover uma casa decimal de um lado só. Com esta forma a
- * complementaridade não é convenção, é aritmética — `sunStarGain(d) +
- * deepPointGain(d) === 1` para todo d finito, EXATO: nas bordas os
- * clamps devolvem os literais (0+1 e 1+0), e no meio, com `a` na cúbica
- * e `b = fl(1 − a)`, o erro de arredondamento de `b` é ≤ 2⁻⁵⁴ (porque
- * 1 − a ∈ (0,1)), e 1 ± 2⁻⁵⁴ arredonda de volta para 1 exato. Pinado por
- * varredura no teste.
- *
- * É essa soma constante que faz o crossfade não ter degrau de luz: o que
- * um lado larga o outro pega no mesmo quadro.
- */
-export function deepPointGain(dPc: number): number {
-  return 1 - sunStarGain(dPc);
-}
+// Aqui moravam `LOD_SOL.entrega` {0,02; 0,05} pc, `sunStarGain`,
+// `deepPointGain` e `LIMIAR_DA_ENTREGA_PC` — o crossfade ponto→clarão
+// que entregava o Sol ao `SunStar` a 0,05 pc. A repartição única
+// (`repartir`, estrela.ts) os substituiu: o Sol-ponto da camada dos dez
+// é o dono do Sol em toda distância de ponto, e quem o apaga de longe é
+// a magnitude. A varredura invertida (simbolosProibidos.test.ts) vigia
+// os nomes mortos.
 
 // ------------------------------------------------------------
 // 1b. Janelas da outra instância: as 16 heroes genéricas
@@ -388,238 +191,18 @@ export function stepRampToward(
 }
 
 // ------------------------------------------------------------
-// 3. Gate por ângulo sólido — contrato do doador, números da casa
+// 3. (O gate por ângulo sólido morreu no M1 — dormiu de 13/08 a 16/08
+//    e nunca teve consumidor de runtime.)
 // ------------------------------------------------------------
 //
-// ── A CONTA DO HANDOFF (decisão D6 do desenho da onda) ──────────────
-//
-// (a) EQUIVALÊNCIA JANELA-EM-PC ↔ LIMIAR-EM-RAD. Uma janela em pc só
-//     vale para UM raio: 0,16 pc é "perto" para o Sol e "colado" para
-//     uma supergigante. O critério portátil é o ângulo. Para um corpo
-//     de raio r visto a d, o raio angular é θ = r/d (aproximação de
-//     ângulo pequeno, arctan(x) ≈ x). O erro dessa aproximação onde o
-//     gate DECIDE algo (θ ≈ ENTER = 0,069 rad) é 0,16%; mesmo colado no
-//     Sol, na parede de fogo (θ ≈ 0,22 rad a 0,05 pc), é 1,6% — uma
-//     ordem de grandeza abaixo do cushion de 2× da histerese, então
-//     nunca move uma decisão. Logo janela-em-pc e limiar-em-rad são a
-//     MESMA régua vista por instâncias diferentes: d = r/θ.
-//
-// (b) A ÂNCORA DA CASA — E ELA É UMA LÁPIDE DESDE A F3. Quando esta
-//     conta foi escrita, o Sol tinha r = 0,011 pc (raio artístico) e o
-//     disco estava PLENO até DISC_FADE0 = 0,16 pc. Hoje o Sol tem raio
-//     físico e a janela do disco não existe mais: os dois números
-//     abaixo são MEMÓRIA de uma calibração cuja premissa morreu, e
-//     estão aqui para o ENTER continuar TESTÁVEL, não para ele
-//     continuar CERTO. Ver o aviso no topo do arquivo — quem acordar o
-//     gate re-deriva o ENTER de um corpo real antes de fiá-lo.
-//     Traduzindo a janela morta para ângulo:
-//         θ_handoff = 0,011 / 0,16 = 6,875e-2 rad  →  é o ENTER.
-//     Ou seja: "o disco é o assunto enquanto o corpo cobre mais de
-//     ~0,0687 rad de raio angular" — a mesma frase que a casa já
-//     escreveu em pc, agora dita numa unidade que serve a QUALQUER
-//     instância (o que a Onda 7 precisa e a janela em pc não dá).
-//
-// (c) O CUSHION 2× (contrato do doador, `stellarMeshGate.ts:51,62-67`).
-//     EXIT = ENTER/2 = 3,4375e-2 rad. Em distância isso é
-//     d_exit = r/EXIT = 2·DISC_FADE0 = 0,32 pc — exato, por
-//     construção. CONFERÊNCIA INDEPENDENTE (feita quando o disco ainda
-//     existia): a casa apagava o grupo do Sol quando `isDiscGroupVisible`
-//     falhava (`stellarBody.ts:480`), e resolvendo
-//     a rampa isso caía em d = 0,32487 pc. O cushion de 2× do doador
-//     reproduz, com 1,5% de diferença, o corte que a casa achou à mão
-//     — e a zona morta [0,16; 0,32] pc cabe INTEIRA dentro da janela
-//     do crossfade [0,16; 0,34] pc, então o gate nunca mata o disco
-//     antes de a rampa ter terminado de apagá-lo. Não é coincidência
-//     dosada: é o mesmo fenômeno físico visto por duas contas.
-//
-// (d) POR QUE ÂNGULO E NÃO BRILHO — A PSF DA CASA. `starPSF`
-//     (`shaders/common.ts:300-313`) é a imagem de uma fonte PONTUAL:
-//         sigma = sigmaPx · screenH/1080      (px; NÃO depende de d)
-//         E     = 10^(-0,4·(m - expoM0))      (a distância entra AQUI)
-//         size  = 2·(2,2·sigma + rSat), rSat = sigma·√(2·ln peak)
-//     O tamanho do sprite em px cresce com √(ln E) — LOGARÍTMICO no
-//     fluxo. O tamanho angular verdadeiro cresce com 1/d — LINEAR.
-//     Chegando perto, a segunda ultrapassa a primeira sem volta: o
-//     sprite deixa de ser honesto por CONSTRUÇÃO, não por calibração.
-//     Por isso o handoff se decide por ângulo sólido (o quanto o corpo
-//     é resolvido) e não por magnitude: um sprite com o dobro do
-//     brilho continua sendo um ponto.
-//
-// (e) O TETO DE `gl_PointSize` COMO PARÂMETRO — e o que a conta
-//     mostrou. Hoje não existe teto no código: `size` sai de `starPSF`
-//     sem min()/clamp (risco 7 do mapa da casa) e quem corta é o
-//     driver (`ALIASED_POINT_SIZE_RANGE`), não medido nesta onda. A
-//     conta o recebe como PARÂMETRO DE PROJETO: com teto C px, altura
-//     de tela H px e t = tan(fov/2), um sprite de ponto cobre no
-//     máximo
-//         θ_teto = C · t / H   (raio angular; ver maxSpriteSolidAngleRad)
-//     Com C = POINT_SIZE_CEILING_PX = 256 px, H = 1080 e o fov mais
-//     fechado do regime do Sol (26°, `cinematic/journey.ts:251,262`):
-//         θ_teto = 256 · tan(13°) / 1080 ≈ 5,47e-2 rad  <  ENTER.
-//     SÓ QUE O TETO DO DRIVER NEM CHEGA A MANDAR. Com os parâmetros
-//     REAIS da PSF da casa (uSigmaPx 0,85, uExpoM0 3,5, uScreenH 1080
-//     — os defaults de `StarFieldOptions` e as uniforms do material em
-//     `stars.ts`), `size` satura em ~21,9 px numa magnitude absurda de
-//     −60, e vale 9,4 px para o Sol na PRÓPRIA distância do handoff
-//     (m = −4,15 pela lei de magnitude de `SunStar.update`). No mesmo
-//     ponto, o corpo precisa de 321,6 px de diâmetro na tela: o sprite
-//     de ponto fica 34× curto. Três consequências:
-//       1. o handoff no ENTER é obrigação, não gosto — e quem obriga é
-//          a própria PSF (o crescimento é log), não o driver;
-//       2. o teto de 256 px tem ~12× de folga sobre o que a PSF entrega
-//          hoje; ele só vira restrição se sigma/expoM0 mudarem muito —
-//          por isso entra como PARÂMETRO declarado (piso conservador
-//          comum em GLES/ANGLE), com a MEDIÇÃO real de driver anotada
-//          como trabalho da Onda 7, e não como número medido;
-//       3. e é por isso que o clarão do Sol de longe é um QUAD
-//          (`PlaneGeometry(2, 2)` no construtor de `SunStar`) e não um
-//          ponto: ponto nenhum daria conta do teto de 40° da lei do
-//          glare (`Math.min(40, ...)` em `SunStar.update`). A camada
-//          que de fato emite `gl_PointSize` é o campo de catálogo (a
-//          última linha do `STAR_VERT`, `starShaders.ts`), e é lá que o
-//          teto vira restrição quando a Onda 7 der disco a outras
-//          estrelas.
-
-/**
- * A LÁPIDE DA JANELA DO DISCO: 0,16 pc era `LOD_SOL.disc.fade0Pc`, o
- * ponto até onde o disco INFLADO do Sol era o assunto do quadro. A
- * janela morreu na F3 com o disco; o número fica aqui, e só aqui,
- * porque o `DISC_ENTER_RAD` dormente é derivado dele. Nada novo pode se
- * ancorar neste valor.
- */
-const DISC_FADE0_ARTISTICO_PC = 0.16;
-
-/**
- * ENTER do gate, em radianos de RAIO ANGULAR. Derivado, não digitado:
- * ver (b) da conta acima. Os dois termos são LÁPIDES desde a F3 — o
- * raio artístico do Sol e a janela morta do disco —, e é de propósito
- * que ele continua saindo da RELAÇÃO entre eles em vez de virar um
- * 0,06875 digitado: assim o número que a Onda 7 vai ter de re-derivar
- * carrega, no próprio código, de onde veio e por que não vale mais.
- */
-export const DISC_ENTER_RAD = RAIO_ARTISTICO_DO_SOL_PC / DISC_FADE0_ARTISTICO_PC;
-
-/** EXIT do gate: metade do ENTER (cushion 2× do doador — (c) acima). */
-export const DISC_EXIT_RAD = DISC_ENTER_RAD / 2;
-
-/**
- * Raio angular aparente, em rad. Aproximação de ângulo pequeno
- * (θ = r/d), com as guardas defensivas do doador
- * (`stellarMeshGate.ts:101-114`): entrada não-finita, distância ≤ 0 ou
- * raio ≤ 0 devolvem 0 — nunca NaN, nunca negativo. Raio e distância na
- * MESMA unidade (na casa: pc).
- */
-export function computeSolidAngle(radiusPc: number, distancePc: number): number {
-  if (
-    !Number.isFinite(radiusPc) ||
-    !Number.isFinite(distancePc) ||
-    distancePc <= 0 ||
-    radiusPc <= 0
-  ) {
-    return 0;
-  }
-  return radiusPc / distancePc;
-}
-
-/**
- * A inversa: a que distância um corpo de raio `radiusPc` cobre
- * `solidAngleRad`. É o conversor que traduz limiar-em-rad de volta
- * para janela-em-pc por instância ((a) da conta). Mesmas guardas —
- * entrada inválida devolve 0 ("não definida"), nunca NaN/Infinity.
- */
-export function distanceForSolidAngle(radiusPc: number, solidAngleRad: number): number {
-  if (
-    !Number.isFinite(radiusPc) ||
-    !Number.isFinite(solidAngleRad) ||
-    solidAngleRad <= 0 ||
-    radiusPc <= 0
-  ) {
-    return 0;
-  }
-  return radiusPc / solidAngleRad;
-}
-
-/**
- * Histerese do handoff — CONTRATO verbatim do doador
- * (`stellarMeshGate.ts:117-139`), limiares da casa:
- * - partindo de INATIVO, entra só com `> ENTER` (estrito);
- * - partindo de ATIVO, fica ativo enquanto `>= EXIT` (só desativa
- *   abaixo);
- * - as fronteiras exatas são NO-OP deliberadamente (θ === ENTER não
- *   ativa; θ === EXIT não desativa) — evita bater-palma por igualdade
- *   de float;
- * - NaN PRESERVA o estado anterior, não flipa.
- * O cushion de 2× existe porque a câmera desta viagem não é estática:
- * o zoom inercial faz o valor tremer perto da fronteira, e sem folga o
- * disco nasceria/morreria a cada quadro.
- */
-export function shouldDiscBeActive(wasActive: boolean, solidAngleRad: number): boolean {
-  if (!Number.isFinite(solidAngleRad)) return wasActive;
-  if (wasActive) {
-    return solidAngleRad >= DISC_EXIT_RAD;
-  }
-  return solidAngleRad > DISC_ENTER_RAD;
-}
-
-// ------------------------------------------------------------
-// 3b. O teto de gl_PointSize — a conta de (e), em função
-// ------------------------------------------------------------
-
-/**
- * Teto de `gl_PointSize` em px: PARÂMETRO DE PROJETO, não medição.
- * 256 é piso conservador (drivers GLES/ANGLE reais reportam de 63 a
- * 8192 em `ALIASED_POINT_SIZE_RANGE`). Medir o teto real do driver e
- * decidir se o shader ganha um clamp é trabalho da Onda 7 — hoje o
- * código não tem teto nenhum (risco 7 do mapa da casa).
- */
-export const POINT_SIZE_CEILING_PX = 256;
-
-/**
- * Raio projetado em px de um corpo de raio angular `solidAngleRad`,
- * numa tela de `screenH` px com `tanHalfFov = tan(fov/2)`.
- * px = θ · screenH / (2·tan(fov/2)) — ângulo pequeno.
- */
-export function projectedRadiusPx(
-  solidAngleRad: number,
-  screenH: number,
-  tanHalfFov: number
-): number {
-  if (
-    !Number.isFinite(solidAngleRad) ||
-    !Number.isFinite(screenH) ||
-    !Number.isFinite(tanHalfFov) ||
-    solidAngleRad <= 0 ||
-    screenH <= 0 ||
-    tanHalfFov <= 0
-  ) {
-    return 0;
-  }
-  return (solidAngleRad * screenH) / (2 * tanHalfFov);
-}
-
-/**
- * O maior raio angular que um sprite de PONTO ainda consegue cobrir
- * dado o teto: inversa de `projectedRadiusPx` com diâmetro = teto.
- * Se ENTER > este valor, o sprite já está grampeado quando o disco
- * entra — ver (e) da conta.
- */
-export function maxSpriteSolidAngleRad(
-  ceilingPx: number,
-  screenH: number,
-  tanHalfFov: number
-): number {
-  if (
-    !Number.isFinite(ceilingPx) ||
-    !Number.isFinite(screenH) ||
-    !Number.isFinite(tanHalfFov) ||
-    ceilingPx <= 0 ||
-    screenH <= 0 ||
-    tanHalfFov <= 0
-  ) {
-    return 0;
-  }
-  return (ceilingPx * tanHalfFov) / screenH;
-}
+// Aqui moravam `DISC_ENTER_RAD`/`DISC_EXIT_RAD`/`shouldDiscBeActive`
+// (contrato do doador com âncora ARTÍSTICA morta — o ENTER derivava do
+// raio inflado que a F3 apagou) e os órfãos `computeSolidAngle`,
+// `distanceForSolidAngle`, `projectedRadiusPx`, `maxSpriteSolidAngleRad`
+// e `POINT_SIZE_CEILING_PX`. O eixo óptico da Lei (`wPonto` contra a
+// pegada do pixel, com histerese C¹) responde a pergunta que o gate
+// queria responder, sem booleano e sem número órfão. Quem precisar da
+// história: `git log -S shouldDiscBeActive`.
 
 // `psfPointSizePx` MORAVA AQUI e mudou de casa no F0 (LEI-DA-ESTRELA §4):
 // era um espelho com vida própria — a quarta cópia da mesma lei — e desde
@@ -708,16 +291,10 @@ export function isFocusBypassActive(focus: number): boolean {
   return focus > 0.5;
 }
 
-/**
- * Espelho da linha INTEIRA que a fase 3 escreveu em `STAR_VERT`:
- * `mix(clamp(1.0 - aFade, 0.0, 1.0), 1.0, step(0.5, aFocus))`.
- * O ternário é mirror EXATO do `mix` porque o `step` só devolve 0 ou 1 e
- * `mix(a,b,0) === a`, `mix(a,b,1) === b` sem arredondamento. Em
- * (0, 0) devolve 1: a prova de que os dois atributos nascem inertes.
- */
-export function spriteAttenuationWithFocus(fade: number, focus: number): number {
-  return isFocusBypassActive(focus) ? 1 : spriteAttenuation(fade);
-}
+// (`spriteAttenuationWithFocus` — o espelho do `mix` inteiro do
+// STAR_VERT — morreu no M1: órfão sem consumidor de runtime; os dois
+// espelhos de linha (`spriteAttenuation`, `isFocusBypassActive`)
+// bastam para os oráculos.)
 
 // ------------------------------------------------------------
 // 5. A POLÍTICA DE DOMINÂNCIA — o fim da dupla-luz hero↔catálogo
@@ -811,56 +388,10 @@ export function heroSizePx(
   return (sizePc * zoom * screenH) / (camDistPc * tanHalfFov);
 }
 
-/**
- * A VOLTA de `heroSizePx`: o `uSize` em pc que faz o billboard medir
- * `diametroPx` de aresta na tela DESTE quadro. Mesma cadeia, resolvida
- * para o outro lado —
- *     sizePc = px · camDistPc · tanHalfFov / (zoom · screenH),
- * com o MESMO `zoom = min(1, tanHalfFov/tan(29°))` do VERT (e por isso a
- * lente continua se cancelando enquanto for igual ou mais fechada que a
- * de referência: quem pede px fixo recebe px fixo).
- *
- * POR QUE ELA EXISTE. Até 15/08 o único jeito de dizer "este clarão tem
- * de medir N pixels" era escolher um ÂNGULO e torcer — foi assim que
- * nasceu a lei de autor do `SunStar` (`1,75°·10^(−0,3m)`, com teto de
- * 40° de céu), e o teto virou o defeito do item 42: entre 4,1 e 27,7 mil
- * UA o ângulo fica GRAMPEADO em 40°, ou seja o clarão ocupa exatamente a
- * mesma fração da tela enquanto o Sol encolhe 6,7×. Medido na tela do
- * gate (1713 px): 2.593 px de aresta, o MESMO número a 10.800 e a 15.800
- * UA. Com esta inversa o tamanho passa a ser pedido em PIXELS, e quem os
- * fornece é a lei do campo estelar (`psfPointSizePx`) — a mesma que
- * desenha o ponto que o clarão substitui.
- *
- * IDA E VOLTA: `heroSizePx(heroSizePcDePx(px, …), …) === px` a menos de
- * ~2 ULP (metade dos casos sai bit a bit; a outra metade erra 5e-16
- * relativos, que é o preço de duas multiplicações e duas divisões em
- * ordens diferentes). O teste cobra a igualdade RELATIVA, não o bit —
- * afirmar bit aqui seria afirmar o que a aritmética não dá.
- *
- * GUARDAS iguais às da ida: entrada não-finita ou não-positiva devolve 0,
- * que no consumidor é quad degenerado = "não desenha".
- */
-export function heroSizePcDePx(
-  diametroPx: number,
-  camDistPc: number,
-  screenH: number,
-  tanHalfFov: number
-): number {
-  if (
-    !Number.isFinite(diametroPx) ||
-    !Number.isFinite(camDistPc) ||
-    !Number.isFinite(screenH) ||
-    !Number.isFinite(tanHalfFov) ||
-    diametroPx <= 0 ||
-    camDistPc <= 0 ||
-    screenH <= 0 ||
-    tanHalfFov <= 0
-  ) {
-    return 0;
-  }
-  const zoom = Math.min(1, tanHalfFov / HERO_ZOOM_TAN_REF);
-  return (diametroPx * camDistPc * tanHalfFov) / (zoom * screenH);
-}
+// (`heroSizePcDePx` — a inversa de `heroSizePx`, nascida em 15/08 para
+// o `SunStar` pedir o tamanho em pixels — morreu no M1 junto com o
+// único consumidor. O clarão por pixel derivado do fluxo é `claraoPx`
+// da Lei, M2.)
 
 /**
  * Magnitude aparente que o vertex do catálogo recalcula da posição da
@@ -931,73 +462,11 @@ export function heroDominanceFade(ratio: number): number {
   return glslSmoothstep(HERO_DOMINANCE.enterRatio, HERO_DOMINANCE.fullRatio, ratio);
 }
 
-/**
- * A MEIA-LARGURA da rampa do filtro solar, em LOG de razão: `ln 2,5`.
- * Não é número novo — é o MESMO `HERO_DOMINANCE.fullRatio` lido em outra
- * unidade, e é o que faz a borda de baixo valer `1/2,5 = 0,4` sem que
- * ninguém digite 0,4 em lugar nenhum.
- */
-const MEIA_LARGURA_LOG_DO_FILTRO = Math.log(HERO_DOMINANCE.fullRatio);
-
-/**
- * O ALVO DO FILTRO SOLAR — a MESMA pergunta de `heroDominanceFade` (o
- * disco domina o próprio clarão?), com a rampa esticada SIMETRICAMENTE
- * EM LOG ao redor do cruzamento de dominância: de `1/2,5 = 0,4` a `2,5`,
- * em vez de `1 → 2,5`. `1` ⇒ radiância verdadeira; `0` ⇒ a paleta H-alfa
- * autorada (o override da instância nº 1, `world/stellarBody.ts` §F2).
- *
- * POR QUE ESTICAR. A troca vale **26,09 magnitudes** — é a maior
- * transição de luz da casa —, e a rampa de `1 → 2,5` cobre só 2,57× em
- * distância. O voo de ida e volta de 15/08
- * (`scripts/visual/voo-ida-e-volta.mjs`, 34 degraus geométricos de
- * fator 1,468) mediu a consequência: entre DOIS degraus vizinhos,
- * 0,232 → 0,341 UA, o filtro pulava de 0,02 para 0,62 — 60% da troca num
- * degrau só, e a foto `capturas/VOO-IDA.png` mostra o laranja aparecendo
- * de uma vez. Com a rampa nova o mesmo par de degraus anda de 0,003 para
- * 0,139, e o MAIOR salto por degrau da travessia inteira cai de 0,60
- * para 0,30: a largura em log DOBRA, o salto por degrau cai pela metade.
- *
- * POR QUE SIMÉTRICA EM LOG e não "mais um pedaço para baixo". A razão é
- * um QUOCIENTE de dois tamanhos na tela — a régua natural dela é
- * multiplicativa, e `0,4` é `2,5` do outro lado do cruzamento, não um
- * segundo número. Como o disco vai com `1/d` e o halo cresce só com
- * `√log`, simetria em log de razão sai quase exatamente simétrica em log
- * de DISTÂNCIA: medido na tela do gate, a rampa vai de 1,446 UA a
- * 0,219 UA com o cruzamento em 0,562 UA — fator 2,57 de cada lado.
- * Esticar "para baixo" com um número livre custaria uma constante nova e
- * uma rampa torta; esticar em log não custa nenhuma das duas.
- *
- * POR QUE NÃO É A CURVA DA CESSÃO, embora leia a mesma razão. A cessão
- * do Sol-ponto (`heroDominanceFade`) arbitra DUPLA-LUZ: lá a borda de
- * baixo é `r = 1` por DEFINIÇÃO (é onde o billboard passa a ser maior que
- * o ponto) e a de cima é DERIVADA da prova de continuidade da Onda 3
- * (`hi ≥ 2,5`) — mexer nelas reabre o passo para trás na luz. O filtro
- * não arbitra dupla-luz nenhuma: ele troca a LEI DE EMISSÃO de uma
- * superfície só, e a única coisa que se exige dele é não ter degrau
- * visível. Duas exigências diferentes, duas rampas — e é por isso que
- * esta função existe em vez de um `1 −` em cima da outra.
- *
- * O QUE ELA CUSTA, declarado: a rampa agora ALCANÇA 1 UA (g = 0,901 lá,
- * ~2,6 das 26,09 magnitudes), então a vista `solreal1ua` muda de
- * propósito. Era esse o pedido — o defeito era a brusquidão, e o preço
- * de consertá-la é o degrau anterior deixar de ser branco puro.
- *
- * PROPRIEDADES (todas pinadas em teste):
- *  - razão ≤ 0,4 ⇒ 1 EXATO (o clamp do smoothstep devolve o literal);
- *  - razão ≥ 2,5 ⇒ 0 EXATO (`(L+L)/(2L)` é 1 sem arredondamento);
- *  - razão = 1 ⇒ 0,5 EXATO — o cruzamento é o MEIO da rampa, que é o que
- *    "simétrica" quer dizer (`L/(2L)` é 0,5 exato);
- *  - monotônica não-crescente e C¹ (smoothstep, e `log` é C¹ em (0,∞));
- *  - razão não-finita ou ≤ 0 ⇒ 1: halo inexistente não filtra nada, o
- *    mesmo precedente de `cessaoAlvo`.
- */
-export function filtroSolarAlvo(razao: number): number {
-  if (!Number.isFinite(razao) || razao <= 0) return 1;
-  return (
-    1 -
-    glslSmoothstep(-MEIA_LARGURA_LOG_DO_FILTRO, MEIA_LARGURA_LOG_DO_FILTRO, Math.log(razao))
-  );
-}
+// (`filtroSolarAlvo` e `MEIA_LARGURA_LOG_DO_FILTRO` morreram no M1: o
+// filtro solar é `overrideExpoente` da repartição única — mesma
+// `discoPx` do eixo óptico, largura própria (§5.7 da Lei). A rampa
+// log-simétrica sobre disco/halo era a âncora circular que a Lei §8.4
+// proíbe: media o disco contra o halo do próprio ponto.)
 
 /**
  * A CHAVE DA CESSÃO. `true` desde a fase 4a da Onda 3 — a dupla-luz

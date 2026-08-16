@@ -209,10 +209,9 @@ em menos de 24 h e o documento sofria a doença que denunciava.
 | compressão na emissão | `BETA_EMISSAO`, `lerBetaDaEmissao` (`luzDaCasa.ts`) | β = 300 por fonte | sobe para L1 |
 | fotosfera na unidade | `FOTOSFERA_VERDADEIRA`, `radianciaDeTela` (`luzDaCasa.ts`), `cirurgiaDaFotosfera` (`stellarBody.ts`) | a malha emite a radiância verdadeira | sobe para L1 |
 | ombro no passa-alta | `BETA_DO_BLOOM`, `OMBRO_DO_BLOOM`, `domarOBloom` (`post.ts`) | 0,45 / 40 | sobe para L1 (instrumento) |
-| cessão pelo gate | `CESSAO_PELO_GATE_MULT`, `cessaoPeloGate` (`corpos/terra.ts`) | mult 1, sobre `LIMIAR_DO_GATE_PX` | **morre no M1** (vira `wResolvido`) |
-| filtro solar | `filtroSolarAlvo` (`lodStellar.ts`), `uFiltroSolar`/`escreverFiltroSolar` (`stellarBody.ts`) | 26,09 mag em stops | **vira `overrideExpoente`** (M1) |
+| a repartição do Sol | `repartir` (`estrela.ts`) → `aCede`/`uFiltroSolar`/`uWorldFade`, fiada pelo director | **M1 FECHADO 16/08**: cessão = `wResolvido`, filtro = `overrideExpoente`, malha entra do zero com o peso da lei | é a lei — fica |
 | segunda coluna do cadastro | `fatorDeBrilho` em `EscalaDeclarada` (`escala.ts`) | declara mentira de BRILHO | fica — e passa a declarar o valor VIVO |
-| as cinco portas | `?bemis= ?bbloom= ?bombro= ?bfoto= ?bcede=`, registradas em `selo.ts` | caminho de volta | **cada uma morre no commit que migra o que ela protege** |
+| as portas | `?bemis= ?bbloom= ?bombro=` registradas em `selo.ts` (`?bfoto` e `?bcede` MORRERAM no M1, regra iv) | caminho de volta | **cada uma morre no commit que migra o que ela protege** |
 
 **Provas vivas e seus limites (re-medidas em 16/08, juízes do §5.10).** O
 invariante disco↔ponto está verde (a dívida F2 foi paga: `fatorDeBrilho: 1` no
@@ -245,14 +244,12 @@ endereço só — `picoDaPsf`/`psfPointSizePx` em `luzDaCasa.ts`,
 constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
 `simbolosProibidos.test.ts`.)*
 
-- **Dois pontos-zero incompatíveis:** `M_V☉ = 4,85` no campo, `4,83` no `SunStar`,
-  ambos declarados em `escala.ts`. L1 tem **UM**. A escolha é gate com foto para o
-  dono, agendado **antes do M3** — é ele que move 328.749 pontos.
-- **Quatro rampas para uma transição:** `cessaoAlvo` (smoothstep 1→2,5 sobre
-  `disco/halo`), `cessaoPeloGate` (a mesma smoothstep sobre `disco/(4·mult)`),
-  `filtroSolarAlvo` (smoothstep simétrico em log, ±ln 2,5) e o `Math.max` das duas
-  primeiras em `director.ts` — que é a quarta, e **um `max` de duas rampas C¹ tem
-  QUINA** na troca de dono.
+- **Dois pontos-zero incompatíveis:** `M_V☉ = 4,85` no campo, `4,83` na lei
+  (`PONTO_ZERO_DA_LEI`), ambos declarados em `escala.ts`. L1 tem **UM**. A escolha
+  é gate com foto para o dono, agendado **antes do M3** — é ele que move 328.749
+  pontos.
+- *(As quatro rampas da transição do Sol — `cessaoAlvo` do Sol, `cessaoPeloGate`,
+  `filtroSolarAlvo` e o `Math.max` com quina — morreram no M1: a repartição é uma.)*
 - **A lei de tela de três regimes tem DUAS cópias:** `galaxyShaders.ts`
   (`clamp(px, 0.7, 20)`, `shrink = min(1, 9/px²)`, `subPix = px²/0.49`) e
   `starForges.ts` (`clamp(px, 0.85, 26)`, o mesmo `shrink`, `subPix = px²/0.7225`).
@@ -409,27 +406,18 @@ constantes. O corpo negro mudou de casa para `luzDaCasa.ts` no mesmo gesto do
 F0, byte-idêntico. Cadastro em código com varredura reproduzível. Sem
 consumidor: zero pixel por construção.)*
 
-### M1 — A instância nº 1 (Sol-ponto + SunStar + corpo), num commit só
-**A maior demolição por commit da casa.** É onde moram os itens 3, 4, 5, 40 e 42.
-**Apaga:** `cessaoAlvo` (uso do Sol), `cessaoPeloGate` + `CESSAO_PELO_GATE_MULT`,
-`filtroSolarAlvo` + `MEIA_LARGURA_LOG_DO_FILTRO`, `sunStarGain`/`deepPointGain`,
-`LOD_SOL.entrega`, a classe `SunStar`, `DISC_ENTER_RAD`/`DISC_EXIT_RAD`/
-`shouldDiscBeActive` e os órfãos do mesmo bloco (`computeSolidAngle`,
-`distanceForSolidAngle`, `LIMIAR_DA_ENTREGA_PC`, `POINT_SIZE_CEILING_PX`,
-`spriteAttenuationWithFocus`, `heroCatalogFade`), `claraoDoAtlas` + `PISO_DO_CLARAO`
-+ `REFERENCIA_UA`, as portas `?bcede` e `?bfoto`, e o oráculo `ponto + clarão === 1`.
-**Atenção:** `heroDominanceFade`/`HERO_DOMINANCE` **muda de dono**, não sai — a onda
-de 15/08 os transformou em viga do filtro solar e da cessão. A rampa `g(r)` sobe
-para `estrela.ts` **antes** de qualquer demolição.
-**Entra também:** o corpo do Sol passa a declarar os três campos `S`/`C`/`E` (§5.18)
-e a consumir a pegada anisotrópica; a esfera analítica cobre a faixa entre o ponto e
-a malha, e a malha só entra por requisito geométrico.
-**Régua:** `voo-ida-e-volta.mjs` + `luz-do-quadro.mjs`. **Delta a declarar antes —
-e é ESTÁGIO INTERMEDIÁRIO, não o aceite final:** o degrau 0,232 → 0,341 UA cai de
-9,2× para ≤ 1,5×; a escada passa de REPROVA 10/10 para no mínimo 7/10. O aceite AAA
-(perfil radial, croma, limbo, altas frequências, derivada no crossfade) é o §5.19 e
-só fecha depois do M2 — declarar M1 como pronto pelo número acima é o mesmo erro que
-a v1 cometeu com o invariante.
+*(M1 — a instância nº 1 num commit só — FECHOU em 16/08, com os números na
+seção "O ESTADO" e as divergências da lista original DECLARADAS: (a)
+`heroCatalogFade` estava listado como órfão e NÃO era — `fadesDoQuadro` o
+consome por quadro para as 16; ele morre no M2 com a política inteira, e a
+lápide no cabeçalho de `lodStellar.ts` registra a divergência; (b) a esfera
+analítica NÃO nasceu — para o Sol a malha já cobre a faixa toda por um
+corpo só, e fingir um regime sem drawable seria pior que declarar: a dívida
+está nomeada no cadastro e ela nasce no M3/E3, onde é obrigatória; (c) o
+item 5 — a fase do ciclo pela data simulada no Atlas — NÃO foi tocado: o
+pino `ATLAS_JOURNEY_T` existe pela reprodutibilidade das vistas, e trocá-lo
+pela data exige seek BIDIRECIONAL do ciclo com re-bake e fotos para o dono;
+segue nas pendências como obra própria.)*
 
 ### M2 — As 16 heroes = o antigo L3
 **Entra:** o clarão de asas, uma camada só, sempre acesa, para as **N fontes mais
@@ -438,6 +426,8 @@ governado pela lei** (número de mips e pesos derivados da asa escolhida). Sem o
 dois termos, o item 42 fica consertado na lei e quebrado na tela.
 **Apaga:** `size = 0,08·10^(−0,3m)`, `ESPELHO_COEF_CLARAO_PC` + o exemplar Sirius,
 `HERO_DOMINANCE`/`heroDominanceFade`/`heroDominanceRatio`/`writeHeroFades`/
+`heroCatalogFade`/`fadesDoQuadro`/`LOD_HERO` (herdados do M1: têm consumidor de
+runtime até a política morrer inteira),
 `DOMINANCE_DEFAULT_ON`/`aFade`, a identidade "as 16", `uExposicao` e a espinha de
 exposição inteira, o clamp `sat`, e — com F0 feito — **`core/pupila.ts` INTEIRO**
 (329 l) + `pupila.test.ts` (230 l) + `?pupila`/`?dom`/`?nodom`. O que sobrevive da
@@ -591,10 +581,16 @@ passaram, porque o juiz parou de exigir o halo constante que era a doença. O vo
 compara `luzMedia` (tolerância 0,02 declarada) e **a assimetria de 2,94× de 15/08
 não se reproduziu** no harness assentado (0,0596 × 0,0598 a 0,05 UA; maior delta
 vivo 0,0019) — era medição com o forno cru, não óptica. A margem da banda está
-ESCRITA no JSON: 0,1268 UA hoje, não mais o fio de 0,0035. O que fica de dívida
-aqui: o voo continua sem chamar `julgarEscada` — a costura 0,232→0,341 UA
-(24→125 px, 5,2× hoje) é julgada pelo aceite declarado do M1, não por juiz
-automático.
+ESCRITA no JSON: 0,1268 UA hoje, não mais o fio de 0,0035. **A costura foi
+julgada e PAGA no M1 (16/08):** 0,232→0,341 UA caiu de 30→130 px para
+30→20 px — 1,5×, na direção física. O que o voo do M1 mediu de quebra, com
+dono nomeado: a janela limpa nova (0,34–0,94 UA, borrão 10–20 px) termina
+onde o ponto reentra (0,734→1,08 UA, 10→178 px), porque cessão PRÉ-curva é
+impotente em fonte saturada — o mesmo fato medido em 15/08 que autorizou o
+mult 1. O halo de ~178 px ali é idêntico ao de antes do M1 (181 px a 1 UA
+nos dois estados); ele encolhe no M2, pela asa — ou antes, se o §5.1 mover
+o peso do ponto para PÓS-curva, que é a direção que o invariante já manda.
+O que fica de dívida: o voo continua sem chamar `julgarEscada`.
 
 **5.11 O sprite descarta 8,9% do fluxo das estrelas fracas.** Com `rSat = 0` o raio
 é 2,2σ e a fração contida do gaussiano 2D é `1 − exp(−2,2²/2) = 0,911`. As fracas
@@ -729,20 +725,24 @@ linhas `toContain` que nenhum censo listava — reescrito como conformidade
 numérica contra a lei importada. Lição registrada: censo de espelho feito de
 memória perde exatamente o espelho que mais importa, o do juiz.
 
+**Aconteceu no M1 (16/08), como previsto e com dois desvios registrados:**
+`lodStellar.test.ts` perdeu o oráculo `ponto + clarão === 1` e 843 linhas
+(2.140→1.297); `planetas.test.ts` perdeu o teorema de complementaridade e o
+`uGain` ponto a ponto; `corpos.test.ts` trocou as rampas velhas por oráculos
+sobre `repartir` (o gate do palco em si SOBREVIVEU — arma 3,60/desarma 7,19
+continua, agora invisível em pixel porque o peso da lei nasce 0 no armar);
+`cameraRig.test.ts`, `selo.test.ts`, `stellarBody.test.ts` e
+`luzDaCasa.test.ts` reescritos. Desvios: `luz.test.ts` NÃO quebrou (a
+previsão era M1/M4 — fica para o M4), e a regra do teste do cadastro mudou
+de "arquivo a arquivo" para "entrada a entrada" porque `planetas.ts` desenha
+duas representações com destinos diferentes.
+
 **Vai acontecer:**
 - `escala.test.ts` casa a regex `const size = ([\d.]+) \* lum;` contra o fonte de
   `heroStars.ts` — **M2** apaga a linha.
 - `pupila.test.ts` — o literal de `GLSL_STAR_PSF` já saiu (F0); **M2** apaga o
   arquivo inteiro.
-- `lodStellar.test.ts` cobra `ponto + clarão === 1` com `Object.is` em ~22.000
-  distâncias e exige o literal `return 1 - sunStarGain(dPc);` — **M1** mata os dois.
-  São **332 citações** de símbolos condenados no arquivo, de 2.139 linhas.
-- `planetas.test.ts` (23 refs: o teorema de complementaridade e o `uGain` ponto a
-  ponto), `corpos.test.ts` (o Sol arma em 3,60 UA e desarma em 7,19 UA),
-  `cameraRig.test.ts` (3 refs), `luz.test.ts` (`irradianciaRelativa(ANCORA_UA)===1`),
-  `selo.test.ts` (as portas) — **M1/M4**.
-- `stellarBody.test.ts` e o bloco `filtroSolarAlvo` de `lodStellar.ts` — oráculos
-  **novos**, nascidos em 15/08, que M1 quebra.
+- `luz.test.ts` (`irradianciaRelativa(ANCORA_UA)===1`) — **M4**.
 - `stellarPhysics.test.ts` pina ~60 valores, vários não físicos — **M3**.
 - `core/engine.test.ts` diz que a vista `sol` está a 0,063 pc contra 1,2955e-7 pc
   vivo (487.000×): literal envelhecido, **item 41**, verde só porque a asserção

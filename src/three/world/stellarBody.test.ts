@@ -21,7 +21,6 @@ import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA, RAIO_SOL_PC } from '../e
 import {
   RADIANCIA_DA_FOTOSFERA,
   comprimir,
-  lerPortaFotosfera,
   radianciaDeTela,
 } from '../luzDaCasa';
 import {
@@ -107,14 +106,16 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     expect(SOL_PARAMS.knobs.spots * 0.5).toBe(0.5);
   });
 
-  it('teffK e convective nascem RESERVADOS: declarados, sem consumidor', () => {
+  it('teffK ganhou o primeiro consumidor no M1; convective segue RESERVADO', () => {
     expect(SOL_PARAMS.teffK).toBe(5772);
     expect(SOL_PARAMS.convective).toBe(true);
-    // a prova de que são reservados: o módulo não os lê em lugar nenhum
-    // além da própria tabela (a lei de cor por classe é da Onda 7, e o
-    // núcleo do doador não tem caminho radiativo)
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    expect(src.match(/params\.teffK|p\.teffK/g)).toBeNull();
+    // o consumidor é o ESTADO DA LEI: a instância declara quem ela é e
+    // `repartir` deriva radiância e cor da temperatura — exatamente uma
+    // leitura, dentro de `estadoDaLei`
+    expect(src.match(/p\.teffK/g)).toHaveLength(1);
+    // convective continua declarado e não lido (o núcleo do doador não
+    // tem caminho radiativo — `sol/granulation.js` roda incondicional)
     expect(src.match(/params\.convective|p\.convective/g)).toBeNull();
   });
 });
@@ -347,19 +348,15 @@ describe('F2 — a fotosfera na unidade, por cirurgia de texto', () => {
     expect(() => cirurgiaDaFotosfera(uma, FATOR, 300)).toThrow(/cirurgiaDaFotosfera/);
   });
 
-  it('O CAMINHO DE VOLTA: com `?bfoto=0` (ou `?bemis=0`) o material não é tocado', () => {
-    // a porta virou PADRÃO em 15/08 — ausente é a radiância verdadeira — e
-    // `?bfoto=0` é o lado A do A/B, o único que devolve o vendorizado intacto
-    expect(lerPortaFotosfera('')).toBe(true);
-    expect(lerPortaFotosfera('?bfoto=0')).toBe(false);
-
+  it('LEI SEM PORTA (M1): a cirurgia roda com a curva, e SÓ a curva a guarda', () => {
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    // e a chamada é guardada pelas duas condições, na mesma linha: com
+    // a porta `?bfoto=` morreu no M1 (regra iv do §4 da LEI-DA-ESTRELA):
+    // nenhum ramo de runtime devolve a paleta crua — o lado A vive nas
+    // capturas versionadas. O que FICA é a trava do half-float: com
     // `?bemis=0` a curva é identidade, e identidade sobre 2,7e10 é o
-    // buffer half-float saturado — a fotosfera "honesta" entregando o quadro
-    // branco que a onda existe para consertar. Quem pede a volta do joelho
-    // leva junto a volta da paleta autorada.
-    expect(src).toContain('if (lerPortaFotosfera(window.location.search) && BETA_DA_EMISSAO > 0)');
+    // buffer saturado — o quadro branco que a onda existe para consertar.
+    expect(src).not.toMatch(/lerPortaFotosfera/);
+    expect(src).toContain('if (BETA_DA_EMISSAO > 0) {');
     // a cirurgia é CHAMADA uma vez só no arquivo (a outra ocorrência do
     // nome é a definição), e a chamada é a que escreve no material
     expect(src.match(/= cirurgiaDaFotosfera\(/g)).toHaveLength(1);
@@ -367,10 +364,8 @@ describe('F2 — a fotosfera na unidade, por cirurgia de texto', () => {
     // e o β é o DOS PONTOS, importado, não uma segunda leitura da URL
     expect(src).toContain("import { BETA_DA_EMISSAO } from '../shaders/starShaders';");
     expect(src).not.toMatch(/get\(\s*'bemis'\s*\)/);
-    // o uniform do filtro nasce DENTRO do mesmo ramo das duas portas, no
-    // objeto de uniforms do material (o que `sun.js` deu ao
-    // ShaderMaterial) — e com a porta fechada ele nem existe, que é o que
-    // faz `escreverFiltroSolar` ser no-op no produto
+    // o uniform do filtro nasce DENTRO do mesmo ramo da curva, no objeto
+    // de uniforms do material (o que `sun.js` deu ao ShaderMaterial)
     expect(src).toContain('ctx.sunUniforms.uFiltroSolar = { value: 1 };');
     expect(src).toContain('this.filtroSolarLigado = true;');
   });

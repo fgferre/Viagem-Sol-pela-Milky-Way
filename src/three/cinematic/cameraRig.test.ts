@@ -29,7 +29,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_SOL_PC } from '../escala';
-import { deepPointGain, sunStarGain } from '../world/lodStellar';
 import { diametroAparentePx } from '../world/corpos/corpos';
 import { farPlanePc, nearPlanePc } from '../core/engine';
 
@@ -376,22 +375,20 @@ describe('o juiz da trajetória — o Sol encolhe sem saltar', () => {
     }
   });
 
-  it('e o filme mostra a escada inteira: corpo → ponto → estrela, sem buraco', () => {
-    // os três degraus, com o instante de cada troca medido:
+  it('e o filme mostra a escada inteira: corpo → ponto, sem buraco', () => {
+    // os degraus, com o instante de cada troca medido:
     //  · CORPO enquanto o disco tem ≥ 4 px (a régua do palco);
-    //  · PONTO fotométrico da camada dos dez até 0,02 pc;
-    //  · CLARÃO do SunStar a partir de 0,05 pc.
+    //  · PONTO fotométrico da camada dos dez dali em diante — desde o M1
+    //    da Lei da Estrela ele é o dono do Sol em TODA distância de
+    //    ponto (a entrega ao SunStar morreu), então "o Sol tem dono" é
+    //    por construção: aCede = wResolvido zera fora do corpo resolvido
+    //    e os pesos da repartição somam 1 (pinado em estrela.test.ts).
     const tGate = QUADROS.find((q) => q.px < 4)?.t ?? -1;
     expect(tGate - 6).toBeCloseTo(8.583, 2); // 8,58 s de hélice
     expect(QUADROS[0].px / H_PX).toBeCloseTo(0.747, 3); // 74,7% da altura
     // a órbita da Terra é cruzada em t≈5,68 s de hélice
     const tUA = QUADROS.find((q) => q.dPc >= 1 / UA_POR_PC)?.t ?? -1;
     expect(tUA - 6).toBeCloseTo(5.68, 1);
-    // e em TODO quadro o Sol tem dono: ou é corpo, ou a soma ponto+clarão
-    // vale 1 (e ela vale 1 sempre, por complementaridade exata)
-    for (const q of QUADROS) {
-      expect(Object.is(deepPointGain(q.dPc) + sunStarGain(q.dPc), 1), `t=${q.t}`).toBe(true);
-    }
   });
 
   it('a lente segue a curva de sempre: 26° no início, 56° no fim', () => {

@@ -22,15 +22,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeStars } from '../config';
 import type { StarArrays, StarsMeta } from '../config';
-import {
-  LIMIAR_SISTEMA_SOLAR_PC,
-  RAIO_ARTISTICO_DO_SOL_PC,
-  RAIO_SOL_PC,
-} from '../escala';
+import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import { HeroStars } from './heroStars';
 import {
-  DISC_ENTER_RAD,
-  DISC_EXIT_RAD,
   DOMINANCE_DEFAULT_ON,
   FADE_NEUTRAL,
   FOCUS_OFF,
@@ -38,63 +32,49 @@ import {
   HERO_DOMINANCE,
   HERO_MATCH_REL_TOL,
   HERO_ZOOM_TAN_REF,
-  LIMIAR_DA_ENTREGA_PC,
   LOD_HERO,
-  LOD_SOL,
-  POINT_SIZE_CEILING_PX,
   RAMP_DURATION_MS,
   catalogApparentMag,
   clearFocus,
-  computeSolidAngle,
-  deepPointGain,
-  distanceForSolidAngle,
   fadesDoQuadro,
-  filtroSolarAlvo,
   heroCatalogFade,
   heroDominanceFade,
   heroDominanceRatio,
   heroFarFade,
   heroNearFade,
   heroPresence,
-  heroSizePcDePx,
   heroSizePx,
   isFocusBypassActive,
   matchHeroesToCatalog,
-  maxSpriteSolidAngleRad,
   needsAttributeWrite,
-  projectedRadiusPx,
   resetRamp,
-  shouldDiscBeActive,
   spriteAttenuation,
-  spriteAttenuationWithFocus,
   stepRampToward,
-  sunStarGain,
 } from './lodStellar';
 import { psfPointSizePx } from '../luzDaCasa';
 
 const DEG = Math.PI / 180;
 
-/**
- * AS DUAS LÁPIDES que ancoram o gate por ângulo sólido, que continua
- * DORMENTE depois da F3 (ver o cabeçalho de `lodStellar.ts`). O raio
- * artístico do Sol e a borda de baixo da janela morta do disco eram, até
- * 2026-08-13, `R_SOL_ART` e `DISC_FADE0_ART` — números vivos
- * de runtime. Hoje o Sol tem raio físico e a janela do disco não existe;
- * eles ficam aqui e no módulo para o ENTER continuar TESTÁVEL, não para
- * continuar CERTO. Quem acordar o gate na Onda 7 re-deriva o limiar de um
- * corpo real, e estes dois somem junto com os casos abaixo.
- */
-const R_SOL_ART = RAIO_ARTISTICO_DO_SOL_PC;
-const DISC_FADE0_ART = 0.16;
-const DISC_FADE1_ART = 0.34;
-
-/** Varredura fina do regime do Sol: 0,01 → 5 pc, 1 mpc de passo. */
-const VARREDURA: number[] = [];
-for (let i = 0; i <= 4990; i++) VARREDURA.push(0.01 + i * 0.001);
-
 // ------------------------------------------------------------
 // 1. Integrador da rampa — 11 casos portados verbatim do doador
 // ------------------------------------------------------------
+// ============================================================
+// O QUE MORREU AQUI NO M1 (LEI-DA-ESTRELA §4) — e não volta:
+//  · a entrega {0,02; 0,05} pc (LOD_SOL, sunStarGain, deepPointGain) e o
+//    oráculo `ponto + clarão === 1` em ~22.000 distâncias — a soma 1 é
+//    tautológica na repartição (estrela.test.ts), não teorema de janela;
+//  · o gate por ângulo sólido (DISC_ENTER/EXIT, shouldDiscBeActive,
+//    computeSolidAngle, distanceForSolidAngle, projectedRadiusPx,
+//    maxSpriteSolidAngleRad, POINT_SIZE_CEILING_PX) — dormiu sem
+//    consumidor desde 13/08 e a âncora dele era o raio artístico morto;
+//  · filtroSolarAlvo e a rampa log-simétrica sobre disco/halo — o filtro
+//    é overrideExpoente da lei (mesma discoPx, largura própria, §5.7);
+//  · a costura de tamanho do SunStar (heroSizePcDePx) — morreu com a
+//    classe; o clarão por fluxo é o M2;
+//  · spriteAttenuationWithFocus — órfão; os espelhos de linha ficam.
+// A varredura invertida (simbolosProibidos.test.ts) vigia os nomes.
+// ============================================================
+
 describe('stepRampToward — integrador linear (porte verbatim do doador)', () => {
   it('salta para o alvo no primeiro tique quando o que falta cabe num passo', () => {
     // falta 0,05; passo = 0,5 s → 1,667
@@ -172,224 +152,6 @@ describe('stepRampToward — integrador linear (porte verbatim do doador)', () =
 
   it('[casa] a duração de 300 ms do doador entra pinada junto com o integrador', () => {
     expect(RAMP_DURATION_MS).toBe(300);
-  });
-});
-
-// ------------------------------------------------------------
-// 2. Janelas do Sol — pinagem verbatim (mata a redigitação)
-// ------------------------------------------------------------
-describe('janelas de LOD do Sol — pinagem verbatim da casa', () => {
-  it('sobrou UMA janela do Sol, a entrega: {0,02; 0,03; 0,05} pc', () => {
-    // A F3 reduziu quatro a uma. As três que morreram (`disc`
-    // {0,16→0,34}, `deep` {0,05→0,02} e `starCore` {0,30→0,42}) só
-    // existiam para dissolver à mão um disco 487.441× maior que o Sol.
-    expect(LOD_SOL.entrega.startPc).toBe(0.02);
-    expect(LOD_SOL.entrega.widthPc).toBe(0.03);
-    expect(LOD_SOL.entrega.endPc).toBe(0.05);
-    expect(Object.keys(LOD_SOL)).toEqual(['entrega']);
-  });
-
-  it('a borda de cima É o limiar do sistema solar — a igualdade é obrigação', () => {
-    // é ela que impede o Sol de apagar ACESO: `planetas.ts` some com a
-    // camada em `LIMIAR_SISTEMA_SOLAR_PC`, e o ganho do Sol-ponto tem de
-    // ter chegado a 0 exatamente ali. Os DOIS símbolos são separados de
-    // propósito (um é LOD, o outro é escala) — o que se cobra é o valor.
-    expect(LIMIAR_DA_ENTREGA_PC).toBe(LOD_SOL.entrega.endPc);
-    expect(LIMIAR_DA_ENTREGA_PC).toBe(LIMIAR_SISTEMA_SOLAR_PC);
-    expect(Object.is(deepPointGain(LIMIAR_SISTEMA_SOLAR_PC), 0)).toBe(true);
-  });
-
-  it('a janela não toca a vista oficial mais próxima da borda de baixo', () => {
-    // `ua500` mora a 0,0024241 pc; a borda de baixo é 8,3× acima dela, e
-    // é essa folga que mantém as três vistas profundas bit-idênticas.
-    expect(LOD_SOL.entrega.startPc / 0.0024241).toBeGreaterThan(8);
-    expect(Object.is(deepPointGain(0.0024241), 1)).toBe(true);
-    expect(Object.is(sunStarGain(0.0024241), 0)).toBe(true);
-  });
-
-  it('a janela near dos heroes é em múltiplos do próprio tamanho: 0,5 e 1,4', () => {
-    expect(LOD_HERO.near.startFactor).toBe(0.5);
-    expect(LOD_HERO.near.endFactor).toBe(1.4);
-    expect(LOD_HERO.far.startPc).toBe(320);
-    expect(LOD_HERO.far.endPc).toBe(900);
-  });
-
-  it('ARMADILHA DE FLOAT: a rampa divide pela LARGURA, e a subtração mente', () => {
-    // `0,05 − 0,02` não é `0,03`, embora `0,02 + 0,03` feche 0,05 exato.
-    // A forma que sobreviveu à fusão (a de `sunStarGain`) divide pela
-    // largura LITERAL, então ela não pisa nessa pedra — e a prova de que
-    // a escolha importa é que a outra forma dá outro número no meio.
-    expect(LOD_SOL.entrega.endPc - LOD_SOL.entrega.startPc).not.toBe(0.03);
-    expect(LOD_SOL.entrega.endPc - LOD_SOL.entrega.startPc).toBe(0.030000000000000002);
-    expect(LOD_SOL.entrega.startPc + LOD_SOL.entrega.widthPc).toBe(LOD_SOL.entrega.endPc);
-
-    const larguraSubtraida = (d: number) => {
-      const k = Math.min(
-        1,
-        Math.max(0, (d - LOD_SOL.entrega.startPc) / (LOD_SOL.entrega.endPc - LOD_SOL.entrega.startPc))
-      );
-      return k * k * (3 - 2 * k);
-    };
-    const DENTRO_DA_JANELA: number[] = [];
-    for (let i = 0; i <= 3000; i++) DENTRO_DA_JANELA.push(0.02 + i * 1e-5);
-    expect(DENTRO_DA_JANELA.some((d) => larguraSubtraida(d) !== sunStarGain(d))).toBe(true);
-  });
-
-  it('a FIAÇÃO existe: os consumidores importam daqui e a redigitação não voltou', () => {
-    // Na fase 1 da Onda 3 este teste conferia NÚMERO contra número,
-    // lendo o TEXTO dos consumidores — era o único elo entre dois
-    // arquivos que não se importavam. Depois da fiação ele guarda o
-    // CONSUMO: quem reescrever uma rampa à mão quebra aqui.
-    const stellarBody = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
-    const planetas = readFileSync(new URL('./planetas/planetas.ts', import.meta.url), 'utf8');
-
-    // O CORPO NÃO TEM MAIS LOD (F3): `stellarBody` deixou de importar
-    // este módulo inteiro. O `not` é o que impede a atenuação por
-    // distância de renascer — com ela de volta, e agora normalizada pelo
-    // raio FÍSICO, a fotosfera se dissolveria entre 4,5 e 1,8 raios
-    // solares, ou seja exatamente onde a F4 quer descer.
-    expect(stellarBody).not.toContain("from './lodStellar'");
-    expect(stellarBody).toContain('ctx.sunUniforms.uWorldFade.value = 1;');
-    expect(stellarBody).toContain('ctx.spiculeUniforms.uWorldFade.value = 1;');
-    expect(stellarBody).not.toMatch(/\(dPc - [\d.]+\)\s*\//);
-    expect(stellarBody).not.toMatch(/wk \* wk \* \(3 - 2 \* wk\)/);
-
-    // O CLARÃO consome UMA rampa nos DOIS uniforms (a fusão da F3).
-    expect(heroStars).toMatch(/import \{[^}]*\bsunStarGain\b[^}]*\} from '\.\/lodStellar'/);
-    expect(heroStars).toContain('const gate = sunStarGain(d);');
-    expect(heroStars).toContain('u.uGain.value = gate;');
-    expect(heroStars).toContain('u.uCore.value = gate;');
-    expect(heroStars).not.toContain('sunStarCore');
-    expect(heroStars).not.toMatch(/\(d - [\d.]+\) \/ [\d.]+/);
-    expect(heroStars).not.toMatch(/[kc] \* [kc] \* \(3 - 2 \* [kc]\)/);
-
-    // E O PONTO consome o complemento, sem redigitar a rampa espelhada.
-    expect(planetas).toMatch(/import \{[^}]*\bdeepPointGain\b[^}]*\} from '\.\.\/lodStellar'/);
-    expect(planetas).toContain('deepPointGain(dHomePc)');
-  });
-
-  it('as duas janelas das 16 heroes seguem no GLSL, com os números pinados (D7)', () => {
-    // Decisão D7: o shader dos heroes genéricos NÃO muda na fase 2 — o
-    // espelho JS puro (LOD_HERO/heroPresence) existe para a fase 3, que
-    // escreve `aFade` no ponto do catálogo. Enquanto o pixel do hero sair
-    // do FRAG, é o texto do FRAG que tem de casar com a tabela.
-    const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
-    const near = heroStars.match(/smoothstep\(uSize \* ([\d.]+), uSize \* ([\d.]+), uCamDist\)/);
-    const far = heroStars.match(/1\.0 - smoothstep\(([\d.]+), ([\d.]+), uCamDist\)/);
-    expect(near).not.toBeNull();
-    expect(far).not.toBeNull();
-    expect(Number(near?.[1])).toBe(LOD_HERO.near.startFactor);
-    expect(Number(near?.[2])).toBe(LOD_HERO.near.endFactor);
-    expect(Number(far?.[1])).toBe(LOD_HERO.far.startPc);
-    expect(Number(far?.[2])).toBe(LOD_HERO.far.endPc);
-  });
-});
-
-// ------------------------------------------------------------
-// 2b. As vistas do gate visual, pinadas em número
-// ------------------------------------------------------------
-describe('as vistas do Sol no ab-identidade — o regime de cada uma depois da F3', () => {
-  // As quatro vistas por distância nasceram na fase 2 da Onda 3 medindo
-  // os regimes do crossfade disco↔clarão. Três delas MUDARAM de assunto
-  // na F3 (não há mais disco), e a quarta não mudou nada — e é
-  // justamente a que não mudou que o gate visual cobra bit a bit.
-  it('0,10 · 0,25 · 0,32 pc: o Sol é ESTRELA, com clarão e núcleo plenos', () => {
-    for (const d of [0.1, 0.25, 0.32]) {
-      expect(sunStarGain(d), String(d)).toBe(1);
-      expect(Object.is(deepPointGain(d), 0), String(d)).toBe(true);
-    }
-  });
-
-  it('0,50 pc (`solestrela`) sai IDÊNTICA: ganho e núcleo já eram 1 antes', () => {
-    // é a razão aritmética de `solestrela` continuar com o md5 de
-    // sempre: as janelas antigas terminavam em 0,30 e 0,42 pc, então a
-    // 0,5 pc os dois uniforms já valiam 1 — e continuam valendo.
-    expect(sunStarGain(0.5)).toBe(1);
-    const gainAntigo = (d: number) => {
-      const k = Math.min(1, Math.max(0, (d - 0.14) / 0.16));
-      return k * k * (3 - 2 * k);
-    };
-    const coreAntigo = (d: number) => {
-      const c = Math.min(1, Math.max(0, (d - 0.3) / 0.12));
-      return c * c * (3 - 2 * c);
-    };
-    expect(Object.is(sunStarGain(0.5), gainAntigo(0.5))).toBe(true);
-    expect(Object.is(sunStarGain(0.5), coreAntigo(0.5))).toBe(true);
-    // e a igualdade NÃO é tautologia: em 0,25 as duas leis divergem
-    expect(Object.is(sunStarGain(0.25), gainAntigo(0.25))).toBe(false);
-  });
-
-  it('as três vistas profundas (`ua500`/`ua150`/`ua40`) saem IDÊNTICAS', () => {
-    // nelas o clarão já era 0 (elas moram muito abaixo de 0,14 pc) e o
-    // ponto já era 1 (muito abaixo de 0,02 pc). A F3 mexeu na janela,
-    // não nas bordas — e nenhuma das três mora dentro dela.
-    for (const d of [0.0024241, 0.00072722, 0.00019393]) {
-      expect(Object.is(sunStarGain(d), 0), String(d)).toBe(true);
-      expect(Object.is(deepPointGain(d), 1), String(d)).toBe(true);
-      expect(d, String(d)).toBeLessThan(LOD_SOL.entrega.startPc);
-    }
-  });
-
-  it('as 3 distâncias de hero caem nos 3 regimes do farFade', () => {
-    expect(heroFarFade(200)).toBe(1); // presença cheia
-    expect(heroFarFade(600)).toBeCloseTo(0.5258518184, 9); // meio da rampa
-    expect(heroFarFade(950)).toBe(0); // apagado: só o ponto do catálogo
-  });
-
-  it('e a 4ª (8 pc) é a única em que o billboard do hero é VISÍVEL', () => {
-    // Medida antes de escolher as vistas: o raio na tela de um hero é
-    // `uSize / (d · tan(58°/2))` em meias-alturas de tela — não depende da
-    // lente, porque o uZoom cancela o fov de propósito (o comentário do
-    // `uZoom` no VERT de heroStars.ts).
-    // Betelgeuse tem uSize = 0,08·10^(−0,3·0,45) = 0,0586 pc.
-    const raioPx = (dPc: number, sizePc: number) =>
-      (sizePc / (dPc * Math.tan(29 * DEG))) * (1713 / 2);
-    const BETELGEUSE = 0.08 * Math.pow(10, -0.3 * 0.45);
-    expect(raioPx(200, BETELGEUSE)).toBeLessThan(0.5);
-    expect(raioPx(600, BETELGEUSE)).toBeLessThan(0.2);
-    expect(raioPx(950, BETELGEUSE)).toBeLessThan(0.2);
-    expect(raioPx(8, BETELGEUSE)).toBeGreaterThan(10);
-    // e nela a presença é CHEIA — é a vista que julga a dupla-luz da D2
-    expect(heroPresence(8, BETELGEUSE)).toBe(1);
-    expect(spriteAttenuation(heroPresence(8, BETELGEUSE))).toBe(0);
-  });
-});
-
-// ------------------------------------------------------------
-// 3. A rampa reproduz a matemática da casa BIT A BIT
-// ------------------------------------------------------------
-describe('rampa — forma exata do consumidor atual', () => {
-  // Oráculo: a expressão de `SunStar.update` transcrita de novo, com a
-  // janela NOVA. A FORMA é a de sempre (Math.min/Math.max no clamp,
-  // divisão pela largura literal, cúbica ascendente); o que a F3 trocou
-  // foram os três números.
-  const oraculoGanho = (d: number) => {
-    const k = Math.min(1, Math.max(0, (d - 0.02) / 0.03));
-    return k * k * (3 - 2 * k);
-  };
-
-  it('o ganho bate o oráculo em toda a varredura (igualdade exata)', () => {
-    for (const d of VARREDURA) expect(sunStarGain(d)).toBe(oraculoGanho(d));
-  });
-
-  it('e o complemento também, na mesma varredura', () => {
-    for (const d of VARREDURA) expect(deepPointGain(d)).toBe(1 - oraculoGanho(d));
-  });
-
-  it('os extremos são exatos (0/1 nas pontas, 0,5 no meio)', () => {
-    expect(sunStarGain(0.02)).toBe(0);
-    expect(sunStarGain(0.05)).toBe(1);
-    expect(sunStarGain(0.035)).toBeCloseTo(0.5, 12);
-    expect(sunStarGain(0)).toBe(0);
-    expect(sunStarGain(40000)).toBe(1);
-  });
-
-  it('a rampa é monotônica em toda a varredura', () => {
-    for (let i = 1; i < VARREDURA.length; i++) {
-      expect(sunStarGain(VARREDURA[i])).toBeGreaterThanOrEqual(sunStarGain(VARREDURA[i - 1]));
-      expect(deepPointGain(VARREDURA[i])).toBeLessThanOrEqual(deepPointGain(VARREDURA[i - 1]));
-    }
   });
 });
 
@@ -485,350 +247,6 @@ describe('heroes — nearFade, farFade e a curva de presença', () => {
 
 // ------------------------------------------------------------
 // 4. Gate por ângulo sólido — 25 casos do doador, números da casa
-// ------------------------------------------------------------
-describe('limiares derivados (contrato do doador, âncora da casa)', () => {
-  it('ENTER = raio artístico / DISC_FADE0, as duas lápides ≈ 6,875e-2 rad', () => {
-    expect(DISC_ENTER_RAD).toBe(R_SOL_ART / DISC_FADE0_ART);
-    expect(DISC_ENTER_RAD).toBeCloseTo(6.875e-2, 12);
-  });
-
-  it('EXIT ≈ 3,4375e-2 rad', () => {
-    expect(DISC_EXIT_RAD).toBeCloseTo(3.4375e-2, 12);
-  });
-
-  it('ENTER é exatamente 2× EXIT (cushion de histerese)', () => {
-    expect(DISC_ENTER_RAD).toBe(DISC_EXIT_RAD * 2);
-  });
-
-  it('a âncora é o raio ARTÍSTICO, e ele não é mais o raio da cena', () => {
-    expect(R_SOL_ART).toBe(0.011);
-    // e a F3 deixou esta linha valendo, que é a prova de que a âncora
-    // envelheceu: o Sol da CENA tem outro raio, 487.441× menor
-    expect(RAIO_SOL_PC).toBeLessThan(R_SOL_ART);
-    expect(R_SOL_ART / RAIO_SOL_PC).toBeCloseTo(487440.81, 2);
-    // e ele traduz a janela em pc para ângulo sem resto:
-    expect(distanceForSolidAngle(R_SOL_ART, DISC_ENTER_RAD)).toBe(DISC_FADE0_ART);
-  });
-
-  it('os limiares do doador NÃO atravessam (o da casa é ~69× o ENTER do atlas)', () => {
-    expect(DISC_ENTER_RAD / 1e-3).toBeCloseTo(68.75, 6);
-    expect(DISC_ENTER_RAD).not.toBe(1e-3);
-    expect(DISC_EXIT_RAD).not.toBe(5e-4);
-  });
-});
-
-describe('computeSolidAngle', () => {
-  it('devolve raio / distância para entradas típicas', () => {
-    expect(computeSolidAngle(1, 100)).toBe(0.01);
-    expect(computeSolidAngle(R_SOL_ART, DISC_FADE0_ART)).toBe(DISC_ENTER_RAD);
-  });
-
-  it('o Sol na parede de fogo (0,05 pc) → ~0,22 rad, bem acima do ENTER', () => {
-    const sa = computeSolidAngle(R_SOL_ART, 0.05);
-    expect(sa).toBeCloseTo(0.22, 6);
-    expect(sa).toBeGreaterThan(DISC_ENTER_RAD);
-  });
-
-  it('Sirius (1,71 R☉ na escala da casa) a 0,16 pc → acima do ENTER', () => {
-    expect(computeSolidAngle(1.711 * R_SOL_ART, 0.16)).toBeGreaterThan(DISC_ENTER_RAD);
-  });
-
-  it('o Sol a 0,5 pc (passada a janela inteira) → abaixo do EXIT', () => {
-    expect(computeSolidAngle(R_SOL_ART, 0.5)).toBeLessThan(DISC_EXIT_RAD);
-  });
-
-  it('devolve 0 para entradas não-finitas (defensivo)', () => {
-    expect(computeSolidAngle(NaN, 1)).toBe(0);
-    expect(computeSolidAngle(1, NaN)).toBe(0);
-    expect(computeSolidAngle(Infinity, 1)).toBe(0);
-    expect(computeSolidAngle(1, Infinity)).toBe(0);
-  });
-
-  it('devolve 0 para distância zero / negativa (defensivo)', () => {
-    expect(computeSolidAngle(1, 0)).toBe(0);
-    expect(computeSolidAngle(1, -100)).toBe(0);
-  });
-
-  it('devolve 0 para raio zero / negativo (defensivo)', () => {
-    expect(computeSolidAngle(0, 1)).toBe(0);
-    expect(computeSolidAngle(-1, 1)).toBe(0);
-  });
-});
-
-describe('shouldDiscBeActive — histerese partindo de INATIVO', () => {
-  it('acende quando o ângulo passa do ENTER', () => {
-    expect(shouldDiscBeActive(false, 2 * DISC_ENTER_RAD)).toBe(true);
-    expect(shouldDiscBeActive(false, 5 * DISC_ENTER_RAD)).toBe(true);
-  });
-
-  it('NÃO acende quando o ângulo é exatamente o ENTER (desigualdade estrita)', () => {
-    expect(shouldDiscBeActive(false, DISC_ENTER_RAD)).toBe(false);
-  });
-
-  it('NÃO acende na zona morta (abaixo do ENTER, acima do EXIT)', () => {
-    expect(shouldDiscBeActive(false, 0.75 * DISC_ENTER_RAD)).toBe(false);
-  });
-
-  it('NÃO acende em ângulo <= EXIT', () => {
-    expect(shouldDiscBeActive(false, DISC_EXIT_RAD)).toBe(false);
-    expect(shouldDiscBeActive(false, 0.1 * DISC_ENTER_RAD)).toBe(false);
-    expect(shouldDiscBeActive(false, 0)).toBe(false);
-  });
-});
-
-describe('shouldDiscBeActive — histerese partindo de ATIVO', () => {
-  it('fica aceso enquanto o ângulo for >= EXIT', () => {
-    expect(shouldDiscBeActive(true, DISC_EXIT_RAD)).toBe(true);
-    expect(shouldDiscBeActive(true, DISC_ENTER_RAD)).toBe(true);
-    expect(shouldDiscBeActive(true, 5 * DISC_ENTER_RAD)).toBe(true);
-  });
-
-  it('fica aceso na zona morta (entre EXIT e ENTER)', () => {
-    expect(shouldDiscBeActive(true, 0.75 * DISC_ENTER_RAD)).toBe(true);
-  });
-
-  it('apaga quando o ângulo cai abaixo do EXIT', () => {
-    expect(shouldDiscBeActive(true, 0.8 * DISC_EXIT_RAD)).toBe(false);
-    expect(shouldDiscBeActive(true, 0.2 * DISC_EXIT_RAD)).toBe(false);
-    expect(shouldDiscBeActive(true, 0)).toBe(false);
-  });
-});
-
-describe('shouldDiscBeActive — ciclo completo de zoom', () => {
-  it('inativo → acende → segura → apaga → segura → acende (7 transições encadeadas)', () => {
-    let active = false;
-    active = shouldDiscBeActive(active, 0.1 * DISC_ENTER_RAD); // longe: nada
-    expect(active).toBe(false);
-    active = shouldDiscBeActive(active, 0.7 * DISC_ENTER_RAD); // zona morta subindo: ainda nada
-    expect(active).toBe(false);
-    active = shouldDiscBeActive(active, 2 * DISC_ENTER_RAD); // passou do ENTER: acende
-    expect(active).toBe(true);
-    active = shouldDiscBeActive(active, 0.9 * DISC_ENTER_RAD); // zona morta descendo: PERSISTE
-    expect(active).toBe(true);
-    active = shouldDiscBeActive(active, 0.8 * DISC_EXIT_RAD); // abaixo do EXIT: apaga
-    expect(active).toBe(false);
-    active = shouldDiscBeActive(active, 0.7 * DISC_ENTER_RAD); // zona morta subindo: segue apagado
-    expect(active).toBe(false);
-    active = shouldDiscBeActive(active, 2 * DISC_ENTER_RAD); // passou do ENTER: acende de novo
-    expect(active).toBe(true);
-  });
-
-  it('NaN preserva o estado anterior nos dois sentidos (defensivo)', () => {
-    expect(shouldDiscBeActive(false, NaN)).toBe(false);
-    expect(shouldDiscBeActive(true, NaN)).toBe(true);
-    expect(shouldDiscBeActive(true, Infinity)).toBe(true);
-  });
-});
-
-describe('sanidade de integração — gate contra computeSolidAngle (regime da casa)', () => {
-  // Escala ARTÍSTICA da casa: o Sol tem 0,011 pc de raio (config.ts:8);
-  // as demais entram como múltiplos do raio solar nessa mesma régua.
-  // A lei física de raio por classe é trabalho da Onda 7 (stellarPhysics).
-  const raioCasa = (rSolar: number) => rSolar * R_SOL_ART;
-
-  it('o Sol logo dentro da própria janela → disco acende; na fronteira exata é no-op', () => {
-    const dentro = computeSolidAngle(R_SOL_ART, 0.159);
-    expect(shouldDiscBeActive(false, dentro)).toBe(true);
-    const fronteira = computeSolidAngle(R_SOL_ART, DISC_FADE0_ART);
-    expect(fronteira).toBe(DISC_ENTER_RAD);
-    expect(shouldDiscBeActive(false, fronteira)).toBe(false);
-  });
-
-  it('Sirius na distância REAL (2,64 pc) → só sprite (da Terra ela é um ponto)', () => {
-    const sa = computeSolidAngle(raioCasa(1.711), 2.64);
-    expect(sa).toBeLessThan(DISC_EXIT_RAD);
-    expect(shouldDiscBeActive(false, sa)).toBe(false);
-  });
-
-  it('Betelgeuse a 100 pc → acende (a gigante compensa a distância)', () => {
-    const sa = computeSolidAngle(raioCasa(764), 100);
-    expect(sa).toBeGreaterThan(DISC_ENTER_RAD);
-    expect(shouldDiscBeActive(false, sa)).toBe(true);
-    // e na distância real (~168 pc) ela cai na zona morta: quem estava
-    // fora fica fora, quem estava dentro fica dentro — a histerese em ação
-    const real = computeSolidAngle(raioCasa(764), 168);
-    expect(real).toBeGreaterThan(DISC_EXIT_RAD);
-    expect(real).toBeLessThan(DISC_ENTER_RAD);
-    expect(shouldDiscBeActive(false, real)).toBe(false);
-    expect(shouldDiscBeActive(true, real)).toBe(true);
-  });
-
-  it('Sirius B (anã branca, 0,0084 R☉) na distância do handoff do Sol → nunca acende', () => {
-    const sa = computeSolidAngle(raioCasa(0.0084), DISC_FADE0_ART);
-    expect(sa).toBeLessThan(DISC_EXIT_RAD);
-    expect(shouldDiscBeActive(false, sa)).toBe(false);
-    // para acender ela teria de estar ~119× mais perto que o Sol acende
-    const dEnter = distanceForSolidAngle(raioCasa(0.0084), DISC_ENTER_RAD);
-    expect(DISC_FADE0_ART / dEnter).toBeCloseTo(119, 0);
-  });
-});
-
-// ------------------------------------------------------------
-// 5. Equivalência pc ↔ rad (a conta (a)/(b) do módulo)
-// ------------------------------------------------------------
-describe('equivalência janela-pc ↔ limiar-rad', () => {
-  it('a âncora do Sol fecha nos dois sentidos: 0,16 pc ↔ 6,875e-2 rad', () => {
-    expect(computeSolidAngle(R_SOL_ART, DISC_FADE0_ART)).toBe(DISC_ENTER_RAD);
-    expect(distanceForSolidAngle(R_SOL_ART, DISC_ENTER_RAD)).toBe(DISC_FADE0_ART);
-  });
-
-  it('o EXIT cai em 0,32 pc = 2× DISC_FADE0, DENTRO da janela do crossfade', () => {
-    const dExit = distanceForSolidAngle(R_SOL_ART, DISC_EXIT_RAD);
-    expect(dExit).toBe(0.32);
-    expect(dExit).toBe(2 * DISC_FADE0_ART);
-    expect(dExit).toBeLessThan(DISC_FADE1_ART);
-    // e a casa apagava o grupo em ~0,3249 pc (o corte `world > 0,02`
-    // que morreu na F3): o cushion de 2× do doador reproduzia o corte
-    // achado à mão com ~1,5% de diferença. O oráculo abaixo é a rampa
-    // morta transcrita — é o único jeito de a conferência do doador
-    // continuar de pé depois que a rampa saiu do runtime.
-    const discoMorto = (d: number) => {
-      const wk = (d - DISC_FADE0_ART) / (DISC_FADE1_ART - DISC_FADE0_ART);
-      return wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
-    };
-    expect(discoMorto(dExit)).toBeGreaterThan(0.02);
-    expect(discoMorto(dExit)).toBeLessThan(0.05);
-  });
-
-  it('a mesma régua serve outra instância: um corpo de 3 R☉ acende 3× mais longe', () => {
-    const r3 = 3 * R_SOL_ART;
-    expect(distanceForSolidAngle(r3, DISC_ENTER_RAD)).toBeCloseTo(3 * DISC_FADE0_ART, 12);
-  });
-
-  it('as guardas defensivas da inversa devolvem 0, nunca NaN/Infinity', () => {
-    expect(distanceForSolidAngle(1, 0)).toBe(0);
-    expect(distanceForSolidAngle(1, -1)).toBe(0);
-    expect(distanceForSolidAngle(0, 1)).toBe(0);
-    expect(distanceForSolidAngle(NaN, 1)).toBe(0);
-    expect(distanceForSolidAngle(1, NaN)).toBe(0);
-  });
-});
-
-// ------------------------------------------------------------
-// 6. Cicatriz C1a — nenhuma faixa de distância sem nada
-// ------------------------------------------------------------
-//
-// A cicatriz nasceu na Onda 3 perguntando "existe alguma distância em
-// que NEM o disco NEM o clarão desenham o Sol?". A F3 tornou a pergunta
-// mais dura e mais simples ao mesmo tempo: o disco não existe mais, e o
-// que tem de cobrir a viagem inteira são as DUAS representações de
-// ponto — o Sol-ponto da camada dos dez corpos e o clarão do SunStar.
-//
-// E A CICATRIZ ACHOU MESMO UM BURACO, medido antes de a F3 escrever uma
-// linha: com as janelas antigas (ponto morto acima de 0,05 pc, clarão
-// morto abaixo de 0,14 pc), tirar o disco deixaria a faixa
-// [0,05; 0,14] pc SEM DONO. O oráculo do buraco está abaixo, e é ele
-// que dá sentido à cobertura de hoje.
-describe('C1a — cobertura contínua do Sol (nenhuma banda morta)', () => {
-  /** varredura larga: da órbita de Netuno ao fim da hélice. */
-  const LARGA: number[] = [];
-  for (let i = 1; i <= 20000; i++) LARGA.push(i * 1e-4); // 1e-4 → 2 pc
-  for (let i = 1; i <= 2000; i++) LARGA.push(i * 1e-7); // 2e-8 → 2e-4 pc
-
-  it('ponto + clarão somam 1 EXATO em toda a varredura — não há banda morta', () => {
-    for (const d of LARGA) {
-      expect(Object.is(deepPointGain(d) + sunStarGain(d), 1), String(d)).toBe(true);
-    }
-  });
-
-  it('onde o clarão ainda é zero, o ponto está pleno (e vice-versa)', () => {
-    for (const d of LARGA) {
-      if (sunStarGain(d) === 0) expect(deepPointGain(d)).toBe(1);
-      if (deepPointGain(d) === 0) expect(sunStarGain(d)).toBe(1);
-    }
-  });
-
-  it('O BURACO QUE A F3 FECHOU: com as janelas antigas, [0,05; 0,14] ficava sem dono', () => {
-    // as duas leis ANTIGAS, transcritas — o ponto morria em 0,05 pc e o
-    // clarão só nascia em 0,14. Enquanto o disco existia, era ele que
-    // cobria; sem disco, seriam ~1,4 s de Sol invisível no trecho mais
-    // olhado do produto.
-    const pontoAntigo = (d: number) => {
-      const wk = (d - 0.02) / (0.05 - 0.02);
-      return wk <= 0 ? 1 : wk >= 1 ? 0 : 1 - wk * wk * (3 - 2 * wk);
-    };
-    const claraoAntigo = (d: number) => {
-      const k = Math.min(1, Math.max(0, (d - 0.14) / 0.16));
-      return k * k * (3 - 2 * k);
-    };
-    for (const d of [0.05, 0.063, 0.08, 0.1, 0.12, 0.1399]) {
-      expect(pontoAntigo(d) + claraoAntigo(d), String(d)).toBe(0); // o buraco
-      expect(deepPointGain(d) + sunStarGain(d), String(d)).toBe(1); // fechado
-    }
-  });
-
-  it('a faixa de sobreposição é a janela de entrega, e nela as DUAS acendem', () => {
-    for (const d of LARGA) {
-      if (d > LOD_SOL.entrega.startPc + 1e-4 && d < LOD_SOL.entrega.endPc - 1e-4) {
-        expect(deepPointGain(d), String(d)).toBeGreaterThan(0);
-        expect(sunStarGain(d), String(d)).toBeGreaterThan(0);
-      }
-    }
-  });
-});
-
-// ------------------------------------------------------------
-describe('o teto de gl_PointSize na conta do handoff', () => {
-  const TAN26 = Math.tan(13 * DEG); // fov 26°, o mais fechado do regime do Sol
-  // os três parâmetros da PSF do campo, como o StarField nasce
-  // (`uScreenH` do material; `expoM0`/`sigmaPx` dos defaults de
-  // `StarFieldOptions`, em stars.ts)
-  const H = 1080;
-  const EXPO_M0 = 3.5;
-  const SIGMA_PX = 0.85;
-  /** magnitude aparente do Sol a d pc (lei de magnitude de `SunStar.update`) */
-  const magSol = (d: number) => 4.83 + 5 * Math.log10(d / 10);
-
-  it('o teto é PARÂMETRO de projeto (256 px), não medição de driver', () => {
-    expect(POINT_SIZE_CEILING_PX).toBe(256);
-    expect(maxSpriteSolidAngleRad(POINT_SIZE_CEILING_PX, H, TAN26)).toBeCloseTo(5.47243e-2, 7);
-    // no ângulo do handoff um gl_Point já estaria grampeado pelo driver
-    expect(maxSpriteSolidAngleRad(POINT_SIZE_CEILING_PX, H, TAN26)).toBeLessThan(DISC_ENTER_RAD);
-  });
-
-  it('no handoff o corpo precisa de ~322 px de diâmetro na tela', () => {
-    expect(projectedRadiusPx(DISC_ENTER_RAD, H, TAN26)).toBeCloseTo(160.81, 2);
-    expect(2 * projectedRadiusPx(DISC_ENTER_RAD, H, TAN26)).toBeGreaterThan(POINT_SIZE_CEILING_PX);
-  });
-
-  it('a PSF da casa entrega 9,4 px no handoff — 34× menos do que o corpo pede', () => {
-    const px = psfPointSizePx(magSol(DISC_FADE0_ART), EXPO_M0, SIGMA_PX, H);
-    expect(px).toBeCloseTo(9.395, 3);
-    expect((2 * projectedRadiusPx(DISC_ENTER_RAD, H, TAN26)) / px).toBeCloseTo(34.2, 1);
-  });
-
-  it('COMPORTAMENTO NO LIMITE: o sprite cresce com log(fluxo), o corpo com 1/d', () => {
-    // 100× mais perto = 10 magnitudes a mais de brilho
-    const perto = psfPointSizePx(magSol(0.0016), EXPO_M0, SIGMA_PX, H);
-    const longe = psfPointSizePx(magSol(0.16), EXPO_M0, SIGMA_PX, H);
-    expect(perto / longe).toBeLessThan(2); // sprite: fator ~1,5
-    const anguloPerto = computeSolidAngle(R_SOL_ART, 0.0016);
-    const anguloLonge = computeSolidAngle(R_SOL_ART, 0.16);
-    expect(anguloPerto / anguloLonge).toBeCloseTo(100, 6); // corpo: fator 100
-    // e mesmo numa magnitude absurda a PSF não chega perto do teto
-    expect(psfPointSizePx(-60, EXPO_M0, SIGMA_PX, H)).toBeCloseTo(21.887, 3);
-    expect(psfPointSizePx(-60, EXPO_M0, SIGMA_PX, H)).toBeLessThan(POINT_SIZE_CEILING_PX);
-  });
-
-  it('o teto depende do fov: fechado aperta, aberto folga (medição real é Onda 7)', () => {
-    const fechado = maxSpriteSolidAngleRad(POINT_SIZE_CEILING_PX, H, Math.tan(7.5 * DEG)); // fov 15°
-    const aberto = maxSpriteSolidAngleRad(POINT_SIZE_CEILING_PX, H, Math.tan(35 * DEG)); // fov 70°
-    expect(fechado).toBeLessThan(DISC_ENTER_RAD);
-    expect(aberto).toBeGreaterThan(DISC_ENTER_RAD);
-  });
-
-  it('as guardas defensivas da conta devolvem 0 (nunca NaN/Infinity)', () => {
-    expect(projectedRadiusPx(NaN, H, TAN26)).toBe(0);
-    expect(projectedRadiusPx(DISC_ENTER_RAD, 0, TAN26)).toBe(0);
-    expect(projectedRadiusPx(DISC_ENTER_RAD, H, 0)).toBe(0);
-    expect(maxSpriteSolidAngleRad(0, H, TAN26)).toBe(0);
-    expect(maxSpriteSolidAngleRad(POINT_SIZE_CEILING_PX, -1, TAN26)).toBe(0);
-    expect(maxSpriteSolidAngleRad(POINT_SIZE_CEILING_PX, H, NaN)).toBe(0);
-  });
-});
-
-// ------------------------------------------------------------
-// 8. Cicatrizes C2/C3 como contrato puro
 // ------------------------------------------------------------
 describe('C2 — escrita idempotente do atributo', () => {
   it('não escreve quando o slot já tem o valor alvo', () => {
@@ -1046,50 +464,8 @@ describe('espelhos em JS das duas contas de tela', () => {
     );
   });
 
-  it('a VOLTA fecha a ida: pedir N px devolve N px (a menos de 2 ULP)', () => {
-    // `heroSizePcDePx` existe para o `SunStar` pedir tamanho em PIXELS à
-    // lei do campo. A garantia dele é esta: a composição das duas é a
-    // identidade. Não é bit a bit — são duas multiplicações e duas
-    // divisões em ordens diferentes —, e por isso o que se cobra é o erro
-    // RELATIVO. Afirmar bit aqui seria afirmar o que a aritmética não dá.
-    let pior = 0;
-    for (const h of [900, 1080, SCREEN_H, 2160]) {
-      for (const fov of [15, 26, 40, 58, 90]) {
-        const t = Math.tan((fov / 2) * DEG);
-        for (let i = 0; i <= 200; i++) {
-          const d = 1e-5 * Math.pow(10, i * 0.05); // 1e-5 → 1e5 pc
-          const px = psfPointSizePx(4.83 + 5 * Math.log10(d / 10), EXPO, SIGMA, h);
-          const volta = heroSizePx(heroSizePcDePx(px, d, h, t), d, h, t);
-          pior = Math.max(pior, Math.abs(volta - px) / px);
-        }
-      }
-    }
-    expect(pior).toBeLessThan(1e-15);
-  });
-
-  it('a VOLTA usa o MESMO uZoom da ida — a lente cancela dos dois lados', () => {
-    // lente igual ou mais fechada que a de referência: o pc pedido não
-    // depende do fov, porque o zoom encolhe o quad na mesma razão
-    const canonico = heroSizePcDePx(20, 200, SCREEN_H, HERO_ZOOM_TAN_REF);
-    for (const fovGraus of [26, 40, 56, 58]) {
-      expect(heroSizePcDePx(20, 200, SCREEN_H, Math.tan((fovGraus / 2) * DEG))).toBeCloseTo(
-        canonico,
-        12
-      );
-    }
-    // mais aberta que 58°: o zoom grampeia em 1 e o pc pedido cresce
-    expect(heroSizePcDePx(20, 200, SCREEN_H, Math.tan(45 * DEG))).toBeGreaterThan(canonico);
-  });
-
-  it('guardas da volta: entrada inválida devolve 0 (quad degenerado)', () => {
-    expect(heroSizePcDePx(0, 200, SCREEN_H, TAN_HELICE)).toBe(0);
-    expect(heroSizePcDePx(-3, 200, SCREEN_H, TAN_HELICE)).toBe(0);
-    expect(heroSizePcDePx(20, 0, SCREEN_H, TAN_HELICE)).toBe(0);
-    expect(heroSizePcDePx(20, 200, 0, TAN_HELICE)).toBe(0);
-    expect(heroSizePcDePx(20, 200, SCREEN_H, 0)).toBe(0);
-    expect(heroSizePcDePx(NaN, 200, SCREEN_H, TAN_HELICE)).toBe(0);
-    expect(heroSizePcDePx(20, Infinity, SCREEN_H, TAN_HELICE)).toBe(0);
-  });
+  // (os testes de `heroSizePcDePx` morreram com ela no M1 — a inversa
+  // só existia para o SunStar pedir tamanho em px, e o SunStar morreu.)
 });
 
 describe('g — a curva da cessão do ponto', () => {
@@ -1154,132 +530,6 @@ describe('g — a curva da cessão do ponto', () => {
 // é que o alargamento não trouxe número novo, não mexeu nas duas
 // propriedades exatas que a rampa velha tinha nas pontas, e é de fato
 // mais larga onde importa.
-describe('filtroSolarAlvo — a travessia de 26 magnitudes, esticada em log', () => {
-  it('NENHUM NÚMERO NOVO: as duas bordas saem do MESMO 2,5 da dominância', () => {
-    // 0,4 não está escrito em lugar nenhum: ele É `1/fullRatio`, e a
-    // divisão fecha exata em IEEE754 (2,5 é potência-de-2 vezes inteiro).
-    expect(1 / HERO_DOMINANCE.fullRatio).toBe(0.4);
-    const mod = readFileSync(new URL('./lodStellar.ts', import.meta.url), 'utf8');
-    expect(mod).toContain('Math.log(HERO_DOMINANCE.fullRatio)');
-    // e a rampa é simétrica pela CONSTRUÇÃO (−L, +L), não por coincidência
-    expect(mod).toMatch(/glslSmoothstep\(\s*-MEIA_LARGURA_LOG_DO_FILTRO,\s*MEIA_LARGURA_LOG_DO_FILTRO/);
-  });
-
-  it('as três exatidões: 1 em 0,4 · 0,5 no cruzamento · 0 em 2,5', () => {
-    // exato, não "quase": `L/(2L)` e `(L+L)/(2L)` não arredondam, então o
-    // meio da rampa cai no cruzamento de dominância sem erro nenhum — que
-    // é o que "simétrica em log" significa em número.
-    expect(Object.is(filtroSolarAlvo(1 / HERO_DOMINANCE.fullRatio), 1)).toBe(true);
-    expect(Object.is(filtroSolarAlvo(1), 0.5)).toBe(true);
-    expect(Object.is(filtroSolarAlvo(HERO_DOMINANCE.fullRatio), 0)).toBe(true);
-  });
-
-  it('piso e teto seguram em toda a varredura (Object.is, não "quase")', () => {
-    for (let i = 0; i <= 4000; i++) {
-      const r = i * 1e-4; // 0 → 0,4
-      expect(Object.is(filtroSolarAlvo(r), 1), String(r)).toBe(true);
-    }
-    for (let i = 0; i <= 5000; i++) {
-      const r = 2.5 + i * 1e-3; // 2,5 → 7,5
-      expect(Object.is(filtroSolarAlvo(r), 0), String(r)).toBe(true);
-    }
-  });
-
-  it('monotônica não-crescente e C¹ — sem degrau e sem quina', () => {
-    let anterior = filtroSolarAlvo(1e-3);
-    for (let i = 0; i <= 60000; i++) {
-      const g = filtroSolarAlvo(1e-3 + i * 1e-4);
-      expect(g).toBeLessThanOrEqual(anterior);
-      anterior = g;
-    }
-    // a derivada (em log de razão, que é a variável natural da rampa)
-    // zera nas duas bordas: a troca entra e sai sem quina
-    const h = 1e-6;
-    const dLog = (r: number) =>
-      (filtroSolarAlvo(Math.exp(Math.log(r) + h)) - filtroSolarAlvo(Math.exp(Math.log(r) - h))) /
-      (2 * h);
-    expect(dLog(0.4)).toBeCloseTo(0, 5);
-    expect(dLog(2.5)).toBeCloseTo(0, 5);
-    expect(dLog(1)).toBeCloseTo(-1.5 / (2 * Math.log(2.5)), 4); // o máximo da cúbica
-  });
-
-  it('SIMETRIA: g(r) + g(1/r) = 1 — o cruzamento é o centro de verdade', () => {
-    for (const r of [1.05, 1.2, 1.5, 2, 2.4, 2.49]) {
-      expect(Math.abs(filtroSolarAlvo(r) + filtroSolarAlvo(1 / r) - 1)).toBeLessThanOrEqual(
-        4 * Number.EPSILON
-      );
-    }
-  });
-
-  it('halo inexistente ⇒ radiância PLENA (o precedente de cessaoAlvo)', () => {
-    // é a direção segura para esta lei, e o oposto da de `heroDominanceFade`
-    // (que devolve 0 = "não cede"): lá zero significa ponto inteiro, aqui
-    // significa apagar a estrela verdadeira sem motivo.
-    for (const r of [0, -1, -0, NaN, Infinity, -Infinity]) {
-      expect(filtroSolarAlvo(r), String(r)).toBe(1);
-    }
-  });
-
-  it('É MAIS LARGA QUE A DA CESSÃO, e o quanto está medido', () => {
-    // a rampa velha era o complemento da cessão. Onde ela ainda dava
-    // radiância PLENA (r ≤ 1), a nova já está descendo — e é exatamente aí
-    // que estava o defeito: a troca não tinha para onde começar.
-    for (const r of [0.5, 0.7, 0.9, 1]) {
-      expect(1 - heroDominanceFade(r), String(r)).toBe(1);
-      expect(filtroSolarAlvo(r), String(r)).toBeLessThan(1);
-    }
-    // a largura em LOG dobra exatamente: de [0; ln2,5] para [−ln2,5; ln2,5]
-    const larguraVelha = Math.log(HERO_DOMINANCE.fullRatio) - Math.log(HERO_DOMINANCE.enterRatio);
-    const larguraNova = 2 * Math.log(HERO_DOMINANCE.fullRatio);
-    expect(larguraNova / larguraVelha).toBe(2);
-    // e as duas terminam JUNTAS: a borda de cima não se moveu, então a
-    // fronteira com a cessão do Sol-ponto continua sendo a mesma
-    expect(filtroSolarAlvo(HERO_DOMINANCE.fullRatio)).toBe(1 - heroDominanceFade(HERO_DOMINANCE.fullRatio));
-  });
-
-  it('NO VOO: o maior salto por degrau cai de 0,60 para 0,30', () => {
-    // a escada REAL do `voo-ida-e-volta.mjs`: 34 degraus geométricos de
-    // 0,05 a 15.800 UA. A razão disco/halo é a do Sol de raio físico na
-    // tela do gate — as mesmas contas de `corpos.test.ts`, aqui só para
-    // medir o SALTO, que é o defeito que o dono viu.
-    const AU_PC = 1 / 206264.80624548031;
-    const R_SOL = (696340 / 149597870.7) * AU_PC;
-    const TAN29 = Math.tan(29 * DEG);
-    const razaoEm = (dUA: number) => {
-      const dPc = dUA * AU_PC;
-      const disco = (2 * Math.atan(R_SOL / dPc) * SCREEN_H) / (2 * TAN29);
-      return disco / psfPointSizePx(-0.15 + 5 * Math.log10(dPc), EXPO, SIGMA, SCREEN_H);
-    };
-    const passo = Math.pow(15800 / 0.05, 1 / 33);
-    const maiorSalto = (lei: (r: number) => number) => {
-      let pior = 0;
-      for (let i = 1; i < 34; i++) {
-        const a = lei(razaoEm(0.05 * Math.pow(passo, i - 1)));
-        const b = lei(razaoEm(0.05 * Math.pow(passo, i)));
-        pior = Math.max(pior, Math.abs(b - a));
-      }
-      return pior;
-    };
-    expect(passo).toBeCloseTo(1.4678, 4);
-    // o par de degraus que a foto pegou: 0,232 → 0,341 UA
-    expect(razaoEm(0.2321)).toBeCloseTo(2.363, 3);
-    expect(razaoEm(0.3406)).toBeCloseTo(1.627, 3);
-    expect(maiorSalto((r) => 1 - heroDominanceFade(r))).toBeCloseTo(0.598, 3);
-    expect(maiorSalto(filtroSolarAlvo)).toBeCloseTo(0.299, 3);
-    // e o alargamento aparece em quantos degraus a rampa TOCA
-    const tocados = (lei: (r: number) => number) => {
-      let n = 0;
-      for (let i = 0; i < 34; i++) {
-        const g = lei(razaoEm(0.05 * Math.pow(passo, i)));
-        if (g > 1e-3 && g < 1 - 1e-3) n++;
-      }
-      return n;
-    };
-    expect(tocados((r) => 1 - heroDominanceFade(r))).toBe(3);
-    expect(tocados(filtroSolarAlvo)).toBe(5);
-  });
-});
-
 describe('as 4 vistas de hero — os números que a fase 2 mediu (A9)', () => {
   it('a 200 pc o PONTO domina: 0,91 px de billboard contra 5,93 do ponto', () => {
     const e = entradaDe('Betelgeuse', 200);
@@ -1676,7 +926,8 @@ describe('a CHAVE da cessão (achado da fase 3, virada na fase 4a)', () => {
     // `spriteAttenuation(FADE_NEUTRAL)` é 1 — o campo desenha exatamente
     // o que desenhava antes da onda. É esta identidade que sustenta as
     // duas provas de pixel-igual das fases 2 e 3.
-    expect(spriteAttenuationWithFocus(FADE_NEUTRAL, FOCUS_OFF)).toBe(1);
+    expect(spriteAttenuation(FADE_NEUTRAL)).toBe(1);
+    expect(isFocusBypassActive(FOCUS_OFF)).toBe(false);
   });
 });
 
@@ -1776,14 +1027,17 @@ describe('D3 — o par de atributos nasce inerte no shader novo', () => {
   });
 
   it('(0, 0) devolve atenuação 1: o campo desenha o que desenhava', () => {
-    expect(spriteAttenuationWithFocus(FADE_NEUTRAL, FOCUS_OFF)).toBe(1);
-  });
-
-  it('o bypass de foco ignora QUALQUER fade (o corpo chega na Onda 7)', () => {
-    expect(spriteAttenuationWithFocus(1, FOCUS_ON)).toBe(1);
-    expect(spriteAttenuationWithFocus(0.5, FOCUS_ON)).toBe(1);
-    expect(spriteAttenuationWithFocus(0.5, FOCUS_OFF)).toBe(0.5);
-    expect(spriteAttenuationWithFocus(0.5, 0.5)).toBe(0.5); // fronteira: fora
+    // oráculo transcrito do `mix` do STAR_VERT (o espelho combinado
+    // `spriteAttenuationWithFocus` morreu no M1 — era órfão de runtime;
+    // a linha do shader continua viva e é pinada acima)
+    const mixDoVert = (fade: number, focus: number) =>
+      isFocusBypassActive(focus) ? 1 : spriteAttenuation(fade);
+    expect(mixDoVert(FADE_NEUTRAL, FOCUS_OFF)).toBe(1);
+    // e o bypass de foco ignora QUALQUER fade (o corpo chega na Onda 7)
+    expect(mixDoVert(1, FOCUS_ON)).toBe(1);
+    expect(mixDoVert(0.5, FOCUS_ON)).toBe(1);
+    expect(mixDoVert(0.5, FOCUS_OFF)).toBe(0.5);
+    expect(mixDoVert(0.5, 0.5)).toBe(0.5); // fronteira: fora
   });
 });
 
@@ -1804,281 +1058,9 @@ describe('D3 — o par de atributos nasce inerte no shader novo', () => {
 // dez some, e (4) a constante do sistema solar ficou congelada e
 // separada, com os três consumidores importando dela.
 
-/**
- * As distâncias de casa (pc) das SETE vistas por `?t=` do
- * `ab-identidade`, medidas amostrando o `Journey` nesta sessão. Aqui
- * elas entram como literais de propósito: `journey.ts` importa
- * `world/galaxy.ts`, que lê `window.location.search` NO TOPO do módulo,
- * e o vitest roda em `node` — a varredura do roteiro inteiro (com o stub
- * de window declarado) mora em `cinematic/cameraRig.test.ts`, ao lado do
- * rig. O que se guarda aqui é o alcance.
- *
- * A PRIMEIRA MUDOU NA F3, e é a fase inteira numa linha: `sol` (t=6)
- * saiu de 0,0631506 pc — 13.027 UA, em volta de uma bola de 2.269 UA —
- * para 1,2956e-7 pc, que são 5,74 raios solares de um Sol do tamanho do
- * Sol. As outras seis não se moveram: a hélice pousa em `ORBIT_EXIT`
- * como sempre pousou, e o plano seguinte parte da mesma constante.
- */
-const VISTAS_T: readonly (readonly [string, number])[] = [
-  ['sol', 1.2955551454727027e-7],
-  ['interno', 4.486971350060561],
-  ['travessia', 221.22434784471977],
-  ['retrato', 221.22434784471977],
-  ['mergulho', 4275.53796810298],
-  ['edgeon', 15904.56497361685],
-  ['faceon', 32790.153293328774],
-];
-
-/**
- * As vistas por `?pos=` do gate visual, lidas do PRÓPRIO script — nunca
- * redigitadas. A leitura é o alarme: uma vista nova por distância que
- * caia dentro da janela de entrega tem de aparecer aqui, senão o gate
- * visual passaria a comparar uma vista que a onda MUDA contra uma
- * baseline que ela não mudou.
- */
-const VISTAS_POS: { nome: string; dPc: number }[] = [];
-{
-  const ab = readFileSync(
-    new URL('../../../scripts/visual/ab-identidade.mjs', import.meta.url),
-    'utf8'
-  );
-  for (const m of ab.matchAll(/\['(\w+)', '\?pos=([-\d.,]+)&([^']*)'/g)) {
-    const [x, y, z] = m[2].split(',').map(Number);
-    VISTAS_POS.push({ nome: m[1], dPc: Math.sqrt(x * x + y * y + z * z) });
-  }
-}
-
-/**
- * As que o desenho declara ABAIXO da janela — todas com ponto pleno.
- *
- * As CINCO últimas entraram em 2026-08-14 como os degraus do vão (a outra
- * metade do item 12): a escada que olha o Sol tinha `solreal1ua` de um lado e
- * `solreal40ua` do outro, sem nada no meio, e é justamente lá que a régua da luz
- * mediu 100% do quadro lavado enquanto o disco verdadeiro encolhia 4 ordens de
- * grandeza. Elas nascem lavadas de propósito: são a baseline do defeito.
- */
-const ABAIXO_DA_JANELA = [
-  'solreal4mkm', 'solreal1ua', 'solreal40ua', 'ua500', 'ua150', 'ua40',
-  'ua2', 'ua4', 'ua8', 'ua20', 'ua2000',
-];
-
-/** varredura fina DENTRO da janela (0,019 → 0,051 pc) */
-const DENTRO: number[] = [];
-for (let i = 0; i <= 32000; i++) DENTRO.push(0.019 + i * 1e-6);
-
-describe('a entrega — as duas rampas são UMA, e a soma é 1 exato', () => {
-  it('COMPLEMENTARIDADE EXATA em toda a varredura da janela', () => {
-    // não é "aproximadamente 1": é 1 bit a bit, e o docstring do módulo
-    // diz por quê (o erro de `1 − a` é ≤ 2⁻⁵⁴ e some no arredondamento).
-    for (const d of DENTRO) {
-      expect(Object.is(sunStarGain(d) + deepPointGain(d), 1)).toBe(true);
-    }
-    for (const d of [0, 0.02, 0.035, 0.05, 1, 40000, Infinity]) {
-      expect(Object.is(sunStarGain(d) + deepPointGain(d), 1)).toBe(true);
-    }
-  });
-
-  it('e ela é ESTRUTURAL, não numérica: o complemento é literalmente `1 −`', () => {
-    // a lição da Onda 3 (rampas espelhadas redigitadas em dois arquivos)
-    // aplicada de novo. O teste lê o texto porque é a forma que garante
-    // a soma, não a coincidência dos números.
-    const mod = readFileSync(new URL('./lodStellar.ts', import.meta.url), 'utf8');
-    expect(mod).toContain('return 1 - sunStarGain(dPc);');
-  });
-
-  it('0/1 exatos nas bordas e fora delas (Object.is, não "quase")', () => {
-    expect(Object.is(sunStarGain(LOD_SOL.entrega.startPc), 0)).toBe(true);
-    expect(Object.is(sunStarGain(LOD_SOL.entrega.endPc), 1)).toBe(true);
-    expect(Object.is(deepPointGain(LOD_SOL.entrega.startPc), 1)).toBe(true);
-    expect(Object.is(deepPointGain(LOD_SOL.entrega.endPc), 0)).toBe(true);
-    expect(Object.is(deepPointGain(0), 1)).toBe(true);
-    expect(Object.is(sunStarGain(40000), 1)).toBe(true);
-  });
-
-  it('meio da janela é 0,5 para os dois (a cúbica é simétrica)', () => {
-    expect(sunStarGain(0.035)).toBeCloseTo(0.5, 12);
-    expect(deepPointGain(0.035)).toBeCloseTo(0.5, 12);
-  });
-
-  it('NaN atravessa como NaN — o veneno aparece em vez de virar 0 ou 1', () => {
-    expect(Number.isNaN(sunStarGain(NaN))).toBe(true);
-    expect(Number.isNaN(deepPointGain(NaN))).toBe(true);
-  });
-});
-
-// ------------------------------------------------------------
-// 10b. A COSTURA DE TAMANHO ponto↔clarão (item 42, 15/08)
-// ------------------------------------------------------------
-//
-// A entrega já era contínua em BRILHO desde a F3 (`sunStarGain +
-// deepPointGain = 1`, provado acima). Faltava o tamanho: o ponto media o
-// que a PSF manda e o clarão media o que a lei de autor do `SunStar`
-// mandava — `min(40°, 1,75°·10^(−0,3m))`, ângulo tirado de magnitude com
-// teto de céu. Entre 4.125 e 27.696 UA o `min` ficava GRAMPEADO nos 40°,
-// e ângulo constante é fração de tela constante: 2.593 px de aresta, o
-// MESMO número em toda a faixa, enquanto o Sol encolhia 6,7×. É o item 42
-// ("esse clarao a 15000 UA … nao vai consumir tudo a tela?") e a metade
-// do item 3 que diz "o Sol encolhe 4.000 vezes e a mancha na tela não
-// muda de tamanho". Agora o tamanho vem da MESMA `psfPointSizePx` do
-// campo, e a igualdade abaixo é a costura.
-describe('a costura de TAMANHO — o clarão mede o que o ponto mediria', () => {
-  const TAN29 = HERO_ZOOM_TAN_REF;
-  /** magnitude do Sol pela lei do `SunStar` (fotometria, não mudou) */
-  const mSol = (dPc: number) => 4.83 + 5 * Math.log10(dPc / 10);
-  /** o caminho do `SunStar`: pede px à PSF, converte para pc, e o VERT projeta */
-  const claraoPx = (dPc: number, h: number, t: number) =>
-    heroSizePx(heroSizePcDePx(psfPointSizePx(mSol(dPc), EXPO, SIGMA, h), dPc, h, t), dPc, h, t);
-
-  it('NA JANELA DA ENTREGA os dois têm o MESMO diâmetro em px', () => {
-    // as duas pontas por caminhos independentes: à esquerda a cadeia
-    // inteira do clarão (PSF → pc → projeção do VERT), à direita a PSF
-    // que o ponto da camada dos dez desenha com a MESMA magnitude.
-    for (const d of [LOD_SOL.entrega.startPc, 0.035, LOD_SOL.entrega.endPc]) {
-      const doPonto = psfPointSizePx(mSol(d), EXPO, SIGMA, SCREEN_H);
-      expect(
-        Math.abs(claraoPx(d, SCREEN_H, TAN_HELICE) - doPonto) / doPonto,
-        String(d)
-      ).toBeLessThan(1e-15);
-    }
-    // e são estes os números: o clarão da entrega é um ponto de ~16 px,
-    // não um borrão de tela inteira
-    expect(claraoPx(LOD_SOL.entrega.startPc, SCREEN_H, TAN_HELICE)).toBeCloseTo(17.224, 3);
-    expect(claraoPx(0.035, SCREEN_H, TAN_HELICE)).toBeCloseTo(16.479, 3);
-    expect(claraoPx(LOD_SOL.entrega.endPc, SCREEN_H, TAN_HELICE)).toBeCloseTo(15.975, 3);
-  });
-
-  it('a costura NÃO depende da lente — o uZoom cancela nos dois lados', () => {
-    const doPonto = psfPointSizePx(mSol(0.035), EXPO, SIGMA, SCREEN_H);
-    for (const fovGraus of [15, 26, 40, 58, 90]) {
-      const px = claraoPx(0.035, SCREEN_H, Math.tan((fovGraus / 2) * DEG));
-      expect(Math.abs(px - doPonto) / doPonto, String(fovGraus)).toBeLessThan(1e-15);
-    }
-  });
-
-  it('O DEFEITO MEDIDO: a lei velha dava 2.593 px, a MESMA a 10.800 e a 15.800 UA', () => {
-    const AU_PC = 1 / 206264.80624548031;
-    // a lei de autor, transcrita para a diferença ser medida e não afirmada
-    const pxVelho = (dPc: number) => {
-      const ang = Math.min(40, 1.75 * Math.pow(10, -0.3 * mSol(dPc)));
-      return (Math.tan(ang * DEG) * SCREEN_H) / TAN29;
-    };
-    // o teto de 40° é o platô: o mesmo px em dois pontos separados por 1,46×
-    expect(pxVelho(10800 * AU_PC)).toBeCloseTo(2593.098, 3);
-    expect(pxVelho(15800 * AU_PC)).toBeCloseTo(2593.098, 3);
-    expect(pxVelho(10800 * AU_PC)).toBe(pxVelho(15800 * AU_PC));
-    // …e 2.593 px de aresta numa tela de 1.713 px é 1,5 tela: é daí que
-    // saem o borrão de ~620 px e os ~31% de quadro lavado do voo
-    expect(pxVelho(15800 * AU_PC) / SCREEN_H).toBeCloseTo(1.514, 3);
-    // a lei NOVA encolhe com a luz, e a diferença é de duas ordens
-    expect(claraoPx(10800 * AU_PC, SCREEN_H, TAN_HELICE)).toBeCloseTo(15.908, 3);
-    expect(claraoPx(15800 * AU_PC, SCREEN_H, TAN_HELICE)).toBeCloseTo(15.337, 3);
-    expect(pxVelho(15800 * AU_PC) / claraoPx(15800 * AU_PC, SCREEN_H, TAN_HELICE)).toBeCloseTo(
-      169.1,
-      1
-    );
-  });
-
-  it('o PLATÔ do teto de 40° cobria 4.125 → 27.696 UA — toda a faixa do defeito', () => {
-    const AU_PC = 1 / 206264.80624548031;
-    // onde o `min` deixa de grampear: 1,75·10^(−0,3m) = 40
-    const mDoTeto = -Math.log10(40 / 1.75) / 0.3;
-    const dDoTeto = 10 * Math.pow(10, (mDoTeto - 4.83) / 5);
-    expect(mDoTeto).toBeCloseTo(-4.5301, 4);
-    expect(dDoTeto / AU_PC).toBeCloseTo(27696, 0);
-    // e o começo do platô é o próprio nascimento do clarão (0,02 pc)
-    expect(LOD_SOL.entrega.startPc / AU_PC).toBeCloseTo(4125, 0);
-    expect(dDoTeto / LOD_SOL.entrega.startPc).toBeCloseTo(6.71, 2);
-    // a lei nova não tem platô ENQUANTO houver luz a perder: de 0,02 pc
-    // até 1,604 pc — onde o pico da PSF cruza 1 — ela cai estritamente
-    const dSaturaAte = 10 * Math.pow(10, (3.5 - 2.5 * Math.log10(6.2831853 * ((0.85 * SCREEN_H) / 1080) ** 2) - 4.83) / 5);
-    expect(dSaturaAte).toBeCloseTo(1.6038, 4);
-    let anterior = Infinity;
-    for (let i = 0; i <= 190; i++) {
-      const d = LOD_SOL.entrega.startPc * Math.pow(10, i * 0.01); // 0,02 → 1,59 pc
-      expect(d, String(i)).toBeLessThan(dSaturaAte);
-      const px = claraoPx(d, SCREEN_H, TAN_HELICE);
-      expect(px, String(d)).toBeLessThan(anterior);
-      anterior = px;
-    }
-    // ACIMA DE 1,604 pc o tamanho para de cair, e o piso é do INSTRUMENTO,
-    // não da fonte: 2·2,2·σ é a largura da PSF, o MESMO piso que as
-    // 328.749 estrelas do catálogo têm. É a diferença entre um piso de
-    // instrumento (honesto, igual para todos) e um teto de autor sobre uma
-    // fonte só, que era o defeito.
-    const piso = 2 * 2.2 * ((SIGMA * SCREEN_H) / 1080);
-    for (const d of [2, 10, 100, 900]) {
-      expect(claraoPx(d, SCREEN_H, TAN_HELICE), String(d)).toBeCloseTo(piso, 9);
-    }
-    expect(piso).toBeCloseTo(5.932, 3);
-  });
-
-  it('A FIAÇÃO: o `SunStar` pede px à lei do campo, e a lei de autor SUMIU', () => {
-    const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
-    expect(heroStars).toMatch(
-      /import \{[^}]*\bheroSizePcDePx\b[^}]*\} from '\.\/lodStellar'/
-    );
-    // desde o F0 a lei do campo mora em `luzDaCasa.ts` — a fiação segue a lei
-    expect(heroStars).toMatch(/import \{[^}]*\bpsfPointSizePx\b[^}]*\} from '\.\.\/luzDaCasa'/);
-    expect(heroStars).toContain('psfPointSizePx(m, expoM0, sigmaPx, screenH),');
-    // a lei ANGULAR não voltou: nem o coeficiente, nem o teto, nem o
-    // `d · tan(ângulo)` que os transformava em pc
-    expect(heroStars).not.toContain('1.75 * Math.pow(10, -0.3 * m)');
-    expect(heroStars).not.toMatch(/Math\.min\(40,/);
-    expect(heroStars).not.toMatch(/d \* Math\.tan\(/);
-    // e a magnitude CONTINUA — ela é fotometria, não estava em causa
-    expect(heroStars).toContain('const m = 4.83 + 5 * Math.log10(d / 10);');
-    // as 16 ilustres NÃO mudaram nesta rodada: o coeficiente de autor
-    // segue no construtor, esperando o L3 (escala.test.ts o varre)
-    expect(heroStars).toContain('const size = 0.08 * lum;');
-  });
-});
-
-describe('as vistas oficiais e a janela — quem se move e quem não', () => {
-  it('as vistas por `?pos=` saem do script, e NENHUMA mora dentro da janela', () => {
-    // ALARME: se alguém cravar uma vista entre 0,02 e 0,05 pc, ela passa
-    // a depender da rampa e deixa de ser baseline estável — quebra aqui.
-    expect(VISTAS_POS.length).toBe(19);
-    const dentro = VISTAS_POS.filter(
-      (v) => v.dPc > LOD_SOL.entrega.startPc && v.dPc < LOD_SOL.entrega.endPc
-    );
-    expect(dentro).toEqual([]);
-  });
-
-  it('as onze vistas ABAIXO da janela têm ponto pleno e clarão zero', () => {
-    const abaixo = VISTAS_POS.filter((v) => v.dPc <= LOD_SOL.entrega.startPc);
-    expect(abaixo.map((v) => v.nome).sort()).toEqual([...ABAIXO_DA_JANELA].sort());
-    for (const { nome, dPc } of abaixo) {
-      expect(Object.is(deepPointGain(dPc), 1), nome).toBe(true);
-      expect(Object.is(sunStarGain(dPc), 0), nome).toBe(true);
-    }
-  });
-
-  it('as vistas ACIMA da janela têm clarão pleno e ponto zero', () => {
-    const acima = [
-      ...VISTAS_T.map(([nome, d]) => ({ nome, dPc: d })).filter(
-        (v) => v.dPc >= LOD_SOL.entrega.endPc
-      ),
-      ...VISTAS_POS.filter((v) => v.dPc >= LOD_SOL.entrega.endPc),
-    ];
-    expect(acima.length).toBe(14);
-    for (const { nome, dPc } of acima) {
-      expect(Object.is(sunStarGain(dPc), 1), nome).toBe(true);
-      expect(Object.is(deepPointGain(dPc), 0), nome).toBe(true);
-    }
-  });
-
-  it('a abertura refilmada é a ÚNICA vista por `?t=` abaixo da janela', () => {
-    const abaixo = VISTAS_T.filter(([, d]) => d < LOD_SOL.entrega.startPc);
-    expect(abaixo.map(([n]) => n)).toEqual(['sol']);
-    // e ela está a 5,74 raios solares: o Sol é CORPO ali, não ponto
-    expect(VISTAS_T[0][1] / RAIO_SOL_PC).toBeCloseTo(5.741, 3);
-  });
-});
-
 describe('a CIRURGIA da constante — duas perguntas, dois símbolos', () => {
   const engine = readFileSync(new URL('../core/engine.ts', import.meta.url), 'utf8');
   const rig = readFileSync(new URL('../cinematic/cameraRig.ts', import.meta.url), 'utf8');
-  const planetas = readFileSync(new URL('./planetas/planetas.ts', import.meta.url), 'utf8');
   const escala = readFileSync(new URL('../escala.ts', import.meta.url), 'utf8');
 
   it('a constante do SISTEMA SOLAR está congelada em 0,05 pc, com âncora escrita', () => {
@@ -2089,14 +1071,15 @@ describe('a CIRURGIA da constante — duas perguntas, dois símbolos', () => {
     expect(escala).toContain('35,4 UA');
   });
 
-  it('os TRÊS consumidores importam de `escala.ts`, e não do LOD', () => {
-    // é a cirurgia: até a F3 os três liam `DEEP_LIMIAR_PC`, o mesmo
-    // símbolo que dizia onde o disco morria. Mexer no LOD do Sol mexia
-    // no plano de corte, na velocidade do voo livre e na camada dos dez.
+  it('os consumidores importam de `escala.ts`, e não do LOD', () => {
+    // é a cirurgia: até a F3 os consumidores liam `DEEP_LIMIAR_PC`, o
+    // mesmo símbolo que dizia onde o disco morria. Desde o M1 a camada
+    // dos dez NÃO consome limiar nenhum (o corte de distância dela
+    // morreu — planetas.test.ts cobra a ausência); ficam o plano de
+    // corte (engine) e a velocidade do voo (rig).
     for (const [nome, txt] of [
       ['engine', engine],
       ['rig', rig],
-      ['planetas', planetas],
     ] as const) {
       expect(txt, nome).toMatch(/import \{[^}]*\bLIMIAR_SISTEMA_SOLAR_PC\b[^}]*\} from '[^']*escala'/);
       // o `not` é sobre o IMPORT, não sobre a prosa: os comentários
@@ -2106,7 +1089,6 @@ describe('a CIRURGIA da constante — duas perguntas, dois símbolos', () => {
     }
     expect(engine).toContain('distFromSun >= LIMIAR_SISTEMA_SOLAR_PC');
     expect(rig).toContain('dPc >= LIMIAR_SISTEMA_SOLAR_PC');
-    expect(planetas).toContain('dHomePc < LIMIAR_SISTEMA_SOLAR_PC');
     expect(engine).not.toMatch(/distFromSun >= 0\.05/);
   });
 
@@ -2122,19 +1104,7 @@ describe('a CIRURGIA da constante — duas perguntas, dois símbolos', () => {
     expect(rig).toContain('pisoDaRoda(this.camera.position.length()),');
   });
 
-  it('SABOTAGEM: separar não pode ser afrouxar — a igualdade de VALOR é obrigação', () => {
-    // os dois símbolos são livres para divergir NO FUTURO, mas hoje
-    // divergir apagaria o Sol aceso: a camada some em
-    // LIMIAR_SISTEMA_SOLAR_PC e o ganho do ponto tem de ser 0 lá.
-    expect(LIMIAR_DA_ENTREGA_PC).toBe(LIMIAR_SISTEMA_SOLAR_PC);
-    const entregaMaisLonge = LIMIAR_SISTEMA_SOLAR_PC * 1.5;
-    const ganhoSabotado = (d: number) => {
-      const k = Math.min(1, Math.max(0, (d - 0.02) / (entregaMaisLonge - 0.02)));
-      return k * k * (3 - 2 * k);
-    };
-    // com a janela esticada, o ponto ainda estaria a 41% quando a camada
-    // que o desenha sumisse: 41% de luz do Sol apagados num quadro
-    expect(1 - ganhoSabotado(LIMIAR_SISTEMA_SOLAR_PC)).toBeGreaterThan(0.4);
-    expect(1 - sunStarGain(LIMIAR_SISTEMA_SOLAR_PC)).toBe(0);
-  });
+  // (a SABOTAGEM da igualdade LIMIAR_DA_ENTREGA_PC === LIMIAR_SISTEMA_SOLAR_PC
+  // morreu com a entrega no M1: não existe mais janela para divergir da
+  // camada — o Sol-ponto não é cortado por distância nenhuma.)
 });

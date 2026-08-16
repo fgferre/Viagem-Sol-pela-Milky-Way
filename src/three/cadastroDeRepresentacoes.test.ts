@@ -66,24 +66,55 @@ describe('a varredura reproduzível — gl_PointSize contra o cadastro', () => {
 });
 
 describe('coerência das colunas', () => {
-  it('consomeL1 bate com o import de verdade, arquivo a arquivo', () => {
-    for (const r of CADASTRO_DE_REPRESENTACOES) {
+  /**
+   * A REGRA MUDOU NO M1, e o motivo é um arquivo com dois donos:
+   * `planetas.ts` desenha o `sol-ponto` (consome a lei desde o M1, fiado
+   * pelo director) E os nove `planetas` (que só migram no M4). A regra
+   * antiga — todo arquivo da entrada tem de bater com a coluna — não
+   * distingue duas representações no mesmo arquivo. A regra nova:
+   *   · quem CONSOME tem PELO MENOS UM arquivo importando `estrela.ts`
+   *     (é onde a fiação mora — e a coluna `arquivos` diz qual);
+   *   · quem NÃO consome não pode ter NENHUM arquivo importando — exceto
+   *     arquivo partilhado com uma entrada consumidora, que é cobrado
+   *     pela regra dela.
+   * A mentira continua quebrando aqui: declarar consumo sem import cai
+   * na primeira; importar a lei numa camada não migrada cai na segunda.
+   */
+  it('consomeL1 bate com o import de verdade, entrada a entrada', () => {
+    const fontesDe = (r: (typeof CADASTRO_DE_REPRESENTACOES)[number]): string[] => {
+      const fontes: string[] = [];
       for (const a of r.arquivos) {
         const caminho = join(RAIZ, a);
-        let fontes: string[];
         try {
-          fontes = statSync(caminho).isDirectory()
-            ? arquivosDeProducao(caminho)
-            : [caminho];
+          fontes.push(
+            ...(statSync(caminho).isDirectory() ? arquivosDeProducao(caminho) : [caminho])
+          );
         } catch {
           expect.fail(`${r.id}: arquivo declarado não existe — ${a}`);
         }
+      }
+      return fontes;
+    };
+    const importa = (f: string) => /from '[^']*\/estrela'/.test(readFileSync(f, 'utf8'));
+    // os arquivos reivindicados por alguma entrada CONSUMIDORA: neles o
+    // import é assunto dela, não das entradas irmãs que os partilham
+    const deQuemConsome = new Set(
+      CADASTRO_DE_REPRESENTACOES.filter((r) => r.consomeL1).flatMap(fontesDe)
+    );
+    for (const r of CADASTRO_DE_REPRESENTACOES) {
+      const fontes = fontesDe(r);
+      if (r.consomeL1) {
+        expect(
+          fontes.some(importa),
+          `${r.id}: consomeL1=true e NENHUM arquivo da entrada importa estrela.ts`
+        ).toBe(true);
+      } else {
         for (const f of fontes) {
-          const importa = /from '[^']*\/estrela'/.test(readFileSync(f, 'utf8'));
+          if (deQuemConsome.has(f)) continue;
           expect(
-            importa,
-            `${relative(RAIZ, f)}: consomeL1=${r.consomeL1} mas o import diz o contrário`
-          ).toBe(r.consomeL1);
+            importa(f),
+            `${relative(RAIZ, f)}: consomeL1=false mas o arquivo importa estrela.ts`
+          ).toBe(false);
         }
       }
     }
@@ -106,7 +137,10 @@ describe('coerência das colunas', () => {
     }
   });
 
-  it('as 18 representações do censo da Lei estão todas aqui (mais as do grep)', () => {
-    expect(CADASTRO_DE_REPRESENTACOES.length).toBeGreaterThanOrEqual(17);
+  it('o censo da Lei está inteiro (a entrada sunstar MORREU no M1)', () => {
+    expect(CADASTRO_DE_REPRESENTACOES.length).toBeGreaterThanOrEqual(16);
+    // representação morta não tem linha: o censo é do que existe, e a
+    // varredura invertida é quem vigia o nome enterrado
+    expect(CADASTRO_DE_REPRESENTACOES.some((r) => r.id === 'sunstar')).toBe(false);
   });
 });

@@ -13,10 +13,7 @@ import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
-import { deepPointGain, filtroSolarAlvo, heroDominanceFade, sunStarGain } from '../lodStellar';
-import { psfPointSizePx } from '../../luzDaCasa';
-import { PONTO_ZERO_SOL_PC, magDoVertice } from '../planetas/planetas';
-import { CESSAO_PELO_GATE_MULT, cessaoAlvo, cessaoPeloGate } from './terra';
+import { repartir } from '../../estrela';
 import {
   CORPOS_DEFAULT_ON,
   CUSHION_DO_GATE,
@@ -143,16 +140,15 @@ describe('o contrato do registro (F0)', () => {
 });
 
 describe('Sol-ator × corpo resolvido: o conflito que a F3 dissolveu (D1)', () => {
-  it('não há mais Sol-ator: dentro do sistema solar quem desenha o Sol é o PONTO', () => {
+  it('não há mais Sol-ator: quem desenha o Sol é o corpo OU o ponto, nunca um terceiro', () => {
     // A F0 tinha de PROVAR que o disco de 2.269 UA e um corpo resolvido
-    // nunca dividiam quadro, porque os dois eram desenháveis. A F3
-    // apagou o disco: onde um corpo resolvido pode ter pixels, o Sol é
-    // ou o próprio corpo (raio físico, régua do palco) ou o ponto
-    // fotométrico — nunca uma esfera de 4.125 UA por cima.
-    for (const d of [0.02, 0.015, 0.005, 1e-4]) {
-      expect(Object.is(deepPointGain(d), 1), `ponto em ${d} pc`).toBe(true);
-      expect(Object.is(sunStarGain(d), 0), `clarão em ${d} pc`).toBe(true);
-    }
+    // nunca dividiam quadro. A F3 apagou o disco inflado; o M1 apagou o
+    // TERCEIRO desenhista (o clarão do SunStar e a janela de entrega):
+    // desde então o Sol é o corpo (régua do palco) ou o ponto
+    // fotométrico da camada dos dez, repartidos pela lei — e a soma dos
+    // pesos é 1 por construção (estrela.test.ts), não por janela.
+    const fonte = readFileSync(new URL('../heroStars.ts', import.meta.url), 'utf8');
+    expect(fonte).not.toMatch(/class SunStar/);
   });
 
   it('a conta do desenho: Júpiter só teria ≈0,2 px com a câmera a 4,125 UA DELE', () => {
@@ -285,10 +281,44 @@ describe('a lei do palco julgando o Sol (F2)', () => {
   });
 });
 
-describe('a fiação do Sol no Director (F2)', () => {
+describe('a fiação do Sol no Director (F2 → M1)', () => {
   const DIRECTOR = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
   const RAIO_SOL_FISICO_PC = (696_340 / AU_KM) * AU_PARA_PC;
   const H_HARNESS = 1713;
+  const TAN_HALF = Math.tan((FOV_DEG * Math.PI) / 360);
+  /**
+   * Chama a LEI DE VERDADE (`repartir`) com a geometria que põe o disco
+   * do Sol em ~`discoPx` na tela do harness — inversa em ângulo pequeno,
+   * então o disco devolvido difere do pedido por <1e-6 relativo; os
+   * oráculos de valor EXATO usam pontos claramente dentro de cada lado
+   * da rampa, nunca a fronteira em cima do float.
+   */
+  const repartirDoSol = (discoPx: number) => {
+    const dPc = (RAIO_SOL_FISICO_PC * H_HARNESS) / (TAN_HALF * discoPx);
+    return repartir(
+      {
+        id: 'sol',
+        semente: 1,
+        posicaoPc: [0, 0, 0],
+        raioPc: RAIO_SOL_FISICO_PC,
+        teffK: 5772,
+        tempo: 0,
+        fase: 0,
+        rotacao: { periodo: 1, eixo: [0, 1, 0] },
+        atividade: { nivel: 1 },
+      },
+      { distPc: dPc, direcao: [0, 0, 1] },
+      {
+        alturaPx: H_HARNESS,
+        tanHalfFov: TAN_HALF,
+        expoM0: 3.5,
+        sigmaPx: 0.85,
+        beta: 300,
+        trocaPx: LIMIAR_DO_GATE_PX,
+        requisitoGeometrico: 1,
+      }
+    );
+  };
 
   it('o gate do Sol usa a régua do palco, com o raio da instância', () => {
     expect(DIRECTOR).toContain('this.solArmado = gateBinario(');
@@ -327,157 +357,77 @@ describe('a fiação do Sol no Director (F2)', () => {
     expect(registro).toBeLessThan(leitura);
   });
 
-  it('o Sol-ponto cede por DOMINÂNCIA, na mesma máquina da Terra', () => {
-    // e NÃO por gate binário: cortar o halo no armar do gate apagaria
-    // ~25 px de luz para pôr 4 px no lugar — passo para trás na luz
-    expect(DIRECTOR).toContain("this.planetas.escreverCessao(");
-    expect(DIRECTOR).toContain('cessaoAlvo(');
-    expect(DIRECTOR).toContain('solCorpoEmQuadro');
-    expect(DIRECTOR).toContain('magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1)');
-    // e "corpo em quadro" é agora só a decisão do gate do palco
-    expect(DIRECTOR).toContain('const solCorpoEmQuadro = this.sun.group.visible;');
-  });
-
-  it('a MESMA régua guia o filtro solar da fotosfera (F2)', () => {
-    // as duas trocas do Sol leem o MESMO número: no trecho em que o ponto
-    // cede ao corpo, o corpo troca a radiância verdadeira pela paleta
-    // autorada. O halo virou SÍMBOLO para as duas leis lerem a mesma
-    // medida; se cada uma calculasse a sua, poderiam divergir sem ninguém
-    // ver. A RAMPA, essa, é própria do filtro desde 15/08 — ver o teste
-    // seguinte, que mede o que a diferença vale.
-    expect(DIRECTOR).toContain('const solHaloPx = this.stars');
-    expect(DIRECTOR).toContain('cessaoAlvo(solCorpoEmQuadro, solDiscoPx, solHaloPx)');
-    expect(DIRECTOR).toContain('this.sun.escreverFiltroSolar(');
+  it('o Sol é UMA repartição (M1): a lei decide cessão, filtro e peso da malha', () => {
+    // as quatro rampas viraram uma função pura: `repartir` (estrela.ts).
+    // O director escreve as três saídas nos três sítios — e o teste de
+    // texto cobra a fiação, enquanto a conta é cobrada em números logo
+    // abaixo, direto na lei.
+    expect(DIRECTOR).toContain('const leiDoSol = repartir(');
+    expect(DIRECTOR).toContain('this.sun.escreverFiltroSolar(leiDoSol.overrideExpoente);');
     expect(DIRECTOR).toContain(
-      'filtroSolarAlvo(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0)'
+      'this.sun.escreverPesoDaLei(leiDoSol.wResolvido * leiDoSol.wMalha);'
     );
-    // e a rampa é IMPORTADA de onde ela mora, não recopiada no Director
-    expect(DIRECTOR).toMatch(
-      /import \{[\s\S]*?\bfiltroSolarAlvo\b[\s\S]*?\} from '\.\/world\/lodStellar'/
-    );
-    // a 0,027 UA — a distância em que a F2 crua entregou 100% branco — o
-    // disco domina com folga (r = 19) ⇒ g = 0 EXATO: a superfície autorada
-    // de volta. A borda de CIMA não se moveu com o alargamento.
-    const perto = 0.027 * 4.8481e-6;
-    const discoPerto = diametroAparentePx(RAIO_SOL_FISICO_PC, perto, H_HARNESS, FOV_DEG);
-    const haloPerto = psfPointSizePx(
-      magDoVertice(PONTO_ZERO_SOL_PC, perto, 1),
-      3.5,
-      0.85,
-      H_HARNESS
-    );
-    expect(discoPerto / haloPerto).toBeCloseTo(19.038, 3);
-    expect(Object.is(filtroSolarAlvo(discoPerto / haloPerto), 0)).toBe(true);
+    expect(DIRECTOR).toContain("this.planetas.escreverCessao(");
+    expect(DIRECTOR).toContain('this.sun.group.visible ? leiDoSol.wResolvido : 0');
+    // o trocaPx do Sol é o gate de corpo texturizado do palco — o 4 px
+    // deixou de ser uma segunda lei e virou PARÂMETRO da repartição (§3)
+    expect(DIRECTOR).toContain('trocaPx: LIMIAR_DO_GATE_PX');
+    // e a lei é IMPORTADA de onde mora, não recopiada no Director
+    expect(DIRECTOR).toMatch(/import \{ repartir \} from '\.\/estrela'/);
   });
 
-  it('A RAMPA DO FILTRO ALCANÇA 1 UA — e é o conserto, não o efeito colateral', () => {
-    // ORÁCULO REESCRITO em 15/08. Ele cobrava `1 − heroDominanceFade` = 1
-    // EXATO aqui, com o argumento de que "o filtro NÃO apaga a vista que a
-    // F1 aprovou". O argumento caiu com o voo de ida e volta: a 1 UA o
-    // disco mede 0,572 do halo, e com a rampa velha (1 → 2,5) isso era
-    // radiância verdadeira PLENA — a troca inteira ficava espremida entre
-    // 0,562 e 0,219 UA, e o voo pegou 60% dela num degrau só (0,232 →
-    // 0,341 UA). A rampa nova começa em 0,4, ou seja em 1,446 UA, e por
-    // isso ESTA distância deixa de ser branco puro de propósito.
-    const dPc = 4.8481e-6;
-    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
-    const halo = psfPointSizePx(magDoVertice(PONTO_ZERO_SOL_PC, dPc, 1), 3.5, 0.85, H_HARNESS);
-    expect(disco / halo).toBeCloseTo(0.5719, 4);
-    // o valor NOVO, derivado: g = 1 − smoothstep(−ln2,5, ln2,5, ln 0,5719)
-    expect(filtroSolarAlvo(disco / halo)).toBeCloseTo(0.9006, 4);
-    // e o que ele custa em luz: o filtro é EXPOENTE (`pow(fator, g)`) sobre
-    // uma razão de 26,09 magnitudes, então 0,0994 de rampa são 2,59 mag —
-    // a `solreal1ua` escurece esse tanto, e escurecer ali é a direção que o
-    // item 3 pede, não o preço dela
-    expect((1 - filtroSolarAlvo(disco / halo)) * 26.09).toBeCloseTo(2.592, 3);
-    // a lei ANTIGA, transcrita, para a diferença ser medida e não afirmada
-    expect(1 - heroDominanceFade(disco / halo)).toBe(1);
-  });
-
-  it('a 1 UA o disco AINDA NÃO domina o halo: cessão 0 EXATA', () => {
-    // é o que mantém a `solreal1ua` no md5 da F1 — a tela branca de
-    // dentro do sistema continua sendo defeito de EXPOSIÇÃO (bastão §5.6),
-    // e esta fase não a apaga por acidente
-    const dPc = 4.8481e-6; // 1 UA
-    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
-    const halo = psfPointSizePx(magDoVertice(PONTO_ZERO_SOL_PC, dPc, 1), 3.5, 0.85, H_HARNESS);
-    expect(disco).toBeCloseTo(14.4, 1);
-    expect(halo).toBeCloseTo(25.2, 1);
-    expect(cessaoAlvo(true, disco, halo)).toBe(0);
-    // …e mais perto ela acorda, sem degrau: o cruzamento fica por volta
-    // de 0,55 UA, ou seja BEM depois do gate de 3,60 UA
-    const perto = 0.4 * 4.8481e-6;
-    expect(
-      cessaoAlvo(
-        true,
-        diametroAparentePx(RAIO_SOL_FISICO_PC, perto, H_HARNESS, FOV_DEG),
-        psfPointSizePx(magDoVertice(PONTO_ZERO_SOL_PC, perto, 1), 3.5, 0.85, H_HARNESS)
-      )
-    ).toBeGreaterThan(0);
-  });
-});
-
-describe('a cessão pelo gate (padrão desde 15/08; ?bcede= é o caminho de volta)', () => {
-  const DIRECTOR = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
-  const RAIO_SOL_FISICO_PC = (696_340 / AU_KM) * AU_PARA_PC;
-  const H_HARNESS = 1713;
-
-  it('fora de quadro, mult 0 ou diâmetro envenenado ⇒ 0 EXATO', () => {
-    expect(cessaoPeloGate(false, 500, 1)).toBe(0);
-    expect(cessaoPeloGate(true, 40, 0)).toBe(0);
-    expect(cessaoPeloGate(true, 40, Number.NaN)).toBe(0);
-    expect(cessaoPeloGate(true, Number.NaN, 1)).toBe(0);
-  });
-
-  it('o MULTIPLICADOR PADRÃO é 1 — a rampa começa no próprio gate do palco', () => {
-    // 1 não é um número escolhido: é dizer que não há deslocamento nenhum
-    // sobre o limiar que o palco já usa para decidir se o corpo existe na
-    // tela. Qualquer outro valor seria uma segunda régua para o mesmo gate.
-    expect(CESSAO_PELO_GATE_MULT).toBe(1);
-    expect(cessaoPeloGate(true, LIMIAR_DO_GATE_PX, CESSAO_PELO_GATE_MULT)).toBe(0);
-  });
-
-  it('no armar do gate (4 px, mult 1) a cessão é 0 EXATO — sem pop na fronteira', () => {
-    // é o que separa esta âncora do corte binário que o comentário do
-    // Director proíbe: armar o gate NÃO muda o ponto em nada
-    expect(cessaoPeloGate(true, LIMIAR_DO_GATE_PX, 1)).toBe(0);
-    // e abaixo do gate (corpo desarmado ⇒ fora de quadro) também é 0
-    expect(cessaoPeloGate(false, LIMIAR_DO_GATE_PX / CUSHION_DO_GATE, 1)).toBe(0);
-  });
-
-  it('com a bola a 2,5 gates (10 px) a cessão é 1 EXATO — a bola assumiu', () => {
-    expect(cessaoPeloGate(true, 2.5 * LIMIAR_DO_GATE_PX, 1)).toBe(1);
-  });
-
-  it('a 1 UA, com mult 1, o ponto cede INTEIRO — a bola de 14,4 px aparece', () => {
-    const dPc = 4.8481e-6; // 1 UA
-    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
-    expect(disco).toBeCloseTo(14.4, 1);
-    expect(cessaoPeloGate(true, disco, 1)).toBe(1);
-  });
-
-  it('monotônica na bola, e o multiplicador empurra a rampa inteira', () => {
+  it('no armar do gate (4 px) o peso da malha é 0 — o liga/desliga fica invisível', () => {
+    // o gate do palco continua BINÁRIO (custo), mas a lei entrega a malha
+    // DO ZERO: wResolvido = smoothstep(4 px, 8 px, disco) é 0 no armar e
+    // no desarmar (2 px) — sem pop nos dois sentidos da histerese.
+    const r39 = repartirDoSol(3.9);
+    expect(r39.wResolvido).toBe(0);
+    expect(r39.wPonto).toBe(1);
+    expect(repartirDoSol(LIMIAR_DO_GATE_PX / CUSHION_DO_GATE).wResolvido).toBe(0);
+    // logo depois do armar a entrega ainda é imperceptível (C¹: a rampa
+    // nasce com derivada zero)
+    expect(repartirDoSol(4.05).wResolvido).toBeLessThan(2e-3);
+    // e com o disco folgado além de 2 gates o ponto cedeu INTEIRO
+    expect(repartirDoSol(8.1).wResolvido).toBe(1);
+    // monotônica no meio — sem passo para trás
     let anterior = 0;
-    for (let px = LIMIAR_DO_GATE_PX; px <= 12; px += 0.05) {
-      const v = cessaoPeloGate(true, px, 1);
+    for (let px = 3.9; px <= 8.1; px += 0.05) {
+      const v = repartirDoSol(px).wResolvido;
       expect(v).toBeGreaterThanOrEqual(anterior);
       anterior = v;
     }
-    // mult 2 dobra a régua: 10 px ainda não é plena, 20 px é
-    expect(cessaoPeloGate(true, 10, 2)).toBeLessThan(1);
-    expect(cessaoPeloGate(true, 20, 2)).toBe(1);
   });
 
-  it('o Director compõe por MAX com a dominância, e o padrão sai da constante', () => {
-    expect(DIRECTOR).toContain("this.debug.get('bcede')");
-    expect(DIRECTOR).toContain('cessaoPeloGate(');
-    // `?bcede=0` ⇒ o valor herdado, bit a bit — o ramo `:` do ternário, que
-    // é o lado A do A/B e continua existindo
-    expect(DIRECTOR).toContain(': alvoPorDominancia');
-    expect(DIRECTOR).toContain('this.cessaoPeloGateMult > 0');
-    // e o default não é um literal solto no parse: sai da constante que
-    // carrega a derivação (terra.ts), nos dois lugares que o escrevem
-    expect(DIRECTOR).toContain('private cessaoPeloGateMult = CESSAO_PELO_GATE_MULT;');
-    expect(DIRECTOR).toContain('bcede >= 0 ? bcede : CESSAO_PELO_GATE_MULT');
+  it('a 1 UA (tela do harness) o disco tem 14,4 px: ponto cedido, paleta autorada', () => {
+    // ANTES do M1: cessão por max(dominância, gate) = 1 e filtro 0,9006 —
+    // a fotosfera a ~2,6 mag do topo, com a costura medida em 5,2× no voo.
+    // AGORA: as duas saem da MESMA régua (disco em px contra 4 px), então
+    // a 14,4 px o ponto cedeu (wResolvido = 1) E o filtro já devolveu a
+    // paleta autorada (override = 0, disco ≥ 10 px) — não existe mais o
+    // trecho em que uma rampa entrega e a outra ainda não pegou, que era
+    // exatamente a costura do item 3.
+    const dPc = 4.8481e-6; // 1 UA
+    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
+    expect(disco).toBeCloseTo(14.4, 1);
+    const r = repartirDoSol(disco);
+    expect(r.wResolvido).toBe(1);
+    expect(r.overrideExpoente).toBe(0);
+  });
+
+  it('o override tem a largura própria da lei: 1 exato até 4 px, 0 exato de 10 px em diante', () => {
+    // §5.7: mesma régua do eixo óptico (discoPx), largura própria (2,5).
+    // Longe (disco < 4 px) a malha nem existe (palco desarmado) e a lei
+    // manda radiância verdadeira; perto, a paleta autorada em stops.
+    expect(repartirDoSol(1).overrideExpoente).toBe(1);
+    expect(repartirDoSol(3.9).overrideExpoente).toBe(1);
+    expect(repartirDoSol(10.1).overrideExpoente).toBe(0);
+    expect(repartirDoSol(40).overrideExpoente).toBe(0);
+    // monotônico e C¹ no meio (smoothstep)
+    let anterior = 1;
+    for (let px = 3.9; px <= 10.1; px += 0.05) {
+      const g = repartirDoSol(px).overrideExpoente;
+      expect(g).toBeLessThanOrEqual(anterior);
+      anterior = g;
+    }
   });
 });

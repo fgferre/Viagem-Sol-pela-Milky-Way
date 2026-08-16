@@ -96,6 +96,88 @@ const PROIBIDOS: SimboloProibido[] = [
       'os coeficientes do corpo negro são interpolados de luzDaCasa.ts — ' +
       'redigitar um aqui recria a divergência que o L1 matou',
   },
+  // ─── M1 (2026-08-16): o Sol inteiro na repartição única ────────────────
+  // (os padrões proíbem a DECLARAÇÃO, não a menção: as lápides citam os
+  // nomes de propósito — é ressuscitar o corpo que é proibido)
+  {
+    arquivo: 'src/three/world/lodStellar.ts',
+    padrao:
+      /function (sunStarGain|deepPointGain|filtroSolarAlvo|shouldDiscBeActive|computeSolidAngle|distanceForSolidAngle|spriteAttenuationWithFocus|heroSizePcDePx|projectedRadiusPx|maxSpriteSolidAngleRad)/,
+    migracao: 'M1',
+    razao:
+      'a entrega ponto→clarão, o filtro por razão disco/halo e o gate dormente ' +
+      'morreram — quem reparte o Sol é repartir() de estrela.ts',
+  },
+  {
+    arquivo: 'src/three/world/lodStellar.ts',
+    padrao: /const (LOD_SOL|LIMIAR_DA_ENTREGA_PC|MEIA_LARGURA_LOG_DO_FILTRO|DISC_ENTER_RAD|DISC_EXIT_RAD|POINT_SIZE_CEILING_PX|DISC_FADE0_ARTISTICO_PC)/,
+    migracao: 'M1',
+    razao: 'as janelas em parsec do Sol e as âncoras do gate morto não renascem',
+  },
+  {
+    arquivo: 'src/three/world/heroStars.ts',
+    padrao: /class SunStar/,
+    migracao: 'M1',
+    razao:
+      'o clarão de autor do Sol morreu — o Sol de longe é o ponto fotométrico ' +
+      'da camada dos dez, e o clarão de asas de todos é o M2',
+  },
+  {
+    arquivo: 'src/three/world/corpos/terra.ts',
+    padrao: /function cessaoPeloGate|CESSAO_PELO_GATE_MULT\s*=/,
+    migracao: 'M1',
+    razao: 'a cessão do Sol-ponto é wResolvido da repartição — uma régua, não duas',
+  },
+  {
+    arquivo: 'src/three/director.ts',
+    padrao: /Math\.max\(\s*alvoPorDominancia|cessaoPeloGate\(|filtroSolarAlvo\(/,
+    migracao: 'M1',
+    razao: 'o max de duas rampas tinha QUINA (§8.3) — a repartição é uma só',
+  },
+  {
+    arquivo: 'src/three/director.ts',
+    padrao: /get\('bcede'\)|new SunStar/,
+    migracao: 'M1',
+    razao: 'a porta ?bcede e a instância do clarão de autor morreram com a migração',
+  },
+  {
+    arquivo: 'src/three/luzDaCasa.ts',
+    padrao: /function lerPortaFotosfera|FOTOSFERA_VERDADEIRA\s*=|get\('bfoto'\)/,
+    migracao: 'M1',
+    razao:
+      'a fotosfera na unidade é lei sem porta — o lado A vive nas capturas, ' +
+      'nunca num ramo de runtime (regra iv do §4)',
+  },
+  {
+    arquivo: 'src/three/atlasConfig.ts',
+    padrao: /function claraoDoAtlas|PISO_DO_CLARAO\s*=|REFERENCIA_UA\s*=/,
+    migracao: 'M1',
+    razao:
+      'o Atlas não apaga mais o clarão 100× (item 4): um universo só, o mesmo ' +
+      'desenho nos dois modos — decisão do dono',
+  },
+  {
+    arquivo: 'src/three/core/post.ts',
+    padrao: /setGradacao\(fator|this\.gradacao/,
+    migracao: 'M1',
+    razao: 'o bloom não tem apagador por modo — a força dele é a mesma nos dois',
+  },
+  {
+    arquivo: 'src/three/world/planetas/planetas.ts',
+    padrao: /uniform float uGain|deepPointGain\(|import \{[^}]*LIMIAR_SISTEMA_SOLAR_PC/,
+    migracao: 'M1',
+    razao:
+      'o Sol-ponto não entrega o bastão nem é cortado a 0,05 pc — a magnitude ' +
+      'apaga, a repartição cede',
+  },
+  {
+    arquivo: 'src/three/selo.ts',
+    padrao: /porta\('bcede'|porta\('bfoto'|porta\('grad'|gradacao:|from '\.\/world\/lodStellar'/,
+    migracao: 'M1',
+    razao:
+      'as portas mortas saem do registro e o eixo ESCALA lê a constante de ' +
+      'escala.ts, não a entrega morta',
+  },
 ];
 
 describe('os símbolos proibidos não renasceram', () => {

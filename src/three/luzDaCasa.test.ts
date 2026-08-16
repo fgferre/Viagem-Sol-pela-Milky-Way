@@ -29,7 +29,6 @@ import {
   RAIO_DO_SPRITE_EM_SIGMAS,
   comprimir,
   lerBetaDaEmissao,
-  lerPortaFotosfera,
   SIGMA_PX,
   M_V_SOL,
   M_V_SOL_DO_CAMPO,
@@ -528,22 +527,14 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
     expect(lerBetaDaEmissao('?bemis=30')).toBe(30);
   });
 
-  it('a porta ?bfoto= é BINÁRIA — ausente é a radiância verdadeira, 0 volta', () => {
-    // binária de propósito, ao contrário da irmã `?bemis=`: um "quanto"
-    // aqui seria um segundo botão de brilho para a malha, e a fotosfera
-    // ou está na unidade da casa ou não está. O joelho mora em `?bemis=`.
-    expect(lerPortaFotosfera('')).toBe(true);
-    expect(lerPortaFotosfera('?outro=1')).toBe(true);
-    expect(lerPortaFotosfera('?bfoto=1')).toBe(true);
-    // o lado A do A/B — e é só o `0` que volta, porque a porta é binária
-    expect(lerPortaFotosfera('?bfoto=0')).toBe(false);
-    // lixo cai no default, como na irmã: um `?bfoto=abacaxi` que desligasse
-    // a lei da casa seria a porta decidindo por engano de digitação
-    expect(lerPortaFotosfera('?bfoto=abacaxi')).toBe(true);
-    expect(lerPortaFotosfera('?bfoto=')).toBe(true);
-    // e ela é PURA: recebe a query, não lê `window` — que é o que
-    // permite este teste existir em `environment: 'node'`
-    expect(lerPortaFotosfera('?bemis=0&bfoto=0&q=cinema')).toBe(false);
+  it('a porta ?bfoto= MORREU no M1 — a fotosfera na unidade é lei sem porta', () => {
+    // regra iv do §4 da LEI-DA-ESTRELA: o commit que migra mata a porta.
+    // O lado A do A/B vive nas capturas versionadas e no teste numérico
+    // da cirurgia (stellarBody.test.ts), nunca mais num ramo de runtime.
+    const src = readFileSync(new URL('./luzDaCasa.ts', import.meta.url), 'utf8');
+    expect(src).not.toMatch(/function lerPortaFotosfera/);
+    expect(src).not.toMatch(/FOTOSFERA_VERDADEIRA\s*=/);
+    expect(src).not.toMatch(/get\(\s*'bfoto'\s*\)/);
   });
 });
 

@@ -20,7 +20,6 @@
 // Este arquivo não toca `window`, não importa three e não importa React:
 // é lido pelo HUD e pelo Director, e é isso que o mantém testável.
 // ============================================================
-import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
 
 /** Uma família de coisas na cena que pode ser desligada. */
@@ -256,116 +255,23 @@ export const ASTEROIDES_DO_SISTEMA: readonly CorpoDoSistema[] = [
 ];
 
 // ============================================================
-// A GRADAÇÃO POR CONTEXTO (F6) — o que o Atlas faz com o
-// instrumento para que o céu de dentro do sistema possa ser lido.
+// (A GRADAÇÃO POR CONTEXTO (F6) morava aqui — `claraoDoAtlas`, o piso
+// de 0,01 e a referência de 20.000 UA — e morreu no M1
+// da LEI-DA-ESTRELA. Ela era o CURATIVO do item 3: dentro do sistema o
+// Atlas era uma tela branca (99% do quadro acima de meia luz a 2,2 UA,
+// medido em 2026-08-12), e o Atlas apagava o clarão até 100× para dar
+// para ler o céu — o item 4 das pendências, "o Atlas desenha com o
+// brilho apagado 100× em relação ao filme", que o dono sentenciou:
+// não pode existir diferença de desenho entre os dois modos. Com a
+// repartição única o ponto do Sol cede ao corpo quando resolvido e o
+// clarão deriva do fluxo — a doença saiu, o curativo saiu junto. A
+// medição inteira que calibrou o curativo está no git deste bloco.
 //
-// O QUE FOI MEDIDO, e é ele que manda (2026-08-12, nesta GPU,
-// 900×900, `?q=cinema&shot=2`, com a câmera do Atlas enquadrando
-// órbitas de 0,39 a 39,5 UA e além):
-//
-//   dist. da câmera ao Sol   fração acima de meia luz   luz média
-//        2,2 UA                      99,0 %              0,927
-//        5,8 UA                      98,9 %              0,924
-//         30 UA                      98,6 %              0,918
-//        228 UA (a faixa da           97,7 %              0,904
-//                abertura — o número
-//                dela mora em
-//                `AtlasRig.focarNoSistema`)
-//      2.018 UA                      67,4 %              0,637
-//     10.034 UA                      28,2 %              0,304
-//     20.183 UA                       7,0 %              0,101
-//     50.168 UA                       1,1 %              0,032
-//
-// Em português: DENTRO DO SISTEMA O ATLAS É UMA TELA BRANCA. Não é
-// exagero de medida — é o que a captura mostra a olho: nada visível,
-// nem planeta nem estrela. E a causa está medida também: a MESMA
-// vista com `&nobloom=1` tem luz média 0,018 e 97% do quadro escuro,
-// com o Sol, os planetas e o campo no lugar. O que lava o quadro é o
-// CLARÃO — o bloom de uma fonte pontual de pico 4,8e6 (Onda 4)
-// espalhado por um raio de 0,58 de tela.
-//
-// E é por isso que o eixo é o clarão e NÃO o brilho. O bloom é
-// instrumento, não céu: no vocabulário do próprio selo ele é
-// "artístico — o disco do Sol e o clarão". Mexer nele muda a ÓPTICA
-// da câmera e deixa a fotometria inteira onde está — cada estrela e
-// cada planeta com a magnitude que a lei da casa calculou. Baixar a
-// exposição faria o contrário: mentiria sobre a luz de tudo para
-// consertar o borrão de uma fonte só, e é exatamente o "teto de
-// brilho" que a decisão de dosagem da Onda 4 proíbe ("o brilho do Sol
-// NÃO se mente"). Medido: `?exp=0,12` (três pontos abaixo) ainda
-// devolve luz média 0,75 — o clarão vence a exposição, porque ele
-// entra ANTES dela no compósito.
-//
-// A LEI, e ela é uma só: o fator do clarão é `(d / d₀)²` grampeado
-// num piso. É a lei do inverso do quadrado — a irradiância cresce com
-// `1/d²` quando a câmera se aproxima, e o fator a devolve, de modo
-// que o clarão do Sol OCUPA SEMPRE O MESMO TANTO DE QUADRO que ocupa
-// na distância de referência. Dois números, os dois medidos:
-//
-//  - `REFERENCIA_UA = 20.000` — a distância em que o clarão do filme
-//    já não lava nada (7% do quadro acima de meia luz, luz média
-//    0,10). Daqui para fora o fator é 1 EXATO e o Atlas mostra o
-//    mesmo que o filme mostraria.
-//  - `PISO_DO_CLARAO = 0,01` — o piso, porque a lei sozinha
-//    exagera: a curva de tom comprime, e em 228 UA o `1/d²` pediria
-//    1,3e-4, que apaga o clarão em vez de moderá-lo. Em 0,01 o clarão
-//    volta a ser clarão: a fração do quadro acima de meia luz cai de
-//    97,7% para 22% nessa faixa e para 23% a 6 UA, o céu volta a ser
-//    preto, as estrelas aparecem e os planetas viram pontos
-//    reconhecíveis ao lado do Sol.
-//
-// O piso e a lei se encontram em 2.000 UA — e esse é o outro limiar,
-// DERIVADO e não escolhido: `(2.000/20.000)² = 0,01`.
-//
-// OS LIMIARES HERDADOS, e por que não sobrevivem (PLANO-ATLAS §2.3,
-// linha `visualPresets.ts`). O doador separava contexto em 3,5 e 50
-// UA, e os de câmera em 200/2.000 da escala dele. Aqui a medição
-// desmente a primeira divisão: de 2,2 a 228 UA o quadro está
-// IGUALMENTE lavado (97–99% acima de meia luz), porque em toda essa
-// faixa o Sol é o mesmo ponto fotométrico e o clarão dele é o mesmo
-// borrão de tela cheia — 3,5 e 50 UA separariam dois regimes que
-// nesta casa são um só. O que atravessa dos 200/2.000 é a FORMA (uma
-// distância onde a correção satura e outra onde ela acaba); os
-// números são re-derivados na escala da Viagem e são 2.000 e 20.000
-// UA, medidos acima.
-//
-// OS EIXOS QUE NÃO NASCERAM, declarados aqui para não renascerem por
-// engano (a lição dos 7 campos mortos do doador vale mais que a lista
-// de 5 eixos):
-//  - BRILHO: sem consumidor e contra o NORTE, pelo que está escrito
-//    acima — com o clarão moderado a fotometria já lê bem, e mexer na
-//    exposição seria mentir sobre a luz de todo o resto.
-//  - SATURAÇÃO e CONTRASTE: sem consumidor MEDIDO. Com o clarão
-//    moderado o quadro tem céu preto, estrelas e planetas; não há
-//    defeito de croma nem de faixa dinâmica para corrigir, e num
-//    produto em que a COR É O DADO um ganho de saturação seria
-//    invenção com cara de medida. Nasceriam como passe próprio
-//    (`enabled = false` fora do Atlas, precedente do knee) no dia em
-//    que houver o que consertar.
-//  - GUIA: sem sujeito. Não há órbita desenhada, grade nem retícula
-//    na Viagem — o eixo governaria o nada. Quando a Onda 6 desenhar
-//    órbitas, é aqui que a densidade delas por contexto entra.
+// OS EIXOS QUE NÃO NASCERAM, declarados para não renascerem por engano:
+//  - BRILHO: contra o NORTE — mexer na exposição mentiria sobre a luz
+//    de todo o resto para consertar uma fonte só.
+//  - SATURAÇÃO e CONTRASTE: sem consumidor MEDIDO; num produto em que a
+//    COR É O DADO, ganho de saturação seria invenção com cara de medida.
+//  - GUIA: sem sujeito ainda — quando houver órbitas desenhadas, a
+//    densidade delas por contexto entra aqui.
 // ============================================================
-
-export const PISO_DO_CLARAO = 0.01;
-export const REFERENCIA_UA = 20000;
-
-/**
- * O fator MULTIPLICATIVO do clarão para uma câmera a `distanciaPc` do
- * Sol. Fora do Atlas ninguém chama isto: quem chama é o tick, e só na
- * fase 'atlas'.
- *
- * Devolve 1 EXATO da referência para fora (e para distância envenenada):
- * é o que faz o termo ser neutro em IEEE754 quando não há gradação —
- * `x * 1 === x` — e o que mantém as 18 vistas oficiais bit a bit.
- */
-export function claraoDoAtlas(distanciaPc: number): number {
-  if (!Number.isFinite(distanciaPc)) return 1;
-  // a conversão sai da MESMA constante que a cena usa para pôr planeta
-  // no lugar (`AU_PARA_PC`), pelo avesso — redigitar 206.264 aqui seria
-  // a segunda fonte de verdade de sempre
-  const k = distanciaPc / AU_PARA_PC / REFERENCIA_UA;
-  const fator = k * k;
-  if (!(fator < 1)) return 1;
-  return fator > PISO_DO_CLARAO ? fator : PISO_DO_CLARAO;
-}

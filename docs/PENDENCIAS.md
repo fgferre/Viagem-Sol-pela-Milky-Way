@@ -22,8 +22,9 @@ existe, nasce desligada e fica como lápide. O dono a recusou por escrito
 `LEI-DA-ESTRELA.md` §7.
 
 **O plano da estrela está em [`docs/LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md).**
-Os itens 3, 4, 5, 12 e 40 são um só conserto: pôr a bola 3D e o ponto do Sol
-na mesma escala de brilho (passos F1/F2). Os itens 8, 9 e 10 são HUD,
+O que restou do conserto do Sol (itens 3 e 40 até o dono conferir; o rabo
+de ambos) é o **M2**: a asa do clarão + o bloom repesado. O item 4 morreu
+no M1; o 5 é obra própria (ciclo pela data). Os itens 8, 9 e 10 são HUD,
 independentes. O item 21 é memória paga e inútil (`depth: false` no engine).
 O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é o canal do
 passo E3.
@@ -53,23 +54,29 @@ cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
 
 - O dono conferir o app com o padrão novo (a queixa que abriu a rodada era
   do app com o desenho velho).
-- O halo do Sol segue generoso no meio do caminho (~170 px contra ~40 da
-  régua ideal) e quase não encolhe com a distância: `luz-do-quadro.mjs`
-  ainda REPROVA a escada padrão. O conserto é a lei de asas da
-  `LEI-DA-ESTRELA.md` v2 (migração M2), que também governa o bloom.
-- **A Lei da Estrela foi REESCRITA (v2, 15/08)** depois de uma banca de
-  quatro críticos e do plano conceitual externo trazido pelo dono. O F0
-  (PSF e Ballesteros num endereço só) FECHOU em 16/08 com zero pixel
-  medido em 51 vistas; o L1 (`estrela.ts`, a peça única, com cadastro de
-  representações em código) FECHOU no mesmo dia, sem consumidor; os
-  juízes do §5.10 FECHARAM em seguida — a escada com teto da lei REPROVA
-  4 de 11 com os vermelhos certos (monotonia a 1 UA, orçamento a
-  2.000/4.000, penhasco 119→4 px a 15.800) e o voo passa com margens
-  escritas. A próxima obra é o M1 — o Sol inteiro num commit, a maior
-  demolição da casa; o aceite intermediário declarado: a costura
-  0,232→0,341 UA cai de 5,2× para ≤ 1,5× e a escada melhora de 4/11.
-  Cada migração APAGA a lei velha no mesmo commit. Saldo contado:
-  ~3.500 linhas mortas contra 400–600 novas.
+- O halo do Sol segue generoso no meio do caminho (~160–180 px de 3,6 a
+  500 UA) e quase não encolhe com a distância: `luz-do-quadro.mjs` ainda
+  REPROVA 4 de 11 — mas os vermelhos agora são TODOS do bloom (monotonia
+  na chegada a 1 UA, orçamento a 2.000/4.000, e 80 px contra teto de
+  69 a 15.800). O conserto é a lei de asas + a pirâmide do bloom
+  repesada (migração M2), que também mata o clamp dos espinhos (item 43).
+- **O M1 FECHOU em 16/08 — o Sol inteiro num commit, a maior demolição
+  da casa.** UMA função pura (`repartir`, `estrela.ts`) decide cessão,
+  filtro e peso da malha; morreram o `SunStar`, a entrega {0,02;0,05} pc,
+  o corte da camada dos dez a 0,05 pc, as quatro rampas com quina, o
+  clarão apagado do Atlas (item 4) e as portas `?bcede`/`?bfoto`. O
+  penhasco do fim da escada morreu junto: 119→4 px virou 119→80 px
+  contínuo, e nove dos onze degraus saíram bit-idênticos. **A costura
+  0,232→0,341 UA caiu de 30→130 px (4,3×, explodindo) para 30→20 px
+  (1,5×, encolhendo como manda a física) — o aceite declarado, cumprido
+  e medido**; o voo PASSA em 34 degraus, ida e volta, zero gritos. E
+  abriu uma janela LIMPA de 0,34 a 0,94 UA (borrão 10–20 px onde havia
+  parede de 130–195). A borda dela — o halo de ~178 px voltando quando
+  o ponto reentra a ~1 UA — já existia idêntica antes (181 px a 1 UA nos
+  dois estados) e é a doença que o M2 mata: cessão parcial é impotente
+  em fonte saturada (medido em 15/08), então o halo só encolhe quando a
+  asa da lei redimensionar o clarão. Saldo do commit: ~2.000 linhas
+  devolvidas. O que sobra da luz é o M2 (asa + bloom).
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
 estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
@@ -78,7 +85,9 @@ Segurar o push **não foi pedido dele**: foi um agente que inventou a trava.
 Qualquer push na `main` põe o site no ar. Sem pedido explícito, não se
 publica; o pedido de publicar continua de pé.
 
-Números aposentados (1, 2, 11, 14, 29, 30, 31, 32, 35, 42): `git show de16542 -- docs/PENDENCIAS.md`.
+Números aposentados (1, 2, 4, 11, 14, 29, 30, 31, 32, 35, 42): `git show de16542 -- docs/PENDENCIAS.md`;
+o 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do
+código e os dois modos desenham igual, decisão do dono cumprida.
 
 ---
 
@@ -100,14 +109,16 @@ O que ela ainda cobra: fotos reais do Sol nunca julgadas por ele
 volta, versionado.
 → `docs/NORTE.md`, seção “Como medir”.
 
-**3. A tela fica branca quando o Sol está longe.** *(CONSERTO LIGADO COMO
-PADRÃO em 15/08 — ver o bloco "ONDA DA LUZ"; falta o dono conferir no app.)*
+**3. A tela fica branca quando o Sol está longe.** *(M1 FECHADO em 16/08 —
+a repartição única é o padrão; falta o dono conferir no app, e o halo
+constante do meio do caminho é o M2.)*
 De ~1 UA a ~2.000 UA o quadro lava. O Sol encolhe 4.000 vezes e a mancha
-na tela não muda de tamanho. São dois defeitos: o ponto do Sol não encolhe,
-e o borrão da lente multiplica. A bola 3D está certa; o brilho por cima é
-que está solto. Entre a bola (some ~7,2 UA) e a estrela com espinhos
-(acende ~4.000 UA) não há nem uma coisa nem outra — o Atlas abre no meio
-desse vão.
+na tela não muda de tamanho. Era: o ponto do Sol não encolhia, o borrão da
+lente multiplicava, e entre a bola e a estrela de espinhos havia um vão.
+Com o M1 o vão morreu (o ponto é o dono do Sol em toda distância, a bola
+entra do zero pela lei) e o que resta é o borrão do BLOOM — a mancha de
+~160–180 px que não encolhe entre 3,6 e 500 UA. Esse é o M2: a asa do
+clarão + a pirâmide do bloom repesada.
 
 O conserto não é teto de brilho (proibido) nem a pupila (reprovada). É a
 lei da estrela: mesma escala de brilho para bola e ponto, compressão fixa.
@@ -120,15 +131,12 @@ quando nos aproximarmos delas"*
 
 → `docs/LEI-DA-ESTRELA.md`. Régua: `scripts/visual/luz-do-quadro.mjs`.
 
-**4. O Atlas desenha com o brilho apagado 100× em relação ao filme.**
-Curativo do item 3. As estrelas ficam secas no Atlas e cheias de vida no
-filme. Decisão do dono: não pode existir diferença de desenho entre os
-dois modos. Morre com o item 3.
-→ `claraoDoAtlas` em `atlasConfig.ts`.
-
 **5. O Sol do Atlas está congelado no máximo solar.**
 Cheio de manchas e explosões; o do filme começa limpo. A fase do ciclo
-deveria sair da data simulada. Mesma frente do item 4.
+deveria sair da data simulada. *(O M1 NÃO o tocou, de propósito: o pino
+`ATLAS_JOURNEY_T` existe pela reprodutibilidade das vistas do Atlas, e
+trocá-lo pela data exige o ciclo andar para TRÁS com re-bake — obra
+própria, com foto para o dono.)*
 
 **6. A cena não reafia ao trocar de monitor.**
 Os rótulos reafiam; a cena 3D não. A nitidez é decidida uma vez, no
@@ -157,11 +165,13 @@ Palavras do dono: *"percebi tb que existem 2 sois (com tags) simultaneos
 na cena. será que tem mais outras duplciacoes? ou isso já está no pipeline
 para ser resovido?"*
 
-O rótulo dobrado não se reproduziu. O que existe: o Sol é **desenhado**
-duas vezes (bola 3D + ponto da camada dos dez corpos). Na abertura do
-Atlas o sistema inteiro empilha num pixel e o borrão branco impede de ver
-o que se clica. O conserto é o item 3. Não criar segundo mecanismo de
-rótulos — o `LabelCanvas` já resolve colisão.
+O rótulo dobrado não se reproduziu. *(M1, 16/08: o Sol continua sendo
+bola 3D + ponto, mas agora os dois são UMA repartição — o ponto cede
+exatamente na medida em que a bola entra, pesos somando 1; e o terceiro
+desenhista, o clarão de autor do `SunStar`, morreu.)* O borrão branco da
+abertura do Atlas é o rabo do item 3 (bloom, M2). Fica aberto até o dono
+conferir. Não criar segundo mecanismo de rótulos — o `LabelCanvas` já
+resolve colisão.
 
 **43. Planetas de longe parecem estrelas.**
 Palavras do dono, 2026-08-16: *"percebi q planetas de longe parecem

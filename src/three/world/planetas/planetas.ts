@@ -102,8 +102,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGal
 import { GLSL_STAR_PSF } from '../../shaders/common';
 import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
 import { STAR_FRAG, BETA_DA_EMISSAO } from '../../shaders/starShaders';
-import { deepPointGain, needsAttributeWrite } from '../lodStellar';
-import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
+import { needsAttributeWrite } from '../lodStellar';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
 import {
@@ -248,7 +247,6 @@ attribute float aFase;    // Φ MH18 (D10) — CPU; o Sol escreve 1
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
-uniform float uGain;    // deepPointGain(dHome): o Sol-ponto assumindo
 uniform float uExpoM0;  // a MESMA exposição do campo (StarField publica)
 uniform float uSigmaPx; // o MESMO instrumento do campo
 
@@ -277,20 +275,19 @@ void main() {
   float size; float peak; float sat; float sigmaFrac;
   starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
 
-  // O alpha desta camada tem DOIS donos declarados — o texto antigo
-  // ("o único alpha é do Sol") foi RENEGOCIADO na Onda 6/F2a, com teste:
-  //  1. o crossfade reverso do Sol (uGain, D2 da Onda 4);
-  //  2. a CESSÃO sob corpo resolvido (aCede): o ponto do corpo cede na
-  //     medida em que o GLOBO domina a representação na tela — SUAVE
-  //     desde a F2b (g(razão mesh/halo) integrada no tempo; a conta
-  //     mora em terra.ts/cessaoAlvo, o precedente é o par
-  //     hero↔catálogo). Com aCede = 0 o fator (1 − aCede) é 1,0 EXATO
-  //     em IEEE754 — fora do corpo resolvido nada muda, e as vistas
-  //     profundas continuam bit-idênticas.
+  // O alpha desta camada tem UM dono desde o M1 da Lei da Estrela: a
+  // CESSÃO sob corpo resolvido (aCede). Para os nove, quem a escreve é o
+  // gate do globo (terra.ts/cessaoAlvo, SUAVE desde a F2b); para o SOL
+  // (vértice 0) é a REPARTIÇÃO da lei — aCede = wResolvido, escrito pelo
+  // director por quadro. O uGain do crossfade reverso (deepPointGain)
+  // morreu no M1 junto com a entrega {0,02; 0,05} pc: o Sol-ponto não
+  // entrega o bastão a ninguém — ele apaga quando a magnitude manda,
+  // como qualquer estrela. Com aCede = 0 o fator (1 − aCede) é 1,0 EXATO
+  // em IEEE754 — fora do corpo resolvido nada muda.
   // Quem decide o brilho dos nove segue sendo a física, não uma rampa.
   // E o alpha cede aos DOIS varyings juntos (lição do vSat, commit
   // 2e16689): atenuar só o vPeak deixaria os espinhos com força cheia.
-  float alpha = mix(1.0, uGain, aEhSol) * (1.0 - aCede);
+  float alpha = 1.0 - aCede;
 
   vColor = aCor;
   vSat = sat * alpha;
@@ -331,16 +328,15 @@ export class Planetas {
 
   /**
    * A porta do quadro (D7/D11a). O director a escreve ANTES do
-   * `update`, como já faz com `sunStar.quad.visible` — as portas
+   * `update`, antes de qualquer camada desenhar — as portas
    * governam a CAMADA, nunca o palco (o domínio profundo é fundação,
    * como o near).
    */
   ligado = false;
 
-  /** digitais dos três uniforms — só escreve o que mudou (M4). */
+  /** digitais dos uniforms — só escreve o que mudou (M4). */
   private readonly camAnterior = new THREE.Vector3(NaN, NaN, NaN);
   private screenHAnterior = NaN;
-  private gainAnterior = NaN;
   /** rascunho da projeção do `?dbgplan` (fora do caminho do quadro). */
   private readonly rascunho = new THREE.Vector3();
   /**
@@ -404,7 +400,6 @@ export class Planetas {
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uScreenH: { value: 1080 },
-        uGain: { value: 0 },
         uExpoM0: { value: psf.expoM0 },
         uSigmaPx: { value: psf.sigmaPx },
         // o MESMO β do campo: os dez corpos compartilham o STAR_FRAG, e o
@@ -429,7 +424,7 @@ export class Planetas {
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;
     // slots ocupados hoje: −1…0,5 (sol/*.js), 1 (lâminas), 2 (campo),
-    // 3 (heroes/SunStar), 4 (poeira), 5 (nuvens CO), 6 (marcador).
+    // 3 (heroes), 4 (poeira), 5 (nuvens CO), 6 (marcador).
     this.points.renderOrder = 7;
   }
 
@@ -450,29 +445,23 @@ export class Planetas {
   }
 
   /**
-   * O quadro inteiro da camada: um corte de custo e três uniforms.
+   * O quadro inteiro da camada: a porta e os uniforms.
    *
-   * O CORTE não é de conteúdo, é de custo — e ele NÃO pisca: em
-   * `LIMIAR_SISTEMA_SOLAR_PC` (0,05 pc) o corpo mais brilhante da tabela
-   * (Júpiter) tem m ≈ 14,2, o que dá um pico de PSF na casa de 1e-6 —
-   * quatro ordens abaixo de um passo de 8 bits (pinado por teste). O
-   * Sol-ponto ali já está com `uGain` 0 EXATO, pelo teorema de
-   * complementaridade de `deepPointGain`.
-   *
-   * A F3 SEPAROU A CONSTANTE que este corte lê, e a separação importa
-   * justamente aqui: até ela o número vinha de `DEEP_LIMIAR_PC`
-   * (`lodStellar.ts`), o MESMO símbolo que dizia onde o disco artístico
-   * do Sol morria — então mexer no LOD do Sol apagaria esta camada de
-   * graça. Agora ele vem de `escala.ts`, CONGELADO em 0,05 pc com a
-   * âncora escrita (10.313 UA; Plutão, o corpo mais distante do
-   * retrato, orbita a 35,4). O que a janela do LOD (`LOD_SOL.entrega`)
-   * ainda deve a este corte é UMA igualdade, e ela virou obrigação de
-   * teste: o ganho do Sol-ponto tem de chegar a 0 EXATAMENTE onde a
-   * camada some, senão o Sol apagaria aceso no meio da hélice. A
-   * separação é de RESPONSABILIDADE, não de valor.
+   * O CORTE DE DISTÂNCIA MORREU NO M1 da Lei da Estrela, junto com a
+   * entrega ponto→clarão que o justificava. Até lá a camada sumia em
+   * `LIMIAR_SISTEMA_SOLAR_PC` (0,05 pc) porque o Sol entregava o bastão
+   * ao `SunStar` exatamente ali; sem SunStar, o Sol-ponto é o dono do
+   * Sol em TODA distância de ponto, e cortá-lo em 0,05 pc o apagaria
+   * aceso (m −6,65 ali — dez vezes Vênus). Quem apaga a camada agora é
+   * a FÍSICA, como o cabeçalho sempre prometeu: a 100 pc o Sol tem
+   * m 9,85 (invisível a olho nu), no núcleo galáctico m 19,4; Júpiter
+   * já era invisível a 0,05 pc (m ≈ 14,2, pico de PSF ~1e-6 — quatro
+   * ordens abaixo de um passo de 8 bits, pinado por teste). O custo de
+   * submeter 10 vértices sempre é nada — e é o preço de não ter um
+   * segundo mecanismo de LOD onde a magnitude já decide.
    */
-  update(dHomePc: number, screenH: number, camPos: THREE.Vector3) {
-    this.points.visible = this.ligado && dHomePc < LIMIAR_SISTEMA_SOLAR_PC;
+  update(screenH: number, camPos: THREE.Vector3) {
+    this.points.visible = this.ligado;
     const u = this.material.uniforms;
     if (!this.camAnterior.equals(camPos)) {
       this.camAnterior.copy(camPos);
@@ -482,11 +471,6 @@ export class Planetas {
     if (screenH !== this.screenHAnterior) {
       this.screenHAnterior = screenH;
       u.uScreenH.value = screenH;
-    }
-    const ganho = deepPointGain(dHomePc);
-    if (ganho !== this.gainAnterior) {
-      this.gainAnterior = ganho;
-      u.uGain.value = ganho;
     }
   }
 
@@ -685,7 +669,7 @@ export class Planetas {
         `instante ${Number.isFinite(this.jdEscrito) ? this.jdEscrito : 'retrato'} · ` +
         `câmera a ${(dHome * UA_POR_PC).toFixed(3)} UA ` +
         `(${(dHome * AL_POR_PC).toFixed(6)} anos-luz; ${dHome} pc, régua interna) · ` +
-        `tela ${larguraPx}×${alturaPx} px · uGain=${u.uGain.value} · ` +
+        `tela ${larguraPx}×${alturaPx} px · ` +
         `expoM0=${expoM0} · sigmaPx=${sigmaPx} · ` +
         `visível=${this.points.visible}`,
     ];
@@ -701,10 +685,12 @@ export class Planetas {
       const faseAttr = this.points.geometry.getAttribute('aFase') as THREE.BufferAttribute;
       const fase = i === 0 ? 1 : faseAttr.getX(i);
       const m = magDoVertice(mag.getX(i), dObs, fase);
-      // o alpha do Sol-ponto é o `uGain` (crossfade reverso da D2); os nove
-      // entram com 1. O pico PUBLICADO já leva o alpha, senão a régua 3 leria
-      // "o Sol pode acender" numa distância em que ele está apagado.
-      const alpha = i === 0 ? (u.uGain.value as number) : 1;
+      // o alpha de TODO vértice é (1 − aCede) desde o M1 — para o Sol o
+      // aCede é o wResolvido da lei, para os nove é o gate do globo. O
+      // pico PUBLICADO já leva o alpha, senão a régua 3 leria "o Sol pode
+      // acender" numa distância em que ele está cedido ao corpo.
+      const cedeAttr = this.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
+      const alpha = 1 - cedeAttr.getX(i);
       const psf = {
         E: fluxoDeMagnitude(m, expoM0),
         pico: picoDaPsf(m, expoM0, sigmaPx, alturaPx),

@@ -34,8 +34,6 @@ import type { EstadoDaVista } from './selo';
 import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
-import { PISO_DO_CLARAO, REFERENCIA_UA, claraoDoAtlas } from './atlasConfig';
-import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { TONE_MAPPINGS } from './core/engine';
 import type { ToneMapMode } from './core/engine';
 
@@ -50,16 +48,14 @@ const LIMPA: EstadoDaVista = {
   tom: 'aces',
   camadasEscondidas: [],
   tier: 'cinema',
-  // 1 = o clarão do filme: a vista limpa é a do filme, sem gradação
-  gradacao: 1,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
   // testes (bloco 2c), porque ele É desvio declarado.
   luz: 'real',
   evLuzDoFoco: null,
-  // 0 = pupila ABERTA, e é o valor certo para a vista limpa pelo mesmo motivo
-  // que `gradacao: 1`: com 0 stops aplicados a imagem é a fotometria crua da
-  // casa. A pupila fechando É desvio declarado, e tem os próprios testes.
+  // 0 = pupila ABERTA, o valor certo para a vista limpa: com 0 stops
+  // aplicados a imagem é a fotometria crua da casa. A pupila fechando É
+  // desvio declarado, e tem os próprios testes.
   stopsDaPupila: 0,
 };
 
@@ -203,53 +199,9 @@ describe('2. nenhum controle desmente o selo', () => {
   });
 });
 
-describe('2b. a gradação por contexto se declara (F6)', () => {
-  it('o clarão moderado é desvio de BRILHO, nomeado e desfazível', () => {
-    const v = estadoDoSelo(com({ gradacao: PISO_DO_CLARAO }));
-    expect(v.brilho).toBe('assistido');
-    const linha = v.desvios.find((d) => d.chave === 'grad');
-    expect(linha, 'a gradação não moveu o selo').toBeDefined();
-    expect(linha!.volta, 'sem volta viva a linha BRILHO não pode desfazê-la').toBe('vivo');
-    expect(linha!.rotulo).toContain('clarão');
-  });
-
-  it('fator 1 é o clarão do filme e NÃO é desvio — é o que mantém as 18 vistas', () => {
-    expect(estadoDoSelo(com({ gradacao: 1 })).brilho).toBe('real');
-  });
-
-  it('desligar a gradação volta ao real, e o clique é o caminho', () => {
-    const comGradacao = com({ gradacao: PISO_DO_CLARAO });
-    const limpo = aoVoltarAoReal(comGradacao);
-    expect(limpo.gradacao).toBe(1);
-    expect(estadoDoSelo(limpo).brilho).toBe('real');
-  });
-
-  it('a lei do clarão: 1 exato de 20.000 UA para fora, piso dentro do sistema', () => {
-    const emUA = (ua: number) => claraoDoAtlas(ua * AU_PARA_PC);
-    // fora: 1 EXATO (é o que faz o termo ser neutro em IEEE754)
-    expect(emUA(REFERENCIA_UA)).toBe(1);
-    expect(emUA(1e6)).toBe(1);
-    expect(claraoDoAtlas(Number.NaN)).toBe(1);
-    // dentro do sistema: o piso medido
-    for (const ua of [2.2, 5.8, 30, 228, 1999]) {
-      expect(emUA(ua), `${ua} UA`).toBe(PISO_DO_CLARAO);
-    }
-    // entre os dois: a lei do inverso do quadrado, monotônica
-    expect(emUA(10000)).toBeCloseTo(0.25, 12);
-    expect(emUA(4000)).toBeCloseTo(0.04, 12);
-    let anterior = 0;
-    for (let ua = 1; ua <= 40000; ua *= 1.05) {
-      const f = emUA(ua);
-      expect(f).toBeGreaterThanOrEqual(anterior);
-      expect(f).toBeLessThanOrEqual(1);
-      anterior = f;
-    }
-    // o piso e a lei se encontram em 2.000 UA — o limiar é DERIVADO, não
-    // escolhido (o resíduo é a ida e volta pc↔UA em ponto flutuante)
-    expect((2000 / REFERENCIA_UA) ** 2).toBeCloseTo(PISO_DO_CLARAO, 15);
-    expect(emUA(2000)).toBeCloseTo(PISO_DO_CLARAO, 15);
-  });
-});
+// (o bloco 2b — a gradação por contexto — morreu no M1 da Lei da
+// Estrela junto com `claraoDoAtlas`: o Atlas não modera mais o clarão, e
+// a linha `grad` saiu do registro. A varredura invertida vigia o nome.)
 
 describe('2c. a política de luz se declara (Onda 6, D2/D8)', () => {
   it('`assistida` — o default do Atlas — é desvio declarado, vivo e desfazível', () => {
@@ -358,9 +310,10 @@ describe('4. o eixo ESCALA sai da geometria, não de porta', () => {
     expect(escalaDaVista(8000)).toBe('fora');
   });
 
-  it('a troca acontece DENTRO da janela do crossfade, e uma vez só', () => {
-    // o eixo não é um limiar novo: ele lê as duas rampas que a cena já
-    // usa para trocar o disco artístico pelo ponto fotométrico
+  it('a troca acontece NA fronteira do sistema solar, e uma vez só', () => {
+    // desde o M1 o eixo lê a constante CONGELADA de escala.ts (a entrega
+    // ponto→clarão que ele lia morreu com o SunStar): "real" é o domínio
+    // em que tudo desenhado é 1:1, e a fronteira é a do sistema solar.
     let trocas = 0;
     let anterior = escalaDaVista(1e-6);
     expect(anterior).toBe('real');
@@ -369,8 +322,8 @@ describe('4. o eixo ESCALA sai da geometria, não de porta', () => {
       const agora = escalaDaVista(d);
       if (agora !== anterior) {
         trocas++;
-        expect(d).toBeGreaterThan(0.02);
-        expect(d).toBeLessThan(LIMIAR_SISTEMA_SOLAR_PC);
+        expect(d).toBeGreaterThanOrEqual(LIMIAR_SISTEMA_SOLAR_PC);
+        expect(d).toBeLessThan(LIMIAR_SISTEMA_SOLAR_PC + 0.1 / 2000 + 1e-12);
       }
       anterior = agora;
     }

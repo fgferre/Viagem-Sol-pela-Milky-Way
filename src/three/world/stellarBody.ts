@@ -45,7 +45,8 @@
 // ============================================================
 import * as THREE from 'three';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
-import { RADIANCIA_DA_FOTOSFERA, lerPortaFotosfera, radianciaDeTela } from '../luzDaCasa';
+import { RADIANCIA_DA_FOTOSFERA, radianciaDeTela } from '../luzDaCasa';
+import type { EstadoDaEstrela } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
 // o β vem do módulo DONO da curva na emissão, nunca de uma segunda
 // leitura da URL: `starShaders.ts` já resolve `?bemis=` uma vez e os
@@ -169,12 +170,12 @@ export interface StellarParams {
    */
   readonly activityLevel: number;
   /**
-   * RESERVADO (D4): temperatura efetiva, em K. Nasce documentado e sem
-   * consumidor — a lei de cor por classe espectral é da Onda 7. Hoje a
-   * cor sai da paleta H-alfa inline dos `sol/*.js`, que é override
-   * declarado da instância 1.
+   * Temperatura efetiva, em K. Ganhou o primeiro consumidor no M1 da Lei
+   * da Estrela: `estadoDaLei` a declara no estado lógico e `repartir`
+   * deriva dela radiância e cor. A paleta H-alfa dos `sol/*.js` continua
+   * sendo o override declarado da instância 1 (`overrideExpoente`).
    */
-  readonly teffK?: number;
+  readonly teffK: number;
   /**
    * RESERVADO: envelope convectivo (granulação). O núcleo do doador não
    * tem caminho radiativo — `sol/granulation.js` roda incondicionalmente
@@ -477,6 +478,10 @@ export class StellarBody {
   private promWorldTmp = new THREE.Vector3();
   /** a cirurgia da F2 foi aplicada NESTA instância (as duas portas) */
   private filtroSolarLigado = false;
+  /** peso da representação resolvida (M1) — o director escreve; o
+   *  `update` o entrega a `uWorldFade`. Nasce 1: sem director escrevendo
+   *  (testes de unidade do corpo), o comportamento é o de sempre. */
+  private pesoDaLei = 1;
   /** cache do último `uFiltroSolar` escrito — nasce no valor do uniform */
   private filtroSolarAnterior = 1;
 
@@ -601,17 +606,17 @@ export class StellarBody {
     createSunUniforms(ctx);
     ctx.chromo = createChromo(ctx);
     createSunMesh(ctx);
-    // F2, PADRÃO desde 15/08. A fotosfera emite a radiância verdadeira na
-    // unidade de tela; `?bfoto=0` é o caminho de volta e devolve o
-    // material byte a byte como o vendorizado o montou — o lado A do A/B,
-    // que continua existindo para comparar.
+    // F2, LEI SEM PORTA desde o M1. A fotosfera emite a radiância
+    // verdadeira na unidade de tela; a porta `?bfoto=` morreu com a
+    // migração (regra iv do §4 da LEI-DA-ESTRELA) — o lado A do A/B vive
+    // nas capturas versionadas e no teste numérico, nunca mais num ramo
+    // de runtime.
     //
-    // A SEGUNDA CONDIÇÃO NÃO É ZELO, é o half-float, e continua valendo
-    // com o sinal invertido: com `?bemis=0` a curva é identidade exata, e
-    // identidade sobre 2,7e10 é o buffer saturado em 65.504 no primeiro
-    // pixel do disco — o quadro branco que a onda existe para consertar.
-    // Quem pedir a volta do joelho leva junto a volta da paleta autorada;
-    // ou as duas, ou nenhuma.
+    // A CONDIÇÃO QUE FICA NÃO É ZELO, é o half-float: com `?bemis=0` a
+    // curva é identidade exata, e identidade sobre 2,7e10 é o buffer
+    // saturado em 65.504 no primeiro pixel do disco — o quadro branco que
+    // a onda existe para consertar. Quem pedir a volta do joelho leva
+    // junto a volta da paleta autorada; ou as duas, ou nenhuma.
     //
     // O FATOR SAI DA PONTE DE UNIDADES (`radianciaDeTela`), a MESMA que o
     // invariante da troca cobra em `luzDaCasa.test.ts` — uma escrita só
@@ -621,7 +626,7 @@ export class StellarBody {
     // `params.radiusPc` em vez do `RAIO_SOL_PC` constante é o que faz esse
     // dia ser um diff em `luzDaCasa.ts`, não uma caça a literais aqui
     // dentro.
-    if (lerPortaFotosfera(window.location.search) && BETA_DA_EMISSAO > 0) {
+    if (BETA_DA_EMISSAO > 0) {
       const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
       mat.fragmentShader = cirurgiaDaFotosfera(
         mat.fragmentShader,
@@ -766,6 +771,62 @@ export class StellarBody {
     this.ctx.sunUniforms.uFiltroSolar.value = v;
   }
 
+  /**
+   * O PESO DA REPRESENTAÇÃO RESOLVIDA (M1 da Lei da Estrela): quanto
+   * desta malha a repartição única manda desenhar neste quadro —
+   * `wResolvido·wMalha` de `repartir` (estrela.ts). Quem o calcula é o
+   * director (só ele tem câmera e instrumento); o corpo só obedece, na
+   * mesma divisão de trabalho de `escreverFiltroSolar`.
+   *
+   * Vai para `uWorldFade`, o multiplicador PÓS-compressão que o
+   * vendorizado já tinha — a cessão de representação aplicada por fora,
+   * na ordem que o invariante pós-curva (§5.1) exige. Envenenado não
+   * escreve, pelo mesmo motivo do filtro.
+   */
+  escreverPesoDaLei(w: number) {
+    if (!Number.isFinite(w)) return;
+    this.pesoDaLei = w <= 0 ? 0 : w >= 1 ? 1 : w;
+  }
+
+  /**
+   * O ESTADO LÓGICO desta instância, na forma do contrato da Lei
+   * (`EstadoDaEstrela`, estrela.ts §3): o corpo declara O QUE ELE É; a
+   * observação (quem olha) e o instrumento (a casa) são do director.
+   *
+   * OS TRÊS CAMPOS DO §5.18 SÃO FACES DESTE ESTADO, e a nomeação é esta:
+   *   S(n, t) — a superfície: granulação, manchas, faculae
+   *             (`sol/granulation.js`, `sol/activity.js`, `sol/sun.js`);
+   *   C(n, h, t) — a cromosfera: casca fina + espículas
+   *             (`sol/chromo.js`, `sol/spicules.js`);
+   *   E(x, t) — o exterior: coroa, proeminências, loops, flares, CME
+   *             (`sol/corona*.js`, `sol/prominences.js`, `sol/loops.js`,
+   *             `sol/flares.js`, `sol/cme.js`).
+   * Cada estrutura de E tem critério de visibilidade PRÓPRIO — escala
+   * projetada e contraste (o `limboFade` deste arquivo, o cone da coroa
+   * que desliga abaixo de um texel) — nunca o LOD do renderer.
+   *
+   * A FASE é a do ciclo vivo (`ctx.cycleTime`), lida pela inversa da
+   * fórmula da dramaturgia (`(1 + fase − 0,35)·1800`), e PERSISTE
+   * (§5.20): sair de quadro não recomeça o relógio.
+   */
+  estadoDaLei(): EstadoDaEstrela {
+    const p = this.params;
+    return {
+      id: p.nome,
+      semente: p.seed,
+      posicaoPc: [0, 0, 0],
+      raioPc: p.radiusPc,
+      teffK: p.teffK,
+      tempo: this.ctx.elapsed,
+      fase: (((this.ctx.cycleTime / 1800 - 0.65) % 1) + 1) % 1,
+      rotacao: {
+        periodo: p.rotPeriodDays * 86400,
+        eixo: [Math.sin(p.tiltRad), Math.cos(p.tiltRad), 0],
+      },
+      atividade: { nivel: p.activityLevel },
+    };
+  }
+
   /** relógio visual do director (0 sob ?shot=) + câmera + tempo de viagem */
   update(time: number, camera: THREE.PerspectiveCamera, journeyT?: number) {
     const ctx = this.ctx;
@@ -794,34 +855,19 @@ export class StellarBody {
     ctx.prominenceGroup.visible = this.limboFade > 0.01;
     ctx.loopGroup.visible = this.limboFade > 0.01;
 
-    // O CROSSFADE DISCO→ESTRELA MORREU AQUI NA F3, e o que ficou no
-    // lugar dele é a ausência de lei: `uWorldFade` vale 1 SEMPRE.
-    //
-    // A conta que autoriza, e ela é curta. A atenuação antiga era
-    // `solWorldFade = discWorldFade × deepDiscFade`, duas rampas em
-    // parsec que só faziam sentido para um corpo de 0,011 pc de raio: a
-    // de longe (0,16→0,34 pc) apagava um disco que, inflado, ainda
-    // media 3,9° a 0,16 pc; a de perto (0,05→0,02 pc) apagava o mesmo
-    // disco antes de a fotosfera de 2.269 UA engolir a órbita de
-    // Netuno. Com raio FÍSICO o corpo mede 4 px a 3,60 UA e 5,5e-4 px no
-    // antigo piso do filme — a perspectiva apaga sozinha, e muito antes.
-    // Manter as rampas com o raio novo seria pior que inútil: normalizada
-    // pelo raio, a rampa de perto dissolveria a fotosfera entre 4,5 e
-    // 1,8 RAIOS SOLARES, ou seja exatamente onde a F4 quer descer.
-    //
-    // O gate de custo também sai daqui: quem apaga o grupo agora é o
-    // Director, pela régua do palco (4 px, com o cushion 2× da
-    // histerese) — a MESMA que governa Terra e Lua, e a única que
-    // continua fazendo uma pergunta respondível ("este corpo é
-    // representável como corpo?"). Aqui sobra ler a decisão dele.
-    //
-    // O ZERO PIXEL desta remoção nas três vistas de raio físico da F1 é
-    // aritmético e não medido: em `solreal4mkm` e `solreal1ua` as duas
-    // rampas antigas já devolviam 1 EXATO (a de perto normalizada dava
-    // 0,063 e 2,36 pc equivalentes, ambos acima de 0,05), e em
-    // `solreal40ua` o grupo já estava apagado pelo gate de 4 px.
-    ctx.sunUniforms.uWorldFade.value = 1;
-    ctx.spiculeUniforms.uWorldFade.value = 1;
+    // O PESO DA LEI (M1). `uWorldFade` — que a F3 deixou em 1 SEMPRE por
+    // ausência de lei — voltou a ter dono: é o peso da representação
+    // RESOLVIDA na repartição única (`wResolvido·wMalha`, estrela.ts),
+    // escrito pelo director por quadro via `escreverPesoDaLei`. É o que
+    // faz a malha ENTRAR DO ZERO enquanto o Sol-ponto cede na mesma
+    // medida (aCede = wResolvido na camada dos dez): a soma dos pesos é
+    // 1 por construção, e o armar binário do gate do palco (4 px) fica
+    // invisível em pixel — no instante em que o grupo liga, o peso ainda
+    // é 0. A ORDEM não mudou: a compressão vem antes do fade, porque o
+    // invariante da troca é cobrado PÓS-curva (§5.1 da Lei) e o joelho
+    // não pode andar durante a transição.
+    ctx.sunUniforms.uWorldFade.value = this.pesoDaLei;
+    ctx.spiculeUniforms.uWorldFade.value = this.pesoDaLei;
     ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
     ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
     if (!this.group.visible) return;

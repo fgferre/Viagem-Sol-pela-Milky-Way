@@ -29,8 +29,7 @@
 //
 // Módulo PURO: sem window, sem three, sem React.
 // ============================================================
-import { deepPointGain, sunStarGain } from './world/lodStellar';
-import { acusacaoDaEscala } from './escala';
+import { LIMIAR_SISTEMA_SOLAR_PC, acusacaoDaEscala } from './escala';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
@@ -170,13 +169,6 @@ export interface EstadoDaVista {
   /** tier vivo — o autoQuality rebaixa sozinho, e isso conta (D1) */
   tier: QualityLevel;
   /**
-   * O FATOR DE CLARÃO que o último quadro usou (F6). 1 é o clarão do
-   * filme — nenhuma gradação; abaixo de 1, o Atlas moderou o
-   * instrumento e o selo tem de dizer. Número e não booleano porque é
-   * o valor VIVO do quadro, e o selo declara o que a tela mostrou.
-   */
-  gradacao: number;
-  /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
    * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
    * clique na linha BRILHO o troca ao vivo.
@@ -192,7 +184,7 @@ export interface EstadoDaVista {
    * OS STOPS QUE A PUPILA APLICOU no último quadro (Onda 8) — `log2` do ganho,
    * negativo quando ela fecha, 0 EXATO quando está aberta.
    *
-   * É VALOR VIVO e não a porta, pelo mesmo motivo de `gradacao`: o selo declara
+   * É VALOR VIVO e não a porta: o selo declara
    * o que a tela mostrou, e a pupila fecha por conta própria conforme a fonte
    * em quadro — a URL não sabe disso. E é NÚMERO e não booleano porque o §7.4
    * do plano pede exatamente isto: "o selo passa a reportar o EV APLICADO, não
@@ -315,34 +307,11 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // a lápide acima; o eixo ESCALA continua saindo da GEOMETRIA, que é
   // de onde ele sempre deveria ter saído.)
   // --- gosto do visitante, ao vivo ---------------------------------
-  /**
-   * A GRADAÇÃO POR CONTEXTO (F6) — a linha que o desenho mandou existir
-   * antes mesmo de a gradação existir, e aqui está ela.
-   *
-   * O que a gradação faz está medido e escrito em `atlasConfig.ts`:
-   * dentro do sistema solar o clarão do Sol lava o quadro inteiro (97%
-   * dele acima de meia luz a 228 UA) e o Atlas fica sendo uma tela
-   * branca; a gradação modera o CLARÃO — o instrumento, o "artístico"
-   * do próprio vocabulário deste arquivo — e não encosta na fotometria.
-   *
-   * Mesmo assim é DESVIO, e é o primeiro da lista: o que se vê deixou
-   * de ser o que a casa produz sozinha, e quem olha tem direito de
-   * saber disso e de desfazer. `volta: 'vivo'` porque o Director
-   * desliga no quadro seguinte (`desligarGradacao`), e o `?grad=0`
-   * carrega a decisão pela recarga.
-   *
-   * A PRECEDÊNCIA de D1 está aqui de graça: a gradação não toca o latch
-   * da exposição nem a curva de tom, então o gesto do visitante (`?exp=`,
-   * o slider, o tom) continua valendo por cima dela — ela preenche o
-   * clarão, que é o único lugar onde o visitante não pôs a mão.
-   */
-  {
-    chave: 'grad',
-    eixo: 'brilho',
-    rotulo: 'clarão moderado pelo enquadramento',
-    volta: 'vivo',
-    desvia: (e) => e.gradacao !== 1,
-  },
+  // (A GRADAÇÃO POR CONTEXTO (F6) morava aqui e morreu no M1 da Lei da
+  // Estrela: o clarão do Sol passou a sair da repartição única e o
+  // curativo de moderá-lo no Atlas ficou sem doença — item 4 das
+  // pendências. A linha, a porta `?grad=` e o campo `gradacao` do
+  // estado saíram juntos.)
   {
     chave: 'exp',
     eixo: 'brilho',
@@ -430,13 +399,14 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('knee', 'joelho asinh forçado'),
   porta('kneemode', 'modo do joelho trocado'),
   porta('kneeamt', 'amount do joelho forçado'),
-  // AS CINCO PORTAS DA ONDA DA LUZ. O pacote virou PADRÃO em 15/08 — a
-  // compressão na emissão, o ombro dentro do bloom, a fotosfera na
-  // unidade da casa e a cessão do Sol-ponto pelo gate são o que o
-  // visitante vê sem digitar nada. As portas ficaram como CAMINHO DE
-  // VOLTA e bancada de comparação, no idioma de ?plan/?noplan: o mesmo
-  // binário dos dois lados, com ?bemis=0, ?bbloom=0, ?bfoto=0 e ?bcede=0
-  // reproduzindo o desenho anterior para o A/B.
+  // AS PORTAS DA ONDA DA LUZ. O pacote virou PADRÃO em 15/08 — a
+  // compressão na emissão, o ombro dentro do bloom e a fotosfera na
+  // unidade da casa são o que o visitante vê sem digitar nada. As portas
+  // que restam são CAMINHO DE VOLTA e bancada, no idioma de
+  // ?plan/?noplan: o mesmo binário dos dois lados. (?bcede e ?bfoto
+  // morreram no M1 da Lei da Estrela — regra iv do §4: a cessão do
+  // Sol-ponto e o filtro solar saem da repartição única, e o lado A
+  // vive nas capturas versionadas, nunca num ramo de runtime.)
   //
   // E ELAS CONTINUAM SENDO DESVIO QUANDO PRESENTES, que é o ponto: quem
   // tem uma delas na URL não está vendo o padrão da casa — esteja ele
@@ -445,14 +415,6 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('bemis', 'compressão na emissão do ponto alterada por URL'),
   porta('bbloom', 'compressão dentro do bloom alterada por URL'),
   porta('bombro', 'ombro da compressão do bloom alterado por URL'),
-  porta('bcede', 'cessão do Sol-ponto pelo gate do palco alterada por URL'),
-  // ?bfoto= governa a F2 no material da malha: a fotosfera emitindo a
-  // radiância verdadeira em vez do ~1 da paleta H-alfa, com o FILTRO
-  // SOLAR declarado — que a devolve à paleta autorada em stops quando o
-  // disco domina o próprio clarão. Ela anda amarrada a ?bemis=: sem
-  // curva, 2,7e10 satura o half-float, então pedir a volta do joelho
-  // devolve a paleta junto.
-  porta('bfoto', 'radiância verdadeira da fotosfera alterada por URL'),
   porta('dom', 'cessão de dominância forçada'),
   porta('nodom', 'cessão de dominância desligada'),
   porta('forgetau', 'extinção por coluna das forjas ligada'),
@@ -603,37 +565,27 @@ export interface VereditoDoSelo {
 
 /**
  * O EIXO ESCALA — e ele lê a DISTÂNCIA A CASA, não o que domina o
- * quadro. A conta é a comparação entre as duas rampas que a cena já usa
- * para trocar o disco artístico do Sol pelo ponto fotométrico
- * (`lodStellar`): "real" é o DOMÍNIO PROFUNDO, a faixa em que o ponto
- * ganha do disco; fora dela o selo declara desvio.
+ * quadro. "Real" é o domínio do sistema solar (`LIMIAR_SISTEMA_SOLAR_PC`,
+ * a constante CONGELADA de `escala.ts`): ali tudo que se desenha é 1:1 —
+ * corpos com raio físico e pontos fotométricos. Além dele o selo declara
+ * desvio porque NÃO SABE GARANTIR 1:1: Sagittarius A✱ segue 125.884×
+ * inflado (item 13) e pode entrar em qualquer enquadramento fundo. É
+ * conservadorismo declarado — o selo, na dúvida, declara o desvio em vez
+ * de prometer o que não sabe — e `VereditoDoSelo.culpados` diz QUEM está
+ * inflado e QUANTO, lendo o cadastro.
  *
- * A DIVERGÊNCIA COM A D1, dita como divergência. O desenho da onda
- * escreveu o critério como "FORA DE ESCALA quando o Sol-ator artístico
- * DOMINA"; o que está implementado é "fora do domínio profundo", que é
- * outra coisa. Enquadrar Sirius (2,6 pc) ou Sagittarius A✱ (8 kpc) põe o
- * selo em FORA DE ESCALA, e em nenhuma das duas vistas o Sol-ator está
- * em quadro. Acima do limiar o selo declara desvio porque NÃO SABE
- * GARANTIR 1:1 — a esfera de 2.269 UA de raio existe na cena e pode
- * entrar em qualquer enquadramento —, e não porque o disco esteja
- * visível ali. É conservadorismo declarado, e a defesa dele é a mesma do
- * NaN abaixo: o selo, na dúvida, declara o desvio em vez de prometer o
- * que não sabe.
+ * ATÉ O M1 a régua era o par `deepPointGain`/`sunStarGain` da entrega
+ * ponto→clarão (fronteira em 0,035 pc, o MEIO da janela morta). A
+ * entrega morreu com o `SunStar`; a fronteira passou a ser a constante
+ * de escala com âncora escrita (0,05 pc), que é o que ela sempre quis
+ * dizer. Quando o item 13 pagar a dívida do Sgr A✱, a acusação nasce
+ * vazia e este eixo poderá deixar de ser conservador.
  *
- * O QUE MUDOU (F0 da onda do Sol real): o veredito continua o mesmo, mas
- * ele parou de ser mudo. `VereditoDoSelo.culpados` diz QUEM está inflado
- * e QUANTO, lendo o cadastro (`escala.ts`) — hoje, "Sol está 487.441×
- * maior" e "Sagittarius A✱ está 125.884× maior". E a frase acima ganhou
- * data de validade: quando a F3 e a F5 pagarem essas duas dívidas, o
- * cadastro fica sem corpo em dívida, a acusação nasce VAZIA, e este eixo
- * poderá deixar de ser conservador porque não haverá mais esfera
- * inventada que possa entrar em quadro. Até lá, o conservadorismo é a
- * resposta certa — só que agora ele diz o nome do que está temendo.
- *
- * Distância envenenada (NaN) devolve 'fora', pelo mesmo motivo.
+ * Distância envenenada (NaN) devolve 'fora', pelo mesmo motivo
+ * (NaN < limiar é falso por construção).
  */
 export function escalaDaVista(distanciaPc: number): 'real' | 'fora' {
-  return deepPointGain(distanciaPc) >= sunStarGain(distanciaPc) ? 'real' : 'fora';
+  return distanciaPc < LIMIAR_SISTEMA_SOLAR_PC ? 'real' : 'fora';
 }
 
 /**
@@ -659,7 +611,6 @@ export function aoVoltarAoReal(e: EstadoDaVista): EstadoDaVista {
     exposicaoManual: chaves.has('exp') ? false : e.exposicaoManual,
     tom: chaves.has('tone') ? 'aces' : e.tom,
     camadasEscondidas: e.camadasEscondidas.filter((f) => !chaves.has(f)),
-    gradacao: chaves.has('grad') ? 1 : e.gradacao,
     luz: chaves.has('luz') ? 'real' : e.luz,
   };
 }

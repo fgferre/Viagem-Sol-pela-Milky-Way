@@ -5,8 +5,7 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GLSL_NOISE, bvToColor } from '../shaders/common';
-import { HERO_ZOOM_TAN_REF, heroSizePcDePx, sunStarGain } from './lodStellar';
-import { psfPointSizePx } from '../luzDaCasa';
+import { HERO_ZOOM_TAN_REF } from './lodStellar';
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -222,135 +221,8 @@ export class HeroStars {
   }
 }
 
-// ============================================================
-// O Sol sob a MESMA lei (unificação 2): de longe ele é uma estrela
-// como as outras — mesmo billboard dos heróis, mas com magnitude VIVA
-// (M=4,83 + 5·log10(d/10)): a 0,5 pc vale −1,7, o brilho de Sirius
-// vista da Terra. Quem faz o crossfade é `sunStarGain` desde a F3 (o
-// nearFade do FRAG cuidava disso quando o disco era o inflado, e hoje
-// satura em 1 na faixa inteira): na janela {0,02; 0,05} pc o clarão
-// acende na EXATA medida em que o Sol-ponto da camada dos dez cede.
-// E desde 15/08 (item 42) o TAMANHO dele também sai da lei do campo,
-// não mais de um ângulo de autor — ver o `update`.
-// ============================================================
-export class SunStar {
-  readonly quad: THREE.Mesh;
-  private mat: THREE.ShaderMaterial;
-
-  constructor() {
-    this.mat = new THREE.ShaderMaterial({
-      vertexShader: VERT,
-      fragmentShader: FRAG,
-      uniforms: {
-        uColor: { value: heroColor(SOL_BV) },
-        uTime: { value: 0 },
-        uSeed: { value: 4.83 },
-        uSize: { value: 0.01 },
-        uZoom: { value: 1 },
-        uCamDist: { value: 100 },
-        uCore: { value: 0 },
-        uGain: { value: 0 },
-        uExposicao: { value: 1 },
-      },
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      // o glare é artefato de olho/lente: nunca é ocluído pelo próprio
-      // disco (com depthTest o disco opaco furava um buraco no clarão)
-      depthTest: false,
-      transparent: true,
-    });
-    this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat);
-    this.quad.frustumCulled = false;
-    this.quad.renderOrder = 3;
-  }
-
-  /**
-   * O TAMANHO SAIU DA LEI DE AUTOR (item 42, 15/08). A magnitude
-   * continua sendo a de sempre — `M=4,83 + 5·log10(d/10)` é FOTOMETRIA e
-   * não estava em causa. O que morreu é a lei ANGULAR que ficava logo
-   * abaixo dela: `ang = min(40°, 1,75°·10^(−0,3m))`, tamanho tirado de
-   * magnitude por gosto, com teto de céu.
-   *
-   * O QUE O TETO FAZIA, medido: entre ~4,1 e ~27,7 mil UA o `min` fica
-   * GRAMPEADO em 40°, e ângulo constante é fração de tela constante — o
-   * clarão ocupava exatamente o mesmo pedaço do quadro enquanto o Sol
-   * encolhia 6,7×. Na tela do gate (1713 px) isso são **2.593 px de
-   * aresta, o MESMO número a 10.800 e a 15.800 UA**, que é o borrão de
-   * ~620 px e os ~31% de quadro lavado que o voo de 15/08 registrou e o
-   * dono viu: *"esse clarao a 15000 UA … nao vai consumir tudo a tela?"*.
-   *
-   * O QUE ENTRA NO LUGAR: o tamanho na tela é pedido em PIXELS à MESMA
-   * lei do campo estelar (`psfPointSizePx`, o espelho da PSF que a GPU
-   * desenha) e convertido para pc pela inversa exata da cadeia do VERT
-   * (`heroSizePcDePx`). Nos mesmos dois pontos o clarão passa a medir
-   * 15,9 e 15,3 px — e encolhe com a luz, porque agora é a luz que o
-   * dimensiona. A COSTURA vem de graça e é o motivo de ser esta lei e não
-   * outra: na janela da entrega o clarão e o Sol-ponto da camada dos dez
-   * têm o MESMO diâmetro em px por construção, então o crossfade que já
-   * era contínuo em brilho (`sunStarGain + deepPointGain = 1`) passa a
-   * ser contínuo em TAMANHO também.
-   *
-   * EFEITO COLATERAL DECLARADO: com `uSize` mil vezes menor, o `nearFade`
-   * do FRAG (`smoothstep(uSize·0,5, uSize·1,4, uCamDist)`) satura em 1 em
-   * toda a faixa em que o clarão acende. Antes ele valia ~0,868 fixo no
-   * platô dos 40° (a razão `uCamDist/uSize` era `1/tan40°` = 1,19,
-   * constante). O clarão fica então ~15% mais forte — irrelevante ao lado
-   * da área, que cai ~170×.
-   *
-   * AS 16 ILUSTRES NÃO MUDAM NESTA RODADA: elas seguem com
-   * `size = 0,08·10^(−0,3m)` no construtor de `HeroStars`, declarado no
-   * cadastro de escala (`clarao-estelar`) e protegido por varredura em
-   * `escala.test.ts`. A instância nº 1 sai na frente porque é a única que
-   * o visitante vê de dentro do sistema; a lei única para TODAS as fontes
-   * é o L3 da Lei da Estrela, que também apaga esta classe inteira.
-   */
-  update(
-    time: number,
-    camDist: number,
-    tanHalfFov: number,
-    screenH: number,
-    expoM0: number,
-    sigmaPx: number
-  ) {
-    const d = Math.max(camDist, 1e-4);
-    const m = 4.83 + 5 * Math.log10(d / 10);
-    // O PORTÃO DE PROXIMIDADE, e desde a F3 ele é CASADO com o ponto
-    // fotométrico da camada dos dez corpos, não mais com o disco
-    // inflado: o clarão sobe na EXATA medida em que o Sol-ponto de
-    // `planetas.ts` cede (`deepPointGain = 1 − sunStarGain`, soma
-    // constante), na janela de entrega {0,02; 0,05} pc. A janela vem de
-    // `lodStellar.ts` — até a Onda 3 os números viviam redigitados dos
-    // dois lados, ligados só por este comentário.
-    const gate = sunStarGain(d);
-    const u = this.mat.uniforms;
-    // tamanho SEMPRE cheio; quem entra é o ganho (ver uGain no shader)
-    u.uSize.value = heroSizePcDePx(
-      psfPointSizePx(m, expoM0, sigmaPx, screenH),
-      d,
-      screenH,
-      tanHalfFov
-    );
-    u.uGain.value = gate;
-    u.uCamDist.value = d;
-    u.uTime.value = time;
-    u.uZoom.value = Math.min(1, tanHalfFov / HeroStars.TAN_REF);
-    // O NÚCLEO ACENDE COM O GANHO desde a F3, e não mais numa segunda
-    // rampa atrasada {0,30; 0,42}. A razão da rampa atrasada era o
-    // disco ("sobrepostos, o núcleo apertado imprime um ponto branco no
-    // meio do disco e a coisa lê como retículo de mira"); sem disco não
-    // há o que sobrepor, e mantê-la deixaria o Sol como um borrão SEM
-    // ponto no meio de 0,05 a 0,30 pc — justamente onde ele já é, para
-    // todos os efeitos, uma estrela do catálogo.
-    u.uCore.value = gate;
-  }
-
-  /** A pupila, no clarão do Sol — a MESMA da cena (ver `HeroStars`). */
-  escreverExposicao(g: number) {
-    this.mat.uniforms.uExposicao.value = Number.isFinite(g) && g > 0 ? g : 1;
-  }
-
-  dispose() {
-    this.mat.dispose();
-    this.quad.geometry.dispose();
-  }
-}
+// (A classe `SunStar` morava aqui e morreu no M1 da LEI-DA-ESTRELA:
+// o Sol de longe é o ponto fotométrico da camada dos dez corpos
+// (`planetas.ts`, vértice 0), pela MESMA PSF do campo, em toda
+// distância — sem clarão de autor, sem janela de entrega. O clarão de
+// asas que a lei promete para TODAS as fontes fortes é o M2.)

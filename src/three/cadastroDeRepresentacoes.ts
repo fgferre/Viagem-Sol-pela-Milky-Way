@@ -23,9 +23,15 @@ export interface RepresentacaoDeclarada {
   id: string;
   /** o que o leitor humano entende */
   nome: string;
-  /** arquivos que DESENHAM esta representação (prefixo vale para pastas) */
+  /** arquivos que DESENHAM esta representação (prefixo vale para pastas)
+   *  — e, quando a lei é consumida por um maestro de fora (o director
+   *  calcula `repartir` e escreve atributo/uniform na camada), o arquivo
+   *  que a FIA entra na lista: é ele que carrega o import cobrado. */
   arquivos: readonly string[];
-  /** já consome `estrela.ts`? O teste cobra o import (ou a ausência dele). */
+  /** já consome `estrela.ts`? O teste cobra o import de verdade: entrada
+   *  que consome tem PELO MENOS UM arquivo importando a lei; entrada que
+   *  não consome não pode ter NENHUM (arquivo partilhado com uma entrada
+   *  consumidora é cobrado pela regra dela). */
   consomeL1: boolean;
   /** a lei velha desta representação já foi APAGADA? (regra i do §4) */
   leiVelhaApagada: boolean;
@@ -74,14 +80,16 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   {
     id: 'sol-ponto',
     nome: 'Sol-ponto (vértice 0 da camada dos dez)',
-    arquivos: ['src/three/world/planetas/planetas.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
+    arquivos: ['src/three/world/planetas/planetas.ts', 'src/three/director.ts'],
+    consomeL1: true,
+    leiVelhaApagada: true,
     fatorDeBrilho: 1,
     destino: 'migra',
     migracao: 'M1',
     emiteGlPointSize: true,
-    razao: 'a cessão pelo gate vira wResolvido da lei; a porta ?bcede morre junto',
+    razao:
+      'FECHADO no M1: aCede = wResolvido da repartição (o director fia; a camada ' +
+      'desenha), a entrega ao SunStar e o corte de 0,05 pc morreram, ?bcede morreu',
   },
   {
     id: 'planetas',
@@ -109,32 +117,23 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'clarão de autor (0,08·10^(−0,3m)) vira o clarão de asas da lei, por ' +
       'orçamento das N mais brilhantes — a identidade "as 16" morre',
   },
-  {
-    id: 'sunstar',
-    nome: 'SunStar (o clarão do Sol)',
-    arquivos: ['src/three/world/heroStars.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
-    fatorDeBrilho: null,
-    destino: 'morre',
-    migracao: 'M1',
-    emiteGlPointSize: false,
-    razao: 'a classe some; o clarão do Sol passa a sair da mesma lei de asas de todos',
-  },
+  // (a entrada `sunstar` saiu do censo no M1: a classe morreu — o Sol de
+  // longe é o próprio `sol-ponto`, e a varredura invertida vigia o nome.)
   {
     id: 'corpo-do-sol',
     nome: 'o corpo do Sol (malha + S/C/E vendorizado)',
     arquivos: ['src/three/world/stellarBody.ts', 'src/three/world/sol'],
-    consomeL1: false,
-    leiVelhaApagada: false,
+    consomeL1: true,
+    leiVelhaApagada: true,
     fatorDeBrilho: null,
     destino: 'migra',
     migracao: 'M1',
     emiteGlPointSize: true,
     razao:
-      'fotosfera na unidade com filtro declarado (fator VIVO 1..2,7e10 pela rampa — ' +
-      'a entrada do cadastro de escala declara); M1 o liga a overrideExpoente e ' +
-      'formaliza os três campos S/C/E do §5.18',
+      'FECHADO no M1: uFiltroSolar = overrideExpoente e uWorldFade = peso da lei ' +
+      '(fator de brilho VIVO 2,7e10^(1−g) pela rampa, §5.8 — por rampa, não por ' +
+      'número único); S/C/E nomeados em estadoDaLei. Dívida nomeada: a esfera ' +
+      'analítica (§1) nasce no M3/E3 — até lá wEsfera é degenerado (só malha)',
   },
   {
     id: 'particulas-da-galaxia',
@@ -261,11 +260,13 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     leiVelhaApagada: false,
     fatorDeBrilho: null,
     destino: 'migra',
-    migracao: 'M1',
+    migracao: 'M2',
     emiteGlPointSize: true,
     razao:
-      'é o campo E(x,t) do §5.18 — critério de visibilidade PRÓPRIO, nunca amarrado ' +
-      'ao LOD do renderer',
+      'campo E(x,t) do §5.18, NOMEADO no M1 (estadoDaLei, stellarBody) com ' +
+      'critério de visibilidade PRÓPRIO (cone < texel, limboFade) — nunca o LOD ' +
+      'do renderer; a EMISSÃO dele ainda não consome a lei: entra na unidade da ' +
+      'casa no M2, com o resto do exterior',
   },
 ];
 

@@ -446,54 +446,15 @@ export function comprimir(x: number, beta: number): number {
   return beta * Math.log(v + Math.sqrt(v * v + 1.0));
 }
 
-/**
- * A FOTOSFERA NA UNIDADE DA CASA É O PADRÃO desde 15/08 — a F2 inteira em
- * uma linha. A malha do Sol emite a radiância VERDADEIRA da fotosfera
- * (`radianciaDeTela` do raio da instância) em vez do ~1 autorado da paleta
- * H-alfa de `world/sol/sun.js`, com o FILTRO SOLAR declarado por cima. O
- * fator não se digita em lugar nenhum: sai da mesma ponte que o cadastro de
- * escala usa para declarar — ou, agora, para dar por quitada — a dívida.
- */
-export const FOTOSFERA_VERDADEIRA = true;
-
-/**
- * A porta `?bfoto=` — o CAMINHO DE VOLTA para a fotosfera autorada, no mesmo
- * idioma de `?bemis=`: ausente ⇒ a radiância verdadeira; `?bfoto=0` ⇒ a
- * paleta H-alfa crua, que é o lado A do A/B. Lixo cai no default, nunca num
- * caminho terceiro.
- *
- * BINÁRIA de propósito, e não um `parseFloat` como a irmã `?bemis=`. Um
- * "quanto" aqui seria um segundo botão de brilho para a malha, e a onda inteira
- * existe para acabar com brilho que se calibra por gosto: ou a fotosfera está
- * na unidade da casa, ou não está. Quem quiser mexer no joelho mexe em `?bemis=`,
- * que é onde o joelho mora.
- *
- * A MULTIPLICAÇÃO É EM STOPS, não por inteiro sempre — a segunda metade da
- * lei, que nasceu do veredito do dono sobre a forma crua (15/08: de perto
- * "vira um clarão que ocupa a tela toda e não se vê mais nada"). O expoente
- * do fator é o filtro solar (`world/stellarBody.ts`, `escreverFiltroSolar`):
- * vale 1 enquanto o disco não domina o próprio clarão — e lá a estrela
- * verdadeira é o que se vê — e desce a 0 quando o disco domina, devolvendo a
- * paleta autorada que a Lei da Estrela §E3 declara como override da
- * instância nº 1. A régua é a MESMA da cessão do Sol-ponto: as duas trocas
- * andam no mesmo trecho, com a mesma rampa.
- *
- * INERTE SEM CURVA, e a dependência é dura, não estilística. O composer é
- * half-float e satura em 65.504; a radiância verdadeira está **quase seis ordens
- * de grandeza acima disso** (2,7e10 é 4,2e5× o teto). Com `?bemis=0` não há
- * curva para dobrar esse valor, e a fotosfera crua não mostraria o Sol honesto —
- * escreveria infinito no buffer e devolveria exatamente o quadro branco que a
- * onda existe para consertar. Por isso `world/stellarBody.ts` cobra AS DUAS
- * antes de encostar no material, em vez de confiar em quem digita a URL: quem
- * pedir só a volta do joelho leva junto a volta da paleta, que é o par são.
- *
- * PURA, recebe a query em vez de ler `window`, pelo mesmo motivo de
- * `lerBetaDaEmissao`: `vitest.config.ts` roda em `environment: 'node'`.
- */
-export function lerPortaFotosfera(busca: string): boolean {
-  const v = new URLSearchParams(busca).get('bfoto');
-  return v === null ? FOTOSFERA_VERDADEIRA : v !== '0';
-}
+// (A FOTOSFERA NA UNIDADE DA CASA é LEI SEM PORTA desde o M1 da
+// LEI-DA-ESTRELA: a malha do Sol emite a radiância verdadeira
+// (`radianciaDeTela` do raio da instância) descida em stops pelo
+// `overrideExpoente` da repartição única — e a porta `?bfoto=`
+// (`lerPortaFotosfera`, `FOTOSFERA_VERDADEIRA`) morreu com a migração,
+// regra iv do §4. O lado A do A/B vive nas capturas versionadas e no
+// teste numérico da cirurgia. A dependência dura da curva continua
+// escrita em `world/stellarBody.ts`: sem `?bemis` a cirurgia não roda,
+// porque 2,7e10 sem joelho satura o half-float.)
 
 // ─── O INSTRUMENTO DE REFERÊNCIA, para o cadastro poder declarar ──────────
 
