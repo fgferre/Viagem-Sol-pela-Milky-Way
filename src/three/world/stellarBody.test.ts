@@ -18,7 +18,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA, RAIO_SOL_PC } from '../escala';
-import { comprimir, lerPortaFotosfera, vaoRadiometricoNaTroca } from '../luzDaCasa';
+import {
+  RADIANCIA_DA_FOTOSFERA,
+  comprimir,
+  lerPortaFotosfera,
+  radianciaDeTela,
+} from '../luzDaCasa';
 import {
   SOL_PARAMS,
   SOL_ROT_PERIOD_DAYS,
@@ -259,8 +264,10 @@ describe('F1 — as pontes de escala para o texto do shader', () => {
 describe('F2 — a fotosfera na unidade, por cirurgia de texto', () => {
   const sunJs = readFileSync(new URL('./sol/sun.js', import.meta.url), 'utf8');
   const ALVO = 'gl_FragColor = vec4(color * uWorldFade, 1.0);';
-  /** o fator REAL da instância 1, pela função que o cadastro já usa */
-  const FATOR = vaoRadiometricoNaTroca(RAIO_SOL_PC);
+  /** o fator REAL da instância 1, pela PONTE DE UNIDADES — a mesma escrita
+   *  que `stellarBody.ts` usa no material e que o invariante da troca cobra
+   *  em `luzDaCasa.test.ts`. Se a lei tiver duas escritas, é aqui que se vê. */
+  const FATOR = radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_SOL_PC);
 
   /** um fragment de mentira com a MESMA última linha do de verdade */
   const fragmentFalso = ['vec3 color = vec3(1.0);', `  ${ALVO}`, '}'].join('\n');
@@ -340,15 +347,18 @@ describe('F2 — a fotosfera na unidade, por cirurgia de texto', () => {
     expect(() => cirurgiaDaFotosfera(uma, FATOR, 300)).toThrow(/cirurgiaDaFotosfera/);
   });
 
-  it('NEUTRALIDADE: sem as DUAS portas o material não é tocado', () => {
-    // a porta nasce fechada
-    expect(lerPortaFotosfera('')).toBe(false);
+  it('O CAMINHO DE VOLTA: com `?bfoto=0` (ou `?bemis=0`) o material não é tocado', () => {
+    // a porta virou PADRÃO em 15/08 — ausente é a radiância verdadeira — e
+    // `?bfoto=0` é o lado A do A/B, o único que devolve o vendorizado intacto
+    expect(lerPortaFotosfera('')).toBe(true);
+    expect(lerPortaFotosfera('?bfoto=0')).toBe(false);
 
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    // e a chamada é guardada pelas duas condições, na mesma linha: sem
-    // `?bemis=` > 0 a curva é identidade, e identidade sobre 2,7e10 é o
-    // buffer half-float saturado — a porta "honesta" entregando o quadro
-    // branco que a onda existe para consertar
+    // e a chamada é guardada pelas duas condições, na mesma linha: com
+    // `?bemis=0` a curva é identidade, e identidade sobre 2,7e10 é o
+    // buffer half-float saturado — a fotosfera "honesta" entregando o quadro
+    // branco que a onda existe para consertar. Quem pede a volta do joelho
+    // leva junto a volta da paleta autorada.
     expect(src).toContain('if (lerPortaFotosfera(window.location.search) && BETA_DA_EMISSAO > 0)');
     // a cirurgia é CHAMADA uma vez só no arquivo (a outra ocorrência do
     // nome é a definição), e a chamada é a que escreve no material

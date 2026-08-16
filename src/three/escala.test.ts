@@ -50,7 +50,7 @@ import {
   raioDeSchwarzschildPc,
   type EscalaDeclarada,
 } from './escala';
-import { SOBRETAXA_DO_HALO, vaoRadiometricoNaTroca } from './luzDaCasa';
+import { SOBRETAXA_DO_HALO } from './luzDaCasa';
 
 const ler = (caminhoDoRepo: string) =>
   readFileSync(new URL(`../../${caminhoDoRepo}`, import.meta.url), 'utf8');
@@ -242,13 +242,18 @@ describe('3b. A SEGUNDA COLUNA: a mesma regra, para brilho', () => {
   // que a deixou existir: o vão de 26 magnitudes da fotosfera nasceu calado
   // porque não havia onde declará-lo NEM quem cobrasse a declaração.
 
-  it('PERNA 1 (espelho) — o fator do Sol sai da unidade, não de um número digitado', () => {
+  it('PERNA 1 (espelho) — o Sol EMITE NA UNIDADE DA CASA, e não deve mais brilho', () => {
+    // a coluna nasceu declarando 3,7e-11 (~26 magnitudes de menos luz): a
+    // malha emitia a paleta H-alfa autorada enquanto o ponto depositava
+    // ~2,7e10 para a MESMA superfície. A F2 entrou em 15/08 — a fotosfera
+    // passou a emitir a radiância verdadeira pela ponte de unidades — e o
+    // oráculo apertou sozinho: agora ele EXIGE 1.
     const sol = CADASTRO_DE_ESCALA.find((e) => e.id === 'sol')!;
-    expect(sol.fatorDeBrilho).toBe(1 / vaoRadiometricoNaTroca(RAIO_SOL_PC));
-    // e o número, para quem quiser conferir: a cena emite ~3,7e-11 do que a
-    // lei manda — ~26 magnitudes de menos luz
-    expect(sol.fatorDeBrilho!).toBeLessThan(1e-10);
-    expect(2.5 * Math.log10(1 / sol.fatorDeBrilho!)).toBeCloseTo(26.1, 0);
+    expect(sol.fatorDeBrilho).toBe(1);
+    expect(deveDividaDeBrilho(sol)).toBe(false);
+    // e a linha do Sol saiu do placar: dívida quitada não fica declarada,
+    // senão a PERNA 2 (nenhuma dívida órfã) vira decoração
+    expect(DIVIDAS_DE_BRILHO.sol).toBeUndefined();
   });
 
   it('PERNA 1 (espelho) — a sobretaxa do halo é a MEDIDA em luzDaCasa.test.ts', () => {
@@ -324,8 +329,13 @@ describe('3b. A SEGUNDA COLUNA: a mesma regra, para brilho', () => {
     expect(brilhoEmTexto(2)).toBe('2,0× mais luz');
     expect(brilhoEmTexto(0.5)).toBe('2,0× menos luz');
     expect(brilhoEmTexto(1e-11)).toMatch(/magnitudes de menos luz/);
+    // o SOL SAIU da acusação em 15/08, com a F2 — quem sobra é o buraco
+    // negro, cuja emissão é autorada e não tem contraparte medida. Um selo
+    // que acusasse quem já pagou é tão desonesto quanto um que cala sobre
+    // quem deve.
     const linhas = acusacaoDoBrilho();
-    expect(linhas.some((l) => l.startsWith('Sol emite'))).toBe(true);
+    expect(linhas.some((l) => l.startsWith('Sol emite'))).toBe(false);
+    expect(linhas).toEqual(['Sagittarius A✱ emite brilho de autor']);
   });
 });
 

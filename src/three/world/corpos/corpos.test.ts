@@ -15,7 +15,7 @@ import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
 import { deepPointGain, heroDominanceFade, psfPointSizePx, sunStarGain } from '../lodStellar';
 import { PONTO_ZERO_SOL_PC, magDoVertice } from '../planetas/planetas';
-import { cessaoAlvo, cessaoPeloGate } from './terra';
+import { CESSAO_PELO_GATE_MULT, cessaoAlvo, cessaoPeloGate } from './terra';
 import {
   CORPOS_DEFAULT_ON,
   CUSHION_DO_GATE,
@@ -395,16 +395,24 @@ describe('a fiação do Sol no Director (F2)', () => {
   });
 });
 
-describe('a cessão pelo gate (?bcede=, bancada da onda da luz)', () => {
+describe('a cessão pelo gate (padrão desde 15/08; ?bcede= é o caminho de volta)', () => {
   const DIRECTOR = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
   const RAIO_SOL_FISICO_PC = (696_340 / AU_KM) * AU_PARA_PC;
   const H_HARNESS = 1713;
 
-  it('fora de quadro, porta fechada ou diâmetro envenenado ⇒ 0 EXATO', () => {
+  it('fora de quadro, mult 0 ou diâmetro envenenado ⇒ 0 EXATO', () => {
     expect(cessaoPeloGate(false, 500, 1)).toBe(0);
     expect(cessaoPeloGate(true, 40, 0)).toBe(0);
     expect(cessaoPeloGate(true, 40, Number.NaN)).toBe(0);
     expect(cessaoPeloGate(true, Number.NaN, 1)).toBe(0);
+  });
+
+  it('o MULTIPLICADOR PADRÃO é 1 — a rampa começa no próprio gate do palco', () => {
+    // 1 não é um número escolhido: é dizer que não há deslocamento nenhum
+    // sobre o limiar que o palco já usa para decidir se o corpo existe na
+    // tela. Qualquer outro valor seria uma segunda régua para o mesmo gate.
+    expect(CESSAO_PELO_GATE_MULT).toBe(1);
+    expect(cessaoPeloGate(true, LIMIAR_DO_GATE_PX, CESSAO_PELO_GATE_MULT)).toBe(0);
   });
 
   it('no armar do gate (4 px, mult 1) a cessão é 0 EXATO — sem pop na fronteira', () => {
@@ -438,11 +446,16 @@ describe('a cessão pelo gate (?bcede=, bancada da onda da luz)', () => {
     expect(cessaoPeloGate(true, 20, 2)).toBe(1);
   });
 
-  it('o Director compõe por MAX com a dominância, atrás da porta', () => {
+  it('o Director compõe por MAX com a dominância, e o padrão sai da constante', () => {
     expect(DIRECTOR).toContain("this.debug.get('bcede')");
     expect(DIRECTOR).toContain('cessaoPeloGate(');
-    // porta fechada ⇒ o valor herdado, bit a bit — o ramo `:` do ternário
+    // `?bcede=0` ⇒ o valor herdado, bit a bit — o ramo `:` do ternário, que
+    // é o lado A do A/B e continua existindo
     expect(DIRECTOR).toContain(': alvoPorDominancia');
     expect(DIRECTOR).toContain('this.cessaoPeloGateMult > 0');
+    // e o default não é um literal solto no parse: sai da constante que
+    // carrega a derivação (terra.ts), nos dois lugares que o escrevem
+    expect(DIRECTOR).toContain('private cessaoPeloGateMult = CESSAO_PELO_GATE_MULT;');
+    expect(DIRECTOR).toContain('bcede >= 0 ? bcede : CESSAO_PELO_GATE_MULT');
   });
 });

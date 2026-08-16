@@ -45,7 +45,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
-import { lerPortaFotosfera, vaoRadiometricoNaTroca } from '../luzDaCasa';
+import { RADIANCIA_DA_FOTOSFERA, lerPortaFotosfera, radianciaDeTela } from '../luzDaCasa';
 import { GLSL_COMPRESSAO } from '../shaders/common';
 // o β vem do módulo DONO da curva na emissão, nunca de uma segunda
 // leitura da URL: `starShaders.ts` já resolve `?bemis=` uma vez e os
@@ -593,29 +593,31 @@ export class StellarBody {
     createSunUniforms(ctx);
     ctx.chromo = createChromo(ctx);
     createSunMesh(ctx);
-    // F2, ATRÁS DE DUAS PORTAS E DESLIGADA. Sem `?bfoto=1` nada acontece
-    // e o material sai daqui byte a byte como o vendorizado o montou —
-    // é a promessa da onda inteira: nenhum pixel do produto muda hoje.
+    // F2, PADRÃO desde 15/08. A fotosfera emite a radiância verdadeira na
+    // unidade de tela; `?bfoto=0` é o caminho de volta e devolve o
+    // material byte a byte como o vendorizado o montou — o lado A do A/B,
+    // que continua existindo para comparar.
     //
-    // A SEGUNDA CONDIÇÃO NÃO É ZELO, é o half-float. Com `?bemis=0` a
-    // curva é identidade exata, e identidade sobre 2,7e10 é o buffer
-    // saturado em 65.504 no primeiro pixel do disco: o quadro branco que
-    // a onda existe para consertar, entregue pela porta que promete
-    // honestidade. Ou as duas, ou nenhuma.
+    // A SEGUNDA CONDIÇÃO NÃO É ZELO, é o half-float, e continua valendo
+    // com o sinal invertido: com `?bemis=0` a curva é identidade exata, e
+    // identidade sobre 2,7e10 é o buffer saturado em 65.504 no primeiro
+    // pixel do disco — o quadro branco que a onda existe para consertar.
+    // Quem pedir a volta do joelho leva junto a volta da paleta autorada;
+    // ou as duas, ou nenhuma.
     //
-    // O FATOR SAI DA FUNÇÃO que o cadastro de escala já usa para
-    // declarar esta dívida (`escala.ts`, `fatorDeBrilho`), com o raio
-    // DESTA instância. A metade geométrica dela já é da instância; a
-    // fotométrica ainda é do Sol (`magnitudeDoSol`), e é a E3 —
-    // `StellarBody` parametrizado por `teffK` — que a solta. Passar
-    // `params.radiusPc` em vez do `RAIO_SOL_PC` constante é o que faz
-    // esse dia ser um diff em `luzDaCasa.ts`, não uma caça a literais
-    // aqui dentro.
+    // O FATOR SAI DA PONTE DE UNIDADES (`radianciaDeTela`), a MESMA que o
+    // invariante da troca cobra em `luzDaCasa.test.ts` — uma escrita só
+    // para a lei, com o raio DESTA instância. A metade geométrica dela já
+    // é da instância; a fotométrica ainda é do Sol (`magnitudeDoSol`), e é
+    // a E3 — `StellarBody` parametrizado por `teffK` — que a solta. Passar
+    // `params.radiusPc` em vez do `RAIO_SOL_PC` constante é o que faz esse
+    // dia ser um diff em `luzDaCasa.ts`, não uma caça a literais aqui
+    // dentro.
     if (lerPortaFotosfera(window.location.search) && BETA_DA_EMISSAO > 0) {
       const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
       mat.fragmentShader = cirurgiaDaFotosfera(
         mat.fragmentShader,
-        vaoRadiometricoNaTroca(params.radiusPc),
+        radianciaDeTela(RADIANCIA_DA_FOTOSFERA, params.radiusPc),
         BETA_DA_EMISSAO
       );
       // O FILTRO nasce em 1 — radiância verdadeira, o comportamento da F2
@@ -731,11 +733,11 @@ export class StellarBody {
    * duas cópias de uma lei que precisa andar em passo com a cessão, e a
    * primeira a mudar deixaria a outra para trás em silêncio.
    *
-   * FORA DA PORTA É NO-OP SILENCIOSO, e é o contrato certo: sem
-   * `?bfoto=1` a cirurgia não rodou, `uFiltroSolar` não existe no
-   * material, e o director — que não sabe de porta nenhuma — chama isto
-   * todo quadro do mesmo jeito. Lançar aqui transformaria a porta fechada
-   * (o caso NORMAL, o de produção) em erro por quadro.
+   * SEM A CIRURGIA É NO-OP SILENCIOSO, e é o contrato certo: com
+   * `?bfoto=0` (ou `?bemis=0`) a cirurgia não rodou, `uFiltroSolar` não
+   * existe no material, e o director — que não sabe de porta nenhuma —
+   * chama isto todo quadro do mesmo jeito. Lançar aqui transformaria o
+   * lado A do A/B em erro por quadro.
    *
    * A ESCRITA É CACHEADA, no precedente do `uGain` de `planetas.ts`: o g
    * fica parado em 1 na viagem inteira, e só acorda no último trecho da

@@ -11,10 +11,11 @@
 //  2. ESCREVER O INVARIANTE DA TROCA, que a casa nunca teve. A Lei da Estrela
 //     declara que "em toda troca de representação o fluxo integrado é o mesmo
 //     dos dois lados" e nomeia isso como o critério de sucesso — e não existia
-//     UM teste que medisse fluxo. Ele nasce aqui REPROVANDO de propósito, com
-//     o vão de hoje pinado em número, e fica verde sozinho quando a fotosfera
-//     subir para a unidade. É o idioma que `escala.ts:305-318` já usa para
-//     tamanho: a suíte aperta sem ninguém lembrar de apertá-la.
+//     UM teste que medisse fluxo. Ele nasceu REPROVANDO de propósito
+//     (`it.fails`), com o vão de hoje pinado em número, e ficou VERDE em
+//     15/08, quando a fotosfera subiu para a unidade e a F2 virou padrão. É o
+//     idioma que `escala.ts` já usa para tamanho: a suíte aperta sem ninguém
+//     lembrar de apertá-la.
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
@@ -40,6 +41,7 @@ import {
   magnitudeDeFluxo,
   magnitudeDoSol,
   radianciaDeCorpoNegro,
+  radianciaDeTela,
   razaoDiscoPonto,
   vaoEmMagnitudes,
   vaoRadiometricoNaTroca,
@@ -323,23 +325,56 @@ describe('3. o invariante da troca — o teste que a casa não tinha', () => {
     expect(a / b).toBeCloseTo(4, 6);
   });
 
-  it.fails('NA TROCA DE 1 PX O FLUXO É O MESMO DOS DOIS LADOS (a dívida de F2)', () => {
-    // ESTE TESTE REPROVA DE PROPÓSITO e é a dívida inteira em uma linha. Ele
-    // fica verde quando a fotosfera passar a emitir a radiância verdadeira —
-    // e não antes. Trocar o `it.fails` por `it.skip`, ou afrouxar o 1e-9,
-    // seria apagar a dívida em vez de pagá-la.
+  it('NA TROCA DE 1 PX O FLUXO É O MESMO DOS DOIS LADOS (a dívida de F2, PAGA)', () => {
+    // ESTE TESTE REPROVAVA DE PROPÓSITO (`it.fails`) e era a dívida inteira
+    // em uma linha: a fotosfera emitia a paleta autorada (~1) e o ponto
+    // depositava ~2,7e10 para a MESMA superfície. Ele ficou VERDE em 15/08,
+    // quando a radiância verdadeira virou padrão — e o que o fez verdecer não
+    // foi mexer no oráculo, foi a PONTE DE UNIDADES entrar na emissão da
+    // malha (`radianciaDeTela`, aplicada em `world/stellarBody.ts`). O
+    // histórico está no git; aqui fica a lei.
+    //
+    // OS DOIS LADOS, e a régua de cada um: a unidade da CASA é a fotosfera =
+    // 1; a unidade de TELA é a do campo (`expoM0`); a ponte entre elas é o
+    // vão. Comparar sem a ponte é comparar metro com pé e chamar de dívida.
     const h = 900;
-    const d = distanciaParaDiametro(1, h);
-    const disco = depositoDoDisco(RADIANCIA_DA_FOTOSFERA, 1);
-    const ponto = depositoDoPonto(magnitudeDoSol(d));
-    expect(Math.abs(ponto / disco - 1)).toBeLessThan(1e-9);
+    const dPonte = distanciaDeTrocaPc(RAIO_SOL_PC, 1, h, FOV);
+    const disco = depositoDoDisco(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_SOL_PC, h), 1);
+    const ponto = depositoDoPonto(magnitudeDoSol(dPonte));
+    expect(Math.abs(ponto / disco - 1)).toBeLessThan(1e-12);
+
+    // E COM A RÉGUA EXATA DO PALCO os dois lados batem a 2,5e-7 — que não é
+    // folga concedida, é o PREÇO JÁ MEDIDO do ângulo pequeno: a ponte usa a
+    // inversa analítica (erro relativo x²/3 = 1,26e-7 na distância, o teste
+    // acima o cobra contra a série) e o fluxo vai com d⁻², logo o dobro.
+    // Afrouxar para 1e-6 sem esta conta seria apagar a dívida em vez de
+    // pagá-la; escrever a derivação é o que separa uma coisa da outra.
+    const dPalco = distanciaParaDiametro(1, h);
+    const pontoNoPalco = depositoDoPonto(magnitudeDoSol(dPalco));
+    const erroDoAnguloPequeno = 2 * ((RAIO_SOL_PC / dPonte) ** 2 / 3);
+    expect(erroDoAnguloPequeno).toBeCloseTo(2.53e-7, 9);
+    expect(Math.abs(pontoNoPalco / disco - 1)).toBeLessThan(1.5 * erroDoAnguloPequeno);
+
+    // E A MALHA EMITE ESTE NÚMERO, não um parecido. Sem esta varredura o que
+    // está acima seria uma tautologia sobre funções puras — ficaria verde
+    // mesmo que o material do Sol tivesse continuado com a paleta autorada.
+    // A lei tem UMA escrita: a cirurgia chama a MESMA ponte, e chamar
+    // `vaoRadiometricoNaTroca` direto lá dentro faria a conversão de unidade
+    // existir em dois lugares, que é como uma delas envelhece calada.
+    const malha = ler('src/three/world/stellarBody.ts');
+    expect(malha).toContain('radianciaDeTela(RADIANCIA_DA_FOTOSFERA, params.radiusPc)');
+    expect(malha).not.toMatch(/vaoRadiometricoNaTroca\(/);
   });
 });
 
 // ------------------------------------------------------------
 describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () => {
-  it('NASCE NEUTRA: β = 0 é identidade EXATA, bit a bit', () => {
-    expect(BETA_EMISSAO).toBe(0);
+  it('O CAMINHO DE VOLTA: β = 0 é identidade EXATA, bit a bit', () => {
+    // era o DEFAULT ("nasce neutra", o idioma de instalar mecanismo sem mover
+    // pixel); virou o lado A do A/B em 15/08. A propriedade que importa é a
+    // mesma e não mudou: `?bemis=0` devolve o desenho anterior BIT A BIT, e é
+    // isso que faz a comparação valer alguma coisa.
+    expect(lerBetaDaEmissao('?bemis=0')).toBe(0);
     for (const x of [0, 1e-6, 0.45, 1, 1e3, 3.9e11]) {
       expect(Object.is(comprimir(x, 0), x), String(x)).toBe(true);
       expect(Object.is(comprimir(x, -1), x), String(x)).toBe(true);
@@ -348,14 +383,17 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
 
   it('O CÉU PASSA INTOCADO: muito abaixo de β a curva é a identidade', () => {
     // É a regra 2 do §7 — "o campo estelar e a galáxia nunca esmaecem", e o
-    // preço tem de ser MEDIDO, não afirmado. Com β = 300, Sirius (pico 30,6
-    // num buffer de 900 px) perde **0,17%**. Invisível, e é o número que
+    // preço tem de ser MEDIDO, não afirmado. Com o β DO PADRÃO, Sirius (pico
+    // 30,6 num buffer de 900 px) perde **0,17%**. Invisível, e é o número que
     // autoriza esse β; com β = 30 a mesma estrela perderia 13%, que já é
-    // esmaecer o céu e está do lado proibido.
+    // esmaecer o céu e está do lado proibido. As duas pontas medidas aqui são
+    // a PERNA DE BAIXO da derivação do 300 — a de cima é o half-float, dois
+    // testes abaixo.
+    expect(BETA_EMISSAO).toBe(300);
     const sirius = 30.6;
-    const perdaEm300 = 1 - comprimir(sirius, 300) / sirius;
-    expect(perdaEm300).toBeCloseTo(0.0017, 4);
-    expect(perdaEm300).toBeLessThan(0.002);
+    const perdaNoPadrao = 1 - comprimir(sirius, BETA_EMISSAO) / sirius;
+    expect(perdaNoPadrao).toBeCloseTo(0.0017, 4);
+    expect(perdaNoPadrao).toBeLessThan(0.002);
 
     const perdaEm30 = 1 - comprimir(sirius, 30) / sirius;
     expect(perdaEm30).toBeGreaterThan(0.1);
@@ -363,7 +401,7 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
     // e o fundo do céu, cinco ordens abaixo de β, sente 5e-12 — que é o
     // termo (x/β)²/6 da série do asinh, não zero. "Intocado" aqui quer dizer
     // abaixo do quantum do half-float por dez ordens de grandeza.
-    expect(Math.abs(comprimir(1e-3, 300) / 1e-3 - 1)).toBeLessThan(1e-11);
+    expect(Math.abs(comprimir(1e-3, BETA_EMISSAO) / 1e-3 - 1)).toBeLessThan(1e-11);
   });
 
   it('SABOTAGEM — A CURVA NÃO É TETO, e é isto que a separa do proibido', () => {
@@ -397,8 +435,10 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
     expect(picoDoSolA1UA).toBeGreaterThan(1e11); // é o número do item 3
 
     const TETO_HALF_FLOAT = 65504;
-    // β = 300 (o ponto de partida da calibração) põe o Sol em ~6,5e3
-    expect(comprimir(picoDoSolA1UA, 300)).toBeLessThan(TETO_HALF_FLOAT);
+    // o β DO PADRÃO põe o Sol em ~6,5e3 — dentro do buffer com uma ordem de
+    // grandeza de folga. É a PERNA DE CIMA da derivação do 300.
+    expect(comprimir(picoDoSolA1UA, BETA_EMISSAO)).toBeLessThan(TETO_HALF_FLOAT);
+    expect(comprimir(picoDoSolA1UA, BETA_EMISSAO)).toBeLessThan(TETO_HALF_FLOAT / 10);
     // e existe um β acima do qual a compressão deixa de proteger o buffer
     expect(comprimir(picoDoSolA1UA, 4000)).toBeGreaterThan(TETO_HALF_FLOAT);
   });
@@ -412,15 +452,16 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
     // valor máximo que o material vai escrever.
     const TETO_HALF_FLOAT = 65504;
     const HDR_DA_PALETA = 2.4;
-    const fator = vaoRadiometricoNaTroca(RAIO_SOL_PC);
-    const maximoEscrito = comprimir(fator * HDR_DA_PALETA, 300);
+    const fator = radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_SOL_PC);
+    const maximoEscrito = comprimir(fator * HDR_DA_PALETA, BETA_EMISSAO);
     expect(maximoEscrito).toBeLessThan(TETO_HALF_FLOAT);
 
-    // SEM A CURVA A PORTA É UM QUADRO BRANCO, e é por isso que
-    // `stellarBody.ts` cobra `?bemis=` junto com `?bfoto=`: β = 0 é
-    // identidade EXATA, e identidade sobre 2,7e10 satura o buffer no
-    // primeiro pixel do disco. No pico da paleta são SEIS ordens de
-    // grandeza acima do teto (1,0e6×); o piso de 1e5 aqui é folga.
+    // SEM A CURVA A FOTOSFERA VERDADEIRA É UM QUADRO BRANCO, e é por isso
+    // que `stellarBody.ts` cobra as duas condições: `?bemis=0` é identidade
+    // EXATA, e identidade sobre 2,7e10 satura o buffer no primeiro pixel do
+    // disco. No pico da paleta são SEIS ordens de grandeza acima do teto
+    // (1,0e6×); o piso de 1e5 aqui é folga. Quem pede a volta do joelho leva
+    // junto a volta da paleta autorada — ou as duas, ou nenhuma.
     expect(comprimir(fator * HDR_DA_PALETA, 0)).toBeGreaterThan(TETO_HALF_FLOAT * 1e5);
 
     // e o mesmo β que estoura para o ponto estoura para a malha: as duas
@@ -458,30 +499,37 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
     expect(PROIBIDO.test('const g = mediaDoQuadro();')).toBe(true);
   });
 
-  it('a porta ?bemis= aceita número e recusa lixo — o default é o neutro', () => {
+  it('a porta ?bemis= é o CAMINHO DE VOLTA — ausente é o padrão, 0 desliga', () => {
+    // o idioma de ?plan/?noplan: o mesmo binário dos dois lados. Ausente ou
+    // envenenada cai no padrão, nunca num caminho terceiro; valor válido
+    // obedece, que é o que mantém a porta servindo de bancada.
     expect(lerBetaDaEmissao('')).toBe(BETA_EMISSAO);
-    expect(lerBetaDaEmissao('?bemis=300')).toBe(300);
-    expect(lerBetaDaEmissao('?bemis=0')).toBe(0);
+    expect(lerBetaDaEmissao('?outro=1')).toBe(BETA_EMISSAO);
     expect(lerBetaDaEmissao('?bemis=abacaxi')).toBe(BETA_EMISSAO);
     expect(lerBetaDaEmissao('?bemis=-5')).toBe(BETA_EMISSAO);
-    expect(lerBetaDaEmissao('?outro=1')).toBe(BETA_EMISSAO);
+    // o lado A do A/B, explícito
+    expect(lerBetaDaEmissao('?bemis=0')).toBe(0);
+    // e a bancada continua varrendo
+    expect(lerBetaDaEmissao('?bemis=300')).toBe(300);
+    expect(lerBetaDaEmissao('?bemis=30')).toBe(30);
   });
 
-  it('a porta ?bfoto= é BINÁRIA — só `1` liga, e o default é não fazer nada', () => {
+  it('a porta ?bfoto= é BINÁRIA — ausente é a radiância verdadeira, 0 volta', () => {
     // binária de propósito, ao contrário da irmã `?bemis=`: um "quanto"
     // aqui seria um segundo botão de brilho para a malha, e a fotosfera
     // ou está na unidade da casa ou não está. O joelho mora em `?bemis=`.
+    expect(lerPortaFotosfera('')).toBe(true);
+    expect(lerPortaFotosfera('?outro=1')).toBe(true);
     expect(lerPortaFotosfera('?bfoto=1')).toBe(true);
-    expect(lerPortaFotosfera('')).toBe(false);
+    // o lado A do A/B — e é só o `0` que volta, porque a porta é binária
     expect(lerPortaFotosfera('?bfoto=0')).toBe(false);
-    expect(lerPortaFotosfera('?bfoto=2')).toBe(false);
-    expect(lerPortaFotosfera('?bfoto=true')).toBe(false);
-    expect(lerPortaFotosfera('?bfoto=abacaxi')).toBe(false);
-    expect(lerPortaFotosfera('?bfoto=')).toBe(false);
-    expect(lerPortaFotosfera('?outro=1')).toBe(false);
+    // lixo cai no default, como na irmã: um `?bfoto=abacaxi` que desligasse
+    // a lei da casa seria a porta decidindo por engano de digitação
+    expect(lerPortaFotosfera('?bfoto=abacaxi')).toBe(true);
+    expect(lerPortaFotosfera('?bfoto=')).toBe(true);
     // e ela é PURA: recebe a query, não lê `window` — que é o que
     // permite este teste existir em `environment: 'node'`
-    expect(lerPortaFotosfera('?bemis=300&bfoto=1&q=cinema')).toBe(true);
+    expect(lerPortaFotosfera('?bemis=0&bfoto=0&q=cinema')).toBe(false);
   });
 });
 

@@ -61,12 +61,7 @@ import { AU_KM } from '../lib/atlas/elementosOrbitais';
 // A UNIDADE DE LUZ (F1). A seta aponta só nesta direção: `luzDaCasa.ts` não
 // importa daqui — toda função dela que precisa de um raio o RECEBE — e é assim
 // que os dois cadastros da casa, o de tamanho e o de brilho, ficam sem ciclo.
-import {
-  M_V_SOL,
-  M_V_SOL_DO_CAMPO,
-  SOBRETAXA_DO_HALO,
-  vaoRadiometricoNaTroca,
-} from './luzDaCasa';
+import { M_V_SOL, M_V_SOL_DO_CAMPO, SOBRETAXA_DO_HALO } from './luzDaCasa';
 
 /**
  * km → pc pela MESMA cadeia que a cena usa para pôr corpo no lugar
@@ -263,12 +258,15 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     nome: 'Sol',
     classe: 'corpo',
     fator: RAIO_DO_SOL_NA_CENA / RAIO_SOL_PC,
-    // A DÍVIDA QUE A SEGUNDA COLUNA REVELOU. O tamanho foi pago na F3; o
-    // brilho, não. A malha emite radiância ~1 (paleta H-alfa autorada,
-    // `world/sol/sun.js`) e a lei do ponto deposita ~2,7e10 para a mesma
-    // superfície, na troca de 1 px. O fator é o INVERSO disso: a cena emite
-    // 3,7e-11 do que deveria.
-    fatorDeBrilho: 1 / vaoRadiometricoNaTroca(RAIO_SOL_PC),
+    // QUITADA em 15/08 (F2). A segunda coluna nasceu declarando 3,7e-11 —
+    // a malha emitia a paleta H-alfa autorada (~1) enquanto a lei do ponto
+    // depositava ~2,7e10 para a MESMA superfície, ~26 magnitudes entre dois
+    // desenhos do mesmo objeto. Agora a fotosfera emite a radiância
+    // verdadeira pela ponte de unidades (`radianciaDeTela`, aplicada em
+    // `world/stellarBody.ts`), e o fator é 1: o Sol está na unidade da casa.
+    // O número velho não se perde — ele continua saindo de
+    // `vaoRadiometricoNaTroca` e o invariante da troca o cobra por teste.
+    fatorDeBrilho: 1,
     endereco: 'src/three/escala.ts:134',
     razao:
       'PAGO na F3: o disco era 487.441× maior para o plano de abertura render a ' +
@@ -423,14 +421,16 @@ export function deveDividaDeBrilho(e: EscalaDeclarada): boolean {
 
 /**
  * AS DÍVIDAS DE BRILHO ABERTAS. O mesmo placar de `DIVIDAS_ABERTAS`, e a
- * mesma promessa: quando a fotosfera entrar na unidade, a linha do `sol` sai
- * daqui e `escala.test.ts` passa a EXIGIR fatorDeBrilho 1 — o teste aperta
- * sozinho, sem ninguém lembrar de apertá-lo.
+ * promessa foi CUMPRIDA: a linha do `sol` saiu em 15/08, quando a F2 virou
+ * padrão, e o oráculo apertou sozinho — o cadastro agora EXIGE fatorDeBrilho
+ * 1 do Sol, sem ninguém lembrar de apertá-lo. A coluna continua existindo
+ * para a PRÓXIMA mentira de brilho, que é a razão de ela ter nascido.
  */
 export const DIVIDAS_DE_BRILHO: Readonly<Record<string, string>> = {
-  sol:
-    'F2 da luz — a fotosfera passa a emitir a radiância verdadeira, com a ' +
-    'compressão fixa na emissão para o half-float aguentar',
+  // (a linha do `sol` saiu em 2026-08-15, com a F2: a fotosfera passou a
+  // emitir a radiância verdadeira com a compressão fixa na emissão, e o
+  // que era ~26 magnitudes de dívida virou fator 1. O histórico está no
+  // git; o invariante da troca, em `luzDaCasa.test.ts`.)
   'sgr-a':
     'SEM FASE MARCADA — a emissão do disco de acreção é autorada e não tem ' +
     'contraparte medida; entra quando a unidade da luz alcançar o buraco negro',

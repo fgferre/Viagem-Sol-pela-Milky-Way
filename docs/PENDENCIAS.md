@@ -30,131 +30,33 @@ passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
 coisas da frente"*. **RESPONDIDA em 15/08: pela fundação.** A onda da luz
-(F0/F1/F2a) entrou; o estado dela está no bloco abaixo.
+entrou INTEIRA e é o padrão; o que resta dela está no bloco abaixo.
 
 ---
 
-## ONDA DA LUZ — onde ela parou (15/08)
+## ONDA DA LUZ — o pacote é o PADRÃO desde 15/08
 
-**O que já está na `main` e é definitivo:**
+O visitante vê, sem digitar nada: compressão na emissão (β = 300), compressão
+com ombro dentro do bloom (0,45 / 40), fotosfera na unidade da casa com o
+filtro solar declarado, e a cessão do Sol-ponto pelo gate (mult 1). As
+derivações moram nas constantes nomeadas (`luzDaCasa.ts`, `post.ts`,
+`terra.ts`); a história inteira, nos commits de 15/08. As cinco portas
+(`?bemis= ?bbloom= ?bombro= ?bfoto= ?bcede=`) são o CAMINHO DE VOLTA
+(valor 0 ⇒ desenho antigo), registradas no selo.
 
-- A régua do item 3 ganhou JUIZ (`julgarEscada` em `luz-do-quadro.mjs`), com
-  limiares que saem de número que já existe na casa. O piso do céu é MEDIDO com
-  o Sol desligado (`&noplan=1`): 0,048 e 0,300% com bloom; 0,039 e 0,113% sem.
-- Nasceu `src/three/luzDaCasa.ts` — a unidade de brilho, irmã de `escala.ts`.
-- `escala.ts` ganhou a SEGUNDA COLUNA (`fatorDeBrilho`), com as três pernas
-  (espelho, completude, sabotagem). Ela já declarou cinco coisas que estavam
-  caladas, entre elas as ~26 magnitudes da fotosfera e o ponto-zero 4,83/4,85.
-- A compressão `β·asinh(x/β)` foi EXTRAÍDA de `post.ts` para `shaders/common.ts`
-  e aplicada na emissão de `STAR_FRAG`. **Nasce desligada.**
-- Existe o teste de invariante disco↔ponto, REPROVANDO de propósito
-  (`it.fails`), com o vão de hoje pinado em número.
-- A cessão do Sol-ponto tem porta de bancada: `?bcede=` re-ancora a rampa no
-  gate do palco (`cessaoPeloGate`, terra.ts), composta por `max` com a
-  dominância — fechada por padrão, 0 ⇒ caminho herdado bit a bit.
-- A F2 está CONSTRUÍDA atrás de `?bfoto=1`: a malha do Sol passa a emitir
-  `comprimir(cor × vão, β do bemis)` por cirurgia de texto no material vivo
-  (`cirurgiaDaFotosfera`, stellarBody.ts — padrão `domarOBloom`; nenhum
-  sol/*.js aberto). Inerte sem `?bemis=`. Fator: `vaoRadiometricoNaTroca`
-  (~2,74e10), nunca digitado. 51 vistas bit-idênticas com a porta fechada.
+Provas vivas: o invariante disco↔ponto está VERDE (a dívida F2 foi paga); o
+voo de ida e volta (`scripts/visual/voo-ida-e-volta.mjs`, pedido do dono)
+passa em 34 degraus — 0,05 → 15.800 UA e volta, na MESMA sessão, sem tela
+cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
 
-**O diagnóstico, que mudou com a medição:** a compressão na emissão **não** mata
-sozinha a tela branca — medido, nenhum β limpa o quadro sem esmaecer as
-estrelas. Sem bloom o quadro JÁ É honesto em toda a escada (borrão de 8 a 12 px).
-**Quem lava é o bloom**, que recebe o ponto do Sol quatro ordens de grandeza
-acima do próprio limiar.
+**O que está ABERTO da onda:**
 
-**A saída achada, e ela respeita a restrição do dono** — palavras dele,
-15/08: *"eu nao quero que as estrelas de fundo diminuam ou morram"*. A
-compressão entra DENTRO do passa-alta do bloom, com um OMBRO: abaixo do ombro a
-identidade é exata (todo clarão legítimo passa bit a bit), acima dele só o Sol
-vive e é comprimido. Como o `UnrealBloomPass` soma o clarão POR CIMA do buffer
-de entrada, a imagem direta — Terra, planetas, galáxia — nunca passa pela curva.
-
-Medido em `?bemis=300&bbloom=0.45&bombro=40`, contra hoje:
-
-| | hoje | proposta |
-|---|---|---|
-| 1 UA — quadro lavado | 100% | 3,8% |
-| 2000 UA — quadro lavado | 92% | 1,9% |
-| borrão (1 → 2000 UA) | 900 → 900 | 168 → 120 |
-
-E o que NÃO mudou, no pixel: `terra`, `interno`, `faceon`, `hero200`,
-`solestrela`, `soldisco` — todos com delta máximo de 1 nível (ULP de
-compilador). `hero8` muda, e mudar ali é o mecanismo funcionando: a vista está a
-0,6 pc de Betelgeuse, que é um mini-Sol com a mesma doença.
-
-**ESTÁ TUDO ATRÁS DE PORTAS DE URL, DESLIGADO POR PADRÃO.** Nenhum pixel do
-produto mudou. As cinco portas estão registradas no selo.
-
-**O QUE FALTA, e é decisão do dono, com as imagens em `capturas/`:**
-
-1. **Aprovar o visual** de `ITEM3-tres-caminhos.png` e, com o "sim", ligar como
-   padrão (tirar as portas) — o que fecha o item 3.
-2. **O halo do Sol fica generoso** (~170 px contra os ~40 da régua ideal). A
-   pergunta do dono que abriu isso: *"onde porque nao aparece o sol procedural a
-   1 UA isso nao seria verdadeiro?"* — e ele tem razão. A bola 3D ESTÁ
-   desenhada e no tamanho certo (7,5 px a 1 UA, prova em `SOL-A-1UA.png`); o que
-   acontece é que **o ponto continua despejando toda a luz dele por cima da
-   bola** e a engole. É o item 40 (dois Sóis) visto por dentro.
-3. **A CESSÃO DO PONTO foi construída e MEDIDA (15/08, segunda rodada) — e a
-   medição corrigiu o registro e devolveu a ordem da Lei.** O registro dizia
-   "ninguém escreve no canal `aCede`" e era falso: o Director já escrevia a
-   cessão por dominância todo quadro — ela é que dá 0 exato longe de ~0,55 UA,
-   por desenho. A porta nova `?bcede=` re-ancora a rampa no gate do palco
-   (4 px × o valor da porta; `cessaoPeloGate`, terra.ts), composta por `max`
-   com a dominância, neutra fechada (47/47 vistas bit-idênticas). Medido:
-   - cessão PARCIAL é impotente: 0,87 de cessão a 0,8 UA ⇒ quadro bit-idêntico
-     (o ponto está 11 ordens acima da saturação; multiplicar não aparece);
-   - cessão PLENA a 1 UA mata a tela branca SOZINHA, sem compressão nenhuma:
-     borrão 900 → 6 px, lavado 100% → 0,97% (0,71% com as b-portas) — e o céu
-     inteiro fica de pé, nada esmaece;
-   - mas a bola aparece LARANJA E FRACA (`CESSAO-1UA-tres-mundos.png`): o
-     ponto escondia o vão F2 — a fotosfera emite ~1 autorado, não a radiância
-     real da unidade da casa;
-   - e pré-F2 a rampa suave é impossível: a lei candidata cava um VALE no
-     borrão — 102 → 6 → 171 px em 0,067 → 1 → 3,6 UA — um pop espacial.
-   **A Lei tinha razão: "nada acima de F2 funciona antes de F2." O próximo
-   passo da onda é F2 — a fotosfera na unidade da casa, com a compressão na
-   emissão alcançando a malha. A cessão fecha DEPOIS, com `?bcede=` já pronta
-   como instrumento.**
-4. **A F2 foi construída e MEDIDA no mesmo dia (`?bfoto=1`), e ela SANA a
-   cessão** — como a Lei previu. Com fotosfera verdadeira + cessão a 1 UA:
-   borrão 110 px, lavado 2,0%, e a sequência 0,5 → 1 → 2 UA dá
-   200 → 110 → 173 px — sem o vale, sem o pop: a bola brilha de verdade e
-   alimenta o próprio clarão (`F2-1UA-quatro-mundos.png` — o Sol vira
-   estrela branca honesta e a cena não esmaece). O teste-dívida (`it.fails`)
-   segue reprovando de propósito: só verdece quando isto virar padrão.
-   **O custo declarado, para o dono decidir com a imagem
-   `luz-0p027ua-bemis300bfoto1.png`:** de perto (≤0,07 UA) a luz verdadeira
-   em exposição fixa é uma parede branca — fisicamente o que uma câmera
-   apontada ao Sol faz, mas mata a granulação querida das vistas próximas.
-   A saída que a própria Lei prevê (§E3): a paleta H-alfa vira OVERRIDE
-   DECLARADO da instância nº 1 — um "filtro solar" assumido no selo, não
-   uma lei de luz. Desenhar esse filtro é o próximo passo natural; decidir
-   se ele entra é do dono.
-
-   **O dono JULGOU a rodada em 15/08, e reprovou a forma crua.** Palavras
-   dele: *"nao ficou bom, está muito estranha a forma que transiciona do
-   sol procedural, de repente vira um clarão que ocupa a tela toda e nao
-   se vê mais nada na tela. nao faz sentido nenhum. ficou muito ruim"*.
-   O defeito apontado é a TRANSIÇÃO: a radiância verdadeira sem filtro
-   cega a tela na aproximação. O filtro solar declarado deixou de ser
-   opção e virou REQUISITO do pacote — sem ele, nada disto vira padrão.
-
-   **O FILTRO FOI CONSTRUÍDO E MEDIDO na mesma rodada.** A emissão exibida
-   desce EM STOPS (`pow(vão, uFiltroSolar)`) da radiância verdadeira para a
-   paleta H-alfa autorada, guiada pela MESMA régua de dominância da cessão
-   (`1 − g(disco/clarão)`, rampa 1→2,5 — nenhum número novo). Escrita por
-   quadro pelo Director; só os pixels do próprio disco mudam — a cena
-   nunca esmaece, nada depende de foco. Medido na aproximação
-   2 → 0,027 UA (`FILTRO-aproximacao.png`): lavado máximo 8,6% (0,35 UA),
-   pico dessatura de perto (0,948) e a granulação volta inteira — o ponto
-   cego morreu. 51 vistas bit-idênticas com a porta fechada; 1672 testes.
-   Falta o julgamento do dono sobre o filme da aproximação.
-
-E outra, que travou um conserto ruim no mesmo dia: *"vc nao pode consertar
-uma coisa e criar outro problema, pense nos impactos das suas decisoes"*.
+- O dono conferir o app com o padrão novo (a queixa que abriu a rodada era
+  do app com o desenho velho).
+- O halo do Sol segue generoso no meio do caminho (~170 px contra ~40 da
+  régua ideal): `luz-do-quadro.mjs` ainda REPROVA a escada padrão por teto
+  e orçamento. Apertar sem teto de brilho é o L3 (item 42).
+- Item 42: a estrela com espinhos de longe (ver ALTA).
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
 estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
@@ -163,7 +65,7 @@ Segurar o push **não foi pedido dele**: foi um agente que inventou a trava.
 Qualquer push na `main` põe o site no ar. Sem pedido explícito, não se
 publica; o pedido de publicar continua de pé.
 
-Números aposentados (1, 2, 14, 29, 30, 31, 32, 35): `git show de16542 -- docs/PENDENCIAS.md`.
+Números aposentados (1, 2, 11, 14, 29, 30, 31, 32, 35): `git show de16542 -- docs/PENDENCIAS.md`.
 
 ---
 
@@ -180,12 +82,13 @@ na tela. Estamos sempre caminhando no sentido das melhorias, se nada muda
 na tela isso fica impossível."* E em 2026-08-13: *"nada é fixo, tudo sempre
 pode ser questionado se melhora UX."*
 
-O que ela ainda cobra: bancada cega a movimento (item 11); fotos reais do
-Sol nunca julgadas por ele (item 22).
+O que ela ainda cobra: fotos reais do Sol nunca julgadas por ele
+(item 22). A cegueira a movimento (item 11) morreu com o voo de ida e
+volta, versionado.
 → `docs/NORTE.md`, seção “Como medir”.
 
-**3. A tela fica branca quando o Sol está longe.** *(CONSERTO MEDIDO E ATRÁS DE
-PORTA — ver o bloco "ONDA DA LUZ" acima; falta o sim do dono para virar padrão.)*
+**3. A tela fica branca quando o Sol está longe.** *(CONSERTO LIGADO COMO
+PADRÃO em 15/08 — ver o bloco "ONDA DA LUZ"; falta o dono conferir no app.)*
 De ~1 UA a ~2.000 UA o quadro lava. O Sol encolhe 4.000 vezes e a mancha
 na tela não muda de tamanho. São dois defeitos: o ponto do Sol não encolhe,
 e o borrão da lente multiplica. A bola 3D está certa; o brilho por cima é
@@ -247,6 +150,18 @@ Atlas o sistema inteiro empilha num pixel e o borrão branco impede de ver
 o que se clica. O conserto é o item 3. Não criar segundo mecanismo de
 rótulos — o `LabelCanvas` já resolve colisão.
 
+**42. A estrela com espinhos de longe consome a tela.**
+Palavras do dono, 15/08: *"esse clarao a 15000 UA quando estivermos
+observando o sistema solar, nao vai consumir tudo a tela? nao me parece
+que o space engine faz dessa forma..."* — e a medição confirma: ~31% do
+quadro lavado e borrão de ~620 px entre 10.800 e 15.800 UA, nos dois
+sentidos do voo. A causa é a lei de autor do clarão (`heroStars.ts`): o
+SunStar tem teto de 40° de céu, e as 16 ilustres usam `0,08·10^(−0,3m)` pc
+— tamanho que sai de magnitude, não de luz recebida. O conserto é o L3 da
+Lei da Estrela: o clarão (núcleo, brilho e espinhos) derivado do fluxo,
+numa lei só para todas as estrelas. O mapa da camada está feito (15/08);
+o SunStar já reescreve o tamanho todo quadro — a troca é contida.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
@@ -258,9 +173,6 @@ também não tem atalho.
 
 **10.** O selo de honestidade pode atrasar até 3 segundos. Só atualiza
 quando a interface redesenha.
-
-**11.** A bancada de medição é cega para movimento. Toda captura congela
-o relógio.
 
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela
 lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.

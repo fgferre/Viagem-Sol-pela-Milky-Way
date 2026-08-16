@@ -317,8 +317,27 @@ export function cessaoAlvo(
 }
 
 /**
- * O ALVO DA CESSÃO PELO GATE (bancada da onda da luz, porta `?bcede=`):
- * a MESMA rampa `g(r)` da irmã de cima, com a âncora trocada — em vez
+ * O MULTIPLICADOR PADRÃO da âncora abaixo — 1, e o 1 não é um número
+ * escolhido: é dizer que a rampa começa NO PRÓPRIO gate do palco, sem
+ * deslocamento nenhum. Qualquer outro valor seria uma segunda régua para o
+ * mesmo limiar, inventada em cima da que o palco já usa para decidir se o
+ * corpo existe na tela.
+ *
+ * A MEDIÇÃO DE 15/08 é quem o autoriza (`docs/PENDENCIAS.md`, bloco ONDA DA
+ * LUZ): com mult 1 a cessão a 1 UA é PLENA e mata a tela branca sozinha —
+ * borrão de 900 para 6 px, lavado de 100% para 0,97% — e o céu inteiro fica
+ * de pé, nada esmaece. A mesma rodada mediu que cessão PARCIAL é impotente
+ * (0,87 de cessão a 0,8 UA devolve quadro bit-idêntico: o ponto está 11
+ * ordens acima da saturação), e é por isso que a porta não vira um botão de
+ * dose: ou a bola assume, ou não adianta.
+ *
+ * `?bcede=0` é o caminho de volta — a lei herdada por dominância, sozinha.
+ */
+export const CESSAO_PELO_GATE_MULT = 1;
+
+/**
+ * O ALVO DA CESSÃO PELO GATE (porta `?bcede=`): a MESMA rampa `g(r)` da
+ * irmã de cima, com a âncora trocada — em vez
  * do halo previsto da PSF, o LIMIAR DO GATE do palco vezes o
  * multiplicador da porta. Para o Sol a dominância é honesta e inócua
  * (o sprite mede ~25 px e o disco só o cruza a ~0,55 UA), mas quem lava
@@ -330,8 +349,9 @@ export function cessaoAlvo(
  * não muda o ponto em nada) e cessão plena com a bola a 2,5 gates
  * (10 px, ~1,4 UA para o Sol).
  *
- * `mult` inválido ou ≤ 0 ⇒ 0 (porta fechada = lei herdada intacta);
- * mesh fora de quadro ⇒ 0 EXATO, como na irmã.
+ * `mult` inválido ou ≤ 0 ⇒ 0 (o caminho de volta de `?bcede=0`: a lei
+ * herdada por dominância, intacta); mesh fora de quadro ⇒ 0 EXATO, como na
+ * irmã.
  */
 export function cessaoPeloGate(
   emQuadro: boolean,

@@ -430,20 +430,29 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('knee', 'joelho asinh forçado'),
   porta('kneemode', 'modo do joelho trocado'),
   porta('kneeamt', 'amount do joelho forçado'),
-  // as cinco portas de medição da onda da luz (F2). Nascem desligadas e
-  // são bancada, não produto — quando a calibração fechar e virarem
-  // default, saem da URL e a linha some daqui junto.
-  porta('bemis', 'compressão na emissão do ponto forçada'),
-  porta('bbloom', 'compressão dentro do bloom forçada'),
-  porta('bombro', 'ombro da compressão do bloom forçado'),
-  porta('bcede', 'cessão do Sol-ponto pelo gate do palco forçada'),
-  // ?bfoto=1 é a F2 no material da malha: a fotosfera emitindo a
+  // AS CINCO PORTAS DA ONDA DA LUZ. O pacote virou PADRÃO em 15/08 — a
+  // compressão na emissão, o ombro dentro do bloom, a fotosfera na
+  // unidade da casa e a cessão do Sol-ponto pelo gate são o que o
+  // visitante vê sem digitar nada. As portas ficaram como CAMINHO DE
+  // VOLTA e bancada de comparação, no idioma de ?plan/?noplan: o mesmo
+  // binário dos dois lados, com ?bemis=0, ?bbloom=0, ?bfoto=0 e ?bcede=0
+  // reproduzindo o desenho anterior para o A/B.
+  //
+  // E ELAS CONTINUAM SENDO DESVIO QUANDO PRESENTES, que é o ponto: quem
+  // tem uma delas na URL não está vendo o padrão da casa — esteja ele
+  // pedindo o lado A ou um valor de bancada —, e o selo declara isso sem
+  // precisar saber qual dos dois.
+  porta('bemis', 'compressão na emissão do ponto alterada por URL'),
+  porta('bbloom', 'compressão dentro do bloom alterada por URL'),
+  porta('bombro', 'ombro da compressão do bloom alterado por URL'),
+  porta('bcede', 'cessão do Sol-ponto pelo gate do palco alterada por URL'),
+  // ?bfoto= governa a F2 no material da malha: a fotosfera emitindo a
   // radiância verdadeira em vez do ~1 da paleta H-alfa, com o FILTRO
   // SOLAR declarado — que a devolve à paleta autorada em stops quando o
-  // disco domina o próprio clarão. INERTE sem ?bemis= > 0 (sem curva,
-  // 2,7e10 satura o half-float) — e mesmo inerte se declara, porque o
-  // selo não promete o que não conhece.
-  porta('bfoto', 'radiância verdadeira da fotosfera (com filtro solar) forçada'),
+  // disco domina o próprio clarão. Ela anda amarrada a ?bemis=: sem
+  // curva, 2,7e10 satura o half-float, então pedir a volta do joelho
+  // devolve a paleta junto.
+  porta('bfoto', 'radiância verdadeira da fotosfera alterada por URL'),
   porta('dom', 'cessão de dominância forçada'),
   porta('nodom', 'cessão de dominância desligada'),
   porta('forgetau', 'extinção por coluna das forjas ligada'),

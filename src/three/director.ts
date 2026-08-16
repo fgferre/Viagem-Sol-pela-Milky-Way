@@ -33,6 +33,7 @@ import {
   gateBinario,
 } from './world/corpos/corpos';
 import {
+  CESSAO_PELO_GATE_MULT,
   RAIO_EQ_TERRA_PC,
   TerraResolvida,
   cessaoAlvo,
@@ -532,9 +533,10 @@ export class Director {
   private expOverride = false;
   /** a gradação por contexto do Atlas está ligada? (`?grad=0` desliga) */
   private gradacaoLigada = true;
-  /** ?bcede= — multiplicador do gate na cessão do Sol-ponto (0 = porta
-   *  fechada ⇒ a lei herdada por dominância; bancada da onda da luz) */
-  private cessaoPeloGateMult = 0;
+  /** ?bcede= — multiplicador do gate na cessão do Sol-ponto. Padrão desde
+   *  15/08 (`CESSAO_PELO_GATE_MULT`, terra.ts); `?bcede=0` é o caminho de
+   *  volta ⇒ a lei herdada por dominância, sozinha. */
+  private cessaoPeloGateMult = CESSAO_PELO_GATE_MULT;
 
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
@@ -668,14 +670,16 @@ export class Director {
     // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
     // no default do Atlas, nunca num caminho terceiro.
     this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
-    // ?bcede= — a quarta porta de medição da onda da luz (F2): re-ancora
-    // a cessão do Sol-ponto no gate do palco (valor = multiplicador do
-    // limiar de 4 px; 1 ⇒ a rampa começa no próprio gate). Ausente ou
-    // inválida ⇒ 0 ⇒ o caminho herdado por dominância, bit a bit. Irmã
-    // de bemis/bbloom/bombro no selo; a conta mora em `cessaoPeloGate`
+    // ?bcede= — a quarta porta da onda da luz (F2): re-ancora a cessão do
+    // Sol-ponto no gate do palco (valor = multiplicador do limiar de 4 px;
+    // 1 ⇒ a rampa começa no próprio gate). PADRÃO desde 15/08; ausente ou
+    // envenenada ⇒ `CESSAO_PELO_GATE_MULT`, e `?bcede=0` é o caminho de
+    // volta ⇒ o herdado por dominância, bit a bit. Irmã de
+    // bemis/bbloom/bombro no selo; a conta mora em `cessaoPeloGate`
     // (terra.ts) e o uso no tick, junto da cessão do Sol.
     const bcede = parseFloat(this.debug.get('bcede') ?? '');
-    this.cessaoPeloGateMult = Number.isFinite(bcede) && bcede > 0 ? bcede : 0;
+    this.cessaoPeloGateMult =
+      Number.isFinite(bcede) && bcede >= 0 ? bcede : CESSAO_PELO_GATE_MULT;
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
     // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
     // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
@@ -3532,15 +3536,15 @@ export class Director {
       this.sun.escreverFiltroSolar(
         1 - heroDominanceFade(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0)
       );
-      // A QUARTA PORTA DA ONDA DA LUZ (`?bcede=`), bancada e não
-      // produto: re-ancora a cessão no GATE DO PALCO (4 px × o
-      // multiplicador da porta) em vez do halo previsto da PSF. NÃO é o
+      // A CESSÃO PELO GATE, padrão desde 15/08 e com `?bcede=` como
+      // caminho de volta: re-ancora a cessão no GATE DO PALCO (4 px × o
+      // multiplicador) em vez do halo previsto da PSF. NÃO é o
       // corte binário que o comentário acima proíbe: a rampa nasce
       // 0 EXATO no armar do gate (razão 1 ⇒ g = 0) e sobe com o
       // TAMANHO da bola — sem pop por construção, nos dois sentidos.
-      // `max` com a dominância: a porta só ADIANTA a cessão, nunca a
+      // `max` com a dominância: esta âncora só ADIANTA a cessão, nunca a
       // atrasa — perto do cruzamento de 0,55 UA a lei herdada continua
-      // sendo o piso. Porta fechada (0) ⇒ o valor herdado, bit a bit.
+      // sendo o piso. `?bcede=0` ⇒ o valor herdado, bit a bit.
       this.planetas.escreverCessao(
         'sun',
         this.cessaoPeloGateMult > 0

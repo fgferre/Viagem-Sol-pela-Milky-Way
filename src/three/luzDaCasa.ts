@@ -259,27 +259,39 @@ export const SOBRETAXA_DO_HALO = 1.534;
  * O β da compressão fixa na emissão do ponto estelar — o joelho de
  * `β·asinh(x/β)` que `shaders/common.ts` define e `STAR_FRAG` aplica.
  *
- * NASCE ZERO, e zero é IDENTIDADE EXATA (`comprimir3` devolve `x` sem tocar em
- * nada). É o idioma com que a casa instala mecanismo novo sem mover um pixel
- * no dia em que ele entra — o mesmo do `uAmt = 0` do joelho do compósito.
+ * VALE 300 DESDE 15/08, e o número é MEDIDO, não digitado. Ele nasceu 0 (o
+ * idioma da casa para instalar mecanismo sem mover pixel no dia em que ele
+ * entra, o mesmo do `uAmt = 0` do joelho do compósito) e virou padrão quando
+ * a rodada de medição fechou — `docs/PENDENCIAS.md`, bloco ONDA DA LUZ. As
+ * duas pontas da calibração são cobradas por teste, não por gosto:
  *
- * O VALOR FINAL É CALIBRAÇÃO, e ela tem duas pontas que puxam para lados
- * opostos:
- *  · β MENOR comprime mais → o quadro limpa, mas as estrelas mais brilhantes
- *    esmaecem, e esmaecer o campo estelar é o que o dono proibiu por escrito;
- *  · β MAIOR poupa as estrelas → mas o Sol pode continuar lavando a tela.
- * Varre-se com `?bemis=` e julga-se com `scripts/visual/luz-do-quadro.mjs`.
+ *  · POR BAIXO manda a regra 2 do §7 da Lei — "o campo estelar e a galáxia
+ *    nunca esmaecem", que é palavra do dono ("eu nao quero que as estrelas de
+ *    fundo diminuam ou morram"). Com β = 300 Sirius (pico 30,6 num buffer de
+ *    900 px) perde **0,17%**; com β = 30 perderia 13%, que já é esmaecer o céu
+ *    e está do lado proibido. É esse par de números que autoriza o 300.
  *
- * TETO DURO, derivado e não digitado: o valor escrito tem de caber no
- * half-float do composer (65.504). Com a radiância máxima alcançável isso põe
- * β abaixo de ~4.000, e `luzDaCasa.test.ts` escreve a conta.
+ *  · POR CIMA manda o half-float do composer, que satura em 65.504. O maior
+ *    valor alcançável da casa é o pico do Sol-ponto a 1 UA (~4e11), e
+ *    `comprimir(pico, 300)` dá ~6,5e3 — dentro do buffer com uma ordem de
+ *    grandeza de folga. Acima de ~4.000 a curva deixa de proteger, e o teste
+ *    da guarda cobra os DOIS lados: que 300 cabe e que 4.000 estoura.
+ *
+ * O CAMINHO DE VOLTA é `?bemis=0`, e ele é identidade EXATA (`comprimir3`
+ * devolve `x` sem tocar em nada) — o lado A do A/B continua existindo bit a
+ * bit, que é o que permite comparar em vez de discutir.
  */
-export const BETA_EMISSAO = 0;
+export const BETA_EMISSAO = 300;
 
 /**
- * A porta `?bemis=` — pura, recebe a query em vez de ler `window`, para poder
- * ser testada no ambiente `node` da suíte. Ausente ou envenenada devolve o
- * default, que é o neutro exato.
+ * A porta `?bemis=` — agora o CAMINHO DE VOLTA, no idioma de `?plan/?noplan`:
+ * o mesmo binário dos dois lados. Ausente ⇒ o default do pacote (`?bemis=0`
+ * é quem desliga); valor explícito e válido ⇒ obedece, e é assim que ela
+ * continua servindo de bancada para varrer o joelho. Lixo cai no default,
+ * nunca num caminho terceiro.
+ *
+ * PURA, recebe a query em vez de ler `window`, para poder ser testada no
+ * ambiente `node` da suíte.
  */
 export function lerBetaDaEmissao(busca: string): number {
   const v = parseFloat(new URLSearchParams(busca).get('bemis') ?? '');
@@ -298,16 +310,29 @@ export function comprimir(x: number, beta: number): number {
 }
 
 /**
- * A PORTA `?bfoto=1` — a MALHA do Sol emitindo a radiância VERDADEIRA da
- * fotosfera COM O FILTRO SOLAR DECLARADO, que é a F2 inteira em uma linha.
- * Hoje a malha emite ~1 (a paleta H-alfa autorada de `world/sol/sun.js`) e a
- * lei do ponto deposita `vaoRadiometricoNaTroca(RAIO_SOL_PC)` — ~2,7e10 —
- * para a MESMA superfície. Ligar a porta é multiplicar a emissão por esse
- * fator, e o número não se digita em lugar nenhum: sai da função que o
- * cadastro de escala já usa para declarar a dívida.
+ * A FOTOSFERA NA UNIDADE DA CASA É O PADRÃO desde 15/08 — a F2 inteira em
+ * uma linha. A malha do Sol emite a radiância VERDADEIRA da fotosfera
+ * (`radianciaDeTela` do raio da instância) em vez do ~1 autorado da paleta
+ * H-alfa de `world/sol/sun.js`, com o FILTRO SOLAR declarado por cima. O
+ * fator não se digita em lugar nenhum: sai da mesma ponte que o cadastro de
+ * escala usa para declarar — ou, agora, para dar por quitada — a dívida.
+ */
+export const FOTOSFERA_VERDADEIRA = true;
+
+/**
+ * A porta `?bfoto=` — o CAMINHO DE VOLTA para a fotosfera autorada, no mesmo
+ * idioma de `?bemis=`: ausente ⇒ a radiância verdadeira; `?bfoto=0` ⇒ a
+ * paleta H-alfa crua, que é o lado A do A/B. Lixo cai no default, nunca num
+ * caminho terceiro.
  *
- * E É MULTIPLICAR EM STOPS, não sempre por inteiro — a segunda metade da
- * porta, que nasceu do veredito do dono sobre a forma crua (15/08: de perto
+ * BINÁRIA de propósito, e não um `parseFloat` como a irmã `?bemis=`. Um
+ * "quanto" aqui seria um segundo botão de brilho para a malha, e a onda inteira
+ * existe para acabar com brilho que se calibra por gosto: ou a fotosfera está
+ * na unidade da casa, ou não está. Quem quiser mexer no joelho mexe em `?bemis=`,
+ * que é onde o joelho mora.
+ *
+ * A MULTIPLICAÇÃO É EM STOPS, não por inteiro sempre — a segunda metade da
+ * lei, que nasceu do veredito do dono sobre a forma crua (15/08: de perto
  * "vira um clarão que ocupa a tela toda e não se vê mais nada"). O expoente
  * do fator é o filtro solar (`world/stellarBody.ts`, `escreverFiltroSolar`):
  * vale 1 enquanto o disco não domina o próprio clarão — e lá a estrela
@@ -316,31 +341,21 @@ export function comprimir(x: number, beta: number): number {
  * instância nº 1. A régua é a MESMA da cessão do Sol-ponto: as duas trocas
  * andam no mesmo trecho, com a mesma rampa.
  *
- * BINÁRIA de propósito, e não um `parseFloat` como a irmã `?bemis=`. Um
- * "quanto" aqui seria um segundo botão de brilho para a malha, e a onda inteira
- * existe para acabar com brilho que se calibra por gosto: ou a fotosfera está
- * na unidade da casa, ou não está. Quem quiser mexer no joelho mexe em `?bemis=`,
- * que é onde o joelho mora.
- *
- * INERTE SOZINHA, e a dependência é dura, não estilística. O composer é
+ * INERTE SEM CURVA, e a dependência é dura, não estilística. O composer é
  * half-float e satura em 65.504; a radiância verdadeira está **quase seis ordens
- * de grandeza acima disso** (2,7e10 é 4,2e5× o teto). Sem `?bemis=` > 0 não há
- * curva para dobrar esse valor, e a porta sozinha não mostraria o Sol honesto —
+ * de grandeza acima disso** (2,7e10 é 4,2e5× o teto). Com `?bemis=0` não há
+ * curva para dobrar esse valor, e a fotosfera crua não mostraria o Sol honesto —
  * escreveria infinito no buffer e devolveria exatamente o quadro branco que a
  * onda existe para consertar. Por isso `world/stellarBody.ts` cobra AS DUAS
- * antes de encostar no material, em vez de confiar em quem digita a URL.
+ * antes de encostar no material, em vez de confiar em quem digita a URL: quem
+ * pedir só a volta do joelho leva junto a volta da paleta, que é o par são.
  *
  * PURA, recebe a query em vez de ler `window`, pelo mesmo motivo de
  * `lerBetaDaEmissao`: `vitest.config.ts` roda em `environment: 'node'`.
- *
- * E ELA SOME. Porta de medição é andaime de calibração: no dia em que o β
- * fechar e a fotosfera na unidade virar o padrão, esta função sai daqui junto
- * com a linha dela no selo — e é o `it.fails` da dívida
- * (`luzDaCasa.test.ts`) que fica verde para avisar que o dia chegou. Enquanto
- * ele reprovar, a F2 não é padrão: é bancada.
  */
 export function lerPortaFotosfera(busca: string): boolean {
-  return new URLSearchParams(busca).get('bfoto') === '1';
+  const v = new URLSearchParams(busca).get('bfoto');
+  return v === null ? FOTOSFERA_VERDADEIRA : v !== '0';
 }
 
 // ─── O INSTRUMENTO DE REFERÊNCIA, para o cadastro poder declarar ──────────
@@ -387,7 +402,8 @@ export function distanciaDeTrocaPc(
 
 /**
  * O VÃO RADIOMÉTRICO DA FOTOSFERA, avaliado na troca de 1 px — o número que a
- * coluna de brilho do cadastro declara, e a dívida que a F2 paga.
+ * coluna de brilho do cadastro declarou enquanto a dívida existiu, e que a F2
+ * pagou em 15/08.
  *
  * Recebe o raio em vez de importá-lo: é assim que esta régua evita o ciclo com
  * `escala.ts`, que é quem a chama.
@@ -399,4 +415,38 @@ export function vaoRadiometricoNaTroca(
 ): number {
   const d = distanciaDeTrocaPc(raioPc, 1, alturaPx, fovGraus);
   return razaoDiscoPonto(magnitudeDoSol(d), 1);
+}
+
+/**
+ * A PONTE ENTRE AS DUAS UNIDADES DE BRILHO — a lei que a F2 escreve, com UM
+ * endereço só.
+ *
+ * A casa tem duas réguas de brilho e elas medem a mesma luz:
+ *  · a UNIDADE DA CASA, em que a fotosfera solar vale 1 (`RADIANCIA_DA_FOTOSFERA`)
+ *    — é a régua física, invariante com a distância, em que a Lei da Estrela
+ *    é escrita;
+ *  · a UNIDADE DE TELA, a do campo estelar, normalizada por `EXPO_M0` — é o
+ *    que o buffer recebe, e é ela que o `STAR_FRAG` deposita.
+ *
+ * A CONVERSÃO ENTRE AS DUAS É O VÃO, e a razão é exatamente a do invariante da
+ * troca: na distância em que o disco mede 1 px, o ponto deposita `vão` vezes o
+ * que o disco depositaria com radiância 1. Multiplicar por ele é passar de uma
+ * régua para a outra; não é ganho de brilho, é troca de unidade — o mesmo
+ * gesto de escrever em pc um comprimento que estava em km.
+ *
+ * POR QUE ELA EXISTE COM NOME PRÓPRIO, e não como um `× vao` espalhado: o
+ * teste do invariante e a cirurgia da fotosfera (`world/stellarBody.ts`)
+ * precisam da MESMA escrita. Enquanto eram duas chamadas parecidas em dois
+ * arquivos, a lei podia mudar de um lado e o oráculo continuar verde do
+ * outro — que é o defeito que esta régua inteira existe para não ter.
+ *
+ * Recebe o raio, como todo o resto daqui, para não fechar ciclo com `escala.ts`.
+ */
+export function radianciaDeTela(
+  radianciaDaCasa: number,
+  raioPc: number,
+  alturaPx: number = ALTURA_DE_REFERENCIA_PX,
+  fovGraus: number = FOV_DA_CASA
+): number {
+  return radianciaDaCasa * vaoRadiometricoNaTroca(raioPc, alturaPx, fovGraus);
 }

@@ -63,6 +63,41 @@ const KNEE_SHADER = {
   `,
 };
 
+/**
+ * O β DA COMPRESSÃO DENTRO DO BLOOM — o joelho que age no passa-alta, não no
+ * quadro. Vale 0,45 desde 15/08, e o número vem da rodada de medição daquele
+ * dia (`docs/PENDENCIAS.md`, bloco ONDA DA LUZ), não de gosto: com
+ * `?bemis=300&bbloom=0.45&bombro=40` o quadro lavado a 1 UA caiu de 100% para
+ * 3,8%, a 2.000 UA de 92% para 1,9%, e o borrão de 900 px fixos para 168→120
+ * px na escada inteira. É o mesmo 0,45 do joelho do compósito (a rodada 20,
+ * logo acima) — e ser o mesmo número não é coincidência de digitação: as duas
+ * curvas comprimem a mesma faixa de HDR, e usar dois joelhos diferentes para
+ * isso seria a casa discordando de si mesma sem ter medido nada a mais.
+ *
+ * O CAMINHO DE VOLTA é `?bbloom=0`, que devolve o passa-alta do vendorizado
+ * intacto, byte a byte — o lado A do A/B.
+ */
+export const BETA_DO_BLOOM = 0.45;
+
+/**
+ * O OMBRO da curva acima, em luz linear. Vale 40, e o 40 é o que separa este
+ * conserto do proibido. Abaixo do ombro a identidade é EXATA e todo clarão
+ * legítimo — Sirius, as heroes, a Terra, o bojo — passa bit a bit; só o Sol
+ * vive acima dele.
+ *
+ * O NÚMERO É MEDIDO PELO FRACASSO DO ZERO: a primeira rodada (asinh puro, sem
+ * ombro, β = 0,45 no passa-alta inteiro) tirou 180 de 255 de Betelgeuse — "as
+ * estrelas diminuem", exatamente o que o dono proibiu por escrito. Com o ombro
+ * em 40 as vistas `terra`, `interno`, `faceon`, `hero200`, `solestrela` e
+ * `soldisco` saem com delta máximo de 1 nível (ULP de compilador) e só `hero8`
+ * muda — e ali mudar É o mecanismo funcionando: a vista está a 0,6 pc de
+ * Betelgeuse, que é um mini-Sol com a mesma doença.
+ *
+ * `?bombro=T` varre o ombro sem mexer no β; `?bombro=0` reproduz a primeira
+ * rodada, a que reprovou.
+ */
+export const OMBRO_DO_BLOOM = 40;
+
 export class Post {
   readonly composer: EffectComposer;
   readonly bloom: UnrealBloomPass;
@@ -156,8 +191,11 @@ export class Post {
   }
 
   /**
-   * A PORTA `?bbloom=β` — a compressão DENTRO do bloom, no filtro de
-   * passa-alta. Nasce DESLIGADA (β ausente ⇒ 0 ⇒ identidade exata).
+   * A COMPRESSÃO DENTRO DO BLOOM, no filtro de passa-alta — PADRÃO desde
+   * 15/08, com `BETA_DO_BLOOM` e `OMBRO_DO_BLOOM`. As portas `?bbloom=β` e
+   * `?bombro=T` viraram o caminho de volta e a bancada de comparação:
+   * ausentes ⇒ o pacote; `?bbloom=0` ⇒ o passa-alta do vendorizado intacto,
+   * sem uma linha de cirurgia, que é o lado A do A/B.
    *
    * POR QUE AQUI E NÃO ANTES DO BLOOM. Medido em 15/08: um joelho aplicado ao
    * quadro inteiro antes do bloom conserta a tela branca e RE-GRADUA O FILME —
@@ -184,16 +222,18 @@ export class Post {
    */
   private domarOBloom() {
     const q = new URLSearchParams(window.location.search);
-    const beta = parseFloat(q.get('bbloom') ?? '');
-    if (!Number.isFinite(beta) || beta <= 0) return;
-    // O OMBRO. `?bombro=T` põe a curva para agir só ACIMA de T: abaixo dele a
-    // identidade é EXATA e todo clarão legítimo — Sirius, as heroes, a Terra,
-    // o bojo — passa bit a bit. É o que a primeira medição (asinh puro, sem
-    // ombro) provou ser necessário: com β=0,45 no quadro todo do passa-alta,
-    // Betelgeuse perdia 180 de 255 — "as estrelas diminuem", o proibido.
-    // Só o Sol vive acima de um T bem posto; é ele que o ombro doma.
-    const ombro = parseFloat(q.get('bombro') ?? '');
-    const t = Number.isFinite(ombro) && ombro > 0 ? ombro : 0;
+    // porta ausente ou envenenada ⇒ o default do pacote; `?bbloom=0` ⇒ a
+    // saída limpa, sem tocar no material do vendorizado
+    const pedido = parseFloat(q.get('bbloom') ?? '');
+    const beta = Number.isFinite(pedido) && pedido >= 0 ? pedido : BETA_DO_BLOOM;
+    if (beta <= 0) return;
+    // O OMBRO faz a curva agir só ACIMA de T: abaixo dele a identidade é
+    // EXATA e todo clarão legítimo — Sirius, as heroes, a Terra, o bojo —
+    // passa bit a bit. A derivação do 40 mora em `OMBRO_DO_BLOOM`; aqui só a
+    // porta, e ela aceita 0 explícito porque `?bombro=0` é a primeira rodada
+    // (asinh puro), que reprovou e continua reproduzível.
+    const ombroPedido = parseFloat(q.get('bombro') ?? '');
+    const t = Number.isFinite(ombroPedido) && ombroPedido >= 0 ? ombroPedido : OMBRO_DO_BLOOM;
     const mat = (this.bloom as unknown as { materialHighPassFilter: THREE.ShaderMaterial })
       .materialHighPassFilter;
     const u = (this.bloom as unknown as { highPassUniforms: Record<string, { value: unknown }> })
