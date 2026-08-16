@@ -253,6 +253,30 @@ O que a verificação REVELOU de quebra: na foto do lado noturno quem
 domina o quadro é o HALO do Sol a 11,5 UA (~160 px) — o rabo do item 3
 fotobombando a cena. É a fila M1/M2 de novo, por outro ângulo.
 
+**44. Afastando do Sol, a bola CRESCE — branca, disforme e com borda
+quadrada.**
+Palavras do dono, 2026-08-16, entregando 10 fotos em sequência de
+afastamento: *"o sistema todo de estrelas está quebrado... quando eramos
+somente 1 filme as coisas eram mais bonitas... essa transicao entre as
+distancias nao pode ser do jeito que está sendo feito hoje... várias
+estrelas estavam com os spikes bonitos e bem pensados no inicio do
+projeto quando eramos o filme somente... perdemos isso e vriou um spike
+horrivel, uma bola borrada e disforme e enorme em vários memomentos"*.
+E: *"infelizmentre nao tem medida de distancia para provar isso"*.
+
+O que as 10 fotos mostram, nessa ordem de afastamento: fotosfera linda
+de perto (1); ponto alaranjado correto (2–3); afastando MAIS, a bola
+CRESCE até meia tela e perde a cor (4–8); a borda QUADRADA do adesivo do
+brilho aparece (5 e 9); só a ~0,9 ano-luz vira ponto rotulado (10).
+Três leis quebradas de uma vez: afastando, nada pode crescer; a cor da
+estrela não pode morrer para branco; borda de quadrado nunca pode
+aparecer. E falta distância viva na tela para ele provar o que vê.
+
+Em investigação no ato (16/08): sonda de afastamento com distância
+carimbada por quadro + mapa de qual peça desenha em cada faixa. Relação
+provável com o item 3: o voo de ida e volta para em 20.000 UA e as fotos
+do dono vão até ~57.000 UA — a régua pode nunca ter olhado essa faixa.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
@@ -364,4 +388,5 @@ Em 2026-08-13 ele disse: *"muitas coisas estou vendo quebradas no visual
 do app nesse momento"* — e essa lista nunca foi escrita. Quando ele
 contar, o item entra aqui, com as palavras dele.
 
-*(vazia — esperando)*
+Primeira entrega, 2026-08-16: a sequência do afastamento com 10 fotos —
+virou o **item 44**. A caixa segue aberta para o resto da lista.
