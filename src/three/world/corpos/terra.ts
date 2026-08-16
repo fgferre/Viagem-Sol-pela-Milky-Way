@@ -35,12 +35,13 @@
 // (cushion 2×, desigualdades assimétricas, NaN preserva estado — os
 // contratos de histerese da Onda 3). O PONTO da camada `planetas` NÃO
 // apaga num degrau (o binário da F2a morreu aqui): ele cede por
-// DOMINÂNCIA, no precedente exato do par hero↔catálogo da Onda 3 —
+// DOMINÂNCIA, no molde que nasceu no par hero↔catálogo da Onda 3 —
 // razão r = diâmetro do MESH em px / halo PREVISTO do ponto em px
 // (`psfPointSizePx`, o espelho da PSF), cessão-alvo = g(r), a rampa
-// cúbica de 1 a 2,5 (`heroDominanceFade`, com a MESMA prova de
+// cúbica de 1 a 2,5 (`cessaoPorDominancia`, com a prova de
 // continuidade: a luz combinada nunca dá passo para trás na
-// aproximação). O mesh NASCE SOB o clarão (aos 4 px do gate, r ≈ 0,3 —
+// aproximação; o par hero↔catálogo morreu no M2 e a curva ficou com
+// este consumidor). O mesh NASCE SOB o clarão (aos 4 px do gate, r ≈ 0,3 —
 // o ponto segue inteiro) e o ponto só cede quando o globo o domina.
 // As 4 cicatrizes do crossfade valem aqui: banda morta PROIBIDA
 // (soma > 0 em toda a faixa — teste de propriedade como o C1a),
@@ -79,7 +80,7 @@ import {
 import type { SombraNaCena } from '../../../lib/atlas/eclipse';
 import { CALIBRACAO_ATLAS } from '../../config';
 import type { QualityLevel } from '../../core/engine';
-import { RAMP_DURATION_MS, heroDominanceFade, stepRampToward } from '../lodStellar';
+import { RAMP_DURATION_MS, cessaoPorDominancia, stepRampToward } from '../lodStellar';
 import { psfPointSizePx } from '../../luzDaCasa';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC, faseDoVertice, magDoVertice } from '../planetas/planetas';
@@ -290,17 +291,18 @@ export function direcaoLocalDeLonLat(lonEastDeg: number, latDeg: number): Vec3 {
 /**
  * O ALVO DA CESSÃO SUAVE (F2b/D5), pura: quanto o PONTO fotométrico
  * cede a um mesh que mede `diametroMeshPx` contra um halo previsto de
- * `haloPontoPx`. A curva é `heroDominanceFade` IMPORTADA — a mesma
- * rampa cúbica g(r) de 1 a 2,5 do par hero↔catálogo da Onda 3, com a
- * mesma prova de continuidade (hi = 2,5 é a MENOR borda em que a luz
+ * `haloPontoPx`. A curva é `cessaoPorDominancia` IMPORTADA — a rampa
+ * cúbica g(r) de 1 a 2,5 com a prova de continuidade escrita ao lado
+ * dela em `lodStellar.ts` (hi = 2,5 é a MENOR borda em que a luz
  * combinada nunca dá passo para trás na aproximação; a régua é TAMANHO
- * na tela, a única comum às duas representações).
+ * na tela, a única comum às duas representações). Nasceu no par
+ * hero↔catálogo da Onda 3; o par morreu no M2 e a curva ficou com o
+ * consumidor legítimo — esta troca corpo↔ponto, que conserva fluxo.
  *
  * Mesh fora de quadro ⇒ 0 EXATO (o ponto fica inteiro — é o que mantém
  * as vistas profundas bit-idênticas). Halo inexistente (PSF ≤ 0, ponto
- * invisível) ⇒ razão 0 ⇒ cessão 0, o precedente de
- * `heroDominanceRatio` ("ponto inexistente não domina nada" — e um
- * ponto invisível também não soma luz para haver o que ceder).
+ * invisível) ⇒ razão 0 ⇒ cessão 0 ("ponto inexistente não domina nada"
+ * — e um ponto invisível também não soma luz para haver o que ceder).
  */
 export function cessaoAlvo(
   emQuadro: boolean,
@@ -309,7 +311,7 @@ export function cessaoAlvo(
 ): number {
   if (!emQuadro) return 0;
   if (!(haloPontoPx > 0) || !Number.isFinite(diametroMeshPx)) return 0;
-  return heroDominanceFade(diametroMeshPx / haloPontoPx);
+  return cessaoPorDominancia(diametroMeshPx / haloPontoPx);
 }
 
 // (`cessaoPeloGate` e `CESSAO_PELO_GATE_MULT` — a cessão do SOL-ponto

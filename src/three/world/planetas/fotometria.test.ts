@@ -19,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { bvToColor } from '../../shaders/common';
 import { catalogApparentMag } from '../lodStellar';
+import { SOL_BV } from '../clarao';
 import {
   A_MAG_BASE,
   BV_SOL,
@@ -63,14 +64,11 @@ describe('fotometria — a tabela dos 10', () => {
     }
   });
 
-  it('o B−V do Sol é o MESMO número de heroStars.ts, sem redigitação divergente', () => {
-    // heroStars.ts:107 declara `const SOL_BV = 0.653` e não o exporta.
-    // Enquanto os dois viverem separados, a igualdade é guardada aqui —
-    // o molde é o teste de fiação de lodStellar.test.ts.
-    const heroStars = readFileSync(new URL('../heroStars.ts', import.meta.url), 'utf8');
-    const achado = heroStars.match(/SOL_BV\s*=\s*([\d.]+)/);
-    expect(achado).not.toBeNull();
-    expect(Number(achado?.[1])).toBe(BV_SOL);
+  it('o B−V do Sol é o MESMO número de clarao.ts, sem redigitação divergente', () => {
+    // O SOL_BV morava em heroStars.ts (morto no M2) e mudou-se para a
+    // camada do clarão, agora EXPORTADO — a igualdade vira import, não
+    // regex sobre o fonte.
+    expect(SOL_BV).toBe(BV_SOL);
   });
 });
 

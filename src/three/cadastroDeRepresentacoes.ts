@@ -54,7 +54,11 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     id: 'catalogo-hyg',
     nome: 'catálogo HYG (328.749 pontos)',
     arquivos: ['src/three/world/stars.ts', 'src/three/shaders/starShaders.ts'],
-    consomeL1: false,
+    // consumo PARCIAL desde o M2: espinhos e branqueamento do STAR_FRAG
+    // derivam das constantes da lei (FRACAO_DOS_ESPINHOS,
+    // BRANQUEAMENTO_MEIA_ALTURA — o clamp `sat` morreu); a migração
+    // plena da PSF pela repartição continua sendo o M3.
+    consomeL1: true,
     leiVelhaApagada: false,
     fatorDeBrilho: 1,
     destino: 'migra',
@@ -105,17 +109,18 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   },
   {
     id: 'heroes',
-    nome: 'os 16 clarões hero',
-    arquivos: ['src/three/world/heroStars.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
-    fatorDeBrilho: null,
+    nome: 'o clarão de asas (orçamento de fontes fortes)',
+    arquivos: ['src/three/world/clarao.ts', 'src/three/director.ts'],
+    consomeL1: true,
+    leiVelhaApagada: true,
+    fatorDeBrilho: 1,
     destino: 'migra',
     migracao: 'M2',
     emiteGlPointSize: false,
     razao:
-      'clarão de autor (0,08·10^(−0,3m)) vira o clarão de asas da lei, por ' +
-      'orçamento das N mais brilhantes — a identidade "as 16" morre',
+      'FECHADO no M2: o clarão de autor (0,08·10^(−0,3m)) e a identidade ' +
+      '"as 16" morreram — a asa Moffat da lei, por orçamento de fluxo com ' +
+      'histerese (§5.21), para o Sol e as nomeadas; profundidade pela §5.15',
   },
   // (a entrada `sunstar` saiu do censo no M1: a classe morreu — o Sol de
   // longe é o próprio `sol-ponto`, e a varredura invertida vigia o nome.)
@@ -227,15 +232,16 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     id: 'bloom-e-gradacao',
     nome: 'bloom + gradação',
     arquivos: ['src/three/core/post.ts', 'src/three/atlasConfig.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
+    consomeL1: true,
+    leiVelhaApagada: true,
     fatorDeBrilho: null,
     destino: 'instrumento',
     migracao: 'M2',
     emiteGlPointSize: false,
     razao:
-      'consome a lei, não a implementa: número de mips e pesos da pirâmide passam a ' +
-      'derivar da asa escolhida (§1) — metade do halo constante mora aqui',
+      'FECHADO no M2: pesos da pirâmide derivados da asa (PESO_POR_MIP = ' +
+      '2^(2−2β)), raio pinado em 0, ombro 0,45/40 como lei sem porta — o ' +
+      'kernel geométrico de ~190 px que era metade do halo constante morreu',
   },
   {
     id: 'poeira',
@@ -260,13 +266,19 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     leiVelhaApagada: false,
     fatorDeBrilho: null,
     destino: 'migra',
-    migracao: 'M2',
+    // DIVERGÊNCIA DECLARADA NO M2 (mesmo molde das três do M1): o L1
+    // havia agendado a emissão do CME "para o M2, com o resto do
+    // exterior" — mas o M2 é a ÓPTICA (asa + bloom + espinhos), e o CME
+    // é FONTE (campo E do §5.18): dose nunca calibrada (item 24 das
+    // pendências), unidade própria do vendorizado. Entra com o resto
+    // emissivo no M7, onde fonte fora-da-unidade é o assunto do commit.
+    migracao: 'M7',
     emiteGlPointSize: true,
     razao:
       'campo E(x,t) do §5.18, NOMEADO no M1 (estadoDaLei, stellarBody) com ' +
       'critério de visibilidade PRÓPRIO (cone < texel, limboFade) — nunca o LOD ' +
       'do renderer; a EMISSÃO dele ainda não consome a lei: entra na unidade da ' +
-      'casa no M2, com o resto do exterior',
+      'casa no M7, com o resto emissivo (divergência do L1 declarada no M2)',
   },
 ];
 

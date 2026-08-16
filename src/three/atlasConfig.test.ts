@@ -57,7 +57,9 @@ describe('a gaveta do Atlas', () => {
   it('oferece as cinco de D6 + a do palco (Onda 6) — e as galácticas ficam de fora', () => {
     expect(CAMADAS_DO_ATLAS.map((c) => c.flag)).toEqual([
       'nocat',
-      'nohero',
+      // era 'nohero' até o M2 — a chave passou a desligar a camada do
+      // clarão de asas, e o nome acompanhou o que ela desliga
+      'noclarao',
       'nomarker',
       'noplan',
       'nocorpos',

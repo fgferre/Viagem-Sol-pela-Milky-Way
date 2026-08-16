@@ -5,15 +5,15 @@
 import * as THREE from 'three';
 import { STAR_VERT, STAR_FRAG, BETA_DA_EMISSAO } from '../shaders/starShaders';
 import type { StarArrays } from '../config';
-import { FADE_NEUTRAL, FOCUS_OFF, clearFocus, needsAttributeWrite } from './lodStellar';
+import { FOCUS_OFF, clearFocus, needsAttributeWrite } from './lodStellar';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 
 /**
  * Teto de faixas pendentes por atributo antes de cair para UPLOAD CHEIO
  * (conserto da revisão de olhos frescos, fase 4b da Onda 3 — ver o
- * comentário do latch em `marcarUpload`). 64 é folgado: o pior quadro
- * honesto tem 16 faixas (uma por hero), e só uma sequência de quadros
- * cujo upload NUNCA acontece chega perto disto.
+ * comentário do latch em `marcarUpload`). 64 é folgado: hoje ninguém
+ * escreve por quadro (o canal de foco é dormente até o M3/E3), e só uma
+ * sequência de quadros cujo upload NUNCA acontece chegaria perto disto.
  */
 export const UPDATE_RANGE_CAP = 64;
 
@@ -28,40 +28,26 @@ interface StarFieldOptions {
 export class StarField {
   readonly points: THREE.Points;
   readonly material: THREE.ShaderMaterial;
-  /** `uExpoM0` e `uSigmaPx` publicados: a política de dominância
-   *  (lodStellar seção 5) precisa da MESMA PSF que a GPU vai desenhar, e
-   *  redigitar 3,5/0,85 no consumidor seria comprar o defeito que a
-   *  fase 2 desfez nas rampas do Sol.
+  /** `uExpoM0` e `uSigmaPx` publicados: quem precisa prever o pixel do
+   *  campo (a repartição do Sol no director, o clarão de asas) lê DAQUI
+   *  — redigitar 3,5/0,85 no consumidor seria comprar a divergência que
+   *  a fase 2 da Onda 3 desfez nas rampas do Sol.
    *
-   *  DESDE A PUPILA (Onda 8) `expoM0` DEIXOU DE SER CONSTANTE, e é de
-   *  propósito que ele continua sendo UM número lido do mesmo lugar: a
-   *  auto-exposição é um deslocamento deste valor (`pupila.ts`), e o
-   *  publicado tem de ser o EFETIVO — o que a GPU vai usar neste quadro.
-   *  Publicar a base deixaria a política de dominância prevendo um pixel
-   *  que não é o desenhado, que é exatamente a divergência silenciosa que
-   *  a publicação existe para impedir. */
-  readonly expoM0Base: number;
+   *  CONSTANTE de novo desde o M2: a pupila morreu inteira (LEI §7), e
+   *  com ela o deslocamento por quadro. O "tempo de exposição" da casa
+   *  é fixo — a compressão fixa na emissão é quem doma o alto. */
+  readonly expoM0: number;
   readonly sigmaPx: number;
-  private deslocamentoDaPupila = 0;
 
-  /** o "tempo de exposição" DESTE quadro: base + pupila. */
-  get expoM0(): number {
-    // `+ 0` é o mesmo bit: com a pupila aberta (deslocamento 0 exato) o
-    // campo desenha exatamente o que desenhava antes de ela existir.
-    return this.expoM0Base + this.deslocamentoDaPupila;
-  }
-
-  // Os dois canais por estrela (Onda 3, fase 3 — ver STAR_VERT).
-  // Float32Array(n) cada: 1,3 MB de RAM/GPU por canal em 328.749
-  // estrelas, e ZERO byte de payload novo — não são campos do formato
-  // sc1, são buffers de RUNTIME (fade e foco são estado de tela, não
-  // dado de catálogo; `StarArrays` não os conhece e não deve conhecer).
-  private readonly fadeArray: Float32Array;
+  // O canal `aFocus` (Onda 3; M2 matou o irmão `aFade` junto com a
+  // política de dominância). Float32Array(n): 1,3 MB de RAM/GPU em
+  // 328.749 estrelas, ZERO byte de payload — buffer de RUNTIME, não
+  // dado de catálogo. DORMENTE POR DESENHO (item 38): a escrita vive
+  // aqui, a leitura volta ao shader no M3/E3 — é o canal por onde a
+  // esfera analítica apaga o ponto da estrela que ganha corpo.
   private readonly focusArray: Float32Array;
-  private readonly fadeAttr: THREE.BufferAttribute;
   private readonly focusAttr: THREE.BufferAttribute;
-  /** latch de upload cheio por canal — ver `marcarUpload` */
-  private fadeCheio = false;
+  /** latch de upload cheio — ver `marcarUpload` */
   private focusCheio = false;
 
   constructor(data: StarArrays, opts: StarFieldOptions = {}) {
@@ -76,27 +62,20 @@ export class StarField {
     geo.setAttribute('position', new THREE.BufferAttribute(data.position, 3));
     geo.setAttribute('aLogLum', new THREE.BufferAttribute(data.logLum, 1));
     geo.setAttribute('aCi', new THREE.BufferAttribute(data.ci, 1));
-    // nascem ZERADOS = neutros (D3): (1 − aFade) = 1 e o branch de foco
-    // inerte. O campo desenha exatamente o que desenhava antes deles.
+    // nasce ZERADO = neutro (D3): o canal dormente não move um pixel.
     const n = data.logLum.length;
-    this.fadeArray = new Float32Array(n);
     this.focusArray = new Float32Array(n);
-    this.fadeAttr = new THREE.BufferAttribute(this.fadeArray, 1);
     this.focusAttr = new THREE.BufferAttribute(this.focusArray, 1);
-    geo.setAttribute('aFade', this.fadeAttr);
     geo.setAttribute('aFocus', this.focusAttr);
     // o latch baixa QUANDO A GPU RECEBE o buffer: o three chama este
     // callback no fim de `createBuffer`/`updateBuffer`
     // (WebGLAttributes.js), e é o único sinal honesto de "subiu".
-    this.fadeAttr.onUpload(() => {
-      this.fadeCheio = false;
-    });
     this.focusAttr.onUpload(() => {
       this.focusCheio = false;
     });
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 6000);
 
-    this.expoM0Base = opts.expoM0 ?? EXPO_M0;
+    this.expoM0 = opts.expoM0 ?? EXPO_M0;
     this.sigmaPx = opts.sigmaPx ?? SIGMA_PX;
     this.material = new THREE.ShaderMaterial({
       vertexShader: STAR_VERT,
@@ -134,42 +113,20 @@ export class StarField {
     this.points.visible = f > 0.001;
   }
 
-  /**
-   * O ATUADOR DA PUPILA (Onda 8): o deslocamento de `expoM0` que realiza o
-   * ganho da auto-exposição. Escrito pelo Director a cada quadro.
-   *
-   * Entra AQUI e não num passe de pós por medição, não por gosto: os render
-   * targets do composer são half-float e saturam em 65.504, e o ponto do Sol a
-   * 1 UA deposita ~4e11 — ele já chega ao buffer como infinito, e ganho
-   * aplicado depois multiplica infinito. A razão inteira está em `pupila.ts`.
-   *
-   * Escrita idempotente, no mesmo espírito do C2 da Onda 3: com a pupila aberta
-   * o deslocamento é 0 EXATO todo quadro, e o uniform não é reescrito.
-   */
-  setPupila(deslocamento: number) {
-    const d = Number.isFinite(deslocamento) ? deslocamento : 0;
-    if (d === this.deslocamentoDaPupila) return;
-    this.deslocamentoDaPupila = d;
-    this.material.uniforms.uExpoM0.value = this.expoM0;
-  }
+  // (O atuador da pupila — `setPupila`, o deslocamento de `expoM0` por
+  // quadro — morreu no M2 junto com `core/pupila.ts` inteiro. A técnica
+  // de pré-exposição que ele encarnava está preservada na LEI §7; o que
+  // a substitui é a compressão fixa, que não tem estado por quadro.)
 
   // ------------------------------------------------------------
   // Escrita por estrela — o contrato C2/C3 da Onda 3
   // ------------------------------------------------------------
   //
-  // C2 — REAFIRMAÇÃO IDEMPOTENTE. O consumidor reescreve os mesmos 16
-  // slots todo quadro; a escrita é NO-OP quando o slot já tem o valor
-  // (`needsAttributeWrite`, lodStellar), então `needsUpdate` só sobe
-  // quando alguma coisa de fato mudou. Sem isso a GPU receberia um
-  // upload de 1,3 MB por quadro para reescrever os mesmos bytes.
-  // E quando muda, sobe com `addUpdateRange(index, 1)`: o three faz
-  // `bufferSubData` só do slot mexido (e funde faixas adjacentes) em vez
-  // do buffer inteiro — 4 bytes no lugar de 1,3 MB.
-  //
-  // O rebuild de geometria que o doador temia NÃO EXISTE nesta casa
-  // (D8): nenhuma camada estelar assina `onQuality`, e o `StarField` nem
-  // recebe o `Engine` para poder assinar. A reafirmação entra mesmo
-  // assim — custo ~zero e protege o invariante de um refactor futuro.
+  // C2 — REAFIRMAÇÃO IDEMPOTENTE: a escrita é NO-OP quando o slot já tem
+  // o valor (`needsAttributeWrite`, lodStellar), então `needsUpdate` só
+  // sobe quando alguma coisa de fato mudou. E quando muda, sobe com
+  // `addUpdateRange(index, 1)`: o three faz `bufferSubData` só do slot
+  // mexido — 4 bytes no lugar de 1,3 MB.
 
   /**
    * Como um slot mexido pede a subida — e as DUAS defesas que a revisão
@@ -178,20 +135,17 @@ export class StarField {
    *
    * (1) TETO. `addUpdateRange` só é consumido (e as faixas só são
    * limpas) DENTRO do `updateBuffer` do three; e o renderer pula objetos
-   * com `visible === false`. Com o campo escondido (`?nocat`, ou o
-   * toggle "Catálogo HYG" do painel) a reafirmação por quadro continua
-   * rodando e ninguém consome nada: as faixas cresciam SEM TETO, ~960
-   * objetos por segundo com a câmera em movimento perto de casa, e o
-   * `sort()` do three pegaria todas de uma vez ao reacender o campo.
-   * Passado o teto, a política é cair para upload cheio — correto e
-   * barato — em vez de guardar lista.
+   * com `visible === false`. Com o campo escondido as faixas cresceriam
+   * sem teto e o `sort()` do three pegaria todas de uma vez ao
+   * reacender. Passado o teto, a política é cair para upload cheio —
+   * correto e barato — em vez de guardar lista.
    *
    * (2) LATCH. `updateRanges` vazio + `needsUpdate` é como se pede o
-   * buffer INTEIRO (`bufferSubData` de tudo). Quem faz isso — `reset()`,
-   * ou o teto acima — precisa que as escritas seguintes NÃO recoloquem
-   * uma faixa antes do render, senão o three sobe só aquele slot e os
-   * outros 328.733 ficam com o valor velho na GPU. Enquanto o latch
-   * estiver alto, escreve-se no array e só se levanta o dirty-flag.
+   * buffer INTEIRO. Quem faz isso — `reset()`, ou o teto acima —
+   * precisa que as escritas seguintes NÃO recoloquem uma faixa antes do
+   * render, senão o three sobe só aquele slot e os outros 328.748 ficam
+   * com o valor velho na GPU. Enquanto o latch estiver alto, escreve-se
+   * no array e só se levanta o dirty-flag.
    */
   private marcarUpload(attr: THREE.BufferAttribute, cheio: boolean, index: number): boolean {
     if (cheio) {
@@ -208,30 +162,10 @@ export class StarField {
     return false;
   }
 
-  /**
-   * Grava `aFade` da estrela `index`. Devolve se a escrita ACONTECEU
-   * (o teste do dirty-flag vive disso). Índice fora da faixa é ignorado.
-   */
-  writeFade(index: number, value: number): boolean {
-    if (!(index >= 0) || index >= this.fadeArray.length) return false;
-    // `Math.fround` ANTES de decidir, e não é detalhe: o buffer é
-    // float32 e o consumidor calcula em float64. Comparar o que ele
-    // pediu com o que ficou gravado daria "mudou" em TODO quadro, para
-    // todo valor não representável — a idempotência morreria em
-    // silêncio e a GPU levaria um upload por quadro com a câmera parada.
-    // DIVERGÊNCIA DECLARADA do doador (`HygStellarMesh.tsx:168` clampa
-    // em [0,1] antes de comparar): aqui NÃO se clampa de propósito — o
-    // clamp mora no shader (`clamp(1.0 - aFade, ...)` no STAR_VERT), e
-    // clampar também aqui esconderia um chamador errado em vez de o
-    // denunciar (`fadeAt` devolveria um valor que a tela nunca usou).
-    const alvo = Math.fround(value);
-    if (!needsAttributeWrite(this.fadeArray[index], alvo)) return false;
-    this.fadeArray[index] = alvo;
-    this.fadeCheio = this.marcarUpload(this.fadeAttr, this.fadeCheio, index);
-    return true;
-  }
-
-  /** Grava `aFocus` (0 ou 1 — o shader corta em 0,5). Mesmas regras. */
+  /** Grava `aFocus` (0 ou 1 — o corte em 0,5 é do consumidor do M3).
+   *  `Math.fround` ANTES de decidir: o buffer é float32 e o consumidor
+   *  calcula em float64 — comparar sem arredondar mataria a
+   *  idempotência em silêncio. Índice fora da faixa é ignorado. */
   writeFocus(index: number, value: number): boolean {
     if (!(index >= 0) || index >= this.focusArray.length) return false;
     const alvo = Math.fround(value);
@@ -242,39 +176,29 @@ export class StarField {
   }
 
   /**
-   * C3 — o que a estrela que PERDE o foco recebe: fade e foco zerados,
-   * para não ficar meio-apagada para sempre. O par vem de `clearFocus()`
-   * (lodStellar), que é onde o contrato mora.
+   * C3 — o que a estrela que PERDE o foco recebe: foco zerado, para não
+   * ficar com bypass pendurado para sempre. O contrato vem de
+   * `clearFocus()` (lodStellar), que é onde ele mora.
    */
   clearFocus(index: number): void {
-    const { fade, focus } = clearFocus();
-    this.writeFade(index, fade);
+    const { focus } = clearFocus();
     this.writeFocus(index, focus);
   }
 
   /**
-   * Volta o campo INTEIRO ao estado de nascimento (os dois canais).
-   * Levanta o latch de upload cheio: uma escrita qualquer entre este
-   * `reset` e o render seguinte devolveria o atributo ao modo parcial e
-   * a GPU subiria só aquele slot — os outros 328.733 ficariam com o
-   * valor pré-reset (achado da caçada adversarial, fase 4b).
+   * Volta o canal INTEIRO ao estado de nascimento. Levanta o latch de
+   * upload cheio: uma escrita qualquer entre este `reset` e o render
+   * seguinte devolveria o atributo ao modo parcial e a GPU subiria só
+   * aquele slot (achado da caçada adversarial, fase 4b).
    */
   reset(): void {
-    this.fadeArray.fill(FADE_NEUTRAL);
     this.focusArray.fill(FOCUS_OFF);
-    this.fadeAttr.clearUpdateRanges();
     this.focusAttr.clearUpdateRanges();
-    this.fadeAttr.needsUpdate = true;
     this.focusAttr.needsUpdate = true;
-    this.fadeCheio = true;
     this.focusCheio = true;
   }
 
-  /** leitura dos canais (oráculos e depuração) */
-  fadeAt(index: number): number {
-    return this.fadeArray[index];
-  }
-
+  /** leitura do canal (oráculos e depuração) */
   focusAt(index: number): number {
     return this.focusArray[index];
   }

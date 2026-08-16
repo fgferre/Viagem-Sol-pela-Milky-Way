@@ -53,10 +53,8 @@ const LIMPA: EstadoDaVista = {
   // testes (bloco 2c), porque ele É desvio declarado.
   luz: 'real',
   evLuzDoFoco: null,
-  // 0 = pupila ABERTA, o valor certo para a vista limpa: com 0 stops
-  // aplicados a imagem é a fotometria crua da casa. A pupila fechando É
-  // desvio declarado, e tem os próprios testes.
-  stopsDaPupila: 0,
+  // (stopsDaPupila saiu da fixture no M2 — a pupila morreu inteira e o
+  // estado da vista não tem mais adaptação por quadro a declarar.)
 };
 
 const com = (mudanca: Partial<EstadoDaVista>): EstadoDaVista => ({ ...LIMPA, ...mudanca });

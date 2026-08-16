@@ -184,22 +184,16 @@ export function raioDeSchwarzschildPc(massaMsol: number): number {
 
 /** Espelho de `world/blackHole.ts:27` (`RS_PC`). */
 export const ESPELHO_RS_SGR_A_PC = 0.05;
-/** Espelho de `world/heroStars.ts:139` (`size = 0.08 * lum`). */
-export const ESPELHO_COEF_CLARAO_PC = 0.08;
 /** Espelho de `world/observedClouds.ts:20` (`CO_RADIUS_SCALE`). */
 export const ESPELHO_ESCALA_NUVEM_CO = 2.1;
 /** Espelho de `world/observedClouds.ts:21` (`LARGE_RADIUS_SCALE`). */
 export const ESPELHO_ESCALA_COMPLEXO = 1.2;
 
-/**
- * Sirius como EXEMPLAR do clarão estelar: magnitude aparente −1,46 e
- * raio 1,711 R☉ — o mesmo 1,711 que `lodStellar.test.ts:536` já usa
- * como múltiplo de raio solar. A lei do clarão não tem um número só
- * (ela é `0,08 × 10^(−0,3m)`), então o cadastro declara o fator NUMA
- * estrela nomeada, que é o que se pode conferir.
- */
-export const SIRIUS_M = -1.46;
-export const SIRIUS_RAIO_RSOL = 1.711;
+// (O espelho `0,08·10^(−0,3m)` do clarão de autor e o exemplar Sirius
+// morreram no M2 da LEI-DA-ESTRELA: o clarão deixou de ter tamanho em
+// parsec — ele é ÓPTICA, medida em px de tela e derivada do fluxo pela
+// asa Moffat (`estrela.ts`). A entrada `clarao-estelar` abaixo declara a
+// lei em vez do coeficiente.)
 
 /**
  * As duas classes, e a fronteira entre elas é a REGRA deste arquivo.
@@ -287,14 +281,21 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     id: 'clarao-estelar',
     nome: 'clarão das estrelas',
     classe: 'instrumento',
-    fator:
-      (ESPELHO_COEF_CLARAO_PC * Math.pow(10, -0.3 * SIRIUS_M)) /
-      (SIRIUS_RAIO_RSOL * RAIO_SOL_PC),
-    fatorDeBrilho: null,
-    endereco: 'src/three/world/heroStars.ts:152',
+    // SEM FATOR ÚNICO desde o M2, e isso é a lei funcionando: o clarão
+    // deixou de ter tamanho em parsec (o coeficiente de autor
+    // 0,08·10^(−0,3m) morreu) — ele é óptica em px de tela, derivada do
+    // fluxo pela asa Moffat: R ∝ F^(1/2β), β = 2,4 (`estrela.ts`). O
+    // número vivo é `claraoPx` da repartição, por fonte e por quadro.
+    fator: null,
+    // a asa explícita carrega a fração declarada do fluxo POR CIMA do
+    // que o sprite já deposita — `FRACAO_DA_ASA` (0,06), a partição de
+    // energia com o bloom que a Lei §1 exige com UM dono.
+    fatorDeBrilho: 1.06,
+    endereco: 'src/three/world/clarao.ts',
     razao:
-      'é o borrão da óptica, não o corpo — sem ele nenhuma estrela apareceria, ' +
-      'e ele não tapa nada (não escreve profundidade). Fator medido em Sirius',
+      'é o borrão da óptica, não o corpo — sem ele nenhuma estrela forte leria ' +
+      'como forte, e ele não tapa nada (nem escreve nem testa profundidade). ' +
+      'Tamanho pela lei da asa, não por coeficiente de autor',
   },
   {
     id: 'halo-da-psf',

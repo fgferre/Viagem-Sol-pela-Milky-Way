@@ -10,6 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import type { Pass } from 'three/addons/postprocessing/Pass.js';
 import { FILM_SHADER } from '../shaders/dustShaders';
 import { GLSL_COMPRESSAO } from '../shaders/common';
+import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
 
 // KNEE pré-ACES (rodada 19): compressão asinh do compósito HDR — o tone
 // map de divulgação da referência (Lupton 2004; Filmic/AgX) comprime
@@ -80,6 +81,58 @@ const KNEE_SHADER = {
 export const BETA_DO_BLOOM = 0.45;
 
 /**
+ * O PESO POR MIP da pirâmide do bloom — DERIVADO da asa da lei, não
+ * digitado (M2 da LEI-DA-ESTRELA, §1: "a mesma asa tem de existir na
+ * pirâmide do bloom"). A conta: a asa Moffat tem brilho de superfície
+ * ∝ θ^(−2β); a energia dela numa OITAVA [θ, 2θ] vai com θ^(2−2β), então
+ * cada dobra de raio carrega 2^(2−2β) da anterior. Cada mip da pirâmide
+ * dobra o σ do anterior — logo o peso de cada nível é o do anterior
+ * vezes esta razão, e a soma dos gaussianos fica CONFINADA sob a asa
+ * explícita, que é a dona da extensão (§1: um dono).
+ *
+ * O que isto mata, medido: os pesos de fábrica ([1; 0,8; 0,6; 0,4; 0,2]
+ * achatados ainda mais pelo lerp do `radius` 0,58 → ~[0,54..0,66]) davam
+ * ao mip 5 — σ ≈ 190 px em 900 px — quase o MESMO peso do mip 1. É
+ * exatamente o halo constante de ~160–180 px do item 3: um número
+ * puramente geométrico que não conhece fluxo. Com a razão da lei
+ * (2^(2−4,8) ≈ 0,144) o mip 5 pesa 4×10⁻⁴ do primeiro e o borrão passa a
+ * ser ditado pela FONTE (a asa explícita encolhe com a luz), nunca pelo
+ * kernel.
+ *
+ * A pirâmide NÃO foi estendida (8–12 mips era o outro caminho do §1):
+ * com pesos em lei de potência os mips além do 5º pesariam < 1e-4 do
+ * primeiro — custo sem imagem. Escolha declarada aqui.
+ */
+export const PESO_POR_MIP = Math.pow(2, 2 - 2 * BETA_DA_ASA);
+
+/**
+ * A FRAÇÃO DO BLOOM na partição de energia da asa — DERIVADA, não
+ * calibrada (§1: "a fração de energia que cabe a cada um é DECLARADA
+ * como número", e "o desenho explícito é o dono da asa"). A leitura
+ * operacional da cláusula: a pirâmide INTEIRA não pode somar mais halo
+ * do que a própria asa explícita carrega. A soma dos pesos da pirâmide
+ * é `PESO_DA_PIRAMIDE · Σᵢ PESO_POR_MIPⁱ`; igualá-la a `FRACAO_DA_ASA`
+ * dá o peso do primeiro mip:
+ *
+ *     PESO_DA_PIRAMIDE = FRACAO_DA_ASA / Σᵢ₌₀..₄ PESO_POR_MIPⁱ ≈ 0,051
+ *
+ * Zero número livre: mexer na asa (β, fração) move a pirâmide junto.
+ *
+ * O QUE ISTO MATOU, medido na âncora do dono (15.800 UA, alvo ~8 px de
+ * raio): com peso 1 o borrão media 37 px; com 0,35 → 27; com 0,2 → 24;
+ * SEM bloom o quadro honesto mede 14 px — o excesso era todo o σ≈12 px
+ * do primeiro mip sobre o núcleo saturado, espalhamento que a lei
+ * atribui à ASA, não ao kernel. Com a fração derivada o aceite do M2
+ * (borrão ≤ 20 px) fecha com folga — o número final está no registro
+ * do commit, medido pela régua da luz.
+ */
+const SOMA_DAS_RAZOES = Array.from({ length: 5 }, (_, i) => Math.pow(PESO_POR_MIP, i)).reduce(
+  (a, b) => a + b,
+  0
+);
+export const PESO_DA_PIRAMIDE = FRACAO_DA_ASA / SOMA_DAS_RAZOES;
+
+/**
  * O OMBRO da curva acima, em luz linear. Vale 40, e o 40 é o que separa este
  * conserto do proibido. Abaixo do ombro a identidade é EXATA e todo clarão
  * legítimo — Sirius, as heroes, a Terra, o bojo — passa bit a bit; só o Sol
@@ -112,47 +165,32 @@ export class Post {
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(scene, camera));
 
-    // ── A PORTA DE MEDIÇÃO `?knee2=β` — o joelho ANTES do bloom ──────────
-    //
-    // NASCE DESLIGADA e é EXPERIMENTO, não decisão. Ela existe porque a
-    // varredura de 15/08 mediu uma coisa que nenhum documento previa: com a
-    // compressão na emissão do ponto (`?bemis=`), o quadro melhora de forma
-    // monótona — o borrão volta a encolher com a distância, que é a queixa
-    // literal do item 3 — mas NÃO chega ao critério com nenhum β que poupe as
-    // estrelas. Medido: β=30 (que já custa 13% em Sirius) ainda deixa 25% do
-    // quadro lavado e borrão de 473 px contra teto de 20.
-    //
-    // O par honesto (`&nobloom=1`) explica por quê: SEM BLOOM O QUADRO JÁ É
-    // HONESTO, com borrão de 8 a 12 px em toda a escada. Quem lava é o bloom,
-    // que recebe o ponto do Sol quatro ordens de grandeza acima do próprio
-    // limiar mesmo depois da compressão.
-    //
-    // A §7 da Lei já dizia isto por escrito — "no lugar errado da cadeia
-    // (depois do bloom, onde não adianta)" — e este passe é o que permite
-    // MEDIR a alternativa em vez de discutir. Ele NÃO troca a ordem da cadeia
-    // oficial: o joelho de baixo continua onde estava, com a calibração de
-    // β=0,45 que venceu os dois gates da galáxia com ele pós-bloom
-    // (rodada 20). Ligar este aqui muda o filme, e mudar o filme é decisão do
-    // dono, com foto — não de quem mede.
-    const q2 = new URLSearchParams(window.location.search);
-    const beta2 = parseFloat(q2.get('knee2') ?? '');
-    if (Number.isFinite(beta2) && beta2 > 0) {
-      const preKnee = new ShaderPass(KNEE_SHADER as never);
-      const u = preKnee.uniforms as Record<string, { value: number }>;
-      u.uBeta.value = beta2;
-      u.uAmt.value = 1;
-      u.uMode.value = q2.get('kneemode') === 'lum' ? 0 : 1;
-      this.composer.addPass(preKnee);
-    }
+    // (A porta de medição `?knee2=` morreu no M2: o experimento que ela
+    // permitia — joelho ANTES do bloom — foi medido em 15/08, perdeu para
+    // o ombro dentro do passa-alta, e o ombro é padrão. Regra iv do §4:
+    // o lado A vive nas capturas versionadas, nunca num ramo de runtime.
+    // A CADEIA DE CURVAS da casa, contada — §7 da Lei exige o número:
+    //   1. β·asinh na EMISSÃO por fonte (β = 300, `?bemis=` é a volta);
+    //   2. ombro + β·asinh DENTRO do passa-alta do bloom (40 / 0,45);
+    //   3. joelho asinh no compósito pós-bloom (β = 0,45, só na vista
+    //      externa — rampa da galáxia);
+    //   4. ACES no OutputPass.
+    // Quatro curvas, nesta ordem, com os desvios declarados no selo.)
 
     this.bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       0.72, // força
-      0.58, // raio
+      // raio 0 PINADO PELA LEI (M2): o `radius` do Unreal é um lerp que
+      // ACHATA os pesos por mip rumo a 1,2−w — com ele, qualquer pirâmide
+      // repesada volta a ser o kernel geométrico que a lei tirou. O
+      // espalhamento agora é dos PESOS (governarPiramide), derivados da
+      // asa; o raio deixou de ser knob.
+      0,
       0.82 // limiar — preserva a fotosfera e faz estrelas HDR florescerem
     );
     this.composer.addPass(this.bloom);
     this.domarOBloom();
+    this.governarPiramide();
 
     // knee asinh no HDR composto (depois do bloom, antes do ACES).
     // Default LIGADO com β=0,45 (rodada 20: com chromsat=0,5 na extinção,
@@ -221,19 +259,12 @@ export class Post {
    * varredura, e a régua da luz, por medição.
    */
   private domarOBloom() {
-    const q = new URLSearchParams(window.location.search);
-    // porta ausente ou envenenada ⇒ o default do pacote; `?bbloom=0` ⇒ a
-    // saída limpa, sem tocar no material do vendorizado
-    const pedido = parseFloat(q.get('bbloom') ?? '');
-    const beta = Number.isFinite(pedido) && pedido >= 0 ? pedido : BETA_DO_BLOOM;
-    if (beta <= 0) return;
-    // O OMBRO faz a curva agir só ACIMA de T: abaixo dele a identidade é
-    // EXATA e todo clarão legítimo — Sirius, as heroes, a Terra, o bojo —
-    // passa bit a bit. A derivação do 40 mora em `OMBRO_DO_BLOOM`; aqui só a
-    // porta, e ela aceita 0 explícito porque `?bombro=0` é a primeira rodada
-    // (asinh puro), que reprovou e continua reproduzível.
-    const ombroPedido = parseFloat(q.get('bombro') ?? '');
-    const t = Number.isFinite(ombroPedido) && ombroPedido >= 0 ? ombroPedido : OMBRO_DO_BLOOM;
+    // LEI SEM PORTA desde o M2 (regra iv do §4): `?bbloom=`/`?bombro=`
+    // morreram no commit que migrou o bloom para a lei — o lado A do A/B
+    // vive nas capturas versionadas e nos números deste cabeçalho, nunca
+    // num ramo de runtime.
+    const beta = BETA_DO_BLOOM;
+    const t = OMBRO_DO_BLOOM;
     const mat = (this.bloom as unknown as { materialHighPassFilter: THREE.ShaderMaterial })
       .materialHighPassFilter;
     const u = (this.bloom as unknown as { highPassUniforms: Record<string, { value: unknown }> })
@@ -256,6 +287,25 @@ export class Post {
         `${ALVO}\n\ttexel.rgb = min( texel.rgb, uOmbroT ) + comprimir3( max( texel.rgb - uOmbroT, vec3( 0.0 ) ), uBetaBloom );`
       );
     mat.needsUpdate = true;
+  }
+
+  /**
+   * A PIRÂMIDE GOVERNADA PELA LEI (M2): os pesos por mip saem de
+   * `PESO_POR_MIP` (derivado de `BETA_DA_ASA` — a conta no cabeçalho da
+   * constante), com o raio pinado em 0 na construção para o lerp do
+   * vendorizado não os achatar de volta. O bloom fica cuidando do
+   * BRILHO perto da fonte (abaixo do ombro); a EXTENSÃO é da asa
+   * explícita (`world/clarao.ts`), que é a dona declarada (§1).
+   */
+  private governarPiramide() {
+    const composite = (this.bloom as unknown as { compositeMaterial: THREE.ShaderMaterial })
+      .compositeMaterial;
+    const fatores = composite.uniforms.bloomFactors?.value as number[] | undefined;
+    if (!fatores || fatores.length === 0) {
+      throw new Error('governarPiramide: o composite do UnrealBloomPass mudou de forma');
+    }
+    for (let i = 0; i < fatores.length; i++)
+      fatores[i] = PESO_DA_PIRAMIDE * Math.pow(PESO_POR_MIP, i);
   }
 
   /**
@@ -324,9 +374,12 @@ export class Post {
     const g = this.galaxyMode;
     // moderação mais firme na vista externa: o bojo é uma fonte HDR
     // enorme e virava uma bola branca que engolia barra e fendas.
+    // (força e limiar são INSTRUMENTO e seguem moduláveis por modo; o
+    // RAIO deixou de ser knob no M2 — pinado em 0 na construção, porque
+    // o lerp dele reflatten os pesos que a lei derivou. Ver
+    // governarPiramide.)
     this.bloom.strength = (0.72 - 0.34 * g) * (1 + k * 0.4);
     this.bloom.threshold = 0.82 + 0.52 * g;
-    this.bloom.radius = 0.58 - 0.18 * g;
     (this.film.uniforms as Record<string, { value: number }>).uCA.value =
       0.00012 + k * 0.00042;
   }

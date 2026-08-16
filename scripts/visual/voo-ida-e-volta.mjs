@@ -36,6 +36,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { abrirSessao } from './chrome.mjs';
+import { tetoDeLavagem } from './luz-do-quadro.mjs';
 
 const RAIZ = resolve(new URL('.', import.meta.url).pathname, '..', '..');
 const CAPTURAS = resolve(RAIZ, 'capturas');
@@ -237,10 +238,23 @@ function julgar(linhas) {
       );
     }
   }
-  // e a queixa original, nos DOIS sentidos: nenhum degrau pode cegar a tela
+  // e a queixa original, nos DOIS sentidos: nenhum degrau pode cegar a
+  // tela ALÉM DO QUE A LEI PERMITE. O critério era um 50% chapado de
+  // antes de a asa existir; desde o M2 o teto é o MESMO da régua da luz
+  // (`tetoDeLavagem`): perto do Sol o clarão da lei cobre o quadro e
+  // lavar é a parede de fogo honesta (a âncora do dono é R ≈ 450 px já
+  // a 1 UA); longe, o orçamento encolhe com a asa e cegueira volta a
+  // reprovar. Reescrever o oráculo, nunca contorná-lo (§5.10) — o teto
+  // vem da lei, não deste harness.
+  const [wPx, hPx] = JANELA.split('x').map(Number);
+  const comBloom = !/nobloom=1/.test(EXTRA);
   for (const l of linhas) {
-    if (l.acimaDeMeia > 0.5) {
-      erros.push(`${l.perna} ${l.ua} UA: tela cega — ${(l.acimaDeMeia * 100).toFixed(1)}% do quadro acima de meia luz`);
+    const teto = tetoDeLavagem(l.ua, { alturaPx: hPx, larguraPx: wPx, comBloom });
+    if (l.acimaDeMeia > teto.tetoAcimaDeMeia) {
+      erros.push(
+        `${l.perna} ${l.ua} UA: tela cega — ${(l.acimaDeMeia * 100).toFixed(1)}% do quadro ` +
+        `acima de meia luz (teto da lei ${(teto.tetoAcimaDeMeia * 100).toFixed(1)}%)`
+      );
     }
   }
   return erros;

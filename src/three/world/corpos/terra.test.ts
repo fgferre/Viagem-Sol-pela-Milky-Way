@@ -61,7 +61,7 @@ import {
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { heroDominanceFade } from '../lodStellar';
+import { cessaoPorDominancia } from '../lodStellar';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -601,7 +601,7 @@ describe('6b. a dominância suave (F2b/D5) — a lei e as cicatrizes', () => {
 
   it('a curva é a MESMA do par hero↔catálogo — uma lei, dois consumidores', () => {
     for (const r of [1.2, 1.7, 2.2]) {
-      expect(cessaoAlvo(true, r * 10, 10)).toBeCloseTo(heroDominanceFade(r), 12);
+      expect(cessaoAlvo(true, r * 10, 10)).toBeCloseTo(cessaoPorDominancia(r), 12);
     }
   });
 });

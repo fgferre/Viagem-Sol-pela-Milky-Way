@@ -211,20 +211,18 @@ em menos de 24 h e o documento sofria a doença que denunciava.
 | ombro no passa-alta | `BETA_DO_BLOOM`, `OMBRO_DO_BLOOM`, `domarOBloom` (`post.ts`) | 0,45 / 40 | sobe para L1 (instrumento) |
 | a repartição do Sol | `repartir` (`estrela.ts`) → `aCede`/`uFiltroSolar`/`uWorldFade`, fiada pelo director | **M1 FECHADO 16/08**: cessão = `wResolvido`, filtro = `overrideExpoente`, malha entra do zero com o peso da lei | é a lei — fica |
 | segunda coluna do cadastro | `fatorDeBrilho` em `EscalaDeclarada` (`escala.ts`) | declara mentira de BRILHO | fica — e passa a declarar o valor VIVO |
-| as portas | `?bemis= ?bbloom= ?bombro=` registradas em `selo.ts` (`?bfoto` e `?bcede` MORRERAM no M1, regra iv) | caminho de volta | **cada uma morre no commit que migra o que ela protege** |
+| as portas | `?bemis=` registrada em `selo.ts` (`?bfoto`/`?bcede` MORRERAM no M1; `?bbloom`/`?bombro`/`?knee2` no M2 — regra iv) | caminho de volta | **morre no commit que migrar a emissão** |
 
-**Provas vivas e seus limites (re-medidas em 16/08, juízes do §5.10).** O
-invariante disco↔ponto está verde (a dívida F2 foi paga: `fatorDeBrilho: 1` no
-Sol, exigido por teste). O voo de ida e volta passa em 34 degraus com o juiz novo
-(`luzMedia` comparada, margem da banda 0,1268 UA escrita no JSON) — a assimetria
-de 2,94× registrada em 15/08 era o forno cru, não óptica. A régua de luz, com o
-teto derivado da lei e a escada até 15.800 UA, dá o mapa exato do que o M1/M2 têm
-de matar: **REPROVA 4 de 11** (`capturas/luz-do-quadro.json`, versionado) —
-monotonia 102→182 px chegando a 1 UA, orçamento estourado a 2.000/4.000 UA
-(luz média 0,098 contra teto 0,081), e o penhasco 119→4 px em 4.000→15.800 UA. E
-o voo carrega o degrau de item 3 vivo: borrão **24 px @ 0,232 UA → 125 px @
-0,341 UA (5,2× hoje; 9,2× em 15/08)** — a costura filtro↔cessão, julgada pelo
-aceite declarado do M1 (≤ 1,5×).
+**Provas vivas (re-medidas em 16/08, depois do M2).** O invariante
+disco↔ponto está verde (a dívida F2 foi paga: `fatorDeBrilho: 1` no Sol,
+exigido por teste). A régua de luz **PASSA 11 de 11**
+(`capturas/luz-do-quadro.json`, versionado) com o borrão monotônico na
+escada inteira e 20 px na âncora de 15.800 UA — os quatro vermelhos do
+pré-M2 (monotonia a 1 UA, orçamento a 2.000/4.000, penhasco de 15.800)
+morreram com a asa + a pirâmide derivada. O voo de ida e volta passa em
+34 degraus (margem da banda 0,1268 UA escrita no JSON), com o critério
+de cegueira derivando do teto da lei desde o M2. A costura do M1
+(0,232→0,341 UA ≤ 1,5×) segue em pé.
 
 ### O censo É o CADASTRO_DE_REPRESENTACOES (em código desde o L1, 16/08)
 
@@ -419,23 +417,47 @@ pino `ATLAS_JOURNEY_T` existe pela reprodutibilidade das vistas, e trocá-lo
 pela data exige seek BIDIRECIONAL do ciclo com re-bake e fotos para o dono;
 segue nas pendências como obra própria.)*
 
-### M2 — As 16 heroes = o antigo L3
-**Entra:** o clarão de asas, uma camada só, sempre acesa, para as **N fontes mais
-brilhantes em quadro** (orçamento, não lista de nomes) — **e o parâmetro do bloom
-governado pela lei** (número de mips e pesos derivados da asa escolhida). Sem os
-dois termos, o item 42 fica consertado na lei e quebrado na tela.
-**Apaga:** `size = 0,08·10^(−0,3m)`, `ESPELHO_COEF_CLARAO_PC` + o exemplar Sirius,
-`HERO_DOMINANCE`/`heroDominanceFade`/`heroDominanceRatio`/`writeHeroFades`/
-`heroCatalogFade`/`fadesDoQuadro`/`LOD_HERO` (herdados do M1: têm consumidor de
-runtime até a política morrer inteira),
-`DOMINANCE_DEFAULT_ON`/`aFade`, a identidade "as 16", `uExposicao` e a espinha de
-exposição inteira, o clamp `sat`, e — com F0 feito — **`core/pupila.ts` INTEIRO**
-(329 l) + `pupila.test.ts` (230 l) + `?pupila`/`?dom`/`?nodom`. O que sobrevive da
-pupila é o que ela **MEDIU** (§7) e a técnica de pré-exposição, que é correta pelo
-motivo half-float. **A medição fica no documento, não em código.**
-**Régua:** `luz-do-quadro.mjs` PASSA 10/10; borrão a 15.800 UA ≤ 20 px.
-**Ordem:** o clarão de autor só é apagado **depois** que a lei nova passa na régua —
-senão a casa fica sem clarão nenhum no intervalo.
+*(M2 — o clarão de asas + o bloom pela lei — FECHOU em 16/08, com o
+aceite declarado CUMPRIDO: a régua da luz saiu de REPROVA 4/11 para
+**PASSA 11/11**, o borrão ficou monotônico na escada inteira (≥900 →
+349 → 87 → 42 → **20 px na âncora de 15.800 UA**, aceite ≤ 20) e o voo
+passa em 34 degraus ida e volta. ENTROU `world/clarao.ts`: camada única
+por orçamento de fluxo — 16 slots entre o Sol e as 1.726 nomeadas, com
+a histerese do §5.21 (RAZAO_DE_TROCA 1,25 + rampas de 300 ms; o oráculo
+da fronteira pegou um bug real da primeira forma — a reafirmação do
+membro fraco desfazia o deslocamento no mesmo quadro — e a seleção
+virou duas fases: decidir o conjunto, depois escrever os alvos), asa
+Moffat + braço de espinho com `BETA_DO_ESPINHO = ¾·β` acorrentado,
+billboard em px de tela, `depthTest: false` pela §5.15. O bloom passou
+a ser GOVERNADO: pesos por mip `2^(2−2β)` ≈ 0,144, raio pinado em 0 (o
+lerp do vendorizado reflatten os pesos), e a fração da pirâmide
+DERIVADA da partição do §1 — `PESO_DA_PIRAMIDE = FRACAO_DA_ASA/Σrazões`
+≈ 0,051, zero número livre; a varredura que a autorizou: peso 1 → 37 px
+na âncora, 0,35 → 27, 0,2 → 24, sem bloom → 14 — o excesso era todo o
+σ≈12 px do primeiro mip sobre o núcleo saturado, espalhamento que a lei
+atribui à ASA. A pirâmide NÃO foi estendida (o outro caminho do §1):
+com pesos em lei de potência os mips 6+ pesariam < 1e-4 — custo sem
+imagem, escolha declarada em `post.ts`. APAGOU tudo o que a lista
+previa: `heroStars.ts` inteiro, a política de dominância inteira, o
+canal `aFade`, `core/pupila.ts` + teste + a espinha de `uExposicao`, o
+clamp `sat` (espinhos = `FRACAO_DOS_ESPINHOS`·pico = 0,0278, calibrada
+por CONTINUIDADE em Sirius; branqueamento suave pico/(pico+4) — item
+43), `ESPELHO_COEF_CLARAO_PC` + exemplar Sirius, e as portas
+`?pupila`/`?dom`/`?nodom`/`?nohero`(→`?noclarao`)/`?bbloom`/`?bombro`/
+`?knee2` — regra iv. O juiz do voo foi reescrito no espírito do §5.10:
+o critério de cegueira (50% chapado, de antes da asa) passou a derivar
+do teto da lei (`tetoDeLavagem`, endereço ÚNICO com a régua da luz) —
+perto do Sol lavar é a parede de fogo honesta, e a âncora do dono é
+R ≈ 450 px já a 1 UA. DESVIOS DECLARADOS, no molde do M1: (a) a rampa
+g(r) 1→2,5 sobrevive como `cessaoPorDominancia` — a cessão corpo↔ponto
+da Terra é OUTRA troca (mesma fonte, fluxo conservado) e a prova de
+continuidade vale igual; (b) `catalogApparentMag` sobrevive — espelha
+linha VIVA do STAR_VERT, não a política morta; (c) o CME saiu do M2
+para o M7 — o M2 é ÓPTICA e o CME é FONTE (campo E do §5.18, dose nunca
+calibrada), divergência escrita no cadastro; (d) o GATE DE FOTO do
+expoente da asa (2,0–3,0) segue devido ao dono — 2,4 é a semente e as
+capturas `luz-*.png` da escada são as fotos; (e) o joelho pós-bloom foi
+ABSORVIDO com a cadeia contada — quatro curvas, ordem em `post.ts`.)*
 
 ### M3 — Catálogo + cascas
 **Gate obrigatório ANTES:** o ponto-zero único (4,83 × 4,85), decidido com foto pelo
@@ -523,8 +545,11 @@ default, usar a mesma forma na emissão, e o modo por canal morre.**
 **satura em `peak = 4`** — em 900 px, `m = 0,75`. Sirius (m = −1,46) e o Sol a 1 UA
 (m = −26,7) — 25 magnitudes, fator 1e10 — recebem **espinhos e núcleo idênticos**. É
 literalmente "dois brilhos diferentes viram o mesmo pixel", proibido pelo NORTE, e a
-v1 não o listava. Entra na demolição do M2: espinhos derivados do fluxo comprimido,
-não de um `clamp`.
+v1 não o listava. **PAGA no M2 (16/08):** o clamp morreu; espinho = fração do fluxo
+(`FRACAO_DOS_ESPINHOS` = 0,0278, calibrada por CONTINUIDADE em Sirius — a
+estrela-exemplar sai igual e todo o resto passa a escalar) e o branqueamento virou
+saturação suave `pico/(pico+4)`. Vênus ganha cruz maior que Sirius porque o fluxo
+manda — como numa câmera (item 43).
 
 **5.5 A radiância passa a ser a integral Planck×CIE NÃO normalizada.**
 `radianciaDeCorpoNegro` devolve `(T/T☉)⁴` — bolométrica — num pipeline em que a cor
@@ -587,10 +612,13 @@ julgada e PAGA no M1 (16/08):** 0,232→0,341 UA caiu de 30→130 px para
 dono nomeado: a janela limpa nova (0,34–0,94 UA, borrão 10–20 px) termina
 onde o ponto reentra (0,734→1,08 UA, 10→178 px), porque cessão PRÉ-curva é
 impotente em fonte saturada — o mesmo fato medido em 15/08 que autorizou o
-mult 1. O halo de ~178 px ali é idêntico ao de antes do M1 (181 px a 1 UA
-nos dois estados); ele encolhe no M2, pela asa — ou antes, se o §5.1 mover
-o peso do ponto para PÓS-curva, que é a direção que o invariante já manda.
-O que fica de dívida: o voo continua sem chamar `julgarEscada`.
+mult 1. O halo de ~178 px ali era idêntico ao de antes do M1 (181 px a 1 UA
+nos dois estados); **encolheu no M2, pela asa, como previsto** — a 1 UA o
+quadro agora é a parede de fogo honesta da âncora do dono (R ≈ 450 px), e
+de 3,6 UA para fora o borrão despenca monotônico. O que fica de dívida: o
+voo passou a consumir o teto da lei (`tetoDeLavagem`, M2) no critério de
+cegueira, mas continua sem chamar `julgarEscada` inteiro (monotonia e
+continuidade por degrau só existem na escada).
 
 **5.11 O sprite descarta 8,9% do fluxo das estrelas fracas.** Com `rSat = 0` o raio
 é 2,2σ e a fração contida do gaussiano 2D é `1 − exp(−2,2²/2) = 0,911`. As fracas
@@ -621,8 +649,9 @@ O que sobra a cobrar é a **partição de energia da asa** (um dono, fração de
 o teste do L1 cobra as duas coisas **separadas** — energia e perfil radial.
 
 **5.15 A profundidade do clarão é parte da lei.** A §1 promete que o clarão nunca é
-ocluído pelo corpo que o causa; só o `SunStar` põe `depthTest: false`. Os 16
-billboards não. Estado de profundidade entra na lei (M2), não na escolha de material.
+ocluído pelo corpo que o causa; só o `SunStar` punha `depthTest: false` — os 16
+billboards não. **PAGA no M2:** a camada da asa nasce com `depthTest: false` escrito
+como LEI no material (`clarao.ts`, com a cláusula citada ao lado), não como escolha.
 
 **5.16 A paleta H-alfa é override de INSTRUMENTO ou sai.** H-alfa é banda estreita em
 656,3 nm; a fotosfera a 5.772 K é branca. Como está, a única estrela que o visitante
@@ -701,6 +730,11 @@ em quadro é um **ranking**, e ranking troca de posição. Duas estrelas de flux
 igual na fronteira do top-N fariam o clarão piscar entre elas a cada quadro — o
 defeito do §5.17 nascendo dentro do conserto do §1. A entrada e a saída da lista têm
 limiares diferentes, e o ganho do clarão sobe e desce em rampa, nunca em degrau.
+**PAGA no M2:** `RAZAO_DE_TROCA` = 1,25 (entrante só desloca o membro mais fraco com
+esta folga) + rampas de 300 ms (`stepRampToward`); o oráculo da fronteira
+(`clarao.test.ts`) prova que quase-empatados não piscam em 120 quadros seguidos — e
+pegou, antes de nascer, o bug da reafirmação desfazendo o deslocamento no mesmo
+quadro (a seleção virou duas fases por causa dele).
 
 ---
 
@@ -737,11 +771,20 @@ previsão era M1/M4 — fica para o M4), e a regra do teste do cadastro mudou
 de "arquivo a arquivo" para "entrada a entrada" porque `planetas.ts` desenha
 duas representações com destinos diferentes.
 
+**Aconteceu no M2 (16/08), como previsto e com o saldo escrito:**
+`escala.test.ts` perdeu o espelho do coeficiente (a regex `const size =`)
+e ganhou o oráculo da lei (fator null + fração da asa);
+`pupila.test.ts` morreu com o arquivo; `lodStellar.test.ts` caiu de
+1.110 para 336 linhas (os ~600 casos da política de dominância — vistas
+A9, redes D2, prova da luz combinada, casamento das duplas — morreram
+com ela); `stars.test.ts` foi reescrito para o canal único;
+`corpos.test.ts`, `atlasConfig.test.ts`, `selo.test.ts`,
+`fotometria.test.ts` e `terra.test.ts` ajustados; `luz-do-quadro.mjs`
+exporta `tetoDeLavagem` e o voo o consome. E nasceu `clarao.test.ts` —
+16 casos, incluindo o oráculo da fronteira que pegou um bug antes de
+ele existir em produção.
+
 **Vai acontecer:**
-- `escala.test.ts` casa a regex `const size = ([\d.]+) \* lum;` contra o fonte de
-  `heroStars.ts` — **M2** apaga a linha.
-- `pupila.test.ts` — o literal de `GLSL_STAR_PSF` já saiu (F0); **M2** apaga o
-  arquivo inteiro.
 - `luz.test.ts` (`irradianciaRelativa(ANCORA_UA)===1`) — **M4**.
 - `stellarPhysics.test.ts` pina ~60 valores, vários não físicos — **M3**.
 - `core/engine.test.ts` diz que a vista `sol` está a 0,063 pc contra 1,2955e-7 pc
@@ -803,14 +846,15 @@ bug; a exposição as estava apagando.
    escurece o fundo; alguém brilha na frente dele. E isso torna o clarão de asas
    (§1) a peça mais importante do documento: é ele que faz o efeito acontecer pelo
    motivo certo, e é ele que o desfaz sozinho quando a fonte encolhe.
-3. **`core/pupila.ts` é LÁPIDE COM DATA DE ENTERRO: M2.** Ela nasce desligada, mas
-   não está morta — o director a instancia, chama `aplicarPupila` todo quadro e
-   importa dela a lei viva `picoDaPsf`. F0 muda `picoDaPsf` de casa; **M2 apaga o
-   arquivo inteiro** (329 l) mais `pupila.test.ts` (230 l) e a espinha de
-   `uExposicao`. O que sobrevive dela é o que ela **MEDIU** — os 16 stops acima e o
-   vão de ~26 magnitudes entre a malha e o ponto, ambos preservados **neste
-   documento** — e a técnica de pré-exposição no shader, correta pelo motivo
-   half-float e sem parentesco com adaptar por foco.
+3. **`core/pupila.ts` foi ENTERRADA na data marcada: M2, 16/08.** O arquivo
+   (329 l), `pupila.test.ts` (230 l) e a espinha inteira de `uExposicao`
+   (`setPupila`, `escreverExposicao` em três camadas, `aplicarPupila` no
+   director, as portas `?pupila`/`?dom`/`?nodom`) morreram no mesmo commit,
+   e a varredura invertida (`simbolosProibidos.test.ts`) vigia a
+   ressurreição. O que sobrevive dela é o que ela **MEDIU** — os 16 stops
+   acima e o vão de ~26 magnitudes entre a malha e o ponto, ambos
+   preservados **neste documento** — e a técnica de pré-exposição no shader,
+   correta pelo motivo half-float e sem parentesco com adaptar por foco.
 
 ### O que substitui a pupila, então
 
@@ -845,8 +889,13 @@ tem**, em ordem, com o desvio de cada estágio, e nomeia quem **não** é alcan�
 `1/px²` estão intactos).
 
 **A compressão deixou de ser um passo** ("L4"). Ela é **cláusula de toda migração**:
-a lei devolve valor já comprimido, ou expõe β. E o joelho pós-bloom é absorvido ou
-demolido no M2, com o número de curvas escrito.
+a lei devolve valor já comprimido, ou expõe β. E o joelho pós-bloom foi **ABSORVIDO
+no M2, com o número escrito**: a cadeia tem QUATRO curvas, nesta ordem — (1) β·asinh
+na emissão por fonte (β = 300, `?bemis=` é a volta); (2) ombro + β·asinh dentro do
+passa-alta do bloom (40 / 0,45, lei sem porta); (3) o joelho asinh no compósito
+pós-bloom (β = 0,45, só na vista externa — rampa da galáxia); (4) ACES no
+OutputPass. A contagem vive em `post.ts`, ao lado da lápide do `?knee2` (o
+experimento pré-bloom foi medido, perdeu para o ombro, e a porta morreu — regra iv).
 
 ---
 

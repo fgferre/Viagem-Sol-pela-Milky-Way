@@ -325,18 +325,20 @@ vec3 extinction(vec3 from, vec3 to, float baseTau) {
 export const GLSL_STAR_PSF = /* glsl */ `
 void starPSF(
   float m, float expoM0, float sigmaPx, float screenH,
-  out float size, out float peak, out float sat, out float sigmaFrac
+  out float size, out float peak, out float sigmaFrac
 ) {
   float sigma = sigmaPx * screenH / ${ALTURA_DE_CALIBRACAO_DO_SIGMA_PX.toFixed(1)};
   float E = pow(10.0, -0.4 * (m - expoM0));
   peak = E / (${DOIS_PI_DO_SHADER} * sigma * sigma);
   float rSat = peak > 1.0 ? sigma * sqrt(2.0 * log(peak)) : 0.0;
   size = 2.0 * (${RAIO_DO_SPRITE_EM_SIGMAS} * sigma + rSat);
-  // a saturação é o gatilho FÍSICO dos spikes de difração
-  sat = clamp(0.5 * log2(max(peak, 1.0)), 0.0, 1.0);
   sigmaFrac = sigma / max(0.5 * size, 1e-4);
 }
 `;
+// (A saída `sat` — o gatilho dos espinhos por clamp, saturado em pico 4 —
+// morreu no M2 da LEI-DA-ESTRELA: espinho e branqueamento derivam do FLUXO
+// (`FRACAO_DOS_ESPINHOS`/`BRANQUEAMENTO_MEIA_ALTURA`, estrela.ts) dentro do
+// STAR_FRAG, comprimidos junto com o resto. A varredura invertida vigia.)
 
 // ============================================================
 // A COMPRESSÃO FIXA — a curva `β·asinh(x/β)`, com UM endereço.

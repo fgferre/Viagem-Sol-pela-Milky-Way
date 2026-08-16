@@ -296,6 +296,31 @@ const PISO_LUZ_MEDIA_SEM_BLOOM = 0.039;
 const MARGEM_DA_CAUDA = 1.15;
 
 /**
+ * O TETO DE LAVAGEM da lei, por distância — a regra 2 e a 3 do juiz num
+ * endereço EXPORTADO (M2): o voo de ida e volta usa o MESMO teto no
+ * critério de cegueira, em vez de um 50% chapado que não conhecia a asa.
+ * Perto do Sol o clarão da lei cobre o quadro e lavar É honesto (a
+ * parede de fogo — a âncora do dono é R ≈ 450 px já a 1 UA); longe, o
+ * orçamento encolhe com a asa e cegueira volta a ser defeito.
+ */
+export function tetoDeLavagem(ua, { alturaPx = JH, larguraPx = JW, comBloom = true } = {}) {
+  const folga = comBloom ? FOLGA_COM_BLOOM : FOLGA_SEM_BLOOM;
+  const disco = discoRealPx(ua, alturaPx);
+  const clarao = claraoDaLeiPx(ua, alturaPx);
+  const teto = folga * Math.max(disco, clarao);
+  const orcamento = (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
+  const pisoAcima = comBloom ? PISO_ACIMA_DE_MEIA_COM_BLOOM : PISO_ACIMA_DE_MEIA_SEM_BLOOM;
+  const pisoLuz = comBloom ? PISO_LUZ_MEDIA_COM_BLOOM : PISO_LUZ_MEDIA_SEM_BLOOM;
+  return {
+    disco,
+    clarao,
+    tetoBorraoPx: teto,
+    tetoAcimaDeMeia: pisoAcima + orcamento,
+    tetoLuzMedia: pisoLuz * MARGEM_DA_CAUDA + orcamento,
+  };
+}
+
+/**
  * O veredito da escada. Puro: recebe as linhas que `medirQuadro` produziu e
  * devolve aprovação por degrau, sem subir Chrome.
  *
@@ -363,13 +388,12 @@ export function julgarEscada({
 
   const julgadas = ordenadas.map((l) => {
     const motivos = motivosPorUa.get(l.ua);
-    const disco = l.disco ?? discoRealPx(l.ua, alturaPx);
-    const clarao = claraoDaLeiPx(l.ua, alturaPx);
+    // as regras 2 e 3 saem do MESMO endereço que o voo consome
+    // (`tetoDeLavagem`) — o disco pode vir pré-calculado da captura
+    const t = tetoDeLavagem(l.ua, { alturaPx, larguraPx, comBloom });
+    const disco = l.disco ?? t.disco;
+    const clarao = t.clarao;
     const teto = folga * Math.max(disco, clarao);
-    // a área que o borrão permitido ocupa no quadro — o orçamento do Sol
-    const orcamento = (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
-    const pisoAcima = comBloom ? PISO_ACIMA_DE_MEIA_COM_BLOOM : PISO_ACIMA_DE_MEIA_SEM_BLOOM;
-    const pisoLuz = comBloom ? PISO_LUZ_MEDIA_COM_BLOOM : PISO_LUZ_MEDIA_SEM_BLOOM;
 
     // 2. teto do borrão
     if (l.borrao > teto) {
@@ -383,20 +407,17 @@ export function julgarEscada({
     //    lavar é exatamente o disco que ele tem direito de fazer. Com isso a
     //    parede de fogo deixa de precisar de caso especial: lá o disco tem 113
     //    px e o orçamento cresce sozinho.
-    const tetoAcima = pisoAcima + orcamento;
-    if (l.acimaDeMeia > tetoAcima) {
+    if (l.acimaDeMeia > t.tetoAcimaDeMeia) {
       motivos.push(
         `${(100 * l.acimaDeMeia).toFixed(3)}% do quadro acima de meia luz `
-        + `(teto ${(100 * tetoAcima).toFixed(3)}% = céu ${(100 * pisoAcima).toFixed(3)}% `
-        + `+ o borrão permitido)`
+        + `(teto ${(100 * t.tetoAcimaDeMeia).toFixed(3)}% = céu + o borrão permitido)`
       );
     }
     // a luz MÉDIA sobre o piso do céu, com a margem da cauda declarada
-    const tetoLuz = pisoLuz * MARGEM_DA_CAUDA + orcamento;
-    if (l.luzMedia > tetoLuz) {
+    if (l.luzMedia > t.tetoLuzMedia) {
       motivos.push(
-        `luz média ${l.luzMedia.toFixed(3)} (teto ${tetoLuz.toFixed(3)} = `
-        + `céu ${pisoLuz} × ${MARGEM_DA_CAUDA} + o borrão permitido)`
+        `luz média ${l.luzMedia.toFixed(3)} (teto ${t.tetoLuzMedia.toFixed(3)} = `
+        + `céu × ${MARGEM_DA_CAUDA} + o borrão permitido)`
       );
     }
 

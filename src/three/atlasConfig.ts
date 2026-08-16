@@ -63,7 +63,10 @@ export const CAMADAS: readonly Camada[] = [
   { flag: 'nonebula', nome: 'Nebulosa volumétrica', viva: true },
   { flag: 'nowrap', nome: 'Campo envolvente', viva: true },
   { flag: 'nocat', nome: 'Catálogo HYG', viva: true, icone: '⁂' },
-  { flag: 'nohero', nome: 'Estrelas nomeadas', viva: true, icone: '✦' },
+  // M2 da Lei: `nohero` virou `noclarao` — o que a chave desliga deixou
+  // de ser as 16 heroes de autor e passou a ser a camada do clarão de
+  // asas (a óptica das fontes fortes, por orçamento de fluxo).
+  { flag: 'noclarao', nome: 'Clarão das estrelas', viva: true, icone: '✦' },
   { flag: 'nomarker', nome: 'Marcador do Sol', viva: true, icone: '⌖' },
   { flag: 'noplan', nome: 'Planetas', viva: true, icone: '◉' },
   // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de

@@ -7,19 +7,19 @@ import { Engine, modoDoToneMapping } from './core/engine';
 import type { QualityLevel } from './core/engine';
 import type { EstadoDaVista } from './selo';
 import { Post } from './core/post';
-import {
-  Pupila,
-  ganhoDaPupila,
-  deslocamentoDeExpoM0,
-  lerPortaDaPupila,
-} from './core/pupila';
+// (A PUPILA morreu INTEIRA no M2 da LEI-DA-ESTRELA — arquivo, teste e a
+// espinha de `uExposicao`. O que substitui a adaptação é a compressão
+// fixa em dois pontos, que é padrão desde 15/08; a medição que ela fez
+// vive na LEI §7.)
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
 import { projectCorpos, projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
-import { HeroStars } from './world/heroStars';
+// O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
+// por orçamento de fluxo — no lugar das 16 heroes de autor.
+import { ClaraoDeAsas } from './world/clarao';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
@@ -51,11 +51,9 @@ import {
   raiosDoGigantePc,
 } from './world/corpos/gigante';
 import {
-  PONTO_ZERO_SOL_PC,
   Planetas,
   PLANETAS_DEFAULT_ON,
   UA_POR_PC,
-  magDoVertice,
 } from './world/planetas/planetas';
 import type { FonteDeEfemerides } from './world/planetas/planetas';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
@@ -81,7 +79,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico
 import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
 import { RAIO_DO_SOL_NA_CENA } from './escala';
-import { EXPO_M0, SIGMA_PX, picoDaPsf } from './luzDaCasa';
+import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 // A LEI DA ESTRELA (M1): a repartição única do Sol — quem era quatro
 // rampas (`cessaoAlvo`, `cessaoPeloGate`, `filtroSolarAlvo` e o `max`
 // delas) virou UMA função pura, e o director é o único que a chama
@@ -118,11 +116,6 @@ import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
-import {
-  DOMINANCE_DEFAULT_ON,
-  fadesDoQuadro,
-  matchHeroesToCatalog,
-} from './world/lodStellar';
 import { carregarEfemerides, loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
 import type { CorpoBuscavel } from '../lib/buscaEstrelas';
@@ -287,15 +280,12 @@ export class Director {
   private post: Post;
   private nebula: Nebula;
   private stars!: StarField;
-  private heroes!: HeroStars;
-  /** índice no catálogo de cada uma das 16 heroes (−1 = sem par
-   *  declarado). Resolvido uma vez no init — ver `matchHeroesToCatalog`. */
-  private heroCatalogIdx: number[] = [];
-  /** `aLogLum` do ponto casado, lido do catálogo no init: é constante e
-   *  é ele (não a magnitude do sidecar) que a GPU usa para a PSF. */
-  private heroCatalogLogLum: number[] = [];
-  /** saída de `fadesDoQuadro`, REUSADA entre quadros (zero alocação) */
-  private readonly heroFades: number[] = [];
+  /** O CLARÃO DE ASAS (M2 da Lei): a óptica das fontes fortes, por
+   *  orçamento de fluxo com histerese — camada única, sempre acesa.
+   *  (A identidade "as 16", o casamento hero↔catálogo e a política de
+   *  dominância morreram com as heroes de autor: o clarão soma óptica
+   *  POR CIMA do ponto e não pede cessão a ninguém.) */
+  private clarao!: ClaraoDeAsas;
   private galaxy!: Galaxy;
   /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
@@ -375,19 +365,6 @@ export class Director {
    * `teletransportou()` e consumido por UM tick.
    */
   private saltoDeCamera = false;
-  /**
-   * A PUPILA (Onda 8) — a auto-exposição viva. A lei e a adaptação moram em
-   * `core/pupila.ts` (puras, testadas); o que fica aqui é o estado e os dois
-   * rascunhos que a medição por quadro reusa para não alocar no tick.
-   * `paramsDaPupila` nulo = `?pupila=0`, a pupila desligada de propósito.
-   */
-  private readonly pupila = new Pupila();
-  private readonly paramsDaPupila = lerPortaDaPupila(
-    new URLSearchParams(window.location.search).get('pupila')
-  );
-  private readonly frustumDaPupila = new THREE.Frustum();
-  private readonly matrizDaPupila = new THREE.Matrix4();
-  private readonly pontoDaPupila = new THREE.Vector3();
   /**
    * O DEGRAU DA ESCADA (F2b/D7): `orbita` é a semântica de sempre do
    * `?foco=`; `corpo` é o alvo com raio físico. O degrau "lua" não é um
@@ -526,7 +503,7 @@ export class Director {
   private shotMode = false;
   /** prefers-reduced-motion: sem shake, sem pulso de warp/CA */
   private reducedMotion = false;
-  /** toggles de debug: ?nogal=1&nosun=1&nodust=1&nohero=1&nocat=1 */
+  /** toggles de debug: ?nogal=1&nosun=1&nodust=1&noclarao=1&nocat=1 */
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
@@ -679,17 +656,13 @@ export class Director {
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     for (const k of [
-      'nogal', 'nosun', 'nodust', 'nohero', 'nocat', 'nomarker', 'nocart', 'nowrap',
+      // ?noclarao=1 — desliga a camada do clarão de asas (M2 da Lei).
+      // Herda o papel do velho ?nohero: o gate do céu mede o CAMPO, e a
+      // óptica das fortes é camada própria. (?nohero e ?nodom morreram
+      // com as heroes e a política de dominância.)
+      'nogal', 'nosun', 'nodust', 'noclarao', 'nocat', 'nomarker', 'nocart', 'nowrap',
       // bissecção do ?nocart: nuvens CO e forjas separadamente
       'noco', 'noforge', 'nobh',
-      // ?nodom=1 — desliga a CESSÃO do ponto do catálogo sob o hero
-      // dominante (Onda 3, fase 3; ligada por padrão desde a fase 4a).
-      // Com `DOMINANCE_DEFAULT_ON = true` este é o caminho de VOLTA — o
-      // lado "antes" de qualquer A/B — e `?dom=1` continua ligando mesmo
-      // se a constante voltar a `false`. O par existe para o A/B ser
-      // feito com o MESMO binário dos dois lados (o `EXTRA=` do
-      // ab-identidade anexa o parâmetro a todas as vistas).
-      'nodom',
       // ?noplan=1 — desliga a CAMADA de planetas (Onda 4, D3/D7). Par de
       // `?plan=1`, no mesmo precedente. Governa a camada e SÓ ela: o
       // domínio profundo (janelas deep, near piecewise, voo proporcional)
@@ -804,31 +777,13 @@ export class Director {
     this.nebula.setResolvedCurve(
       resolvedCatalogCurve(starArrays.position, starArrays.logLum)
     );
-    this.heroes = new HeroStars(this.meta.named);
-    // FIM DA DUPLA-LUZ hero↔catálogo (Onda 3, fase 3 — decisão D2). Até
-    // aqui as 16 mais brilhantes desenhavam luz DUAS vezes na mesma
-    // posição: o ponto do campo de catálogo e o billboard do hero por
-    // cima, somados em blending aditivo. O casamento é POSICIONAL porque
-    // o formato sc1 não carrega identidade (9 bytes, sem id) — posição
-    // com tolerância de quantização, desempate por luminosidade.
-    this.heroCatalogIdx = matchHeroesToCatalog(
-      this.heroes.chosen,
-      starArrays.position,
-      starArrays.logLum
-    );
-    this.heroCatalogLogLum = this.heroCatalogIdx.map((i) =>
-      i >= 0 ? starArrays.logLum[i] : 0
-    );
-    // sem par é DECLARAÇÃO, não chute: o slot é pulado e a estrela do
-    // catálogo fica inteira (o hero continua desenhando por cima, como
-    // antes desta fase). Hoje as 16 casam; o aviso existe para o dia em
-    // que o catálogo for regerado com outro corte.
-    const semPar = this.heroCatalogIdx
-      .map((idx, i) => (idx < 0 ? this.heroes.chosen[i].n : null))
-      .filter(Boolean);
-    if (semPar.length) {
-      console.warn(`[heroes] sem par no catálogo: ${semPar.join(', ')}`);
-    }
+    // O CLARÃO DE ASAS (M2 da Lei): a óptica das fontes fortes por
+    // orçamento de fluxo. As 16 heroes de autor, o casamento posicional
+    // hero↔catálogo e a política de dominância (`aFade`) morreram com a
+    // migração: o clarão é LENTE — soma óptica por cima do ponto, do
+    // raio do sprite para fora, e não pede cessão a ninguém. Quem
+    // decide quem o tem é o fluxo, por quadro, com histerese (§5.21).
+    this.clarao = new ClaraoDeAsas(this.meta.named);
     // (o `SunStar` morreu no M1 da Lei da Estrela: o Sol de longe é o
     // ponto fotométrico da camada dos dez, em toda distância — a mesma
     // PSF do campo, sem clarão de autor por cima.)
@@ -940,7 +895,7 @@ export class Director {
     this.engine.scene.add(this.stars.points);
     this.engine.scene.add(this.sun.group);
     this.engine.scene.add(this.dust.points);
-    this.engine.scene.add(this.heroes.group);
+    this.engine.scene.add(this.clarao.group);
     this.engine.scene.add(this.galaxy.group);
     // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
     // NUNCA dentro de `sun.group` — de lá herdaria a escala 0,005 do
@@ -2838,10 +2793,9 @@ export class Director {
       tier: this.engine.quality,
       luz: this.politicaDeLuz,
       evLuzDoFoco: this.evLuzDoFoco(),
-      // o valor VIVO da pupila, do último quadro: ESTADO com adaptação no
-      // tempo — não há como o selo redescobri-lo sem repetir a
-      // integração. Ler o estado é o único caminho honesto.
-      stopsDaPupila: this.pupila.stopsAplicados,
+      // (stopsDaPupila saiu do estado no M2: a pupila morreu inteira, e
+      // a compressão fixa não é desvio por quadro — é a lei, declarada
+      // nas linhas de luz do próprio selo.)
     };
   }
 
@@ -3335,16 +3289,17 @@ export class Director {
     this.dust.setCavity(cam.position, cavityGate);
 
     if (this.debug.has('dbgfade')) {
-      // quem está CEDENDO agora (Onda 3, fase 3): o único jeito de ver a
-      // política de dominância viva sem abrir um profiler
-      const cedendo = this.heroCatalogIdx
-        .map((idx, i) => (idx >= 0 && this.stars?.fadeAt(idx) ? `${this.heroes.chosen[i].n}:${this.stars.fadeAt(idx).toFixed(2)}` : null))
-        .filter(Boolean);
+      // quem ocupa o orçamento do clarão agora (M2): o único jeito de
+      // ver a histerese da seleção viva sem abrir um profiler
+      const claroes = this.clarao
+        ?.ocupacao()
+        .map((o) => `${o.indice}:${o.ganho.toFixed(2)}`)
+        .join(' ');
       console.log(
         `[dbgfade] dHome=${dHome.toFixed(0)} gal=${galaxyFade.toFixed(2)} ` +
           `loc=${localFade.toFixed(2)} hide=[${[...this.hide].join(',')}] ` +
           `galVis=${this.galaxy?.group.visible} phase=${this.phase} jt=${this.journeyT.toFixed(1)} ` +
-          `cede=[${cedendo.join(' ')}]`
+          `clarao=[${claroes ?? ''}]`
       );
     }
 
@@ -3363,21 +3318,24 @@ export class Director {
     // o MESMO catFade das cascas: a LUT da faixa desconta do termo
     // estelar a luz que o catálogo já desenha como estrela individual
     this.nebula.setCatalogueFade(catFade);
-    // heroes esmaecem a zero em farFade (900 pc) — além disso os
-    // draws são garantidamente invisíveis
-    if (this.heroes) {
-      this.heroes.group.visible = !this.hide.has('nohero') && dHome < 1200;
+    // O CLARÃO DE ASAS (M2): sem janela de distância — a elegibilidade
+    // é do FLUXO (uma nomeada só ganha asa a poucos pc dela; o Sol, na
+    // escada do item 3), e é a magnitude que apaga, nunca um corte em
+    // pc. O Sol só é candidato enquanto a camada dos dez desenha o
+    // ponto dele (fonte oculta não tem óptica); a leitura é do quadro
+    // anterior por ordem de atualização, e a rampa de 300 ms engole o
+    // único quadro de atraso possível.
+    if (this.clarao) {
+      this.clarao.group.visible = !this.hide.has('noclarao');
+      this.clarao.atualizar({
+        camPos: cam.position,
+        screenH: hPx,
+        dtS: dt,
+        solVisivel: !this.hide.has('noplan') && (this.planetas?.points.visible ?? false),
+        expoM0: this.stars?.expoM0 ?? EXPO_M0,
+        sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
+      });
     }
-    this.heroes?.update(time, cam.position, tanHalfFov);
-    // A PUPILA (Onda 8) ENTRA AQUI, e o lugar é obrigação, não conveniência:
-    // depois do `heroes.update` (que publica `camDistPc`, insumo da medição) e
-    // ANTES do `writeHeroFades`, que prevê em JS o tamanho do ponto do catálogo
-    // com `stars.expoM0`. Escrever a pupila depois faria a política de
-    // dominância decidir com a exposição do quadro ANTERIOR — um quadro de
-    // atraso entre o que a casa prevê e o que a GPU desenha, que é exatamente a
-    // divergência que a publicação de `expoM0` existe para impedir.
-    this.aplicarPupila(cam, dHome, hPx, dt);
-    this.writeHeroFades(hPx, tanHalfFov);
     // `solArmado` entra AQUI, junto do `?nosun`, e não dentro do
     // `StellarBody`: o corpo não conhece a tela (não tem altura de buffer
     // nem lente), e o gate do palco é medido em PIXELS. O `sun.update`
@@ -3391,11 +3349,10 @@ export class Director {
     // `cessaoPeloGate` sobre disco/4px, `filtroSolarAlvo` em log
     // simétrico e o `Math.max` das duas primeiras, que tinha QUINA). Os
     // três contratos: o ESTADO vem do próprio corpo (`estadoDaLei`), a
-    // OBSERVAÇÃO é a câmera deste tick, o INSTRUMENTO é a casa —
-    // `stars.expoM0` EFETIVO (base + pupila), o mesmo que
-    // `writeHeroFades` acabou de usar, e `trocaPx` = o gate de corpo
-    // texturizado do palco (4 px), que deixou de ser uma segunda lei e
-    // virou parâmetro (§3 da Lei).
+    // OBSERVAÇÃO é a câmera deste tick, o INSTRUMENTO é a casa — o
+    // `expoM0` do campo (constante desde que a pupila morreu no M2), e
+    // `trocaPx` = o gate de corpo texturizado do palco (4 px), que
+    // deixou de ser uma segunda lei e virou parâmetro (§3 da Lei).
     const leiDoSol = repartir(
       this.sun.estadoDaLei(),
       {
@@ -3675,173 +3632,6 @@ export class Director {
     this.quadrosDaFase++;
   }
 
-  /**
-   * O FIM DA DUPLA-LUZ hero↔catálogo, por quadro (decisão D2 da Onda 3).
-   * Escreve `aFade` nos 16 pontos do catálogo casados com as heroes: o
-   * ponto cede na medida em que o billboard DOMINA a representação na
-   * tela (razão de tamanhos em px — `lodStellar` seção 5), e fica
-   * inteiro enquanto o hero for menor que ele. É por isso que das quatro
-   * vistas de Betelgeuse só a de 8 pc muda: a 200/600/950 pc o billboard
-   * tem menos de 1 px contra os 5,9 px do ponto, a razão nem chega a 1 e
-   * o fade é 0 EXATO.
-   *
-   * As duas redes de segurança que são estado de runtime moram aqui: com
-   * `?nohero=1` ou além de 1.200 pc de casa o grupo inteiro está
-   * desligado (a linha `heroes.group.visible = ...` do `frame`, logo
-   * antes desta chamada) e o que se escreve é o NEUTRO — o catálogo volta
-   * inteiro no mesmo quadro, e o gate do céu (que roda com `nohero=1`)
-   * continua medindo exatamente o que media. A terceira (o hero apagado
-   * pelo `farFade` além de 900 pc) é da própria política, por
-   * construção. A quarta é a CHAVE `DOMINANCE_DEFAULT_ON`, `true` desde
-   * a fase 4a (ver a decisão e o A/B medido ao lado dela, em
-   * `lodStellar`): `?nodom=1` é o caminho de volta e `?dom=1` liga mesmo
-   * se a constante voltar a `false`.
-   *
-   * ONDE ISSO MUDA A TELA (medido com `?dom=1`, não suposto): das 15
-   * vistas do `ab-identidade`, cinco. As quatro do Sol (α Centauri, a
-   * 1,4 pc, com o PONTO dentro do quadro) e a `hero8`. As outras dez
-   * ficam bit-idênticas — inclusive a `sol` e a `interno`, onde as
-   * heroes que cedem estão fora do frustum e só o clarão delas sangra
-   * para dentro. As cinco viraram BASELINE nova na fase 4a. Custo: 16
-   * comparações por quadro; a escrita é no-op enquanto nada muda (C2).
-   */
-  /**
-   * A PUPILA (Onda 8) — o FIO. A lei mora em `core/pupila.ts`, pura e testada;
-   * aqui fica só o que precisa da cena: QUAIS fontes estão em quadro e qual
-   * delas manda.
-   *
-   * O QUE ELA MEDE, e por que não é a média do quadro: o pico da PSF da fonte
-   * pontual mais brilhante EM QUADRO. Fonte pontual concentra fluxo colossal em
-   * poucos pixels — a 40 UA o Sol dá média de cena ~963 e pico ~2,5e8 —, então
-   * expor pela média deixaria o pico em milhares e a tela continuaria lavada.
-   * Quem lava é o pico.
-   *
-   * MEDE COM A BASE, NUNCA COM O EFETIVO. `expoM0Base` e não `expoM0`: medir
-   * com o valor que a própria pupila acabou de escrever fecharia a malha sobre
-   * si mesma e o ganho fugiria em espiral a cada quadro. É o mesmo cuidado que
-   * o mapa da casa cobra dos 5 mips do bloom, que são pós-limiar e por isso não
-   * servem de medidor.
-   *
-   * O FRUSTUM É PARTE DA LEI, não otimização: fonte fora de quadro não é
-   * desenhada, logo não lava nada, logo não pode fechar a pupila. Sem este
-   * teste, virar a câmera para o lado escuro continuaria com o céu apagado
-   * porque o Sol "ainda existe" atrás da nuca.
-   *
-   * O LIMITE DESTA MEDIÇÃO, declarado porque é dívida e não desenho: as
-   * candidatas são o Sol e as 16 heroes. As 328.749 do catálogo NÃO entram —
-   * varrer o catálogo por quadro para achar a mais brilhante custaria a
-   * travessia inteira, e nenhuma delas foi medida estourando o quadro (o pico
-   * do Sol a 1 UA é 4e11; o de Betelgeuse a 8 pc é 9e2). O dia em que o motor
-   * estelar der corpo a uma estrela do catálogo, esta lista é o que cresce.
-   */
-  private aplicarPupila(
-    cam: THREE.PerspectiveCamera,
-    dHome: number,
-    screenH: number,
-    dtS: number
-  ) {
-    const stars = this.stars;
-    if (!stars) return;
-    if (!this.paramsDaPupila) {
-      // `?pupila=0`: desligada de propósito. O A/B do item 3 se faz com o
-      // MESMO binário dos dois lados, no molde do `?dom=`/`?nodom=`.
-      stars.setPupila(0);
-      this.planetas?.escreverExposicao(stars.expoM0);
-      this.wrappedStars?.escreverExposicao(stars.expoM0);
-      this.heroes?.escreverExposicao(1);
-      return;
-    }
-    this.frustumDaPupila.setFromProjectionMatrix(
-      this.matrizDaPupila.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
-    );
-    let pico = 0;
-    // 1. O SOL-PONTO. Conta sempre que a camada dos dez o desenha — e
-    //    desde o M1 ela o desenha em toda distância; quem o apaga de
-    //    longe é a própria magnitude, que esta conta já carrega.
-    if (this.planetas?.points.visible && this.frustumDaPupila.containsPoint(ORIGEM)) {
-      pico = picoDaPsf(
-        // fase 1: o Sol é o ILUMINANTE, não tem fase — o mesmo argumento
-        // que a cessão por dominância já passa aqui ao lado
-        magDoVertice(PONTO_ZERO_SOL_PC, dHome, 1),
-        stars.expoM0Base,
-        stars.sigmaPx,
-        screenH
-      );
-    }
-    // 2. AS 16 HEROES, pela lei do catálogo. A magnitude aparente da câmera sai
-    //    da de casa sem precisar de `logLum`: as duas diferem só pelo termo de
-    //    distância, `m(d) = m_casa + 5·log10(d / d_casa)`.
-    const heroes = this.heroes;
-    if (heroes?.group.visible) {
-      for (let i = 0; i < heroes.chosen.length; i++) {
-        const s = heroes.chosen[i];
-        const dCam = heroes.camDistPc[i];
-        if (!(dCam > 0) || !Number.isFinite(dCam) || !(s.d > 0)) continue;
-        this.pontoDaPupila.set(s.x, s.y, s.z);
-        if (!this.frustumDaPupila.containsPoint(this.pontoDaPupila)) continue;
-        const m = s.m + 5 * Math.log10(dCam / s.d);
-        const p = picoDaPsf(m, stars.expoM0Base, stars.sigmaPx, screenH);
-        if (p > pico) pico = p;
-      }
-    }
-    const alvo = ganhoDaPupila(pico, this.paramsDaPupila);
-    // SALTA SÓ SOB CAPTURA. Sob `?shot=` o relógio visual é 0 e a cena assenta;
-    // uma adaptação com constante de tempo continuaria andando depois disso e
-    // toda captura viraria loteria. Saltando, o gate mede a MESMA exposição que
-    // o espectador vê parado. É o oposto do que o irmão fez (lá a pupila tem
-    // efeito zero sob captura, e o registro da casa já sentenciou: "se a Onda 8
-    // nascer assim, nenhum juiz olha para ela").
-    //
-    // O SALTO DE CÂMERA SAIU DAQUI, e a correção é do dono (2026-08-14, item 39):
-    // *"quando uma estrela está focada, as demais simplesmente desaparecem
-    // (ligam/desligam abruptamente), nao quero esse efeito"*. A primeira versão
-    // também saltava em `saltoDeCamera`, com o argumento de que teletransporte é
-    // cena nova e não mudança de luz. O argumento é bom e a CONSEQUÊNCIA é
-    // péssima: enquadrar uma estrela É um salto, então cada foco trocava a
-    // exposição da cena inteira em UM quadro — o liga-desliga que ele viu. Um
-    // olho que muda de assunto não pisca: ele se adapta. A rampa fica, e o
-    // "cena nova" é atendido pela constante de tempo, não por um corte.
-    const ganho = this.pupila.passo(alvo, dtS, this.shotMode);
-    stars.setPupila(deslocamentoDeExpoM0(ganho));
-    // as outras duas camadas de PSF copiam o efetivo — a cadeia de exposição da
-    // casa é uma só, e é o campo quem a publica
-    this.planetas?.escreverExposicao(stars.expoM0);
-    this.wrappedStars?.escreverExposicao(stars.expoM0);
-    // e os clarões de billboard, que NÃO passam pela PSF e por isso não são
-    // alcançados pelo deslocamento de `expoM0`. Sem esta linha a pupila
-    // deixaria de ser exposição de CENA e viraria teto sobre a fonte pontual.
-    this.heroes?.escreverExposicao(ganho);
-  }
-
-  private writeHeroFades(screenH: number, tanHalfFov: number) {
-    const stars = this.stars;
-    const heroes = this.heroes;
-    if (!stars || !heroes) return;
-    // a chave da cessão mora em `lodStellar` (DOMINANCE_DEFAULT_ON), com
-    // a decisão de estar em `true` escrita ao lado dela; aqui ficam só as
-    // duas portas de URL que a auditoria usa
-    const cessao = this.debug.has('dom') || (DOMINANCE_DEFAULT_ON && !this.hide.has('nodom'));
-    // a política inteira é PURA e mora em `lodStellar.fadesDoQuadro`
-    // (testada por comportamento); o que sobra aqui é o fio: ler o estado
-    // do quadro, entregar, escrever. `heroes.camDistPc` é do `update`
-    // logo acima — invertê-los daria o fade do quadro ANTERIOR (e
-    // `Infinity` no primeiro), e é por isso que a ORDEM está pinada no
-    // teste.
-    fadesDoQuadro(
-      this.heroCatalogIdx,
-      heroes.camDistPc,
-      heroes.sizePc,
-      this.heroCatalogLogLum,
-      { screenH, tanHalfFov, expoM0: stars.expoM0, sigmaPx: stars.sigmaPx },
-      heroes.group.visible && cessao,
-      this.heroFades
-    );
-    for (let i = 0; i < this.heroCatalogIdx.length; i++) {
-      const idx = this.heroCatalogIdx[i];
-      if (idx < 0) continue;
-      stars.writeFade(idx, this.heroFades[i]);
-    }
-  }
 
   dispose() {
     if (this.disposed) return;
@@ -3892,7 +3682,7 @@ export class Director {
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
     step('stars', () => this.stars?.dispose());
-    step('heroes', () => this.heroes?.dispose());
+    step('clarao', () => this.clarao?.dispose());
     step('galaxy', () => this.galaxy?.dispose());
     step('observedClouds', () => this.observedClouds?.dispose());
     step('starForges', () => this.starForges?.dispose());

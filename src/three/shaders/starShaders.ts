@@ -11,6 +11,7 @@ import {
   GLSL_COMPRESSAO,
 } from './common';
 import { lerBetaDaEmissao } from '../luzDaCasa';
+import { BRANQUEAMENTO_MEIA_ALTURA, FRACAO_DOS_ESPINHOS, LIMIAR_DO_CLARAO } from '../estrela';
 
 /**
  * O β da compressão na emissão, resolvido UMA vez — e aqui, que é o módulo
@@ -31,20 +32,16 @@ export const BETA_DA_EMISSAO = lerBetaDaEmissao(
 // da Onda 3 entram aqui sem tocar em `wrappedStars.ts` (risco 6 do mapa
 // da casa: as cascas têm fade fixo em 1 e a cadeia catálogo↔cascas não
 // pode mudar).
+// (Os dois canais por estrela da Onda 3 saíram do TEXTO do vertex no M2
+// da LEI-DA-ESTRELA: `aFade` morreu com a política de dominância — quem
+// responde pelo clarão das fortes é a camada da asa (world/clarao.ts),
+// que soma óptica POR CIMA e não pede cessão ao ponto. `aFocus` segue
+// vivo como canal dormente do lado da CPU (item 38 — buffer + escrita em
+// stars.ts); a leitura volta ao shader no M3/E3, quando a esfera
+// analítica precisar apagar o ponto da estrela que ganha corpo.)
 export const STAR_VERT = /* glsl */ `
 attribute float aLogLum;
 attribute float aCi;
-// --- os dois canais por estrela (Onda 3, fase 3) ---
-// aFade: quanto ESTA estrela cede, 0 = ponto inteiro, 1 = apagada. Quem
-// escreve são as 16 heroes, por quadro, e só quando o billboard passa a
-// DOMINAR a representação na tela (política de dominância, lodStellar.ts
-// seção 5) — até lá o catálogo continua sendo a estrela, e o buffer
-// zerado é o estado de 328.733 das 328.749.
-// aFocus: canal de IDENTIDADE, instalado e inerte (D3). O bypass existe
-// para a estrela em foco não ceder a nada; o corpo dele chega na Onda 7,
-// com a malha da estrela focada. Ninguém escreve 1 aqui hoje.
-attribute float aFade;
-attribute float aFocus;
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
@@ -54,9 +51,8 @@ uniform float uTau;
 uniform float uFade;
 
 varying vec3 vColor;
-varying float vSat;    // quanto o pico passou de 1 (núcleo estourado)
 varying float vSigma;  // sigma da PSF em fração do meio-sprite
-varying float vPeak;
+varying float vPeak;   // pico da PSF × atenuação total — TODO o resto deriva dele
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
@@ -77,8 +73,8 @@ void main() {
 
   // A lei da PSF é compartilhada (GLSL_STAR_PSF, common.ts) — a mesma
   // para o catálogo e para as cascas procedurais.
-  float size; float peak; float sat; float sigmaFrac;
-  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
+  float size; float peak; float sigmaFrac;
+  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sigmaFrac);
   float alpha = 1.0;
 
   // extinção interestelar: gás entre a câmera e a estrela a apaga e
@@ -91,37 +87,13 @@ void main() {
   alpha *= mix(1.0, vis, 0.5);
   alpha *= uFade; // some ao deixar a vizinhança solar
 
-  // A CESSÃO DO PONTO. Multiplicação por 1 enquanto aFade = 0, que é o
-  // estado de nascimento e o de quase todo o campo — a neutralidade é
-  // por construção, não por dosagem.
-  // O mix com step em vez de um if: o bypass de identidade não
-  // ramifica o vertex (mix(a,b,0) é exatamente a, mix(a,b,1) é
-  // exatamente b), e o caminho aritmético fica o mesmo para todo vértice.
-  float atten = mix(clamp(1.0 - aFade, 0.0, 1.0), 1.0, step(0.5, aFocus));
-  alpha *= atten;
-
   vColor = col;
-  // vSat cede JUNTO, e isso não é detalhe: o alfa só governa o vPeak
-  // (núcleo + halo gaussianos), enquanto os espinhos de difração e o
-  // núcleo esbranquiçado das estouradas saem de vSat no fragment
-  // (no STAR_FRAG: o bloco guardado por vSat > 0.001 e o termo
-  // core*core*vSat). Atenuar só o alfa deixaria a cruz de
-  // difração intacta por cima do hero — a dupla-luz mais visível de
-  // todas continuaria lá.
-  //
-  // E cede pela atenuação TOTAL, que é o próprio alpha: ele nasce 1.0 e
-  // daqui para trás SÓ acumula atenuação — a extinção mix(1.0, vis, 0.5),
-  // o uFade da saída da vizinhança solar e a cessão por estrela (atten).
-  // É por isso que a linha é alpha e não atten: com atten sozinho, os
-  // espinhos e o núcleo branco ficavam com força CHEIA enquanto o núcleo
-  // gaussiano esmaecia — e sumiam de golpe quando setFade derruba
-  // points.visible em fade < 0.001 (stars.ts). Achado da caçada
-  // adversarial da Onda 3; o defeito é herdado, não da onda. Fatorar a
-  // atenuação num só lugar (alpha) em vez de repetir a expressão é o que
-  // impede a assimetria de voltar: quem acrescentar um fator novo a
-  // alpha o dá aos dois varyings sem pensar nisso.
-  vSat = sat * alpha;
   vSigma = sigmaFrac;
+  // A ATENUAÇÃO INTEIRA vive num fator só (alpha) e vPeak a carrega para
+  // TODOS os termos do fragment — núcleo, halo, espinhos e branqueamento
+  // derivam dele. É a lição da caçada adversarial da Onda 3, preservada
+  // depois que o segundo varying (vSat) morreu no M2: quem acrescentar
+  // atenuação nova a alpha a dá a todos os termos sem pensar nisso.
   vPeak = peak * alpha;
 
   vec4 mv = modelViewMatrix * vec4(worldPos, 1.0);
@@ -134,7 +106,6 @@ export const STAR_FRAG = /* glsl */ `
 precision highp float;
 
 varying vec3 vColor;
-varying float vSat;
 varying float vSigma;
 varying float vPeak;
 
@@ -157,17 +128,24 @@ void main() {
   float core = exp(-r2 / (2.0 * s2));
   float halo = exp(-r2 / (18.0 * s2)) * 0.06;
 
-  // spikes de difração em cruz — só onde o núcleo estourou
+  // ESPINHOS DE DIFRAÇÃO: fração do FLUXO, comprimida com o resto (M2 da
+  // LEI-DA-ESTRELA, §5.4). O gatilho antigo (clamp \`sat\`, saturado em
+  // pico 4) dava a Vênus e a Sirius a mesma cruz cheia — item 43. Agora a
+  // cruz vem na dose do brilho: amplitude = fração × pico, e o guarda é o
+  // MESMO piso de visibilidade da asa (1/255) — abaixo dele os 4 exp não
+  // pagam por um termo que o buffer de 8 bits não vê.
   float spike = 0.0;
-  if (vSat > 0.001) {
+  if (vPeak * ${FRACAO_DOS_ESPINHOS} > ${LIMIAR_DO_CLARAO.toPrecision(8)}) {
     float ax = exp(-abs(uv.y) * 14.0) * exp(-abs(uv.x) * 2.6);
     float ay = exp(-abs(uv.x) * 14.0) * exp(-abs(uv.y) * 2.6);
-    spike = (ax + ay) * vSat * 0.85;
+    spike = (ax + ay) * ${FRACAO_DOS_ESPINHOS} * vPeak;
   }
 
   vec3 col = vColor * (core + halo) * vPeak + vColor * spike;
-  // núcleo esbranquiçado nas estouradas (saturação do sensor)
-  col += vec3(0.9, 0.95, 1.0) * core * core * vSat * 0.6;
+  // núcleo esbranquiçado por SATURAÇÃO SUAVE do sensor — pico/(pico+P₅₀),
+  // curva de meia altura ${BRANQUEAMENTO_MEIA_ALTURA.toFixed(1)} (o antigo ponto de clamp pleno), sem degrau
+  col += vec3(0.9, 0.95, 1.0) * core * core *
+         (vPeak / (vPeak + ${BRANQUEAMENTO_MEIA_ALTURA.toFixed(1)})) * 0.6;
 
   // A COMPRESSÃO NA EMISSÃO (Lei da Estrela §7). Ela vai no col FINAL e NÃO
   // no peak: o pico é multiplicado pelo perfil logo acima, então comprimi-lo

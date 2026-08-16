@@ -28,7 +28,6 @@ import { readFileSync } from 'node:fs';
 import {
   CADASTRO_DE_ESCALA,
   DIVIDAS_ABERTAS,
-  ESPELHO_COEF_CLARAO_PC,
   ESPELHO_ESCALA_COMPLEXO,
   ESPELHO_ESCALA_NUVEM_CO,
   ESPELHO_RS_SGR_A_PC,
@@ -51,6 +50,7 @@ import {
   type EscalaDeclarada,
 } from './escala';
 import { SOBRETAXA_DO_HALO } from './luzDaCasa';
+import { FRACAO_DA_ASA } from './estrela';
 
 const ler = (caminhoDoRepo: string) =>
   readFileSync(new URL(`../../${caminhoDoRepo}`, import.meta.url), 'utf8');
@@ -66,13 +66,10 @@ describe('1. os espelhos batem com a fonte', () => {
     expect(Number(m![1])).toBe(ESPELHO_RS_SGR_A_PC);
   });
 
-  it('coeficiente do clarão — world/heroStars.ts', () => {
-    const m = ler('src/three/world/heroStars.ts').match(
-      /const size = ([\d.]+) \* lum;/
-    );
-    expect(m, 'a varredura do clarão perdeu o padrão').not.toBeNull();
-    expect(Number(m![1])).toBe(ESPELHO_COEF_CLARAO_PC);
-  });
+  // (O espelho do coeficiente do clarão — `0,08 * lum` em heroStars.ts —
+  // morreu no M2 com o clarão de autor: o tamanho é lei (asa Moffat,
+  // estrela.ts), e a varredura INVERTIDA vigia a ressurreição do
+  // coeficiente em simbolosProibidos.test.ts.)
 
   it('escalas das nuvens — world/observedClouds.ts', () => {
     const fonte = ler('src/three/world/observedClouds.ts');
@@ -358,11 +355,17 @@ describe('4. os números, pinados', () => {
     expect(Math.round(bh.fator!)).toBe(125_884);
   });
 
-  it('o clarão de Sirius é ~5,7 milhões de vezes o raio dela', () => {
+  it('o clarão das estrelas declara a LEI, não um fator de autor (M2)', () => {
+    // O "~5,7 milhões de vezes o raio de Sirius" era o coeficiente de
+    // autor 0,08·10^(−0,3m) — morreu no M2. O tamanho agora é px pela
+    // asa Moffat, então a entrada declara `fator: null` (não há razão
+    // única a declarar) e o fatorDeBrilho da asa explícita (1,06 =
+    // 1 + FRACAO_DA_ASA, a partição de energia da Lei §1).
     const clarao = CADASTRO_DE_ESCALA.find((e) => e.id === 'clarao-estelar')!;
-    expect(clarao.fator!).toBeGreaterThan(5.6e6);
-    expect(clarao.fator!).toBeLessThan(5.8e6);
+    expect(clarao.fator).toBeNull();
+    expect(clarao.fatorDeBrilho).toBeCloseTo(1 + FRACAO_DA_ASA, 12);
     expect(clarao.classe).toBe('instrumento');
+    expect(clarao.endereco).toContain('clarao.ts');
   });
 
   it('a acusação vai do pior para o melhor', () => {

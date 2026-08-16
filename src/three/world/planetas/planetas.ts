@@ -251,7 +251,6 @@ uniform float uExpoM0;  // a MESMA exposição do campo (StarField publica)
 uniform float uSigmaPx; // o MESMO instrumento do campo
 
 varying vec3 vColor;
-varying float vSat;
 varying float vSigma;
 varying float vPeak;
 
@@ -272,8 +271,8 @@ void main() {
                      - 2.5 * (log2(fase) * ${LOG10_DE_2});
 
   // A PSF compartilhada da casa, sem uma vírgula de diferença.
-  float size; float peak; float sat; float sigmaFrac;
-  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
+  float size; float peak; float sigmaFrac;
+  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sigmaFrac);
 
   // O alpha desta camada tem UM dono desde o M1 da Lei da Estrela: a
   // CESSÃO sob corpo resolvido (aCede). Para os nove, quem a escreve é o
@@ -285,12 +284,12 @@ void main() {
   // como qualquer estrela. Com aCede = 0 o fator (1 − aCede) é 1,0 EXATO
   // em IEEE754 — fora do corpo resolvido nada muda.
   // Quem decide o brilho dos nove segue sendo a física, não uma rampa.
-  // E o alpha cede aos DOIS varyings juntos (lição do vSat, commit
-  // 2e16689): atenuar só o vPeak deixaria os espinhos com força cheia.
+  // O alpha cede num fator só: espinhos e branqueamento derivam de vPeak
+  // no STAR_FRAG (M2 — o clamp \`sat\` morreu; item 43: a cruz de Vênus
+  // vem na dose do brilho DELA, não na dose única da saturação).
   float alpha = 1.0 - aCede;
 
   vColor = aCor;
-  vSat = sat * alpha;
   vSigma = sigmaFrac;
   vPeak = peak * alpha;
 
@@ -604,25 +603,10 @@ export class Planetas {
     if (mudou) attr.needsUpdate = true;
   }
 
-  /**
-   * A PUPILA (Onda 8), do lado desta camada: o `expoM0` EFETIVO deste quadro.
-   *
-   * A camada nunca teve exposição própria — ela recebe a do campo por contrato
-   * ("a MESMA exposição do campo (StarField publica)", no comentário do VERT).
-   * A auto-exposição não muda esse contrato: ela muda o número que o campo
-   * publica, e a camada continua copiando. Se copiasse a BASE, o Sol-ponto
-   * seria a única fonte da casa fora da pupila — e ele é justamente a fonte
-   * que lava a tela.
-   *
-   * Escrita idempotente: com a pupila aberta o valor é o de sempre e o uniform
-   * não é reescrito.
-   */
-  escreverExposicao(expoM0: number) {
-    if (!Number.isFinite(expoM0)) return;
-    const u = this.material.uniforms;
-    if (u.uExpoM0.value === expoM0) return;
-    u.uExpoM0.value = expoM0;
-  }
+  // (O fio da pupila — `escreverExposicao`, o `expoM0` reescrito por
+  // quadro — morreu no M2 com a pupila inteira: `uExpoM0` é o do campo,
+  // escrito UMA vez na construção, constante como o contrato do VERT
+  // sempre prometeu.)
 
   escreverCessao(id: string, cede: number): boolean {
     const i = (IDS_FOTOMETRIA as readonly string[]).indexOf(id);

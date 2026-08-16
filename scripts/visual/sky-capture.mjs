@@ -86,8 +86,10 @@ for (const f of (soMedir ? [] : FACES)) {
   if (existsSync(png)) rmSync(png);
   const cap = await capturarCDP({
     largura: 1440, altura: 1440, porta: porta++,
-    // nohero=1: os clarões das estrelas-herói são camada CINEMATOGRÁFICA;
-    // com eles, Sirius/αCen/Capella viram picos espúrios no perfil da faixa.
+    // noclarao=1 (era nohero=1 até o M2): o clarão de asas é camada de
+    // ÓPTICA — o gate mede o CAMPO fotométrico contra a recriação Gaia,
+    // que não desenha lente; com a camada, Sirius/αCen/Capella viram
+    // picos espúrios no perfil da faixa.
     // kneeamt=1&knee=0.02&exp=4.4: REVELAÇÃO fotométrica do gate (não é o
     // look do app!) — o panorama ESO é astrofoto com stretch asinh a ~3% do
     // pico; medir sem o stretch equivalente compara curva de tom, não céu
@@ -96,7 +98,7 @@ for (const f of (soMedir ? [] : FACES)) {
     // captura em qualquer máquina que não segure 42 fps, e `nebulaSteps`
     // 56→30 muda o raymarch local — que é 46% do excesso do termo
     // `espessura`. Bit-exato onde o degrau nunca dispara. Ver ab-identidade.
-    // noplan=1 (Onda 4, D8): precedente EXATO do nohero=1 acima. A câmera do
+    // noplan=1 (Onda 4, D8): precedente EXATO do noclarao=1 acima. A câmera do
     // protocolo fica na ORIGEM, ou seja DENTRO do domínio profundo, e a
     // camada de planetas acenderia aqui — no céu de verdade eles estariam
     // lá. Só que o oráculo é a recriação Gaia do panorama ESO, que não tem
@@ -104,7 +106,7 @@ for (const f of (soMedir ? [] : FACES)) {
     // a referência não sabe desenhar. Entra no MESMO commit que vira a
     // chave, para o gate do céu nunca ver a camada ligada.
     url: `${APP}/?pos=0,0,0&look=${f.dir.map((v) => v.toFixed(9)).join(',')}` +
-      `&fov=90&q=cinema&nosun=1&nohero=1&noplan=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
+      `&fov=90&q=cinema&nosun=1&noclarao=1&noplan=1&kneeamt=1&knee=0.02&exp=4.4&shot=2${extra}`,
   });
   writeFileSync(png, cap.png);
   vias.push(cap.via);

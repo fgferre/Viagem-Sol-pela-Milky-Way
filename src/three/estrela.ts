@@ -186,9 +186,37 @@ export const FRACAO_DA_ASA = 0.06;
 /** Raio de dobra da asa (θ₀) em unidades de σ da PSF. */
 export const NUCLEO_DA_ASA_EM_SIGMAS = 2;
 
+/** Expoente Moffat do BRAÇO do espinho — ¾ do da asa, DERIVADO e não
+ *  segundo número livre: braço que decai como o halo afunda dentro dele
+ *  e a cruz some; braço θ⁻² (difração de borda reta pura) atravessa a
+ *  tela em qualquer fonte forte. O ¾ entra no MESMO gate de foto do
+ *  expoente da asa (M2) — um gate, dois números acorrentados. */
+export const BETA_DO_ESPINHO = 0.75 * BETA_DA_ASA;
+
 /** O limiar de visibilidade do clarão, em luz de tela: o piso de 8 bits.
  *  Abaixo dele a asa afunda no céu e estrela fraca continua um ponto. */
 export const LIMIAR_DO_CLARAO = 1 / 255;
+
+/** A fração do pico que os ESPINHOS de difração carregam — a lei que matou
+ *  o clamp `sat` (§5.4, M2). O gatilho antigo saturava em pico 4: Vênus,
+ *  Júpiter e Sirius ganhavam a MESMA cruz (item 43) e o Sol a 1 UA, 25
+ *  magnitudes acima, idem — "dois brilhos diferentes viram o mesmo pixel",
+ *  proibido pelo NORTE. Agora a amplitude é fração do fluxo, comprimida
+ *  junto com o resto na emissão: a cruz vem NA DOSE do brilho, como numa
+ *  câmera real. Calibrada por CONTINUIDADE em Sirius, não por gosto: o
+ *  desenho velho dava amplitude 0,85 no pico 30,57 de Sirius (900 px), e
+ *  0,85/30,57 = 0,0278 — a estrela-exemplar sai igual, e todo o resto
+ *  passa a escalar. (A dependência de resolução do pico é a dívida §5.6,
+ *  a mesma do β da emissão — declarada, não nova.) */
+export const FRACAO_DOS_ESPINHOS = 0.0278;
+
+/** O pico em que o BRANQUEAMENTO do núcleo (saturação de sensor) atinge
+ *  meia altura: `pico/(pico + 4)` — curva de saturação suave, sem clamp.
+ *  O 4 é herdado do desenho velho (o pico em que `sat` saturava): o ponto
+ *  de branqueamento pleno de ontem vira a meia-altura de hoje, e estrela
+ *  forte segue branqueando por SATURAÇÃO declarada do instrumento, não
+ *  pela dessaturação da compressão (§5.3 continua sendo outra dívida). */
+export const BRANQUEAMENTO_MEIA_ALTURA = 4;
 
 /** A régua do override (o filtro solar como SEÇÃO da lei, §5.7): a MESMA
  *  `discoPx` do eixo óptico, com largura própria. 4 px é a regra de corpo
@@ -225,6 +253,34 @@ export function discoAparentePx(
   tanHalfFov: number
 ): number {
   return (2 * Math.atan(raioPc / distPc) * alturaPx) / (2 * tanHalfFov);
+}
+
+/**
+ * O RAIO VISÍVEL DA ASA em px — a face CPU da MESMA conta do GLSL
+ * (`raioDaAsaPx` em `GLSL_LEI_DA_ESTRELA`, abaixo): resolve
+ * `f·P/(1+(θ/θ₀)²)^β = limiar`. Exportada no M2 porque a camada do
+ * clarão (`world/clarao.ts`) precisa DELA por candidato e por quadro —
+ * redigitá-la lá seria recriar a cópia que o F0 matou. `repartir` usa
+ * esta mesma escrita.
+ */
+export function raioVisivelDaAsaPx(picoDeTela: number, sigmaPsfPx: number): number {
+  const excesso = (FRACAO_DA_ASA * picoDeTela) / LIMIAR_DO_CLARAO;
+  if (!(excesso > 1)) return 0;
+  return NUCLEO_DA_ASA_EM_SIGMAS * sigmaPsfPx * Math.sqrt(Math.pow(excesso, 1 / BETA_DA_ASA) - 1);
+}
+
+/**
+ * O ALCANCE VISÍVEL DO BRAÇO do espinho em px — mesma família Moffat da
+ * asa, expoente próprio (`BETA_DO_ESPINHO`): o braço decai mais devagar
+ * que o halo, e é isso que faz a cruz LER como cruz em vez de afundar
+ * dentro dela. Resolve `f_s·P/(1+(θ/θ₀)²)^βs = limiar`.
+ */
+export function alcanceDoEspinhoPx(picoDeTela: number, sigmaPsfPx: number): number {
+  const excesso = (FRACAO_DOS_ESPINHOS * picoDeTela) / LIMIAR_DO_CLARAO;
+  if (!(excesso > 1)) return 0;
+  return (
+    NUCLEO_DA_ASA_EM_SIGMAS * sigmaPsfPx * Math.sqrt(Math.pow(excesso, 1 / BETA_DO_ESPINHO) - 1)
+  );
 }
 
 /**
@@ -306,13 +362,11 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
   // núcleo: o tamanho gaussiano de hoje (√ln E) — correto no SPRITE que
   // carrega o fluxo; a doença do item 42 era usá-lo como lei do HALO.
   const nucleoPx = psfPointSizePx(m, i.expoM0, i.sigmaPx, i.alturaPx);
-  // asa: Moffat. O raio visível resolve f·P/(1+(θ/θ₀)²)^β = limiar.
+  // asa: Moffat. O raio visível resolve f·P/(1+(θ/θ₀)²)^β = limiar —
+  // a escrita única mora em `raioVisivelDaAsaPx`, que a camada do clarão
+  // também consome (M2).
   const pico = picoDaPsf(m, i.expoM0, i.sigmaPx, i.alturaPx);
-  const excesso = (FRACAO_DA_ASA * pico) / LIMIAR_DO_CLARAO;
-  const raioDaAsaPx =
-    excesso > 1
-      ? NUCLEO_DA_ASA_EM_SIGMAS * sigma * Math.sqrt(Math.pow(excesso, 1 / BETA_DA_ASA) - 1)
-      : 0;
+  const raioDaAsaPx = raioVisivelDaAsaPx(pico, sigma);
   const claraoPx = Math.max(nucleoPx, 2 * raioDaAsaPx);
   const claraoGanho = fluxoDeTela;
 

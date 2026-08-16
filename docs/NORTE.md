@@ -181,7 +181,7 @@ não neste arquivo. O Sol já está em fator 1. Sobra Sagittarius A*.
 Sol–centro (`frameGalactico.ts`). Não são o mesmo símbolo.
 
 Proibido: teto de brilho. Proibido: exposição que depende do que está em
-foco. A pupila adaptativa está reprovada pelo dono (`core/pupila.ts` é
+foco. A pupila adaptativa está reprovada pelo dono (enterrada no M2; era
 lápide). O que entra no lugar é compressão **fixa** na emissão — contrato
 em `LEI-DA-ESTRELA.md` §7. O céu e a galáxia nunca esmaecem.
 

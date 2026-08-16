@@ -12,9 +12,16 @@
 // contrário: torna RESSUSCITAR a cópia mais caro que usar a lei única.
 // ============================================================
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
-const ler = (rel: string) => readFileSync(new URL(`../../${rel}`, import.meta.url), 'utf8');
+// Arquivo APAGADO é a forma mais FORTE de o símbolo estar morto: o M2
+// enterrou `core/pupila.ts`, `pupila.test.ts` e `heroStars.ts` inteiros,
+// e as entradas antigas destes arquivos continuam na lista de propósito —
+// se alguém os recriar, a varredura volta a lê-los e cobra os padrões.
+const ler = (rel: string) => {
+  const url = new URL(`../../${rel}`, import.meta.url);
+  return existsSync(url) ? readFileSync(url, 'utf8') : '';
+};
 
 interface SimboloProibido {
   /** onde o símbolo NÃO pode existir (caminho a partir da raiz) */
@@ -177,6 +184,96 @@ const PROIBIDOS: SimboloProibido[] = [
     razao:
       'as portas mortas saem do registro e o eixo ESCALA lê a constante de ' +
       'escala.ts, não a entrega morta',
+  },
+  // ─── M2 (2026-08-16): o clarão de asas + o bloom pela lei ──────────────
+  {
+    arquivo: 'src/three/world/heroStars.ts',
+    padrao: /class HeroStars|0\.08 \* lum|HERO_COUNT/,
+    migracao: 'M2',
+    razao:
+      'as 16 heroes de autor morreram INTEIRAS (o arquivo foi enterrado): o ' +
+      'clarão é a asa da lei, por orçamento de fluxo — world/clarao.ts',
+  },
+  {
+    arquivo: 'src/three/world/clarao.ts',
+    padrao: /0\.08 \* lum|uZoom|nearFade|farFade/,
+    migracao: 'M2',
+    razao:
+      'o coeficiente de autor e as janelas de presença das heroes não renascem ' +
+      'dentro da camada que as substituiu — o tamanho é claraoPx da lei',
+  },
+  {
+    arquivo: 'src/three/world/lodStellar.ts',
+    padrao:
+      /function (heroNearFade|heroFarFade|heroPresence|heroSizePx|heroDominanceFade|heroDominanceRatio|heroCatalogFade|fadesDoQuadro|matchHeroesToCatalog)|const (LOD_HERO|HERO_DOMINANCE|HERO_ZOOM_TAN_REF|HERO_MATCH_REL_TOL|DOMINANCE_DEFAULT_ON|FADE_NEUTRAL)/,
+    migracao: 'M2',
+    razao:
+      'a política de dominância morreu com a dupla-luz que a justificava: o ' +
+      'clarão da lei soma óptica POR CIMA do ponto e ninguém cede a ninguém',
+  },
+  {
+    arquivo: 'src/three/core/pupila.ts',
+    padrao: /class Pupila|ganhoDaPupila|deslocamentoDeExpoM0|lerPortaDaPupila/,
+    migracao: 'M2',
+    razao:
+      'a lápide foi ENTERRADA na data marcada (LEI §7.3): adaptação por foco ' +
+      'está reprovada pelo dono — o que doma o alto é a compressão fixa',
+  },
+  {
+    arquivo: 'src/three/director.ts',
+    padrao: /aplicarPupila|writeHeroFades|escreverExposicao|get\('pupila'\)|'nodom'|'nohero'/,
+    migracao: 'M2',
+    razao:
+      'a espinha de exposição por quadro morreu inteira — expoM0 é constante, ' +
+      'e as portas ?pupila/?dom/?nodom/?nohero morreram com os donos',
+  },
+  {
+    arquivo: 'src/three/world/stars.ts',
+    padrao: /setPupila\(|deslocamentoDaPupila|expoM0Base|fadeArray|writeFade\(/,
+    migracao: 'M2',
+    razao:
+      'o atuador da pupila e o canal aFade morreram — o expoM0 publicado é ' +
+      'constante e o único canal por estrela é o aFocus dormente (item 38)',
+  },
+  {
+    arquivo: 'src/three/shaders/common.ts',
+    padrao: /out float sat|clamp\(0\.5 \* log2/,
+    migracao: 'M2',
+    razao:
+      'o clamp `sat` era teto de brilho vivo (§5.4, item 43): espinho e ' +
+      'branqueamento derivam do FLUXO (FRACAO_DOS_ESPINHOS, estrela.ts)',
+  },
+  {
+    arquivo: 'src/three/shaders/starShaders.ts',
+    padrao: /attribute float aFade|varying float vSat|\* 0\.85|vSat =/,
+    migracao: 'M2',
+    razao:
+      'aFade e vSat morreram: a cessão por dominância acabou e a amplitude ' +
+      'dos espinhos é fração do pico, comprimida junto — nunca mais um clamp',
+  },
+  {
+    arquivo: 'src/three/core/post.ts',
+    padrao: /get\('bbloom'\)|get\('bombro'\)|get\('knee2'\)|bloom\.radius\s*=|this\.bloom\.radius\s*=/,
+    migracao: 'M2',
+    razao:
+      'o bloom é governado pela lei: pesos por mip derivados da asa, raio ' +
+      'pinado em 0 na construção (o lerp do radius reflatten os pesos) e as ' +
+      'portas ?bbloom/?bombro/?knee2 viraram capturas versionadas (regra iv)',
+  },
+  {
+    arquivo: 'src/three/escala.ts',
+    padrao: /ESPELHO_COEF_CLARAO_PC|SIRIUS_M\b|SIRIUS_RAIO_RSOL/,
+    migracao: 'M2',
+    razao:
+      'o espelho do coeficiente de autor e o exemplar Sirius morreram: o ' +
+      'clarão não tem tamanho em parsec — tem lei em px, declarada no cadastro',
+  },
+  {
+    arquivo: 'src/three/selo.ts',
+    padrao:
+      /porta\('bbloom'|porta\('bombro'|porta\('dom'|porta\('nodom'|function rotuloDaPupila|COPY_PUPILA =|stopsDaPupila:/,
+    migracao: 'M2',
+    razao: 'as portas mortas e a linha da pupila saem do registro do selo',
   },
 ];
 

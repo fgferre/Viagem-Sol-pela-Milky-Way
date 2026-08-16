@@ -16,18 +16,19 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
-**⚠ A PUPILA ESTÁ REPROVADA — não a ressuscite.** `src/three/core/pupila.ts`
-existe, nasce desligada e fica como lápide. O dono a recusou por escrito
-(item 39). O que entra no lugar é compressão fixa na emissão —
-`LEI-DA-ESTRELA.md` §7.
+**⚠ A PUPILA ESTÁ REPROVADA — e foi ENTERRADA no M2 (16/08).**
+`src/three/core/pupila.ts` e o teste morreram inteiros na data marcada
+(LEI §7.3); a varredura invertida (`simbolosProibidos.test.ts`) vigia a
+ressurreição. O que está no lugar é compressão fixa na emissão —
+`LEI-DA-ESTRELA.md` §7. Não a reescreva.
 
 **O plano da estrela está em [`docs/LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md).**
-O que restou do conserto do Sol (itens 3 e 40 até o dono conferir; o rabo
-de ambos) é o **M2**: a asa do clarão + o bloom repesado. O item 4 morreu
-no M1; o 5 é obra própria (ciclo pela data). Os itens 8, 9 e 10 são HUD,
-independentes. O item 21 é memória paga e inútil (`depth: false` no engine).
-O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é o canal do
-passo E3.
+O conserto do Sol está FECHADO em código: M1 e **M2** (asa + bloom pela lei)
+pousaram em 16/08 — os itens 3, 39, 40 e 43 ficam abertos só até o dono
+conferir no app. O item 5 é obra própria (ciclo pela data). Os itens 8, 9 e
+10 são HUD, independentes. O item 21 é memória paga e inútil (`depth: false`
+no engine). O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é
+o canal do passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
 coisas da frente"*. **RESPONDIDA em 15/08: pela fundação.** A onda da luz
@@ -39,11 +40,13 @@ entrou INTEIRA e é o padrão; o que resta dela está no bloco abaixo.
 
 O visitante vê, sem digitar nada: compressão na emissão (β = 300), compressão
 com ombro dentro do bloom (0,45 / 40), fotosfera na unidade da casa com o
-filtro solar declarado, e a cessão do Sol-ponto pelo gate (mult 1). As
-derivações moram nas constantes nomeadas (`luzDaCasa.ts`, `post.ts`,
-`terra.ts`); a história inteira, nos commits de 15/08. As cinco portas
-(`?bemis= ?bbloom= ?bombro= ?bfoto= ?bcede=`) são o CAMINHO DE VOLTA
-(valor 0 ⇒ desenho antigo), registradas no selo.
+filtro solar declarado, a repartição única do Sol e — desde o M2 — o clarão
+de asas da lei com a pirâmide do bloom derivada dela. As derivações moram
+nas constantes nomeadas (`luzDaCasa.ts`, `estrela.ts`, `post.ts`,
+`terra.ts`); a história inteira, nos commits de 15–16/08. Das cinco portas
+de volta restou UMA (`?bemis=`, registrada no selo): `?bfoto`/`?bcede`
+morreram no M1 e `?bbloom`/`?bombro` no M2 — regra iv do §4, o lado A vive
+nas capturas versionadas.
 
 Provas vivas: o invariante disco↔ponto está VERDE (a dívida F2 foi paga); o
 voo de ida e volta (`scripts/visual/voo-ida-e-volta.mjs`, pedido do dono)
@@ -54,29 +57,44 @@ cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
 
 - O dono conferir o app com o padrão novo (a queixa que abriu a rodada era
   do app com o desenho velho).
-- O halo do Sol segue generoso no meio do caminho (~160–180 px de 3,6 a
-  500 UA) e quase não encolhe com a distância: `luz-do-quadro.mjs` ainda
-  REPROVA 4 de 11 — mas os vermelhos agora são TODOS do bloom (monotonia
-  na chegada a 1 UA, orçamento a 2.000/4.000, e 80 px contra teto de
-  69 a 15.800). O conserto é a lei de asas + a pirâmide do bloom
-  repesada (migração M2), que também mata o clamp dos espinhos (item 43).
-- **O M1 FECHOU em 16/08 — o Sol inteiro num commit, a maior demolição
-  da casa.** UMA função pura (`repartir`, `estrela.ts`) decide cessão,
-  filtro e peso da malha; morreram o `SunStar`, a entrega {0,02;0,05} pc,
-  o corte da camada dos dez a 0,05 pc, as quatro rampas com quina, o
-  clarão apagado do Atlas (item 4) e as portas `?bcede`/`?bfoto`. O
-  penhasco do fim da escada morreu junto: 119→4 px virou 119→80 px
-  contínuo, e nove dos onze degraus saíram bit-idênticos. **A costura
-  0,232→0,341 UA caiu de 30→130 px (4,3×, explodindo) para 30→20 px
-  (1,5×, encolhendo como manda a física) — o aceite declarado, cumprido
-  e medido**; o voo PASSA em 34 degraus, ida e volta, zero gritos. E
-  abriu uma janela LIMPA de 0,34 a 0,94 UA (borrão 10–20 px onde havia
-  parede de 130–195). A borda dela — o halo de ~178 px voltando quando
-  o ponto reentra a ~1 UA — já existia idêntica antes (181 px a 1 UA nos
-  dois estados) e é a doença que o M2 mata: cessão parcial é impotente
-  em fonte saturada (medido em 15/08), então o halo só encolhe quando a
-  asa da lei redimensionar o clarão. Saldo do commit: ~2.000 linhas
-  devolvidas. O que sobra da luz é o M2 (asa + bloom).
+- O GATE DE FOTO do expoente da asa: β = 2,4 é semente de projeto (a Lei
+  §1 pede a escolha entre 2,0 e 3,0 com foto), com `BETA_DO_ESPINHO`
+  acorrentado em ¾ dele e a fração 0,06 junto. As fotos já existem —
+  `capturas/luz-*.png`, a escada inteira — falta o dono olhar e cravar.
+
+**O M1 FECHOU em 16/08 — o Sol inteiro numa repartição.** `repartir`
+(`estrela.ts`) decide cessão, filtro e peso da malha; morreram o
+`SunStar`, a entrega {0,02;0,05} pc, as quatro rampas com quina e as
+portas `?bcede`/`?bfoto`. A costura 0,232→0,341 UA caiu de 4,3× para
+1,5× — aceite declarado, cumprido e medido. Saldo: ~2.000 linhas
+devolvidas.
+
+**O M2 FECHOU em 16/08, no mesmo dia — o clarão virou LEI e o halo
+constante morreu.** A régua da luz saiu de REPROVA 4/11 para **PASSA
+11/11**, com o borrão finalmente encolhendo com a distância — ≥900 px na
+parede de fogo → 349 a 40 UA → 87 a 500 → **20 px na âncora de
+15.800 UA** (aceite declarado ≤ 20; o alvo do dono era ~8 px de raio) —
+e o voo passa em 34 degraus, ida e volta, zero assimetrias. Entrou a
+camada única do clarão de asas (`clarao.ts`): 16 vagas por ORÇAMENTO DE
+FLUXO entre o Sol e as 1.726 nomeadas (a identidade "as 16" morreu — em
+casa, Sirius, Canopus, Vega e as clássicas emergem da física), com
+histerese e rampas para o ranking nunca piscar. O bloom passou a ser
+governado pela lei: pesos por mip derivados da asa (razão ≈ 0,144) e a
+fração da pirâmide DERIVADA da partição (≈ 0,051, zero número livre) —
+era o σ≈12 px do primeiro mip que segurava o borrão em 24–37 px na
+âncora; sem ele, 14. Morreram: as 16 heroes de autor (arquivo inteiro),
+a política de dominância e o canal `aFade`, a PUPILA inteira (arquivo,
+teste e a espinha de `uExposicao`), o clamp `sat` dos espinhos (item 43:
+a cruz agora vem NA DOSE do fluxo — 0,0278 por continuidade em Sirius),
+o coeficiente 0,08·10^(−0,3m) com o exemplar Sirius, e as portas
+`?pupila`/`?dom`/`?nodom`/`?nohero`(→`?noclarao`)/`?bbloom`/`?bombro`/
+`?knee2`. O juiz de cegueira do voo foi reescrito para o teto da lei
+(perto do Sol, lavar é a parede de fogo honesta — a âncora do dono é
+R ≈ 450 px já a 1 UA). A/B das 51 vistas oficiais, medido com baseline
+recapturada do zero no commit do M1: **50 mudam, 1 fica bit-idêntica**
+(`edgeon` — a única sem nada acima do limiar do bloom: o controle de que
+a repesagem só toca o que floresce). Mudar era o esperado e está
+DECLARADO: toda vista com brilho tem menos halo de kernel e mais lei.
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
 estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
@@ -109,18 +127,18 @@ O que ela ainda cobra: fotos reais do Sol nunca julgadas por ele
 volta, versionado.
 → `docs/NORTE.md`, seção “Como medir”.
 
-**3. A tela fica branca quando o Sol está longe.** *(M1 FECHADO em 16/08 —
-a repartição única é o padrão; falta o dono conferir no app, e o halo
-constante do meio do caminho é o M2.)*
-De ~1 UA a ~2.000 UA o quadro lava. O Sol encolhe 4.000 vezes e a mancha
-na tela não muda de tamanho. Era: o ponto do Sol não encolhia, o borrão da
-lente multiplicava, e entre a bola e a estrela de espinhos havia um vão.
-Com o M1 o vão morreu (o ponto é o dono do Sol em toda distância, a bola
-entra do zero pela lei) e o que resta é o borrão do BLOOM — a mancha de
-~160–180 px que não encolhe entre 3,6 e 500 UA. Esse é o M2: a asa do
-clarão + a pirâmide do bloom repesada.
+**3. A tela fica branca quando o Sol está longe.** *(M1 e M2 FECHADOS em
+16/08 — a repartição única + o clarão de asas + o bloom pela lei são o
+padrão. A régua PASSA 11/11 e o borrão encolhe com a distância em toda a
+escada, 20 px na âncora de 15.800 UA. Fica aberto SÓ até o dono conferir
+no app — a queixa era dele e o aceite final é dele.)*
+De ~1 UA a ~2.000 UA o quadro lavava. O Sol encolhia 4.000 vezes e a mancha
+na tela não mudava de tamanho. Era: o ponto do Sol não encolhia, o borrão
+da lente multiplicava, e entre a bola e a estrela de espinhos havia um vão.
+O M1 matou o vão; o M2 matou a mancha constante (era o kernel do bloom, que
+não conhecia fluxo — agora a extensão é da asa, que encolhe com a luz).
 
-O conserto não é teto de brilho (proibido) nem a pupila (reprovada). É a
+O conserto não foi teto de brilho (proibido) nem a pupila (reprovada). Foi a
 lei da estrela: mesma escala de brilho para bola e ponto, compressão fixa.
 
 Palavras do dono, no dia: *"mas isso nao deveria ser so para o sol. toda
@@ -185,13 +203,14 @@ divide o gaussiano e a fotometria com o campo estelar de propósito. De
 longe de verdade eles apagam com 1/d²: no limiar do sistema (~10.300 UA)
 os nove medem m 15,3–27,7, invisíveis — pinado em `planetas.test.ts`.
 
-O que é defeito e tem dono: o GRAU. O gatilho dos espinhos satura em
-pico 4 (cláusula 5.4 da Lei, o clamp `sat`), então Vênus, Júpiter e
-Sirius ganham a MESMA cruz de difração cheia — um planeta modesto fica
-tão "estrela" quanto uma estrela de verdade. Morre no **M2**, quando
-espinho e clarão passam a derivar do fluxo: planeta brilhante continuará
-virando ponto com cruz COMO NUMA CÂMERA REAL, mas na dose do brilho
-dele, não na dose única do clamp.
+O que era defeito e tinha dono: o GRAU. O gatilho dos espinhos saturava
+em pico 4 (cláusula 5.4 da Lei, o clamp `sat`), então Vênus, Júpiter e
+Sirius ganhavam a MESMA cruz de difração cheia. *(MORTO no M2, 16/08:
+espinho e branqueamento derivam do FLUXO — amplitude 0,0278·pico,
+calibrada por continuidade em Sirius; saturação suave pico/(pico+4) no
+lugar do clamp. Vênus brilha mais que Sirius no céu real e agora a cruz
+dela é maior TAMBÉM — como numa câmera. Fica aberto até o dono conferir
+na cena.)*
 
 Ele refinou, no mesmo dia: *"acho que um planeta, nao poderia refletir
 de todos os lados... eles nao sao fontes de luz..."* e *"os planetas

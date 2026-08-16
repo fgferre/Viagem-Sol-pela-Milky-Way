@@ -123,19 +123,10 @@ export function lerPortaLuz(bruto: string | null | undefined): PoliticaDeLuz | n
   return bruto === 'real' || bruto === 'assistida' ? bruto : null;
 }
 
-/** A copy leiga da pupila — o que o visitante lê quando ela está fechando. */
-export const COPY_PUPILA = 'a câmera fechou o diafragma para o Sol caber na tela';
-
-/**
- * O rótulo VIVO da pupila: a copy mais os stops APLICADOS neste quadro.
- * Número envenenado deixa o rótulo sem número — o selo nunca inventa uma
- * medição que não fez (a mesma regra de `rotuloDaLuzAssistida`).
- */
-export function rotuloDaPupila(stops: number): string {
-  if (!Number.isFinite(stops) || stops === 0) return COPY_PUPILA;
-  const passos = `${stops >= 0 ? '+' : '−'}${Math.abs(stops).toFixed(1).replace('.', ',')}`;
-  return `${COPY_PUPILA} — ${passos} passos de luz (a cena inteira)`;
-}
+// (A copy e o rótulo vivo da pupila morreram no M2 com a pupila inteira
+// — `core/pupila.ts` era lápide com data de enterro (LEI §7.3) e foi
+// enterrada. A compressão fixa não tem linha própria: ela é a lei, e as
+// portas de bancada dela — `?bemis=` — continuam declaradas abaixo.)
 
 /**
  * O DEGRAU DE ENQUADRAMENTO da escada (Onda 6 F2b, D7). `orbita` é o
@@ -180,17 +171,8 @@ export interface EstadoDaVista {
    * corpo está em foco, e aí o rótulo fica sem número.
    */
   evLuzDoFoco: number | null;
-  /**
-   * OS STOPS QUE A PUPILA APLICOU no último quadro (Onda 8) — `log2` do ganho,
-   * negativo quando ela fecha, 0 EXATO quando está aberta.
-   *
-   * É VALOR VIVO e não a porta: o selo declara
-   * o que a tela mostrou, e a pupila fecha por conta própria conforme a fonte
-   * em quadro — a URL não sabe disso. E é NÚMERO e não booleano porque o §7.4
-   * do plano pede exatamente isto: "o selo passa a reportar o EV APLICADO, não
-   * uma etiqueta de política".
-   */
-  stopsDaPupila: number;
+  // (stopsDaPupila morreu no M2 com a pupila: não há mais adaptação por
+  // quadro a declarar — a compressão fixa é a lei, igual em todo quadro.)
 }
 
 /** Dá para desfazer com um clique? */
@@ -355,33 +337,9 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     desvia: (e) => e.luz === 'assistida',
     rotuloVivo: (e) => rotuloDaLuzAssistida(e.evLuzDoFoco),
   },
-  /**
-   * A PUPILA (Onda 8) — a auto-exposição, no MESMO eixo BRILHO e no MESMO
-   * molde da luz assistida: linha de registro único, rótulo VIVO, volta com um
-   * clique. É o que o §7.4 do plano pede por escrito.
-   *
-   * DECLARA PELO VALOR APLICADO, NÃO PELA PORTA (`desvia` lê os stops, não
-   * `e.portas`), e a diferença é de honestidade: a pupila fecha sozinha quando
-   * uma fonte estouraria o quadro, sem ninguém pedir na URL. Declarar pela
-   * porta faria o selo calar exatamente nos quadros em que ela mais age — que
-   * é o defeito que o próprio registro existe para não ter.
-   *
-   * E POR ISSO `?pupila=0` NÃO É DESVIO: com ela desligada a imagem é a
-   * fotometria crua da casa, sem assistência nenhuma. É o caminho purista, e o
-   * selo não tem o que declarar — os stops são 0 e a linha não nasce. Quem
-   * tinha de estar declarado é o padrão LIGADO, e está.
-   *
-   * `volta: 'vivo'`: o tick recalcula a pupila todo quadro, então desligá-la
-   * aparece no quadro seguinte.
-   */
-  {
-    chave: 'pupila',
-    eixo: 'brilho',
-    rotulo: COPY_PUPILA,
-    volta: 'vivo',
-    desvia: (e) => Number.isFinite(e.stopsDaPupila) && e.stopsDaPupila !== 0,
-    rotuloVivo: (e) => rotuloDaPupila(e.stopsDaPupila),
-  },
+  // (A linha da pupila morreu no M2 com a pupila inteira — não há mais
+  // adaptação por quadro para o selo declarar. O caminho dela no
+  // registro se acha por `git log -S rotuloDaPupila`.)
   {
     chave: 'q',
     eixo: 'brilho',
@@ -413,10 +371,10 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // pedindo o lado A ou um valor de bancada —, e o selo declara isso sem
   // precisar saber qual dos dois.
   porta('bemis', 'compressão na emissão do ponto alterada por URL'),
-  porta('bbloom', 'compressão dentro do bloom alterada por URL'),
-  porta('bombro', 'ombro da compressão do bloom alterado por URL'),
-  porta('dom', 'cessão de dominância forçada'),
-  porta('nodom', 'cessão de dominância desligada'),
+  // (?bbloom e ?bombro morreram no M2 — regra iv do §4: o bloom passou a
+  // ser governado pela lei (ombro fixo + pirâmide derivada da asa), e o
+  // lado A vive nas capturas versionadas. ?dom/?nodom morreram com a
+  // política de dominância — não há mais cessão para forçar.)
   porta('forgetau', 'extinção por coluna das forjas ligada'),
   porta('cart', 'modo de cartografia trocado'),
   porta('discoff', 'cartografia do disco desligada'),
@@ -436,7 +394,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   camada('nonebula'),
   camada('nowrap'),
   camada('nocat'),
-  camada('nohero'),
+  camada('noclarao'),
   camada('nomarker'),
   camada('noplan'),
   camada('nocorpos'),

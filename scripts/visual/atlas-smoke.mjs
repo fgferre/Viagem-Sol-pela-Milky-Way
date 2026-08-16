@@ -360,7 +360,7 @@ try {
 
   const FLAGS = [
     'nogal', 'nodisc', 'nogdust', 'noglow', 'nocart', 'nonebula',
-    'nowrap', 'nocat', 'nohero', 'nomarker', 'noplan', 'nocorpos', 'nobh',
+    'nowrap', 'nocat', 'noclarao', 'nomarker', 'noplan', 'nocorpos', 'nobh',
   ];
   let vivas = 0;
   for (let i = 0; i < FLAGS.length; i++) {

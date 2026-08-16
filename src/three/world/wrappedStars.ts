@@ -328,7 +328,6 @@ uniform float uCatHorizon;
 uniform float uCatFade;
 
 varying vec3 vColor;
-varying float vSat;
 varying float vSigma;
 varying float vPeak;
 
@@ -413,7 +412,6 @@ void main() {
     gl_Position = vec4(0.0, 0.0, 2.0, 1.0); // fora do clip — morta
     gl_PointSize = 0.0;
     vPeak = 0.0;
-    vSat = 0.0;
     vSigma = 1.0;
     vColor = vec3(0.0);
     return;
@@ -431,11 +429,13 @@ void main() {
 
   float size;
   float peak;
-  float sat;
   float sigmaFrac;
-  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sat, sigmaFrac);
-  vSat = sat;
+  starPSF(m, uExpoM0, uSigmaPx, uScreenH, size, peak, sigmaFrac);
   vSigma = sigmaFrac;
+  // vPeak carrega o uFade e o STAR_FRAG deriva DELE espinho e
+  // branqueamento (M2): a velha assimetria das cascas — vSat saía sem o
+  // fade e a cruz ficava acesa enquanto o núcleo esmaecia — morreu junto
+  // com o varying.
   vPeak = peak * uFade;
 
   // projeção com SÓ a rotação do modelView: a posição em view-space de
@@ -564,22 +564,11 @@ export class WrappedStars {
     this.points.visible = fade > 0.001;
   }
 
-  /**
-   * A PUPILA (Onda 8): o `expoM0` EFETIVO do quadro. As cascas dizem de si
-   * mesmas, no construtor, que são "a mesma exposição/instrumento do campo HYG
-   * — uma cadeia"; a auto-exposição não quebra essa cadeia, só a faz andar. Se
-   * as cascas ficassem na exposição de fábrica enquanto o campo fecha, o céu
-   * profundo continuaria aceso com o resto da cena escurecendo — a costura
-   * apareceria como um degrau de luz entre catálogo e casca.
-   *
-   * Idempotente: pupila aberta não reescreve uniform nenhum.
-   */
-  escreverExposicao(expoM0: number) {
-    if (!Number.isFinite(expoM0)) return;
-    const u = this.material.uniforms;
-    if (u.uExpoM0.value === expoM0) return;
-    u.uExpoM0.value = expoM0;
-  }
+  // (O fio da pupila — `escreverExposicao` — morreu no M2 com a pupila
+  // inteira: `uExpoM0` é o EXPO_M0 do campo, escrito na construção. A
+  // cadeia "mesma exposição/instrumento do campo" continua verdadeira —
+  // agora porque os dois são a MESMA constante, não porque um copia o
+  // outro por quadro.)
 
   dispose() {
     this.points.geometry.dispose();
