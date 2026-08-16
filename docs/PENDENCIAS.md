@@ -183,6 +183,29 @@ espinho e clarão passam a derivar do fluxo: planeta brilhante continuará
 virando ponto com cruz COMO NUMA CÂMERA REAL, mas na dose do brilho
 dele, não na dose única do clamp.
 
+Ele refinou, no mesmo dia: *"acho que um planeta, nao poderia refletir
+de todos os lados... eles nao sao fontes de luz..."* e *"os planetas
+refletem de acordo com sua cor... venus está proxima do sol, brilha mais
+e tem uma cor mais reflexiva... marte jé é mais avermelhada.. a terra é
+o pale blue dot..."*
+
+As duas coisas JÁ SÃO o modelo, verificadas ao vivo em 16/08:
+- **Fase:** todo movimento de câmera reescreve `aFase` por corpo
+  (`escreverFase`, planetas.ts) com o ângulo Sol–planeta–observador no
+  modelo MH18 (Saturno inclui a abertura do anel). Medido na cena:
+  Saturno a 2 UA pelo lado do Sol, fase 0,883; a 2 UA por trás (ângulo
+  160,7°), fase 0,024 — 37× menos luz, e some no piso (+15 mag) em
+  fase nova plena. Ninguém reflete de todos os lados.
+- **Cor e albedo:** `aCor` por corpo = iluminante solar × razão de banda
+  dos índices medidos (B−V/V−R, fotometria.ts). Na cena: Marte
+  [1,89 / 0,97 / 0,48] avermelhado; Netuno [0,46 / 0,97 / 1,17] azul;
+  Terra levemente azulada; Vênus clara — e o brilho dela vem de H
+  (albedo × tamanho) + proximidade, como ele descreveu.
+
+O que a verificação REVELOU de quebra: na foto do lado noturno quem
+domina o quadro é o HALO do Sol a 11,5 UA (~160 px) — o rabo do item 3
+fotobombando a cena. É a fila M1/M2 de novo, por outro ângulo.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
