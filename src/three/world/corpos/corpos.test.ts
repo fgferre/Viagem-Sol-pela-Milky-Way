@@ -13,7 +13,13 @@ import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
-import { deepPointGain, heroDominanceFade, psfPointSizePx, sunStarGain } from '../lodStellar';
+import {
+  deepPointGain,
+  filtroSolarAlvo,
+  heroDominanceFade,
+  psfPointSizePx,
+  sunStarGain,
+} from '../lodStellar';
 import { PONTO_ZERO_SOL_PC, magDoVertice } from '../planetas/planetas';
 import { CESSAO_PELO_GATE_MULT, cessaoAlvo, cessaoPeloGate } from './terra';
 import {
@@ -338,29 +344,25 @@ describe('a fiação do Sol no Director (F2)', () => {
   });
 
   it('a MESMA régua guia o filtro solar da fotosfera (F2)', () => {
-    // as duas trocas do Sol andam JUNTAS: no trecho em que o ponto cede
-    // ao corpo, o corpo troca a radiância verdadeira pela paleta autorada
-    // — mesma razão disco/clarão, mesma rampa. O halo virou SÍMBOLO para
-    // as duas leis lerem o mesmo número; se cada uma calculasse o seu,
-    // elas poderiam divergir sem ninguém ver
+    // as duas trocas do Sol leem o MESMO número: no trecho em que o ponto
+    // cede ao corpo, o corpo troca a radiância verdadeira pela paleta
+    // autorada. O halo virou SÍMBOLO para as duas leis lerem a mesma
+    // medida; se cada uma calculasse a sua, poderiam divergir sem ninguém
+    // ver. A RAMPA, essa, é própria do filtro desde 15/08 — ver o teste
+    // seguinte, que mede o que a diferença vale.
     expect(DIRECTOR).toContain('const solHaloPx = this.stars');
     expect(DIRECTOR).toContain('cessaoAlvo(solCorpoEmQuadro, solDiscoPx, solHaloPx)');
     expect(DIRECTOR).toContain('this.sun.escreverFiltroSolar(');
     expect(DIRECTOR).toContain(
-      '1 - heroDominanceFade(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0)'
+      'filtroSolarAlvo(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0)'
     );
     // e a rampa é IMPORTADA de onde ela mora, não recopiada no Director
     expect(DIRECTOR).toMatch(
-      /import \{[\s\S]*?\bheroDominanceFade\b[\s\S]*?\} from '\.\/world\/lodStellar'/
+      /import \{[\s\S]*?\bfiltroSolarAlvo\b[\s\S]*?\} from '\.\/world\/lodStellar'/
     );
-    // a 1 UA o disco ainda não domina (o teste abaixo mede) ⇒ g = 1: a
-    // estrela verdadeira. O filtro NÃO apaga a vista que a F1 aprovou.
-    const dPc = 4.8481e-6;
-    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
-    const halo = psfPointSizePx(magDoVertice(PONTO_ZERO_SOL_PC, dPc, 1), 3.5, 0.85, H_HARNESS);
-    expect(1 - heroDominanceFade(disco / halo)).toBe(1);
-    // e a 0,027 UA — a distância em que a F2 crua entregou 100% branco —
-    // o disco domina com folga ⇒ g = 0: a superfície autorada de volta
+    // a 0,027 UA — a distância em que a F2 crua entregou 100% branco — o
+    // disco domina com folga (r = 19) ⇒ g = 0 EXATO: a superfície autorada
+    // de volta. A borda de CIMA não se moveu com o alargamento.
     const perto = 0.027 * 4.8481e-6;
     const discoPerto = diametroAparentePx(RAIO_SOL_FISICO_PC, perto, H_HARNESS, FOV_DEG);
     const haloPerto = psfPointSizePx(
@@ -369,7 +371,32 @@ describe('a fiação do Sol no Director (F2)', () => {
       0.85,
       H_HARNESS
     );
-    expect(1 - heroDominanceFade(discoPerto / haloPerto)).toBe(0);
+    expect(discoPerto / haloPerto).toBeCloseTo(19.038, 3);
+    expect(Object.is(filtroSolarAlvo(discoPerto / haloPerto), 0)).toBe(true);
+  });
+
+  it('A RAMPA DO FILTRO ALCANÇA 1 UA — e é o conserto, não o efeito colateral', () => {
+    // ORÁCULO REESCRITO em 15/08. Ele cobrava `1 − heroDominanceFade` = 1
+    // EXATO aqui, com o argumento de que "o filtro NÃO apaga a vista que a
+    // F1 aprovou". O argumento caiu com o voo de ida e volta: a 1 UA o
+    // disco mede 0,572 do halo, e com a rampa velha (1 → 2,5) isso era
+    // radiância verdadeira PLENA — a troca inteira ficava espremida entre
+    // 0,562 e 0,219 UA, e o voo pegou 60% dela num degrau só (0,232 →
+    // 0,341 UA). A rampa nova começa em 0,4, ou seja em 1,446 UA, e por
+    // isso ESTA distância deixa de ser branco puro de propósito.
+    const dPc = 4.8481e-6;
+    const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
+    const halo = psfPointSizePx(magDoVertice(PONTO_ZERO_SOL_PC, dPc, 1), 3.5, 0.85, H_HARNESS);
+    expect(disco / halo).toBeCloseTo(0.5719, 4);
+    // o valor NOVO, derivado: g = 1 − smoothstep(−ln2,5, ln2,5, ln 0,5719)
+    expect(filtroSolarAlvo(disco / halo)).toBeCloseTo(0.9006, 4);
+    // e o que ele custa em luz: o filtro é EXPOENTE (`pow(fator, g)`) sobre
+    // uma razão de 26,09 magnitudes, então 0,0994 de rampa são 2,59 mag —
+    // a `solreal1ua` escurece esse tanto, e escurecer ali é a direção que o
+    // item 3 pede, não o preço dela
+    expect((1 - filtroSolarAlvo(disco / halo)) * 26.09).toBeCloseTo(2.592, 3);
+    // a lei ANTIGA, transcrita, para a diferença ser medida e não afirmada
+    expect(1 - heroDominanceFade(disco / halo)).toBe(1);
   });
 
   it('a 1 UA o disco AINDA NÃO domina o halo: cessão 0 EXATA', () => {

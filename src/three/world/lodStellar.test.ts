@@ -49,12 +49,14 @@ import {
   deepPointGain,
   distanceForSolidAngle,
   fadesDoQuadro,
+  filtroSolarAlvo,
   heroCatalogFade,
   heroDominanceFade,
   heroDominanceRatio,
   heroFarFade,
   heroNearFade,
   heroPresence,
+  heroSizePcDePx,
   heroSizePx,
   isFocusBypassActive,
   matchHeroesToCatalog,
@@ -1043,6 +1045,51 @@ describe('espelhos em JS das duas contas de tela', () => {
       2 * 2.2 * ((SIGMA * SCREEN_H) / 1080)
     );
   });
+
+  it('a VOLTA fecha a ida: pedir N px devolve N px (a menos de 2 ULP)', () => {
+    // `heroSizePcDePx` existe para o `SunStar` pedir tamanho em PIXELS à
+    // lei do campo. A garantia dele é esta: a composição das duas é a
+    // identidade. Não é bit a bit — são duas multiplicações e duas
+    // divisões em ordens diferentes —, e por isso o que se cobra é o erro
+    // RELATIVO. Afirmar bit aqui seria afirmar o que a aritmética não dá.
+    let pior = 0;
+    for (const h of [900, 1080, SCREEN_H, 2160]) {
+      for (const fov of [15, 26, 40, 58, 90]) {
+        const t = Math.tan((fov / 2) * DEG);
+        for (let i = 0; i <= 200; i++) {
+          const d = 1e-5 * Math.pow(10, i * 0.05); // 1e-5 → 1e5 pc
+          const px = psfPointSizePx(4.83 + 5 * Math.log10(d / 10), EXPO, SIGMA, h);
+          const volta = heroSizePx(heroSizePcDePx(px, d, h, t), d, h, t);
+          pior = Math.max(pior, Math.abs(volta - px) / px);
+        }
+      }
+    }
+    expect(pior).toBeLessThan(1e-15);
+  });
+
+  it('a VOLTA usa o MESMO uZoom da ida — a lente cancela dos dois lados', () => {
+    // lente igual ou mais fechada que a de referência: o pc pedido não
+    // depende do fov, porque o zoom encolhe o quad na mesma razão
+    const canonico = heroSizePcDePx(20, 200, SCREEN_H, HERO_ZOOM_TAN_REF);
+    for (const fovGraus of [26, 40, 56, 58]) {
+      expect(heroSizePcDePx(20, 200, SCREEN_H, Math.tan((fovGraus / 2) * DEG))).toBeCloseTo(
+        canonico,
+        12
+      );
+    }
+    // mais aberta que 58°: o zoom grampeia em 1 e o pc pedido cresce
+    expect(heroSizePcDePx(20, 200, SCREEN_H, Math.tan(45 * DEG))).toBeGreaterThan(canonico);
+  });
+
+  it('guardas da volta: entrada inválida devolve 0 (quad degenerado)', () => {
+    expect(heroSizePcDePx(0, 200, SCREEN_H, TAN_HELICE)).toBe(0);
+    expect(heroSizePcDePx(-3, 200, SCREEN_H, TAN_HELICE)).toBe(0);
+    expect(heroSizePcDePx(20, 0, SCREEN_H, TAN_HELICE)).toBe(0);
+    expect(heroSizePcDePx(20, 200, 0, TAN_HELICE)).toBe(0);
+    expect(heroSizePcDePx(20, 200, SCREEN_H, 0)).toBe(0);
+    expect(heroSizePcDePx(NaN, 200, SCREEN_H, TAN_HELICE)).toBe(0);
+    expect(heroSizePcDePx(20, Infinity, SCREEN_H, TAN_HELICE)).toBe(0);
+  });
 });
 
 describe('g — a curva da cessão do ponto', () => {
@@ -1090,6 +1137,146 @@ describe('g — a curva da cessão do ponto', () => {
     expect(heroDominanceFade(NaN)).toBe(0);
     expect(heroDominanceFade(Infinity)).toBe(0);
     expect(heroDominanceFade(-Infinity)).toBe(0);
+  });
+});
+
+// ------------------------------------------------------------
+// 9b. O FILTRO SOLAR — a MESMA razão, a rampa esticada em log
+// ------------------------------------------------------------
+//
+// A rampa nasceu em 15/08 escrita como `1 − heroDominanceFade(r)`, isto é
+// reaproveitando a curva da cessão. O voo de ida e volta do mesmo dia
+// mostrou que ela não serve para 26,09 magnitudes: `1 → 2,5` de razão são
+// 2,57× de distância, e o voo (34 degraus geométricos de fator 1,468)
+// pegou 60% da troca entre DOIS degraus vizinhos — 0,232 → 0,341 UA, a
+// foto `capturas/VOO-IDA.png`. `filtroSolarAlvo` estica a travessia
+// simetricamente em log ao redor do cruzamento, e o que este bloco cobra
+// é que o alargamento não trouxe número novo, não mexeu nas duas
+// propriedades exatas que a rampa velha tinha nas pontas, e é de fato
+// mais larga onde importa.
+describe('filtroSolarAlvo — a travessia de 26 magnitudes, esticada em log', () => {
+  it('NENHUM NÚMERO NOVO: as duas bordas saem do MESMO 2,5 da dominância', () => {
+    // 0,4 não está escrito em lugar nenhum: ele É `1/fullRatio`, e a
+    // divisão fecha exata em IEEE754 (2,5 é potência-de-2 vezes inteiro).
+    expect(1 / HERO_DOMINANCE.fullRatio).toBe(0.4);
+    const mod = readFileSync(new URL('./lodStellar.ts', import.meta.url), 'utf8');
+    expect(mod).toContain('Math.log(HERO_DOMINANCE.fullRatio)');
+    // e a rampa é simétrica pela CONSTRUÇÃO (−L, +L), não por coincidência
+    expect(mod).toMatch(/glslSmoothstep\(\s*-MEIA_LARGURA_LOG_DO_FILTRO,\s*MEIA_LARGURA_LOG_DO_FILTRO/);
+  });
+
+  it('as três exatidões: 1 em 0,4 · 0,5 no cruzamento · 0 em 2,5', () => {
+    // exato, não "quase": `L/(2L)` e `(L+L)/(2L)` não arredondam, então o
+    // meio da rampa cai no cruzamento de dominância sem erro nenhum — que
+    // é o que "simétrica em log" significa em número.
+    expect(Object.is(filtroSolarAlvo(1 / HERO_DOMINANCE.fullRatio), 1)).toBe(true);
+    expect(Object.is(filtroSolarAlvo(1), 0.5)).toBe(true);
+    expect(Object.is(filtroSolarAlvo(HERO_DOMINANCE.fullRatio), 0)).toBe(true);
+  });
+
+  it('piso e teto seguram em toda a varredura (Object.is, não "quase")', () => {
+    for (let i = 0; i <= 4000; i++) {
+      const r = i * 1e-4; // 0 → 0,4
+      expect(Object.is(filtroSolarAlvo(r), 1), String(r)).toBe(true);
+    }
+    for (let i = 0; i <= 5000; i++) {
+      const r = 2.5 + i * 1e-3; // 2,5 → 7,5
+      expect(Object.is(filtroSolarAlvo(r), 0), String(r)).toBe(true);
+    }
+  });
+
+  it('monotônica não-crescente e C¹ — sem degrau e sem quina', () => {
+    let anterior = filtroSolarAlvo(1e-3);
+    for (let i = 0; i <= 60000; i++) {
+      const g = filtroSolarAlvo(1e-3 + i * 1e-4);
+      expect(g).toBeLessThanOrEqual(anterior);
+      anterior = g;
+    }
+    // a derivada (em log de razão, que é a variável natural da rampa)
+    // zera nas duas bordas: a troca entra e sai sem quina
+    const h = 1e-6;
+    const dLog = (r: number) =>
+      (filtroSolarAlvo(Math.exp(Math.log(r) + h)) - filtroSolarAlvo(Math.exp(Math.log(r) - h))) /
+      (2 * h);
+    expect(dLog(0.4)).toBeCloseTo(0, 5);
+    expect(dLog(2.5)).toBeCloseTo(0, 5);
+    expect(dLog(1)).toBeCloseTo(-1.5 / (2 * Math.log(2.5)), 4); // o máximo da cúbica
+  });
+
+  it('SIMETRIA: g(r) + g(1/r) = 1 — o cruzamento é o centro de verdade', () => {
+    for (const r of [1.05, 1.2, 1.5, 2, 2.4, 2.49]) {
+      expect(Math.abs(filtroSolarAlvo(r) + filtroSolarAlvo(1 / r) - 1)).toBeLessThanOrEqual(
+        4 * Number.EPSILON
+      );
+    }
+  });
+
+  it('halo inexistente ⇒ radiância PLENA (o precedente de cessaoAlvo)', () => {
+    // é a direção segura para esta lei, e o oposto da de `heroDominanceFade`
+    // (que devolve 0 = "não cede"): lá zero significa ponto inteiro, aqui
+    // significa apagar a estrela verdadeira sem motivo.
+    for (const r of [0, -1, -0, NaN, Infinity, -Infinity]) {
+      expect(filtroSolarAlvo(r), String(r)).toBe(1);
+    }
+  });
+
+  it('É MAIS LARGA QUE A DA CESSÃO, e o quanto está medido', () => {
+    // a rampa velha era o complemento da cessão. Onde ela ainda dava
+    // radiância PLENA (r ≤ 1), a nova já está descendo — e é exatamente aí
+    // que estava o defeito: a troca não tinha para onde começar.
+    for (const r of [0.5, 0.7, 0.9, 1]) {
+      expect(1 - heroDominanceFade(r), String(r)).toBe(1);
+      expect(filtroSolarAlvo(r), String(r)).toBeLessThan(1);
+    }
+    // a largura em LOG dobra exatamente: de [0; ln2,5] para [−ln2,5; ln2,5]
+    const larguraVelha = Math.log(HERO_DOMINANCE.fullRatio) - Math.log(HERO_DOMINANCE.enterRatio);
+    const larguraNova = 2 * Math.log(HERO_DOMINANCE.fullRatio);
+    expect(larguraNova / larguraVelha).toBe(2);
+    // e as duas terminam JUNTAS: a borda de cima não se moveu, então a
+    // fronteira com a cessão do Sol-ponto continua sendo a mesma
+    expect(filtroSolarAlvo(HERO_DOMINANCE.fullRatio)).toBe(1 - heroDominanceFade(HERO_DOMINANCE.fullRatio));
+  });
+
+  it('NO VOO: o maior salto por degrau cai de 0,60 para 0,30', () => {
+    // a escada REAL do `voo-ida-e-volta.mjs`: 34 degraus geométricos de
+    // 0,05 a 15.800 UA. A razão disco/halo é a do Sol de raio físico na
+    // tela do gate — as mesmas contas de `corpos.test.ts`, aqui só para
+    // medir o SALTO, que é o defeito que o dono viu.
+    const AU_PC = 1 / 206264.80624548031;
+    const R_SOL = (696340 / 149597870.7) * AU_PC;
+    const TAN29 = Math.tan(29 * DEG);
+    const razaoEm = (dUA: number) => {
+      const dPc = dUA * AU_PC;
+      const disco = (2 * Math.atan(R_SOL / dPc) * SCREEN_H) / (2 * TAN29);
+      return disco / psfPointSizePx(-0.15 + 5 * Math.log10(dPc), EXPO, SIGMA, SCREEN_H);
+    };
+    const passo = Math.pow(15800 / 0.05, 1 / 33);
+    const maiorSalto = (lei: (r: number) => number) => {
+      let pior = 0;
+      for (let i = 1; i < 34; i++) {
+        const a = lei(razaoEm(0.05 * Math.pow(passo, i - 1)));
+        const b = lei(razaoEm(0.05 * Math.pow(passo, i)));
+        pior = Math.max(pior, Math.abs(b - a));
+      }
+      return pior;
+    };
+    expect(passo).toBeCloseTo(1.4678, 4);
+    // o par de degraus que a foto pegou: 0,232 → 0,341 UA
+    expect(razaoEm(0.2321)).toBeCloseTo(2.363, 3);
+    expect(razaoEm(0.3406)).toBeCloseTo(1.627, 3);
+    expect(maiorSalto((r) => 1 - heroDominanceFade(r))).toBeCloseTo(0.598, 3);
+    expect(maiorSalto(filtroSolarAlvo)).toBeCloseTo(0.299, 3);
+    // e o alargamento aparece em quantos degraus a rampa TOCA
+    const tocados = (lei: (r: number) => number) => {
+      let n = 0;
+      for (let i = 0; i < 34; i++) {
+        const g = lei(razaoEm(0.05 * Math.pow(passo, i)));
+        if (g > 1e-3 && g < 1 - 1e-3) n++;
+      }
+      return n;
+    };
+    expect(tocados((r) => 1 - heroDominanceFade(r))).toBe(3);
+    expect(tocados(filtroSolarAlvo)).toBe(5);
   });
 });
 
@@ -1716,6 +1903,132 @@ describe('a entrega — as duas rampas são UMA, e a soma é 1 exato', () => {
   it('NaN atravessa como NaN — o veneno aparece em vez de virar 0 ou 1', () => {
     expect(Number.isNaN(sunStarGain(NaN))).toBe(true);
     expect(Number.isNaN(deepPointGain(NaN))).toBe(true);
+  });
+});
+
+// ------------------------------------------------------------
+// 10b. A COSTURA DE TAMANHO ponto↔clarão (item 42, 15/08)
+// ------------------------------------------------------------
+//
+// A entrega já era contínua em BRILHO desde a F3 (`sunStarGain +
+// deepPointGain = 1`, provado acima). Faltava o tamanho: o ponto media o
+// que a PSF manda e o clarão media o que a lei de autor do `SunStar`
+// mandava — `min(40°, 1,75°·10^(−0,3m))`, ângulo tirado de magnitude com
+// teto de céu. Entre 4.125 e 27.696 UA o `min` ficava GRAMPEADO nos 40°,
+// e ângulo constante é fração de tela constante: 2.593 px de aresta, o
+// MESMO número em toda a faixa, enquanto o Sol encolhia 6,7×. É o item 42
+// ("esse clarao a 15000 UA … nao vai consumir tudo a tela?") e a metade
+// do item 3 que diz "o Sol encolhe 4.000 vezes e a mancha na tela não
+// muda de tamanho". Agora o tamanho vem da MESMA `psfPointSizePx` do
+// campo, e a igualdade abaixo é a costura.
+describe('a costura de TAMANHO — o clarão mede o que o ponto mediria', () => {
+  const TAN29 = HERO_ZOOM_TAN_REF;
+  /** magnitude do Sol pela lei do `SunStar` (fotometria, não mudou) */
+  const mSol = (dPc: number) => 4.83 + 5 * Math.log10(dPc / 10);
+  /** o caminho do `SunStar`: pede px à PSF, converte para pc, e o VERT projeta */
+  const claraoPx = (dPc: number, h: number, t: number) =>
+    heroSizePx(heroSizePcDePx(psfPointSizePx(mSol(dPc), EXPO, SIGMA, h), dPc, h, t), dPc, h, t);
+
+  it('NA JANELA DA ENTREGA os dois têm o MESMO diâmetro em px', () => {
+    // as duas pontas por caminhos independentes: à esquerda a cadeia
+    // inteira do clarão (PSF → pc → projeção do VERT), à direita a PSF
+    // que o ponto da camada dos dez desenha com a MESMA magnitude.
+    for (const d of [LOD_SOL.entrega.startPc, 0.035, LOD_SOL.entrega.endPc]) {
+      const doPonto = psfPointSizePx(mSol(d), EXPO, SIGMA, SCREEN_H);
+      expect(
+        Math.abs(claraoPx(d, SCREEN_H, TAN_HELICE) - doPonto) / doPonto,
+        String(d)
+      ).toBeLessThan(1e-15);
+    }
+    // e são estes os números: o clarão da entrega é um ponto de ~16 px,
+    // não um borrão de tela inteira
+    expect(claraoPx(LOD_SOL.entrega.startPc, SCREEN_H, TAN_HELICE)).toBeCloseTo(17.224, 3);
+    expect(claraoPx(0.035, SCREEN_H, TAN_HELICE)).toBeCloseTo(16.479, 3);
+    expect(claraoPx(LOD_SOL.entrega.endPc, SCREEN_H, TAN_HELICE)).toBeCloseTo(15.975, 3);
+  });
+
+  it('a costura NÃO depende da lente — o uZoom cancela nos dois lados', () => {
+    const doPonto = psfPointSizePx(mSol(0.035), EXPO, SIGMA, SCREEN_H);
+    for (const fovGraus of [15, 26, 40, 58, 90]) {
+      const px = claraoPx(0.035, SCREEN_H, Math.tan((fovGraus / 2) * DEG));
+      expect(Math.abs(px - doPonto) / doPonto, String(fovGraus)).toBeLessThan(1e-15);
+    }
+  });
+
+  it('O DEFEITO MEDIDO: a lei velha dava 2.593 px, a MESMA a 10.800 e a 15.800 UA', () => {
+    const AU_PC = 1 / 206264.80624548031;
+    // a lei de autor, transcrita para a diferença ser medida e não afirmada
+    const pxVelho = (dPc: number) => {
+      const ang = Math.min(40, 1.75 * Math.pow(10, -0.3 * mSol(dPc)));
+      return (Math.tan(ang * DEG) * SCREEN_H) / TAN29;
+    };
+    // o teto de 40° é o platô: o mesmo px em dois pontos separados por 1,46×
+    expect(pxVelho(10800 * AU_PC)).toBeCloseTo(2593.098, 3);
+    expect(pxVelho(15800 * AU_PC)).toBeCloseTo(2593.098, 3);
+    expect(pxVelho(10800 * AU_PC)).toBe(pxVelho(15800 * AU_PC));
+    // …e 2.593 px de aresta numa tela de 1.713 px é 1,5 tela: é daí que
+    // saem o borrão de ~620 px e os ~31% de quadro lavado do voo
+    expect(pxVelho(15800 * AU_PC) / SCREEN_H).toBeCloseTo(1.514, 3);
+    // a lei NOVA encolhe com a luz, e a diferença é de duas ordens
+    expect(claraoPx(10800 * AU_PC, SCREEN_H, TAN_HELICE)).toBeCloseTo(15.908, 3);
+    expect(claraoPx(15800 * AU_PC, SCREEN_H, TAN_HELICE)).toBeCloseTo(15.337, 3);
+    expect(pxVelho(15800 * AU_PC) / claraoPx(15800 * AU_PC, SCREEN_H, TAN_HELICE)).toBeCloseTo(
+      169.1,
+      1
+    );
+  });
+
+  it('o PLATÔ do teto de 40° cobria 4.125 → 27.696 UA — toda a faixa do defeito', () => {
+    const AU_PC = 1 / 206264.80624548031;
+    // onde o `min` deixa de grampear: 1,75·10^(−0,3m) = 40
+    const mDoTeto = -Math.log10(40 / 1.75) / 0.3;
+    const dDoTeto = 10 * Math.pow(10, (mDoTeto - 4.83) / 5);
+    expect(mDoTeto).toBeCloseTo(-4.5301, 4);
+    expect(dDoTeto / AU_PC).toBeCloseTo(27696, 0);
+    // e o começo do platô é o próprio nascimento do clarão (0,02 pc)
+    expect(LOD_SOL.entrega.startPc / AU_PC).toBeCloseTo(4125, 0);
+    expect(dDoTeto / LOD_SOL.entrega.startPc).toBeCloseTo(6.71, 2);
+    // a lei nova não tem platô ENQUANTO houver luz a perder: de 0,02 pc
+    // até 1,604 pc — onde o pico da PSF cruza 1 — ela cai estritamente
+    const dSaturaAte = 10 * Math.pow(10, (3.5 - 2.5 * Math.log10(6.2831853 * ((0.85 * SCREEN_H) / 1080) ** 2) - 4.83) / 5);
+    expect(dSaturaAte).toBeCloseTo(1.6038, 4);
+    let anterior = Infinity;
+    for (let i = 0; i <= 190; i++) {
+      const d = LOD_SOL.entrega.startPc * Math.pow(10, i * 0.01); // 0,02 → 1,59 pc
+      expect(d, String(i)).toBeLessThan(dSaturaAte);
+      const px = claraoPx(d, SCREEN_H, TAN_HELICE);
+      expect(px, String(d)).toBeLessThan(anterior);
+      anterior = px;
+    }
+    // ACIMA DE 1,604 pc o tamanho para de cair, e o piso é do INSTRUMENTO,
+    // não da fonte: 2·2,2·σ é a largura da PSF, o MESMO piso que as
+    // 328.749 estrelas do catálogo têm. É a diferença entre um piso de
+    // instrumento (honesto, igual para todos) e um teto de autor sobre uma
+    // fonte só, que era o defeito.
+    const piso = 2 * 2.2 * ((SIGMA * SCREEN_H) / 1080);
+    for (const d of [2, 10, 100, 900]) {
+      expect(claraoPx(d, SCREEN_H, TAN_HELICE), String(d)).toBeCloseTo(piso, 9);
+    }
+    expect(piso).toBeCloseTo(5.932, 3);
+  });
+
+  it('A FIAÇÃO: o `SunStar` pede px à lei do campo, e a lei de autor SUMIU', () => {
+    const heroStars = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
+    expect(heroStars).toMatch(
+      /import \{[^}]*\bheroSizePcDePx\b[^}]*\} from '\.\/lodStellar'/
+    );
+    expect(heroStars).toMatch(/import \{[^}]*\bpsfPointSizePx\b[^}]*\} from '\.\/lodStellar'/);
+    expect(heroStars).toContain('psfPointSizePx(m, expoM0, sigmaPx, screenH),');
+    // a lei ANGULAR não voltou: nem o coeficiente, nem o teto, nem o
+    // `d · tan(ângulo)` que os transformava em pc
+    expect(heroStars).not.toContain('1.75 * Math.pow(10, -0.3 * m)');
+    expect(heroStars).not.toMatch(/Math\.min\(40,/);
+    expect(heroStars).not.toMatch(/d \* Math\.tan\(/);
+    // e a magnitude CONTINUA — ela é fotometria, não estava em causa
+    expect(heroStars).toContain('const m = 4.83 + 5 * Math.log10(d / 10);');
+    // as 16 ilustres NÃO mudaram nesta rodada: o coeficiente de autor
+    // segue no construtor, esperando o L3 (escala.test.ts o varre)
+    expect(heroStars).toContain('const size = 0.08 * lum;');
   });
 });
 

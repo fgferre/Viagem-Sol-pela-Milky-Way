@@ -293,13 +293,21 @@ export function epsilonDeSegmentoGlsl(raioPc: number): string {
 // COMO: a emissão exibida desce EM STOPS da radiância verdadeira (g=1)
 // para a paleta autorada (g=0), e quem manda no g é a DOMINÂNCIA do
 // disco sobre o próprio clarão — a MESMA razão `discoPx/haloPx` que
-// decide a cessão do Sol-ponto no director. Longe, o disco não domina o
-// clarão: g = 1, e a estrela é a verdadeira. Perto, o disco domina por
-// 2,5×: g = 0, e o que se vê é a superfície autorada, com granulação,
+// decide a cessão do Sol-ponto no director. Longe, o disco mede menos de
+// 0,4 do clarão: g = 1, e a estrela é a verdadeira. Perto, o disco domina
+// por 2,5×: g = 0, e o que se vê é a superfície autorada, com granulação,
 // manchas e proeminências — que é o que a aproximação existe para
-// mostrar. As duas trocas andam JUNTAS por construção, com a mesma
-// rampa cúbica: no quadro em que o ponto acaba de ceder ao corpo, o
-// corpo já está inteiro na paleta que sabe se desenhar de perto.
+// mostrar. As duas trocas leem o MESMO número e terminam no MESMO
+// ponto (2,5): no quadro em que o ponto acaba de ceder ao corpo, o corpo
+// já está inteiro na paleta que sabe se desenhar de perto.
+//
+// A RAMPA DELE É MAIS LARGA QUE A DA CESSÃO, e isso é conserto de 15/08,
+// não desalinho: a cessão arbitra dupla-luz e tem as bordas provadas pela
+// Onda 3 (1 → 2,5); o filtro atravessa 26,09 magnitudes, e em 2,57× de
+// distância o voo de ida e volta mediu 60% da troca acontecendo entre
+// dois degraus vizinhos. `filtroSolarAlvo` estica a travessia
+// simetricamente em log (0,4 → 2,5) sem inventar número — a derivação
+// inteira mora ao lado da função, em `world/lodStellar.ts`.
 //
 // ISTO NÃO É PUPILA, e a distinção é a que separa assistência declarada
 // de teto de brilho (o que o NORTE proíbe). Uma pupila mede o QUADRO e
@@ -728,8 +736,11 @@ export class StellarBody {
    * porquê está escrito no cabeçalho da seção F2, junto com a conta.
    *
    * QUEM DECIDE O g É O DIRECTOR, e a régua dele é a MESMA da cessão do
-   * Sol-ponto: `1 − heroDominanceFade(discoPx / haloPx)`. Este método não
-   * a reproduz nem a adivinha — se a régua morasse aqui, a casa teria
+   * Sol-ponto — a razão `discoPx / haloPx` —, com a rampa PRÓPRIA que a
+   * travessia de 26 magnitudes exige: `filtroSolarAlvo(discoPx/haloPx)`,
+   * esticada simetricamente em log de 0,4 a 2,5 (`world/lodStellar.ts`,
+   * onde está escrito por que ela não é a curva da cessão). Este método
+   * não a reproduz nem a adivinha — se a régua morasse aqui, a casa teria
    * duas cópias de uma lei que precisa andar em passo com a cessão, e a
    * primeira a mudar deixaria a outra para trás em silêncio.
    *

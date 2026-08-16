@@ -829,6 +829,57 @@ export function heroSizePx(
 }
 
 /**
+ * A VOLTA de `heroSizePx`: o `uSize` em pc que faz o billboard medir
+ * `diametroPx` de aresta na tela DESTE quadro. Mesma cadeia, resolvida
+ * para o outro lado —
+ *     sizePc = px · camDistPc · tanHalfFov / (zoom · screenH),
+ * com o MESMO `zoom = min(1, tanHalfFov/tan(29°))` do VERT (e por isso a
+ * lente continua se cancelando enquanto for igual ou mais fechada que a
+ * de referência: quem pede px fixo recebe px fixo).
+ *
+ * POR QUE ELA EXISTE. Até 15/08 o único jeito de dizer "este clarão tem
+ * de medir N pixels" era escolher um ÂNGULO e torcer — foi assim que
+ * nasceu a lei de autor do `SunStar` (`1,75°·10^(−0,3m)`, com teto de
+ * 40° de céu), e o teto virou o defeito do item 42: entre 4,1 e 27,7 mil
+ * UA o ângulo fica GRAMPEADO em 40°, ou seja o clarão ocupa exatamente a
+ * mesma fração da tela enquanto o Sol encolhe 6,7×. Medido na tela do
+ * gate (1713 px): 2.593 px de aresta, o MESMO número a 10.800 e a 15.800
+ * UA. Com esta inversa o tamanho passa a ser pedido em PIXELS, e quem os
+ * fornece é a lei do campo estelar (`psfPointSizePx`) — a mesma que
+ * desenha o ponto que o clarão substitui.
+ *
+ * IDA E VOLTA: `heroSizePx(heroSizePcDePx(px, …), …) === px` a menos de
+ * ~2 ULP (metade dos casos sai bit a bit; a outra metade erra 5e-16
+ * relativos, que é o preço de duas multiplicações e duas divisões em
+ * ordens diferentes). O teste cobra a igualdade RELATIVA, não o bit —
+ * afirmar bit aqui seria afirmar o que a aritmética não dá.
+ *
+ * GUARDAS iguais às da ida: entrada não-finita ou não-positiva devolve 0,
+ * que no consumidor é quad degenerado = "não desenha".
+ */
+export function heroSizePcDePx(
+  diametroPx: number,
+  camDistPc: number,
+  screenH: number,
+  tanHalfFov: number
+): number {
+  if (
+    !Number.isFinite(diametroPx) ||
+    !Number.isFinite(camDistPc) ||
+    !Number.isFinite(screenH) ||
+    !Number.isFinite(tanHalfFov) ||
+    diametroPx <= 0 ||
+    camDistPc <= 0 ||
+    screenH <= 0 ||
+    tanHalfFov <= 0
+  ) {
+    return 0;
+  }
+  const zoom = Math.min(1, tanHalfFov / HERO_ZOOM_TAN_REF);
+  return (diametroPx * camDistPc * tanHalfFov) / (zoom * screenH);
+}
+
+/**
  * Magnitude aparente que o vertex do catálogo recalcula da posição da
  * câmera — espelho da linha `float m = ...` do `STAR_VERT`
  * (`starShaders.ts`):
@@ -895,6 +946,74 @@ export const HERO_DOMINANCE = { enterRatio: 1, fullRatio: 2.5 } as const;
 export function heroDominanceFade(ratio: number): number {
   if (!Number.isFinite(ratio)) return 0;
   return glslSmoothstep(HERO_DOMINANCE.enterRatio, HERO_DOMINANCE.fullRatio, ratio);
+}
+
+/**
+ * A MEIA-LARGURA da rampa do filtro solar, em LOG de razão: `ln 2,5`.
+ * Não é número novo — é o MESMO `HERO_DOMINANCE.fullRatio` lido em outra
+ * unidade, e é o que faz a borda de baixo valer `1/2,5 = 0,4` sem que
+ * ninguém digite 0,4 em lugar nenhum.
+ */
+const MEIA_LARGURA_LOG_DO_FILTRO = Math.log(HERO_DOMINANCE.fullRatio);
+
+/**
+ * O ALVO DO FILTRO SOLAR — a MESMA pergunta de `heroDominanceFade` (o
+ * disco domina o próprio clarão?), com a rampa esticada SIMETRICAMENTE
+ * EM LOG ao redor do cruzamento de dominância: de `1/2,5 = 0,4` a `2,5`,
+ * em vez de `1 → 2,5`. `1` ⇒ radiância verdadeira; `0` ⇒ a paleta H-alfa
+ * autorada (o override da instância nº 1, `world/stellarBody.ts` §F2).
+ *
+ * POR QUE ESTICAR. A troca vale **26,09 magnitudes** — é a maior
+ * transição de luz da casa —, e a rampa de `1 → 2,5` cobre só 2,57× em
+ * distância. O voo de ida e volta de 15/08
+ * (`scripts/visual/voo-ida-e-volta.mjs`, 34 degraus geométricos de
+ * fator 1,468) mediu a consequência: entre DOIS degraus vizinhos,
+ * 0,232 → 0,341 UA, o filtro pulava de 0,02 para 0,62 — 60% da troca num
+ * degrau só, e a foto `capturas/VOO-IDA.png` mostra o laranja aparecendo
+ * de uma vez. Com a rampa nova o mesmo par de degraus anda de 0,003 para
+ * 0,139, e o MAIOR salto por degrau da travessia inteira cai de 0,60
+ * para 0,30: a largura em log DOBRA, o salto por degrau cai pela metade.
+ *
+ * POR QUE SIMÉTRICA EM LOG e não "mais um pedaço para baixo". A razão é
+ * um QUOCIENTE de dois tamanhos na tela — a régua natural dela é
+ * multiplicativa, e `0,4` é `2,5` do outro lado do cruzamento, não um
+ * segundo número. Como o disco vai com `1/d` e o halo cresce só com
+ * `√log`, simetria em log de razão sai quase exatamente simétrica em log
+ * de DISTÂNCIA: medido na tela do gate, a rampa vai de 1,446 UA a
+ * 0,219 UA com o cruzamento em 0,562 UA — fator 2,57 de cada lado.
+ * Esticar "para baixo" com um número livre custaria uma constante nova e
+ * uma rampa torta; esticar em log não custa nenhuma das duas.
+ *
+ * POR QUE NÃO É A CURVA DA CESSÃO, embora leia a mesma razão. A cessão
+ * do Sol-ponto (`heroDominanceFade`) arbitra DUPLA-LUZ: lá a borda de
+ * baixo é `r = 1` por DEFINIÇÃO (é onde o billboard passa a ser maior que
+ * o ponto) e a de cima é DERIVADA da prova de continuidade da Onda 3
+ * (`hi ≥ 2,5`) — mexer nelas reabre o passo para trás na luz. O filtro
+ * não arbitra dupla-luz nenhuma: ele troca a LEI DE EMISSÃO de uma
+ * superfície só, e a única coisa que se exige dele é não ter degrau
+ * visível. Duas exigências diferentes, duas rampas — e é por isso que
+ * esta função existe em vez de um `1 −` em cima da outra.
+ *
+ * O QUE ELA CUSTA, declarado: a rampa agora ALCANÇA 1 UA (g = 0,901 lá,
+ * ~2,6 das 26,09 magnitudes), então a vista `solreal1ua` muda de
+ * propósito. Era esse o pedido — o defeito era a brusquidão, e o preço
+ * de consertá-la é o degrau anterior deixar de ser branco puro.
+ *
+ * PROPRIEDADES (todas pinadas em teste):
+ *  - razão ≤ 0,4 ⇒ 1 EXATO (o clamp do smoothstep devolve o literal);
+ *  - razão ≥ 2,5 ⇒ 0 EXATO (`(L+L)/(2L)` é 1 sem arredondamento);
+ *  - razão = 1 ⇒ 0,5 EXATO — o cruzamento é o MEIO da rampa, que é o que
+ *    "simétrica" quer dizer (`L/(2L)` é 0,5 exato);
+ *  - monotônica não-crescente e C¹ (smoothstep, e `log` é C¹ em (0,∞));
+ *  - razão não-finita ou ≤ 0 ⇒ 1: halo inexistente não filtra nada, o
+ *    mesmo precedente de `cessaoAlvo`.
+ */
+export function filtroSolarAlvo(razao: number): number {
+  if (!Number.isFinite(razao) || razao <= 0) return 1;
+  return (
+    1 -
+    glslSmoothstep(-MEIA_LARGURA_LOG_DO_FILTRO, MEIA_LARGURA_LOG_DO_FILTRO, Math.log(razao))
+  );
 }
 
 /**

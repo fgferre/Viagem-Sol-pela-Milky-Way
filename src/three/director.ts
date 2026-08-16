@@ -119,7 +119,7 @@ import { BlackHolePass } from './world/blackHole';
 import {
   DOMINANCE_DEFAULT_ON,
   fadesDoQuadro,
-  heroDominanceFade,
+  filtroSolarAlvo,
   matchHeroesToCatalog,
   psfPointSizePx,
 } from './world/lodStellar';
@@ -3440,7 +3440,22 @@ export class Director {
     // a PSF do Sol vive FORA do group (o group some no crossfade) — só
     // ?nosun a desliga
     this.sunStar.quad.visible = !this.hide.has('nosun');
-    this.sunStar.update(time, dHome, tanHalfFov);
+    // O CLARÃO PEDE O TAMANHO À LEI DO CAMPO (item 42), e por isso passa
+    // a receber a tela e a PSF do quadro. `stars.expoM0` é o EFETIVO (base
+    // + pupila), o mesmo que `writeHeroFades` acabou de usar duas linhas
+    // acima: o clarão tem de encolher com a exposição na mesma medida em
+    // que o ponto do catálogo encolhe, senão a costura ponto↔clarão que
+    // esta lei existe para fechar se abriria toda vez que a pupila mexesse.
+    // Sem campo carregado valem os defaults da casa — os MESMOS com que o
+    // `new StarField` acima o constrói, não um segundo par de números.
+    this.sunStar.update(
+      time,
+      dHome,
+      tanHalfFov,
+      hPx,
+      this.stars?.expoM0 ?? EXPO_M0,
+      this.stars?.sigmaPx ?? SIGMA_PX
+    );
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
     // dentro do Atlas ele é PINADO, senão cada entrada daria um Sol
     // diferente conforme o instante da pausa (ver ATLAS_JOURNEY_T)
@@ -3533,9 +3548,15 @@ export class Director {
       // 0 ⇒ g = 1, a estrela verdadeira — o precedente de `cessaoAlvo`.
       // O porquê da lei (stops, e por que não é pupila) mora em
       // `world/stellarBody.ts`, seção F2.
-      this.sun.escreverFiltroSolar(
-        1 - heroDominanceFade(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0)
-      );
+      //
+      // A RÉGUA É A MESMA, A RAMPA NÃO — e a diferença entrou em 15/08,
+      // com o voo de ida e volta na mão: `filtroSolarAlvo` lê exatamente
+      // esta razão, mas estica a travessia simetricamente em log (0,4 →
+      // 2,5 em vez de 1 → 2,5), porque 26 magnitudes não cabem em 2,57×
+      // de distância — o voo mediu 60% da troca entre dois degraus
+      // vizinhos (0,232 → 0,341 UA). O porquê inteiro mora ao lado da
+      // função, em `world/lodStellar.ts`.
+      this.sun.escreverFiltroSolar(filtroSolarAlvo(solHaloPx > 0 ? solDiscoPx / solHaloPx : 0));
       // A CESSÃO PELO GATE, padrão desde 15/08 e com `?bcede=` como
       // caminho de volta: re-ancora a cessão no GATE DO PALCO (4 px × o
       // multiplicador) em vez do halo previsto da PSF. NÃO é o

@@ -130,11 +130,21 @@ async function voar() {
     // o FORNO do Sol (bake de granulação/cromosfera) termina DEPOIS da
     // prontidão geral da página; medir antes fotografa uma bola lisa e
     // pálida que não existe no produto assentado — foi exatamente a
-    // assimetria que a primeira rodada deste harness acusou a 0,05 UA
-    for (let i = 0; i < 240; i++) {
-      if (await aval('window.__director?.sun?.assentado === true')) break;
+    // assimetria que a primeira rodada deste harness acusou a 0,05 UA.
+    // ARMADILHA MEDIDA (15/08): `assentado` PISCA true no quadro ~50,
+    // ANTES de o forno começar, e só volta a true minutos depois, no
+    // fim do bake — uma leitura isolada cai na piscada. Exigem-se três
+    // leituras verdadeiras seguidas com o app já rodado (quadro > 300).
+    const t0 = Date.now();
+    let seguidas = 0;
+    for (let i = 0; i < 960 && seguidas < 3; i++) {
+      const ok = await aval(
+        'window.__f > 300 && window.__director?.sun?.assentado === true'
+      );
+      seguidas = ok ? seguidas + 1 : 0;
       await dorme(500);
     }
+    console.log(`forno do Sol assentado em ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 
     // a banda de histerese, calculada pela régua do próprio app
     BANDA_UA = await aval(`(() => {
