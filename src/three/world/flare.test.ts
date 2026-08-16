@@ -9,15 +9,7 @@ import {
   LADO_DA_TEXTURA,
   gerarTexturaDoFlare,
 } from './flare';
-import {
-  ESCALA_DO_FLARE_PX,
-  EXPOENTE_DO_TAMANHO_DO_FLARE,
-  TETO_DE_LUZ_DO_FLARE,
-  TETO_DO_PICO_DO_FLARE,
-  ganhoDeEntradaDoFlare,
-  picoComTeto,
-  raioDoFlarePx,
-} from '../estrela';
+import { TETO_DE_LUZ_DO_FLARE, ganhoDeEntradaDoFlare, picoComTeto } from '../estrela';
 
 /** lê um canal decodificado (√v → v) no texel mais próximo de (u,v) em -1..1 */
 function canal(dados: Uint8Array, lado: number, u: number, v: number, c: 0 | 1): number {
@@ -67,23 +59,15 @@ describe('a textura do flare — a receita de 30/07 assada', () => {
   });
 });
 
-describe('a lei do flare — escala consagrada, dois tetos de propósito', () => {
-  it('tamanho: K·pico^0,4 com teto — Sirius sai com a presença do filme', () => {
-    // âncora: pico 30,57 (Sirius na tela de 900 px) → ~104 px de raio
-    expect(raioDoFlarePx(30.57)).toBeGreaterThan(90);
-    expect(raioDoFlarePx(30.57)).toBeLessThan(120);
-    // monotônico e com teto: 10⁶ de fluxo não passa do raio máximo
-    const rMax =
-      ESCALA_DO_FLARE_PX * Math.pow(TETO_DO_PICO_DO_FLARE, EXPOENTE_DO_TAMANHO_DO_FLARE);
-    expect(raioDoFlarePx(1e6)).toBeLessThanOrEqual(rMax);
-    expect(raioDoFlarePx(1e6)).toBeGreaterThan(raioDoFlarePx(30.57));
-  });
-
-  it('luz: o teto PRÓPRIO é menor que o de tamanho — o rim dourado mora aí', () => {
-    // prato branco de borda dura foi medido com um teto só (1ª leva R1);
-    // a luz satura muito antes do tamanho, de propósito
-    expect(TETO_DE_LUZ_DO_FLARE).toBeLessThan(TETO_DO_PICO_DO_FLARE / 4);
-    expect(picoComTeto(1e9, TETO_DE_LUZ_DO_FLARE)).toBeLessThanOrEqual(TETO_DE_LUZ_DO_FLARE);
+describe('a luz do clarão do Sol — teto baixo de propósito', () => {
+  it('a dose satura em ~8: o fluxo cegante do Sol nunca vira prato branco', () => {
+    // prato branco de borda dura foi medido na 1ª leva da R1 (dose alta
+    // saturava o quad inteiro); o rim dourado mora na faixa 0,1–1
+    expect(picoComTeto(1e9)).toBeLessThanOrEqual(TETO_DE_LUZ_DO_FLARE);
+    expect(picoComTeto(1e9)).toBeGreaterThan(0.99 * TETO_DE_LUZ_DO_FLARE);
+    // e o teto fica muito abaixo do β da emissão (300): compressão
+    // ~linear, matiz intacto
+    expect(TETO_DE_LUZ_DO_FLARE).toBeLessThan(300 / 30);
   });
 
   it('gatilho de 30/07: acende no núcleo estourado, satura em pico 4', () => {

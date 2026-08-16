@@ -186,13 +186,19 @@ const PROIBIDOS: SimboloProibido[] = [
       'escala.ts, não a entrega morta',
   },
   // ─── M2 (2026-08-16): o clarão de asas + o bloom pela lei ──────────────
+  // A LÁPIDE DAS HEROES CAIU (item 44, 2026-08-16): o dono mandou o
+  // resgate — *"Porque você não resgata no git a versão certa antes de
+  // entrar o atlas? ... Veja as imagens de spikes geradas anteriormente
+  // pelo histórico do git."* A peça voltou byte a byte (world/
+  // heroStars.ts); a lei única segue regendo catálogo, planetas e o
+  // clarão do Sol. O que NÃO renasce junto está abaixo:
   {
     arquivo: 'src/three/world/heroStars.ts',
-    padrao: /class HeroStars|0\.08 \* lum|HERO_COUNT/,
-    migracao: 'M2',
+    padrao: /uExposicao|escreverExposicao|from '\.\/lodStellar'|class SunStar/,
+    migracao: 'item 44',
     razao:
-      'as 16 heroes de autor morreram INTEIRAS (o arquivo foi enterrado): o ' +
-      'clarão é a asa da lei, por orçamento de fluxo — world/clarao.ts',
+      'a espinha da pupila e o SunStar não renascem com a peça resgatada, ' +
+      'e a referência de lente é local (a de lodStellar morreu no M2)',
   },
   {
     arquivo: 'src/three/world/clarao.ts',

@@ -42,7 +42,6 @@ import {
   alcanceDoEspinhoPx,
   ganhoDeEntradaDoFlare,
   picoComTeto,
-  raioDoFlarePx,
   raioVisivelDaAsaPx,
 } from '../estrela';
 import { AMPLITUDE_DA_CRUZ, AMPLITUDE_DO_HALO, gerarTexturaDoFlare } from './flare';
@@ -408,19 +407,14 @@ export class ClaraoDeAsas {
    * histerese e escreve os slots nos billboards.
    */
   /**
-   * O TAMANHO do quad pela lei (item 44/R1) — DUAS réguas, de propósito:
-   * o SOL segue a régua aceita do item 3 (asa/espinho Moffat, com o
-   * fator de enchimento da textura) — a escada 900→20 px não muda; as
-   * ESTRELAS ganham o PISO de presença do filme (K·pico^0,4 com teto),
-   * que devolve ao Sirius os ~104 px de 30/07. O piso NÃO vale para o
-   * Sol: com o fluxo cegante dele, o piso viraria halo constante de
-   * ~180 px por quatro décadas — o item 3 renascendo.
+   * O TAMANHO do quad do Sol pela régua ACEITA do item 3 (asa/espinho
+   * Moffat), com o fator de enchimento da textura — a escada 900→20 px
+   * não muda. (O piso de presença das estrelas saiu daqui no resgate
+   * das heroes: quem dá presença às 16 é a arte do filme.)
    */
-  private meiaDaLei(indice: number, pico: number, sigma: number): number {
+  private meiaDaLei(pico: number, sigma: number): number {
     const asa = Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
-    const piso =
-      indice > 0 && ganhoDeEntradaDoFlare(pico) > 0 ? raioDoFlarePx(pico) : 0;
-    return Math.min(Math.max(FATOR_DE_ENCHIMENTO_DO_SOL * asa, piso), TETO_DO_BILLBOARD_PX);
+    return Math.min(FATOR_DE_ENCHIMENTO_DO_SOL * asa, TETO_DO_BILLBOARD_PX);
   }
 
   atualizar(q: QuadroDoClarao): void {
@@ -434,7 +428,10 @@ export class ClaraoDeAsas {
         ? q.pesoDoPontoDoSol
         : 1;
     const doSol = pesoDoPontoDoSol / atenuacaoDoSol;
-    const n = this.mBase.length;
+    // RESGATE (16/08, ordem do dono): as nomeadas voltaram às heroes de
+    // autor (world/heroStars.ts) — esta camada fica SÓ com o Sol. A
+    // unificação volta à mesa no M3, com o visto DELE na estética.
+    const n = 1;
     for (let i = 0; i < n; i++) {
       if (i === 0 && !q.solVisivel) continue;
       const dx = this.pos[i * 3] - q.camPos.x;
@@ -448,7 +445,7 @@ export class ClaraoDeAsas {
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
       // elegível quando a óptica alcança além do que o sprite já desenha
       const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
-      if (!(2 * this.meiaDaLei(i, pico, sigma) > nucleo)) continue;
+      if (!(2 * this.meiaDaLei(pico, sigma) > nucleo)) continue;
       // inserção ordenada (pico DESC, índice ASC no empate), teto K
       let p = el.length;
       while (p > 0 && (el[p - 1].pico < pico || (el[p - 1].pico === pico && el[p - 1].indice > i)))
@@ -476,7 +473,7 @@ export class ClaraoDeAsas {
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
       const entrada = ganhoDeEntradaDoFlare(pico);
-      const meiaPx = this.meiaDaLei(i, pico, sigma);
+      const meiaPx = this.meiaDaLei(pico, sigma);
       if (!(meiaPx > 0) || !(entrada > 0)) {
         mesh.visible = false;
         continue;

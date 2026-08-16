@@ -20,6 +20,7 @@ import type { StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor.
 import { ClaraoDeAsas } from './world/clarao';
+import { HeroStars } from './world/heroStars';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
@@ -286,6 +287,7 @@ export class Director {
    *  dominância morreram com as heroes de autor: o clarão soma óptica
    *  POR CIMA do ponto e não pede cessão a ninguém.) */
   private clarao!: ClaraoDeAsas;
+  private heroes!: HeroStars;
   private galaxy!: Galaxy;
   /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
@@ -788,6 +790,12 @@ export class Director {
     // ponto fotométrico da camada dos dez, em toda distância — a mesma
     // PSF do campo, sem clarão de autor por cima.)
 
+    // AS 16 HEROES DO FILME, RESGATADAS (16/08, ordem do dono): a arte
+    // de 30/07 — braço fino, halo e cruz na cor da estrela — volta como
+    // era, byte a byte, e o clarão da lei fica só com o Sol. Palavras
+    // dele: "resgata no git a versão certa antes de entrar o atlas".
+    this.heroes = new HeroStars(this.meta.named);
+
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
     const cartOn = Boolean(galactic) && cartMode !== 'off';
@@ -896,6 +904,7 @@ export class Director {
     this.engine.scene.add(this.sun.group);
     this.engine.scene.add(this.dust.points);
     this.engine.scene.add(this.clarao.group);
+    this.engine.scene.add(this.heroes.group);
     this.engine.scene.add(this.galaxy.group);
     // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
     // NUNCA dentro de `sun.group` — de lá herdaria a escala 0,005 do
@@ -3378,6 +3387,16 @@ export class Director {
     // e câmera com filtro solar não tem flare. Foi a correção que as
     // palavras do dono (16/08) cobraram: sem ela, a asa sem filtro
     // pintava a abertura do filme de branco por cima do Sol procedural.
+    // AS HEROES RESGATADAS: a mesma chave de isolamento da óptica das
+    // fortes (?noclarao) esconde as duas camadas — heroes e clarão do Sol
+    if (this.heroes) {
+      this.heroes.group.visible = !this.hide.has('noclarao');
+      this.heroes.update(
+        time,
+        cam.position,
+        Math.tan((this.engine.camera.fov * Math.PI) / 360)
+      );
+    }
     if (this.clarao) {
       this.clarao.group.visible = !this.hide.has('noclarao');
       this.clarao.atualizar({

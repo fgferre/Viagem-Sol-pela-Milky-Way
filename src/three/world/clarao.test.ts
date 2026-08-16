@@ -34,11 +34,9 @@ import {
   BETA_DO_ESPINHO,
   BETA_DA_ASA,
   alcanceDoEspinhoPx,
-  ganhoDeEntradaDoFlare,
-  raioDoFlarePx,
   raioVisivelDaAsaPx,
 } from '../estrela';
-import { EXPO_M0, SIGMA_PX, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
+import { EXPO_M0, SIGMA_PX, picoDaPsf, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS } from './lodStellar';
 
 const META = JSON.parse(
@@ -163,21 +161,6 @@ describe('1. o orçamento com histerese (§5.21)', () => {
 describe('2. a elegibilidade pela lei — a identidade "as 16" emerge, não se declara', () => {
   const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
 
-  /** a régua da camada (item 44/R1): núcleo estourado E flare além do sprite */
-  const elegivel = (m: number) => {
-    const pico = picoDaPsf(m, EXPO_M0, SIGMA_PX, 900);
-    const nucleo = psfPointSizePx(m, EXPO_M0, SIGMA_PX, 900);
-    return ganhoDeEntradaDoFlare(pico) > 0 && 2 * raioDoFlarePx(pico) > nucleo;
-  };
-
-  it('em casa, as elegíveis são as brilhantes clássicas — e Sirius manda', () => {
-    // m visto de CASA = o `m` do sidecar; a fronteira fica perto de m ~ 1,5
-    expect(elegivel(-1.46)).toBe(true); // Sirius
-    expect(elegivel(0.0)).toBe(true); // Vega / α Cen
-    expect(elegivel(1.25)).toBe(true); // Deneb
-    expect(elegivel(3.5)).toBe(false); // uma estrela mediana não tem asa
-    expect(elegivel(6.0)).toBe(false);
-  });
 
   it('a asa ENCOLHE com a luz: R ∝ F^(1/2β) na cauda, e zera sob o limiar', () => {
     const picoDe = (m: number) => picoDaPsf(m, EXPO_M0, SIGMA_PX, 900);
@@ -227,19 +210,16 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
-  it('em casa, os slots se enchem com as brilhantes clássicas — por FLUXO, não por lista', () => {
+  it('no RESGATE a camada é SÓ do Sol: nomeada nunca ocupa slot', () => {
+    // ordem do dono (16/08): as 16 voltaram à arte do filme
+    // (heroStars.ts); esta camada fica só com o Sol até o M3 unificar de
+    // novo, com o visto dele na estética
     const c = new ClaraoDeAsas(META.named);
-    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa());
-    const ocupantes = c.ocupacao();
-    expect(ocupantes.length).toBeGreaterThanOrEqual(8);
-    expect(ocupantes.length).toBeLessThanOrEqual(ORCAMENTO_DO_CLARAO);
-    // os nomes: traduz índice → nomeada (0 = Sol; i>0 = named[i−1])
-    const nomes = ocupantes.map((o) => (o.indice === 0 ? 'Sol' : META.named[o.indice - 1].n));
-    for (const esperado of ['Sirius', 'Canopus', 'Rigil Kentaurus', 'Vega', 'Capella']) {
-      expect(nomes, nomes.join(', ')).toContain(esperado);
-    }
-    // e TODOS os assentados estão com a rampa plena
-    for (const o of ocupantes) expect(o.ganho).toBe(1);
+    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+    expect(c.ocupacao().every((o) => o.indice === 0)).toBe(true);
+    // e com o Sol-ponto oculto, a camada fica VAZIA
+    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(false));
+    expect(c.ocupacao()).toHaveLength(0);
     c.dispose();
   });
 

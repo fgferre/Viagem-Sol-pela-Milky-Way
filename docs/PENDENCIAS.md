@@ -296,13 +296,25 @@ o halo constante renasceria). Sonda re-voada: restam as 2 violações de
 crescimento NA SOLTURA do filtro (0,73→1,58 UA) — são a **R2** (entrega
 contínua + remover a exceção da régua). **R3**: distância viva na tela.
 
-Escada oficial re-rodada e re-versionada com o desenho novo: **9/11, com
-os 2 vermelhos DECLARADOS** (4.000 e 15.800 UA, ~2,1% lavado contra teto
-de 1,8%/0,8%): o teto do lavado orça só "céu + Sol" e agora as nomeadas
-têm o flare do filme — luz LEGAL que a régua ainda não sabe orçar. Não
-se emenda o juiz às escondidas (a lição da exceção): o termo das
-estrelas entra no teto na R2, DERIVADO da mesma lei, depois que o dono
-cravar a dose. Aberto até o dono julgar a prancha (`aceite-rodada-1`).
+Escada oficial re-rodada com o desenho da R1: 9/11, com os 2 vermelhos
+declarados (o teto do lavado orçava só "céu + Sol" e o piso da R1 dava
+flare grande às nomeadas).
+
+**RESGATE (16/08, noite) — o dono REPROVOU a R1 e mandou a ordem:**
+*"Porque você não resgata no git a versão certa antes de entrar o atlas?
+Já vi nas screenshots que está horrível não preciso nem abrir. Virou uma
+bolha enorme com uma spikes dentro dessa bolha de luz enorme. Totalmente
+horrível. Veja as imagens de spikes geradas anteriormente pelo histórico
+do git."* Executado no ato: `world/heroStars.ts` EXUMADO byte a byte de
+`bd12905` (as 16 do filme, braço fino 16/2,4, halo e cruz na cor, tamanho
+de autor em pc, cintilação; só a espinha MORTA da pupila foi amputada);
+o clarão da lei fica SÓ com o Sol — o piso K·pico^0,4 que a R1 deu às
+estrelas morreu com a bolha; a textura da R1 segue APENAS na forma do
+clarão do Sol (rim com degradê e cor). Lápides do M2 reabertas com a
+ordem dele citada (`simbolosProibidos`, `corpos.test`): SunStar e pupila
+seguem mortos. Prova visual: `resgate-sirius.png` — o Sirius de hoje ao
+lado do alvo de 30/07, na mesma moldura (6,5 anos-luz). A unificação
+estética estrela↔Sol volta à mesa só no M3, COM o visto dele.
 
 ---
 

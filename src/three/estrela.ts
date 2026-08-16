@@ -288,54 +288,33 @@ export function alcanceDoEspinhoPx(picoDeTela: number, sigmaPsfPx: number): numb
   );
 }
 
-// ─── A LEI DO FLARE (item 44/R1) — o TAMANHO do clarão desenhado ─────────
-// A forma bonita mora na textura (`world/flare.ts`, a receita de 30/07
-// assada); aqui mora só a ESCALA, e ela é a consagrada dos planetários
-// (Celestia PSF: r ∝ pico^0,4; Stellarium equivalente): raio = K·pico^0,4
-// com TETO suave Reinhard no pico. Fluxo cai com 1/d² ⇒ o raio é
-// monotônico na distância POR CONSTRUÇÃO — a bola que crescia afastando
-// (item 44) fica impossível nesta lei. A asa Moffat acima segue sendo a
-// Lei §1 (governa o bloom e o GLSL do M3); o billboard não a usa mais.
+// ─── A LUZ DO CLARÃO DO SOL (item 44/R1, revista no RESGATE) ─────────────
+// A FORMA do clarão do Sol mora na textura (`world/flare.ts`, a receita
+// de 30/07 assada); o TAMANHO segue a asa Moffat aceita do item 3. Aqui
+// mora só a DOSE de luz e o gatilho. (A lei de tamanho K·pico^0,4 que a
+// R1 deu às estrelas morreu no resgate das heroes — quem dá presença às
+// 16 é a arte do filme, `world/heroStars.ts`, por ordem do dono 16/08.)
 
-/** teto suave do pico para o TAMANHO do flare — o joelho da lei de
- *  escala das estrelas. */
-export const TETO_DO_PICO_DO_FLARE = 88;
-
-/** teto suave do pico para a LUZ do flare (o uPico do shader) — SEPARADO
- *  do teto de tamanho, e muito menor, DE PROPÓSITO: com a dose no teto de
- *  tamanho (88) o quad satura inteiro e vira PRATO branco de borda dura
- *  (medido na primeira leva da sonda R1: sat 0,017, borda visível). Com
+/** teto suave do pico para a LUZ do clarão (o uPico do shader) — MENOR
+ *  que qualquer teto de tamanho, DE PROPÓSITO: na primeira leva da R1 a
+ *  dose alta saturava o quad inteiro em PRATO branco de borda dura. Com
  *  ~8, o miolo ainda estoura (branco de sensor, correto) mas o rim do
  *  halo atravessa a faixa 0,1–1 de luminância AO LONGO do raio — é ali
- *  que mora o degradê suave e a COR da estrela (Sol dourado, Sirius
- *  azul-branco). Abaixo do β da emissão (300), a compressão é ~linear e
- *  não rouba matiz. Dose de partida; o ajuste fino é por FOTO. */
+ *  que mora o degradê suave e a COR (Sol dourado). Abaixo do β da
+ *  emissão (300), a compressão é ~linear e não rouba matiz. */
 export const TETO_DE_LUZ_DO_FLARE = 8;
 
-/** K da escala do flare, ancorado em SIRIUS (a estrela-exemplar): pico
- *  30,57 na tela de 900 px → raio ≈ 104 px, a presença do filme. */
-export const ESCALA_DO_FLARE_PX = 30;
-export const EXPOENTE_DO_TAMANHO_DO_FLARE = 0.4;
-
 /** Reinhard: `(1 − 1/(pico/T + 1))·T` — nunca clampa (C¹). */
-export function picoComTeto(pico: number, teto: number = TETO_DO_PICO_DO_FLARE): number {
+export function picoComTeto(pico: number, teto: number = TETO_DE_LUZ_DO_FLARE): number {
   if (!(pico > 0)) return 0;
   return (1 - 1 / (pico / teto + 1)) * teto;
 }
 
-/** O GATILHO DE ENTRADA — resgate literal do `vSat` de 30/07: o flare
- *  acende porque o núcleo ESTOUROU (pico > 1) e satura em pico 4.
- *  Estrela fraca segue ponto puro. */
+/** O GATILHO DE ENTRADA — o `vSat` de 30/07: o clarão acende porque o
+ *  núcleo ESTOUROU (pico > 1) e satura em pico 4. Fraca segue ponto. */
 export function ganhoDeEntradaDoFlare(pico: number): number {
   if (!(pico > 1)) return 0;
   return Math.min(1, 0.5 * Math.log2(pico));
-}
-
-/** O RAIO do flare em px de tela (meia-extensão do billboard). */
-export function raioDoFlarePx(pico: number): number {
-  const efetivo = picoComTeto(pico);
-  if (!(efetivo > 0)) return 0;
-  return ESCALA_DO_FLARE_PX * Math.pow(efetivo, EXPOENTE_DO_TAMANHO_DO_FLARE);
 }
 
 /**

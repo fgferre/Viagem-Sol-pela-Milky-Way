@@ -6,7 +6,7 @@
 // Não instancia Engine nem Director: tudo aqui é o contrato puro do
 // módulo — o mesmo precedente de `stellarBody.test.ts`.
 // ============================================================
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
@@ -143,14 +143,17 @@ describe('Sol-ator × corpo resolvido: o conflito que a F3 dissolveu (D1)', () =
   it('não há mais Sol-ator: quem desenha o Sol é o corpo OU o ponto, nunca um terceiro', () => {
     // A F0 tinha de PROVAR que o disco de 2.269 UA e um corpo resolvido
     // nunca dividiam quadro. A F3 apagou o disco inflado; o M1 apagou o
-    // TERCEIRO desenhista (o clarão do SunStar e a janela de entrega); o
-    // M2 enterrou o ARQUIVO das heroes inteiro: desde então o Sol é o
-    // corpo (régua do palco) ou o ponto fotométrico da camada dos dez,
-    // repartidos pela lei — e a soma dos pesos é 1 por construção
-    // (estrela.test.ts), não por janela. O clarão de asas (clarao.ts)
-    // não é um terceiro DESENHISTA do Sol: é a óptica POR CIMA, do raio
-    // do sprite para fora, sem cessão e sem entrega.
-    expect(existsSync(new URL('../heroStars.ts', import.meta.url))).toBe(false);
+    // TERCEIRO desenhista (o clarão do SunStar e a janela de entrega):
+    // desde então o Sol é o corpo (régua do palco) ou o ponto
+    // fotométrico da camada dos dez, repartidos pela lei — e a soma dos
+    // pesos é 1 por construção (estrela.test.ts), não por janela. O
+    // clarão de asas (clarao.ts) não é um terceiro DESENHISTA do Sol: é
+    // a óptica POR CIMA, do raio do sprite para fora. As heroes
+    // RESGATADAS (item 44, ordem do dono 16/08) desenham as 16 NOMEADAS
+    // e nunca o Sol — o invariante cobrado aqui é esse, não a ausência
+    // do arquivo.
+    const heroes = readFileSync(new URL('../heroStars.ts', import.meta.url), 'utf8');
+    expect(heroes).not.toMatch(/class SunStar/);
     const clarao = readFileSync(new URL('../clarao.ts', import.meta.url), 'utf8');
     expect(clarao).not.toMatch(/class SunStar/);
   });
