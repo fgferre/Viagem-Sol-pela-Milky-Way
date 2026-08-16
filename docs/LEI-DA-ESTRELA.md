@@ -1,10 +1,23 @@
 # A lei da estrela — uma mecânica só, do Sol aos bilhões
 
+**v2 — 2026-08-15.** Por que a v1 caiu, em três linhas: (a) ela nasceu em 14/08 e a
+onda da luz entrou em 15/08 somando **+1.216 linhas em 12 arquivos**, então o
+"contrato único" passou a descrever o dia anterior; (b) a lei do clarão que ela
+propunha como conserto (`√ln`) é a **doença** do halo constante — encolhe menos que
+o defeito que ia consertar; (c) o custo declarado no §7 estava com o **sinal
+invertido**, e um contrato que erra o próprio custo autoriza qualquer camada nova.
+
+**De onde vem a v2:** quatro relatórios de crítica adversarial que auditaram a v1
+contra o código vivo e contra as capturas de 15/08 — deles saem os números deste
+texto — mais um **plano conceitual externo consolidado pelo dono, 15/08**, que
+validou a direção e acrescentou quatro peças: estabilidade temporal como cláusula de
+arquitetura, detalhe como campo filtrado por pegada anisotrópica, a esfera analítica
+como regime intermediário, e o corpo estelar como três campos do mesmo estado.
+
 **O que este documento é:** o contrato único de como uma estrela é desenhada nesta
 casa, em qualquer distância, e a ordem de trabalho para chegar lá a partir do que
-já existe. Ele nasce em 2026-08-14, de um censo do código inteiro, e substitui as
-promessas soltas das Ondas 7 e 8 — que continuam válidas no espírito e estavam
-erradas no alvo.
+já existe. Ele substitui as promessas soltas das Ondas 7 e 8 e a v1 de 14/08 — que
+continuam válidas no espírito e estavam erradas no alvo.
 
 **A decisão do dono, em uma frase:** *uma estrela nunca "vira outra coisa"; ela só
 muda de tamanho.* SpaceEngine é a referência declarada.
@@ -13,259 +26,600 @@ muda de tamanho.* SpaceEngine é a referência declarada.
 
 ## 1. A LEI
 
-Existem **duas coisas**, sempre as mesmas, sempre juntas:
+Existem **duas coisas**, sempre as mesmas, sempre juntas, e **uma repartição** entre
+elas — nunca duas leis concorrendo. Mudar de **regime** não é "virar outra coisa": é
+a mesma estrela, com o mesmo fluxo e a mesma cor, desenhada pela matemática que cabe
+naquele tamanho de tela. A frase do dono continua inteira porque a repartição é
+contínua e conserva fluxo por construção; o que ela proíbe é o salto.
 
 **O disco** é a estrela. Tem tamanho angular verdadeiro, que encolhe com `1/d`. O
 **brilho de superfície dele NÃO muda com a distância** — só a área muda. Chegar
 perto de uma estrela não a deixa mais brilhante; deixa maior.
 
 **O clarão** é a lente (halo + espinhos de difração). Não é a estrela: é artefato
-do instrumento. Existe em **toda** distância, acompanha o fluxo recebido, e nunca
-pode ser ocluído pelo corpo que o causa.
+do instrumento. Existe em **toda** distância, **deve** acompanhar o fluxo recebido —
+hoje **não acompanha** (item 42: o borrão cresce de 119 px a 5.000 UA para 619 px a
+10.800 UA enquanto o fluxo do Sol **cai** 10×, `capturas/voo-ida-e-volta.json`) — e
+nunca pode ser ocluído pelo corpo que o causa. Regra escrita no indicativo é lida
+como verdade e faz a migração pular a verificação: aqui ela é **dívida nomeada**.
 
-**A troca.** Abaixo de **um pixel** não há disco para desenhar — é aritmética de
-tela, não escolha. Aí entra um ponto que carrega **exatamente o mesmo fluxo** que o
-disco carregava. Feito assim, a troca é invisível por construção.
+**A repartição.** Abaixo de **um pixel** não há disco para desenhar — é aritmética
+de tela, não escolha. A troca não é um interruptor nem uma rampa própria: são
+**pesos que somam 1 por construção**, medidos sobre `discoPx`. A conservação do
+fluxo passa a ser tautológica em vez de verificada por sorte. Toda rampa que hoje
+mede outra coisa (o halo, a dominância, o gate de 4 px) some dentro dela.
+
+**Três regimes, não dois** *(plano conceitual externo consolidado pelo dono,
+15/08)*. Entre o ponto/PSF e a malha com geometria entra um regime oficial: a
+**esfera analítica** — interseção raio-esfera resolvida dentro de um quad, sem
+malha. É barata, cobre uma faixa enorme de distâncias, e é **com ela que as outras
+estrelas ganham corpo** quando a câmera se aproxima, sem custo de geometria. Daí os
+três pesos: `wPonto`, `wEsferaAnalitica`, `wDisco` (o disco geométrico, com malha),
+somando 1 literalmente.
+
+**A régua tem DUAS perguntas separadas**, e confundi-las é trocar de representação
+por motivo de textura ou fingir detalhe por motivo de distância: **a pegada do pixel
+controla o DETALHE**; **o requisito geométrico controla a REPRESENTAÇÃO** — malha só
+quando a geometria a exige (câmera colada, displacement visível, horizonte curvo
+atravessando o quadro, interseção com outra coisa da cena).
+
+**A aproximação nunca CRIA detalhe; ela REVELA o que já pertencia ao mesmo estado**
+*(mesma origem)*. O que se vê a qualquer distância é o **mesmo campo**, filtrado
+pela **pegada do pixel** sobre a superfície (`dFdx`/`dFdy`) — e no limbo a pegada é
+**alongada**, então a filtragem é **anisotrópica**, ou o limbo ferve enquanto o
+centro está liso. É requisito da migração do corpo do Sol e do das demais estrelas, e
+é o que impede que "chegar perto" signifique "somar uma camada de octaves".
+
+**Duas trocas, não uma.** A casa faz **duas** trocas de representação e só uma
+conserva fluxo:
+1. `ponto ↔ disco`, **fluxo conservado** — o invariante abaixo;
+2. `radiância verdadeira ↔ superfície autorada` (o filtro solar), **fluxo NÃO
+   conservado**: 26,09 magnitudes, desvio declarado no cadastro e no selo.
+   Não é remendo: é uma **escolha de instrumento** e tem seção própria (§5.7).
+
+**O clarão tem ASAS.** `√ln fluxo` é a assinatura exclusiva de um perfil gaussiano —
+isto é, de um perfil **sem asas**. Perfil de instrumento real tem asa em lei de
+potência: aureola atmosférica (King 1971, Racine 1996) ∝ θ⁻²; envoltória de Airy ∝
+θ⁻³; Moffat ∝ θ⁻²ᵝ; a função de ofuscamento CIE/Spencer 1995 soma gaussiana +
+θ⁻³ + θ⁻². Para asa `p ∝ θ⁻ⁿ`, o raio visível a limiar `T` é
+
+> **R = θ₀ · (F/T)^{1/n}  ⇒  R ∝ F^{1/n} ∝ d^{−2/n}**
+
+e — a linha que fecha o assunto — **a compressão `β·asinh` NÃO altera esse
+expoente**: de `β·ln(2Fθ⁻ⁿ/β) = T` sai `θ ∝ F^{1/n}`, igual. A curva comprime o
+**valor**, nunca o **tamanho**. Nenhum β, nenhum ombro e nenhum joelho conserta o
+halo constante; só a forma da asa conserta.
+
+Das duas âncoras que o dono deu — quadro honesto a 1 UA com R ≈ 450 px, e ~8 px a
+15.800 UA (o alvo do item 42) — sai `n = 2·log(d₂/d₁)/log(R₁/R₂) = 2·4,199/1,750 =
+4,8`:
+
+| família | n | R ∝ | encolhe 1 → 2.000 UA |
+|---|---|---|---|
+| gaussiana `√ln` (o que a v1 propunha) | — | √ln F | **1,36×** ← a doença |
+| autor `0,08·10^(−0,3m)` (o que roda) | 4/3 | d^(−1,5) | 8,9e4× |
+| aureola King/CIE | 2 | d^(−1) | 2.000× |
+| envoltória de Airy | 3 | d^(−0,67) | 159× |
+| **Moffat β≈2,4 (n = 4,8)** | **4,8** | **d^(−0,42)** | **21×** ← alvo |
+
+**A lei do clarão é, portanto:** núcleo gaussiano σ (o que já existe) **+** asa
+`f/(1+(θ/θ₀)²)^β` com β ≈ 2,4, fração de espalhamento `f` declarada. Estrela fraca
+continua um ponto (a asa fica sob o limiar); estrela forte ganha auréola que
+**encolhe com a luz**. O valor final do expoente é **parâmetro de projeto**, não
+dogma: entra com gate de foto para o dono, entre 2,0 e 3,0, e o número escolhido
+fica escrito ao lado da captura que o escolheu.
+
+**E a mesma asa tem de existir na PIRÂMIDE DO BLOOM.** Metade do borrão que o dono
+vê não sai da PSF: sai do kernel. `UnrealBloomPass` roda `nMips = 5`, kernels
+`[6,10,14,18,22]`, e o mip 5 em 900/32 ≈ 28 px com σ ≈ 6 px do mip dá **σ ≈ 190 px
+em resolução plena** — um número puramente geométrico, que não conhece fluxo
+nenhum. É exatamente o halo de 120–180 px medido. Estender a pirâmide (8–12 mips) e
+pesar os níveis para a asa escolhida é a segunda metade do conserto; sem ela,
+qualquer lei correta no fragment continua sendo apagada pelo bloom.
 
 **A compressão.** A faixa entre "estrela enchendo o céu" e "pontinho" é de ~15
-ordens de grandeza; a tela tem 2. Caber é obrigação, e há duas formas: adaptar
-(a pupila) ou comprimir com uma curva FIXA. **A casa usa a segunda, por decisão do
-dono — ver §7.** A curva comprime o ALTO e não levanta o baixo, então o campo
-estelar e a galáxia passam intocados e **nunca esmaecem**, aconteça o que
-acontecer em quadro. E por ser fixa, nada depende do que está em foco.
+ordens de grandeza; a tela tem 2. Caber é obrigação, e há duas formas: adaptar (a
+pupila) ou comprimir com uma curva fixa. **A casa usa a segunda, por decisão do
+dono — ver §7.** Ela age em **dois pontos** da cadeia, medidos: na emissão
+(`BETA_EMISSAO = 300`, protege o half-float) e **dentro do passa-alta do bloom**,
+acima de um ombro (`BETA_DO_BLOOM = 0.45`, `OMBRO_DO_BLOOM = 40`, protege o quadro).
+A varredura de β provou que a emissão sozinha não basta — §5.2.
 
 ### O invariante que amarra tudo
 
-> **Em toda troca de representação, o fluxo integrado é o mesmo dos dois lados.**
+> **Em toda troca de representação, o fluxo integrado é o mesmo dos dois lados —
+> medido PÓS-curva, no que chega ao buffer.**
 
-Vale para disco↔ponto, para catálogo↔cascas, para cascas↔partículas da galáxia e
-para partículas↔lâminas. É o único teste que separa "lei" de "quatro camadas que
-por acaso se parecem".
-
----
-
-## 2. O CENSO — o que existe hoje (2026-08-14)
-
-**18 representações** de estrela ou de luz estelar, medidas no código.
-
-| # | representação | onde | lei de brilho | lei de tamanho |
-|---|---|---|---|---|
-| 1 | catálogo HYG (328.749) | `stars.ts` + `starShaders.ts` | `E = 10^(−0,4(m−expoM0))` | PSF: `2(2,2σ + σ√(2 ln peak))` |
-| 2 | cascas procedurais | `wrappedStars.ts` | mesma PSF, `M_V` sorteado por bin | mesma PSF |
-| 3 | Sol-ponto (vértice 0) | `planetas.ts` | mesma PSF, `aMagBase = −0,15` | mesma PSF |
-| 4 | os 9 planetas | `planetas.ts` | mesma PSF + fase MH18 | mesma PSF |
-| 5 | 16 clarões hero | `heroStars.ts` | **de autor**: core/glow/spikes | **`0,08·10^(−0,3m)` pc** |
-| 6 | SunStar (o Sol de longe) | `heroStars.ts` | mesmo FRAG, `uGain` da janela | ângulo `min(40°, 1,75°·10^(−0,3m))` |
-| 7 | corpo do Sol | `stellarBody.ts` + `sol/*.js` | **paleta H-alfa literal**, radiância ~1 | raio físico |
-| 8 | partículas da galáxia (4,02 M) | `galaxy.ts` + `galaxyShaders.ts` | `aAlpha` artístico ∈ [0,001; 0,7] | `px = aSize·H/(2·tan·d)` |
-| 9 | 7 lâminas emissivas do disco | `galaxyShaders.ts` | bake artístico | plano de 33,6 kpc |
-| 10 | glow do bojo | `galaxy.ts:760` | `GLOW_FRAG` | `uSize` em pc |
-| 11 | halo térmico | `galaxy.ts:782` | `GLOW_FRAG` | idem |
-| 12 | anã de Sagitário | `galaxy.ts:798` | `GLOW_FRAG` | idem |
-| 13 | marcador do Sol | `galaxy.ts:811` | `GLOW_FRAG` pulsante | idem |
-| 14 | forjas (5 populações) | `starForges.ts` | `aIntensity` por população | por população |
-| 15 | luz integrada da faixa | `nebulaShaders.ts:382` | termo `stellar` do raymarch | — |
-| 16 | campo 2D do carregamento | `CartografiaCanvas.ts` | sorteado, paleta pintada | sprites |
-| 17 | splats do bake da cartografia | `structureMap.ts:287` | `(17−mag)/8` | gaussiana |
-| 18 | bloom + gradação do Atlas | `post.ts` + `atlasConfig.ts` | decide o tamanho do clarão de TODAS | — |
-
-### As divergências medidas
-
-- **9 famílias de cor.** Uma é a lei da casa (Ballesteros B−V → Teff →
-  `blackbodyLinear`), usada por catálogo, cascas e heroes, e as três concordam bit
-  a bit. As outras oito divergem. A pior: **o Sol de perto tem cor de autor
-  (paleta H-alfa) e o Sol de longe tem cor de Ballesteros** — a mesma estrela, duas
-  cores. E a fórmula de Ballesteros existe em **três cópias** (`common.ts` GLSL,
-  `common.ts` CPU, `stellarPhysics.ts`), das quais só duas têm acordo anti-divergência.
-- **6 leis de magnitude aparente**, com dois pontos-zero incompatíveis: o campo
-  usa `M_V☉ = 4,85` e o `SunStar` usa `4,83` (0,02 mag, pinado como intencional).
-- **A lei do clarão não é fotometria.** `0,08·10^(−0,3m)` — expoente −0,3, sem
-  parentesco com o −0,4 da lei fotométrica. É o único lugar da casa em que o
-  TAMANHO de uma estrela sai de magnitude em vez de raio.
-- **O vão radiométrico: ~26 magnitudes** entre a fotosfera da malha (radiância
-  autorada ~1) e a lei do ponto (~2,8e10 para a MESMA superfície). É a maior
-  mentira de escala da casa e **não quebra nenhum teste**, porque o cadastro de
-  escala só tem coluna para TAMANHO.
-- **6 pares de dupla-luz**, 4 já desfeitos. Os 2 abertos:
-  - Sol-ponto ↔ corpo do Sol: a cessão existe mas é inócua (a 1 UA dá 0 exato) e a
-    malha, sendo opaca, **oclui** o ponto — é daí que nasce o passo para trás na luz;
-  - partículas da galáxia ↔ lâminas emissivas: **sem cessão nenhuma**, somam em aditivo.
-
-### A galáxia já tem a lei certa E o mesmo defeito
-
-A lei de tela das partículas tem **três regimes**:
-
-| faixa | fluxo | veredito |
-|---|---|---|
-| `px < 0,7` | `∝ px² ∝ 1/d²` | **certo** — é a troca sub-pixel conservando fluxo |
-| `0,7 ≤ px ≤ 3` | `∝ px² ∝ 1/d²` | **certo** — brilho de superfície constante |
-| `3 < px ≤ 20` | platô constante | teto artístico anti-estouro |
-| `px > 20` | `∝ 1/px² ∝ d²` | **a estrela ESCURECE ao ser aproximada** |
-
-Ou seja: **o precedente exato da lei que queremos já roda em produção**, nos dois
-primeiros regimes, sobre 4 milhões de pontos. E o mesmo defeito do Sol — escurecer
-ao chegar perto — já está lá, assumido como teto anti-estouro. Os dois regimes de
-cima existem porque não havia compressão. Com a curva fixa (§7), eles não têm
-razão de existir.
+Vale para disco↔ponto, catálogo↔cascas, cascas↔partículas e partículas↔lâminas. É
+o único teste que separa "lei" de "quatro camadas que por acaso se parecem" — e é
+**necessário e NÃO suficiente**: ele está VERDE hoje e o item 3 continua vermelho.
+Quem fecha o item 3 é `julgarEscada` de `scripts/visual/luz-do-quadro.mjs`
+(monotonia + teto + orçamento) **mais** o voo de ida e volta passando. O invariante
+sozinho jamais declara pronto.
 
 ---
 
-## 3. O CAMINHO
+## 2. O ESTADO — o que JÁ é padrão (15/08)
 
-Sete passos. Os dois primeiros destravam todos os outros; nada acima de F2 funciona
-antes de F2.
+**F1 e F2 saem da fila de trabalho.** Estão FECHADOS e viram estado, com endereço.
+Todo endereço aqui é **símbolo**, nunca linha: as âncoras de linha da v1 envelheceram
+em menos de 24 h e o documento sofria a doença que denunciava.
 
-### F1 — Uma unidade de luz para a casa
+| peça | endereço (símbolo) | o que faz | destino |
+|---|---|---|---|
+| a unidade da casa | `luzDaCasa.ts` (âncora, `fluxoDeEstrela`, ponte magnitude↔fluxo) | fotosfera = 1 | **sobe para L1** |
+| compressão na emissão | `BETA_EMISSAO`, `lerBetaDaEmissao` (`luzDaCasa.ts`) | β = 300 por fonte | sobe para L1 |
+| fotosfera na unidade | `FOTOSFERA_VERDADEIRA`, `radianciaDeTela` (`luzDaCasa.ts`), `cirurgiaDaFotosfera` (`stellarBody.ts`) | a malha emite a radiância verdadeira | sobe para L1 |
+| ombro no passa-alta | `BETA_DO_BLOOM`, `OMBRO_DO_BLOOM`, `domarOBloom` (`post.ts`) | 0,45 / 40 | sobe para L1 (instrumento) |
+| cessão pelo gate | `CESSAO_PELO_GATE_MULT`, `cessaoPeloGate` (`corpos/terra.ts`) | mult 1, sobre `LIMIAR_DO_GATE_PX` | **morre no M1** (vira `wDisco`) |
+| filtro solar | `filtroSolarAlvo` (`lodStellar.ts`), `uFiltroSolar`/`escreverFiltroSolar` (`stellarBody.ts`) | 26,09 mag em stops | **vira `overrideExpoente`** (M1) |
+| segunda coluna do cadastro | `fatorDeBrilho` em `EscalaDeclarada` (`escala.ts`) | declara mentira de BRILHO | fica — e passa a declarar o valor VIVO |
+| as cinco portas | `?bemis= ?bbloom= ?bombro= ?bfoto= ?bcede=`, registradas em `selo.ts` | caminho de volta | **cada uma morre no commit que migra o que ela protege** |
 
-Hoje há **três normalizações independentes que não se convertem**: `ANCORA_UA = 1`
-(a Terra a 1 UA lê 1), `expoM0 = 3,5` (a magnitude cujo pico de PSF vale 1) e
-`M_V☉ = 4,83`/`4,85`.
+**Provas vivas e seus limites.** O invariante disco↔ponto está verde (a dívida F2
+foi paga: `fatorDeBrilho: 1` no Sol, exigido por teste). O voo de ida e volta passa
+em 34 degraus (0,05 → 15.800 UA e volta, mesma sessão). Mas: a régua de luz
+**REPROVA 10 de 10 degraus** no padrão
+(`capturas/luz-do-quadro-bemis300bbloom045bombro40bfoto1.json`) — a 1 UA, borrão
+182 px contra teto de 40,4 px (4,5×), 4,28% do quadro lavado contra 0,458% (9,3×),
+luz média 0,156 contra 0,057 (2,8×). E o voo carrega um degrau de item 3 vivo:
+borrão **30 px @ 0,232 UA → 277 px @ 0,341 UA (9,2×)**, nas duas pernas, com
+`acimaDeMeia` 0,42% → 8,69% — a costura filtro↔cessão, que nenhum juiz atual
+enxerga.
 
-Âncora escolhida: **a radiância da fotosfera solar**. Tudo passa a ser "quantas
-vezes a superfície do Sol". A razão não é gosto:
-- é a única grandeza **invariante com a distância**, que é o fato físico central da lei;
-- é diretamente comparável entre disco e ponto (`fluxo = radiância × ângulo sólido`),
-  que é exatamente o invariante da troca;
-- e o número mais duro da casa (o vão de 26 magnitudes) é literalmente "a superfície
-  do Sol, medida de dois jeitos".
+### O censo vira CADASTRO_DE_REPRESENTACOES (em código)
 
-Entrega:
-- `src/three/luzDaCasa.ts` — puro: a âncora, `fluxoDeEstrela(teffK, raioPc, distPc)`
-  por Stefan-Boltzmann, e a ponte `magnitude ↔ fluxo` que faz as três normalizações
-  virarem uma. No dia 1 ela devolve os números de hoje: nada move.
-- **A segunda coluna do cadastro de escala.** `escala.ts` declara mentiras de
-  TAMANHO e não tem onde declarar mentira de BRILHO — por isso o vão de 26
-  magnitudes nasceu calado. Abrir `fatorDeBrilho` é o que impede a próxima.
+Em prosa o censo apodrece a cada commit — apodreceu em menos de 24 h. Ele vira uma
+tabela **em código**, no molde de `CADASTRO_DE_ESCALA`, com `id`, `arquivo`,
+`consomeL1`, `leiVelhaApagada`, `fatorDeBrilho`, `destino` e `razao`, mais um teste
+que reprova quando um arquivo da lista desenha luz sem importar a lei. Destino é
+uma de quatro palavras: **migra** (consome L1), **morre**, **instrumento** (consome
+a lei, não a implementa) ou **fora da lei** (com razão escrita).
 
-### F2 — Pôr a fotosfera na unidade
+| # | representação | onde | destino |
+|---|---|---|---|
+| 1 | catálogo HYG (328.749) | `stars.ts` + `starShaders.ts` | migra — **M3** |
+| 2 | cascas procedurais | `wrappedStars.ts` | migra — **M3** (lei própria: `m = MV + 5log₁₀d − 5 + ext·d`) |
+| 3 | Sol-ponto (vértice 0) | `planetas.ts` | migra — **M1** |
+| 4 | os 9 planetas | `planetas.ts` | migra — **M4** (consomem o *instrumento*, mantêm MH18) |
+| 5 | 16 clarões hero | `heroStars.ts` | migra — **M2**; a identidade "as 16" morre |
+| 6 | SunStar | `heroStars.ts` | **morre** — M1 |
+| 7 | corpo do Sol | `stellarBody.ts` + `sol/*.js` | migra — M1, com `overrideExpoente` |
+| 8 | partículas da galáxia (4,02 M) | `galaxy.ts` + `galaxyShaders.ts` | migra — **M6** |
+| 9 | 7 lâminas emissivas | `galaxyShaders.ts` | migra — M6 (cessão G2) |
+| 10–13 | glow do bojo, halo térmico, anã de Sagitário, marcador do Sol | `galaxy.ts` (`GLOW_FRAG`) | migra — **M5** |
+| 14 | forjas (5 populações) | `starForges.ts` | migra — M5; a **cópia** da lei de tela morre junto |
+| 15 | termo `stellar` do raymarch | `nebulaShaders.ts` | migra — **M7** |
+| 16 | campo 2D do carregamento | `CartografiaCanvas.ts` | **fora da lei** — 2D, não é cena |
+| 17 | splats do bake | `structureMap.ts` | migra — M7 |
+| 18 | bloom + gradação | `post.ts` + `atlasConfig.ts` | **instrumento** — consome L1, e é onde mora metade do padrão |
 
-A malha do Sol emite ~1; tem de emitir a radiância verdadeira. Como half-float
-satura em 65.504, a conta acontece **na emissão**, junto com a compressão fixa
-(§7) — a malha entra na mesma curva que todo o resto.
+### As divergências que sobram
 
-Sem abrir os 14 vendorizados: o adaptador já tem o precedente de injeção
-(`ctx.SUN_R_GLSL`, `ctx.SEG_EPS_GLSL`), e `onBeforeCompile` fecha o resto.
-
-Teste que define o sucesso: **no ponto de 1 pixel, o fluxo integrado do disco é
-igual ao do ponto.** É o fim do passo para trás na luz, e é o que destrava o item 3.
-
-### L1 — A lei única, em uma peça pura
-
-`src/three/world/estrela.ts`. Entrada `{teffK, raioPc, posição}` + câmera + tela.
-Saída `{diâmetro em px, fluxo recebido, cor}`. **Nenhuma camada volta a inventar
-brilho ou tamanho.** Todas as 18 passam a consumir daqui.
-
-### L2 — A troca em 1 pixel, conservando fluxo
-
-O gate do palco (4 px, sai em 2) é regra de **corpo texturizado**: abaixo de 4 px um
-globo com textura não tem o que mostrar. Estrela é diferente — o disco é uniforme e
-serve até 1 px. Os planetas ficam com a regra deles; as estrelas ganham a de 1 px,
-com a razão escrita.
-
-A rampa não se inventa: **`subPix = px²/0,49` da galáxia já é essa lei**, rodando
-sobre 4 milhões de pontos. Adotar, não reinventar.
-
-### L3 — O clarão contínuo, derivado do fluxo
-
-Morre `size = 0,08·10^(−0,3m)`. O tamanho do clarão passa a sair do fluxo recebido
-pela mesma raiz-do-logaritmo que a PSF já usa (`rSat = σ√(2 ln peak)`) — que é,
-aliás, como um clarão real cresce.
-
-Uma camada de clarão só, sempre acesa, para as **N fontes mais brilhantes em
-quadro** — um orçamento, não uma lista de 16 nomes. Com isso caem, de uma vez:
-`LOD_SOL.entrega` (a janela 0,02–0,05 pc), `sunStarGain`/`deepPointGain`, a classe
-`SunStar`, a identidade "as 16 heroes" e **a cessão por dominância** — que existe só
-para arbitrar uma dupla-luz que deixa de existir.
-
-### L4 — A compressão FIXA na emissão, alcançando tudo
-
-**Não é a pupila — ela está reprovada pelo dono (ver §7).** É uma curva fixa,
-`β·asinh(x/β)`, aplicada na emissão de cada fonte: identidade no céu, logaritmo no
-Sol, e **nada que dependa do foco**. A curva já existe e está testada em
-`post.ts`; falta movê-la para a emissão e fazê-la alcançar malha, partículas,
-lâminas, glows e forjas.
-
-### E — Todas as estrelas
-
-- **E1.** `teffK` e raio saem do catálogo: `ci → Teff` (Ballesteros, que já roda) e
-  raio por Stefan-Boltzmann. **Zero byte novo.** `stellarPhysics.ts` (816 linhas,
-  hoje sem nenhum consumidor de runtime) tem as leis prontas — **mas os oráculos
-  dele pinam valores de RENDER, não físicos** (Rigel 283 R☉ contra ~78 reais).
-  Acordá-lo é reescrever os oráculos, nunca satisfazê-los.
-- **E2.** O Sol sai da camada dos dez corpos. Ele não é um planeta: é a instância
-  nº 1 da lei estelar. A dupla-luz morre na raiz, em vez de ser arbitrada.
-- **E3.** `StellarBody` parametrizado por `teffK` (cor) e `convective` (granulação e
-  manchas: estrela fria ferve, estrela quente é lisa). A paleta H-alfa continua —
-  como **override declarado da instância nº 1**, não como lei.
-
-### G — Os bilhões
-
-- **G1.** `aAlpha` deixa de ser artístico e vira fluxo na unidade da casa (um grumo
-  de N estrelas não resolvidas tem fluxo integrado calculável). Aí o platô de 3–20 px
-  e o ramo que escurece acima de 20 px **morrem**: eram anti-estouro por camada, e
-  o anti-estouro honesto é a curva fixa de §7, igual para todos.
-- **G2.** Cessão partículas ↔ lâminas — a única dupla-luz sem mecanismo nenhum. O
-  molde já existe e funciona (`unresolved`/`resolvedByCatalog`).
-- **G3.** **A promoção.** Hoje uma partícula da galáxia nunca vira estrela do
-  catálogo. Com uma unidade só, a escada fecha em quatro níveis, cada um cedendo ao
-  seguinte com fluxo conservado:
-
-  > luz integrada → partícula → casca/catálogo (ponto) → corpo
-
-  É isto que "uma mecânica para bilhões de estrelas" quer dizer.
+- **A PSF tem QUATRO cópias**, e o próprio código já escreve a lista
+  (`luzDaCasa.ts`): `psfPointSizePx` (`lodStellar.ts`), `picoDaPsf` (`core/pupila.ts`),
+  `picoDaPsf` (`planetas.ts`) e o GLSL de `common.ts`. Sem unificá-las **antes**, L1
+  nasce como cópia nº 5. É o F0.
+- **Ballesteros em três cópias** (`common.ts` GLSL, `common.ts` CPU,
+  `stellarPhysics.ts`), duas com acordo anti-divergência. Fundir no F0, com
+  conformidade **numérica** — nunca varredura textual, que é o padrão "espelho" que
+  produziu as quatro PSFs.
+- **Dois pontos-zero incompatíveis:** `M_V☉ = 4,85` no campo, `4,83` no `SunStar`,
+  ambos declarados em `escala.ts`. L1 tem **UM**. A escolha é gate com foto para o
+  dono, agendado **antes do M3** — é ele que move 328.749 pontos.
+- **Quatro rampas para uma transição:** `cessaoAlvo` (smoothstep 1→2,5 sobre
+  `disco/halo`), `cessaoPeloGate` (a mesma smoothstep sobre `disco/(4·mult)`),
+  `filtroSolarAlvo` (smoothstep simétrico em log, ±ln 2,5) e o `Math.max` das duas
+  primeiras em `director.ts` — que é a quarta, e **um `max` de duas rampas C¹ tem
+  QUINA** na troca de dono.
+- **A lei de tela de três regimes tem DUAS cópias:** `galaxyShaders.ts`
+  (`clamp(px, 0.7, 20)`, `shrink = min(1, 9/px²)`, `subPix = px²/0.49`) e
+  `starForges.ts` (`clamp(px, 0.85, 26)`, o mesmo `shrink`, `subPix = px²/0.7225`).
+  Mesma lei, pisos e tetos diferentes.
+- **O censo foi feito de memória.** `grep gl_PointSize` devolve 8 emissores: dois
+  fora da lista (`dustShaders.ts`, com `clamp(px, 1.0, 5.0)` — teto de 5 px não
+  declarado — e `sol/cme.js`), e `wrappedStars.ts` emite `gl_PointSize = 0.0` como
+  forma de apagar, que é uma **terceira convenção de cessão**. Refazer por varredura
+  reprodutível, com o comando versionado ao lado da tabela.
+- **A galáxia já tem a lei certa E o mesmo defeito.** Abaixo de 0,7 px o fluxo cai
+  com `px²` (a troca sub-pixel, **certa**); de 0,7 a 3 px, brilho de superfície
+  constante (**certa**); de 3 a 20 px, platô; acima de 20 px, `∝1/px²` — **a estrela
+  ESCURECE ao ser aproximada**. Os dois regimes de cima são anti-estouro por camada
+  e morrem no M6.
 
 ---
 
-## 4. O QUE SAI
+## 3. A PEÇA ÚNICA
 
-Cada onda apaga o que ela substitui — item resolvido sai da lista, não vira camada
-por cima.
+`src/three/estrela.ts` — puro, **sem three**, importa **só** `luzDaCasa.ts`. Não
+fica em `world/`: `world/` é a camada que importa three, e a primeira necessidade de
+câmera puxaria three para dentro da lei, que deixaria de ser auditável em `node`.
 
-| o que | onde | por quê |
-|---|---|---|
-| `LOD_SOL.entrega` {0,02; 0,03; 0,05} pc | `lodStellar.ts:176` | a janela ponto↔clarão só existe porque o clarão era gateado; com clarão contínuo, não há o que entregar |
-| `sunStarGain` / `deepPointGain` | `lodStellar.ts:217-243` | idem — e com eles a "soma 1 exato" que os testes varrem |
-| classe `SunStar` | `heroStars.ts:232` | o Sol deixa de ter clarão próprio: usa o da casa |
-| a identidade "as 16 heroes" | `heroStars.ts` | vira orçamento das N mais brilhantes em quadro |
-| `size = 0,08·10^(−0,3m)` + `ESPELHO_COEF_CLARAO_PC` + o exemplar Sirius | `heroStars.ts:151`, `escala.ts:184,197` | tamanho de estrela deixa de sair de magnitude |
-| cessão por dominância (`heroDominanceFade`, `HERO_DOMINANCE`) | `lodStellar.ts:884+` | árbitro de uma dupla-luz que deixa de existir |
-| `DISC_ENTER_RAD` / `DISC_EXIT_RAD` / `shouldDiscBeActive` | `lodStellar.ts:499-560` | dormentes, ancorados no raio artístico morto; a regra de 1 px os substitui |
-| `RAIO_ARTISTICO_DO_SOL_PC` como âncora viva | `escala.ts:123` | só sobrevive porque três números nunca foram re-derivados dele |
-| `claraoDoAtlas` (o apagamento de 100×) | `atlasConfig.ts:362` | curativo do item 3; morre com ele |
-| `aFocus` | `stars.ts` (`aFocus`), `starShaders.ts` | **não sai agora** — canal do passo E3 (apaga o ponto quando nasce o corpo). Nasce zerado de propósito. Item 38 das pendências. Só vira lixo se a Onda do motor terminar sem fiá-lo |
-| platô 3–20 px e ramo `1/px²` da galáxia | `galaxyShaders.ts:68-74` | anti-estouro artístico que a compressão fixa (§7) substitui |
-| `ANCORA_UA = 1` | `luz.ts:59` | o próprio cabeçalho já diz que é provisória e que é ELA que move quando a radiometria fechar |
+```ts
+export interface Fonte {            // o que a estrela É (não conhece a tela)
+  teffK: number; raioPc: number; distPc: number;
+  tau?: number;                     // extinção acumulada até ela
+}
+export interface Instrumento {      // o que a CASA é (um só por quadro)
+  alturaPx: number; tanHalfFov: number;
+  expoM0: number; sigmaPx: number; beta: number;
+  trocaPx?: number;                 // 1 px = estrela; 4 px é regra de corpo TEXTURIZADO
+  exigeGeometria?: boolean;         // displacement/horizonte/interseção — NÃO é pegada
+}
+export interface Reparticao {
+  discoPx: number;                  // diâmetro angular verdadeiro (1/d)
+  radiancia: number;                // da superfície — SEM distância no argumento
+  fluxo: number;                    // recebido, já com extinção
+  cor: readonly [number, number, number];
+  wPonto: number;                   // ∈[0,1]
+  wEsferaAnalitica: number;         // ∈[0,1] — o regime intermediário (§1)
+  wDisco: number;                   // ESCRITO como `1 - wPonto - wEsferaAnalitica`
+                                    // — conservação tautológica: os três somam 1
+  claraoPx: number;                 // derivado do FLUXO, nunca de magnitude
+  pegadaPx: readonly [number, number]; // pegada do pixel na superfície, ANISOTRÓPICA
+                                    // (semi-eixos); no limbo os dois divergem
+  overrideExpoente: number;         // 1 = a lei; 0 = paleta autorada (instância nº 1)
+  overrideFator: number;            // quanto de brilho a exceção retira → cadastro + selo
+}
+export function repartir(f: Fonte, i: Instrumento): Reparticao;
+export const GLSL_LEI_DA_ESTRELA: string;   // o MESMO texto, para quem desenha na GPU
+```
+
+**Duas faces do mesmo texto.** As 18 representações são GLSL; 328.749 estrelas e
+4,02 M partículas não podem ser avaliadas por quadro na CPU. Então L1 publica o
+avaliador em TS **e** `GLSL_LEI_DA_ESTRELA`, com conformidade **NUMÉRICA** sobre uma
+grade de valores. Varredura textual é proibida como prova: foi ela que produziu as
+quatro cópias da PSF.
+
+**Fronteira, escrita uma vez:** `luzDaCasa.ts` é a **unidade e o instrumento**
+(fluxo, radiância, ponte magnitude↔fluxo, ângulo sólido, compressão). `estrela.ts` é
+a **única face pública** da lei. Nenhuma fórmula pode existir nos dois, e isso vira
+teste. Sem essa frase, o próximo agente não sabe onde escrever a próxima função — e
+é literalmente esse o mecanismo do frankenstein.
+
+**Por que esta assinatura mata as quatro rampas:**
+- a única régua da repartição é `discoPx`, o número que a §1 nomeia:
+  `wPonto = 1 − smoothstep(trocaPx, k·trocaPx, discoPx)`, `wEsferaAnalitica` sobe no
+  degrau seguinte, e `wDisco = 1 − wPonto − wEsferaAnalitica`. O degrau da malha
+  **não sai da pegada**: sai do requisito geométrico (§1), passado no `Instrumento`;
+- `cessaoAlvo` some porque a âncora dela era **circular** — media o disco contra o
+  **halo do ponto**, e o clarão passa a ser derivado do fluxo. **O clarão é SAÍDA,
+  nunca entrada;**
+- `cessaoPeloGate` some porque o gate de 4 px é regra de corpo **texturizado** e
+  vira o **parâmetro** `trocaPx`, não uma segunda lei. O `Math.max` some junto, e
+  com ele a quina;
+- `filtroSolarAlvo` deixa de ser rampa e vira `overrideExpoente`: mesma régua,
+  largura própria, dentro da mesma função, com o custo saindo por `overrideFator` —
+  o número que falta ao cadastro;
+- **fallback único**, decidido uma vez, na direção que não pode cegar o quadro:
+  entrada inválida ⇒ `wDisco = 0, wPonto = 1, overrideExpoente = 0`.
+
+Os sítios de hoje viram leituras da mesma saída: `planetas.aCede ← r.wDisco`;
+`sun.uFiltroSolar ← r.overrideExpoente`; clarão ← `r.claraoPx` com ganho `r.wPonto`.
+`sunStarGain`/`deepPointGain` deixam de existir porque o clarão deixa de ser gateado.
+`fluxo` sai **com** extinção — hoje `starShaders.ts` a aplica só quando
+`size > 3.0`, uma troca de lei em 3 px que faria o orçamento do clarão ordenar por
+um número que a tela não mostra.
 
 ---
 
-## 5. O QUE VAI QUEBRAR DE PROPÓSITO
+## 4. AS MIGRAÇÕES
 
-A casa cobra muita coisa por **varredura textual do código-fonte**. Estes testes
-falham quando a fundação mudar, e falhar é o comportamento correto — mas quem
-mudar tem de reescrever o oráculo, não contorná-lo:
+**A regra de todo commit de migração**, sem exceção:
+(i) apaga os símbolos da lei velha; (ii) **inverte a varredura textual no mesmo
+diff** — "tem de conter X" vira "não pode conter X", num arquivo único de símbolos
+proibidos com o commit que matou cada um; (iii) atualiza `CADASTRO_DE_REPRESENTACOES`
+e o `fatorDeBrilho` correspondente; (iv) **mata a porta `?b*`** que protegia aquela
+representação — o lado A vira captura + teste numérico, nunca ramo de runtime;
+(v) declara o delta aceito **ANTES** nas réguas que já existem (`luz-do-quadro.mjs`,
+`voo-ida-e-volta.mjs`, as 18 vistas A/B) e traz o número **medido** no commit;
+(vi) a lei devolve valor já comprimido (ou expõe β) — a compressão não é passo, é
+**cláusula de toda migração**.
 
-- `escala.test.ts:63-69` casa a regex `const size = ([\d.]+) \* lum;` contra o fonte
-  de `heroStars.ts`. L3 apaga essa linha.
-- `pupila.test.ts:31-33` exige o texto literal das três linhas de `GLSL_STAR_PSF`.
-  F1 mexe nelas.
-- `lodStellar.test.ts:726` cobra `ponto + clarão === 1` com `Object.is` em ~22.000
-  distâncias; `:1688` exige o literal `return 1 - sunStarGain(dPc);`. L3 mata os dois.
-- `luz.test.ts` pina a lei de luz por corpo inteira, e `terra.test.ts:499` /
-  `lua.test.ts:294` pinam `uLuzGanho` bit a bit. F1 os toca.
-- `stellarPhysics.test.ts` pina ~60 valores, **vários deles não físicos** (Rigel
-  283 R☉). E1 os reescreve.
-- `corpos.test.ts:246` crava que o Sol arma em 3,60 UA e desarma em 7,19 UA. L2 move.
+**Antes da primeira linha de `estrela.ts`:** rodar `luz-do-quadro.mjs` sem EXTRA no
+estado padrão e versionar. Hoje `capturas/luz-do-quadro.json` é de 13:57 e contém o
+desenho ANTIGO (borrão 900 px, REPROVA 4/4), enquanto o padrão subiu às 22:57 — é
+armadilha de procedência, e a casa proíbe md5 sem medir.
 
-## 6. DUAS ARMADILHAS NOMEADAS
+### F0 — PSF e Ballesteros num endereço só (pré-requisito duro)
+**Entra:** uma PSF e uma Ballesteros, com conformidade numérica GLSL↔CPU.
+**Apaga:** `picoDaPsf` de `core/pupila.ts` e de `planetas.ts`, o literal GLSL solto,
+duas das três cópias de Ballesteros. **`picoDaPsf` muda de casa aqui** — o director
+importa a lei viva de dentro da lápide, e um módulo marcado como morto que hospeda
+uma lei viva é o cenário exato do "as AIs vão se perder".
+**Régua:** funções puras, bit-idênticas. **Delta declarado: zero pixel.**
 
-1. **Dois raios, dois nomes.** `RAIO_SOL_PC` em `escala.ts` é a fotosfera
-   (2,2567e-8 pc). `R0_PC` em `frameGalactico.ts` é a distância Sol–centro
-   (8.150 pc). Onze ordens de grandeza. Um import trocado compilava, rodava
-   e mentia — os nomes agora são distintos.
-2. **Não confundir cessão com duplicidade.** O censo de duplicidade anterior já
-   produziu um falso positivo grave ("a faixa da galáxia é desenhada 2×" era uma
-   cessão funcionando). Antes de costurar qualquer par, conferir se não é uma cessão
-   que já funciona — quatro dos seis pares JÁ estão desfeitos.
+### L1 — A lei única (com o L2 dissolvido)
+**Entra:** `estrela.ts` com a assinatura do §3, o clarão de asas do §1, os **três
+pesos** (ponto / esfera analítica / disco geométrico), a pegada anisotrópica, o
+ponto-zero único (gate de foto **antes do M3**), e `trocaPx` como parâmetro — o
+antigo L2 não é passo, é um campo. **Apaga:** nada ainda; L1 nasce sem consumidor e
+com teste de conformidade. **Régua:** grade numérica TS↔GLSL; nenhuma vista muda.
+**Delta declarado: zero pixel.**
+
+### M1 — A instância nº 1 (Sol-ponto + SunStar + corpo), num commit só
+**A maior demolição por commit da casa.** É onde moram os itens 3, 4, 5, 40 e 42.
+**Apaga:** `cessaoAlvo` (uso do Sol), `cessaoPeloGate` + `CESSAO_PELO_GATE_MULT`,
+`filtroSolarAlvo` + `MEIA_LARGURA_LOG_DO_FILTRO`, `sunStarGain`/`deepPointGain`,
+`LOD_SOL.entrega`, a classe `SunStar`, `DISC_ENTER_RAD`/`DISC_EXIT_RAD`/
+`shouldDiscBeActive` e os órfãos do mesmo bloco (`computeSolidAngle`,
+`distanceForSolidAngle`, `LIMIAR_DA_ENTREGA_PC`, `POINT_SIZE_CEILING_PX`,
+`spriteAttenuationWithFocus`, `heroCatalogFade`), `claraoDoAtlas` + `PISO_DO_CLARAO`
++ `REFERENCIA_UA`, as portas `?bcede` e `?bfoto`, e o oráculo `ponto + clarão === 1`.
+**Atenção:** `heroDominanceFade`/`HERO_DOMINANCE` **muda de dono**, não sai — a onda
+de 15/08 os transformou em viga do filtro solar e da cessão. A rampa `g(r)` sobe
+para `estrela.ts` **antes** de qualquer demolição.
+**Entra também:** o corpo do Sol passa a declarar os três campos `S`/`C`/`E` (§5.18)
+e a consumir a pegada anisotrópica; a esfera analítica cobre a faixa entre o ponto e
+a malha, e a malha só entra por requisito geométrico.
+**Régua:** `voo-ida-e-volta.mjs` + `luz-do-quadro.mjs`. **Delta a declarar antes:**
+o degrau 0,232 → 0,341 UA cai de 9,2× para ≤ 1,5×; a escada passa de REPROVA 10/10
+para no mínimo 7/10.
+
+### M2 — As 16 heroes = o antigo L3
+**Entra:** o clarão de asas, uma camada só, sempre acesa, para as **N fontes mais
+brilhantes em quadro** (orçamento, não lista de nomes) — **e o parâmetro do bloom
+governado pela lei** (número de mips e pesos derivados da asa escolhida). Sem os
+dois termos, o item 42 fica consertado na lei e quebrado na tela.
+**Apaga:** `size = 0,08·10^(−0,3m)`, `ESPELHO_COEF_CLARAO_PC` + o exemplar Sirius,
+`HERO_DOMINANCE`/`heroDominanceFade`/`heroDominanceRatio`/`writeHeroFades`/
+`DOMINANCE_DEFAULT_ON`/`aFade`, a identidade "as 16", `uExposicao` e a espinha de
+exposição inteira, o clamp `sat`, e — com F0 feito — **`core/pupila.ts` INTEIRO**
+(329 l) + `pupila.test.ts` (230 l) + `?pupila`/`?dom`/`?nodom`. O que sobrevive da
+pupila é o que ela **MEDIU** (§7) e a técnica de pré-exposição, que é correta pelo
+motivo half-float. **A medição fica no documento, não em código.**
+**Régua:** `luz-do-quadro.mjs` PASSA 10/10; borrão a 15.800 UA ≤ 20 px.
+**Ordem:** o clarão de autor só é apagado **depois** que a lei nova passa na régua —
+senão a casa fica sem clarão nenhum no intervalo.
+
+### M3 — Catálogo + cascas
+**Gate obrigatório ANTES:** o ponto-zero único (4,83 × 4,85), decidido com foto pelo
+dono. **Apaga:** o segundo ponto-zero, a extinção condicional de 3 px, a lei de
+magnitude própria das cascas (`+ ext·d`, em CPU por bisseção e em GLSL) — ou, se ela
+sobreviver, um teste prova que casca e catálogo depositam o mesmo fluxo para a mesma
+estrela. Acende `aFocus` e fecha o E3 (item 38) — **e o E3 é a esfera analítica**:
+é assim que uma estrela qualquer ganha corpo ao ser aproximada, com `S`/`C` no
+impostor e `E` por fora, sem uma malha por estrela. **Régua:** as 18 vistas A/B.
+
+### M4 — Os nove planetas
+Não são estrelas: consomem o **instrumento** da lei e mantêm a fase MH18. Risco
+baixo, fecha a camada. **Apaga:** a cópia de `picoDaPsf` já morta no F0 e o `uGain`
+ponto a ponto de `planetas.test.ts`.
+
+### M5 — Os quatro glows + as forjas
+Um `GLOW_FRAG` só e `starForges.ts`. **Apaga:** a **segunda cópia** da lei de tela
+de três regimes (piso 0,85 / teto 26 / `px²/0.7225`). Barato, um shader.
+
+### M6 — A galáxia (partículas + lâminas)
+**Entra:** `aAlpha` deixa de ser artístico e vira fluxo na unidade da casa; a cessão
+partículas↔lâminas (a única dupla-luz sem mecanismo nenhum — o molde
+`unresolved`/`resolvedByCatalog` já existe); e a **promoção**, que fecha a escada em
+quatro níveis com fluxo conservado: `luz integrada → partícula → casca/catálogo
+(ponto) → corpo`. **Apaga:** o platô 3–20 px e o ramo `1/px²`, e um piso de sub-pixel
+único fica na lei. **Maior risco visual (4,02 M):** por último entre as fontes, com o
+invariante já provado em quatro famílias. **Advertência medida:** a curva na emissão
+foi necessária e **insuficiente** para o Sol; prever que ela baste para a galáxia é
+repetir o erro — a garantia de half-float tem de ser medida **sobre o pixel somado**
+(contagem de sobreposição no núcleo galáctico), não sobre a fonte isolada.
+
+### M7 — O resto emissivo
+Termo `stellar` do raymarch (`nebulaShaders.ts`) e splats do bake
+(`structureMap.ts`). **Fora da lei, declarado:** o campo 2D do carregamento.
+
+### MB1 — O juiz de estabilidade temporal
+Não é migração de representação: é a régua que falta. Delta entre **quadros
+consecutivos** num zoom lento, com tolerância declarada (§5.17). **Entra antes do
+M6** — é a migração de 4,02 M partículas que mais pode chiar, e hoje nenhum juiz da
+casa enxerga cintilação.
+
+### O saldo
+Se as migrações forem executadas inteiras: ~1.560 linhas de produção apagadas
+(`lodStellar.ts` sozinho perde ~770 de 1.310 — 59%) e ~1.900–2.150 de teste, contra
+`estrela.ts` nascendo com 400–600. **Saldo líquido: −2.900 a −3.100 linhas**, de
+50.856 TS. A onda da luz somou +1.216 linhas em um dia para tapar um buraco; a Lei
+Única é o primeiro trabalho do projeto que **devolve** linha, e devolve duas vezes e
+meia o que a última onda gastou. **O risco não é o tamanho da demolição — é a
+ordem.**
+
+---
+
+## 5. AS CLÁUSULAS DE HONESTIDADE
+
+Cada uma é dívida medida. Nenhuma pode ser fechada por argumento; só por número.
+
+**5.1 O invariante é cobrado PÓS-curva.** Hoje `luzDaCasa.ts` iguala
+`depositoDoDisco` e `depositoDoPonto` **antes** da compressão, e `starShaders.ts`
+escreve `comprimir3(col, uBeta)` depois. Como `∫comprimir(pico·G) ≠
+comprimir(∫pico·G)`, na troca de 1 px com β = 300 o disco escreve 4.496 e o ponto
+147.980 — razão **32,9×**, ou 3,8 magnitudes. A "troca invisível por construção" é,
+hoje, visível. Ou o invariante é cobrado sobre o que chega ao buffer, ou a curva é
+aplicada depois da soma.
+
+**5.2 A compressão age em dois pontos, e o custo tem o sinal CORRIGIDO.** A v1 dizia
+que a soma de valores comprimidos fica *abaixo* do físico. É o contrário:
+`β·asinh(x/β)` é côncava com `f(0)=0`, logo **subaditiva**, `f(a)+f(b) ≥ f(a+b)`. Com
+β = 300: `2·C(1e6) = 5.283` contra `C(2e6) = 2.849` → **1,85× ACIMA**; no pico do Sol
+(3,9e11), **1,94×**. E são **dois desvios distintos, de sinais opostos**: por fonte,
+na emissão; e sobre a **soma** (o texel já somado do passa-alta), no ombro do bloom.
+O selo declara os dois, separados. Custo declarado errado é pior que custo não
+declarado.
+
+**5.3 A compressão por canal DESSATURA.** `comprimir3` age em `vec3`. Uma estrela de
+cor linear (1; 0,5; 0,3) com pico P vira: P=1e4 → (1; **0,835**; **0,714**); P=1e9 →
+(1; 0,956; 0,923). **Toda estrela forte fica branca** — o que destrói a cadeia
+Ballesteros → Teff → `blackbodyLinear` sobre a qual a lei inteira se apoia. A forma
+que **preserva croma** já existe no `KNEE_SHADER` (o ramo `uMode ≤ 0.5`), mas o
+default é `uMode = 1` e o modo correto só entra por `?kneemode=lum`. **Inverter o
+default, usar a mesma forma na emissão, e o modo por canal morre.**
+
+**5.4 O clamp `sat` é TETO DE BRILHO vivo.** `sat = clamp(0.5*log2(max(peak,1)), 0, 1)`
+**satura em `peak = 4`** — em 900 px, `m = 0,75`. Sirius (m = −1,46) e o Sol a 1 UA
+(m = −26,7) — 25 magnitudes, fator 1e10 — recebem **espinhos e núcleo idênticos**. É
+literalmente "dois brilhos diferentes viram o mesmo pixel", proibido pelo NORTE, e a
+v1 não o listava. Entra na demolição do M2: espinhos derivados do fluxo comprimido,
+não de um `clamp`.
+
+**5.5 A radiância passa a ser a integral Planck×CIE NÃO normalizada.**
+`radianciaDeCorpoNegro` devolve `(T/T☉)⁴` — bolométrica — num pipeline em que a cor
+é **normalizada a Y = 1**, isto é, não carrega luminância. Erro na banda visível:
+30.000 K → Planck(550 nm) dá razão 66 contra T⁴ = 729 (**11× brilhante demais**);
+3.000 K → 0,0150 contra 0,0729 (**4,9× fraca demais**). A função da integral já
+existe. Consequência: o "zero byte novo" do raio por Stefan-Boltzmann **não fecha
+sem correção** — pela receita crua, Rigel dá 52,9 R☉; com BC(12.100 K) ≈ −0,8, dá
+73,4 R☉ ≈ real (~78). Ou entra uma tabela BC(Teff) e o "zero byte" cai, ou tudo
+passa a viver na banda de render — **decisão explícita, nunca implícita**. (O
+oráculo pinado de 283 R☉ é valor de RENDER: reescreve-se, não se satisfaz.)
+
+**5.6 A lei é invariante com a resolução.** `peak = E/(2πσ²)` com `σ ∝ alturaPx` dá
+**`peak ∝ 1/H²`**. Limiar de espinhos cheios: H=720 → m < 1,23; H=900 → m < 0,75;
+H=1080 → m < 0,35; **H=2160 → m < −1,15**. Num 4K quase todo o céu perde a cruz de
+difração, e o β = 300 (número absoluto de buffer) morde em magnitudes diferentes. L1
+normaliza por **ângulo sólido por pixel**; σ e β em unidades de campo, não de
+buffer. (Liga-se ao item 6 das pendências.)
+
+**5.7 O filtro solar é SEÇÃO da lei, não remendo.** Ele é a segunda troca da §1:
+`pow(fator, uFiltroSolar)`, 26,09 magnitudes entre a radiância verdadeira (g=1) e a
+paleta autorada (g=0). Como `overrideExpoente`/`overrideFator`, ele é: uma escolha
+de **instrumento** (transmitância), com **régua compartilhada** com `wDisco` (a mesma
+`discoPx`, largura própria), **custo no cadastro** e no selo, e **default seguro** —
+hoje `uFiltroSolar` nasce em 1 (radiância verdadeira, o quadro cego) e só é escrito
+dentro de `if (this.planetas)`. Quem desenha o corpo escreve a emissão do corpo.
+
+**5.8 O `fatorDeBrilho` do Sol volta a declarar o valor VIVO.** O cadastro diz
+`fatorDeBrilho: 1` com a razão "agora a fotosfera emite a radiância verdadeira". Mas
+o filtro desce em stops: o fator vivo é `2,7e10^(1−g)` — ~11× a 1 UA (g = 0,901) e
+~2,7e10× abaixo de ~0,22 UA. **A coluna nasceu exatamente para que a próxima mentira
+de brilho não nascesse calada, e ela nasceu calada no mesmo commit que criou a
+coluna.** Isto fica escrito aqui como LIÇÃO: uma coluna de honestidade só honesta
+quem a preenche depois. A entrada do Sol declara faixa + rampa (ou ganha entrada
+`filtro-solar` própria), e o selo mostra o valor vivo, não o do infinito. Vale
+igual para β=300, o ombro 0,45/40 e a cessão: hoje o desvio é declarado quando é do
+visitante e calado quando é da casa.
+
+**5.9 UM ponto-zero.** 4,83 × 4,85, 0,02 mag, pinado como intencional. Gate com foto
+para o dono **antes do M3**. Se L1 carregar os dois, a peça que existe para acabar
+com a duplicidade nasce duplicada.
+
+**5.10 O que as réguas ainda não veem.** `julgarEscada` cobra monotonia com
+tolerância de 1 px e não tem critério de **continuidade**: um penhasco de 10× (619 →
+15,9 px) passa sem uma linha vermelha. O voo compara `solArmado`, `acimaDeMeia` (1
+p.p.) e cegueira absoluta, **nunca chama `julgarEscada`**, e grava `luzMedia` sem
+comparar — a 0,05 UA a ida lê 0,17269 e a volta 0,05883 (**2,94×**) e o harness
+devolve `"erros": []`. E o PASSA do voo depende de um degrau cair **0,0035 UA**
+dentro da borda da banda de histerese (1,70676–3,41353 UA). Antes do M1: razão
+máxima entre vizinhos no `julgarEscada`, `luzMedia` comparada com tolerância
+declarada, e a margem da banda escrita no JSON. O teto da régua passa a ser derivado
+da lei nova — hoje `teto = 3 × max(disco, clarão)` com `claraoPsfPx` sendo a MESMA
+`√ln`, ou seja, **o juiz exige um clarão quase constante**.
+
+**5.11 O sprite descarta 8,9% do fluxo das estrelas fracas.** Com `rSat = 0` o raio
+é 2,2σ e a fração contida do gaussiano 2D é `1 − exp(−2,2²/2) = 0,911`. As fracas
+depositam 91,1% e as fortes ~100%: viés de 9% dependente do brilho, invisível porque
+o invariante só é cobrado no ponto de 1 px. Cobrar em pelo menos **três** pontos da
+escada, ou renormalizar por `1/(1−exp(−R²/2σ²))`.
+
+**5.12 O ombro tem resolução efetiva declarada.** Entrada 6,5e3 → 44,6; entrada
+6,5e4 (uma década a mais de luz) → 45,6: **2,2% de saída por década**, que depois de
+ACES e 8 bits é menos de 1 LSB. "Asinh é estritamente crescente, logo não é teto"
+não é argumento: monotonicidade não é distinguibilidade. O ombro declara **stops por
+LSB**, ou o "proibido teto de brilho" já está violado de fato.
+
+**5.13 "Fixa" é promessa forte demais.** O ombro age **por pixel acima do limiar**,
+então a fração de energia comprimida depende de quantos pixels a fonte cobre — isto
+é, da distância. **Não depende de FOCO**, e a regra do dono está respeitada. A
+promessa correta é: *não depende do foco nem do conteúdo do quadro*, com a
+dependência de tamanho aparente declarada.
+
+**5.14 A troca conserva energia e não conserva aparência.** Na distância de troca de
+1 px (7,56 UA para o Sol, a 900 px e 58°), a PSF do ponto mede **12,65 px**: um disco
+duro de 1 px vira um borrão de 12,65 px. A integral é a mesma, a imagem não. Ou o
+disco também passa pelo instrumento (mesma convolução, mesma cauda), ou a §1 admite
+as duas coisas e o teste do L1 as cobra **separadas**.
+
+**5.15 A profundidade do clarão é parte da lei.** A §1 promete que o clarão nunca é
+ocluído pelo corpo que o causa; só o `SunStar` põe `depthTest: false`. Os 16
+billboards não. Estado de profundidade entra na lei (M2), não na escolha de material.
+
+**5.16 A paleta H-alfa é override de INSTRUMENTO ou sai.** H-alfa é banda estreita em
+656,3 nm; a fotosfera a 5.772 K é branca. Como está, a única estrela que o visitante
+pode inspecionar de perto é justamente a que **nunca testa** a lei de cor que M3
+constrói. Ou vira modo de instrumento aplicável a TODAS as estrelas (aí é honesto e
+testável), ou sai — "override declarado" não pode ser o nome novo da lei de autor.
+
+**5.17 ESTABILIDADE TEMPORAL é cláusula de arquitetura, não polimento.**
+*(plano conceitual externo consolidado pelo dono, 15/08.)* **Nenhum campo
+procedural, nenhuma PSF, nenhum crossfade e nenhum clarão pode "ferver" ou cintilar
+quando a câmera avança frações de por cento.** Coerência quadro-a-quadro é requisito
+AAA **tão obrigatório quanto detalhe espacial**: imagem parada bonita que chia em
+movimento é trabalho reprovado, não quase pronto. Consequências exigíveis: os pesos
+da repartição são C¹ (é o que mata a quina do `max`, §8.3); a filtragem pela pegada
+é anisotrópica (§1), porque é a isotrópica no limbo que produz o chiado clássico; e
+nenhuma transição depende de limiar duro sobre grandeza que oscila com o movimento.
+**Migração nomeada — MB1:** um juiz que compara **quadros consecutivos num zoom
+lento** (delta por pixel e delta de energia em banda alta), com tolerância
+declarada. Hoje não existe — `voo-ida-e-volta.mjs` amostra 34 degraus **distantes**
+e é cego a cintilação por construção. Sem MB1, "não ferve" é opinião.
+
+**5.18 O corpo estelar é UM estado em três campos.** *(plano conceitual externo
+consolidado pelo dono, 15/08.)* O desenho-alvo do corpo — do Sol e de toda estrela
+que ganhe corpo — separa três campos do **mesmo** estado, nunca três camadas
+independentes: **`S(n, t)`**, a superfície (granulação, manchas, faculae);
+**`C(n, h, t)`**, a cromosfera, casca fina sobre `S` com altura própria; e
+**`E(x, t)`**, o exterior (coroa, proeminências, loops, espículas, ejeções) no
+espaço 3D em volta.
+
+**Cada estrutura exterior tem critério de visibilidade PRÓPRIO** — escala projetada
+em px, significância física, contraste contra o fundo local — **nunca amarrado ao
+LOD do renderer**. Uma proeminência não some porque o corpo trocou de regime: some
+quando fica pequena, fraca ou sem contraste, e isso se mede nela mesma. É a mesma
+doutrina do clarão — decide a grandeza da própria coisa, não o estado da câmera. O
+`sol/*.js` vendorizado já **aproxima** este desenho; a migração o **formaliza**: dá
+nomes aos três campos, tira os critérios de visibilidade de dentro do LOD, e é o que
+permite à esfera analítica (§1) hospedar `S` e `C` sem malha, com `E` por fora.
+Requisito de M1 (Sol) e de M3/E3 (as demais).
+
+---
+
+## 6. O QUE QUEBRA DE PROPÓSITO
+
+A casa cobra muita coisa por **varredura textual do fonte**. Estes testes falham
+quando a fundação mudar, e falhar é o comportamento correto — mas quem mudar
+**reescreve o oráculo, nunca o contorna**, e no mesmo diff **inverte** a varredura.
+Endereços por símbolo; a v1 os deu por linha e todos envelheceram.
+
+**Já aconteceu: nada.** F1 e F2 entraram bit-neutros ou com oráculo apertado
+(`luzDaCasa.ts` declara por escrito "no dia 1 este módulo não move um pixel"). Duas
+previsões da v1 foram falsificadas: F1 não tocou as três linhas literais de
+`GLSL_STAR_PSF` em `pupila.test.ts` nem o `uLuzGanho` de `terra.test.ts`/`lua.test.ts`.
+
+**Vai acontecer:**
+- `escala.test.ts` casa a regex `const size = ([\d.]+) \* lum;` contra o fonte de
+  `heroStars.ts` — **M2** apaga a linha.
+- `pupila.test.ts` (230 l inteiras) exige o texto literal de `GLSL_STAR_PSF` — **F0**
+  move e **M2** apaga o arquivo.
+- `lodStellar.test.ts` cobra `ponto + clarão === 1` com `Object.is` em ~22.000
+  distâncias e exige o literal `return 1 - sunStarGain(dPc);` — **M1** mata os dois.
+  São **332 citações** de símbolos condenados no arquivo, de 2.139 linhas.
+- `planetas.test.ts` (23 refs: o teorema de complementaridade e o `uGain` ponto a
+  ponto), `corpos.test.ts` (o Sol arma em 3,60 UA e desarma em 7,19 UA),
+  `cameraRig.test.ts` (3 refs), `luz.test.ts` (`irradianciaRelativa(ANCORA_UA)===1`),
+  `selo.test.ts` (as portas) — **M1/M4**.
+- `stellarBody.test.ts` e o bloco `filtroSolarAlvo` de `lodStellar.ts` — oráculos
+  **novos**, nascidos em 15/08, que M1 quebra.
+- `stellarPhysics.test.ts` pina ~60 valores, vários não físicos — **M3**.
+- `core/engine.test.ts` diz que a vista `sol` está a 0,063 pc contra 1,2955e-7 pc
+  vivo (487.000×): literal envelhecido, **item 41**, verde só porque a asserção
+  vizinha exige "acima de 0,05 pc". Trocar pelo certo deixa vermelho sem ter achado
+  defeito. Conserto certo: mover `sol` para `PROFUNDAS`.
+
+**§6 vira tabela gerada por grep** dos símbolos proibidos, com contagem por arquivo —
+mantida à mão, ela mente em uma semana.
+
+**Sobrevive, contra a v1:** `RAIO_ARTISTICO_DO_SOL_PC` **não sai**. Tem consumidor
+vivo e documentado (`epsilonDeSegmentoGlsl` em `stellarBody.ts`): fica como âncora de
+**PROCEDÊNCIA**, nunca de geometria — trocá-la pelo raio real mudaria o número
+fingindo que a calibração foi refeita. E `aFocus` não sai: nasce zerado de propósito,
+é o canal do M3 (item 38 das pendências); só vira lixo se a onda terminar sem fiá-lo.
 
 ---
 
@@ -288,42 +642,106 @@ bug; a exposição as estava apagando.
 
 ### A LEI, e ela vale para todo o resto deste documento
 
-1. **NADA de exposição que dependa do que está em foco.** Nem adaptativa, nem
-   por alvo, nem "medindo o corpo em quadro". A grandeza da cena galáctica e do
-   campo estelar **não é variável de estado**.
+1. **NADA de exposição fotométrica que dependa do que está em quadro.** Nem
+   adaptativa, nem por alvo, nem medindo a CENA ou o histograma. A grandeza da cena
+   galáctica e do campo estelar **não é variável de estado**.
+   **A distinção que faltava, escrita:** é *permitida e declarada* a troca de
+   representação pelo **tamanho aparente da PRÓPRIA fonte** — geometria fixa, que não
+   toca em nenhum outro pixel da tela. É isso que `wDisco` e `overrideExpoente` são.
+   O que está proibido é medir a cena para decidir a exposição; o que é lícito é
+   medir a fonte para decidir como ela se desenha. Sem esta emenda escrita, o padrão
+   que roda hoje está formalmente em desacordo com a única regra que existe para
+   obedecer — e a defesa mora só no código, não no documento que o dono lê.
 2. **O campo estelar e a galáxia nunca esmaecem.** Qualquer mecanismo cujo efeito
    colateral seja escurecê-los está reprovado por construção, por mais honesto que
    seja o argumento físico.
-3. **`core/pupila.ts` fica como LÁPIDE**, não como plano. Ela nasce desligada e
-   assim continua. O que sobrevive dela é o que ela MEDIU — o vão de ~26
-   magnitudes entre a malha e o ponto (§2) — e o mecanismo de pré-exposição no
-   shader, que é a técnica correta pelo motivo half-float e não tem nada a ver com
-   adaptar por foco.
+   **A regra absoluta da Via Láctea, na formulação que ele aprovou** *(plano
+   conceitual externo consolidado pelo dono, 15/08)*: **o fundo galáctico NUNCA
+   esmaece artificialmente.** Quem esconde estrelas perto do Sol é a **óptica
+   local** — o clarão e o bloom da fonte dominante **sobrepondo** o fundo, que é o
+   que a luz faz de verdade. Perto do Sol as estrelas somem **pelo clarão**; longe
+   dele a Via Láctea continua espetacular. É por aqui que a tensão com o SpaceEngine
+   se resolve sem trair nenhum dos dois lados: o céu preto que uma câmera produz
+   nasce de **luz somada por cima**, não de ganho retirado por baixo. Ninguém
+   escurece o fundo; alguém brilha na frente dele. E isso torna o clarão de asas
+   (§1) a peça mais importante do documento: é ele que faz o efeito acontecer pelo
+   motivo certo, e é ele que o desfaz sozinho quando a fonte encolhe.
+3. **`core/pupila.ts` é LÁPIDE COM DATA DE ENTERRO: M2.** Ela nasce desligada, mas
+   não está morta — o director a instancia, chama `aplicarPupila` todo quadro e
+   importa dela a lei viva `picoDaPsf`. F0 muda `picoDaPsf` de casa; **M2 apaga o
+   arquivo inteiro** (329 l) mais `pupila.test.ts` (230 l) e a espinha de
+   `uExposicao`. O que sobrevive dela é o que ela **MEDIU** — os 16 stops acima e o
+   vão de ~26 magnitudes entre a malha e o ponto, ambos preservados **neste
+   documento** — e a técnica de pré-exposição no shader, correta pelo motivo
+   half-float e sem parentesco com adaptar por foco.
 
 ### O que substitui a pupila, então
 
 O problema físico não some por decreto: a faixa é de ~15 ordens de grandeza e o
 buffer é half-float, que satura em 65.504. Sem adaptação, a saída é **comprimir o
-alto, nunca levantar o baixo** — uma curva **FIXA**, igual em todo quadro,
-aplicada **na emissão** de cada fonte:
+alto, nunca levantar o baixo** — `valor = β · asinh(radiância / β)`, igual em todo
+quadro, sem depender do foco. Para valores muito abaixo de β é a identidade: **o
+céu, o campo estelar e a galáxia passam intocados**, que é exatamente o que ele
+pediu.
 
-    valor_escrito = β · asinh(radiância / β)
+**A cadeia real, medida, em dois pontos — e por que um só não bastou.** A v1 dizia
+que a curva estava "no lugar errado da cadeia (depois do bloom, onde não adianta)" e
+que o trabalho era "movê-la para a emissão". **A varredura de β falsificou isso:**
+`?bemis=300` sozinho REPROVA 9/10 com 90,84% do quadro lavado a 1 UA e borrão de 900
+px; `?bemis=1000` chega a 99,07% lavado; `?bemis=30` já custa 13% de Sirius e ainda
+deixa 25% lavado; e `?nobloom=1` **PASSA 10/10** com borrão de 8 a 12 px na escada
+inteira. **Quem lava é o BLOOM.** O conserto que virou padrão foi uma **segunda**
+curva, com **ombro**, dentro do passa-alta: `min(texel, 40) + comprimir3(max(texel −
+40, 0), 0.45)`. O ombro é a peça que separa o conserto do teto de brilho proibido, e
+por isso ele declara sua resolução efetiva (§5.12). Quem apagar qualquer uma das
+duas por "não constar do plano" reabre o item 3.
 
-- para valores muito abaixo de `β` isto é a identidade (`asinh(x) ≈ x`): **o céu, o
-  campo estelar e a galáxia passam intocados**, que é exatamente o que ele pediu;
-- para valores muito acima, vira logaritmo: o Sol para de estourar o buffer e de
-  alimentar o bloom com infinito;
-- e como a curva é **fixa**, nada depende do foco, nada adapta, nada pisca.
+**Custo declarado, com o sinal certo, para ninguém descobrir depois:** somar em
+aditivo valores já comprimidos não é somar e comprimir. Como `β·asinh` é **côncava e
+subaditiva**, a soma fica **ACIMA** do físico onde duas fontes se sobrepõem — 1,85×
+com dois picos de 1e6, 1,94× no pico do Sol. O erro é o de **estourar**, não o de
+escurecer. E são **dois desvios distintos**: por fonte na emissão, e sobre a soma no
+passa-alta. Some-se a eles o joelho pós-bloom (β = 0,45, mais `knee2`, `kneemode`,
+`kneeamt`) e o `pow` em stops do filtro: a cadeia final declara **quantas curvas
+tem**, em ordem, com o desvio de cada estágio, e nomeia quem **não** é alcançado
+(partículas, lâminas, glows e forjas continuam fora até M5/M6 — o platô e o ramo
+`1/px²` estão intactos).
 
-A casa já tem essa curva pronta e testada (o joelho asinh de `post.ts`), hoje
-desligada dentro do disco e no lugar errado da cadeia (depois do bloom, onde não
-adianta). O trabalho é movê-la para a emissão, não inventá-la.
+**A compressão deixou de ser um passo** ("L4"). Ela é **cláusula de toda migração**:
+a lei devolve valor já comprimido, ou expõe β. E o joelho pós-bloom é absorvido ou
+demolido no M2, com o número de curvas escrito.
 
-**Custo declarado, para ninguém descobrir depois:** somar em aditivo valores já
-comprimidos não é exatamente somar e comprimir. Para fontes separadas na tela a
-diferença é nula; onde duas fontes brilhantes se sobrepõem, a soma fica um pouco
-abaixo do físico. É desvio declarável no selo, e é o preço de manter o céu vivo.
+---
 
-**O passo L4 deste documento muda de nome:** era "a pupila ligada, alcançando
-tudo"; passa a ser **"a compressão fixa na emissão, alcançando tudo"**. A ordem dos
-sete passos não muda — a fundação (F1/F2) continua sendo o que destrava tudo.
+## 8. AS ARMADILHAS NOMEADAS
+
+1. **Dois raios, dois nomes.** `RAIO_SOL_PC` em `escala.ts` é a fotosfera
+   (2,2567e-8 pc). `R0_PC` em `frameGalactico.ts` é a distância Sol–centro
+   (8.150 pc). Onze ordens de grandeza. Um import trocado compilava, rodava e
+   mentia — os nomes agora são distintos.
+2. **Não confundir cessão com duplicidade.** O censo de duplicidade anterior já
+   produziu um falso positivo grave ("a faixa da galáxia é desenhada 2×" era uma
+   cessão funcionando). Antes de costurar qualquer par, conferir se não é uma cessão
+   que já funciona.
+3. **A piscada do assentado — `max` de duas rampas tem QUINA.** `director.ts`
+   combina `cessaoAlvo` e `cessaoPeloGate` com `Math.max`. Duas rampas C¹ somadas
+   por `max` produzem uma derivada descontínua na troca de dono: é a piscada, e é
+   exatamente o defeito que `heroDominanceFade` se orgulhava de não ter. **Uma
+   repartição só, ou a quina volta com outro nome.**
+4. **A âncora circular.** `cessaoAlvo` mede o disco contra o **halo do ponto**, e o
+   clarão passa a ser derivado do fluxo — a rampa que decide quanto o ponto cede
+   leria um número que depende do ponto. **O clarão é SAÍDA, nunca entrada.**
+5. **O fallback de dois sentidos.** Três mecanismos herdaram "razão ≤ 0 ⇒ direção
+   segura" e discordam sobre qual é a direção segura: para a cessão é ponto inteiro
+   (devolve 0), e `filtroSolarAlvo` devolve **1**, que é radiância verdadeira
+   (~2,7e10) — o quadro cego. **Um fallback só, decidido uma vez, na direção que não
+   pode cegar o quadro:** `wDisco = 0`, `wPonto = 1`, `overrideExpoente = 0`.
+6. **A varredura textual como prova.** "Tem de conter X" é o motor do frankenstein:
+   torna somar camada mais barato que demolir. Toda prova de conformidade entre CPU e
+   GLSL é **numérica**, sobre grade de valores; toda varredura textual é, a partir
+   daqui, **negativa** ("não pode conter").
+7. **A captura que envelheceu.** `capturas/luz-do-quadro.json` — o caminho canônico
+   "sem knob" — é de 13:57 e mede o desenho antigo, enquanto o padrão subiu às 22:57.
+   Ler o arquivo versionado como "o estado atual" é a mesma classe de mentira que a
+   casa proíbe ao vetar md5 sem medir. **Toda régua re-rodada e re-versionada no
+   commit que muda o desenho.**

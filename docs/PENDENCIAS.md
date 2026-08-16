@@ -54,9 +54,15 @@ cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
 - O dono conferir o app com o padrão novo (a queixa que abriu a rodada era
   do app com o desenho velho).
 - O halo do Sol segue generoso no meio do caminho (~170 px contra ~40 da
-  régua ideal): `luz-do-quadro.mjs` ainda REPROVA a escada padrão por teto
-  e orçamento. Apertar sem teto de brilho é o L3 (item 42).
-- Item 42: a estrela com espinhos de longe (ver ALTA).
+  régua ideal) e quase não encolhe com a distância: `luz-do-quadro.mjs`
+  ainda REPROVA a escada padrão. O conserto é a lei de asas da
+  `LEI-DA-ESTRELA.md` v2 (migração M2), que também governa o bloom.
+- **A Lei da Estrela foi REESCRITA (v2, 15/08)** depois de uma banca de
+  quatro críticos e do plano conceitual externo trazido pelo dono. A
+  próxima obra é a dela: F0 (unificar PSF/Ballesteros) → L1 (a peça
+  única) → M1 (o Sol inteiro num commit, a maior demolição da casa) →
+  M2…M7 — cada migração APAGA a lei velha no mesmo commit. Saldo contado:
+  ~3.500 linhas mortas contra 400–600 novas.
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
 estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
@@ -65,7 +71,7 @@ Segurar o push **não foi pedido dele**: foi um agente que inventou a trava.
 Qualquer push na `main` põe o site no ar. Sem pedido explícito, não se
 publica; o pedido de publicar continua de pé.
 
-Números aposentados (1, 2, 11, 14, 29, 30, 31, 32, 35): `git show de16542 -- docs/PENDENCIAS.md`.
+Números aposentados (1, 2, 11, 14, 29, 30, 31, 32, 35, 42): `git show de16542 -- docs/PENDENCIAS.md`.
 
 ---
 
@@ -149,18 +155,6 @@ duas vezes (bola 3D + ponto da camada dos dez corpos). Na abertura do
 Atlas o sistema inteiro empilha num pixel e o borrão branco impede de ver
 o que se clica. O conserto é o item 3. Não criar segundo mecanismo de
 rótulos — o `LabelCanvas` já resolve colisão.
-
-**42. A estrela com espinhos de longe consome a tela.**
-Palavras do dono, 15/08: *"esse clarao a 15000 UA quando estivermos
-observando o sistema solar, nao vai consumir tudo a tela? nao me parece
-que o space engine faz dessa forma..."* — e a medição confirma: ~31% do
-quadro lavado e borrão de ~620 px entre 10.800 e 15.800 UA, nos dois
-sentidos do voo. A causa é a lei de autor do clarão (`heroStars.ts`): o
-SunStar tem teto de 40° de céu, e as 16 ilustres usam `0,08·10^(−0,3m)` pc
-— tamanho que sai de magnitude, não de luz recebida. O conserto é o L3 da
-Lei da Estrela: o clarão (núcleo, brilho e espinhos) derivado do fluxo,
-numa lei só para todas as estrelas. O mapa da camada está feito (15/08);
-o SunStar já reescreve o tamanho todo quadro — a troca é contida.
 
 ---
 
