@@ -1,6 +1,6 @@
 # A lei da estrela — uma mecânica só, do Sol aos bilhões
 
-**v2 — 2026-08-15.** Por que a v1 caiu, em três linhas: (a) ela nasceu em 14/08 e a
+**v2.1 — 2026-08-15.** Por que a v1 caiu, em três linhas: (a) ela nasceu em 14/08 e a
 onda da luz entrou em 15/08 somando **+1.216 linhas em 12 arquivos**, então o
 "contrato único" passou a descrever o dia anterior; (b) a lei do clarão que ela
 propunha como conserto (`√ln`) é a **doença** do halo constante — encolhe menos que
@@ -13,6 +13,15 @@ texto — mais um **plano conceitual externo consolidado pelo dono, 15/08**, que
 validou a direção e acrescentou quatro peças: estabilidade temporal como cláusula de
 arquitetura, detalhe como campo filtrado por pegada anisotrópica, a esfera analítica
 como regime intermediário, e o corpo estelar como três campos do mesmo estado.
+
+**O que a v2.1 corrigiu na v2.0** (segunda rodada de revisão externa, mesma data):
+o contrato virou **três** (estado lógico / observação / instrumento) em vez de
+misturar a estrela com quem a olha; a mistura virou **dois eixos** contínuos em vez
+de um booleano que garantia pop; o **clarão deixou de ser gateado** pelo peso do
+ponto, que contradizia o §1; a pegada virou objeto completo (covariância, frequência
+máxima, limbo nomeado); o aceite final ganhou lista própria, separada do estágio
+intermediário; a identidade da fonte passou a atravessar as representações; e o
+movimento da câmera entrou como obra própria (§9).
 
 **O que este documento é:** o contrato único de como uma estrela é desenhada nesta
 casa, em qualquer distância, e a ordem de trabalho para chegar lá a partir do que
@@ -43,32 +52,75 @@ hoje **não acompanha** (item 42: o borrão cresce de 119 px a 5.000 UA para 619
 nunca pode ser ocluído pelo corpo que o causa. Regra escrita no indicativo é lida
 como verdade e faz a migração pular a verificação: aqui ela é **dívida nomeada**.
 
-**A repartição.** Abaixo de **um pixel** não há disco para desenhar — é aritmética
-de tela, não escolha. A troca não é um interruptor nem uma rampa própria: são
-**pesos que somam 1 por construção**, medidos sobre `discoPx`. A conservação do
-fluxo passa a ser tautológica em vez de verificada por sorte. Toda rampa que hoje
-mede outra coisa (o halo, a dominância, o gate de 4 px) some dentro dela.
+**A repartição, em DOIS EIXOS.** Abaixo de **um pixel** não há disco para desenhar —
+é aritmética de tela, não escolha. Mas a pergunta "resolvida ou não" e a pergunta
+"impostor ou geometria" são **duas**, e misturá-las num só número foi o que produziu
+as quatro rampas de hoje. A lei separa os eixos e mantém a conservação **tautológica
+nos dois**:
 
-**Três regimes, não dois** *(plano conceitual externo consolidado pelo dono,
-15/08)*. Entre o ponto/PSF e a malha com geometria entra um regime oficial: a
-**esfera analítica** — interseção raio-esfera resolvida dentro de um quad, sem
-malha. É barata, cobre uma faixa enorme de distâncias, e é **com ela que as outras
-estrelas ganham corpo** quando a câmera se aproxima, sem custo de geometria. Daí os
-três pesos: `wPonto`, `wEsferaAnalitica`, `wDisco` (o disco geométrico, com malha),
-somando 1 literalmente.
+- **Eixo ÓPTICO — o que a imagem estelar É:** `wPonto + wResolvido = 1`, com régua
+  `discoPx` contra a pegada do pixel. Responde apenas: a fonte é resolvida?
+- **Eixo de REPRESENTAÇÃO — como o resolvido é DESENHADO:** `wEsfera + wMalha = 1`,
+  com régua no **requisito geométrico**, que é **contínuo**: proximidade da
+  superfície e amplitude de displacement projetada em px, **com histerese**.
+  Responde apenas: impostor ou geometria?
 
-**A régua tem DUAS perguntas separadas**, e confundi-las é trocar de representação
-por motivo de textura ou fingir detalhe por motivo de distância: **a pegada do pixel
-controla o DETALHE**; **o requisito geométrico controla a REPRESENTAÇÃO** — malha só
-quando a geometria a exige (câmera colada, displacement visível, horizonte curvo
-atravessando o quadro, interseção com outra coisa da cena).
+**Pesos finais:** `ponto = wPonto`; `esfera = wResolvido·wEsfera`;
+`malha = wResolvido·wMalha`. Somam 1 por construção, sem nenhuma soma verificada por
+sorte. **Não existe booleano nesta lei:** uma bandeira `exigeGeometria` é um pop
+garantido, e pop é o defeito que este documento existe para matar. Toda rampa que
+hoje mede outra coisa (o halo, a dominância, o gate de 4 px) some dentro destes dois
+eixos.
+
+**A esfera analítica é um regime oficial** *(plano conceitual externo consolidado
+pelo dono, 15/08)*: interseção raio-esfera resolvida dentro de um quad, sem malha.
+É barata, cobre uma faixa enorme de distâncias, e é **com ela que as outras estrelas
+ganham corpo** quando a câmera se aproxima, sem custo de geometria. A malha deixa de
+ser "o jeito de ter um corpo" e passa a ser o que se paga só quando a geometria
+cobra: câmera colada, displacement visível, horizonte curvo atravessando o quadro,
+interseção com outra coisa da cena.
+
+**Confundir os dois eixos** é trocar de representação por motivo de textura, ou
+fingir detalhe por motivo de distância. **A pegada controla o DETALHE; o requisito
+geométrico controla a REPRESENTAÇÃO.** Nunca o contrário, nunca o mesmo número.
+
+**O CLARÃO NUNCA É GATEADO POR `wPonto`.** A óptica age sobre a **imagem estelar
+inteira** — resolvida ou não. Uma estrela que virou disco não perde o halo: uma
+câmera apontada para o Sol de perto produz *mais* clarão, não menos. Então o ganho
+do clarão deriva **do FLUXO, sempre presente**, e o que desvanece com `wResolvido`
+é apenas **o ponto-como-objeto** (o sprite que substituía o disco), nunca a óptica.
+Ligar o clarão a `wPonto` contradiz a linha do §1 que diz "existe em toda distância"
+e reintroduz, com nome novo, o gate que este documento veio matar.
+
+**A PARTIÇÃO DE ENERGIA da asa: UM dono.** A asa pode ser desenhada de dois jeitos —
+explicitamente, no perfil da fonte, e implicitamente, pelo kernel do bloom. Se os
+dois a desenharem, **o halo conta duas vezes** e a lei fica mentindo por um fator que
+ninguém declarou. A lei: **o desenho explícito é o dono da asa**; o bloom fica
+**confinado abaixo do ombro**, cuidando do brilho, não da extensão. A fração de
+energia que cabe a cada um é **declarada como número**, no cadastro e no selo, e é
+verificada quando a pirâmide for repesada (§4, M2).
 
 **A aproximação nunca CRIA detalhe; ela REVELA o que já pertencia ao mesmo estado**
 *(mesma origem)*. O que se vê a qualquer distância é o **mesmo campo**, filtrado
-pela **pegada do pixel** sobre a superfície (`dFdx`/`dFdy`) — e no limbo a pegada é
-**alongada**, então a filtragem é **anisotrópica**, ou o limbo ferve enquanto o
-centro está liso. É requisito da migração do corpo do Sol e do das demais estrelas, e
-é o que impede que "chegar perto" signifique "somar uma camada de octaves".
+espacialmente pela **pegada do pixel** sobre a superfície. E a pegada é um objeto
+completo, não um número:
+
+- **dois vetores diferenciais no plano tangente** (equivalentemente, uma
+  **covariância 2×2**) — o que carrega a **orientação** da elipse, e é a orientação
+  que a filtragem isotrópica joga fora;
+- **a frequência máxima permitida** que sai dela, que é o que o campo procedural
+  consulta antes de somar qualquer oitava;
+- **tratamento nomeado da singularidade do limbo**, onde a elipse degenera: ali a
+  pegada tende ao infinito na direção radial, e é preciso dizer com que lei ela é
+  limitada — senão o limbo ferve enquanto o centro está liso;
+- `dFdx`/`dFdy` é o **mecanismo inicial**, não a especificação. A especificação é a
+  covariância; o mecanismo pode mudar sem que a lei mude.
+
+**Proibido latitude/longitude como domínio procedural primário.** O domínio é a
+esfera (ruído 3D na direção `n`, ou equivalente sem polos). Lat/lon só é lícita para
+fenômenos **semanticamente** solares — cinturões de manchas, rotação diferencial —
+onde a coordenada *significa* alguma coisa. Usá-la como grade de textura empilha
+detalhe nos polos e é a origem clássica do polo que ferve.
 
 **Duas trocas, não uma.** A casa faz **duas** trocas de representação e só uma
 conserva fluxo:
@@ -141,6 +193,12 @@ sozinho jamais declara pronto.
 
 ## 2. O ESTADO — o que JÁ é padrão (15/08)
 
+> **Camada TRANSITÓRIA.** Esta seção e a §4 descrevem a travessia, não a doutrina.
+> Elas **se podam** conforme as migrações completam — linha migrada sai da lista,
+> como em `PENDENCIAS.md` — e desaparecem quando a última fechar. O arquivo continua
+> **UM** (doutrina da casa: não se cria pasta de história); o que muda é que §1, §3,
+> §5 e §7 sobrevivem, e §2/§4 encolhem até sumir.
+
 **F1 e F2 saem da fila de trabalho.** Estão FECHADOS e viram estado, com endereço.
 Todo endereço aqui é **símbolo**, nunca linha: as âncoras de linha da v1 envelheceram
 em menos de 24 h e o documento sofria a doença que denunciava.
@@ -151,7 +209,7 @@ em menos de 24 h e o documento sofria a doença que denunciava.
 | compressão na emissão | `BETA_EMISSAO`, `lerBetaDaEmissao` (`luzDaCasa.ts`) | β = 300 por fonte | sobe para L1 |
 | fotosfera na unidade | `FOTOSFERA_VERDADEIRA`, `radianciaDeTela` (`luzDaCasa.ts`), `cirurgiaDaFotosfera` (`stellarBody.ts`) | a malha emite a radiância verdadeira | sobe para L1 |
 | ombro no passa-alta | `BETA_DO_BLOOM`, `OMBRO_DO_BLOOM`, `domarOBloom` (`post.ts`) | 0,45 / 40 | sobe para L1 (instrumento) |
-| cessão pelo gate | `CESSAO_PELO_GATE_MULT`, `cessaoPeloGate` (`corpos/terra.ts`) | mult 1, sobre `LIMIAR_DO_GATE_PX` | **morre no M1** (vira `wDisco`) |
+| cessão pelo gate | `CESSAO_PELO_GATE_MULT`, `cessaoPeloGate` (`corpos/terra.ts`) | mult 1, sobre `LIMIAR_DO_GATE_PX` | **morre no M1** (vira `wResolvido`) |
 | filtro solar | `filtroSolarAlvo` (`lodStellar.ts`), `uFiltroSolar`/`escreverFiltroSolar` (`stellarBody.ts`) | 26,09 mag em stops | **vira `overrideExpoente`** (M1) |
 | segunda coluna do cadastro | `fatorDeBrilho` em `EscalaDeclarada` (`escala.ts`) | declara mentira de BRILHO | fica — e passa a declarar o valor VIVO |
 | as cinco portas | `?bemis= ?bbloom= ?bombro= ?bfoto= ?bcede=`, registradas em `selo.ts` | caminho de volta | **cada uma morre no commit que migra o que ela protege** |
@@ -235,33 +293,60 @@ a lei, não a implementa) ou **fora da lei** (com razão escrita).
 fica em `world/`: `world/` é a camada que importa three, e a primeira necessidade de
 câmera puxaria three para dentro da lei, que deixaria de ser auditável em `node`.
 
+**Três contratos, não um.** A v2.0 tinha uma `Fonte` que misturava o que a estrela É
+com o que depende de **quem olha** (`distPc`, `tau`). Misturar os dois é o que faz
+uma lei "intrínseca" aceitar a câmera pela porta dos fundos. Separados:
+
 ```ts
-export interface Fonte {            // o que a estrela É (não conhece a tela)
-  teffK: number; raioPc: number; distPc: number;
-  tau?: number;                     // extinção acumulada até ela
+export interface EstadoDaEstrela {  // o StarState LÓGICO — não conhece câmera nem tela
+  id: string; semente: number;      // IDENTIDADE — atravessa todas as representações
+  posicaoPc: readonly [number, number, number];
+  raioPc: number; teffK: number;
+  tempo: number; fase: number;      // relógio e fase do ciclo de atividade
+  rotacao: { periodo: number; eixo: readonly [number, number, number] };
+  atividade: ParametrosDeAtividade; // manchas, faculae, coroa, ejeções
+}
+// Os três campos do §5.18 são AS FACES deste estado, não camadas independentes:
+//   S(n, t)     — superfície        \
+//   C(n, h, t)  — cromosfera         }  derivados de EstadoDaEstrela, sempre
+//   E(x, t)     — exterior          /
+export interface Observacao {       // o que depende de QUEM OLHA
+  distPc: number;
+  direcao: readonly [number, number, number];
+  tau?: number;                     // extinção acumulada na linha de visada
 }
 export interface Instrumento {      // o que a CASA é (um só por quadro)
   alturaPx: number; tanHalfFov: number;
   expoM0: number; sigmaPx: number; beta: number;
   trocaPx?: number;                 // 1 px = estrela; 4 px é regra de corpo TEXTURIZADO
-  exigeGeometria?: boolean;         // displacement/horizonte/interseção — NÃO é pegada
+  requisitoGeometrico?: number;     // ∈[0,1] CONTÍNUO, com histerese — nunca booleano
 }
 export interface Reparticao {
   discoPx: number;                  // diâmetro angular verdadeiro (1/d)
   radiancia: number;                // da superfície — SEM distância no argumento
   fluxo: number;                    // recebido, já com extinção
   cor: readonly [number, number, number];
-  wPonto: number;                   // ∈[0,1]
-  wEsferaAnalitica: number;         // ∈[0,1] — o regime intermediário (§1)
-  wDisco: number;                   // ESCRITO como `1 - wPonto - wEsferaAnalitica`
-                                    // — conservação tautológica: os três somam 1
-  claraoPx: number;                 // derivado do FLUXO, nunca de magnitude
-  pegadaPx: readonly [number, number]; // pegada do pixel na superfície, ANISOTRÓPICA
-                                    // (semi-eixos); no limbo os dois divergem
+
+  // EIXO ÓPTICO — a fonte é resolvida?
+  wPonto: number;
+  wResolvido: number;               // ESCRITO como `1 - wPonto`
+  // EIXO DE REPRESENTAÇÃO — o resolvido é impostor ou geometria?
+  wEsfera: number;
+  wMalha: number;                   // ESCRITO como `1 - wEsfera`
+  // pesos finais, por construção: ponto=wPonto, esfera=wResolvido*wEsfera,
+  //                               malha=wResolvido*wMalha
+
+  claraoPx: number;                 // derivado do FLUXO — NUNCA gateado por wPonto
+  claraoGanho: number;              // idem: função do fluxo, presente em todo regime
+  fracaoDaAsaExplicita: number;     // partição de energia com o bloom (§1) — declarada
+  pegada: Covariancia2x2;           // dois diferenciais no plano tangente + orientação
+  frequenciaMaxima: number;         // o que o campo procedural pode somar
   overrideExpoente: number;         // 1 = a lei; 0 = paleta autorada (instância nº 1)
   overrideFator: number;            // quanto de brilho a exceção retira → cadastro + selo
 }
-export function repartir(f: Fonte, i: Instrumento): Reparticao;
+export function repartir(
+  e: EstadoDaEstrela, o: Observacao, i: Instrumento
+): Reparticao;
 export const GLSL_LEI_DA_ESTRELA: string;   // o MESMO texto, para quem desenha na GPU
 ```
 
@@ -273,15 +358,18 @@ quatro cópias da PSF.
 
 **Fronteira, escrita uma vez:** `luzDaCasa.ts` é a **unidade e o instrumento**
 (fluxo, radiância, ponte magnitude↔fluxo, ângulo sólido, compressão). `estrela.ts` é
-a **única face pública** da lei. Nenhuma fórmula pode existir nos dois, e isso vira
-teste. Sem essa frase, o próximo agente não sabe onde escrever a próxima função — e
-é literalmente esse o mecanismo do frankenstein.
+a **única face PÚBLICA** da lei — o que não quer dizer um único arquivo físico:
+módulos internos podem existir atrás dela (o perfil da asa, os campos `S`/`C`/`E`, a
+pegada), desde que **nada os importe de fora**. O que a lei proíbe é uma segunda
+porta de entrada, não a organização interna. Nenhuma fórmula pode existir nos dois
+lados da fronteira, e isso vira teste. Sem essa frase, o próximo agente não sabe onde
+escrever a próxima função — e é literalmente esse o mecanismo do frankenstein.
 
 **Por que esta assinatura mata as quatro rampas:**
-- a única régua da repartição é `discoPx`, o número que a §1 nomeia:
-  `wPonto = 1 − smoothstep(trocaPx, k·trocaPx, discoPx)`, `wEsferaAnalitica` sobe no
-  degrau seguinte, e `wDisco = 1 − wPonto − wEsferaAnalitica`. O degrau da malha
-  **não sai da pegada**: sai do requisito geométrico (§1), passado no `Instrumento`;
+- as réguas são **duas e separadas** (§1): `wPonto = 1 − smoothstep(trocaPx,
+  k·trocaPx, discoPx)` no eixo óptico; `wEsfera = 1 − smoothstep(...)` sobre
+  `requisitoGeometrico`, com histerese, no eixo de representação. O degrau da malha
+  **não sai da pegada**, e o degrau do ponto **não sai da geometria**;
 - `cessaoAlvo` some porque a âncora dela era **circular** — media o disco contra o
   **halo do ponto**, e o clarão passa a ser derivado do fluxo. **O clarão é SAÍDA,
   nunca entrada;**
@@ -292,10 +380,11 @@ teste. Sem essa frase, o próximo agente não sabe onde escrever a próxima fun�
   largura própria, dentro da mesma função, com o custo saindo por `overrideFator` —
   o número que falta ao cadastro;
 - **fallback único**, decidido uma vez, na direção que não pode cegar o quadro:
-  entrada inválida ⇒ `wDisco = 0, wPonto = 1, overrideExpoente = 0`.
+  entrada inválida ⇒ `wPonto = 1, wResolvido = 0, wEsfera = 1, overrideExpoente = 0`.
 
-Os sítios de hoje viram leituras da mesma saída: `planetas.aCede ← r.wDisco`;
-`sun.uFiltroSolar ← r.overrideExpoente`; clarão ← `r.claraoPx` com ganho `r.wPonto`.
+Os sítios de hoje viram leituras da mesma saída: `planetas.aCede ← r.wResolvido`;
+`sun.uFiltroSolar ← r.overrideExpoente`; e o clarão ← `r.claraoPx` com ganho
+`r.claraoGanho` — **nunca `r.wPonto`**, que é o gate disfarçado (§1).
 `sunStarGain`/`deepPointGain` deixam de existir porque o clarão deixa de ser gateado.
 `fluxo` sai **com** extinção — hoje `starShaders.ts` a aplica só quando
 `size > 3.0`, uma troca de lei em 3 px que faria o orçamento do clarão ordenar por
@@ -304,6 +393,10 @@ um número que a tela não mostra.
 ---
 
 ## 4. AS MIGRAÇÕES
+
+> **Camada TRANSITÓRIA**, como a §2: cada migração fechada **sai desta lista**. O que
+> ela deixa atrás é a linha no cadastro e o número medido no commit, não um parágrafo
+> aqui. Quando a última fechar, esta seção acaba.
 
 **A regra de todo commit de migração**, sem exceção:
 (i) apaga os símbolos da lei velha; (ii) **inverte a varredura textual no mesmo
@@ -352,9 +445,12 @@ para `estrela.ts` **antes** de qualquer demolição.
 **Entra também:** o corpo do Sol passa a declarar os três campos `S`/`C`/`E` (§5.18)
 e a consumir a pegada anisotrópica; a esfera analítica cobre a faixa entre o ponto e
 a malha, e a malha só entra por requisito geométrico.
-**Régua:** `voo-ida-e-volta.mjs` + `luz-do-quadro.mjs`. **Delta a declarar antes:**
-o degrau 0,232 → 0,341 UA cai de 9,2× para ≤ 1,5×; a escada passa de REPROVA 10/10
-para no mínimo 7/10.
+**Régua:** `voo-ida-e-volta.mjs` + `luz-do-quadro.mjs`. **Delta a declarar antes —
+e é ESTÁGIO INTERMEDIÁRIO, não o aceite final:** o degrau 0,232 → 0,341 UA cai de
+9,2× para ≤ 1,5×; a escada passa de REPROVA 10/10 para no mínimo 7/10. O aceite AAA
+(perfil radial, croma, limbo, altas frequências, derivada no crossfade) é o §5.19 e
+só fecha depois do M2 — declarar M1 como pronto pelo número acima é o mesmo erro que
+a v1 cometeu com o invariante.
 
 ### M2 — As 16 heroes = o antigo L3
 **Entra:** o clarão de asas, uma camada só, sempre acesa, para as **N fontes mais
@@ -407,10 +503,12 @@ Termo `stellar` do raymarch (`nebulaShaders.ts`) e splats do bake
 (`structureMap.ts`). **Fora da lei, declarado:** o campo 2D do carregamento.
 
 ### MB1 — O juiz de estabilidade temporal
-Não é migração de representação: é a régua que falta. Delta entre **quadros
-consecutivos** num zoom lento, com tolerância declarada (§5.17). **Entra antes do
-M6** — é a migração de 4,02 M partículas que mais pode chiar, e hoje nenhum juiz da
-casa enxerga cintilação.
+Não é migração de representação: é a régua que falta. Delta entre quadros
+consecutivos **após reprojeção**, em cinco famílias de movimento (aproximação, pan,
+órbita, reversão, FOV) mais as fronteiras de promoção, com tolerância declarada —
+§5.17. **Entra antes do M6** (4,02 M partículas é o que mais pode chiar) e é o único
+juiz que enxerga o §5.20: hoje nada na casa detecta uma fonte que se re-semeia ao
+trocar de representação.
 
 ### O saldo
 Se as migrações forem executadas inteiras: ~1.560 linhas de produção apagadas
@@ -480,7 +578,7 @@ buffer. (Liga-se ao item 6 das pendências.)
 **5.7 O filtro solar é SEÇÃO da lei, não remendo.** Ele é a segunda troca da §1:
 `pow(fator, uFiltroSolar)`, 26,09 magnitudes entre a radiância verdadeira (g=1) e a
 paleta autorada (g=0). Como `overrideExpoente`/`overrideFator`, ele é: uma escolha
-de **instrumento** (transmitância), com **régua compartilhada** com `wDisco` (a mesma
+de **instrumento** (transmitância), com **régua compartilhada** com `wResolvido` (a mesma
 `discoPx`, largura própria), **custo no cadastro** e no selo, e **default seguro** —
 hoje `uFiltroSolar` nasce em 1 (radiância verdadeira, o quadro cego) e só é escrito
 dentro de `if (this.planetas)`. Quem desenha o corpo escreve a emissão do corpo.
@@ -530,11 +628,15 @@ então a fração de energia comprimida depende de quantos pixels a fonte cobre 
 promessa correta é: *não depende do foco nem do conteúdo do quadro*, com a
 dependência de tamanho aparente declarada.
 
-**5.14 A troca conserva energia e não conserva aparência.** Na distância de troca de
-1 px (7,56 UA para o Sol, a 900 px e 58°), a PSF do ponto mede **12,65 px**: um disco
-duro de 1 px vira um borrão de 12,65 px. A integral é a mesma, a imagem não. Ou o
-disco também passa pelo instrumento (mesma convolução, mesma cauda), ou a §1 admite
-as duas coisas e o teste do L1 as cobra **separadas**.
+**5.14 A troca conserva energia e não conserva aparência — e a causa tem nome.** Na
+distância de troca de 1 px (7,56 UA para o Sol, a 900 px e 58°), a PSF do ponto mede
+**12,65 px**: um disco duro de 1 px vira um borrão de 12,65 px. A integral é a mesma,
+a imagem não. **A causa é o gate:** hoje o disco *não* passa pelo instrumento e o
+ponto passa, então trocar de regime troca de óptica. Com a lei do §1 isso desaparece
+pela raiz — **o clarão não é gateado por `wPonto`**: a mesma óptica age sobre a
+imagem estelar em todo regime, e o que a troca move é só o **objeto** por baixo dela.
+O que sobra a cobrar é a **partição de energia da asa** (um dono, fração declarada);
+o teste do L1 cobra as duas coisas **separadas** — energia e perfil radial.
 
 **5.15 A profundidade do clarão é parte da lei.** A §1 promete que o clarão nunca é
 ocluído pelo corpo que o causa; só o `SunStar` põe `depthTest: false`. Os 16
@@ -555,10 +657,16 @@ movimento é trabalho reprovado, não quase pronto. Consequências exigíveis: o
 da repartição são C¹ (é o que mata a quina do `max`, §8.3); a filtragem pela pegada
 é anisotrópica (§1), porque é a isotrópica no limbo que produz o chiado clássico; e
 nenhuma transição depende de limiar duro sobre grandeza que oscila com o movimento.
-**Migração nomeada — MB1:** um juiz que compara **quadros consecutivos num zoom
-lento** (delta por pixel e delta de energia em banda alta), com tolerância
-declarada. Hoje não existe — `voo-ida-e-volta.mjs` amostra 34 degraus **distantes**
-e é cego a cintilação por construção. Sem MB1, "não ferve" é opinião.
+**Migração nomeada — MB1, e ele não é um juiz de pixel cru.** Comparar quadros
+consecutivos pixel a pixel **mistura fluxo legítimo com fervura**: a imagem *deve*
+mudar quando a câmera anda. Então MB1 compara **após reprojeção / compensação de
+movimento** — o quadro anterior transportado para a pose atual — e mede o resíduo:
+delta por pixel reprojetado e delta de energia em banda alta, com tolerância
+declarada. E cobre **cinco famílias de movimento**, não só zoom: aproximação, **pan**,
+**órbita**, **reversão de sentido** (onde a histerese aparece), **mudança de FOV** e
+as **fronteiras de promoção** (partícula→catálogo→corpo), que é onde a identidade
+pode escorregar. Hoje nada disso existe: `voo-ida-e-volta.mjs` amostra 34 degraus
+**distantes** e é cego a cintilação por construção. Sem MB1, "não ferve" é opinião.
 
 **5.18 O corpo estelar é UM estado em três campos.** *(plano conceitual externo
 consolidado pelo dono, 15/08.)* O desenho-alvo do corpo — do Sol e de toda estrela
@@ -576,7 +684,41 @@ doutrina do clarão — decide a grandeza da própria coisa, não o estado da c�
 `sol/*.js` vendorizado já **aproxima** este desenho; a migração o **formaliza**: dá
 nomes aos três campos, tira os critérios de visibilidade de dentro do LOD, e é o que
 permite à esfera analítica (§1) hospedar `S` e `C` sem malha, com `E` por fora.
-Requisito de M1 (Sol) e de M3/E3 (as demais).
+Requisito de M1 (Sol) e de M3/E3 (as demais). **Os três campos são FACES de
+`EstadoDaEstrela`** e isso está escrito no contrato (§3), não só aqui — uma cláusula
+que vive fora do tipo é uma cláusula que a próxima migração não lê.
+
+**5.19 O ACEITE FINAL não é o aceite intermediário.** O invariante de fluxo é
+condição de entrada; ele não diz nada sobre a imagem. Existem **dois aceites
+declarados, e não se confundem**:
+- **Intermediário (M1):** o degrau 0,232→0,341 UA cai de 9,2× para ≤ 1,5× e a escada
+  passa de REPROVA 10/10 para ≥ 7/10. É **estágio**, não pronto — está escrito assim
+  no M1 para ninguém declarar vitória com ele.
+- **AAA final**, que fecha a migração da luz e é cobrado **degrau a degrau**, nas
+  duas pernas do voo: (i) **perfil radial** dentro de tolerância contra a lei
+  (núcleo + asa), não só o raio a meia altura; (ii) **raio aparente** monotônico e
+  com razão máxima entre vizinhos; (iii) **croma** preservado — a estrela forte não
+  embranquece (§5.3); (iv) **escurecimento de limbo** presente e coerente entre
+  esfera analítica e malha; (v) **energia em altas frequências** estável sob
+  movimento (§5.17); (vi) **continuidade da DERIVADA** no crossfade — não basta a
+  função ser contínua, a quina é visível e é exatamente a piscada do §8.3.
+
+**5.20 IDENTIDADE: proibido re-semear.** *(plano conceitual externo consolidado pelo
+dono, 15/08.)* Uma fonte tem `id` e `semente` em `EstadoDaEstrela`, e eles
+**atravessam as representações**. Na promoção `partícula → casca/catálogo → corpo`
+(G3, M6), a estrela que era um ponto de luz na galáxia e vira um corpo é **a mesma
+estrela**: mesma semente, mesma **fase** de rotação e de atividade, mesma posição.
+Re-semear na troca é o defeito mais caro da escada inteira — a fonte "pisca" e vira
+outra, o que é literalmente o que a frase do dono proíbe. A fase também é
+**persistente**: um corpo que sai de quadro e volta não recomeça o relógio. MB1
+cobre isso na família "fronteiras de promoção", e o teste é numérico: mesma entrada,
+mesma saída, atravessando o degrau.
+
+**5.21 A seleção do clarão tem HISTERESE.** O orçamento das N fontes mais brilhantes
+em quadro é um **ranking**, e ranking troca de posição. Duas estrelas de fluxo quase
+igual na fronteira do top-N fariam o clarão piscar entre elas a cada quadro — o
+defeito do §5.17 nascendo dentro do conserto do §1. A entrada e a saída da lista têm
+limiares diferentes, e o ganho do clarão sobe e desce em rampa, nunca em degrau.
 
 ---
 
@@ -647,7 +789,7 @@ bug; a exposição as estava apagando.
    galáctica e do campo estelar **não é variável de estado**.
    **A distinção que faltava, escrita:** é *permitida e declarada* a troca de
    representação pelo **tamanho aparente da PRÓPRIA fonte** — geometria fixa, que não
-   toca em nenhum outro pixel da tela. É isso que `wDisco` e `overrideExpoente` são.
+   toca em nenhum outro pixel da tela. É isso que `wResolvido` e `overrideExpoente` são.
    O que está proibido é medir a cena para decidir a exposição; o que é lícito é
    medir a fonte para decidir como ela se desenha. Sem esta emenda escrita, o padrão
    que roda hoje está formalmente em desacordo com a única regra que existe para
@@ -735,7 +877,7 @@ demolido no M2, com o número de curvas escrito.
    segura" e discordam sobre qual é a direção segura: para a cessão é ponto inteiro
    (devolve 0), e `filtroSolarAlvo` devolve **1**, que é radiância verdadeira
    (~2,7e10) — o quadro cego. **Um fallback só, decidido uma vez, na direção que não
-   pode cegar o quadro:** `wDisco = 0`, `wPonto = 1`, `overrideExpoente = 0`.
+   pode cegar o quadro:** `wPonto = 1`, `wResolvido = 0`, `overrideExpoente = 0`.
 6. **A varredura textual como prova.** "Tem de conter X" é o motor do frankenstein:
    torna somar camada mais barato que demolir. Toda prova de conformidade entre CPU e
    GLSL é **numérica**, sobre grade de valores; toda varredura textual é, a partir
@@ -745,3 +887,43 @@ demolido no M2, com o número de curvas escrito.
    Ler o arquivo versionado como "o estado atual" é a mesma classe de mentira que a
    casa proíbe ao vetar md5 sem medir. **Toda régua re-rodada e re-versionada no
    commit que muda o desenho.**
+8. **O booleano que vira pop.** Toda vez que uma decisão de desenho couber num
+   `true/false`, ela vai piscar. `exigeGeometria` foi proposto assim e foi recusado
+   por isso (§1). A pergunta a fazer antes de escrever qualquer bandeira nova: *o que
+   acontece no quadro em que ela troca de valor?* Se a resposta for "muda de uma vez",
+   a bandeira está errada — o que falta é a régua contínua e a histerese.
+9. **O ranking que pisca.** Ordenar fontes por fluxo e cortar em N é estável só até
+   duas ficarem empatadas. Vale para o clarão (§5.21) e para qualquer orçamento
+   futuro: **entrada e saída com limiares diferentes**, sempre.
+
+---
+
+## 9. A CÂMERA POR TAXA DE INFORMAÇÃO VISUAL — obra própria
+
+*(plano conceitual externo consolidado pelo dono, 15/08. Fica **fora** das migrações
+da luz; entra aqui porque é a outra metade da estabilidade do §5.17, e porque quem
+ler a lei precisa saber que ela existe.)*
+
+Hoje a velocidade da câmera é decidida por distância. O desenho-alvo troca a régua:
+a velocidade é limitada pela **taxa a que a imagem ganha informação**, medida em
+duas grandezas da PRÓPRIA fonte de interesse:
+
+- **`d(log raioProjetado)/dt`** — quão depressa o alvo cresce na tela. Dobrar de
+  tamanho em meio segundo é rápido demais para o olho, a qualquer distância;
+- **a taxa de surgimento de frequências resolvíveis** — quanto detalhe novo a pegada
+  do pixel (§1) está descobrindo por segundo. É a mesma grandeza que MB1 mede, usada
+  agora para *governar o movimento* em vez de julgá-lo.
+
+A câmera **desacelera quando a imagem ganha informação depressa** e acelera quando o
+quadro está estático — o que dá, de graça, a aproximação que "respira" ao chegar num
+corpo, sem nenhuma curva de distância escrita à mão por objeto.
+
+**Compatível com a proibição da pupila (§7), e a distinção é exata:** isto limita
+**MOVIMENTO**, nunca exposição; e **não lê a cena** — lê o raio projetado e a pegada
+**da própria fonte**, que é geometria, como `wResolvido` e `overrideExpoente`. Nada
+aqui escurece um pixel sequer, e nada aqui depende do que mais está em quadro. É a
+mesma fronteira do §7 regra 1: medir a fonte é lícito; medir a cena para decidir
+brilho, não.
+
+**Não entra nesta fila.** É obra própria, depois da luz — mas a lei já a referencia
+para que ninguém a implemente como "mais uma curva de LOD" quando ela chegar.
