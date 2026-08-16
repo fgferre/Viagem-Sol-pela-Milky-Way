@@ -430,13 +430,18 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('knee', 'joelho asinh forçado'),
   porta('kneemode', 'modo do joelho trocado'),
   porta('kneeamt', 'amount do joelho forçado'),
-  // as quatro portas de medição da onda da luz (F2). Nascem desligadas e
+  // as cinco portas de medição da onda da luz (F2). Nascem desligadas e
   // são bancada, não produto — quando a calibração fechar e virarem
   // default, saem da URL e a linha some daqui junto.
   porta('bemis', 'compressão na emissão do ponto forçada'),
   porta('bbloom', 'compressão dentro do bloom forçada'),
   porta('bombro', 'ombro da compressão do bloom forçado'),
   porta('bcede', 'cessão do Sol-ponto pelo gate do palco forçada'),
+  // ?bfoto=1 é a F2 no material da malha: a fotosfera emitindo a
+  // radiância verdadeira em vez do ~1 da paleta H-alfa. INERTE sem
+  // ?bemis= > 0 (sem curva, 2,7e10 satura o half-float) — e mesmo
+  // inerte se declara, porque o selo não promete o que não conhece.
+  porta('bfoto', 'radiância verdadeira da fotosfera forçada'),
   porta('dom', 'cessão de dominância forçada'),
   porta('nodom', 'cessão de dominância desligada'),
   porta('forgetau', 'extinção por coluna das forjas ligada'),

@@ -25,6 +25,7 @@ import {
   FOV_DA_CASA,
   comprimir,
   lerBetaDaEmissao,
+  lerPortaFotosfera,
   SIGMA_PX,
   M_V_SOL,
   M_V_SOL_DO_CAMPO,
@@ -402,6 +403,32 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
     expect(comprimir(picoDoSolA1UA, 4000)).toBeGreaterThan(TETO_HALF_FLOAT);
   });
 
+  it('A GUARDA DO HALF-FLOAT NA MALHA (F2) — o teto vale para o DISCO também', () => {
+    // A guarda de cima é do PONTO. Esta é da MALHA, e a conta é outra: o
+    // que a F2 escreve não é o pico da PSF, é `radiância × fator`, onde o
+    // fator é o vão radiométrico e a radiância é a cor autorada do
+    // fragment do Sol. Ela não é 1 no pico — a paleta H-alfa chega a
+    // ~2,4 nas regiões mais quentes (HDR medido na onda), e é ESSE o
+    // valor máximo que o material vai escrever.
+    const TETO_HALF_FLOAT = 65504;
+    const HDR_DA_PALETA = 2.4;
+    const fator = vaoRadiometricoNaTroca(RAIO_SOL_PC);
+    const maximoEscrito = comprimir(fator * HDR_DA_PALETA, 300);
+    expect(maximoEscrito).toBeLessThan(TETO_HALF_FLOAT);
+
+    // SEM A CURVA A PORTA É UM QUADRO BRANCO, e é por isso que
+    // `stellarBody.ts` cobra `?bemis=` junto com `?bfoto=`: β = 0 é
+    // identidade EXATA, e identidade sobre 2,7e10 satura o buffer no
+    // primeiro pixel do disco. No pico da paleta são SEIS ordens de
+    // grandeza acima do teto (1,0e6×); o piso de 1e5 aqui é folga.
+    expect(comprimir(fator * HDR_DA_PALETA, 0)).toBeGreaterThan(TETO_HALF_FLOAT * 1e5);
+
+    // e o mesmo β que estoura para o ponto estoura para a malha: as duas
+    // pontas da troca vivem sob o MESMO teto, que é o argumento inteiro
+    // para elas viverem sob a mesma curva
+    expect(comprimir(fator * HDR_DA_PALETA, 4000)).toBeGreaterThan(TETO_HALF_FLOAT);
+  });
+
   it('A CURVA TEM UM ENDEREÇO SÓ — o GLSL e o espelho de CPU são a mesma', () => {
     const glsl = ler('src/three/shaders/common.ts');
     expect(glsl).toContain('vec3 asinh3(vec3 v) { return log(v + sqrt(v * v + 1.0)); }');
@@ -438,6 +465,23 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
     expect(lerBetaDaEmissao('?bemis=abacaxi')).toBe(BETA_EMISSAO);
     expect(lerBetaDaEmissao('?bemis=-5')).toBe(BETA_EMISSAO);
     expect(lerBetaDaEmissao('?outro=1')).toBe(BETA_EMISSAO);
+  });
+
+  it('a porta ?bfoto= é BINÁRIA — só `1` liga, e o default é não fazer nada', () => {
+    // binária de propósito, ao contrário da irmã `?bemis=`: um "quanto"
+    // aqui seria um segundo botão de brilho para a malha, e a fotosfera
+    // ou está na unidade da casa ou não está. O joelho mora em `?bemis=`.
+    expect(lerPortaFotosfera('?bfoto=1')).toBe(true);
+    expect(lerPortaFotosfera('')).toBe(false);
+    expect(lerPortaFotosfera('?bfoto=0')).toBe(false);
+    expect(lerPortaFotosfera('?bfoto=2')).toBe(false);
+    expect(lerPortaFotosfera('?bfoto=true')).toBe(false);
+    expect(lerPortaFotosfera('?bfoto=abacaxi')).toBe(false);
+    expect(lerPortaFotosfera('?bfoto=')).toBe(false);
+    expect(lerPortaFotosfera('?outro=1')).toBe(false);
+    // e ela é PURA: recebe a query, não lê `window` — que é o que
+    // permite este teste existir em `environment: 'node'`
+    expect(lerPortaFotosfera('?bemis=300&bfoto=1&q=cinema')).toBe(true);
   });
 });
 

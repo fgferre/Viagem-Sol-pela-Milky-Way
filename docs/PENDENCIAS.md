@@ -52,6 +52,11 @@ coisas da frente"*. **RESPONDIDA em 15/08: pela fundação.** A onda da luz
 - A cessão do Sol-ponto tem porta de bancada: `?bcede=` re-ancora a rampa no
   gate do palco (`cessaoPeloGate`, terra.ts), composta por `max` com a
   dominância — fechada por padrão, 0 ⇒ caminho herdado bit a bit.
+- A F2 está CONSTRUÍDA atrás de `?bfoto=1`: a malha do Sol passa a emitir
+  `comprimir(cor × vão, β do bemis)` por cirurgia de texto no material vivo
+  (`cirurgiaDaFotosfera`, stellarBody.ts — padrão `domarOBloom`; nenhum
+  sol/*.js aberto). Inerte sem `?bemis=`. Fator: `vaoRadiometricoNaTroca`
+  (~2,74e10), nunca digitado. 51 vistas bit-idênticas com a porta fechada.
 
 **O diagnóstico, que mudou com a medição:** a compressão na emissão **não** mata
 sozinha a tela branca — medido, nenhum β limpa o quadro sem esmaecer as
@@ -80,7 +85,7 @@ compilador). `hero8` muda, e mudar ali é o mecanismo funcionando: a vista está
 0,6 pc de Betelgeuse, que é um mini-Sol com a mesma doença.
 
 **ESTÁ TUDO ATRÁS DE PORTAS DE URL, DESLIGADO POR PADRÃO.** Nenhum pixel do
-produto mudou. As quatro portas estão registradas no selo.
+produto mudou. As cinco portas estão registradas no selo.
 
 **O QUE FALTA, e é decisão do dono, com as imagens em `capturas/`:**
 
@@ -113,6 +118,21 @@ produto mudou. As quatro portas estão registradas no selo.
    passo da onda é F2 — a fotosfera na unidade da casa, com a compressão na
    emissão alcançando a malha. A cessão fecha DEPOIS, com `?bcede=` já pronta
    como instrumento.**
+4. **A F2 foi construída e MEDIDA no mesmo dia (`?bfoto=1`), e ela SANA a
+   cessão** — como a Lei previu. Com fotosfera verdadeira + cessão a 1 UA:
+   borrão 110 px, lavado 2,0%, e a sequência 0,5 → 1 → 2 UA dá
+   200 → 110 → 173 px — sem o vale, sem o pop: a bola brilha de verdade e
+   alimenta o próprio clarão (`F2-1UA-quatro-mundos.png` — o Sol vira
+   estrela branca honesta e a cena não esmaece). O teste-dívida (`it.fails`)
+   segue reprovando de propósito: só verdece quando isto virar padrão.
+   **O custo declarado, para o dono decidir com a imagem
+   `luz-0p027ua-bemis300bfoto1.png`:** de perto (≤0,07 UA) a luz verdadeira
+   em exposição fixa é uma parede branca — fisicamente o que uma câmera
+   apontada ao Sol faz, mas mata a granulação querida das vistas próximas.
+   A saída que a própria Lei prevê (§E3): a paleta H-alfa vira OVERRIDE
+   DECLARADO da instância nº 1 — um "filtro solar" assumido no selo, não
+   uma lei de luz. Desenhar esse filtro é o próximo passo natural; decidir
+   se ele entra é do dono.
 
 E outra, que travou um conserto ruim no mesmo dia: *"vc nao pode consertar
 uma coisa e criar outro problema, pense nos impactos das suas decisoes"*.

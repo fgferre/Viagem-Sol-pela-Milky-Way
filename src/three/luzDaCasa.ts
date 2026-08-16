@@ -297,6 +297,42 @@ export function comprimir(x: number, beta: number): number {
   return beta * Math.log(v + Math.sqrt(v * v + 1.0));
 }
 
+/**
+ * A PORTA `?bfoto=1` — a MALHA do Sol emitindo a radiância VERDADEIRA da
+ * fotosfera, que é a F2 inteira em uma linha. Hoje a malha emite ~1 (a paleta
+ * H-alfa autorada de `world/sol/sun.js`) e a lei do ponto deposita
+ * `vaoRadiometricoNaTroca(RAIO_SOL_PC)` — ~2,7e10 — para a MESMA superfície.
+ * Ligar a porta é multiplicar a emissão por esse fator, e é só isso: o número
+ * não se digita em lugar nenhum, sai da função que o cadastro de escala já
+ * usa para declarar a dívida.
+ *
+ * BINÁRIA de propósito, e não um `parseFloat` como a irmã `?bemis=`. Um
+ * "quanto" aqui seria um segundo botão de brilho para a malha, e a onda inteira
+ * existe para acabar com brilho que se calibra por gosto: ou a fotosfera está
+ * na unidade da casa, ou não está. Quem quiser mexer no joelho mexe em `?bemis=`,
+ * que é onde o joelho mora.
+ *
+ * INERTE SOZINHA, e a dependência é dura, não estilística. O composer é
+ * half-float e satura em 65.504; a radiância verdadeira está **quase seis ordens
+ * de grandeza acima disso** (2,7e10 é 4,2e5× o teto). Sem `?bemis=` > 0 não há
+ * curva para dobrar esse valor, e a porta sozinha não mostraria o Sol honesto —
+ * escreveria infinito no buffer e devolveria exatamente o quadro branco que a
+ * onda existe para consertar. Por isso `world/stellarBody.ts` cobra AS DUAS
+ * antes de encostar no material, em vez de confiar em quem digita a URL.
+ *
+ * PURA, recebe a query em vez de ler `window`, pelo mesmo motivo de
+ * `lerBetaDaEmissao`: `vitest.config.ts` roda em `environment: 'node'`.
+ *
+ * E ELA SOME. Porta de medição é andaime de calibração: no dia em que o β
+ * fechar e a fotosfera na unidade virar o padrão, esta função sai daqui junto
+ * com a linha dela no selo — e é o `it.fails` da dívida
+ * (`luzDaCasa.test.ts`) que fica verde para avisar que o dia chegou. Enquanto
+ * ele reprovar, a F2 não é padrão: é bancada.
+ */
+export function lerPortaFotosfera(busca: string): boolean {
+  return new URLSearchParams(busca).get('bfoto') === '1';
+}
+
 // ─── O INSTRUMENTO DE REFERÊNCIA, para o cadastro poder declarar ──────────
 
 /**

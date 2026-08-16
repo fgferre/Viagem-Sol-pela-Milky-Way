@@ -45,6 +45,12 @@
 // ============================================================
 import * as THREE from 'three';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
+import { lerPortaFotosfera, vaoRadiometricoNaTroca } from '../luzDaCasa';
+import { GLSL_COMPRESSAO } from '../shaders/common';
+// o β vem do módulo DONO da curva na emissão, nunca de uma segunda
+// leitura da URL: `starShaders.ts` já resolve `?bemis=` uma vez e os
+// três materiais de ponto estelar bebem de lá. A malha é o quarto.
+import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import type { QualityLevel } from '../core/engine';
 import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
@@ -255,6 +261,86 @@ export function epsilonDeSegmentoGlsl(raioPc: number): string {
   return literalGlsl(raioPc * (1e-4 / RAIO_ARTISTICO_DO_SOL_PC));
 }
 
+// ============================================================
+// F2 — A FOTOSFERA NA UNIDADE DA CASA, por cirurgia de texto.
+//
+// A malha emite ~1 e a lei do ponto deposita ~2,7e10 para a MESMA
+// superfície: são ~26 magnitudes entre dois desenhos do mesmo objeto,
+// e é a dívida que `escala.ts` declara em `fatorDeBrilho` e que o
+// `it.fails` de `luzDaCasa.test.ts` cobra sem afrouxar. A F2 é o
+// pagamento: a malha passa a emitir a radiância verdadeira, e como o
+// composer é half-float ela só pode fazer isso COMPRIMIDA — pela mesma
+// `β·asinh(x/β)` que o ponto estelar já aplica.
+//
+// POR QUE CIRURGIA DE TEXTO, e não um uniform novo. Abrir os 14
+// vendorizados é a coisa que o cabeçalho deste arquivo promete não
+// fazer, e `stellarBody.test.ts` pina o texto deles por linha. O molde
+// é o de `core/post.ts` (`domarOBloom`), que reescreve o passa-alta do
+// `UnrealBloomPass` sem tocar no arquivo do vendor: âncora exata, erro
+// ALTO se ela sumir, `needsUpdate` no fim. Um shader que muda de forma
+// tem de quebrar a suíte, nunca calar a tela.
+// ============================================================
+
+/**
+ * A âncora: a escrita final do fragment do Sol (`sol/sun.js`, a última
+ * linha antes do `}` do main). É o único `gl_FragColor` do arquivo com
+ * esta forma, e o teste-agulha o confere contra o vendorizado REAL.
+ */
+const ESCRITA_FINAL_DO_SOL = 'gl_FragColor = vec4(color * uWorldFade, 1.0);';
+
+/**
+ * O fragment do Sol reescrito para emitir a radiância VERDADEIRA da
+ * fotosfera, comprimida por `β·asinh(x/β)`. Pura: recebe texto e
+ * devolve texto, para poder ser provada sem subir GPU.
+ *
+ * A COMPRESSÃO VEM ANTES DO FADE, e a ordem não é gosto. `uWorldFade` é
+ * o crossfade disco→estrela: ele não muda o brilho da estrela, muda
+ * QUEM a desenha. Comprimir depois dele faria o joelho da curva andar
+ * durante a transição — a mesma superfície entraria em pedaços
+ * diferentes da curva conforme o wrapper baixasse o fade, e a troca
+ * deixaria de conservar fluxo justamente onde ela precisa conservar. O
+ * que a curva tem de ver é a radiância da superfície, que é invariante
+ * com a distância (item 3 da Lei); o fade continua sendo cessão de
+ * representação, aplicada depois, por fora.
+ *
+ * O β É O DOS PONTOS, o mesmo símbolo (`BETA_DA_EMISSAO`), não um β da
+ * malha. Disco e ponto desenham o MESMO objeto nos dois lados da troca:
+ * duas curvas diferentes fariam o Sol mudar de brilho no instante em que
+ * mudasse de representação, que é o defeito que a Lei nomeia.
+ *
+ * A DUPLICATA REPROVA. Depois da cirurgia a âncora não existe mais no
+ * texto, então uma segunda passada cai no mesmo erro alto de âncora
+ * ausente — e isso é a resposta certa, não um efeito colateral: aplicar
+ * o fator duas vezes elevaria a emissão ao quadrado, e uma função que
+ * engolisse a segunda chamada em silêncio esconderia exatamente esse
+ * estrago.
+ */
+export function cirurgiaDaFotosfera(
+  fragmentShader: string,
+  fator: number,
+  beta: number
+): string {
+  if (!fragmentShader.includes(ESCRITA_FINAL_DO_SOL)) {
+    throw new Error(
+      'cirurgiaDaFotosfera: a escrita final do fragment do Sol não está mais lá ' +
+        `(esperado \`${ESCRITA_FINAL_DO_SOL}\`, de sol/sun.js) — ou o vendorizado ` +
+        'mudou de forma, ou a cirurgia já foi aplicada neste material'
+    );
+  }
+  // a curva entra ANTES de tudo, por prepend: o fragment do Sol começa
+  // com o `NOISE_GLSL` (funções soltas, sem `#version`, sem `#extension`
+  // e sem `precision` — quem prefixa precisão é o three), então não há
+  // âncora frágil a inventar aqui. Uma vez só, e o teste conta.
+  return (
+    GLSL_COMPRESSAO +
+    fragmentShader.replace(
+      ESCRITA_FINAL_DO_SOL,
+      `gl_FragColor = vec4(comprimir3(color * ${literalGlsl(fator)}, ` +
+        `${literalGlsl(beta)}) * uWorldFade, 1.0);`
+    )
+  );
+}
+
 /**
  * A instância 1. Todo campo aqui reproduz o literal que estava solto no
  * módulo antes da Onda 3: a promoção é de ENDEREÇO, não de valor, e o
@@ -442,6 +528,33 @@ export class StellarBody {
     createSunUniforms(ctx);
     ctx.chromo = createChromo(ctx);
     createSunMesh(ctx);
+    // F2, ATRÁS DE DUAS PORTAS E DESLIGADA. Sem `?bfoto=1` nada acontece
+    // e o material sai daqui byte a byte como o vendorizado o montou —
+    // é a promessa da onda inteira: nenhum pixel do produto muda hoje.
+    //
+    // A SEGUNDA CONDIÇÃO NÃO É ZELO, é o half-float. Com `?bemis=0` a
+    // curva é identidade exata, e identidade sobre 2,7e10 é o buffer
+    // saturado em 65.504 no primeiro pixel do disco: o quadro branco que
+    // a onda existe para consertar, entregue pela porta que promete
+    // honestidade. Ou as duas, ou nenhuma.
+    //
+    // O FATOR SAI DA FUNÇÃO que o cadastro de escala já usa para
+    // declarar esta dívida (`escala.ts`, `fatorDeBrilho`), com o raio
+    // DESTA instância. A metade geométrica dela já é da instância; a
+    // fotométrica ainda é do Sol (`magnitudeDoSol`), e é a E3 —
+    // `StellarBody` parametrizado por `teffK` — que a solta. Passar
+    // `params.radiusPc` em vez do `RAIO_SOL_PC` constante é o que faz
+    // esse dia ser um diff em `luzDaCasa.ts`, não uma caça a literais
+    // aqui dentro.
+    if (lerPortaFotosfera(window.location.search) && BETA_DA_EMISSAO > 0) {
+      const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
+      mat.fragmentShader = cirurgiaDaFotosfera(
+        mat.fragmentShader,
+        vaoRadiometricoNaTroca(params.radiusPc),
+        BETA_DA_EMISSAO
+      );
+      mat.needsUpdate = true;
+    }
     ctx.sunInvRot = new THREE.Matrix3();
     createCoronaRays(ctx);
     createCoronaVolume(ctx);
