@@ -22,6 +22,7 @@ import type { StarsMeta } from '../config';
 import {
   ClaraoDeAsas,
   ELEGIVEIS_POR_QUADRO,
+  FATOR_DE_ENCHIMENTO_DO_SOL,
   ORCAMENTO_DO_CLARAO,
   RAZAO_DE_TROCA,
   SOL_BV,
@@ -33,6 +34,8 @@ import {
   BETA_DO_ESPINHO,
   BETA_DA_ASA,
   alcanceDoEspinhoPx,
+  ganhoDeEntradaDoFlare,
+  raioDoFlarePx,
   raioVisivelDaAsaPx,
 } from '../estrela';
 import { EXPO_M0, SIGMA_PX, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
@@ -160,13 +163,11 @@ describe('1. o orçamento com histerese (§5.21)', () => {
 describe('2. a elegibilidade pela lei — a identidade "as 16" emerge, não se declara', () => {
   const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
 
-  /** a régua da camada: a óptica excede o sprite? */
+  /** a régua da camada (item 44/R1): núcleo estourado E flare além do sprite */
   const elegivel = (m: number) => {
     const pico = picoDaPsf(m, EXPO_M0, SIGMA_PX, 900);
     const nucleo = psfPointSizePx(m, EXPO_M0, SIGMA_PX, 900);
-    return (
-      Math.max(2 * raioVisivelDaAsaPx(pico, sigma), 2 * alcanceDoEspinhoPx(pico, sigma)) > nucleo
-    );
+    return ganhoDeEntradaDoFlare(pico) > 0 && 2 * raioDoFlarePx(pico) > nucleo;
   };
 
   it('em casa, as elegíveis são as brilhantes clássicas — e Sirius manda', () => {
@@ -282,12 +283,15 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     for (let i = 0; i < 30; i++) c.atualizar(q);
     const slotDoSol = c.ocupacao().findIndex((o) => o.indice === 0);
     expect(slotDoSol).toBeGreaterThanOrEqual(0);
-    // a MESMA conta que claraoDaLeiPx/luz-do-quadro faz para o teto:
-    // m do Sol pela lei do campo, pico, asa Moffat + braço do espinho
+    // o SOL segue a régua aceita do item 3 (asa/espinho), com o fator de
+    // enchimento da textura — o piso de presença do filme é só das
+    // estrelas (item 44/R1: duas réguas, de propósito)
     const m = -0.15 + 5 * Math.log10(dPc);
     const pico = picoDaPsf(m, EXPO_M0, SIGMA_PX, 900);
     const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
-    const esperado = Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
+    const esperado =
+      FATOR_DE_ENCHIMENTO_DO_SOL *
+      Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
     const meshes = c.group.children.filter(
       (f) => (f as THREE.Mesh).visible
     ) as THREE.Mesh[];

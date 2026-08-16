@@ -272,10 +272,37 @@ Três leis quebradas de uma vez: afastando, nada pode crescer; a cor da
 estrela não pode morrer para branco; borda de quadrado nunca pode
 aparecer. E falta distância viva na tela para ele provar o que vê.
 
-Em investigação no ato (16/08): sonda de afastamento com distância
-carimbada por quadro + mapa de qual peça desenha em cada faixa. Relação
-provável com o item 3: o voo de ida e volta para em 20.000 UA e as fotos
-do dono vão até ~57.000 UA — a régua pode nunca ter olhado essa faixa.
+Investigado no ato (16/08): sonda de afastamento com distância carimbada
+provou o crescimento (6→42→222 px de raio entre 0,73 e 1,58 UA, 4
+décadas para desinchar) e o mapa achou o culpado — as duas travas
+(wPonto e filtro solar) abrem NO MESMO pixel (disco = 4 px) e a asa
+entra com o fluxo pleno; o branco era a compressão por canal esmagando o
+matiz; o quadrado era a janela de borda desenhada com régua de quadrado;
+e a régua da monotonia tinha EXCEÇÃO escrita exatamente nessa faixa.
+
+**R1 EXECUTADA (16/08, tarde) — a estrela renasce:** a FORMA do clarão
+voltou a ser a receita de 30/07 (braço fino 16/2,4, halo, cruz colorida),
+assada UMA vez numa textura neutra (`world/flare.ts`) e pintada pela cor
+de cada estrela — o padrão dos grandes (Stellarium/Celestia/SpaceEngine:
+forma é imagem, fórmula só decide escala). Moldura agora é CIRCULAR e
+zera com folga antes da aresta (quadrado impossível — `flare.test.ts`
+cobra zero na borda). A LUZ ganhou teto próprio (`TETO_DE_LUZ_DO_FLARE`)
+separado do teto de TAMANHO: o rim do halo tem degradê e cor (o prato
+branco saturado morreu). As ESTRELAS ganharam o piso de presença do
+filme (`raioDoFlarePx`, Sirius ~104 px); o SOL manteve a régua ACEITA do
+item 3 (asa/espinho × fator de enchimento 0,45 — escada preservada:
+189 px a 1,58 UA, 75 a 15,8, 6 no fim; o piso não vale para ele, senão
+o halo constante renasceria). Sonda re-voada: restam as 2 violações de
+crescimento NA SOLTURA do filtro (0,73→1,58 UA) — são a **R2** (entrega
+contínua + remover a exceção da régua). **R3**: distância viva na tela.
+
+Escada oficial re-rodada e re-versionada com o desenho novo: **9/11, com
+os 2 vermelhos DECLARADOS** (4.000 e 15.800 UA, ~2,1% lavado contra teto
+de 1,8%/0,8%): o teto do lavado orça só "céu + Sol" e agora as nomeadas
+têm o flare do filme — luz LEGAL que a régua ainda não sabe orçar. Não
+se emenda o juiz às escondidas (a lição da exceção): o termo das
+estrelas entra no teto na R2, DERIVADO da mesma lei, depois que o dono
+cravar a dose. Aberto até o dono julgar a prancha (`aceite-rodada-1`).
 
 ---
 
