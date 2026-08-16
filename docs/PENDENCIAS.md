@@ -294,6 +294,21 @@ corte come a superfície.
 apaga o ponto de uma estrela quando ela ganha corpo (passo E3 da lei).
 Se a onda do motor terminar sem fiá-lo, aí sim vira peso morto.
 
+**43. Arquivos grandes demais — toda mudança faz as IAs lerem milhares de
+linhas.** Palavras do dono, 2026-08-16: *"estou preocupado com nossa
+arquitetura atual, acho que estamos com arquivos muito grandes, e toda vez que
+vamos fazer qq mudança as AIs leem tudo isso.. como poderíamos resolver isso?"*
+
+O vilão é o `director.ts` (4.019 linhas, 15 assuntos); depois `hud.css`,
+`terra.ts`, `galaxy.ts`, `App.tsx`, `atlasRig.ts`. Docs estão saudáveis. Plano
+aprovado pelo dono no mesmo dia — refatoração pura (zero pixel, gates
+bit-idênticos como prova), desenho por símbolo em
+`/Users/fgferre/.claude/plans/estou-preocupado-com-nossa-rosy-lynx.md`.
+**Largada travada por decisão dele:** só depois que a etapa da rodada da
+estrela pousar e ele avisar — a rodada altera muitas linhas, e o passo 0 da
+execução é re-medir tudo. Não tocar no que a Lei demole (`lodStellar.ts`,
+`pupila.ts`); os blocos que M1/M2 apagam viram lápides de um arquivo só.
+
 ---
 
 ## O que o dono ainda vai contar
