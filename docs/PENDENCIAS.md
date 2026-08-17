@@ -16,22 +16,19 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
-**O BASTÃO DE 17/08 (sete commits, 92bf642→cb866b7):** a R2 do item 44
-fechou INTEIRA — bloom seletivo (cada camada com seu cobertor), perna
-retina das réguas (que pegou duas mentiras de instrumento no caminho:
-a geometria 900×813 e a repartição medindo em px físicos), teto do céu
-re-derivado + régua do céu-nunca-vazio (piso de 40 faíscas), o conserto
-do aceite negado (limiar do campo em zero + extensão do bloom na régua
-de referência — as duas telas empatadas em TODOS os degraus), a
-distância viva no HUD (R3), a SOLTURA do clarão (R2 da escada da
-estrela — a explosão no recuo morreu; voo ida-e-volta 34/34) e a dose
-de observação do Atlas (Sol compacto ~14% do quadro; drama intocado no
-filme). **A PRÓXIMA JANELA COMEÇA por:** (1) o veredito dos OLHOS do
-dono no app — a soltura no recuo, o céu, e a dose 0,07 do Atlas (número
-dele para calibrar); (2) se ele declarar a rodada da estrela POUSADA,
-a ONDA DA ARQUITETURA (item 43 da BAIXA) destrava com a palavra dele;
-(3) senão, a fila é estender a escada da estrela às nomeadas e o item 5
-(o Sol do Atlas congelado no máximo).
+**O BASTÃO DE 17/08 (tarde): A RODADA DA ESTRELA POUSOU.** Palavras do
+dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
+e o app na mão: *"a soltura ficou boa, pode considerar pousada —
+destrave a arquitetura"*. Os itens 3 e 44 saíram da lista — a história
+mora nos commits de 16–17/08 e na `LEI-DA-ESTRELA.md`. A **ONDA DA
+ARQUITETURA (item 43 da BAIXA) está DESTRAVADA e em execução**: passo 0
+(re-medir tudo) primeiro; o primeiro commit de corte só depois do
+re-mapa. O que segue à espera de conferência ESPECÍFICA do dono no app:
+item 39 (focar estrela não pode apagar as outras), item 40 (rótulo
+dobrado do Sol), item 43 da ALTA (a cruz de Vênus na dose do fluxo). A
+dose 0,07 do Atlas segue sendo número DELE para calibrar quando quiser;
+a extensão da escada às nomeadas mora na Lei (M3+), com o visto dele
+antes de qualquer unificação estética estrela↔Sol.
 
 **⚠ A PUPILA ESTÁ REPROVADA — e foi ENTERRADA no M2 (16/08).**
 `src/three/core/pupila.ts` e o teste morreram inteiros na data marcada
@@ -40,11 +37,12 @@ ressurreição. O que está no lugar é compressão fixa na emissão —
 `LEI-DA-ESTRELA.md` §7. Não a reescreva.
 
 **O plano da estrela está em [`docs/LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md).**
-O conserto do Sol está FECHADO em código: M1 e **M2** (asa + bloom pela lei)
-pousaram em 16/08 — os itens 3, 39, 40 e 43 ficam abertos só até o dono
-conferir no app. O item 5 é obra própria (ciclo pela data). Os itens 8, 9 e
-10 são HUD, independentes. O item 21 é memória paga e inútil (`depth: false`
-no engine). O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é
+O conserto do Sol está FECHADO e ACEITO (M1, M2, R1–R3 e a soltura — o
+pouso de 17/08). Os itens 39, 40 e 43 da ALTA esperam cada um a SUA
+conferência no app (focar estrela; rótulo dobrado; a cruz de Vênus). O
+item 5 é obra própria (ciclo pela data). Os itens 8, 9 e 10 são HUD,
+independentes. O item 21 é memória paga e inútil (`depth: false` no
+engine). O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é
 o canal do passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
@@ -140,7 +138,8 @@ publica; o pedido de publicar continua de pé.
 
 Números aposentados (1, 2, 4, 11, 14, 29, 30, 31, 32, 35, 42): `git show de16542 -- docs/PENDENCIAS.md`;
 o 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do
-código e os dois modos desenham igual, decisão do dono cumprida.
+código e os dois modos desenham igual, decisão do dono cumprida. O **3** e o
+**44** pousaram com o aceite do dono em 17/08 (histórico deste arquivo no git).
 
 ---
 
@@ -161,28 +160,6 @@ O que ela ainda cobra: fotos reais do Sol nunca julgadas por ele
 (item 22). A cegueira a movimento (item 11) morreu com o voo de ida e
 volta, versionado.
 → `docs/NORTE.md`, seção “Como medir”.
-
-**3. A tela fica branca quando o Sol está longe.** *(M1 e M2 FECHADOS em
-16/08 — a repartição única + o clarão de asas + o bloom pela lei são o
-padrão. A régua PASSA 11/11 e o borrão encolhe com a distância em toda a
-escada, 20 px na âncora de 15.800 UA. Fica aberto SÓ até o dono conferir
-no app — a queixa era dele e o aceite final é dele.)*
-De ~1 UA a ~2.000 UA o quadro lavava. O Sol encolhia 4.000 vezes e a mancha
-na tela não mudava de tamanho. Era: o ponto do Sol não encolhia, o borrão
-da lente multiplicava, e entre a bola e a estrela de espinhos havia um vão.
-O M1 matou o vão; o M2 matou a mancha constante (era o kernel do bloom, que
-não conhecia fluxo — agora a extensão é da asa, que encolhe com a luz).
-
-O conserto não foi teto de brilho (proibido) nem a pupila (reprovada). Foi a
-lei da estrela: mesma escala de brilho para bola e ponto, compressão fixa.
-
-Palavras do dono, no dia: *"mas isso nao deveria ser so para o sol. toda
-estrela deveria seguir o mesmo mecanismo nao acha? baseado nas magnitudes
-da estrela obviamente. tinhamos falado disso quando geramos o plano de como
-fariamos o motor estelar para gerar proceduralmente todas as estrelas
-quando nos aproximarmos delas"*
-
-→ `docs/LEI-DA-ESTRELA.md`. Régua: `scripts/visual/luz-do-quadro.mjs`.
 
 **5. O Sol do Atlas está congelado no máximo solar.**
 Cheio de manchas e explosões; o do filme começa limpo. A fase do ciclo
@@ -270,299 +247,6 @@ O que a verificação REVELOU de quebra: na foto do lado noturno quem
 domina o quadro é o HALO do Sol a 11,5 UA (~160 px) — o rabo do item 3
 fotobombando a cena. É a fila M1/M2 de novo, por outro ângulo.
 
-**44. Afastando do Sol, a bola CRESCE — branca, disforme e com borda
-quadrada.**
-Palavras do dono, 2026-08-16, entregando 10 fotos em sequência de
-afastamento: *"o sistema todo de estrelas está quebrado... quando eramos
-somente 1 filme as coisas eram mais bonitas... essa transicao entre as
-distancias nao pode ser do jeito que está sendo feito hoje... várias
-estrelas estavam com os spikes bonitos e bem pensados no inicio do
-projeto quando eramos o filme somente... perdemos isso e vriou um spike
-horrivel, uma bola borrada e disforme e enorme em vários memomentos"*.
-E: *"infelizmentre nao tem medida de distancia para provar isso"*.
-
-O que as 10 fotos mostram, nessa ordem de afastamento: fotosfera linda
-de perto (1); ponto alaranjado correto (2–3); afastando MAIS, a bola
-CRESCE até meia tela e perde a cor (4–8); a borda QUADRADA do adesivo do
-brilho aparece (5 e 9); só a ~0,9 ano-luz vira ponto rotulado (10).
-Três leis quebradas de uma vez: afastando, nada pode crescer; a cor da
-estrela não pode morrer para branco; borda de quadrado nunca pode
-aparecer. E falta distância viva na tela para ele provar o que vê.
-
-Investigado no ato (16/08): sonda de afastamento com distância carimbada
-provou o crescimento (6→42→222 px de raio entre 0,73 e 1,58 UA, 4
-décadas para desinchar) e o mapa achou o culpado — as duas travas
-(wPonto e filtro solar) abrem NO MESMO pixel (disco = 4 px) e a asa
-entra com o fluxo pleno; o branco era a compressão por canal esmagando o
-matiz; o quadrado era a janela de borda desenhada com régua de quadrado;
-e a régua da monotonia tinha EXCEÇÃO escrita exatamente nessa faixa.
-
-**R1 EXECUTADA (16/08, tarde) — a estrela renasce:** a FORMA do clarão
-voltou a ser a receita de 30/07 (braço fino 16/2,4, halo, cruz colorida),
-assada UMA vez numa textura neutra (`world/flare.ts`) e pintada pela cor
-de cada estrela — o padrão dos grandes (Stellarium/Celestia/SpaceEngine:
-forma é imagem, fórmula só decide escala). Moldura agora é CIRCULAR e
-zera com folga antes da aresta (quadrado impossível — `flare.test.ts`
-cobra zero na borda). A LUZ ganhou teto próprio (`TETO_DE_LUZ_DO_FLARE`)
-separado do teto de TAMANHO: o rim do halo tem degradê e cor (o prato
-branco saturado morreu). As ESTRELAS ganharam o piso de presença do
-filme (`raioDoFlarePx`, Sirius ~104 px); o SOL manteve a régua ACEITA do
-item 3 (asa/espinho × fator de enchimento 0,45 — escada preservada:
-189 px a 1,58 UA, 75 a 15,8, 6 no fim; o piso não vale para ele, senão
-o halo constante renasceria). Sonda re-voada: restavam as 2 violações de
-crescimento NA SOLTURA do filtro (0,73→1,58 UA) — eram a **R2, FEITA em
-17/08** (a soltura do clarão; registro completo no bloco abaixo da R1).
-**R3 FEITA em 17/08 — a
-distância viva existe:** no voo livre o canto do HUD diz "SOL · 1 UA" →
-"SOL · 40 UA" → "SOL · 6,5 anos-luz", vivo enquanto voa (a escada única
-de unidades de `lib/unidades`, no traje da linha de rumo, 4 Hz; só no
-voo livre — o filme guarda a dramaturgia). Agora o afastamento se PROVA
-com o olho: é o instrumento da R2, que fica sendo o que resta.
-
-Escada oficial re-rodada com o desenho da R1: 9/11, com os 2 vermelhos
-declarados (o teto do lavado orçava só "céu + Sol" e o piso da R1 dava
-flare grande às nomeadas).
-
-**A PERGUNTA DO DONO SOBRE A SOLTURA (17/08, ao ver as fotos):** *"nas
-fotos parece inteeressante, mas minha pergunta é, quando estiver
-observando os obejtos em movimento do nosso sistemqa solar ele nao vai
-dominar toda a cena? como os apps como o solar system scope ou nasa
-eyes on the solar system, space engine, fazem isso? acho que vc está
-errando nessa dinamica ainda..."* — **RESPONDIDA NO ATO com a DOSE DE
-OBSERVAÇÃO.** Fotografado o crime primeiro: na moldura de Vênus do
-Atlas o clarão comia o centro do quadro e o corpo enquadrado era um
-pontinho dentro do brilho. Os apps de referência de-dramatizam o Sol
-quando o assunto é o sistema (NASA Eyes o mantém em ~10–15% do
-quadro). O conserto seguiu a doutrina da casa (assistência declarada é
-boa UX; o selo do Atlas JÁ diz BRILHO ASSISTIDO): o teto de ocupação
-do clarão ganhou dose POR FASE — `OCUPACAO_NA_OBSERVACAO` = 0,07 no
-Atlas (cartaz de ~14% do quadro), o drama do filme/voo livre intocado
-(0,55). Medido depois: Vênus/Mercúrio/Marte/Terra legíveis com o Sol
-compacto e elegante ao lado; fotos na conversa. Segue sendo limitador
-POR ESTRELA, nunca exposição de cena (a pupila continua morta). A DOSE
-é gosto: se 0,07 parecer pouco ou muito aos olhos dele, é um número
-declarado a calibrar.
-
-**R2 FEITA em 17/08 — A SOLTURA DO CLARÃO:** as 2 violações de
-crescimento morreram na raiz. O clarão era gateado por DUAS travas
-exponenciais na mesma janela (o peso do ponto × a divisão pelo filtro,
-26 magnitudes) e, como o raio da asa vai com fluxo^(1/2β), o tamanho
-EXPLODIA no recuo: a sonda densa mediu 10→30→118→357→**417** px entre
-0,8 e 2 UA (42×, pico no meio da janela). A lei nova
-(`solturaDoClarao`, estrela.ts + emenda na LEI §1): o clarão é a conta
-PLENA do ponto (com o teto de ocupação) vestida por UMA rampa C¹ em log
-do disco — 0 onde o filtro completa (fotosfera limpa por construção), 1
-no ponto pleno. Medido depois: 10→30→34→88→190→276→**325** (pico
-exatamente onde a soltura completa, razão ≤3× entre vizinhos, cauda
-além da janela BIT-IDÊNTICA). O filtro ficou dono só da SUPERFÍCIE. A
-exceção da régua deixou de absolver acidente: o espelho da monotonia
-agora É a rampa declarada, com conformidade numérica por teste. E DE
-QUEBRA a perna retina pegou a repartição inteira medindo as janelas em
-px FÍSICOS (borrão crescendo 109→244 entre 3,6 e 7,2 UA só em DPR 2) —
-a lei passou à régua de referência (px de CSS) e o ÚLTIMO vão entre as
-telas fechou: 1 UA agora é 30×26 px (era 30×8). Provas: sonda densa
-antes/depois, escadas PASSA 11/11 nas DUAS pernas, voo de ida e volta
-PASSA 34 degraus (a soltura conta a mesma história nos dois sentidos),
-sequência de fotos do afastamento na conversa. 1.622 testes verdes.
-
-**RESGATE (16/08, noite) — o dono REPROVOU a R1 e mandou a ordem:**
-*"Porque você não resgata no git a versão certa antes de entrar o atlas?
-Já vi nas screenshots que está horrível não preciso nem abrir. Virou uma
-bolha enorme com uma spikes dentro dessa bolha de luz enorme. Totalmente
-horrível. Veja as imagens de spikes geradas anteriormente pelo histórico
-do git."* Executado no ato: `world/heroStars.ts` EXUMADO byte a byte de
-`bd12905` (as 16 do filme, braço fino 16/2,4, halo e cruz na cor, tamanho
-de autor em pc, cintilação; só a espinha MORTA da pupila foi amputada);
-o clarão da lei fica SÓ com o Sol — o piso K·pico^0,4 que a R1 deu às
-estrelas morreu com a bolha; a textura da R1 segue APENAS na forma do
-clarão do Sol (rim com degradê e cor). Lápides do M2 reabertas com a
-ordem dele citada (`simbolosProibidos`, `corpos.test`): SunStar e pupila
-seguem mortos. Prova visual: `resgate-sirius.png` — o Sirius de hoje ao
-lado do alvo de 30/07, na mesma moldura (6,5 anos-luz). A unificação
-estética estrela↔Sol volta à mesa só no M3, COM o visto dele.
-
-**O CÉU (16/08, madrugada) — o dono viu o campo apagado:** *"o que vc
-está fazzendo está bagunçando todo céu, as estrelas quase nao existem
-mais, o ceu ficou vazio e escuro"*. Causa PROVADA por diff: o M2 trocou
-o gatilho da cruz do catálogo (o `vSat` de 30/07 — saturava em pico 4,
-amplitude 0,85) pela lei do fluxo pura, e centenas de estrelas perderam
-a faísca. RESGATADO atrás de `uArteDaCruz`: campo estelar e cascas usam
-a arte do filme; os dez corpos ficam na lei pura (o conserto do item 43
-segue de pé). Junto: a dose de luz do clarão do Sol desceu ao teto 2,5
-(proporção do filme — halo em ⅓ do cartaz, braços para fora; a 15,8 UA
-o Sol voltou a ser ESTRELA). Escada re-medida: 11/11.
-
-**A RESPOSTA DO DONO VEIO COMO DESENHO COMPLETO (16/08, madrugada) — e
-é o brief da R2, palavra por palavra:** *"acho que temos ainda que achar
-o equilíbrio entre uma regra única para todas as estrelas baseados nas
-suas 'qualidades'/magintudes/medidas, etc, etc e um fitro aplicado a
-cada uma delas baseado na distancia e foco, nao aplicado à cena inteira
-ou a todo starfiled, ele só limita para que nao aconteça que uma estrela
-nunca ocupe toda a tela, ela sempre chega no máximo que vai ocupar
-rapidamente, ela é uma bola 3d, depois vira uma bola colorida e vai
-migrando para o shape do spike até virar uma bola de novo e até sumir
-pela distancia ou se encolher e diminuir luminosidade, enfim aí vc quem
-sabe melhor como fazer, mas nao quero que o ceu vire nunca uma coisa
-vazia, pois ele nao é...."*
-
-Tradução executável — A ESCADA DA ESTRELA (vale para TODAS, Sol
-incluído; o "gigante × discreto" morre aqui: a fase do spike É o
-gigante, com teto):
-
-1. **Regra única por estrela** (magnitude/cor/raio → fluxo recebido),
-   com **LIMITADOR POR ESTRELA** — nunca exposição de cena (a pupila
-   segue morta). O limitador só faz UMA coisa: nenhuma estrela ocupa a
-   tela toda, nunca; aproximando, ela cresce RÁPIDO até o teto de
-   ocupação (fração da tela) e estaciona ali até o corpo resolver.
-2. **A escada de formas, contínua e reversível** (ida e volta pelas
-   MESMAS rampas, C¹, histerese onde precisar — nada liga/desliga):
-   corpo 3D resolvido → bola colorida → SHAPE DO SPIKE (a cruz do filme,
-   a fase de presença) → bola pequena → ponto que esmaece até sumir.
-3. **O céu nunca vazio — vira JUIZ executável:** régua nova que conta as
-   estrelas visíveis/faiscantes por quadro em vistas fixas; toda mudança
-   de desenho compara antes × depois — nunca mais um commit apaga o céu
-   em silêncio (foi o que o M2 fez e nenhuma régua viu).
-4. Execução em rodadas pequenas (método de 16/08), começando pelo Sol
-   (a soltura do filtro é o pulo declarado) e estendendo às nomeadas;
-   a âncora de 20 px a 15.800 UA se re-decide com a escada dele.
-
-**O COBERTOR CURTO, nomeado pelo dono e MEDIDO (madrugada):** *"minha
-preocupação é o cobertor curto... vc resolve de um lado e ferra do
-outro"*. Confirmado pela escada no bloom: ele é UM para a cena inteira —
-o kernel do filme (raio 0,58) devolve o respiro do campo ("a galaxia
-parece vazia... tem bilhoes de estrelas e nem parece") E lava o Sol
-distante (4/11); o kernel do M2 disciplina o Sol E mata o campo. O
-meio-termo MEDIDO desta noite: a FORMA do filme (5 mips vivos) a 30% —
-PASSA 11/11 com o campo respirando (`respirarPiramide`, post.ts). O
-COBERTOR COMPRIDO é o item 1 da R2: **bloom seletivo por família de
-camada** (campo estelar com o kernel do filme; Sol/planetas com o
-disciplinado) + a régua do céu-nunca-vazio para o teto do céu ser
-re-derivado com o dono, não herdado do céu morto do M2.
-
-**A RAIZ DO CÉU VAZIO, ACHADA PELA PISTA DO DONO (madrugada, com fotos
-modo-cinema-dpr2 × modo-performance-dpr1):** *"no modo performance
-parece que a galaxia fica muito mais cheia"* — confirmado e explicado. O
-pico da PSF cai com o QUADRADO do pixelRatio (mesmo fluxo, 4× mais
-pixels em cinema/DPR 2), e TODOS os gatilhos são em cima do pico: a
-faísca da cruz (satura em pico 4), o piso 1/255, o branqueamento, a
-entrada do clarão, o limiar do bloom. Resultado: o céu DESARMA
-exatamente no modo mais caro. E o ESCÂNDALO DE INSTRUMENTO: todas as
-réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
-
-**O MAPA DO CONSERTO (R2) — estado:**
-1. **✅ Invariância de resolução (FEITA em DUAS partes, 3cef5f1 +
-   37a8c26, APROVADA PELO DONO: *"ficou muito melhor agora"*):**
-   parte 1 = gatilhos e doses de arte na régua de referência; parte 2 =
-   o DEPÓSITO também (vPeak × uPr2 no vertex das três camadas — o
-   tonemap esmagava o brilho por pixel em retina). Em DPR 1 nada muda
-   (testes e baselines intactos); em retina o campo = performance, com
-   nitidez de cinema (fotos modo-cinema-dpr2). Heroes já eram
-   invariantes (pc). SUSPEITA REMANESCENTE se "vazio" voltar na vista
-   de LONGE: a camada da galáxia profunda (galaxy.ts, 4M pontos,
-   `shrink` 1/px² próprio) não recebeu o tratamento — conferir com o
-   dono na vista galáctica antes de mexer.
-2. **✅ Instrumento (FEITO em 17/08 — a perna retina existe e RODOU):**
-   `capturarCDP` ganhou `dpr` (emulação de tela por alvo) e a escada roda
-   com `DPR=2 node scripts/visual/luz-do-quadro.mjs`: o app arma o
-   caminho retina de verdade (pr = 2, buffer 1800), o borrão volta a px
-   de CSS e os MESMOS tetos julgam — a invariância ("a aparência não
-   muda com a resolução") é o próprio critério. A trava de honestidade
-   pegou, NO PRIMEIRO TIRO, uma mentira de geometria que estava em todos
-   os registros: a janela do Chrome desconta a barra e a régua sempre
-   fotografou 900×813 com previsões assumindo 900 de altura — agora a
-   área útil é EXATA nas duas pernas (o registro DPR 1 re-baseou ~10%,
-   declarado, números antigos no git). VEREDITO das duas pernas: **PASSA
-   11/11 nas duas**, e em 9 dos 11 degraus os borrões concordam em ~1 px
-   de CSS — a invariância segura de ponta a ponta. As duas exceções,
-   MEDIDAS pela primeira vez (a extensão do kernel do bloom mede em px
-   físicos — o limite (b) do item 3): a 1 UA o clarão retina é menor
-   (30→8 px), e a cauda longe encolhe (âncora 20→15 px). Registro novo
-   versionado: `capturas/luz-do-quadro-dpr2.json`. FICA: estender a
-   perna ao `sky-capture` quando o céu interno voltar à mesa (a medição
-   contra o panorama ESO precisa de decisão própria de resolução).
-3. **✅ Bloom seletivo (FEITO em 17/08 — a ordem *"cada camada com seu
-   cobertor"*, cumprida):** o cobertor PRINCIPAL voltou à pirâmide da
-   LEI (`governarPiramide`, raio 0) e disciplina Sol, planetas, galáxia
-   e nebulosa; o passe novo do campo (`ClaraoDoCampo`, post.ts) desenha
-   catálogo + cascas + heroes pela `CAMADA_DO_CAMPO` e veste neles o
-   kernel do FILME inteiro ([1; 0,8; 0,6; 0,4; 0,2], raio 0,58) — na
-   MESMA máquina do vendorizado, rodada duas vezes por quadro: zero
-   VRAM nova (o rascunho é o writeBuffer ocioso do composer), e só o
-   CLARÃO soma no quadro, antes do knee/ACES — estrela nenhuma conta
-   duas vezes (a "flag só-brilho" do desenho virou reuso). O meio-termo
-   0,3 morreu com lápide na varredura invertida. O limiar do campo já
-   chega na régua de referência sem conta nova (o depósito ×pr² da
-   parte 2 é quem faz). Escada re-medida: **PASSA 11/11**, com o Sol
-   MAIS disciplinado que o meio-termo (borrão a 1 UA: 88→40 px; na
-   âncora de 15.800 UA: 52→**20 px**, o aceite do M2) e decaimento
-   monotônico 310→20 px — e o campo com o respiro PLENO do filme
-   (fotos da prova na conversa de 17/08). Defeito achado e morto na
-   montagem, ao vivo: o quad da soma final limpava o quadro inteiro
-   (autoClear ligado) — o Sol e a nebulosa sumiam da tela; o passe
-   agora prende o autoClear em falso do primeiro ao último draw, a
-   disciplina do vendorizado. LIMITES DECLARADOS: (a) estrela atrás de
-   corpo resolvido ainda vaza clarão fraco no rascunho do campo (sem
-   ocultadores lá; o conserto conhecido — fantasmas só-profundidade —
-   está anotado no passe). **O ACEITE DO DONO VEIO NEGADO (17/08),
-   palavras dele:** *"sinto que perdemos muitas estrelas, densidade
-   parece que caiu, o efeito de spikes perdeu beleza., ficou muito corpo
-   redondo bojudo"* — **e as duas causas foram achadas, consertadas e
-   re-medidas no ato:** (1) no passe do campo cada estrela enfrentava o
-   limiar 0,82 SOZINHA (sem o fundo da galáxia por baixo, as fracas
-   perdiam o gatilho e o céu ralava) → o limiar do campo caiu a ZERO
-   (`LIMIAR_DO_CAMPO`, post.ts): todo pontinho respira na proporção da
-   própria luz, quem doma o topo é a compressão de sempre; (2) a
-   EXTENSÃO do bloom media em px físicos — em retina a mesma energia
-   concentrava na metade do tamanho e virava a bola densa em cima da
-   cruz fina → a pirâmide inteira foi à régua de referência (parte 3 da
-   invariância, `setSize`): mesmo halo visual em qualquer tela, DPR 1
-   bit-idêntico, e o trem de mips 4× mais barato em retina. Re-medido:
-   escadas PASSA 11/11 nas duas pernas, borrões EMPATADOS entre as
-   telas em 10 de 11 degraus (âncora 20 = 20), faíscas 68–82 (DPR 1) e
-   83–102 (retina), piso do céu re-derivado de novo (0,060/0,63% — o
-   céu cheio; linhagem no cabeçalho da régua). VÃO REMANESCENTE,
-   medido e anotado: a 1 UA (janela do filtro solar) o clarão retina
-   ainda é menor (30×8 px) — vai junto com a soltura do filtro da
-   ESCADA DA ESTRELA, que já é o pulo declarado. **Os olhos dele
-   voltaram em 17/08: "ok, pode seguir" — o conserto ficou de pé, os
-   três números do selo (piso de céu 0,060, piso de 40 faíscas, céu só
-   tem piso) valem como lei, e a fila anda para a escada da estrela
-   (distância viva na tela primeiro, depois a soltura do filtro).**
-4. **Teto do céu re-derivado + a régua do céu-nunca-vazio (EXECUTADO em
-   17/08 — falta só o SELO do dono nos três números):** o piso do céu
-   foi re-MEDIDO com o Sol desligado, nas duas pernas (DPR 1: luz média
-   0,049, 0,44% acima de meia; retina: 0,0446 / 0,41% — provas
-   versionadas em `luz-do-quadro-noplan1{,dpr2}.json`), e os tetos da
-   escada agora sentam no céu DE HOJE — a luz média voltou ao número do
-   céu do filme de 15/08, e o acima-de-meia subiu 0,30%→0,44%: são as
-   faíscas que o cobertor pleno devolveu. E nasceu a régua que ele
-   pediu: `faiscantes` conta as manchas de estrela por vista, e o juiz
-   REPROVA céu abaixo de **40 faíscas** (⅔ do mínimo vivo: hoje 60–73
-   em DPR 1, 73–101 em retina; os fósseis do céu morto do M2 achados na
-   pasta medem **1** — a régua os denuncia na primeira linha, e é a
-   regra que faltou quando o M2 apagou o campo com o verde aceso). DE
-   QUEBRA, achado e travado: a porta `?nobloom=` estava MORTA no app
-   desde o M2 e o par "sem bloom" fotografava COM bloom julgando sem —
-   o runner agora recusa o botão morto. Escadas re-medidas nas duas
-   pernas com o juiz novo: PASSA 11/11 nas duas, faíscas registradas
-   por degrau. O QUE É DELE: os três números são proposta — o piso de
-   céu (0,049), o de faíscas (40), e a regra de que céu só tem PISO,
-   nunca teto de estrelas; querendo o céu ainda mais rico, sobe-se a
-   arte e re-mede — os tetos acompanham.
-
-**PRIMEIRO PASSO EXECUTADO NO ATO (madrugada) — UM DESENHISTA SÓ:** o
-dono cravou o diagnóstico final: *"claramente a regra que desenha
-sirius é totalmente diferente da que desenha o sol... o desenho de
-spikes de sirius é muito superioir"*. Resposta: o clarão do Sol passou a
-usar A MESMA receita das heroes (núcleo+halo+braços de 30/07, brilho
-fixo da forma — linha a linha, com oráculo de conformidade em
-`clarao.test.ts` que cai se alguém "melhorar" um lado só); a LEI manda
-apenas em presença (filtro/entrega/gatilho) e TAMANHO (asa do item 3 +
-teto de ocupação por estrela, `OCUPACAO_MAXIMA_DA_TELA` = 0,55 da
-altura). A textura assada da R1 foi DELETADA (flare.ts + teste). Na
-tela: o Sol partindo voltou a ser o gigante de braços finos do tríptico
-de 15/08, encolhendo monotônico — sem prato, sem moeda, sem borda.
-
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
@@ -622,6 +306,12 @@ para a lista `PROFUNDAS` (`:62-66`) e medir o corte de câmera lá. Achado em
 **37.** (Suspeita a medir.) As nuvens escuras podem estar apagando o que
 está na frente delas. Par de capturas antes de tocar em qualquer linha.
 
+**46.** (Suspeita a medir, herdada do item 44.) A galáxia profunda
+(`galaxy.ts`, 4M pontos, `shrink` 1/px² próprio) não passou pela
+invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
+tela retina, é a primeira suspeita. Conferir com o dono na vista
+galáctica antes de mexer.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -656,15 +346,26 @@ linhas.** Palavras do dono, 2026-08-16: *"estou preocupado com nossa
 arquitetura atual, acho que estamos com arquivos muito grandes, e toda vez que
 vamos fazer qq mudança as AIs leem tudo isso.. como poderíamos resolver isso?"*
 
-O vilão é o `director.ts` (4.019 linhas, 15 assuntos); depois `hud.css`,
-`terra.ts`, `galaxy.ts`, `App.tsx`, `atlasRig.ts`. Docs estão saudáveis. Plano
-aprovado pelo dono no mesmo dia — refatoração pura (zero pixel, gates
-bit-idênticos como prova), desenho por símbolo em
+O vilão é o `director.ts` (4.019 linhas em 16/08, 15 assuntos); depois
+`hud.css`, `terra.ts`, `galaxy.ts`, `App.tsx`, `atlasRig.ts`. Docs estão
+saudáveis. Plano aprovado pelo dono no mesmo dia — refatoração pura (zero
+pixel, gates bit-idênticos como prova), desenho por símbolo em
 `/Users/fgferre/.claude/plans/estou-preocupado-com-nossa-rosy-lynx.md`.
-**Largada travada por decisão dele:** só depois que a etapa da rodada da
-estrela pousar e ele avisar — a rodada altera muitas linhas, e o passo 0 da
-execução é re-medir tudo. Não tocar no que a Lei demole (`lodStellar.ts`,
-`pupila.ts`); os blocos que M1/M2 apagam viram lápides de um arquivo só.
+**DESTRAVADA em 17/08 com a palavra dele** (o pouso da estrela; o bastão
+no topo). Em execução: o passo 0 re-mede tudo — os números do plano são a
+fotografia de 16/08 e a rodada da estrela mexeu fundo (nasceram
+`estrela.ts`/`clarao.ts`, a pupila já morreu no M2, lápides podem ter
+encolhido) — e só depois do re-mapa vem o primeiro commit de corte. Não
+tocar no que a Lei ainda demole (`lodStellar.ts`).
+
+**45.** (Herdada do item 44.) A perna retina das réguas não cobre o
+`sky-capture` — a medição do céu interno contra o panorama ESO precisa de
+decisão própria de resolução quando esse assunto voltar à mesa.
+
+**47.** (Herdada do item 44, limite declarado do bloom seletivo.) Estrela
+atrás de corpo resolvido ainda vaza clarão FRACO no rascunho do campo —
+não há ocultadores lá. O conserto conhecido (fantasmas só-profundidade)
+está anotado no próprio passe (`post.ts`).
 
 ---
 
