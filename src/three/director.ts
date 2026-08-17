@@ -236,6 +236,8 @@ interface DirectorEvents {
   onQuality: (quality: QualityLevel) => void;
   /** linha de rumo ("→ DESTINO · distância viva"); vazio = esconder */
   onDest: (text: string) => void;
+  /** distância viva do Sol ("SOL · 40,2 UA"); vazio = esconder */
+  onSol: (text: string) => void;
   /** etapa viva do carregamento — a mesma que o HUD desenha */
   onStage: (stage: LoadStage) => void;
   /** opacidade do véu do Atlas (0..1); custom property, não estado */
@@ -410,6 +412,8 @@ export class Director {
   private prevLabelKeys = new Set<string>();
   private lastDest = '';
   private destTimer = 0;
+  private lastSol = '';
+  private solTimer = 0;
   /**
    * O GESTO de arrastar do Atlas e do pausar-e-olhar. Era um punhado de
    * campos soltos (`pauseDragging`, `pauseLastX/Y`, `pauseArrasto`,
@@ -1523,6 +1527,31 @@ export class Director {
       this.lastDest = text;
       this.destTimer = 0;
       this.events.onDest(text);
+    }
+  }
+
+  /**
+   * "SOL · distância viva" — a medida do afastamento que o dono pediu
+   * (item 44, R3: "infelizmente nao tem medida de distancia para provar
+   * isso"). Só no voo livre — o filme guarda a dramaturgia e o Atlas tem
+   * o próprio enquadramento (`HUD_POR_FASE` concorda: `sol` só em
+   * 'free'). A escada de unidades é a MESMA dos rótulos e da linha de
+   * rumo (`lib/unidades`, injetada com o pt-BR da casa) — uma quinta
+   * cópia não nasce aqui. O Sol está na ORIGEM do mundo heliocêntrico,
+   * então a distância é o comprimento da posição da câmera; mesmo
+   * remédio de 4 Hz do rumo contra o setState por quadro.
+   */
+  private emitSol(camPos: THREE.Vector3) {
+    let text = '';
+    if (this.phase === 'free') {
+      const nota = notaDeDistancia(camPos.length() * UA_POR_PC, numeroPtBr);
+      if (nota) text = `SOL · ${nota}`;
+    }
+    const changedKind = (text === '') !== (this.lastSol === '');
+    if (text !== this.lastSol && (changedKind || this.solTimer > 0.25)) {
+      this.lastSol = text;
+      this.solTimer = 0;
+      this.events.onSol(text);
     }
   }
 
@@ -3294,6 +3323,7 @@ export class Director {
     const markerFade = THREE.MathUtils.smoothstep(dHome, 1700, 3300);
 
     this.destTimer += dt;
+    this.solTimer += dt;
     // nuvens-semente do raymarch + cavidade do observador itinerante
     this.seedCloudTimer += dt;
     if (this.seedCloudTimer > 0.25) {
@@ -3660,6 +3690,8 @@ export class Director {
       this.emitDest(undefined, cam.position);
     }
 
+    // a distância viva do Sol — roda todo tique e se auto-apaga fora do voo
+    this.emitSol(cam.position);
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     // gate 0.02: na casca externa do fade a contribuição é invisível

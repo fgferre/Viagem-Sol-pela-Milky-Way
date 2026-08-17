@@ -294,7 +294,12 @@ item 3 (asa/espinho × fator de enchimento 0,45 — escada preservada:
 189 px a 1,58 UA, 75 a 15,8, 6 no fim; o piso não vale para ele, senão
 o halo constante renasceria). Sonda re-voada: restam as 2 violações de
 crescimento NA SOLTURA do filtro (0,73→1,58 UA) — são a **R2** (entrega
-contínua + remover a exceção da régua). **R3**: distância viva na tela.
+contínua + remover a exceção da régua). **R3 FEITA em 17/08 — a
+distância viva existe:** no voo livre o canto do HUD diz "SOL · 1 UA" →
+"SOL · 40 UA" → "SOL · 6,5 anos-luz", vivo enquanto voa (a escada única
+de unidades de `lib/unidades`, no traje da linha de rumo, 4 Hz; só no
+voo livre — o filme guarda a dramaturgia). Agora o afastamento se PROVA
+com o olho: é o instrumento da R2, que fica sendo o que resta.
 
 Escada oficial re-rodada com o desenho da R1: 9/11, com os 2 vermelhos
 declarados (o teto do lavado orçava só "céu + Sol" e o piso da R1 dava
@@ -458,8 +463,11 @@ réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
    céu cheio; linhagem no cabeçalho da régua). VÃO REMANESCENTE,
    medido e anotado: a 1 UA (janela do filtro solar) o clarão retina
    ainda é menor (30×8 px) — vai junto com a soltura do filtro da
-   ESCADA DA ESTRELA, que já é o pulo declarado. Aguarda os olhos do
-   dono de novo.
+   ESCADA DA ESTRELA, que já é o pulo declarado. **Os olhos dele
+   voltaram em 17/08: "ok, pode seguir" — o conserto ficou de pé, os
+   três números do selo (piso de céu 0,060, piso de 40 faíscas, céu só
+   tem piso) valem como lei, e a fila anda para a escada da estrela
+   (distância viva na tela primeiro, depois a soltura do filtro).**
 4. **Teto do céu re-derivado + a régua do céu-nunca-vazio (EXECUTADO em
    17/08 — falta só o SELO do dono nos três números):** o piso do céu
    foi re-MEDIDO com o Sol desligado, nas duas pernas (DPR 1: luz média

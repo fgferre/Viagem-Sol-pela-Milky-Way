@@ -79,6 +79,11 @@ export interface HudDaFase {
   legenda: boolean;
   /** linha de rumo "→ DESTINO · distância viva" */
   rumo: boolean;
+  /** distância viva do Sol ("SOL · 40,2 UA") — o instrumento do
+   *  afastamento que o dono pediu (item 44: "infelizmente nao tem
+   *  medida de distancia para provar isso"). Só no voo livre: o filme
+   *  guarda a dramaturgia, o Atlas tem o próprio enquadramento. */
+  sol: boolean;
   /** barra de capítulos do FILME (slider de scrub) */
   progresso: boolean;
   /** barra de controles — é ela que hospeda o ⚙ Ajustes */
@@ -113,6 +118,7 @@ export interface HudDaFase {
 
 export const HUD_POR_FASE = {
   loading: {
+    sol: false,
     letterbox: false,
     legenda: false,
     rumo: false,
@@ -130,6 +136,7 @@ export const HUD_POR_FASE = {
     veuDeTitulo: false,
   },
   intro: {
+    sol: false,
     letterbox: true,
     legenda: false,
     rumo: false,
@@ -147,6 +154,7 @@ export const HUD_POR_FASE = {
     veuDeTitulo: true,
   },
   journey: {
+    sol: false,
     letterbox: true,
     legenda: true,
     rumo: true,
@@ -164,6 +172,7 @@ export const HUD_POR_FASE = {
     veuDeTitulo: false,
   },
   end: {
+    sol: false,
     letterbox: true,
     legenda: false,
     rumo: false,
@@ -181,6 +190,7 @@ export const HUD_POR_FASE = {
     veuDeTitulo: true,
   },
   free: {
+    sol: true,
     letterbox: true,
     legenda: false,
     rumo: false,
@@ -204,6 +214,7 @@ export const HUD_POR_FASE = {
   // entra (é o slider de capítulos do filme, e daria scrub do filme
   // dentro do Atlas — e o tempo do Atlas é OUTRO tempo: o do céu).
   atlas: {
+    sol: false,
     letterbox: true,
     legenda: false,
     rumo: false,

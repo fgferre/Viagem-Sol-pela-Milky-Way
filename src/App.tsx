@@ -70,6 +70,7 @@ export default function App() {
   const [ticks, setTicks] = useState<{ t: number; text: string }[]>([]);
   const [runtime, setRuntime] = useState(0);
   const [dest, setDest] = useState('');
+  const [sol, setSol] = useState('');
   const [quality, setQuality] = useState<QualityLevel>('cinema');
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -204,6 +205,7 @@ export default function App() {
       },
       onQuality: setQuality,
       onDest: setDest,
+      onSol: setSol,
       onStage: setLoadStage,
       // custom property, como o warp: o véu do Atlas anda a 60 Hz e um
       // setState por quadro re-renderizaria o HUD inteiro à toa
@@ -938,6 +940,9 @@ export default function App() {
 
       {/* linha de rumo: para onde estamos indo, com distância viva */}
       {hud.rumo && dest && <div className="dest-line">{dest}</div>}
+
+      {/* distância viva do Sol — a prova do afastamento (voo livre) */}
+      {hud.sol && sol && <div className="sol-line">{sol}</div>}
 
       {/* progresso (arrastável — scrub). Fica de pé na tela final também:
           seekFraction já sabe retomar a partir da fase 'end', e sem a barra
