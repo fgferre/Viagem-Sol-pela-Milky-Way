@@ -371,26 +371,29 @@ const PISO_DO_BORRAO_PX = 8;
  * E NÃO AFROUXA NADA: o quadro de hoje, com bloom, está em 100% acima de meia
  * luz e luz média 0,945. Contra o piso do céu isso é 330× e 20×.
  *
- * RE-DERIVADO em 17/08 (item 4 do mapa da R2), com o bloom seletivo como
- * padrão e a geometria exata da viewport: `EXTRA='&noplan=1'` em 1/40/2000 UA,
- * nas DUAS pernas — DPR 1: luz média ≤ 0,0490, acima de meia ≤ 0,44%;
- * DPR 2: 0,0446 / 0,41% (a extensão do kernel em px físicos deixa o céu
- * retina um fio mais contido — medido, declarado). A constante é a da perna
- * de REFERÊNCIA (DPR 1), como toda régua da casa; prova versionada em
- * `capturas/luz-do-quadro-noplan1{,dpr2}.json`. O piso VELHO (0,048/0,30%)
- * era de 15/08, do céu do filme pré-M2 — a luz média voltou ao MESMO número
- * (o campo com o cobertor do filme é o céu daquela época de novo), e o
- * acima-de-meia subiu de 0,30% para 0,44%: são as faíscas que o cobertor
- * pleno devolveu.
+ * RE-DERIVADO em 17/08 (item 4 do mapa da R2) e RE-DERIVADO DE NOVO no
+ * mesmo dia, depois do aceite negado do dono ("perdemos muitas estrelas,
+ * densidade parece que caiu"): o cobertor do campo desceu o limiar a ZERO
+ * (todo pontinho respira — `LIMIAR_DO_CAMPO`, post.ts) e a extensão do
+ * bloom foi à régua de referência (parte 3 da invariância, `setSize`).
+ * Medição `EXTRA='&noplan=1'` em 1/40/2000 UA, nas DUAS pernas —
+ * DPR 1: luz média ≤ 0,0600, acima de meia ≤ 0,63%; DPR 2: 0,0586 /
+ * 0,57%. AS PERNAS AGORA QUASE EMPATAM (antes 0,049 × 0,0446): fechar a
+ * extensão em px de CSS fechou também o vão entre as telas — a
+ * invariância completa, medida. A constante é a da perna de REFERÊNCIA
+ * (DPR 1); prova versionada em `capturas/luz-do-quadro-noplan1{,dpr2}.json`.
+ * A linhagem dos pisos: 0,048/0,30% (15/08, céu do filme) → 0,049/0,44%
+ * (bloom seletivo, limiar 0,82 isolado — o céu que o dono REPROVOU) →
+ * 0,060/0,63% (limiar zero + extensão de referência — o céu cheio).
  *
  * O PAR SEM BLOOM ficou HISTÓRICO: a porta `?nobloom=` NÃO EXISTE no app
  * (o lado A morreu com `?bbloom` no M2 e virou captura versionada) — o
  * runner agora RECUSA `EXTRA` com nobloom em vez de fotografar com bloom
  * e julgar sem, que era o que o par vinha fazendo em silêncio.
  */
-const PISO_ACIMA_DE_MEIA_COM_BLOOM = 4.4e-3;
+const PISO_ACIMA_DE_MEIA_COM_BLOOM = 6.3e-3;
 const PISO_ACIMA_DE_MEIA_SEM_BLOOM = 1.133e-3;
-const PISO_LUZ_MEDIA_COM_BLOOM = 0.049;
+const PISO_LUZ_MEDIA_COM_BLOOM = 0.06;
 const PISO_LUZ_MEDIA_SEM_BLOOM = 0.039;
 
 /**
@@ -399,13 +402,14 @@ const PISO_LUZ_MEDIA_SEM_BLOOM = 0.039;
  * vazia, pois ele nao é"). Nenhuma régua contava PONTOS: o M2 apagou a
  * faísca de centenas de estrelas e toda métrica de média continuou verde.
  *
- * O número vem de medição, não de gosto (17/08, bloom seletivo padrão):
- * as 11 vistas oficiais têm 60–73 faíscas em DPR 1 e 73–101 em DPR 2; as
- * capturas FÓSSEIS da era do céu morto, achadas na mesma pasta, têm 1 (o
- * Sol sozinho). O piso é ⅔ do mínimo observado — folga declarada para
- * cintilação e variação de vista, morte certa para o colapso (60 → 1 é o
- * defeito; 60 → 55 é uma noite diferente). Vale para as DUAS pernas: a
- * contagem de manchas é invariante de resolução por construção.
+ * O número vem de medição, não de gosto (17/08, bloom seletivo com o
+ * limiar do campo em zero): as 11 vistas oficiais têm 68–82 faíscas em
+ * DPR 1 e 83–102 em DPR 2 (retina resolve mais pontinhos acima de meia
+ * luz — riqueza, não defeito); as capturas FÓSSEIS da era do céu morto,
+ * achadas na mesma pasta, têm 1 (o Sol sozinho). O piso é ~⅗ do mínimo
+ * observado — folga declarada para cintilação e variação de vista,
+ * morte certa para o colapso (70 → 1 é o defeito; 70 → 60 é uma noite
+ * diferente). Vale para as DUAS pernas.
  */
 const PISO_DE_FAISCAS = 40;
 /**

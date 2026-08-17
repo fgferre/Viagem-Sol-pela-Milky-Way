@@ -438,10 +438,28 @@ réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
    disciplina do vendorizado. LIMITES DECLARADOS: (a) estrela atrás de
    corpo resolvido ainda vaza clarão fraco no rascunho do campo (sem
    ocultadores lá; o conserto conhecido — fantasmas só-profundidade —
-   está anotado no passe); (b) em retina a EXTENSÃO de qualquer bloom
-   é menor em px de CSS (o kernel mede em px de buffer) — quem mede e
-   decide é a perna DPR 2 (item 2). Fica aberto SÓ o aceite do dono no
-   app.
+   está anotado no passe). **O ACEITE DO DONO VEIO NEGADO (17/08),
+   palavras dele:** *"sinto que perdemos muitas estrelas, densidade
+   parece que caiu, o efeito de spikes perdeu beleza., ficou muito corpo
+   redondo bojudo"* — **e as duas causas foram achadas, consertadas e
+   re-medidas no ato:** (1) no passe do campo cada estrela enfrentava o
+   limiar 0,82 SOZINHA (sem o fundo da galáxia por baixo, as fracas
+   perdiam o gatilho e o céu ralava) → o limiar do campo caiu a ZERO
+   (`LIMIAR_DO_CAMPO`, post.ts): todo pontinho respira na proporção da
+   própria luz, quem doma o topo é a compressão de sempre; (2) a
+   EXTENSÃO do bloom media em px físicos — em retina a mesma energia
+   concentrava na metade do tamanho e virava a bola densa em cima da
+   cruz fina → a pirâmide inteira foi à régua de referência (parte 3 da
+   invariância, `setSize`): mesmo halo visual em qualquer tela, DPR 1
+   bit-idêntico, e o trem de mips 4× mais barato em retina. Re-medido:
+   escadas PASSA 11/11 nas duas pernas, borrões EMPATADOS entre as
+   telas em 10 de 11 degraus (âncora 20 = 20), faíscas 68–82 (DPR 1) e
+   83–102 (retina), piso do céu re-derivado de novo (0,060/0,63% — o
+   céu cheio; linhagem no cabeçalho da régua). VÃO REMANESCENTE,
+   medido e anotado: a 1 UA (janela do filtro solar) o clarão retina
+   ainda é menor (30×8 px) — vai junto com a soltura do filtro da
+   ESCADA DA ESTRELA, que já é o pulo declarado. Aguarda os olhos do
+   dono de novo.
 4. **Teto do céu re-derivado + a régua do céu-nunca-vazio (EXECUTADO em
    17/08 — falta só o SELO do dono nos três números):** o piso do céu
    foi re-MEDIDO com o Sol desligado, nas duas pernas (DPR 1: luz média

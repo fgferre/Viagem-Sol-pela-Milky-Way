@@ -180,7 +180,18 @@ export const CAMADA_DO_CAMPO = 1;
 const FORMA_DO_FILME = [1.0, 0.8, 0.6, 0.4, 0.2];
 const FORCA_DO_FILME = 0.72;
 const RAIO_DO_FILME = 0.58;
-const LIMIAR_DO_FILME = 0.82;
+/**
+ * O LIMIAR DO CAMPO É ZERO — e o zero é a correção do aceite negado
+ * (17/08, dono: "perdemos muitas estrelas, densidade parece que caiu").
+ * O 0,82 do cobertor único existia para a FOTOSFERA e a galáxia não
+ * florescerem — mas no rascunho do campo só existe estrela, e cada uma
+ * enfrentava o limiar SOZINHA: sem o fundo da galáxia por baixo, as
+ * fracas que floresciam no cobertor único perdiam o gatilho e o céu
+ * esvaziava. Limiar aqui é censo, não proteção: com zero, todo pontinho
+ * respira na proporção da própria luz — quem doma o topo é a compressão
+ * do passa-alta (ombro 40 / β 0,45), a mesma de sempre.
+ */
+const LIMIAR_DO_CAMPO = 0;
 
 /**
  * O PASSE DO CAMPO — o segundo cobertor, SEM segunda máquina.
@@ -282,7 +293,7 @@ class ClaraoDoCampo extends Pass {
     }
     m.strength = FORCA_DO_FILME;
     m.radius = RAIO_DO_FILME;
-    m.threshold = LIMIAR_DO_FILME;
+    m.threshold = LIMIAR_DO_CAMPO;
     this.bloom.render(renderer, writeBuffer, writeBuffer, 0, false);
 
     // 3. só o clarão, somado ao quadro principal — o blendMaterial do
@@ -504,6 +515,18 @@ export class Post {
   setSize(w: number, h: number) {
     this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.composer.setSize(w, h);
+    // A EXTENSÃO DO BLOOM NA RÉGUA DE REFERÊNCIA (parte 3 da invariância,
+    // cobrada pelo dono no aceite do bloom seletivo: "ficou muito corpo
+    // redondo bojudo"). O composer dimensiona os passes em px FÍSICOS, e
+    // com isso o σ da pirâmide media em buffer: em retina a mesma energia
+    // concentrava na METADE do tamanho visual — a bola densa em cima da
+    // cruz fina, e o borrão do Sol a 1 UA caindo de 30 para 8 px de CSS
+    // (medido na perna DPR 2). A pirâmide inteira (bright + mips) passa a
+    // viver em px de CSS: mesmo halo visual em qualquer tela, DPR 1
+    // bit-idêntico (css == buffer), e o trem de mips 4× mais barato em
+    // retina. O blend final amostra o composite para o buffer cheio, como
+    // sempre fez.
+    this.bloom.setSize(w, h);
   }
 
   private galaxyMode = 0;
