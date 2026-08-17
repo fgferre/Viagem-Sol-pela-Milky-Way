@@ -374,6 +374,36 @@ camada** (campo estelar com o kernel do filme; Sol/planetas com o
 disciplinado) + a régua do céu-nunca-vazio para o teto do céu ser
 re-derivado com o dono, não herdado do céu morto do M2.
 
+**A RAIZ DO CÉU VAZIO, ACHADA PELA PISTA DO DONO (madrugada, com fotos
+modo-cinema-dpr2 × modo-performance-dpr1):** *"no modo performance
+parece que a galaxia fica muito mais cheia"* — confirmado e explicado. O
+pico da PSF cai com o QUADRADO do pixelRatio (mesmo fluxo, 4× mais
+pixels em cinema/DPR 2), e TODOS os gatilhos são em cima do pico: a
+faísca da cruz (satura em pico 4), o piso 1/255, o branqueamento, a
+entrada do clarão, o limiar do bloom. Resultado: o céu DESARMA
+exatamente no modo mais caro. E o ESCÂNDALO DE INSTRUMENTO: todas as
+réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
+
+**O MAPA DO CONSERTO (R2, executar na próxima janela — receita
+completa):**
+1. **Invariância de resolução:** gatilhos e doses de ARTE usam o pico de
+   REFERÊNCIA (pico_ref = pico_buffer × pr²); o depósito FÍSICO fica
+   como está. Sítios: `starShaders.ts` (satDoFilme, guarda do spike,
+   branqueamento — novo uniform `uPr2` em stars/wrappedStars/planetas);
+   `clarao.ts` (entrada + meiaPx: calcular com σ_css e converter
+   meia_buffer = meia_css × pr); `director.ts` (passar
+   `pr = renderer.getPixelRatio()` junto com hPx). Heroes já são
+   invariantes (tamanho em pc no mundo).
+2. **Instrumento:** perna DPR 2 na sonda e na escada (Emulation.
+   setDeviceMetricsOverride — receita em scratchpad/dois-modos.mjs);
+   nenhuma régua de céu vale mais só em DPR 1.
+3. **Bloom seletivo — ordem do dono: *"vai no bloom seletivo então,
+   cada camada com seu cobertor"*:** campo estelar (stars, wrapped,
+   heroes, galáxia) com o kernel do filme; Sol/planetas com o
+   disciplinado; limiar do bloom também referenciado por pr².
+4. Depois de 1–3: re-derivar o teto de céu da escada COM o dono (o céu
+   legítimo ficou mais rico) e re-medir tudo nas DUAS pernas.
+
 **PRIMEIRO PASSO EXECUTADO NO ATO (madrugada) — UM DESENHISTA SÓ:** o
 dono cravou o diagnóstico final: *"claramente a regra que desenha
 sirius é totalmente diferente da que desenha o sol... o desenho de
