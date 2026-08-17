@@ -130,6 +130,45 @@ describe('medirQuadro — o que a régua lê na imagem', () => {
     expect(m.acimaDeMeia).toBe(1);
     expect(m.luzMedia).toBeGreaterThan(0.9);
   });
+
+  // ── faíscas — a régua do céu-nunca-vazio (item 4) ─────────────────────
+  it('céu preto tem 0 faíscas; quadro todo claro é UMA mancha, não N pixels', () => {
+    expect(medirQuadro(quadroSolido(64, 64, 0), 64, 64).faiscantes).toBe(0);
+    // componentes conexos, não pixels: o núcleo saturado é platô e conta 1 —
+    // um contador de máximos estritos devolveria 0 aqui, e o de pixels, 4096
+    expect(medirQuadro(quadroSolido(64, 64, 1), 64, 64).faiscantes).toBe(1);
+  });
+
+  it('três estrelas separadas contam 3; encostadas na diagonal contam separado (4-vizinhos)', () => {
+    const W = 21, H = 9;
+    const d = new Uint8Array(W * H * 3);
+    const acende = (x, y) => {
+      const p = (y * W + x) * 3;
+      d[p] = d[p + 1] = d[p + 2] = 255;
+    };
+    acende(2, 2);
+    acende(10, 4);
+    acende(11, 4); // grudada na anterior pelo lado: mesma mancha
+    acende(18, 7);
+    expect(medirQuadro(d, W, H).faiscantes).toBe(3);
+    // a diagonal NÃO une (4-vizinhos, declarado no medidor)
+    acende(3, 3); // diagonal da (2,2) → mancha própria
+    expect(medirQuadro(d, W, H).faiscantes).toBe(4);
+  });
+
+  it('O CÉU MORTO DO M2 é denunciado: 1 faísca contra as dezenas do céu vivo', () => {
+    // o retrato real de 17/08: as capturas fósseis da era do céu apagado
+    // têm 1 mancha (o Sol sozinho); as 11 vistas de hoje têm 60–101. Este
+    // sintético reproduz o colapso: um "Sol" central e nada mais.
+    const W = 31, H = 31;
+    const d = new Uint8Array(W * H * 3);
+    for (let y = 14; y <= 16; y++)
+      for (let x = 14; x <= 16; x++) {
+        const p = (y * W + x) * 3;
+        d[p] = d[p + 1] = d[p + 2] = 255;
+      }
+    expect(medirQuadro(d, W, H).faiscantes).toBe(1);
+  });
 });
 
 describe('claraoPsfPx — o que o instrumento tem DIREITO de espalhar', () => {
@@ -233,6 +272,25 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     const j = julgarEscada({ linhas: honesta(), alturaPx: 900, comBloom: false });
     expect(j.erro, j.texto).toBe(false);
     expect(j.resumo).toContain('PASSA');
+  });
+
+  it('CÉU MORTO reprova pelo piso de faíscas — a regra que o M2 escancarou', () => {
+    // uma escada perfeita em TODAS as métricas de teto, mas com o céu
+    // apagado (1 faísca = o Sol sozinho, o retrato dos fósseis de 17/08).
+    // Antes desta regra o juiz dizia PASSA — céu morto passa por qualquer
+    // teto, e foi assim que o M2 apagou o campo com o verde aceso.
+    const mortas = honesta().map((l) => ({ ...l, faiscantes: 1 }));
+    const j = julgarEscada({ linhas: mortas, alturaPx: 900, comBloom: false });
+    expect(j.erro).toBe(true);
+    expect(j.texto).toContain('céu nunca vazio');
+    // e o céu VIVO de hoje (60+) passa com folga
+    const vivas = honesta().map((l) => ({ ...l, faiscantes: 60 }));
+    expect(julgarEscada({ linhas: vivas, alturaPx: 900, comBloom: false }).erro).toBe(false);
+  });
+
+  it('linha SEM contagem (json histórico) não é julgada pelo piso — replay honesto', () => {
+    const j = julgarEscada({ linhas: honesta(), alturaPx: 900, comBloom: false });
+    expect(j.erro, 'linhas sem faiscantes não podem reprovar pela regra 4').toBe(false);
   });
 
   it('o PISO DO CÉU não é cobrado do Sol — a baseline honesta de 15/08 passa', () => {

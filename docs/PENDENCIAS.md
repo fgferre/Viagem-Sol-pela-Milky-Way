@@ -442,8 +442,27 @@ réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
    é menor em px de CSS (o kernel mede em px de buffer) — quem mede e
    decide é a perna DPR 2 (item 2). Fica aberto SÓ o aceite do dono no
    app.
-4. Depois de 2–3: re-derivar o teto de céu da escada COM o dono (o céu
-   legítimo ficou mais rico) e re-medir tudo nas DUAS pernas.
+4. **Teto do céu re-derivado + a régua do céu-nunca-vazio (EXECUTADO em
+   17/08 — falta só o SELO do dono nos três números):** o piso do céu
+   foi re-MEDIDO com o Sol desligado, nas duas pernas (DPR 1: luz média
+   0,049, 0,44% acima de meia; retina: 0,0446 / 0,41% — provas
+   versionadas em `luz-do-quadro-noplan1{,dpr2}.json`), e os tetos da
+   escada agora sentam no céu DE HOJE — a luz média voltou ao número do
+   céu do filme de 15/08, e o acima-de-meia subiu 0,30%→0,44%: são as
+   faíscas que o cobertor pleno devolveu. E nasceu a régua que ele
+   pediu: `faiscantes` conta as manchas de estrela por vista, e o juiz
+   REPROVA céu abaixo de **40 faíscas** (⅔ do mínimo vivo: hoje 60–73
+   em DPR 1, 73–101 em retina; os fósseis do céu morto do M2 achados na
+   pasta medem **1** — a régua os denuncia na primeira linha, e é a
+   regra que faltou quando o M2 apagou o campo com o verde aceso). DE
+   QUEBRA, achado e travado: a porta `?nobloom=` estava MORTA no app
+   desde o M2 e o par "sem bloom" fotografava COM bloom julgando sem —
+   o runner agora recusa o botão morto. Escadas re-medidas nas duas
+   pernas com o juiz novo: PASSA 11/11 nas duas, faíscas registradas
+   por degrau. O QUE É DELE: os três números são proposta — o piso de
+   céu (0,049), o de faíscas (40), e a regra de que céu só tem PISO,
+   nunca teto de estrelas; querendo o céu ainda mais rico, sobe-se a
+   arte e re-mede — os tetos acompanham.
 
 **PRIMEIRO PASSO EXECUTADO NO ATO (madrugada) — UM DESENHISTA SÓ:** o
 dono cravou o diagnóstico final: *"claramente a regra que desenha

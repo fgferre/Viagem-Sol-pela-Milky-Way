@@ -257,14 +257,46 @@ export function medirQuadro(dados, largura, altura) {
   let acima = 0;
   let pico = 0;
   const linha = new Float64Array(largura);
+  const meia = new Uint8Array(N);
   const yMeio = Math.floor(altura / 2);
   for (let i = 0, p = 0; i < N; i++, p += 3) {
     const y = (0.2126 * dados[p] + 0.7152 * dados[p + 1] + 0.0722 * dados[p + 2]) / 255;
     soma += y;
-    if (y > 0.5) acima++;
+    if (y > 0.5) {
+      acima++;
+      meia[i] = 1;
+    }
     if (y > pico) pico = y;
     const yy = (i / largura) | 0;
     if (yy === yMeio) linha[i - yy * largura] = y;
+  }
+  // AS FAÍSCAS — a régua do céu-nunca-vazio (item 4; palavras do dono:
+  // "nao quero que o ceu vire nunca uma coisa vazia, pois ele nao é").
+  // `faiscantes` conta as MANCHAS acima de meia luz: componentes conexos
+  // (4 vizinhos) da máscara, não máximos locais — núcleo saturado é platô,
+  // e um máximo estrito o perderia. Foi exatamente esta contagem que faltou
+  // quando o M2 apagou a faísca de centenas de estrelas e todo "verde"
+  // continuou verde: as métricas de média não enxergam pontos que somem.
+  // O Sol e o clarão dele contam como UMA mancha (braços encostam no
+  // núcleo) — o sinal do céu morto não é 12 contra 11, é o colapso de
+  // centenas para dezenas.
+  let faiscantes = 0;
+  const fila = new Int32Array(N);
+  for (let i = 0; i < N; i++) {
+    if (!meia[i]) continue;
+    faiscantes++;
+    meia[i] = 0;
+    fila[0] = i;
+    let topo = 1;
+    while (topo) {
+      const q = fila[--topo];
+      const x = q % largura;
+      const yy = (q / largura) | 0;
+      if (x > 0 && meia[q - 1]) { meia[q - 1] = 0; fila[topo++] = q - 1; }
+      if (x < largura - 1 && meia[q + 1]) { meia[q + 1] = 0; fila[topo++] = q + 1; }
+      if (yy > 0 && meia[q - largura]) { meia[q - largura] = 0; fila[topo++] = q - largura; }
+      if (yy < altura - 1 && meia[q + largura]) { meia[q + largura] = 0; fila[topo++] = q + largura; }
+    }
   }
   // O BORRÃO é medido na linha do meio e a partir do CENTRO, não é a maior
   // corrida da imagem inteira: todas as vistas desta escada olham o Sol na
@@ -276,9 +308,9 @@ export function medirQuadro(dados, largura, altura) {
   if (linha[xMeio] > 0.5) {
     while (esq > 0 && linha[esq - 1] > 0.5) esq--;
     while (dir < largura - 1 && linha[dir + 1] > 0.5) dir++;
-    return { luzMedia: soma / N, acimaDeMeia: acima / N, pico, borrao: dir - esq + 1 };
+    return { luzMedia: soma / N, acimaDeMeia: acima / N, pico, faiscantes, borrao: dir - esq + 1 };
   }
-  return { luzMedia: soma / N, acimaDeMeia: acima / N, pico, borrao: 0 };
+  return { luzMedia: soma / N, acimaDeMeia: acima / N, pico, faiscantes, borrao: 0 };
 }
 
 // ── O JUÍZO ───────────────────────────────────────────────────────────────
@@ -338,11 +370,44 @@ const PISO_DO_BORRAO_PX = 8;
  *
  * E NÃO AFROUXA NADA: o quadro de hoje, com bloom, está em 100% acima de meia
  * luz e luz média 0,945. Contra o piso do céu isso é 330× e 20×.
+ *
+ * RE-DERIVADO em 17/08 (item 4 do mapa da R2), com o bloom seletivo como
+ * padrão e a geometria exata da viewport: `EXTRA='&noplan=1'` em 1/40/2000 UA,
+ * nas DUAS pernas — DPR 1: luz média ≤ 0,0490, acima de meia ≤ 0,44%;
+ * DPR 2: 0,0446 / 0,41% (a extensão do kernel em px físicos deixa o céu
+ * retina um fio mais contido — medido, declarado). A constante é a da perna
+ * de REFERÊNCIA (DPR 1), como toda régua da casa; prova versionada em
+ * `capturas/luz-do-quadro-noplan1{,dpr2}.json`. O piso VELHO (0,048/0,30%)
+ * era de 15/08, do céu do filme pré-M2 — a luz média voltou ao MESMO número
+ * (o campo com o cobertor do filme é o céu daquela época de novo), e o
+ * acima-de-meia subiu de 0,30% para 0,44%: são as faíscas que o cobertor
+ * pleno devolveu.
+ *
+ * O PAR SEM BLOOM ficou HISTÓRICO: a porta `?nobloom=` NÃO EXISTE no app
+ * (o lado A morreu com `?bbloom` no M2 e virou captura versionada) — o
+ * runner agora RECUSA `EXTRA` com nobloom em vez de fotografar com bloom
+ * e julgar sem, que era o que o par vinha fazendo em silêncio.
  */
-const PISO_ACIMA_DE_MEIA_COM_BLOOM = 3.0e-3;
+const PISO_ACIMA_DE_MEIA_COM_BLOOM = 4.4e-3;
 const PISO_ACIMA_DE_MEIA_SEM_BLOOM = 1.133e-3;
-const PISO_LUZ_MEDIA_COM_BLOOM = 0.048;
+const PISO_LUZ_MEDIA_COM_BLOOM = 0.049;
 const PISO_LUZ_MEDIA_SEM_BLOOM = 0.039;
+
+/**
+ * O PISO DE FAÍSCAS — a régua do céu-nunca-vazio, agora LEI EXECUTÁVEL
+ * (item 4; palavras do dono: "nao quero que o ceu vire nunca uma coisa
+ * vazia, pois ele nao é"). Nenhuma régua contava PONTOS: o M2 apagou a
+ * faísca de centenas de estrelas e toda métrica de média continuou verde.
+ *
+ * O número vem de medição, não de gosto (17/08, bloom seletivo padrão):
+ * as 11 vistas oficiais têm 60–73 faíscas em DPR 1 e 73–101 em DPR 2; as
+ * capturas FÓSSEIS da era do céu morto, achadas na mesma pasta, têm 1 (o
+ * Sol sozinho). O piso é ⅔ do mínimo observado — folga declarada para
+ * cintilação e variação de vista, morte certa para o colapso (60 → 1 é o
+ * defeito; 60 → 55 é uma noite diferente). Vale para as DUAS pernas: a
+ * contagem de manchas é invariante de resolução por construção.
+ */
+const PISO_DE_FAISCAS = 40;
 /**
  * A margem da luz média sobre o piso, e por que ela existe separada do
  * orçamento geométrico: `acimaDeMeia` conta pixel acima de MEIA LUZ, então a
@@ -489,6 +554,16 @@ export function julgarEscada({
         + `céu × ${MARGEM_DA_CAUDA} + o borrão permitido)`
       );
     }
+    // 4. O CÉU NUNCA VAZIO — o piso de faíscas. É a regra que faltava
+    //    quando o M2 apagou o campo: as três acima só têm TETO, e céu
+    //    morto passa por qualquer teto. Linhas antigas (sem a contagem)
+    //    não são julgadas — replay de json histórico continua honesto.
+    if (l.faiscantes !== undefined && l.faiscantes < PISO_DE_FAISCAS) {
+      motivos.push(
+        `céu com ${l.faiscantes} faísca(s) — piso ${PISO_DE_FAISCAS} `
+        + '("o céu nunca vazio", item 4)'
+      );
+    }
 
     return {
       ua: l.ua,
@@ -536,6 +611,18 @@ function urlDaDistancia(ua) {
 }
 
 async function principal() {
+  // A TRAVA DO BOTÃO MORTO (17/08): `?nobloom=` não existe no app — o lado
+  // A do bloom morreu com `?bbloom` no M2 e vive nas capturas versionadas.
+  // Rodar com este EXTRA fotografava COM bloom e julgava com os pisos de
+  // SEM — números com cara de honestos e origem de mentira. Recusar é o
+  // único comportamento decente; o par sem-bloom volta no dia em que
+  // existir de novo um caminho REAL de desligar o bloom para medição.
+  if (/nobloom=1/.test(EXTRA)) {
+    throw new Error(
+      'EXTRA com nobloom=1: a porta morreu no M2 (lado A vive nas capturas '
+      + 'versionadas) — este par fotografava COM bloom e julgava sem'
+    );
+  }
   const pedidas = process.argv.slice(2).map(Number).filter(Number.isFinite);
   const escada = pedidas.length ? pedidas : ESCADA_UA;
   const saida = resolve(ROOT, 'capturas');
@@ -586,16 +673,16 @@ async function principal() {
     + `${EXTRA ? `  EXTRA=${EXTRA}` : ''}\n\n`
   );
   process.stdout.write(
-    '      UA   luzMedia   acimaDeMeia    pico   borrao(px)   discoReal(px)   clarao(px)\n'
+    '      UA   luzMedia   acimaDeMeia    pico   faiscas   borrao(px)   discoReal(px)   clarao(px)\n'
   );
-  process.stdout.write('  ' + '─'.repeat(82) + '\n');
+  process.stdout.write('  ' + '─'.repeat(90) + '\n');
   for (const l of linhas) {
     const borrao = l.borrao >= JW ? `>=${JW}` : String(l.borrao);
     process.stdout.write(
       `${String(l.ua).padStart(8)}   ${num(l.luzMedia).padStart(8)}   ` +
       `${num(100 * l.acimaDeMeia, 1).padStart(9)}%   ${num(l.pico, 2).padStart(5)}   ` +
-      `${borrao.padStart(10)}   ${num(l.disco, 2).padStart(13)}   ` +
-      `${num(l.clarao, 2).padStart(10)}\n`
+      `${String(l.faiscantes).padStart(7)}   ${borrao.padStart(10)}   ` +
+      `${num(l.disco, 2).padStart(13)}   ${num(l.clarao, 2).padStart(10)}\n`
     );
   }
   // O VEREDITO — a régua deixa de devolver a decisão para quem lê a tabela.

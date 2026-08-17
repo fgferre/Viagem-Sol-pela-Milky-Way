@@ -1,0 +1,45 @@
+{
+  "janela": [
+    900,
+    900
+  ],
+  "dpr": 2,
+  "extra": "&noplan=1",
+  "comBloom": true,
+  "veredito": ">>> PASSA — 3 degraus dentro da lei",
+  "linhas": [
+    {
+      "ua": 1,
+      "via": "sinal",
+      "luzMedia": 0.04454878481293813,
+      "acimaDeMeia": 0.004132098765432099,
+      "pico": 0.9523905882352941,
+      "borrao": 8,
+      "disco": 7.55764391733353,
+      "clarao": 53.246623310383775,
+      "claraoNucleo": 13.466560442925418
+    },
+    {
+      "ua": 40,
+      "via": "sinal",
+      "luzMedia": 0.04448033782673651,
+      "acimaDeMeia": 0.004068827160493827,
+      "pico": 0.9523905882352941,
+      "borrao": 0,
+      "disco": 0.18894109793333827,
+      "clarao": 279.3733944513899,
+      "claraoNucleo": 11.92046108990552
+    },
+    {
+      "ua": 2000,
+      "via": "sinal",
+      "luzMedia": 0.04444134821211429,
+      "acimaDeMeia": 0.003977469135802469,
+      "pico": 0.9523905882352941,
+      "borrao": 0,
+      "disco": 0.0037788219586667657,
+      "clarao": 54.66642325649703,
+      "claraoNucleo": 9.906507934705731
+    }
+  ]
+}
