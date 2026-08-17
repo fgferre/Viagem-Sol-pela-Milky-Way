@@ -97,6 +97,7 @@ import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { ArrastoDePonteiro } from './arrastoDePonteiro';
 import { NuvensSemente } from './director/nuvensSemente';
+import { VeuDoAtlas } from './director/veu';
 import { RodaDaEscada } from './rodaDaEscada';
 import {
   AtlasRig,
@@ -174,15 +175,6 @@ const QUADROS_ESTAVEIS = 10;
  * captura nunca finge que a efeméride viva estava lá.
  */
 const QUADROS_TENTANDO_FONTE = 10;
-
-/**
- * Duração de CADA metade do véu de entrada/saída do Atlas, em
- * segundos: fecha, reposiciona, abre. Entrar no Atlas não é travessia
- * física (D3) — não há nave voando de um lugar ao outro, e fingir isso
- * numa escala que vai de 1 UA a 25 kpc seria mentira de câmera. Sob
- * `prefers-reduced-motion` a troca é INSTANTÂNEA: o véu não anima.
- */
-const VEU_ATLAS_S = 0.45;
 
 /**
  * O INSTANTE DE VIAGEM QUE O SOL VIVE DENTRO DO ATLAS, pinado.
@@ -482,11 +474,11 @@ export class Director {
    */
   private naParede = false;
 
-  /** véu do Atlas: 0 = aberto, 1 = fechado */
-  private veu = 0;
-  private veuAlvo = 0;
-  /** o que fazer quando o véu terminar de FECHAR */
-  private veuPendente: (() => void) | null = null;
+  /** o véu do Atlas — corte 2 da Parte 1 da onda */
+  private readonly veuDoAtlas = new VeuDoAtlas({
+    onVeu: (k) => this.events.onVeu(k),
+    perturbar: () => this.perturbar(),
+  });
 
   private phase: Phase = 'loading';
   private journeyT = 0;
@@ -1161,8 +1153,7 @@ export class Director {
       // não fechado) é movimento na tela como qualquer outro. O rig do
       // Atlas em si não anima — o reposicionamento acontece atrás do
       // véu —, então este é o único termo novo que a fase traz.
-      this.veu > 0 ||
-      this.veuPendente !== null ||
+      this.veuDoAtlas.emCurso ||
       // A MÁQUINA DO TEMPO (F4): relógio andando é cena mudando, e
       // efeméride em voo é uma mudança JÁ PEDIDA que ainda não chegou.
       // Sem os dois termos, o `?jd=` do gate poderia ser capturado no
@@ -2442,7 +2433,9 @@ export class Director {
     // tempo dizendo a verdade ("sem efeméride"). O filme continua sem
     // pagar um byte: só quem cruza o portal chega aqui.
     this.garantirEfemerides();
-    this.atravessarVeu(opcoes.instantaneo === true, () => {
+    this.veuDoAtlas.atravessar(
+      opcoes.instantaneo === true || this.reducedMotion || this.shotMode,
+      () => {
       // focar ANTES da fase virar: `rampaDaEscada()` ainda vê a fase
       // velha e a reposição é seca — a entrada acontece atrás do véu,
       // nunca por rampa (D3: não é travessia física)
@@ -2477,7 +2470,7 @@ export class Director {
     this.aoVivo = false;
     this.naParede = false;
     this.publicarTempo();
-    this.atravessarVeu(false, () => {
+    this.veuDoAtlas.atravessar(this.reducedMotion || this.shotMode, () => {
       this.rig.reset();
       this.teletransportou();
       if (!volta) {
@@ -2676,24 +2669,6 @@ export class Director {
     this.perturbar();
   }
 
-  /**
-   * Fecha o véu, faz a troca, abre o véu. Instantâneo (véu nenhum) sob
-   * `prefers-reduced-motion`, sob `?shot=` e quando quem chama pede —
-   * é o que mantém a captura headless determinística.
-   */
-  private atravessarVeu(instantaneo: boolean, aoFechar: () => void) {
-    if (instantaneo || this.reducedMotion || this.shotMode) {
-      this.veu = 0;
-      this.veuAlvo = 0;
-      this.veuPendente = null;
-      this.events.onVeu(0);
-      aoFechar();
-      return;
-    }
-    this.veuPendente = aoFechar;
-    this.veuAlvo = 1;
-    this.perturbar();
-  }
 
   setQuality(q: QualityLevel) {
     this.engine.applyQuality(q, true);
@@ -2881,24 +2856,9 @@ export class Director {
     const cam = this.engine.camera;
     let warp = 0;
 
-    // VÉU DO ATLAS, antes de tudo: se ele terminar de fechar neste
-    // quadro, a troca de fase acontece AQUI e o resto do tick já roda na
-    // fase nova. Fora da travessia o ramo inteiro é um teste falso — o
-    // filme não paga um ciclo por ele.
-    if (this.veu !== this.veuAlvo || this.veuPendente) {
-      const passo = dt / VEU_ATLAS_S;
-      this.veu =
-        this.veuAlvo > this.veu
-          ? Math.min(1, this.veu + passo)
-          : Math.max(0, this.veu - passo);
-      if (this.veu >= 1 && this.veuPendente) {
-        const acao = this.veuPendente;
-        this.veuPendente = null;
-        this.veuAlvo = 0;
-        acao();
-      }
-      this.events.onVeu(this.veu);
-    }
+    // VÉU DO ATLAS, antes de tudo (o passo e a razão moram em
+    // director/veu.ts — se ele fechar neste quadro, a fase vira AQUI)
+    this.veuDoAtlas.tique(dt);
 
     // O RELÓGIO DO CÉU, antes de tudo que lê posição: se o instante
     // mudar neste quadro, a camada de planetas já o vê escrito. Parado
