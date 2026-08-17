@@ -372,8 +372,18 @@ de representações aponta o fiador novo; prova extra: voo-ida-e-volta
 PASSA em 34 degraus). Provas por corte: 1.622 testes + ab (completos:
 52 vistas bit-idênticas; a acusação falsa da `terranb` virou o item
 49 — nos cortes 7 e 8 as vistas da Terra saíram limpas de primeira).
-**FALTA: 9 escada.** Não tocar no que a Lei ainda demole
-(`lodStellar.ts`).
+**FALTA: 9 escada — o corte MAIOR (~861 linhas), com o MAPA COMPLETO
+já investigado e escrito no fim do plano aprovado**
+(`/Users/fgferre/.claude/plans/estou-preocupado-com-nossa-rosy-lynx.md`,
+seção "Mapa do corte 9"): censo real de 23 métodos (não 19), as 2
+ilhas (`nomeadas`/`corpos`) que migram junto por serem delimitador de
+fatia, o trio com um dono e o leitor único (`evLuzDoFoco`, que FICA),
+as 16 costuras com o tick, a fachada obrigatória de 4 textos pinados,
+os textos que sobrevivem verbatim dentro do módulo, os 12 pares de
+fatia do atlasRig.test com o destino de cada um, e as provas (ab +
+atlas-smoke + busca-smoke + a11y + manual CDP). Executar SÓ em janela
+limpa — o corte é grande demais para contexto meado (lição do corte
+7). Não tocar no que a Lei ainda demole (`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
