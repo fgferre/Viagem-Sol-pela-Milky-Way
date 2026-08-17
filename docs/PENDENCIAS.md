@@ -16,6 +16,23 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
+**O BASTÃO DE 17/08 (sete commits, 92bf642→cb866b7):** a R2 do item 44
+fechou INTEIRA — bloom seletivo (cada camada com seu cobertor), perna
+retina das réguas (que pegou duas mentiras de instrumento no caminho:
+a geometria 900×813 e a repartição medindo em px físicos), teto do céu
+re-derivado + régua do céu-nunca-vazio (piso de 40 faíscas), o conserto
+do aceite negado (limiar do campo em zero + extensão do bloom na régua
+de referência — as duas telas empatadas em TODOS os degraus), a
+distância viva no HUD (R3), a SOLTURA do clarão (R2 da escada da
+estrela — a explosão no recuo morreu; voo ida-e-volta 34/34) e a dose
+de observação do Atlas (Sol compacto ~14% do quadro; drama intocado no
+filme). **A PRÓXIMA JANELA COMEÇA por:** (1) o veredito dos OLHOS do
+dono no app — a soltura no recuo, o céu, e a dose 0,07 do Atlas (número
+dele para calibrar); (2) se ele declarar a rodada da estrela POUSADA,
+a ONDA DA ARQUITETURA (item 43 da BAIXA) destrava com a palavra dele;
+(3) senão, a fila é estender a escada da estrela às nomeadas e o item 5
+(o Sol do Atlas congelado no máximo).
+
 **⚠ A PUPILA ESTÁ REPROVADA — e foi ENTERRADA no M2 (16/08).**
 `src/three/core/pupila.ts` e o teste morreram inteiros na data marcada
 (LEI §7.3); a varredura invertida (`simbolosProibidos.test.ts`) vigia a
