@@ -275,8 +275,14 @@ Ajustes oferece 13, a gaveta do Atlas 6, o selo conhece 17.
 **34.** A tela de carregamento desenha outra Via Láctea, de dois braços.
 O modelo da casa tem quatro.
 
-**36.** (Suspeita a medir.) Duas leis de poeira convivendo. Medir antes
-de mexer — esta família já produziu um falso positivo (cessão da faixa).
+**36.** (Suspeita a medir.) Leis de poeira demais convivendo — a análise
+paralela de 17/08 conta QUATRO (a absorção do catálogo, a das cascas em
+0,8 mag/kpc, a CCM89 das partículas e o forno das forjas), e o NORTE
+ainda descreve uma quinta fórmula (λ^−2,6) que não é a que o catálogo
+executa — documento e código não batem. É a unificação 1 do NORTE, não
+um corte de pasta. Medir antes de mexer — esta família já produziu um
+falso positivo (cessão da faixa) — e foto para o dono. Só depois da
+onda da arquitetura assentar (fila aprovada em 17/08).
 
 **41.** (Suspeita a medir.) `core/engine.test.ts:44` diz que a vista `sol`
 está a 0,063 pc; o valor vivo é 1,2955e-7 pc (`lodStellar.test.ts:1636`) —
@@ -383,7 +389,16 @@ os textos que sobrevivem verbatim dentro do módulo, os 12 pares de
 fatia do atlasRig.test com o destino de cada um, e as provas (ab +
 atlas-smoke + busca-smoke + a11y + manual CDP). Executar SÓ em janela
 limpa — o corte é grande demais para contexto meado (lição do corte
-7). Não tocar no que a Lei ainda demole (`lodStellar.ts`).
+7). Depois do 9, a fila que o dono APROVOU em 17/08 (da análise
+paralela, conferida no código): **corte 10 — a `baseGalactica` (49
+linhas) importa o modelo galáctico de 932 linhas para usar TRÊS
+números** (`sunRadiusPc`, `diskRadiusPc`, `sunHeightPc`) — o
+desperdício que o corte 5 matou voltou pela porta dos fundos;
+consertar mantendo UMA fonte para os números (nada de literal
+duplicado — o modelo continua o dono deles), prova ab de sempre. Em
+seguida os consertos de papel (itens 50 e 51) e só então a poeira
+(item 36), medida e com foto. Não tocar no que a Lei ainda demole
+(`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
@@ -407,6 +422,22 @@ os testa — "clarão undefined", "fator undefined", `?grad=0`. Provado em
 o corte do hud.css). O conserto é atualizar o JUIZ ao mundo pós-M1 — e
 decidir o que ele passa a cobrar da assistência nova do Atlas
 (`OCUPACAO_NA_OBSERVACAO`, a dose 0,07), que hoje ninguém vigia.
+
+**50. O mapa do README desenha mortos.** A seção do mapa ainda lista
+`hud.css` na raiz (virou 8 fatias em `src/hud/` no corte 2 da Parte 2)
+e a pupila em `core/` (enterrada no M2), e não mostra as pastas que a
+onda criou (`director/` com os módulos novos, `hud/`). Mapa mentiroso
+manda a próxima IA ler arquivo morto — é o conserto mais barato da
+fila. Aprovado pelo dono em 17/08; mentira antes de estrutura.
+
+**51. O topo DESTA lista pesa ~90 linhas de história fechada.** O bloco
+da ONDA DA LUZ (M1/M2 e as correções) já mora nos commits e só tem
+DOIS itens vivos dentro: a conferência do dono no app com o padrão
+novo e o gate de foto do expoente da asa (β). Toda conversa nova paga
+essa leitura antes de trabalhar. Enxugar movendo a história para o
+git e mantendo os dois abertos como itens — é a regra da própria
+lista ("isto é o que está aberto, não um diário"). Aprovado pelo dono
+em 17/08.
 
 ---
 
