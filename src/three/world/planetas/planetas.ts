@@ -406,6 +406,7 @@ export class Planetas {
         uBeta: { value: BETA_DA_EMISSAO },
         // lei do fluxo PURA: planeta não ganha a cruz de arte do filme
         uArteDaCruz: { value: 0 },
+        uPr2: { value: 1 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -461,7 +462,7 @@ export class Planetas {
    * submeter 10 vértices sempre é nada — e é o preço de não ter um
    * segundo mecanismo de LOD onde a magnitude já decide.
    */
-  update(screenH: number, camPos: THREE.Vector3) {
+  update(screenH: number, camPos: THREE.Vector3, pr2 = 1) {
     this.points.visible = this.ligado;
     const u = this.material.uniforms;
     if (!this.camAnterior.equals(camPos)) {
@@ -473,6 +474,7 @@ export class Planetas {
       this.screenHAnterior = screenH;
       u.uScreenH.value = screenH;
     }
+    u.uPr2.value = pr2;
   }
 
   /**

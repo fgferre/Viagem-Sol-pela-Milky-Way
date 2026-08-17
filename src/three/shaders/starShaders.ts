@@ -115,6 +115,13 @@ uniform float uBeta;
 // a dose da cruz por CAMADA: 1 = campo estelar/cascas (a arte do filme,
 // resgatada em 16/08); 0 = os dez corpos (lei do fluxo pura — item 43)
 uniform float uArteDaCruz;
+// INVARIÂNCIA DE RESOLUÇÃO (madrugada 16→17/08): o pico por pixel cai
+// com pr² (mesmo fluxo, mais pixels), e os GATILHOS não podem cair
+// junto — senão o céu desarma exatamente no modo mais caro ("no modo
+// performance parece que a galaxia fica muito mais cheia" — dono, com
+// as três fotos de prova). uPr2 = pixelRatio² devolve o pico de
+// REFERÊNCIA para decisões e doses de ARTE; o depósito físico fica.
+uniform float uPr2;
 
 ${GLSL_COMPRESSAO}
 
@@ -142,7 +149,8 @@ void main() {
   //    fazia centenas de estrelas faiscarem; a M2 a trocou pela lei pura
   //    e o céu apagou. Campo estelar e cascas usam 1; os dez corpos, 0.
   float spike = 0.0;
-  float satDoFilme = clamp(0.5 * log2(max(vPeak, 1.0)), 0.0, 1.0);
+  float picoRef = vPeak * uPr2; // o pico na régua de referência (DPR 1)
+  float satDoFilme = clamp(0.5 * log2(max(picoRef, 1.0)), 0.0, 1.0);
   float amp = max(${FRACAO_DOS_ESPINHOS} * vPeak, 0.85 * satDoFilme * uArteDaCruz);
   if (amp > ${LIMIAR_DO_CLARAO.toPrecision(8)}) {
     float ax = exp(-abs(uv.y) * 14.0) * exp(-abs(uv.x) * 2.6);
@@ -154,7 +162,7 @@ void main() {
   // núcleo esbranquiçado por SATURAÇÃO SUAVE do sensor — pico/(pico+P₅₀),
   // curva de meia altura ${BRANQUEAMENTO_MEIA_ALTURA.toFixed(1)} (o antigo ponto de clamp pleno), sem degrau
   col += vec3(0.9, 0.95, 1.0) * core * core *
-         (vPeak / (vPeak + ${BRANQUEAMENTO_MEIA_ALTURA.toFixed(1)})) * 0.6;
+         (picoRef / (picoRef + ${BRANQUEAMENTO_MEIA_ALTURA.toFixed(1)})) * 0.6;
 
   // A COMPRESSÃO NA EMISSÃO (Lei da Estrela §7). Ela vai no col FINAL e NÃO
   // no peak: o pico é multiplicado pelo perfil logo acima, então comprimi-lo

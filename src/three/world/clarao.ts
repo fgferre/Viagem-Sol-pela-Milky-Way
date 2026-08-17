@@ -309,6 +309,11 @@ export interface QuadroDoClarao {
   pesoDoPontoDoSol: number;
   expoM0: number;
   sigmaPx: number;
+  /** pixelRatio do renderer — a INVARIÂNCIA de resolução: gatilho e
+   *  tamanho do clarão são decididos na régua de referência (DPR 1) e
+   *  convertidos para o buffer; sem isso o clarão desarma/encolhe
+   *  exatamente no modo cinema (pico cai com pr²). 1 = referência. */
+  pr?: number;
 }
 
 /** Teto de sanidade do billboard, em px: além da diagonal de qualquer
@@ -418,7 +423,12 @@ export class ClaraoDeAsas {
   atualizar(q: QuadroDoClarao): void {
     const el = this.elegiveis;
     el.length = 0;
-    const sigma = sigmaDaPsfPx(q.sigmaPx, q.screenH);
+    const pr = Number.isFinite(q.pr) && (q.pr as number) > 0 ? (q.pr as number) : 1;
+    // a régua de REFERÊNCIA (DPR 1): toda a decisão roda em px de CSS
+    // (cssH) — pico, gatilho, tamanho — idêntica em qualquer resolução;
+    // só a escrita nos uniforms converte para o buffer (× pr)
+    const cssH = q.screenH / pr;
+    const sigma = sigmaDaPsfPx(q.sigmaPx, cssH);
     const atenuacaoDoSol =
       Number.isFinite(q.atenuacaoDoSol) && q.atenuacaoDoSol >= 1 ? q.atenuacaoDoSol : 1;
     const pesoDoPontoDoSol =
@@ -440,10 +450,10 @@ export class ClaraoDeAsas {
       const m = this.mBase[i] + 2.5 * Math.log10(d2);
       // pré-filtro barato: acima de m 6 nem a asa nasce (excesso ≤ 1)
       if (!(m < 6)) continue;
-      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
+      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH) * (i === 0 ? doSol : 1);
       // elegível quando a óptica alcança além do que o sprite já desenha
-      const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
-      if (!(2 * this.meiaDaLei(pico, sigma, q.screenH) > nucleo)) continue;
+      const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
+      if (!(2 * this.meiaDaLei(pico, sigma, cssH) > nucleo)) continue;
       // inserção ordenada (pico DESC, índice ASC no empate), teto K
       let p = el.length;
       while (p > 0 && (el[p - 1].pico < pico || (el[p - 1].pico === pico && el[p - 1].indice > i)))
@@ -468,10 +478,10 @@ export class ClaraoDeAsas {
       const dz = this.pos[i * 3 + 2] - q.camPos.z;
       const d2 = dx * dx + dy * dy + dz * dz;
       const m = this.mBase[i] + 2.5 * Math.log10(Math.max(d2, 1e-30));
-      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
-      const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
+      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH) * (i === 0 ? doSol : 1);
+      const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
       const entrada = ganhoDeEntradaDoFlare(pico);
-      const meiaPx = this.meiaDaLei(pico, sigma, q.screenH);
+      const meiaPx = this.meiaDaLei(pico, sigma, cssH) * pr;
       if (!(meiaPx > 0) || !(entrada > 0)) {
         mesh.visible = false;
         continue;
@@ -489,7 +499,7 @@ export class ClaraoDeAsas {
       // que o dono apontou; a lei manda só em presença e tamanho
       u.uGanho.value = s.ganho * entrada;
       u.uMeiaPx.value = meiaPx;
-      u.uNucleoPx.value = 0.5 * nucleoPx;
+      u.uNucleoPx.value = 0.5 * nucleoPx * pr;
       u.uScreenH.value = q.screenH;
     }
   }

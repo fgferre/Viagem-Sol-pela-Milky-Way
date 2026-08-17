@@ -506,6 +506,7 @@ export class WrappedStars {
         // o MESMO β do campo: as cascas compartilham o STAR_FRAG
         uBeta: { value: BETA_DA_EMISSAO },
         uArteDaCruz: { value: 1 },
+        uPr2: { value: 1 },
         uCell: { value: new Float32Array(cells) },
         uProb: { value: new Float32Array(probs) },
         uMagLo: { value: new Float32Array(magLo) },
@@ -539,11 +540,13 @@ export class WrappedStars {
     fade: number,
     /** o MESMO fade do campo de catálogo — a supressão tem de acompanhar
      *  quem está desenhando, senão o viajante leva um vazio junto */
-    catFade: number
+    catFade: number,
+    pr2 = 1
   ) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camPos);
     u.uScreenH.value = screenH;
+    u.uPr2.value = pr2;
     u.uFade.value = fade;
     u.uCatFade.value = catFade;
     const camCells = u.uCamCell.value as THREE.Vector3[];

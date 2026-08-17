@@ -88,6 +88,7 @@ export class StarField {
         // a compressão na emissão (F2 da luz) — 0 é identidade exata
         uBeta: { value: BETA_DA_EMISSAO },
         uArteDaCruz: { value: 1 },
+        uPr2: { value: 1 },
         uTau: { value: opts.tau ?? 0.9 },
         uFade: { value: 1 },
         uCavityPos: { value: new THREE.Vector3() },
@@ -103,10 +104,11 @@ export class StarField {
     this.points.renderOrder = 2;
   }
 
-  update(camPos: THREE.Vector3, screenH: number) {
+  update(camPos: THREE.Vector3, screenH: number, pr2 = 1) {
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camPos);
     u.uScreenH.value = screenH;
+    u.uPr2.value = pr2;
   }
 
   setFade(f: number) {

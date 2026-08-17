@@ -2999,6 +2999,11 @@ export class Director {
 
     // mundo
     const hPx = this.engine.renderer.domElement.height;
+    // INVARIÂNCIA DE RESOLUÇÃO: pr² re-escala o pico para a régua de
+    // referência (DPR 1) nos gatilhos do campo e do clarão — sem isso o
+    // céu desarma no modo cinema (pista do dono, 16→17/08)
+    const prAtual = this.engine.renderer.getPixelRatio();
+    const pr2Atual = prAtual * prAtual;
     const dHome = cam.position.length();
     const dGC = cam.position.distanceTo(GAL.GC_POS);
     // o near acompanha a âncora mais PRÓXIMA (Sol ou centro galáctico):
@@ -3313,13 +3318,14 @@ export class Director {
     }
 
     const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
-    this.stars?.update(cam.position, hPx);
+    this.stars?.update(cam.position, hPx, pr2Atual);
     const catFade = this.hide.has('nocat') ? 0 : localFade;
     this.wrappedStars?.update(
       cam.position,
       hPx,
       this.hide.has('nowrap') ? 0 : 1,
-      catFade
+      catFade,
+      pr2Atual
     );
     this.stars?.setFade(catFade);
     this.dust.setFade(this.hide.has('nodust') ? 0 : localFade);
@@ -3412,6 +3418,7 @@ export class Director {
         pesoDoPontoDoSol: leiDoSol.wPonto,
         expoM0: this.stars?.expoM0 ?? EXPO_M0,
         sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
+        pr: prAtual,
       });
     }
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
@@ -3456,7 +3463,7 @@ export class Director {
       if (this.efemeride) {
         this.planetas.escreverInstante(grampearJd(this.jdPedido), this.efemeride);
       }
-      this.planetas.update(hPx, cam.position);
+      this.planetas.update(hPx, cam.position, pr2Atual);
       // A CESSÃO DO SOL-PONTO É A REPARTIÇÃO (M1): aCede = wResolvido —
       // o ponto cede na exata medida em que a fonte está RESOLVIDA na
       // tela (rampa C¹ de 4 a 8 px de disco), e o corpo entra do zero
