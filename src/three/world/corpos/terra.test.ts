@@ -744,7 +744,7 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(director).toContain('!this.luaFriaNoGate &&');
     expect(director).toContain('!this.rochosos.some((r) => r.friaNoGate)');
     expect(director).toContain('!this.gigantes.some((g) => g.friaNoGate)');
-    expect(director).toContain("this.faseDaEfemeride === 'indisponivel'");
+    expect(director).toContain("this.maquinaDoTempo.faseDaEfemeride === 'indisponivel'");
     expect(director).toContain('QUADROS_TENTANDO_FONTE');
     expect(director).toContain('RETRATO congelado');
     // teardown: a Terra devolve tudo ANTES do palco esvaziar

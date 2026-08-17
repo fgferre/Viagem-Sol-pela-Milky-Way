@@ -953,6 +953,12 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
 
 describe('texto-fonte da fiação no director', () => {
   const director = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
+// o corte 4 da onda moveu a máquina do tempo para o módulo próprio —
+// os pinos da D8 seguem o código para lá, e o fio de volta se pina aqui
+const maquina = readFileSync(
+  new URL('../../director/maquinaDoTempo.ts', import.meta.url),
+  'utf8'
+);
 
   it('as duas portas existem com o nome exato, e a chave passa por elas', () => {
     expect(director).toContain('PLANETAS_DEFAULT_ON');
@@ -998,23 +1004,27 @@ describe('texto-fonte da fiação no director', () => {
   });
 
   it('quem chama `perturbar` na troca de instante é o Director (D8)', () => {
-    // os quatro gestos da máquina do tempo, e o `?jd=` no construtor
+    // os quatro gestos moram na máquina (corte 4) e puxam o fio
+    // `fios.perturbar` — que o director liga na própria `perturbar()`:
+    // a D8 continua inteira, com o fio pinado dos DOIS lados
     for (const metodo of [
       'andarNoTempo(sentido: SentidoDoTempo)',
       'ciclarDegrau(): number',
       'alternarAoVivo()',
       'voltarAEpoca()',
     ]) {
-      const i = director.indexOf(`  ${metodo} {`);
+      const i = maquina.indexOf(`  ${metodo} {`);
       expect(i, metodo).toBeGreaterThan(0);
-      const corpo = director.slice(i, director.indexOf('\n  }', i));
-      expect(corpo, metodo).toContain('this.perturbar()');
+      const corpo = maquina.slice(i, maquina.indexOf('\n  }', i));
+      expect(corpo, metodo).toContain('this.fios.perturbar()');
     }
     // e a chegada da efeméride também perturba: a imagem pode mudar
-    const busca = director.indexOf('private garantirEfemerides()');
-    expect(director.slice(busca, director.indexOf('\n  }\n', busca))).toContain(
-      'this.perturbar()'
+    const busca = maquina.indexOf('garantirEfemerides()');
+    expect(maquina.slice(busca, maquina.indexOf('\n  }\n', busca))).toContain(
+      'this.fios.perturbar()'
     );
+    // o outro lado do fio: quem o liga é o Director, na própria perturbar
+    expect(director).toContain('perturbar: () => this.perturbar()');
   });
 
   it('a porta `?jd=` existe com o nome exato e o relógio entra na prontidão', () => {
@@ -1026,9 +1036,9 @@ describe('texto-fonte da fiação no director', () => {
       director.indexOf('  get captura() {'),
       director.indexOf('    return {', director.indexOf('  get captura() {'))
     );
-    expect(captura).toContain('this.aoVivo');
-    expect(captura).toContain('this.sentidoDoTempo !== 0');
-    expect(captura).toContain("this.faseDaEfemeride === 'buscando'");
+    expect(captura).toContain('this.maquinaDoTempo.aoVivo');
+    expect(captura).toContain('this.maquinaDoTempo.sentidoDoTempo !== 0');
+    expect(captura).toContain("this.maquinaDoTempo.faseDaEfemeride === 'buscando'");
   });
 
   it('o bloco de qualidade continua sem tocar na camada (D8)', () => {

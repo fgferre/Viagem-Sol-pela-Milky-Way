@@ -56,7 +56,6 @@ import {
   PLANETAS_DEFAULT_ON,
   UA_POR_PC,
 } from './world/planetas/planetas';
-import type { FonteDeEfemerides } from './world/planetas/planetas';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { lerPortaLuz } from './selo';
@@ -64,18 +63,9 @@ import type { VerDaEscada } from './selo';
 import { sondarGl } from '../lib/glProbe';
 import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
 import type { IdRetrato } from './world/planetas/retrato2026';
-import {
-  degrauValido,
-  estadoDoTempo,
-  grampearJd,
-  lerPortaJd,
-  numeroPtBr,
-  taxaDoDegrau,
-  DEGRAUS_DE_TEMPO,
-} from './tempoDoAtlas';
+import { lerPortaJd, numeroPtBr } from './tempoDoAtlas';
 import { notaDeDistancia } from '../lib/unidades';
-import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from './tempoDoAtlas';
-import { dateToTDB } from '../lib/atlas/time';
+import type { EstadoDoTempo, SentidoDoTempo } from './tempoDoAtlas';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
 import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
@@ -99,6 +89,7 @@ import { ArrastoDePonteiro } from './arrastoDePonteiro';
 import { NuvensSemente } from './director/nuvensSemente';
 import { VeuDoAtlas } from './director/veu';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
+import { MaquinaDoTempo } from './director/maquinaDoTempo';
 import { RodaDaEscada } from './rodaDaEscada';
 import {
   AtlasRig,
@@ -120,7 +111,7 @@ import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
-import { carregarEfemerides, loadStarData } from './config';
+import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
 import type { CorpoBuscavel } from '../lib/buscaEstrelas';
 
@@ -164,23 +155,6 @@ export const LOAD_STAGES = (
  * de olhar — e vem de `SOL_PARAMS`, não de um 29 redigitado.
  */
 const ATLAS_JOURNEY_T = SOL_PARAMS.dramaT1;
-
-/**
- * De quanto em quanto tempo o modo AO VIVO relê o relógio do visitante,
- * em segundos. Um: é a resolução em que a máquina do tempo fala (o
- * mostrador é minuto a minuto) e o passo em que a camada recalcula os
- * dez corpos — reler a 60 Hz seria pagar efeméride por quadro para
- * mostrar o mesmo minuto sessenta vezes (D2).
- */
-const PASSO_DO_AO_VIVO_S = 1;
-
-/**
- * De quanto em quanto tempo o mostrador do tempo é publicado para o
- * React enquanto o relógio anda, em segundos. Mesmo remédio da linha de
- * rumo (`updateDest`, 4 Hz): sem ele um `setState` por quadro
- * re-renderizaria o HUD inteiro 60×/s durante toda a viagem no tempo.
- */
-const PASSO_DO_MOSTRADOR_S = 0.25;
 
 /**
  * A LARGURA DE CSS DA JANELA — a entrada de largura do retângulo útil do
@@ -420,37 +394,21 @@ export class Director {
   // que a pausa já teve (dois donos, `freezeJourney` e `rig.paused`).
 
   /**
-   * O instante PEDIDO, em JD TDB. Nasce na época do retrato — sem isso
-   * a cena não seria a mesma de ontem no primeiro quadro. O instante
-   * MOSTRADO é este grampeado na janela da tabela (`get tempo`).
-   */
-  private jdPedido = EPOCA_JD_TDB;
-  /**
    * O instante em que o enquadramento do Atlas foi composto pela última
    * vez — o limite de frequência do religador (ver `recomporAlvo`).
    * `NaN` nunca é igual a nada, então o primeiro quadro da fase sempre
    * recompõe uma vez.
    */
   private jdDoEnquadre = Number.NaN;
-  /** degrau na escada de taxas (`tempoDoAtlas`) */
-  private degrau = 0;
-  /** sentido do relógio: 0 é parado, e parado é como o Atlas abre */
-  private sentidoDoTempo: SentidoDoTempo = 0;
-  /** o relógio segue o tempo real do visitante */
-  private aoVivo = false;
-  /** a fonte viva; `null` enquanto ninguém pediu, ou se a rede faltou */
-  private efemeride: FonteDeEfemerides | null = null;
-  private faseDaEfemeride: FaseDaEfemeride = 'retrato';
-  /** acumuladores do passo do AO VIVO e do mostrador */
-  private relogioAoVivo = 0;
-  private mostradorTimer = 0;
-  /**
-   * O relógio bateu na borda da tabela e PAROU ali. Uma máquina do
-   * tempo honesta faz isso: a fita acaba, ela para na última volta e
-   * diz. A alternativa — deixar o pedido correr para fora da janela —
-   * cobraria do visitante o mesmo tempo de volta que ele gastou indo.
-   */
-  private naParede = false;
+  /** a máquina do tempo — corte 4 da Parte 1; os fios são arrows (só
+   *  executam bem depois de todos os campos nascerem) */
+  private readonly maquinaDoTempo = new MaquinaDoTempo({
+    onTempo: (e) => this.events.onTempo(e),
+    perturbar: () => this.perturbar(),
+    aoChegarFonte: () => this.reenquadrarAposEfemeride(),
+    signal: () => this.abortController.signal,
+    disposed: () => this.disposed,
+  });
 
   /** o véu do Atlas — corte 2 da Parte 1 da onda */
   private readonly veuDoAtlas = new VeuDoAtlas({
@@ -629,8 +587,8 @@ export class Director {
       const pedido = lerPortaJd(this.debug.get('jd'), EPOCA_JD_TDB);
       if (pedido === null) console.warn('?jd= inválido:', this.debug.get('jd'));
       else {
-        this.jdPedido = pedido;
-        this.garantirEfemerides();
+        this.maquinaDoTempo.jdPedido = pedido;
+        this.maquinaDoTempo.garantirEfemerides();
       }
     }
     this.reducedMotion =
@@ -1038,7 +996,7 @@ export class Director {
     this.events.onPhase(p);
     // o HUD da fase nova pode ter mostrador de tempo, e ele monta com o
     // valor de agora em vez de esperar o primeiro passo do relógio
-    this.publicarTempo();
+    this.maquinaDoTempo.publicarTempo();
     this.perturbar();
   }
 
@@ -1100,9 +1058,9 @@ export class Director {
       // Sem os dois termos, o `?jd=` do gate poderia ser capturado no
       // quadro anterior à escrita do instante — e a captura mediria a
       // corrida, não a imagem.
-      this.aoVivo ||
-      this.sentidoDoTempo !== 0 ||
-      this.faseDaEfemeride === 'buscando' ||
+      this.maquinaDoTempo.aoVivo ||
+      this.maquinaDoTempo.sentidoDoTempo !== 0 ||
+      this.maquinaDoTempo.faseDaEfemeride === 'buscando' ||
       // A TERRA (F2a) e A LUA (F2b) e OS ROCHOSOS (F3): textura em voo
       // é uma mudança JÁ PEDIDA que ainda não chegou — capturar antes
       // dela mediria a corrida, não a imagem (o mesmo argumento da
@@ -1128,7 +1086,7 @@ export class Director {
     // quadros e dá o aviso único quando ela esgota — ver o bloco no tick).
     const fonteAssentada = !(
       this.palco.ligado &&
-      this.faseDaEfemeride === 'indisponivel' &&
+      this.maquinaDoTempo.faseDaEfemeride === 'indisponivel' &&
       this.quadrosTentandoFonte < QUADROS_TENTANDO_FONTE
     );
     return julgarProntidao({
@@ -1565,13 +1523,13 @@ export class Director {
    * seriam duas direções que divergiriam no primeiro salto de data.
    */
   private casaViva(): { raio: number; eixo: THREE.Vector3 } | null {
-    if (!this.efemeride) return null;
-    const jd = grampearJd(this.jdPedido);
+    if (!this.maquinaDoTempo.efemeride) return null;
+    const jd = this.maquinaDoTempo.jdVivo;
     let raioUA = 0;
     const externo = { x: 0, y: 0, z: 0 };
     for (const c of CORPOS_DO_SISTEMA) {
       if (c.id === 'sun') continue;
-      const p = this.efemeride.posicaoHeliocentrica(c.id, jd);
+      const p = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(c.id, jd);
       const r = Math.hypot(p.x, p.y, p.z);
       if (r > raioUA) {
         raioUA = r;
@@ -1799,7 +1757,7 @@ export class Director {
   private poloDoCorpo(id: string): THREE.Vector3 | null {
     const o = IAU_ORIENTATIONS[id];
     if (!o) return null;
-    const p = baseCorpoEquatorial(o, grampearJd(this.jdPedido)).polo;
+    const p = baseCorpoEquatorial(o, this.maquinaDoTempo.jdVivo).polo;
     return POLO_DO_CORPO.set(p[0], p[1], p[2]);
   }
 
@@ -1825,13 +1783,13 @@ export class Director {
     // o centro sai da MESMA cadeia do mesh (efeméride viva, retrato sem
     // ela) — calculado aqui e não lido do estado do tick, porque o boot
     // por `?ver=corpo` chega ANTES do primeiro tick (estado ainda NaN)
-    const jd = grampearJd(this.jdPedido);
+    const jd = this.maquinaDoTempo.jdVivo;
     const p =
       id === 'earth'
-        ? posicaoDaTerraUA(jd, this.efemeride)
+        ? posicaoDaTerraUA(jd, this.maquinaDoTempo.efemeride)
         : ehGigante
-          ? posicaoDoGiganteUA(id, jd, this.efemeride)
-          : posicaoDoRochosoUA(id, jd, this.efemeride);
+          ? posicaoDoGiganteUA(id, jd, this.maquinaDoTempo.efemeride)
+          : posicaoDoRochosoUA(id, jd, this.maquinaDoTempo.efemeride);
     if (!p) return;
     const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
     const centro = new THREE.Vector3(
@@ -1936,15 +1894,15 @@ export class Director {
     this.ver = 'corpo';
     this.events.onFoco(entrada.nome);
     this.emitirEscada();
-    if (!this.efemeride) {
+    if (!this.maquinaDoTempo.efemeride) {
       // a ContextLine já anuncia a lua; o enquadramento chega com a fonte
       // (`reenquadrarAposEfemeride`) — nenhuma posição inventada antes
-      this.garantirEfemerides();
+      this.maquinaDoTempo.garantirEfemerides();
       return;
     }
     // centros pela MESMA cadeia dos meshes, calculados na hora (o boot
     // por URL chega antes do primeiro tick — ver aproximarDoCorpo)
-    const jd = grampearJd(this.jdPedido);
+    const jd = this.maquinaDoTempo.jdVivo;
     const paraPc = (p: { x: number; y: number; z: number }) => {
       const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
       return new THREE.Vector3(
@@ -1953,8 +1911,8 @@ export class Director {
         eq[2] * AU_PARA_PC
       );
     };
-    const lua = paraPc(this.efemeride.posicaoHeliocentrica(id, jd));
-    const pai = paraPc(this.efemeride.posicaoHeliocentrica(entrada.pai, jd));
+    const lua = paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(id, jd));
+    const pai = paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(entrada.pai, jd));
     // o raio físico é o de BODY_AXES (a fonte única — a Lua dela é a
     // exceção declarada; RAIO_LUA_PC deriva dela bit a bit)
     const raioPc = id === 'moon' ? RAIO_LUA_PC : raiosDoRochosoPc(id).a;
@@ -1993,7 +1951,7 @@ export class Director {
     pai: THREE.Vector3 | null;
     polo: THREE.Vector3 | null;
   } | null {
-    const jd = grampearJd(this.jdPedido);
+    const jd = this.maquinaDoTempo.jdVivo;
     const paraPc = (p: { x: number; y: number; z: number }) => {
       const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
       return new THREE.Vector3(
@@ -2005,13 +1963,13 @@ export class Director {
     const { degrau } = this.escada;
     if (degrau === 'estrela') return null;
     if (degrau === 'lua') {
-      if (!this.efemeride) return null;
-      const lua = paraPc(this.efemeride.posicaoHeliocentrica('moon', jd));
+      if (!this.maquinaDoTempo.efemeride) return null;
+      const lua = paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica('moon', jd));
       return {
         alvo: lua,
         raio: RAIO_LUA_PC,
         eixoDe: lua,
-        pai: paraPc(this.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd)),
+        pai: paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd)),
         polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id)?.clone() ?? null,
       };
     }
@@ -2031,7 +1989,7 @@ export class Director {
           polo: null,
         };
       }
-      const centro = paraPc(posicaoDaTerraUA(jd, this.efemeride));
+      const centro = paraPc(posicaoDaTerraUA(jd, this.maquinaDoTempo.efemeride));
       return {
         alvo: centro,
         raio: RAIO_EQ_TERRA_PC,
@@ -2043,8 +2001,8 @@ export class Director {
     if (degrau === 'orbita') {
       const id = this.focoCorpoId;
       if (!id) return null;
-      const pos = this.efemeride
-        ? paraPc(this.efemeride.posicaoHeliocentrica(id, jd))
+      const pos = this.maquinaDoTempo.efemeride
+        ? paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(id, jd))
         : this.posicaoDesenhada(id);
       if (!pos || pos.lengthSq() === 0) return null;
       return { alvo: ORIGEM, raio: pos.length(), eixoDe: pos, pai: null, polo: null };
@@ -2225,20 +2183,20 @@ export class Director {
       classe: c.classe,
       rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
     }));
-    const jd = grampearJd(this.jdPedido);
+    const jd = this.maquinaDoTempo.jdVivo;
     const luas = LUAS_DO_SISTEMA.map((l) => {
       let rUA = Number.NaN;
-      if (this.efemeride) {
-        const p = this.efemeride.posicaoHeliocentrica(l.id, jd);
-        const pai = this.efemeride.posicaoHeliocentrica(l.pai, jd);
+      if (this.maquinaDoTempo.efemeride) {
+        const p = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(l.id, jd);
+        const pai = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(l.pai, jd);
         rUA = Math.hypot(p.x - pai.x, p.y - pai.y, p.z - pai.z);
       }
       return { id: l.id, nome: l.nome, classe: l.classe, rUA, pai: l.pai };
     });
     const anoes = HELIO_SEM_PONTO.map((a) => {
       let rUA = Number.NaN;
-      if (this.efemeride) {
-        const p = this.efemeride.posicaoHeliocentrica(a.id, jd);
+      if (this.maquinaDoTempo.efemeride) {
+        const p = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(a.id, jd);
         rUA = Math.hypot(p.x, p.y, p.z);
       }
       return { id: a.id, nome: a.nome, classe: a.classe, rUA };
@@ -2255,12 +2213,12 @@ export class Director {
     this.ver = 'orbita';
     this.events.onFoco(entrada.nome);
     this.emitirEscada();
-    if (!this.efemeride) {
-      this.garantirEfemerides();
+    if (!this.maquinaDoTempo.efemeride) {
+      this.maquinaDoTempo.garantirEfemerides();
       return;
     }
-    const jd = grampearJd(this.jdPedido);
-    const p = this.efemeride.posicaoHeliocentrica(id, jd);
+    const jd = this.maquinaDoTempo.jdVivo;
+    const p = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(id, jd);
     const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
     const pos = new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
     if (pos.lengthSq() === 0) return;
@@ -2366,7 +2324,7 @@ export class Director {
     // rede a degradação é a existente: retrato congelado + badge do
     // tempo dizendo a verdade ("sem efeméride"). O filme continua sem
     // pagar um byte: só quem cruza o portal chega aqui.
-    this.garantirEfemerides();
+    this.maquinaDoTempo.garantirEfemerides();
     this.veuDoAtlas.atravessar(
       opcoes.instantaneo === true || this.reducedMotion || this.shotMode,
       () => {
@@ -2400,10 +2358,10 @@ export class Director {
   partirDoAtlas() {
     if (this.phase !== 'atlas') return;
     const volta = this.retomada;
-    this.sentidoDoTempo = 0;
-    this.aoVivo = false;
-    this.naParede = false;
-    this.publicarTempo();
+    this.maquinaDoTempo.sentidoDoTempo = 0;
+    this.maquinaDoTempo.aoVivo = false;
+    this.maquinaDoTempo.naParede = false;
+    this.maquinaDoTempo.publicarTempo();
     this.veuDoAtlas.atravessar(this.reducedMotion || this.shotMode, () => {
       this.rig.reset();
       this.teletransportou();
@@ -2427,164 +2385,27 @@ export class Director {
 
   // ---- a máquina do tempo (F4/D2) ----------------------------------
 
-  /**
-   * O MOSTRADOR, somente leitura — como o `captura` e o `selo`. A conta
-   * inteira (grampo, aviso, rótulos) mora no módulo puro; aqui só se
-   * juntam os cinco campos de estado que este objeto guarda.
-   */
+  /** o mostrador, somente leitura — o corpo inteiro mora em
+   *  `director/maquinaDoTempo.ts` (Parte 1, corte 4); o contrato
+   *  `window.__director.tempo` do atlas-smoke segue daqui */
   get tempo(): EstadoDoTempo {
-    return estadoDoTempo({
-      jdPedido: this.jdPedido,
-      jdDaEpoca: EPOCA_JD_TDB,
-      degrau: this.degrau,
-      sentido: this.sentidoDoTempo,
-      aoVivo: this.aoVivo,
-      efemeride: this.faseDaEfemeride,
-      naParede: this.naParede,
-    });
+    return this.maquinaDoTempo.tempo;
   }
 
-  /**
-   * BUSCA A EFEMÉRIDE, UMA VEZ E TARDE. Ninguém que só quer ver o filme
-   * paga um byte disto: quem chama são a porta `?jd=` e os controles do
-   * tempo no HUD do Atlas, e o download é abortado pelo mesmo signal de
-   * todo o resto.
-   *
-   * SEM REDE NÃO HÁ GRITO — NESTE caminho. A camada continua no retrato
-   * congelado e o badge do HUD conta a verdade ao visitante — um
-   * `console.error` aqui seria ruído num caminho em que a degradação é
-   * o comportamento projetado. Falhou uma vez, uma segunda tentativa é
-   * permitida: quem clicou de novo pediu de novo.
-   *
-   * A ÚNICA exceção mora no tick (item 5c da auditoria): com CORPOS em
-   * cena e a fonte pedida indisponível, o RETRATO ACUSA — um aviso por
-   * sessão, depois da janela de retentativa (QUADROS_TENTANDO_FONTE).
-   * O juiz atlas-smoke pina exatamente esse aviso, e nada além dele.
-   */
-  private garantirEfemerides() {
-    if (this.efemeride || this.faseDaEfemeride === 'buscando') return;
-    this.faseDaEfemeride = 'buscando';
-    this.publicarTempo();
-    carregarEfemerides(this.abortController.signal)
-      .then(({ motor }) => {
-        if (this.disposed) return;
-        this.efemeride = motor;
-        this.faseDaEfemeride = 'viva';
-        // o instante vai ser reescrito no tick seguinte: a imagem pode
-        // mudar, e a contagem de estabilidade da captura recomeça
-        this.perturbar();
-        this.publicarTempo();
-        // F2b: o degrau vivo se reaplica com a fonte na mão — a
-        // abertura vira a posição do DIA e o `?foco=lua` do boot ganha
-        // a Lua que esperava (na época é bit a bit o que já estava)
-        this.reenquadrarAposEfemeride();
-      })
-      .catch((error: unknown) => {
-        if (this.disposed) return;
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        this.faseDaEfemeride = 'indisponivel';
-        this.publicarTempo();
-      });
-  }
-
-  /**
-   * ⏴ ⏸ ⏵ — o sentido em que o relógio anda. QUALQUER sentido desliga o
-   * AO VIVO, inclusive o zero: os dois são modos de relógio, ter os dois
-   * ligados seria o visitante disputando a data com o próprio calendário
-   * — e o ⏸ diz "parar o tempo", que é parar QUALQUER relógio. Enquanto
-   * o zero não desligava o AO VIVO, o botão ficava habilitado (o HUD lê
-   * `sentido === 0 && !aoVivo`), o visitante o apertava e a data seguia
-   * andando a 1 Hz: o rótulo prometia uma coisa e o método fazia outra.
-   */
   andarNoTempo(sentido: SentidoDoTempo) {
-    this.sentidoDoTempo = sentido;
-    this.naParede = false;
-    this.aoVivo = false;
-    if (sentido !== 0) this.garantirEfemerides();
-    this.perturbar();
-    this.publicarTempo();
+    this.maquinaDoTempo.andarNoTempo(sentido);
   }
 
-  /** o próximo degrau da escada, dando a volta — precedente do `1×/2×/4×` */
   ciclarDegrau(): number {
-    this.degrau = degrauValido((this.degrau + 1) % DEGRAUS_DE_TEMPO);
-    this.garantirEfemerides();
-    // troca de taxa muda o que a tela vai mostrar no quadro seguinte
-    this.perturbar();
-    this.publicarTempo();
-    return this.degrau;
+    return this.maquinaDoTempo.ciclarDegrau();
   }
 
-  /**
-   * AO VIVO: o céu no instante em que o visitante está. A data sai do
-   * conversor único da casa (`dateToTDB`, regra M6) — nunca de uma
-   * conta de milissegundos aqui dentro.
-   */
   alternarAoVivo() {
-    this.aoVivo = !this.aoVivo;
-    this.naParede = false;
-    if (this.aoVivo) {
-      this.sentidoDoTempo = 0;
-      this.relogioAoVivo = PASSO_DO_AO_VIVO_S; // o primeiro tick já lê o relógio
-      this.garantirEfemerides();
-    }
-    this.perturbar();
-    this.publicarTempo();
+    this.maquinaDoTempo.alternarAoVivo();
   }
 
-  /**
-   * VOLTAR À ÉPOCA — o retrato congelado de 2026, que é o que a cena
-   * mostra quando ninguém mexeu em nada. Não busca efeméride nenhuma:
-   * se ela nunca chegou, a camada já está exatamente aqui.
-   */
   voltarAEpoca() {
-    this.jdPedido = EPOCA_JD_TDB;
-    this.sentidoDoTempo = 0;
-    this.aoVivo = false;
-    this.naParede = false;
-    this.perturbar();
-    this.publicarTempo();
-  }
-
-  /** o mostrador sai agora, e o relógio do mostrador recomeça */
-  private publicarTempo() {
-    this.mostradorTimer = 0;
-    this.events.onTempo(this.tempo);
-  }
-
-  /**
-   * O RELÓGIO, um passo. Fora de qualquer movimento no tempo o método
-   * inteiro é um teste falso — o filme não paga por ele.
-   *
-   * O grampo PARA na borda em vez de deixar o pedido correr para fora:
-   * ver `naParede`. O AO VIVO relê o calendário a 1 Hz (D2), que é a
-   * resolução em que o mostrador fala.
-   */
-  private andarORelogio(dt: number) {
-    if (!this.aoVivo && this.sentidoDoTempo === 0) return;
-    if (this.aoVivo) {
-      this.relogioAoVivo += dt;
-      if (this.relogioAoVivo >= PASSO_DO_AO_VIVO_S) {
-        this.relogioAoVivo = 0;
-        const agora = dateToTDB(new Date());
-        const grampeado = grampearJd(agora);
-        this.naParede = grampeado !== agora;
-        this.jdPedido = grampeado;
-      }
-    } else {
-      const bruto =
-        this.jdPedido + (this.sentidoDoTempo * taxaDoDegrau(this.degrau) * dt) / 86400;
-      const grampeado = grampearJd(bruto);
-      this.jdPedido = grampeado;
-      if (grampeado !== bruto) {
-        this.naParede = true;
-        this.sentidoDoTempo = 0;
-        this.publicarTempo();
-        return;
-      }
-    }
-    this.mostradorTimer += dt;
-    if (this.mostradorTimer >= PASSO_DO_MOSTRADOR_S) this.publicarTempo();
+    this.maquinaDoTempo.voltarAEpoca();
   }
 
   /**
@@ -2798,7 +2619,7 @@ export class Director {
     // mudar neste quadro, a camada de planetas já o vê escrito. Parado
     // (o estado de nascimento, e o do filme inteiro) o método devolve
     // na primeira linha.
-    this.andarORelogio(dt);
+    this.maquinaDoTempo.andarORelogio(dt);
 
     // ...e o ENQUADRAMENTO DO ATLAS segue o corpo no instante novo
     // (Onda 7). Aqui, e não dentro do ramo da fase, porque tem de vir
@@ -2806,7 +2627,7 @@ export class Director {
     // é escrita logo abaixo. `jdDoEnquadre` é o limite de frequência:
     // uma recomposição por instante de céu, zero com o relógio parado.
     if (this.phase === 'atlas') {
-      const jdAgora = grampearJd(this.jdPedido);
+      const jdAgora = this.maquinaDoTempo.jdVivo;
       if (jdAgora !== this.jdDoEnquadre) {
         this.jdDoEnquadre = jdAgora;
         this.recomporAlvo();
@@ -2937,8 +2758,8 @@ export class Director {
     // de planetas; a Terra não conhece nem o palco nem a camada.
     if (this.terra && this.stars) {
       const t = this.terra.atualizar({
-        jdTdb: grampearJd(this.jdPedido),
-        fonte: this.efemeride,
+        jdTdb: this.maquinaDoTempo.jdVivo,
+        fonte: this.maquinaDoTempo.efemeride,
         camPosPc: cam.position,
         screenHPx: hPx,
         fovDeg: cam.fov,
@@ -2978,8 +2799,8 @@ export class Director {
     // no retrato congelado — o badge do tempo conta essa verdade).
     if (this.lua) {
       const l = this.lua.atualizar({
-        jdTdb: grampearJd(this.jdPedido),
-        fonte: this.efemeride,
+        jdTdb: this.maquinaDoTempo.jdVivo,
+        fonte: this.maquinaDoTempo.efemeride,
         camPosPc: cam.position,
         screenHPx: hPx,
         fovDeg: cam.fov,
@@ -2994,7 +2815,7 @@ export class Director {
       // efeméride a Lua não existe por contrato (não é falha de textura)
       this.luaFriaNoGate =
         this.palco.ligado &&
-        this.efemeride !== null &&
+        this.maquinaDoTempo.efemeride !== null &&
         l.gateArmado &&
         !l.emQuadro &&
         !l.carregando;
@@ -3016,8 +2837,8 @@ export class Director {
     if (this.stars) {
       for (const r of this.rochosos) {
       const e = r.corpo.atualizar({
-        jdTdb: grampearJd(this.jdPedido),
-        fonte: this.efemeride,
+        jdTdb: this.maquinaDoTempo.jdVivo,
+        fonte: this.maquinaDoTempo.efemeride,
         camPosPc: cam.position,
         screenHPx: hPx,
         fovDeg: cam.fov,
@@ -3037,7 +2858,7 @@ export class Director {
       // de textura); planeta sem fonte cai no retrato e o frio vale
       r.friaNoGate =
         this.palco.ligado &&
-        (r.corpo.planeta || this.efemeride !== null) &&
+        (r.corpo.planeta || this.maquinaDoTempo.efemeride !== null) &&
         e.gateArmado &&
         !e.emQuadro &&
         !e.carregando;
@@ -3058,8 +2879,8 @@ export class Director {
     if (this.stars) {
       for (const g of this.gigantes) {
       const e = g.corpo.atualizar({
-        jdTdb: grampearJd(this.jdPedido),
-        fonte: this.efemeride,
+        jdTdb: this.maquinaDoTempo.jdVivo,
+        fonte: this.maquinaDoTempo.efemeride,
         camPosPc: cam.position,
         screenHPx: hPx,
         fovDeg: cam.fov,
@@ -3097,10 +2918,10 @@ export class Director {
     // QUADROS_TENTANDO_FONTE; se ela ainda não veio, o aviso único ACUSA
     // — quem ler o quadro dali em diante sabe que os corpos estão no
     // retrato congelado, nunca numa efeméride que não chegou.
-    if (this.palco.ligado && this.faseDaEfemeride === 'indisponivel') {
+    if (this.palco.ligado && this.maquinaDoTempo.faseDaEfemeride === 'indisponivel') {
       if (!this.retentouFonte) {
         this.retentouFonte = true;
-        this.garantirEfemerides();
+        this.maquinaDoTempo.garantirEfemerides();
       } else if (this.quadrosTentandoFonte < QUADROS_TENTANDO_FONTE) {
         this.quadrosTentandoFonte++;
         if (this.quadrosTentandoFonte >= QUADROS_TENTANDO_FONTE && !this.acusouRetrato) {
@@ -3110,7 +2931,7 @@ export class Director {
           );
         }
       }
-    } else if (this.faseDaEfemeride === 'viva') {
+    } else if (this.maquinaDoTempo.faseDaEfemeride === 'viva') {
       this.quadrosTentandoFonte = 0;
     }
     this.saltoDeCamera = false;
@@ -3324,8 +3145,8 @@ export class Director {
       // fica exatamente no retrato — o caminho honesto do "sem rede".
       // `grampearJd` e não `this.tempo`: o mostrador formata strings e
       // aloca um objeto — ele é para o HUD, a 4 Hz, não para o quadro.
-      if (this.efemeride) {
-        this.planetas.escreverInstante(grampearJd(this.jdPedido), this.efemeride);
+      if (this.maquinaDoTempo.efemeride) {
+        this.planetas.escreverInstante(this.maquinaDoTempo.jdVivo, this.maquinaDoTempo.efemeride);
       }
       this.planetas.update(hPx, cam.position, pr2Atual);
       // A CESSÃO DO SOL-PONTO É A REPARTIÇÃO (M1): aCede = wResolvido —
