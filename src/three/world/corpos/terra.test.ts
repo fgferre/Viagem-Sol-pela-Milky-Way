@@ -82,6 +82,12 @@ const MANIFEST = JSON.parse(
 const JDS = [2460409.26395835, EPOCA_JD_TDB, 2458327.34980323];
 
 const FONTE = readFileSync(new URL('./terra.ts', import.meta.url), 'utf8');
+// os shaders mudaram de casa na onda da arquitetura (corte 4): as leis
+// pinadas no TEXTO deles leem o arquivo novo
+const FONTE_SHADERS = readFileSync(
+  new URL('../../shaders/terraShaders.ts', import.meta.url),
+  'utf8'
+);
 
 function grau360(deg: number): number {
   const r = deg % 360;
@@ -679,20 +685,20 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
 
   it('a luz direta multiplica o ESCALAR ÚNICO, e as luzes de cidade ficam fora', () => {
     // o único lugar do fragment em que o ganho entra na superfície
-    expect(FONTE).toContain('(albedo * ndotl + vec3(espec)) * uLuzGanho');
+    expect(FONTE_SHADERS).toContain('(albedo * ndotl + vec3(espec)) * uLuzGanho');
     // emissão: máscara × intensidade, SEM o ganho — cidade não é reflexo
-    expect(FONTE).toContain('.rgb * (mascaraNoite * uNoiteGanho)');
-    expect(FONTE).toContain('ganhoFundido(');
+    expect(FONTE_SHADERS).toContain('.rgb * (mascaraNoite * uNoiteGanho)');
+    expect(FONTE_SHADERS).toContain('ganhoFundido(');
   });
 
   it('não existe termo ambiente (anti-padrões 3 e 9): a saída é direta + emissão e nada mais', () => {
-    expect(FONTE).toContain('gl_FragColor = vec4(direta + luzes, 1.0);');
-    expect(FONTE).not.toMatch(/uAmbient|ambientLight|uPiso/);
+    expect(FONTE_SHADERS).toContain('gl_FragColor = vec4(direta + luzes, 1.0);');
+    expect(FONTE_SHADERS).not.toMatch(/uAmbient|ambientLight|uPiso/);
   });
 
   it('as luzes noturnas usam o linstep do espec, não smoothstep', () => {
-    expect(FONTE).toContain('linstep(-0.1, 0.1, -ndotlGeo)');
-    expect(FONTE).not.toContain('smoothstep(');
+    expect(FONTE_SHADERS).toContain('linstep(-0.1, 0.1, -ndotlGeo)');
+    expect(FONTE_SHADERS).not.toContain('smoothstep(');
   });
 
   it('a ponte de frame é a da casa e SÓ ela (D1)', () => {
@@ -702,8 +708,8 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
   });
 
   it('nenhum chunk do three atravessa: shaders próprios por inteiro', () => {
-    expect(FONTE).not.toContain('#include');
-    expect(FONTE).not.toContain('ShaderChunk');
+    expect(FONTE_SHADERS).not.toContain('#include');
+    expect(FONTE_SHADERS).not.toContain('ShaderChunk');
   });
 
   it('os raios saem de BODY_AXES — achatamento real, nenhum literal novo', () => {
@@ -778,7 +784,7 @@ describe('8. o eclipse na tela (F2c/D3)', () => {
     expect(TERRA_FRAG).toContain('gl_FragColor = vec4(direta + luzes, 1.0);');
     // a casca das nuvens recebe o MESMO chunk (escurece junto): duas
     // interpolações do chunk da lib no texto-fonte, nenhuma cópia redigitada
-    expect(FONTE.match(/\$\{GLSL_SOMBRA_ECLIPSE\}/g)).toHaveLength(2);
+    expect(FONTE_SHADERS.match(/\$\{GLSL_SOMBRA_ECLIPSE\}/g)).toHaveLength(2);
   });
 
   it('a ponte cena→local: o eixo da sombra no frame local É o anti-Sol, nos dois jd pinados', () => {

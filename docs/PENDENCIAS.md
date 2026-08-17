@@ -367,6 +367,15 @@ atrás de corpo resolvido ainda vaza clarão FRACO no rascunho do campo —
 não há ocultadores lá. O conserto conhecido (fantasmas só-profundidade)
 está anotado no próprio passe (`post.ts`).
 
+**49.** (Ruído de instrumento, achado no corte 4 da arquitetura.) A vista
+oficial `terralua` CINTILA entre duas capturas da MESMA sessão no MESMO
+código: no baseline do A/B as duas capturas do "antes" deram md5
+diferentes entre si (99f534… vs 87ad78…), e o "depois" reproduziu a
+primeira byte a byte. Algo assenta entre capturas — cara de carga de
+textura. Enquanto viver, qualquer rodada de A/B pode acusar `terralua`
+em falso; a prova de inocência é o md5 do depois bater com UMA captura
+do antes.
+
 **48.** O juiz de a11y cobra um morto: 6 falhas órfãs do M1. O campo
 `gradacao` do selo e a porta `?grad=` morreram DE PROPÓSITO no M1
 (lápide em `selo.ts`, "a gradação por contexto"), mas `a11y.mjs` ainda

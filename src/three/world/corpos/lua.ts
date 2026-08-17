@@ -94,17 +94,19 @@ import {
 import type { QualityLevel } from '../../core/engine';
 import type { FonteDeEfemerides } from '../planetas/planetas';
 import { diametroAparentePx } from './corpos';
+import { gateBinario } from './terra';
 import {
   RECARGAS_ATE_DESISTIR,
   alvoDePixels,
   detectarWebp,
   escolherVariante,
+} from './texturas';
+import type { ManifestDeTexturas } from './texturas';
+import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
+import {
   escreverSombraDeEclipse,
-  gateBinario,
-  orientacaoDoCorpoNaCena,
   uniformsDeEclipseNeutros,
-} from './terra';
-import type { ManifestDeTexturas } from './terra';
+} from './eclipseNoMaterial';
 
 /** Raio da Lua em pc — BODY_AXES (km, kernel pck00011) pelos
  *  conversores únicos; esfera exata (a = b = c), um raio só. */

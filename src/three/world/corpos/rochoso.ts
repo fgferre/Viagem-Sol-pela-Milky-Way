@@ -73,20 +73,22 @@ import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { psfPointSizePx } from '../../luzDaCasa';
 import { diametroAparentePx } from './corpos';
 import { LS_NORMALIZACAO_GLSL } from './lua';
+import { LIMIAR_DO_GATE_PX, cessaoAlvo, gateBinario } from './terra';
 import {
   RECARGAS_ATE_DESISTIR,
   alvoDePixels,
-  cessaoAlvo,
   detectarWebp,
   escolherVariante,
-  escreverSombraDeEclipse,
-  LIMIAR_DO_GATE_PX,
-  gateBinario,
+} from './texturas';
+import type { ManifestDeTexturas } from './texturas';
+import {
   orientacaoDoCorpoNaCena,
   orientacaoInercialDoAnelNaCena,
+} from './orientacaoNaCena';
+import {
+  escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
-} from './terra';
-import type { ManifestDeTexturas } from './terra';
+} from './eclipseNoMaterial';
 import { ANEIS_CITADOS, ANEL_PROC_FRAG, ANEL_VERT } from './gigante';
 
 

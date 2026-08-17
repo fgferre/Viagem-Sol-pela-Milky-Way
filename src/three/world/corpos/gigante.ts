@@ -65,19 +65,22 @@ import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { psfPointSizePx } from '../../luzDaCasa';
 import { diametroAparentePx } from './corpos';
+import { cessaoAlvo, gateBinario } from './terra';
 import {
   RECARGAS_ATE_DESISTIR,
   alvoDePixels,
-  cessaoAlvo,
   detectarWebp,
   escolherVariante,
-  escreverSombraDeEclipse,
-  gateBinario,
+} from './texturas';
+import type { ManifestDeTexturas } from './texturas';
+import {
   orientacaoDoCorpoNaCena,
   orientacaoInercialDoAnelNaCena,
+} from './orientacaoNaCena';
+import {
+  escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
-} from './terra';
-import type { ManifestDeTexturas } from './terra';
+} from './eclipseNoMaterial';
 
 /** Os quatro gigantes da F4, Sol → fora. A lista é o DADO VIVO
  *  que o Director percorre — a mesma disciplina dos rochosos. */
