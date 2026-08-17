@@ -23,6 +23,7 @@ import {
   ClaraoDeAsas,
   ELEGIVEIS_POR_QUADRO,
   FATOR_DE_ENCHIMENTO_DO_SOL,
+  OCUPACAO_MAXIMA_DA_TELA,
   ORCAMENTO_DO_CLARAO,
   RAZAO_DE_TROCA,
   SOL_BV,
@@ -210,6 +211,26 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
+  it('a receita do clarão do Sol é BYTE A BYTE a das heroes — um desenhista só', () => {
+    // "claramente a regra que desenha sirius é totalmente diferente da
+    // que desenha o sol... o desenho de spikes de sirius é muito
+    // superioir" (dono, 16/08). Resposta: o mesmo desenho, cobrado aqui
+    // linha a linha — se alguém "melhorar" um lado só, este oráculo cai.
+    const heroes = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
+    const clarao = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
+    for (const linha of [
+      'exp(-r * r * 90.0) * 3.0',
+      'exp(-r * 4.5) * 0.9',
+      'exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4)',
+      'exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4)',
+      '(ax + ay) * 0.8',
+      'vec3(1.0, 0.98, 0.95)',
+    ]) {
+      expect(heroes, linha).toContain(linha);
+      expect(clarao, linha).toContain(linha);
+    }
+  });
+
   it('no RESGATE a camada é SÓ do Sol: nomeada nunca ocupa slot', () => {
     // ordem do dono (16/08): as 16 voltaram à arte do filme
     // (heroStars.ts); esta camada fica só com o Sol até o M3 unificar de
@@ -263,15 +284,16 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     for (let i = 0; i < 30; i++) c.atualizar(q);
     const slotDoSol = c.ocupacao().findIndex((o) => o.indice === 0);
     expect(slotDoSol).toBeGreaterThanOrEqual(0);
-    // o SOL segue a régua aceita do item 3 (asa/espinho), com o fator de
-    // enchimento da textura — o piso de presença do filme é só das
-    // estrelas (item 44/R1: duas réguas, de propósito)
+    // o SOL: a asa dá a ESCALA e o teto de ocupação do dono dá o LIMITE
+    // ("nenhuma estrela ocupa a tela toda") — nunca exposição de cena
     const m = -0.15 + 5 * Math.log10(dPc);
     const pico = picoDaPsf(m, EXPO_M0, SIGMA_PX, 900);
     const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
-    const esperado =
+    const esperado = Math.min(
       FATOR_DE_ENCHIMENTO_DO_SOL *
-      Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
+        Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma)),
+      OCUPACAO_MAXIMA_DA_TELA * 900
+    );
     const meshes = c.group.children.filter(
       (f) => (f as THREE.Mesh).visible
     ) as THREE.Mesh[];

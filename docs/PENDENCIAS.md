@@ -327,14 +327,52 @@ segue de pé). Junto: a dose de luz do clarão do Sol desceu ao teto 2,5
 (proporção do filme — halo em ⅓ do cartaz, braços para fora; a 15,8 UA
 o Sol voltou a ser ESTRELA). Escada re-medida: 11/11.
 
-**DECISÃO ABERTA PARA O DONO (prancha `decisao-sol-partindo`):** o
-tríptico de 15/08 (`capturas/ESPINHOS-de-longe.png`) mostra que o Sol
-partindo era um GIGANTE de braços finos e estruturados — e parte da
-"riqueza" do céu daquele dia era a luz DELE banhando o quadro. O item 3
-matou a lavada branca e levou o gigante junto; hoje o Sol de longe é um
-ponto discreto. Ele decide: (a) reconstruir o gigante COM estrutura e
-SEM lavar o quadro (anatomia de hero, R2), re-decidindo a âncora de
-20 px a 15.800 UA; ou (b) manter o ponto discreto de hoje.
+**A RESPOSTA DO DONO VEIO COMO DESENHO COMPLETO (16/08, madrugada) — e
+é o brief da R2, palavra por palavra:** *"acho que temos ainda que achar
+o equilíbrio entre uma regra única para todas as estrelas baseados nas
+suas 'qualidades'/magintudes/medidas, etc, etc e um fitro aplicado a
+cada uma delas baseado na distancia e foco, nao aplicado à cena inteira
+ou a todo starfiled, ele só limita para que nao aconteça que uma estrela
+nunca ocupe toda a tela, ela sempre chega no máximo que vai ocupar
+rapidamente, ela é uma bola 3d, depois vira uma bola colorida e vai
+migrando para o shape do spike até virar uma bola de novo e até sumir
+pela distancia ou se encolher e diminuir luminosidade, enfim aí vc quem
+sabe melhor como fazer, mas nao quero que o ceu vire nunca uma coisa
+vazia, pois ele nao é...."*
+
+Tradução executável — A ESCADA DA ESTRELA (vale para TODAS, Sol
+incluído; o "gigante × discreto" morre aqui: a fase do spike É o
+gigante, com teto):
+
+1. **Regra única por estrela** (magnitude/cor/raio → fluxo recebido),
+   com **LIMITADOR POR ESTRELA** — nunca exposição de cena (a pupila
+   segue morta). O limitador só faz UMA coisa: nenhuma estrela ocupa a
+   tela toda, nunca; aproximando, ela cresce RÁPIDO até o teto de
+   ocupação (fração da tela) e estaciona ali até o corpo resolver.
+2. **A escada de formas, contínua e reversível** (ida e volta pelas
+   MESMAS rampas, C¹, histerese onde precisar — nada liga/desliga):
+   corpo 3D resolvido → bola colorida → SHAPE DO SPIKE (a cruz do filme,
+   a fase de presença) → bola pequena → ponto que esmaece até sumir.
+3. **O céu nunca vazio — vira JUIZ executável:** régua nova que conta as
+   estrelas visíveis/faiscantes por quadro em vistas fixas; toda mudança
+   de desenho compara antes × depois — nunca mais um commit apaga o céu
+   em silêncio (foi o que o M2 fez e nenhuma régua viu).
+4. Execução em rodadas pequenas (método de 16/08), começando pelo Sol
+   (a soltura do filtro é o pulo declarado) e estendendo às nomeadas;
+   a âncora de 20 px a 15.800 UA se re-decide com a escada dele.
+
+**PRIMEIRO PASSO EXECUTADO NO ATO (madrugada) — UM DESENHISTA SÓ:** o
+dono cravou o diagnóstico final: *"claramente a regra que desenha
+sirius é totalmente diferente da que desenha o sol... o desenho de
+spikes de sirius é muito superioir"*. Resposta: o clarão do Sol passou a
+usar A MESMA receita das heroes (núcleo+halo+braços de 30/07, brilho
+fixo da forma — linha a linha, com oráculo de conformidade em
+`clarao.test.ts` que cai se alguém "melhorar" um lado só); a LEI manda
+apenas em presença (filtro/entrega/gatilho) e TAMANHO (asa do item 3 +
+teto de ocupação por estrela, `OCUPACAO_MAXIMA_DA_TELA` = 0,55 da
+altura). A textura assada da R1 foi DELETADA (flare.ts + teste). Na
+tela: o Sol partindo voltou a ser o gigante de braços finos do tríptico
+de 15/08, encolhendo monotônico — sem prato, sem moeda, sem borda.
 
 ---
 

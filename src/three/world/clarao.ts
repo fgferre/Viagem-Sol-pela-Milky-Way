@@ -3,15 +3,16 @@
 // (M2 da LEI-DA-ESTRELA). Substitui as 16 heroes de autor.
 //
 // O QUE ELA É. O clarão é a LENTE (halo + espinhos), não a estrela — a
-// Lei §1 numa frase. Ele existe em toda distância e deriva do FLUXO
-// recebido (nunca do peso do ponto). Desde o item 44 (R1, 16/08) a
-// FORMA vem de uma textura neutra assada da receita de 30/07
-// (`world/flare.ts` — o Sirius do filme é a especificação), pintada
-// pela cor da estrela; e o TAMANHO vem da lei consagrada
-// raio = K·pico^0,4 com TETO suave Reinhard — monotônico na distância
-// por construção. A cruz Moffat procedural que viveu aqui entre o M2 e
-// o item 44 ("cruz que afunda no próprio halo") morreu com a prancha
-// historia-dos-spikes: lei única para a escala, arte única para a forma.
+// Lei §1 numa frase. Desde o item 44 (16/08) a camada desenha SÓ o Sol,
+// e desenha com A MESMA RECEITA das heroes de 30/07 ("claramente a
+// regra que desenha sirius é totalmente diferente da que desenha o
+// sol... o desenho de spikes de sirius é muito superioir" — dono; a
+// resposta é UM desenhista). A LEI manda em presença (filtro/entrega,
+// gatilho de entrada) e em TAMANHO (asa do item 3, com o teto de
+// ocupação por estrela do dono: "nenhuma estrela ocupa a tela toda;
+// chega rápido no máximo e para"); a FORMA e o brilho são os do filme.
+// A cruz Moffat do M2 e a textura assada da R1 morreram aqui dentro —
+// a prancha historia-dos-spikes e a "moeda" foram os atestados.
 //
 // O ORÇAMENTO, não a lista de nomes. A identidade "as 16" morreu: a
 // camada tem N slots (ORCAMENTO_DO_CLARAO) e quem os ocupa é decidido
@@ -37,14 +38,7 @@ import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GLSL_COMPRESSAO, bvToColor } from '../shaders/common';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
-import {
-  TETO_DE_LUZ_DO_FLARE,
-  alcanceDoEspinhoPx,
-  ganhoDeEntradaDoFlare,
-  picoComTeto,
-  raioVisivelDaAsaPx,
-} from '../estrela';
-import { AMPLITUDE_DA_CRUZ, AMPLITUDE_DO_HALO, gerarTexturaDoFlare } from './flare';
+import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
 
@@ -240,38 +234,42 @@ const FRAG = /* glsl */ `
 precision highp float;
 
 uniform vec3 uCor;
-uniform float uPico;     // pico JÁ com teto e ganho de entrada (≤ teto do flare)
 uniform float uMeiaPx;   // meia-extensão do billboard em px
 uniform float uNucleoPx; // MEIO-tamanho do sprite do ponto, em px (máscara)
-uniform float uGanho;    // rampa de presença do orçamento (histerese §5.21)
+uniform float uGanho;    // presença: rampa do orçamento × entrada × filtro
 uniform float uBeta;     // compressão na emissão — o MESMO β do campo
-uniform sampler2D uFlare; // a receita de 30/07 assada: R = halo, G = cruz (√v)
 
 varying vec2 vUv;
 
 ${GLSL_COMPRESSAO}
 
 void main() {
-  // A FORMA vem da textura (flare.ts) — nenhuma fórmula de perfil vive
-  // mais neste shader. Os canais são √-codificados contra banding; a
-  // janela radial da borda já está ASSADA na imagem (zero exato em
-  // r = 1, isolinha de círculo): moldura quadrada é impossível.
-  vec2 amostra = texture2D(uFlare, vUv * 0.5 + 0.5).rg;
-  float halo = amostra.x * amostra.x;
-  float cruz = amostra.y * amostra.y;
-  float perfil = ${AMPLITUDE_DO_HALO} * halo + ${AMPLITUDE_DA_CRUZ} * cruz;
+  vec2 uv = vUv;
+  float r = length(uv);
+  if (r > 1.0) discard;
 
-  // A MÁSCARA DO SPRITE: dentro do raio do ponto quem desenha núcleo,
-  // halo curto e espinhos curtos é o STAR_FRAG — esta camada continua o
-  // perfil DALI para fora. Sem a máscara o miolo contaria duas vezes.
-  float rPx = length(vUv) * uMeiaPx;
+  // A RECEITA DO FILME, a mesma das heroes ("claramente a regra que
+  // desenha sirius é totalmente diferente da que desenha o sol... o
+  // desenho de spikes de sirius é muito superioir" — dono, 16/08; a
+  // resposta é UM desenhista só). Núcleo + halo + braços com os números
+  // de 30/07, byte a byte com heroStars.ts — o oráculo de conformidade
+  // cobra a igualdade. O brilho é FIXO como nas heroes (é a forma que
+  // lê como estrela); quem varia é presença (uGanho) e tamanho (a lei).
+  float core = exp(-r * r * 90.0) * 3.0;
+  float glow = exp(-r * 4.5) * 0.9;
+  float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
+  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
+  float spikes = (ax + ay) * 0.8;
+
+  // A MÁSCARA DO SPRITE: dentro do raio do ponto quem desenha é o
+  // STAR_FRAG — esta camada continua DALI para fora (sem dupla conta).
+  float rPx = r * uMeiaPx;
   float mascara = smoothstep(0.6 * uNucleoPx, uNucleoPx, rPx);
 
-  // Com o teto do flare abaixo do β da emissão, comprimir3 opera no
-  // trecho ~linear: a razão entre canais sobrevive e a COR da estrela
-  // chega à tela — o branco-que-apaga-tudo do item 44 morre aqui.
-  vec3 col = uCor * uPico * perfil * mascara * uGanho;
-  gl_FragColor = vec4(comprimir3(col, uBeta), 1.0);
+  vec3 col = (vec3(1.0, 0.98, 0.95) * core + uCor * (glow + spikes)) * mascara * uGanho;
+  float a = clamp(core + glow + spikes, 0.0, 1.0) * mascara * uGanho;
+  vec3 comprimida = comprimir3(col, uBeta);
+  gl_FragColor = vec4(comprimida, a);
 }
 `;
 
@@ -317,21 +315,21 @@ export interface QuadroDoClarao {
  *  tela real o perfil já é invisível — é guarda de fillrate, não lei. */
 const TETO_DO_BILLBOARD_PX = 4096;
 
-/** O FATOR DE ENCHIMENTO do quad do Sol: a textura (perfil exp da receita
- *  de 30/07) preenche o quad quase até a borda, enquanto a Moffat antiga
- *  morria bem DENTRO dele — com o mesmo quad, a bola visível cresceria.
- *  0,45 é a razão medida (bola visível ÷ quad da asa na saída do filtro,
- *  222/489 px) que preserva a escada aceita do item 3. Dose de partida:
- *  o ajuste fino é por FOTO, com o dono. */
-export const FATOR_DE_ENCHIMENTO_DO_SOL = 0.45;
+/** A ANATOMIA DO FILME no clarão do Sol (brief do dono, 16/08): cartaz
+ *  GRANDE (o da asa inteira), com a receita das heroes dentro (brilho
+ *  morre sozinho, braços vazam para fora) — e o TETO DE OCUPAÇÃO por
+ *  estrela: *"ele só limita para que nao aconteça que uma estrela nunca
+ *  ocupe toda a tela, ela sempre chega no máximo que vai ocupar
+ *  rapidamente"*. Nenhum clarão passa desta fração da altura da tela,
+ *  nunca — o limitador é POR ESTRELA, jamais exposição de cena. */
+export const FATOR_DE_ENCHIMENTO_DO_SOL = 1.0;
+export const OCUPACAO_MAXIMA_DA_TELA = 0.55;
 
 export class ClaraoDeAsas {
   readonly group = new THREE.Group();
   private readonly mats: THREE.ShaderMaterial[] = [];
   private readonly meshes: THREE.Mesh[] = [];
   private readonly slots = criarSlots();
-  /** a receita de 30/07 assada UMA vez — os 16 materiais compartilham */
-  private readonly texturaDoFlare = gerarTexturaDoFlare();
 
   // o cadastro de candidatos: 0 = Sol (na origem), 1.. = as nomeadas.
   // mBase = m − 5·log10(d_casa): a MESMA lei de recálculo do campo,
@@ -377,13 +375,11 @@ export class ClaraoDeAsas {
         fragmentShader: FRAG,
         uniforms: {
           uCor: { value: new THREE.Color(1, 1, 1) },
-          uPico: { value: 0 },
           uMeiaPx: { value: 0 },
           uNucleoPx: { value: 0 },
           uGanho: { value: 0 },
           uScreenH: { value: 1080 },
           uBeta: { value: BETA_DA_EMISSAO },
-          uFlare: { value: this.texturaDoFlare },
         },
         blending: THREE.AdditiveBlending,
         // §5.15: o clarão NUNCA é ocluído pelo corpo que o causa — estado
@@ -407,14 +403,16 @@ export class ClaraoDeAsas {
    * histerese e escreve os slots nos billboards.
    */
   /**
-   * O TAMANHO do quad do Sol pela régua ACEITA do item 3 (asa/espinho
-   * Moffat), com o fator de enchimento da textura — a escada 900→20 px
-   * não muda. (O piso de presença das estrelas saiu daqui no resgate
-   * das heroes: quem dá presença às 16 é a arte do filme.)
+   * O TAMANHO do quad do Sol: a régua da asa (item 3) dá a ESCALA, e o
+   * teto de ocupação do dono dá o LIMITE — nenhuma estrela ocupa a tela
+   * toda; aproximando, chega rápido no máximo e estaciona. Dentro do
+   * cartaz, a receita do filme faz o resto: brilho apertado, braço
+   * longo. (O piso de presença das nomeadas saiu no resgate das heroes.)
    */
-  private meiaDaLei(pico: number, sigma: number): number {
+  private meiaDaLei(pico: number, sigma: number, screenH: number): number {
     const asa = Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
-    return Math.min(FATOR_DE_ENCHIMENTO_DO_SOL * asa, TETO_DO_BILLBOARD_PX);
+    const teto = Math.min(OCUPACAO_MAXIMA_DA_TELA * screenH, TETO_DO_BILLBOARD_PX);
+    return Math.min(FATOR_DE_ENCHIMENTO_DO_SOL * asa, teto);
   }
 
   atualizar(q: QuadroDoClarao): void {
@@ -445,7 +443,7 @@ export class ClaraoDeAsas {
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
       // elegível quando a óptica alcança além do que o sprite já desenha
       const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
-      if (!(2 * this.meiaDaLei(pico, sigma) > nucleo)) continue;
+      if (!(2 * this.meiaDaLei(pico, sigma, q.screenH) > nucleo)) continue;
       // inserção ordenada (pico DESC, índice ASC no empate), teto K
       let p = el.length;
       while (p > 0 && (el[p - 1].pico < pico || (el[p - 1].pico === pico && el[p - 1].indice > i)))
@@ -473,7 +471,7 @@ export class ClaraoDeAsas {
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, q.screenH) * (i === 0 ? doSol : 1);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, q.screenH);
       const entrada = ganhoDeEntradaDoFlare(pico);
-      const meiaPx = this.meiaDaLei(pico, sigma);
+      const meiaPx = this.meiaDaLei(pico, sigma, q.screenH);
       if (!(meiaPx > 0) || !(entrada > 0)) {
         mesh.visible = false;
         continue;
@@ -486,13 +484,12 @@ export class ClaraoDeAsas {
         this.cor[i * 3 + 1],
         this.cor[i * 3 + 2]
       );
-      // a LUZ chega ao shader já com o teto PRÓPRIO dela (menor que o de
-      // tamanho): o rim do halo fica na faixa 0,1–1 onde o degradê é
-      // suave e a cor da estrela sobrevive à compressão e ao tonemap
-      u.uPico.value = picoComTeto(pico, TETO_DE_LUZ_DO_FLARE) * entrada;
+      // presença = rampa do orçamento × entrada (a soltura do filtro):
+      // o brilho da forma é FIXO como nas heroes — é o desenho superior
+      // que o dono apontou; a lei manda só em presença e tamanho
+      u.uGanho.value = s.ganho * entrada;
       u.uMeiaPx.value = meiaPx;
       u.uNucleoPx.value = 0.5 * nucleoPx;
-      u.uGanho.value = s.ganho;
       u.uScreenH.value = q.screenH;
     }
   }
@@ -503,7 +500,6 @@ export class ClaraoDeAsas {
   }
 
   dispose(): void {
-    this.texturaDoFlare.dispose();
     this.mats.forEach((m) => m.dispose());
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();

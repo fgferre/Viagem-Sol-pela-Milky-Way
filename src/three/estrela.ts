@@ -288,32 +288,15 @@ export function alcanceDoEspinhoPx(picoDeTela: number, sigmaPsfPx: number): numb
   );
 }
 
-// ─── A LUZ DO CLARÃO DO SOL (item 44/R1, revista no RESGATE) ─────────────
-// A FORMA do clarão do Sol mora na textura (`world/flare.ts`, a receita
-// de 30/07 assada); o TAMANHO segue a asa Moffat aceita do item 3. Aqui
-// mora só a DOSE de luz e o gatilho. (A lei de tamanho K·pico^0,4 que a
-// R1 deu às estrelas morreu no resgate das heroes — quem dá presença às
-// 16 é a arte do filme, `world/heroStars.ts`, por ordem do dono 16/08.)
-
-/** teto suave do pico para a LUZ do clarão (o uPico do shader) — MENOR
- *  que qualquer teto de tamanho, DE PROPÓSITO, e calibrado pela
- *  PROPORÇÃO do filme: nas heroes bonitas o miolo fica em ~1–3, o halo
- *  ocupa ~⅓ do cartaz e os braços saem PARA FORA dele. Com 8 o halo do
- *  Sol inchava até a borda e virava PRATO com cruz por dentro ("quando
- *  se afasta fica uma merda" — dono, 16/08, com foto); com ~2,5 o halo
- *  visível para em r̂ ≈ ⅓ e a cruz alcança 2–3× o halo, como no Sirius
- *  resgatado. O ofuscante fica por conta do ponto + bloom, não das asas.
- *  Abaixo do β da emissão (300), compressão ~linear, matiz intacto. */
-export const TETO_DE_LUZ_DO_FLARE = 2.5;
-
-/** Reinhard: `(1 − 1/(pico/T + 1))·T` — nunca clampa (C¹). */
-export function picoComTeto(pico: number, teto: number = TETO_DE_LUZ_DO_FLARE): number {
-  if (!(pico > 0)) return 0;
-  return (1 - 1 / (pico / teto + 1)) * teto;
-}
+// ─── A ENTRADA DO CLARÃO DO SOL (item 44, forma final do resgate) ────────
+// A FORMA e o brilho do clarão são os do FILME (a mesma receita das
+// heroes, `world/clarao.ts`); o TAMANHO segue a asa do item 3 com o
+// teto de ocupação por estrela. Aqui mora só o GATILHO — a lei decide
+// QUANDO a óptica acende, nunca como ela é bonita.
 
 /** O GATILHO DE ENTRADA — o `vSat` de 30/07: o clarão acende porque o
- *  núcleo ESTOUROU (pico > 1) e satura em pico 4. Fraca segue ponto. */
+ *  núcleo ESTOUROU (pico > 1) e satura em pico 4. Fraca segue ponto;
+ *  sob o filtro solar (pico ≈ 0) a óptica não existe. */
 export function ganhoDeEntradaDoFlare(pico: number): number {
   if (!(pico > 1)) return 0;
   return Math.min(1, 0.5 * Math.log2(pico));
