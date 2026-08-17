@@ -21,7 +21,7 @@ import type { StarLabel } from './world/labels';
 // por orçamento de fluxo — no lugar das 16 heroes de autor.
 import { ClaraoDeAsas, OCUPACAO_MAXIMA_DA_TELA, OCUPACAO_NA_OBSERVACAO } from './world/clarao';
 import { HeroStars } from './world/heroStars';
-import { Galaxy, buildGalaxy, GAL, EX, EY, EZ } from './world/galaxy';
+import { Galaxy, GAL, EX, EY, EZ } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
@@ -40,13 +40,11 @@ import {
 } from './world/corpos/terra';
 import { LuaResolvida, RAIO_LUA_PC } from './world/corpos/lua';
 import {
-  ROCHOSOS,
   RochosoResolvido,
   posicaoDoRochosoUA,
   raiosDoRochosoPc,
 } from './world/corpos/rochoso';
 import {
-  GIGANTES,
   GiganteResolvido,
   posicaoDoGiganteUA,
   raiosDoGigantePc,
@@ -78,11 +76,7 @@ import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 import { repartir } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
 import { loadGalacticAssets } from './cartography/galacticAssets';
-import {
-  bakeDustMap,
-  DUST_MAP_SIZE,
-  DUST_MAP_HALF_EXTENT,
-} from './cartography/dustMap';
+import { bakeDustMap } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { ArrastoDePonteiro } from './arrastoDePonteiro';
@@ -90,6 +84,11 @@ import { NuvensSemente } from './director/nuvensSemente';
 import { VeuDoAtlas } from './director/veu';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
 import { MaquinaDoTempo } from './director/maquinaDoTempo';
+import {
+  montarCenaDeAquecimento,
+  montarCorposDoPalco,
+  montarGalaxia,
+} from './director/carregamento';
 import { RodaDaEscada } from './rodaDaEscada';
 import {
   AtlasRig,
@@ -760,22 +759,7 @@ export class Director {
     // número fixo mentiria em metade dos aparelhos
     await this.stage('galaxy');
     if (this.disposed) return;
-    this.galaxy = new Galaxy(
-      buildGalaxy(
-        20260730,
-        {
-          gasResponse: structureBake.gasResponse,
-          gasSupport: structureBake.gasSupport,
-          youngResponse: structureBake.youngResponse,
-          youngSupport: structureBake.youngSupport,
-          size: DUST_MAP_SIZE,
-          halfExtentPc: DUST_MAP_HALF_EXTENT,
-        },
-        this.engine.quality === 'performance' ? 0.28 : 1
-      ),
-      dustBake.texture,
-      structureBake.texture
-    );
+    this.galaxy = montarGalaxia(structureBake, dustBake, this.engine.quality);
     // O QUE JÁ ESTAVA DESLIGADO chega junto. A galáxia semeia as flags
     // dela da URL, como sempre, e isto só cobre a corrida do painel
     // aberto DURANTE o carregamento (`?ajustes=1`): sem esta linha, o
@@ -864,53 +848,20 @@ export class Director {
     // (a carga é preguiçosa por contrato; as 18 vistas não fazem fetch).
     // O tier e o teto de textura congelam AQUI, como a população da
     // galáxia: a escada não reage a auto-quality depois do init.
-    this.terra = new TerraResolvida({
+    const corpos = montarCorposDoPalco({
       tier: this.engine.quality,
       maxTextureSize: sondarGl().maxTextureSize,
       base: import.meta.env.BASE_URL,
     });
+    this.terra = corpos.terra;
     this.palco.group.add(this.terra.group);
-    // A LUA (F2b): mesmo contrato — construtor barato, carga preguiçosa.
-    this.lua = new LuaResolvida({
-      tier: this.engine.quality,
-      maxTextureSize: sondarGl().maxTextureSize,
-      base: import.meta.env.BASE_URL,
-    });
+    this.lua = corpos.lua;
     this.palco.group.add(this.lua.group);
-    // OS ROCHOSOS (F3): a classe genérica, um por config da lista viva.
     this.rochosos.length = 0;
-    for (const config of ROCHOSOS) {
-      const corpo = new RochosoResolvido({
-        config,
-        tier: this.engine.quality,
-        maxTextureSize: sondarGl().maxTextureSize,
-        base: import.meta.env.BASE_URL,
-      });
-      this.rochosos.push({
-        corpo,
-        emQuadroAntes: false,
-        carregavaAntes: false,
-        carregando: false,
-        friaNoGate: false,
-      });
-      this.palco.group.add(corpo.group);
-    }
-    // OS GIGANTES (F4): a classe própria, um por config da lista viva.
+    this.rochosos.push(...corpos.rochosos);
     this.gigantes.length = 0;
-    for (const { id } of GIGANTES) {
-      const corpo = new GiganteResolvido({
-        id,
-        tier: this.engine.quality,
-        maxTextureSize: sondarGl().maxTextureSize,
-        base: import.meta.env.BASE_URL,
-      });
-      this.gigantes.push({
-        corpo,
-        emQuadroAntes: false,
-        carregavaAntes: false,
-        carregando: false,
-        friaNoGate: false,
-      });
+    this.gigantes.push(...corpos.gigantes);
+    for (const { corpo } of [...corpos.rochosos, ...corpos.gigantes]) {
       this.palco.group.add(corpo.group);
     }
     this.engine.scene.add(this.palco.group);
@@ -928,28 +879,17 @@ export class Director {
     if (!this.shotMode) {
       await this.stage('shaders');
       if (this.disposed) return;
-      const warm = new THREE.Scene();
-      // a chave de programa inclui a PRESENÇA do atributo normal
-      // (vertexNormals): o quad da nebulosa é PlaneGeometry (tem normal),
-      // o FullScreenQuad do BH é um triângulo só com position+uv — cada
-      // material precisa compilar contra a geometria que vai usá-lo
-      const warmGeo = new THREE.PlaneGeometry(2, 2);
-      const warmGeoBH = new THREE.PlaneGeometry(2, 2);
-      warmGeoBH.deleteAttribute('normal');
-      for (const m of this.nebula.warmupMaterials) {
-        warm.add(new THREE.Mesh(warmGeo, m));
-      }
-      for (const m of [
-        ...(this.blackHole?.warmupMaterials ?? []),
-        ...this.post.warmupMaterials,
-      ]) {
-        warm.add(new THREE.Mesh(warmGeoBH, m));
-      }
       // A chave de programa do three inclui o colorSpace de SAÍDA, que é
       // "tela" quando nenhum render target está amarrado — e no frame real
       // tudo renderiza DENTRO do composer (linear). Compilar sem RT gera a
       // variante errada e o primeiro frame re-linka tudo (medido: 8,7 s).
-      const warmRt = new THREE.WebGLRenderTarget(2, 2);
+      const { warm, warmRt, descartar } = montarCenaDeAquecimento({
+        comNormal: this.nebula.warmupMaterials,
+        semNormal: [
+          ...(this.blackHole?.warmupMaterials ?? []),
+          ...this.post.warmupMaterials,
+        ],
+      });
       this.engine.renderer.setRenderTarget(warmRt);
       try {
         // guardado porque o dispose PRECISA esperar por ele: o
@@ -965,9 +905,7 @@ export class Director {
       } finally {
         this.warmup = null;
         this.engine.renderer.setRenderTarget(null);
-        warmRt.dispose();
-        warmGeo.dispose();
-        warmGeoBH.dispose();
+        descartar();
       }
       if (this.disposed) return;
     }
