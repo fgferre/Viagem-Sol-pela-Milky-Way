@@ -145,22 +145,6 @@ código e os dois modos desenham igual, decisão do dono cumprida. O **3** e o
 
 ## ALTA — o dono vê e incomoda
 
-**0. A tela congelada virou o juiz — e é daqui que quase tudo nasce.**
-Aprovar trabalho passou a depender de *"as vistas saem bit-idênticas"*.
-Todo conserto que mexia em pixel era reprovado; todo defeito virava uma
-camada nova por cima. Cinco commits exibiram “18/18 vistas idênticas” como
-aval de trabalho de HUD — e as vistas são capturadas sem HUD.
-
-Palavras do dono, 2026-08-11: *"Nunca foi criada essa regra que nada muda
-na tela. Estamos sempre caminhando no sentido das melhorias, se nada muda
-na tela isso fica impossível."* E em 2026-08-13: *"nada é fixo, tudo sempre
-pode ser questionado se melhora UX."*
-
-O que ela ainda cobra: fotos reais do Sol nunca julgadas por ele
-(item 22). A cegueira a movimento (item 11) morreu com o voo de ida e
-volta, versionado.
-→ `docs/NORTE.md`, seção “Como medir”.
-
 **5. O Sol do Atlas está congelado no máximo solar.**
 Cheio de manchas e explosões; o do filme começa limpo. A fase do ciclo
 deveria sair da data simulada. *(O M1 NÃO o tocou, de propósito: o pino
