@@ -180,17 +180,21 @@ export class Post {
     this.bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       0.72, // força
-      // raio 0 PINADO PELA LEI (M2): o `radius` do Unreal é um lerp que
-      // ACHATA os pesos por mip rumo a 1,2−w — com ele, qualquer pirâmide
-      // repesada volta a ser o kernel geométrico que a lei tirou. O
-      // espalhamento agora é dos PESOS (governarPiramide), derivados da
-      // asa; o raio deixou de ser knob.
+      // O COBERTOR CURTO, nomeado pelo dono ("vc resolve de um lado e
+      // ferra do outro"): o bloom é UM para a cena — o kernel do filme
+      // (raio 0,58, fatores default) dá o respiro do campo E lava o Sol
+      // distante (medido: 4/11 reprovados, borrão 82 px > 69). O raio
+      // volta a 0 (o lerp do vendorizado deixa de ser variável) e o
+      // meio-termo vive nos FATORES (respirarPiramide): a FORMA do
+      // filme com fração medida pela escada. O cobertor comprido — bloom
+      // SELETIVO por família de camada (campo respira, Sol disciplinado)
+      // — é a R2, junto com a régua do "céu nunca vazio".
       0,
       0.82 // limiar — preserva a fotosfera e faz estrelas HDR florescerem
     );
     this.composer.addPass(this.bloom);
     this.domarOBloom();
-    this.governarPiramide();
+    this.respirarPiramide();
 
     // knee asinh no HDR composto (depois do bloom, antes do ACES).
     // Default LIGADO com β=0,45 (rodada 20: com chromsat=0,5 na extinção,
@@ -290,22 +294,26 @@ export class Post {
   }
 
   /**
-   * A PIRÂMIDE GOVERNADA PELA LEI (M2): os pesos por mip saem de
-   * `PESO_POR_MIP` (derivado de `BETA_DA_ASA` — a conta no cabeçalho da
-   * constante), com o raio pinado em 0 na construção para o lerp do
-   * vendorizado não os achatar de volta. O bloom fica cuidando do
-   * BRILHO perto da fonte (abaixo do ombro); a EXTENSÃO é da asa
-   * explícita (`world/clarao.ts`), que é a dona declarada (§1).
+   * O MEIO-TERMO DO COBERTOR (madrugada 16→17/08): a pirâmide do M2
+   * (0,051·0,144^i — só o 1º mip vivo, a 5%) apagou o respiro do campo
+   * ("a galaxia parece vazia" — dono); a do filme (fatores default,
+   * raio 0,58) lava o Sol distante (4/11 na escada). Aqui: a FORMA do
+   * filme (os cinco mips vivos, queda default) com a FRAÇÃO que a
+   * escada aprova — campo com respiro, Sol distante dentro do teto.
+   * O cobertor comprido (bloom seletivo por camada) é a R2.
    */
-  private governarPiramide() {
+  private respirarPiramide() {
+    // os fatores default do UnrealBloomPass vendorizado: [1,0.8,0.6,0.4,0.2]
+    const FORMA_DO_FILME = [1.0, 0.8, 0.6, 0.4, 0.2];
+    const FRACAO_DO_RESPIRO = 0.3;
     const composite = (this.bloom as unknown as { compositeMaterial: THREE.ShaderMaterial })
       .compositeMaterial;
     const fatores = composite.uniforms.bloomFactors?.value as number[] | undefined;
     if (!fatores || fatores.length === 0) {
-      throw new Error('governarPiramide: o composite do UnrealBloomPass mudou de forma');
+      throw new Error('respirarPiramide: o composite do UnrealBloomPass mudou de forma');
     }
     for (let i = 0; i < fatores.length; i++)
-      fatores[i] = PESO_DA_PIRAMIDE * Math.pow(PESO_POR_MIP, i);
+      fatores[i] = FORMA_DO_FILME[i] * FRACAO_DO_RESPIRO;
   }
 
   /**

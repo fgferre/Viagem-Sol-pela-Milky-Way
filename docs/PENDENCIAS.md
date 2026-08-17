@@ -361,6 +361,19 @@ gigante, com teto):
    (a soltura do filtro é o pulo declarado) e estendendo às nomeadas;
    a âncora de 20 px a 15.800 UA se re-decide com a escada dele.
 
+**O COBERTOR CURTO, nomeado pelo dono e MEDIDO (madrugada):** *"minha
+preocupação é o cobertor curto... vc resolve de um lado e ferra do
+outro"*. Confirmado pela escada no bloom: ele é UM para a cena inteira —
+o kernel do filme (raio 0,58) devolve o respiro do campo ("a galaxia
+parece vazia... tem bilhoes de estrelas e nem parece") E lava o Sol
+distante (4/11); o kernel do M2 disciplina o Sol E mata o campo. O
+meio-termo MEDIDO desta noite: a FORMA do filme (5 mips vivos) a 30% —
+PASSA 11/11 com o campo respirando (`respirarPiramide`, post.ts). O
+COBERTOR COMPRIDO é o item 1 da R2: **bloom seletivo por família de
+camada** (campo estelar com o kernel do filme; Sol/planetas com o
+disciplinado) + a régua do céu-nunca-vazio para o teto do céu ser
+re-derivado com o dono, não herdado do céu morto do M2.
+
 **PRIMEIRO PASSO EXECUTADO NO ATO (madrugada) — UM DESENHISTA SÓ:** o
 dono cravou o diagnóstico final: *"claramente a regra que desenha
 sirius é totalmente diferente da que desenha o sol... o desenho de
