@@ -384,24 +384,28 @@ entrada do clarão, o limiar do bloom. Resultado: o céu DESARMA
 exatamente no modo mais caro. E o ESCÂNDALO DE INSTRUMENTO: todas as
 réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
 
-**O MAPA DO CONSERTO (R2, executar na próxima janela — receita
-completa):**
-1. **Invariância de resolução:** gatilhos e doses de ARTE usam o pico de
-   REFERÊNCIA (pico_ref = pico_buffer × pr²); o depósito FÍSICO fica
-   como está. Sítios: `starShaders.ts` (satDoFilme, guarda do spike,
-   branqueamento — novo uniform `uPr2` em stars/wrappedStars/planetas);
-   `clarao.ts` (entrada + meiaPx: calcular com σ_css e converter
-   meia_buffer = meia_css × pr); `director.ts` (passar
-   `pr = renderer.getPixelRatio()` junto com hPx). Heroes já são
-   invariantes (tamanho em pc no mundo).
-2. **Instrumento:** perna DPR 2 na sonda e na escada (Emulation.
-   setDeviceMetricsOverride — receita em scratchpad/dois-modos.mjs);
-   nenhuma régua de céu vale mais só em DPR 1.
-3. **Bloom seletivo — ordem do dono: *"vai no bloom seletivo então,
-   cada camada com seu cobertor"*:** campo estelar (stars, wrapped,
-   heroes, galáxia) com o kernel do filme; Sol/planetas com o
-   disciplinado; limiar do bloom também referenciado por pr².
-4. Depois de 1–3: re-derivar o teto de céu da escada COM o dono (o céu
+**O MAPA DO CONSERTO (R2) — estado:**
+1. **✅ Invariância de resolução (FEITA, commit 3cef5f1):** gatilhos e
+   doses de ARTE na régua de referência (uPr2 em stars/wrappedStars/
+   planetas; clarão decidido em px de CSS com conversão ×pr nos
+   uniforms; pr do renderer via director). Em DPR 1 nada muda (1.615
+   verdes, baselines intactos); em DPR 2 o campo renasceu — fotos
+   modo-cinema-dpr2 antes/depois. Heroes já eram invariantes (pc).
+2. **Instrumento (PENDENTE):** perna DPR 2 formal na sonda e na escada
+   (Emulation.setDeviceMetricsOverride — receita pronta em
+   scratchpad/dois-modos.mjs); nenhuma régua de céu vale só em DPR 1.
+3. **Bloom seletivo (PENDENTE — ordem do dono: *"vai no bloom seletivo
+   então, cada camada com seu cobertor"*):** o desenho técnico: passe de
+   render do CAMPO (stars + wrappedStars + heroes, via camada/layer
+   dedicada — 3 draws baratos) num alvo próprio com o kernel do FILME
+   ([1;0,8;0,6;0,4;0,2] pleno) em modo SÓ-BRILHO (o vendorizado ganha a
+   flag; sem ela as estrelas contam duas vezes), composto aditivo antes
+   do knee/ACES; o bloom PRINCIPAL volta ao kernel disciplinado da lei
+   (o meio-termo 0,3 de `respirarPiramide` morre — era o remendo do
+   cobertor único); limiar do passe do campo referenciado por pr².
+   Galáxia/nebulosa ficam no principal na 1ª leva (4M partículas — não
+   pagar o segundo render até o dono sentir falta).
+4. Depois de 2–3: re-derivar o teto de céu da escada COM o dono (o céu
    legítimo ficou mais rico) e re-medir tudo nas DUAS pernas.
 
 **PRIMEIRO PASSO EXECUTADO NO ATO (madrugada) — UM DESENHISTA SÓ:** o
