@@ -50,9 +50,15 @@ duplicata. Ordem: **1 antes de 3**. A 2 é independente da 3.
 **1. Uma cadeia fotométrica.** Magnitude → fluxo → pixel, uma vez só, para
 todas as camadas. *Parcial:* o campo HYG já recalcula `m` da câmera e desenha
 PSF de largura fixa. *Falta:* exposição compartilhada e o tonemap (hoje o
-teto real do campo é ~2,3 mag contra 8,6 do catálogo). Quatro leis de
-extinção ainda convivem (CCM89 nas partículas, λ^−2,6 no HYG, 0,8 mag/kpc
-nas cascas, 1,5 mag/kpc no bake). Unificar é a pauta desta unificação.
+teto real do campo é ~2,3 mag contra 8,6 do catálogo). SEIS leis de
+extinção convivem — censo de 17/08 no item 36 do PENDENCIAS: a tripla
+literal `[1.0, 1.65, 2.35]` no HYG (não é lei de potência; entra 2×, na
+cor e em meio alpha), CCM89 com saturação nas partículas, CCM89 sem
+saturação nas forjas (desligada por padrão), CCM89 sem coluna nas nuvens
+observadas, 0,8 mag/kpc acromático nas cascas, e o A_V→τ cinza da LUT da
+faixa; o bake executa um fator 2,39 normalizado com a âncora física de
+1,5 mag/kpc declarada como pendente no próprio código. Unificar é a
+pauta desta unificação.
 
 O contrato da estrela — disco + clarão, troca abaixo de 1 px conservando
 fluxo, compressão fixa — está em `LEI-DA-ESTRELA.md`. É quem manda sobre as

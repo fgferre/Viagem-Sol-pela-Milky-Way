@@ -214,14 +214,24 @@ Ajustes oferece 13, a gaveta do Atlas 6, o selo conhece 17.
 **34.** A tela de carregamento desenha outra Via Láctea, de dois braços.
 O modelo da casa tem quatro.
 
-**36.** (Suspeita a medir.) Leis de poeira demais convivendo — a análise
-paralela de 17/08 conta QUATRO (a absorção do catálogo, a das cascas em
-0,8 mag/kpc, a CCM89 das partículas e o forno das forjas), e o NORTE
-ainda descreve uma quinta fórmula (λ^−2,6) que não é a que o catálogo
-executa — documento e código não batem. É a unificação 1 do NORTE, não
-um corte de pasta. Medir antes de mexer — esta família já produziu um
-falso positivo (cessão da faixa) — e foto para o dono. Só depois da
-onda da arquitetura assentar (fila aprovada em 17/08).
+**36. (MEDIDO em 17/08 — o censo completo mora no commit da data.)
+SEIS leis de poeira convivem, não quatro.** Às quatro contadas (a
+tripla literal do catálogo, as cascas em 0,8 mag/kpc acromático, a
+CCM89 das partículas com saturação `?chromsat=`, o forno das forjas —
+CCM89 SEM saturação e desligado por padrão) somam-se as nuvens
+observadas (CCM89 sem coluna, τ fixo 2,4) e a LUT da faixa (A_V→τ
+cinza). Três espaços de conta e três curvas espectrais diferentes; o
+catálogo e as partículas — as duas camadas que se tocam na tela —
+avermelham DIFERENTE (~33% mais azul comido no catálogo para a mesma
+coluna). O NORTE errava dois de quatro e foi corrigido no mesmo
+commit: a λ^−2,6 do catálogo NÃO existe (executa-se `exp(−τ·[1.0,
+1.65, 2.35])`, que nem se reduz a lei de potência) e o "1,5 mag/kpc no
+bake" é âncora declarada pendente no próprio código (executa-se um
+fator 2,39 normalizado). De carona: a extinção do catálogo entra DUAS
+vezes (na cor e em metade do alpha) com degrau duro em 3 px, e o
+`tau: 0.045` do director deixa o default 0,9 da classe como letra
+morta. A UNIFICAÇÃO segue sendo a pauta 1 do NORTE — obra própria, que
+muda pixel e volta com foto para o dono a cada mudança.
 
 **41.** (Suspeita a medir.) `core/engine.test.ts:44` diz que a vista `sol`
 está a 0,063 pc; o valor vivo é 1,2955e-7 pc (`lodStellar.test.ts:1636`) —
