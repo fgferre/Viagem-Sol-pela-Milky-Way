@@ -20,10 +20,16 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
 e o app na mão: *"a soltura ficou boa, pode considerar pousada —
 destrave a arquitetura"*. Os itens 3 e 44 saíram da lista — a história
-mora nos commits de 16–17/08 e na `LEI-DA-ESTRELA.md`. A **ONDA DA
-ARQUITETURA (item 43 da BAIXA) está DESTRAVADA e em execução**: passo 0
-(re-medir tudo) primeiro; o primeiro commit de corte só depois do
-re-mapa. O que segue à espera de conferência ESPECÍFICA do dono no app:
+mora nos commits de 16–17/08 e na `LEI-DA-ESTRELA.md`. **A ONDA DA
+ARQUITETURA CONCLUIU na noite de 17/08 e o item 43 da BAIXA saiu da
+lista**: Parte 2 6/6, Parte 1 9/9 (director 4.019 → 2.135; a escada
+foi o corte final), corte 10 (medidas da galáxia em folha) e a fila de
+papel/poeira — cada corte com typecheck + 1.622 testes + lint + ab
+bit-idêntico; a história mora nos commits de 17/08 (o fecho é a
+sequência f702c4e → 881fbfc). Fronteira que fica de pé: não tocar no
+que a Lei ainda demole (`lodStellar.ts`, `stellarBody.ts` por dentro,
+`world/sol/*`, `iauOrientation.ts`). O que segue à espera de
+conferência ESPECÍFICA do dono no app:
 item 39 (focar estrela não pode apagar as outras), item 40 (rótulo
 dobrado do Sol), item 43 da ALTA (a cruz de Vênus na dose do fluxo). A
 dose 0,07 do Atlas segue sendo número DELE para calibrar quando quiser;
@@ -279,76 +285,6 @@ corte come a superfície.
 **38.** Canal `aFocus` dormente por desenho — **não apagar.** É o que
 apaga o ponto de uma estrela quando ela ganha corpo (passo E3 da lei).
 Se a onda do motor terminar sem fiá-lo, aí sim vira peso morto.
-
-**43. Arquivos grandes demais — toda mudança faz as IAs lerem milhares de
-linhas.** Palavras do dono, 2026-08-16: *"estou preocupado com nossa
-arquitetura atual, acho que estamos com arquivos muito grandes, e toda vez que
-vamos fazer qq mudança as AIs leem tudo isso.. como poderíamos resolver isso?"*
-
-O vilão é o `director.ts` (4.019 linhas em 16/08, 15 assuntos); depois
-`hud.css`, `terra.ts`, `galaxy.ts`, `App.tsx`, `atlasRig.ts`. Docs estão
-saudáveis. Plano aprovado pelo dono no mesmo dia — refatoração pura (zero
-pixel, gates bit-idênticos como prova), desenho por símbolo em
-`/Users/fgferre/.claude/plans/estou-preocupado-com-nossa-rosy-lynx.md`.
-**DESTRAVADA em 17/08 com a palavra dele** (o pouso da estrela; o bastão
-no topo). **A PARTE 2 ESTÁ 5/6 (17/08, cinco cortes commitados):** passo
-0 (re-mapa completo; a lápide exposicao.ts morreu com a pupila, o
-solNoQuadro virou módulo definitivo, lodStellar já caiu a 287 pela Lei);
-corte 1 alias `@/*` morto + princípio 11 no AGENTS; corte 2 hud.css → 8
-fatias contíguas em `src/hud/` (cascata byte a byte); corte 3 atlasRig →
-retanguloDoAtlas + enquadramento + rig (fachada serve o a11y por
-caminho); corte 4 terra → orientacaoNaCena + texturas +
-eclipseNoMaterial + shaders/terraShaders (1.210→693; corpos importam
-por assunto); corte 5 galaxy → baseGalactica (49 l — journey e mais 4
-importavam 1.192 linhas por 4 vetores) + geradorDaGalaxia + classe.
-Provas por corte: typecheck + 1.622 testes + lint, e ab-identidade
-BIT-IDÊNTICO (51 vistas no 4 e no 5; atlas-smoke verde no 3). **A PARTE
-2 FECHOU 6/6 em 17/08** — o corte 6 entregou App.tsx 1.183 → 769 com os
-três hooks (useDirector 226, useEspelhoDaUrl 308, useAtalhos 64; os
-dois primeiros GOVERNADOS pelo selo; semântica da URL intocada; provas:
-busca-smoke + voo-smoke + ab SMOKE bit-idêntico + a11y sem falha nova).
-**A PARTE 1 FECHOU 9/9 (17/08, noite) e o director em 2.135** (era
-3.797): 1 nuvensSemente, 2 veu, 3 prontidao, 4 maquinaDoTempo (as 110
-costuras religadas de uma vez — o typecheck com campos mortos varre as
-órfãs; atlas-smoke provou o relógio em cada gesto), 5 carregamento
-(montarGalaxia/montarCorposDoPalco/montarCenaDeAquecimento; os
-literais expoM0/sigmaPx FICARAM no shell do init), 6 gestos
-(ligarGestos com as duas máquinas dentro; arrasto provado com mouse
-CDP real: órbita nos dois eixos, move órfão inerte), 7 rotulos
-(Rotulos com a projeção do quadro, a linha de rumo, a distância do
-Sol e o buffer das luas; o beat da viagem entra por fio; tryVisit lê
-a MESMA lista pelo getter `alvos`; os pinos de lua.test,
-atlasRig.test e LabelCanvas.test seguiram o código e vigiam a costura
-dos dois lados), 8 solNoQuadro (o gate do palco, a repartição da lei
-e a cessão do ponto nos MESMOS três pontos do tick; `solArmado` e a
-repartição do quadro viraram estado do módulo; as heroes ficaram no
-director e subiram uma posição — neutro provado em pixel; o cadastro
-de representações aponta o fiador novo; prova extra: voo-ida-e-volta
-PASSA em 34 degraus), 9 escada — o corte MAIOR, executado na janela
-limpa que o mapa pediu (a navegação inteira em `director/escada.ts`:
-clique, busca, casa viva, degraus, religador do relógio e reaplicação
-pós-efeméride; o trio do foco com UM dono e o selo lendo `focoCorpoId`
-pela fachada; `EstadoDaEscada` e `larguraDeCss` moram lá com reexport;
-`HELIO_SEM_PONTO` mudou para o `atlasConfig`, ao lado das listas de
-que deriva; as fatias do atlasRig.test seguiram o código; prova manual
-no navegador: Ceres pela busca com aproximar e Esc·Esc de volta,
-clique no Sol em casa descendo ao corpo, `?foco=sol&ver=corpo`
-nascendo seco a 6,40 raios solares). Provas por corte: 1.622 testes +
-ab (completos: 52 vistas bit-idênticas; a acusação falsa da `terranb`
-virou o item 49 — nos cortes 7 a 9 as vistas da Terra saíram limpas de
-primeira). ⚠ Lição de instrumento do corte 9: o ab-identidade RETOMA
-capturas por vista do estado em disco — um `depois` rodado depois de
-outra sessão pode reaproveitar capturas VELHAS e o veredito sai vazio;
-o `depois` de um corte novo roda com `DOZERO=1`.
-**O corte 10 FECHOU no mesmo dia**: as três medidas de ancoragem
-(`sunRadiusPc`, `sunHeightPc`, `diskRadiusPc`) viraram a folha
-`cartography/medidasDaGalaxia.ts` — a `baseGalactica` lê de lá e o
-`GALACTIC_MODEL` as incorpora por spread (o modelo segue sendo o
-endereço do contrato completo; zero literal duplicado). Prova: 1.622
-testes + lint + typecheck + ab completo BIT-IDÊNTICO (52 vistas,
-`depois` do zero). Da fila aprovada em 17/08 ficam os consertos de
-papel (itens 50 e 51) e só então a poeira (item 36), medida e com
-foto. Não tocar no que a Lei ainda demole (`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
