@@ -284,6 +284,15 @@ const PROIBIDOS: SimboloProibido[] = [
     migracao: 'M2',
     razao: 'as portas mortas e a linha da pupila saem do registro do selo',
   },
+  // ─── R2 (2026-08-17): o bloom seletivo — cada camada com seu cobertor ──
+  {
+    arquivo: 'src/three/core/post.ts',
+    padrao: /respirarPiramide|FRACAO_DO_RESPIRO/,
+    migracao: 'R2',
+    razao:
+      'o meio-termo do cobertor único (forma do filme a 30%) morreu: o ' +
+      'respiro do campo é o ClaraoDoCampo, e a lei governa o principal',
+  },
 ];
 
 describe('os símbolos proibidos não renasceram', () => {

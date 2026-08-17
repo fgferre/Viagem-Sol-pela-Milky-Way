@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { Engine, modoDoToneMapping } from './core/engine';
 import type { QualityLevel } from './core/engine';
 import type { EstadoDaVista } from './selo';
-import { Post } from './core/post';
+import { CAMADA_DO_CAMPO, Post } from './core/post';
 // (A PUPILA morreu INTEIRA no M2 da LEI-DA-ESTRELA — arquivo, teste e a
 // espinha de `uExposicao`. O que substitui a adaptação é a compressão
 // fixa em dois pontos, que é padrão desde 15/08; a medição que ela fez
@@ -906,6 +906,14 @@ export class Director {
     this.engine.scene.add(this.clarao.group);
     this.engine.scene.add(this.heroes.group);
     this.engine.scene.add(this.galaxy.group);
+    // O COBERTOR DO CAMPO (R2 do item 44, "cada camada com seu cobertor"):
+    // as três camadas de estrelas vivem TAMBÉM na CAMADA_DO_CAMPO — é por
+    // ela que o ClaraoDoCampo (post.ts) as re-desenha para vestir o kernel
+    // do filme SÓ nelas. Sol, clarão, planetas, poeira, galáxia e nebulosa
+    // ficam na camada 0, sob a pirâmide da lei.
+    this.stars.points.layers.enable(CAMADA_DO_CAMPO);
+    this.wrappedStars.points.layers.enable(CAMADA_DO_CAMPO);
+    this.heroes.group.traverse((o) => o.layers.enable(CAMADA_DO_CAMPO));
     // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
     // NUNCA dentro de `sun.group` — de lá herdaria a escala 0,005 do
     // doador e o `return` antecipado quando o

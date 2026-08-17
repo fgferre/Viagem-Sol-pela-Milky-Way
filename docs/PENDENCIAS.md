@@ -399,19 +399,33 @@ réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
 2. **Instrumento (PENDENTE):** perna DPR 2 formal na sonda e na escada
    (Emulation.setDeviceMetricsOverride — receita pronta em
    scratchpad/dois-modos.mjs); nenhuma régua de céu vale só em DPR 1.
-3. **Bloom seletivo (PRÓXIMA LARGADA — ordem do dono dada DUAS vezes:
-   *"vai no bloom seletivo então, cada camada com seu cobertor"* e, ao
-   encerrar a sessão de 16→17/08, *"segue no bloom seletivo"*. A
-   próxima janela COMEÇA aqui):** o desenho técnico: passe de
-   render do CAMPO (stars + wrappedStars + heroes, via camada/layer
-   dedicada — 3 draws baratos) num alvo próprio com o kernel do FILME
-   ([1;0,8;0,6;0,4;0,2] pleno) em modo SÓ-BRILHO (o vendorizado ganha a
-   flag; sem ela as estrelas contam duas vezes), composto aditivo antes
-   do knee/ACES; o bloom PRINCIPAL volta ao kernel disciplinado da lei
-   (o meio-termo 0,3 de `respirarPiramide` morre — era o remendo do
-   cobertor único); limiar do passe do campo referenciado por pr².
-   Galáxia/nebulosa ficam no principal na 1ª leva (4M partículas — não
-   pagar o segundo render até o dono sentir falta).
+3. **✅ Bloom seletivo (FEITO em 17/08 — a ordem *"cada camada com seu
+   cobertor"*, cumprida):** o cobertor PRINCIPAL voltou à pirâmide da
+   LEI (`governarPiramide`, raio 0) e disciplina Sol, planetas, galáxia
+   e nebulosa; o passe novo do campo (`ClaraoDoCampo`, post.ts) desenha
+   catálogo + cascas + heroes pela `CAMADA_DO_CAMPO` e veste neles o
+   kernel do FILME inteiro ([1; 0,8; 0,6; 0,4; 0,2], raio 0,58) — na
+   MESMA máquina do vendorizado, rodada duas vezes por quadro: zero
+   VRAM nova (o rascunho é o writeBuffer ocioso do composer), e só o
+   CLARÃO soma no quadro, antes do knee/ACES — estrela nenhuma conta
+   duas vezes (a "flag só-brilho" do desenho virou reuso). O meio-termo
+   0,3 morreu com lápide na varredura invertida. O limiar do campo já
+   chega na régua de referência sem conta nova (o depósito ×pr² da
+   parte 2 é quem faz). Escada re-medida: **PASSA 11/11**, com o Sol
+   MAIS disciplinado que o meio-termo (borrão a 1 UA: 88→40 px; na
+   âncora de 15.800 UA: 52→**20 px**, o aceite do M2) e decaimento
+   monotônico 310→20 px — e o campo com o respiro PLENO do filme
+   (fotos da prova na conversa de 17/08). Defeito achado e morto na
+   montagem, ao vivo: o quad da soma final limpava o quadro inteiro
+   (autoClear ligado) — o Sol e a nebulosa sumiam da tela; o passe
+   agora prende o autoClear em falso do primeiro ao último draw, a
+   disciplina do vendorizado. LIMITES DECLARADOS: (a) estrela atrás de
+   corpo resolvido ainda vaza clarão fraco no rascunho do campo (sem
+   ocultadores lá; o conserto conhecido — fantasmas só-profundidade —
+   está anotado no passe); (b) em retina a EXTENSÃO de qualquer bloom
+   é menor em px de CSS (o kernel mede em px de buffer) — quem mede e
+   decide é a perna DPR 2 (item 2). Fica aberto SÓ o aceite do dono no
+   app.
 4. Depois de 2–3: re-derivar o teto de céu da escada COM o dono (o céu
    legítimo ficou mais rico) e re-medir tudo nas DUAS pernas.
 

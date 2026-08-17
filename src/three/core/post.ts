@@ -7,7 +7,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import type { Pass } from 'three/addons/postprocessing/Pass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { FILM_SHADER } from '../shaders/dustShaders';
 import { GLSL_COMPRESSAO } from '../shaders/common';
 import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
@@ -151,9 +151,163 @@ export const PESO_DA_PIRAMIDE = FRACAO_DA_ASA / SOMA_DAS_RAZOES;
  */
 export const OMBRO_DO_BLOOM = 40;
 
+/**
+ * O COBERTOR DO CAMPO — a resposta da R2 ao "cobertor curto" que o dono
+ * nomeou (item 44): o bloom era UM para a cena inteira, e o kernel que dá
+ * respiro ao campo estelar lava o Sol distante (4/11 na escada), enquanto
+ * o kernel da lei que disciplina o Sol apaga o céu ("a galaxia parece
+ * vazia... tem bilhoes de estrelas e nem parece"). Ordem dele, dada duas
+ * vezes: "vai no bloom seletivo então, cada camada com seu cobertor".
+ *
+ * A partir daqui são DOIS cobertores por quadro, na MESMA máquina:
+ *
+ *  - o PRINCIPAL veste a pirâmide da LEI (`governarPiramide`) e cobre o
+ *    que vive na camada 0 — Sol, planetas, galáxia, nebulosa: é o kernel
+ *    do M2, o que passou 11/11 com 20 px na âncora de 15.800 UA;
+ *  - o passe do CAMPO (`ClaraoDoCampo`) desenha só as três camadas de
+ *    estrelas na `CAMADA_DO_CAMPO` e veste nelas o kernel do FILME,
+ *    inteiro — a forma [1; 0,8; 0,6; 0,4; 0,2] com raio 0,58 que dava ao
+ *    céu o respiro que o dono cobrou de volta.
+ *
+ * O LIMIAR do campo já chega na régua de referência SEM conta nova: o
+ * depósito das três camadas é ×pr² no vertex desde a parte 2 da
+ * invariância — escalar o limiar por pr² aqui seria compensar duas vezes.
+ * Galáxia e nebulosa ficam FORA do passe do campo na primeira leva, por
+ * decisão declarada no mapa da R2: são 4 M de partículas, e o segundo
+ * render delas não se paga antes de o dono sentir falta.
+ */
+export const CAMADA_DO_CAMPO = 1;
+const FORMA_DO_FILME = [1.0, 0.8, 0.6, 0.4, 0.2];
+const FORCA_DO_FILME = 0.72;
+const RAIO_DO_FILME = 0.58;
+const LIMIAR_DO_FILME = 0.82;
+
+/**
+ * O PASSE DO CAMPO — o segundo cobertor, SEM segunda máquina.
+ *
+ * O desenho da R2 pedia "modo só-brilho no vendorizado"; a leitura do
+ * vendorizado mostrou um caminho mais barato que a flag: o
+ * `UnrealBloomPass` já deposita o clarão puro numa textura própria
+ * (`renderTargetsHorizontal[0]`) ANTES do blend aditivo final. Então o
+ * passe (1) desenha só o campo — catálogo, cascas, heroes, via
+ * `CAMADA_DO_CAMPO` — no buffer OCIOSO do composer (o writeBuffer: o
+ * bloom principal não troca buffers, e knee/OutputPass reescrevem cada
+ * pixel dele depois — rascunho de graça, zero alvo novo na VRAM);
+ * (2) roda a MESMA máquina do bloom vestida de filme em cima do
+ * rascunho — o blend interno do vendorizado cai no próprio rascunho e
+ * morre ali; (3) soma SÓ o clarão ao quadro principal, com o mesmo
+ * blend aditivo do vendorizado. As estrelas não contam duas vezes: a
+ * imagem direta delas só existe no render principal.
+ *
+ * LIMITE DECLARADO (v1): o rascunho do campo não tem os ocultadores
+ * (Sol e planetas vivem na camada 0), então estrela ATRÁS de um disco
+ * resolvido ainda deposita clarão por cima dele — de frente para um
+ * corpo próximo, um brilho fantasma fraco pode vazar no lado noturno.
+ * Se a tela cobrar, o conserto conhecido é desenhar os ocultadores no
+ * rascunho só com profundidade (colorWrite falso) — nunca voltar ao
+ * cobertor único.
+ */
+class ClaraoDoCampo extends Pass {
+  private readonly quad = new FullScreenQuad();
+  private readonly corDeLimpezaVelha = new THREE.Color();
+  private readonly roupaDaLei: number[] = [];
+  private readonly bloom: UnrealBloomPass;
+  private readonly cena: THREE.Scene;
+  private readonly camera: THREE.Camera;
+
+  constructor(bloom: UnrealBloomPass, cena: THREE.Scene, camera: THREE.Camera) {
+    super();
+    this.bloom = bloom;
+    this.cena = cena;
+    this.camera = camera;
+    this.needsSwap = false;
+    const m = this.maquina();
+    if (!m.compositeMaterial || !m.renderTargetsHorizontal?.length || !m.blendMaterial) {
+      throw new Error('ClaraoDoCampo: o UnrealBloomPass mudou de forma');
+    }
+  }
+
+  private maquina() {
+    return this.bloom as unknown as {
+      strength: number;
+      radius: number;
+      threshold: number;
+      compositeMaterial: THREE.ShaderMaterial;
+      renderTargetsHorizontal: Array<{ texture: THREE.Texture }>;
+      blendMaterial: THREE.Material;
+    };
+  }
+
+  render(
+    renderer: THREE.WebGLRenderer,
+    writeBuffer: THREE.WebGLRenderTarget,
+    readBuffer: THREE.WebGLRenderTarget
+  ) {
+    // O autoClear fica PRESO em falso do primeiro ao último draw — a
+    // mesma disciplina do corpo do vendorizado, e ela não é estilo: o
+    // FullScreenQuad.render é um renderer.render(), e com a limpeza
+    // automática ligada a soma do passo 3 LIMPARIA o quadro inteiro
+    // antes de somar (o Sol e a nebulosa sumiam da tela — defeito da
+    // primeira montagem deste passe, provado e consertado no ato).
+    const limpavaSozinho = renderer.autoClear;
+    renderer.autoClear = false;
+
+    // 1. só o campo no rascunho — com o fundo (a nebulosa panorâmica)
+    //    FORA, senão o céu inteiro entraria no cobertor do campo
+    const fundo = this.cena.background;
+    const mascara = this.camera.layers.mask;
+    renderer.getClearColor(this.corDeLimpezaVelha);
+    const alphaVelho = renderer.getClearAlpha();
+    this.cena.background = null;
+    this.camera.layers.set(CAMADA_DO_CAMPO);
+    renderer.setClearColor(0x000000, 0);
+    renderer.setRenderTarget(writeBuffer);
+    renderer.clear();
+    renderer.render(this.cena, this.camera);
+    this.cena.background = fundo;
+    this.camera.layers.mask = mascara;
+    renderer.setClearColor(this.corDeLimpezaVelha, alphaVelho);
+
+    // 2. a mesma máquina, vestida de filme — e despida no fim: força e
+    //    limiar vivos são do setWarp, escritos a cada quadro ANTES do
+    //    composer, e o passe devolve exatamente o que encontrou
+    const m = this.maquina();
+    const forca = m.strength;
+    const raio = m.radius;
+    const limiar = m.threshold;
+    const fatores = m.compositeMaterial.uniforms.bloomFactors.value as number[];
+    for (let i = 0; i < fatores.length; i++) {
+      this.roupaDaLei[i] = fatores[i];
+      fatores[i] = FORMA_DO_FILME[i];
+    }
+    m.strength = FORCA_DO_FILME;
+    m.radius = RAIO_DO_FILME;
+    m.threshold = LIMIAR_DO_FILME;
+    this.bloom.render(renderer, writeBuffer, writeBuffer, 0, false);
+
+    // 3. só o clarão, somado ao quadro principal — o blendMaterial do
+    //    vendorizado já aponta para o composite do passo 2
+    this.quad.material = m.blendMaterial;
+    renderer.setRenderTarget(readBuffer);
+    this.quad.render(renderer);
+
+    // 4. a roupa da lei de volta
+    m.strength = forca;
+    m.radius = raio;
+    m.threshold = limiar;
+    for (let i = 0; i < fatores.length; i++) fatores[i] = this.roupaDaLei[i];
+    renderer.autoClear = limpavaSozinho;
+  }
+
+  dispose() {
+    this.quad.dispose();
+  }
+}
+
 export class Post {
   readonly composer: EffectComposer;
   readonly bloom: UnrealBloomPass;
+  private claraoDoCampo: ClaraoDoCampo;
   private film: ShaderPass;
   private knee: ShaderPass;
   private kneeOn = false;
@@ -180,21 +334,23 @@ export class Post {
     this.bloom = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       0.72, // força
-      // O COBERTOR CURTO, nomeado pelo dono ("vc resolve de um lado e
-      // ferra do outro"): o bloom é UM para a cena — o kernel do filme
-      // (raio 0,58, fatores default) dá o respiro do campo E lava o Sol
-      // distante (medido: 4/11 reprovados, borrão 82 px > 69). O raio
-      // volta a 0 (o lerp do vendorizado deixa de ser variável) e o
-      // meio-termo vive nos FATORES (respirarPiramide): a FORMA do
-      // filme com fração medida pela escada. O cobertor comprido — bloom
-      // SELETIVO por família de camada (campo respira, Sol disciplinado)
-      // — é a R2, junto com a régua do "céu nunca vazio".
+      // O COBERTOR deixou de ser um só (R2 do item 44, ordem do dono:
+      // "cada camada com seu cobertor"): este passe é o PRINCIPAL —
+      // pirâmide da LEI via governarPiramide, com o raio pinado em 0
+      // para o lerp do vendorizado não achatar os pesos derivados — e
+      // disciplina o que vive na camada 0: Sol, planetas, galáxia,
+      // nebulosa. O respiro do campo estelar mora no segundo cobertor,
+      // o ClaraoDoCampo logo abaixo.
       0,
       0.82 // limiar — preserva a fotosfera e faz estrelas HDR florescerem
     );
     this.composer.addPass(this.bloom);
     this.domarOBloom();
-    this.respirarPiramide();
+    this.governarPiramide();
+    // o segundo cobertor: o clarão do campo entra ANTES do knee/ACES,
+    // aditivo, como o mapa da R2 manda
+    this.claraoDoCampo = new ClaraoDoCampo(this.bloom, scene, camera);
+    this.composer.addPass(this.claraoDoCampo);
 
     // knee asinh no HDR composto (depois do bloom, antes do ACES).
     // Default LIGADO com β=0,45 (rodada 20: com chromsat=0,5 na extinção,
@@ -294,26 +450,27 @@ export class Post {
   }
 
   /**
-   * O MEIO-TERMO DO COBERTOR (madrugada 16→17/08): a pirâmide do M2
-   * (0,051·0,144^i — só o 1º mip vivo, a 5%) apagou o respiro do campo
-   * ("a galaxia parece vazia" — dono); a do filme (fatores default,
-   * raio 0,58) lava o Sol distante (4/11 na escada). Aqui: a FORMA do
-   * filme (os cinco mips vivos, queda default) com a FRAÇÃO que a
-   * escada aprova — campo com respiro, Sol distante dentro do teto.
-   * O cobertor comprido (bloom seletivo por camada) é a R2.
+   * A PIRÂMIDE GOVERNADA PELA LEI (M2, de volta na R2): os pesos por mip
+   * saem de `PESO_POR_MIP` (derivado de `BETA_DA_ASA` — a conta no
+   * cabeçalho da constante), com o raio pinado em 0 na construção para o
+   * lerp do vendorizado não os achatar de volta. O bloom fica cuidando
+   * do BRILHO perto da fonte (abaixo do ombro); a EXTENSÃO é da asa
+   * explícita (`world/clarao.ts`), que é a dona declarada (§1).
+   *
+   * (O meio-termo da madrugada de 16→17/08 — a forma do filme a 30% no
+   * cobertor único — morreu aqui: era o remendo que dava meio respiro ao
+   * campo lavando meio Sol. O respiro inteiro do campo mora no
+   * `ClaraoDoCampo`; a varredura invertida vigia a volta do remendo.)
    */
-  private respirarPiramide() {
-    // os fatores default do UnrealBloomPass vendorizado: [1,0.8,0.6,0.4,0.2]
-    const FORMA_DO_FILME = [1.0, 0.8, 0.6, 0.4, 0.2];
-    const FRACAO_DO_RESPIRO = 0.3;
+  private governarPiramide() {
     const composite = (this.bloom as unknown as { compositeMaterial: THREE.ShaderMaterial })
       .compositeMaterial;
     const fatores = composite.uniforms.bloomFactors?.value as number[] | undefined;
     if (!fatores || fatores.length === 0) {
-      throw new Error('respirarPiramide: o composite do UnrealBloomPass mudou de forma');
+      throw new Error('governarPiramide: o composite do UnrealBloomPass mudou de forma');
     }
     for (let i = 0; i < fatores.length; i++)
-      fatores[i] = FORMA_DO_FILME[i] * FRACAO_DO_RESPIRO;
+      fatores[i] = PESO_DA_PIRAMIDE * Math.pow(PESO_POR_MIP, i);
   }
 
   /**
@@ -400,6 +557,7 @@ export class Post {
   dispose() {
     // EffectComposer.dispose() NÃO dispõe os passes: o UnrealBloom
     // sozinho retém 11 render targets HDR na VRAM
+    this.claraoDoCampo.dispose();
     this.bloom.dispose();
     this.film.dispose();
     this.knee.dispose();

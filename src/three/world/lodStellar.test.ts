@@ -260,7 +260,11 @@ describe('o shader novo depois do M2 — aFade morto, vPeak fatorado', () => {
     // e vPeak carregando-o para núcleo, halo, espinhos e branqueamento.
     expect(vert).not.toContain('attribute float aFade;');
     expect(vert).not.toContain('float atten =');
-    expect(vert).toContain('vPeak = peak * alpha;');
+    // ×uPr2 desde a parte 2 da invariância: o depósito nasce na régua de
+    // referência (DPR 1 é ×1 exato). O commit da parte 2 esqueceu de
+    // atualizar este pino e a suíte ficou vermelha em silêncio — o pino
+    // agora cobra a linha VIVA, com a resolução dentro.
+    expect(vert).toContain('vPeak = peak * alpha * uPr2;');
     // espinhos e branqueamento derivam de vPeak no FRAG (o clamp sat
     // morreu) — proibida é a DECLARAÇÃO do varying, não a menção nas
     // lápides (a regra de sempre da varredura invertida)
