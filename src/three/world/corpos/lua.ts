@@ -77,6 +77,7 @@
 // convertidos na CPU (float64); clamps e guardas em todo pow/divisão.
 // ============================================================
 import * as THREE from 'three';
+import { CAMADA_DOS_OCULTADORES } from '../../core/post';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import {
   AU_PARA_PC,
@@ -402,6 +403,9 @@ export class LuaResolvida {
       transparent: false,
     });
     this.superficie = new THREE.Mesh(this.geometria, this.matSuperficie);
+    // globo opaco = ocultador do rascunho do campo (item 47): estrela
+    // atrás dele não deposita clarão. Anel/atmosfera/nuvens ficam fora.
+    this.superficie.layers.enable(CAMADA_DOS_OCULTADORES);
     this.superficie.matrixAutoUpdate = false;
     this.group.add(this.superficie);
   }

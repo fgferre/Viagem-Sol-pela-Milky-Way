@@ -358,11 +358,6 @@ ainda demole (`lodStellar.ts`).
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
 decisão própria de resolução quando esse assunto voltar à mesa.
 
-**47.** (Herdada do item 44, limite declarado do bloom seletivo.) Estrela
-atrás de corpo resolvido ainda vaza clarão FRACO no rascunho do campo —
-não há ocultadores lá. O conserto conhecido (fantasmas só-profundidade)
-está anotado no próprio passe (`post.ts`).
-
 **49.** (Ruído de instrumento, achado no corte 4 da arquitetura.) A vista
 oficial `terralua` CINTILA entre duas capturas da MESMA sessão no MESMO
 código: no baseline do A/B as duas capturas do "antes" deram md5

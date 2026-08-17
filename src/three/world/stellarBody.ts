@@ -44,6 +44,7 @@
 // `group.visible`.
 // ============================================================
 import * as THREE from 'three';
+import { CAMADA_DOS_OCULTADORES } from '../core/post';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
 import { RADIANCIA_DA_FOTOSFERA, radianciaDeTela } from '../luzDaCasa';
 import type { EstadoDaEstrela } from '../estrela';
@@ -606,6 +607,9 @@ export class StellarBody {
     createSunUniforms(ctx);
     ctx.chromo = createChromo(ctx);
     createSunMesh(ctx);
+    // a fotosfera é ocultador do rascunho do campo (item 47): estrela
+    // atrás do Sol não vaza clarão. Coroa/cromosfera/ejeções ficam fora.
+    ctx.sunMesh.layers.enable(CAMADA_DOS_OCULTADORES);
     // F2, LEI SEM PORTA desde o M1. A fotosfera emite a radiância
     // verdadeira na unidade de tela; a porta `?bfoto=` morreu com a
     // migração (regra iv do §4 da LEI-DA-ESTRELA) — o lado A do A/B vive

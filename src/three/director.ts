@@ -527,6 +527,11 @@ export class Director {
    * encolher no mesh e continuar tapando o céu como se fosse grande.
    */
   private readonly solRaioPc = RAIO_DO_SOL_NA_CENA;
+  /** o disco do Sol como oclusor de RÓTULO ("vejo estrelas através do
+   *  sol", item 47): nome de estrela atrás da fotosfera não nasce. Os
+   *  planetas não entram nesta leva — disco de minutos de arco só em
+   *  close, e lá o rótulo do próprio corpo é quem manda no quadro. */
+  private readonly oclusoresDeRotulo = [{ x: 0, y: 0, z: 0, raio: RAIO_DO_SOL_NA_CENA }];
   /**
    * O GATE DO SOL COMO CORPO (F2), estado da histerese entre quadros.
    * Nasce `false` porque o gate da casa entra por `>=` estrito e sai por
@@ -3643,7 +3648,7 @@ export class Director {
         const meta = this.rig.metaAt(this.journeyT);
         let labels = meta.quiet
           ? []
-          : projectLabels(cam, this.meta.named, 4, this.prevLabelKeys).filter(
+          : projectLabels(cam, this.meta.named, 4, this.prevLabelKeys, this.oclusoresDeRotulo).filter(
               (l) => {
                 if (l.key === 'sol-home' || l.key === 'sgr-a') return true;
                 const dx = l.x - 0.5;
@@ -3686,7 +3691,7 @@ export class Director {
         this.lastLabels = [
           ...corpos,
           ...luas,
-          ...projectLabels(cam, this.meta.named, 7, this.prevLabelKeys),
+          ...projectLabels(cam, this.meta.named, 7, this.prevLabelKeys, this.oclusoresDeRotulo),
         ];
         this.emitDest(undefined, cam.position);
       }

@@ -132,6 +132,11 @@ export const VISTAS = [
   //  40 UA (1,93926e-4 pc) = a órbita de Plutão. É a foto que mostra o
   //    que "estrela longe é PONTO, não invisível" quer dizer.
   ['solreal4mkm', '?pos=0,0,0.00000012963&look=0,0,0&shot=2'],
+  // a fotosfera com SIRIUS (m −1,44) exatamente ATRÁS do disco — a vista
+  // que faltava quando "vejo estrelas através do sol" (item 47) viveu sem
+  // régua: nenhuma das 51 tinha estrela brilhante atrás de corpo. Câmera
+  // no anti-Sirius a 4 mi km, mirando a origem.
+  ['solatras', '?pos=0.0000000243031,-0.000000121752,0.0000000372805&look=0,0,0&shot=2'],
   ['solreal1ua', '?pos=0,0,0.0000048481&look=0,0,0&shot=2'],
   ['solreal40ua', '?pos=0,0,0.00019393&look=0,0,0&shot=2'],
   // As de hero são Betelgeuse (152,67 pc de casa, a supergigante do Ato II),

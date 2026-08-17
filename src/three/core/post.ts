@@ -177,6 +177,19 @@ export const OMBRO_DO_BLOOM = 40;
  * render delas não se paga antes de o dono sentir falta.
  */
 export const CAMADA_DO_CAMPO = 1;
+
+/**
+ * A camada dos OCULTADORES do rascunho do campo — as SUPERFÍCIES OPACAS
+ * dos corpos resolvidos (fotosfera do Sol, globos de Terra/Lua/rochosos/
+ * gigantes). Cada corpo marca o próprio globo ao criá-lo; atmosfera,
+ * nuvens, anéis e glows FICAM DE FORA — são vazados/translúcidos, e um
+ * fantasma de anel engoliria estrela que se vê pelos buracos. Quem lê a
+ * camada é a etapa 1a do `ClaraoDoCampo`: os globos entram no rascunho
+ * SÓ com profundidade (colorWrite falso), e o depth test que os materiais
+ * do campo já carregam corta estrela escondida — era o item 47, cobrado
+ * pelo dono NA TELA: "vejo estrelas através do sol".
+ */
+export const CAMADA_DOS_OCULTADORES = 2;
 const FORMA_DO_FILME = [1.0, 0.8, 0.6, 0.4, 0.2];
 const FORCA_DO_FILME = 0.72;
 const RAIO_DO_FILME = 0.58;
@@ -225,6 +238,8 @@ class ClaraoDoCampo extends Pass {
   private readonly bloom: UnrealBloomPass;
   private readonly cena: THREE.Scene;
   private readonly camera: THREE.Camera;
+  /** o traje dos ocultadores: geometria verdadeira, zero cor — só depth */
+  private readonly fantasma = new THREE.MeshBasicMaterial({ colorWrite: false });
 
   constructor(bloom: UnrealBloomPass, cena: THREE.Scene, camera: THREE.Camera) {
     super();
@@ -270,10 +285,19 @@ class ClaraoDoCampo extends Pass {
     renderer.getClearColor(this.corDeLimpezaVelha);
     const alphaVelho = renderer.getClearAlpha();
     this.cena.background = null;
-    this.camera.layers.set(CAMADA_DO_CAMPO);
     renderer.setClearColor(0x000000, 0);
     renderer.setRenderTarget(writeBuffer);
     renderer.clear();
+    // 1a. os OCULTADORES primeiro, só profundidade: as superfícies
+    //     opacas enchem o depth do rascunho e o depth test que o campo
+    //     já carrega corta estrela ATRÁS de corpo — nem ponto, nem
+    //     clarão ("vejo estrelas através do sol", item 47, morto aqui)
+    this.camera.layers.set(CAMADA_DOS_OCULTADORES);
+    this.cena.overrideMaterial = this.fantasma;
+    renderer.render(this.cena, this.camera);
+    this.cena.overrideMaterial = null;
+    // 1b. e o campo por cima, agora com o mundo sólido no caminho
+    this.camera.layers.set(CAMADA_DO_CAMPO);
     renderer.render(this.cena, this.camera);
     this.cena.background = fundo;
     this.camera.layers.mask = mascara;

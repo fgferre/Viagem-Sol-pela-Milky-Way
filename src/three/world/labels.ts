@@ -65,11 +65,56 @@ function projectPoint(
   return { x, y };
 }
 
+/** Um corpo com disco: nome de estrela ESCONDIDA atrás dele não nasce. */
+export interface OclusorDeRotulo {
+  x: number;
+  y: number;
+  z: number;
+  /** raio da superfície na cena, em pc */
+  raio: number;
+}
+
+const _aoAlvo = new THREE.Vector3();
+const _aoCorpo = new THREE.Vector3();
+
+/**
+ * O CENTRO da estrela cai dentro do cone do corpo, com o corpo entre a
+ * câmera e ela? ("vejo estrelas através do sol" — item 47.) O teste é o
+ * ângulo real (dot) contra o meio-ângulo do disco (cos = √(1−(r/d)²)) —
+ * nada de aproximar seno por ângulo, que de perto o disco é ENORME.
+ *
+ * O IRMÃO DE GPU desta conta é o oclusor da nebulosa
+ * (`nebula.setSunOccluder` + o cosseno SEGURO do cone dela): mesma
+ * geometria, domínios diferentes — lá o cone encolhe pelas margens do
+ * raymarch (tesselação, blur de RT), que não existem num rótulo.
+ */
+function escondidaPorDisco(
+  camPos: THREE.Vector3,
+  estrela: { x: number; y: number; z: number },
+  distEstrela: number,
+  oclusores: readonly OclusorDeRotulo[]
+): boolean {
+  for (const o of oclusores) {
+    _aoCorpo.set(o.x, o.y, o.z).sub(camPos);
+    const dCorpo = _aoCorpo.length();
+    // corpo sem disco à frente (atrás da estrela, raio nulo, ou a câmera
+    // DENTRO dele) não esconde nada
+    if (!(o.raio > 0) || dCorpo <= o.raio || distEstrela <= dCorpo) continue;
+    const razao = o.raio / dCorpo;
+    const cosMeioAngulo = Math.sqrt(1 - razao * razao);
+    _aoAlvo.set(estrela.x, estrela.y, estrela.z).sub(camPos);
+    const cos = _aoAlvo.dot(_aoCorpo) / (distEstrela * dCorpo);
+    if (cos > cosMeioAngulo) return true;
+  }
+  return false;
+}
+
 export function projectLabels(
   camera: THREE.PerspectiveCamera,
   named: NamedStar[],
   maxLabels = 7,
-  prevKeys?: Set<string>
+  prevKeys?: Set<string>,
+  oclusores?: readonly OclusorDeRotulo[]
 ): StarLabel[] {
   const camPos = camera.position;
   const out: StarLabel[] = [];
@@ -124,6 +169,7 @@ export function projectLabels(
     // apontava um nome onde não há estrela visível. A magnitude é
     // recalculada da CÂMERA — quem se aproxima acende, como no shader.
     if (s.m + 5 * Math.log10(dist / Math.max(s.d, 1e-6)) > NAKED_EYE_MAG) continue;
+    if (oclusores && escondidaPorDisco(camPos, s, dist, oclusores)) continue;
 
     const p = projectPoint(camera, s);
     if (!p) continue;
