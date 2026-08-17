@@ -385,17 +385,24 @@ exatamente no modo mais caro. E o ESCÂNDALO DE INSTRUMENTO: todas as
 réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
 
 **O MAPA DO CONSERTO (R2) — estado:**
-1. **✅ Invariância de resolução (FEITA, commit 3cef5f1):** gatilhos e
-   doses de ARTE na régua de referência (uPr2 em stars/wrappedStars/
-   planetas; clarão decidido em px de CSS com conversão ×pr nos
-   uniforms; pr do renderer via director). Em DPR 1 nada muda (1.615
-   verdes, baselines intactos); em DPR 2 o campo renasceu — fotos
-   modo-cinema-dpr2 antes/depois. Heroes já eram invariantes (pc).
+1. **✅ Invariância de resolução (FEITA em DUAS partes, 3cef5f1 +
+   37a8c26, APROVADA PELO DONO: *"ficou muito melhor agora"*):**
+   parte 1 = gatilhos e doses de arte na régua de referência; parte 2 =
+   o DEPÓSITO também (vPeak × uPr2 no vertex das três camadas — o
+   tonemap esmagava o brilho por pixel em retina). Em DPR 1 nada muda
+   (testes e baselines intactos); em retina o campo = performance, com
+   nitidez de cinema (fotos modo-cinema-dpr2). Heroes já eram
+   invariantes (pc). SUSPEITA REMANESCENTE se "vazio" voltar na vista
+   de LONGE: a camada da galáxia profunda (galaxy.ts, 4M pontos,
+   `shrink` 1/px² próprio) não recebeu o tratamento — conferir com o
+   dono na vista galáctica antes de mexer.
 2. **Instrumento (PENDENTE):** perna DPR 2 formal na sonda e na escada
    (Emulation.setDeviceMetricsOverride — receita pronta em
    scratchpad/dois-modos.mjs); nenhuma régua de céu vale só em DPR 1.
-3. **Bloom seletivo (PENDENTE — ordem do dono: *"vai no bloom seletivo
-   então, cada camada com seu cobertor"*):** o desenho técnico: passe de
+3. **Bloom seletivo (PRÓXIMA LARGADA — ordem do dono dada DUAS vezes:
+   *"vai no bloom seletivo então, cada camada com seu cobertor"* e, ao
+   encerrar a sessão de 16→17/08, *"segue no bloom seletivo"*. A
+   próxima janela COMEÇA aqui):** o desenho técnico: passe de
    render do CAMPO (stars + wrappedStars + heroes, via camada/layer
    dedicada — 3 draws baratos) num alvo próprio com o kernel do FILME
    ([1;0,8;0,6;0,4;0,2] pleno) em modo SÓ-BRILHO (o vendorizado ganha a
