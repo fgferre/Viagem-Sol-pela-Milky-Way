@@ -19,7 +19,7 @@ import { projectCorpos, projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor.
-import { ClaraoDeAsas } from './world/clarao';
+import { ClaraoDeAsas, OCUPACAO_MAXIMA_DA_TELA, OCUPACAO_NA_OBSERVACAO } from './world/clarao';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
@@ -3456,6 +3456,12 @@ export class Director {
         dtS: dt,
         solVisivel: !this.hide.has('noplan') && (this.planetas?.points.visible ?? false),
         solturaDoSol: leiDoSol.solturaDoClarao,
+        // a DOSE pela fase (pergunta do dono, 17/08): o filme e o voo
+        // livre ficam com o drama; o Atlas é o modo de OBSERVAÇÃO — o
+        // selo já declara BRILHO ASSISTIDO, e o clarão compacto (família
+        // NASA Eyes) faz parte da mesma assistência declarada
+        tetoDeOcupacao:
+          this.phase === 'atlas' ? OCUPACAO_NA_OBSERVACAO : OCUPACAO_MAXIMA_DA_TELA,
         expoM0: this.stars?.expoM0 ?? EXPO_M0,
         sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
         pr: prAtual,

@@ -306,6 +306,26 @@ Escada oficial re-rodada com o desenho da R1: 9/11, com os 2 vermelhos
 declarados (o teto do lavado orçava só "céu + Sol" e o piso da R1 dava
 flare grande às nomeadas).
 
+**A PERGUNTA DO DONO SOBRE A SOLTURA (17/08, ao ver as fotos):** *"nas
+fotos parece inteeressante, mas minha pergunta é, quando estiver
+observando os obejtos em movimento do nosso sistemqa solar ele nao vai
+dominar toda a cena? como os apps como o solar system scope ou nasa
+eyes on the solar system, space engine, fazem isso? acho que vc está
+errando nessa dinamica ainda..."* — **RESPONDIDA NO ATO com a DOSE DE
+OBSERVAÇÃO.** Fotografado o crime primeiro: na moldura de Vênus do
+Atlas o clarão comia o centro do quadro e o corpo enquadrado era um
+pontinho dentro do brilho. Os apps de referência de-dramatizam o Sol
+quando o assunto é o sistema (NASA Eyes o mantém em ~10–15% do
+quadro). O conserto seguiu a doutrina da casa (assistência declarada é
+boa UX; o selo do Atlas JÁ diz BRILHO ASSISTIDO): o teto de ocupação
+do clarão ganhou dose POR FASE — `OCUPACAO_NA_OBSERVACAO` = 0,07 no
+Atlas (cartaz de ~14% do quadro), o drama do filme/voo livre intocado
+(0,55). Medido depois: Vênus/Mercúrio/Marte/Terra legíveis com o Sol
+compacto e elegante ao lado; fotos na conversa. Segue sendo limitador
+POR ESTRELA, nunca exposição de cena (a pupila continua morta). A DOSE
+é gosto: se 0,07 parecer pouco ou muito aos olhos dele, é um número
+declarado a calibrar.
+
 **R2 FEITA em 17/08 — A SOLTURA DO CLARÃO:** as 2 violações de
 crescimento morreram na raiz. O clarão era gateado por DUAS travas
 exponenciais na mesma janela (o peso do ponto × a divisão pelo filtro,
