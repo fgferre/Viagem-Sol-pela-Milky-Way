@@ -11,12 +11,6 @@
     // sem checagem profunda; o contrato tipado vive no wrapper stellarBody.ts
     "allowJs": true,
 
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
     /* Bundler mode */
     "moduleResolution": "bundler",
     "resolveJsonModule": true,

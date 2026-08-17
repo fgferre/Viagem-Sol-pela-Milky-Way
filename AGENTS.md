@@ -10,6 +10,7 @@
 8. Registre apenas o resultado, os testes e os limites reais. Não deixe diários, prompts ou relatórios já consumidos no projeto. **Com o dono, fale simples** — ele é leigo em programação; densidade técnica vai para commits e documentos, nunca para o chat. Em documento, cite a **peça** (`aproximarDoSol`, `RAIO_SOL_PC`), nunca o número de linha — a linha anda, o nome não.
 9. **Melhoria visível é a direção do trabalho.** Palavras do dono em 2026-08-11: "Nunca foi criada essa regra que nada muda na tela. Estamos sempre caminhando no sentido das melhorias, se nada muda na tela isso fica impossível". E em 2026-08-13: "nada é fixo, tudo sempre pode ser questionado se melhora UX" — decisão herdada, número ou formato não estão protegidos quando atrapalham a experiência.
 10. **Você é o juiz da mecânica interna.** Técnica de render, arquitetura, número, formato: decida, faça, e volte com IMAGEM. Pergunte ao dono só o que é gosto, prioridade ou escopo.
+11. **Um arquivo, um assunto.** Arquivo que acumulou assuntos divide-se na primeira mudança que o tocar — mover e agrupar, nunca reescrever — e quem só precisa do referencial não importa o mundo inteiro junto.
 
 Crie um commit local a cada checkpoint coerente de implementação validada — sem esperar pedido. Não faça push sem pedido explícito.
 
