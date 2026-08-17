@@ -21,7 +21,7 @@ import type { StarLabel } from './world/labels';
 // por orçamento de fluxo — no lugar das 16 heroes de autor.
 import { ClaraoDeAsas, OCUPACAO_MAXIMA_DA_TELA, OCUPACAO_NA_OBSERVACAO } from './world/clarao';
 import { HeroStars } from './world/heroStars';
-import { Galaxy, buildGalaxy, GAL, EX, EY, EZ, galactocentricToScene } from './world/galaxy';
+import { Galaxy, buildGalaxy, GAL, EX, EY, EZ } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
@@ -96,6 +96,7 @@ import {
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { ArrastoDePonteiro } from './arrastoDePonteiro';
+import { NuvensSemente } from './director/nuvensSemente';
 import { RodaDaEscada } from './rodaDaEscada';
 import {
   AtlasRig,
@@ -394,9 +395,8 @@ export class Director {
   private dustMapTexture: THREE.Texture | null = null;
   private structureMapTexture: THREE.Texture | null = null;
   /** nuvens do catálogo em coords de cena: x,y,z,raio,amp por registro */
-  private seedCloudPool: Float32Array | null = null;
-  private seedCloudScratch = new Float32Array(32 * 5);
-  private seedCloudTimer = 0;
+  /** as nuvens-semente do raymarch — corte 1 da Parte 1 da onda */
+  private readonly nuvensSemente = new NuvensSemente();
   private sun: StellarBody;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
@@ -882,7 +882,7 @@ export class Director {
       }
       this.engine.scene.add(this.observedClouds.mesh);
       this.engine.scene.add(this.starForges.points);
-      this.buildSeedCloudPool(galactic);
+      this.nuvensSemente.construir(galactic);
       if (dustBake) {
         console.info(
           `[cartografia] APOGEE ${(dustBake.coverageFraction * 100).toFixed(1)}% ` +
@@ -1217,77 +1217,6 @@ export class Director {
     };
   }
 
-  /** nuvens CO/complexos em coords de cena para semear o raymarch */
-  private buildSeedCloudPool(galactic: {
-    molecularClouds: { data: Float32Array; count: number; stride: number };
-    largeMolecularClouds: { data: Float32Array; count: number; stride: number };
-  }) {
-    const out: number[] = [];
-    const scratch = new THREE.Vector3();
-    {
-      const { data, count, stride } = galactic.molecularClouds;
-      for (let i = 0; i < count; i++) {
-        const o = i * stride;
-        if (data[o + 10] < 0.5) continue;
-        const surface = data[o + 5];
-        const amp = (surface / (surface + 130)) * 2.0;
-        if (amp < 0.08) continue;
-        galactocentricToScene(data[o], data[o + 1], data[o + 2], scratch);
-        out.push(scratch.x, scratch.y, scratch.z, Math.max(data[o + 3] * 1.6, 14), amp);
-      }
-    }
-    {
-      const { data, count, stride } = galactic.largeMolecularClouds;
-      for (let i = 0; i < count; i++) {
-        const o = i * stride;
-        const density = data[o + 4];
-        galactocentricToScene(data[o], data[o + 1], data[o + 2], scratch);
-        out.push(
-          scratch.x, scratch.y, scratch.z,
-          Math.max(data[o + 3] * 1.2, 60),
-          (density / (density + 116)) * 1.6
-        );
-      }
-    }
-    this.seedCloudPool = new Float32Array(out);
-  }
-
-  /** seleciona as ≤32 nuvens do catálogo mais próximas da câmera */
-  private updateSeedClouds(camPos: THREE.Vector3) {
-    const pool = this.seedCloudPool;
-    if (!pool) return;
-    const reach = 900; // pc — alcance do raymarch + margem
-    // rank pela distância à SUPERFÍCIE: um complexo que envolve a
-    // câmera nunca é expulso por nuvens pequenas próximas
-    const nearest: Array<{ sd: number; o: number }> = [];
-    for (let o = 0; o < pool.length; o += 5) {
-      const dx = pool[o] - camPos.x;
-      const dy = pool[o + 1] - camPos.y;
-      const dz = pool[o + 2] - camPos.z;
-      const sd = Math.max(
-        0,
-        Math.sqrt(dx * dx + dy * dy + dz * dz) - pool[o + 3]
-      );
-      if (sd > reach) continue;
-      nearest.push({ sd, o });
-    }
-    nearest.sort((a, b) => a.sd - b.sd);
-    const n = Math.min(nearest.length, 32);
-    // amplitude → 0 na fronteira de seleção: nuvens entram e saem do
-    // conjunto invisíveis — sem popping a cada refresh de 0,25 s
-    const cut = Math.max(nearest.length > 32 ? nearest[32].sd : reach, 1);
-    for (let i = 0; i < n; i++) {
-      const o = nearest[i].o;
-      const t = i * 5;
-      const edge = 1 - THREE.MathUtils.smoothstep(nearest[i].sd, cut * 0.8, cut);
-      this.seedCloudScratch[t] = pool[o];
-      this.seedCloudScratch[t + 1] = pool[o + 1];
-      this.seedCloudScratch[t + 2] = pool[o + 2];
-      this.seedCloudScratch[t + 3] = pool[o + 3];
-      this.seedCloudScratch[t + 4] = pool[o + 4] * edge;
-    }
-    this.nebula.setSeedClouds(this.seedCloudScratch, n);
-  }
 
   /** posiciona a câmera em modo livre (deep-links/screenshots ?pos=) */
   placeCamera(pos: [number, number, number], look?: [number, number, number]) {
@@ -1299,10 +1228,7 @@ export class Director {
     this.roam.syncFromCamera();
     // captura/deep-link: sem slerp de entrada — orientação exata no frame 1
     this.roam.snapCanonical();
-    // o primeiro frame já renderiza com as nuvens-semente do lugar —
-    // capturas ?pos= são determinísticas desde o frame 1
-    this.updateSeedClouds(cam.position);
-    this.seedCloudTimer = 0;
+    this.nuvensSemente.zerar(cam.position, this.nebula);
     this.setPhase('free'); // e o setPhase zera a contagem de estabilidade
     this.events.onCaption(-1, '', '');
     this.events.onWarp(0);
@@ -3330,14 +3256,7 @@ export class Director {
     this.destTimer += dt;
     this.solTimer += dt;
     // nuvens-semente do raymarch + cavidade do observador itinerante
-    this.seedCloudTimer += dt;
-    if (this.seedCloudTimer > 0.25) {
-      this.seedCloudTimer = 0;
-      // o MESMO 0,02 do gate do raymarch lá embaixo: abaixo dele o
-      // `nebula.render` não roda, e varrer o pool de nuvens-semente
-      // alimentava um shader que ninguém ia executar
-      if (nebulaFade > 0.02) this.updateSeedClouds(cam.position);
-    }
+    this.nuvensSemente.tique(dt, nebulaFade, cam.position, this.nebula);
     // a MESMA cavidade em todos os consumidores da densidade: raymarch,
     // extinção das estrelas e brilho da poeira próxima
     const cavityGate = THREE.MathUtils.smoothstep(dHome, 600, 1300);
