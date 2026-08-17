@@ -352,17 +352,27 @@ BIT-IDÊNTICO (51 vistas no 4 e no 5; atlas-smoke verde no 3). **A PARTE
 três hooks (useDirector 226, useEspelhoDaUrl 308, useAtalhos 64; os
 dois primeiros GOVERNADOS pelo selo; semântica da URL intocada; provas:
 busca-smoke + voo-smoke + ab SMOKE bit-idêntico + a11y sem falha nova).
-**A PARTE 1 ESTÁ 3/9 (17/08, noite):** corte 1 nuvensSemente (classe
-com pool/scratch/timer; ab COMPLETO 52 vistas bit-idênticas), corte 2
-veu (VeuDoAtlas com os fios no construtor; atlas-smoke verde + ab
-SMOKE), corte 3 prontidao (julgamento puro + janelas de quadros; o
-próprio harness usa o sinal — ab COMPLETO 52 bit-idênticas). O director
-está em **3.615** (era 3.797). **FALTA: 4 maquinaDoTempo — O MAIS
-ENTRELAÇADO, 110 referências aos 9 campos espalhadas pelo arquivo;
-começar por ele com leitura fresca (o get jdVivo do plano mata as 13
-repetições de grampearJd) —, 5 carregamento, 6 gestos, 7 rotulos,
-8 solNoQuadro (+ voo-ida-e-volta), 9 escada.** Não tocar no que a Lei
-ainda demole (`lodStellar.ts`).
+**A PARTE 1 ESTÁ 6/9 (17/08, noite) e o director em 3.257** (era
+3.797): 1 nuvensSemente, 2 veu, 3 prontidao, 4 maquinaDoTempo (as 110
+costuras religadas de uma vez — o typecheck com campos mortos varre as
+órfãs; atlas-smoke provou o relógio em cada gesto), 5 carregamento
+(montarGalaxia/montarCorposDoPalco/montarCenaDeAquecimento; os
+literais expoM0/sigmaPx FICARAM no shell do init), 6 gestos
+(ligarGestos com as duas máquinas dentro; arrasto provado com mouse
+CDP real: órbita nos dois eixos, move órfão inerte). Provas por corte:
+1.622 testes + ab (completos: 52 vistas bit-idênticas; a acusação
+falsa da `terranb` virou o item 49). **FALTA: 7 rotulos, 8 solNoQuadro
+(+ voo-ida-e-volta), 9 escada. O MAPA DO CORTE 7, já investigado
+(interrompido pelo fim do contexto — o módulo esboçado foi DESCARTADO,
+refazer do desenho): campos lastLabels/prevLabelKeys/lastDest/
+destTimer/lastSol/solTimer (~353-358) + luaPosParaRotulo (~305);
+métodos resolveForcedLabel/emitDest/emitSol/escreverPosicaoDeLua; o
+bloco de projeção do tick (~3100-3173, com a regra editorial do beat)
+e os timers no tick (~2803); tryVisit lê lastLabels (vira `alvos`);
+fios onLabels/onDest/onSol; CUIDADO com pinos de texto nos testes de
+labels (o padrão dos cortes 4 e 6: os pinos seguem o código e vigiam o
+fio dos dois lados).** Não tocar no que a Lei ainda demole
+(`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
