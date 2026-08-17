@@ -11,6 +11,7 @@
 // - Wegg et al. 2015 (barra): https://arxiv.org/abs/1504.01401
 // ============================================================
 import spiralModel from './spiralModel.json';
+import { MEDIDAS_DA_GALAXIA } from './medidasDaGalaxia';
 
 // ?warpamp= — multiplicador de varredura da amplitude do warp.
 // Base 820 pc na borda = PISO da literatura (Chen/Skowron 2019 vão de
@@ -150,9 +151,10 @@ export const LUT_DISK = {
 } as const;
 
 export const GALACTIC_MODEL = {
-  sunRadiusPc: 8_150,
-  sunHeightPc: 5.5,
-  diskRadiusPc: 16_800,
+  // as três medidas de ancoragem moram em medidasDaGalaxia.ts (folha
+  // sem dependências — a baseGalactica da cena lê de lá, corte 10 da
+  // onda); o modelo segue sendo o endereço do contrato completo
+  ...MEDIDAS_DA_GALAXIA,
   stellarScaleLengthPc: 2_600,
   barHalfLengthPc: 5_000,
   barAngleRad: (-29 * Math.PI) / 180,

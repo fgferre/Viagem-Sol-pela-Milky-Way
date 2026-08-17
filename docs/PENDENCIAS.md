@@ -391,15 +391,15 @@ primeira). ⚠ Lição de instrumento do corte 9: o ab-identidade RETOMA
 capturas por vista do estado em disco — um `depois` rodado depois de
 outra sessão pode reaproveitar capturas VELHAS e o veredito sai vazio;
 o `depois` de um corte novo roda com `DOZERO=1`.
-**Da fila aprovada em 17/08 fica: corte 10 — a `baseGalactica` (49
-linhas) importa o modelo galáctico de 932 linhas para usar TRÊS
-números** (`sunRadiusPc`, `diskRadiusPc`, `sunHeightPc`) — o
-desperdício que o corte 5 matou voltou pela porta dos fundos;
-consertar mantendo UMA fonte para os números (nada de literal
-duplicado — o modelo continua o dono deles), prova ab de sempre. Em
-seguida os consertos de papel (itens 50 e 51) e só então a poeira
-(item 36), medida e com foto. Não tocar no que a Lei ainda demole
-(`lodStellar.ts`).
+**O corte 10 FECHOU no mesmo dia**: as três medidas de ancoragem
+(`sunRadiusPc`, `sunHeightPc`, `diskRadiusPc`) viraram a folha
+`cartography/medidasDaGalaxia.ts` — a `baseGalactica` lê de lá e o
+`GALACTIC_MODEL` as incorpora por spread (o modelo segue sendo o
+endereço do contrato completo; zero literal duplicado). Prova: 1.622
+testes + lint + typecheck + ab completo BIT-IDÊNTICO (52 vistas,
+`depois` do zero). Da fila aprovada em 17/08 ficam os consertos de
+papel (itens 50 e 51) e só então a poeira (item 36), medida e com
+foto. Não tocar no que a Lei ainda demole (`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
