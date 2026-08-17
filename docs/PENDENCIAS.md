@@ -424,13 +424,6 @@ o corte do hud.css). O conserto é atualizar o JUIZ ao mundo pós-M1 — e
 decidir o que ele passa a cobrar da assistência nova do Atlas
 (`OCUPACAO_NA_OBSERVACAO`, a dose 0,07), que hoje ninguém vigia.
 
-**50. O mapa do README desenha mortos.** A seção do mapa ainda lista
-`hud.css` na raiz (virou 8 fatias em `src/hud/` no corte 2 da Parte 2)
-e a pupila em `core/` (enterrada no M2), e não mostra as pastas que a
-onda criou (`director/` com os módulos novos, `hud/`). Mapa mentiroso
-manda a próxima IA ler arquivo morto — é o conserto mais barato da
-fila. Aprovado pelo dono em 17/08; mentira antes de estrutura.
-
 **51. O topo DESTA lista pesa ~90 linhas de história fechada.** O bloco
 da ONDA DA LUZ (M1/M2 e as correções) já mora nos commits e só tem
 DOIS itens vivos dentro: a conferência do dono no app com o padrão

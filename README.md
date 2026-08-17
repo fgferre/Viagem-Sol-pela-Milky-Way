@@ -73,30 +73,41 @@ npm run data:all
 ```
 src/
 ├─ App.tsx                  fases (loading → intro → journey / atlas / free)
+├─ hooks/                   useDirector + useEspelhoDaUrl (governados pelo
+│                           selo) + useAtalhos
 ├─ components/
 │  ├─ Hud.tsx               HUD do filme
 │  ├─ HudDoAtlas.tsx        HUD do Atlas
 │  ├─ PaletaDeBusca.tsx     busca unificada (corpos + estrelas)
 │  └─ LabelCanvas.ts        rótulos, colisão, clique
+├─ hud/                     o CSS do HUD em 8 fatias contíguas
+│                           (01-base … 08-ajustes; a ordem É a cascata)
 ├─ lib/atlas/               física pura: efemérides, IAU, tempo, luz
 ├─ three/
-│  ├─ director.ts           orquestrador
-│  ├─ atlasConfig.ts        camadas, clarão do Atlas, knobs
+│  ├─ director.ts           orquestrador (fachadas + tick)
+│  ├─ director/             os módulos do director: escada (a navegação
+│  │                        por degraus), solNoQuadro, maquinaDoTempo,
+│  │                        rotulos, gestos, carregamento, prontidao,
+│  │                        veu, nuvensSemente
+│  ├─ estrela.ts            a repartição da lei (LEI-DA-ESTRELA)
+│  ├─ luzDaCasa.ts          as constantes da luz (expoM0, sigmaPx)
+│  ├─ atlasConfig.ts        camadas e os corpos/luas buscáveis
 │  ├─ escala.ts             cadastro de mentiras de escala
 │  ├─ selo.ts               selo de honestidade
 │  ├─ fases.ts              o que cada fase escreve
-│  ├─ cartography/          modelo galáctico + bakes
+│  ├─ cartography/          modelo galáctico + bakes + medidas
 │  ├─ cinematic/            journey.ts (filme) + atlasRig.ts + cameraRig.ts
-│  ├─ core/                 engine, post, pupila (lápide)
+│  ├─ core/                 engine, post
 │  └─ world/
 │     ├─ stellarBody.ts     Sol = instância nº 1 (núcleo em sol/)
 │     ├─ stars.ts           catálogo
-│     ├─ heroStars.ts       clarões nomeados
+│     ├─ clarao.ts          clarão de asas por orçamento de fluxo
+│     ├─ heroStars.ts       as 16 heroes do filme (arte de 30/07)
 │     ├─ galaxy.ts          Via Láctea (partículas + lâminas)
+│     ├─ baseGalactica.ts   o frame galáctico da cena (GAL, EX/EY/EZ)
 │     ├─ wrappedStars.ts    cascas procedurais
 │     ├─ nebula.ts          faixa volumétrica
 │     └─ corpos/            Terra, Lua, rochosos, gigantes
-└─ hud.css
 ```
 
 Geometria: Sol a 8.150 pc do centro, 5,5 pc acima do plano. Quatro braços
@@ -118,9 +129,7 @@ segmento próprio.
 | `&play=1` | começa o filme |
 | `&q=cinema` | qualidade (`alta`, `performance`, `cinema`) |
 | `&nobloom=1` | desliga o bloom (primeiro teste se a tela lava) |
-| `&nosun=1` `&nocat=1` `&nogal=1` `&nonebula=1` `&noplan=1` | isola camadas |
-| `&nodom=1` | desliga a cessão hero↔catálogo |
-| `?pupila=1` | **lápide** — não usar; o dono reprovou |
+| `&nosun=1` `&nocat=1` `&nogal=1` `&nonebula=1` `&noplan=1` `&noclarao=1` | isola camadas |
 
 ## 7. Regras de GLSL — leia antes de tocar em shader
 
