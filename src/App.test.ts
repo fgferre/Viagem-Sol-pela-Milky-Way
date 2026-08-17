@@ -14,6 +14,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const FONTE = readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
+// o urlComMomento mudou de casa no corte 6 da onda da arquitetura — o
+// pino do "copiar link" segue a função para o hook do espelho da URL
+const ESPELHO = readFileSync(
+  new URL('./hooks/useEspelhoDaUrl.ts', import.meta.url),
+  'utf8'
+);
 
 describe('?loader= é ferramenta de captura (auditoria item 4)', () => {
   it('só é honrado com ?shot= presente — sem ele, nem se lê o valor', () => {
@@ -27,9 +33,9 @@ describe('?loader= é ferramenta de captura (auditoria item 4)', () => {
   it('o link copiado NUNCA propaga loader — urlComMomento o apaga na entrada', () => {
     // o delete mora no próprio urlComMomento, antes de qualquer retorno
     // (inclusive o `if (!d) return url` do boot sem Director)
-    const funcao = FONTE.indexOf('const urlComMomento = ');
-    const apaga = FONTE.indexOf("url.searchParams.delete('loader')");
-    const semDirector = FONTE.indexOf('if (!d) return url;');
+    const funcao = ESPELHO.indexOf('const urlComMomento = ');
+    const apaga = ESPELHO.indexOf("url.searchParams.delete('loader')");
+    const semDirector = ESPELHO.indexOf('if (!d) return url;');
     expect(funcao).toBeGreaterThan(0);
     expect(apaga).toBeGreaterThan(funcao);
     expect(apaga).toBeLessThan(semDirector);

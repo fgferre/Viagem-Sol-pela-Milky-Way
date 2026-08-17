@@ -210,6 +210,10 @@ export interface CaminhoDoSelo {
  */
 export const ARQUIVOS_GOVERNADOS = [
   'App.tsx',
+  // corte 6 da onda da arquitetura: o boot e o espelho da URL saíram do
+  // App para hooks próprios — as portas foram JUNTO, e a varredura segue
+  'hooks/useDirector.ts',
+  'hooks/useEspelhoDaUrl.ts',
   'three/director.ts',
   'three/core/engine.ts',
   'three/core/post.ts',

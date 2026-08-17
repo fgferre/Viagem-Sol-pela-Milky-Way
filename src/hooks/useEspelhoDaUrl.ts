@@ -1,0 +1,308 @@
+// ============================================================
+// A URL COMO ESPELHO — o estado de gosto que nasce dela e os sete
+// escritores que a mantêm fiel (a decisão do dono: a URL espelha, não
+// é painel). Morava no App.tsx (onda da arquitetura, corte 6); a
+// semântica é a MESMA, linha a linha — só mudou de endereço. Este
+// arquivo é GOVERNADO pelo selo (lê portas de URL).
+// ============================================================
+import { useLayoutEffect, useState } from 'react';
+import type { Director, Phase } from '../three/director';
+import type { QualityLevel, ToneMapMode } from '../three/core/engine';
+import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
+import type { EstadoDoTempo } from '../three/tempoDoAtlas';
+import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
+import { CAMADAS } from '../three/atlasConfig';
+import { estadoDoSelo } from '../three/selo';
+import { ESCALA_PADRAO, aplicarEscalaDaUi, lerEscalaDaUi } from '../lib/uiScale';
+
+/** a exposição de referência da casa — o 1,02 da vista interna */
+export const EXPOSICAO_PADRAO = 1.02;
+
+/**
+ * Reescreve a query preservando tudo que não é o parâmetro tocado.
+ * Estava dentro do painel de Ajustes enquanto ele era o único a escrever
+ * na URL; com a gaveta do Atlas e o selo mexendo nos mesmos parâmetros,
+ * subiu para o dono do estado.
+ */
+function comParam(chave: string, valor: string | null) {
+  const q = new URLSearchParams(window.location.search);
+  if (valor === null) q.delete(chave);
+  else q.set(chave, valor);
+  const s = q.toString();
+  return `${window.location.pathname}${s ? `?${s}` : ''}`;
+}
+
+export function useEspelhoDaUrl(dep: {
+  directorRef: React.MutableRefObject<Director | null>;
+  phase: Phase;
+  foco: string | null;
+  tempo: EstadoDoTempo | null;
+  indice: ReturnType<typeof construirIndice>;
+  quality: QualityLevel;
+}) {
+  const { directorRef, phase, foco, tempo, indice, quality } = dep;
+  // O ESTADO DE GOSTO, com um dono só (F2). Ele nasce da URL — que segue
+  // sendo a fonte de verdade — e é lido por três hospedeiros: o painel de
+  // Ajustes, a gaveta do Atlas e o selo de honestidade. Enquanto morava
+  // dentro do painel, o segundo hospedeiro nascia mentindo.
+  // ...pela MESMA lei que o engine aplica (`lerPortaTom`/`lerPortaExposicao`
+  // em core/engine): antes o inicializador lia cru e só o caminho do
+  // Director validava, então `?tone=foo` deixava os quatro rádios
+  // desmarcados e `?exp=abc` pintava "Exposição · NaN" num slider com
+  // `value={NaN}` — o HUD mentindo sobre o que o instrumento faz.
+  const [tom, setTom] = useState<ToneMapMode>(
+    () => lerPortaTom(new URLSearchParams(window.location.search).get('tone')) ?? 'aces'
+  );
+  const [exposicao, setExposicao] = useState(
+    () =>
+      lerPortaExposicao(new URLSearchParams(window.location.search).get('exp')) ??
+      EXPOSICAO_PADRAO
+  );
+  const [escondidas, setEscondidas] = useState<Set<string>>(() => {
+    const q = new URLSearchParams(window.location.search);
+    return new Set(CAMADAS.filter((c) => q.has(c.flag)).map((c) => c.flag));
+  });
+  /**
+   * O TAMANHO DO TEXTO DO HUD (`?ui=`, F6). Nasce da URL como todo
+   * gosto da casa e NUNCA vai ao storage — quem quiser o texto maior
+   * leva o tamanho no link, junto do instante da viagem.
+   */
+  const [escalaUi, setEscalaUi] = useState(() =>
+    lerEscalaDaUi(new URLSearchParams(window.location.search).get('ui'))
+  );
+
+  // ANTES DE PINTAR, e antes do Director existir: o `--ui` da raiz é o
+  // que move os `rem` do HUD e o termo `vw` dos `clamp`, e o número
+  // vivo é o que o retângulo útil do Atlas lê a cada quadro. Efeito de
+  // layout (não `useEffect`) para não haver um quadro com o tamanho
+  // errado quando o link já chega com `?ui=`.
+  useLayoutEffect(() => {
+    aplicarEscalaDaUi(escalaUi);
+  }, [escalaUi]);
+
+  /**
+   * A URL de agora, com o MOMENTO da viagem dentro. Era o buraco comum de
+   * três incômodos: trocar a qualidade recarregava e devolvia o espectador à
+   * tela de título, "copiar link" copiava a configuração sem o instante, e
+   * quem recarregava perdia onde estava. `play=1` acompanha o `t=` para a
+   * viagem voltar ANDANDO — `?t=` sozinho congela, e assim continua, porque
+   * é o contrato das capturas headless.
+   */
+  const urlComMomento = () => {
+    const url = new URL(window.location.href);
+    // ferramenta de captura NÃO viaja no link copiado (auditoria item
+    // 4): `?loader=` numa URL compartilhada prenderia o véu na tela de
+    // quem a abrisse com ?shot= — e sem ?shot= seria porta morta.
+    url.searchParams.delete('loader');
+    const d = directorRef.current;
+    if (!d) return url;
+    // de dentro do Atlas o link volta PARA o Atlas, com o momento que o
+    // portal guardou pendurado — quem abrir o link e clicar em "Partir"
+    // cai no mesmo instante de quem o copiou
+    const instante =
+      phase === 'atlas'
+        ? d.momentoGuardado
+        : phase === 'journey' || phase === 'end'
+          ? d.currentTime
+          : null;
+    if (phase === 'atlas') url.searchParams.set('atlas', '1');
+    else url.searchParams.delete('atlas');
+    // O ALVO EM QUADRO (F3) viaja junto, e só de dentro do Atlas: é lá
+    // que "foco" quer dizer alguma coisa. A chave é a canônica da lib
+    // (hd/hip quando existem), e ela some da URL quando o que está em
+    // quadro é o sistema — que é o enquadramento de abertura, o padrão.
+    //
+    // O QUE ESTA LINHA NÃO PROMETE, declarado: o foco que NÃO está no
+    // índice (o Sagittarius A✱, alcançável pelo clique no rótulo) não tem
+    // chave — o link volta ao modo sem o alvo em vez de inventar uma
+    // porta que a busca não saberia resolver. É o mesmo alcance da D4,
+    // dos dois lados. Os dez corpos do sistema ENTRAM: a chave deles é o
+    // nome normalizado (`?foco=terra`).
+    const emQuadro = foco === null ? null : chaveDoFoco(foco, indice);
+    if (phase === 'atlas' && emQuadro) url.searchParams.set('foco', emQuadro);
+    else url.searchParams.delete('foco');
+    // O DEGRAU (F2b/D7) viaja com o foco — espelho, precedente `?jd=`:
+    // `?ver=corpo` só entra quando o enquadramento está de fato no
+    // degrau do corpo (a Lua inclusive: `?foco=lua&ver=corpo` reproduz
+    // o degrau dela); na órbita a porta sai, porque órbita é o default.
+    const ver = directorRef.current?.verDaEscada;
+    if (phase === 'atlas' && emQuadro && ver === 'corpo') {
+      url.searchParams.set('ver', 'corpo');
+    } else url.searchParams.delete('ver');
+    // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: a
+    // troca de qualidade e o "voltar ao brilho real" RECARREGAM a página
+    // por esta URL, e sem esta linha o visitante que viajou no tempo
+    // voltaria à época sem ter pedido. Na época a porta sai da URL em
+    // vez de gravar o valor padrão.
+    if (tempo && !tempo.naEpoca) url.searchParams.set('jd', String(tempo.jd));
+    else url.searchParams.delete('jd');
+    if (instante !== null && instante > 0.5) {
+      url.searchParams.set('t', instante.toFixed(1));
+      url.searchParams.set('play', '1');
+    }
+    return url;
+  };
+
+  /**
+   * Metade da qualidade é VIVA (pixelRatio, passos do raymarch) e metade é
+   * ASSADA na construção: o tier do Sol congela no construtor do Director e a
+   * população da galáxia é decidida no init (regerar 2,6 M partículas no meio
+   * da viagem seria pior que a diferença). Trocar só ao vivo entregava um
+   * "performance" pela METADE — engine em performance, Sol ainda em high e
+   * 2,7 M vértices — e ainda deixava o link copiado sem a qualidade.
+   * Grava na URL e recarrega — e serve os dois controles (seletor do HUD e
+   * botões do painel).
+   *
+   * O `?q=` É SEMPRE ESCRITO, cinema inclusive. Tom e exposição podem
+   * omitir o valor padrão porque o padrão deles é CONSTANTE; o de
+   * qualidade não é — sem `?q=` quem decide é o storage (`tierQueRodou`,
+   * alocação medida) ou a detecção, e um `alta` medido na visita passada
+   * sobrepunha o clique em Cinema na recarga seguinte. URL sem `?q=` não
+   * diz o que a tela mostra, e escolha manual tem de sobreviver ao link.
+   */
+  const changeQuality = (q: QualityLevel) => {
+    if (q === quality) return;
+    const url = urlComMomento();
+    url.searchParams.set('q', q);
+    window.location.assign(url.toString());
+  };
+
+  // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
+  const trocarTom = (t: ToneMapMode) => {
+    setTom(t);
+    directorRef.current?.engine.setToneMapping(t);
+    window.history.replaceState(null, '', comParam('tone', t === 'aces' ? null : t));
+  };
+
+  /**
+   * O SLIDER DE VOLTA AO PADRÃO DESARMA O LATCH. `setExposure` LIGA o
+   * `expOverride` do Director (é o que faz o valor escolhido sobreviver
+   * ao quadro seguinte), e o slider o armava até no 1,02 — a tela ficava
+   * em 1,02 fixo enquanto a URL, já sem `?exp=`, recarregava na
+   * auto-exposição 1,02+0,03·galaxyFade (1,05 na vista externa). Duas
+   * telas para a mesma URL. No padrão o caminho é o de volta, o mesmo que
+   * a linha BRILHO do selo usa.
+   */
+  const trocarExposicao = (v: number) => {
+    setExposicao(v);
+    const d = directorRef.current;
+    if (v === EXPOSICAO_PADRAO) d?.limparExposicaoManual();
+    else d?.setExposure(v);
+    window.history.replaceState(
+      null,
+      '',
+      comParam('exp', v === EXPOSICAO_PADRAO ? null : String(v))
+    );
+  };
+
+  /**
+   * VOLTAR AO BRILHO REAL — a ação da linha BRILHO do selo (D1). Ela não
+   * tem lista própria de coisas a desfazer: pergunta ao registro quais
+   * caminhos estão ativos AGORA e desfaz os que têm volta.
+   *
+   * Os de volta 'vivo' são desfeitos no lugar; se houver algum que só o
+   * boot lê (`?nobloom=`, `?knee=`, as camadas do bake), o caminho é o
+   * mesmo que a troca de qualidade já usa: reescrever a URL sem eles e
+   * recarregar — e a URL sai do `urlComMomento`, que carrega o `atlas=1`
+   * e o instante guardado, para o visitante voltar exatamente para onde
+   * estava. O que não tem volta (o tier) fica, e o selo segue dizendo.
+   */
+  const voltarAoBrilhoReal = () => {
+    const d = directorRef.current;
+    if (!d) return;
+    const desvios = estadoDoSelo(d.selo).desvios.filter((c) => c.volta !== 'nenhuma');
+    if (desvios.length === 0) return;
+    const url = urlComMomento();
+    for (const c of desvios) url.searchParams.delete(c.chave);
+    // A LUZ (Onda 6, D2): o padrão é `assistida`,
+    // então apagar a chave da URL a ressuscitaria na recarga. A volta
+    // escreve `?luz=real` — a URL vira espelho do estado escolhido.
+    if (desvios.some((c) => c.chave === 'luz')) url.searchParams.set('luz', 'real');
+    if (desvios.some((c) => c.volta === 'recarregar')) {
+      window.location.assign(url.toString());
+      return;
+    }
+    for (const c of desvios) {
+      if (c.chave === 'exp') {
+        d.limparExposicaoManual();
+        setExposicao(EXPOSICAO_PADRAO);
+      } else if (c.chave === 'tone') {
+        d.engine.setToneMapping('aces');
+        setTom('aces');
+      } else if (c.chave === 'luz') {
+        // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo')
+        d.definirLuz('real');
+      } else {
+        d.setLayerHidden(c.chave, false);
+        setEscondidas((prev) => {
+          const s = new Set(prev);
+          s.delete(c.chave);
+          return s;
+        });
+      }
+    }
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+  };
+
+  /**
+   * O tamanho do texto do HUD. Muda ao vivo (o `--ui` é lido pelo CSS a
+   * cada pintura) e conta como troca de ENQUADRAMENTO para o Atlas: o
+   * HUD cresceu, o retângulo útil encolheu, a câmera recua.
+   */
+  const trocarEscalaUi = (v: number) => {
+    setEscalaUi(v);
+    directorRef.current?.escalaDaUiMudou();
+    window.history.replaceState(
+      null,
+      '',
+      comParam('ui', v === ESCALA_PADRAO ? null : String(v))
+    );
+  };
+
+  const alternarCamada = (flag: string, ligar: boolean) => {
+    const camada = CAMADAS.find((c) => c.flag === flag);
+    if (!camada) return;
+    if (!camada.viva) {
+      // O RAMO DE RECARGA, hoje sem nenhuma camada: as três que passavam
+      // por aqui (nodisc/nogdust/noglow) viraram vivas em 2026-08-12. Ele
+      // fica como o outro lado do contrato `viva` — uma camada nova que
+      // realmente precise reconstruir o mundo cai aqui, com o ↻ do painel
+      // junto —, e é a mesma rota que a troca de qualidade usa.
+      //
+      // Reconstruir o mundo — reload de verdade. E pelo `urlComMomento`,
+      // que é o que a troca de qualidade e o "voltar ao brilho real" já
+      // fazem: sem ele, desmarcar uma camada ↻ de DENTRO do Atlas (onde a
+      // URL costuma estar limpa) recarregava em `/?nodisc=1` e devolvia o
+      // visitante à tela de título — modo, foco, instante do céu e alvo em
+      // quadro, todos perdidos.
+      const url = urlComMomento();
+      if (ligar) url.searchParams.delete(flag);
+      else url.searchParams.set(flag, '1');
+      window.location.assign(url.toString());
+      return;
+    }
+    directorRef.current?.setLayerHidden(flag, !ligar);
+    setEscondidas((prev) => {
+      const s = new Set(prev);
+      if (ligar) s.delete(flag);
+      else s.add(flag);
+      return s;
+    });
+    window.history.replaceState(null, '', comParam(flag, ligar ? null : '1'));
+  };
+
+  return {
+    tom,
+    exposicao,
+    escondidas,
+    escalaUi,
+    setEscondidas,
+    urlComMomento,
+    changeQuality,
+    trocarTom,
+    trocarExposicao,
+    voltarAoBrilhoReal,
+    trocarEscalaUi,
+    alternarCamada,
+  };
+}
