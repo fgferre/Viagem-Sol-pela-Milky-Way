@@ -289,7 +289,15 @@ describe('a lei do palco julgando o Sol (F2)', () => {
 });
 
 describe('a fiação do Sol no Director (F2 → M1)', () => {
+  // o assunto migrou INTEIRO para director/solNoQuadro.ts (corte 8 da
+  // onda da arquitetura) — os pinos internos seguem o código e leem o
+  // módulo; o DIRECTOR fica para os pinos de COSTURA (as chamadas nos
+  // três pontos do tick), vigiando o fio dos dois lados.
   const DIRECTOR = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
+  const SOL_NO_QUADRO = readFileSync(
+    new URL('../../director/solNoQuadro.ts', import.meta.url),
+    'utf8'
+  );
   const RAIO_SOL_FISICO_PC = (696_340 / AU_KM) * AU_PARA_PC;
   const H_HARNESS = 1713;
   const TAN_HALF = Math.tan((FOV_DEG * Math.PI) / 360);
@@ -328,16 +336,22 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
   };
 
   it('o gate do Sol usa a régua do palco, com o raio da instância', () => {
-    expect(DIRECTOR).toContain('this.solArmado = gateBinario(');
-    expect(DIRECTOR).toContain('diametroAparentePx(this.solRaioPc, dHome, hPx, cam.fov)');
-    expect(DIRECTOR).toMatch(
-      /import \{[\s\S]*?\bgateBinario\b[\s\S]*?\} from '\.\/world\/corpos\/corpos'/
+    expect(SOL_NO_QUADRO).toContain('this.solArmado = gateBinario(');
+    expect(SOL_NO_QUADRO).toContain(
+      'diametroAparentePx(this.fios.solRaioPc, q.dHome, q.hPx, q.fovDeg)'
+    );
+    expect(SOL_NO_QUADRO).toMatch(
+      /import \{[\s\S]*?\bgateBinario\b[\s\S]*?\} from '\.\.\/world\/corpos\/corpos'/
+    );
+    // a COSTURA: o director entrega a geometria do quadro no mesmo ponto
+    expect(DIRECTOR).toContain(
+      'this.solNoQuadro.armarGate({ dHome, hPx, fovDeg: cam.fov });'
     );
   });
 
   it('o grupo do Sol depende do gate, e o `?nosun` continua mandando', () => {
-    expect(DIRECTOR).toContain(
-      "this.sun.group.visible = !this.hide.has('nosun') && this.solArmado;"
+    expect(SOL_NO_QUADRO).toContain(
+      "sun.group.visible = !this.fios.escondido('nosun') && this.solArmado;"
     );
   });
 
@@ -345,19 +359,26 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
     // a guarda `solRaioPc !== WORLD.sunRadius` da F2 saiu na F3 porque
     // saiu o caso que ela recusava (o corpo inflado). A doutrina do
     // palco — ali só entra superfície real — passou a valer por
-    // construção: só existe um raio, e ele é o de verdade.
+    // construção: só existe um raio, e ele é o de verdade — e o módulo
+    // o recebe UMA vez, do campo único do director.
     expect(DIRECTOR).toContain('private readonly solRaioPc = RAIO_DO_SOL_NA_CENA;');
-    expect(DIRECTOR).toContain("if (this.solArmado && !this.hide.has('nosun')) {");
-    expect(DIRECTOR).toContain("this.palco.registrar('sun', this.solRaioPc, ORIGEM)");
-    expect(DIRECTOR).toContain("this.palco.remover('sun')");
+    expect(DIRECTOR).toContain('solRaioPc: this.solRaioPc,');
+    expect(SOL_NO_QUADRO).toContain("if (this.solArmado && !this.fios.escondido('nosun')) {");
+    expect(SOL_NO_QUADRO).toContain(
+      "this.fios.palco().registrar('sun', this.fios.solRaioPc, ORIGEM)"
+    );
+    expect(SOL_NO_QUADRO).toContain("this.fios.palco().remover('sun')");
     // e a porta que escolhia o raio morreu junto
     expect(DIRECTOR).not.toContain("this.debug.has('solreal')");
+    expect(SOL_NO_QUADRO).not.toContain("escondido('solreal')");
   });
 
   it('o registro do Sol acontece ANTES de o near ler o palco', () => {
     // era o defeito herdado da F1: registrado depois do `sun.update`, o
-    // clip recebia a superfície do quadro ANTERIOR
-    const registro = DIRECTOR.indexOf("this.palco.registrar('sun'");
+    // clip recebia a superfície do quadro ANTERIOR. O registro mora no
+    // módulo; a ORDEM é do director — a costura `armarGate` tem de vir
+    // antes da leitura do near, no mesmo tick.
+    const registro = DIRECTOR.indexOf('this.solNoQuadro.armarGate(');
     const leitura = DIRECTOR.indexOf('this.palco.superficieMaisProxima(');
     expect(registro).toBeGreaterThan(0);
     expect(leitura).toBeGreaterThan(0);
@@ -366,21 +387,26 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
 
   it('o Sol é UMA repartição (M1): a lei decide cessão, filtro e peso da malha', () => {
     // as quatro rampas viraram uma função pura: `repartir` (estrela.ts).
-    // O director escreve as três saídas nos três sítios — e o teste de
+    // O módulo escreve as três saídas nos três sítios — e o teste de
     // texto cobra a fiação, enquanto a conta é cobrada em números logo
     // abaixo, direto na lei.
-    expect(DIRECTOR).toContain('const leiDoSol = repartir(');
-    expect(DIRECTOR).toContain('this.sun.escreverFiltroSolar(leiDoSol.overrideExpoente);');
-    expect(DIRECTOR).toContain(
-      'this.sun.escreverPesoDaLei(leiDoSol.wResolvido * leiDoSol.wMalha);'
+    expect(SOL_NO_QUADRO).toContain('const leiDoSol = repartir(');
+    expect(SOL_NO_QUADRO).toContain('sun.escreverFiltroSolar(leiDoSol.overrideExpoente);');
+    expect(SOL_NO_QUADRO).toContain(
+      'sun.escreverPesoDaLei(leiDoSol.wResolvido * leiDoSol.wMalha);'
     );
-    expect(DIRECTOR).toContain("this.planetas.escreverCessao(");
-    expect(DIRECTOR).toContain('this.sun.group.visible ? leiDoSol.wResolvido : 0');
+    expect(SOL_NO_QUADRO).toContain('planetas.escreverCessao(');
+    expect(SOL_NO_QUADRO).toContain(
+      "this.fios.sun().group.visible ? this.leiDoSol.wResolvido : 0"
+    );
     // o trocaPx do Sol é o gate de corpo texturizado do palco — o 4 px
     // deixou de ser uma segunda lei e virou PARÂMETRO da repartição (§3)
-    expect(DIRECTOR).toContain('trocaPx: LIMIAR_DO_GATE_PX');
-    // e a lei é IMPORTADA de onde mora, não recopiada no Director
-    expect(DIRECTOR).toMatch(/import \{ repartir \} from '\.\/estrela'/);
+    expect(SOL_NO_QUADRO).toContain('trocaPx: LIMIAR_DO_GATE_PX');
+    // e a lei é IMPORTADA de onde mora, não recopiada
+    expect(SOL_NO_QUADRO).toMatch(/import \{ repartir \} from '\.\.\/estrela'/);
+    // as COSTURAS dos dois sítios do tick: corpo+clarão e cessão
+    expect(DIRECTOR).toContain('this.solNoQuadro.atualizarCorpoEClarao({');
+    expect(DIRECTOR).toContain('this.solNoQuadro.cederPonto(this.planetas);');
   });
 
   it('no armar do gate (4 px) o peso da malha é 0 — o liga/desliga fica invisível', () => {

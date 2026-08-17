@@ -84,7 +84,10 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   {
     id: 'sol-ponto',
     nome: 'Sol-ponto (vértice 0 da camada dos dez)',
-    arquivos: ['src/three/world/planetas/planetas.ts', 'src/three/director.ts'],
+    arquivos: [
+      'src/three/world/planetas/planetas.ts',
+      'src/three/director/solNoQuadro.ts',
+    ],
     consomeL1: true,
     leiVelhaApagada: true,
     fatorDeBrilho: 1,
@@ -92,8 +95,9 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     migracao: 'M1',
     emiteGlPointSize: true,
     razao:
-      'FECHADO no M1: aCede = wResolvido da repartição (o director fia; a camada ' +
-      'desenha), a entrega ao SunStar e o corte de 0,05 pc morreram, ?bcede morreu',
+      'FECHADO no M1: aCede = wResolvido da repartição (o módulo do Sol fia — ' +
+      'corte 8 da arquitetura; a camada desenha), a entrega ao SunStar e o ' +
+      'corte de 0,05 pc morreram, ?bcede morreu',
   },
   {
     id: 'planetas',
@@ -110,7 +114,7 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   {
     id: 'heroes',
     nome: 'o clarão de asas (orçamento de fontes fortes)',
-    arquivos: ['src/three/world/clarao.ts', 'src/three/director.ts'],
+    arquivos: ['src/three/world/clarao.ts', 'src/three/director/solNoQuadro.ts'],
     consomeL1: true,
     leiVelhaApagada: true,
     fatorDeBrilho: 1,

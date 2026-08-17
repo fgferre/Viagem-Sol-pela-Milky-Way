@@ -17,21 +17,16 @@ import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
 import type { StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
-// por orçamento de fluxo — no lugar das 16 heroes de autor.
-import { ClaraoDeAsas, OCUPACAO_MAXIMA_DA_TELA, OCUPACAO_NA_OBSERVACAO } from './world/clarao';
+// por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
+// alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
+import { ClaraoDeAsas } from './world/clarao';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, GAL, EX, EY, EZ } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
-import {
-  CORPOS_DEFAULT_ON,
-  CorposResolvidos,
-  LIMIAR_DO_GATE_PX,
-  diametroAparentePx,
-  gateBinario,
-} from './world/corpos/corpos';
+import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
 import {
   RAIO_EQ_TERRA_PC,
   TerraResolvida,
@@ -67,12 +62,10 @@ import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../lib/atlas/iauOrientation';
 import { RAIO_DO_SOL_NA_CENA } from './escala';
 import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
-// A LEI DA ESTRELA (M1): a repartição única do Sol — quem era quatro
-// rampas (`cessaoAlvo`, `cessaoPeloGate`, `filtroSolarAlvo` e o `max`
-// delas) virou UMA função pura, e o director é o único que a chama
-// porque é o único que tem câmera e instrumento na mão.
-import { repartir } from './estrela';
-import { BETA_DA_EMISSAO } from './shaders/starShaders';
+// A LEI DA ESTRELA (M1): a repartição única do Sol virou UMA função
+// pura (`repartir`, estrela.ts) — quem a chama por quadro é o módulo
+// do Sol (director/solNoQuadro.ts), com a câmera e o instrumento que
+// o director lhe entrega no tick.
 import { loadGalacticAssets } from './cartography/galacticAssets';
 import { bakeDustMap } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
@@ -83,6 +76,7 @@ import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
 import { MaquinaDoTempo } from './director/maquinaDoTempo';
 import { ligarGestos } from './director/gestos';
 import { Rotulos } from './director/rotulos';
+import { SolNoQuadro } from './director/solNoQuadro';
 import {
   montarCenaDeAquecimento,
   montarCorposDoPalco,
@@ -440,13 +434,19 @@ export class Director {
    * encolher no mesh e continuar tapando o céu como se fosse grande.
    */
   private readonly solRaioPc = RAIO_DO_SOL_NA_CENA;
-  /**
-   * O GATE DO SOL COMO CORPO (F2), estado da histerese entre quadros.
-   * Nasce `false` porque o gate da casa entra por `>=` estrito e sai por
-   * `<`: começar armado inverteria a decisão na primeira fronteira. É a
-   * mesma partida de `TerraResolvida.armado`.
-   */
-  private solArmado = false;
+  /** o Sol no quadro — corte 8 da Parte 1 (director/solNoQuadro.ts):
+   *  o gate do palco, a repartição da lei e a cessão do ponto, com o
+   *  estado da histerese (`solArmado`) dentro; os punhos tardios
+   *  entram por fio e o raio único entra UMA vez, daqui */
+  private readonly solNoQuadro = new SolNoQuadro({
+    solRaioPc: this.solRaioPc,
+    sun: () => this.sun,
+    palco: () => this.palco,
+    clarao: () => this.clarao,
+    planetas: () => this.planetas,
+    stars: () => this.stars,
+    escondido: (flag) => this.hide.has(flag),
+  });
   private disposed = false;
   /** pré-compilação em voo; o dispose do renderer espera por ela */
   private warmup: Promise<unknown> | null = null;
@@ -2431,55 +2431,15 @@ export class Director {
       (CORPOS_DEFAULT_ON || this.debug.has('corpos')) && !this.hide.has('nocorpos');
 
     // ------------------------------------------------------------
-    // O SOL SOB A LEI DO PALCO (F2 da onda do Sol real)
-    // ------------------------------------------------------------
-    // Até aqui o disco do Sol era decidido por JANELA EM PARSEC
-    // (`LOD_SOL`, calibrada para UM raio: o inflado). Agora ele passa
-    // pela MESMA lei da Terra e da Lua — `diametroAparentePx` contra
-    // `LIMIAR_DO_GATE_PX` (4 px de diâmetro), com o cushion 2× da
-    // histerese. Não é troca de gosto: uma janela em pc só vale para um
-    // raio, e é a régua de TAMANHO NA TELA que a Onda 7 (corpo por
-    // estrela) pode herdar sem número novo.
-    //
-    // A ARITMÉTICA — desde a F3 ela é a lei ÚNICA do grupo do Sol, e não
-    // mais uma segunda opinião por cima da janela em parsec (lente de
-    // 58°, buffer efetivo do harness de 1.713 px de altura ⇒
-    // 1.545,1 px/rad):
-    //  · raio FÍSICO (2,2567e-8 pc): arma abaixo de 3,60 UA (4 px) e
-    //    desarma acima de 7,19 UA (2 px).
-    // Na F2 este gate era INERTE por aritmética (o disco artístico só
-    // desenhava acima de 4.125 UA, 1.147× além de onde o corpo real
-    // arma, e as duas faixas nunca coexistiam) — foi assim que ele
-    // entrou sem custar um pixel. A F3 apagou a outra faixa, e o que era
-    // inerte virou o único juiz: é ele que faz o Sol da abertura
-    // refilmada existir a 5,74 raios solares e virar ponto por volta de
-    // t≈8,5 s da hélice, sem uma janela em parsec no caminho.
-    this.solArmado = gateBinario(
-      this.solArmado,
-      diametroAparentePx(this.solRaioPc, dHome, hPx, cam.fov)
-    );
-    // O SOL NO PALCO. Até a F3 havia aqui uma guarda a mais —
-    // `solRaioPc !== WORLD.sunRadius` —, e ela NÃO era gate de fase: era
-    // doutrina do palco. Ali moram SUPERFÍCIES REAIS (é delas que o near
-    // deriva onde a câmera tem de parar), e um corpo inflado não é
-    // superfície, é cenário. Medido na época: registrar o Sol artístico
-    // poria uma superfície a 0,011 pc da origem no `min()` do near, e
-    // para a câmera além de ~1,375 pc o ramo do corpo passaria a ganhar
-    // do `distFromSun × 0,004` — mudando o plano de corte em `interno`,
-    // `travessia`, `mergulho`, `edgeon`, `faceon` e nas quatro de hero.
-    // A guarda saiu porque o corpo inflado saiu: não existe mais o caso
-    // que ela recusava, e a doutrina continua valendo por construção —
-    // o palco só recebe o raio físico porque é o único que existe.
+    // O SOL SOB A LEI DO PALCO (F2 da onda do Sol real) — o gate em
+    // pixels e o registro no palco moram no módulo (corte 8;
+    // director/solNoQuadro.ts, com a aritmética e a doutrina escritas).
     //
     // AQUI e não depois do `sun.update` (onde a F1 o deixou): o near lê
     // o palco umas 100 linhas abaixo, então registrar lá embaixo dava ao
     // clip a superfície do quadro ANTERIOR. É o mesmo lugar em que a
     // Terra e a Lua se registram, pela mesma razão escrita.
-    if (this.solArmado && !this.hide.has('nosun')) {
-      this.palco.registrar('sun', this.solRaioPc, ORIGEM);
-    } else {
-      this.palco.remover('sun');
-    }
+    this.solNoQuadro.armarGate({ dHome, hPx, fovDeg: cam.fov });
 
     // A TERRA RESOLVIDA (F2a) roda ANTES do near ler o palco: o globo
     // que entra em quadro NESTE tick já governa o clip NESTE tick. O
@@ -2740,73 +2700,6 @@ export class Director {
     // o MESMO catFade das cascas: a LUT da faixa desconta do termo
     // estelar a luz que o catálogo já desenha como estrela individual
     this.nebula.setCatalogueFade(catFade);
-    // (O CLARÃO DE ASAS desceu para DEPOIS da repartição — ele consome o
-    // `overrideFator` do quadro, a transmitância do filtro solar. Ver o
-    // bloco logo após `leiDoSol`.)
-    // `solArmado` entra AQUI, junto do `?nosun`, e não dentro do
-    // `StellarBody`: o corpo não conhece a tela (não tem altura de buffer
-    // nem lente), e o gate do palco é medido em PIXELS. O `sun.update`
-    // continua fazendo o seu próprio corte de custo por cima
-    // (`isDiscGroupVisible`) — os dois se somam com `&&`, e no raio
-    // artístico o de lá sempre fecha primeiro (ver a conta lá em cima).
-    this.sun.group.visible = !this.hide.has('nosun') && this.solArmado;
-    // ── A REPARTIÇÃO DA LEI (M1 da LEI-DA-ESTRELA) ─────────────────────
-    // UMA função pura decide, por quadro, como o Sol é desenhado — no
-    // lugar das quatro rampas de antes (`cessaoAlvo` sobre disco/halo,
-    // `cessaoPeloGate` sobre disco/4px, `filtroSolarAlvo` em log
-    // simétrico e o `Math.max` das duas primeiras, que tinha QUINA). Os
-    // três contratos: o ESTADO vem do próprio corpo (`estadoDaLei`), a
-    // OBSERVAÇÃO é a câmera deste tick, o INSTRUMENTO é a casa — o
-    // `expoM0` do campo (constante desde que a pupila morreu no M2), e
-    // `trocaPx` = o gate de corpo texturizado do palco (4 px), que
-    // deixou de ser uma segunda lei e virou parâmetro (§3 da Lei).
-    const leiDoSol = repartir(
-      this.sun.estadoDaLei(),
-      {
-        distPc: dHome,
-        direcao:
-          dHome > 0
-            ? [cam.position.x / dHome, cam.position.y / dHome, cam.position.z / dHome]
-            : [0, 0, 1],
-      },
-      {
-        // A RÉGUA DE REFERÊNCIA (px de CSS), não o buffer: com `hPx`
-        // cru, TODAS as janelas em px da repartição (troca, filtro,
-        // soltura) abriam uma oitava adiante em retina — foi a perna
-        // DPR 2 da escada que pegou (borrão crescendo 109→244 px entre
-        // 3,6 e 7,2 UA, 17/08). Em DPR 1 a divisão é ×1 exata. A camada
-        // do clarão já decidia em CSS desde a parte 1 da invariância;
-        // agora a lei que a alimenta mede na mesma régua.
-        alturaPx: hPx / prAtual,
-        tanHalfFov,
-        expoM0: this.stars?.expoM0 ?? EXPO_M0,
-        sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
-        beta: BETA_DA_EMISSAO,
-        trocaPx: LIMIAR_DO_GATE_PX,
-        // a única representação resolvida do Sol hoje é a MALHA — a
-        // esfera analítica (§1) nasce no M3/E3, onde é obrigatória;
-        // a dívida está nomeada no cadastro de representações.
-        requisitoGeometrico: 1,
-      }
-    );
-    // o corpo troca a radiância verdadeira pela paleta autorada com a
-    // régua da lei (mesma `discoPx`, largura própria — §5.7)...
-    this.sun.escreverFiltroSolar(leiDoSol.overrideExpoente);
-    // ...e ENTRA DO ZERO com o peso da representação resolvida: no armar
-    // binário do gate do palco o peso ainda é 0, então o liga/desliga de
-    // custo fica invisível em pixel, nos dois sentidos da histerese.
-    this.sun.escreverPesoDaLei(leiDoSol.wResolvido * leiDoSol.wMalha);
-    // O CLARÃO DE ASAS (M2): sem janela de distância — a elegibilidade é
-    // do FLUXO (uma nomeada só ganha asa a poucos pc dela; o Sol, na
-    // escada do item 3), e é a magnitude que apaga, nunca um corte em pc.
-    // O Sol só é candidato enquanto a camada dos dez desenha o ponto dele
-    // (fonte oculta não tem óptica; leitura do quadro anterior — a rampa
-    // de 300 ms engole o único quadro de atraso). E a entrega da óptica é
-    // a SOLTURA da própria repartição (R2 do item 44): uma rampa C¹ no
-    // domínio do TAMANHO, zero onde o filtro completa (a fotosfera limpa
-    // que o dono cobrou em 16/08 continua paga por construção) e plena no
-    // ponto — as duas travas exponenciais que explodiam o clarão no recuo
-    // (wPonto × 1/filtro) morreram na sonda densa de 17/08.
     // AS HEROES RESGATADAS: a mesma chave de isolamento da óptica das
     // fortes (?noclarao) esconde as duas camadas — heroes e clarão do Sol
     if (this.heroes) {
@@ -2817,25 +2710,19 @@ export class Director {
         Math.tan((this.engine.camera.fov * Math.PI) / 360)
       );
     }
-    if (this.clarao) {
-      this.clarao.group.visible = !this.hide.has('noclarao');
-      this.clarao.atualizar({
-        camPos: cam.position,
-        screenH: hPx,
-        dtS: dt,
-        solVisivel: !this.hide.has('noplan') && (this.planetas?.points.visible ?? false),
-        solturaDoSol: leiDoSol.solturaDoClarao,
-        // a DOSE pela fase (pergunta do dono, 17/08): o filme e o voo
-        // livre ficam com o drama; o Atlas é o modo de OBSERVAÇÃO — o
-        // selo já declara BRILHO ASSISTIDO, e o clarão compacto (família
-        // NASA Eyes) faz parte da mesma assistência declarada
-        tetoDeOcupacao:
-          this.phase === 'atlas' ? OCUPACAO_NA_OBSERVACAO : OCUPACAO_MAXIMA_DA_TELA,
-        expoM0: this.stars?.expoM0 ?? EXPO_M0,
-        sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
-        pr: prAtual,
-      });
-    }
+    // O CORPO E O CLARÃO DO SOL PELA LEI (corte 8): a repartição decide
+    // filtro, peso e soltura, e o clarão consome a soltura no MESMO
+    // quadro — o assunto inteiro em director/solNoQuadro.ts; a cessão
+    // do ponto sai da mesma repartição, no bloco da camada (abaixo)
+    this.solNoQuadro.atualizarCorpoEClarao({
+      dHome,
+      hPx,
+      prAtual,
+      tanHalfFov,
+      camPos: cam.position,
+      dtS: dt,
+      fase: this.phase,
+    });
     // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
     // dentro do Atlas ele é PINADO, senão cada entrada daria um Sol
     // diferente conforme o instante da pausa (ver ATLAS_JOURNEY_T)
@@ -2879,18 +2766,9 @@ export class Director {
         this.planetas.escreverInstante(this.maquinaDoTempo.jdVivo, this.maquinaDoTempo.efemeride);
       }
       this.planetas.update(hPx, cam.position, pr2Atual);
-      // A CESSÃO DO SOL-PONTO É A REPARTIÇÃO (M1): aCede = wResolvido —
-      // o ponto cede na exata medida em que a fonte está RESOLVIDA na
-      // tela (rampa C¹ de 4 a 8 px de disco), e o corpo entra do zero
-      // com o mesmo peso pelo outro lado (`escreverPesoDaLei`, acima). A
-      // soma dos pesos é 1 por construção — nenhuma dupla-luz, nenhum
-      // passo para trás, nenhuma quina de `max`. Com o corpo ESCONDIDO
-      // (`?nosun`) o ponto fica inteiro: ceder a uma malha invisível
-      // cegaria o quadro, e a direção segura da lei é o ponto (§8.5).
-      this.planetas.escreverCessao(
-        'sun',
-        this.sun.group.visible ? leiDoSol.wResolvido : 0
-      );
+      // a cessão do Sol-ponto é a MESMA repartição do quadro (corte 8;
+      // a doutrina inteira em director/solNoQuadro.ts, §8.5 incluído)
+      this.solNoQuadro.cederPonto(this.planetas);
     }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
