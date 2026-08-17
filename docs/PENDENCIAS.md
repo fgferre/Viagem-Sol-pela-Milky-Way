@@ -358,7 +358,7 @@ BIT-IDÊNTICO (51 vistas no 4 e no 5; atlas-smoke verde no 3). **A PARTE
 três hooks (useDirector 226, useEspelhoDaUrl 308, useAtalhos 64; os
 dois primeiros GOVERNADOS pelo selo; semântica da URL intocada; provas:
 busca-smoke + voo-smoke + ab SMOKE bit-idêntico + a11y sem falha nova).
-**A PARTE 1 ESTÁ 8/9 (17/08, noite) e o director em 2.966** (era
+**A PARTE 1 FECHOU 9/9 (17/08, noite) e o director em 2.135** (era
 3.797): 1 nuvensSemente, 2 veu, 3 prontidao, 4 maquinaDoTempo (as 110
 costuras religadas de uma vez — o typecheck com campos mortos varre as
 órfãs; atlas-smoke provou o relógio em cada gesto), 5 carregamento
@@ -375,22 +375,23 @@ e a cessão do ponto nos MESMOS três pontos do tick; `solArmado` e a
 repartição do quadro viraram estado do módulo; as heroes ficaram no
 director e subiram uma posição — neutro provado em pixel; o cadastro
 de representações aponta o fiador novo; prova extra: voo-ida-e-volta
-PASSA em 34 degraus). Provas por corte: 1.622 testes + ab (completos:
-52 vistas bit-idênticas; a acusação falsa da `terranb` virou o item
-49 — nos cortes 7 e 8 as vistas da Terra saíram limpas de primeira).
-**FALTA: 9 escada — o corte MAIOR (~861 linhas), com o MAPA COMPLETO
-já investigado e escrito no fim do plano aprovado**
-(`/Users/fgferre/.claude/plans/estou-preocupado-com-nossa-rosy-lynx.md`,
-seção "Mapa do corte 9"): censo real de 23 métodos (não 19), as 2
-ilhas (`nomeadas`/`corpos`) que migram junto por serem delimitador de
-fatia, o trio com um dono e o leitor único (`evLuzDoFoco`, que FICA),
-as 16 costuras com o tick, a fachada obrigatória de 4 textos pinados,
-os textos que sobrevivem verbatim dentro do módulo, os 12 pares de
-fatia do atlasRig.test com o destino de cada um, e as provas (ab +
-atlas-smoke + busca-smoke + a11y + manual CDP). Executar SÓ em janela
-limpa — o corte é grande demais para contexto meado (lição do corte
-7). Depois do 9, a fila que o dono APROVOU em 17/08 (da análise
-paralela, conferida no código): **corte 10 — a `baseGalactica` (49
+PASSA em 34 degraus), 9 escada — o corte MAIOR, executado na janela
+limpa que o mapa pediu (a navegação inteira em `director/escada.ts`:
+clique, busca, casa viva, degraus, religador do relógio e reaplicação
+pós-efeméride; o trio do foco com UM dono e o selo lendo `focoCorpoId`
+pela fachada; `EstadoDaEscada` e `larguraDeCss` moram lá com reexport;
+`HELIO_SEM_PONTO` mudou para o `atlasConfig`, ao lado das listas de
+que deriva; as fatias do atlasRig.test seguiram o código; prova manual
+no navegador: Ceres pela busca com aproximar e Esc·Esc de volta,
+clique no Sol em casa descendo ao corpo, `?foco=sol&ver=corpo`
+nascendo seco a 6,40 raios solares). Provas por corte: 1.622 testes +
+ab (completos: 52 vistas bit-idênticas; a acusação falsa da `terranb`
+virou o item 49 — nos cortes 7 a 9 as vistas da Terra saíram limpas de
+primeira). ⚠ Lição de instrumento do corte 9: o ab-identidade RETOMA
+capturas por vista do estado em disco — um `depois` rodado depois de
+outra sessão pode reaproveitar capturas VELHAS e o veredito sai vazio;
+o `depois` de um corte novo roda com `DOZERO=1`.
+**Da fila aprovada em 17/08 fica: corte 10 — a `baseGalactica` (49
 linhas) importa o modelo galáctico de 932 linhas para usar TRÊS
 números** (`sunRadiusPc`, `diskRadiusPc`, `sunHeightPc`) — o
 desperdício que o corte 5 matou voltou pela porta dos fundos;

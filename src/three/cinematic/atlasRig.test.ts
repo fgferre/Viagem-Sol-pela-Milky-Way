@@ -900,17 +900,20 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
     // (o Director precisa de WebGL). A fonte do dado é cobrada junto —
     // é a MESMA que orienta a malha, e uma segunda tabela de eixos aqui
     // faria a câmera e o planeta discordarem sem ninguém notar.
-    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
-    expect(DIRECTOR).toContain(
-      "import { baseCorpoEquatorial } from '../lib/atlas/orientacao'"
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
     );
-    expect(DIRECTOR).toContain('polo: this.poloDoCorpo(id),');
-    expect(DIRECTOR).toContain('polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id),');
+    expect(ESCADA).toContain(
+      "import { baseCorpoEquatorial } from '../../lib/atlas/orientacao'"
+    );
+    expect(ESCADA).toContain('polo: this.poloDoCorpo(id),');
+    expect(ESCADA).toContain('polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id),');
     // ...e os degraus de fora NÃO o pedem: lá o assunto é o plano do
     // sistema, e o eixo de um corpo qualquer não governa o horizonte
-    const sistema = DIRECTOR.slice(
-      DIRECTOR.indexOf('  focarNoSistema() {'),
-      DIRECTOR.indexOf('private rampaDaEscada()')
+    const sistema = ESCADA.slice(
+      ESCADA.indexOf('  focarNoSistema() {'),
+      ESCADA.indexOf('private rampaDaEscada()')
     );
     expect(sistema).not.toContain('polo:');
   });
@@ -1049,10 +1052,15 @@ describe('o alvo vivo — recompor sem quebrar o que o visitante estava fazendo'
       DIRECTOR.indexOf('this.atlas.apply(cam,')
     );
     // o religador NÃO passa pelo caminho do gesto (que zera o arrasto,
-    // derruba a LUT do raymarch e reinicia a contagem da captura)
-    const corpo = DIRECTOR.slice(
-      DIRECTOR.indexOf('  private recomporAlvo() {'),
-      DIRECTOR.indexOf('  subirDegrau()')
+    // derruba a LUT do raymarch e reinicia a contagem da captura) — o
+    // corpo dele mora na escada (corte 9); a costura do tick fica acima
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
+    const corpo = ESCADA.slice(
+      ESCADA.indexOf('  recomporAlvo() {'),
+      ESCADA.indexOf('  subirDegrau()')
     );
     expect(corpo).toContain('this.atlas.recompor(');
     expect(corpo).not.toContain('this.teletransportou()');
@@ -1171,10 +1179,13 @@ describe('o degrau do CORPO DO SOL', () => {
   });
 
   it('o Director lê o `ver` ANTES de desviar o Sol — e só o `corpo` desce', () => {
-    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
-    const corpo = DIRECTOR.slice(
-      DIRECTOR.indexOf('  focarNoCorpo(id: string'),
-      DIRECTOR.indexOf('  private poloDoCorpo(')
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
+    const corpo = ESCADA.slice(
+      ESCADA.indexOf('  focarNoCorpo(id: string'),
+      ESCADA.indexOf('  private poloDoCorpo(')
     );
     const ramo = corpo.slice(corpo.indexOf("if (id === 'sun')"));
     // o desvio deixou de ser incondicional: `corpo` desce, `orbita`
@@ -1184,12 +1195,15 @@ describe('o degrau do CORPO DO SOL', () => {
   });
 
   it('o enquadramento do Sol sai do raio ÚNICO, sem literal de distância e sem polo', () => {
-    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
     // o vizinho de baixo era `escreverPosicaoDeLua`, que migrou para o
     // módulo dos rótulos (corte 7) — o delimitador seguiu o código
-    const metodo = DIRECTOR.slice(
-      DIRECTOR.indexOf('  private aproximarDoSol() {'),
-      DIRECTOR.indexOf('  focarNaLua(')
+    const metodo = ESCADA.slice(
+      ESCADA.indexOf('  private aproximarDoSol() {'),
+      ESCADA.indexOf('  focarNaLua(')
     );
     expect(metodo).toContain('this.atlas.focar(');
     // o raio é a fonte única do tamanho do Sol (a MESMA que o palco e o
@@ -1209,10 +1223,13 @@ describe('o degrau do CORPO DO SOL', () => {
   });
 
   it('o degrau é alcançável por GESTO: clicar no Sol estando em casa desce', () => {
-    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
-    const visita = DIRECTOR.slice(
-      DIRECTOR.indexOf('  private tryVisit('),
-      DIRECTOR.indexOf('  get nomeadas()')
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
+    const visita = ESCADA.slice(
+      ESCADA.indexOf('  tryVisit('),
+      ESCADA.indexOf('  get nomeadas()')
     );
     // o gesto irmão do "clicar no MESMO corpo já focado desce um degrau"
     // (D7), no único corpo cujo degrau de cima é a ABERTURA
@@ -1225,18 +1242,21 @@ describe('o degrau do CORPO DO SOL', () => {
     // `?foco=sol` também chama aquele método e chega com a abertura já
     // na tela — lá dentro as duas seriam indistinguíveis, e `?foco=sol`
     // (sem `ver=`) passaria a cair no Sol em vez da casa
-    const foco = DIRECTOR.slice(
-      DIRECTOR.indexOf('  focarNoCorpo(id: string'),
-      DIRECTOR.indexOf('  private poloDoCorpo(')
+    const foco = ESCADA.slice(
+      ESCADA.indexOf('  focarNoCorpo(id: string'),
+      ESCADA.indexOf('  private poloDoCorpo(')
     );
     expect(foco).not.toContain("degrau === 'sistema'");
   });
 
   it('o religador do relógio conhece o Sol — senão a câmera saltaria para a Terra', () => {
-    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
-    const vivo = DIRECTOR.slice(
-      DIRECTOR.indexOf('  private enquadreVivo()'),
-      DIRECTOR.indexOf('  private posicaoDesenhada(')
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
+    const vivo = ESCADA.slice(
+      ESCADA.indexOf('  private enquadreVivo()'),
+      ESCADA.indexOf('  private posicaoDesenhada(')
     );
     const ramo = vivo.slice(vivo.indexOf("if (degrau === 'corpo')"));
     // o ramo do Sol vem ANTES do de sempre (que devolve a TERRA), e o
@@ -1249,29 +1269,32 @@ describe('o degrau do CORPO DO SOL', () => {
     // e a efeméride que chega tarde reaplica o degrau do Sol pelo método
     // dele — `aproximarDoCorpo` só conhece mesh de planeta e sairia sem
     // fazer nada
-    const tarde = DIRECTOR.slice(
-      DIRECTOR.indexOf('  private reenquadrarAposEfemeride()'),
-      DIRECTOR.indexOf('  get corpos()')
+    const tarde = ESCADA.slice(
+      ESCADA.indexOf('  reenquadrarAposEfemeride()'),
+      ESCADA.indexOf('  get corpos()')
     );
     expect(tarde).toContain("if (this.focoCorpoId === 'sun') this.aproximarDoSol();");
   });
 
   it('a SUBIDA sai do Sol pela escada de sempre, e a roda não perde a Terra', () => {
-    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
     // do degrau `corpo` a subida chama `focarNoCorpo(foco, 'orbita')`, e
     // para o Sol isso é a abertura — nenhum ramo novo precisou nascer
-    const sobe = DIRECTOR.slice(
-      DIRECTOR.indexOf('  subirDegrau(): boolean {'),
-      DIRECTOR.indexOf('  descerDegrau(): boolean {')
+    const sobe = ESCADA.slice(
+      ESCADA.indexOf('  subirDegrau(): boolean {'),
+      ESCADA.indexOf('  descerDegrau(): boolean {')
     );
     expect(sobe).toContain("this.focarNoCorpo(this.focoCorpoId!, 'orbita');");
     // e a DESCIDA da roda continua indo do sistema à órbita da casa: o
     // corpo do Sol não é um degrau abaixo do sistema, é o outro ramo que
     // sai dali — trocar este ramo tiraria da roda o único caminho até a
     // Terra, que é a queixa que a Onda 7 consertou
-    const desce = DIRECTOR.slice(
-      DIRECTOR.indexOf('  descerDegrau(): boolean {'),
-      DIRECTOR.indexOf('  private reenquadrarAposEfemeride()')
+    const desce = ESCADA.slice(
+      ESCADA.indexOf('  descerDegrau(): boolean {'),
+      ESCADA.indexOf('  reenquadrarAposEfemeride()')
     );
     expect(desce).toContain("this.focarNoCorpo(paiDaLua, 'orbita');");
     expect(desce).not.toContain("'sun'");
@@ -1280,11 +1303,14 @@ describe('o degrau do CORPO DO SOL', () => {
   it('a abertura e o corpo do Sol leem UMA conta do "mais externo"', () => {
     // duas contas seriam duas direções, e elas divergiriam no primeiro
     // salto de data — a descida deixaria de ser dolly puro sem aviso
-    const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
-    expect(DIRECTOR.split('posicaoHeliocentrica(c.id, jd)').length - 1).toBe(1);
-    const abertura = DIRECTOR.slice(
-      DIRECTOR.indexOf('  focarNoSistema() {'),
-      DIRECTOR.indexOf('  private rampaDaEscada()')
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
+    expect(ESCADA.split('posicaoHeliocentrica(c.id, jd)').length - 1).toBe(1);
+    const abertura = ESCADA.slice(
+      ESCADA.indexOf('  focarNoSistema() {'),
+      ESCADA.indexOf('  private rampaDaEscada()')
     );
     expect(abertura).toContain('const casa = this.casaViva();');
   });
@@ -1311,11 +1337,18 @@ describe('o degrau do CORPO DO SOL', () => {
 // ============================================================
 describe('os dois defeitos declarados do degrau do Sol', () => {
   const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+  // o corte 9 moveu a escada para o módulo próprio: as fatias INTERNAS
+  // (clique, rampa) leem escada.ts; as COSTURAS (setPhase, o somador do
+  // tick, a ordem da entrada no modo) continuam lidas no director
+  const ESCADA = readFileSync(
+    new URL('../director/escada.ts', import.meta.url),
+    'utf8'
+  );
 
   it('o clique só mira rótulo DESENHADO — e descarta antes de medir distância', () => {
-    const visita = DIRECTOR.slice(
-      DIRECTOR.indexOf('  private tryVisit('),
-      DIRECTOR.indexOf('  get nomeadas()')
+    const visita = ESCADA.slice(
+      ESCADA.indexOf('  tryVisit('),
+      ESCADA.indexOf('  get nomeadas()')
     );
     expect(visita).toContain('if (label.desenhado === false) continue;');
     expect(visita).toContain('const dx = label.x - x;');
@@ -1348,9 +1381,9 @@ describe('os dois defeitos declarados do degrau do Sol', () => {
   });
 
   it('a rampa exige um quadro do modo JÁ DESENHADO — o deep-link nasce seco', () => {
-    const rampa = DIRECTOR.slice(
-      DIRECTOR.indexOf('  private rampaDaEscada(): boolean {'),
-      DIRECTOR.indexOf('  private get escada()')
+    const rampa = ESCADA.slice(
+      ESCADA.indexOf('  private rampaDaEscada(): boolean {'),
+      ESCADA.indexOf('  private get escada()')
     );
     expect(rampa).toContain('this.quadrosDaFase > 0');
     // a contagem zera na troca de fase e só soma DEPOIS do render — o

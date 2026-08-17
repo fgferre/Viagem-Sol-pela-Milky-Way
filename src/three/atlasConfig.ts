@@ -257,6 +257,17 @@ export const ASTEROIDES_DO_SISTEMA: readonly CorpoDoSistema[] = [
   { id: 'hygiea', ...NOMES_DOS_CORPOS.hygiea, chave: `${CHAVE_DE_CORPO}hygiea` },
 ];
 
+/**
+ * OS HELIOCÊNTRICOS SEM PONTO na camada — anões + asteroides, a união
+ * que a escada e o selo percorrem. Deriva das duas listas acima (nunca
+ * uma terceira lista digitada); morava solta no meio dos imports do
+ * director e mudou para cá na onda da arquitetura (Parte 1, corte 9).
+ */
+export const HELIO_SEM_PONTO: readonly CorpoDoSistema[] = [
+  ...ANOES_DO_SISTEMA,
+  ...ASTEROIDES_DO_SISTEMA,
+];
+
 // ============================================================
 // (A GRADAÇÃO POR CONTEXTO (F6) morava aqui — `claraoDoAtlas`, o piso
 // de 0,01 e a referência de 20.000 UA — e morreu no M1
