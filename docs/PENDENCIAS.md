@@ -352,10 +352,17 @@ BIT-IDÊNTICO (51 vistas no 4 e no 5; atlas-smoke verde no 3). **A PARTE
 três hooks (useDirector 226, useEspelhoDaUrl 308, useAtalhos 64; os
 dois primeiros GOVERNADOS pelo selo; semântica da URL intocada; provas:
 busca-smoke + voo-smoke + ab SMOKE bit-idêntico + a11y sem falha nova).
-**FALTA: a PARTE 1 inteira — o director (3.797 → ~2.100) em 9 cortes,
-na ordem do plano: 1 nuvensSemente, 2 veu, 3 prontidao,
-4 maquinaDoTempo, 5 carregamento, 6 gestos, 7 rotulos, 8 solNoQuadro,
-9 escada.** Não tocar no que a Lei ainda demole (`lodStellar.ts`).
+**A PARTE 1 ESTÁ 3/9 (17/08, noite):** corte 1 nuvensSemente (classe
+com pool/scratch/timer; ab COMPLETO 52 vistas bit-idênticas), corte 2
+veu (VeuDoAtlas com os fios no construtor; atlas-smoke verde + ab
+SMOKE), corte 3 prontidao (julgamento puro + janelas de quadros; o
+próprio harness usa o sinal — ab COMPLETO 52 bit-idênticas). O director
+está em **3.615** (era 3.797). **FALTA: 4 maquinaDoTempo — O MAIS
+ENTRELAÇADO, 110 referências aos 9 campos espalhadas pelo arquivo;
+começar por ele com leitura fresca (o get jdVivo do plano mata as 13
+repetições de grampearJd) —, 5 carregamento, 6 gestos, 7 rotulos,
+8 solNoQuadro (+ voo-ida-e-volta), 9 escada.** Não tocar no que a Lei
+ainda demole (`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
