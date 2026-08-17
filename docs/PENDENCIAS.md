@@ -316,6 +316,26 @@ seguem mortos. Prova visual: `resgate-sirius.png` — o Sirius de hoje ao
 lado do alvo de 30/07, na mesma moldura (6,5 anos-luz). A unificação
 estética estrela↔Sol volta à mesa só no M3, COM o visto dele.
 
+**O CÉU (16/08, madrugada) — o dono viu o campo apagado:** *"o que vc
+está fazzendo está bagunçando todo céu, as estrelas quase nao existem
+mais, o ceu ficou vazio e escuro"*. Causa PROVADA por diff: o M2 trocou
+o gatilho da cruz do catálogo (o `vSat` de 30/07 — saturava em pico 4,
+amplitude 0,85) pela lei do fluxo pura, e centenas de estrelas perderam
+a faísca. RESGATADO atrás de `uArteDaCruz`: campo estelar e cascas usam
+a arte do filme; os dez corpos ficam na lei pura (o conserto do item 43
+segue de pé). Junto: a dose de luz do clarão do Sol desceu ao teto 2,5
+(proporção do filme — halo em ⅓ do cartaz, braços para fora; a 15,8 UA
+o Sol voltou a ser ESTRELA). Escada re-medida: 11/11.
+
+**DECISÃO ABERTA PARA O DONO (prancha `decisao-sol-partindo`):** o
+tríptico de 15/08 (`capturas/ESPINHOS-de-longe.png`) mostra que o Sol
+partindo era um GIGANTE de braços finos e estruturados — e parte da
+"riqueza" do céu daquele dia era a luz DELE banhando o quadro. O item 3
+matou a lavada branca e levou o gigante junto; hoje o Sol de longe é um
+ponto discreto. Ele decide: (a) reconstruir o gigante COM estrutura e
+SEM lavar o quadro (anatomia de hero, R2), re-decidindo a âncora de
+20 px a 15.800 UA; ou (b) manter o ponto discreto de hoje.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos

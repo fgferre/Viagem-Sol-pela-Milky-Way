@@ -112,6 +112,9 @@ varying float vPeak;
 // β da compressão na emissão (F2 da luz). ZERO por nascimento, e zero é
 // IDENTIDADE EXATA — ver comprimir3 em shaders/common.ts.
 uniform float uBeta;
+// a dose da cruz por CAMADA: 1 = campo estelar/cascas (a arte do filme,
+// resgatada em 16/08); 0 = os dez corpos (lei do fluxo pura — item 43)
+uniform float uArteDaCruz;
 
 ${GLSL_COMPRESSAO}
 
@@ -128,17 +131,23 @@ void main() {
   float core = exp(-r2 / (2.0 * s2));
   float halo = exp(-r2 / (18.0 * s2)) * 0.06;
 
-  // ESPINHOS DE DIFRAÇÃO: fração do FLUXO, comprimida com o resto (M2 da
-  // LEI-DA-ESTRELA, §5.4). O gatilho antigo (clamp \`sat\`, saturado em
-  // pico 4) dava a Vênus e a Sirius a mesma cruz cheia — item 43. Agora a
-  // cruz vem na dose do brilho: amplitude = fração × pico, e o guarda é o
-  // MESMO piso de visibilidade da asa (1/255) — abaixo dele os 4 exp não
-  // pagam por um termo que o buffer de 8 bits não vê.
+  // ESPINHOS DE DIFRAÇÃO — DUAS doses, escolhidas por camada (uArteDaCruz):
+  //  · a LEI DO FLUXO (M2, §5.4): amplitude = fração × pico — segue sendo
+  //    a régua dos DEZ CORPOS (item 43: Vênus e Sirius não dividem a
+  //    mesma cruz; o conserto do dono fica de pé);
+  //  · a ARTE DO FILME, resgatada (16/08, palavras do dono: "as estrelas
+  //    quase nao existem mais, o ceu ficou vazio e escuro"): o gatilho de
+  //    30/07 — a cruz acende porque o núcleo ESTOUROU, 0,5·log₂(pico)
+  //    saturando em pico 4, com a amplitude 0,85 do filme. Era isso que
+  //    fazia centenas de estrelas faiscarem; a M2 a trocou pela lei pura
+  //    e o céu apagou. Campo estelar e cascas usam 1; os dez corpos, 0.
   float spike = 0.0;
-  if (vPeak * ${FRACAO_DOS_ESPINHOS} > ${LIMIAR_DO_CLARAO.toPrecision(8)}) {
+  float satDoFilme = clamp(0.5 * log2(max(vPeak, 1.0)), 0.0, 1.0);
+  float amp = max(${FRACAO_DOS_ESPINHOS} * vPeak, 0.85 * satDoFilme * uArteDaCruz);
+  if (amp > ${LIMIAR_DO_CLARAO.toPrecision(8)}) {
     float ax = exp(-abs(uv.y) * 14.0) * exp(-abs(uv.x) * 2.6);
     float ay = exp(-abs(uv.x) * 14.0) * exp(-abs(uv.y) * 2.6);
-    spike = (ax + ay) * ${FRACAO_DOS_ESPINHOS} * vPeak;
+    spike = (ax + ay) * amp;
   }
 
   vec3 col = vColor * (core + halo) * vPeak + vColor * spike;

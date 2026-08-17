@@ -87,6 +87,7 @@ export class StarField {
         uSigmaPx: { value: this.sigmaPx },
         // a compressão na emissão (F2 da luz) — 0 é identidade exata
         uBeta: { value: BETA_DA_EMISSAO },
+        uArteDaCruz: { value: 1 },
         uTau: { value: opts.tau ?? 0.9 },
         uFade: { value: 1 },
         uCavityPos: { value: new THREE.Vector3() },

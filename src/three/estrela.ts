@@ -296,13 +296,15 @@ export function alcanceDoEspinhoPx(picoDeTela: number, sigmaPsfPx: number): numb
 // 16 é a arte do filme, `world/heroStars.ts`, por ordem do dono 16/08.)
 
 /** teto suave do pico para a LUZ do clarão (o uPico do shader) — MENOR
- *  que qualquer teto de tamanho, DE PROPÓSITO: na primeira leva da R1 a
- *  dose alta saturava o quad inteiro em PRATO branco de borda dura. Com
- *  ~8, o miolo ainda estoura (branco de sensor, correto) mas o rim do
- *  halo atravessa a faixa 0,1–1 de luminância AO LONGO do raio — é ali
- *  que mora o degradê suave e a COR (Sol dourado). Abaixo do β da
- *  emissão (300), a compressão é ~linear e não rouba matiz. */
-export const TETO_DE_LUZ_DO_FLARE = 8;
+ *  que qualquer teto de tamanho, DE PROPÓSITO, e calibrado pela
+ *  PROPORÇÃO do filme: nas heroes bonitas o miolo fica em ~1–3, o halo
+ *  ocupa ~⅓ do cartaz e os braços saem PARA FORA dele. Com 8 o halo do
+ *  Sol inchava até a borda e virava PRATO com cruz por dentro ("quando
+ *  se afasta fica uma merda" — dono, 16/08, com foto); com ~2,5 o halo
+ *  visível para em r̂ ≈ ⅓ e a cruz alcança 2–3× o halo, como no Sirius
+ *  resgatado. O ofuscante fica por conta do ponto + bloom, não das asas.
+ *  Abaixo do β da emissão (300), compressão ~linear, matiz intacto. */
+export const TETO_DE_LUZ_DO_FLARE = 2.5;
 
 /** Reinhard: `(1 − 1/(pico/T + 1))·T` — nunca clampa (C¹). */
 export function picoComTeto(pico: number, teto: number = TETO_DE_LUZ_DO_FLARE): number {

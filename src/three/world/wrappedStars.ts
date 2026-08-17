@@ -505,6 +505,7 @@ export class WrappedStars {
         uSigmaPx: { value: SIGMA_PX },
         // o MESMO β do campo: as cascas compartilham o STAR_FRAG
         uBeta: { value: BETA_DA_EMISSAO },
+        uArteDaCruz: { value: 1 },
         uCell: { value: new Float32Array(cells) },
         uProb: { value: new Float32Array(probs) },
         uMagLo: { value: new Float32Array(magLo) },

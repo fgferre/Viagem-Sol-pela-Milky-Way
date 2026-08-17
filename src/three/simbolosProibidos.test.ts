@@ -251,7 +251,10 @@ const PROIBIDOS: SimboloProibido[] = [
   },
   {
     arquivo: 'src/three/shaders/starShaders.ts',
-    padrao: /attribute float aFade|varying float vSat|\* 0\.85|vSat =/,
+    // (a amplitude 0,85 da cruz do filme RENASCEU em 16/08 por ordem do
+    // dono — "o ceu ficou vazio e escuro" — atrás de uArteDaCruz, campo
+    // e cascas apenas; o que segue morto é a espinha da dominância)
+    padrao: /attribute float aFade|varying float vSat|vSat =/,
     migracao: 'M2',
     razao:
       'aFade e vSat morreram: a cessão por dominância acabou e a amplitude ' +

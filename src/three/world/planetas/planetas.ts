@@ -404,6 +404,8 @@ export class Planetas {
         // o MESMO β do campo: os dez corpos compartilham o STAR_FRAG, e o
         // vértice 0 é o Sol — o ponto que estoura o half-float
         uBeta: { value: BETA_DA_EMISSAO },
+        // lei do fluxo PURA: planeta não ganha a cruz de arte do filme
+        uArteDaCruz: { value: 0 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
