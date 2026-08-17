@@ -11,8 +11,10 @@
 // do ponteiro.
 //
 // AS COORDENADAS DESTE TESTE FORAM MEDIDAS, não inventadas: são as que
-// `window.__director.lastLabels` devolveu em `?atlas=1`, 1200×1200, na
-// época (Sol em 0,5000/0,4575; Marte, Fobos e Deimos empilhados em
+// a última projeção do director devolveu em `?atlas=1`, 1200×1200, na
+// época (hoje o caminho de console é `__director.rotulos.alvos` —
+// corte 7 da onda da arquitetura; Sol em 0,5000/0,4575; Marte, Fobos e
+// Deimos empilhados em
 // 0,5033/0,4525). O teste prova as duas metades: que a armadilha é real
 // (o rótulo mais PERTO é o de Fobos) e que a marca a desarma (o mais
 // perto entre os DESENHADOS é o do Sol).

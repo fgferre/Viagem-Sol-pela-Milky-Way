@@ -459,8 +459,17 @@ describe('5. texto-fonte (as leis pinadas) e a fiação no director', () => {
     // a captura espera a textura da Lua como espera a da Terra
     expect(director).toContain('this.luaCarregando');
     // o buffer das luas alimenta projectCorpos; NaN o projectCorpos
-    // ignora (a barreira mora em labels.ts, não no gate do [0])
+    // ignora (a barreira mora em labels.ts, não no gate do [0]). O
+    // buffer e a projeção moram no módulo dos rótulos (corte 7 da onda
+    // da arquitetura) — o fio é vigiado dos DOIS lados da costura:
     expect(director).toContain(
+      "this.rotulos.escreverPosicaoDeLua('moon', l.centroPc)"
+    );
+    const rotulos = readFileSync(
+      new URL('../../director/rotulos.ts', import.meta.url),
+      'utf8'
+    );
+    expect(rotulos).toContain(
       'projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)'
     );
     // teardown: a Lua devolve tudo ANTES do palco esvaziar

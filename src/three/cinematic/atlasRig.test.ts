@@ -1185,9 +1185,11 @@ describe('o degrau do CORPO DO SOL', () => {
 
   it('o enquadramento do Sol sai do raio ÚNICO, sem literal de distância e sem polo', () => {
     const DIRECTOR = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    // o vizinho de baixo era `escreverPosicaoDeLua`, que migrou para o
+    // módulo dos rótulos (corte 7) — o delimitador seguiu o código
     const metodo = DIRECTOR.slice(
       DIRECTOR.indexOf('  private aproximarDoSol() {'),
-      DIRECTOR.indexOf('  private escreverPosicaoDeLua(')
+      DIRECTOR.indexOf('  focarNaLua(')
     );
     expect(metodo).toContain('this.atlas.focar(');
     // o raio é a fonte única do tamanho do Sol (a MESMA que o palco e o

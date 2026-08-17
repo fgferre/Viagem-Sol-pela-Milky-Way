@@ -15,7 +15,6 @@ import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
-import { projectCorpos, projectLabels, projectForced } from './world/labels';
 import type { StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor.
@@ -61,8 +60,7 @@ import type { VerDaEscada } from './selo';
 import { sondarGl } from '../lib/glProbe';
 import { EPOCA_JD_TDB, RETRATO_2026 } from './world/planetas/retrato2026';
 import type { IdRetrato } from './world/planetas/retrato2026';
-import { lerPortaJd, numeroPtBr } from './tempoDoAtlas';
-import { notaDeDistancia } from '../lib/unidades';
+import { lerPortaJd } from './tempoDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './tempoDoAtlas';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../lib/atlas/frameGalactico';
 import { baseCorpoEquatorial } from '../lib/atlas/orientacao';
@@ -84,6 +82,7 @@ import { VeuDoAtlas } from './director/veu';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
 import { MaquinaDoTempo } from './director/maquinaDoTempo';
 import { ligarGestos } from './director/gestos';
+import { Rotulos } from './director/rotulos';
 import {
   montarCenaDeAquecimento,
   montarCorposDoPalco,
@@ -299,12 +298,6 @@ export class Director {
   private retentouFonte = false;
   /** o aviso único do retrato sob corpos já saiu no console */
   private acusouRetrato = false;
-  /** posições VIVAS das luas para os rótulos (projectCorpos) —
-   *  3 floats por entrada de `LUAS_DO_SISTEMA`, NaN sem efeméride
-   *  (projectCorpos ignora NaN — rótulo só onde há corpo). */
-  private readonly luaPosParaRotulo = new Float32Array(
-    LUAS_DO_SISTEMA.length * 3
-  ).fill(Number.NaN);
   /**
    * A CÂMERA SALTOU neste quadro (portal, enquadramento, ?pos=) — os
    * corpos resolvidos fazem SNAP da cessão em vez de animar através do
@@ -349,13 +342,6 @@ export class Director {
   /** quem escreve a câmera AGORA — decidido pelo `setPhase` */
   private escritorDeCamera: EscritorDeCamera = 'nenhum';
   private meta!: StarsMeta;
-  /** última projeção de rótulos — alvo do clicar-para-visitar */
-  private lastLabels: StarLabel[] = [];
-  private prevLabelKeys = new Set<string>();
-  private lastDest = '';
-  private destTimer = 0;
-  private lastSol = '';
-  private solTimer = 0;
   /** o punho dos gestos do canvas — corte 6 da Parte 1 (director/gestos.ts) */
   private gestos: ReturnType<typeof ligarGestos> | null = null;
   /** roda e pinça → degraus da escada (Onda 7) */
@@ -406,6 +392,15 @@ export class Director {
     perturbar: () => this.perturbar(),
   });
 
+  /** os rótulos do céu — corte 7 da Parte 1 (director/rotulos.ts); o
+   *  beat é fio porque só o ramo da viagem o paga */
+  private readonly rotulos = new Rotulos({
+    onLabels: (labels) => this.events.onLabels(labels),
+    onDest: (text) => this.events.onDest(text),
+    onSol: (text) => this.events.onSol(text),
+    beatDaViagem: () => this.rig.metaAt(this.journeyT),
+  });
+
   private phase: Phase = 'loading';
   private journeyT = 0;
   /**
@@ -445,11 +440,6 @@ export class Director {
    * encolher no mesh e continuar tapando o céu como se fosse grande.
    */
   private readonly solRaioPc = RAIO_DO_SOL_NA_CENA;
-  /** o disco do Sol como oclusor de RÓTULO ("vejo estrelas através do
-   *  sol", item 47): nome de estrela atrás da fotosfera não nasce. Os
-   *  planetas não entram nesta leva — disco de minutos de arco só em
-   *  close, e lá o rótulo do próprio corpo é quem manda no quadro. */
-  private readonly oclusoresDeRotulo = [{ x: 0, y: 0, z: 0, raio: RAIO_DO_SOL_NA_CENA }];
   /**
    * O GATE DO SOL COMO CORPO (F2), estado da histerese entre quadros.
    * Nasce `false` porque o gate da casa entra por `>=` estrito e sai por
@@ -1119,88 +1109,6 @@ export class Director {
     return this.phase === 'journey' && this.freezeJourney;
   }
 
-  /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | nome HYG) */
-  private resolveForcedLabel(cam: THREE.PerspectiveCamera, name: string): StarLabel | null {
-    if (name === 'SOL') {
-      return projectForced(cam, 'SOL', 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
-    }
-    if (name === 'SGR') {
-      return projectForced(cam, 'Sagittarius A✱', 'SMBH', GAL.GC_POS, 'sgr-a');
-    }
-    const star = this.meta.named.find((s) => s.n === name);
-    return star ? projectForced(cam, star.n, star.s, star, star.n) : null;
-  }
-
-  /** "→ DESTINO · distância viva" — só emite quando o texto muda */
-  private emitDest(dest: string | undefined, camPos: THREE.Vector3) {
-    let text = '';
-    if (dest) {
-      const target =
-        dest === 'SGR' ? GAL.GC_POS : this.meta?.named.find((s) => s.n === dest);
-      if (target) {
-        const d = camPos.distanceTo(
-          target instanceof THREE.Vector3
-            ? target
-            : new THREE.Vector3(target.x, target.y, target.z)
-        );
-        // A QUARTA CÓPIA DA ESCADA MORREU AQUI (2026-08-14). Esta linha
-        // fazia `d * 3.262` e escrevia "1953 AL" com ponto decimal,
-        // enquanto o rótulo da mesma estrela, um palmo acima na mesma
-        // tela, já dizia "16,9 anos-luz" — duas grafias e dois
-        // separadores convivendo. Agora é a escada única
-        // (`lib/unidades`), a mesma de `LabelCanvas` e da paleta de
-        // busca. `src/three` pode importar de `src/lib`; o contrário é
-        // que inverteria a seta, e por isso o formatador pt-BR continua
-        // entrando INJETADO.
-        //
-        // O `UA_POR_PC` usado é o que este arquivo já importava de
-        // `world/planetas` (derivado de `AU_PARA_PC`): é o MESMO número
-        // do de `lib/unidades` até a 11ª casa, e um segundo símbolo com
-        // o mesmo nome no mesmo arquivo custaria mais do que resolve.
-        //
-        // SEM MEDIDA, SEM NÚMERO: `notaDeDistancia` devolve `null`
-        // quando a distância não é positiva e finita — aí fica só o
-        // nome do destino, em vez do "0.0 AL" que a cópia antiga
-        // escrevia ao chegar em cima do alvo.
-        const nota = notaDeDistancia(d * UA_POR_PC, numeroPtBr);
-        const label = dest === 'SGR' ? 'SAGITTARIUS A✱' : dest.toUpperCase();
-        text = nota ? `→ ${label} · ${nota}` : `→ ${label}`;
-      }
-    }
-    // aparecer/sumir é imediato; o contador vivo atualiza a 4 Hz
-    const changedKind = (text === '') !== (this.lastDest === '');
-    if (text !== this.lastDest && (changedKind || this.destTimer > 0.25)) {
-      this.lastDest = text;
-      this.destTimer = 0;
-      this.events.onDest(text);
-    }
-  }
-
-  /**
-   * "SOL · distância viva" — a medida do afastamento que o dono pediu
-   * (item 44, R3: "infelizmente nao tem medida de distancia para provar
-   * isso"). Só no voo livre — o filme guarda a dramaturgia e o Atlas tem
-   * o próprio enquadramento (`HUD_POR_FASE` concorda: `sol` só em
-   * 'free'). A escada de unidades é a MESMA dos rótulos e da linha de
-   * rumo (`lib/unidades`, injetada com o pt-BR da casa) — uma quinta
-   * cópia não nasce aqui. O Sol está na ORIGEM do mundo heliocêntrico,
-   * então a distância é o comprimento da posição da câmera; mesmo
-   * remédio de 4 Hz do rumo contra o setState por quadro.
-   */
-  private emitSol(camPos: THREE.Vector3) {
-    let text = '';
-    if (this.phase === 'free') {
-      const nota = notaDeDistancia(camPos.length() * UA_POR_PC, numeroPtBr);
-      if (nota) text = `SOL · ${nota}`;
-    }
-    const changedKind = (text === '') !== (this.lastSol === '');
-    if (text !== this.lastSol && (changedKind || this.solTimer > 0.25)) {
-      this.lastSol = text;
-      this.solTimer = 0;
-      this.events.onSol(text);
-    }
-  }
-
   /**
    * Clique curto no rótulo mais próximo. Duas fases, dois modos: no voo
    * livre a câmera VOA até lá; no Atlas ela ENQUADRA de onde estiver.
@@ -1224,7 +1132,7 @@ export class Director {
     if ((this.phase !== 'free' && this.phase !== 'atlas') || !this.meta) return;
     let best: StarLabel | null = null;
     let bestD = 0.0035; // ~6% da tela ao quadrado
-    for (const label of this.lastLabels) {
+    for (const label of this.rotulos.alvos) {
       if (label.desenhado === false) continue;
       if (label.opacity < 0.15) continue;
       const dx = label.x - x;
@@ -1698,15 +1606,6 @@ export class Director {
     this.events.onFoco(CORPOS_DO_SISTEMA.find((c) => c.id === 'sun')?.nome ?? null);
     this.emitirEscada();
     this.teletransportou();
-  }
-
-  /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
-  private escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
-    const i = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
-    if (i < 0) return;
-    this.luaPosParaRotulo[i * 3] = centro.x;
-    this.luaPosParaRotulo[i * 3 + 1] = centro.y;
-    this.luaPosParaRotulo[i * 3 + 2] = centro.z;
   }
 
   /**
@@ -2661,7 +2560,7 @@ export class Director {
       this.luaCarregavaAntes = l.carregando;
       // a posição viva para o RÓTULO da Lua (NaN sem efeméride ⇒ o
       // projectCorpos não a projeta — rótulo só onde há corpo)
-      this.escreverPosicaoDeLua('moon', l.centroPc);
+      this.rotulos.escreverPosicaoDeLua('moon', l.centroPc);
     }
     // OS ROCHOSOS (F3), pelo MESMO fio das irmãs — a lista viva é o
     // dado; planeta escreve a cessão do ponto (D5), lua não tem ponto.
@@ -2703,7 +2602,7 @@ export class Director {
       }
       r.emQuadroAntes = e.emQuadro;
       r.carregavaAntes = e.carregando;
-      if (!r.corpo.planeta) this.escreverPosicaoDeLua(r.corpo.id, e.centroPc);
+      if (!r.corpo.planeta) this.rotulos.escreverPosicaoDeLua(r.corpo.id, e.centroPc);
       }
     }
     // OS GIGANTES (F4), pelo MESMO fio dos rochosos — a lista viva é o
@@ -2800,8 +2699,7 @@ export class Director {
     const localBandFade = env * 0.76;
     const markerFade = THREE.MathUtils.smoothstep(dHome, 1700, 3300);
 
-    this.destTimer += dt;
-    this.solTimer += dt;
+    this.rotulos.tique(dt);
     // nuvens-semente do raymarch + cavidade do observador itinerante
     this.nuvensSemente.tique(dt, nebulaFade, cam.position, this.nebula);
     // a MESMA cavidade em todos os consumidores da densidade: raymarch,
@@ -3095,82 +2993,15 @@ export class Director {
       console.log(this.planetas.dbg(cam, this.engine.renderer.domElement.width, hPx));
     }
 
-    // rótulos a cada frame — a 10 Hz eles "nadavam" contra as estrelas
-    // (7 projeções + um canvas 2D pequeno: custo desprezível).
-    // Na viagem, menos rótulos (cinema); no voo livre, mais (são os
-    // alvos do clicar-para-visitar).
-    // O Atlas entra pelo ramo do voo livre: rótulos fartos e sem filtro
-    // editorial de centro — lá eles são os ALVOS do clicar-para-focar,
-    // não a moldura de um beat (fundação da busca da F3).
-    if (
-      (this.phase === 'journey' || this.phase === 'free' || this.phase === 'atlas') &&
-      this.meta
-    ) {
-      if (this.phase === 'journey') {
-        // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
-        // (target, etiqueta forçada, sem fades) e o fundo fica mudo
-        // (quiet) ou limitado a 2 durante o beat. SOL e Sagittarius A✱
-        // são sempre isentos do filtro de centro.
-        const meta = this.rig.metaAt(this.journeyT);
-        let labels = meta.quiet
-          ? []
-          : projectLabels(cam, this.meta.named, 4, this.prevLabelKeys, this.oclusoresDeRotulo).filter(
-              (l) => {
-                if (l.key === 'sol-home' || l.key === 'sgr-a') return true;
-                const dx = l.x - 0.5;
-                const dy = l.y - 0.5;
-                return dx * dx + dy * dy > 0.012; // ~11% do quadro
-              }
-            );
-        if (dHome < 1.5 && !meta.target) labels = [];
-        if (meta.target) {
-          const forced: StarLabel[] = [];
-          for (const name of meta.target) {
-            const l = this.resolveForcedLabel(cam, name);
-            if (l) forced.push(l);
-          }
-          const keys = new Set(forced.map((l) => l.key));
-          labels = labels.filter((l) => !keys.has(l.key)).slice(0, 2);
-          labels.push(...forced);
-        }
-        this.lastLabels = labels;
-        // linha de rumo com distância viva
-        this.emitDest(meta.dest, cam.position);
-      } else {
-        // OS DEZ CORPOS PRIMEIRO, e só onde eles estão DESENHADOS (a
-        // camada ligada e dentro do domínio profundo — o mesmo critério
-        // que decide `points.visible`). Primeiro na lista porque o
-        // desempate de colisão do `LabelCanvas` é a ordem: dentro do
-        // sistema solar o assunto são eles, e uma vizinha a 40 pc não
-        // pode expulsar Netuno do quadro que o Atlas abriu mostrando.
-        const corpos =
-          this.phase === 'atlas' && this.planetas?.points.visible
-            ? projectCorpos(cam, CORPOS_DO_SISTEMA, this.planetas.posicoes)
-            : [];
-        // AS LUAS (F2b/F5): rótulo pela posição VIVA da efeméride —
-        // não têm vértice na camada de pontos, então entram por uma
-        // projeção própria. NaN (sem efeméride) o projectCorpos ignora.
-        const luas =
-          this.phase === 'atlas' && this.planetas?.points.visible
-            ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
-            : [];
-        this.lastLabels = [
-          ...corpos,
-          ...luas,
-          ...projectLabels(cam, this.meta.named, 7, this.prevLabelKeys, this.oclusoresDeRotulo),
-        ];
-        this.emitDest(undefined, cam.position);
-      }
-      this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
-      this.events.onLabels(this.lastLabels);
-    } else if (this.phase !== 'journey') {
-      this.lastLabels = [];
-      this.events.onLabels([]);
-      this.emitDest(undefined, cam.position);
-    }
-
-    // a distância viva do Sol — roda todo tique e se auto-apaga fora do voo
-    this.emitSol(cam.position);
+    // rótulos a cada frame — projeção, linha de rumo e distância do Sol
+    // moram no módulo (corte 7); o quadro entrega fase, catálogo, dHome
+    // e a camada dos corpos, e o clique lê a MESMA lista por `alvos`
+    this.rotulos.projetar(cam, {
+      fase: this.phase,
+      named: this.meta?.named ?? null,
+      dHome,
+      planetas: this.planetas,
+    });
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     // gate 0.02: na casca externa do fade a contribuição é invisível
