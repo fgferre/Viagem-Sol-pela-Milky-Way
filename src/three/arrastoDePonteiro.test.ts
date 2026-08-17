@@ -417,6 +417,12 @@ describe('FreeRoam — o teardown leva TODOS os listeners do gesto', () => {
 // 3. A FIAÇÃO DO DIRECTOR (e o cursor), por texto-fonte
 // ------------------------------------------------------------
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
+// o corte 6 da Parte 1 moveu os gestos do canvas para o módulo próprio —
+// os pinos da fiação seguem o código, e o fio de volta se pina no DIRECTOR
+const GESTOS = readFileSync(
+  new URL('./director/gestos.ts', import.meta.url),
+  'utf8'
+);
 const RIG = readFileSync(new URL('./cinematic/cameraRig.ts', import.meta.url), 'utf8');
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 const HUD_DIR = new URL('../hud/', import.meta.url);
@@ -427,7 +433,7 @@ const CSS = readdirSync(HUD_DIR)
 
 describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', () => {
   it('os dois gestos da casa importam uma máquina só', () => {
-    expect(DIRECTOR).toContain("import { ArrastoDePonteiro } from './arrastoDePonteiro'");
+    expect(GESTOS).toContain("import { ArrastoDePonteiro } from '../arrastoDePonteiro'");
     expect(RIG).toContain("import { ArrastoDePonteiro } from '../arrastoDePonteiro'");
     // e nenhum dos dois guarda mais o estado do gesto por conta própria
     expect(RIG).not.toMatch(/private dragging|private dragMoved|private downAt/);
@@ -439,49 +445,48 @@ describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', ()
   it('o delta NÃO é mais calculado à mão contra a última posição', () => {
     // era esta subtração — cega a qual dedo estava do outro lado dela —
     // que dava os 25° de giro num evento só
-    expect(DIRECTOR).not.toMatch(/clientX - this\.pause/);
-    expect(DIRECTOR).toContain('this.arrastoDaPausa.mover(event)');
-    expect(DIRECTOR).toContain('if (!passo) return;');
+    expect(GESTOS).not.toMatch(/clientX - this\.pause/);
+    expect(GESTOS).toContain('arrasto.mover(event)');
+    expect(GESTOS).toContain('if (!passo) return;');
     // e o passo FILTRADO é o que chega aos dois consumidores do gesto —
     // a órbita do Atlas e o olhar da viagem congelada. Sem este pino,
     // um `mover` chamado e depois ignorado passaria pelos de cima.
     // (Onda 7: o passo chega INTEIRO — o `dy` era calculado e jogado
     // fora, e era esse descarte que deixava o Atlas com um eixo só)
-    expect(DIRECTOR).toContain('this.atlas.addOrbitDelta(passo.dx, passo.dy)');
-    expect(DIRECTOR).toContain('this.rig.addLookDelta(passo.dx, passo.dy)');
+    expect(GESTOS).toContain('fios.orbitar(passo.dx, passo.dy)');
+    expect(GESTOS).toContain('fios.olhar(passo.dx, passo.dy)');
+    // e o DIRECTOR liga os fios nos dois consumidores de sempre
+    expect(DIRECTOR).toContain('this.atlas.addOrbitDelta(dx, dy)');
+    expect(DIRECTOR).toContain('this.rig.addLookDelta(dx, dy)');
   });
 
   it('down e up passam pela máquina (botão principal e dono do gesto)', () => {
-    expect(DIRECTOR).toContain('this.arrastoDaPausa.comecar(event, performance.now())');
-    expect(DIRECTOR).toContain('this.arrastoDaPausa.soltar(event, performance.now())');
+    expect(GESTOS).toContain('arrasto.comecar(event, performance.now())');
+    expect(GESTOS).toContain('arrasto.soltar(event, performance.now())');
     // o clique curto só existe se o `soltar` disser que houve
-    expect(DIRECTOR).toMatch(/if \(curto && this\.phase === 'atlas'\)/);
+    expect(GESTOS).toMatch(/if \(curto && fios\.noAtlas\(\)\)/);
   });
 
   it('as DUAS saídas de gesto cancelado estão registradas e caem no cancelar', () => {
     for (const tipo of ['pointercancel', 'lostpointercapture']) {
-      expect(DIRECTOR).toContain(
-        `window.addEventListener('${tipo}', this.onPausePointerCancel)`
-      );
-      expect(DIRECTOR).toContain(
-        `window.removeEventListener('${tipo}', this.onPausePointerCancel)`
-      );
+      expect(GESTOS).toContain(`window.addEventListener('${tipo}', onPointerCancel)`);
+      expect(GESTOS).toContain(`window.removeEventListener('${tipo}', onPointerCancel)`);
     }
-    expect(DIRECTOR).toContain('this.arrastoDaPausa.cancelar(event)');
+    expect(GESTOS).toContain('arrasto.cancelar(event)');
     // o gesto vivo não sobrevive ao próprio Director (HMR do vite)
-    expect(DIRECTOR).toContain('this.arrastoDaPausa.esquecer()');
+    expect(GESTOS).toContain('arrasto.esquecer()');
   });
 
   it('o menu do sistema não abre sobre o canvas — e sai no teardown', () => {
-    expect(DIRECTOR).toContain("canvas.addEventListener('contextmenu', this.onContextMenu)");
-    expect(DIRECTOR).toMatch(
+    expect(GESTOS).toContain("canvas.addEventListener('contextmenu', onContextMenu)");
+    expect(GESTOS).toMatch(
       /onContextMenu = \(event: MouseEvent\) => \{\s*event\.preventDefault\(\);/
     );
-    expect(DIRECTOR).toContain("removeEventListener('contextmenu', this.onContextMenu)");
+    expect(GESTOS).toContain("canvas.removeEventListener('contextmenu', onContextMenu)");
   });
 
   it('o bloqueio é do CANVAS, não da janela — o HUD mantém o menu normal', () => {
-    expect(DIRECTOR).not.toContain("window.addEventListener('contextmenu'");
+    expect(GESTOS).not.toContain("window.addEventListener('contextmenu'");
     // e é UM dono só: dois `preventDefault` no mesmo canvas seriam a
     // mesma decisão escrita em dois lugares
     expect(RIG).not.toContain('contextmenu');

@@ -79,17 +79,16 @@ import { loadGalacticAssets } from './cartography/galacticAssets';
 import { bakeDustMap } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
-import { ArrastoDePonteiro } from './arrastoDePonteiro';
 import { NuvensSemente } from './director/nuvensSemente';
 import { VeuDoAtlas } from './director/veu';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
 import { MaquinaDoTempo } from './director/maquinaDoTempo';
+import { ligarGestos } from './director/gestos';
 import {
   montarCenaDeAquecimento,
   montarCorposDoPalco,
   montarGalaxia,
 } from './director/carregamento';
-import { RodaDaEscada } from './rodaDaEscada';
 import {
   AtlasRig,
   orbitaMaisExterna,
@@ -357,17 +356,9 @@ export class Director {
   private destTimer = 0;
   private lastSol = '';
   private solTimer = 0;
-  /**
-   * O GESTO de arrastar do Atlas e do pausar-e-olhar. Era um punhado de
-   * campos soltos (`pauseDragging`, `pauseLastX/Y`, `pauseArrasto`,
-   * `pauseDesde`) duplicado no `FreeRoam`, com os mesmos quatro
-   * defeitos nos dois; agora os dois trios de listeners falam com a
-   * MESMA máquina — que é onde o filtro por `pointerId`, o botão
-   * principal e o cancelamento pelo sistema estão escritos e testados.
-   */
-  private arrastoDaPausa = new ArrastoDePonteiro();
+  /** o punho dos gestos do canvas — corte 6 da Parte 1 (director/gestos.ts) */
+  private gestos: ReturnType<typeof ligarGestos> | null = null;
   /** roda e pinça → degraus da escada (Onda 7) */
-  private readonly roda = new RodaDaEscada();
 
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
@@ -622,22 +613,19 @@ export class Director {
       if (this.debug.has(k)) this.hide.add(k);
     }
 
-    // pausar-e-olhar: com a viagem pausada, arrastar olha ao redor;
-    // no play a mira volta sozinha ao enquadramento do filme
-    canvas.addEventListener('pointerdown', this.onPausePointerDown);
-    window.addEventListener('pointermove', this.onPausePointerMove);
-    window.addEventListener('pointerup', this.onPausePointerUp);
-    // as DUAS outras saídas do gesto — sem elas o `pointerup` que nunca
-    // chega deixa o arrasto preso para sempre (ver `onPausePointerCancel`)
-    window.addEventListener('pointercancel', this.onPausePointerCancel);
-    window.addEventListener('lostpointercapture', this.onPausePointerCancel);
-    canvas.addEventListener('contextmenu', this.onContextMenu);
-    // A RODA E A PINÇA (Onda 7), e o `passive: false` é a coisa toda:
-    // sem ele o navegador recusa o `preventDefault` e a página rola (ou
-    // o Chrome DÁ ZOOM, que é o que a pinça faz por padrão) por baixo do
-    // Atlas. Fica no CANVAS e não na janela para o HUD — a máquina do
-    // tempo, a busca, o painel de ajustes — continuar rolando normal.
-    canvas.addEventListener('wheel', this.onRodaDoAtlas, { passive: false });
+    // os gestos do canvas moram em director/gestos.ts (corte 6)
+    this.gestos = ligarGestos(canvas, {
+      pauseLookAtivo: () => this.pauseLookActive,
+      noAtlas: () => this.phase === 'atlas',
+      orbitar: (dx, dy) => {
+        this.atlas.addOrbitDelta(dx, dy);
+        this.perturbar();
+      },
+      olhar: (dx, dy) => this.rig.addLookDelta(dx, dy),
+      focar: (x, y) => this.tryVisit(x, y),
+      descerDegrau: () => this.descerDegrau(),
+      subirDegrau: () => this.subirDegrau(),
+    });
 
     // clique curto no voo livre → mini-viagem até a estrela nomeada
     this.roam.onTap = (x, y) => this.tryVisit(x, y);
@@ -929,7 +917,7 @@ export class Director {
     this.escritorDeCamera = ESCRITOR_DE_CAMERA[p];
     // trocar de fase encerra o gesto da roda: meio empurrão guardado não
     // pode virar degrau na próxima entrada no Atlas
-    this.roda.esquecer();
+    this.gestos?.esquecerRoda();
     this.roam.enabled = this.escritorDeCamera === 'voo';
     this.events.onPhase(p);
     // o HUD da fase nova pode ter mostrador de tempo, e ele monta com o
@@ -1130,100 +1118,6 @@ export class Director {
   private get pauseLookActive() {
     return this.phase === 'journey' && this.freezeJourney;
   }
-
-  /**
-   * Os MESMOS listeners servem o Atlas — arrastar orbita o alvo, clique
-   * curto foca o nome mais próximo. Registrar um segundo conjunto para
-   * a fase nova compraria dois donos do mesmo gesto no mesmo canvas; o
-   * dono muda com a fase, o listener não.
-   */
-  private onPausePointerDown = (event: PointerEvent) => {
-    if (!this.pauseLookActive && this.phase !== 'atlas') return;
-    this.arrastoDaPausa.comecar(event, performance.now());
-  };
-
-  private onPausePointerMove = (event: PointerEvent) => {
-    // o passo vem `null` para qualquer ponteiro que não seja o dono do
-    // gesto: é ISSO que impede o segundo dedo de girar 25° medido
-    // contra a última posição do primeiro (ver `arrastoDePonteiro.ts`)
-    const passo = this.arrastoDaPausa.mover(event);
-    if (!passo) return;
-    if (this.phase === 'atlas') {
-      // OS DOIS EIXOS (Onda 7): o `dy` era calculado e jogado fora — a
-      // dica prometia "girar em torno do alvo" e o que existia era uma
-      // subida em latitude. Agora a horizontal dá a volta e a vertical
-      // sobe e desce, cada uma no seu eixo (ver `addOrbitDelta`).
-      this.atlas.addOrbitDelta(passo.dx, passo.dy);
-      this.perturbar();
-    } else if (this.pauseLookActive) {
-      this.rig.addLookDelta(passo.dx, passo.dy);
-    }
-  };
-
-  private onPausePointerUp = (event: PointerEvent) => {
-    // clique curto e parado no Atlas = focar. Os dois limiares (6 px,
-    // 400 ms) são os do voo livre, não números novos — hoje moram em
-    // `CLIQUE_PX`/`CLIQUE_MS`, um lugar só para os dois gestos.
-    const curto = this.arrastoDaPausa.soltar(event, performance.now());
-    if (curto && this.phase === 'atlas') {
-      this.tryVisit(
-        event.clientX / window.innerWidth,
-        event.clientY / window.innerHeight
-      );
-    }
-  };
-
-  /**
-   * O SISTEMA LEVOU O PONTEIRO: gesto do iOS, palma rejeitada, trocar
-   * de janela com o botão preso. Nesses casos o `pointerup` NUNCA
-   * chega, e sem este tratador o arrasto ficava ligado para sempre — a
-   * cena passava a girar com o ponteiro solto, e o único caminho de
-   * volta era recarregar. Encerra pelo mesmo lugar do soltar, MENOS o
-   * clique curto: gesto abortado pelo sistema não é clique de ninguém.
-   * O `lostpointercapture` entra junto porque o toque tem captura
-   * IMPLÍCITA no alvo — quando ela cai sem `pointerup` (o navegador
-   * assumiu o gesto), este é o único aviso que chega.
-   */
-  private onPausePointerCancel = (event: PointerEvent) => {
-    this.arrastoDaPausa.cancelar(event);
-  };
-
-  /**
-   * A RODA E A PINÇA MOVEM A ESCADA (Onda 7) — e este é o único lugar
-   * do projeto que trata `wheel` fora do voo livre.
-   *
-   * O `preventDefault` é INCONDICIONAL dentro da fase, e vem antes de
-   * qualquer decisão de degrau: mesmo o giro que não completa um degrau
-   * (o acumulador ainda somando) tem de morrer aqui, senão metade dos
-   * eventos de um gesto rolaria a página enquanto a outra metade move a
-   * escada. E ele vale para a PINÇA pelo mesmo `wheel` — no Chrome e no
-   * Safari de Mac a pinça de trackpad chega como `wheel` com `ctrlKey`,
-   * e o padrão dela é DAR ZOOM NA PÁGINA inteira, HUD e canvas juntos.
-   *
-   * Quem traduz pixels em degrau é a `RodaDaEscada` (limiar, trava e
-   * `deltaMode`); aqui só se decide o que é subir e o que é descer.
-   */
-  private onRodaDoAtlas = (evento: WheelEvent) => {
-    if (this.phase !== 'atlas') return;
-    evento.preventDefault();
-    const passo = this.roda.girar(evento, performance.now(), window.innerHeight);
-    if (passo < 0) this.descerDegrau();
-    else if (passo > 0) this.subirDegrau();
-  };
-
-  /**
-   * O MENU DO SISTEMA NÃO ABRE SOBRE A CENA. Mora aqui, e não no
-   * `FreeRoam`, porque o canvas é UM e os dois conjuntos de listeners
-   * são dele: dois `preventDefault` no mesmo evento seriam a mesma
-   * decisão escrita em dois lugares. Vale em TODAS as fases de
-   * propósito — o canvas ocupa a tela inteira, e um menu de navegador
-   * por cima do filme é a mesma quebra de imersão em qualquer uma
-   * delas. As peças do HUD são outros nós do DOM: clicar com o direito
-   * nelas continua abrindo o menu normal.
-   */
-  private onContextMenu = (event: MouseEvent) => {
-    event.preventDefault();
-  };
 
   /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | nome HYG) */
   private resolveForcedLabel(cam: THREE.PerspectiveCamera, name: string): StarLabel | null {
@@ -3330,18 +3224,7 @@ export class Director {
       }
     };
     step('roam', () => this.roam.dispose());
-    step('listeners', () => {
-      this.engine.renderer.domElement.removeEventListener('pointerdown', this.onPausePointerDown);
-      window.removeEventListener('pointermove', this.onPausePointerMove);
-      window.removeEventListener('pointerup', this.onPausePointerUp);
-      window.removeEventListener('pointercancel', this.onPausePointerCancel);
-      window.removeEventListener('lostpointercapture', this.onPausePointerCancel);
-      this.engine.renderer.domElement.removeEventListener('contextmenu', this.onContextMenu);
-      this.engine.renderer.domElement.removeEventListener('wheel', this.onRodaDoAtlas);
-      // o HMR do vite chama o dispose a cada salvamento: gesto vivo de
-      // uma sessão morta não pode sobreviver ao próprio Director
-      this.arrastoDaPausa.esquecer();
-    });
+    step('listeners', () => this.gestos?.desligar());
     step('blackHole', () => this.blackHole?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram

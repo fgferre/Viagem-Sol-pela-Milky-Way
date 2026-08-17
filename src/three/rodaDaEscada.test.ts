@@ -119,29 +119,36 @@ describe('o acumulador não guarda o que não é gesto', () => {
 // A FIAÇÃO, por texto-fonte
 // ------------------------------------------------------------
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
+const GESTOS = readFileSync(
+  new URL('./director/gestos.ts', import.meta.url),
+  'utf8'
+);
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 
 describe('Director — a roda está ligada, e ligada do jeito que funciona', () => {
   it('o listener é do CANVAS e com passive: false — sem isso o preventDefault é recusado', () => {
-    expect(DIRECTOR).toContain(
-      "canvas.addEventListener('wheel', this.onRodaDoAtlas, { passive: false })"
+    expect(GESTOS).toContain(
+      "canvas.addEventListener('wheel', onRoda, { passive: false })"
     );
     // e sai no dispose: o HMR do vite recria o Director a cada salvamento
-    expect(DIRECTOR).toContain("removeEventListener('wheel', this.onRodaDoAtlas)");
+    expect(GESTOS).toContain("canvas.removeEventListener('wheel', onRoda)");
   });
 
   it('o preventDefault vem ANTES da decisão de degrau', () => {
-    const corpo = DIRECTOR.slice(
-      DIRECTOR.indexOf('private onRodaDoAtlas'),
-      DIRECTOR.indexOf('private onContextMenu')
+    const corpo = GESTOS.slice(
+      GESTOS.indexOf('const onRoda'),
+      GESTOS.indexOf('const onContextMenu')
     );
     expect(corpo).toContain('evento.preventDefault();');
     expect(corpo.indexOf('evento.preventDefault()')).toBeLessThan(
-      corpo.indexOf('this.roda.girar')
+      corpo.indexOf('roda.girar')
     );
     // os dois consumidores, e a escada é a de sempre (nada de zoom novo)
-    expect(corpo).toContain('this.descerDegrau()');
-    expect(corpo).toContain('this.subirDegrau()');
+    expect(corpo).toContain('fios.descerDegrau()');
+    expect(corpo).toContain('fios.subirDegrau()');
+    // e o DIRECTOR liga os fios na escada de sempre
+    expect(DIRECTOR).toContain('descerDegrau: () => this.descerDegrau()');
+    expect(DIRECTOR).toContain('subirDegrau: () => this.subirDegrau()');
   });
 
   it('a dica conta ao visitante que a roda existe', () => {
