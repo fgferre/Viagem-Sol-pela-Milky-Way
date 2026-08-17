@@ -14,7 +14,7 @@
 // uma lista envelhece calada na próxima regra de CSS que alguém
 // escrever. A regra alcança as que ainda não existem.
 // ============================================================
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   DEGRAUS_DA_UI,
@@ -25,7 +25,11 @@ import {
   rotuloDaEscala,
 } from './uiScale';
 
-const HUD_CSS = readFileSync(new URL('../hud.css', import.meta.url), 'utf8');
+const HUD_DIR = new URL('../hud/', import.meta.url);
+const HUD_CSS = readdirSync(HUD_DIR)
+  .sort()
+  .map((fatia) => readFileSync(new URL(fatia, HUD_DIR), 'utf8'))
+  .join('\n');
 const INDEX_CSS = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
 const DECLARACOES = [...HUD_CSS.matchAll(/font-size:\s*([^;]+);/g)].map((m) => m[1].trim());
 

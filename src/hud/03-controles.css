@@ -1,0 +1,230 @@
+/* HUD, fatia 3/8 — a cascata é a ordem dos prefixos numéricos:
+   App.tsx importa nessa ordem e os testes concatenam por sort(). */
+/* --- botões --- */
+.hud-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1px solid rgba(220, 230, 248, 0.35);
+  background: rgba(8, 12, 22, 0.35);
+  color: rgba(235, 240, 250, 0.92);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 300;
+  padding: 0.85rem 1.9rem;
+  transition: all 0.35s ease;
+  backdrop-filter: blur(6px);
+}
+.hud-btn:focus-visible {
+  outline: 1px solid rgba(255, 219, 164, 0.95);
+  outline-offset: 4px;
+}
+.hud-btn:hover {
+  background: rgba(255, 214, 150, 0.14);
+  border-color: rgba(255, 214, 150, 0.75);
+  color: #fff;
+  box-shadow: 0 0 24px rgba(255, 200, 120, 0.18);
+}
+.hud-btn.small {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+}
+.controls-bar select.hud-btn {
+  appearance: none;
+  min-width: 9rem;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(230, 237, 248, 0.8) 50%),
+    linear-gradient(135deg, rgba(230, 237, 248, 0.8) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+
+/* --- controles fixos --- */
+.controls-bar {
+  position: fixed;
+  top: 8.5vh;
+  right: 3vw;
+  z-index: 45;
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* A FAIXA DE CIMA DO ATLAS, com a mesma garantia geométrica do rodapé.
+   A linha de contexto (esquerda) e a barra de controles (direita) se
+   penduram na MESMA linha, e as duas crescem com o texto: sem limite
+   declarado elas se encontram no meio — foi o que aconteceu a 800 px de
+   largura com o texto em 140%. Aqui a linha de contexto termina no
+   máximo em 6vw + 30vw = 36vw e a barra começa no mínimo em
+   100vw − 3vw − 60vw = 37vw; entre as duas sobra 1vw em qualquer
+   tamanho de texto. A barra quebra linha em vez de crescer para a
+   esquerda, e o `:has()` mantém a regra dentro do Atlas — no filme,
+   onde não há linha de contexto, a barra é a de sempre. */
+.atlas-contexto {
+  max-width: 30vw;
+}
+.hud-root:has(.atlas-contexto) .controls-bar {
+  max-width: 60vw;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* --- linha de rumo (destino com distância viva) --- */
+.dest-line {
+  position: fixed;
+  right: 6vw;
+  bottom: 9.6vh;
+  z-index: 40;
+  pointer-events: none;
+  color: rgba(255, 214, 150, 0.78);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+
+/* --- distância viva do Sol (voo livre) — a prova do afastamento.
+   Mesmo traje da linha de rumo, um degrau abaixo e mais discreta:
+   é referência de posição, não chamada de destino. --- */
+.sol-line {
+  position: fixed;
+  right: 6vw;
+  bottom: 7.6vh;
+  z-index: 40;
+  pointer-events: none;
+  color: rgba(255, 214, 150, 0.55);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+
+/* --- dica de voo livre ---
+   SEM POSIÇÃO PRÓPRIA: a dica vive dentro de uma coluna nos dois modos
+   em que existe — o `.filme-rodape` no filme e no voo livre, o
+   `.atlas-rodape` no Atlas —, e é a coluna que a ancora. O
+   `position: fixed; left: 6vw; bottom: 11vh` que morava aqui era o
+   MESMO ponto da legenda, e foi assim que as duas passaram a ser
+   escritas uma por cima da outra. */
+.free-hint {
+  color: rgba(200, 214, 235, 0.75);
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  line-height: 2;
+  pointer-events: none;
+}
+
+/* o opt-in da captura de ponteiro (F5): mora dentro da dica de voo, que
+   é a linha que o visitante já lê para saber como voar. A dica inteira é
+   `pointer-events: none` — só este botão recebe clique. */
+.free-hint-captura {
+  margin-top: 0.3rem;
+  padding: 0.18rem 0.6rem;
+  pointer-events: auto;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.5);
+  color: rgba(200, 214, 235, 0.75);
+  font: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+.free-hint-captura:hover:not(:disabled) {
+  border-color: rgba(255, 214, 150, 0.6);
+  color: rgba(235, 240, 250, 0.95);
+}
+.free-hint-captura:disabled {
+  cursor: default;
+  border-color: rgba(220, 230, 248, 0.14);
+  color: rgba(200, 214, 235, 0.5);
+}
+
+/* --- Spotlight e convite (F5) ---------------------------------------
+   Filho DIRETO de .hud-root, como o véu e o painel: é a regra do
+   .bare-mode (`> *:not(.scene-canvas)`) que os apaga em ?shot=2.
+   O véu NÃO recebe ponteiro — o visitante tem de poder arrastar o céu
+   enquanto lê "arraste para olhar em volta"; só o cartão é clicável.
+   A ÚNICA transição aqui é a opacidade da entrada, e ela some sob
+   prefers-reduced-motion (bloco lá embaixo): nada pisca nem pulsa. */
+.spotlight {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.spotlight.pronto {
+  opacity: 1;
+}
+.spotlight-mascara {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.spotlight-cartao {
+  position: fixed;
+  max-width: min(24rem, 82vw);
+  pointer-events: auto;
+  padding: 0.8rem 1rem 0.7rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.86);
+  backdrop-filter: blur(14px);
+  color: rgba(235, 240, 250, 0.92);
+}
+/* sem alvo na tela: o cartão fica no meio, sozinho */
+.spotlight-cartao.solto {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.convite-texto {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 300;
+  line-height: 1.5;
+}
+.convite-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.convite-conta {
+  margin-right: auto;
+  font-size: 0.54rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.55);
+}
+.convite-linha button {
+  padding: 0.24rem 0.7rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: none;
+  color: rgba(200, 214, 235, 0.8);
+  font: inherit;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+.convite-linha button:hover {
+  border-color: rgba(255, 214, 150, 0.6);
+  color: rgba(235, 240, 250, 0.95);
+}
+.convite-linha .convite-adiante {
+  border-color: rgba(255, 214, 150, 0.45);
+  color: rgba(255, 224, 180, 0.92);
+}
+

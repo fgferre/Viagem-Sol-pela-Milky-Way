@@ -31,7 +31,17 @@ import { CAMADAS } from './three/atlasConfig';
 import { estadoDoSelo } from './three/selo';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { ESCALA_PADRAO, aplicarEscalaDaUi, lerEscalaDaUi } from './lib/uiScale';
-import './hud.css';
+// O HUD em 8 fatias contíguas — a ORDEM destes imports é a cascata do
+// antigo hud.css e não pode se reordenar (empates de especificidade,
+// @media e .shot-mode dependem dela).
+import './hud/01-base.css';
+import './hud/02-filme.css';
+import './hud/03-controles.css';
+import './hud/04-atlas.css';
+import './hud/05-loading.css';
+import './hud/06-responsivo.css';
+import './hud/07-foto.css';
+import './hud/08-ajustes.css';
 
 /** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
 const MERGE_MS = 2200;

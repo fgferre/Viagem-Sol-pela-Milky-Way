@@ -367,6 +367,15 @@ atrás de corpo resolvido ainda vaza clarão FRACO no rascunho do campo —
 não há ocultadores lá. O conserto conhecido (fantasmas só-profundidade)
 está anotado no próprio passe (`post.ts`).
 
+**48.** O juiz de a11y cobra um morto: 6 falhas órfãs do M1. O campo
+`gradacao` do selo e a porta `?grad=` morreram DE PROPÓSITO no M1
+(lápide em `selo.ts`, "a gradação por contexto"), mas `a11y.mjs` ainda
+os testa — "clarão undefined", "fator undefined", `?grad=0`. Provado em
+17/08 que as falhas antecedem a onda da arquitetura (mesmas 6 com e sem
+o corte do hud.css). O conserto é atualizar o JUIZ ao mundo pós-M1 — e
+decidir o que ele passa a cobrar da assistência nova do Atlas
+(`OCUPACAO_NA_OBSERVACAO`, a dose 0,07), que hoje ninguém vigia.
+
 ---
 
 ## O que o dono ainda vai contar

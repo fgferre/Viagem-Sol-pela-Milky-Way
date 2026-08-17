@@ -1,0 +1,203 @@
+/* HUD, fatia 6/8 — a cascata é a ordem dos prefixos numéricos:
+   App.tsx importa nessa ordem e os testes concatenam por sort(). */
+@media (max-width: 760px) {
+  .letterbox.on {
+    height: 4.5vh;
+  }
+
+  .title-big {
+    max-width: 94vw;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+  }
+
+  .title-sub {
+    max-width: 88vw;
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
+    line-height: 1.8;
+  }
+
+  .controls-bar {
+    top: 6.5vh;
+    right: 4vw;
+    left: 4vw;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  /* "Ver a galáxia" NÃO some no celular: é a única saída visível dos
+     ~48 s quase parados do Ato I, e a barra já quebra linha (flex-wrap).
+     Quem cede espaço é o seletor de qualidade — o rótulo do preset é
+     legível cortado, e escolher qualidade é raro; pular para o clímax não. */
+  .controls-bar select.hud-btn {
+    min-width: 0;
+    max-width: 5.6rem;
+  }
+
+  /* no celular a máquina do tempo quebra linha em vez de sair da tela;
+     a faixa fica mais alta, e é por isso que o retângulo útil dela é
+     declarado com a folga da medição de mesa (atlasRig.ts). O limite de
+     46vw da coluna NÃO se afrouxa aqui: é ele que garante que o rodapé
+     nunca alcance o selo, e tela estreita é justamente onde essa
+     garantia importa. */
+  .atlas-rodape {
+    left: 4vw;
+  }
+  /* A LINHA DE CONTEXTO ANTES DOS BOTÕES. As duas peças do topo se
+     ancoram na mesma linha (`top`), e numa tela estreita a barra de
+     controles ocupa a largura inteira e passava POR CIMA do "em
+     quadro". Aqui a barra desce o que a linha de contexto ocupa — e o
+     número é em `rem` porque a altura dela é toda em `rem`: a folga
+     sobrevive a qualquer `?ui=`. O `:has()` mantém isto restrito ao
+     Atlas; no filme, onde não há linha de contexto, a barra fica onde
+     sempre esteve. */
+  .hud-root:has(.atlas-contexto) .controls-bar {
+    top: calc(6.5vh + 3.2rem);
+    /* aqui a barra é de borda a borda (`left` E `right` acima), e um
+       `max-width` sobre isso desancoraria a direita — o navegador
+       descarta o `right` quando os três brigam. A garantia horizontal
+       do bloco de cima não vale nesta faixa: quem separa as duas peças
+       é a linha, não a coluna. */
+    max-width: none;
+  }
+  .atlas-contexto {
+    left: 4vw;
+    right: 4vw;
+    max-width: none;
+  }
+  /* uma linha só, sempre: é a altura da linha de contexto que a barra
+     desconta acima, e um nome comprido que dobrasse de linha comeria a
+     folga. Cortado com reticências continua honesto — o nome inteiro
+     está no rótulo da estrela em quadro. */
+  .atlas-contexto-nome {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .atlas-tempo-linha {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .atlas-tempo-botoes {
+    flex-wrap: wrap;
+  }
+  .atlas-tempo-taxa {
+    min-width: 0;
+  }
+
+  /* `stretch` porque a coluna passa a ter as duas bordas (left E right):
+     é o que devolve à legenda a largura inteira que ela tinha aqui
+     quando se posicionava sozinha — sem isto o título do beat pararia
+     de quebrar linha na tela estreita, que é justamente onde ele
+     precisa quebrar */
+  .filme-rodape {
+    left: 5vw;
+    right: 5vw;
+    bottom: 10vh;
+    align-items: stretch;
+  }
+
+  .caption-title {
+    font-size: clamp(1.15rem, calc(7vw * var(--ui)), 1.8rem);
+    letter-spacing: 0.28em;
+  }
+
+  .caption-sub {
+    letter-spacing: 0.18em;
+  }
+
+  .progress-wrap {
+    left: 5vw;
+    right: 5vw;
+    bottom: 6.4vh;
+  }
+
+  .cv-trilho {
+    left: 5vw;
+    right: 5vw;
+    bottom: 6.4vh;
+    gap: 0.9rem;
+  }
+
+  .cv-titulo {
+    top: 58%;
+    gap: 0.8rem;
+  }
+
+  .cv-titulo .title-big {
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+  }
+
+  .cv-etapa-rotulo {
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
+  }
+}
+
+/* paisagem baixa (844×390): a composição sobe e o bloco de texto encolhe
+   para caber entre a galáxia e o trilho */
+@media (max-height: 480px) and (orientation: landscape) {
+  /* Numa tela desta altura o rodapé do Atlas não cabe inteiro com o
+     texto grande — a máquina do tempo encostava na barra de controles.
+     Quem cede é a DICA, que é ensino de gesto e se descobre arrastando;
+     fica a máquina do tempo, que é controle e não se adivinha. Mesmo
+     critério do "Ver a galáxia" no celular, logo acima. */
+  .atlas-rodape .free-hint {
+    display: none;
+  }
+
+  .cv-titulo {
+    top: 56%;
+    gap: 0.55rem;
+  }
+
+  .cv-titulo .title-big {
+    font-size: clamp(1rem, calc(3.4vw * var(--ui)), 1.6rem);
+    letter-spacing: 0.38em;
+    text-indent: 0.38em;
+  }
+
+  .cv-trilho {
+    bottom: 5vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letterbox,
+  .veil,
+  .progress-fill {
+    transition-duration: 0.01ms;
+  }
+
+  .caption-wrap.show {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* a loading vira crossfade simples: nada gira, pulsa ou expande — só
+     as opacidades atravessam (o canvas já fica estático pelo `still`) */
+  .cv-core-body {
+    animation: none;
+  }
+
+  .cv-core-scale {
+    transition: none;
+  }
+
+  .cv-core,
+  .cv-done .cv-core {
+    transform: none;
+    transition: opacity 0.8s ease;
+  }
+
+  /* o convite entra INSTANTÂNEO: a única transição dele é o fade de
+     entrada, e sob movimento reduzido ela não acontece — a troca de
+     passo já era instantânea (o furo não desliza de um alvo ao outro) */
+  .spotlight {
+    transition: none;
+  }
+}
+

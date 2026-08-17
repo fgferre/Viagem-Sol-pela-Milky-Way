@@ -1,0 +1,25 @@
+/* HUD, fatia 7/8 — a cascata é a ordem dos prefixos numéricos:
+   App.tsx importa nessa ordem e os testes concatenam por sort(). */
+/* --- modo foto (?shot=1): capturas determinísticas sem transições --- */
+.shot-mode *,
+.shot-mode *::before,
+.shot-mode *::after {
+  transition: none !important;
+  animation: none !important;
+}
+/* a legenda ativa aparece nas capturas ?shot=1 (a janela é decidida
+   pelo roteiro; sem isto a animação zerada a deixava em opacity 0 e as
+   auditorias de sincronia não enxergavam legenda nenhuma) */
+.shot-mode .caption-wrap.show {
+  opacity: 1;
+  transform: none;
+}
+.shot-mode .veil.hidden-veil {
+  display: none;
+}
+/* ?shot=2 — só a cena. Botões, rótulos e barra de progresso contaminam
+   qualquer medida de perfil/contraste contra a referência. */
+.bare-mode > *:not(.scene-canvas) {
+  display: none !important;
+}
+

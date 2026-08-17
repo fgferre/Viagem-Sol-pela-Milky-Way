@@ -1,0 +1,232 @@
+/* HUD, fatia 2/8 — a cascata é a ordem dos prefixos numéricos:
+   App.tsx importa nessa ordem e os testes concatenam por sort(). */
+/* --- letterbox --- */
+.letterbox {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: #000;
+  z-index: 30;
+  transition: height 2.2s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.letterbox.top { top: 0; }
+.letterbox.bottom { bottom: 0; }
+.letterbox.on { height: 6.5vh; }
+
+/* O RODAPÉ DO FILME — a legenda do beat e a dica de gestos, empilhadas.
+   Eram duas peças `position: fixed` no MESMO ponto (as duas em
+   `left: 6vw; bottom: 11vh`), então a dica do pausar-e-olhar era escrita
+   por cima da legenda: pausar é o que se faz DURANTE a viagem, que é
+   quando a legenda está no ar. É o mesmo defeito que o `.atlas-rodape`
+   já tinha resolvido do outro lado da casa, e é o mesmo conserto —
+   numa coluna quem empilha é o fluxo, e o vão é `rem`, ou seja, cresce
+   junto com o texto (`?ui=`).
+
+   ANCORADA EMBAIXO, e isso é o que mantém a composição do filme: a
+   ÚLTIMA peça da coluna encosta em 11vh, que é onde a dica sempre
+   esteve. Quem sobe é a legenda, e só quando há dica — sozinha, ela
+   fica no pixel de sempre.
+
+   `align-items: flex-start` para cada peça manter a própria largura de
+   conteúdo, como tinha quando era `fixed` sem `right`. */
+.filme-rodape {
+  position: fixed;
+  left: 6vw;
+  bottom: 11vh;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+  pointer-events: none;
+}
+
+/* --- legenda da fase --- */
+.caption-wrap {
+  opacity: 0;
+  transform: translateY(14px);
+}
+/* a VIDA da legenda agora é do roteiro (janelas em tempo de viagem no
+   journey.ts) — o CSS só anima a entrada; a saída é a janela fechando */
+.caption-wrap.show {
+  animation: captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes captionIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+.caption-title {
+  color: #f5f1e8;
+  font-size: clamp(1.5rem, calc(3.2vw * var(--ui)), 2.6rem);
+  font-weight: 200;
+  letter-spacing: 0.42em;
+  text-shadow: 0 0 24px rgba(140, 180, 255, 0.45);
+}
+.caption-sub {
+  color: rgba(200, 214, 235, 0.82);
+  font-size: clamp(0.7rem, calc(1.1vw * var(--ui)), 0.95rem);
+  font-weight: 300;
+  letter-spacing: 0.28em;
+  margin-top: 0.55rem;
+  text-transform: uppercase;
+}
+.caption-rule {
+  width: 3.2rem;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 214, 150, 0.9), transparent);
+  margin-bottom: 0.8rem;
+}
+
+/* --- barra de progresso --- */
+.progress-wrap {
+  position: fixed;
+  left: 6vw;
+  right: 6vw;
+  bottom: 7.4vh;
+  /* acima do véu (50): na tela final a barra continua de pé, e é por ela
+     que se volta a um momento preferido em vez de reiniciar do zero */
+  z-index: 60;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.13);
+  /* clicável (scrub) com área de toque generosa via pseudo-elemento */
+  pointer-events: auto;
+  cursor: pointer;
+}
+.progress-wrap::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12px;
+  bottom: -12px;
+}
+.progress-wrap:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.progress-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 200, 130, 0.95), rgba(150, 190, 255, 0.95));
+  box-shadow: 0 0 8px rgba(180, 200, 255, 0.6);
+  transform: scaleX(var(--journey-progress, 0));
+  transform-origin: left center;
+  transition: transform 0.18s linear;
+}
+.progress-tick {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* --- véu do Atlas ---------------------------------------------------
+   Filho direto de .hud-root de propósito: em ?shot=2 a regra do
+   .bare-mode o esconde junto com o resto do HUD. A opacidade é escrita
+   pelo Director a cada quadro da travessia: quem interpola é o próprio
+   número, sem quadro-chave nenhum do CSS no caminho, e é ele também que
+   fica em 0 sob prefers-reduced-motion. */
+.atlas-veu {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: #000;
+  opacity: var(--veu-atlas);
+  pointer-events: none;
+}
+
+/* --- telas de título --- */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(2, 4, 10, 0.55), rgba(0, 0, 2, 0.92));
+  transition: opacity 1.6s ease;
+}
+/* O TÍTULO NÃO PODE ESTAR ESCRITO EM DUAS CAMADAS AO MESMO TEMPO. A tela
+   de carregamento também assina "HYG · VIA LÁCTEA · TEMPO REAL / MAR DE
+   ESTRELAS" (a 62% da altura), e ela sai num fade de 0,8 s — o mesmo
+   0,8 s em que este véu já estava entrando, no centro. Resultado medido:
+   o título aparecia DUAS VEZES, em duas alturas, por 0,8 s a cada
+   arranque. O atraso aqui é exatamente a saída do outro: quando este
+   começa a chegar, aquele já foi. Mesmo mecanismo do `veil-end` abaixo —
+   nesta casa quem sequencia camadas é o `transition-delay`. */
+.veil.veil-intro {
+  transition-delay: 0.8s;
+}
+.veil.veil-intro.hidden-veil {
+  transition-delay: 0s;
+}
+
+/* O último plano É a tese do filme ("o Sol é só mais um ponto de luz") e a
+   câmera congela ~2,9 s antes do fim; o véu subia quase em cima dele. Estes
+   2,4 s a mais são GOSTO — o número está aqui sozinho para poder mudar. */
+.veil.veil-end {
+  transition-delay: 2.4s;
+}
+.veil.veil-end.hidden-veil {
+  transition-delay: 0s;
+}
+.veil.hidden-veil {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 1.6s ease,
+    visibility 0s linear 1.6s;
+}
+.title-big {
+  color: #f7f3ea;
+  font-weight: 100;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  font-size: clamp(1.5rem, calc(4.2vw * var(--ui)), 3.4rem);
+  text-shadow: 0 0 40px rgba(150, 180, 255, 0.5);
+  max-width: 88vw;
+  margin: 0 auto;
+  padding: 0 3vw;
+  text-align: center;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+.title-kicker {
+  margin-bottom: 1.15rem;
+  color: rgba(177, 196, 225, 0.72);
+  font-size: clamp(0.55rem, calc(0.8vw * var(--ui)), 0.7rem);
+  font-weight: 400;
+  letter-spacing: 0.46em;
+  text-indent: 0.46em;
+}
+.error-title {
+  max-width: 24ch;
+  font-size: clamp(1.25rem, calc(3vw * var(--ui)), 2.2rem);
+}
+.journey-runtime {
+  margin-top: 1rem;
+  color: rgba(165, 180, 202, 0.58);
+  font-size: 0.56rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.title-sub {
+  color: rgba(190, 205, 228, 0.85);
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  font-weight: 300;
+  font-size: clamp(0.62rem, calc(1.2vw * var(--ui)), 0.9rem);
+  margin-top: 1.4rem;
+  line-height: 2;
+  text-align: center;
+}
+.title-rule {
+  width: 5rem;
+  height: 1px;
+  margin: 1.8rem 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 214, 150, 0.9), transparent);
+}
+

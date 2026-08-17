@@ -1,0 +1,76 @@
+/* HUD, fatia 1/8 — a cascata é a ordem dos prefixos numéricos:
+   App.tsx importa nessa ordem e os testes concatenam por sort(). */
+/* ============================================================
+   HUD cinematográfico — letterbox, legendas, rótulos, títulos
+   ============================================================ */
+
+.hud-root {
+  --warp: 0;
+  --veu-atlas: 0;
+  /* ONDE A BARRA DE CONTROLES TERMINA, em pixels de tela. Quem escreve
+     é o App, que MEDE a barra (ela quebra em duas linhas dentro do
+     Atlas, e nenhum número escrito à mão acompanha isso). O valor aqui
+     é só a reserva das telas em que a barra não existe — título e
+     intro, onde o ⚙ Ajustes ainda abre por `?ajustes=1`. */
+  --barra-fim: 5.6rem;
+  /* A CAMADA DOS TRÊS DIÁLOGOS (Ajustes, Camadas, Busca), e a razão em
+     uma linha: QUEM CEDE É O SELO, porque informação permanente pode
+     esperar e ação em curso não — quem abriu um painel precisa poder
+     fechá-lo.
+     O selo mora no canto de baixo à direita e os painéis descem da barra
+     até o pé da tela pela direita: em janela apertada com o texto grande
+     é o MESMO retângulo, e não há geometria que separe os dois (foi assim
+     que a barra de controles se resolveu — ela tem altura própria e o
+     painel passou a nascer abaixo dela; aqui não existe esse "abaixo").
+     Então decide a pilha, e ela segue o que o diálogo JÁ declara de si:
+     `aria-modal`, foco preso e Esc fecha (lib/dialogFocus.ts) — enquanto
+     está aberto, ele é a tela. Estava ao contrário (20 contra os 40 do
+     selo), e o "✕" de fechar ficava debaixo do selo junto com o clique.
+     Entre a barra de controles (45) e o holofote (48), e abaixo dos véus
+     (50+): o painel cobre o HUD fixo, nunca o filme passando por cima. */
+  --camada-dialogo: 46;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scene-canvas,
+.label-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.scene-canvas {
+  z-index: 0;
+  touch-action: none;
+}
+
+/* O CURSOR É A ÚNICA DICA de que a cena se arrasta — e ela faltava:
+   até 2026-08-13 o ponteiro sobre o canvas era a seta de sempre, em
+   todas as fases, e quem não tentou arrastar nunca soube que podia.
+   A classe vem do `arrastoFazAlgo` (three/fases.ts): só entra nas três
+   fases em que o arrasto realmente move a câmera — Atlas, voo livre e
+   a viagem CONGELADA. No filme correndo a seta fica, porque lá quem
+   manda na câmera é o roteiro e o convite seria falso.
+   `:active` é o que dá o feedback do gesto EM CURSO sem inventar
+   estado: o navegador já sabe que o botão está apertado sobre o
+   elemento — nenhuma classe nova, nenhum re-render por quadro.
+   Zero risco de pixel nas 22 vistas oficiais: cursor não entra em
+   captura de tela nem ocupa espaço de layout. */
+.scene-canvas.arrastavel {
+  cursor: grab;
+}
+.scene-canvas.arrastavel:active {
+  cursor: grabbing;
+}
+
+.label-canvas {
+  z-index: 25;
+  pointer-events: none;
+}
+

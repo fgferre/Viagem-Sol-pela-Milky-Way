@@ -21,7 +21,7 @@
 // capturadas sem toque, sem botão direito e sem gesto cancelado, e o
 // cursor não entra em captura de tela nem ocupa espaço de layout.
 // ============================================================
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import * as THREE from 'three';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
@@ -419,7 +419,11 @@ describe('FreeRoam — o teardown leva TODOS os listeners do gesto', () => {
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const RIG = readFileSync(new URL('./cinematic/cameraRig.ts', import.meta.url), 'utf8');
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
-const CSS = readFileSync(new URL('../hud.css', import.meta.url), 'utf8');
+const HUD_DIR = new URL('../hud/', import.meta.url);
+const CSS = readdirSync(HUD_DIR)
+  .sort()
+  .map((fatia) => readFileSync(new URL(fatia, HUD_DIR), 'utf8'))
+  .join('\n');
 
 describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', () => {
   it('os dois gestos da casa importam uma máquina só', () => {
