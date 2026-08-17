@@ -4,6 +4,7 @@
 //   node scripts/visual/luz-do-quadro.mjs 1 4 40 500      # só estas distâncias, em UA
 //   EXTRA='&noplan=1' node scripts/visual/luz-do-quadro.mjs 1   # isolando uma camada
 //   JANELA=900x900 node scripts/visual/luz-do-quadro.mjs        # (padrão)
+//   DPR=2 node scripts/visual/luz-do-quadro.mjs           # a perna retina (o céu do Mac do dono)
 //
 // POR QUE ELE EXISTE. O item 3 das pendências ("a tela fica branca quando o Sol
 // está longe") nunca teve ferramenta. Os números que o projeto cita — "99,0% do
@@ -68,6 +69,25 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const APP = process.env.APP_URL || APP_PADRAO;
 const EXTRA = process.env.EXTRA || '';
 const [JW, JH] = (process.env.JANELA || '900x900').split('x').map(Number);
+// A PERNA RETINA (`DPR=2 node …`): o dono vê o app num Mac retina e esta
+// régua media SEMPRE em DPR 1 — foi assim que o céu vazio do modo cinema
+// passou meses invisível para todo "verde" (a raiz do item 44). Com DPR=2 o
+// Chrome emula a tela dele (capturarCDP), o app arma o caminho retina de
+// verdade (pr=2, buffer 1800), e o BORRÃO medido volta para px de CSS antes
+// do juízo — a doutrina da invariância ("a aparência não muda com a
+// resolução") vira o próprio critério: a MESMA régua, os MESMOS tetos.
+// luzMedia/acimaDeMeia são frações e pico é por pixel — já são invariantes.
+//
+// E a perna trouxe um conserto de GEOMETRIA para as DUAS: a trava de
+// tamanho pegou, no primeiro tiro (17/08), a janela do Chrome descontando a
+// barra do navegador — a viewport real era 900×813 com as previsões
+// assumindo 900 de altura, um descompasso de ~10% silencioso em todos os
+// registros. A escada agora pede a área útil EXATA ao CDP (`dpr: 1`
+// também fixa a geometria), então o registro DPR 1 re-baseia em ~10% —
+// declarado aqui e no commit; os números antigos ficam no histórico do git.
+const DPR = Number.isFinite(Number(process.env.DPR)) && Number(process.env.DPR) >= 1
+  ? Number(process.env.DPR)
+  : 1;
 // O MESMO PIN do `ab-identidade`: sem `?q=` o `autoQuality` rebaixa o tier no
 // meio da espera e a régua compara duas qualidades diferentes.
 const PIN = '&q=cinema';
@@ -80,7 +100,7 @@ const PIN = '&q=cinema';
 // caminho e não deixava rastro do knob no NOME: a culpa é dela, não de quem
 // rodou. Com o sufixo, cada modo tem o seu arquivo e o "antes" oficial é
 // intocável.
-const CHAVE_DO_ESTADO = `${EXTRA}${process.env.JANELA || ''}`;
+const CHAVE_DO_ESTADO = `${EXTRA}${process.env.JANELA || ''}${DPR !== 1 ? `dpr${DPR}` : ''}`;
 const SUFIXO = CHAVE_DO_ESTADO ? `-${CHAVE_DO_ESTADO.replace(/[^a-z0-9]+/gi, '')}` : '';
 
 // ── as constantes da conta, todas com procedência ─────────────────────────
@@ -527,17 +547,30 @@ async function principal() {
   for (const ua of escada) {
     process.stdout.write(`${String(ua).padStart(8)} UA … `);
     const { png, via } = await capturarCDP({
-      url: urlDaDistancia(ua), largura: JW, altura: JH, porta: porta++,
+      url: urlDaDistancia(ua), largura: JW, altura: JH, porta: porta++, dpr: DPR,
     });
     const arquivo = resolve(saida, `luz-${String(ua).replace('.', 'p')}ua${SUFIXO}.png`);
     writeFileSync(arquivo, png);
     const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    // A TRAVA DA PERNA: se o override de DPR não pegou, a imagem volta no
+    // tamanho de CSS e a régua estaria medindo DPR 1 com nome de retina —
+    // a mentira silenciosa exata que esta perna existe para matar. Quebrar
+    // é o comportamento certo.
+    if (info.width !== Math.round(JW * DPR) || info.height !== Math.round(JH * DPR)) {
+      throw new Error(
+        `captura em ${info.width}x${info.height}, esperado ${JW * DPR}x${JH * DPR} — `
+        + 'o override de DPR não pegou'
+      );
+    }
     const m = medirQuadro(data, info.width, info.height);
     vias.push(via);
     linhas.push({
       ua,
       via,
       ...m,
+      // o borrão volta à régua de referência (px de CSS): é NELA que os
+      // tetos moram, e é ela que a invariância promete igual nas duas pernas
+      borrao: m.borrao / DPR,
       disco: discoRealPx(ua),
       // o DIREITO da lei (núcleo + asa) e o núcleo sozinho, lado a lado —
       // a diferença entre os dois é exatamente o que o M2 vai construir
@@ -548,7 +581,10 @@ async function principal() {
 
   const num = (v, c = 3) => v.toFixed(c).replace('.', ',');
   process.stdout.write('\n');
-  process.stdout.write(`janela ${JW}x${JH}${EXTRA ? `  EXTRA=${EXTRA}` : ''}\n\n`);
+  process.stdout.write(
+    `janela ${JW}x${JH}${DPR !== 1 ? ` · DPR ${DPR} (borrão em px de CSS)` : ''}`
+    + `${EXTRA ? `  EXTRA=${EXTRA}` : ''}\n\n`
+  );
   process.stdout.write(
     '      UA   luzMedia   acimaDeMeia    pico   borrao(px)   discoReal(px)   clarao(px)\n'
   );
@@ -575,7 +611,7 @@ async function principal() {
   writeFileSync(
     jsonPath,
     JSON.stringify(
-      { janela: [JW, JH], extra: EXTRA, comBloom, veredito: juizo.resumo, linhas },
+      { janela: [JW, JH], dpr: DPR, extra: EXTRA, comBloom, veredito: juizo.resumo, linhas },
       null,
       2
     )

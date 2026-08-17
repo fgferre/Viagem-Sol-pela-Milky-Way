@@ -396,9 +396,25 @@ réguas capturam em DPR 1 — nunca mediram o céu que o dono vê no Mac.
    de LONGE: a camada da galáxia profunda (galaxy.ts, 4M pontos,
    `shrink` 1/px² próprio) não recebeu o tratamento — conferir com o
    dono na vista galáctica antes de mexer.
-2. **Instrumento (PENDENTE):** perna DPR 2 formal na sonda e na escada
-   (Emulation.setDeviceMetricsOverride — receita pronta em
-   scratchpad/dois-modos.mjs); nenhuma régua de céu vale só em DPR 1.
+2. **✅ Instrumento (FEITO em 17/08 — a perna retina existe e RODOU):**
+   `capturarCDP` ganhou `dpr` (emulação de tela por alvo) e a escada roda
+   com `DPR=2 node scripts/visual/luz-do-quadro.mjs`: o app arma o
+   caminho retina de verdade (pr = 2, buffer 1800), o borrão volta a px
+   de CSS e os MESMOS tetos julgam — a invariância ("a aparência não
+   muda com a resolução") é o próprio critério. A trava de honestidade
+   pegou, NO PRIMEIRO TIRO, uma mentira de geometria que estava em todos
+   os registros: a janela do Chrome desconta a barra e a régua sempre
+   fotografou 900×813 com previsões assumindo 900 de altura — agora a
+   área útil é EXATA nas duas pernas (o registro DPR 1 re-baseou ~10%,
+   declarado, números antigos no git). VEREDITO das duas pernas: **PASSA
+   11/11 nas duas**, e em 9 dos 11 degraus os borrões concordam em ~1 px
+   de CSS — a invariância segura de ponta a ponta. As duas exceções,
+   MEDIDAS pela primeira vez (a extensão do kernel do bloom mede em px
+   físicos — o limite (b) do item 3): a 1 UA o clarão retina é menor
+   (30→8 px), e a cauda longe encolhe (âncora 20→15 px). Registro novo
+   versionado: `capturas/luz-do-quadro-dpr2.json`. FICA: estender a
+   perna ao `sky-capture` quando o céu interno voltar à mesa (a medição
+   contra o panorama ESO precisa de decisão própria de resolução).
 3. **✅ Bloom seletivo (FEITO em 17/08 — a ordem *"cada camada com seu
    cobertor"*, cumprida):** o cobertor PRINCIPAL voltou à pirâmide da
    LEI (`governarPiramide`, raio 0) e disciplina Sol, planetas, galáxia

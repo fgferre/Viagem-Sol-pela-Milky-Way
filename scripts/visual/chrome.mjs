@@ -395,7 +395,7 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
  * comparação de 0,5 px compara duas cenas.
  */
 export async function capturarCDP({
-  url, largura, altura, porta, quadros = 700, teto = 300000, coletar = null,
+  url, largura, altura, porta, quadros = 700, teto = 300000, coletar = null, dpr = null,
 }) {
   const perfil = resolve(tmpdir(), `cdp-${process.pid}-${porta}`);
   const chrome = spawn(CHROME, [
@@ -440,6 +440,24 @@ export async function capturarCDP({
     });
     await send('Page.enable');
     await send('Runtime.enable');
+    // A PERNA RETINA (item 2 do mapa da R2): o escândalo de instrumento da
+    // madrugada de 16→17/08 foi as réguas medirem SEMPRE em DPR 1 — nunca o
+    // céu que o dono vê no Mac. Com `dpr`, o CDP emula a tela (o
+    // devicePixelRatio muda de verdade, o preset cinema arma pr=dpr e o
+    // buffer escala) e o screenshot sai em px FÍSICOS (largura·dpr).
+    //
+    // E o override também FIXA A ÁREA ÚTIL em largura×altura exatos — o que
+    // a primeira trava da escada pegou no primeiro tiro (17/08): a janela
+    // `--window-size=900,900` desconta a barra do navegador e a viewport
+    // real era 900×813, com as previsões da régua assumindo 900 de altura.
+    // Toda régua que passa `dpr` (mesmo `dpr: 1`) ganha a geometria exata;
+    // quem NÃO passa (`null`) fica com a viewport de janela de sempre,
+    // byte a byte — os históricos dessas réguas continuam comparáveis.
+    if (dpr !== null) {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: largura, height: altura, deviceScaleFactor: dpr, mobile: false,
+      });
+    }
     await send('Page.addScriptToEvaluateOnNewDocument', {
       source: 'window.__f=0;const o=window.requestAnimationFrame.bind(window);'
         + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
