@@ -347,12 +347,15 @@ eclipseNoMaterial + shaders/terraShaders (1.210→693; corpos importam
 por assunto); corte 5 galaxy → baseGalactica (49 l — journey e mais 4
 importavam 1.192 linhas por 4 vetores) + geradorDaGalaxia + classe.
 Provas por corte: typecheck + 1.622 testes + lint, e ab-identidade
-BIT-IDÊNTICO (51 vistas no 4 e no 5; atlas-smoke verde no 3). **FALTA:
-corte 6 (App.tsx → hooks useDirector/useEspelhoDaUrl/useAtalhos, com os
-dois primeiros entrando em ARQUIVOS_GOVERNADOS do selo — juízes: a11y +
-ab SMOKE + busca-smoke + voo-smoke) e a PARTE 1 inteira (director
-3.797 → ~2.100 em 9 cortes, ordem no plano).** Não tocar no que a Lei
-ainda demole (`lodStellar.ts`).
+BIT-IDÊNTICO (51 vistas no 4 e no 5; atlas-smoke verde no 3). **A PARTE
+2 FECHOU 6/6 em 17/08** — o corte 6 entregou App.tsx 1.183 → 769 com os
+três hooks (useDirector 226, useEspelhoDaUrl 308, useAtalhos 64; os
+dois primeiros GOVERNADOS pelo selo; semântica da URL intocada; provas:
+busca-smoke + voo-smoke + ab SMOKE bit-idêntico + a11y sem falha nova).
+**FALTA: a PARTE 1 inteira — o director (3.797 → ~2.100) em 9 cortes,
+na ordem do plano: 1 nuvensSemente, 2 veu, 3 prontidao,
+4 maquinaDoTempo, 5 carregamento, 6 gestos, 7 rotulos, 8 solNoQuadro,
+9 escada.** Não tocar no que a Lei ainda demole (`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
