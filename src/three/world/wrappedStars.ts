@@ -313,6 +313,7 @@ attribute float aBin;
 uniform vec3 uCamPos;
 uniform float uScreenH;
 uniform float uFade;
+uniform float uPr2;
 uniform float uExpoM0;
 uniform float uSigmaPx;
 uniform float uCell[${NB}];
@@ -436,7 +437,9 @@ void main() {
   // branqueamento (M2): a velha assimetria das cascas — vSat saía sem o
   // fade e a cruz ficava acesa enquanto o núcleo esmaecia — morreu junto
   // com o varying.
-  vPeak = peak * uFade;
+  // ×uPr2: o depósito na régua de referência — a mesma invariância de
+  // aparência do catálogo (starShaders), senão as cascas apagam em retina
+  vPeak = peak * uFade * uPr2;
 
   // projeção com SÓ a rotação do modelView: a posição em view-space de
   // (camPos + rel) É R·rel — nenhuma soma com quilo-parsecs em f32.

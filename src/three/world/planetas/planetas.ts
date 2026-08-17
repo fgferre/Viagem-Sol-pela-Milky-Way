@@ -249,6 +249,7 @@ uniform vec3 uCamPos;
 uniform float uScreenH;
 uniform float uExpoM0;  // a MESMA exposição do campo (StarField publica)
 uniform float uSigmaPx; // o MESMO instrumento do campo
+uniform float uPr2;     // invariância de aparência — a mesma do campo
 
 varying vec3 vColor;
 varying float vSigma;
@@ -291,7 +292,7 @@ void main() {
 
   vColor = aCor;
   vSigma = sigmaFrac;
-  vPeak = peak * alpha;
+  vPeak = peak * alpha * uPr2;
 
   gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPos, 1.0);
   gl_PointSize = size;
