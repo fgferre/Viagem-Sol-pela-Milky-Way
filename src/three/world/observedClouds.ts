@@ -11,7 +11,7 @@
 // ============================================================
 import * as THREE from 'three';
 import type { CatalogueTable } from '../cartography/galacticAssets';
-import { galactocentricToScene } from './galaxy';
+import { galactocentricToScene } from './baseGalactica';
 import { GLSL_NOISE } from '../shaders/common';
 
 // As nuvens CO individuais têm dezenas de pc — subpixel na vista

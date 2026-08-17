@@ -21,7 +21,7 @@
 import * as THREE from 'three';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { BH_VERT, BH_MARCH_FRAG, BH_COMPOSITE_FRAG } from '../shaders/blackHoleShaders';
-import { GAL, EX, EY, EZ } from './galaxy';
+import { GAL, EX, EY, EZ } from './baseGalactica';
 import type { QualityLevel } from '../core/engine';
 
 const RS_PC = 0.05;

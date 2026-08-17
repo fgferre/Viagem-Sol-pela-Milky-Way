@@ -12,7 +12,7 @@
 // ============================================================
 import * as THREE from 'three';
 import type { GalacticAssets } from '../cartography/galacticAssets';
-import { galactocentricToScene, EX, EY, EZ, GAL } from './galaxy';
+import { galactocentricToScene, EX, EY, EZ, GAL } from './baseGalactica';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { GLSL_STAR_COLOR } from '../shaders/common';
 

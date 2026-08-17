@@ -4,7 +4,7 @@
 // ============================================================
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
-import { GAL } from './galaxy';
+import { GAL } from './baseGalactica';
 
 export interface StarLabel {
   name: string;

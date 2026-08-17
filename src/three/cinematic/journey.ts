@@ -30,7 +30,7 @@
 // POUSA no enquadramento.
 // ============================================================
 import * as THREE from 'three';
-import { GAL, EX, EY, EZ } from '../world/galaxy';
+import { GAL, EX, EY, EZ } from '../world/baseGalactica';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
