@@ -193,8 +193,7 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     solVisivel,
     // filtro solar FORA e ponto INTEIRO (regime de longe) — o engate do
     // filtro e a entrega ao bloom têm teste próprio abaixo
-    atenuacaoDoSol: 1,
-    pesoDoPontoDoSol: 1,
+    solturaDoSol: 1,
     expoM0: EXPO_M0,
     sigmaPx: SIGMA_PX,
   });
@@ -244,18 +243,18 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
-  it('o Sol RESOLVIDO entrega a óptica ao bloom: peso do ponto 0 ⇒ sem asa', () => {
+  it('o Sol RESOLVIDO entrega a óptica ao bloom: soltura 0 ⇒ sem asa', () => {
     // a segunda lição do dono (16/08): a asa modela a óptica do PONTO —
     // aplicá-la a um disco resolvido concentrava o fluxo inteiro numa
     // conta de PSF e desenhava um círculo branco no meio da fotosfera.
-    // Com wPonto = 0 (corpo resolvido) a asa some pela rampa da lei e o
-    // clarão do disco é a convolução do bloom sobre a imagem real.
+    // Com a soltura em 0 (superfície dona — R2 do item 44, a rampa única
+    // no domínio do tamanho) a asa nem candidata, e o clarão do disco é
+    // a convolução do bloom sobre a imagem real.
     const c = new ClaraoDeAsas(META.named);
     const perto = {
       ...quadroEmCasa(true),
       camPos: new THREE.Vector3(0, 0, 0.1 / 206264.80624548031), // 0,1 UA
-      atenuacaoDoSol: 2.7e10, // filtro pleno (overrideFator da repartição)
-      pesoDoPontoDoSol: 0, // corpo resolvido: o ponto cedeu inteiro
+      solturaDoSol: 0, // corpo resolvido: a superfície é a dona
     };
     for (let i = 0; i < 30; i++) c.atualizar(perto);
     expect(c.ocupacao().some((o) => o.indice === 0)).toBe(false);

@@ -95,12 +95,30 @@ concentrado na PSF — e aplicar essa conta a um disco RESOLVIDO superestima por
 ordens de grandeza (o disco filtrado da abertura ainda virava um pico de
 ~5.700 e desenhava um círculo branco sobre a superfície). A óptica do
 resolvido é a **convolução da imagem real** — e desde o M2 quem a faz é o
-BLOOM, cuja pirâmide deriva da MESMA asa. A lei, corrigida: **o ganho da asa
-explícita deriva do fluxo admitido pelo instrumento × `wPonto`** — no ponto,
-a asa é a dona; no resolvido, o bloom convolui a imagem que está lá; a entrega
-entre os dois é a rampa C¹ da própria repartição, nunca um booleano. O que
-continua proibido é o defeito original: resolver a fonte e ficar SEM óptica
-nenhuma.
+BLOOM, cuja pirâmide deriva da MESMA asa.
+
+**A SEGUNDA CORREÇÃO desta cláusula é a SOLTURA (R2 do item 44, 17/08) — e
+ela também foi medida antes de escrita.** A forma do M2 ("o ganho da asa
+deriva do fluxo admitido × `wPonto`") punha DUAS rampas exponenciais na
+mesma janela — o peso do ponto E a divisão pela transmitância do filtro
+(26 magnitudes) — e como o raio visível da asa vai com fluxo^(1/2β),
+**multiplicar fluxo por rampas e tirar raiz nunca dá rampa mansa**: a sonda
+densa mediu o clarão EXPLODINDO no recuo, 10 → 417 px de borrão entre 0,8 e
+2 UA (as "2 violações de crescimento" do item 44), com a régua da monotonia
+carregando uma exceção escrita só para absolvê-lo. A lei, corrigida de novo:
+**o clarão é a conta PLENA do ponto (fluxo sem filtro, com o teto de
+ocupação do dono) vestida por UMA soltura C¹ no domínio do TAMANHO**
+(`solturaDoClarao`: 0 com disco ≥ 10 px, 1 com disco ≤ 2 px, smoothstep em
+log do disco no meio — passo constante por oitava, a régua da continuidade
+do §5.10). Recuando, o clarão desabrocha DO teto estacionado pela janela
+declarada — o espelho do brief do dono: *"ela sempre chega no máximo que
+vai ocupar rapidamente e estaciona"* — e dali só encolhe com a asa. O
+filtro solar segue dono da SUPERFÍCIE (§5.7); do clarão, não é mais. As
+duas lições anteriores continuam pagas por construção: soltura zero
+exatamente onde o filtro completa (clarão nenhum sobre a fotosfera), e a
+conta de ponto nunca aplicada a um disco (ela é desligada, não filtrada).
+O que continua proibido é o defeito original: resolver a fonte e ficar SEM
+óptica nenhuma — no resolvido, o bloom convolui a imagem que está lá.
 
 **A PARTIÇÃO DE ENERGIA da asa: UM dono.** A asa pode ser desenhada de dois jeitos —
 explicitamente, no perfil da fonte, e implicitamente, pelo kernel do bloom. Se os
@@ -602,6 +620,11 @@ de **instrumento** (transmitância), com **régua compartilhada** com `wResolvid
 `discoPx`, largura própria), **custo no cadastro** e no selo, e **default seguro** —
 hoje `uFiltroSolar` nasce em 1 (radiância verdadeira, o quadro cego) e só é escrito
 dentro de `if (this.planetas)`. Quem desenha o corpo escreve a emissão do corpo.
+**Desde a R2 do item 44 (17/08), o filtro é dono da SUPERFÍCIE e de nada mais:
+o clarão não divide pela transmitância — a entrega ponto↔resolvido dele é a
+`solturaDoClarao` (§1, segunda correção), medida na sonda densa antes de
+escrita. `fluxoDeTela`/`claraoGanho` seguem sendo o fluxo que o instrumento
+admite (cadastro e selo); do TAMANHO do clarão, o filtro saiu.**
 
 **5.8 O `fatorDeBrilho` do Sol volta a declarar o valor VIVO.** O cadastro diz
 `fatorDeBrilho: 1` com a razão "agora a fotosfera emite a radiância verdadeira". Mas

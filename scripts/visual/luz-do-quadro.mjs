@@ -191,16 +191,34 @@ const NUCLEO_DA_ASA_EM_SIGMAS = 2;
 /** expoente Moffat — `BETA_DA_ASA` */
 const BETA_DA_ASA = 2.4;
 
-// ── o FILTRO SOLAR corta a asa junto (correção do M2, §5.7 da Lei) ───────
-// Quando o corpo está resolvido, quem torna a superfície visível é o filtro
-// solar — ~26 magnitudes de transmitância — e câmera com filtro não tem
-// flare. A rampa é a MESMA do override da repartição (disco de 4 a 10 px),
-// e o vão sai da MESMA cadeia de `luzDaCasa` (d de troca de 1 px →
-// magnitude do Sol lá → depósito do ponto / depósito do disco de 1 px).
+// ── a SOLTURA do clarão (R2 do item 44 — substituiu o filtro na asa) ─────
+// O clarão da lei é a óptica PLENA do ponto vestida por UMA rampa C¹ no
+// domínio do TAMANHO: zero com disco ≥ 10 px (a superfície é a dona — o
+// filtro solar segue lá, cuidando DELA), um com disco ≤ 2 px (ponto
+// pleno), smoothstep em LOG do disco no meio. A forma anterior (dividir o
+// fluxo pelo filtro e tirar raiz) explodia o clarão no recuo — 10→417 px
+// entre 0,8 e 2 UA, as "2 violações" da sonda densa de 17/08.
 /** limiar e largura da rampa do override — `LIMIAR_DO_OVERRIDE_PX`,
  *  `LARGURA_DO_OVERRIDE` de estrela.ts */
 const LIMIAR_DO_OVERRIDE_PX = 4;
 const LARGURA_DO_OVERRIDE = 2.5;
+/** o disco em que a soltura completa — `SOLTURA_PLENA_PX` de estrela.ts */
+const SOLTURA_PLENA_PX = 2;
+
+/** espelho de `solturaDoClarao` (estrela.ts) — cobrado por conformidade
+ *  numérica no teste, como toda a família */
+export function solturaDaLei(distanciaUa, alturaPx = JH) {
+  const disco = discoRealPx(distanciaUa, alturaPx);
+  if (!(disco > 0)) return 1;
+  return (
+    1 -
+    suave(
+      Math.log(SOLTURA_PLENA_PX),
+      Math.log(LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE),
+      Math.log(disco)
+    )
+  );
+}
 
 function suave(a, b, x) {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -217,22 +235,16 @@ export function vaoDoFiltro(alturaPx = JH) {
   return E / (Math.PI * 0.25);
 }
 
-/** a transmitância do filtro sobre o clarão, por distância (≥ 1) */
-export function fatorDoFiltro(distanciaUa, alturaPx = JH) {
-  const disco = discoRealPx(distanciaUa, alturaPx);
-  const override = 1 - suave(LIMIAR_DO_OVERRIDE_PX, LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE, disco);
-  return Math.pow(vaoDoFiltro(alturaPx), 1 - override);
-}
 
 export function claraoDaLeiPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigmaPx = SIGMA_PX) {
   const dPc = distanciaUa * UA_EM_PC;
   const m = PONTO_ZERO_SOL_PC + 5 * (Math.log2(dPc) * 0.30103);
   const sigma = (sigmaPx * alturaPx) / 1080;
   const E = Math.pow(10, -0.4 * (m - expoM0));
-  // o clarão vê o fluxo que o INSTRUMENTO admite: o filtro corta a asa E
-  // o núcleo saturado da mesma lei (é o que `repartir` faz — conformidade
-  // cobrada por teste)
-  const pico = E / (DOIS_PI_DO_SHADER * sigma * sigma) / fatorDoFiltro(distanciaUa, alturaPx);
+  // o clarão é a óptica PLENA do ponto (sem filtro) vestida pela SOLTURA
+  // no tamanho — é o que `repartir` faz desde a R2; conformidade cobrada
+  // por teste
+  const pico = E / (DOIS_PI_DO_SHADER * sigma * sigma);
   const rSat = pico > 1 ? sigma * Math.sqrt(2 * Math.log(pico)) : 0;
   const nucleo = 2 * (2.2 * sigma + rSat);
   const excesso = (FRACAO_DA_ASA * pico) / LIMIAR_DO_CLARAO;
@@ -240,7 +252,7 @@ export function claraoDaLeiPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigm
     excesso > 1
       ? NUCLEO_DA_ASA_EM_SIGMAS * sigma * Math.sqrt(Math.pow(excesso, 1 / BETA_DA_ASA) - 1)
       : 0;
-  return Math.max(nucleo, 2 * raioDaAsa);
+  return Math.max(nucleo, 2 * raioDaAsa) * solturaDaLei(distanciaUa, alturaPx);
 }
 
 /**

@@ -292,9 +292,10 @@ branco saturado morreu). As ESTRELAS ganharam o piso de presença do
 filme (`raioDoFlarePx`, Sirius ~104 px); o SOL manteve a régua ACEITA do
 item 3 (asa/espinho × fator de enchimento 0,45 — escada preservada:
 189 px a 1,58 UA, 75 a 15,8, 6 no fim; o piso não vale para ele, senão
-o halo constante renasceria). Sonda re-voada: restam as 2 violações de
-crescimento NA SOLTURA do filtro (0,73→1,58 UA) — são a **R2** (entrega
-contínua + remover a exceção da régua). **R3 FEITA em 17/08 — a
+o halo constante renasceria). Sonda re-voada: restavam as 2 violações de
+crescimento NA SOLTURA do filtro (0,73→1,58 UA) — eram a **R2, FEITA em
+17/08** (a soltura do clarão; registro completo no bloco abaixo da R1).
+**R3 FEITA em 17/08 — a
 distância viva existe:** no voo livre o canto do HUD diz "SOL · 1 UA" →
 "SOL · 40 UA" → "SOL · 6,5 anos-luz", vivo enquanto voa (a escada única
 de unidades de `lib/unidades`, no traje da linha de rumo, 4 Hz; só no
@@ -304,6 +305,28 @@ com o olho: é o instrumento da R2, que fica sendo o que resta.
 Escada oficial re-rodada com o desenho da R1: 9/11, com os 2 vermelhos
 declarados (o teto do lavado orçava só "céu + Sol" e o piso da R1 dava
 flare grande às nomeadas).
+
+**R2 FEITA em 17/08 — A SOLTURA DO CLARÃO:** as 2 violações de
+crescimento morreram na raiz. O clarão era gateado por DUAS travas
+exponenciais na mesma janela (o peso do ponto × a divisão pelo filtro,
+26 magnitudes) e, como o raio da asa vai com fluxo^(1/2β), o tamanho
+EXPLODIA no recuo: a sonda densa mediu 10→30→118→357→**417** px entre
+0,8 e 2 UA (42×, pico no meio da janela). A lei nova
+(`solturaDoClarao`, estrela.ts + emenda na LEI §1): o clarão é a conta
+PLENA do ponto (com o teto de ocupação) vestida por UMA rampa C¹ em log
+do disco — 0 onde o filtro completa (fotosfera limpa por construção), 1
+no ponto pleno. Medido depois: 10→30→34→88→190→276→**325** (pico
+exatamente onde a soltura completa, razão ≤3× entre vizinhos, cauda
+além da janela BIT-IDÊNTICA). O filtro ficou dono só da SUPERFÍCIE. A
+exceção da régua deixou de absolver acidente: o espelho da monotonia
+agora É a rampa declarada, com conformidade numérica por teste. E DE
+QUEBRA a perna retina pegou a repartição inteira medindo as janelas em
+px FÍSICOS (borrão crescendo 109→244 entre 3,6 e 7,2 UA só em DPR 2) —
+a lei passou à régua de referência (px de CSS) e o ÚLTIMO vão entre as
+telas fechou: 1 UA agora é 30×26 px (era 30×8). Provas: sonda densa
+antes/depois, escadas PASSA 11/11 nas DUAS pernas, voo de ida e volta
+PASSA 34 degraus (a soltura conta a mesma história nos dois sentidos),
+sequência de fotos do afastamento na conversa. 1.622 testes verdes.
 
 **RESGATE (16/08, noite) — o dono REPROVOU a R1 e mandou a ordem:**
 *"Porque você não resgata no git a versão certa antes de entrar o atlas?

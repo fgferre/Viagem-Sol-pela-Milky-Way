@@ -172,22 +172,40 @@ describe('2. as duas faces batem — conformidade numérica, molde do F0', () =>
     for (const ua of [1, 10, 100, 1000, 15800]) {
       const dist = ua * UA_EM_PC;
       const r = repartir(sol(), verDe(dist), instrumento());
-      // o clarão vê o fluxo que o INSTRUMENTO admite: o filtro solar
-      // (§5.7) corta a asa pela MESMA transmitância do corpo — a correção
-      // do M2 que as palavras do dono cobraram (o Sol procedural escondido
-      // atrás da tela branca). A transliteração divide pelo overrideFator
-      // que a própria repartição declara.
-      const fluxoDeTela =
-        depositoDoDisco(radianciaDeTela(r.radiancia, RAIO_SOL_PC, 900), r.discoPx) /
-        r.overrideFator;
-      const m = EXPO_M0 - 2.5 * Math.log10(fluxoDeTela);
+      // R2 do item 44: o clarão é a óptica PLENA do ponto (fluxo SEM
+      // filtro) vestida pela SOLTURA no tamanho. A transliteração
+      // recompõe o pleno e multiplica pela soltura que a própria
+      // repartição declara — as duas travas exponenciais (wPonto ×
+      // 1/filtro) morreram, e com elas o clarão que explodia no recuo.
+      const fluxoPleno = depositoDoDisco(
+        radianciaDeTela(r.radiancia, RAIO_SOL_PC, 900),
+        r.discoPx
+      );
+      const m = EXPO_M0 - 2.5 * Math.log10(fluxoPleno);
       const pico = picoDaPsf(m, EXPO_M0, SIGMA_PX, 900);
       const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
-      const esperado = Math.max(
-        psfPointSizePx(m, EXPO_M0, SIGMA_PX, 900),
-        2 * raioDaAsaRef(pico, sigma)
-      );
+      const esperado =
+        Math.max(psfPointSizePx(m, EXPO_M0, SIGMA_PX, 900), 2 * raioDaAsaRef(pico, sigma)) *
+        r.solturaDoClarao;
       expect(r.claraoPx, `${ua} UA`).toBe(esperado);
+    }
+  });
+
+  it('a soltura é a rampa única: 0 com a superfície dona, 1 no ponto, C¹ em log no meio', () => {
+    // disco ≥ 10 px (o filtro completo) ⇒ soltura 0 — clarão nenhum por
+    // cima da fotosfera (a lição do círculo branco, paga por construção)
+    expect(repartir(sol(), verDe(0.5 * UA_EM_PC), instrumento()).solturaDoClarao).toBe(0);
+    // disco ≤ 2 px ⇒ ponto pleno
+    expect(repartir(sol(), verDe(4 * UA_EM_PC), instrumento()).solturaDoClarao).toBe(1);
+    // no meio: estritamente crescente com a distância (recuando, o
+    // clarão só desabrocha — nunca pisca nem volta)
+    let anterior = 0;
+    for (const ua of [0.8, 1, 1.26, 1.58, 2, 2.5, 3.16]) {
+      const s = repartir(sol(), verDe(ua * UA_EM_PC), instrumento()).solturaDoClarao;
+      expect(s, `${ua} UA`).toBeGreaterThanOrEqual(anterior);
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(s).toBeLessThanOrEqual(1);
+      anterior = s;
     }
   });
 
@@ -209,10 +227,15 @@ describe('2. as duas faces batem — conformidade numérica, molde do F0', () =>
 
 // ------------------------------------------------------------
 describe('3. o clarão deriva do FLUXO — nunca do peso do ponto (§1)', () => {
-  it('com o disco dominando (wResolvido = 1) o clarão CONTINUA aceso', () => {
+  it('com o disco dominando (wResolvido = 1) a óptica MUDA DE DONO — não some', () => {
     const r = repartir(sol(), verDe(0.05 * UA_EM_PC), instrumento());
     expect(r.wResolvido).toBe(1);
-    expect(r.claraoPx).toBeGreaterThan(0);
+    // R2 do item 44: a soltura declara o dono. Zero = a superfície manda
+    // e a óptica é o BLOOM sobre a imagem real (§1, corrigida) — o
+    // billboard do clarão se apaga, e é isso que protege a fotosfera do
+    // círculo branco. O fluxo admitido segue vivo (cadastro/selo).
+    expect(r.solturaDoClarao).toBe(0);
+    expect(r.claraoPx).toBe(0);
     expect(r.claraoGanho).toBeGreaterThan(0);
   });
 
@@ -233,11 +256,12 @@ describe('3. o clarão deriva do FLUXO — nunca do peso do ponto (§1)', () => 
   });
 
   it('o clarão ENCOLHE monotônico com a distância no regime de ponto — item 42', () => {
-    // a partir de onde o filtro está FORA (disco < 4 px ⇔ d ≳ 1,9 UA
-    // para o Sol) a forma do item 42 vale inteira; o degrau do filtro
-    // (0,8–1,9 UA) é instrumento declarado, não quebra de monotonia
+    // a partir de onde a SOLTURA completa (disco ≤ 2 px ⇔ d ≳ 3,2 UA
+    // para o Sol) a forma do item 42 vale inteira; a janela da soltura
+    // (0,63–3,16 UA) é a rampa DECLARADA da entrega, não quebra de
+    // monotonia — e o teste dela mora no bloco da soltura, acima
     let anterior = Infinity;
-    for (const ua of [2, 3.6, 7.2, 20, 40, 150, 500, 2000, 4000, 15800]) {
+    for (const ua of [3.6, 7.2, 20, 40, 150, 500, 2000, 4000, 15800]) {
       const r = repartir(sol(), verDe(ua * UA_EM_PC), instrumento());
       expect(r.claraoPx, `${ua} UA`).toBeLessThanOrEqual(anterior);
       anterior = r.claraoPx;

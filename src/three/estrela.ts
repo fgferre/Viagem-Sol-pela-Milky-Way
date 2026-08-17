@@ -138,11 +138,16 @@ export interface Reparticao {
   /** escrito como `1 - wEsfera` */
   wMalha: number;
 
-  /** diâmetro do clarão em px — derivado do FLUXO, NUNCA gateado por wPonto */
+  /** diâmetro do clarão em px — a óptica PLENA do ponto (fluxo sem
+   *  filtro) × a soltura; nunca gateado por wPonto nem pelo filtro
+   *  (R2 do item 44 — a rampa da entrega vive no TAMANHO) */
   claraoPx: number;
   /** ganho do clarão — função do fluxo (em unidade de tela), presente em
    *  todo regime */
   claraoGanho: number;
+  /** a soltura do clarão (0 = superfície é a dona; 1 = ponto pleno) —
+   *  a rampa ÚNICA da entrega, consumida pela camada do clarão */
+  solturaDoClarao: number;
   /** partição de energia da asa com o bloom (§1) — UM dono, declarada */
   fracaoDaAsaExplicita: number;
   /** pegada do pixel no plano tangente, no CENTRO do disco — a anisotropia
@@ -229,6 +234,44 @@ export const BRANQUEAMENTO_MEIA_ALTURA = 4;
  *  simétrica em log do filtro de 15/08. */
 export const LIMIAR_DO_OVERRIDE_PX = 4;
 export const LARGURA_DO_OVERRIDE = 2.5;
+
+/**
+ * A SOLTURA DO CLARÃO — a rampa ÚNICA da entrega ponto↔resolvido da
+ * óptica, no domínio do TAMANHO (R2 do item 44, a soltura do filtro).
+ *
+ * O QUE ELA MATA, medido na sonda densa de 17/08: o clarão era gateado
+ * por DUAS travas na mesma janela — o peso do ponto E a divisão pelo
+ * filtro solar (26 magnitudes de exponencial espremidas em ~1 oitava de
+ * distância) — e como o raio da asa vai com fluxo^(1/2β), o tamanho
+ * EXPLODIA no recuo: 10 → 30 → 118 → 357 → 417 px entre 0,8 e 2 UA
+ * (42×), as "2 violações de crescimento" da sonda, absolvidas por uma
+ * exceção escrita na régua. Multiplicar fluxo por rampas e tirar raiz
+ * nunca dá rampa mansa — a entrega C¹ tem de viver no TAMANHO.
+ *
+ * A LEI NOVA: o clarão é computado PLENO (óptica do ponto, fluxo sem
+ * filtro — com o teto de ocupação do dono por cima) e multiplicado por
+ * UMA soltura C¹ em log do disco aparente: 0 com disco ≥ 10 px (o
+ * filtro completa e a superfície é a dona — clarão nenhum por cima da
+ * fotosfera, a lição do círculo branco), 1 com disco ≤ 2 px (ponto
+ * pleno). Recuando, o clarão DESABROCHA do teto estacionado pela janela
+ * declarada — *"ela sempre chega no máximo que vai ocupar rapidamente"*
+ * (o espelho do brief do dono) — e daí só encolhe com a asa. O filtro
+ * solar segue dono da SUPERFÍCIE (§5.7, intocado); do clarão, ele não
+ * é mais.
+ */
+export const SOLTURA_PLENA_PX = 2;
+export const SOLTURA_FIM_PX = LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE;
+
+/** A soltura, forma única (consumida por `repartir` e espelhada na
+ *  régua da luz): smoothstep em LOG do disco — por oitava de distância
+ *  o passo é constante, que é a régua da continuidade (§5.10). */
+export function solturaDoClarao(discoPx: number): number {
+  if (!(discoPx > 0)) return 1;
+  return (
+    1 -
+    smoothstep(Math.log(SOLTURA_PLENA_PX), Math.log(SOLTURA_FIM_PX), Math.log(discoPx))
+  );
+}
 
 /** A lei que limita a singularidade da pegada no limbo (μ = cosseno do
  *  ângulo de visada): a elipse estica com 1/μ e é GRAMPEADA em 1/μ_min —
@@ -341,6 +384,7 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
       wMalha: 0,
       claraoPx: 0,
       claraoGanho: 0,
+      solturaDoClarao: 1,
       fracaoDaAsaExplicita: FRACAO_DA_ASA,
       pegada: { xx: 0, xy: 0, yy: 0 },
       frequenciaMaxima: 0,
@@ -376,7 +420,7 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
     1 - overrideExpoente
   );
 
-  // ── o CLARÃO — do fluxo QUE O INSTRUMENTO ADMITE; nunca do peso do ponto ──
+  // ── o CLARÃO — a óptica PLENA do ponto, vestida pela SOLTURA ──
   // A troca de unidade (casa → tela) é a DO INVARIANTE: a radiância sobe
   // pela mesma ponte da fotosfera (`radianciaDeTela`) e o depósito do disco
   // a integra sobre os pixels — é o lado "disco" da troca, escrito uma vez
@@ -384,20 +428,28 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
   // da casa; multiplicar o fluxo em esterradianos pelo vão, sem a área do
   // pixel, erraria por (px/rad)²/4 ≈ 6,6e5 — o teste da asa pegou.
   //
-  // O FILTRO CORTA A ASA JUNTO (correção do M2, palavras do dono: *"o sol
-  // procedural não aparece mais, fica escondido atrás dessa tela branca"*).
-  // O clarão é o espalhamento da luz que ENTRA no instrumento — e quando o
-  // corpo está resolvido, quem deixa a superfície ser visível é o filtro
-  // solar (§5.7), que corta ~26 magnitudes. Uma câmera com filtro solar não
-  // tem flare: a primeira forma do M2 usava o fluxo SEM filtro e pintava a
-  // tela de branco POR CIMA do Sol procedural na abertura do filme. A asa
-  // divide pelo MESMO `overrideFator` do corpo — longe (ponto puro) o fator
-  // é 1 e nada muda; perto, o filtro engata pela mesma rampa C¹ da lei.
+  // A SOLTURA SUBSTITUIU O FILTRO NA ASA (R2 do item 44). A forma do M2
+  // ("a asa divide pelo overrideFator") somada ao peso do ponto punha
+  // DUAS travas exponenciais na mesma janela — e raiz de exponencial
+  // explode: 10→417 px de borrão entre 0,8 e 2 UA na sonda densa, o
+  // crescimento no recuo que o dono condenou. Agora o clarão é a conta
+  // PLENA do ponto (fluxo sem filtro — o que a câmera sem filtro veria)
+  // e a entrega ponto↔resolvido é a `solturaDoClarao`, UMA rampa C¹ no
+  // domínio do tamanho, consumida pela camada do clarão. A lição do
+  // círculo branco continua paga: soltura = 0 exatamente onde o filtro
+  // completa (disco ≥ 10 px) — clarão nenhum por cima da fotosfera. O
+  // `fluxoDeTela` filtrado segue existindo como o fluxo que o
+  // instrumento ADMITE (claraoGanho, cadastro, selo) — do TAMANHO do
+  // clarão, o filtro não é mais dono.
   const fluxoDeTela =
     (depositoDoDisco(radianciaDeTela(radiancia, e.raioPc, i.alturaPx), discoPx) *
       Math.exp(-tau)) /
     overrideFator;
-  const m = magnitudeDeFluxo(fluxoDeTela, i.expoM0);
+  const fluxoPleno =
+    depositoDoDisco(radianciaDeTela(radiancia, e.raioPc, i.alturaPx), discoPx) *
+    Math.exp(-tau);
+  const soltura = solturaDoClarao(discoPx);
+  const m = magnitudeDeFluxo(fluxoPleno, i.expoM0);
   const sigma = sigmaDaPsfPx(i.sigmaPx, i.alturaPx);
   // núcleo: o tamanho gaussiano de hoje (√ln E) — correto no SPRITE que
   // carrega o fluxo; a doença do item 42 era usá-lo como lei do HALO.
@@ -408,7 +460,7 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
   // do flare abaixo vale para as ESTRELAS da camada do clarão.)
   const pico = picoDaPsf(m, i.expoM0, i.sigmaPx, i.alturaPx);
   const raioDaAsaPx = raioVisivelDaAsaPx(pico, sigma);
-  const claraoPx = Math.max(nucleoPx, 2 * raioDaAsaPx);
+  const claraoPx = Math.max(nucleoPx, 2 * raioDaAsaPx) * soltura;
   const claraoGanho = fluxoDeTela;
 
   // ── a PEGADA no centro do disco (a anisotropia do limbo é do fragmento) ──
@@ -428,6 +480,7 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
     wMalha,
     claraoPx,
     claraoGanho,
+    solturaDoClarao: soltura,
     fracaoDaAsaExplicita: FRACAO_DA_ASA,
     pegada,
     frequenciaMaxima,

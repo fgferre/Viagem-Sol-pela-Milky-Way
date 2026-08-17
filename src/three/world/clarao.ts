@@ -284,29 +284,21 @@ export interface QuadroDoClarao {
   /** a camada dos dez está desenhando o Sol-ponto? (fonte oculta não tem óptica) */
   solVisivel: boolean;
   /**
-   * A TRANSMITÂNCIA DO FILTRO SOLAR sobre o clarão do Sol — o
-   * `overrideFator` da repartição deste quadro (≥ 1; 1 = filtro fora,
-   * ponto puro). O clarão é o espalhamento da luz que ENTRA no
-   * instrumento: com o corpo resolvido, quem torna a superfície visível
-   * é o filtro (§5.7, corta ~26 mag) — e uma câmera com filtro solar
-   * não tem flare. Sem este fator a camada pintava a tela de branco POR
-   * CIMA do Sol procedural na abertura do filme (palavras do dono,
-   * 16/08). Só o candidato 0 o consome; as nomeadas são pontos sempre.
+   * A SOLTURA DO CLARÃO do Sol — `solturaDoClarao` da repartição deste
+   * quadro (0..1; 1 = ponto pleno, 0 = superfície é a dona). É a rampa
+   * ÚNICA da entrega ponto↔resolvido, no domínio do TAMANHO — e a R2 do
+   * item 44: a forma anterior somava DUAS travas exponenciais nesta
+   * janela (o `wPonto` e a divisão pela transmitância do filtro,
+   * 26 mag) e, como o raio da asa vai com fluxo^(1/2β), o clarão
+   * EXPLODIA no recuo (10→417 px entre 0,8 e 2 UA, medido). As duas
+   * lições do dono continuam pagas por construção: soltura = 0
+   * exatamente onde o filtro completa — clarão nenhum por cima da
+   * fotosfera (o círculo branco), e a óptica do RESOLVIDO segue sendo o
+   * bloom sobre a imagem real (a conta de ponto nunca é aplicada a um
+   * disco: ela é DESLIGADA pela soltura). Só o candidato 0 a consome;
+   * as nomeadas são pontos sempre.
    */
-  atenuacaoDoSol: number;
-  /**
-   * O PESO DO PONTO do Sol — `wPonto` da repartição (0..1). A ENTREGA DA
-   * ÓPTICA, e a segunda lição do dono no mesmo dia (*"esse círculo
-   * branco no meio do sol é normal?"*): esta camada modela a óptica de
-   * uma fonte PONTUAL — todo o fluxo concentrado na PSF. Para uma fonte
-   * RESOLVIDA a conta superestima por ordens de grandeza (o disco
-   * filtrado da abertura ainda virava um pico de ~5.700 e desenhava um
-   * círculo branco no meio da fotosfera). A óptica do RESOLVIDO é a
-   * convolução da imagem real — trabalho do BLOOM, cuja pirâmide o M2
-   * já governa pela mesma asa. Este peso é a entrega C¹ entre os dois
-   * donos: ponto → asa explícita; resolvido → bloom sobre o quadro.
-   */
-  pesoDoPontoDoSol: number;
+  solturaDoSol: number;
   expoM0: number;
   sigmaPx: number;
   /** pixelRatio do renderer — a INVARIÂNCIA de resolução: gatilho e
@@ -429,19 +421,21 @@ export class ClaraoDeAsas {
     // só a escrita nos uniforms converte para o buffer (× pr)
     const cssH = q.screenH / pr;
     const sigma = sigmaDaPsfPx(q.sigmaPx, cssH);
-    const atenuacaoDoSol =
-      Number.isFinite(q.atenuacaoDoSol) && q.atenuacaoDoSol >= 1 ? q.atenuacaoDoSol : 1;
-    const pesoDoPontoDoSol =
-      Number.isFinite(q.pesoDoPontoDoSol) && q.pesoDoPontoDoSol >= 0 && q.pesoDoPontoDoSol <= 1
-        ? q.pesoDoPontoDoSol
+    // a soltura entra SANEADA e na direção segura do §8.5: entrada
+    // inválida ⇒ 1 (ponto pleno — o clarão de longe nunca pode sumir
+    // por um NaN; perto, quem protege a fotosfera é a própria rampa)
+    const solturaDoSol =
+      Number.isFinite(q.solturaDoSol) && q.solturaDoSol >= 0 && q.solturaDoSol <= 1
+        ? q.solturaDoSol
         : 1;
-    const doSol = pesoDoPontoDoSol / atenuacaoDoSol;
     // RESGATE (16/08, ordem do dono): as nomeadas voltaram às heroes de
     // autor (world/heroStars.ts) — esta camada fica SÓ com o Sol. A
     // unificação volta à mesa no M3, com o visto DELE na estética.
     const n = 1;
     for (let i = 0; i < n; i++) {
       if (i === 0 && !q.solVisivel) continue;
+      // superfície é a dona: com a soltura em zero o clarão nem candidata
+      if (i === 0 && !(solturaDoSol > 0)) continue;
       const dx = this.pos[i * 3] - q.camPos.x;
       const dy = this.pos[i * 3 + 1] - q.camPos.y;
       const dz = this.pos[i * 3 + 2] - q.camPos.z;
@@ -450,10 +444,13 @@ export class ClaraoDeAsas {
       const m = this.mBase[i] + 2.5 * Math.log10(d2);
       // pré-filtro barato: acima de m 6 nem a asa nasce (excesso ≤ 1)
       if (!(m < 6)) continue;
-      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH) * (i === 0 ? doSol : 1);
+      // o pico é o PLENO (óptica do ponto, sem filtro) — a entrega
+      // ponto↔resolvido é a soltura, aplicada no TAMANHO e no ganho
+      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
       // elegível quando a óptica alcança além do que o sprite já desenha
       const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
-      if (!(2 * this.meiaDaLei(pico, sigma, cssH) > nucleo)) continue;
+      if (!(2 * this.meiaDaLei(pico, sigma, cssH) * (i === 0 ? solturaDoSol : 1) > nucleo))
+        continue;
       // inserção ordenada (pico DESC, índice ASC no empate), teto K
       let p = el.length;
       while (p > 0 && (el[p - 1].pico < pico || (el[p - 1].pico === pico && el[p - 1].indice > i)))
@@ -478,10 +475,14 @@ export class ClaraoDeAsas {
       const dz = this.pos[i * 3 + 2] - q.camPos.z;
       const d2 = dx * dx + dy * dy + dz * dz;
       const m = this.mBase[i] + 2.5 * Math.log10(Math.max(d2, 1e-30));
-      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH) * (i === 0 ? doSol : 1);
-      const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
-      const entrada = ganhoDeEntradaDoFlare(pico);
-      const meiaPx = this.meiaDaLei(pico, sigma, cssH) * pr;
+      const soltura = i === 0 ? solturaDoSol : 1;
+      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
+      const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH) * soltura;
+      const entrada = ganhoDeEntradaDoFlare(pico) * soltura;
+      // a soltura veste o TAMANHO por fora do teto de ocupação: o clarão
+      // desabrocha DO teto estacionado (o espelho do brief do dono —
+      // "chega no máximo rapidamente e estaciona"), nunca além dele
+      const meiaPx = this.meiaDaLei(pico, sigma, cssH) * soltura * pr;
       if (!(meiaPx > 0) || !(entrada > 0)) {
         mesh.visible = false;
         continue;
@@ -494,9 +495,9 @@ export class ClaraoDeAsas {
         this.cor[i * 3 + 1],
         this.cor[i * 3 + 2]
       );
-      // presença = rampa do orçamento × entrada (a soltura do filtro):
-      // o brilho da forma é FIXO como nas heroes — é o desenho superior
-      // que o dono apontou; a lei manda só em presença e tamanho
+      // presença = rampa do orçamento × entrada × soltura: o brilho da
+      // forma é FIXO como nas heroes — é o desenho superior que o dono
+      // apontou; a lei manda só em presença e tamanho
       u.uGanho.value = s.ganho * entrada;
       u.uMeiaPx.value = meiaPx;
       u.uNucleoPx.value = 0.5 * nucleoPx * pr;

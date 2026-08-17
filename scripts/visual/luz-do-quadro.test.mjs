@@ -13,7 +13,6 @@ import {
   discoRealPx,
   claraoPsfPx,
   claraoDaLeiPx,
-  fatorDoFiltro,
   julgarEscada,
   medirQuadro,
   vaoDoFiltro,
@@ -395,15 +394,21 @@ describe('claraoDaLeiPx — o teto derivado da LEI (§5.10)', () => {
       // fogo (0,067 UA, r/d = 0,0695 rad) o vão é x²/3 = 1,6e-3 de ângulo,
       // que a asa comprime por 1/(2β) para ~7e-4 de raio — a tolerância é
       // essa física, não uma folga de gosto.
+      // dentro da janela da soltura os dois lados vestem a MESMA rampa;
+      // onde ela zera (superfície dona), zero contra zero é conformidade
+      if (r.claraoPx === 0) {
+        expect(claraoDaLeiPx(ua, 900), `${ua} UA`).toBe(0);
+        continue;
+      }
       expect(Math.abs(claraoDaLeiPx(ua, 900) / r.claraoPx - 1), `${ua} UA`).toBeLessThan(1e-3);
     }
   });
 
-  it('a asa ENCOLHE com a luz: da saída do filtro (2 UA) a 15.800 UA cai mais de 40×', () => {
+  it('a asa ENCOLHE com a luz: da soltura plena (4 UA) a 15.800 UA cai mais de 30×', () => {
     // o √ln caía 1,5× no mesmo trecho — era o juiz exigindo halo constante.
-    // A ponta de perto é a SAÍDA DO FILTRO (~2 UA, disco < 4 px): dentro
-    // dele o clarão é cortado pela transmitância (§5.7, correção do M2).
-    expect(claraoDaLeiPx(2, 900) / claraoDaLeiPx(15800, 900)).toBeGreaterThan(40);
+    // A ponta de perto é a SOLTURA PLENA (~3,2 UA, disco ≤ 2 px): dali
+    // para fora o clarão é a asa pura, e ela encolhe com a luz (R2).
+    expect(claraoDaLeiPx(4, 900) / claraoDaLeiPx(15800, 900)).toBeGreaterThan(30);
   });
 
   it('nunca cresce com a distância NO REGIME DE PONTO (filtro fora)', () => {
@@ -436,9 +441,7 @@ describe('claraoDaLeiPx — o teto derivado da LEI (§5.10)', () => {
     expect(Math.abs(vaoDoFiltro(900) / fonte - 1)).toBeLessThan(1e-6);
     expect(vaoDoFiltro(900)).toBeGreaterThan(2.7e10);
     expect(vaoDoFiltro(900)).toBeLessThan(2.8e10);
-    // filtro pleno perto (disco ≥ 10 px), fora longe (disco < 4 px)
-    expect(fatorDoFiltro(0.5, 900) / vaoDoFiltro(900)).toBeCloseTo(1, 9);
-    expect(fatorDoFiltro(2, 900)).toBe(1);
-    expect(fatorDoFiltro(15800, 900)).toBe(1);
+    // (o espelho do filtro SOBRE O CLARÃO morreu na R2 do item 44 — o
+    // filtro é dono da superfície, e do clarão quem manda é a soltura)
   });
 });

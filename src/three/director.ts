@@ -3401,7 +3401,14 @@ export class Director {
             : [0, 0, 1],
       },
       {
-        alturaPx: hPx,
+        // A RÉGUA DE REFERÊNCIA (px de CSS), não o buffer: com `hPx`
+        // cru, TODAS as janelas em px da repartição (troca, filtro,
+        // soltura) abriam uma oitava adiante em retina — foi a perna
+        // DPR 2 da escada que pegou (borrão crescendo 109→244 px entre
+        // 3,6 e 7,2 UA, 17/08). Em DPR 1 a divisão é ×1 exata. A camada
+        // do clarão já decidia em CSS desde a parte 1 da invariância;
+        // agora a lei que a alimenta mede na mesma régua.
+        alturaPx: hPx / prAtual,
         tanHalfFov,
         expoM0: this.stars?.expoM0 ?? EXPO_M0,
         sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
@@ -3425,12 +3432,12 @@ export class Director {
     // escada do item 3), e é a magnitude que apaga, nunca um corte em pc.
     // O Sol só é candidato enquanto a camada dos dez desenha o ponto dele
     // (fonte oculta não tem óptica; leitura do quadro anterior — a rampa
-    // de 300 ms engole o único quadro de atraso). E o clarão do Sol passa
-    // pelo FILTRO SOLAR da própria repartição (`overrideFator`, §5.7):
-    // com o corpo resolvido, quem torna a superfície visível é o filtro —
-    // e câmera com filtro solar não tem flare. Foi a correção que as
-    // palavras do dono (16/08) cobraram: sem ela, a asa sem filtro
-    // pintava a abertura do filme de branco por cima do Sol procedural.
+    // de 300 ms engole o único quadro de atraso). E a entrega da óptica é
+    // a SOLTURA da própria repartição (R2 do item 44): uma rampa C¹ no
+    // domínio do TAMANHO, zero onde o filtro completa (a fotosfera limpa
+    // que o dono cobrou em 16/08 continua paga por construção) e plena no
+    // ponto — as duas travas exponenciais que explodiam o clarão no recuo
+    // (wPonto × 1/filtro) morreram na sonda densa de 17/08.
     // AS HEROES RESGATADAS: a mesma chave de isolamento da óptica das
     // fortes (?noclarao) esconde as duas camadas — heroes e clarão do Sol
     if (this.heroes) {
@@ -3448,12 +3455,7 @@ export class Director {
         screenH: hPx,
         dtS: dt,
         solVisivel: !this.hide.has('noplan') && (this.planetas?.points.visible ?? false),
-        atenuacaoDoSol: leiDoSol.overrideFator,
-        // a ENTREGA da óptica: a asa explícita modela o PONTO; quando o
-        // Sol resolve, quem faz o clarão é o bloom sobre a imagem real
-        // (o círculo branco no meio da fotosfera era a conta de ponto
-        // aplicada a um disco — palavras do dono, 16/08)
-        pesoDoPontoDoSol: leiDoSol.wPonto,
+        solturaDoSol: leiDoSol.solturaDoClarao,
         expoM0: this.stars?.expoM0 ?? EXPO_M0,
         sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
         pr: prAtual,
