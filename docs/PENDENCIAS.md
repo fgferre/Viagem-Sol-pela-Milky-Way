@@ -47,87 +47,11 @@ o canal do passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
 coisas da frente"*. **RESPONDIDA em 15/08: pela fundação.** A onda da luz
-entrou INTEIRA e é o padrão; o que resta dela está no bloco abaixo.
-
----
-
-## ONDA DA LUZ — o pacote é o PADRÃO desde 15/08
-
-O visitante vê, sem digitar nada: compressão na emissão (β = 300), compressão
-com ombro dentro do bloom (0,45 / 40), fotosfera na unidade da casa com o
-filtro solar declarado, a repartição única do Sol e — desde o M2 — o clarão
-de asas da lei com a pirâmide do bloom derivada dela. As derivações moram
-nas constantes nomeadas (`luzDaCasa.ts`, `estrela.ts`, `post.ts`,
-`terra.ts`); a história inteira, nos commits de 15–16/08. Das cinco portas
-de volta restou UMA (`?bemis=`, registrada no selo): `?bfoto`/`?bcede`
-morreram no M1 e `?bbloom`/`?bombro` no M2 — regra iv do §4, o lado A vive
-nas capturas versionadas.
-
-Provas vivas: o invariante disco↔ponto está VERDE (a dívida F2 foi paga); o
-voo de ida e volta (`scripts/visual/voo-ida-e-volta.mjs`, pedido do dono)
-passa em 34 degraus — 0,05 → 15.800 UA e volta, na MESMA sessão, sem tela
-cega e sem assimetria fora da banda de histerese declarada (1,71–3,41 UA).
-
-**O que está ABERTO da onda:**
-
-- O dono conferir o app com o padrão novo (a queixa que abriu a rodada era
-  do app com o desenho velho).
-- O GATE DE FOTO do expoente da asa: β = 2,4 é semente de projeto (a Lei
-  §1 pede a escolha entre 2,0 e 3,0 com foto), com `BETA_DO_ESPINHO`
-  acorrentado em ¾ dele e a fração 0,06 junto. As fotos já existem —
-  `capturas/luz-*.png`, a escada inteira — falta o dono olhar e cravar.
-
-**O M1 FECHOU em 16/08 — o Sol inteiro numa repartição.** `repartir`
-(`estrela.ts`) decide cessão, filtro e peso da malha; morreram o
-`SunStar`, a entrega {0,02;0,05} pc, as quatro rampas com quina e as
-portas `?bcede`/`?bfoto`. A costura 0,232→0,341 UA caiu de 4,3× para
-1,5× — aceite declarado, cumprido e medido. Saldo: ~2.000 linhas
-devolvidas.
-
-**O M2 FECHOU em 16/08, no mesmo dia — o clarão virou LEI e o halo
-constante morreu.** A régua da luz saiu de REPROVA 4/11 para **PASSA
-11/11**, com o borrão finalmente encolhendo com a distância — ≥900 px na
-parede de fogo → 349 a 40 UA → 87 a 500 → **20 px na âncora de
-15.800 UA** (aceite declarado ≤ 20; o alvo do dono era ~8 px de raio) —
-e o voo passa em 34 degraus, ida e volta, zero assimetrias. Entrou a
-camada única do clarão de asas (`clarao.ts`): 16 vagas por ORÇAMENTO DE
-FLUXO entre o Sol e as 1.726 nomeadas (a identidade "as 16" morreu — em
-casa, Sirius, Canopus, Vega e as clássicas emergem da física), com
-histerese e rampas para o ranking nunca piscar. O bloom passou a ser
-governado pela lei: pesos por mip derivados da asa (razão ≈ 0,144) e a
-fração da pirâmide DERIVADA da partição (≈ 0,051, zero número livre) —
-era o σ≈12 px do primeiro mip que segurava o borrão em 24–37 px na
-âncora; sem ele, 14. Morreram: as 16 heroes de autor (arquivo inteiro),
-a política de dominância e o canal `aFade`, a PUPILA inteira (arquivo,
-teste e a espinha de `uExposicao`), o clamp `sat` dos espinhos (item 43:
-a cruz agora vem NA DOSE do fluxo — 0,0278 por continuidade em Sirius),
-o coeficiente 0,08·10^(−0,3m) com o exemplar Sirius, e as portas
-`?pupila`/`?dom`/`?nodom`/`?nohero`(→`?noclarao`)/`?bbloom`/`?bombro`/
-`?knee2`. O juiz de cegueira do voo foi reescrito para o teto da lei
-(perto do Sol, lavar é a parede de fogo honesta). A/B das 51 vistas
-oficiais, medido com baseline recapturada do zero no commit do M1:
-**50 mudam, 1 fica bit-idêntica** (`edgeon` — a única sem nada acima do
-limiar do bloom: o controle de que a repesagem só toca o que floresce).
-Mudar era o esperado e está DECLARADO.
-
-**E a CORREÇÃO do mesmo dia, cobrada pelo dono ao abrir o app** — as
-palavras dele, na hora: *"está totalmente bugado... o filme começa
-totalmente bugado com a tela toda branca, o sol procedural não aparece
-mais, fica escondido atrás dessa tela branca, os spikes ficaram
-horríveis e enormes"* e *"esse círculo branco no meio do sol é normal
-para você???"*. Três defeitos que as réguas não viam (elas fotografam o
-Sol de longe; o juiz que faltava era o filme aberto): (1) a asa ignorava
-o FILTRO SOLAR — de perto, quem deixa ver a superfície é o filtro
-(~26 mag), e câmera com filtro não tem flare; agora a asa é cortada pela
-mesma transmitância da repartição; (2) a asa é a óptica do PONTO — num
-disco resolvido ela concentrava o fluxo inteiro numa conta de PSF e
-desenhava o círculo branco; agora ela entrega ao BLOOM pela rampa
-`wPonto` da lei (emenda escrita na cláusula do §1); (3) o braço do
-espinho decaía mais devagar que o halo e virava parede branca de
-~2.400 px; o expoente virou 1,5·β e a cruz afina em vez de atravessar a
-tela. Verificado NA TELA desta vez: abertura com o Sol procedural
-limpo, primeiro ato limpo, 5/40/500 UA com brilho redondo decaindo —
-e os números re-medidos no registro do commit da correção.
+entrou INTEIRA e é o padrão desde então — compressão na emissão, ombro no
+bloom, filtro solar declarado, a repartição única do Sol (M1) e o clarão
+de asas da lei (M2). A história (M1, M2 e a correção do mesmo dia, cobrada
+pelo dono no app) mora nos commits de 15–16/08 e na `LEI-DA-ESTRELA.md`;
+o que segue VIVO dela são os itens **52** e **53** da ALTA.
 
 **Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
 estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
@@ -230,6 +154,21 @@ As duas coisas JÁ SÃO o modelo, verificadas ao vivo em 16/08:
 O que a verificação REVELOU de quebra: na foto do lado noturno quem
 domina o quadro é o HALO do Sol a 11,5 UA (~160 px) — o rabo do item 3
 fotobombando a cena. É a fila M1/M2 de novo, por outro ângulo.
+
+**52. A conferência do dono no app com o padrão novo da luz.**
+A queixa que abriu a rodada da luz era do app com o desenho velho; o
+pacote inteiro (compressão na emissão, ombro no bloom, filtro solar
+declarado, repartição + clarão de asas) espera a conferência DELE no
+app. O pouso de 17/08 aceitou a SOLTURA da estrela — este item é o
+pacote da luz por inteiro. *(Veio do bloco da onda da luz, enxuto pelo
+item 51.)*
+
+**53. O expoente da asa (β) espera o gate de foto do dono.**
+β = 2,4 é semente de projeto — a Lei §1 pede a escolha entre 2,0 e 3,0
+com foto, com `BETA_DO_ESPINHO` acorrentado em ¾ dele e a fração 0,06
+junto. As fotos já existem (`capturas/luz-*.png`, a escada inteira);
+falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
+item 51.)*
 
 ---
 
