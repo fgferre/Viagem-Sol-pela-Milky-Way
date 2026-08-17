@@ -352,11 +352,23 @@ saudáveis. Plano aprovado pelo dono no mesmo dia — refatoração pura (zero
 pixel, gates bit-idênticos como prova), desenho por símbolo em
 `/Users/fgferre/.claude/plans/estou-preocupado-com-nossa-rosy-lynx.md`.
 **DESTRAVADA em 17/08 com a palavra dele** (o pouso da estrela; o bastão
-no topo). Em execução: o passo 0 re-mede tudo — os números do plano são a
-fotografia de 16/08 e a rodada da estrela mexeu fundo (nasceram
-`estrela.ts`/`clarao.ts`, a pupila já morreu no M2, lápides podem ter
-encolhido) — e só depois do re-mapa vem o primeiro commit de corte. Não
-tocar no que a Lei ainda demole (`lodStellar.ts`).
+no topo). **A PARTE 2 ESTÁ 5/6 (17/08, cinco cortes commitados):** passo
+0 (re-mapa completo; a lápide exposicao.ts morreu com a pupila, o
+solNoQuadro virou módulo definitivo, lodStellar já caiu a 287 pela Lei);
+corte 1 alias `@/*` morto + princípio 11 no AGENTS; corte 2 hud.css → 8
+fatias contíguas em `src/hud/` (cascata byte a byte); corte 3 atlasRig →
+retanguloDoAtlas + enquadramento + rig (fachada serve o a11y por
+caminho); corte 4 terra → orientacaoNaCena + texturas +
+eclipseNoMaterial + shaders/terraShaders (1.210→693; corpos importam
+por assunto); corte 5 galaxy → baseGalactica (49 l — journey e mais 4
+importavam 1.192 linhas por 4 vetores) + geradorDaGalaxia + classe.
+Provas por corte: typecheck + 1.622 testes + lint, e ab-identidade
+BIT-IDÊNTICO (51 vistas no 4 e no 5; atlas-smoke verde no 3). **FALTA:
+corte 6 (App.tsx → hooks useDirector/useEspelhoDaUrl/useAtalhos, com os
+dois primeiros entrando em ARQUIVOS_GOVERNADOS do selo — juízes: a11y +
+ab SMOKE + busca-smoke + voo-smoke) e a PARTE 1 inteira (director
+3.797 → ~2.100 em 9 cortes, ordem no plano).** Não tocar no que a Lei
+ainda demole (`lodStellar.ts`).
 
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
