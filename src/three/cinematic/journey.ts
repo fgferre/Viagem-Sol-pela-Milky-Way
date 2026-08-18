@@ -136,6 +136,8 @@ interface ShotCaption {
   sub?: string;
   /** janela de exibição em segundos de VIAGEM (padrão 8,6) */
   dur?: number;
+  /** autoriza esta legenda, e somente ela, a sobreviver ao corte do plano */
+  bridge?: boolean;
 }
 
 interface Shot {
@@ -373,7 +375,7 @@ const SHOTS: Shot[] = [
     look: still(SOL),
     fov0: 26, fov1: 26,
     quiet: true,
-    captions: [{ at: 0.3, text: 'SOL', sub: 'uma estrela comum', dur: 9 }],
+    captions: [{ at: 0.3, text: 'SOL', sub: 'uma estrela comum', dur: 9, bridge: true }],
   },
   {
     // hélice ascendente: o Sol fica, o céu inteiro gira. O bojo dourado
@@ -400,7 +402,7 @@ const SHOTS: Shot[] = [
     captions: [
       // entra quando a faixa já está franca no quadro (revisão: em
       // k≈0,5 ela ainda estava espremida na borda)
-      { at: 0.64, text: 'A VIA LÁCTEA, DE DENTRO', sub: 'aquela faixa no céu é o nosso destino' },
+      { at: 0.64, text: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é a galáxia vista por dentro' },
     ],
   },
   {
@@ -412,7 +414,14 @@ const SHOTS: Shot[] = [
     ease: glide,
     warp: (k) => 0.25 * Math.sin(Math.PI * k),
     target: ['Sirius', 'SOL'],
-    captions: [{ at: 0.4, text: 'SIRIUS', sub: 'a luz dela chega à Terra em 8 anos' }],
+    captions: [
+      {
+        at: 0.4,
+        text: 'SIRIUS',
+        sub: 'a estrela mais brilhante do céu noturno — apenas uma vizinha',
+        dur: 6.4,
+      },
+    ],
   },
   {
     // primeira guinada: o Sol à popa já é um ponto amarelo modesto
@@ -439,7 +448,9 @@ const SHOTS: Shot[] = [
     ease: glide,
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
     dest: 'Alnilam',
-    captions: [{ at: 0.25, text: 'O MAR INTERESTELAR', sub: 'gás e poeira entre as estrelas' }],
+    captions: [
+      { at: 0.25, text: 'O MAR INTERESTELAR', sub: 'o espaço entre as estrelas não está vazio' },
+    ],
   },
   {
     // A TRAVA DAS TRÊS MARIAS (queixa literal do dono, resolvida): a
@@ -468,7 +479,7 @@ const SHOTS: Shot[] = [
     target: ['Alnitak', 'Alnilam', 'Mintaka'],
     quiet: true,
     captions: [
-      { at: 0.08, text: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista', dur: 7 },
+      { at: 0.08, text: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista', dur: 5.4 },
     ],
   },
   {
@@ -526,7 +537,7 @@ const SHOTS: Shot[] = [
     ease: glide,
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
     target: ['Rigel'],
-    captions: [{ at: 0.3, text: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis', dur: 7 }],
+    captions: [{ at: 0.3, text: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis', dur: 5.4 }],
   },
   {
     // a dobradiça: desacelera até quase zero, meia-volta de 180° e o
@@ -540,7 +551,7 @@ const SHOTS: Shot[] = [
     ease: settle,
     target: ['SOL'],
     quiet: true,
-    captions: [{ at: 0.5, text: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu', dur: 9 }],
+    captions: [{ at: 0.5, text: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu', dur: 6 }],
   },
 
   // ================= ATO III — O MERGULHO =================
@@ -559,7 +570,9 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.45 * Math.sin(Math.PI * k),
     target: ['Antares'],
     dest: 'Antares',
-    captions: [{ at: 0.5, text: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz' }],
+    captions: [
+      { at: 0.5, text: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz', dur: 6.8 },
+    ],
   },
   {
     // quase-parada diante da brasa — e o lançamento mais forte do filme
@@ -589,7 +602,7 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.55 + 0.4 * Math.sin(Math.PI * k),
     roll: (k) => 0.10 * Math.sin(Math.PI * k),
     dest: 'SGR',
-    captions: [{ at: 0.45, text: 'O MERGULHO', sub: 'oito mil parsecs até o coração' }],
+    captions: [{ at: 0.45, text: 'O MERGULHO' }],
   },
   {
     // ONDA 2 — a desaceleração É o braço de Sagitário: a poeira
@@ -603,9 +616,6 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.5 + 0.45 * Math.sin(Math.PI * k),
     roll: (k) => -0.12 * Math.sin(Math.PI * k),
     dest: 'SGR',
-    captions: [
-      { at: 0.25, text: 'BRAÇO DE SAGITÁRIO', sub: 'a poeira engrossa — estamos dentro de um braço espiral', dur: 9 },
-    ],
   },
   {
     // ONDA 3 — Scutum-Centaurus na desaceleração de entrada, e a reta
@@ -618,14 +628,10 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.6 + 0.4 * Math.sin(Math.PI * k * 0.9),
     roll: (k) => 0.14 * Math.sin(Math.PI * k),
     dest: 'SGR',
-    captions: [
-      { at: 0.06, text: 'SCUTUM-CENTAURUS', sub: 'a última muralha de estrelas antes do coração', dur: 8 },
-    ],
   },
   {
-    // desaceleração no aglomerado central: e... nada aparece. Sgr A* só
-    // se revela nos últimos segundos — uma pérola negra descentrada,
-    // notada primeiro pela distorção do campo estelar.
+    // desaceleração no aglomerado central: e... nada é nomeado ainda.
+    // A distorção prepara a revelação que pertence à curva rasante.
     dur: 10,
     pos: bezier(DIVE_4, gal(700, 29, -8), gal(320, 30, -6), CORE_IN),
     look: still(GAL.GC_POS),
@@ -633,9 +639,6 @@ const SHOTS: Shot[] = [
     ease: settle,
     warp: (k) => 0.9 * (1 - k) * (1 - k),
     dest: 'SGR',
-    captions: [
-      { at: 0.5, text: 'SAGITTARIUS A✱', sub: 'quatro milhões de sóis dentro da órbita de Mercúrio', dur: 9 },
-    ],
   },
   {
     // aproximação final: de 120 pc a 1,5 pc do centro
@@ -670,7 +673,18 @@ const SHOTS: Shot[] = [
     roll: (k) => 0.22 * Math.sin(Math.PI * k),
     quiet: true,
     captions: [
-      { at: 0.15, text: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra', dur: 12 },
+      {
+        at: 0.12,
+        text: 'SAGITTARIUS A✱',
+        sub: 'quatro milhões de massas solares no centro da Via Láctea',
+        dur: 6,
+      },
+      {
+        at: 0.52,
+        text: 'O HORIZONTE',
+        sub: 'a gravidade dobra o disco de luz ao redor da sombra',
+        dur: 9,
+      },
     ],
   },
 
@@ -695,7 +709,12 @@ const SHOTS: Shot[] = [
     roll: (k) => 0.16 * Math.sin(Math.PI * k) * (1 - k) + GATE_EDGE_ROLL * smooth(k),
     captions: [
       { at: 0.22, text: 'O ESTILINGUE', sub: 'do coração para fora do disco', dur: 6 },
-      { at: 0.6, text: 'A VIA LÁCTEA, POR FORA', sub: 'nenhum ser humano jamais viu isto', dur: 8 },
+      {
+        at: 0.6,
+        text: 'A VIA LÁCTEA, POR FORA',
+        sub: 'uma reconstrução científica do que ninguém jamais viu',
+        dur: 8,
+      },
     ],
   },
   {
@@ -706,9 +725,7 @@ const SHOTS: Shot[] = [
     fov0: GATE_EDGE_FOV, fov1: GATE_EDGE_FOV,
     ease: linear,
     roll: () => GATE_EDGE_ROLL,
-    captions: [
-      { at: 0.12, text: 'ELA NÃO É PLANA', sub: 'repare nas pontas — o disco ondula' },
-    ],
+    captions: [{ at: 0.12, text: 'ELA NÃO É PLANA', dur: 7 }],
   },
   {
     // a travessia: um único arco com a galáxia sempre no centro do
@@ -730,9 +747,7 @@ const SHOTS: Shot[] = [
     fov0: GATE_FACE_FOV, fov1: GATE_FACE_FOV,
     ease: linear,
     roll: () => GATE_FACE_ROLL,
-    captions: [
-      { at: 0.12, text: 'NOSSA GALÁXIA', sub: '400 bilhões de estrelas' },
-    ],
+    captions: [{ at: 0.12, text: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas', dur: 7 }],
   },
   {
     // deriva final: NUNCA aproximar do marcador — a pequenez é a
@@ -751,9 +766,7 @@ const SHOTS: Shot[] = [
     ease: settleFreeze,
     roll: (k) => GATE_FACE_ROLL * (1 - smooth(Math.min(k / 0.88, 1))),
     target: ['SOL'],
-    captions: [
-      { at: 0.5, text: 'VOCÊ ESTÁ AQUI', sub: 'uma estrela comum — a nossa', dur: 60 },
-    ],
+    captions: [{ at: 0.5, text: 'VOCÊ ESTÁ AQUI', dur: 60 }],
   },
 ];
 
@@ -773,10 +786,71 @@ const CAPTION_WINDOWS = SHOTS.flatMap((s, i) =>
   (s.captions ?? []).map((c) => ({
     t0: STARTS[i] + c.at * s.dur,
     t1: STARTS[i] + c.at * s.dur + (c.dur ?? 8.6),
+    shotIndex: i,
+    shotEnd: STARTS[i] + s.dur,
     text: c.text,
     sub: c.sub,
+    bridge: c.bridge ?? false,
   }))
 ).sort((a, b) => a.t0 - b.t0);
+
+export interface JourneyScriptAudit {
+  duration: number;
+  shotCount: number;
+  captions: {
+    t0: number;
+    t1: number;
+    shotIndex: number;
+    text: string;
+    sub?: string;
+    bridge: boolean;
+  }[];
+  overlaps: { first: string; second: string; at: number }[];
+  crossings: {
+    text: string;
+    shotIndex: number;
+    shotEnd: number;
+    t1: number;
+    bridge: boolean;
+  }[];
+}
+
+/**
+ * Auditoria editorial do filme. Ela torna erro de roteiro verificável:
+ * legendas não se atropelam nem vazam por um corte sem passe explícito.
+ */
+export function auditarRoteiro(): JourneyScriptAudit {
+  const overlaps = CAPTION_WINDOWS.slice(1).flatMap((current, i) => {
+    const previous = CAPTION_WINDOWS[i];
+    return current.t0 < previous.t1
+      ? [{ first: previous.text, second: current.text, at: current.t0 }]
+      : [];
+  });
+  const crossings = CAPTION_WINDOWS.filter(
+    (caption) => caption.shotIndex < SHOTS.length - 1 && caption.t1 > caption.shotEnd
+  ).map(({ text, shotIndex, shotEnd, t1, bridge }) => ({
+    text,
+    shotIndex,
+    shotEnd,
+    t1,
+    bridge,
+  }));
+
+  return {
+    duration: JOURNEY_DURATION,
+    shotCount: SHOTS.length,
+    captions: CAPTION_WINDOWS.map(({ t0, t1, shotIndex, text, sub, bridge }) => ({
+      t0,
+      t1,
+      shotIndex,
+      text,
+      sub,
+      bridge,
+    })),
+    overlaps,
+    crossings,
+  };
+}
 
 /** shot do hold de perfil / face-on — capturas no MEIO do hold */
 const EDGE_HOLD = SHOTS.findIndex((s) => s.captions?.[0]?.text === 'ELA NÃO É PLANA');

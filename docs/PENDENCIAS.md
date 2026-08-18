@@ -174,6 +174,13 @@ junto. As fotos já existem (`capturas/luz-*.png`, a escada inteira);
 falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
 
+**54. O filme precisa entregar mais “wowness, drama e ciência” e vender a
+maravilha técnica que já fizemos aqui.**
+Palavras do dono, 2026-08-18: *“traga uma nova visão que entregue wowness,
+drama, ciência e venda a maravilha técnica que fizemos aqui”*. A cirurgia de
+texto é o primeiro passo; o item só sai depois de ele assistir e aprovar o
+filme completo, com as fases de som e ritmo concluídas.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos

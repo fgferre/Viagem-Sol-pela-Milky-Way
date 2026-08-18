@@ -197,8 +197,7 @@ export function TitleVeil({
           <div className="title-sub">
             do Sol às supergigantes de Órion, ao coração da galáxia — e além
             <br />
-            328.749 estrelas de catálogo · poeira APOGEE · nuvens de CO · regiões H II ·
-            aglomerados e Cefeidas Gaia DR3 — cartografia real, gás volumétrico em tempo real
+            328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real
           </div>
           <div className="title-rule" />
           {/* o "Explorar livremente" já estava ligado aqui (App passa
@@ -222,14 +221,14 @@ export function TitleVeil({
       {mode === 'end' && (
         <>
           <div className="title-sub" style={{ letterSpacing: '0.42em' }}>
-            25 mil parsecs acima de casa
+            cerca de 80 mil anos-luz acima de casa
           </div>
           <div className="title-rule" />
           <div className="title-big" style={{ fontSize: 'clamp(1.2rem, 3vw, 2.2rem)' }}>
             O SOL É SÓ MAIS UM PONTO DE LUZ
           </div>
           <div className="title-sub">
-            cada estrela nomeada — e o buraco negro — existem de verdade, nas posições reais
+            estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos
           </div>
           <div className="title-rule" />
           <div style={{ display: 'flex', gap: '0.8rem' }}>

@@ -49,8 +49,15 @@ const {
   pisoDaRoda,
   velocidadeDeVoo,
 } = await import('./cameraRig');
-const { Journey, D_ABERTURA_PC, D_SAIDA_PC, DECADAS_DA_ABERTURA, distanciaDaAbertura } =
-  await import('./journey');
+const {
+  Journey,
+  CAPTURE_T,
+  D_ABERTURA_PC,
+  D_SAIDA_PC,
+  DECADAS_DA_ABERTURA,
+  auditarRoteiro,
+  distanciaDaAbertura,
+} = await import('./journey');
 const { GAL } = await import('../world/galaxy');
 
 /** A fórmula ANTIGA, verbatim da linha que vivia no `syncFromCamera`. */
@@ -246,6 +253,54 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
     expect(j.at(100).pos.length()).toBeCloseTo(221.22434784471977, 6);
     expect(j.at(261).pos.length()).toBeCloseTo(15904.56497361685, 4);
     expect(j.at(293).pos.length()).toBeCloseTo(32790.153293328774, 4);
+  });
+});
+
+describe('a auditoria editorial do filme', () => {
+  const auditoria = auditarRoteiro();
+  const journey = new Journey();
+
+  it('preserva os 24 planos, os 321 s e os dois holds de medição', () => {
+    expect(auditoria.shotCount).toBe(24);
+    expect(auditoria.duration).toBe(321);
+    expect(journey.duration).toBe(321);
+    expect(CAPTURE_T).toEqual({ edge: 261, face: 293 });
+  });
+
+  it('nenhuma legenda se sobrepõe e só o SOL atravessa um corte, com passe explícito', () => {
+    expect(auditoria.overlaps).toEqual([]);
+    expect(auditoria.crossings.filter((caption) => !caption.bridge)).toEqual([]);
+    expect(auditoria.crossings).toEqual([
+      { text: 'SOL', shotIndex: 0, shotEnd: 6, t1: 10.8, bridge: true },
+    ]);
+    expect(auditoria.captions.filter((caption) => caption.bridge).map((caption) => caption.text))
+      .toEqual(['SOL']);
+  });
+
+  it('as saídas de Sirius, Casa, Rigel e Antares não vazam para o plano seguinte', () => {
+    const fim = (text: string) => auditoria.captions.find((caption) => caption.text === text)?.t1;
+    expect(fim('SIRIUS')).toBeCloseTo(40.8, 10);
+    expect(fim('RIGEL')).toBeCloseTo(103.8, 10);
+    expect(fim('CASA')).toBe(116);
+    expect(fim('ANTARES')).toBeCloseTo(129.8, 10);
+    expect(journey.captionAt(40.79).key.caption).toBe('SIRIUS');
+    expect(journey.captionAt(40.81).key.caption).toBe('');
+    expect(journey.captionAt(115.99).key.caption).toBe('CASA');
+    expect(journey.captionAt(116).key.caption).toBe('');
+  });
+
+  it('Sagittarius A* só é nomeado durante a curva rasante', () => {
+    const sgr = auditoria.captions.filter((caption) => caption.text === 'SAGITTARIUS A✱');
+    expect(sgr).toHaveLength(1);
+    expect(sgr[0].t0).toBeCloseTo(211.4, 10);
+    expect(sgr[0].t1).toBeCloseTo(217.4, 10);
+    expect(journey.captionAt(196.2).key.caption).toBe('');
+    expect(journey.captionAt(211.39).key.caption).toBe('');
+    expect(journey.captionAt(211.4).key.caption).toBe('SAGITTARIUS A✱');
+  });
+
+  it('o roteiro final tem as 18 janelas editoriais aprovadas', () => {
+    expect(auditoria.captions).toHaveLength(18);
   });
 });
 

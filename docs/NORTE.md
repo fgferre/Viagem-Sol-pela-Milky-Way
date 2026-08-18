@@ -9,6 +9,7 @@ e no ledger `docs/reference/EVOLUCAO.md`.
 O que está aberto e incomoda quem usa mora em [`docs/PENDENCIAS.md`](PENDENCIAS.md).
 Como uma estrela é desenhada mora em [`docs/LEI-DA-ESTRELA.md`](LEI-DA-ESTRELA.md).
 O que falta da fusão do Atlas mora em [`docs/PLANO-ATLAS.md`](PLANO-ATLAS.md).
+O que ainda falta dos filmes mora em [`docs/PLANO-CINEMA.md`](PLANO-CINEMA.md).
 
 ---
 
@@ -27,6 +28,15 @@ O produto é um só — **Mar de Estrelas**: o filme de ~5 min 21 s leva do Sol
 a Sagittarius A*; perto de casa vive o **Atlas**, o sistema solar explorável,
 no mesmo Director, sem segundo motor. Frase de identidade: *a jornada te
 leva; o Atlas te deixa ficar.*
+
+O filme galáctico atual vem primeiro. Seu eixo é a **perspectiva**: o universo
+não mudou; nós mudamos de lugar. Depois dele haverá uma segunda viagem, solar,
+de quatro minutos — Terra/Lua, Júpiter/Io, Saturno/luas e o recuo até o Sol
+virar ponto. Os dois filmes pertencem ao mesmo motor e novos filmes serão
+declarativos: roteiro leve e editável, sem reescrever o núcleo do aplicativo.
+
+Unidades também contam a história: **UA** no Sistema Solar, **anos-luz** na
+narrativa galáctica e **parsecs** no canal técnico.
 
 O árbitro visual não é captura do próprio app: são as referências em
 [`docs/reference/`](reference/), com alvos em
