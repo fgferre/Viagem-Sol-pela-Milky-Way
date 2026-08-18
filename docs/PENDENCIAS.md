@@ -277,32 +277,6 @@ preguiçosa de textura. Enquanto viver, qualquer A/B pode acusá-las em
 falso; a prova de inocência é uma captura do lado acusado bater byte a
 byte com o baseline (funcionou nas duas).
 
-**48. (EM FECHO — falta SÓ re-rodar o juiz inteiro e cravar 0 falhas.)**
-O juiz foi reescrito ao mundo pós-M1 em 17/08 (commit desta data): as 6
-cobranças órfãs (gradação, `?grad=`, "clarão undefined") viraram as
-cobranças de HOJE — o selo declara a vista nova ao visitar (sem o campo
-morto), a abertura cobra `faixa comprimida` no detalhe, o rodapé de
-proveniência NOMEANDO o clarão como artístico + a gradação morta
-vigiada em runtime (par do simbolosProibidos), a volta do BRILHO
-escrevendo só `?luz=real` (nada de `grad` na URL), e o cenário
-`?luz=real` abrindo em BRILHO REAL. A dose da observação ganhou pino em
-`clarao.test.ts`: 0,07 é número do DONO (recalibrar = mudar o pino
-junto), abaixo do drama 0,55, e a troca por fase vigiada no texto do
-`solNoQuadro`. Suíte 1.626 + lint verdes. A janela fechou no meio da
-rodada do juiz: a PRÓXIMA sessão roda `node scripts/visual/a11y.mjs`
-com o dev server em 5173 e crava 0 falhas — se algo acusar, o suspeito
-é o juiz novo, não o app (as provas do app desta janela estão todas
-verdes).
-
-**51. O topo DESTA lista pesa ~90 linhas de história fechada.** O bloco
-da ONDA DA LUZ (M1/M2 e as correções) já mora nos commits e só tem
-DOIS itens vivos dentro: a conferência do dono no app com o padrão
-novo e o gate de foto do expoente da asa (β). Toda conversa nova paga
-essa leitura antes de trabalhar. Enxugar movendo a história para o
-git e mantendo os dois abertos como itens — é a regra da própria
-lista ("isto é o que está aberto, não um diário"). Aprovado pelo dono
-em 17/08.
-
 ---
 
 ## O que o dono ainda vai contar
