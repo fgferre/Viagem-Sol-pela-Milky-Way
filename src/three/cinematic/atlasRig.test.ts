@@ -234,7 +234,8 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     const semDegrau = retanguloUtilDoAtlas(1, 1200);
     const comDegrau = retanguloUtilDoAtlas(1, 900);
     expect(comDegrau.topo - semDegrau.topo).toBeCloseTo(0.04, 12);
-    // e a base não depende da largura: quem quebra é a barra do topo
+    // em ui = 1 a base não move: a quebra da MÁQUINA DO TEMPO só existe
+    // abaixo de 714 px por unidade de ui — fora da faixa declarada
     expect(comDegrau.base).toBe(semDegrau.base);
     // o degrau a 1.200 px cai entre 1,25 e 1,26 (1.200 / 960 = 1,25) —
     // e a quebra REAL a 1.200 px começa em 1,30, medida: a declaração
@@ -244,6 +245,16 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
       0.065 + 0.09 * 1.3 + 0.04,
       12
     );
+    // A QUEBRA DA MÁQUINA DO TEMPO é o mesmo fenômeno na BASE (grade de
+    // eixos do juiz, 2026-08-18, viewport exato por override): a barra
+    // do tempo mede 0,267 da altura a 1.000 e 1.200 px com ui = 1,4 e
+    // quebra para 0,321 a 900 px — o degrau vive entre 900 e 1.000 px
+    // por 1,4 de ui. Limiar no topo da faixa (714), o lado seguro.
+    expect(retanguloUtilDoAtlas(1.4, 900).base).toBeCloseTo(
+      0.065 + 0.175 * 1.4 + 0.03,
+      12
+    );
+    expect(retanguloUtilDoAtlas(1.4, 1000).base).toBeCloseTo(0.065 + 0.175 * 1.4, 12);
     // largura envenenada cai na tela de mesa de referência, não em NaN
     for (const cru of [Number.NaN, 0, -100, Number.POSITIVE_INFINITY]) {
       expect(retanguloUtilDoAtlas(1, cru)).toEqual(retanguloUtilDoAtlas(1, LARGURA_DE_MESA_PX));

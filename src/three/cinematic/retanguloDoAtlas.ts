@@ -88,6 +88,27 @@ const BARRA_QUEBRADA_FRACAO = 0.04;
 const SELO_FRACAO = 0.14;
 
 /**
+ * O DEGRAU DA MÁQUINA DO TEMPO QUEBRADA — o fenômeno da barra de
+ * controles repetido na BASE: largura×texto, não texto sozinho. MEDIDO
+ * pelo juiz de a11y na grade de eixos (2026-08-18, viewport exato por
+ * override, fontes Linux da máquina de nuvem): com `?ui=1,4` a barra
+ * do tempo mede 0,267 da altura a 1.000 e 1.200 px e QUEBRA para 0,321
+ * a 900 px — o degrau vive entre 900 e 1.000 px por 1,4 de ui (razão
+ * 643–714). O limiar fica no TOPO da faixa (714), o mesmo lado seguro
+ * do erro da barra: declarar cedo custa um recuo de câmera; declarar
+ * tarde põe o alvo atrás da leitura do tempo. Em `ui = 1` o degrau só
+ * existiria abaixo de 714 px — fora da faixa declarada
+ * (`LARGURA_UTIL_MINIMA_PX`), onde a medição já é só registro.
+ *
+ * A fração (0,03) cobre o 0,321 medido com folga de 0,019 — e fontes
+ * de outra máquina movem esta margem (o juiz roda no macOS do dono e
+ * na nuvem), que é exatamente por que a declaração paga o degrau
+ * inteiro em vez de raspar o número de uma máquina só.
+ */
+const LARGURA_DA_QUEBRA_DO_TEMPO_PX = 714;
+const TEMPO_QUEBRADO_FRACAO = 0.03;
+
+/**
  * A LARGURA DE REFERÊNCIA — a tela de mesa em que as frações acima
  * foram medidas e em que o juiz de a11y roda. É o default do produtor:
  * quem o chama sem largura (o vitest da função pura) recebe o
@@ -98,10 +119,12 @@ export const LARGURA_DE_MESA_PX = 1200;
 /**
  * ATÉ ONDE A DECLARAÇÃO VALE, em largura de CSS — medido, não estimado.
  * De 900 px para cima o retângulo declarado cobre o HUD real em toda a
- * faixa de `?ui=` (0,85 a 1,4); abaixo disso a BASE estoura, porque a
- * máquina do tempo também quebra em duas e três linhas: medido em
- * `ui = 1,4`, base 0,297 a 850 px (declarada 0,310, cabe) contra 0,328 a
- * 800 px e 0,416 a 700 px. A 600 px nem o topo cabe (0,245 contra 0,210).
+ * faixa de `?ui=` (0,85 a 1,4) — no próprio 900, o extremo 1,4 só cabe
+ * pelo degrau `TEMPO_QUEBRADO_FRACAO` (a quebra da máquina do tempo já
+ * morde ali: 0,321 medido na grade de eixos de 2026-08-18). Abaixo da
+ * faixa a BASE estoura de vez, em duas e três linhas: medido na era do
+ * viewport de 813 px, base 0,328 a 800 px e 0,416 a 700 px; a 600 px
+ * nem o topo cabe (0,245 contra 0,210).
  *
  * PENDÊNCIA NOMEADA, com endereço em vez de adjetivo: "telas estreitas"
  * é o HUD do Atlas reflowar abaixo de 900 px de largura de CSS — não é o
@@ -181,6 +204,9 @@ export function retanguloUtilDoAtlas(
       LETTERBOX_FRACAO +
       CONTEXTO_FRACAO * k +
       (largura < LARGURA_DA_QUEBRA_PX * k ? BARRA_QUEBRADA_FRACAO : 0),
-    base: LETTERBOX_FRACAO + Math.max(SELO_FRACAO, TEMPO_FRACAO) * k,
+    base:
+      LETTERBOX_FRACAO +
+      Math.max(SELO_FRACAO, TEMPO_FRACAO) * k +
+      (largura < LARGURA_DA_QUEBRA_DO_TEMPO_PX * k ? TEMPO_QUEBRADO_FRACAO : 0),
   };
 }
