@@ -13,6 +13,7 @@
 // O que se testa é a conta, que é pura — mesmo precedente de
 // `stellarBody.test.ts`, que julga `SOL_PARAMS` sem montar a cena.
 // ============================================================
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
@@ -370,5 +371,51 @@ describe('?exp= — só número finito e positivo atravessa', () => {
       const v = lerPortaExposicao(qualquer);
       expect(v === null || (Number.isFinite(v) && v > 0), String(qualquer)).toBe(true);
     }
+  });
+});
+
+// ============================================================
+// A NITIDEZ SEGUE O MONITOR (item 6) — por texto-fonte, porque o vigia
+// depende de `window.matchMedia` e de um evento que só o navegador
+// dispara de verdade (trocar de tela, mudar o zoom). O que se pina é a
+// fiação: a query armada no DPR VIVO, o re-arme, e a separação de
+// assuntos — reafiar não é opinião sobre tier.
+// ============================================================
+describe('a nitidez segue o monitor (item 6)', () => {
+  const ENGINE = readFileSync(new URL('./engine.ts', import.meta.url), 'utf8');
+
+  it('o vigia arma a query no DPR vivo, com re-arme de um disparo', () => {
+    expect(ENGINE).toContain(
+      'matchMedia(\n      `(resolution: ${window.devicePixelRatio}dppx)`\n    )'
+    );
+    expect(ENGINE).toContain(
+      "addEventListener('change', this.aoMudarDpr, { once: true })"
+    );
+  });
+
+  it('reafiar NÃO passa pelo tier — e o teardown desarma o vigia', () => {
+    const vigia = ENGINE.slice(
+      ENGINE.indexOf('private aoMudarDpr'),
+      ENGINE.indexOf('onTick(')
+    );
+    expect(vigia).toContain('this.aplicarNitidez();');
+    expect(vigia).not.toContain('applyQuality');
+    const teardown = ENGINE.slice(ENGINE.indexOf('dispose() {'));
+    expect(teardown).toContain(
+      "this.vigiaDeDpr?.removeEventListener('change', this.aoMudarDpr);"
+    );
+  });
+
+  it('o applyQuality e o vigia aplicam a MESMA nitidez (uma função)', () => {
+    // o pixel ratio é min(DPR vivo, teto do tier) num lugar só — duas
+    // contas divergiriam no primeiro monitor novo
+    expect(
+      ENGINE.split('Math.min(window.devicePixelRatio || 1,').length - 1
+    ).toBe(1);
+    const aplicar = ENGINE.slice(
+      ENGINE.indexOf('applyQuality(q: QualityLevel'),
+      ENGINE.indexOf('private aplicarNitidez()')
+    );
+    expect(aplicar).toContain('this.aplicarNitidez();');
   });
 });

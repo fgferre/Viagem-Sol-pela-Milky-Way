@@ -201,6 +201,8 @@ export class Engine {
    *  "avg > 72" nunca acontece; os limiares de subida são relativos */
   private peakAvg = 0;
   private upgradeCooldown = 0;
+  /** a media query armada no DPR vivo — trocar de monitor a dispara */
+  private vigiaDeDpr: MediaQueryList | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({
@@ -237,6 +239,7 @@ export class Engine {
     this.applyQuality(inicial, q !== undefined);
     this.resize();
     window.addEventListener('resize', this.resize);
+    this.armarVigiaDeDpr();
   }
 
   get preset(): QualityPreset {
@@ -289,11 +292,45 @@ export class Engine {
     this.quality = q;
     if (manual) this.autoQuality = false;
     else if (q === 'cinema') this.autoQuality = true;
-    const pr = Math.min(window.devicePixelRatio || 1, PRESETS[q].pixelRatio);
-    this.renderer.setPixelRatio(pr);
-    this.resize();
+    this.aplicarNitidez();
     this.qualityFns.forEach((fn) => fn(q));
   }
+
+  /**
+   * A NITIDEZ DO QUADRO (item 6): o pixel ratio é o MENOR entre o teto
+   * do tier e o DPR do monitor ATUAL — relido a cada aplicação, nunca
+   * guardado. Chamada pelo `applyQuality` e pelo vigia de DPR: arrastar
+   * a janela para outro monitor (ou mudar o zoom) reafia a cena sem
+   * recarregar, como os rótulos já faziam. O resto do pipeline não
+   * precisa saber: quem depende de resolução lê `getPixelRatio()` por
+   * quadro — a invariância de resolução da casa.
+   */
+  private aplicarNitidez() {
+    const pr = Math.min(window.devicePixelRatio || 1, this.preset.pixelRatio);
+    this.renderer.setPixelRatio(pr);
+    this.resize();
+  }
+
+  /**
+   * O VIGIA DE DPR — uma media query armada no valor VIVO; ela dispara
+   * exatamente quando `devicePixelRatio` deixa de ser o que era (troca
+   * de monitor, zoom do navegador), e aí a nitidez é reaplicada e o
+   * vigia re-armado no valor novo. `once` porque a query velha vira
+   * mentira no instante em que dispara. Não passa por `applyQuality`:
+   * trocar de tela não é opinião sobre tier nem desliga o auto-quality.
+   */
+  private armarVigiaDeDpr() {
+    if (typeof window.matchMedia !== 'function') return;
+    this.vigiaDeDpr = window.matchMedia(
+      `(resolution: ${window.devicePixelRatio}dppx)`
+    );
+    this.vigiaDeDpr.addEventListener('change', this.aoMudarDpr, { once: true });
+  }
+
+  private aoMudarDpr = () => {
+    this.aplicarNitidez();
+    this.armarVigiaDeDpr();
+  };
 
   onTick(fn: (t: number, dt: number) => void) {
     this.tickFns.add(fn);
@@ -367,6 +404,7 @@ export class Engine {
   dispose() {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
+    this.vigiaDeDpr?.removeEventListener('change', this.aoMudarDpr);
     this.timer.dispose();
     this.renderer.dispose();
   }

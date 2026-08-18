@@ -82,10 +82,6 @@ deveria sair da data simulada. *(O M1 NÃO o tocou, de propósito: o pino
 trocá-lo pela data exige o ciclo andar para TRÁS com re-bake — obra
 própria, com foto para o dono.)*
 
-**6. A cena não reafia ao trocar de monitor.**
-Os rótulos reafiam; a cena 3D não. A nitidez é decidida uma vez, no
-arranque.
-
 **7. Trocar a qualidade ainda recarrega a página.**
 O dono pediu “nada recarrega, padrão AAA”. A Fase A fechou 3 dos 4
 recarregamentos; sobra a qualidade, mais três automatismos.
