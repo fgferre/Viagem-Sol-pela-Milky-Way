@@ -35,6 +35,8 @@
 //  9. OS DEZ CORPOS DO SISTEMA são alvo de verdade: `?foco=terra`
 //     resolve, a paleta os acha pelo nome pt-BR, a escolha enquadra a
 //     ÓRBITA e o clique no rótulo faz o mesmo.
+// 10. O ATALHO DO TECLADO (item 8): "/" e Ctrl+K abrem a paleta; o "/"
+//     que abriu não vaza para o campo, e com ela aberta "/" é digitação.
 import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -105,6 +107,50 @@ try {
     vista1 === vista2 && vista2 === vista3,
     `enquadrar a MESMA estrela três vezes dá a MESMA câmera (${vista1} · ${vista2} · ${vista3})`
   );
+
+  // ---- 1c: o atalho do teclado abre a paleta (item 8) --------------
+  // `/` (e Ctrl+K) moram no useAtalhos, com as guardas: diálogo aberto
+  // fica com o teclado dele e alvo de texto não atalha. Aqui: o caminho
+  // feliz das duas teclas, a prova de que o "/" que ABRIU não vazou
+  // para o campo, e a de que com a paleta aberta "/" é digitação.
+  await sessao.digitar('/');
+  await sleep(200);
+  const abriuPorBarra = await sessao.js(`(() => {
+    const campo = document.querySelector('.atlas-busca-campo');
+    return JSON.stringify({
+      aberta: Boolean(document.querySelector('[data-dialogo="busca"]')),
+      focada: document.activeElement === campo,
+      valor: campo ? campo.value : null,
+    });
+  })()`);
+  const porBarra = JSON.parse(abriuPorBarra);
+  conferir(
+    porBarra.aberta && porBarra.focada && porBarra.valor === '',
+    `a tecla "/" abre a paleta com o campo focado e LIMPO (${abriuPorBarra})`
+  );
+  await sessao.digitar('/');
+  const barraDigitou = await sessao.js(
+    "document.querySelector('.atlas-busca-campo').value"
+  );
+  conferir(
+    barraDigitou === '/',
+    `com a paleta aberta, "/" é digitação, não atalho (campo "${barraDigitou}")`
+  );
+  await sessao.teclar('Escape');
+  await sleep(200);
+  const tecladoCtrlK = {
+    key: 'k', code: 'KeyK', windowsVirtualKeyCode: 75,
+    nativeVirtualKeyCode: 75, modifiers: 2,
+  };
+  await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'rawKeyDown' });
+  await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'keyUp' });
+  await sleep(200);
+  const porCtrlK = await sessao.js(
+    'Boolean(document.querySelector(\'[data-dialogo="busca"]\'))'
+  );
+  conferir(porCtrlK, 'Ctrl+K abre a paleta pelo mesmo caminho');
+  await sessao.teclar('Escape');
+  await sleep(200);
 
   // ---- 2: porta que não acha não chuta -----------------------------
   // "alfa cen" é o caso REAL do dado: o nome próprio da IAU expulsou a

@@ -5,15 +5,41 @@
 // ============================================================
 import { useEffect } from 'react';
 import type { Director } from '../three/director';
+import { HUD_POR_FASE } from '../three/fases';
 
 export function useAtalhos(
   directorRef: React.RefObject<Director | null>,
-  setPaused: (v: boolean) => void
+  setPaused: (v: boolean) => void,
+  abrirBusca: () => void
 ) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const d = directorRef.current;
       if (!d) return;
+      // O ATALHO DA BUSCA (item 8): `/` — e Ctrl/Cmd+K, o costume das
+      // paletas — nas fases que HOSPEDAM a busca (quem decide é o mapa
+      // das fases, não uma lista daqui). As guardas: diálogo aberto
+      // fica com o teclado dele (quem digita "/" na própria paleta está
+      // escrevendo, não atalhando) e alvo de texto idem; botão focado
+      // NÃO bloqueia — "/" sobre um botão não escreve nada.
+      const pedeBusca =
+        (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) ||
+        ((event.ctrlKey || event.metaKey) &&
+          !event.altKey &&
+          event.key.toLowerCase() === 'k');
+      if (
+        pedeBusca &&
+        HUD_POR_FASE[d.fase].busca &&
+        !event.defaultPrevented &&
+        !document.querySelector('[data-dialogo]') &&
+        !(event.target as HTMLElement | null)?.closest(
+          'input, select, textarea, [contenteditable]'
+        )
+      ) {
+        event.preventDefault();
+        abrirBusca();
+        return;
+      }
       // Os três atalhos do FILME não têm sujeito dentro do Atlas — e
       // Espaço com `preventDefault` roubaria a tecla de quem estiver
       // navegando o modo (D3: "Espaço não vaza"). O que o Atlas TEM é o
@@ -58,7 +84,8 @@ export function useAtalhos(
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // directorRef é ref (estável); setPaused é setState (estável)
+    // directorRef é ref (estável); setPaused é setState (estável);
+    // abrirBusca só fecha sobre setStates — a captura do 1º render vale
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

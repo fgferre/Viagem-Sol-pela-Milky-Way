@@ -143,7 +143,6 @@ export default function App() {
     setTempo,
     setEscada,
   });
-  useAtalhos(directorRef, setPaused);
 
   // ?loader=<id> fixa uma etapa da tela de carregamento e a mantém no ar
   // depois que o init termina — com &shot=1 (que congela transições e o
@@ -356,6 +355,9 @@ export default function App() {
     setAjustes(false);
     setBusca((v) => !v);
   };
+  // depois do `abrirBusca` porque o passa ao atalho de teclado ("/" e
+  // Ctrl+K, item 8) — a ordem dos hooks não muda entre renders
+  useAtalhos(directorRef, setPaused, abrirBusca);
 
   /**
    * A ESCOLHA DA PALETA. O verbo é da FASE, não do botão: o Director
@@ -596,9 +598,11 @@ export default function App() {
               faixa declarada —, a quebra da 2ª para a 3ª linha acontece
               entre 68 e 70 caracteres, e a 3ª linha estoura a base
               declarada (0,328 contra 0,310). Daí "clique — enquadrar" e
-              não "clique num nome — enquadrar": 68 é o que cabe. */}
+              não "clique num nome — enquadrar". O item 8 pôs o Esc na
+              tela DENTRO do mesmo orçamento: "girar e subir/descer"
+              virou "girar" para "esc — subir" caber — 67 de 68. */}
           <div className="free-hint">
-            arraste — girar e subir/descer · roda — degraus · clique — enquadrar
+            arraste — girar · roda — degraus · clique — enquadrar · esc — subir
           </div>
         </div>
       )}

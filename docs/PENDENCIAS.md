@@ -175,9 +175,6 @@ item 51.)*
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
-**8.** `Esc` é a única tecla do Atlas e não está escrita na tela. A busca
-também não tem atalho.
-
 **9.** Tela estreita quebra o rodapé. Abaixo de 900 px a base do HUD estoura.
 
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela

@@ -272,6 +272,11 @@ export function BotaoDaBusca({
       className="hud-btn small"
       onClick={onAlternar}
       aria-label="Buscar estrela"
+      // o atalho declarado onde o leitor de tela o anuncia; o texto do
+      // botão NÃO cresce — a barra tem orçamento de quebra por largura
+      // (LARGURA_DA_QUEBRA_PX) medido com este comprimento
+      aria-keyshortcuts="/ Control+K"
+      title="buscar — tecla / (ou Ctrl+K)"
       {...gatilhoDoDialogo('busca', aberta)}
     >
       ⌕ Buscar
