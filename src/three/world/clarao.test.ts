@@ -24,6 +24,7 @@ import {
   ELEGIVEIS_POR_QUADRO,
   FATOR_DE_ENCHIMENTO_DO_SOL,
   OCUPACAO_MAXIMA_DA_TELA,
+  OCUPACAO_NA_OBSERVACAO,
   ORCAMENTO_DO_CLARAO,
   RAZAO_DE_TROCA,
   SOL_BV,
@@ -309,5 +310,23 @@ describe('3. a camada de verdade, com o sidecar real', () => {
 
   it('o teto de elegíveis por quadro é orçamento + folga de desafiantes', () => {
     expect(ELEGIVEIS_POR_QUADRO).toBe(ORCAMENTO_DO_CLARAO + 8);
+  });
+
+  it('a dose de OBSERVAÇÃO é o número do dono, abaixo do drama — e a fase é quem troca', () => {
+    // 0,07 é a resposta dele à pergunta de 17/08 ("como os apps como o
+    // NASA Eyes fazem?") — recalibrar é mudar AQUI junto, nunca deriva
+    expect(OCUPACAO_NA_OBSERVACAO).toBe(0.07);
+    expect(OCUPACAO_NA_OBSERVACAO).toBeLessThan(OCUPACAO_MAXIMA_DA_TELA);
+    // e quem escolhe a dose por FASE é o módulo do Sol no quadro: o
+    // Atlas observa, o filme e o voo dramatizam — assistência DECLARADA
+    // (o selo diz BRILHO ASSISTIDO; o a11y vigia o rodapé que nomeia o
+    // clarão como artístico). Item 48: hoje alguém vigia.
+    const SOL_NO_QUADRO = readFileSync(
+      new URL('../director/solNoQuadro.ts', import.meta.url),
+      'utf8'
+    );
+    expect(SOL_NO_QUADRO).toContain(
+      "q.fase === 'atlas' ? OCUPACAO_NA_OBSERVACAO : OCUPACAO_MAXIMA_DA_TELA"
+    );
   });
 });
