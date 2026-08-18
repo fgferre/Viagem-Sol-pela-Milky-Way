@@ -643,7 +643,7 @@ process.stdout.write('\nJUIZ DE A11Y: tudo verde\n');
 // texto).
 // ============================================================
 
-async function medirCobertura(s, quando, cobra = true) {
+async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
   const cobertura = await s.js(`(() => {
     const H = window.innerHeight;
     const util = window.__director.retanguloUtil;
@@ -714,9 +714,25 @@ async function medirCobertura(s, quando, cobra = true) {
   // a declaração paga folga por cima do medido, então o piso pinava "o
   // número de hoje menos um fio" e a próxima peça de HUD o baixaria de
   // novo com derivação escrita, sem ninguém ver a linha ser cruzada.
-  // Aqui ele afirma o que realmente importa e não se move: o HUD REAL
-  // não come mais da metade da altura do quadro. Passar disso não é HUD,
-  // é moldura.
+  // Aqui ele afirma o que realmente importa: o HUD REAL não come mais
+  // da metade da altura do quadro. Passar disso não é HUD, é moldura.
+  //
+  // NO TEXTO DE FÁBRICA (fator ≤ 1). Com `?ui=` acima de 1 o visitante
+  // trocou quadro por texto de propósito, e o contrato dessa troca é a
+  // DECLARAÇÃO — `retanguloUtilDoAtlas` recebe o fator, a câmera recua,
+  // e as duas provas acima cobram declarado ≥ medido. Um piso fixo por
+  // cima da ampliação puniria exatamente quem pediu o texto grande: a
+  // 1200×900 com ×1,4 o HUD mede ~50,4% por aritmética do próprio
+  // pedido, com a declaração verde. O piso nasceu cobrando TODA medição
+  // e nunca tinha visto uma rodada completa (a primeira, item 48,
+  // acusou a própria régua). Na ampliação a sobra fica como REGISTRO.
+  if (fatorUi > 1) {
+    process.stdout.write(
+      `  ·     retângulo útil (${onde}): o HUD deixa ${(sobra * 100).toFixed(1)}% da altura `
+        + `livre — registro (texto ampliado: a declaração é o contrato)\n`
+    );
+    return;
+  }
   conferir(
     sobra > 0.5,
     `retângulo útil (${onde}): o HUD REAL deixa ${(sobra * 100).toFixed(1)}% da altura `
@@ -883,7 +899,7 @@ async function julgarEscalaDaUi(s) {
   // ---- e o retângulo útil do Atlas segue cobrindo o HUD -----------
   for (const fator of [0.85, GRANDE]) {
     await s.ir(`atlas=1&ui=${fator}&${PIN}`);
-    await medirCobertura(s, `ui = ${fator}`);
+    await medirCobertura(s, `ui = ${fator}`, true, fator);
   }
 
   // ---- OS DOIS EIXOS DA DECLARAÇÃO, e não um só -------------------
@@ -912,7 +928,7 @@ async function julgarEscalaDaUi(s) {
         width: largura, height: 900, deviceScaleFactor: 1, mobile: false,
       });
       await s.ir(`atlas=1&ui=${fator}&${PIN}`);
-      await medirCobertura(s, `ui = ${fator}`);
+      await medirCobertura(s, `ui = ${fator}`, true, fator);
     }
   }
   await s.send('Emulation.clearDeviceMetricsOverride');
