@@ -386,27 +386,15 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // ?corpos força o palco dos corpos resolvidos (Onda 6, F0) — par de
   // ?nocorpos, no precedente exato de ?plan/?noplan
   porta('corpos', 'camada de corpos forçada'),
-  // --- camadas (as do painel e as só-URL) ---------------------------
-  camada('nogal'),
-  // as três da galáxia deixaram de recarregar em 2026-08-12: o setter da
-  // `Galaxy` as troca por quadro, então a linha BRILHO do selo as desfaz
-  // no lugar, como qualquer outra camada
-  camada('nodisc'),
-  camada('nogdust'),
-  camada('noglow'),
-  camada('nocart'),
-  camada('nonebula'),
-  camada('nowrap'),
-  camada('nocat'),
-  camada('noclarao'),
-  camada('nomarker'),
-  camada('noplan'),
-  camada('nocorpos'),
-  camada('nobh'),
-  camada('nosun'),
-  camada('nodust'),
-  camada('noco'),
-  camada('noforge'),
+  // --- camadas: TODAS derivadas da tabela única ---------------------
+  // Redigitá-las aqui foi o buraco do item 33: quatro flags só-URL
+  // (nosun/nodust/noco/noforge) viviam no registro sem linha em
+  // `CAMADAS` — o selo escrevia a flag crua no rótulo e quem chegava
+  // com `?nosun=1` não tinha caixa em painel nenhum para religar.
+  // Derivando, camada nova nasce nos três hospedeiros (painel, espelho
+  // da URL e selo) com uma linha só — e a `volta` acompanha o contrato
+  // `viva` da própria tabela.
+  ...CAMADAS.map((c) => camada(c.flag, c.viva ? 'vivo' : 'recarregar')),
   // --- portas que NÃO mexem na luz, declaradas ----------------------
   /**
    * `?jd=` — O INSTANTE DO CÉU (F4/D2), e a decisão fica POR ESCRITO

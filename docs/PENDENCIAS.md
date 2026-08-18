@@ -209,9 +209,6 @@ Vênus não tem foto em luz visível.
 **20.** Asteroides são elipsoides, e o HUD não confessa. Diz “cartografia
 real” sem admitir o recuo procedural.
 
-**33.** O selo e o painel discordam sobre quantas camadas existem.
-Ajustes oferece 13, a gaveta do Atlas 6, o selo conhece 17.
-
 **34.** A tela de carregamento desenha outra Via Láctea, de dois braços.
 O modelo da casa tem quatro.
 

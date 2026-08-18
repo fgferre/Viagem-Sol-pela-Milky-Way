@@ -52,7 +52,13 @@ export interface Camada {
  * comentário podre — `bakeDiscLayers` roda inteiro de qualquer jeito, o
  * τRT inclusive, e elas só governam `mesh.visible` e o bind de
  * `uTauMap`, que a `Galaxy` reescreve por quadro. Nenhuma opção do
- * painel recarrega a página. A 13ª (`nocorpos`) é da Onda 6.
+ * painel recarrega a página.
+ *
+ * Esta tabela é a ÚNICA lista de camadas (item 33): o registro do selo
+ * e o laço de flags do Director DERIVAM dela. Quatro delas nasceram
+ * só-URL dentro do director (nosun/nodust/noco/noforge) e viveram sem
+ * nome pt-BR nem caixa — o selo escrevia a flag crua e quem chegava
+ * com `?nosun=1` não tinha onde religar.
  */
 export const CAMADAS: readonly Camada[] = [
   { flag: 'nogal', nome: 'Galáxia (tudo)', viva: true },
@@ -60,13 +66,23 @@ export const CAMADAS: readonly Camada[] = [
   { flag: 'nogdust', nome: 'Extinção por partícula', viva: true },
   { flag: 'noglow', nome: 'Brilho do bojo', viva: true },
   { flag: 'nocart', nome: 'Cartografia observada', viva: true },
+  // a bissecção de `nocart`: nuvens CO medidas e forjas estelares têm
+  // chave própria — o tick as lê por quadro junto com a cartografia
+  { flag: 'noco', nome: 'Nuvens de CO', viva: true },
+  { flag: 'noforge', nome: 'Forjas estelares', viva: true },
   { flag: 'nonebula', nome: 'Nebulosa volumétrica', viva: true },
   { flag: 'nowrap', nome: 'Campo envolvente', viva: true },
+  // a poeira de paralaxe perto da câmera (`world/dust.ts`) — o tick lê
+  // `hide.has('nodust')` por quadro no fade dela
+  { flag: 'nodust', nome: 'Poeira próxima', viva: true },
   { flag: 'nocat', nome: 'Catálogo HYG', viva: true, icone: '⁂' },
   // M2 da Lei: `nohero` virou `noclarao` — o que a chave desliga deixou
   // de ser as 16 heroes de autor e passou a ser a camada do clarão de
   // asas (a óptica das fontes fortes, por orçamento de fluxo).
   { flag: 'noclarao', nome: 'Clarão das estrelas', viva: true, icone: '✦' },
+  // o Sol inteiro em cena — o gate por quadro vive em
+  // `director/solNoQuadro.ts` (`fios.escondido('nosun')`)
+  { flag: 'nosun', nome: 'Sol', viva: true },
   { flag: 'nomarker', nome: 'Marcador do Sol', viva: true, icone: '⌖' },
   { flag: 'noplan', nome: 'Planetas', viva: true, icone: '◉' },
   // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de

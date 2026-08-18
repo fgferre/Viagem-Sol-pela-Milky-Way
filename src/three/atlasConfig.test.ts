@@ -22,6 +22,12 @@ import {
 
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GALAXY = readFileSync(new URL('./world/galaxy.ts', import.meta.url), 'utf8');
+// o leitor por quadro do `nosun` mudou de casa no corte 8 da onda da
+// arquitetura: o gate do Sol vive no módulo, não na fachada
+const SOL_NO_QUADRO = readFileSync(
+  new URL('./director/solNoQuadro.ts', import.meta.url),
+  'utf8'
+);
 
 describe('a tabela de camadas da casa', () => {
   it('não repete flag — duas linhas com a mesma flag seriam dois donos', () => {
@@ -36,19 +42,23 @@ describe('a tabela de camadas da casa', () => {
         DIRECTOR.includes(`this.debug.has('${c.flag}')`) ||
         // as três da galáxia são lidas LÁ: o boot semeia por `Galaxy.dbg`
         // e a troca viva entra pelo setter que o Director roteia
-        GALAXY.includes(`'${c.flag}'`);
+        GALAXY.includes(`'${c.flag}'`) ||
+        // o gate do Sol lê pelo fio do módulo (corte 8): `fios.escondido`
+        // é o `hide.has` da fachada entregue por função
+        SOL_NO_QUADRO.includes(`escondido('${c.flag}')`);
       expect(lida, `${c.flag} não é lida por ninguém`).toBe(true);
     }
   });
 
-  it('as TREZE trocam ao vivo — nenhuma opção do painel recarrega a página', () => {
+  it('TODAS trocam ao vivo — nenhuma opção do painel recarrega a página', () => {
     // A régua do dono: nenhuma opção do painel de Ajustes recarrega. As
     // três da galáxia (nodisc/nogdust/noglow) recarregavam por um
     // comentário podre — `bakeDiscLayers` roda inteiro de qualquer
     // jeito. Quem marcar uma camada como `viva: false` quebra aqui e
     // vai ter de provar que o mundo precisa MESMO ser reconstruído.
-    // A 13ª é `nocorpos`, o palco local da Onda 6 (F0).
-    expect(CAMADAS.length).toBe(13);
+    // 17 = as 13 de sempre + as quatro que eram só-URL até o item 33
+    // (nosun/nodust/noco/noforge), todas lidas por quadro desde sempre.
+    expect(CAMADAS.length).toBe(17);
     expect(CAMADAS.filter((c) => !c.viva)).toEqual([]);
   });
 });

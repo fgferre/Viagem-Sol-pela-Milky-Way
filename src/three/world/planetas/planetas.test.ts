@@ -964,7 +964,11 @@ const maquina = readFileSync(
     expect(director).toContain('PLANETAS_DEFAULT_ON');
     expect(director).toContain("this.debug.has('plan')");
     expect(director).toContain("!this.hide.has('noplan')");
-    expect(director).toContain("'noplan',");
+    // a semeadura URL→hide deixou de ser array digitado no director
+    // (item 33): o laço deriva da tabela única, onde a flag tem linha
+    expect(director).toContain('for (const { flag } of CAMADAS)');
+    const config = readFileSync(new URL('../../atlasConfig.ts', import.meta.url), 'utf8');
+    expect(config).toContain("flag: 'noplan',");
   });
 
   it('a camada entra na cena por conta própria, nunca em `sun.group`', () => {

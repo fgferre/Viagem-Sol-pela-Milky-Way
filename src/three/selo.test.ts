@@ -106,6 +106,24 @@ describe('1. completude do registro', () => {
     }
   });
 
+  it('a recíproca: as camadas do registro SÃO a tabela única, na ordem (item 33)', () => {
+    // era a direção que faltava — quatro flags só-URL viveram no
+    // registro sem linha em CAMADAS, com o selo escrevendo a flag crua
+    // no rótulo e nenhuma caixa para religar. A derivação torna isto
+    // estrutural; este pino impede a segunda lista de renascer.
+    const doRegistro = REGISTRO.filter((c) =>
+      c.rotulo.startsWith('camada desligada')
+    );
+    expect(doRegistro.map((c) => c.chave)).toEqual(CAMADAS.map((c) => c.flag));
+    // e nenhuma delas ficou sem nome pt-BR: rótulo com a flag crua é o
+    // sintoma exato do buraco fechado
+    for (const c of doRegistro) {
+      expect(c.rotulo, `rótulo cru em ${c.chave}`).not.toBe(
+        `camada desligada: ${c.chave}`
+      );
+    }
+  });
+
   it('não há entrada MORTA: toda chave do registro é citada em arquivo governado', () => {
     const fontes = ARQUIVOS_GOVERNADOS.map((a) =>
       readFileSync(new URL(`./../${a}`, import.meta.url), 'utf8')

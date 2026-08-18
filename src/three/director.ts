@@ -71,6 +71,7 @@ import {
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
 import {
+  CAMADAS,
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
   HELIO_SEM_PONTO,
@@ -544,33 +545,18 @@ export class Director {
     this.reducedMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    for (const k of [
-      // ?noclarao=1 — desliga a camada do clarão de asas (M2 da Lei).
-      // Herda o papel do velho ?nohero: o gate do céu mede o CAMPO, e a
-      // óptica das fortes é camada própria. (?nohero e ?nodom morreram
-      // com as heroes e a política de dominância.)
-      'nogal', 'nosun', 'nodust', 'noclarao', 'nocat', 'nomarker', 'nocart', 'nowrap',
-      // bissecção do ?nocart: nuvens CO e forjas separadamente
-      'noco', 'noforge', 'nobh',
-      // ?noplan=1 — desliga a CAMADA de planetas (Onda 4, D3/D7). Par de
-      // `?plan=1`, no mesmo precedente. Governa a camada e SÓ ela: o
-      // domínio profundo (janelas deep, near piecewise, voo proporcional)
-      // é fundação sem porta, como o near — emenda D11a.
-      'noplan',
-      // ?nocorpos=1 — desliga o PALCO dos corpos resolvidos (Onda 6,
-      // F0/D8). Par de `?corpos=1`, padrão ?dom/?nodom: o A/B se faz
-      // com o MESMO binário dos dois lados. Desligado, os corpos saem
-      // do QUADRO inteiro — inclusive do min() do near, que volta ao
-      // vigente bit a bit (é o que devolve a baseline no A/B).
-      'nocorpos',
-      // AS TRÊS DA GALÁXIA. Quem as LÊ é a Galaxy (por quadro, no
-      // `update`); elas entram no conjunto porque o `hide` é o que o
-      // SELO declara — sem esta linha, chegar com `?nodisc=1` apagava
-      // uma camada e o selo dizia "brilho real", enquanto o mesmo
-      // desligamento pelo painel se declarava. Uma opção, um veredito.
-      'nodisc', 'nogdust', 'noglow',
-    ]) {
-      if (this.debug.has(k)) this.hide.add(k);
+    // As flags de camada semeiam da URL DERIVADAS da tabela única
+    // (`atlasConfig.CAMADAS`) — este laço era a quarta lista digitada à
+    // mão, e foi por fora dela que quatro flags só-URL viveram sem nome
+    // nem caixa até o item 33. Todas entram em `hide` porque o `hide` é
+    // o que o SELO declara: sem isto, chegar com `?nodisc=1` apagava
+    // uma camada e o selo dizia "brilho real", enquanto o mesmo
+    // desligamento pelo painel se declarava. Uma opção, um veredito.
+    // `nonebula` é a exceção de morada: vive em `this.noNebula` (semeada
+    // acima, trocada por `setLayerHidden`) e o selo a re-injeta na
+    // leitura de `camadasEscondidas`.
+    for (const { flag } of CAMADAS) {
+      if (flag !== 'nonebula' && this.debug.has(flag)) this.hide.add(flag);
     }
 
     // os gestos do canvas moram em director/gestos.ts (corte 6)
