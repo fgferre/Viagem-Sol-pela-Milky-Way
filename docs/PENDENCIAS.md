@@ -191,6 +191,15 @@ desligar coroa e ejeção são lidas e nunca escritas.
 
 **16.** Engasgo ao entrar no Atlas (a medir): o relógio do Sol acumula
 fora de quadro e volta em salto.
+*(Lido no código em 18/08 — o mecanismo existe: `update` avança
+`ctx.elapsed` ANTES do retorno cedo de invisibilidade
+(`stellarBody.ts`), então as regiões ativas, que leem `elapsed`,
+saltam ao reaparecer; o sim e o bake congelam e retomam FATIADOS —
+custo por quadro limitado, ou seja, isto explica o SALTO visual, não
+um engasgo. O conserto mora dentro do `stellarBody.ts`, que a Lei
+ainda demole — fica para a onda dela. O engasgo de ENTRADA, se
+existir, tem outro suspeito (palco/texturas) e pede medição na
+máquina do dono.)*
 
 **17.** O Sol solavanca quando o relógio acelera. O conserto existe, veio
 do projeto irmão e está desligado. Ligar depende de editar `sol/activity.js`.
