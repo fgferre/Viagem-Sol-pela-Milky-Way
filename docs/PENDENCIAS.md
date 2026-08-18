@@ -180,9 +180,6 @@ também não tem atalho.
 
 **9.** Tela estreita quebra o rodapé. Abaixo de 900 px a base do HUD estoura.
 
-**10.** O selo de honestidade pode atrasar até 3 segundos. Só atualiza
-quando a interface redesenha.
-
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela
 lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
 

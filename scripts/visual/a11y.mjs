@@ -520,6 +520,33 @@ try {
     `?luz=real: o Atlas abre sem assistência e o selo diz "${semAssistencia.brilho}"`
   );
 
+  // ---- O SELO ACOMPANHA O TIER NO ATO (item 10) --------------------
+  // A queixa era "o selo pode atrasar até 3 segundos; só atualiza
+  // quando a interface redesenha". O redesenho é DISPARADO por todo
+  // escritor de insumo do selo desde o corte 6 (onQuality → React) e a
+  // F6 (enquadrarAgora move a câmera ANTES de avisar o HUD); medido em
+  // 2026-08-18: 1–2 ms entre setQuality e o DOM. Esta prova vigia a
+  // FIAÇÃO — um tier que mudasse a imagem sem mover o selo na tela
+  // seria o selo mentindo por atraso, que é a doença do item.
+  await sessao.js("window.__director.setQuality('alta')");
+  const tierNaTela = await esperarPor(
+    sessao,
+    "document.querySelector('.atlas-selo').innerText.includes('amostragem abaixo de cinema')"
+  );
+  conferir(
+    tierNaTela !== null && tierNaTela < 1000,
+    `selo: a troca de tier aparece na tela no ato (${tierNaTela} ms)`
+  );
+  await sessao.js("window.__director.setQuality('cinema')");
+  const tierVoltou = await esperarPor(
+    sessao,
+    "!document.querySelector('.atlas-selo').innerText.includes('amostragem')"
+  );
+  conferir(
+    tierVoltou !== null,
+    `selo: a volta a cinema tira o desvio da tela (${tierVoltou} ms)`
+  );
+
   // ---- A ESCADA DE NAVEGAÇÃO (F2b/D7) -----------------------------
   // Os dois botões novos da ContextLine com nome acessível pt-BR, o
   // gesto de descer, o Esc que sobe UM degrau — e a interação declarada
