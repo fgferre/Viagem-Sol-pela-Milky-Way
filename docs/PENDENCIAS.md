@@ -47,9 +47,8 @@ O conserto do Sol está FECHADO e ACEITO (M1, M2, R1–R3 e a soltura — o
 pouso de 17/08). Os itens 39, 40 e 43 da ALTA esperam cada um a SUA
 conferência no app (focar estrela; rótulo dobrado; a cruz de Vênus). O
 item 5 é obra própria (ciclo pela data). Os itens 8, 9 e 10 são HUD,
-independentes. O item 21 é memória paga e inútil (`depth: false` no
-engine). O item 38 (`aFocus`) é dormente por desenho — **não apagar**; é
-o canal do passo E3.
+independentes. O item 38 (`aFocus`) é dormente por desenho — **não
+apagar**; é o canal do passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
 coisas da frente"*. **RESPONDIDA em 15/08: pela fundação.** A onda da luz
@@ -247,9 +246,6 @@ galáctica antes de mexer.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
-
-**21.** 22,9 MB de memória de vídeo paga e inútil (buffer de profundidade
-da tela; o composite é um quad). Uma palavra: `depth: false` no engine.
 
 **22.** 35 imagens de referência citadas que não existem, e as 6 fotos
 reais do Sol nunca foram baixadas. As seis passam na régua da bancada;

@@ -210,6 +210,12 @@ export class Engine {
       antialias: false, // AA vem do supersampling via pixelRatio + bloom
       powerPreference: 'high-performance',
       stencil: false,
+      // O BUFFER DE PROFUNDIDADE DA TELA era memória paga e inútil
+      // (item 21): TUDO renderiza dentro do composer (que tem os RTs
+      // e o depth PRÓPRIOS) e o que chega ao canvas é o blit de um
+      // quad — um fullscreen quad não testa profundidade. Medido na
+      // época: ~22,9 MB de VRAM devolvidos numa tela retina.
+      depth: false,
     });
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.02;
