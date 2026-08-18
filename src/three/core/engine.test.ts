@@ -39,9 +39,17 @@ const farAntigo = (d: number) => THREE.MathUtils.clamp(d * 12, 60000, 400000);
  * (`director.ts`), e nas duas vistas em que o centro galáctico está mais
  * perto que o Sol (mergulho, faceon) é ELE que entra — os dois números
  * abaixo são os que o engine vê de verdade.
+ *
+ * O `sol` (t=6) é o RE-MEDIDO de 17/08 no navegador, com o filme
+ * congelado. O achado do item 41 (15/08) flagrou o literal antigo
+ * defasado do vivo de então (1,2955e-7 pc — o começo refilmado da F3) e
+ * mandava mover a vista para PROFUNDAS; antes do conserto a soltura da
+ * estrela refez o começo do filme e t=6 voltou para CIMA do limiar. O
+ * número da tabela segue a medição — se o filme re-temporizar de novo,
+ * é a asserção de limiar logo abaixo que acusa.
  */
 const VISTAS: readonly (readonly [string, number])[] = [
-  ['sol', 0.06315061361538779],
+  ['sol', 0.07762087348130012],
   ['interno', 4.486971350060561],
   ['travessia', 221.22434784471977],
   ['retrato', 221.22434784471977],
@@ -88,7 +96,7 @@ describe('near/far — acima do limiar o par é IDÊNTICO ao de antes (D5)', () 
   });
 
   it('inclusive nos três regimes do clamp: piso, proporção e teto', () => {
-    expect(nearPlanePc(0.06315061361538779)).toBe(0.001); // piso, o filme inteiro
+    expect(nearPlanePc(0.07762087348130012)).toBe(0.001); // piso, o filme inteiro
     expect(nearPlanePc(1)).toBe(0.004); // proporção
     expect(nearPlanePc(20000)).toBe(40); // teto
     expect(farPlanePc(0.1)).toBe(60000); // piso do far

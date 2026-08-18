@@ -239,15 +239,6 @@ vezes (na cor e em metade do alpha) com degrau duro em 3 px, e o
 morta. A UNIFICAÇÃO segue sendo a pauta 1 do NORTE — obra própria, que
 muda pixel e volta com foto para o dono a cada mudança.
 
-**41.** (Suspeita a medir.) `core/engine.test.ts:44` diz que a vista `sol`
-está a 0,063 pc; o valor vivo é 1,2955e-7 pc (`lodStellar.test.ts:1636`) —
-487.000× de diferença. O literal envelheceu na F3 e ninguém o moveu. O teste
-está VERDE só por isso: a asserção da `:77` exige que toda vista da lista
-esteja ACIMA de 0,05 pc, então trocar o número pelo certo deixa o teste
-vermelho **sem ter achado defeito nenhum**. O conserto certo é mover `sol`
-para a lista `PROFUNDAS` (`:62-66`) e medir o corte de câmera lá. Achado em
-15/08, na onda da luz; não tocado de propósito.
-
 **37.** (Suspeita a medir.) As nuvens escuras podem estar apagando o que
 está na frente delas. Par de capturas antes de tocar em qualquer linha.
 
