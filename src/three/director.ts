@@ -693,7 +693,16 @@ export class Director {
     // número fixo mentiria em metade dos aparelhos
     await this.stage('galaxy');
     if (this.disposed) return;
-    this.galaxy = montarGalaxia(structureBake, dustBake, this.engine.quality);
+    // a população nasce no WORKER (montarGalaxia, carregamento.ts) — a
+    // thread fica livre e o rótulo da etapa anima em vez de congelar.
+    // Dispose durante o await é o caso dos stage(): o teardown já
+    // correu e ninguém mais descartaria ESTA Galaxy — descarta e sai.
+    const galaxia = await montarGalaxia(structureBake, dustBake, this.engine.quality);
+    if (this.disposed) {
+      galaxia.dispose();
+      return;
+    }
+    this.galaxy = galaxia;
     // O QUE JÁ ESTAVA DESLIGADO chega junto. A galáxia semeia as flags
     // dela da URL, como sempre, e isto só cobre a corrida do painel
     // aberto DURANTE o carregamento (`?ajustes=1`): sem esta linha, o

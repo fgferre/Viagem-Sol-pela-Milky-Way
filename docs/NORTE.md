@@ -198,8 +198,13 @@ em `LEI-DA-ESTRELA.md` §7. O céu e a galáxia nunca esmaecem.
 Régua do dono: nenhuma opção do painel recarrega a página. A Fase A
 fechou as camadas e o latch da exposição. Sobra a qualidade.
 
-- **B** — Worker da cadeia de carga (`buildGalaxy` + bakes); amostrador
-  de memória; medir o hitch do upload dos ~123 MiB.
+- **B** — Worker da cadeia de carga. O `buildGalaxy` JÁ RODA no worker
+  (18/08: `galaxiaEmWorker` + `construirBuffersDaGalaxia`, bit a bit
+  igual ao inline, com fallback declarado; a tarefa de ~3,3 s saiu da
+  thread e o rótulo da etapa anima). Sobram: os dois bakes de CPU
+  (~1,6 s) no mesmo worker, o amostrador de memória, e o hitch restante
+  medido por Long Tasks — `bakeDiscLayers` (bake por GPU) e o `prime`
+  do Sol, que são assunto do C.
 - **C** — troca de tier viva, double-buffer com swap atômico, sem véu.
 - **D** — Auto vira o 4º estado do seletor. Sem `?q=`, default de produto
   = cinema. Detecção nunca decide; medição sugere; o visitante escolhe.
