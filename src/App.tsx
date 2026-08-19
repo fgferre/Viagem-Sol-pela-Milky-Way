@@ -315,17 +315,13 @@ export default function App() {
 
   // pausa via botão ou tecla Espaço — um filme de mais de 5 min precisa disso
   const togglePause = () => {
-    const d = directorRef.current;
-    d?.startSound();
-    setPaused(d?.togglePause() ?? false);
+    setPaused(directorRef.current?.togglePause() ?? false);
   };
 
   const play = () => {
     setPaused(false);
     setRate(1);
-    const d = directorRef.current;
-    d?.startSound();
-    d?.play();
+    directorRef.current?.play();
   };
   const scrub = (fraction: number) => directorRef.current?.seekFraction(fraction);
   const freeRoam = () => directorRef.current?.enterFreeRoam();
@@ -333,7 +329,6 @@ export default function App() {
     setPaused(false);
     const d = directorRef.current;
     if (!d) return;
-    d.startSound();
     d.play();
     d.seek(d.revealTime);
   };
@@ -418,14 +413,12 @@ export default function App() {
     exposicao,
     escondidas,
     escalaUi,
-    somMutado,
     urlComMomento,
     changeQuality,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,
-    trocarSom,
     alternarCamada,
   } = useEspelhoDaUrl({ directorRef, phase, foco, tempo, indice, quality });
 
@@ -647,16 +640,6 @@ export default function App() {
                 aria-label={paused ? 'Retomar a viagem' : 'Pausar a viagem'}
               >
                 {paused ? '⏵ Retomar' : '⏸ Pausar'}
-              </button>
-              <button
-                className="hud-btn small"
-                data-sound-toggle
-                onClick={trocarSom}
-                aria-label={somMutado ? 'Ligar som do filme' : 'Desligar som do filme'}
-                aria-pressed={!somMutado}
-                title="Trilha procedural sincronizada ao filme"
-              >
-                {somMutado ? 'Som mudo' : '♪ Som'}
               </button>
               <button
                 className="hud-btn small"

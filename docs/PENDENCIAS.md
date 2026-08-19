@@ -179,15 +179,7 @@ maravilha técnica que já fizemos aqui.**
 Palavras do dono, 2026-08-18: *“traga uma nova visão que entregue wowness,
 drama, ciência e venda a maravilha técnica que fizemos aqui”*. A cirurgia de
 texto é o primeiro passo; o item só sai depois de ele assistir e aprovar o
-filme completo, com as fases de som e ritmo concluídas.
-
-**55. A trilha parece uma moto que nunca para de aumentar a rotação; não tem
-nada com nada e não entrega significado.**
-Palavras do dono, 2026-08-18: *“essa etapa de som está uma piada... não tem
-nada com nada, parece um som de uma moto que nunca termina de aumentar a
-rotação, muito ruim”*. A primeira prova não está aprovada. O defeito não é uma
-mixagem fina: o leito contínuo de osciladores muda frequência e intensidade,
-mas não constrói música, silêncio, acontecimentos ou contraste dramático.
+filme completo, com a revisão de ritmo concluída.
 
 ---
 

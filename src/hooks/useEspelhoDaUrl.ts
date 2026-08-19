@@ -14,7 +14,6 @@ import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
 import { estadoDoSelo } from '../three/selo';
 import { ESCALA_PADRAO, aplicarEscalaDaUi, lerEscalaDaUi } from '../lib/uiScale';
-import { somMutadoNaUrl } from '../three/cinematic/soundtrack';
 
 /** a exposição de referência da casa — o 1,02 da vista interna */
 export const EXPOSICAO_PADRAO = 1.02;
@@ -70,10 +69,6 @@ export function useEspelhoDaUrl(dep: {
    */
   const [escalaUi, setEscalaUi] = useState(() =>
     lerEscalaDaUi(new URLSearchParams(window.location.search).get('ui'))
-  );
-  /** O som é gosto e vive no link; o AudioContext continua sendo do Director. */
-  const [somMutado, setSomMutado] = useState(() =>
-    somMutadoNaUrl(window.location.search)
   );
 
   // ANTES DE PINTAR, e antes do Director existir: o `--ui` da raiz é o
@@ -264,14 +259,6 @@ export function useEspelhoDaUrl(dep: {
     );
   };
 
-  const trocarSom = () => {
-    const d = directorRef.current;
-    if (!d) return;
-    const muted = d.toggleSound();
-    setSomMutado(muted);
-    window.history.replaceState(null, '', comParam('mute', muted ? '1' : null));
-  };
-
   const alternarCamada = (flag: string, ligar: boolean) => {
     const camada = CAMADAS.find((c) => c.flag === flag);
     if (!camada) return;
@@ -309,7 +296,6 @@ export function useEspelhoDaUrl(dep: {
     exposicao,
     escondidas,
     escalaUi,
-    somMutado,
     setEscondidas,
     urlComMomento,
     changeQuality,
@@ -317,7 +303,6 @@ export function useEspelhoDaUrl(dep: {
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,
-    trocarSom,
     alternarCamada,
   };
 }

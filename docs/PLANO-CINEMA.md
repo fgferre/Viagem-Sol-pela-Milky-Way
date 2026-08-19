@@ -39,30 +39,24 @@ serão descritos pelo mesmo motor declarativo. Não haverá segundo aplicativo.
 - abertura, cuja composição só muda depois de comparação visual e aprovação do
   dono;
 - holds de medição em `t=261` e `t=293`;
-- nenhuma retemporização antes de uma exibição completa com o som novo.
+- nenhuma retemporização antes de uma exibição completa do corte atual.
 
 ## Fila ativa
 
 A cirurgia de texto foi o primeiro passo e agora é contrato do roteiro e de
 sua auditoria. O trabalho restante segue nesta ordem:
 
-1. **Direção musical e desenho de som.** A primeira prova de leito procedural
-   contínuo foi rejeitada e não será tratada como problema de mixagem. Antes de
-   novo código, definir uma linguagem com silêncio, motivos, acontecimentos e
-   contraste dramático. A execução ainda deve nascer de gesto do usuário,
-   respeitar `?mute=1` e poder ser desligada sem mudar a imagem. Conclui com
-   audição integral e aceite explícito do dono.
-2. **Revisão de ritmo.** Assistir aos 321 segundos com som e decidir por imagem
-   e ouvido se hélice e ondas ainda pedem tempo. Conclui com decisão explícita:
-   manter o corte ou redistribuir segundos sem mudar total, quatro atos,
-   abertura protegida e holds.
-3. **Motor declarativo.** Movimentos nomeados, legendas, som, preload e
-   marcadores de QA passam a ser dados leves do filme. Conclui quando o filme
+1. **Revisão de ritmo.** Assistir aos 321 segundos e decidir pela imagem se
+   hélice e ondas ainda pedem tempo. Conclui com decisão explícita: manter o
+   corte ou redistribuir segundos sem mudar total, quatro atos, abertura
+   protegida e holds.
+2. **Motor declarativo.** Movimentos nomeados, legendas, preload e marcadores
+   de QA passam a ser dados leves do filme. Conclui quando o filme
    galáctico roda pelo novo formato sem diferença visual nem perda dos gates e
    um filme novo não exige editar o núcleo do aplicativo.
-4. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
+3. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
    com Terra/Lua, Júpiter/Io, Saturno/luas e o afastamento final, ciência e
-   unidades revisadas, som, gate visual e exibição completa aprovada.
+   unidades revisadas, gate visual e exibição completa aprovada.
 
 Quando esta fila terminar, este arquivo pode desaparecer: o produto, os testes,
 o `NORTE.md` e o histórico do Git serão as fontes de verdade.

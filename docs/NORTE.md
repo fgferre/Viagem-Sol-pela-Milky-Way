@@ -320,7 +320,6 @@ A lista completa das hipóteses de espiral está em
 - Espessura do céu no anticentro: o dono medido é o volume **local**
   (raymarch + véu), não a LUT distante.
 - `q2<7` no raymarch segue fora.
-- Som: sim, procedural, depois de gesto, `?mute=1`.
 - Baseline do gate indexada pela GPU, fora do TMPDIR — ainda não
   existe; o ritual acima é manual.
 

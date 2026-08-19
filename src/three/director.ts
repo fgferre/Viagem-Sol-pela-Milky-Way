@@ -54,7 +54,6 @@ import { loadGalacticAssets } from './cartography/galacticAssets';
 import { bakeDustMap } from './cartography/dustMap';
 import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
-import { CinematicSoundtrack, somMutadoNaUrl } from './cinematic/soundtrack';
 import { NuvensSemente } from './director/nuvensSemente';
 import { VeuDoAtlas } from './director/veu';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
@@ -368,10 +367,6 @@ export class Director {
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
-  /** trilha sem carga e sem relógio próprio; o contexto só nasce por gesto */
-  private readonly soundtrack = new CinematicSoundtrack({
-    muted: somMutadoNaUrl(window.location.search),
-  });
   /**
    * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
    * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
@@ -1014,21 +1009,6 @@ export class Director {
     this.setPhase('journey');
   }
 
-  /** Deve ser chamado dentro do clique que inicia ou retoma o filme. */
-  startSound() {
-    return this.soundtrack.start();
-  }
-
-  /** O botão do HUD é também um gesto válido para criar o AudioContext. */
-  toggleSound(): boolean {
-    return this.soundtrack.toggleMuted();
-  }
-
-  /** estado somente-leitura para o gate do áudio e diagnóstico no DEV */
-  get audio() {
-    return this.soundtrack.snapshot;
-  }
-
   /**
    * Salta para um instante da viagem (segundos) — usado por deep-links.
    *
@@ -1591,13 +1571,6 @@ export class Director {
       }
     }
 
-    // O MESMO relógio do rig: pausa, seek, velocidade e saída do filme
-    // chegam à trilha sem scheduler paralelo nem evento por plano.
-    this.soundtrack.update(
-      this.journeyT,
-      this.phase === 'journey' && !this.freezeJourney
-    );
-
     // a matriz da câmera precisa estar atual ANTES de projeções e
     // extrações de base — labels usavam a matriz do frame anterior
     cam.updateMatrixWorld(true);
@@ -2125,7 +2098,6 @@ export class Director {
     };
     step('roam', () => this.roam.dispose());
     step('listeners', () => this.gestos?.desligar());
-    step('soundtrack', () => this.soundtrack.dispose());
     step('blackHole', () => this.blackHole?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
