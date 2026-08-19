@@ -178,8 +178,12 @@ item 51.)*
 maravilha técnica que já fizemos aqui.**
 Palavras do dono, 2026-08-18: *“traga uma nova visão que entregue wowness,
 drama, ciência e venda a maravilha técnica que fizemos aqui”*. A cirurgia de
-texto é o primeiro passo; o item só sai depois de ele assistir e aprovar o
-filme completo, com a revisão de ritmo concluída.
+texto entrou; a revisão de ritmo CONCLUIU em 18/08 com decisão de manter o
+corte (exibição completa medida — `scripts/visual/filme-ritmo.mjs`, 161
+quadros + curva de movimento; registro no `PLANO-CINEMA.md`). O que falta
+para o item sair: ELE assistir e aprovar o filme completo. Ponto a vigiar na
+exibição dele: a calmaria dupla em t≈110–127 (vazio de CASA emendado no
+início escuro da virada a Antares).
 
 ---
 

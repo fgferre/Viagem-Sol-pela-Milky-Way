@@ -39,22 +39,27 @@ serão descritos pelo mesmo motor declarativo. Não haverá segundo aplicativo.
 - abertura, cuja composição só muda depois de comparação visual e aprovação do
   dono;
 - holds de medição em `t=261` e `t=293`;
-- nenhuma retemporização antes de uma exibição completa do corte atual.
+- o corte de 18/08 está DECIDIDO: a revisão de ritmo (exibição completa por
+  `filme-ritmo.mjs`, 161 quadros + curva de movimento) manteve todos os
+  segundos — hélice e ondas sustentam; vales e picos caem onde o desenho
+  manda. Único ponto em observação: a calmaria dupla em t≈110–127 (vazio de
+  CASA + início escuro da virada a Antares), que só se mexe se o dono a
+  sentir na exibição dele.
 
 ## Fila ativa
 
 A cirurgia de texto foi o primeiro passo e agora é contrato do roteiro e de
-sua auditoria. O trabalho restante segue nesta ordem:
+sua auditoria. A revisão de ritmo concluiu em 18/08 (decisão: manter o corte
+— registrada nas restrições acima; o instrumento é
+`scripts/visual/filme-ritmo.mjs` e serve de novo quando um corte mudar). O
+trabalho restante segue nesta ordem:
 
-1. **Revisão de ritmo.** Assistir aos 321 segundos e decidir pela imagem se
-   hélice e ondas ainda pedem tempo. Conclui com decisão explícita: manter o
-   corte ou redistribuir segundos sem mudar total, quatro atos, abertura
-   protegida e holds.
-2. **Motor declarativo.** Movimentos nomeados, legendas, preload e marcadores
+1. **Motor declarativo.** Movimentos nomeados, legendas, preload e marcadores
    de QA passam a ser dados leves do filme. Conclui quando o filme
-   galáctico roda pelo novo formato sem diferença visual nem perda dos gates e
+   galáctico roda pelo novo formato sem diferença visual — prova A/B bit a
+   bit, com o lado novo capturado de disco zerado — nem perda dos gates e
    um filme novo não exige editar o núcleo do aplicativo.
-3. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
+2. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
    com Terra/Lua, Júpiter/Io, Saturno/luas e o afastamento final, ciência e
    unidades revisadas, gate visual e exibição completa aprovada.
 
