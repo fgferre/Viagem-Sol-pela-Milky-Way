@@ -177,13 +177,13 @@ describe('pisoDaRoda — o OUTRO grampo de velocidade (D6)', () => {
 });
 
 describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () => {
-  // A varredura que o desenho da onda pede: t = 0 → 321 s, e em cada
-  // instante as consequências julgadas contra os oráculos antigos. O
-  // `updateClip` recebe `min(dHome, dGC)` (director.ts) e a velocidade
-  // recebe `dHome` (|posição|).
+  // A varredura que o desenho da onda pede: o filme INTEIRO em passos
+  // de 0,01 s, e em cada instante as consequências julgadas contra os
+  // oráculos antigos. O `updateClip` recebe `min(dHome, dGC)`
+  // (director.ts) e a velocidade recebe `dHome` (|posição|).
   const j = new Journey();
   const AMOSTRAS: { t: number; dHome: number; dClip: number }[] = [];
-  for (let i = 0; i <= 32100; i++) {
+  for (let i = 0; i <= Math.round(j.duration * 100); i++) {
     const t = i * 0.01;
     const s = j.at(t);
     const dHome = s.pos.length();
@@ -192,8 +192,8 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
   /** o instante em que a hélice cruza o limiar do sistema solar. */
   const T_SAIDA = AMOSTRAS.find((a) => a.dHome >= LIMIAR_SISTEMA_SOLAR_PC)?.t ?? -1;
 
-  it('a duração é 321 s e o piso do filme é a abertura refilmada, em t=0', () => {
-    expect(j.duration).toBe(321);
+  it('a duração é 231 s e o piso do filme é a abertura refilmada, em t=0', () => {
+    expect(j.duration).toBe(231);
     // a PAREDE (t<6) devolve a constante bit a bit; a hélice em k=0
     // devolve o mesmo ponto a 1 ULP, porque ela normaliza a direção e
     // reescala (`v · (d/|v|)`). É 1,7e-23 pc — 5e-10 metro.
@@ -218,7 +218,11 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
   it('depois da saída, dHome e min(dHome, dGC) nunca voltam a descer', () => {
     // a rasante de Sgr A* é o que poderia surpreender aqui: lá quem
     // alimenta o near é o centro galáctico, não o Sol. Mínimo medido:
-    // 1,397 pc em t≈229,3 — 28× o limiar.
+    // 1,5 pc — a própria rasante cruzando o plano do disco (z=0, onde
+    // a distância é o raio puro), ~30× o limiar. O mergulhinho a 1,397
+    // do corte antigo era a cauda lenta do glide de 28 s demorando no
+    // comecinho do estilingue; a fuga de 5 s atravessa esse trecho em
+    // dois quadros e a varredura de 0,01 s não o vê mais.
     const depois = AMOSTRAS.filter((a) => a.t >= T_SAIDA);
     const pisoClip = depois.reduce((m, a) => Math.min(m, a.dClip), Infinity);
     expect(pisoClip).toBeGreaterThanOrEqual(LIMIAR_SISTEMA_SOLAR_PC);
@@ -226,7 +230,7 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
       (m, a) => Math.min(m, j.at(a.t).pos.distanceTo(GAL.GC_POS)),
       Infinity
     );
-    expect(pisoGC).toBeCloseTo(1.3972179743, 8);
+    expect(pisoGC).toBeCloseTo(1.5, 6);
   });
 
   it('em cada instante DEPOIS da saída: o par (near, far) é o de antes, bit a bit', () => {
@@ -242,17 +246,16 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
     }
   });
 
-  it('e os 20 planos DEPOIS da hélice não se moveram um bit', () => {
-    // a hélice pousa em `ORBIT_EXIT`, a constante de onde o plano
-    // seguinte parte — então tudo a partir de t=30 s é o filme de
-    // sempre. É a razão aritmética de `interno` (t=40), `travessia`,
-    // `mergulho`, `edgeon`, `faceon` e `retrato` saírem bit-idênticas.
+  it('a hélice pousa onde sempre pousou, e os holds seguram o quadro exato de medição', () => {
+    // A abertura é intocável (composição aprovada pelo dono): a hélice
+    // pousa em `ORBIT_EXIT` como sempre. E o corte de 19/08 moveu os
+    // INSTANTES dos holds, nunca os QUADROS: posição, mira, fov e roll
+    // de perfil e face-on continuam os das rodadas 16–25 — é o que
+    // mantém as capturas oficiais comparáveis entre cortes.
     const p = j.at(30).pos;
     expect(p.length()).toBeCloseTo(D_SAIDA_PC, 12);
-    expect(j.at(40).pos.length()).toBeCloseTo(4.486971350060561, 9);
-    expect(j.at(100).pos.length()).toBeCloseTo(221.22434784471977, 6);
-    expect(j.at(261).pos.length()).toBeCloseTo(15904.56497361685, 4);
-    expect(j.at(293).pos.length()).toBeCloseTo(32790.153293328774, 4);
+    expect(j.at(CAPTURE_T.edge).pos.length()).toBeCloseTo(15904.56497361685, 4);
+    expect(j.at(CAPTURE_T.face).pos.length()).toBeCloseTo(32790.153293328774, 4);
   });
 });
 
@@ -260,11 +263,11 @@ describe('a auditoria editorial do filme', () => {
   const auditoria = auditarRoteiro();
   const journey = new Journey();
 
-  it('preserva os 24 planos, os 321 s e os dois holds de medição', () => {
-    expect(auditoria.shotCount).toBe(24);
-    expect(auditoria.duration).toBe(321);
-    expect(journey.duration).toBe(321);
-    expect(CAPTURE_T).toEqual({ edge: 261, face: 293 });
+  it('o corte de 19/08: 23 planos, 231 s e os dois holds de medição', () => {
+    expect(auditoria.shotCount).toBe(23);
+    expect(auditoria.duration).toBe(231);
+    expect(journey.duration).toBe(231);
+    expect(CAPTURE_T).toEqual({ edge: 189, face: 213 });
   });
 
   it('nenhuma legenda se sobrepõe e só o SOL atravessa um corte, com passe explícito', () => {
@@ -279,24 +282,24 @@ describe('a auditoria editorial do filme', () => {
 
   it('as saídas de Sirius, Casa, Rigel e Antares não vazam para o plano seguinte', () => {
     const fim = (text: string) => auditoria.captions.find((caption) => caption.text === text)?.t1;
-    expect(fim('SIRIUS')).toBeCloseTo(40.8, 10);
-    expect(fim('RIGEL')).toBeCloseTo(103.8, 10);
-    expect(fim('CASA')).toBe(116);
-    expect(fim('ANTARES')).toBeCloseTo(129.8, 10);
-    expect(journey.captionAt(40.79).key.caption).toBe('SIRIUS');
-    expect(journey.captionAt(40.81).key.caption).toBe('');
-    expect(journey.captionAt(115.99).key.caption).toBe('CASA');
-    expect(journey.captionAt(116).key.caption).toBe('');
+    expect(fim('SIRIUS')).toBeCloseTo(36.8, 10);
+    expect(fim('RIGEL')).toBeCloseTo(83.75, 10);
+    expect(fim('CASA')).toBeCloseTo(92.6, 10);
+    expect(fim('ANTARES')).toBeCloseTo(103.95, 10);
+    expect(journey.captionAt(36.79).key.caption).toBe('SIRIUS');
+    expect(journey.captionAt(36.81).key.caption).toBe('');
+    expect(journey.captionAt(92.59).key.caption).toBe('CASA');
+    expect(journey.captionAt(92.61).key.caption).toBe('');
   });
 
   it('Sagittarius A* só é nomeado durante a curva rasante', () => {
     const sgr = auditoria.captions.filter((caption) => caption.text === 'SAGITTARIUS A✱');
     expect(sgr).toHaveLength(1);
-    expect(sgr[0].t0).toBeCloseTo(211.4, 10);
-    expect(sgr[0].t1).toBeCloseTo(217.4, 10);
-    expect(journey.captionAt(196.2).key.caption).toBe('');
-    expect(journey.captionAt(211.39).key.caption).toBe('');
-    expect(journey.captionAt(211.4).key.caption).toBe('SAGITTARIUS A✱');
+    expect(sgr[0].t0).toBeCloseTo(149.4, 10);
+    expect(sgr[0].t1).toBeCloseTo(155.4, 10);
+    expect(journey.captionAt(148).key.caption).toBe('');
+    expect(journey.captionAt(149.39).key.caption).toBe('');
+    expect(journey.captionAt(149.41).key.caption).toBe('SAGITTARIUS A✱');
   });
 
   it('o roteiro final tem as 18 janelas editoriais aprovadas', () => {

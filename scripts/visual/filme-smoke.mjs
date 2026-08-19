@@ -117,33 +117,43 @@ async function conferirMovimento(sessao, nome, t, legenda) {
   conferir(atual.title === legenda, `${nome}: manteve “${atual.title || '—'}” durante o movimento`);
 }
 
+// As margens do corte de 19/08 (23 planos, 231 s): um instante DENTRO de
+// cada janela de legenda e um logo DEPOIS dela — os números derivam de
+// STARTS/captions do journey.ts e morrem junto com qualquer retemporização.
 const JANELAS = [
   { t: 21.37, title: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é a galáxia vista por dentro' },
-  { t: 34.41, title: 'SIRIUS', sub: 'a estrela mais brilhante do céu noturno — apenas uma vizinha' },
-  { t: 40.81, title: '', sub: '' },
-  { t: 51.01, title: 'O MAR INTERESTELAR', sub: 'o espaço entre as estrelas não está vazio' },
-  { t: 72.49, title: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista' },
-  { t: 77.89, title: '', sub: '' },
-  { t: 98.41, title: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis' },
-  { t: 103.81, title: '', sub: '' },
-  { t: 110.01, title: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu' },
-  { t: 116, title: '', sub: '' },
-  { t: 123.01, title: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz' },
-  { t: 129.81, title: '', sub: '' },
-  { t: 147.2, title: 'O MERGULHO', sub: '' },
-  { t: 160.6, title: '', sub: '' },
-  { t: 172.3, title: '', sub: '' },
-  { t: 196.2, title: '', sub: '' },
-  { t: 211.41, title: 'SAGITTARIUS A✱', sub: 'quatro milhões de massas solares no centro da Via Láctea' },
-  { t: 217.41, title: '', sub: '' },
-  { t: 219.41, title: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra' },
-  { t: 228.41, title: '', sub: '' },
-  { t: 246, title: 'A VIA LÁCTEA, POR FORA', sub: 'uma reconstrução científica do que ninguém jamais viu' },
-  { t: 258.2, title: 'ELA NÃO É PLANA', sub: '' },
-  { t: 265, title: '', sub: '' },
-  { t: 290.2, title: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas' },
-  { t: 297, title: '', sub: '' },
-  { t: 309.2, title: 'VOCÊ ESTÁ AQUI', sub: '' },
+  { t: 30.5, title: '', sub: '' },
+  { t: 33, title: 'SIRIUS', sub: 'a estrela mais brilhante do céu noturno — apenas uma vizinha' },
+  { t: 36.9, title: '', sub: '' },
+  { t: 40.5, title: 'O MAR INTERESTELAR', sub: 'o espaço entre as estrelas não está vazio' },
+  { t: 46.6, title: '', sub: '' },
+  { t: 48.5, title: 'AS TRÊS MARIAS', sub: 'Alnitak · Alnilam · Mintaka — em fila só vistas daqui' },
+  { t: 54.8, title: '', sub: '' },
+  { t: 55.6, title: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista' },
+  { t: 60.95, title: '', sub: '' },
+  { t: 70, title: 'BETELGEUSE', sub: 'no lugar do Sol, engoliria a órbita de Júpiter' },
+  { t: 76.4, title: '', sub: '' },
+  { t: 79, title: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis' },
+  { t: 83.8, title: '', sub: '' },
+  { t: 88, title: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu' },
+  { t: 92.7, title: '', sub: '' },
+  { t: 98, title: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz' },
+  { t: 104, title: '', sub: '' },
+  { t: 115, title: 'O MERGULHO', sub: '' },
+  { t: 121.9, title: '', sub: '' },
+  { t: 150, title: 'SAGITTARIUS A✱', sub: 'quatro milhões de massas solares no centro da Via Láctea' },
+  { t: 155.5, title: '', sub: '' },
+  { t: 158, title: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra' },
+  { t: 166.5, title: '', sub: '' },
+  { t: 168.5, title: 'O ESTILINGUE', sub: 'do coração para fora do disco' },
+  { t: 172.5, title: '', sub: '' },
+  { t: 180, title: 'A VIA LÁCTEA, POR FORA', sub: 'uma reconstrução científica do que ninguém jamais viu' },
+  { t: 185.5, title: '', sub: '' },
+  { t: 186.5, title: 'ELA NÃO É PLANA', sub: '' },
+  { t: 193.5, title: '', sub: '' },
+  { t: 210.5, title: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas' },
+  { t: 217.5, title: '', sub: '' },
+  { t: 224, title: 'VOCÊ ESTÁ AQUI', sub: '' },
 ];
 
 async function julgarLargura(largura, altura, captura) {
@@ -174,24 +184,24 @@ async function julgarLargura(largura, altura, captura) {
     );
     if (captura) frames.push({ png: await capturar(sessao), rotulo: `ABERTURA · ${largura}px` });
 
-    const viagemAssentou = await sessao.ir('q=cinema&shot=1&t=34.5');
+    const viagemAssentou = await sessao.ir('q=cinema&shot=1&t=33');
     conferir(viagemAssentou.via === 'sinal', `${largura}px · viagem assentou por ${viagemAssentou.via}`);
 
     for (const janela of JANELAS) await conferirLegenda(sessao, largura, janela);
 
     if (captura) {
       const vistas = captura === 'todas' ? [
-        [34.5, 'SIRIUS · 34,5 s'],
-        [110.2, 'CASA · 110,2 s'],
-        [147.2, 'MERGULHO · 147,2 s'],
-        [196.2, 'SILÊNCIO ANTES DO CENTRO · 196,2 s'],
-        [212.2, 'SAGITTARIUS A✱ · 212,2 s'],
-        [258.2, 'PERFIL · 258,2 s'],
-        [290.2, 'FACE-ON · 290,2 s'],
-        [309.2, 'FINAL · 309,2 s'],
+        [33.5, 'SIRIUS · 33,5 s'],
+        [88.5, 'CASA · 88,5 s'],
+        [115, 'MERGULHO · 115 s'],
+        [137, 'AGLOMERADO · 137 s'],
+        [150.5, 'SAGITTARIUS A✱ · 150,5 s'],
+        [186.5, 'PERFIL · 186,5 s'],
+        [210.5, 'FACE-ON · 210,5 s'],
+        [224, 'FINAL · 224 s'],
       ] : [
-        [211.5, `SAGITTARIUS A✱ · ${largura}px`],
-        [309.2, `FINAL · ${largura}px`],
+        [150.5, `SAGITTARIUS A✱ · ${largura}px`],
+        [224, `FINAL · ${largura}px`],
       ];
       for (const [t, rotulo] of vistas) {
         await saltar(sessao, t);
@@ -199,17 +209,17 @@ async function julgarLargura(largura, altura, captura) {
       }
 
       if (captura === 'todas') for (const [nome, t, legenda] of [
-        ['Sirius', 34.5, 'SIRIUS'],
-        ['Casa', 110.2, 'CASA'],
-        ['mergulho', 147.2, 'O MERGULHO'],
-        ['Sagittarius A*', 211.5, 'SAGITTARIUS A✱'],
-        ['perfil', 258.2, 'ELA NÃO É PLANA'],
-        ['face-on', 290.2, 'NOSSA GALÁXIA'],
-        ['final', 309.2, 'VOCÊ ESTÁ AQUI'],
+        ['Sirius', 33.5, 'SIRIUS'],
+        ['Casa', 88.5, 'CASA'],
+        ['mergulho', 115, 'O MERGULHO'],
+        ['Sagittarius A*', 150.5, 'SAGITTARIUS A✱'],
+        ['perfil', 186.5, 'ELA NÃO É PLANA'],
+        ['face-on', 210.5, 'NOSSA GALÁXIA'],
+        ['final', 224, 'VOCÊ ESTÁ AQUI'],
       ]) await conferirMovimento(sessao, nome, t, legenda);
     }
 
-    await saltar(sessao, 320.9);
+    await saltar(sessao, 230.9);
     await sessao.js('window.__director.togglePause()');
     const limite = Date.now() + 3000;
     let fase = '';

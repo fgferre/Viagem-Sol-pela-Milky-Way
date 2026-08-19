@@ -407,15 +407,15 @@ try {
   // mentiria — e as três camadas novas mexem em `mesh.visible` e no bind
   // do `uTauMap`, que é onde uma diferença dessas se esconderia.
   //
-  // `t=293` é a vista de fora (a `faceon` da leva oficial): é a única em
+  // `t=213` é a vista de fora (a `faceon` da leva oficial): é a única em
   // que as três TÊM efeito — lâminas do disco, bojo e extinção por
   // partícula só pintam com a galáxia inteira em quadro. Por isso o
   // terceiro veredito: md5 vivo ≠ md5 limpo, senão o teste passaria
   // comparando duas imagens que ninguém mudou.
   for (const flag of ['nodisc', 'nogdust', 'noglow']) {
-    await sessao.ir(`t=293&${PIN}&${flag}=1`);
+    await sessao.ir(`t=213&${PIN}&${flag}=1`);
     const noBoot = await sessao.md5();
-    await sessao.ir(`t=293&${PIN}`);
+    await sessao.ir(`t=213&${PIN}`);
     const limpo = await sessao.md5();
     await sessao.js(`window.__director.setLayerHidden('${flag}', true)`);
     await sessao.assentar();
@@ -446,7 +446,7 @@ try {
     return el.value;
   })()`);
 
-  await sessao.ir('t=293&ajustes=1&q=cinema&shot=1');
+  await sessao.ir('t=213&ajustes=1&q=cinema&shot=1');
   await sessao.assentar();
   const autoAntes = Number(await sessao.js(EXPOSICAO));
   conferir(

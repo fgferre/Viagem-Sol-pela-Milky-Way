@@ -25,7 +25,6 @@ import { abrirSessao } from './chrome.mjs';
 const DIR = process.env.FILME_RITMO_DIR
   || resolve(tmpdir(), `filme-ritmo-${process.pid}`);
 const PASSO = Number(process.env.PASSO || 2); // segundos de viagem por quadro
-const DURACAO = 321;
 
 // medida em miniatura cinza: o delta é por PIXEL da miniatura, então a
 // resolução dela só precisa ser estável dentro da varredura
@@ -103,6 +102,9 @@ try {
   // Sem ele a varredura fotografa a tela "INICIAR A VIAGEM" 161 vezes.
   const abriu = await sessao.ir('q=cinema&shot=1&t=0');
   process.stdout.write(`abertura assentou por ${abriu.via}\n`);
+  // a duração vem do app — o instrumento acompanha o corte, não o contrário
+  const DURACAO = await sessao.js('window.__director.journeyDuration');
+  process.stdout.write(`duração do corte: ${DURACAO}s\n`);
 
   const linhas = ['t\tmov_por_s\tlegenda'];
   const cards = [];

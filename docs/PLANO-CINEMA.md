@@ -21,6 +21,13 @@ serão descritos pelo mesmo motor declarativo. Não haverá segundo aplicativo.
 
 ## Regras editoriais
 
+- **A frente é a visão principal** (lei do dono, 19/08): em travessia, a
+  câmera olha para onde vai — "os aviões não voam de lado". Traseira e
+  laterais existem como acentos declarados e curtos, nunca como o normal.
+  Órbita ao redor de um ASSUNTO olhando para ele não é voo de lado.
+- **Tempo sem atividade não existe** (lei do dono, 19/08): trecho parado se
+  encurta, se acelera ou ganha evento no caminho. Quietude só quando é a
+  mensagem — e curta.
 - Uma legenda, uma função: orientar, revelar, dimensionar ou concluir.
 - A imagem mostra primeiro; o texto nomeia ou muda a leitura depois.
 - Texto de tela fala com quem assiste. Parâmetros de implementação ficam no
@@ -32,34 +39,45 @@ serão descritos pelo mesmo motor declarativo. Não haverá segundo aplicativo.
 - Legendas não se sobrepõem nem atravessam cortes, salvo uma ponte declarada e
   intencional. No filme atual, somente a legenda inicial do Sol tem esse passe.
 
-## Restrições protegidas do filme atual
+## Restrições protegidas
 
-- quatro atos, 24 planos e duração total de 321 segundos;
-- câmera, trajetórias e enquadramentos existentes;
-- abertura, cuja composição só muda depois de comparação visual e aprovação do
-  dono;
-- holds de medição em `t=261` e `t=293`;
-- o corte de 18/08 está DECIDIDO: a revisão de ritmo (exibição completa por
-  `filme-ritmo.mjs`, 161 quadros + curva de movimento) manteve todos os
-  segundos — hélice e ondas sustentam; vales e picos caem onde o desenho
-  manda. Único ponto em observação: a calmaria dupla em t≈110–127 (vazio de
-  CASA + início escuro da virada a Antares), que só se mexe se o dono a
-  sentir na exibição dele.
+O corte de 18/08 foi REPROVADO pela exibição do dono em 19/08 ("muito
+enfadonho... minutos sem nada acontecer... feio viajar com a câmera de
+lado"; palavras completas no item 54 do `PENDENCIAS.md`). A revisão de
+ritmo tinha dito "manter" com curva de pixels — a lição: curva de pixels
+não mede tédio; densidade de eventos e língua de câmera medem. O roteiro
+será repensado 100%. O que fica de pé no repensar:
+
+- a abertura (parede de fogo + hélice exponencial), cuja composição o dono
+  aprovou e que só muda com comparação visual e novo aval dele;
+- os dois QUADROS de medição (posição, mira, fov e roll exatos de perfil e
+  face-on — `GATE_*` no `journey.ts`): o corte novo os mantém como holds em
+  algum instante, e os TEMPOS novos atualizam testes e réguas no mesmo
+  commit;
+- as âncoras da história: casa → Órion → mergulho → Sagittarius A✱ →
+  revelação → "você está aqui";
+- 24 planos e 321 s NÃO são mais protegidos — o corte novo decide a duração
+  pelos beats, sem tempo morto.
 
 ## Fila ativa
 
-A cirurgia de texto foi o primeiro passo e agora é contrato do roteiro e de
-sua auditoria. A revisão de ritmo concluiu em 18/08 (decisão: manter o corte
-— registrada nas restrições acima; o instrumento é
-`scripts/visual/filme-ritmo.mjs` e serve de novo quando um corte mudar). O
-trabalho restante segue nesta ordem:
+A cirurgia de texto foi o primeiro passo e é contrato do roteiro e de sua
+auditoria. O trabalho segue nesta ordem:
 
-1. **Motor declarativo.** Movimentos nomeados, legendas, preload e marcadores
+1. **Roteiro novo (100%).** Primeiro o perfil analítico do corte atual,
+   tirado do CÓDIGO (por segundo: velocidade da câmera, ângulo entre olhar
+   e direção do voo, eventos em cena) — é ele que marca os trechos mortos e
+   os voos de lado. Depois o desenho novo sob as duas leis do dono, com
+   eventos reais no caminho (estrelas nomeadas perto da rota, com posição
+   verdadeira). Conclui com typecheck, testes e juízes atualizados no mesmo
+   commit, a varredura do `filme-ritmo.mjs` no corte novo, folhas para o
+   dono — e a exibição DELE.
+2. **Motor declarativo.** Movimentos nomeados, legendas, preload e marcadores
    de QA passam a ser dados leves do filme. Conclui quando o filme
    galáctico roda pelo novo formato sem diferença visual — prova A/B bit a
    bit, com o lado novo capturado de disco zerado — nem perda dos gates e
    um filme novo não exige editar o núcleo do aplicativo.
-2. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
+3. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
    com Terra/Lua, Júpiter/Io, Saturno/luas e o afastamento final, ciência e
    unidades revisadas, gate visual e exibição completa aprovada.
 

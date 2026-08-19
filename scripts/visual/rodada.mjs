@@ -50,8 +50,10 @@ const APP = process.env.APP_URL || APP_PADRAO;
 // CAPTURE_T): posição/mira/fov idênticos aos das rodadas 16–25 — só o
 // instante na linha do tempo mudou com o roteiro novo (rodada 26).
 const VIEWS = [
-  { nome: 'faceon', t: 293 },
-  { nome: 'edgeon', t: 261 },
+  // instantes do corte de 19/08 (CAPTURE_T do journey.ts): o QUADRO dos
+  // holds é o mesmo das rodadas 16–25; só o relógio do filme mudou
+  { nome: 'faceon', t: 213 },
+  { nome: 'edgeon', t: 189 },
 ];
 
 // TIER FIXO, e não é preferência: ver o cabeçalho e `ab-identidade.mjs`.

@@ -178,12 +178,23 @@ item 51.)*
 maravilha técnica que já fizemos aqui.**
 Palavras do dono, 2026-08-18: *“traga uma nova visão que entregue wowness,
 drama, ciência e venda a maravilha técnica que fizemos aqui”*. A cirurgia de
-texto entrou; a revisão de ritmo CONCLUIU em 18/08 com decisão de manter o
-corte (exibição completa medida — `scripts/visual/filme-ritmo.mjs`, 161
-quadros + curva de movimento; registro no `PLANO-CINEMA.md`). O que falta
-para o item sair: ELE assistir e aprovar o filme completo. Ponto a vigiar na
-exibição dele: a calmaria dupla em t≈110–127 (vazio de CASA emendado no
-início escuro da virada a Antares).
+texto entrou; a revisão de ritmo de 18/08 decidiu "manter o corte" com curva
+de movimento — e a exibição DELE, em 19/08, REPROVOU a decisão. Palavras
+dele: *“ficou péssimo... muito enfadonho. minutos sem nada acontecer em
+diversos momentos vc deveria ter encurtado os tempos sem atividade,
+acelerando a velocidade da camera ou criando novos eventos no meio do
+caminho, tb acho muito feio quando estamos viajando com a camera voltada
+para o lado e nao em linha reta, na direcao para qual estamos indo... vc vai
+olhando reto para seu alvo normalmente, os avioes nao vooam de lado por
+exemplo, ou nos filmes as naves nao vooam de lado... vc pdoeria até mostrar
+vistas por trás, a direita, a esquerda, mas a frente é a visao principal...
+[...] acho que vc deveria repensar 100% esse roteiro. repense sob o ponto de
+vista de tempo sem atividade tb. vc tem os marcadores de tempo, vc nao
+precisa só se basear em tentear ler um filme, vc pode entender o codigo para
+marcare tempos e movimentos.”* O item agora é o ROTEIRO NOVO sob as duas
+leis dele (frente é a visão principal; tempo sem atividade se corta, se
+acelera ou ganha evento), com perfil analítico tirado do código. Sai quando
+ele assistir e aprovar o filme novo.
 
 ---
 
