@@ -24,7 +24,7 @@ na qual se pode viajar até qualquer ponto e ainda sentir um universo vivo:
   tamanho e brilho corretos, respondendo à posição do observador.
 - Determinístico, eficiente no browser, LOD de verdade. Sem truque de sprite.
 
-O produto é um só — **Mar de Estrelas**: o filme de ~4 min 06 s leva do Sol
+O produto é um só — **Mar de Estrelas**: o filme de ~3 min 15 s leva do Sol
 a Sagittarius A*; perto de casa vive o **Atlas**, o sistema solar explorável,
 no mesmo Director, sem segundo motor. Frase de identidade: *a jornada te
 leva; o Atlas te deixa ficar.*
@@ -155,11 +155,10 @@ pelo perfil (`matarPerfil`), nunca pelo nome. Gate de imagem **pina**
 `?q=cinema`. Perto do Sol, A/B só com `&nobloom=1` — com bloom, `ua150` e
 `ua40` devolvem md5 iguais com céus diferentes.
 
-Holds do gate externo: **t=189** (perfil) e **t=213** (face-on) no corte de
-19/08 (eram 261/293 no corte anterior), com o roll assado do rig antigo. O
-que descompara o histórico é mexer no QUADRO (posição/mira/fov/roll,
-`GATE_*` do journey.ts); os instantes derivam do corte e mudam com ele —
-réguas e juízes leem os vigentes em `CAPTURE_T`.
+Holds do gate externo: o MEIO dos holds de perfil e face-on, com o roll
+assado do rig antigo. O que descompara o histórico é mexer no QUADRO
+(posição/mira/fov/roll, `GATE_*` do journey.ts); os instantes derivam do
+corte e mudam com ele — réguas e juízes leem os vigentes em `CAPTURE_T`.
 
 A régua do céu tem cinco termos (espessura, perfil, fenda-curva, púrpura,
 cor). Números de antes da mudança de régua de 2026-08-06 **não se comparam**

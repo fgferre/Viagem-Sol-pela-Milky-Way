@@ -202,7 +202,7 @@ terminando com a terra dando uma volta mostrando ela do lado escruo e
 terminando cetnralizada e grande do lado claro? (algo assim, vc dirige
 melhor do que eu [...] seja cuidadoso para ir rápido mas tendo tempo para
 contemplar a psg rápida pela lua e terminar desacelerando na visao final
-da terra.”* — implementada em 19/08 (filme a 4min06). E ele refinou o
+da terra.”* — implementada em 19/08. E ele refinou o
 pouso: *“como que a gente poderia terminar com a terra orientada no
 sentido dos polos e com o dia acontecendo na visao mais comum com as
 americas aparecendo?”* — resolvido no mesmo dia: a coda troca o relógio
@@ -210,6 +210,17 @@ do céu para as 16:00 UTC (meio-dia a ~60°O — as Américas no dia, Brasil
 no centro) no único trecho em que nada que depende dele está em quadro, e
 o roll final alinha o norte da Terra com o alto da tela. Sai quando ele
 assistir e aprovar o filme novo com a coda.
+
+Em 19/08, DEPOIS do corte novo e da coda, ele ainda vê o mesmo problema
+de dinâmica — agora no filme que já foi “repensado”. Palavras dele:
+*“percebi que ainda tem esse periodos longos atrapalhando a dinamica.
+acho que os movimentos de camera tambem podeira ser mais
+cinematográficos e interessantes, como um fly-by ao redor dos planetas
+no final, num unico take passar pela lua mirando a terra ao fundo,
+(ideias soltas de exmplo, nao necessarimanete isso, vc tem direito de
+pensar melhro do que eu e achar exemplos mais incrivies ainda)”*. O item
+volta a ser o que ELE vê: períodos longos da câmera se movimentando sem
+ação, e uma câmera que ainda não emociona.
 
 ---
 

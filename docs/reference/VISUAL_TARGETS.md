@@ -13,10 +13,10 @@ que preservam o estado atual.
 ### 1. Via Láctea face-on — recriação Gaia 2025 (vista externa, Ato III)
 
 - [gaia-2025-face-on-5k.jpg](gaia-2025-face-on-5k.jpg) — o alvo da
-  revelação (`?t=213&shot=2`, meio do hold face-on no corte de 19/08;
-  era `?t=293` na rodada 26 e `?t=170` até a 25 — o QUADRO é o mesmo
-  desde a 16; shot=2 é o modo de MEDIÇÃO, sem HUD; shot=1 mantém o HUD
-  e serve só para inspeção) e de toda vista externa de cima/baixo.
+  revelação (`?t=` + `CAPTURE_T.face` + `&shot=2`, meio do hold face-on;
+  o QUADRO é o mesmo desde a 16; shot=2 é o modo de MEDIÇÃO, sem HUD;
+  shot=1 mantém o HUD e serve só para inspeção) e de toda vista externa
+  de cima/baixo.
 - [gaia-2025-face-on-anatomia.jpg](gaia-2025-face-on-anatomia.jpg) —
   versão rotulada: nomes e posições dos braços (Perseus, Orion,
   Carina-Sagittarius, Centaurus, Norma, Outer, 3-kpc), barra, Sol,
@@ -29,9 +29,8 @@ que preservam o estado atual.
 ### 2. Via Láctea edge-on — recriação Gaia 2025 (disco de perfil)
 
 - [gaia-2025-edge-on-5k.jpg](gaia-2025-edge-on-5k.jpg) — o alvo do
-  disco de perfil (`?t=189&shot=2`, meio do hold de perfil no corte de
-  19/08; era `?t=261` na rodada 26 e `?t=158` até a 25) e de vistas
-  rasantes:
+  disco de perfil (`?t=` + `CAPTURE_T.edge` + `&shot=2`, meio do hold
+  de perfil) e de vistas rasantes:
   espessura relativa do disco fino, bojo em caixa/amendoim, warp sutil,
   lâmina de poeira MAIS FINA que a lâmina estelar. A câmera do hold é
   IDÊNTICA à das rodadas 16–25 (pos −597, 14597, 6287 · mira −442,
@@ -140,9 +139,9 @@ mais alto que outro com m=2 e m=4 casados exatamente.
 
 A face-on não testa espessura, faixa escura, warp nem cor por altura — a
 rodada 09 mudou o brilho rasante 2,19× e a métrica face-on moveu 0,002.
-`?mode=edge` na mesma página mede o quadro `?t=189&shot=2` (o hold de
-perfil do corte de 19/08; era `?t=261` na rodada 26 e `?t=158` até a
-25 — a câmera é a mesma) contra `gaia-2025-edge-on-5k.jpg`. Tudo normalizado por R90
+`?mode=edge` na mesma página mede o quadro do hold de perfil
+(`CAPTURE_T.edge`, a câmera é a mesma desde a rodada 16) contra
+`gaia-2025-edge-on-5k.jpg`. Tudo normalizado por R90
 horizontal ou pela meia-altura h50, então independe de enquadramento.
 
 | grandeza | alvo | o que significa |

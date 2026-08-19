@@ -117,49 +117,54 @@ async function conferirMovimento(sessao, nome, t, legenda) {
   conferir(atual.title === legenda, `${nome}: manteve “${atual.title || '—'}” durante o movimento`);
 }
 
-// As margens do corte de 19/08 (23 planos, 231 s): um instante DENTRO de
-// cada janela de legenda e um logo DEPOIS dela — os números derivam de
-// STARTS/captions do journey.ts e morrem junto com qualquer retemporização.
+// As margens do corte de 19/08 à noite (25 planos, 195 s): um instante
+// DENTRO de cada janela de legenda e um logo DEPOIS dela — os números
+// derivam de STARTS/captions do journey.ts e morrem junto com qualquer
+// retemporização.
 const JANELAS = [
-  { t: 21.37, title: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é a galáxia vista por dentro' },
-  { t: 30.5, title: '', sub: '' },
-  { t: 33, title: 'SIRIUS', sub: 'a estrela mais brilhante do céu noturno — apenas uma vizinha' },
+  { t: 21.5, title: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é a galáxia vista por dentro' },
+  { t: 30.1, title: '', sub: '' },
+  { t: 33.2, title: 'SIRIUS', sub: 'a estrela mais brilhante do céu noturno — apenas uma vizinha' },
   { t: 36.9, title: '', sub: '' },
-  { t: 40.5, title: 'O MAR INTERESTELAR', sub: 'o espaço entre as estrelas não está vazio' },
-  { t: 46.6, title: '', sub: '' },
-  { t: 48.5, title: 'AS TRÊS MARIAS', sub: 'Alnitak · Alnilam · Mintaka — em fila só vistas daqui' },
-  { t: 54.8, title: '', sub: '' },
-  { t: 55.6, title: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista' },
-  { t: 60.95, title: '', sub: '' },
-  { t: 70, title: 'BETELGEUSE', sub: 'no lugar do Sol, engoliria a órbita de Júpiter' },
-  { t: 76.4, title: '', sub: '' },
-  { t: 79, title: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis' },
-  { t: 83.8, title: '', sub: '' },
-  { t: 88, title: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu' },
-  { t: 92.7, title: '', sub: '' },
-  { t: 98, title: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz' },
-  { t: 104, title: '', sub: '' },
-  { t: 115, title: 'O MERGULHO', sub: '' },
-  { t: 121.9, title: '', sub: '' },
-  { t: 150, title: 'SAGITTARIUS A✱', sub: 'quatro milhões de massas solares no centro da Via Láctea' },
-  { t: 155.5, title: '', sub: '' },
-  { t: 158, title: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra' },
-  { t: 166.5, title: '', sub: '' },
-  { t: 168.5, title: 'O ESTILINGUE', sub: 'do coração para fora do disco' },
-  { t: 172.5, title: '', sub: '' },
-  { t: 180, title: 'A VIA LÁCTEA, POR FORA', sub: 'uma reconstrução científica do que ninguém jamais viu' },
-  { t: 185.5, title: '', sub: '' },
-  { t: 186.5, title: 'ELA NÃO É PLANA', sub: '' },
-  { t: 193.5, title: '', sub: '' },
-  { t: 210.5, title: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas' },
-  { t: 217.5, title: '', sub: '' },
-  { t: 224, title: 'VOCÊ ESTÁ AQUI', sub: '' },
-  { t: 231.3, title: '', sub: '' },
-  { t: 233, title: 'A VOLTA PARA CASA', sub: '' },
-  { t: 236.5, title: '', sub: '' },
-  { t: 239.5, title: 'A LUA', sub: 'a um segundo-luz de casa' },
-  { t: 241.2, title: '', sub: '' },
-  { t: 243.5, title: 'A TERRA', sub: 'de onde tudo isto foi visto' },
+  { t: 39, title: 'O MAR INTERESTELAR', sub: 'o espaço entre as estrelas não está vazio' },
+  { t: 43, title: '', sub: '' },
+  { t: 44.5, title: 'AS TRÊS MARIAS', sub: 'Alnitak · Alnilam · Mintaka — em fila só vistas daqui' },
+  { t: 48.9, title: '', sub: '' },
+  { t: 50, title: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista' },
+  { t: 54.95, title: '', sub: '' },
+  { t: 61, title: 'BETELGEUSE', sub: 'no lugar do Sol, engoliria a órbita de Júpiter' },
+  { t: 66, title: '', sub: '' },
+  { t: 68.5, title: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis' },
+  { t: 72.85, title: '', sub: '' },
+  { t: 76.5, title: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu' },
+  { t: 79.95, title: '', sub: '' },
+  { t: 84, title: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz' },
+  { t: 87.95, title: '', sub: '' },
+  { t: 98, title: 'O MERGULHO', sub: '' },
+  { t: 103.7, title: '', sub: '' },
+  { t: 106.5, title: 'O BERÇÁRIO', sub: 'estrelas nascem no último braço antes do centro' },
+  { t: 110.4, title: '', sub: '' },
+  { t: 123.5, title: 'SAGITTARIUS A✱', sub: 'quatro milhões de massas solares no centro da Via Láctea' },
+  { t: 128.2, title: '', sub: '' },
+  { t: 130, title: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra' },
+  { t: 136.6, title: '', sub: '' },
+  { t: 139, title: 'O ESTILINGUE', sub: 'do coração para fora do disco' },
+  { t: 142.1, title: '', sub: '' },
+  { t: 148.5, title: 'A VIA LÁCTEA, POR FORA', sub: 'uma reconstrução científica do que ninguém jamais viu' },
+  { t: 151.8, title: '', sub: '' },
+  { t: 153.5, title: 'ELA NÃO É PLANA', sub: '' },
+  { t: 157, title: '', sub: '' },
+  { t: 160, title: 'OS BRAÇOS', sub: 'de perfil, uma linha; de cima, uma espiral' },
+  { t: 165.1, title: '', sub: '' },
+  { t: 167.5, title: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas' },
+  { t: 171, title: '', sub: '' },
+  { t: 174, title: 'VOCÊ ESTÁ AQUI', sub: '' },
+  { t: 179.9, title: '', sub: '' },
+  { t: 181.5, title: 'A VOLTA PARA CASA', sub: '' },
+  { t: 184.9, title: '', sub: '' },
+  { t: 187, title: 'A LUA', sub: 'a um segundo-luz de casa' },
+  { t: 188.9, title: '', sub: '' },
+  { t: 191, title: 'A TERRA', sub: 'de onde tudo isto foi visto' },
 ];
 
 async function julgarLargura(largura, altura, captura) {
@@ -197,19 +202,19 @@ async function julgarLargura(largura, altura, captura) {
 
     if (captura) {
       const vistas = captura === 'todas' ? [
-        [33.5, 'SIRIUS · 33,5 s'],
-        [88.5, 'CASA · 88,5 s'],
-        [115, 'MERGULHO · 115 s'],
-        [137, 'AGLOMERADO · 137 s'],
-        [150.5, 'SAGITTARIUS A✱ · 150,5 s'],
-        [186.5, 'PERFIL · 186,5 s'],
-        [210.5, 'FACE-ON · 210,5 s'],
-        [224, 'VOCÊ ESTÁ AQUI · 224 s'],
-        [239.5, 'A LUA · 239,5 s'],
-        [245.5, 'A TERRA · 245,5 s'],
+        [33.2, 'SIRIUS · 33 s'],
+        [76.5, 'CASA · 76 s'],
+        [98, 'MERGULHO · 98 s'],
+        [106.5, 'BERÇÁRIO · 106 s'],
+        [123.5, 'SAGITTARIUS A✱ · 123 s'],
+        [153.5, 'PERFIL · 153 s'],
+        [167.5, 'FACE-ON · 167 s'],
+        [174, 'VOCÊ ESTÁ AQUI · 174 s'],
+        [187, 'A LUA · 187 s'],
+        [194.5, 'A TERRA · 194 s'],
       ] : [
-        [150.5, `SAGITTARIUS A✱ · ${largura}px`],
-        [245.5, `A TERRA · ${largura}px`],
+        [123.5, `SAGITTARIUS A✱ · ${largura}px`],
+        [194.5, `A TERRA · ${largura}px`],
       ];
       for (const [t, rotulo] of vistas) {
         await saltar(sessao, t);
@@ -217,19 +222,19 @@ async function julgarLargura(largura, altura, captura) {
       }
 
       if (captura === 'todas') for (const [nome, t, legenda] of [
-        ['Sirius', 33.5, 'SIRIUS'],
-        ['Casa', 88.5, 'CASA'],
-        ['mergulho', 115, 'O MERGULHO'],
-        ['Sagittarius A*', 150.5, 'SAGITTARIUS A✱'],
-        ['perfil', 186.5, 'ELA NÃO É PLANA'],
-        ['face-on', 210.5, 'NOSSA GALÁXIA'],
-        ['galáxia final', 224, 'VOCÊ ESTÁ AQUI'],
-        ['a Lua', 239.5, 'A LUA'],
-        ['a Terra', 243.5, 'A TERRA'],
+        ['Sirius', 33.2, 'SIRIUS'],
+        ['Casa', 76.5, 'CASA'],
+        ['mergulho', 98, 'O MERGULHO'],
+        ['Sagittarius A*', 123.5, 'SAGITTARIUS A✱'],
+        ['perfil', 153.5, 'ELA NÃO É PLANA'],
+        ['face-on', 167.5, 'NOSSA GALÁXIA'],
+        ['galáxia final', 174, 'VOCÊ ESTÁ AQUI'],
+        ['a Lua', 187, 'A LUA'],
+        ['a Terra', 191, 'A TERRA'],
       ]) await conferirMovimento(sessao, nome, t, legenda);
     }
 
-    await saltar(sessao, 245.9);
+    await saltar(sessao, 194.9);
     await sessao.js('window.__director.togglePause()');
     const limite = Date.now() + 3000;
     let fase = '';

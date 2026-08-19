@@ -55,8 +55,8 @@ será repensado 100%. O que fica de pé no repensar:
   algum instante, e os TEMPOS novos atualizam testes e réguas no mesmo
   commit;
 - as âncoras da história: casa → Órion → mergulho → Sagittarius A✱ →
-  revelação → "você está aqui" → a volta para casa (coda pedida pelo dono
-  em 19/08: quinze segundos, a Lua de raspão, a Terra do escuro ao claro);
+  revelação → "você está aqui" → a volta para casa (coda: quinze segundos,
+  um take Lua→Terra olhando para casa, do escuro ao claro);
 - 24 planos e 321 s NÃO são mais protegidos — o corte novo decide a duração
   pelos beats, sem tempo morto.
 
