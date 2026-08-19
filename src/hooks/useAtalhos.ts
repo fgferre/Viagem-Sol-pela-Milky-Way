@@ -73,6 +73,9 @@ export function useAtalhos(
       }
       if (event.code === 'Space') {
         event.preventDefault();
+        // A tecla é gesto explícito: numa viagem aberta por deep-link,
+        // retomar também precisa poder criar o AudioContext.
+        d.startSound();
         setPaused(d.togglePause());
       } else if (event.code === 'ArrowRight') {
         event.preventDefault();

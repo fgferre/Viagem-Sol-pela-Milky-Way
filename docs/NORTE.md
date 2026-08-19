@@ -38,6 +38,11 @@ declarativos: roteiro leve e editável, sem reescrever o núcleo do aplicativo.
 Unidades também contam a história: **UA** no Sistema Solar, **anos-luz** na
 narrativa galáctica e **parsecs** no canal técnico.
 
+O som dos filmes é **sonificação procedural**, não a alegação de que há som
+no vácuo. Nasce somente de gesto explícito, respeita `?mute=1` e segue o mesmo
+relógio da viagem em pausa, seek e velocidade. A composição é contínua entre
+atos e não depende de arquivo de áudio ou preload.
+
 O árbitro visual não é captura do próprio app: são as referências em
 [`docs/reference/`](reference/), com alvos em
 [`docs/reference/VISUAL_TARGETS.md`](reference/VISUAL_TARGETS.md). As vistas

@@ -48,8 +48,9 @@ sua auditoria. O trabalho restante segue nesta ordem:
 
 1. **Som procedural por ato.** Deve nascer de gesto do usuário, respeitar
    `?mute=1`, ter continuidade entre planos e poder ser desligado sem mudar a
-   imagem. Conclui com audição integral, teste do mute e nenhuma reprodução
-   automática indevida.
+   imagem. A instrumentação e os gates já estão no produto; falta a audição
+   integral do dono para cravar a mixagem. Conclui com esse aceite, teste do
+   mute e nenhuma reprodução automática indevida.
 2. **Revisão de ritmo.** Assistir aos 321 segundos com som e decidir por imagem
    e ouvido se hélice e ondas ainda pedem tempo. Conclui com decisão explícita:
    manter o corte ou redistribuir segundos sem mudar total, quatro atos,
