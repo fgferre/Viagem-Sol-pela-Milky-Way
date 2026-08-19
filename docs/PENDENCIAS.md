@@ -232,6 +232,12 @@ atos. acho que vale uma revisao a proicura desses erros.”* O que ele VÊ:
 a Lua passa e a Terra não recebe o take (não roda até as Américas); ainda
 há sequências longas; e o filme engasga na junta dos atos.
 
+Ele conferiu o conserto e ainda falha no play. Palavras dele: *“nao
+funcionou... continua dando outro problema agora, quando vc avanca
+direto para o ato da lua funciona, se vem pelo playback normal , d”*.
+O que ele VÊ: pular até a Lua mostra o take certo; deixar o filme
+chegar sozinho, não.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos

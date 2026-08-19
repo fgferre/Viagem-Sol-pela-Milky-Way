@@ -27,6 +27,8 @@ const FRAME_A = new THREE.Vector3(0.0548755604, 0.8734370902, 0.4838350155); // 
 const FRAME_B = new THREE.Vector3().crossVectors(GALACTIC_NORTH, FRAME_A).normalize();
 
 const _tmpV = new THREE.Vector3();
+const _tmpDir = new THREE.Vector3();
+const _tmpFrom = new THREE.Vector3();
 const _tmpQ = new THREE.Quaternion();
 
 /** up compartilhado viagem/voo: polo galáctico, cedendo ao eixo
@@ -106,15 +108,32 @@ export class JourneyRig {
     const kLook = 1 - Math.exp(-dt / 0.4);
     const kFov = 1 - Math.exp(-dt / 0.2);
 
-    // suavização do ponto de mira. Sem limiar de snap: os shots são
-    // contínuos por construção; saltos só existem em seek(), que chama
-    // reset() e cai no primeiro-quadro.
+    // suavização da DIREÇÃO da mira, não do ponto. O ponto em mundo
+    // falha na coda: a deriva mira a milhares de pc, a Lua a 1e-8 pc;
+    // o lerp exponencial de 0,4 s nunca alcança a Terra no play (o
+    // seek esconde o defeito porque `reset()` salta). Distância da
+    // mira acompanha o roteiro; o ângulo é que amortece.
     const snap = this.first;
     if (snap) {
       this.lookSm.copy(s.look);
       this.first = false;
     } else {
-      this.lookSm.lerp(s.look, kLook);
+      _tmpDir.copy(s.look).sub(s.pos);
+      const wantLen = _tmpDir.length();
+      if (wantLen > 1e-20) {
+        _tmpDir.multiplyScalar(1 / wantLen);
+        _tmpFrom.copy(this.lookSm).sub(s.pos);
+        const curLen = _tmpFrom.length();
+        if (curLen > 1e-20) {
+          _tmpFrom.multiplyScalar(1 / curLen);
+          _tmpFrom.lerp(_tmpDir, kLook).normalize();
+          this.lookSm.copy(s.pos).addScaledVector(_tmpFrom, wantLen);
+        } else {
+          this.lookSm.copy(s.pos).addScaledVector(_tmpDir, wantLen);
+        }
+      } else {
+        this.lookSm.copy(s.look);
+      }
     }
 
     camera.position.copy(s.pos);

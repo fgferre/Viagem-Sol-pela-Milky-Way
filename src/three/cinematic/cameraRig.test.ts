@@ -44,6 +44,7 @@ import { farPlanePc, nearPlanePc } from '../core/engine';
 const {
   ERROS_ATE_DESISTIR,
   EstadoDaCaptura,
+  JourneyRig,
   RODA_MIN_PC_POR_S,
   VOO_MIN_PC_POR_S,
   pisoDaRoda,
@@ -55,6 +56,8 @@ const {
   D_ABERTURA_PC,
   D_SAIDA_PC,
   DECADAS_DA_ABERTURA,
+  TERRA_PC,
+  LUA_PC,
   auditarRoteiro,
   distanciaDaAbertura,
 } = await import('./journey');
@@ -313,6 +316,24 @@ describe('a auditoria editorial do filme', () => {
 
   it('o roteiro final tem as 23 janelas editoriais do corte', () => {
     expect(auditoria.captions).toHaveLength(23);
+  });
+
+  it('o play contínuo chega na Lua olhando para casa — pular o tempo não é o único caminho', () => {
+    // o defeito que o dono viu: seek no ato da Lua funciona; o filme
+    // chegando sozinho, não. A mira era um ponto em mundo (milhares de
+    // pc) e o amortecimento nunca alcançava a Terra (1e-8 pc).
+    const rig = new JourneyRig();
+    const cam = new THREE.PerspectiveCamera();
+    const dt = 1 / 60;
+    rig.reset();
+    rig.apply(cam, 170, dt);
+    for (let t = 170 + dt; t <= 183.5; t += dt) rig.apply(cam, t, dt);
+    const dir = cam.getWorldDirection(new THREE.Vector3());
+    const paraTerra = TERRA_PC.clone().sub(cam.position).normalize();
+    const paraLua = LUA_PC.clone().sub(cam.position).normalize();
+    const angT = THREE.MathUtils.radToDeg(dir.angleTo(paraTerra));
+    const angL = THREE.MathUtils.radToDeg(dir.angleTo(paraLua));
+    expect(Math.min(angT, angL)).toBeLessThan(25);
   });
 
   it('nenhuma junta de plano salta posição, mira, lente ou roll', () => {
