@@ -78,7 +78,7 @@ import {
 } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
-import { REVEAL_T } from './cinematic/journey';
+import { JD_DO_FILME_TDB, REVEAL_T } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
@@ -1610,7 +1610,18 @@ export class Director {
     // de efemérides precisa estar viva antes de o raspão chegar. Mesmo
     // relógio do pré-aquecimento de textura (palcoQuente, t≥REVEAL_T:
     // ~64 s de folga); `garantirEfemerides` é idempotente e abortável.
-    if (this.palcoQuente) this.maquinaDoTempo.garantirEfemerides();
+    // E o FILME TROCA O RELÓGIO aqui: os atos rodam no instante do
+    // retrato, mas o pouso pede o dia sobre as Américas — a coda pede
+    // as 16:00 UTC (JD_DO_FILME_TDB) no único trecho em que nada que
+    // depende do relógio está em quadro (26.000 anos-luz de casa). A
+    // porta ?jd= do operador tem precedência; sem rede a fonte não
+    // chega e a coda degrada como a Lua: honesta e visível.
+    if (this.palcoQuente) {
+      this.maquinaDoTempo.garantirEfemerides();
+      if (this.phase === 'journey' && !this.debug.has('jd')) {
+        this.maquinaDoTempo.jdPedido = JD_DO_FILME_TDB;
+      }
+    }
 
     // ------------------------------------------------------------
     // O SOL SOB A LEI DO PALCO (F2 da onda do Sol real) — o gate em

@@ -432,24 +432,36 @@ const FINAL_LOOK = new THREE.Vector3(-155, -2491, -1381); // GC→Sol a 65%
 // ---- A VOLTA PARA CASA (coda de 19/08, pedido literal do dono) ----------
 //
 // O filme sobe 26.000 anos-luz para dizer "você está aqui" — e volta,
-// em quinze segundos, para o único lugar do quadro onde há olhos. A
-// geometria é REAL na época pinada do céu (EPOCA_JD_TDB, 2026-01-01):
-// os dois vetores abaixo saem da MESMA cadeia do app (efemerides.bin →
-// eclipticaParaEquatorial × AU_PARA_PC), calculados uma vez e pinados
-// como os quadros de medição — e voltaParaCasa.test.ts RECOMPUTA pela
-// cadeia e cobra igualdade bit a bit: se a época ou a efeméride
-// mudarem, o juiz grita antes de a câmera chegar numa Terra que não
-// está mais lá.
+// em quinze segundos, para o único lugar do quadro onde há olhos.
 //
-// A sorte da época: em 2026-01-01 a Lua está gibosa (146° do Sol, 91%
-// acesa) do lado ANTI-Sol — exatamente no corredor de quem chega por
-// trás da Terra. O raspão passa pelo flanco solar dela, e a chegada vê
-// a Terra de noite antes de a volta amanhecer.
+// O RELÓGIO DO FILME: os atos rodam no instante do retrato
+// (EPOCA_JD_TDB, 2026-01-01 00:00 UTC) — mas às 00:00 UTC o meio-dia
+// está sobre o Pacífico, e o dono pediu o pouso com "o dia acontecendo
+// com as Américas aparecendo". A coda então pede o céu das 16:00 UTC
+// do MESMO dia (meio-dia solar a ~60°O — a Amazônia no centro do dia,
+// as duas Américas acesas). O director troca o relógio no gatilho do
+// pré-aquecimento (t≥REVEAL_T), o único trecho em que NADA que depende
+// dele está em quadro — a câmera está saindo do buraco negro, a
+// 26.000 anos-luz de casa.
+//
+// A geometria é REAL nesse instante: os dois vetores abaixo saem da
+// MESMA cadeia do app (efemerides.bin → eclipticaParaEquatorial ×
+// AU_PARA_PC), calculados uma vez e pinados como os quadros de medição
+// — e voltaParaCasa.test.ts RECOMPUTA pela cadeia e cobra igualdade
+// bit a bit: se o instante ou a efeméride mudarem, o juiz grita antes
+// de a câmera chegar numa Terra que não está mais lá.
+//
+// A sorte do instante: a Lua está gibosa (155° do Sol, ~94% acesa) do
+// lado ANTI-Sol — exatamente no corredor de quem chega por trás da
+// Terra. O raspão passa pelo flanco solar dela, e a chegada vê a Terra
+// de noite antes de a volta amanhecer sobre as Américas.
+/** o instante do céu da coda: 16:00 UTC de 2026-01-01, em JD TDB */
+export const JD_DO_FILME_TDB = 2461042.16753588;
 export const TERRA_PC = new THREE.Vector3(
-  -8.450152776918732e-7, 0.000004304769511680729, 0.0000018660331486822022
+  -9.005623255658378e-7, 0.000004295230365654541, 0.000001861898774935369
 );
 export const LUA_PC = new THREE.Vector3(
-  -8.403404448353588e-7, 0.000004314155230007297, 0.0000018712239652735277
+  -8.978208032539119e-7, 0.000004305191642310892, 0.0000018673338296557573
 );
 /** Terra→anti-Sol (o Sol é a origem da cena) */
 const ANTISSOL = TERRA_PC.clone().normalize();
@@ -471,20 +483,57 @@ const ENTRADA_DE_CASA = LUA_PC.clone()
   .addScaledVector(FLANCO_ANTISSOL, 2e-9);
 /** o ponto do raspão: 7,1 raios lunares, no flanco solar da Lua */
 const RASPAO_DA_LUA = 4.0e-10;
-/** raio e ângulos da volta na Terra (do lado escuro ao claro) */
+/** raio da volta na Terra (do lado escuro ao claro) */
 const VOLTA_R0 = 2.6e-9; // ~12,6 raios terrestres, lado noite
 const VOLTA_R1 = 1.13e-9; // ~5,5 raios terrestres: Terra a ~45% do quadro
-const VOLTA_A0 = THREE.MathUtils.degToRad(22);
-const VOLTA_A1 = THREE.MathUtils.degToRad(150);
-/** ponto da volta na Terra em função de (α, r, h) — base local â=ANTISSOL */
-const pontoDaVolta = (a: number, r: number, h: number, out: THREE.Vector3) =>
-  out
-    .copy(TERRA_PC)
-    .addScaledVector(ANTISSOL, Math.cos(a) * r)
-    .addScaledVector(LADO_DA_LUA, Math.sin(a) * r)
-    .addScaledVector(FORA_DO_PLANO, h);
-/** onde a volta começa (fim do raspão) e termina (o quadro final) */
-const INICIO_DA_VOLTA = pontoDaVolta(VOLTA_A0, VOLTA_R0, 4e-10, new THREE.Vector3());
+/**
+ * As duas pontas da volta, como DIREÇÕES Terra→câmera. A chegada fica
+ * 22° fora do eixo anti-Sol, do lado da Lua (é de lá que o raspão
+ * entrega). O POUSO fica 20° fora do eixo solar, PARA O NORTE
+ * equatorial — a cena é o frame equatorial J2000, então (0,0,1) é o
+ * polo norte da Terra: o desvio ao norte sobe o centro do disco do
+ * subsolar (23°S de janeiro) para perto do equador, e as duas Américas
+ * cabem acesas no quadro.
+ */
+const SOLWARD = ANTISSOL.clone().negate();
+const NORTE_EQ = new THREE.Vector3(0, 0, 1);
+const NORTE_PERP = NORTE_EQ.clone()
+  .addScaledVector(SOLWARD, -NORTE_EQ.dot(SOLWARD)).normalize();
+const DIR_CHEGADA = ANTISSOL.clone()
+  .multiplyScalar(Math.cos(THREE.MathUtils.degToRad(22)))
+  .addScaledVector(LADO_DA_LUA, Math.sin(THREE.MathUtils.degToRad(22)))
+  .normalize();
+const DIR_POUSO = SOLWARD.clone()
+  .multiplyScalar(Math.cos(THREE.MathUtils.degToRad(20)))
+  .addScaledVector(NORTE_PERP, Math.sin(THREE.MathUtils.degToRad(20)))
+  .normalize();
+/** o arco da volta: rotação de DIR_CHEGADA a DIR_POUSO num eixo só */
+const EIXO_DA_VOLTA = new THREE.Vector3()
+  .crossVectors(DIR_CHEGADA, DIR_POUSO).normalize();
+const ANGULO_DA_VOLTA = DIR_CHEGADA.angleTo(DIR_POUSO);
+/** onde a volta começa (fim do raspão) e onde pousa (o quadro final) */
+const INICIO_DA_VOLTA = TERRA_PC.clone().addScaledVector(DIR_CHEGADA, VOLTA_R0);
+const POUSO = TERRA_PC.clone().addScaledVector(DIR_POUSO, VOLTA_R1);
+/**
+ * O ROLL QUE PÕE OS POLOS PARA CIMA (pedido do dono): o rig olha o
+ * mundo com o up do POLO GALÁCTICO (cameraRig.galacticUp), e no último
+ * quadro o dono quer a Terra "no sentido dos polos" — o norte DELA para
+ * cima. O ângulo abaixo gira a tela do up galáctico ao up equatorial,
+ * medido ao redor do eixo de visada do pouso; o rig aplica roll com
+ * rotateZ, que gira ao redor de câmera→trás (−olhar), e o sinal aqui
+ * segue essa convenção. voltaParaCasa.test.ts reconstrói a câmera do
+ * rig e cobra o alinhamento em graus.
+ */
+const ROLL_DOS_POLOS = (() => {
+  const olhar = TERRA_PC.clone().sub(POUSO).normalize();
+  const upGal = EZ.clone().addScaledVector(olhar, -EZ.dot(olhar)).normalize();
+  const upTerra = NORTE_EQ.clone().addScaledVector(olhar, -NORTE_EQ.dot(olhar)).normalize();
+  const eixoDoRoll = olhar.clone().negate();
+  return Math.atan2(
+    new THREE.Vector3().crossVectors(upGal, upTerra).dot(eixoDoRoll),
+    upGal.dot(upTerra)
+  );
+})();
 /**
  * O MERGULHO DE VOLTA: distância à Terra exponencial (11,5 décadas em
  * 6 s — a régua da abertura, 7× mais rápida) com a direção deslizando
@@ -986,19 +1035,21 @@ const SHOTS: Shot[] = [
   },
   {
     // a volta na Terra: chega pelo lado ESCURO (disco negro de borda
-    // fina), contorna 128° desacelerando e pousa CONGELADO no lado
-    // claro — a Terra grande e centrada, o último quadro do filme.
+    // fina), contorna o arco desacelerando e pousa CONGELADO no lado
+    // claro — a Terra grande e centrada, o dia sobre as Américas, o
+    // norte para cima (o roll assenta os polos junto com o pouso).
     // Órbita de assunto declarada: contemplar o alvo é permitido.
     dur: 5,
-    pos: (k, out) => pontoDaVolta(
-      THREE.MathUtils.lerp(VOLTA_A0, VOLTA_A1, k),
-      THREE.MathUtils.lerp(VOLTA_R0, VOLTA_R1, k),
-      4e-10 * (1 - k),
-      out
-    ),
+    pos: (k, out) => {
+      out.copy(DIR_CHEGADA).applyAxisAngle(EIXO_DA_VOLTA, ANGULO_DA_VOLTA * k);
+      return out
+        .multiplyScalar(THREE.MathUtils.lerp(VOLTA_R0, VOLTA_R1, k))
+        .add(TERRA_PC);
+    },
     look: still(TERRA_PC),
     fov0: 54, fov1: 46,
     ease: settleFreeze,
+    roll: (k) => ROLL_DOS_POLOS * smooth(Math.min(k / 0.88, 1)),
     quiet: true,
     lingua: 'assunto',
     captions: [{ at: 0.4, text: 'A TERRA', sub: 'de onde tudo isto foi visto', dur: 60 }],

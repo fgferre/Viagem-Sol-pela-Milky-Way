@@ -30,8 +30,10 @@ const _tmpV = new THREE.Vector3();
 const _tmpQ = new THREE.Quaternion();
 
 /** up compartilhado viagem/voo: polo galáctico, cedendo ao eixo
- *  centro→Sol em visadas quase face-on (evita o flip do lookAt) */
-function galacticUp(viewDir: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
+ *  centro→Sol em visadas quase face-on (evita o flip do lookAt).
+ *  Exportado para o juiz da coda (voltaParaCasa.test) reconstruir a
+ *  câmera do rig com a MESMA função, não uma reescrita. */
+export function galacticUp(viewDir: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
   const faceOn = THREE.MathUtils.smoothstep(
     Math.abs(viewDir.dot(GALACTIC_NORTH)),
     0.86,

@@ -30,7 +30,7 @@ import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
   location: { search: '' },
 };
-const { Journey, TERRA_PC, LUA_PC } = await import('./journey');
+const { Journey, TERRA_PC, LUA_PC, JD_DO_FILME_TDB } = await import('./journey');
 
 const DATA_DIR = fileURLToPath(new URL('../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -45,7 +45,7 @@ const motor = new MotorEfemerides(
 );
 
 const cadeiaPc = (id: 'earth' | 'moon') => {
-  const v = motor.posicaoHeliocentrica(id, EPOCA_JD_TDB);
+  const v = motor.posicaoHeliocentrica(id, JD_DO_FILME_TDB);
   const eq = eclipticaParaEquatorial([v.x, v.y, v.z]);
   return [eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC];
 };
@@ -120,5 +120,30 @@ describe('a encenação pedida, medida na trajetória', () => {
     const p1 = j.at(j.duration - 0.4).pos;
     const p2 = j.at(j.duration).pos;
     expect(p1.distanceTo(p2)).toBe(0);
+  });
+
+  it('o instante da coda é 16:00 UTC do dia do retrato', () => {
+    expect(JD_DO_FILME_TDB).toBe(EPOCA_JD_TDB + 16 / 24);
+  });
+
+  it('o último quadro tem os POLOS PARA CIMA (pedido do dono)', async () => {
+    // a câmera reconstruída com as MESMAS peças do rig: galacticUp,
+    // lookAt e rotateZ(roll) — não uma reescrita da conta
+    const { galacticUp } = await import('./cameraRig');
+    const s = j.at(j.duration);
+    const cam = new THREE.PerspectiveCamera(s.fov, 4 / 3, 0.1, 10);
+    cam.position.copy(s.pos);
+    const viewDir = s.look.clone().sub(s.pos).normalize();
+    galacticUp(viewDir, cam.up);
+    cam.lookAt(s.look);
+    cam.rotateZ(s.roll);
+    cam.updateMatrixWorld();
+    // o "para cima" da tela é o +Y da câmera no mundo; o norte da Terra
+    // é o +Z do frame equatorial, projetado perpendicular ao olhar
+    const upDaTela = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+    const norte = new THREE.Vector3(0, 0, 1)
+      .addScaledVector(viewDir, -viewDir.z)
+      .normalize();
+    expect(grausEntre(upDaTela, norte)).toBeLessThan(0.5);
   });
 });

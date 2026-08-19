@@ -202,7 +202,13 @@ terminando com a terra dando uma volta mostrando ela do lado escruo e
 terminando cetnralizada e grande do lado claro? (algo assim, vc dirige
 melhor do que eu [...] seja cuidadoso para ir rápido mas tendo tempo para
 contemplar a psg rápida pela lua e terminar desacelerando na visao final
-da terra.”* — implementada em 19/08 (filme a 4min06). Sai quando ele
+da terra.”* — implementada em 19/08 (filme a 4min06). E ele refinou o
+pouso: *“como que a gente poderia terminar com a terra orientada no
+sentido dos polos e com o dia acontecendo na visao mais comum com as
+americas aparecendo?”* — resolvido no mesmo dia: a coda troca o relógio
+do céu para as 16:00 UTC (meio-dia a ~60°O — as Américas no dia, Brasil
+no centro) no único trecho em que nada que depende dele está em quadro, e
+o roll final alinha o norte da Terra com o alto da tela. Sai quando ele
 assistir e aprovar o filme novo com a coda.
 
 ---
