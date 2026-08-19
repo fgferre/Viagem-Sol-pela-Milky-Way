@@ -24,7 +24,7 @@ na qual se pode viajar até qualquer ponto e ainda sentir um universo vivo:
   tamanho e brilho corretos, respondendo à posição do observador.
 - Determinístico, eficiente no browser, LOD de verdade. Sem truque de sprite.
 
-O produto é um só — **Mar de Estrelas**: o filme de ~3 min 51 s leva do Sol
+O produto é um só — **Mar de Estrelas**: o filme de ~4 min 06 s leva do Sol
 a Sagittarius A*; perto de casa vive o **Atlas**, o sistema solar explorável,
 no mesmo Director, sem segundo motor. Frase de identidade: *a jornada te
 leva; o Atlas te deixa ficar.*

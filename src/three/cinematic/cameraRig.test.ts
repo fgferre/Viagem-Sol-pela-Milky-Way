@@ -192,8 +192,8 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
   /** o instante em que a hélice cruza o limiar do sistema solar. */
   const T_SAIDA = AMOSTRAS.find((a) => a.dHome >= LIMIAR_SISTEMA_SOLAR_PC)?.t ?? -1;
 
-  it('a duração é 231 s e o piso do filme é a abertura refilmada, em t=0', () => {
-    expect(j.duration).toBe(231);
+  it('a duração é 246 s e o piso do filme é a abertura refilmada, em t=0', () => {
+    expect(j.duration).toBe(246);
     // a PAREDE (t<6) devolve a constante bit a bit; a hélice em k=0
     // devolve o mesmo ponto a 1 ULP, porque ela normaliza a direção e
     // reescala (`v · (d/|v|)`). É 1,7e-23 pc — 5e-10 metro.
@@ -208,14 +208,23 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
     expect(0.06315061361538779 / piso).toBeCloseTo(487440.81, 1);
   });
 
-  it('o filme atravessa o domínio profundo nos primeiros ~20 s, e só neles', () => {
+  /** o instante em que a CODA volta a cruzar o limiar, mergulhando. */
+  const T_VOLTA = AMOSTRAS.find(
+    (a) => a.t >= T_SAIDA && a.dHome < LIMIAR_SISTEMA_SOLAR_PC
+  )?.t ?? Infinity;
+
+  it('o domínio profundo é a abertura e a coda — e nada no meio', () => {
     expect(T_SAIDA).toBeCloseTo(26.17, 2); // 6 s de parede + 20,17 s de hélice
+    // o mergulho de volta cruza o limiar a meio caminho das 11,5 décadas
+    expect(T_VOLTA).toBeCloseTo(234.02, 1);
     for (const a of AMOSTRAS) {
-      expect(a.dHome < LIMIAR_SISTEMA_SOLAR_PC, `t=${a.t}`).toBe(a.t < T_SAIDA);
+      expect(a.dHome < LIMIAR_SISTEMA_SOLAR_PC, `t=${a.t}`).toBe(
+        a.t < T_SAIDA || a.t >= T_VOLTA
+      );
     }
   });
 
-  it('depois da saída, dHome e min(dHome, dGC) nunca voltam a descer', () => {
+  it('entre a saída e a volta, dHome e min(dHome, dGC) nunca descem do limiar', () => {
     // a rasante de Sgr A* é o que poderia surpreender aqui: lá quem
     // alimenta o near é o centro galáctico, não o Sol. Mínimo medido:
     // 1,5 pc — a própria rasante cruzando o plano do disco (z=0, onde
@@ -223,8 +232,8 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
     // do corte antigo era a cauda lenta do glide de 28 s demorando no
     // comecinho do estilingue; a fuga de 5 s atravessa esse trecho em
     // dois quadros e a varredura de 0,01 s não o vê mais.
-    const depois = AMOSTRAS.filter((a) => a.t >= T_SAIDA);
-    const pisoClip = depois.reduce((m, a) => Math.min(m, a.dClip), Infinity);
+    const meio = AMOSTRAS.filter((a) => a.t >= T_SAIDA && a.t < T_VOLTA);
+    const pisoClip = meio.reduce((m, a) => Math.min(m, a.dClip), Infinity);
     expect(pisoClip).toBeGreaterThanOrEqual(LIMIAR_SISTEMA_SOLAR_PC);
     const pisoGC = AMOSTRAS.reduce(
       (m, a) => Math.min(m, j.at(a.t).pos.distanceTo(GAL.GC_POS)),
@@ -233,15 +242,15 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
     expect(pisoGC).toBeCloseTo(1.5, 6);
   });
 
-  it('em cada instante DEPOIS da saída: o par (near, far) é o de antes, bit a bit', () => {
-    for (const a of AMOSTRAS.filter((x) => x.t >= T_SAIDA)) {
+  it('fora do domínio profundo: o par (near, far) é o de antes, bit a bit', () => {
+    for (const a of AMOSTRAS.filter((x) => x.dClip >= LIMIAR_SISTEMA_SOLAR_PC)) {
       expect(Object.is(nearPlanePc(a.dClip), nearAntigo(a.dClip))).toBe(true);
       expect(Object.is(farPlanePc(a.dClip), farAntigo(a.dClip))).toBe(true);
     }
   });
 
-  it('em cada instante DEPOIS da saída: a velocidade de voo é a de antes, bit a bit', () => {
-    for (const a of AMOSTRAS.filter((x) => x.t >= T_SAIDA)) {
+  it('fora do domínio profundo: a velocidade de voo é a de antes, bit a bit', () => {
+    for (const a of AMOSTRAS.filter((x) => x.dHome >= LIMIAR_SISTEMA_SOLAR_PC)) {
       expect(Object.is(velocidadeDeVoo(a.dHome), velocidadeAntiga(a.dHome))).toBe(true);
     }
   });
@@ -263,10 +272,10 @@ describe('a auditoria editorial do filme', () => {
   const auditoria = auditarRoteiro();
   const journey = new Journey();
 
-  it('o corte de 19/08: 23 planos, 231 s e os dois holds de medição', () => {
-    expect(auditoria.shotCount).toBe(23);
-    expect(auditoria.duration).toBe(231);
-    expect(journey.duration).toBe(231);
+  it('o corte de 19/08 com a coda: 26 planos, 246 s e os dois holds de medição', () => {
+    expect(auditoria.shotCount).toBe(26);
+    expect(auditoria.duration).toBe(246);
+    expect(journey.duration).toBe(246);
     expect(CAPTURE_T).toEqual({ edge: 189, face: 213 });
   });
 
@@ -302,8 +311,8 @@ describe('a auditoria editorial do filme', () => {
     expect(journey.captionAt(149.41).key.caption).toBe('SAGITTARIUS A✱');
   });
 
-  it('o roteiro final tem as 18 janelas editoriais aprovadas', () => {
-    expect(auditoria.captions).toHaveLength(18);
+  it('o roteiro final tem as 21 janelas editoriais aprovadas', () => {
+    expect(auditoria.captions).toHaveLength(21);
   });
 });
 

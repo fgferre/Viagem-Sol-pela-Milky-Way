@@ -1029,6 +1029,18 @@ export class Director {
     return this.rig.duration;
   }
 
+  /**
+   * O PALCO PRÉ-AQUECE no Atlas E na reta final do filme: a coda "a
+   * volta para casa" resolve Terra e Lua em segundos, e a textura tem
+   * de estar quente ANTES de o gate armar — senão o espectador vê o
+   * globo nascer cru no meio do raspão (a carga preguiçosa dos corpos
+   * lê este booleano como gatilho 2; o gatilho 1 é o próprio gate).
+   * REVEAL_T dá ~64 s de aquecimento antes da chegada.
+   */
+  private get palcoQuente(): boolean {
+    return this.phase === 'atlas' || (this.phase === 'journey' && this.journeyT >= REVEAL_T);
+  }
+
   /** instante atual da viagem — para gravar o momento num link */
   get currentTime() {
     return this.journeyT;
@@ -1594,6 +1606,12 @@ export class Director {
     this.palco.ligado =
       (CORPOS_DEFAULT_ON || this.debug.has('corpos')) && !this.hide.has('nocorpos');
 
+    // A CODA RESOLVE A LUA, e a Lua não tem retrato congelado: a fonte
+    // de efemérides precisa estar viva antes de o raspão chegar. Mesmo
+    // relógio do pré-aquecimento de textura (palcoQuente, t≥REVEAL_T:
+    // ~64 s de folga); `garantirEfemerides` é idempotente e abortável.
+    if (this.palcoQuente) this.maquinaDoTempo.garantirEfemerides();
+
     // ------------------------------------------------------------
     // O SOL SOB A LEI DO PALCO (F2 da onda do Sol real) — o gate em
     // pixels e o registro no palco moram no módulo (corte 8;
@@ -1619,7 +1637,7 @@ export class Director {
         screenHPx: hPx,
         fovDeg: cam.fov,
         ligado: this.palco.ligado,
-        atlasQuente: this.phase === 'atlas',
+        atlasQuente: this.palcoQuente,
         politica: this.politicaDeLuz,
         dtS: dt,
         psf: this.stars,
@@ -1660,7 +1678,7 @@ export class Director {
         screenHPx: hPx,
         fovDeg: cam.fov,
         ligado: this.palco.ligado,
-        atlasQuente: this.phase === 'atlas',
+        atlasQuente: this.palcoQuente,
         politica: this.politicaDeLuz,
       });
       if (l.emQuadro) this.palco.registrar('moon', l.raioPc, l.centroPc);
@@ -1698,7 +1716,7 @@ export class Director {
         screenHPx: hPx,
         fovDeg: cam.fov,
         ligado: this.palco.ligado,
-        atlasQuente: this.phase === 'atlas',
+        atlasQuente: this.palcoQuente,
         politica: this.politicaDeLuz,
         dtS: dt,
         psf: this.stars!,
@@ -1740,7 +1758,7 @@ export class Director {
         screenHPx: hPx,
         fovDeg: cam.fov,
         ligado: this.palco.ligado,
-        atlasQuente: this.phase === 'atlas',
+        atlasQuente: this.palcoQuente,
         politica: this.politicaDeLuz,
         dtS: dt,
         psf: this.stars!,

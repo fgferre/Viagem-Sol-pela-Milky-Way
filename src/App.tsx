@@ -313,7 +313,7 @@ export default function App() {
     gravarPreferencia('conviteVisto', true);
   };
 
-  // pausa via botão ou tecla Espaço — um filme de mais de 5 min precisa disso
+  // pausa via botão ou tecla Espaço — um filme de 4 min precisa disso
   const togglePause = () => {
     setPaused(directorRef.current?.togglePause() ?? false);
   };

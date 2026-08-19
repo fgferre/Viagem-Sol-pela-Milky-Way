@@ -154,6 +154,12 @@ const JANELAS = [
   { t: 210.5, title: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas' },
   { t: 217.5, title: '', sub: '' },
   { t: 224, title: 'VOCÊ ESTÁ AQUI', sub: '' },
+  { t: 231.3, title: '', sub: '' },
+  { t: 233, title: 'A VOLTA PARA CASA', sub: '' },
+  { t: 236.5, title: '', sub: '' },
+  { t: 239.5, title: 'A LUA', sub: 'a um segundo-luz de casa' },
+  { t: 241.2, title: '', sub: '' },
+  { t: 243.5, title: 'A TERRA', sub: 'de onde tudo isto foi visto' },
 ];
 
 async function julgarLargura(largura, altura, captura) {
@@ -175,7 +181,7 @@ async function julgarLargura(largura, altura, captura) {
     conferir(introAssentou.via === 'sinal', `${largura}px · abertura assentou por ${introAssentou.via}`);
     const intro = normalizar(await sessao.js("document.querySelector('.veil-intro .title-sub')?.textContent"));
     conferir(
-      intro.includes('do Sol às supergigantes de Órion, ao coração da galáxia — e além'),
+      intro.includes('do Sol às supergigantes de Órion, ao coração da galáxia — e de volta'),
       `${largura}px · primeira frase da abertura preservada`
     );
     conferir(
@@ -198,10 +204,12 @@ async function julgarLargura(largura, altura, captura) {
         [150.5, 'SAGITTARIUS A✱ · 150,5 s'],
         [186.5, 'PERFIL · 186,5 s'],
         [210.5, 'FACE-ON · 210,5 s'],
-        [224, 'FINAL · 224 s'],
+        [224, 'VOCÊ ESTÁ AQUI · 224 s'],
+        [239.5, 'A LUA · 239,5 s'],
+        [245.5, 'A TERRA · 245,5 s'],
       ] : [
         [150.5, `SAGITTARIUS A✱ · ${largura}px`],
-        [224, `FINAL · ${largura}px`],
+        [245.5, `A TERRA · ${largura}px`],
       ];
       for (const [t, rotulo] of vistas) {
         await saltar(sessao, t);
@@ -215,11 +223,13 @@ async function julgarLargura(largura, altura, captura) {
         ['Sagittarius A*', 150.5, 'SAGITTARIUS A✱'],
         ['perfil', 186.5, 'ELA NÃO É PLANA'],
         ['face-on', 210.5, 'NOSSA GALÁXIA'],
-        ['final', 224, 'VOCÊ ESTÁ AQUI'],
+        ['galáxia final', 224, 'VOCÊ ESTÁ AQUI'],
+        ['a Lua', 239.5, 'A LUA'],
+        ['a Terra', 243.5, 'A TERRA'],
       ]) await conferirMovimento(sessao, nome, t, legenda);
     }
 
-    await saltar(sessao, 230.9);
+    await saltar(sessao, 245.9);
     await sessao.js('window.__director.togglePause()');
     const limite = Date.now() + 3000;
     let fase = '';
@@ -229,8 +239,11 @@ async function julgarLargura(largura, altura, captura) {
     }
     conferir(fase === 'end', `${largura}px · a viagem alcança a tela final`);
     const final = normalizar(await sessao.js("document.querySelector('.veil-end')?.textContent"));
-    conferir(final.includes('cerca de 80 mil anos-luz acima de casa'), `${largura}px · distância final em anos-luz`);
-    conferir(final.includes('O SOL É SÓ MAIS UM PONTO DE LUZ'), `${largura}px · conclusão do Sol preservada`);
+    conferir(final.includes('de volta a casa'), `${largura}px · a coda assina a tela final`);
+    conferir(
+      final.includes('O SOL É SÓ MAIS UM PONTO DE LUZ — E É O NOSSO'),
+      `${largura}px · conclusão do Sol preservada`
+    );
     conferir(
       final.includes('estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos'),
       `${largura}px · selo científico final está completo`

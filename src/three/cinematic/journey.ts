@@ -10,7 +10,7 @@
 //   - TEMPO SEM ATIVIDADE NÃO EXISTE: trecho parado encurta, acelera
 //     ou ganha evento. Quietude só quando é a mensagem — e curta.
 //
-// Quatro atos, ~3min51 (os intervalos abaixo derivam de STARTS):
+// Quatro atos e uma coda, ~4min06 (os intervalos derivam de STARTS):
 //   I   CASA (0–30s)        — parede de fogo e hélice exponencial,
 //                             INTACTAS (composição aprovada pelo dono).
 //   II  ÓRION (30–93s)      — Sirius crescendo À FRENTE e passando,
@@ -29,7 +29,13 @@
 //                             traseiro declarado), subida com o disco se
 //                             construindo, holds de perfil e face-on
 //                             EXATOS, travessia mais viva, "você está
-//                             aqui" com congelamento final.
+//                             aqui" congelado.
+//   CODA A VOLTA (231–246s) — pedido do dono (19/08): quinze segundos de
+//                             volta para casa — mergulho exponencial, a
+//                             Lua de raspão com um joelho para
+//                             contemplar, e a volta na Terra do lado
+//                             escuro ao claro, desacelerando até o
+//                             congelamento final.
 //
 // Sistema editorial (revisão "outros olhos" da rodada 26):
 //   - legendas são JANELAS em tempo de viagem (captions[], com dur) —
@@ -48,6 +54,7 @@
 import * as THREE from 'three';
 import { GAL, EX, EY, EZ } from '../world/baseGalactica';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
+import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
 // rodada.mjs e docs/reference/VISUAL_TARGETS.md). As posições vêm da
@@ -192,10 +199,11 @@ interface Shot {
    * EASE SÓ DO FOV (F3), quando ele precisa divergir do da trajetória.
    * Ausente, o fov usa o `ease` do plano, como sempre — e a expressão
    * que `at` avalia é EXATAMENTE a de antes, então nenhum plano herdado
-   * muda um bit. Existe por causa de um plano só: a hélice da abertura
+   * muda um bit. Nasceu por causa de um plano: a hélice da abertura
    * refilmada, cuja posição precisa do parâmetro CRU (a distância é
    * exponencial em segundos de relógio) enquanto o zoom 26°→56° tem de
-   * continuar com o `glide` de sempre. Sem este campo, a alternativa
+   * continuar com o `glide` de sempre. O mergulho de volta da coda usa
+   * o mesmo par (ease cru + fovEase) pela mesma razão. Sem este campo, a alternativa
    * seria inverter o smoothstep dentro do `pos` por Newton para
    * recuperar o `k` cru — conta iterativa por quadro para reproduzir um
    * número que já existe.
@@ -420,6 +428,109 @@ const FINAL_POS = new THREE.Vector3(-11429, -7864, 29651);
 // o gesto final aponta para a MENOR coisa do quadro: a mira desliza do
 // centro galáctico para perto do Sol — o marcador deriva até o terço
 const FINAL_LOOK = new THREE.Vector3(-155, -2491, -1381); // GC→Sol a 65%
+
+// ---- A VOLTA PARA CASA (coda de 19/08, pedido literal do dono) ----------
+//
+// O filme sobe 26.000 anos-luz para dizer "você está aqui" — e volta,
+// em quinze segundos, para o único lugar do quadro onde há olhos. A
+// geometria é REAL na época pinada do céu (EPOCA_JD_TDB, 2026-01-01):
+// os dois vetores abaixo saem da MESMA cadeia do app (efemerides.bin →
+// eclipticaParaEquatorial × AU_PARA_PC), calculados uma vez e pinados
+// como os quadros de medição — e voltaParaCasa.test.ts RECOMPUTA pela
+// cadeia e cobra igualdade bit a bit: se a época ou a efeméride
+// mudarem, o juiz grita antes de a câmera chegar numa Terra que não
+// está mais lá.
+//
+// A sorte da época: em 2026-01-01 a Lua está gibosa (146° do Sol, 91%
+// acesa) do lado ANTI-Sol — exatamente no corredor de quem chega por
+// trás da Terra. O raspão passa pelo flanco solar dela, e a chegada vê
+// a Terra de noite antes de a volta amanhecer.
+export const TERRA_PC = new THREE.Vector3(
+  -8.450152776918732e-7, 0.000004304769511680729, 0.0000018660331486822022
+);
+export const LUA_PC = new THREE.Vector3(
+  -8.403404448353588e-7, 0.000004314155230007297, 0.0000018712239652735277
+);
+/** Terra→anti-Sol (o Sol é a origem da cena) */
+const ANTISSOL = TERRA_PC.clone().normalize();
+/** Terra→Lua */
+const RUMO_DA_LUA = LUA_PC.clone().sub(TERRA_PC).normalize();
+/** fora do plano Sol–Terra–Lua */
+const FORA_DO_PLANO = new THREE.Vector3()
+  .crossVectors(RUMO_DA_LUA, ANTISSOL).normalize();
+/** no plano, ⊥ ao rumo da Lua, apontando para o lado ANTI-Sol */
+const FLANCO_ANTISSOL = new THREE.Vector3()
+  .crossVectors(FORA_DO_PLANO, RUMO_DA_LUA).normalize();
+/** no plano, ⊥ ao anti-Sol, para o lado da Lua — o plano da volta */
+const LADO_DA_LUA = RUMO_DA_LUA.clone()
+  .addScaledVector(ANTISSOL, -RUMO_DA_LUA.dot(ANTISSOL)).normalize();
+
+/** entrada do corredor: 0,017 UA além da Lua, na linha de chegada */
+const ENTRADA_DE_CASA = LUA_PC.clone()
+  .addScaledVector(RUMO_DA_LUA, 0.017 * AU_PARA_PC)
+  .addScaledVector(FLANCO_ANTISSOL, 2e-9);
+/** o ponto do raspão: 7,1 raios lunares, no flanco solar da Lua */
+const RASPAO_DA_LUA = 4.0e-10;
+/** raio e ângulos da volta na Terra (do lado escuro ao claro) */
+const VOLTA_R0 = 2.6e-9; // ~12,6 raios terrestres, lado noite
+const VOLTA_R1 = 1.13e-9; // ~5,5 raios terrestres: Terra a ~45% do quadro
+const VOLTA_A0 = THREE.MathUtils.degToRad(22);
+const VOLTA_A1 = THREE.MathUtils.degToRad(150);
+/** ponto da volta na Terra em função de (α, r, h) — base local â=ANTISSOL */
+const pontoDaVolta = (a: number, r: number, h: number, out: THREE.Vector3) =>
+  out
+    .copy(TERRA_PC)
+    .addScaledVector(ANTISSOL, Math.cos(a) * r)
+    .addScaledVector(LADO_DA_LUA, Math.sin(a) * r)
+    .addScaledVector(FORA_DO_PLANO, h);
+/** onde a volta começa (fim do raspão) e termina (o quadro final) */
+const INICIO_DA_VOLTA = pontoDaVolta(VOLTA_A0, VOLTA_R0, 4e-10, new THREE.Vector3());
+/**
+ * O MERGULHO DE VOLTA: distância à Terra exponencial (11,5 décadas em
+ * 6 s — a régua da abertura, 7× mais rápida) com a direção deslizando
+ * do alto galáctico para o corredor da Lua. `k` CRU, como na hélice.
+ */
+const D_VOLTA_0 = FINAL_POS.distanceTo(TERRA_PC);
+const D_VOLTA_1 = ENTRADA_DE_CASA.distanceTo(TERRA_PC);
+const U_VOLTA_0 = FINAL_POS.clone().sub(TERRA_PC).normalize();
+const U_VOLTA_1 = ENTRADA_DE_CASA.clone().sub(TERRA_PC).normalize();
+function mergulhoDeVolta(): PosFn {
+  const u = new THREE.Vector3();
+  return (k, out) => {
+    u.copy(U_VOLTA_0).lerp(U_VOLTA_1, glide(k)).normalize();
+    const d = D_VOLTA_0 * Math.pow(D_VOLTA_1 / D_VOLTA_0, clamp01(k));
+    return out.copy(TERRA_PC).addScaledVector(u, d);
+  };
+}
+/**
+ * O RASPÃO: distância à LUA em vale logarítmico (entra a 0,017 UA,
+ * toca 7,1 raios lunares no joelho k=0,62, sai a 0,0024 UA rumo à
+ * volta) enquanto a direção Lua→câmera desliza para o flanco solar e
+ * depois para a saída — é o vale que garante a Lua GRANDE no quadro,
+ * coisa que uma bézier com pontas longe não garante.
+ */
+const U_RASPAO_IN = ENTRADA_DE_CASA.clone().sub(LUA_PC).normalize();
+const U_RASPAO_MIN = FLANCO_ANTISSOL.clone().negate();
+const U_RASPAO_OUT = INICIO_DA_VOLTA.clone().sub(LUA_PC).normalize();
+const D_RASPAO_IN = ENTRADA_DE_CASA.distanceTo(LUA_PC);
+const D_RASPAO_OUT = INICIO_DA_VOLTA.distanceTo(LUA_PC);
+const JOELHO_DO_RASPAO = 0.62;
+function raspaoDaLua(): PosFn {
+  const u = new THREE.Vector3();
+  return (k, out) => {
+    const antes = k <= JOELHO_DO_RASPAO;
+    const f = antes
+      ? smooth(k / JOELHO_DO_RASPAO)
+      : smooth((k - JOELHO_DO_RASPAO) / (1 - JOELHO_DO_RASPAO));
+    const d = antes
+      ? D_RASPAO_IN * Math.pow(RASPAO_DA_LUA / D_RASPAO_IN, f)
+      : RASPAO_DA_LUA * Math.pow(D_RASPAO_OUT / RASPAO_DA_LUA, f);
+    u.copy(antes ? U_RASPAO_IN : U_RASPAO_MIN)
+      .lerp(antes ? U_RASPAO_MIN : U_RASPAO_OUT, f)
+      .normalize();
+    return out.copy(LUA_PC).addScaledVector(u, d);
+  };
+}
 
 // ---- a lista de shots ----------------------------------------------------
 const SHOTS: Shot[] = [
@@ -823,10 +934,10 @@ const SHOTS: Shot[] = [
     captions: [{ at: 0.12, text: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas', dur: 7 }],
   },
   {
-    // deriva final: NUNCA aproximar do marcador — a pequenez é a
-    // mensagem. A mira desliza do centro para perto de casa; o marcador
-    // do Sol pulsa, minúsculo. Pousa aos ~88% e CONGELA: o filme
-    // termina parado, com a última legenda persistindo até o fim.
+    // deriva: NUNCA aproximar do marcador — a pequenez é a mensagem. A
+    // mira desliza do centro para perto de casa; o marcador do Sol
+    // pulsa, minúsculo. Pousa aos ~88% e CONGELA — e é desse
+    // congelamento que a coda CORTA para o mergulho de volta.
     dur: 14,
     pos: bezier(
       GATE_FACE_POS,
@@ -840,7 +951,57 @@ const SHOTS: Shot[] = [
     roll: (k) => GATE_FACE_ROLL * (1 - smooth(Math.min(k / 0.88, 1))),
     target: ['SOL'],
     lingua: 'assunto',
-    captions: [{ at: 0.45, text: 'VOCÊ ESTÁ AQUI', dur: 60 }],
+    captions: [{ at: 0.45, text: 'VOCÊ ESTÁ AQUI', dur: 7.6 }],
+  },
+
+  // ============ CODA — A VOLTA PARA CASA (pedido do dono, 19/08) ============
+  {
+    // o mergulho de volta: 11,5 décadas de distância em 6 s, caindo do
+    // alto galáctico direto no corredor da Lua — a régua exponencial da
+    // abertura, 7× mais rápida, com o warp no talo. Olhar cravado em
+    // casa: é para onde se vai.
+    dur: 6,
+    pos: mergulhoDeVolta(),
+    look: still(TERRA_PC),
+    fov0: 54, fov1: 62,
+    ease: linear,
+    fovEase: glide,
+    warp: (k) => 0.9 * Math.sin(Math.PI * Math.min(k * 1.35, 1)),
+    quiet: true,
+    captions: [{ at: 0.15, text: 'A VOLTA PARA CASA', dur: 4.5 }],
+  },
+  {
+    // a Lua de raspão: o vale toca 7,1 raios lunares no flanco solar —
+    // ela entra crescendo, desliza GRANDE pelo quadro e fica para trás
+    // quando o olhar devolve a Terra. Rápido, mas com o joelho do vale
+    // segurando o instante de contemplar.
+    dur: 4,
+    pos: raspaoDaLua(),
+    look: lookEvento(TERRA_PC, LUA_PC, TERRA_PC, 0.18, 0.78),
+    fov0: 62, fov1: 54,
+    ease: linear,
+    warp: (k) => 0.5 * (1 - k) * (1 - k),
+    quiet: true,
+    captions: [{ at: 0.35, text: 'A LUA', sub: 'a um segundo-luz de casa', dur: 2.5 }],
+  },
+  {
+    // a volta na Terra: chega pelo lado ESCURO (disco negro de borda
+    // fina), contorna 128° desacelerando e pousa CONGELADO no lado
+    // claro — a Terra grande e centrada, o último quadro do filme.
+    // Órbita de assunto declarada: contemplar o alvo é permitido.
+    dur: 5,
+    pos: (k, out) => pontoDaVolta(
+      THREE.MathUtils.lerp(VOLTA_A0, VOLTA_A1, k),
+      THREE.MathUtils.lerp(VOLTA_R0, VOLTA_R1, k),
+      4e-10 * (1 - k),
+      out
+    ),
+    look: still(TERRA_PC),
+    fov0: 54, fov1: 46,
+    ease: settleFreeze,
+    quiet: true,
+    lingua: 'assunto',
+    captions: [{ at: 0.4, text: 'A TERRA', sub: 'de onde tudo isto foi visto', dur: 60 }],
   },
 ];
 

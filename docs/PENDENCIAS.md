@@ -193,8 +193,17 @@ vista de tempo sem atividade tb. vc tem os marcadores de tempo, vc nao
 precisa só se basear em tentear ler um filme, vc pode entender o codigo para
 marcare tempos e movimentos.”* O item agora é o ROTEIRO NOVO sob as duas
 leis dele (frente é a visão principal; tempo sem atividade se corta, se
-acelera ou ganha evento), com perfil analítico tirado do código. Sai quando
-ele assistir e aprovar o filme novo.
+acelera ou ganha evento), com perfil analítico tirado do código.
+
+No mesmo dia ele pediu a CODA, com estas palavras: *“que tal adicionarmos
+no final uma viagem super rápida no 'vc está aqui' até terminar no planeta
+terra, mas essa viagem vai ser de 15 seg, passando pela lua de raspao e
+terminando com a terra dando uma volta mostrando ela do lado escruo e
+terminando cetnralizada e grande do lado claro? (algo assim, vc dirige
+melhor do que eu [...] seja cuidadoso para ir rápido mas tendo tempo para
+contemplar a psg rápida pela lua e terminar desacelerando na visao final
+da terra.”* — implementada em 19/08 (filme a 4min06). Sai quando ele
+assistir e aprovar o filme novo com a coda.
 
 ---
 

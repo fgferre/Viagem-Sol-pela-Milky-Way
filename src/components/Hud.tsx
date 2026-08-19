@@ -195,7 +195,7 @@ export function TitleVeil({
           <div className="title-big">MAR DE ESTRELAS</div>
           <div className="title-rule" />
           <div className="title-sub">
-            do Sol às supergigantes de Órion, ao coração da galáxia — e além
+            do Sol às supergigantes de Órion, ao coração da galáxia — e de volta
             <br />
             328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real
           </div>
@@ -221,11 +221,11 @@ export function TitleVeil({
       {mode === 'end' && (
         <>
           <div className="title-sub" style={{ letterSpacing: '0.42em' }}>
-            cerca de 80 mil anos-luz acima de casa
+            de volta a casa
           </div>
           <div className="title-rule" />
           <div className="title-big" style={{ fontSize: 'clamp(1.2rem, 3vw, 2.2rem)' }}>
-            O SOL É SÓ MAIS UM PONTO DE LUZ
+            O SOL É SÓ MAIS UM PONTO DE LUZ — E É O NOSSO
           </div>
           <div className="title-sub">
             estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos

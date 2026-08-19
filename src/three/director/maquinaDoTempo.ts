@@ -103,10 +103,12 @@ export class MaquinaDoTempo {
   }
 
   /**
-   * BUSCA A EFEMÉRIDE, UMA VEZ E TARDE. Ninguém que só quer ver o filme
-   * paga um byte disto: quem chama são a porta `?jd=` e os controles do
-   * tempo no HUD do Atlas, e o download é abortado pelo mesmo signal de
-   * todo o resto.
+   * BUSCA A EFEMÉRIDE, UMA VEZ E TARDE. Quem chama são a porta `?jd=`,
+   * os controles do tempo no HUD do Atlas — e a reta final do filme
+   * (t≥REVEAL_T): a coda "a volta para casa" resolve a LUA, que não tem
+   * retrato congelado, então o filme passou a pagar estes bytes de
+   * propósito, com ~64 s de folga. O download é abortado pelo mesmo
+   * signal de todo o resto.
    *
    * SEM REDE NÃO HÁ GRITO — NESTE caminho. A camada continua no retrato
    * congelado e o badge do HUD conta a verdade ao visitante — um
