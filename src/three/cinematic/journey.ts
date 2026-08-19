@@ -690,6 +690,7 @@ const SHOTS: Shot[] = [
     fov0: 56, fov1: 63,
     ease: glide,
     warp: (k) => 0.25 * Math.sin(Math.PI * k),
+    roll: (k) => 0.08 * Math.sin(Math.PI * k),
     target: ['Sirius', 'SOL'],
     captions: [
       {
@@ -715,6 +716,7 @@ const SHOTS: Shot[] = [
     fov0: 63, fov1: 54,
     ease: glide,
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
+    roll: (k) => 0.06 * Math.sin(Math.PI * k),
     dest: 'Alnilam',
     captions: [
       { at: 0.22, text: 'O MAR INTERESTELAR', sub: 'o espaço entre as estrelas não está vazio', dur: 4.5 },
@@ -807,6 +809,7 @@ const SHOTS: Shot[] = [
     fov0: 38, fov1: 60,
     ease: glide,
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
+    roll: (k) => -0.08 * Math.sin(Math.PI * k),
     target: ['Rigel'],
     captions: [{ at: 0.25, text: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis', dur: 5 }],
   },
@@ -841,6 +844,7 @@ const SHOTS: Shot[] = [
     fov0: 34, fov1: 50,
     ease: glide,
     warp: (k) => 0.45 * Math.sin(Math.PI * k),
+    roll: (k) => 0.07 * Math.sin(Math.PI * k),
     target: ['Antares'],
     dest: 'Antares',
     captions: [
@@ -876,6 +880,7 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.55 + 0.4 * Math.sin(Math.PI * k),
     roll: (k) => 0.10 * Math.sin(Math.PI * k),
     dest: 'SGR',
+    target: ['Shaula', 'Dschubba', 'Lesath', 'Paikauhale'],
     captions: [{ at: 0.28, text: 'O MERGULHO', dur: 6.8 }],
   },
   {
@@ -1069,12 +1074,13 @@ const SHOTS: Shot[] = [
   // ============ CODA — A VOLTA PARA CASA (pedido do dono, 19/08) ============
   {
     // o mergulho de volta: 11,5 décadas em 5 s, caindo do alto galáctico
-    // no corredor da Lua — a régua da abertura, ainda mais rápida, com
-    // o warp no talo. O olhar PARTE do quadro congelado da deriva
-    // (FINAL_LOOK) e vira para casa — sem o salto de 4,8° na junta.
+    // no corredor da Lua. Olha para CASA o tempo todo (a frente é a
+    // visão). Interpolar FINAL_LOOK→TERRA como PONTOS, de perto, virava
+    // um giro de ~85° que o play não seguia — a Lua passava fora de
+    // quadro. O corte de 4,8° na junta o rig amortece em ângulo.
     dur: 5,
     pos: mergulhoDeVolta(),
-    look: panThenHold(FINAL_LOOK, TERRA_PC, 0.22),
+    look: still(TERRA_PC),
     fov0: 54, fov1: 62,
     ease: linear,
     fovEase: glide,

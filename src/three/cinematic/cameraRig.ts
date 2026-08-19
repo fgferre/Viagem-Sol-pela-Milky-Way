@@ -28,8 +28,32 @@ const FRAME_B = new THREE.Vector3().crossVectors(GALACTIC_NORTH, FRAME_A).normal
 
 const _tmpV = new THREE.Vector3();
 const _tmpDir = new THREE.Vector3();
-const _tmpFrom = new THREE.Vector3();
+const _tmpAxis = new THREE.Vector3();
 const _tmpQ = new THREE.Quaternion();
+
+/** slerp de versores. `lerp`+`normalize` atolha perto de 180° (o
+ *  caminho passa pelo zero e o normalize devolve o lado errado) — é
+ *  o chicote que no play contínuo faz a coda olhar para trás. */
+function slerpDir(
+  a: THREE.Vector3,
+  b: THREE.Vector3,
+  t: number,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  const dot = THREE.MathUtils.clamp(a.dot(b), -1, 1);
+  if (dot > 0.9995) return out.copy(a).lerp(b, t).normalize();
+  if (dot < -0.9995) {
+    _tmpAxis.set(Math.abs(a.x) < 0.9 ? 1 : 0, Math.abs(a.x) < 0.9 ? 0 : 1, 0);
+    _tmpAxis.cross(a).normalize();
+    return out.copy(a).applyAxisAngle(_tmpAxis, Math.PI * t);
+  }
+  const omega = Math.acos(dot);
+  const so = Math.sin(omega);
+  return out
+    .copy(a)
+    .multiplyScalar(Math.sin((1 - t) * omega) / so)
+    .addScaledVector(b, Math.sin(t * omega) / so);
+}
 
 /** up compartilhado viagem/voo: polo galáctico, cedendo ao eixo
  *  centro→Sol em visadas quase face-on (evita o flip do lookAt).
@@ -47,6 +71,10 @@ export function galacticUp(viewDir: THREE.Vector3, out: THREE.Vector3): THREE.Ve
 export class JourneyRig {
   private journey = new Journey();
   private lookSm = new THREE.Vector3();
+  /** direção suavizada da mira — NÃO um ponto em mundo. No mergulho a
+   *  câmera anda milhares de pc por quadro; um ponto velho fica para
+   *  trás e o olhar vira 180°. */
+  private lookDir = new THREE.Vector3();
   private first = true;
   /** olhar-ao-redor durante a pausa (radianos, decai sozinho no play) */
   private lookYaw = 0;
@@ -114,27 +142,18 @@ export class JourneyRig {
     // seek esconde o defeito porque `reset()` salta). Distância da
     // mira acompanha o roteiro; o ângulo é que amortece.
     const snap = this.first;
+    _tmpDir.copy(s.look).sub(s.pos);
+    const wantLen = _tmpDir.length();
+    if (wantLen > 1e-20) _tmpDir.multiplyScalar(1 / wantLen);
     if (snap) {
-      this.lookSm.copy(s.look);
+      this.lookDir.copy(_tmpDir);
       this.first = false;
-    } else {
-      _tmpDir.copy(s.look).sub(s.pos);
-      const wantLen = _tmpDir.length();
-      if (wantLen > 1e-20) {
-        _tmpDir.multiplyScalar(1 / wantLen);
-        _tmpFrom.copy(this.lookSm).sub(s.pos);
-        const curLen = _tmpFrom.length();
-        if (curLen > 1e-20) {
-          _tmpFrom.multiplyScalar(1 / curLen);
-          _tmpFrom.lerp(_tmpDir, kLook).normalize();
-          this.lookSm.copy(s.pos).addScaledVector(_tmpFrom, wantLen);
-        } else {
-          this.lookSm.copy(s.pos).addScaledVector(_tmpDir, wantLen);
-        }
-      } else {
-        this.lookSm.copy(s.look);
-      }
+    } else if (wantLen > 1e-20 && this.lookDir.lengthSq() > 1e-20) {
+      slerpDir(this.lookDir, _tmpDir, kLook, this.lookDir);
+    } else if (wantLen > 1e-20) {
+      this.lookDir.copy(_tmpDir);
     }
+    this.lookSm.copy(s.pos).addScaledVector(this.lookDir, Math.max(wantLen, 1e-12));
 
     camera.position.copy(s.pos);
     const viewDir = _tmpV.copy(this.lookSm).sub(s.pos).normalize();
@@ -167,6 +186,7 @@ export class JourneyRig {
 
   reset() {
     this.first = true;
+    this.lookDir.set(0, 0, 0);
     this.lookYaw = 0;
     this.lookPitch = 0;
   }

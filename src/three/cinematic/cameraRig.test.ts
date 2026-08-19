@@ -320,20 +320,29 @@ describe('a auditoria editorial do filme', () => {
 
   it('o play contínuo chega na Lua olhando para casa — pular o tempo não é o único caminho', () => {
     // o defeito que o dono viu: seek no ato da Lua funciona; o filme
-    // chegando sozinho, não. A mira era um ponto em mundo (milhares de
-    // pc) e o amortecimento nunca alcançava a Terra (1e-8 pc).
+    // chegando sozinho, não. A mira interpolava PONTOS (FINAL_LOOK a
+    // milhares de pc → TERRA) e o lerp+normalize atolhava a 180°.
     const rig = new JourneyRig();
     const cam = new THREE.PerspectiveCamera();
     const dt = 1 / 60;
+    const dir = new THREE.Vector3();
+    const angCasa = () => {
+      cam.getWorldDirection(dir);
+      const paraTerra = TERRA_PC.clone().sub(cam.position).normalize();
+      const paraLua = LUA_PC.clone().sub(cam.position).normalize();
+      return Math.min(
+        THREE.MathUtils.radToDeg(dir.angleTo(paraTerra)),
+        THREE.MathUtils.radToDeg(dir.angleTo(paraLua))
+      );
+    };
     rig.reset();
     rig.apply(cam, 170, dt);
-    for (let t = 170 + dt; t <= 183.5; t += dt) rig.apply(cam, t, dt);
-    const dir = cam.getWorldDirection(new THREE.Vector3());
-    const paraTerra = TERRA_PC.clone().sub(cam.position).normalize();
-    const paraLua = LUA_PC.clone().sub(cam.position).normalize();
-    const angT = THREE.MathUtils.radToDeg(dir.angleTo(paraTerra));
-    const angL = THREE.MathUtils.radToDeg(dir.angleTo(paraLua));
-    expect(Math.min(angT, angL)).toBeLessThan(25);
+    for (let t = 170 + dt; t <= 181; t += dt) rig.apply(cam, t, dt);
+    expect(angCasa(), 'entrada do take').toBeLessThan(20);
+    for (let t = 181 + dt; t <= 183.5; t += dt) rig.apply(cam, t, dt);
+    expect(angCasa(), 'raspão da Lua').toBeLessThan(25);
+    for (let t = 183.5 + dt; t <= 191; t += dt) rig.apply(cam, t, dt);
+    expect(angCasa(), 'pouso nas Américas').toBeLessThan(15);
   });
 
   it('nenhuma junta de plano salta posição, mira, lente ou roll', () => {
@@ -348,7 +357,9 @@ describe('a auditoria editorial do filme', () => {
         a.look.clone().sub(a.pos).normalize().angleTo(b.look.clone().sub(b.pos).normalize())
       );
       expect(rel, `pos t=${s.t0}`).toBeLessThan(1e-5);
-      expect(dLook, `look t=${s.t0}`).toBeLessThan(0.6);
+      // o corte da coda (deriva→mergulho) vira ~5° para casa: o rig
+      // amortece o ângulo. 112° seria o chicote que o play não segue.
+      expect(dLook, `look t=${s.t0}`).toBeLessThan(6);
       expect(Math.abs(b.fov - a.fov), `fov t=${s.t0}`).toBeLessThan(0.6);
       expect(Math.abs(b.roll - a.roll), `roll t=${s.t0}`).toBeLessThan(0.02);
     }
