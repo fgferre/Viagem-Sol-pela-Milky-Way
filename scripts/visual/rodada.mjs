@@ -52,8 +52,8 @@ const APP = process.env.APP_URL || APP_PADRAO;
 const VIEWS = [
   // instantes do corte de 19/08 (CAPTURE_T do journey.ts): o QUADRO dos
   // holds é o mesmo das rodadas 16–25; só o relógio do filme mudou
-  { nome: 'faceon', t: 169 },
-  { nome: 'edgeon', t: 155 },
+  { nome: 'faceon', t: 167 },
+  { nome: 'edgeon', t: 153 },
 ];
 
 // TIER FIXO, e não é preferência: ver o cabeçalho e `ab-identidade.mjs`.

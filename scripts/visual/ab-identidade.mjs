@@ -82,8 +82,8 @@ export const VISTAS = [
   ['interno', '?t=40&shot=2'],
   ['travessia', '?t=100&shot=2'],
   ['mergulho', '?t=180&shot=2'],
-  ['edgeon', '?t=155&shot=2'],
-  ['faceon', '?t=169&shot=2'],
+  ['edgeon', '?t=153&shot=2'],
+  ['faceon', '?t=167&shot=2'],
   // RETRATO POR PADRÃO, não opt-in. Os três harnesses do repo capturam em 1:1
   // (rodada 1800x1800, sky 1440x1440, este 1800x1800), e defeito que dependa
   // do ASPECTO da tela é invisível para todos eles. Foi exatamente o caso da

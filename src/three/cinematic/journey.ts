@@ -10,7 +10,7 @@
 //   - TEMPO SEM ATIVIDADE NÃO EXISTE: trecho parado encurta, acelera
 //     ou ganha evento. Quietude só quando é a mensagem — e curta.
 //
-// Quatro atos e uma coda, ~3min15 (os intervalos derivam de STARTS).
+// Quatro atos e uma coda, ~3min13 (os intervalos derivam de STARTS).
 // Corte de 19/08 à noite: o dono ainda via "periodos longos da camera
 // se movimentando sem nenhuma acao" e pediu câmera mais cinematográfica
 // (fly-by, take único). O que mudou é DURAÇÃO e a coda; a abertura e
@@ -20,16 +20,15 @@
 //   II  ÓRION (30–80s)      — Sirius, corredor curto, a TRAVA das Três
 //                             Marias, o passo ao lado, Betelgeuse,
 //                             Rigel, a dobradiça: CASA.
-//   III O MERGULHO (80–137s) — Antares, lançamento, duas ondas (a
+//   III O MERGULHO (80–135s) — Antares, lançamento, duas ondas (a
 //                             segunda agora é um BEAT, o berçário),
 //                             freio no aglomerado, curva rasante.
-//   IV  A REVELAÇÃO (137–180s) — fuga, subida, holds EXATOS mais
+//   IV  A REVELAÇÃO (135–176s) — fuga, subida, holds EXATOS mais
 //                             curtos, travessia que mostra os braços,
 //                             "você está aqui".
-//   CODA A VOLTA (180–195s) — quinze segundos: mergulho e UM take
-//                             Lua→Terra (a Lua passa à frente, a Terra
-//                             fica no fundo, depois a volta do escuro
-//                             ao claro até o pouso).
+//   CODA A VOLTA (176–193s) — mergulho e UM take Lua→Terra de 12 s
+//                             (a Lua passa à frente, a Terra fica no
+//                             fundo, depois a volta até as Américas).
 //
 // Sistema editorial (revisão "outros olhos" da rodada 26):
 //   - legendas são JANELAS em tempo de viagem (captions[], com dur) —
@@ -570,9 +569,12 @@ function raspaoDaLua(): PosFn {
   const u = new THREE.Vector3();
   return (k, out) => {
     const antes = k <= JOELHO_DO_RASPAO;
+    // inbound: deriva ≠ 0 no começo (o mergulho chega rápido — smooth
+    // começava parado e o play travava). outbound: sai devagar do
+    // joelho e chega na volta AINDA andando (smooth parava de novo).
     const f = antes
-      ? smooth(k / JOELHO_DO_RASPAO)
-      : smooth((k - JOELHO_DO_RASPAO) / (1 - JOELHO_DO_RASPAO));
+      ? 1 - Math.pow(1 - k / JOELHO_DO_RASPAO, 1.4)
+      : Math.pow((k - JOELHO_DO_RASPAO) / (1 - JOELHO_DO_RASPAO), 1.3);
     const d = antes
       ? D_RASPAO_IN * Math.pow(RASPAO_DA_LUA / D_RASPAO_IN, f)
       : RASPAO_DA_LUA * Math.pow(D_RASPAO_OUT / RASPAO_DA_LUA, f);
@@ -589,24 +591,32 @@ function raspaoDaLua(): PosFn {
  * corredor — grande, de raspão, com a casa atrás — e o mesmo gesto
  * entrega a volta do escuro ao claro até o pouso.
  *
- * k em [0, K_LUA_NO_TAKE] é o vale do raspão; o resto é a volta, com o
- * settleFreeze ASSADO no parâmetro (o plano é `linear` para o vale
- * receber k cru).
+ * k em [0, K_LUA_NO_TAKE] é o vale do raspão; o resto é a volta.
+ * A volta NÃO usa settleFreeze (comia a rotação: 140° em 3 s e o
+ * espectador perdia as Américas). Ease mais longo, freeze só no fim.
  */
-const K_LUA_NO_TAKE = 0.42;
+const K_LUA_NO_TAKE = 0.30;
+/** a volta na Terra: gira 88% do trecho, pousa e CONGELA */
+const easeDaVolta = (x: number) => {
+  const u = Math.min(x / 0.88, 1);
+  return 1 - Math.pow(1 - u, 1.55);
+};
 function takeDaCasa(): PosFn {
   const raspao = raspaoDaLua();
   return (k, out) => {
     if (k <= K_LUA_NO_TAKE) return raspao(k / K_LUA_NO_TAKE, out);
-    const u = settleFreeze((k - K_LUA_NO_TAKE) / (1 - K_LUA_NO_TAKE));
+    const u = easeDaVolta((k - K_LUA_NO_TAKE) / (1 - K_LUA_NO_TAKE));
     out.copy(DIR_CHEGADA).applyAxisAngle(EIXO_DA_VOLTA, ANGULO_DA_VOLTA * u);
     return out
       .multiplyScalar(THREE.MathUtils.lerp(VOLTA_R0, VOLTA_R1, u))
       .add(TERRA_PC);
   };
 }
-/** no joelho, o olhar é o meio-ângulo Lua–Terra visto da câmera — os
- *  dois cabem no quadro. Fora do raspão, casa. */
+/** no joelho, o olhar é o meio-ângulo Lua–Terra. O ponto de mira mora
+ *  a ~1e-8 pc da câmera (a escala Lua–Terra) — NUNCA a 1 pc. O rig
+ *  amortece a mira em 0,4 s; um alvo a 1 pc nunca alcançava a Terra
+ *  no play contínuo, e a órbita das Américas acontecia fora de quadro. */
+const ALCANCE_DA_MIRA_PC = 8e-9;
 function lookDoTake(): PosFn {
   const raspao = raspaoDaLua();
   const pos = new THREE.Vector3();
@@ -620,7 +630,7 @@ function lookDoTake(): PosFn {
     dirTerra.copy(TERRA_PC).sub(pos).normalize();
     dirLua.copy(LUA_PC).sub(pos).normalize();
     dirTerra.lerp(dirLua, w).normalize();
-    return out.copy(pos).add(dirTerra);
+    return out.copy(pos).addScaledVector(dirTerra, ALCANCE_DA_MIRA_PC);
   };
 }
 
@@ -900,10 +910,12 @@ const SHOTS: Shot[] = [
     dest: 'SGR',
   },
   {
-    // aproximação final: de 120 pc a 1,5 pc do centro
+    // aproximação final: de 120 pc a 1,5 pc do centro.
+    // O ângulo de partida É o de CORE_IN (30°), não 32° — 2° a 120 pc
+    // eram 4,2 pc de salto, o microtravamento no meio do ato III.
     dur: 5,
     pos: (k, out) => {
-      const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(32, BH_ARC_IN, k));
+      const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(30, BH_ARC_IN, k));
       const r = THREE.MathUtils.lerp(120, BH_R, k);
       const z = THREE.MathUtils.lerp(-4, -0.3, k);
       return galPoint(r, a, z, out);
@@ -920,7 +932,7 @@ const SHOTS: Shot[] = [
     // Einstein varrendo o campo estelar). Plano contínuo, sem cortes,
     // NOMEADO no clímax. Órbita de ASSUNTO declarada: é o alvo que se
     // contempla, não voo de lado.
-    dur: 16,
+    dur: 14,
     pos: (k, out) => {
       const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(BH_ARC_IN, BH_ARC_OUT, k));
       const z = THREE.MathUtils.lerp(-0.3, 0.55, k);
@@ -943,7 +955,7 @@ const SHOTS: Shot[] = [
         at: 0.5,
         text: 'O HORIZONTE',
         sub: 'a gravidade dobra o disco de luz ao redor da sombra',
-        dur: 7.5,
+        dur: 6.6,
       },
     ],
   },
@@ -1038,7 +1050,7 @@ const SHOTS: Shot[] = [
     // mira desliza do centro para perto de casa; o marcador do Sol
     // pulsa, minúsculo. Pousa aos ~88% e CONGELA — e é desse
     // congelamento que a coda CORTA para o mergulho de volta.
-    dur: 9,
+    dur: 7,
     pos: bezier(
       GATE_FACE_POS,
       new THREE.Vector3(-21000, -11500, 21500),
@@ -1051,17 +1063,18 @@ const SHOTS: Shot[] = [
     roll: (k) => GATE_FACE_ROLL * (1 - smooth(Math.min(k / 0.88, 1))),
     target: ['SOL'],
     lingua: 'assunto',
-    captions: [{ at: 0.22, text: 'VOCÊ ESTÁ AQUI', dur: 6.8 }],
+    captions: [{ at: 0.2, text: 'VOCÊ ESTÁ AQUI', dur: 5.4 }],
   },
 
   // ============ CODA — A VOLTA PARA CASA (pedido do dono, 19/08) ============
   {
     // o mergulho de volta: 11,5 décadas em 5 s, caindo do alto galáctico
     // no corredor da Lua — a régua da abertura, ainda mais rápida, com
-    // o warp no talo. Olhar cravado em casa: é para onde se vai.
+    // o warp no talo. O olhar PARTE do quadro congelado da deriva
+    // (FINAL_LOOK) e vira para casa — sem o salto de 4,8° na junta.
     dur: 5,
     pos: mergulhoDeVolta(),
-    look: still(TERRA_PC),
+    look: panThenHold(FINAL_LOOK, TERRA_PC, 0.22),
     fov0: 54, fov1: 62,
     ease: linear,
     fovEase: glide,
@@ -1072,25 +1085,26 @@ const SHOTS: Shot[] = [
   {
     // UM TAKE: a Lua passa GRANDE à frente com a Terra no fundo, o
     // mesmo gesto entrega a volta do escuro ao claro e pousa congelado
-    // — Américas no dia, polos para cima. Sem corte, sem desviar o
-    // olhar para a Lua: casa é o alvo o tempo todo.
-    dur: 10,
+    // — Américas no dia, polos para cima. 12 s (era 10): a Lua fica
+    // com 3,6 s e a Terra com 8,4 s para a rotação se ler. fov0 casa
+    // com o fim do mergulho (62°), sem o pop de lente na junta.
+    dur: 12,
     pos: takeDaCasa(),
     look: lookDoTake(),
-    fov0: 68, fov1: 46,
+    fov0: 62, fov1: 46,
     ease: linear,
     fovEase: glide,
     warp: (k) => 0.45 * (1 - Math.min(k / K_LUA_NO_TAKE, 1)) ** 2,
     roll: (k) => {
       if (k <= K_LUA_NO_TAKE) return 0;
       const u = (k - K_LUA_NO_TAKE) / (1 - K_LUA_NO_TAKE);
-      return ROLL_DOS_POLOS * smooth(Math.min(u / 0.88, 1));
+      return ROLL_DOS_POLOS * easeDaVolta(u);
     },
     quiet: true,
     lingua: 'assunto',
     captions: [
-      { at: 0.12, text: 'A LUA', sub: 'a um segundo-luz de casa', dur: 2.6 },
-      { at: 0.48, text: 'A TERRA', sub: 'de onde tudo isto foi visto', dur: 60 },
+      { at: 0.08, text: 'A LUA', sub: 'a um segundo-luz de casa', dur: 2.8 },
+      { at: 0.325, text: 'A TERRA', sub: 'de onde tudo isto foi visto', dur: 60 },
     ],
   },
 ];

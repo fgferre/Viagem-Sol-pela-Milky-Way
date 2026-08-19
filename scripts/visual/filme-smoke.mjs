@@ -117,9 +117,9 @@ async function conferirMovimento(sessao, nome, t, legenda) {
   conferir(atual.title === legenda, `${nome}: manteve “${atual.title || '—'}” durante o movimento`);
 }
 
-// As margens do corte de 19/08 à noite (25 planos, 195 s): um instante
-// DENTRO de cada janela de legenda e um logo DEPOIS dela — os números
-// derivam de STARTS/captions do journey.ts e morrem junto com qualquer
+// As margens do corte (25 planos, 193 s): um instante DENTRO de cada
+// janela de legenda e um logo DEPOIS dela — os números derivam de
+// STARTS/captions do journey.ts e morrem junto com qualquer
 // retemporização.
 const JANELAS = [
   { t: 21.5, title: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é a galáxia vista por dentro' },
@@ -144,27 +144,27 @@ const JANELAS = [
   { t: 103.7, title: '', sub: '' },
   { t: 106.5, title: 'O BERÇÁRIO', sub: 'estrelas nascem no último braço antes do centro' },
   { t: 110.4, title: '', sub: '' },
-  { t: 123.5, title: 'SAGITTARIUS A✱', sub: 'quatro milhões de massas solares no centro da Via Láctea' },
-  { t: 128.2, title: '', sub: '' },
-  { t: 130, title: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra' },
-  { t: 136.6, title: '', sub: '' },
-  { t: 139, title: 'O ESTILINGUE', sub: 'do coração para fora do disco' },
-  { t: 142.1, title: '', sub: '' },
-  { t: 148.5, title: 'A VIA LÁCTEA, POR FORA', sub: 'uma reconstrução científica do que ninguém jamais viu' },
-  { t: 151.8, title: '', sub: '' },
-  { t: 153.5, title: 'ELA NÃO É PLANA', sub: '' },
-  { t: 157, title: '', sub: '' },
-  { t: 160, title: 'OS BRAÇOS', sub: 'de perfil, uma linha; de cima, uma espiral' },
-  { t: 165.1, title: '', sub: '' },
-  { t: 167.5, title: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas' },
-  { t: 171, title: '', sub: '' },
-  { t: 174, title: 'VOCÊ ESTÁ AQUI', sub: '' },
-  { t: 179.9, title: '', sub: '' },
-  { t: 181.5, title: 'A VOLTA PARA CASA', sub: '' },
-  { t: 184.9, title: '', sub: '' },
-  { t: 187, title: 'A LUA', sub: 'a um segundo-luz de casa' },
-  { t: 188.9, title: '', sub: '' },
-  { t: 191, title: 'A TERRA', sub: 'de onde tudo isto foi visto' },
+  { t: 123.2, title: 'SAGITTARIUS A✱', sub: 'quatro milhões de massas solares no centro da Via Láctea' },
+  { t: 127.95, title: '', sub: '' },
+  { t: 129, title: 'O HORIZONTE', sub: 'a gravidade dobra o disco de luz ao redor da sombra' },
+  { t: 134.7, title: '', sub: '' },
+  { t: 137, title: 'O ESTILINGUE', sub: 'do coração para fora do disco' },
+  { t: 140.1, title: '', sub: '' },
+  { t: 146.5, title: 'A VIA LÁCTEA, POR FORA', sub: 'uma reconstrução científica do que ninguém jamais viu' },
+  { t: 149.8, title: '', sub: '' },
+  { t: 151.5, title: 'ELA NÃO É PLANA', sub: '' },
+  { t: 155, title: '', sub: '' },
+  { t: 158, title: 'OS BRAÇOS', sub: 'de perfil, uma linha; de cima, uma espiral' },
+  { t: 163.1, title: '', sub: '' },
+  { t: 165.5, title: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas' },
+  { t: 169, title: '', sub: '' },
+  { t: 171.5, title: 'VOCÊ ESTÁ AQUI', sub: '' },
+  { t: 175.9, title: '', sub: '' },
+  { t: 177.5, title: 'A VOLTA PARA CASA', sub: '' },
+  { t: 180.9, title: '', sub: '' },
+  { t: 183, title: 'A LUA', sub: 'a um segundo-luz de casa' },
+  { t: 184.85, title: '', sub: '' },
+  { t: 187, title: 'A TERRA', sub: 'de onde tudo isto foi visto' },
 ];
 
 async function julgarLargura(largura, altura, captura) {
@@ -206,15 +206,15 @@ async function julgarLargura(largura, altura, captura) {
         [76.5, 'CASA · 76 s'],
         [98, 'MERGULHO · 98 s'],
         [106.5, 'BERÇÁRIO · 106 s'],
-        [123.5, 'SAGITTARIUS A✱ · 123 s'],
-        [153.5, 'PERFIL · 153 s'],
-        [167.5, 'FACE-ON · 167 s'],
-        [174, 'VOCÊ ESTÁ AQUI · 174 s'],
-        [187, 'A LUA · 187 s'],
-        [194.5, 'A TERRA · 194 s'],
+        [123.2, 'SAGITTARIUS A✱ · 123 s'],
+        [152, 'PERFIL · 152 s'],
+        [166, 'FACE-ON · 166 s'],
+        [172, 'VOCÊ ESTÁ AQUI · 172 s'],
+        [183, 'A LUA · 183 s'],
+        [191.5, 'A TERRA · 191 s'],
       ] : [
-        [123.5, `SAGITTARIUS A✱ · ${largura}px`],
-        [194.5, `A TERRA · ${largura}px`],
+        [123.2, `SAGITTARIUS A✱ · ${largura}px`],
+        [191.5, `A TERRA · ${largura}px`],
       ];
       for (const [t, rotulo] of vistas) {
         await saltar(sessao, t);
@@ -225,16 +225,16 @@ async function julgarLargura(largura, altura, captura) {
         ['Sirius', 33.2, 'SIRIUS'],
         ['Casa', 76.5, 'CASA'],
         ['mergulho', 98, 'O MERGULHO'],
-        ['Sagittarius A*', 123.5, 'SAGITTARIUS A✱'],
-        ['perfil', 153.5, 'ELA NÃO É PLANA'],
-        ['face-on', 167.5, 'NOSSA GALÁXIA'],
-        ['galáxia final', 174, 'VOCÊ ESTÁ AQUI'],
-        ['a Lua', 187, 'A LUA'],
-        ['a Terra', 191, 'A TERRA'],
+        ['Sagittarius A*', 123.2, 'SAGITTARIUS A✱'],
+        ['perfil', 152, 'ELA NÃO É PLANA'],
+        ['face-on', 166, 'NOSSA GALÁXIA'],
+        ['galáxia final', 172, 'VOCÊ ESTÁ AQUI'],
+        ['a Lua', 183, 'A LUA'],
+        ['a Terra', 187, 'A TERRA'],
       ]) await conferirMovimento(sessao, nome, t, legenda);
     }
 
-    await saltar(sessao, 194.9);
+    await saltar(sessao, 192.8);
     await sessao.js('window.__director.togglePause()');
     const limite = Date.now() + 3000;
     let fase = '';

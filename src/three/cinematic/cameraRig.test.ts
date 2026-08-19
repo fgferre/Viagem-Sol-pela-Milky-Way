@@ -192,8 +192,8 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
   /** o instante em que a hélice cruza o limiar do sistema solar. */
   const T_SAIDA = AMOSTRAS.find((a) => a.dHome >= LIMIAR_SISTEMA_SOLAR_PC)?.t ?? -1;
 
-  it('a duração é 195 s e o piso do filme é a abertura refilmada, em t=0', () => {
-    expect(j.duration).toBe(195);
+  it('a duração é 193 s e o piso do filme é a abertura refilmada, em t=0', () => {
+    expect(j.duration).toBe(193);
     // a PAREDE (t<6) devolve a constante bit a bit; a hélice em k=0
     // devolve o mesmo ponto a 1 ULP, porque ela normaliza a direção e
     // reescala (`v · (d/|v|)`). É 1,7e-23 pc — 5e-10 metro.
@@ -216,7 +216,7 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
   it('o domínio profundo é a abertura e a coda — e nada no meio', () => {
     expect(T_SAIDA).toBeCloseTo(26.17, 2); // 6 s de parede + 20,17 s de hélice
     // o mergulho de volta cruza o limiar a meio caminho das 11,5 décadas
-    expect(T_VOLTA).toBeCloseTo(182.52, 1);
+    expect(T_VOLTA).toBeCloseTo(178.52, 1);
     for (const a of AMOSTRAS) {
       expect(a.dHome < LIMIAR_SISTEMA_SOLAR_PC, `t=${a.t}`).toBe(
         a.t < T_SAIDA || a.t >= T_VOLTA
@@ -272,11 +272,11 @@ describe('a auditoria editorial do filme', () => {
   const auditoria = auditarRoteiro();
   const journey = new Journey();
 
-  it('o corte de 19/08 à noite: 25 planos, 195 s e os dois holds de medição', () => {
+  it('o corte de 19/08 à noite: 25 planos, 193 s e os dois holds de medição', () => {
     expect(auditoria.shotCount).toBe(25);
-    expect(auditoria.duration).toBe(195);
-    expect(journey.duration).toBe(195);
-    expect(CAPTURE_T).toEqual({ edge: 155, face: 169 });
+    expect(auditoria.duration).toBe(193);
+    expect(journey.duration).toBe(193);
+    expect(CAPTURE_T).toEqual({ edge: 153, face: 167 });
   });
 
   it('nenhuma legenda se sobrepõe e só o SOL atravessa um corte, com passe explícito', () => {
@@ -304,15 +304,33 @@ describe('a auditoria editorial do filme', () => {
   it('Sagittarius A* só é nomeado durante a curva rasante', () => {
     const sgr = auditoria.captions.filter((caption) => caption.text === 'SAGITTARIUS A✱');
     expect(sgr).toHaveLength(1);
-    expect(sgr[0].t0).toBeCloseTo(122.6, 10);
-    expect(sgr[0].t1).toBeCloseTo(128.1, 10);
+    expect(sgr[0].t0).toBeCloseTo(122.4, 10);
+    expect(sgr[0].t1).toBeCloseTo(127.9, 10);
     expect(journey.captionAt(122).key.caption).toBe('');
-    expect(journey.captionAt(122.59).key.caption).toBe('');
-    expect(journey.captionAt(122.61).key.caption).toBe('SAGITTARIUS A✱');
+    expect(journey.captionAt(122.39).key.caption).toBe('');
+    expect(journey.captionAt(122.41).key.caption).toBe('SAGITTARIUS A✱');
   });
 
   it('o roteiro final tem as 23 janelas editoriais do corte', () => {
     expect(auditoria.captions).toHaveLength(23);
+  });
+
+  it('nenhuma junta de plano salta posição, mira, lente ou roll', () => {
+    // o microtravamento que o dono viu no play contínuo: posição
+    // copiada sem amortecer (cameraRig.apply). 2° a 120 pc eram 4 pc.
+    const juncao = new Journey();
+    for (const s of auditoria.shots.slice(1)) {
+      const a = juncao.at(s.t0 - 1e-6);
+      const b = juncao.at(s.t0);
+      const rel = a.pos.distanceTo(b.pos) / Math.max(a.pos.length(), 1e-12);
+      const dLook = THREE.MathUtils.radToDeg(
+        a.look.clone().sub(a.pos).normalize().angleTo(b.look.clone().sub(b.pos).normalize())
+      );
+      expect(rel, `pos t=${s.t0}`).toBeLessThan(1e-5);
+      expect(dLook, `look t=${s.t0}`).toBeLessThan(0.6);
+      expect(Math.abs(b.fov - a.fov), `fov t=${s.t0}`).toBeLessThan(0.6);
+      expect(Math.abs(b.roll - a.roll), `roll t=${s.t0}`).toBeLessThan(0.02);
+    }
   });
 });
 

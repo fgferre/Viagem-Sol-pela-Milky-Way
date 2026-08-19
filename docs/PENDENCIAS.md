@@ -222,6 +222,16 @@ pensar melhro do que eu e achar exemplos mais incrivies ainda)”*. O item
 volta a ser o que ELE vê: períodos longos da câmera se movimentando sem
 ação, e uma câmera que ainda não emociona.
 
+Depois do corte de 3 min 15 s ele assistiu em play contínuo e ainda
+reprova a dinâmica — agora com falha no gesto final. Palavras dele:
+*“nao está funcionando muito bem a transicao, quando é dado o play
+continuo entre os atos, ele passa pela lua e nao termina certo com a
+passagem para terra e a rotacao até focar nas americas. precisa revisar
+isso, ainda tem seuqencia muitos longas tb e microtravamentos entre
+atos. acho que vale uma revisao a proicura desses erros.”* O que ele VÊ:
+a Lua passa e a Terra não recebe o take (não roda até as Américas); ainda
+há sequências longas; e o filme engasga na junta dos atos.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos

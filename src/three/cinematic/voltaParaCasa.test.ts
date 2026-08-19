@@ -62,7 +62,7 @@ function faseVista(corpo: THREE.Vector3, cam: THREE.Vector3): number {
 }
 
 const j = new Journey();
-const T_CODA = j.duration - 15;
+const T_CODA = j.duration - 17;
 
 describe('os vetores pinados são a efeméride', () => {
   it('TERRA_PC e LUA_PC batem bit a bit com a cadeia na época pinada', () => {
@@ -115,17 +115,20 @@ describe('a encenação pedida, medida na trajetória', () => {
   });
 
   it('o take começa e termina na Terra — no joelho o olhar cede à Lua', () => {
-    const tTake = j.duration - 10;
+    const tTake = j.duration - 12;
     const noRaspao = AMOSTRAS.reduce((m, a) =>
       a.pos.distanceTo(LUA_PC) < m.pos.distanceTo(LUA_PC) ? a : m
     );
     expect(j.at(tTake).look.distanceTo(TERRA_PC)).toBeLessThan(1e-12);
-    expect(j.at(noRaspao.t).look.distanceTo(TERRA_PC)).toBeGreaterThan(1e-6);
+    const noJoelho = j.at(noRaspao.t);
+    const paraTerra = TERRA_PC.clone().sub(noJoelho.pos).normalize();
+    const olhar = noJoelho.look.clone().sub(noJoelho.pos).normalize();
+    expect(grausEntre(olhar, paraTerra)).toBeGreaterThan(8);
     expect(j.at(j.duration).look.distanceTo(TERRA_PC)).toBeLessThan(1e-12);
   });
 
   it('a volta chega pelo lado escuro e pousa no claro, com a Terra grande', () => {
-    const chegada = j.at(j.duration - 5.8).pos; // início da volta no take
+    const chegada = j.at(j.duration - 8.4).pos; // início da volta no take
     expect(faseVista(TERRA_PC, chegada)).toBeGreaterThan(135);
     const fim = j.at(j.duration).pos;
     expect(faseVista(TERRA_PC, fim)).toBeLessThan(45);
