@@ -46,11 +46,12 @@ serão descritos pelo mesmo motor declarativo. Não haverá segundo aplicativo.
 A cirurgia de texto foi o primeiro passo e agora é contrato do roteiro e de
 sua auditoria. O trabalho restante segue nesta ordem:
 
-1. **Som procedural por ato.** Deve nascer de gesto do usuário, respeitar
-   `?mute=1`, ter continuidade entre planos e poder ser desligado sem mudar a
-   imagem. A instrumentação e os gates já estão no produto; falta a audição
-   integral do dono para cravar a mixagem. Conclui com esse aceite, teste do
-   mute e nenhuma reprodução automática indevida.
+1. **Direção musical e desenho de som.** A primeira prova de leito procedural
+   contínuo foi rejeitada e não será tratada como problema de mixagem. Antes de
+   novo código, definir uma linguagem com silêncio, motivos, acontecimentos e
+   contraste dramático. A execução ainda deve nascer de gesto do usuário,
+   respeitar `?mute=1` e poder ser desligada sem mudar a imagem. Conclui com
+   audição integral e aceite explícito do dono.
 2. **Revisão de ritmo.** Assistir aos 321 segundos com som e decidir por imagem
    e ouvido se hélice e ondas ainda pedem tempo. Conclui com decisão explícita:
    manter o corte ou redistribuir segundos sem mudar total, quatro atos,
