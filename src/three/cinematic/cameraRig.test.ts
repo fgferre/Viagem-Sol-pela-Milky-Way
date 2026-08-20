@@ -345,6 +345,29 @@ describe('a auditoria editorial do filme', () => {
     expect(angCasa(), 'pouso nas Américas').toBeLessThan(15);
   });
 
+  it('o play contínuo mantém Sagittarius A* no quadro na fuga — o clímax não some', () => {
+    // t=135: o C1 do estilingue atravessava o centro; a mira girava
+    // 650 °/s e o buraco saía do quadro (~102°). O espectador perde o
+    // adeus. Meia lente da fuga é ~26°.
+    const rig = new JourneyRig();
+    const cam = new THREE.PerspectiveCamera(52, 16 / 9, 0.1, 1e6);
+    const dt = 1 / 60;
+    const dir = new THREE.Vector3();
+    const gc = GAL.GC_POS;
+    const erro = () => {
+      cam.getWorldDirection(dir);
+      return THREE.MathUtils.radToDeg(dir.angleTo(gc.clone().sub(cam.position).normalize()));
+    };
+    rig.reset();
+    rig.apply(cam, 128, dt);
+    let pior = 0;
+    for (let t = 128 + dt; t <= 140; t += dt) {
+      rig.apply(cam, t, dt);
+      pior = Math.max(pior, erro());
+    }
+    expect(pior).toBeLessThan(25);
+  });
+
   it('nenhuma junta de plano salta posição, mira, lente ou roll', () => {
     // o microtravamento que o dono viu no play contínuo: posição
     // copiada sem amortecer (cameraRig.apply). 2° a 120 pc eram 4 pc.

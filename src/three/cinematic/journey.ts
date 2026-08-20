@@ -407,7 +407,9 @@ const BH_R = 1.5;
 // quadro de perfil, travessia em arco com a galáxia sempre no centro,
 // pouso no face-on, deriva final. A CURVA é uma só (o estilingue de
 // sempre); a fuga e a subida a dividem em dois olhares.
-const SLING_C1 = gal(900, 60, 260);
+// C1 no azimute da rasante (190°): o de 60° atravessava o centro e a
+// mira do adeus girava 650 °/s — Sagittarius A* saía do quadro.
+const SLING_C1 = gal(900, 190, 260);
 const SLING_C2 = gal(4200, 85, 2600);
 const BH_EXIT = galPoint(
   BH_R, THREE.MathUtils.degToRad(BH_ARC_OUT), 0.55, new THREE.Vector3()
@@ -969,11 +971,13 @@ const SHOTS: Shot[] = [
   {
     // A FUGA: sai da curva olhando o monstro ENCOLHER — acento traseiro
     // declarado e curto. É o único adeus que o buraco negro ganha.
+    // A curva sai RADIAL (C1 no azimute da rasante). glide parte e
+    // chega parado — casa com a rasante e com a subida.
     dur: 5,
     pos: (k, out) => SLING(k * FUGA_ATE, out),
     look: still(GAL.GC_POS),
     fov0: 52, fov1: 54,
-    ease: easeOut,
+    ease: glide,
     warp: (k) => 0.6 * (1 - k),
     roll: (k) => 0.1 * Math.sin(Math.PI * k),
     quiet: true,
