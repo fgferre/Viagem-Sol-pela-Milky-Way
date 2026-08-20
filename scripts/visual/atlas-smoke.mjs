@@ -328,11 +328,11 @@ try {
     [...document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')]
       .map((e) => e.textContent.trim())
   )`));
-  // 13 desde a Onda 6/F0: o palco dos corpos resolvidos ('nocorpos')
-  // entrou na tabela única (atlasConfig.CAMADAS) — e este juiz descobriu
-  // na F2a que estava com a lista manual envelhecida (a mesma classe de
-  // defeito que o selo existe para não ter).
-  conferir(camadas.length === 13, `o painel oferece ${camadas.length} camadas`);
+  // 17 desde o item 33: as 13 de sempre mais as quatro que eram só-URL
+  // (nosun/nodust/noco/noforge). Quem PINA o número contra a tabela
+  // única é `atlasConfig.test.ts` (`CAMADAS.length`); aqui ele serve só
+  // para o painel não deixar nenhuma de fora na hora de desenhar.
+  conferir(camadas.length === 17, `o painel oferece ${camadas.length} camadas`);
   conferir(
     !camadas.some((n) => n.includes('↻')),
     `nenhuma marcada com ↻ (${camadas.join(' · ')})`
@@ -358,25 +358,28 @@ try {
     });
   })()`);
 
-  const FLAGS = [
-    'nogal', 'nodisc', 'nogdust', 'noglow', 'nocart', 'nonebula',
-    'nowrap', 'nocat', 'noclarao', 'nomarker', 'noplan', 'nocorpos', 'nobh',
-  ];
+  // A FLAG DA LINHA VEM DO APP, não de uma quarta lista digitada à mão.
+  // Havia uma aqui, e ela envelheceu: quando as quatro só-URL entraram na
+  // tabela (item 33) o painel passou a desenhar 17 linhas e este laço
+  // seguiu casando os nomes com as 13 antigas — nove vereditos errados,
+  // exatamente a classe de defeito que o config único existe para não
+  // ter. Agora a flag é a que ENTRA no selo com o clique: a lista parte
+  // vazia (boot limpo) e cada `off` acende uma, cada `on` apaga.
   let vivas = 0;
-  for (let i = 0; i < FLAGS.length; i++) {
-    const flag = FLAGS[i];
+  for (let i = 0; i < camadas.length; i++) {
     // assentar ANTES de cada clique: é o que dá sentido ao `antes >= 10`
     // — a cena estava parada e o clique é quem a perturbou
     await sessao.assentar();
     const off = JSON.parse(await trocar(i));
     await sessao.assentar();
     const on = JSON.parse(await trocar(i));
+    const flag = off.escondidas[0];
     const ok =
       !off.recarregou && !on.recarregou
       && off.antes >= 10 && on.antes >= 10 && off.depois === 0 && on.depois === 0
       && off.marcado === false && on.marcado === true
-      && off.url.includes(`${flag}=1`) && !on.url.includes(`${flag}=1`)
-      && off.escondidas.includes(flag) && !on.escondidas.includes(flag);
+      && off.escondidas.length === 1 && on.escondidas.length === 0
+      && off.url.includes(`${flag}=1`) && !on.url.includes(`${flag}=1`);
     if (ok) vivas++;
     conferir(
       ok,
@@ -384,7 +387,10 @@ try {
         + ` url '${off.url}', selo [${off.escondidas.join(',')}] e volta`
     );
   }
-  conferir(vivas === 13, `as ${vivas} de 13 camadas do painel trocam sem reload`);
+  conferir(
+    vivas === camadas.length,
+    `as ${vivas} de ${camadas.length} camadas do painel trocam sem reload`
+  );
 
   await sessao.assentar();
   const depoisDaCamada = await sessao.js(`JSON.stringify({
