@@ -7,8 +7,10 @@
 // O QUE ELE MEDE, em números e não em impressão: `window.__director.stats`
 // (DEV, o mesmo portão do `captura` que os juízes de CDP já usam) publica
 // `renderer.info.memory` — a contagem viva de texturas e geometrias que o
-// PRÓPRIO three mantém na GPU — e o heap de JS. O protocolo repete os três
-// gestos que alocam e desalocam de verdade:
+// PRÓPRIO three mantém na GPU — e o heap de JS; o CDP acrescenta o heap
+// preciso e a lista de alvos vivos do browser. O protocolo repete os três
+// gestos que alocam e desalocam de verdade (A, B, C), e a régua D olha a
+// memória que saiu da thread:
 //
 //  A. N=5 ciclos entra/sai do Atlas — o portal "Partir" e a volta, o mesmo
 //     caminho vivo que o `atlas-smoke` navega. VEREDITO: `textures` e
@@ -28,6 +30,18 @@
 //     Enquadrar não aloca: delta ZERO também. Além do delta, o
 //     veredito cobra um TETO residente (texturas/geometrias): Atlas
 //     quente com delta zero e 400 texturas ainda é vazamento permanente.
+//  D. WORKERS VIVOS, contados pelo BROWSER (CDP `Target.getTargets`) e não
+//     pelo app. Esta régua nasceu com os Ajustes B: a carga pesada — os dois
+//     bakes de mapa e a população — mudou de thread, e memória de worker é
+//     INVISÍVEL para as duas réguas de cima. `Runtime.getHeapUsage` mede o
+//     isolate da PÁGINA (um Float64Array retido DENTRO do worker não move o
+//     número), e `renderer.info` só conta o que subiu para a GPU. Um worker
+//     que sobreviva à carga leva junto os catálogos copiados e os buffers que
+//     alocou, e o juiz ficaria verde por cegueira. VEREDITO: ZERO worker vivo
+//     em TODA amostra — quem sobe o da carga o termina na mesma linha em que
+//     recebe a resposta (`assarCargaEmWorker`, director/carregamento.ts).
+//     Contar pelo browser e não pelo app é o que dá dentes: worker vazado por
+//     QUALQUER caminho aparece, inclusive um que o app não conheça.
 //
 // O HEAP: veredito por INCLINAÇÃO, não por igualdade — o heap de V8 oscila
 // por natureza (GC, caches do JIT). O juiz força GC (HeapProfiler.
@@ -51,12 +65,14 @@
 //
 // AUTOVALIDAÇÃO M5 — o verde só vale com dentes. O run padrão termina
 // executando um braço SABOTADO curto (navegação nova, 2 ciclos): a cada
-// ciclo o juiz injeta um vazamento DE VERDADE pelo próprio app — uma
-// DataTexture nova subida pelo renderer (`initTexture`, que incrementa o
-// MESMO `info.memory.textures` que o veredito lê) e 16 MB de Float64Array
-// retidos num array global (o formato de vazamento que cegou a primeira
-// régua — ver acima). Se os medidores NÃO acusarem o vazamento, o juiz
-// REPROVA A SI MESMO — veredito verde de medidor cego não é veredito.
+// ciclo o juiz injeta um vazamento DE VERDADE pelo próprio app, um por
+// régua — uma DataTexture nova subida pelo renderer (`initTexture`, que
+// incrementa o MESMO `info.memory.textures` que o veredito lê), 16 MB de
+// Float64Array retidos num array global (o formato de vazamento que cegou a
+// primeira régua — ver acima) e um WORKER que ninguém termina, com outros
+// 16 MB retidos lá dentro (o formato que cega as DUAS réguas antigas e que
+// a régua D existe para ver). Se os medidores NÃO acusarem o vazamento, o
+// juiz REPROVA A SI MESMO — veredito verde de medidor cego não é veredito.
 // `--sabotagem` roda o protocolo INTEIRO com a injeção por ciclo e aplica
 // os mesmos vereditos: TEM de sair ≠ 0; se sair 0, o medidor está sem
 // dentes.
@@ -96,21 +112,27 @@ const mediana = (v) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-// O VAZAMENTO INJETADO (M5): real, pelo próprio app, visível aos DOIS
-// medidores do veredito. O construtor da DataTexture é colhido de um
-// objeto vivo do app (o dust map) — o bundle não exporta THREE — e o
-// `initTexture` do renderer sobe a textura DE VERDADE para a GPU,
-// incrementando o mesmo `info.memory.textures` que o juiz lê. O array
-// global segura a textura E 16 MB de Float64Array: nem o GC forçado leva.
+// O VAZAMENTO INJETADO (M5): real, pelo próprio app, visível aos TRÊS
+// medidores do veredito — um formato para cada um. O construtor da
+// DataTexture é colhido de um objeto vivo do app (o dust map) — o bundle
+// não exporta THREE — e o `initTexture` do renderer sobe a textura DE
+// VERDADE para a GPU, incrementando o mesmo `info.memory.textures` que o
+// juiz lê. O array global segura a textura E 16 MB de Float64Array: nem o
+// GC forçado leva. E o WORKER (blob, nunca terminado) segura mais 16 MB
+// no isolate DELE, que é justamente o que a régua do heap não enxerga.
 const INJETAR = `(() => {
   const d = window.__director;
   const Ctor = d.dustMapTexture.constructor;
   const t = new Ctor(new Uint8Array(512 * 512 * 4), 512, 512);
   t.needsUpdate = true;
   d.engine.renderer.initTexture(t);
+  const w = new Worker(URL.createObjectURL(new Blob(
+    ['self.__peso = new Float64Array(2 * 1024 * 1024); onmessage = () => {};'],
+    { type: 'text/javascript' }
+  )));
   window.__sabotagem = window.__sabotagem || [];
-  window.__sabotagem.push(t, new Float64Array(2 * 1024 * 1024));
-  return window.__sabotagem.length / 2;
+  window.__sabotagem.push(t, new Float64Array(2 * 1024 * 1024), w);
+  return window.__sabotagem.length / 3;
 })()`;
 
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
@@ -121,8 +143,18 @@ try {
   // domínio extra do CDP, uma vez por sessão (sobrevive à navegação)
   await sessao.send('HeapProfiler.enable');
 
-  /** GC forçado + uma amostra: stats do app e heap preciso do CDP
-   *  (V8 + backing stores — ver o cabeçalho sobre o ponto cego). */
+  /** A RÉGUA D: workers vivos pelo olho do BROWSER. `Target.getTargets` é
+   *  domínio de browser e responde na mesma conexão da página; contar aqui,
+   *  e não em `__director.stats`, é o que faz a régua ver worker de qualquer
+   *  origem — inclusive o blob que a sabotagem injeta, que o app não conhece. */
+  const workersVivos = async () => {
+    const { targetInfos } = await sessao.send('Target.getTargets');
+    return targetInfos.filter((t) => t.type === 'worker').length;
+  };
+
+  /** GC forçado + uma amostra: stats do app, heap preciso do CDP
+   *  (V8 + backing stores — ver o cabeçalho sobre o ponto cego) e os
+   *  workers vivos, que nenhum dos dois primeiros enxerga. */
   const amostrar = async (rotulo) => {
     await sessao.send('HeapProfiler.collectGarbage');
     const stats = JSON.parse(await sessao.js('JSON.stringify(window.__director.stats)'));
@@ -137,18 +169,20 @@ try {
       points: stats.render.points,
       heap,
       heapGetter: stats.heapMB,
+      workers: await workersVivos(),
     };
   };
 
   const tabela = (linhas) => {
     process.stdout.write(
-      '        amostra           textures  geometries  heap V8+ext  heapGetter(MB)\n'
+      '        amostra           textures  geometries  heap V8+ext  heapGetter(MB)  workers\n'
     );
     for (const a of linhas) {
       process.stdout.write(
         `        ${a.rotulo.padEnd(18)}${String(a.textures).padStart(8)}`
         + `${String(a.geometries).padStart(12)}${a.heap.toFixed(1).padStart(13)}`
-        + `${(a.heapGetter === null ? 'null' : a.heapGetter.toFixed(1)).padStart(16)}\n`
+        + `${(a.heapGetter === null ? 'null' : a.heapGetter.toFixed(1)).padStart(16)}`
+        + `${String(a.workers).padStart(9)}\n`
       );
     }
   };
@@ -210,7 +244,10 @@ try {
       mediana(heaps.slice(-janela)) - mediana(heaps.slice(0, janela));
     const picoTextures = Math.max(...amostras.map((a) => a.textures));
     const picoGeometries = Math.max(...amostras.map((a) => a.geometries));
-    return { deltaPortal, deltaResto, inclinacao, picoTextures, picoGeometries };
+    const picoWorkers = Math.max(...amostras.map((a) => a.workers));
+    return {
+      deltaPortal, deltaResto, inclinacao, picoTextures, picoGeometries, picoWorkers,
+    };
   };
 
   if (SABOTAGEM) {
@@ -227,6 +264,7 @@ try {
       v.inclinacao < LIMIAR_HEAP_MB,
       `heap: inclinação ${v.inclinacao.toFixed(1)} MB < ${LIMIAR_HEAP_MB} MB`
     );
+    conferir(v.picoWorkers === 0, `workers: ZERO vivo em toda amostra (pico ${v.picoWorkers})`);
   } else {
     // ---- 1: o contrato do getter -------------------------------------
     const primeira = await protocolo({
@@ -276,6 +314,11 @@ try {
       v.picoGeometries <= TETO_GEOMETRIAS,
       `teto residente: ${v.picoGeometries} geometrias ≤ ${TETO_GEOMETRIAS}`
     );
+    conferir(
+      v.picoWorkers === 0,
+      'nenhum worker sobrevive à carga: ZERO vivo em toda amostra'
+        + ` (pico ${v.picoWorkers}) — a memória que mudou de thread nos Ajustes B`
+    );
     const faseFinal = await sessao.js('window.__director.captura.fase');
     conferir(faseFinal === 'atlas', `o protocolo termina onde começou (fase '${faseFinal}')`);
 
@@ -305,6 +348,10 @@ try {
     conferir(
       heapM5 >= LIMIAR_HEAP_MB,
       `M5: o medidor de heap ACUSA os 16 MB/ciclo retidos (+${heapM5.toFixed(1)} MB em 2 ciclos)`
+    );
+    conferir(
+      vm5.picoWorkers > 0,
+      `M5: a régua de workers ACUSA o worker vazado por ciclo (pico ${vm5.picoWorkers})`
     );
   }
 } finally {

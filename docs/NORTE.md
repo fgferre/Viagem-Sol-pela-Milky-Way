@@ -208,16 +208,15 @@ em `LEI-DA-ESTRELA.md` §7. O céu e a galáxia nunca esmaecem.
 ## Ajustes: nada recarrega
 
 Régua do dono: nenhuma opção do painel recarrega a página. A Fase A
-fechou as camadas e o latch da exposição. Sobra a qualidade.
+fechou as camadas e o latch da exposição; a **B fechou em 20/08** — a
+cadeia de carga inteira mora no worker (`cadeiaDaCarga` +
+`cargaEmWorker`, subidos por `assarCargaEmWorker`), com fallback inline
+declarado e igualdade bit a bit por construção: os dois lados chamam a
+MESMA função. Sobra a qualidade.
 
-- **B** — Worker da cadeia de carga. O `buildGalaxy` JÁ RODA no worker
-  (18/08: `galaxiaEmWorker` + `construirBuffersDaGalaxia`, bit a bit
-  igual ao inline, com fallback declarado; a tarefa de ~3,3 s saiu da
-  thread e o rótulo da etapa anima). Sobram: os dois bakes de CPU
-  (~1,6 s) no mesmo worker, o amostrador de memória, e o hitch restante
-  medido por Long Tasks — `bakeDiscLayers` (bake por GPU) e o `prime`
-  do Sol, que são assunto do C.
 - **C** — troca de tier viva, double-buffer com swap atômico, sem véu.
+  Vai junto o hitch que RESTOU na thread, medido por Long Tasks:
+  `bakeDiscLayers` (bake por GPU) e o `prime` do Sol.
 - **D** — Auto vira o 4º estado do seletor. Sem `?q=`, default de produto
   = cinema. Detecção nunca decide; medição sugere; o visitante escolhe.
 
@@ -313,8 +312,8 @@ A lista completa das hipóteses de espiral está em
 
 - Unificações 1, 2 (forjas/partículas + G2/G3) e 3 (κ/Σ + quad).
 - Lei da estrela, a partir de F1 — `LEI-DA-ESTRELA.md`.
-- Ajustes B, C e D.
-- Worker da carga; colunas mortas do manifesto (poda segura só de
+- Ajustes C e D.
+- Colunas mortas do manifesto (poda segura só de
   `gaiaObProxyStars[3,6,7]` e `dustDensity[4,5]`; `spiralAnchors[7]`
   não sai).
 - Fade das cascas no Ato IV (`?nowrap` já saiu bit-idêntico nos gates;

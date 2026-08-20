@@ -84,10 +84,12 @@ própria, com foto para o dono.)*
 **7. Trocar a qualidade ainda recarrega a página.**
 O dono pediu “nada recarrega, padrão AAA”. A Fase A fechou 3 dos 4
 recarregamentos; sobra a qualidade, mais três automatismos.
-→ `docs/NORTE.md`, seção “Ajustes”. *(A letra B avançou em 18/08: o
-`buildGalaxy` roda num worker, bit a bit igual ao inline — a etapa da
-galáxia deixou de congelar o carregamento. Sobram os bakes no worker,
-o swap vivo (C) e o Auto (D).)*
+→ `docs/NORTE.md`, seção “Ajustes”. *(A letra B FECHOU em 20/08: a
+cadeia de carga inteira — os dois bakes de mapa e a população — roda
+num worker, bit a bit igual ao inline, e o amostrador de memória ganhou
+a régua que enxerga worker vazado. O carregamento parou de congelar
+(medido: os dois bloqueios de ~0,5 s sumiram da thread). Sobram o swap
+vivo (C) e o Auto (D).)*
 
 **39. Estrela focada apaga as outras, ligando e desligando de repente.**
 Palavras do dono: *"uma coisa que percebi é que agora quando uma estrela
