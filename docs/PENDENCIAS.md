@@ -174,79 +174,29 @@ junto. As fotos já existem (`capturas/luz-*.png`, a escada inteira);
 falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
 
-**54. O filme precisa entregar mais “wowness, drama e ciência” e vender a
-maravilha técnica que já fizemos aqui.**
-Palavras do dono, 2026-08-18: *“traga uma nova visão que entregue wowness,
-drama, ciência e venda a maravilha técnica que fizemos aqui”*. A cirurgia de
-texto entrou; a revisão de ritmo de 18/08 decidiu "manter o corte" com curva
-de movimento — e a exibição DELE, em 19/08, REPROVOU a decisão. Palavras
-dele: *“ficou péssimo... muito enfadonho. minutos sem nada acontecer em
-diversos momentos vc deveria ter encurtado os tempos sem atividade,
-acelerando a velocidade da camera ou criando novos eventos no meio do
-caminho, tb acho muito feio quando estamos viajando com a camera voltada
-para o lado e nao em linha reta, na direcao para qual estamos indo... vc vai
-olhando reto para seu alvo normalmente, os avioes nao vooam de lado por
-exemplo, ou nos filmes as naves nao vooam de lado... vc pdoeria até mostrar
-vistas por trás, a direita, a esquerda, mas a frente é a visao principal...
-[...] acho que vc deveria repensar 100% esse roteiro. repense sob o ponto de
-vista de tempo sem atividade tb. vc tem os marcadores de tempo, vc nao
-precisa só se basear em tentear ler um filme, vc pode entender o codigo para
-marcare tempos e movimentos.”* O item agora é o ROTEIRO NOVO sob as duas
-leis dele (frente é a visão principal; tempo sem atividade se corta, se
-acelera ou ganha evento), com perfil analítico tirado do código.
+**54. O filme espera a exibição do dono — agora com o gesto da Lua.**
+Palavras dele no pedido, 19/08: *“quando estivesse passando poderia dar
+uma leve desacelerada e virar rapidamente a camera para ela e desvirar
+para continuar em direção a terra.”* — implementado e medido em 20/08:
+a Lua fica grande ~1,8 s (era 0,8 — o "piscar"), a câmera vira para ela
+no ponto mais próximo (6 raios lunares) e devolve o olhar à Terra; o
+pouso assenta nas Américas. Na mesma rodada: os giros de Sirius e de
+Rigel deixaram de borrar, "O BERÇÁRIO" cai onde as estrelas reais
+passam, a Lua sem rede usa o lugar medido das 16:00, e um juiz novo
+assiste o filme INTEIRO em play contínuo (0→193) nos testes. A
+história completa da rodada (o roteiro repensado, a coda, as falhas do
+play e seus consertos) mora nos commits de 19–20/08. Falta só ele
+assistir do começo, sem pular, e aprovar.
 
-No mesmo dia ele pediu a CODA, com estas palavras: *“que tal adicionarmos
-no final uma viagem super rápida no 'vc está aqui' até terminar no planeta
-terra, mas essa viagem vai ser de 15 seg, passando pela lua de raspao e
-terminando com a terra dando uma volta mostrando ela do lado escruo e
-terminando cetnralizada e grande do lado claro? (algo assim, vc dirige
-melhor do que eu [...] seja cuidadoso para ir rápido mas tendo tempo para
-contemplar a psg rápida pela lua e terminar desacelerando na visao final
-da terra.”* — implementada em 19/08. E ele refinou o
-pouso: *“como que a gente poderia terminar com a terra orientada no
-sentido dos polos e com o dia acontecendo na visao mais comum com as
-americas aparecendo?”* — resolvido no mesmo dia: a coda troca o relógio
-do céu para as 16:00 UTC (meio-dia a ~60°O — as Américas no dia, Brasil
-no centro) no único trecho em que nada que depende dele está em quadro, e
-o roll final alinha o norte da Terra com o alto da tela. Sai quando ele
-assistir e aprovar o filme novo com a coda.
+A ideia solta dele segue na mesa como decisão de escopo: *“como um
+fly-by ao redor dos planetas no final”*. Na rota de casa Júpiter passa
+a 2,3 UA — um pontinho; fly-by de verdade exige desviar a rota da coda.
+A alternativa oferecida é cruzar o plano da galáxia no mergulho (a
+poeira passa de teto a chão). Um dos dois, ou nenhum: escolha dele.
 
-Em 19/08, DEPOIS do corte novo e da coda, ele ainda vê o mesmo problema
-de dinâmica — agora no filme que já foi “repensado”. Palavras dele:
-*“percebi que ainda tem esse periodos longos atrapalhando a dinamica.
-acho que os movimentos de camera tambem podeira ser mais
-cinematográficos e interessantes, como um fly-by ao redor dos planetas
-no final, num unico take passar pela lua mirando a terra ao fundo,
-(ideias soltas de exmplo, nao necessarimanete isso, vc tem direito de
-pensar melhro do que eu e achar exemplos mais incrivies ainda)”*. O item
-volta a ser o que ELE vê: períodos longos da câmera se movimentando sem
-ação, e uma câmera que ainda não emociona.
-
-Depois do corte de 3 min 15 s ele assistiu em play contínuo e ainda
-reprova a dinâmica — agora com falha no gesto final. Palavras dele:
-*“nao está funcionando muito bem a transicao, quando é dado o play
-continuo entre os atos, ele passa pela lua e nao termina certo com a
-passagem para terra e a rotacao até focar nas americas. precisa revisar
-isso, ainda tem seuqencia muitos longas tb e microtravamentos entre
-atos. acho que vale uma revisao a proicura desses erros.”* O que ele VÊ:
-a Lua passa e a Terra não recebe o take (não roda até as Américas); ainda
-há sequências longas; e o filme engasga na junta dos atos.
-
-Ele conferiu o conserto e ainda falha no play. Palavras dele: *“nao
-funcionou... continua dando outro problema agora, quando vc avanca
-direto para o ato da lua funciona, se vem pelo playback normal , d”*.
-O que ele VÊ: pular até a Lua mostra o take certo; deixar o filme
-chegar sozinho, não.
-
-A Lua no play contínuo já entra no quadro; agora ele pede o GESTO da
-passagem. Palavras dele: *“quando estivesse passando poderia dar uma
-leve desacelerada e virar rapidamente a camera para ela e desvirar para
-continuar em direção a terra.”* O que ele VÊ: a Lua passa num piscar;
-queria um instante olhando para ela, depois de volta à Terra.
-
-No mesmo dia ele gostou das legendas novas (ciência no lugar do clichê)
-e avisou: *“gostei das suas sugestoes, mas talvez teria que adaptar um
-pouco design/layout UI para acomodar”*.
+E um aviso dele sobre as legendas novas (que ele gostou): *“gostei das
+suas sugestoes, mas talvez teria que adaptar um pouco design/layout UI
+para acomodar”* — conferir na mesma exibição.
 
 ---
 
