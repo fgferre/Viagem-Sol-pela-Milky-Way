@@ -7,15 +7,18 @@
 // `sigmaPx: SIGMA_PX` que os testes pinam POR TEXTO lá.
 // ============================================================
 import * as THREE from 'three';
-import { Galaxy, buildGalaxy } from '../world/galaxy';
-import type { GalaxyBuffers } from '../world/geradorDaGalaxia';
+import { Galaxy } from '../world/galaxy';
+import { assarCarga } from '../world/cadeiaDaCarga';
 import type {
-  PedidoDaGalaxia,
-  RespostaDaGalaxia,
-} from '../world/galaxiaEmWorker';
-import { DUST_MAP_SIZE, DUST_MAP_HALF_EXTENT } from '../cartography/dustMap';
-import type { bakeDustMap } from '../cartography/dustMap';
-import type { bakeGalacticStructureMap } from '../cartography/structureMap';
+  CargaAssada,
+  EtapaDaCadeia,
+} from '../world/cadeiaDaCarga';
+import type {
+  PedidoDaCarga,
+  RespostaDaCarga,
+} from '../world/cargaEmWorker';
+import { DUST_MAP_SIZE } from '../cartography/dustMap';
+import type { GalacticAssets } from '../cartography/galacticAssets';
 import { TerraResolvida } from '../world/corpos/terra';
 import { LuaResolvida } from '../world/corpos/lua';
 import { ROCHOSOS, RochosoResolvido } from '../world/corpos/rochoso';
@@ -43,38 +46,54 @@ const corpoNoPalco = <T>(corpo: T): CorpoNoPalco<T> => ({
 const SEMENTE_DA_GALAXIA = 20260730;
 
 /**
- * A POPULAÇÃO FORA DA THREAD (Ajustes B do NORTE): buildGalaxy roda num
- * Worker para os ~3,3 s de CPU da população não congelarem o
- * carregamento — o "conserto DEFINITIVO" que o stage() do director
- * prometia. O contrato de igualdade é bit a bit: o worker executa o
- * MESMO buildGalaxy, com a MESMA semente e o `search` da página (os
- * knobs `?tune`/`warpamp` valem lá dentro — ver galaxiaEmWorker), e o
- * resultado volta por TRANSFERÊNCIA (os 122,7 MiB do cinema mudam de
- * dono, não de lugar).
+ * A CARGA PESADA FORA DA THREAD (Ajustes B do NORTE): a cadeia inteira
+ * — bake da poeira, campo acoplado e população — roda num Worker, para
+ * os ~1,6 s dos dois mapas mais os ~3,3 s da população não congelarem o
+ * carregamento. É o "conserto DEFINITIVO" que o stage() do director
+ * prometia, agora pelas três etapas e não só pela última.
  *
- * Os quatro campos de estrutura vão por CÓPIA (4 × 1 MiB): é o que
- * mantém o fallback inline sempre possível — worker que não sobe
- * (file://, CSP de embed) ou que morre no meio degrada para a conta na
- * thread, honesta e mais lenta, com os arrays intactos.
+ * O contrato de igualdade é bit a bit POR CONSTRUÇÃO: os dois lados
+ * chamam a MESMA `assarCarga`, com a mesma entrada e o `search` da
+ * página (os knobs `?tune`/`warpamp` valem lá dentro — ver
+ * cargaEmWorker). O resultado volta por TRANSFERÊNCIA (os 122,7 MiB do
+ * cinema e os dois RGBA de 1 MiB mudam de dono, não de lugar).
+ *
+ * Os catálogos vão por CÓPIA (~9,7 MiB de Float32): é o que mantém o
+ * fallback inline sempre possível — worker que não sobe (file://, CSP
+ * de embed) ou que morre no meio degrada para a conta na thread,
+ * honesta e mais lenta — e o que deixa o palco (nuvens observadas,
+ * forjas, nuvens-semente) com os MESMOS arrays intactos depois.
  */
-function construirBuffersDaGalaxia(
-  structure: PedidoDaGalaxia['structure'],
-  populationScale: number
-): Promise<GalaxyBuffers> {
+function assarCargaEmWorker(
+  pedido: PedidoDaCarga,
+  aoAvancar: (etapa: EtapaDaCadeia) => void
+): Promise<CargaAssada> {
   return new Promise((resolve) => {
+    // sem worker a thread congela como sempre congelou; o fôlego do
+    // `setTimeout(0)` entre etapas é o mesmo que o `stage()` dá, para o
+    // rótulo pintar antes do bloqueio seguinte
     const inline = () =>
-      resolve(buildGalaxy(SEMENTE_DA_GALAXIA, structure, populationScale));
+      resolve(
+        assarCarga(pedido, async (etapa) => {
+          aoAvancar(etapa);
+          await new Promise<void>((r) => setTimeout(r, 0));
+        })
+      );
     let worker: Worker;
     try {
       worker = new Worker(
-        new URL('../world/galaxiaEmWorker.ts', import.meta.url),
+        new URL('../world/cargaEmWorker.ts', import.meta.url),
         { type: 'module' }
       );
     } catch {
       inline();
       return;
     }
-    worker.onmessage = (e: MessageEvent<RespostaDaGalaxia>) => {
+    worker.onmessage = (e: MessageEvent<RespostaDaCarga>) => {
+      if ('etapa' in e.data) {
+        aoAvancar(e.data.etapa);
+        return;
+      }
       worker.terminate();
       resolve(e.data);
     };
@@ -82,38 +101,77 @@ function construirBuffersDaGalaxia(
       worker.terminate();
       inline();
     };
-    worker.postMessage({
-      seed: SEMENTE_DA_GALAXIA,
-      structure,
-      populationScale,
-      search: window.location.search,
-    } satisfies PedidoDaGalaxia);
+    worker.postMessage(pedido);
   });
 }
 
 /**
- * A GALÁXIA do init: buildGalaxy com o campo de estrutura assado e a
- * população por tier (cinema semeia 4,02 M, performance 1,1 M —
- * decidido no build; a troca de tier em runtime é a fila C do NORTE, e
- * é para ela que o worker acima abre caminho).
+ * Os dois mapas cartográficos viram textura AQUI, e não dentro dos
+ * bakes: os bakes são CPU pura para poderem rodar no worker, e quem tem
+ * GPU é a thread. Os dois copiavam o MESMO bloco de sete linhas —
+ * mipmaps inclusive, sem os quais a minificação do mapa (vistas
+ * afastadas e a LUT da faixa) cintila; o custo é 1/3 de memória extra,
+ * uma vez.
  */
-export async function montarGalaxia(
-  structureBake: ReturnType<typeof bakeGalacticStructureMap>,
-  dustBake: ReturnType<typeof bakeDustMap>,
-  tier: QualityLevel
-): Promise<Galaxy> {
-  const buffers = await construirBuffersDaGalaxia(
-    {
-      gasResponse: structureBake.gasResponse,
-      gasSupport: structureBake.gasSupport,
-      youngResponse: structureBake.youngResponse,
-      youngSupport: structureBake.youngSupport,
-      size: DUST_MAP_SIZE,
-      halfExtentPc: DUST_MAP_HALF_EXTENT,
-    },
-    tier === 'performance' ? 0.28 : 1
+function texturaDoMapa(pixels: Uint8Array): THREE.DataTexture {
+  const textura = new THREE.DataTexture(
+    pixels,
+    DUST_MAP_SIZE,
+    DUST_MAP_SIZE,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType
   );
-  return new Galaxy(buffers, dustBake.texture, structureBake.texture);
+  textura.minFilter = THREE.LinearMipmapLinearFilter;
+  textura.magFilter = THREE.LinearFilter;
+  textura.generateMipmaps = true;
+  textura.wrapS = THREE.ClampToEdgeWrapping;
+  textura.wrapT = THREE.ClampToEdgeWrapping;
+  textura.needsUpdate = true;
+  return textura;
+}
+
+/** o que a carga entrega ao init: a galáxia, os dois mapas e as coberturas */
+export interface CargaDoMundo {
+  galaxy: Galaxy;
+  dustMapTexture: THREE.DataTexture;
+  structureMapTexture: THREE.DataTexture;
+  coberturaDaPoeira: number;
+  coberturaDeGas: number;
+  coberturaDeJovens: number;
+}
+
+/**
+ * A CARGA do init: os dois mapas assados e a população por tier (cinema
+ * semeia 4,02 M, performance 1,1 M — decidido no build; a troca de tier
+ * em runtime é a fila C do NORTE, e é para ela que o worker abre
+ * caminho). `catalogos` já chega decidido pelo `?cart` da página: o
+ * knob que decide alocação lê-se ANTES de quem aloca.
+ */
+export async function montarCarga(opts: {
+  catalogos: GalacticAssets | null;
+  tier: QualityLevel;
+  aoAvancar: (etapa: EtapaDaCadeia) => void;
+}): Promise<CargaDoMundo> {
+  const { catalogos, tier, aoAvancar } = opts;
+  const carga = await assarCargaEmWorker(
+    {
+      seed: SEMENTE_DA_GALAXIA,
+      catalogos,
+      populationScale: tier === 'performance' ? 0.28 : 1,
+      search: window.location.search,
+    },
+    aoAvancar
+  );
+  const dustMapTexture = texturaDoMapa(carga.poeira);
+  const structureMapTexture = texturaDoMapa(carga.estrutura);
+  return {
+    galaxy: new Galaxy(carga, dustMapTexture, structureMapTexture),
+    dustMapTexture,
+    structureMapTexture,
+    coberturaDaPoeira: carga.coberturaDaPoeira,
+    coberturaDeGas: carga.coberturaDeGas,
+    coberturaDeJovens: carga.coberturaDeJovens,
+  };
 }
 
 /**

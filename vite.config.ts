@@ -4,10 +4,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   plugins: [react()],
-  // O worker da galáxia (galaxiaEmWorker) usa import DINÂMICO — é o que
-  // deixa o `window` falso valer antes da avaliação do gerador (os
-  // knobs ?tune da página). Import dinâmico dentro de worker exige
-  // bundle ES; o alvo da casa (era WebGL2, es2022) suporta module
+  // O worker da carga (cargaEmWorker) usa import DINÂMICO — é o que
+  // deixa o `window` falso valer antes da avaliação da cadeia (os
+  // knobs ?tune/?warpamp da página). Import dinâmico dentro de worker
+  // exige bundle ES; o alvo da casa (era WebGL2, es2022) suporta module
   // worker em todos os navegadores que abrem o app.
   worker: { format: 'es' },
   server: {

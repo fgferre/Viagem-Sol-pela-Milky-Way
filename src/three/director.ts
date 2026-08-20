@@ -51,8 +51,6 @@ import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 // do Sol (director/solNoQuadro.ts), com a câmera e o instrumento que
 // o director lhe entrega no tick.
 import { loadGalacticAssets } from './cartography/galacticAssets';
-import { bakeDustMap } from './cartography/dustMap';
-import { bakeGalacticStructureMap } from './cartography/structureMap';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { NuvensSemente } from './director/nuvensSemente';
 import { VeuDoAtlas } from './director/veu';
@@ -64,9 +62,9 @@ import { SolNoQuadro } from './director/solNoQuadro';
 import { Escada, larguraDeCss } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
+  montarCarga,
   montarCenaDeAquecimento,
   montarCorposDoPalco,
-  montarGalaxia,
 } from './director/carregamento';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
@@ -604,18 +602,32 @@ export class Director {
   }
 
   /**
-   * Rótulo de etapa + fôlego para o browser PINTAR o rótulo. O init tem
-   * ~5 s de CPU síncrona (bakes 1,6 s + buildGalaxy 3,27 s) e o loader
-   * congelava junto — parecia travado exatamente enquanto mais trabalhava.
-   * Barra por byte não conserta (a rede é a fatia pequena; ela pararia em
-   * 100%). setTimeout(0) e não rAF: em aba de fundo o rAF é estrangulado
-   * e o init nunca terminaria. O conserto DEFINITIVO é o Worker (fila
-   * 2026-08-05, item 2); isto é o que dá para honestamente prometer sem ele:
-   * o espectador vê O QUE está acontecendo, entre um congelamento e outro.
+   * SÓ O RÓTULO, sem fôlego: é o que a carga em worker precisa. Os ~5 s
+   * de CPU pesada (os dois bakes de mapa e a população) rodam fora da
+   * thread desde os Ajustes B, e é o próprio worker quem avisa a etapa
+   * que está começando — a thread está livre para pintar sozinha, e um
+   * `setTimeout(0)` no meio do aviso só atrasaria o rótulo.
    */
-  private async stage(id: LoadStageId) {
+  private rotular(id: LoadStageId) {
     const stage = LOAD_STAGES.find((s) => s.id === id);
     if (stage) this.events.onStage(stage);
+  }
+
+  /**
+   * Rótulo de etapa + fôlego para o browser PINTAR o rótulo, para as
+   * etapas que AINDA congelam a thread. O init tinha ~5 s de CPU
+   * síncrona (bakes 1,6 s + buildGalaxy 3,27 s) e o loader congelava
+   * junto — parecia travado exatamente enquanto mais trabalhava. Barra
+   * por byte não conserta (a rede é a fatia pequena; ela pararia em
+   * 100%). setTimeout(0) e não rAF: em aba de fundo o rAF é estrangulado
+   * e o init nunca terminaria. O conserto DEFINITIVO é o Worker, e ele
+   * já cobre `dust`, `structure` e `galaxy` (`montarCarga`); o que
+   * sobra bloqueando é `layers` (bake por GPU) e o prime do Sol — fila
+   * do C. Para essas, isto continua sendo o que dá para honestamente
+   * prometer: o espectador vê O QUE está acontecendo.
+   */
+  private async stage(id: LoadStageId) {
+    this.rotular(id);
     await new Promise<void>((r) => setTimeout(r, 0));
   }
 
@@ -678,31 +690,28 @@ export class Director {
     // não era disposta por ninguém. Achado de auditoria externa.
     await this.stage('dust');
     if (this.disposed) return;
-    const dustBake = bakeDustMap(cartOn && galactic ? galactic.dustDensity : null);
-    this.dustMapTexture = dustBake.texture;
-    await this.stage('structure');
-    if (this.disposed) return;
-    const structureBake = bakeGalacticStructureMap(
-      cartOn ? galactic : null,
-      dustBake.density,
-      dustBake.coverage,
-      dustBake.arms
-    );
-    this.structureMapTexture = structureBake.texture;
-    // sem contagem no rótulo: cinema semeia 4,02 M, performance 1,1 M — um
-    // número fixo mentiria em metade dos aparelhos
-    await this.stage('galaxy');
-    if (this.disposed) return;
-    // a população nasce no WORKER (montarGalaxia, carregamento.ts) — a
-    // thread fica livre e o rótulo da etapa anima em vez de congelar.
-    // Dispose durante o await é o caso dos stage(): o teardown já
-    // correu e ninguém mais descartaria ESTA Galaxy — descarta e sai.
-    const galaxia = await montarGalaxia(structureBake, dustBake, this.engine.quality);
+    // AS TRÊS ETAPAS PESADAS NASCEM NO WORKER (montarCarga,
+    // carregamento.ts): poeira, campo acoplado e população saem da
+    // thread juntos, e os rótulos `structure`/`galaxy` andam pelo aviso
+    // do próprio worker em vez de congelar. Sem contagem no rótulo da
+    // galáxia: cinema semeia 4,02 M, performance 1,1 M — um número fixo
+    // mentiria em metade dos aparelhos. Dispose durante o await é o caso
+    // dos stage(): o teardown já correu e ninguém mais descartaria estes
+    // objetos — descarta os três e sai.
+    const carga = await montarCarga({
+      catalogos: cartOn ? galactic : null,
+      tier: this.engine.quality,
+      aoAvancar: (etapa) => this.rotular(etapa),
+    });
     if (this.disposed) {
-      galaxia.dispose();
+      carga.galaxy.dispose();
+      carga.dustMapTexture.dispose();
+      carga.structureMapTexture.dispose();
       return;
     }
-    this.galaxy = galaxia;
+    this.dustMapTexture = carga.dustMapTexture;
+    this.structureMapTexture = carga.structureMapTexture;
+    this.galaxy = carga.galaxy;
     // O QUE JÁ ESTAVA DESLIGADO chega junto. A galáxia semeia as flags
     // dela da URL, como sempre, e isto só cobre a corrida do painel
     // aberto DURANTE o carregamento (`?ajustes=1`): sem esta linha, o
@@ -717,7 +726,7 @@ export class Director {
     if (this.disposed) return;
     this.galaxy.bakeDiscLayers(this.engine.renderer);
     const tauTex = this.galaxy.tauMapTexture;
-    this.nebula.setDustMap(dustBake.texture, cartOn ? 1 : 0);
+    this.nebula.setDustMap(carga.dustMapTexture, cartOn ? 1 : 0);
     if (galactic && cartMode !== 'off') {
       this.observedClouds = new ObservedClouds(
         galactic.molecularClouds,
@@ -738,16 +747,14 @@ export class Director {
       this.engine.scene.add(this.observedClouds.mesh);
       this.engine.scene.add(this.starForges.points);
       this.nuvensSemente.construir(galactic);
-      if (dustBake) {
-        console.info(
-          `[cartografia] APOGEE ${(dustBake.coverageFraction * 100).toFixed(1)}% ` +
-            'do disco; campo acoplado com ' +
-            `${(structureBake.gasCoverageFraction * 100).toFixed(1)}% ` +
-            'de suporte material e ' +
-            `${(structureBake.youngCoverageFraction * 100).toFixed(1)}% ` +
-            'de suporte em traçadores jovens.'
-        );
-      }
+      console.info(
+        `[cartografia] APOGEE ${(carga.coberturaDaPoeira * 100).toFixed(1)}% ` +
+          'do disco; campo acoplado com ' +
+          `${(carga.coberturaDeGas * 100).toFixed(1)}% ` +
+          'de suporte material e ' +
+          `${(carga.coberturaDeJovens * 100).toFixed(1)}% ` +
+          'de suporte em traçadores jovens.'
+      );
     }
     if (this.disposed) return;
 

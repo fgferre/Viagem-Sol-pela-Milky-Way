@@ -10,6 +10,10 @@
 // às incertezas. Nas lacunas, o esqueleto espiral ajustado aos masers
 // funciona como proxy dos vales do potencial não axisimétrico; ruído
 // determinístico atua apenas na escala de complexos não resolvidos.
+//
+// Como o bake da poeira, este é CPU pura e devolve o RGBA cru — o
+// `THREE` que sobra aqui é só `MathUtils`, aritmética sem GPU — e por
+// isso roda dentro do worker da carga (`cadeiaDaCarga`).
 // ============================================================
 import * as THREE from 'three';
 import type { GalacticAssets, CatalogueTable } from './galacticAssets';
@@ -20,7 +24,8 @@ import {
 import { glMajorArms, glLocalArm } from './galacticModel';
 
 export interface StructureBake {
-  texture: THREE.DataTexture;
+  /** RGBA 512² pronto para virar DataTexture na thread que tem GPU. */
+  pixels: Uint8Array;
   gasResponse: Float32Array;
   youngResponse: Float32Array;
   gasSupport: Float32Array;
@@ -515,22 +520,8 @@ export function bakeGalacticStructureMap(
     );
   }
 
-  const texture = new THREE.DataTexture(
-    pixels,
-    DUST_MAP_SIZE,
-    DUST_MAP_SIZE,
-    THREE.RGBAFormat,
-    THREE.UnsignedByteType
-  );
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = true;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
   return {
-    texture,
+    pixels,
     gasResponse: gas,
     youngResponse: young,
     gasSupport,

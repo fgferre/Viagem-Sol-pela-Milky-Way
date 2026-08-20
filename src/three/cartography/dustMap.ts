@@ -10,8 +10,11 @@
 // a largura dos braços com folga. São canais `inferred`; R/G são
 // `derived` do APOGEE. O colapso vertical usa peso exp(-|z|/220)
 // e o perfil vertical volta analiticamente no shader.
+//
+// O bake é CPU PURA e devolve o RGBA cru: quem o veste de textura é
+// quem tem GPU (`texturaDoMapa`, director/carregamento.ts). É o que
+// deixa este arquivo rodar dentro do worker da carga.
 // ============================================================
-import * as THREE from 'three';
 import type { CatalogueTable } from './galacticAssets';
 import { glMajorArms, glLocalArm, warpHeightPc } from './galacticModel';
 
@@ -24,7 +27,8 @@ const VERTICAL_SCALE = 220;
 const CONTRAST_GAIN = 0.55;
 
 interface DustBake {
-  texture: THREE.DataTexture;
+  /** RGBA 512² pronto para virar DataTexture na thread que tem GPU. */
+  pixels: Uint8Array;
   /** contraste log-local de poeira (0..1, 0,5 = neutro). */
   density: Float32Array;
   /** fração de texels do disco com cobertura > 0 (diagnóstico). */
@@ -201,24 +205,8 @@ export function bakeDustMap(table: CatalogueTable | null): DustBake {
     }
   }
 
-  const texture = new THREE.DataTexture(
-    pixels,
-    size,
-    size,
-    THREE.RGBAFormat,
-    THREE.UnsignedByteType
-  );
-  // mipmaps: sem eles a minificação do mapa (vistas afastadas e a
-  // LUT da faixa) cintila; o custo é 1/3 de memória extra, uma vez
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = true;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
   return {
-    texture,
+    pixels,
     density,
     coverageFraction: discTexels > 0 ? covered / discTexels : 0,
     coverage,
