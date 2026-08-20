@@ -314,8 +314,15 @@ describe('a auditoria editorial do filme', () => {
     expect(journey.captionAt(122.41).key.caption).toBe('SAGITTARIUS A✱');
   });
 
-  it('o roteiro final tem as 23 janelas editoriais do corte', () => {
-    expect(auditoria.captions).toHaveLength(23);
+  it('o roteiro final tem as 24 janelas editoriais do corte', () => {
+    expect(auditoria.captions).toHaveLength(24);
+  });
+
+  it('o berçário é nomeado onde as estrelas reais passam', () => {
+    const bercario = auditoria.captions.find((c) => c.text === 'O BERÇÁRIO');
+    expect(bercario).toBeDefined();
+    expect(bercario!.t0).toBeGreaterThanOrEqual(94);
+    expect(bercario!.t1).toBeLessThanOrEqual(104);
   });
 
   it('o play contínuo chega na Lua olhando para casa — pular o tempo não é o único caminho', () => {
@@ -409,6 +416,30 @@ describe('a auditoria editorial do filme', () => {
     expect(pior).toBeLessThan(25);
   });
 
+  it('o play contínuo segue o roteiro do começo ao fim — trecho sem juiz não esconde defeito', () => {
+    const rig = new JourneyRig();
+    const cam = new THREE.PerspectiveCamera();
+    const dt = 1 / 60;
+    const dir = new THREE.Vector3();
+    const want = new THREE.Vector3();
+    const j = new Journey();
+    rig.reset();
+    rig.apply(cam, 0, dt);
+    let pior = 0;
+    for (let t = dt; t <= j.duration; t += dt) {
+      rig.apply(cam, t, dt);
+      const s = j.at(t);
+      want.copy(s.look).sub(s.pos);
+      if (want.lengthSq() < 1e-30) continue;
+      want.normalize();
+      cam.getWorldDirection(dir);
+      pior = Math.max(pior, THREE.MathUtils.radToDeg(dir.angleTo(want)));
+    }
+    // Sirius pede ~148° de virada; o amortecedor de 0,4 s cola a ~32°.
+    // 90° era o borrão. 50° deixa folga e ainda grita chicote de ponto.
+    expect(pior).toBeLessThan(50);
+  });
+
   it('nenhuma junta de plano salta posição, mira, lente ou roll', () => {
     // o microtravamento que o dono viu no play contínuo: posição
     // copiada sem amortecer (cameraRig.apply). 2° a 120 pc eram 4 pc.
@@ -421,9 +452,11 @@ describe('a auditoria editorial do filme', () => {
         a.look.clone().sub(a.pos).normalize().angleTo(b.look.clone().sub(b.pos).normalize())
       );
       expect(rel, `pos t=${s.t0}`).toBeLessThan(1e-5);
-      // o corte da coda (deriva→mergulho) vira ~5° para casa: o rig
-      // amortece o ângulo. 112° seria o chicote que o play não segue.
-      expect(dLook, `look t=${s.t0}`).toBeLessThan(6);
+      // a folga de 6° é SÓ o corte da coda (deriva→mergulho, ~4,8°).
+      // Nas outras juntas o olhar cola a 0,6° — 6° em todas era o
+      // juiz cedendo para um conserto passar.
+      const coda = Math.abs(s.t0 - (juncao.duration - 17)) < 1e-9;
+      expect(dLook, `look t=${s.t0}`).toBeLessThan(coda ? 6 : 0.6);
       expect(Math.abs(b.fov - a.fov), `fov t=${s.t0}`).toBeLessThan(0.6);
       expect(Math.abs(b.roll - a.roll), `roll t=${s.t0}`).toBeLessThan(0.02);
     }

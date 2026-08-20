@@ -59,12 +59,11 @@
 // especular inventado seria exatamente o tipo de "melhoria" que a
 // doutrina de honestidade proíbe.
 //
-// SEM EFEMÉRIDE NÃO HÁ LUA: o retrato congelado (`RETRATO_2026`) tem 9
-// planetas e nenhum satélite, então o caminho "sem rede" da Terra
-// (congelar no retrato) não existe para cá — a Lua resolvida só nasce
-// com a fonte viva, e o badge da máquina do tempo já conta essa verdade
-// ("sem efeméride: congelado no retrato"). Honesto: nenhuma posição
-// inventada, nenhum corpo em lugar chutado.
+// SEM EFEMÉRIDE NÃO HÁ LUA — salvo o PINO DA CODA. O retrato congelado
+// não tem satélites; no Atlas, sem rede, a Lua não nasce (o badge já
+// conta). No FILME, `centroPinadoPc` é `LUA_PC`: a mesma efeméride das
+// 16:00, pré-computada. Sem o pino a câmera raspa um vazio e a Lua
+// desenhada (se chegasse tarde) ficaria 59 mil km ao lado.
 //
 // SEM PONTO FOTOMÉTRICO, DECLARADO: `IDS_FOTOMETRIA` não tem a Lua —
 // não há aCede a escrever nem crossfade a fazer; o nascimento do mesh
@@ -185,8 +184,12 @@ void main() {
  *  (sem PSF: a Lua não tem ponto a ceder; ver o cabeçalho). */
 export interface QuadroDaLua {
   jdTdb: number;
-  /** a efeméride viva, ou null — e null aqui significa SEM Lua. */
+  /** a efeméride viva, ou null — e null aqui significa SEM Lua, salvo
+   *  `centroPinadoPc` (o vetor da coda do filme). */
   fonte: FonteDeEfemerides | null;
+  /** posição heliocêntrica pinada (pc). Só vale sem fonte: é a coda
+   *  usando `LUA_PC`, não um chute. */
+  centroPinadoPc?: THREE.Vector3;
   camPosPc: THREE.Vector3;
   screenHPx: number;
   fovDeg: number;
@@ -313,6 +316,10 @@ export class LuaResolvida {
             this.sombra
           );
         }
+      } else if (q.centroPinadoPc) {
+        this.centro.copy(q.centroPinadoPc);
+        this.rUA = this.centro.length() / AU_PARA_PC;
+        this.sombra.ativo = false;
       } else {
         this.rUA = Number.NaN;
         this.centro.set(Number.NaN, Number.NaN, Number.NaN);

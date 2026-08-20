@@ -216,6 +216,13 @@ function lookEvento(
     return out.copy(p).addScaledVector(dir, 1);
   };
 }
+/** vira cedo de `de` para `para` (direção) e segura — o panThenHold de
+ *  PONTOS chicoteia quando o alvo passa perto da câmera (Rigel, 47°). */
+function lookPan(
+  posDe: PosFn, de: THREE.Vector3, para: THREE.Vector3, fim: number
+): PosFn {
+  return lookEvento(posDe, de, para, para, fim, 1);
+}
 
 interface ShotCaption {
   /** fração do shot em que a legenda ENTRA */
@@ -420,6 +427,12 @@ const BET_ORBIT_OUT = new THREE.Vector3()
   .addScaledVector(EZ, 3.5);
 // Rigel de raspão (fly-under: passamos 6 pc abaixo dela, sem parar)
 const RIGEL_PASS = RIGEL.clone().add(new THREE.Vector3(-4, 14, -9));
+const RIGEL_PATH = bezier(
+  BET_ORBIT_OUT,
+  new THREE.Vector3(18, 190, 6),
+  RIGEL.clone().add(new THREE.Vector3(-10, -6, -14)),
+  RIGEL_PASS
+);
 const LOOKBACK_2 = new THREE.Vector3(52, 296, -52); // a parada do vazio
 
 // Ato III — Antares como portão: quase-parada diante da brasa vermelha
@@ -885,13 +898,8 @@ const SHOTS: Shot[] = [
     // Rigel de raspão, DE FRENTE: o olhar vira rápido de Betelgeuse
     // para ela e a silhueta azul cresce até passar por cima
     dur: 7,
-    pos: bezier(
-      BET_ORBIT_OUT,
-      new THREE.Vector3(18, 190, 6),
-      RIGEL.clone().add(new THREE.Vector3(-10, -6, -14)),
-      RIGEL_PASS
-    ),
-    look: panThenHold(BETELGEUSE, RIGEL, 0.35),
+    pos: RIGEL_PATH,
+    look: lookPan(RIGEL_PATH, BETELGEUSE, RIGEL, 0.45),
     fov0: 38, fov1: 60,
     ease: glide,
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
@@ -967,11 +975,25 @@ const SHOTS: Shot[] = [
     roll: (k) => 0.10 * Math.sin(Math.PI * k),
     dest: 'SGR',
     target: ['Shaula', 'Dschubba', 'Lesath', 'Paikauhale'],
-    captions: [{ at: 0.28, text: 'O MERGULHO', sub: 'braço de Sagitário: a poeira extingue e avermelha as estrelas', dur: 6.8 }],
+    captions: [
+      {
+        at: 0.06,
+        text: 'O MERGULHO',
+        sub: 'braço de Sagitário: a poeira extingue e avermelha as estrelas',
+        dur: 4.2,
+      },
+      {
+        at: 0.50,
+        text: 'O BERÇÁRIO',
+        sub: 'Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho',
+        dur: 4.8,
+      },
+    ],
   },
   {
     // ONDA 2 — Scutum-Centaurus: a segunda crista é um BEAT, não um
-    // corredor mudo. O berçário azul varre perto; o dourado enche.
+    // corredor mudo. O berçário com NOME (estrelas reais) ficou na
+    // Onda 1, onde elas passam; aqui é o último braço antes do centro.
     dur: 7,
     pos: bezier(DIVE_2, gal(4600, 16, -30), DIVE_3, DIVE_4),
     look: still(GAL.GC_POS),
@@ -983,8 +1005,8 @@ const SHOTS: Shot[] = [
     captions: [
       {
         at: 0.18,
-        text: 'O BERÇÁRIO',
-        sub: 'Scutum-Centaurus — nuvens que comprimem e acendem estrelas azuis',
+        text: 'O ÚLTIMO BRAÇO',
+        sub: 'Scutum-Centaurus — o gás comprime e acende estrelas azuis',
         dur: 5,
       },
     ],

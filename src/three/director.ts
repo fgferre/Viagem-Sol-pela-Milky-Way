@@ -78,7 +78,7 @@ import {
 } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
-import { JD_DO_FILME_TDB, REVEAL_T } from './cinematic/journey';
+import { JD_DO_FILME_TDB, LUA_PC, REVEAL_T, TERRA_PC } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
@@ -1644,6 +1644,7 @@ export class Director {
       const t = this.terra.atualizar({
         jdTdb: this.maquinaDoTempo.jdVivo,
         fonte: this.maquinaDoTempo.efemeride,
+        centroPinadoPc: this.phase === 'journey' ? TERRA_PC : undefined,
         camPosPc: cam.position,
         screenHPx: hPx,
         fovDeg: cam.fov,
@@ -1685,6 +1686,7 @@ export class Director {
       const l = this.lua.atualizar({
         jdTdb: this.maquinaDoTempo.jdVivo,
         fonte: this.maquinaDoTempo.efemeride,
+        centroPinadoPc: this.phase === 'journey' ? LUA_PC : undefined,
         camPosPc: cam.position,
         screenHPx: hPx,
         fovDeg: cam.fov,

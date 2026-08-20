@@ -347,6 +347,20 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     lua.dispose();
   });
 
+  it('o pino da coda coloca a Lua no lugar medido, sem inventar', async () => {
+    const { lua } = luaDeTeste();
+    const pin = centroPc(JD);
+    const perto = pin.clone();
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto, { atlasQuente: true }));
+    await flush();
+    lua.atualizar(quadro(perto));
+    const e = lua.atualizar(quadro(perto, { fonte: null, centroPinadoPc: pin }));
+    expect(e.centroPc.distanceTo(pin)).toBe(0);
+    expect(Number.isFinite(e.rUA)).toBe(true);
+    lua.dispose();
+  });
+
   it('SEM efeméride não há Lua: centro NaN, nunca em quadro, nada inventado', async () => {
     const { lua } = luaDeTeste();
     const perto = centroPc(JD);

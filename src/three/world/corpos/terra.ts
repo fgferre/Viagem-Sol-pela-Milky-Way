@@ -230,6 +230,9 @@ export interface QuadroDaTerra {
   jdTdb: number;
   /** a efeméride viva, ou null (retrato congelado — o "sem rede"). */
   fonte: FonteDeEfemerides | null;
+  /** no filme, sem fonte: Terra das 16:00 (`TERRA_PC`), não o retrato
+   *  da meia-noite — senão o pouso mira um globo a 1,7 milhão de km. */
+  centroPinadoPc?: THREE.Vector3;
   camPosPc: THREE.Vector3;
   screenHPx: number;
   fovDeg: number;
@@ -390,26 +393,32 @@ export class TerraResolvida {
       saltoDeData = true;
       this.jdEscrito = q.jdTdb;
       this.fonteEscrita = q.fonte;
-      const p = posicaoDaTerraUA(q.jdTdb, q.fonte);
-      this.rUA = Math.hypot(p.x, p.y, p.z);
-      // a MESMA ponte de frame da camada de planetas (D1): uma rotação e
-      // uma multiplicação — nenhum segundo caminho de comprimento.
-      const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
-      this.centro.set(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
-      // O ECLIPSE (F2c/D3): o par da TABELA (earth ← moon), resolvido no
-      // MESMO relógio do quadro e na MESMA base da efeméride. Sem fonte
-      // viva não há Lua — e não há eclipse: o fator fica neutro.
-      const eclipsadorId = PARES_DE_ECLIPSE.earth;
-      if (q.fonte && eclipsadorId) {
-        const pEcl = q.fonte.posicaoHeliocentrica(eclipsadorId, q.jdTdb);
-        resolveSombraNaCena(
-          'earth',
-          [p.x, p.y, p.z],
-          [pEcl.x, pEcl.y, pEcl.z],
-          this.sombra
-        );
-      } else {
+      if (!q.fonte && q.centroPinadoPc) {
+        this.centro.copy(q.centroPinadoPc);
+        this.rUA = this.centro.length() / AU_PARA_PC;
         this.sombra.ativo = false;
+      } else {
+        const p = posicaoDaTerraUA(q.jdTdb, q.fonte);
+        this.rUA = Math.hypot(p.x, p.y, p.z);
+        // a MESMA ponte de frame da camada de planetas (D1): uma rotação e
+        // uma multiplicação — nenhum segundo caminho de comprimento.
+        const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+        this.centro.set(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+        // O ECLIPSE (F2c/D3): o par da TABELA (earth ← moon), resolvido no
+        // MESMO relógio do quadro e na MESMA base da efeméride. Sem fonte
+        // viva não há Lua — e não há eclipse: o fator fica neutro.
+        const eclipsadorId = PARES_DE_ECLIPSE.earth;
+        if (q.fonte && eclipsadorId) {
+          const pEcl = q.fonte.posicaoHeliocentrica(eclipsadorId, q.jdTdb);
+          resolveSombraNaCena(
+            'earth',
+            [p.x, p.y, p.z],
+            [pEcl.x, pEcl.y, pEcl.z],
+            this.sombra
+          );
+        } else {
+          this.sombra.ativo = false;
+        }
       }
     }
 
