@@ -46,8 +46,8 @@ ressurreição. O que está no lugar é compressão fixa na emissão —
 O conserto do Sol está FECHADO e ACEITO (M1, M2, R1–R3 e a soltura — o
 pouso de 17/08). Os itens 39, 40 e 43 da ALTA esperam cada um a SUA
 conferência no app (focar estrela; rótulo dobrado; a cruz de Vênus). O
-item 5 é obra própria (ciclo pela data). Os itens 8, 9 e 10 são HUD,
-independentes. O item 38 (`aFocus`) é dormente por desenho — **não
+item 5 é obra própria (ciclo pela data). O item 9 é HUD, independente
+(8 e 10 fecharam — `cf6ea79`, `7afe64d`). O item 38 (`aFocus`) é dormente por desenho — **não
 apagar**; é o canal do passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
