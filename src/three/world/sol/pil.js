@@ -22,6 +22,12 @@ export function createPIL(ctx){
     minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
     format: THREE.RGBAFormat, type: THREE.UnsignedByteType,
     depthBuffer: false, stencilBuffer: false });
+  // transplante: publicado no ctx para o `dispose()` do corpo alcançá-lo.
+  // No doador o Sol nasce UMA vez e vive até a aba fechar, então este RT
+  // nunca precisou de dono; aqui a troca de tier ao vivo (Ajustes C)
+  // constrói um corpo novo por clique, e um RT sem dono é vazamento por
+  // clique — medido em `memoria.mjs`.
+  ctx.pilRT = pilRT;
   var pilCopyUniforms = { tSrc: { value: null } };
   var pilCopyMaterial = new THREE.ShaderMaterial({ uniforms: pilCopyUniforms, vertexShader: quadVertex, fragmentShader: [
     'uniform sampler2D tSrc;',

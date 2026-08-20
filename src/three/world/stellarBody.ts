@@ -485,6 +485,9 @@ export class StellarBody {
   private pesoDaLei = 1;
   /** cache do último `uFiltroSolar` escrito — nasce no valor do uniform */
   private filtroSolarAnterior = 1;
+  /** as geometrias das cenas de quad (`makeFullscreenScene`) — elas não
+   *  moram no `group`, então só esta lista as leva ao `dispose()` */
+  private readonly geoDosQuads: THREE.PlaneGeometry[] = [];
 
   constructor(
     params: StellarParams,
@@ -577,8 +580,16 @@ export class StellarBody {
       rtType: THREE.HalfFloatType,
       isHDR: true,
       quadCamera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+      // As CINCO cenas de quad (sim, três da cromosfera, PIL) vivem FORA
+      // do `group` — são cenas de passo, não cena de mundo —, e por isso
+      // o `traverse` do `dispose()` nunca as alcançou. Com um Sol por
+      // aba isso não custava nada; com a troca de tier ao vivo (Ajustes
+      // C) custava 5 geometrias POR CLIQUE, e o amostrador de memória as
+      // pegou. A lista é a coleira: quem cria, anota.
       makeFullscreenScene: (material: THREE.Material) => {
-        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+        const geometria = new THREE.PlaneGeometry(2, 2);
+        this.geoDosQuads.push(geometria);
+        const mesh = new THREE.Mesh(geometria, material);
         mesh.frustumCulled = false;
         const s = new THREE.Scene();
         s.add(mesh);
@@ -1107,6 +1118,17 @@ export class StellarBody {
       set.c?.dispose?.();
       set.s?.dispose?.();
     }
+    // OS DOIS RTs QUE NÃO ESTAVAM EM LISTA NENHUMA: o do PIL (readback do
+    // Br para as âncoras de proeminência) e o snapshot do sim que a
+    // cromosfera assa. Nasceram privados dentro dos vendorizados; a troca
+    // de tier ao vivo (Ajustes C) transformou "um por aba" em "um por
+    // clique", e eles se publicam no ctx desde então (ver os comentários
+    // `transplante:` em pil.js e chromo.js).
+    free(ctx.pilRT);
+    free(ctx.bakeSimRT);
+    // as cenas de quad vivem fora do `group` — só esta lista as alcança
+    for (const g of this.geoDosQuads) g.dispose();
+    this.geoDosQuads.length = 0;
     // Data3DTexture da coroa volumétrica: material.dispose() NÃO dispõe
     // texturas, e esta não pertence a nenhum material do traverse.
     free(ctx.cvolTex);

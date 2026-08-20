@@ -278,6 +278,10 @@ export function createChromo(ctx){
   // latitude. Snapshot dos DOIS no início do ciclo: todas as fatias
   // leem um único estado, coerente com o timestamp único (bakeTime).
   var bakeSimRT = new THREE.WebGLRenderTarget(SIM_W, SIM_H, simRTOptions);
+  // transplante: mesmo motivo do `ctx.pilRT` (pil.js) — o `dispose()` do
+  // corpo precisa alcançá-lo, porque a troca de tier ao vivo constrói um
+  // Sol novo por clique e este RT não está em `bakeSets`.
+  ctx.bakeSimRT = bakeSimRT;
   var bakeCopyUniforms = { tSrc: { value: null } };
   var bakeCopyMaterial = new THREE.ShaderMaterial({ uniforms: bakeCopyUniforms, vertexShader: quadVertex, fragmentShader: [
     'uniform sampler2D tSrc;',
