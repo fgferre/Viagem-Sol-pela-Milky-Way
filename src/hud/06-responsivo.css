@@ -104,7 +104,9 @@
   }
 
   .caption-sub {
-    letter-spacing: 0.18em;
+    letter-spacing: 0.03em;
+    font-size: clamp(0.72rem, calc(2.6vw * var(--ui)), 0.95rem);
+    max-width: none;
   }
 
   .progress-wrap {

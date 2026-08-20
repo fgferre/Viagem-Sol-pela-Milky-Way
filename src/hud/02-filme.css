@@ -46,6 +46,7 @@
 .caption-wrap {
   opacity: 0;
   transform: translateY(14px);
+  max-width: min(42rem, 72vw);
 }
 /* a VIDA da legenda agora é do roteiro (janelas em tempo de viagem no
    journey.ts) — o CSS só anima a entrada; a saída é a janela fechando */
@@ -61,14 +62,16 @@
   font-weight: 200;
   letter-spacing: 0.42em;
   text-shadow: 0 0 24px rgba(140, 180, 255, 0.45);
+  text-wrap: balance;
 }
 .caption-sub {
-  color: rgba(200, 214, 235, 0.82);
-  font-size: clamp(0.7rem, calc(1.1vw * var(--ui)), 0.95rem);
+  color: rgba(200, 214, 235, 0.88);
+  font-size: clamp(0.78rem, calc(1.15vw * var(--ui)), 1.05rem);
   font-weight: 300;
-  letter-spacing: 0.28em;
-  margin-top: 0.55rem;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  margin-top: 0.4rem;
+  max-width: 38rem;
 }
 .caption-rule {
   width: 3.2rem;

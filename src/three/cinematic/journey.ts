@@ -151,22 +151,69 @@ const panLook = (a: THREE.Vector3, b: THREE.Vector3, ease: Ease = smooth): PosFn
  */
 const panThenHold = (a: THREE.Vector3, b: THREE.Vector3, fim: number): PosFn =>
   (k, out) => out.copy(a).lerp(b, smooth(Math.min(k / fim, 1)));
+/** slerp de versores — o lerp de PONTOS perto da câmera gira 445 °/s
+ *  (Sirius) e 650 °/s (fuga). A direção não atravessa a origem. */
+const _eixoSlerp = new THREE.Vector3();
+function slerpVersor(
+  a: THREE.Vector3, b: THREE.Vector3, t: number, out: THREE.Vector3
+): THREE.Vector3 {
+  const dot = THREE.MathUtils.clamp(a.dot(b), -1, 1);
+  if (dot > 0.9995) return out.copy(a).lerp(b, t).normalize();
+  if (dot < -0.9995) {
+    _eixoSlerp.set(Math.abs(a.x) < 0.9 ? 1 : 0, Math.abs(a.x) < 0.9 ? 0 : 1, 0);
+    _eixoSlerp.cross(a).normalize();
+    return out.copy(a).applyAxisAngle(_eixoSlerp, Math.PI * t);
+  }
+  const omega = Math.acos(dot);
+  const so = Math.sin(omega);
+  return out
+    .copy(a)
+    .multiplyScalar(Math.sin((1 - t) * omega) / so)
+    .addScaledVector(b, Math.sin(t * omega) / so);
+}
 /**
- * O olhar de um EVENTO de passagem: vira cedo (`k1`) do ponto `a` para o
- * assunto, vive o assunto crescendo, e em `k2` entrega o olhar ao rumo
- * seguinte — para o plano terminar olhando para onde o próximo vai.
+ * O olhar de um EVENTO de passagem: vira cedo (`k1`) do assunto `a` para
+ * o `assunto` (DIREÇÃO a partir da câmera, não ponto em mundo), vive o
+ * assunto crescendo, e em `k2` entrega o rumo seguinte.
  */
 function lookEvento(
+  posDe: PosFn,
   a: THREE.Vector3,
   assunto: THREE.Vector3,
   rumo: THREE.Vector3,
   k1: number,
   k2: number
 ): PosFn {
+  const p = new THREE.Vector3();
+  const dirA = new THREE.Vector3();
+  const dirB = new THREE.Vector3();
+  const dir = new THREE.Vector3();
   return (k, out) => {
-    if (k <= k1) return out.copy(a).lerp(assunto, smooth(k / k1));
-    if (k <= k2) return out.copy(assunto);
-    return out.copy(assunto).lerp(rumo, smooth((k - k2) / (1 - k2)));
+    posDe(k, p);
+    let de: THREE.Vector3;
+    let para: THREE.Vector3;
+    let t: number;
+    if (k <= k1) {
+      de = a;
+      para = assunto;
+      t = glide(k / k1);
+    } else if (k <= k2) {
+      de = assunto;
+      para = assunto;
+      t = 1;
+    } else {
+      de = assunto;
+      para = rumo;
+      t = glide((k - k2) / (1 - k2));
+    }
+    dirA.copy(de).sub(p);
+    const la = dirA.length();
+    if (la > 1e-20) dirA.multiplyScalar(1 / la);
+    dirB.copy(para).sub(p);
+    const lb = dirB.length();
+    if (lb > 1e-20) dirB.multiplyScalar(1 / lb);
+    slerpVersor(dirA, dirB, t, dir);
+    return out.copy(p).addScaledVector(dir, 1);
   };
 }
 
@@ -345,13 +392,13 @@ function heliceDaAbertura(): PosFn {
   };
 }
 
-// partida: cruza a 0,35 pc de Sirius SEM centralizá-la (a primeira
-// quebra de expectativa — a estrela mais brilhante do céu é só uma
-// vizinha), agora vivida DE FRENTE: o olhar vira cedo para ela, ela
-// incha na aproximação e o olhar entrega o rumo do cinturão na saída
+// partida: cruza a 0,35 pc de Sirius DE FRENTE — o olhar vira cedo
+// para ela (direção, não ponto), ela incha na aproximação e o olhar
+// entrega o rumo do cinturão na saída
 const SIRIUS_C1 = new THREE.Vector3(0.15, 1.1, 0.15);
 const SIRIUS_C2 = new THREE.Vector3(-0.35, 2.2, -0.45);
 const POST_SIRIUS = new THREE.Vector3(0.4, 4.6, -0.6);
+const SIRIUS_PATH = bezier(ORBIT_EXIT, SIRIUS_C1, SIRIUS_C2, POST_SIRIUS);
 
 // Ato II — a TRAVA das Três Marias vem ANTES de Betelgeuse: o ponto de
 // vista fica no eixo Terra→Alnilam a 55 pc de casa, onde a paralaxe
@@ -567,16 +614,43 @@ const U_RASPAO_OUT = INICIO_DA_VOLTA.clone().sub(LUA_PC).normalize();
 const D_RASPAO_IN = ENTRADA_DE_CASA.distanceTo(LUA_PC);
 const D_RASPAO_OUT = INICIO_DA_VOLTA.distanceTo(LUA_PC);
 const JOELHO_DO_RASPAO = 0.62;
+/** erf de Abramowitz–Stegun 7.1.26 — só para alongar o vale do raspão. */
+function erfAprox(x: number): number {
+  const s = Math.sign(x);
+  const a = Math.abs(x);
+  const p = 1 / (1 + 0.3275911 * a);
+  const y = 1 - (((((1.061405429 * p - 1.453152027) * p) + 1.421413741) * p
+    - 0.284496736) * p + 0.254829592) * p * Math.exp(-a * a);
+  return s * y;
+}
+/**
+ * k uniforme → parâmetro que ANDA MAIS DEVAGAR no joelho (a Lua fica
+ * grande ~1,5 s) e nunca para: velocidade mínima ~36% da média.
+ */
+function alongaJoelho(k: number): number {
+  const j = JOELHO_DO_RASPAO;
+  const sig = 0.16;
+  const extra = 0.64;
+  const s2 = sig * Math.SQRT2;
+  const integ = (u: number) =>
+    u - extra * sig * Math.sqrt(2 * Math.PI) * 0.5 * erfAprox((u - j) / s2);
+  return (integ(k) - integ(0)) / (integ(1) - integ(0));
+}
 function raspaoDaLua(): PosFn {
   const u = new THREE.Vector3();
   return (k, out) => {
-    const antes = k <= JOELHO_DO_RASPAO;
-    // inbound: deriva ≠ 0 no começo (o mergulho chega rápido — smooth
-    // começava parado e o play travava). outbound: sai devagar do
-    // joelho e chega na volta AINDA andando (smooth parava de novo).
+    const k2 = alongaJoelho(k);
+    const antes = k2 <= JOELHO_DO_RASPAO;
+    const t = antes
+      ? k2 / JOELHO_DO_RASPAO
+      : (k2 - JOELHO_DO_RASPAO) / (1 - JOELHO_DO_RASPAO);
+    // CHAO linear: o ease sozinho parava no joelho (derivada 0) e o
+    // play já travou duas vezes com a câmera parada. O dono pediu
+    // desacelerar, não parar.
+    const CHAO = 0.18;
     const f = antes
-      ? 1 - Math.pow(1 - k / JOELHO_DO_RASPAO, 1.4)
-      : Math.pow((k - JOELHO_DO_RASPAO) / (1 - JOELHO_DO_RASPAO), 1.3);
+      ? CHAO * t + (1 - CHAO) * (1 - Math.pow(1 - t, 1.6))
+      : CHAO * t + (1 - CHAO) * Math.pow(t, 1.45);
     const d = antes
       ? D_RASPAO_IN * Math.pow(RASPAO_DA_LUA / D_RASPAO_IN, f)
       : RASPAO_DA_LUA * Math.pow(D_RASPAO_OUT / RASPAO_DA_LUA, f);
@@ -587,17 +661,14 @@ function raspaoDaLua(): PosFn {
   };
 }
 /**
- * O TAKE ÚNICO Lua→Terra (pedido do dono: "passar pela lua mirando a
- * terra ao fundo"). A câmera NÃO corta e NÃO desvia o olhar para a Lua:
- * olha a Terra o tempo todo. A Lua entra no quadro porque está no
- * corredor — grande, de raspão, com a casa atrás — e o mesmo gesto
- * entrega a volta do escuro ao claro até o pouso.
- *
- * k em [0, K_LUA_NO_TAKE] é o vale do raspão; o resto é a volta.
+ * O TAKE ÚNICO Lua→Terra. A Lua passa GRANDE à frente com a Terra no
+ * fundo; no joelho o olhar cede a ela um instante e devolve à casa —
+ * pedido do dono: "leve desacelerada e virar rapidamente a camera para
+ * ela e desvirar". k em [0, K_LUA_NO_TAKE] é o vale; o resto é a volta.
  * A volta NÃO usa settleFreeze (comia a rotação: 140° em 3 s e o
  * espectador perdia as Américas). Ease mais longo, freeze só no fim.
  */
-const K_LUA_NO_TAKE = 0.30;
+export const K_LUA_NO_TAKE = 0.40;
 /** a volta na Terra: gira 88% do trecho, pousa e CONGELA */
 const easeDaVolta = (x: number) => {
   const u = Math.min(x / 0.88, 1);
@@ -626,7 +697,15 @@ function lookDoTake(): PosFn {
   const dirLua = new THREE.Vector3();
   return (k, out) => {
     if (k >= K_LUA_NO_TAKE) return out.copy(TERRA_PC);
-    const w = 0.52 * Math.sin(Math.PI * (k / K_LUA_NO_TAKE));
+    const kr = alongaJoelho(k / K_LUA_NO_TAKE);
+    // pico no JOELHO (~83%), sobe e desce em ~1,5 s, zero EXATO nas
+    // pontas — o take começa e termina na Terra.
+    const WMAX = 0.83;
+    const w = kr <= JOELHO_DO_RASPAO
+      ? WMAX * 0.5 * (1 - Math.cos((Math.PI * kr) / JOELHO_DO_RASPAO))
+      : WMAX * 0.5 * (1 + Math.cos(
+        (Math.PI * (kr - JOELHO_DO_RASPAO)) / (1 - JOELHO_DO_RASPAO)
+      ));
     if (w < 1e-6) return out.copy(TERRA_PC);
     raspao(k / K_LUA_NO_TAKE, pos);
     dirTerra.copy(TERRA_PC).sub(pos).normalize();
@@ -649,7 +728,13 @@ const SHOTS: Shot[] = [
     look: still(SOL),
     fov0: 26, fov1: 26,
     quiet: true,
-    captions: [{ at: 0.3, text: 'SOL', sub: 'uma estrela comum', dur: 9, bridge: true }],
+    captions: [{
+      at: 0.3,
+      text: 'SOL',
+      sub: '600 milhões de toneladas de hidrogênio fundidas por segundo',
+      dur: 9,
+      bridge: true,
+    }],
   },
   {
     // hélice ascendente: o Sol fica, o céu inteiro gira. O bojo dourado
@@ -676,19 +761,18 @@ const SHOTS: Shot[] = [
     captions: [
       // entra quando a faixa já está franca no quadro (revisão: em
       // k≈0,5 ela ainda estava espremida na borda)
-      { at: 0.64, text: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é a galáxia vista por dentro' },
+      { at: 0.64, text: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é o disco: cem mil anos-luz vistos de dentro' },
     ],
   },
   // ================= ATO II — ÓRION =================
   {
-    // partida À FRENTE: o olhar vira cedo para Sirius, ela incha de
-    // ponto a farol, varre o quadro na passagem a 0,35 pc e o olhar
-    // entrega o rumo do cinturão antes do corte. A mira em 2,4× o vetor
-    // dela é a composição de raspão de sempre: ela cresce SEM ser
-    // centralizada, e o chicote da passagem sai macio.
+    // partida À FRENTE: o olhar vira cedo para Sirius (DIREÇÃO a
+    // partir da câmera, não ponto em mundo — o lerp de SOL→Sirius×2,4
+    // girava 445 °/s e o play borrava 1 s), ela incha de ponto a farol
+    // na passagem a 0,35 pc e o olhar entrega o rumo do cinturão.
     dur: 7,
-    pos: bezier(ORBIT_EXIT, SIRIUS_C1, SIRIUS_C2, POST_SIRIUS),
-    look: lookEvento(SOL, SIRIUS.clone().multiplyScalar(2.4), ALNILAM, 0.2, 0.75),
+    pos: SIRIUS_PATH,
+    look: lookEvento(SIRIUS_PATH, SOL, SIRIUS.clone().multiplyScalar(2.4), ALNILAM, 0.58, 0.82),
     fov0: 56, fov1: 63,
     ease: glide,
     warp: (k) => 0.25 * Math.sin(Math.PI * k),
@@ -698,7 +782,7 @@ const SHOTS: Shot[] = [
       {
         at: 0.4,
         text: 'SIRIUS',
-        sub: 'a estrela mais brilhante do céu noturno — apenas uma vizinha',
+        sub: 'brilha tanto por estar a 8,6 anos-luz — é só uma vizinha',
         dur: 4,
       },
     ],
@@ -721,7 +805,7 @@ const SHOTS: Shot[] = [
     roll: (k) => 0.06 * Math.sin(Math.PI * k),
     dest: 'Alnilam',
     captions: [
-      { at: 0.22, text: 'O MAR INTERESTELAR', sub: 'o espaço entre as estrelas não está vazio', dur: 4.5 },
+      { at: 0.22, text: 'A BOLHA LOCAL', sub: 'gás a um milhão de graus, esculpido por supernovas antigas', dur: 4.5 },
     ],
   },
   {
@@ -737,7 +821,7 @@ const SHOTS: Shot[] = [
     quiet: true,
     lingua: 'assunto',
     captions: [
-      { at: 0.12, text: 'AS TRÊS MARIAS', sub: 'Alnitak · Alnilam · Mintaka — em fila só vistas daqui', dur: 5 },
+      { at: 0.12, text: 'AS TRÊS MARIAS', sub: 'Alnitak, Alnilam, Mintaka — três supergigantes alinhadas só daqui', dur: 5 },
     ],
   },
   {
@@ -752,7 +836,7 @@ const SHOTS: Shot[] = [
     quiet: true,
     lingua: 'assunto',
     captions: [
-      { at: 0.08, text: 'UM PASSO AO LADO', sub: 'e a fila se desfaz — constelações são pontos de vista', dur: 5.4 },
+      { at: 0.08, text: 'UM PASSO AO LADO', sub: 'Alnilam está 1.200 anos-luz mais ao fundo — a fila era um ponto de vista', dur: 5.4 },
     ],
   },
   {
@@ -794,7 +878,7 @@ const SHOTS: Shot[] = [
     quiet: true,
     lingua: 'assunto',
     captions: [
-      { at: 0.08, text: 'BETELGEUSE', sub: 'no lugar do Sol, engoliria a órbita de Júpiter', dur: 5.4 },
+      { at: 0.08, text: 'BETELGEUSE', sub: 'supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter', dur: 5.4 },
     ],
   },
   {
@@ -813,7 +897,7 @@ const SHOTS: Shot[] = [
     warp: (k) => 0.3 * Math.sin(Math.PI * k),
     roll: (k) => -0.08 * Math.sin(Math.PI * k),
     target: ['Rigel'],
-    captions: [{ at: 0.25, text: 'RIGEL', sub: 'a supergigante azul de Órion — 40.000 sóis', dur: 5 }],
+    captions: [{ at: 0.25, text: 'RIGEL', sub: 'supergigante azul a 12.000 K — 40.000 sóis em poucos milhões de anos', dur: 5 }],
   },
   {
     // a dobradiça: desacelera, meia-volta RÁPIDA de 180° e o VAZIO — o
@@ -827,7 +911,7 @@ const SHOTS: Shot[] = [
     target: ['SOL'],
     quiet: true,
     lingua: 'tras',
-    captions: [{ at: 0.35, text: 'CASA', sub: 'daqui, o Sol já é invisível a olho nu', dur: 4.4 }],
+    captions: [{ at: 0.35, text: 'CASA', sub: 'a 800 anos-luz o Sol caiu para magnitude 12: invisível a olho nu', dur: 4.4 }],
   },
 
   // ================= ATO III — O MERGULHO =================
@@ -850,7 +934,7 @@ const SHOTS: Shot[] = [
     target: ['Antares'],
     dest: 'Antares',
     captions: [
-      { at: 0.38, text: 'ANTARES', sub: 'atrás dela: o centro. 26.000 anos-luz', dur: 4.8 },
+      { at: 0.38, text: 'ANTARES', sub: 'brasa a 550 anos-luz, no alinhamento do centro da galáxia', dur: 4.8 },
     ],
   },
   {
@@ -883,7 +967,7 @@ const SHOTS: Shot[] = [
     roll: (k) => 0.10 * Math.sin(Math.PI * k),
     dest: 'SGR',
     target: ['Shaula', 'Dschubba', 'Lesath', 'Paikauhale'],
-    captions: [{ at: 0.28, text: 'O MERGULHO', dur: 6.8 }],
+    captions: [{ at: 0.28, text: 'O MERGULHO', sub: 'braço de Sagitário: a poeira extingue e avermelha as estrelas', dur: 6.8 }],
   },
   {
     // ONDA 2 — Scutum-Centaurus: a segunda crista é um BEAT, não um
@@ -900,7 +984,7 @@ const SHOTS: Shot[] = [
       {
         at: 0.18,
         text: 'O BERÇÁRIO',
-        sub: 'estrelas nascem no último braço antes do centro',
+        sub: 'Scutum-Centaurus — nuvens que comprimem e acendem estrelas azuis',
         dur: 5,
       },
     ],
@@ -955,13 +1039,13 @@ const SHOTS: Shot[] = [
       {
         at: 0.1,
         text: 'SAGITTARIUS A✱',
-        sub: 'quatro milhões de massas solares no centro da Via Láctea',
+        sub: 'quatro milhões de sóis num volume menor que a órbita de Mercúrio',
         dur: 5.5,
       },
       {
         at: 0.5,
         text: 'O HORIZONTE',
-        sub: 'a gravidade dobra o disco de luz ao redor da sombra',
+        sub: 'a gravidade curva a luz ao redor da sombra — lente de Einstein',
         dur: 6.6,
       },
     ],
@@ -983,7 +1067,7 @@ const SHOTS: Shot[] = [
     quiet: true,
     lingua: 'tras',
     captions: [
-      { at: 0.2, text: 'O ESTILINGUE', sub: 'do coração para fora do disco', dur: 4 },
+      { at: 0.2, text: 'O ESTILINGUE', sub: 'do coração para o vazio acima do disco', dur: 4 },
     ],
   },
   {
@@ -1004,7 +1088,7 @@ const SHOTS: Shot[] = [
       {
         at: 0.55,
         text: 'A VIA LÁCTEA, POR FORA',
-        sub: 'uma reconstrução científica do que ninguém jamais viu',
+        sub: 'reconstrução a partir de 1,8 bilhão de estrelas da missão Gaia',
         dur: 4.2,
       },
     ],
@@ -1020,7 +1104,7 @@ const SHOTS: Shot[] = [
     ease: linear,
     roll: () => GATE_EDGE_ROLL,
     lingua: 'assunto',
-    captions: [{ at: 0.1, text: 'ELA NÃO É PLANA', dur: 4.4 }],
+    captions: [{ at: 0.1, text: 'ELA NÃO É PLANA', sub: 'cem mil anos-luz de lado, mil de espessura — as bordas ondulam', dur: 4.4 }],
   },
   {
     // a travessia: o disco de perfil ABRE em braços — esse é o evento,
@@ -1037,7 +1121,7 @@ const SHOTS: Shot[] = [
       {
         at: 0.22,
         text: 'OS BRAÇOS',
-        sub: 'de perfil, uma linha; de cima, uma espiral',
+        sub: 'não são braços rígidos — são ondas que comprimem o gás em espiral',
         dur: 6,
       },
     ],
@@ -1052,7 +1136,7 @@ const SHOTS: Shot[] = [
     ease: linear,
     roll: () => GATE_FACE_ROLL,
     lingua: 'assunto',
-    captions: [{ at: 0.1, text: 'NOSSA GALÁXIA', sub: 'centenas de bilhões de estrelas', dur: 4.4 }],
+    captions: [{ at: 0.1, text: 'NOSSA GALÁXIA', sub: 'espiral barrada — centenas de bilhões de estrelas a 220 km/s', dur: 4.4 }],
   },
   {
     // deriva: NUNCA aproximar do marcador — a pequenez é a mensagem. A
@@ -1072,7 +1156,12 @@ const SHOTS: Shot[] = [
     roll: (k) => GATE_FACE_ROLL * (1 - smooth(Math.min(k / 0.88, 1))),
     target: ['SOL'],
     lingua: 'assunto',
-    captions: [{ at: 0.2, text: 'VOCÊ ESTÁ AQUI', dur: 5.4 }],
+    captions: [{
+      at: 0.2,
+      text: 'VOCÊ ESTÁ AQUI',
+      sub: 'Esporão de Órion, 26 mil anos-luz do centro — uma volta a cada 230 milhões de anos',
+      dur: 5.4,
+    }],
   },
 
   // ============ CODA — A VOLTA PARA CASA (pedido do dono, 19/08) ============
@@ -1090,14 +1179,13 @@ const SHOTS: Shot[] = [
     fovEase: glide,
     warp: (k) => 0.9 * Math.sin(Math.PI * Math.min(k * 1.35, 1)),
     quiet: true,
-    captions: [{ at: 0.12, text: 'A VOLTA PARA CASA', dur: 4.2 }],
+    captions: [{ at: 0.12, text: 'A VOLTA PARA CASA', sub: '26 mil anos-luz até os minutos-luz de casa', dur: 4.2 }],
   },
   {
-    // UM TAKE: a Lua passa GRANDE à frente com a Terra no fundo, o
-    // mesmo gesto entrega a volta do escuro ao claro e pousa congelado
-    // — Américas no dia, polos para cima. 12 s (era 10): a Lua fica
-    // com 3,6 s e a Terra com 8,4 s para a rotação se ler. fov0 casa
-    // com o fim do mergulho (62°), sem o pop de lente na junta.
+    // UM TAKE: a Lua passa GRANDE à frente com a Terra no fundo; no
+    // joelho o olhar cede a ela e devolve à casa. 12 s: a Lua fica com
+    // ~4,8 s (vale mais largo, sem parar) e a Terra com ~7,2 s para a
+    // rotação se ler. fov0 casa com o fim do mergulho (62°).
     dur: 12,
     pos: takeDaCasa(),
     look: lookDoTake(),
@@ -1113,8 +1201,8 @@ const SHOTS: Shot[] = [
     quiet: true,
     lingua: 'assunto',
     captions: [
-      { at: 0.08, text: 'A LUA', sub: 'a um segundo-luz de casa', dur: 2.8 },
-      { at: 0.325, text: 'A TERRA', sub: 'de onde tudo isto foi visto', dur: 60 },
+      { at: 0.06, text: 'A LUA', sub: '1,3 segundo-luz — o mais longe que o ser humano já chegou', dur: 4.2 },
+      { at: 0.44, text: 'A TERRA', sub: 'o único ponto com oceano de onde a galáxia inteira foi decifrada', dur: 60 },
     ],
   },
 ];

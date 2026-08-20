@@ -238,6 +238,16 @@ direto para o ato da lua funciona, se vem pelo playback normal , d”*.
 O que ele VÊ: pular até a Lua mostra o take certo; deixar o filme
 chegar sozinho, não.
 
+A Lua no play contínuo já entra no quadro; agora ele pede o GESTO da
+passagem. Palavras dele: *“quando estivesse passando poderia dar uma
+leve desacelerada e virar rapidamente a camera para ela e desvirar para
+continuar em direção a terra.”* O que ele VÊ: a Lua passa num piscar;
+queria um instante olhando para ela, depois de volta à Terra.
+
+No mesmo dia ele gostou das legendas novas (ciência no lugar do clichê)
+e avisou: *“gostei das suas sugestoes, mas talvez teria que adaptar um
+pouco design/layout UI para acomodar”*.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos

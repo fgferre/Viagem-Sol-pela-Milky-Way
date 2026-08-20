@@ -339,10 +339,51 @@ describe('a auditoria editorial do filme', () => {
     rig.apply(cam, 170, dt);
     for (let t = 170 + dt; t <= 181; t += dt) rig.apply(cam, t, dt);
     expect(angCasa(), 'entrada do take').toBeLessThan(20);
-    for (let t = 181 + dt; t <= 183.5; t += dt) rig.apply(cam, t, dt);
+    let dMin = Infinity;
+    let angLuaJoelho = 180;
+    for (let t = 181 + dt; t <= 186; t += dt) {
+      rig.apply(cam, t, dt);
+      const d = cam.position.distanceTo(LUA_PC);
+      cam.getWorldDirection(dir);
+      const angLua = THREE.MathUtils.radToDeg(
+        dir.angleTo(LUA_PC.clone().sub(cam.position).normalize())
+      );
+      if (d < dMin) {
+        dMin = d;
+        angLuaJoelho = angLua;
+      }
+    }
     expect(angCasa(), 'raspão da Lua').toBeLessThan(25);
-    for (let t = 183.5 + dt; t <= 191; t += dt) rig.apply(cam, t, dt);
+    expect(angLuaJoelho, 'no joelho a Lua toma o quadro').toBeLessThan(15);
+    for (let t = 186 + dt; t <= 191; t += dt) rig.apply(cam, t, dt);
     expect(angCasa(), 'pouso nas Américas').toBeLessThan(15);
+  });
+
+  it('o play contínuo vira para Sirius sem borrar o começo do plano', () => {
+    // t≈31: o lerp de pontos SOL→Sirius×2,4 girava 445 °/s; o rig
+    // atrasava 90° e ~1 s do farol saía borrado. Pan por direção.
+    const rig = new JourneyRig();
+    const cam = new THREE.PerspectiveCamera(56, 16 / 9, 0.1, 1e6);
+    const dt = 1 / 60;
+    const dir = new THREE.Vector3();
+    const want = new THREE.Vector3();
+    const j = new Journey();
+    const erro = (t: number) => {
+      const s = j.at(t);
+      want.copy(s.look).sub(s.pos).normalize();
+      cam.getWorldDirection(dir);
+      return THREE.MathUtils.radToDeg(dir.angleTo(want));
+    };
+    rig.reset();
+    rig.apply(cam, 26, dt);
+    let pior = 0;
+    for (let t = 26 + dt; t <= 34; t += dt) {
+      rig.apply(cam, t, dt);
+      pior = Math.max(pior, erro(t));
+    }
+    // a virada é ~148° (Sol → Sirius). O amortecedor de 0,4 s não cola
+    // a 25° num giro desses — e 90° era o borrão. 40° segue o farol.
+    expect(pior).toBeLessThan(40);
   });
 
   it('o play contínuo mantém Sagittarius A* no quadro na fuga — o clímax não some', () => {

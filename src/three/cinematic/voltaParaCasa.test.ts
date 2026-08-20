@@ -30,7 +30,7 @@ import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
   location: { search: '' },
 };
-const { Journey, TERRA_PC, LUA_PC, JD_DO_FILME_TDB } = await import('./journey');
+const { Journey, TERRA_PC, LUA_PC, JD_DO_FILME_TDB, K_LUA_NO_TAKE } = await import('./journey');
 
 const DATA_DIR = fileURLToPath(new URL('../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -95,6 +95,11 @@ describe('a encenação pedida, medida na trajetória', () => {
     expect(menor).toBeLessThan(3.9e-10);
     const diametroGraus = 2 * THREE.MathUtils.radToDeg(Math.atan(RAIO_LUA_PC / menor));
     expect(diametroGraus).toBeGreaterThan(14);
+    // o dono pediu um instante, não um piscar: ~1,5–2 s com ela grande
+    const dezRaios = 10 * RAIO_LUA_PC;
+    const perto = AMOSTRAS.filter((a) => a.pos.distanceTo(LUA_PC) < dezRaios);
+    expect(perto.length * 0.004).toBeGreaterThan(1.4);
+    expect(perto.length * 0.004).toBeLessThan(3.2);
   });
 
   it('a Lua do raspão está acesa (flanco solar), não de costas', () => {
@@ -122,13 +127,15 @@ describe('a encenação pedida, medida na trajetória', () => {
     expect(j.at(tTake).look.distanceTo(TERRA_PC)).toBeLessThan(1e-12);
     const noJoelho = j.at(noRaspao.t);
     const paraTerra = TERRA_PC.clone().sub(noJoelho.pos).normalize();
+    const paraLua = LUA_PC.clone().sub(noJoelho.pos).normalize();
     const olhar = noJoelho.look.clone().sub(noJoelho.pos).normalize();
-    expect(grausEntre(olhar, paraTerra)).toBeGreaterThan(8);
+    expect(grausEntre(olhar, paraTerra)).toBeGreaterThan(20);
+    expect(grausEntre(olhar, paraLua)).toBeLessThan(12);
     expect(j.at(j.duration).look.distanceTo(TERRA_PC)).toBeLessThan(1e-12);
   });
 
   it('a volta chega pelo lado escuro e pousa no claro, com a Terra grande', () => {
-    const chegada = j.at(j.duration - 8.4).pos; // início da volta no take
+    const chegada = j.at(j.duration - 12 * (1 - K_LUA_NO_TAKE)).pos; // início da volta
     expect(faseVista(TERRA_PC, chegada)).toBeGreaterThan(135);
     const fim = j.at(j.duration).pos;
     expect(faseVista(TERRA_PC, fim)).toBeLessThan(45);
