@@ -11,10 +11,10 @@
     {
       "ua": 0.067,
       "via": "sinal",
-      "luzMedia": 0.07221770671980304,
-      "acimaDeMeia": 0.01817777777777778,
+      "luzMedia": 0.07426130877547393,
+      "acimaDeMeia": 0.018001234567901234,
       "pico": 0.9487725490196078,
-      "faiscantes": 71,
+      "faiscantes": 87,
       "borrao": 113,
       "disco": 112.80065548258999,
       "clarao": 0,
@@ -23,7 +23,7 @@
     {
       "ua": 1,
       "via": "sinal",
-      "luzMedia": 0.06085795297207929,
+      "luzMedia": 0.06085803444678275,
       "acimaDeMeia": 0.006928395061728395,
       "pico": 0.9971952941176471,
       "faiscantes": 73,

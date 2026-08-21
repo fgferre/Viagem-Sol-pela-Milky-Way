@@ -33,11 +33,9 @@
 //     `&jd=EPOCA`, é ele quem diz o que aconteceu.
 //
 //     E ela NÃO mede o Sol, apesar do nome que carregou até 20/08:
-//     nesta abertura (226,8 UA) o Sol não chega a um pixel. MEDIDO —
-//     com o pino `ATLAS_JOURNEY_T` desligado à mão, as três entradas
-//     saem bit-idênticas AQUI. O Sol só é a imagem no degrau do corpo
-//     dele, e lá ele NÃO é reproduzível — item 5 das PENDENCIAS, dentro
-//     da Lei da estrela: a prova que faltaria nasce quando ele cair.
+//     nesta abertura (226,8 UA) o Sol não chega a um pixel. Quem o mede
+//     é a PROVA 18, no degrau do corpo — e ela nasceu com o item 5, em
+//     21/08, quando o Sol passou a obedecer ao calendário.
 //
 // Método herdado do `ab-identidade`: `?q=cinema` pinado (declara o tier
 // da captura — era defesa contra o autoQuality até a letra D dos
@@ -828,6 +826,65 @@ try {
     (await sessao.js('window.__director.captura.fase')) === 'atlas'
       && Number(await sessao.js(veu)) === 0,
     'reduced-motion: a troca é instantânea e o véu nunca acende'
+  );
+  // ---- 18: O SOL DO ATLAS OBEDECE AO CALENDÁRIO (item 5) -----------
+  //
+  // A prova 3 mede a ABERTURA do Atlas, onde o Sol não chega a um pixel
+  // (226,8 UA). Esta desce ao DEGRAU DO CORPO — o único enquadramento em
+  // que o Sol É a imagem — e cobra as duas metades do item 5, que só
+  // valem JUNTAS:
+  //
+  //  (a) MESMA DATA, DOIS CAMINHOS: entrar no Atlas a partir de t=10 e a
+  //      partir de t=100 tem de dar o MESMO md5. Até 21/08 dava dois
+  //      Sóis — o pino da dramaturgia só empurrava a fase para FRENTE e
+  //      quem alimentava as regiões era um acumulador, então os quadros
+  //      do filme desenhados antes do portal deixavam resíduo;
+  //  (b) DATAS DIFERENTES, SÓIS DIFERENTES: a mesma rota com o relógio
+  //      noutra data tem de dar md5 DIFERENTE. Sem esta metade, (a)
+  //      passaria com um Sol congelado — que é exatamente o defeito
+  //      antigo, e ele passaria por virtude.
+  //
+  // O VEREDITO DO RELÓGIO VEM ANTES DO VEREDITO DO PIXEL, como na prova
+  // 3: se o pino do céu sair do lugar, é ele quem diz o que aconteceu em
+  // vez de o Sol levar a culpa.
+  const noCorpoDoSol = async (t, jd) => {
+    await sessao.ir(`t=${t}&${PIN}&jd=${jd}`);
+    await sessao.js('window.__director.entrarNoAtlas()');
+    await sessao.js("window.__director.focarNoCorpo('sun', 'corpo')");
+    const pousou = await sessao.assentar();
+    return {
+      md5: await sessao.md5(),
+      via: pousou.via,
+      jd: await sessao.js('window.__director.tempo.jd'),
+      degrau: await sessao.js('window.__director.escadaViva.degrau'),
+    };
+  };
+  const de10 = await noCorpoDoSol(10, 'EPOCA');
+  const de100 = await noCorpoDoSol(100, 'EPOCA');
+  const outraData = await noCorpoDoSol(10, 2465000);
+  conferir(
+    de10.degrau === 'corpo' && de100.degrau === 'corpo' && outraData.degrau === 'corpo',
+    `as três entradas param no degrau do CORPO do Sol`
+      + ` (${de10.degrau} · ${de100.degrau} · ${outraData.degrau})`
+  );
+  conferir(
+    de10.via === 'sinal' && de100.via === 'sinal' && outraData.via === 'sinal',
+    `o corpo do Sol assenta por via=sinal (${de10.via} · ${de100.via} · ${outraData.via})`
+  );
+  conferir(
+    de10.jd === de100.jd && de10.jd !== outraData.jd,
+    `o relógio do céu: as duas entradas na MESMA data (${de10.jd}) e a`
+      + ` contraprova noutra (${outraData.jd})`
+  );
+  conferir(
+    de10.md5 === de100.md5,
+    `mesma data, dois caminhos: t=10 e t=100 dão o MESMO Sol`
+      + ` (${de10.md5} vs ${de100.md5})`
+  );
+  conferir(
+    de10.md5 !== outraData.md5,
+    `datas diferentes, Sóis diferentes — o Sol do Atlas tem calendário`
+      + ` (${de10.md5} vs ${outraData.md5})`
   );
 } finally {
   sessao.fechar();
