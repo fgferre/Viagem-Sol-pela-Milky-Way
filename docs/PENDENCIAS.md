@@ -294,7 +294,7 @@ invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
 tela retina, é a primeira suspeita. Conferir com o dono na vista
 galáctica antes de mexer.
 
-**55.** Em celular, os nomes das estrelas são escritos por cima do
+**56.** Em celular, os nomes das estrelas são escritos por cima do
 rodapé. Fotografado a 375 px em 20/08 — "E IND · 11,9 anos-luz" atravessa
 a data do céu, outro nome atravessa a dica dos gestos.
 *(O canvas dos rótulos só desvia dos DIÁLOGOS: o App reserva o retângulo
