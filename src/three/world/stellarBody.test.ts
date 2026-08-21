@@ -68,16 +68,43 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     expect(rotSpeedFromPeriod(Infinity)).toBe(0);
   });
 
-  it('inclinação, sementes e janelas do ciclo batem os literais antigos', () => {
+  it('inclinação, semente e prefixo dos knobs batem os literais antigos', () => {
     expect(SOL_PARAMS.tiltRad).toBe(0.1265); // ~7,25°
     expect(SOL_PARAMS.seed).toBe(20260803);
-    expect(SOL_PARAMS.cyclePhaseMin).toBe(0.02);
-    expect(SOL_PARAMS.cyclePhaseMax).toBe(0.5);
-    expect(SOL_PARAMS.dramaT0).toBe(5);
-    expect(SOL_PARAMS.dramaT1).toBe(29);
     expect(SOL_PARAMS.knobPrefix).toBe('sol');
-    // a fase inicial do ciclo é derivada da fase mínima: 1206 s
-    expect((1 + SOL_PARAMS.cyclePhaseMin - 0.35) * 1800).toBe(1206);
+  });
+
+  it('corpo fora de quadro NÃO envelhece (item 16)', () => {
+    // O ORÁCULO É A ORDEM, e ela não tem como ser provada sem GPU: o
+    // `update` real precisa de um renderer. Então se cobra a ORDEM NO
+    // FONTE, no precedente do teste que lê `evLuzDoFoco` em selo.test.
+    // Até 21/08 o relógio rápido era somado ANTES do retorno de
+    // invisibilidade, e o Sol reaparecia com um salto de tudo o que
+    // "viveu" enquanto ninguém o via.
+    const fonte = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
+    const corpoDoUpdate = fonte.slice(fonte.indexOf('  update(time: number'));
+    const retorno = corpoDoUpdate.indexOf('if (!this.group.visible) return;');
+    const relogio = corpoDoUpdate.indexOf('ctx.elapsed += delta;');
+    expect(retorno).toBeGreaterThan(0);
+    expect(relogio).toBeGreaterThan(retorno);
+    // e ele é somado UMA vez só — duas somas seriam a volta do defeito
+    expect(corpoDoUpdate.split('ctx.elapsed += delta;').length - 1).toBe(1);
+  });
+
+  it('a instância não conhece mais o roteiro: a dramaturgia saiu do corpo', () => {
+    // O ORÁCULO ANTIGO cobrava aqui quatro números — as fases 0,02/0,50 e
+    // a janela 5/29 s — e a aritmética `(1 + 0,02 − 0,35)·1800 = 1206`,
+    // que era a semente do acumulador de fase. Ele foi REESCRITO, não
+    // contornado: os quatro campos morreram do `StellarParams` no item 5
+    // (21/08), porque um corpo estelar não tem por que saber em que
+    // segundo do filme ele está. A dose que os substituiu tem oráculo
+    // próprio (`director/doseDoSol.test.ts`) e a fase tem o dela
+    // (`estrela/cicloDeAtividade.test.ts`).
+    const campos = Object.keys(SOL_PARAMS);
+    expect(campos).not.toContain('cyclePhaseMin');
+    expect(campos).not.toContain('cyclePhaseMax');
+    expect(campos).not.toContain('dramaT0');
+    expect(campos).not.toContain('dramaT1');
   });
 
   it('os 3 streams derivados da semente-mãe continuam nos mesmos XOR', () => {

@@ -1,6 +1,28 @@
 // sim/activity.js — modelo magnético: cargas/regiões ativas, ciclo de 11
 // anos e bFieldJS (espelho JS do BFIELD_GLSL). Corpo movido verbatim;
 // buildCharges/seedSimulation rodam NA CHAMADA da factory (posição do init).
+//
+// A EXCEÇÃO DECLARADA AO "OS 14 VENDORIZADOS NÃO SE TOCAM" (21/08, item 5
+// das pendências) — o precedente é o das duas pontes de escala. O que o
+// doador tinha aqui era um ACUMULADOR de fase (um relógio somando
+// delta por quadro) e um lifecycle de regiões que dependia do CAMINHO: a
+// posição vinha de uma integral de deriva com limitador, e o renascimento
+// disparava por latch de renascimento, consumindo o stream COMPARTILHADO do
+// `srand`. Com isso, chegar ao mesmo instante por dois caminhos dava dois
+// Sóis, e o relógio não sabia andar para trás.
+//
+// O QUE ESTÁ NO LUGAR: o estado das regiões é FUNÇÃO PURA de um tempo
+// único, `ctx.tempoDoCiclo`, que a lei da estrela deriva da data simulada
+// (`estrela/cicloDeAtividade.ts`). Cada região tem um índice de VIDA
+// (`k = floor((T + fase)/período)`), a vida tem semente própria — não um
+// stream que anda — e a deriva diferencial é forma FECHADA na idade da
+// vida. Nenhum acumulador, nenhum latch, nenhum cap: `estadoEm(T)` é o
+// mesmo vindo de frente, de trás ou direto.
+//
+// OS DOIS RELÓGIOS, declarados: o RÁPIDO (`ctx.elapsed` — granulação,
+// rotação, coroa, flares, proeminências) continua sendo tempo de tela e
+// segue acumulando; o LENTO (`ctx.tempoDoCiclo` — fase, regiões ativas,
+// grupos de manchas) pendura na DATA. Misturá-los foi o defeito.
 
 import * as THREE from 'three';
 import { cycleDepthFor, cycleEasingFor, cycleMultiplierFor } from './cycle.js';
@@ -29,43 +51,33 @@ export function createActivity(ctx){
   // a maquinaria de lifecycle que já existe:
   //  - lei de Spörer: a banda de emergência migra de ±35° para ±5° ao
   //    longo do ciclo (diagrama borboleta) — placePair reaproveita o
-  //    MESMO sorteio de latitude (o stream do srand não desloca);
-  //  - envelope de atividade: |q| das regiões cresce ao máximo (~fase
-  //    0.35) e definha no mínimo — uActivity (coroa, cooldown de flare,
+  //    MESMO sorteio de latitude (a contagem de draws da vida não muda);
+  //  - envelope de atividade: |q| das regiões cresce ao máximo (fase
+  //    0.5) e definha no mínimo — uActivity (coroa, cooldown de flare,
   //    íris) segue de graça ("uma estrela, um estado");
   //  - flip de Hale: a polaridade líder/seguidor inverte por ciclo
   //    (ps.polSign, aplicado na emergência — regiões vivas não trocam);
   //  - reversão polar: o dipolo de fundo cruza zero perto do máximo
   //    (fase ~0.45) e renasce invertido (cargas polares moduladas).
-  // Tempo comprimido com honestidade de VFX: 11 anos ~ CYCLE_PERIOD
-  // unidades simuladas (~30 min a speed=1); lapse acelera até ~×40.
-  // Com cycle=0 NADA disto roda: fase congelada em 0.35 (meio de
-  // ciclo), polSign=1, ampK=1, cargas polares intocadas — o frame
-  // default é pixel-idêntico ao baseline (gate qa:parity + A/B 0px).
+  // O TEMPO DO CICLO vem da DATA (`ctx.tempoDoCiclo`, escrito pelo
+  // corpo a cada quadro a partir de `faseDoCiclo(jd)`), na unidade
+  // herdada: 1800 unidades por ciclo (~2,24 dias por unidade). Foi o
+  // acumulador que morreu, não a régua — período de vida, deriva e
+  // envelopes seguem calibrados nela.
+  // Com cycle=0 NADA disto roda: fase congelada, polSign=1, ampK=1,
+  // cargas polares intocadas.
   // ---------------------------------------------------------------
-  var CYCLE_PERIOD = 1800;    // unidades de tempo simulado por ciclo
-  var CYCLE_PHASE0 = 0.35;    // fase do sol default (meio de ciclo)
-  ctx.cycleTime = 0;          // só anda com o ciclo ligado
-  ctx.cycleWarp = 0;          // tempo EXTRA acumulado p/ as regiões (lapse)
-  ctx.cyclePhase01 = CYCLE_PHASE0;
-  ctx.cycleN = 0;             // índice do ciclo (paridade => Hale)
+  // `ctx.cyclePhase01` (0 = mínimo, 0.5 = máximo) e `ctx.cycleN` (o
+  // número do ciclo, cuja paridade dá Hale) NASCEM no contexto, escritos
+  // por quem conhece a data — não aqui. Zerá-los na fábrica apagaria a
+  // data com que o corpo foi construído.
   ctx.cycleHale = 1;          // sinal de Hale do ciclo corrente
-  ctx.cycleAmpK = 1;          // ganho global de atividade
+  ctx.cycleAmpK = 1;          // ganho global de atividade (já com a DOSE)
   ctx.cyclePolF = 1;          // fator do dipolo polar (1 = default)
-  // EVENTO "máximo/mínimo solar" (prévia do painel + hook de QA): boost
-  // TEMPORÁRIO do multiplicador do relógio do ciclo até um alvo de fase,
-  // segura ~20 s no alvo (relógio parado) e devolve ao ritmo normal.
-  // Mesma física, tempo comprimido — nenhum uniform é setado na mão.
-  // Com evento nulo, cycleEventMul=1 e nada muda (caminho det intocado).
   ctx.solarMaxK = 0;          // 0 em amp<=1.0, 1 em amp>=1.14 (smoothstep)
-  ctx.cycleEventMul = 1;
-  var cycleEvent = null;
-  var CYCLE_EVT_RAMP = 6;     // s simulados de subida até o alvo
   var cyclePolarN = null, cyclePolarS = null;
   function cycleMultiplier(){
-    // durante um evento o boost É o multiplicador (0 no hold = relógio
-    // parado no pico); fora dele, a lei de sempre derivada do lapse
-    return cycleEvent ? ctx.cycleEventMul : cycleMultiplierFor(ctx.LAPSE_K);
+    return cycleMultiplierFor(ctx.LAPSE_K);
   }
   function cycleDepth(){
     // lapse sozinho liga o ciclo (modo documental de um toque)
@@ -73,9 +85,6 @@ export function createActivity(ctx){
   }
   function updateCycleState(){
     var d = cycleDepth();
-    var tot = CYCLE_PHASE0 + ctx.cycleTime / CYCLE_PERIOD;
-    ctx.cycleN = Math.floor(tot);
-    ctx.cyclePhase01 = tot - ctx.cycleN;
     ctx.cycleHale = ((ctx.cycleN % 2) + 2) % 2 === 0 ? 1 : -1;
     // atividade: sobe rápido ao máximo (~0.35), decai lento. Piso 0.10
     // e swing maior (painel de juízes F3: max↔min a "~1 stop" não
@@ -83,7 +92,13 @@ export function createActivity(ctx){
     // ref-06 vs ref-07); em fase 0.35 vale ~1.03 (ligar o knob não dá
     // pop perceptível nas regiões vivas)
     var amp = 0.10 + 1.06 * Math.pow(Math.sin(Math.PI * ctx.cyclePhase01), 1.15);
-    ctx.cycleAmpK = 1.0 + (amp - 1.0) * d;
+    // A DOSE DA DRAMATURGIA entra AQUI e só aqui: ela multiplica a
+    // OCUPAÇÃO (quanta atividade da fase aparece) e não encosta em fase,
+    // banda de Spörer, sinal de Hale nem reversão polar — o `cyclePolF`
+    // abaixo continua saindo da fase crua. Fora da viagem vale 1, e
+    // multiplicar por 1,0 é bit-exato: sem dose e com dose plena
+    // desenham o mesmo Sol byte a byte.
+    ctx.cycleAmpK = (1.0 + (amp - 1.0) * d) * ctx.doseDoSol;
     // EVENTO DE MÁXIMO — escalar de apresentação derivado da física:
     // smoothstep(1.0, 1.14, ampK). Teto real do amp = 1.16 (fase 0.5,
     // d=1). Com o ciclo desligado (d=0) ampK=1.0 => maxK=0 exato — o
@@ -101,37 +116,59 @@ export function createActivity(ctx){
       cyclePolarS.w = -0.5 * ctx.cyclePolF;
     }
   }
-  // lei de Spörer: banda de emergência na fase corrente. latR é o MESMO
-  // sorteio uniforme que o caminho default consome — sem chamadas novas
-  // de srand(). defLat entra p/ o blend suave de profundidade do knob.
-  function cycleEmergenceLat(latR, hemi, defLat){
+  // lei de Spörer: banda de emergência na fase EM QUE A REGIÃO EMERGIU —
+  // e "em que emergiu" é literal desde 21/08. Ler a fase VIVA aqui era o
+  // último resíduo de caminho do modelo: a mesma vida, alcançada por
+  // datas diferentes, nascia em latitudes diferentes. Uma região real
+  // carrega a banda do dia em que emergiu pelo resto da vida.
+  // latR é o MESMO sorteio uniforme que o caminho default consome — sem
+  // draws novos. defLat entra p/ o blend suave de profundidade do knob.
+  function cycleEmergenceLat(latR, hemi, defLat, faseNasc){
     var d = cycleDepth();
-    var latC = (35.0 - 30.0 * ctx.cyclePhase01) * (Math.PI / 180.0);
-    var latW = (8.0 - 4.0 * ctx.cyclePhase01) * (Math.PI / 180.0);
+    var latC = (35.0 - 30.0 * faseNasc) * (Math.PI / 180.0);
+    var latW = (8.0 - 4.0 * faseNasc) * (Math.PI / 180.0);
     var lat = Math.max(0.035, latC + (latR * 2.0 - 1.0) * latW);
     return defLat + (hemi * lat - defLat) * d;
   }
-  function placePair(ps){
+  // o instante do NASCIMENTO da vida `k`, e a fase/ciclo que ele viu.
+  // `T = (ciclo + fase)·UNIDADES`, então a inversa é uma divisão.
+  function estadoDoNascimento(ps, k){
+    var t = k * ps.period - ps.phase;
+    var tot = t / ctx.UNIDADES_POR_CICLO;
+    var ciclo = Math.floor(tot);
+    return { fase: tot - ciclo, hale: ((ciclo % 2) + 2) % 2 === 0 ? 1 : -1 };
+  }
+  // O NASCIMENTO DE UMA VIDA. `k` é o índice da vida da região (quantos
+  // períodos já se passaram no relógio do ciclo) e é ELE que semeia o
+  // sorteio: mesma vida, mesma posição, venha o relógio de onde vier.
+  // Antes isto consumia o `srand` COMPARTILHADO, e por isso o número de
+  // renascimentos no caminho decidia onde as regiões estavam — o resíduo
+  // que atravessava o portal do Atlas (item 5).
+  //
+  // A REJEIÇÃO é a do nascimento original do doador — cada par nasce
+  // contra os que JÁ nasceram (índices menores) —, agora aplicada a toda
+  // vida em vez de só ao boot. Ler o líder VIVO dos outros seria
+  // recursão: a posição viva deles depende do T que estamos calculando.
+  function placePair(ps, i, k){
+    var rand = ctx.correnteDaVida('regiao', i, k);
+    var nasc = estadoDoNascimento(ps, k);
     // Uma nova posição equivale a uma nova região magnética física. A
     // geração dá identidade estável à descoberta educativa sem depender
-    // dos pontos visuais auxiliares de manchas.
-    ps.eduGeneration++;
-    // rejeição: regiões ativas independentes não nascem sobrepostas —
-    // exige distância angular mínima dos líderes das outras regiões
+    // dos pontos visuais auxiliares de manchas — e agora ela É a vida.
+    ps.eduGeneration = k;
     var lat, lon, lead;
     for (var attempt = 0; attempt < 24; attempt++){
-      var latR = srand();
+      var latR = rand();
       lat = ps.hemi * (0.24 + latR*0.30);
       // FASE 3 — lei de Spörer: com o ciclo ligado a banda migra
-      // 35°→5°; reaproveita latR (stream do srand intocado)
-      if (cycleDepth() > 0.001) lat = cycleEmergenceLat(latR, ps.hemi, lat);
-      lon = srand()*Math.PI*2;
+      // 35°→5° conforme a fase DA DATA
+      if (cycleDepth() > 0.001) lat = cycleEmergenceLat(latR, ps.hemi, lat, nasc.fase);
+      lon = rand()*Math.PI*2;
       lead = sphDir(lon, lat);
       var minAng = Math.PI, minLon = Math.PI;
-      for (var j = 0; j < pairStates.length; j++){
+      for (var j = 0; j < i; j++){
         var other = pairStates[j];
-        if (other === ps || !other.lead) continue;
-        var od = new THREE.Vector3(other.lead.x, other.lead.y, other.lead.z);
+        var od = new THREE.Vector3(other.lead0.x, other.lead0.y, other.lead0.z);
         if (od.lengthSq() < 1e-6) continue;
         minAng = Math.min(minAng, lead.angleTo(od.normalize()));
         // separação LONGITUDINAL mínima entre pares vivos (envelope
@@ -146,16 +183,18 @@ export function createActivity(ctx){
     }
     // lei de Joy: o par é inclinado — o seguidor fica mais perto do polo;
     // separação maior que o raio das manchas (pares reais não se tocam)
-    var sep = 0.19 + srand()*0.10;
-    var follLat = lat + ps.hemi * sep * (0.105 + srand()*0.071);   // tilt de Joy 6-10 graus
+    var sep = 0.19 + rand()*0.10;
+    var follLat = lat + ps.hemi * sep * (0.105 + rand()*0.071);   // tilt de Joy 6-10 graus
     lead.multiplyScalar(0.88);
     var foll = sphDir(lon+sep, follLat).multiplyScalar(0.88);
-    ps.lead.set(lead.x, lead.y, lead.z, ps.lead.w);
-    ps.foll.set(foll.x, foll.y, foll.z, ps.foll.w);
-    // FASE 3 — flip de Hale: a região que EMERGE carrega a polaridade
-    // do ciclo corrente (regiões vivas não trocam de sinal no meio da
+    // a posição de NASCIMENTO fica guardada: a posição viva é ela mais a
+    // deriva diferencial da IDADE, em forma fechada (ver `derivarDe`)
+    ps.lead0.copy(lead);
+    ps.foll0.copy(foll);
+    // FASE 3 — flip de Hale: a região que EMERGE carrega a polaridade do
+    // ciclo EM QUE EMERGIU (regiões vivas não trocam de sinal no meio da
     // vida). Com o ciclo desligado, polSign=1 = comportamento de sempre.
-    ps.polSign = (cycleDepth() > 0.001) ? ctx.cycleHale : 1;
+    ps.polSign = (cycleDepth() > 0.001) ? nasc.hale : 1;
   }
   (function buildCharges(){
     for (var i=0;i<4;i++){
@@ -166,14 +205,17 @@ export function createActivity(ctx){
       charges.push(lead); charges.push(foll);
       // ciclo de vida: emerge -> madura -> decai -> some (e renasce em
       // outro lugar). Fases espalhadas: sempre há 2-3 regiões vivas.
+      // `q`, `period` e `phase` são a IDENTIDADE do par e continuam
+      // saindo do stream de construção: são sorteados uma vez e não
+      // andam mais — não é deles que vinha o resíduo.
       var ps = {
         lead: lead, foll: foll, baseQ: q, hemi: hemi,
         period: 150 + srand()*90,
-        phase: 0, reborn: false, polSign: 1,
+        phase: 0, vida: null, polSign: 1,
+        lead0: new THREE.Vector3(), foll0: new THREE.Vector3(),
         eduGeneration: -1, eduAnnouncedGeneration: -1
       };
       ps.phase = (i/4 + srand()*0.1) * ps.period;
-      placePair(ps);
       pairStates.push(ps);
     }
     charges.push(cyclePolarN = new THREE.Vector4(0,  0.55, 0,  0.5));
@@ -182,6 +224,10 @@ export function createActivity(ctx){
   // FASE 3: com ?cycle/?lapse na URL o estado do ciclo (amp, dipolo
   // polar) vale desde o primeiro frame/seed do sim; com knob=0 é no-op
   updateCycleState();
+  // as regiões nascem NO INSTANTE DA DATA, antes de o Br ser semeado: o
+  // relaxamento longo do `prime` tem de convergir para as cargas que a
+  // data pede, não para um estado de t=0 que não existe mais
+  updateActiveRegions(ctx.tempoDoCiclo);
   simUniforms.uChargesSim.value = charges;
   seedSimulation();
   function lifeEnvelope(x){   // x em 0..1 dentro do período
@@ -211,137 +257,84 @@ export function createActivity(ctx){
   // sempre.
   function lifeEnvelopeEased(x){
     var e = lifeEnvelope(x);
-    // o boost do evento acelera o MESMO relógio warpado do lapse: as
-    // rampas largas entram pelo mesmo easing (sem strobo na subida)
-    if (ctx.LAPSE_K > 0 || (cycleEvent && ctx.cycleEventMul > 1)){
+    if (ctx.LAPSE_K > 0){
       var easeK=cycleEasingFor(cycleMultiplier());
       e += (lifeEnvelopeLapse(x) - e)*easeK;
     }
     return e;
   }
-  // ---------------------------------------------------------------
-  // EVENTO máximo/mínimo solar. startCycleEvent(alvo, hold): comprime o
-  // caminho de fase até o alvo em ~CYCLE_EVT_RAMP s (multiplicador
-  // derivado do que falta / tempo restante — nunca abaixo do ritmo do
-  // lapse), congela o relógio no alvo por `hold` s simulados e libera.
-  // tickCycleEvent roda todo frame no animate (com evento nulo é um
-  // return imediato — caminho default/det intocado).
-  // ---------------------------------------------------------------
-  function startCycleEvent(target01, hold){
-    var tot = CYCLE_PHASE0 + ctx.cycleTime / CYCLE_PERIOD;
-    var ahead = target01 - (tot - Math.floor(tot));
-    if (ahead < 0.002) ahead += 1.0;   // alvo sempre À FRENTE (fase anda, nunca salta)
-    cycleEvent = { targetTot: tot + ahead, holdLeft: hold,
-                   rampLeft: CYCLE_EVT_RAMP, state: 'ramp' };
-    ctx.cycleEventMul = 1;
-  }
-  function endCycleEvent(){
-    cycleEvent = null;
-    ctx.cycleEventMul = 1;
-  }
-  function tickCycleEvent(delta){
-    if (!cycleEvent) return;
-    // ciclo desligado no meio do evento (usuário zerou cycle/lapse):
-    // aborta limpo — sem relógio não há o que acelerar/segurar
-    if (cycleDepth() <= 0.001){ endCycleEvent(); return; }
-    var ev = cycleEvent;
-    if (ev.state === 'ramp'){
-      var remain = (ev.targetTot - (CYCLE_PHASE0 + ctx.cycleTime / CYCLE_PERIOD)) * CYCLE_PERIOD;
-      if (remain <= 0.5){
-        ev.state = 'hold';        // chegou: segura no alvo (relógio parado)
-        ctx.cycleEventMul = 0;
-      } else {
-        ev.rampLeft = Math.max(0, ev.rampLeft - delta);
-        // cobre o que falta no tempo de rampa restante; no último frame
-        // (rampLeft<delta) fecha exato em delta*mul = remain — sem overshoot
-        var need = remain / Math.max(ev.rampLeft, Math.max(delta, 1/240));
-        ctx.cycleEventMul = Math.max(cycleMultiplierFor(ctx.LAPSE_K), Math.min(need, 3600));
-      }
-    } else {
-      ctx.cycleEventMul = 0;
-      ev.holdLeft -= delta;
-      if (ev.holdLeft <= 0) endCycleEvent();
-    }
-  }
-  function cycleEventInfo(){
-    return cycleEvent
-      ? { on: true, state: cycleEvent.state, mul: +ctx.cycleEventMul.toFixed(2),
-          holdLeft: +Math.max(0, cycleEvent.holdLeft).toFixed(2),
-          targetTot: cycleEvent.targetTot }
-      : { on: false, state: '', mul: 1, holdLeft: 0, targetTot: 0 };
-  }
-  // prévias do painel (padrão canPreviewBurst/previewBurst do flares.js)
-  function canPreviewCycleEvent(){
-    if (cycleDepth() <= 0.001) return { ok:false, reason:'source-empty' };
-    if (cycleEvent) return { ok:false, reason:'event-active' };
-    return { ok:true, reason:'' };
-  }
-  function previewSolarMax(){
-    var state = canPreviewCycleEvent();
-    if (!state.ok) return state;
-    if (ctx.directorUserExit) ctx.directorUserExit();
-    startCycleEvent(0.5, 20);   // fase 0.5 = pico do envelope (amp 1.16)
-    return { ok:true, reason:'', target:'max' };
-  }
-  function previewSolarMin(){
-    var state = canPreviewCycleEvent();
-    if (!state.ok) return state;
-    if (ctx.directorUserExit) ctx.directorUserExit();
-    startCycleEvent(1.0, 20);   // fase 0/1 = fundo do envelope (amp 0.10)
-    return { ok:true, reason:'', target:'min' };
-  }
-  ctx.canPreviewSolarMax = canPreviewCycleEvent;
-  ctx.canPreviewSolarMin = canPreviewCycleEvent;
-  ctx.previewSolarMax = previewSolarMax;
-  ctx.previewSolarMin = previewSolarMin;
-  // A visita guiada pode encerrar uma prévia documental quando a pessoa
-  // passa de máximo para mínimo ou volta à exploração. Isso remove apenas
-  // o acelerador/hold temporário; a fase física já alcançada é preservada.
-  ctx.cancelCycleEvent = endCycleEvent;
-  var lastRegionT = 0;
+  // (O EVENTO "máximo/mínimo solar" do doador MORREU em 21/08, item 5.
+  // Ele era um acelerador TEMPORÁRIO do acumulador de fase — comprimia
+  // o relógio de fase até um alvo e o congelava lá. Sem acumulador não há
+  // o que acelerar: a fase agora é a da DATA, e quem quiser ver o máximo
+  // solar anda o relógio do céu até 2024-10, que é onde ele está de
+  // verdade. Nesta casa a prévia nunca teve consumidor — era hook do
+  // painel do doador, que não viajou.)
+
+  // O ESTADO DAS REGIÕES NO INSTANTE T — função PURA, sem acumulador,
+  // sem latch e sem cap. Chamar com o mesmo T duas vezes dá o mesmo
+  // estado; chamar com T menor anda para trás sem re-integrar nada.
+  //
+  // Três peças:
+  //  1. a VIDA: `k = floor((T + fase)/período)` diz qual encarnação da
+  //     região está em cena, e `x` onde ela está no envelope;
+  //  2. o NASCIMENTO: quando a tupla de vidas muda, os quatro pares são
+  //     re-sorteados EM ORDEM — cada um contra os que já nasceram —, com
+  //     a semente da vida. Re-sortear os quatro (e não só quem virou)
+  //     é o que torna a rejeição função da tupla, e a tupla função de T;
+  //  3. a DERIVA: rotação diferencial de Snodgrass em FORMA FECHADA
+  //     sobre a IDADE da vida (`x·período`), na mesma constante do sim.
+  //     A latitude não muda sob rotação em Y, então ω é constante na
+  //     vida e a integral é exata — nada de somar dt por quadro.
+  var vidasVivas = null;
   function updateActiveRegions(timeNow){
-    // rotação diferencial nas CARGAS (mesma lei Snodgrass do sim, relativa
-    // à taxa de Carrington 14.18°/dia): manchas derivam em sincronia com a
-    // plage advectada — antes só a textura cisalhava e as cargas ficavam
-    // cap 0.35 > delta máximo por frame (rawDelta 0.1 × speed 3 = 0.3):
-    // a deriva das cargas nunca perde tempo relativo à advecção da plage
-    // (bug 4 da auditoria — o cap antigo 0.2 descolava manchas da plage)
-    var regDt = Math.min(timeNow - lastRegionT, 0.35);
-    lastRegionT = timeNow;
-    for (var i=0;i<pairStates.length;i++){
-      var ps = pairStates[i];
+    var i, ps, k;
+    var vidas = '';
+    for (i=0;i<pairStates.length;i++){
+      ps = pairStates[i];
+      vidas += Math.floor((timeNow + ps.phase) / ps.period) + '|';
+    }
+    if (vidas !== vidasVivas){
+      vidasVivas = vidas;
+      for (i=0;i<pairStates.length;i++){
+        ps = pairStates[i];
+        k = Math.floor((timeNow + ps.phase) / ps.period);
+        ps.vida = k;
+        placePair(ps, i, k);
+      }
+    }
+    for (i=0;i<pairStates.length;i++){
+      ps = pairStates[i];
       var x = ((timeNow + ps.phase) % ps.period) / ps.period;
       var env = lifeEnvelopeEased(x);   // = lifeEnvelope(x) com lapse=0
-      if (x >= 0.90){
-        if (!ps.reborn){ placePair(ps); ps.reborn = true; }   // renasce longe
-      } else {
-        ps.reborn = false;
-      }
       // FASE 3: polSign (flip de Hale) e cycleAmpK (envelope de
-      // atividade do ciclo) valem 1 com o ciclo desligado — o produto
-      // por 1.0 é bit-exato, o caminho default não muda
-      // A posição nova é sorteada na fase morta (x>=0.90). O piso antigo
-      // mantinha 3% de carga nesse instante e teleportava um campo ainda
-      // observável pela cromosfera/coroa. O envelope já chega suavemente a
-      // zero; respeitá-lo torna a relocação eletricamente invisível.
+      // atividade do ciclo, já com a DOSE) valem 1 com o ciclo
+      // desligado — o produto por 1.0 é bit-exato.
+      // A posição nova é sorteada na fase morta (x>=0.90), onde o
+      // envelope já chegou a zero: a relocação é eletricamente
+      // invisível, sem piso de carga a teleportar.
       ps.lead.w =  ps.baseQ * ps.polSign * env * ctx.cycleAmpK;
       ps.foll.w = -ps.baseQ * ps.polSign * 0.85 * env * ctx.cycleAmpK;
       // MACRO_SLOW: a advecção do sim desacelera junto (SIM_DT) — as
       // cargas derivam na mesma escala para as manchas não descolarem
       // da plage (família do bug 4 da auditoria de movimento)
-      if (regDt > 0){ driftCharge(ps.lead, regDt*ctx.MACRO_SLOW); driftCharge(ps.foll, regDt*ctx.MACRO_SLOW); }
+      var idade = x * ps.period * ctx.MACRO_SLOW;
+      derivarDe(ps.lead0, ps.lead, idade);
+      derivarDe(ps.foll0, ps.foll, idade);
     }
   }
-  updateActiveRegions(0);
-  // cisalhamento diferencial de uma carga: mesma constante do sim
-  // (vel.x = (Ω(lat)-14.18)*0.00028 em unidades de uv por tempo simulado)
-  function driftCharge(c, dt){
-    var lat = Math.asin(Math.max(-1, Math.min(1, c.y)));
+  // a posição VIVA = nascimento + deriva diferencial da idade, exata.
+  // Mesma constante do sim (vel.x = (Ω(lat)-14.18)*0.00028 em uv por
+  // tempo simulado); a rotação é em Y, então `y` (e portanto Ω) não muda.
+  function derivarDe(nasc, saida, idade){
+    var lat = Math.asin(Math.max(-1, Math.min(1, nasc.y)));
     var s2 = Math.sin(lat)*Math.sin(lat);
     var omega = 14.71 - 2.39*s2 - 1.78*s2*s2;
-    var dlon = (omega - 14.18) * 0.00028 * 6.28318 * dt;
-    var cx = c.x, cz = c.z, cd = Math.cos(dlon), sd = Math.sin(dlon);
-    c.x = cx*cd - cz*sd; c.z = cx*sd + cz*cd;
+    var dlon = (omega - 14.18) * 0.00028 * 6.28318 * idade;
+    var cd = Math.cos(dlon), sd = Math.sin(dlon);
+    saida.x = nasc.x*cd - nasc.z*sd;
+    saida.y = nasc.y;
+    saida.z = nasc.x*sd + nasc.z*cd;
   }
   // value noise 1D com 3 oitavas (flicker 1/f do plasma suspenso)
   function vhash1(i){ var s = Math.sin(i*127.1 + 311.7)*43758.5453; return s - Math.floor(s); }
@@ -372,11 +365,7 @@ export function createActivity(ctx){
            updateCycleState: updateCycleState, placePair: placePair,
            updateActiveRegions: updateActiveRegions, cycleDepth: cycleDepth,
            cycleMultiplier: cycleMultiplier,
-           startCycleEvent: startCycleEvent, tickCycleEvent: tickCycleEvent,
-           cancelCycleEvent: endCycleEvent,
-           cycleEventInfo: cycleEventInfo,
            lifeEnvelope: lifeEnvelope, lifeEnvelopeEased: lifeEnvelopeEased,
            bFieldJS: bFieldJS, flicker1f: flicker1f,
-           cyclePolarN: cyclePolarN, cyclePolarS: cyclePolarS,
-           CYCLE_PERIOD: CYCLE_PERIOD, CYCLE_PHASE0: CYCLE_PHASE0 };
+           cyclePolarN: cyclePolarN, cyclePolarS: cyclePolarS };
 }

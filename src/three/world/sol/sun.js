@@ -89,6 +89,7 @@ export function createSunUniforms(ctx){
     [0.008, 0.014, 2.0]     // 4 pequeno (oposto ao médio-2)
   ];
   var spotPairs = [];
+  var vidasDosGrupos = null;
   function sstep(a, b, x){
     var t = Math.min(1, Math.max(0, (x - a)/(b - a)));
     return t*t*(3 - 2*t);
@@ -97,15 +98,21 @@ export function createSunUniforms(ctx){
   // chamada (contagem constante = lifecycle determinístico sob det;
   // candidatos descartados NÃO devolvem draws — anti-flaky por
   // construção, mesmo racional do placePair original)
-  function placeSpotPair(sp, p){
-    var uHemi = spotRand();
-    var uLat = spotRand();
-    var uC0 = spotRand(), uC1 = spotRand(), uC2 = spotRand(),
-        uC3 = spotRand(), uC4 = spotRand();
-    var uSz = spotRand();
-    var uFr = spotRand();
-    var uSep = spotRand();
-    var uJoy = spotRand();
+  function placeSpotPair(sp, p, k){
+    // O STREAM É O DA VIDA (mesma lei das regiões, activity.js): 11
+    // draws de uma corrente semeada por (grupo, vida), e não do
+    // `spotRand` compartilhado que ANDAVA a cada renascimento. É isto
+    // que faz o mesmo instante devolver o mesmo grupo, venha o relógio
+    // de onde vier — e que deixa o calendário andar para trás.
+    var r = ctx.correnteDaVida('mancha', p, k);
+    var uHemi = r();
+    var uLat = r();
+    var uC0 = r(), uC1 = r(), uC2 = r(),
+        uC3 = r(), uC4 = r();
+    var uSz = r();
+    var uFr = r();
+    var uSep = r();
+    var uJoy = r();
     // hemisfério: principal e poros sorteiam; médios/pequeno espelham
     // em cadeia (oposto ao par de referência) — atividade distribuída
     // entre N e S por construção (ref-07: grupos nos DOIS hemisférios;
@@ -159,43 +166,36 @@ export function createSunUniforms(ctx){
       }
       if (score > bestS){ bestS = score; lon = lc; }
     }
-    sp.lx = cl*Math.cos(lon); sp.ly = slat; sp.lz = cl*Math.sin(lon);
+    sp.lx0 = cl*Math.cos(lon); sp.ly0 = slat; sp.lz0 = cl*Math.sin(lon);
     // tilt de Joy (seguidor levemente rumo ao polo), seguidor a leste
     var latF = lat + hemi*sep*(0.10 + 0.07*uJoy), lonF = lon + sep,
         cf = Math.cos(latF);
-    sp.fx = cf*Math.cos(lonF); sp.fy = Math.sin(latF); sp.fz = cf*Math.sin(lonF);
+    sp.fx0 = cf*Math.cos(lonF); sp.fy0 = Math.sin(latF); sp.fz0 = cf*Math.sin(lonF);
+    // a posição VIVA nasce igual à de nascimento; a deriva a reescreve
+    sp.lx = sp.lx0; sp.ly = sp.ly0; sp.lz = sp.lz0;
+    sp.fx = sp.fx0; sp.fy = sp.fy0; sp.fz = sp.fz0;
   }
   (function buildSpotPairs(){
     for (var p = 0; p < 5; p++){
-      var sp = { period: 90 + spotRand()*70, phase: 0, reborn: false,
+      var sp = { period: 90 + spotRand()*70, phase: 0, vida: null,
                  lx: 0, ly: 0, lz: 0, lr0: 0.01,
-                 fx: 0, fy: 0, fz: 0, fr0: 0.006 };
+                 fx: 0, fy: 0, fz: 0, fr0: 0.006,
+                 lx0: 0, ly0: 0, lz0: 0, fx0: 0, fy0: 0, fz0: 0 };
       // fases espalhadas (mesmo padrão do buildCharges): sempre há
-      // pares em estágios diferentes do envelope. Janela [0.02, 0.80]
-      // do x inicial: piso 0.02 garante os 5 pares VIVOS no frame de
-      // captura (fade>0 — S2/sweep dependem da multiplicidade cheia);
-      // teto 0.80: o 1º renascimento natural (draws de spotRand) fica
-      // a >=0.10·period (~9s sim) — nunca DENTRO de uma janela de
-      // captura de QA (o frame do hook tem jitter de wall-clock; um
-      // renascimento na janela dessincronizaria o stream)
+      // pares em estágios diferentes do envelope. `period` e `phase`
+      // são a IDENTIDADE do grupo — sorteadas uma vez, no stream de
+      // construção, e nunca mais. A POSIÇÃO não nasce aqui: ela é
+      // função da VIDA, e a primeira atualização (que já conhece a
+      // data) a coloca.
       sp.phase = (p/5*0.85 + 0.02 + spotRand()*0.10) * sp.period;
-      placeSpotPair(sp, p);
       spotPairs.push(sp);
     }
   })();
-  // re-emergência total (hook de QA/sweep, chamada pelo reseed do
-  // setCyclePhase): 12 draws fixos por par — determinístico; a mesma
-  // janela de x pós-reseed. A fase NÃO lê o relógio corrente: o x na
-  // captura depende só do frame congelado (frame-exato sob det), nunca
-  // do instante de wall-clock em que o hook rodou (anti-flaky S6).
-  function spotsReseed(){
-    for (var p = 0; p < 5; p++){
-      var sp = spotPairs[p];
-      sp.phase = (p/5*0.85 + 0.02 + spotRand()*0.10) * sp.period;
-      sp.reborn = false;
-      placeSpotPair(sp, p);
-    }
-  }
+  // (O RE-SEED DE TODOS OS GRUPOS morreu em 21/08, item 5: ele existia para
+  // re-emergir os cinco quando um salto de fase os teleportava, e essa
+  // chamada nunca existiu nesta casa — era hook do painel do doador.
+  // Com semente POR VIDA não há o que re-semear: a posição já é função
+  // do instante.)
   // cisalhamento diferencial (mesma lei Snodgrass de driftCharge):
   // devolve o dlon para a latitude — as manchas derivam em sincronia
   // com as cargas/plage e não descolam do entorno
@@ -205,16 +205,33 @@ export function createSunUniforms(ctx){
     var omega = 14.71 - 2.39*s2 - 1.78*s2*s2;
     return (omega - 14.18) * 0.00028 * 6.28318 * dt;
   }
-  var spotLastT = 0;
+  // O RELÓGIO DOS GRUPOS É O DA DATA (`ctx.tempoDoCiclo`), o mesmo das
+  // regiões reais — e ele NÃO acumula: o instante anterior e o cap de
+  // 0,35 morreram em 21/08 com o item 5, junto com o latch de renascimento.
   // atualização por frame (chamada pelo onBeforeRender do disco — main
   // render apenas, 1×/frame): ZERO alocações; roda independente do
   // knob (uSpotsK é quem gateia o desenho no shader)
   function spotsUpdate(){
-    var tNow = ctx.elapsed + ctx.cycleWarp;   // mesmo relógio das regiões (lapse acelera)
-    var dt = tNow - spotLastT;
-    if (dt < 0) dt = 0; if (dt > 0.35) dt = 0.35;
-    spotLastT = tNow;
-    var drift = dt * ctx.MACRO_SLOW;
+    var tNow = ctx.tempoDoCiclo;
+    var p, sp;
+    // as VIDAS primeiro: se a tupla mudou, os cinco grupos re-nascem EM
+    // ORDEM (cada um contra os que já nasceram, como no build original),
+    // com a semente da vida. Re-colocar os cinco — e não só quem virou —
+    // é o que torna a cadeia de hemisférios e a escolha de longitude
+    // função da TUPLA, e a tupla função do instante.
+    var vidas = '';
+    for (p = 0; p < 5; p++){
+      sp = spotPairs[p];
+      vidas += Math.floor((tNow + sp.phase) / sp.period) + '|';
+    }
+    if (vidas !== vidasDosGrupos){
+      vidasDosGrupos = vidas;
+      for (p = 0; p < 5; p++){
+        sp = spotPairs[p];
+        sp.vida = Math.floor((tNow + sp.phase) / sp.period);
+        placeSpotPair(sp, p, sp.vida);
+      }
+    }
     var k = ctx.SPOTS_K;
     // multiplicidade: contagem instantânea = ciclo (cycleAmpK) × knob —
     // o knob compra GRUPOS, não raio (lei corrigida pós-painel).
@@ -230,54 +247,30 @@ export function createSunUniforms(ctx){
     // fator é 1.0)
     var sizeK = 0.82 + 0.18*Math.min(1, k) + 0.02*Math.max(0, k - 1);
     var ampSz = 0.55 + 0.45*Math.min(1, ctx.cycleAmpK);
-    for (var p = 0; p < 5; p++){
-      var sp = spotPairs[p];
+    for (p = 0; p < 5; p++){
+      sp = spotPairs[p];
       var x = ((tNow + sp.phase) % sp.period) / sp.period;
       var env = lifeEnvelopeEased(x);   // = lifeEnvelope(x) com lapse=0
-      if (x >= 0.90){
-        if (!sp.reborn){ placeSpotPair(sp, p); sp.reborn = true; }   // renasce noutro grupo
-      } else sp.reborn = false;
-      if (drift > 0){
-        var dl = spotDriftLon(sp.ly, drift), cd = Math.cos(dl), sd = Math.sin(dl);
-        var x0 = sp.lx, z0 = sp.lz;
-        sp.lx = x0*cd - z0*sd; sp.lz = x0*sd + z0*cd;
-        dl = spotDriftLon(sp.fy, drift); cd = Math.cos(dl); sd = Math.sin(dl);
-        x0 = sp.fx; z0 = sp.fz;
-        sp.fx = x0*cd - z0*sd; sp.fz = x0*sd + z0*cd;
-      }
-      // anti-fusão em RUNTIME: se a deriva diferencial ou um
-      // renascimento de região REAL (placePair não conhece os grupos
-      // virtuais) invadir o keep-out, o grupo virtual cede — empurrão
-      // só em LONGITUDE, rate-limitado (fração de px por frame, nunca
-      // salto), determinístico (função pura do estado, zero draws e
-      // zero alocações). Limiares em corda²: 0.040≈(0.20 rad)² vs
-      // reais, 0.130≈(0.36 rad)² vs grupos virtuais (histerese abaixo
-      // dos keep-outs de nascimento 0.30/0.42).
-      if (dt > 0){
-        var pushDl = 0, oj;
-        for (oj = 0; oj < 8; oj++){
-          var oc = charges[oj];
-          var oil = 1.0/(Math.sqrt(oc.x*oc.x + oc.y*oc.y + oc.z*oc.z) || 1);
-          if (2.0*(1.0 - (sp.lx*oc.x + sp.ly*oc.y + sp.lz*oc.z)*oil) < 0.040){
-            pushDl += ((oc.x*sp.lz - oc.z*sp.lx) >= 0 ? 1 : -1);
-          }
-        }
-        for (oj = 0; oj < 5; oj++){
-          if (oj === p) continue;
-          var op = spotPairs[oj];
-          if (2.0*(1.0 - (sp.lx*op.lx + sp.ly*op.ly + sp.lz*op.lz)) < 0.130){
-            pushDl += ((op.lx*sp.lz - op.lz*sp.lx) >= 0 ? 1 : -1);
-          }
-        }
-        if (pushDl !== 0){
-          var pd = (pushDl > 0 ? 1 : -1) * 0.06 * dt;
-          var cpd = Math.cos(pd), spd = Math.sin(pd);
-          var rx = sp.lx, rz = sp.lz;
-          sp.lx = rx*cpd - rz*spd; sp.lz = rx*spd + rz*cpd;
-          rx = sp.fx; rz = sp.fz;
-          sp.fx = rx*cpd - rz*spd; sp.fz = rx*spd + rz*cpd;
-        }
-      }
+      // deriva diferencial em FORMA FECHADA sobre a IDADE da vida —
+      // a mesma lei (e a mesma constante) de `derivarDe` nas cargas.
+      // Antes isto era uma integral por quadro com limitador; o
+      // limitador é que fazia o mesmo instante ter duas respostas.
+      var idade = x * sp.period * ctx.MACRO_SLOW;
+      var dl = spotDriftLon(sp.ly0, idade), cd = Math.cos(dl), sd = Math.sin(dl);
+      sp.lx = sp.lx0*cd - sp.lz0*sd; sp.ly = sp.ly0; sp.lz = sp.lx0*sd + sp.lz0*cd;
+      dl = spotDriftLon(sp.fy0, idade); cd = Math.cos(dl); sd = Math.sin(dl);
+      sp.fx = sp.fx0*cd - sp.fz0*sd; sp.fy = sp.fy0; sp.fz = sp.fx0*sd + sp.fz0*cd;
+      // (O EMPURRÃO ANTI-FUSÃO em runtime MORREU aqui em 21/08, item 5,
+      // e morre declarado: era uma relaxação rate-limitada que somava
+      // uma fração de radiano POR QUADRO contra os vizinhos vivos —
+      // ou seja, um acumulador, e o resíduo dele era exatamente o que
+      // fazia duas entradas no mesmo instante darem dois Sóis. O que
+      // ele defendia continua defendido no NASCIMENTO: os 5 candidatos
+      // de longitude escolhem por argmax de folga angular contra as 8
+      // umbras reais (keep-out 0,30 rad) e contra os outros grupos
+      // (0,42 rad) — e agora contra posições que também são função do
+      // instante. E a deriva diferencial é CISALHAMENTO: separa por
+      // latitude em vez de juntar.)
       // fade = vida (anti-pop, como o lifeK das reais) × rampa do gate
       var fade = sstep(0.02, 0.25, env) * sstep(0.0, 0.08, gate - SPOT_THR[p]) * kOn;
       // raio efetivo cresce com a vida (como aw nas reais); knob quase
@@ -371,7 +364,6 @@ export function createSunUniforms(ctx){
     return out;
   }
   ctx.spotsUpdate = spotsUpdate;
-  ctx.spotsReseed = spotsReseed;
   ctx.spotsInfoData = spotsInfoData;
 
   var sunUniforms = {

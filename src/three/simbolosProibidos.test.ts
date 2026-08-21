@@ -293,6 +293,56 @@ const PROIBIDOS: SimboloProibido[] = [
       'o meio-termo do cobertor único (forma do filme a 30%) morreu: o ' +
       'respiro do campo é o ClaraoDoCampo, e a lei governa o principal',
   },
+  // ─── item 5 (2026-08-21): o Sol do Atlas obedece ao calendário ────────
+  //
+  // Aqui não morreu uma lei de LUZ: morreu um relógio. A fase do ciclo
+  // era um acumulador que a dramaturgia do filme torcia, e o Atlas vivia
+  // de um pino. Cada padrão abaixo é uma peça daquele mecanismo — e a
+  // varredura vale para os `sol/*.js` vendorizados também, porque a
+  // exceção ao "os 14 não se tocam" foi declarada no cabeçalho deles.
+  {
+    arquivo: 'src/three/director.ts',
+    padrao: /ATLAS_JOURNEY_T/,
+    migracao: 'item 5',
+    razao:
+      'o pino do Sol dentro do Atlas morreu: a reprodutibilidade não vem ' +
+      'de congelar o instante, vem de o Sol ser função pura da data',
+  },
+  {
+    arquivo: 'src/three/world/stellarBody.ts',
+    padrao: /cyclePhaseMin|cyclePhaseMax|cycleWarp|cycleTime|bakeNow\(120\)/,
+    migracao: 'item 5',
+    razao:
+      'o acumulador de fase, o tempo warpado e o catch-up do salto de ' +
+      'dramaturgia morreram — a fase chega escrita (escreverCiclo) e o ' +
+      'catch-up é o re-bake fatiado, com semente e contagem fixas',
+  },
+  {
+    arquivo: 'src/three/world/stellarBody.ts',
+    padrao: /journeyT/,
+    migracao: 'item 5',
+    razao:
+      'o corpo estelar não conhece o roteiro: o filme escreve DOSE de ' +
+      'ocupação (escreverDose), nunca o segundo em que a viagem está',
+  },
+  {
+    arquivo: 'src/three/world/sol/activity.js',
+    padrao: /ctx\.cycleTime|ctx\.cycleWarp|lastRegionT|CYCLE_PHASE0|startCycleEvent|\.reborn/,
+    migracao: 'item 5',
+    razao:
+      'o acumulador, o cap de deriva, o latch de renascimento e o evento ' +
+      'de máximo/mínimo morreram: o estado das regiões é função pura de ' +
+      'ctx.tempoDoCiclo, com semente POR VIDA',
+  },
+  {
+    arquivo: 'src/three/world/sol/sun.js',
+    padrao: /spotLastT|spotsReseed|pushDl|\.reborn/,
+    migracao: 'item 5',
+    razao:
+      'os grupos de manchas perderam o acumulador, o re-seed de QA e o ' +
+      'empurrão anti-fusão rate-limitado — o keep-out vive no NASCIMENTO, ' +
+      'que agora é função do instante',
+  },
 ];
 
 describe('os símbolos proibidos não renasceram', () => {

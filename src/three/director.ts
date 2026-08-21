@@ -64,6 +64,8 @@ import { MaquinaDoTempo } from './director/maquinaDoTempo';
 import { ligarGestos } from './director/gestos';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
+import { doseDaDramaturgia } from './director/doseDoSol';
+import { faseDoCiclo } from './estrela';
 import { Escada, larguraDeCss } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
@@ -116,16 +118,17 @@ export const LOAD_STAGES = (
   ] as const
 ).map(([id, label], i, all) => ({ id, label, index: i + 1, total: all.length }));
 
-/**
- * O INSTANTE DE VIAGEM QUE O SOL VIVE DENTRO DO ATLAS, pinado.
- * A dramaturgia do ciclo solar é monótona em `journeyT` (mínimo no
- * arranque, máximo no fim da hélice — `SOL_PARAMS.dramaT0/dramaT1`);
- * sem pino, entrar no Atlas a partir de t=10 e a partir de t=250 daria
- * DOIS Sóis diferentes e nenhuma vista do Atlas seria reproduzível.
- * O pino é o fim da janela — o máximo solar, o Sol mais interessante
- * de olhar — e vem de `SOL_PARAMS`, não de um 29 redigitado.
+/*
+ * (O PINO DO SOL DENTRO DO ATLAS morreu em 21/08 — item 5. Ele existia
+ * porque a fase do ciclo era torcida pelo tempo de VIAGEM, e sem pino
+ * entrar no Atlas de t=10 ou de t=250 daria dois Sóis. Ele nem entregava
+ * o que prometia: o que alimentava as regiões era um acumulador, e o
+ * resíduo do trajeto atravessava o portal. Agora a fase é a DATA e o
+ * estado das regiões é função pura dela — a reprodutibilidade não vem
+ * mais de congelar nada, vem de o Sol ser recalculável. E o Atlas ganhou
+ * calendário: o Sol de 2019 é o de um mínimo, o de 2024 é o de um
+ * máximo.)
  */
-const ATLAS_JOURNEY_T = SOL_PARAMS.dramaT1;
 
 /** etapa viva do carregamento: `{ id, index, total, label }`, index 1…total */
 export type LoadStage = (typeof LOAD_STAGES)[number];
@@ -509,7 +512,11 @@ export class Director {
       SOL_PARAMS,
       this.engine.renderer,
       this.engine.camera,
-      this.engine.quality
+      this.engine.quality,
+      // a fase do ciclo NO NASCIMENTO: o `prime` do construtor assa um
+      // retrato completo, e assá-lo na data certa é o que evita um
+      // re-bake no primeiro quadro de toda sessão
+      faseDoCiclo(this.maquinaDoTempo.jdVivo)
     );
     this.dust = new Dust();
     this.roam = new FreeRoam(canvas, this.engine.camera);
@@ -1551,7 +1558,10 @@ export class Director {
       SOL_PARAMS,
       this.engine.renderer,
       this.engine.camera,
-      q
+      q,
+      // o Sol do tier novo nasce NA DATA VIVA — é o que faz a troca ao
+      // vivo sair igual ao boot direto naquele tier (Ajustes C)
+      faseDoCiclo(this.maquinaDoTempo.jdVivo)
     );
     // ---- SWAP ATÔMICO — daqui até o fim nada cede a thread ----------
     const velho = {
@@ -1690,6 +1700,9 @@ export class Director {
       tier: this.engine.quality,
       luz: this.politicaDeLuz,
       evLuzDoFoco: this.evLuzDoFoco(),
+      // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,
+      // e é aí que o selo tem o que declarar
+      doseDoSol: this.phase === 'journey' ? doseDaDramaturgia(this.journeyT) : 1,
       // (stopsDaPupila saiu do estado no M2: a pupila morreu inteira, e
       // a compressão fixa não é desvio por quadro — é a lei, declarada
       // nas linhas de luz do próprio selo.)
@@ -2201,14 +2214,17 @@ export class Director {
       dtS: dt,
       fase: this.phase,
     });
-    // journeyT dirige a dramaturgia do ciclo (mínimo→máximo na hélice);
-    // dentro do Atlas ele é PINADO, senão cada entrada daria um Sol
-    // diferente conforme o instante da pausa (ver ATLAS_JOURNEY_T)
-    this.sun.update(
-      time,
-      this.engine.camera,
-      this.phase === 'atlas' ? ATLAS_JOURNEY_T : this.journeyT
+    // O SOL OBEDECE AO CALENDÁRIO (item 5): a fase do ciclo sai da data
+    // simulada, e o filme só atenua a OCUPAÇÃO no arranque — uma dose
+    // declarada no selo, nunca uma fase inventada. Escrito ANTES do
+    // `update` porque o passe do disco (`spotsUpdate`, no
+    // `onBeforeRender`) lê a fase: escrever depois desenharia um quadro
+    // com as manchas da data anterior.
+    this.sun.escreverCiclo(faseDoCiclo(this.maquinaDoTempo.jdVivo));
+    this.sun.escreverDose(
+      this.phase === 'journey' ? doseDaDramaturgia(this.journeyT) : 1
     );
+    this.sun.update(time, this.engine.camera);
     // O OCLUSOR DA NEBULOSA. A fotosfera está na ORIGEM (o grupo do Sol
     // só é escalado, nunca posicionado) e o raio de mundo dele é
     // `solRaioPc` por construção (esfera de 2,2 do doador × escala

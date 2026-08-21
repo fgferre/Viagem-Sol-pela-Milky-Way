@@ -171,6 +171,17 @@ export interface EstadoDaVista {
    * corpo está em foco, e aí o rótulo fica sem número.
    */
   evLuzDoFoco: number | null;
+  /**
+   * A DOSE DE OCUPAÇÃO DO SOL (item 5, 21/08): quanta da atividade que a
+   * DATA pede o quadro está mostrando. 1 = toda — o valor fora do filme,
+   * e o único em que não há nada a declarar. O arranque do filme mostra
+   * um Sol mais limpo do que o calendário autoriza, e isso é assistência:
+   * entra no eixo BRILHO como qualquer outra.
+   *
+   * Ela mora aqui, e não numa porta de URL, porque não é gesto do
+   * visitante — é a dramaturgia. Quem a calcula é `director/doseDoSol.ts`.
+   */
+  doseDoSol: number;
   // (stopsDaPupila morreu no M2 com a pupila: não há mais adaptação por
   // quadro a declarar — a compressão fixa é a lei, igual em todo quadro.)
 }
@@ -313,6 +324,24 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotulo: 'curva de tom trocada',
     volta: 'vivo',
     desvia: (e) => e.tom !== 'aces',
+  },
+  /**
+   * A DOSE DO SOL NO ARRANQUE (item 5). A linha que faz da dramaturgia
+   * uma ASSISTÊNCIA DECLARADA em vez de um segundo universo: o filme não
+   * inventa uma fase de ciclo que a data não tem — ele mostra MENOS da
+   * atividade que a data tem, e diz isso.
+   *
+   * `volta: 'nenhuma'` porque não há clique que a desfaça: ela é do
+   * roteiro, não do visitante. Como toda linha assim, o selo continua
+   * dizendo ASSISTIDO e explica por quê, em vez de fingir que o clique
+   * resolveu. Ela some sozinha no fim da hélice, quando a dose vira 1.
+   */
+  {
+    chave: 'dose-do-sol',
+    eixo: 'brilho',
+    rotulo: 'o arranque mostra o Sol mais limpo do que a data pede',
+    volta: 'nenhuma',
+    desvia: (e) => e.doseDoSol < 1,
   },
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — a linha

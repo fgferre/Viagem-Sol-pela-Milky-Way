@@ -33,6 +33,7 @@ import {
 import type { EstadoDaVista } from './selo';
 import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
+import { DRAMA_T1, doseDaDramaturgia } from './director/doseDoSol';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { TONE_MAPPINGS } from './core/engine';
 import type { ToneMapMode } from './core/engine';
@@ -53,6 +54,10 @@ const LIMPA: EstadoDaVista = {
   // testes (bloco 2c), porque ele É desvio declarado.
   luz: 'real',
   evLuzDoFoco: null,
+  // dose PLENA na fixture, pelo mesmo motivo do `luz: 'real'`: é o
+  // estado sem assistência nenhuma. O arranque do filme tem os seus
+  // testes próprios (bloco da dose).
+  doseDoSol: 1,
   // (stopsDaPupila saiu da fixture no M2 — a pupila morreu inteira e o
   // estado da vista não tem mais adaptação por quadro a declarar.)
 };
@@ -260,6 +265,28 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8)', () => {
     );
     expect(fn).toContain('HELIO_SEM_PONTO');
     expect(fn).toContain('deslocamentoEVAssistida');
+  });
+
+  it('a dose do arranque é desvio DECLARADO, e some sozinha no fim da hélice', () => {
+    // o filme mostra menos atividade do que a data pede: é assistência,
+    // e o selo a nomeia em vez de calar
+    const v = estadoDoSelo(com({ doseDoSol: doseDaDramaturgia(0) }));
+    expect(v.brilho).toBe('assistido');
+    const linha = v.desvios.find((d) => d.chave === 'dose-do-sol')!;
+    expect(linha.rotulo).toContain('mais limpo do que a data pede');
+    // e não é desfazível por clique: é o roteiro, não o visitante
+    expect(linha.volta).toBe('nenhuma');
+    // no fim da janela a dose é 1 EXATO e o desvio some — sem resíduo
+    expect(doseDaDramaturgia(DRAMA_T1)).toBe(1);
+    expect(doseDaDramaturgia(200)).toBe(1);
+    expect(doseDaDramaturgia(undefined)).toBe(1);
+    expect(estadoDoSelo(com({ doseDoSol: 1 })).brilho).toBe('real');
+    // e o clique "voltar ao real" NÃO a apaga (nada a apaga)
+    expect(
+      estadoDoSelo(aoVoltarAoReal(com({ doseDoSol: 0.2 }))).desvios.some(
+        (d) => d.chave === 'dose-do-sol'
+      )
+    ).toBe(true);
   });
 
   it('clicar volta ao real: aoVoltarAoReal escreve `real` e o selo limpa', () => {

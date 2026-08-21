@@ -49,6 +49,26 @@ import {
   sigmaDaPsfPx,
 } from './luzDaCasa';
 
+// A FASE DO CICLO PELA DATA mora num módulo INTERNO (`estrela/`), como o
+// §3 permite — "módulos internos podem existir atrás dela, desde que nada
+// os importe de fora". A porta é ESTA linha: quem precisa da fase importa
+// de `estrela.ts`. O assunto é grande o bastante para ter arquivo próprio
+// (a âncora do ciclo 25, a assimetria subida/descida) e não tem por que
+// engordar a repartição.
+export {
+  faseDoCiclo,
+  tempoDoCiclo,
+  haleDoCiclo,
+  UNIDADES_POR_CICLO,
+  PERIODO_DO_CICLO_ANOS,
+  SUBIDA_DO_CICLO_ANOS,
+  DESCIDA_DO_CICLO_ANOS,
+  JD_DO_MINIMO_ANCORA,
+  CICLO_DA_ANCORA,
+  DIAS_DO_ANO_JULIANO,
+} from './estrela/cicloDeAtividade';
+export type { FaseDoCiclo } from './estrela/cicloDeAtividade';
+
 // ─── OS TRÊS CONTRATOS ────────────────────────────────────────────────────
 
 /**

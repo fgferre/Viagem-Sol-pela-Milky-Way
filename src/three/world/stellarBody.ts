@@ -25,10 +25,20 @@
 // lá foi calibrado a fov 42° — sem a correção, o enquadramento
 // da parede de fogo a fov 26° leria como "longe").
 //
-// TEMPO: update(time) recebe o relógio VISUAL do director (0 sob
-// ?shot=). delta<=0 congela tudo — por isso o construtor faz um
+// TEMPO: são DOIS relógios, e a distinção é a lei desta casa desde
+// 21/08 (item 5). O RÁPIDO é `update(time)` — o relógio VISUAL do
+// director (0 sob ?shot=) — e move granulação, rotação, coroa, flares,
+// proeminências: tempo de TELA, que acumula. O LENTO é a DATA SIMULADA,
+// que chega por `escreverCiclo` e move a fase do ciclo, as regiões
+// ativas e os grupos de manchas: ele NÃO acumula, é função pura do
+// calendário, e por isso anda para trás de graça. Misturar os dois foi
+// o defeito: o Sol do Atlas ficava congelado no máximo e duas entradas
+// no mesmo instante davam dois Sóis.
+// delta<=0 congela o relógio rápido — por isso o construtor faz um
 // PRIME síncrono (semente do sim + N passos + um bake completo):
-// sem ele, captura em t=0 fotografaria o disco sem cromosfera.
+// sem ele, captura em t=0 fotografaria o disco sem cromosfera. E quando
+// a DATA anda o bastante, um re-bake FATIADO (mesma semente, mesma
+// contagem) refaz o retrato na fase nova sem bloquear a thread.
 //
 // LOD: este arquivo NÃO TEM MAIS LOD, e isso é o que a F3 da onda do Sol
 // real entregou. Até ela, o corpo se atenuava por DISTÂNCIA — duas
@@ -47,7 +57,8 @@ import * as THREE from 'three';
 import { CAMADA_DOS_OCULTADORES } from '../core/post';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
 import { RADIANCIA_DA_FOTOSFERA, radianciaDeTela } from '../luzDaCasa';
-import type { EstadoDaEstrela } from '../estrela';
+import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
+import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
 // o β vem do módulo DONO da curva na emissão, nunca de uma segunda
 // leitura da URL: `starShaders.ts` já resolve `?bemis=` uma vez e os
@@ -185,12 +196,15 @@ export interface StellarParams {
    * Onda 7 vai precisar dele para as classes quentes.
    */
   readonly convective: boolean;
-  /** Fase do ciclo no arranque e no pico da dramaturgia. */
-  readonly cyclePhaseMin: number;
-  readonly cyclePhaseMax: number;
-  /** Janela da dramaturgia, em s de tempo de VIAGEM. */
-  readonly dramaT0: number;
-  readonly dramaT1: number;
+  /*
+   * (A DRAMATURGIA POR TORÇÃO DE FASE morreu em 21/08 — item 5. Eram
+   * quatro números aqui — as fases do arranque e do pico, mais a janela
+   * em segundos de viagem — que faziam o corpo trocar a fase do ciclo
+   * pelo tempo de VIAGEM. A fase agora é da DATA (`faseDoCiclo`, a lei
+   * da estrela) e o filme atenua a OCUPAÇÃO por uma dose declarada, que
+   * mora com quem dirige o filme — `director/doseDoSol.ts`. Um corpo
+   * estelar não tem por que conhecer o roteiro.)
+   */
   /** Semente-mãe dos streams determinísticos da instância. */
   readonly seed: number;
   /** Prefixo dos knobs por URL (`?solcvol=0`). Por instância. */
@@ -417,12 +431,13 @@ export function cirurgiaDaFotosfera(
  * módulo antes da Onda 3: a promoção é de ENDEREÇO, não de valor, e o
  * gate de md5 desta fase é a prova.
  *
- * Dramaturgia do arranque (pedido do dono): o Sol acorda do MÍNIMO
- * (fase 0,02, disco quase limpo) na parede de fogo e chega ao MÁXIMO
- * (fase 0,50, solarMaxK pleno) no fim da hélice — dirigido pelo TEMPO
- * DE VIAGEM, então seek e capturas ?t= veem a fase certa daquele
- * instante. Depois da janela o ciclo segue vivo em 1× a partir do
- * máximo (decai devagar pelo resto da viagem).
+ * Dramaturgia do arranque (pedido do dono): o Sol acorda com o disco
+ * quase limpo na parede de fogo e ganha atividade até o fim da hélice.
+ * A partir de 21/08 isso é uma DOSE DE OCUPAÇÃO — quanta atividade da
+ * data aparece —, e não uma fase inventada: quem manda na fase é o
+ * calendário. A dose mora com quem dirige o filme
+ * (`director/doseDoSol.ts`) e se declara no selo; aqui só entra o que é
+ * da ESTRELA.
  */
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
@@ -438,14 +453,39 @@ export const SOL_PARAMS: StellarParams = {
   activityLevel: 1,
   teffK: 5772,
   convective: true,
-  cyclePhaseMin: 0.02,
-  cyclePhaseMax: 0.5,
-  dramaT0: 5, // s de viagem (fim da parede de fogo)
-  dramaT1: 29, // s de viagem (fim da hélice)
   seed: 20260803,
   knobPrefix: 'sol',
   knobs: SOL_KNOBS,
 };
+
+/**
+ * AS FAMÍLIAS DE VIDA. Cada linhagem de estrutura efêmera do corpo tem um
+ * tempero próprio na semente, para que o sorteio de uma não desloque o da
+ * outra — regiões ativas e grupos de manchas nascem no mesmo instante e
+ * têm de ser independentes.
+ */
+const FAMILIAS_DA_VIDA: Record<string, number> = { regiao: 1, mancha: 2 };
+
+/**
+ * QUANTO A DATA PRECISA ANDAR PARA O RETRATO SER OUTRO — em unidades do
+ * ciclo (1800 por ciclo, ~2,24 dias cada). 7,2 unidades ≈ 16 dias: abaixo
+ * disso a fase move a atividade menos que o ruído da granulação, e re-assar
+ * seria pagar por nada. No filme o instante é fixo (a troca da coda anda
+ * 0,667 dia ≈ 0,3 unidade), então o filme não paga NENHUM re-bake; no
+ * degrau de 10⁷ s/s do Atlas o limiar é cruzado ~7×/s e a máquina pousa a
+ * cada meio segundo — que é honesto, porque ali o Sol está mesmo mudando.
+ */
+const LIMIAR_DE_REASSAR = 7.2;
+
+/**
+ * Os passos de relaxamento do Br que estabelecem um retrato — os mesmos
+ * no `prime` síncrono e no re-bake fatiado, porque é a IGUALDADE da
+ * contagem que garante a mesma chegada por qualquer caminho.
+ */
+const PRIME_STEPS = 320;
+
+/** Passos de simulação por quadro durante o re-bake fatiado. */
+const PASSOS_DO_REASSAR_POR_QUADRO = 16;
 
 function mulberry32(seed: number) {
   let s = seed >>> 0;
@@ -485,6 +525,20 @@ export class StellarBody {
   private pesoDaLei = 1;
   /** cache do último `uFiltroSolar` escrito — nasce no valor do uniform */
   private filtroSolarAnterior = 1;
+  /** a fase do ciclo VIVA (a da data), escrita pelo director por quadro */
+  private faseDoCicloViva: FaseDoCiclo;
+  /** o T em que o retrato publicado foi assado — a régua do re-bake */
+  private cicloAssado = 0;
+  /**
+   * O RE-BAKE FATIADO. Quando a data anda o bastante, o retrato da
+   * cromosfera (e, com o relógio parado, o campo da granulação) precisa
+   * ser refeito NA FASE NOVA. Fatiado por quadro e COALESCIDO — enquanto
+   * ele corre, uma fase nova só reinicia a máquina se cruzar o limiar de
+   * novo; nunca se enfileira. O retrato velho continua publicado até o
+   * fim, então não há véu nem meia cromosfera em quadro.
+   */
+  private reassar: { alvo: number; passos: number; fatia: number; semear: boolean } | null =
+    null;
   /** as geometrias das cenas de quad (`makeFullscreenScene`) — elas não
    *  moram no `group`, então só esta lista as leva ao `dispose()` */
   private readonly geoDosQuads: THREE.PlaneGeometry[] = [];
@@ -493,9 +547,17 @@ export class StellarBody {
     params: StellarParams,
     renderer: THREE.WebGLRenderer,
     camera: THREE.PerspectiveCamera,
-    quality: QualityLevel
+    quality: QualityLevel,
+    /**
+     * A FASE DO CICLO NO NASCIMENTO — a data que o mundo já conhece. Não
+     * é conforto: o `prime` do construtor assa um retrato completo, e
+     * assá-lo na fase errada obrigaria um re-bake no primeiro quadro de
+     * TODA sessão. Quem sabe a data é o director; o corpo obedece.
+     */
+    cicloInicial: FaseDoCiclo = { fase01: 0, ciclo: 0 }
   ) {
     this.params = params;
+    this.faseDoCicloViva = cicloInicial;
     this.rotSpeed = rotSpeedFromPeriod(params.rotPeriodDays);
     this.scale = params.radiusPc / DONOR_RADIUS;
     this.group.scale.setScalar(this.scale);
@@ -561,9 +623,27 @@ export class StellarBody {
       launchCME: () => {},
       maybeLaunchCME: () => {},
       elapsed: 0,
-      // fase inicial 0,02 (mínimo profundo): tot = 0,35 + 1206/1800 = 1,02
-      cycleTime: (1 + params.cyclePhaseMin - 0.35) * 1800,
-      cycleWarp: 0,
+      cyclePhase01: cicloInicial.fase01,
+      cycleN: cicloInicial.ciclo,
+      // O RELÓGIO LENTO — a data, na unidade do núcleo. Escrito por
+      // `escreverCiclo` a cada quadro; nasce no instante que o director
+      // passou. Não acumula, não pode acumular: é ele que faz o mesmo
+      // instante devolver o mesmo Sol.
+      tempoDoCiclo: tempoDoCiclo(cicloInicial),
+      // a régua que converte T de volta em (ciclo, fase) — é dela que o
+      // núcleo tira a fase EM QUE UMA REGIÃO NASCEU
+      UNIDADES_POR_CICLO,
+      // a DOSE de ocupação da dramaturgia (1 = sem assistência)
+      doseDoSol: 1,
+      // A CORRENTE DE UMA VIDA. Semente por (família, índice, vida) — é
+      // o que substituiu o stream compartilhado que ANDAVA a cada
+      // renascimento. A família separa regiões de grupos de manchas para
+      // um não deslocar o outro.
+      correnteDaVida: (familia: string, i: number, k: number) =>
+        mulberry32(
+          (params.seed ^ Math.imul(FAMILIAS_DA_VIDA[familia] ?? 0, 0x9e3779b1)
+            ^ Math.imul(i + 1, 0x85ebca6b) ^ Math.imul(k | 0, 0xc2b2ae35)) >>> 0
+        ),
       solarMaxK: 0,
       surfFlareT: 999,
       surfFlareAmp: 0,
@@ -684,17 +764,25 @@ export class StellarBody {
     this.prime(renderer);
   }
 
-  // Sim + bake síncronos: evolui o Br na direção das cargas ATUAIS e
-  // publica um retrato completo da cromosfera. Usado pelo prime e pelo
-  // catch-up de saltos de fase (seek/captura, quando delta=0 e o bake
-  // fatiado nunca rodaria).
+  // Sim + bake síncronos: põe as regiões NA FASE PEDIDA, evolui o Br na
+  // direção delas e publica um retrato completo da cromosfera. Usado
+  // pelo `prime` do construtor. A ORDEM importa e mudou em 21/08: as
+  // cargas primeiro, senão os N passos relaxam rumo a um estado que já
+  // não existe e o retrato sai meio ciclo atrasado.
   private bakeNow(simSteps: number) {
     const ctx = this.ctx;
     const prevRT = ctx.renderer.getRenderTarget();
+    ctx.act.updateActiveRegions(ctx.tempoDoCiclo);
     for (let i = 0; i < simSteps; i++) ctx.gran.stepSimulation(SIM_DT);
-    ctx.act.updateActiveRegions(ctx.elapsed + ctx.cycleWarp);
     ctx.chromo.snapshotBakeInputs();
     for (let s = 0; s < 8; s++) ctx.chromo.bakeChromoSlice(s, ctx.elapsed);
+    this.publicarRetrato();
+    ctx.renderer.setRenderTarget(prevRT);
+  }
+
+  /** o passo comum a `bakeNow` e ao re-bake: o retrato novo entra INTEIRO */
+  private publicarRetrato() {
+    const ctx = this.ctx;
     ctx.bakePrev = ctx.bakeCur = ctx.bakeWrite;
     ctx.bakeWrite = (ctx.bakeCur + 1) % 3;
     ctx.bakeSwapT = ctx.elapsed;
@@ -704,6 +792,43 @@ export class StellarBody {
     ctx.sunUniforms.uChromoTexP.value = set.s.texture;
     ctx.sunUniforms.uChromoFarP.value = set.c.texture;
     ctx.sunUniforms.uBakeMix.value = 1;
+    this.cicloAssado = ctx.tempoDoCiclo;
+  }
+
+  /**
+   * O RE-BAKE FATIADO, um passo por quadro. É a MESMA máquina do `prime`
+   * — mesma semente, MESMA CONTAGEM de passos —, só que repartida no
+   * orçamento de quadro em vez de bloquear a thread. É essa igualdade
+   * que faz a chegada ser bit-idêntica por qualquer caminho: nunca se
+   * integra para trás; re-semeia-se e repete-se a contagem fixa.
+   *
+   * `semear` é a diferença declarada entre CAPTURA e PLAY. Com o relógio
+   * visual parado (`delta === 0`, o regime de `?shot=`) nada integra a
+   * granulação, então o campo é REFEITO da semente — determinístico por
+   * construção. Com o relógio andando, a granulação já está sendo
+   * integrada 5×/quadro rumo às cargas novas: re-semear ali seria trocar
+   * o padrão de grânulos duas vezes por segundo, um strobo. Nesse caso o
+   * re-bake só refaz o retrato da cromosfera.
+   */
+  private passoDoReassar() {
+    const ctx = this.ctx;
+    const r = this.reassar!;
+    const prevRT = ctx.renderer.getRenderTarget();
+    if (r.passos === 0 && r.semear && ctx.gran.seedSimulation) ctx.gran.seedSimulation();
+    if (r.passos < PRIME_STEPS && r.semear) {
+      const ate = Math.min(PRIME_STEPS, r.passos + PASSOS_DO_REASSAR_POR_QUADRO);
+      for (let i = r.passos; i < ate; i++) ctx.gran.stepSimulation(SIM_DT);
+      r.passos = ate;
+    } else {
+      r.passos = PRIME_STEPS;
+      if (r.fatia === 0) ctx.chromo.snapshotBakeInputs();
+      ctx.chromo.bakeChromoSlice(r.fatia, ctx.elapsed);
+      r.fatia++;
+      if (r.fatia >= 8) {
+        this.publicarRetrato();
+        this.reassar = null;
+      }
+    }
     ctx.renderer.setRenderTarget(prevRT);
   }
 
@@ -715,7 +840,7 @@ export class StellarBody {
     const ctx = this.ctx;
     const prev = renderer.getRenderTarget();
     if (ctx.gran.seedSimulation) ctx.gran.seedSimulation();
-    this.bakeNow(320);
+    this.bakeNow(PRIME_STEPS);
     // coroa volumétrica: corre a máquina de fatias até a 1ª publicação —
     // sem isto, capturas ?shot= (delta 0) nunca a veriam
     for (let i = 0; i < 220 && !ctx.cvolReady; i++) {
@@ -744,7 +869,13 @@ export class StellarBody {
    */
   get assentado(): boolean {
     const ctx = this.ctx;
-    return ctx.bakeStep < 0 && (!(ctx.CVOL_STEPS > 0) || Boolean(ctx.cvolReady));
+    return (
+      ctx.bakeStep < 0 &&
+      // o re-bake pela data conta como retrato a meio caminho: capturar
+      // no meio dele fotografaria a cromosfera da data ANTERIOR
+      this.reassar === null &&
+      (!(ctx.CVOL_STEPS > 0) || Boolean(ctx.cvolReady))
+    );
   }
 
   /**
@@ -804,6 +935,36 @@ export class StellarBody {
   }
 
   /**
+   * A FASE DO CICLO, escrita por quadro pelo director a partir da DATA
+   * SIMULADA (`faseDoCiclo(jdVivo)`, a lei da estrela). Mesma divisão de
+   * trabalho do filtro e do peso: quem tem o relógio é o director; o
+   * corpo obedece. É esta linha que faz o Sol do Atlas ter calendário.
+   *
+   * Escrever é BARATO e idempotente: enquanto a data não mover o
+   * bastante (`LIMIAR_DE_REASSAR`), nada é re-assado.
+   */
+  escreverCiclo(fase: FaseDoCiclo) {
+    if (!Number.isFinite(fase.fase01) || !Number.isFinite(fase.ciclo)) return;
+    this.faseDoCicloViva = fase;
+    const ctx = this.ctx;
+    ctx.cyclePhase01 = fase.fase01;
+    ctx.cycleN = fase.ciclo;
+    ctx.tempoDoCiclo = tempoDoCiclo(fase);
+  }
+
+  /**
+   * A DOSE DE OCUPAÇÃO da dramaturgia (`director/doseDoSol.ts`): quanto
+   * da atividade DAQUELA data aparece. 1 = tudo, e é o valor fora do
+   * filme. Ela multiplica a ocupação e não encosta em fase, banda de
+   * Spörer, Hale ou dipolo polar — atenuação de QUANTO, nunca invenção
+   * de QUANDO.
+   */
+  escreverDose(d: number) {
+    if (!Number.isFinite(d)) return;
+    this.ctx.doseDoSol = d <= 0 ? 0 : d >= 1 ? 1 : d;
+  }
+
+  /**
    * O ESTADO LÓGICO desta instância, na forma do contrato da Lei
    * (`EstadoDaEstrela`, estrela.ts §3): o corpo declara O QUE ELE É; a
    * observação (quem olha) e o instrumento (a casa) são do director.
@@ -820,9 +981,12 @@ export class StellarBody {
    * projetada e contraste (o `limboFade` deste arquivo, o cone da coroa
    * que desliga abaixo de um texel) — nunca o LOD do renderer.
    *
-   * A FASE é a do ciclo vivo (`ctx.cycleTime`), lida pela inversa da
-   * fórmula da dramaturgia (`(1 + fase − 0,35)·1800`), e PERSISTE
-   * (§5.20): sair de quadro não recomeça o relógio.
+   * A FASE é a do ciclo VIVO e ela é a da DATA SIMULADA — não há mais
+   * inversa de fórmula nenhuma a fazer, porque não há mais acumulador
+   * (item 5, 21/08). O §5.20 fica satisfeito pelo caminho mais forte que
+   * existe: a fase não "persiste", ela é RECALCULÁVEL — sair de quadro,
+   * voltar, recarregar ou trocar de tier devolvem o mesmo Sol porque
+   * todos leem o mesmo calendário.
    */
   estadoDaLei(): EstadoDaEstrela {
     const p = this.params;
@@ -833,7 +997,7 @@ export class StellarBody {
       raioPc: p.radiusPc,
       teffK: p.teffK,
       tempo: this.ctx.elapsed,
-      fase: (((this.ctx.cycleTime / 1800 - 0.65) % 1) + 1) % 1,
+      fase: this.faseDoCicloViva.fase01,
       rotacao: {
         periodo: p.rotPeriodDays * 86400,
         eixo: [Math.sin(p.tiltRad), Math.cos(p.tiltRad), 0],
@@ -842,15 +1006,17 @@ export class StellarBody {
     };
   }
 
-  /** relógio visual do director (0 sob ?shot=) + câmera + tempo de viagem */
-  update(time: number, camera: THREE.PerspectiveCamera, journeyT?: number) {
+  /** relógio visual do director (0 sob ?shot=) + câmera */
+  update(time: number, camera: THREE.PerspectiveCamera) {
     const ctx = this.ctx;
     ctx.camera = camera;
     const delta = this.lastTime < 0 ? 0 : Math.min(Math.max(time - this.lastTime, 0), 0.1);
     this.lastTime = time;
 
-    ctx.elapsed += delta;
-    ctx.sunUniforms.uTime.value = ctx.elapsed;
+    // (o relógio RÁPIDO — `ctx.elapsed` — só anda DEPOIS do retorno de
+    // invisibilidade, umas linhas abaixo. Item 16: até 21/08 ele era
+    // somado aqui, fora de quadro, e o Sol reaparecia com um salto de
+    // tudo o que "viveu" enquanto ninguém o via.)
 
     // câmera em unidades de doador, corrigida por fov: o LOD do disco
     // de lá foi calibrado a fov 42° — mesmo enquadramento, mesmo LOD
@@ -886,6 +1052,28 @@ export class StellarBody {
     ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
     ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
     if (!this.group.visible) return;
+
+    // O RELÓGIO RÁPIDO, aqui e não lá em cima (item 16): corpo fora de
+    // quadro não envelhece. Antes deste ponto ficam só as leituras de
+    // câmera e os uniforms que o ponto do Sol ainda consome; daqui para
+    // baixo é tudo trabalho de corpo em quadro.
+    ctx.elapsed += delta;
+    ctx.sunUniforms.uTime.value = ctx.elapsed;
+
+    // --- o retrato SEGUE A DATA (item 5) ------------------------------
+    // Coalescer, nunca enfileirar: enquanto o re-bake corre, uma fase
+    // nova só o reinicia se cruzar o limiar OUTRA vez. E ele mora depois
+    // do retorno de invisibilidade pela mesma razão do relógio: re-assar
+    // um Sol que ninguém vê é gastar quadro à toa — quando ele voltar a
+    // ser corpo, a comparação abaixo dispara sozinha.
+    if (this.reassar === null && Math.abs(ctx.tempoDoCiclo - this.cicloAssado) > LIMIAR_DE_REASSAR) {
+      this.reassar = { alvo: ctx.tempoDoCiclo, passos: 0, fatia: 0, semear: delta === 0 };
+    } else if (
+      this.reassar !== null &&
+      Math.abs(ctx.tempoDoCiclo - this.reassar.alvo) > LIMIAR_DE_REASSAR
+    ) {
+      this.reassar = { alvo: ctx.tempoDoCiclo, passos: 0, fatia: 0, semear: delta === 0 };
+    }
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---
     this.simAccum += delta;
@@ -932,38 +1120,16 @@ export class StellarBody {
     ctx.sunInvRot.setFromMatrix4(this.sunRotM4).transpose();
     ctx.spiculeUniforms.uTime.value = ctx.elapsed;
 
-    // --- ciclo de 11 anos + regiões ativas ---
-    ctx.act.tickCycleEvent(delta);
-    if (ctx.act.cycleDepth() > 0.001) {
-      const cycMul = ctx.act.cycleMultiplier();
-      ctx.cycleTime += delta * cycMul;
-      if (cycMul > 1.0) ctx.cycleWarp += delta * (cycMul - 1.0);
-      // dramaturgia do arranque: mínimo→máximo dirigido pelo tempo de
-      // viagem (só empurra para FRENTE; depois da janela o relógio
-      // natural assume e o snap vira no-op)
-      if (journeyT !== undefined) {
-        const p = this.params;
-        const k = Math.min(1, Math.max(0, (journeyT - p.dramaT0) / (p.dramaT1 - p.dramaT0)));
-        const eased = k * k * (3 - 2 * k);
-        const desired =
-          (1 + p.cyclePhaseMin + (p.cyclePhaseMax - p.cyclePhaseMin) * eased - 0.35) * 1800;
-        if (desired > ctx.cycleTime) {
-          const jump = desired - ctx.cycleTime;
-          ctx.cycleWarp += jump;
-          ctx.cycleTime = desired;
-          // salto grande (seek/captura, não o avanço suave do play):
-          // o Sol "vive" o salto na hora — sim + bake síncronos, senão
-          // a fotografia mostra fase nova com cromosfera velha
-          if (jump > 20) {
-            ctx.act.updateCycleState();
-            this.bakeNow(120);
-          }
-        }
-      }
-      ctx.act.updateCycleState();
-    } else if (ctx.solarMaxK !== 0) ctx.solarMaxK = 0;
+    // --- ciclo de 11 anos + regiões ativas ---------------------------
+    // O relógio LENTO é a data e chega escrito (`escreverCiclo`): não há
+    // o que integrar aqui, e é por isso que ele anda para trás de graça.
+    // A dramaturgia por torção de fase morreu — o filme atenua OCUPAÇÃO
+    // (`escreverDose`), nunca a fase.
+    if (ctx.act.cycleDepth() > 0.001) ctx.act.updateCycleState();
+    else if (ctx.solarMaxK !== 0) ctx.solarMaxK = 0;
     ctx.sunUniforms.uMaxK.value = ctx.solarMaxK;
-    ctx.act.updateActiveRegions(ctx.elapsed + ctx.cycleWarp);
+    ctx.act.updateActiveRegions(ctx.tempoDoCiclo);
+    if (this.reassar !== null) this.passoDoReassar();
 
     // --- flare de superfície (duas fases; sem CME na fase 1) ---
     if (delta > 0) {
@@ -1017,7 +1183,18 @@ export class StellarBody {
       } else ps.reborn = false;
       const Bm = ctx.act.bFieldJS(ps.meshes[0].userData.dir).length();
       const fieldK = Math.min(1.2, 0.35 + 0.65 * (Bm / 1.1));
-      ps.fieldK = ps.fieldK === undefined ? fieldK : ps.fieldK + (fieldK - ps.fieldK) * Math.min(1, delta * 0.8);
+      // A RESPOSTA DA PROEMINÊNCIA AO CAMPO segue o campo com atraso —
+      // e com o relógio PARADO ela SNAPA nele, em vez de ficar travada
+      // no último valor que viu andando. Sem esta linha o filtro virava
+      // um latch: uma captura (`?shot=`) mostrava proeminências
+      // respondendo às cargas de um instante ANTERIOR, e entrar no Atlas
+      // por t=10 ou por t=100 dava dois Sóis mesmo com todo o resto
+      // idêntico — foi este o último resíduo de caminho que o item 5
+      // encontrou, e ele estava aqui desde sempre. É a mesma doutrina do
+      // catch-up de salto: com o relógio parado, o Sol vive o salto na
+      // hora.
+      const seguirOCampo = delta > 0 ? Math.min(1, delta * 0.8) : 1;
+      ps.fieldK = ps.fieldK === undefined ? fieldK : ps.fieldK + (fieldK - ps.fieldK) * seguirOCampo;
       ps.agitT = ps.agitT === undefined ? 999 : ps.agitT + delta;
       ps.agit = (1.0 - Math.exp(-ps.agitT * 3.0)) * Math.exp(-ps.agitT * 0.55);
       if (ps.agit < 0.004) ps.agit = 0;

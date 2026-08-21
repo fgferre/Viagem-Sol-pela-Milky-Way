@@ -141,8 +141,13 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     razao:
       'FECHADO no M1: uFiltroSolar = overrideExpoente e uWorldFade = peso da lei ' +
       '(fator de brilho VIVO 2,7e10^(1−g) pela rampa, §5.8 — por rampa, não por ' +
-      'número único); S/C/E nomeados em estadoDaLei. Dívida nomeada: a esfera ' +
-      'analítica (§1) nasce no M3/E3 — até lá wEsfera é degenerado (só malha)',
+      'número único); S/C/E nomeados em estadoDaLei. Item 5 (21/08): a fase do ' +
+      'ciclo vem da DATA SIMULADA (faseDoCiclo, estrela.ts) e o estado das ' +
+      'regiões/manchas é função pura dela — o pino do Atlas e a torção de fase ' +
+      'morreram. A DOSE de ocupação do arranque (director/doseDoSol.ts) é a ' +
+      'assistência que sobrou, declarada no selo: atenua QUANTO, nunca QUANDO. ' +
+      'Dívida nomeada: a esfera analítica (§1) nasce no M3/E3 — até lá wEsfera ' +
+      'é degenerado (só malha)',
   },
   {
     id: 'particulas-da-galaxia',
