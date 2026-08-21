@@ -147,7 +147,13 @@ node scripts/visual/a11y.mjs
 node scripts/visual/atlas-smoke.mjs
 node scripts/visual/voo-smoke.mjs
 node scripts/visual/busca-smoke.mjs
+node scripts/visual/memoria.mjs
 ```
+
+O `memoria.mjs` é o juiz de VAZAMENTO (texturas, geometrias, heap e
+workers vivos), e desde a letra C dos Ajustes ele é também quem mede o
+preço do swap de tier na thread. Ele se autovalida: o run padrão termina
+sabotando a si mesmo e tem de acusar o vazamento que injetou.
 
 O harness espera `window.__director.captura.pronto`. Sem isso cai no teto
 de 700 quadros e, no alvo padrão, **sai com status ≠ 0**. Chrome morre
