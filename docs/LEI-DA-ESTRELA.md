@@ -440,10 +440,37 @@ lápide no cabeçalho de `lodStellar.ts` registra a divergência; (b) a esfera
 analítica NÃO nasceu — para o Sol a malha já cobre a faixa toda por um
 corpo só, e fingir um regime sem drawable seria pior que declarar: a dívida
 está nomeada no cadastro e ela nasce no M3/E3, onde é obrigatória; (c) o
-item 5 — a fase do ciclo pela data simulada no Atlas — NÃO foi tocado: o
-pino `ATLAS_JOURNEY_T` existe pela reprodutibilidade das vistas, e trocá-lo
-pela data exige seek BIDIRECIONAL do ciclo com re-bake e fotos para o dono;
-segue nas pendências como obra própria.)*
+item 5 — a fase do ciclo pela data simulada no Atlas — não foi tocado no
+M1 e FECHOU em 21/08, em obra própria: a fase saiu do acumulador e virou
+função pura da data (`faseDoCiclo`, módulo interno de `estrela.ts`, com a
+âncora do ciclo 25 declarada); o estado das regiões ativas e dos grupos
+de manchas virou função do mesmo instante (semente POR VIDA, deriva
+diferencial em forma fechada), então o seek é bidirecional por
+construção e o re-bake nunca integra para trás — re-semeia e repete a
+contagem fixa do `prime`, fatiada por quadro. Morreram o pino
+`ATLAS_JOURNEY_T`, a torção de fase da dramaturgia, os dois acumuladores
+do núcleo e o empurrão anti-fusão rate-limitado dos grupos de manchas
+(varredura invertida em `simbolosProibidos.test.ts`). O que a dramaturgia
+do filme virou é uma DOSE de ocupação declarada — `selo.ts` +
+`cadastroDeRepresentacoes`. **Delta declarado ANTES:** mudam as vistas
+com o Sol em quadro, e as referências delas NÃO se atualizam sem o dono.
+**Medido:** 5 das 52 (`sol`, `solreal1ua`, `solreal4mkm`, `solatras`,
+`ua2`) — as outras 47 bit-idênticas, `soldisco`/`solrampa`/`solestouro`
+inclusive, porque a 0,1–0,32 pc o Sol é PONTO e a fotometria do ponto
+não foi tocada. Na `sol` (t=6) o diff de pixel dá 89% do quadro, máx
+116/255, sinal predominantemente mais LUZ: é a fase real de 2026 no lugar
+do mínimo inventado — banda de Spörer a 17° em vez de 34°, dipolo polar
+em meia força depois da reversão. As réguas de contorno passaram
+inteiras: `luz-do-quadro` 11/11, `voo-ida-e-volta` 34 degraus, e a curva
+de ritmo do filme saiu IDÊNTICA nos 97 quadros. O `atlas-smoke` ganhou a
+prova do degrau do corpo (mesma data em duas entradas = md5 igual; data
+distinta = Sol diferente) e passou de 94 para 99 vereditos. De carona
+fechou o item 16 (o relógio rápido não anda com o corpo fora de quadro) e
+um resíduo de caminho que ninguém tinha visto: a resposta das
+proeminências ao campo era um filtro passa-baixa que, com o relógio
+parado, virava LATCH. As fotos para o dono são
+`capturas/item5-sol-do-atlas-cinco-datas.png` e
+`capturas/item5-arranque-antes-depois.png`.)*
 
 *(M2 — o clarão de asas + o bloom pela lei — FECHOU em 16/08, com o
 aceite declarado CUMPRIDO: a régua da luz saiu de REPROVA 4/11 para

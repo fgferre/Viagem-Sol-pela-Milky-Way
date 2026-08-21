@@ -28,7 +28,10 @@ papel/poeira — cada corte com typecheck + 1.622 testes + lint + ab
 bit-idêntico; a história mora nos commits de 17/08 (o fecho é a
 sequência f702c4e → 881fbfc). Fronteira que fica de pé: não tocar no
 que a Lei ainda demole (`lodStellar.ts`, `stellarBody.ts` por dentro,
-`world/sol/*`, `iauOrientation.ts`). O que segue à espera de
+`world/sol/*`, `iauOrientation.ts`) — a exceção é obra própria DELA, e a
+primeira foi o item 5 em 21/08, que entrou em `stellarBody.ts`,
+`sol/activity.js` e `sol/sun.js` com a exceção declarada no cabeçalho de
+cada um. O que segue à espera de
 conferência ESPECÍFICA do dono no app:
 item 39 (focar estrela não pode apagar as outras), item 40 (rótulo
 dobrado do Sol), item 43 da ALTA (a cruz de Vênus na dose do fluxo). A
@@ -46,7 +49,8 @@ ressurreição. O que está no lugar é compressão fixa na emissão —
 O conserto do Sol está FECHADO e ACEITO (M1, M2, R1–R3 e a soltura — o
 pouso de 17/08). Os itens 39, 40 e 43 da ALTA esperam cada um a SUA
 conferência no app (focar estrela; rótulo dobrado; a cruz de Vênus). O
-item 5 é obra própria (ciclo pela data). O item 38 (`aFocus`) é dormente por desenho — **não
+item 5 (o ciclo pela data) FECHOU em 21/08 e espera só a conferência
+dele. O item 38 (`aFocus`) é dormente por desenho — **não
 apagar**; é o canal do passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
@@ -64,7 +68,7 @@ Segurar o push **não foi pedido dele**: foi um agente que inventou a trava.
 Qualquer push na `main` põe o site no ar. Sem pedido explícito, não se
 publica; o pedido de publicar continua de pé.
 
-Números aposentados (1, 2, 4, 11, 14, 29, 30, 31, 32, 35, 42): `git show de16542 -- docs/PENDENCIAS.md`;
+Números aposentados (1, 2, 4, 11, 14, 16, 29, 30, 31, 32, 35, 42): `git show de16542 -- docs/PENDENCIAS.md`;
 o 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do
 código e os dois modos desenham igual, decisão do dono cumprida. O **3** e o
 **44** pousaram com o aceite do dono em 17/08 (histórico deste arquivo no git).
@@ -73,25 +77,36 @@ código e os dois modos desenham igual, decisão do dono cumprida. O **3** e o
 
 ## ALTA — o dono vê e incomoda
 
-**5. O Sol do Atlas está congelado no máximo solar.**
-Cheio de manchas e explosões; o do filme começa limpo. A fase do ciclo
-deveria sair da data simulada. *(O M1 NÃO o tocou, de propósito: o pino
-`ATLAS_JOURNEY_T` existe pela reprodutibilidade das vistas do Atlas, e
-trocá-lo pela data exige o ciclo andar para TRÁS com re-bake — obra
-própria, com foto para o dono.)*
-*(E o pino NEM ENTREGA a reprodutibilidade que promete — medido em
-20/08 no navegador. No degrau do corpo do Sol, entrar no Atlas a partir
-de t=10 e a partir de t=100 dá DOIS Sóis: mesma pose de câmera bit a
-bit, mesmo relógio do céu, pixel diferente. A causa é o mesmo nó do
-parágrafo acima — o snap da dramaturgia só empurra para FRENTE e quem
-alimenta as regiões ativas é um acumulador, não o pino, então os
-quadros do filme desenhados antes do portal deixam resíduo que o pino
-não desfaz. Fica de pé porque o conserto é dentro da Lei da estrela
-(`stellarBody.ts`, o bloco "dramaturgia do arranque"), que é território
-de obra própria. Quem fizer o ciclo andar para trás resolve os dois — e
-aí o `atlas-smoke` pode ganhar a prova do Sol no degrau dele, que hoje
-reprovaria. Na abertura do Atlas isto NÃO aparece: a 226,8 UA o Sol não
-chega a um pixel.)*
+**5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
+ao calendário; falta ele ver.**
+Cheio de manchas e explosões em QUALQUER data; o do filme começa limpo.
+Implementado em 21/08, e o item fica aberto até ele conferir nas fotos e
+no app.
+
+**A frase, para quem for olhar:** *hoje o Sol do Atlas é o mesmo em
+qualquer data; agora ele obedece ao calendário — e 2026 segue um Sol
+ativo porque o Sol de 2026 É ativo.*
+
+**As fotos:** `capturas/item5-sol-do-atlas-cinco-datas.png` (o mesmo
+enquadramento em 2019-12, 2024-10, 2026-01, 2030-05 e 2035-01 — em cima
+o Sol de antes, sempre igual; embaixo o de agora, com o mínimo quase
+limpo e o máximo cheio de manchas) e
+`capturas/item5-arranque-antes-depois.png` (o arranque do filme em t=0,
+6 e 29 s, que NÃO podia mudar — e não mudou).
+
+*(A fase do ciclo saiu do acumulador e virou função pura da data, com
+âncora declarada: mínimo do ciclo 25 em dezembro de 2019 e máximo em
+outubro de 2024, o que obriga a subida a ser mais curta que a descida.
+O estado das regiões ativas e dos grupos de manchas virou função do
+mesmo instante — semente POR VIDA e deriva em forma fechada —, então o
+relógio anda para trás sem re-integrar nada e o mesmo instante devolve
+sempre o mesmo Sol. Morreram o pino `ATLAS_JOURNEY_T`, a torção de fase
+da dramaturgia e os dois acumuladores do núcleo. A dramaturgia do filme
+virou DOSE de ocupação declarada no selo: o arranque mostra menos
+atividade do que a data pede, e diz isso — nunca inventa uma data. O
+`atlas-smoke` ganhou a prova que faltava, no degrau do corpo do Sol:
+mesma data por dois caminhos dá o MESMO pixel, e data diferente dá Sol
+diferente.)*
 
 **7. Trocar a qualidade recarregava a página — o reload morreu; falta ele ver.**
 O dono pediu “nada recarrega, padrão AAA”. Hoje NADA no painel recarrega,
@@ -112,8 +127,11 @@ quadros continua rodando e SUGERE (o painel diz "Cinema, a 28
 quadros/s — Alta deve andar melhor"), mas só troca de tier se ele
 escolher Auto; medido no navegador: em manual, 18 s com a medição
 pedindo outro tier e nada se moveu. Fica de pé o pior bloqueio de
-thread do swap, ~300 ms, que é o `prime` do Sol — bloco que não se
-fatia sem entrar no miolo de `stellarBody.ts`, território da Lei.)*
+thread do swap, que é o `prime` do Sol — 136 ms medidos em 21/08 nesta
+máquina. O item 5 entrou no miolo de `stellarBody.ts` e construiu a
+máquina que vai fatiá-lo (o re-bake por data já roda a MESMA semente e a
+MESMA contagem repartidas por quadro), mas não fatiou o `prime` em si —
+e não o piorou: 137 ms depois.)*
 
 **39. Estrela focada apaga as outras, ligando e desligando de repente.**
 Palavras do dono: *"uma coisa que percebi é que agora quando uma estrela
@@ -236,18 +254,6 @@ mentiroso de escala. Cadastro em `escala.ts`.
 
 **15.** Quando o quadro engasga, não há como aliviar o Sol. As chaves de
 desligar coroa e ejeção são lidas e nunca escritas.
-
-**16.** Engasgo ao entrar no Atlas (a medir): o relógio do Sol acumula
-fora de quadro e volta em salto.
-*(Lido no código em 18/08 — o mecanismo existe: `update` avança
-`ctx.elapsed` ANTES do retorno cedo de invisibilidade
-(`stellarBody.ts`), então as regiões ativas, que leem `elapsed`,
-saltam ao reaparecer; o sim e o bake congelam e retomam FATIADOS —
-custo por quadro limitado, ou seja, isto explica o SALTO visual, não
-um engasgo. O conserto mora dentro do `stellarBody.ts`, que a Lei
-ainda demole — fica para a onda dela. O engasgo de ENTRADA, se
-existir, tem outro suspeito (palco/texturas) e pede medição na
-máquina do dono.)*
 
 **17.** O Sol solavanca quando o relógio acelera. O conserto existe, veio
 do projeto irmão e está desligado. Ligar depende de editar `sol/activity.js`.

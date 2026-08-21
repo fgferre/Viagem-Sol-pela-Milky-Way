@@ -204,6 +204,37 @@ não neste arquivo. O Sol já está em fator 1. Sobra Sagittarius A*.
 `RAIO_SOL_PC` é a fotosfera (`escala.ts`). `R0_PC` é a distância
 Sol–centro (`frameGalactico.ts`). Não são o mesmo símbolo.
 
+**DOIS RELÓGIOS, e a distinção é lei (21/08, item 5).** O RÁPIDO é tempo
+de TELA (`ctx.elapsed`): granulação, rotação, coroa, flares,
+proeminências. Ele acumula, e é honesto que acumule — mas só **com o
+corpo em quadro**: fora dela ele para, senão o Sol reaparece com um salto
+de tudo o que "viveu" sem plateia. O LENTO é a **data simulada**: a fase
+do ciclo de 11 anos, as regiões ativas e os grupos de manchas. Ele NÃO
+acumula — é função pura do calendário (`faseDoCiclo`, atrás de
+`estrela.ts`), e é por isso que o relógio do Atlas anda para trás de
+graça. Pendurar o lento no rápido foi o defeito que congelou o Sol do
+Atlas no máximo solar; pendurar o rápido no lento congelaria o Sol nos
+193 s do filme, em que o jd é fixo.
+
+**A âncora do ciclo é declarada:** mínimo do ciclo 25 em 2019-12 (SILSO),
+máximo em 2024-10 — daí a subida de 4,83 anos contra a descida de 6,20,
+num período médio de 11,03. A assimetria mora no mapa data→fase; o
+envelope de atividade do núcleo continua simétrico e com a calibração
+intacta.
+
+**O filme não torce a fase: ele DOSA a ocupação.** O arranque mostra
+menos atividade do que a data pede (`doseDaDramaturgia`,
+`director/doseDoSol.ts`), e isso é assistência DECLARADA — linha própria
+no `selo.ts`, menção no cadastro. Fora da viagem a dose é 1 EXATO, e
+multiplicar por 1,0 é bit-exato: sem dose e com dose plena desenham o
+mesmo Sol. Um segundo relógio de fase "só do filme" é o segundo universo
+com outro nome — não se faz.
+
+**Nunca integrar o Sol para trás.** Data nova = re-semear + repetir a
+contagem FIXA de passos (os mesmos do `prime`), fatiada por quadro e
+coalescida. Integração reversa de campo difusivo não é opção; o que
+garante a mesma chegada por qualquer caminho é a igualdade da contagem.
+
 Proibido: teto de brilho. Proibido: exposição que depende do que está em
 foco. A pupila adaptativa está reprovada pelo dono (enterrada no M2; era
 lápide). O que entra no lugar é compressão **fixa** na emissão — contrato
@@ -238,23 +269,29 @@ Teardown que falha não leva os outros junto (`passoBlindado`).
 
 **O que a C deixou de pé, para quem for mexer no assunto:**
 
-- **O `prime` do Sol é o pior bloqueio do swap: ~230–330 ms**, medido
-  por Long Tasks em `memoria.mjs` (registro no fim do run). É um bloco
-  único dentro do construtor de `StellarBody`, e fatiá-lo exige entrar
-  no miolo que a Lei da Estrela ainda demole — fica para essa onda. O
-  bake das lâminas, que era a outra metade, já vai FATIADO por lâmina
-  (~70 ms cada, sete fatias) e a primeira renderização do mundo novo
-  custa ~130 ms de upload de VBO, inerente.
+- **O `prime` do Sol é o pior bloqueio do swap** — medido por Long Tasks
+  em `memoria.mjs` (registro no fim do run): 136 ms nesta máquina em
+  21/08, contra os ~230–330 ms anotados em 20/08 noutra carga. É um bloco
+  único dentro do construtor de `StellarBody`. O item 5 NÃO o fatiou (e
+  não o piorou: 137 ms depois da rodada), mas construiu a máquina que
+  vai fatiá-lo — o `passoDoReassar` já roda a MESMA semente e a MESMA
+  contagem de passos repartidas no orçamento de quadro. O bake das
+  lâminas, que era a outra metade, já vai FATIADO por lâmina (~70 ms
+  cada, sete fatias) e a primeira renderização do mundo novo custa
+  ~130 ms de upload de VBO, inerente.
 - **Corpo do palco JÁ carregado guarda os pixels que tem.** Refazê-los
   na troca foi tentado e medido em 20/08: a Terra em close-up vira
   ponto por ~2 s enquanto a textura do tier novo vem pela rede — o véu
   que a letra C proíbe. Quem carregar DEPOIS da troca obedece ao tier
   de agora. Se um dia isso incomodar, o conserto é double-buffer POR
   CORPO (segurar a textura velha até a nova chegar), não reconstrução.
-- **O Sol novo nasce com o relógio em zero.** Trocar de tier troca a
-  resolução da simulação da granulação (768×384 ↔ 384×192): a superfície
-  é necessariamente outra, não há como o padrão continuar. Sob `?shot=`
-  o relógio é 0 dos dois lados, e é por isso que o gate sai bit-idêntico.
+- **O Sol novo nasce com o relógio RÁPIDO em zero e o LENTO na data
+  viva.** Trocar de tier troca a resolução da simulação da granulação
+  (768×384 ↔ 384×192): a superfície é necessariamente outra, não há como
+  o padrão continuar. Sob `?shot=` o relógio rápido é 0 dos dois lados, e
+  é por isso que o gate sai bit-idêntico. A fase do ciclo, essa, viaja:
+  o construtor recebe `faseDoCiclo(jdVivo)` para que o `prime` asse o
+  retrato na data certa — sem isso, toda troca pagaria um re-bake.
 
 **E o que a D deixou de pé:**
 
