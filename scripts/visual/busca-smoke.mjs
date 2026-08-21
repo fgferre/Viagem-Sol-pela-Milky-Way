@@ -17,10 +17,13 @@
 //     parecida.
 //  3. IDA E VOLTA pelo escritor VIVO: escolher na paleta e deixar o app
 //     reescrever a própria URL (o caminho da troca de qualidade, que é
-//     quem chama `urlComMomento`) tem de devolver, depois do reload, a
-//     MESMA estrela em quadro. É a prova de que o link copiado reabre
-//     igual — e ela passa pelo escritor de verdade, não por uma cópia
-//     do formato dentro do teste.
+//     quem chama `urlComMomento`) tem de deixar a MESMA estrela em
+//     quadro. É a prova de que o link copiado reabre igual — e ela passa
+//     pelo escritor de verdade, não por uma cópia do formato dentro do
+//     teste. Desde os Ajustes C esse caminho NÃO recarrega mais: o
+//     mundo novo entra por troca de ponteiro, e a exigência ficou mais
+//     dura — antes bastava o documento novo reabrir no lugar certo,
+//     agora o lugar certo tem de SOBREVIVER à troca sem recarga.
 //  4. O ESTADO VAZIO é honesto: diz o que não achou e mostra o que
 //     funciona.
 //  5. NO VOO LIVRE a mesma paleta VOA — o verbo é da fase, e o rótulo
@@ -164,9 +167,9 @@ try {
 
   // ---- 3: ida e volta pelo escritor vivo ---------------------------
   // Escolhe na paleta e deixa o APP reescrever a URL: a troca de
-  // qualidade recarrega por `urlComMomento`, que é o mesmo texto que o
+  // qualidade espelha por `urlComMomento`, que é o mesmo texto que o
   // botão "copiar link" entrega. Se a porta não sair de lá com a chave
-  // canônica, o reload cai noutro lugar e esta prova quebra.
+  // canônica, o link copiado cai noutro lugar e esta prova quebra.
   await sessao.ir(`atlas=1&${PIN}`);
   await abrirPaleta(sessao);
   await sessao.digitar('sirius');
@@ -187,11 +190,13 @@ try {
     urlDaVolta.includes('foco=hd48915'),
     `o link vivo carrega a chave canônica do foco (${urlDaVolta})`
   );
-  const depoisDoReload = await contexto(sessao);
+  const depoisDaTroca = await contexto(sessao);
   const faseDaVolta = await sessao.js('window.__director.captura.fase');
+  const mundoDaVolta = await sessao.js('window.__director.captura.tierDoMundo');
   conferir(
-    faseDaVolta === 'atlas' && depoisDoReload === escolhido,
-    `e reabre IGUAL depois do reload (fase '${faseDaVolta}', em quadro "${depoisDoReload}")`
+    faseDaVolta === 'atlas' && depoisDaTroca === escolhido && mundoDaVolta === 'alta',
+    `e o alvo SOBREVIVE à troca de tier, sem recarga (fase '${faseDaVolta}',`
+      + ` mundo '${mundoDaVolta}', em quadro "${depoisDaTroca}")`
   );
 
   // ---- 4: o estado vazio, honesto ----------------------------------
