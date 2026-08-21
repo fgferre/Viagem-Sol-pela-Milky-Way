@@ -54,10 +54,10 @@ function contextoFalso() {
   };
 }
 
-function canvasFalso(lado = 1200) {
+function canvasFalso(largura = 1200, altura = largura) {
   return {
-    clientWidth: lado,
-    clientHeight: lado,
+    clientWidth: largura,
+    clientHeight: altura,
     width: 0,
     height: 0,
     getContext: () => contextoFalso(),
@@ -156,5 +156,65 @@ describe('o clique bate com o nome escrito na tela', () => {
     const sozinho = [rotulo('corpo:mars', 'Marte', 0.5033, 0.4525)];
     canvas.draw(sozinho);
     expect(sozinho[0].desenhado).toBe(true);
+  });
+});
+
+// ============================================================
+// O HUD FIXO AFASTA O NOME (item 56, 2026-08-20). O flagrante do dono
+// foi a 375 px: o rodapé do Atlas vira coluna única e ocupa um terço da
+// altura, e "E IND · 11,9 anos-luz" saiu escrito atravessado na data do
+// céu. A margem de composição deste arquivo só corta a partir de 0,76
+// da altura; a coluna começa em ~0,61. Quem cobre a diferença é o
+// retângulo MEDIDO que o App publica (`AREAS_RESERVADAS`), e o que se
+// prova aqui é que ele manda no desenho.
+//
+// A tela é 375×812 (a do flagrante) e o retângulo é o do rodapé real
+// medido lá: 15..360 × 495..752.
+// ============================================================
+describe('o HUD fixo afasta o nome (item 56)', () => {
+  const RODAPE = { left: 15, right: 360, top: 495, bottom: 752 };
+  /** as duas do flagrante, em fração de tela: sobre a data e sobre a dica */
+  const sobreORodape = () => [
+    rotulo('star:eind', 'E IND', 0.29, 0.622),
+    rotulo('star:lang', 'LANG-EXSTER', 0.24, 0.742),
+  ];
+
+  it('sem reserva o nome nasce por cima do rodapé — o defeito do dono', () => {
+    const labels = sobreORodape();
+    new LabelCanvas(canvasFalso(375, 812)).draw(labels);
+    // 0,622 e 0,742 passam longe da margem de 0,76: as duas são
+    // desenhadas, e é isso que a foto de 20/08 mostra
+    expect(labels.map((l) => l.desenhado)).toEqual([true, true]);
+  });
+
+  it('com o retângulo do rodapé reservado, as duas cedem', () => {
+    const canvas = new LabelCanvas(canvasFalso(375, 812));
+    canvas.reservar([RODAPE]);
+    const labels = sobreORodape();
+    canvas.draw(labels);
+    expect(labels.map((l) => l.desenhado)).toEqual([false, false]);
+  });
+
+  it('e quem está ACIMA do rodapé continua na tela', () => {
+    const canvas = new LabelCanvas(canvasFalso(375, 812));
+    canvas.reservar([RODAPE]);
+    // PEACOCK, no mesmo quadro do flagrante, bem acima da coluna
+    const labels = [rotulo('star:peacock', 'Peacock', 0.61, 0.49)];
+    canvas.draw(labels);
+    expect(labels[0].desenhado).toBe(true);
+  });
+
+  it('a reserva é lista viva: trocar de arranjo troca quem cede', () => {
+    const canvas = new LabelCanvas(canvasFalso(375, 812));
+    canvas.reservar([RODAPE]);
+    const estreita = sobreORodape();
+    canvas.draw(estreita);
+    expect(estreita[0].desenhado).toBe(false);
+    // a janela alargou, o selo voltou ao canto e a coluna encolheu: o
+    // App republica, e o mesmo nome volta a ser desenhado
+    canvas.reservar([{ left: 15, right: 360, top: 700, bottom: 752 }]);
+    const larga = sobreORodape();
+    canvas.draw(larga);
+    expect(larga[0].desenhado).toBe(true);
   });
 });

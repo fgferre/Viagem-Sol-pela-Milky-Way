@@ -49,6 +49,54 @@ import './hud/08-ajustes.css';
 /** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
 const MERGE_MS = 2200;
 
+/**
+ * O QUE OS RÓTULOS CONTORNAM — a lista de peças de HUD cujo retângulo o
+ * App MEDE e entrega ao `LabelCanvas`.
+ *
+ * Os diálogos entraram em 2026-08-14; o HUD FIXO entrou em 2026-08-20
+ * (item 56), e o que faltava era exatamente isto: uma lista de um item
+ * só. O canvas dos rótulos desviava dos `[data-dialogo]` e de mais nada,
+ * e cedia o resto do quadro a DUAS FRAÇÕES de tela escritas à mão (a
+ * faixa de baixo e o canto dos controles, em `LabelCanvas`). Numa tela
+ * de mesa a fração cobre o HUD e ninguém vê; a 375 px o rodapé do Atlas
+ * ocupa um terço da altura — começa em ~0,61 da tela, a fração só corta
+ * a partir de 0,76 — e o encontro é certo: "E IND · 11,9 anos-luz"
+ * escrito atravessado na data do céu.
+ *
+ * SÃO AS PEÇAS QUE MUDAM DE TAMANHO OU DE ARRANJO, que é onde fração de
+ * tela sempre erra:
+ *  - `.controls-bar > *` — os CONTROLES, e não a caixa deles. A barra
+ *    tem `flex-wrap` com `justify-content: flex-end`, então quando ela
+ *    quebra em duas linhas a última fica encostada à direita e a caixa
+ *    passa a declarar um vão vazio à esquerda que ninguém ocupa: medido
+ *    em 800×600, reservar a CAIXA apagava "ALDHANAB · B8III · 183
+ *    anos-luz" a 290 px do botão mais próximo. Reservar o que tem tinta
+ *    não apaga nada por engano.
+ *  - `.atlas-contexto` vai de 30vw a borda-a-borda na tela estreita — e
+ *    lá a caixa É o território: o nome se corta com reticências para
+ *    caber nela.
+ *  - `.atlas-rodape` empilha três blocos numa coluna só abaixo de 761 px;
+ *  - `.atlas-selo` é `fixed` no canto de mesa e volta ao FLUXO na tela
+ *    estreita — os dois arranjos com a mesma lei, e de quebra o rótulo
+ *    para de nascer atrás do selo também na tela de mesa;
+ *  - `.filme-rodape` cresce com a legenda do beat e com a dica do
+ *    pausar-e-olhar.
+ * A linha de rumo, a distância do Sol e a barra de progresso ficam de
+ * FORA porque são réguas de uma linha coladas na borda de baixo, dentro
+ * da margem que o `LabelCanvas` já guarda em qualquer arranjo.
+ */
+const AREAS_RESERVADAS = [
+  // O CONTRATO É O DO `dialogFocus` (D7), o mesmo que o juiz de a11y
+  // varre: todo diálogo da casa se declara com `data-dialogo`, então um
+  // diálogo novo passa a afastar os rótulos no dia em que nascer.
+  ':scope > [data-dialogo]',
+  '.controls-bar > *',
+  '.atlas-contexto',
+  '.atlas-rodape',
+  '.atlas-selo',
+  '.filme-rodape',
+].join(', ');
+
 
 
 export default function App() {
@@ -193,17 +241,27 @@ export default function App() {
    *  2. OS NOMES DAS ESTRELAS eram escritos por cima dos painéis. O
    *     canvas dos rótulos cedia espaço a duas frações de tela fixas e
    *     a mais nada; os painéis nascem no meio da direita, fora delas.
+   *     Em 2026-08-20 o item 56 mostrou a MESMA falta um degrau acima:
+   *     o HUD fixo também não existia para o canvas. A lista de quem se
+   *     contorna é `AREAS_RESERVADAS`, acima.
    *
    * MEDIR, e não declarar uma fração: a barra QUEBRA EM DUAS LINHAS
-   * dentro do Atlas (`flex-wrap`, teto de 60vw) e a paleta de busca
-   * cresce a cada tecla. Nenhum número escrito à mão acompanha isso —
-   * e foi tentar acompanhar à mão que criou o defeito.
+   * dentro do Atlas (`flex-wrap`, teto de 60vw), a paleta de busca
+   * cresce a cada tecla e o rodapé do Atlas troca de arranjo a 761 px.
+   * Nenhum número escrito à mão acompanha isso — e foi tentar acompanhar
+   * à mão que criou os dois defeitos.
+   *
+   * MEDE-SE RARO, e nunca por quadro (M4): as peças de HUD mudam de
+   * tamanho em resize, em troca de arranjo e em troca de texto, e são
+   * esses três momentos que chamam `medir`. O canvas dos rótulos só lê a
+   * lista já pronta.
    *
    * O ResizeObserver cobre o que muda de TAMANHO (a barra quebrando, a
-   * lista da busca crescendo, o texto do HUD mudando de escala); o
-   * `resize` da janela cobre o que muda de LUGAR sem mudar de tamanho
-   * (o `8.5vh` da barra desce quando a janela cresce). As dependências
-   * são só a presença das peças — quem entra e quem sai da tela.
+   * lista da busca crescendo, o selo ganhando linha, o texto do HUD
+   * mudando de escala); o `resize` da janela cobre o que muda de LUGAR
+   * sem mudar de tamanho (o `8.5vh` da barra desce quando a janela
+   * cresce). As dependências são só a presença das peças — quem entra e
+   * quem sai da tela.
    */
   useEffect(() => {
     const root = rootRef.current;
@@ -216,22 +274,27 @@ export default function App() {
         const fim = barra.getBoundingClientRect().bottom;
         root.style.setProperty('--barra-fim', `${Math.round(fim)}px`);
       } else root.style.removeProperty('--barra-fim');
-      // O CONTRATO É O DO `dialogFocus` (D7), o mesmo que o juiz de
-      // a11y varre: todo diálogo da casa se declara com `data-dialogo`,
-      // então um diálogo novo passa a afastar os rótulos no dia em que
-      // nascer, sem uma linha a mais aqui.
       labelsRef.current?.reservar(
-        [...root.querySelectorAll(':scope > [data-dialogo]')].map((e) => {
-          const b = e.getBoundingClientRect();
-          return { left: b.left, right: b.right, top: b.top, bottom: b.bottom };
-        })
+        [...root.querySelectorAll(AREAS_RESERVADAS)]
+          .map((e) => e.getBoundingClientRect())
+          // CAIXA VAZIA NÃO RESERVA NADA. Em `?shot=2` o HUD inteiro é
+          // `display: none` e cada peça devolveria 0×0 na quina de cima
+          // à esquerda — um punhado de retângulos degenerados apagando
+          // os rótulos que nascessem ali.
+          .filter((b) => b.width > 0 && b.height > 0)
+          .map((b) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom }))
       );
     };
     medir();
     const observador = new ResizeObserver(medir);
-    for (const e of root.querySelectorAll('.controls-bar, [data-dialogo]')) {
-      observador.observe(e);
-    }
+    for (const e of root.querySelectorAll(AREAS_RESERVADAS)) observador.observe(e);
+    // A BARRA ENTRA NA OBSERVAÇÃO POR FORA da lista, porque ela é a única
+    // peça que se MEDE sem se RESERVAR: quem reserva são os controles
+    // dentro dela, e um controle não muda de tamanho quando a barra
+    // quebra em duas linhas — só de lugar, que o ResizeObserver não vê.
+    // É a caixa que enxerga a quebra, e é dela que sai o `--barra-fim`.
+    const barra = root.querySelector('.controls-bar');
+    if (barra) observador.observe(barra);
     window.addEventListener('resize', medir);
     return () => {
       observador.disconnect();

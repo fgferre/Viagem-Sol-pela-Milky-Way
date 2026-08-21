@@ -41,3 +41,50 @@ describe('?loader= é ferramenta de captura (auditoria item 4)', () => {
     expect(apaga).toBeLessThan(semDirector);
   });
 });
+
+// ============================================================
+// O QUE OS RÓTULOS CONTORNAM (item 56, 2026-08-20). A régua do defeito
+// do dono não é o desenho — esse já sabia ceder (`LabelCanvas.test.ts`)
+// — é a LISTA: o App reservava os diálogos e mais nada, então o HUD
+// fixo não existia para o canvas. O que se pina aqui é que a lista cita
+// as peças que trocam de arranjo, e que ela é a MESMA usada para medir
+// e para observar: duas listas discordariam na primeira peça nova.
+// ============================================================
+describe('a reserva dos rótulos cobre o HUD fixo (item 56)', () => {
+  const LISTA = FONTE.slice(
+    FONTE.indexOf('const AREAS_RESERVADAS = ['),
+    FONTE.indexOf("].join(', ');")
+  );
+
+  it('cita o rodapé, o selo e a linha de contexto — o HUD do flagrante', () => {
+    expect(LISTA).toContain("':scope > [data-dialogo]'");
+    for (const peca of [
+      '.atlas-contexto',
+      '.atlas-rodape',
+      '.atlas-selo',
+      '.filme-rodape',
+    ]) {
+      expect(LISTA, peca).toContain(`'${peca}'`);
+    }
+  });
+
+  it('da barra reserva os CONTROLES, nunca a caixa com o vão da quebra', () => {
+    expect(LISTA).toContain("'.controls-bar > *'");
+    // a caixa sozinha apagava nome a 290 px do botão mais próximo
+    expect(LISTA).not.toContain("'.controls-bar',");
+  });
+
+  it('quem MEDE e quem OBSERVA leem a mesma lista', () => {
+    expect(FONTE).toContain('root.querySelectorAll(AREAS_RESERVADAS)]');
+    expect(FONTE).toContain(
+      'for (const e of root.querySelectorAll(AREAS_RESERVADAS)) observador.observe(e);'
+    );
+    // e a barra é a ÚNICA exceção declarada: observada sem ser reservada,
+    // porque a quebra de linha move os controles sem redimensioná-los
+    expect(FONTE).toContain('if (barra) observador.observe(barra);');
+  });
+
+  it('caixa vazia não vira retângulo — em ?shot=2 todo o HUD é display:none', () => {
+    expect(FONTE).toContain('.filter((b) => b.width > 0 && b.height > 0)');
+  });
+});

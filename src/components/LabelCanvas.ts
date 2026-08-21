@@ -33,22 +33,31 @@ export class LabelCanvas {
   private lastHadContent = false;
 
   /**
-   * OS RETÂNGULOS DOS DIÁLOGOS ABERTOS, em pixels de tela — o mesmo
-   * sistema de coordenadas deste canvas, que é `inset: 0`.
+   * OS RETÂNGULOS QUE O HUD JÁ OCUPA, em pixels de tela — o mesmo
+   * sistema de coordenadas deste canvas, que é `inset: 0`. Quem os mede
+   * e publica é o App (`AREAS_RESERVADAS`); a lista chega pronta.
    *
    * Por que existem (2026-08-14): o rótulo cedia espaço a DOIS lugares
    * do HUD escritos como fração da tela (a faixa de baixo e o canto dos
    * controles) e a mais nenhum. Painel de Ajustes, gaveta de camadas e
    * paleta de busca são caixas OPACAS que nascem no meio da direita, e
    * os nomes das estrelas eram desenhados por cima deles — em 1600×900
-   * uma faixa de ~530×270 px de nome sobre painel. Fração de tela não
-   * resolve: os três têm largura em `rem` e altura que muda com o
-   * conteúdo (a lista da busca cresce a cada tecla), então o que vale é
-   * o retângulo MEDIDO, publicado pelo App quando ele muda.
+   * uma faixa de ~530×270 px de nome sobre painel.
+   *
+   * E POR QUE CRESCERAM (2026-08-20, item 56): o HUD FIXO — rodapé,
+   * selo, linha de contexto — também não existia para este canvas. A
+   * mesma fração de tela que o cobre numa janela de mesa erra por 15%
+   * da altura num celular, onde o rodapé do Atlas vira coluna única e
+   * ocupa um terço da tela.
+   *
+   * Fração de tela não resolve NENHUM dos dois: as peças têm largura em
+   * `rem`, altura que muda com o conteúdo (a lista da busca cresce a
+   * cada tecla, o selo ganha linha a cada desvio) e arranjo que troca
+   * com a largura da janela. O que vale é o retângulo MEDIDO.
    */
   private reservadas: readonly Rect[] = [];
 
-  /** Quem publica é o App; lista vazia = nenhum diálogo na tela. */
+  /** Quem publica é o App; lista vazia = nenhum HUD na tela. */
   reservar(areas: readonly Rect[]): void {
     this.reservadas = areas;
   }
@@ -72,10 +81,10 @@ export class LabelCanvas {
     // Em `ui = 1` cada produto é exato (`x * 1 === x` em IEEE754) e o
     // desenho é o de sempre, pixel a pixel.
     const k = escalaDaUi();
-    // OS DIÁLOGOS ENTRAM COMO SE FOSSEM RÓTULOS JÁ DESENHADOS: a lei de
-    // colisão que faz um nome ceder a outro é a mesma que o faz ceder a
-    // um painel. Sem caso novo, sem z-index, sem `!important` — quem
-    // chegou primeiro ocupa, e o painel sempre chega primeiro.
+    // O HUD ENTRA COMO SE FOSSE RÓTULO JÁ DESENHADO: a lei de colisão
+    // que faz um nome ceder a outro é a mesma que o faz ceder a um
+    // painel, ao rodapé ou ao selo. Sem caso novo, sem z-index, sem
+    // `!important` — quem chegou primeiro ocupa, e o HUD chega primeiro.
     const occupied: Rect[] = [...this.reservadas];
     ctx.textBaseline = 'middle';
     ctx.lineCap = 'round';
@@ -91,18 +100,23 @@ export class LabelCanvas {
       if (label.opacity < 0.08) continue;
       const anchorX = label.x * this.width;
       const anchorY = label.y * this.height;
-      // O HUD é parte da composição: labels nunca disputam espaço com
-      // legenda/progresso nem com os controles no canto superior direito.
-      // As duas áreas reservadas CRESCEM com o tamanho do texto (F6): o
-      // que as delimita é a faixa de baixo e a barra de controles, e as
-      // duas são caixas de `rem`. A forma `x − c·(k−1)` não é enfeite: em
-      // `ui = 1` o segundo termo é ZERO e o primeiro é o número de
-      // sempre, bit a bit — o desenho do filme não muda um pixel.
-      // O teste é pela ÂNCORA, como sempre foi: um rótulo cujo TEXTO
-      // avança para dentro da área reservada ainda passa (visível com
-      // `?ui=1,4`, onde nome e barra crescem um na direção do outro).
-      // Corrigir isso é mudar onde os rótulos caem NO FILME, e essa é
-      // decisão de composição, não de escala de UI.
+      // A MARGEM DA COMPOSIÇÃO — a faixa de baixo e o canto dos
+      // controles, onde o HUD mora em QUALQUER arranjo. Não é a régua do
+      // HUD (essa é `reservadas`, medida): é o que sobra de pé quando
+      // uma peça está entre montar e medir, e é o que mantém a linha de
+      // rumo, a distância do Sol e a barra de progresso — três réguas de
+      // uma linha coladas na borda — fora do alcance dos nomes sem
+      // precisarem de retângulo próprio.
+      // As duas áreas CRESCEM com o tamanho do texto (F6), porque o que
+      // as delimita são caixas de `rem`. A forma `x − c·(k−1)` não é
+      // enfeite: em `ui = 1` o segundo termo é ZERO e o primeiro é o
+      // número de sempre, bit a bit — o filme não muda um pixel.
+      // AQUI O TESTE É PELA ÂNCORA, e é a diferença entre margem e
+      // régua: um rótulo cuja âncora passa mas cujo TEXTO avança para
+      // dentro da faixa não morre nesta linha — a margem é grosseira de
+      // propósito, é só o piso. Quem mede de verdade é a colisão logo
+      // abaixo, que compara a CAIXA do rótulo com os retângulos que o
+      // App mediu (item 56).
       if (anchorY > this.height * (0.76 - 0.24 * (k - 1))) continue;
       if (
         anchorY < this.height * 0.17 * k &&
