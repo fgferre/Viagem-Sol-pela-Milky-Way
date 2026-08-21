@@ -85,17 +85,23 @@ própria, com foto para o dono.)*
 O dono pediu “nada recarrega, padrão AAA”. Hoje NADA no painel recarrega,
 a qualidade inclusive; o item fica aberto até ele conferir no app —
 clicar em outro tier, com o filme andando ou de dentro do Atlas, e ver a
-cena continuar de onde estava.
-→ `docs/NORTE.md`, seção “Ajustes”. *(A letra B fechou em 20/08 — a
-cadeia de carga inteira num worker. A **letra C fechou no mesmo dia**:
-a qualidade NÃO recarrega mais. O mundo novo (galáxia, os dois mapas e
-o Sol) assa em segundo plano enquanto o atual continua desenhando, e a
-troca é num quadro só, sem véu; medido: o mundo trocado ao vivo sai
-BIT-IDÊNTICO ao do boot direto naquele tier, nos dois sentidos, e seis
-trocas seguidas não acumulam uma textura. Fica de pé o pior bloqueio de
+cena continuar de onde estava. E de quebra, olhar o **Auto**, que agora
+é o 4º estado do seletor.
+→ `docs/NORTE.md`, seção “Ajustes”. *(As QUATRO letras fecharam em
+20/08. A B pôs a cadeia de carga inteira num worker. A **C** matou o
+reload: o mundo novo (galáxia, os dois mapas e o Sol) assa em segundo
+plano enquanto o atual continua desenhando, e a troca é num quadro só,
+sem véu; medido: o mundo trocado ao vivo sai BIT-IDÊNTICO ao do boot
+direto naquele tier, nos dois sentidos, e seis trocas seguidas não
+acumulam uma textura. A **D** pôs o Auto no seletor e tirou do boot
+quem decidia pelo visitante: sem `?q=` o tier é cinema por constante —
+o storage e a detecção por aparelho saíram do caminho. A medição de
+quadros continua rodando e SUGERE (o painel diz "Cinema, a 28
+quadros/s — Alta deve andar melhor"), mas só troca de tier se ele
+escolher Auto; medido no navegador: em manual, 18 s com a medição
+pedindo outro tier e nada se moveu. Fica de pé o pior bloqueio de
 thread do swap, ~300 ms, que é o `prime` do Sol — bloco que não se
-fatia sem entrar no miolo de `stellarBody.ts`, território da Lei.
-Sobra a letra D, o Auto.)*
+fatia sem entrar no miolo de `stellarBody.ts`, território da Lei.)*
 
 **39. Estrela focada apaga as outras, ligando e desligando de repente.**
 Palavras do dono: *"uma coisa que percebi é que agora quando uma estrela

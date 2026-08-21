@@ -143,8 +143,10 @@ gaveta), não a decoração.
 - Primeira superfície iluminada: 9.400:1 num display de ~25:1. Recalibrar
   contra ACES; não mergear sem selo `?luz=`.
 - Alocação irreversível pelo tier — o amostrador da Fase B é o instrumento.
-- Persistência contra a honestidade dos gates: URL > storage > detecção;
-  tom/exposição/camadas fora do envelope.
+- Persistência contra a honestidade dos gates: tom/exposição/camadas fora
+  do envelope. A cascata `URL > storage > detecção` valia para o TIER e
+  não vale mais (Ajustes D, 20/08): sem `?q=` ele é constante, e o
+  storage só guarda marcas de primeira visita.
 - Rede de terceiros (Wikipedia): opt-out verificável.
 - Publicação inadvertida: o site publica a cada push na `main`.
 - Sobrecorreção da doutrina: ferramenta offline julgada por oráculo migra.

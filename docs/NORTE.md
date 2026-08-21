@@ -211,17 +211,24 @@ em `LEI-DA-ESTRELA.md` §7. O céu e a galáxia nunca esmaecem.
 
 ---
 
-## Ajustes: nada recarrega
+## Ajustes: nada recarrega — e ninguém decide pelo visitante
 
-Régua do dono: nenhuma opção do painel recarrega a página. **Nenhuma
-recarrega desde 20/08** — a A fechou as camadas e o latch da exposição,
-a B pôs a cadeia de carga inteira no worker, e a C matou o último
-reload, o da qualidade. Sobra a **D**.
+Régua do dono: nenhuma opção do painel recarrega a página. **A seção
+inteira virou produto em 20/08** — a A fechou as camadas e o latch da
+exposição, a B pôs a cadeia de carga no worker, a C matou o último
+reload (o da qualidade) e a D pôs o Auto como 4º estado do seletor. O
+que fica aqui é só o que ainda decide alguma coisa.
 
-- **D** — Auto vira o 4º estado do seletor. Sem `?q=`, default de produto
-  = cinema. Detecção nunca decide; medição sugere; o visitante escolhe.
-  O caminho já está aberto: `Director.setQuality` troca o mundo ao vivo,
-  então o Auto é decisão de UI e política, não de motor.
+**A LEI QUE A D DEIXOU, e ela é política, não mecânica:** *detecção
+nunca decide; medição sugere; o visitante escolhe.* Sem `?q=` o tier é
+uma CONSTANTE (`TIER_DE_PRODUTO` = cinema) — não há storage nem palpite
+sobre o aparelho no caminho do boot, e a lápide dos três que morreram
+(`defaultQualityForDevice`, `tierQueRodou`, o rebaixamento por renderer
+de software) está no próprio `core/engine.ts`. O engine MEDE e avisa
+(`onMedicao`); quem aplica é o Director, e só sob a política `auto`. A
+URL espelha a ESCOLHA, nunca o tier vivo: em Auto o tier anda sozinho, e
+gravar o tier de agora congelaria no link uma decisão que o visitante
+não tomou.
 
 Knob que decide alocação lê-se **antes** de quem aloca — e, quando a
 alocação é preguiçosa, lê-se **na hora de alocar**: é por isso que o
@@ -247,6 +254,22 @@ Teardown que falha não leva os outros junto (`passoBlindado`).
   resolução da simulação da granulação (768×384 ↔ 384×192): a superfície
   é necessariamente outra, não há como o padrão continuar. Sob `?shot=`
   o relógio é 0 dos dois lados, e é por isso que o gate sai bit-idêntico.
+
+**E o que a D deixou de pé:**
+
+- **A medição só sabe do tier que está rodando.** A sugestão é um degrau
+  a partir do vivo (limiares 42 e 34 quadros/s, os do auto-quality que
+  morreu), e a média recomeça a cada troca — média do tier que saiu não
+  diz nada sobre o que entrou. Daí o "medindo" do painel ser verdade e
+  não enfeite.
+- **Vaivém no Auto é possível e está dosado, não resolvido.** Um
+  aparelho que fica na fronteira pode cair e subir com período de ~17,5 s
+  (a espera anti-vaivém: 15 s depois de cair, 10 s depois de subir).
+  Cada volta paga um mundo assado. Se incomodar, o conserto é a espera
+  crescer a cada vaivém, não o limiar mudar.
+- **O pino `?q=` dos gates virou DECLARAÇÃO.** Era defesa contra o
+  rebaixamento automático; hoje `?q=cinema` é o mesmo que o padrão. Fica
+  porque gate não vive de padrão alheio.
 
 ---
 
@@ -337,7 +360,6 @@ A lista completa das hipóteses de espiral está em
 
 - Unificações 1, 2 (forjas/partículas + G2/G3) e 3 (κ/Σ + quad).
 - Lei da estrela, a partir de F1 — `LEI-DA-ESTRELA.md`.
-- Ajustes D (o Auto). A C fechou em 20/08.
 - Colunas mortas do manifesto (poda segura só de
   `gaiaObProxyStars[3,6,7]` e `dustDensity[4,5]`; `spiralAnchors[7]`
   não sai).
