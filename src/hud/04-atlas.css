@@ -151,6 +151,16 @@
   flex-direction: column;
   gap: 0.7rem;
   max-width: 46vw;
+  /* O RETÂNGULO DA COLUNA NÃO ROUBA O ARRASTO — mesma lei do
+     `.filme-rodape`. Um `div` sem fundo continua recebendo o ponteiro
+     dentro da própria caixa, e na tela estreita esta caixa passou a ir
+     de borda a borda: sem isto, o terço de baixo de um celular deixaria
+     de girar a câmera. Quem volta a receber clique é só o que É
+     controle — os `.hud-btn` (fatia 3) e as linhas do selo. */
+  pointer-events: none;
+}
+.atlas-selo-linha {
+  pointer-events: auto;
 }
 .atlas-rodape .atlas-tempo,
 .atlas-rodape .free-hint {
@@ -183,13 +193,32 @@
   letter-spacing: 0.1em;
   color: rgba(235, 240, 250, 0.92);
 }
+/* A LINHA DOS CONTROLES QUEBRA — em QUALQUER largura, e não só na
+   quebra estreita do CSS. Sem isto ela é uma linha que não cede: os
+   seis controles são pedidos em `rem` (crescem com `?ui=`) dentro de
+   uma coluna em `vw` (que não cresce), e o que não cabe era PINTADO
+   FORA da coluna, por cima do selo — medido em 2026-08-20 a 768, 899 e
+   até 1.280 px com `?ui=1,4` (`scrollWidth > clientWidth`, e na
+   captura o "Época" escrito em cima de "O QUE NESTA VISTA É AJUSTADO").
+   A garantia geométrica do rodapé (a coluna acaba em 52vw) só vale se
+   o conteúdo respeitar a coluna, e quem faz respeitar é a quebra.
+   Ela também é o que a declaração do retângulo útil já supunha desde a
+   F4 (`LARGURA_DA_QUEBRA_DO_TEMPO_PX`): a base pagava por uma quebra
+   que o CSS não fazia. */
 .atlas-tempo-botoes {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.28rem;
 }
 /* largura fixa: o rótulo da taxa muda de comprimento a cada degrau, e
-   sem isto os botões vizinhos dançariam a cada clique */
+   sem isto os botões vizinhos dançariam a cada clique. O número é
+   ABSOLUTO de propósito — `min(11rem, 100%)` parece mais seguro e é
+   pior: a porcentagem fica indefinida no cálculo de largura intrínseca,
+   a linha dos controles encolhe como se o botão medisse o texto dele, e
+   aí quebra em duas ONDE CABIA EM UMA (medido: 1.280 px com `?ui=1`, a
+   linha do tempo 34 px mais alta sem motivo). O teto da coluna estreita
+   mora na fatia 6, onde 11rem realmente não cabe. */
 .atlas-tempo-taxa {
   min-width: 11rem;
   /* o rótulo é uma frase, não um selo: com o tracking dos botões da

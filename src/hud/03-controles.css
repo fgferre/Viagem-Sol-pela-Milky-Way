@@ -46,12 +46,25 @@
 }
 
 /* --- controles fixos --- */
+/* A BARRA NUNCA SAI DA TELA PELA ESQUERDA. Ela é `fixed` só pela
+   direita, então cresce para a esquerda sem limite: no filme com
+   `?ui=1,4` a 768 px ela começava em −218 px — dois botões inteiros
+   fora do quadro, sem barra de rolagem que os traga de volta (medido
+   em 2026-08-20; a 899 px, −91 px).
+   O teto e a quebra já existiam DENTRO do Atlas (`:has(.atlas-contexto)`
+   logo abaixo, com 60vw por causa da linha de contexto); aqui é a mesma
+   lei, com a única margem que existe em toda tela — os 3vw da direita,
+   espelhados à esquerda. Onde a barra cabe, nada muda: `fixed` sem
+   `left` continua encolhendo até o conteúdo. */
 .controls-bar {
   position: fixed;
   top: 8.5vh;
   right: 3vw;
   z-index: 45;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 94vw;
   gap: 0.6rem;
 }
 

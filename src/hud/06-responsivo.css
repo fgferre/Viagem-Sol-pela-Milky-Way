@@ -18,12 +18,13 @@
     line-height: 1.8;
   }
 
+  /* a quebra e o alinhamento à direita subiram para a fatia 3: valem em
+     toda largura desde que a barra ganhou teto (94vw). Aqui fica o que
+     é só da tela estreita — a barra sobe e ganha as duas bordas. */
   .controls-bar {
     top: 6.5vh;
     right: 4vw;
     left: 4vw;
-    justify-content: flex-end;
-    flex-wrap: wrap;
   }
 
   /* "Ver a galáxia" NÃO some no celular: é a única saída visível dos
@@ -35,12 +36,6 @@
     max-width: 5.6rem;
   }
 
-  /* no celular a máquina do tempo quebra linha em vez de sair da tela;
-     a faixa fica mais alta, e é por isso que o retângulo útil dela é
-     declarado com a folga da medição de mesa (atlasRig.ts). O limite de
-     46vw da coluna NÃO se afrouxa aqui: é ele que garante que o rodapé
-     nunca alcance o selo, e tela estreita é justamente onde essa
-     garantia importa. */
   .atlas-rodape {
     left: 4vw;
   }
@@ -79,9 +74,11 @@
     flex-wrap: wrap;
     gap: 0.4rem;
   }
-  .atlas-tempo-botoes {
-    flex-wrap: wrap;
-  }
+  /* a quebra dos CONTROLES subiu para a fatia 4: ela vale em toda
+     largura, não só aqui. O teto do botão da taxa fica: na coluna de
+     borda a borda os 11rem dele cabem em quase toda tela, mas numa
+     janela de 320 px com o texto em 140% não cabem — e mínimo maior que
+     o contêiner transborda por definição, com quebra ou sem. */
   .atlas-tempo-taxa {
     min-width: 0;
   }
@@ -94,7 +91,16 @@
   .filme-rodape {
     left: 5vw;
     right: 5vw;
-    bottom: 10vh;
+    /* ACIMA DA LINHA DE RUMO, e não em cima dela. Aqui a coluna tem as
+       DUAS bordas, então ela passa por baixo do canto de baixo à
+       direita, onde moram a linha de rumo (9,6vh) e a distância do Sol
+       (7,6vh) — e a 10vh a última linha da dica era escrita EM CIMA do
+       destino ("arraste — olhar ao redor" e "→ Sagittarius A✱" no mesmo
+       pixel, medido a 500 e 600 px). O termo em `rem` é a altura da
+       linha de rumo: a folga acompanha `?ui=`, que é onde o atropelo
+       piorava. Em tela de mesa a coluna é só à esquerda e nada disto
+       existe — os 11vh de sempre continuam lá. */
+    bottom: calc(9.6vh + 1.1rem);
     align-items: stretch;
   }
 
@@ -135,6 +141,46 @@
   .cv-etapa-rotulo {
     letter-spacing: 0.2em;
     text-indent: 0.2em;
+  }
+}
+
+/* O RODAPÉ DO ATLAS VIRA UMA COLUNA SÓ, DE BORDA A BORDA (item 9).
+   Até 2026-08-20 a faixa de baixo eram DUAS colunas de ~45vw — a máquina
+   do tempo à esquerda (46vw) e o selo à direita (42vw) —, e o limite de
+   46vw era a garantia de que uma nunca alcançava a outra. A garantia
+   valia; o que não valia era o arranjo: num celular cada coluna tem ~170
+   px, e ali TUDO quebra. Medido a 500×725: os seis controles do tempo em
+   três linhas, a dica em quatro, o selo em dez, com o `em` do selo
+   cortado por reticências — a base do HUD comia 0,377 da altura contra
+   0,270 declarados, e com `?ui=1,4` chegava a 0,568 e subia por cima da
+   barra de controles.
+   Numa coluna só quem empilha é o fluxo, e cada bloco recebe a LARGURA
+   INTEIRA: os mesmos seis controles cabem em duas linhas, a dica em
+   duas, o selo em seis. O selo é o último — ele é quem cede (informação
+   permanente espera; ação em curso, não) e continua encostado na tarja
+   de baixo, como no canto de mesa.
+
+   A GUARDA DE ALTURA (`min-height`) é o que impede o conserto de virar
+   outro defeito: empilhar gasta ALTURA, e numa paisagem baixa (600×450
+   com o texto em 140% — a janela que o juiz de a11y mede com zoom de
+   200%) a coluna empilhada subia até a barra de controles. Onde falta
+   altura e sobra largura, o arranjo certo é o de mesa, que usa a
+   largura: as duas colunas voltam sozinhas, porque este bloco não vale.
+   Em tela de mesa NADA disto acontece — o selo é `position: fixed` e
+   nenhum pai move filho fixo. */
+@media (max-width: 760px) and (min-height: 481px) {
+  .atlas-rodape {
+    right: 4vw;
+    max-width: none;
+  }
+  /* de volta ao FLUXO: é o que faz o selo empilhar com os outros dois em
+     vez de flutuar por cima deles. `width: auto` porque o `min(21rem,
+     42vw)` do canto de mesa é largura de COLUNA, e aqui a coluna é a
+     tela; o alinhamento à direita continua (é o traje do selo). */
+  .atlas-rodape .atlas-selo {
+    position: static;
+    width: auto;
+    max-width: 100%;
   }
 }
 

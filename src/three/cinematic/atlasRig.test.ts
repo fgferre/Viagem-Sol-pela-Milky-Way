@@ -201,14 +201,19 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
    *    isto que uma tabela de constantes pode afirmar sozinha.
    */
   it('a declaração paga FOLGA sobre o medido, e a folga tem teto', () => {
-    // MEDIDO pelo juiz de a11y (2026-08-12, janela 1200×900, viewport de
-    // 813 px de altura, `?atlas=1&shot=1`). Se a CSS crescer, é o juiz
-    // que quebra primeiro (declarado ≥ medido); aqui quebra quando a
-    // DECLARAÇÃO cresce sem a medição acompanhar.
+    // MEDIDO pelo juiz de a11y (janela 1200×900, viewport de 813 px de
+    // altura, `?atlas=1&shot=1`). Se a CSS crescer, é o juiz que quebra
+    // primeiro (declarado ≥ medido); aqui quebra quando a DECLARAÇÃO
+    // cresce sem a medição acompanhar.
+    // A base em ui = 1,4 subiu de 0,292 para 0,333 em 2026-08-20 (item
+    // 9): a linha dos controles do tempo passou a QUEBRAR em duas em vez
+    // de ser pintada fora da coluna, por cima do selo. A altura sempre
+    // existiu; o que mudou foi ela passar a ocupar lugar em vez de
+    // transbordar — e a declaração paga por ela.
     const MEDIDO = [
       { ui: 0.85, topo: 0.119, base: 0.175 },
       { ui: 1, topo: 0.125, base: 0.192 },
-      { ui: 1.4, topo: 0.197, base: 0.292 },
+      { ui: 1.4, topo: 0.197, base: 0.333 },
     ];
     const TETO_DA_FOLGA = 0.06;
     for (const m of MEDIDO) {
@@ -234,9 +239,11 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     const semDegrau = retanguloUtilDoAtlas(1, 1200);
     const comDegrau = retanguloUtilDoAtlas(1, 900);
     expect(comDegrau.topo - semDegrau.topo).toBeCloseTo(0.04, 12);
-    // em ui = 1 a base não move: a quebra da MÁQUINA DO TEMPO só existe
-    // abaixo de 714 px por unidade de ui — fora da faixa declarada
-    expect(comDegrau.base).toBe(semDegrau.base);
+    // e a BASE também anda, desde 2026-08-20: a linha dos controles do
+    // tempo quebra em duas abaixo de 1.060 px por unidade de ui — a
+    // 1.200 com ui = 1 ela ainda cabe em uma, a 900 não (medido: a
+    // quebra vira entre 1.040 e 1.060).
+    expect(comDegrau.base - semDegrau.base).toBeCloseTo(0.03, 12);
     // o degrau a 1.200 px cai entre 1,25 e 1,26 (1.200 / 960 = 1,25) —
     // e a quebra REAL a 1.200 px começa em 1,30, medida: a declaração
     // entra um degrau ANTES, que é o lado seguro do erro
@@ -245,16 +252,22 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
       0.065 + 0.09 * 1.3 + 0.04,
       12
     );
-    // A QUEBRA DA MÁQUINA DO TEMPO é o mesmo fenômeno na BASE (grade de
-    // eixos do juiz, 2026-08-18, viewport exato por override): a barra
-    // do tempo mede 0,267 da altura a 1.000 e 1.200 px com ui = 1,4 e
-    // quebra para 0,321 a 900 px — o degrau vive entre 900 e 1.000 px
+    // A TERCEIRA LINHA DA MÁQUINA DO TEMPO é o mesmo fenômeno um degrau
+    // adiante (medido em 2026-08-20, viewport exato por override, 900 px
+    // de altura): com ui = 1,4 os controles cabem em duas linhas a 980 e
+    // 1.000 px e vão para três a 940 — o degrau vive entre 940 e 980 px
     // por 1,4 de ui. Limiar no topo da faixa (714), o lado seguro.
     expect(retanguloUtilDoAtlas(1.4, 900).base).toBeCloseTo(
+      0.065 + 0.175 * 1.4 + 0.03 + 0.09,
+      12
+    );
+    expect(retanguloUtilDoAtlas(1.4, 1000).base).toBeCloseTo(
       0.065 + 0.175 * 1.4 + 0.03,
       12
     );
-    expect(retanguloUtilDoAtlas(1.4, 1000).base).toBeCloseTo(0.065 + 0.175 * 1.4, 12);
+    // e a 1.800 px (a janela das vistas oficiais) com ui = 1 nenhum dos
+    // dois degraus existe: o enquadramento de mesa é o de sempre
+    expect(retanguloUtilDoAtlas(1, 1800)).toEqual(semDegrau);
     // largura envenenada cai na tela de mesa de referência, não em NaN
     for (const cru of [Number.NaN, 0, -100, Number.POSITIVE_INFINITY]) {
       expect(retanguloUtilDoAtlas(1, cru)).toEqual(retanguloUtilDoAtlas(1, LARGURA_DE_MESA_PX));
@@ -635,13 +648,18 @@ describe('o rig e o alvo de abertura', () => {
     // escada da F2b crescer a faixa do topo)
     expect(emUA()).toBeGreaterThan(226.6);
     expect(emUA()).toBeLessThan(227.1);
-    // e ela ANDA com `?ui=` nos dois sentidos (213,4 e 296,8 UA)
+    // e ela ANDA com `?ui=` nos dois sentidos (213,4 e 317,1 UA). O
+    // extremo de cima subiu de 296,8 em 2026-08-20 (item 9): a 1.200 px
+    // com o texto em 140% os controles do tempo quebram em duas linhas,
+    // a base declarada paga o degrau, e a câmera recua o que o HUD
+    // ocupa. Recuo é o preço declarado de HUD mais alto — o contrário
+    // (declarar menos) é o alvo atrás do texto.
     rig.apply(camera, 0.85);
     expect(emUA()).toBeGreaterThan(213.1);
     expect(emUA()).toBeLessThan(213.6);
     rig.apply(camera, 1.4);
-    expect(emUA()).toBeGreaterThan(296.5);
-    expect(emUA()).toBeLessThan(297.0);
+    expect(emUA()).toBeGreaterThan(316.9);
+    expect(emUA()).toBeLessThan(317.4);
   });
 
   it('o fov do Atlas é pino, não herança: o rig o escreve todo quadro', () => {

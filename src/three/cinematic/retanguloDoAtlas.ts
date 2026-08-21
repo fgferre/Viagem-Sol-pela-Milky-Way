@@ -88,25 +88,48 @@ const BARRA_QUEBRADA_FRACAO = 0.04;
 const SELO_FRACAO = 0.14;
 
 /**
- * O DEGRAU DA MÁQUINA DO TEMPO QUEBRADA — o fenômeno da barra de
- * controles repetido na BASE: largura×texto, não texto sozinho. MEDIDO
- * pelo juiz de a11y na grade de eixos (2026-08-18, viewport exato por
- * override, fontes Linux da máquina de nuvem): com `?ui=1,4` a barra
- * do tempo mede 0,267 da altura a 1.000 e 1.200 px e QUEBRA para 0,321
- * a 900 px — o degrau vive entre 900 e 1.000 px por 1,4 de ui (razão
- * 643–714). O limiar fica no TOPO da faixa (714), o mesmo lado seguro
- * do erro da barra: declarar cedo custa um recuo de câmera; declarar
- * tarde põe o alvo atrás da leitura do tempo. Em `ui = 1` o degrau só
- * existiria abaixo de 714 px — fora da faixa declarada
- * (`LARGURA_UTIL_MINIMA_PX`), onde a medição já é só registro.
+ * OS DOIS DEGRAUS DA MÁQUINA DO TEMPO — o fenômeno da barra de controles
+ * repetido na BASE: largura×texto, não texto sozinho. Os seis controles
+ * são pedidos em `rem` (crescem com `?ui=`) dentro de uma coluna em `vw`
+ * (que não cresce), então a linha deles quebra em duas e depois em três.
  *
- * A fração (0,03) cobre o 0,321 medido com folga de 0,019 — e fontes
- * de outra máquina movem esta margem (o juiz roda no macOS do dono e
- * na nuvem), que é exatamente por que a declaração paga o degrau
- * inteiro em vez de raspar o número de uma máquina só.
+ * ATÉ 2026-08-20 havia UM degrau declarado (714 px por unidade de ui) e
+ * o CSS não quebrava linha nenhuma acima da faixa estreita: o que não
+ * cabia era PINTADO FORA da coluna, por cima do selo. A declaração
+ * pagava por uma quebra que não acontecia, e a tela mostrava o "Época"
+ * escrito em cima de "O QUE NESTA VISTA É AJUSTADO" (768 px, item 9).
+ * Com a quebra de verdade no CSS (`.atlas-tempo-botoes`, fatia 4 do
+ * HUD), os dois degraus passam a existir e são MEDIDOS, um a um.
+ *
+ * MEDIDO em 2026-08-20 (viewport exato por override, 900 px de altura,
+ * `?atlas=1&shot=1`, macOS do dono):
+ *
+ *   1ª quebra (uma linha → duas): a 1.040 px ela já aconteceu, a 1.060
+ *   ainda não — com `?ui=1`. Razão 1.040–1.060 px de largura por
+ *   unidade de ui; o limiar fica no TOPO da faixa (1.060), que é o lado
+ *   seguro do erro: declarar cedo custa um recuo de câmera, declarar
+ *   tarde põe o alvo atrás da leitura do tempo. A 1.200 px com `ui = 1`
+ *   ela NÃO acontece — é o que mantém a tela de mesa (e as vistas
+ *   oficiais, que rodam a 1.800 px) exatamente onde estavam.
+ *
+ *   2ª quebra (duas linhas → três): entre 940 e 980 px com `?ui=1,4`
+ *   (razão 671–700). O limiar de 714 que já morava aqui está no topo
+ *   dessa faixa e continua valendo — o que mudou foi o que ele paga.
+ *
+ * AS FRAÇÕES saem da mesma medição, pela base MEDIDA menos as tarjas,
+ * normalizada por ui: duas linhas custam 0,175–0,191 (o extremo é o
+ * viewport mais BAIXO, 813 px, onde a mesma altura é fração maior) e o
+ * `TEMPO_FRACAO` sozinho já declara 0,175 — daí 0,03, que cobre o
+ * extremo com folga. Três linhas custam 0,229 a 900 px e 0,251 a 768,
+ * e os 0,09 cobrem o pior com 0,013 de folga. Fontes de outra máquina
+ * movem estas margens (o juiz roda no macOS do dono e na nuvem), que é
+ * por que a declaração paga o degrau inteiro em vez de raspar o número
+ * de uma máquina só.
  */
-const LARGURA_DA_QUEBRA_DO_TEMPO_PX = 714;
+const LARGURA_DA_QUEBRA_DO_TEMPO_PX = 1060;
 const TEMPO_QUEBRADO_FRACAO = 0.03;
+const LARGURA_DA_TERCEIRA_LINHA_PX = 714;
+const TEMPO_EM_TRES_LINHAS_FRACAO = 0.09;
 
 /**
  * A LARGURA DE REFERÊNCIA — a tela de mesa em que as frações acima
@@ -118,21 +141,22 @@ export const LARGURA_DE_MESA_PX = 1200;
 
 /**
  * ATÉ ONDE A DECLARAÇÃO VALE, em largura de CSS — medido, não estimado.
- * De 900 px para cima o retângulo declarado cobre o HUD real em toda a
- * faixa de `?ui=` (0,85 a 1,4) — no próprio 900, o extremo 1,4 só cabe
- * pelo degrau `TEMPO_QUEBRADO_FRACAO` (a quebra da máquina do tempo já
- * morde ali: 0,321 medido na grade de eixos de 2026-08-18). Abaixo da
- * faixa a BASE estoura de vez, em duas e três linhas: medido na era do
- * viewport de 813 px, base 0,328 a 800 px e 0,416 a 700 px; a 600 px
- * nem o topo cabe (0,245 contra 0,210).
+ * De 768 px para cima o retângulo declarado cobre o HUD real em toda a
+ * faixa de `?ui=` (0,85 a 1,4), com os dois degraus da máquina do tempo
+ * acima. Era 900 até 2026-08-20, e o que baixou o número foi o item 9:
+ * a linha dos controles passou a QUEBRAR em vez de ser pintada fora da
+ * coluna, então o que ela ocupa virou altura declarável em vez de
+ * transbordo invisível.
  *
- * PENDÊNCIA NOMEADA, com endereço em vez de adjetivo: "telas estreitas"
- * é o HUD do Atlas reflowar abaixo de 900 px de largura de CSS — não é o
- * enquadramento que está errado ali, é o HUD que precisa de um arranjo
- * próprio (Onda 6). O juiz de a11y mede essas larguras e IMPRIME os
- * números; o que ele cobra como gate é a faixa declarada aqui.
+ * ABAIXO DE 761 px o HUD do Atlas troca de arranjo: a faixa de baixo
+ * deixa de ser duas colunas de ~45vw e vira UMA coluna de borda a borda
+ * (fatia 6 do HUD). Ali a base é maior de propósito — três blocos
+ * empilhados numa tela de celular ocupam mais altura do que dois lado a
+ * lado, e em troca nada é cortado, sobreposto nem pintado fora do lugar.
+ * É medição de REGISTRO, não gate: o juiz de a11y imprime os números
+ * dessas larguras e cobra como gate a faixa declarada aqui.
  */
-export const LARGURA_UTIL_MINIMA_PX = 900;
+export const LARGURA_UTIL_MINIMA_PX = 768;
 
 /**
  * A MÁQUINA DO TEMPO (F4), na BASE e à ESQUERDA — o canto oposto ao do
@@ -207,6 +231,7 @@ export function retanguloUtilDoAtlas(
     base:
       LETTERBOX_FRACAO +
       Math.max(SELO_FRACAO, TEMPO_FRACAO) * k +
-      (largura < LARGURA_DA_QUEBRA_DO_TEMPO_PX * k ? TEMPO_QUEBRADO_FRACAO : 0),
+      (largura < LARGURA_DA_QUEBRA_DO_TEMPO_PX * k ? TEMPO_QUEBRADO_FRACAO : 0) +
+      (largura < LARGURA_DA_TERCEIRA_LINHA_PX * k ? TEMPO_EM_TRES_LINHAS_FRACAO : 0),
   };
 }

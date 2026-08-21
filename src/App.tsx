@@ -569,23 +569,26 @@ export default function App() {
         />
       )}
 
-      {/* O SELO. Lê o estado da vista do Director a cada render — e o
-          render acontece quando o foco muda, que é quando a vista muda
-          (dentro de um enquadramento a câmera não anda sozinha). */}
-      {hud.selo && directorRef.current && (
-        <Selo
-          vista={directorRef.current.selo}
-          onEscalaReal={() => directorRef.current?.focarNoSistema()}
-          onBrilhoReal={voltarAoBrilhoReal}
-        />
-      )}
+      {/* O RODAPÉ DO ATLAS: a máquina do tempo (F4), a dica do modo e o
+          selo, numa COLUNA só. Eram duas peças `position: fixed`
+          penduradas em dois `vh` escolhidos à mão, e a folga entre elas
+          era de 6 px — o primeiro degrau de `?ui=` punha uma por cima da
+          outra (F6). Numa coluna quem empilha é o fluxo, e a folga passa
+          a ser a mesma em qualquer tamanho de texto.
 
-      {/* O RODAPÉ DO ATLAS: a máquina do tempo (F4) e a dica do modo,
-          numa COLUNA só. Eram duas peças `position: fixed` penduradas em
-          dois `vh` escolhidos à mão, e a folga entre elas era de 6 px —
-          o primeiro degrau de `?ui=` punha uma por cima da outra (F6).
-          Numa coluna quem empilha é o fluxo, e a folga passa a ser a
-          mesma em qualquer tamanho de texto. */}
+          O SELO ENTROU NA COLUNA em 2026-08-20 (item 9), e a mudança é
+          de PARENTESCO, não de lugar: em tela de mesa ele continua
+          `position: fixed` no canto de baixo à direita, fora do fluxo,
+          exatamente onde sempre esteve — pai nenhum move filho fixo. O
+          que o parentesco compra é a tela estreita: lá o CSS o devolve
+          ao fluxo (`position: static`) e os três blocos EMPILHAM, cada
+          um com a largura inteira, em vez de disputarem duas colunas de
+          ~45vw em que tudo quebra em três e quatro linhas.
+          Empilhar sem parentesco exigiria que um dos dois soubesse a
+          altura do outro — e altura de HUD não se escreve à mão (foi
+          essa lição que criou o `--barra-fim`).
+          Ele segue apagado no `?shot=2`: a regra do `.bare-mode` alcança
+          filhos DIRETOS, e some com este rodapé inteiro. */}
       {phase === 'atlas' && (
         <div className="atlas-rodape">
           {hud.tempo && tempo && (
@@ -617,6 +620,20 @@ export default function App() {
           <div className="free-hint">
             arraste — girar · roda — degraus · clique — enquadrar · esc — subir
           </div>
+
+          {/* O SELO. Lê o estado da vista do Director a cada render — e o
+              render acontece quando o foco muda, que é quando a vista
+              muda (dentro de um enquadramento a câmera não anda
+              sozinha). É o ÚLTIMO da coluna porque é o que cede: na tela
+              estreita ele fica encostado na tarja de baixo, como no
+              canto de mesa, e a leitura desce controle → gesto → selo. */}
+          {hud.selo && directorRef.current && (
+            <Selo
+              vista={directorRef.current.selo}
+              onEscalaReal={() => directorRef.current?.focarNoSistema()}
+              onBrilhoReal={voltarAoBrilhoReal}
+            />
+          )}
         </div>
       )}
 
