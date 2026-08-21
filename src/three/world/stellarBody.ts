@@ -824,7 +824,6 @@ export class StellarBody {
       for (let i = r.passos; i < ate; i++) ctx.gran.stepSimulation(SIM_DT);
       r.passos = ate;
     } else {
-      r.passos = PRIME_STEPS;
       if (r.fatia === 0) ctx.chromo.snapshotBakeInputs();
       ctx.chromo.bakeChromoSlice(r.fatia, ctx.elapsed);
       r.fatia++;
