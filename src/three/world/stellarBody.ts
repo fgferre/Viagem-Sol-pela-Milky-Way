@@ -532,13 +532,12 @@ export class StellarBody {
   /**
    * O RE-BAKE FATIADO. Quando a data anda o bastante, o retrato da
    * cromosfera (e, com o relógio parado, o campo da granulação) precisa
-   * ser refeito NA FASE NOVA. Fatiado por quadro e COALESCIDO — enquanto
-   * ele corre, uma fase nova só reinicia a máquina se cruzar o limiar de
-   * novo; nunca se enfileira. O retrato velho continua publicado até o
-   * fim, então não há véu nem meia cromosfera em quadro.
+   * ser refeito NA FASE NOVA. Fatiado por quadro e COALESCIDO — um
+   * re-bake em curso nunca se reinicia nem se enfileira: ele POUSA, e só
+   * então a data pode disparar o próximo. O retrato velho continua
+   * publicado até o fim, então não há véu nem meia cromosfera em quadro.
    */
-  private reassar: { alvo: number; passos: number; fatia: number; semear: boolean } | null =
-    null;
+  private reassar: { passos: number; fatia: number; semear: boolean } | null = null;
   /** as geometrias das cenas de quad (`makeFullscreenScene`) — elas não
    *  moram no `group`, então só esta lista as leva ao `dispose()` */
   private readonly geoDosQuads: THREE.PlaneGeometry[] = [];
@@ -1061,18 +1060,20 @@ export class StellarBody {
     ctx.sunUniforms.uTime.value = ctx.elapsed;
 
     // --- o retrato SEGUE A DATA (item 5) ------------------------------
-    // Coalescer, nunca enfileirar: enquanto o re-bake corre, uma fase
-    // nova só o reinicia se cruzar o limiar OUTRA vez. E ele mora depois
-    // do retorno de invisibilidade pela mesma razão do relógio: re-assar
-    // um Sol que ninguém vê é gastar quadro à toa — quando ele voltar a
-    // ser corpo, a comparação abaixo dispara sozinha.
+    // COALESCER É DEIXAR POUSAR. Um re-bake em curso NUNCA se reinicia:
+    // reiniciá-lo a cada vez que a data passa do limiar parece "seguir a
+    // fase mais de perto" e é o contrário — MEDIDO no degrau de 115,7
+    // dias/s, com a data andando ~6 unidades por quadro contra um limiar
+    // de 7,2, a máquina reiniciava a cada quadro e o retrato NUNCA
+    // publicava. Deixando pousar, ele pousa a cada ~8 quadros com o
+    // relógio andando (a granulação já está sendo integrada, então só a
+    // cromosfera é refeita) e a data seguinte dispara o próximo.
+    //
+    // E ele mora depois do retorno de invisibilidade pela mesma razão do
+    // relógio: re-assar um Sol que ninguém vê é gastar quadro à toa —
+    // quando ele voltar a ser corpo, a comparação dispara sozinha.
     if (this.reassar === null && Math.abs(ctx.tempoDoCiclo - this.cicloAssado) > LIMIAR_DE_REASSAR) {
-      this.reassar = { alvo: ctx.tempoDoCiclo, passos: 0, fatia: 0, semear: delta === 0 };
-    } else if (
-      this.reassar !== null &&
-      Math.abs(ctx.tempoDoCiclo - this.reassar.alvo) > LIMIAR_DE_REASSAR
-    ) {
-      this.reassar = { alvo: ctx.tempoDoCiclo, passos: 0, fatia: 0, semear: delta === 0 };
+      this.reassar = { passos: 0, fatia: 0, semear: delta === 0 };
     }
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---

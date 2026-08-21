@@ -89,7 +89,6 @@ export function createSunUniforms(ctx){
     [0.008, 0.014, 2.0]     // 4 pequeno (oposto ao médio-2)
   ];
   var spotPairs = [];
-  var vidasDosGrupos = null;
   function sstep(a, b, x){
     var t = Math.min(1, Math.max(0, (x - a)/(b - a)));
     return t*t*(3 - 2*t);
@@ -219,13 +218,12 @@ export function createSunUniforms(ctx){
     // com a semente da vida. Re-colocar os cinco — e não só quem virou —
     // é o que torna a cadeia de hemisférios e a escolha de longitude
     // função da TUPLA, e a tupla função do instante.
-    var vidas = '';
+    var mudou = false;
     for (p = 0; p < 5; p++){
       sp = spotPairs[p];
-      vidas += Math.floor((tNow + sp.phase) / sp.period) + '|';
+      if (sp.vida !== Math.floor((tNow + sp.phase) / sp.period)) mudou = true;
     }
-    if (vidas !== vidasDosGrupos){
-      vidasDosGrupos = vidas;
+    if (mudou){
       for (p = 0; p < 5; p++){
         sp = spotPairs[p];
         sp.vida = Math.floor((tNow + sp.phase) / sp.period);

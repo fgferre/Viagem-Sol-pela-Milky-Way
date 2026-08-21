@@ -286,16 +286,15 @@ export function createActivity(ctx){
   //     sobre a IDADE da vida (`x·período`), na mesma constante do sim.
   //     A latitude não muda sob rotação em Y, então ω é constante na
   //     vida e a integral é exata — nada de somar dt por quadro.
-  var vidasVivas = null;
   function updateActiveRegions(timeNow){
-    var i, ps, k;
-    var vidas = '';
+    var i, ps, k, mudou = false;
+    // a comparação é NUMÉRICA e não uma chave concatenada: isto roda por
+    // quadro, e o núcleo do doador não aloca no caminho quente
     for (i=0;i<pairStates.length;i++){
       ps = pairStates[i];
-      vidas += Math.floor((timeNow + ps.phase) / ps.period) + '|';
+      if (ps.vida !== Math.floor((timeNow + ps.phase) / ps.period)) mudou = true;
     }
-    if (vidas !== vidasVivas){
-      vidasVivas = vidas;
+    if (mudou){
       for (i=0;i<pairStates.length;i++){
         ps = pairStates[i];
         k = Math.floor((timeNow + ps.phase) / ps.period);
