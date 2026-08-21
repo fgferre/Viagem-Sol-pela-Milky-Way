@@ -81,15 +81,21 @@ deveria sair da data simulada. *(O M1 NÃO o tocou, de propósito: o pino
 trocá-lo pela data exige o ciclo andar para TRÁS com re-bake — obra
 própria, com foto para o dono.)*
 
-**7. Trocar a qualidade ainda recarrega a página.**
-O dono pediu “nada recarrega, padrão AAA”. A Fase A fechou 3 dos 4
-recarregamentos; sobra a qualidade, mais três automatismos.
-→ `docs/NORTE.md`, seção “Ajustes”. *(A letra B FECHOU em 20/08: a
-cadeia de carga inteira — os dois bakes de mapa e a população — roda
-num worker, bit a bit igual ao inline, e o amostrador de memória ganhou
-a régua que enxerga worker vazado. O carregamento parou de congelar
-(medido: os dois bloqueios de ~0,5 s sumiram da thread). Sobram o swap
-vivo (C) e o Auto (D).)*
+**7. Trocar a qualidade recarregava a página — o reload morreu; falta ele ver.**
+O dono pediu “nada recarrega, padrão AAA”. Hoje NADA no painel recarrega,
+a qualidade inclusive; o item fica aberto até ele conferir no app —
+clicar em outro tier, com o filme andando ou de dentro do Atlas, e ver a
+cena continuar de onde estava.
+→ `docs/NORTE.md`, seção “Ajustes”. *(A letra B fechou em 20/08 — a
+cadeia de carga inteira num worker. A **letra C fechou no mesmo dia**:
+a qualidade NÃO recarrega mais. O mundo novo (galáxia, os dois mapas e
+o Sol) assa em segundo plano enquanto o atual continua desenhando, e a
+troca é num quadro só, sem véu; medido: o mundo trocado ao vivo sai
+BIT-IDÊNTICO ao do boot direto naquele tier, nos dois sentidos, e seis
+trocas seguidas não acumulam uma textura. Fica de pé o pior bloqueio de
+thread do swap, ~300 ms, que é o `prime` do Sol — bloco que não se
+fatia sem entrar no miolo de `stellarBody.ts`, território da Lei.
+Sobra a letra D, o Auto.)*
 
 **39. Estrela focada apaga as outras, ligando e desligando de repente.**
 Palavras do dono: *"uma coisa que percebi é que agora quando uma estrela
@@ -301,6 +307,16 @@ Se a onda do motor terminar sem fiá-lo, aí sim vira peso morto.
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
 decisão própria de resolução quando esse assunto voltar à mesa.
+
+**55.** (Juiz mentindo, achado em 20/08 ao estender o `atlas-smoke`.)
+A prova "Sol reproduzível" do smoke do Atlas REPROVA na `main` desde o
+recorte do filme: entrar no Atlas a partir de t=10 e de t=100 dá o
+mesmo quadro, mas de t=250 dá outro. O pino `ATLAS_JOURNEY_T` existe
+justamente para os três serem iguais; o que mudou foi o filme, que
+agora dura 193 s — t=250 é grampeado no FIM (fase `end`), e a entrada
+pela fase `end` não passa pelo mesmo caminho que a entrada pela fase
+`journey`. Confirmado pré-existente: reprova igual com a árvore limpa.
+Enquanto viver, o smoke sai ≠ 0 e esconde falha nova atrás dela.
 
 **49.** (Ruído de instrumento, achado nos cortes 4-5 da arquitetura.)
 As vistas oficiais da TERRA cintilam entre capturas da MESMA sessão no

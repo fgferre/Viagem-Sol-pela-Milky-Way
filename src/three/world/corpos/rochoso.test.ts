@@ -151,7 +151,7 @@ describe('3. a figura — BODY_AXES e o gradiente EXATO do elipsoide', () => {
     // aproximação — a escolha é visível no limbo e o teste a pina
     const fobos = new RochosoResolvido({
       config: { id: 'phobos', brdf: 'lambert' },
-      tier: 'cinema',
+      tier: () => 'cinema',
       base: '',
     });
     // o uniform nasce no garantirCasca (privado) — a fórmula é pinada
@@ -178,7 +178,7 @@ function rochosoDeTeste(
   const chamadas: string[] = [];
   const corpo = new RochosoResolvido({
     config: { id, brdf, superficie },
-    tier: 'cinema',
+    tier: () => 'cinema',
     maxTextureSize: 16384,
     base: '',
     webp: true,
@@ -345,7 +345,7 @@ describe('4. a classe — gate, carga, retrato × sem-retrato, cessão', () => {
     const chamadas: string[] = [];
     const corpo = new RochosoResolvido({
       config: { id: 'venus', brdf: 'lambert' },
-      tier: 'cinema',
+      tier: () => 'cinema',
       maxTextureSize: 16384,
       base: '',
       webp: true,

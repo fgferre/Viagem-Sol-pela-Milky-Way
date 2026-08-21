@@ -8,8 +8,10 @@
 // (o bake roda inteiro de qualquer jeito; elas só governam visibilidade
 // e bind por quadro).
 //
-// RECARREGA: só a QUALIDADE, e por motivo real — o tier do Sol e a
-// população da galáxia são decididos na construção (ver `changeQuality`).
+// A QUALIDADE também troca ao vivo desde 2026-08-20 (Ajustes C): a
+// metade assada dela — população da galáxia, tier do Sol, alvo de
+// textura dos corpos — nasce num mundo paralelo (worker + bake fatiado)
+// e entra por troca de ponteiro num quadro só. NADA no painel recarrega.
 //
 // A URL continua sendo a fonte de verdade: quem escreve nela é o App, e o
 // painel só reflete e edita. Assim qualquer configuração vira link, e a
@@ -135,6 +137,11 @@ export function Ajustes({
 
       <div className="ajustes-secao">
         <h3>Qualidade</h3>
+        <p className="ajustes-nota">
+          Troca ao vivo, sem recarregar. A parte pesada — a população da
+          galáxia e o Sol — é refeita em segundo plano e entra de uma vez;
+          até lá a cena continua como está.
+        </p>
         <div className="ajustes-linha">
           {QUALIDADES.map((q) => (
             <button
@@ -142,7 +149,6 @@ export function Ajustes({
               key={q}
               className={qualidade === q ? 'on' : ''}
               onClick={() => onQualidade(q)}
-              title="Recarrega: o tier do Sol e a população da galáxia são decididos na construção"
             >
               {q}
             </button>

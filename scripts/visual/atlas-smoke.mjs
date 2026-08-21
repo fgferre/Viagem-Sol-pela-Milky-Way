@@ -486,35 +486,82 @@ try {
     `e a URL sem ?exp= reproduz a tela, pixel a pixel (${telaDevolta} vs ${recarregada})`
   );
 
-  // ---- 14: escolha manual de qualidade grava ?q=, cinema inclusive --
-  // Tom e exposição podem omitir o padrão porque o padrão deles é
-  // CONSTANTE; o de qualidade não é — sem `?q=` quem decide na recarga é
-  // o storage (`tierQueRodou`, alocação medida) ou a detecção. Apagando o
-  // parâmetro no clique em Cinema, um `alta` medido na visita passada
-  // sobrepunha a escolha do visitante.
-  await sessao.ir('t=100&ajustes=1&q=alta&shot=1');
+  // ---- 14: A QUALIDADE TROCA AO VIVO, IDA E VOLTA (Ajustes C) -------
+  // A ÚLTIMA opção do painel que recarregava a página. Metade da
+  // qualidade sempre foi viva (pixel ratio, passos do raymarch); a outra
+  // metade é ALOCAÇÃO — população da galáxia, tier do Sol, alvo de
+  // textura dos corpos — e até 2026-08-20 o único jeito de refazê-la era
+  // gravar `?q=` e RECARREGAR, o que devolvia o espectador à tela de
+  // título. Este bloco julgava justamente a recarga; agora julga o
+  // contrário, e IDA E VOLTA na mesma sessão — captura congelada não vê
+  // histerese, e mundo que volta tem de ser o mesmo que saiu.
+  //
+  // Quatro provas por sentido, todas no MESMO documento:
+  //   1. não houve navegação    — a marca posta na `window` sobrevive;
+  //   2. o MUNDO trocou         — `captura.tierDoMundo` acompanha, e não
+  //      só `captura.tier` (o do instrumento, que muda no quadro do
+  //      clique e sozinho não prova alocação nenhuma);
+  //   3. a URL espelha          — `replaceState` com `?q=` SEMPRE
+  //      escrito, cinema inclusive: sem ele quem decide na recarga é o
+  //      storage (`tierQueRodou`) ou a detecção, e um `alta` medido na
+  //      visita passada sobreporia a escolha do visitante;
+  //   4. o Atlas nem soube      — modo, instante do céu e alvo em quadro.
+  await sessao.ir('atlas=1&jd=2465000&foco=hd48915&ajustes=1&q=alta&shot=1');
   await sessao.js('window.__marcaQ = 1');
-  await sessao.js(`(() => [...document.querySelectorAll('[data-dialogo="ajustes"] button')]
-    .find((b) => b.textContent.trim() === 'cinema').click())()`);
-  // a recarga destrói o contexto de JS no meio do caminho: perguntar
-  // durante a troca ERRA, e é por isso que a espera engole o erro em vez
-  // de morrer nele. O documento novo se anuncia pela marca que sumiu.
-  for (let i = 0; i < 100; i++) {
-    const pronta = await sessao
-      .js('String(window.__marcaQ) + "|" + (window.__director ? 1 : 0)')
-      .catch(() => '');
-    if (pronta === 'undefined|1') break;
-    await sleep(200);
+  const clicarTier = (q) => sessao.js(`(() => [...document.querySelectorAll(
+    '[data-dialogo="ajustes"] button')].find((b) => b.textContent.trim() === '${q}').click())()`);
+  for (const q of ['cinema', 'alta']) {
+    await clicarTier(q);
+    // o `andando` da prontidão inclui a troca em voo (Ajustes C): quem
+    // espera o sinal do app espera o swap, sem relógio de parede
+    await sessao.assentar();
+    const t = JSON.parse(await sessao.js(`JSON.stringify({
+      url: location.search,
+      tier: window.__director.captura.tier,
+      mundo: window.__director.captura.tierDoMundo,
+      marca: window.__marcaQ,
+      fase: window.__director.captura.fase,
+      jd: window.__director.tempo.jd,
+      foco: (document.querySelector('.atlas-contexto-nome') || {}).textContent || '',
+    })`));
+    conferir(
+      t.marca === 1 && t.tier === q && t.mundo === q && t.url.includes(`q=${q}`),
+      `clicar em ${q} troca o MUNDO sem recarregar (instrumento '${t.tier}',`
+        + ` mundo '${t.mundo}', url '${t.url}')`
+    );
+    conferir(
+      t.fase === 'atlas' && t.jd === 2465000 && t.foco === 'Sirius',
+      `e o Atlas nem soube: modo, instante e alvo intactos (${t.fase}, ${t.jd}, ${t.foco})`
+    );
   }
-  await sessao.assentar();
-  const depoisDoTier = JSON.parse(await sessao.js(`JSON.stringify({
-    url: location.search, tier: window.__director.captura.tier, marca: window.__marcaQ })`));
+
+  // O PIXEL, que é o veredito duro: o mundo trocado AO VIVO tem de sair
+  // idêntico ao do boot DIRETO naquele tier — a mesma exigência que a
+  // seção 12 faz às camadas, agora sobre a alocação inteira (4,02 M
+  // partículas em cinema contra 1,1 M em performance, o Sol em high
+  // contra low, e os dois mapas reassados). `t=167` é a vista de fora,
+  // onde a população da galáxia É a imagem. Nos DOIS sentidos: subir de
+  // tier e voltar, sem recarregar entre um e outro.
+  const bootDoTier = new Map();
+  for (const q of ['performance', 'cinema']) {
+    await sessao.ir(`t=167&shot=2&q=${q}`);
+    bootDoTier.set(q, await sessao.md5());
+  }
   conferir(
-    depoisDoTier.url.includes('q=cinema') && depoisDoTier.tier === 'cinema'
-      && depoisDoTier.marca === undefined,
-    `clicar em Cinema grava ?q=cinema na URL (tier '${depoisDoTier.tier}',`
-      + ` url '${depoisDoTier.url}')`
+    bootDoTier.get('performance') !== bootDoTier.get('cinema'),
+    `o tier REALMENTE muda a vista de fora (${bootDoTier.get('performance')}`
+      + ` vs ${bootDoTier.get('cinema')})`
   );
+  await sessao.ir('t=167&shot=2&q=performance');
+  for (const q of ['cinema', 'performance']) {
+    await sessao.js(`window.__director.setQuality('${q}')`);
+    await sessao.assentar();
+    const aoVivo = await sessao.md5();
+    conferir(
+      aoVivo === bootDoTier.get(q),
+      `?q=${q}: boot e troca viva dão o MESMO pixel (${bootDoTier.get(q)} vs ${aoVivo})`
+    );
+  }
 
 
   // ---- 15: A RODA E A PINÇA MOVEM A ESCADA (Onda 7) ----------------

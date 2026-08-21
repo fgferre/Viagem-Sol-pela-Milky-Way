@@ -309,7 +309,7 @@ const flush = async () => {
 function terraDeTeste() {
   const chamadas: string[] = [];
   const terra = new TerraResolvida({
-    tier: 'cinema',
+    tier: () => 'cinema',
     maxTextureSize: 16384,
     base: '',
     webp: true,
@@ -618,7 +618,7 @@ describe('6c. a falha de carga não é sentença (auditoria item 6)', () => {
     let restantes = falhas;
     const chamadas: string[] = [];
     const terra = new TerraResolvida({
-      tier: 'cinema',
+      tier: () => 'cinema',
       maxTextureSize: 16384,
       base: '',
       webp: true,

@@ -18,13 +18,16 @@
 //     não "quase": um recurso de GPU que sobra por ciclo é dispose faltando,
 //     e cresce sem teto em quem deixa a aba aberta.
 //  B. N=3 trocas de qualidade pelo CAMINHO VIVO (`director.setQuality`,
-//     alta→performance→alta — pixelRatio, render targets do pós e passos do
-//     raymarch trocam e voltam). REGISTRADO AQUI porque é fato do desenho:
-//     a troca DO VISITANTE (painel de Ajustes) é RELOAD por decisão —
-//     metade da qualidade é assada na construção (`changeQuality` no
-//     App.tsx grava `?q=` e recarrega) — então o juiz também mede um reload
-//     ao final, a título de registro. O caminho vivo existe (é o que o boot
-//     com `?q=` usa) e é ele que pode vazar dentro de uma sessão.
+//     alta→performance→alta). Desde os Ajustes C esta régua é a mais
+//     exigente das três: a troca deixou de recarregar a página e passou a
+//     RECONSTRUIR o mundo dentro da mesma sessão — galáxia nova (4,02 M
+//     partículas em cinema contra 1,1 M), dois mapas novos, Sol novo, doze
+//     corpos de palco novos —, e o mundo velho tem de ser desmontado
+//     inteiro no mesmo quadro. Um `dispose()` que faltasse ali vazaria
+//     ~123 MiB POR CLIQUE, e antes desta rodada o reload escondia o
+//     defeito atrás de um documento novo. O juiz cobra que o mundo tenha
+//     de fato trocado (`captura.tierDoMundo`), senão o delta zero seria
+//     zero por não ter acontecido nada.
 //  C. Foco em 5 corpos — `focarNoCorpo`, o MESMO ponto de pouso do
 //     `?foco=` (App.tsx: resolverFoco → escolherAlvo → focarNoCorpo).
 //     Enquadrar não aloca: delta ZERO também. Além do delta, o
@@ -206,11 +209,15 @@ try {
       if (sabotar) await sessao.js(INJETAR);
       amostras.push(await amostrar(`ciclo ${c}`));
     }
+    // o mundo TEM de trocar dos dois lados: delta zero sobre uma troca
+    // que não aconteceu é zero por omissão, não por higiene
+    const mundos = [];
     for (let t = 1; t <= trocas; t++) {
-      await sessao.js("window.__director.setQuality('performance')");
-      await sessao.assentar();
-      await sessao.js("window.__director.setQuality('alta')");
-      await sessao.assentar();
+      for (const q of ['performance', 'alta']) {
+        await sessao.js(`window.__director.setQuality('${q}')`);
+        await sessao.assentar();
+        mundos.push(await sessao.js('window.__director.captura.tierDoMundo'));
+      }
       amostras.push(await amostrar(`troca q ${t}`));
     }
     for (const id of focos) {
@@ -218,7 +225,7 @@ try {
       await sessao.assentar();
       amostras.push(await amostrar(`foco ${id}`));
     }
-    return { boot, amostras };
+    return { boot, amostras, mundos };
   };
 
   /** Os vereditos do D9 sobre um conjunto de amostras, sem imprimir. */
@@ -229,13 +236,27 @@ try {
       ...ciclos.map((a) => Math.abs(a.textures - base.textures)),
       ...ciclos.map((a) => Math.abs(a.geometries - base.geometries))
     );
-    const posPortal = amostras.filter(
-      (a) => a.rotulo.startsWith('troca') || a.rotulo.startsWith('foco')
-    );
-    const deltaResto = posPortal.length
+    // AS TROCAS SE COMPARAM ENTRE SI, e não com os ciclos do portal:
+    // o mundo novo nasce com um Sol RECÉM-PRIMADO, e o Sol aloca peças
+    // preguiçosas enquanto anima (as malhas da ejeção, os laços). Um Sol
+    // que rodou cinco ciclos de Atlas tem ~10 geometrias que o recém-nascido
+    // ainda não pediu — a troca DEVOLVE memória, e cobrar "delta zero
+    // contra o ciclo 5" reprovaria a higiene em vez do vazamento. O que
+    // tem de ser zero é o delta ENTRE trocas: seis swaps seguidos que
+    // não crescem provam que cada um desmontou o que montou.
+    const trocas = amostras.filter((a) => a.rotulo.startsWith('troca'));
+    const deltaTrocas = trocas.length
       ? Math.max(
-          ...posPortal.map((a) => Math.abs(a.textures - ciclos[ciclos.length - 1].textures)),
-          ...posPortal.map((a) => Math.abs(a.geometries - ciclos[ciclos.length - 1].geometries))
+          ...trocas.map((a) => Math.abs(a.textures - trocas[0].textures)),
+          ...trocas.map((a) => Math.abs(a.geometries - trocas[0].geometries))
+        )
+      : 0;
+    const ancora = trocas[trocas.length - 1] ?? ciclos[ciclos.length - 1];
+    const focos = amostras.filter((a) => a.rotulo.startsWith('foco'));
+    const deltaFocos = focos.length
+      ? Math.max(
+          ...focos.map((a) => Math.abs(a.textures - ancora.textures)),
+          ...focos.map((a) => Math.abs(a.geometries - ancora.geometries))
         )
       : 0;
     const heaps = amostras.map((a) => a.heap);
@@ -246,7 +267,8 @@ try {
     const picoGeometries = Math.max(...amostras.map((a) => a.geometries));
     const picoWorkers = Math.max(...amostras.map((a) => a.workers));
     return {
-      deltaPortal, deltaResto, inclinacao, picoTextures, picoGeometries, picoWorkers,
+      deltaPortal, deltaTrocas, deltaFocos, inclinacao,
+      picoTextures, picoGeometries, picoWorkers,
     };
   };
 
@@ -259,7 +281,8 @@ try {
     tabela(amostras);
     const v = julgar(amostras);
     conferir(v.deltaPortal === 0, `portal: delta ZERO em textures/geometries (max ${v.deltaPortal})`);
-    conferir(v.deltaResto === 0, `trocas+focos: delta ZERO (max ${v.deltaResto})`);
+    conferir(v.deltaTrocas === 0, `trocas de tier: delta ZERO entre trocas (max ${v.deltaTrocas})`);
+    conferir(v.deltaFocos === 0, `focos: delta ZERO (max ${v.deltaFocos})`);
     conferir(
       v.inclinacao < LIMIAR_HEAP_MB,
       `heap: inclinação ${v.inclinacao.toFixed(1)} MB < ${LIMIAR_HEAP_MB} MB`
@@ -270,7 +293,7 @@ try {
     const primeira = await protocolo({
       sabotar: false, ciclos: CICLOS, trocas: TROCAS, focos: FOCOS,
     });
-    const { amostras, boot } = primeira;
+    const { amostras, boot, mundos } = primeira;
     conferir(
       boot.via === 'sinal',
       `boot no Atlas assentou por via=${boot.via} em ${(boot.ms / 1000).toFixed(1)}s`
@@ -297,9 +320,18 @@ try {
         + ` (max ${v.deltaPortal})`
     );
     conferir(
-      v.deltaResto === 0,
-      `${TROCAS} trocas de qualidade (caminho vivo) + ${FOCOS.length} focos: delta ZERO`
-        + ` (max ${v.deltaResto})`
+      mundos.length === TROCAS * 2
+        && mundos.every((m, i) => m === (i % 2 === 0 ? 'performance' : 'alta')),
+      `as ${TROCAS * 2} trocas RECONSTRUÍRAM o mundo de verdade (${mundos.join(' → ')})`
+    );
+    conferir(
+      v.deltaTrocas === 0,
+      `${TROCAS * 2} trocas de tier (mundo inteiro refeito, ida e volta): textures/`
+        + `geometries não crescem — delta ZERO entre trocas (max ${v.deltaTrocas})`
+    );
+    conferir(
+      v.deltaFocos === 0,
+      `${FOCOS.length} focos: enquadrar não aloca — delta ZERO (max ${v.deltaFocos})`
     );
     conferir(
       v.inclinacao < LIMIAR_HEAP_MB,
@@ -322,15 +354,37 @@ try {
     const faseFinal = await sessao.js('window.__director.captura.fase');
     conferir(faseFinal === 'atlas', `o protocolo termina onde começou (fase '${faseFinal}')`);
 
-    // ---- 5: a troca do visitante é RELOAD — registrado e medido ------
-    // Não é veredito: é fato do desenho (App.tsx, changeQuality). O que
-    // se mede é o custo do caminho que o visitante paga.
-    const recarga = await sessao.ir(BOOT);
-    process.stdout.write(
-      `        registro: a troca de qualidade do PAINEL é reload por decisão `
-      + `(App.tsx changeQuality);\n        um reload medido: via=${recarga.via}, `
-      + `${(recarga.ms / 1000).toFixed(1)}s até assentar\n`
-    );
+    // ---- 5: O PREÇO DO SWAP NA THREAD — registrado e medido ----------
+    // Até 2026-08-20 esta linha registrava um RELOAD: a troca do painel
+    // gravava `?q=` e trocava de documento, e o que se media era o custo
+    // do caminho que o visitante pagava. Os Ajustes C mataram a recarga;
+    // o que sobra a medir é o preço do swap NA THREAD — quanto tempo até
+    // o mundo novo entrar e, sobretudo, o PIOR bloqueio de quadro no
+    // caminho (Long Tasks). Registro, não veredito: quem julga vazamento
+    // são as réguas acima, e o número aqui é para o NORTE saber o que
+    // ainda não foi fatiado.
+    await sessao.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: 'window.__longs=[];window.__marca=0;'
+        + 'new PerformanceObserver((l)=>{for(const e of l.getEntries())'
+        + 'if(e.startTime>=window.__marca)window.__longs.push(Math.round(e.duration));'
+        + '}).observe({entryTypes:["longtask"]});',
+    });
+    await sessao.ir(BOOT);
+    for (const q of ['cinema', 'alta']) {
+      await sessao.js('window.__longs=[];window.__marca=performance.now();'
+        + `window.__t0=performance.now();window.__director.setQuality('${q}')`);
+      await sessao.assentar();
+      const swap = JSON.parse(await sessao.js(`JSON.stringify({
+        ms: Math.round(performance.now() - window.__t0),
+        pior: Math.max(0, ...window.__longs),
+        n: window.__longs.length,
+        mundo: window.__director.captura.tierDoMundo })`));
+      process.stdout.write(
+        `        registro: troca viva → ${q} em ${(swap.ms / 1000).toFixed(1)}s até`
+        + ` assentar (mundo '${swap.mundo}');\n        pior bloqueio de thread`
+        + ` ${swap.pior} ms em ${swap.n} tarefas longas\n`
+      );
+    }
 
     // ---- 6: AUTOVALIDAÇÃO M5 — o verde só vale com dentes ------------
     // Navegação nova (zera o array da sabotagem) e 2 ciclos VAZADOS de

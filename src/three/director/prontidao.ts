@@ -42,6 +42,18 @@ export interface TermosDaProntidao {
   fonteAssentada: boolean;
   quadrosEstaveis: number;
   tier: QualityLevel;
+  /**
+   * O tier com que o MUNDO na tela foi assado — e ele não é o `tier`
+   * acima. Aquele é o do instrumento e muda no quadro do clique; este é
+   * o da ALOCAÇÃO (população da galáxia, Sol, alvo de textura dos
+   * corpos) e só muda quando o mundo novo entra, segundos depois
+   * (Ajustes C). Só é REPORTADO — nenhum juiz de prontidão o consulta,
+   * porque quem segura a captura durante a troca é o termo `andando`.
+   * Sem ele, um juiz que quisesse provar que a troca de tier VIROU
+   * mundo só teria o número do instrumento, que muda sozinho e não
+   * prova nada. `null` antes do init terminar.
+   */
+  tierDoMundo: QualityLevel | null;
 }
 
 
@@ -106,5 +118,6 @@ export function julgarProntidao(t: TermosDaProntidao) {
     corpos: t.corposAssentados,
     fonte: t.fonteAssentada,
     tier: t.tier,
+    tierDoMundo: t.tierDoMundo,
   };
 }

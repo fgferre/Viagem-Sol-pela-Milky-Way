@@ -141,11 +141,28 @@ export interface CargaDoMundo {
 }
 
 /**
- * A CARGA do init: os dois mapas assados e a população por tier (cinema
- * semeia 4,02 M, performance 1,1 M — decidido no build; a troca de tier
- * em runtime é a fila C do NORTE, e é para ela que o worker abre
- * caminho). `catalogos` já chega decidido pelo `?cart` da página: o
- * knob que decide alocação lê-se ANTES de quem aloca.
+ * DESCARTA uma carga que não vai virar mundo — o `dispose()` dos três
+ * objetos de GPU que ela criou. Dois caminhos precisam dele e por isso
+ * ele tem nome: o `dispose()` do Director caindo dentro do `await` do
+ * init, e a troca de tier CANCELADA (o visitante clicou noutro tier
+ * enquanto o mundo assava). Quem esquecer um deles deixa 122,7 MiB de
+ * partículas e dois RGBA na placa sem dono.
+ */
+export function descartarCarga(carga: CargaDoMundo) {
+  carga.galaxy.dispose();
+  carga.dustMapTexture.dispose();
+  carga.structureMapTexture.dispose();
+}
+
+/**
+ * A CARGA do init E da troca de tier viva (Ajustes C): os dois mapas
+ * assados e a população por tier (cinema semeia 4,02 M, performance
+ * 1,1 M). `catalogos` já chega decidido pelo `?cart` da página: o knob
+ * que decide alocação lê-se ANTES de quem aloca — e é a MESMA regra que
+ * faz o `tier` ser parâmetro daqui em vez de leitura do engine lá
+ * dentro: quem troca de tier ao vivo pede o mundo NOVO por este mesmo
+ * caminho, com o mundo velho ainda desenhando, e a única diferença
+ * entre os dois é o número que entra aqui.
  */
 export async function montarCarga(opts: {
   catalogos: GalacticAssets | null;
@@ -177,12 +194,18 @@ export async function montarCarga(opts: {
 /**
  * OS CORPOS DO PALCO (Onda 6): construtores baratos, sem geometria e
  * sem um byte de textura — a carga é preguiçosa por contrato (as
- * vistas oficiais não fazem fetch). O tier e o teto de textura
- * CONGELAM aqui, como a população da galáxia: a escada não reage a
- * auto-quality depois do init.
+ * vistas oficiais não fazem fetch).
+ *
+ * O TETO DE TEXTURA congela aqui (é do aparelho, não muda). O TIER não:
+ * ele entra como FUNÇÃO e é lido no instante da carga (Ajustes C). Até
+ * 2026-08-20 congelava junto, e a troca de tier viva não alcançava
+ * corpo nenhum; reconstruí-los para alcançar tirava o globo da tela por
+ * ~2 s (o tempo da textura nova) — o véu que a letra C proíbe. Quem já
+ * carregou guarda os pixels que tem; quem carregar depois obedece ao
+ * tier de agora, auto-quality inclusive.
  */
 export function montarCorposDoPalco(opts: {
-  tier: QualityLevel;
+  tier: () => QualityLevel;
   maxTextureSize: number | undefined;
   base: string;
 }) {

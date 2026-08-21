@@ -371,7 +371,19 @@ export interface EstadoDoGigante {
 
 export interface OpcoesDoGigante {
   id: string;
-  tier: QualityLevel;
+  /**
+   * O TIER, LIDO NA HORA DE ALOCAR — função, não valor. É a regra do
+   * NORTE ("knob que decide alocação lê-se ANTES de quem aloca") escrita
+   * ao pé da letra: a textura deste corpo é preguiçosa, então o número
+   * que decide o alvo de pixels só faz sentido no instante em que ela é
+   * pedida. Congelado no construtor (como era até os Ajustes C), trocar
+   * de qualidade ao vivo não alcançava corpo nenhum; e reconstruí-los
+   * para alcançar tirava o globo da tela por ~2 s enquanto a textura
+   * nova vinha — medido, e é exatamente o véu que a letra C proíbe.
+   * Quem já está carregado guarda os pixels que tem; quem carregar
+   * daqui em diante obedece ao tier de agora.
+   */
+  tier: () => QualityLevel;
   maxTextureSize?: number;
   base: string;
   webp?: boolean;
@@ -677,6 +689,7 @@ export class GiganteResolvido {
   private iniciarCarga() {
     this.texturas = 'buscando';
     const { base, tier, maxTextureSize } = this.opcoes;
+    const tierAgora = tier();
     const id = this.idCorpo;
     const buscar =
       this.opcoes.buscarManifest ??
@@ -692,7 +705,7 @@ export class GiganteResolvido {
 
     void (async () => {
       const manifest = await buscar(`${base}data/atlas/texturas.json`);
-      const alvo = alvoDePixels(tier, 'map', maxTextureSize);
+      const alvo = alvoDePixels(tierAgora, 'map', maxTextureSize);
       const variante = escolherVariante(manifest.entradas, id, 'map', alvo, webpOk);
       if (!variante) throw new Error(`${id} sem variante para 'map' ≤ ${alvo}px`);
       const tex = await carregar(`${base}${variante.arquivo}`);

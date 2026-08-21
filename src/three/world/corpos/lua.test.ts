@@ -219,7 +219,7 @@ const flush = async () => {
 function luaDeTeste() {
   const chamadas: string[] = [];
   const lua = new LuaResolvida({
-    tier: 'cinema',
+    tier: () => 'cinema',
     maxTextureSize: 16384,
     base: '',
     webp: true,
@@ -398,7 +398,7 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     let falhas = 1;
     const chamadas: string[] = [];
     const lua = new LuaResolvida({
-      tier: 'cinema',
+      tier: () => 'cinema',
       maxTextureSize: 16384,
       base: '',
       webp: true,

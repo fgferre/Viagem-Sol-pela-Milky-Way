@@ -62,10 +62,12 @@ import { SolNoQuadro } from './director/solNoQuadro';
 import { Escada, larguraDeCss } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
+  descartarCarga,
   montarCarga,
   montarCenaDeAquecimento,
   montarCorposDoPalco,
 } from './director/carregamento';
+import type { GalacticAssets } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
 import {
@@ -264,6 +266,26 @@ export class Director {
   private wrappedStars!: WrappedStars;
   private dustMapTexture: THREE.Texture | null = null;
   private structureMapTexture: THREE.Texture | null = null;
+  /**
+   * O TIER COM QUE O MUNDO FOI ASSADO — e ele NÃO é `engine.quality`.
+   * Metade da qualidade é viva (pixelRatio, passos do raymarch) e vale
+   * no quadro seguinte ao clique; a outra metade é ALOCAÇÃO (a população
+   * da galáxia e o tier do Sol) e leva segundos de worker para nascer.
+   * Entre o clique e o swap os dois números divergem de propósito: um
+   * diz o que o instrumento já faz, este diz o que está na tela. Nasce
+   * no init com o tier que `montarCarga` recebeu.
+   */
+  private tierDoMundo: QualityLevel | null = null;
+  /** o tier PEDIDO e ainda a caminho (`null` = nenhuma troca em voo) —
+   *  é ele que faz a captura esperar e que cancela um mundo em forno
+   *  quando o visitante muda de ideia no meio */
+  private trocaPedida: QualityLevel | null = null;
+  /** os catálogos do boot, guardados porque o mundo pode ser reassado.
+   *  Os arrays são os MESMOS de sempre: o worker os recebe por CÓPIA. */
+  private catalogos: GalacticAssets | null = null;
+  /** o modo de cartografia decidido no boot (`?cart=`) — o mundo novo
+   *  nasce com o mesmo, senão a troca de tier viraria troca de mapa */
+  private cartMode: CartographyMode = 'blend';
   /** nuvens do catálogo em coords de cena: x,y,z,raio,amp por registro */
   /** as nuvens-semente do raymarch — corte 1 da Parte 1 da onda */
   private readonly nuvensSemente = new NuvensSemente();
@@ -698,33 +720,38 @@ export class Director {
     // mentiria em metade dos aparelhos. Dispose durante o await é o caso
     // dos stage(): o teardown já correu e ninguém mais descartaria estes
     // objetos — descarta os três e sai.
+    //
+    // O QUE FICA GUARDADO AQUI é o que a troca de tier viva (Ajustes C)
+    // precisa para pedir o MESMO mundo com outro número: os catálogos
+    // (que o worker leva por cópia e por isso continuam intactos), o
+    // modo de cartografia e o tier que de fato foi assado.
+    this.catalogos = cartOn ? galactic : null;
+    this.cartMode = cartOn ? cartMode : 'off';
+    this.tierDoMundo = this.engine.quality;
     const carga = await montarCarga({
-      catalogos: cartOn ? galactic : null,
-      tier: this.engine.quality,
+      catalogos: this.catalogos,
+      tier: this.tierDoMundo,
       aoAvancar: (etapa) => this.rotular(etapa),
     });
     if (this.disposed) {
-      carga.galaxy.dispose();
-      carga.dustMapTexture.dispose();
-      carga.structureMapTexture.dispose();
+      descartarCarga(carga);
       return;
     }
     this.dustMapTexture = carga.dustMapTexture;
     this.structureMapTexture = carga.structureMapTexture;
     this.galaxy = carga.galaxy;
-    // O QUE JÁ ESTAVA DESLIGADO chega junto. A galáxia semeia as flags
-    // dela da URL, como sempre, e isto só cobre a corrida do painel
-    // aberto DURANTE o carregamento (`?ajustes=1`): sem esta linha, o
-    // clique sumia no objeto que ainda não existia. Idempotente para
-    // quem veio da URL, e mudo para as flags que não são da galáxia.
-    for (const f of this.hide) this.galaxy.setLayerHidden(f, true);
-    this.galaxy.setCartography(
-      this.debug.has('discoff') ? 'off' : galactic ? cartMode : 'off'
-    );
+    this.vestirGalaxia(this.galaxy);
     // congela as lâminas (estáticas) em texturas — depois do modo
     await this.stage('layers');
     if (this.disposed) return;
-    this.galaxy.bakeDiscLayers(this.engine.renderer);
+    // FATIADO POR LÂMINA (Ajustes C): eram oito render targets de 1024²
+    // num bloco só — a maior tarefa longa que sobrou na thread depois
+    // que a carga foi para o worker, e o loader congelava nela. O
+    // fôlego entre lâminas devolve a thread ao browser; um `dispose()`
+    // que caia no meio para o forno em vez de assar numa cena morta.
+    if (!(await this.galaxy.bakeDiscLayers(this.engine.renderer, () => this.folego(null)))) {
+      return;
+    }
     const tauTex = this.galaxy.tauMapTexture;
     this.nebula.setDustMap(carga.dustMapTexture, cartOn ? 1 : 0);
     if (galactic && cartMode !== 'off') {
@@ -796,10 +823,13 @@ export class Director {
     // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
     // Terra — construtor barato, sem geometria e sem um byte de textura
     // (a carga é preguiçosa por contrato; as 18 vistas não fazem fetch).
-    // O tier e o teto de textura congelam AQUI, como a população da
-    // galáxia: a escada não reage a auto-quality depois do init.
+    // O teto de textura congela AQUI (é do aparelho); o TIER, não — ele
+    // entra por FUNÇÃO e é lido no instante da carga, que é quando ele
+    // decide alguma coisa. É o que faz a troca de tier viva (Ajustes C)
+    // alcançar os corpos sem os reconstruir — reconstruir tirava o globo
+    // da tela por ~2 s, o véu que a letra C proíbe.
     const corpos = montarCorposDoPalco({
-      tier: this.engine.quality,
+      tier: () => this.engine.quality,
       maxTextureSize: sondarGl().maxTextureSize,
       base: import.meta.env.BASE_URL,
     });
@@ -862,6 +892,15 @@ export class Director {
 
     this.setPhase('intro');
     this.engine.start();
+    // A CORRIDA DO PAINEL ABERTO DURANTE A CARGA (`?ajustes=1`): um
+    // clique em outro tier no meio do init muda o instrumento na hora,
+    // mas o mundo já saiu do forno com o tier anterior. Aqui os dois se
+    // reconciliam — sem esta linha o app ficaria com "performance" no
+    // seletor e a população de cinema na placa, e nenhum clique
+    // seguinte consertaria (o tier pedido já é o vivo).
+    if (this.engine.quality !== this.tierDoMundo) {
+      void this.reassarMundo(this.engine.quality);
+    }
   }
 
   /**
@@ -959,7 +998,12 @@ export class Director {
       this.gigantes.some((g) => g.carregando) ||
       // A RAMPA ENTRE DEGRAUS (F2b/D7): o rig anima entre dois
       // enquadramentos — cena mudando por construção até assentar
-      this.atlas.animando;
+      this.atlas.animando ||
+      // TROCA DE TIER EM VOO (Ajustes C): mudança JÁ PEDIDA que ainda
+      // não chegou — o mesmo argumento da efeméride e da textura acima.
+      // Sem este termo o gate fotografaria o mundo VELHO com o `?q=`
+      // novo no selo, e mediria a corrida em vez da imagem.
+      this.trocaPedida !== null;
     // CORPO NO GATE A FRIO (auditoria item 5b): o gate diz que o corpo
     // devia estar na tela e a textura não está quente — capturar agora
     // fotografaria o ponto (ou nada) fingindo a vista do globo. O
@@ -985,6 +1029,7 @@ export class Director {
       fonteAssentada,
       quadrosEstaveis: this.quadrosEstaveis,
       tier: this.engine.quality,
+      tierDoMundo: this.tierDoMundo,
     });
   }
 
@@ -1339,10 +1384,180 @@ export class Director {
   }
 
 
+  /**
+   * TROCA DE TIER — a metade viva na hora, a metade assada em segundo
+   * plano (Ajustes C do NORTE, a régua do dono: nada recarrega).
+   *
+   * O que muda AGORA é o instrumento: pixel ratio, passos do raymarch,
+   * grão, passos do buraco negro. O que muda DEPOIS é a alocação — a
+   * população da galáxia e o tier do Sol —, e ela nasce num mundo
+   * paralelo enquanto o atual continua desenhando. Até o swap, a tela
+   * segue mostrando o mundo velho com o instrumento novo: nenhum véu,
+   * nenhum quadro preto, nenhum "carregando".
+   */
   setQuality(q: QualityLevel) {
     this.engine.applyQuality(q, true);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
     this.perturbar();
+    void this.reassarMundo(q);
+  }
+
+  /**
+   * O QUE UMA GALÁXIA RECÉM-NASCIDA VESTE antes de assar: as camadas que
+   * já estavam desligadas e o modo de cartografia do boot. Num lugar só
+   * porque são DOIS os partos — o do init e o do mundo novo da troca de
+   * tier —, e um mundo novo que nascesse sem isto acenderia de volta o
+   * que o visitante tinha desligado, ou trocaria de mapa junto com o
+   * tier. `this.hide` é lido AGORA, não no boot: o que vale é o que está
+   * desligado no momento em que este mundo nasce.
+   */
+  private vestirGalaxia(g: Galaxy) {
+    for (const f of this.hide) g.setLayerHidden(f, true);
+    g.setCartography(this.debug.has('discoff') ? 'off' : this.cartMode);
+  }
+
+  /**
+   * O mundo que está no forno ainda interessa? `null` é o do boot (só a
+   * morte do Director o cancela); um tier é o da troca viva, e ele
+   * deixa de valer no instante em que o visitante pede OUTRO.
+   */
+  private mundoAindaVale(pedido: QualityLevel | null) {
+    return !this.disposed && (pedido === null || this.trocaPedida === pedido);
+  }
+
+  /**
+   * O fôlego entre duas fatias de trabalho pesado, com a resposta a
+   * "continuo?" junto. `setTimeout(0)` e não rAF pelo mesmo motivo do
+   * `stage()`: em aba de fundo o rAF é estrangulado e o forno nunca
+   * terminaria.
+   */
+  private folego(pedido: QualityLevel | null): Promise<boolean> {
+    return new Promise((resolver) =>
+      setTimeout(() => resolver(this.mundoAindaVale(pedido)), 0)
+    );
+  }
+
+  /**
+   * O MUNDO NOVO, ASSADO EM SEGUNDO PLANO, TROCADO NUM QUADRO SÓ.
+   *
+   * Isto é o double-buffer da letra C. A cadeia pesada (os dois mapas e
+   * a população — 4,02 M partículas em cinema, 1,1 M em performance) vai
+   * inteira para o worker que a letra B abriu; as lâminas do disco assam
+   * na GPU FORA da cena, fatiadas uma a uma; o Sol novo nasce por
+   * último, porque o `prime` dele é um bloco que não se fatia (o miolo
+   * de `stellarBody.ts` é território da Lei da Estrela e não se toca
+   * aqui). Só então os ponteiros trocam — e essa troca é síncrona de
+   * ponta a ponta, sem um `await` no meio: nenhum quadro pode ser
+   * desenhado com meio mundo velho e meio mundo novo.
+   *
+   * CANCELAMENTO: quem clica em três tiers seguidos gera três pedidos, e
+   * só o ÚLTIMO vira mundo. Os outros descartam o que já assaram
+   * (`descartarCarga`) em vez de virarem tela — é isso que impede a
+   * troca de tier de ser uma máquina de vazar 122,7 MiB por clique.
+   */
+  private async reassarMundo(q: QualityLevel) {
+    // DURANTE O INIT NÃO HÁ MUNDO A TROCAR, e a guarda é dupla de
+    // propósito. O que o init assa já é o tier vivo, e a reconciliação
+    // no fim dele cobre a corrida do painel aberto na carga
+    // (`?ajustes=1`); sem esta linha, um clique no meio do init poria
+    // DOIS mundos no forno e o segundo poderia pousar antes de o
+    // primeiro terminar — sobre um `wrappedStars` que ainda não existe.
+    if (this.disposed || this.phase === 'loading' || this.tierDoMundo === null) return;
+    if (q === this.tierDoMundo || this.trocaPedida === q) return;
+    this.trocaPedida = q;
+    const carga = await montarCarga({
+      catalogos: this.catalogos,
+      tier: q,
+      // o loader não aparece: a troca é viva, e o rótulo de etapa é do
+      // carregamento. O visitante vê o mundo velho até o mundo novo
+      // estar pronto — que é a promessa inteira da letra C.
+      aoAvancar: () => {},
+    });
+    if (!this.mundoAindaVale(q)) {
+      descartarCarga(carga);
+      return;
+    }
+    this.vestirGalaxia(carga.galaxy);
+    const assou = await carga.galaxy.bakeDiscLayers(
+      this.engine.renderer,
+      () => this.folego(q)
+    );
+    if (!assou || !this.mundoAindaVale(q)) {
+      descartarCarga(carga);
+      return;
+    }
+    const solNovo = new StellarBody(
+      SOL_PARAMS,
+      this.engine.renderer,
+      this.engine.camera,
+      q
+    );
+    // ---- SWAP ATÔMICO — daqui até o fim nada cede a thread ----------
+    const velho = {
+      galaxy: this.galaxy,
+      poeira: this.dustMapTexture,
+      estrutura: this.structureMapTexture,
+      sol: this.sun,
+    };
+    this.engine.scene.remove(velho.galaxy.group);
+    this.galaxy = carga.galaxy;
+    this.engine.scene.add(this.galaxy.group);
+    this.dustMapTexture = carga.dustMapTexture;
+    this.structureMapTexture = carga.structureMapTexture;
+    // os dois consumidores dos mapas que SOBREVIVEM à troca (a
+    // população deles não depende de tier): sem estes dois binds ficariam
+    // lendo a textura que o teardown descarta duas linhas abaixo
+    this.nebula.setDustMap(carga.dustMapTexture, this.catalogos ? 1 : 0);
+    this.wrappedStars.setDustMap(carga.dustMapTexture);
+    if (this.starForges && this.debug.has('forgetau')) {
+      const tauTex = this.galaxy.tauMapTexture;
+      if (tauTex) this.starForges.setTauMap(tauTex);
+    }
+    this.engine.scene.remove(velho.sol.group);
+    this.sun = solNovo;
+    this.engine.scene.add(this.sun.group);
+    // O PALCO LOCAL NÃO É REFEITO AQUI, e isso é decisão medida: os doze
+    // corpos leem o tier na HORA de pedir textura (`montarCorposDoPalco`
+    // recebe uma função), então quem carregar daqui em diante já obedece
+    // ao número novo. Reconstruí-los para alcançar os que JÁ estão
+    // carregados foi tentado e medido em 20/08: a Terra em close-up some
+    // por ~2 s enquanto a textura no tier novo vem pela rede — o globo
+    // vira ponto e volta. É exatamente o véu que a letra C proíbe, e o
+    // preço de não fazê-lo é modesto: textura de corpo é alocação
+    // PREGUIÇOSA, do que se visitou, não peso residente do mundo.
+    this.tierDoMundo = q;
+    this.trocaPedida = null;
+    // ---- fim do swap ------------------------------------------------
+    // TEARDOWN DO MUNDO VELHO, passo a passo blindado: um dispose que
+    // estoure não pode levar os outros junto (a mesma lei do `teardown`
+    // da morte do Director) — a diferença é que aqui a sessão CONTINUA,
+    // e um passo perdido no meio vazaria pelo resto da visita.
+    const passo = (rotulo: string, fn: () => void) =>
+      this.passoBlindado('troca de tier', rotulo, fn);
+    passo('galaxy', () => velho.galaxy.dispose());
+    passo('dustMap', () => velho.poeira?.dispose());
+    passo('structureMap', () => velho.estrutura?.dispose());
+    passo('sun', () => velho.sol.dispose());
+    // o mundo novo tem OUTRO mapa de poeira: a LUT do raymarch foi
+    // medida contra o que acabou de ser descartado
+    this.nebula.invalidarLut();
+    this.perturbar();
+  }
+
+  /**
+   * Um passo de descarte que NÃO leva os outros junto. Nasceu no
+   * `teardown` (uma exceção no meio deixava o Engine vivo, com RAF numa
+   * cena zumbi) e serve agora aos dois desmontes da casa — o da morte do
+   * Director e o do mundo velho na troca de tier, que é o mais exigente
+   * dos dois: ali a sessão CONTINUA, e um passo perdido vaza pelo resto
+   * da visita em vez de morrer com a página.
+   */
+  private passoBlindado(contexto: string, rotulo: string, fn: () => void) {
+    try {
+      fn();
+    } catch (error) {
+      console.warn(`[${contexto}] ${rotulo} falhou; seguindo.`, error);
+    }
   }
 
   /**
@@ -2127,13 +2342,10 @@ export class Director {
     // junto o resto do teardown. Sem isto, uma exceção no meio deixava
     // o Engine vivo — RAF rodando uma cena zumbi e o contexto WebGL
     // preso para sempre, porque a segunda chamada retorna no início.
-    const step = (label: string, fn: () => void) => {
-      try {
-        fn();
-      } catch (error) {
-        console.warn(`[dispose] ${label} falhou; seguindo.`, error);
-      }
-    };
+    // (A blindagem é a MESMA do desmonte do mundo velho na troca de
+    // tier — uma lei, um lugar: `passoBlindado`.)
+    const step = (label: string, fn: () => void) =>
+      this.passoBlindado('dispose', label, fn);
     step('roam', () => this.roam.dispose());
     step('listeners', () => this.gestos?.desligar());
     step('blackHole', () => this.blackHole?.dispose());

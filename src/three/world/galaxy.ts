@@ -329,9 +329,29 @@ export class Galaxy {
    * acima da frequência útil do FBM). O conteúdo é 100% estático:
    * por frame sobra um fetch × uLayerAlpha × uFade, em vez de
    * 2×fbm2(5 oitavas) + 10 galArm por fragmento × 7 lâminas
-   * (~400 M hash/frame no Ato III). Roda uma vez no init.
+   * (~400 M hash/frame no Ato III).
+   *
+   * FATIÁVEL POR LÂMINA (Ajustes C do NORTE). São OITO render targets de
+   * 1024² com o fragmento analítico inteiro dentro, e num bloco só isso
+   * é a maior tarefa longa que sobrou na thread depois que a carga foi
+   * para o worker. `respirar` é o fôlego ENTRE lâminas: no boot ele deixa
+   * o rótulo do loader pintar; na troca de tier viva ele é o que impede o
+   * mundo novo de engasgar o mundo velho, que segue desenhando a 60 Hz
+   * enquanto isto assa fora da cena.
+   *
+   * Devolve `false` quando o fôlego disse para PARAR (`respirar` devolveu
+   * `false`): a troca foi cancelada ou o Director morreu no meio, e o
+   * corpo meio assado é do chamador — `dispose()` sabe descartar as
+   * lâminas já congeladas e as que ainda são analíticas.
+   *
+   * Sem `respirar` a função é SÍNCRONA de ponta a ponta (nenhum `await`
+   * executa): é o caminho do fallback e o que mantém o custo do bake
+   * igual ao de sempre para quem não quer fatiar.
    */
-  bakeDiscLayers(renderer: THREE.WebGLRenderer) {
+  async bakeDiscLayers(
+    renderer: THREE.WebGLRenderer,
+    respirar?: () => Promise<boolean>
+  ): Promise<boolean> {
     const bakeScene = new THREE.Scene();
     const bakeCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
@@ -401,6 +421,17 @@ export class Galaxy {
       analytic.dispose();
       this.discMats[i] = baked;
       this.discRTs.push(rt);
+
+      // o fôlego vai ENTRE lâminas, com o alvo de render já devolvido:
+      // quem desenhar no intervalo (o mundo velho, na troca viva)
+      // encontra o renderer como o deixou
+      if (respirar) {
+        renderer.setRenderTarget(prev);
+        if (!(await respirar())) {
+          quad.geometry.dispose();
+          return false;
+        }
+      }
     }
 
     quad.geometry.dispose();
@@ -410,6 +441,7 @@ export class Galaxy {
     // assado SEMPRE, esteja a camada ligada ou não. Quem decide o que o
     // uniform enxerga é o bind, e ele tem um dono só.
     this.ligarTauMap();
+    return true;
   }
 
   /** o bind do τ⊥ num lugar só: o mapa assado ou a 1×1 de repouso. */

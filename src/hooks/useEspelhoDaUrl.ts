@@ -87,6 +87,11 @@ export function useEspelhoDaUrl(dep: {
    * quem recarregava perdia onde estava. `play=1` acompanha o `t=` para a
    * viagem voltar ANDANDO — `?t=` sozinho congela, e assim continua, porque
    * é o contrato das capturas headless.
+   *
+   * O primeiro dos três morreu de vez nos Ajustes C: a qualidade não
+   * recarrega mais. Este texto continua sendo o que ela escreve no
+   * espelho — e agora ele serve a quem der F5 por conta própria, não a
+   * um reload forçado pelo app.
    */
   const urlComMomento = () => {
     const url = new URL(window.location.href);
@@ -129,11 +134,11 @@ export function useEspelhoDaUrl(dep: {
     if (phase === 'atlas' && emQuadro && ver === 'corpo') {
       url.searchParams.set('ver', 'corpo');
     } else url.searchParams.delete('ver');
-    // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: a
-    // troca de qualidade e o "voltar ao brilho real" RECARREGAM a página
-    // por esta URL, e sem esta linha o visitante que viajou no tempo
-    // voltaria à época sem ter pedido. Na época a porta sai da URL em
-    // vez de gravar o valor padrão.
+    // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: o
+    // "voltar ao brilho real" ainda pode RECARREGAR a página por esta
+    // URL (e o F5 de quem trocou de tier a relê), e sem esta linha o
+    // visitante que viajou no tempo voltaria à época sem ter pedido. Na
+    // época a porta sai da URL em vez de gravar o valor padrão.
     if (tempo && !tempo.naEpoca) url.searchParams.set('jd', String(tempo.jd));
     else url.searchParams.delete('jd');
     if (instante !== null && instante > 0.5) {
@@ -144,14 +149,20 @@ export function useEspelhoDaUrl(dep: {
   };
 
   /**
-   * Metade da qualidade é VIVA (pixelRatio, passos do raymarch) e metade é
-   * ASSADA na construção: o tier do Sol congela no construtor do Director e a
-   * população da galáxia é decidida no init (regerar 2,6 M partículas no meio
-   * da viagem seria pior que a diferença). Trocar só ao vivo entregava um
-   * "performance" pela METADE — engine em performance, Sol ainda em high e
-   * 2,7 M vértices — e ainda deixava o link copiado sem a qualidade.
-   * Grava na URL e recarrega — e serve os dois controles (seletor do HUD e
-   * botões do painel).
+   * A QUALIDADE TROCA AO VIVO (Ajustes C do NORTE — a régua do dono:
+   * nada recarrega). Metade dela sempre foi viva (pixelRatio, passos do
+   * raymarch); a outra metade é ALOCAÇÃO — a população da galáxia, o
+   * tier do Sol, o alvo de textura dos corpos —, e até 2026-08-20 o
+   * único jeito de refazê-la era gravar `?q=` na URL e RECARREGAR, o
+   * que devolvia o espectador à tela de título. Agora o Director assa o
+   * mundo novo em segundo plano e troca os ponteiros num quadro só
+   * (`Director.setQuality`); daqui sai só o pedido e o espelho.
+   *
+   * A URL É ESPELHO, NÃO PAINEL: ela continua sendo reescrita — e pelo
+   * `urlComMomento`, que é o mesmo texto do botão "copiar link" —, mas
+   * com `replaceState` em vez de `assign`. Quem der F5 depois de trocar
+   * de tier volta ao mesmo instante, no mesmo modo, com o mesmo alvo em
+   * quadro; quem não der não perde nada.
    *
    * O `?q=` É SEMPRE ESCRITO, cinema inclusive. Tom e exposição podem
    * omitir o valor padrão porque o padrão deles é CONSTANTE; o de
@@ -162,9 +173,10 @@ export function useEspelhoDaUrl(dep: {
    */
   const changeQuality = (q: QualityLevel) => {
     if (q === quality) return;
+    directorRef.current?.setQuality(q);
     const url = urlComMomento();
     url.searchParams.set('q', q);
-    window.location.assign(url.toString());
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
   };
 
   // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
@@ -267,14 +279,15 @@ export function useEspelhoDaUrl(dep: {
       // por aqui (nodisc/nogdust/noglow) viraram vivas em 2026-08-12. Ele
       // fica como o outro lado do contrato `viva` — uma camada nova que
       // realmente precise reconstruir o mundo cai aqui, com o ↻ do painel
-      // junto —, e é a mesma rota que a troca de qualidade usa.
+      // junto. Desde os Ajustes C a QUALIDADE já não passa por aqui: o
+      // Director assa o mundo novo em segundo plano e troca ao vivo, e
+      // uma camada que precisasse do mesmo teria esse caminho pronto.
       //
       // Reconstruir o mundo — reload de verdade. E pelo `urlComMomento`,
-      // que é o que a troca de qualidade e o "voltar ao brilho real" já
-      // fazem: sem ele, desmarcar uma camada ↻ de DENTRO do Atlas (onde a
-      // URL costuma estar limpa) recarregava em `/?nodisc=1` e devolvia o
-      // visitante à tela de título — modo, foco, instante do céu e alvo em
-      // quadro, todos perdidos.
+      // que é o que o "voltar ao brilho real" já faz: sem ele, desmarcar
+      // uma camada ↻ de DENTRO do Atlas (onde a URL costuma estar limpa)
+      // recarregava em `/?nodisc=1` e devolvia o visitante à tela de
+      // título — modo, foco, instante do céu e alvo em quadro, perdidos.
       const url = urlComMomento();
       if (ligar) url.searchParams.delete(flag);
       else url.searchParams.set(flag, '1');

@@ -537,6 +537,18 @@ export class WrappedStars {
     this.points.matrixAutoUpdate = false;
   }
 
+  /**
+   * O mapa de poeira que as cascas leem (canais B/A: braços e warp).
+   * Existe pela troca de tier viva (Ajustes C): o mundo novo traz mapas
+   * NOVOS, e as cascas — que sobrevivem à troca, porque a população
+   * delas não depende de tier — precisam apontar para os de agora, senão
+   * ficariam lendo a textura que o teardown acabou de descartar. Mesmo
+   * contrato do `setDustMap` da nebulosa: só o bind muda.
+   */
+  setDustMap(dustMap: THREE.Texture) {
+    this.material.uniforms.uDustMap.value = dustMap;
+  }
+
   update(
     camPos: THREE.Vector3,
     screenH: number,

@@ -171,7 +171,7 @@ function giganteDeTeste(id: string) {
   const chamadas: string[] = [];
   const corpo = new GiganteResolvido({
     id,
-    tier: 'cinema',
+    tier: () => 'cinema',
     maxTextureSize: 16384,
     base: '',
     webp: true,

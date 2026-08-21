@@ -28,6 +28,20 @@ const SOL_NO_QUADRO = readFileSync(
   new URL('./director/solNoQuadro.ts', import.meta.url),
   'utf8'
 );
+// quem escreve a troca de qualidade — a última opção do painel que
+// recarregava a página, viva desde os Ajustes C
+const ESPELHO = readFileSync(
+  new URL('../hooks/useEspelhoDaUrl.ts', import.meta.url),
+  'utf8'
+);
+// os quatro corpos do palco: o tier deles é lido na HORA de alocar
+const CORPOS = (['terra', 'lua', 'rochoso', 'gigante'] as const).map(
+  (nome) =>
+    [
+      nome,
+      readFileSync(new URL(`./world/corpos/${nome}.ts`, import.meta.url), 'utf8'),
+    ] as const
+);
 
 describe('a tabela de camadas da casa', () => {
   it('não repete flag — duas linhas com a mesma flag seriam dois donos', () => {
@@ -60,6 +74,77 @@ describe('a tabela de camadas da casa', () => {
     // (nosun/nodust/noco/noforge), todas lidas por quadro desde sempre.
     expect(CAMADAS.length).toBe(17);
     expect(CAMADAS.filter((c) => !c.viva)).toEqual([]);
+  });
+
+  it('a QUALIDADE também não recarrega — o pedido vai ao Director, não ao browser', () => {
+    // A última opção do painel que recarregava. Até 2026-08-20 este
+    // caminho era `window.location.assign(url)`: gravava `?q=` e trocava
+    // de documento, devolvendo o espectador à tela de título. A letra C
+    // dos Ajustes o trocou por um pedido ao Director + o espelho da URL.
+    const inicio = ESPELHO.indexOf('const changeQuality = ');
+    expect(inicio).toBeGreaterThan(0);
+    const corpo = ESPELHO.slice(inicio, ESPELHO.indexOf('\n  };', inicio));
+    expect(corpo).toContain('setQuality(q)');
+    expect(corpo).toContain('window.history.replaceState');
+    expect(corpo).not.toContain('location.assign');
+  });
+});
+
+describe('a troca de tier ao vivo (Ajustes C)', () => {
+  it('o pedido de qualidade manda assar um mundo NOVO, não muda só o instrumento', () => {
+    const inicio = DIRECTOR.indexOf('  setQuality(q: QualityLevel) {');
+    expect(inicio).toBeGreaterThan(0);
+    const corpo = DIRECTOR.slice(inicio, DIRECTOR.indexOf('\n  }', inicio));
+    // o instrumento na hora…
+    expect(corpo).toContain('this.engine.applyQuality(q, true)');
+    // …e a alocação em segundo plano
+    expect(corpo).toContain('this.reassarMundo(q)');
+  });
+
+  it('o SWAP é atômico: nenhum `await` entre a troca dos ponteiros e o fim', () => {
+    // O contrato inteiro do double-buffer mora nesta ausência. Um único
+    // `await` aqui dentro cede a thread ao rAF, e o quadro que ele
+    // deixasse passar desenharia meio mundo velho e meio mundo novo —
+    // a galáxia nova com o Sol velho, ou o palco novo com o mapa velho.
+    const inicio = DIRECTOR.indexOf('// ---- SWAP ATÔMICO');
+    const fim = DIRECTOR.indexOf('// ---- fim do swap');
+    expect(inicio).toBeGreaterThan(0);
+    expect(fim).toBeGreaterThan(inicio);
+    expect(DIRECTOR.slice(inicio, fim)).not.toContain('await');
+  });
+
+  it('o mundo velho é DESMONTADO inteiro — galáxia, os dois mapas e o Sol', () => {
+    const inicio = DIRECTOR.indexOf('// ---- fim do swap');
+    const corpo = DIRECTOR.slice(inicio, DIRECTOR.indexOf('\n  }', inicio));
+    // as QUATRO peças que a troca realoca. O palco NÃO entra de
+    // propósito: os corpos leem o tier na hora de pedir textura, e
+    // refazê-los tirava o globo da tela por ~2 s (ver o bloco do swap).
+    for (const peca of ['galaxy', 'dustMap', 'structureMap', 'sun']) {
+      expect(corpo, `${peca} sobreviveu à troca`).toContain(`passo('${peca}'`);
+    }
+  });
+
+  it('o corpo do palco lê o tier na HORA de alocar, não no construtor', () => {
+    // A regra do NORTE ao pé da letra ("knob que decide alocação lê-se
+    // ANTES de quem aloca"): a textura é preguiçosa, então o número que
+    // decide o alvo de pixels só faz sentido no instante do pedido.
+    for (const [nome, fonte] of CORPOS) {
+      expect(fonte, `${nome}: o tier congelou de novo no construtor`).toContain(
+        'tier: () => QualityLevel;'
+      );
+      expect(fonte, `${nome}: o alvo de pixels não lê o tier de agora`).toContain(
+        'const tierAgora = tier();'
+      );
+    }
+  });
+
+  it('mundo que não vira tela é DESCARTADO — os três pontos de cancelamento', () => {
+    const inicio = DIRECTOR.indexOf('private async reassarMundo(');
+    const corpo = DIRECTOR.slice(inicio, DIRECTOR.indexOf('// ---- SWAP ATÔMICO', inicio));
+    // um clique num terceiro tier no meio do forno não pode deixar
+    // 122,7 MiB de partículas sem dono
+    expect(corpo.match(/descartarCarga\(carga\)/g)?.length).toBe(2);
+    expect(corpo).toContain('this.mundoAindaVale(q)');
   });
 });
 

@@ -215,7 +215,19 @@ export interface EstadoDaLua {
 }
 
 export interface OpcoesDaLua {
-  tier: QualityLevel;
+  /**
+   * O TIER, LIDO NA HORA DE ALOCAR — função, não valor. É a regra do
+   * NORTE ("knob que decide alocação lê-se ANTES de quem aloca") escrita
+   * ao pé da letra: a textura deste corpo é preguiçosa, então o número
+   * que decide o alvo de pixels só faz sentido no instante em que ela é
+   * pedida. Congelado no construtor (como era até os Ajustes C), trocar
+   * de qualidade ao vivo não alcançava corpo nenhum; e reconstruí-los
+   * para alcançar tirava o globo da tela por ~2 s enquanto a textura
+   * nova vinha — medido, e é exatamente o véu que a letra C proíbe.
+   * Quem já está carregado guarda os pixels que tem; quem carregar
+   * daqui em diante obedece ao tier de agora.
+   */
+  tier: () => QualityLevel;
   maxTextureSize?: number;
   base: string;
   webp?: boolean;
@@ -421,6 +433,7 @@ export class LuaResolvida {
   private iniciarCarga() {
     this.texturas = 'buscando';
     const { base, tier, maxTextureSize } = this.opcoes;
+    const tierAgora = tier();
     const buscar =
       this.opcoes.buscarManifest ??
       (async (url: string): Promise<ManifestDeTexturas> => {
@@ -437,7 +450,7 @@ export class LuaResolvida {
       const manifest = await buscar(`${base}data/atlas/texturas.json`);
       // a dose de VRAM é POR CANAL (alvoDePixels): o único canal da Lua
       // é o `map`, que mantém o 8k de cinema — a regra não é por corpo
-      const alvo = alvoDePixels(tier, 'map', maxTextureSize);
+      const alvo = alvoDePixels(tierAgora, 'map', maxTextureSize);
       const variante = escolherVariante(manifest.entradas, 'moon', 'map', alvo, webpOk);
       if (!variante) throw new Error(`lua sem variante para 'map' ≤ ${alvo}px`);
       const tex = await carregar(`${base}${variante.arquivo}`);

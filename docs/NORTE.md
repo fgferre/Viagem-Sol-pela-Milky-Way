@@ -207,21 +207,40 @@ em `LEI-DA-ESTRELA.md` §7. O céu e a galáxia nunca esmaecem.
 
 ## Ajustes: nada recarrega
 
-Régua do dono: nenhuma opção do painel recarrega a página. A Fase A
-fechou as camadas e o latch da exposição; a **B fechou em 20/08** — a
-cadeia de carga inteira mora no worker (`cadeiaDaCarga` +
-`cargaEmWorker`, subidos por `assarCargaEmWorker`), com fallback inline
-declarado e igualdade bit a bit por construção: os dois lados chamam a
-MESMA função. Sobra a qualidade.
+Régua do dono: nenhuma opção do painel recarrega a página. **Nenhuma
+recarrega desde 20/08** — a A fechou as camadas e o latch da exposição,
+a B pôs a cadeia de carga inteira no worker, e a C matou o último
+reload, o da qualidade. Sobra a **D**.
 
-- **C** — troca de tier viva, double-buffer com swap atômico, sem véu.
-  Vai junto o hitch que RESTOU na thread, medido por Long Tasks:
-  `bakeDiscLayers` (bake por GPU) e o `prime` do Sol.
 - **D** — Auto vira o 4º estado do seletor. Sem `?q=`, default de produto
   = cinema. Detecção nunca decide; medição sugere; o visitante escolhe.
+  O caminho já está aberto: `Director.setQuality` troca o mundo ao vivo,
+  então o Auto é decisão de UI e política, não de motor.
 
-Knob que decide alocação lê-se **antes** de quem aloca. Teardown que
-falha não leva os outros junto.
+Knob que decide alocação lê-se **antes** de quem aloca — e, quando a
+alocação é preguiçosa, lê-se **na hora de alocar**: é por isso que o
+tier dos corpos do palco entra como FUNÇÃO (`montarCorposDoPalco`).
+Teardown que falha não leva os outros junto (`passoBlindado`).
+
+**O que a C deixou de pé, para quem for mexer no assunto:**
+
+- **O `prime` do Sol é o pior bloqueio do swap: ~230–330 ms**, medido
+  por Long Tasks em `memoria.mjs` (registro no fim do run). É um bloco
+  único dentro do construtor de `StellarBody`, e fatiá-lo exige entrar
+  no miolo que a Lei da Estrela ainda demole — fica para essa onda. O
+  bake das lâminas, que era a outra metade, já vai FATIADO por lâmina
+  (~70 ms cada, sete fatias) e a primeira renderização do mundo novo
+  custa ~130 ms de upload de VBO, inerente.
+- **Corpo do palco JÁ carregado guarda os pixels que tem.** Refazê-los
+  na troca foi tentado e medido em 20/08: a Terra em close-up vira
+  ponto por ~2 s enquanto a textura do tier novo vem pela rede — o véu
+  que a letra C proíbe. Quem carregar DEPOIS da troca obedece ao tier
+  de agora. Se um dia isso incomodar, o conserto é double-buffer POR
+  CORPO (segurar a textura velha até a nova chegar), não reconstrução.
+- **O Sol novo nasce com o relógio em zero.** Trocar de tier troca a
+  resolução da simulação da granulação (768×384 ↔ 384×192): a superfície
+  é necessariamente outra, não há como o padrão continuar. Sob `?shot=`
+  o relógio é 0 dos dois lados, e é por isso que o gate sai bit-idêntico.
 
 ---
 
@@ -312,7 +331,7 @@ A lista completa das hipóteses de espiral está em
 
 - Unificações 1, 2 (forjas/partículas + G2/G3) e 3 (κ/Σ + quad).
 - Lei da estrela, a partir de F1 — `LEI-DA-ESTRELA.md`.
-- Ajustes C e D.
+- Ajustes D (o Auto). A C fechou em 20/08.
 - Colunas mortas do manifesto (poda segura só de
   `gaiaObProxyStars[3,6,7]` e `dustDensity[4,5]`; `spiralAnchors[7]`
   não sai).
