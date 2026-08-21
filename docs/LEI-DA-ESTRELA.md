@@ -446,8 +446,12 @@ função pura da data (`faseDoCiclo`, módulo interno de `estrela.ts`, com a
 âncora do ciclo 25 declarada); o estado das regiões ativas e dos grupos
 de manchas virou função do mesmo instante (semente POR VIDA, deriva
 diferencial em forma fechada), então o seek é bidirecional por
-construção e o re-bake nunca integra para trás — re-semeia e repete a
-contagem fixa do `prime`, fatiada por quadro. Morreram o pino
+construção e o re-bake nunca integra para trás: com o relógio visual
+PARADO (o regime das capturas, em que nada integra a granulação) ele
+re-semeia e repete a contagem fixa do `prime`, fatiada por quadro; com
+ele andando, a granulação já está relaxando rumo às cargas novas e só a
+cromosfera é refeita. Um re-bake em curso não se reinicia — ele pousa —,
+e foi essa a lição do degrau de 115,7 dias/s. Morreram o pino
 `ATLAS_JOURNEY_T`, a torção de fase da dramaturgia, os dois acumuladores
 do núcleo e o empurrão anti-fusão rate-limitado dos grupos de manchas
 (varredura invertida em `simbolosProibidos.test.ts`). O que a dramaturgia
