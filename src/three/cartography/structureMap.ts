@@ -293,9 +293,13 @@ function depositGaiaObProxy(target: SplatTarget, table: CatalogueTable) {
   const { data, count, stride } = table;
   for (let index = 0; index < count; index++) {
     const offset = index * stride;
-    const sigmaDistancePc = Math.max(0, data[offset + 4]);
-    const magnitude = data[offset + 5];
-    const confidence = THREE.MathUtils.clamp(data[offset + 8], 0.05, 1);
+    // stride 7: xPc, yPc, zPc, sigmaDistancePc, photGMeanMag,
+    // effectiveTemperatureK, astrometricConfidence. A temperatura é a cor
+    // das cem mil em `starForges.ts`; aqui ela não entra — o splat é peso,
+    // não pigmento.
+    const sigmaDistancePc = Math.max(0, data[offset + 3]);
+    const magnitude = data[offset + 4];
+    const confidence = THREE.MathUtils.clamp(data[offset + 6], 0.05, 1);
     const brightnessWeight = THREE.MathUtils.clamp(
       (17 - magnitude) / 8,
       0.22,

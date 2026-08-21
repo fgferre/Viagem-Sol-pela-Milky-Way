@@ -96,7 +96,10 @@ function bakeDustChannels(
     const y = data[o + 1];
     const z = data[o + 2];
     const density = data[o + 3];
-    const confidence = data[o + 6];
+    // stride 5: xPc, yPc, zPc, particleDensityCm3, densityConfidence.
+    // A confiança JÁ É a incerteza: o build a calcula como
+    // `d / (d + s_Density)`, e por isso a coluna crua de sigma não viaja.
+    const confidence = data[o + 4];
     const ix = Math.floor((x + halfExtent) * scale);
     const iy = Math.floor((y + halfExtent) * scale);
     if (ix < 0 || ix >= size || iy < 0 || iy >= size) continue;

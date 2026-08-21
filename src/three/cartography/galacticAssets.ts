@@ -27,10 +27,15 @@ import { fetchBinary } from '../config';
  *
  * O que a divergência custa, dito por inteiro: corrupção do MESMO
  * tamanho passa. O que a paga: hospedagem estática (nenhum
- * intermediário reescreve bytes) e uma soma de 12 MB em WASM/JS a cada
- * boot, que sairia do orçamento do primeiro quadro para defender um
- * caso que a hospedagem já defende. Se um dia os ativos vierem de fonte
- * não confiável, esta é a linha que muda.
+ * intermediário reescreve bytes) e uma soma dos ~7 MB destes oito
+ * binários em WASM/JS a cada boot, que sairia do orçamento do primeiro
+ * quadro para defender um caso que a hospedagem já defende. (Eram 10 MB
+ * até a poda das colunas mortas de 2026-08-21.) Se um dia os ativos
+ * vierem de fonte não confiável, esta é a linha que muda.
+ *
+ * O `fields` também fica de fora, e quem o cobra é o mesmo verificador
+ * offline: os leitores indexam por NÚMERO (`data[o + 4]`), então é lá que
+ * se prova que cada índice cravado ainda aponta para o campo certo.
  */
 interface ManifestAsset {
   file: string;
@@ -52,7 +57,7 @@ export interface CatalogueTable {
 }
 
 export interface GalacticAssets {
-  /** APOGEE — amostras 3D de densidade de poeira (stride 7). */
+  /** APOGEE — amostras 3D de densidade de poeira (stride 5). */
   dustDensity: CatalogueTable;
   /** 84 grandes complexos moleculares (stride 9). */
   largeMolecularClouds: CatalogueTable;
@@ -66,7 +71,7 @@ export interface GalacticAssets {
   gaiaYoungClusters: CatalogueTable;
   /** 2.806 Cefeidas jovens Gaia DR3 (stride 10). */
   gaiaYoungCepheids: CatalogueTable;
-  /** Amostra proxy de estrelas quentes Gaia DR3 (stride 10). */
+  /** Amostra proxy de estrelas quentes Gaia DR3 (stride 7). */
   gaiaObProxyStars: CatalogueTable;
 }
 

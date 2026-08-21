@@ -83,11 +83,84 @@ if (manifest.dictionaries?.hiiClass?.['3'] !== 'K') {
   );
 }
 
+// ============================================================
+// OS ÍNDICES QUE O RUNTIME TEM CRAVADOS.
+//
+// Todo leitor de catálogo indexa Float32 por NÚMERO: `data[o + 4]`.
+// Se uma regeneração mudar a ORDEM ou o CONJUNTO das colunas, o índice
+// continua válido e devolve OUTRO campo — Float32 plausível, nenhum
+// erro, imagem errada em silêncio. É a mesma armadilha do `hiiClass`
+// logo acima, e foi o risco que a poda das colunas mortas (2026-08-21)
+// obrigou a fechar: dois ativos trocaram de stride no mesmo dia.
+//
+// A tabela declara o contrato do lado do RUNTIME, independente do
+// artefato gerado, e serve de censo: coluna que não aparece aqui é
+// coluna que ninguém lê — a próxima candidata a sair.
+// ============================================================
+const INDICES_DO_RUNTIME = {
+  // cartography/dustMap.ts
+  dustDensity: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'],
+    [3, 'particleDensityCm3'], [4, 'densityConfidence'],
+  ],
+  // world/observedClouds.ts + cartography/structureMap.ts
+  largeMolecularClouds: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'], [3, 'radiusPc'],
+    [4, 'particleDensityCm3'], [5, 'sigmaDensityCm3'],
+    [6, 'heliocentricDistancePc'], [7, 'sigmaDistancePc'],
+  ],
+  molecularClouds: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'], [3, 'radiusPc'],
+    [5, 'surfaceDensitySolarPerPc2'], [10, 'rendererRecommended'],
+  ],
+  // world/starForges.ts + cartography/structureMap.ts
+  spiralAnchors: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'], [6, 'relativeParallaxError'],
+  ],
+  hiiRegions: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'], [3, 'radiusPc'],
+    [6, 'relativeDistanceError'], [7, 'classCode'], [8, 'distanceMethodCode'],
+  ],
+  gaiaYoungClusters: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'], [6, 'relativeParallaxError'],
+    [8, 'memberCount'], [9, 'brightMemberCount'],
+  ],
+  gaiaYoungCepheids: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'],
+    [3, 'heliocentricDistancePc'], [4, 'sigmaDistancePc'],
+  ],
+  gaiaObProxyStars: [
+    [0, 'xPc'], [1, 'yPc'], [2, 'zPc'], [3, 'sigmaDistancePc'],
+    [4, 'photGMeanMag'], [5, 'effectiveTemperatureK'],
+    [6, 'astrometricConfidence'],
+  ],
+};
+for (const [nome, indices] of Object.entries(INDICES_DO_RUNTIME)) {
+  const asset = manifest.assets[nome];
+  if (!asset) throw new Error(`manifesto sem o ativo "${nome}".`);
+  // `fields` só vale como contrato se descrever o registro INTEIRO
+  if (asset.fields?.length !== asset.strideFloat32) {
+    throw new Error(
+      `${nome}: ${asset.fields?.length} campos declarados para stride ` +
+        `${asset.strideFloat32} — o manifesto não descreve o registro.`
+    );
+  }
+  for (const [indice, campo] of indices) {
+    if (asset.fields[indice] !== campo) {
+      throw new Error(
+        `${nome}[${indice}] é "${asset.fields[indice]}"; o runtime lê esse ` +
+          `índice como "${campo}". Ou o schema volta a bater, ou o leitor ` +
+          'muda junto — offset errado devolve Float32 plausível e nada quebra.'
+      );
+    }
+  }
+}
+
 const gaiaObAsset = manifest.assets.gaiaObProxyStars;
 if (
   !gaiaObAsset ||
   gaiaObAsset.count < 80_000 ||
-  gaiaObAsset.strideFloat32 !== 10
+  gaiaObAsset.strideFloat32 !== 7
 ) {
   throw new Error(
     'Gaia OB proxy ausente, abaixo de 80.000 registros ou com stride inválido.'
@@ -102,7 +175,7 @@ for (
   offset += gaiaObAsset.strideFloat32 * 4
 ) {
   const zPc = gaiaObBuffer.readFloatLE(offset + 2 * 4);
-  const confidence = gaiaObBuffer.readFloatLE(offset + 8 * 4);
+  const confidence = gaiaObBuffer.readFloatLE(offset + 6 * 4);
   if (Math.abs(zPc - 5.5) >= 300.01) {
     throw new Error(`Gaia OB proxy viola |Z| < 300 pc no byte ${offset}.`);
   }

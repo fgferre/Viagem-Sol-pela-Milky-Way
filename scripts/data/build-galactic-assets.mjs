@@ -172,8 +172,17 @@ console.log(
 const negativeDustSamples = catalogs.dustDensity.filter(
   (row) => numeric(row, 'Density') < 0
 ).length;
+// A DISTÂNCIA HELIOCÊNTRICA SAI DO ARQUIVO E FICA SÓ NO DIAGNÓSTICO.
+// Ela é |posição − Sol| com o Sol num lugar declarado no manifesto: uma
+// subtração guardada em disco. E `s_Density` chega ao renderer
+// PRÉ-DIGERIDA em `densityConfidence` — a política de incerteza continua
+// satisfeita, e guardar o número cru ao lado do resultado é redundância,
+// não preservação. Poda de 2026-08-21; o racional inteiro está no
+// `NORTE.md`, e a coluna crua volta do VizieR quando alguém precisar dela.
+const dustDistancesPc = [];
 const dustRecords = catalogs.dustDensity.map((row) => {
   const distancePc = numeric(row, 'Distance');
+  dustDistancesPc.push(distancePc);
   const rawDensity = numeric(row, 'Density');
   const density = Math.max(0, rawDensity);
   const sigma = Math.max(0, numeric(row, 's_Density'));
@@ -183,7 +192,7 @@ const dustRecords = catalogs.dustDensity.map((row) => {
     distancePc
   );
   const confidence = density > 0 ? density / (density + sigma) : 0;
-  return [x, y, z, density, sigma, distancePc, confidence];
+  return [x, y, z, density, confidence];
 });
 
 const largeCloudArmDictionary = categoryDictionary(
@@ -359,8 +368,21 @@ const youngCepheidRecords = youngCepheidRows.map((row) => {
   ];
 });
 
+// TRÊS COLUNAS NÃO VÃO MAIS PARA O ARQUIVO, e cada uma por um motivo:
+// `r_med_photogeo` é derivável da posição (mesma conta da poeira acima);
+// `random_index` virava um `randomSeed` que o shader parou de ler quando a
+// cor das cem mil passou a sair da temperatura medida; e `bp_rp` é a cor
+// OBSERVADA, já avermelhada pela poeira, que o renderer NÃO PODE usar
+// porque aplica a própria extinção pelo `tauMap` — usá-la avermelharia
+// duas vezes. As três continuam VIVAS na consulta: `bp_rp` e
+// `random_index` entram no WHERE/ORDER que define a amostra, e é a
+// consulta, publicada em `queries/gaia-dr3-ob-hot-stars.sql` e citada no
+// manifesto, que reproduz qualquer coluna de origem. O que a poda tira é
+// a CÓPIA que o visitante baixava sem ninguém ler.
+const gaiaObDistancesPc = [];
 const gaiaObProxyRecords = gaiaOb.rows.map((row) => {
   const distancePc = numeric(row, 'r_med_photogeo');
+  gaiaObDistancesPc.push(distancePc);
   const lowerPc = numeric(row, 'r_lo_photogeo');
   const upperPc = numeric(row, 'r_hi_photogeo');
   const sigmaDistancePc = Math.max(
@@ -386,13 +408,10 @@ const gaiaObProxyRecords = gaiaOb.rows.map((row) => {
     x,
     y,
     z,
-    distancePc,
     sigmaDistancePc,
     numeric(row, 'phot_g_mean_mag'),
-    finiteOr(numeric(row, 'bp_rp')),
     temperature,
     astrometricConfidence / (1 + relativeDistanceError * 3),
-    numeric(row, 'random_index') / 650_000_000,
   ];
 });
 
@@ -402,15 +421,7 @@ const assets = {
     outputDirectory,
     'dust-density.bin',
     dustRecords,
-    [
-      'xPc',
-      'yPc',
-      'zPc',
-      'particleDensityCm3',
-      'sigmaDensityCm3',
-      'heliocentricDistancePc',
-      'densityConfidence',
-    ]
+    ['xPc', 'yPc', 'zPc', 'particleDensityCm3', 'densityConfidence']
   ),
   largeMolecularClouds: await writeFloat32Asset(
     outputDirectory,
@@ -520,13 +531,10 @@ const assets = {
       'xPc',
       'yPc',
       'zPc',
-      'heliocentricDistancePc',
       'sigmaDistancePc',
       'photGMeanMag',
-      'bpMinusRp',
       'effectiveTemperatureK',
       'astrometricConfidence',
-      'randomSeed',
     ]
   ),
 };
@@ -547,7 +555,10 @@ const manifest = {
     measured:
       'Values are transformed from the cited catalogues; no procedural points are written here.',
     uncertainty:
-      'Source uncertainties and distance-method codes remain in the assets. Renderers must use them.',
+      'Source uncertainties and distance-method codes reach the renderer, raw or ' +
+      'pre-digested into a confidence column; the published assets carry only the ' +
+      'columns the renderer reads, and the cited catalogues and query reproduce ' +
+      'every source column.',
     inferred:
       'Unobserved space must be filled by a separately identified statistical model, never presented as measured.',
   },
@@ -560,7 +571,7 @@ const manifest = {
   },
   diagnostics: {
     dustNegativeSamplesClampedToZero: negativeDustSamples,
-    dustDistancePc: range(dustRecords.map((record) => record[5])),
+    dustDistancePc: range(dustDistancesPc),
     molecularCloudsOutsideRendererBounds,
     molecularCloudDistancePc: range(molecularCloudRecords.map((record) => record[7])),
     hiiRowsWithoutAdoptedDistance: catalogs.hiiRegions.length - hiiRecords.length,
@@ -568,9 +579,7 @@ const manifest = {
     gaiaYoungCepheidAgeCut: 'log10(age/yr) < log10(200000000)',
     gaiaObProxySelection:
       'Drimmel hot-star cuts plus Bailer-Jones photogeometric distance, |Z| < 300 pc, RUWE < 1.4, parallax_over_error > 5, visibility_periods_used >= 10; uniform random_index subset, not the paper sample',
-    gaiaObProxyDistancePc: range(
-      gaiaObProxyRecords.map((record) => record[3])
-    ),
+    gaiaObProxyDistancePc: range(gaiaObDistancesPc),
   },
   sources: [
     {

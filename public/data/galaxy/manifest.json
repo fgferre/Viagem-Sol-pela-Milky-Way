@@ -16,23 +16,21 @@
   },
   "policy": {
     "measured": "Values are transformed from the cited catalogues; no procedural points are written here.",
-    "uncertainty": "Source uncertainties and distance-method codes remain in the assets. Renderers must use them.",
+    "uncertainty": "Source uncertainties and distance-method codes reach the renderer, raw or pre-digested into a confidence column; the published assets carry only the columns the renderer reads, and the cited catalogues and query reproduce every source column.",
     "inferred": "Unobserved space must be filled by a separately identified statistical model, never presented as measured."
   },
   "assets": {
     "dustDensity": {
       "file": "data/galaxy/dust-density.bin",
       "count": 196503,
-      "strideFloat32": 7,
-      "byteLength": 5502084,
-      "sha256": "81437f9134972934d09b8c80fe3cffff405e8b62205be3d41cdb483090177652",
+      "strideFloat32": 5,
+      "byteLength": 3930060,
+      "sha256": "8526d2c32fe920905202368211c23e1c6c35cb16e1caf73de49cf73fe50329c6",
       "fields": [
         "xPc",
         "yPc",
         "zPc",
         "particleDensityCm3",
-        "sigmaDensityCm3",
-        "heliocentricDistancePc",
         "densityConfidence"
       ]
     },
@@ -151,20 +149,17 @@
     "gaiaObProxyStars": {
       "file": "data/galaxy/gaia-ob-proxy-stars.bin",
       "count": 100000,
-      "strideFloat32": 10,
-      "byteLength": 4000000,
-      "sha256": "2f39312dd41d4655330a58904273f957d50fd71dbd40ccdea331a46dd09461cf",
+      "strideFloat32": 7,
+      "byteLength": 2800000,
+      "sha256": "4213bc1cbe34f044c073b0de21a77aa93c7d6f99ca118ed432626e61285b86f0",
       "fields": [
         "xPc",
         "yPc",
         "zPc",
-        "heliocentricDistancePc",
         "sigmaDistancePc",
         "photGMeanMag",
-        "bpMinusRp",
         "effectiveTemperatureK",
-        "astrometricConfidence",
-        "randomSeed"
+        "astrometricConfidence"
       ]
     }
   },

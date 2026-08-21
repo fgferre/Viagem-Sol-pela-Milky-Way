@@ -294,6 +294,16 @@ Não reabrir sem que a condição listada mude.
 
 ## Regras que ainda mandam
 
+- **Coluna do manifesto se poda pelo CENSO, não por lista escrita à
+  mão.** `INDICES_DO_RUNTIME` (`verify-assets.mjs`) declara todo índice
+  que algum leitor tem cravado; o que não está lá é a próxima
+  candidata, e schema que muda de ordem sem o leitor mudar junto agora
+  quebra o gate em vez de devolver Float32 plausível. Duas exceções
+  permanentes: `spiralAnchors[7] armCode` alimenta o fit espiral
+  OFFLINE (não passa pelo runtime, não aparece no censo, não sai), e
+  `bp_rp`/`random_index` seguem vivos no WHERE da consulta Gaia mesmo
+  fora do binário. A lição de por que a lista à mão falha está no
+  próprio caso: a que vigiava aqui envelheceu em quatro dias.
 - **Cobertura = magnitude e horizonte e presença.** Os três saem de
   `stars_meta.json`. O corte é heliocêntrico e a câmera anda.
 - **AT-HYG sozinho não serve.** A fotometria brilhante vem do HYG v4.4.
@@ -360,9 +370,6 @@ A lista completa das hipóteses de espiral está em
 
 - Unificações 1, 2 (forjas/partículas + G2/G3) e 3 (κ/Σ + quad).
 - Lei da estrela, a partir de F1 — `LEI-DA-ESTRELA.md`.
-- Colunas mortas do manifesto (poda segura só de
-  `gaiaObProxyStars[3,6,7]` e `dustDensity[4,5]`; `spiralAnchors[7]`
-  não sai).
 - Fade das cascas no Ato IV (`?nowrap` já saiu bit-idêntico nos gates;
   falta escolher a rampa e medir).
 - Espessura do céu no anticentro: o dono medido é o volume **local**

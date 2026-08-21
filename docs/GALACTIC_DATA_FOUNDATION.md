@@ -60,16 +60,28 @@ Drimmel” seria incorreto.
 Todos os binários usam Float32 little-endian. O schema campo a campo, hashes e
 dicionários categóricos ficam em `public/data/galaxy/manifest.json`.
 
+**O binário publicado carrega só as colunas que o renderer lê.** Ele é o ativo
+de RENDERIZAÇÃO, não o arquivo científico: quem guarda todas as colunas de
+origem é o catálogo citado — e, no caso Gaia, a consulta versionada em
+`scripts/data/queries/gaia-dr3-ob-hot-stars.sql`, que continua selecionando as
+colunas que não viajam. Coluna que ninguém lê não é preservação, é peso no
+download do visitante; o censo de quem lê o quê está em
+`scripts/data/verify-assets.mjs` (`INDICES_DO_RUNTIME`), e é ele que barra o
+schema que mudar de ordem sem o leitor mudar junto. Duas incertezas chegam
+PRÉ-DIGERIDAS e não como coluna crua: `densityConfidence` é
+`densidade / (densidade + sigma)` da poeira, e `astrometricConfidence` funde
+RUWE, `parallax_over_error` e o erro relativo de distância.
+
 | Ativo | Registros | Uso científico | Limite que o renderer deve respeitar |
 |---|---:|---|---|
-| `dust-density.bin` | 196.503 | espinha dorsal de densidade 3D derivada de APOGEE | 48.612 inferências negativas foram limitadas a zero; `sigmaDensity` e `densityConfidence` continuam disponíveis |
+| `dust-density.bin` | 196.503 | espinha dorsal de densidade 3D derivada de APOGEE | 48.612 inferências negativas foram limitadas a zero; a incerteza chega em `densityConfidence`, e é ela que pesa cada amostra no bake |
 | `large-molecular-clouds.bin` | 84 | grandes complexos de nuvens no mesmo mapa APOGEE | usar raio, erro de distância e associação de braço |
 | `molecular-clouds.bin` | 8.107 | catálogo de nuvens derivado da emissão de CO | distância é cinemática; `farDistanceFlag` e `rendererRecommended` são obrigatórios |
 | `spiral-anchors.bin` | 199 | regiões de formação estelar com paralaxe trigonométrica BeSSeL | usar como âncoras de alta confiança, não como campo de densidade |
 | `hii-regions.bin` | 1.413 | subconjunto WISE com distância adotada | 6.986 fontes sem distância não foram inventadas em 3D; classe e método foram preservados |
 | `gaia-young-clusters.bin` | 988 | aglomerados Gaia DR3 com `log10(age/yr) < 8` | distância por inversão da paralaxe mediana; usar erro relativo |
 | `gaia-young-cepheids.bin` | 2.806 | Cefeidas Gaia jovens com menos de 200 Myr | distância por módulo de distância; usar `sigmaDistance` |
-| `gaia-ob-proxy-stars.bin` | 100.000 | seleção proxy de estrelas quentes Gaia DR3 com distância fotogeométrica | não chamar de amostra Drimmel; preservar a pegada local, o erro de distância e os filtros no manifesto |
+| `gaia-ob-proxy-stars.bin` | 100.000 | seleção proxy de estrelas quentes Gaia DR3 com distância fotogeométrica | não chamar de amostra Drimmel; preservar a pegada local, o erro de distância e os filtros no manifesto; a cor sai de `effectiveTemperatureK`, nunca de `bp_rp` — o renderer já aplica a própria extinção |
 
 Fontes dos dados:
 

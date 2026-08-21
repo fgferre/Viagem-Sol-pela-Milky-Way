@@ -245,16 +245,19 @@ export class StarForges {
       const { data, count, stride } = assets.gaiaObProxyStars;
       for (let i = 0; i < count; i++) {
         const o = i * stride;
-        const magnitude = data[o + 5];
-        const confidence = data[o + 8];
-        // [7] = effectiveTemperatureK (Gaia teff_esphs, com teff_gspphot de
+        // stride 7: xPc, yPc, zPc, sigmaDistancePc, photGMeanMag,
+        // effectiveTemperatureK, astrometricConfidence.
+        const magnitude = data[o + 4];
+        const confidence = data[o + 6];
+        // [5] = effectiveTemperatureK (Gaia teff_esphs, com teff_gspphot de
         // reserva). Estava no arquivo desde sempre, baixada por todo
         // visitante, e o shader pintava estas 100.000 com um SORTEIO.
-        // NÃO se usa [6] bpMinusRp: aquela é a cor OBSERVADA, já avermelhada
-        // pela poeira — e o renderer aplica a própria extinção pelo tauMap
-        // (vExtinct, no VERT). Usá-la avermelharia duas vezes. A mediana
-        // medida é +0,76 justamente por causa do avermelhamento.
-        const temperaturaK = data[o + 7];
+        // A cor OBSERVADA (bpMinusRp) NÃO serve e por isso nem viaja mais no
+        // arquivo: ela já vem avermelhada pela poeira — mediana +0,76 —, e o
+        // renderer aplica a própria extinção pelo tauMap (vExtinct, no VERT).
+        // Usá-la avermelharia duas vezes. Quem precisar dela a busca na
+        // consulta publicada, onde ela segue viva no corte da amostra.
+        const temperaturaK = data[o + 5];
         const brightness = THREE.MathUtils.clamp(
           (17 - magnitude) / 8,
           0.2,
