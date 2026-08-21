@@ -309,9 +309,10 @@ export function createActivity(ctx){
       // FASE 3: polSign (flip de Hale) e cycleAmpK (envelope de
       // atividade do ciclo, já com a DOSE) valem 1 com o ciclo
       // desligado — o produto por 1.0 é bit-exato.
-      // A posição nova é sorteada na fase morta (x>=0.90), onde o
-      // envelope já chegou a zero: a relocação é eletricamente
-      // invisível, sem piso de carga a teleportar.
+      // A vida vira quando `x` dá a volta, e o envelope vale ZERO dos
+      // dois lados da virada (morto a partir de 0.90, e nascendo de zero
+      // até 0.14): a relocação é eletricamente invisível, sem piso de
+      // carga a teleportar.
       ps.lead.w =  ps.baseQ * ps.polSign * env * ctx.cycleAmpK;
       ps.foll.w = -ps.baseQ * ps.polSign * 0.85 * env * ctx.cycleAmpK;
       // MACRO_SLOW: a advecção do sim desacelera junto (SIM_DT) — as

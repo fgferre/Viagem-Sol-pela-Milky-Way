@@ -532,12 +532,18 @@ export class StellarBody {
   /**
    * O RE-BAKE FATIADO. Quando a data anda o bastante, o retrato da
    * cromosfera (e, com o relógio parado, o campo da granulação) precisa
-   * ser refeito NA FASE NOVA. Fatiado por quadro e COALESCIDO — um
-   * re-bake em curso nunca se reinicia nem se enfileira: ele POUSA, e só
-   * então a data pode disparar o próximo. O retrato velho continua
-   * publicado até o fim, então não há véu nem meia cromosfera em quadro.
+   * ser refeito NA FASE NOVA — e isso só é preciso com o relógio VISUAL
+   * PARADO. Com ele andando, o bake estrutural de 8 Hz já refaz o retrato
+   * com as cargas de agora e a granulação já relaxa rumo a elas: a data
+   * é seguida de graça, e as duas máquinas escrevem no MESMO conjunto de
+   * alvos — deixá-las correr juntas rasgaria o retrato ao meio.
+   *
+   * Fatiado por quadro e COALESCIDO: um re-bake em curso nunca se
+   * reinicia nem se enfileira, ele POUSA, e só então a data pode disparar
+   * o próximo. O retrato velho continua publicado até o fim, então não há
+   * véu nem meia cromosfera em quadro.
    */
-  private reassar: { passos: number; fatia: number; semear: boolean } | null = null;
+  private reassar: { passos: number; fatia: number } | null = null;
   /** as geometrias das cenas de quad (`makeFullscreenScene`) — elas não
    *  moram no `group`, então só esta lista as leva ao `dispose()` */
   private readonly geoDosQuads: THREE.PlaneGeometry[] = [];
@@ -801,20 +807,19 @@ export class StellarBody {
    * que faz a chegada ser bit-idêntica por qualquer caminho: nunca se
    * integra para trás; re-semeia-se e repete-se a contagem fixa.
    *
-   * `semear` é a diferença declarada entre CAPTURA e PLAY. Com o relógio
-   * visual parado (`delta === 0`, o regime de `?shot=`) nada integra a
-   * granulação, então o campo é REFEITO da semente — determinístico por
-   * construção. Com o relógio andando, a granulação já está sendo
-   * integrada 5×/quadro rumo às cargas novas: re-semear ali seria trocar
-   * o padrão de grânulos duas vezes por segundo, um strobo. Nesse caso o
-   * re-bake só refaz o retrato da cromosfera.
+   * A SEMENTE É O PONTO. Ele só roda com o relógio visual parado, e ali
+   * NADA integra a granulação — então o campo é REFEITO da semente, com
+   * a contagem fixa, e a chegada é a mesma por qualquer caminho. Com o
+   * relógio andando esta máquina nem acorda: quem segue a data é a
+   * relaxação de sempre, 5 passos por quadro, e re-semear ali trocaria o
+   * padrão de grânulos duas vezes por segundo — um strobo.
    */
   private passoDoReassar() {
     const ctx = this.ctx;
     const r = this.reassar!;
     const prevRT = ctx.renderer.getRenderTarget();
-    if (r.passos === 0 && r.semear && ctx.gran.seedSimulation) ctx.gran.seedSimulation();
-    if (r.passos < PRIME_STEPS && r.semear) {
+    if (r.passos === 0 && ctx.gran.seedSimulation) ctx.gran.seedSimulation();
+    if (r.passos < PRIME_STEPS) {
       const ate = Math.min(PRIME_STEPS, r.passos + PASSOS_DO_REASSAR_POR_QUADRO);
       for (let i = r.passos; i < ate; i++) ctx.gran.stepSimulation(SIM_DT);
       r.passos = ate;
@@ -1065,15 +1070,23 @@ export class StellarBody {
     // fase mais de perto" e é o contrário — MEDIDO no degrau de 115,7
     // dias/s, com a data andando ~6 unidades por quadro contra um limiar
     // de 7,2, a máquina reiniciava a cada quadro e o retrato NUNCA
-    // publicava. Deixando pousar, ele pousa a cada ~8 quadros com o
-    // relógio andando (a granulação já está sendo integrada, então só a
-    // cromosfera é refeita) e a data seguinte dispara o próximo.
+    // publicava. Deixando pousar, ele pousa e a data seguinte dispara o
+    // próximo.
     //
-    // E ele mora depois do retorno de invisibilidade pela mesma razão do
-    // relógio: re-assar um Sol que ninguém vê é gastar quadro à toa —
-    // quando ele voltar a ser corpo, a comparação dispara sozinha.
-    if (this.reassar === null && Math.abs(ctx.tempoDoCiclo - this.cicloAssado) > LIMIAR_DE_REASSAR) {
-      this.reassar = { passos: 0, fatia: 0, semear: delta === 0 };
+    // TRÊS GUARDAS, e cada uma tem uma razão escrita: `delta === 0`
+    // porque com o relógio andando quem segue a data é o bake de 8 Hz de
+    // sempre, e as duas máquinas escrevem no MESMO alvo; `bakeStep < 0`
+    // porque um bake estrutural a meio caminho não pode ser atropelado;
+    // e o lugar — depois do retorno de invisibilidade — porque re-assar
+    // um Sol que ninguém vê é gastar quadro à toa, e quando ele voltar a
+    // ser corpo a comparação dispara sozinha.
+    if (
+      this.reassar === null &&
+      delta === 0 &&
+      ctx.bakeStep < 0 &&
+      Math.abs(ctx.tempoDoCiclo - this.cicloAssado) > LIMIAR_DE_REASSAR
+    ) {
+      this.reassar = { passos: 0, fatia: 0 };
     }
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---
@@ -1088,7 +1101,7 @@ export class StellarBody {
 
     // --- bake estrutural ~8 Hz, 8 fatias, publicação com crossfade ---
     this.chromoAccum += delta;
-    if (ctx.bakeStep < 0 && this.chromoAccum >= 0.12 && delta > 0) {
+    if (ctx.bakeStep < 0 && this.chromoAccum >= 0.12 && delta > 0 && this.reassar === null) {
       this.chromoAccum = 0;
       ctx.bakeStep = 0;
       ctx.bakeTime = ctx.elapsed;
@@ -1104,6 +1117,10 @@ export class StellarBody {
         ctx.bakeWrite = ctx.bakeCur === ctx.bakePrev ? (ctx.bakeCur + 1) % 3 : 3 - ctx.bakeCur - ctx.bakePrev;
         ctx.bakeCycleDt = Math.max(0.05, Math.min(4.5, (ctx.elapsed - ctx.bakeSwapT) * 0.85));
         ctx.bakeSwapT = ctx.elapsed;
+        // o retrato de 8 Hz também é um retrato DA DATA: anotá-lo aqui é
+        // o que faz parar o relógio não disparar um catch-up para uma
+        // fase que já está na tela
+        this.cicloAssado = ctx.tempoDoCiclo;
         ctx.sunUniforms.uChromoTex.value = ctx.bakeSets[ctx.bakeCur].s.texture;
         ctx.sunUniforms.uChromoFar.value = ctx.bakeSets[ctx.bakeCur].c.texture;
         ctx.sunUniforms.uChromoTexP.value = ctx.bakeSets[ctx.bakePrev].s.texture;
