@@ -127,7 +127,7 @@ segmento próprio.
 | `&shot=1` | foto: zera transições CSS |
 | `&shot=2` | idem, **sem HUD** — gate visual |
 | `&play=1` | começa o filme |
-| `&q=cinema` | qualidade (`alta`, `performance`, `cinema`) |
+| `&q=cinema` | qualidade (`cinema`, `alta`, `performance`; `auto` deixa a medição escolher) |
 | `&nobloom=1` | desliga o bloom (primeiro teste se a tela lava) |
 | `&nosun=1` `&nocat=1` `&nogal=1` `&nonebula=1` `&noplan=1` `&noclarao=1` | isola camadas |
 

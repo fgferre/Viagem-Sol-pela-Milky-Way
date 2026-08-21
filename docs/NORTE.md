@@ -223,12 +223,13 @@ que fica aqui é só o que ainda decide alguma coisa.
 nunca decide; medição sugere; o visitante escolhe.* Sem `?q=` o tier é
 uma CONSTANTE (`TIER_DE_PRODUTO` = cinema) — não há storage nem palpite
 sobre o aparelho no caminho do boot, e a lápide dos três que morreram
-(`defaultQualityForDevice`, `tierQueRodou`, o rebaixamento por renderer
-de software) está no próprio `core/engine.ts`. O engine MEDE e avisa
-(`onMedicao`); quem aplica é o Director, e só sob a política `auto`. A
-URL espelha a ESCOLHA, nunca o tier vivo: em Auto o tier anda sozinho, e
-gravar o tier de agora congelaria no link uma decisão que o visitante
-não tomou.
+está no arquivo onde cada um vivia — `defaultQualityForDevice` e
+`tierQueRodou` em `core/engine.ts`, o campo do storage em
+`lib/preferencias.ts`, o rebaixamento por renderer de software em
+`lib/glProbe.ts`. O engine MEDE e avisa (`onMedicao`); quem aplica é o
+Director, e só sob a política `auto`. A URL espelha a ESCOLHA, nunca o
+tier vivo: em Auto o tier anda sozinho, e gravar o tier de agora
+congelaria no link uma decisão que o visitante não tomou.
 
 Knob que decide alocação lê-se **antes** de quem aloca — e, quando a
 alocação é preguiçosa, lê-se **na hora de alocar**: é por isso que o
