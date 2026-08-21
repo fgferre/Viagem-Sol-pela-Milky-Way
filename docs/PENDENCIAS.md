@@ -80,6 +80,19 @@ deveria sair da data simulada. *(O M1 NÃO o tocou, de propósito: o pino
 `ATLAS_JOURNEY_T` existe pela reprodutibilidade das vistas do Atlas, e
 trocá-lo pela data exige o ciclo andar para TRÁS com re-bake — obra
 própria, com foto para o dono.)*
+*(E o pino NEM ENTREGA a reprodutibilidade que promete — medido em
+20/08 no navegador. No degrau do corpo do Sol, entrar no Atlas a partir
+de t=10 e a partir de t=100 dá DOIS Sóis: mesma pose de câmera bit a
+bit, mesmo relógio do céu, pixel diferente. A causa é o mesmo nó do
+parágrafo acima — o snap da dramaturgia só empurra para FRENTE e quem
+alimenta as regiões ativas é um acumulador, não o pino, então os
+quadros do filme desenhados antes do portal deixam resíduo que o pino
+não desfaz. Fica de pé porque o conserto é dentro da Lei da estrela
+(`stellarBody.ts`, o bloco "dramaturgia do arranque"), que é território
+de obra própria. Quem fizer o ciclo andar para trás resolve os dois — e
+aí o `atlas-smoke` pode ganhar a prova do Sol no degrau dele, que hoje
+reprovaria. Na abertura do Atlas isto NÃO aparece: a 226,8 UA o Sol não
+chega a um pixel.)*
 
 **7. Trocar a qualidade recarregava a página — o reload morreu; falta ele ver.**
 O dono pediu “nada recarrega, padrão AAA”. Hoje NADA no painel recarrega,
@@ -313,16 +326,6 @@ Se a onda do motor terminar sem fiá-lo, aí sim vira peso morto.
 **45.** (Herdada do item 44.) A perna retina das réguas não cobre o
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
 decisão própria de resolução quando esse assunto voltar à mesa.
-
-**55.** (Juiz mentindo, achado em 20/08 ao estender o `atlas-smoke`.)
-A prova "Sol reproduzível" do smoke do Atlas REPROVA na `main` desde o
-recorte do filme: entrar no Atlas a partir de t=10 e de t=100 dá o
-mesmo quadro, mas de t=250 dá outro. O pino `ATLAS_JOURNEY_T` existe
-justamente para os três serem iguais; o que mudou foi o filme, que
-agora dura 193 s — t=250 é grampeado no FIM (fase `end`), e a entrada
-pela fase `end` não passa pelo mesmo caminho que a entrada pela fase
-`journey`. Confirmado pré-existente: reprova igual com a árvore limpa.
-Enquanto viver, o smoke sai ≠ 0 e esconde falha nova atrás dela.
 
 **49.** (Ruído de instrumento, achado nos cortes 4-5 da arquitetura.)
 As vistas oficiais da TERRA cintilam entre capturas da MESMA sessão no

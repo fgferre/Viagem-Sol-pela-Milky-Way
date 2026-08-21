@@ -14,10 +14,30 @@
 //     por `via=sinal`. Se ela cair no teto de segurança (`via=quadros`),
 //     o getter `captura` não aprendeu a fase e todo gate futuro do Atlas
 //     estaria medindo espera cega — o modo caro de falhar.
-//  3. SOL REPRODUZÍVEL. Entrar no Atlas a partir de t=10 e a partir de
-//     t=250 tem de dar o MESMO md5. A dramaturgia do ciclo solar é
-//     monótona em `journeyT`; sem o pino do Atlas cada entrada daria um
-//     Sol diferente e nenhuma vista do modo seria reproduzível.
+//  3. ABERTURA REPRODUZÍVEL. Entrar no Atlas a partir de t=10, t=100 e
+//     t=250 tem de dar o MESMO md5: nenhum resíduo do trajeto pode
+//     atravessar o portal. Foi esta trinca que denunciou a LUT do
+//     raymarch herdada do voo.
+//
+//     O RELÓGIO DO CÉU VAI PINADO (`&jd=EPOCA`), e não é conforto. O
+//     `?t=250` é grampeado no FIM do filme (193 s), e a partir de
+//     REVEAL_T o palco esquenta e a coda TROCA o relógio para
+//     `JD_DO_FILME_TDB` — as 16:00 UTC do pouso sobre as Américas. Esse
+//     instante atravessa o portal DE PROPÓSITO (ver `partirDoAtlas`:
+//     "o jdPedido FICA"), os planetas ficam noutro lugar, e a abertura
+//     enquadra pela órbita mais externa VIVA (`casaViva`) — 4·10⁻⁸ pc
+//     de câmera a menos e md5 diferente. Sem o pino, a prova media DUAS
+//     coisas e culpava uma: reprovou de 20/08 até aqui acusando o Sol
+//     de um desvio que era do calendário. Por isso o veredito do
+//     relógio vem ANTES do veredito do pixel — se alguém tirar o
+//     `&jd=EPOCA`, é ele quem diz o que aconteceu.
+//
+//     E ela NÃO mede o Sol, apesar do nome que carregou até 20/08:
+//     nesta abertura (226,8 UA) o Sol não chega a um pixel. MEDIDO —
+//     com o pino `ATLAS_JOURNEY_T` desligado à mão, as três entradas
+//     saem bit-idênticas AQUI. O Sol só é a imagem no degrau do corpo
+//     dele, e lá ele NÃO é reproduzível — item 5 das PENDENCIAS, dentro
+//     da Lei da estrela: a prova que faltaria nasce quando ele cair.
 //
 // Método herdado do `ab-identidade`: `?q=cinema` pinado (declara o tier
 // da captura — era defesa contra o autoQuality até a letra D dos
@@ -46,14 +66,24 @@ if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu
 
 const sessao = await abrir();
 try {
-  // ---- 1, 2 e 3: ida e volta, prontidão, e o Sol reproduzível ------
-  // Os DOIS instantes não são redundância: t=10 deixa a câmera do filme
-  // ainda dentro dos 2 pc de casa (o raio em que a LUT do raymarch se
-  // reusa) e t=250 a deixa a 20 kpc. Foi essa dupla que denunciou a LUT
-  // herdada do trajeto — com um instante só, o gate passava mentindo.
+  // ---- 1, 2 e 3: ida e volta, prontidão, e a abertura reproduzível --
+  // Os TRÊS instantes não são redundância — cada um deixa a câmera do
+  // filme num regime diferente na hora de cruzar o portal (medido):
+  // t=10 dentro dos 2 pc de casa (o raio em que a LUT do raymarch se
+  // reusa), t=100 a 1.911 pc, e t=250 grampeado no fim (193 s), de
+  // volta em casa pela coda e já com o palco quente. Foi essa variedade
+  // que denunciou a LUT herdada do trajeto — com um instante só, o gate
+  // passava mentindo.
+  //
+  // `jd=EPOCA` pina o relógio do céu: é a segunda variável que a coda
+  // move sozinha, e sem o pino ela se disfarçava de defeito do Sol (ver
+  // a prova 3 no cabeçalho). O `?jd=` tem precedência declarada sobre a
+  // troca da coda — é a mesma porta que a prova 8 usa.
+  const PIN_DO_TRIO = `${PIN}&jd=EPOCA`;
   const doAtlas = new Map();
+  const relogios = new Map();
   for (const T of [10, 100, 250]) {
-    await sessao.ir(`t=${T}&${PIN}`);
+    await sessao.ir(`t=${T}&${PIN_DO_TRIO}`);
     const antesFase = await sessao.js('window.__director.captura.fase');
     const antesT = await sessao.js('window.__director.currentTime');
     const antes = await sessao.md5();
@@ -64,6 +94,7 @@ try {
     const faseDentro = await sessao.js('window.__director.captura.fase');
     const md5Atlas = await sessao.md5();
     doAtlas.set(T, md5Atlas);
+    relogios.set(T, await sessao.js('window.__director.tempo.jd'));
     conferir(faseDentro === 'atlas', `t=${T}: entrou — fase = '${faseDentro}'`);
     conferir(
       dentro.via === 'sinal',
@@ -80,10 +111,18 @@ try {
     conferir(Object.is(antesT, depoisT), `t=${T}: journeyT EXATO na volta (${depoisT})`);
     conferir(antes === depois, `t=${T}: pixel idêntico antes/depois — ${antes} vs ${depois}`);
   }
+  // o relógio PRIMEIRO: ele é a variável escondida que fazia o pixel
+  // mentir, e um veredito só dele diz na hora se o pino saiu do lugar
+  const jds = [...new Set(relogios.values())];
+  conferir(
+    jds.length === 1,
+    `o relógio do céu vai PINADO nas três entradas — a coda não o move`
+      + ` (${[...relogios].map(([t, jd]) => `t=${t} ${jd}`).join(' · ')})`
+  );
   const vistas = [...new Set(doAtlas.values())];
   conferir(
     vistas.length === 1,
-    `Sol reproduzível: ${[...doAtlas].map(([t, h]) => `t=${t} ${h}`).join(' · ')}`
+    `abertura reproduzível: ${[...doAtlas].map(([t, h]) => `t=${t} ${h}`).join(' · ')}`
   );
 
   // ---- 4: o deep-link e o "Partir" sem viagem anterior -------------
