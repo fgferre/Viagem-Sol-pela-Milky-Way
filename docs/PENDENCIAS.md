@@ -294,6 +294,15 @@ invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
 tela retina, é a primeira suspeita. Conferir com o dono na vista
 galáctica antes de mexer.
 
+**55.** Em celular, os nomes das estrelas são escritos por cima do
+rodapé. Fotografado a 375 px em 20/08 — "E IND · 11,9 anos-luz" atravessa
+a data do céu, outro nome atravessa a dica dos gestos.
+*(O canvas dos rótulos só desvia dos DIÁLOGOS: o App reserva o retângulo
+de cada `[data-dialogo]` e mais nada, então o HUD fixo — rodapé, selo,
+linha de contexto — não existe para ele. Numa tela de mesa sobra espaço e
+ninguém vê; numa estreita o rodapé ocupa um terço da altura e o encontro
+é certo. É de antes do item 9 e não mudou com ele.)*
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
