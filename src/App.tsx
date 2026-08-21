@@ -610,10 +610,11 @@ export default function App() {
               coluna da máquina do tempo, então cada linha que ela ganha
               empurra a barra para cima e come o retângulo útil (é o juiz
               de a11y quem cobra, `base declarada ≥ medida`). MEDIDO em
-              `ui = 1,4` e 900 px de largura — o canto mais apertado da
-              faixa declarada —, a quebra da 2ª para a 3ª linha acontece
-              entre 68 e 70 caracteres, e a 3ª linha estoura a base
-              declarada (0,328 contra 0,310). Daí "clique — enquadrar" e
+              `ui = 1,4` e 900 px de largura, na época o canto mais
+              apertado da faixa declarada (desde o item 9 ela desce a
+              768), a quebra da 2ª para a 3ª linha acontece entre 68 e 70
+              caracteres, e a 3ª linha estoura a base declarada de então
+              (0,328 contra 0,310). Daí "clique — enquadrar" e
               não "clique num nome — enquadrar". O item 8 pôs o Esc na
               tela DENTRO do mesmo orçamento: "girar e subir/descer"
               virou "girar" para "esc — subir" caber — 67 de 68. */}

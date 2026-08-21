@@ -46,8 +46,7 @@ ressurreição. O que está no lugar é compressão fixa na emissão —
 O conserto do Sol está FECHADO e ACEITO (M1, M2, R1–R3 e a soltura — o
 pouso de 17/08). Os itens 39, 40 e 43 da ALTA esperam cada um a SUA
 conferência no app (focar estrela; rótulo dobrado; a cruz de Vênus). O
-item 5 é obra própria (ciclo pela data). O item 9 é HUD, independente
-(8 e 10 fecharam — `cf6ea79`, `7afe64d`). O item 38 (`aFocus`) é dormente por desenho — **não
+item 5 é obra própria (ciclo pela data). O item 38 (`aFocus`) é dormente por desenho — **não
 apagar**; é o canal do passo E3.
 
 Palavras do dono no fim da rodada de 14/08: *"precisamos começar a tirar as
@@ -228,8 +227,6 @@ para acomodar”* — conferir na mesma exibição.
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
-
-**9.** Tela estreita quebra o rodapé. Abaixo de 900 px a base do HUD estoura.
 
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela
 lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.

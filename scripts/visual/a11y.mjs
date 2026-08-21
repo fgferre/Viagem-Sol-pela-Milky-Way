@@ -700,16 +700,19 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
     };
   })()`);
   const sobra = 1 - cobertura.topoMedido - cobertura.baseMedida;
-  // ABAIXO DA FAIXA DECLARADA (`LARGURA_UTIL_MINIMA_PX`) a medição é
-  // REGISTRO, não gate: ali o HUD reflowa em duas e três linhas e a
-  // declaração não o cobre — é a pendência nomeada "telas estreitas",
-  // e o número dela sai daqui em vez de sair de um adjetivo.
+  // JANELA MUITO BAIXA, ou abaixo da faixa declarada
+  // (`LARGURA_UTIL_MINIMA_PX`): a medição é REGISTRO, não gate. A
+  // declaração é fração de ALTURA e não sabe da altura da janela, então
+  // num viewport de 450 px a mesma peça de HUD é o dobro de fração; e
+  // abaixo da faixa o HUD do Atlas troca de arranjo (uma coluna só, de
+  // borda a borda — fatia 6 do CSS), onde a base é maior de propósito.
+  // O número sai daqui em vez de sair de um adjetivo.
   if (!cobra) {
     process.stdout.write(
       `  ·     retângulo útil (${quando}, ${cobertura.largura} px de largura): `
         + `topo ${cobertura.topoMedido.toFixed(3)}/${cobertura.util.topo.toFixed(3)} · `
         + `base ${cobertura.baseMedida.toFixed(3)}/${cobertura.util.base.toFixed(3)} · `
-        + `sobra ${(sobra * 100).toFixed(1)}% — PENDÊNCIA "telas estreitas"\n`
+        + `sobra ${(sobra * 100).toFixed(1)}% — REGISTRO (fora da faixa declarada)\n`
     );
     return;
   }
@@ -866,10 +869,11 @@ async function julgarEscalaDaUi(s) {
         + (q.atropelos.length ? ` — atropelo: ${q.atropelos.join(' · ')}` : '')
     );
     // E O RETÂNGULO ÚTIL AQUI TAMBÉM — como REGISTRO. Estas duas janelas
-    // (800 e 600 px de CSS) caem ABAIXO da faixa que `atlasRig.ts`
-    // declara cobrir, e é justamente por isso que elas são medidas: a
-    // pendência "telas estreitas" passa a ter número, e o dia em que o
-    // HUD ganhar um arranjo próprio para elas o número mostra o ganho.
+    // (800 e 600 px de CSS) são BAIXAS antes de serem estreitas (600 e
+    // 450 px de altura), e a declaração é fração de altura: ali a mesma
+    // faixa de HUD vale o dobro. O número existe para o ganho aparecer —
+    // foi ele que mostrou o conserto do item 9 na janela de 600 px, onde
+    // a sobra saiu de −13,6% para 3,7%.
     await medirCobertura(s, `ui = ${GRANDE} com zoom ${zoom * 100}%`, false);
     // OS DOIS `clamp` QUE SÓ EXISTEM NA QUEBRA ESTREITA do CSS — os
     // últimos dos nove, e os únicos que nenhuma medição em tela de mesa
