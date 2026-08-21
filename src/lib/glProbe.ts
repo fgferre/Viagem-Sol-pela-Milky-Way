@@ -12,8 +12,16 @@
 //     sair, por qualquer caminho.
 //  4. try/catch por fora: há browsers que LANÇAM (não devolvem
 //     null) quando o GL está desabilitado por política.
-// rendererSoftware === undefined significa "não medimos, não
-// afirmamos": extensão ausente nunca vira veredito.
+//
+// LÁPIDE DE `rendererSoftware` (Ajustes D, 2026-08-20). A sonda lia o
+// nome do renderer, comparava com uma lista de marcas de software
+// (SwiftShader, llvmpipe, softpipe…) e o engine REBAIXAVA o tier para
+// `performance` quando batia. Era detecção decidindo alocação pelas
+// costas do visitante, e a letra D não deixa nenhuma de pé: sem `?q=`
+// o tier é constante e quem o move é medição, sob a política `auto`.
+// O campo saiu inteiro porque ficou sem leitor no mundo. Se um dia o
+// nome do renderer voltar, que volte para SUGERIR — uma linha no
+// painel, ao lado da medida —, nunca para decidir.
 // ============================================================
 
 export interface GlCapacidades {
@@ -28,16 +36,7 @@ export interface GlCapacidades {
    */
   webgl2?: boolean;
   maxTextureSize?: number;
-  rendererSoftware?: boolean;
 }
-
-const MARCAS_SOFTWARE = [
-  'swiftshader',
-  'llvmpipe',
-  'softpipe',
-  'software adapter',
-  'basic render driver',
-];
 
 let cache: GlCapacidades | null = null;
 
@@ -52,16 +51,6 @@ export function sondarGl(): GlCapacidades {
       cache = { suportado: false };
       return cache;
     }
-    let rendererSoftware: boolean | undefined;
-    try {
-      const ext = gl.getExtension('WEBGL_debug_renderer_info');
-      if (ext) {
-        const nome = String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)).toLowerCase();
-        rendererSoftware = MARCAS_SOFTWARE.some((m) => nome.includes(m));
-      }
-    } catch {
-      /* renderer ilegível: fica undefined */
-    }
     // todo getParameter tem de rodar ANTES de soltar o contexto — e cada
     // leitura com a própria blindagem: uma falha aqui não pode rebaixar
     // um aparelho com WebGL utilizável para o véu fatal de "sem WebGL"
@@ -74,7 +63,6 @@ export function sondarGl(): GlCapacidades {
     gl.getExtension('WEBGL_lose_context')?.loseContext();
     cache = { suportado: true, webgl2: gl2 !== null };
     if (Number.isFinite(maxTex) && maxTex > 0) cache.maxTextureSize = maxTex;
-    if (rendererSoftware !== undefined) cache.rendererSoftware = rendererSoftware;
   } catch {
     cache = { suportado: false };
   } finally {

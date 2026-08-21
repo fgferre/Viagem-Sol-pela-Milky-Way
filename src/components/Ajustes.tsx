@@ -29,8 +29,12 @@
 import { useState } from 'react';
 import { useDialogFocus } from '../lib/dialogFocus';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
-import { CAMADAS } from '../three/atlasConfig';
-import type { QualityLevel, ToneMapMode } from '../three/core/engine';
+import { CAMADAS, QUALIDADES, rotuloDaQualidade } from '../three/atlasConfig';
+import type {
+  EscolhaDeQualidade,
+  EstadoDaQualidade,
+  ToneMapMode,
+} from '../three/core/engine';
 
 const TONS: { id: ToneMapMode; nome: string; nota: string }[] = [
   { id: 'aces', nome: 'ACES', nota: 'comprime e dessatura os altos' },
@@ -38,8 +42,6 @@ const TONS: { id: ToneMapMode; nome: string; nota: string }[] = [
   { id: 'neutral', nome: 'Neutral', nota: 'meio-termo' },
   { id: 'linear', nome: 'Linear', nota: 'sem curva — estoura, mostra o cru' },
 ];
-
-const QUALIDADES: QualityLevel[] = ['cinema', 'alta', 'performance'];
 
 export function Ajustes({
   aberto,
@@ -59,8 +61,9 @@ export function Ajustes({
 }: {
   aberto: boolean;
   onFechar: () => void;
-  qualidade: QualityLevel;
-  onQualidade: (q: QualityLevel) => void;
+  /** o estado inteiro (escolha, tier vivo, medição) — Ajustes D */
+  qualidade: EstadoDaQualidade;
+  onQualidade: (q: EscolhaDeQualidade) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
   exposicao: number;
@@ -140,20 +143,32 @@ export function Ajustes({
         <p className="ajustes-nota">
           Troca ao vivo, sem recarregar. A parte pesada — a população da
           galáxia e o Sol — é refeita em segundo plano e entra de uma vez;
-          até lá a cena continua como está.
+          até lá a cena continua como está. O <em>auto</em> deixa a medição
+          escolher — e ninguém escolhe por você sem esse clique.
         </p>
         <div className="ajustes-linha">
           {QUALIDADES.map((q) => (
             <button
               type="button"
-              key={q}
-              className={qualidade === q ? 'on' : ''}
-              onClick={() => onQualidade(q)}
+              key={q.id}
+              className={qualidade.escolha === q.id ? 'on' : ''}
+              onClick={() => onQualidade(q.id)}
             >
-              {q}
+              {q.nome}
             </button>
           ))}
         </div>
+        {/* A MEDIÇÃO, DITA (Ajustes D). A frase é a mesma do título do
+            seletor da barra — uma função só (`rotuloDaQualidade`), senão
+            os dois hospedeiros contariam a mesma coisa de dois jeitos.
+            Ela é `aria-live` porque muda SOZINHA: quem está com o painel
+            aberto quando o quadro engasga tem de ouvir a sugestão sem
+            precisar reabrir nada — e por isso a região tem SÓ a frase que
+            muda. O convite ao auto é copy fixa e mora na nota acima; aqui
+            dentro ele seria relido em voz alta a cada medida nova. */}
+        <p className="ajustes-nota ajustes-medida" role="status" aria-live="polite">
+          {rotuloDaQualidade(qualidade)}
+        </p>
       </div>
 
       <div className="ajustes-secao">

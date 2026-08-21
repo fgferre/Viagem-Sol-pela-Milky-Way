@@ -157,7 +157,7 @@ export interface EstadoDaVista {
   tom: ToneMapMode;
   /** flags das camadas escondidas agora */
   camadasEscondidas: readonly string[];
-  /** tier vivo — o autoQuality rebaixa sozinho, e isso conta (D1) */
+  /** tier VIVO — no Auto ele anda sem clique, e isso conta (D1) */
   tier: QualityLevel;
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
@@ -348,10 +348,13 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     chave: 'q',
     eixo: 'brilho',
     rotulo: 'amostragem abaixo de cinema',
-    // NÃO é gesto do visitante que se desfaz com um clique: o tier vem
-    // do que o aparelho aguenta (o autoQuality rebaixa sozinho — D1),
-    // e forçar cinema numa máquina que não dá conta seria trocar uma
-    // honestidade por outra mentira. O selo declara e não promete.
+    // NÃO é gesto que se desfaz com um clique — e a razão mudou de dono
+    // nos Ajustes D sem mudar de conclusão. Antes o tier podia ter sido
+    // rebaixado SOZINHO (o auto-quality, D1) e o selo declarava o que o
+    // visitante não pediu. Agora abaixo de cinema é sempre escolha dele
+    // — um tier no seletor, ou o Auto delegando à medição —, e forçar
+    // cinema por trás dessa escolha seria o clique da linha BRILHO
+    // desfazendo o que o visitante quis. O selo declara e não promete.
     volta: 'nenhuma',
     desvia: (e) => e.tier !== 'cinema',
   },

@@ -3,10 +3,17 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Director, LOAD_STAGES } from './three/director';
-import type { EstadoDaEscada, LoadStage, Phase } from './three/director';
+import type {
+  EstadoDaEscada,
+  EstadoDaQualidade,
+  LoadStage,
+  Phase,
+} from './three/director';
 import type { NamedStar } from './three/config';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
-import type { QualityLevel } from './three/core/engine';
+import { TIER_DE_PRODUTO } from './three/core/engine';
+import type { EscolhaDeQualidade } from './three/core/engine';
+import { QUALIDADES, rotuloDaQualidade } from './three/atlasConfig';
 import { LabelCanvas } from './components/LabelCanvas';
 import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
@@ -62,7 +69,13 @@ export default function App() {
   const [runtime, setRuntime] = useState(0);
   const [dest, setDest] = useState('');
   const [sol, setSol] = useState('');
-  const [quality, setQuality] = useState<QualityLevel>('cinema');
+  // A semente é o padrão de produto e nada mais: quem publica a verdade
+  // é o Director, no fim do construtor (`publicarQualidade`).
+  const [quality, setQuality] = useState<EstadoDaQualidade>({
+    escolha: TIER_DE_PRODUTO,
+    tier: TIER_DE_PRODUTO,
+    medicao: null,
+  });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
   // Sonda de GL na PRIMEIRA renderização (Onda 1d/1e): o construtor do
@@ -659,15 +672,36 @@ export default function App() {
               </button>
             </>
           )}
+          {/* O SELETOR DE QUALIDADE — quatro estados desde os Ajustes D
+              (o Auto é o quarto). Os rótulos saem da tabela única
+              (`QUALIDADES`, atlasConfig), NUNCA digitados aqui: o painel
+              oferece a mesma lista e as duas discordariam no primeiro
+              estado novo.
+
+              O RÓTULO DO AUTO NÃO CARREGA O TIER VIVO, e é orçamento de
+              largura, não descuido: um `<select>` nativo se dimensiona
+              pela opção MAIS LARGA, então "⟳ Auto · performance" alargaria
+              a barra de controles em toda tela — inclusive nas estreitas
+              que o juiz de a11y mede com o texto em 140%. O tier em que o
+              Auto pousou é dito onde há espaço para dizê-lo: no `title`
+              (abaixo) e na nota do painel.
+
+              O `aria-label` FICA PARADO enquanto o `title` anda: nome
+              acessível que muda a cada janela de medida desorienta quem
+              ouve a tela — o que muda é ESTADO, e estado se anuncia pela
+              região `aria-live` do painel, não renomeando o controle. */}
           <select
             className="hud-btn small"
             aria-label="Qualidade gráfica"
-            value={quality}
-            onChange={(e) => changeQuality(e.target.value as QualityLevel)}
+            title={rotuloDaQualidade(quality)}
+            value={quality.escolha}
+            onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
           >
-            <option value="cinema">◆ Cinema</option>
-            <option value="alta">◇ Alta</option>
-            <option value="performance">◦ Performance</option>
+            {QUALIDADES.map((q) => (
+              <option key={q.id} value={q.id}>
+                {q.simbolo} {q.nome}
+              </option>
+            ))}
           </select>
           <button
             className="hud-btn small"

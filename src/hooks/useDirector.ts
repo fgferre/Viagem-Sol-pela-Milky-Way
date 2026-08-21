@@ -7,10 +7,13 @@
 // ============================================================
 import { useEffect } from 'react';
 import { Director } from '../three/director';
-import type { EstadoDaEscada, LoadStage, Phase } from '../three/director';
+import type { EstadoDaEscada, EstadoDaQualidade, LoadStage, Phase } from '../three/director';
 import type { NamedStar } from '../three/config';
-import type { QualityLevel } from '../three/core/engine';
-import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
+import {
+  lerPortaExposicao,
+  lerPortaQualidade,
+  lerPortaTom,
+} from '../three/core/engine';
 import { LabelCanvas } from '../components/LabelCanvas';
 import { sondarGl } from '../lib/glProbe';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
@@ -43,7 +46,7 @@ export interface FiosDoDirector {
   setRuntime: (v: number) => void;
   setDest: (v: string) => void;
   setSol: (v: string) => void;
-  setQuality: (v: QualityLevel) => void;
+  setQuality: (v: EstadoDaQualidade) => void;
   setLoadStage: (v: LoadStage) => void;
   setLoadError: (v: string) => void;
   setNomeadas: (v: readonly NamedStar[]) => void;
@@ -132,10 +135,15 @@ export function useDirector(fios: FiosDoDirector) {
         setRuntime(d.journeyDuration);
         setNomeadas(d.nomeadas);
         const query = new URLSearchParams(window.location.search);
-        const qualityParam = query.get('q') as QualityLevel | null;
-        if (qualityParam && ['cinema', 'alta', 'performance'].includes(qualityParam)) {
-          d.setQuality(qualityParam);
-        }
+        // `?q=` — a lei da porta mora no engine (`lerPortaQualidade`), que
+        // é quem a lê primeiro, no construtor. Aqui ela volta a passar
+        // porque o `auto` é POLÍTICA e o engine não a conhece: o boot com
+        // `?q=auto` nasce no tier de produto e é esta linha que entrega a
+        // escolha ao Director. Para um tier explícito a chamada é a
+        // reconciliação de sempre — o engine já o aplicou, e o
+        // `setQuality` reconhece o no-op.
+        const escolha = lerPortaQualidade(query.get('q'));
+        if (escolha) d.setQuality(escolha);
 
         // ?tone= e ?exp= — os ajustes de gosto também são URL, para que uma
         // configuração vire link e a captura headless veja o mesmo que a tela.

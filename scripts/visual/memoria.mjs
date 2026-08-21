@@ -82,9 +82,10 @@
 //
 // Método herdado dos juízes da casa (`atlas-smoke`, `a11y`): uma sessão de
 // Chrome só (comparar contadores entre processos não prova ciclo nenhum),
-// `?q=alta` pinado via porta (o boot chama `setQuality` manual e desliga o
-// autoQuality — o tier não troca sozinho no meio da medida) e o SINAL de
-// prontidão do próprio app no lugar de espera cega.
+// `?q=alta` pinado via porta (o tier não troca sozinho no meio da medida:
+// desde a letra D dos Ajustes nada troca sem escolha do visitante, e `alta`
+// é escolha explícita) e o SINAL de prontidão do próprio app no lugar de
+// espera cega.
 import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;

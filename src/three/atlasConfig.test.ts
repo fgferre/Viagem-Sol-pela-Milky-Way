@@ -17,8 +17,11 @@ import {
   ASTEROIDES_DO_SISTEMA,
   NOMES_DOS_CORPOS,
   NOME_DO_SISTEMA,
+  QUALIDADES,
+  rotuloDaQualidade,
   tituloDeCorpo,
 } from './atlasConfig';
+import { TIER_DE_PRODUTO, lerPortaQualidade, tierMedido } from './core/engine';
 
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GALAXY = readFileSync(new URL('./world/galaxy.ts', import.meta.url), 'utf8');
@@ -32,6 +35,17 @@ const SOL_NO_QUADRO = readFileSync(
 // recarregava a página, viva desde os Ajustes C
 const ESPELHO = readFileSync(
   new URL('../hooks/useEspelhoDaUrl.ts', import.meta.url),
+  'utf8'
+);
+// os DOIS hospedeiros do seletor de qualidade (Ajustes D) e o medidor
+const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
+const AJUSTES = readFileSync(
+  new URL('../components/Ajustes.tsx', import.meta.url),
+  'utf8'
+);
+const ENGINE = readFileSync(new URL('./core/engine.ts', import.meta.url), 'utf8');
+const PREFERENCIAS = readFileSync(
+  new URL('../lib/preferencias.ts', import.meta.url),
   'utf8'
 );
 // os quatro corpos do palco: o tier deles é lido na HORA de alocar
@@ -84,7 +98,7 @@ describe('a tabela de camadas da casa', () => {
     const inicio = ESPELHO.indexOf('const changeQuality = ');
     expect(inicio).toBeGreaterThan(0);
     const corpo = ESPELHO.slice(inicio, ESPELHO.indexOf('\n  };', inicio));
-    expect(corpo).toContain('setQuality(q)');
+    expect(corpo).toContain('setQuality(escolha)');
     expect(corpo).toContain('window.history.replaceState');
     expect(corpo).not.toContain('location.assign');
   });
@@ -92,11 +106,11 @@ describe('a tabela de camadas da casa', () => {
 
 describe('a troca de tier ao vivo (Ajustes C)', () => {
   it('o pedido de qualidade manda assar um mundo NOVO, não muda só o instrumento', () => {
-    const inicio = DIRECTOR.indexOf('  setQuality(q: QualityLevel) {');
+    const inicio = DIRECTOR.indexOf('  setQuality(escolha: EscolhaDeQualidade) {');
     expect(inicio).toBeGreaterThan(0);
     const corpo = DIRECTOR.slice(inicio, DIRECTOR.indexOf('\n  }', inicio));
     // o instrumento na hora…
-    expect(corpo).toContain('this.engine.applyQuality(q, true)');
+    expect(corpo).toContain('this.engine.applyQuality(q)');
     // …e a alocação em segundo plano
     expect(corpo).toContain('this.reassarMundo(q)');
   });
@@ -145,6 +159,129 @@ describe('a troca de tier ao vivo (Ajustes C)', () => {
     // 122,7 MiB de partículas sem dono
     expect(corpo.match(/descartarCarga\(carga\)/g)?.length).toBe(2);
     expect(corpo).toContain('this.mundoAindaVale(q)');
+  });
+});
+
+// ============================================================
+// AJUSTES D — O AUTO É O 4º ESTADO, E A FRONTEIRA É POLÍTICA.
+//
+// A régua do dono, ao pé da letra: *detecção nunca decide; medição
+// sugere; o visitante escolhe*. O que se cobra aqui é a fronteira, não
+// a estética: nada troca de tier sem escolha, o boot sem `?q=` é uma
+// CONSTANTE (nem storage, nem palpite sobre o aparelho), e a sugestão
+// da medição é só uma frase enquanto o Auto não for escolhido.
+// ============================================================
+describe('os quatro estados do seletor (Ajustes D)', () => {
+  it('a tabela é a única lista — os dois hospedeiros a leem, ninguém a redigita', () => {
+    expect(QUALIDADES.map((q) => q.id)).toEqual([
+      'cinema',
+      'alta',
+      'performance',
+      'auto',
+    ]);
+    // o painel e a barra desenham a MESMA tabela; `<option>` digitado à
+    // mão é a segunda lista nascendo (foi assim que ela viveu até aqui)
+    expect(AJUSTES).toContain('QUALIDADES.map(');
+    expect(APP).toContain('QUALIDADES.map(');
+    expect(APP).not.toContain('<option value="cinema">');
+    // e cada estado tem nome pt-BR e glifo — o seletor da barra é glifo
+    for (const q of QUALIDADES) {
+      expect(q.nome.length, `${q.id} sem nome`).toBeGreaterThan(3);
+      expect(q.simbolo.length, `${q.id} sem símbolo`).toBe(1);
+    }
+  });
+
+  it('sem `?q=` o tier é uma CONSTANTE — nem storage, nem detecção', () => {
+    // A LÁPIDE, cobrada por ausência (a varredura invertida da casa): as
+    // três decisões que o boot tomava pelo visitante morreram na letra D.
+    expect(TIER_DE_PRODUTO).toBe('cinema');
+    expect(ENGINE).not.toContain('defaultQualityForDevice(');
+    expect(ENGINE).not.toContain('lerPreferencias(');
+    expect(ENGINE).not.toContain('rendererSoftware');
+    // e o storage não guarda mais o veredito medido em lugar nenhum
+    expect(PREFERENCIAS).not.toContain('tierQueRodou?');
+  });
+
+  it('a porta `?q=` aceita os quatro literais e nada mais (a lição do ?tone=constructor)', () => {
+    for (const q of QUALIDADES) expect(lerPortaQualidade(q.id)).toBe(q.id);
+    expect(lerPortaQualidade('constructor')).toBeNull();
+    expect(lerPortaQualidade('AUTO')).toBeNull();
+    expect(lerPortaQualidade('')).toBeNull();
+    expect(lerPortaQualidade(null)).toBeNull();
+    expect(lerPortaQualidade(undefined)).toBeNull();
+  });
+
+  it('o engine MEDE e avisa; ele não troca de tier sozinho', () => {
+    // A fronteira inteira mora nesta ausência. O auto-quality chamava
+    // `applyQuality` de dentro do laço — e chamava só a metade viva,
+    // deixando a alocação no tier de antes. Quem aplica agora é o
+    // Director, que sabe assar um mundo, e só sob a política `auto`.
+    const laco = ENGINE.slice(ENGINE.indexOf('  start() {'), ENGINE.indexOf('  dispose() {'));
+    expect(laco).not.toContain('this.applyQuality(');
+    expect(laco).toContain('this.medicaoFns.forEach(');
+    const aoMedir = DIRECTOR.slice(
+      DIRECTOR.indexOf('private aoMedirOQuadro('),
+      DIRECTOR.indexOf('private publicarQualidade(')
+    );
+    expect(aoMedir).toContain("this.politicaDeQualidade === 'auto'");
+  });
+
+  it('a MEDIDA recomeça a cada troca de tier — média do tier que saiu não vale', () => {
+    const aplicar = ENGINE.slice(
+      ENGINE.indexOf('applyQuality(q: QualityLevel'),
+      ENGINE.indexOf('get medicao()')
+    );
+    expect(aplicar).toContain('this.medicaoAtual = null;');
+    expect(aplicar).toContain('this.fpsN = 0;');
+  });
+
+  it('o que a medição INDICA: os limiares de sempre, agora como sugestão', () => {
+    // cinema engasgado pede alta; alta engasgada pede performance; o
+    // degrau de baixo não tem para onde cair
+    expect(tierMedido('cinema', 30, false)).toBe('alta');
+    expect(tierMedido('alta', 30, false)).toBe('performance');
+    expect(tierMedido('performance', 5, false)).toBe('performance');
+    // acima do limiar e longe do teto: nada a sugerir (= o de agora)
+    expect(tierMedido('cinema', 60, false)).toBe('cinema');
+    expect(tierMedido('alta', 40, false)).toBe('alta');
+    // no teto do monitor a medida pede o degrau de cima, um por vez
+    expect(tierMedido('performance', 60, true)).toBe('alta');
+    expect(tierMedido('alta', 60, true)).toBe('cinema');
+    expect(tierMedido('cinema', 60, true)).toBe('cinema');
+    // e o teto NÃO resgata quem está abaixo do limiar (a queda manda)
+    expect(tierMedido('cinema', 20, true)).toBe('alta');
+  });
+
+  it('a URL espelha a ESCOLHA, não o tier vivo — senão o Auto não caberia num link', () => {
+    const inicio = ESPELHO.indexOf('const changeQuality = ');
+    const corpo = ESPELHO.slice(inicio, ESPELHO.indexOf('\n  };', inicio));
+    expect(corpo).toContain("url.searchParams.set('q', escolha)");
+    expect(corpo).not.toContain("set('q', quality.tier)");
+  });
+
+  it('a frase da medição é UMA — o painel e o título do seletor contam igual', () => {
+    expect(AJUSTES).toContain('rotuloDaQualidade(qualidade)');
+    expect(APP).toContain('title={rotuloDaQualidade(quality)}');
+    // …e o NOME ACESSÍVEL do seletor fica parado: nome que muda a cada
+    // janela de medida desorienta quem ouve a tela. O que anda é estado,
+    // e estado se anuncia pela região `aria-live` do painel.
+    expect(APP).toContain('aria-label="Qualidade gráfica"');
+    const estado = (m: Parameters<typeof rotuloDaQualidade>[0]) => rotuloDaQualidade(m);
+    // manual, medida boa: nada a sugerir — o painel não inventa alarme
+    expect(
+      estado({ escolha: 'cinema', tier: 'cinema', medicao: { fps: 59.6, sugestao: 'cinema' } })
+    ).toBe('Qualidade Cinema, e o quadro anda a 60 quadros/s.');
+    // manual, medida ruim: SUGERE e nada mais — o tier não se mexeu
+    expect(
+      estado({ escolha: 'cinema', tier: 'cinema', medicao: { fps: 28.2, sugestao: 'alta' } })
+    ).toBe('Qualidade Cinema, a 28 quadros/s — Alta deve andar melhor.');
+    // auto: diz onde a medição pousou, que é a pergunta que sobra
+    expect(
+      estado({ escolha: 'auto', tier: 'alta', medicao: { fps: 51, sugestao: 'alta' } })
+    ).toBe('Auto: a medição pôs a qualidade em Alta, a 51 quadros/s.');
+    // sem medida ainda: diz "medindo" em vez de fingir um número
+    expect(estado({ escolha: 'auto', tier: 'cinema', medicao: null })).toContain('medindo');
+    expect(estado({ escolha: 'alta', tier: 'alta', medicao: null })).toContain('medindo');
   });
 });
 

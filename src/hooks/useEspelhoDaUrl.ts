@@ -6,8 +6,8 @@
 // arquivo é GOVERNADO pelo selo (lê portas de URL).
 // ============================================================
 import { useLayoutEffect, useState } from 'react';
-import type { Director, Phase } from '../three/director';
-import type { QualityLevel, ToneMapMode } from '../three/core/engine';
+import type { Director, EstadoDaQualidade, Phase } from '../three/director';
+import type { EscolhaDeQualidade, ToneMapMode } from '../three/core/engine';
 import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
@@ -38,7 +38,7 @@ export function useEspelhoDaUrl(dep: {
   foco: string | null;
   tempo: EstadoDoTempo | null;
   indice: ReturnType<typeof construirIndice>;
-  quality: QualityLevel;
+  quality: EstadoDaQualidade;
 }) {
   const { directorRef, phase, foco, tempo, indice, quality } = dep;
   // O ESTADO DE GOSTO, com um dono só (F2). Ele nasce da URL — que segue
@@ -164,18 +164,21 @@ export function useEspelhoDaUrl(dep: {
    * de tier volta ao mesmo instante, no mesmo modo, com o mesmo alvo em
    * quadro; quem não der não perde nada.
    *
-   * O `?q=` É SEMPRE ESCRITO, cinema inclusive. Tom e exposição podem
-   * omitir o valor padrão porque o padrão deles é CONSTANTE; o de
-   * qualidade não é — sem `?q=` quem decide é o storage (`tierQueRodou`,
-   * alocação medida) ou a detecção, e um `alta` medido na visita passada
-   * sobrepunha o clique em Cinema na recarga seguinte. URL sem `?q=` não
-   * diz o que a tela mostra, e escolha manual tem de sobreviver ao link.
+   * O QUE VAI À URL É A ESCOLHA, NÃO O TIER VIVO (Ajustes D). Em `auto`
+   * o tier anda sozinho, e gravar o tier de agora congelaria no link uma
+   * decisão que o visitante não tomou — quem abrisse o link cairia num
+   * tier fixo em vez do Auto que o dono do link escolheu.
+   *
+   * O `?q=` É SEMPRE ESCRITO, cinema inclusive — mesmo agora que cinema
+   * é o padrão de produto. Tom e exposição omitem o valor padrão porque
+   * o estado deles é só gosto; este é ALOCAÇÃO, e um link que cala sobre
+   * o tier não diz o que a tela mostra.
    */
-  const changeQuality = (q: QualityLevel) => {
-    if (q === quality) return;
-    directorRef.current?.setQuality(q);
+  const changeQuality = (escolha: EscolhaDeQualidade) => {
+    if (escolha === quality.escolha) return;
+    directorRef.current?.setQuality(escolha);
     const url = urlComMomento();
-    url.searchParams.set('q', q);
+    url.searchParams.set('q', escolha);
     window.history.replaceState(null, '', `${url.pathname}${url.search}`);
   };
 

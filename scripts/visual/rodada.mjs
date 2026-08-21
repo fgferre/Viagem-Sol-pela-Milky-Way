@@ -22,9 +22,10 @@
 // `sky-capture`: espera o SINAL de prontidão do app), a medição passou para o
 // padrão do `sky-capture` (o critério de pronto é o ARQUIVO, não o processo —
 // o Chrome do `--dump-dom` também não sai sozinho), e a URL ganhou
-// `&q=cinema`: sem fixar o tier o `autoQuality` rebaixa cinema→alta→
-// performance no meio da captura e troca `nebulaSteps` 56→30, o que mudaria
-// os números do ledger por motivo alheio à rodada medida.
+// `&q=cinema`: fixa o tier do ledger. Até a letra D dos Ajustes isso era
+// defesa (o `autoQuality` rebaixava cinema→alta→performance no meio da
+// captura e trocava `nebulaSteps` 56→30, mudando os números por motivo
+// alheio à rodada); hoje nada troca sozinho e o pino é a declaração.
 //
 // CONSEQUÊNCIA PARA QUEM LÊ O LEDGER: a rodada 42 é a primeira por este
 // caminho. Os números anteriores vieram de outro protocolo de captura (tempo

@@ -1067,7 +1067,9 @@ const maquina = readFileSync(
     const config = readFileSync(new URL('../../atlasConfig.ts', import.meta.url), 'utf8');
     expect(config).toContain("{ flag: 'noplan', nome: 'Planetas', viva: true");
     const ajustes = readFileSync(new URL('../../../components/Ajustes.tsx', import.meta.url), 'utf8');
-    expect(ajustes).toContain("import { CAMADAS } from '../three/atlasConfig'");
+    // (a lista dos quatro estados do seletor de qualidade entrou no
+    // mesmo import na letra D dos Ajustes, pelo mesmo motivo)
+    expect(ajustes).toMatch(/import \{[^}]*\bCAMADAS\b[^}]*\} from '\.\.\/three\/atlasConfig'/);
     expect(ajustes).toContain('CAMADAS.map(');
   });
 });

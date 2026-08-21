@@ -94,10 +94,11 @@ for (const f of (soMedir ? [] : FACES)) {
     // look do app!) — o panorama ESO é astrofoto com stretch asinh a ~3% do
     // pico; medir sem o stretch equivalente compara curva de tom, não céu
     // (provado 2026-08-03: bulgeAnti 19,1→5,52 com alvo 5,57; zero clipping)
-    // q=cinema: sem ele o auto-quality do engine rebaixa o tier durante a
-    // captura em qualquer máquina que não segure 42 fps, e `nebulaSteps`
-    // 56→30 muda o raymarch local — que é 46% do excesso do termo
-    // `espessura`. Bit-exato onde o degrau nunca dispara. Ver ab-identidade.
+    // q=cinema: declara em que qualidade a régua foi medida — `nebulaSteps`
+    // 56→30 muda o raymarch local, que é 46% do excesso do termo
+    // `espessura`. Era defesa contra o auto-quality rebaixando o tier no
+    // meio da captura; desde a letra D dos Ajustes nada troca sozinho.
+    // Ver o bloco do PIN em ab-identidade.
     // noplan=1 (Onda 4, D8): precedente EXATO do noclarao=1 acima. A câmera do
     // protocolo fica na ORIGEM, ou seja DENTRO do domínio profundo, e a
     // camada de planetas acenderia aqui — no céu de verdade eles estariam

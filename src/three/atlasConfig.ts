@@ -10,17 +10,27 @@
 //     A seleção do Atlas é um CAMPO da mesma tabela, não uma segunda
 //     lista: assim é impossível a gaveta oferecer uma camada que o
 //     Director não conhece.
-//  2. O nome do enquadramento de abertura — o que a ContextLine lê
+//  2. A TABELA DOS QUATRO ESTADOS do seletor de qualidade (Ajustes D),
+//     pela MESMA razão e com a mesma história: dois leitores (o painel
+//     e o `<select>` da barra) e a lista digitada duas vezes.
+//  3. O nome do enquadramento de abertura — o que a ContextLine lê
 //     quando o foco não tem nome (ela NUNCA chuta).
-//  3. O lugar declarado da GRADAÇÃO POR CONTEXTO da F6: os eixos e
-//     limiares dela entram AQUI (D6), e o registro do selo
-//     (`selo.ts`) cobra a declaração pela varredura de completude —
-//     porta nova neste arquivo sem entrada no registro quebra o teste.
+//
+// E o que este arquivo é PERANTE O SELO: governado. Ele está em
+// `ARQUIVOS_GOVERNADOS` (`selo.ts`), então porta de URL nova aqui sem
+// entrada no registro quebra a varredura de completude. (O item que
+// citava a GRADAÇÃO POR CONTEXTO da F6 saiu: ela morreu no M1 da Lei
+// da Estrela junto com o `claraoDoAtlas` — a regra de declaração é que
+// continua de pé, e vale para qualquer porta, não só para aquela.)
 //
 // Este arquivo não toca `window`, não importa three e não importa React:
 // é lido pelo HUD e pelo Director, e é isso que o mantém testável.
 // ============================================================
 import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
+// só o TIPO: a união dos quatro estados do seletor mora no engine (é
+// ele quem lê a porta `?q=`), e o `import type` é apagado na compilação
+// — este arquivo continua sem importar three nem React.
+import type { EscolhaDeQualidade, EstadoDaQualidade } from './core/engine';
 
 /** Uma família de coisas na cena que pode ser desligada. */
 export interface Camada {
@@ -100,6 +110,69 @@ export const CAMADAS: readonly Camada[] = [
  * página tiraria o visitante do modo), e o teste cobra isso.
  */
 export const CAMADAS_DO_ATLAS = CAMADAS.filter((c) => c.icone !== undefined);
+
+/** Um estado do seletor de qualidade, como o visitante o lê. */
+export interface EscolhaNaUi {
+  id: EscolhaDeQualidade;
+  /** o nome em pt-BR, o mesmo nos dois hospedeiros */
+  nome: string;
+  /** o glifo da barra de controles — peso visual crescente */
+  simbolo: string;
+}
+
+/**
+ * OS QUATRO ESTADOS DO SELETOR (Ajustes D). Mesma história das camadas,
+ * e é por isso que a tabela mora AQUI: a lista tinha DOIS leitores — os
+ * botões do painel e o `<select>` da barra — e vivia digitada duas
+ * vezes, com o painel oferecendo três estados sem símbolo e a barra
+ * três `<option>` à mão. Duas listas é a segunda fonte de verdade
+ * nascendo (AGENTS 4), e a letra D acrescentaria o quarto estado a uma
+ * delas.
+ *
+ * A ORDEM é a do peso: do mais caro ao mais barato, e o `auto` por
+ * último — ele não é um degrau da escada, é quem escolhe o degrau.
+ * O `id` casa com a união do engine, então tier novo (ou estado novo)
+ * não tem como nascer sem passar por esta tabela.
+ */
+export const QUALIDADES: readonly EscolhaNaUi[] = [
+  { id: 'cinema', nome: 'Cinema', simbolo: '◆' },
+  { id: 'alta', nome: 'Alta', simbolo: '◇' },
+  { id: 'performance', nome: 'Performance', simbolo: '◦' },
+  { id: 'auto', nome: 'Auto', simbolo: '⟳' },
+];
+
+const nomeDaQualidade = (id: EscolhaDeQualidade) =>
+  QUALIDADES.find((q) => q.id === id)?.nome ?? id;
+
+/**
+ * O ESTADO DA QUALIDADE EM UMA FRASE — o título do seletor da barra e a
+ * nota do painel saem daqui, para não haver duas maneiras de contar a
+ * mesma coisa.
+ *
+ * A frase muda com a POLÍTICA, porque a pergunta que ela responde muda:
+ * no manual o visitante quer saber se a máquina está dando conta (e é
+ * aqui que a medição SUGERE, sem tocar em nada); no Auto ele quer saber
+ * onde a medição pousou. E "medindo" é dito quando é verdade: depois de
+ * cada troca de tier a média recomeça, e fingir um número velho seria o
+ * HUD mentindo sobre o instrumento.
+ */
+export function rotuloDaQualidade(e: EstadoDaQualidade): string {
+  const aqui = nomeDaQualidade(e.tier);
+  if (!e.medicao) {
+    return e.escolha === 'auto'
+      ? `Auto: a qualidade está em ${aqui}, medindo o quadro.`
+      : `Qualidade ${aqui}, medindo o quadro.`;
+  }
+  const quadros = `${Math.round(e.medicao.fps)} quadros/s`;
+  if (e.escolha === 'auto') {
+    return `Auto: a medição pôs a qualidade em ${aqui}, a ${quadros}.`;
+  }
+  if (e.medicao.sugestao === e.tier) {
+    return `Qualidade ${aqui}, e o quadro anda a ${quadros}.`;
+  }
+  return `Qualidade ${aqui}, a ${quadros}`
+    + ` — ${nomeDaQualidade(e.medicao.sugestao)} deve andar melhor.`;
+}
 
 /**
  * O nome do que o Atlas enquadra quando abre — e o que a ContextLine lê

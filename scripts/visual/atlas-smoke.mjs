@@ -19,9 +19,10 @@
 //     monótona em `journeyT`; sem o pino do Atlas cada entrada daria um
 //     Sol diferente e nenhuma vista do modo seria reproduzível.
 //
-// Método herdado do `ab-identidade`: `?q=cinema` pinado (senão o
-// autoQuality troca o tier no meio da espera), `?shot=2` (só a cena),
-// e o SINAL de prontidão do próprio app no lugar de espera cega.
+// Método herdado do `ab-identidade`: `?q=cinema` pinado (declara o tier
+// da captura — era defesa contra o autoQuality até a letra D dos
+// Ajustes), `?shot=2` (só a cena), e o SINAL de prontidão do próprio app
+// no lugar de espera cega.
 import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -502,14 +503,18 @@ try {
   //      só `captura.tier` (o do instrumento, que muda no quadro do
   //      clique e sozinho não prova alocação nenhuma);
   //   3. a URL espelha          — `replaceState` com `?q=` SEMPRE
-  //      escrito, cinema inclusive: sem ele quem decide na recarga é o
-  //      storage (`tierQueRodou`) ou a detecção, e um `alta` medido na
-  //      visita passada sobreporia a escolha do visitante;
+  //      escrito, cinema inclusive: um link que cala sobre o tier não
+  //      diz o que a tela mostra (e até a letra D quem decidia na
+  //      recarga era o storage ou a detecção, que sobrepunham a escolha
+  //      do visitante em silêncio);
   //   4. o Atlas nem soube      — modo, instante do céu e alvo em quadro.
   await sessao.ir('atlas=1&jd=2465000&foco=hd48915&ajustes=1&q=alta&shot=1');
   await sessao.js('window.__marcaQ = 1');
+  // o botão mostra o nome pt-BR da tabela única ('Cinema', 'Auto'); a
+  // comparação em minúsculas casa com o `id`, que é o que se digita aqui
   const clicarTier = (q) => sessao.js(`(() => [...document.querySelectorAll(
-    '[data-dialogo="ajustes"] button')].find((b) => b.textContent.trim() === '${q}').click())()`);
+    '[data-dialogo="ajustes"] button')].find(
+      (b) => b.textContent.trim().toLowerCase() === '${q}').click())()`);
   for (const q of ['cinema', 'alta']) {
     await clicarTier(q);
     // o `andando` da prontidão inclui a troca em voo (Ajustes C): quem
@@ -563,6 +568,114 @@ try {
     );
   }
 
+  // ---- 14b: O AUTO É O 4º ESTADO (Ajustes D) -----------------------
+  // A régua do dono: *detecção nunca decide; medição sugere; o visitante
+  // escolhe*. O que se prova aqui é a FRONTEIRA POLÍTICA, no navegador,
+  // com o HUD na tela (`?shot=1`, nunca `2` — vista sem HUD não prova
+  // HUD):
+  //   1. o seletor tem QUATRO estados, e os quatro saem da tabela única;
+  //   2. sem `?q=` o boot é CINEMA — nem storage, nem palpite sobre o
+  //      aparelho. O storage é SUJADO de propósito antes do boot com o
+  //      campo que decidia o tier até 20/08: se ele voltar a mandar,
+  //      esta linha é a que grita;
+  //   3. escolher Auto vira `?q=auto` na URL e política viva, sem
+  //      navegação nenhuma (a marca na `window` sobrevive);
+  //   4. e o Auto NÃO congela o tier no link: `?q=auto` num documento
+  //      novo volta como Auto, não como o tier em que ele pousou.
+  // `atlas=1` e não a tela de título: a barra de controles — que é onde
+  // o seletor mora — só existe nas fases que a hospedam (`fases.ts`), e
+  // uma prova de HUD tirada onde o HUD não está não prova nada.
+  await sessao.ir('atlas=1&ajustes=1&shot=1');
+  const estadosDoSeletor = JSON.parse(await sessao.js(`JSON.stringify(
+    [...document.querySelectorAll('.controls-bar select option')].map((o) => o.value))`));
+  conferir(
+    estadosDoSeletor.join(',') === 'cinema,alta,performance,auto',
+    `o seletor mostra os quatro estados (${estadosDoSeletor.join(' · ')})`
+  );
+  await sessao.js(`window.localStorage.setItem('viagem-prefs',
+    JSON.stringify({ v: 1, tierQueRodou: 'performance' }))`);
+  await sessao.ir('atlas=1&ajustes=1&shot=1');
+  const semQnaUrl = JSON.parse(await sessao.js(`JSON.stringify({
+    url: location.search,
+    tier: window.__director.captura.tier,
+    mundo: window.__director.captura.tierDoMundo,
+    escolhido: document.querySelector('.controls-bar select').value })`));
+  conferir(
+    semQnaUrl.tier === 'cinema' && semQnaUrl.mundo === 'cinema'
+      && semQnaUrl.escolhido === 'cinema' && !semQnaUrl.url.includes('q='),
+    `sem ?q= o padrão de produto é CINEMA, com o storage mentindo 'performance'`
+      + ` (instrumento '${semQnaUrl.tier}', mundo '${semQnaUrl.mundo}',`
+      + ` seletor '${semQnaUrl.escolhido}')`
+  );
+  await sessao.js("window.localStorage.removeItem('viagem-prefs')");
+  await sessao.js('window.__marcaAuto = 1');
+  await clicarTier('auto');
+  // uma JANELA DE MEDIDA inteira (2,5 s) mais folga: sem ela a prova
+  // pegaria o "medindo" e não o veredito, e o que a letra D promete é
+  // justamente que escolher Auto MEDE e aplica
+  await sleep(3200);
+  // …e se a medida pediu outro tier, o mundo novo ainda está no forno
+  await sessao.assentar();
+  const noAuto = JSON.parse(await sessao.js(`JSON.stringify({
+    url: location.search,
+    marca: window.__marcaAuto,
+    escolhido: document.querySelector('.controls-bar select').value,
+    tier: window.__director.captura.tier,
+    medicao: window.__director.engine.medicao,
+    nota: ((document.querySelector('.ajustes-medida') || {}).textContent || '').trim() })`));
+  conferir(
+    noAuto.marca === 1 && noAuto.escolhido === 'auto' && noAuto.url.includes('q=auto'),
+    `escolher Auto não recarrega e vira espelho na URL ('${noAuto.url}',`
+      + ` seletor '${noAuto.escolhido}')`
+  );
+  conferir(
+    noAuto.nota.startsWith('Auto:') && noAuto.nota.includes(noAuto.tier === 'cinema'
+      ? 'Cinema' : noAuto.tier === 'alta' ? 'Alta' : 'Performance'),
+    `e o painel DIZ onde a medição pôs a qualidade: "${noAuto.nota}"`
+  );
+  // A CONVERGÊNCIA, que é o que "aplica" quer dizer sem depender do fps
+  // desta máquina: sob Auto, o tier VIVO não pode ficar parado contra a
+  // medição. `medicao` nula é o estado legítimo logo depois de uma
+  // troca — a média recomeça —, e aí não há veredito a contradizer.
+  conferir(
+    noAuto.medicao === null || noAuto.medicao.sugestao === noAuto.tier,
+    `e o Auto não fica parado contra a medição (tier '${noAuto.tier}', medida`
+      + ` ${noAuto.medicao ? `${noAuto.medicao.fps.toFixed(1)} q/s → '${noAuto.medicao.sugestao}'` : 'recomeçando'})`
+  );
+
+  // A FRONTEIRA POLÍTICA, no navegador: em MANUAL a medição pode gritar
+  // o que quiser — o tier não anda. O tier escolhido é `performance` e a
+  // espera passa dos 15 s da anti-vaivém DE PROPÓSITO: é só depois dela
+  // que a medida no teto do monitor passa a sugerir SUBIR, ou seja, é aí
+  // que existe uma sugestão para o manual resistir. Medido nesta
+  // bancada: a 60 q/s a sugestão vira 'alta' na 6ª janela (~15,6 s).
+  // Numa máquina que não chega ao teto a sugestão fica igual ao vivo e a
+  // prova enfraquece (o tier segue o mesmo, que é o que se cobra) — o
+  // log diz qual dos dois casos aconteceu.
+  const ESPERA_DO_MANUAL_MS = 18000;
+  await sessao.ir('atlas=1&ajustes=1&shot=1&q=performance');
+  await sleep(ESPERA_DO_MANUAL_MS);
+  const noManual = JSON.parse(await sessao.js(`JSON.stringify({
+    tier: window.__director.captura.tier,
+    mundo: window.__director.captura.tierDoMundo,
+    escolhido: document.querySelector('.controls-bar select').value,
+    medicao: window.__director.engine.medicao })`));
+  conferir(
+    noManual.tier === 'performance' && noManual.mundo === 'performance'
+      && noManual.escolhido === 'performance',
+    `em MANUAL nada troca de tier sozinho: ${ESPERA_DO_MANUAL_MS / 1000} s depois segue`
+      + ` em '${noManual.tier}' (mundo '${noManual.mundo}'), com a medição`
+      + ` ${noManual.medicao ? `em ${noManual.medicao.fps.toFixed(1)} q/s sugerindo '${noManual.medicao.sugestao}'` : 'ainda medindo'}`
+  );
+  await sessao.ir('q=auto&atlas=1&ajustes=1&shot=1');
+  const deLink = JSON.parse(await sessao.js(`JSON.stringify({
+    escolhido: document.querySelector('.controls-bar select').value,
+    tier: window.__director.captura.tier })`));
+  conferir(
+    deLink.escolhido === 'auto',
+    `?q=auto num documento novo volta como AUTO, não como o tier em que ele`
+      + ` pousou (seletor '${deLink.escolhido}', tier '${deLink.tier}')`
+  );
 
   // ---- 15: A RODA E A PINÇA MOVEM A ESCADA (Onda 7) ----------------
   // A bancada de `rodaDaEscada.test.ts` prova a tradução de pixels em

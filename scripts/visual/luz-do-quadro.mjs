@@ -88,8 +88,10 @@ const [JW, JH] = (process.env.JANELA || '900x900').split('x').map(Number);
 const DPR = Number.isFinite(Number(process.env.DPR)) && Number(process.env.DPR) >= 1
   ? Number(process.env.DPR)
   : 1;
-// O MESMO PIN do `ab-identidade`: sem `?q=` o `autoQuality` rebaixa o tier no
-// meio da espera e a régua compara duas qualidades diferentes.
+// O MESMO PIN do `ab-identidade`, pelo mesmo argumento e com a mesma
+// história: era defesa contra o `autoQuality` rebaixando o tier no meio da
+// espera; desde a letra D dos Ajustes nada troca de tier sozinho, e o pino
+// virou a declaração de em que qualidade esta régua foi medida.
 const PIN = '&q=cinema';
 // ...e o MESMO SUFIXO (`ab-identidade.mjs:595-596`), pelo mesmo argumento,
 // palavra por palavra: uma leva com knob não pode pisar no arquivo da leva

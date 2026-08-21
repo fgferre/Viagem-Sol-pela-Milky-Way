@@ -105,6 +105,16 @@
   display: flex;
   gap: 0.35rem;
 }
+/* A NOTA DA MEDIÇÃO (Ajustes D) vem DEPOIS dos botões, e é a única nota
+   do painel que muda sozinha — daí a margem em cima, no lugar da de
+   baixo que as outras usam. */
+.ajustes-medida {
+  margin: 0.55rem 0 0;
+}
+.ajustes-medida em {
+  font-style: normal;
+  color: rgba(255, 214, 150, 0.85);
+}
 .ajustes-linha button,
 .ajustes-copiar {
   flex: 1;

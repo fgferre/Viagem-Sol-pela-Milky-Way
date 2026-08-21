@@ -1,10 +1,15 @@
 // ============================================================
-// Engine — renderer WebGL2 HDR, cena, câmera, loop e qualidade
-// adaptativa (degrada pixel ratio / passos do raymarch se cair fps).
+// Engine — renderer WebGL2 HDR, cena, câmera, loop e a MEDIÇÃO do
+// quadro (quantos quadros por segundo, e que tier isso indica).
+//
+// O QUE ELE NÃO FAZ MAIS, desde a letra D dos Ajustes: trocar de tier
+// por conta própria. O antigo auto-quality media e APLICAVA — e
+// aplicava só a metade viva (pixel ratio, passos do raymarch), deixando
+// a alocação no tier de antes. Agora ele mede e AVISA (`onMedicao`);
+// quem aplica é o Director, pela via viva que a letra C abriu, e só
+// quando o visitante escolheu Auto.
 // ============================================================
 import * as THREE from 'three';
-import { sondarGl } from '../../lib/glProbe';
-import { gravarPreferencia, lerPreferencias } from '../../lib/preferencias';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 
 export type QualityLevel = 'cinema' | 'alta' | 'performance';
@@ -80,21 +85,104 @@ const PRESETS: Record<QualityLevel, QualityPreset> = {
   performance: { pixelRatio: 1.0, nebulaSteps: 30, grain: 0.008 },
 };
 
-// Tier INICIAL sem ?q=: decidido pelo dispositivo, não por uma constante.
-// A assimetria que justifica errar para BAIXO no touch: o tier inicial
-// decide ALOCAÇÃO (a população da galáxia — 4,02 M partículas em cinema —
-// e o tier do Sol congelam no init), e o auto-quality nunca desfaz o que
-// já foi assado. Começar baixo e subir é barato (o nearCeiling sobe passos
-// e pixelRatio em segundos); começar alto e cair deixa a memória de cinema
-// num celular para sempre. Desktop segue em cinema: os gates capturam em
-// headless sem touch e com ?q=cinema fixado — este caminho nem roda lá.
-function defaultQualityForDevice(): QualityLevel {
-  const touch =
-    navigator.maxTouchPoints > 1 || window.matchMedia('(pointer: coarse)').matches;
-  if (!touch) return 'cinema';
-  // lado curto da TELA (não da janela): tablet deitado continua tablet
-  const shortSide = Math.min(window.screen.width, window.screen.height);
-  return shortSide < 820 ? 'performance' : 'alta';
+/**
+ * O TIER SEM `?q=` — uma constante, e a constante é CINEMA (Ajustes D
+ * do NORTE, a régua do dono: *detecção nunca decide; medição sugere; o
+ * visitante escolhe*).
+ *
+ * LÁPIDE DE `defaultQualityForDevice` E DE `tierQueRodou`. Até 20/08 o
+ * tier inicial saía de três palpites em cascata — a URL, depois o
+ * veredito MEDIDO na visita passada (storage), depois a detecção por
+ * touch/tela, e um rebaixamento extra quando o renderer se nomeava
+ * software. Os três decidiam ALOCAÇÃO (4,02 M partículas em cinema, o
+ * tier do Sol) pelas costas do visitante, e o pior deles era o
+ * storage: um `alta` medido ontem sobrepunha o clique em Cinema de
+ * hoje. Nenhum deles sobrevive à letra D — o que o aparelho aguenta
+ * deixou de ser palpite de boot e virou MEDIÇÃO viva, que SUGERE (o
+ * painel diz) e só APLICA quando o visitante escolheu Auto.
+ */
+export const TIER_DE_PRODUTO: QualityLevel = 'cinema';
+
+/**
+ * A ESCOLHA do seletor — os três tiers mais o `auto`, que NÃO é tier:
+ * é a política de quem aceita a sugestão da medição. O mundo é sempre
+ * um dos três; `auto` só diz quem escolhe qual.
+ */
+export type EscolhaDeQualidade = QualityLevel | 'auto';
+
+/**
+ * A LEI DA PORTA `?q=`, num lugar só — o precedente é `lerPortaTom`, e
+ * a lição é a mesma do `?tone=constructor`: comparação por literal,
+ * nunca `in` nem `includes` sobre coisa herdada. `null` = "não pediram
+ * nada de válido", e quem chama conhece o padrão (`TIER_DE_PRODUTO`).
+ */
+export function lerPortaQualidade(
+  bruto: string | null | undefined
+): EscolhaDeQualidade | null {
+  return (['cinema', 'alta', 'performance', 'auto'] as const).find((v) => v === bruto)
+    ?? null;
+}
+
+/** quanto tempo de quadro entra em cada amostra da medição */
+const JANELA_DA_MEDIDA_S = 2.5;
+
+/**
+ * O QUE A MEDIÇÃO INDICA, puro. Abaixo do limiar do tier que está
+ * rodando, a medida pede o degrau de baixo; no teto do monitor (e com a
+ * espera cumprida), o de cima. Fora disso, o de agora — e "o de agora"
+ * é o que faz o painel ficar calado quando não há nada a sugerir.
+ *
+ * OS LIMIARES SÃO OS DE SEMPRE (42 e 34): eram o gatilho do antigo
+ * auto-quality, que aplicava sozinho. A letra D não os re-dosou — mudou
+ * QUEM os obedece.
+ */
+const QUEDA: Record<QualityLevel, { abaixoDe: number; para: QualityLevel }> = {
+  cinema: { abaixoDe: 42, para: 'alta' },
+  alta: { abaixoDe: 34, para: 'performance' },
+  // o degrau mais baixo não tem para onde cair
+  performance: { abaixoDe: 0, para: 'performance' },
+};
+const SUBIDA: Record<QualityLevel, QualityLevel> = {
+  performance: 'alta',
+  alta: 'cinema',
+  cinema: 'cinema',
+};
+
+export function tierMedido(
+  atual: QualityLevel,
+  quadrosPorSegundo: number,
+  noTetoDoMonitor: boolean
+): QualityLevel {
+  if (quadrosPorSegundo < QUEDA[atual].abaixoDe) return QUEDA[atual].para;
+  return noTetoDoMonitor ? SUBIDA[atual] : atual;
+}
+
+/** do mais barato ao mais caro — só o `applyQuality` precisa da ordem */
+const ORDEM_DOS_TIERS: readonly QualityLevel[] = ['performance', 'alta', 'cinema'];
+/** depois de CAIR, 15 s antes de a medição poder pedir para subir */
+const ESPERA_APOS_QUEDA_S = 15;
+/** depois de SUBIR, 10 s antes do próximo degrau */
+const ESPERA_APOS_SUBIDA_S = 10;
+
+/** O que a última janela de medida viu, e o que ela indica. */
+export interface MedicaoDoQuadro {
+  /** média de quadros por segundo na janela */
+  fps: number;
+  /** o tier que ESTA medida indica — igual ao vivo quer dizer "nada a sugerir" */
+  sugestao: QualityLevel;
+}
+
+/**
+ * O QUE O HUD PRECISA SABER DA QUALIDADE (Ajustes D). São três coisas
+ * distintas e nenhuma deriva das outras: o que o visitante ESCOLHEU (um
+ * tier ou `auto`), o tier que está VIVO (em Auto ele muda sem clique
+ * nenhum), e o que a MEDIÇÃO indica agora (`null` = ainda medindo).
+ * Quem publica é o Director — ele é o dono da política.
+ */
+export interface EstadoDaQualidade {
+  escolha: EscolhaDeQualidade;
+  tier: QualityLevel;
+  medicao: MedicaoDoQuadro | null;
 }
 
 /**
@@ -196,7 +284,13 @@ export class Engine {
   private fpsAcc = 0;
   private fpsN = 0;
   private fpsTimer = 0;
-  private autoQuality = true;
+  private medicaoFns = new Set<(m: MedicaoDoQuadro) => void>();
+  /**
+   * A ÚLTIMA MEDIDA, ou `null` para "ainda medindo" — e ela volta a
+   * `null` a cada troca de tier: a média do tier que saiu não diz nada
+   * sobre o que entrou.
+   */
+  private medicaoAtual: MedicaoDoQuadro | null = null;
   /** teto de refresh observado (proxy do monitor) — sob vsync a 60 Hz
    *  "avg > 72" nunca acontece; os limiares de subida são relativos */
   private peakAvg = 0;
@@ -231,18 +325,15 @@ export class Engine {
     // só depois (App.tsx), performance ficava com as 2,7 M partículas e o Sol
     // em high — exatamente onde a economia é necessária.
     //
-    // Precedência URL > storage > detecção (Onda 1f): a URL segue soberana —
-    // inclusive sobre o teto de GL, porque os gates fixam ?q= e a captura tem
-    // de enxergar o que a tela enxerga. Sem ?q=, vale o último veredito
-    // MEDIDO sobre este aparelho (tierQueRodou, gravado pelo monitor de fps);
-    // por fim, a detecção por touch/tela. O teto de GL (Onda 1e) só REBAIXA,
-    // e só quando o renderer se NOMEIA software (SwiftShader, llvmpipe…) —
-    // string ilegível não é veredito.
-    const qParam = new URLSearchParams(window.location.search).get('q');
-    const q = (['cinema', 'alta', 'performance'] as const).find((v) => v === qParam);
-    let inicial = q ?? lerPreferencias().tierQueRodou ?? defaultQualityForDevice();
-    if (!q && sondarGl().rendererSoftware === true) inicial = 'performance';
-    this.applyQuality(inicial, q !== undefined);
+    // A PRECEDÊNCIA ENCOLHEU PARA DUAS LINHAS (Ajustes D): a URL, e o
+    // tier de produto. `?q=auto` é POLÍTICA, não tier — o mundo nasce em
+    // cinema como qualquer outro boot e quem o move depois é a medição,
+    // pela via viva do `Director.setQuality`. Nada de storage, nada de
+    // detecção: ver a lápide em `TIER_DE_PRODUTO`.
+    const escolha = lerPortaQualidade(
+      new URLSearchParams(window.location.search).get('q')
+    );
+    this.applyQuality(escolha && escolha !== 'auto' ? escolha : TIER_DE_PRODUTO);
     this.resize();
     window.addEventListener('resize', this.resize);
     this.armarVigiaDeDpr();
@@ -294,12 +385,44 @@ export class Engine {
     }
   }
 
-  applyQuality(q: QualityLevel, manual = false) {
+  /**
+   * TROCA O INSTRUMENTO. A metade assada do tier é do Director
+   * (`setQuality` → `reassarMundo`); daqui sai o pixel ratio, os passos
+   * do raymarch e o grão.
+   *
+   * E RECOMEÇA A MEDIDA, que é a outra metade do contrato da letra D: a
+   * média do tier que saiu não diz nada sobre o que entrou, então a
+   * sugestão volta a "medindo" e a espera anti-vaivém é rearmada — 15 s
+   * depois de uma QUEDA (não subir de volta em cima do mesmo engasgo) e
+   * 10 s depois de uma SUBIDA. Os dois números são os do auto-quality
+   * que morreu aqui; o que mudou é quem obedece a eles.
+   */
+  applyQuality(q: QualityLevel) {
+    const antes = this.quality;
     this.quality = q;
-    if (manual) this.autoQuality = false;
-    else if (q === 'cinema') this.autoQuality = true;
+    this.upgradeCooldown = ORDEM_DOS_TIERS.indexOf(q) < ORDEM_DOS_TIERS.indexOf(antes)
+      ? ESPERA_APOS_QUEDA_S
+      : ESPERA_APOS_SUBIDA_S;
+    this.medicaoAtual = null;
+    this.fpsAcc = 0;
+    this.fpsN = 0;
+    this.fpsTimer = 0;
     this.aplicarNitidez();
     this.qualityFns.forEach((fn) => fn(q));
+  }
+
+  /** o que a medição viu por último, ou `null` enquanto ela mede */
+  get medicao(): MedicaoDoQuadro | null {
+    return this.medicaoAtual;
+  }
+
+  /**
+   * QUEM OUVE A MEDIÇÃO. O engine MEDE e avisa; ele não troca de tier
+   * sozinho — essa fronteira é a letra D inteira. Quem decide o que
+   * fazer com a sugestão é o Director, que é quem sabe assar um mundo.
+   */
+  onMedicao(fn: (m: MedicaoDoQuadro) => void) {
+    this.medicaoFns.add(fn);
   }
 
   /**
@@ -367,39 +490,33 @@ export class Engine {
       const dt = Math.min(this.timer.getDelta(), 0.05);
       const t = this.timer.getElapsed();
 
-      // monitor de fps → degradação automática suave
-      if (this.autoQuality) {
-        this.fpsAcc += dt;
-        this.fpsN++;
-        this.fpsTimer += dt;
-        if (this.fpsTimer > 2.5) {
-          const avg = this.fpsN / this.fpsAcc;
-          this.peakAvg = Math.max(this.peakAvg, avg);
-          this.upgradeCooldown = Math.max(0, this.upgradeCooldown - this.fpsTimer);
-          // degrada rápido; recupera com limiar RELATIVO ao teto de
-          // refresh observado (94%) + cooldown anti-thrash — limiares
-          // absolutos (>72 fps) eram inatingíveis sob vsync a 60 Hz.
-          const nearCeiling = this.peakAvg > 20 && avg > this.peakAvg * 0.94;
-          const antes = this.quality;
-          if (avg < 42 && this.quality === 'cinema') {
-            this.applyQuality('alta');
-            this.upgradeCooldown = 15;
-          } else if (avg < 34 && this.quality === 'alta') {
-            this.applyQuality('performance');
-            this.upgradeCooldown = 15;
-          } else if (nearCeiling && this.upgradeCooldown <= 0) {
-            if (this.quality === 'performance') this.applyQuality('alta');
-            else if (this.quality === 'alta') this.applyQuality('cinema');
-            this.upgradeCooldown = 10;
-          }
-          // o veredito MEDIDO sobrevive à recarga: é ele que decide a
-          // alocação da próxima visita (Onda 1f). Só o monitor grava —
-          // ?q= explícito e detecção não são medição.
-          if (this.quality !== antes) gravarPreferencia('tierQueRodou', this.quality);
-          this.fpsAcc = 0;
-          this.fpsN = 0;
-          this.fpsTimer = 0;
-        }
+      // A MEDIÇÃO (Ajustes D). Ela roda SEMPRE — inclusive com o
+      // seletor no manual —, porque a régua do dono é "medição sugere":
+      // uma sugestão que só existisse depois de o visitante já ter
+      // escolhido Auto não sugeriria nada a ninguém. O que ela nunca faz
+      // é trocar de tier: daqui sai um aviso, não uma decisão.
+      this.fpsAcc += dt;
+      this.fpsN++;
+      this.fpsTimer += dt;
+      if (this.fpsTimer > JANELA_DA_MEDIDA_S) {
+        const avg = this.fpsN / this.fpsAcc;
+        this.peakAvg = Math.max(this.peakAvg, avg);
+        this.upgradeCooldown = Math.max(0, this.upgradeCooldown - this.fpsTimer);
+        // subir pede limiar RELATIVO ao teto de refresh observado (94%)
+        // + a espera anti-vaivém — limiares absolutos (>72 fps) eram
+        // inatingíveis sob vsync a 60 Hz.
+        const noTeto =
+          this.peakAvg > 20 && avg > this.peakAvg * 0.94 && this.upgradeCooldown <= 0;
+        const sugestao = tierMedido(this.quality, avg, noTeto);
+        const antes = this.medicaoAtual?.sugestao;
+        this.medicaoAtual = { fps: avg, sugestao };
+        // avisa só quando a SUGESTÃO muda (inclusive a primeira, que sai
+        // do "medindo"): o número anda a cada janela e um evento por
+        // janela seria um re-render do HUD a 0,4 Hz para dizer o mesmo.
+        if (sugestao !== antes) this.medicaoFns.forEach((fn) => fn(this.medicaoAtual!));
+        this.fpsAcc = 0;
+        this.fpsN = 0;
+        this.fpsTimer = 0;
       }
 
       this.tickFns.forEach((f) => f(t, dt));

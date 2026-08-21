@@ -4,7 +4,12 @@
 // ============================================================
 import * as THREE from 'three';
 import { Engine, modoDoToneMapping } from './core/engine';
-import type { QualityLevel } from './core/engine';
+import type {
+  EscolhaDeQualidade,
+  EstadoDaQualidade,
+  MedicaoDoQuadro,
+  QualityLevel,
+} from './core/engine';
 import type { EstadoDaVista } from './selo';
 import { CAMADA_DO_CAMPO, Post } from './core/post';
 // (A PUPILA morreu INTEIRA no M2 da LEI-DA-ESTRELA — arquivo, teste e a
@@ -126,13 +131,19 @@ const ATLAS_JOURNEY_T = SOL_PARAMS.dramaT1;
 export type LoadStage = (typeof LOAD_STAGES)[number];
 export type LoadStageId = LoadStage['id'];
 
+// O ESTADO DA QUALIDADE mora no vocabulário do engine (`core/engine`),
+// junto de `QualityLevel` e `MedicaoDoQuadro`; reexportado porque
+// `import { EstadoDaQualidade } from './three/director'` é o endereço
+// que o HUD usa — o mesmo caso do `Phase` e do `EstadoDaEscada`.
+export type { EstadoDaQualidade } from './core/engine';
+
 interface DirectorEvents {
   onPhase: (p: Phase) => void;
   onCaption: (index: number, caption: string, sub?: string) => void;
   onProgress: (k: number) => void;
   onLabels: (labels: StarLabel[]) => void;
   onWarp: (k: number) => void;
-  onQuality: (quality: QualityLevel) => void;
+  onQuality: (estado: EstadoDaQualidade) => void;
   /** linha de rumo ("→ DESTINO · distância viva"); vazio = esconder */
   onDest: (text: string) => void;
   /** distância viva do Sol ("SOL · 40,2 UA"); vazio = esconder */
@@ -276,6 +287,13 @@ export class Director {
    * no init com o tier que `montarCarga` recebeu.
    */
   private tierDoMundo: QualityLevel | null = null;
+  /**
+   * QUEM ESCOLHE O TIER (Ajustes D). `manual` é o padrão de produto e a
+   * fronteira política do dono: com ele, nada troca de tier sem clique.
+   * `auto` é o 4º estado do seletor — o visitante delegando a escolha à
+   * medição, que continua sendo medição e nunca detecção.
+   */
+  private politicaDeQualidade: 'manual' | 'auto' = 'manual';
   /** o tier PEDIDO e ainda a caminho (`null` = nenhuma troca em voo) —
    *  é ele que faz a captura esperar e que cancela um mundo em forno
    *  quando o visitante muda de ideia no meio */
@@ -505,11 +523,16 @@ export class Director {
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
       this.blackHole?.setQuality(quality);
-      this.events.onQuality(quality);
+      this.publicarQualidade();
       // troca de tier muda pixelRatio e passos do raymarch: a contagem de
       // estabilidade da captura recomeça (ver o getter `captura`)
       this.perturbar();
     });
+    // A MEDIÇÃO (Ajustes D). O engine mede e avisa; a decisão é daqui —
+    // é esta linha que faz o Auto trocar o MUNDO (a alocação inteira,
+    // pela via viva da letra C) em vez de só o instrumento, que era todo
+    // o alcance do auto-quality que morreu no engine.
+    this.engine.onMedicao((m) => this.aoMedirOQuadro(m));
     // o Engine já aplicou a qualidade no próprio construtor, antes destes
     // ouvintes existirem — o estado inicial precisa ser semeado à mão.
     // O setScale faltava desta lista: em performance inicial o raymarch
@@ -518,11 +541,11 @@ export class Director {
     this.nebula.setScale(this.engine.quality === 'performance' ? 0.35 : 0.5);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
     this.post.setGrain(this.engine.preset.grain);
-    // e o React TAMBÉM é ouvinte tardio: sem esta semente, um tier inicial
-    // vindo do storage ou do teto de GL (sem ?q=) deixava o painel de
-    // Ajustes mostrando "cinema" — e o clique nele virava no-op (achado
-    // da revisão de olhos frescos da Onda 1, verificado ao vivo).
-    this.events.onQuality(this.engine.quality);
+    // e o React TAMBÉM é ouvinte tardio: sem esta semente o painel de
+    // Ajustes nasceria mostrando o que ele chutou no `useState` em vez do
+    // que o engine aplicou — e o clique no tier certo virava no-op
+    // (achado da revisão de olhos frescos da Onda 1, verificado ao vivo).
+    this.publicarQualidade();
 
     this.engine.onResize((w, h) => {
       this.nebula.setSize(w, h);
@@ -1385,8 +1408,12 @@ export class Director {
 
 
   /**
+   * A ESCOLHA DO SELETOR — os três tiers e o `auto` (Ajustes D do
+   * NORTE). Porta ÚNICA: quem troca de qualidade nesta casa passa por
+   * aqui, venha do painel, da barra, da URL ou do console.
+   *
    * TROCA DE TIER — a metade viva na hora, a metade assada em segundo
-   * plano (Ajustes C do NORTE, a régua do dono: nada recarrega).
+   * plano (Ajustes C, a régua do dono: nada recarrega).
    *
    * O que muda AGORA é o instrumento: pixel ratio, passos do raymarch,
    * grão, passos do buraco negro. O que muda DEPOIS é a alocação — a
@@ -1394,12 +1421,46 @@ export class Director {
    * paralelo enquanto o atual continua desenhando. Até o swap, a tela
    * segue mostrando o mundo velho com o instrumento novo: nenhum véu,
    * nenhum quadro preto, nenhum "carregando".
+   *
+   * `auto` NÃO É TIER: é a política de aceitar a sugestão da medição.
+   * Escolhê-lo aplica a sugestão que já houver (e se não houver
+   * nenhuma, espera a próxima janela de medida) — pela MESMA via viva
+   * de qualquer outra troca. Um tier explícito devolve a política ao
+   * manual: escolher Cinema é dizer *cinema*, não *cinema por ora*.
    */
-  setQuality(q: QualityLevel) {
-    this.engine.applyQuality(q, true);
-    this.nebula.setSteps(this.engine.preset.nebulaSteps);
-    this.perturbar();
-    void this.reassarMundo(q);
+  setQuality(escolha: EscolhaDeQualidade) {
+    this.politicaDeQualidade = escolha === 'auto' ? 'auto' : 'manual';
+    const q = escolha === 'auto' ? this.engine.medicao?.sugestao : escolha;
+    if (q !== undefined && q !== this.engine.quality) {
+      this.engine.applyQuality(q);
+      this.nebula.setSteps(this.engine.preset.nebulaSteps);
+      this.perturbar();
+      void this.reassarMundo(q);
+    } else this.publicarQualidade();
+  }
+
+  /**
+   * A MEDIÇÃO CHEGOU. Em manual ela só ATRAVESSA — vira a nota do
+   * painel e para aí, que é a fronteira política da letra D: nada muda
+   * de tier sem o visitante ter escolhido Auto. Em Auto ela vira troca,
+   * e pela mesma porta de sempre, ou seja, com o mundo assado por trás
+   * e sem véu.
+   */
+  private aoMedirOQuadro(m: MedicaoDoQuadro) {
+    if (this.politicaDeQualidade === 'auto' && m.sugestao !== this.engine.quality) {
+      this.setQuality('auto');
+      return;
+    }
+    this.publicarQualidade();
+  }
+
+  /** o estado inteiro da qualidade, para o HUD desenhar sem adivinhar */
+  private publicarQualidade() {
+    this.events.onQuality({
+      escolha: this.politicaDeQualidade === 'auto' ? 'auto' : this.engine.quality,
+      tier: this.engine.quality,
+      medicao: this.engine.medicao,
+    });
   }
 
   /**

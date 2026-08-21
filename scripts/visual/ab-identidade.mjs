@@ -566,15 +566,21 @@ export const VISTAS = [
 // travessia, nem o mergulho, nem os regimes do farFade.
 const SENTINELAS = ['sol', 'soldisco', 'hero8', 'ua150'];
 const APP = process.env.APP_URL || APP_PADRAO;
-// TIER FIXO, e ele não é preferência: sem `?q=` o `autoQuality` do engine
-// rebaixa cinema→alta→performance sozinho assim que a média cai de 42 fps
-// (engine.ts), e isso troca `nebulaSteps` 56→30 e o `pixelRatio` NO MEIO da
-// espera. Numa máquina que segura 60 fps o degrau nunca dispara e `q=cinema`
-// é BIT-EXATO (mesmo tier, mesmo preset — só desliga o automático); numa que
-// não segura, sem ele o gate compara duas imagens tiradas em qualidades
-// diferentes e chama a diferença de regressão. Medido aqui: o app assenta em
-// `performance` (raymarch de 30 passos) em toda captura, e o `nearCeiling`
-// do engine ainda pode reacelerar para `alta`.
+// TIER FIXO, e ele não é preferência. Por dois períodos:
+//
+//  ATÉ 20/08 ele era DEFESA. Sem `?q=` o `autoQuality` do engine rebaixava
+//  cinema→alta→performance sozinho assim que a média caía de 42 fps, e isso
+//  trocava `nebulaSteps` 56→30 e o `pixelRatio` NO MEIO da espera — o gate
+//  comparava duas imagens tiradas em qualidades diferentes e chamava a
+//  diferença de regressão. Medido na época: o app assentava em `performance`
+//  em toda captura, e o `nearCeiling` ainda podia reacelerar para `alta`.
+//
+//  DESDE A LETRA D DOS AJUSTES ele é DECLARAÇÃO. Nada troca de tier sem o
+//  visitante ter escolhido Auto, e sem `?q=` o boot é cinema por constante
+//  (`TIER_DE_PRODUTO`) — o pino passou a ser redundante com o padrão. Fica
+//  de pé porque gate não vive de padrão alheio: o dia em que o produto
+//  mudar de tier de fábrica, esta linha é o que impede a leva inteira de
+//  descomparar com o histórico sem ninguém ter pedido.
 export const PIN = '&q=cinema';
 // EXTRA=&knob=1 anexa um parâmetro a TODAS as vistas — o A/B de um knob se faz
 // com o mesmo binário dos dois lados, sem editar nada entre as capturas.
