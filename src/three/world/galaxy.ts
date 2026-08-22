@@ -121,7 +121,7 @@ export class Galaxy {
     this.brightMat = new THREE.ShaderMaterial({
       vertexShader: GALAXY_VERT,
       fragmentShader: GALAXY_FRAG,
-      uniforms: this.sharedUniforms(20),
+      uniforms: this.sharedUniforms(),
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,
@@ -196,13 +196,14 @@ export class Galaxy {
     this.markerMesh = marker;
   }
 
-  private sharedUniforms(maxPx: number) {
+  // O teto de tamanho NÃO entra mais por aqui: era `uMaxPx`, uniform de um
+  // valor só (20 px), e desde o M5 ele é o teto da lei de tela (`estrela.ts`).
+  private sharedUniforms() {
     return {
       uCamPos: { value: new THREE.Vector3() },
       uScreenH: { value: 1080 },
       uTanHalfFov: { value: 0.55 },
       uFade: { value: 0 },
-      uMaxPx: { value: maxPx },
       // extinção por partícula: canal A da lâmina central bakeada. Nasce
       // com a 1×1 A=0 (extinção nula) — o app funciona antes do bake, e
       // é para ela que `?nogdust=1` (ou o clique no painel) volta.

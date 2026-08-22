@@ -4,6 +4,7 @@
 // que escurece o fundo e billboards de brilho (bojo / marcador).
 // ============================================================
 import { GALACTIC_MODEL, GLSL_CARTOGRAPHY, glslNumber } from '../cartography/galacticModel';
+import { GLSL_LEI_DE_TELA } from '../estrela';
 import { GLSL_STAR_COLOR } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
@@ -71,7 +72,6 @@ uniform vec3 uCamPos;
 uniform float uScreenH;
 uniform float uTanHalfFov;
 uniform float uFade;
-uniform float uMaxPx;
 // canal A da lâmina central bakeada: τ⊥ da coluna de poeira
 uniform sampler2D uTauMap;
 // base galactocêntrica da cena (EX/EY/EZ) e posição do centro galáctico
@@ -85,18 +85,21 @@ varying float vAlpha;
 
 ${GLSL_CARTOGRAPHY}
 ${GLSL_UNRESOLVED}
+${GLSL_LEI_DE_TELA}
 
 void main() {
   float dist = length(position - uCamPos);
   // tamanho angular real: pc/dist → fração da tela → pixels
   float px = aSize * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0));
-  float clamped = clamp(px, 0.7, uMaxPx);
-  // conservação de fluxo luminoso: sprites grandes (perto) teriam
-  // pico constante e área enorme → estouro branco. Acima de ~3px o
-  // pico cai com 1/px², mantendo o depósito total limitado; abaixo
-  // do piso de pixel, o fluxo cai com px² (suavidade a distância).
-  float shrink = min(1.0, 9.0 / max(px * px, 1e-4));
-  float subPix = px < 0.7 ? (px * px) / 0.49 : 1.0;
+  // A LEI DE TELA (M5) — os três regimes vêm de estrela.ts, não daqui.
+  // Os números eram os MESMOS que a lei nasceu carregando (0,7 / 20 /
+  // px²÷0,49): esta camada não move um pixel no M5, o que muda é a
+  // DIREÇÃO da dependência. O uniform do teto morreu junto — tinha um
+  // valor só (20), knob sem lado A. A migração de REPRESENTAÇÃO desta
+  // camada (aAlpha → fluxo na unidade, a morte do platô e do ramo 1/px²,
+  // a cessão partícula↔lâmina) segue sendo o M6.
+  float clamped, shrink, subPix;
+  leiDeTela(px, clamped, shrink, subPix);
 
   // PROJEÇÃO ANTES DA EXTINÇÃO — o recorte que faltava.
   // As 16 amostras VTF abaixo custam 1,22 ms por milhão de pontos (medido

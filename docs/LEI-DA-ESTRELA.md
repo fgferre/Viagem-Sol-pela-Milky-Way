@@ -276,20 +276,21 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   pontos.
 - *(As quatro rampas da transição do Sol — `cessaoAlvo` do Sol, `cessaoPeloGate`,
   `filtroSolarAlvo` e o `Math.max` com quina — morreram no M1: a repartição é uma.)*
-- **A lei de tela de três regimes tem DUAS cópias:** `galaxyShaders.ts`
-  (`clamp(px, 0.7, 20)`, `shrink = min(1, 9/px²)`, `subPix = px²/0.49`) e
-  `starForges.ts` (`clamp(px, 0.85, 26)`, o mesmo `shrink`, `subPix = px²/0.7225`).
-  Mesma lei, pisos e tetos diferentes.
+- *(A lei de tela de três regimes em DUAS cópias — `galaxyShaders.ts` com piso
+  0,7 / teto 20 / `px²/0.49` e `starForges.ts` com 0,85 / 26 / `px²/0.7225` —
+  morreu no M5, 22/08: ela é UMA, `leiDeTela` em `estrela.ts`, e os dois sítios
+  a chamam. A varredura invertida vigia as duas cópias.)*
 - **O censo foi feito de memória.** `grep gl_PointSize` devolve 8 emissores: dois
   fora da lista (`dustShaders.ts`, com `clamp(px, 1.0, 5.0)` — teto de 5 px não
   declarado — e `sol/cme.js`), e `wrappedStars.ts` emite `gl_PointSize = 0.0` como
   forma de apagar, que é uma **terceira convenção de cessão**. Refazer por varredura
   reprodutível, com o comando versionado ao lado da tabela.
-- **A galáxia já tem a lei certa E o mesmo defeito.** Abaixo de 0,7 px o fluxo cai
+- **A galáxia já tem a lei certa E o mesmo defeito** — e desde o M5 o defeito é
+  da LEI, num endereço só (`leiDeTela`, `estrela.ts`). Abaixo de 0,7 px o fluxo cai
   com `px²` (a troca sub-pixel, **certa**); de 0,7 a 3 px, brilho de superfície
   constante (**certa**); de 3 a 20 px, platô; acima de 20 px, `∝1/px²` — **a estrela
   ESCURECE ao ser aproximada**. Os dois regimes de cima são anti-estouro por camada
-  e morrem no M6.
+  e morrem no M6, e agora morrem em UM lugar.
 
 ---
 
@@ -599,6 +600,81 @@ ele não quebrou: fundir as duas unidades muda o brilho de TODO corpo
 resolvido e passa pela dose assistida (`SIGMA_ASSISTIDA`), que é GOSTO
 do dono. Fica como gate de foto, e o §6 registra a divergência.)*
 
+*(M5 — a lei de tela é UMA — FECHOU em 22/08. O "Apaga" era a **segunda
+cópia** da lei de tela de três regimes, e ela morreu: `starForges.ts`
+escrevia `clamp(px, 0.85, 26)` / `shrink = min(1, 9/px²)` /
+`subPix = px²/0.7225` e agora chama `leiDeTela` de `estrela.ts`, nos
+números da CASA — os que a §2 listava do outro lado. A lei NASCEU aqui
+como peça: `PISO_DE_TELA_PX` 0,7 · `PLATO_DE_TELA_PX` 3 ·
+`TETO_DE_TELA_PX` 20 · `PISO_DE_TELA_AO_QUADRADO` 0,49, a face TS
+`leiDeTela` e `GLSL_LEI_DE_TELA` gerado das MESMAS constantes, com
+conformidade NUMÉRICA em grade de −2 a 3 décadas de px (§8.6). **A
+lição do quadrado do piso**, achada pelo próprio oráculo antes de
+existir em produção: `0.7 * 0.7` em float64 dá 0,48999999999999994 e o
+shader imprimia `0.4900` — duas leis separadas por uma casa que ninguém
+lê. O divisor virou constante ESCRITA, com o teste cobrando a relação.
+(i)/(iv) MORREU também `uMaxPx`, uniform de um valor só (20) que
+`galaxy.ts` escrevia no material: teto sem lado A é knob morto.
+(ii) Quatro entradas M5 em `simbolosProibidos.test.ts`, uma por cópia e
+uma por sítio do uniform. (iii) O cadastro: `forjas` passa a
+`consomeL1: true` / `leiVelhaApagada: true` com `fatorDeBrilho` ainda
+`null` e a dívida NOMEADA (o `aIntensity` é artístico — 0,16 por
+confiança nas H II, 0,34 nos masers —, unidade que só entra na casa com
+o resto emissivo); `particulas-da-galaxia` passa a consumo PARCIAL, no
+molde do `catalogo-hyg`. (vi) O valor sai como sempre saiu, e o β segue
+exposto onde a emissão o aplica — nenhuma destas duas camadas comprime,
+e isso está declarado, não esquecido.
+
+**DESVIOS DECLARADOS, no molde do M1:** (a) **os quatro glows saíram do
+M5 para o M7**, pela mesma razão que mandou o CME do M2 para o M7 — o
+assunto do commit é OUTRO. O M5 é a lei de TELA, e `GLOW_VERT`/
+`GLOW_FRAG` não têm lei de tela nenhuma para apagar: são quads de
+tamanho FÍSICO em pc (`uSize`), sem px, sem piso e sem teto — quem cuida
+do estouro de perto é uma rampa de mão no `update` (`glowGate`, 5–13
+kpc) e quem cuida do tamanho é a projeção. O que sobra neles é FONTE
+fora-da-unidade (o ganho de autor das rodadas 17–24), que é exatamente o
+assunto do M7. O censo pagou o que devia aqui: a entrada
+`glows-do-nucleo` citava só `world/galaxy.ts` e não o arquivo que os
+DESENHA. (b) `galaxyShaders.ts` (GALAXY_VERT, camada do M6) consome a
+lei JÁ — se não consumisse, a "lei única" nasceria com um segundo texto
+no mesmo commit que a declara única. É consumo TEXTUAL: os números são
+idênticos, e o zero pixel foi MEDIDO, não argumentado. A migração de
+REPRESENTAÇÃO da galáxia (aAlpha → fluxo, a morte do platô e do ramo
+1/px², a cessão partícula↔lâmina) continua inteira no M6.
+
+**Delta declarado ANTES:** muda pixel — ao contrário do M4 — e só nas
+forjas: de LONGE elas são sub-pixel, e o piso mais baixo com o divisor
+0,49 as clareia até **1,47×**; de PERTO o teto 20 (era 26) as escurece
+para **0,59×** com o mesmo `shrink`. O depósito no sub-pixel é o MESMO
+nos dois pisos (`pontoPx²·subPix = px²` dos dois lados, cobrado por
+teste): o que se move é a REPARTIÇÃO, não o fluxo. Vistas sem forja em
+quadro — os corpos e as luas — saem bit-idênticas.
+**Medido** (`ab-identidade`, os dois lados com `DOZERO=1`): 16 das 52
+IGUAIS, e são exatamente as que não têm forja em quadro (`terra`,
+`terranb`, `lua`, `terralua`, os nove corpos com e sem bloom, `atlas`).
+As galácticas de FORA ganharam luz — `faceon` 40.767 px (1,32%, máx +22
+níveis, 99,98% só ganharam), `edgeon` 360 px (0,012%, máx +25, 100% só
+ganharam). As de DENTRO e as do Sol perderam um fio, que é o teto novo
+cortando a forja grande: `mergulho` 1.698 px (0,055%, máx 2), `interno`
+372 (0,012%, máx 1), `travessia` 146 (0,005%, máx 1), `sol` 48
+(0,0016%, máx 1), `ua2` 12 (0,0004%, máx 1). **A PROVA DE QUE É SÓ A
+FORJA:** com `EXTRA='&noforge=1'` os dois lados são BIT-IDÊNTICOS em
+`faceon`, `sol` e `soldisco` — a troca de lei da camada da galáxia não
+moveu um bit, como declarado. `luz-do-quadro` PASSA 11/11 com a escada
+de borrão linha a linha idêntica (113 → 30 → 325 → 245 → 158 → 118 → 69
+→ 42 → 28 → 26 → 20 px); só `luzMedia` anda na 6ª casa. `sky-capture`
+0,9270 → 0,9269, com os cinco termos parados nas quatro casas
+(espessura 0,4184 · fenda 0,2334 · perfil 0,2198 · cor 0,0299 · púrpura
+0,0254). **O PREÇO, medido e NÃO pago aqui** (`rodada.mjs`, linha 44 do
+ledger): no face-on o `clumpError` piora 0,1581 → 0,1741 e o `grain`
+0,0874 → 0,0877 — as forjas ficaram mais claras de longe e a dose delas
+foi calibrada sob o piso VELHO. `harmonicError` (0,3966 → 0,3970) e
+`toneError` (0,1845 → 0,1848) praticamente não andam, e o edge-on sai
+IDÊNTICO nas cinco colunas. Re-dosar `aIntensity` é gosto e gate de
+foto do dono — item 69 das pendências —, não gesto de migração
+mecânica. Foto para o dono:
+`capturas/m5-glows-forjas-antes-depois.png`.)*
+
 ### M3 — Catálogo + cascas
 **Gate obrigatório ANTES:** o ponto-zero único (4,83 × 4,85), decidido com foto pelo
 dono. **Apaga:** o segundo ponto-zero, a extinção condicional de 3 px, a lei de
@@ -611,10 +687,6 @@ catálogo ↔ heroes de autor** (desvio (f) do M2): hoje o ponto e o billboard
 desenham a mesma estrela somados, sem cessão nenhuma entre eles, e é aqui que
 uma das duas cede — com o **gate de foto do dono na estética**, que é o que
 mandou a peça de 30/07 voltar. **Régua:** as 52 vistas A/B.
-
-### M5 — Os quatro glows + as forjas
-Um `GLOW_FRAG` só e `starForges.ts`. **Apaga:** a **segunda cópia** da lei de tela
-de três regimes (piso 0,85 / teto 26 / `px²/0.7225`). Barato, um shader.
 
 ### M6 — A galáxia (partículas + lâminas)
 **Entra:** `aAlpha` deixa de ser artístico e vira fluxo na unidade da casa; a cessão
@@ -946,6 +1018,20 @@ podem mais aparecer no director). `terra.test.ts`, `rochoso.test.ts` e
 é gate de FOTO do dono, não migração mecânica, porque unificar
 `irradianciaRelativa` com a unidade da casa move o brilho de todo corpo
 resolvido através da dose assistida.
+
+**Aconteceu no M5 (2026-08-22): NADA quebrou — e é essa a lição.** Duas
+cópias de uma lei conviveram com pisos e tetos diferentes por meses e
+NENHUM oráculo da casa as comparava: `galaxyShaders.test.ts` passou intacto,
+`starForges` nunca teve teste, e a divergência só apareceu quando alguém a
+leu a olho no censo de 21/08. Varredura textual positiva não pega isto
+(§8.6) e teste de camada também não — o que pega é a lei ter UM endereço e
+uma grade numérica cobrando as duas faces. O que ENTROU foi essa grade
+(`estrela.test.ts`: piso, platô, teto e o divisor do sub-pixel extraídos do
+GLSL gerado e reavaliados contra a face TS, mais a conservação do depósito
+`pontoPx²·subPix = px²` e a continuidade nas três fronteiras), e quatro
+entradas M5 em `simbolosProibidos.test.ts`. Corolário para o M6: quando o
+platô e o ramo `1/px²` morrerem, o oráculo que os cobra JÁ existe e vai
+quebrar — como deve.
 
 **Vai acontecer:**
 - `luz.test.ts` (`irradianciaRelativa(ANCORA_UA)===1`) — **gate de foto do

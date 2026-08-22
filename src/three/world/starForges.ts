@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import type { GalacticAssets } from '../cartography/galacticAssets';
 import { galactocentricToScene, EX, EY, EZ, GAL } from './baseGalactica';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GLSL_LEI_DE_TELA } from '../estrela';
 import { GLSL_STAR_COLOR } from '../shaders/common';
 
 const TYPE_HII = 0;
@@ -53,14 +54,19 @@ varying float vSeed;
 varying vec3 vExtinct;
 
 ${GLSL_CARTOGRAPHY}
+${GLSL_LEI_DE_TELA}
 
 void main() {
   float dist = length(position - uCamPos);
   float px = aSize * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0));
-  float clamped = clamp(px, 0.85, 26.0);
-  // conservação de fluxo — mesma regra das partículas da galáxia
-  float shrink = min(1.0, 9.0 / max(px * px, 1e-4));
-  float subPix = px < 0.85 ? (px * px) / 0.7225 : 1.0;
+  // A LEI DE TELA (M5) — esta camada carregava a SEGUNDA cópia dela
+  // (piso 0,85 / teto 26 / px²÷0,7225) e é a cópia que a Lei §4 manda
+  // apagar: os números da casa são os da lei (0,7 / 20 / px²÷0,49). ISTO
+  // MUDA PIXEL, e o delta é o assunto do commit: o piso mais baixo deixa
+  // a forja distante escrever ponto menor e apagar mais tarde, e o teto
+  // mais baixo corta as poucas forjas gigantes de perto.
+  float clamped, shrink, subPix;
+  leiDeTela(px, clamped, shrink, subPix);
 
   float intensity = aIntensity;
   // Cefeidas pulsam: períodos reais são 1–70 dias — inviáveis numa

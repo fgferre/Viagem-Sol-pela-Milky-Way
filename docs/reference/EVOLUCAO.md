@@ -94,6 +94,7 @@ raios que antes ninguém cobrava. `discMean` fica FORA das notas de propósito:
 | 40 | 0.3920 | 0.0603 | 0.1753 | 0.1299 | 0.0663 | 0.1047 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
 | 42 | 0.3939 | 0.1160 | 0.1766 | 0.1296 | 0.0844 | 0.1048 | conserto do harness (CDP + tier fixo) |
 | 43 | 0.3939 | 0.1160 | 0.1766 | 0.1296 | 0.0844 | 0.1048 | Onda 4 fechada: dominio profundo 1:1 + ceu com planetas |
+| 44 | 0.3970 | 0.1741 | 0.1848 | 0.1258 | 0.0877 | 0.1067 | M5: a lei de tela vira UMA (`leiDeTela`, estrela.ts) — as forjas largam a segunda cópia (piso 0,85/teto 26/px²÷0,7225 → 0,7/20/px²÷0,49). **A/B DA MESMA SESSÃO, que é o que vale:** o mesmo binário sem a mudança media 0.3966 · **0.1581** · 0.1845 · 0.1257 · **0.0874** · 0.1067 — não compare com a linha 43, que é de 11/08 e carrega tudo o que entrou depois. O que M5 move é `clumpError` e `grain`: de longe as forjas são sub-pixel e o piso mais baixo as clareia até 1,47×. A dose delas (`aIntensity`) foi calibrada sob o piso velho — re-dosar é gate de foto do dono, item 69 |
 
 ## Edge-on
 
@@ -124,6 +125,7 @@ descontínua com as de cima** — ver a nota do protocolo de captura acima.
 | 40 | 0.4124 | 0.0445 | 0.0916 | 0.8715 | 0.0500 | extremo frio do disco: 25.000 K -> 6.000 K pela blackbodyLinear, Y e purpura conservados |
 | 42 | 0.3758 | 0.0424 | 0.0886 | 0.8784 | 0.0486 | conserto do harness (CDP + tier fixo) |
 | 43 | 0.3758 | 0.0424 | 0.0886 | 0.8784 | 0.0486 | Onda 4 fechada: dominio profundo 1:1 + ceu com planetas |
+| 44 | 0.3758 | 0.0424 | 0.0886 | 0.8784 | 0.0486 | M5: a lei de tela vira UMA (`leiDeTela`, estrela.ts). **IDÊNTICO nas cinco colunas ao A/B da mesma sessão** — de perfil a forja que muda é a grande, e o teto novo (20 em vez de 26) mexe em 360 px de 3,08 M |
 
 ## Céu interno (panorama ESO)
 

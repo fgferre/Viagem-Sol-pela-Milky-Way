@@ -316,6 +316,63 @@ export function solturaDoClarao(discoPx: number): number {
  *  (M1) é quem a consome por fragmento; o nome mora aqui. */
 export const MU_MINIMO_DO_LIMBO = 0.05;
 
+// ─── A LEI DE TELA — três regimes, UM texto (M5) ──────────────────────────
+//
+// Como um tamanho FÍSICO em pc vira pixel, e o que se faz com o fluxo em
+// cada regime. Ela não é a repartição do §1 (aquela decide ponto × disco);
+// é a aritmética de tela que toda fonte pontual desta casa paga depois:
+//
+//   px < PISO      — não há disco para desenhar: o fluxo cai com px²
+//                    (`subPix`), suavidade a distância em vez de cintilação
+//   PISO … PLATÔ   — brilho de superfície constante: o ponto cresce e o
+//                    pico fica
+//   PLATÔ … TETO   — platô: o pico cai com 1/px², o depósito total fica
+//   px > TETO      — o tamanho para no teto e o depósito cai com 1/px²
+//
+// Os dois últimos regimes são ANTI-ESTOURO POR CAMADA e estão nomeados
+// como dívida na Lei (§2: "a estrela ESCURECE ao ser aproximada"); eles
+// morrem no M6, quando o piso de sub-pixel único ficar sozinho aqui. O
+// que o M5 paga é a DUPLICIDADE: a mesma lei vivia redigitada em
+// `galaxyShaders.ts` (0,7 / 20 / px²÷0,49) e em `starForges.ts` (0,85 /
+// 26 / px²÷0,7225) — mesma ideia, números diferentes, e nada no repo
+// comparava os dois textos. Os números da CASA são os primeiros: a Lei §4
+// manda apagar a SEGUNDA cópia, e é ela que se dobra.
+
+/** Abaixo deste diâmetro em px não há disco para desenhar (§1). */
+export const PISO_DE_TELA_PX = 0.7;
+/** Onde o pico começa a cair com 1/px² para conservar o depósito. */
+export const PLATO_DE_TELA_PX = 3;
+/** O maior ponto que a casa escreve — acima dele o tamanho para. */
+export const TETO_DE_TELA_PX = 20;
+/**
+ * O piso AO QUADRADO — o divisor do regime sub-pixel. ESCRITO, não
+ * derivado, e a razão é exatamente a doença que esta lei existe para
+ * curar: `0.7 * 0.7` em float64 dá 0,48999999999999994, e um shader que
+ * imprime `0.49` com um TS que multiplica seriam DUAS leis separadas por
+ * uma casa decimal que ninguém lê. `estrela.test.ts` cobra a relação com
+ * a tolerância do float, e as duas faces leem este número.
+ */
+export const PISO_DE_TELA_AO_QUADRADO = 0.49;
+
+export interface TelaDaFonte {
+  /** o `gl_PointSize` a escrever: px cortado entre o piso e o teto */
+  pontoPx: number;
+  /** anti-estouro: acima do platô o pico cai com (PLATÔ/px)² */
+  shrink: number;
+  /** abaixo do piso o fluxo cai com (px/PISO)² */
+  subPix: number;
+}
+
+/** A face CPU da lei de tela — a MESMA conta de `GLSL_LEI_DE_TELA`,
+ *  palavra por palavra (a conformidade é numérica, `estrela.test.ts`). */
+export function leiDeTela(px: number): TelaDaFonte {
+  return {
+    pontoPx: Math.min(TETO_DE_TELA_PX, Math.max(PISO_DE_TELA_PX, px)),
+    shrink: Math.min(1, (PLATO_DE_TELA_PX * PLATO_DE_TELA_PX) / Math.max(px * px, 1e-4)),
+    subPix: px < PISO_DE_TELA_PX ? (px * px) / PISO_DE_TELA_AO_QUADRADO : 1,
+  };
+}
+
 // ─── AS FUNÇÕES DA LEI ────────────────────────────────────────────────────
 
 /** O smoothstep de GLSL, palavra por palavra, em float64 — as duas faces
@@ -553,5 +610,23 @@ float raioDaAsaPx(float picoDeTela, float sigmaPx) {
   if (excesso <= 1.0) return 0.0;
   float theta0 = ${NUCLEO_DA_ASA_EM_SIGMAS.toFixed(1)} * sigmaPx;
   return theta0 * sqrt(pow(excesso, ${1 / BETA_DA_ASA}) - 1.0);
+}
+`;
+
+// A LEI DE TELA em GLSL — texto separado porque quem a consome (as forjas,
+// as partículas da galáxia) não precisa da repartição inteira, e um `#include`
+// que arrasta função morta é custo de compilação sem imagem.
+//
+// `toFixed` é o mesmo cinto do `glslNumber` da cartografia: o literal impresso
+// tem de ser o MESMO float que o TS calcula, senão as duas faces divergem numa
+// casa decimal que ninguém lê.
+export const GLSL_LEI_DE_TELA = /* glsl */ `
+// A lei de tela — três regimes, gerada das constantes de estrela.ts.
+void leiDeTela(float px, out float pontoPx, out float shrink, out float subPix) {
+  pontoPx = clamp(px, ${PISO_DE_TELA_PX.toFixed(2)}, ${TETO_DE_TELA_PX.toFixed(1)});
+  shrink = min(1.0, ${(PLATO_DE_TELA_PX * PLATO_DE_TELA_PX).toFixed(1)} / max(px * px, 1e-4));
+  subPix = px < ${PISO_DE_TELA_PX.toFixed(2)}
+    ? (px * px) / ${PISO_DE_TELA_AO_QUADRADO.toFixed(4)}
+    : 1.0;
 }
 `;

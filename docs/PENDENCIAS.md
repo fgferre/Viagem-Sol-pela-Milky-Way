@@ -250,6 +250,21 @@ E um aviso dele sobre as legendas novas (que ele gostou): *“gostei das
 suas sugestoes, mas talvez teria que adaptar um pouco design/layout UI
 para acomodar”* — conferir na mesma exibição.
 
+**69. As forjas ficaram mais claras de longe — a dose delas espera o
+olho dele.** (Achado no M5, 22/08.) As 5.400 e tantas regiões de
+formação de estrelas (H II, masers, aglomerados jovens, Cefeidas,
+proxy OB) largaram a cópia própria da lei de tela e passaram à lei da
+casa: piso 0,85 → 0,7 px e teto 26 → 20 px. De longe elas clareiam até
+1,47× e de perto escurecem para 0,59×. O fluxo total no sub-pixel é o
+mesmo dos dois lados — o que muda é a repartição —, mas a DOSE delas
+(`aIntensity`, artística) foi calibrada sob o piso velho, e a régua da
+galáxia mediu o preço: no face-on o `clumpError` piorou 0,1581 → 0,1741
+e o `grain` 0,0874 → 0,0877 (ledger, rodada 44); as outras notas e o
+edge-on inteiro não se mexeram. Re-dosar é GOSTO, não migração: a foto
+está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
+— fica mais bonito com os berçários assim, mais fracos, ou como
+estavam?
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos

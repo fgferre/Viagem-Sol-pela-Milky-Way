@@ -2306,7 +2306,7 @@ export class Director {
         const pos = pts.geometry.attributes.position;
         const v = new THREE.Vector3();
         // margem: ponto FORA do frustum ainda aparece pelo tamanho dele (até
-        // uMaxPx = 20 px). A 8 kpc, 10 px valem ~37 pc; 50 é folga honesta.
+        // o teto da lei de tela, 20 px). A 8 kpc, 10 px valem ~37 pc; 50 é folga.
         const sp = new THREE.Sphere(new THREE.Vector3(), 50);
         let dentro = 0;
         for (let i = 0; i < pos.count; i++) {

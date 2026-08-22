@@ -28,6 +28,12 @@ import {
   TROCA_PX_PADRAO,
   discoAparentePx,
   GLSL_LEI_DA_ESTRELA,
+  GLSL_LEI_DE_TELA,
+  PISO_DE_TELA_AO_QUADRADO,
+  PISO_DE_TELA_PX,
+  PLATO_DE_TELA_PX,
+  TETO_DE_TELA_PX,
+  leiDeTela,
   repartir,
   type EstadoDaEstrela,
   type Instrumento,
@@ -211,6 +217,64 @@ describe('2. as duas faces batem — conformidade numérica, molde do F0', () =>
 
   it('o texto GLSL gerado não vazou lixo de interpolação', () => {
     expect(GLSL_LEI_DA_ESTRELA).not.toMatch(/undefined|NaN/);
+  });
+
+  // ─── A LEI DE TELA (M5) ─────────────────────────────────────────────
+  //
+  // A conformidade é NUMÉRICA (§8.6): o texto GLSL é lido pelo seu
+  // TRANSLITERADOR — os literais que ele imprime são extraídos e
+  // reavaliados em float64 — e comparados com `leiDeTela` sobre grade.
+  // Uma casa decimal a menos no `toFixed` quebra aqui, que é exatamente
+  // a divergência que a lei existe para tornar impossível.
+  it('a face GLSL da lei de tela imprime os MESMOS floats da face TS', () => {
+    const numeros = (re: RegExp) => {
+      const m = GLSL_LEI_DE_TELA.match(re);
+      expect(m, `${re} não achou o literal no GLSL gerado`).not.toBeNull();
+      return (m as RegExpMatchArray).slice(1).map(Number);
+    };
+    const [pisoClamp, teto] = numeros(/clamp\(px, ([\d.]+), ([\d.]+)\)/);
+    const [plato2] = numeros(/min\(1\.0, ([\d.]+) \/ max/);
+    const [pisoIf] = numeros(/px < ([\d.]+)\n/);
+    const [piso2] = numeros(/\/ ([\d.]+)\n/);
+    expect(pisoClamp).toBe(PISO_DE_TELA_PX);
+    expect(pisoIf).toBe(PISO_DE_TELA_PX);
+    expect(teto).toBe(TETO_DE_TELA_PX);
+    expect(plato2).toBe(PLATO_DE_TELA_PX * PLATO_DE_TELA_PX);
+    expect(piso2).toBe(PISO_DE_TELA_AO_QUADRADO);
+    // e o número escrito É o quadrado do piso, dentro do float — a relação
+    // que a constante escrita à mão poderia perder em silêncio
+    expect(PISO_DE_TELA_AO_QUADRADO).toBeCloseTo(PISO_DE_TELA_PX * PISO_DE_TELA_PX, 15);
+    expect(GLSL_LEI_DE_TELA).not.toMatch(/undefined|NaN/);
+    // e a transliteração completa bate com a face TS em toda a grade
+    for (let logPx = -2; logPx <= 3; logPx += 0.037) {
+      const px = Math.pow(10, logPx);
+      const t = leiDeTela(px);
+      expect(t.pontoPx, `${px} px`).toBe(Math.min(teto, Math.max(pisoClamp, px)));
+      expect(t.shrink, `${px} px`).toBe(Math.min(1, plato2 / Math.max(px * px, 1e-4)));
+      expect(t.subPix, `${px} px`).toBe(px < pisoIf ? (px * px) / piso2 : 1);
+    }
+  });
+
+  it('a lei de tela conserva o DEPÓSITO no sub-pixel, seja qual for o piso', () => {
+    // por que os dois pisos da casa velha (0,7 e 0,85) depositavam o mesmo:
+    // abaixo do piso o depósito é pontoPx² · subPix = piso² · px²/piso² = px².
+    // É por isso que o M5 não é uma mudança de FLUXO nas forjas fracas — é
+    // uma mudança de REPARTIÇÃO (o mesmo fluxo, num ponto de outro tamanho).
+    for (const px of [0.05, 0.2, 0.4, 0.6, 0.69]) {
+      const t = leiDeTela(px);
+      expect(t.pontoPx * t.pontoPx * t.subPix).toBeCloseTo(px * px, 12);
+    }
+  });
+
+  it('a lei de tela é contínua nas duas fronteiras — piso e platô', () => {
+    const eps = 1e-9;
+    for (const p of [PISO_DE_TELA_PX, PLATO_DE_TELA_PX, TETO_DE_TELA_PX]) {
+      const a = leiDeTela(p - eps);
+      const b = leiDeTela(p + eps);
+      expect(a.pontoPx, `pontoPx em ${p}`).toBeCloseTo(b.pontoPx, 8);
+      expect(a.shrink, `shrink em ${p}`).toBeCloseTo(b.shrink, 8);
+      expect(a.subPix, `subPix em ${p}`).toBeCloseTo(b.subPix, 8);
+    }
   });
 
   it('discoAparentePx === diametroAparentePx da régua do palco, bit a bit', () => {

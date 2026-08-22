@@ -403,6 +403,39 @@ const PROIBIDOS: SimboloProibido[] = [
       'o β da compressão chega DENTRO da calibração da casa; importá-lo à ' +
       'parte era o terceiro endereço do instrumento nesta camada',
   },
+
+  // ─── M5 (2026-08-22): a lei de tela de três regimes é UMA ──────────────
+  {
+    arquivo: 'src/three/world/starForges.ts',
+    padrao: /0\.7225|clamp\(px, 0\.85/,
+    migracao: 'M5',
+    razao:
+      'a SEGUNDA cópia da lei de tela (piso 0,85 / teto 26 / px²÷0,7225) — ' +
+      'a que a Lei §4 mandou apagar. A camada chama `leiDeTela` de estrela.ts',
+  },
+  {
+    arquivo: 'src/three/shaders/galaxyShaders.ts',
+    padrao: /clamp\(px, 0\.7|\/ 0\.49/,
+    migracao: 'M5',
+    razao:
+      'a PRIMEIRA cópia — os números eram os da casa, e é por isso que a ' +
+      'lei nasceu com eles; redigitá-los aqui recria a divergência de piso ' +
+      'e teto que o censo de 21/08 mediu',
+  },
+  {
+    arquivo: 'src/three/shaders/galaxyShaders.ts',
+    padrao: /uniform float uMaxPx|uMaxPx\s*[:)]/,
+    migracao: 'M5',
+    razao:
+      'o teto do ponto é da lei (TETO_DE_TELA_PX): o uniform tinha um valor ' +
+      'só (20) e nenhum lado A — knob morto, regra iv',
+  },
+  {
+    arquivo: 'src/three/world/galaxy.ts',
+    padrao: /uMaxPx\s*[:)]|sharedUniforms\(\d/,
+    migracao: 'M5',
+    razao: 'quem escrevia o teto de 20 px no material era esta linha; agora é a lei',
+  },
 ];
 
 /**

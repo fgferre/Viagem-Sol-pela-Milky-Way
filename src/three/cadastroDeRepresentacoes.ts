@@ -204,7 +204,12 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     id: 'particulas-da-galaxia',
     nome: 'partículas da galáxia (4,02 M)',
     arquivos: ['src/three/world/galaxy.ts', 'src/three/shaders/galaxyShaders.ts'],
-    consomeL1: false,
+    // consumo PARCIAL desde o M5, no molde do catálogo HYG: a LEI DE TELA
+    // (piso 0,7 / platô 3 / teto 20) saiu daqui e virou `leiDeTela` em
+    // `estrela.ts` — os números eram os DA CASA, então esta camada não moveu
+    // um pixel; o que mudou foi a direção da dependência. `uMaxPx` morreu
+    // com ela. A migração de REPRESENTAÇÃO continua sendo o M6.
+    consomeL1: true,
     leiVelhaApagada: false,
     fatorDeBrilho: null,
     destino: 'migra',
@@ -212,7 +217,9 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     emiteGlPointSize: true,
     razao:
       'aAlpha artístico vira fluxo na unidade; o platô 3–20 px e o ramo 1/px² ' +
-      '(a estrela que ESCURECE ao aproximar) morrem; maior risco visual — por último',
+      '(a estrela que ESCURECE ao aproximar) morrem; maior risco visual — por ' +
+      'último. Desde o M5 a lei de TELA já é a única (estrela.ts): o que falta ' +
+      'aqui é a lei de FLUXO',
   },
   {
     id: 'laminas',
@@ -232,28 +239,53 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   {
     id: 'glows-do-nucleo',
     nome: 'glow do bojo, halo térmico, anã de Sagitário, marcador do Sol',
-    arquivos: ['src/three/world/galaxy.ts'],
+    // o arquivo que os DESENHA é o dos shaders (GLOW_VERT/GLOW_FRAG), e ele
+    // faltava aqui: a entrada citava só quem instancia os quatro materiais
+    arquivos: ['src/three/world/galaxy.ts', 'src/three/shaders/galaxyShaders.ts'],
     consomeL1: false,
     leiVelhaApagada: false,
     fatorDeBrilho: null,
     destino: 'migra',
-    migracao: 'M5',
+    // DIVERGÊNCIA DECLARADA NO M5, no molde da do CME no M2: o M5 é a LEI
+    // DE TELA — como um tamanho em pc vira pixel — e estes quatro NÃO têm
+    // lei de tela nenhuma para apagar. São billboards de tamanho FÍSICO em
+    // pc (uSize), sem px, sem clamp, sem piso: quem cuida do estouro de
+    // perto é uma rampa de mão (`glowGate`, 5–13 kpc) e quem cuida do
+    // tamanho é a projeção. O que sobra neles é FONTE fora-da-unidade — o
+    // ganho artístico das rodadas 17–24, calibrado a olho pelo dono — e
+    // esse é o assunto do M7, com o raymarch e os splats.
+    migracao: 'M7',
     emiteGlPointSize: false,
-    razao: 'um GLOW_FRAG só; barato, um shader',
+    razao:
+      'um GLOW_FRAG só, e ele não emite ponto: são QUADS de tamanho físico ' +
+      'em pc, sem lei de tela para migrar (a do M5 é dos EMISSORES DE ' +
+      'PONTO). O que falta é a EMISSÃO na unidade da casa — uColor carrega ' +
+      'ganho de autor (glowgain, halo 0,3, as doses 0,32/0,11 do update) — e ' +
+      'isso entra no M7 com o resto emissivo. O 1310 pc cravado na fenda ' +
+      '(item 65) era outra dívida desta peça e foi paga à parte: a fenda ' +
+      'segue a MESMA âncora gerada dos outros nove shaders',
   },
   {
     id: 'forjas',
     nome: 'forjas estelares (5 populações)',
     arquivos: ['src/three/world/starForges.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
+    consomeL1: true,
+    leiVelhaApagada: true,
     fatorDeBrilho: null,
     destino: 'migra',
     migracao: 'M5',
     emiteGlPointSize: true,
     razao:
-      'carrega a SEGUNDA cópia da lei de tela de três regimes (piso 0,85 / teto 26 / ' +
-      'px²/0,7225) — a cópia morre junto',
+      'FECHADO no M5: carregava a SEGUNDA cópia da lei de tela de três ' +
+      'regimes (piso 0,85 / teto 26 / px²÷0,7225) e ela MORREU — a camada ' +
+      'chama `leiDeTela` de estrela.ts, nos números da casa (0,7 / 3 / 20). ' +
+      'Muda pixel, e o delta é o assunto do commit: o depósito total é o ' +
+      'mesmo nos dois pisos (px² dos dois lados), então o que se move é a ' +
+      'REPARTIÇÃO — a forja de sub-pixel deixa de ser dividida por 0,7225 e ' +
+      'clareia até 1,47×, e a forja gigante de perto perde 0,59× (teto 20 ' +
+      'em vez de 26, com o mesmo shrink). fatorDeBrilho fica null e a ' +
+      'dívida tem nome: aIntensity é artístico (0,16 por confiança nas H II, ' +
+      '0,34 nos masers…), unidade que só entra na casa com o resto emissivo',
   },
   {
     id: 'raymarch-stellar',
