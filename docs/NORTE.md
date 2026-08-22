@@ -364,6 +364,7 @@ Não reabrir sem que a condição listada mude.
 | `forgetau` desligado | Dosagem edge calibrada sem extinção nas forjas | Re-dosagem conjunta medida |
 | A ida e volta não é mais juiz obrigatório | Dono em 21/08: *"essa viagem ida e volta não é mais relevante"* — o run inteiro cobrava horas | A mudança ser de transição ou histerese: aí `voo-ida-e-volta.mjs` volta, como instrumento |
 | Pupila adaptativa: não | Dono: o campo estelar nunca esmaece. Medido: 16 stops ao focar Sirius | — |
+| A UI/UX vai ser revista | Dono em 21/08: Atlas ganha botão na abertura, e o celular ganha controles menores e escondidos que expandem (a ideia do drawer do projeto Atlas). Separar Ajustes em visitante × laboratório ele recusou. Itens 60, 61 e 62 | — (é onda de desenho: mockups antes de código) |
 
 ---
 

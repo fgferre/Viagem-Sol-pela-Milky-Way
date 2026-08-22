@@ -224,6 +224,18 @@ junto. As fotos já existem (`capturas/luz-*.png`, a escada inteira);
 falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
 
+**60. Atlas na abertura — DECISÃO DELE, 21/08: SIM.**
+Perguntado se a abertura devia ter um botão de entrar no Atlas ao lado
+de "Iniciar a viagem", ele respondeu: *"1. sim"*.
+
+Medido em 21/08: hoje o caminho para o Atlas é único e tem 3 cliques —
+Iniciar a viagem → Pausar → Entrar no Atlas. A palavra "Atlas" não
+aparece na abertura, e "Explorar livremente" é o voo livre, outra coisa.
+
+O que falta: um terceiro botão na abertura, ao lado de "Iniciar a
+viagem" e "Explorar livremente", que entre no Atlas. É pequeno; o juiz
+é o `a11y.mjs` (foco, Esc, escala de UI).
+
 **54. O filme espera a exibição do dono — agora com o gesto da Lua.**
 Palavras dele no pedido, 19/08: *“quando estivesse passando poderia dar
 uma leve desacelerada e virar rapidamente a camera para ela e desvirar
@@ -317,6 +329,36 @@ textura nova vem pela rede —, e isso está declarado no próprio
 `reassarMundo` e no `NORTE.md`. O conserto sem véu é double-buffer por
 corpo: assar a textura nova em paralelo e trocar o ponteiro num quadro
 só, que é o que a letra C já faz com a galáxia e o Sol.
+
+**61. Rever a UI/UX inteira — DECISÃO DELE, 21/08.**
+Perguntado se queria separar os Ajustes em "preferências do visitante" e
+"laboratório" (medido: 32 controles hoje, 22 técnicos — curva de tom,
+exposição, 17 camadas — e 10 de visitante), ele respondeu:
+
+> *"2. nao, mas acho que podemos rever essa UI/UX (atlas tinha ideias
+> boas de UX/UI e outros Apps tem até coisas melhores)"*
+
+Ou seja: **não** é para separar os Ajustes. O que ele pediu é uma
+revisão da interface inteira, trazendo as ideias boas do projeto Atlas
+(`docs/PLANO-ATLAS.md`) e referências de outros aplicativos. É onda de
+desenho: precisa de mockups antes de código.
+
+**62. Celular: controles menores que expandem — DECISÃO DELE, 21/08.**
+Perguntado se telas pequenas valem o esforço (medido: no Atlas, a
+320×568 sobram 103 px de universo, 18% da tela; a 390×844 sobram 42%;
+nenhum juiz abre 320 ou 390 px, e a quebra de CSS em 760 px ninguém
+julga), ele respondeu:
+
+> *"3. tela grande resultado melhor, mas acho que podemos criar
+> alternativas de cotnrole menores e escondigos que expandam para
+> celular, o proprio projeto atlas tinhas as abas animadas (drawer) que
+> podiamos trazer a ideia (com execucao bem melhor fieta por sua
+> coordenacao)"*
+
+Tela grande continua sendo o resultado principal. O que entra é o
+controle pequeno e escondido que expande — a ideia das abas animadas
+(drawer) do projeto Atlas, com execução melhor. Junto vai um juiz que
+abra 390 px, porque hoje nenhum abre.
 
 ---
 
