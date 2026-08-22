@@ -13,6 +13,7 @@
 // uma peça portalizada para o `body` (ou aninhada numa outra) apareceria
 // nas 18 vistas oficiais e o filme perderia pixel.
 // ============================================================
+import { useEffect, useRef, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_DO_ATLAS, NOME_DO_SISTEMA } from '../three/atlasConfig';
 import {
@@ -141,20 +142,46 @@ export function GavetaDeCamadas({
 }
 
 /**
- * O SELO DE HONESTIDADE (D1). Dois eixos, duas linhas — e as linhas SÃO
- * os controles: cada uma diz o estado de agora e, quando há o que
- * desfazer, o que o clique vai produzir.
+ * O SELO DE HONESTIDADE (D1), DOBRADO EM UMA LINHA — item 61, 22/08.
  *
- * ESCALA não tem porta de URL: ela sai da geometria (`escalaDaVista`), e
- * o caminho de volta é enquadrar o sistema — o único enquadramento em
- * que o que domina o quadro é 1:1. BRILHO sai do registro único de
- * caminhos, e o clique desfaz tudo que é desfazível; o que não for, o
- * selo continua declarando em vez de fingir que resolveu.
+ * A QUEIXA DO DONO, palavra por palavra: *"o selo de honestidade é
+ * complexo e nao funciona direito, no proejto atlas ele era muito mais
+ * simples e menos invasivo, porque virou isso aqui?"*. E o fato que ela
+ * media: o selo daqui NÃO FECHAVA. Quatro blocos sempre abertos (a tese,
+ * a linha ESCALA, a linha BRILHO com a lista de desvios colada por "·" e
+ * o rodapé de procedência) ocupavam 3,2% da tela de mesa e 10,1% de um
+ * celular — permanentes, sobre a cena, sem ninguém ter pedido.
  *
- * A lista de desvios é UMA linha de altura fixa, truncada com reticências
- * — o retângulo útil do enquadramento desconta a altura deste bloco, e um
- * bloco que cresce com o número de desvios moveria a câmera. A lista
- * inteira vai no nome acessível do botão, que não tem limite de largura.
+ * O QUE MUDOU É A APRESENTAÇÃO, E SÓ ELA. A LEI do selo não se toca: as
+ * frases, o `REGISTRO` de caminhos e os dois eixos são os mesmos, e
+ * `selo.ts` continua sendo o único lugar que decide o que o selo DIZ.
+ * Aqui só se decide o que a tela mostra de uma vez.
+ *
+ * FECHADO é UMA LINHA, no molde do doador: ● ESCALA REAL · BRILHO
+ * ASSISTIDO ▸. A bolinha é a cor do PIOR EIXO (âmbar se qualquer um
+ * desvia, verde só quando os dois estão em real) — o resumo agregado que
+ * deixa o visitante saber, sem ler, se há algo a saber.
+ *
+ * ABERTO é o conteúdo de sempre, organizado: a tese, a linha ESCALA, a
+ * linha BRILHO com os desvios ativos, OS CULPADOS (quem está inflado e
+ * quanto — o campo que `estadoDoSelo` devolve desde 4e8bedb e que a tela
+ * nunca mostrou: era promessa cobrada só pelo teste) e o rodapé de
+ * procedência. Cada linha continua sendo o PRÓPRIO controle: clicar em
+ * ESCALA enquadra o sistema, clicar em BRILHO desfaz o que é desfazível,
+ * e a linha que já está em real fica desabilitada em vez de mentir uma
+ * ação.
+ *
+ * A GAVETA É `position: absolute` (fatia 4 do HUD): ela cresce PARA CIMA
+ * sem mover a caixa fechada. Não é estilo — é o que mantém a área do HUD
+ * permanente igual aberta e fechada, e o retângulo útil do enquadramento
+ * (`retanguloDoAtlas.ts`) desconta área permanente, não painel que o
+ * visitante abriu por um instante. Um selo que empurrasse ao abrir moveria
+ * a câmera no clique.
+ *
+ * O ESTADO ABERTO/FECHADO NÃO VAI PARA A URL NEM PARA O STORAGE: é
+ * chrome, não domínio. Link copiado com o selo aberto reproduziria uma
+ * decisão de leitura de outra pessoa, e a URL desta casa é espelho da
+ * VISTA.
  */
 export function Selo({
   vista,
@@ -175,53 +202,136 @@ export function Selo({
   onEscalaReal: () => void;
   onBrilhoReal: () => void;
 }) {
-  const { escala, brilho, desvios } = estadoDoSelo(vista);
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+  const { escala, brilho, desvios, culpados } = estadoDoSelo(vista);
   const lista = desvios.map((d) => d.rotulo).join(' · ');
   const daParaVoltar = desvios.some((d) => d.volta !== 'nenhuma');
+  const escalaReal = escala === 'real';
+  const brilhoReal = brilho === 'real';
+  /** o PIOR EIXO decide a bolinha do resumo: um desvio já tinge os dois */
+  const algumDesvia = !escalaReal || !brilhoReal;
+
+  /**
+   * AS DUAS SAÍDAS que não são o clique na própria linha: Esc e clique
+   * fora. Ambas em CAPTURA, e a razão é a ordem de quem reivindica o Esc
+   * dentro do Atlas (`useAtalhos.ts`): DIÁLOGO ABERTO COME O Esc
+   * PRIMEIRO — por isso a guarda `[data-dialogo]`, a mesma do atalho —,
+   * depois este selo, e só o Esc que ninguém reivindicou sobe a escada.
+   * Sem a captura, o `subirDegrau()` da janela levaria a câmera junto com
+   * o fechamento, que são duas coisas num gesto só.
+   *
+   * O clique fora NÃO cancela o evento: quem clica na cena está girando a
+   * câmera, e fechar o selo não pode custar o arrasto.
+   */
+  useEffect(() => {
+    if (!aberto) return;
+    const onTecla = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || document.querySelector('[data-dialogo]')) return;
+      e.preventDefault();
+      setAberto(false);
+    };
+    const onFora = (e: Event) => {
+      if (!caixa.current?.contains(e.target as Node)) setAberto(false);
+    };
+    window.addEventListener('keydown', onTecla, true);
+    window.addEventListener('pointerdown', onFora, true);
+    return () => {
+      window.removeEventListener('keydown', onTecla, true);
+      window.removeEventListener('pointerdown', onFora, true);
+    };
+  }, [aberto]);
+
   return (
-    <div className="atlas-selo" aria-label="Selo de honestidade desta vista">
-      <p className="atlas-selo-tese">{TESE_DO_SELO}</p>
+    <div
+      className="atlas-selo"
+      ref={caixa}
+      role="group"
+      aria-label="Selo de honestidade desta vista"
+    >
+      {aberto && (
+        <div id="atlas-selo-detalhe" className="atlas-selo-detalhe hud-cartao">
+          <p className="atlas-selo-tese">{TESE_DO_SELO}</p>
 
+          <button
+            type="button"
+            className={`atlas-selo-linha ${escalaReal ? 'real' : 'desvio'}`}
+            onClick={onEscalaReal}
+            disabled={escalaReal}
+            aria-label={
+              escalaReal
+                ? `${ESCALA_REAL}: o que domina o quadro está em 1:1`
+                : `${FORA_DE_ESCALA}: o disco do Sol nesta vista é ator. Clique para enquadrar o sistema em escala real`
+            }
+          >
+            <span className="atlas-selo-eixo">escala</span>
+            <strong>{escalaReal ? ESCALA_REAL : FORA_DE_ESCALA}</strong>
+            <em>{escalaReal ? 'o quadro está em 1:1' : 'clique: enquadrar em escala real'}</em>
+          </button>
+
+          {/* OS CULPADOS, e eles só saem quando há acusação: `estadoDoSelo`
+              devolve a lista vazia com a escala em real. Um selo que
+              acusasse numa vista honesta seria o erro simétrico ao de calar
+              numa vista mentirosa. Ficam SOB a linha ESCALA porque é dela
+              que a acusação sai (a dívida de tamanho do cadastro). */}
+          {culpados.length > 0 && (
+            <ul className="atlas-selo-culpados">
+              {culpados.map((c) => (
+                <li key={c}>{c}</li>
+              ))}
+            </ul>
+          )}
+
+          <button
+            type="button"
+            className={`atlas-selo-linha ${brilhoReal ? 'real' : 'desvio'}`}
+            onClick={onBrilhoReal}
+            disabled={brilhoReal || !daParaVoltar}
+            aria-label={
+              brilhoReal
+                ? `${BRILHO_REAL}: nada foi ajustado nesta vista`
+                : `${BRILHO_ASSISTIDO}. Ajustado: ${lista}.`
+                + (daParaVoltar ? ' Clique para voltar ao brilho real.' : '')
+            }
+          >
+            <span className="atlas-selo-eixo">brilho</span>
+            <strong>{brilhoReal ? BRILHO_REAL : BRILHO_ASSISTIDO}</strong>
+            <em>
+              {brilhoReal
+                ? 'a fotometria da casa, sem ajuste'
+                : daParaVoltar
+                  ? `clique: voltar ao real — ${lista}`
+                  : lista}
+            </em>
+          </button>
+
+          <p className="atlas-selo-legenda">
+            {legendaDaProcedencia(cartografiaMedida, cartografiaDesligada)}
+          </p>
+        </div>
+      )}
+
+      {/* A LINHA FECHADA, e ela é a última no DOM de propósito: a gaveta
+          sobe por cima da cena e esta linha fica encostada na tarja de
+          baixo, onde o selo sempre morou. */}
       <button
         type="button"
-        className={`atlas-selo-linha ${escala === 'real' ? 'real' : 'desvio'}`}
-        onClick={onEscalaReal}
-        disabled={escala === 'real'}
-        aria-label={
-          escala === 'real'
-            ? `${ESCALA_REAL}: o que domina o quadro está em 1:1`
-            : `${FORA_DE_ESCALA}: o disco do Sol nesta vista é ator. Clique para enquadrar o sistema em escala real`
-        }
+        className={`atlas-selo-resumo ${algumDesvia ? 'desvio' : 'real'}`}
+        aria-expanded={aberto}
+        aria-controls="atlas-selo-detalhe"
+        title={TESE_DO_SELO}
+        onClick={() => setAberto((v) => !v)}
       >
-        <strong>{escala === 'real' ? ESCALA_REAL : FORA_DE_ESCALA}</strong>
-        <em>{escala === 'real' ? 'o quadro está em 1:1' : 'clique: enquadrar em escala real'}</em>
+        <span className="atlas-selo-bolinha" aria-hidden="true" />
+        <span>{escalaReal ? ESCALA_REAL : FORA_DE_ESCALA}</span>
+        <span className="atlas-selo-meio" aria-hidden="true">
+          ·
+        </span>
+        <span>{brilhoReal ? BRILHO_REAL : BRILHO_ASSISTIDO}</span>
+        <span className="atlas-selo-seta" aria-hidden="true">
+          {aberto ? '▾' : '▸'}
+        </span>
       </button>
-
-      <button
-        type="button"
-        className={`atlas-selo-linha ${brilho === 'real' ? 'real' : 'desvio'}`}
-        onClick={onBrilhoReal}
-        disabled={brilho === 'real' || !daParaVoltar}
-        aria-label={
-          brilho === 'real'
-            ? `${BRILHO_REAL}: nada foi ajustado nesta vista`
-            : `${BRILHO_ASSISTIDO}. Ajustado: ${lista}.`
-            + (daParaVoltar ? ' Clique para voltar ao brilho real.' : '')
-        }
-      >
-        <strong>{brilho === 'real' ? BRILHO_REAL : BRILHO_ASSISTIDO}</strong>
-        <em title={lista}>
-          {brilho === 'real'
-            ? 'a fotometria da casa, sem ajuste'
-            : daParaVoltar
-              ? `clique: voltar ao real — ${lista}`
-              : lista}
-        </em>
-      </button>
-
-      <p className="atlas-selo-legenda">
-        {legendaDaProcedencia(cartografiaMedida, cartografiaDesligada)}
-      </p>
     </div>
   );
 }

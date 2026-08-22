@@ -167,9 +167,10 @@
    barra de controles.
    Numa coluna só quem empilha é o fluxo, e cada bloco recebe a LARGURA
    INTEIRA: os mesmos seis controles cabem em duas linhas, a dica em
-   duas, o selo em seis. O selo é o último — ele é quem cede (informação
-   permanente espera; ação em curso, não) e continua encostado na tarja
-   de baixo, como no canto de mesa.
+   duas, e o selo — desde que o item 61 o dobrou — numa só, aqui como no
+   canto de mesa (é a MESMA peça nas duas telas, que foi o pedido do
+   dono). O selo é o último — ele é quem cede (informação permanente
+   espera; ação em curso, não) e continua encostado na tarja de baixo.
 
    A GUARDA DE ALTURA (`min-height`) é o que impede o conserto de virar
    outro defeito: empilhar gasta ALTURA, e numa paisagem baixa (600×450
@@ -185,12 +186,27 @@
     max-width: none;
   }
   /* de volta ao FLUXO: é o que faz o selo empilhar com os outros dois em
-     vez de flutuar por cima deles. `width: auto` porque o `min(21rem,
-     42vw)` do canto de mesa é largura de COLUNA, e aqui a coluna é a
-     tela; o alinhamento à direita continua (é o traje do selo). */
+     vez de flutuar por cima deles. `relative` e não `static` porque a
+     gaveta do selo é `absolute` e precisa de um pai que a ancore — em
+     `static` ela subiria colada no `.hud-root` e apareceria no meio da
+     tela. `relative` não move nada: para o fluxo, é `static`.
+     O teto de largura sai porque o `min(21rem, 42vw)` do canto de mesa é
+     largura de COLUNA, e aqui a coluna é a tela; o alinhamento à direita
+     continua (é o traje do selo). */
   .atlas-rodape .atlas-selo {
-    position: static;
-    width: auto;
+    position: relative;
+    /* `bottom`/`right` VOLTAM A ZERO, e isto não é higiene: em `static`
+       o navegador IGNORA os dois, em `relative` ele os OBEDECE como
+       deslocamento. Sem esta linha o selo subia 7,4vh e ia parar em cima
+       da dica do modo — medido a 390×844: a caixa dele em y=703 contra a
+       dica em 715, uma dentro da outra. */
+    bottom: auto;
+    right: auto;
+    /* `align-self` porque a coluna ESTICA os filhos por padrão: sem isto
+       a caixa do selo mede a tela inteira (359 px num 390) enquanto a
+       linha desenhada mede 211, e o juiz de a11y mediria área que ninguém
+       vê. Encostada à direita, como no canto de mesa. */
+    align-self: flex-end;
     max-width: 100%;
   }
 }

@@ -79,7 +79,9 @@ const MERGE_MS = 2200;
  *  - `.atlas-rodape` empilha três blocos numa coluna só abaixo de 761 px;
  *  - `.atlas-selo` é `fixed` no canto de mesa e volta ao FLUXO na tela
  *    estreita — os dois arranjos com a mesma lei, e de quebra o rótulo
- *    para de nascer atrás do selo também na tela de mesa;
+ *    para de nascer atrás do selo também na tela de mesa; desde o item
+ *    61 ele é UMA linha fechada, e a gaveta que sobe dele reserva o
+ *    próprio retângulo enquanto está aberta;
  *  - `.filme-rodape` cresce com a legenda do beat e com a dica do
  *    pausar-e-olhar.
  * A linha de rumo, a distância do Sol e a barra de progresso ficam de
@@ -103,6 +105,13 @@ const AREAS_RESERVADAS = [
   '.atlas-contexto',
   '.atlas-rodape',
   '.atlas-selo',
+  // A GAVETA DO SELO (item 61, 22/08) entra por conta própria: ela é
+  // `absolute` e SOBE da linha fechada, então o retângulo dela não está
+  // dentro do `.atlas-selo` acima. Enquanto está aberta é um cartão
+  // opaco sobre a cena, e um nome escrito por baixo dele não existe para
+  // quem olha — a mesma razão das tarjas. Fechada, o seletor não casa
+  // com nada e não reserva nada.
+  '.atlas-selo-detalhe',
   '.filme-rodape',
 ].join(', ');
 

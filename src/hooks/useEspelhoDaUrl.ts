@@ -71,6 +71,24 @@ export function useEspelhoDaUrl(dep: {
     lerEscalaDaUi(new URLSearchParams(window.location.search).get('ui'))
   );
 
+  /**
+   * O CARIMBO DO REDESENHO — e ele existe por uma mentira MEDIDA em
+   * 22/08. A política de luz é estado do DIRECTOR (`definirLuz`) e não
+   * tem espelho em React, ao contrário do tom, da exposição e das
+   * camadas. Resultado: quando o único desvio era `luz`, o clique na
+   * linha BRILHO do selo trocava a luz de verdade e escrevia `?luz=real`
+   * na URL — e o SELO continuava dizendo BRILHO ASSISTIDO na tela, até
+   * um redesenho por outro motivo passar por ali. É a doença do item 10
+   * ("o selo só atualiza quando a interface redesenha") por outra porta,
+   * e ela passava calada porque o juiz de a11y só clicava em BRILHO
+   * DEPOIS de desligar uma camada, que redesenha por conta própria.
+   *
+   * NÃO É SEGUNDA VERDADE: ninguém lê este número. Ele só faz o React
+   * repintar, e quem repinta relê `director.selo`, que é a fonte única.
+   */
+  const [, carimbar] = useState(0);
+  const redesenhar = () => carimbar((n) => n + 1);
+
   // ANTES DE PINTAR, e antes do Director existir: o `--ui` da raiz é o
   // que move os `rem` do HUD e o termo `vw` dos `clamp`, e o número
   // vivo é o que o retângulo útil do Atlas lê a cada quadro. Efeito de
@@ -260,8 +278,11 @@ export function useEspelhoDaUrl(dep: {
         d.engine.setToneMapping('aces');
         setTom('aces');
       } else if (c.chave === 'luz') {
-        // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo')
+        // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo'), e o
+        // carimbo porque esta é a única linha sem espelho em React: sem
+        // ele o selo ficava dizendo ASSISTIDO sobre uma cena já real
         d.definirLuz('real');
+        redesenhar();
       } else {
         d.setLayerHidden(c.chave, false);
         setEscondidas((prev) => {

@@ -78,14 +78,16 @@ try {
   conferir(fase === 'atlas', `?foco= sozinha ABRE o Atlas (fase '${fase}')`);
   const alvo = await contexto(sessao);
   conferir(alvo === 'Sirius', `?foco=hd48915 põe Sirius em quadro (em quadro: "${alvo}")`);
+  // a LINHA FECHADA do selo (item 61, 22/08): os dois eixos numa frase
+  // só, que é o que fica na tela sem ninguém abrir nada
   const selo = await sessao.js(
-    "document.querySelector('.atlas-selo-linha strong').textContent"
+    "document.querySelector('.atlas-selo-resumo').innerText.replace(/\\n/g, ' ')"
   );
   // o eixo ESCALA sai da GEOMETRIA: enquadrar uma estrela a 2,6 pc tira
   // o quadro do domínio profundo, e o selo tem de dizer isso sozinho —
   // sem que a porta precise se declarar desvio (ela é neutra)
   conferir(
-    selo === 'FORA DE ESCALA',
+    selo.includes('FORA DE ESCALA'),
     `e o selo conta a verdade da vista sem a porta se declarar ("${selo}")`
   );
 

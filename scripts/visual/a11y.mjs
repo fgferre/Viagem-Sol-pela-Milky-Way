@@ -36,6 +36,14 @@ const JANELA = process.env.JANELA || '1200x900';
 // `?shot=1` (não `2`): congela transições e o relógio visual — o juiz não
 // espera fade nenhum — e MANTÉM o HUD na tela, que é o objeto do juízo.
 const PIN = 'q=cinema&shot=1';
+/**
+ * O TETO DA LINHA FECHADA do selo, em px de CSS a `ui = 1` — a medida de
+ * ÁREA que o item 61 trouxe (a derivação inteira está em
+ * `julgarAreaDoSelo`, lá embaixo). Mora aqui em cima porque `const` não
+ * sobe: a função é chamada antes desta linha no corpo do módulo, e
+ * declarar o número junto dela dava ReferenceError.
+ */
+const TETO_DA_LINHA_PX = 24;
 const falhas = [];
 const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
@@ -567,16 +575,18 @@ try {
       return JSON.stringify({ pc: s.distanciaPc });
     })()`);
     const longe = JSON.parse(seloLonge);
+    // a LINHA FECHADA é o que está na tela desde o item 61: os dois
+    // eixos numa frase só, sem precisar abrir nada
     const escalaLonge = await sessao.js(
-      "document.querySelector('.atlas-selo-linha strong').textContent"
+      "document.querySelector('.atlas-selo-resumo').innerText.replace(/\\n/g, ' ')"
     );
     conferir(
-      longe.pc > 1 && escalaLonge === 'FORA DE ESCALA',
+      longe.pc > 1 && escalaLonge.includes('FORA DE ESCALA'),
       `atlas: depois de visitar, o selo declara a vista NOVA — ${longe.pc.toFixed(1)} pc,`
         + ` "${escalaLonge}"`
     );
   }
-  // ---- o selo de honestidade (D1) ---------------------------------
+  // ---- o selo de honestidade (D1), DOBRADO EM UMA LINHA (item 61) --
   // Este bloco julga o selo NA ABERTURA. A F3 descobriu que ele passava
   // por sorte quando rodava depois de uma prova que move a câmera (lia
   // ESCALA REAL só porque o HUD ainda não tinha sido redesenhado); a F6
@@ -588,23 +598,79 @@ try {
   // desmentir o selo; aqui a mesma promessa é cobrada no navegador, com
   // os controles de verdade: desligar uma camada na gaveta tem de mover
   // o selo, e clicar na linha BRILHO tem de trazê-lo de volta.
+  //
+  // O QUE MUDOU EM 22/08 (item 61): o selo FECHA. O que está na tela o
+  // tempo inteiro é UMA linha — os dois eixos, a bolinha do pior deles e
+  // a seta —, e o resto (a tese, as duas linhas-controle, os culpados e a
+  // procedência) mora numa gaveta que sobe ao clique. As cobranças de
+  // sempre passam a valer sobre a gaveta ABERTA; as novas são sobre a
+  // linha fechada: ela nomeia os dois eixos sem abrir nada, declara
+  // `aria-expanded`, mede UMA linha de altura, e a gaveta de CAMADAS não
+  // pode mais cobri-la.
   // volta ao ENQUADRAMENTO DE ABERTURA: a prova do selo é sobre a vista
   // com que o Atlas abre, e a prova acima deixou a câmera numa estrela
   await sessao.ir(`atlas=1&${PIN}`);
-  const lerSelo = () => sessao.js(`(() => {
-    const s = document.querySelector('.atlas-selo');
-    if (!s) return null;
-    const [escala, brilho] = [...s.querySelectorAll('.atlas-selo-linha')];
+
+  /** o que a LINHA FECHADA diz — o único texto do selo que fica na tela */
+  const lerResumo = () => sessao.js(`(() => {
+    const r = document.querySelector('.atlas-selo-resumo');
+    if (!r) return null;
+    const b = r.getBoundingClientRect();
     return {
-      escala: escala.querySelector('strong').textContent,
-      brilho: brilho.querySelector('strong').textContent,
-      detalhe: brilho.querySelector('em').textContent,
-      brilhoClicavel: !brilho.disabled,
-      escalaClicavel: !escala.disabled,
+      texto: r.innerText.replace(/\\n/g, ' ').replace(/\\s+/g, ' ').trim(),
+      expandido: r.getAttribute('aria-expanded'),
+      controla: r.getAttribute('aria-controls'),
+      alto: Math.round(b.height),
+      largo: Math.round(b.width),
+      // com o selo fechado NÃO pode haver linha-controle na tela: elas
+      // são o conteúdo da gaveta, e vê-las fechado seria o selo aberto
+      // com outro nome
+      linhasNaTela: document.querySelectorAll('.atlas-selo-linha').length,
+      ui: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1,
     };
   })()`);
 
-  const inicial = await lerSelo();
+  /** abre a gaveta do selo (se já não estiver) e lê o que ela mostra */
+  const abrirSelo = async () => {
+    if (!(await sessao.js("document.querySelector('.atlas-selo-detalhe') !== null"))) {
+      await sessao.js("document.querySelector('.atlas-selo-resumo').click()");
+      await dorme(200);
+    }
+    return sessao.js(`(() => {
+      const d = document.querySelector('.atlas-selo-detalhe');
+      if (!d) return null;
+      const [escala, brilho] = [...d.querySelectorAll('.atlas-selo-linha')];
+      return {
+        escala: escala.querySelector('strong').textContent,
+        brilho: brilho.querySelector('strong').textContent,
+        detalhe: brilho.querySelector('em').textContent,
+        brilhoClicavel: !brilho.disabled,
+        escalaClicavel: !escala.disabled,
+        culpados: [...d.querySelectorAll('.atlas-selo-culpados li')]
+          .map((e) => e.textContent),
+        tudo: d.innerText.replace(/\\n/g, ' '),
+      };
+    })()`);
+  };
+
+  // 1. A LINHA FECHADA. Ela é o selo para quem só olha: os dois eixos
+  //    numa frase, e a promessa de que há mais atrás dela.
+  const fechado = await lerResumo();
+  conferir(
+    fechado !== null && /ESCALA REAL/.test(fechado.texto)
+      && /BRILHO ASSISTIDO/.test(fechado.texto),
+    `selo fechado: uma linha com os dois eixos — "${fechado?.texto}"`
+  );
+  conferir(
+    fechado !== null && fechado.expandido === 'false'
+      && fechado.controla === 'atlas-selo-detalhe' && fechado.linhasNaTela === 0,
+    `selo fechado: aria-expanded="${fechado?.expandido}", aria-controls`
+      + `="${fechado?.controla}", ${fechado?.linhasNaTela} linha(s)-controle na tela`
+  );
+
+  // 2. ABERTO: tudo que o selo dizia antes continua sendo dito, e é
+  //    aqui que se cobra.
+  const inicial = await abrirSelo();
   // DESDE O M2 a abertura do Atlas declara o BRILHO ASSISTIDO: a faixa
   // é comprimida na emissão para mundos distantes continuarem visíveis
   // (é a LEI da luz, não um desvio por quadro), e a política de luz dos
@@ -617,26 +683,79 @@ try {
     inicial !== null && inicial.escala === 'ESCALA REAL'
       && inicial.brilho === 'BRILHO ASSISTIDO'
       && /faixa comprimida/.test(inicial.detalhe),
-    `selo na abertura: "${inicial?.escala}" · "${inicial?.brilho}" — ${inicial?.detalhe}`
+    `selo aberto na abertura: "${inicial?.escala}" · "${inicial?.brilho}" — ${inicial?.detalhe}`
+  );
+  const aberto = await lerResumo();
+  conferir(
+    aberto !== null && aberto.expandido === 'true' && aberto.linhasNaTela === 2,
+    `selo aberto: aria-expanded="${aberto?.expandido}" e as DUAS linhas-controle na tela`
+      + ` (${aberto?.linhasNaTela})`
   );
   // A ASSISTÊNCIA NOVA DO ATLAS É DECLARADA ONDE O VISITANTE LÊ (M2 +
   // a dose por fase de 17/08): o rodapé de proveniência do selo NOMEIA
   // o clarão como artístico. E a gradação morta não pode ressuscitar no
   // estado — o vigia de CÓDIGO é simbolosProibidos.test; este é o de
   // runtime (item 48).
-  const rodape = await sessao.js(
-    "(document.querySelector('.atlas-selo')||{innerText:''}).innerText.replace(/\\n/g,' ')"
-  );
   const gradacaoMorta = await sessao.js('String(window.__director.selo.gradacao)');
   conferir(
-    /artístico:.*clarão/.test(rodape) && gradacaoMorta === 'undefined',
+    /artístico:.*clarão/.test(inicial.tudo) && gradacaoMorta === 'undefined',
     'selo: o rodapé declara o clarão como artístico, e a gradação segue morta'
   );
   conferir(
-    inicial !== null && inicial.brilhoClicavel && !inicial.escalaClicavel,
+    inicial.brilhoClicavel && !inicial.escalaClicavel,
     'selo: a linha com o que desfazer é controle; a que está em real, não'
   );
 
+  // 3. AS TRÊS SAÍDAS da gaveta: a própria linha, Esc e clique fora.
+  await sessao.js("document.querySelector('.atlas-selo-resumo').click()");
+  await dorme(200);
+  const porClique = await lerResumo();
+  // ENTER de verdade: `sessao.teclar` manda `rawKeyDown`, que dispara o
+  // evento e NÃO executa a ação padrão do navegador — com ele um
+  // `<button>` nunca é ativado pelo teclado, e a prova passaria a medir o
+  // harness em vez do HUD. `keyDown` com `text` é o Enter que o Chrome
+  // entrega a um controle nativo.
+  const ENTER = {
+    key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13,
+    nativeVirtualKeyCode: 13, text: '\r', unmodifiedText: '\r',
+  };
+  await sessao.js("document.querySelector('.atlas-selo-resumo').focus()");
+  await sessao.send('Input.dispatchKeyEvent', { ...ENTER, type: 'keyDown' });
+  await sessao.send('Input.dispatchKeyEvent', { ...ENTER, type: 'keyUp' });
+  await dorme(200);
+  const porEnter = await lerResumo();
+  // ESC NÃO PODE FAZER DUAS COISAS: dentro do Atlas ele também sobe um
+  // degrau da escada (`useAtalhos`), e um Esc que fechasse a gaveta E
+  // movesse a câmera junto seria um gesto com dois donos. Por isso a
+  // distância é medida dos dois lados da tecla.
+  const antesDoEsc = await sessao.js('window.__director.selo.distanciaPc');
+  await sessao.teclar('Escape');
+  await dorme(250);
+  const porEsc = await lerResumo();
+  const depoisDoEsc = await sessao.js('window.__director.selo.distanciaPc');
+  conferir(
+    porClique.expandido === 'false' && porEnter.expandido === 'true'
+      && porEsc.expandido === 'false',
+    'selo: a linha fecha no clique, abre no Enter e fecha no Esc'
+      + ` (${porClique.expandido} → ${porEnter.expandido} → ${porEsc.expandido})`
+  );
+  conferir(
+    antesDoEsc === depoisDoEsc,
+    `selo: o Esc que fecha a gaveta NÃO sobe a escada — a vista fica em`
+      + ` ${Number(depoisDoEsc).toFixed(6)} pc (era ${Number(antesDoEsc).toFixed(6)})`
+  );
+  await sessao.js("document.querySelector('.atlas-selo-resumo').click()");
+  await dorme(150);
+  await sessao.clicar(60, Math.round(0.5 * 900));
+  await dorme(250);
+  const porFora = await lerResumo();
+  conferir(
+    porFora.expandido === 'false',
+    `selo: clicar fora fecha a gaveta (aria-expanded="${porFora.expandido}")`
+  );
+
+  // 4. OS CONTROLES DE VERDADE: desligar uma camada move o selo, e o
+  //    clique na linha BRILHO desfaz.
   await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
   await dorme(150);
   await sessao.js(`(() => {
@@ -644,24 +763,32 @@ try {
     g.querySelector('input[type=checkbox]').click();
   })()`);
   await dorme(200);
-  const sujo = await lerSelo();
+  const sujo = await abrirSelo();
   conferir(
     sujo.brilho === 'BRILHO ASSISTIDO' && /camada desligada/.test(sujo.detalhe),
     `selo depois de desligar uma camada na gaveta: "${sujo.brilho}" — ${sujo.detalhe}`
   );
   conferir(sujo.brilhoClicavel, 'selo: com desvio desfazível, a linha BRILHO vira controle');
 
-  await sessao.js("document.querySelector('.atlas-selo-linha:nth-of-type(2)').click()");
+  await sessao.js(`(() => {
+    const [, brilho] = [...document.querySelectorAll('.atlas-selo-detalhe .atlas-selo-linha')];
+    brilho.click();
+  })()`);
   await dorme(250);
-  const voltou = await lerSelo();
+  const voltou = await abrirSelo();
+  const resumoDaVolta = await lerResumo();
   const urlLimpa = await sessao.js('location.search');
   const camadasVivas = await sessao.js(
     'JSON.stringify(window.__director.selo.camadasEscondidas)'
   );
   conferir(
-    voltou.brilho === 'BRILHO REAL' && camadasVivas === '[]',
+    voltou.brilho === 'BRILHO REAL' && camadasVivas === '[]'
+      // …e a LINHA FECHADA conta a mesma história: são as duas superfícies
+      // do mesmo veredito, e uma que ficasse para trás seria o selo
+      // mentindo por atraso (a doença do item 10)
+      && /BRILHO REAL/.test(resumoDaVolta.texto),
     `selo: clicar na linha BRILHO volta ao real ("${voltou.brilho}", escondidas=`
-      + `${camadasVivas})`
+      + `${camadasVivas}, linha fechada: "${resumoDaVolta.texto}")`
   );
   conferir(
     !urlLimpa.includes('nocat') && urlLimpa.includes('atlas')
@@ -676,12 +803,41 @@ try {
   // resultado tem de poder ser desligado pelo link: `?luz=real` faz o
   // Atlas abrir com o 1/d² cru nos corpos — e aí o selo diz REAL, que
   // é a verdade daquela vista. (O `?grad=` morreu no M1 junto com a
-  // gradação por contexto.)
+  // gradação por contexto.) Lido na LINHA FECHADA, que é onde o
+  // visitante vê sem clicar.
   await sessao.ir(`atlas=1&luz=real&${PIN}`);
-  const semAssistencia = await lerSelo();
+  const semAssistencia = await lerResumo();
   conferir(
-    semAssistencia.brilho === 'BRILHO REAL',
-    `?luz=real: o Atlas abre sem assistência e o selo diz "${semAssistencia.brilho}"`
+    /BRILHO REAL/.test(semAssistencia.texto),
+    `?luz=real: o Atlas abre sem assistência e a linha do selo diz "${semAssistencia.texto}"`
+  );
+
+  // 5. OS CULPADOS NA TELA (a promessa de 4e8bedb, cumprida em 22/08).
+  //    `estadoDoSelo` devolve QUEM está inflado e QUANTO desde então, e
+  //    até o item 61 só o teste puro via esse campo — a tela dizia FORA
+  //    DE ESCALA e calava. Um selo que acusa sem dizer o quê é aviso
+  //    legal, não honestidade. A vista é uma ESTRELA, que é onde a
+  //    escala sai do 1:1 do sistema solar.
+  await sessao.ir(`foco=sirius&${PIN}`);
+  const comCulpado = await abrirSelo();
+  const resumoCulpado = await lerResumo();
+  conferir(
+    comCulpado.escala === 'FORA DE ESCALA' && comCulpado.culpados.length > 0
+      && /Sagittarius/.test(comCulpado.culpados[0])
+      && /× maior/.test(comCulpado.culpados[0]),
+    `selo: fora de escala, a gaveta NOMEIA o culpado — ${comCulpado.culpados.join(' · ')}`
+  );
+  conferir(
+    /FORA DE ESCALA/.test(resumoCulpado.texto) && comCulpado.escalaClicavel,
+    `selo: a linha fechada acompanha ("${resumoCulpado.texto}") e a linha ESCALA vira controle`
+  );
+  // E O CONTRÁRIO: numa vista honesta o selo NÃO acusa ninguém. Acusar
+  // onde não há dívida é o erro simétrico ao de calar onde há.
+  await sessao.ir(`atlas=1&${PIN}`);
+  const semCulpado = await abrirSelo();
+  conferir(
+    semCulpado.escala === 'ESCALA REAL' && semCulpado.culpados.length === 0,
+    `selo: em escala real a lista de culpados nasce vazia (${semCulpado.culpados.length})`
   );
 
   // ---- O SELO ACOMPANHA O TIER NO ATO (item 10) --------------------
@@ -691,11 +847,13 @@ try {
   // F6 (enquadrarAgora move a câmera ANTES de avisar o HUD); medido em
   // 2026-08-18: 1–2 ms entre setQuality e o DOM. Esta prova vigia a
   // FIAÇÃO — um tier que mudasse a imagem sem mover o selo na tela
-  // seria o selo mentindo por atraso, que é a doença do item.
+  // seria o selo mentindo por atraso, que é a doença do item. A gaveta
+  // fica ABERTA durante ela: é lá que a lista de desvios mora agora.
   await sessao.js("window.__director.setQuality('alta')");
   const tierNaTela = await esperarPor(
     sessao,
-    "document.querySelector('.atlas-selo').innerText.includes('amostragem abaixo de cinema')"
+    "document.querySelector('.atlas-selo-detalhe').innerText"
+      + ".includes('amostragem abaixo de cinema')"
   );
   conferir(
     tierNaTela !== null && tierNaTela < 1000,
@@ -704,12 +862,15 @@ try {
   await sessao.js("window.__director.setQuality('cinema')");
   const tierVoltou = await esperarPor(
     sessao,
-    "!document.querySelector('.atlas-selo').innerText.includes('amostragem')"
+    "!document.querySelector('.atlas-selo-detalhe').innerText.includes('amostragem')"
   );
   conferir(
     tierVoltou !== null,
     `selo: a volta a cinema tira o desvio da tela (${tierVoltou} ms)`
   );
+
+  // ---- A ÁREA DO SELO E A GAVETA QUE PARA ACIMA DELE (item 61) -----
+  await julgarAreaDoSelo(sessao);
 
   // ---- A ESCADA DE NAVEGAÇÃO (F2b/D7) -----------------------------
   // Os dois botões novos da ContextLine com nome acessível pt-BR, o
@@ -900,6 +1061,89 @@ if (falhas.length) {
   process.exit(1);
 }
 process.stdout.write('\nJUIZ DE A11Y: tudo verde\n');
+
+// ============================================================
+// A ÁREA DO SELO (item 61, 22/08) — a medida que faltava.
+//
+// A QUEIXA DO DONO era de ÁREA e de invasão: *"o selo de honestidade é
+// complexo e nao funciona direito, no proejto atlas ele era muito mais
+// simples e menos invasivo"*. O selo de então não fechava — quatro
+// blocos permanentes sobre a cena —, e MEDIDO em 22/08 antes da obra:
+// 336×93 px (3,19% da tela) a 1200×900, 470×131 (6,32%) com `?ui=1,4`,
+// e 359×93 (10,10%) num celular de 390×844.
+//
+// Nenhum gate media isso: o retângulo útil (`medirCobertura`) cobra
+// declarado ≥ medido, ou seja, PERMITE o HUD crescer desde que a
+// declaração cresça junto — é detector de câmera enquadrando por baixo
+// do texto, não teto de invasão. Esta prova é o teto que faltava.
+//
+// AS DUAS COBRANÇAS:
+//  1. FECHADO É UMA LINHA. `TETO_DA_LINHA_PX` é o teto em pixels de CSS
+//     em `ui = 1`, multiplicado pelo fator — a linha mede ~16 px ali
+//     (14 em 0,85 e 23 em 1,4: ~16,5 px por unidade de ui), e uma
+//     segunda linha custaria ~32. O teto de 24 passa folgado numa linha
+//     e não tem como passar em duas, que é exatamente o que ele vigia.
+//  2. A GAVETA DE CAMADAS NÃO COBRE O SELO. Retângulos que não se
+//     intersectam, com a gaveta ABERTA — o defeito que o mockup do dono
+//     acusou (artboard 3: a gaveta por cima, a frase do selo cortada em
+//     "…"), medido a 768×600 com `?ui=1,4`: gaveta y 160–432 contra selo
+//     y 396–556. O conserto é geométrico (`--selo-base`/`--selo-linha`,
+//     fatia 1 do HUD), então a prova é geométrica também.
+// ============================================================
+
+async function julgarAreaDoSelo(s) {
+  const MEDIR = `(() => {
+    const W = innerWidth, H = innerHeight;
+    const cx = (sel) => {
+      const e = document.querySelector(sel);
+      if (!e) return null;
+      const b = e.getBoundingClientRect();
+      return { x: b.left, y: b.top, w: b.width, h: b.height };
+    };
+    const selo = cx('.atlas-selo');
+    const gaveta = cx('.atlas-gaveta');
+    const bate = (p, q) => Boolean(p && q && p.x < q.x + q.w && q.x < p.x + p.w
+      && p.y < q.y + q.h && q.y < p.y + p.h);
+    return { W, H, selo, gaveta, cobre: bate(gaveta, selo),
+      ui: parseFloat(getComputedStyle(document.documentElement)
+        .getPropertyValue('--ui')) || 1,
+      pct: selo ? (selo.w * selo.h) / (W * H) * 100 : null };
+  })()`;
+  for (const fator of [0.85, 1, 1.4]) {
+    // 768 px é o piso da faixa declarada (`LARGURA_UTIL_MINIMA_PX`), e
+    // 600 de altura com o texto em 140% é o canto em que a gaveta
+    // passava por cima do selo — o caso do mockup roda de propósito
+    for (const [w, h] of [[1200, 900], [768, 600]]) {
+      await s.send('Emulation.setDeviceMetricsOverride', {
+        width: w, height: h, deviceScaleFactor: 1, mobile: false,
+      });
+      await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+      const fechado = await s.js(MEDIR);
+      const onde = `${w}×${h}, ui = ${fator}`;
+      const teto = TETO_DA_LINHA_PX * fechado.ui;
+      conferir(
+        fechado.selo !== null && fechado.selo.h <= teto,
+        `selo fechado (${onde}): ${fechado.selo?.h.toFixed(1)} px de altura ≤ teto `
+          + `${teto.toFixed(1)} px — UMA linha, e ocupa ${fechado.pct?.toFixed(3)}% da tela`
+      );
+      await s.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
+      await dorme(250);
+      const comGaveta = await s.js(MEDIR);
+      const r = (p) => (p ? `[${p.x | 0},${p.y | 0} ${p.w | 0}×${p.h | 0}]` : 'ausente');
+      conferir(
+        comGaveta.gaveta !== null && !comGaveta.cobre,
+        `gaveta aberta (${onde}): NÃO cobre o selo — gaveta ${r(comGaveta.gaveta)}, `
+          + `selo ${r(comGaveta.selo)}`
+      );
+    }
+  }
+  // devolve a janela do juiz: as provas seguintes medem nela
+  const [w, h] = JANELA.split('x').map(Number);
+  await s.send('Emulation.setDeviceMetricsOverride', {
+    width: w, height: h, deviceScaleFactor: 1, mobile: false,
+  });
+  await s.send('Emulation.clearDeviceMetricsOverride');
+}
 
 // ============================================================
 // O RETÂNGULO ÚTIL e A ESCALA DA UI — as duas provas que a F6 trouxe,

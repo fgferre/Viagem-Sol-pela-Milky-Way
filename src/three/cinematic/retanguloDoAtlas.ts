@@ -27,9 +27,15 @@ const LETTERBOX_FRACAO = 0.065;
  * Desde a F3 a barra carrega o botão da busca e QUEBRA LINHA no texto
  * grande: medido 19,7% a 1200×900 com `?ui=1,4` — é ela, e não a linha
  * de contexto, quem dimensiona a fração do topo.
- * BASE: `.atlas-selo`, ancorado em `bottom: 7,4vh` — quatro blocos de
- * texto, medido 19,6% da altura com a tarja, e é a peça mais alta do
- * HUD do modo (a dica do Atlas fica em 13,4%).
+ * BASE: `.atlas-selo`, ancorado em `bottom: 7,4vh`. Ele foi a peça mais
+ * alta do modo enquanto eram quatro blocos de texto sempre abertos
+ * (19,6% da altura com a tarja). O item 61 o dobrou numa LINHA em
+ * 2026-08-22: medido no juiz de a11y, 9,4% a 1200×900 e 10,0% com
+ * `?ui=1,4` — a gaveta que sobe dele é `absolute` e não entra na conta,
+ * pelo mesmo critério que não conta diálogo aberto. `SELO_FRACAO` fica
+ * em 0,14 porque quem dimensiona a base é o `Math.max` com
+ * `TEMPO_FRACAO` (0,175), e baixá-lo não moveria a câmera um pixel:
+ * seria trocar um número declarado com folga por outro, sem prova.
  *
  * As duas frações são de tela de mesa (medidas a 1280×720 e 1200×900),
  * e valem em `ui = 1`.

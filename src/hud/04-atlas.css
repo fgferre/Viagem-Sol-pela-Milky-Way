@@ -48,26 +48,103 @@
   pointer-events: auto;
 }
 
-/* o selo de honestidade: canto oposto ao da dica, encostado na tarja de
-   baixo. Altura FIXA — o retângulo útil do enquadramento desconta esta
-   faixa, e um selo que cresce com o número de desvios moveria a câmera. */
+/* O SELO DE HONESTIDADE, DOBRADO EM UMA LINHA (item 61, 22/08): canto
+   oposto ao da dica, encostado na tarja de baixo. O que fica NA TELA o
+   tempo inteiro é a linha `.atlas-selo-resumo` e nada mais — a caixa
+   `.atlas-selo` mede exatamente ela.
+
+   O DETALHE É `position: absolute` E CRESCE PARA CIMA. Não é traje: é o
+   que mantém a altura permanente do HUD igual aberta e fechada. O
+   retângulo útil do enquadramento (`retanguloDoAtlas.ts`) desconta esta
+   faixa, e um bloco que empurrasse ao abrir moveria a CÂMERA no clique —
+   o mesmo motivo pelo qual a máquina do tempo tem a linha de aviso sempre
+   montada. É o juiz de a11y quem mede as duas coisas. */
 .atlas-selo {
   position: fixed;
   right: 3vw;
   /* encostado na tarja de baixo: cada 1vh a mais aqui é 1vh a menos de
-     quadro útil, e o enquadramento paga isso em distância */
-  bottom: 7.4vh;
+     quadro útil, e o enquadramento paga isso em distância. O número é o
+     `--selo-base` da fatia 1 — o MESMO de que a gaveta desconta a folga
+     para parar acima daqui (e o mesmo do `.atlas-rodape`). */
+  bottom: var(--selo-base);
   z-index: 40;
-  width: min(21rem, 42vw);
+  /* NÃO é largura de coluna: a linha fechada mede o próprio texto e o
+     teto continua sendo o de sempre — é dele que sai a garantia
+     geométrica declarada no `.atlas-rodape` ("nunca começa antes de
+     55vw"). */
+  max-width: min(21rem, 42vw);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.14rem;
   text-align: right;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
 }
+/* a linha fechada: bolinha do PIOR eixo, as duas palavras de estado e a
+   seta. `nowrap` sem `ellipsis` de propósito — o teto acima é largo o
+   bastante para a frase inteira em toda a faixa de `?ui=`, e reticências
+   aqui seriam o defeito que esta obra veio consertar */
+.atlas-selo-resumo {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.34em;
+  max-width: 100%;
+  padding: 0.16rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.atlas-selo-resumo.real {
+  color: rgba(190, 226, 210, 0.92);
+}
+.atlas-selo-resumo.desvio {
+  color: rgba(255, 214, 150, 0.92);
+}
+.atlas-selo-resumo:hover {
+  color: rgba(255, 255, 255, 0.98);
+}
+/* a bolinha do agregado — âmbar quando qualquer eixo desvia, verde só
+   quando os dois estão em real. NADA aqui pulsa: o doador a fazia piscar
+   (`animate-pulse`) e o modo desta casa é silencioso (fatia 4, primeira
+   linha). A cor vem do texto, então ela nunca discorda dele. */
+.atlas-selo-bolinha {
+  width: 0.42em;
+  height: 0.42em;
+  flex: none;
+  border-radius: 50%;
+  background: currentcolor;
+}
+.atlas-selo-meio {
+  opacity: 0.42;
+}
+.atlas-selo-seta {
+  opacity: 0.55;
+  letter-spacing: 0;
+}
+/* A GAVETA DO SELO — sobe da linha fechada, encostada à direita nela. */
+.atlas-selo-detalhe {
+  pointer-events: auto;
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 0.3rem;
+  width: max-content;
+  max-width: min(23rem, 58vw);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.16rem;
+  padding: 0.6rem 0.75rem 0.55rem;
+  text-shadow: none;
+}
 .atlas-selo-tese {
-  margin: 0;
+  margin: 0 0 0.1rem;
   font-size: 0.5rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -90,6 +167,15 @@
 .atlas-selo-linha:disabled {
   cursor: default;
 }
+/* o nome do EIXO acima do estado (molde do doador): sem ele as duas
+   linhas do detalhe são duas frases soltas, e quem lê "FORA DE ESCALA"
+   não sabe que existe um segundo eixo dizendo outra coisa */
+.atlas-selo-eixo {
+  font-size: 0.44rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.5);
+}
 .atlas-selo-linha strong {
   font-size: 0.66rem;
   font-weight: 400;
@@ -104,16 +190,26 @@
 }
 .atlas-selo-linha em {
   max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 0.54rem;
   font-style: normal;
+  line-height: 1.45;
   letter-spacing: 0.12em;
   color: rgba(200, 214, 235, 0.62);
 }
 .atlas-selo-linha:not(:disabled):hover em {
   color: rgba(235, 240, 250, 0.92);
+}
+/* OS CULPADOS: quem está inflado e quanto. Uma linha por corpo em dívida,
+   do pior fator para o melhor — a lista que `estadoDoSelo` devolve e que
+   até 22/08 só o teste via. */
+.atlas-selo-culpados {
+  margin: 0 0 0.1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.5rem;
+  line-height: 1.5;
+  letter-spacing: 0.1em;
+  color: rgba(255, 214, 150, 0.7);
 }
 .atlas-selo-legenda {
   margin: 0.1rem 0 0;
@@ -145,7 +241,7 @@
 .atlas-rodape {
   position: fixed;
   left: 6vw;
-  bottom: 7.4vh;
+  bottom: var(--selo-base);
   z-index: 40;
   display: flex;
   flex-direction: column;
@@ -156,11 +252,9 @@
      dentro da própria caixa, e na tela estreita esta caixa passou a ir
      de borda a borda: sem isto, o terço de baixo de um celular deixaria
      de girar a câmera. Quem volta a receber clique é só o que É
-     controle — os `.hud-btn` (fatia 3) e as linhas do selo. */
+     controle — os `.hud-btn` (fatia 3), a linha fechada do selo e a
+     gaveta dele (as duas, logo acima). */
   pointer-events: none;
-}
-.atlas-selo-linha {
-  pointer-events: auto;
 }
 .atlas-rodape .atlas-tempo,
 .atlas-rodape .free-hint {
@@ -249,6 +343,18 @@
    (fatia 1) e aqui fica só o que é DELA. */
 .atlas-gaveta {
   width: min(15rem, calc(100vw - 3.2rem));
+  /* A GAVETA PARA ACIMA DO SELO (item 61, 22/08). Ela herda de
+     `.hud-dialogo` um teto que desce até o pé da tela, e a 768×600 com
+     `?ui=1,4` isso a punha POR CIMA do selo — o mockup do dono mostrou a
+     frase do selo cortada em "…" por baixo dela. Com o selo dobrado numa
+     linha existe geometria para separar os dois, e ela se declara aqui:
+     o teto desconta a linha de base do selo (`--selo-base`), o teto da
+     linha fechada (`--selo-linha`) e um respiro. O que não couber ROLA
+     dentro da gaveta (o `overflow-y: auto` já vem da fatia 1) — nunca
+     cobre o selo. */
+  max-height: calc(
+    100vh - var(--barra-fim) - var(--selo-base) - var(--selo-linha) - 2.4rem
+  );
 }
 .atlas-gaveta-topo {
   display: flex;

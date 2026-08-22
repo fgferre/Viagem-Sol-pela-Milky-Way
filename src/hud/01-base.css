@@ -18,19 +18,39 @@
      é só a reserva das telas em que a barra não existe — título e
      intro, onde o ⚙ Ajustes ainda abre por `?ajustes=1`. */
   --barra-fim: 5.6rem;
+  /* ONDE O SELO ENCOSTA no pé da tela, e QUANTO ele reserva ali. Duas
+     linhas porque três peças precisam do mesmo número e nenhuma pode
+     tê-lo digitado: o selo (`bottom`), o rodapé do Atlas (`bottom`, a
+     mesma linha de base) e a GAVETA DE CAMADAS, que desconta os dois
+     para PARAR ACIMA do selo em vez de cobri-lo.
+     `--selo-linha` é o TETO da linha fechada, não a medida dela: a linha
+     mede ~17 px em `ui = 1` e ~24 px em `ui = 1,4`, e 2,4rem (38,4 e
+     53,8 px) declara isso com folga. Errar para cima custa uma gaveta que
+     rola um pouco mais cedo; errar para baixo põe a gaveta de novo por
+     cima do selo, que é o defeito do item 61. É o juiz de a11y quem mede
+     a linha contra este teto e cobra que os dois retângulos não se
+     toquem. */
+  --selo-base: 7.4vh;
+  --selo-linha: 2.4rem;
   /* A CAMADA DOS TRÊS DIÁLOGOS (Ajustes, Camadas, Busca), e a razão em
      uma linha: QUEM CEDE É O SELO, porque informação permanente pode
      esperar e ação em curso não — quem abriu um painel precisa poder
      fechá-lo.
      O selo mora no canto de baixo à direita e os painéis descem da barra
      até o pé da tela pela direita: em janela apertada com o texto grande
-     é o MESMO retângulo, e não há geometria que separe os dois (foi assim
-     que a barra de controles se resolveu — ela tem altura própria e o
-     painel passou a nascer abaixo dela; aqui não existe esse "abaixo").
-     Então decide a pilha, e ela segue o que o diálogo JÁ declara de si:
-     `aria-modal`, foco preso e Esc fecha (lib/dialogFocus.ts) — enquanto
-     está aberto, ele é a tela. Estava ao contrário (20 contra os 40 do
-     selo), e o "✕" de fechar ficava debaixo do selo junto com o clique.
+     era o MESMO retângulo (medido em 22/08: a 768×600 com `?ui=1,4` a
+     gaveta ia de y=160 a 432 e o selo de 396 a 556 — a sobreposição que
+     o mockup do dono acusou), e não havia geometria que separasse os
+     dois. Então decidia a pilha, e ela segue o que o diálogo JÁ declara
+     de si: `aria-modal`, foco preso e Esc fecha (lib/dialogFocus.ts) —
+     enquanto está aberto, ele é a tela. Estava ao contrário (20 contra os
+     40 do selo), e o "✕" de fechar ficava debaixo do selo junto com o
+     clique.
+     A GEOMETRIA PASSOU A EXISTIR em 22/08, com o selo dobrado numa linha
+     (item 61): a gaveta de camadas desconta `--selo-base` e
+     `--selo-linha` do próprio teto e para acima dele. A pilha fica de pé
+     para o painel de Ajustes e a paleta de busca, que são modais de tela
+     cheia e não têm esse "acima".
      Entre a barra de controles (45) e o holofote (48), e abaixo dos véus
      (50+): o painel cobre o HUD fixo, nunca o filme passando por cima. */
   --camada-dialogo: 46;
