@@ -531,8 +531,10 @@ fotografam o Sol de LONGE ou por deep-link — o juiz que faltava era o
 FILME ABERTO, e foi o dono. Os oráculos foram reescritos (nunca
 contornados): monotonia da escada só cobra onde a lei não cresce (o
 filtro desengata a ~2 UA e a âncora do quadro claro, R ≈ 450 px, vive na
-SAÍDA do filtro), e `vaoDoFiltro`/`fatorDoFiltro` entram na régua com
-espelho cobrado contra `luzDaCasa`.)*
+SAÍDA do filtro), e `vaoDoFiltro` entra na régua com espelho cobrado
+contra `luzDaCasa`. O espelho do filtro SOBRE O CLARÃO — `fatorDoFiltro` —
+nasceu aqui e morreu na R2: o clarão é a óptica plena do ponto vestida
+pela `solturaDaLei`.)*
 
 ### M3 — Catálogo + cascas
 **Gate obrigatório ANTES:** o ponto-zero único (4,83 × 4,85), decidido com foto pelo

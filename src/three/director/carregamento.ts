@@ -202,7 +202,8 @@ export async function montarCarga(opts: {
  * corpo nenhum; reconstruí-los para alcançar tirava o globo da tela por
  * ~2 s (o tempo da textura nova) — o véu que a letra C proíbe. Quem já
  * carregou guarda os pixels que tem; quem carregar depois obedece ao
- * tier de agora, auto-quality inclusive.
+ * tier de agora — inclusive quando quem acabou de trocá-lo foi o Auto
+ * do seletor (o antigo auto-quality do engine morreu na letra D).
  */
 export function montarCorposDoPalco(opts: {
   tier: () => QualityLevel;

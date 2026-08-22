@@ -68,10 +68,16 @@ Segurar o push **não foi pedido dele**: foi um agente que inventou a trava.
 Qualquer push na `main` põe o site no ar. Sem pedido explícito, não se
 publica; o pedido de publicar continua de pé.
 
-Números aposentados (1, 2, 4, 11, 14, 16, 29, 30, 31, 32, 35, 42): `git show de16542 -- docs/PENDENCIAS.md`;
-o 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do
-código e os dois modos desenham igual, decisão do dono cumprida. O **3** e o
-**44** pousaram com o aceite do dono em 17/08 (histórico deste arquivo no git).
+Números aposentados — e nenhum se reaproveita. Os de 14/08 (**1, 2, 14, 29,
+30, 31, 32, 35**) leem-se em `git show de16542 -- docs/PENDENCIAS.md`. Os
+demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
+(`38d4ae4`, `ca4707e`), **4** em 16/08 (`bd12905`), **3** e **44** em 17/08
+(`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
+`229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
+`2f2355a`), **16** em 21/08 (`ade2c3e`). O 4 (Atlas com brilho apagado 100×)
+morreu no M1 — `claraoDoAtlas` saiu do código e os dois modos desenham
+igual, decisão do dono cumprida. O **3** e o **44** pousaram com o aceite
+do dono em 17/08.
 
 ---
 
@@ -222,7 +228,7 @@ item 51.)*
 Palavras dele no pedido, 19/08: *“quando estivesse passando poderia dar
 uma leve desacelerada e virar rapidamente a camera para ela e desvirar
 para continuar em direção a terra.”* — implementado e medido em 20/08:
-a Lua fica grande ~1,8 s (era 0,8 — o "piscar"), a câmera vira para ela
+a Lua fica grande ~1,5 s (era 0,7 — o "piscar"), a câmera vira para ela
 no ponto mais próximo (6 raios lunares) e devolve o olhar à Terra; o
 pouso assenta nas Américas. Na mesma rodada: os giros de Sirius e de
 Rigel deixaram de borrar, "O BERÇÁRIO" cai onde as estrelas reais

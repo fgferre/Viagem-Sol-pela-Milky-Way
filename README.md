@@ -151,8 +151,8 @@ Clip planes dinâmicos: a viagem cobre 0,01 pc → 25.000 pc. RNG da galáxia
 | Sintoma | Causa provável | Ação |
 |---|---|---|
 | “A viagem não pôde começar” | `stars.bin` não carregou | console; conferir `public/data/` |
-| Tela branca no filme | NaN em shader, ou o item 3 (Sol) | `?nobloom=1`, depois `&no*=1` |
-| Tela branca no Atlas | ponto do Sol + bloom (item 3) | `?nobloom=1` mostra o disco |
+| Tela branca no filme | NaN em shader, ou o clarão do Sol (`LEI-DA-ESTRELA.md` §7) | `?nobloom=1`, depois `&no*=1` |
+| Tela branca no Atlas | ponto do Sol + bloom (`LEI-DA-ESTRELA.md` §7) | `?nobloom=1` mostra o disco |
 | Tela preta | clip / câmera | `&dbgfade=1` |
 | Lento no celular | bloom + resolução | `?q=performance` |
 

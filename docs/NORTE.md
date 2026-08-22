@@ -103,7 +103,8 @@ protege adiciona risco sem ganho.
   esses cinco.
 - Fase nova decide por mapa em `fases.ts`, não por cadeia de `if`.
 - O Atlas herda o look do filme. Diferença de desenho entre os dois modos
-  é defeito (item 4 das pendências).
+  é defeito — decisão dele CUMPRIDA no M1: `claraoDoAtlas` saiu do código
+  e os dois modos desenham igual.
 - Um relógio só: luz, rotação IAU, nuvens, anel e eclipse leem o `jd` do
   Director.
 
@@ -131,7 +132,8 @@ A prova tem de tocar o que a mudança tocou. As vistas oficiais rodam com
 Duas cegueiras declaradas:
 
 - **Movimento.** `?shot=` congela o relógio. Nada que só apareça andando
-  tem juiz aqui (item 11).
+  tem juiz aqui — quem enxerga movimento é `voo-ida-e-volta.mjs`, ida e
+  volta na MESMA sessão.
 - **Referência visual entre 1 e 40 UA.** As vistas `ua2`…`ua2000` existem;
   foto-oráculo nessa faixa, não (item 12).
 
