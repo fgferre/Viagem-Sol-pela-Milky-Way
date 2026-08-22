@@ -141,12 +141,28 @@ A prova tem de tocar o que a mudança tocou. As vistas oficiais rodam com
 
 Três cegueiras declaradas:
 
-- **Movimento.** `?shot=` congela o relógio. Nada que só apareça andando
-  tem juiz aqui — quem enxerga movimento é `voo-ida-e-volta.mjs`, ida e
-  volta na MESMA sessão. **Desde 21/08 ele não é juiz obrigatório**, por
-  decisão do dono: *"essa viagem ida e volta não é mais relevante"*. Fica
-  disponível como instrumento, e roda quando a mudança for de transição ou
-  histerese — que é o que só a ida e volta enxerga.
+- **Movimento — ENCOLHEU em 22/08, e o que sobra está nomeado.** `?shot=`
+  congela o relógio, e as 52 vistas oficiais são todas paradas. Quem
+  enxerga movimento agora é `estabilidade-temporal.mjs` (MB1): sessão
+  viva, relógio andando, HUD apagado por CSS em vez de `?shot=`, e o
+  quadro comparado com o ANTERIOR REPROJETADO pela câmera conhecida.
+  **O que ele COBRE:** fervura e cintilação entre quadros consecutivos
+  (resíduo por pixel e energia em banda alta, contra o piso medido da
+  própria pose) e identidade de fonte (§5.20 — re-semeadura, sumiço e a
+  persistência de quem sai de quadro e volta), em oito famílias:
+  aproximação ao Sol e a Sirius, pan, órbita, reversão, FOV e as duas
+  fronteiras de promoção (o gate ponto→corpo do Sol e a cessão
+  corpo↔ponto da Terra). **O que ele NÃO cobre, declarado:** o filme
+  andando (é a cegueira seguinte, e MB1 anda por poses, não pelo
+  roteiro); a promoção partícula→catálogo da galáxia, que só existe
+  depois do M6; o interior do clarão de um corpo próximo, que sai do
+  resíduo por pixel e é julgado só por identidade; e o resíduo por
+  pixel onde a paralaxe do passo passa de 1 px — em `aproxEstrela` isso
+  suspende a família inteira e sobra a estrela-alvo. `voo-ida-e-volta.mjs`
+  continua sendo outra régua para outra pergunta (ida e volta em 34
+  degraus DISTANTES, cego a cintilação por construção) e **desde 21/08
+  não é juiz obrigatório**, por decisão do dono: *"essa viagem ida e
+  volta não é mais relevante"*.
 - **O filme andando de ponta a ponta.** Nenhum juiz assiste 0→193 s no
   navegador: o `filme-ritmo.mjs` amostra 97 quadros PARADOS e o
   `filme-smoke.mjs` solta o relógio por 420 ms em sete instantes. A única
@@ -167,6 +183,7 @@ para escolher com honestidade.
 | `ab-identidade.mjs antes` / `depois` | md5 das **52 vistas** oficiais, um lado de cada vez — detector de regressão | **6,5 min por lado** (52 vistas × 2 capturas, `JOBS=3`) | fechamento de qualquer mudança que possa mover imagem |
 | `SMOKE=1 ab-identidade.mjs …` | as 4 sentinelas (`sol`, `soldisco`, `hero8`, `ua150`) | **0,8 min por lado** | enquanto se itera — nunca para fechar |
 | `atlas-smoke.mjs` | o portal do Atlas em pixel: ida e volta com `journeyT` exato, prontidão da fase nova, abertura reprodutível (as três do filme e a porta da abertura, item 60) e o Sol pela data — 101 vereditos | **4,7 min** | portal, fases, enquadramento do Atlas, calendário do Sol |
+| `estabilidade-temporal.mjs [família…]` | MB1: fervura e re-semeadura entre quadros CONSECUTIVOS com o relógio andando, depois de reprojetar o quadro anterior pela câmera conhecida — 8 famílias, 87 passos, tolerâncias declaradas no cabeçalho (§5.17/§5.20) | **2,7 min** a corrida inteira · ~0,3 min por família | qualquer coisa que só apareça em MOVIMENTO: campo procedural, PSF, crossfade, clarão, histerese, fronteira de promoção |
 | `memoria.mjs` | vazamento em número: texturas, **bytes de texel**, geometrias, heap e workers vivos em 5 idas ao Atlas, 3 trocas de tier pelo caminho vivo e 5 focos. Autovalida-se — `--sabotagem` TEM de reprovar | **2,9 min** por tier | troca de tier, entrar/sair do Atlas, foco, carga em worker, **dose de textura** |
 | `a11y.mjs` (`?shot=1`) | os diálogos do HUD: o foco entra, fica preso, Esc devolve; nenhum diálogo órfão; escala de UI em três telas; e a ABERTURA — as três portas com a sua linha, a mesma tinta nas três, o Tab na ordem da tela e nada fora dela (desde 22/08, item 60) | **2,6 min** | HUD, diálogo novo, escala de texto, abertura |
 | `filme-smoke.mjs` | o roteiro na tela: texto e corte nas margens das 25 janelas de legenda, responsividade, e 420 ms de relógio solto em sete instantes | **2,6 min** | legenda, corte, retemporização, responsividade |
@@ -214,9 +231,16 @@ Duas coisas que mudam o preço e não se adivinham:
   O veredito passa a imprimir os dois carimbos, e **0 vistas julgadas não
   é mais "bit-idêntico"** — é veredito inválido, com saída ≠ 0.
 - **As contas puras vêm de graça.** `ab-identidade`, `chrome`,
-  `luz-do-quadro`, `planeta-pixel` e `z-fighting` têm cada um o seu
-  `.test.mjs`, que julga o molde sem subir Chrome e roda dentro do
-  `npm test`.
+  `estabilidade-temporal`, `luz-do-quadro`, `planeta-pixel` e
+  `z-fighting` têm cada um o seu `.test.mjs`, que julga o molde sem
+  subir Chrome e roda dentro do `npm test`.
+- **MB1 não usa `?shot=`, e é por isso que ele existe.** A porta congela
+  `time` em zero, que é exatamente o que um juiz de movimento não pode
+  ter. Para o HUD não entrar na foto, o harness injeta a MESMA regra CSS
+  do `.bare-mode` (`.hud-root > *:not(.scene-canvas)`) que o `?shot=2`
+  usa — a cena desenha igual e o relógio segue andando. Sem isso a capa
+  da abertura (`cv-veil`) ainda cobre a cena por alguns segundos DEPOIS
+  de a prontidão fechar, e a foto sai da capa, não do mundo.
 
 O harness espera `window.__director.captura.pronto`. Sem isso cai no teto
 de 700 quadros e, no alvo padrão, **sai com status ≠ 0**. Chrome morre

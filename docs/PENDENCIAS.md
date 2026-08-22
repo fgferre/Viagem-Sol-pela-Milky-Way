@@ -380,6 +380,39 @@ controle pequeno e escondido que expande — a ideia das abas animadas
 (drawer) do projeto Atlas, com execução melhor. Junto vai um juiz que
 abra 390 px, porque hoje nenhum abre.
 
+**70. Girar a câmera acende e apaga o céu inteiro.** (Achado em 22/08
+pelo juiz novo de movimento, o MB1 — `scripts/visual/
+estabilidade-temporal.mjs`. Nada foi consertado: a régua nasceu para
+dizer a verdade primeiro.) Quando uma estrela muito brilhante sai pela
+borda do quadro, o brilhão dela some de uma vez e **o céu inteiro perde
+quase um terço da luz num único passo de câmera** — quatro pixels de
+giro. Ao voltar, o céu acende de novo do mesmo jeito. Não é o olho: está
+medido três vezes com a mesma assinatura, sempre na mesma estrela —
+girando para lá (−24%), girando de volta (+32%) e fechando a lente, que
+empurra a mesma estrela para fora (−29%). Junto com a luz vão um terço
+das estrelinhas visíveis, que caem abaixo do limiar. A causa técnica: o
+clarão é efeito de TELA e não sabe de fonte que está fora do quadro — e
+o corte é duro, não uma rampa, que é justamente o que a
+`LEI-DA-ESTRELA.md` §5.17 proíbe ("nenhuma transição depende de limiar
+duro sobre grandeza que oscila com o movimento"). Conferir com ele no
+app antes de mexer: é um giro lento com uma estrela forte perto da
+borda.
+
+*Na mesma medição, e ainda sem diagnóstico — cada um espera a sua
+rodada:* **(a)** Vênus salta 13,4 px na VOLTA da fronteira do Sol e não
+na ida, com a câmera passando pelas MESMAS poses na mesma sessão: é
+assinatura de histerese, e é exatamente para isto que a família da
+reversão existe. **(b)** A Lua salta ~1,9 px nos dois passos em que a
+Terra está no meio da rampa de cessão ponto→corpo (`cessaoPorDominancia`,
+`cede` 0,33 e 0,67) — pouco, mas acima do 1 px declarado, e a §5.20 diz
+que a fonte que troca de representação é A MESMA. **(c)** Meia dúzia de
+saltos de 1 a 2 px no fio da tolerância, no pan e na órbita — estes
+mudam de corrida para corrida, porque as POSES do juiz são
+determinísticas mas a fase do relógio não é, e no fio da régua isso
+basta. Fora isso a casa passa: o piso é 0,33 degrau de 8 bits nas oito
+famílias e a mediana do maior salto por passo fica entre 0,19 e 0,99 px
+— ninguém ferve onde nada cruza fronteira.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -434,6 +467,17 @@ então lançar `filho j0 saiu com null`, sem imprimir o veredito. O lado
 Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
 baldes cheios se resolve matando o filho preso — o veredito sai da
 segunda invocação, que lê tudo de disco.
+
+**71.** (Achado em 22/08, ao construir o MB1.) A coluna `gate` do
+`voo-ida-e-volta.mjs` é cega, e a comparação que ela alimenta nunca
+dispara: o harness lê `window.__director.solArmado`, e esse campo não
+existe — o estado do gate mora em `solNoQuadro.solArmado`
+(`director/solNoQuadro.ts`). Lendo `undefined` dos dois lados, a linha
+imprime `----` em todos os degraus e o teste "o gate difere entre ida e
+volta fora da banda de histerese" compara `undefined !== undefined`, que
+é sempre falso. A banda de histerese continua sendo calculada e
+publicada certo; o que está morto é só quem a usaria. O MB1 lê o
+endereço bom.
 
 ---
 

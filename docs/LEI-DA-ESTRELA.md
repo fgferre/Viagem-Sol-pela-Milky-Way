@@ -704,13 +704,51 @@ repetir o erro — a garantia de half-float tem de ser medida **sobre o pixel so
 Termo `stellar` do raymarch (`nebulaShaders.ts`) e splats do bake
 (`structureMap.ts`). **Fora da lei, declarado:** o campo 2D do carregamento.
 
-### MB1 — O juiz de estabilidade temporal
-Não é migração de representação: é a régua que falta. Delta entre quadros
-consecutivos **após reprojeção**, em cinco famílias de movimento (aproximação, pan,
-órbita, reversão, FOV) mais as fronteiras de promoção, com tolerância declarada —
-§5.17. **Entra antes do M6** (4,02 M partículas é o que mais pode chiar) e é o único
-juiz que enxerga o §5.20: hoje nada na casa detecta uma fonte que se re-semeia ao
-trocar de representação.
+*(MB1 — o juiz de estabilidade temporal — FECHOU em 22/08, em
+`scripts/visual/estabilidade-temporal.mjs` + o oráculo em `.test.mjs` (34
+contas puras dentro do `npm test`). **O que ele mede.** Numa sessão viva, com o
+relógio ANDANDO — nada de `?shot=`, que congela `time` em zero; o HUD sai pela
+MESMA regra do `.bare-mode` injetada pelo harness —, ele anda um percurso de
+poses determinísticas por `placeCamera` e por `camera.fov`, espera um número
+FIXO de quadros entre dois retratos e compara o quadro com o ANTERIOR
+REPROJETADO. A reprojeção é exata porque a câmera é conhecida dos dois lados:
+homografia de rotação + fov para o que está no infinito, e a posição 3D
+publicada pelo próprio app (o Sol na origem, os dez pontos fotométricos, os
+corpos resolvidos do palco, a estrela do catálogo) para o que está perto. Duas
+réguas, as duas que a §5.17 nomeia: **resíduo por pixel** (média de |ΔY| sobre
+um borrão 3×3, mais p99) e **energia em banda alta** (escalar, imune a
+desregistro sub-pixel). E a régua de IDENTIDADE do §5.20, que não depende de
+pixel: as fontes do quadro anterior são PREVISTAS no atual, e uma que caia a
+mais de 1 px da predição — ou que suma longe da borda — reprova no passo em que
+aconteceu. Oito famílias: aproximação ao Sol, a fronteira ponto→corpo do Sol
+(com a banda de 4 px/2 px lida da régua do próprio app), a REVERSÃO dela na
+mesma sessão, pan com volta ao ponto de partida (a persistência do §5.20 — quem
+sai de quadro e volta tem de voltar onde estava), órbita, FOV, aproximação a
+Sirius e a cessão corpo↔ponto da Terra (`cessaoPorDominancia`), 87 passos ao
+todo. **O PISO é o que torna o veredito honesto:** o relógio anda, e granulação
+e coroa mudam sozinhas; cada família mede dois retratos na MESMA pose nas duas
+pontas, e o que se julga é o EXCESSO que o movimento acrescenta — 2 degraus de
+8 bits sobre o piso, 15% de banda alta, 1 px de salto, tudo declarado no
+cabeçalho com a conta de onde saiu. Onde a reprojeção não vale, ele SUSPENDE e
+diz por quê: a paralaxe de um passo é `Δ/1,30 pc` (Proxima) e acima de 1 px o
+resíduo por pixel sai do veredito — é o caso inteiro da aproximação a Sirius,
+onde só a estrela-alvo, de profundidade conhecida, segue julgada.
+**Preço: 2,7 min** a corrida inteira nesta máquina (`640x700`, canvas 640×613),
+e o censo do NORTE já o traz. **Linha de base de 22/08, e ele nasce
+REPROVANDO: 15 defeitos.** O piso é 0,33 degrau em todas as oito famílias e a
+mediana do maior salto por passo fica entre 0,19 e 0,99 px — a casa é estável
+onde nada cruza fronteira. O que reprova: (i) **uma fonte forte que cruza a
+BORDA do quadro leva o clarão dela junto** — bloom é efeito de tela e não sabe
+de fonte fora do quadro —, e o céu inteiro perde 24 a 32% da luz em UM passo de
+4 px; aparece três vezes com a mesma assinatura (pan indo, pan voltando, e o
+zoom de fov ao empurrar a mesma estrela para fora); (ii) Vênus salta 13,4 px na
+VOLTA da fronteira do Sol e não na ida — assinatura de histerese, e é para isto
+que a família da reversão existe; (iii) a Lua salta ~1,9 px nos dois passos da
+rampa de cessão da Terra; (iv) meia dúzia de saltos de 1,0 a 1,1 px, no fio da
+tolerância. Tudo escrito no item 70 das PENDENCIAS, com número; NADA foi
+consertado nesta rodada — a régua nasceu para dizer a verdade primeiro.
+**Segue de pé o que a entrada original dizia:** MB1 **entra antes do M6** (4,02
+M partículas é o que mais pode chiar) e é o único juiz que enxerga o §5.20.)*
 
 ### O saldo
 Se as migrações forem executadas inteiras: ~1.560 linhas de produção apagadas
@@ -892,8 +930,11 @@ delta por pixel reprojetado e delta de energia em banda alta, com tolerância
 declarada. E cobre **cinco famílias de movimento**, não só zoom: aproximação, **pan**,
 **órbita**, **reversão de sentido** (onde a histerese aparece), **mudança de FOV** e
 as **fronteiras de promoção** (partícula→catálogo→corpo), que é onde a identidade
-pode escorregar. Hoje nada disso existe: `voo-ida-e-volta.mjs` amostra 34 degraus
-**distantes** e é cego a cintilação por construção. Sem MB1, "não ferve" é opinião.
+pode escorregar. *(22/08: MB1 EXISTE — `scripts/visual/estabilidade-temporal.mjs`,
+oito famílias, 87 passos, 2,7 min; a entrada dele no §4 traz a linha de base. O
+`voo-ida-e-volta.mjs` continua amostrando 34 degraus **distantes** e continua cego a
+cintilação por construção — é outra régua, para outra pergunta.)* Sem MB1, "não
+ferve" era opinião.
 
 **5.18 O corpo estelar é UM estado em três campos.** *(plano conceitual externo
 consolidado pelo dono, 15/08.)* O desenho-alvo do corpo — do Sol e de toda estrela
