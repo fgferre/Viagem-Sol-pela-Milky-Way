@@ -25,7 +25,32 @@ const CHROMSAT = qnum('chromsat', 0.5);
 // uniform por material desde a rodada 24 (uSlitTau; fixo 2,5 no glow
 // compacto, ?haloslit= varre o do halo; o 5,0 foi rejeitado sob o
 // regime velho, idem).
-const NSAMP = Math.max(2, Math.round(qnum('samples', 16)));
+/**
+ * O TETO, que faltava — e faltava só deste lado. `?nebsteps=` já é
+ * `Math.min(v, 96)` em `world/nebula.ts`, pela mesma razão: passo de
+ * varredura que o visitante escreve na URL precisa de teto, não só de piso.
+ *
+ * AQUI O PREÇO DE NÃO TER É MAIOR, porque este número não é uniform: ele
+ * entra TEXTUAL no fonte (`for (int i = 0; i < ${NSAMP}; i++)`). Com
+ * `?samples=1000000` o laço nasce com um milhão de voltas por fragmento; com
+ * `?samples=1e21` o `${}` imprime `1e+21`, que não é literal inteiro em GLSL
+ * — o shader nem compila, e a galáxia some sem uma linha de erro que
+ * explique. `Math.round` de um float enorme não protege de nenhum dos dois.
+ *
+ * NÃO É UM ENDEREÇO SÓ com o de `nebula.ts`, de propósito: 96 passos de
+ * raymarch e 96 amostras de coluna de extinção são grandezas diferentes que
+ * hoje calham de aceitar o mesmo teto. Amarrá-las numa constante faria
+ * mexer no teto de uma mudar o da outra em silêncio — acoplamento falso é
+ * pior que número repetido. O que se compartilha é a RÉGUA, e ela está
+ * escrita aqui.
+ */
+export const TETO_DE_AMOSTRAS = 96;
+
+/** piso 2, teto 96, inteiro — o que pode virar `${NSAMP}` no fonte GLSL. */
+export const amostrasDaExtincao = (bruto: number) =>
+  Math.min(TETO_DE_AMOSTRAS, Math.max(2, Math.round(bruto)));
+
+const NSAMP = amostrasDaExtincao(qnum('samples', 16));
 // ?warpslit= — a fenda do glow/halo segue o warp (±1 = quiralidade, 0 =
 // reta). Na rodada 17 era inútil (só o glow compacto existia — sem fluxo
 // além de 8,4 kpc); com o halo de 6–9 kpc a fenda reta voltou a imprimir
