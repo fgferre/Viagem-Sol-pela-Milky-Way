@@ -116,12 +116,17 @@ segmento próprio.
 
 ## 6. URL (debug e deep-link)
 
+A URL é **espelho, não painel**: `useEspelhoDaUrl` (`src/hooks/`) LÊ e
+REESCREVE `?atlas=`, `?foco=`, `?d=`, `?jd=`, `?t=`/`?play=`, `?q=`,
+`?tone=`, `?exp=`, `?ui=` e as flags de camada. O resto da tabela é porta
+de entrada só.
+
 | Param | Efeito |
 |---|---|
 | `?t=150` | pula a intro, congela no segundo `t` do filme |
 | `?atlas=1` | abre no Atlas |
 | `?foco=terra` | enquadra o alvo (nome pt-BR; estrela por hd/hip) |
-| `?ver=corpo` | degrau da escada (sistema / órbita / corpo / lua) |
+| `?ver=corpo` | **só leitura** — degrau da escada (sistema / órbita / corpo / lua). O link antigo pousa no mesmo enquadramento, mas o espelho NUNCA a escreve: `urlComMomento` a apaga sempre, porque quem descreve a vista desde o zoom contínuo é `?d=` |
 | `?jd=` | instante do céu (1950–2050 TDB) |
 | `?luz=real` | brilho sem assistência (`assistida` é o default do Atlas) |
 | `&shot=1` | foto: zera transições CSS |
@@ -134,6 +139,9 @@ segmento próprio.
 | `?corpos=1` `?nocorpos=1` | os corpos resolvidos de perto — distintos dos PONTOS fotométricos de `?noplan=` |
 | `?samples=16` | amostras do caminho de extinção da galáxia (piso 2, **teto 96**) |
 | `?nebsteps=` | passos do raymarch da nebulosa (**teto 96**; ausente = o preset manda) |
+| `?ui=1.2` | tamanho do texto do HUD (0,85–1,4, grampeado); o Atlas reenquadra, porque o retângulo útil encolhe |
+| `?tone=agx` | curva de tonemapping (`aces` padrão, `agx`, `neutral`, `linear`) |
+| `?exp=1.4` | exposição em multiplicador (positivo finito, sem teto — captura tem de poder estourar) |
 | `&nobloom=1` | desliga o bloom (primeiro teste se a tela lava) |
 | `&nosun=1` `&nocat=1` `&nogal=1` `&nonebula=1` `&noplan=1` `&noclarao=1` `&noforge=1` … | isola camadas — a lista COMPLETA e viva é `CAMADAS` em `src/three/atlasConfig.ts`, que é a única (o selo e o laço de flags do Director derivam dela) |
 

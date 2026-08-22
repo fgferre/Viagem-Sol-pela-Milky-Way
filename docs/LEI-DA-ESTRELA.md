@@ -270,6 +270,12 @@ endereço só — `picoDaPsf`/`psfPointSizePx` em `luzDaCasa.ts`,
 constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
 `simbolosProibidos.test.ts`.)*
 
+- **O β mora no shader, não na lei — exceção declarada no M4.**
+  `BETA_DA_EMISSAO`/`lerBetaDaEmissao` continuam resolvidos em
+  `shaders/starShaders.ts`, e não em `luzDaCasa.ts`: a leitura é PURA de propósito,
+  para a suíte a julgar em `node`, e mover a porta mexeria em sete consumidores que
+  não são de migração nenhuma. A lei é dona da fórmula e da constante; o shader é
+  dono da porta.
 - **Dois pontos-zero incompatíveis:** `M_V☉ = 4,85` no campo, `4,83` na lei
   (`PONTO_ZERO_DA_LEI`), ambos declarados em `escala.ts`. L1 tem **UM**. A escolha
   é gate com foto para o dono, agendado **antes do M3** — é ele que move 328.749
@@ -491,7 +497,11 @@ impostor e `E` por fora, sem uma malha por estrela. **Fecha também a dupla-luz
 catálogo ↔ heroes de autor** (desvio (f) do M2): hoje o ponto e o billboard
 desenham a mesma estrela somados, sem cessão nenhuma entre eles, e é aqui que
 uma das duas cede — com o **gate de foto do dono na estética**, que é o que
-mandou a peça de 30/07 voltar. **Régua:** as 52 vistas A/B.
+mandou a peça de 30/07 voltar. **Paga também o desvio (b) do M4:** `solNoQuadro`
+ainda monta o `Instrumento` do Sol com `stars?.expoM0 ?? EXPO_M0` em vez da
+`CALIBRACAO_DA_CASA` — o mesmo detour que o M4 matou nos dez corpos —, e unificá-lo
+é gesto deste passo, porque é aqui que o gate do ponto-zero move o campo.
+**Régua:** as 52 vistas A/B.
 
 ### M6 — A galáxia (partículas + lâminas)
 **Entra:** `aAlpha` deixa de ser artístico e vira fluxo na unidade da casa; a cessão
@@ -581,13 +591,19 @@ sem correção** — pela receita crua, Rigel dá 52,9 R☉; com BC(12.100 K) �
 73,4 R☉ ≈ real (~78). Ou entra uma tabela BC(Teff) e o "zero byte" cai, ou tudo
 passa a viver na banda de render — **decisão explícita, nunca implícita**. (O
 oráculo pinado de 283 R☉ é valor de RENDER: reescreve-se, não se satisfaz.)
+**DECIDIDA NO L1, e a decisão foi a banda de render:** `integralPlanckCie` +
+`radianciaVisivelDeCorpoNegro` são produção em `luzDaCasa.ts`, exportadas por
+`estrela.ts`, e reproduzem os números desta cláusula (30.000 K dá 65,9, não 729 —
+cravado em `estrela.test.ts`). O que segue em aberto é só a tabela BC(Teff) do raio
+por Stefan-Boltzmann, que é do M3.
 
 **5.6 A lei é invariante com a resolução.** `peak = E/(2πσ²)` com `σ ∝ alturaPx` dá
 **`peak ∝ 1/H²`**. Limiar de espinhos cheios: H=720 → m < 1,23; H=900 → m < 0,75;
 H=1080 → m < 0,35; **H=2160 → m < −1,15**. Num 4K quase todo o céu perde a cruz de
 difração, e o β = 300 (número absoluto de buffer) morde em magnitudes diferentes. L1
 normaliza por **ângulo sólido por pixel**; σ e β em unidades de campo, não de
-buffer. (Liga-se ao item 6 das pendências.)
+buffer. (Ligava-se ao item 6 das pendências, aposentado em `70dc039` — a cena
+reafia sozinha ao trocar de monitor; o que esta cláusula pede segue aberto.)
 
 **5.7 O filtro solar é SEÇÃO da lei, não remendo.** Ele é a segunda troca da §1:
 `pow(fator, uFiltroSolar)`, 26,09 magnitudes entre a radiância verdadeira (g=1) e a

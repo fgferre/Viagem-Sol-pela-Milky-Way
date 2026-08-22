@@ -45,11 +45,10 @@ externas (face-on / edge-on) são recriações científicas ancoradas em Gaia �
 ninguém fotografou a Via Láctea de fora. A única foto real é o panorama ESO,
 visto de dentro.
 
-**Mais que um SpaceEngine** (decisão do dono, 2026-08-11 — a linha que
-manda está na tabela de decisões fechadas): escala 1:1 onde
-for possível; visibilidade por fotometria; artifício só no canal do
-instrumento, separável e desligável. A galáxia volumétrica científica é o
-diferencial. Toda escala artística nova se declara no selo.
+**Mais que um SpaceEngine** — decisão do dono de 2026-08-11, e ela mora
+INTEIRA na tabela de decisões fechadas, uma vez só. O que ela obriga
+aqui: a galáxia volumétrica científica é o diferencial, e toda escala
+artística nova se declara no selo.
 
 ---
 
@@ -276,8 +275,8 @@ estão no ledger [`docs/reference/EVOLUCAO.md`](reference/EVOLUCAO.md),
 seção “baseline vigente”. Noutra máquina servem só como sinal de que a
 captura assentou, nunca como oráculo.
 
-`forgetau` fica **desligado**. A dosagem edge foi calibrada sem extinção
-nas forjas; ligar sem re-dosar explode o gate.
+`forgetau` fica **desligado** — a razão e a condição de reabrir moram na
+tabela de decisões fechadas, uma vez só.
 
 Sagittarius A* é passe de pós, só a <2,4 kpc do centro. Custo zero de
 longe. A escala artística (RS 0,05 pc ≈ 125.884× o real) é dívida de

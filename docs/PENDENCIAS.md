@@ -13,6 +13,8 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
+- **Próximo número livre: 80.** Quem abrir um item usa este e soma um aqui,
+  no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
@@ -90,16 +92,22 @@ publica; o pedido de publicar continua de pé.
 Números aposentados — e nenhum se reaproveita. Os de 14/08 (**1, 2, 14, 29,
 30, 31, 32, 35**) leem-se em `git show de16542 -- docs/PENDENCIAS.md`. Os
 demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
-(`38d4ae4`, `ca4707e`), **4** em 16/08 (`bd12905`), **3** e **44** em 17/08
-(`6740d72`), **8**, **10**, **48** e **51** em 18/08 (`cf6ea79`,
-`7afe64d`, e o **48** e o **51** no MESMO diff, `229dc1c`), **9**, **55**
+(`38d4ae4`, `ca4707e`), **4** em 16/08 (`bd12905`), **3**, **6**, **21**,
+**41**, **44**, **47** e **50** em 17/08 (`6740d72`, `70dc039`, `028c335`,
+`bcdcf51`, `6740d72`, `b7409d3`, `a95dd64`), **8**, **10**, **33**, **48**
+e **51** em 18/08 (`cf6ea79`,
+`7afe64d`, `1a86d22`, e o **48** e o **51** no MESMO diff, `229dc1c`),
+**9**, **55**
 e **56** em 20/08 (`35bab48`, `6d2278a`, `2f2355a` — `39ca08f` só
 RENUMEROU 55→56, quem matou o 55 foi `6d2278a`), **16** e **57** em 21/08
-(`ade2c3e`, `841d57d`), **60**, **66**,
+(`ade2c3e`, `841d57d`), **60**, **63**, **66**,
 **67**, **68**, **58**, **65**, **71** e **73** em 22/08 (`a8a3168`,
-`92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`, `d2fb2c7`,
-`c8507ba`). O **73** é o único que levou OITO commits: a obra inteira é
-a sequência `3f2a290` → `c8507ba`, e o hash da lista é o do fecho.
+`d562f5a`, `92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`,
+`d2fb2c7`, `c8507ba`). O **73** é o único que levou OITO commits: a obra
+inteira é a sequência `3f2a290` → `c8507ba`, e o hash da lista é o do
+fecho. (Os sete créditos de 22/08 — **6**, **21**, **33**, **41**, **47**,
+**50** e **63** — foram achados por varredura: eram os números que não
+estavam nem vivos nem aposentados.)
 O 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do código e os
 dois modos desenham igual, decisão do dono cumprida. O **3** e o **44**
 pousaram com o aceite do dono em 17/08.
@@ -244,9 +252,12 @@ item 51.)*
 
 **53. O expoente da asa (β) espera o gate de foto do dono.**
 β = 2,4 é semente de projeto — a Lei §1 pede a escolha entre 2,0 e 3,0
-com foto, com `BETA_DO_ESPINHO` acorrentado em ¾ dele e a fração 0,06
-junto. As fotos já existem (`capturas/luz-*.png`, a escada inteira);
-falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
+com foto, com `BETA_DO_ESPINHO` acorrentado em **1,5×** ele
+(`1.5 * BETA_DA_ASA`, em `estrela.ts`) e a fração 0,06 junto. O ¾ foi a
+primeira forma, e o dono a reprovou no app em 16/08 — *"os spikes
+ficaram horríveis e enormes"*: braço que decai mais devagar que o halo
+não é cruz, é parede de 2.400 px. As fotos já existem
+(`capturas/luz-*.png`, a escada inteira); falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
 
 **54. O filme espera a exibição do dono — agora com o gesto da Lua.**
@@ -289,8 +300,8 @@ está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
 estavam?
 
 **74. O painel grande do "em quadro" do Atlas orbital — onde foi
-parar?** (Dono em 22/08. **Investigação EM CURSO na mesma data**; o
-resultado entra AQUI depois.) Palavras dele:
+parar?** (Dono em 22/08. **A metade (a) está RESPONDIDA, na mesma data;
+o que fica aberto é a obra (b).**) Palavras dele:
 
 > *"o "em quadro" no projeto atlas orbital havia um elemento grande do
 > HUD cheio de informacoes incriveis sobre os objetos selecionados.
@@ -300,13 +311,25 @@ resultado entra AQUI depois.) Palavras dele:
 O que existe hoje com esse nome: a `ContextLine` — UMA linha, "o que
 está EM QUADRO no Atlas", com o nome do alvo enquadrado e os dois
 gestos da escada. Não é um elemento grande e não traz informação sobre
-o objeto. A pergunta dele tem duas metades e as duas estão abertas:
-**(a)** o painel do doador existe em algum lugar do projeto, desligado
-da UI? **(b)** se não existe, o que dele volta? Na fila do
-`PLANO-ATLAS.md` ("Conteúdo e didática") já esperam, sem onda marcada,
-o *painel por corpo lendo `corpos.json`*, a *camada de fatos
-relacionais* e a *Wikipedia no painel* — é provavelmente a mesma obra,
-e é ela que a resposta a este item vai nomear.
+o objeto.
+
+**(a) NÃO ESTÁ PERDIDO AQUI: nunca veio.** O painel é o `Sidebar.tsx`
+do doador (`~/Github/atlas-orbital/src/components/ui/Sidebar.tsx`, 778
+linhas), alimentado por `src/data/celestialBodies.ts` (45 corpos), com
+dez seções por objeto — telemetria em tempo real, dados físicos
+(×Terra), contexto, fidelidade visual, recordes, exploração, dados
+orbitais, geometria no céu (fase/elongação), atmosfera e curiosidades.
+Neste repositório não há arquivo nenhum dessa família, ligado ou
+desligado: a busca por painel/sidebar não devolve peça, e o "em quadro"
+daqui É a `ContextLine`. Ou seja, a fusão trouxe a MECÂNICA do Atlas e
+deixou o CONTEÚDO para trás.
+
+**(b) O QUE VOLTA, e por onde:** é a fila "Conteúdo e didática" do
+[`PLANO-ATLAS.md`](PLANO-ATLAS.md) — *painel por corpo lendo
+`corpos.json`*, *camada de fatos relacionais* e *Wikipedia no painel*.
+O plano antigo a chamava de Onda 8; hoje ela está listada **sem onda
+marcada**, e é isso que precisa mudar quando a onda da UI/UX decidir a
+ordem. A obra é portar, não procurar.
 
 ---
 
@@ -532,8 +555,9 @@ pan de 40 UA (e empurrada para fora pelo fechamento da lente na família
 0,0646 (−30%) em 7 px, e a maior queda de um pixel só (−10,4%) acontece
 exatamente no pixel em que o CENTRO da estrela cruza `y = 0`. O que foi
 descartado, cada um com a sua medida: **não é auto-exposição** — a
-`toneMappingExposure` fica em 1,02 nos 87 passos da corrida de 22/08
-(o juiz tem 97 hoje, com a nona família); **não é o bloom
+`toneMappingExposure` fica em 1,02 nos 87 passos que o juiz tinha
+QUANDO a causa foi medida (hoje são 97, com a nona família — a medida
+não foi refeita); **não é o bloom
 principal** — `?nobloom=1` muda 0,35% da luz do quadro e não muda a
 queda; **não é a galáxia** — `?nogal=1` repete a queda igual. Desligando
 catálogo E clarão juntos (`?nocat=1&noclarao=1`) o resíduo do passo cai
@@ -629,22 +653,18 @@ para o próprio agente escrever os roteiros, e o **filme atual se porta
 depois** — não antes.
 
 O plano da casa já tem o nome disso, e a ideia dele coincide com o que
-está escrito: **"Motor declarativo"** é o item 1 da *Fila ativa* do
-[`PLANO-CINEMA.md`](PLANO-CINEMA.md) — "movimentos nomeados, legendas,
-preload e marcadores de QA passam a ser dados leves do filme", com
-critério de saída "o filme galáctico roda pelo novo formato sem
-diferença visual — prova A/B bit a bit, com o lado novo capturado de
-disco zerado — nem perda dos gates, e um filme novo não exige editar o
-núcleo do aplicativo". O `NORTE.md` diz o mesmo em uma linha: "novos
-filmes serão declarativos: roteiro leve e editável, sem reescrever o
-núcleo do aplicativo". O que a mensagem dele ACRESCENTA ao que estava
-escrito é a parte da câmera — trocar de lente, usar zoom, virar e se
-mover por "algoritmos claros de movimento inteligente cinematográfico"
-— e o destinatário: o motor é ferramenta do agente, com instruções.
+está escrito: é o **"Motor declarativo"**, item 1 da *Fila ativa* do
+[`PLANO-CINEMA.md`](PLANO-CINEMA.md) — **critério de saída: PLANO-CINEMA,
+fila ativa 1** (é lá que ele mora, e só lá). O que a mensagem dele
+ACRESCENTA ao que estava escrito é a parte da câmera — trocar de lente,
+usar zoom, virar e se mover por "algoritmos claros de movimento
+inteligente cinematográfico" — e o destinatário: o motor é ferramenta do
+agente, com instruções.
 
 **77. As linhas de órbita, ligadas por padrão.** (Nasceu em 22/08, do
-plano da navegação — item 73 §5 —, e ficou de fora dele por decisão
-declarada.) A órbita é o DADO, não enfeite: NASA Eyes, Celestia e
+plano da navegação — o item 73, aposentado em `c8507ba` —, e ficou de
+fora dele por decisão declarada. O que aquele plano dizia das órbitas
+está reescrito aqui embaixo, que passa a ser o único lugar.) A órbita é o DADO, não enfeite: NASA Eyes, Celestia e
 SpaceEngine desenham as três. Sem elas o Atlas mostra dez pontos soltos
 e o visitante não tem como ler que Marte está entre a Terra e Júpiter.
 
@@ -764,6 +784,14 @@ três num `ab-identidade-depois.json` e rodar o lado de novo — as 52
 vieram `(de disco)`, com o CARIMBO conferido (`c8507bad1eb9-d41d8cd9`),
 e o veredito saiu em segundos. Se voltar a acontecer, o suspeito é o
 `stdio: 'inherit'` dos filhos com Chrome órfão segurando o descritor.
+
+**79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
+`bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo
+(`webglcontextlost`) e a exceção em quadro — nunca foi visto por ele: as
+fotos são `capturas/erro-contexto-perdido.png` e `capturas/erro-no-tick.png`,
+e elas ficam no disco até ele olhar. **Não apagar na próxima limpeza de
+`capturas/`** — a regra 5 vale para captura que terminou de servir, e
+estas não terminaram.
 
 ---
 
