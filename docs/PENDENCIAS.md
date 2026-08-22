@@ -16,6 +16,14 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
+**O BASTÃO DE 22/08: A ONDA DA UI/UX ABRIU.** O dono respondeu às três
+perguntas dos mockups e, na mesma mensagem, trouxe queixas e ideias
+novas: a onda da UI/UX está aberta e é feita dos itens **61**, **62**,
+**73**, **74** e **75**. A ordem de trabalho NÃO está decidida — as
+investigações da navegação (73) e do painel "em quadro" (74) correm em
+22/08, e a fila se decide COM ele depois delas. Palavras dele no fim da
+mensagem: *"enfim muitas ideias que precisam ser organizadas."*
+
 **O BASTÃO DE 17/08 (tarde): A RODADA DA ESTRELA POUSOU.** Palavras do
 dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
 e o app na mão: *"a soltura ficou boa, pode considerar pousada —
@@ -84,6 +92,53 @@ pousaram com o aceite do dono em 17/08.
 ---
 
 ## ALTA — o dono vê e incomoda
+
+**73. A navegação do Atlas — "foi criado um monstro frankstein".**
+(Dono em 22/08. **Investigação EM CURSO na mesma data**; o conserto é a
+PRIMEIRA obra da onda da UI/UX.) Palavras dele, inteiras, sobre a dica
+de gestos que sai do rodapé:
+
+> *"toda navegacao atual do modo atlas está uma merda... antes no
+> projeto atlas verdadeito conseguiamos dar zoom out zoom in livremente
+> rodando o mouse wheel quando um objeto estava selecionado... agora
+> essa nvagacao para cima e para baixo de objetos está muito confusa,
+> nem conseguimos mais selecionar para onde vamos. conseguiamos ver os
+> rotulos de todos objetos de forma inteligente, talvez vc deva olhar o
+> nasa eyes of the solar system para entneder melhor o padrao da
+> industria d einterface e navegacao, foi criado um monstro
+> frankstein."*
+
+**O que ele diz que havia no projeto Atlas** — três coisas, e são o
+alvo do conserto:
+
+1. **zoom out / zoom in livre com a roda do mouse** quando um objeto
+   está selecionado;
+2. **os rótulos de todos os objetos, de forma inteligente**;
+3. **escolher para onde ir** — hoje ele diz que "nem conseguimos mais
+   selecionar".
+
+**O fato do lado de cá, e ele é uma decisão escrita.** A roda do Atlas
+hoje NÃO é zoom: ela é traduzida em DEGRAUS da escada (sistema → órbita
+→ corpo → lua) por `rodaDaEscada.ts`, que abre com o título "POR QUE
+DEGRAU E NÃO ZOOM CONTÍNUO, que é o que a roda faz em toda fonte
+consultada (SpaceEngine, Celestia, Stellarium, three.js)" — o argumento
+registrado é que o Atlas não guarda distância de câmera, só o degrau, e
+o degrau vive na URL como `?ver=` para o link copiado reproduzir a
+vista. Um estalo de roda = um degrau (`LIMIAR_DO_DEGRAU_PX` 40, trava
+de embalo do trackpad). A queixa dele bate EXATAMENTE nessa decisão: é
+ela que tem de ser reaberta, não um bug solto. A "navegação para cima e
+para baixo de objetos" é essa mesma escada, e os "dois gestos" dela
+moram na `ContextLine` (aproximar / voltar ao sistema).
+
+**A referência que ele manda olhar:** *NASA Eyes on the Solar System*,
+"para entender melhor o padrão da indústria de interface e navegação".
+Existe estudo dela na casa —
+`docs/reference/atlas-estudo-tecnologia-nasa-eyes-camera-navegacao.md`
+— com a ressalva do `NORTE.md`: os quatro `atlas-estudo-*` são mapa de
+técnicas gerado por IA, e nenhum número deles se cita sem a fonte
+primária. (No `PLANO-ATLAS.md` §2 o que está aposentado é o estudo de
+STARFIELD do NASA Eyes, outro assunto — câmera e navegação não foram
+julgadas.)
 
 **5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
 ao calendário; falta ele ver.**
@@ -265,6 +320,26 @@ está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
 — fica mais bonito com os berçários assim, mais fracos, ou como
 estavam?
 
+**74. O painel grande do "em quadro" do Atlas orbital — onde foi
+parar?** (Dono em 22/08. **Investigação EM CURSO na mesma data**; o
+resultado entra AQUI depois.) Palavras dele:
+
+> *"o "em quadro" no projeto atlas orbital havia um elemento grande do
+> HUD cheio de informacoes incriveis sobre os objetos selecionados.
+> onde isso foi parar? (será que está perdido dentro do proejto sem
+> nenhuma ligacao atual com o UI?)"*
+
+O que existe hoje com esse nome: a `ContextLine` — UMA linha, "o que
+está EM QUADRO no Atlas", com o nome do alvo enquadrado e os dois
+gestos da escada. Não é um elemento grande e não traz informação sobre
+o objeto. A pergunta dele tem duas metades e as duas estão abertas:
+**(a)** o painel do doador existe em algum lugar do projeto, desligado
+da UI? **(b)** se não existe, o que dele volta? Na fila do
+`PLANO-ATLAS.md` ("Conteúdo e didática") já esperam, sem onda marcada,
+o *painel por corpo lendo `corpos.json`*, a *camada de fatos
+relacionais* e a *Wikipedia no painel* — é provavelmente a mesma obra,
+e é ela que a resposta a este item vai nomear.
+
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
@@ -363,6 +438,64 @@ revisão da interface inteira, trazendo as ideias boas do projeto Atlas
 (`docs/PLANO-ATLAS.md`) e referências de outros aplicativos. É onda de
 desenho: precisa de mockups antes de código.
 
+**AS TRÊS RESPOSTAS DOS MOCKUPS, 22/08.** Ele olhou o canvas com as
+três perguntas e respondeu numa linha só:
+
+> *"1) 3 botoes iguais 2) somem sozinhos 3) vira alça"*
+
+1. **Três botões iguais** na abertura — nenhum destacado. É a mesma
+   decisão que o juiz já cobra ("as três com a mesma tinta"), agora
+   também no TAMANHO. Na foto ele viu o que faltava: *"tela de
+   abertura- botao explorar livremente está com tamanho diferente dos
+   outros, sugiro tirar a palavra livremente."* O conserto é a primeira
+   obra desta onda e entra em commit próprio nesta mesma rodada.
+2. **Os controles do filme somem sozinhos.** Falta fazer.
+3. **A máquina do tempo vira alça** no celular. Falta fazer — e a mesma
+   resposta está registrada no item **62**, que é onde o celular mora.
+
+**"camadas e ajustes concorrem", 22/08.** Palavras dele:
+
+> *"atlas - camadas e ajustes concorrem. vc nao acha que varios
+> elementos que hj estao em ajustes na verdade deveriam ser camadas?"*
+
+O fato ao lado: os Ajustes têm **32 controles**, e **17 deles SÃO as
+camadas** — a tabela `CAMADAS` do `atlasConfig.ts`, uma por flag
+`?no…`. A gaveta do Atlas mostra **6** dessas 17 (as que têm ícone:
+catálogo HYG, clarão das estrelas, marcador do Sol, planetas, corpos de
+perto, buraco negro). Ou seja, as duas superfícies desenham da MESMA
+lista e o visitante vê duas portas para a mesma coisa, uma com 17 e
+outra com 6.
+
+**"o selo de honestidade é complexo e nao funciona direito", 22/08.**
+Palavras dele:
+
+> *"o selo de honestidade é complexo e nao funciona direito, no proejto
+> atlas ele era muito mais simples e menos invasivo, porque virou isso
+> aqui? talvez a ideia da tela mobile deveria ser trazida para tela
+> desktop ou analisar um jeito mais inteligente e simples para o
+> usuário simples."*
+
+A pista que ele mesmo dá é o caminho: **trazer a ideia da tela do
+celular para a tela de mesa**, ou achar um jeito mais simples para o
+usuário simples.
+
+**"o atlas deveria ser o modo único", 22/08 — e isto é DIREÇÃO DE
+PRODUTO.** Palavras dele:
+
+> *"O modo atlas na minha visao deveria ser o modo único, a viagem na
+> verdade para mim é só uma ferramenta do modo atlas. da forma que vc
+> montou (digo vc, mas estou falando e todas AIs e conversas que
+> trouxeram o projeto até aqui) o atlas e a viagem sao 2 coisas quase
+> concorrentes. Tenho a impressao que até os gráficos mudam de um modo
+> para o outro... parece que o modo atlas fica mais morto, vazio..."*
+
+Entrou na tabela de decisões do `NORTE.md` como direção, não como item
+fechado. **Um mundo só JÁ É LEI** e já é código: o `claraoDoAtlas`
+morreu no M1 e os dois modos desenham igual — se os gráficos ainda
+parecem mudar, é medida a fazer, não desenho a mudar. O que falta é a
+UI parar de tratar os dois como concorrentes, e o Atlas parar de
+parecer mais vazio.
+
 **62. Celular: controles menores que expandem — DECISÃO DELE, 21/08.**
 Perguntado se telas pequenas valem o esforço (medido: no Atlas, a
 320×568 sobram 103 px de universo, 18% da tela; a 390×844 sobram 42%;
@@ -379,6 +512,11 @@ Tela grande continua sendo o resultado principal. O que entra é o
 controle pequeno e escondido que expande — a ideia das abas animadas
 (drawer) do projeto Atlas, com execução melhor. Junto vai um juiz que
 abra 390 px, porque hoje nenhum abre.
+
+**A FORMA, decidida em 22/08 no mockup do celular.** Terceira resposta
+dele às três perguntas — *"3) vira alça"*: no celular a **máquina do
+tempo vira alça**, o controle pequeno que se puxa. É a mesma resposta
+registrada no item **61**, e é aqui que ela vira obra.
 
 **70. Girar a câmera acende e apaga o céu inteiro.** (Achado em 22/08
 pelo juiz novo de movimento, o MB1 — `scripts/visual/
@@ -471,6 +609,45 @@ determinísticas mas a fase do relógio não é, e no fio da régua isso
 basta. Fora isso a casa passa: o piso é 0,33 degrau de 8 bits nas oito
 famílias e a mediana do maior salto por passo fica entre 0,19 e 0,99 px
 — ninguém ferve onde nada cruza fronteira.
+
+**75. Motor de filmes por roteiro — ideia dele para implementação
+futura, 22/08.** Palavras dele, inteiras:
+
+> *"Digo mais, deveríamos ser capazes de criar filmes, os filmes nao
+> deveriam ser milhares de linhas de codigo, deveriam ser na verdade um
+> script, quase como um arquivo txt com os parametros que o "motor de
+> filmes" só lesse. um diretor de uma camera que se movimenta pelo
+> universo, troca de lente, usa zoom, vira e se movimenta livremente,
+> seguidno algortimos claros de movimento intelignete cinematográfico.
+> Nao estou dizendo que a ferramenta deveria estar disponivel para o
+> usuário, mas isso facilitaria sua propria vida para que vc gerasse
+> novos filmes facilmente... logo vc criaria a ferramenta e deixaria
+> instrucoes para que vc mesmo criasse scripts para essa ferramenta...
+> fica a ideia para uma implmentacao futura. depois podemos portar esse
+> filme atual para esssa ferramenta. nunca li o codigo, mas tneho a
+> impressao que hoje dentro do filme já temos todas as "ferramentas"
+> praticamente prontas para que realmente vire um motor, seria como
+> separar as coisas que sao constantes hard coded, da lógica
+> algortimica..."*
+
+Três coisas ficam ditas por ele: a ferramenta **não** é para o
+visitante (é para o agente escrever filmes), ela vem com **instruções**
+para o próprio agente escrever os roteiros, e o **filme atual se porta
+depois** — não antes.
+
+O plano da casa já tem o nome disso, e a ideia dele coincide com o que
+está escrito: **"Motor declarativo"** é o item 1 da *Fila ativa* do
+[`PLANO-CINEMA.md`](PLANO-CINEMA.md) — "movimentos nomeados, legendas,
+preload e marcadores de QA passam a ser dados leves do filme", com
+critério de saída "o filme galáctico roda pelo novo formato sem
+diferença visual — prova A/B bit a bit, com o lado novo capturado de
+disco zerado — nem perda dos gates, e um filme novo não exige editar o
+núcleo do aplicativo". O `NORTE.md` diz o mesmo em uma linha: "novos
+filmes serão declarativos: roteiro leve e editável, sem reescrever o
+núcleo do aplicativo". O que a mensagem dele ACRESCENTA ao que estava
+escrito é a parte da câmera — trocar de lente, usar zoom, virar e se
+mover por "algoritmos claros de movimento inteligente cinematográfico"
+— e o destinatário: o motor é ferramenta do agente, com instruções.
 
 ---
 

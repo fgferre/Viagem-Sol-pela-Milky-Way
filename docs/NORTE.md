@@ -337,6 +337,15 @@ exposição, a B pôs a cadeia de carga no worker, a C matou o último
 reload (o da qualidade) e a D pôs o Auto como 4º estado do seletor. O
 que fica aqui é só o que ainda decide alguma coisa.
 
+**EM REVISÃO, e a decisão desta seção NÃO muda por isso:** o dono em
+22/08 — *"atlas - camadas e ajustes concorrem. vc nao acha que varios
+elementos que hj estao em ajustes na verdade deveriam ser camadas?"*.
+As 17 camadas estarem DENTRO dos Ajustes (dos 32 controles) enquanto a
+gaveta do Atlas mostra 6 delas é o que ele chama de concorrência, e
+está em revisão pelo **item 61**. O que esta seção decide — nada
+recarrega; detecção nunca decide, medição sugere, o visitante escolhe —
+continua de pé e vale onde quer que a camada acabe morando.
+
 **A LEI QUE A D DEIXOU, e ela é política, não mecânica:** *detecção
 nunca decide; medição sugere; o visitante escolhe.* Sem `?q=` o tier é
 uma CONSTANTE (`TIER_DE_PRODUTO` = cinema) — não há storage nem palpite
@@ -439,6 +448,9 @@ Não reabrir sem que a condição listada mude.
 | A ida e volta não é mais juiz obrigatório | Dono em 21/08: *"essa viagem ida e volta não é mais relevante"* — o run inteiro cobrava horas | A mudança ser de transição ou histerese: aí `voo-ida-e-volta.mjs` volta, como instrumento |
 | Pupila adaptativa: não | Dono: o campo estelar nunca esmaece. Medido: 16 stops ao focar Sirius | — |
 | A UI/UX vai ser revista | Dono em 21/08: Atlas ganha botão na abertura, e o celular ganha controles menores e escondidos que expandem (a ideia do drawer do projeto Atlas). Separar Ajustes em visitante × laboratório ele recusou. Itens 60, 61 e 62 | — (é onda de desenho: mockups antes de código) |
+| **O Atlas é o modo único; a viagem é uma ferramenta dele** | Dono em 22/08: *"O modo atlas na minha visao deveria ser o modo único, a viagem na verdade para mim é só uma ferramenta do modo atlas"*, e *"o atlas e a viagem sao 2 coisas quase concorrentes… parece que o modo atlas fica mais morto, vazio"*. O que isso MUDA: um mundo só já é lei e já é código (`claraoDoAtlas` morreu no M1, os dois modos desenham igual) — se os gráficos ainda parecem mudar, é medida a fazer. O que falta é a UI parar de tratar os dois como concorrentes e o Atlas parar de parecer mais vazio. É **direção**, não item fechado. Item 61 | — (direção viva; a obra é a onda da UI/UX) |
+| **Filmes viram roteiro lido por um motor** | Dono em 22/08: *"os filmes nao deveriam ser milhares de linhas de codigo, deveriam ser na verdade um script"* — ferramenta do AGENTE, não do visitante, com instruções para o próprio agente escrever roteiros; o filme atual porta-se depois. É a mesma coisa que o "Motor declarativo", item 1 da fila do `PLANO-CINEMA.md`, mais a parte da câmera (trocar de lente, zoom, virar, por algoritmo de movimento cinematográfico). Item 75 | — (ideia para implementação futura, palavras dele) |
+| **Mockups de 22/08: três botões iguais; controles do filme somem sozinhos; máquina do tempo vira alça** | Respostas dele às três perguntas do canvas: *"1) 3 botoes iguais 2) somem sozinhos 3) vira alça"*. A 1 é a abertura — as três portas com o MESMO tamanho e "Explorar" sem "livremente" (item 61, em código nesta rodada); a 2 e a 3 são obra da onda — itens 61 e 62 | — |
 
 ---
 
