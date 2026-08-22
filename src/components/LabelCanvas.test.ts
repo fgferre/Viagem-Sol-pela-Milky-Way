@@ -19,8 +19,8 @@
 // (o rótulo mais PERTO é o de Fobos) e que a marca a desarma (o mais
 // perto entre os DESENHADOS está de fato escrito na tela).
 //
-// EM 22/08 (item 73) o desenho ganhou CINCO lugares por nome e TRÊS
-// pesos visuais, e o que sobra na tela deixou de ser um só — as duas
+// EM 22/08 (item 73) o desenho ganhou SETE lugares por nome — a âncora
+// e três de cada lado — e TRÊS pesos visuais, e o que sobra na tela deixou de ser um só — as duas
 // metades acima continuam valendo palavra por palavra, e o que muda é
 // quantos nomes cabem.
 //
@@ -136,7 +136,7 @@ describe('o clique bate com o nome escrito na tela', () => {
     new LabelCanvas(canvasFalso()).draw(labels);
     // ATÉ 22/08 SOBRAVA UM SÓ: o Sol chegava primeiro e os quatro
     // planetas internos e as três luas caíam DENTRO da caixa dele. Com
-    // sete lugares em cada lado (item 73) o aglomerado de 6 px cabe
+    // sete lugares por nome nos dois lados (item 73) o aglomerado de 6 px cabe
     // inteiro — é esta a promessa que a foto do dono mostra.
     for (const l of labels) expect(l.desenhado, l.key).toBe(true);
   });
@@ -247,11 +247,11 @@ describe('o HUD fixo afasta o nome (item 56)', () => {
 
 
 // ============================================================
-// AS CINCO POSIÇÕES E OS TRÊS PESOS (item 73, plano §3). O que se julga
+// OS SETE LUGARES E OS TRÊS PESOS (item 73, plano §3). O que se julga
 // é a decisão — onde o texto pousa e com que tinta —, que é aritmética e
 // tabela; a pintura é do navegador.
 // ============================================================
-describe('sete lugares em cada lado, para cada nome', () => {
+describe('sete lugares por nome — a âncora e três de cada lado', () => {
   it('o PRIMEIRO lugar é o de sempre: quem já cabia não se move', () => {
     const canvas = new LabelCanvas(canvasFalso());
     const sozinho = [rotulo('corpo:mars', 'Marte', 0.5, 0.45)];
@@ -269,19 +269,23 @@ describe('sete lugares em cada lado, para cada nome', () => {
       if (passo === 0) continue;
       expect(Math.abs(passo)).toBeGreaterThan(24 + 8);
     }
-    // SETE e não os cinco do plano: cinco de cada lado davam 8 dos 10
-    // corpos da abertura, medido no navegador (ver a docstring)
+    // SETE e não os cinco do plano: com cinco lugares nos dois lados
+    // cabiam 8 dos 10 corpos da abertura, medido no navegador (ver a
+    // docstring). Sete LUGARES ao todo: a âncora (o zero) e três de cada
+    // lado dela.
     expect(DESLOCAMENTOS.length).toBe(7);
+    expect(DESLOCAMENTOS.filter((p) => p < 0)).toHaveLength(3);
+    expect(DESLOCAMENTOS.filter((p) => p > 0)).toHaveLength(3);
     // simétricas em torno da âncora, e em ordem de distância
     expect([...DESLOCAMENTOS].sort((a, b) => Math.abs(a) - Math.abs(b))).toEqual([
       ...DESLOCAMENTOS,
     ]);
   });
 
-  it('catorze empilhados cabem — sete de cada lado; o décimo quinto não', () => {
+  it('catorze empilhados cabem — os sete lugares nos dois lados; o 15º não', () => {
     const canvas = new LabelCanvas(canvasFalso());
     // quinze nomes no MESMO ponto — o pior caso do aglomerado interno,
-    // exagerado: sete deslocamentos × dois lados = catorze vagas
+    // exagerado: os sete lugares × dois lados = catorze vagas
     const muitos = Array.from({ length: 15 }, (_, i) =>
       rotulo(`corpo:c${i}`, `Corpo ${i}`, 0.5, 0.45)
     );
@@ -295,7 +299,7 @@ describe('sete lugares em cada lado, para cada nome', () => {
   it('o LADO é alternativa, e o preferido vem primeiro', () => {
     const canvas = new LabelCanvas(canvasFalso());
     // dois no mesmo ponto, com a caixa alta o bastante para o primeiro
-    // ocupar todos os sete lugares de um lado é caro — aqui basta ver
+    // ocupar os sete lugares de um lado é caro — aqui basta ver
     // que os dois cabem, o que só é possível com dois lugares
     const dois = [
       rotulo('corpo:a', 'A', 0.5, 0.45),

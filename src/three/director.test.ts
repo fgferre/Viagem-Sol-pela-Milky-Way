@@ -137,8 +137,8 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
   // `director/palco.ts` e `director/rotulos.ts` para cobrá-las. Refatorar
   // o Director quebrava o teste da LUA, que não tinha nada com isso. O
   // fato é o mesmo; o dono dele é este arquivo. Os TRAÇOS da Lua (sem
-  // ponto, sem retrato, com rótulo) ficaram lá, e lá viraram teste de
-  // objeto: `montarCorposDoPalco()` chamado de verdade.
+  // ponto, sem retrato, com rótulo) seguem por TEXTO — a razão está no
+  // `it` abaixo.
   const PALCO = readFileSync(new URL('./director/palco.ts', import.meta.url), 'utf8');
   const ROTULOS = readFileSync(new URL('./director/rotulos.ts', import.meta.url), 'utf8');
   const CARREGAMENTO = readFileSync(

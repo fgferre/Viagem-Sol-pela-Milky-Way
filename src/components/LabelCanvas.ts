@@ -25,15 +25,16 @@ const FAMILIA = '"Segoe UI", Arial, sans-serif';
  * caixas ainda se cruzam, e as cinco posições dele viravam uma. 34 px é
  * o primeiro passo que limpa, com 2 px de margem.
  *
- * A CONTAGEM. O plano pedia CINCO, e cinco não bastam — está medido na
- * vista de abertura, que é onde a promessa foi feita ("os 8 planetas e
- * o Sol com nome, contra 3 hoje"). O aglomerado interno tem CINCO
- * corpos dentro de 6 px (Sol, Mercúrio, Vênus, Terra, Marte) e mais
- * três vizinhos na mesma faixa vertical (Júpiter, Saturno, Urano):
- * cinco lugares de um lado dão 5 nomes, cinco de cada lado dão 8, e
- * SETE de cada lado dão os 10. Cada par a mais custa 34 px de traço, e
- * o traço agora é conferido contra o HUD (ver `draw`), então ele não
- * pode se esconder atrás da tarja.
+ * A CONTAGEM: SETE LUGARES — a âncora e três de cada lado. O plano
+ * pedia CINCO, e cinco não bastam — está medido na vista de abertura,
+ * que é onde a promessa foi feita ("os 8 planetas e o Sol com nome,
+ * contra 3 hoje"). O aglomerado interno tem CINCO corpos dentro de 6 px
+ * (Sol, Mercúrio, Vênus, Terra, Marte) e mais três vizinhos na mesma
+ * faixa vertical (Júpiter, Saturno, Urano): com cinco lugares num lado
+ * só cabem 5 nomes, com os cinco nos dois lados cabem 8, e são os SETE
+ * (nos dois lados, 14 vagas) que dão os 10. Cada par a mais custa 34 px
+ * de traço, e o traço agora é conferido contra o HUD (ver `draw`), então
+ * ele não pode se esconder atrás da tarja.
  *
  * A ordem é centro → cima → baixo → mais longe, alternando, e o
  * PRIMEIRO é o zero: quem já cabia continua exatamente onde estava.
