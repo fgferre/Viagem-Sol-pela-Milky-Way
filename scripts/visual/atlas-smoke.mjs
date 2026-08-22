@@ -123,6 +123,32 @@ try {
     `abertura reproduzível: ${[...doAtlas].map(([t, h]) => `t=${t} ${h}`).join(' · ')}`
   );
 
+  // ---- 3b: A QUARTA ENTRADA, a porta da ABERTURA (item 60) ---------
+  // Desde 22/08 dá para entrar no Atlas sem ver o filme, pelo terceiro
+  // botão do véu de título. O botão chama o MESMO `entrarNoAtlas`, mas
+  // "mesmo método" não é prova de "mesma tela": daqui ele entra SEM
+  // viagem atrás (`retomada` fica `null`) e sem nada do palco montado
+  // pelo roteiro. A promessa que o item 60 fez é que o visitante chega
+  // ao MESMO Atlas dos três cliques — então é pixel que a mede.
+  // O clique vai no botão mesmo, e não no método: sob `?shot=2` o véu
+  // está em `display: none` e o `.click()` do DOM dispara igual, o que
+  // é justamente o que se quer — a prova é do BOTÃO.
+  await sessao.ir(PIN);
+  await sessao.js("[...document.querySelectorAll('.veil-intro button')]"
+    + ".find((b) => b.textContent.trim() === 'Entrar no Atlas').click()");
+  await sessao.assentar();
+  const faseDaPorta = await sessao.js('window.__director.captura.fase');
+  const daPorta = await sessao.md5();
+  conferir(
+    faseDaPorta === 'atlas',
+    `a porta da abertura entra no Atlas: fase = '${faseDaPorta}'`
+  );
+  conferir(
+    daPorta === vistas[0],
+    `a porta da abertura chega ao MESMO Atlas dos três cliques`
+      + ` (${daPorta} vs ${vistas[0]})`
+  );
+
   // ---- 4: o deep-link e o "Partir" sem viagem anterior -------------
   await sessao.ir(`atlas=1&${PIN}`);
   const faseLink = await sessao.js('window.__director.captura.fase');

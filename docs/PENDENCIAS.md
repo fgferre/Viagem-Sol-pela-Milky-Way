@@ -444,7 +444,7 @@ recarregada. As duas diferem. Não foi diagnosticado: pode ser o juiz
 fotografando a recarga antes de ela assentar, ou pode ser a
 auto-exposição pousando num valor diferente quando NASCE com a cena em
 vez de voltar a ela. Enquanto viver, o `atlas-smoke` pode sair com 1
-falha em 99 e não é regressão de quem o rodou. **E ele é INTERMITENTE:**
+falha em 101 e não é regressão de quem o rodou. **E ele é INTERMITENTE:**
 na volta de 22/08 que fechou o item 60 o juiz saiu 99 de 99, com o mesmo
 código — o que empurra a suspeita para o primeiro palpite (o juiz
 fotografando a recarga antes de ela assentar), porque a segunda
