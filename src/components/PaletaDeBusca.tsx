@@ -192,7 +192,7 @@ export function PaletaDeBusca({
         + `${(corpos > 0 ? ['terra', ...EXEMPLOS] : EXEMPLOS).join(' · ')}`;
 
   return (
-    <div className="atlas-busca" aria-label="Buscar um alvo" {...dialogo}>
+    <div className="hud-cartao hud-dialogo atlas-busca" aria-label="Buscar um alvo" {...dialogo}>
       <div className="atlas-busca-topo">
         <input
           type="text"

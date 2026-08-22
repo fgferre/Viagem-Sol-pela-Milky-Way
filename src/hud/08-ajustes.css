@@ -3,39 +3,24 @@
 /* ---- Painel de ajustes ---------------------------------------------
    Fica fora do fluxo do HUD e some sozinho em ?shot=2 pela regra de
    .bare-mode acima — captura de medição não pode ter UI dentro. */
+/* Pele e ancoragem vêm de `hud-cartao hud-dialogo` (fatia 1) — inclusive
+   o topo medido, que é o conserto do `6.4rem` de uma janela só: a barra
+   se pendura em `8.5vh` e acima de ~881 px de altura descia por cima do
+   painel, comendo o "✕" de fechar junto com o clique dele.
+   Aqui ficam a largura e as DUAS EXCEÇÕES deste painel — os únicos dois
+   pontos em que ele não é a gaveta nem a paleta. */
 .ajustes {
-  position: absolute;
-  /* ABAIXO DA BARRA DE CONTROLES — e agora medindo a barra, não
-     adivinhando onde ela está. O `6.4rem` que ficava aqui era um número
-     de uma janela só: a barra se pendura em `8.5vh`, e acima de ~881 px
-     de altura ela descia até por cima deste topo. Como ela desenha por
-     cima (camada 45 contra 20), o "✕" de fechar sumia junto com o
-     clique dele — quatro dezenas de pixels comidos num 1440p. */
-  top: calc(var(--barra-fim) + 0.8rem);
-  right: 1.6rem;
   width: min(19rem, calc(100vw - 3.2rem));
-  /* O TETO SAI DA MESMA ÂNCORA DO TOPO, e o terceiro termo é o que
-     impede o conserto de virar outro defeito: o painel agora começa
-     abaixo da barra MEDIDA, que numa janela apertada (600×450 com o
-     texto em 140%, onde a barra quebra em duas linhas) desce bem mais
-     do que o `6.4rem` de antes — e um teto de `66vh` cravado punha o pé
-     do painel 57 px fora da tela. Os dois primeiros termos continuam
-     mandando em qualquer tela com espaço, então o painel é o de sempre;
-     o terceiro só ganha quando o espaço acabou. */
+  /* EXCEÇÃO 1 — o teto tem três termos, não um. Os outros dois diálogos
+     cabem na tela sozinhos; este é o mais alto da casa e precisa parar
+     antes. Os dois primeiros termos mandam em qualquer tela com espaço,
+     e o terceiro (o teto comum, o da âncora medida) só ganha quando o
+     espaço acabou — foi ele que impediu o conserto do topo de virar
+     outro defeito, com o pé do painel 57 px fora de uma janela de
+     600×450 e o texto em 140%. */
   max-height: min(66vh, 40rem, calc(100vh - var(--barra-fim) - 2.4rem));
-  overflow-y: auto;
-  pointer-events: auto;
-  /* a camada dos diálogos, declarada uma vez em `.hud-root` — o mesmo
-     "camada 45 contra 20" do comentário acima acontecia com o selo (40),
-     e contra o selo não há geometria: ele mora onde o painel termina */
-  z-index: var(--camada-dialogo);
-  padding: 0.9rem 1.1rem 1.2rem;
-  border: 1px solid rgba(220, 230, 248, 0.28);
-  background: rgba(6, 9, 18, 0.86);
-  backdrop-filter: blur(14px);
-  color: rgba(235, 240, 250, 0.92);
-  font-size: 0.72rem;
-  font-weight: 300;
+  /* EXCEÇÃO 2 — o rodapé é 0,2rem mais alto que o dos outros dois. */
+  padding-bottom: 1.2rem;
 }
 .ajustes-topo {
   display: flex;

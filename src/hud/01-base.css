@@ -1,7 +1,12 @@
 /* HUD, fatia 1/8 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 /* ============================================================
-   HUD cinematográfico — letterbox, legendas, rótulos, títulos
+   O QUE É COMUM AO HUD INTEIRO: a raiz e as duas camadas de canvas,
+   as custom properties que as outras fatias consomem (`--barra-fim`,
+   `--camada-dialogo`) e o vocabulário visual compartilhado (a pele do
+   cartão, o diálogo ancorado). Vem PRIMEIRO de propósito: quem declara
+   o comum tem de perder para quem declara a exceção, e entre seletores
+   de mesma especificidade quem decide é a ordem.
    ============================================================ */
 
 .hud-root {
@@ -72,5 +77,45 @@
 .label-canvas {
   z-index: 25;
   pointer-events: none;
+}
+
+/* ---- A PELE DO CARTÃO ------------------------------------------------
+   Os QUATRO cartões do HUD — o convite do voo livre (`.spotlight-cartao`,
+   fatia 3), a gaveta de camadas e a paleta de busca (`.atlas-gaveta` e
+   `.atlas-busca`, fatia 4) e o painel de Ajustes (`.ajustes`, fatia 8) —
+   sempre tiveram a MESMA pele: a borda fria, o fundo quase preto, o
+   desfoque do que passa atrás e a cor do texto. Estava escrita quatro
+   vezes, em três arquivos, e cada cópia era um lugar a mais para o
+   próximo ajuste de cor pegar três dos quatro.
+   Mora aqui pela mesma razão que `--camada-dialogo` e `--barra-fim`: é
+   vocabulário da casa, não peça de um modo. */
+.hud-cartao {
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(6, 9, 18, 0.86);
+  backdrop-filter: blur(14px);
+  color: rgba(235, 240, 250, 0.92);
+}
+
+/* ---- O DIÁLOGO ANCORADO SOB A BARRA ----------------------------------
+   Três dos quatro cartões são, além da pele, o MESMO diálogo: pendurado
+   na barra de controles MEDIDA, encostado à direita, na camada dos
+   diálogos, com o mesmo respiro, o mesmo teto e o mesmo corpo de texto.
+   Também estava escrito três vezes — e os comentários das três já
+   diziam "mesmo topo do painel de Ajustes", "mesmo teto", "pela mesma
+   medida", que é duplicação pedindo socorro em prosa.
+   O QUE NÃO É COMUM continua em cada um, nomeado: a LARGURA (cada
+   diálogo tem a sua) e as duas exceções do Ajustes — o teto de três
+   termos e o rodapé mais alto. */
+.hud-dialogo {
+  position: absolute;
+  top: calc(var(--barra-fim) + 0.8rem);
+  right: 1.6rem;
+  max-height: calc(100vh - var(--barra-fim) - 2.4rem);
+  overflow-y: auto;
+  pointer-events: auto;
+  z-index: var(--camada-dialogo);
+  padding: 0.9rem 1.1rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 300;
 }
 

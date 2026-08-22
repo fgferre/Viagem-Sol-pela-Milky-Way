@@ -186,15 +186,14 @@
   width: 100%;
   height: 100%;
 }
+/* a pele vem de `.hud-cartao` (fatia 1). Este é o único dos quatro
+   cartões que NÃO é o diálogo ancorado: ele é `fixed` e persegue o alvo
+   do holofote, então a geometria é toda dele. */
 .spotlight-cartao {
   position: fixed;
   max-width: min(24rem, 82vw);
   pointer-events: auto;
   padding: 0.8rem 1rem 0.7rem;
-  border: 1px solid rgba(220, 230, 248, 0.28);
-  background: rgba(6, 9, 18, 0.86);
-  backdrop-filter: blur(14px);
-  color: rgba(235, 240, 250, 0.92);
 }
 /* sem alvo na tela: o cartão fica no meio, sozinho */
 .spotlight-cartao.solto {

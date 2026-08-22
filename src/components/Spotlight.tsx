@@ -136,7 +136,7 @@ export function Spotlight({ alvo, children }: { alvo: string | null; children: R
           />
         )}
       </svg>
-      <div className={`spotlight-cartao${cartao ? '' : ' solto'}`} style={cartao}>
+      <div className={`hud-cartao spotlight-cartao${cartao ? '' : ' solto'}`} style={cartao}>
         {children}
       </div>
     </div>

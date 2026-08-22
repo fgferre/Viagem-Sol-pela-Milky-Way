@@ -110,7 +110,7 @@ export function GavetaDeCamadas({
   const dialogo = useDialogFocus('camadas', aberta, onFechar);
   if (!aberta) return null;
   return (
-    <div className="atlas-gaveta" aria-label="Camadas do Atlas" {...dialogo}>
+    <div className="hud-cartao hud-dialogo atlas-gaveta" aria-label="Camadas do Atlas" {...dialogo}>
       <div className="atlas-gaveta-topo">
         <span>Camadas</span>
         <button type="button" onClick={onFechar} aria-label="Fechar camadas">

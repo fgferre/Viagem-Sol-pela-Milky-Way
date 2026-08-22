@@ -97,7 +97,7 @@ export function Ajustes({
   if (!aberto) return null;
 
   return (
-    <div className="ajustes" aria-label="Ajustes de renderização" {...dialogo}>
+    <div className="hud-cartao hud-dialogo ajustes" aria-label="Ajustes de renderização" {...dialogo}>
       <div className="ajustes-topo">
         <span>Ajustes</span>
         <button type="button" onClick={onFechar} aria-label="Fechar ajustes">

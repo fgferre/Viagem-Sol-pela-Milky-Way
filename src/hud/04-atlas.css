@@ -244,29 +244,11 @@
 
 /* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
    tipo de coisa (diálogo de controle), e um segundo vocabulário visual
-   para a mesma função seria ruído */
+   para a mesma função seria ruído. O "mesmo desenho" deixou de ser
+   promessa em comentário: a marcação pede `hud-cartao hud-dialogo`
+   (fatia 1) e aqui fica só o que é DELA. */
 .atlas-gaveta {
-  position: absolute;
-  /* mesmo topo medido do painel de Ajustes — os três diálogos da casa
-     se penduram na MESMA barra e agora leem a MESMA medida */
-  top: calc(var(--barra-fim) + 0.8rem);
-  right: 1.6rem;
   width: min(15rem, calc(100vw - 3.2rem));
-  /* mesmo teto do painel de Ajustes: quem tem o topo medido tem de ter
-     o pé medido também, senão a janela apertada empurra a caixa para
-     fora da tela */
-  max-height: calc(100vh - var(--barra-fim) - 2.4rem);
-  overflow-y: auto;
-  pointer-events: auto;
-  /* a camada dos diálogos, declarada uma vez em `.hud-root` */
-  z-index: var(--camada-dialogo);
-  padding: 0.9rem 1.1rem 1rem;
-  border: 1px solid rgba(220, 230, 248, 0.28);
-  background: rgba(6, 9, 18, 0.86);
-  backdrop-filter: blur(14px);
-  color: rgba(235, 240, 250, 0.92);
-  font-size: 0.72rem;
-  font-weight: 300;
 }
 .atlas-gaveta-topo {
   display: flex;
@@ -313,28 +295,11 @@
    ruído. Ela é a única peça daqui que serve DUAS fases: o Atlas e o voo
    livre. Tudo em rem puro, sem termo vw: uma paleta que mudasse de
    tamanho ao trocar de fase seria a mesma coisa parecendo outra.
-   NADA aqui pisca — o que está escolhido tem borda e fundo, não pulso. */
+   NADA aqui pisca — o que está escolhido tem borda e fundo, não pulso.
+   Pele e ancoragem vêm de `hud-cartao hud-dialogo` (fatia 1); aqui fica
+   a largura, que é a única coisa que distingue as três caixas. */
 .atlas-busca {
-  position: absolute;
-  /* abaixo da barra de controles, como o painel — e pela mesma medida */
-  top: calc(var(--barra-fim) + 0.8rem);
-  right: 1.6rem;
   width: min(22rem, calc(100vw - 3.2rem));
-  /* mesmo teto dos outros dois (e ele faltava aqui desde sempre: a
-     paleta é a mais alta das três e já saía da tela numa janela baixa,
-     porque só a LISTA tinha teto, não a caixa) */
-  max-height: calc(100vh - var(--barra-fim) - 2.4rem);
-  overflow-y: auto;
-  pointer-events: auto;
-  /* a camada dos diálogos, declarada uma vez em `.hud-root` */
-  z-index: var(--camada-dialogo);
-  padding: 0.9rem 1.1rem 1rem;
-  border: 1px solid rgba(220, 230, 248, 0.28);
-  background: rgba(6, 9, 18, 0.86);
-  backdrop-filter: blur(14px);
-  color: rgba(235, 240, 250, 0.92);
-  font-size: 0.72rem;
-  font-weight: 300;
 }
 .atlas-busca-topo {
   display: flex;
