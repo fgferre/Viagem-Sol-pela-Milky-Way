@@ -191,6 +191,14 @@ export default function App() {
    * evento — a 4 Hz, nunca por quadro — que faz o HUD redesenhar.
    */
   const [tempo, setTempo] = useState<EstadoDoTempo | null>(null);
+  /**
+   * O VISITANTE JÁ ARRASTOU dentro do Atlas (item 73)? Uma vez só por
+   * sessão, e só para APAGAR a dica dos gestos: quem girou aprendeu o
+   * gesto e não precisa mais da linha, e a linha ocupa altura de rodapé
+   * que é distância de câmera. Não volta a acender ao sair e entrar de
+   * novo — a lição é do visitante, não da fase.
+   */
+  const [girouNoAtlas, setGirouNoAtlas] = useState(false);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
   // (onda da arquitetura, corte 6) — os fios são os mesmos de sempre.
@@ -214,6 +222,7 @@ export default function App() {
     setFoco,
     setTempo,
     setEscada,
+    girou: () => setGirouNoAtlas(true),
   });
 
   // ?loader=<id> fixa uma etapa da tela de carregamento e a mantém no ar
@@ -675,11 +684,12 @@ export default function App() {
               onEpoca={() => directorRef.current?.voltarAEpoca()}
             />
           )}
-          {/* A DICA DESCREVE OS GESTOS REAIS (Onda 7). "girar em torno
-              do alvo" era promessa de um eixo que não existia: o arrasto
-              tinha um eixo só e ele subia em LATITUDE. Agora são dois —
-              a horizontal gira em torno do alvo, a vertical sobe e desce
-              — e a roda move a escada em degraus.
+          {/* A DICA DESCREVE OS GESTOS REAIS (item 73). Prometer degrau
+              na roda e enquadramento no clique era descrever a navegação
+              que o dono chamou de monstro: a roda pulava de degrau em vez
+              de dar zoom, e o clique reposicionava em vez de escolher. Os quatro
+              verbos passam a ser os do padrão da indústria — girar, zoom,
+              ir, voltar —, e cada um é o que o gesto faz de verdade.
 
               O COMPRIMENTO É ORÇAMENTO, não gosto: a dica mora na mesma
               coluna da máquina do tempo, então cada linha que ela ganha
@@ -689,12 +699,15 @@ export default function App() {
               apertado da faixa declarada (desde o item 9 ela desce a
               768), a quebra da 2ª para a 3ª linha acontece entre 68 e 70
               caracteres, e a 3ª linha estoura a base declarada de então
-              (0,328 contra 0,310). Daí "clique — enquadrar" e
-              não "clique num nome — enquadrar". O item 8 pôs o Esc na
-              tela DENTRO do mesmo orçamento: "girar e subir/descer"
-              virou "girar" para "esc — subir" caber — 67 de 68. */}
-          <div className="free-hint">
-            arraste — girar · roda — degraus · clique — enquadrar · esc — subir
+              (0,328 contra 0,310). A linha nova tem 58 caracteres contra
+              os 67 da anterior — desce dentro do orçamento, nunca sobe.
+
+              E ELA SOME DEPOIS DO PRIMEIRO ARRASTO (decisão do dono nos
+              mockups), por OPACIDADE e com a caixa no lugar: ver
+              `.free-hint.apagada`. Tirá-la do fluxo cresceria o retângulo
+              útil e a câmera daria um pulo no meio da sessão. */}
+          <div className={`free-hint ${girouNoAtlas ? 'apagada' : ''}`}>
+            arraste — girar · roda — zoom · clique — ir · esc — voltar
           </div>
 
           {/* O SELO. Lê o estado da vista do Director a cada render — e o

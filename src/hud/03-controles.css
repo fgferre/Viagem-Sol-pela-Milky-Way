@@ -133,6 +133,17 @@
   text-transform: uppercase;
   line-height: 2;
   pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+/* A DICA DO ATLAS SOME DEPOIS DO PRIMEIRO ARRASTO — e some por
+   OPACIDADE, com a CAIXA NO LUGAR. Se ela saísse do fluxo, a coluna do
+   `.atlas-rodape` encolheria, o retângulo útil cresceria e a câmera
+   daria um pulo no meio da sessão (a altura do rodapé alimenta
+   `retanguloUtilDoAtlas`, que alimenta a DISTÂNCIA). Quem já arrastou
+   aprendeu o gesto; quem não arrastou continua lendo. */
+.free-hint.apagada {
+  opacity: 0;
 }
 
 /* o opt-in da captura de ponteiro (F5): mora dentro da dica de voo, que

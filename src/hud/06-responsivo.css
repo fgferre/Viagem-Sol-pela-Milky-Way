@@ -226,7 +226,8 @@
 @media (prefers-reduced-motion: reduce) {
   .letterbox,
   .veil,
-  .progress-fill {
+  .progress-fill,
+  .free-hint {
     transition-duration: 0.01ms;
   }
 

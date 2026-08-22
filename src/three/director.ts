@@ -198,6 +198,15 @@ interface DirectorEvents {
    */
   onEscada: (estado: EstadoDaEscada) => void;
   /**
+   * O PRIMEIRO ARRASTO dentro do Atlas, uma vez por sessão (item 73).
+   * Serve à dica dos gestos: quem girou aprendeu o gesto, e a linha
+   * apaga por opacidade — a caixa fica, senão o rodapé encolheria e a
+   * câmera recuaria no meio da sessão. Uma vez e não por quadro porque
+   * o consumidor é `setState` do React: um por movimento de ponteiro
+   * redesenharia o HUD inteiro a 60 Hz.
+   */
+  onGirou: () => void;
+  /**
    * A SESSÃO MORREU DEPOIS DO BOOT — contexto WebGL perdido ou exceção
    * em quadro. É o MESMO canal do véu de erro do carregamento (o App
    * escreve `loadError`): a casa tem um véu de falha só, e o que muda
@@ -375,7 +384,8 @@ export class Director {
   private meta!: StarsMeta;
   /** o punho dos gestos do canvas — corte 6 da Parte 1 (director/gestos.ts) */
   private gestos: ReturnType<typeof ligarGestos> | null = null;
-  /** roda e pinça → degraus da escada (Onda 7) */
+  /** o visitante já arrastou dentro do Atlas? (item 73 — apaga a dica) */
+  private jaGirouNoAtlas = false;
 
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
@@ -693,6 +703,12 @@ export class Director {
       orbitar: (dx, dy) => {
         this.atlas.addOrbitDelta(dx, dy);
         this.perturbar();
+        // o primeiro arrasto apaga a dica dos gestos (item 73) — uma vez
+        // por sessão, nunca por quadro: do outro lado do fio há setState
+        if (!this.jaGirouNoAtlas) {
+          this.jaGirouNoAtlas = true;
+          this.events.onGirou();
+        }
       },
       olhar: (dx, dy) => this.rig.addLookDelta(dx, dy),
       focar: (x, y) => this.escada.tryVisit(x, y),

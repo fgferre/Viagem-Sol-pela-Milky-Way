@@ -53,6 +53,8 @@ export interface FiosDoDirector {
   setFoco: (v: string | null) => void;
   setTempo: (v: EstadoDoTempo | null) => void;
   setEscada: (v: EstadoDaEscada) => void;
+  /** o primeiro arrasto dentro do Atlas — apaga a dica dos gestos */
+  girou: () => void;
 }
 
 export function useDirector(fios: FiosDoDirector) {
@@ -76,6 +78,7 @@ export function useDirector(fios: FiosDoDirector) {
     setFoco,
     setTempo,
     setEscada,
+    girou,
   } = fios;
   useEffect(() => {
     if (!canvasRef.current || !labelCanvasRef.current) return;
@@ -109,6 +112,7 @@ export function useDirector(fios: FiosDoDirector) {
       onFoco: setFoco,
       onTempo: setTempo,
       onEscada: setEscada,
+      onGirou: girou,
       // a falha DEPOIS do boot (contexto perdido, exceção em quadro) cai
       // no MESMO véu das três falhas de carga — o App decide a copy pela
       // fase, que é o que separa "não pôde começar" de "parou no meio"

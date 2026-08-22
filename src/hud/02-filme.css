@@ -1,6 +1,15 @@
 /* HUD, fatia 2/8 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
-/* --- letterbox --- */
+/* --- letterbox ---
+   A TARJA NÃO RECEBE PONTEIRO, e não é opção de fase: ela é pintura
+   preta nos dois modos e nunca precisou de gesto nenhum. Com
+   `z-index: 30` sobre o canvas e `height: 6.5vh`, ela engolia 52,8 px em
+   cima e 52,8 embaixo na janela de 813 px de altura em que os juízes
+   medem (1200×900 de janela externa) — arrastar ali não
+   girava, rolar ali não chegava à roda, e o visitante que começa o
+   gesto na borda (que é onde se começa) concluía que a navegação não
+   responde (item 73). `pointer-events: none` devolve os dois gestos ao
+   canvas sem mover um pixel: não é layout nem tinta. */
 .letterbox {
   position: fixed;
   left: 0;
@@ -8,6 +17,7 @@
   height: 0;
   background: #000;
   z-index: 30;
+  pointer-events: none;
   transition: height 2.2s cubic-bezier(0.65, 0, 0.35, 1);
 }
 .letterbox.top { top: 0; }

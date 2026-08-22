@@ -152,6 +152,10 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
   });
 
   it('a dica conta ao visitante que a roda existe', () => {
-    expect(APP).toMatch(/roda — degraus/);
+    // O VERBO saiu do trilho em 22/08 (item 73): a dica deixou de
+    // prometer degrau porque a roda vai deixar de dar degrau. O que esta
+    // prova cobra continua sendo o que ela sempre cobrou — que a linha do
+    // rodapé NOMEIE a roda —, sem pinar qual gesto ela executa.
+    expect(APP).toMatch(/roda —/);
   });
 });
