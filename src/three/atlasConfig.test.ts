@@ -289,7 +289,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       ENGINE.indexOf('get medicao()')
     );
     expect(aplicar).toContain('this.medicaoAtual = null;');
-    expect(aplicar).toContain('this.fpsN = 0;');
+    expect(aplicar).toContain('this.medidor.zerar();');
   });
 
   it('o que a medição INDICA: os limiares de sempre, agora como sugestão', () => {

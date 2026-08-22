@@ -19,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import {
   DEEP_NEAR_MIN_PC,
+  MedidorDeQuadros,
   TONE_MAPPINGS,
   TravaDoVaivem,
   farPlanePc,
@@ -573,6 +574,86 @@ describe('o Auto não balança para sempre (trava de vai-e-volta)', () => {
       t.anotar('cinema', 'cinema', 26, true);
       t.anotar('cinema', 'alta', 27, true);
       expect(t.travada).toBe(true);
+    });
+  });
+
+  // ============================================================
+  // O CHÃO DE 20 q/s (item 68, medido em 22/08). A janela somava o `dt`
+  // do tick, que vem grampeado em 0,05 s para a animação não saltar um
+  // engasgo — e `quadros ÷ tempo grampeado` nunca podia dar menos de
+  // 1 ÷ 0,05 = 20. Medido nesta bancada em `q=cinema` a 1200×900: 60
+  // quadros em 4,00 s reais (15,0 q/s) com o painel dizendo 20,3.
+  // ============================================================
+  describe('o medidor conta relógio de parede, não o passo do integrador', () => {
+    /** roda `n` quadros de `dtS` e devolve as amostras que fecharam */
+    function medir(dtS: number, n: number, janelaS = 2.5) {
+      const m = new MedidorDeQuadros();
+      const saidas: number[] = [];
+      for (let i = 0; i < n; i++) {
+        const a = m.amostrar(dtS, janelaS);
+        if (a) saidas.push(a.fps);
+      }
+      return saidas;
+    }
+
+    it('quadros de 66 ms dão 15 q/s — abaixo do chão velho de 20', () => {
+      const [fps] = medir(1 / 15, 60);
+      expect(fps).toBeCloseTo(15, 6);
+      // a conta VELHA, verbatim: o mesmo quadro somado com o `dt`
+      // grampeado devolve exatamente o chão, e é a mentira do painel
+      const grampeado = Math.min(1 / 15, 0.05);
+      const nVelho = Math.ceil(2.5 / grampeado) + 1;
+      expect(nVelho / (nVelho * grampeado)).toBeCloseTo(20, 6);
+    });
+
+    it('quadros de 60 Hz atravessam intocados — o grampo não morde acima de 20', () => {
+      const [fps] = medir(1 / 60, 300);
+      expect(fps).toBeCloseTo(60, 6);
+    });
+
+    // 0,0625 s = 16 q/s, exato em binário: 40 quadros dão 2,5 s cravados
+    // e a janela ainda NÃO fecha (o corte é `>`), o 41º fecha
+    const PASSO_EXATO = 0.0625;
+
+    it('a janela só fecha DEPOIS de 2,5 s de relógio, e recomeça do zero', () => {
+      const m = new MedidorDeQuadros();
+      for (let i = 0; i < 40; i++) expect(m.amostrar(PASSO_EXATO)).toBeNull();
+      const a = m.amostrar(PASSO_EXATO);
+      expect(a).not.toBeNull();
+      expect(a!.janelaS).toBeCloseTo(41 * PASSO_EXATO, 9);
+      expect(a!.fps).toBeCloseTo(16, 9);
+      expect(m.amostrar(PASSO_EXATO)).toBeNull();
+    });
+
+    it('`zerar` esvazia a janela — a média do tier que saiu não conta no que entrou', () => {
+      const m = new MedidorDeQuadros();
+      for (let i = 0; i < 30; i++) m.amostrar(PASSO_EXATO);
+      m.zerar();
+      for (let i = 0; i < 40; i++) expect(m.amostrar(PASSO_EXATO)).toBeNull();
+      expect(m.amostrar(PASSO_EXATO)).not.toBeNull();
+    });
+
+    // O CONSERTO NÃO MEXE NO AUTO: os limiares de `QUEDA` são 42 e 34,
+    // os dois acima do chão velho. Onde a medida muda (abaixo de 20) ela
+    // cai do MESMO lado dos dois; acima, os dois tempos são o mesmo
+    // número. Quem mentia era só o mostrador.
+    it('as decisões do Auto não mudam: 15 e 20 pedem o mesmo degrau', () => {
+      for (const tier of ['cinema', 'alta', 'performance'] as QualityLevel[]) {
+        expect(tierMedido(tier, 15, false)).toBe(tierMedido(tier, 20, false));
+        expect(tierMedido(tier, 15, true)).toBe(tierMedido(tier, 20, true));
+      }
+    });
+
+    it('o engine passa o dt REAL ao medidor e o grampeado ao tick', () => {
+      const ENGINE = readFileSync(new URL('./engine.ts', import.meta.url), 'utf8');
+      const loop = ENGINE.slice(ENGINE.indexOf('const loop = (timestamp'));
+      expect(loop).toContain('const dtReal = this.timer.getDelta();');
+      expect(loop).toContain('const dt = Math.min(dtReal, GRAMPO_DO_PASSO_S);');
+      expect(loop).toContain('this.medidor.amostrar(dtReal, JANELA_DA_MEDIDA_S)');
+      expect(loop).toContain('f(t, dt)');
+      // e o acumulador de `dt` grampeado não volta por outro nome
+      expect(loop).not.toContain('this.fpsAcc');
+      expect(loop).not.toContain('this.fpsTimer');
     });
   });
 

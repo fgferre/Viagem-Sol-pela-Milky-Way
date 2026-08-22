@@ -126,6 +126,54 @@ export function lerPortaQualidade(
 /** quanto tempo de quadro entra em cada amostra da medição */
 const JANELA_DA_MEDIDA_S = 2.5;
 
+/** o passo que o INTEGRADOR aceita — depois de um engasgo a animação
+ *  anda `GRAMPO_DO_PASSO_S` e não salta o buraco inteiro */
+const GRAMPO_DO_PASSO_S = 0.05;
+
+/**
+ * O MEDIDOR DE QUADROS — puro, para ser julgado sem GPU.
+ *
+ * SÃO DUAS GRANDEZAS, e confundi-las era o item 68. O integrador quer o
+ * passo DOMADO (`GRAMPO_DO_PASSO_S`, senão a animação salta o engasgo);
+ * o medidor quer o RELÓGIO DE PAREDE. Enquanto a janela somava o `dt`
+ * grampeado, `quadros ÷ tempo` tinha um CHÃO de 1 ÷ 0,05 = 20 q/s que
+ * nenhuma máquina lenta atravessava: medidos nesta bancada 60 quadros
+ * em 4,00 s reais — 15,0 q/s — e o painel dizia 20,3.
+ *
+ * O que a correção NÃO mexe: as decisões do Auto. Acima de 20 q/s
+ * nenhum quadro grampeia e os dois tempos são o MESMO número; abaixo,
+ * os limiares de `QUEDA` (42 e 34) já estavam ambos acima do chão, e
+ * uma medida mais baixa cai do mesmo lado deles. Quem mentia era o
+ * MOSTRADOR — e mentiria também qualquer limiar futuro abaixo de 20.
+ */
+export class MedidorDeQuadros {
+  private quadros = 0;
+  private janelaS = 0;
+
+  zerar() {
+    this.quadros = 0;
+    this.janelaS = 0;
+  }
+
+  /**
+   * Um quadro. Devolve a amostra quando a janela fecha (e recomeça),
+   * ou `null` enquanto ela ainda está enchendo.
+   *
+   * @param dtRealS o tempo REAL desde o quadro anterior — nunca o do tick
+   */
+  amostrar(
+    dtRealS: number,
+    janelaS = JANELA_DA_MEDIDA_S
+  ): { fps: number; janelaS: number } | null {
+    this.quadros++;
+    this.janelaS += dtRealS;
+    if (this.janelaS <= janelaS) return null;
+    const amostra = { fps: this.quadros / this.janelaS, janelaS: this.janelaS };
+    this.zerar();
+    return amostra;
+  }
+}
+
 /**
  * O QUE A MEDIÇÃO INDICA, puro. Abaixo do limiar do tier que está
  * rodando, a medida pede o degrau de baixo; no teto do monitor (e com a
@@ -345,9 +393,7 @@ export class Engine {
   private tickFns = new Set<(t: number, dt: number) => void>();
   private resizeFns = new Set<(w: number, h: number) => void>();
   private qualityFns = new Set<(quality: QualityLevel) => void>();
-  private fpsAcc = 0;
-  private fpsN = 0;
-  private fpsTimer = 0;
+  private medidor = new MedidorDeQuadros();
   private medicaoFns = new Set<(m: MedicaoDoQuadro) => void>();
   private contextoPerdidoFns = new Set<() => void>();
   /**
@@ -524,9 +570,7 @@ export class Engine {
       ? ESPERA_APOS_QUEDA_S
       : ESPERA_APOS_SUBIDA_S;
     this.medicaoAtual = null;
-    this.fpsAcc = 0;
-    this.fpsN = 0;
-    this.fpsTimer = 0;
+    this.medidor.zerar();
     this.aplicarNitidez();
     this.qualityFns.forEach((fn) => fn(q));
   }
@@ -607,7 +651,10 @@ export class Engine {
     const loop = (timestamp: number) => {
       this.raf = requestAnimationFrame(loop);
       this.timer.update(timestamp);
-      const dt = Math.min(this.timer.getDelta(), 0.05);
+      // DUAS grandezas do mesmo quadro (item 68): o real, que o medidor
+      // conta, e o grampeado, que o integrador anda.
+      const dtReal = this.timer.getDelta();
+      const dt = Math.min(dtReal, GRAMPO_DO_PASSO_S);
       const t = this.timer.getElapsed();
 
       // A MEDIÇÃO (Ajustes D). Ela roda SEMPRE — inclusive com o
@@ -615,13 +662,11 @@ export class Engine {
       // uma sugestão que só existisse depois de o visitante já ter
       // escolhido Auto não sugeriria nada a ninguém. O que ela nunca faz
       // é trocar de tier: daqui sai um aviso, não uma decisão.
-      this.fpsAcc += dt;
-      this.fpsN++;
-      this.fpsTimer += dt;
-      if (this.fpsTimer > JANELA_DA_MEDIDA_S) {
-        const avg = this.fpsN / this.fpsAcc;
+      const amostra = this.medidor.amostrar(dtReal, JANELA_DA_MEDIDA_S);
+      if (amostra) {
+        const avg = amostra.fps;
         this.peakAvg = Math.max(this.peakAvg, avg);
-        this.upgradeCooldown = Math.max(0, this.upgradeCooldown - this.fpsTimer);
+        this.upgradeCooldown = Math.max(0, this.upgradeCooldown - amostra.janelaS);
         // subir pede limiar RELATIVO ao teto de refresh observado (94%)
         // + a espera anti-vaivém — limiares absolutos (>72 fps) eram
         // inatingíveis sob vsync a 60 Hz. E a TRAVA, que é o que faz o
@@ -638,9 +683,6 @@ export class Engine {
         // do "medindo"): o número anda a cada janela e um evento por
         // janela seria um re-render do HUD a 0,4 Hz para dizer o mesmo.
         if (sugestao !== antes) this.medicaoFns.forEach((fn) => fn(this.medicaoAtual!));
-        this.fpsAcc = 0;
-        this.fpsN = 0;
-        this.fpsTimer = 0;
       }
 
       this.tickFns.forEach((f) => f(t, dt));
