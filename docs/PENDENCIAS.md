@@ -27,7 +27,13 @@ por importância (dez corpos com nome na abertura, contra três) e o
 modo ganhou o convite dele. Ficou de fora, de propósito, o **77** (as
 linhas de órbita). **Espera o olho dele no app**, com as fotos em
 `capturas/item73-*`. Palavras dele no fim da mensagem: *"enfim muitas
-ideias que precisam ser organizadas."*
+ideias que precisam ser organizadas."* Do **61** já fechou UMA parte: o
+**selo de honestidade**, que não fechava e comia de 3,2% (mesa) a 10,1%
+(celular) da tela, virou UMA LINHA de 0,3% a 1,0% — a mesma peça nas
+duas telas, com gaveta que sobe ao clique, os culpados finalmente na
+tela e a gaveta de camadas parando acima dele. Fotos em
+`capturas/item61-*`. O resto do 61 (camadas × ajustes, o modo único, os
+controles do filme que somem sozinhos) segue aberto.
 
 **O BASTÃO DE 17/08 (tarde): A RODADA DA ESTRELA POUSOU.** Palavras do
 dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
@@ -436,8 +442,8 @@ perto, buraco negro). Ou seja, as duas superfícies desenham da MESMA
 lista e o visitante vê duas portas para a mesma coisa, uma com 17 e
 outra com 6.
 
-**"o selo de honestidade é complexo e nao funciona direito", 22/08.**
-Palavras dele:
+**"o selo de honestidade é complexo e nao funciona direito", 22/08 —
+FEITO em 22/08 (`3b1d4e2`).** Palavras dele:
 
 > *"o selo de honestidade é complexo e nao funciona direito, no proejto
 > atlas ele era muito mais simples e menos invasivo, porque virou isso
@@ -445,9 +451,25 @@ Palavras dele:
 > desktop ou analisar um jeito mais inteligente e simples para o
 > usuário simples."*
 
-A pista que ele mesmo dá é o caminho: **trazer a ideia da tela do
-celular para a tela de mesa**, ou achar um jeito mais simples para o
-usuário simples.
+O fato que a queixa media: **o selo não fechava**. Quatro blocos
+permanentes sobre a cena, medidos antes da obra em **3,19% da tela** a
+1200×900, **6,32%** com o texto em 140% e **10,10%** num celular de
+390×844. Agora ele fecha em UMA LINHA — ● ESCALA REAL · BRILHO
+ASSISTIDO ▸, a mesma peça no celular e na mesa —, e ocupa **0,31%**,
+**0,63%** e **1,03%**. O clique (ou o Enter) abre uma gaveta que SOBE
+com o conteúdo de sempre; Esc, clique fora ou clique na linha fecham.
+
+O que a lei não perdeu: as frases, o registro de caminhos e os dois
+eixos são os mesmos — mudou a apresentação, não o que o selo diz. E o
+que a tela GANHOU: os **culpados** ("Sagittarius A✱ está 125.884×
+maior") aparecem pela primeira vez; o campo existia desde 12/08
+(`4e8bedb`, "o selo PARA DE SER MUDO") e só o teste puro o via. De
+quebra, a **gaveta de camadas parou de cobrir o selo** (a queixa do
+artboard 3), agora por geometria declarada, e o clique em BRILHO voltou
+a aparecer na tela quando o único desvio era a luz.
+
+Fotos: `capturas/item61-selo-fechado-aberto.png` e
+`capturas/item61-selo-celular.png`. **Espera o olho dele no app.**
 
 **"o atlas deveria ser o modo único", 22/08 — e isto é DIREÇÃO DE
 PRODUTO.** Palavras dele:
