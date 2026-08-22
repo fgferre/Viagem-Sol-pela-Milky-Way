@@ -391,8 +391,14 @@ Não reabrir sem que a condição listada mude.
   `alpha` o dá aos two varyings sem precisar lembrar.
 - **Escrita em atributo instanciado:** idempotência com `Math.fround`
   antes de decidir; teto nas faixas; latch de upload cheio.
-- **Dominância é por tamanho, não por presença.** `?nodom=1` / `?dom=1`
-  existem para A/B com o mesmo binário.
+- **Par de portas para A/B com o MESMO binário.** O que vive é o PADRÃO,
+  não as portas que o inauguraram: `?nocorpos=1` é o caminho de volta à
+  baseline e `?corpos=1` liga mesmo com a constante em `false` — o mesmo
+  molde das `no*` do README. O par original, `?dom`/`?nodom` da Onda 3,
+  MORREU no M2 com a política de dominância inteira, junto de `?pupila`,
+  `?nohero` (→ `?noclarao`), `?bbloom`, `?bombro` e `?knee2`;
+  `simbolosProibidos.test.ts` cobra a ausência de todas por varredura
+  invertida. Citá-las como vivas é o erro que esta linha já cometeu.
 - **Diálogo novo nasce em `dialogFocus.ts`** ou não é julgado.
 - **Overlay novo é filho direto de `.hud-root`.**
 - **Selo deriva de registro único** com teste de completude: porta nova
