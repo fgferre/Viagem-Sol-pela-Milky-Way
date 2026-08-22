@@ -1,7 +1,8 @@
 // O AMOSTRADOR DE MEMÓRIA — o juiz que prova que sair DEVOLVE o que
 // entrar alocou (Onda 6, F8/D9).
 //
-//   node scripts/visual/memoria.mjs               # veredito
+//   node scripts/visual/memoria.mjs               # veredito (tier alta)
+//   TIER=cinema node scripts/visual/memoria.mjs   # onde os texels dobram
 //   node scripts/visual/memoria.mjs --sabotagem   # TEM de REPROVAR (sair ≠ 0)
 //
 // O QUE ELE MEDE, em números e não em impressão: `window.__director.stats`
@@ -18,7 +19,7 @@
 //     não "quase": um recurso de GPU que sobra por ciclo é dispose faltando,
 //     e cresce sem teto em quem deixa a aba aberta.
 //  B. N=3 trocas de qualidade pelo CAMINHO VIVO (`director.setQuality`,
-//     alta→performance→alta). Desde os Ajustes C esta régua é a mais
+//     TIER→performance→TIER). Desde os Ajustes C esta régua é a mais
 //     exigente das três: a troca deixou de recarregar a página e passou a
 //     RECONSTRUIR o mundo dentro da mesma sessão — galáxia nova (4,02 M
 //     partículas em cinema contra 1,1 M), dois mapas novos, Sol novo, doze
@@ -31,8 +32,9 @@
 //  C. Foco em 5 corpos — `focarNoCorpo`, o MESMO ponto de pouso do
 //     `?foco=` (App.tsx: resolverFoco → escolherAlvo → focarNoCorpo).
 //     Enquadrar não aloca: delta ZERO também. Além do delta, o
-//     veredito cobra um TETO residente (texturas/geometrias): Atlas
-//     quente com delta zero e 400 texturas ainda é vazamento permanente.
+//     veredito cobra um TETO residente (texturas, BYTES DE TEXEL e
+//     geometrias): Atlas quente com delta zero e 400 texturas ainda é
+//     vazamento permanente — e delta zero com 1,2 GiB também é.
 //  D. WORKERS VIVOS, contados pelo BROWSER (CDP `Target.getTargets`) e não
 //     pelo app. Esta régua nasceu com os Ajustes B: a carga pesada — os dois
 //     bakes de mapa e a população — mudou de thread, e memória de worker é
@@ -82,26 +84,53 @@
 //
 // Método herdado dos juízes da casa (`atlas-smoke`, `a11y`): uma sessão de
 // Chrome só (comparar contadores entre processos não prova ciclo nenhum),
-// `?q=alta` pinado via porta (o tier não troca sozinho no meio da medida:
-// desde a letra D dos Ajustes nada troca sem escolha do visitante, e `alta`
-// é escolha explícita) e o SINAL de prontidão do próprio app no lugar de
-// espera cega.
+// `?q=` pinado via porta (o tier não troca sozinho no meio da medida:
+// desde a letra D dos Ajustes nada troca sem escolha do visitante, e o tier
+// pedido é escolha explícita) e o SINAL de prontidão do próprio app no
+// lugar de espera cega.
 import { abrirSessao, APP_PADRAO } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
-const BOOT = 'atlas=1&q=alta';
+/**
+ * O TIER da medida. `alta` é o padrão histórico (o tier não troca sozinho
+ * no meio da medida, e `alta` é escolha explícita), mas a régua de BYTES
+ * só tem sentido se rodar também onde os texels dobram: `TIER=cinema node
+ * scripts/visual/memoria.mjs`. O teto sai de `TETO_MIB[TIER]`.
+ */
+const TIER = process.env.TIER || 'alta';
+const BOOT = `atlas=1&q=${TIER}`;
 const CICLOS = 5;
 const TROCAS = 3;
 // os 5 corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=)
 const FOCOS = ['earth', 'jupiter', 'saturn', 'neptune', 'mars'];
 const LIMIAR_HEAP_MB = 12;
-// Teto RESIDENTE (não o delta). O Atlas em alta pré-aquece os 38
-// canais de corpo + pós + campo. Delta ZERO com 400 texturas ainda
-// é um vazamento permanente. Cinema usa o MESMO número de objetos
-// (os texels é que dobram) — o GB mora no comentário de alvoDePixels.
+// Teto RESIDENTE (não o delta). Delta ZERO com 400 texturas ainda é um
+// vazamento permanente.
 const TETO_TEXTURAS = 120;
 const TETO_GEOMETRIAS = 80;
+
+/**
+ * O TETO EM BYTES, POR TIER — a régua que faltava (item 22/08).
+ *
+ * A régua de OBJETOS é cega para o que mais pesa. O comentário que
+ * morava aqui admitia: "cinema usa o MESMO número de objetos (os texels
+ * é que dobram)". Media-se em `alta` e ficava verde — e em cinema, com
+ * o pré-aquecimento antigo, o Atlas ficava com **1.200 MiB** residentes
+ * (1.146 deles de corpo) contando as MESMAS 36 texturas. Contar objeto
+ * e chamar de memória era medir a caixa e ignorar o que tem dentro.
+ *
+ * A conta é a de `alvoDePixels`: largura × altura × 4 canais × 4/3 de
+ * mipmap, sobre as texturas VIVAS na cena (o walker abaixo).
+ *
+ * OS NÚMEROS. Medidos em 22/08 nesta máquina, com o protocolo inteiro
+ * (5 idas ao Atlas, 3 trocas de tier e 5 focos — earth, jupiter,
+ * saturn, neptune, mars, que é a dose de corpo mais pesada que o
+ * protocolo alcança). O teto fica ~25% acima do pico medido: acima do
+ * ruído de um foco a mais, e MUITO abaixo do que o pré-aquecimento
+ * antigo deixava (1.200 MiB em cinema, 291 em alta).
+ */
+const TETO_MIB = { cinema: 900, alta: 200, performance: 120 };
 const SABOTAGEM = process.argv.includes('--sabotagem');
 
 const falhas = [];
@@ -139,6 +168,46 @@ const INJETAR = `(() => {
   return window.__sabotagem.length / 3;
 })()`;
 
+/**
+ * O WALKER DOS TEXELS. O three não publica a lista de texturas que subiu
+ * (`renderer.properties` é WeakMap), então quem quer BYTES percorre a
+ * cena: cada material, cada uniform, mais os dois mapas da cartografia e
+ * o fundo. Conta cada textura UMA vez (Set por identidade — a mesma
+ * placa do anel entra em dois materiais de Saturno) e cobra o 4/3 do
+ * mipmap só de quem gera mipmap.
+ */
+const MEDIR_TEXELS = `(() => {
+  const d = window.__director;
+  const vistas = new Set();
+  let bytes = 0, n = 0;
+  const cont = (t) => {
+    if (!t || !t.isTexture || vistas.has(t)) return;
+    vistas.add(t);
+    const im = t.image || {};
+    const w = im.width || (t.source && t.source.data && t.source.data.width) || 0;
+    const h = im.height || (t.source && t.source.data && t.source.data.height) || 0;
+    if (!w || !h) return;
+    const mip = t.generateMipmaps !== false && t.minFilter !== 1003 && t.minFilter !== 1006;
+    n++;
+    bytes += w * h * 4 * (mip ? 4 / 3 : 1);
+  };
+  const doMat = (m) => {
+    if (!m) return;
+    for (const k of Object.keys(m)) { const v = m[k]; if (v && v.isTexture) cont(v); }
+    if (m.uniforms) for (const k of Object.keys(m.uniforms)) {
+      const v = m.uniforms[k] && m.uniforms[k].value; if (v && v.isTexture) cont(v);
+    }
+  };
+  d.engine.scene.traverse((o) => {
+    const m = o.material;
+    if (Array.isArray(m)) m.forEach(doMat); else doMat(m);
+  });
+  cont(d.engine.scene.background);
+  cont(d.dustMapTexture);
+  cont(d.structureMapTexture);
+  return { n, MiB: bytes / 1048576 };
+})()`;
+
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
@@ -164,9 +233,11 @@ try {
     const stats = JSON.parse(await sessao.js('JSON.stringify(window.__director.stats)'));
     const uso = await sessao.send('Runtime.getHeapUsage');
     const heap = (uso.usedSize + (uso.backingStorageSize ?? 0)) / 1048576;
+    const texels = await sessao.js(MEDIR_TEXELS);
     return {
       rotulo,
       textures: stats.memory.textures,
+      texelMiB: texels.MiB,
       geometries: stats.memory.geometries,
       calls: stats.render.calls,
       triangles: stats.render.triangles,
@@ -179,11 +250,12 @@ try {
 
   const tabela = (linhas) => {
     process.stdout.write(
-      '        amostra           textures  geometries  heap V8+ext  heapGetter(MB)  workers\n'
+      '        amostra           textures  texel MiB  geometries  heap V8+ext  heapGetter(MB)  workers\n'
     );
     for (const a of linhas) {
       process.stdout.write(
         `        ${a.rotulo.padEnd(18)}${String(a.textures).padStart(8)}`
+        + `${a.texelMiB.toFixed(0).padStart(11)}`
         + `${String(a.geometries).padStart(12)}${a.heap.toFixed(1).padStart(13)}`
         + `${(a.heapGetter === null ? 'null' : a.heapGetter.toFixed(1)).padStart(16)}`
         + `${String(a.workers).padStart(9)}\n`
@@ -214,7 +286,9 @@ try {
     // que não aconteceu é zero por omissão, não por higiene
     const mundos = [];
     for (let t = 1; t <= trocas; t++) {
-      for (const q of ['performance', 'alta']) {
+      // a ida é sempre a 'performance' e a VOLTA é ao tier da medida —
+      // com TIER=cinema os focos são medidos onde os texels dobram
+      for (const q of ['performance', TIER]) {
         await sessao.js(`window.__director.setQuality('${q}')`);
         await sessao.assentar();
         mundos.push(await sessao.js('window.__director.captura.tierDoMundo'));
@@ -265,11 +339,12 @@ try {
     const inclinacao =
       mediana(heaps.slice(-janela)) - mediana(heaps.slice(0, janela));
     const picoTextures = Math.max(...amostras.map((a) => a.textures));
+    const picoTexelMiB = Math.max(...amostras.map((a) => a.texelMiB));
     const picoGeometries = Math.max(...amostras.map((a) => a.geometries));
     const picoWorkers = Math.max(...amostras.map((a) => a.workers));
     return {
       deltaPortal, deltaTrocas, deltaFocos, inclinacao,
-      picoTextures, picoGeometries, picoWorkers,
+      picoTextures, picoTexelMiB, picoGeometries, picoWorkers,
     };
   };
 
@@ -322,7 +397,7 @@ try {
     );
     conferir(
       mundos.length === TROCAS * 2
-        && mundos.every((m, i) => m === (i % 2 === 0 ? 'performance' : 'alta')),
+        && mundos.every((m, i) => m === (i % 2 === 0 ? 'performance' : TIER)),
       `as ${TROCAS * 2} trocas RECONSTRUÍRAM o mundo de verdade (${mundos.join(' → ')})`
     );
     conferir(
@@ -342,6 +417,12 @@ try {
     conferir(
       v.picoTextures <= TETO_TEXTURAS,
       `teto residente: ${v.picoTextures} texturas ≤ ${TETO_TEXTURAS}`
+    );
+    conferir(
+      v.picoTexelMiB <= TETO_MIB[TIER],
+      `teto residente em BYTES: ${v.picoTexelMiB.toFixed(0)} MiB de texel`
+        + ` ≤ ${TETO_MIB[TIER]} MiB (tier ${TIER}) — a régua que a contagem de`
+        + ' objetos não vê'
     );
     conferir(
       v.picoGeometries <= TETO_GEOMETRIAS,

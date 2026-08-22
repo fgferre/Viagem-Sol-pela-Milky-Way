@@ -444,6 +444,29 @@ então lançar `filho j0 saiu com null`, sem imprimir o veredito. O lado
 Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
 baldes cheios se resolve matando o filho preso — o veredito sai da
 segunda invocação, que lê tudo de disco.
+
+**66.** (Achado em 22/08, rodando o `atlas-smoke` para fechar outra
+coisa; REPRODUZ NO HEAD, com os mesmos dois md5.) Um dos 99 vereditos
+reprova: *"a URL sem `?exp=` reproduz a tela, pixel a pixel"*
+(`91a7de848027` vs `7ae51a055bb7`). O juiz mexe no slider de exposição
+para 1,40, volta para 1,02 — a auto-exposição religa e o `?exp=` sai da
+URL, as duas coisas certas — e então compara a tela viva com a mesma URL
+recarregada. As duas diferem. Não foi diagnosticado: pode ser o juiz
+fotografando a recarga antes de ela assentar, ou pode ser a
+auto-exposição pousando num valor diferente quando NASCE com a cena em
+vez de voltar a ela. Enquanto viver, o `atlas-smoke` sai com 1 falha em
+99 e não é regressão de quem o rodou.
+
+**67.** (Achado em 22/08, quando o `memoria.mjs` passou a rodar por
+tier; REPRODUZ NO HEAD.) Em `q=cinema`, cinco idas e voltas ao Atlas
+ganham **3 geometrias** na QUINTA volta (45 → 48; as quatro primeiras
+ficam paradas em 45). Não são os corpos do palco: medido corpo a corpo,
+nenhum deles carregou textura nos cinco ciclos (`prontos: []`) e a
+contagem de texturas fica em 40 o tempo todo. O juiz reprova o portal
+com `delta 3`, e está certo em reprovar — só nunca tinha medido em
+cinema, porque rodava só em `alta` (onde os cinco ciclos ficam em 45).
+Por que a QUINTA e não a segunda é justamente o que falta descobrir.
+
 ---
 
 ## O que o dono ainda vai contar

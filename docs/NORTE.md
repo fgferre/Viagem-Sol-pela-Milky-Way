@@ -167,7 +167,7 @@ para escolher com honestidade.
 | `ab-identidade.mjs antes` / `depois` | md5 das **52 vistas** oficiais, um lado de cada vez — detector de regressão | **6,5 min por lado** (52 vistas × 2 capturas, `JOBS=3`) | fechamento de qualquer mudança que possa mover imagem |
 | `SMOKE=1 ab-identidade.mjs …` | as 4 sentinelas (`sol`, `soldisco`, `hero8`, `ua150`) | **0,8 min por lado** | enquanto se itera — nunca para fechar |
 | `atlas-smoke.mjs` | o portal do Atlas em pixel: ida e volta com `journeyT` exato, prontidão da fase nova, abertura reprodutível e o Sol pela data — 99 vereditos | **4,7 min** | portal, fases, enquadramento do Atlas, calendário do Sol |
-| `memoria.mjs` | vazamento em número: texturas, geometrias, heap e workers vivos em 5 idas ao Atlas, 3 trocas de tier pelo caminho vivo e 5 focos. Autovalida-se — `--sabotagem` TEM de reprovar | **2,9 min** | troca de tier, entrar/sair do Atlas, foco, carga em worker |
+| `memoria.mjs` | vazamento em número: texturas, **bytes de texel**, geometrias, heap e workers vivos em 5 idas ao Atlas, 3 trocas de tier pelo caminho vivo e 5 focos. Autovalida-se — `--sabotagem` TEM de reprovar | **2,9 min** por tier | troca de tier, entrar/sair do Atlas, foco, carga em worker, **dose de textura** |
 | `a11y.mjs` (`?shot=1`) | os diálogos do HUD: o foco entra, fica preso, Esc devolve; nenhum diálogo órfão; escala de UI em três telas | **2,6 min** | HUD, diálogo novo, escala de texto |
 | `filme-smoke.mjs` | o roteiro na tela: texto e corte nas margens das 25 janelas de legenda, responsividade, e 420 ms de relógio solto em sete instantes | **2,6 min** | legenda, corte, retemporização, responsividade |
 | `filme-ritmo.mjs` | quanto a imagem muda por segundo no corte inteiro — 97 quadros parados — mais as folhas de contato | **~2,3 min** no passo padrão (extrapolado de 10 quadros em 0,3 min) | revisão de ritmo, e só como onde-olhar: a curva não mede tédio |
@@ -181,6 +181,19 @@ para escolher com honestidade.
 | `gpu-profile.mjs "?q" s w h dpr` | o tempo que a GPU passa DENTRO de cada draw, passe a passe, por timer query | **0,2 min** com janela de 8 s | performance, custo de pós-processamento |
 | `diff-pixel.mjs a.png b.png` | depois de um `DIFERE`: quantos pixels, de quanto e onde, com mapa de blocos 16×16 | segundos | sempre que o A/B der diferente |
 | `voo-ida-e-volta.mjs` | ida e volta em 34 degraus na MESMA sessão — o único que enxerga transição e histerese | **1,0 min** (eram 9,3, e 8,1 deles eram espera cega pelo forno do Sol a 0,05 UA; a espera passou a contar bordas por quadro em 22/08 e fecha em 2 s) | só quando a mudança for de transição ou histerese — não é obrigatório desde 21/08 |
+
+- **`memoria.mjs` conta BYTES desde 22/08, e roda por TIER.** A régua de
+  objetos era cega para o que mais pesa: o próprio comentário dela
+  admitia que cinema tem o mesmo número de texturas que alta, e ela
+  rodava só em `alta` — ficava verde com 1,2 GiB residentes. Agora
+  percorre a cena somando largura × altura × 4 × 4/3 de mipmap e cobra
+  um teto DECLARADO por tier (`TETO_MIB`). `TIER=cinema node
+  scripts/visual/memoria.mjs` mede onde os texels dobram, e a volta da
+  troca de tier passou a ser ao tier da medida (era sempre `alta`).
+  Medido em 22/08: pico de 139 MiB em `alta` (teto 200) e 683 MiB em
+  `cinema` (teto 900). **O run de cinema reprova numa régua VELHA** — os
+  3 geometrias que a quinta volta ao Atlas ganha —, e isso é defeito
+  achado, não regressão: reproduz no HEAD e virou o item 67.
 
 Duas coisas que mudam o preço e não se adivinham:
 
