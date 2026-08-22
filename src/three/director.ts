@@ -327,10 +327,11 @@ export class Director {
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
    * inteiro quando ele parte. Não é só o `journeyT`: o `seek()` sozinho
-   * zera o olhar do pausar-e-olhar, o tick zera o latch `leftDisk` fora
-   * da viagem, e a pausa tem DOIS donos (`freezeJourney` aqui e
-   * `rig.paused` no rig). Faltando qualquer um dos cinco, "Partir"
-   * devolveria um quadro parecido — e o gate mede PIXEL.
+   * zera o olhar do pausar-e-olhar, e o tick zera o latch `leftDisk`
+   * fora da viagem. Faltando qualquer um dos cinco, "Partir" devolveria
+   * um quadro parecido — e o gate mede PIXEL. (A pausa teve dois donos
+   * até 21/08; hoje o `freezeJourney` é o dono único e escreve o
+   * `rig.paused` por dentro.)
    */
   private retomada: {
     journeyT: number;
@@ -345,7 +346,8 @@ export class Director {
   // não tem relógio (o teste de texto-fonte dela proíbe `Date`), o HUD
   // só desenha o que este bloco publica, e a efeméride é um serviço que
   // chega tarde. Um segundo dono aqui seria a mesma classe de defeito
-  // que a pausa já teve (dois donos, `freezeJourney` e `rig.paused`).
+  // que a pausa teve até 21/08, quando `freezeJourney` e `rig.paused`
+  // eram escritos separadamente e o boot só escrevia um.
 
   /**
    * O instante em que o enquadramento do Atlas foi composto pela última
@@ -390,8 +392,25 @@ export class Director {
    */
   private leftDisk = false;
   private lastCaptionIdx = -1;
-  /** congela o relógio da viagem (debug/screenshots via ?freeze=1) */
-  freezeJourney = false;
+  private relogioParado = false;
+  /**
+   * CONGELA A VIAGEM — e é o DONO ÚNICO da pausa, que sempre teve dois
+   * campos: este relógio e o `rig.paused`, que é quem desliga o
+   * decaimento do olhar-ao-redor (τ = 0,5 s, `JourneyRig.apply`). Quem
+   * escrevesse só um entregava meia pausa, e era o que o boot fazia com
+   * `?t=` sem `play`: medido em 21/08, um arrasto de −0,44 rad
+   * escorregava para −0,064 em 2 s, enquanto o botão Pausar segurava os
+   * −0,44 inteiros. Agora o botão, o portal e o boot escrevem AQUI, e a
+   * porta de captura entra no MESMO estado que o botão.
+   */
+  get freezeJourney() {
+    return this.relogioParado;
+  }
+
+  set freezeJourney(parada: boolean) {
+    this.relogioParado = parada;
+    this.rig.paused = parada;
+  }
   /** multiplicador do relógio da viagem (1× · 2× · 4×) */
   playbackRate = 1;
   private noNebula = false;
@@ -1087,7 +1106,6 @@ export class Director {
     this.playbackRate = 1;
     this.leftDisk = false;
     this.rig.reset();
-    this.rig.paused = false;
     this.setPhase('journey');
   }
 
@@ -1132,7 +1150,6 @@ export class Director {
   togglePause(): boolean {
     if (this.phase !== 'journey') return false;
     this.freezeJourney = !this.freezeJourney;
-    this.rig.paused = this.freezeJourney;
     this.perturbar();
     return this.freezeJourney;
   }
@@ -1327,8 +1344,8 @@ export class Director {
 
   /**
    * PARTIR. Devolve os CINCO do portal de uma vez — o instante, os dois
-   * ângulos do olhar, o latch do disco e a pausa (que tem dois donos:
-   * `freezeJourney` aqui e `rig.paused` no rig). O `reset()` antes do
+   * ângulos do olhar, o latch do disco e a pausa (um campo só desde
+   * 21/08: o `freezeJourney` escreve o `rig.paused`). O `reset()` antes do
    * `restaurarOlhar` é de propósito: ele arma o salto do primeiro
    * quadro, que recompõe mira e fov exatamente a partir do instante.
    *
@@ -1362,7 +1379,6 @@ export class Director {
       this.rig.restaurarOlhar(volta.lookYaw, volta.lookPitch);
       this.leftDisk = volta.leftDisk;
       this.freezeJourney = volta.pausado;
-      this.rig.paused = volta.pausado;
       this.setPhase('journey');
     });
   }

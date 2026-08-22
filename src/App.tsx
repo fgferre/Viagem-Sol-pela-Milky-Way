@@ -317,8 +317,9 @@ export default function App() {
     return () => window.clearTimeout(id);
   }, [loaderState]);
 
-  // O rótulo do botão de pausa é o TERCEIRO dono do estado de pausa (os
-  // outros dois são `freezeJourney` e `rig.paused`, no Director). Ele se
+  // O rótulo do botão de pausa é o SEGUNDO dono do estado de pausa (o
+  // outro é o `freezeJourney` do Director, que desde 21/08 escreve o
+  // `rig.paused` por dentro — a pausa lá é um campo só). Ele se
   // ressincroniza a cada entrada em 'journey' — é o que faz "Partir"
   // devolver a viagem PAUSADA como estava, sem o portal precisar
   // conhecer o React, e o que conserta o `?t=` congelado que mostrava
