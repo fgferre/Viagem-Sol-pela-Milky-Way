@@ -380,17 +380,6 @@ controle pequeno e escondido que expande — a ideia das abas animadas
 (drawer) do projeto Atlas, com execução melhor. Junto vai um juiz que
 abra 390 px, porque hoje nenhum abre.
 
-**65.** (Achado em 22/08, conferindo no navegador o commit que gerou as
-âncoras da galáxia.) A fenda do brilho do disco segue uma amplitude de
-warp que o resto da casa não usa mais. Em `galaxyShaders.ts`
-(`GLOW_FRAG`) o número é `1310.0`, com o comentário citando
-`galWarpHeight (1310 pc)`; a base de hoje é 820 pc, e é ela que o
-`GLSL_CARTOGRAPHY` gera. Medido com `?warpamp=`: os 9 shaders que
-declaram `GAL_WARP_AMPLITUDE` acompanham o knob (820 → 410 com
-`warpamp=0.5`) e quatro malhas ficam com `1310.0` cravado nos dois
-casos. Trocar MUDA PIXEL: precisa de foto e do olho dele, não é
-substituição cega.
-
 ---
 
 ## BAIXA — dívida interna, ninguém vê

@@ -436,6 +436,18 @@ const PROIBIDOS: SimboloProibido[] = [
     migracao: 'M5',
     razao: 'quem escrevia o teto de 20 px no material era esta linha; agora é a lei',
   },
+
+  // ─── item 65 (2026-08-22): a fenda do glow na âncora da casa ───────────
+  {
+    arquivo: 'src/three/shaders/galaxyShaders.ts',
+    padrao: /1310\.0/,
+    migracao: 'item 65',
+    razao:
+      'a amplitude de warp da fenda do GLOW_FRAG era o teto da rodada 21 ' +
+      '(1310 pc) enquanto a casa usa 820 desde a rodada 25 — e com ?warpamp= ' +
+      'a fenda ficava parada contra nove shaders que seguiam o knob. Sai de ' +
+      'glslNumber(GALACTIC_MODEL.warpAmplitudePc), como as outras âncoras',
+  },
 ];
 
 /**

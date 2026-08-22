@@ -292,7 +292,11 @@ void main() {
   // A faixa escura atravessa o bojo de perfil: extinção por uma lâmina
   // fina de poeira em |z| galáctico, com o CENTRO seguindo o warp do
   // ponto tangente quando ?warpslit=±1 (0 = reta); h = 130 pc casa com
-  // a σ da camada de poeira. Amplitude/forma = galWarpHeight (1310 pc).
+  // a σ da camada de poeira. A forma é a de galWarpHeight, e a AMPLITUDE
+  // é a mesma âncora gerada que os outros nove shaders leem — era 1310 pc
+  // cravado aqui (o teto da rodada 21) contra os 820 pc que a casa usa
+  // desde a rodada 25, e com ?warpamp= a fenda ficava parada enquanto o
+  // gás e as estrelas seguiam o knob (item 65).
   float wx = clamp(
     (abs(vXgal) - ${glslNumber(GALACTIC_MODEL.warpStartPc)}) /
       ${glslNumber(GALACTIC_MODEL.diskRadiusPc - GALACTIC_MODEL.warpStartPc)},
@@ -300,7 +304,8 @@ void main() {
     1.0
   );
   float dz = vZgal -
-    ${WARPSLIT.toFixed(2)} * sign(vXgal) * 1310.0 * pow(wx, 1.55);
+    ${WARPSLIT.toFixed(2)} * sign(vXgal) *
+      ${glslNumber(GALACTIC_MODEL.warpAmplitudePc)} * pow(wx, 1.55);
   float laneTau = uSlitTau * exp(-dz * dz / (2.0 * 130.0 * 130.0));
   glow *= mix(1.0, exp(-laneTau), uLaneGate);
   float a = glow * uFade;
