@@ -358,9 +358,23 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    *
    * `volta: 'vivo'`: o clique escreve `real` no Director e o PRÓXIMO
    * estado visível já sai sem compressão — a affordance que o doador
-   * não tinha. Fora do Atlas o estado é neutro POR CONSTRUÇÃO: não há
-   * superfície resolvida no filme para o escalar multiplicar (as 18
-   * vistas oficiais provam bit a bit).
+   * não tinha.
+   *
+   * A POLÍTICA VALE EM TODA FASE, e esta linha já disse o contrário.
+   * Ela afirmava que fora do Atlas o estado era neutro POR CONSTRUÇÃO,
+   * "não há superfície resolvida no filme para o escalar multiplicar".
+   * Deixou de ser verdade na coda "a volta para casa" (19/08), que
+   * RESOLVE Terra e Lua no fim do filme (`palcoQuente`, a partir de
+   * `REVEAL_T`): o material dos corpos chama `ganhoFundido(rUA,
+   * politica)` sem perguntar em que modo a cena está, e o default é
+   * `assistida` nas duas.
+   *
+   * O DESVIO É MINÚSCULO, e é por estar na ÂNCORA, não por construção:
+   * ΔEV = (σ−1)·log₂(E) zera exatamente a 1 UA, e a coda chega em
+   * casa. Medido a ~1 UA, a Lua sai −0,027 passos de luz — ~2% mais
+   * escura que em `real`. Pequeno não é neutro, e é o motivo de o selo
+   * declarar ASSISTIDO na coda como declara no Atlas. (Número medido
+   * na cena; sem imagem que o ateste.)
    */
   {
     chave: 'luz',
