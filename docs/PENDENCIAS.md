@@ -413,6 +413,17 @@ saem de um retrato a meio caminho. O harness já passou a dizer isso em voz
 alta em vez de imprimir "assentado"; **por que o sinal não chega não foi
 medido** — pode ser o bake, pode ser o critério de três leituras seguidas.
 
+**64.** (Ruído de instrumento, visto UMA vez em 21/08.) Um filho do
+`ab-identidade` mediu as suas 18 vistas, gravou o estado e o arquivo de
+vias, e NÃO saiu — ficou 12 minutos vivo depois do `process.exit(0)`,
+com o pai parado no `Promise.allSettled`. As 52 vistas já estavam em
+disco; matar o filho fez o pai fundir os três baldes normalmente e só
+então lançar `filho j0 saiu com null`, sem imprimir o veredito. O lado
+`antes` da mesma bateria, com os mesmos três filhos, terminou sozinho.
+Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
+baldes cheios se resolve matando o filho preso — o veredito sai da
+segunda invocação, que lê tudo de disco.
+
 **63.** (Higiene, medida em 21/08.) O `director.ts` voltou a crescer: 2.135
 linhas no fim da onda da arquitetura, 2.487 hoje — a qualidade ao vivo e o
 calendário do Sol entraram por cima. E dentro do tick os quatro grupos do
