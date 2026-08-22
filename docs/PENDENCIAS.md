@@ -447,8 +447,16 @@ três perguntas e respondeu numa linha só:
    decisão que o juiz já cobra ("as três com a mesma tinta"), agora
    também no TAMANHO. Na foto ele viu o que faltava: *"tela de
    abertura- botao explorar livremente está com tamanho diferente dos
-   outros, sugiro tirar a palavra livremente."* O conserto é a primeira
-   obra desta onda e entra em commit próprio nesta mesma rodada.
+   outros, sugiro tirar a palavra livremente."* **FEITO em 22/08**: os
+   três botões medem o MESMO retângulo, e a largura vem do CSS e não do
+   texto — o próximo nome que crescer não desalinha a fileira. Numa
+   janela de 1200 px eram **201,79 · 243,24 · 205,78 px** de largura e
+   agora são **224,00** nos três. O rótulo virou "Explorar". A foto
+   nova é `capturas/item60-abertura.png`, e o juiz de a11y passou a
+   medir o retângulo das três nos DOIS degraus de `?ui=`: verde em
+   224.00×42.19 px (ui=1) e 313.59×58.06 px (ui=1,4). Fica de pé, para
+   ele decidir na mesma onda: "Explorar livremente" continua sendo o
+   nome na barra de controles do filme e no véu do fim.
 2. **Os controles do filme somem sozinhos.** Falta fazer.
 3. **A máquina do tempo vira alça** no celular. Falta fazer — e a mesma
    resposta está registrada no item **62**, que é onde o celular mora.

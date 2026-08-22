@@ -18,6 +18,17 @@
     line-height: 1.8;
   }
 
+  /* AS TRÊS PORTAS EMPILHAM AQUI, uma por linha — e então os 14rem que
+     as igualam lado a lado só apertariam a NOTA de cada uma, que passa
+     a quebrar em mais linhas e empurra a última linha da abertura para
+     fora da tela (medido a 390×844 com `?ui=1.4`: a fileira ia de 314
+     para 356 px de altura). Empilhadas elas tomam a largura que o
+     telefone dá — as TRÊS a mesma, que é a promessa —, e a nota volta a
+     caber. `88vw` é o mesmo teto do `.title-sub` logo acima. */
+  .abertura-porta {
+    width: min(20rem, 88vw);
+  }
+
   /* a quebra e o alinhamento à direita subiram para a fatia 3: valem em
      toda largura desde que a barra ganhou teto (94vw). Aqui fica o que
      é só da tela estreita — a barra sobe e ganha as duas bordas. */

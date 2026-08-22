@@ -233,13 +233,25 @@
   background: linear-gradient(90deg, transparent, rgba(255, 214, 150, 0.9), transparent);
 }
 
-/* ---- AS TRÊS PORTAS DA ABERTURA (item 60) ---------------------------
+/* ---- AS TRÊS PORTAS DA ABERTURA (item 60; o TAMANHO, item 61) -------
    Era um `style=` embutido no JSX com três propriedades de flex; virou
    classe quando a terceira porta chegou e cada botão passou a carregar
-   uma linha embaixo. `align-items: flex-start` e não `stretch`: as três
-   notas têm comprimentos diferentes, e esticar as colunas faria os
-   botões mudarem de largura conforme o texto da nota — o botão é do
-   tamanho do nome dele. */
+   uma linha embaixo.
+
+   AS TRÊS SÃO IGUAIS POR CONSTRUÇÃO — decisão do dono em 22/08 ("3
+   botoes iguais"). Até aqui cada botão era do tamanho do NOME dele, e
+   foi isso que ele viu na foto do item 60: medidos a 1200 px, os três
+   davam 201,79 · 243,24 · 205,78 px. Agora a COLUNA tem largura
+   declarada e o botão ocupa a coluna inteira: a largura vem do CSS e
+   não do texto, então o próximo nome que crescer não desalinha a
+   fileira. As três colunas têm a mesma base de flex, logo encolhem
+   juntas em tela estreita e continuam iguais em qualquer largura; em
+   `rem`, para andarem com o `?ui=`.
+
+   `align-items: flex-start` e não `stretch`: a altura de cada coluna é
+   a dela — as notas têm 1 ou 2 linhas, e esticar todas até a mais alta
+   só abriria vão embaixo do texto curto. Os BOTÕES já saem com a mesma
+   altura por serem o primeiro item de cada coluna. */
 .abertura-portas {
   display: flex;
   flex-wrap: wrap;
@@ -254,7 +266,13 @@
   flex-direction: column;
   align-items: center;
   gap: 0.55rem;
-  max-width: 16rem;
+  /* 14rem = 224 px no tamanho de sempre, acima dos 205,78 px do nome
+     mais largo ("Entrar no Atlas") — o texto nunca aperta, e a três
+     colunas lado a lado a fileira ainda cabe no maior degrau de `?ui=`. */
+  width: 14rem;
+}
+.abertura-porta .hud-btn {
+  width: 100%;
 }
 /* A LINHA QUE DIZ O QUE A PORTA É. Fica no tom da `free-hint`, não no do
    `title-sub`: é dica, não título — sem caixa alta e sem o tracking de

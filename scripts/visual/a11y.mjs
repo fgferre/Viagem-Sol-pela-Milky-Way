@@ -205,6 +205,13 @@ async function julgarDialogo(s, nome, onde) {
  *     é pior que nenhum;
  *  2. NENHUMA porta é destacada em cor (decisão do dono: as três
  *     iguais) — cor, borda e fundo idênticos nas três;
+ *  2b. e nenhuma é MAIOR que as outras — o mesmo retângulo nas três.
+ *     O dono mediu isso a olho na foto ("botao explorar livremente está
+ *     com tamanho diferente dos outros", 22/08) enquanto a linha 2
+ *     passava limpa: tinta igual não é tamanho igual. A régua é
+ *     `getBoundingClientRect`, e a cobrança vive no laço do `?ui=`
+ *     porque a igualdade vem do CSS — CSS que só vale no tamanho de
+ *     sempre não é igualdade, é coincidência;
  *  3. o Tab passa nas três, na ordem em que estão na tela;
  *  4. nada sai da tela, nem com o texto no maior degrau — três botões
  *     com três linhas embaixo é o estado mais alto que a abertura tem.
@@ -266,9 +273,34 @@ async function julgarAbertura(s) {
     `abertura: o Tab passa nas três, na ordem da tela (${andados.join(' → ')})`
   );
 
-  // nada sai da tela — nem com o texto no maior degrau
+  // o MESMO retângulo nas três, e nada sai da tela — nos dois degraus
   for (const fator of [1, 1.4]) {
     await s.ir(`ui=${fator}&${PIN}`);
+
+    // O TAMANHO IGUAL (item 61). Arredondado ao centésimo porque o
+    // layout devolve fração de pixel e duas larguras que só diferem no
+    // 1e-13 são a MESMA largura. Mede-se nos DOIS degraus de propósito:
+    // a igualdade vem do CSS, e CSS que só vale no tamanho de sempre
+    // não é igualdade — é coincidência.
+    const caixas = await s.js(`(() => {
+      const out = [];
+      for (const p of document.querySelectorAll('.veil-intro .abertura-porta')) {
+        const b = p.querySelector('button');
+        const r = b.getBoundingClientRect();
+        out.push({ nome: b.textContent.trim(),
+          caixa: r.width.toFixed(2) + '×' + r.height.toFixed(2) });
+      }
+      return out;
+    })()`);
+    const tamanhos = [...new Set(caixas.map((c) => c.caixa))];
+    conferir(
+      tamanhos.length === 1,
+      `abertura com ui=${fator}: os três botões medem o MESMO retângulo`
+        + (tamanhos.length === 1
+          ? ` (${tamanhos[0]} px)`
+          : ` — ${tamanhos.length} tamanhos: ${caixas.map((c) => `"${c.nome}" ${c.caixa}`).join(' vs ')}`)
+    );
+
     const fora = await s.js(`(() => {
       const W = window.innerWidth; const H = window.innerHeight;
       const alvos = [...document.querySelectorAll('.veil-intro .abertura-porta, '

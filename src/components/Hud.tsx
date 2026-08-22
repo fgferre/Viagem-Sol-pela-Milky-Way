@@ -221,17 +221,25 @@ export function TitleVeil({
             328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real
           </div>
           <div className="title-rule" />
-          {/* AS TRÊS PORTAS DA ABERTURA. O "Explorar livremente" já
-              estava ligado aqui (App passa onExplore ao véu) e só era
-              desenhado no fim — quem não quer 3 min de filme fechava a
-              aba em vez de entrar na galáxia. O "Entrar no Atlas" é o
-              item 60, e é o MESMO `entrarNoAtlas` do portal do
-              pausar-e-olhar: dois caminhos até o mesmo modo, um só
-              código.
+          {/* AS TRÊS PORTAS DA ABERTURA. O "Explorar" já estava ligado
+              aqui (App passa onExplore ao véu) e só era desenhado no
+              fim — quem não quer 3 min de filme fechava a aba em vez de
+              entrar na galáxia. O "Entrar no Atlas" é o item 60, e é o
+              MESMO `entrarNoAtlas` do portal do pausar-e-olhar: dois
+              caminhos até o mesmo modo, um só código.
               NENHUMA das três é destacada em cor: o nome de cada porta
               não diz o que ela é, então cada uma leva a sua linha — e
               ela é `aria-describedby`, não texto solto, para que quem
-              ouve a tela receba a explicação junto com o botão. */}
+              ouve a tela receba a explicação junto com o botão.
+              E NENHUMA é maior que as outras (dono, 22/08: "3 botoes
+              iguais"). A palavra que sobrava saiu por pedido dele —
+              *"botao explorar livremente está com tamanho diferente dos
+              outros, sugiro tirar a palavra livremente"* —, mas o
+              tamanho igual NÃO vem do texto: vem do CSS
+              (`.abertura-porta`), senão o próximo nome que crescer
+              desalinha a fileira de novo. O rótulo "Explorar livremente"
+              continua na barra de controles do filme e no véu do fim:
+              renomear ali é a onda da UI/UX (item 61), que é dele. */}
           <div className="abertura-portas">
             <div className="abertura-porta">
               <button className="hud-btn" onClick={onPlay} aria-describedby="porta-filme">
@@ -244,7 +252,7 @@ export function TitleVeil({
             {onExplore && (
               <div className="abertura-porta">
                 <button className="hud-btn" onClick={onExplore} aria-describedby="porta-voo">
-                  Explorar livremente
+                  Explorar
                 </button>
                 <span className="abertura-porta-nota" id="porta-voo">
                   você pilota a câmera, sem roteiro nem relógio
