@@ -133,7 +133,11 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'morte da identidade "as 16" CAIU no resgate de 16/08 (ordem do dono, ' +
       'commit 4ca23b7): a camada desenha só o candidato 0 (`n = 1` em ' +
       '`atualizar`) e as nomeadas voltaram à arte de autor — linha ' +
-      '`heroes-de-autor` aqui embaixo. Os 16 slots são RESERVA do M3',
+      '`heroes-de-autor` aqui embaixo. CAPACIDADE MAIOR QUE O USO, ' +
+      'declarada: 16 slots (ORCAMENTO_DO_CLARAO) e arrays de 1.727 ' +
+      'entradas (Sol + 1.726 nomeadas) para UM candidato. É RESERVA do ' +
+      'M3 e não encolhe — mexer na contagem de objetos da cena é ' +
+      'mudança de pixel, que se prova em A/B no navegador',
   },
   {
     id: 'heroes-de-autor',

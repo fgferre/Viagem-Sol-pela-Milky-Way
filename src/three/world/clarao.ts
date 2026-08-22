@@ -25,6 +25,20 @@
 // causa — depthTest: false, escrito aqui e não deixado ao acaso do
 // material.
 //
+// A CAPACIDADE É RESERVA DO M3, e está declarada porque hoje ela é
+// maior que o uso. A camada aloca 16 materiais + 16 quads
+// (ORCAMENTO_DO_CLARAO) e os três arrays de candidatos com 1.727
+// entradas (o Sol + as 1.726 nomeadas do sidecar) — mas `atualizar`
+// varre `n = 1`: só o Sol candidata, desde o resgate das heroes em
+// 16/08. Não encolhe, e a razão é dupla: (a) encolher mudaria a
+// CONTAGEM DE OBJETOS da cena, que é mudança de pixel a provar em
+// A/B no navegador, e esta não é uma rodada de pixel; (b) é
+// exatamente a capacidade que o M3 vai querer de volta, quando as
+// nomeadas voltarem a candidatar e a cessão catálogo↔hero for
+// decidida. O custo enquanto isso: 16 quads invisíveis
+// (`visible = false`, sem draw) e 55.264 B nos três arrays
+// (pos 20.724 + mBase 13.816 + cor 20.724).
+//
 // O QUE FICA DE FORA, declarado:
 //  · as 328.749 anônimas do catálogo não são candidatas — o ranking por
 //    quadro custaria a travessia; nenhuma delas alcança asa visível sem
