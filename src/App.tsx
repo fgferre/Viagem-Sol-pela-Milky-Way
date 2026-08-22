@@ -10,6 +10,7 @@ import type {
   Phase,
 } from './three/director';
 import type { NamedStar } from './three/config';
+import { cartografiaMedida } from './three/cartography/galacticAssets';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import { TIER_DE_PRODUTO } from './three/core/engine';
 import type { EscolhaDeQualidade } from './three/core/engine';
@@ -695,6 +696,9 @@ export default function App() {
           {hud.selo && directorRef.current && (
             <Selo
               vista={directorRef.current.selo}
+              // os mapas da galáxia chegaram nesta sessão? sem isto a
+              // legenda jurava "medido" sobre uma cena 100% procedural
+              cartografiaMedida={cartografiaMedida()}
               onEscalaReal={() => directorRef.current?.focarNoSistema()}
               onBrilhoReal={voltarAoBrilhoReal}
             />

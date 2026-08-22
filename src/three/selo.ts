@@ -91,6 +91,38 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
 };
 
 /**
+ * O QUARTO SEGMENTO DA LEGENDA, e ele só aparece quando é verdade: a
+ * CARTOGRAFIA caiu. Frase curta pelo mesmo motivo medido do tier
+ * artístico — esta linha é a `.atlas-selo-legenda`, e a caixa que a
+ * contém desconta o retângulo útil do enquadramento.
+ *
+ * A REDAÇÃO é precisa de propósito: o que cai são os MAPAS DA GALÁXIA
+ * (`cartography/galacticAssets.ts`). O catálogo HYG e as efemérides
+ * continuam chegando e continuam medidos — dizer "medido: nada" seria a
+ * mentira contrária.
+ */
+export const CARTOGRAFIA_PROCEDURAL = 'cartografia: procedural (os mapas não chegaram)';
+
+/**
+ * A LEGENDA DA PROCEDÊNCIA, montada aqui e não no JSX do componente —
+ * pelo mesmo motivo do registro de caminhos: o `Selo` enumerava os três
+ * tiers à mão e imprimia "medido: catálogo e efeméride" sem olhar dado
+ * nenhum. Provado em 2026-08-21 bloqueando o manifesto e os `.bin` da
+ * cartografia: `loadGalacticAssets` engolia a falha num `console.warn`,
+ * o mundo virava 100% procedural e o selo seguia jurando medida.
+ *
+ * `cartografiaMedida` é o estado REAL da carga
+ * (`cartografiaMedida()` de `cartography/galacticAssets.ts`), não uma
+ * constante.
+ */
+export function legendaDaProcedencia(cartografiaMedida: boolean): string {
+  const tiers = Object.values(PROCEDENCIA)
+    .map((t) => `${t.rotulo}: ${t.oQue}`)
+    .join(' · ');
+  return cartografiaMedida ? tiers : `${tiers} · ${CARTOGRAFIA_PROCEDURAL}`;
+}
+
+/**
  * A COPY da política de luz `assistida` — herdada do fidelityBadge
  * pt-BR do doador, verbatim (D2 da Onda 6): a explicação leiga primeiro,
  * o número como complemento.

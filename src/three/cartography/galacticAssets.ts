@@ -108,6 +108,31 @@ async function fetchTable(
 }
 
 /**
+ * OS MAPAS CHEGARAM? — o desfecho da última carga, guardado porque
+ * alguém precisa DIZER isso na tela.
+ *
+ * A falha graciosa do cabeçalho tinha um preço que ninguém pagava: o
+ * `catch` abaixo escreve um `console.warn`, a cena cai inteira para
+ * procedural e o SELO DE HONESTIDADE continuava imprimindo "medido:
+ * catálogo e efeméride" sobre uma galáxia inventada — provado em
+ * 2026-08-21 bloqueando o manifesto e os `.bin`. Um selo que não sabe
+ * quando a medida sumiu é decoração.
+ *
+ * POR QUE AQUI, e não num campo do `EstadoDaVista` do Director: esta
+ * função é a ÚNICA que sabe se a rede entregou. O `catalogos` do
+ * Director é derivada dela (`Boolean(galactic) && cartMode !== 'off'`)
+ * — e `false` como valor inicial cobre o terceiro caminho de graça:
+ * com `?cart=off` a carga nem é chamada, e a cartografia é procedural
+ * do mesmo jeito.
+ */
+let mapasChegaram = false;
+
+/** A cartografia desta sessão é MEDIDA (os mapas chegaram) ou procedural? */
+export function cartografiaMedida(): boolean {
+  return mapasChegaram;
+}
+
+/**
  * Carrega todos os catálogos em paralelo. Retorna null se qualquer
  * parte faltar — o chamador decide seguir só com o procedural.
  */
@@ -132,9 +157,11 @@ export async function loadGalacticAssets(
     REQUIRED.forEach((name, index) => {
       result[name] = tables[index];
     });
+    mapasChegaram = true;
     return result as GalacticAssets;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    mapasChegaram = false;
     console.warn('[cartografia] ativos observacionais indisponíveis — cena procedural.', error);
     return null;
   }

@@ -20,9 +20,9 @@ import {
   BRILHO_REAL,
   ESCALA_REAL,
   FORA_DE_ESCALA,
-  PROCEDENCIA,
   TESE_DO_SELO,
   estadoDoSelo,
+  legendaDaProcedencia,
 } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
@@ -158,10 +158,17 @@ export function GavetaDeCamadas({
  */
 export function Selo({
   vista,
+  cartografiaMedida,
   onEscalaReal,
   onBrilhoReal,
 }: {
   vista: EstadoDaVista;
+  /**
+   * Os mapas da galáxia chegaram? A legenda da procedência mentia
+   * enquanto isto era constante: com o manifesto bloqueado a cena vira
+   * procedural em silêncio e o rodapé seguia dizendo "medido".
+   */
+  cartografiaMedida: boolean;
   onEscalaReal: () => void;
   onBrilhoReal: () => void;
 }) {
@@ -209,11 +216,7 @@ export function Selo({
         </em>
       </button>
 
-      <p className="atlas-selo-legenda">
-        {PROCEDENCIA.medido.rotulo}: {PROCEDENCIA.medido.oQue} ·{' '}
-        {PROCEDENCIA.derivado.rotulo}: {PROCEDENCIA.derivado.oQue} ·{' '}
-        {PROCEDENCIA.artistico.rotulo}: {PROCEDENCIA.artistico.oQue}
-      </p>
+      <p className="atlas-selo-legenda">{legendaDaProcedencia(cartografiaMedida)}</p>
     </div>
   );
 }

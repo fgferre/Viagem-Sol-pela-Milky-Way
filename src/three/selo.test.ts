@@ -22,6 +22,7 @@ import {
   ARQUIVOS_GOVERNADOS,
   BRILHO_ASSISTIDO,
   BRILHO_REAL,
+  CARTOGRAFIA_PROCEDURAL,
   ESCALA_REAL,
   FORA_DE_ESCALA,
   PROCEDENCIA,
@@ -29,6 +30,7 @@ import {
   aoVoltarAoReal,
   escalaDaVista,
   estadoDoSelo,
+  legendaDaProcedencia,
 } from './selo';
 import type { EstadoDaVista } from './selo';
 import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
@@ -426,6 +428,39 @@ describe('5. a copy do selo', () => {
     // declarados (e quem domina a base é a `.atlas-tempo`, com 0,1809).
     // Ou seja: esta redação não move um fio do juízo de a11y.
     expect(oQue.length).toBeLessThanOrEqual(85);
+  });
+
+  /**
+   * A LEGENDA NÃO PODE JURAR MEDIDA QUANDO A MEDIDA NÃO CHEGOU.
+   * ACHADO em 2026-08-21: bloqueando o `manifest.json` e os `.bin` da
+   * cartografia, `loadGalacticAssets` engolia a falha num
+   * `console.warn`, a cena virava 100% procedural (`__director.catalogos
+   * = false`) e o rodapé do selo seguia imprimindo "medido: catálogo e
+   * efeméride" — porque o componente enumerava `PROCEDENCIA` à mão, sem
+   * olhar dado nenhum. Era o defeito do doador de volta, no único lugar
+   * do selo que ainda não lia estado.
+   */
+  it('a legenda diz a verdade nos DOIS estados da cartografia', () => {
+    const medida = legendaDaProcedencia(true);
+    const caida = legendaDaProcedencia(false);
+
+    // com os mapas na mão os três tiers são a legenda inteira
+    for (const t of Object.values(PROCEDENCIA)) {
+      expect(medida).toContain(`${t.rotulo}: ${t.oQue}`);
+      expect(caida).toContain(`${t.rotulo}: ${t.oQue}`);
+    }
+    expect(medida).not.toContain('procedural');
+
+    // sem eles, a frase extra — e só ela muda
+    expect(caida).toBe(`${medida} · ${CARTOGRAFIA_PROCEDURAL}`);
+    expect(CARTOGRAFIA_PROCEDURAL).toContain('cartografia');
+    expect(CARTOGRAFIA_PROCEDURAL).toContain('procedural');
+
+    // O QUE CAI É A CARTOGRAFIA, e a redação não pode escorregar disso:
+    // o catálogo HYG e as efemérides continuam chegando, e continuam
+    // medidos. A legenda que dissesse "medido: nada" seria a mentira
+    // contrária à que este teste existe para impedir.
+    expect(caida).toContain(`${PROCEDENCIA.medido.rotulo}: ${PROCEDENCIA.medido.oQue}`);
   });
 });
 
