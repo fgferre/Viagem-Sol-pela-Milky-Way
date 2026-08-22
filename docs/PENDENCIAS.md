@@ -16,13 +16,18 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
-**O BASTÃO DE 22/08: A ONDA DA UI/UX ABRIU.** O dono respondeu às três
-perguntas dos mockups e, na mesma mensagem, trouxe queixas e ideias
-novas: a onda da UI/UX está aberta e é feita dos itens **61**, **62**,
-**73**, **74** e **75**. A ordem de trabalho NÃO está decidida — as
-investigações da navegação (73) e do painel "em quadro" (74) correm em
-22/08, e a fila se decide COM ele depois delas. Palavras dele no fim da
-mensagem: *"enfim muitas ideias que precisam ser organizadas."*
+**O BASTÃO DE 22/08: A ONDA DA UI/UX ABRIU, E A NAVEGAÇÃO FECHOU.** O
+dono respondeu às três perguntas dos mockups e, na mesma mensagem,
+trouxe queixas e ideias novas: a onda da UI/UX está aberta e é feita
+dos itens **61**, **62**, **74**, **75** e **77**. O **73** — *"foi
+criado um monstro frankstein"* — FECHOU em 22/08, nas duas etapas: a
+roda virou zoom contínuo, o arrasto dá a volta inteira, um clique
+escolhe e dois vão, a distância entra no link, os nomes se organizam
+por importância (dez corpos com nome na abertura, contra três) e o
+modo ganhou o convite dele. Ficou de fora, de propósito, o **77** (as
+linhas de órbita). **Espera o olho dele no app**, com as fotos em
+`capturas/item73-*`. Palavras dele no fim da mensagem: *"enfim muitas
+ideias que precisam ser organizadas."*
 
 **O BASTÃO DE 17/08 (tarde): A RODADA DA ESTRELA POUSOU.** Palavras do
 dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
@@ -83,87 +88,17 @@ demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
 (`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
 `229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
 `2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60**, **66**,
-**67**, **68**, **58**, **65** e **71** em 22/08 (`a8a3168`, `92f0232`,
-`64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`, `d2fb2c7`). O 4 (Atlas com
-brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do código e os
+**67**, **68**, **58**, **65**, **71** e **73** em 22/08 (`a8a3168`,
+`92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`, `d2fb2c7`,
+`c8507ba`). O **73** é o único que levou OITO commits: a obra inteira é
+a sequência `3f2a290` → `c8507ba`, e o hash da lista é o do fecho.
+O 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do código e os
 dois modos desenham igual, decisão do dono cumprida. O **3** e o **44**
 pousaram com o aceite do dono em 17/08.
 
 ---
 
 ## ALTA — o dono vê e incomoda
-
-**73. A navegação do Atlas — "foi criado um monstro frankstein".**
-(Dono em 22/08. **ETAPA 1 DE 2 FECHADA na mesma data** — os três
-primeiros passos do plano estão na main; o item só sai quando a obra
-inteira fechar.) Palavras dele, inteiras, sobre a dica de gestos que sai
-do rodapé:
-
-> *"toda navegacao atual do modo atlas está uma merda... antes no
-> projeto atlas verdadeito conseguiamos dar zoom out zoom in livremente
-> rodando o mouse wheel quando um objeto estava selecionado... agora
-> essa nvagacao para cima e para baixo de objetos está muito confusa,
-> nem conseguimos mais selecionar para onde vamos. conseguiamos ver os
-> rotulos de todos objetos de forma inteligente, talvez vc deva olhar o
-> nasa eyes of the solar system para entneder melhor o padrao da
-> industria d einterface e navegacao, foi criado um monstro
-> frankstein."*
-
-**O QUE JÁ ESTÁ NA MAIN (etapa 1, três passos) — e o que ele vê:**
-
-1. **A roda do mouse voltou a ser ZOOM.** Gira e a câmera se aproxima ou
-   se afasta do objeto escolhido, sem pular de degrau, com inércia curta
-   — e **o objeto escolhido nunca troca sozinho**, por construção: a roda
-   só escreve distância. Em Saturno a faixa vai do topo das nuvens
-   (120.536 km) até o sistema inteiro em quadro (287,8 UA), ~50 estaladas
-   de ponta a ponta. Foto: `capturas/item73-zoom-saturno.png`.
-2. **Arrastar dá a volta inteira.** A trava que impedia ver o lado escuro
-   (o cone de 70° em torno da linha do Sol) saiu; o único limite que
-   ficou é o dos polos, e ele existe para a imagem não girar sozinha.
-3. **A tarja preta parou de engolir o gesto.** Eram 52,8 px em cima e
-   52,8 embaixo em que arrastar não girava e rolar não dava zoom.
-4. **A dica do rodapé conta a verdade** — "arraste — girar · roda — zoom
-   · clique — ir · esc — voltar" — e some depois do primeiro arrasto.
-5. **`?foco=marte` enquadra MARTE**, não o Sol com uma esfera do tamanho
-   da órbita de Marte. Foto: `capturas/item73-foco-marte-antes-depois.png`.
-
-**O QUE FALTA (etapa 2, três passos do mesmo plano):**
-
-6. **`?d=` no link** — a distância entra no endereço em raios do alvo, e
-   `?ver=` passa a ser só leitura (todo link antigo continua valendo).
-7. **Um clique escolhe, dois cliques voam.** Hoje o clique simples ainda
-   reposiciona a câmera; a promessa é o clique SELECIONAR sem mover e o
-   duplo clique mergulhar.
-8. **Os rótulos por importância**, com fade e cinco lugares para cada
-   texto: na abertura ler os oito planetas e o Sol, contra três hoje.
-   É a segunda coisa que ele pediu ("os rótulos de todos os objetos de
-   forma inteligente") e a única das três que ainda não começou.
-9. *(passo seguinte, obra própria)* **As linhas de órbita**, ligadas por
-   padrão. Ficaram de fora porque mudam a imagem de TODA vista do Atlas
-   e pedem a conferência dele à parte.
-
-**TRÊS COISAS PARA O OLHO DELE, medidas e declaradas:**
-
-- **Na abertura a roda tem pouco curso** — 226,8 → 70,8 UA, cinco
-  estaladas. É de propósito: ali o alvo é o SISTEMA, e descer ao Sol é
-  outro degrau, com distância e brilho já julgados. Se ele quiser que a
-  roda atravesse da abertura até a superfície do Sol, é decisão dele.
-- **A roda não troca de degrau.** Ela anda dentro do degrau em que se
-  está; quem troca é o botão "⊕ Aproximar", o clique no corpo, o Esc e a
-  busca. É o padrão do NASA Eyes, e é o que mantém a seleção estável.
-- **No degrau da Lua o arrasto ainda para no terminador.** O grampo de
-  70° continua lá guardando a MISTURA calculada que põe o pai em quadro;
-  soltá-lo é obra própria.
-
-**A referência que ele manda olhar:** *NASA Eyes on the Solar System*,
-"para entender melhor o padrão da indústria de interface e navegação".
-Existe estudo dela na casa —
-`docs/reference/atlas-estudo-tecnologia-nasa-eyes-camera-navegacao.md`
-— com a ressalva do `NORTE.md`: os quatro `atlas-estudo-*` são mapa de
-técnicas gerado por IA, e nenhum número deles se cita sem a fonte
-primária. (No `PLANO-ATLAS.md` §2 o que está aposentado é o estudo de
-STARFIELD do NASA Eyes, outro assunto — câmera e navegação não foram
-julgadas.)
 
 **5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
 ao calendário; falta ele ver.**
@@ -682,6 +617,31 @@ escrito é a parte da câmera — trocar de lente, usar zoom, virar e se
 mover por "algoritmos claros de movimento inteligente cinematográfico"
 — e o destinatário: o motor é ferramenta do agente, com instruções.
 
+**77. As linhas de órbita, ligadas por padrão.** (Nasceu em 22/08, do
+plano da navegação — item 73 §5 —, e ficou de fora dele por decisão
+declarada.) A órbita é o DADO, não enfeite: NASA Eyes, Celestia e
+SpaceEngine desenham as três. Sem elas o Atlas mostra dez pontos soltos
+e o visitante não tem como ler que Marte está entre a Terra e Júpiter.
+
+**POR QUE FICOU DE FORA DA OBRA DA NAVEGAÇÃO, e a razão é medida:** elas
+mudam pixel em TODA vista do Atlas, inclusive as três md5 da prova 3 do
+`atlas-smoke` e as vistas oficiais de dentro do sistema. Ou seja, pedem
+`ab-identidade` cheio com o delta DECLARADO (não bit-idêntico — a
+imagem muda de propósito) e a conferência do dono à parte. Entrar junto
+com a navegação teria misturado "a câmera mudou" com "o desenho mudou"
+no mesmo A/B.
+
+**O QUE ELAS PRECISAM, escrito para quem as fizer:** uma camada nova na
+tabela única `CAMADAS` (`atlasConfig.ts`) — `{ flag: 'noorbitas', nome:
+'Linhas de órbita', viva: true, icone: '◜' }` —, e com ícone ela aparece
+na gaveta do Atlas de graça e o selo a declara pela derivação de
+sempre. O desenho é um `world/orbitas.ts` que amostre
+`efemeride.posicaoHeliocentrica(id, jd + k·T/N)` ao longo de um período
+(a efeméride VIVA, nunca o retrato congelado — senão a linha e o ponto
+divergem no primeiro salto de data), ~256 pontos por corpo, `LineLoop`
+aditivo com fade por tamanho angular (some quando a órbita não cabe no
+quadro), e as luas só com o pai enquadrado.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -756,7 +716,8 @@ solta o relógio por 420 ms em sete instantes e cobra mais de 0,1 s de
 filme andado — ou seja, mais de 24% do tempo real. Nos shots pesados
 (mergulho, Sagittarius A*, face-on, galáxia final) a máquina não entrega
 isso, e o número muda a cada corrida: TRÊS corridas do MESMO binário
-deram 3, 1 e 4 falhas. A prova de que não é regressão foi feita com
+deram 3, 1 e 4 falhas — e uma quarta, no fecho do 73 em 22/08, deu 2
+(mergulho e Sagittarius A*), sempre os mesmos shots pesados. A prova de que não é regressão foi feita com
 worktree no commit anterior à obra do 73, num segundo dev server: **as
 MESMAS 4 falhas, no código de antes**. Ou seja, o gate hoje mede a carga
 da máquina e chama isso de defeito do filme — e um juiz que reprova sem
@@ -765,6 +726,19 @@ para um gate. O conserto não é afrouxar o número: é medir o que a régua
 quer medir (o relógio ANDA quando solto), por exemplo cobrando avanço
 maior que zero e publicando a taxa como REGISTRO, do jeito que o
 `a11y.mjs` já faz com os cantos fora da faixa declarada.
+
+**78.** (Ruído de instrumento, visto UMA vez em 22/08.) **O
+`ab-identidade` com `JOBS=3` travou DEPOIS de terminar.** Os três
+processos-filhos capturaram as 52 vistas, gravaram os arquivos de
+estado e saíram — o pai ficou 25 minutos vivo, sem filhos, sem
+consumir CPU e sem imprimir o veredito, com 20 Chrome órfãos na
+máquina. O `Promise.allSettled` sobre os `on('exit')` dos filhos não
+resolveu, e o pai nem chegou a fundir os três `-j*.json` (eles
+continuavam em disco, e a fusão os apaga). Contornado à mão: fundir os
+três num `ab-identidade-depois.json` e rodar o lado de novo — as 52
+vieram `(de disco)`, com o CARIMBO conferido (`c8507bad1eb9-d41d8cd9`),
+e o veredito saiu em segundos. Se voltar a acontecer, o suspeito é o
+`stdio: 'inherit'` dos filhos com Chrome órfão segurando o descritor.
 
 ---
 

@@ -182,13 +182,13 @@ para escolher com honestidade.
 |---|---|---|---|
 | `ab-identidade.mjs antes` / `depois` | md5 das **52 vistas** oficiais, um lado de cada vez — detector de regressão | **6,5 min por lado** (52 vistas × 2 capturas, `JOBS=3`) | fechamento de qualquer mudança que possa mover imagem |
 | `SMOKE=1 ab-identidade.mjs …` | as 4 sentinelas (`sol`, `soldisco`, `hero8`, `ua150`) | **0,8 min por lado** | enquanto se itera — nunca para fechar |
-| `atlas-smoke.mjs` | o portal do Atlas em pixel: ida e volta com `journeyT` exato, prontidão da fase nova, abertura reprodutível (as três do filme e a porta da abertura, item 60), o Sol pela data e o ZOOM da roda (item 73: o alvo não troca, o piso e o teto seguram) — 105 vereditos | **4,7 min** | portal, fases, enquadramento do Atlas, calendário do Sol |
+| `atlas-smoke.mjs` | o portal do Atlas em pixel: ida e volta com `journeyT` exato, prontidão da fase nova, abertura reprodutível (as três do filme e a porta da abertura, item 60), o Sol pela data e a NAVEGAÇÃO inteira (item 73: a roda dá zoom sem trocar o alvo, o piso e o teto seguram, `?d=` faz a ida e volta pelo escritor vivo, um clique escolhe com a câmera parada e o duplo mergulha, e a abertura mostra os 8 planetas e o Sol com nome) — 113 vereditos | **5,6 min** | portal, fases, enquadramento do Atlas, calendário do Sol, gestos, rótulos |
 | `estabilidade-temporal.mjs [família…]` | MB1: fervura e re-semeadura entre quadros CONSECUTIVOS com o relógio andando, depois de reprojetar o quadro anterior pela câmera conhecida — 9 famílias, 97 passos, tolerâncias declaradas no cabeçalho (§5.17/§5.20); a 9ª (`zoomDeRoda`, 22/08) é a única que corre DENTRO do Atlas, pela porta do gesto | **2,9 min** a corrida inteira · ~0,3 min por família | qualquer coisa que só apareça em MOVIMENTO: campo procedural, PSF, crossfade, clarão, histerese, fronteira de promoção |
 | `memoria.mjs` | vazamento em número: texturas, **bytes de texel**, geometrias, heap e workers vivos em 5 idas ao Atlas, 3 trocas de tier pelo caminho vivo e 5 focos. Autovalida-se — `--sabotagem` TEM de reprovar | **2,9 min** por tier | troca de tier, entrar/sair do Atlas, foco, carga em worker, **dose de textura** |
-| `a11y.mjs` (`?shot=1`) | os diálogos do HUD: o foco entra, fica preso, Esc devolve; nenhum diálogo órfão; escala de UI em três telas; e a ABERTURA — as três portas com a sua linha, a mesma tinta nas três, o Tab na ordem da tela e nada fora dela (desde 22/08, item 60) | **2,6 min** | HUD, diálogo novo, escala de texto, abertura |
+| `a11y.mjs` (`?shot=1`) | os diálogos do HUD: o foco entra, fica preso, Esc devolve; nenhum diálogo órfão; escala de UI em três telas; a ABERTURA — as três portas com a sua linha, a mesma tinta nas três, o Tab na ordem da tela e nada fora dela (desde 22/08, item 60); e o CONVITE DO ATLAS — quatro passos, furo no pedaço real da dica, chave `conviteAtlasVisto` própria (desde 22/08, item 73) | **2,6 min** | HUD, diálogo novo, escala de texto, abertura, convite |
 | `filme-smoke.mjs` | o roteiro na tela: texto e corte nas margens das 25 janelas de legenda, responsividade, e 420 ms de relógio solto em sete instantes | **2,6 min** | legenda, corte, retemporização, responsividade |
 | `filme-ritmo.mjs` | quanto a imagem muda por segundo no corte inteiro — 97 quadros parados — mais as folhas de contato | **~2,3 min** no passo padrão (extrapolado de 10 quadros em 0,3 min) | revisão de ritmo, e só como onde-olhar: a curva não mede tédio |
-| `busca-smoke.mjs` | a paleta de busca e o `?foco=`: os dez corpos, a ida e volta pelo escritor vivo da URL, latência por tecla, o atalho de teclado | **1,5 min** | busca, deep-link de foco, rótulo clicável |
+| `busca-smoke.mjs` | a paleta de busca, o `?foco=` e o `?d=`: os dez corpos, a ida e volta pelo escritor vivo da URL (com a DISTÂNCIA dentro desde 22/08), latência por tecla, o atalho de teclado, e o par clique/duplo clique num corpo | **1,5 min** | busca, deep-link de foco, rótulo clicável, gestos do Atlas |
 | `luz-do-quadro.mjs [ua…]` | quanto do quadro está lavado e o diâmetro do borrão contra o disco real e o clarão de direito, na escada de 11 distâncias; `julgarEscada` dá o veredito | **1,0 min inteira · 0,1 min por degrau** | exposição, bloom, clarão, qualquer coisa perto do Sol |
 | `planeta-pixel.mjs [vista]` | se a luz que a camada dos planetas acende cai onde o `?dbgplan` mandou, a ≤0,5 px, por dois estimadores — lente `&nobloom=1&noclarao=1` e caixa de MEIA-ALTURA desde 22/08 (item 58a) | **0,4 min por vista** (as três ≈ 1,1 min) | camada dos planetas, fotometria dos corpos |
 | `sky-capture.mjs [tag]` | o céu interno contra o panorama ESO: 6 faces costuradas e os cinco termos da régua | **0,7 min** | céu, poeira, catálogo visto de casa |
@@ -219,6 +219,15 @@ para escolher com honestidade.
   do FILME — no Atlas o Sol está longe e as três malhas não chegam ao
   renderer —, e a linha de base já nasce com elas: 45 → 48 nos dois
   tiers, e os cinco ciclos param em 48.
+
+- **O `atlas-smoke` foi de 101 a 113 vereditos em 22/08**, e dois números
+  de mensagem de commit ficaram errados no caminho — ficam corrigidos
+  AQUI, que é onde o número vivo mora, e não por reescrita de histórico:
+  `faa66ba` diz "102 vereditos" e aquele commit não toca o script (eram
+  101); `59b099e` diz "111" e a corrida daquele código deu **108**. Os
+  três números que foram MEDIDOS na rodada, cada um na sua corrida: 105
+  (`71d0f90`, o zoom da abertura), 108 (`59b099e`, o `?d=`) e 113
+  (`c8507ba`, o fecho).
 
 Duas coisas que mudam o preço e não se adivinham:
 
