@@ -1,18 +1,18 @@
 // ============================================================
 // OS GESTOS DO CANVAS — o pausar-e-olhar, a órbita do Atlas, o clique
-// de focar, a roda/pinça da escada e o menu de contexto morto. Morava
+// de focar, a roda/pinça do zoom e o menu de contexto morto. Morava
 // no director.ts (onda da arquitetura, Parte 1, corte 6); a semântica
 // é a mesma, linha a linha. As duas máquinas de gesto
-// (ArrastoDePonteiro, RodaDaEscada) moram AQUI — quem precisa esquecer
+// (ArrastoDePonteiro, ZoomDaRoda) moram AQUI — quem precisa esquecer
 // a roda na troca de fase usa o punho devolvido.
 // ============================================================
 import { ArrastoDePonteiro } from '../arrastoDePonteiro';
-import { RodaDaEscada } from '../rodaDaEscada';
+import { ZoomDaRoda } from '../zoomDaRoda';
 
 export interface FiosDosGestos {
   /** viagem congelada — arrastar olha ao redor */
   pauseLookAtivo: () => boolean;
-  /** a fase é 'atlas' — arrastar orbita, clique curto foca, roda move a escada */
+  /** a fase é 'atlas' — arrastar orbita, clique curto foca, roda dá zoom */
   noAtlas: () => boolean;
   /** atlas.addOrbitDelta + perturbar (a captura recomeça) */
   orbitar: (dx: number, dy: number) => void;
@@ -20,8 +20,12 @@ export interface FiosDosGestos {
   olhar: (dx: number, dy: number) => void;
   /** clique curto no Atlas: focar o nome mais próximo (frações de tela) */
   focar: (x: number, y: number) => void;
-  descerDegrau: () => void;
-  subirDegrau: () => void;
+  /**
+   * ZOOM CONTÍNUO (item 73): estalos fracionários deste quadro —
+   * negativo aproxima, positivo afasta. Quem os converte em distância é
+   * o rig, que é quem sabe o piso e o teto do alvo.
+   */
+  zoom: (estalos: number) => void;
 }
 
 /**
@@ -34,7 +38,7 @@ export interface FiosDosGestos {
  */
 export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   const arrasto = new ArrastoDePonteiro();
-  const roda = new RodaDaEscada();
+  const roda = new ZoomDaRoda();
 
   /**
    * Os MESMOS listeners servem o Atlas — arrastar orbita o alvo, clique
@@ -93,26 +97,27 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   };
 
   /**
-   * A RODA E A PINÇA MOVEM A ESCADA (Onda 7) — e este é o único lugar
-   * do projeto que trata `wheel` fora do voo livre.
+   * A RODA E A PINÇA DÃO ZOOM (item 73) — e este é o único lugar do
+   * projeto que trata `wheel` fora do voo livre.
    *
    * O `preventDefault` é INCONDICIONAL dentro da fase, e vem antes de
-   * qualquer decisão de degrau: mesmo o giro que não completa um degrau
-   * (o acumulador ainda somando) tem de morrer aqui, senão metade dos
-   * eventos de um gesto rolaria a página enquanto a outra metade move a
-   * escada. E ele vale para a PINÇA pelo mesmo `wheel` — no Chrome e no
-   * Safari de Mac a pinça de trackpad chega como `wheel` com `ctrlKey`,
-   * e o padrão dela é DAR ZOOM NA PÁGINA inteira, HUD e canvas juntos.
+   * qualquer decisão: mesmo o giro pequeno demais para mover a câmera de
+   * forma visível tem de morrer aqui, senão metade dos eventos de um
+   * gesto rolaria a página enquanto a outra metade dá zoom. E ele vale
+   * para a PINÇA pelo mesmo `wheel` — no Chrome e no Safari de Mac a
+   * pinça de trackpad chega como `wheel` com `ctrlKey`, e o padrão dela
+   * é DAR ZOOM NA PÁGINA inteira, HUD e canvas juntos.
    *
-   * Quem traduz pixels em degrau é a `RodaDaEscada` (limiar, trava e
-   * `deltaMode`); aqui só se decide o que é subir e o que é descer.
+   * O EVENTO SÓ EMPURRA A VELOCIDADE; quem gasta é o quadro
+   * (`avancarZoom`). Era aqui que a escada decidia degrau, com limiar e
+   * trava de embalo; zoom contínuo não precisa de nenhum dos dois — o
+   * que não completa um estalo vira fração de estalo, e a fração move a
+   * câmera.
    */
   const onRoda = (evento: WheelEvent) => {
     if (!fios.noAtlas()) return;
     evento.preventDefault();
-    const passo = roda.girar(evento, performance.now(), window.innerHeight);
-    if (passo < 0) fios.descerDegrau();
-    else if (passo > 0) fios.subirDegrau();
+    roda.girar(evento, window.innerHeight);
   };
 
   /**
@@ -148,6 +153,18 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
 
   return {
     esquecerRoda: () => roda.esquecer(),
+    /**
+     * UM QUADRO DE INÉRCIA. Chamado do tick, do mesmo ponto em que o
+     * Atlas escreve a câmera: a roda deixa velocidade guardada e é o
+     * relógio que a gasta, com atrito exponencial e zona morta
+     * (`zoomDaRoda.ts`). Fora do Atlas ninguém chama, e a velocidade
+     * morre no `esquecerRoda` da troca de fase.
+     */
+    avancarZoom: (dt: number) => {
+      if (!roda.embalando) return;
+      const estalos = roda.avancar(dt);
+      if (estalos !== 0) fios.zoom(estalos);
+    },
     desligar: () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointermove', onPointerMove);

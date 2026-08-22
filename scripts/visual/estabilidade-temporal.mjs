@@ -1235,13 +1235,56 @@ async function familiaFronteiraTerra(s) {
   return medirPercurso(s, { nome: 'fronteiraTerra', poses, ancorasDe });
 }
 
+/**
+ * ZOOM DE RODA (item 73) — a única família que corre DENTRO do Atlas, e a
+ * única que mexe na câmera pela porta que o visitante usa.
+ *
+ * POR QUE ELA PRECISA EXISTIR: as outras oito voam com `placeCamera` no
+ * voo livre, onde o AtlasRig nem é o escritor da câmera. O zoom contínuo
+ * é escrita nova de posição a 60 Hz com o relógio andando, e é
+ * exatamente o regime que MB1 existe para julgar — campo procedural, PSF
+ * e clarão re-semeando entre quadros consecutivos.
+ *
+ * O PASSO É PEQUENO DE PROPÓSITO, e o precedente é o `familiaFov`: a
+ * reprojeção supõe que a imagem é função da DIREÇÃO, e a PSF de uma
+ * estrela tem tamanho de TELA. Um degrau de zoom translada a câmera, e a
+ * paralaxe do passo é o que decide se o par é julgável — `paralaxePx`
+ * acima de `PARALAXE_CEGA_PX` SUSPENDE o passo sozinho, como já acontece
+ * em `aproxEstrela`. `PASSO_LOG_PERTO` (0,05 década = 12,2% da
+ * distância) é o passo do produto junto ao piso, e a 226 UA de casa ele
+ * desloca a câmera 8,8e-5 pc — 0,07 px de paralaxe contra a régua de
+ * 1,30 pc. Cabe com folga de uma ordem de grandeza.
+ *
+ * A POSE é escrita pelo mesmo caminho do gesto (`pinarDistancia`), e não
+ * por `placeCamera`: fosse por `placeCamera`, a família mediria o voo
+ * livre com outro nome.
+ */
+async function familiaZoomDeRoda(s) {
+  await s.ir('atlas=1&foco=saturno&q=cinema');
+  await s.js(SO_A_CENA);
+  await s.assentar();
+  const faixa = JSON.parse(await s.js(`JSON.stringify((() => {
+    const d = window.__director;
+    return { dist: d.atlas.distancia, piso: d.atlas.pisoDeZoom, teto: d.atlas.tetoDeZoom };
+  })())`));
+  // 11 poses descendo do enquadramento rumo ao piso, uma década em 11
+  // passos de 0,05 — o passo do produto junto ao corpo
+  const poses = [];
+  for (let k = 0; k < 11; k++) {
+    const d = faixa.dist * Math.pow(10, -0.05 * k);
+    poses.push((sess) =>
+      sess.js(`window.__director.atlas.pinarDistancia(${Math.max(d, faixa.piso)})`));
+  }
+  return medirPercurso(s, { nome: 'zoomDeRoda', poses });
+}
+
 // ------------------------------------------------------------
 // main
 // ------------------------------------------------------------
 
 const TODAS = [
   'aproxSol', 'fronteiraSol', 'reversao', 'pan', 'orbita', 'fov',
-  'aproxEstrela', 'fronteiraTerra',
+  'aproxEstrela', 'fronteiraTerra', 'zoomDeRoda',
 ];
 
 async function correr() {
@@ -1280,6 +1323,7 @@ async function correr() {
       else if (nome === 'orbita') r = await familiaOrbita(s);
       else if (nome === 'fov') r = await familiaFov(s);
       else if (nome === 'aproxEstrela') r = await familiaAproxEstrela(s);
+      else if (nome === 'zoomDeRoda') r = await familiaZoomDeRoda(s);
       else r = await familiaFronteiraTerra(s);
       r.segundos = (Date.now() - marca) / 1000;
       cruas.push(r);

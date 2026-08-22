@@ -750,41 +750,108 @@ try {
       + ` pousou (seletor '${deLink.escolhido}', tier '${deLink.tier}')`
   );
 
-  // ---- 15: A RODA E A PINÇA MOVEM A ESCADA (Onda 7) ----------------
-  // A bancada de `rodaDaEscada.test.ts` prova a tradução de pixels em
-  // degrau; o que ela NÃO pode provar é que o evento do navegador chega
-  // — que o listener está no elemento certo, que a fase o aceita e que
-  // o degrau realmente muda. Era exatamente esse o defeito original: a
-  // lógica do voo livre existia e o Atlas nunca a via.
-  await sessao.ir('atlas=1&q=cinema&shot=1');
-  const degrauVivo = () => sessao.js('window.__director.escadaViva.degrau');
+  // ---- 15: A RODA DÁ ZOOM E NÃO TROCA O ALVO (item 73) --------------
+  // Substitui a prova "a roda e a pinça movem a escada" (Onda 7). A
+  // bancada de `zoomDaRoda.test.ts` prova a inércia, o passo em log e os
+  // dois limites; o que ela NÃO pode provar é que o evento do navegador
+  // chega — que o listener está no elemento certo, que a fase o aceita e
+  // que a câmera anda. E o veredito NOVO é o que o dono pediu com estas
+  // palavras: "nem conseguimos mais selecionar para onde vamos" — o
+  // objeto escolhido não pode trocar sozinho quando a roda gira.
+  await sessao.ir('atlas=1&foco=saturno&q=cinema&shot=1');
+  await sessao.assentar();
+  const doZoom = async () => JSON.parse(await sessao.js(`JSON.stringify((() => {
+    const d = window.__director;
+    return {
+      degrau: d.escadaViva.degrau,
+      foco: d.escada.focoCorpoId,
+      alvo: d.atlas.alvo.toArray().join(','),
+      dist: d.atlas.distancia,
+      piso: d.atlas.pisoDeZoom,
+      teto: d.atlas.tetoDeZoom,
+      raio: d.atlas.raioDoAlvo,
+      cam: d.engine.camera.position.distanceTo(d.atlas.alvo),
+    };
+  })())`));
   const rodar = (deltaY, ctrlKey = false) =>
     sessao.js(`(() => document.querySelector('canvas').dispatchEvent(
       new WheelEvent('wheel', { deltaY: ${deltaY}, deltaMode: 0,
         ctrlKey: ${ctrlKey}, bubbles: true, cancelable: true })))()`);
-  const descer = [];
-  for (let i = 0; i < 4; i++) {
-    await rodar(-120);
-    // a trava de 300 ms é do produto: sem esperar por ela o gesto
-    // seguinte é engolido de propósito
-    await sleep(400);
-    descer.push(await degrauVivo());
-  }
-  conferir(
-    descer.join(' → ') === 'orbita → corpo → lua → lua',
-    `a roda DESCE a escada e para no piso: sistema → ${descer.join(' → ')}`
+  // a inércia é curta (meia-vida 87 ms, zona morta em ~0,5 s): esperar
+  // por ela é esperar o gesto acabar, não uma trava de produto
+  const estalo = async (deltaY, ctrlKey = false) => {
+    await rodar(deltaY, ctrlKey);
+    await sleep(600);
+    return doZoom();
+  };
+
+  const zoomInicio = await doZoom();
+  const paraDentro = [];
+  for (let i = 0; i < 6; i++) paraDentro.push(await estalo(-100));
+  const mesmoAlvo = paraDentro.every(
+    (a) => a.alvo === zoomInicio.alvo && a.foco === zoomInicio.foco
+      && a.degrau === zoomInicio.degrau
   );
-  await rodar(120);
-  await sleep(400);
-  const subiu = await degrauVivo();
-  conferir(subiu === 'corpo', `e SOBE de volta um degrau por vez (lua → ${subiu})`);
-  // a PINÇA do trackpad é o mesmo `wheel` com `ctrlKey`, em eventos
-  // pequenos que somam até o limiar
-  await rodar(-30, true);
-  await rodar(-30, true);
-  await sleep(400);
-  const pincou = await degrauVivo();
-  conferir(pincou === 'lua', `a pinça (ctrlKey) faz o mesmo (corpo → ${pincou})`);
+  const desce = paraDentro.every(
+    (a, i) => a.dist < (i === 0 ? zoomInicio.dist : paraDentro[i - 1].dist)
+  );
+  conferir(
+    mesmoAlvo && desce,
+    `a roda APROXIMA sem trocar o alvo: ${(zoomInicio.dist / zoomInicio.raio).toFixed(2)}`
+      + ` → ${(paraDentro[5].dist / zoomInicio.raio).toFixed(2)} raios, foco`
+      + ` "${zoomInicio.foco}" → "${paraDentro[5].foco}", degrau ${zoomInicio.degrau}`
+  );
+  conferir(
+    paraDentro.every((a) => Math.abs(a.cam - a.dist) / a.dist < 1e-9),
+    'e a CÂMERA está onde a distância publicada diz que ela está'
+  );
+
+  // O PISO: `K_MIN_RAIOS` raios FÍSICOS do alvo (o piso publicado já é
+  // `2 × raio físico`), e nem oitenta estalos passam dele. Para Saturno
+  // são 120.536 km de centro — 2 raios equatoriais, o topo das nuvens.
+  let noPiso = paraDentro[5];
+  for (let i = 0; i < 80; i++) await rodar(-100);
+  await sleep(900);
+  noPiso = await doZoom();
+  conferir(
+    Math.abs(noPiso.dist / noPiso.piso - 1) < 1e-9 && noPiso.foco === zoomInicio.foco,
+    `o PISO segura em ${(noPiso.dist / (noPiso.piso / 2)).toFixed(4)} raios físicos do alvo`
+      + ` (K_MIN = 2,0; ${(noPiso.dist / 4.84813681e-6 * 1.495978707e8).toFixed(0)} km)`
+  );
+
+  // O TETO: o sistema em quadro, centrado no alvo
+  for (let i = 0; i < 90; i++) await rodar(100);
+  await sleep(900);
+  const noTeto = await doZoom();
+  conferir(
+    Math.abs(noTeto.dist - noTeto.teto) / noTeto.teto < 1e-9
+      && noTeto.dist > zoomInicio.dist,
+    `o TETO segura no sistema em quadro: ${(noTeto.dist / noTeto.raio).toFixed(3)} raios de`
+      + ` órbita (${(noTeto.dist / 4.84813681e-6).toFixed(1)} UA)`
+  );
+  conferir(
+    noTeto.alvo === zoomInicio.alvo && noTeto.foco === zoomInicio.foco,
+    `...e depois de 176 estalos o alvo ainda é o mesmo ("${noTeto.foco}")`
+  );
+  conferir(
+    Math.abs(Math.log10(noTeto.teto / noPiso.piso) - 5.55) < 0.05,
+    `a faixa inteira do alvo tem ${Math.log10(noTeto.teto / noPiso.piso).toFixed(2)} décadas`
+      + ` — as ~50 estaladas de ponta a ponta que o passo em log promete`
+  );
+
+  // a PINÇA do trackpad é o mesmo `wheel` com `ctrlKey`, e sem limiar
+  // nenhum: eventos pequenos viram fração de estalo e a câmera anda
+  const antesDaPinca = await doZoom();
+  for (let i = 0; i < 4; i++) await rodar(-30, true);
+  await sleep(600);
+  const depoisDaPinca = await doZoom();
+  conferir(
+    depoisDaPinca.dist < antesDaPinca.dist && depoisDaPinca.foco === zoomInicio.foco,
+    `a pinça (ctrlKey) faz o mesmo, em fração de estalo`
+      + ` (${(antesDaPinca.dist / antesDaPinca.raio).toFixed(3)} →`
+      + ` ${(depoisDaPinca.dist / depoisDaPinca.raio).toFixed(3)} raios)`
+  );
+
   // e o gesto NÃO rola a página nem deixa o navegador dar zoom: o
   // `preventDefault` só é aceito porque o listener é `passive: false`
   const engoliu = await sessao.js(`(() => {

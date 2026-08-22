@@ -57,6 +57,7 @@ import { VeuDoAtlas } from './director/veu';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
 import { MaquinaDoTempo } from './director/maquinaDoTempo';
 import { ligarGestos } from './director/gestos';
+import { distanciaAposEstalos } from './zoomDaRoda';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
 import { doseDaDramaturgia } from './director/doseDoSol';
@@ -712,8 +713,20 @@ export class Director {
       },
       olhar: (dx, dy) => this.rig.addLookDelta(dx, dy),
       focar: (x, y) => this.escada.tryVisit(x, y),
-      descerDegrau: () => this.descerDegrau(),
-      subirDegrau: () => this.subirDegrau(),
+      // A RODA ESCREVE DISTÂNCIA, e só distância (item 73): nem
+      // `focoCorpoId`, nem alvo, nem degrau. É por construção que o
+      // objeto escolhido nunca troca sozinho — a queixa "nem conseguimos
+      // mais selecionar para onde vamos" morre aqui, não num remendo.
+      zoom: (estalos) => {
+        const d = distanciaAposEstalos(
+          this.atlas.distancia,
+          this.atlas.pisoDeZoom,
+          this.atlas.tetoDeZoom,
+          estalos
+        );
+        this.atlas.pinarDistancia(d);
+        this.perturbar();
+      },
     });
 
     // clique curto no voo livre → mini-viagem até a estrela nomeada
@@ -1330,10 +1343,6 @@ export class Director {
 
   subirDegrau(): boolean {
     return this.escada.subirDegrau();
-  }
-
-  descerDegrau(): boolean {
-    return this.escada.descerDegrau();
   }
 
   /** o `ver` vivo, para o `urlComMomento` espelhar `?ver=corpo`. */
@@ -2032,6 +2041,13 @@ export class Director {
     } else if (this.escritorDeCamera === 'voo') {
       this.roam.update(dt);
     } else if (this.escritorDeCamera === 'atlas') {
+      // A INÉRCIA DA RODA gasta o embalo ANTES de a câmera ser escrita
+      // (item 73): escrever depois deixaria o quadro com a distância do
+      // anterior, e a 60 Hz isso é um quadro de atraso em todo estalo.
+      // `pinarDistancia` recusa sozinho enquanto a rampa entre degraus
+      // anda — a rampa termina EXATA na pose pura, e duas mãos na mesma
+      // distância seriam duas leis.
+      this.gestos?.avancarZoom(dt);
       // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
       // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
       // amortecido do shot onde o visitante pausou. O dt alimenta a

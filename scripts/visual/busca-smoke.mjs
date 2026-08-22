@@ -437,9 +437,16 @@ try {
   );
 
   // O CLIQUE. Perto do centro do retângulo útil, no enquadramento da
-  // órbita da Terra, quem está é um dos dez — o Sol na mira e os
-  // interiores em volta. Antes do conserto o clique ali não achava
-  // rótulo nenhum (não havia rótulo de corpo) e nada acontecia.
+  // órbita da Terra. Antes do conserto o clique ali não achava rótulo
+  // nenhum (não havia rótulo de corpo) e nada acontecia.
+  //
+  // O QUE ELE ACHA MUDOU EM 22/08 (item 73): `?foco=terra` passou a pôr
+  // a TERRA no centro, e não mais o Sol com uma esfera do tamanho da
+  // órbita dela. Então o clique no centro cai na própria Terra, e o
+  // gesto que sai dali é a DESCIDA de degrau — órbita → corpo —, que é
+  // o gesto irmão do botão "⊕ Aproximar". O veredito passa a cobrar o
+  // que ele sempre quis dizer: o clique achou um corpo da lista única e
+  // o ENQUADRAMENTO se moveu, seja trocando de nome, seja de degrau.
   await sessao.ir(`foco=terra&${PIN}`);
   const nomesDosCorpos = JSON.parse(
     await sessao.js('JSON.stringify(window.__director.corpos.map((c) => c.nome))')
@@ -447,15 +454,19 @@ try {
   const tela = JSON.parse(
     await sessao.js('JSON.stringify({ w: window.innerWidth, h: window.innerHeight })')
   );
+  const degrau = () => sessao.js('window.__director.escadaViva.degrau');
+  const antesDoClique = await degrau();
   await sessao.clicar(Math.round(tela.w * 0.5), Math.round(tela.h * 0.45));
   await sessao.assentar();
   const depoisDoClique = await contexto(sessao);
+  const degrauDepois = await degrau();
   conferir(
     // 11 desde a F2b; 13 F3; 30 F5; 36 F6; 39 F7 (+ Vesta/Palas/Hígia)
     nomesDosCorpos.length === 39
       && (nomesDosCorpos.includes(depoisDoClique) || depoisDoClique === 'Sistema solar')
-      && depoisDoClique !== naTerra,
-    `clicar num corpo ENQUADRA por ele ("${naTerra}" → "${depoisDoClique}")`
+      && (depoisDoClique !== naTerra || degrauDepois !== antesDoClique),
+    `clicar num corpo ENQUADRA por ele ("${naTerra}"/${antesDoClique} →`
+      + ` "${depoisDoClique}"/${degrauDepois})`
   );
 
   // ---- 9b: A LUA na busca (F2b, P-E10) -----------------------------

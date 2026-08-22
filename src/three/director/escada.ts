@@ -4,9 +4,9 @@
 // (`visitarEstrela`, `focarNoCorpo`), a casa viva e a abertura
 // (`casaViva`, `focarNoSistema`), os degraus do corpo, da lua, do Sol
 // e dos anões (`aproximarDoCorpo`, `focarNaLua`, `aproximarDoSol`,
-// `focarNoAnao`), a subida e a descida (`subirDegrau`, `descerDegrau`),
-// o religador do relógio (`enquadreVivo` → `recomporAlvo`) e a
-// reaplicação quando a efeméride chega tarde
+// `focarNoAnao`), a subida da escada (`subirDegrau` — a descida morreu
+// com a roda de degraus, item 73), o religador do relógio
+// (`enquadreVivo` → `recomporAlvo`) e a reaplicação quando a efeméride chega tarde
 // (`reenquadrarAposEfemeride`). Morava no director.ts num bloco de
 // ~860 linhas (onda da arquitetura, Parte 1, corte 9); a semântica é a
 // mesma, linha a linha, e os métodos são chamados nos MESMOS pontos —
@@ -46,7 +46,7 @@ import {
 import { GAL } from '../world/baseGalactica';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
-import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
+import { BODY_AXES, IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
 import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { RAIO_LUA_PC } from '../world/corpos/lua';
 import type { RochosoResolvido } from '../world/corpos/rochoso';
@@ -489,12 +489,19 @@ export class Escada {
    * OS DEZ CORPOS COMO ALVO (Onda 5) — o clique no rótulo, a escolha na
    * paleta e o `?foco=terra` caem todos aqui.
    *
-   * ENQUADRA A ÓRBITA, não o corpo: a esfera é centrada no SOL e tem o
-   * raio da distância heliocêntrica VIVA do alvo. É a mesma forma da
-   * vista de abertura (que é este método com o corpo mais externo), e é o
-   * que a D5 manda — corpos são pontos até a Onda 6, e uma tabela nova de
-   * raios físicos seria a segunda fonte de verdade que a Onda 7 refaria.
-   * A DIREÇÃO sai do corpo, e é ela que dá a vista privilegiada dele.
+   * O ALVO É O CORPO, e a esfera enquadrada tem o raio da ÓRBITA dele
+   * (a distância heliocêntrica viva) — ou seja: Marte no centro, com a
+   * escala da órbita em quadro.
+   *
+   * ERA CENTRADA NO SOL até 22/08, e é a linha que produzia a confusão
+   * do item 73: "em quadro: Marte" com o SOL no meio da tela e Marte um
+   * ponto na borda. Com a roda virando zoom o defeito deixou de ser só
+   * de leitura — a distância de zoom se mede AO ALVO, e com o alvo no
+   * Sol a roda aproximaria do SOL enquanto a linha de contexto anuncia
+   * Marte. Move pixel, e é mudança pedida.
+   *
+   * A DIREÇÃO continua saindo do corpo, e é ela que dá a vista
+   * privilegiada dele.
    *
    * A posição sai do atributo VIVO da camada, não do retrato: quem
    * clicou num rótulo clicou onde o ponto está DESENHADO, inclusive
@@ -562,7 +569,11 @@ export class Escada {
     const p = this.planetas.posicoes;
     const pos = new THREE.Vector3(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
     if (pos.lengthSq() === 0) return;
-    this.atlas.focar(ORIGEM, pos.length(), pos, { rampa: this.rampaDaEscada() });
+    this.atlas.focar(pos, pos.length(), pos, {
+      rampa: this.rampaDaEscada(),
+      // o PISO do zoom se mede no corpo, não na órbita dele (item 73)
+      pisoRaio: this.raioFisicoDe(id),
+    });
     this.enquadrarAgora();
     // o selo lê o ΔEV DESTE corpo enquanto ele estiver em foco (D2)
     this.focoCorpoId = id;
@@ -587,6 +598,23 @@ export class Escada {
    * Corpo sem registro IAU devolve `null` e o chamador fica com a
    * eclíptica — que é o que o Atlas sempre fez.
    */
+  /**
+   * O RAIO FÍSICO de um corpo do sistema, em pc — a régua do PISO do
+   * zoom da roda (`K_MIN_RAIOS`, item 73). `null` para quem não tem.
+   *
+   * FONTE ÚNICA: `BODY_AXES` do kernel `pck00011`, lida pela MESMA
+   * função que dá raio às malhas. `raiosDoRochosoPc` é literalmente
+   * `BODY_AXES[id]` convertido — o nome é do módulo em que ela nasceu,
+   * não uma restrição de classe, e usar a irmã de gigante daria o mesmo
+   * número por um segundo caminho. O SOL não está na tabela: ele é o
+   * `solRaioPc` que o palco entregou, a mesma fonte única que o degrau
+   * do corpo dele usa.
+   */
+  private raioFisicoDe(id: string): number | null {
+    if (id === 'sun') return this.solRaioPc;
+    return BODY_AXES[id] ? raiosDoRochosoPc(id).a : null;
+  }
+
   private poloDoCorpo(id: string): THREE.Vector3 | null {
     const o = IAU_ORIENTATIONS[id];
     if (!o) return null;
@@ -813,7 +841,10 @@ export class Escada {
         ? paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(id, jd))
         : this.posicaoDesenhada(id);
       if (!pos || pos.lengthSq() === 0) return null;
-      return { alvo: ORIGEM, raio: pos.length(), eixoDe: pos, pai: null, polo: null };
+      // o ALVO é o corpo (item 73) — a mesma troca de `focarNoCorpo`, e
+      // as duas têm de andar juntas ou o religador do relógio puxaria a
+      // câmera de volta para o Sol no primeiro tique
+      return { alvo: pos, raio: pos.length(), eixoDe: pos, pai: null, polo: null };
     }
     // sistema: a esfera é centrada no Sol e o raio é a órbita mais
     // externa VIVA — a MESMA conta de `focarNoSistema`, e agora
@@ -888,57 +919,24 @@ export class Escada {
   }
 
   /**
-   * A DESCIDA da escada (Onda 7): o gesto irmão do `subirDegrau`, e o
-   * consumidor de runtime da roda e da pinça. Devolve se algum degrau
-   * foi descido.
+   * A DESCIDA MORREU COM A RODA (item 73, 22/08). `descerDegrau` era o
+   * consumidor de runtime da roda e da pinça, e tinha dois defeitos que
+   * eram do DESENHO, não da implementação: no degrau `sistema` ele ia
+   * para o literal do pai da única lua construída — a Terra —, então a
+   * roda "para dentro" na vista de abertura escolhia um corpo que o
+   * visitante não pediu; e o `subirDegrau` saindo de `orbita` zera o
+   * `focoCorpoId`, então a roda "para fora" desfazia a seleção. É a
+   * queixa dele, palavra por palavra: "nem conseguimos mais selecionar
+   * para onde vamos".
    *
-   * Cada ramo cai num método que JÁ EXISTIA — não há enquadramento novo
-   * nascendo aqui, só a ordem dos degraus dita uma vez:
-   *
-   *  · `sistema` → a ÓRBITA da casa. Um degrau abaixo do sistema precisa
-   *    de um alvo, e no degrau "sistema" não há nenhum escolhido; o alvo
-   *    sai do DADO e não de um literal novo — é o pai da única lua
-   *    construída (`LUAS_DO_SISTEMA`), que é o mesmo que dizer "o único
-   *    corpo cuja escada existe inteira até embaixo". Sem este ramo a
-   *    roda não faria nada justamente na vista de ABERTURA, que é onde
-   *    todo visitante a experimenta primeiro — e a queixa continuaria de
-   *    pé com o conserto no lugar.
-   *  · `orbita` → o CORPO, e só onde `podeAproximar` diz que há mesh
-   *    resolvido: fingir um degrau que não existe seria pior que não ter
-   *    roda.
-   *  · `corpo` → a LUA dele, quando o corpo em foco é o pai de uma.
-   *  · `lua` e `estrela` → não há degrau abaixo, e a roda cala.
-   *
-   * O CORPO DO SOL NÃO ENTRA NA DESCIDA, e a razão é que ele não é um
-   * degrau ABAIXO de `sistema`: é o outro ramo que sai dali. Este ramo
-   * já está gasto com a órbita da casa, e trocá-lo pelo Sol tiraria da
-   * roda o único caminho que ela tem até a Terra — a queixa que a
-   * Onda 7 consertou voltaria por outra porta. O corpo do Sol se
-   * alcança pelo gesto irmão, o clique no Sol estando em casa
-   * (`tryVisit`), e por `?foco=sol&ver=corpo`; a SUBIDA, essa sim,
-   * atravessa a roda: do corpo do Sol a roda para cima volta à casa
-   * pelo `subirDegrau` de sempre.
+   * Com a roda escrevendo DISTÂNCIA (`AtlasRig.pinarDistancia`) os dois
+   * somem por construção — não há caminho da roda até o alvo. A descida
+   * continua existindo como gesto, com os donos que sempre teve e nos
+   * quais o visitante ESCOLHE o corpo: o botão "⊕ Aproximar" da
+   * ContextLine (`aproximarDoCorpo`), o clique no mesmo corpo já focado
+   * (`focarNoCorpo`), a busca e o `?ver=corpo`. A SUBIDA fica inteira —
+   * ela é o Esc, e Esc é preset, não gesto contínuo.
    */
-  descerDegrau(): boolean {
-    if (this.phase !== 'atlas') return false;
-    const { degrau, podeAproximar } = this.escada;
-    const paiDaLua = LUAS_DO_SISTEMA[0].pai;
-    if (degrau === 'sistema') {
-      this.focarNoCorpo(paiDaLua, 'orbita');
-      return true;
-    }
-    if (degrau === 'orbita') {
-      if (!podeAproximar) return false;
-      this.aproximarDoCorpo();
-      return true;
-    }
-    if (degrau === 'corpo') {
-      if (this.focoCorpoId !== paiDaLua) return false;
-      this.focarNaLua();
-      return true;
-    }
-    return false;
-  }
 
   /**
    * REAPLICA o enquadramento do degrau vivo quando a efeméride chega
@@ -1030,7 +1028,12 @@ export class Escada {
     const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
     const pos = new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
     if (pos.lengthSq() === 0) return;
-    this.atlas.focar(ORIGEM, pos.length(), pos, { rampa: this.rampaDaEscada() });
+    // alvo = o corpo, esfera = a órbita dele (item 73) — a mesma lei de
+    // `focarNoCorpo`, que é de onde este degrau é irmão
+    this.atlas.focar(pos, pos.length(), pos, {
+      rampa: this.rampaDaEscada(),
+      pisoRaio: this.raioFisicoDe(id),
+    });
     this.enquadrarAgora();
     this.teletransportou();
   }

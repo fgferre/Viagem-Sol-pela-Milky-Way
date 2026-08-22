@@ -42,6 +42,42 @@ const SOL = new THREE.Vector3(0, 0, 0);
 
 export const RAMPA_DO_DEGRAU_S = 0.5;
 
+/**
+ * O PISO DO ZOOM, em RAIOS do alvo — e ele é derivado, não escolhido.
+ *
+ * A conta sai de `nearPlanePc` (`core/engine.ts`): com corpo em quadro
+ * ele devolve `near = min(semCorpo, max(dSuperfície·0,004; raio·0,5))`,
+ * ou seja o near nunca fica abaixo de MEIO raio do corpo. A câmera a
+ * `k` raios do centro vê a superfície a `k − 1` raios, e o corpo começa
+ * a ser cortado pelo near quando `k − 1 ≤ 0,5` — isto é, em 1,5 raios a
+ * superfície cai EXATAMENTE sobre o plano near e o corpo desaparece.
+ * 2,0 é o mesmo número com fator 2 de margem: a superfície fica a 1,0
+ * raio e o near a 0,5, com uma folga de um raio inteiro.
+ *
+ * Chegar mais perto que isto NÃO é mexer neste número: é baixar o piso
+ * do `nearPlanePc`, que é obra própria e declarada (o `?dbg` do near, o
+ * z-fighting e a fronteira de promoção da Lei dependem dele).
+ *
+ * QUAL RAIO, e a resposta tem duas metades porque o alvo tem dois tipos:
+ *
+ *  · ALVO = UM CORPO (os degraus "órbita", "corpo" e "lua"): o raio
+ *    FÍSICO dele, que é o que a conta acima descreve. Quem o conhece é a
+ *    escada (`BODY_AXES`, a mesma tabela que dá raio às malhas), e ela o
+ *    entrega em `focar({ pisoRaio })`. Sem ele o piso do degrau "órbita"
+ *    seria 2 ÓRBITAS — de Saturno, 19 UA —, e a roda "para dentro"
+ *    acabaria no vazio a 19 UA do planeta em vez de chegar perto dele.
+ *    MEDIDO: com o raio físico, Saturno tem 5,55 décadas entre o piso e
+ *    o teto, ou 51 estalos; com o orbital, 1,18 décadas e 11 estalos.
+ *
+ *  · ALVO = O SISTEMA (a abertura): o raio da ESFERA enquadrada, a
+ *    órbita mais externa. Ali o alvo não é o Sol, é o sistema — e descer
+ *    ao Sol é OUTRO degrau, o do corpo do Sol, que tem distância
+ *    declarada (6,40 raios solares) e fotometria já julgada pelo
+ *    `luz-do-quadro`. Deixar a roda passar de 70,8 UA na abertura seria
+ *    abrir um regime de brilho que nenhum juiz da casa mediu.
+ */
+export const K_MIN_RAIOS = 2.0;
+
 const _dir = new THREE.Vector3();
 const _dirPai = new THREE.Vector3();
 const _posDestino = new THREE.Vector3();
@@ -110,6 +146,32 @@ export class AtlasRig {
    */
   private readonly polo = POLO_ECLIPTICO.clone();
 
+  // ---- a DISTÂNCIA, e é ela a lei nova (item 73) -------------------
+  // «um ALVO e uma DISTÂNCIA». Até 22/08 o Atlas tinha só o alvo: a
+  // distância era função dele (`enquadrar().distancia`) e não havia onde
+  // guardar "o visitante quis chegar mais perto" — daí a roda ter virado
+  // degrau, e daí a queixa. `null` é a conta de sempre, BIT A BIT, e é
+  // por isso que toda vista pinada continua reproduzindo: quem não mexeu
+  // na roda cai no mesmo caminho de código de antes.
+  private distanciaPinada: number | null = null;
+  /**
+   * O RAIO que mede o PISO do zoom, em pc — o FÍSICO do corpo alvo,
+   * quando quem focou o conhece. `null` cai no raio de enquadramento
+   * (ver `K_MIN_RAIOS`). Não anda com o relógio: é propriedade do corpo,
+   * não do instante, então `recompor` não o toca.
+   */
+  private pisoRaio: number | null = null;
+  /** a distância PURA do enquadramento, do último quadro escrito (pc) */
+  private distanciaEnquadrada = 0;
+  /**
+   * `distância / raio` do último enquadramento — o fator ~6,40 que a
+   * lente e o retângulo útil produzem. Guardado porque `enquadrar` é
+   * LINEAR no raio (há prova disso na bancada), então o teto do zoom
+   * sai dele sem o rig precisar saber de `aspect` nem de HUD fora do
+   * `apply`.
+   */
+  private fatorDeEnquadramento = 0;
+
   // ---- a rampa entre degraus (F2b/D7) ------------------------------
   // O reposicionamento de ENTRADA no Atlas segue atrás do véu (D3);
   // esta rampa é só a troca de degrau DENTRO do modo — órbita→corpo,
@@ -128,6 +190,8 @@ export class AtlasRig {
     temPai: false,
     orbita: { altura: 0, volta: 0 } as OrbitaDoVisitante,
     polo: POLO_ECLIPTICO.clone(),
+    /** o pino de distância que a câmera MOSTRAVA no quadro da troca */
+    distancia: null as number | null,
   };
 
   /**
@@ -186,6 +250,11 @@ export class AtlasRig {
       pai?: THREE.Vector3 | null;
       /** o polo que fica no alto; ausente = o da eclíptica (ver `polo`) */
       polo?: THREE.Vector3 | null;
+      /**
+       * o raio FÍSICO do corpo alvo, em pc — a régua do piso do zoom
+       * (`K_MIN_RAIOS`). Ausente = o raio de enquadramento.
+       */
+      pisoRaio?: number | null;
     } = {}
   ) {
     const pai = opcoes.pai ?? null;
@@ -206,6 +275,7 @@ export class AtlasRig {
       this.partida.orbita.altura = this.orbita.altura;
       this.partida.orbita.volta = this.orbita.volta;
       this.partida.polo.copy(this.polo);
+      this.partida.distancia = this.distanciaPinada;
       this.rampaT = 0;
     } else {
       this.rampaT = 1;
@@ -220,8 +290,18 @@ export class AtlasRig {
       this.pai = null;
     }
     this.polo.copy(polo);
+    this.pisoRaio =
+      opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
+        ? opcoes.pisoRaio
+        : null;
     this.orbita.altura = 0;
     this.orbita.volta = 0;
+    // ALVO NOVO NASCE NO ENQUADRAMENTO, sem o zoom do alvo anterior: a
+    // distância pinada é do alvo antigo e não tem sentido no novo (2
+    // raios de Marte não são 2 raios de Saturno). É isto que faz a
+    // escada funcionar como PRESET — o botão, o Esc, o `?ver=` e a busca
+    // devolvem o enquadramento, e a roda mexe nele a partir dali.
+    this.distanciaPinada = null;
   }
 
   /**
@@ -279,6 +359,83 @@ export class AtlasRig {
   /** a rampa entre degraus ainda está andando? (a captura espera por ela) */
   get animando(): boolean {
     return this.rampaT < 1;
+  }
+
+  /**
+   * A DISTÂNCIA que o último quadro escreveu, em pc — pinada quando o
+   * visitante mexeu na roda, e a conta do enquadramento quando não.
+   * É esta a grandeza que a porta `?d=` publica em raios do alvo.
+   */
+  get distancia(): number {
+    return this.distanciaPinada ?? this.distanciaEnquadrada;
+  }
+
+  /** a distância PURA do enquadramento — a que `?d=` ausente reproduz. */
+  get distanciaDoEnquadramento(): number {
+    return this.distanciaEnquadrada;
+  }
+
+  /** o visitante pinou a distância? (`null` = a conta de sempre) */
+  get distanciaEstaPinada(): boolean {
+    return this.distanciaPinada !== null;
+  }
+
+  /** o raio de enquadramento do alvo vivo, em pc — a régua do `?d=`. */
+  get raioDoAlvo(): number {
+    return this.raio;
+  }
+
+  /** PISO do zoom: `K_MIN_RAIOS` raios do alvo. Ver a constante. */
+  get pisoDeZoom(): number {
+    const regua =
+      this.pisoRaio !== null && this.pisoRaio > 0 ? this.pisoRaio : this.raio;
+    return K_MIN_RAIOS * regua;
+  }
+
+  /**
+   * TETO do zoom: o enquadramento do SISTEMA INTEIRO centrado no alvo —
+   * `enquadrar(raio = órbita mais externa + |alvo|)`. A soma é o que
+   * torna a promessa verdadeira para um alvo fora do centro: uma esfera
+   * da órbita de Plutão pendurada em Saturno não conteria o sistema.
+   *
+   * Com o alvo no Sol ele REDUZ ao enquadramento de abertura, que é o
+   * que o Atlas já mostrava — ou seja, na vista de abertura o visitante
+   * nasce NO teto e só pode aproximar. É a leitura certa: mais longe que
+   * "o sistema em quadro" não há assunto, há fundo de céu.
+   *
+   * O `max` com a distância do último enquadramento é a guarda do
+   * relógio: a órbita mais externa aqui vem do RETRATO congelado, e com
+   * `?jd=` de outra data a casa VIVA pode ser um pouco maior. Sem o
+   * `max`, o primeiro estalo para fora daria um pulinho para dentro.
+   */
+  get tetoDeZoom(): number {
+    const doSistema =
+      this.fatorDeEnquadramento > 0
+        ? this.fatorDeEnquadramento * (orbitaMaisExterna().raio + this.alvo.length())
+        : 0;
+    return Math.max(this.distanciaEnquadrada, doSistema);
+  }
+
+  /**
+   * PINA a distância ao alvo, em pc — a escrita da roda e, na etapa
+   * seguinte, a da porta `?d=`. `null` devolve o enquadramento puro.
+   *
+   * A RAMPA MANDA enquanto ela anda: a troca de degrau interpola poses e
+   * termina EXATA na pose pura, e um pino escrito no meio dela seria uma
+   * segunda mão na mesma distância. Depois de `rampaT ≥ 1` o zoom
+   * escreve à vontade. Fora da faixa `[piso, teto]` o valor é grampeado,
+   * nunca recusado — é o que faz o embalo da inércia parar na parede em
+   * vez de sumir.
+   */
+  pinarDistancia(pc: number | null) {
+    if (pc === null) {
+      this.distanciaPinada = null;
+      return;
+    }
+    if (this.rampaT < 1 || !Number.isFinite(pc) || pc <= 0) return;
+    const piso = this.pisoDeZoom;
+    const teto = Math.max(piso, this.tetoDeZoom);
+    this.distanciaPinada = THREE.MathUtils.clamp(pc, piso, teto);
   }
 
   /**
@@ -345,11 +502,15 @@ export class AtlasRig {
     dt = 0
   ) {
     if (this.rampaT >= 1) {
-      // o caminho de SEMPRE, intocado bit a bit — é o que as provas de
-      // idempotência (?foco) e os md5 do atlas-smoke medem
-      this.escreverPose(
-        camera, fatorUi, larguraPx,
-        this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo
+      // o caminho de SEMPRE, intocado bit a bit quando não há pino — é o
+      // que as provas de idempotência (?foco) e os md5 do atlas-smoke
+      // medem, e `distanciaPinada` nasce `null` em todo foco
+      this.registrarEnquadramento(
+        this.escreverPose(
+          camera, fatorUi, larguraPx,
+          this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo,
+          this.distanciaPinada
+        )
       );
       return;
     }
@@ -363,9 +524,12 @@ export class AtlasRig {
     // o mesmo smoothstep de toda rampa da casa (C¹ nas duas bordas)
     const k = t * t * (3 - 2 * t);
 
-    this.escreverPose(
-      camera, fatorUi, larguraPx,
-      this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo
+    this.registrarEnquadramento(
+      this.escreverPose(
+        camera, fatorUi, larguraPx,
+        this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo,
+        this.distanciaPinada
+      )
     );
     _posDestino.copy(camera.position);
     _quatDestino.copy(camera.quaternion);
@@ -373,7 +537,7 @@ export class AtlasRig {
       camera, fatorUi, larguraPx,
       this.partida.alvo, this.partida.raio, this.partida.eixoDe,
       this.partida.temPai ? this.partida.pai : null, this.partida.orbita,
-      this.partida.polo
+      this.partida.polo, this.partida.distancia
     );
     _posPartida.copy(camera.position);
     _quatPartida.copy(camera.quaternion);
@@ -397,7 +561,27 @@ export class AtlasRig {
     camera.updateProjectionMatrix();
   }
 
-  /** a pose PURA de um enquadramento — o corpo do `apply` de sempre. */
+  /**
+   * Guarda a régua do quadro: a distância PURA do enquadramento e o
+   * fator `distância/raio` que a lente e o HUD produziram. É de onde o
+   * piso e o teto do zoom saem sem o rig ter de conhecer DOM fora do
+   * `apply`.
+   */
+  private registrarEnquadramento(pura: number) {
+    this.distanciaEnquadrada = pura;
+    this.fatorDeEnquadramento = this.raio > 0 ? pura / this.raio : 0;
+  }
+
+  /**
+   * A pose PURA de um enquadramento — o corpo do `apply` de sempre.
+   * Devolve a distância que a CONTA pede (não a que foi escrita): é ela
+   * a régua do zoom, e ela não muda quando o visitante pina.
+   *
+   * `pinada` substitui a distância na hora de pôr a câmera, e SÓ ela: a
+   * direção, o `up` e os dois giros de recentragem do HUD continuam os
+   * do enquadramento. Zoom é dolly puro sobre o mesmo eixo — é isso que
+   * mantém o alvo no mesmo ponto da tela enquanto a roda anda.
+   */
   private escreverPose(
     camera: THREE.PerspectiveCamera,
     fatorUi: number,
@@ -407,8 +591,9 @@ export class AtlasRig {
     eixoDe: THREE.Vector3,
     pai: THREE.Vector3 | null,
     orbita: Readonly<OrbitaDoVisitante>,
-    polo: THREE.Vector3
-  ) {
+    polo: THREE.Vector3,
+    pinada: number | null = null
+  ): number {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: raio,
       fovDeg: ATLAS_FOV_GRAUS,
@@ -429,12 +614,16 @@ export class AtlasRig {
     } else {
       direcaoPrivilegiada(_dir.copy(eixoDe).sub(SOL), polo, orbita, _dir);
     }
-    camera.position.copy(alvo).addScaledVector(_dir, distancia);
+    const escrita = pinada !== null && Number.isFinite(pinada) && pinada > 0
+      ? pinada
+      : distancia;
+    camera.position.copy(alvo).addScaledVector(_dir, escrita);
     camera.up.copy(upDoAtlas(_dir, polo, _up));
     camera.lookAt(alvo);
     if (giroY !== 0) camera.rotateY(giroY);
     if (giroX !== 0) camera.rotateX(giroX);
     camera.fov = ATLAS_FOV_GRAUS;
     camera.updateProjectionMatrix();
+    return distancia;
   }
 }

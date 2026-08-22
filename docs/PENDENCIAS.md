@@ -94,9 +94,10 @@ pousaram com o aceite do dono em 17/08.
 ## ALTA — o dono vê e incomoda
 
 **73. A navegação do Atlas — "foi criado um monstro frankstein".**
-(Dono em 22/08. **Investigação EM CURSO na mesma data**; o conserto é a
-PRIMEIRA obra da onda da UI/UX.) Palavras dele, inteiras, sobre a dica
-de gestos que sai do rodapé:
+(Dono em 22/08. **ETAPA 1 DE 2 FECHADA na mesma data** — os três
+primeiros passos do plano estão na main; o item só sai quando a obra
+inteira fechar.) Palavras dele, inteiras, sobre a dica de gestos que sai
+do rodapé:
 
 > *"toda navegacao atual do modo atlas está uma merda... antes no
 > projeto atlas verdadeito conseguiamos dar zoom out zoom in livremente
@@ -108,27 +109,51 @@ de gestos que sai do rodapé:
 > industria d einterface e navegacao, foi criado um monstro
 > frankstein."*
 
-**O que ele diz que havia no projeto Atlas** — três coisas, e são o
-alvo do conserto:
+**O QUE JÁ ESTÁ NA MAIN (etapa 1, três passos) — e o que ele vê:**
 
-1. **zoom out / zoom in livre com a roda do mouse** quando um objeto
-   está selecionado;
-2. **os rótulos de todos os objetos, de forma inteligente**;
-3. **escolher para onde ir** — hoje ele diz que "nem conseguimos mais
-   selecionar".
+1. **A roda do mouse voltou a ser ZOOM.** Gira e a câmera se aproxima ou
+   se afasta do objeto escolhido, sem pular de degrau, com inércia curta
+   — e **o objeto escolhido nunca troca sozinho**, por construção: a roda
+   só escreve distância. Em Saturno a faixa vai do topo das nuvens
+   (120.536 km) até o sistema inteiro em quadro (287,8 UA), ~50 estaladas
+   de ponta a ponta. Foto: `capturas/item73-zoom-saturno.png`.
+2. **Arrastar dá a volta inteira.** A trava que impedia ver o lado escuro
+   (o cone de 70° em torno da linha do Sol) saiu; o único limite que
+   ficou é o dos polos, e ele existe para a imagem não girar sozinha.
+3. **A tarja preta parou de engolir o gesto.** Eram 52,8 px em cima e
+   52,8 embaixo em que arrastar não girava e rolar não dava zoom.
+4. **A dica do rodapé conta a verdade** — "arraste — girar · roda — zoom
+   · clique — ir · esc — voltar" — e some depois do primeiro arrasto.
+5. **`?foco=marte` enquadra MARTE**, não o Sol com uma esfera do tamanho
+   da órbita de Marte. Foto: `capturas/item73-foco-marte-antes-depois.png`.
 
-**O fato do lado de cá, e ele é uma decisão escrita.** A roda do Atlas
-hoje NÃO é zoom: ela é traduzida em DEGRAUS da escada (sistema → órbita
-→ corpo → lua) por `rodaDaEscada.ts`, que abre com o título "POR QUE
-DEGRAU E NÃO ZOOM CONTÍNUO, que é o que a roda faz em toda fonte
-consultada (SpaceEngine, Celestia, Stellarium, three.js)" — o argumento
-registrado é que o Atlas não guarda distância de câmera, só o degrau, e
-o degrau vive na URL como `?ver=` para o link copiado reproduzir a
-vista. Um estalo de roda = um degrau (`LIMIAR_DO_DEGRAU_PX` 40, trava
-de embalo do trackpad). A queixa dele bate EXATAMENTE nessa decisão: é
-ela que tem de ser reaberta, não um bug solto. A "navegação para cima e
-para baixo de objetos" é essa mesma escada, e os "dois gestos" dela
-moram na `ContextLine` (aproximar / voltar ao sistema).
+**O QUE FALTA (etapa 2, três passos do mesmo plano):**
+
+6. **`?d=` no link** — a distância entra no endereço em raios do alvo, e
+   `?ver=` passa a ser só leitura (todo link antigo continua valendo).
+7. **Um clique escolhe, dois cliques voam.** Hoje o clique simples ainda
+   reposiciona a câmera; a promessa é o clique SELECIONAR sem mover e o
+   duplo clique mergulhar.
+8. **Os rótulos por importância**, com fade e cinco lugares para cada
+   texto: na abertura ler os oito planetas e o Sol, contra três hoje.
+   É a segunda coisa que ele pediu ("os rótulos de todos os objetos de
+   forma inteligente") e a única das três que ainda não começou.
+9. *(passo seguinte, obra própria)* **As linhas de órbita**, ligadas por
+   padrão. Ficaram de fora porque mudam a imagem de TODA vista do Atlas
+   e pedem a conferência dele à parte.
+
+**TRÊS COISAS PARA O OLHO DELE, medidas e declaradas:**
+
+- **Na abertura a roda tem pouco curso** — 226,8 → 70,8 UA, cinco
+  estaladas. É de propósito: ali o alvo é o SISTEMA, e descer ao Sol é
+  outro degrau, com distância e brilho já julgados. Se ele quiser que a
+  roda atravesse da abertura até a superfície do Sol, é decisão dele.
+- **A roda não troca de degrau.** Ela anda dentro do degrau em que se
+  está; quem troca é o botão "⊕ Aproximar", o clique no corpo, o Esc e a
+  busca. É o padrão do NASA Eyes, e é o que mantém a seleção estável.
+- **No degrau da Lua o arrasto ainda para no terminador.** O grampo de
+  70° continua lá guardando a MISTURA calculada que põe o pai em quadro;
+  soltá-lo é obra própria.
 
 **A referência que ele manda olhar:** *NASA Eyes on the Solar System*,
 "para entender melhor o padrão da indústria de interface e navegação".
@@ -724,6 +749,22 @@ foi essa crença que quase enterrou o diagnóstico do item 70. O conserto
 é uma linha (o passe respeita a mesma chave), mas ele MOVE PIXEL nas
 vistas que hoje usam a porta, então tem de entrar com `ab-identidade`
 cheio e o delta declarado — não é conserto de fim de rodada.
+
+**76.** (Medido em 22/08, fechando o item 73.) **O `filme-smoke` reprova
+sem defeito nenhum nesta máquina.** O veredito "avançou X s em movimento"
+solta o relógio por 420 ms em sete instantes e cobra mais de 0,1 s de
+filme andado — ou seja, mais de 24% do tempo real. Nos shots pesados
+(mergulho, Sagittarius A*, face-on, galáxia final) a máquina não entrega
+isso, e o número muda a cada corrida: TRÊS corridas do MESMO binário
+deram 3, 1 e 4 falhas. A prova de que não é regressão foi feita com
+worktree no commit anterior à obra do 73, num segundo dev server: **as
+MESMAS 4 falhas, no código de antes**. Ou seja, o gate hoje mede a carga
+da máquina e chama isso de defeito do filme — e um juiz que reprova sem
+defeito treina quem o roda a ignorá-lo, que é o pior desfecho possível
+para um gate. O conserto não é afrouxar o número: é medir o que a régua
+quer medir (o relógio ANDA quando solto), por exemplo cobrando avanço
+maior que zero e publicando a taxa como REGISTRO, do jeito que o
+`a11y.mjs` já faz com os cantos fora da faixa declarada.
 
 ---
 

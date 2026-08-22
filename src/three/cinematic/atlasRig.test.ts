@@ -1434,7 +1434,7 @@ describe('o degrau do CORPO DO SOL', () => {
     expect(tarde).toContain("if (this.focoCorpoId === 'sun') this.aproximarDoSol();");
   });
 
-  it('a SUBIDA sai do Sol pela escada de sempre, e a roda não perde a Terra', () => {
+  it('a SUBIDA sai do Sol pela escada de sempre — e a DESCIDA da roda morreu', () => {
     const ESCADA = readFileSync(
       new URL('../director/escada.ts', import.meta.url),
       'utf8'
@@ -1443,19 +1443,18 @@ describe('o degrau do CORPO DO SOL', () => {
     // para o Sol isso é a abertura — nenhum ramo novo precisou nascer
     const sobe = ESCADA.slice(
       ESCADA.indexOf('  subirDegrau(): boolean {'),
-      ESCADA.indexOf('  descerDegrau(): boolean {')
-    );
-    expect(sobe).toContain("this.focarNoCorpo(this.focoCorpoId!, 'orbita');");
-    // e a DESCIDA da roda continua indo do sistema à órbita da casa: o
-    // corpo do Sol não é um degrau abaixo do sistema, é o outro ramo que
-    // sai dali — trocar este ramo tiraria da roda o único caminho até a
-    // Terra, que é a queixa que a Onda 7 consertou
-    const desce = ESCADA.slice(
-      ESCADA.indexOf('  descerDegrau(): boolean {'),
       ESCADA.indexOf('  reenquadrarAposEfemeride()')
     );
-    expect(desce).toContain("this.focarNoCorpo(paiDaLua, 'orbita');");
-    expect(desce).not.toContain("'sun'");
+    expect(sobe).toContain("this.focarNoCorpo(this.focoCorpoId!, 'orbita');");
+    // e `descerDegrau` não existe mais (item 73): ela era o consumidor
+    // da roda, e ia para o literal do pai da única lua construída — a
+    // roda "para dentro" na abertura escolhia um corpo que ninguém
+    // pediu. Com a roda escrevendo distância, o método ficou sem
+    // chamador e a descida virou o botão, o clique e o `?ver=corpo`.
+    // (o NOME sobrevive na lápide do método; o que não pode voltar é a
+    // declaração dele)
+    expect(ESCADA).not.toContain('  descerDegrau(');
+    expect(ESCADA.slice(ESCADA.indexOf('  subirDegrau'))).not.toContain('paiDaLua');
   });
 
   it('a abertura e o corpo do Sol leem UMA conta do "mais externo"', () => {
