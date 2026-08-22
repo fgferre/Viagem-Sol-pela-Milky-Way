@@ -145,7 +145,18 @@ async function voar() {
       seguidas = ok ? seguidas + 1 : 0;
       await dorme(500);
     }
-    console.log(`forno do Sol assentado em ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+    // E O TETO NÃO SE CONFUNDE COM O POUSO (censo dos juízes, 21/08): antes
+    // desta linha o harness imprimia "assentado" mesmo quando o laço tinha
+    // esgotado os 960 giros — 480 s de espera cega travestidos de sinal. O
+    // preço deste juiz é quase todo AQUI, então quem o lê tem de saber se
+    // pagou por um pouso ou por um teto.
+    const esperou = ((Date.now() - t0) / 1000).toFixed(0);
+    console.log(
+      seguidas >= 3
+        ? `forno do Sol assentado em ${esperou} s`
+        : `forno do Sol NÃO assentou: teto de espera esgotado em ${esperou} s `
+          + '— as medidas abaixo saem de um retrato a meio caminho'
+    );
 
     // a banda de histerese, calculada pela régua do próprio app
     BANDA_UA = await aval(`(() => {

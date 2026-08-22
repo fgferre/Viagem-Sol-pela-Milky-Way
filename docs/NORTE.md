@@ -129,7 +129,7 @@ A prova tem de tocar o que a mudança tocou. As vistas oficiais rodam com
 `?shot=2` e **apagaram o HUD**. Trabalho de HUD é julgado por `a11y.mjs`
 (`?shot=1`). Se nenhum juiz cobre a mudança, cria-se a vista que cobre.
 
-Duas cegueiras declaradas:
+Três cegueiras declaradas:
 
 - **Movimento.** `?shot=` congela o relógio. Nada que só apareça andando
   tem juiz aqui — quem enxerga movimento é `voo-ida-e-volta.mjs`, ida e
@@ -137,28 +137,51 @@ Duas cegueiras declaradas:
   decisão do dono: *"essa viagem ida e volta não é mais relevante"*. Fica
   disponível como instrumento, e roda quando a mudança for de transição ou
   histerese — que é o que só a ida e volta enxerga.
+- **O filme andando de ponta a ponta.** Nenhum juiz assiste 0→193 s no
+  navegador: o `filme-ritmo.mjs` amostra 97 quadros PARADOS e o
+  `filme-smoke.mjs` solta o relógio por 420 ms em sete instantes. A única
+  varredura contínua a 60 fps é conta em Node (`cameraRig.test.ts`), sem
+  GPU e sem pós. O filme inteiro continua sendo julgado pelo olho do dono.
 - **Referência visual entre 1 e 40 UA.** As vistas `ua2`…`ua2000` existem;
   foto-oráculo nessa faixa, não (item 12).
 
-Como rodar:
+Como rodar — e quanto cada um cobra. `npm run dev` primeiro: todos falam
+com o dev server em `127.0.0.1:5173`. Os minutos são MEDIDOS nesta máquina
+em 21/08, com o servidor já no ar; noutra máquina são ordem de grandeza,
+nunca oráculo. Escolher qual rodar é a regra que já está escrita — a prova
+tem de tocar o que a mudança tocou —, e a coluna do preço é o que faltava
+para escolher com honestidade.
 
-```
-npm run dev
-node scripts/visual/ab-identidade.mjs antes
-node scripts/visual/ab-identidade.mjs depois
-SMOKE=1 node scripts/visual/ab-identidade.mjs antes
-node scripts/visual/sky-capture.mjs [tag]
-node scripts/visual/a11y.mjs
-node scripts/visual/atlas-smoke.mjs
-node scripts/visual/voo-smoke.mjs
-node scripts/visual/busca-smoke.mjs
-node scripts/visual/memoria.mjs
-```
+| Juiz | O que mede | Custo | Quando roda |
+|---|---|---|---|
+| `ab-identidade.mjs antes` / `depois` | md5 das **52 vistas** oficiais, um lado de cada vez — detector de regressão | **6,5 min por lado** (52 vistas × 2 capturas, `JOBS=3`) | fechamento de qualquer mudança que possa mover imagem |
+| `SMOKE=1 ab-identidade.mjs …` | as 4 sentinelas (`sol`, `soldisco`, `hero8`, `ua150`) | **0,8 min por lado** | enquanto se itera — nunca para fechar |
+| `atlas-smoke.mjs` | o portal do Atlas em pixel: ida e volta com `journeyT` exato, prontidão da fase nova, abertura reprodutível e o Sol pela data — 99 vereditos | **4,7 min** | portal, fases, enquadramento do Atlas, calendário do Sol |
+| `memoria.mjs` | vazamento em número: texturas, geometrias, heap e workers vivos em 5 idas ao Atlas, 3 trocas de tier pelo caminho vivo e 5 focos. Autovalida-se — `--sabotagem` TEM de reprovar | **2,9 min** | troca de tier, entrar/sair do Atlas, foco, carga em worker |
+| `a11y.mjs` (`?shot=1`) | os diálogos do HUD: o foco entra, fica preso, Esc devolve; nenhum diálogo órfão; escala de UI em três telas | **2,6 min** | HUD, diálogo novo, escala de texto |
+| `filme-smoke.mjs` | o roteiro na tela: texto e corte nas margens das 25 janelas de legenda, responsividade, e 420 ms de relógio solto em sete instantes | **2,6 min** | legenda, corte, retemporização, responsividade |
+| `filme-ritmo.mjs` | quanto a imagem muda por segundo no corte inteiro — 97 quadros parados — mais as folhas de contato | **~2,3 min** no passo padrão (extrapolado de 10 quadros em 0,3 min) | revisão de ritmo, e só como onde-olhar: a curva não mede tédio |
+| `busca-smoke.mjs` | a paleta de busca e o `?foco=`: os dez corpos, a ida e volta pelo escritor vivo da URL, latência por tecla, o atalho de teclado | **1,5 min** | busca, deep-link de foco, rótulo clicável |
+| `luz-do-quadro.mjs [ua…]` | quanto do quadro está lavado e o diâmetro do borrão contra o disco real e o clarão de direito, na escada de 11 distâncias; `julgarEscada` dá o veredito | **1,0 min inteira · 0,1 min por degrau** | exposição, bloom, clarão, qualquer coisa perto do Sol |
+| `planeta-pixel.mjs [vista]` | se a luz que a camada dos planetas acende cai onde o `?dbgplan` mandou, a ≤0,5 px, por dois estimadores | **0,4 min por vista** (as três ≈ 1,1 min) | camada dos planetas, fotometria dos corpos |
+| `sky-capture.mjs [tag]` | o céu interno contra o panorama ESO: 6 faces costuradas e os cinco termos da régua | **0,7 min** | céu, poeira, catálogo visto de casa |
+| `voo-smoke.mjs` | o voo livre: convite, furo do Spotlight ancorado, captura de ponteiro opt-in, backoff, soltura de teclas | **0,6 min** | voo livre |
+| `z-fighting.mjs` | pixels que ALTERNAM sob jitter sub-pixel (Terra × nuvem, Saturno × anel); limiar zero, com sabotagem que tem de reprovar | **0,5 min** | superfície colada em superfície, near/far, depth |
+| `rodada.mjs <n> "nota"` | as duas vistas da galáxia contra as referências, e **escreve a linha** no ledger `docs/reference/EVOLUCAO.md` | **0,3 min** | mudança na galáxia (a última linha do ledger é de 11/08) |
+| `gpu-profile.mjs "?q" s w h dpr` | o tempo que a GPU passa DENTRO de cada draw, passe a passe, por timer query | **0,2 min** com janela de 8 s | performance, custo de pós-processamento |
+| `diff-pixel.mjs a.png b.png` | depois de um `DIFERE`: quantos pixels, de quanto e onde, com mapa de blocos 16×16 | segundos | sempre que o A/B der diferente |
+| `voo-ida-e-volta.mjs` | ida e volta em 34 degraus na MESMA sessão — o único que enxerga transição e histerese | **9,3 min, e 8,1 deles são espera** pelo forno do Sol a 0,05 UA, que hoje esgota o teto de 480 s sem assentar | só quando a mudança for de transição ou histerese — não é obrigatório desde 21/08 |
 
-O `memoria.mjs` é o juiz de VAZAMENTO (texturas, geometrias, heap e
-workers vivos), e desde a letra C dos Ajustes ele é também quem mede o
-preço do swap de tier na thread. Ele se autovalida: o run padrão termina
-sabotando a si mesmo e tem de acusar o vazamento que injetou.
+Duas coisas que mudam o preço e não se adivinham:
+
+- **O `depois` de código novo vai com `DOZERO=1`.** Sem ele o gate RETOMA
+  os md5 que ficaram em disco (a retomada existe para não perder uma
+  bateria interrompida) e o veredito sai vazio, com `(de disco)` em cada
+  linha. Custo igual; prova, nenhuma.
+- **As contas puras vêm de graça.** `ab-identidade`, `chrome`,
+  `luz-do-quadro`, `planeta-pixel` e `z-fighting` têm cada um o seu
+  `.test.mjs`, que julga o molde sem subir Chrome e roda dentro do
+  `npm test`.
 
 O harness espera `window.__director.captura.pronto`. Sem isso cai no teto
 de 700 quadros e, no alvo padrão, **sai com status ≠ 0**. Chrome morre

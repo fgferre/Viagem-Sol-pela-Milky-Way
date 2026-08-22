@@ -241,8 +241,9 @@ describe('lerDbgPlan', () => {
     'sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto',
   ];
   const bloco = [
-    '[dbgplan] época 2026-01-01T00:00:00Z = JD 2461041.5008692136 TDB · câmera a 150.000 UA '
-      + '(0.002372 anos-luz; 0.00072722 pc, régua interna) · tela 1800×1713 px · uGain=1 · '
+    '[dbgplan] época 2026-01-01T00:00:00Z = JD 2461041.5008692136 TDB · instante retrato · '
+      + 'câmera a 150.000 UA '
+      + '(0.002372 anos-luz; 0.00072722 pc, régua interna) · tela 1800×1713 px · '
       + 'expoM0=3.5 · sigmaPx=0.85 · visível=true',
     ...CORPOS.map((id, i) =>
       `[dbgplan] ${id.padEnd(8)} ecl=(0.000000000, 0.000000000, 0.000000000) UA · `
@@ -258,7 +259,6 @@ describe('lerDbgPlan', () => {
     expect(d.cameraUA).toBe(150);
     expect(d.largura).toBe(1800);
     expect(d.altura).toBe(1713);
-    expect(d.uGain).toBe(1);
     expect(d.expoM0).toBe(3.5);
     expect(d.sigmaPx).toBe(0.85);
     expect(d.visivel).toBe(true);

@@ -310,18 +310,6 @@ galáctica antes de mexer.
 
 ## BAIXA — dívida interna, ninguém vê
 
-**57.** Palavras dele em 21/08: *"Essa viagem ida e volta não é mais
-relevante. Talvez os testes estejam desatualizados e cobrando preços muito
-altos. Esse run demorou horas…"* — a rodada do item 5 levou 2h20, boa parte
-dela no navegador rodando juiz (`ab-identidade` 52 vistas ×2, `atlas-smoke`
-99 provas, `voo-ida-e-volta` 34 degraus, `filme-ritmo`, `filme-smoke`,
-`luz-do-quadro`, `memoria`).
-O trabalho é o censo dos juízes: o que cada um mede, quanto custa em
-minutos, o que envelheceu — aposentar quem não mede mais nada e reafirmar
-(sem duplicar) a regra que o `AGENTS.md` §7 já tem, rodar só o que mede a
-mudança. **É a primeira tarefa da próxima conversa** — por isso abre a
-BAIXA em vez de fechá-la.
-
 **22.** 35 imagens de referência citadas que não existem, e as 6 fotos
 reais do Sol nunca foram baixadas. As seis passam na régua da bancada;
 o dono nunca as julgou.
@@ -357,6 +345,19 @@ isolada saiu IGUAL). Algo assenta entre capturas — cara de carga
 preguiçosa de textura. Enquanto viver, qualquer A/B pode acusá-las em
 falso; a prova de inocência é uma captura do lado acusado bater byte a
 byte com o baseline (funcionou nas duas).
+
+**58.** (Achado no censo dos juízes de 21/08, que fechou o item 57.) Duas
+réguas rodam e não julgam. A dos planetas (`planeta-pixel.mjs`) voltou a
+funcionar — travava desde o M1 pedindo um `uGain` que a lei tinha matado —
+e agora REPROVA por outro motivo: a 150 UA o clarão do Sol é uma mancha de
+37.132 px que engole seis dos dez corpos, e a lente `&nobloom=1` já não
+isola o que a régua veio medir. Ela precisa de lente nova (a porta
+`?nosun=1` existe) antes de voltar a valer veredito. E a ida e volta
+(`voo-ida-e-volta.mjs`) gasta 8,1 dos seus 9,3 minutos esperando o forno do
+Sol assentar a 0,05 UA, e ESGOTA o teto de 480 s sem assentar — as medidas
+saem de um retrato a meio caminho. O harness já passou a dizer isso em voz
+alta em vez de imprimir "assentado"; **por que o sinal não chega não foi
+medido** — pode ser o bake, pode ser o critério de três leituras seguidas.
 
 ---
 

@@ -313,7 +313,7 @@ export function manchaSaturada({ img, W, H, x, y }) {
 
 /**
  * O BLOCO do `?dbgplan` virado em números. Onze linhas: o cabeçalho (época,
- * distância da câmera, tela, `uGain`, os dois uniformes da PSF) e os dez
+ * distância da câmera, tela, os dois uniformes da PSF) e os dez
  * corpos, cada um com o px previsto e o pico de PSF que o APP calculou —
  * é de propósito que a régua não recalcula o pico: quem tem os uniformes
  * verdadeiros é a camada.
@@ -351,7 +351,6 @@ export function lerDbgPlan(bloco) {
     cameraUA: Number((cab.match(/câmera a ([\d.]+) UA/) || [])[1]),
     largura: Number(tela[1]),
     altura: Number(tela[2]),
-    uGain: num(cab, 'uGain'),
     expoM0: num(cab, 'expoM0'),
     sigmaPx: num(cab, 'sigmaPx'),
     visivel: /visível=true/.test(cab),
@@ -680,7 +679,7 @@ async function medirVista(nome, query, porta) {
 function imprimir({ nome, dbg, r, juizo }) {
   const s = r.par;
   console.log(`\n=== ${nome} · câmera a ${dbg.cameraUA.toFixed(3)} UA · tela ${r.W}×${r.H}`
-    + ` · uGain=${dbg.uGain} · nobloom (flag de medição) ===`);
+    + ' · nobloom (flag de medição) ===');
   console.log(`  diff plan−noplan: ${s.acesos.toLocaleString('pt-BR')} px acesos`
     + ` (${((100 * s.acesos) / (r.W * r.H)).toFixed(4)}%) · ${s.subiram.toLocaleString('pt-BR')} SUBIRAM`
     + ` · ${s.desceram} desceram · soma +${s.somaGanho.toLocaleString('pt-BR')}`

@@ -411,7 +411,7 @@ proibidos com o commit que matou cada um; (iii) atualiza `CADASTRO_DE_REPRESENTA
 e o `fatorDeBrilho` correspondente; (iv) **mata a porta `?b*`** que protegia aquela
 representação — o lado A vira captura + teste numérico, nunca ramo de runtime;
 (v) declara o delta aceito **ANTES** nas réguas que já existem (`luz-do-quadro.mjs`,
-as 18 vistas A/B — e `voo-ida-e-volta.mjs` só quando a migração mexer em transição ou
+as 52 vistas A/B — e `voo-ida-e-volta.mjs` só quando a migração mexer em transição ou
 histerese: desde 21/08 ele não é obrigatório, é instrumento) e traz o número **medido**
 no commit;
 (vi) a lei devolve valor já comprimido (ou expõe β) — a compressão não é passo, é
@@ -545,7 +545,7 @@ magnitude própria das cascas (`+ ext·d`, em CPU por bisseção e em GLSL) — 
 sobreviver, um teste prova que casca e catálogo depositam o mesmo fluxo para a mesma
 estrela. Acende `aFocus` e fecha o E3 (item 38) — **e o E3 é a esfera analítica**:
 é assim que uma estrela qualquer ganha corpo ao ser aproximada, com `S`/`C` no
-impostor e `E` por fora, sem uma malha por estrela. **Régua:** as 18 vistas A/B.
+impostor e `E` por fora, sem uma malha por estrela. **Régua:** as 52 vistas A/B.
 
 ### M4 — Os nove planetas
 Não são estrelas: consomem o **instrumento** da lei e mantêm a fase MH18. Risco

@@ -520,29 +520,22 @@ export const VISTAS = [
       + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
   ],
   // ------------------------------------------------------------------
-  // O MODO ATLAS, e ela fecha um BURACO DE COBERTURA de três ondas:
-  // nenhuma das 22 vistas oficiais ligava `?atlas=1`, então a LEI DO
-  // CLARÃO do Atlas (`claraoDoAtlas`, src/three/atlasConfig.ts) — a
-  // única defesa que a casa construiu contra a tela branca de dentro do
-  // sistema solar — nunca foi exercida por juiz nenhum. Ela é código de
-  // runtime que só roda na fase 'atlas' (o tick não a chama fora dela),
-  // e portanto invisível para as 22, todas em fase de filme.
+  // O MODO ATLAS, e ela fecha um BURACO DE COBERTURA que nenhuma outra
+  // vista cobre: as outras 51 rodam em fase de FILME, e a fase `atlas` é
+  // a única que decide enquadramento por conta própria (`casaViva` — a
+  // órbita mais externa VIVA — em vez de um `?pos=` cravado). Sem ela,
+  // mexer no rig do Atlas, na abertura ou na própria fase não moveria md5
+  // nenhum.
   //
-  // O QUE ESTA VISTA GUARDA: a moderação MÁXIMA da lei. Na abertura
-  // (227 UA) o fator está no PISO — k = 227/20.000 dá k² = 1,29e-4, bem
-  // abaixo de `PISO_DO_CLARAO` = 0,01 —, então é aqui que a defesa está
-  // apertada ao limite. Mexer no piso, na referência de 20.000 UA ou na
-  // lei quadrática move este md5 na hora, e é isso que a vista compra.
-  //
-  // E O QUE ELA MOSTRA, dito sem maquiagem porque foi a PRIMEIRA vez que
-  // alguém olhou: mesmo no piso, o clarão do Sol-ponto ainda é uma bola
-  // branca que ocupa a maior parte do quadro. A lei modera; ela não
-  // resolve. É a MESMA pendência que o bastão já declarava por escrito
-  // (item 3 das pendências — a tela branca é defeito de
-  // EXPOSIÇÃO, e a causa medida é uma das cinco escalas de borrão do
-  // clarão, não a lei do Atlas), agora com imagem, juiz e md5. Esta
-  // vista é a linha de base contra a qual a onda da exposição vai poder
-  // provar que consertou alguma coisa — hoje não há como provar.
+  // O QUE ELA GUARDAVA ANTES, e não guarda mais: a lei de moderação do
+  // clarão do Atlas (`claraoDoAtlas`, com `PISO_DO_CLARAO` e a referência
+  // de 20.000 UA). Ela MORREU no M1 — os dois modos desenham igual, e a
+  // varredura invertida de `simbolosProibidos.test.ts` vigia a
+  // ressurreição dos três símbolos. O que a vista compra hoje é a
+  // abertura do Atlas: a 226,8 UA o Sol não chega a um pixel, então quem
+  // move este md5 é o ENQUADRAMENTO e o céu, não a fotometria do Sol —
+  // para o Sol do Atlas quem responde é a prova do degrau do corpo, no
+  // `atlas-smoke`.
   //
   // `?atlas=1` e NÃO `?pos=`: a precedência declarada em App.tsx é
   // `?pos=` > `?atlas=1`, então cravar a câmera desligaria justamente o

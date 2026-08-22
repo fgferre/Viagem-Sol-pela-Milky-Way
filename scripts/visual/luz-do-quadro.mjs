@@ -400,10 +400,11 @@ const PISO_DO_BORRAO_PX = 8;
  * (bloom seletivo, limiar 0,82 isolado — o céu que o dono REPROVOU) →
  * 0,060/0,63% (limiar zero + extensão de referência — o céu cheio).
  *
- * O PAR SEM BLOOM ficou HISTÓRICO: a porta `?nobloom=` NÃO EXISTE no app
- * (o lado A morreu com `?bbloom` no M2 e virou captura versionada) — o
- * runner agora RECUSA `EXTRA` com nobloom em vez de fotografar com bloom
- * e julgar sem, que era o que o par vinha fazendo em silêncio.
+ * O PAR SEM BLOOM está VIVO. Quem morreu no M2 foi `?bbloom=` (a DOSE do
+ * bloom, hoje proibida em `simbolosProibidos.test.ts`); `?nobloom=` é porta
+ * declarada no selo e lida pelo director, e é a mesma lente que as onze
+ * vistas `…nb` do `ab-identidade`, o `planeta-pixel` e o `z-fighting` já
+ * pinam. A trava de 17/08 confundiu as duas e recusou o par por seis dias.
  */
 const PISO_ACIMA_DE_MEIA_COM_BLOOM = 6.3e-3;
 const PISO_ACIMA_DE_MEIA_SEM_BLOOM = 1.133e-3;
@@ -629,18 +630,6 @@ function urlDaDistancia(ua) {
 }
 
 async function principal() {
-  // A TRAVA DO BOTÃO MORTO (17/08): `?nobloom=` não existe no app — o lado
-  // A do bloom morreu com `?bbloom` no M2 e vive nas capturas versionadas.
-  // Rodar com este EXTRA fotografava COM bloom e julgava com os pisos de
-  // SEM — números com cara de honestos e origem de mentira. Recusar é o
-  // único comportamento decente; o par sem-bloom volta no dia em que
-  // existir de novo um caminho REAL de desligar o bloom para medição.
-  if (/nobloom=1/.test(EXTRA)) {
-    throw new Error(
-      'EXTRA com nobloom=1: a porta morreu no M2 (lado A vive nas capturas '
-      + 'versionadas) — este par fotografava COM bloom e julgava sem'
-    );
-  }
   const pedidas = process.argv.slice(2).map(Number).filter(Number.isFinite);
   const escada = pedidas.length ? pedidas : ESCADA_UA;
   const saida = resolve(ROOT, 'capturas');
