@@ -74,7 +74,8 @@ demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
 (`38d4ae4`, `ca4707e`), **4** em 16/08 (`bd12905`), **3** e **44** em 17/08
 (`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
 `229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
-`2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`). O 4 (Atlas com brilho apagado 100×)
+`2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60** em
+22/08 (`a8a3168`). O 4 (Atlas com brilho apagado 100×)
 morreu no M1 — `claraoDoAtlas` saiu do código e os dois modos desenham
 igual, decisão do dono cumprida. O **3** e o **44** pousaram com o aceite
 do dono em 17/08.
@@ -223,18 +224,6 @@ com foto, com `BETA_DO_ESPINHO` acorrentado em ¾ dele e a fração 0,06
 junto. As fotos já existem (`capturas/luz-*.png`, a escada inteira);
 falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
-
-**60. Atlas na abertura — DECISÃO DELE, 21/08: SIM.**
-Perguntado se a abertura devia ter um botão de entrar no Atlas ao lado
-de "Iniciar a viagem", ele respondeu: *"1. sim"*.
-
-Medido em 21/08: hoje o caminho para o Atlas é único e tem 3 cliques —
-Iniciar a viagem → Pausar → Entrar no Atlas. A palavra "Atlas" não
-aparece na abertura, e "Explorar livremente" é o voo livre, outra coisa.
-
-O que falta: um terceiro botão na abertura, ao lado de "Iniciar a
-viagem" e "Explorar livremente", que entre no Atlas. É pequeno; o juiz
-é o `a11y.mjs` (foco, Esc, escala de UI).
 
 **54. O filme espera a exibição do dono — agora com o gesto da Lua.**
 Palavras dele no pedido, 19/08: *“quando estivesse passando poderia dar
@@ -454,8 +443,12 @@ URL, as duas coisas certas — e então compara a tela viva com a mesma URL
 recarregada. As duas diferem. Não foi diagnosticado: pode ser o juiz
 fotografando a recarga antes de ela assentar, ou pode ser a
 auto-exposição pousando num valor diferente quando NASCE com a cena em
-vez de voltar a ela. Enquanto viver, o `atlas-smoke` sai com 1 falha em
-99 e não é regressão de quem o rodou.
+vez de voltar a ela. Enquanto viver, o `atlas-smoke` pode sair com 1
+falha em 99 e não é regressão de quem o rodou. **E ele é INTERMITENTE:**
+na volta de 22/08 que fechou o item 60 o juiz saiu 99 de 99, com o mesmo
+código — o que empurra a suspeita para o primeiro palpite (o juiz
+fotografando a recarga antes de ela assentar), porque a segunda
+explicação daria falha toda vez.
 
 **67.** (Achado em 22/08, quando o `memoria.mjs` passou a rodar por
 tier; REPRODUZ NO HEAD.) Em `q=cinema`, cinco idas e voltas ao Atlas
