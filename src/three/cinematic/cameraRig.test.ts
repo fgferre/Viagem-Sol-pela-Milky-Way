@@ -60,8 +60,9 @@ const {
   LUA_PC,
   auditarRoteiro,
   distanciaDaAbertura,
+  T_SAIDA_DO_DISCO,
 } = await import('./journey');
-const { GAL } = await import('../world/galaxy');
+const { GAL, LIMIAR_FORA_DO_DISCO, dentroDoDisco } = await import('../world/galaxy');
 
 /** A fórmula ANTIGA, verbatim da linha que vivia no `syncFromCamera`. */
 const velocidadeAntiga = (d: number) => THREE.MathUtils.clamp(d * 0.02, 2, 600);
@@ -268,6 +269,30 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
     expect(p.length()).toBeCloseTo(D_SAIDA_PC, 12);
     expect(j.at(CAPTURE_T.edge).pos.length()).toBeCloseTo(15904.56497361685, 4);
     expect(j.at(CAPTURE_T.face).pos.length()).toBeCloseTo(32790.153293328774, 4);
+  });
+
+  // O ENDEREÇO DO LATCH (21/08). O `seek` não tem história e o latch
+  // `leftDisk` é história: sem um instante derivado, arrastar a barra
+  // até a coda nascia DENTRO do disco e ressuscitava a nebulosa atrás
+  // da Terra. Aqui se cobra que o instante publicado seja mesmo a
+  // primeira saída da MESMA varredura — se o corte mudar e a constante
+  // não acompanhar, o juiz grita antes de a foto sair errada.
+  it('T_SAIDA_DO_DISCO é a PRIMEIRA saída do envelope, e a coda já nasce fora', () => {
+    const forasteiro = AMOSTRAS.find(
+      (a) => dentroDoDisco(j.at(a.t).pos) <= LIMIAR_FORA_DO_DISCO
+    );
+    expect(forasteiro).toBeDefined();
+    // a varredura anda de 0,01 s; a constante é bissectada
+    expect(T_SAIDA_DO_DISCO).toBeGreaterThan(forasteiro!.t - 0.01);
+    expect(T_SAIDA_DO_DISCO).toBeLessThanOrEqual(forasteiro!.t);
+    // e ninguém sai antes
+    for (const a of AMOSTRAS.filter((x) => x.t < T_SAIDA_DO_DISCO)) {
+      expect(dentroDoDisco(j.at(a.t).pos)).toBeGreaterThan(LIMIAR_FORA_DO_DISCO);
+    }
+    // a CODA volta a entrar no envelope (0 pc de casa) — é exatamente
+    // por isso que o latch importa lá: sem ele o ambiente reacende
+    expect(dentroDoDisco(j.at(188).pos)).toBeGreaterThan(LIMIAR_FORA_DO_DISCO);
+    expect(188).toBeGreaterThan(T_SAIDA_DO_DISCO);
   });
 });
 

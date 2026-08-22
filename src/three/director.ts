@@ -26,7 +26,7 @@ import type { StarLabel } from './world/labels';
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
 import { ClaraoDeAsas } from './world/clarao';
 import { HeroStars } from './world/heroStars';
-import { Galaxy, GAL, EX, EY, EZ } from './world/galaxy';
+import { Galaxy, GAL, LIMIAR_FORA_DO_DISCO, dentroDoDisco } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
@@ -85,7 +85,13 @@ import {
 } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
-import { JD_DO_FILME_TDB, LUA_PC, REVEAL_T, TERRA_PC } from './cinematic/journey';
+import {
+  JD_DO_FILME_TDB,
+  LUA_PC,
+  REVEAL_T,
+  TERRA_PC,
+  T_SAIDA_DO_DISCO,
+} from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
@@ -384,11 +390,16 @@ export class Director {
   private phase: Phase = 'loading';
   private journeyT = 0;
   /**
-   * A trajetória do Ato III reatravessa o envelope do disco (t≈151–154)
-   * já a ~15 kpc do Sol; na viagem ROTEIRIZADA, uma vez fora do disco o
-   * ambiente fica desligado (latch) — o pull-back mostra o modelo da
-   * galáxia, não uma nebulosa ressuscitada. Free-roam/?pos= não usam o
-   * latch: lá o comportamento relocável instantâneo é o desejado.
+   * A viagem ROTEIRIZADA sai do envelope do disco em `T_SAIDA_DO_DISCO`
+   * (148,394 s) e a CODA volta a entrar nele em t≈176,5, mergulhando
+   * para casa; uma vez fora, o ambiente fica desligado (latch) — o
+   * pull-back e a volta mostram o modelo da galáxia, não uma nebulosa
+   * ressuscitada. Free-roam/?pos= não usam o latch: lá o comportamento
+   * relocável instantâneo é o desejado.
+   *
+   * O TICK só o ARMA (câmera fora); quem SALTA no tempo o recebe do
+   * roteiro, no `seek` e na semente do portal — o latch é história, e o
+   * salto não tem história.
    */
   private leftDisk = false;
   private lastCaptionIdx = -1;
@@ -1117,10 +1128,17 @@ export class Director {
    * no navegador). Ele vaza para o link de retomada, que o HUD monta a
    * partir do `currentTime`, e faz `onProgress` depender de um `min` a
    * jusante para não passar de 1. Achado de auditoria externa.
+   *
+   * E O LATCH DO DISCO NASCE DO ROTEIRO, não zerado. Ele é HISTÓRIA — o
+   * tick só o arma com a câmera FORA —, e o salto não tem história: na
+   * coda a câmera está em casa, dentro do disco, e o latch zerado
+   * ressuscitava a nebulosa e apagava o cartão da galáxia atrás da
+   * Terra. Quem salta para depois de `T_SAIDA_DO_DISCO` chega com o
+   * mesmo latch de quem chegou voando.
    */
   seek(t: number) {
     this.journeyT = Math.min(t, this.rig.duration);
-    this.leftDisk = false;
+    this.leftDisk = this.journeyT >= T_SAIDA_DO_DISCO;
     this.rig.reset(); // a mira suavizada também salta para o instante certo
     this.perturbar();
   }
@@ -1300,7 +1318,9 @@ export class Director {
    *
    * `momento` semeia a volta a partir da URL (`?atlas=1&t=…`): sem ele
    * e sem viagem em curso, o portal guarda NADA — e "Partir" devolve a
-   * tela de título, que é o candidato honesto (D3).
+   * tela de título, que é o candidato honesto (D3). O latch do disco
+   * dessa semente sai do roteiro pela MESMA lei do `seek`: um link para
+   * a coda tem de partir com o disco já para trás.
    */
   entrarNoAtlas(opcoes: { instantaneo?: boolean; momento?: number } = {}) {
     if (this.phase === 'atlas' || this.phase === 'loading') return;
@@ -1312,7 +1332,7 @@ export class Director {
             journeyT: opcoes.momento,
             lookYaw: 0,
             lookPitch: 0,
-            leftDisk: false,
+            leftDisk: opcoes.momento >= T_SAIDA_DO_DISCO,
             pausado: true,
           }
         : daViagem
@@ -2139,20 +2159,11 @@ export class Director {
     // A Via Láctea não é um plano: os fades de AMBIENTE respondem à
     // posição da câmera no DISCO (R, z galactocêntricos), não à
     // distância do Sol — o volume local existe em qualquer ponto da
-    // galáxia. Só camadas fisicamente solares continuam com dHome.
-    const qx = cam.position.x - GAL.GC_POS.x;
-    const qy = cam.position.y - GAL.GC_POS.y;
-    const qz = cam.position.z - GAL.GC_POS.z;
-    const zg = Math.abs(qx * EZ.x + qy * EZ.y + qz * EZ.z);
-    const rg = Math.hypot(
-      qx * EX.x + qy * EX.y + qz * EX.z,
-      qx * EY.x + qy * EY.y + qz * EY.z
-    );
-    const inDisk =
-      (1 - THREE.MathUtils.smoothstep(zg, 600, 2100)) *
-      (1 - THREE.MathUtils.smoothstep(rg, 16800, 20500));
+    // galáxia. Só camadas fisicamente solares continuam com dHome. A
+    // conta mora em `baseGalactica` porque o roteiro também a lê.
+    const inDisk = dentroDoDisco(cam.position);
     if (this.phase === 'journey') {
-      if (inDisk <= 0.001) this.leftDisk = true;
+      if (inDisk <= LIMIAR_FORA_DO_DISCO) this.leftDisk = true;
     } else {
       this.leftDisk = false;
     }

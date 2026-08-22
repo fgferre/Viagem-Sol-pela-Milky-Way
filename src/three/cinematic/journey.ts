@@ -45,7 +45,14 @@
 // POUSA no enquadramento.
 // ============================================================
 import * as THREE from 'three';
-import { GAL, EX, EY, EZ } from '../world/baseGalactica';
+import {
+  GAL,
+  EX,
+  EY,
+  EZ,
+  LIMIAR_FORA_DO_DISCO,
+  dentroDoDisco,
+} from '../world/baseGalactica';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 
@@ -1328,6 +1335,7 @@ export const CAPTURE_T = {
 export const REVEAL_T =
   STARTS[SHOTS.findIndex((s) => s.captions?.[0]?.text === 'O ESTILINGUE')];
 
+
 interface JourneySample {
   pos: THREE.Vector3;
   look: THREE.Vector3;
@@ -1408,3 +1416,42 @@ export class Journey {
     }));
   }
 }
+
+/**
+ * O SEGUNDO EM QUE A VIAGEM DEIXA O DISCO — 148,394 s no corte de hoje,
+ * e DERIVADO, nunca digitado: a mesma conta de que o quadro vive
+ * (`dentroDoDisco`, a fonte única do envelope) varrida sobre esta mesma
+ * trajetória. Como o `REVEAL_T`, muda sozinho quando o corte muda; ao
+ * contrário dele, não tem nome de plano porque a saída cai no MEIO da
+ * subida, não numa junta.
+ *
+ * Existe porque o latch `leftDisk` do Director é HISTÓRIA — uma vez
+ * fora, fica fora — e o `seek` não tem história. Arrastar a barra até a
+ * coda nascia "dentro do disco" e ressuscitava a nebulosa atrás da
+ * Terra, com o cartão da galáxia apagado: o oposto do que o play
+ * contínuo mostra no mesmo instante. Medido no navegador em 21/08, o
+ * play contínuo arma o latch em t=148,46 (amostragem de 16 ms a 8×) —
+ * a varredura e o navegador concordam.
+ *
+ * O laço custa 1,4 ms nesta máquina e roda uma vez por sessão. A
+ * bisseção existe porque o `seek` compara com `>=`: um degrau de 0,1 s
+ * poria a fronteira até 100 ms cedo demais.
+ */
+export const T_SAIDA_DO_DISCO = (() => {
+  const filme = new Journey();
+  const fora = (t: number) => dentroDoDisco(filme.at(t).pos) <= LIMIAR_FORA_DO_DISCO;
+  const passo = 0.1;
+  for (let t = 0; t <= filme.duration; t += passo) {
+    if (!fora(t)) continue;
+    let dentro = t - passo;
+    let saiu = t;
+    for (let i = 0; i < 30; i++) {
+      const meio = (dentro + saiu) / 2;
+      if (fora(meio)) saiu = meio;
+      else dentro = meio;
+    }
+    return saiu;
+  }
+  // roteiro que nunca sai do disco: o latch nunca nasce armado
+  return Number.POSITIVE_INFINITY;
+})();
