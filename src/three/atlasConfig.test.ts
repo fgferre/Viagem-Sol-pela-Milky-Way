@@ -158,7 +158,41 @@ describe('a troca de tier ao vivo (Ajustes C)', () => {
     // um clique num terceiro tier no meio do forno não pode deixar
     // 122,7 MiB de partículas sem dono
     expect(corpo.match(/descartarCarga\(carga\)/g)?.length).toBe(2);
-    expect(corpo).toContain('this.mundoAindaVale(q)');
+    expect(corpo).toContain('this.mundoAindaVale(geracao)');
+  });
+
+  it('Alta → Performance → Alta: o pedido de VOLTA cancela o forno em voo', () => {
+    // A CORRIDA MEDIDA EM 21/08, 3 de 3 vezes (100, 250 e 500 ms entre
+    // cliques): seletor, URL e `engine.quality` diziam Alta e o mundo era
+    // Performance — 1.211.500 pontos de galáxia contra 3.933.500,
+    // `nebulaSteps` 44 contra 56, console mudo. E clicar Alta de novo não
+    // consertava: para o `setQuality` o tier pedido JÁ era o vivo.
+    //
+    // A causa era a ORDEM: a guarda `q === this.tierDoMundo` saía antes de
+    // qualquer escrita, então o terceiro clique não cancelava nada e o
+    // forno de Performance continuava se dando por válido. O que se cobra
+    // aqui é essa ordem, porque é ela que quebrou — e três invariantes,
+    // cada uma sozinha suficiente para o defeito voltar:
+    const inicio = DIRECTOR.indexOf('private async reassarMundo(');
+    const corpo = DIRECTOR.slice(inicio, DIRECTOR.indexOf('const carga = await', inicio));
+
+    // 1. o mesmo pedido duas vezes NÃO toma geração nova (o forno em
+    //    curso se cancelaria a si mesmo e nada pousaria nunca)
+    const mesmoPedido = corpo.indexOf('if (this.trocaPedida === q) return;');
+    // 2. a geração nasce ANTES da guarda do tier vivo
+    const geracao = corpo.indexOf('const geracao = ++this.geracaoDaTroca;');
+    // 3. e a guarda do tier vivo CANCELA em vez de só voltar
+    const voltaAoVivo = corpo.indexOf('if (q === this.tierDoMundo) {');
+    expect(mesmoPedido).toBeGreaterThan(0);
+    expect(geracao).toBeGreaterThan(mesmoPedido);
+    expect(voltaAoVivo).toBeGreaterThan(geracao);
+    expect(corpo.slice(voltaAoVivo)).toContain('this.trocaPedida = null;');
+
+    // e a régua de validade é a GERAÇÃO, não o tier pedido — era o tier
+    // que deixava o mundo do meio do caminho pousar
+    const vale = DIRECTOR.slice(DIRECTOR.indexOf('private mundoAindaVale('));
+    expect(vale.slice(0, 200)).toContain('geracao === this.geracaoDaTroca');
+    expect(vale.slice(0, 200)).not.toContain('this.trocaPedida ===');
   });
 });
 

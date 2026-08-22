@@ -304,9 +304,23 @@ export class Director {
    */
   private politicaDeQualidade: 'manual' | 'auto' = 'manual';
   /** o tier PEDIDO e ainda a caminho (`null` = nenhuma troca em voo) —
-   *  é ele que faz a captura esperar e que cancela um mundo em forno
-   *  quando o visitante muda de ideia no meio */
+   *  é ele que faz a captura esperar */
   private trocaPedida: QualityLevel | null = null;
+  /**
+   * O NÚMERO DE SEQUÊNCIA DO PEDIDO, e quem CANCELA o mundo em forno
+   * quando o visitante muda de ideia no meio. Cada passagem por
+   * `reassarMundo` toma o próximo número; o forno só pousa o mundo cujo
+   * número ainda é o último (`mundoAindaVale`). Quem perdeu a vez
+   * descarta o que assou.
+   *
+   * Por que não bastava o tier pedido: em Alta → Performance → Alta o
+   * terceiro clique é um NÃO-PEDIDO pela régua do tier (o mundo já é
+   * alta) e saía sem tocar em `trocaPedida`, deixando o forno de
+   * Performance com licença para pousar. Medido em 21/08, 3 de 3 vezes
+   * com 100/250/500 ms entre cliques: seletor, URL e `engine.quality` em
+   * Alta, mundo em Performance, e clicar Alta de novo não consertava.
+   */
+  private geracaoDaTroca = 0;
   /** os catálogos do boot, guardados porque o mundo pode ser reassado.
    *  Os arrays são os MESMOS de sempre: o worker os recebe por CÓPIA. */
   private catalogos: GalacticAssets | null = null;
@@ -1522,11 +1536,20 @@ export class Director {
 
   /**
    * O mundo que está no forno ainda interessa? `null` é o do boot (só a
-   * morte do Director o cancela); um tier é o da troca viva, e ele
-   * deixa de valer no instante em que o visitante pede OUTRO.
+   * morte do Director o cancela); um número é a GERAÇÃO do pedido da
+   * troca viva, e ele deixa de valer no instante em que qualquer outro
+   * pedido nasce — inclusive o pedido de VOLTAR ao tier que já está na
+   * tela, que não assa mundo nenhum e existe só para cancelar este.
+   *
+   * A régua era o TIER pedido, e isso tinha um buraco: Alta → Performance
+   * → Alta devolvia `trocaPedida = 'performance'` intacto (o segundo
+   * clique saía antes de escrevê-lo, porque "o tier já é alta"), o forno
+   * de Performance se dava por válido e pousava sobre um seletor que
+   * dizia Alta. Geração não tem esse buraco: ela é ÚNICA por pedido, e
+   * um pedido só pousa se nenhum outro tiver nascido depois dele.
    */
-  private mundoAindaVale(pedido: QualityLevel | null) {
-    return !this.disposed && (pedido === null || this.trocaPedida === pedido);
+  private mundoAindaVale(geracao: number | null) {
+    return !this.disposed && (geracao === null || geracao === this.geracaoDaTroca);
   }
 
   /**
@@ -1535,9 +1558,9 @@ export class Director {
    * `stage()`: em aba de fundo o rAF é estrangulado e o forno nunca
    * terminaria.
    */
-  private folego(pedido: QualityLevel | null): Promise<boolean> {
+  private folego(geracao: number | null): Promise<boolean> {
     return new Promise((resolver) =>
-      setTimeout(() => resolver(this.mundoAindaVale(pedido)), 0)
+      setTimeout(() => resolver(this.mundoAindaVale(geracao)), 0)
     );
   }
 
@@ -1557,7 +1580,12 @@ export class Director {
    * CANCELAMENTO: quem clica em três tiers seguidos gera três pedidos, e
    * só o ÚLTIMO vira mundo. Os outros descartam o que já assaram
    * (`descartarCarga`) em vez de virarem tela — é isso que impede a
-   * troca de tier de ser uma máquina de vazar 122,7 MiB por clique.
+   * troca de tier de ser uma máquina de vazar 122,7 MiB por clique. Quem
+   * decide isso é a GERAÇÃO do pedido (`geracaoDaTroca`) e não o tier
+   * pedido: o clique que VOLTA ao tier vivo também é um pedido, e pela
+   * régua do tier ele passava batido — cancelando nada e deixando o
+   * mundo do meio do caminho pousar sobre um seletor que já dizia outra
+   * coisa.
    */
   private async reassarMundo(q: QualityLevel) {
     // DURANTE O INIT NÃO HÁ MUNDO A TROCAR, e a guarda é dupla de
@@ -1567,7 +1595,20 @@ export class Director {
     // DOIS mundos no forno e o segundo poderia pousar antes de o
     // primeiro terminar — sobre um `wrappedStars` que ainda não existe.
     if (this.disposed || this.phase === 'loading' || this.tierDoMundo === null) return;
-    if (q === this.tierDoMundo || this.trocaPedida === q) return;
+    // O MESMO PEDIDO DUAS VEZES não abre um segundo forno — e não pode
+    // tomar geração nova, senão o forno em curso se cancelaria sozinho.
+    if (this.trocaPedida === q) return;
+    // DAQUI PARA BAIXO É PEDIDO NOVO, e todo pedido novo invalida o
+    // anterior: quem estiver no forno perde a vez neste instante.
+    const geracao = ++this.geracaoDaTroca;
+    // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR, e não é no-op: não
+    // há mundo a assar, mas há um mundo em forno que precisa saber que
+    // ninguém o espera mais. A geração acima já o invalidou; aqui só se
+    // apaga o pedido em voo, para a captura parar de esperar por ele.
+    if (q === this.tierDoMundo) {
+      this.trocaPedida = null;
+      return;
+    }
     this.trocaPedida = q;
     const carga = await montarCarga({
       catalogos: this.catalogos,
@@ -1577,16 +1618,16 @@ export class Director {
       // estar pronto — que é a promessa inteira da letra C.
       aoAvancar: () => {},
     });
-    if (!this.mundoAindaVale(q)) {
+    if (!this.mundoAindaVale(geracao)) {
       descartarCarga(carga);
       return;
     }
     this.vestirGalaxia(carga.galaxy);
     const assou = await carga.galaxy.bakeDiscLayers(
       this.engine.renderer,
-      () => this.folego(q)
+      () => this.folego(geracao)
     );
-    if (!assou || !this.mundoAindaVale(q)) {
+    if (!assou || !this.mundoAindaVale(geracao)) {
       descartarCarga(carga);
       return;
     }
