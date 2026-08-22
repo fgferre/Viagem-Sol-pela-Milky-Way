@@ -27,7 +27,10 @@ output
 *.sln
 *.sw?
 
-# Capturas de rodada (regra 5: captura nao se versiona)
+# Capturas de rodada (regra 5: captura nao se versiona). EXCECAO declarada pela
+# LEI-DA-ESTRELA.md #4: os quatro `capturas/luz-do-quadro*.json` sao PROVA
+# versionada por desenho (a Lei manda rodar o juiz e versionar o resultado),
+# por isso estao no git com `git add -f` e continuam rastreados.
 capturas/
 # Idem para o gate do ceu: sky/ na baseline, sky_<tag>/ nas ablacoes
 sky/

@@ -55,7 +55,6 @@ const INSTRUMENT = `(() => {
     // CopyShader: o blend ADITIVO do bloom no buffer do composer. Sem este
     // token ele sai como programa de cena e o pós fica 0,05 ms menor.
     ['opacity * texel', 'pos:bloom-blend'],
-    ['uMaxPx', 'cena:galaxia(pontos)'],
     ['uCamFwd', 'cena:nebulosa(raymarch)'],
     ['uLayerAlpha', 'cena:laminas-poeira'],
     ['uCell', 'cena:wrappedStars'],
