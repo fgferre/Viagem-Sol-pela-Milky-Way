@@ -22,6 +22,7 @@ export function LoadingVeil({
   state,
   still,
   error,
+  emVoo = false,
   onRetry,
 }: {
   /** etapa viva do director (ou a fixada por `?loader=`) */
@@ -32,6 +33,14 @@ export function LoadingVeil({
   still: boolean;
   /** mensagem técnica da falha */
   error?: string;
+  /**
+   * A FALHA CHEGOU COM A VIAGEM JÁ ANDANDO (contexto de vídeo perdido,
+   * exceção em quadro). Muda só a copy: "não pôde começar" é mentira
+   * quando ela começou, e a linha da etapa da cartografia é do boot —
+   * repeti-la aqui apontaria para uma etapa que passou faz tempo. O véu
+   * é o MESMO, porque a casa tem um lugar só para dizer que acabou.
+   */
+  emVoo?: boolean;
   onRetry: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -68,7 +77,7 @@ export function LoadingVeil({
   }, []);
 
   return (
-    <div className={`cv-veil cv-${state}`}>
+    <div className={`cv-veil cv-${state}${emVoo ? ' cv-em-voo' : ''}`}>
       <div className="cv-scene">
         <canvas ref={canvasRef} className="cv-canvas" aria-hidden="true" />
       </div>
@@ -151,11 +160,21 @@ export function LoadingVeil({
 
       {falhou && (
         <div className="cv-falha" role="alert">
-          <div className="title-kicker">FALHA DE INICIALIZAÇÃO</div>
-          <div className="title-big error-title">A VIAGEM NÃO PÔDE COMEÇAR</div>
+          <div className="title-kicker">
+            {emVoo ? 'FALHA DURANTE A VIAGEM' : 'FALHA DE INICIALIZAÇÃO'}
+          </div>
+          <div className="title-big error-title">
+            {emVoo ? 'A VIAGEM PAROU' : 'A VIAGEM NÃO PÔDE COMEÇAR'}
+          </div>
           <div className="title-sub">
-            a cartografia parou na etapa {String(stage.index).padStart(2, '0')}/
-            {String(stage.total).padStart(2, '0')} — {stage.label}
+            {emVoo ? (
+              'a cena deixou de ser desenhada — recarregue para começar de novo'
+            ) : (
+              <>
+                a cartografia parou na etapa {String(stage.index).padStart(2, '0')}/
+                {String(stage.total).padStart(2, '0')} — {stage.label}
+              </>
+            )}
           </div>
           {error && <div className="cv-falha-detalhe">{error}</div>}
           <div className="title-rule cv-falha-regua" />

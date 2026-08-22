@@ -181,6 +181,15 @@ interface DirectorEvents {
    * `?ver=corpo` entra no link.
    */
   onEscada: (estado: EstadoDaEscada) => void;
+  /**
+   * A SESSÃO MORREU DEPOIS DO BOOT — contexto WebGL perdido ou exceção
+   * em quadro. É o MESMO canal do véu de erro do carregamento (o App
+   * escreve `loadError`): a casa tem um véu de falha só, e o que muda
+   * entre "não pôde começar" e "parou no meio" é a copy, não o
+   * componente. Sem este fio as duas falhas eram invisíveis — a tela
+   * congelava com o HUD inteiro no ar e nada dizia que acabou.
+   */
+  onErro: (mensagem: string) => void;
 }
 
 // A ESCADA DE NAVEGAÇÃO (D7) mora em `director/escada.ts` (corte 9);
@@ -670,7 +679,31 @@ export class Director {
     // clique curto no voo livre → mini-viagem até a estrela nomeada
     this.roam.onTap = (x, y) => this.escada.tryVisit(x, y);
 
-    this.engine.onTick((t, dt) => this.tick(t, dt));
+    // O TICK NÃO PODE ESTOURAR PARA O NADA. Sem este try, uma exceção
+    // em quadro saía do rAF como "Uncaught" e o laço a repetia 60×/s
+    // para sempre: console em cascata, tela congelada e nenhum aviso ao
+    // visitante. Medido em 21/08 — três "Uncaught" no console e nada na
+    // tela. O try mora AQUI, no registro, e não em volta do corpo do
+    // tick: é a mesma cobertura com 3 linhas em vez de reindentar 550.
+    this.engine.onTick((t, dt) => {
+      try {
+        this.tick(t, dt);
+      } catch (e) {
+        console.error(e);
+        this.desistir(
+          'A Viagem parou de desenhar: '
+            + (e instanceof Error ? e.message : String(e))
+        );
+      }
+    });
+    // A PLACA DE VÍDEO DESISTIU (o listener e o porquê de não restaurar
+    // moram no Engine, que é quem tem o canvas e o laço).
+    this.engine.onContextoPerdido(() =>
+      this.desistir(
+        'A placa de vídeo desistiu de desenhar a Viagem — o navegador '
+          + 'tirou o contexto 3D desta página.'
+      )
+    );
     } catch (e) {
       this.engine.dispose();
       throw e;
@@ -2464,6 +2497,27 @@ export class Director {
     this.quadrosDaFase++;
   }
 
+
+  /**
+   * A SESSÃO ACABOU NO MEIO — para o laço e manda a falha para o véu.
+   *
+   * Uma vez só (`desistiu`): contexto perdido e exceção em quadro podem
+   * chegar juntos, e o segundo aviso só trocaria a mensagem do primeiro
+   * pela consequência dele.
+   *
+   * NÃO CHAMA `dispose()`, ao contrário do `.catch` do boot. Ali não há
+   * nada na tela a preservar; aqui o véu desenha POR CIMA do último
+   * quadro, e desmontar o mundo trocaria a imagem congelada por um
+   * canvas vazio sem devolver nada — a página inteira morre no
+   * "Tentar novamente", que recarrega.
+   */
+  private desistiu = false;
+  private desistir(mensagem: string) {
+    if (this.desistiu || this.disposed) return;
+    this.desistiu = true;
+    this.engine.parar();
+    this.events.onErro(mensagem);
+  }
 
   dispose() {
     if (this.disposed) return;

@@ -879,12 +879,18 @@ export default function App() {
           sobre o Sol WebGL quando a viagem começa). Em ?shot=2 ela nem
           monta: esconder por CSS deixaria o laço do canvas disputando a
           thread com a captura que a medição depende */}
-      {loadingMontada && !bareMode && (
+      {/* a camada volta A MONTAR quando a falha chega depois do boot: o
+          merge a desmonta ~MERGE_MS após o `done`, e sem o segundo termo
+          o contexto perdido e a exceção em quadro não tinham onde
+          aparecer (medido em 21/08: tela congelada, HUD inteiro no ar,
+          nada dito). `emVoo` é o que muda a copy — a viagem começou. */}
+      {(loadingMontada || loaderState === 'error') && !bareMode && (
         <LoadingVeil
           stage={loaderFixo ?? loadStage}
           state={loaderState}
           still={movimentoReduzido || shotMode}
           error={loadError}
+          emVoo={phase !== 'loading'}
           onRetry={() => window.location.reload()}
         />
       )}

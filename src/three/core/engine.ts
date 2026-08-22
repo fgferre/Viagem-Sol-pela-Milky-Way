@@ -349,6 +349,7 @@ export class Engine {
   private fpsN = 0;
   private fpsTimer = 0;
   private medicaoFns = new Set<(m: MedicaoDoQuadro) => void>();
+  private contextoPerdidoFns = new Set<() => void>();
   /**
    * A ÚLTIMA MEDIDA, ou `null` para "ainda medindo" — e ela volta a
    * `null` a cada troca de tier: a média do tier que saiu não diz nada
@@ -402,7 +403,50 @@ export class Engine {
     this.applyQuality(escolha && escolha !== 'auto' ? escolha : TIER_DE_PRODUTO);
     this.resize();
     window.addEventListener('resize', this.resize);
+    canvas.addEventListener('webglcontextlost', this.aoPerderContexto);
     this.armarVigiaDeDpr();
+  }
+
+  /**
+   * A PLACA DESISTIU. Sem este listener o sintoma medido era o pior de
+   * todos: o canvas congela na última imagem, o HUD inteiro continua no
+   * ar respondendo a clique, o console fica MUDO e nada na tela diz que
+   * acabou — a sessão parece viva e não é.
+   *
+   * `preventDefault` porque é ele que tira o evento das mãos do browser;
+   * e o laço para na hora, senão são 60 draws por segundo num contexto
+   * que não existe mais.
+   *
+   * NÃO SE TENTA RESTAURAR, e isso é decisão medida, não preguiça: o que
+   * se perde com o contexto não são só os objetos que o three refaz
+   * sozinho — são os dois mapas assados na GPU, as lâminas do disco, o
+   * `prime` do Sol e os alvos do pós. Refazê-los é a cadeia inteira do
+   * boot (segundos de forno), e uma restauração pela metade devolveria
+   * uma galáxia sem disco fingindo que está tudo bem. Recarregar é
+   * honesto e é o que o véu pede.
+   */
+  private aoPerderContexto = (e: Event) => {
+    e.preventDefault();
+    this.parar();
+    this.contextoPerdidoFns.forEach((f) => f());
+  };
+
+  /** avisa que o contexto WebGL morreu — quem escuta é o véu de erro */
+  onContextoPerdido(fn: () => void) {
+    this.contextoPerdidoFns.add(fn);
+  }
+
+  /**
+   * PARA O LAÇO e nada mais — a cena, o renderer e os recursos ficam de
+   * pé. Existe porque há duas mortes diferentes: a do `dispose()`, que
+   * desmonta tudo, e a da falha em quadro (contexto perdido, exceção no
+   * tick), em que o que se quer é só deixar de desenhar enquanto o véu
+   * de erro conta o que aconteceu. Idempotente: `cancelAnimationFrame`
+   * de um id já cancelado é no-op.
+   */
+  parar() {
+    cancelAnimationFrame(this.raf);
+    this.raf = 0;
   }
 
   get preset(): QualityPreset {
@@ -605,8 +649,12 @@ export class Engine {
   }
 
   dispose() {
-    cancelAnimationFrame(this.raf);
+    this.parar();
     window.removeEventListener('resize', this.resize);
+    this.renderer.domElement.removeEventListener(
+      'webglcontextlost',
+      this.aoPerderContexto
+    );
     this.vigiaDeDpr?.removeEventListener('change', this.aoMudarDpr);
     this.timer.dispose();
     this.renderer.dispose();

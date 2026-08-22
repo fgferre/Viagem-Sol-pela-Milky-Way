@@ -109,6 +109,10 @@ export function useDirector(fios: FiosDoDirector) {
       onFoco: setFoco,
       onTempo: setTempo,
       onEscada: setEscada,
+      // a falha DEPOIS do boot (contexto perdido, exceção em quadro) cai
+      // no MESMO véu das três falhas de carga — o App decide a copy pela
+      // fase, que é o que separa "não pôde começar" de "parou no meio"
+      onErro: setLoadError,
       });
     } catch (error) {
       // a sonda passou mas a criação real falhou (contexto despejado,
