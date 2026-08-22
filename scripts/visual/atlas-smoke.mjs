@@ -673,9 +673,19 @@ try {
   await sessao.js("window.localStorage.removeItem('viagem-prefs')");
   await sessao.js('window.__marcaAuto = 1');
   await clicarTier('auto');
-  // uma JANELA DE MEDIDA inteira (2,5 s) mais folga: sem ela a prova
-  // pegaria o "medindo" e não o veredito, e o que a letra D promete é
-  // justamente que escolher Auto MEDE e aplica
+  // uma JANELA DE MEDIDA inteira (2,5 s) mais folga: escolher Auto só
+  // vira tier depois de EXISTIR uma sugestão, e é a primeira janela que
+  // a produz — sem a espera, a prova cobraria o Auto por não ter
+  // aplicado uma medida que ainda não havia.
+  //
+  // O que NÃO se espera aqui é o mostrador: desde 22/08 (item 66) o
+  // `?shot=` congela a nota em "medindo o quadro." de propósito. O
+  // número é medida VIVA, muda de boot para boot, e entrava na tela ~50
+  // quadros depois do `pronto` — toda foto de HUD carregava um dígito
+  // que ninguém controla, e era isso que fazia a prova 13 reprovar uma
+  // vez a cada ~100. Quem traz o número é
+  // `window.__director.engine.medicao`, lido abaixo, que o modo foto
+  // não congela: a régua corre, só o mostrador para.
   await sleep(3200);
   // …e se a medida pediu outro tier, o mundo novo ainda está no forno
   await sessao.assentar();

@@ -1547,7 +1547,24 @@ export class Director {
     this.events.onQuality({
       escolha: this.politicaDeQualidade === 'auto' ? 'auto' : this.engine.quality,
       tier: this.engine.quality,
-      medicao: this.engine.medicao,
+      // O MODO FOTO NÃO TEM INSTRUMENTO (item 66). A nota do painel
+      // estreia em "medindo o quadro." e troca pelo NÚMERO na primeira
+      // janela do medidor — 50 quadros, porque o `dt` que a alimenta vem
+      // grampeado em 0,05 s —, e essa janela fecha DEPOIS dos 10 quadros
+      // estáveis da prontidão. Medido em 22/08 na mesma URL: md5
+      // `91a7de848027` no `pronto` (quadro 21) e `d58cb662df01` no
+      // quadro 60, sem ninguém tocar na cena — duas telas para uma URL
+      // só, e o `atlas-smoke` reprovando 1 em ~100 conforme o quadro em
+      // que a foto caía.
+      //
+      // ESPERAR o número seria pior: ele é medida VIVA, muda de máquina
+      // para máquina e de boot para boot, e toda captura de HUD passaria
+      // a carregar um dígito que ninguém controla. Então `?shot=`
+      // congela o instrumento, exatamente como já congela o relógio
+      // visual (`const time = this.shotMode ? 0 : rawTime`). A medição
+      // segue rodando e o Auto segue ouvindo (`aoMedirOQuadro`): o que
+      // para é o mostrador, não a régua.
+      medicao: this.shotMode ? null : this.engine.medicao,
     });
   }
 

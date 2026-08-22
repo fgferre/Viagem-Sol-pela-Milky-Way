@@ -340,6 +340,27 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'auto', tier: 'cinema', medicao: null })).toContain('medindo');
     expect(estado({ escolha: 'alta', tier: 'alta', medicao: null })).toContain('medindo');
   });
+
+  it('o modo foto congela o MOSTRADOR da medição, e não a medição (item 66)', () => {
+    // O número entra na nota ~50 quadros depois do boot (a janela do
+    // medidor conta `dt` grampeado em 0,05 s) — ou seja, DEPOIS dos 10
+    // quadros estáveis que a prontidão pede. Duas fotos da mesma URL
+    // caíam uma de cada lado dessa troca: medido em 22/08, `91a7de848027`
+    // no `pronto` e `d58cb662df01` no quadro 60. Sob `?shot=` o
+    // mostrador não recebe número nenhum, como o relógio visual já não
+    // recebe tempo.
+    const publicar = DIRECTOR.slice(
+      DIRECTOR.indexOf('private publicarQualidade()'),
+      DIRECTOR.indexOf('private vestirGalaxia')
+    );
+    expect(publicar).toContain('medicao: this.shotMode ? null : this.engine.medicao,');
+    // e a régua continua correndo: quem ouve a medição não olha o shot
+    const aoMedir = DIRECTOR.slice(
+      DIRECTOR.indexOf('private aoMedirOQuadro('),
+      DIRECTOR.indexOf('private publicarQualidade(')
+    );
+    expect(aoMedir).not.toContain('shotMode');
+  });
 });
 
 describe('a gaveta do Atlas', () => {
