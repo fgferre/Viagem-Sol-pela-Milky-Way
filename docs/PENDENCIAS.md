@@ -85,9 +85,11 @@ Números aposentados — e nenhum se reaproveita. Os de 14/08 (**1, 2, 14, 29,
 30, 31, 32, 35**) leem-se em `git show de16542 -- docs/PENDENCIAS.md`. Os
 demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
 (`38d4ae4`, `ca4707e`), **4** em 16/08 (`bd12905`), **3** e **44** em 17/08
-(`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
-`229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
-`2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60**, **66**,
+(`6740d72`), **8**, **10**, **48** e **51** em 18/08 (`cf6ea79`,
+`7afe64d`, e o **48** e o **51** no MESMO diff, `229dc1c`), **9**, **55**
+e **56** em 20/08 (`35bab48`, `6d2278a`, `2f2355a` — `39ca08f` só
+RENUMEROU 55→56, quem matou o 55 foi `6d2278a`), **16** e **57** em 21/08
+(`ade2c3e`, `841d57d`), **60**, **66**,
 **67**, **68**, **58**, **65**, **71** e **73** em 22/08 (`a8a3168`,
 `92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`, `d2fb2c7`,
 `c8507ba`). O **73** é o único que levou OITO commits: a obra inteira é
@@ -508,7 +510,8 @@ pan de 40 UA (e empurrada para fora pelo fechamento da lente na família
 0,0646 (−30%) em 7 px, e a maior queda de um pixel só (−10,4%) acontece
 exatamente no pixel em que o CENTRO da estrela cruza `y = 0`. O que foi
 descartado, cada um com a sua medida: **não é auto-exposição** — a
-`toneMappingExposure` fica em 1,02 nos 87 passos; **não é o bloom
+`toneMappingExposure` fica em 1,02 nos 87 passos da corrida de 22/08
+(o juiz tem 97 hoje, com a nona família); **não é o bloom
 principal** — `?nobloom=1` muda 0,35% da luz do quadro e não muda a
 queda; **não é a galáxia** — `?nogal=1` repete a queda igual. Desligando
 catálogo E clarão juntos (`?nocat=1&noclarao=1`) o resíduo do passo cai

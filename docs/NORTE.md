@@ -45,7 +45,8 @@ externas (face-on / edge-on) são recriações científicas ancoradas em Gaia �
 ninguém fotografou a Via Láctea de fora. A única foto real é o panorama ESO,
 visto de dentro.
 
-**Mais que um SpaceEngine** (decisão do dono, 2026-08-11): escala 1:1 onde
+**Mais que um SpaceEngine** (decisão do dono, 2026-08-11 — a linha que
+manda está na tabela de decisões fechadas): escala 1:1 onde
 for possível; visibilidade por fotometria; artifício só no canal do
 instrumento, separável e desligável. A galáxia volumétrica científica é o
 diferencial. Toda escala artística nova se declara no selo.
@@ -149,20 +150,20 @@ Três cegueiras declaradas:
   **O que ele COBRE:** fervura e cintilação entre quadros consecutivos
   (resíduo por pixel e energia em banda alta, contra o piso medido da
   própria pose) e identidade de fonte (§5.20 — re-semeadura, sumiço e a
-  persistência de quem sai de quadro e volta), em oito famílias:
-  aproximação ao Sol e a Sirius, pan, órbita, reversão, FOV e as duas
+  persistência de quem sai de quadro e volta), em nove famílias:
+  aproximação ao Sol e a Sirius, pan, órbita, reversão, FOV, as duas
   fronteiras de promoção (o gate ponto→corpo do Sol e a cessão
-  corpo↔ponto da Terra). **O que ele NÃO cobre, declarado:** o filme
-  andando (é a cegueira seguinte, e MB1 anda por poses, não pelo
-  roteiro); a promoção partícula→catálogo da galáxia, que só existe
-  depois do M6; o interior do clarão de um corpo próximo, que sai do
+  corpo↔ponto da Terra) e o zoom da roda (`zoomDeRoda`, 22/08 — a única
+  que corre DENTRO do Atlas, pela porta do gesto). **O que ele NÃO cobre,
+  declarado:** o filme andando (é a cegueira seguinte, e MB1 anda por
+  poses, não pelo roteiro); a promoção partícula→catálogo da galáxia, que
+  só existe depois do M6; o interior do clarão de um corpo próximo, que sai do
   resíduo por pixel e é julgado só por identidade; e o resíduo por
   pixel onde a paralaxe do passo passa de 1 px — em `aproxEstrela` isso
   suspende a família inteira e sobra a estrela-alvo. `voo-ida-e-volta.mjs`
   continua sendo outra régua para outra pergunta (ida e volta em 34
-  degraus DISTANTES, cego a cintilação por construção) e **desde 21/08
-  não é juiz obrigatório**, por decisão do dono: *"essa viagem ida e
-  volta não é mais relevante"*.
+  degraus DISTANTES, cego a cintilação por construção) e não é juiz
+  obrigatório desde 21/08 — ver a tabela de decisões fechadas.
 - **O filme andando de ponta a ponta.** Nenhum juiz assiste 0→193 s no
   navegador: o `filme-ritmo.mjs` amostra 97 quadros PARADOS e o
   `filme-smoke.mjs` solta o relógio por 420 ms em sete instantes. A única
@@ -194,7 +195,7 @@ para escolher com honestidade.
 | `sky-capture.mjs [tag]` | o céu interno contra o panorama ESO: 6 faces costuradas e os cinco termos da régua | **0,7 min** | céu, poeira, catálogo visto de casa |
 | `voo-smoke.mjs` | o voo livre: convite, furo do Spotlight ancorado, captura de ponteiro opt-in, backoff, soltura de teclas | **0,6 min** | voo livre |
 | `z-fighting.mjs` | pixels que ALTERNAM sob jitter sub-pixel (Terra × nuvem, Saturno × anel); limiar zero, com sabotagem que tem de reprovar | **0,5 min** | superfície colada em superfície, near/far, depth |
-| `rodada.mjs <n> "nota"` | as duas vistas da galáxia contra as referências, e **escreve a linha** no ledger `docs/reference/EVOLUCAO.md` | **0,3 min** | mudança na galáxia (a última linha do ledger é de 11/08) |
+| `rodada.mjs <n> "nota"` | as duas vistas da galáxia contra as referências, e **escreve a linha** no ledger `docs/reference/EVOLUCAO.md` | **0,3 min** | mudança na galáxia (a última linha do ledger é a **44**, de 22/08 — o M5) |
 | `gpu-profile.mjs "?q" s w h dpr` | o tempo que a GPU passa DENTRO de cada draw, passe a passe, por timer query | **0,2 min** com janela de 8 s | performance, custo de pós-processamento |
 | `diff-pixel.mjs a.png b.png` | depois de um `DIFERE`: quantos pixels, de quanto e onde, com mapa de blocos 16×16 | segundos | sempre que o A/B der diferente |
 | `voo-ida-e-volta.mjs` | ida e volta em 34 degraus na MESMA sessão — o único que enxerga transição e histerese | **1,0 min** (eram 9,3, e 8,1 deles eram espera cega pelo forno do Sol a 0,05 UA; a espera passou a contar bordas por quadro em 22/08 e fecha em 2 s) | só quando a mudança for de transição ou histerese — não é obrigatório desde 21/08 |
@@ -456,10 +457,9 @@ Não reabrir sem que a condição listada mude.
 | `forgetau` desligado | Dosagem edge calibrada sem extinção nas forjas | Re-dosagem conjunta medida |
 | A ida e volta não é mais juiz obrigatório | Dono em 21/08: *"essa viagem ida e volta não é mais relevante"* — o run inteiro cobrava horas | A mudança ser de transição ou histerese: aí `voo-ida-e-volta.mjs` volta, como instrumento |
 | Pupila adaptativa: não | Dono: o campo estelar nunca esmaece. Medido: 16 stops ao focar Sirius | — |
-| A UI/UX vai ser revista | Dono em 21/08: Atlas ganha botão na abertura, e o celular ganha controles menores e escondidos que expandem (a ideia do drawer do projeto Atlas). Separar Ajustes em visitante × laboratório ele recusou. Itens 60, 61 e 62 | — (é onda de desenho: mockups antes de código) |
+| A UI/UX vai ser revista | Dono em 21–22/08. O que ainda DECIDE: separar Ajustes em visitante × laboratório ele **recusou**; o celular ganha controles menores e escondidos que expandem (o drawer do projeto Atlas); e das três respostas do canvas (*"1) 3 botoes iguais 2) somem sozinhos 3) vira alça"*) sobram a 2 (controles do filme somem sozinhos) e a 3 (máquina do tempo vira alça) — itens **61** e **62**. O botão do Atlas na abertura e os três botões iguais viraram código em 22/08 e saíram daqui | — (é onda de desenho: mockups antes de código) |
 | **O Atlas é o modo único; a viagem é uma ferramenta dele** | Dono em 22/08: *"O modo atlas na minha visao deveria ser o modo único, a viagem na verdade para mim é só uma ferramenta do modo atlas"*, e *"o atlas e a viagem sao 2 coisas quase concorrentes… parece que o modo atlas fica mais morto, vazio"*. O que isso MUDA: um mundo só já é lei e já é código (`claraoDoAtlas` morreu no M1, os dois modos desenham igual) — se os gráficos ainda parecem mudar, é medida a fazer. O que falta é a UI parar de tratar os dois como concorrentes e o Atlas parar de parecer mais vazio. É **direção**, não item fechado. Item 61 | — (direção viva; a obra é a onda da UI/UX) |
-| **Filmes viram roteiro lido por um motor** | Dono em 22/08: *"os filmes nao deveriam ser milhares de linhas de codigo, deveriam ser na verdade um script"* — ferramenta do AGENTE, não do visitante, com instruções para o próprio agente escrever roteiros; o filme atual porta-se depois. É a mesma coisa que o "Motor declarativo", item 1 da fila do `PLANO-CINEMA.md`, mais a parte da câmera (trocar de lente, zoom, virar, por algoritmo de movimento cinematográfico). Item 75 | — (ideia para implementação futura, palavras dele) |
-| **Mockups de 22/08: três botões iguais; controles do filme somem sozinhos; máquina do tempo vira alça** | Respostas dele às três perguntas do canvas: *"1) 3 botoes iguais 2) somem sozinhos 3) vira alça"*. A 1 está FEITA em 22/08: as três portas da abertura medem o mesmo retângulo (224,00 px de largura a 1200 px, onde eram 201,79 · 243,24 · 205,78), com a largura vinda do CSS e não do texto, e o rótulo virou "Explorar"; a 2 e a 3 são obra da onda — itens 61 e 62 | — |
+| **Filmes viram roteiro lido por um motor** | Dono em 22/08 — as palavras dele inteiras e o que fica decidido moram no **item 75** do `PENDENCIAS.md`, que é o dono do assunto; o critério técnico de saída é o item 1 da fila do `PLANO-CINEMA.md` | — (ideia para implementação futura) |
 
 ---
 
@@ -529,8 +529,8 @@ Já medidos e refutados — não repetir.
 - Fenda do glow seguindo o warp: não há fluxo de glow em r > 8,4 kpc.
 - Escurecer o glow ou o interior das partículas (`idim`) para o edge:
   o glow é flanco, halo quente e espessura ao mesmo tempo.
-- Halo > 0,4 sob `forgetau`: axial explode.
-- Ligar `forgetau` sem re-dosar.
+- Halo > 0,4 sob `forgetau`: axial explode (a regra do `forgetau` é uma
+  decisão fechada — ver a tabela).
 - Teto de brilho para a tela branca.
 - Copiar a exposição 0,418 do projeto irmão: é a conta de um conserto
   de cor que esta casa nunca precisou; escurece tudo 2,44×.

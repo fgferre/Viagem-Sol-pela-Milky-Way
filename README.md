@@ -128,8 +128,14 @@ segmento próprio.
 | `&shot=2` | idem, **sem HUD** — gate visual |
 | `&play=1` | começa o filme |
 | `&q=cinema` | qualidade (`cinema`, `alta`, `performance`; `auto` deixa a medição escolher) |
+| `?pos=x,y,z` `?look=x,y,z` `?fov=` | põe a câmera onde se manda — a régua das capturas; `?fov=` (15–140) só vale junto de `?pos=`, e `?pos=` tem precedência sobre todo o resto |
+| `?d=8` | distância ao alvo em RAIOS dele (pina o enquadramento; ausente = a conta de sempre, bit a bit) |
+| `?cart=off` `?cart=obs` | cartografia: `off` nem baixa os ~6 MB, `obs` usa só a observada (padrão: mistura) |
+| `?corpos=1` `?nocorpos=1` | os corpos resolvidos de perto — distintos dos PONTOS fotométricos de `?noplan=` |
+| `?samples=16` | amostras do caminho de extinção da galáxia (piso 2, **teto 96**) |
+| `?nebsteps=` | passos do raymarch da nebulosa (**teto 96**; ausente = o preset manda) |
 | `&nobloom=1` | desliga o bloom (primeiro teste se a tela lava) |
-| `&nosun=1` `&nocat=1` `&nogal=1` `&nonebula=1` `&noplan=1` `&noclarao=1` | isola camadas |
+| `&nosun=1` `&nocat=1` `&nogal=1` `&nonebula=1` `&noplan=1` `&noclarao=1` `&noforge=1` … | isola camadas — a lista COMPLETA e viva é `CAMADAS` em `src/three/atlasConfig.ts`, que é a única (o selo e o laço de flags do Director derivam dela) |
 
 ## 7. Regras de GLSL — leia antes de tocar em shader
 

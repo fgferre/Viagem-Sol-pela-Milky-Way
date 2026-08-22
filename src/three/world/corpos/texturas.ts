@@ -7,9 +7,11 @@
 // rochosos e gigantes.
 //
 // POR QUE A CARGA MUDOU DE CASA. Os quatro corpos tinham cada um o SEU
-// `iniciarCarga` quase igual (71/54/58/65 linhas), e as diferenças entre
-// eles não eram desenho — eram os três furos que quatro cópias sempre
-// acabam tendo:
+// `iniciarCarga` quase igual — 71/54/58/65 linhas de EXTENSÃO (Terra, Lua,
+// rochoso, gigante), medidas no método inteiro em `12b2394^`; a mensagem
+// daquele commit conta as mesmas quatro em LINHAS DE CÓDIGO (58/45/51/62),
+// que é outra unidade e não outra medida — e as diferenças entre eles não
+// eram desenho, eram os três furos que quatro cópias sempre acabam tendo:
 //
 //  (a) a Terra pedia os cinco canais com `Promise.all`, que REJEITA no
 //      primeiro canal que cai: os outros quatro terminavam para lugar

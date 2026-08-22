@@ -46,9 +46,12 @@ enfadonho... minutos sem nada acontecer... feio viajar com a câmera de
 lado"; palavras completas no item 54 do `PENDENCIAS.md`). A revisão de
 ritmo tinha dito "manter" com curva de pixels — a lição: curva de pixels
 não mede tédio; densidade de eventos e língua de câmera medem. O
-repensar pousou em 19–20/08: 193 s, 25 planos, a coda com o gesto da
-Lua e o juiz de play contínuo do segundo 0 ao 193 (a história mora nos
-commits das datas; a exibição do dono é o item 54 do `PENDENCIAS.md`).
+repensar pousou em 19–20/08: 193 s, 25 planos e a coda com o gesto da
+Lua (a história mora nos commits das datas; a exibição do dono é o item
+54 do `PENDENCIAS.md`). **Juiz de play contínuo do segundo 0 ao 193 NÃO
+existe** — é cegueira declarada no `NORTE.md`: `filme-ritmo.mjs` amostra
+97 quadros parados e `filme-smoke.mjs` solta o relógio por 420 ms em sete
+instantes; o filme inteiro segue julgado pelo olho do dono.
 O que ficou de pé no repensar:
 
 - a abertura (parede de fogo + hélice exponencial), cuja composição o dono
@@ -70,11 +73,13 @@ O roteiro novo (perfil analítico, desenho sob as duas leis, juízes e
 varredura) pousou em 19–20/08 e virou produto — a exibição do dono é o
 item 54 do `PENDENCIAS.md`. O trabalho segue nesta ordem:
 
-1. **Motor declarativo.** Movimentos nomeados, legendas, preload e marcadores
-   de QA passam a ser dados leves do filme. Conclui quando o filme
-   galáctico roda pelo novo formato sem diferença visual — prova A/B bit a
-   bit, com o lado novo capturado de disco zerado — nem perda dos gates e
-   um filme novo não exige editar o núcleo do aplicativo.
+1. **Motor declarativo.** A decisão e as palavras do dono moram no **item 75
+   do `PENDENCIAS.md`** — é ele o dono deste assunto; aqui fica só o critério
+   técnico de saída. Movimentos nomeados, legendas, preload e marcadores de QA
+   passam a ser dados leves do filme. Conclui quando o filme galáctico roda
+   pelo novo formato sem diferença visual — prova A/B bit a bit, com o lado
+   novo capturado de disco zerado — nem perda dos gates, e um filme novo não
+   exige editar o núcleo do aplicativo.
 2. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
    com Terra/Lua, Júpiter/Io, Saturno/luas e o afastamento final, ciência e
    unidades revisadas, gate visual e exibição completa aprovada.

@@ -280,11 +280,15 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   0,7 / teto 20 / `px²/0.49` e `starForges.ts` com 0,85 / 26 / `px²/0.7225` —
   morreu no M5, 22/08: ela é UMA, `leiDeTela` em `estrela.ts`, e os dois sítios
   a chamam. A varredura invertida vigia as duas cópias.)*
-- **O censo foi feito de memória.** `grep gl_PointSize` devolve 8 emissores: dois
-  fora da lista (`dustShaders.ts`, com `clamp(px, 1.0, 5.0)` — teto de 5 px não
-  declarado — e `sol/cme.js`), e `wrappedStars.ts` emite `gl_PointSize = 0.0` como
-  forma de apagar, que é uma **terceira convenção de cessão**. Refazer por varredura
-  reprodutível, com o comando versionado ao lado da tabela.
+- **O censo era de memória — e deixou de ser.** Os dois emissores que a v1 desta
+  Lei dava por fora da lista ENTRARAM no cadastro e são linhas vivas dele:
+  `poeira` (`dustShaders.ts`, `fora-da-lei`, com o `clamp(px, 1.0, 5.0)` e o teto
+  de 5 px NÃO declarado escritos como dívida) e `cme` (`world/sol`, `migra` no M7 —
+  fonte fora-da-unidade, não óptica). O comando não é mais um `grep` de memória:
+  `cadastroDeRepresentacoes.test.ts` varre `src/` de verdade e REPROVA se um
+  emissor de `gl_PointSize` não tiver linha no cadastro. O que segue ABERTO é a
+  dívida em si: `wrappedStars.ts` apaga zerando o tamanho no vertex — a **terceira
+  convenção de cessão** da casa —, e quem a paga é o M3 (entrada `cascas`).
 - **A galáxia já tem a lei certa E o mesmo defeito** — e desde o M5 o defeito é
   da LEI, num endereço só (`leiDeTela`, `estrela.ts`). Abaixo de 0,7 px o fluxo cai
   com `px²` (a troca sub-pixel, **certa**); de 0,7 a 3 px, brilho de superfície
@@ -401,9 +405,12 @@ um número que a tela não mostra.
 
 ## 4. AS MIGRAÇÕES
 
-> **Camada TRANSITÓRIA**, como a §2: cada migração fechada **sai desta lista**. O que
-> ela deixa atrás é a linha no cadastro e o número medido no commit, não um parágrafo
-> aqui. Quando a última fechar, esta seção acaba.
+> **Camada TRANSITÓRIA**, como a §2: migração fechada deixa de ser ENTRADA e vira
+> **duas ou três linhas** — o que fechou, o número-chave, o hash — mais o que dela
+> **ainda decide** alguma coisa (uma dívida que outra migração paga, um gate de foto
+> devido ao dono). O resto — a narrativa, os desvios já pagos, os números por vista —
+> mora no commit e no cadastro, e não se copia para cá: §8, sem diário. Quando a
+> última fechar, esta seção acaba.
 
 **A regra de todo commit de migração**, sem exceção:
 (i) apaga os símbolos da lei velha; (ii) **inverte a varredura textual no mesmo
@@ -423,257 +430,55 @@ estado padrão e versionar. Hoje `capturas/luz-do-quadro.json` é de 13:57 e con
 desenho ANTIGO (borrão 900 px, REPROVA 4/4), enquanto o padrão subiu às 22:57 — é
 armadilha de procedência, e a casa proíbe md5 sem medir.
 
-*(F0 — PSF e Ballesteros num endereço só — FECHOU em 16/08, delta medido:
-zero pixel em 51 vistas. O registro é o commit; a lista é do que falta.)*
+*(F0 — PSF e Ballesteros num endereço só — FECHOU em 16/08 (`02bf37e`), delta
+medido: zero pixel em 51 vistas. O registro é o commit; a lista é do que falta.)*
 
-*(L1 — a lei única — FECHOU em 16/08: `estrela.ts` puro com os três contratos
-do §3, `repartir`, o clarão de asas derivado do fluxo, a radiância na banda de
-render (§5.5 decidida: a integral Planck×CIE reproduz os números da cláusula —
-30.000 K dá 65,9, não 729), o ponto-zero único 4,83 (gate de foto segue devido
-antes do M3), fallback único, e `GLSL_LEI_DA_ESTRELA` gerado das mesmas
-constantes. O corpo negro mudou de casa para `luzDaCasa.ts` no mesmo gesto do
-F0, byte-idêntico. Cadastro em código com varredura reproduzível. Sem
-consumidor: zero pixel por construção.)*
+*(L1 — a lei única — FECHOU em 16/08 (`48fa498`): `estrela.ts` puro com os três
+contratos do §3, `repartir`, o clarão de asas derivado do fluxo, o ponto-zero
+único 4,83 e `GLSL_LEI_DA_ESTRELA` gerado das mesmas constantes; o cadastro
+nasceu em código, com varredura reproduzível. Sem consumidor: zero pixel por
+construção.)*
 
-*(M1 — a instância nº 1 num commit só — FECHOU em 16/08, com os números na
-seção "O ESTADO" e as divergências da lista original DECLARADAS: (a)
-`heroCatalogFade` estava listado como órfão e NÃO era — `fadesDoQuadro` o
-consome por quadro para as 16; ele morre no M2 com a política inteira, e a
-lápide no cabeçalho de `lodStellar.ts` registra a divergência; (b) a esfera
-analítica NÃO nasceu — para o Sol a malha já cobre a faixa toda por um
-corpo só, e fingir um regime sem drawable seria pior que declarar: a dívida
-está nomeada no cadastro e ela nasce no M3/E3, onde é obrigatória; (c) o
-item 5 — a fase do ciclo pela data simulada no Atlas — não foi tocado no
-M1 e FECHOU em 21/08, em obra própria: a fase saiu do acumulador e virou
-função pura da data (`faseDoCiclo`, módulo interno de `estrela.ts`, com a
-âncora do ciclo 25 declarada); o estado das regiões ativas e dos grupos
-de manchas virou função do mesmo instante (semente POR VIDA, deriva
-diferencial em forma fechada), então o seek é bidirecional por
-construção e o re-bake nunca integra para trás: com o relógio visual
-PARADO (o regime das capturas, em que nada integra a granulação) ele
-re-semeia e repete a contagem fixa do `prime`, fatiada por quadro; com
-ele andando, a granulação já está relaxando rumo às cargas novas e só a
-cromosfera é refeita. Um re-bake em curso não se reinicia — ele pousa —,
-e foi essa a lição do degrau de 115,7 dias/s. Morreram o pino
-`ATLAS_JOURNEY_T`, a torção de fase da dramaturgia, os dois acumuladores
-do núcleo e o empurrão anti-fusão rate-limitado dos grupos de manchas
-(varredura invertida em `simbolosProibidos.test.ts`). O que a dramaturgia
-do filme virou é uma DOSE de ocupação declarada — `selo.ts` +
-`cadastroDeRepresentacoes`. **Delta declarado ANTES:** mudam as vistas
-com o Sol em quadro, e as referências delas NÃO se atualizam sem o dono.
-**Medido:** 5 das 52 (`sol`, `solreal1ua`, `solreal4mkm`, `solatras`,
-`ua2`) — as outras 47 bit-idênticas, `soldisco`/`solrampa`/`solestouro`
-inclusive, porque a 0,1–0,32 pc o Sol é PONTO e a fotometria do ponto
-não foi tocada. Na `sol` (t=6) o diff de pixel dá 89% do quadro, máx
-116/255, sinal predominantemente mais LUZ: é a fase real de 2026 no lugar
-do mínimo inventado — banda de Spörer a 17° em vez de 34°, dipolo polar
-em meia força depois da reversão. As réguas de contorno passaram
-inteiras: `luz-do-quadro` 11/11, `voo-ida-e-volta` 34 degraus, e a curva
-de ritmo do filme saiu IDÊNTICA nos 97 quadros. O `atlas-smoke` ganhou a
-prova do degrau do corpo (mesma data em duas entradas = md5 igual; data
-distinta = Sol diferente) e passou de 94 para 99 vereditos. De carona
-fechou o item 16 (o relógio rápido não anda com o corpo fora de quadro) e
-um resíduo de caminho que ninguém tinha visto: a resposta das
-proeminências ao campo era um filtro passa-baixa que, com o relógio
-parado, virava LATCH. As fotos para o dono são
-`capturas/item5-sol-do-atlas-cinco-datas.png` e
-`capturas/item5-arranque-antes-depois.png`.)*
+*(M1 — a instância nº 1 num commit só — FECHOU em 16/08 (`bd12905`): o Sol
+inteiro virou UMA repartição e a costura caiu de 4,3× para 1,5×; morreram o
+`SunStar`, a entrega e as quatro rampas. O item 5 — a fase do ciclo pela data
+simulada — não foi tocado aqui e fechou em 21/08, em obra própria: a fase virou
+função pura da data (`faseDoCiclo`), o seek é bidirecional por construção, e o
+delta declarado ANTES se cumpriu — 5 das 52 vistas mudaram, as com o Sol em
+quadro. **Segue decidindo:** a esfera analítica NÃO nasceu no M1 — para o Sol a
+malha cobre a faixa por um corpo só —, e a dívida é do M3/E3, onde é obrigatória;
+está nomeada no cadastro.)*
 
-*(M2 — o clarão de asas + o bloom pela lei — FECHOU em 16/08, com o
-aceite declarado CUMPRIDO: a régua da luz saiu de REPROVA 4/11 para
-**PASSA 11/11**, o borrão ficou monotônico na escada inteira (≥900 →
-349 → 87 → 42 → **20 px na âncora de 15.800 UA**, aceite ≤ 20) e o voo
-passa em 34 degraus ida e volta. ENTROU `world/clarao.ts`: camada única
-por orçamento de fluxo — 16 slots entre o Sol e as 1.726 nomeadas, com
-a histerese do §5.21 (RAZAO_DE_TROCA 1,25 + rampas de 300 ms; o oráculo
-da fronteira pegou um bug real da primeira forma — a reafirmação do
-membro fraco desfazia o deslocamento no mesmo quadro — e a seleção
-virou duas fases: decidir o conjunto, depois escrever os alvos), asa
-Moffat + braço de espinho com `BETA_DO_ESPINHO = ¾·β` acorrentado,
-billboard em px de tela, `depthTest: false` pela §5.15. O bloom passou
-a ser GOVERNADO: pesos por mip `2^(2−2β)` ≈ 0,144, raio pinado em 0 (o
-lerp do vendorizado reflatten os pesos), e a fração da pirâmide
-DERIVADA da partição do §1 — `PESO_DA_PIRAMIDE = FRACAO_DA_ASA/Σrazões`
-≈ 0,051, zero número livre; a varredura que a autorizou: peso 1 → 37 px
-na âncora, 0,35 → 27, 0,2 → 24, sem bloom → 14 — o excesso era todo o
-σ≈12 px do primeiro mip sobre o núcleo saturado, espalhamento que a lei
-atribui à ASA. A pirâmide NÃO foi estendida (o outro caminho do §1):
-com pesos em lei de potência os mips 6+ pesariam < 1e-4 — custo sem
-imagem, escolha declarada em `post.ts`. APAGOU tudo o que a lista
-previa: `heroStars.ts` inteiro (**resgatado no mesmo dia — desvio (f)**),
-a política de dominância inteira, o
-canal `aFade`, `core/pupila.ts` + teste + a espinha de `uExposicao`, o
-clamp `sat` (espinhos = `FRACAO_DOS_ESPINHOS`·pico = 0,0278, calibrada
-por CONTINUIDADE em Sirius; branqueamento suave pico/(pico+4) — item
-43), `ESPELHO_COEF_CLARAO_PC` + exemplar Sirius, e as portas
-`?pupila`/`?dom`/`?nodom`/`?nohero`(→`?noclarao`)/`?bbloom`/`?bombro`/
-`?knee2` — regra iv. O juiz do voo foi reescrito no espírito do §5.10:
-o critério de cegueira (50% chapado, de antes da asa) passou a derivar
-do teto da lei (`tetoDeLavagem`, endereço ÚNICO com a régua da luz) —
-perto do Sol lavar é a parede de fogo honesta, e a âncora do dono é
-R ≈ 450 px já a 1 UA. DESVIOS DECLARADOS, no molde do M1: (a) a rampa
-g(r) 1→2,5 sobrevive como `cessaoPorDominancia` — a cessão corpo↔ponto
-da Terra é OUTRA troca (mesma fonte, fluxo conservado) e a prova de
-continuidade vale igual; (b) `catalogApparentMag` sobrevive — espelha
-linha VIVA do STAR_VERT, não a política morta; (c) o CME saiu do M2
-para o M7 — o M2 é ÓPTICA e o CME é FONTE (campo E do §5.18, dose nunca
-calibrada), divergência escrita no cadastro; (d) o GATE DE FOTO do
-expoente da asa (2,0–3,0) segue devido ao dono — 2,4 é a semente e as
-capturas `luz-*.png` da escada são as fotos; (e) o joelho pós-bloom foi
-ABSORVIDO com a cadeia contada — quatro curvas, ordem em `post.ts`;
-(f) **`heroStars.ts` NÃO ficou apagado** — o dono reprovou a substituta e
-mandou exumar a peça do git (`4ca23b7`, de `bd12905`, menos a espinha
-morta da pupila); o director a instancia e as 16 desenham a arte de
-30/07. O que a camada da lei ficou desenhando é SÓ o Sol (`n = 1` em
-`atualizar`), com os 16 slots virando reserva do M3. Preço aberto,
-medido e não pago aqui: catálogo e hero desenham a MESMA estrela juntos,
-sem cessão entre eles — em Sirius o hero põe ~69% da luz de um disco de
-120 px sobre o ponto do catálogo, e nada esmaece quando o outro entra. É
-a dupla-luz que o M3 fecha, com o gate de foto do dono na estética; a
-linha `heroes-de-autor` do cadastro carrega a dívida.
-**A CORREÇÃO DO MESMO DIA, cobrada pelo dono ao abrir o app** (*"tela
-toda branca... o sol procedural fica escondido... os spikes horríveis e
-enormes... esse círculo branco no meio do sol é normal?"*): (1) o clarão
-passa a ver o fluxo que o INSTRUMENTO ADMITE — o filtro solar (§5.7)
-corta a asa pela mesma transmitância do corpo, e câmera com filtro não
-tem flare; (2) a asa é a óptica do PONTO e entrega ao BLOOM quando a
-fonte resolve (× `wPonto` — a emenda da cláusula do §1, acima); (3) o
-braço do espinho decai MAIS RÁPIDO que o halo (`BETA_DO_ESPINHO` =
-1,5·β, era ¾·β) — braço mais raso que o halo não é cruz, é parede de
-2.400 px. As três eram invisíveis para as réguas porque a escada e o voo
-fotografam o Sol de LONGE ou por deep-link — o juiz que faltava era o
-FILME ABERTO, e foi o dono. Os oráculos foram reescritos (nunca
-contornados): monotonia da escada só cobra onde a lei não cresce (o
-filtro desengata a ~2 UA e a âncora do quadro claro, R ≈ 450 px, vive na
-SAÍDA do filtro), e `vaoDoFiltro` entra na régua com espelho cobrado
-contra `luzDaCasa`. O espelho do filtro SOBRE O CLARÃO — `fatorDoFiltro` —
-nasceu aqui e morreu na R2: o clarão é a óptica plena do ponto vestida
-pela `solturaDaLei`.)*
+*(M2 — o clarão de asas + o bloom pela lei — FECHOU em 16/08 (`1a8b4d5`, com a
+correção do mesmo dia em `3f7a228`): nasceu `world/clarao.ts` (camada única por
+orçamento de fluxo, com a histerese do §5.21), o bloom passou a ser GOVERNADO
+pela partição do §1, e a régua da luz saiu de REPROVA 4/11 para **PASSA 11/11**,
+com 20 px de borrão na âncora de 15.800 UA — o aceite do dono. **Segue
+decidindo:** (a) `heroStars.ts` NÃO ficou apagado — o dono reprovou a substituta
+e mandou exumar a peça de 30/07 (`4ca23b7`), e o preço é a **dupla-luz** catálogo
+↔ heroes que o M3 fecha, com gate de foto na estética; (b) o CME saiu do M2 para
+o M7, porque o M2 é ÓPTICA e o CME é FONTE; (c) o expoente da asa (2,0–3,0) segue
+devido ao dono como gate de foto.)*
 
-*(M4 — os nove planetas — FECHOU em 22/08, e as duas linhas do "Apaga"
-já estavam pagas: a cópia de `picoDaPsf` morreu no F0 e o `uGain` ponto
-a ponto de `planetas.test.ts` no M1 (as duas com varredura invertida em
-pé). O que faltava era a frase inteira — *consomem o INSTRUMENTO da
-lei* —, e o instrumento não vinha da lei: a camada dos dez corpos
-recebia `{expoM0, sigmaPx}` do MATERIAL do campo de catálogo, por uma
-interface própria (`PsfDoCampo`), e o β de `shaders/starShaders`. Três
-endereços, nenhum deles a lei, e a calibração dos planetas amarrada a
-uma representação que o M3 ainda vai mover: trocar o ponto-zero do
-catálogo teria movido os dez corpos junto, calado. ENTROU
-`CalibracaoDaCasa` (`estrela.ts`) — o pedaço do `Instrumento` que não
-muda com o quadro (`expoM0`, `sigmaPx`, `beta`) — e `CALIBRACAO_DA_CASA`
-no director: UM objeto, entregue ao campo, à camada dos dez e ao palco
-dos corpos resolvidos. APAGOU `PsfDoCampo` (que os três corpos
-resolvidos também liam), a chave `PLANETAS_DEFAULT_ON` e a porta
-`?plan` — regra iv: o lado A virou captura e teste numérico, e `?noplan`
-FICA porque não é porta de migração, é a LENTE das réguas. O cadastro
-passa a `consomeL1: true`, `destino: 'instrumento'`,
-`leiVelhaApagada: true`, com `fatorDeBrilho: 1` agora MEDIDO (o pico que
-o `?dbgplan` publica é `picoDaPsf` da lei bit a bit, e a conformidade
-virou grade numérica de dez magnitudes sobre `picoDaPsf`/`psfPointSizePx`
-com os uniformes REAIS do material). O que NÃO mudou, por contrato: a
-fase MH18 (`escreverFase`, Saturno com a abertura do anel), a cor por
-albedo e índices, o apagar com 1/d² (m 15,3–27,7 no limiar do sistema,
-pinado por corpo) e a cruz de Vênus maior que a de Sirius por fluxo
-(item 43, M2). **Delta declarado ANTES: ZERO pixel**, por construção — o
-director sempre entregou ao campo os mesmos `EXPO_M0`/`SIGMA_PX`, então
-trocar quem os passa não pode mover um bit; o que muda é a DIREÇÃO da
-dependência. **Medido:** 52 de 52 vistas IGUAIS (`ab-identidade`, os dois
-lados recapturados com `DOZERO=1`), `luz-do-quadro` PASSA 11/11 com a
-escada linha a linha idêntica (borrão 113 → 30 → 325 → 245 → 158 → 118 →
-69 → 42 → 28 → 26 → 20 px), `atlas-smoke` 101/101, e a régua dos
-planetas — com a lente nova do item 58a — PASSA nas três vistas
-profundas, com SETE dos dez corpos MEDIDOS na `ua40` (pior centroide
-0,380 px, pior caixa 0,286 px). DESVIOS DECLARADOS, no molde do M1:
-(a) o β continua resolvido em `shaders/starShaders` (`BETA_DA_EMISSAO`)
-e não em `luzDaCasa` — `lerBetaDaEmissao` é PURA de propósito, para a
-suíte a julgar em `node`, e mover a leitura da URL mexeria em sete
-consumidores que não são desta migração; a lei é dona da fórmula e da
-constante, o shader é dono da porta; (b) `solNoQuadro` continua montando
-o `Instrumento` do Sol com `stars?.expoM0 ?? EXPO_M0` — mesmo detour,
-mas é o M1, fechado, e unificá-lo com `CALIBRACAO_DA_CASA` é gesto do M3,
-quando o gate do ponto-zero mover o campo; (c) **`luz.ts` NÃO foi
-unificada** — `irradianciaRelativa`, a irradiância dos corpos
-RESOLVIDOS, segue ancorada em "a Terra a 1 UA lê 1", que é uma SEGUNDA
-unidade de fluxo na casa. O §6 previa que `luz.test.ts` quebrasse aqui e
-ele não quebrou: fundir as duas unidades muda o brilho de TODO corpo
-resolvido e passa pela dose assistida (`SIGMA_ASSISTIDA`), que é GOSTO
-do dono. Fica como gate de foto, e o §6 registra a divergência.)*
+*(M4 — os nove planetas — FECHOU em 22/08 (`7d488d0`): a camada dos dez corpos
+parou de receber `{expoM0, sigmaPx}` do MATERIAL do campo de catálogo e passou a
+receber `CALIBRACAO_DA_CASA`, o pedaço do `Instrumento` que não muda com o quadro
+(`estrela.ts`). Morreram `PsfDoCampo` e a porta `?plan`. Delta declarado ZERO
+pixel e medido: 52 de 52 vistas iguais — o que mudou foi a DIREÇÃO da dependência.
+**Segue decidindo: `luz.ts` NÃO foi unificada** — `irradianciaRelativa` é uma
+SEGUNDA unidade de fluxo na casa, e fundi-la passa pela dose assistida, que é
+gosto do dono; o §6 carrega a divergência como gate de foto.)*
 
-*(M5 — a lei de tela é UMA — FECHOU em 22/08. O "Apaga" era a **segunda
-cópia** da lei de tela de três regimes, e ela morreu: `starForges.ts`
-escrevia `clamp(px, 0.85, 26)` / `shrink = min(1, 9/px²)` /
-`subPix = px²/0.7225` e agora chama `leiDeTela` de `estrela.ts`, nos
-números da CASA — os que a §2 listava do outro lado. A lei NASCEU aqui
-como peça: `PISO_DE_TELA_PX` 0,7 · `PLATO_DE_TELA_PX` 3 ·
-`TETO_DE_TELA_PX` 20 · `PISO_DE_TELA_AO_QUADRADO` 0,49, a face TS
-`leiDeTela` e `GLSL_LEI_DE_TELA` gerado das MESMAS constantes, com
-conformidade NUMÉRICA em grade de −2 a 3 décadas de px (§8.6). **A
-lição do quadrado do piso**, achada pelo próprio oráculo antes de
-existir em produção: `0.7 * 0.7` em float64 dá 0,48999999999999994 e o
-shader imprimia `0.4900` — duas leis separadas por uma casa que ninguém
-lê. O divisor virou constante ESCRITA, com o teste cobrando a relação.
-(i)/(iv) MORREU também `uMaxPx`, uniform de um valor só (20) que
-`galaxy.ts` escrevia no material: teto sem lado A é knob morto.
-(ii) Quatro entradas M5 em `simbolosProibidos.test.ts`, uma por cópia e
-uma por sítio do uniform. (iii) O cadastro: `forjas` passa a
-`consomeL1: true` / `leiVelhaApagada: true` com `fatorDeBrilho` ainda
-`null` e a dívida NOMEADA (o `aIntensity` é artístico — 0,16 por
-confiança nas H II, 0,34 nos masers —, unidade que só entra na casa com
-o resto emissivo); `particulas-da-galaxia` passa a consumo PARCIAL, no
-molde do `catalogo-hyg`. (vi) O valor sai como sempre saiu, e o β segue
-exposto onde a emissão o aplica — nenhuma destas duas camadas comprime,
-e isso está declarado, não esquecido.
-
-**DESVIOS DECLARADOS, no molde do M1:** (a) **os quatro glows saíram do
-M5 para o M7**, pela mesma razão que mandou o CME do M2 para o M7 — o
-assunto do commit é OUTRO. O M5 é a lei de TELA, e `GLOW_VERT`/
-`GLOW_FRAG` não têm lei de tela nenhuma para apagar: são quads de
-tamanho FÍSICO em pc (`uSize`), sem px, sem piso e sem teto — quem cuida
-do estouro de perto é uma rampa de mão no `update` (`glowGate`, 5–13
-kpc) e quem cuida do tamanho é a projeção. O que sobra neles é FONTE
-fora-da-unidade (o ganho de autor das rodadas 17–24), que é exatamente o
-assunto do M7. O censo pagou o que devia aqui: a entrada
-`glows-do-nucleo` citava só `world/galaxy.ts` e não o arquivo que os
-DESENHA. (b) `galaxyShaders.ts` (GALAXY_VERT, camada do M6) consome a
-lei JÁ — se não consumisse, a "lei única" nasceria com um segundo texto
-no mesmo commit que a declara única. É consumo TEXTUAL: os números são
-idênticos, e o zero pixel foi MEDIDO, não argumentado. A migração de
-REPRESENTAÇÃO da galáxia (aAlpha → fluxo, a morte do platô e do ramo
-1/px², a cessão partícula↔lâmina) continua inteira no M6.
-
-**Delta declarado ANTES:** muda pixel — ao contrário do M4 — e só nas
-forjas: de LONGE elas são sub-pixel, e o piso mais baixo com o divisor
-0,49 as clareia até **1,47×**; de PERTO o teto 20 (era 26) as escurece
-para **0,59×** com o mesmo `shrink`. O depósito no sub-pixel é o MESMO
-nos dois pisos (`pontoPx²·subPix = px²` dos dois lados, cobrado por
-teste): o que se move é a REPARTIÇÃO, não o fluxo. Vistas sem forja em
-quadro — os corpos e as luas — saem bit-idênticas.
-**Medido** (`ab-identidade`, os dois lados com `DOZERO=1`): 16 das 52
-IGUAIS, e são exatamente as que não têm forja em quadro (`terra`,
-`terranb`, `lua`, `terralua`, os nove corpos com e sem bloom, `atlas`).
-As galácticas de FORA ganharam luz — `faceon` 40.767 px (1,32%, máx +22
-níveis, 99,98% só ganharam), `edgeon` 360 px (0,012%, máx +25, 100% só
-ganharam). As de DENTRO e as do Sol perderam um fio, que é o teto novo
-cortando a forja grande: `mergulho` 1.698 px (0,055%, máx 2), `interno`
-372 (0,012%, máx 1), `travessia` 146 (0,005%, máx 1), `sol` 48
-(0,0016%, máx 1), `ua2` 12 (0,0004%, máx 1). **A PROVA DE QUE É SÓ A
-FORJA:** com `EXTRA='&noforge=1'` os dois lados são BIT-IDÊNTICOS em
-`faceon`, `sol` e `soldisco` — a troca de lei da camada da galáxia não
-moveu um bit, como declarado. `luz-do-quadro` PASSA 11/11 com a escada
-de borrão linha a linha idêntica (113 → 30 → 325 → 245 → 158 → 118 → 69
-→ 42 → 28 → 26 → 20 px); só `luzMedia` anda na 6ª casa. `sky-capture`
-0,9270 → 0,9269, com os cinco termos parados nas quatro casas
-(espessura 0,4184 · fenda 0,2334 · perfil 0,2198 · cor 0,0299 · púrpura
-0,0254). **O PREÇO, medido e NÃO pago aqui** (`rodada.mjs`, linha 44 do
-ledger): no face-on o `clumpError` piora 0,1581 → 0,1741 e o `grain`
-0,0874 → 0,0877 — as forjas ficaram mais claras de longe e a dose delas
-foi calibrada sob o piso VELHO. `harmonicError` (0,3966 → 0,3970) e
-`toneError` (0,1845 → 0,1848) praticamente não andam, e o edge-on sai
-IDÊNTICO nas cinco colunas. Re-dosar `aIntensity` é gosto e gate de
-foto do dono — item 69 das pendências —, não gesto de migração
-mecânica. Foto para o dono:
-`capturas/m5-glows-forjas-antes-depois.png`.)*
+*(M5 — a lei de tela é UMA — FECHOU em 22/08 (`33cb0bb`): a segunda cópia de
+`starForges.ts` (`clamp(px, 0.85, 26)` / `px²/0.7225`) morreu e as duas camadas
+chamam `leiDeTela` de `estrela.ts`, com `GLSL_LEI_DE_TELA` gerado das MESMAS
+constantes. Morreu junto `uMaxPx`. Delta declarado e medido: 16 das 52 vistas
+bit-idênticas — exatamente as sem forja em quadro —, e com `?noforge=1` as
+galácticas também. O preço aberto (`clumpError` 0,1581 → 0,1741, re-dosar
+`aIntensity`) é o item 69 das pendências. **Segue decidindo: os quatro glows
+saíram do M5 para o M7** — não têm lei de tela para apagar, o que sobra neles é
+FONTE fora-da-unidade; a razão inteira está na entrada `glows-do-nucleo` do
+cadastro.)*
 
 ### M3 — Catálogo + cascas
 **Gate obrigatório ANTES:** o ponto-zero único (4,83 × 4,85), decidido com foto pelo
@@ -702,53 +507,19 @@ repetir o erro — a garantia de half-float tem de ser medida **sobre o pixel so
 
 ### M7 — O resto emissivo
 Termo `stellar` do raymarch (`nebulaShaders.ts`) e splats do bake
-(`structureMap.ts`). **Fora da lei, declarado:** o campo 2D do carregamento.
+(`structureMap.ts`), **mais o que as migrações fechadas empurraram para cá por
+serem FONTE e não óptica**: o CME do Sol (adiado no M2) e os quatro glows do
+núcleo (adiados no M5) — as duas razões inteiras estão nas entradas `cme` e
+`glows-do-nucleo` do cadastro. **Fora da lei, declarado:** o campo 2D do
+carregamento.
 
-*(MB1 — o juiz de estabilidade temporal — FECHOU em 22/08, em
-`scripts/visual/estabilidade-temporal.mjs` + o oráculo em `.test.mjs` (34
-contas puras dentro do `npm test`). **O que ele mede.** Numa sessão viva, com o
-relógio ANDANDO — nada de `?shot=`, que congela `time` em zero; o HUD sai pela
-MESMA regra do `.bare-mode` injetada pelo harness —, ele anda um percurso de
-poses determinísticas por `placeCamera` e por `camera.fov`, espera um número
-FIXO de quadros entre dois retratos e compara o quadro com o ANTERIOR
-REPROJETADO. A reprojeção é exata porque a câmera é conhecida dos dois lados:
-homografia de rotação + fov para o que está no infinito, e a posição 3D
-publicada pelo próprio app (o Sol na origem, os dez pontos fotométricos, os
-corpos resolvidos do palco, a estrela do catálogo) para o que está perto. Duas
-réguas, as duas que a §5.17 nomeia: **resíduo por pixel** (média de |ΔY| sobre
-um borrão 3×3, mais p99) e **energia em banda alta** (escalar, imune a
-desregistro sub-pixel). E a régua de IDENTIDADE do §5.20, que não depende de
-pixel: as fontes do quadro anterior são PREVISTAS no atual, e uma que caia a
-mais de 1 px da predição — ou que suma longe da borda — reprova no passo em que
-aconteceu. Oito famílias: aproximação ao Sol, a fronteira ponto→corpo do Sol
-(com a banda de 4 px/2 px lida da régua do próprio app), a REVERSÃO dela na
-mesma sessão, pan com volta ao ponto de partida (a persistência do §5.20 — quem
-sai de quadro e volta tem de voltar onde estava), órbita, FOV, aproximação a
-Sirius e a cessão corpo↔ponto da Terra (`cessaoPorDominancia`), 87 passos ao
-todo. **O PISO é o que torna o veredito honesto:** o relógio anda, e granulação
-e coroa mudam sozinhas; cada família mede dois retratos na MESMA pose nas duas
-pontas, e o que se julga é o EXCESSO que o movimento acrescenta — 2 degraus de
-8 bits sobre o piso, 15% de banda alta, 1 px de salto, tudo declarado no
-cabeçalho com a conta de onde saiu. Onde a reprojeção não vale, ele SUSPENDE e
-diz por quê: a paralaxe de um passo é `Δ/1,30 pc` (Proxima) e acima de 1 px o
-resíduo por pixel sai do veredito — é o caso inteiro da aproximação a Sirius,
-onde só a estrela-alvo, de profundidade conhecida, segue julgada.
-**Preço: 2,7 min** a corrida inteira nesta máquina (`640x700`, canvas 640×613),
-e o censo do NORTE já o traz. **Linha de base de 22/08, e ele nasce
-REPROVANDO: 15 defeitos.** O piso é 0,33 degrau em todas as oito famílias e a
-mediana do maior salto por passo fica entre 0,19 e 0,99 px — a casa é estável
-onde nada cruza fronteira. O que reprova: (i) **uma fonte forte que cruza a
-BORDA do quadro leva o clarão dela junto** — bloom é efeito de tela e não sabe
-de fonte fora do quadro —, e o céu inteiro perde 24 a 32% da luz em UM passo de
-4 px; aparece três vezes com a mesma assinatura (pan indo, pan voltando, e o
-zoom de fov ao empurrar a mesma estrela para fora); (ii) Vênus salta 13,4 px na
-VOLTA da fronteira do Sol e não na ida — assinatura de histerese, e é para isto
-que a família da reversão existe; (iii) a Lua salta ~1,9 px nos dois passos da
-rampa de cessão da Terra; (iv) meia dúzia de saltos de 1,0 a 1,1 px, no fio da
-tolerância. Tudo escrito no item 70 das PENDENCIAS, com número; NADA foi
-consertado nesta rodada — a régua nasceu para dizer a verdade primeiro.
-**Segue de pé o que a entrada original dizia:** MB1 **entra antes do M6** (4,02
-M partículas é o que mais pode chiar) e é o único juiz que enxerga o §5.20.)*
+*(MB1 — o juiz de estabilidade temporal — FECHOU em 22/08 (`a11112b`):
+`estabilidade-temporal.mjs`, sessão viva com o relógio andando, o quadro
+comparado com o ANTERIOR REPROJETADO — nove famílias, 97 passos, e nasceu
+REPROVANDO 15 defeitos, todos no item 70 das PENDENCIAS. O que ele mede e o
+que ele NÃO vê está no censo do `NORTE.md`; o resto mora no commit. **Segue
+decidindo: MB1 entra ANTES do M6** — 4,02 M partículas é o que mais pode
+chiar — e é o único juiz que enxerga o §5.20.)*
 
 ### O saldo
 Se as migrações forem executadas inteiras: ~1.560 linhas de produção apagadas
@@ -931,7 +702,7 @@ declarada. E cobre **cinco famílias de movimento**, não só zoom: aproximaçã
 **órbita**, **reversão de sentido** (onde a histerese aparece), **mudança de FOV** e
 as **fronteiras de promoção** (partícula→catálogo→corpo), que é onde a identidade
 pode escorregar. *(22/08: MB1 EXISTE — `scripts/visual/estabilidade-temporal.mjs`,
-oito famílias, 87 passos, 2,7 min; a entrada dele no §4 traz a linha de base. O
+nove famílias, 97 passos, 2,9 min; a entrada dele no §4 traz a linha de base. O
 `voo-ida-e-volta.mjs` continua amostrando 34 degraus **distantes** e continua cego a
 cintilação por construção — é outra régua, para outra pergunta.)* Sem MB1, "não
 ferve" era opinião.
