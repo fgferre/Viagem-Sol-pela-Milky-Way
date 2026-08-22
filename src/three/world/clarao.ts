@@ -36,7 +36,13 @@
 // ============================================================
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
-import { GLSL_COMPRESSAO, bvToColor } from '../shaders/common';
+import {
+  GLSL_BRANCO_DO_NUCLEO,
+  GLSL_COMPRESSAO,
+  bvToColor,
+  glslBracosDeDifracao,
+  glslNucleoEHalo,
+} from '../shaders/common';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
@@ -189,8 +195,14 @@ export const SOL_BV = 0.653;
 /** Tabela de B−V MEDIDO (Onda 1b — SIMBAD/Hipparcos), herdada das
  *  heroes: o `ci` do sidecar acerta ±0,03 em quase todas, mas erra onde
  *  mais se vê (Betelgeuse: 1,50 lá contra 1,85 medido). A tabela é a
- *  autoridade; o `ci` cobre o resto das 1.726. */
-const BV_MEDIDO: Record<string, number> = {
+ *  autoridade; o `ci` cobre o resto das 1.726.
+ *
+ *  ENDEREÇO ÚNICO desde 21/08: `heroStars.ts` tinha a MESMA tabela
+ *  redigitada (`HERO_BV`, diff vazio nas 16 entradas) e agora importa
+ *  esta. Fica aqui, e não lá, porque aqui já morava o `SOL_BV`
+ *  exportado que `planetas/fotometria` consome — e porque a peça de
+ *  autor é a que o M3 pode apagar. */
+export const BV_MEDIDO: Record<string, number> = {
   Sirius: 0.0,
   Canopus: 0.15,
   Arcturus: 1.23,
@@ -230,6 +242,12 @@ void main() {
 }
 `;
 
+// A receita do filme (núcleo + halo + braços) é MONTADA do endereço
+// único em `shaders/common.ts`, o mesmo que `heroStars.ts` monta: a
+// igualdade que o comentário lá dentro promete deixou de ser conferida
+// e passou a ser de CONSTRUÇÃO. O texto montado é byte a byte o de
+// antes — é o que o oráculo de conformidade cobra, agora sobre o
+// `fragmentShader` pronto em vez de sobre os dois fontes.
 const FRAG = /* glsl */ `
 precision highp float;
 
@@ -255,18 +273,15 @@ void main() {
   // de 30/07, byte a byte com heroStars.ts — o oráculo de conformidade
   // cobra a igualdade. O brilho é FIXO como nas heroes (é a forma que
   // lê como estrela); quem varia é presença (uGanho) e tamanho (a lei).
-  float core = exp(-r * r * 90.0) * 3.0;
-  float glow = exp(-r * 4.5) * 0.9;
-  float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
-  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
-  float spikes = (ax + ay) * 0.8;
+  ${glslNucleoEHalo()}
+  ${glslBracosDeDifracao()}
 
   // A MÁSCARA DO SPRITE: dentro do raio do ponto quem desenha é o
   // STAR_FRAG — esta camada continua DALI para fora (sem dupla conta).
   float rPx = r * uMeiaPx;
   float mascara = smoothstep(0.6 * uNucleoPx, uNucleoPx, rPx);
 
-  vec3 col = (vec3(1.0, 0.98, 0.95) * core + uCor * (glow + spikes)) * mascara * uGanho;
+  vec3 col = (${GLSL_BRANCO_DO_NUCLEO} * core + uCor * (glow + spikes)) * mascara * uGanho;
   float a = clamp(core + glow + spikes, 0.0, 1.0) * mascara * uGanho;
   vec3 comprimida = comprimir3(col, uBeta);
   gl_FragColor = vec4(comprimida, a);

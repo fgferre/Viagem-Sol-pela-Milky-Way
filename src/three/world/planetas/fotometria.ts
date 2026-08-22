@@ -88,10 +88,10 @@ import type { IdRetrato } from './retrato2026';
 import { IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
 /**
- * (B−V)☉ [R12] — o MESMO número que `SOL_BV` em `heroStars.ts:107`,
- * que já pinta o clarão distante do Sol pela lei do catálogo. Lá ele
- * não é exportado; a igualdade entre os dois é pinada por teste de
- * texto-fonte para a redigitação não poder divergir em silêncio.
+ * (B−V)☉ [R12] — o MESMO número que `SOL_BV` em `world/clarao.ts`, que
+ * já pinta o clarão distante do Sol pela lei do catálogo. Lá ele é
+ * EXPORTADO, então a igualdade entre os dois é pinada por import no
+ * teste, não por regex sobre o fonte.
  */
 export const BV_SOL = 0.653;
 

@@ -7,9 +7,11 @@
 //     declarada sobre o membro mais fraco, saída sempre por rampa,
 //     nunca N+1 clarões acesos.
 //  2. A ELEGIBILIDADE PELA LEI — quem ganha slot é decidido pelo fluxo
-//     (a asa tem de exceder o que o sprite já desenha), nunca por nome:
-//     a identidade "as 16" morreu, e o teste prova que ela emerge da
-//     física quando a câmera está em casa.
+//     (a asa tem de exceder o que o sprite já desenha), nunca por nome,
+//     e o teste prova que a escolha emerge da física quando a câmera
+//     está em casa. (A identidade "as 16" NÃO morreu: as heroes de
+//     autor voltaram em 16/08 e vivem em `heroStars.ts` — esta camada é
+//     que ficou só com o Sol.)
 //  3. A CAMADA DE VERDADE — instancia `ClaraoDeAsas` com o sidecar REAL
 //     do repo (o mesmo molde de lodStellar.test.ts antes do M2):
 //     profundidade pela §5.15, billboards em px pela lei, Sol como
@@ -19,7 +21,9 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import type { StarsMeta } from '../config';
+import { HeroStars } from './heroStars';
 import {
+  BV_MEDIDO,
   ClaraoDeAsas,
   ELEGIVEIS_POR_QUADRO,
   FATOR_DE_ENCHIMENTO_DO_SOL,
@@ -211,11 +215,55 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
-  it('a receita do clarão do Sol é BYTE A BYTE a das heroes — um desenhista só', () => {
+  it('a receita montada é BYTE A BYTE a de antes, nos DOIS shaders', () => {
     // "claramente a regra que desenha sirius é totalmente diferente da
     // que desenha o sol... o desenho de spikes de sirius é muito
-    // superioir" (dono, 16/08). Resposta: o mesmo desenho, cobrado aqui
-    // linha a linha — se alguém "melhorar" um lado só, este oráculo cai.
+    // superioir" (dono, 16/08). Resposta: o mesmo desenho — e desde
+    // 21/08 ele é UMA string (`shaders/common.ts`), não duas iguais.
+    //
+    // O ORÁCULO MUDOU DE ALVO junto, e é essa a prova de pixel-neutro:
+    // antes lia os dois FONTES e cobrava que cada um CONTIVESSE os
+    // números; com o endereço único nenhum dos dois os contém mais.
+    // Quem tem de contê-los é o texto MONTADO — o `fragmentShader` que
+    // chega à GPU. Os blocos abaixo foram copiados byte a byte do texto
+    // de ANTES da unificação: se a montagem mover um espaço, cai aqui.
+    const c = new ClaraoDeAsas(META.named);
+    const h = new HeroStars(META.named);
+    const fragDo = (o: THREE.Object3D) =>
+      ((o as THREE.Mesh).material as THREE.ShaderMaterial).fragmentShader;
+    const fragDoSol = fragDo(c.group.children[0]);
+    const fragDasHeroes = fragDo(h.group.children[0]);
+
+    expect(fragDoSol).toContain(
+      `  float core = exp(-r * r * 90.0) * 3.0;
+  float glow = exp(-r * 4.5) * 0.9;
+  float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
+  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
+  float spikes = (ax + ay) * 0.8;`
+    );
+    // nas heroes o núcleo e os braços levam `uCore` (1,0 nelas): é a
+    // ÚNICA diferença entre os dois, e é o parâmetro da receita
+    expect(fragDasHeroes).toContain(
+      `  float core = exp(-r * r * 90.0) * 3.0 * uCore;
+  float glow = exp(-r * 4.5) * 0.9;
+
+  // spikes de difração
+  float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
+  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
+  float spikes = (ax + ay) * 0.8 * uCore;`
+    );
+    for (const frag of [fragDoSol, fragDasHeroes]) {
+      expect(frag).toContain('vec3(1.0, 0.98, 0.95)');
+    }
+    c.dispose();
+    h.dispose();
+  });
+
+  it('os números da receita NÃO voltam a ser redigitados nos dois fontes', () => {
+    // A VARREDURA INVERTIDA do endereço único, no idioma de
+    // `simbolosProibidos.test.ts`: o que os fontes tinham de conter
+    // agora não podem conter. Sem ela, nada impede a cópia de renascer
+    // — e a cópia só é notada quando alguém corrige um lado só.
     const heroes = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
     const clarao = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
     for (const linha of [
@@ -226,8 +274,8 @@ describe('3. a camada de verdade, com o sidecar real', () => {
       '(ax + ay) * 0.8',
       'vec3(1.0, 0.98, 0.95)',
     ]) {
-      expect(heroes, linha).toContain(linha);
-      expect(clarao, linha).toContain(linha);
+      expect(heroes, linha).not.toContain(linha);
+      expect(clarao, linha).not.toContain(linha);
     }
   });
 
@@ -306,6 +354,31 @@ describe('3. a camada de verdade, com o sidecar real', () => {
 
   it('SOL_BV continua o número medido (a cor do Sol sai da mesma lei)', () => {
     expect(SOL_BV).toBe(0.653);
+  });
+
+  it('BV_MEDIDO é o literal de antes da fusão, entrada por entrada', () => {
+    // A tabela existia DUAS vezes — aqui e como `HERO_BV` em
+    // heroStars.ts, com diff vazio nas 16. A fusão só é honesta se
+    // nenhum número tiver andado no caminho: este é o literal que as
+    // duas cópias tinham no commit anterior, colado inteiro.
+    expect(BV_MEDIDO).toEqual({
+      Sirius: 0.0,
+      Canopus: 0.15,
+      Arcturus: 1.23,
+      'Rigil Kentaurus': 0.71,
+      Vega: 0.0,
+      Capella: 0.8,
+      Rigel: -0.03,
+      Procyon: 0.42,
+      Achernar: -0.16,
+      Betelgeuse: 1.85,
+      Hadar: -0.23,
+      Altair: 0.22,
+      Acrux: -0.26,
+      Aldebaran: 1.54,
+      Spica: -0.23,
+      Antares: 1.83,
+    });
   });
 
   it('o teto de elegíveis por quadro é orçamento + folga de desafiantes', () => {

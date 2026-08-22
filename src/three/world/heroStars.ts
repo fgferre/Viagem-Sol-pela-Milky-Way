@@ -20,7 +20,14 @@
 // ============================================================
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
-import { GLSL_NOISE, bvToColor } from '../shaders/common';
+import {
+  GLSL_BRANCO_DO_NUCLEO,
+  GLSL_NOISE,
+  bvToColor,
+  glslBracosDeDifracao,
+  glslNucleoEHalo,
+} from '../shaders/common';
+import { BV_MEDIDO, SOL_BV } from './clarao';
 
 /** A lente de referência do `uZoom`: tan(29°), a metade do fov padrão
  *  (58°). Era `HERO_ZOOM_TAN_REF` em lodStellar (morta no M2); a
@@ -80,18 +87,15 @@ void main() {
   float farFade = 1.0 - smoothstep(320.0, 900.0, uCamDist);
 
   // núcleo estelar + brilho radial
-  float core = exp(-r * r * 90.0) * 3.0 * uCore;
-  float glow = exp(-r * 4.5) * 0.9;
+  ${glslNucleoEHalo(' * uCore')}
 
   // spikes de difração
-  float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
-  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
-  float spikes = (ax + ay) * 0.8 * uCore;
+  ${glslBracosDeDifracao(' * uCore')}
 
   // cintilação sutil de plasma
   float tw = 0.92 + 0.08 * vnoise(vec3(uSeed * 10.0, uTime * 0.5, uSeed));
 
-  vec3 col = (vec3(1.0, 0.98, 0.95) * core + uColor * (glow + spikes)) * tw;
+  vec3 col = (${GLSL_BRANCO_DO_NUCLEO} * core + uColor * (glow + spikes)) * tw;
   float a = clamp(core + glow + spikes, 0.0, 1.0);
 
   gl_FragColor = vec4(col * nearFade * farFade * uGain,
@@ -99,34 +103,21 @@ void main() {
 }
 `;
 
-// Tabela literal de B-V MEDIDO das 16 heroes (Onda 1b, valores
-// publicados — SIMBAD/Hipparcos). O `ci` do sidecar (HYG v4.4) acerta
+// A tabela de B−V MEDIDO das 16 (Onda 1b, SIMBAD/Hipparcos) e o B−V do
+// Sol vêm de `clarao.ts`, ENDEREÇO ÚNICO desde 21/08. Ela morava aqui
+// também, redigitada como `HERO_BV` — as duas cópias tinham diff vazio
+// nas 16 entradas, e é o tipo de igualdade que só continua verdadeira
+// enquanto ninguém corrige um lado. O `ci` do sidecar (HYG v4.4) acerta
 // 15 delas dentro de ±0,03 do publicado, mas erra onde mais se vê:
 // Betelgeuse vem 1,50 lá contra 1,85 medido — e a supergigante é o
-// retrato do Ato II. A tabela é a autoridade; o `ci` do sidecar cobre
-// qualquer nomeada fora dela; a string espectral não decide mais cor
-// (a da Capella é "M1: comp" — a lei antiga de baldes a pintava de M).
-const HERO_BV: Record<string, number> = {
-  Sirius: 0.0,
-  Canopus: 0.15,
-  Arcturus: 1.23,
-  'Rigil Kentaurus': 0.71,
-  Vega: 0.0,
-  Capella: 0.8,
-  Rigel: -0.03,
-  Procyon: 0.42,
-  Achernar: -0.16,
-  Betelgeuse: 1.85,
-  Hadar: -0.23,
-  Altair: 0.22,
-  Acrux: -0.26,
-  Aldebaran: 1.54,
-  Spica: -0.23,
-  Antares: 1.83,
-};
-
-/** B-V do Sol (medido): a cor do clarão distante sai da MESMA lei. */
-const SOL_BV = 0.653;
+// retrato do Ato II. A tabela é a autoridade; o `ci` cobre qualquer
+// nomeada fora dela; a string espectral não decide mais cor (a da
+// Capella é "M1: comp" — a lei antiga de baldes a pintava de M).
+//
+// O import atravessa para a camada da lei e ISSO NÃO É CONSUMO DA LEI:
+// o que vem é DADO medido (cor de catálogo), não `estrela.ts` — a linha
+// `heroes-de-autor` do cadastro segue `consomeL1: false`, e o teste do
+// cadastro cobra o import de verdade.
 
 function heroColor(bv: number): THREE.Color {
   const [r, g, b] = bvToColor(bv);
@@ -161,7 +152,7 @@ export class HeroStars {
         vertexShader: VERT,
         fragmentShader: FRAG,
         uniforms: {
-          uColor: { value: heroColor(HERO_BV[s.n] ?? s.ci ?? SOL_BV) },
+          uColor: { value: heroColor(BV_MEDIDO[s.n] ?? s.ci ?? SOL_BV) },
           uTime: { value: 0 },
           // seed pelo índice: cintilação idêntica em toda visita
           uSeed: { value: ((heroIndex++ * 0.6180339887) % 1) * 10 },

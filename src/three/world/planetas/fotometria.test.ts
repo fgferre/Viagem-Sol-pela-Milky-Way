@@ -65,9 +65,10 @@ describe('fotometria — a tabela dos 10', () => {
   });
 
   it('o B−V do Sol é o MESMO número de clarao.ts, sem redigitação divergente', () => {
-    // O SOL_BV morava em heroStars.ts (morto no M2) e mudou-se para a
-    // camada do clarão, agora EXPORTADO — a igualdade vira import, não
-    // regex sobre o fonte.
+    // O SOL_BV morava também em heroStars.ts e mudou-se para a camada
+    // do clarão, agora EXPORTADO — a igualdade vira import, não regex
+    // sobre o fonte. Desde 21/08 a peça resgatada importa DAQUI: um
+    // endereço só para o B−V medido, o do Sol e o das 16.
     expect(SOL_BV).toBe(BV_SOL);
   });
 });

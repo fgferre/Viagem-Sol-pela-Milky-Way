@@ -375,6 +375,41 @@ vec3 comprimir3(vec3 x, float b) {
 }
 `;
 
+// ============================================================
+// A RECEITA DO FILME (30/07) — o perfil de UM clarão, num endereço só.
+//
+// Ela desenhava DUAS vezes, com os mesmos sete números: em
+// `world/heroStars.ts` (as 16 heroes de autor) e em `world/clarao.ts`
+// (o clarão de asas do Sol). "Claramente a regra que desenha sirius é
+// totalmente diferente da que desenha o sol... o desenho de spikes de
+// sirius é muito superioir" (dono, 16/08) — a resposta foi UM
+// desenhista, e um desenhista com dois corpos é o desenhista voltando a
+// ser dois na primeira mão que "melhorar" um lado. `clarao.test.ts`
+// cobrava a igualdade lendo os dois FONTES; agora ela é fato de
+// construção, e o oráculo cobra o texto MONTADO dos dois shaders.
+//
+// O PARÂMETRO É UM SUFIXO DE TEXTO, e é o mínimo que reproduz os dois
+// chamadores byte a byte: as heroes multiplicam núcleo e braços por
+// `uCore` (que vale 1,0 nelas — a espinha do disco resolvido) e o Sol
+// não multiplica nada. Sufixo vazio = a forma do Sol.
+//
+// A INDENTAÇÃO DE 2 ESPAÇOS das linhas de continuação faz parte do
+// contrato: o chamador escreve `  ${...}` no corpo do `main`, e é assim
+// que o texto montado sai idêntico ao que estava escrito à mão.
+// ============================================================
+
+/** Núcleo apertado + halo radial. */
+export const glslNucleoEHalo = (fator = ''): string => /* glsl */ `float core = exp(-r * r * 90.0) * 3.0${fator};
+  float glow = exp(-r * 4.5) * 0.9;`;
+
+/** Os dois braços de difração cruzados — o "spike" fino do filme. */
+export const glslBracosDeDifracao = (fator = ''): string => /* glsl */ `float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
+  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
+  float spikes = (ax + ay) * 0.8${fator};`;
+
+/** O branco levemente quente do núcleo — a oitava constante da receita. */
+export const GLSL_BRANCO_DO_NUCLEO = /* glsl */ `vec3(1.0, 0.98, 0.95)`;
+
 // Cor estelar: Planck × CIE 1931 → sRGB linear, normalizado a Y = 1.
 //
 // As cinco âncoras pintadas à mão que existiam aqui tinham dois defeitos

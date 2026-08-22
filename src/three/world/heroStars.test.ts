@@ -5,6 +5,8 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import type { NamedStar } from '../config';
+import { bvToColor } from '../shaders/common';
+import { BV_MEDIDO } from './clarao';
 import { HeroStars, TAN_DA_LENTE_PADRAO } from './heroStars';
 
 function estrela(n: string, m: number, x = 1, y = 0, z = 0): NamedStar {
@@ -43,6 +45,21 @@ describe('as heroes resgatadas — a arte do filme', () => {
     const h = new HeroStars(named);
     h.update(1, new THREE.Vector3(0, 0, 0), TAN_DA_LENTE_PADRAO);
     expect(h.camDistPc[0]).toBeCloseTo(2.6, 6);
+    h.dispose();
+  });
+
+  it('a cor vem da tabela PARTILHADA, não do `ci` do sidecar', () => {
+    // O endereço único do B−V (21/08): a tabela morava redigitada aqui
+    // como `HERO_BV`. Betelgeuse é o caso que separa as duas fontes —
+    // o sidecar traz 1,50 e o medido é 1,85 —, então se o import
+    // virasse decorativo e o `ci` voltasse a mandar, cai aqui.
+    const h = new HeroStars([estrela('Betelgeuse', 0.42)]);
+    const mat = (h.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial;
+    const cor = mat.uniforms.uColor.value as THREE.Color;
+    const [r, g, b] = bvToColor(BV_MEDIDO.Betelgeuse);
+    expect([cor.r, cor.g, cor.b]).toEqual([r, g, b]);
+    // e o `ci` do fixture (0,5) daria OUTRA cor — o teste não é vazio
+    expect(cor.r).not.toBeCloseTo(bvToColor(0.5)[0], 6);
     h.dispose();
   });
 
