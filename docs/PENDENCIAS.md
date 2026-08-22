@@ -75,8 +75,8 @@ demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
 (`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
 `229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
 `2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60**, **66**,
-**67**, **68** e **58** em 22/08 (`a8a3168`, `92f0232`, `64f8ed9`,
-`4c14bfd`, `e4b2295`). O 4 (Atlas com brilho apagado 100×)
+**67**, **68**, **58** e **65** em 22/08 (`a8a3168`, `92f0232`,
+`64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`). O 4 (Atlas com brilho apagado 100×)
 morreu no M1 — `claraoDoAtlas` saiu do código e os dois modos desenham
 igual, decisão do dono cumprida. O **3** e o **44** pousaram com o aceite
 do dono em 17/08.
