@@ -411,7 +411,9 @@ proibidos com o commit que matou cada um; (iii) atualiza `CADASTRO_DE_REPRESENTA
 e o `fatorDeBrilho` correspondente; (iv) **mata a porta `?b*`** que protegia aquela
 representação — o lado A vira captura + teste numérico, nunca ramo de runtime;
 (v) declara o delta aceito **ANTES** nas réguas que já existem (`luz-do-quadro.mjs`,
-`voo-ida-e-volta.mjs`, as 18 vistas A/B) e traz o número **medido** no commit;
+as 18 vistas A/B — e `voo-ida-e-volta.mjs` só quando a migração mexer em transição ou
+histerese: desde 21/08 ele não é obrigatório, é instrumento) e traz o número **medido**
+no commit;
 (vi) a lei devolve valor já comprimido (ou expõe β) — a compressão não é passo, é
 **cláusula de toda migração**.
 

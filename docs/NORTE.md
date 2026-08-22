@@ -133,7 +133,10 @@ Duas cegueiras declaradas:
 
 - **Movimento.** `?shot=` congela o relógio. Nada que só apareça andando
   tem juiz aqui — quem enxerga movimento é `voo-ida-e-volta.mjs`, ida e
-  volta na MESMA sessão.
+  volta na MESMA sessão. **Desde 21/08 ele não é juiz obrigatório**, por
+  decisão do dono: *"essa viagem ida e volta não é mais relevante"*. Fica
+  disponível como instrumento, e roda quando a mudança for de transição ou
+  histerese — que é o que só a ida e volta enxerga.
 - **Referência visual entre 1 e 40 UA.** As vistas `ua2`…`ua2000` existem;
   foto-oráculo nessa faixa, não (item 12).
 
@@ -328,6 +331,7 @@ Não reabrir sem que a condição listada mude.
 | Saturação/lift no pós para “consertar” cor: não | Maquiagem. Cor emerge da física | — |
 | Reduzir vértices para ganhar quadro: ⚠ reaberta | A nuvem custa ~31% do quadro; isso **não** autoriza podar pontos — contagem é imagem | — (já reaberta; entra como troca imagem×quadro, dose medida) |
 | `forgetau` desligado | Dosagem edge calibrada sem extinção nas forjas | Re-dosagem conjunta medida |
+| A ida e volta não é mais juiz obrigatório | Dono em 21/08: *"essa viagem ida e volta não é mais relevante"* — o run inteiro cobrava horas | A mudança ser de transição ou histerese: aí `voo-ida-e-volta.mjs` volta, como instrumento |
 | Pupila adaptativa: não | Dono: o campo estelar nunca esmaece. Medido: 16 stops ao focar Sirius | — |
 
 ---

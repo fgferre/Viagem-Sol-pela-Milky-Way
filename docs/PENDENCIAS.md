@@ -310,6 +310,18 @@ galáctica antes de mexer.
 
 ## BAIXA — dívida interna, ninguém vê
 
+**57.** Palavras dele em 21/08: *"Essa viagem ida e volta não é mais
+relevante. Talvez os testes estejam desatualizados e cobrando preços muito
+altos. Esse run demorou horas…"* — a rodada do item 5 levou 2h20, boa parte
+dela no navegador rodando juiz (`ab-identidade` 52 vistas ×2, `atlas-smoke`
+99 provas, `voo-ida-e-volta` 34 degraus, `filme-ritmo`, `filme-smoke`,
+`luz-do-quadro`, `memoria`).
+O trabalho é o censo dos juízes: o que cada um mede, quanto custa em
+minutos, o que envelheceu — aposentar quem não mede mais nada e reafirmar
+(sem duplicar) a regra que o `AGENTS.md` §7 já tem, rodar só o que mede a
+mudança. **É a primeira tarefa da próxima conversa** — por isso abre a
+BAIXA em vez de fechá-la.
+
 **22.** 35 imagens de referência citadas que não existem, e as 6 fotos
 reais do Sol nunca foram baixadas. As seis passam na régua da bancada;
 o dono nunca as julgou.
