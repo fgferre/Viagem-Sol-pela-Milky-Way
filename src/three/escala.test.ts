@@ -66,10 +66,14 @@ describe('1. os espelhos batem com a fonte', () => {
     expect(Number(m![1])).toBe(ESPELHO_RS_SGR_A_PC);
   });
 
-  // (O espelho do coeficiente do clarão — `0,08 * lum` em heroStars.ts —
-  // morreu no M2 com o clarão de autor: o tamanho é lei (asa Moffat,
-  // estrela.ts), e a varredura INVERTIDA vigia a ressurreição do
-  // coeficiente em simbolosProibidos.test.ts.)
+  // (O espelho do coeficiente `0,08 * lum` saiu daqui no M2, quando o
+  // clarão DA LEI passou a medir tamanho em px de tela pela asa Moffat
+  // (estrela.ts). O coeficiente em si está VIVO desde o resgate das 16
+  // em 16/08 — é o tamanho de autor das heroes —, e nada o vigia: a
+  // varredura invertida de heroStars.ts em simbolosProibidos.test.ts
+  // cobra só o que NÃO renasceu com a peça (a espinha da pupila, o
+  // SunStar, o import de lodStellar). Declarado na nota dos espelhos em
+  // escala.ts; quem unifica é o M3.)
 
   it('escalas das nuvens — world/observedClouds.ts', () => {
     const fonte = ler('src/three/world/observedClouds.ts');

@@ -86,9 +86,11 @@ export const CAMADAS: readonly Camada[] = [
   // `hide.has('nodust')` por quadro no fade dela
   { flag: 'nodust', nome: 'Poeira próxima', viva: true },
   { flag: 'nocat', nome: 'Catálogo HYG', viva: true, icone: '⁂' },
-  // M2 da Lei: `nohero` virou `noclarao` — o que a chave desliga deixou
-  // de ser as 16 heroes de autor e passou a ser a camada do clarão de
-  // asas (a óptica das fontes fortes, por orçamento de fluxo).
+  // M2 da Lei: `nohero` virou `noclarao`. O que a chave desliga são as
+  // DUAS camadas de fonte forte, e voltou a incluir as 16 heroes de
+  // autor com o resgate de 16/08 (`world/heroStars.ts`): o tick esconde
+  // `heroes.group` e o clarão de asas (`world/clarao.ts`, o Sol) pela
+  // mesma `hide.has('noclarao')`.
   { flag: 'noclarao', nome: 'Clarão das estrelas', viva: true, icone: '✦' },
   // o Sol inteiro em cena — o gate por quadro vive em
   // `director/solNoQuadro.ts` (`fios.escondido('nosun')`)

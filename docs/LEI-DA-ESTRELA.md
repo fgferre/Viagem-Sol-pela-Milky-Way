@@ -499,7 +499,8 @@ na âncora, 0,35 → 27, 0,2 → 24, sem bloom → 14 — o excesso era todo o
 atribui à ASA. A pirâmide NÃO foi estendida (o outro caminho do §1):
 com pesos em lei de potência os mips 6+ pesariam < 1e-4 — custo sem
 imagem, escolha declarada em `post.ts`. APAGOU tudo o que a lista
-previa: `heroStars.ts` inteiro, a política de dominância inteira, o
+previa: `heroStars.ts` inteiro (**resgatado no mesmo dia — desvio (f)**),
+a política de dominância inteira, o
 canal `aFade`, `core/pupila.ts` + teste + a espinha de `uExposicao`, o
 clamp `sat` (espinhos = `FRACAO_DOS_ESPINHOS`·pico = 0,0278, calibrada
 por CONTINUIDADE em Sirius; branqueamento suave pico/(pico+4) — item
@@ -518,7 +519,17 @@ para o M7 — o M2 é ÓPTICA e o CME é FONTE (campo E do §5.18, dose nunca
 calibrada), divergência escrita no cadastro; (d) o GATE DE FOTO do
 expoente da asa (2,0–3,0) segue devido ao dono — 2,4 é a semente e as
 capturas `luz-*.png` da escada são as fotos; (e) o joelho pós-bloom foi
-ABSORVIDO com a cadeia contada — quatro curvas, ordem em `post.ts`.
+ABSORVIDO com a cadeia contada — quatro curvas, ordem em `post.ts`;
+(f) **`heroStars.ts` NÃO ficou apagado** — o dono reprovou a substituta e
+mandou exumar a peça do git (`4ca23b7`, de `bd12905`, menos a espinha
+morta da pupila); o director a instancia e as 16 desenham a arte de
+30/07. O que a camada da lei ficou desenhando é SÓ o Sol (`n = 1` em
+`atualizar`), com os 16 slots virando reserva do M3. Preço aberto,
+medido e não pago aqui: catálogo e hero desenham a MESMA estrela juntos,
+sem cessão entre eles — em Sirius o hero põe ~69% da luz de um disco de
+120 px sobre o ponto do catálogo, e nada esmaece quando o outro entra. É
+a dupla-luz que o M3 fecha, com o gate de foto do dono na estética; a
+linha `heroes-de-autor` do cadastro carrega a dívida.
 **A CORREÇÃO DO MESMO DIA, cobrada pelo dono ao abrir o app** (*"tela
 toda branca... o sol procedural fica escondido... os spikes horríveis e
 enormes... esse círculo branco no meio do sol é normal?"*): (1) o clarão
@@ -545,7 +556,11 @@ magnitude própria das cascas (`+ ext·d`, em CPU por bisseção e em GLSL) — 
 sobreviver, um teste prova que casca e catálogo depositam o mesmo fluxo para a mesma
 estrela. Acende `aFocus` e fecha o E3 (item 38) — **e o E3 é a esfera analítica**:
 é assim que uma estrela qualquer ganha corpo ao ser aproximada, com `S`/`C` no
-impostor e `E` por fora, sem uma malha por estrela. **Régua:** as 52 vistas A/B.
+impostor e `E` por fora, sem uma malha por estrela. **Fecha também a dupla-luz
+catálogo ↔ heroes de autor** (desvio (f) do M2): hoje o ponto e o billboard
+desenham a mesma estrela somados, sem cessão nenhuma entre eles, e é aqui que
+uma das duas cede — com o **gate de foto do dono na estética**, que é o que
+mandou a peça de 30/07 voltar. **Régua:** as 52 vistas A/B.
 
 ### M4 — Os nove planetas
 Não são estrelas: consomem o **instrumento** da lei e mantêm a fase MH18. Risco

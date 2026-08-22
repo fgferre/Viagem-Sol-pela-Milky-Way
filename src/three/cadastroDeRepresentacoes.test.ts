@@ -13,7 +13,11 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CADASTRO_DE_REPRESENTACOES, PADRAO_DE_EMISSOR } from './cadastroDeRepresentacoes';
+import {
+  CADASTRO_DE_REPRESENTACOES,
+  PADRAO_DE_EMISSOR,
+  PADRAO_DE_QUAD_ADITIVO,
+} from './cadastroDeRepresentacoes';
 
 const RAIZ = fileURLToPath(new URL('../..', import.meta.url));
 
@@ -61,6 +65,31 @@ describe('a varredura reproduzível — gl_PointSize contra o cadastro', () => {
         emissores.some((e) => e === a || e.startsWith(`${a}/`))
       );
       expect(achado, `${r.id} declara emitir gl_PointSize e a varredura não achou`).toBe(true);
+    }
+  });
+});
+
+describe('a segunda varredura — quem desenha luz em QUAD aditivo', () => {
+  // O buraco que ela fecha: `heroStars.ts` desenha as 16 em billboards e
+  // NUNCA escreve `gl_PointSize`, então a primeira varredura não podia
+  // achá-lo — e o cadastro pôde afirmar por dias que "as 16" tinham
+  // morrido com a peça VIVA e instanciada pelo director. Uma varredura
+  // que não alcança a representação não a vigia.
+  const emissores = TODOS.filter((c) => {
+    const fonte = readFileSync(c, 'utf8');
+    return PADRAO_DE_QUAD_ADITIVO.every((p) => p.test(fonte));
+  }).map((c) => relative(RAIZ, c));
+
+  it('a varredura ENXERGA as heroes de autor (o escape que a fechou)', () => {
+    expect(emissores).toContain('src/three/world/heroStars.ts');
+  });
+
+  it('todo quad aditivo achado no fonte está coberto por uma linha do cadastro', () => {
+    for (const emissor of emissores) {
+      const coberto = CADASTRO_DE_REPRESENTACOES.some((r) =>
+        r.arquivos.some((a) => emissor === a || emissor.startsWith(`${a}/`))
+      );
+      expect(coberto, `${emissor} desenha quad aditivo e não está no cadastro`).toBe(true);
     }
   });
 });

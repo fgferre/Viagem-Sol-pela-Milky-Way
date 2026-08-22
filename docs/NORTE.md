@@ -77,9 +77,11 @@ antigas Ondas 7 e 8 de luz.
 **2. Uma lei de população estelar.** Cascas por bin de M_V e o handoff
 `unresolved(d)` já estão no código. O Sol já é `StellarBody` (instância nº 1).
 *Falta:* star forges e as partículas da galáxia ainda são leis próprias;
-cessão partículas ↔ lâminas (a única dupla-luz sem mecanismo); promoção
-partícula → catálogo → corpo. Detalhe e ordem: `LEI-DA-ESTRELA.md` passos
-E e G.
+DUAS dupla-luzes sem mecanismo — partículas ↔ lâminas, e catálogo ↔ as 16
+heroes de autor (`heroStars.ts`, resgatado em 16/08 por ordem dele: o ponto
+e o billboard somam na mesma estrela, e quem fecha a cessão é o M3, com
+gate de foto); promoção partícula → catálogo → corpo. Detalhe e ordem:
+`LEI-DA-ESTRELA.md` passos E e G.
 
 **3. Um meio volumétrico.** O dado já é único (mesmo campo de densidade). O
 que está duplicado é o integrador: ~430 k sprites na vista externa e um

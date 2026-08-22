@@ -5,8 +5,14 @@
 // é uma tabela no molde de `CADASTRO_DE_ESCALA`, com teste que cobra a
 // coerência contra o fonte (`cadastroDeRepresentacoes.test.ts`): quem
 // declara consumir a lei tem de importá-la; quem declara que não, não pode;
-// e a varredura de emissores (`gl_PointSize`) é REPRODUZÍVEL — o comando é o
-// próprio teste, não uma lembrança.
+// e as varreduras de emissores são REPRODUZÍVEIS — o comando é o próprio
+// teste, não uma lembrança.
+//
+// SÃO DUAS VARREDURAS, e a segunda nasceu de um escape por construção: a
+// primeira só enxerga `gl_PointSize`, e quem desenha luz em QUAD aditivo
+// (as 16 heroes de autor) passava por ela sem ser vista — o cadastro
+// ficou quatro dias afirmando que "as 16" tinham morrido com uma peça
+// VIVA em cena. `PADRAO_DE_QUAD_ADITIVO` fecha esse buraco.
 //
 // `destino` é uma de quatro palavras (§2):
 //   migra        — passa a consumir `estrela.ts` na migração indicada
@@ -113,7 +119,7 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   },
   {
     id: 'heroes',
-    nome: 'o clarão de asas (orçamento de fontes fortes)',
+    nome: 'o clarão de asas (orçamento de fontes fortes) — hoje SÓ o Sol',
     arquivos: ['src/three/world/clarao.ts', 'src/three/director/solNoQuadro.ts'],
     consomeL1: true,
     leiVelhaApagada: true,
@@ -122,9 +128,36 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     migracao: 'M2',
     emiteGlPointSize: false,
     razao:
-      'FECHADO no M2: o clarão de autor (0,08·10^(−0,3m)) e a identidade ' +
-      '"as 16" morreram — a asa Moffat da lei, por orçamento de fluxo com ' +
-      'histerese (§5.21), para o Sol e as nomeadas; profundidade pela §5.15',
+      'FECHADO no M2: a asa Moffat da lei, por orçamento de fluxo com ' +
+      'histerese (§5.21), profundidade pela §5.15. A frase do M2 sobre a ' +
+      'morte da identidade "as 16" CAIU no resgate de 16/08 (ordem do dono, ' +
+      'commit 4ca23b7): a camada desenha só o candidato 0 (`n = 1` em ' +
+      '`atualizar`) e as nomeadas voltaram à arte de autor — linha ' +
+      '`heroes-de-autor` aqui embaixo. Os 16 slots são RESERVA do M3',
+  },
+  {
+    id: 'heroes-de-autor',
+    nome: 'as 16 heroes de autor (billboards da arte de 30/07)',
+    arquivos: ['src/three/world/heroStars.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'migra',
+    migracao: 'M3',
+    // não emite ponto: são QUADS aditivos, achados pela SEGUNDA varredura
+    emiteGlPointSize: false,
+    razao:
+      'VIVA e em cena — o director instancia `HeroStars(meta.named)`. O M2 ' +
+      'apagou a peça e o dono mandou exumá-la do git em 16/08 (4ca23b7); o ' +
+      'cadastro seguiu dizendo que "as 16" tinham morrido, e é essa mentira ' +
+      'que esta linha desfaz. NÃO consome a lei: tamanho, brilho e cor saem ' +
+      'da arte do filme (0,08·10^(−0,3m) em pc, braço 16/2,4, cintilação) — ' +
+      'declarado, não esquecido. A DUPLA-LUZ é o preço aberto: o ponto do ' +
+      'catálogo e o hero desenham a MESMA estrela juntos, sem cessão nenhuma ' +
+      'entre eles (medido em Sirius: ~69% da luz de um disco de 120 px vem ' +
+      'do hero, e nada esmaece o ponto quando ele entra). Quem fecha a ' +
+      'cessão é o M3, com o gate de foto do dono na estética — e o ' +
+      'fatorDeBrilho fica null até a medição na unidade da casa',
   },
   // (a entrada `sunstar` saiu do censo no M1: a classe morreu — o Sol de
   // longe é o próprio `sol-ponto`, e a varredura invertida vigia o nome.)
@@ -173,7 +206,10 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     destino: 'migra',
     migracao: 'M6',
     emiteGlPointSize: false,
-    razao: 'a cessão partículas↔lâminas é a única dupla-luz sem mecanismo nenhum',
+    razao:
+      'a cessão partículas↔lâminas é dupla-luz sem mecanismo nenhum — e desde ' +
+      'o resgate de 16/08 não é a ÚNICA: catálogo↔heroes-de-autor é a outra, ' +
+      'declarada na linha dela e agendada para o M3',
   },
   {
     id: 'glows-do-nucleo',
@@ -298,3 +334,20 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
  * emissores fora da lista da v1 da Lei.
  */
 export const PADRAO_DE_EMISSOR = /gl_PointSize\s*=/;
+
+/**
+ * A SEGUNDA varredura: quem desenha luz em QUAD ADITIVO. As heroes de
+ * autor escapavam da primeira POR CONSTRUÇÃO — billboard não emite
+ * `gl_PointSize` —, e foi assim que uma peça viva ficou fora do censo.
+ * Um arquivo é emissor quando casa com TODOS os padrões da lista.
+ *
+ * Aqui não há coluna irmã (nada como `emiteGlPointSize`): a coluna
+ * existe para a direção ANTI-INFLAÇÃO, que cobra uma declaração; esta
+ * varredura não pede declaração nenhuma — pede só que nada escape. A
+ * obrigação é de mão única: todo emissor achado tem de estar coberto
+ * por alguma linha do cadastro.
+ */
+export const PADRAO_DE_QUAD_ADITIVO: readonly RegExp[] = [
+  /new THREE\.PlaneGeometry\(/,
+  /AdditiveBlending/,
+];
