@@ -788,6 +788,79 @@ try {
     `escada: Esc sobe um degrau por vez (corpo → '${sub1}' → '${d3.degrau}'), e no sistema os botões somem`
   );
 
+  // ---- O CONVITE DO ATLAS (item 73, 22/08) ------------------------
+  // Ele é IRMÃO do convite do voo livre — a mecânica é a mesma peça
+  // (`Spotlight`), e o `voo-smoke` já a julga inteira lá. O que muda, e
+  // é o que se mede aqui, é o CONTEÚDO e a CHAVE: quatro passos com os
+  // gestos do Atlas, e `conviteAtlasVisto` própria, para que ver um
+  // convite não faça o visitante pular o outro.
+  //
+  // A prova começa com o storage LIMPO: convite é marca de primeira
+  // visita, e as provas acima já entraram no modo várias vezes.
+  await sessao.js("window.localStorage.removeItem('viagem-prefs')");
+  await sessao.ir(`atlas=1&${PIN}`);
+  const convite = JSON.parse(await sessao.js(`JSON.stringify((() => {
+    const spot = document.querySelector('.spotlight');
+    const furo = [...document.querySelectorAll('.spotlight-mascara rect')]
+      .map((r) => ({ w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')) }))
+      .find((r) => Number.isFinite(r.w) && r.w > 0 && r.w < window.innerWidth);
+    const alvo = document.querySelector('[data-spot="girar"]');
+    return {
+      existe: Boolean(spot),
+      filhaDireta: Boolean(spot && spot.parentElement.classList.contains('hud-root')),
+      texto: (document.querySelector('.convite-texto') || {}).innerText || '',
+      conta: (document.querySelector('.convite-conta') || {}).innerText || '',
+      furoLargura: furo ? furo.w : null,
+      alvoLargura: alvo ? Math.round(alvo.getBoundingClientRect().width) : null,
+    };
+  })())`));
+  conferir(
+    convite.existe && convite.filhaDireta,
+    'atlas: o convite abre na PRIMEIRA entrada e é filho DIRETO de .hud-root'
+  );
+  conferir(
+    // o `innerText` volta MAIÚSCULO: a caixa alta é do CSS do cartão
+    /^1 de 4$/i.test(convite.conta.trim()) && /girar/i.test(convite.texto),
+    `atlas: o convite tem os QUATRO gestos do modo ("${convite.conta.trim()}" ·`
+      + ` "${convite.texto}")`
+  );
+  // o furo é ANCORADO no pedaço REAL da dica do rodapé: sem isso o
+  // convite apontaria um lugar onde não há nada a lembrar depois
+  conferir(
+    convite.furoLargura !== null && convite.alvoLargura !== null
+      && Math.abs(convite.furoLargura - convite.alvoLargura - 16) <= 2,
+    `atlas: o furo é o retângulo do "arraste — girar" da dica`
+      + ` (${convite.furoLargura} px de furo sobre ${convite.alvoLargura} px de alvo`
+      + ` + 8 de folga de cada lado)`
+  );
+  // "continuar" três vezes chega ao último passo, e "entendi" fecha e
+  // grava a chave PRÓPRIA — não a do voo livre
+  for (let i = 0; i < 3; i++) {
+    await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
+      .find((b) => b.textContent.trim() === 'continuar').click()`);
+    await sleep(120);
+  }
+  const noQuarto = await sessao.js(
+    "(document.querySelector('.convite-conta')||{}).innerText||''"
+  );
+  await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
+    .find((b) => b.textContent.trim() === 'entendi').click()`);
+  await sleep(200);
+  const prefs = await sessao.js("window.localStorage.getItem('viagem-prefs') || ''");
+  conferir(
+    /^4 de 4$/i.test(noQuarto.trim())
+      && (await sessao.js("!!document.querySelector('.spotlight')")) === false
+      && /"conviteAtlasVisto":true/.test(prefs)
+      && !/"conviteVisto":true/.test(prefs),
+    `atlas: o "entendi" fecha e grava a chave PRÓPRIA (${prefs})`
+  );
+  await sessao.ir(`atlas=1&${PIN}`);
+  conferir(
+    (await sessao.js("!!document.querySelector('.spotlight')")) === false,
+    'atlas: RECARGA no mesmo perfil — o convite NÃO reaparece'
+  );
+  await sessao.js("window.localStorage.removeItem('viagem-prefs')");
+
   // ---- o retângulo útil cobre o HUD REAL --------------------------
   // A declaração vive no TS (`retanguloUtilDoAtlas`) e as alturas, no
   // CSS. Sem esta prova as duas só se encontrariam a olho — e o alvo

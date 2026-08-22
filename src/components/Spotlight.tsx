@@ -14,9 +14,12 @@
 // o convite sai, o lembrete fica. A cópia é a da legenda: minúscula,
 // sem exclamação, sem "clique aqui".
 //
-// O convite MORA NO VOO LIVRE e não no Atlas, e isso é decisão de
-// conteúdo, não de arquivo: no Atlas o WASD não voa e clicar num nome
-// ENQUADRA em vez de visitar — os três passos ali seriam falsos.
+// SÃO DOIS CONVITES desde 22/08 (item 73), um por conjunto de gestos —
+// e é decisão de CONTEÚDO, não de arquivo: no voo livre o WASD voa e o
+// clique visita; no Atlas a roda dá zoom, o clique ESCOLHE e o duplo vai.
+// Os três passos de um seriam falsos no outro, e por isso cada um tem a
+// sua chave de storage (`conviteVisto`, `conviteAtlasVisto`):
+// reaproveitar uma faria quem viu um pular o outro.
 //
 // NÃO É DIÁLOGO, de propósito. Ele não prende o foco nem bloqueia nada:
 // o visitante deve poder arrastar o céu ENQUANTO lê "arraste para olhar
@@ -154,18 +157,36 @@ export const PASSOS_DO_CONVITE = [
   { alvo: 'visitar', texto: 'clique num nome para visitar a estrela' },
 ] as const;
 
+/**
+ * OS QUATRO GESTOS DO ATLAS (item 73, 22/08), na ordem em que se
+ * aprendem: girar em volta do que está em quadro, aproximar com a roda,
+ * escolher outro objeto, ir até ele. Os `alvo` são os pedaços da dica do
+ * rodapé do Atlas (`data-spot` no `App`), e o QUARTO aponta o mesmo
+ * pedaço do terceiro de propósito: escolher e ir são o mesmo botão do
+ * mouse, e a dica tem uma linha só para os dois.
+ */
+export const PASSOS_DO_CONVITE_DO_ATLAS = [
+  { alvo: 'girar', texto: 'arraste para girar em volta do que está em quadro' },
+  { alvo: 'zoom', texto: 'a roda aproxima e afasta do objeto escolhido' },
+  { alvo: 'escolher', texto: 'clique num nome para escolher o objeto' },
+  { alvo: 'escolher', texto: 'dois cliques para ir até ele' },
+] as const;
+
 export function Convite({
   passo,
+  passos = PASSOS_DO_CONVITE,
   onPasso,
   onFechar,
 }: {
   passo: number;
+  /** o roteiro: os três do voo livre ou os quatro do Atlas */
+  passos?: readonly { alvo: string; texto: string }[];
   onPasso: (n: number) => void;
   onFechar: () => void;
 }) {
-  const atual = PASSOS_DO_CONVITE[passo];
+  const atual = passos[passo];
   if (!atual) return null;
-  const ultimo = passo === PASSOS_DO_CONVITE.length - 1;
+  const ultimo = passo === passos.length - 1;
   // `onMouseDown` com `preventDefault` no lugar de um `blur()` depois do
   // clique: sem ele o botão FICA COM O FOCO, e a guarda de alvo de
   // formulário do rig engoliria justamente o WASD que o passo 2 acabou
@@ -179,7 +200,7 @@ export function Convite({
       </p>
       <div className="convite-linha">
         <span className="convite-conta">
-          {passo + 1} de {PASSOS_DO_CONVITE.length}
+          {passo + 1} de {passos.length}
         </span>
         {!ultimo && (
           <button type="button" onMouseDown={semRoubarFoco} onClick={onFechar}>

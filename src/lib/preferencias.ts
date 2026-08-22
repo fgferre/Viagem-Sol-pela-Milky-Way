@@ -33,6 +33,15 @@
 export interface Preferencias {
   v: 1;
   conviteVisto?: boolean;
+  /**
+   * O convite do ATLAS já passou? Chave PRÓPRIA, e não a do voo livre
+   * (item 73, 22/08): são dois conjuntos de gestos diferentes — lá o
+   * WASD voa e o clique visita; aqui a roda dá zoom e o clique escolhe.
+   * Reaproveitar `conviteVisto` faria quem viu um pular o outro, nos
+   * dois sentidos, e o visitante chegaria ao modo novo sem nunca ter
+   * lido os gestos dele.
+   */
+  conviteAtlasVisto?: boolean;
 }
 
 const CHAVE = 'viagem-prefs';
@@ -51,6 +60,7 @@ export function lerPreferencias(): Preferencias {
     const p = dado as Record<string, unknown>;
     const envelope: Preferencias = { v: 1 };
     if (p.conviteVisto === true) envelope.conviteVisto = true;
+    if (p.conviteAtlasVisto === true) envelope.conviteAtlasVisto = true;
     return envelope;
   } catch {
     return { v: 1 };

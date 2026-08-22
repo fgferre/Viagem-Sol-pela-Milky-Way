@@ -29,7 +29,7 @@ import {
 import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca, BotaoDaBusca } from './components/PaletaDeBusca';
 import { construirIndice } from './lib/buscaEstrelas';
-import { Convite } from './components/Spotlight';
+import { Convite, PASSOS_DO_CONVITE_DO_ATLAS } from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { useDirector, escolherAlvo } from './hooks/useDirector';
@@ -179,8 +179,16 @@ export default function App() {
    * nascer, e este é o render.
    */
   const [nomeadas, setNomeadas] = useState<readonly NamedStar[]>([]);
-  /** passo do convite de boas-vindas ao voo livre; null = fora do ar */
-  const [convite, setConvite] = useState<number | null>(null);
+  /**
+   * O CONVITE DE BOAS-VINDAS, e ele agora é DOIS (item 73, 22/08): o do
+   * voo livre e o do Atlas, cada um com os seus gestos e a sua chave de
+   * storage. Um estado só, com o `onde` dentro, porque os dois nunca
+   * podem estar na tela ao mesmo tempo — o visitante está numa fase de
+   * cada vez, e dois overlays sobre o mesmo furo seriam dois véus.
+   */
+  const [convite, setConvite] = useState<{ onde: 'voo' | 'atlas'; passo: number } | null>(
+    null
+  );
   /** o ponteiro está capturado AGORA? (F5 — o opt-in do voo livre) */
   const [capturado, setCapturado] = useState(false);
   /** o navegador negou a captura vezes demais e ela parou de se oferecer */
@@ -407,15 +415,26 @@ export default function App() {
   // URL. Em tela de toque o convite não abre — dois dos três gestos são
   // de teclado e mouse, e ensinar WASD a quem não tem teclado é mentir.
   useEffect(() => {
-    if (phase !== 'free') return;
-    if (lerPreferencias().conviteVisto) return;
+    if (phase !== 'free' && phase !== 'atlas') return;
+    const onde = phase === 'free' ? 'voo' : 'atlas';
+    const chave = onde === 'voo' ? 'conviteVisto' : 'conviteAtlasVisto';
+    if (lerPreferencias()[chave]) return;
+    // O GATE DE TELA DE TOQUE VALE PARA OS DOIS, e por razões irmãs: no
+    // voo livre dois dos três gestos são de teclado; no Atlas o gesto do
+    // meio é a RODA, que não existe em tela de toque. Ensinar um gesto
+    // que o aparelho não tem é mentir.
     if (window.matchMedia?.('(pointer: coarse)').matches) return;
-    setConvite(0);
+    setConvite({ onde, passo: 0 });
   }, [phase]);
 
   const fecharConvite = () => {
+    if (convite) {
+      gravarPreferencia(
+        convite.onde === 'voo' ? 'conviteVisto' : 'conviteAtlasVisto',
+        true
+      );
+    }
     setConvite(null);
-    gravarPreferencia('conviteVisto', true);
   };
 
   // pausa via botão ou tecla Espaço — um filme de 4 min precisa disso
@@ -697,7 +716,20 @@ export default function App() {
               que o dono chamou de monstro: a roda pulava de degrau em vez
               de dar zoom, e o clique reposicionava em vez de escolher. Os quatro
               verbos passam a ser os do padrão da indústria — girar, zoom,
-              ir, voltar —, e cada um é o que o gesto faz de verdade.
+              escolher, voltar —, e cada um é o que o gesto faz de verdade.
+
+              O VERBO DO CLIQUE VIROU "ESCOLHER" quando o clique passou a
+              escolher (22/08, o passo do duplo clique). "IR" não some do
+              produto: quem ensina os dois cliques é o CONVITE DO ATLAS,
+              que aponta justamente este pedaço da linha, e o botão "⊕
+              Aproximar" da linha de contexto é o mesmo gesto com nome.
+              Pôr os dois na dica custaria 80 caracteres, e o orçamento
+              medido abaixo é 68.
+
+              OS TRÊS `data-spot` são os alvos do convite do Atlas: o
+              furo do Spotlight se abre sobre o pedaço REAL da dica que
+              repete aquele gesto para sempre — quando o convite sai, o
+              lembrete fica.
 
               O COMPRIMENTO É ORÇAMENTO, não gosto: a dica mora na mesma
               coluna da máquina do tempo, então cada linha que ela ganha
@@ -707,15 +739,19 @@ export default function App() {
               apertado da faixa declarada (desde o item 9 ela desce a
               768), a quebra da 2ª para a 3ª linha acontece entre 68 e 70
               caracteres, e a 3ª linha estoura a base declarada de então
-              (0,328 contra 0,310). A linha nova tem 58 caracteres contra
-              os 67 da anterior — desce dentro do orçamento, nunca sobe.
+              (0,328 contra 0,310). A linha tinha 67 caracteres antes
+              desta obra, caiu para 58 e voltou a 64 com "escolher" —
+              dentro do orçamento, com quatro de folga, e o `a11y.mjs`
+              é quem cobra (base declarada ≥ medida).
 
               E ELA SOME DEPOIS DO PRIMEIRO ARRASTO (decisão do dono nos
               mockups), por OPACIDADE e com a caixa no lugar: ver
               `.free-hint.apagada`. Tirá-la do fluxo cresceria o retângulo
               útil e a câmera daria um pulo no meio da sessão. */}
           <div className={`free-hint ${girouNoAtlas ? 'apagada' : ''}`}>
-            arraste — girar · roda — zoom · clique — ir · esc — voltar
+            <span data-spot="girar">arraste — girar</span> ·{' '}
+            <span data-spot="zoom">roda — zoom</span> ·{' '}
+            <span data-spot="escolher">clique — escolher</span> · esc — voltar
           </div>
 
           {/* O SELO. Lê o estado da vista do Director a cada render — e o
@@ -874,21 +910,34 @@ export default function App() {
         onCamada={alternarCamada}
         urlParaCopiar={() => urlComMomento().toString()}
         onReverConvite={
-          hud.dicaDeVoo
+          hud.dicaDeVoo || phase === 'atlas'
             ? () => {
                 setAjustes(false);
-                setConvite(0);
+                setConvite({ onde: phase === 'atlas' ? 'atlas' : 'voo', passo: 0 });
               }
             : undefined
         }
       />
 
       {/* O CONVITE — filho DIRETO de .hud-root como todo overlay da casa
-          (a regra do .bare-mode só alcança filhos diretos). Ele só existe
-          onde os três gestos são verdade: no voo livre, onde a dica que
-          ele aponta está na tela. */}
-      {convite !== null && hud.dicaDeVoo && (
-        <Convite passo={convite} onPasso={setConvite} onFechar={fecharConvite} />
+          (a regra do .bare-mode só alcança filhos diretos). Cada fase
+          tem o SEU: os três gestos do voo livre apontam a dica de voo;
+          os quatro do Atlas apontam a dica do rodapé do modo. Os dois só
+          existem onde a dica que eles furam está na tela. */}
+      {convite?.onde === 'voo' && hud.dicaDeVoo && (
+        <Convite
+          passo={convite.passo}
+          onPasso={(n) => setConvite({ onde: 'voo', passo: n })}
+          onFechar={fecharConvite}
+        />
+      )}
+      {convite?.onde === 'atlas' && phase === 'atlas' && !girouNoAtlas && (
+        <Convite
+          passo={convite.passo}
+          passos={PASSOS_DO_CONVITE_DO_ATLAS}
+          onPasso={(n) => setConvite({ onde: 'atlas', passo: n })}
+          onFechar={fecharConvite}
+        />
       )}
 
       {/* tela de título / fim — montada desde o primeiro frame, por baixo

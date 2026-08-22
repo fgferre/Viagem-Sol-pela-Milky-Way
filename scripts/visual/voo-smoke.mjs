@@ -144,13 +144,36 @@ try {
     (await js("!!document.querySelector('.spotlight')")) === false,
     'RECARGA no mesmo perfil: o convite NÃO reaparece'
   );
-  // e ele é do voo livre, não do filme nem do Atlas
+  // E ELE NÃO INVADE O ATLAS — que desde 22/08 (item 73) tem o SEU,
+  // com os gestos de lá e a chave `conviteAtlasVisto` própria. O que
+  // este veredito guarda é a fronteira: o convite do voo livre ensina
+  // WASD, e no Atlas o WASD não voa. Quem julga o convite do Atlas por
+  // inteiro é o `a11y.mjs`; aqui basta ver que o texto é OUTRO.
   await js("localStorage.removeItem('viagem-prefs')");
   await sessao.ir('atlas=1&q=cinema&shot=1');
+  const noAtlas = await js(`(() => {
+    const t = (document.querySelector('.convite-texto') || {}).innerText || '';
+    return JSON.stringify({
+      existe: !!document.querySelector('.spotlight'),
+      texto: t,
+      conta: (document.querySelector('.convite-conta') || {}).innerText || '',
+    });
+  })()`);
+  const doAtlas = JSON.parse(noAtlas);
   conferir(
-    (await js("!!document.querySelector('.spotlight')")) === false,
-    'o convite não invade o Atlas (lá o WASD não voa e clicar num nome enquadra)'
+    doAtlas.existe && !/w a s d/i.test(doAtlas.texto) && /4/.test(doAtlas.conta),
+    `o convite do voo livre não invade o Atlas — lá o roteiro é outro`
+      + ` ("${doAtlas.conta.trim()}" · "${doAtlas.texto}")`
   );
+  // ...e fechar o do Atlas não marca o do voo livre como visto
+  await js(`[...document.querySelectorAll('.convite-linha button')]
+    .find((b) => b.textContent.trim() === 'pular').click()`);
+  await sessao.ir(`${VOO}&shot=1`);
+  conferir(
+    (await js("!!document.querySelector('.spotlight')")) === true,
+    'e pular o do Atlas NÃO consome o do voo livre — são duas chaves'
+  );
+  await js("localStorage.removeItem('viagem-prefs')");
 
   // ---- 4: o bare-mode o apaga (as 18 vistas não o veem) ------------
   await sessao.ir(`${VOO}&shot=2`);
