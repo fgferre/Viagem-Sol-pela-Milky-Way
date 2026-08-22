@@ -862,6 +862,83 @@ try {
   })()`);
   conferir(engoliu === 'true', `e a rolagem da página morre no canvas (defaultPrevented=${engoliu})`);
 
+  // ---- 15b: `?d=` ENTRA NO ESPELHO; `?ver=` VIRA SÓ LEITURA -------
+  // A distância era a única grandeza da vista que o link não sabia
+  // contar: `?ver=` diz "no corpo" e não sabe dizer "no corpo, a 2,4
+  // raios dele". As duas metades da porta se medem aqui, e nenhuma
+  // delas cabe numa bancada — o escritor é o `urlComMomento` do React e
+  // o leitor é o boot, e entre um e outro há uma NAVEGAÇÃO.
+  //
+  // O escritor vivo é chamado pelo mesmo caminho que o `busca-smoke`
+  // usa: trocar a qualidade reescreve a URL por `replaceState` com o
+  // texto do "copiar link". Nada de montar a query à mão — o que se
+  // prova é o ESPELHO, não a nossa ideia dele.
+  const espelhar = async () => {
+    await sessao.js(`(() => {
+      const sel = document.querySelector('.controls-bar select');
+      sel.value = sel.value === 'alta' ? 'cinema' : 'alta';
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sessao.assentar();
+    return sessao.js('location.search');
+  };
+
+  await sessao.ir('atlas=1&foco=saturno&q=cinema&shot=1');
+  await sessao.assentar();
+  for (let i = 0; i < 6; i++) await rodar(-100);
+  await sleep(800);
+  const antesDoLink = await doZoom();
+  const linkComD = await espelhar();
+  const dEscrito = new URLSearchParams(linkComD).get('d');
+  conferir(
+    dEscrito !== null && /^\d+(\.\d+)?$/.test(dEscrito)
+      && String(Number(Number(dEscrito).toPrecision(4))) === dEscrito,
+    `o espelho escreve ?d= com 4 algarismos ('${dEscrito}' contra`
+      + ` ${(antesDoLink.dist / antesDoLink.raio).toFixed(6)} raios medidos)`
+  );
+  conferir(
+    !linkComD.includes('ver='),
+    `...e NÃO escreve mais ?ver= (${linkComD})`
+  );
+  await sessao.ir(linkComD.replace(/^\?/, ''));
+  await sessao.assentar();
+  const doLink = await doZoom();
+  const erro = Math.abs(doLink.dist / antesDoLink.dist - 1);
+  conferir(
+    erro < 5e-4 && doLink.foco === antesDoLink.foco,
+    `a ida e volta reproduz a distância a ${(erro * 100).toFixed(4)}%`
+      + ` (${(antesDoLink.dist / antesDoLink.raio).toFixed(4)} →`
+      + ` ${(doLink.dist / doLink.raio).toFixed(4)} raios de "${doLink.foco}")`
+  );
+  // e ela SOBREVIVE à efeméride, que chega sempre depois do boot e
+  // refaz o enquadramento do degrau vivo — era aqui que um `?d=` sem
+  // dono voltaria sozinho para o enquadramento, um segundo depois
+  await sleep(1500);
+  const depoisDaFonte = await doZoom();
+  conferir(
+    Math.abs(depoisDaFonte.dist / doLink.dist - 1) < 5e-4,
+    `...e sobrevive à efeméride que chega tarde`
+      + ` (${(depoisDaFonte.dist / depoisDaFonte.raio).toFixed(4)} raios)`
+  );
+
+  // `?ver=corpo` LEGADO pousa no MESMO enquadramento de sempre: sem
+  // `?d=` a distância é a conta pura, e a conta pura é bit a bit a de
+  // antes desta obra. O oráculo é o GESTO — descer ao corpo pela escada
+  // — e o veredito é o md5, não um número de câmera.
+  await sessao.ir(`atlas=1&foco=terra&ver=corpo&jd=EPOCA&${PIN}`);
+  await sessao.assentar();
+  const porPortaLegada = await sessao.md5();
+  const pinadoNaPorta = await sessao.js('window.__director.atlas.distanciaEstaPinada');
+  await sessao.ir(`atlas=1&jd=EPOCA&${PIN}`);
+  await sessao.js("window.__director.focarNoCorpo('earth', 'corpo')");
+  await sessao.assentar();
+  const peloGesto = await sessao.md5();
+  conferir(
+    porPortaLegada === peloGesto && pinadoNaPorta === false,
+    `?ver=corpo legado pousa no MESMO md5 do gesto, e sem pino de distância`
+      + ` (${porPortaLegada} vs ${peloGesto})`
+  );
+
   // ---- 16: O POLO DO CORPO NO ALTO (Onda 7) ------------------------
   // O `up` era a constante do polo da eclíptica em toda parte. No degrau
   // "corpo" ele passa a ser o EIXO DO PLANETA — e os dois são coisas

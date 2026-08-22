@@ -562,6 +562,24 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    * mesma lei, e o eixo ESCALA continua saindo da geometria sozinho.
    */
   neutra('ver', 'degrau do enquadramento (corpo ou órbita)'),
+  /**
+   * `?d=` — A DISTÂNCIA AO ALVO, em RAIOS DELE (item 73, 22/08). A
+   * grandeza que a roda escreve, e a que faltava para o link contar a
+   * vista inteira: o degrau (`?ver=`) sabia dizer "no corpo" e não sabia
+   * dizer "a 2,4 raios dele".
+   *
+   * POR QUE EM RAIOS DO ALVO e não em UA: raio do alvo é escala-livre,
+   * é o que se lê ("1,8 raios de Saturno") e sobrevive à troca de alvo.
+   * E não como fator sobre o enquadramento porque AQUELE número anda com
+   * `?ui=` e com o tamanho da janela — o link mostraria outra coisa
+   * noutra tela.
+   *
+   * Mesma família de `?foco=`/`?ver=`/`?pos=`: diz DE ONDE se olha,
+   * nunca com quanta luz. O eixo ESCALA continua saindo da GEOMETRIA
+   * sozinho — chegar a 2 raios do Sol move o selo por conta própria,
+   * como move o clique num nome, que não tem porta nenhuma.
+   */
+  neutra('d', 'distância ao alvo, em raios dele'),
   neutra('t', 'instante da viagem'),
   neutra('play', 'retomar a viagem andando'),
   neutra('freeze', 'congelar o relógio da viagem'),

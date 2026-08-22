@@ -294,3 +294,55 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
     expect(APP).toMatch(/roda — zoom/);
   });
 });
+
+// ============================================================
+// A PORTA `?d=` — o espelho da roda (item 73, 22/08). A distância era a
+// única grandeza da vista que o link não sabia contar. O que se cobra
+// aqui é a FIAÇÃO: que haja UM escritor, UM leitor, e que `?ver=` tenha
+// perdido a caneta — duas portas para a mesma grandeza são duas
+// verdades (AGENTS §4), e a que sabe menos ganharia na leitura.
+// A ida e volta viva é do `atlas-smoke`: entre o escritor e o leitor há
+// uma NAVEGAÇÃO, que bancada nenhuma tem.
+// ============================================================
+const ESPELHO = readFileSync(new URL('../hooks/useEspelhoDaUrl.ts', import.meta.url), 'utf8');
+const BOOT = readFileSync(new URL('../hooks/useDirector.ts', import.meta.url), 'utf8');
+const SELO = readFileSync(new URL('./selo.ts', import.meta.url), 'utf8');
+
+describe('?d= entra no espelho; ?ver= vira só leitura', () => {
+  it('o espelho ESCREVE a distância e APAGA o degrau', () => {
+    const escritor = ESPELHO.slice(
+      ESPELHO.indexOf('  const urlComMomento = () => {'),
+      ESPELHO.indexOf('  const changeQuality')
+    );
+    expect(escritor).toContain("url.searchParams.set('d', String(Number(emRaios.toPrecision(4))))");
+    expect(escritor).toContain("url.searchParams.delete('ver');");
+    // ...e não há um segundo caminho que ressuscite a escrita do degrau
+    expect(ESPELHO).not.toContain("searchParams.set('ver'");
+  });
+
+  it('a porta se declara no REGISTRO do selo, como toda porta da casa', () => {
+    expect(SELO).toContain("neutra('d', 'distância ao alvo, em raios dele')");
+    // e `?ver=` continua LIDO: é o contrato com todo link já copiado
+    expect(SELO).toContain('export function lerPortaVer');
+    expect(BOOT).toContain("lerPortaVer(query.get('ver'))");
+  });
+
+  it('o leitor vem DEPOIS do alvo — a régua do ?d= é o raio dele', () => {
+    const boot = BOOT.slice(BOOT.indexOf("const foco = query.get('foco');"));
+    expect(boot).toContain('d.pinarEmRaios(raios);');
+    expect(boot.indexOf('lerPortaVer')).toBeLessThan(boot.indexOf('pinarEmRaios'));
+    // lixo não vira câmera: a porta avisa e a vista fica no enquadramento
+    expect(boot).toContain("console.warn('?d= inválido:'");
+  });
+
+  it('o `?d=` do link sobrevive à efeméride que chega tarde', () => {
+    const ESCADA = readFileSync(new URL('./director/escada.ts', import.meta.url), 'utf8');
+    const tarde = ESCADA.slice(
+      ESCADA.indexOf('  reenquadrarAposEfemeride()'),
+      ESCADA.indexOf('  pinarEmRaios(')
+    );
+    expect(tarde).toContain('if (this.pinoDeBoot !== null) this.pinarEmRaios(this.pinoDeBoot);');
+    // ...e morre no primeiro gesto: a partir dali quem manda é a mão
+    expect(DIRECTOR).toContain('this.escada.esquecerPinoDoLink();');
+  });
+});

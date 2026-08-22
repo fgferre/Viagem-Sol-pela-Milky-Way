@@ -1,7 +1,7 @@
 // ============================================================
 // O BOOT do Director — sonda de GL, LabelCanvas, os 13 fios de evento
 // e a leitura das portas de URL do init (?q, ?tone, ?exp, ?pos, ?look,
-// ?fov, ?atlas, ?foco, ?ver, ?t, ?play, ?freeze). Morava no App.tsx
+// ?fov, ?atlas, ?foco, ?ver, ?d, ?t, ?play, ?freeze). Morava no App.tsx
 // (onda da arquitetura, corte 6) — a semântica é a mesma, linha a
 // linha, e este arquivo é GOVERNADO pelo selo (lê portas de URL).
 // ============================================================
@@ -212,6 +212,17 @@ export function useDirector(fios: FiosDoDirector) {
             // é o que ficou de fato em quadro (precedente do `?pos=`)
             else console.warn('?foco= não encontrou alvo:', foco);
           }
+          // `?d=` — A DISTÂNCIA AO ALVO, em raios dele (item 73). Vem
+          // DEPOIS do `?foco=`/`?ver=` porque é sobre o alvo deles que
+          // ela se mede: a régua é o raio de enquadramento do alvo vivo,
+          // e trocar o alvo depois de pinar apagaria o pino por lei
+          // (alvo novo nasce no enquadramento). Ausente = a conta de
+          // sempre, bit a bit — é o que faz todo link já copiado
+          // reproduzir a vista sem mudar um pixel.
+          const raios = Number(query.get('d'));
+          if (query.has('d') && Number.isFinite(raios) && raios > 0) {
+            d.pinarEmRaios(raios);
+          } else if (query.get('d')) console.warn('?d= inválido:', query.get('d'));
         } else if (!pos && (hasTime || query.get('play'))) {
           d.play();
           if (momento !== undefined) d.seek(momento);

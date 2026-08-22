@@ -491,7 +491,23 @@ try {
   await sessao.assentar();
   const naLua = await contexto(sessao);
   conferir(naLua === 'Lua', `a escolha põe a LUA em quadro ("${naLua}")`);
-  // o link vivo carrega o degrau: foco=lua&ver=corpo (espelho, ?jd)
+  // O LINK VIVO CARREGA A DISTÂNCIA: `foco=lua&d=…` (item 73, 22/08).
+  // Era `foco=lua&ver=corpo`, e o degrau deixou de ser a grandeza que
+  // descreve a vista quando a roda virou zoom contínuo — entre "no
+  // corpo" e "no corpo, a 2,4 raios dele" a porta velha não distingue.
+  // Aqui a roda anda ANTES do espelho, que é o que faz o link ter o que
+  // contar; `?ver=` some da escrita e continua valendo na leitura.
+  for (let i = 0; i < 3; i++) {
+    await sessao.js(`(() => document.querySelector('canvas').dispatchEvent(
+      new WheelEvent('wheel', { deltaY: -100, deltaMode: 0, bubbles: true, cancelable: true })))()`);
+  }
+  // a inércia da roda é curta (meia-vida 87 ms, zona morta em ~0,7 s):
+  // esperar 1,2 s é esperar o GESTO acabar, e é obrigatório — ler a
+  // distância com o embalo andando compararia dois instantes
+  await sleep(1200);
+  const emRaios = () =>
+    sessao.js('window.__director.atlas.distancia / window.__director.atlas.raioDoAlvo');
+  const raiosNaLua = await emRaios();
   await sessao.js(`(() => {
     const sel = document.querySelector('.controls-bar select');
     sel.value = 'alta';
@@ -499,10 +515,21 @@ try {
   })()`);
   await sessao.assentar();
   const urlDaLua = await sessao.js('location.search');
+  // e agora o link é ABERTO: o veredito é a vista que ele reproduz, não
+  // o texto que ele carrega
+  await sessao.ir(urlDaLua.replace(/^\?/, ''));
+  await sessao.assentar();
   const voltouLua = await contexto(sessao);
+  const raiosDeVolta = await emRaios();
   conferir(
-    voltouLua === 'Lua' && urlDaLua.includes('foco=lua') && urlDaLua.includes('ver=corpo'),
-    `o degrau da Lua reproduz por URL (${urlDaLua} → "${voltouLua}")`
+    voltouLua === 'Lua'
+      && urlDaLua.includes('foco=lua')
+      && /[?&]d=/.test(urlDaLua)
+      && !urlDaLua.includes('ver=')
+      && Math.abs(raiosDeVolta / raiosNaLua - 1) < 5e-4,
+    `a vista da Lua reproduz por URL com a DISTÂNCIA dentro (${urlDaLua} →`
+      + ` "${voltouLua}" a ${raiosDeVolta.toFixed(4)} raios, contra`
+      + ` ${raiosNaLua.toFixed(4)} medidos antes do link)`
   );
 
   // ---- 7: a paleta não vaza no ?shot=2 -----------------------------

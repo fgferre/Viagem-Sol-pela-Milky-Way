@@ -104,6 +104,22 @@ export class Escada {
   /** o corpo em FOCO no Atlas (id do retrato) — só a escada escreve;
    *  o director o lê para o selo (o ΔEV de `evLuzDoFoco` é dele). */
   focoCorpoId: string | null = null;
+  /**
+   * O `?d=` QUE CHEGOU PELO LINK, em raios do alvo — e ele precisa
+   * SOBREVIVER à efeméride que chega tarde.
+   *
+   * A efeméride do Atlas nasce no `fetch` da entrada no modo, então ela
+   * sempre chega DEPOIS do boot: quando chega,
+   * `reenquadrarAposEfemeride` refaz o enquadramento do degrau vivo, e
+   * `focar` zera o pino por lei (alvo novo nasce no enquadramento). Sem
+   * este campo, todo link com `?d=` reproduzia a vista por um segundo e
+   * então voltava sozinho para o enquadramento — link que não reproduz
+   * a vista não é link.
+   *
+   * Morre no primeiro gesto do visitante (a roda e o Esc o limpam): a
+   * partir dali quem manda é a mão, não o endereço.
+   */
+  private pinoDeBoot: number | null = null;
 
   /** o rig do Atlas — a MESMA instância do director, com o nome que os
    *  textos dos métodos exigem (`this.atlas.focar`/`recompor`/`apply`) */
@@ -916,6 +932,7 @@ export class Escada {
     if (this.phase !== 'atlas') return false;
     if (this.atlas.distanciaEstaPinada) {
       this.atlas.pinarDistancia(null);
+      this.pinoDeBoot = null;
       this.enquadrarAgora();
       this.teletransportou();
       return true;
@@ -983,6 +1000,35 @@ export class Escada {
       this.focoCorpoId = null;
       this.focarNoCorpo(id, 'orbita');
     }
+    // o `?d=` do link sobrevive ao reenquadramento — ver `pinoDeBoot`
+    if (this.pinoDeBoot !== null) this.pinarEmRaios(this.pinoDeBoot);
+  }
+
+  /**
+   * PINA A DISTÂNCIA em RAIOS do alvo — a porta `?d=` (item 73). O rig
+   * trabalha em parsec porque é isso que a câmera consome; a URL fala
+   * em raios porque é isso que sobrevive à troca de alvo e de tela, e a
+   * conversão é a régua do enquadramento vivo (`raioDoAlvo`).
+   *
+   * O valor é GRAMPEADO pelo rig entre o piso e o teto do alvo, nunca
+   * recusado: `?d=0.1` num planeta não vira erro, vira o topo das
+   * nuvens — que é a leitura certa de "o mais perto que dá".
+   */
+  pinarEmRaios(raios: number | null) {
+    if (this.phase !== 'atlas') return;
+    this.pinoDeBoot = raios;
+    if (raios === null || !Number.isFinite(raios) || raios <= 0) {
+      this.atlas.pinarDistancia(null);
+      this.enquadrarAgora();
+      return;
+    }
+    this.atlas.pinarDistancia(raios * this.atlas.raioDoAlvo);
+    this.enquadrarAgora();
+  }
+
+  /** o visitante mexeu na roda: o `?d=` do link deixa de mandar. */
+  esquecerPinoDoLink() {
+    this.pinoDeBoot = null;
   }
 
   /**

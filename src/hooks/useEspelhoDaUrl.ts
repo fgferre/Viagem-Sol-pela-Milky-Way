@@ -126,14 +126,29 @@ export function useEspelhoDaUrl(dep: {
     const emQuadro = foco === null ? null : chaveDoFoco(foco, indice);
     if (phase === 'atlas' && emQuadro) url.searchParams.set('foco', emQuadro);
     else url.searchParams.delete('foco');
-    // O DEGRAU (F2b/D7) viaja com o foco — espelho, precedente `?jd=`:
-    // `?ver=corpo` só entra quando o enquadramento está de fato no
-    // degrau do corpo (a Lua inclusive: `?foco=lua&ver=corpo` reproduz
-    // o degrau dela); na órbita a porta sai, porque órbita é o default.
-    const ver = directorRef.current?.verDaEscada;
-    if (phase === 'atlas' && emQuadro && ver === 'corpo') {
-      url.searchParams.set('ver', 'corpo');
-    } else url.searchParams.delete('ver');
+    // `?ver=` VIRA SÓ LEITURA (item 73, 22/08). Ele espelhava o DEGRAU
+    // — "no corpo" ou "na órbita" —, e o degrau deixou de ser a
+    // grandeza que descreve a vista no dia em que a roda virou zoom
+    // contínuo: entre "no corpo" e "no corpo, a 2,4 raios dele" a porta
+    // não sabe distinguir. Quem espelha agora é `?d=`, e escrever as
+    // duas seriam DUAS PORTAS PARA A MESMA GRANDEZA (AGENTS §4), com a
+    // pior consequência possível — a que sabe menos ganhando na leitura.
+    //
+    // LER continua valendo, e é o contrato: todo link `?foco=x&ver=corpo`
+    // já copiado pousa no MESMO enquadramento de sempre (`lerPortaVer`
+    // em `selo.ts` e o bloco do `useDirector` ficam inteiros). O que
+    // some é a ESCRITA — e ela some sempre, inclusive quando a porta
+    // chegou pela URL: espelho reescreve o que a vista diz agora.
+    url.searchParams.delete('ver');
+    // A DISTÂNCIA AO ALVO, em RAIOS dele — 4 algarismos significativos.
+    // Ela entra SÓ quando o visitante pinou (mexeu na roda ou chegou com
+    // `?d=`): sem pino a vista É o enquadramento, e um link que
+    // escrevesse a distância calculada congelaria no endereço um número
+    // que anda com `?ui=` e com o tamanho da janela.
+    const emRaios = phase === 'atlas' ? directorRef.current?.distanciaEmRaios : null;
+    if (emRaios !== null && emRaios !== undefined && Number.isFinite(emRaios)) {
+      url.searchParams.set('d', String(Number(emRaios.toPrecision(4))));
+    } else url.searchParams.delete('d');
     // O INSTANTE DO CÉU (F4) viaja junto — pelo mesmo motivo do `t=`: o
     // "voltar ao brilho real" ainda pode RECARREGAR a página por esta
     // URL (e o F5 de quem trocou de tier a relê), e sem esta linha o

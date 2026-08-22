@@ -384,6 +384,20 @@ export class AtlasRig {
     return this.distanciaPinada !== null;
   }
 
+  /**
+   * A DISTÂNCIA EM RAIOS DO ALVO — a unidade da porta `?d=`, e a única
+   * que sobrevive à troca de alvo e à troca de tela. `null` quando não
+   * há régua (raio zero, o instante antes do primeiro enquadramento).
+   */
+  get distanciaEmRaios(): number | null {
+    return this.raio > 0 ? this.distancia / this.raio : null;
+  }
+
+  /** o alvo tem PAI (o degrau "lua")? — o religador do relógio pergunta */
+  get temPai(): boolean {
+    return this.pai !== null;
+  }
+
   /** o raio de enquadramento do alvo vivo, em pc — a régua do `?d=`. */
   get raioDoAlvo(): number {
     return this.raio;

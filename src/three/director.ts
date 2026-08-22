@@ -725,6 +725,8 @@ export class Director {
           estalos
         );
         this.atlas.pinarDistancia(d);
+        // o `?d=` que veio no link deixa de mandar no primeiro gesto
+        this.escada.esquecerPinoDoLink();
         this.perturbar();
       },
     });
@@ -1345,9 +1347,30 @@ export class Director {
     return this.escada.subirDegrau();
   }
 
-  /** o `ver` vivo, para o `urlComMomento` espelhar `?ver=corpo`. */
+  /**
+   * O `ver` vivo. Desde 22/08 (item 73) ele é LIDO e não ESCRITO: a
+   * porta `?ver=` continua abrindo todo link antigo, e quem espelha a
+   * vista é `?d=` — duas portas para a mesma grandeza seriam duas
+   * verdades (AGENTS §4), e `?ver=` não sabe dizer "2,4 raios". O
+   * getter fica porque a escada o publica e a bancada o lê.
+   */
   get verDaEscada(): VerDaEscada {
     return this.escada.verDaEscada;
+  }
+
+  /**
+   * A DISTÂNCIA AO ALVO EM RAIOS DELE — o que a porta `?d=` espelha.
+   * `null` quando o visitante não pinou nada: aí a URL cala e o link
+   * reproduz o ENQUADRAMENTO, que é a conta de sempre, bit a bit.
+   */
+  get distanciaEmRaios(): number | null {
+    return this.atlas.distanciaEstaPinada ? this.atlas.distanciaEmRaios : null;
+  }
+
+  /** a porta `?d=` do boot — ver `Escada.pinarEmRaios`. */
+  pinarEmRaios(raios: number | null) {
+    this.escada.pinarEmRaios(raios);
+    this.perturbar();
   }
 
   get escadaViva(): EstadoDaEscada {
