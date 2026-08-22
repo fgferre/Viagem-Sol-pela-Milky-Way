@@ -3,7 +3,8 @@
 // físico em pc → px com alpha compensado), poeira multiplicativa
 // que escurece o fundo e billboards de brilho (bojo / marcador).
 // ============================================================
-import { GALACTIC_MODEL, GLSL_CARTOGRAPHY, glslNumber } from '../cartography/galacticModel';
+import { GALACTIC_MODEL, GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { glslNumber } from '../glslNumber';
 import { GLSL_LEI_DE_TELA } from '../estrela';
 import { GLSL_STAR_COLOR } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
@@ -27,9 +28,10 @@ const CHROMSAT = qnum('chromsat', 0.5);
 // compacto, ?haloslit= varre o do halo; o 5,0 foi rejeitado sob o
 // regime velho, idem).
 /**
- * O TETO, que faltava — e faltava só deste lado. `?nebsteps=` já é
- * `Math.min(v, 96)` em `world/nebula.ts`, pela mesma razão: passo de
- * varredura que o visitante escreve na URL precisa de teto, não só de piso.
+ * O TETO, que faltava — e faltava só deste lado. `?nebsteps=` já tinha o
+ * seu (`TETO_DE_PASSOS_DA_NEBULOSA`/`passosDoRaymarch` em `world/nebula.ts`),
+ * pela mesma razão: passo de varredura que o visitante escreve na URL precisa
+ * de teto, não só de piso.
  *
  * AQUI O PREÇO DE NÃO TER É MAIOR, porque este número não é uniform: ele
  * entra TEXTUAL no fonte (`for (int i = 0; i < ${NSAMP}; i++)`). Com

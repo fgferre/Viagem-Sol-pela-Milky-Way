@@ -40,7 +40,8 @@ import {
 } from '../shaders/common';
 import { STAR_FRAG, BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
-import { GALACTIC_MODEL, LUT_DISK, glslNumber } from '../cartography/galacticModel';
+import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
+import { glslNumber } from '../glslNumber';
 
 // m em que a PSF morre na nossa exposição (expoM0 3,5):
 // peak(11,75) ≈ 1,6e-4 — abaixo de qualquer depósito perceptível.

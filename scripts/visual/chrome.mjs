@@ -51,7 +51,12 @@ export const GPU_FLAGS = [
   `--use-angle=${ANGLE[process.platform] ?? 'default'}`,
 ];
 
-const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+/**
+ * A espera de todo harness. Eram DOZE cópias desta linha em
+ * `scripts/visual/` — sete chamadas `sleep` e cinco `dorme`, idênticas —
+ * e os doze arquivos já importam este módulo. Uma linha só, aqui.
+ */
+export const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * O ALVO PADRÃO dos harnesses: o dev server do vite. Todo script de

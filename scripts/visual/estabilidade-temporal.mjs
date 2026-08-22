@@ -119,7 +119,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { abrirSessao, APP_PADRAO } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const UA_POR_PC = 206264.80624548031;
 
@@ -928,8 +928,6 @@ const CAPTURAS = resolve(RAIZ, 'capturas');
 
 /** o jd das vistas oficiais da Terra/Lua (o eclipse de 2024-04-08) */
 const JD_DA_TERRA = 2460409.26395835;
-
-const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** o CSS do `.bare-mode`, injetado — ver o cabeçalho */
 const SO_A_CENA =

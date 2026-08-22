@@ -12,6 +12,7 @@
 // ============================================================
 import spiralModel from './spiralModel.json';
 import { MEDIDAS_DA_GALAXIA } from './medidasDaGalaxia';
+import { glslNumber } from '../glslNumber';
 
 // ?warpamp= — multiplicador de varredura da amplitude do warp.
 // Base 820 pc na borda = PISO da literatura (Chen/Skowron 2019 vão de
@@ -703,21 +704,6 @@ export function glLocalArm(theta: number, radiusPc: number, sharpness: number) {
     LOCAL_ARM.weight *
     LOCAL_ARM_EXTERNAL_WEIGHT
   );
-}
-
-/**
- * O NÚMERO EM GLSL — exportado desde 2026-08-21 porque ele é a peça que
- * impede a constante de existir duas vezes. Os shaders que NÃO incluem
- * `GLSL_CARTOGRAPHY` (o `GLOW_FRAG` da galáxia, as cascas de
- * `wrappedStars`) precisavam redigitar o começo do warp, o raio do disco e a
- * amplitude à mão — e com `?warpamp=` o lado gerado e o lado cravado
- * divergiam. Agora eles interpolam daqui, e `toFixed(7)` garante o MESMO
- * float: `glslNumber(8150)` imprime sete casas de zero, que é o mesmo valor
- * que o literal de uma casa que estava lá. A varredura de
- * `simbolosProibidos.test.ts` cobra que nenhum deles volte cravado.
- */
-export function glslNumber(value: number) {
-  return value.toFixed(7);
 }
 
 function glslGate(

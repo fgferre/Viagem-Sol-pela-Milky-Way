@@ -11,13 +11,11 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
-import { abrirSessao, APP_PADRAO } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const SAIDA = process.env.FILME_SMOKE_SAIDA
   || resolve(tmpdir(), `filme-smoke-${process.pid}.png`);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
 const falhas = [];
 const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
@@ -107,7 +105,7 @@ async function conferirMovimento(sessao, nome, t, legenda) {
   await saltar(sessao, t);
   const antes = await sessao.js('window.__director.currentTime');
   const pausouAoSoltar = await sessao.js('window.__director.togglePause()');
-  await sleep(420);
+  await dorme(420);
   const depois = await sessao.js('window.__director.currentTime');
   const atual = await lerLegenda(sessao);
   await sessao.js('window.__director.togglePause()');
@@ -242,7 +240,7 @@ async function julgarLargura(largura, altura, captura) {
     let fase = '';
     while (Date.now() < limite && fase !== 'end') {
       fase = await sessao.js('window.__director.captura.fase');
-      if (fase !== 'end') await sleep(50);
+      if (fase !== 'end') await dorme(50);
     }
     conferir(fase === 'end', `${largura}px · a viagem alcança a tela final`);
     const final = normalizar(await sessao.js("document.querySelector('.veil-end')?.textContent"));

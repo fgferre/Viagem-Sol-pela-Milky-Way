@@ -31,15 +31,13 @@
 // dispararia (`pointerlockerror`, `pointerlockchange`) em vez de fingir
 // que o lock aconteceu: o que se cobra é a reação do app, que é a parte
 // que é nossa.
-import { abrirSessao, APP_PADRAO } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
 // `?pos=` é a porta do voo livre que o harness já usa (precedência
 // declarada na F1: ela ganha até do `?atlas=1`); `?q=cinema` pinado.
 const VOO = 'pos=0,0,0.1&look=0,0,0&q=cinema';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
 const falhas = [];
 const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
@@ -113,7 +111,7 @@ try {
       `[...document.querySelectorAll('.convite-linha button')]`
       + `.find((b) => b.innerText.trim().toLowerCase() === '${rotulo}').click()`
     );
-    await sleep(150);
+    await dorme(150);
   };
 
   await adiante('continuar');
@@ -212,7 +210,7 @@ try {
   conferir((await js('window.__pedidos')) === 1, 'o clique no botão vira UM pedido de captura');
 
   await js("for (let i = 0; i < 3; i++) document.dispatchEvent(new Event('pointerlockerror'))");
-  await sleep(120);
+  await dorme(120);
   const negado = await js(`JSON.stringify({
     erros: window.__director.capturaDePonteiro.estado.erros,
     desistiu: window.__director.capturaDePonteiro.desistiu,
@@ -243,9 +241,9 @@ try {
   // o opt-in até a RECARGA — que dentro do Atlas custa o estado inteiro
   // — num navegador que suporta a captura perfeitamente.
   await js('window.__director.entrarNoAtlas({ instantaneo: true })');
-  await sleep(200);
+  await dorme(200);
   await js('window.__director.enterFreeRoam()');
-  await sleep(300);
+  await dorme(300);
   const reaberto = await js(`JSON.stringify({
     erros: window.__director.capturaDePonteiro.estado.erros,
     desistiu: window.__director.capturaDePonteiro.desistiu,
@@ -295,7 +293,7 @@ try {
     document.dispatchEvent(new Event('pointerlockchange'));
     return { ativa: window.__director.capturaDePonteiro.ativa };
   })())`));
-  await sleep(120);
+  await dorme(120);
   conferir(
     volta.ativa === false
       && (await js("document.querySelector('.free-hint-captura').disabled")) === false,

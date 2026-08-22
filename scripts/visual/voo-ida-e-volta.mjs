@@ -35,7 +35,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
-import { abrirSessao } from './chrome.mjs';
+import { abrirSessao, dorme } from './chrome.mjs';
 import { tetoDeLavagem } from './luz-do-quadro.mjs';
 
 const RAIZ = resolve(new URL('.', import.meta.url).pathname, '..', '..');
@@ -69,8 +69,6 @@ for (let e = Math.log10(0.05); e <= Math.log10(20000) + 1e-9; e += 1 / 6) {
 // de `diametroAparentePx` para a janela do voo, feita no navegador (a
 // mesma fonte de verdade do app), preenchida no arranque.
 let BANDA_UA = { de: 0, ate: 0 };
-
-const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** as três medidas da régua da luz (espelho de `medirQuadro`,
  *  luz-do-quadro.mjs — luminância Rec.709 do PNG já tonemapado) */

@@ -22,7 +22,7 @@ import { spawn } from 'node:child_process';
 import { rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { CHROME, GPU_FLAGS, matarPerfil } from './chrome.mjs';
+import { CHROME, GPU_FLAGS, matarPerfil, dorme } from './chrome.mjs';
 
 const QUERY = process.argv[2] || '?t=100';
 const SECONDS = Number(process.argv[3] || 15);
@@ -169,7 +169,6 @@ const chrome = spawn(CHROME, [
   'about:blank',
 ], { stdio: 'ignore' });
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function endpoint() {
   for (let i = 0; i < 100; i++) {
     try {
@@ -177,7 +176,7 @@ async function endpoint() {
       const page = r.find((t) => t.type === 'page');
       if (page?.webSocketDebuggerUrl) return page.webSocketDebuggerUrl;
     } catch { /* Chrome ainda subindo */ }
-    await sleep(200);
+    await dorme(200);
   }
   throw new Error('CDP não respondeu');
 }
@@ -218,14 +217,14 @@ try {
     if (s.err) throw new Error('instrumento: ' + s.err);
     if (s.f > 120) break;
     if (Date.now() - t0 > 90000) throw new Error(`app não desenhou (frames=${s.f}, ext=${s.e})`);
-    await sleep(500);
+    await dorme(500);
   }
   // zera: o arranque tem compilação e upload que não são o quadro de regime
   await send('Runtime.evaluate', {
     expression: 'window.__prof.byLabel={};window.__prof.frames=0;'
       + 'window.__prof.calls=0;window.__prof.drops=0;window.__prof.rafDt=[]',
   });
-  await sleep(SECONDS * 1000);
+  await dorme(SECONDS * 1000);
   const out = await send('Runtime.evaluate', {
     expression: 'JSON.stringify(window.__prof)', returnByValue: true,
   });
@@ -263,6 +262,6 @@ try {
 } finally {
   chrome.kill();
   matarPerfil(PROFILE);
-  await sleep(500);
+  await dorme(500);
   try { rmSync(PROFILE, { recursive: true, force: true }); } catch { /* perfil preso */ }
 }

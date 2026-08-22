@@ -7,7 +7,7 @@
 // `?samples=1e21` imprimia `1e+21` no lugar de um literal inteiro — GLSL
 // inválido, galáxia sem compilar, nenhuma mensagem que explicasse.
 //
-// A régua é a de `?nebsteps=` (`world/nebula.ts`, `Math.min(v, 96)`): passo
+// A régua é a de `?nebsteps=` (`passosDoRaymarch`, `world/nebula.ts`): passo
 // de varredura que o visitante escreve na URL tem teto. O default (16) e o
 // piso (2) NÃO mudam — nenhum pixel se move nesta mudança, e é isso que os
 // dois primeiros casos cobram.

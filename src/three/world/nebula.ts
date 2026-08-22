@@ -15,6 +15,23 @@ import { makeBlueNoiseTexture } from './blueNoise';
 const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682); // supergigante vermelha
 const RIGEL = new THREE.Vector3(51.601, 256.71, -37.74); // supergigante azul
 
+/**
+ * O TETO de `?nebsteps=`, que existia como `Math.min(v, 96)` cru. Mesmo
+ * molde do lado da galáxia (`TETO_DE_AMOSTRAS`/`amostrasDaExtincao` em
+ * `shaders/galaxyShaders.ts`): passo de varredura que o visitante escreve
+ * na URL tem piso E teto, e o clamp é peça nomeada.
+ *
+ * NÃO É UM ENDEREÇO SÓ com o da galáxia, pela decisão de 4c645b6: 96 passos
+ * de raymarch e 96 amostras de coluna de extinção são grandezas diferentes
+ * que hoje calham de aceitar o mesmo número. Amarrá-las faria mexer no teto
+ * de uma mudar o da outra em silêncio. O que se compartilha é a régua.
+ */
+const TETO_DE_PASSOS_DA_NEBULOSA = 96;
+
+/** piso 1 (0 = ausente, e aí manda o preset), teto 96, inteiro. */
+const passosDoRaymarch = (bruto: number) =>
+  Number.isFinite(bruto) && bruto > 0 ? Math.min(bruto, TETO_DE_PASSOS_DA_NEBULOSA) : 0;
+
 export class Nebula {
   readonly texture: THREE.Texture;
   private rt: THREE.WebGLRenderTarget;
@@ -170,7 +187,7 @@ export class Nebula {
   private stepsOverride = (() => {
     if (typeof window === 'undefined') return 0;
     const v = parseInt(new URLSearchParams(window.location.search).get('nebsteps') ?? '', 10);
-    return Number.isFinite(v) && v > 0 ? Math.min(v, 96) : 0;
+    return passosDoRaymarch(v);
   })();
 
   setSteps(n: number) {

@@ -41,13 +41,11 @@
 // da captura — era defesa contra o autoQuality até a letra D dos
 // Ajustes), `?shot=2` (só a cena), e o SINAL de prontidão do próprio app
 // no lugar de espera cega.
-import { abrirSessao, APP_PADRAO } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const PIN = 'shot=2&q=cinema';
 const JANELA = process.env.JANELA || '1200x900';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
 // A sessão viva (subir o Chrome, falar CDP, navegar, esperar assentar,
 // clicar, ler JS, tirar md5) nasceu aqui na F1 e mora em `chrome.mjs`
 // desde a F2, quando o juiz de a11y virou o segundo consumidor.
@@ -173,7 +171,7 @@ try {
   await sessao.ir('t=100&q=cinema');
   await sessao.js("[...document.querySelectorAll('.controls-bar button')]"
     + ".find((b) => b.innerText.toUpperCase().includes('ATLAS')).click()");
-  await sleep(150);
+  await dorme(150);
   const meio = Number(await sessao.js(veu));
   conferir(meio > 0 && meio < 1, `o véu fecha por passos (medido em ${meio.toFixed(2)})`);
   await sessao.assentar();
@@ -255,7 +253,7 @@ try {
     const antesDoDuplo = await pose();
     await sessao.duploClicar(tintaDoDuplo.x, tintaDoDuplo.y);
     // a rampa entre degraus dura 0,5 s (RAMPA_DO_DEGRAU_S)
-    await sleep(1500);
+    await dorme(1500);
     await sessao.assentar();
     const depoisDoDuplo = await pose();
     conferir(
@@ -386,16 +384,16 @@ try {
 
   await sessao.ir('atlas=1&q=cinema&shot=1');
   await apertar('Seguir o tempo real');
-  await sleep(300);
+  await dorme(300);
   const vivo = JSON.parse(await relogio());
   conferir(vivo.aoVivo === true, `AO VIVO liga o relógio do calendário (${vivo.data})`);
   // ⏸ com AO VIVO ligado: o botão está habilitado e promete "Parar o
   // tempo". Enquanto `andarNoTempo(0)` não desligava o AO VIVO, ele
   // apagava o sentido (que já era zero) e a data seguia andando a 1 Hz.
   await apertar('Parar o tempo');
-  await sleep(200);
+  await dorme(200);
   const parado = JSON.parse(await relogio());
-  await sleep(1600);
+  await dorme(1600);
   const aindaParado = JSON.parse(await relogio());
   conferir(
     parado.aoVivo === false && parado.sentido === 0 && aindaParado.jd === parado.jd,
@@ -406,14 +404,14 @@ try {
   // E "Partir" leva o relógio junto: o filme não tem dono para ele.
   await sessao.ir('t=100&q=cinema&shot=1');
   await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
-  await sleep(200);
+  await dorme(200);
   await apertar('Avançar no tempo');
-  await sleep(300);
+  await dorme(300);
   const andando = JSON.parse(await relogio());
   await sessao.js('window.__director.partirDoAtlas()');
   await sessao.assentar();
   const noFilme = JSON.parse(await relogio());
-  await sleep(1200);
+  await dorme(1200);
   const depoisDoFilme = JSON.parse(await relogio());
   conferir(
     andando.sentido === 1 && noFilme.sentido === 0 && !noFilme.aoVivo
@@ -742,7 +740,7 @@ try {
   // vez a cada ~100. Quem traz o número é
   // `window.__director.engine.medicao`, lido abaixo, que o modo foto
   // não congela: a régua corre, só o mostrador para.
-  await sleep(3200);
+  await dorme(3200);
   // …e se a medida pediu outro tier, o mundo novo ainda está no forno
   await sessao.assentar();
   const noAuto = JSON.parse(await sessao.js(`JSON.stringify({
@@ -783,7 +781,7 @@ try {
   // log diz qual dos dois casos aconteceu.
   const ESPERA_DO_MANUAL_MS = 18000;
   await sessao.ir('atlas=1&ajustes=1&shot=1&q=performance');
-  await sleep(ESPERA_DO_MANUAL_MS);
+  await dorme(ESPERA_DO_MANUAL_MS);
   const noManual = JSON.parse(await sessao.js(`JSON.stringify({
     tier: window.__director.captura.tier,
     mundo: window.__director.captura.tierDoMundo,
@@ -837,7 +835,7 @@ try {
   // por ela é esperar o gesto acabar, não uma trava de produto
   const estalo = async (deltaY, ctrlKey = false) => {
     await rodar(deltaY, ctrlKey);
-    await sleep(600);
+    await dorme(600);
     return doZoom();
   };
 
@@ -867,7 +865,7 @@ try {
   // são 120.536 km de centro — 2 raios equatoriais, o topo das nuvens.
   let noPiso = paraDentro[5];
   for (let i = 0; i < 80; i++) await rodar(-100);
-  await sleep(900);
+  await dorme(900);
   noPiso = await doZoom();
   conferir(
     Math.abs(noPiso.dist / noPiso.piso - 1) < 1e-9 && noPiso.foco === zoomInicio.foco,
@@ -877,7 +875,7 @@ try {
 
   // O TETO: o sistema em quadro, centrado no alvo
   for (let i = 0; i < 90; i++) await rodar(100);
-  await sleep(900);
+  await dorme(900);
   const noTeto = await doZoom();
   conferir(
     Math.abs(noTeto.dist - noTeto.teto) / noTeto.teto < 1e-9
@@ -899,7 +897,7 @@ try {
   // nenhum: eventos pequenos viram fração de estalo e a câmera anda
   const antesDaPinca = await doZoom();
   for (let i = 0; i < 4; i++) await rodar(-30, true);
-  await sleep(600);
+  await dorme(600);
   const depoisDaPinca = await doZoom();
   conferir(
     depoisDaPinca.dist < antesDaPinca.dist && depoisDaPinca.foco === zoomInicio.foco,
@@ -942,7 +940,7 @@ try {
   await sessao.ir('atlas=1&foco=saturno&q=cinema&shot=1');
   await sessao.assentar();
   for (let i = 0; i < 6; i++) await rodar(-100);
-  await sleep(800);
+  await dorme(800);
   const antesDoLink = await doZoom();
   const linkComD = await espelhar();
   const dEscrito = new URLSearchParams(linkComD).get('d');
@@ -969,7 +967,7 @@ try {
   // e ela SOBREVIVE à efeméride, que chega sempre depois do boot e
   // refaz o enquadramento do degrau vivo — era aqui que um `?d=` sem
   // dono voltaria sozinho para o enquadramento, um segundo depois
-  await sleep(1500);
+  await dorme(1500);
   const depoisDaFonte = await doZoom();
   conferir(
     Math.abs(depoisDaFonte.dist / doLink.dist - 1) < 5e-4,
@@ -1011,7 +1009,7 @@ try {
   // a capa da abertura cobre a cena por alguns segundos DEPOIS de a
   // prontidão fechar (ver o NORTE, "Como rodar") — e é o desenho dos
   // rótulos que se mede aqui, não a prontidão
-  await sleep(4000);
+  await dorme(4000);
   const nomesDaAbertura = JSON.parse(await sessao.js(`JSON.stringify((() => {
     const alvos = window.__director.rotulos.alvos;
     return {
@@ -1078,7 +1076,7 @@ try {
     await sessao.js('window.__director.ciclarDegrau()');
   }
   await sessao.js('window.__director.andarNoTempo(1)');
-  await sleep(2000);
+  await dorme(2000);
   await sessao.js('window.__director.andarNoTempo(0)');
   const depoisDoRelogio = JSON.parse(await leitura());
   const andou = Math.hypot(
@@ -1102,7 +1100,7 @@ try {
   await sessao.ir('t=100&q=cinema');
   await sessao.js("[...document.querySelectorAll('.controls-bar button')]"
     + ".find((b) => b.innerText.toUpperCase().includes('ATLAS')).click()");
-  await sleep(150);
+  await dorme(150);
   conferir(
     (await sessao.js('window.__director.captura.fase')) === 'atlas'
       && Number(await sessao.js(veu)) === 0,

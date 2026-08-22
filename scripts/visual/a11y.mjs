@@ -29,15 +29,13 @@
 // Diálogo novo que nasça no módulo é julgado no mesmo dia, sem uma linha
 // a mais aqui. Diálogo que nasça FORA do módulo não se declara e não é
 // julgado — e é por isso que todo diálogo do Atlas nasce nele.
-import { abrirSessao, APP_PADRAO } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
 // `?shot=1` (não `2`): congela transições e o relógio visual — o juiz não
 // espera fade nenhum — e MANTÉM o HUD na tela, que é o objeto do juízo.
 const PIN = 'q=cinema&shot=1';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
 const falhas = [];
 const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
@@ -128,7 +126,7 @@ async function julgarDialogo(s, nome, onde) {
     b.focus();
     b.click();
   })()`);
-  await sleep(150);
+  await dorme(150);
 
   const info = await s.js(`(() => {
     const d = document.querySelector('[data-dialogo="${nome}"]');
@@ -171,7 +169,7 @@ async function julgarDialogo(s, nome, onde) {
 
   // Esc FECHA e o foco VOLTA ao gatilho
   await s.teclar('Escape');
-  await sleep(150);
+  await dorme(150);
   const depois = await s.js(`(() => {
     const d = document.querySelector('[data-dialogo="${nome}"]');
     const g = document.querySelector('[data-abre-dialogo="${nome}"]');
@@ -381,7 +379,7 @@ async function esperarPor(s, expressao, teto = 3000) {
   for (;;) {
     if (await s.js(expressao)) return Date.now() - t0;
     if (Date.now() - t0 > teto) return null;
-    await sleep(50);
+    await dorme(50);
   }
 }
 
@@ -402,11 +400,11 @@ async function julgarListbox(s) {
     b.focus();
     b.click();
   })()`);
-  await sleep(150);
+  await dorme(150);
   // digitação de VERDADE (tecla a tecla, com código nativo): é o único
   // caminho que passa pelo mesmo `onChange` que o visitante usa
   await s.digitar('tau');
-  await sleep(300);
+  await dorme(300);
 
   const estado = () => s.js(`(() => {
     const campo = document.querySelector('.atlas-busca-campo');
@@ -458,7 +456,7 @@ async function julgarListbox(s) {
   // linha de contexto anuncia é o nome que estava escolhido — a prova
   // de que a tecla escolheu a estrela certa, e não a primeira da lista.
   //
-  // ESPERA MEDIDA e não `sleep` fixo: o Enter dispara trabalho de
+  // ESPERA MEDIDA e não `dorme` fixo: o Enter dispara trabalho de
   // câmera antes do fechamento, e no Atlas o quadro custa ~100 ms
   // (1200×900 com a galáxia inteira). Um prazo cego aqui é gate que
   // acende vermelho por carga da máquina — e, o que é pior, que acende
@@ -562,7 +560,7 @@ try {
         y: Math.round(l.y * window.innerHeight), nome: l.name } : null;
     })())`));
     await sessao.duploClicar(daEstrela.x, daEstrela.y);
-    await sleep(1200);
+    await dorme(1200);
     await sessao.assentar();
     const seloLonge = await sessao.js(`(() => {
       const s = window.__director.selo;
@@ -640,12 +638,12 @@ try {
   );
 
   await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
-  await sleep(150);
+  await dorme(150);
   await sessao.js(`(() => {
     const g = document.querySelector('[data-dialogo="camadas"]');
     g.querySelector('input[type=checkbox]').click();
   })()`);
-  await sleep(200);
+  await dorme(200);
   const sujo = await lerSelo();
   conferir(
     sujo.brilho === 'BRILHO ASSISTIDO' && /camada desligada/.test(sujo.detalhe),
@@ -654,7 +652,7 @@ try {
   conferir(sujo.brilhoClicavel, 'selo: com desvio desfazível, a linha BRILHO vira controle');
 
   await sessao.js("document.querySelector('.atlas-selo-linha:nth-of-type(2)').click()");
-  await sleep(250);
+  await dorme(250);
   const voltou = await lerSelo();
   const urlLimpa = await sessao.js('location.search');
   const camadasVivas = await sessao.js(
@@ -758,9 +756,9 @@ try {
     b.focus();
     b.click();
   })()`);
-  await sleep(150);
+  await dorme(150);
   await sessao.teclar('Escape');
-  await sleep(200);
+  await dorme(200);
   const aposDialogo = await sessao.js(`JSON.stringify({
     gaveta: Boolean(document.querySelector('[data-dialogo="camadas"]')),
     degrau: window.__director.escadaViva.degrau,
@@ -838,14 +836,14 @@ try {
   for (let i = 0; i < 3; i++) {
     await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
       .find((b) => b.textContent.trim() === 'continuar').click()`);
-    await sleep(120);
+    await dorme(120);
   }
   const noQuarto = await sessao.js(
     "(document.querySelector('.convite-conta')||{}).innerText||''"
   );
   await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
     .find((b) => b.textContent.trim() === 'entendi').click()`);
-  await sleep(200);
+  await dorme(200);
   const prefs = await sessao.js("window.localStorage.getItem('viagem-prefs') || ''");
   conferir(
     /^4 de 4$/i.test(noQuarto.trim())
@@ -1151,7 +1149,7 @@ async function julgarEscalaDaUi(s) {
       .find((e) => e.textContent.trim() === '120%');
     b.click();
   })()`);
-  await sleep(200);
+  await dorme(200);
   const depois = await s.js(`({
     url: location.search,
     raiz: getComputedStyle(document.documentElement).getPropertyValue('--ui').trim(),
@@ -1186,7 +1184,7 @@ async function julgarEscalaDaUi(s) {
   await s.js(
     "(() => { import('/src/three/cinematic/atlasRig.ts').then((m) => { window.__rig = m; }); })()"
   );
-  await sleep(400);
+  await dorme(400);
   const minima = await s.js('window.__rig.LARGURA_UTIL_MINIMA_PX');
   conferir(
     Number.isFinite(minima) && minima > 0,

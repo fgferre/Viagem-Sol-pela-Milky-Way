@@ -88,7 +88,7 @@
 // desde a letra D dos Ajustes nada troca sem escolha do visitante, e o tier
 // pedido é escolha explícita) e o SINAL de prontidão do próprio app no
 // lugar de espera cega.
-import { abrirSessao, APP_PADRAO } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -100,7 +100,6 @@ const JANELA = process.env.JANELA || '1200x900';
  */
 const TIER = process.env.TIER || 'alta';
 const BOOT = `atlas=1&q=${TIER}`;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const CICLOS = 5;
 const TROCAS = 3;
 // os 5 corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=)
@@ -307,7 +306,7 @@ try {
     await sessao.js('window.__director.sun.ctx.launchCME(1.3)');
     let agora = antes;
     for (let i = 0, parado = 0; i < 40 && parado < 3; i++) {
-      await sleep(100);
+      await dorme(100);
       const n = await conta();
       parado = n === agora ? parado + 1 : 0;
       agora = n;

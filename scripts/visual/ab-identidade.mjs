@@ -71,7 +71,7 @@ import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
-  CHROME, GPU_FLAGS, matarPerfil, portaDoPerfil, esperarAssentar, julgarProntidao, APP_PADRAO,
+  CHROME, GPU_FLAGS, matarPerfil, portaDoPerfil, esperarAssentar, julgarProntidao, APP_PADRAO, dorme,
 } from './chrome.mjs';
 
 const LADO = process.argv[2] || 'antes';
@@ -657,8 +657,6 @@ const lerCarimbo = (lado) =>
 const FILHO = process.env.AB_FILHO ? Number(process.env.AB_FILHO) : null;
 const JOBS = Math.max(1, Number(process.env.JOBS || 3));
 const SMOKE = process.env.SMOKE === '1' || process.env.SMOKE === 'true';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
 let id = 0;
 function rpc(ws, onEvent) {
   const waiting = new Map();
@@ -697,7 +695,7 @@ async function capturar(query, png, janela) {
         const r = await fetch(`http://127.0.0.1:${porta}/json/list`).then((x) => x.json());
         url = r.find((t) => t.type === 'page')?.webSocketDebuggerUrl;
       } catch { /* Chrome ainda subindo */ }
-      if (!url) await sleep(200);
+      if (!url) await dorme(200);
     }
     if (!url) throw new Error('CDP não respondeu');
     const ws = new WebSocket(url);
@@ -750,7 +748,7 @@ async function capturar(query, png, janela) {
   } finally {
     chrome.kill();
     matarPerfil(perfil);
-    await sleep(400);
+    await dorme(400);
     try { rmSync(perfil, { recursive: true, force: true }); } catch { /* perfil preso */ }
   }
 }

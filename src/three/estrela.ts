@@ -35,6 +35,7 @@
 // commit, com o delta declarado ANTES. A ordem vive em LEI-DA-ESTRELA §4;
 // o censo de quem migra vive em `cadastroDeRepresentacoes.ts`.
 // ============================================================
+import { glslNumber } from './glslNumber';
 import {
   M_V_SOL,
   TEFF_SOL_K,
@@ -617,16 +618,18 @@ float raioDaAsaPx(float picoDeTela, float sigmaPx) {
 // as partículas da galáxia) não precisa da repartição inteira, e um `#include`
 // que arrasta função morta é custo de compilação sem imagem.
 //
-// `toFixed` é o mesmo cinto do `glslNumber` da cartografia: o literal impresso
-// tem de ser o MESMO float que o TS calcula, senão as duas faces divergem numa
-// casa decimal que ninguém lê.
+// O literal impresso tem de ser o MESMO float que o TS calcula, senão as duas
+// faces da lei divergem numa casa decimal que ninguém lê. Era `toFixed` à mão,
+// com uma escolha de casas por chamada (2, 1, 1, 4) — e o comentário já
+// admitia ser "o mesmo cinto do `glslNumber`". Agora é o cinto, e não a cópia
+// dele: `glslNumber` é a peça única da casa (`glslNumber.ts`).
 export const GLSL_LEI_DE_TELA = /* glsl */ `
 // A lei de tela — três regimes, gerada das constantes de estrela.ts.
 void leiDeTela(float px, out float pontoPx, out float shrink, out float subPix) {
-  pontoPx = clamp(px, ${PISO_DE_TELA_PX.toFixed(2)}, ${TETO_DE_TELA_PX.toFixed(1)});
-  shrink = min(1.0, ${(PLATO_DE_TELA_PX * PLATO_DE_TELA_PX).toFixed(1)} / max(px * px, 1e-4));
-  subPix = px < ${PISO_DE_TELA_PX.toFixed(2)}
-    ? (px * px) / ${PISO_DE_TELA_AO_QUADRADO.toFixed(4)}
+  pontoPx = clamp(px, ${glslNumber(PISO_DE_TELA_PX)}, ${glslNumber(TETO_DE_TELA_PX)});
+  shrink = min(1.0, ${glslNumber(PLATO_DE_TELA_PX * PLATO_DE_TELA_PX)} / max(px * px, 1e-4));
+  subPix = px < ${glslNumber(PISO_DE_TELA_PX)}
+    ? (px * px) / ${glslNumber(PISO_DE_TELA_AO_QUADRADO)}
     : 1.0;
 }
 `;

@@ -40,15 +40,13 @@
 //     ÓRBITA e o clique no rótulo faz o mesmo.
 // 10. O ATALHO DO TECLADO (item 8): "/" e Ctrl+K abrem a paleta; o "/"
 //     que abriu não vaza para o campo, e com ela aberta "/" é digitação.
-import { abrirSessao, APP_PADRAO } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
 // `?shot=1`: congela transições e o relógio visual, e MANTÉM o HUD — o
 // objeto do juízo é justamente a UI.
 const PIN = 'q=cinema&shot=1';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
 const falhas = [];
 const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
@@ -65,7 +63,7 @@ async function abrirPaleta(s) {
     b.focus();
     b.click();
   })()`);
-  await sleep(200);
+  await dorme(200);
 }
 
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
@@ -117,7 +115,7 @@ try {
   // feliz das duas teclas, a prova de que o "/" que ABRIU não vazou
   // para o campo, e a de que com a paleta aberta "/" é digitação.
   await sessao.digitar('/');
-  await sleep(200);
+  await dorme(200);
   const abriuPorBarra = await sessao.js(`(() => {
     const campo = document.querySelector('.atlas-busca-campo');
     return JSON.stringify({
@@ -140,20 +138,20 @@ try {
     `com a paleta aberta, "/" é digitação, não atalho (campo "${barraDigitou}")`
   );
   await sessao.teclar('Escape');
-  await sleep(200);
+  await dorme(200);
   const tecladoCtrlK = {
     key: 'k', code: 'KeyK', windowsVirtualKeyCode: 75,
     nativeVirtualKeyCode: 75, modifiers: 2,
   };
   await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'rawKeyDown' });
   await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'keyUp' });
-  await sleep(200);
+  await dorme(200);
   const porCtrlK = await sessao.js(
     'Boolean(document.querySelector(\'[data-dialogo="busca"]\'))'
   );
   conferir(porCtrlK, 'Ctrl+K abre a paleta pelo mesmo caminho');
   await sessao.teclar('Escape');
-  await sleep(200);
+  await dorme(200);
 
   // ---- 2: porta que não acha não chuta -----------------------------
   // "alfa cen" é o caso REAL do dado: o nome próprio da IAU expulsou a
@@ -173,9 +171,9 @@ try {
   await sessao.ir(`atlas=1&${PIN}`);
   await abrirPaleta(sessao);
   await sessao.digitar('sirius');
-  await sleep(300);
+  await dorme(300);
   await sessao.teclar('Enter');
-  await sleep(400);
+  await dorme(400);
   const escolhido = await contexto(sessao);
   conferir(escolhido === 'Sirius', `a paleta enquadra o que se escolhe ("${escolhido}")`);
 
@@ -203,7 +201,7 @@ try {
   await sessao.ir(`atlas=1&${PIN}`);
   await abrirPaleta(sessao);
   await sessao.digitar('alfa cen');
-  await sleep(400);
+  await dorme(400);
   const vazio = await sessao.js(`(() => ({
     opcoes: document.querySelectorAll('[role="option"]').length,
     aviso: (document.querySelector('.atlas-busca-aviso') || {}).textContent || '',
@@ -226,7 +224,7 @@ try {
   );
   await abrirPaleta(sessao);
   await sessao.digitar('sirius');
-  await sleep(300);
+  await dorme(300);
   // o rótulo se lê COM resultados na tela: sem eles a linha viva está
   // ensinando o que se pode digitar, e não prometendo verbo nenhum
   const rotulo = await sessao.js(
@@ -259,7 +257,7 @@ try {
   await sessao.js(
     "(() => { import('/src/lib/buscaEstrelas.ts').then((m) => { window.__lib = m; }); })()"
   );
-  await sleep(300);
+  await dorme(300);
   const puro = await sessao.js(`(() => {
     const m = window.__lib;
     const nomeadas = window.__director.nomeadas;
@@ -320,7 +318,7 @@ try {
   const CONSULTA = 'tau cet';
   for (const ch of CONSULTA) {
     await sessao.digitar(ch);
-    await sleep(250);
+    await dorme(250);
   }
   const lat = await sessao.js('window.__lat');
   const ordenadas = [...lat].sort((x, y) => x - y);
@@ -352,9 +350,9 @@ try {
         .click();
     })()`);
   await clicar('Reviver');
-  await sleep(300);
+  await dorme(300);
   await clicar('Explorar');
-  await sleep(400);
+  await dorme(400);
   const aoVoltar = await sessao.js(`JSON.stringify({
     paleta: Boolean(document.querySelector('.atlas-busca')),
     foco: document.activeElement ? document.activeElement.className : null,
@@ -368,12 +366,12 @@ try {
   // e o mesmo para a gaveta de camadas, que atravessava Atlas→filme→Atlas
   await sessao.ir(`atlas=1&${PIN}`);
   await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
-  await sleep(200);
+  await dorme(200);
   const abriuNoAtlas = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
   await sessao.js('window.__director.partirDoAtlas()');
-  await sleep(300);
+  await dorme(300);
   await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
-  await sleep(400);
+  await dorme(400);
   const gaveta = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
   conferir(
     abriuNoAtlas && !gaveta,
@@ -405,7 +403,7 @@ try {
   // a paleta acha pelo nome pt-BR, sem acento, e a escolha ENQUADRA
   await abrirPaleta(sessao);
   await sessao.digitar('netuno');
-  await sleep(300);
+  await dorme(300);
   const listaCorpo = await sessao.js(`(() => {
     const o = document.querySelector('[role="option"]');
     return o ? o.textContent : '';
@@ -484,7 +482,7 @@ try {
       + `${antesDoClique} → "${depoisDoClique}"/${degrauDepois})`
   );
   await sessao.duploClicar(px, py);
-  await sleep(1200);
+  await dorme(1200);
   await sessao.assentar();
   const noDuplo = await contexto(sessao);
   const degrauDoDuplo = await degrau();
@@ -502,7 +500,7 @@ try {
   await sessao.ir(`atlas=1&${PIN}`);
   await abrirPaleta(sessao);
   await sessao.digitar('lua');
-  await sleep(400);
+  await dorme(400);
   const listaLua = await sessao.js(`(() => {
     const ops = [...document.querySelectorAll('[role="option"]')];
     const daLua = ops.find((o) => o.querySelector('.atlas-busca-nome').textContent === 'Lua');
@@ -529,7 +527,7 @@ try {
   // a inércia da roda é curta (meia-vida 87 ms, zona morta em ~0,7 s):
   // esperar 1,2 s é esperar o GESTO acabar, e é obrigatório — ler a
   // distância com o embalo andando compararia dois instantes
-  await sleep(1200);
+  await dorme(1200);
   const emRaios = () =>
     sessao.js('window.__director.atlas.distancia / window.__director.atlas.raioDoAlvo');
   const raiosNaLua = await emRaios();
@@ -564,7 +562,7 @@ try {
   // não pega isto sozinha — lá o Atlas nem monta.
   await sessao.ir('atlas=1&q=cinema&shot=2');
   await sessao.js("document.querySelector('[data-abre-dialogo=\"busca\"]').click()");
-  await sleep(200);
+  await dorme(200);
   const nua = await sessao.js(`(() => {
     const e = document.querySelector('.atlas-busca');
     return {

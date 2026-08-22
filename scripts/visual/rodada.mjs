@@ -37,7 +37,7 @@ import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
-  CHROME, GPU_FLAGS, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO,
+  CHROME, GPU_FLAGS, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO, dorme,
 } from './chrome.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -72,7 +72,6 @@ if (!round || round === '00') throw new Error('uso: node scripts/visual/rodada.m
 const PROFILE = resolve(tmpdir(), `rodada-${process.pid}`);
 mkdirSync(OUT, { recursive: true });
 
-const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 // Teto da MEDIÇÃO (a página file:// que compara com a referência). A CAPTURA
 // não passa por aqui: ela é `capturarCDP`, que espera a cena assentar.
 const TIMEOUT = Number(process.env.RODADA_TIMEOUT || 600000);
