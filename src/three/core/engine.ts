@@ -164,6 +164,70 @@ const ESPERA_APOS_QUEDA_S = 15;
 /** depois de SUBIR, 10 s antes do próximo degrau */
 const ESPERA_APOS_SUBIDA_S = 10;
 
+/**
+ * A JANELA DO VAI-E-VOLTA: subir para um tier e cair dele dentro dela é
+ * o aparelho na FRONTEIRA do limiar, não um engasgo que passou. O
+ * vai-e-volta medido fecha em 2,5 s — uma janela de medida depois de a
+ * espera de subida vencer —, então 20 s são oito janelas de margem, e
+ * ainda ficam longe de uma cena que o próprio visitante tornou pesada.
+ */
+const JANELA_DO_VAIVEM_S = 20;
+
+/**
+ * A TRAVA DE VAI-E-VOLTA — pura, para ser julgada sem GPU.
+ *
+ * O QUE ELA FECHA: o `upgradeCooldown` segura só a SUBIDA. Um aparelho
+ * parado na fronteira dos 42 fps caía para alta, esperava os 15 s,
+ * subia para cinema no teto do monitor e caía de novo na PRIMEIRA
+ * janela de medida: 17,5 s por volta, para sempre, assando um mundo
+ * inteiro a cada volta. Fazer a QUEDA esperar também não resolve — só
+ * alonga o ciclo (30 s em vez de 17,5). O que o mata é parar de PROPOR
+ * a subida.
+ *
+ * A REGRA: subiu para X e a MEDIÇÃO derrubou de X dentro da janela → a
+ * escada desarma, e a medição não pede mais subida nenhuma. Rearma
+ * quando alguém sobe de tier — e isso é dedução, não confiança: com a
+ * trava armada a medição nunca propõe subida (`tierMedido` sem
+ * `noTetoDoMonitor` devolve o tier de agora ou o de baixo), então
+ * subida que chegue aqui só pode ter vindo do VISITANTE.
+ *
+ * A queda só conta se veio da MEDIÇÃO, e por isso o quarto argumento:
+ * quem desce dois degraus na mão em poucos segundos (medido no
+ * navegador: alta → cinema → performance) não está numa fronteira, está
+ * experimentando o painel — e armava a trava sem ter engasgado.
+ */
+export class TravaDoVaivem {
+  private subiuPara: QualityLevel | null = null;
+  private quandoSubiu = 0;
+  /** com a trava armada a medição não pede mais subida */
+  travada = false;
+
+  /** anota uma troca JÁ decidida; `agora` em segundos de sessão */
+  anotar(
+    de: QualityLevel,
+    para: QualityLevel,
+    agora: number,
+    daMedicao: boolean
+  ) {
+    const passo = ORDEM_DOS_TIERS.indexOf(para) - ORDEM_DOS_TIERS.indexOf(de);
+    if (passo === 0) return;
+    if (passo > 0) {
+      this.travada = false;
+      this.subiuPara = para;
+      this.quandoSubiu = agora;
+      return;
+    }
+    if (
+      daMedicao
+      && this.subiuPara === de
+      && agora - this.quandoSubiu <= JANELA_DO_VAIVEM_S
+    ) {
+      this.travada = true;
+    }
+    this.subiuPara = null;
+  }
+}
+
 /** O que a última janela de medida viu, e o que ela indica. */
 export interface MedicaoDoQuadro {
   /** média de quadros por segundo na janela */
@@ -295,6 +359,8 @@ export class Engine {
    *  "avg > 72" nunca acontece; os limiares de subida são relativos */
   private peakAvg = 0;
   private upgradeCooldown = 0;
+  /** a trava anti-vai-e-volta do Auto (ver `TravaDoVaivem`) */
+  private travaDoVaivem = new TravaDoVaivem();
   /** a media query armada no DPR vivo — trocar de monitor a dispara */
   private vigiaDeDpr: MediaQueryList | null = null;
 
@@ -396,10 +462,20 @@ export class Engine {
    * depois de uma QUEDA (não subir de volta em cima do mesmo engasgo) e
    * 10 s depois de uma SUBIDA. Os dois números são os do auto-quality
    * que morreu aqui; o que mudou é quem obedece a eles.
+   *
+   * E A TROCA É ANOTADA na `TravaDoVaivem`, que é o que impede o Auto de
+   * balançar para sempre num aparelho parado na fronteira do limiar. A
+   * espera sozinha nunca conseguiu: ela segura a subida e a queda vem na
+   * janela seguinte.
    */
   applyQuality(q: QualityLevel) {
     const antes = this.quality;
+    // quem PEDIU esta troca: a medição só age pela sugestão que acabou
+    // de publicar, e é a última coisa que ainda dá para saber daqui —
+    // o engine mede e não conhece o painel
+    const daMedicao = q === this.medicaoAtual?.sugestao;
     this.quality = q;
+    this.travaDoVaivem.anotar(antes, q, this.timer.getElapsed(), daMedicao);
     this.upgradeCooldown = ORDEM_DOS_TIERS.indexOf(q) < ORDEM_DOS_TIERS.indexOf(antes)
       ? ESPERA_APOS_QUEDA_S
       : ESPERA_APOS_SUBIDA_S;
@@ -504,9 +580,13 @@ export class Engine {
         this.upgradeCooldown = Math.max(0, this.upgradeCooldown - this.fpsTimer);
         // subir pede limiar RELATIVO ao teto de refresh observado (94%)
         // + a espera anti-vaivém — limiares absolutos (>72 fps) eram
-        // inatingíveis sob vsync a 60 Hz.
+        // inatingíveis sob vsync a 60 Hz. E a TRAVA, que é o que faz o
+        // Auto parar de balançar depois de a primeira volta se fechar.
         const noTeto =
-          this.peakAvg > 20 && avg > this.peakAvg * 0.94 && this.upgradeCooldown <= 0;
+          this.peakAvg > 20
+          && avg > this.peakAvg * 0.94
+          && this.upgradeCooldown <= 0
+          && !this.travaDoVaivem.travada;
         const sugestao = tierMedido(this.quality, avg, noTeto);
         const antes = this.medicaoAtual?.sugestao;
         this.medicaoAtual = { fps: avg, sugestao };

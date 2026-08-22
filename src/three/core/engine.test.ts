@@ -20,12 +20,14 @@ import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import {
   DEEP_NEAR_MIN_PC,
   TONE_MAPPINGS,
+  TravaDoVaivem,
   farPlanePc,
   lerPortaExposicao,
   lerPortaTom,
   nearPlanePc,
+  tierMedido,
 } from './engine';
-import type { ToneMapMode } from './engine';
+import type { QualityLevel, ToneMapMode } from './engine';
 
 /** A fórmula ANTIGA, verbatim das duas linhas que viviam no `updateClip`. */
 const nearAntigo = (d: number) => THREE.MathUtils.clamp(d * 0.004, 0.001, 40);
@@ -417,5 +419,175 @@ describe('a nitidez segue o monitor (item 6)', () => {
       ENGINE.indexOf('private aplicarNitidez()')
     );
     expect(aplicar).toContain('this.aplicarNitidez();');
+  });
+});
+
+// ============================================================
+// A TRAVA DE VAI-E-VOLTA DO AUTO (21/08). A espera (`upgradeCooldown`)
+// segura só a SUBIDA, e por isso nunca bastou: um aparelho parado na
+// fronteira dos 42 fps caía para alta, cumpria os 15 s, subia de volta
+// para cinema no teto do monitor e caía outra vez na PRIMEIRA janela de
+// medida — 17,5 s por volta, para sempre, com um mundo inteiro assado a
+// cada volta (`aoMedirOQuadro` → `setQuality('auto')` → `reassarMundo`).
+//
+// Aqui a SEQUÊNCIA de medidas é simulada, que é a única forma de julgar
+// uma máquina de estados sem GPU. As duas peças que decidem são as do
+// app (`tierMedido` e `TravaDoVaivem`); o simulador só repõe a cola —
+// o teto observado, a espera e quem aplica — nas janelas de 2,5 s.
+// ============================================================
+describe('o Auto não balança para sempre (trava de vai-e-volta)', () => {
+  const JANELA = 2.5;
+  const ORDEM: QualityLevel[] = ['performance', 'alta', 'cinema'];
+
+  function simular(
+    fps: Record<QualityLevel, number>,
+    segundos: number,
+    comTrava = true
+  ) {
+    let tier: QualityLevel = 'cinema';
+    let peakAvg = 0;
+    let espera = 0;
+    const trava = new TravaDoVaivem();
+    const trocas: { t: number; de: QualityLevel; para: QualityLevel }[] = [];
+    // por CONTAGEM de janelas, não somando 2,5 num acumulador: o passo é
+    // exato em binário, o acumulador de 240 somas não é
+    for (let n = 1; n * JANELA <= segundos; n++) {
+      const t = n * JANELA;
+      const avg = fps[tier];
+      peakAvg = Math.max(peakAvg, avg);
+      espera = Math.max(0, espera - JANELA);
+      const noTeto =
+        peakAvg > 20
+        && avg > peakAvg * 0.94
+        && espera <= 0
+        && !(comTrava && trava.travada);
+      const sugestao = tierMedido(tier, avg, noTeto);
+      if (sugestao === tier) continue;
+      // no simulador toda troca vem da medição — é o que ele simula
+      trava.anotar(tier, sugestao, t, true);
+      espera = ORDEM.indexOf(sugestao) < ORDEM.indexOf(tier) ? 15 : 10;
+      trocas.push({ t, de: tier, para: sugestao });
+      tier = sugestao;
+    }
+    return { tier, trocas, travada: trava.travada };
+  }
+
+  /** o aparelho do defeito: cinema não fecha os 42, alta corre no teto */
+  const NA_FRONTEIRA: Record<QualityLevel, number> = {
+    cinema: 41,
+    alta: 60,
+    performance: 60,
+  };
+
+  it('sem a trava, dez minutos balançam sem parar — uma volta a cada 17,5 s', () => {
+    const { trocas } = simular(NA_FRONTEIRA, 600, false);
+    expect(trocas.length).toBeGreaterThan(60);
+    // ainda balançando no fim dos dez minutos: não é transitório
+    expect(trocas[trocas.length - 1].t).toBeGreaterThan(590);
+    const subidas = trocas.filter((x) => x.para === 'cinema');
+    const intervalos = subidas.slice(1).map((x, i) => x.t - subidas[i].t);
+    expect([...new Set(intervalos)]).toEqual([17.5]);
+  });
+
+  it('com a trava, a volta se fecha UMA vez e a escada desarma', () => {
+    const { tier, trocas, travada } = simular(NA_FRONTEIRA, 600);
+    // cai (2,5 s) → sobe quando a espera vence (17,5 s) → cai de novo na
+    // janela seguinte (20 s), e aí a trava arma: nunca mais.
+    expect(trocas).toEqual([
+      { t: 2.5, de: 'cinema', para: 'alta' },
+      { t: 17.5, de: 'alta', para: 'cinema' },
+      { t: 20, de: 'cinema', para: 'alta' },
+    ]);
+    expect(travada).toBe(true);
+    expect(tier).toBe('alta');
+  });
+
+  it('o aparelho que SEGURA o tier não arma nada — nem troca', () => {
+    const { tier, trocas, travada } = simular(
+      { cinema: 60, alta: 60, performance: 60 },
+      600
+    );
+    expect(trocas).toEqual([]);
+    expect(travada).toBe(false);
+    expect(tier).toBe('cinema');
+  });
+
+  it('o aparelho FRACO desce os dois degraus, tenta voltar uma vez, e para', () => {
+    const { tier, trocas, travada } = simular(
+      { cinema: 20, alta: 20, performance: 55 },
+      600
+    );
+    expect(trocas.map((x) => x.para)).toEqual([
+      'alta',
+      'performance',
+      'alta',
+      'performance',
+    ]);
+    expect(travada).toBe(true);
+    expect(tier).toBe('performance');
+  });
+
+  describe('a regra da trava, peça a peça', () => {
+    it('subir e cair de volta DENTRO da janela arma', () => {
+      const t = new TravaDoVaivem();
+      t.anotar('cinema', 'alta', 10, true);
+      expect(t.travada).toBe(false);
+      t.anotar('alta', 'cinema', 25, true);
+      t.anotar('cinema', 'alta', 27.5, true);
+      expect(t.travada).toBe(true);
+    });
+
+    it('...e FORA dela não arma: engasgo que passou não é fronteira', () => {
+      const t = new TravaDoVaivem();
+      t.anotar('alta', 'cinema', 25, true);
+      t.anotar('cinema', 'alta', 45.1, true);
+      expect(t.travada).toBe(false);
+    });
+
+    it('duas quedas seguidas, sem subida entre elas, não armam', () => {
+      const t = new TravaDoVaivem();
+      t.anotar('cinema', 'alta', 5, true);
+      t.anotar('alta', 'performance', 10, true);
+      expect(t.travada).toBe(false);
+    });
+
+    it('a queda que NÃO veio da medição não arma — mexer no painel não é engasgo', () => {
+      const t = new TravaDoVaivem();
+      t.anotar('alta', 'cinema', 25, false);
+      t.anotar('cinema', 'performance', 27.5, false);
+      expect(t.travada).toBe(false);
+    });
+
+    it('subir REARMA — com a trava armada, subida só pode vir do visitante', () => {
+      const t = new TravaDoVaivem();
+      t.anotar('alta', 'cinema', 25, true);
+      t.anotar('cinema', 'alta', 27.5, true);
+      expect(t.travada).toBe(true);
+      t.anotar('alta', 'cinema', 300, false);
+      expect(t.travada).toBe(false);
+    });
+
+    it('troca para o MESMO tier é não-evento', () => {
+      const t = new TravaDoVaivem();
+      t.anotar('alta', 'cinema', 25, true);
+      t.anotar('cinema', 'cinema', 26, true);
+      t.anotar('cinema', 'alta', 27, true);
+      expect(t.travada).toBe(true);
+    });
+  });
+
+  it('o engine liga a trava nos dois pontos: a medida lê, a troca anota', () => {
+    const ENGINE = readFileSync(new URL('./engine.ts', import.meta.url), 'utf8');
+    const medida = ENGINE.slice(
+      ENGINE.indexOf('const noTeto ='),
+      ENGINE.indexOf('const sugestao =')
+    );
+    expect(medida).toContain('!this.travaDoVaivem.travada');
+    const aplicar = ENGINE.slice(
+      ENGINE.indexOf('applyQuality(q: QualityLevel'),
+      ENGINE.indexOf('private aplicarNitidez()')
+    );
+    expect(aplicar).toContain('this.travaDoVaivem.anotar(antes, q,');
+    expect(aplicar).toContain('const daMedicao = q === this.medicaoAtual?.sugestao;');
   });
 });
