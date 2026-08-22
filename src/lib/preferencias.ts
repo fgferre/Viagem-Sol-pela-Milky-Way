@@ -3,7 +3,7 @@
 // A URL continua sendo a fonte de verdade (qualquer configuração
 // vira link e a captura headless enxerga o que a tela enxerga);
 // o storage só guarda o que a URL não carrega e o visitante não
-// escolheu: já viu o convite, já ligou a Wikipedia.
+// escolheu: por ora, só que ele já viu o convite.
 // Tom, exposição e camadas NÃO se persistem — quebrariam a
 // honestidade dos gates.
 //
@@ -17,12 +17,22 @@
 // o aparelho aguenta é medição VIVA, que sugere e só aplica no Auto.
 // A precedência da Onda 1f (URL > storage > detecção) vale para o que
 // sobrou aqui; para o tier, ela encolheu para URL > produto.
+//
+// LÁPIDE DE `wikipediaLigada` (2026-08-21). O campo nasceu com o
+// PLANO-ATLAS ("Wikipedia no painel, opt-out persistido"), e o painel
+// NUNCA nasceu: ninguém no projeto o leu nem o escreveu — nem código,
+// nem teste, nem captura. Era um envelope guardando a preferência de um
+// visitante que não tinha onde exprimi-la, e um campo assim mente duas
+// vezes: promete que a opção existe e faz o saneamento fingir que
+// protege alguma coisa. O plano do Atlas CONTINUA prometendo o painel,
+// e a promessa fica lá; quando ele nascer, o campo nasce com ele — que
+// é a ordem certa. A varredura invertida vigia o nome em
+// `atlasConfig.test.ts`, ao lado da lápide do `tierQueRodou`.
 // ============================================================
 
 export interface Preferencias {
   v: 1;
   conviteVisto?: boolean;
-  wikipediaLigada?: boolean;
 }
 
 const CHAVE = 'viagem-prefs';
@@ -41,7 +51,6 @@ export function lerPreferencias(): Preferencias {
     const p = dado as Record<string, unknown>;
     const envelope: Preferencias = { v: 1 };
     if (p.conviteVisto === true) envelope.conviteVisto = true;
-    if (p.wikipediaLigada === true) envelope.wikipediaLigada = true;
     return envelope;
   } catch {
     return { v: 1 };

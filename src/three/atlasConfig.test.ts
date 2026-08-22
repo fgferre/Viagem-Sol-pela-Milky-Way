@@ -202,6 +202,17 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(PREFERENCIAS).not.toContain('tierQueRodou?');
   });
 
+  it('o storage não guarda campo que ninguém lê (a lápide da Wikipedia)', () => {
+    // `wikipediaLigada` viveu no envelope sem UM chamador — o painel que
+    // o PLANO-ATLAS promete nunca nasceu. Campo assim promete uma opção
+    // que não existe e faz o saneamento fingir que protege algo. Quando
+    // o painel nascer, o campo nasce com ele; até lá, ausência cobrada.
+    // O `?` é do CAMPO opcional, como na lápide do tierQueRodou acima:
+    // é o que separa o campo vivo da lápide que o nomeia.
+    expect(PREFERENCIAS).not.toContain('wikipediaLigada?');
+    expect(PREFERENCIAS).not.toContain('p.wikipediaLigada');
+  });
+
   it('a porta `?q=` aceita os quatro literais e nada mais (a lição do ?tone=constructor)', () => {
     for (const q of QUALIDADES) expect(lerPortaQualidade(q.id)).toBe(q.id);
     expect(lerPortaQualidade('constructor')).toBeNull();
