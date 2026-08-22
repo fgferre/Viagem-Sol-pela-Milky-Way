@@ -74,8 +74,8 @@ demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
 (`38d4ae4`, `ca4707e`), **4** em 16/08 (`bd12905`), **3** e **44** em 17/08
 (`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
 `229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
-`2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60** em
-22/08 (`a8a3168`). O 4 (Atlas com brilho apagado 100×)
+`2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60**, **66**
+e **67** em 22/08 (`a8a3168`, `92f0232`, `64f8ed9`). O 4 (Atlas com brilho apagado 100×)
 morreu no M1 — `claraoDoAtlas` saiu do código e os dois modos desenham
 igual, decisão do dono cumprida. O **3** e o **44** pousaram com o aceite
 do dono em 17/08.
@@ -375,6 +375,19 @@ declaram `GAL_WARP_AMPLITUDE` acompanham o knob (820 → 410 com
 casos. Trocar MUDA PIXEL: precisa de foto e do olho dele, não é
 substituição cega.
 
+**68.** (Medido em 22/08, ao diagnosticar o item 66.) **O painel diz um
+número de quadros por segundo melhor do que a verdade, e nunca diz menos
+de 20.** Medido nesta bancada, em `q=cinema` a 1200×900: 60 quadros em
+4,00 s de relógio — 15,0 q/s reais — e o app mostrando 20,3. A janela da
+medida soma o `dt` do tick, que vem grampeado em 0,05 s para a animação
+não saltar; a média é `quadros ÷ esse tempo grampeado`, então 20 q/s
+(1 ÷ 0,05) é um CHÃO que nenhuma máquina lenta atravessa. Pelo mesmo
+motivo a primeira medida não sai aos 2,5 s: sai no 50º quadro. A decisão
+do Auto não muda hoje (os limiares são 42 e 34, os dois acima do chão) —
+quem mente é o MOSTRADOR, e mentiria também qualquer limiar futuro
+abaixo de 20. O conserto é a janela contar relógio de parede em vez do
+`dt` da animação; muda número na tela e pede o olho dele.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -415,6 +428,10 @@ preguiçosa de textura. Enquanto viver, qualquer A/B pode acusá-las em
 falso; a prova de inocência é uma captura do lado acusado bater byte a
 byte com o baseline (funcionou nas duas).
 
+Uma pista MORREU em 22/08: o item 66 (a mesma URL dando duas telas) era
+o mostrador de quadros por segundo do HUD entrando na foto — e as vistas
+da Terra são `?shot=2`, sem HUD nenhum. Não é a mesma raiz.
+
 **58.** (Achado no censo dos juízes de 21/08, que fechou o item 57. A
 metade da ida e volta FECHOU em 22/08; sobra esta.) A régua dos planetas
 (`planeta-pixel.mjs`) voltou a funcionar — travava desde o M1 pedindo um
@@ -433,32 +450,6 @@ então lançar `filho j0 saiu com null`, sem imprimir o veredito. O lado
 Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
 baldes cheios se resolve matando o filho preso — o veredito sai da
 segunda invocação, que lê tudo de disco.
-
-**66.** (Achado em 22/08, rodando o `atlas-smoke` para fechar outra
-coisa; REPRODUZ NO HEAD, com os mesmos dois md5.) Um dos 99 vereditos
-reprova: *"a URL sem `?exp=` reproduz a tela, pixel a pixel"*
-(`91a7de848027` vs `7ae51a055bb7`). O juiz mexe no slider de exposição
-para 1,40, volta para 1,02 — a auto-exposição religa e o `?exp=` sai da
-URL, as duas coisas certas — e então compara a tela viva com a mesma URL
-recarregada. As duas diferem. Não foi diagnosticado: pode ser o juiz
-fotografando a recarga antes de ela assentar, ou pode ser a
-auto-exposição pousando num valor diferente quando NASCE com a cena em
-vez de voltar a ela. Enquanto viver, o `atlas-smoke` pode sair com 1
-falha em 101 e não é regressão de quem o rodou. **E ele é INTERMITENTE:**
-na volta de 22/08 que fechou o item 60 o juiz saiu 99 de 99, com o mesmo
-código — o que empurra a suspeita para o primeiro palpite (o juiz
-fotografando a recarga antes de ela assentar), porque a segunda
-explicação daria falha toda vez.
-
-**67.** (Achado em 22/08, quando o `memoria.mjs` passou a rodar por
-tier; REPRODUZ NO HEAD.) Em `q=cinema`, cinco idas e voltas ao Atlas
-ganham **3 geometrias** na QUINTA volta (45 → 48; as quatro primeiras
-ficam paradas em 45). Não são os corpos do palco: medido corpo a corpo,
-nenhum deles carregou textura nos cinco ciclos (`prontos: []`) e a
-contagem de texturas fica em 40 o tempo todo. O juiz reprova o portal
-com `delta 3`, e está certo em reprovar — só nunca tinha medido em
-cinema, porque rodava só em `alta` (onde os cinco ciclos ficam em 45).
-Por que a QUINTA e não a segunda é justamente o que falta descobrir.
 
 ---
 
