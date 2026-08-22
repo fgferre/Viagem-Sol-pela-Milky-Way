@@ -14,6 +14,7 @@ import {
   LARGURA_UTIL_MINIMA_PX,
   MARGEM_DE_ENQUADRAMENTO,
   MAX_SOLAR_DEVIATION_GRAUS,
+  MIN_POLAR_RAD,
   ORBITA_PARADA,
   ARRASTO_RAD_POR_PX,
   PARENT_FRAMING_BIAS,
@@ -36,6 +37,12 @@ import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
 
 const GRAU = Math.PI / 180;
+
+/** o polo da eclíptica no frame da cena — o `up` dos degraus de cima */
+const POLO_DA_ECLIPTICA = (() => {
+  const v = eclipticaParaEquatorial([0, 0, 1]);
+  return new THREE.Vector3(v[0], v[1], v[2]).normalize();
+})();
 
 /**
  * O semi-ângulo que a esfera de raio `rAlvo × margem` ocupa, vista da
@@ -417,21 +424,74 @@ describe('direcaoPrivilegiada — os 30° e o grampo dos 70°, do lado ACESO', (
     expect(out.angleTo(aceso) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS, 10);
   });
 
-  it('a órbita do visitante soma — e para no máximo solar', () => {
+  it('a órbita do visitante soma — e o CONE morreu (item 73)', () => {
     const out = new THREE.Vector3();
     direcaoPrivilegiada(eixo.clone(), polo, { altura: 20 * GRAU, volta: 0 }, out);
     expect(out.angleTo(aceso) / GRAU).toBeCloseTo(PHASE_OFFSET_GRAUS + 20, 10);
-    direcaoPrivilegiada(eixo.clone(), polo, { altura: 180 * GRAU, volta: 0 }, out);
-    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 10);
-    // e o PISO do cone é a fase cheia (0°), não mais −70°: a metade
-    // negativa do arco virou redundante quando a volta ganhou 360°
-    // (ver `OrbitaDoVisitante`) — arrastar sem parar para cima para na
-    // linha do Sol em vez de atravessá-la e inverter a horizontal
-    direcaoPrivilegiada(eixo.clone(), polo, { altura: -180 * GRAU, volta: 0 }, out);
+    // O QUE MUDOU: 70° era o teto, e passar dele era impossível. Agora a
+    // inclinação vai até 180° — o lado escuro visto de trás —, e é isso
+    // que o dono pediu quando disse que a navegação virou um monstro.
+    // 75° de inclinação: passa dos 70° do cone e ainda fica 15° fora da
+    // calota do polo (aqui o polo é perpendicular à linha do Sol, então
+    // inclinação de 90° seria o polo em cheio)
+    direcaoPrivilegiada(eixo.clone(), polo, { altura: 45 * GRAU, volta: 0 }, out);
+    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(75, 10);
+    expect(75).toBeGreaterThan(MAX_SOLAR_DEVIATION_GRAUS);
+    direcaoPrivilegiada(eixo.clone(), polo, { altura: 400 * GRAU, volta: 0 }, out);
+    expect(out.angleTo(aceso) / GRAU).toBeCloseTo(180, 6);
+    // e o PISO continua sendo a fase cheia (0°), não −180°: a metade
+    // negativa do arco é redundante com a volta de 360° (ver
+    // `OrbitaDoVisitante`) — arrastar sem parar para cima para na linha
+    // do Sol em vez de atravessá-la e inverter a horizontal
+    direcaoPrivilegiada(eixo.clone(), polo, { altura: -400 * GRAU, volta: 0 }, out);
     expect(out.angleTo(aceso) / GRAU).toBeCloseTo(0, 10);
-    // no extremo do grampo mais de meio disco continua aceso — é a única
-    // serventia do 70°, e é o que a docstring dele promete
-    expect((1 + Math.cos(MAX_SOLAR_DEVIATION_GRAUS * GRAU)) / 2).toBeGreaterThan(0.5);
+  });
+
+  it('o grampo polar NÃO TOCA em nada dentro da faixa — bit a bit', () => {
+    // é esta identidade que segura os md5 do `atlas-smoke` e toda vista
+    // pinada: fora da calota o grampo devolve a direção sem escrever um
+    // bit. Varre a esfera inteira, menos as duas calotas.
+    const out = new THREE.Vector3();
+    const referencia = new THREE.Vector3();
+    for (let alt = -PHASE_OFFSET_GRAUS; alt <= 150; alt += 3) {
+      for (let v = 0; v < 360; v += 11) {
+        const orbita = { altura: alt * GRAU, volta: v * GRAU };
+        // reconstrói pelo caminho SEM grampo (inclina, gira) e cobra
+        // igualdade EXATA — nenhum `toBeCloseTo` aqui
+        referencia.copy(eixo).negate().normalize();
+        const linha = referencia.clone();
+        const angulo = THREE.MathUtils.clamp(
+          PHASE_OFFSET_GRAUS * GRAU + orbita.altura,
+          0,
+          Math.PI
+        );
+        const eixoDoGiro = new THREE.Vector3().crossVectors(referencia, polo).normalize();
+        referencia.applyAxisAngle(eixoDoGiro, angulo);
+        if (orbita.volta !== 0) referencia.applyAxisAngle(linha, orbita.volta);
+        // a faixa se decide na direção CRUA: uma já grampeada pousa
+        // exatamente na borda e passaria por "dentro" sem ser
+        if (Math.abs(referencia.dot(polo)) > Math.cos(MIN_POLAR_RAD)) continue;
+        direcaoPrivilegiada(eixo.clone(), polo, orbita, out);
+        expect(out.x).toBe(referencia.x);
+        expect(out.y).toBe(referencia.y);
+        expect(out.z).toBe(referencia.z);
+      }
+    }
+  });
+
+  it('...e onde toca, para EXATAMENTE em MIN_POLAR — nunca atravessa', () => {
+    const out = new THREE.Vector3();
+    // o polo aqui é (0,0,1) e o eixo Sol→alvo é (1,0,0): a inclinação de
+    // 90° põe a direção EM CIMA do polo, e a de 90°±ε dentro da calota
+    for (const alt of [59.5, 60, 60.5, 119.5, 120, 120.5]) {
+      direcaoPrivilegiada(eixo.clone(), polo, { altura: alt * GRAU, volta: 0 }, out);
+      const polar = out.angleTo(polo);
+      expect(Math.min(polar, Math.PI - polar)).toBeGreaterThanOrEqual(MIN_POLAR_RAD - 1e-12);
+      expect(out.length()).toBeCloseTo(1, 12);
+    }
+    // `|up × z| = sen(φ)`, e é isso que separa o grampo do ruído de
+    // float32 — o número que a docstring de MIN_POLAR_RAD declara
+    expect(Math.sin(MIN_POLAR_RAD)).toBeCloseTo(0.0998, 4);
   });
 
   it('alvo em cima do polo não devolve NaN', () => {
@@ -570,7 +630,7 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
     expect(camera.position.distanceTo(inicial)).toBeGreaterThan(0.5 * inicial.length());
   });
 
-  it('o VERTICAL para no cone: 70° para um lado, a linha do Sol para o outro', () => {
+  it('o VERTICAL atravessa o terminador e para no LADO ESCURO (item 73)', () => {
     const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
     const rig = new AtlasRig();
     const casa = orbitaMaisExterna();
@@ -581,11 +641,35 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
       rig.apply(camera);
       return camera.position.clone().sub(rig.alvo).normalize().angleTo(iluminada) / GRAU;
     };
-    // para BAIXO sem parar: a câmera desce até o terminador e para lá
-    expect(faseDepoisDe(50)).toBeCloseTo(MAX_SOLAR_DEVIATION_GRAUS, 9);
+    // para BAIXO sem parar: a câmera vai até o outro lado do alvo. O
+    // grampo polar corta os últimos 5,73° quando a linha do Sol e o polo
+    // não são perpendiculares — Plutão tem 17° de inclinação, então a
+    // parada fica a MIN_POLAR do polo, não em 180° exatos
+    const escuro = faseDepoisDe(50);
+    expect(escuro).toBeGreaterThan(MAX_SOLAR_DEVIATION_GRAUS);
+    expect(escuro).toBeGreaterThan(160);
+    // a fração iluminada lá é `(1+cos φ)/2` — quase zero: é o lado
+    // escuro, que é o que ele pediu para ver
+    expect((1 + Math.cos(escuro * GRAU)) / 2).toBeLessThan(0.03);
     // para CIMA sem parar: para na fase CHEIA, sem atravessar o eixo —
     // atravessar inverteria a horizontal do outro lado
     expect(faseDepoisDe(-50)).toBeCloseTo(0, 6);
+  });
+
+  it('o ACUMULADOR para junto com a inclinação — sem arrasto morto', () => {
+    // a "borracha" de todo controle mal grampeado: se o acumulador
+    // seguisse somando depois do limite, a volta custaria desfazer o
+    // arrasto morto antes de a câmera se mexer. Um pixel de volta tem de
+    // mover a câmera na hora.
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+    const rig = new AtlasRig();
+    rig.focarNoSistema();
+    for (let i = 0; i < 500; i++) rig.addOrbitDelta(0, 50);
+    rig.apply(camera);
+    const noLimite = camera.position.clone();
+    rig.addOrbitDelta(0, -1);
+    rig.apply(camera);
+    expect(camera.position.distanceTo(noLimite)).toBeGreaterThan(0);
   });
 });
 
@@ -692,14 +776,12 @@ describe('o rig e o alvo de abertura', () => {
     rig.apply(camera);
     const girada = camera.position.clone();
     expect(girada.distanceTo(inicial)).toBeGreaterThan(0);
-    // grampeado: o desvio contra a direção ILUMINADA — a que aponta do
-    // corpo mais externo para o Sol — nunca passa do máximo
-    const casa = orbitaMaisExterna();
-    const aceso = casa.posicao.clone().negate().normalize();
+    // grampeado no POLO, que é o único limite que sobrou (item 73): a
+    // direção da câmera nunca entra na calota de MIN_POLAR em volta do
+    // polo da eclíptica, que é o `up` deste degrau
     const daCamera = girada.clone().sub(rig.alvo).normalize();
-    expect(daCamera.angleTo(aceso) / GRAU).toBeLessThanOrEqual(
-      MAX_SOLAR_DEVIATION_GRAUS + 1e-9
-    );
+    const polar = daCamera.angleTo(POLO_DA_ECLIPTICA);
+    expect(Math.min(polar, Math.PI - polar)).toBeGreaterThanOrEqual(MIN_POLAR_RAD - 1e-9);
     // e focar de novo zera a órbita — o alvo novo nasce no pino
     rig.focarNoSistema();
     rig.apply(camera);
@@ -834,26 +916,34 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
     return fora;
   };
 
-  it('a degenerescência é ALCANÇÁVEL: o eixo da Terra entra no cone do arrasto', () => {
+  it('a degenerescência é ALCANÇÁVEL — e desde o item 73, em qualquer data', () => {
     // o eixo da Terra faz com a direção do Sol, no solstício, 90° − 23,4°
-    // = 66,6°. O grampo do arrasto vale 70°, então a inclinação passa DO
-    // OUTRO LADO do polo — e é por isso que a guarda existe.
+    // = 66,6°. No cone de 70° ele já era alcançável só nessa janela do
+    // ano; com a inclinação varrendo [0°, 180°] ele é alcançável SEMPRE,
+    // e é por isso que a guarda deixou de ser opcional.
     const polo = poloDe('earth', EPOCA_JD_TDB);
     let menor = 180;
+    let maior = 0;
     for (const doSol of direcoesDoAno(1)) {
       const iluminada = doSol.clone().negate();
       menor = Math.min(menor, iluminada.angleTo(polo) / GRAU);
+      maior = Math.max(maior, iluminada.angleTo(polo) / GRAU);
     }
     expect(menor).toBeGreaterThan(66);
     expect(menor).toBeLessThan(67);
-    // ...e 66,6 < 70: o dedo do visitante CHEGA ao eixo do planeta
+    // no cone de então só o solstício chegava lá (66,6 < 70); no
+    // equinócio a linha do Sol fica a 90° do eixo e faltavam 20°
     expect(menor).toBeLessThan(MAX_SOLAR_DEVIATION_GRAUS);
+    expect(maior).toBeGreaterThan(MAX_SOLAR_DEVIATION_GRAUS + 40);
+    // hoje a inclinação chega a 180°, então o polo está DENTRO do
+    // alcance em todo dia do ano — a guarda vale sempre
+    expect(maior).toBeLessThan(180);
   });
 
-  it('no encontro exato, sem guarda o up é a própria mira — com guarda são 23,4°', () => {
+  it('no encontro exato o grampo polar segura a mira em MIN_POLAR, e o up cede', () => {
     const polo = poloDe('earth', EPOCA_JD_TDB);
     // construção EXATA: `u` (alvo→Sol) a 60° do polo e `altura` de 30°
-    // põem a direção da câmera em cima do polo, sem depender de busca
+    // PEDEM a direção da câmera em cima do polo, sem depender de busca
     const t = new THREE.Vector3(1, 0, 0).cross(polo).normalize();
     const u = polo
       .clone()
@@ -866,15 +956,16 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
       { altura: (60 - PHASE_OFFSET_GRAUS) * GRAU, volta: 0 },
       new THREE.Vector3()
     );
-    // a mira caiu EM CIMA do eixo do planeta
-    expect(dir.angleTo(polo) / GRAU).toBeCloseTo(0, 9);
-    // sem guarda, `up = polo` seria paralelo à mira: `direita = up × z`
-    // colapsa e a imagem gira sozinha
-    expect(Math.abs(dir.dot(polo))).toBeCloseTo(1, 12);
-    // com guarda, o up cede à eclíptica — que para a Terra fica a 23,4°
+    // o pedido era o polo EXATO; o grampo o para a MIN_POLAR dele, e
+    // esse é o piso duro de `|direita| = |up × z| = sen(φ)`
+    expect(dir.angleTo(polo)).toBeCloseTo(MIN_POLAR_RAD, 9);
+    expect(Math.abs(dir.dot(polo))).toBeLessThan(Math.cos(MIN_POLAR_RAD) + 1e-12);
+    // e o up ainda cede à eclíptica — as duas guardas somam: para a
+    // Terra a eclíptica fica a 23,4° do eixo, e a mira a 5,73° dele,
+    // então a separação mira↔up sobe para ~18°
     const up = upDoAtlas(dir, polo, new THREE.Vector3());
     expect(up.distanceTo(POLO_ECLIPTICO)).toBeLessThan(1e-12);
-    expect(dir.angleTo(up) / GRAU).toBeCloseTo(23.44, 1);
+    expect(dir.angleTo(up) / GRAU).toBeGreaterThan(15);
   });
 
   it('a guarda NÃO vaza: longe do eixo o up é o polo do corpo, bit a bit', () => {
@@ -897,15 +988,26 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
 
   it('VARREDURA: em nenhum ponto alcançável a mira encosta no up', () => {
     // os dois corpos que têm degrau "corpo"/"lua" hoje, um ano de datas,
-    // o cone inteiro do arrasto. O piso MEDIDO nesta varredura é 17,6°
-    // (Terra) e 19,9° (Lua); 15° é o que se declara, com folga.
-    const PISO_GRAUS = 15;
+    // e a ESFERA INTEIRA do arrasto (item 73 — era o cone de 70°).
+    //
+    // O PISO DECLARADO CAIU, e é o preço declarado do arrasto livre. No
+    // cone o pior caso media 17,6° (Terra) e 19,9° (Lua), porque o dedo
+    // nunca chegava perto do eixo. Hoje ele chega até a borda da calota,
+    // e quem segura é `MIN_POLAR_RAD` — aplicado DUAS vezes: na mira
+    // contra o polo, e no `up` contra a mira (`upDoAtlas`). MEDIDO nesta
+    // varredura: 5,7296° nos dois corpos, que é MIN_POLAR_RAD exato — a
+    // guarda encosta no próprio piso e não passa dele.
+    //
+    // O que importa é o número que sai disso: `|direita| = |up × z| =
+    // sen(separação) = 9,98e-2`, três ordens de grandeza acima do ruído
+    // de float32 — que é a razão de a guarda existir.
+    const PISO_GRAUS = MIN_POLAR_RAD / GRAU - 1e-9;
     let pior = 180;
     for (const id of ['earth', 'moon']) {
       for (let d = 0; d < 366; d += 11) {
         const polo = poloDe(id, EPOCA_JD_TDB + d);
         for (const doSol of direcoesDoAno(15)) {
-          for (let alt = -PHASE_OFFSET_GRAUS; alt <= 40; alt += 5) {
+          for (let alt = -PHASE_OFFSET_GRAUS; alt <= 150; alt += 5) {
             for (let v = 0; v < 360; v += 20) {
               const dir = direcaoPrivilegiada(
                 doSol.clone(),
@@ -921,6 +1023,33 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
       }
     }
     expect(pior).toBeGreaterThan(PISO_GRAUS);
+    expect(Math.sin(pior * GRAU)).toBeGreaterThan(0.09);
+  });
+
+  it('a cedência sozinha PERSEGUIA a mira — é o `up` grampeado que fecha', () => {
+    // o defeito que a varredura achou quando o cone morreu, reduzido ao
+    // ponto exato: mira a 20° do eixo da Terra, no azimute da eclíptica.
+    // `cede` vale 0,83 e põe o `up` cru a 19,4° do eixo — 0,6° da mira.
+    const polo = poloDe('earth', EPOCA_JD_TDB);
+    const rumo = POLO_ECLIPTICO.clone()
+      .addScaledVector(polo, -POLO_ECLIPTICO.dot(polo))
+      .normalize();
+    const mira = polo
+      .clone()
+      .multiplyScalar(Math.cos(20 * GRAU))
+      .addScaledVector(rumo, Math.sin(20 * GRAU))
+      .normalize();
+    const cede = THREE.MathUtils.smoothstep(
+      Math.abs(mira.dot(polo)),
+      Math.cos(CEDER_COMECA_GRAUS * GRAU),
+      Math.cos(15 * GRAU)
+    );
+    const cru = polo.clone().lerp(POLO_ECLIPTICO, cede).normalize();
+    expect(cru.angleTo(mira) / GRAU).toBeLessThan(1);
+    // com o grampo, o `up` publicado nunca chega lá
+    const up = upDoAtlas(mira, polo, new THREE.Vector3());
+    expect(up.angleTo(mira)).toBeCloseTo(MIN_POLAR_RAD, 9);
+    expect(up.length()).toBeCloseTo(1, 12);
   });
 
   it('o Director LIGA o polo do corpo nos dois degraus que o pedem', () => {

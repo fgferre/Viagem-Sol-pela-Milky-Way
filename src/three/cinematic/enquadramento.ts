@@ -35,19 +35,49 @@ import type { RetanguloUtil } from './retanguloDoAtlas';
 export const PHASE_OFFSET_GRAUS = 30;
 
 /**
- * Desvio MÁXIMO que a órbita do visitante pode acumular contra a
- * DIREÇÃO ILUMINADA (alvo→Sol), em graus. 70° ainda deixa mais de meio
- * disco iluminado — a fração iluminada é `(1+cos φ)/2`, e em φ = 70° ela
- * é 67% — com o terminador em quadro; passar disso é fotografar o lado
- * escuro do alvo.
+ * Desvio MÁXIMO contra a DIREÇÃO ILUMINADA (alvo→Sol), em graus. 70°
+ * ainda deixa mais de meio disco iluminado — a fração iluminada é
+ * `(1+cos φ)/2`, e em φ = 70° ela é 67% — com o terminador em quadro;
+ * passar disso é fotografar o lado escuro do alvo.
  *
- * DESDE O ARRASTO DE DOIS EIXOS ELE É UM CONE, não mais um arco, e a
- * frase acima passou a valer LITERALMENTE em vez de valer num plano só:
- * φ é o ângulo entre a câmera e a direção iluminada, e o grampo diz
- * `φ ≤ 70°` para QUALQUER azimute em torno da linha alvo→Sol. Ver
- * `OrbitaDoVisitante`.
+ * ELE NÃO GRAMPEIA MAIS O DEDO DO VISITANTE (item 73, 22/08). Até então
+ * era um CONE em volta da linha alvo→Sol, e era ele que o arrasto
+ * vertical batia: o visitante nunca via o lado escuro de nada, que é
+ * metade da queixa "toda navegação atual do modo atlas está uma merda".
+ * O que sobrou no caminho do dedo é o GRAMPO POLAR (`MIN_POLAR_RAD`),
+ * que não é estético — é a degenerescência de `lookAt`.
+ *
+ * O QUE ELE AINDA GUARDA, e por isso continua vivo: a MISTURA de
+ * `direcaoDaLua`. Lá o desvio é de uma direção CALCULADA — o peso
+ * `PARENT_FRAMING_BIAS` puxando a câmera para o lado oposto ao pai —, e
+ * sem o grampo a mistura cai no lado noturno quando o eixo pai→lua passa
+ * de ~106° do Sol (a cicatriz que o doador pagou: Japeto, Titã e a
+ * própria Lua liam como "não carregou"). Consequência declarada: no
+ * degrau "lua" o arrasto do visitante atravessa `direcaoPrivilegiada` e
+ * volta a ser aparado por este 70°. Soltá-lo lá é obra própria — quem a
+ * fizer tem de separar a mistura calculada do gesto, e isso move a pose
+ * de repouso de nenhuma lua mas move a de todas as arrastadas.
  */
 export const MAX_SOLAR_DEVIATION_GRAUS = 70;
+
+/**
+ * O GRAMPO POLAR, em radianos — o ÚNICO limite que sobrou no caminho do
+ * dedo, e o mesmo que todo controle de órbita tem (`OrbitControls` do
+ * three, `clamp(phi, 0.18, π−0.18)` do projeto irmão).
+ *
+ * NÃO É GOSTO, é a degenerescência de `lookAt`: a base da câmera sai de
+ * `direita = up × z`, e quando a direção de vista encosta no `up` esse
+ * produto vetorial encolhe para zero — a normalização passa a amplificar
+ * ruído de float e a imagem GIRA SOZINHA em torno da mira, com o alvo
+ * parado. É o mesmo fenômeno que `upDoAtlas` documenta e do qual ele é a
+ * segunda linha de defesa (a cedência ao polo da eclíptica só salva
+ * quando o polo pedido NÃO é o da eclíptica).
+ *
+ * 0,1 rad são 5,73°, e o que eles compram é medido: `|up × z| = sen(φ)`,
+ * e em 5,73° isso é 0,0998 — quatro ordens de grandeza acima do ruído de
+ * float32 (~1e-7), enquanto a 0,01° seria 1,7e-4 e já se veria girar.
+ */
+export const MIN_POLAR_RAD = 0.1;
 
 /**
  * A SENSIBILIDADE do arrasto, em radianos por pixel — o número que já
@@ -82,16 +112,28 @@ export const ARRASTO_RAD_POR_PX = 0.0022;
  * inteira sem nunca ver um grau a mais de sombra. `atlasRig.test.ts`
  * varre ψ e cobra a invariância a 1e-12.
  *
- * O `altura` GRAMPEADO EM [0°, 70°] e não mais em [−70°, +70°], e isto
- * NÃO tira nada do visitante: com 360° de `volta` a metade negativa é
- * REDUNDANTE — `(−φ, ψ)` e `(φ, ψ+180°)` são a MESMA direção, porque
- * girar meia volta em torno de `u` espelha a inclinação. O alcance sai
- * de um arco de 140° (uma dimensão) para o cone de 70° inteiro (duas), e
- * o que se ganha em troca é o que todo controle de órbita ganha ao
- * grampear o ângulo polar em vez de deixá-lo cruzar o eixo (three.js
- * `OrbitControls`, e o `clamp(phi, 0.18, π−0.18)` do projeto irmão):
- * atravessar φ = 0 INVERTERIA a horizontal, porque do outro lado do
- * eixo o azimute corre ao contrário. A vista de repouso (`altura = 0`,
+ * O `altura` É GRAMPEADO EM [0°, 180°] DE INCLINAÇÃO — `angulo = pino +
+ * altura`, e o intervalo é o da esfera inteira (item 73, 22/08). Era
+ * [0°, 70°]: o cone de `MAX_SOLAR_DEVIATION_GRAUS`, que é o que o dono
+ * chamou de trava para ver o lado escuro. Com (inclinação, volta) =
+ * ([0°, 180°], 360°) o par varre a esfera INTEIRA, e é isso que "órbita
+ * livre" quer dizer.
+ *
+ * O PISO EM 0° fica, e não tira nada: com 360° de `volta` a inclinação
+ * negativa é REDUNDANTE — `(−φ, ψ)` e `(φ, ψ+180°)` são a MESMA direção,
+ * porque girar meia volta em torno de `u` espelha a inclinação. E
+ * atravessar φ = 0 INVERTERIA a horizontal, porque do outro lado do eixo
+ * o azimute corre ao contrário.
+ *
+ * OS DOIS POLOS DESTA PARAMETRIZAÇÃO estão na linha alvo→Sol (φ = 0 e
+ * φ = 180°), e neles o arrasto horizontal estaciona: o efeito dele
+ * escala com sen(φ). É propriedade herdada — o piso em 0° sempre teve
+ * essa parada —, agora com uma segunda ocorrência na fase nova. Sair
+ * dela é arrastar 5° na vertical.
+ *
+ * O ÚNICO limite que sobrou é o polar (`MIN_POLAR_RAD`), aplicado à
+ * direção FINAL e só quando ela entra na calota — dentro da faixa a
+ * direção volta intocada, bit a bit. A vista de repouso (`altura = 0`,
  * `volta = 0`) segue sendo o pino de 30° de sempre, bit a bit.
  */
 export interface OrbitaDoVisitante {
@@ -230,17 +272,60 @@ export function enquadrar(pedido: PedidoDeEnquadramento): Enquadramento {
  * deveria garantir 67% de disco iluminado garante no máximo 33%.
  *
  * `orbita` é o que o dedo do visitante acumulou, nos DOIS eixos (ver
- * `OrbitaDoVisitante`): a `altura` soma ao pino e é grampeada em
- * `MAX_SOLAR_DEVIATION_GRAUS` — passar disso é fotografar o lado escuro
- * do alvo, e é essa a única serventia do 70° —, e a `volta` gira o
- * resultado em torno da própria linha alvo→Sol, que é a rotação que não
- * mexe no ângulo ao Sol e por isso não precisa de grampo nenhum.
+ * `OrbitaDoVisitante`): a `altura` soma ao pino e varre a INCLINAÇÃO de
+ * 0° a 180° (a esfera inteira, item 73 — era o cone de 70°), e a `volta`
+ * gira o resultado em torno da própria linha alvo→Sol.
  *
  * A ORDEM importa e é esta: inclina PRIMEIRO, gira DEPOIS. Girar antes
  * seria girar o eixo em torno de si mesmo (identidade) e o eixo novo
  * seria inerte.
+ *
+ * O GRAMPO POLAR vem por último, sobre a direção FINAL: é a direção que
+ * chega ao `lookAt` que precisa ficar fora da calota, e a `volta` mexe
+ * no ângulo ao polo (ela só preserva o ângulo ao SOL). Dentro da faixa
+ * ele não toca em nada — é isso que mantém toda vista pinada bit a bit.
  */
 const _linhaDoSol = new THREE.Vector3();
+const _poloUnitario = new THREE.Vector3();
+const _perpendicular = new THREE.Vector3();
+
+/**
+ * O grampo de `MIN_POLAR_RAD`: afasta `dir` do eixo `polo` até os dois
+ * fazerem pelo menos esse ângulo, preservando o azimute. Pura, e usada
+ * DOS DOIS LADOS do mesmo colapso — em `direcaoPrivilegiada` para a
+ * mira não entrar na calota do polo, e em `upDoAtlas` para o `up` não
+ * encostar na mira. É o mesmo `|a × b| = sen(ângulo)` nos dois casos.
+ *
+ * IDEMPOTENTE DENTRO DA FAIXA: fora da calota devolve `dir` sem escrever
+ * um bit nele — a reconstrução esférica só acontece onde ela é
+ * obrigatória, e é por isso que ela não pode mover nenhuma pose que já
+ * era legal.
+ */
+function grampearNoPolo(dir: THREE.Vector3, polo: THREE.Vector3): THREE.Vector3 {
+  _poloUnitario.copy(polo);
+  if (_poloUnitario.lengthSq() < 1e-30) return dir;
+  _poloUnitario.normalize();
+  const cosseno = dir.dot(_poloUnitario);
+  if (!Number.isFinite(cosseno)) return dir;
+  const teto = Math.cos(MIN_POLAR_RAD);
+  if (Math.abs(cosseno) <= teto) return dir;
+  const alvo = cosseno > 0 ? MIN_POLAR_RAD : Math.PI - MIN_POLAR_RAD;
+  // o AZIMUTE se preserva: o que muda é só a latitude
+  _perpendicular.copy(dir).addScaledVector(_poloUnitario, -cosseno);
+  if (_perpendicular.lengthSq() < 1e-24) {
+    // direção EM CIMA do polo: não há azimute a preservar, e qualquer
+    // perpendicular serve — a escolha é determinística
+    _perpendicular.set(1, 0, 0).addScaledVector(_poloUnitario, -_poloUnitario.x);
+    if (_perpendicular.lengthSq() < 1e-24) {
+      _perpendicular.set(0, 1, 0).addScaledVector(_poloUnitario, -_poloUnitario.y);
+    }
+  }
+  _perpendicular.normalize();
+  return dir
+    .copy(_poloUnitario)
+    .multiplyScalar(Math.cos(alvo))
+    .addScaledVector(_perpendicular, Math.sin(alvo));
+}
 
 export function direcaoPrivilegiada(
   doSolAoAlvo: THREE.Vector3,
@@ -254,11 +339,15 @@ export function direcaoPrivilegiada(
   // a LINHA alvo→Sol guardada ANTES da inclinação: é ela o eixo do giro
   // de volta, e `out` deixa de ser ela na linha seguinte
   _linhaDoSol.copy(eixoSolar);
-  const maximo = MAX_SOLAR_DEVIATION_GRAUS * GRAU;
   const altura = Number.isFinite(orbita.altura) ? orbita.altura : 0;
-  // o cone: 0 é a fase cheia (câmera na linha do Sol), 70° é o limite
-  // iluminado. Ver `OrbitaDoVisitante` para por que o piso é 0 e não −70°.
-  const angulo = THREE.MathUtils.clamp(PHASE_OFFSET_GRAUS * GRAU + altura, 0, maximo);
+  // a inclinação: 0 é a fase cheia (câmera na linha do Sol), 180° é o
+  // lado escuro visto de trás. Ver `OrbitaDoVisitante` para por que o
+  // piso é 0 e não −180°.
+  const angulo = THREE.MathUtils.clamp(
+    PHASE_OFFSET_GRAUS * GRAU + altura,
+    0,
+    Math.PI
+  );
   const eixo = new THREE.Vector3().crossVectors(eixoSolar, polo);
   // alvo alinhado com o polo: qualquer perpendicular serve
   if (eixo.lengthSq() < 1e-12) {
@@ -268,7 +357,7 @@ export function direcaoPrivilegiada(
   eixoSolar.applyAxisAngle(eixo.normalize(), angulo);
   const volta = Number.isFinite(orbita.volta) ? orbita.volta : 0;
   if (volta !== 0) eixoSolar.applyAxisAngle(_linhaDoSol, volta);
-  return eixoSolar;
+  return grampearNoPolo(eixoSolar, polo);
 }
 
 /**
@@ -354,11 +443,10 @@ export const POLO_ECLIPTICO = (() => {
  * globo torto por um globo que roda sozinho não é conserto.
  *
  * E a degenerescência é ALCANÇÁVEL, medida: com o polo do CORPO no alto
- * e o arrasto de dois eixos solto, a direção da câmera chega a 0,44° do
- * polo da Terra (por volta do solstício, no extremo do arrasto) — porque
- * o eixo da Terra faz 66,6° com a direção do Sol no solstício e o
- * grampo do arrasto vale 70°, então a inclinação passa DO OUTRO LADO do
- * polo por 3,4°.
+ * e o arrasto de dois eixos solto, a direção da câmera chega ao polo da
+ * Terra — no cone de 70° de então ela já chegava a 0,44° dele, e desde
+ * que a inclinação varre a esfera inteira (item 73) ela chega ao polo de
+ * QUALQUER corpo, em qualquer data.
  *
  * A saída é o precedente que já existe na casa (`cameraRig.ts`,
  * `galacticUp`): misturar suavemente com um segundo `up`. Aqui o
@@ -369,6 +457,15 @@ export const POLO_ECLIPTICO = (() => {
  * de separação a mistura é ZERO e o `up` é o polo do corpo puro, bit a
  * bit (o repouso do degrau "corpo" fica a 36,6° do polo no solstício e
  * a 83° no equinócio — nunca dentro da faixa).
+ *
+ * ELA NÃO BASTA SOZINHA, e é por isso que `MIN_POLAR_RAD` existe: a
+ * cedência só tem para onde ir quando o polo pedido NÃO é o da
+ * eclíptica. No degrau "sistema" e no "órbita" o polo pedido É o da
+ * eclíptica, e a mistura devolve ele mesmo; no degrau "lua" o polo da
+ * Lua está a 1,5° do da eclíptica, e a mistura quase não move. Quem
+ * garante o piso nesses casos é o grampo polar, que impede a mira de
+ * entrar na calota — as duas guardas são complementares, não
+ * redundantes.
  */
 export const CEDER_COMECA_GRAUS = 30;
 export const CEDER_TERMINA_GRAUS = 15;
@@ -381,6 +478,21 @@ const _upBruto = new THREE.Vector3();
  *
  * `dir` é a direção alvo→câmera (unitária); o sinal não importa, o que
  * decide é |dir·polo|.
+ *
+ * A CEDÊNCIA SOZINHA PODE PERSEGUIR A MIRA, e a varredura de
+ * `atlasRig.test.ts` mediu isso quando o arrasto ficou livre (item 73):
+ * o `up` cedido caminha pelo arco polo→eclíptica, e se a mira estiver
+ * NESSE arco os dois se cruzam. Medido: com a mira a 20° do eixo da
+ * Terra e no azimute da eclíptica, `cede` vale 0,83 e põe o `up` a 19,4°
+ * do eixo — 0,6° da mira, que é o colapso que a cedência existe para
+ * impedir. No cone de 70° o ponto era inalcançável (o piso medido era
+ * 17,6°) e o defeito ficou latente.
+ *
+ * O FECHO é o MESMO grampo da direção, com os papéis trocados: o
+ * `up` final é aparado para ficar a pelo menos `MIN_POLAR_RAD` da mira.
+ * Dentro da faixa ele volta intocado, bit a bit — nenhuma vista de
+ * repouso se move, e a cedência continua sendo quem decide o roll onde
+ * há roll a decidir.
  */
 export function upDoAtlas(
   dir: THREE.Vector3,
@@ -397,7 +509,7 @@ export function upDoAtlas(
   // polo do corpo anti-paralelo ao da eclíptica no meio da mistura: o
   // lerp passa pelo vetor nulo e não há direção a normalizar
   if (_upBruto.lengthSq() < 1e-12) _upBruto.copy(POLO_ECLIPTICO);
-  return out.copy(_upBruto).normalize();
+  return grampearNoPolo(out.copy(_upBruto).normalize(), dir);
 }
 
 /**

@@ -18,7 +18,6 @@ import {
   ARRASTO_RAD_POR_PX,
   ATLAS_FOV_GRAUS,
   GRAU,
-  MAX_SOLAR_DEVIATION_GRAUS,
   PHASE_OFFSET_GRAUS,
   POLO_ECLIPTICO,
   direcaoDaLua,
@@ -289,8 +288,14 @@ export class AtlasRig {
    *  · HORIZONTAL (`dx`) dá a VOLTA no alvo, girando em torno da linha
    *    alvo→Sol. Não tem grampo porque não tem o que grampear: o giro
    *    não altera o ângulo ao Sol (a conta está em `OrbitaDoVisitante`).
-   *  · VERTICAL (`dy`) sobe e desce dentro do MESMO grampo de 70° de
-   *    sempre — é ele quem mexe na fase.
+   *  · VERTICAL (`dy`) sobe e desce pela INCLINAÇÃO INTEIRA, de 0° (fase
+   *    cheia) a 180° (o lado escuro visto de trás). Era o cone de
+   *    `MAX_SOLAR_DEVIATION_GRAUS` — 70° —, e era ele a trava de que o
+   *    dono reclama no item 73: "conseguíamos… agora essa navegação está
+   *    muito confusa". O par (inclinação, volta) passa a varrer a esfera
+   *    inteira, e o único limite que sobra no caminho do dedo é o grampo
+   *    polar de `direcaoPrivilegiada` (`MIN_POLAR_RAD`), que não é
+   *    estético: é a degenerescência de `lookAt`.
    *
    * OS SINAIS SÃO OS DA SUPERFÍCIE SEGUINDO O DEDO (o "estilo Google
    * Earth" do projeto irmão), e não são gosto: com `up = polo`, a base
@@ -308,15 +313,18 @@ export class AtlasRig {
    * seria um número sem teto guardado em estado de sessão.
    */
   addOrbitDelta(dx: number, dy: number) {
-    const maximo = MAX_SOLAR_DEVIATION_GRAUS * GRAU;
     const pino = PHASE_OFFSET_GRAUS * GRAU;
     const passoX = Number.isFinite(dx) ? dx : 0;
     const passoY = Number.isFinite(dy) ? dy : 0;
     this.orbita.volta = enrolar(this.orbita.volta + passoX * ARRASTO_RAD_POR_PX);
+    // o acumulador para EXATAMENTE onde a inclinação para — sem isso o
+    // dedo somaria arrasto morto e a volta custaria desfazê-lo antes de
+    // a câmera se mexer de novo (a "borracha" de todo controle mal
+    // grampeado). A faixa é a da inclinação [0°, 180°] menos o pino.
     this.orbita.altura = THREE.MathUtils.clamp(
       this.orbita.altura + passoY * ARRASTO_RAD_POR_PX,
       -pino,
-      maximo - pino
+      Math.PI - pino
     );
   }
 
