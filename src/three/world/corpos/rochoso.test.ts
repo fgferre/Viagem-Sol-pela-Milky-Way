@@ -200,7 +200,7 @@ function centroPc(id: string, jd: number): THREE.Vector3 {
   return new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
 }
 
-const PSF_FALSA = { expoM0: 0, sigmaPx: 2 };
+const PSF_FALSA = { expoM0: 0, sigmaPx: 2, beta: 300 };
 
 function quadro(id: string, distanciaRaios: number, extra: Record<string, unknown> = {}) {
   const jd = typeof extra.jdTdb === 'number' ? extra.jdTdb : JD;

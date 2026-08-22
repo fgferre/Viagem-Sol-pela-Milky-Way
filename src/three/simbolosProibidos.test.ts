@@ -343,6 +343,66 @@ const PROIBIDOS: SimboloProibido[] = [
       'empurrão anti-fusão rate-limitado — o keep-out vive no NASCIMENTO, ' +
       'que agora é função do instante',
   },
+
+  // ─── M4 (2026-08-22): os dez corpos consomem o INSTRUMENTO da lei ──────
+  {
+    arquivo: 'src/three/world/planetas/planetas.ts',
+    padrao: /interface PsfDoCampo|psf: PsfDoCampo/,
+    migracao: 'M4',
+    razao:
+      'a camada pedia `{expoM0, sigmaPx}` ao MATERIAL do campo de catálogo ' +
+      'por uma interface própria — a calibração dos dez corpos era "o que o ' +
+      'catálogo tiver". O tipo agora é CalibracaoDaCasa (estrela.ts)',
+  },
+  {
+    arquivo: 'src/three/world/corpos/terra.ts',
+    padrao: /PsfDoCampo/,
+    migracao: 'M4',
+    razao: 'os corpos resolvidos leem o mesmo instrumento da lei, não o do campo',
+  },
+  {
+    arquivo: 'src/three/world/corpos/rochoso.ts',
+    padrao: /PsfDoCampo/,
+    migracao: 'M4',
+    razao: 'os corpos resolvidos leem o mesmo instrumento da lei, não o do campo',
+  },
+  {
+    arquivo: 'src/three/world/corpos/gigante.ts',
+    padrao: /PsfDoCampo/,
+    migracao: 'M4',
+    razao: 'os corpos resolvidos leem o mesmo instrumento da lei, não o do campo',
+  },
+  {
+    arquivo: 'src/three/world/planetas/planetas.ts',
+    padrao: /PLANETAS_DEFAULT_ON\s*=/,
+    migracao: 'M4',
+    razao:
+      'a chave que a porta ?plan protegia morreu com ela (regra iv): está ' +
+      'em `true` desde 2026-08-11 e o ramo de forçar não tinha lado A',
+  },
+  {
+    arquivo: 'src/three/director.ts',
+    padrao: /PLANETAS_DEFAULT_ON|debug\.has\('plan'\)|new Planetas\(this\.stars\)|q\.psf = this\.stars/,
+    migracao: 'M4',
+    razao:
+      'a porta ?plan morreu e o instrumento deixou de vir do material do ' +
+      'campo: `CALIBRACAO_DA_CASA` vai ao campo, à camada dos dez e ao ' +
+      'palco dos corpos — um objeto só, o da lei',
+  },
+  {
+    arquivo: 'src/three/selo.ts',
+    padrao: /porta\('plan'/,
+    migracao: 'M4',
+    razao: 'porta morta não se declara no selo — regra iv do §4',
+  },
+  {
+    arquivo: 'src/three/world/planetas/planetas.ts',
+    padrao: /BETA_DA_EMISSAO/,
+    migracao: 'M4',
+    razao:
+      'o β da compressão chega DENTRO da calibração da casa; importá-lo à ' +
+      'parte era o terceiro endereço do instrumento nesta camada',
+  },
 ];
 
 /**

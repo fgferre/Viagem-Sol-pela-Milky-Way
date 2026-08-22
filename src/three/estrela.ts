@@ -133,6 +133,23 @@ export interface Instrumento {
   requisitoGeometrico?: number;
 }
 
+/**
+ * A CALIBRAÇÃO DA CASA — o pedaço do `Instrumento` que NÃO muda com o
+ * quadro: a exposição de referência, a largura da PSF e o β da
+ * compressão na emissão. Os outros campos (`alturaPx`, `tanHalfFov`,
+ * `trocaPx`, `requisitoGeometrico`) são do quadro e de quem olha.
+ *
+ * Nasceu no M4 e o motivo é o defeito que ele fecha: quem precisava do
+ * instrumento pedia-o à CAMADA que por acaso já o tinha. A camada dos
+ * dez corpos recebia `{expoM0, sigmaPx}` do campo de catálogo por uma
+ * interface própria (`PsfDoCampo`, morta no M4) e o β de
+ * `shaders/starShaders` — dois endereços, nenhum deles a lei, e a
+ * calibração dos planetas passava a ser "o que o catálogo tiver". A
+ * §3 diz o contrário: o instrumento é o que a CASA é, um só por
+ * quadro, e ele mora aqui.
+ */
+export type CalibracaoDaCasa = Pick<Instrumento, 'expoM0' | 'sigmaPx' | 'beta'>;
+
 /** Covariância 2×2 simétrica da pegada do pixel no plano tangente (pc²). */
 export interface Covariancia2x2 {
   xx: number;

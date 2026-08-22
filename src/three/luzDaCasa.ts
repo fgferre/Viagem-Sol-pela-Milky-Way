@@ -421,7 +421,7 @@ export const SOBRETAXA_DO_HALO = 1.534;
 export const BETA_EMISSAO = 300;
 
 /**
- * A porta `?bemis=` — agora o CAMINHO DE VOLTA, no idioma de `?plan/?noplan`:
+ * A porta `?bemis=` — agora o CAMINHO DE VOLTA, no idioma de `?corpos/?nocorpos`:
  * o mesmo binário dos dois lados. Ausente ⇒ o default do pacote (`?bemis=0`
  * é quem desliga); valor explícito e válido ⇒ obedece, e é assim que ela
  * continua servindo de bancada para varrer o joelho. Lixo cai no default,

@@ -53,7 +53,8 @@ import {
   criaSombraNaCena,
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
-import type { FonteDeEfemerides, PsfDoCampo } from '../planetas/planetas';
+import type { FonteDeEfemerides } from '../planetas/planetas';
+import type { CalibracaoDaCasa } from '../../estrela';
 import {
   A_MAG_BASE_PC,
   DESLOCAMENTO_UA_PARA_PC,
@@ -347,7 +348,7 @@ export interface QuadroDoGigante {
   atlasQuente: boolean;
   politica: PoliticaDeLuz;
   dtS: number;
-  psf: PsfDoCampo;
+  psf: CalibracaoDaCasa;
   salto: boolean;
 }
 

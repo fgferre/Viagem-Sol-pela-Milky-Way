@@ -55,7 +55,7 @@ export function quadroDoPalcoVazio(): QuadroDoPalco {
     atlasQuente: false,
     politica: 'assistida',
     dtS: 0,
-    psf: { expoM0: 0, sigmaPx: 0 },
+    psf: { expoM0: 0, sigmaPx: 0, beta: 0 },
     salto: false,
   };
 }

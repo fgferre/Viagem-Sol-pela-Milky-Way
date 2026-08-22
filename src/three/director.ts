@@ -35,11 +35,7 @@ import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
 import { LuaResolvida } from './world/corpos/lua';
 import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
-import {
-  Planetas,
-  PLANETAS_DEFAULT_ON,
-  UA_POR_PC,
-} from './world/planetas/planetas';
+import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { lerPortaLuz } from './selo';
@@ -65,6 +61,8 @@ import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
 import { doseDaDramaturgia } from './director/doseDoSol';
 import { faseDoCiclo } from './estrela';
+import type { CalibracaoDaCasa } from './estrela';
+import { BETA_DA_EMISSAO } from './shaders/starShaders';
 import { Escada, larguraDeCss } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
@@ -98,6 +96,25 @@ import type { CorpoBuscavel } from '../lib/buscaEstrelas';
 
 // A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
 const ORIGEM = new THREE.Vector3(0, 0, 0);
+
+/**
+ * O INSTRUMENTO DA CASA na parte que não muda com o quadro (M4 da Lei
+ * da Estrela, §3: "o que a CASA é — um por quadro"). Montado AQUI
+ * porque é aqui que as duas metades se encontram: a exposição de
+ * referência e a largura da PSF são da lei (`luzDaCasa`), e o β da
+ * emissão é o valor JÁ RESOLVIDO da porta `?bemis=` — `lerBetaDaEmissao`
+ * é pura de propósito (não lê `window`, para a suíte poder julgá-la em
+ * `node`), e quem a resolve uma vez é `shaders/starShaders`.
+ *
+ * Quem o recebe: o campo de catálogo e a camada dos dez corpos. Eles já
+ * usavam os mesmos três números — a diferença é que agora usam o MESMO
+ * OBJETO, e a igualdade deixou de depender de duas listas coincidirem.
+ */
+const CALIBRACAO_DA_CASA: CalibracaoDaCasa = {
+  expoM0: EXPO_M0,
+  sigmaPx: SIGMA_PX,
+  beta: BETA_DA_EMISSAO,
+};
 
 // A fase e o inventário de quem decide por ela moram em `fases.ts` —
 // o App também os lê, e duplicar a união aqui era o começo da segunda
@@ -639,7 +656,7 @@ export class Director {
     // (a porta `?bcede=` morreu no M1: a cessão do Sol-ponto é
     // `wResolvido` da repartição única — regra iv do §4 da Lei.)
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
-    // `?plan/?noplan`: uma porta que o A/B usa com o MESMO binário dos
+    // `?corpos/?nocorpos`: uma porta que o A/B usa com o MESMO binário dos
     // dois lados. `?jd=EPOCA` pede o instante do retrato e é o lado
     // "com a porta" desse A/B — ele acende o caminho vivo INTEIRO
     // (busca, decodificação, escrita dos dois atributos) num instante
@@ -786,8 +803,8 @@ export class Director {
     // unificação 2: as cascas de wrappedStars cobrem essa população em
     // QUALQUER ponto do disco, com a mesma PSF e anti-dupla-contagem.
     this.stars = new StarField(starArrays, {
-      expoM0: EXPO_M0,
-      sigmaPx: SIGMA_PX,
+      expoM0: CALIBRACAO_DA_CASA.expoM0,
+      sigmaPx: CALIBRACAO_DA_CASA.sigmaPx,
       tau: 0.045,
     });
     // ...e a LUT da faixa deixa de emitir de novo a luz que este campo
@@ -928,10 +945,18 @@ export class Director {
     this.heroes.group.traverse((o) => o.layers.enable(CAMADA_DO_CAMPO));
     // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
     // NUNCA dentro de `sun.group` — de lá herdaria a escala 0,005 do
-    // doador e o `return` antecipado quando o
-    // disco apaga. A PSF vem do campo (`stars` publica expoM0/sigmaPx):
-    // é o que faz a fotometria planeta↔estrela ser relativa de verdade.
-    this.planetas = new Planetas(this.stars);
+    // doador e o `return` antecipado quando o disco apaga.
+    //
+    // O INSTRUMENTO É O DA CASA (M4 da Lei): a MESMA `CALIBRACAO_DA_CASA`
+    // que o campo de catálogo recebe acima. A camada era construída com
+    // o PRÓPRIO `StarField` no lugar do instrumento — lia a PSF do
+    // material do campo —, e o efeito colateral disso era mudo: mover o
+    // ponto-zero do catálogo (o gate do M3) teria
+    // movido os dez corpos junto, sem uma linha dizendo isso. Passando os
+    // dois pelo mesmo objeto, a fotometria planeta↔estrela continua
+    // relativa de verdade PORQUE ambos são clientes da lei, não porque um
+    // deles copia do outro.
+    this.planetas = new Planetas(CALIBRACAO_DA_CASA);
     this.engine.scene.add(this.planetas.points);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
     // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
@@ -2073,7 +2098,7 @@ export class Director {
       q.ligado = this.palco.ligado;
       q.politica = this.politicaDeLuz;
       q.dtS = dt;
-      q.psf = this.stars;
+      q.psf = CALIBRACAO_DA_CASA;
       q.salto = this.saltoDeCamera;
       passoDoPalco(this.noPalco, q, {
         palco: this.palco,
@@ -2227,11 +2252,12 @@ export class Director {
     // TODA distância de ponto — a entrega ao `SunStar` e o corte de
     // 0,05 pc morreram no M1 da Lei da Estrela. Quem apaga o Sol-ponto
     // de longe é a magnitude; quem o cede de perto é a repartição. A
-    // chave mora em `planetas.ts` (`PLANETAS_DEFAULT_ON`); aqui ficam só
-    // as duas portas de URL.
+    // A CHAVE e a porta `?plan=1` morreram no M4 (regra iv do §4 da
+    // Lei): a camada é o padrão desde 2026-08-11 e o ramo de "forçar
+    // ligado" não tinha mais lado A para proteger. Fica `?noplan=1`,
+    // que é LENTE de régua, não porta de migração.
     if (this.planetas) {
-      this.planetas.ligado =
-        (PLANETAS_DEFAULT_ON || this.debug.has('plan')) && !this.hide.has('noplan');
+      this.planetas.ligado = !this.hide.has('noplan');
       // A MÁQUINA DO TEMPO (F4/D2), ANTES do quadro e fora dele: o
       // método vivo tem cache por jd e devolve na primeira linha quando
       // o instante não mudou, que é o caso de todo quadro do filme e de

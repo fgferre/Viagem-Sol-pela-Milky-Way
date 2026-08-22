@@ -94,7 +94,7 @@ export function foraDaJanela(jd: number): boolean {
  * o instante do retrato congelado. É com ela que o A/B da onda se faz
  * — as três vistas profundas com a porta ligada têm de sair BIT a BIT
  * iguais às sem ela, com o MESMO binário dos dois lados (precedente
- * `?plan/?noplan`).
+ * `?corpos/?nocorpos`).
  */
 export const PALAVRA_DA_EPOCA = 'EPOCA';
 

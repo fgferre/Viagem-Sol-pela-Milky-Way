@@ -79,7 +79,8 @@ import { RAMP_DURATION_MS, cessaoPorDominancia, stepRampToward } from '../lodSte
 import { psfPointSizePx } from '../../luzDaCasa';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC, faseDoVertice, magDoVertice } from '../planetas/planetas';
-import type { FonteDeEfemerides, PsfDoCampo } from '../planetas/planetas';
+import type { FonteDeEfemerides } from '../planetas/planetas';
+import type { CalibracaoDaCasa } from '../../estrela';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { CUSHION_DO_GATE, LIMIAR_DO_GATE_PX, diametroAparentePx, gateBinario } from './corpos';
 import {
@@ -251,8 +252,9 @@ export interface QuadroDaTerra {
   /** dt do quadro em segundos — só a rampa temporal da cessão o consome
    *  (o clamp de picos mora em `stepRampToward`, nunca aqui). */
   dtS: number;
-  /** a PSF do campo (`StarField` publica) — o halo do ponto sai dela. */
-  psf: PsfDoCampo;
+  /** o instrumento da CASA (M4): o halo do ponto sai dele. Era a PSF
+   *  do material do campo de catálogo — mesma conta, dono errado. */
+  psf: CalibracaoDaCasa;
   /** a câmera SALTOU neste quadro (portal, enquadramento, ?pos=): a
    *  cessão faz snap para o alvo em vez de animar através do salto —
    *  cicatriz "reset no salto de foco" do crossfade da Onda 3. */

@@ -457,7 +457,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // compressão na emissão, o ombro dentro do bloom e a fotosfera na
   // unidade da casa são o que o visitante vê sem digitar nada. As portas
   // que restam são CAMINHO DE VOLTA e bancada, no idioma de
-  // ?plan/?noplan: o mesmo binário dos dois lados. (?bcede e ?bfoto
+  // ?corpos/?nocorpos: o mesmo binário dos dois lados. (?bcede e ?bfoto
   // morreram no M1 da Lei da Estrela — regra iv do §4: a cessão do
   // Sol-ponto e o filtro solar saem da repartição única, e o lado A
   // vive nas capturas versionadas, nunca num ramo de runtime.)
@@ -474,9 +474,12 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('forgetau', 'extinção por coluna das forjas ligada'),
   porta('cart', 'modo de cartografia trocado'),
   porta('discoff', 'cartografia do disco desligada'),
-  porta('plan', 'camada de planetas forçada'),
+  // (?plan morreu no M4 — regra iv do §4 da Lei: a camada dos dez
+  // corpos é o padrão desde 2026-08-11 e a porta de "forçar ligado"
+  // não tinha mais lado A para proteger. `?noplan` fica, e é camada,
+  // não porta: ele já se declara pela tabela única abaixo.)
   // ?corpos força o palco dos corpos resolvidos (Onda 6, F0) — par de
-  // ?nocorpos, no precedente exato de ?plan/?noplan
+  // ?nocorpos, no mesmo idioma: o MESMO binário dos dois lados
   porta('corpos', 'camada de corpos forçada'),
   // --- camadas: TODAS derivadas da tabela única ---------------------
   // Redigitá-las aqui foi o buraco do item 33: quatro flags só-URL

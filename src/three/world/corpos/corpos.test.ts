@@ -134,7 +134,7 @@ describe('o contrato do registro (F0)', () => {
     expect(a).toBe(b);
   });
 
-  it('a chave nasce ligada, como PLANETAS_DEFAULT_ON — ?nocorpos é a volta', () => {
+  it('a chave nasce ligada — ?nocorpos é a volta (a irmã morreu no M4)', () => {
     expect(CORPOS_DEFAULT_ON).toBe(true);
   });
 });

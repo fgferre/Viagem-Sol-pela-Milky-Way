@@ -335,7 +335,7 @@ function centroPc(jd: number): THREE.Vector3 {
 const JD = JDS[0];
 
 /** a PSF do campo, com os números REAIS do init do Director. */
-const PSF = { expoM0: 3.5, sigmaPx: 0.85 } as const;
+const PSF = { expoM0: 3.5, sigmaPx: 0.85, beta: 300 } as const;
 
 function quadro(camPosPc: THREE.Vector3, extra: Partial<Parameters<TerraResolvida['atualizar']>[0]> = {}) {
   return {

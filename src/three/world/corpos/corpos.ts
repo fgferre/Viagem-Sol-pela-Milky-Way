@@ -42,8 +42,11 @@
 import * as THREE from 'three';
 
 /**
- * A CHAVE da camada, no precedente exato de `PLANETAS_DEFAULT_ON`
- * (planetas.ts): nasce `true` porque a camada vazia é neutra por
+ * A CHAVE da camada. (A irmã dela, `PLANETAS_DEFAULT_ON`, morreu no M4
+ * da Lei com a porta `?plan` — regra iv do §4: a camada dos dez corpos
+ * já é o padrão e não havia mais lado A para proteger. Esta fica
+ * enquanto o palco ainda puder nascer vazio.) Nasce `true` porque a
+ * camada vazia é neutra por
  * construção, e as portas `?corpos`/`?nocorpos` são o par de A/B com o
  * mesmo binário dos dois lados (`?nocorpos=1` é o caminho de VOLTA à
  * baseline; `?corpos=1` liga mesmo se esta constante voltar a `false`).

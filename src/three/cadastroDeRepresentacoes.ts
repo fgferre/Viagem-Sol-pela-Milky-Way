@@ -109,13 +109,27 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     id: 'planetas',
     nome: 'os 9 planetas-ponto',
     arquivos: ['src/three/world/planetas/planetas.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
+    consomeL1: true,
+    leiVelhaApagada: true,
     fatorDeBrilho: 1,
-    destino: 'migra',
+    destino: 'instrumento',
     migracao: 'M4',
     emiteGlPointSize: true,
-    razao: 'não são estrelas: consomem o INSTRUMENTO da lei e mantêm a fase MH18',
+    razao:
+      'FECHADO no M4: não são estrelas — consomem o INSTRUMENTO (a ' +
+      '`CalibracaoDaCasa` de estrela.ts: expoM0, sigmaPx e o β da emissão, ' +
+      'escritos UMA vez no construtor) e NÃO a repartição, nem a radiância ' +
+      'de corpo negro, nem o clarão de asas: o brilho é luz do Sol ' +
+      'refletida (H por corpo), a cor é albedo por banda e a fase é MH18. ' +
+      'Morreram `PsfDoCampo` — a interface por onde o MATERIAL do campo de ' +
+      'catálogo entregava a PSF, amarrando a calibração dos dez ao ' +
+      'ponto-zero que o M3 ainda vai mover — e a chave ' +
+      '`PLANETAS_DEFAULT_ON` com a porta `?plan` (regra iv). ' +
+      'fatorDeBrilho 1 é MEDIDO, não herdado: o pico que o ?dbgplan ' +
+      'publica é `picoDaPsf` da lei, bit a bit (planetas.test.ts), e o ' +
+      'delta em pixel do M4 foi ZERO nas 52 vistas — o director sempre ' +
+      'entregou ao campo os mesmos EXPO_M0/SIGMA_PX, então o que mudou foi ' +
+      'a DIREÇÃO da dependência, não o número',
   },
   {
     id: 'heroes',

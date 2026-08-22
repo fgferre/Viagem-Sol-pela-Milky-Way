@@ -11,6 +11,35 @@
 // (`GLSL_STAR_PSF`, `shaders/common.ts`).
 //
 // ------------------------------------------------------------
+// 0. O QUE O M4 DA LEI DA ESTRELA FECHOU (2026-08-22)
+// ------------------------------------------------------------
+// "Não são estrelas: consomem o INSTRUMENTO da lei e mantêm a fase
+// MH18" (LEI-DA-ESTRELA §4). As duas metades da frase são o contrato
+// desta camada, e a segunda é tão importante quanto a primeira:
+//
+//   CONSOME o instrumento — exposição de referência, largura da PSF e
+//     β da compressão chegam numa `CalibracaoDaCasa` (`estrela.ts`),
+//     escrita UMA vez no construtor. Antes vinham por duas portas
+//     laterais: `{expoM0, sigmaPx}` do material do CAMPO DE CATÁLOGO
+//     (pela interface `PsfDoCampo`, que morreu aqui) e o β de
+//     `shaders/starShaders`. Nenhuma das duas era a lei, e a primeira
+//     amarrava a calibração dos dez corpos a uma representação que
+//     ainda vai migrar (M3): mover o ponto-zero do catálogo teria
+//     movido os planetas junto, calado.
+//
+//   NÃO consome o resto — nem a repartição (`repartir`), nem a
+//     radiância de corpo negro, nem o clarão de asas. Planeta não é
+//     fonte: o brilho dele é luz do Sol refletida, a cor é albedo por
+//     banda e a fase é MH18 (`fotometria.ts`, §5.4 da Lei). É por isso
+//     que a linha do cadastro diz `destino: 'instrumento'` e não
+//     `migra`: a camada consome a LEI (parâmetros) e não a implementa.
+//
+// O que NÃO mudou no pixel, e é a razão de o M4 ser "risco baixo": o
+// director sempre entregou ao campo os MESMOS `EXPO_M0`/`SIGMA_PX` de
+// `luzDaCasa`, então trocar quem os passa é bit-idêntico por
+// construção. O que muda é a DIREÇÃO da dependência.
+//
+// ------------------------------------------------------------
 // 1. A PONTE DE FRAME (D1) — uma rotação e uma multiplicação
 // ------------------------------------------------------------
 // A cena JÁ é heliocêntrica equatorial J2000 cartesiana em pc com o Sol
@@ -101,7 +130,8 @@ import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGalactico';
 import { GLSL_STAR_PSF } from '../../shaders/common';
 import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
-import { STAR_FRAG, BETA_DA_EMISSAO } from '../../shaders/starShaders';
+import type { CalibracaoDaCasa } from '../../estrela';
+import { STAR_FRAG } from '../../shaders/starShaders';
 import { needsAttributeWrite } from '../lodStellar';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
@@ -115,28 +145,18 @@ import {
 } from './fotometria';
 import { EPOCA_ISO, EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
-/**
- * A CHAVE da camada (D7), VIRADA na F4 depois do envelope medido.
- *
- * Nasceu `false` na F3, de propósito: a camada inteira entrou com as 18
- * vistas bit-idênticas por construção, e só depois foi medida com
- * `?plan=1` — régua 3 no pixel (11 corpos MEDIDOS a ≤0,20 px de
- * centroide nas três vistas profundas, só adição de luz, par nulo em
- * zero) e envelope visual do mergulho nas quatro distâncias. Com a
- * chave em `true`, mudam TRÊS md5 do gate e só três: `ua500`, `ua150` e
- * `ua40`, as vistas que caem abaixo do piso do filme. As quinze antigas
- * saem bit-idênticas — o filme não muda um pixel, que é a promessa da
- * onda.
- *
- * As duas portas de URL seguem vivas e são o caminho de VOLTA exato:
- * `?noplan=1` desliga a camada ao vivo e devolve as três profundas aos
- * md5 de antes dela (provado com o mesmo binário, F4); `?plan=1` liga
- * mesmo se esta constante voltar a `false`. Precedente `?dom/?nodom` da
- * Onda 3. Elas governam a CAMADA e só ela: o domínio profundo (janelas
- * `deep`, near piecewise, voo proporcional) é fundação sem porta, como
- * o near — emenda D11a.
- */
-export const PLANETAS_DEFAULT_ON = true;
+// A CHAVE DA CAMADA (`PLANETAS_DEFAULT_ON`) E A PORTA `?plan=1`
+// MORRERAM NO M4 — regra (iv) do §4 da Lei: a porta que protegia uma
+// representação morre no commit que a migra, e o lado A vira captura +
+// teste numérico, nunca ramo de runtime. Elas nasceram na F3/F4 para o
+// caso de a camada ter de voltar ao `false` — a chave está em `true`
+// desde 2026-08-11 e desde então `(CHAVE || debug.has('plan'))` era um
+// ramo que nenhuma URL alcançava. O que fica é `?noplan=1`, que NÃO é
+// a porta de volta de uma migração: é a LENTE das réguas
+// (`luz-do-quadro` isola o clarão com ela, `planeta-pixel` faz o diff
+// com ela, o painel do Atlas a lista como camada viva) e continua
+// governando a CAMADA e só ela — o domínio profundo (janelas `deep`,
+// near piecewise, voo proporcional) é fundação sem porta, como o near.
 
 /**
  * UA por pc, DERIVADO do conversor único (`AU_PARA_PC`,
@@ -299,13 +319,13 @@ void main() {
 }
 `;
 
-/** O que a camada precisa saber da PSF do campo — `StarField` publica
- *  os dois (`stars.ts`), e é de lá que eles vêm: redigitar 3,5/0,85
- *  aqui compraria a divergência que a fase 2 da Onda 3 desfez. */
-export interface PsfDoCampo {
-  readonly expoM0: number;
-  readonly sigmaPx: number;
-}
+// (`PsfDoCampo` — a interface própria por onde o campo de catálogo
+// entregava `{expoM0, sigmaPx}` a esta camada — MORREU no M4. Ela
+// resolvia o problema certo (não redigitar 3,5/0,85 aqui) pelo caminho
+// errado: fazia a calibração dos dez corpos ser "o que o CATÁLOGO
+// tiver", quando os dois são clientes do MESMO instrumento. Agora o
+// tipo é `CalibracaoDaCasa`, da lei, e o número vem de `luzDaCasa` pelo
+// director — que o entrega igual ao campo, na mesma linha.)
 
 /**
  * O que a camada precisa da efeméride — e NADA além disto. O
@@ -351,7 +371,7 @@ export class Planetas {
   /** entrada da ponte de frame, reusada — ver `escreverInstante`. */
   private readonly rascunhoUA: [number, number, number] = [0, 0, 0];
 
-  constructor(psf: PsfDoCampo) {
+  constructor(instrumento: CalibracaoDaCasa) {
     const n = IDS_FOTOMETRIA.length;
     const posicao = new Float32Array(n * 3);
     const magBase = new Float32Array(n);
@@ -400,11 +420,16 @@ export class Planetas {
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uScreenH: { value: 1080 },
-        uExpoM0: { value: psf.expoM0 },
-        uSigmaPx: { value: psf.sigmaPx },
-        // o MESMO β do campo: os dez corpos compartilham o STAR_FRAG, e o
-        // vértice 0 é o Sol — o ponto que estoura o half-float
-        uBeta: { value: BETA_DA_EMISSAO },
+        // O INSTRUMENTO DA LEI (M4): exposição de referência, largura da
+        // PSF e β da compressão chegam JUNTOS, na `CalibracaoDaCasa` de
+        // `estrela.ts`. Antes vinham de dois lugares — os dois primeiros
+        // do material do campo de catálogo, o terceiro de
+        // `shaders/starShaders` —, e nenhum dos dois era a lei.
+        uExpoM0: { value: instrumento.expoM0 },
+        uSigmaPx: { value: instrumento.sigmaPx },
+        // o β é o da EMISSÃO e é o mesmo dos outros pontos da casa: o
+        // vértice 0 é o Sol, o ponto que estoura o half-float
+        uBeta: { value: instrumento.beta },
         // lei do fluxo PURA: planeta não ganha a cruz de arte do filme
         uArteDaCruz: { value: 0 },
         uPr2: { value: 1 },

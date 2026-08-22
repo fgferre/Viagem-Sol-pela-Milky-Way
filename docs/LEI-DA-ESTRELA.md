@@ -549,6 +549,56 @@ contra `luzDaCasa`. O espelho do filtro SOBRE O CLARÃO — `fatorDoFiltro` —
 nasceu aqui e morreu na R2: o clarão é a óptica plena do ponto vestida
 pela `solturaDaLei`.)*
 
+*(M4 — os nove planetas — FECHOU em 22/08, e as duas linhas do "Apaga"
+já estavam pagas: a cópia de `picoDaPsf` morreu no F0 e o `uGain` ponto
+a ponto de `planetas.test.ts` no M1 (as duas com varredura invertida em
+pé). O que faltava era a frase inteira — *consomem o INSTRUMENTO da
+lei* —, e o instrumento não vinha da lei: a camada dos dez corpos
+recebia `{expoM0, sigmaPx}` do MATERIAL do campo de catálogo, por uma
+interface própria (`PsfDoCampo`), e o β de `shaders/starShaders`. Três
+endereços, nenhum deles a lei, e a calibração dos planetas amarrada a
+uma representação que o M3 ainda vai mover: trocar o ponto-zero do
+catálogo teria movido os dez corpos junto, calado. ENTROU
+`CalibracaoDaCasa` (`estrela.ts`) — o pedaço do `Instrumento` que não
+muda com o quadro (`expoM0`, `sigmaPx`, `beta`) — e `CALIBRACAO_DA_CASA`
+no director: UM objeto, entregue ao campo, à camada dos dez e ao palco
+dos corpos resolvidos. APAGOU `PsfDoCampo` (que os três corpos
+resolvidos também liam), a chave `PLANETAS_DEFAULT_ON` e a porta
+`?plan` — regra iv: o lado A virou captura e teste numérico, e `?noplan`
+FICA porque não é porta de migração, é a LENTE das réguas. O cadastro
+passa a `consomeL1: true`, `destino: 'instrumento'`,
+`leiVelhaApagada: true`, com `fatorDeBrilho: 1` agora MEDIDO (o pico que
+o `?dbgplan` publica é `picoDaPsf` da lei bit a bit, e a conformidade
+virou grade numérica de dez magnitudes sobre `picoDaPsf`/`psfPointSizePx`
+com os uniformes REAIS do material). O que NÃO mudou, por contrato: a
+fase MH18 (`escreverFase`, Saturno com a abertura do anel), a cor por
+albedo e índices, o apagar com 1/d² (m 15,3–27,7 no limiar do sistema,
+pinado por corpo) e a cruz de Vênus maior que a de Sirius por fluxo
+(item 43, M2). **Delta declarado ANTES: ZERO pixel**, por construção — o
+director sempre entregou ao campo os mesmos `EXPO_M0`/`SIGMA_PX`, então
+trocar quem os passa não pode mover um bit; o que muda é a DIREÇÃO da
+dependência. **Medido:** 52 de 52 vistas IGUAIS (`ab-identidade`, os dois
+lados recapturados com `DOZERO=1`), `luz-do-quadro` PASSA 11/11 com a
+escada linha a linha idêntica (borrão 113 → 30 → 325 → 245 → 158 → 118 →
+69 → 42 → 28 → 26 → 20 px), `atlas-smoke` 101/101, e a régua dos
+planetas — com a lente nova do item 58a — PASSA nas três vistas
+profundas, com SETE dos dez corpos MEDIDOS na `ua40` (pior centroide
+0,380 px, pior caixa 0,286 px). DESVIOS DECLARADOS, no molde do M1:
+(a) o β continua resolvido em `shaders/starShaders` (`BETA_DA_EMISSAO`)
+e não em `luzDaCasa` — `lerBetaDaEmissao` é PURA de propósito, para a
+suíte a julgar em `node`, e mover a leitura da URL mexeria em sete
+consumidores que não são desta migração; a lei é dona da fórmula e da
+constante, o shader é dono da porta; (b) `solNoQuadro` continua montando
+o `Instrumento` do Sol com `stars?.expoM0 ?? EXPO_M0` — mesmo detour,
+mas é o M1, fechado, e unificá-lo com `CALIBRACAO_DA_CASA` é gesto do M3,
+quando o gate do ponto-zero mover o campo; (c) **`luz.ts` NÃO foi
+unificada** — `irradianciaRelativa`, a irradiância dos corpos
+RESOLVIDOS, segue ancorada em "a Terra a 1 UA lê 1", que é uma SEGUNDA
+unidade de fluxo na casa. O §6 previa que `luz.test.ts` quebrasse aqui e
+ele não quebrou: fundir as duas unidades muda o brilho de TODO corpo
+resolvido e passa pela dose assistida (`SIGMA_ASSISTIDA`), que é GOSTO
+do dono. Fica como gate de foto, e o §6 registra a divergência.)*
+
 ### M3 — Catálogo + cascas
 **Gate obrigatório ANTES:** o ponto-zero único (4,83 × 4,85), decidido com foto pelo
 dono. **Apaga:** o segundo ponto-zero, a extinção condicional de 3 px, a lei de
@@ -561,11 +611,6 @@ catálogo ↔ heroes de autor** (desvio (f) do M2): hoje o ponto e o billboard
 desenham a mesma estrela somados, sem cessão nenhuma entre eles, e é aqui que
 uma das duas cede — com o **gate de foto do dono na estética**, que é o que
 mandou a peça de 30/07 voltar. **Régua:** as 52 vistas A/B.
-
-### M4 — Os nove planetas
-Não são estrelas: consomem o **instrumento** da lei e mantêm a fase MH18. Risco
-baixo, fecha a camada. **Apaga:** a cópia de `picoDaPsf` já morta no F0 e o `uGain`
-ponto a ponto de `planetas.test.ts`.
 
 ### M5 — Os quatro glows + as forjas
 Um `GLOW_FRAG` só e `starForges.ts`. **Apaga:** a **segunda cópia** da lei de tela
@@ -883,8 +928,28 @@ exporta `tetoDeLavagem` e o voo o consome. E nasceu `clarao.test.ts` —
 16 casos, incluindo o oráculo da fronteira que pegou um bug antes de
 ele existir em produção.
 
+**Aconteceu no M4 (2026-08-22), com um desvio de previsão registrado:**
+`planetas.test.ts` perdeu o oráculo "a PSF é a DO CAMPO" (que instanciava
+um `StarField` e cobrava que os uniformes da camada fossem os do MATERIAL
+dele) e a linha de `PLANETAS_DEFAULT_ON`; no lugar entraram três — o
+instrumento recebido inteiro, a igualdade dos três números com os da lei,
+e a CONFORMIDADE NUMÉRICA em grade de dez magnitudes contra
+`picoDaPsf`/`psfPointSizePx`. O pino de texto do construtor mudou de alvo
+junto com a assinatura, e o das portas INVERTEU-SE (`?plan` e a chave não
+podem mais aparecer no director). `terra.test.ts`, `rochoso.test.ts` e
+`gigante.test.ts` ajustaram o literal de PSF, que ganhou `beta`;
+`corpos.test.ts` e `luzDaCasa.test.ts`, só a prosa que citava o par
+`?plan/?noplan` — o par vivo agora é `?corpos/?nocorpos`.
+`simbolosProibidos.test.ts` ganhou oito entradas M4.
+**O DESVIO:** `luz.test.ts` **não quebrou** — ver o desvio (c) do M4 no
+§4. A previsão era M1, foi adiada para o M4 e agora tem dono explícito:
+é gate de FOTO do dono, não migração mecânica, porque unificar
+`irradianciaRelativa` com a unidade da casa move o brilho de todo corpo
+resolvido através da dose assistida.
+
 **Vai acontecer:**
-- `luz.test.ts` (`irradianciaRelativa(ANCORA_UA)===1`) — **M4**.
+- `luz.test.ts` (`irradianciaRelativa(ANCORA_UA)===1`) — **gate de foto do
+  dono**, não mais uma migração: a previsão M1→M4 caiu duas vezes (acima).
 - `stellarPhysics.test.ts` pina ~60 valores, vários não físicos — **M3**.
 - `core/engine.test.ts` diz que a vista `sol` está a 0,063 pc contra 1,2955e-7 pc
   vivo (487.000×): literal envelhecido, **item 41**, verde só porque a asserção

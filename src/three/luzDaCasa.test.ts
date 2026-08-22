@@ -513,7 +513,7 @@ describe('3b. A COMPRESSÃO NA EMISSÃO — e a prova de que não é teto', () =
   });
 
   it('a porta ?bemis= é o CAMINHO DE VOLTA — ausente é o padrão, 0 desliga', () => {
-    // o idioma de ?plan/?noplan: o mesmo binário dos dois lados. Ausente ou
+    // o idioma de ?corpos/?nocorpos: o mesmo binário dos dois lados. Ausente ou
     // envenenada cai no padrão, nunca num caminho terceiro; valor válido
     // obedece, que é o que mantém a porta servindo de bancada.
     expect(lerBetaDaEmissao('')).toBe(BETA_EMISSAO);

@@ -150,8 +150,13 @@ const APP = process.env.APP_URL || APP_PADRAO;
 /** As três vistas do domínio profundo (D9) — a lista vem do harness. */
 export const PROFUNDAS = ['ua500', 'ua150', 'ua40'];
 
-/** O par de portas da D7. O A/B é feito com o MESMO binário dos dois lados. */
-const PORTA_LIGA = '&plan=1';
+/**
+ * O A/B da camada, com o MESMO binário dos dois lados. O lado LIGADO
+ * não tem porta desde o M4 (2026-08-22): `?plan=1` morreu com a chave
+ * `PLANETAS_DEFAULT_ON` (regra iv do §4 da Lei) porque a camada é o
+ * padrão — o lado ligado é simplesmente a URL sem `?noplan`.
+ */
+const PORTA_LIGA = '';
 const PORTA_DESLIGA = '&noplan=1';
 /** A lente da régua — ver o cabeçalho. Não é o look do app. */
 const FLAG_MEDICAO = '&nobloom=1&noclarao=1';

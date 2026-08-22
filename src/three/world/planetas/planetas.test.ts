@@ -65,14 +65,20 @@ import {
   DIST_MIN_PC,
   FASE_MIN,
   LOG10_DE_2,
-  PLANETAS_DEFAULT_ON,
   PONTO_ZERO_SOL_PC,
   Planetas,
   UA_POR_PC,
   faseDoVertice,
   magDoVertice,
 } from './planetas';
-import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
+import {
+  BETA_EMISSAO,
+  EXPO_M0,
+  SIGMA_PX,
+  fluxoDeMagnitude,
+  picoDaPsf,
+  psfPointSizePx,
+} from '../../luzDaCasa';
 
 /**
  * O buffer EFETIVO do harness: `--window-size=1800,1800` com
@@ -236,8 +242,14 @@ const CORPO_DO_UPDATE = FONTE.slice(
   FONTE.indexOf('  /**\n   * O CAMINHO VIVO')
 );
 
+/** O INSTRUMENTO DA CASA como a suíte o escreve — os três números da
+ *  lei (`EXPO_M0`, `SIGMA_PX`, `BETA_EMISSAO`). O M4 fez `Planetas`
+ *  pedir a `CalibracaoDaCasa` inteira; antes ele recebia o MATERIAL do
+ *  campo de catálogo por uma interface própria (`PsfDoCampo`, morta). */
+const INSTRUMENTO = { expoM0: 3.5, sigmaPx: 0.85, beta: 300 } as const;
+
 function camada(): Planetas {
-  return new Planetas({ expoM0: 3.5, sigmaPx: 0.85 });
+  return new Planetas(INSTRUMENTO);
 }
 
 const atributo = (p: Planetas, nome: string) =>
@@ -294,19 +306,67 @@ describe('a camada nasce com a estrutura que a D3 manda', () => {
     p.dispose();
   });
 
-  it('a PSF é a DO CAMPO, recebida por parâmetro e não redigitada', () => {
+  // O M4 (2026-08-22) trocou o DONO do instrumento. O teste antigo
+  // pinava a dependência velha — "a PSF é a DO CAMPO" — instanciando um
+  // `StarField` e cobrando que os uniformes da camada fossem os do
+  // MATERIAL dele. Agora a camada pede a `CalibracaoDaCasa` da lei, e o
+  // que se cobra é o oposto: os três números chegam pelo parâmetro, e
+  // continuam sendo os MESMOS que o campo recebe — o director entrega o
+  // mesmo objeto aos dois, e é por isso que a fotometria
+  // planeta↔estrela segue relativa de verdade.
+  it('o instrumento é o da LEI, recebido inteiro e não redigitado', () => {
+    const p = new Planetas({ expoM0: 4.25, sigmaPx: 1.5, beta: 42 });
+    expect(p.material.uniforms.uExpoM0.value).toBe(4.25);
+    expect(p.material.uniforms.uSigmaPx.value).toBe(1.5);
+    expect(p.material.uniforms.uBeta.value).toBe(42);
+    p.dispose();
+  });
+
+  it('e os três números da casa são os da lei, não os do material do campo', () => {
     const campo = new StarField({
       position: new Float32Array(3),
       logLum: new Float32Array(1),
       ci: new Float32Array(1),
     });
-    const p = new Planetas(campo);
-    expect(p.material.uniforms.uExpoM0.value).toBe(campo.expoM0);
-    expect(p.material.uniforms.uSigmaPx.value).toBe(campo.sigmaPx);
-    expect(campo.expoM0).toBe(3.5);
-    expect(campo.sigmaPx).toBe(0.85);
-    p.dispose();
+    // o campo nasce com os mesmos, porque o director dá a AMBOS a
+    // `CALIBRACAO_DA_CASA` — a igualdade é consequência da lei, não de
+    // uma camada copiar da outra
+    expect(campo.expoM0).toBe(EXPO_M0);
+    expect(campo.sigmaPx).toBe(SIGMA_PX);
+    expect(INSTRUMENTO.expoM0).toBe(EXPO_M0);
+    expect(INSTRUMENTO.sigmaPx).toBe(SIGMA_PX);
+    expect(INSTRUMENTO.beta).toBe(BETA_EMISSAO);
     campo.dispose();
+  });
+
+  // A CONFORMIDADE É NUMÉRICA, nunca textual (§8.6 da Lei). O que
+  // `consomeL1: true` no cadastro afirma é que o pixel desta camada sai
+  // da LEI, e a prova é uma grade: com os uniformes REAIS do material,
+  // as duas saídas do `starPSF` do vertex (o pico e o tamanho do
+  // sprite) reproduzem `picoDaPsf`/`psfPointSizePx` de `luzDaCasa` —
+  // as funções de onde o próprio GLSL é gerado.
+  it('o instrumento da camada É o da lei, por grade numérica', () => {
+    const p = camada();
+    const u = p.material.uniforms;
+    const H = ALTURA_PX;
+    const sigma = (u.uSigmaPx.value as number) * H / 1080;
+    for (const m of [-26.7, -18.71, -15.84, -4.6, 0, 3.5, 12.3, 15.37, 21.18, 27.66]) {
+      // o espelho do GLSL, recomputado aqui — a terceira escrita existe
+      // para que as duas primeiras não possam concordar por acidente
+      const pico =
+        Math.pow(10, -0.4 * (m - (u.uExpoM0.value as number)))
+        / (6.2831853 * sigma * sigma);
+      const rSat = pico > 1 ? sigma * Math.sqrt(2 * Math.log(pico)) : 0;
+      expect(
+        picoDaPsf(m, u.uExpoM0.value as number, u.uSigmaPx.value as number, H),
+        `pico m=${m}`
+      ).toBe(pico);
+      expect(
+        psfPointSizePx(m, u.uExpoM0.value as number, u.uSigmaPx.value as number, H),
+        `size m=${m}`
+      ).toBe(2 * (2.2 * sigma + rSat));
+    }
+    p.dispose();
   });
 
   it('o vertex traz a PSF compartilhada e o fragment É o do campo', () => {
@@ -322,17 +382,13 @@ describe('a camada nasce com a estrutura que a D3 manda', () => {
     p.dispose();
   });
 
-  it('a chave está LIGADA desde a F4, e o objeto ainda nasce apagado', () => {
-    // A F3 pinava `false` aqui. A F4 virou a chave depois do envelope
-    // medido (régua 3 no pixel + as quatro distâncias do mergulho), e as
-    // três vistas profundas do gate mudaram de md5 — as quinze antigas
-    // não. A porta de volta é `?noplan=1`, e é EXATA: com ela as três
-    // devolvem os md5 de antes da camada, bit a bit, com o mesmo binário.
-    expect(PLANETAS_DEFAULT_ON).toBe(true);
-    // e o `ligado` do OBJETO segue nascendo false: quem o escreve é o
-    // director, por quadro, cruzando a constante com as duas portas. Um
-    // default `true` aqui acenderia a camada entre o construtor e o
-    // primeiro `update`.
+  it('o objeto nasce APAGADO — quem o acende é o director, por quadro', () => {
+    // A chave `PLANETAS_DEFAULT_ON` morreu no M4 com a porta `?plan=1`
+    // (regra iv do §4 da Lei): ela existia para o caso de a camada ter
+    // de voltar ao `false`, e está em `true` desde 2026-08-11. O que
+    // fica é este: o `ligado` do OBJETO nasce false, porque um default
+    // `true` aqui acenderia a camada entre o construtor e o primeiro
+    // `update`. Quem o escreve é o director, cruzando com `?noplan=1`.
     expect(camada().ligado).toBe(false);
   });
 
@@ -922,7 +978,7 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
   it('nenhum escalar de comprimento além do conversor único (D1)', () => {
     // o corpo do construtor, onde as posições nascem
     const construtor = FONTE.slice(
-      FONTE.indexOf('  constructor(psf: PsfDoCampo)'),
+      FONTE.indexOf('  constructor(instrumento: CalibracaoDaCasa)'),
       FONTE.indexOf('  /**\n   * O quadro inteiro')
     );
     expect(construtor).toContain('eq[0] * AU_PARA_PC');
@@ -960,10 +1016,14 @@ const maquina = readFileSync(
   'utf8'
 );
 
-  it('as duas portas existem com o nome exato, e a chave passa por elas', () => {
-    expect(director).toContain('PLANETAS_DEFAULT_ON');
-    expect(director).toContain("this.debug.has('plan')");
-    expect(director).toContain("!this.hide.has('noplan')");
+  it('sobra UMA porta — a lente das réguas —, e a chave e o ?plan morreram', () => {
+    // M4, regra (iv): a porta que protegia a representação morre no
+    // commit que a migra. `?noplan=1` NÃO é essa porta — é a LENTE que
+    // `luz-do-quadro` e `planeta-pixel` usam para isolar a camada, e o
+    // painel do Atlas a lista como camada viva.
+    expect(director).not.toContain('PLANETAS_DEFAULT_ON');
+    expect(director).not.toContain("this.debug.has('plan')");
+    expect(director).toContain("this.planetas.ligado = !this.hide.has('noplan');");
     // a semeadura URL→hide deixou de ser array digitado no director
     // (item 33): o laço deriva da tabela única, onde a flag tem linha
     expect(director).toContain('for (const { flag } of CAMADAS)');
