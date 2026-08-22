@@ -538,10 +538,13 @@ function glArmTarget(
   tanPitchOuter: number,
   symIndex = -1
 ) {
-  const observedTan = radiusPc < 8150 ? tanPitchInner : tanPitchOuter;
+  const observedTan =
+    radiusPc < MEDIDAS_DA_GALAXIA.sunRadiusPc ? tanPitchInner : tanPitchOuter;
   const farBlend = smoothstepGl(9500, 15000, radiusPc);
   const tanPitch = observedTan + (0.283 - observedTan) * farBlend;
-  const base = phaseAtSun + Math.log(Math.max(radiusPc, 180) / 8150) / tanPitch;
+  const base =
+    phaseAtSun +
+    Math.log(Math.max(radiusPc, 180) / MEDIDAS_DA_GALAXIA.sunRadiusPc) / tanPitch;
   const observed =
     base +
     0.052 * Math.sin(radiusPc * 0.00115 + phaseAtSun * 2.7) +
@@ -702,7 +705,18 @@ export function glLocalArm(theta: number, radiusPc: number, sharpness: number) {
   );
 }
 
-function glslNumber(value: number) {
+/**
+ * O NÚMERO EM GLSL — exportado desde 2026-08-21 porque ele é a peça que
+ * impede a constante de existir duas vezes. Os shaders que NÃO incluem
+ * `GLSL_CARTOGRAPHY` (o `GLOW_FRAG` da galáxia, as cascas de
+ * `wrappedStars`) precisavam redigitar o começo do warp, o raio do disco e a
+ * amplitude à mão — e com `?warpamp=` o lado gerado e o lado cravado
+ * divergiam. Agora eles interpolam daqui, e `toFixed(7)` garante o MESMO
+ * float: `glslNumber(8150)` imprime sete casas de zero, que é o mesmo valor
+ * que o literal de uma casa que estava lá. A varredura de
+ * `simbolosProibidos.test.ts` cobra que nenhum deles volte cravado.
+ */
+export function glslNumber(value: number) {
   return value.toFixed(7);
 }
 
@@ -747,9 +761,17 @@ function glslArmCall(
  * emissivas e volume de gás usem versões incompatíveis da galáxia.
  */
 export const GLSL_CARTOGRAPHY = /* glsl */ `
-const float GAL_SUN_RADIUS = 8150.0;
-const float GAL_DISK_RADIUS = 16800.0;
-const float GAL_WARP_START = 8400.0;
+// AS ÂNCORAS SÃO GERADAS das constantes TS, não redigitadas: elas viviam
+// cravadas aqui e declaradas em medidasDaGalaxia.ts / GALACTIC_MODEL, e as
+// duas cópias só se encontrariam a olho. A amplitude do warp era o caso
+// pior — GERADA de um lado (com ?warpamp=) e CRAVADA do outro
+// (shaders/common.ts, world/wrappedStars.ts): bastava varrer o knob para o
+// gás e as estrelas seguirem warps diferentes. glslNumber imprime sete casas
+// decimais, que é o MESMO float do literal de uma casa que estava aqui.
+const float GAL_SUN_RADIUS = ${glslNumber(GALACTIC_MODEL.sunRadiusPc)};
+const float GAL_DISK_RADIUS = ${glslNumber(GALACTIC_MODEL.diskRadiusPc)};
+const float GAL_WARP_START = ${glslNumber(GALACTIC_MODEL.warpStartPc)};
+const float GAL_WARP_AMPLITUDE = ${glslNumber(GALACTIC_MODEL.warpAmplitudePc)};
 
 float galWrappedDistance(float a, float b) {
   return abs(atan(sin(a - b), cos(a - b)));
@@ -761,7 +783,7 @@ float galWarpHeight(float radiusPc, float theta) {
     0.0,
     1.0
   );
-  return ${(820 * WARP_TUNE).toFixed(1)} * pow(x, 1.55) * sin(theta - 3.2288591);
+  return GAL_WARP_AMPLITUDE * pow(x, 1.55) * sin(theta - 3.2288591);
 }
 
 // ---- espinha simétrica (espelho de BACKBONE / backboneThetaAtRadius) ----

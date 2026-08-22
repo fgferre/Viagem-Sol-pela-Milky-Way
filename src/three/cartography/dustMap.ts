@@ -17,10 +17,11 @@
 // ============================================================
 import type { CatalogueTable } from './galacticAssets';
 import { glMajorArms, glLocalArm, warpHeightPc } from './galacticModel';
+import { MEDIDAS_DA_GALAXIA } from './medidasDaGalaxia';
 
 export const DUST_MAP_SIZE = 512;
-/** meia-aresta do domínio (pc) — igual a rendererDiskRadiusPc. */
-export const DUST_MAP_HALF_EXTENT = 16_800;
+/** meia-aresta do domínio (pc) — É o raio do disco, não um número parecido. */
+export const DUST_MAP_HALF_EXTENT = MEDIDAS_DA_GALAXIA.diskRadiusPc;
 /** escala vertical do colapso (pc). */
 const VERTICAL_SCALE = 220;
 /** ganho do contraste log-local (lanes = excesso sobre o entorno). */

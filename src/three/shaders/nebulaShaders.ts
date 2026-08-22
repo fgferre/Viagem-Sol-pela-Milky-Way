@@ -403,7 +403,7 @@ ${NOTHICK ? '    thickDisk = 0.0;\n' : ''}
     // fenda pode existir: extinção que não chega a τ~1 não escurece
     // nada, por mais bem desenhada que seja.
     float dustDiffuse = ${DIFFUSE} *
-      exp(-(radius - 8150.0) / ${DUSTRD}) * exp(-abs(z) / dustHeight) * edge;
+      exp(-(radius - GAL_SUN_RADIUS) / ${DUSTRD}) * exp(-abs(z) / dustHeight) * edge;
     // Onde o APOGEE mediu estruturas densas (cobertura começa a
     // ~1 kpc do Sol; as fendas locais tipo Great Rift continuam
     // procedurais), a fenda real SOMA-SE ao procedural; o nível

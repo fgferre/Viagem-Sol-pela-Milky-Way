@@ -3,7 +3,7 @@
 // físico em pc → px com alpha compensado), poeira multiplicativa
 // que escurece o fundo e billboards de brilho (bojo / marcador).
 // ============================================================
-import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
+import { GALACTIC_MODEL, GLSL_CARTOGRAPHY, glslNumber } from '../cartography/galacticModel';
 import { GLSL_STAR_COLOR } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
@@ -290,7 +290,12 @@ void main() {
   // fina de poeira em |z| galáctico, com o CENTRO seguindo o warp do
   // ponto tangente quando ?warpslit=±1 (0 = reta); h = 130 pc casa com
   // a σ da camada de poeira. Amplitude/forma = galWarpHeight (1310 pc).
-  float wx = clamp((abs(vXgal) - 8400.0) / 8400.0, 0.0, 1.0);
+  float wx = clamp(
+    (abs(vXgal) - ${glslNumber(GALACTIC_MODEL.warpStartPc)}) /
+      ${glslNumber(GALACTIC_MODEL.diskRadiusPc - GALACTIC_MODEL.warpStartPc)},
+    0.0,
+    1.0
+  );
   float dz = vZgal -
     ${WARPSLIT.toFixed(2)} * sign(vXgal) * 1310.0 * pow(wx, 1.55);
   float laneTau = uSlitTau * exp(-dz * dz / (2.0 * 130.0 * 130.0));

@@ -142,7 +142,7 @@ float diskGasEnvelope(vec3 p) {
   float radiusPc = length(xy);
   // braços (B) e warp (A) pré-computados a 65 pc/texel
   vec4 cart = texture2D(uDustMap, xy / (2.0 * GAL_DISK_RADIUS) + 0.5);
-  float zw = z - (cart.a * 2.0 - 1.0) * 820.0;
+  float zw = z - (cart.a * 2.0 - 1.0) * GAL_WARP_AMPLITUDE;
   float flare = clamp((radiusPc - 7500.0) / 9300.0, 0.0, 1.0);
   flare *= flare;
   // gaussiano FINO (σ 70→260 pc com flare): fino como o gás

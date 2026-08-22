@@ -40,7 +40,7 @@ import {
 } from '../shaders/common';
 import { STAR_FRAG, BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
-import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
+import { GALACTIC_MODEL, LUT_DISK, glslNumber } from '../cartography/galacticModel';
 
 // m em que a PSF morre na nossa exposição (expoM0 3,5):
 // peak(11,75) ≈ 1,6e-4 — abaixo de qualquer depósito perceptível.
@@ -355,8 +355,8 @@ float stellarDensity(vec3 p, out float bulgeGate) {
   float z = dot(q, GAL_N);
   vec2 xy = vec2(dot(q, GAL_X), dot(q, GAL_Y));
   float radiusPc = length(xy);
-  vec4 cart = texture2D(uDustMap, xy / 33600.0 + 0.5);
-  float zw = z - (cart.a * 2.0 - 1.0) * 820.0;
+  vec4 cart = texture2D(uDustMap, xy / ${glslNumber(2 * GALACTIC_MODEL.diskRadiusPc)} + 0.5);
+  float zw = z - (cart.a * 2.0 - 1.0) * ${glslNumber(GALACTIC_MODEL.warpAmplitudePc)};
   float thin = exp(-radiusPc / 2600.0) * exp(-abs(zw) / 300.0);
   float thick = exp(-radiusPc / 3600.0) * exp(-abs(zw) / 1000.0) * 0.12;
   float bulge = exp(-length(q) / 900.0) * 14.0;

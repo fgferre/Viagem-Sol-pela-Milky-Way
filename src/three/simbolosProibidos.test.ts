@@ -345,10 +345,60 @@ const PROIBIDOS: SimboloProibido[] = [
   },
 ];
 
+/**
+ * AS ÂNCORAS DA GALÁXIA (2026-08-21) — a mesma regra, aplicada a NÚMERO em
+ * vez de a nome. As três medidas de ancoragem e a amplitude do warp viviam
+ * declaradas em `medidasDaGalaxia.ts`/`GALACTIC_MODEL` E redigitadas dentro
+ * do GLSL, e as cópias só se encontrariam a olho. O caso pior era a
+ * amplitude: GERADA de um lado (com `?warpamp=` vivo) e CRAVADA do outro
+ * (`shaders/common.ts`, `world/wrappedStars.ts`) — bastava varrer o knob
+ * para o gás e as estrelas seguirem warps diferentes na mesma cena.
+ *
+ * Agora as quatro saem de `glslNumber(...)`, e esta varredura é o que
+ * impede a cópia de voltar. O padrão pega o literal FLOAT (com ponto
+ * decimal), que é a forma que só existe dentro de GLSL: `8150` cru em
+ * comentário ou em conta TypeScript passa, e é assim que se quer — a
+ * varredura textual só pode exigir a mais, nunca a menos.
+ */
+const ANCORAS_CRAVADAS = /\b(?:8150|16800|8400|820)\.0/;
+const ARQUIVOS_COM_GLSL_DA_GALAXIA = [
+  'src/three/cartography/galacticModel.ts',
+  'src/three/cartography/dustMap.ts',
+  'src/three/shaders/common.ts',
+  'src/three/shaders/galaxyShaders.ts',
+  'src/three/shaders/nebulaShaders.ts',
+  'src/three/shaders/dustShaders.ts',
+  'src/three/shaders/starShaders.ts',
+  'src/three/world/wrappedStars.ts',
+  'src/three/world/galaxy.ts',
+  'src/three/world/nebula.ts',
+];
+
 describe('os símbolos proibidos não renasceram', () => {
   for (const { arquivo, padrao, migracao, razao } of PROIBIDOS) {
     it(`${arquivo} não contém ${padrao} (${migracao})`, () => {
       expect(ler(arquivo), `${razao}`).not.toMatch(padrao);
+    });
+  }
+});
+
+describe('as âncoras da galáxia são GERADAS, nunca cravadas', () => {
+  it('a varredura acha o que procura — um padrão quebrado passaria calado', () => {
+    // o mesmo cinto do selo: se o regex morrer, este caso reprova primeiro
+    expect('const float GAL_SUN_RADIUS = 8150.0;').toMatch(ANCORAS_CRAVADAS);
+    expect('float zw = z - (cart.a * 2.0 - 1.0) * 820.0;').toMatch(ANCORAS_CRAVADAS);
+    // e não confunde vizinhos: só o número inteiro, e só com ponto decimal
+    expect('radiusPc < 8150 ? a : b').not.toMatch(ANCORAS_CRAVADAS);
+    expect('smoothstep(15500.0, 19300.0, r)').not.toMatch(ANCORAS_CRAVADAS);
+  });
+
+  for (const arquivo of ARQUIVOS_COM_GLSL_DA_GALAXIA) {
+    it(`${arquivo} não crava o raio do Sol, o raio do disco, o começo do warp nem a amplitude`, () => {
+      expect(
+        ler(arquivo),
+        'as quatro âncoras saem de glslNumber(GALACTIC_MODEL.…) — ' +
+          'redigitar uma aqui recria a divergência que ?warpamp= revelava'
+      ).not.toMatch(ANCORAS_CRAVADAS);
     });
   }
 });
