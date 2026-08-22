@@ -233,3 +233,38 @@
   background: linear-gradient(90deg, transparent, rgba(255, 214, 150, 0.9), transparent);
 }
 
+/* ---- AS TRÊS PORTAS DA ABERTURA (item 60) ---------------------------
+   Era um `style=` embutido no JSX com três propriedades de flex; virou
+   classe quando a terceira porta chegou e cada botão passou a carregar
+   uma linha embaixo. `align-items: flex-start` e não `stretch`: as três
+   notas têm comprimentos diferentes, e esticar as colunas faria os
+   botões mudarem de largura conforme o texto da nota — o botão é do
+   tamanho do nome dele. */
+.abertura-portas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  /* o vão entre colunas é maior que o de cima porque quem quase se
+     encosta são as NOTAS, que são mais largas que os botões */
+  gap: 0.9rem 2.2rem;
+}
+.abertura-porta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: 16rem;
+}
+/* A LINHA QUE DIZ O QUE A PORTA É. Fica no tom da `free-hint`, não no do
+   `title-sub`: é dica, não título — sem caixa alta e sem o tracking de
+   0,34em, que a esta altura da tela viraria um quarto título. */
+.abertura-porta-nota {
+  color: rgba(165, 180, 202, 0.72);
+  font-size: 0.62rem;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  text-align: center;
+}
+

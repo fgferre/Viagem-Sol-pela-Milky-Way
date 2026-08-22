@@ -192,12 +192,14 @@ export function TitleVeil({
   mode,
   onPlay,
   onExplore,
+  onAtlas,
   runtime,
 }: {
   visible: boolean;
   mode: 'intro' | 'end';
   onPlay: () => void;
   onExplore?: () => void;
+  onAtlas?: () => void;
   runtime?: number;
 }) {
   const minutes = runtime ? Math.floor(runtime / 60) : 0;
@@ -219,17 +221,45 @@ export function TitleVeil({
             328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real
           </div>
           <div className="title-rule" />
-          {/* o "Explorar livremente" já estava ligado aqui (App passa
-              onExplore ao véu) e só era desenhado no fim — quem não quer
-              5 min de filme fechava a aba em vez de entrar na galáxia */}
-          <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <button className="hud-btn" onClick={onPlay}>
-              Iniciar a viagem
-            </button>
-            {onExplore && (
-              <button className="hud-btn" onClick={onExplore}>
-                Explorar livremente
+          {/* AS TRÊS PORTAS DA ABERTURA. O "Explorar livremente" já
+              estava ligado aqui (App passa onExplore ao véu) e só era
+              desenhado no fim — quem não quer 3 min de filme fechava a
+              aba em vez de entrar na galáxia. O "Entrar no Atlas" é o
+              item 60, e é o MESMO `entrarNoAtlas` do portal do
+              pausar-e-olhar: dois caminhos até o mesmo modo, um só
+              código.
+              NENHUMA das três é destacada em cor: o nome de cada porta
+              não diz o que ela é, então cada uma leva a sua linha — e
+              ela é `aria-describedby`, não texto solto, para que quem
+              ouve a tela receba a explicação junto com o botão. */}
+          <div className="abertura-portas">
+            <div className="abertura-porta">
+              <button className="hud-btn" onClick={onPlay} aria-describedby="porta-filme">
+                Iniciar a viagem
               </button>
+              <span className="abertura-porta-nota" id="porta-filme">
+                um filme com roteiro e legendas — você assiste
+              </span>
+            </div>
+            {onExplore && (
+              <div className="abertura-porta">
+                <button className="hud-btn" onClick={onExplore} aria-describedby="porta-voo">
+                  Explorar livremente
+                </button>
+                <span className="abertura-porta-nota" id="porta-voo">
+                  você pilota a câmera, sem roteiro nem relógio
+                </span>
+              </div>
+            )}
+            {onAtlas && (
+              <div className="abertura-porta">
+                <button className="hud-btn" onClick={onAtlas} aria-describedby="porta-atlas">
+                  Entrar no Atlas
+                </button>
+                <span className="abertura-porta-nota" id="porta-atlas">
+                  o céu de hoje: escolha a data, visite os planetas
+                </span>
+              </div>
             )}
           </div>
           <div className="journey-runtime">

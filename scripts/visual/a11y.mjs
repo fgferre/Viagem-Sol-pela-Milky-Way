@@ -189,6 +189,116 @@ async function julgarDialogo(s, nome, onde) {
   );
 }
 
+/**
+ * A ABERTURA — a única tela do app que este juiz nunca tinha aberto.
+ * O contrato genérico do `dialogFocus` não a alcança: a fase `intro`
+ * não tem barra de controles e portanto não tem UM gatilho de diálogo,
+ * então `julgarPagina` sairia dizendo "0 gatilhos" e passaria. Era o
+ * ponto cego que o item 60 (a terceira porta, o Atlas) obrigou a fechar:
+ * mudança que só acontece na abertura precisa de vista que abra a
+ * abertura.
+ *
+ * O que ele cobra, e cada linha é uma promessa que a tela faz:
+ *  1. cada porta é um botão COM a sua linha de explicação, e o botão
+ *     aponta para ela por `aria-describedby` — quem ouve a tela recebe
+ *     as duas coisas juntas, e um `aria-describedby` pendurado em nada
+ *     é pior que nenhum;
+ *  2. NENHUMA porta é destacada em cor (decisão do dono: as três
+ *     iguais) — cor, borda e fundo idênticos nas três;
+ *  3. o Tab passa nas três, na ordem em que estão na tela;
+ *  4. nada sai da tela, nem com o texto no maior degrau — três botões
+ *     com três linhas embaixo é o estado mais alto que a abertura tem.
+ */
+async function julgarAbertura(s) {
+  const assentou = await s.ir(PIN);
+  conferir(assentou.via === 'sinal', `abertura: assentou por via=${assentou.via}`);
+  const fase = await s.js('window.__director.captura.fase');
+  conferir(fase === 'intro', `abertura: a fase da página é '${fase}'`);
+
+  const portas = await s.js(`(() => {
+    const el = document.querySelector('.veil-intro');
+    if (!el) return null;
+    return [...el.querySelectorAll('.abertura-porta')].map((p) => {
+      const b = p.querySelector('button');
+      const id = b && b.getAttribute('aria-describedby');
+      const nota = id ? document.getElementById(id) : null;
+      const cs = b ? getComputedStyle(b) : null;
+      return {
+        botao: b ? b.textContent.trim() : null,
+        descrito: id,
+        nota: nota ? nota.textContent.trim() : null,
+        tinta: cs ? cs.color + '|' + cs.borderColor + '|' + cs.backgroundColor : null,
+      };
+    });
+  })()`);
+  conferir(
+    Array.isArray(portas) && portas.length === 3,
+    `abertura: ${portas ? portas.length : 0} porta(s) — ${(portas || []).map((p) => `"${p.botao}"`).join(' · ')}`
+  );
+  for (const p of portas || []) {
+    conferir(
+      Boolean(p.botao && p.descrito && p.nota),
+      `abertura · "${p.botao}": a linha que diz o que é, e o botão aponta para ela`
+        + ` (aria-describedby=${p.descrito} → "${p.nota}")`
+    );
+  }
+  const tintas = [...new Set((portas || []).map((p) => p.tinta))];
+  conferir(
+    tintas.length === 1,
+    `abertura: nenhuma porta destacada em cor — as três com a mesma tinta`
+      + (tintas.length === 1 ? ` (${tintas[0]})` : ` — ${tintas.length} tintas: ${tintas.join(' vs ')}`)
+  );
+
+  // o Tab passa nas três, na ordem da tela
+  await s.js("document.querySelector('.veil-intro').focus?.(); document.body.focus?.()");
+  const andados = [];
+  for (let i = 0; i < 8 && andados.length < 3; i++) {
+    await s.teclar('Tab');
+    const foco = await s.js(
+      "(document.activeElement && document.activeElement.tagName === 'BUTTON')"
+      + " ? document.activeElement.textContent.trim() : ''"
+    );
+    if (foco && !andados.includes(foco)) andados.push(foco);
+  }
+  const esperada = (portas || []).map((p) => p.botao);
+  conferir(
+    JSON.stringify(andados) === JSON.stringify(esperada),
+    `abertura: o Tab passa nas três, na ordem da tela (${andados.join(' → ')})`
+  );
+
+  // nada sai da tela — nem com o texto no maior degrau
+  for (const fator of [1, 1.4]) {
+    await s.ir(`ui=${fator}&${PIN}`);
+    const fora = await s.js(`(() => {
+      const W = window.innerWidth; const H = window.innerHeight;
+      const alvos = [...document.querySelectorAll('.veil-intro .abertura-porta, '
+        + '.veil-intro .title-big, .veil-intro .journey-runtime')];
+      return alvos.map((e) => { const b = e.getBoundingClientRect(); return {
+        c: (typeof e.className === 'string' ? e.className : '').split(' ')[0],
+        l: Math.round(b.left), t: Math.round(b.top),
+        r: Math.round(b.right), b: Math.round(b.bottom) }; })
+        .filter((p) => p.l < -1 || p.t < -1 || p.r > W + 1 || p.b > H + 1)
+        .map((p) => p.c + ' [' + [p.l, p.t, p.r, p.b].join(',') + '] em ' + W + 'x' + H);
+    })()`);
+    conferir(
+      fora.length === 0,
+      `abertura com ui=${fator}: nada fora da tela` + (fora.length ? ` — ${fora.join(' · ')}` : '')
+    );
+  }
+
+  // e a porta do Atlas leva ao Atlas — o MESMO `entrarNoAtlas` do portal
+  // do pausar-e-olhar (item 60). Sem esta linha, um botão que não faz
+  // nada passaria em todas as de cima.
+  await s.ir(PIN);
+  await s.js("[...document.querySelectorAll('.veil-intro button')]"
+    + ".find((b) => b.textContent.trim() === 'Entrar no Atlas').click()");
+  const entrou = await esperarPor(s, "window.__director.captura.fase === 'atlas'", 8000);
+  conferir(
+    entrou !== null,
+    `abertura: "Entrar no Atlas" leva ao Atlas${entrou === null ? '' : ` (em ${entrou} ms)`}`
+  );
+}
+
 async function julgarPagina(s, query, onde) {
   const assentou = await s.ir(`${query}&${PIN}`);
   conferir(assentou.via === 'sinal', `${onde}: assentou por via=${assentou.via}`);
@@ -352,6 +462,10 @@ if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu
 
 const sessao = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'a11y' });
 try {
+  // A ABERTURA, que é por onde o visitante entra — e que este juiz não
+  // abria (item 60).
+  await julgarAbertura(sessao);
+
   // O FILME PAUSADO: é lá que o painel de Ajustes sempre viveu, e é a
   // prova de que a reforma do D7 não é privilégio do modo novo.
   await julgarPagina(sessao, 't=100', 'journey');

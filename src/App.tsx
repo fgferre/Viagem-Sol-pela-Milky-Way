@@ -878,6 +878,7 @@ export default function App() {
         mode={phase === 'end' ? 'end' : 'intro'}
         onPlay={play}
         onExplore={freeRoam}
+        onAtlas={entrarNoAtlas}
         runtime={runtime}
       />
 
