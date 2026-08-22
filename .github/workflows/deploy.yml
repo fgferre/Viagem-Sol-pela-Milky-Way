@@ -61,6 +61,29 @@ jobs:
       # bancada, rodadas à mão.
       - run: npm run lint
 
+      # O PORTÃO DOS DADOS, que faltava. Os 25 arquivos de `public/data`
+      # são VERSIONADOS: uma regeneração entra por commit como qualquer
+      # outra mudança, e até 2026-08-21 ia ao ar sem ninguém conferir
+      # sha256, `count × stride × 4`, os pares `.bin`/`.bin.gz` (gunzip +
+      # sha contra o cru — a única checagem que o runtime NÃO faz, ver o
+      # cabeçalho de `cartography/galacticAssets.ts`), os índices de
+      # coluna cravados nos leitores e as 174 texturas com dimensão
+      # RE-MEDIDA. Binário corrompido ou manifesto fora de sincronia
+      # publicava, e o visitante via a falha graciosa: cena procedural,
+      # sem aviso nenhum.
+      #
+      # ELE CABE AQUI, e isso foi medido antes de entrar: 0,7 s nesta
+      # bancada (contra 6,5 min do gate de imagem, que segue de fora por
+      # falta de GPU). Não pede rede, não pede GPU, não pede git — lê só
+      # `public/` e `src/`, tudo versionado e tudo já no checkout. A
+      # única dependência externa é o `sharp` das dimensões de textura,
+      # que é devDependency e o `npm ci` acima já instalou; sem ele o
+      # script morre com mensagem própria, e não com um stack trace.
+      #
+      # Fica ANTES do `npm test` pela mesma ordem do resto: do mais
+      # barato para o mais caro.
+      - run: npm run data:verify
+
       # ATENÇÃO ao que `npm test` arrasta: o `include` do vitest.config.ts
       # é `src/**/*.test.ts` + `scripts/**/*.test.mjs`, e essas três de
       # `scripts/visual/` (chrome, ab-identidade, planeta-pixel) importam
