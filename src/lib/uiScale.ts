@@ -79,3 +79,19 @@ export function aplicarEscalaDaUi(fator: number): void {
  * são texto do HUD como qualquer outro, só que pintados à mão).
  */
 export const escalaDaUi = () => viva;
+
+/**
+ * A LARGURA DE CSS DA JANELA — a outra entrada de DOM do retângulo útil
+ * do Atlas, ao lado de `escalaDaUi()`. `window.innerWidth` e não a do
+ * canvas de propósito: quem faz a barra de controles quebrar é o
+ * `max-width: 60vw` do `hud.css`, e o `vw` é o VIEWPORT.
+ *
+ * Mora AQUI desde 22/08 (AGENTS §11: um arquivo, um assunto) — vinha
+ * de `director/escada.ts`, que é a escada de navegação e não tinha por
+ * que ser o endereço de um leitor de `window`. As duas leituras de DOM
+ * que o enquadramento precisa passam a ter o mesmo endereço, e o rig
+ * continua sem saber que existe DOM.
+ */
+export function larguraDeCss(): number {
+  return window.innerWidth;
+}

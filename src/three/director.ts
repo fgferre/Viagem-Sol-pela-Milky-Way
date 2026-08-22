@@ -64,7 +64,7 @@ import { doseDaDramaturgia } from './director/doseDoSol';
 import { faseDoCiclo } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
-import { Escada, larguraDeCss } from './director/escada';
+import { Escada } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
   descartarCarga,
@@ -76,7 +76,7 @@ import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
-import { escalaDaUi } from '../lib/uiScale';
+import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
 import {
   CAMADAS,
   CORPOS_DO_SISTEMA,

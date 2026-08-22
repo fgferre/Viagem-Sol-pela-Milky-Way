@@ -55,25 +55,13 @@ import type { GiganteResolvido } from '../world/corpos/gigante';
 import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
-import { escalaDaUi } from '../../lib/uiScale';
+import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
 
 /** o centro do frame heliocêntrico — o Sol não sai daqui, ninguém muta */
 const ORIGEM = new THREE.Vector3(0, 0, 0);
 
 /** rascunho do polo do corpo — o rig COPIA, ninguém guarda a referência */
 const POLO_DO_CORPO = new THREE.Vector3();
-
-/**
- * A LARGURA DE CSS DA JANELA — a entrada de largura do retângulo útil do
- * Atlas. `window.innerWidth` e não a do canvas de propósito: quem faz a
- * barra de controles quebrar é o `max-width: 60vw` do `hud.css`, e o
- * `vw` é o VIEWPORT. Fica aqui, ao lado de `escalaDaUi()`, porque as
- * duas leituras de DOM que o enquadramento precisa são estas duas — o
- * rig continua sem saber que existe DOM.
- */
-export function larguraDeCss(): number {
-  return window.innerWidth;
-}
 
 /**
  * Posição da efeméride (eclíptica heliocêntrica, em UA) → frame da CENA
@@ -397,12 +385,28 @@ export class Escada {
    * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
-    const casa = this.casaViva();
-    if (casa) {
-      this.atlas.focar(ORIGEM, casa.raio, casa.eixo, { rampa: this.rampaDaEscada() });
-    } else {
-      this.atlas.focarNoSistema();
-    }
+    const congelada = orbitaMaisExterna();
+    // sem efeméride carregada fica o RETRATO congelado, que é o que o
+    // `AtlasRig.focarNoSistema` sempre fez — a conta agora é uma só
+    // porque o piso do zoom precisa entrar nas DUAS entradas
+    const casa = this.casaViva() ?? { raio: congelada.raio, eixo: congelada.posicao };
+    // O PISO DO ZOOM DA ABERTURA É O SOL, e não a esfera enquadrada
+    // (item 73, 22/08). Na abertura o ALVO É O SOL — a esfera do
+    // sistema é centrada nele —, e a lei do modo é "um alvo e uma
+    // distância": a roda tem de descer continuamente até o corpo do
+    // alvo, como desce em Saturno. Com o piso na esfera enquadrada eram
+    // 70,8 UA e CINCO estalos de curso; com o raio físico do Sol são
+    // 0,00930 UA e 40 estalos, a mesma ordem das ~50 de Saturno.
+    //
+    // A queda não abre regime de brilho novo: 2 raios solares é MAIS
+    // PERTO que o degrau do corpo do Sol (6,40 raios), que a
+    // `luz-do-quadro` já julga, e a etapa 1 conferiu na tela que não
+    // lava o quadro. O que ela revoga é a nota "descer ao Sol é outro
+    // degrau" — que valia enquanto a roda trocava de degrau.
+    this.atlas.focar(ORIGEM, casa.raio, casa.eixo, {
+      rampa: this.rampaDaEscada(),
+      pisoRaio: this.solRaioPc,
+    });
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = false;
@@ -897,9 +901,25 @@ export class Escada {
    * consumida). A interação com diálogos está no App: diálogo aberto
    * come o Esc PRIMEIRO (o `dialogFocus` o trata com preventDefault no
    * contêiner), e só o Esc que sobrou chega aqui.
+   *
+   * O PRIMEIRO ESC DESFAZ O ZOOM (item 73, 22/08), e é o que faz a dica
+   * do rodapé ("esc — voltar") continuar verdadeira depois que a roda
+   * virou zoom contínuo: quem desceu da abertura até dois raios do Sol
+   * está no degrau `sistema`, onde a escada não tem para onde subir —
+   * sem esta linha o Esc não fazia NADA e o visitante ficava preso
+   * junto ao corpo, com o único caminho de volta sendo rolar a roda
+   * cinquenta vezes. Um Esc devolve o ENQUADRAMENTO do degrau em que se
+   * está (`pinarDistancia(null)` é a conta pura, bit a bit); o Esc
+   * seguinte sobe a escada, como sempre.
    */
   subirDegrau(): boolean {
     if (this.phase !== 'atlas') return false;
+    if (this.atlas.distanciaEstaPinada) {
+      this.atlas.pinarDistancia(null);
+      this.enquadrarAgora();
+      this.teletransportou();
+      return true;
+    }
     const { degrau } = this.escada;
     if (degrau === 'sistema') return false;
     if (degrau === 'lua') {

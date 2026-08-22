@@ -69,9 +69,6 @@ describe('a inércia — impulso, atrito, zona morta', () => {
   });
 
   it('e anda o MESMO tanto em qualquer taxa de quadros', () => {
-    // é o que a integral fechada compra: com o `v·dt` do doador, 60 Hz
-    // entregaria 93,5% do impulso e 1.000 Hz entregaria 99,9% — o mesmo
-    // gesto andaria menos na máquina mais lenta
     const andar = (hz: number) => {
       const roda = new ZoomDaRoda();
       roda.girar(pixel(-100));
@@ -80,10 +77,52 @@ describe('a inércia — impulso, atrito, zona morta', () => {
       return total;
     };
     // o que sobra de diferença é só ONDE a zona morta corta o rabo:
-    // 0,15% entre 30 e 240 Hz, contra os 6,4% do `v·dt`
+    // 0,15% entre 30 e 240 Hz
     expect(Math.abs(andar(30) - andar(240))).toBeLessThan(0.002);
     expect(andar(30)).toBeGreaterThan(-1);
     expect(andar(30)).toBeLessThan(-1 + ZONA_MORTA / ATRITO_POR_S);
+  });
+
+  it('...e o `v·dt` do doador NÃO andaria — o número é medido aqui', () => {
+    // A DIVERGÊNCIA DECLARADA no commit de 22/08 dizia "93,5% a 60 Hz e
+    // 99,9% a 1.000 Hz" e não tinha quem a medisse: a bancada só
+    // comparava a forma FECHADA consigo mesma. Agora a variante do
+    // doador roda ao lado, com a MESMA zona morta e o MESMO atrito, e o
+    // veredito é o número que sai — não o que a mensagem lembrava.
+    //
+    // A variante é a soma de Riemann pela DIREITA (o doador aplica o
+    // atrito e só então anda `v·dt`), e é ela que faz o mesmo gesto
+    // andar MENOS na máquina mais lenta.
+    const comVezesDt = (hz: number) => {
+      let v = IMPULSO_POR_ESTALO;
+      let total = 0;
+      const dt = 1 / hz;
+      for (let i = 0; i < hz * 10 && v !== 0; i++) {
+        v *= Math.exp(-ATRITO_POR_S * dt);
+        total += v * dt;
+        if (Math.abs(v) < ZONA_MORTA) v = 0;
+      }
+      return total;
+    };
+    const fechada = (hz: number) => {
+      const roda = new ZoomDaRoda();
+      roda.girar(pixel(100));
+      let total = 0;
+      for (let i = 0; i < hz * 10; i++) total += roda.avancar(1 / hz);
+      return total;
+    };
+    // a forma fechada: 0,9877 a 60 Hz e 0,9875 a 1.000 Hz — 0,02% de
+    // espalhamento, e o que sobra é a zona morta
+    expect(fechada(60)).toBeCloseTo(0.9877, 4);
+    expect(fechada(1000)).toBeCloseTo(0.9875, 4);
+    // o `v·dt`: 0,9233 a 60 Hz contra 0,9836 a 1.000 Hz — 6,1%, e a 30 Hz
+    // (a máquina ruim, que é onde isto importa) 0,8632: 12% a menos de
+    // câmera pelo MESMO gesto
+    expect(comVezesDt(60)).toBeCloseTo(0.9233, 4);
+    expect(comVezesDt(1000)).toBeCloseTo(0.9836, 4);
+    expect(comVezesDt(30)).toBeCloseTo(0.8632, 4);
+    expect(Math.abs(comVezesDt(1000) - comVezesDt(30))).toBeGreaterThan(0.1);
+    expect(Math.abs(fechada(1000) - fechada(30))).toBeLessThan(0.002);
   });
 
   it('o sinal: roda para cima e pinça abrindo APROXIMAM', () => {

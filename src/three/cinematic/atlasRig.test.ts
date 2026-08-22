@@ -30,6 +30,7 @@ import {
   raioDeEnquadramentoEstelar,
   retanguloUtilDoAtlas,
 } from './atlasRig';
+import { distanciaAposEstalos } from '../zoomDaRoda';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { RAIO_DO_SOL_NA_CENA, RAIO_SOL_KM, RAIO_SOL_PC } from '../escala';
 import { EPOCA_JD_TDB, RETRATO_2026 } from '../world/planetas/retrato2026';
@@ -744,6 +745,70 @@ describe('o rig e o alvo de abertura', () => {
     rig.apply(camera, 1.4);
     expect(emUA()).toBeGreaterThan(316.9);
     expect(emUA()).toBeLessThan(317.4);
+  });
+
+  it('a roda desce da ABERTURA até o corpo do Sol — 40 estalos, não cinco', () => {
+    // item 73, 22/08. Na abertura o ALVO É O SOL (a esfera do sistema é
+    // centrada nele), então o piso do zoom é o raio FÍSICO dele. Com o
+    // piso na esfera enquadrada eram 70,8 UA e cinco estalos: a roda
+    // parava a meio caminho de casa e a lei "um alvo e uma distância"
+    // valia em Saturno e não valia na vista com que o Atlas abre.
+    const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
+    const rig = new AtlasRig();
+    const casa = orbitaMaisExterna();
+    rig.focar(new THREE.Vector3(), casa.raio, casa.posicao, {
+      pisoRaio: RAIO_DO_SOL_NA_CENA,
+    });
+    rig.apply(camera);
+    const emUA = (pc: number) => pc / AU_PARA_PC;
+    // o piso: 2 raios solares, 0,00930 UA — e não os 70,8 UA de antes
+    expect(emUA(rig.pisoDeZoom)).toBeCloseTo(2 * emUA(RAIO_SOL_PC), 6);
+    expect(emUA(rig.pisoDeZoom)).toBeLessThan(0.01);
+    expect(emUA(rig.tetoDeZoom)).toBeGreaterThan(226.6);
+    // o CURSO, contado com o mesmo passo em log que a roda gasta
+    let d = rig.tetoDeZoom;
+    let estalos = 0;
+    while (d > rig.pisoDeZoom * 1.000001 && estalos < 500) {
+      d = distanciaAposEstalos(d, rig.pisoDeZoom, rig.tetoDeZoom, -1);
+      estalos += 1;
+    }
+    expect(estalos).toBe(40);
+    // e a mesma conta com o piso ANTIGO (a esfera enquadrada) devolve o
+    // curso que o dono viu: quatro estalos (a nota do item 73 diz
+    // "cinco" porque lá o gesto começa fora do teto exato)
+    const pisoAntigo = 2 * casa.raio;
+    let e2 = 0;
+    let d2 = rig.tetoDeZoom;
+    while (d2 > pisoAntigo * 1.000001 && e2 < 500) {
+      d2 = distanciaAposEstalos(d2, pisoAntigo, rig.tetoDeZoom, -1);
+      e2 += 1;
+    }
+    expect(e2).toBe(4);
+  });
+
+  it('a ABERTURA é quem entrega o piso do Sol — a escada, não o rig', () => {
+    // a fonte única do tamanho do Sol é o `solRaioPc` do director (a
+    // MESMA que o palco e o portão de 4 px leem); o rig não a conhece.
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
+    const sistema = ESCADA.slice(
+      ESCADA.indexOf('  focarNoSistema() {'),
+      ESCADA.indexOf('private rampaDaEscada()')
+    );
+    expect(sistema).toContain('pisoRaio: this.solRaioPc,');
+    // ...e o Esc desfaz o zoom antes de subir a escada, senão quem
+    // desceu da abertura ao Sol fica preso (no degrau `sistema` a
+    // subida não tem para onde ir)
+    const sobe = ESCADA.slice(
+      ESCADA.indexOf('  subirDegrau(): boolean {'),
+      ESCADA.indexOf('  reenquadrarAposEfemeride()')
+    );
+    expect(sobe).toContain('if (this.atlas.distanciaEstaPinada) {');
+    expect(sobe.indexOf('distanciaEstaPinada')).toBeLessThan(
+      sobe.indexOf("if (degrau === 'sistema') return false;")
+    );
   });
 
   it('o fov do Atlas é pino, não herança: o rig o escreve todo quadro', () => {
@@ -1469,7 +1534,8 @@ describe('o degrau do CORPO DO SOL', () => {
       ESCADA.indexOf('  focarNoSistema() {'),
       ESCADA.indexOf('  private rampaDaEscada()')
     );
-    expect(abertura).toContain('const casa = this.casaViva();');
+    expect(abertura).toContain('this.casaViva() ??');
+    expect(abertura.split('this.casaViva()').length - 1).toBe(1);
   });
 });
 

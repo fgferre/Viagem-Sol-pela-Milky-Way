@@ -448,6 +448,55 @@ const PROIBIDOS: SimboloProibido[] = [
       'a fenda ficava parada contra nove shaders que seguiam o knob. Sai de ' +
       'glslNumber(GALACTIC_MODEL.warpAmplitudePc), como as outras âncoras',
   },
+  // ─── item 73 (2026-08-22): a roda de DEGRAUS morreu; sobra o zoom ──────
+  // A regra (ii) cobra a inversão no MESMO diff, e o commit que apagou
+  // `three/rodaDaEscada.ts` (a peça inteira) e `Escada.descerDegrau` não
+  // a escreveu. Ela entra aqui, com o motivo: o que morreu não foi um
+  // detalhe de implementação, foi o TRADUTOR roda→degrau — e era ele o
+  // caminho pelo qual a roda trocava o objeto escolhido, que é a queixa
+  // do dono ("nem conseguimos mais selecionar para onde vamos").
+  {
+    arquivo: 'src/three/zoomDaRoda.ts',
+    padrao: /LIMIAR_DO_DEGRAU_PX|TRAVA_DO_DEGRAU_MS|ESQUECIMENTO_MS|class RodaDaEscada/,
+    migracao: 'item 73',
+    razao:
+      'o limiar, a trava de embalo e o esquecimento eram a máquina do ' +
+      'DEGRAU; zoom contínuo não tem nenhum dos três — o que não completa ' +
+      'um estalo vira fração de estalo, e a fração move a câmera',
+  },
+  {
+    arquivo: 'src/three/zoomDaRoda.ts',
+    padrao: /deltaEmPixels/,
+    migracao: 'item 73',
+    razao: 'a conversão de unidade da roda tem um nome só: pixelsDoGiro',
+  },
+  {
+    arquivo: 'src/three/director/escada.ts',
+    // a DECLARAÇÃO, não o nome: o nome sobrevive na LÁPIDE do método,
+    // que é onde o argumento revogado tem de continuar legível
+    padrao: /\n {2}(?:private )?(?:descerDegrau|paiDaLua)\s*[(:]/,
+    migracao: 'item 73',
+    razao:
+      'a DESCIDA da roda ia para o literal do pai da única lua construída ' +
+      '(a Terra), então a roda "para dentro" na abertura escolhia um corpo ' +
+      'que ninguém pediu. A descida continua existindo como GESTO — o ' +
+      'botão, o duplo clique e o ?ver=corpo —, onde o visitante escolhe',
+  },
+  {
+    arquivo: 'src/three/director/gestos.ts',
+    padrao: /Degrau/,
+    migracao: 'item 73',
+    razao: 'não há caminho da roda até o degrau: o fio dela escreve distância',
+  },
+  {
+    arquivo: 'src/three/rodaDaEscada.ts',
+    padrao: /./,
+    migracao: 'item 73',
+    razao:
+      'o arquivo inteiro morreu (o cabeçalho dele virou LÁPIDE dentro de ' +
+      'zoomDaRoda.ts, com a citação do dono que revogou o degrau) — se ' +
+      'alguém o recriar, esta linha o lê e reprova',
+  },
 ];
 
 /**

@@ -69,12 +69,16 @@ export const RAMPA_DO_DEGRAU_S = 0.5;
  *    MEDIDO: com o raio físico, Saturno tem 5,55 décadas entre o piso e
  *    o teto, ou 51 estalos; com o orbital, 1,18 décadas e 11 estalos.
  *
- *  · ALVO = O SISTEMA (a abertura): o raio da ESFERA enquadrada, a
- *    órbita mais externa. Ali o alvo não é o Sol, é o sistema — e descer
- *    ao Sol é OUTRO degrau, o do corpo do Sol, que tem distância
- *    declarada (6,40 raios solares) e fotometria já julgada pelo
- *    `luz-do-quadro`. Deixar a roda passar de 70,8 UA na abertura seria
- *    abrir um regime de brilho que nenhum juiz da casa mediu.
+ *  · ALVO = O SISTEMA (a abertura): o raio físico do SOL, porque na
+ *    abertura o alvo É o Sol — a esfera do sistema é centrada nele, e a
+ *    lei do modo é "um alvo e uma distância". Foi o raio da ESFERA
+ *    ENQUADRADA até 22/08, e ali a roda tinha 70,8 UA de piso e CINCO
+ *    estalos de curso: a nota de então ("descer ao Sol é outro degrau")
+ *    valia enquanto a roda TROCAVA de degrau, e caiu junto com ela. Com
+ *    o raio do Sol o piso é 0,00930 UA e o curso 40 estalos, a mesma
+ *    ordem das ~50 de Saturno. Não abre regime de brilho novo: 2 raios
+ *    solares é mais PERTO que o degrau do corpo do Sol (6,40 raios),
+ *    que o `luz-do-quadro` já julga.
  */
 export const K_MIN_RAIOS = 2.0;
 
