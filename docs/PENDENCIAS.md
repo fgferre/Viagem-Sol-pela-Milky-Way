@@ -75,11 +75,11 @@ demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
 (`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
 `229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
 `2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60**, **66**,
-**67**, **68**, **58** e **65** em 22/08 (`a8a3168`, `92f0232`,
-`64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`). O 4 (Atlas com brilho apagado 100×)
-morreu no M1 — `claraoDoAtlas` saiu do código e os dois modos desenham
-igual, decisão do dono cumprida. O **3** e o **44** pousaram com o aceite
-do dono em 17/08.
+**67**, **68**, **58**, **65** e **71** em 22/08 (`a8a3168`, `92f0232`,
+`64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`, `d2fb2c7`). O 4 (Atlas com
+brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do código e os
+dois modos desenham igual, decisão do dono cumprida. O **3** e o **44**
+pousaram com o aceite do dono em 17/08.
 
 ---
 
@@ -382,31 +382,90 @@ abra 390 px, porque hoje nenhum abre.
 
 **70. Girar a câmera acende e apaga o céu inteiro.** (Achado em 22/08
 pelo juiz novo de movimento, o MB1 — `scripts/visual/
-estabilidade-temporal.mjs`. Nada foi consertado: a régua nasceu para
-dizer a verdade primeiro.) Quando uma estrela muito brilhante sai pela
-borda do quadro, o brilhão dela some de uma vez e **o céu inteiro perde
+estabilidade-temporal.mjs`. **DIAGNOSTICADO em 22/08, ainda NÃO
+consertado** — a causa está escrita abaixo, com os números.) Quando uma
+estrela muito brilhante sai pela borda do quadro, o brilhão dela some de
+uma vez e **o céu inteiro perde
 quase um terço da luz num único passo de câmera** — quatro pixels de
 giro. Ao voltar, o céu acende de novo do mesmo jeito. Não é o olho: está
 medido três vezes com a mesma assinatura, sempre na mesma estrela —
 girando para lá (−24%), girando de volta (+32%) e fechando a lente, que
 empurra a mesma estrela para fora (−29%). Junto com a luz vão um terço
-das estrelinhas visíveis, que caem abaixo do limiar. A causa técnica: o
-clarão é efeito de TELA e não sabe de fonte que está fora do quadro — e
-o corte é duro, não uma rampa, que é justamente o que a
-`LEI-DA-ESTRELA.md` §5.17 proíbe ("nenhuma transição depende de limiar
-duro sobre grandeza que oscila com o movimento"). Conferir com ele no
+das estrelinhas visíveis, que caem abaixo do limiar. Conferir com ele no
 app antes de mexer: é um giro lento com uma estrela forte perto da
 borda.
 
-*Na mesma medição, e ainda sem diagnóstico — cada um espera a sua
-rodada:* **(a)** Vênus salta 13,4 px na VOLTA da fronteira do Sol e não
-na ida, com a câmera passando pelas MESMAS poses na mesma sessão: é
-assinatura de histerese, e é exatamente para isto que a família da
-reversão existe. **(b)** A Lua salta ~1,9 px nos dois passos em que a
-Terra está no meio da rampa de cessão ponto→corpo (`cessaoPorDominancia`,
-`cede` 0,33 e 0,67) — pouco, mas acima do 1 px declarado, e a §5.20 diz
-que a fonte que troca de representação é A MESMA. **(c)** Meia dúzia de
-saltos de 1 a 2 px no fio da tolerância, no pan e na órbita — estes
+**A CAUSA, MEDIDA em 22/08 — e são DUAS, nenhuma delas a pupila.** A
+estrela é **Rigil Kentaurus (α Centauri)**, saindo pela borda de CIMA no
+pan de 40 UA (e empurrada para fora pelo fechamento da lente na família
+`fov`). Andando a UM pixel por passo, a luz do quadro cai de 0,0924 para
+0,0646 (−30%) em 7 px, e a maior queda de um pixel só (−10,4%) acontece
+exatamente no pixel em que o CENTRO da estrela cruza `y = 0`. O que foi
+descartado, cada um com a sua medida: **não é auto-exposição** — a
+`toneMappingExposure` fica em 1,02 nos 87 passos; **não é o bloom
+principal** — `?nobloom=1` muda 0,35% da luz do quadro e não muda a
+queda; **não é a galáxia** — `?nogal=1` repete a queda igual. Desligando
+catálogo E clarão juntos (`?nocat=1&noclarao=1`) o resíduo do passo cai
+para 0,37 degrau, que É o piso, e o quadro não perde luz nenhuma. O
+resíduo do MESMO passo de 4 px, camada por camada: piso 0,33 · só o
+catálogo 1,83 · só heroes+clarão 4,05 · tudo 5,20.
+
+As duas causas são a mesma frase — *efeito de tela que não sabe de fonte
+fora do quadro* — em dois lugares:
+
+1. **`ClaraoDoCampo` (`core/post.ts`), o SEGUNDO bloom.** É o "cobertor
+   do campo" que o dono pediu em 17/08, e ele veste a pirâmide do FILME
+   ([1; 0,8; 0,6; 0,4; 0,2], força 0,72, raio 0,58, **limiar ZERO**) por
+   cima de um rascunho que só tem o que está DENTRO do quadro. O kernel
+   dele alcança ~250–300 px: uma estrela forte deita um pedestal sobre o
+   quadro inteiro, e o pedestal vai embora junto com ela. **E `?nobloom`
+   não o desliga** — a porta só apaga `post.bloom.enabled`, enquanto o
+   `ClaraoDoCampo` chama `bloom.render` na mão. Foi por isso que o A/B
+   com bloom desligado parecia inocente.
+2. **Ponto de GPU é cortado pelo CENTRO.** Catálogo, cascas e os dez
+   corpos são `THREE.Points`, e o WebGL descarta o sprite INTEIRO quando
+   o vértice sai do volume de clip. Medido no α Cen com as heroes
+   apagadas: a coluna debaixo dela lê 0,83 / 0,62 / 0,44 (y = 0/8/16) com
+   o centro em y = +1, e fica CHAPADA no fundo (0,18) dois pixels
+   depois — o sprite sumiu inteiro. A hero, que é QUAD, sai suave pela
+   mesma borda. É o "culling da ponta e não da asa" da §1.
+
+O conserto não é margem mágica: o cobertor do campo tem de enxergar
+ALÉM do quadro (faixa de guarda no rascunho e na pirâmide) e o sprite
+tem de sobreviver enquanto qualquer pedaço dele estiver na tela. Nenhum
+dos dois é mudança pequena, e nenhum dos dois entrou nesta rodada.
+
+*Na mesma medição:* **(a)** Vênus. O que o juiz acusa é 13,4 px na VOLTA
+da fronteira do Sol e não na ida — mas **a Vênus DESENHADA não salta**:
+nas poses 5→8 da reversão ela caminha (133,290) → (156,291) →
+(176,292) → (194,294), um passo limpo de cada vez, sempre com pico 1,00.
+O que salta é o CASAMENTO do juiz: na pose 7 a componente de Vênus se
+funde com o pedestal do clarão do Sol (tudo acima do limiar 0,40 de
+x=170 até o centro) e o casal mútuo cai numa vizinha de pico 0,42 a
+13,4 px. E só acontece na volta por causa da histerese do PRÓPRIO Sol:
+`solArmado` vira na pose 8 das DUAS pernas, que são DISTÂNCIAS
+diferentes (arma a 4 px, desarma a 2 px) — as duas pernas passam pelo
+mesmo lugar com o Sol em estados diferentes, e só a que recua tem o
+clarão largo o bastante para engolir o planeta. Ou seja: **não há
+histerese na POSIÇÃO de Vênus**; o que ficou provado é um clarão que
+engole um planeta a 2 UA (o item 43 por outra estrada) e uma regra de
+"bloco fundido" do MB1 que não cobre este par.
+**(b)** A Lua. A frase "o ponto e o corpo da Lua" está errada: **a Lua
+não tem ponto** — `IDS_FOTOMETRIA` é o Sol mais os NOVE de
+`IDS_RETRATO` (mercury…pluto), e ela entra no palco com
+`temPonto: false` (`director/carregamento.ts`, pinado em `lua.test.ts`).
+No centro do quadro da família `fronteiraTerra` existe UMA mancha só: a
+família usa o eclipse de 2024-04-08, em que a Lua está SOBRE o eixo
+Sol–Terra, e na pose 7 o globo da Terra mede ~13 px e o da Lua ~14 px —
+sobrepostos. Os 1,9 px são o centroide DO BLOCO andando enquanto a
+TERRA faz o crossfade ponto→globo; a âncora `moon` e a âncora `earth`
+não caem na mesma componente, então a regra do próprio juiz ("dois
+corpos na mesma mancha não têm identidade separada") não dispara. O que
+falta medir, e é o que pode ser defeito de verdade, é se o crossfade da
+Terra CONSERVA fluxo: se a luz total dela afunda no meio da rampa, o
+centroide do bloco TEM de andar — e aí é assunto da §1.
+**(c)** Meia dúzia de saltos de 1 a 2 px no fio da tolerância, no pan e
+na órbita — estes
 mudam de corrida para corrida, porque as POSES do juiz são
 determinísticas mas a fase do relógio não é, e no fio da régua isso
 basta. Fora isso a casa passa: o piso é 0,33 degrau de 8 bits nas oito
@@ -468,16 +527,18 @@ Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
 baldes cheios se resolve matando o filho preso — o veredito sai da
 segunda invocação, que lê tudo de disco.
 
-**71.** (Achado em 22/08, ao construir o MB1.) A coluna `gate` do
-`voo-ida-e-volta.mjs` é cega, e a comparação que ela alimenta nunca
-dispara: o harness lê `window.__director.solArmado`, e esse campo não
-existe — o estado do gate mora em `solNoQuadro.solArmado`
-(`director/solNoQuadro.ts`). Lendo `undefined` dos dois lados, a linha
-imprime `----` em todos os degraus e o teste "o gate difere entre ida e
-volta fora da banda de histerese" compara `undefined !== undefined`, que
-é sempre falso. A banda de histerese continua sendo calculada e
-publicada certo; o que está morto é só quem a usaria. O MB1 lê o
-endereço bom.
+**72.** (Achado em 22/08, medindo o item 70.) **A porta `?nobloom=1`
+mente: ela não desliga o bloom todo.** Ela só apaga `post.bloom.enabled`,
+e o SEGUNDO cobertor — o `ClaraoDoCampo` do `core/post.ts`, que veste a
+pirâmide do filme por cima do rascunho do campo — chama `bloom.render`
+na mão, sem passar pelo `enabled`. Medido: com `?nobloom=1` a luz média
+do quadro muda 0,35% a 40 UA, e o halo de 250–300 px de uma estrela
+forte continua inteiro. Quem lê a linha do `NORTE.md` ("perto do Sol,
+A/B só com `&nobloom=1`") acredita estar sem bloom nenhum e não está —
+foi essa crença que quase enterrou o diagnóstico do item 70. O conserto
+é uma linha (o passe respeita a mesma chave), mas ele MOVE PIXEL nas
+vistas que hoje usam a porta, então tem de entrar com `ab-identidade`
+cheio e o delta declarado — não é conserto de fim de rodada.
 
 ---
 
