@@ -215,7 +215,14 @@ async function voar() {
           const cede = d.planetas?.points?.geometry?.getAttribute('aCede');
           return {
             dUa: d.engine.camera.position.length() * ${UA_POR_PC},
-            solArmado: d.solArmado,
+            // O ENDEREÇO DO GATE é \`solNoQuadro.solArmado\` (director/
+            // solNoQuadro.ts), e não \`director.solArmado\`: o campo nunca
+            // existiu no Director. Lendo \`undefined\` dos dois lados, a
+            // coluna imprimia \`----\` em todos os degraus e a comparação
+            // "o gate difere entre ida e volta" virava
+            // \`undefined !== undefined\` — sempre falsa. É o mesmo
+            // endereço que o MB1 lê (estabilidade-temporal.mjs).
+            solArmado: !!(d.solNoQuadro && d.solNoQuadro.solArmado),
             cedeSol: cede ? cede.getX(0) : null,
           };
         })()`);
