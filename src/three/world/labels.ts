@@ -45,6 +45,93 @@ export interface StarLabel {
    * canvas dos rótulos não exista.
    */
   desenhado?: boolean;
+  /**
+   * QUEM GANHA A VAGA quando dois nomes se atropelam (item 73, 22/08).
+   * Número maior manda; `undefined` é "não entra na disputa por
+   * hierarquia" e vale o peso mínimo — é o caso do RAMO DO FILME, que
+   * não é tocado por esta obra e continua ordenando por tier e
+   * proximidade, como sempre ordenou.
+   *
+   * O valor sai da tabela `PRIORIDADE_DO_ROTULO`, e a razão de ele ser
+   * um NÚMERO e não uma classe é o bônus de histerese: quem estava
+   * desenhado no quadro anterior vale 20% a mais, e isso é uma
+   * multiplicação, não um caso novo.
+   */
+  prioridade?: number;
+}
+
+/**
+ * A HIERARQUIA DOS NOMES, numa tabela só — a reimplementação do
+ * `OverlayPositionTracker` do atlas doador (item 73, plano §3).
+ *
+ * O que ela resolve, medido: na abertura do Atlas os dez corpos e as 21
+ * luas projetam a menos de 1% de tela uns dos outros, e quem chegava
+ * primeiro na lista ocupava. O resultado era Saturno nascendo
+ * `desenhado: false` por colidir com "SOL", e a queixa do dono —
+ * *"conseguíamos ver os rótulos de todos objetos de forma
+ * inteligente"*.
+ *
+ * OS NÚMEROS, e a razão de cada degrau:
+ *  · `foco` 100 — o que o visitante escolheu nunca cede a nada;
+ *  · `sol` 90 — a estrela da casa é o centro do frame e a referência de
+ *    escala de toda vista do Atlas;
+ *  · `planeta` 10, `anao` 8, `lua` 6 — a hierarquia do próprio objeto;
+ *  · `estrelaPropria` 5 e `estrelaBayer` 3 — o tier que
+ *    `projectLabels` já usava para desempatar, virado peso: nome
+ *    próprio acima de designação;
+ *  · `outros` 4 — Sagittarius A✱ e o que mais chegar sem classe.
+ */
+export const PRIORIDADE_DO_ROTULO = {
+  foco: 100,
+  sol: 90,
+  planeta: 10,
+  anao: 8,
+  lua: 6,
+  estrelaPropria: 5,
+  outros: 4,
+  estrelaBayer: 3,
+} as const;
+
+/** O bônus de quem JÁ ESTAVA na tela — a histerese, em fator. */
+export const BONUS_DE_HISTERESE = 1.2;
+
+/**
+ * A prioridade de um corpo do sistema, pela CLASSE em pt-BR que a
+ * tabela `NOMES_DOS_CORPOS` já publica ("estrela", "planeta", "planeta
+ * anão", "lua", "asteroide"). Deriva do dado que existe — uma segunda
+ * tabela de ids seria a segunda fonte de verdade que a primeira
+ * desmentiria no dia em que alguém promovesse Ceres.
+ */
+export function prioridadeDeCorpo(classe: string): number {
+  if (classe === 'estrela') return PRIORIDADE_DO_ROTULO.sol;
+  if (classe === 'planeta') return PRIORIDADE_DO_ROTULO.planeta;
+  if (classe === 'lua') return PRIORIDADE_DO_ROTULO.lua;
+  if (classe === 'planeta anão' || classe === 'asteroide') {
+    return PRIORIDADE_DO_ROTULO.anao;
+  }
+  return PRIORIDADE_DO_ROTULO.outros;
+}
+
+/** A prioridade de uma estrela, pelo tier (0 = nome próprio). */
+export function prioridadeDeEstrela(tier: number | undefined): number {
+  return (tier ?? 0) === 0
+    ? PRIORIDADE_DO_ROTULO.estrelaPropria
+    : PRIORIDADE_DO_ROTULO.estrelaBayer;
+}
+
+/**
+ * O PESO da disputa: prioridade × histerese. Quem estava desenhado no
+ * quadro anterior vale 20% a mais — sem isso a seleção PISCA quando dois
+ * nomes disputam a mesma vaga e a projeção anda um pixel. É a mesma
+ * histerese que `projectLabels` já tinha na disputa entre estrelas
+ * (`prevKeys`), generalizada para a lista inteira.
+ */
+export function pesoDoRotulo(
+  label: StarLabel,
+  desenhadosAntes?: ReadonlySet<string>
+): number {
+  const base = label.prioridade ?? PRIORIDADE_DO_ROTULO.outros;
+  return desenhadosAntes?.has(label.key) ? base * BONUS_DE_HISTERESE : base;
 }
 
 const _v = new THREE.Vector3();
@@ -236,10 +323,18 @@ export interface CorpoRotulavel {
  * um salto de data. Ler o retrato congelado aqui seria a segunda fonte
  * de verdade que a máquina do tempo desmentiria.
  *
- * SEM FADE DE DISTÂNCIA, como o `projectForced`: dentro do sistema estes
- * dez são o assunto, não a moldura. Quem decide se eles aparecem é o
- * chamador, e o critério é o único honesto — a camada estar desenhando.
+ * O FADE DE DISTÂNCIA nasceu em 22/08 (item 73, plano §3): a opacidade
+ * era 0,95 FIXA, e a docstring de então dizia "sem fade, dentro do
+ * sistema estes dez são o assunto". Dentro do sistema continua sendo
+ * verdade e nada muda — o fade só começa a morder a 0,01 pc (2.060 UA),
+ * que é 9× mais longe que a vista de abertura, e fecha em 0,05 pc. O
+ * que ele conserta é a outra ponta: visitar uma estrela a parsecs de
+ * casa e continuar lendo "NETUNO · planeta" sobre um ponto que já não
+ * existe no quadro.
  */
+export const CORPO_FADE_COMECA_PC = 0.01;
+export const CORPO_FADE_TERMINA_PC = 0.05;
+
 export function projectCorpos(
   camera: THREE.PerspectiveCamera,
   corpos: readonly CorpoRotulavel[],
@@ -255,15 +350,20 @@ export function projectCorpos(
     if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
     const p = projectPoint(camera, { x, y, z });
     if (!p) continue;
+    const dist = _v.set(x, y, z).distanceTo(camera.position);
     out.push({
       name: corpos[i].nome,
       spect: '',
       detalhe: corpos[i].classe,
-      distPc: _v.set(x, y, z).distanceTo(camera.position),
+      distPc: dist,
       x: p.x,
       y: p.y,
-      opacity: 0.95,
+      opacity:
+        0.95 *
+        (1 -
+          THREE.MathUtils.smoothstep(dist, CORPO_FADE_COMECA_PC, CORPO_FADE_TERMINA_PC)),
       key: corpos[i].chave,
+      prioridade: prioridadeDeCorpo(corpos[i].classe),
     });
   }
   return out;

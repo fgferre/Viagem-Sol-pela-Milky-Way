@@ -544,6 +544,26 @@ try {
     // tem de dizer FORA DE ESCALA na hora, e não um enquadramento
     // depois. Até a F6 ele lia a câmera do enquadramento anterior e
     // declarava a vista velha.
+    //
+    // O GESTO QUE VIAJA VIROU O DUPLO CLIQUE em 22/08 (item 73): o
+    // clique simples passou a ESCOLHER sem mover a câmera, e é por isso
+    // que a linha de contexto acima muda com um clique só e o selo, que
+    // fala de DISTÂNCIA, precisa dos dois. A promessa medida é a mesma
+    // de sempre — o selo declara a vista NOVA, não a anterior.
+    // e o alvo é uma ESTRELA, escolhida da lista viva em vez de sorteada
+    // pelo primeiro pixel com tinta: dentro do sistema solar nenhum
+    // duplo clique tira a câmera de 0,001 pc, e o que este veredito
+    // mede é justamente sair dele
+    const daEstrela = JSON.parse(await sessao.js(`JSON.stringify((() => {
+      const l = window.__director.rotulos.alvos.find(
+        (r) => r.desenhado === true && !r.key.startsWith('corpo:')
+      );
+      return l ? { x: Math.round(l.x * window.innerWidth),
+        y: Math.round(l.y * window.innerHeight), nome: l.name } : null;
+    })())`));
+    await sessao.duploClicar(daEstrela.x, daEstrela.y);
+    await sleep(1200);
+    await sessao.assentar();
     const seloLonge = await sessao.js(`(() => {
       const s = window.__director.selo;
       return JSON.stringify({ pc: s.distanciaPc });

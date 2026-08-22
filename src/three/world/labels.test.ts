@@ -22,7 +22,16 @@ import { IDS_FOTOMETRIA } from './planetas/fotometria';
 // um jsdom que nenhum outro precisa — e sem partir o módulo em dois só
 // para agradar ao runner.
 (globalThis as { window?: unknown }).window = { location: { search: '' } };
-const { projectCorpos } = await import('./labels');
+const {
+  projectCorpos,
+  prioridadeDeCorpo,
+  prioridadeDeEstrela,
+  pesoDoRotulo,
+  PRIORIDADE_DO_ROTULO,
+  BONUS_DE_HISTERESE,
+  CORPO_FADE_COMECA_PC,
+  CORPO_FADE_TERMINA_PC,
+} = await import('./labels');
 
 /** uma câmera olhando a origem de 10 unidades no eixo z */
 function camera() {
@@ -118,5 +127,93 @@ describe('projectCorpos', () => {
     expect(rotulos.some((l) => l.key === `${CHAVE_DE_CORPO}sun`)).toBe(false);
     expect(rotulos.length).toBe(9);
     for (const l of rotulos) expect(Number.isFinite(l.x)).toBe(true);
+  });
+});
+
+
+// ============================================================
+// A HIERARQUIA DOS NOMES (item 73, plano §3) — a tabela do doador
+// (`OverlayPositionTracker`), reimplementada. Antes dela quem chegava
+// primeiro na lista ocupava a vaga, e o resultado medido era Saturno
+// nascendo `desenhado: false` por colidir com "SOL".
+// ============================================================
+describe('prioridade — quem ganha a vaga', () => {
+  it('a hierarquia é a que o plano declara, e ela DERIVA da classe', () => {
+    expect(prioridadeDeCorpo('estrela')).toBe(PRIORIDADE_DO_ROTULO.sol);
+    expect(prioridadeDeCorpo('planeta')).toBe(PRIORIDADE_DO_ROTULO.planeta);
+    expect(prioridadeDeCorpo('planeta anão')).toBe(PRIORIDADE_DO_ROTULO.anao);
+    expect(prioridadeDeCorpo('asteroide')).toBe(PRIORIDADE_DO_ROTULO.anao);
+    expect(prioridadeDeCorpo('lua')).toBe(PRIORIDADE_DO_ROTULO.lua);
+    // classe que ninguém previu não vira exceção: cai no piso
+    expect(prioridadeDeCorpo('cometa')).toBe(PRIORIDADE_DO_ROTULO.outros);
+    // e a ordem é a que a queixa do dono pede: planeta acima de lua
+    expect(PRIORIDADE_DO_ROTULO.foco).toBeGreaterThan(PRIORIDADE_DO_ROTULO.sol);
+    expect(PRIORIDADE_DO_ROTULO.sol).toBeGreaterThan(PRIORIDADE_DO_ROTULO.planeta);
+    expect(PRIORIDADE_DO_ROTULO.planeta).toBeGreaterThan(PRIORIDADE_DO_ROTULO.anao);
+    expect(PRIORIDADE_DO_ROTULO.anao).toBeGreaterThan(PRIORIDADE_DO_ROTULO.lua);
+    expect(PRIORIDADE_DO_ROTULO.lua).toBeGreaterThan(PRIORIDADE_DO_ROTULO.estrelaPropria);
+  });
+
+  it('a estrela entra pelo TIER: nome próprio acima de designação', () => {
+    expect(prioridadeDeEstrela(0)).toBe(PRIORIDADE_DO_ROTULO.estrelaPropria);
+    expect(prioridadeDeEstrela(1)).toBe(PRIORIDADE_DO_ROTULO.estrelaBayer);
+    expect(prioridadeDeEstrela(undefined)).toBe(PRIORIDADE_DO_ROTULO.estrelaPropria);
+  });
+
+  it('a projeção dos corpos PUBLICA a prioridade — o desenho não a recalcula', () => {
+    const rotulos = projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes());
+    const porChave = new Map(rotulos.map((l) => [l.key, l]));
+    expect(porChave.get(`${CHAVE_DE_CORPO}sun`)?.prioridade).toBe(PRIORIDADE_DO_ROTULO.sol);
+    expect(porChave.get(`${CHAVE_DE_CORPO}earth`)?.prioridade).toBe(
+      PRIORIDADE_DO_ROTULO.planeta
+    );
+    expect(porChave.get(`${CHAVE_DE_CORPO}pluto`)?.prioridade).toBe(
+      PRIORIDADE_DO_ROTULO.anao
+    );
+  });
+
+  it('a HISTERESE vale 20% e é multiplicação, não caso novo', () => {
+    const rotulos = projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes());
+    const terra = rotulos.find((l) => l.key === `${CHAVE_DE_CORPO}earth`)!;
+    expect(pesoDoRotulo(terra)).toBe(PRIORIDADE_DO_ROTULO.planeta);
+    expect(pesoDoRotulo(terra, new Set([terra.key]))).toBe(
+      PRIORIDADE_DO_ROTULO.planeta * BONUS_DE_HISTERESE
+    );
+    expect(BONUS_DE_HISTERESE).toBe(1.2);
+    // ...e ela NÃO inverte a hierarquia: uma lua que estava na tela
+    // continua abaixo de um planeta que não estava
+    const lua = { ...terra, prioridade: PRIORIDADE_DO_ROTULO.lua };
+    expect(pesoDoRotulo(lua, new Set([lua.key]))).toBeLessThan(pesoDoRotulo(terra));
+  });
+
+  it('sem prioridade vale o piso — é o rótulo do FILME, que não é tocado', () => {
+    expect(pesoDoRotulo({ ...projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes())[0], prioridade: undefined }))
+      .toBe(PRIORIDADE_DO_ROTULO.outros);
+  });
+});
+
+describe('o fade dos corpos — dentro do sistema nada muda', () => {
+  it('na vista de abertura a opacidade é a de sempre, 0,95', () => {
+    // a câmera de brinquedo está a 10 unidades, mas a régua do fade é a
+    // distância em pc, e ela só começa a morder a 0,01 pc: aqui a
+    // distância É 10 pc, então o teste usa a escala real
+    const cam = camera();
+    cam.position.set(0, 0, 0.001); // 0,001 pc — 9× mais perto que o começo
+    cam.updateMatrixWorld(true);
+    const p = new Float32Array(30);
+    const rotulos = projectCorpos(cam, CORPOS_DO_SISTEMA, p);
+    for (const l of rotulos) expect(l.opacity).toBeCloseTo(0.95, 12);
+  });
+
+  it('e some quando a casa vira um ponto — visitar uma estrela apaga os dez', () => {
+    const cam = camera();
+    cam.position.set(0, 0, CORPO_FADE_TERMINA_PC * 2);
+    cam.updateMatrixWorld(true);
+    const rotulos = projectCorpos(cam, CORPOS_DO_SISTEMA, new Float32Array(30));
+    for (const l of rotulos) expect(l.opacity).toBe(0);
+    // e a faixa é declarada, com o começo bem além da vista de abertura
+    // (0,0011 pc): o fade nunca morde dentro do sistema
+    expect(CORPO_FADE_COMECA_PC).toBeGreaterThan(0.005);
+    expect(CORPO_FADE_TERMINA_PC).toBeGreaterThan(CORPO_FADE_COMECA_PC);
   });
 });

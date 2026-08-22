@@ -91,6 +91,14 @@ const AREAS_RESERVADAS = [
   // varre: todo diálogo da casa se declara com `data-dialogo`, então um
   // diálogo novo passa a afastar os rótulos no dia em que nascer.
   ':scope > [data-dialogo]',
+  // AS TARJAS (item 73, 22/08). Elas são tinta PRETA OPACA por cima do
+  // canvas dos rótulos (`z-index: 30` contra 25), então um nome escrito
+  // ali não existe para quem olha — e desde que o rótulo ganhou cinco
+  // lugares por âncora ele passou a alcançá-las: medido, um traço
+  // saindo de uma âncora a 150 px do topo com o nome escondido debaixo
+  // da tarja. Quando a tarja está recolhida (`height: 0`) o retângulo
+  // não tem altura e não reserva nada.
+  '.letterbox',
   '.controls-bar > *',
   '.atlas-contexto',
   '.atlas-rodape',

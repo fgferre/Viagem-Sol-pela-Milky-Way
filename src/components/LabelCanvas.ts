@@ -10,6 +10,83 @@ interface Rect {
   bottom: number;
 }
 
+/** a família do HUD, escrita uma vez (era repetida em quatro linhas) */
+const FAMILIA = '"Segoe UI", Arial, sans-serif';
+
+/**
+ * OS LUGARES ALTERNATIVOS de um nome, em pixels de deslocamento
+ * VERTICAL a partir da âncora (item 73, plano §3) — e tanto o passo
+ * quanto a CONTAGEM são MEDIDOS, não copiados.
+ *
+ * O PASSO. A caixa de colisão tem 24 px de altura (`anchorY ± 12`) e a
+ * folga entre duas caixas é 8 px, então dois textos empilhados só se
+ * livram um do outro a partir de 24 + 8 = 32 px. O doador usa ±18 e
+ * ±36, que na geometria DESTE canvas não separam nada: a 18 px as
+ * caixas ainda se cruzam, e as cinco posições dele viravam uma. 34 px é
+ * o primeiro passo que limpa, com 2 px de margem.
+ *
+ * A CONTAGEM. O plano pedia CINCO, e cinco não bastam — está medido na
+ * vista de abertura, que é onde a promessa foi feita ("os 8 planetas e
+ * o Sol com nome, contra 3 hoje"). O aglomerado interno tem CINCO
+ * corpos dentro de 6 px (Sol, Mercúrio, Vênus, Terra, Marte) e mais
+ * três vizinhos na mesma faixa vertical (Júpiter, Saturno, Urano):
+ * cinco lugares de um lado dão 5 nomes, cinco de cada lado dão 8, e
+ * SETE de cada lado dão os 10. Cada par a mais custa 34 px de traço, e
+ * o traço agora é conferido contra o HUD (ver `draw`), então ele não
+ * pode se esconder atrás da tarja.
+ *
+ * A ordem é centro → cima → baixo → mais longe, alternando, e o
+ * PRIMEIRO é o zero: quem já cabia continua exatamente onde estava.
+ */
+export const DESLOCAMENTOS = [0, -34, 34, -68, 68, -102, 102] as const;
+
+/**
+ * OS TRÊS PESOS VISUAIS, numa tabela só — à moda do `labelTier.ts` do
+ * doador. O que separa um do outro é a HIERARQUIA (`prioridade`), e a
+ * tabela é o único lugar onde cor, peso e tamanho de um rótulo se
+ * decidem.
+ *
+ * O DO MEIO É O DESENHO DE SEMPRE, pixel a pixel, e isso é deliberado:
+ * `prioridade` ausente cai nele, e `prioridade` ausente é exatamente o
+ * caso do RAMO DO FILME, que esta obra não toca. Um rótulo do filme
+ * continua sendo desenhado com os mesmos números de antes.
+ */
+export const PESOS_DO_ROTULO = {
+  /** o foco e o Sol (prioridade ≥ 90): o assunto, e ele se lê primeiro */
+  principal: {
+    tamanhoDoNome: 13,
+    pesoDoNome: '600',
+    corDoNome: 'rgba(255, 246, 232, 0.98)',
+    tamanhoDoDetalhe: 9,
+    corDoDetalhe: 'rgba(198, 206, 220, 0.92)',
+  },
+  /** planetas, anões, luas e nomes próprios — o desenho de sempre */
+  secundario: {
+    tamanhoDoNome: 12,
+    pesoDoNome: '500',
+    corDoNome: 'rgba(240, 244, 251, 0.96)',
+    tamanhoDoDetalhe: 9,
+    corDoDetalhe: 'rgba(159, 176, 201, 0.88)',
+  },
+  /** designações de Bayer e o resto: presente, sem disputar a leitura */
+  terciario: {
+    tamanhoDoNome: 11,
+    pesoDoNome: '400',
+    corDoNome: 'rgba(206, 215, 231, 0.82)',
+    tamanhoDoDetalhe: 8,
+    corDoDetalhe: 'rgba(143, 158, 181, 0.74)',
+  },
+} as const;
+
+/** A faixa de prioridade de cada peso — a tabela decide, não o desenho. */
+export function pesoVisual(label: StarLabel) {
+  const p = label.prioridade;
+  if (p === undefined) return PESOS_DO_ROTULO.secundario;
+  if (p >= 90) return PESOS_DO_ROTULO.principal;
+  if (p >= 5) return PESOS_DO_ROTULO.secundario;
+  return PESOS_DO_ROTULO.terciario;
+}
+
 /**
  * Desenha todos os rótulos em um único canvas.
  *
@@ -124,28 +201,66 @@ export class LabelCanvas {
       ) {
         continue;
       }
-      const toLeft = anchorX > this.width * 0.72;
-      const direction = toLeft ? -1 : 1;
-      const textX = anchorX + direction * 18 * k;
+      const ladoPreferido = anchorX > this.width * 0.72;
       const name = label.name.toLocaleUpperCase('pt-BR');
       // o `detalhe` é dos corpos do sistema (a classe em pt-BR, que não
       // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é o
       // tipo espectral
       const detail = detalheDoRotulo(label);
+      const peso = pesoVisual(label);
 
-      ctx.font = `500 ${12 * k}px "Segoe UI", Arial, sans-serif`;
+      ctx.font = `${peso.pesoDoNome} ${peso.tamanhoDoNome * k}px ${FAMILIA}`;
       const nameWidth = ctx.measureText(name).width;
-      ctx.font = `400 ${9 * k}px "Segoe UI", Arial, sans-serif`;
+      ctx.font = `400 ${peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
       const detailWidth = ctx.measureText(detail).width;
       const contentWidth = nameWidth + 9 * k + detailWidth;
-      const left = toLeft ? textX - contentWidth : textX;
-      const candidate: Rect = {
-        left: left - 5 * k,
-        right: left + contentWidth + 5 * k,
-        top: anchorY - 12 * k,
-        bottom: anchorY + 12 * k,
-      };
-      if (occupied.some((rect) => intersects(candidate, rect, 8 * k))) continue;
+      // AS CINCO POSIÇÕES, EM CADA LADO (item 73, plano §3): prioridade
+      // não salva Vênus colidindo com o Sol — outro LUGAR para o texto,
+      // sim. O primeiro candidato é o de sempre (lado preferido,
+      // deslocamento ZERO), e é isso que mantém intacto todo rótulo que
+      // já cabia: em `ui = 1` o produto é exato e a caixa é a mesma, bit
+      // a bit.
+      let candidate: Rect | null = null;
+      let textY = anchorY;
+      let toLeft = ladoPreferido;
+      let textX = anchorX + (ladoPreferido ? -1 : 1) * 18 * k;
+      for (const lado of [ladoPreferido, !ladoPreferido]) {
+        const direcao = lado ? -1 : 1;
+        const x = anchorX + direcao * 18 * k;
+        const left = lado ? x - contentWidth : x;
+        for (const passo of DESLOCAMENTOS) {
+          const y = anchorY + passo * k;
+          const tentativa: Rect = {
+            left: left - 5 * k,
+            right: left + contentWidth + 5 * k,
+            top: y - 12 * k,
+            bottom: y + 12 * k,
+          };
+          if (occupied.some((rect) => intersects(tentativa, rect, 8 * k))) continue;
+          // O TRAÇO TAMBÉM É TINTA, e com deslocamento ele deixa de ser
+          // um risco de 10 px para virar uma diagonal de até 102: ela
+          // não pode atravessar o HUD. A caixa do texto continua sendo
+          // a régua da disputa ENTRE nomes (incluir a âncora nela faria
+          // todo empilhamento colidir consigo mesmo — medido, os 10
+          // nomes da abertura voltavam a 4); contra o HUD, que é opaco,
+          // vale a tinta inteira.
+          const traco: Rect = {
+            left: Math.min(anchorX, anchorX + direcao * 10 * k),
+            right: Math.max(anchorX, anchorX + direcao * 10 * k),
+            top: Math.min(anchorY, y),
+            bottom: Math.max(anchorY, y),
+          };
+          if (this.reservadas.some((rect) => intersects(traco, rect, 0))) continue;
+          candidate = tentativa;
+          textY = y;
+          toLeft = lado;
+          textX = x;
+          break;
+        }
+        if (candidate) break;
+      }
+      if (!candidate) continue;
+      const direction = toLeft ? -1 : 1;
       occupied.push(candidate);
       // passou pelas três leis: está NA TELA, e portanto é clicável
       label.desenhado = true;
@@ -155,21 +270,24 @@ export class LabelCanvas {
       ctx.lineWidth = 0.75;
       ctx.beginPath();
       ctx.moveTo(anchorX, anchorY);
-      ctx.lineTo(anchorX + direction * 10 * k, anchorY);
+      // o traço vai da ÂNCORA até a altura do texto: com deslocamento
+      // zero ele é a horizontal de sempre, pixel a pixel; deslocado, ele
+      // é a linha que diz de qual ponto aquele nome está falando
+      ctx.lineTo(anchorX + direction * 10 * k, textY);
       ctx.stroke();
 
       ctx.textAlign = toLeft ? 'right' : 'left';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
       ctx.shadowBlur = 7;
-      ctx.font = `500 ${12 * k}px "Segoe UI", Arial, sans-serif`;
-      ctx.fillStyle = 'rgba(240, 244, 251, 0.96)';
-      ctx.fillText(name, textX, anchorY);
+      ctx.font = `${peso.pesoDoNome} ${peso.tamanhoDoNome * k}px ${FAMILIA}`;
+      ctx.fillStyle = peso.corDoNome;
+      ctx.fillText(name, textX, textY);
 
       ctx.shadowBlur = 6;
-      ctx.font = `400 ${9 * k}px "Segoe UI", Arial, sans-serif`;
-      ctx.fillStyle = 'rgba(159, 176, 201, 0.88)';
+      ctx.font = `400 ${peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
+      ctx.fillStyle = peso.corDoDetalhe;
       const detailX = toLeft ? textX - nameWidth - 9 * k : textX + nameWidth + 9 * k;
-      ctx.fillText(detail, detailX, anchorY);
+      ctx.fillText(detail, detailX, textY);
     }
 
     ctx.globalAlpha = 1;

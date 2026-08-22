@@ -2441,6 +2441,9 @@ export class Director {
       named: this.meta?.named ?? null,
       dHome,
       planetas: this.planetas,
+      // o alvo escolhido tem prioridade 100 na disputa dos nomes (item
+      // 73): o dono do foco é a escada, e o rótulo só precisa do id
+      foco: this.escada.focoCorpoId,
     });
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);

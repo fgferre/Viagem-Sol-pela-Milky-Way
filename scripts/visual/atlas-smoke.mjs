@@ -995,6 +995,51 @@ try {
       + ` (${porPortaLegada} vs ${peloGesto})`
   );
 
+  // ---- 15c: OS NOMES DA ABERTURA (item 73, plano §3) ---------------
+  // A segunda coisa que o dono pediu, com as palavras dele:
+  // *"conseguíamos ver os rótulos de todos objetos de forma
+  // inteligente"*. A medida de antes desta obra: 38 projetados → 7
+  // desenhados → TRÊS corpos com nome (Sol, Netuno, Plutão). Os quatro
+  // planetas internos projetam a menos de 6 px do Sol e perdiam a vaga
+  // para ele; Saturno perdia para Júpiter.
+  //
+  // A promessa é contada em CORPOS COM NOME, não em rótulos desenhados:
+  // quantas estrelas cabem depende do céu daquela data, e o que o dono
+  // pediu foi ver os objetos do sistema.
+  await sessao.ir('atlas=1&q=cinema');
+  await sessao.assentar();
+  // a capa da abertura cobre a cena por alguns segundos DEPOIS de a
+  // prontidão fechar (ver o NORTE, "Como rodar") — e é o desenho dos
+  // rótulos que se mede aqui, não a prontidão
+  await sleep(4000);
+  const nomesDaAbertura = JSON.parse(await sessao.js(`JSON.stringify((() => {
+    const alvos = window.__director.rotulos.alvos;
+    return {
+      projetados: alvos.length,
+      desenhados: alvos.filter((l) => l.desenhado === true).length,
+      corpos: alvos.filter((l) => l.desenhado === true && l.key.startsWith('corpo:'))
+        .map((l) => l.key.slice(6)),
+      luasAcesas: alvos.filter((l) => l.desenhado === true && l.opacity > 0.08
+        && ['moon','titan','io','europa','ganymede','callisto'].includes(l.key.slice(6))).length,
+    };
+  })())`));
+  const OITO_PLANETAS = [
+    'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune',
+  ];
+  const faltando = OITO_PLANETAS.filter((p) => !nomesDaAbertura.corpos.includes(p));
+  conferir(
+    faltando.length === 0 && nomesDaAbertura.corpos.includes('sun'),
+    `na abertura os 8 planetas e o Sol têm nome — ${nomesDaAbertura.corpos.length}`
+      + ` corpos de ${nomesDaAbertura.projetados} projetados`
+      + ` (${nomesDaAbertura.corpos.join(', ')})`
+      + (faltando.length ? ` · FALTAM ${faltando.join(', ')}` : '')
+  );
+  conferir(
+    nomesDaAbertura.luasAcesas === 0,
+    `...e nenhuma LUA acende colada no pai: elas esmaecem por separação`
+      + ` na tela (${nomesDaAbertura.luasAcesas} acesas)`
+  );
+
   // ---- 16: O POLO DO CORPO NO ALTO (Onda 7) ------------------------
   // O `up` era a constante do polo da eclíptica em toda parte. No degrau
   // "corpo" ele passa a ser o EIXO DO PLANETA — e os dois são coisas

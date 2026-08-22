@@ -10,7 +10,14 @@
 // projeção pelo getter `alvos` — a mesma lista única da pendência 30.
 // ============================================================
 import * as THREE from 'three';
-import { projectCorpos, projectLabels, projectForced } from '../world/labels';
+import {
+  PRIORIDADE_DO_ROTULO,
+  pesoDoRotulo,
+  prioridadeDeEstrela,
+  projectCorpos,
+  projectLabels,
+  projectForced,
+} from '../world/labels';
 import type { StarLabel } from '../world/labels';
 import { GAL } from '../world/galaxy';
 import { numeroPtBr } from '../tempoDoAtlas';
@@ -18,7 +25,7 @@ import { notaDeDistancia } from '../../lib/unidades';
 import { UA_POR_PC } from '../world/planetas/planetas';
 import type { Planetas } from '../world/planetas/planetas';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
-import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
 import type { NamedStar } from '../config';
 import type { Phase } from '../fases';
 import type { JourneyMeta } from '../cinematic/journey';
@@ -32,12 +39,48 @@ export interface QuadroDeRotulos {
   dHome: number;
   /** a camada dos dez corpos (rótulos só onde ela está DESENHADA) */
   planetas: Planetas | null;
+  /**
+   * O CORPO EM FOCO no Atlas (id do retrato) — `null` quando o que está
+   * em quadro é o sistema ou uma estrela. É a única entrada que o
+   * produtor de rótulos precisa da escada: o alvo escolhido tem
+   * prioridade 100 e não cede a nada (item 73).
+   */
+  foco: string | null;
 }
+
+/**
+ * O TETO DE CANDIDATAS ESTELARES do Atlas — e ele é DECLARADO, não
+ * escondido (item 73, plano §3).
+ *
+ * O teto de 7 morreu: quem decide quem aparece passou a ser a
+ * hierarquia mais a colisão, e um corte numérico antes disso jogava
+ * fora Saturno para caber uma vizinha a 40 pc. Mas a lista das nomeadas
+ * tem 1.726 entradas e o laço de colisão é quadrático no que sobra —
+ * então o dique fica, no lugar certo: 24 CANDIDATAS, o suficiente para
+ * a colisão ter de onde escolher e pouco o bastante para o custo por
+ * quadro não sair do desprezível.
+ */
+export const TETO_DE_CANDIDATAS_ESTELARES = 24;
+
+/**
+ * A SEPARAÇÃO NA TELA, em fração de largura, em que uma LUA vira
+ * assunto. Abaixo de `LUA_ACENDE_EM` o nome dela está em cima do nome do
+ * pai e não diz nada; acima de `LUA_ACESA_EM` ela é um objeto próprio no
+ * quadro. É o "fade por tamanho angular" da §3 do plano, escrito na
+ * grandeza que a decisão realmente usa — o que separa "Titã" de
+ * "Saturno" na tela não é a distância à câmera, é o quanto os dois
+ * pontos se afastaram um do outro.
+ */
+export const LUA_ACENDE_EM = 0.012;
+export const LUA_ACESA_EM = 0.035;
 
 export class Rotulos {
   /** última projeção de rótulos — alvo do clicar-para-visitar */
   private lastLabels: StarLabel[] = [];
   private prevLabelKeys = new Set<string>();
+  /** as chaves que o DESENHO marcou no quadro anterior — o bônus de
+   *  histerese de `pesoDoRotulo` (item 73) */
+  private prevDesenhados = new Set<string>();
   private lastDest = '';
   private destTimer = 0;
   private lastSol = '';
@@ -80,6 +123,32 @@ export class Rotulos {
     this.luaPosParaRotulo[i * 3] = centro.x;
     this.luaPosParaRotulo[i * 3 + 1] = centro.y;
     this.luaPosParaRotulo[i * 3 + 2] = centro.z;
+  }
+
+  /**
+   * A LUA COLADA NO PAI NÃO TEM O QUE DIZER. Mede a separação NA TELA
+   * entre a lua e o pai dela (fração da largura, que é a unidade em que
+   * `x`/`y` chegam) e esmaece com `smoothstep` entre `LUA_ACENDE_EM` e
+   * `LUA_ACESA_EM`; o `LabelCanvas` descarta abaixo de 0,08 de opacidade
+   * e o clique descarta abaixo de 0,15, então o nome some antes de
+   * roubar vaga e antes de roubar clique.
+   *
+   * Pai fora do quadro não esmaece nada: se o planeta não está
+   * projetado, a lua É o único objeto ali e o nome dela é a informação.
+   */
+  private esmaecerLuasColadasNoPai(
+    corpos: readonly StarLabel[],
+    luas: readonly StarLabel[]
+  ) {
+    if (luas.length === 0) return;
+    for (const lua of luas) {
+      const entrada = LUAS_DO_SISTEMA.find((l) => l.chave === lua.key);
+      if (!entrada) continue;
+      const pai = corpos.find((c) => c.key === `${CHAVE_DE_CORPO}${entrada.pai}`);
+      if (!pai) continue;
+      const sep = Math.hypot(lua.x - pai.x, lua.y - pai.y);
+      lua.opacity *= THREE.MathUtils.smoothstep(sep, LUA_ACENDE_EM, LUA_ACESA_EM);
+    }
   }
 
   /** os relógios de 4 Hz do rumo e do Sol andam com o quadro */
@@ -221,12 +290,9 @@ export class Rotulos {
         // linha de rumo com distância viva
         this.emitDest(meta.dest, cam.position, named);
       } else {
-        // OS DEZ CORPOS PRIMEIRO, e só onde eles estão DESENHADOS (a
-        // camada ligada e dentro do domínio profundo — o mesmo critério
-        // que decide `points.visible`). Primeiro na lista porque o
-        // desempate de colisão do `LabelCanvas` é a ordem: dentro do
-        // sistema solar o assunto são eles, e uma vizinha a 40 pc não
-        // pode expulsar Netuno do quadro que o Atlas abriu mostrando.
+        // OS DEZ CORPOS, e só onde eles estão DESENHADOS (a camada
+        // ligada e dentro do domínio profundo — o mesmo critério que
+        // decide `points.visible`).
         const corpos =
           fase === 'atlas' && planetas?.points.visible
             ? projectCorpos(cam, CORPOS_DO_SISTEMA, planetas.posicoes)
@@ -238,14 +304,55 @@ export class Rotulos {
           fase === 'atlas' && planetas?.points.visible
             ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
             : [];
-        this.lastLabels = [
-          ...corpos,
-          ...luas,
-          ...projectLabels(cam, named, 7, this.prevLabelKeys, this.oclusoresDeRotulo),
-        ];
+        // A LUA SÓ ACENDE QUANDO SE DESCOLA DO PAI (item 73, plano §3):
+        // na abertura as 21 luas projetam em cima dos planetas delas, e
+        // o nome "Titã" escrito sobre o nome "Saturno" não é
+        // informação, é ruído que ainda por cima disputa vaga.
+        this.esmaecerLuasColadasNoPai(corpos, luas);
+        // AS ESTRELAS entram por CANDIDATAS, não por vagas: o teto de 7
+        // era um corte ANTES da disputa, e era ele que fazia uma vizinha
+        // a 40 pc chegar à tela enquanto Saturno ficava de fora. Quem
+        // decide agora é a hierarquia (o peso) mais a colisão.
+        const estrelas = projectLabels(
+          cam,
+          named,
+          TETO_DE_CANDIDATAS_ESTELARES,
+          this.prevLabelKeys,
+          this.oclusoresDeRotulo
+        );
+        // a prioridade das ESTRELAS é escrita AQUI e não dentro de
+        // `projectLabels`: aquele é o mesmo caminho do FILME, e o filme
+        // não é tocado por esta obra — sem `prioridade` o desenho cai no
+        // peso do meio, que é o desenho de sempre, pixel a pixel
+        for (const e of estrelas) e.prioridade = prioridadeDeEstrela(e.tier);
+        const lista = [...corpos, ...luas, ...estrelas];
+        // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a
+        // mesma que o hit-test reconhece; o `sol-home` cobre o caso da
+        // estrela da casa vista de longe.
+        if (quadro.foco) {
+          const chaveDoFoco = `${CHAVE_DE_CORPO}${quadro.foco}`;
+          for (const l of lista) {
+            if (l.key === chaveDoFoco) l.prioridade = PRIORIDADE_DO_ROTULO.foco;
+          }
+        }
+        // A ORDEM É A DISPUTA: o `LabelCanvas` desenha na ordem que
+        // recebe e quem chega primeiro ocupa, então ordenar aqui É
+        // decidir a hierarquia. Empate desempata pelo mais PERTO, que é
+        // a régua que a lista já usava entre estrelas.
+        lista.sort(
+          (a, b) =>
+            pesoDoRotulo(b, this.prevDesenhados) - pesoDoRotulo(a, this.prevDesenhados) ||
+            a.distPc - b.distPc
+        );
+        this.lastLabels = lista;
         this.emitDest(undefined, cam.position, named);
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
+      // o que o DESENHO marcou no quadro que acabou de sair da tela —
+      // a histerese é sobre o que se VIU, não sobre o que se projetou
+      this.prevDesenhados = new Set(
+        this.lastLabels.filter((l) => l.desenhado).map((l) => l.key)
+      );
       this.fios.onLabels(this.lastLabels);
     } else if (fase !== 'journey') {
       this.lastLabels = [];
