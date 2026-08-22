@@ -306,6 +306,18 @@ invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
 tela retina, é a primeira suspeita. Conferir com o dono na vista
 galáctica antes de mexer.
 
+**59.** (Achado em 21/08, ligado ao item 7.) Trocar de qualidade não
+troca a textura dos corpos que já estão carregados. O `reassarMundo`
+refaz a galáxia, os dois mapas e o Sol; os doze corpos do palco leem o
+tier só na HORA de pedir textura, então quem já carregou fica no alvo do
+tier velho (`alvoDePixels`, `world/corpos/texturas.ts`: cinema 8192,
+alta 2048, performance 1024). Não é esquecimento: refazer o globo hoje
+custa ~2 s de véu — a Terra em close-up vira ponto e volta enquanto a
+textura nova vem pela rede —, e isso está declarado no próprio
+`reassarMundo` e no `NORTE.md`. O conserto sem véu é double-buffer por
+corpo: assar a textura nova em paralelo e trocar o ponteiro num quadro
+só, que é o que a letra C já faz com a galáxia e o Sol.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -358,6 +370,14 @@ Sol assentar a 0,05 UA, e ESGOTA o teto de 480 s sem assentar — as medidas
 saem de um retrato a meio caminho. O harness já passou a dizer isso em voz
 alta em vez de imprimir "assentado"; **por que o sinal não chega não foi
 medido** — pode ser o bake, pode ser o critério de três leituras seguidas.
+
+**63.** (Higiene, medida em 21/08.) O `director.ts` voltou a crescer: 2.135
+linhas no fim da onda da arquitetura, 2.487 hoje — a qualidade ao vivo e o
+calendário do Sol entraram por cima. E dentro do tick os quatro grupos do
+palco (Terra, Lua, `rochosos`, `gigantes`) são quatro laços quase iguais,
+com a mesma sequência em cada um: `palco.registrar`/`remover`,
+`escreverCessao`, `friaNoGate`, `perturbar`. É trabalho de agrupar, não de
+reescrever, e fecha com gate bit-idêntico.
 
 ---
 
