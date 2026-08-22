@@ -104,6 +104,15 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
 export const CARTOGRAFIA_PROCEDURAL = 'cartografia: procedural (os mapas não chegaram)';
 
 /**
+ * A MESMA CARTOGRAFIA, PEDIDA. Com `?cart=off` os mapas nem são
+ * baixados: a cena é procedural porque o visitante escolheu, e dizer
+ * "os mapas não chegaram" acusa a rede de uma decisão dele — a frase
+ * soa falha onde não houve nenhuma. Conferido no navegador em 22/08: as
+ * duas situações imprimiam a MESMA linha.
+ */
+export const CARTOGRAFIA_DESLIGADA = 'cartografia: procedural (os mapas desligados por ?cart=off)';
+
+/**
  * A LEGENDA DA PROCEDÊNCIA, montada aqui e não no JSX do componente —
  * pelo mesmo motivo do registro de caminhos: o `Selo` enumerava os três
  * tiers à mão e imprimia "medido: catálogo e efeméride" sem olhar dado
@@ -113,13 +122,18 @@ export const CARTOGRAFIA_PROCEDURAL = 'cartografia: procedural (os mapas não ch
  *
  * `cartografiaMedida` é o estado REAL da carga
  * (`cartografiaMedida()` de `cartography/galacticAssets.ts`), não uma
- * constante.
+ * constante. `porEscolha` separa a falha do pedido: os dois dão a mesma
+ * cena procedural e NÃO são a mesma notícia.
  */
-export function legendaDaProcedencia(cartografiaMedida: boolean): string {
+export function legendaDaProcedencia(
+  cartografiaMedida: boolean,
+  porEscolha = false
+): string {
   const tiers = Object.values(PROCEDENCIA)
     .map((t) => `${t.rotulo}: ${t.oQue}`)
     .join(' · ');
-  return cartografiaMedida ? tiers : `${tiers} · ${CARTOGRAFIA_PROCEDURAL}`;
+  if (cartografiaMedida) return tiers;
+  return `${tiers} · ${porEscolha ? CARTOGRAFIA_DESLIGADA : CARTOGRAFIA_PROCEDURAL}`;
 }
 
 /**

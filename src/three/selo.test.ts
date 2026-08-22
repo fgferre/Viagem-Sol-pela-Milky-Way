@@ -31,6 +31,7 @@ import {
   escalaDaVista,
   estadoDoSelo,
   legendaDaProcedencia,
+  CARTOGRAFIA_DESLIGADA,
 } from './selo';
 import type { EstadoDaVista } from './selo';
 import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
@@ -453,6 +454,19 @@ describe('5. a copy do selo', () => {
 
     // sem eles, a frase extra — e só ela muda
     expect(caida).toBe(`${medida} · ${CARTOGRAFIA_PROCEDURAL}`);
+
+    // E A FALHA NÃO SE CONFUNDE COM O PEDIDO (conferido no navegador em
+    // 22/08): com `?cart=off` os mapas nem são baixados, e a cena é
+    // procedural porque o visitante escolheu. As duas situações
+    // imprimiam a MESMA linha — "os mapas não chegaram" acusava a rede
+    // de uma decisão dele.
+    const desligada = legendaDaProcedencia(false, true);
+    expect(desligada).toBe(`${medida} · ${CARTOGRAFIA_DESLIGADA}`);
+    expect(desligada).not.toBe(caida);
+    expect(CARTOGRAFIA_DESLIGADA).toContain('?cart=off');
+    expect(CARTOGRAFIA_DESLIGADA).not.toContain('não chegaram');
+    // com os mapas na mão a escolha não inventa linha nenhuma
+    expect(legendaDaProcedencia(true, true)).toBe(medida);
     expect(CARTOGRAFIA_PROCEDURAL).toContain('cartografia');
     expect(CARTOGRAFIA_PROCEDURAL).toContain('procedural');
 

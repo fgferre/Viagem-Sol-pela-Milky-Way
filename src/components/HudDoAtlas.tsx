@@ -159,6 +159,7 @@ export function GavetaDeCamadas({
 export function Selo({
   vista,
   cartografiaMedida,
+  cartografiaDesligada,
   onEscalaReal,
   onBrilhoReal,
 }: {
@@ -169,6 +170,8 @@ export function Selo({
    * procedural em silêncio e o rodapé seguia dizendo "medido".
    */
   cartografiaMedida: boolean;
+  /** …e quando não chegaram, foi porque o visitante pediu (`?cart=off`)? */
+  cartografiaDesligada: boolean;
   onEscalaReal: () => void;
   onBrilhoReal: () => void;
 }) {
@@ -216,7 +219,9 @@ export function Selo({
         </em>
       </button>
 
-      <p className="atlas-selo-legenda">{legendaDaProcedencia(cartografiaMedida)}</p>
+      <p className="atlas-selo-legenda">
+        {legendaDaProcedencia(cartografiaMedida, cartografiaDesligada)}
+      </p>
     </div>
   );
 }

@@ -152,6 +152,16 @@ export default function App() {
   const [ajustes, setAjustes] = useState(
     new URLSearchParams(window.location.search).has('ajustes')
   );
+  /**
+   * `?cart=off` — a cartografia procedural POR ESCOLHA. Lida uma vez,
+   * como o tier do boot: é porta de alocação e não troca ao vivo. Quem a
+   * consome é só o selo, para não chamar de falha da rede o que o
+   * visitante pediu (conferido no navegador em 22/08: os mapas
+   * bloqueados e o `?cart=off` imprimiam a MESMA frase).
+   */
+  const [cartografiaDesligada] = useState(
+    () => new URLSearchParams(window.location.search).get('cart') === 'off'
+  );
   const [gaveta, setGaveta] = useState(false);
   const [busca, setBusca] = useState(false);
   /**
@@ -699,6 +709,9 @@ export default function App() {
               // os mapas da galáxia chegaram nesta sessão? sem isto a
               // legenda jurava "medido" sobre uma cena 100% procedural
               cartografiaMedida={cartografiaMedida()}
+              // …e se não chegaram, foi escolha dele? A frase da falha
+              // acusava a rede de uma decisão do visitante.
+              cartografiaDesligada={cartografiaDesligada}
               onEscalaReal={() => directorRef.current?.focarNoSistema()}
               onBrilhoReal={voltarAoBrilhoReal}
             />
