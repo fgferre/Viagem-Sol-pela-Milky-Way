@@ -37,6 +37,34 @@
 // propósito, e este parágrafo existe para ninguém "consertar" a divergência.
 //
 // ------------------------------------------------------------
+// A SEGUNDA METADE DA LENTE — `&noclarao=1` (item 58a, 2026-08-22)
+// ------------------------------------------------------------
+// `&nobloom=1` sozinho parou de isolar em 16/08, quando o M2 da Lei da
+// Estrela pôs o CLARÃO DE ASAS numa camada própria (`world/clarao.ts`) que
+// não passa pelo bloom: ela desenha a asa Moffat do Sol direto no quadro.
+// Como a asa só acende quando o Sol-ponto está visível, ela entrava
+// INTEIRA no diff `com camada − sem camada`, e o resultado media a asa em
+// vez dos dez pontos. Medido a 150 UA, antes da correção: 37.798 px
+// acesos em 209 componentes, uma mancha ÚNICA de 37.132 px engolindo SEIS
+// corpos como `SOB-GLARE`, e 191 componentes órfãs — os farrapos da asa
+// no limiar de 1/255, a ~110 px do centro — que são um dos três modos de
+// REPROVAR. A régua reprovava a asa e chamava isso de planetas.
+//
+// A asa NÃO é esta representação: no cadastro ela é a linha `heroes`, do
+// M2, e quem a julga é `luz-do-quadro.mjs` (a coluna `clarao(px)` da
+// escada). Desligá-la nos DOIS lados do A/B tira-a do diff sem tocar em
+// nada do que esta régua veio medir — mesmo binário, mesma figura do
+// `&nobloom=1`. Medido depois: 393 px em 4 componentes, ZERO órfãs longe,
+// e Júpiter e Saturno saem de `SOB-GLARE` para `MEDIDO` (0,049/0,073 px e
+// −0,310/+0,006 px de centroide).
+//
+// O QUE A LENTE NÃO CONSERTA, e não deve: Mercúrio, Vênus e a Terra caem a
+// 3,2, 6,8 e 9,3 px do centro do Sol a 150 UA, DENTRO do sprite de ~21 px
+// dele. Nenhuma lente separa dois pontos que a geometria põe no mesmo
+// lugar — é `SOB-GLARE` de verdade, declarado e não julgado, e a régua os
+// mede nas outras duas vistas, onde o desfile abre.
+//
+// ------------------------------------------------------------
 // O INSTRUMENTO É VALIDADO NOS DOIS ESTADOS (M5)
 // ------------------------------------------------------------
 // Uma régua que só sabe dizer "achei" não prova nada: se o diff acusasse
@@ -64,8 +92,19 @@
 // caixa vive numa grade de meio pixel por construção ((x0+x1+1)/2), então
 // ±0,5 px em x e em y É a resolução dele. Cobrar a HIPOTENUSA ≤0,5 seria
 // cobrar 0,35 px por eixo — mais fino que a grade —, e o que reprovaria não
-// seria a camada, seria a régua. (Medido: a Terra na `ua40` sai com a caixa a
-// 0,277/0,420 px, dentro dos 0,5 em cada eixo e 0,503 na hipotenusa.)
+// seria a camada, seria a régua.
+//
+// A CAIXA JULGADA É A DE MEIA-ALTURA desde 22/08 (item 58a) — a tolerância
+// NÃO mudou, o estimador é que ficou honesto. Sobre todos os pixels da
+// componente ele era refém do último: a fronteira em 1/255 é onde um pixel
+// da cauda entra ou não por arredondamento, e um pixel solto muda a caixa
+// inteira. Medido: Júpiter na `ua40` saía 7×7 em vez dos 6×6 do sprite
+// (`gl_PointSize` = 5,93 px) e a caixa caía 0,724 px em y — REPROVA — com o
+// centroide a 0,014 px. Com o corte em metade do pico da componente, onde o
+// perfil é íngreme e a fronteira é simétrica, a caixa ENCOLHE e melhora em
+// todos: Júpiter 0,724 → 0,224, a Terra 0,420 → 0,080, Saturno 0,321 →
+// 0,179, e o pior eixo das três vistas passa de 0,724 para 0,286 (Vênus em
+// x, na `ua40`). Ver `caixaDeMeiaAltura`.
 //
 // E A CAIXA NÃO É JULGADA quando outro corpo previsto tem luz DENTRO da mesma
 // componente: a caixa é propriedade da componente inteira e o vizinho a
@@ -115,7 +154,7 @@ export const PROFUNDAS = ['ua500', 'ua150', 'ua40'];
 const PORTA_LIGA = '&plan=1';
 const PORTA_DESLIGA = '&noplan=1';
 /** A lente da régua — ver o cabeçalho. Não é o look do app. */
-const FLAG_MEDICAO = '&nobloom=1';
+const FLAG_MEDICAO = '&nobloom=1&noclarao=1';
 /** O readout da D7, ligado nos DOIS lados para o diff não medir o readout. */
 const READOUT = '&dbgplan=1';
 
@@ -148,6 +187,52 @@ export const RAIO_HALO_PX = 30;
 // no teste e outra na tela — o defeito que o `diff-pixel.mjs` não pode ter
 // porque a conta dele vive só na string.
 // ------------------------------------------------------------
+
+/**
+ * A CAIXA DE MEIA-ALTURA — o estimador GROSSO, na largura em que ele é
+ * um estimador.
+ *
+ * A caixa nasceu sobre TODOS os pixels da componente, isto é, sobre o
+ * limiar de UM degrau de 8 bits. Isso a torna refém do último pixel: a
+ * PSF é um gaussiano amostrado numa grade, e a fronteira em 1/255 é
+ * exatamente onde um pixel entra ou não por arredondamento. Medido em
+ * 22/08, Júpiter na `ua40`: a componente tem 33 px e a caixa crua sai
+ * 7×7 em vez dos 6×6 do sprite (`gl_PointSize` = 5,93 px), porque UM
+ * pixel solto uma linha acima passou o degrau. A caixa cai meio pixel
+ * (centro em 829,5 contra 830,224 previstos: Δ 0,724) enquanto o
+ * centroide fica a 0,014 px — e a régua reprovava a camada por causa
+ * de um pixel.
+ *
+ * É a MESMA doença que o cabeçalho já nomeia para o vizinho ("a caixa é
+ * propriedade da componente inteira e o vizinho a estica"); a diferença
+ * é que aqui quem estica é a própria cauda da PSF. A resposta é a
+ * padrão em fotometria: medir a extensão a MEIA ALTURA do pico da
+ * componente, onde o perfil é íngreme e a fronteira é simétrica. É um
+ * estimador MAIS ESTRITO (a caixa encolhe), continua independente do
+ * centroide (usa só quais pixels passam, sem peso nenhum) e a
+ * resolução de meio pixel do `(x0+x1+1)/2` não muda — a tolerância de
+ * 0,5 px por eixo fica onde estava.
+ */
+export function caixaDeMeiaAltura(pixels, dMax, deltaMax, W) {
+  const corte = deltaMax / 2;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  let n = 0;
+  for (const p of pixels) {
+    if (dMax[p] < corte) continue;
+    const x = p % W;
+    const y = (p / W) | 0;
+    n++;
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  // componente de um pixel só: a meia-altura é ele mesmo
+  return n ? { n, x0, y0, x1, y1 } : { n: 0, x0: 0, y0: 0, x1: 0, y1: 0 };
+}
 
 /**
  * O DIFF e as COMPONENTES CONEXAS da luz que apareceu.
@@ -203,6 +288,9 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
     let y0 = H;
     let x1 = -1;
     let y1 = -1;
+    // os pixels da componente, guardados para o SEGUNDO passo da caixa
+    // (meia-altura — ver `caixaDeMeiaAltura` abaixo)
+    const meus = [];
     while (topo > 0) {
       const p = pilha[--topo];
       const x = p % W;
@@ -216,6 +304,7 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
       sx += w * (x + 0.5);
       sy += w * (y + 0.5);
       if (dMax[p] > deltaMax) deltaMax = dMax[p];
+      meus.push(p);
       if (x < x0) x0 = x;
       if (x > x1) x1 = x;
       if (y < y0) y0 = y;
@@ -231,11 +320,16 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
         }
       }
     }
+    // A CAIXA JULGADA É A DE MEIA-ALTURA, não a do limiar de 1 degrau —
+    // ver `caixaDeMeiaAltura`. A caixa CRUA fica publicada ao lado
+    // porque é ela que diz o quanto a componente inteira se espalha.
+    const mh = caixaDeMeiaAltura(meus, dMax, deltaMax, W);
     componentes.push({
       id, n, peso, deltaMax,
       cx: sx / peso, cy: sy / peso,
       x0, y0, x1, y1,
-      cxCaixa: (x0 + x1 + 1) / 2, cyCaixa: (y0 + y1 + 1) / 2,
+      nMeia: mh.n,
+      cxCaixa: (mh.x0 + mh.x1 + 1) / 2, cyCaixa: (mh.y0 + mh.y1 + 1) / 2,
     });
   }
 
@@ -552,6 +646,7 @@ async function analisar({ semCamada, comCamada, semCamada2, alvos }) {
   const dir = mkdtempSync(resolve(tmpdir(), 'planetapx-'));
   const pagina = resolve(dir, 'analise.html');
   writeFileSync(pagina, `<!doctype html><meta charset="utf-8"><pre id="o">…</pre><script>
+${caixaDeMeiaAltura.toString()}
 ${componentesDoDiff.toString()}
 ${manchaSaturada.toString()}
 (async () => {

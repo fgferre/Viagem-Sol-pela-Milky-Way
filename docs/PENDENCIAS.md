@@ -75,7 +75,7 @@ demais saíram depois, cada um no seu commit: **11** e **42** em 15/08
 (`6740d72`), **8**, **10** e **51** em 18/08 (`cf6ea79`, `7afe64d`,
 `229dc1c`), **9**, **55** e **56** em 20/08 (`35bab48`, `39ca08f`,
 `2f2355a`), **16** e **57** em 21/08 (`ade2c3e`, `841d57d`), **60**, **66**,
-**67** e **68** em 22/08 (`a8a3168`, `92f0232`, `64f8ed9`). O 4 (Atlas com brilho apagado 100×)
+**67** e **68** em 22/08 (`a8a3168`, `92f0232`, `64f8ed9`, `4c14bfd`). O 4 (Atlas com brilho apagado 100×)
 morreu no M1 — `claraoDoAtlas` saiu do código e os dois modos desenham
 igual, decisão do dono cumprida. O **3** e o **44** pousaram com o aceite
 do dono em 17/08.
@@ -418,14 +418,6 @@ byte com o baseline (funcionou nas duas).
 Uma pista MORREU em 22/08: o item 66 (a mesma URL dando duas telas) era
 o mostrador de quadros por segundo do HUD entrando na foto — e as vistas
 da Terra são `?shot=2`, sem HUD nenhum. Não é a mesma raiz.
-
-**58.** (Achado no censo dos juízes de 21/08, que fechou o item 57. A
-metade da ida e volta FECHOU em 22/08; sobra esta.) A régua dos planetas
-(`planeta-pixel.mjs`) voltou a funcionar — travava desde o M1 pedindo um
-`uGain` que a lei tinha matado — e agora REPROVA por outro motivo: a 150 UA
-o clarão do Sol é uma mancha de 37.132 px que engole seis dos dez corpos, e
-a lente `&nobloom=1` já não isola o que a régua veio medir. Ela precisa de
-lente nova (a porta `?nosun=1` existe) antes de voltar a valer veredito.
 
 **64.** (Ruído de instrumento, visto UMA vez em 21/08.) Um filho do
 `ab-identidade` mediu as suas 18 vistas, gravou o estado e o arquivo de

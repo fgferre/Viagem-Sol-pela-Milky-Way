@@ -18,6 +18,7 @@ import {
   RAIO_HALO_PX,
   TOLERANCIA_PX,
   autoTesteSintetico,
+  caixaDeMeiaAltura,
   casarCorpos,
   componentesDoDiff,
   lerDbgPlan,
@@ -130,6 +131,71 @@ describe('componentesDoDiff', () => {
 // ============================================================
 // 2. A mancha saturada — a definição operacional do SOB-GLARE
 // ============================================================
+// ============================================================
+// 1b. A CAIXA DE MEIA-ALTURA (item 58a, 22/08) — o estimador grosso
+// deixou de ser refém do último pixel do limiar de 1 degrau.
+// ============================================================
+describe('caixaDeMeiaAltura', () => {
+  /** um mapa `dMax` de brinquedo, num quadro de largura `w` */
+  function mapa(w, celulas) {
+    const dMax = new Uint8Array(w * 40);
+    const pixels = [];
+    for (const [x, y, v] of celulas) {
+      dMax[y * w + x] = v;
+      pixels.push(y * w + x);
+    }
+    return { dMax, pixels, w };
+  }
+
+  it('um pixel solto no limiar NÃO estica a caixa — o defeito de Júpiter', () => {
+    // o núcleo (delta 40) mais UM pixel de delta 1 uma linha acima: é
+    // exatamente a forma medida na `ua40` em 22/08, que punha a caixa
+    // crua em 7 linhas e derrubava o centro meio pixel
+    const { dMax, pixels, w } = mapa(20, [
+      [10, 5, 1],
+      [10, 6, 40], [11, 6, 38], [10, 7, 39], [11, 7, 37],
+    ]);
+    const crua = { y0: 5, y1: 7 };
+    expect((crua.y0 + crua.y1 + 1) / 2).toBe(6.5);
+    const mh = caixaDeMeiaAltura(pixels, dMax, 40, w);
+    expect(mh.y0).toBe(6);
+    expect(mh.y1).toBe(7);
+    expect((mh.y0 + mh.y1 + 1) / 2).toBe(7);
+    expect(mh.n).toBe(4);
+  });
+
+  it('o corte é METADE do pico da componente, não um número fixo', () => {
+    const { dMax, pixels, w } = mapa(20, [[3, 3, 100], [4, 3, 51], [5, 3, 49]]);
+    const mh = caixaDeMeiaAltura(pixels, dMax, 100, w);
+    expect(mh.x0).toBe(3);
+    expect(mh.x1).toBe(4);
+    expect(mh.n).toBe(2);
+  });
+
+  it('mancha chata (tudo no mesmo delta) devolve a caixa INTEIRA', () => {
+    const { dMax, pixels, w } = mapa(20, [[2, 2, 9], [3, 2, 9], [4, 2, 9]]);
+    const mh = caixaDeMeiaAltura(pixels, dMax, 9, w);
+    expect([mh.x0, mh.x1, mh.n]).toEqual([2, 4, 3]);
+  });
+
+  it('a caixa da componente JÁ é a de meia-altura, e ela é MAIS ESTRITA', () => {
+    // pela porta pública: a gaussiana do harness com uma faísca solta
+    const base = fundo();
+    const com = comMancha(base, [{ px: 40.5, py: 30.5, pico: 60, sigma: 1.5 }]);
+    // a faísca de 1 degrau, cinco pixels acima do núcleo
+    const i = ((30 - 5) * W + 40) * 4;
+    com[i] += 1; com[i + 1] += 1; com[i + 2] += 1;
+    const r = componentesDoDiff({ a: base, b: com, W, H, limiar: 1 });
+    const c = r.componentes.reduce((m, x) => (x.n > m.n ? x : m));
+    // a caixa CRUA subiu com a faísca...
+    expect(c.y0).toBe(25);
+    // ...e a de meia-altura, que é a julgada, ficou no núcleo
+    expect(c.cyCaixa).toBeGreaterThan(29);
+    expect(c.cyCaixa).toBeLessThan(32);
+    expect(c.nMeia).toBeLessThan(c.n);
+  });
+});
+
 describe('manchaSaturada', () => {
   it('devolve null onde o pixel não está no teto', () => {
     expect(manchaSaturada({ img: fundo(), W, H, x: 10.5, y: 10.5 })).toBeNull();
