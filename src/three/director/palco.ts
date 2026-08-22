@@ -113,6 +113,15 @@ export interface FiosDoPalco {
   efemeride: unknown;
   /** o filme está correndo? (só nele o pino das 16:00 vale) */
   noFilme: boolean;
+  /**
+   * ESTE corpo pré-aquece a textura neste quadro? É o GATILHO 2 da carga
+   * preguiçosa (o gatilho 1 é o gate de 4 px), e desde 22/08 ele é POR
+   * CORPO. Era um booleano só para os doze — `palcoQuente` —, e o preço
+   * estava medido: abrir o Atlas em cinema carregava 1.147 MiB de texel
+   * de corpo sem o visitante chegar perto de nada, e a coda do filme
+   * fazia o mesmo com os dez que ela nunca resolve.
+   */
+  preAquecer: (id: string) => boolean;
   /** a cena mudou: a captura recomeça a contagem de estabilidade */
   perturbar: () => void;
 }
@@ -130,12 +139,14 @@ export function passoDoPalco(
   quadro: QuadroDoPalco,
   fios: FiosDoPalco
 ): void {
-  const { palco, planetas, rotulos, efemeride, noFilme, perturbar } = fios;
+  const { palco, planetas, rotulos, efemeride, noFilme, preAquecer, perturbar } = fios;
   for (const posto of postos) {
     // o pino das 16:00 é POR CORPO e só dentro do filme; sem ele o
     // pouso miraria um globo a 1,7 milhão de km
     quadro.centroPinadoPc =
       noFilme && posto.pinoNoFilme ? posto.pinoNoFilme : undefined;
+    // e o pré-aquecimento também é POR CORPO (a dose de 22/08)
+    quadro.atlasQuente = preAquecer(posto.id);
     const e = posto.corpo.atualizar(quadro);
 
     if (e.emQuadro) palco.registrar(posto.id, e.raioPc, e.centroPc);

@@ -242,6 +242,40 @@ export class Director {
   private readonly quadroDoPalco = quadroDoPalcoVazio();
   /** `perturbar` já ligado ao this — um fio por tick, não doze */
   private readonly perturbarDoPalco = () => this.perturbar();
+  /**
+   * A DOSE DO PRÉ-AQUECIMENTO (22/08) — o gatilho 2 da carga preguiçosa,
+   * agora POR CORPO. Era um booleano só (`palcoQuente`) valendo para os
+   * doze, e o preço estava medido: abrir o Atlas em cinema deixava
+   * residentes **1.147 MiB de texel de corpo** (38 texturas, 36,5 MiB
+   * baixados) sem o visitante chegar perto de nada — e a coda do filme
+   * fazia o mesmo com os que ela nunca resolve.
+   *
+   * A DOSE NOVA, e o número que a autoriza. Medido nesta máquina, com o
+   * cache HTTP DESLIGADO e o pré-aquecimento desligado: um corpo sozinho
+   * vai de 'fria' a 'pronta' em 90–113 ms, e na descida ao degrau do
+   * corpo o gate de 4 px arma 222–479 ms antes da chegada da câmera — a
+   * textura pousa 124 a 230 ms ANTES do fim da rampa nos três corpos
+   * medidos (Marte, Terra, Saturno). O gate acorda cedo o bastante, e é
+   * ele quem manda para quem não está em foco.
+   *
+   * Quem AINDA pré-aquece, e por quê:
+   *  - no ATLAS, o corpo EM FOCO (e o pai, quando o foco é uma lua — o
+   *    degrau da lua enquadra os dois, D7): o clique dá segundos de
+   *    folga, não milissegundos, e é o único corpo que o visitante
+   *    declarou querer ver;
+   *  - no FILME, TERRA e LUA a partir de REVEAL_T — as duas que a coda
+   *    resolve, e só elas. As outras dez nunca chegam aos 4 px no filme:
+   *    aqueciam por engano, dentro do ato mais pesado.
+   */
+  private readonly preAquecerCorpo = (id: string): boolean => {
+    if (this.phase === 'journey') {
+      return this.journeyT >= REVEAL_T && (id === 'earth' || id === 'moon');
+    }
+    if (this.phase !== 'atlas') return false;
+    const foco = this.escada.focoCorpoId;
+    if (!foco) return false;
+    return id === foco || id === LUAS_DO_SISTEMA.find((l) => l.id === foco)?.pai;
+  };
   /** quadros já gastos segurando a captura com a efeméride pedida
    *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
   private quadrosTentandoFonte = 0;
@@ -1157,12 +1191,14 @@ export class Director {
   }
 
   /**
-   * O PALCO PRÉ-AQUECE no Atlas E na reta final do filme: a coda "a
-   * volta para casa" resolve Terra e Lua em segundos, e a textura tem
-   * de estar quente ANTES de o gate armar — senão o espectador vê o
-   * globo nascer cru no meio do raspão (a carga preguiçosa dos corpos
-   * lê este booleano como gatilho 2; o gatilho 1 é o próprio gate).
-   * REVEAL_T dá ~64 s de aquecimento antes da chegada.
+   * O PALCO ESTÁ EM CENA — no Atlas e na reta final do filme (a coda "a
+   * volta para casa" resolve Terra e Lua em segundos; REVEAL_T dá ~64 s
+   * de folga antes da chegada). Quem lê isto hoje é a EFEMÉRIDE, que
+   * precisa estar viva antes de o raspão chegar.
+   *
+   * A TEXTURA já NÃO lê mais este booleano: o pré-aquecimento virou dose
+   * POR CORPO em 22/08 (`preAquecerCorpo`), porque um booleano só para os
+   * doze custava 1.146 MiB de texel de corpo ao abrir o Atlas em cinema.
    */
   private get palcoQuente(): boolean {
     return this.phase === 'atlas' || (this.phase === 'journey' && this.journeyT >= REVEAL_T);
@@ -2018,7 +2054,6 @@ export class Director {
       q.screenHPx = hPx;
       q.fovDeg = cam.fov;
       q.ligado = this.palco.ligado;
-      q.atlasQuente = this.palcoQuente;
       q.politica = this.politicaDeLuz;
       q.dtS = dt;
       q.psf = this.stars;
@@ -2029,6 +2064,7 @@ export class Director {
         rotulos: this.rotulos,
         efemeride: this.maquinaDoTempo.efemeride,
         noFilme: this.phase === 'journey',
+        preAquecer: this.preAquecerCorpo,
         perturbar: this.perturbarDoPalco,
       });
     }

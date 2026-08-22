@@ -330,6 +330,21 @@ textura nova vem pela rede —, e isso está declarado no próprio
 corpo: assar a textura nova em paralelo e trocar o ponteiro num quadro
 só, que é o que a letra C já faz com a galáxia e o Sol.
 
+*(22/08: ENCOLHEU por dois lados, e continua aberto. (1) A carga virou
+TRANSACIONAL e cancelável — `carregarCanaisDoCorpo` já busca o lote
+inteiro num pedido, publica de uma vez e descarta tudo se o pedido for
+cancelado no caminho; é exatamente a metade de baixo do double-buffer, e
+ela existe. (2) O pré-aquecimento virou DOSE por corpo: abrir o Atlas
+não carrega mais os doze, então na troca de tier quase todo corpo está
+`fria` e nasce no tier novo sozinho — o item passou a valer só para o
+corpo que o visitante está OLHANDO. O que falta é a metade de cima: uma
+GERAÇÃO por corpo e o `tierVivo` que ela compara, para o corpo já
+carregado pedir o tier novo em segundo plano, seguir desenhando com os
+pixels velhos e trocar o ponteiro num quadro só. Hoje isso seriam quatro
+cópias — o estado (`texturas`, `recargas`, `texturasVivas`) ainda mora em
+cada classe; o passo honesto é esse estado mudar de casa para o pipeline
+único primeiro, e o double-buffer nascer lá, uma vez.)*
+
 **61. Rever a UI/UX inteira — DECISÃO DELE, 21/08.**
 Perguntado se queria separar os Ajustes em "preferências do visitante" e
 "laboratório" (medido: 32 controles hoje, 22 técnicos — curva de tom,
@@ -429,7 +444,6 @@ então lançar `filho j0 saiu com null`, sem imprimir o veredito. O lado
 Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
 baldes cheios se resolve matando o filho preso — o veredito sai da
 segunda invocação, que lê tudo de disco.
-
 ---
 
 ## O que o dono ainda vai contar

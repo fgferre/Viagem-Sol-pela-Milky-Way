@@ -327,6 +327,29 @@ Teardown que falha não leva os outros junto (`passoBlindado`).
   que a letra C proíbe. Quem carregar DEPOIS da troca obedece ao tier
   de agora. Se um dia isso incomodar, o conserto é double-buffer POR
   CORPO (segurar a textura velha até a nova chegar), não reconstrução.
+  Desde a dose de 22/08 (logo abaixo) isso vale para MUITO menos gente:
+  quem não está em foco está `fria` na hora da troca e nasce no tier
+  novo sozinho.
+- **A DOSE DO PRÉ-AQUECIMENTO é por CORPO, e o gate manda no resto**
+  (22/08). Era um booleano só — `palcoQuente` — valendo para os doze, e
+  o preço estava medido: abrir o Atlas em cinema deixava residentes
+  **1.200 MiB de texel** (1.146 deles de corpo; 38 texturas, 36,5 MiB
+  baixados) sem o visitante chegar perto de nada, e a coda do filme
+  fazia o mesmo a partir de REVEAL_T com os dez corpos que ela nunca
+  resolve. Hoje pré-aquecem: no Atlas, o corpo EM FOCO e, se o foco é
+  uma lua, o pai (o degrau da lua enquadra os dois); no filme, TERRA e
+  LUA a partir de REVEAL_T, e só elas. Medido depois: o Atlas sem foco
+  abre com **0 texel de corpo** (54,1 MiB, que são a galáxia e os dois
+  mapas) e `?foco=terra&ver=corpo` fica em 582 MiB contra 1.216.
+  **O NÚMERO QUE AUTORIZOU**, com o cache HTTP desligado e o
+  pré-aquecimento desligado: um corpo sozinho vai de `fria` a `pronta`
+  em **90–113 ms**, e na descida ao degrau do corpo o gate de 4 px arma
+  **222–479 ms** antes da chegada da câmera — a textura pousa **124 a
+  230 ms ANTES** do fim da rampa (Marte, Terra, Saturno). O gate acorda
+  cedo o bastante; o pré-aquecimento fica só para quem o visitante já
+  declarou querer ver. E os juízes de imagem não afrouxam: corpo armado
+  sem textura segura a captura (`friaNoGate`), então a vista sai a mesma,
+  só mais tarde.
 - **O Sol novo nasce com o relógio RÁPIDO em zero e o LENTO na data
   viva.** Trocar de tier troca a resolução da simulação da granulação
   (768×384 ↔ 384×192): a superfície é necessariamente outra, não há como
