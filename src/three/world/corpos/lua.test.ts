@@ -20,7 +20,11 @@
 //  4. GATE + CARGA PREGUIÇOSA, como a Terra — e o contrato próprio da
 //     Lua: SEM efeméride não há corpo (o retrato não tem luas).
 //  5. TEXTO-FONTE: sem relógio, sem chunk, sem termo ambiente, sem
-//     especular — e a fiação no director (registro, teardown, captura).
+//     especular. O texto lido aqui é o de `lua.ts` e o do shader
+//     MONTADO — nunca o de outro arquivo. A fiação do posto no Director
+//     (traços, palco, rótulos, captura, teardown) mudou de casa em 22/08
+//     para `director.test.ts`, que é o dono dela: refatorar o Director
+//     não pode quebrar o teste da Lua.
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -423,7 +427,7 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
   });
 });
 
-describe('5. texto-fonte (as leis pinadas) e a fiação no director', () => {
+describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () => {
   it('não tem relógio: o jd é do Director (D-E6)', () => {
     expect(FONTE).not.toContain('Date.now');
     expect(FONTE).not.toContain('new Date(');
@@ -466,52 +470,4 @@ describe('5. texto-fonte (as leis pinadas) e a fiação no director', () => {
     expect(LUA_FRAG).toContain('gl_FragColor = vec4(direta, 1.0);');
   });
 
-  it('a fiação no director: registro, captura, rótulo e teardown', () => {
-    const director = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
-    // desde 22/08 (item 63) a Lua é UM POSTO da lista única, e o que a
-    // distingue são os quatro traços — não um laço próprio. Aqui se
-    // cobra que a fiação seja a mesma, no endereço novo.
-    const palco = readFileSync(
-      new URL('../../director/palco.ts', import.meta.url),
-      'utf8'
-    );
-    const carregamento = readFileSync(
-      new URL('../../director/carregamento.ts', import.meta.url),
-      'utf8'
-    );
-    expect(palco).toContain('palco.registrar(posto.id, e.raioPc, e.centroPc)');
-    expect(palco).toContain('palco.remover(posto.id)');
-    expect(carregamento).toContain("new LuaResolvida({ tier, maxTextureSize, base }), 'moon'");
-    // OS TRAÇOS DA LUA, um a um: sem ponto fotométrico na camada (não há
-    // cessão a escrever), sem retrato congelado (sem efeméride ela não
-    // existe — e o fallback frio não pode segurar a captura por isso) e
-    // COM rótulo próprio. O pino das 16:00 é o que a coda mira.
-    const traços = carregamento.slice(
-      carregamento.indexOf("'moon'"),
-      carregamento.indexOf('const rochosos')
-    );
-    expect(traços).toContain('pinoNoFilme: LUA_PC');
-    expect(traços).toContain('temPonto: false');
-    expect(traços).toContain('temRetrato: false');
-    expect(traços).toContain('rotuloDeLua: true');
-    // a captura espera a textura da Lua como espera a dos outros onze
-    expect(director).toContain('this.noPalco.some((p) => p.carregando)');
-    // o buffer das luas alimenta projectCorpos; NaN o projectCorpos
-    // ignora (a barreira mora em labels.ts, não no gate do [0]). O
-    // buffer e a projeção moram no módulo dos rótulos (corte 7 da onda
-    // da arquitetura) — o fio é vigiado dos DOIS lados da costura:
-    expect(palco).toContain('rotulos.escreverPosicaoDeLua(posto.id, e.centroPc)');
-    const rotulos = readFileSync(
-      new URL('../../director/rotulos.ts', import.meta.url),
-      'utf8'
-    );
-    expect(rotulos).toContain(
-      'projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)'
-    );
-    // teardown: os corpos devolvem tudo ANTES do palco esvaziar
-    const stepCorpos = director.indexOf('step(posto.id, () => posto.corpo.dispose())');
-    const stepPalco = director.indexOf("step('palco'");
-    expect(stepCorpos).toBeGreaterThan(0);
-    expect(stepCorpos).toBeLessThan(stepPalco);
-  });
 });

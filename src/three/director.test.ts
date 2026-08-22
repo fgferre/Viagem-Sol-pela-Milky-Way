@@ -130,3 +130,67 @@ describe('a falha depois do boot chega à tela', () => {
     expect(APP).toContain("emVoo={phase !== 'loading'}");
   });
 });
+
+describe('a fiação de um posto do palco no Director (a da Lua)', () => {
+  // MUDOU DE CASA em 22/08: estas quatro cravações moravam em
+  // `world/corpos/lua.test.ts`, que lia o texto-fonte de `director.ts`,
+  // `director/palco.ts` e `director/rotulos.ts` para cobrá-las. Refatorar
+  // o Director quebrava o teste da LUA, que não tinha nada com isso. O
+  // fato é o mesmo; o dono dele é este arquivo. Os TRAÇOS da Lua (sem
+  // ponto, sem retrato, com rótulo) ficaram lá, e lá viraram teste de
+  // objeto: `montarCorposDoPalco()` chamado de verdade.
+  const PALCO = readFileSync(new URL('./director/palco.ts', import.meta.url), 'utf8');
+  const ROTULOS = readFileSync(new URL('./director/rotulos.ts', import.meta.url), 'utf8');
+  const CARREGAMENTO = readFileSync(
+    new URL('./director/carregamento.ts', import.meta.url),
+    'utf8'
+  );
+
+  it('a Lua é UM posto da lista única, com os quatro traços que a distinguem', () => {
+    // Segue por TEXTO, e a razão está medida: `montarCorposDoPalco` é a
+    // peça que declara os traços, mas importá-la arrasta `world/galaxy.ts`
+    // → `geradorDaGalaxia.ts`, que lê `window.location.search` no topo do
+    // módulo — e o runner da casa é `node`. Um teste de objeto aqui
+    // custaria um `window` falso global no arquivo; o fato é de texto até
+    // a peça ser alcançável sem o mundo junto.
+    expect(CARREGAMENTO).toContain(
+      "new LuaResolvida({ tier, maxTextureSize, base }), 'moon'"
+    );
+    // sem ponto fotométrico na camada (não há cessão a escrever), sem
+    // retrato congelado (sem efeméride ela não existe — e o fallback frio
+    // não pode segurar a captura por isso) e COM rótulo próprio; o pino
+    // das 16:00 é o que a coda mira
+    const tracos = CARREGAMENTO.slice(
+      CARREGAMENTO.indexOf("'moon'"),
+      CARREGAMENTO.indexOf('const rochosos')
+    );
+    expect(tracos).toContain('pinoNoFilme: LUA_PC');
+    expect(tracos).toContain('temPonto: false');
+    expect(tracos).toContain('temRetrato: false');
+    expect(tracos).toContain('rotuloDeLua: true');
+  });
+
+  it('o palco registra e remove a superfície pelo posto — o corpo não conhece o palco', () => {
+    expect(PALCO).toContain('palco.registrar(posto.id, e.raioPc, e.centroPc)');
+    expect(PALCO).toContain('palco.remover(posto.id)');
+  });
+
+  it('a captura espera a textura de QUALQUER posto, não uma lista escrita à mão', () => {
+    expect(FONTE).toContain('this.noPalco.some((p) => p.carregando)');
+  });
+
+  it('o buffer das luas é escrito pelo palco e lido pelos rótulos — os dois lados da costura', () => {
+    // NaN o `projectCorpos` ignora; a barreira mora em `labels.ts`, não
+    // no gate do [0]. O buffer e a projeção moram no módulo dos rótulos
+    // (corte 7 da onda da arquitetura), e o fio se cobra dos dois lados.
+    expect(PALCO).toContain('rotulos.escreverPosicaoDeLua(posto.id, e.centroPc)');
+    expect(ROTULOS).toContain('projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)');
+  });
+
+  it('teardown: os corpos devolvem tudo ANTES de o palco esvaziar', () => {
+    const stepCorpos = FONTE.indexOf('step(posto.id, () => posto.corpo.dispose())');
+    const stepPalco = FONTE.indexOf("step('palco'");
+    expect(stepCorpos).toBeGreaterThan(0);
+    expect(stepCorpos).toBeLessThan(stepPalco);
+  });
+});
