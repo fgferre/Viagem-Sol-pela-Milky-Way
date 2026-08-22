@@ -430,14 +430,6 @@ Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
 baldes cheios se resolve matando o filho preso — o veredito sai da
 segunda invocação, que lê tudo de disco.
 
-**63.** (Higiene, medida em 21/08.) O `director.ts` voltou a crescer: 2.135
-linhas no fim da onda da arquitetura, 2.487 hoje — a qualidade ao vivo e o
-calendário do Sol entraram por cima. E dentro do tick os quatro grupos do
-palco (Terra, Lua, `rochosos`, `gigantes`) são quatro laços quase iguais,
-com a mesma sequência em cada um: `palco.registrar`/`remover`,
-`escreverCessao`, `friaNoGate`, `perturbar`. É trabalho de agrupar, não de
-reescrever, e fecha com gate bit-idêntico.
-
 ---
 
 ## O que o dono ainda vai contar

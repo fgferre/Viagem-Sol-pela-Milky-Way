@@ -23,24 +23,42 @@ import { TerraResolvida } from '../world/corpos/terra';
 import { LuaResolvida } from '../world/corpos/lua';
 import { ROCHOSOS, RochosoResolvido } from '../world/corpos/rochoso';
 import { GIGANTES, GiganteResolvido } from '../world/corpos/gigante';
+import { LUA_PC, TERRA_PC } from '../cinematic/journey';
+import type { AtorDoPalco, PostoNoPalco } from './palco';
 import type { QualityLevel } from '../core/engine';
 
-/** o estado de gate/carga que o tick acompanha por corpo do palco */
-export interface CorpoNoPalco<T> {
-  corpo: T;
-  emQuadroAntes: boolean;
-  carregavaAntes: boolean;
-  carregando: boolean;
-  friaNoGate: boolean;
-}
+/**
+ * O POSTO de um corpo no palco — os quatro traços que o distinguem no
+ * laço e as digitais do quadro anterior. O contrato mora em
+ * `director/palco.ts`, ao lado do laço que os consome; aqui só se
+ * MONTA. `CorpoNoPalco` continua sendo o nome do tipo para quem só
+ * precisa do par `{ corpo }` (a escada).
+ */
+export type CorpoNoPalco<T extends AtorDoPalco> = PostoNoPalco<T>;
 
-const corpoNoPalco = <T>(corpo: T): CorpoNoPalco<T> => ({
-  corpo,
-  emQuadroAntes: false,
-  carregavaAntes: false,
-  carregando: false,
-  friaNoGate: false,
-});
+function corpoNoPalco<T extends AtorDoPalco>(
+  corpo: T,
+  id: string,
+  tracos: {
+    pinoNoFilme?: THREE.Vector3;
+    temPonto: boolean;
+    temRetrato: boolean;
+    rotuloDeLua: boolean;
+  }
+): PostoNoPalco<T> {
+  return {
+    corpo,
+    id,
+    pinoNoFilme: tracos.pinoNoFilme ?? null,
+    temPonto: tracos.temPonto,
+    temRetrato: tracos.temRetrato,
+    rotuloDeLua: tracos.rotuloDeLua,
+    emQuadroAntes: false,
+    carregavaAntes: false,
+    carregando: false,
+    friaNoGate: false,
+  };
+}
 
 /** a semente da galáxia — um número, um dono (README: mulberry32) */
 const SEMENTE_DA_GALAXIA = 20260730;
@@ -211,15 +229,46 @@ export function montarCorposDoPalco(opts: {
   base: string;
 }) {
   const { tier, maxTextureSize, base } = opts;
-  const terra = new TerraResolvida({ tier, maxTextureSize, base });
-  const lua = new LuaResolvida({ tier, maxTextureSize, base });
-  const rochosos = ROCHOSOS.map((config) =>
-    corpoNoPalco(new RochosoResolvido({ config, tier, maxTextureSize, base }))
-  );
+  // A TERRA e a LUA têm o PINO DAS 16:00 do filme (`TERRA_PC`/`LUA_PC`,
+  // journey.ts): sem ele a coda mira um globo a 1,7 milhão de km. A Lua
+  // é a única do quarteto sem ponto fotométrico na camada
+  // (`IDS_FOTOMETRIA` não a conhece) e sem retrato congelado — sem
+  // efeméride ela simplesmente não existe, e é isso que o fallback frio
+  // precisa saber para não segurar a captura para sempre.
+  const terra = corpoNoPalco(new TerraResolvida({ tier, maxTextureSize, base }), 'earth', {
+    pinoNoFilme: TERRA_PC,
+    temPonto: true,
+    temRetrato: true,
+    rotuloDeLua: false,
+  });
+  const lua = corpoNoPalco(new LuaResolvida({ tier, maxTextureSize, base }), 'moon', {
+    pinoNoFilme: LUA_PC,
+    temPonto: false,
+    temRetrato: false,
+    rotuloDeLua: true,
+  });
+  const rochosos = ROCHOSOS.map((config) => {
+    const corpo = new RochosoResolvido({ config, tier, maxTextureSize, base });
+    return corpoNoPalco(corpo, corpo.id, {
+      // planeta cai no retrato e tem ponto; lua rochosa (Fobos, Io…)
+      // não tem nem um nem outro, e é ela que ganha rótulo próprio
+      temPonto: corpo.planeta,
+      temRetrato: corpo.planeta,
+      rotuloDeLua: !corpo.planeta,
+    });
+  });
   const gigantes = GIGANTES.map(({ id }) =>
-    corpoNoPalco(new GiganteResolvido({ id, tier, maxTextureSize, base }))
+    corpoNoPalco(new GiganteResolvido({ id, tier, maxTextureSize, base }), id, {
+      temPonto: true,
+      temRetrato: true,
+      rotuloDeLua: false,
+    })
   );
-  return { terra, lua, rochosos, gigantes };
+  // A LISTA ÚNICA do tick, na ORDEM de sempre — Terra, Lua, rochosos,
+  // gigantes. Os mesmos objetos das listas acima: uma lista, duas
+  // leituras (o laço do palco lê todas; a escada lê rochosos/gigantes).
+  const noPalco: PostoNoPalco[] = [terra, lua, ...rochosos, ...gigantes];
+  return { terra, lua, rochosos, gigantes, noPalco };
 }
 
 /**

@@ -721,37 +721,49 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
 
   it('a fiação no director: registro no palco, cessão, ordem e teardown', () => {
     const director = readFileSync(new URL('../../director.ts', import.meta.url), 'utf8');
+    // OS QUATRO LAÇOS VIRARAM UM (item 63, 22/08): o registro, a cessão
+    // e o fallback frio moram em `director/palco.ts`, sobre a lista
+    // única; o que se cobra aqui é a MESMA fiação, no endereço novo.
+    const palco = readFileSync(
+      new URL('../../director/palco.ts', import.meta.url),
+      'utf8'
+    );
     // o Director registra a superfície e escreve a cessão — a Terra não
     // conhece nem o palco nem a camada
-    expect(director).toContain("this.palco.registrar('earth', t.raioPc, t.centroPc)");
-    expect(director).toContain("this.palco.remover('earth')");
-    expect(director).toContain("escreverCessao('earth', t.cede)");
-    // o tick da Terra roda ANTES do near ler o palco: sem lag de 1 quadro
-    const tickTerra = director.indexOf('this.terra.atualizar({');
+    expect(palco).toContain('palco.registrar(posto.id, e.raioPc, e.centroPc)');
+    expect(palco).toContain('palco.remover(posto.id)');
+    expect(palco).toContain('escreverCessao(posto.id, e.cede ?? 0)');
+    // e a TERRA é um dos doze, com ponto (cessão) e retrato congelado
+    const carregamento = readFileSync(
+      new URL('../../director/carregamento.ts', import.meta.url),
+      'utf8'
+    );
+    expect(carregamento).toContain("new TerraResolvida({ tier, maxTextureSize, base }), 'earth'");
+    // o passo do palco roda ANTES do near ler a superfície: sem lag de
+    // 1 quadro entre o globo entrar em quadro e o clip enxergá-lo
+    const tickPalco = director.indexOf('passoDoPalco(this.noPalco');
     const nearLe = director.indexOf('this.palco.superficieMaisProxima(');
-    expect(tickTerra).toBeGreaterThan(0);
-    expect(tickTerra).toBeLessThan(nearLe);
+    expect(tickPalco).toBeGreaterThan(0);
+    expect(tickPalco).toBeLessThan(nearLe);
     // a porta ?luz= passa pela lei única, e a captura espera a textura
     expect(director).toContain("lerPortaLuz(this.debug.get('luz'))");
-    expect(director).toContain('this.terraCarregando');
+    expect(director).toContain('this.noPalco.some((p) => p.carregando)');
     // ...e SEGURA o gate a FRIO (item 5b) e o retrato acusado (item 5c):
     // corpo armado sem textura quente não captura; efeméride pedida
-    // indisponível segura a janela da retentativa e ACUSA no console —
-    // desde a F3 o selo dos frios cobre TAMBÉM os rochosos (a lista viva)
-    expect(director).toContain('this.terraFriaNoGate =');
-    expect(director).toContain('this.luaFriaNoGate =');
-    expect(director).toContain('!this.terraFriaNoGate &&');
-    expect(director).toContain('!this.luaFriaNoGate &&');
-    expect(director).toContain('!this.rochosos.some((r) => r.friaNoGate)');
-    expect(director).toContain('!this.gigantes.some((g) => g.friaNoGate)');
+    // indisponível segura a janela da retentativa e ACUSA no console. O
+    // selo dos frios cobre OS DOZE de uma vez — não há mais lista para
+    // alguém esquecer de acrescentar.
+    expect(palco).toContain('posto.friaNoGate =');
+    expect(palco).toContain('posto.temRetrato || efemeride !== null');
+    expect(director).toContain('!this.noPalco.some((p) => p.friaNoGate)');
     expect(director).toContain("this.maquinaDoTempo.faseDaEfemeride === 'indisponivel'");
     expect(director).toContain('QUADROS_TENTANDO_FONTE');
     expect(director).toContain('RETRATO congelado');
-    // teardown: a Terra devolve tudo ANTES do palco esvaziar
-    const stepTerra = director.indexOf("step('terra'");
+    // teardown: os corpos devolvem tudo ANTES do palco esvaziar
+    const stepCorpos = director.indexOf('step(posto.id, () => posto.corpo.dispose())');
     const stepPalco = director.indexOf("step('palco'");
-    expect(stepTerra).toBeGreaterThan(0);
-    expect(stepTerra).toBeLessThan(stepPalco);
+    expect(stepCorpos).toBeGreaterThan(0);
+    expect(stepCorpos).toBeLessThan(stepPalco);
   });
 
   it('as constantes do espec do doador estão pinadas número a número', () => {

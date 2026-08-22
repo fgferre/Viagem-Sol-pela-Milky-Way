@@ -32,7 +32,6 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
-import { TerraResolvida } from './world/corpos/terra';
 import { LuaResolvida } from './world/corpos/lua';
 import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
@@ -74,6 +73,8 @@ import {
   montarCenaDeAquecimento,
   montarCorposDoPalco,
 } from './director/carregamento';
+import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
+import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { escalaDaUi } from '../lib/uiScale';
@@ -86,9 +87,7 @@ import {
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import {
-  LUA_PC,
   REVEAL_T,
-  TERRA_PC,
   T_SAIDA_DO_DISCO,
   jdDoFilme,
 } from './cinematic/journey';
@@ -220,55 +219,29 @@ export class Director {
    *  `palco` e não `corpos`: o nome `corpos` já é do getter público da
    *  BUSCA (os dez do retrato), que é outra coisa. */
   private readonly palco = new CorposResolvidos();
-  /** A TERRA RESOLVIDA (Onda 6, F2a) — o primeiro corpo do palco. Nasce
-   *  no init com construtor barato (zero geometria, zero textura: a
-   *  carga é preguiçosa por contrato — gate ou fase atlas). */
-  private terra: TerraResolvida | null = null;
-  /** digitais do tick anterior da Terra: pop do globo e chegada de
-   *  textura são mudança de imagem — a captura recomeça a contagem. */
-  private terraEmQuadroAntes = false;
-  private terraCarregavaAntes = false;
-  /** fetch de textura da Terra em voo — o `captura` espera por ele. */
-  private terraCarregando = false;
-  /** Terra no GATE a FRIO (armada, sem textura quente, sem fetch em voo
-   *  e com a camada ligada): o fallback frio da carga que desistiu — o
-   *  `captura` segura a prontidão em vez de fotografar o ponto fingindo
-   *  globo (auditoria item 5b; precedente `sun.assentado`). */
-  private terraFriaNoGate = false;
-  /** A LUA RESOLVIDA (F2b) — o segundo morador do palco, com as mesmas
-   *  digitais de estabilidade da Terra. */
-  private lua: LuaResolvida | null = null;
-  private luaEmQuadroAntes = false;
-  private luaCarregavaAntes = false;
-  private luaCarregando = false;
-  /** a Lua no gate a frio — o mesmo contrato de `terraFriaNoGate`. */
-  private luaFriaNoGate = false;
   /**
-   * OS ROCHOSOS (F3+F5): planetas e luas texturadas — a classe
-   * genérica percorrida como DADO (`ROCHOSOS`), com as mesmas digitais
-   * de estabilidade das irmãs por instância (pop do mesh, chegada de
-   * textura, gate a frio e rampa de cessão recomeçam a contagem da
-   * captura).
+   * OS DOZE CORPOS DO PALCO — a LISTA ÚNICA que o tick percorre (item
+   * 63): Terra, Lua, os rochosos (F3+F5) e os gigantes (F4), nesta
+   * ordem, cada um com os quatro traços que o distinguem e as digitais
+   * do quadro anterior (pop do mesh, chegada de textura, gate a frio e
+   * rampa de cessão recomeçam a contagem da captura). Montada no init
+   * por `montarCorposDoPalco`; o laço mora em `director/palco.ts`.
    */
-  private readonly rochosos: {
-    corpo: RochosoResolvido;
-    emQuadroAntes: boolean;
-    carregavaAntes: boolean;
-    carregando: boolean;
-    friaNoGate: boolean;
-  }[] = [];
-  /**
-   * OS GIGANTES (F4): Júpiter, Saturno, Urano e Netuno — a classe
-   * própria (não cabe em rochoso.ts), percorrida como DADO
-   * (`GIGANTES`), com as mesmas digitais de estabilidade.
-   */
-  private readonly gigantes: {
-    corpo: GiganteResolvido;
-    emQuadroAntes: boolean;
-    carregavaAntes: boolean;
-    carregando: boolean;
-    friaNoGate: boolean;
-  }[] = [];
+  private noPalco: readonly PostoNoPalco[] = [];
+  /** A LUA pelo nome — o único posto que alguém procura fora do laço
+   *  (o rUA da cadeia dela alimenta a linha BRILHO do selo). A Terra
+   *  não precisa de handle: quem a quer de fora (o juiz de z-fighting)
+   *  a acha em `noPalco` pelo id, que é o endereço único desde 22/08. */
+  private lua: PostoNoPalco<LuaResolvida> | null = null;
+  /** as duas fatias que a ESCADA percorre por tipo — os MESMOS objetos
+   *  de `noPalco`: uma lista, duas leituras. */
+  private rochosos: readonly PostoNoPalco<RochosoResolvido>[] = [];
+  private gigantes: readonly PostoNoPalco<GiganteResolvido>[] = [];
+  /** o quadro dos doze, montado UMA vez e reusado — doze objetos por
+   *  tick era alocação que o M4 da casa não deixa passar. */
+  private readonly quadroDoPalco = quadroDoPalcoVazio();
+  /** `perturbar` já ligado ao this — um fio por tick, não doze */
+  private readonly perturbarDoPalco = () => this.perturbar();
   /** quadros já gastos segurando a captura com a efeméride pedida
    *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
   private quadrosTentandoFonte = 0;
@@ -940,15 +913,11 @@ export class Director {
       maxTextureSize: sondarGl().maxTextureSize,
       base: import.meta.env.BASE_URL,
     });
-    this.terra = corpos.terra;
-    this.palco.group.add(this.terra.group);
     this.lua = corpos.lua;
-    this.palco.group.add(this.lua.group);
-    this.rochosos.length = 0;
-    this.rochosos.push(...corpos.rochosos);
-    this.gigantes.length = 0;
-    this.gigantes.push(...corpos.gigantes);
-    for (const { corpo } of [...corpos.rochosos, ...corpos.gigantes]) {
+    this.rochosos = corpos.rochosos;
+    this.gigantes = corpos.gigantes;
+    this.noPalco = corpos.noPalco;
+    for (const { corpo } of this.noPalco) {
       this.palco.group.add(corpo.group);
     }
     this.engine.scene.add(this.palco.group);
@@ -1099,10 +1068,7 @@ export class Director {
       // é uma mudança JÁ PEDIDA que ainda não chegou — capturar antes
       // dela mediria a corrida, não a imagem (o mesmo argumento da
       // efeméride acima).
-      this.terraCarregando ||
-      this.luaCarregando ||
-      this.rochosos.some((r) => r.carregando) ||
-      this.gigantes.some((g) => g.carregando) ||
+      this.noPalco.some((p) => p.carregando) ||
       // A RAMPA ENTRE DEGRAUS (F2b/D7): o rig anima entre dois
       // enquadramentos — cena mudando por construção até assentar
       this.atlas.animando ||
@@ -1115,11 +1081,7 @@ export class Director {
     // devia estar na tela e a textura não está quente — capturar agora
     // fotografaria o ponto (ou nada) fingindo a vista do globo. O
     // precedente é `sun.assentado`: prontidão espera o retrato completo.
-    const corposAssentados =
-      !this.terraFriaNoGate &&
-      !this.luaFriaNoGate &&
-      !this.rochosos.some((r) => r.friaNoGate) &&
-      !this.gigantes.some((g) => g.friaNoGate);
+    const corposAssentados = !this.noPalco.some((p) => p.friaNoGate);
     // O RETRATO ACUSADO (item 5c): efeméride PEDIDA indisponível com os
     // corpos em cena segura a janela da retentativa (o tick conta os
     // quadros e dá o aviso único quando ela esgota — ver o bloco no tick).
@@ -1835,7 +1797,7 @@ export class Director {
     if (LUAS_DO_SISTEMA.some((l) => l.id === this.escada.focoCorpoId)) {
       const rUA =
         this.escada.focoCorpoId === 'moon'
-          ? this.lua?.estadoVivo.rUA
+          ? this.lua?.corpo.estadoVivo.rUA
           : this.rochosos.find((r) => r.corpo.id === this.escada.focoCorpoId)?.corpo
               .estadoVivo.rUA;
       return rUA !== undefined && Number.isFinite(rUA)
@@ -2043,168 +2005,32 @@ export class Director {
     // Terra e a Lua se registram, pela mesma razão escrita.
     this.solNoQuadro.armarGate({ dHome, hPx, fovDeg: cam.fov });
 
-    // A TERRA RESOLVIDA (F2a) roda ANTES do near ler o palco: o globo
-    // que entra em quadro NESTE tick já governa o clip NESTE tick. O
-    // Director é quem registra a superfície (só corpo EM QUADRO entra
-    // no min() — de longe o registro esvazia e o par (near, far) fica
-    // no vigente bit a bit) e quem escreve a cessão do ponto na camada
-    // de planetas; a Terra não conhece nem o palco nem a camada.
-    if (this.terra && this.stars) {
-      const t = this.terra.atualizar({
-        jdTdb: this.maquinaDoTempo.jdVivo,
-        fonte: this.maquinaDoTempo.efemeride,
-        centroPinadoPc: this.phase === 'journey' ? TERRA_PC : undefined,
-        camPosPc: cam.position,
-        screenHPx: hPx,
-        fovDeg: cam.fov,
-        ligado: this.palco.ligado,
-        atlasQuente: this.palcoQuente,
-        politica: this.politicaDeLuz,
-        dtS: dt,
-        psf: this.stars,
-        salto: this.saltoDeCamera,
-      });
-      if (t.emQuadro) this.palco.registrar('earth', t.raioPc, t.centroPc);
-      else this.palco.remover('earth');
-      // a cessão SUAVE (F2b/D5): reafirmada TODO quadro — a escrita é
-      // idempotente (`gravar`), então reafirmar não sobe upload
-      this.planetas?.escreverCessao('earth', t.cede);
-      this.terraCarregando = t.carregando;
-      // o FALLBACK FRIO (item 5b): gate armado, camada ligada e nem
-      // textura quente nem fetch em voo — o `captura` segura nisto
-      this.terraFriaNoGate =
-        this.palco.ligado && t.gateArmado && !t.emQuadro && !t.carregando;
-      // globo entrando/saindo do quadro, textura que acabou de chegar e
-      // a RAMPA da cessão andando são mudança de imagem: a contagem de
-      // estabilidade recomeça (a captura nunca assenta no meio do fade)
-      if (
-        t.emQuadro !== this.terraEmQuadroAntes ||
-        (this.terraCarregavaAntes && !t.carregando) ||
-        t.emRampa
-      ) {
-        this.perturbar();
-      }
-      this.terraEmQuadroAntes = t.emQuadro;
-      this.terraCarregavaAntes = t.carregando;
-    }
-    // A LUA (F2b), pelo MESMO fio — e sem cessão: ela não tem ponto
-    // fotométrico na camada (dito em lua.ts; o slot 'moon' não existe
-    // em IDS_FOTOMETRIA). Sem efeméride o corpo não nasce (não há Lua
-    // no retrato congelado — o badge do tempo conta essa verdade).
-    if (this.lua) {
-      const l = this.lua.atualizar({
-        jdTdb: this.maquinaDoTempo.jdVivo,
-        fonte: this.maquinaDoTempo.efemeride,
-        centroPinadoPc: this.phase === 'journey' ? LUA_PC : undefined,
-        camPosPc: cam.position,
-        screenHPx: hPx,
-        fovDeg: cam.fov,
-        ligado: this.palco.ligado,
-        atlasQuente: this.palcoQuente,
-        politica: this.politicaDeLuz,
-      });
-      if (l.emQuadro) this.palco.registrar('moon', l.raioPc, l.centroPc);
-      else this.palco.remover('moon');
-      this.luaCarregando = l.carregando;
-      // o mesmo fallback frio da Terra — mas SÓ com fonte viva: sem
-      // efeméride a Lua não existe por contrato (não é falha de textura)
-      this.luaFriaNoGate =
-        this.palco.ligado &&
-        this.maquinaDoTempo.efemeride !== null &&
-        l.gateArmado &&
-        !l.emQuadro &&
-        !l.carregando;
-      if (
-        l.emQuadro !== this.luaEmQuadroAntes ||
-        (this.luaCarregavaAntes && !l.carregando)
-      ) {
-        this.perturbar();
-      }
-      this.luaEmQuadroAntes = l.emQuadro;
-      this.luaCarregavaAntes = l.carregando;
-      // a posição viva para o RÓTULO da Lua (NaN sem efeméride ⇒ o
-      // projectCorpos não a projeta — rótulo só onde há corpo)
-      this.rotulos.escreverPosicaoDeLua('moon', l.centroPc);
-    }
-    // OS ROCHOSOS (F3), pelo MESMO fio das irmãs — a lista viva é o
-    // dado; planeta escreve a cessão do ponto (D5), lua não tem ponto.
-    // A guarda do `stars` é a da Terra: a PSF alimenta a cessão.
+    // OS DOZE CORPOS DO PALCO num laço só (item 63, 22/08): o passo
+    // mora em `director/palco.ts`, junto do contrato dos quatro traços
+    // que distinguem um corpo do outro. Roda ANTES de o near ler o
+    // palco — o corpo que entra em quadro NESTE tick já governa o clip
+    // NESTE tick.
     if (this.stars) {
-      for (const r of this.rochosos) {
-      const e = r.corpo.atualizar({
-        jdTdb: this.maquinaDoTempo.jdVivo,
-        fonte: this.maquinaDoTempo.efemeride,
-        camPosPc: cam.position,
-        screenHPx: hPx,
-        fovDeg: cam.fov,
-        ligado: this.palco.ligado,
-        atlasQuente: this.palcoQuente,
-        politica: this.politicaDeLuz,
-        dtS: dt,
-        psf: this.stars!,
-        salto: this.saltoDeCamera,
+      const q = this.quadroDoPalco;
+      q.jdTdb = this.maquinaDoTempo.jdVivo;
+      q.fonte = this.maquinaDoTempo.efemeride;
+      q.camPosPc = cam.position;
+      q.screenHPx = hPx;
+      q.fovDeg = cam.fov;
+      q.ligado = this.palco.ligado;
+      q.atlasQuente = this.palcoQuente;
+      q.politica = this.politicaDeLuz;
+      q.dtS = dt;
+      q.psf = this.stars;
+      q.salto = this.saltoDeCamera;
+      passoDoPalco(this.noPalco, q, {
+        palco: this.palco,
+        planetas: this.planetas,
+        rotulos: this.rotulos,
+        efemeride: this.maquinaDoTempo.efemeride,
+        noFilme: this.phase === 'journey',
+        perturbar: this.perturbarDoPalco,
       });
-      if (e.emQuadro) this.palco.registrar(r.corpo.id, e.raioPc, e.centroPc);
-      else this.palco.remover(r.corpo.id);
-      if (r.corpo.planeta) this.planetas?.escreverCessao(r.corpo.id, e.cede);
-      r.carregando = e.carregando;
-      // o fallback frio das irmãs — e o da Lua, palavra por palavra,
-      // para Fobos/Deimos: sem efeméride a lua não EXISTE (não é falha
-      // de textura); planeta sem fonte cai no retrato e o frio vale
-      r.friaNoGate =
-        this.palco.ligado &&
-        (r.corpo.planeta || this.maquinaDoTempo.efemeride !== null) &&
-        e.gateArmado &&
-        !e.emQuadro &&
-        !e.carregando;
-      if (
-        e.emQuadro !== r.emQuadroAntes ||
-        (r.carregavaAntes && !e.carregando) ||
-        e.emRampa
-      ) {
-        this.perturbar();
-      }
-      r.emQuadroAntes = e.emQuadro;
-      r.carregavaAntes = e.carregando;
-      if (!r.corpo.planeta) this.rotulos.escreverPosicaoDeLua(r.corpo.id, e.centroPc);
-      }
-    }
-    // OS GIGANTES (F4), pelo MESMO fio dos rochosos — a lista viva é o
-    // dado; os quatro são planetas (retrato + cessão do ponto).
-    if (this.stars) {
-      for (const g of this.gigantes) {
-      const e = g.corpo.atualizar({
-        jdTdb: this.maquinaDoTempo.jdVivo,
-        fonte: this.maquinaDoTempo.efemeride,
-        camPosPc: cam.position,
-        screenHPx: hPx,
-        fovDeg: cam.fov,
-        ligado: this.palco.ligado,
-        atlasQuente: this.palcoQuente,
-        politica: this.politicaDeLuz,
-        dtS: dt,
-        psf: this.stars!,
-        salto: this.saltoDeCamera,
-      });
-      if (e.emQuadro) this.palco.registrar(g.corpo.id, e.raioPc, e.centroPc);
-      else this.palco.remover(g.corpo.id);
-      this.planetas?.escreverCessao(g.corpo.id, e.cede);
-      g.carregando = e.carregando;
-      g.friaNoGate =
-        this.palco.ligado &&
-        e.gateArmado &&
-        !e.emQuadro &&
-        !e.carregando;
-      if (
-        e.emQuadro !== g.emQuadroAntes ||
-        (g.carregavaAntes && !e.carregando) ||
-        e.emRampa
-      ) {
-        this.perturbar();
-      }
-      g.emQuadroAntes = e.emQuadro;
-      g.carregavaAntes = e.carregando;
-      }
     }
     // O RETRATO NUNCA FINGE EFEMÉRIDE (item 5c da auditoria): com os
     // corpos em cena e a fonte PEDIDA indisponível, o tick tenta a fonte
@@ -2570,14 +2396,11 @@ export class Director {
     // a camada nasce depois do await do init: falha de carga chega aqui
     // com ela indefinida
     step('planetas', () => this.planetas?.dispose());
-    step('terra', () => this.terra?.dispose());
-    step('lua', () => this.lua?.dispose());
-    step('rochosos', () => {
-      for (const r of this.rochosos) r.corpo.dispose();
-    });
-    step('gigantes', () => {
-      for (const g of this.gigantes) g.corpo.dispose();
-    });
+    // um passo por corpo, e não um por grupo: `passoBlindado` isola a
+    // falha (teardown que falha não leva os outros junto — NORTE)
+    for (const posto of this.noPalco) {
+      step(posto.id, () => posto.corpo.dispose());
+    }
     step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());

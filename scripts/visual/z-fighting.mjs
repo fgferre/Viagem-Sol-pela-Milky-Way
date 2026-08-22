@@ -243,7 +243,8 @@ async function principal() {
     await sessao.ir(terraQ.replace(/^\?/, ''));
     const colou = await sessao.js(`(() => {
       const d = window.__director;
-      const g = d.terra && d.terra.group;
+      const posto = d.noPalco && d.noPalco.find((p) => p.id === 'earth');
+      const g = posto && posto.corpo.group;
       if (!g) return 'sem-terra';
       const nuvem = g.children.find((m) => m.renderOrder === 8);
       if (!nuvem) return 'sem-nuvem';
