@@ -120,6 +120,18 @@ export class Escada {
    * partir dali quem manda é a mão, não o endereço.
    */
   private pinoDeBoot: number | null = null;
+  /**
+   * O QUE O ÚLTIMO CLIQUE SIMPLES ESCOLHEU — a memória de um gesto só,
+   * e ela existe porque escolher RE-MIRA a câmera: entre o clique e o
+   * `dblclick` a vista gira e o rótulo sai de baixo do dedo, então o
+   * duplo clique não tem como reencontrá-lo pelo ponto (ver
+   * `mergulharNoEscolhido`). `id` é um corpo do sistema; `pos`/`nome`
+   * são uma estrela ou o centro galáctico. `null` = o último clique não
+   * acertou rótulo nenhum, e aí não há para onde mergulhar.
+   */
+  private escolhaDoClique:
+    | { id: string | null; pos: THREE.Vector3; nome: string }
+    | null = null;
 
   /** o rig do Atlas — a MESMA instância do director, com o nome que os
    *  textos dos métodos exigem (`this.atlas.focar`/`recompor`/`apply`) */
@@ -225,8 +237,7 @@ export class Escada {
    * desenhado ainda) a marca é `undefined` — aí vale a lista projetada,
    * que é o comportamento de sempre.
    */
-  tryVisit(x: number, y: number) {
-    if ((this.phase !== 'free' && this.phase !== 'atlas') || !this.meta) return;
+  private alvoNoPonto(x: number, y: number): StarLabel | null {
     let best: StarLabel | null = null;
     let bestD = 0.0035; // ~6% da tela ao quadrado
     for (const label of this.rotulos.alvos) {
@@ -240,37 +251,23 @@ export class Escada {
         best = label;
       }
     }
+    return best;
+  }
+
+  /**
+   * O CLIQUE CURTO NO VOO LIVRE: a câmera VOA até o nome mais próximo.
+   *
+   * O ATLAS SAIU DAQUI em 22/08 (item 73): lá o clique passou a
+   * ESCOLHER (`selecionarNoPonto`) e o duplo a MERGULHAR
+   * (`mergulharNoEscolhido`), e cada gesto ganhou a sua porta. O ramo
+   * dos CORPOS do sistema saiu junto — eles só têm rótulo dentro do
+   * Atlas (`projectCorpos` só roda naquela fase), então aqui ele era
+   * código sem caminho.
+   */
+  tryVisit(x: number, y: number) {
+    if (this.phase !== 'free' || !this.meta) return;
+    const best = this.alvoNoPonto(x, y);
     if (!best) return;
-    // no Atlas o Sol não é "uma estrela a 0 pc": clicar nele é voltar
-    // para casa, o enquadramento de abertura
-    if (best.key === 'sol-home' && this.phase === 'atlas') {
-      this.focarNoSistema();
-      return;
-    }
-    // um CORPO do sistema: enquadra pela ÓRBITA dele, que é o que o
-    // AtlasRig já sabe fazer com a abertura
-    if (best.key.startsWith(CHAVE_DE_CORPO)) {
-      const id = best.key.slice(CHAVE_DE_CORPO.length);
-      // O GESTO DA DESCIDA NO SOL — o mesmo de todo corpo (D7: "clicar
-      // no MESMO corpo já focado desce um degrau"), traduzido para o
-      // único da casa cujo degrau de cima é a ABERTURA: a esfera do
-      // degrau `sistema` já é centrada no Sol, então quem clica no Sol
-      // estando em casa está clicando no alvo que já está em foco, e
-      // desce ao corpo dele. Clicar no Sol de QUALQUER outro degrau
-      // continua sendo voltar para casa, palavra por palavra.
-      //
-      // AQUI e não dentro de `focarNoCorpo` porque isto é GESTO: a
-      // porta `?foco=sol` também chama aquele método, e no boot ela
-      // chega com a abertura já na tela — dentro de lá as duas seriam
-      // indistinguíveis, e `?foco=sol` (sem `ver=`) passaria a cair no
-      // Sol em vez da casa, quebrando a baseline.
-      if (id === 'sun' && this.escada.degrau === 'sistema') {
-        this.focarNoCorpo('sun', 'corpo');
-        return;
-      }
-      this.focarNoCorpo(id);
-      return;
-    }
     if (best.key === 'sgr-a') {
       this.irAte(GAL.GC_POS.clone(), 7, best.name);
       return;
@@ -281,6 +278,173 @@ export class Escada {
         : this.meta.named.find((s) => s.n === best.name);
     if (!star) return;
     this.visitarEstrela(star);
+  }
+
+  /**
+   * O DUPLO CLIQUE MERGULHA NO QUE O CLIQUE ESCOLHEU (item 73, 22/08) —
+   * e ele NÃO refaz o hit-test, o que é a lição medida desta obra.
+   *
+   * Escolher RE-MIRA a câmera (a lei do Atlas é que a câmera olha o
+   * alvo), então entre o primeiro clique e o `dblclick` a vista já girou
+   * e o rótulo saiu de baixo do dedo: medido, um clique em Alnair na
+   * abertura leva o rótulo dela para fora do quadro e põe Tiaki a meio
+   * caminho do ponteiro. Refazer o hit-test aqui mergulharia no vizinho.
+   *
+   * Sem escolha guardada não há mergulho: um duplo clique no vazio não
+   * pode descer num alvo que o visitante não apontou.
+   */
+  mergulharNoEscolhido() {
+    if (this.phase !== 'atlas') return;
+    const escolha = this.escolhaDoClique;
+    if (!escolha) return;
+    if (escolha.id !== null) {
+      // o SOL tem os dois degraus e o mergulho pede o de baixo — o corpo
+      // dele; `focarNoCorpo('sun')` sem `ver=` é a casa, que é o oposto
+      if (escolha.id === 'sun') this.focarNoCorpo('sun', 'corpo');
+      else this.focarNoCorpo(escolha.id);
+      return;
+    }
+    // uma estrela ou o centro galáctico: o enquadramento da D5, com
+    // rampa — o `arriveDist` é do voo livre e o Atlas o ignora
+    this.irAte(escolha.pos.clone(), 0, escolha.nome);
+  }
+
+  /**
+   * O CLIQUE SIMPLES NO ATLAS: ESCOLHE O ALVO E A CÂMERA NÃO SAI DO
+   * LUGAR (item 73, plano §1). É a metade da queixa do dono que faltava
+   * — *"nem conseguimos mais selecionar para onde vamos"* —, e o padrão
+   * de toda fonte consultada: um clique escolhe, dois vão.
+   *
+   * Não há canal novo: `focoCorpoId` já É a seleção. O que muda é que a
+   * troca de alvo passa por `AtlasRig.selecionar` (a pose preservada,
+   * conta fechada) em vez de `focar` (o alvo novo no enquadramento
+   * dele). Depois disso a roda mede a distância AO CORPO ESCOLHIDO, que
+   * é a lei do modo.
+   *
+   * A ESTRELA E O CENTRO GALÁCTICO entram pelo mesmo caminho: eles são
+   * alvos do rig como qualquer corpo, com o raio de enquadramento que a
+   * D5 já lhes dá. O `sol-home` é a exceção declarada — ele só nasce a
+   * mais de 0,12 pc de casa, onde "SOL" quer dizer voltar, e selecionar
+   * o corpo do Sol a 2,6 pc de distância cairia direto no teto do zoom
+   * (o sistema em quadro), ou seja MOVERIA a câmera. Um gesto que
+   * promete não mover não pode ter um canto onde move.
+   */
+  selecionarNoPonto(x: number, y: number) {
+    if (this.phase !== 'atlas' || !this.meta) return;
+    this.escolhaDoClique = null;
+    const best = this.alvoNoPonto(x, y);
+    if (!best) return;
+    if (best.key === 'sol-home') {
+      this.focarNoSistema();
+      return;
+    }
+    if (best.key.startsWith(CHAVE_DE_CORPO)) {
+      const id = best.key.slice(CHAVE_DE_CORPO.length);
+      this.escolhaDoClique = { id, pos: ORIGEM.clone(), nome: best.name };
+      this.selecionarCorpo(id);
+      return;
+    }
+    if (best.key === 'sgr-a') {
+      this.escolhaDoClique = { id: null, pos: GAL.GC_POS.clone(), nome: best.name };
+      // o MESMO raio que o mergulho vai usar (`irAte` → D5): duas
+      // réguas para o mesmo alvo fariam o `?d=` mudar de unidade entre
+      // escolher e ir
+      this.selecionarPonto(
+        GAL.GC_POS.clone(),
+        raioDeEnquadramentoEstelar(GAL.GC_POS.length()),
+        best.name
+      );
+      return;
+    }
+    const star = this.meta.named.find((s) => s.n === best.name);
+    if (!star) return;
+    const pos = new THREE.Vector3(star.x, star.y, star.z);
+    this.escolhaDoClique = { id: null, pos, nome: star.n };
+    this.selecionarPonto(pos, raioDeEnquadramentoEstelar(pos.length()), star.n);
+  }
+
+  /**
+   * A RECEITA DE ENQUADRAMENTO de um corpo QUALQUER, no instante vivo —
+   * a irmã de `enquadreVivo`, que só sabe do degrau em que se está.
+   * `null` quer dizer "ainda não dá para enquadrar" (lua ou anão sem
+   * efeméride carregada), e quem chama pede a fonte.
+   */
+  private receitaDoCorpo(id: string): {
+    alvo: THREE.Vector3;
+    raio: number;
+    eixoDe: THREE.Vector3;
+    pisoRaio: number | null;
+    ver: VerDaEscada;
+  } | null {
+    if (id === 'sun') {
+      return {
+        alvo: ORIGEM.clone(),
+        raio: this.solRaioPc,
+        eixoDe: this.casaViva()?.eixo ?? orbitaMaisExterna().posicao,
+        pisoRaio: this.solRaioPc,
+        ver: 'corpo',
+      };
+    }
+    const jd = this.maquinaDoTempo.jdVivo;
+    const ef = this.maquinaDoTempo.efemeride;
+    const lua = LUAS_DO_SISTEMA.find((l) => l.id === id);
+    if (lua) {
+      if (!ef) return null;
+      const pos = paraPc(ef.posicaoHeliocentrica(id, jd));
+      // o raio é o de BODY_AXES, a MESMA fonte de `focarNaLua`
+      const raio = id === 'moon' ? RAIO_LUA_PC : raiosDoRochosoPc(id).a;
+      return { alvo: pos, raio, eixoDe: pos, pisoRaio: raio, ver: 'corpo' };
+    }
+    // planetas e anões: alvo = o corpo, esfera = a ÓRBITA dele — a
+    // mesma lei de `focarNoCorpo`, e a posição sai da efeméride viva
+    // (sem ela, do ponto DESENHADO, que é onde o visitante clicou)
+    const pos = ef ? paraPc(ef.posicaoHeliocentrica(id, jd)) : this.posicaoDesenhada(id);
+    if (!pos || pos.lengthSq() === 0) return null;
+    return {
+      alvo: pos,
+      raio: pos.length(),
+      eixoDe: pos,
+      pisoRaio: this.raioFisicoDe(id),
+      ver: 'orbita',
+    };
+  }
+
+  /** escolhe um corpo do sistema SEM mover a câmera (ver `selecionarNoPonto`) */
+  private selecionarCorpo(id: string) {
+    const r = this.receitaDoCorpo(id);
+    if (!r) {
+      // sem efeméride não há posição de lua nem de anão: pede a fonte e
+      // não inventa alvo nenhum — o mesmo contrato de `focarNaLua`
+      this.maquinaDoTempo.garantirEfemerides();
+      return;
+    }
+    this.atlas.selecionar(r.alvo, r.raio, r.eixoDe, { pisoRaio: r.pisoRaio });
+    this.enquadrarAgora();
+    this.focoCorpoId = id;
+    this.focoEstrela = false;
+    this.ver = r.ver;
+    this.pinoDeBoot = null;
+    const nome =
+      CORPOS_DO_SISTEMA.find((c) => c.id === id)?.nome ??
+      LUAS_DO_SISTEMA.find((l) => l.id === id)?.nome ??
+      HELIO_SEM_PONTO.find((a) => a.id === id)?.nome ??
+      null;
+    this.events.onFoco(nome);
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /** escolhe uma ESTRELA (ou o centro galáctico) sem mover a câmera */
+  private selecionarPonto(pos: THREE.Vector3, raio: number, nome: string) {
+    this.atlas.selecionar(pos, raio, pos);
+    this.enquadrarAgora();
+    this.focoCorpoId = null;
+    this.focoEstrela = true;
+    this.ver = 'orbita';
+    this.pinoDeBoot = null;
+    this.events.onFoco(nome);
+    this.emitirEscada();
+    this.teletransportou();
   }
 
   /**
@@ -821,12 +985,22 @@ export class Escada {
     if (degrau === 'lua') {
       if (!this.maquinaDoTempo.efemeride) return null;
       const lua = paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica('moon', jd));
+      // A MISTURA DO PAI É DO PRESET, e o religador não a inventa: ele
+      // pergunta ao RIG se ela está de pé (item 73, 22/08). Uma lua
+      // SELECIONADA com um clique nasce sem pai — a pose é a do
+      // visitante, não a que `direcaoDaLua` calcularia —, e devolver o
+      // pai aqui recolocaria no primeiro tique do relógio o
+      // enquadramento que o gesto não pediu. Com o preset (duplo
+      // clique, busca, `?foco=lua`) o rig TEM pai e nada muda.
+      const comPai = this.atlas.temPai;
       return {
         alvo: lua,
         raio: RAIO_LUA_PC,
         eixoDe: lua,
-        pai: paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd)),
-        polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id)?.clone() ?? null,
+        pai: comPai
+          ? paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd))
+          : null,
+        polo: comPai ? this.poloDoCorpo(LUAS_DO_SISTEMA[0].id)?.clone() ?? null : null,
       };
     }
     if (degrau === 'corpo') {

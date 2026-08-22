@@ -462,9 +462,13 @@ describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', ()
 
   it('down e up passam pela máquina (botão principal e dono do gesto)', () => {
     expect(GESTOS).toContain('arrasto.comecar(event, performance.now())');
-    expect(GESTOS).toContain('arrasto.soltar(event, performance.now())');
+    // o `agora` do soltar é o MESMO relógio do par de cliques (item 73):
+    // uma leitura só de `performance.now()` decide "foi curto?" e "foi o
+    // segundo de um duplo?" — duas leituras dariam duas verdades
+    expect(GESTOS).toContain('const agora = performance.now();');
+    expect(GESTOS).toContain('arrasto.soltar(event, agora)');
     // o clique curto só existe se o `soltar` disser que houve
-    expect(GESTOS).toMatch(/if \(curto && fios\.noAtlas\(\)\)/);
+    expect(GESTOS).toMatch(/if \(!curto \|\| !fios\.noAtlas\(\)\) return;/);
   });
 
   it('as DUAS saídas de gesto cancelado estão registradas e caem no cancelar', () => {

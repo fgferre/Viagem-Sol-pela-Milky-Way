@@ -360,6 +360,88 @@ export function direcaoPrivilegiada(
   return grampearNoPolo(eixoSolar, polo);
 }
 
+const _eixoDoGrampo = new THREE.Vector3();
+const _azimute = new THREE.Vector3();
+const _componentePerp = new THREE.Vector3();
+
+/**
+ * O CAMINHO DE VOLTA de `direcaoPrivilegiada`: dada uma direção
+ * alvo→câmera, quais `(altura, volta)` a produzem contra ESTE eixo
+ * solar e ESTE polo. Conta fechada, sem busca e sem iteração.
+ *
+ * PARA QUE ELA EXISTE (item 73, 22/08): o clique simples passou a
+ * SELECIONAR sem mover a câmera. Trocar o alvo mantendo a câmera parada
+ * é exatamente isto — a pose é a mesma no mundo, e o que muda é o
+ * referencial em que ela se escreve. Sem a volta, "não mover a câmera"
+ * teria de virar um segundo caminho de escrita da câmera, e aí haveria
+ * duas leis para a mesma pose.
+ *
+ * A CONTA, e ela é a leitura da ida ao contrário:
+ *
+ *  · `direcaoPrivilegiada` inclina `s` (a linha alvo→Sol) por `ângulo =
+ *    pino + altura` em torno de `e₀ = s × polo`, e depois gira o
+ *    resultado em torno da PRÓPRIA `s` por `volta`. O segundo giro não
+ *    muda o ângulo a `s`, então `ângulo = acos(dir·s)` — e daí a
+ *    `altura`, que é `ângulo − pino`.
+ *  · o azimute sai da base `{p₀ = e₀ × s, e₀}`, que é ortonormal e ⊥ a
+ *    `s` (`s × p₀ = e₀`): a componente perpendicular de `dir` vale
+ *    `sen(ângulo)·(p₀·cos volta + e₀·sen volta)`, logo
+ *    `volta = atan2(dir·e₀, dir·p₀)`.
+ *
+ * O GRAMPO POLAR não atrapalha porque é IDEMPOTENTE: uma direção que
+ * saiu de `direcaoPrivilegiada` já está fora da calota, e reaplicá-lo
+ * não escreve um bit. Uma direção que entre AQUI dentro da calota volta
+ * grampeada na ida — que é o comportamento certo, e a bancada o cobra.
+ *
+ * A `altura` sai na MESMA faixa que `addOrbitDelta` grampeia
+ * (`[−pino, π − pino]`), então o arrasto seguinte continua de onde a
+ * seleção parou, sem degrau escondido.
+ */
+export function orbitaQueProduz(
+  dir: THREE.Vector3,
+  doSolAoAlvo: THREE.Vector3,
+  polo: THREE.Vector3,
+  out: OrbitaDoVisitante
+): OrbitaDoVisitante {
+  out.altura = 0;
+  out.volta = 0;
+  if (dir.lengthSq() < 1e-30) return out;
+  _linhaDoSol.copy(doSolAoAlvo).negate();
+  if (_linhaDoSol.lengthSq() < 1e-30) _linhaDoSol.set(0, 0, 1);
+  _linhaDoSol.normalize();
+  // a MESMA escolha de eixo da ida, inclusive os dois desempates do
+  // caso degenerado (alvo alinhado com o polo)
+  _eixoDoGrampo.crossVectors(_linhaDoSol, polo);
+  if (_eixoDoGrampo.lengthSq() < 1e-12) {
+    _eixoDoGrampo.set(1, 0, 0).cross(_linhaDoSol);
+    if (_eixoDoGrampo.lengthSq() < 1e-12) {
+      _eixoDoGrampo.set(0, 1, 0).cross(_linhaDoSol);
+    }
+  }
+  if (_eixoDoGrampo.lengthSq() < 1e-30) return out;
+  _eixoDoGrampo.normalize();
+  _azimute.copy(_eixoDoGrampo).cross(_linhaDoSol).normalize();
+  _perpendicular.copy(dir).normalize();
+  // O ÂNGULO POR `atan2`, NUNCA POR `acos`, e o número diz por quê: perto
+  // de 0 e de 180° o `acos` perde METADE dos dígitos (o erro vai com
+  // `√ε`), e o que sobra vira deslocamento de câmera proporcional à
+  // distância — medido, 1e-6 rad na abertura são 33 mil km de câmera
+  // num gesto que promete não mover nada. `atan2(|perp|, paralelo)` tem
+  // precisão cheia nos dois extremos.
+  const cos = _perpendicular.dot(_linhaDoSol);
+  _componentePerp.copy(_perpendicular).addScaledVector(_linhaDoSol, -cos);
+  const angulo = Math.atan2(_componentePerp.length(), cos);
+  const pino = PHASE_OFFSET_GRAUS * GRAU;
+  out.altura = THREE.MathUtils.clamp(angulo - pino, -pino, Math.PI - pino);
+  out.volta = Math.atan2(
+    _componentePerp.dot(_eixoDoGrampo),
+    _componentePerp.dot(_azimute)
+  );
+  if (!Number.isFinite(out.altura)) out.altura = 0;
+  if (!Number.isFinite(out.volta)) out.volta = 0;
+  return out;
+}
+
 /**
  * A DIREÇÃO DO DEGRAU "LUA" (F2b/D7) — o consumidor de
  * `PARENT_FRAMING_BIAS`. Pura, e a semântica é a do doador

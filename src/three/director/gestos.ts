@@ -1,8 +1,8 @@
 // ============================================================
 // OS GESTOS DO CANVAS — o pausar-e-olhar, a órbita do Atlas, o clique
-// de focar, a roda/pinça do zoom e o menu de contexto morto. Morava
-// no director.ts (onda da arquitetura, Parte 1, corte 6); a semântica
-// é a mesma, linha a linha. As duas máquinas de gesto
+// que ESCOLHE, o duplo clique que MERGULHA, a roda/pinça do zoom e o
+// menu de contexto morto. Morava no director.ts (onda da arquitetura,
+// Parte 1, corte 6); a semântica é a mesma, linha a linha. As duas máquinas de gesto
 // (ArrastoDePonteiro, ZoomDaRoda) moram AQUI — quem precisa esquecer
 // a roda na troca de fase usa o punho devolvido.
 // ============================================================
@@ -12,14 +12,19 @@ import { ZoomDaRoda } from '../zoomDaRoda';
 export interface FiosDosGestos {
   /** viagem congelada — arrastar olha ao redor */
   pauseLookAtivo: () => boolean;
-  /** a fase é 'atlas' — arrastar orbita, clique curto foca, roda dá zoom */
+  /** a fase é 'atlas' — arrastar orbita, clique escolhe, roda dá zoom */
   noAtlas: () => boolean;
   /** atlas.addOrbitDelta + perturbar (a captura recomeça) */
   orbitar: (dx: number, dy: number) => void;
   /** rig.addLookDelta do pausar-e-olhar */
   olhar: (dx: number, dy: number) => void;
-  /** clique curto no Atlas: focar o nome mais próximo (frações de tela) */
-  focar: (x: number, y: number) => void;
+  /**
+   * CLIQUE CURTO no Atlas: ESCOLHER o nome mais próximo (frações de
+   * tela) — sem mover a câmera (item 73).
+   */
+  selecionar: (x: number, y: number) => void;
+  /** DUPLO CLIQUE no Atlas: mergulhar no que o clique escolheu, com rampa. */
+  mergulhar: () => void;
   /**
    * ZOOM CONTÍNUO (item 73): estalos fracionários deste quadro —
    * negativo aproxima, positivo afasta. Quem os converte em distância é
@@ -42,7 +47,7 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
 
   /**
    * Os MESMOS listeners servem o Atlas — arrastar orbita o alvo, clique
-   * curto foca o nome mais próximo. Registrar um segundo conjunto para
+   * curto escolhe o nome mais próximo. Registrar um segundo conjunto para
    * a fase nova compraria dois donos do mesmo gesto no mesmo canvas; o
    * dono muda com a fase, o listener não.
    */
@@ -68,17 +73,70 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     }
   };
 
+  /**
+   * O SEGUNDO CLIQUE DE UM DUPLO NÃO ESCOLHE DE NOVO, e sem isto o par
+   * "escolhe / vai" não funcionaria — este é o detalhe que a leitura do
+   * plano não previa e a medida achou.
+   *
+   * ESCOLHER RE-MIRA A CÂMERA: a lei do Atlas é que a câmera OLHA o
+   * alvo, então trocar o alvo gira a vista em torno da câmera parada, e
+   * os rótulos vão junto. Medido: um clique em Alnair na abertura leva o
+   * rótulo dela de (0,294 · 0,450) para fora do quadro, e Tiaki assume
+   * (0,402 · 0,532). Ou seja, quando o segundo clique do par chega, o
+   * pixel debaixo do dedo já é OUTRO objeto — sem a guarda, o duplo
+   * clique escolheria um vizinho e mergulharia nele.
+   *
+   * `event.detail` não serve: medido no Chrome, o `pointerup` chega com
+   * `detail = 0` nos dois cliques do par (só o `click`/`dblclick` conta).
+   * Então a contagem é nossa, com a MESMA janela que o navegador usa
+   * para sintetizar o `dblclick` (500 ms) e o limiar de imobilidade que
+   * o clique curto já tem.
+   */
+  const JANELA_DO_DUPLO_MS = 500;
+  const IMOVEL_PX = 6;
+  let ultimoCliqueMs = -Infinity;
+  let ultimoCliqueX = 0;
+  let ultimoCliqueY = 0;
+
   const onPointerUp = (event: PointerEvent) => {
-    // clique curto e parado no Atlas = focar. Os dois limiares (6 px,
+    // clique curto e parado no Atlas = ESCOLHER. Os dois limiares (6 px,
     // 400 ms) são os do voo livre, não números novos — hoje moram em
     // `CLIQUE_PX`/`CLIQUE_MS`, um lugar só para os dois gestos.
-    const curto = arrasto.soltar(event, performance.now());
-    if (curto && fios.noAtlas()) {
-      fios.focar(
-        event.clientX / window.innerWidth,
-        event.clientY / window.innerHeight
-      );
-    }
+    const agora = performance.now();
+    const curto = arrasto.soltar(event, agora);
+    if (!curto || !fios.noAtlas()) return;
+    const segundoDoPar =
+      agora - ultimoCliqueMs < JANELA_DO_DUPLO_MS &&
+      Math.abs(event.clientX - ultimoCliqueX) <= IMOVEL_PX &&
+      Math.abs(event.clientY - ultimoCliqueY) <= IMOVEL_PX;
+    ultimoCliqueMs = agora;
+    ultimoCliqueX = event.clientX;
+    ultimoCliqueY = event.clientY;
+    if (segundoDoPar) return;
+    fios.selecionar(
+      event.clientX / window.innerWidth,
+      event.clientY / window.innerHeight
+    );
+  };
+
+  /**
+   * O DUPLO CLIQUE MERGULHA (item 73) — e ele tem dono pela primeira
+   * vez. Até 22/08 não havia tratador nenhum: dois cliques eram dois
+   * ENQUADRAMENTOS seguidos, ou seja dois degraus de escada de uma vez,
+   * que é metade da queixa "essa navegação para cima e para baixo de
+   * objetos está muito confusa".
+   *
+   * ELE NÃO REFAZ O HIT-TEST, e é por isso que ele não recebe ponto
+   * nenhum: quando o `dblclick` chega, a câmera já foi re-mirada pelo
+   * primeiro clique e o rótulo saiu de baixo do dedo (ver a guarda do
+   * segundo clique, acima). O que ele mergulha é O QUE O PRIMEIRO
+   * CLIQUE ESCOLHEU — a escada guarda a escolha, que é a única leitura
+   * que continua verdadeira depois de a vista girar.
+   */
+  const onDuploClique = (event: MouseEvent) => {
+    if (!fios.noAtlas()) return;
+    event.preventDefault();
+    fios.mergulhar();
   };
 
   /**
@@ -144,6 +202,7 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   window.addEventListener('pointercancel', onPointerCancel);
   window.addEventListener('lostpointercapture', onPointerCancel);
   canvas.addEventListener('contextmenu', onContextMenu);
+  canvas.addEventListener('dblclick', onDuploClique);
   // A RODA E A PINÇA (Onda 7), e o `passive: false` é a coisa toda:
   // sem ele o navegador recusa o `preventDefault` e a página rola (ou
   // o Chrome DÁ ZOOM, que é o que a pinça faz por padrão) por baixo do
@@ -172,6 +231,7 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
       window.removeEventListener('pointercancel', onPointerCancel);
       window.removeEventListener('lostpointercapture', onPointerCancel);
       canvas.removeEventListener('contextmenu', onContextMenu);
+      canvas.removeEventListener('dblclick', onDuploClique);
       canvas.removeEventListener('wheel', onRoda);
       arrasto.esquecer();
     },

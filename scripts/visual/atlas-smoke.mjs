@@ -199,14 +199,70 @@ try {
   })()`);
   conferir(tinta !== null, `o pipeline de rótulos desenha em 'atlas' (tinta em ${JSON.stringify(tinta)})`);
   if (tinta) {
-    const antesDoClique = await sessao.js('window.__director.engine.camera.position.toArray().join()');
+    // UM CLIQUE ESCOLHE, DOIS VÃO (item 73, 22/08). O veredito antigo
+    // era "clicar num nome ENQUADRA (a câmera reposicionou)", e é
+    // exatamente a promessa que mudou: o clique simples passa a trocar o
+    // ALVO com a câmera PARADA, e quem reposiciona é o segundo clique.
+    const pose = async () => JSON.parse(await sessao.js(`JSON.stringify((() => {
+      const d = window.__director;
+      return {
+        cam: d.engine.camera.position.toArray(),
+        foco: d.escada.focoCorpoId,
+        alvo: d.atlas.alvo.toArray().join(),
+        degrau: d.escadaViva.degrau,
+        fase: d.captura.fase,
+      };
+    })())`));
+    const anda = (a, b) => {
+      const r = Math.hypot(a.cam[0] - b.cam[0], a.cam[1] - b.cam[1], a.cam[2] - b.cam[2]);
+      return r / Math.hypot(...b.cam);
+    };
+    // a SELEÇÃO é o trio (alvo, corpo em foco, degrau): clicar num
+    // corpo muda o foco, clicar no Sol da abertura muda só o degrau (o
+    // alvo já era a origem), clicar numa estrela muda o alvo
+    const selecao = (p) => `${p.alvo}|${p.foco}|${p.degrau}`;
+    const antesDoClique = await pose();
     await sessao.clicar(tinta.x, tinta.y);
     await sessao.assentar();
-    const depoisDoClique = await sessao.js('window.__director.engine.camera.position.toArray().join()');
+    const depoisDoClique = await pose();
+    const mexeu = anda(depoisDoClique, antesDoClique);
     conferir(
-      antesDoClique !== depoisDoClique
-        && (await sessao.js('window.__director.captura.fase')) === 'atlas',
-      'clicar num nome ENQUADRA sem sair da fase (a câmera reposicionou)'
+      selecao(depoisDoClique) !== selecao(antesDoClique)
+        && mexeu < 1e-9
+        && depoisDoClique.fase === 'atlas',
+      `um clique ESCOLHE e a câmera NÃO sai do lugar: degrau`
+        + ` ${antesDoClique.degrau} → ${depoisDoClique.degrau}, foco`
+        + ` ${antesDoClique.foco} → ${depoisDoClique.foco}, deslocamento`
+        + ` ${mexeu.toExponential(2)} do raio`
+    );
+    // O DUPLO CLIQUE É UM GESTO SÓ, e por isso ele começa de uma
+    // abertura LIMPA em vez de continuar de onde o clique acima parou:
+    // escolher RE-MIRA a câmera, então o rótulo que estava em `tinta`
+    // já não está lá — clicar duas vezes no mesmo pixel com segundos de
+    // intervalo é outro gesto, e mediria outra coisa.
+    await sessao.ir('atlas=1&q=cinema');
+    await sessao.assentar();
+    const tintaDoDuplo = await sessao.js(`(() => {
+      const c = document.querySelector('.label-canvas');
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      for (let y = 0; y < c.height; y += 2) {
+        for (let x = 0; x < c.width; x += 2) {
+          if (d[(y * c.width + x) * 4 + 3] > 200) return { x, y };
+        }
+      }
+      return null;
+    })()`);
+    const antesDoDuplo = await pose();
+    await sessao.duploClicar(tintaDoDuplo.x, tintaDoDuplo.y);
+    // a rampa entre degraus dura 0,5 s (RAMPA_DO_DEGRAU_S)
+    await sleep(1500);
+    await sessao.assentar();
+    const depoisDoDuplo = await pose();
+    conferir(
+      anda(depoisDoDuplo, antesDoDuplo) > 1e-3 && depoisDoDuplo.fase === 'atlas',
+      `o DUPLO clique MERGULHA: a câmera reposicionou (degrau`
+        + ` ${antesDoDuplo.degrau} → ${depoisDoDuplo.degrau}, andou`
+        + ` ${anda(depoisDoDuplo, antesDoDuplo).toExponential(2)} do raio)`
     );
   }
 

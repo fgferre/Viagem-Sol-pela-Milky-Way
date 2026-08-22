@@ -712,7 +712,11 @@ export class Director {
         }
       },
       olhar: (dx, dy) => this.rig.addLookDelta(dx, dy),
-      focar: (x, y) => this.escada.tryVisit(x, y),
+      // UM CLIQUE ESCOLHE, DOIS VÃO (item 73). São dois fios porque são
+      // dois gestos: o primeiro troca o alvo com a câmera parada, o
+      // segundo é o preset da escada, com rampa.
+      selecionar: (x, y) => this.escada.selecionarNoPonto(x, y),
+      mergulhar: () => this.escada.mergulharNoEscolhido(),
       // A RODA ESCREVE DISTÂNCIA, e só distância (item 73): nem
       // `focoCorpoId`, nem alvo, nem degrau. É por construção que o
       // objeto escolhido nunca troca sozinho — a queixa "nem conseguimos

@@ -298,6 +298,24 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
       await send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased', buttons: 0 });
     },
     /**
+     * DUPLO CLIQUE de verdade — dois pares press/release com
+     * `clickCount` 1 e 2, que é o que faz o Chrome sintetizar o evento
+     * `dblclick`. Sem o `clickCount: 2` no segundo par o navegador
+     * entrega dois cliques soltos e o tratador do duplo nunca acorda:
+     * era assim que o Atlas ficava sem dono para o gesto (item 73).
+     */
+    duploClicar: async (x, y) => {
+      const base = { x, y, button: 'left', pointerType: 'mouse' };
+      for (const clickCount of [1, 2]) {
+        await send('Input.dispatchMouseEvent', {
+          ...base, type: 'mousePressed', clickCount, buttons: 1,
+        });
+        await send('Input.dispatchMouseEvent', {
+          ...base, type: 'mouseReleased', clickCount, buttons: 0,
+        });
+      }
+    },
+    /**
      * Tecla de verdade, com código nativo — `el.dispatchEvent(new
      * KeyboardEvent('keydown'))` não move o foco: só o evento REAL faz o
      * Chrome andar com o Tab, e é justamente o andar do foco que o juiz

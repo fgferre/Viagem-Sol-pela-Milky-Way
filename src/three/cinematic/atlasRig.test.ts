@@ -27,6 +27,7 @@ import {
   upDoAtlas,
   enquadrar,
   orbitaMaisExterna,
+  orbitaQueProduz,
   raioDeEnquadramentoEstelar,
   retanguloUtilDoAtlas,
 } from './atlasRig';
@@ -1451,16 +1452,21 @@ describe('o degrau do CORPO DO SOL', () => {
       'utf8'
     );
     const visita = ESCADA.slice(
-      ESCADA.indexOf('  tryVisit('),
-      ESCADA.indexOf('  get nomeadas()')
+      ESCADA.indexOf('  mergulharNoEscolhido() {'),
+      ESCADA.indexOf('  selecionarNoPonto(')
     );
-    // o gesto irmão do "clicar no MESMO corpo já focado desce um degrau"
-    // (D7), no único corpo cujo degrau de cima é a ABERTURA
-    expect(visita).toContain("if (id === 'sun' && this.escada.degrau === 'sistema')");
-    expect(visita).toContain("this.focarNoCorpo('sun', 'corpo');");
-    // ...e de QUALQUER outro degrau o clique no Sol continua sendo
-    // voltar para casa, pelo caminho de sempre
-    expect(visita).toContain('this.focarNoCorpo(id);');
+    // O DUPLO CLIQUE É QUEM DESCE desde 22/08 (item 73): o clique
+    // simples passou a ESCOLHER, e o degrau já é o do Sol quando o
+    // segundo clique chega — por isso a condição de degrau saiu e o
+    // `ver` passa a ser explícito. Sem isso `focarNoCorpo('sun')`
+    // mandaria de volta para casa, que é o oposto do gesto.
+    expect(visita).toContain("if (escolha.id === 'sun') this.focarNoCorpo('sun', 'corpo');");
+    // ...e o duplo clique em qualquer outro corpo desce pelo caminho de
+    // sempre
+    expect(visita).toContain('else this.focarNoCorpo(escolha.id);');
+    // e ele NÃO refaz o hit-test: escolher re-mira a câmera, e o rótulo
+    // já não está debaixo do dedo quando o `dblclick` chega
+    expect(visita).not.toContain('alvoNoPonto');
     // o gesto mora AQUI e não dentro de `focarNoCorpo`: a porta
     // `?foco=sol` também chama aquele método e chega com a abertura já
     // na tela — lá dentro as duas seriam indistinguíveis, e `?foco=sol`
@@ -1569,8 +1575,11 @@ describe('os dois defeitos declarados do degrau do Sol', () => {
   );
 
   it('o clique só mira rótulo DESENHADO — e descarta antes de medir distância', () => {
+    // o hit-test virou peça própria em 22/08 (item 73): os DOIS gestos
+    // do Atlas o leem — o clique que escolhe e o duplo que mergulha —,
+    // e a lista continua sendo UMA (pendência 30)
     const visita = ESCADA.slice(
-      ESCADA.indexOf('  tryVisit('),
+      ESCADA.indexOf('  private alvoNoPonto('),
       ESCADA.indexOf('  get nomeadas()')
     );
     expect(visita).toContain('if (label.desenhado === false) continue;');
@@ -1665,5 +1674,183 @@ describe('a fita dos loops coronais volta ao clip com o w certo', () => {
     // câmera); o que mudou é o caminho de volta para clip
     expect(LOOPS).toContain('float wA = max(clipA.w, 0.01);');
     expect(LOOPS).toContain('float rawPx = uLoopW * pxScale / wA;');
+  });
+});
+
+
+// ============================================================
+// UM CLIQUE ESCOLHE, DOIS VÃO (item 73, 22/08). Trocar o alvo sem mexer
+// na câmera é uma conta FECHADA: a mesma pose, escrita noutro
+// referencial. O que se cobra aqui é a conta — o gesto vivo é do
+// `atlas-smoke`, que é onde há ponteiro.
+// ============================================================
+describe('a pose de volta — orbitaQueProduz inverte direcaoPrivilegiada', () => {
+  const eixos = [
+    new THREE.Vector3(1e-5, 0, 0),
+    new THREE.Vector3(-3e-6, 5e-6, 1e-6),
+    new THREE.Vector3(0, 0, 2e-5),
+    new THREE.Vector3(1e-6, -4e-6, -7e-6),
+  ];
+  const poloDaTerra = (() => {
+    const p = baseCorpoEquatorial(IAU_ORIENTATIONS.earth, EPOCA_JD_TDB).polo;
+    return new THREE.Vector3(p[0], p[1], p[2]).normalize();
+  })();
+  const polos = [POLO_DA_ECLIPTICA, poloDaTerra];
+
+  it('ida e volta: a direção que sai é a direção que entrou', () => {
+    const dir = new THREE.Vector3();
+    const devolta = new THREE.Vector3();
+    const orbita = { altura: 0, volta: 0 };
+    let pior = 0;
+    for (const eixo of eixos) {
+      for (const polo of polos) {
+        for (let ia = 0; ia <= 12; ia++) {
+          for (let iv = 0; iv <= 12; iv++) {
+            const altura = (-30 + (ia * 180) / 12) * GRAU;
+            const volta = (-180 + (iv * 360) / 12) * GRAU;
+            direcaoPrivilegiada(eixo, polo, { altura, volta }, dir);
+            orbitaQueProduz(dir, eixo, polo, orbita);
+            direcaoPrivilegiada(eixo, polo, orbita, devolta);
+            // a CORDA, não `angleTo`: aquele passa por `acos` e não
+            // consegue medir abaixo de ~1,5e-8 rad (o erro do `acos`
+            // perto de 1 é `√ε`), que é justamente a faixa em que a
+            // conta fechada trabalha. Para ângulos pequenos a corda É o
+            // ângulo, e ela se mede por subtração, sem `acos` nenhum.
+            pior = Math.max(pior, dir.distanceTo(devolta));
+          }
+        }
+      }
+    }
+    // 676 poses × 8 referenciais: a volta reproduz a direção a menos de
+    // 1e-14 — é conta fechada, não busca. O número depende de o ângulo
+    // sair de `atan2` e não de `acos`: com `acos` o pior caso media
+    // 1e-6 rad, e 1e-6 rad na abertura são 33 mil km de câmera num
+    // gesto que promete não mover nada.
+    expect(pior).toBeLessThan(1e-14);
+  });
+
+  it('a altura sai na MESMA faixa que o arrasto grampeia', () => {
+    const pino = PHASE_OFFSET_GRAUS * GRAU;
+    const dir = new THREE.Vector3();
+    const orbita = { altura: 0, volta: 0 };
+    for (const eixo of eixos) {
+      for (let i = 0; i <= 24; i++) {
+        direcaoPrivilegiada(eixo, POLO_DA_ECLIPTICA, {
+          altura: (-30 + (i * 180) / 24) * GRAU,
+          volta: 0.7,
+        }, dir);
+        orbitaQueProduz(dir, eixo, POLO_DA_ECLIPTICA, orbita);
+        expect(orbita.altura).toBeGreaterThanOrEqual(-pino - 1e-9);
+        expect(orbita.altura).toBeLessThanOrEqual(Math.PI - pino + 1e-9);
+        expect(Math.abs(orbita.volta)).toBeLessThanOrEqual(Math.PI + 1e-9);
+      }
+    }
+  });
+
+  it('entradas impossíveis devolvem o repouso, nunca NaN', () => {
+    const orbita = { altura: 1, volta: 1 };
+    orbitaQueProduz(new THREE.Vector3(0, 0, 0), eixos[0], POLO_DA_ECLIPTICA, orbita);
+    expect(orbita).toEqual({ altura: 0, volta: 0 });
+    orbitaQueProduz(
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      POLO_DA_ECLIPTICA,
+      orbita
+    );
+    expect(Number.isFinite(orbita.altura)).toBe(true);
+    expect(Number.isFinite(orbita.volta)).toBe(true);
+  });
+});
+
+describe('selecionar — o alvo troca e a câmera NÃO sai do lugar', () => {
+  const cam = () => new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+
+  it('a posição da câmera é a MESMA depois de trocar de alvo', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    const casa = orbitaMaisExterna();
+    rig.focar(new THREE.Vector3(), casa.raio, casa.posicao, {
+      pisoRaio: RAIO_DO_SOL_NA_CENA,
+    });
+    rig.apply(camera);
+    // um arrasto qualquer, para a pose não ser a de repouso
+    rig.addOrbitDelta(213, -97);
+    rig.apply(camera);
+    const antes = camera.position.clone();
+    // Netuno: o alvo mais externo do retrato, e o mais longe do Sol
+    const netuno = RETRATO_2026.neptune;
+    const eq = eclipticaParaEquatorial([netuno.rUA, 0, 0]);
+    const alvo = new THREE.Vector3(eq[0], eq[1], eq[2]).multiplyScalar(AU_PARA_PC);
+    rig.selecionar(alvo, alvo.length(), alvo, { pisoRaio: 1e-9 });
+    rig.apply(camera);
+    // 1e-12 pc são 0,2 metros: a câmera não se moveu
+    expect(camera.position.distanceTo(antes)).toBeLessThan(1e-12 * antes.length());
+    expect(rig.alvo.distanceTo(alvo)).toBe(0);
+    // ...e a distância publicada é a distância REAL ao alvo novo
+    expect(Math.abs(rig.distancia - antes.distanceTo(alvo)) / rig.distancia)
+      .toBeLessThan(1e-9);
+    expect(rig.distanciaEstaPinada).toBe(true);
+  });
+
+  it('selecionar duas vezes o MESMO alvo não anda — é o par do duplo clique', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    const casa = orbitaMaisExterna();
+    rig.focar(new THREE.Vector3(), casa.raio, casa.posicao);
+    rig.addOrbitDelta(-140, 61);
+    rig.apply(camera);
+    const alvo = casa.posicao.clone();
+    rig.selecionar(alvo, alvo.length(), alvo);
+    rig.apply(camera);
+    const uma = camera.position.clone();
+    const d1 = rig.distancia;
+    rig.selecionar(alvo, alvo.length(), alvo);
+    rig.apply(camera);
+    // NÃO é bit a bit, e o número diz por quê: a volta pela conta
+    // fechada perde os últimos bits de float (medido, 6,4e-19 pc — dois
+    // centésimos de MICRÔMETRO), e é isso que sobra depois de a pose
+    // atravessar acos/atan2 e voltar. O duplo clique dispara duas
+    // seleções antes do mergulho, e as duas param no mesmo lugar.
+    expect(camera.position.distanceTo(uma)).toBeLessThan(1e-15 * uma.length());
+    expect(Math.abs(rig.distancia / d1 - 1)).toBeLessThan(1e-12);
+  });
+
+  it('a roda continua de onde a seleção parou, e o alvo é o NOVO', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    const casa = orbitaMaisExterna();
+    rig.focar(new THREE.Vector3(), casa.raio, casa.posicao, {
+      pisoRaio: RAIO_DO_SOL_NA_CENA,
+    });
+    rig.apply(camera);
+    const alvo = casa.posicao.clone();
+    const raioFisico = 2.5e-9;
+    rig.selecionar(alvo, alvo.length(), alvo, { pisoRaio: raioFisico });
+    rig.apply(camera);
+    // o piso passou a ser o do corpo NOVO
+    expect(rig.pisoDeZoom).toBeCloseTo(2 * raioFisico, 20);
+    const antes = rig.distancia;
+    rig.pinarDistancia(antes * 0.5);
+    rig.apply(camera);
+    expect(rig.distancia).toBeCloseTo(antes * 0.5, 20);
+    // e a câmera está onde a distância publicada diz, medida ao alvo NOVO
+    expect(camera.position.distanceTo(alvo)).toBeCloseTo(rig.distancia, 18);
+  });
+
+  it('o PAI morre na seleção — a mistura da lua é do preset', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    const alvo = new THREE.Vector3(1e-6, 2e-6, 0);
+    const pai = new THREE.Vector3(1.1e-6, 2e-6, 0);
+    rig.focar(alvo, 1e-11, alvo, { pai });
+    rig.apply(camera);
+    expect(rig.temPai).toBe(true);
+    const antes = camera.position.clone();
+    rig.selecionar(alvo, 1e-11, alvo);
+    rig.apply(camera);
+    expect(rig.temPai).toBe(false);
+    // e mesmo com a mistura saindo de cena a câmera não se move: a pose
+    // é resolvida contra a direção que ESTAVA na tela
+    expect(camera.position.distanceTo(antes)).toBeLessThan(1e-12 * antes.length());
   });
 });

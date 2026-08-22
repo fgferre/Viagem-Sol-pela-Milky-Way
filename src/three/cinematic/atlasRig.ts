@@ -23,6 +23,7 @@ import {
   direcaoDaLua,
   direcaoPrivilegiada,
   enquadrar,
+  orbitaQueProduz,
   orbitaMaisExterna,
   upDoAtlas,
 } from './enquadramento';
@@ -264,9 +265,15 @@ export class AtlasRig {
     const pai = opcoes.pai ?? null;
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     if (opcoes.rampa) {
+      // "MESMO ALVO" quer dizer «a pose que este foco produziria já está
+      // na tela» — e com uma DISTÂNCIA PINADA ela não está. Sem a
+      // terceira linha, o duplo clique num corpo que o visitante acabou
+      // de SELECIONAR era no-op: a seleção é o alvo com a câmera parada,
+      // e o mergulho é o mesmo alvo no enquadramento dele (item 73).
       const mesmoAlvo =
         this.alvo.distanceToSquared(alvo) === 0 &&
         this.raio === raio &&
+        this.distanciaPinada === null &&
         (pai === null) === (this.pai === null) &&
         this.polo.distanceToSquared(polo) === 0;
       if (mesmoAlvo) return;
@@ -306,6 +313,99 @@ export class AtlasRig {
     // escada funcionar como PRESET — o botão, o Esc, o `?ver=` e a busca
     // devolvem o enquadramento, e a roda mexe nele a partir dali.
     this.distanciaPinada = null;
+  }
+
+  /**
+   * TROCA O ALVO SEM MEXER NA CÂMERA — o clique simples (item 73, plano
+   * §1). É a outra metade da lei "um alvo e uma distância": `focar` é o
+   * PRESET (o alvo novo nasce no enquadramento dele), e isto é a
+   * SELEÇÃO (o alvo novo nasce onde o visitante já está).
+   *
+   * A CONTA É FECHADA e roda de trás para frente:
+   *
+   *  1. a pose de agora sai do próprio rig — `alvo + direção · distância`
+   *     —, e não da câmera: a direção é a mesma função pura que o
+   *     `escreverPose` usa, e a distância é a que ele escreveu. Os dois
+   *     giros de recentragem do HUD giram a câmera SEM mover a posição
+   *     dela, então esta conta é exata, e o rig continua sem precisar
+   *     que ninguém lhe entregue uma câmera;
+   *  2. o alvo, o raio, o eixo e o polo passam a ser os novos;
+   *  3. `(altura, volta)` saem de `orbitaQueProduz` contra o eixo NOVO —
+   *     a mesma pose escrita noutro referencial;
+   *  4. a distância vira PINO, porque é isso que ela é agora: uma
+   *     distância que o visitante escolheu (ficando parado) e que a roda
+   *     continua de onde ela está.
+   *
+   * SEM PAI, e é declarado: a mistura de `direcaoDaLua` é uma direção
+   * CALCULADA (a lua com o pai em quadro), e ela pertence ao PRESET —
+   * o duplo clique, a busca, o `?foco=`. Selecionar uma lua de onde se
+   * está é escolher o alvo, não pedir o enquadramento dela; quem quiser
+   * o enquadramento dá o segundo clique. O religador do relógio
+   * pergunta ao rig se há pai (`temPai`) em vez de deduzi-lo do degrau,
+   * para não recolocar a mistura que a seleção não pediu.
+   *
+   * A RAMPA NÃO ENTRA: não há travessia a animar — a câmera não sai do
+   * lugar. `rampaT` volta a 1 para o caso de a seleção pegar uma troca
+   * de degrau no meio (aí a rampa perde, e é o certo: o gesto do
+   * visitante ganha do preset que ele interrompeu).
+   */
+  selecionar(
+    alvo: THREE.Vector3,
+    raio: number,
+    eixoDe: THREE.Vector3 = alvo,
+    opcoes: { polo?: THREE.Vector3 | null; pisoRaio?: number | null } = {}
+  ) {
+    // 1. a pose de agora, no mundo
+    if (this.pai) {
+      direcaoDaLua(
+        _dir.copy(this.eixoDe).sub(SOL),
+        _dirPai.copy(this.alvo).sub(this.pai),
+        this.polo,
+        this.orbita,
+        _dir
+      );
+    } else {
+      direcaoPrivilegiada(_dir.copy(this.eixoDe).sub(SOL), this.polo, this.orbita, _dir);
+    }
+    _posPartida.copy(this.alvo).addScaledVector(_dir, this.distancia);
+    // 2. o referencial novo
+    const polo = opcoes.polo ?? POLO_ECLIPTICO;
+    this.alvo.copy(alvo);
+    this.raio = raio;
+    this.eixoDe.copy(eixoDe);
+    this.pai = null;
+    this.polo.copy(polo);
+    this.pisoRaio =
+      opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
+        ? opcoes.pisoRaio
+        : null;
+    this.rampaT = 1;
+    // 3. a MESMA pose, escrita no referencial novo
+    _dirB.copy(_posPartida).sub(this.alvo);
+    const distancia = _dirB.length();
+    if (!(distancia > 0)) {
+      // a câmera está EM CIMA do alvo novo: não há direção a preservar,
+      // e o enquadramento é a única resposta honesta
+      this.orbita.altura = 0;
+      this.orbita.volta = 0;
+      this.distanciaPinada = null;
+      return;
+    }
+    orbitaQueProduz(
+      _dirB.multiplyScalar(1 / distancia),
+      _dir.copy(this.eixoDe).sub(SOL),
+      this.polo,
+      this.orbita
+    );
+    // 4. a distância vira pino, grampeada na faixa do alvo NOVO. O teto
+    //    usa o `fatorDeEnquadramento` do quadro anterior — ele é da
+    //    LENTE e do HUD, não do alvo, então não envelhece na troca.
+    const piso = this.pisoDeZoom;
+    this.distanciaPinada = THREE.MathUtils.clamp(
+      distancia,
+      piso,
+      Math.max(piso, this.tetoDeZoom)
+    );
   }
 
   /**

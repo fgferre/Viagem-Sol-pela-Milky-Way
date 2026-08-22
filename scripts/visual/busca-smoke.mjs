@@ -440,13 +440,13 @@ try {
   // órbita da Terra. Antes do conserto o clique ali não achava rótulo
   // nenhum (não havia rótulo de corpo) e nada acontecia.
   //
-  // O QUE ELE ACHA MUDOU EM 22/08 (item 73): `?foco=terra` passou a pôr
-  // a TERRA no centro, e não mais o Sol com uma esfera do tamanho da
-  // órbita dela. Então o clique no centro cai na própria Terra, e o
-  // gesto que sai dali é a DESCIDA de degrau — órbita → corpo —, que é
-  // o gesto irmão do botão "⊕ Aproximar". O veredito passa a cobrar o
-  // que ele sempre quis dizer: o clique achou um corpo da lista única e
-  // o ENQUADRAMENTO se moveu, seja trocando de nome, seja de degrau.
+  // O QUE ELE FAZ MUDOU DUAS VEZES EM 22/08 (item 73). Primeiro
+  // `?foco=terra` passou a pôr a TERRA no centro (e não o Sol com uma
+  // esfera do tamanho da órbita dela), então o clique no centro cai na
+  // própria Terra. Depois o clique simples passou a ESCOLHER sem mover,
+  // e quem desce é o DUPLO — o par do padrão da indústria. O veredito
+  // cobra os dois: o clique acha um corpo da lista única e a câmera
+  // fica parada; o duplo desce o degrau, órbita → corpo.
   await sessao.ir(`foco=terra&${PIN}`);
   const nomesDosCorpos = JSON.parse(
     await sessao.js('JSON.stringify(window.__director.corpos.map((c) => c.nome))')
@@ -455,18 +455,43 @@ try {
     await sessao.js('JSON.stringify({ w: window.innerWidth, h: window.innerHeight })')
   );
   const degrau = () => sessao.js('window.__director.escadaViva.degrau');
+  const posDaCamera = async () =>
+    JSON.parse(await sessao.js(
+      'JSON.stringify(window.__director.engine.camera.position.toArray())'
+    ));
+  // a câmera "parada" se mede em FRAÇÃO do raio, não por igualdade de
+  // texto: a pose atravessa a conta fechada de `orbitaQueProduz` e
+  // volta com os últimos bits de float trocados (medido, 1e-11 do raio
+  // — micrômetros numa vista de unidades astronômicas)
+  const andou = (a, b) =>
+    Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / Math.hypot(...b);
   const antesDoClique = await degrau();
-  await sessao.clicar(Math.round(tela.w * 0.5), Math.round(tela.h * 0.45));
+  const cameraAntes = await posDaCamera();
+  const px = Math.round(tela.w * 0.5);
+  const py = Math.round(tela.h * 0.45);
+  await sessao.clicar(px, py);
   await sessao.assentar();
   const depoisDoClique = await contexto(sessao);
   const degrauDepois = await degrau();
+  const cameraDepois = await posDaCamera();
   conferir(
     // 11 desde a F2b; 13 F3; 30 F5; 36 F6; 39 F7 (+ Vesta/Palas/Hígia)
     nomesDosCorpos.length === 39
-      && (nomesDosCorpos.includes(depoisDoClique) || depoisDoClique === 'Sistema solar')
-      && (depoisDoClique !== naTerra || degrauDepois !== antesDoClique),
-    `clicar num corpo ENQUADRA por ele ("${naTerra}"/${antesDoClique} →`
-      + ` "${depoisDoClique}"/${degrauDepois})`
+      && nomesDosCorpos.includes(depoisDoClique)
+      && degrauDepois === antesDoClique
+      && andou(cameraDepois, cameraAntes) < 1e-9,
+    `clicar num corpo ESCOLHE e a câmera não sai do lugar ("${naTerra}"/`
+      + `${antesDoClique} → "${depoisDoClique}"/${degrauDepois})`
+  );
+  await sessao.duploClicar(px, py);
+  await sleep(1200);
+  await sessao.assentar();
+  const noDuplo = await contexto(sessao);
+  const degrauDoDuplo = await degrau();
+  conferir(
+    degrauDoDuplo === 'corpo' && noDuplo === 'Terra'
+      && andou(await posDaCamera(), cameraDepois) > 1e-3,
+    `...e o DUPLO clique desce o degrau ("${noDuplo}"/${degrauDoDuplo})`
   );
 
   // ---- 9b: A LUA na busca (F2b, P-E10) -----------------------------
