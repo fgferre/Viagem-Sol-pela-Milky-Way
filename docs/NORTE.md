@@ -191,9 +191,17 @@ para escolher com honestidade.
   scripts/visual/memoria.mjs` mede onde os texels dobram, e a volta da
   troca de tier passou a ser ao tier da medida (era sempre `alta`).
   Medido em 22/08: pico de 139 MiB em `alta` (teto 200) e 683 MiB em
-  `cinema` (teto 900). **O run de cinema reprova numa régua VELHA** — os
-  3 geometrias que a quinta volta ao Atlas ganha —, e isso é defeito
-  achado, não regressão: reproduz no HEAD e virou o item 67.
+  `cinema` (teto 900). **E ele estreia o EPISÓDICO antes da linha de
+  base.** `renderer.info.memory.geometries` conta o que já foi
+  DESENHADO, não o que existe, e a ejeção de massa do Sol
+  (`world/sol/cme.js`) nasce invisível e só aparece por sorteio: em
+  cinema ela caiu na quinta volta ao Atlas e o veredito do portal
+  acusou `delta 3` de vazamento onde não havia nenhum (item 67). Agora
+  o juiz dispara uma ejeção pelo emissor canônico (`ctx.launchCME`, a
+  porta que o `cme.js` reserva à QA) dentro do primeiro ciclo, do lado
+  do FILME — no Atlas o Sol está longe e as três malhas não chegam ao
+  renderer —, e a linha de base já nasce com elas: 45 → 48 nos dois
+  tiers, e os cinco ciclos param em 48.
 
 Duas coisas que mudam o preço e não se adivinham:
 

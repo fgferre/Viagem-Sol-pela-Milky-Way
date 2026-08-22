@@ -100,6 +100,7 @@ const JANELA = process.env.JANELA || '1200x900';
  */
 const TIER = process.env.TIER || 'alta';
 const BOOT = `atlas=1&q=${TIER}`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const CICLOS = 5;
 const TROCAS = 3;
 // os 5 corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=)
@@ -269,6 +270,54 @@ try {
    * trocas de qualidade pelo caminho vivo, focos. Devolve as amostras;
    * quem julga é quem chamou.
    */
+  /**
+   * O MUNDO MORNO ANTES DA LINHA DE BASE — o passo que faltava (item 67).
+   *
+   * `renderer.info.memory.geometries` conta o que o renderer JÁ VIU
+   * desenhar, não o que existe: uma geometria alocada no boot só entra na
+   * conta no quadro em que é desenhada pela primeira vez. O Sol tem um
+   * subsistema EPISÓDICO — a ejeção de massa (`world/sol/cme.js`): a
+   * casca e as duas nuvens de partículas nascem com o Sol e ficam em
+   * `visible = false` até uma ejeção acontecer, e ela acontece por
+   * SORTEIO (só flare grande solta CME, com probabilidade na amplitude).
+   *
+   * Sem este passo, a estreia caía onde o sorteio mandasse. Medido em
+   * 22/08 com `TIER=cinema`: 45 geometrias nos ciclos 1 a 4 e 48 no
+   * QUINTO, e o veredito do portal acusava `delta 3` de vazamento onde
+   * não havia nenhum — as três seguem em 48 no sexto ciclo, porque
+   * estrearam, não vazaram. Em `alta` o mesmo sorteio simplesmente não
+   * tinha caído ainda.
+   *
+   * `ctx.launchCME` é o emissor CANÔNICO, e o próprio `cme.js` declara
+   * que é por ele que a QA passa. Duas coisas o passo respeita:
+   *
+   *  - ELE CORRE DO LADO DO FILME, e não dentro do Atlas. Medido: uma
+   *    ejeção disparada em `fase = atlas` não mexe na conta (dali o Sol
+   *    está longe e as três malhas nunca chegam ao renderer); a mesma
+   *    ejeção, com o mundo em `fase = intro`, registra as três na hora.
+   *    Por isso ele mora DENTRO do primeiro ciclo, entre o `partir` e o
+   *    `entrar` — a linha de base do portal é a amostra do ciclo 1.
+   *  - E ESPERA O DESENHO, não o disparo: a conta é lida até parar de
+   *    subir, porque é o primeiro quadro desenhado que registra.
+   */
+  const estrearOEpisodico = async () => {
+    const conta = () =>
+      sessao.js('window.__director.engine.renderer.info.memory.geometries');
+    const antes = await conta();
+    await sessao.js('window.__director.sun.ctx.launchCME(1.3)');
+    let agora = antes;
+    for (let i = 0, parado = 0; i < 40 && parado < 3; i++) {
+      await sleep(100);
+      const n = await conta();
+      parado = n === agora ? parado + 1 : 0;
+      agora = n;
+    }
+    process.stdout.write(
+      `  ejeção de massa estreada antes da linha de base:`
+      + ` ${antes} → ${agora} geometrias\n`
+    );
+  };
+
   const protocolo = async ({ sabotar, ciclos, trocas, focos }) => {
     const boot = await sessao.ir(BOOT);
     const fase = await sessao.js('window.__director.captura.fase');
@@ -277,6 +326,7 @@ try {
     for (let c = 1; c <= ciclos; c++) {
       await sessao.js('window.__director.partirDoAtlas()');
       await sessao.assentar();
+      if (c === 1) await estrearOEpisodico();
       await sessao.js('window.__director.entrarNoAtlas()');
       await sessao.assentar();
       if (sabotar) await sessao.js(INJETAR);
