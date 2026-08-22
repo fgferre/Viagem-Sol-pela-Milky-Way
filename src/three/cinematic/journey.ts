@@ -45,6 +45,7 @@
 // POUSA no enquadramento.
 // ============================================================
 import * as THREE from 'three';
+import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
 import {
   GAL,
   EX,
@@ -1335,6 +1336,28 @@ export const CAPTURE_T = {
 export const REVEAL_T =
   STARTS[SHOTS.findIndex((s) => s.captions?.[0]?.text === 'O ESTILINGUE')];
 
+/**
+ * O CALENDÁRIO DO FILME — que dia o céu mostra em cada segundo do
+ * corte, e é o filme quem manda. São 193 s do MESMO dia, 2026-01-01: os
+ * atos correm no instante do retrato (00:00 UTC, a época em que os dez
+ * corpos estão congelados quando não há rede) e a coda pede as 16:00
+ * UTC do mesmo dia, o meio-dia solar a ~60°O que acende as Américas
+ * para o pouso. A troca segue caindo em `REVEAL_T`, o único trecho em
+ * que nada que dependa do relógio está em quadro — a câmera sai do
+ * buraco negro, a 26.000 anos-luz de casa.
+ *
+ * Por que uma FUNÇÃO e não a linha solta que existia no tick: a linha
+ * só corria a partir de `REVEAL_T`, então a data que o visitante
+ * escolhera no Atlas atravessava o portal e ficava dentro do filme.
+ * Medido em 21/08: viajar para 2035 no Atlas, Partir e arrastar a barra
+ * para o Ato I dava planetas de 2035 no filme, com o relógio saltando
+ * sozinho para 2026 quando a barra chegava à coda — dois calendários no
+ * mesmo corte, nenhum declarado. Um relógio só, e no filme ele é este.
+ * A porta `?jd=` do operador continua com precedência (o tick a checa).
+ */
+export function jdDoFilme(t: number): number {
+  return t >= REVEAL_T ? JD_DO_FILME_TDB : EPOCA_JD_TDB;
+}
 
 interface JourneySample {
   pos: THREE.Vector3;

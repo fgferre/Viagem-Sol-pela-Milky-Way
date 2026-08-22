@@ -107,6 +107,14 @@ protege adiciona risco sem ganho.
   e os dois modos desenham igual.
 - Um relógio só: luz, rotação IAU, nuvens, anel e eclipse leem o `jd` do
   Director.
+- E DENTRO DO FILME esse relógio é do FILME (`jdDoFilme`, journey.ts): o
+  instante do retrato até `REVEAL_T`, as 16:00 UTC do mesmo dia na coda,
+  para o pouso sobre as Américas. O Atlas é o relógio do VISITANTE — e o
+  preço declarado dessa fronteira é que voltar ao Atlas depois de passar
+  pelo filme volta com a data do filme, não com a que ele escolheu. A
+  porta `?jd=` do operador vence os dois. (Até 21/08 a troca só corria a
+  partir de `REVEAL_T` e a data do Atlas atravessava o portal: 2035 nos
+  atos, 2026 na coda, sem nada dizendo.)
 
 O que ainda falta da fusão (Wikipedia, idioma, cinturões, Decisões 1 e 2)
 está no `PLANO-ATLAS.md`. Não se relista aqui.

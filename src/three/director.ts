@@ -86,11 +86,11 @@ import {
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import {
-  JD_DO_FILME_TDB,
   LUA_PC,
   REVEAL_T,
   TERRA_PC,
   T_SAIDA_DO_DISCO,
+  jdDoFilme,
 } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
@@ -1942,17 +1942,20 @@ export class Director {
     // de efemérides precisa estar viva antes de o raspão chegar. Mesmo
     // relógio do pré-aquecimento de textura (palcoQuente, t≥REVEAL_T:
     // ~64 s de folga); `garantirEfemerides` é idempotente e abortável.
-    // E o FILME TROCA O RELÓGIO aqui: os atos rodam no instante do
-    // retrato, mas o pouso pede o dia sobre as Américas — a coda pede
-    // as 16:00 UTC (JD_DO_FILME_TDB) no único trecho em que nada que
-    // depende do relógio está em quadro (26.000 anos-luz de casa). A
-    // porta ?jd= do operador tem precedência; sem rede a fonte não
-    // chega e a coda degrada como a Lua: honesta e visível.
-    if (this.palcoQuente) {
-      this.maquinaDoTempo.garantirEfemerides();
-      if (this.phase === 'journey' && !this.debug.has('jd')) {
-        this.maquinaDoTempo.jdPedido = JD_DO_FILME_TDB;
-      }
+    if (this.palcoQuente) this.maquinaDoTempo.garantirEfemerides();
+
+    // O FILME CORRE NA DATA DELE, do primeiro segundo ao último — o
+    // calendário é do roteiro (`jdDoFilme`: o instante do retrato até
+    // REVEAL_T, as 16:00 UTC do mesmo dia na coda, para o pouso sobre as
+    // Américas). Até 21/08 esta linha só corria a partir de REVEAL_T e
+    // vivia dentro do `palcoQuente`, e o buraco era o portal: quem
+    // viajasse para 2035 no Atlas e partisse assistia aos atos com os
+    // planetas de 2035 e via o relógio saltar sozinho para 2026 na coda,
+    // sem nada dizendo. Um relógio só — e dentro do filme ele é do
+    // filme. A porta ?jd= do operador mantém a precedência; sem rede a
+    // fonte não chega e a coda degrada como a Lua: honesta e visível.
+    if (this.phase === 'journey' && !this.debug.has('jd')) {
+      this.maquinaDoTempo.jdPedido = jdDoFilme(this.journeyT);
     }
 
     // ------------------------------------------------------------
