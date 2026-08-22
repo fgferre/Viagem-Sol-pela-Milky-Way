@@ -590,6 +590,14 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
 // `repartir` por quadro na CPU. A conformidade entre as duas faces é
 // NUMÉRICA (grade em `estrela.test.ts`, transliteração float64 do corpo
 // abaixo) — varredura textual é proibida como prova (§8.6).
+//
+// O LITERAL SAI DO `glslNumber`, como no vizinho `GLSL_LEI_DE_TELA` — era
+// `toFixed(1)` à mão, a escolha de casas por chamada que a peça existe para
+// matar. COM DUAS EXCEÇÕES DECLARADAS E MEDIDAS: as sete casas fixas do
+// `glslNumber` NÃO reproduzem `LIMIAR_DO_CLARAO` (1/255 = 0,00392156862745098
+// → 0,0039216) nem `1 / BETA_DA_ASA` (0,4166666666666667 → 0,4166667) — os
+// dois caem em float32 DIFERENTE, e passá-los pelo cinto moveria pixel. Nesses
+// dois a interpolação crua é que é a precisão cheia, e é ela que fica.
 export const GLSL_LEI_DA_ESTRELA = /* glsl */ `
 // A repartição da Lei da Estrela — dois eixos, pesos que somam 1 por
 // construção. Constantes interpoladas de estrela.ts, a fonte única.
@@ -597,7 +605,7 @@ void repartirPesos(
   float discoPx, float trocaPx, float requisitoGeometrico,
   out float wPonto, out float wResolvido, out float wEsfera, out float wMalha
 ) {
-  wPonto = 1.0 - smoothstep(trocaPx, ${LARGURA_DA_TROCA.toFixed(1)} * trocaPx, discoPx);
+  wPonto = 1.0 - smoothstep(trocaPx, ${glslNumber(LARGURA_DA_TROCA)} * trocaPx, discoPx);
   wResolvido = 1.0 - wPonto;
   wEsfera = 1.0 - smoothstep(0.0, 1.0, clamp(requisitoGeometrico, 0.0, 1.0));
   wMalha = 1.0 - wEsfera;
@@ -607,9 +615,9 @@ void repartirPesos(
 // (R ~ F^(1/${(2 * BETA_DA_ASA).toFixed(1)})). Deriva do FLUXO (pico da PSF em tela), nunca do
 // peso do ponto: a óptica age sobre a imagem estelar inteira (§1).
 float raioDaAsaPx(float picoDeTela, float sigmaPx) {
-  float excesso = (${FRACAO_DA_ASA} * picoDeTela) / ${LIMIAR_DO_CLARAO};
+  float excesso = (${glslNumber(FRACAO_DA_ASA)} * picoDeTela) / ${LIMIAR_DO_CLARAO};
   if (excesso <= 1.0) return 0.0;
-  float theta0 = ${NUCLEO_DA_ASA_EM_SIGMAS.toFixed(1)} * sigmaPx;
+  float theta0 = ${glslNumber(NUCLEO_DA_ASA_EM_SIGMAS)} * sigmaPx;
   return theta0 * sqrt(pow(excesso, ${1 / BETA_DA_ASA}) - 1.0);
 }
 `;

@@ -55,6 +55,14 @@ const INSTRUMENT = `(() => {
     // CopyShader: o blend ADITIVO do bloom no buffer do composer. Sem este
     // token ele sai como programa de cena e o pós fica 0,05 ms menor.
     ['opacity * texel', 'pos:bloom-blend'],
+    // os pontos da galáxia (GALAXY_VERT/FRAG, galaxyShaders.ts). NÃO é um
+    // uniform: desde o M5 os nove uniformes do material (uCamPos, uScreenH,
+    // uTanHalfFov, uFade, uTauMap, uEX/uEY/uEZ, uGC) são os MESMOS de
+    // starForges.ts, e um token compartilhado batizaria os dois passes com
+    // um nome só. unresolved(dist) é a chamada que só este vertex faz — a
+    // nebulosa chama a mesma função com unresolved(t). (Sem crases: isto
+    // vive num template.)
+    ['unresolved(dist)', 'cena:galaxia(pontos)'],
     ['uCamFwd', 'cena:nebulosa(raymarch)'],
     ['uLayerAlpha', 'cena:laminas-poeira'],
     ['uCell', 'cena:wrappedStars'],

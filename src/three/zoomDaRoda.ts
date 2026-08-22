@@ -216,8 +216,11 @@ export class ZoomDaRoda {
    * O QUE ANDOU É A INTEGRAL EXATA de `v·e^(−F·t)` no quadro —
    * `v·(1 − e^(−F·dt))/F` —, e não o `v·dt` do doador. A diferença não é
    * refinamento: com `v·dt` a soma de um estalo depende da TAXA DE
-   * QUADROS (soma de Riemann pela direita), e medido a 60 Hz ela entrega
-   * 93,5% do que o impulso promete, contra 99,9% a 1.000 Hz. Um gesto
+   * QUADROS (soma de Riemann pela direita), e quem MEDE é a bancada
+   * (`zoomDaRoda.test.ts`, o `it` do `v·dt`): 92,33% do que o impulso
+   * promete a 60 Hz, contra 98,36% a 1.000 Hz — e 86,32% a 30 Hz, que é
+   * a máquina ruim, onde isto importa. (Os 93,5% / 99,9% que este
+   * comentário trazia eram lembrança, nunca medida.) Um gesto
    * que anda menos quando a máquina está rápida é um gesto que ninguém
    * consegue calibrar. Com a forma fechada a soma é `I/F` exato em
    * qualquer taxa, menos a fatia que a zona morta corta no fim (< 1,25%).

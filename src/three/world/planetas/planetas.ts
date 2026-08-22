@@ -14,7 +14,9 @@
 // 0. O QUE O M4 DA LEI DA ESTRELA FECHOU (2026-08-22)
 // ------------------------------------------------------------
 // "Não são estrelas: consomem o INSTRUMENTO da lei e mantêm a fase
-// MH18" (LEI-DA-ESTRELA §4). As duas metades da frase são o contrato
+// MH18" — a frase mora na linha `planetas` de
+// `cadastroDeRepresentacoes.ts`, que é o censo cobrado por teste; a §4
+// da Lei enxugou a entrada M4 quando ela fechou. As duas metades são o contrato
 // desta camada, e a segunda é tão importante quanto a primeira:
 //
 //   CONSOME o instrumento — exposição de referência, largura da PSF e

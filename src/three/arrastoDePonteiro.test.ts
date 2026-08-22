@@ -433,7 +433,12 @@ const CSS = readdirSync(HUD_DIR)
 
 describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', () => {
   it('os dois gestos da casa importam uma máquina só', () => {
-    expect(GESTOS).toContain("import { ArrastoDePonteiro } from '../arrastoDePonteiro'");
+    // os gestos trazem junto o `CLIQUE_PX`: a imobilidade do PAR de
+    // cliques é o MESMO limiar do clique curto, e ele tem um endereço só
+    expect(GESTOS).toContain(
+      "import { ArrastoDePonteiro, CLIQUE_PX } from '../arrastoDePonteiro'"
+    );
+    expect(GESTOS).not.toMatch(/const IMOVEL_PX\b/);
     expect(RIG).toContain("import { ArrastoDePonteiro } from '../arrastoDePonteiro'");
     // e nenhum dos dois guarda mais o estado do gesto por conta própria
     expect(RIG).not.toMatch(/private dragging|private dragMoved|private downAt/);

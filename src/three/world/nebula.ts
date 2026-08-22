@@ -32,6 +32,16 @@ const TETO_DE_PASSOS_DA_NEBULOSA = 96;
 const passosDoRaymarch = (bruto: number) =>
   Number.isFinite(bruto) && bruto > 0 ? Math.min(bruto, TETO_DE_PASSOS_DA_NEBULOSA) : 0;
 
+/**
+ * Segmentos da esfera da fotosfera no PIOR tier (`TIERS.low.seg` em
+ * `world/stellarBody.ts`) — é a contagem que `sunCone` usa para achar o
+ * polígono INSCRITO da silhueta. Terceira grandeza da casa que calha de
+ * valer 96, e pelo mesmo motivo da nota acima ela tem nome próprio: era
+ * literal no `Math.cos(Math.PI / 96)` com o "N = 96" só no comentário ao
+ * lado, e o comentário não muda quando o tier muda.
+ */
+const SEGMENTOS_DA_FOTOSFERA = 96;
+
 export class Nebula {
   readonly texture: THREE.Texture;
   private rt: THREE.WebGLRenderTarget;
@@ -296,8 +306,9 @@ export class Nebula {
    * Cosseno do meio-ângulo SEGURO do cone da fotosfera. Três encolhimentos, e
    * o do meio é o que morde:
    *  - a malha é uma esfera TESSELADA, cuja silhueta é o polígono INSCRITO, não
-   *    o círculo: raio efetivo R·cos(π/N). Usa-se o pior tier (N = 96), porque
-   *    errar para menos aqui só custa GPU e errar para mais apaga pixel visível;
+   *    o círculo: raio efetivo R·cos(π/N). Usa-se o pior tier
+   *    (N = `SEGMENTOS_DA_FOTOSFERA`), porque errar para menos aqui só custa
+   *    GPU e errar para mais apaga pixel visível;
    *  - entre o raymarch e o consumo há um blur de 4 taps a ±meio-texel E o
    *    upsample linear do RT de meia-res: os dois ESPALHAM o preto para fora do
    *    disco. É o encolhimento grande, e é em texel do RT, não em raio;
@@ -310,7 +321,7 @@ export class Nebula {
     // câmera dentro (ou quase) da esfera: não há cone, e a fotosfera nem cobre
     // a tela toda de forma previsível
     if (d <= this.occluderR * 1.02) return 2;
-    const rMalha = this.occluderR * Math.cos(Math.PI / 96);
+    const rMalha = this.occluderR * Math.cos(Math.PI / SEGMENTOS_DA_FOTOSFERA);
     const theta = Math.asin(Math.min(rMalha / d, 1));
     const texel = (2 * (this.material.uniforms.uTanHalfFov.value as number)) / this.rt.height;
     const seguro = theta - 3 * texel;

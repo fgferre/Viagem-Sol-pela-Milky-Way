@@ -6,7 +6,7 @@
 // (ArrastoDePonteiro, ZoomDaRoda) moram AQUI — quem precisa esquecer
 // a roda na troca de fase usa o punho devolvido.
 // ============================================================
-import { ArrastoDePonteiro } from '../arrastoDePonteiro';
+import { ArrastoDePonteiro, CLIQUE_PX } from '../arrastoDePonteiro';
 import { ZoomDaRoda } from '../zoomDaRoda';
 
 export interface FiosDosGestos {
@@ -93,22 +93,22 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
    * o clique curto já tem.
    */
   const JANELA_DO_DUPLO_MS = 500;
-  const IMOVEL_PX = 6;
   let ultimoCliqueMs = -Infinity;
   let ultimoCliqueX = 0;
   let ultimoCliqueY = 0;
 
   const onPointerUp = (event: PointerEvent) => {
     // clique curto e parado no Atlas = ESCOLHER. Os dois limiares (6 px,
-    // 400 ms) são os do voo livre, não números novos — hoje moram em
-    // `CLIQUE_PX`/`CLIQUE_MS`, um lugar só para os dois gestos.
+    // 400 ms) são os do voo livre, não números novos — moram em
+    // `CLIQUE_PX`/`CLIQUE_MS` (`arrastoDePonteiro.ts`), um lugar só para
+    // os dois gestos, e a imobilidade do PAR usa o mesmo `CLIQUE_PX`.
     const agora = performance.now();
     const curto = arrasto.soltar(event, agora);
     if (!curto || !fios.noAtlas()) return;
     const segundoDoPar =
       agora - ultimoCliqueMs < JANELA_DO_DUPLO_MS &&
-      Math.abs(event.clientX - ultimoCliqueX) <= IMOVEL_PX &&
-      Math.abs(event.clientY - ultimoCliqueY) <= IMOVEL_PX;
+      Math.abs(event.clientX - ultimoCliqueX) <= CLIQUE_PX &&
+      Math.abs(event.clientY - ultimoCliqueY) <= CLIQUE_PX;
     ultimoCliqueMs = agora;
     ultimoCliqueX = event.clientX;
     ultimoCliqueY = event.clientY;

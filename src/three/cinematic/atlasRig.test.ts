@@ -19,6 +19,7 @@ import {
   ARRASTO_RAD_POR_PX,
   PARENT_FRAMING_BIAS,
   PHASE_OFFSET_GRAUS,
+  POLO_ECLIPTICO,
   RETANGULO_CHEIO,
   RAMPA_DO_DEGRAU_S,
   CEDER_COMECA_GRAUS,
@@ -38,13 +39,12 @@ import { EPOCA_JD_TDB, RETRATO_2026 } from '../world/planetas/retrato2026';
 import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
 
+// O POLO DA ECLÍPTICA VEM IMPORTADO (`POLO_ECLIPTICO`, de
+// `enquadramento.ts` pelo `export *` do rig): esta bancada o recalculava
+// à mão em DOIS lugares, com dois nomes para o mesmo vetor — um deles
+// sombreando o outro dentro de um `describe`. Oráculo que redigita a
+// constante que julga não julga a constante.
 const GRAU = Math.PI / 180;
-
-/** o polo da eclíptica no frame da cena — o `up` dos degraus de cima */
-const POLO_DA_ECLIPTICA = (() => {
-  const v = eclipticaParaEquatorial([0, 0, 1]);
-  return new THREE.Vector3(v[0], v[1], v[2]).normalize();
-})();
 
 /**
  * O semi-ângulo que a esfera de raio `rAlvo × margem` ocupa, vista da
@@ -846,7 +846,7 @@ describe('o rig e o alvo de abertura', () => {
     // direção da câmera nunca entra na calota de MIN_POLAR em volta do
     // polo da eclíptica, que é o `up` deste degrau
     const daCamera = girada.clone().sub(rig.alvo).normalize();
-    const polar = daCamera.angleTo(POLO_DA_ECLIPTICA);
+    const polar = daCamera.angleTo(POLO_ECLIPTICO);
     expect(Math.min(polar, Math.PI - polar)).toBeGreaterThanOrEqual(MIN_POLAR_RAD - 1e-9);
     // e focar de novo zera a órbita — o alvo novo nasce no pino
     rig.focarNoSistema();
@@ -963,10 +963,6 @@ describe('direcaoDaLua — o degrau "lua" (F2b/D7)', () => {
 // suave o desarma sem vazar para o caso comum.
 // ============================================================
 describe('o polo do corpo no alto, e a guarda da mira', () => {
-  const POLO_ECLIPTICO = (() => {
-    const v = eclipticaParaEquatorial([0, 0, 1]);
-    return new THREE.Vector3(v[0], v[1], v[2]).normalize();
-  })();
   const poloDe = (id: string, jd: number) => {
     const p = baseCorpoEquatorial(IAU_ORIENTATIONS[id], jd).polo;
     return new THREE.Vector3(p[0], p[1], p[2]);
@@ -1451,19 +1447,27 @@ describe('o degrau do CORPO DO SOL', () => {
       new URL('../director/escada.ts', import.meta.url),
       'utf8'
     );
-    const visita = ESCADA.slice(
-      ESCADA.indexOf('  mergulharNoEscolhido() {'),
-      ESCADA.indexOf('  selecionarNoPonto(')
+    // o GESTO mudou de casa no corte do §11 (22/08): o hit-test, a
+    // memória do clique e os dois cliques do Atlas moram em `escolha.ts`
+    const ESCOLHA = readFileSync(
+      new URL('../director/escolha.ts', import.meta.url),
+      'utf8'
+    );
+    const visita = ESCOLHA.slice(
+      ESCOLHA.indexOf('  mergulharNoEscolhido() {'),
+      ESCOLHA.indexOf('  selecionarNoPonto(')
     );
     // O DUPLO CLIQUE É QUEM DESCE desde 22/08 (item 73): o clique
     // simples passou a ESCOLHER, e o degrau já é o do Sol quando o
     // segundo clique chega — por isso a condição de degrau saiu e o
     // `ver` passa a ser explícito. Sem isso `focarNoCorpo('sun')`
     // mandaria de volta para casa, que é o oposto do gesto.
-    expect(visita).toContain("if (escolha.id === 'sun') this.focarNoCorpo('sun', 'corpo');");
+    expect(visita).toContain(
+      "if (escolha.id === 'sun') this.escada.focarNoCorpo('sun', 'corpo');"
+    );
     // ...e o duplo clique em qualquer outro corpo desce pelo caminho de
     // sempre
-    expect(visita).toContain('else this.focarNoCorpo(escolha.id);');
+    expect(visita).toContain('else this.escada.focarNoCorpo(escolha.id);');
     // e ele NÃO refaz o hit-test: escolher re-mira a câmera, e o rótulo
     // já não está debaixo do dedo quando o `dblclick` chega
     expect(visita).not.toContain('alvoNoPonto');
@@ -1577,10 +1581,15 @@ describe('os dois defeitos declarados do degrau do Sol', () => {
   it('o clique só mira rótulo DESENHADO — e descarta antes de medir distância', () => {
     // o hit-test virou peça própria em 22/08 (item 73): os DOIS gestos
     // do Atlas o leem — o clique que escolhe e o duplo que mergulha —,
-    // e a lista continua sendo UMA (pendência 30)
-    const visita = ESCADA.slice(
-      ESCADA.indexOf('  private alvoNoPonto('),
-      ESCADA.indexOf('  get nomeadas()')
+    // e a lista continua sendo UMA (pendência 30). No corte do §11 a
+    // peça foi com o GESTO para `escolha.ts`.
+    const ESCOLHA = readFileSync(
+      new URL('../director/escolha.ts', import.meta.url),
+      'utf8'
+    );
+    const visita = ESCOLHA.slice(
+      ESCOLHA.indexOf('  private alvoNoPonto('),
+      ESCOLHA.indexOf('  tryVisit(')
     );
     expect(visita).toContain('if (label.desenhado === false) continue;');
     expect(visita).toContain('const dx = label.x - x;');
@@ -1695,7 +1704,7 @@ describe('a pose de volta — orbitaQueProduz inverte direcaoPrivilegiada', () =
     const p = baseCorpoEquatorial(IAU_ORIENTATIONS.earth, EPOCA_JD_TDB).polo;
     return new THREE.Vector3(p[0], p[1], p[2]).normalize();
   })();
-  const polos = [POLO_DA_ECLIPTICA, poloDaTerra];
+  const polos = [POLO_ECLIPTICO, poloDaTerra];
 
   it('ida e volta: a direção que sai é a direção que entrou', () => {
     const dir = new THREE.Vector3();
@@ -1735,11 +1744,11 @@ describe('a pose de volta — orbitaQueProduz inverte direcaoPrivilegiada', () =
     const orbita = { altura: 0, volta: 0 };
     for (const eixo of eixos) {
       for (let i = 0; i <= 24; i++) {
-        direcaoPrivilegiada(eixo, POLO_DA_ECLIPTICA, {
+        direcaoPrivilegiada(eixo, POLO_ECLIPTICO, {
           altura: (-30 + (i * 180) / 24) * GRAU,
           volta: 0.7,
         }, dir);
-        orbitaQueProduz(dir, eixo, POLO_DA_ECLIPTICA, orbita);
+        orbitaQueProduz(dir, eixo, POLO_ECLIPTICO, orbita);
         expect(orbita.altura).toBeGreaterThanOrEqual(-pino - 1e-9);
         expect(orbita.altura).toBeLessThanOrEqual(Math.PI - pino + 1e-9);
         expect(Math.abs(orbita.volta)).toBeLessThanOrEqual(Math.PI + 1e-9);
@@ -1749,12 +1758,12 @@ describe('a pose de volta — orbitaQueProduz inverte direcaoPrivilegiada', () =
 
   it('entradas impossíveis devolvem o repouso, nunca NaN', () => {
     const orbita = { altura: 1, volta: 1 };
-    orbitaQueProduz(new THREE.Vector3(0, 0, 0), eixos[0], POLO_DA_ECLIPTICA, orbita);
+    orbitaQueProduz(new THREE.Vector3(0, 0, 0), eixos[0], POLO_ECLIPTICO, orbita);
     expect(orbita).toEqual({ altura: 0, volta: 0 });
     orbitaQueProduz(
       new THREE.Vector3(1, 0, 0),
       new THREE.Vector3(0, 0, 0),
-      POLO_DA_ECLIPTICA,
+      POLO_ECLIPTICO,
       orbita
     );
     expect(Number.isFinite(orbita.altura)).toBe(true);
