@@ -91,17 +91,11 @@ import {
   criaSombraNaCena,
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
-import type { QualityLevel } from '../../core/engine';
 import type { FonteDeEfemerides } from '../planetas/planetas';
 import { diametroAparentePx } from './corpos';
 import { gateBinario } from './terra';
-import {
-  RECARGAS_ATE_DESISTIR,
-  alvoDePixels,
-  detectarWebp,
-  escolherVariante,
-} from './texturas';
-import type { ManifestDeTexturas } from './texturas';
+import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
+import type { EstadoDasTexturas, OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
   escreverSombraDeEclipse,
@@ -214,28 +208,9 @@ export interface EstadoDaLua {
   rUA: number;
 }
 
-export interface OpcoesDaLua {
-  /**
-   * O TIER, LIDO NA HORA DE ALOCAR — função, não valor. É a regra do
-   * NORTE ("knob que decide alocação lê-se ANTES de quem aloca") escrita
-   * ao pé da letra: a textura deste corpo é preguiçosa, então o número
-   * que decide o alvo de pixels só faz sentido no instante em que ela é
-   * pedida. Congelado no construtor (como era até os Ajustes C), trocar
-   * de qualidade ao vivo não alcançava corpo nenhum; e reconstruí-los
-   * para alcançar tirava o globo da tela por ~2 s enquanto a textura
-   * nova vinha — medido, e é exatamente o véu que a letra C proíbe.
-   * Quem já está carregado guarda os pixels que tem; quem carregar
-   * daqui em diante obedece ao tier de agora.
-   */
-  tier: () => QualityLevel;
-  maxTextureSize?: number;
-  base: string;
-  webp?: boolean;
-  buscarManifest?: (url: string) => Promise<ManifestDeTexturas>;
-  carregarTextura?: (url: string) => Promise<THREE.Texture>;
-}
-
-type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
+/** Só o bloco comum de textura (`OpcoesDeTextura`): a Lua tem UM canal e
+ *  nada de próprio para pedir. */
+export type OpcoesDaLua = OpcoesDeTextura;
 
 export class LuaResolvida {
   readonly group = new THREE.Group();
@@ -429,60 +404,34 @@ export class LuaResolvida {
     this.group.add(this.superficie);
   }
 
-  /** a carga preguiçosa — manifest, escada por tier, UM canal (map). */
+  /** a carga preguiçosa — UM canal (`map`), pela transação única. A dose
+   *  de VRAM é POR CANAL (`alvoDePixels`), então o `map` da Lua mantém o
+   *  8k de cinema de graça: a regra nunca foi por corpo. */
   private iniciarCarga() {
     this.texturas = 'buscando';
-    const { base, tier, maxTextureSize } = this.opcoes;
-    const tierAgora = tier();
-    const buscar =
-      this.opcoes.buscarManifest ??
-      (async (url: string): Promise<ManifestDeTexturas> => {
-        const r = await fetch(url);
-        if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-        return r.json() as Promise<ManifestDeTexturas>;
+    void carregarCanaisDoCorpo('moon', [CANAL_MAP], this.opcoes, () => this.disposto)
+      .then((porCanal) => {
+        // cancelada no caminho: o lote já foi descartado lá dentro
+        if (!porCanal) return;
+        // e o microtask entre a chegada e esta linha ainda cabe um
+        // `dispose()` do Director — o lote não fica sem dono
+        if (this.disposto) {
+          for (const t of porCanal.values()) t.dispose();
+          return;
+        }
+        const tex = porCanal.get('map')!;
+        this.garantirCasca();
+        this.matSuperficie!.uniforms.uMapaDia.value = tex;
+        this.texturasVivas.push(tex);
+        this.texturas = 'pronta';
+      })
+      .catch(() => {
+        if (this.disposto) return;
+        // a Lua não tem nem ponto fotométrico para sobrar no lugar
+        const r = estadoAposFalha(this.recargas, 'lua', 'a Lua não nasce nesta sessão');
+        this.recargas = r.recargas;
+        this.texturas = r.texturas;
       });
-    const carregar =
-      this.opcoes.carregarTextura ??
-      ((url: string) => new THREE.TextureLoader().loadAsync(url));
-    const webpOk = this.opcoes.webp ?? detectarWebp();
-
-    void (async () => {
-      const manifest = await buscar(`${base}data/atlas/texturas.json`);
-      // a dose de VRAM é POR CANAL (alvoDePixels): o único canal da Lua
-      // é o `map`, que mantém o 8k de cinema — a regra não é por corpo
-      const alvo = alvoDePixels(tierAgora, 'map', maxTextureSize);
-      const variante = escolherVariante(manifest.entradas, 'moon', 'map', alvo, webpOk);
-      if (!variante) throw new Error(`lua sem variante para 'map' ≤ ${alvo}px`);
-      const tex = await carregar(`${base}${variante.arquivo}`);
-      if (this.disposto) {
-        tex.dispose();
-        return;
-      }
-      // cor em sRGB; wrap REPEAT em U (emenda 0/360 do equiretangular)
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.anisotropy = 4;
-      this.garantirCasca();
-      this.matSuperficie!.uniforms.uMapaDia.value = tex;
-      this.texturasVivas.push(tex);
-      this.texturas = 'pronta';
-    })().catch(() => {
-      if (this.disposto) return;
-      // o MESMO backoff contado da Terra (auditoria item 6): falha volta
-      // a 'fria' e o gatilho rearma no tick seguinte, até
-      // RECARGAS_ATE_DESISTIR; só então 'falhou' é terminal, com aviso
-      // único — e a Lua não tem nem ponto para sobrar no lugar.
-      if (this.recargas < RECARGAS_ATE_DESISTIR) {
-        this.recargas++;
-        this.texturas = 'fria';
-      } else {
-        this.texturas = 'falhou';
-        console.warn(
-          `[lua] carga de textura falhou ${1 + RECARGAS_ATE_DESISTIR}×; a Lua não nasce nesta sessão`
-        );
-      }
-    });
   }
 
   dispose() {

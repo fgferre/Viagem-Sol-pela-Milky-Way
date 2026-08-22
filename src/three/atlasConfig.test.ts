@@ -48,7 +48,14 @@ const PREFERENCIAS = readFileSync(
   new URL('../lib/preferencias.ts', import.meta.url),
   'utf8'
 );
-// os quatro corpos do palco: o tier deles é lido na HORA de alocar
+// os quatro corpos do palco: o tier deles é lido na HORA de alocar. A
+// carga (e com ela a leitura do tier) mudou de casa em 22/08 — era uma
+// cópia por corpo, virou `carregarCanaisDoCorpo` em texturas.ts —, então
+// o que se lê aqui é o pipeline único MAIS os quatro consumidores dele.
+const TEXTURAS = readFileSync(
+  new URL('./world/corpos/texturas.ts', import.meta.url),
+  'utf8'
+);
 const CORPOS = (['terra', 'lua', 'rochoso', 'gigante'] as const).map(
   (nome) =>
     [
@@ -142,12 +149,17 @@ describe('a troca de tier ao vivo (Ajustes C)', () => {
     // A regra do NORTE ao pé da letra ("knob que decide alocação lê-se
     // ANTES de quem aloca"): a textura é preguiçosa, então o número que
     // decide o alvo de pixels só faz sentido no instante do pedido.
+    // A leitura mora no pipeline único desde 22/08 — uma linha, não
+    // quatro cópias —, e cada corpo tem de passar por ela.
+    expect(TEXTURAS, 'o tier congelou de novo no construtor').toContain(
+      'tier: () => QualityLevel;'
+    );
+    expect(TEXTURAS, 'o alvo de pixels não lê o tier de agora').toContain(
+      'const tierAgora = opcoes.tier();'
+    );
     for (const [nome, fonte] of CORPOS) {
-      expect(fonte, `${nome}: o tier congelou de novo no construtor`).toContain(
-        'tier: () => QualityLevel;'
-      );
-      expect(fonte, `${nome}: o alvo de pixels não lê o tier de agora`).toContain(
-        'const tierAgora = tier();'
+      expect(fonte, `${nome}: pede textura por fora do pipeline único`).toContain(
+        'carregarCanaisDoCorpo('
       );
     }
   });

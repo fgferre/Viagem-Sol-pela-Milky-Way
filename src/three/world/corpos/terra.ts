@@ -75,7 +75,6 @@ import {
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
 import { CALIBRACAO_ATLAS } from '../../config';
-import type { QualityLevel } from '../../core/engine';
 import { RAMP_DURATION_MS, cessaoPorDominancia, stepRampToward } from '../lodStellar';
 import { psfPointSizePx } from '../../luzDaCasa';
 import { RETRATO_2026 } from '../planetas/retrato2026';
@@ -94,13 +93,8 @@ import {
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import type { OrientacaoNaCena } from './orientacaoNaCena';
-import {
-  RECARGAS_ATE_DESISTIR,
-  alvoDePixels,
-  detectarWebp,
-  escolherVariante,
-} from './texturas';
-import type { ManifestDeTexturas } from './texturas';
+import { carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
+import type { CanalPedido, EstadoDasTexturas, OpcoesDeTextura } from './texturas';
 import {
   escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
@@ -150,6 +144,19 @@ export const DERIVA_DAS_NUVENS = 1.03;
 /** Os cinco canais da Terra no manifest — a escada real de F2a-1. */
 export const CANAIS_DA_TERRA = ['map', 'night', 'clouds', 'normal', 'roughness'] as const;
 export type CanalDaTerra = (typeof CANAIS_DA_TERRA)[number];
+
+/**
+ * O PEDIDO dos cinco canais, na forma que a carga única consome: os três
+ * de COR decodificam de sRGB, `normal` e `roughness` são DADO e ficam
+ * lineares — pôr um normal map em sRGB torceria a normal em silêncio.
+ * Todos são equiretangulares, então todos repetem em U (a emenda 0/360
+ * fecha sem risca de mipmap).
+ */
+const PEDIDO_DA_TERRA: readonly CanalPedido[] = CANAIS_DA_TERRA.map((canal) => ({
+  canal,
+  cor: canal === 'map' || canal === 'night' || canal === 'clouds',
+  repetirEmU: true,
+}));
 
 
 // ------------------------------------------------------------
@@ -285,32 +292,9 @@ export interface EstadoDaTerra {
   diametroPx: number;
 }
 
-export interface OpcoesDaTerra {
-  /**
-   * O TIER, LIDO NA HORA DE ALOCAR — função, não valor. É a regra do
-   * NORTE ("knob que decide alocação lê-se ANTES de quem aloca") escrita
-   * ao pé da letra: a textura deste corpo é preguiçosa, então o número
-   * que decide o alvo de pixels só faz sentido no instante em que ela é
-   * pedida. Congelado no construtor (como era até os Ajustes C), trocar
-   * de qualidade ao vivo não alcançava corpo nenhum; e reconstruí-los
-   * para alcançar tirava o globo da tela por ~2 s enquanto a textura
-   * nova vinha — medido, e é exatamente o véu que a letra C proíbe.
-   * Quem já está carregado guarda os pixels que tem; quem carregar
-   * daqui em diante obedece ao tier de agora.
-   */
-  tier: () => QualityLevel;
-  maxTextureSize?: number;
-  /** BASE_URL do vite — o Director injeta; teste injeta ''. */
-  base: string;
-  /** injeção de teste; default = detectarWebp() no primeiro uso. */
-  webp?: boolean;
-  /** injeção de teste do fetch do manifest. */
-  buscarManifest?: (url: string) => Promise<ManifestDeTexturas>;
-  /** injeção de teste do loader de imagem. */
-  carregarTextura?: (url: string) => Promise<THREE.Texture>;
-}
-
-type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
+/** Só o bloco comum de textura (`OpcoesDeTextura`) — a Terra não pede
+ *  nada além dele. O tier como FUNÇÃO e o porquê moram lá. */
+export type OpcoesDaTerra = OpcoesDeTextura;
 
 export class TerraResolvida {
   /** o nó do palco — o Director pendura em `palco.group`. */
@@ -659,77 +643,36 @@ export class TerraResolvida {
     this.group.add(this.superficie, this.nuvens, this.atmosfera);
   }
 
-  /** a carga preguiçosa — manifest, escada por tier, cinco canais. */
+  /** a carga preguiçosa — a transação mora em `carregarCanaisDoCorpo`;
+   *  o que fica aqui é o estado do corpo e a publicação nos uniforms. */
   private iniciarCarga() {
     this.texturas = 'buscando';
-    const { base, tier, maxTextureSize } = this.opcoes;
-    const tierAgora = tier();
-    const buscar =
-      this.opcoes.buscarManifest ??
-      (async (url: string): Promise<ManifestDeTexturas> => {
-        const r = await fetch(url);
-        if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-        return r.json() as Promise<ManifestDeTexturas>;
+    void carregarCanaisDoCorpo('earth', PEDIDO_DA_TERRA, this.opcoes, () => this.disposto)
+      .then((porCanal) => {
+        // cancelada no caminho: o lote já foi descartado lá dentro
+        if (!porCanal) return;
+        // e o microtask entre a chegada e esta linha ainda cabe um
+        // `dispose()` do Director — o lote não fica sem dono
+        if (this.disposto) {
+          for (const t of porCanal.values()) t.dispose();
+          return;
+        }
+        this.garantirCascas();
+        const uS = this.matSuperficie!.uniforms;
+        uS.uMapaDia.value = porCanal.get('map');
+        uS.uMapaNoite.value = porCanal.get('night');
+        uS.uMapaNormal.value = porCanal.get('normal');
+        uS.uMapaRugosidade.value = porCanal.get('roughness');
+        this.matNuvens!.uniforms.uMapaNuvens.value = porCanal.get('clouds');
+        this.texturasVivas.push(...porCanal.values());
+        this.texturas = 'pronta';
+      })
+      .catch(() => {
+        if (this.disposto) return;
+        const r = estadoAposFalha(this.recargas, 'terra', 'o globo não nasce nesta sessão');
+        this.recargas = r.recargas;
+        this.texturas = r.texturas;
       });
-    const carregar =
-      this.opcoes.carregarTextura ??
-      ((url: string) => new THREE.TextureLoader().loadAsync(url));
-    const webpOk = this.opcoes.webp ?? detectarWebp();
-
-    void (async () => {
-      const manifest = await buscar(`${base}data/atlas/texturas.json`);
-      const texturas = await Promise.all(
-        CANAIS_DA_TERRA.map(async (canal) => {
-          // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels`
-          const alvo = alvoDePixels(tierAgora, canal, maxTextureSize);
-          const variante = escolherVariante(manifest.entradas, 'earth', canal, alvo, webpOk);
-          if (!variante) throw new Error(`terra sem variante para '${canal}' ≤ ${alvo}px`);
-          const tex = await carregar(`${base}${variante.arquivo}`);
-          // cor em sRGB (o sampler decodifica para linear); dado
-          // (normal/roughness) fica linear. Wrap REPEAT em U — a emenda
-          // 0/360 do mapa equiretangular fecha sem risca de mipmap.
-          if (canal === 'map' || canal === 'night' || canal === 'clouds') {
-            tex.colorSpace = THREE.SRGBColorSpace;
-          }
-          tex.wrapS = THREE.RepeatWrapping;
-          tex.wrapT = THREE.ClampToEdgeWrapping;
-          tex.anisotropy = 4;
-          return { canal, tex };
-        })
-      );
-      if (this.disposto) {
-        for (const { tex } of texturas) tex.dispose();
-        return;
-      }
-      this.garantirCascas();
-      const porCanal = new Map(texturas.map((t) => [t.canal, t.tex]));
-      const uS = this.matSuperficie!.uniforms;
-      uS.uMapaDia.value = porCanal.get('map');
-      uS.uMapaNoite.value = porCanal.get('night');
-      uS.uMapaNormal.value = porCanal.get('normal');
-      uS.uMapaRugosidade.value = porCanal.get('roughness');
-      this.matNuvens!.uniforms.uMapaNuvens.value = porCanal.get('clouds');
-      this.texturasVivas.push(...texturas.map((t) => t.tex));
-      this.texturas = 'pronta';
-    })().catch(() => {
-      if (this.disposto) return;
-      // UMA falha não é sentença (auditoria item 6): volta a 'fria' e o
-      // MESMO gatilho de sempre (gate armado ou fase atlas) rearma a
-      // carga no tick seguinte — até RECARGAS_ATE_DESISTIR. Só então
-      // 'falhou' é terminal: o globo não nasce, o PONTO continua com a
-      // fotometria certa (degradação honesta), e o aviso único deixa a
-      // falha legível — a captura da vista terra REPROVA em vez de
-      // fingir (o `captura` do Director segura com o gate armado a frio).
-      if (this.recargas < RECARGAS_ATE_DESISTIR) {
-        this.recargas++;
-        this.texturas = 'fria';
-      } else {
-        this.texturas = 'falhou';
-        console.warn(
-          `[terra] carga de texturas falhou ${1 + RECARGAS_ATE_DESISTIR}×; o globo não nasce nesta sessão`
-        );
-      }
-    });
   }
 
   dispose() {

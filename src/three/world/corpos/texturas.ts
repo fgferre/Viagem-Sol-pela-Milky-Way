@@ -2,9 +2,35 @@
 // O PIPELINE DE TEXTURAS de todos os corpos resolvidos.
 //
 // O manifest, o alvo de pixels por tier e canal (a dose de VRAM), a
-// escolha de variante, a detecção de webp e a política de recarga.
-// Morava em terra.ts; serve a Terra, Lua, rochosos e gigantes.
+// escolha de variante, a detecção de webp, a política de recarga — e,
+// desde 22/08, A CARGA EM SI. Morava em terra.ts; serve a Terra, Lua,
+// rochosos e gigantes.
+//
+// POR QUE A CARGA MUDOU DE CASA. Os quatro corpos tinham cada um o SEU
+// `iniciarCarga` quase igual (71/54/58/65 linhas), e as diferenças entre
+// eles não eram desenho — eram os três furos que quatro cópias sempre
+// acabam tendo:
+//
+//  (a) a Terra pedia os cinco canais com `Promise.all`, que REJEITA no
+//      primeiro canal que cai: os outros quatro terminavam para lugar
+//      nenhum, e o catch não descartava nada — até 12 imagens
+//      abandonadas em três tentativas;
+//  (b) Saturno publicava o `map` ANTES de buscar o `ring`, então uma
+//      falha do anel voltava tudo a 'fria' e recarregava, deixando até
+//      três mapas de superfície residentes (42,7 MiB cada em cinema) e
+//      o planeta nunca aparecia;
+//  (c) cada corpo buscava o SEU `texturas.json` — 33 pedidos do mesmo
+//      arquivo de 3,44 MiB ao entrar no Atlas.
+//
+// A carga daqui é TRANSACIONAL: o manifest é buscado uma vez por
+// buscador (`buscarManifestUmaVez`), os canais descem para um lote
+// TEMPORÁRIO, e o lote inteiro é entregue ao corpo num passo só — ou
+// nenhum canal é entregue e TODOS os que chegaram são descartados. O
+// corpo continua dono do seu estado ('fria'/'buscando'/'pronta'/
+// 'falhou'), do seu material e do seu `dispose`; o que ele delega é o
+// caminho de rede e a transação.
 // ============================================================
+import * as THREE from 'three';
 import type { QualityLevel } from '../../core/engine';
 
 /**
@@ -33,6 +59,17 @@ export interface ManifestDeTexturas {
 /** Teto de cinema para os canais de APOIO (tudo que não é `map`) —
  *  a dose de VRAM; a conta mora no doc de `alvoDePixels`. */
 export const ALVO_DE_APOIO_CINEMA = 4096;
+
+/**
+ * Os canais que o olho LÊ como assunto, e por isso ficam com o 8k de
+ * cinema. O `map` sempre foi um; o `ring` de Saturno entrou por escrito
+ * em 22/08 — não é mudança de dose, é a dose que já vigorava saindo do
+ * esconderijo: `gigante.ts` calculava o alvo do anel com o canal 'map'
+ * (`alvoDePixels(tier, 'map')`) e a linha não dizia por quê. O anel É o
+ * assunto de Saturno em close, e a placa 8192×500 custa 21,8 MiB com
+ * mip — um oitavo do que um `map` 8k custa, porque não é equiretangular.
+ */
+const CANAIS_DE_ASSUNTO = new Set(['map', 'ring']);
 
 /**
  * O ALVO de pixels por tier E POR CANAL — a política do dono (D4/decisão
@@ -64,7 +101,7 @@ export function alvoDePixels(
       : 2048;
   const alvo =
     tier === 'cinema'
-      ? canal === 'map'
+      ? CANAIS_DE_ASSUNTO.has(canal)
         ? 8192
         : ALVO_DE_APOIO_CINEMA
       : tier === 'alta'
@@ -119,4 +156,201 @@ export function detectarWebp(): boolean {
   } catch {
     return false;
   }
+}
+
+
+// ------------------------------------------------------------
+// A CARGA — uma só, para os quatro corpos
+// ------------------------------------------------------------
+
+/** O estado da textura de um corpo. Um enum, quatro moradores. */
+export type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
+
+export type BuscadorDeManifest = (url: string) => Promise<ManifestDeTexturas>;
+export type CarregadorDeTextura = (url: string) => Promise<THREE.Texture>;
+
+/**
+ * O que TODO corpo resolvido precisa saber para pedir os pixels dele —
+ * o bloco que era copiado nas quatro `Opcoes*`, palavra por palavra.
+ */
+export interface OpcoesDeTextura {
+  /**
+   * O TIER, LIDO NA HORA DE ALOCAR — função, não valor. É a regra do
+   * NORTE ("knob que decide alocação lê-se ANTES de quem aloca") escrita
+   * ao pé da letra: a textura destes corpos é preguiçosa, então o número
+   * que decide o alvo de pixels só faz sentido no instante em que ela é
+   * pedida. Congelado no construtor (como era até os Ajustes C), trocar
+   * de qualidade ao vivo não alcançava corpo nenhum; e reconstruí-los
+   * para alcançar tirava o globo da tela por ~2 s enquanto a textura
+   * nova vinha — medido, e é exatamente o véu que a letra C proíbe.
+   * Quem já está carregado guarda os pixels que tem; quem carregar
+   * daqui em diante obedece ao tier de agora.
+   */
+  tier: () => QualityLevel;
+  maxTextureSize?: number;
+  /** BASE_URL do vite — o Director injeta; teste injeta ''. */
+  base: string;
+  /** injeção de teste; default = detectarWebp() no primeiro uso. */
+  webp?: boolean;
+  /** injeção de teste do fetch do manifest. */
+  buscarManifest?: BuscadorDeManifest;
+  /** injeção de teste do loader de imagem. */
+  carregarTextura?: CarregadorDeTextura;
+}
+
+/** Um canal que o corpo quer, com o pouco que varia entre eles. */
+export interface CanalPedido {
+  /** o nome no manifest — 'map', 'night', 'clouds', 'ring'… */
+  canal: string;
+  /**
+   * COR (sRGB, o sampler decodifica para linear) ou DADO (linear cru).
+   * `normal` e `roughness` da Terra são dado; todo o resto é cor.
+   */
+  cor: boolean;
+  /**
+   * Wrap em U: REPEAT fecha a emenda 0/360 do equiretangular sem risca
+   * de mipmap. O anel de Saturno não é equiretangular — é uma placa
+   * radial — e prende nas bordas.
+   */
+  repetirEmU: boolean;
+}
+
+/** O canal comum: superfície equiretangular em cor. */
+export const CANAL_MAP: CanalPedido = { canal: 'map', cor: true, repetirEmU: true };
+
+const buscarPelaRede: BuscadorDeManifest = async (url) => {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+  return r.json() as Promise<ManifestDeTexturas>;
+};
+
+const carregarPelaRede: CarregadorDeTextura = (url) =>
+  new THREE.TextureLoader().loadAsync(url);
+
+/**
+ * O manifest é UM arquivo de 3,44 MiB e treze corpos o pediam ao mesmo
+ * tempo (33 pedidos medidos ao entrar no Atlas em cinema, um por corpo
+ * e por recarga). A promessa em voo é reusada por (buscador, url).
+ *
+ * A chave é o BUSCADOR e não só a url porque o buscador é injetável: um
+ * teste que dá o seu próprio `buscarManifest` tem o seu próprio cache, e
+ * dois testes nunca leem o manifest um do outro. O buscador de rede é um
+ * só (`buscarPelaRede`, módulo), então em produção o cache é global de
+ * verdade. WeakMap: buscador que morre leva o cache dele junto.
+ *
+ * FALHA NÃO SE GUARDA. A recarga contada (`RECARGAS_ATE_DESISTIR`)
+ * existe porque um 404 transitório não é sentença; guardar a promessa
+ * rejeitada faria a segunda tentativa reler o mesmo erro sem tocar a
+ * rede, e as três tentativas do contrato viravam uma.
+ */
+const manifestosEmVoo = new WeakMap<
+  BuscadorDeManifest,
+  Map<string, Promise<ManifestDeTexturas>>
+>();
+
+export function buscarManifestUmaVez(
+  buscar: BuscadorDeManifest,
+  url: string
+): Promise<ManifestDeTexturas> {
+  let porUrl = manifestosEmVoo.get(buscar);
+  if (!porUrl) {
+    porUrl = new Map();
+    manifestosEmVoo.set(buscar, porUrl);
+  }
+  const emVoo = porUrl.get(url);
+  if (emVoo) return emVoo;
+  const nova = buscar(url);
+  porUrl.set(url, nova);
+  // o `.catch` cria um RAMO — a promessa devolvida ao chamador continua
+  // sendo `nova`, com o erro dele para tratar; o ramo só limpa o cache
+  // (e, de quebra, tira a rejeição de "não tratada" caso ninguém a leia)
+  void nova.catch(() => {
+    if (porUrl.get(url) === nova) porUrl.delete(url);
+  });
+  return nova;
+}
+
+/**
+ * A CARGA TRANSACIONAL de um corpo: manifest (uma vez), os canais em
+ * paralelo, e a entrega ATÔMICA.
+ *
+ * Devolve o lote por canal, ou `null` se o pedido foi CANCELADO no
+ * caminho (corpo descartado, ou geração vencida por uma carga mais nova)
+ * — e nesse caso tudo que chegou já foi descartado aqui dentro. Se
+ * QUALQUER canal falhar, o que chegou também é descartado e o erro sobe:
+ * é o furo (a) do cabeçalho fechado por construção, e o (b) junto, porque
+ * o anel de Saturno é só mais um canal do MESMO lote.
+ *
+ * `Promise.allSettled` e não `Promise.all`: com `all`, o primeiro canal
+ * que cai resolve a espera e os outros terminam sozinhos, sem ninguém
+ * para descartá-los. Aqui todos são esperados até o fim, sempre.
+ */
+export async function carregarCanaisDoCorpo(
+  corpo: string,
+  canais: readonly CanalPedido[],
+  opcoes: OpcoesDeTextura,
+  cancelado: () => boolean
+): Promise<Map<string, THREE.Texture> | null> {
+  const { base, maxTextureSize } = opcoes;
+  // o tier é lido UMA vez, no começo do pedido: um lote é de um tier só,
+  // ou os canais da Terra viriam de duas doses diferentes
+  const tierAgora = opcoes.tier();
+  const buscar = opcoes.buscarManifest ?? buscarPelaRede;
+  const carregar = opcoes.carregarTextura ?? carregarPelaRede;
+  const webpOk = opcoes.webp ?? detectarWebp();
+
+  const manifest = await buscarManifestUmaVez(buscar, `${base}data/atlas/texturas.json`);
+
+  const lote = await Promise.allSettled(
+    canais.map(async (pedido) => {
+      // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels`
+      const alvo = alvoDePixels(tierAgora, pedido.canal, maxTextureSize);
+      const variante = escolherVariante(manifest.entradas, corpo, pedido.canal, alvo, webpOk);
+      if (!variante) {
+        throw new Error(`${corpo} sem variante para '${pedido.canal}' ≤ ${alvo}px`);
+      }
+      const tex = await carregar(`${base}${variante.arquivo}`);
+      if (pedido.cor) tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = pedido.repetirEmU ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.anisotropy = 4;
+      return { canal: pedido.canal, tex };
+    })
+  );
+
+  const chegaram = lote.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
+  const caiu = lote.find((r) => r.status === 'rejected');
+  if (caiu || cancelado()) {
+    for (const { tex } of chegaram) tex.dispose();
+    if (caiu) throw (caiu as PromiseRejectedResult).reason;
+    return null;
+  }
+  return new Map(chegaram.map(({ canal, tex }) => [canal, tex]));
+}
+
+/**
+ * A POLÍTICA DE RECARGA, uma vez para os quatro (auditoria item 6): UMA
+ * falha não é sentença — volta a 'fria' e o MESMO gatilho de sempre
+ * (gate armado ou fase atlas) rearma no tick seguinte, até
+ * `RECARGAS_ATE_DESISTIR`. Só então 'falhou' é terminal, com o aviso
+ * ÚNICO: três falhas seguidas não são degradação projetada, são um
+ * defeito que alguém precisa ler. Quem desiste degrada honesto — o
+ * planeta conserva o PONTO com a fotometria certa, a lua simplesmente
+ * não nasce — e a captura REPROVA em vez de fingir (o `captura` do
+ * Director segura com o gate armado a frio).
+ *
+ * `oQueNaoNasce` é a única coisa que variava entre as quatro cópias.
+ */
+export function estadoAposFalha(
+  recargas: number,
+  etiqueta: string,
+  oQueNaoNasce: string
+): { texturas: EstadoDasTexturas; recargas: number } {
+  if (recargas < RECARGAS_ATE_DESISTIR) {
+    return { texturas: 'fria', recargas: recargas + 1 };
+  }
+  console.warn(
+    `[${etiqueta}] carga de textura falhou ${1 + RECARGAS_ATE_DESISTIR}×; ${oQueNaoNasce}`
+  );
+  return { texturas: 'falhou', recargas };
 }
