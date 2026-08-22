@@ -2501,6 +2501,11 @@ export class Director {
     // de renderer.dispose() não chama deleteProgram
     step('stars', () => this.stars?.dispose());
     step('clarao', () => this.clarao?.dispose());
+    // as heroes andam com o clarão (as duas camadas de asa) e faltavam
+    // desta lista desde que nasceram: medido em 21/08, um `dispose()` do
+    // Director deixava 16 geometrias e 16 materiais vivos, que são
+    // exatamente os das 16 nomeadas de autor
+    step('heroes', () => this.heroes?.dispose());
     step('galaxy', () => this.galaxy?.dispose());
     step('observedClouds', () => this.observedClouds?.dispose());
     step('starForges', () => this.starForges?.dispose());
