@@ -7,6 +7,17 @@
 //   node scripts/visual/ab-identidade.mjs antes interno   # uma vista só
 //   SMOKE=1 node scripts/visual/ab-identidade.mjs antes   # 4 vistas-sentinela
 //   JOBS=1 node scripts/visual/ab-identidade.mjs antes    # serial (padrão: 3)
+//   DOZERO=1 node scripts/visual/ab-identidade.mjs depois # ignora o disco à força
+//
+// A RETOMADA DE DISCO NÃO ATRAVESSA MAIS UMA EDIÇÃO. Cada lado grava, ao lado
+// dos md5, o CARIMBO DO CÓDIGO que os produziu (`git rev-parse HEAD` + um md5
+// de `git status --porcelain` e `git diff HEAD`, para a árvore suja contar).
+// Na entrada, carimbo diferente = estado de outro binário: descartado, com
+// linha na tela. Era o buraco que fazia o `depois` de código novo sair inteiro
+// em `(de disco)` — 6,5 min de leva, prova nenhuma — e que só `DOZERO=1`
+// fechava, se alguém lembrasse. `DOZERO=1` continua de pé como força bruta
+// (recapturar o MESMO código), e sem git o carimbo vira `sem-git` e o
+// comportamento é o de antes.
 //
 // POR QUE NÃO `--virtual-time-budget --screenshot`, que é como `rodada.mjs`
 // captura: o orçamento de tempo virtual acelera TIMERS, não a REDE. Os ~6 MB
@@ -53,7 +64,7 @@
 // seguinte, não a conclusão: rodar o diff de pixel. Diferença de 1 nível
 // espalhada por dezenas de pixels é 1 ULP do compilador (reordenar aritmética
 // ao mudar um `if` já basta), não conteúdo que sumiu.
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -604,6 +615,43 @@ const SUFIXO = CHAVE_DO_ESTADO ? `-${CHAVE_DO_ESTADO.replace(/[^a-z0-9]+/gi, '')
 // o corte lateral de sprite é exatamente desse tipo.
 // JANELA=LxA sobrescreve o tamanho de TODAS as vistas, para varredura ad hoc.
 const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}.json`);
+
+/**
+ * O CARIMBO DO CÓDIGO que produziu um estado — o commit mais a árvore suja.
+ *
+ * POR QUE NÃO ENTRA NO `SUFIXO`, que seria o lugar óbvio: o sufixo é a chave
+ * de PAREAMENTO. O `depois` procura o `antes` por `ab-identidade-antes${SUFIXO}
+ * .json`, e os dois lados de um A/B honesto têm, por definição, códigos
+ * DIFERENTES — carimbo no nome do arquivo faria o `depois` procurar um `antes`
+ * que não existe. Então ele vai ao LADO, no precedente do arquivo de `via` dos
+ * filhos, e governa só uma coisa: se o estado gravado deste MESMO lado ainda
+ * vale para retomar.
+ *
+ * `git diff HEAD` cobre o conteúdo do que está rastreado (com ou sem `add`);
+ * `--porcelain` cobre o resto, inclusive o NOME de arquivo novo ainda não
+ * rastreado. Sem git (tarball, clone raso sem `.git`) devolve `sem-git`, uma
+ * constante: o carimbo nunca invalida nada e a retomada volta a ser a de
+ * antes — cegueira declarada, não silenciosa.
+ */
+function carimboDoCodigo() {
+  const git = (args) =>
+    execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
+  try {
+    const head = git(['rev-parse', 'HEAD']).trim().slice(0, 12);
+    const sujeira = createHash('md5')
+      .update(git(['status', '--porcelain']))
+      .update(git(['diff', 'HEAD']))
+      .digest('hex')
+      .slice(0, 8);
+    return `${head}-${sujeira}`;
+  } catch {
+    return 'sem-git';
+  }
+}
+const CARIMBO = carimboDoCodigo();
+const carimboDoLado = (lado) => resolve(tmpdir(), `ab-identidade-${lado}${SUFIXO}-codigo.txt`);
+const lerCarimbo = (lado) =>
+  existsSync(carimboDoLado(lado)) ? readFileSync(carimboDoLado(lado), 'utf8').trim() : null;
 // o filho recebe a sua fatia por ambiente; a linha de comando continua sendo
 // a de sempre (`lado [vista]`), para nada do ritual mudar
 const FILHO = process.env.AB_FILHO ? Number(process.env.AB_FILHO) : null;
@@ -781,6 +829,10 @@ const viasDoFilho = (k) => resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}-j${
  *   silêncio.
  * - os dois lados presentes → `INSTÁVEL` (um dos lados não repetiu o próprio
  *   md5), `IGUAL` (interseção não vazia) ou `DIFERE`, como sempre.
+ * - **nenhuma vista COMPARADA** (lista vazia, ou todas NOVA) → também ERRO.
+ *   Não há veredito a dar sobre comparação nenhuma, e o verde de antes —
+ *   ">>> BIT-IDÊNTICO (0 vistas julgadas)", saída 0 — era o mesmo defeito com
+ *   outra roupa.
  *
  * `vistas` é a lista de NOMES que ESTA invocação cobre (a leva completa, ou o
  * recorte de `SMOKE`/vista única) — julgar sempre as 18 faria `SMOKE=1 depois`
@@ -809,13 +861,24 @@ export function julgarVistas({ vistas = [], antes = {}, depois = {} }) {
     });
   }
   const julgadas = conta.IGUAL + conta.DIFERE + conta.INSTÁVEL;
-  const erro = conta.AUSENTE > 0;
+  // ZERO VISTAS JULGADAS NÃO É VEREDITO — e era, até 2026-08-21:
+  // `julgarVistas({vistas: []})` devolvia `bitIdentico: true`, imprimia
+  // ">>> BIT-IDÊNTICO (0 vistas julgadas)" e saía 0. Verde de comparação
+  // nenhuma é a mesma família do `continue` silencioso que este juiz nasceu
+  // para fechar: gate que aprova o que não mediu. Vale para a lista vazia e
+  // para a lista em que TODAS são NOVA (nenhuma tem baseline): em nenhum dos
+  // dois houve comparação, e "bit-idêntico" seria mentira.
+  const erro = conta.AUSENTE > 0 || julgadas === 0;
   const bitIdentico = !erro && conta.DIFERE === 0 && conta.INSTÁVEL === 0;
   const sufixo = conta.NOVA ? ` · ${conta.NOVA} NOVA(s) sem baseline (nada a comparar)` : '';
   let resumo;
-  if (erro) {
+  if (conta.AUSENTE > 0) {
     resumo = `>>> VEREDITO INVÁLIDO — ${conta.AUSENTE} vista(s) AUSENTE(s) no `
       + '"depois": recapture o lado que falta antes de concluir qualquer coisa'
+      + sufixo;
+  } else if (julgadas === 0) {
+    resumo = '>>> VEREDITO INVÁLIDO — 0 vistas julgadas: nada foi comparado, '
+      + 'e comparação nenhuma não é prova de igualdade'
       + sufixo;
   } else if (bitIdentico) {
     const n = julgadas === 1 ? '1 vista julgada' : `${julgadas} vistas julgadas`;
@@ -852,9 +915,29 @@ async function pai() {
   // re-rodar o mesmo lado só refaz o que falta, e `ab-identidade.mjs antes
   // edgeon` deixa de apagar as outras (o filtro `SO` escrevia um estado
   // com uma vista só).
-  const md5 = existsSync(ESTADO) && !process.env.DOZERO
+  //
+  // ...MAS SÓ DENTRO DO MESMO CÓDIGO. Até 2026-08-21 a única invalidação era
+  // `DOZERO=1`, à mão: quem editasse e rodasse `depois` recebia a leva inteira
+  // em `(de disco)` — os md5 do binário ANTERIOR, apresentados como veredito da
+  // mudança. O carimbo fecha isso sozinho.
+  const carimboEmDisco = lerCarimbo(LADO);
+  const outroCodigo = existsSync(ESTADO) && carimboEmDisco !== CARIMBO;
+  if (outroCodigo) {
+    console.log(
+      `estado de "${LADO}" é de outro código (${carimboEmDisco ?? 'sem carimbo'}), `
+      + `agora em ${CARIMBO} — recapturando do zero`
+    );
+  }
+  const md5 = existsSync(ESTADO) && !outroCodigo && !process.env.DOZERO
     ? JSON.parse(readFileSync(ESTADO, 'utf8'))
     : {};
+  // O CARIMBO E O ESTADO ANDAM JUNTOS, e são gravados ANTES da primeira
+  // captura: uma leva interrompida tem de deixar em disco um par coerente —
+  // estado parcial com o código que o produziu. Gravar o carimbo no fim
+  // deixaria a janela em que um estado descartado ainda está no disco com o
+  // carimbo velho, e a próxima leva o retomaria como se valesse.
+  writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
+  writeFileSync(carimboDoLado(LADO), CARIMBO);
 
   const lista = VISTAS.filter(([nome]) => {
     if (SO) return nome === SO;
@@ -929,18 +1012,23 @@ async function pai() {
     );
   }
 
-  let vistaAusente = false;
+  let vereditoInvalido = false;
   if (LADO === 'depois') {
     const antes = JSON.parse(
       readFileSync(resolve(tmpdir(), `ab-identidade-antes${SUFIXO}.json`), 'utf8')
     );
+    // OS DOIS CARIMBOS na tela, e é a razão de eles existirem: quem lê o
+    // veredito passa a ver COM QUAL CÓDIGO cada lado foi medido, em vez de
+    // deduzir do ritual. Carimbos iguais não são erro — o A/B de um knob por
+    // `EXTRA=` se faz de propósito com o mesmo binário dos dois lados.
+    console.log(`\ncódigo  antes=${lerCarimbo('antes') ?? '—'}  depois=${CARIMBO}`);
     // `lista` e não `VISTAS`: o veredito cobra o que ESTA invocação pediu.
     // Com a leva completa são as 18; com SMOKE/vista única é o recorte, e
     // cobrar as outras como AUSENTE reprovaria o fluxo de iterar.
     const juizo = julgarVistas({ vistas: lista.map(([nome]) => nome), antes, depois: md5 });
     for (const l of juizo.linhas) console.log(l.texto);
     console.log('\n' + juizo.resumo);
-    vistaAusente = juizo.erro;
+    vereditoInvalido = juizo.erro;
   }
 
   // POR ÚLTIMO, depois do veredito: o gate GRITA e SAI ≠ 0 se o sinal de
@@ -952,9 +1040,10 @@ async function pai() {
     vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
   });
   if (prontidao.mensagem) process.stderr.write(prontidao.mensagem);
-  // vista AUSENTE sai ≠ 0 pelo mesmo motivo: um veredito que não julgou a
-  // lista inteira não é veredito, e o silêncio de antes era o defeito
-  if (prontidao.erro || vistaAusente) process.exit(1);
+  // veredito INVÁLIDO sai ≠ 0 pelo mesmo motivo: um juízo que não julgou a
+  // lista inteira — ou que não julgou NADA — não é veredito, e o silêncio de
+  // antes era o defeito
+  if (prontidao.erro || vereditoInvalido) process.exit(1);
 }
 
 // SÓ A INVOCAÇÃO POR LINHA DE COMANDO roda a leva. `ab-identidade.test.mjs`

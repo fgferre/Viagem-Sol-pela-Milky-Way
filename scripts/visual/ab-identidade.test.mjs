@@ -107,10 +107,49 @@ describe('julgarVistas', () => {
     expect(r.resumo).toBe('>>> BIT-IDÊNTICO (1 vista julgada)');
   });
 
-  it('sem lista não há juízo — e nem por isso mente', () => {
+  // ACHADO em 2026-08-21: este teste EXIGIA o contrário — `bitIdentico: true`
+  // para uma lista vazia. `julgarVistas({})` imprimia ">>> BIT-IDÊNTICO
+  // (0 vistas julgadas)" e o gate saía 0: verde de comparação nenhuma, com o
+  // teste de guarda cobrando o verde. É a mesma família do `continue`
+  // silencioso que este juiz nasceu para fechar — gate que aprova o que não
+  // mediu —, e o teste que a protegia era parte do defeito.
+  it('sem lista não há juízo — e "sem juízo" NÃO é bit-idêntico', () => {
     const r = julgarVistas({});
     expect(r.linhas).toHaveLength(0);
+    expect(r.julgadas).toBe(0);
+    expect(r.bitIdentico).toBe(false);
+    expect(r.erro).toBe(true);
+    expect(r.resumo).toContain('VEREDITO INVÁLIDO');
+    expect(r.resumo).toContain('0 vistas julgadas');
+  });
+
+  it('lista inteira NOVA: nada foi comparado, então nada foi provado', () => {
+    // o caso vivo: `antes` perdido (TMPDIR limpo) e `depois` completo. Antes
+    // daqui isto saía ">>> BIT-IDÊNTICO (0 vistas julgadas) · 2 NOVA(s)…" e
+    // com status 0 — o pior verde possível, porque parece uma leva inteira.
+    const r = julgarVistas({
+      vistas: ['sol', 'interno'],
+      antes: {},
+      depois: { sol: H('a4fbf427778a'), interno: H('d98cbef70849') },
+    });
+    expect(r.conta).toMatchObject({ NOVA: 2, AUSENTE: 0 });
+    expect(r.julgadas).toBe(0);
+    expect(r.bitIdentico).toBe(false);
+    expect(r.erro).toBe(true);
+    expect(r.resumo).toContain('VEREDITO INVÁLIDO');
+    // e o que É verdade continua dito: as duas nascem sem baseline
+    expect(r.resumo).toContain('2 NOVA(s) sem baseline');
+  });
+
+  it('uma vista comparada JÁ é juízo — o piso é 1, não 0', () => {
+    const r = julgarVistas({
+      vistas: ['sol', 'interno'],
+      antes: { sol: H('a4fbf427778a') },
+      depois: { sol: H('a4fbf427778a'), interno: H('d98cbef70849') },
+    });
+    expect(r.julgadas).toBe(1);
     expect(r.erro).toBe(false);
     expect(r.bitIdentico).toBe(true);
+    expect(r.resumo).toContain('BIT-IDÊNTICO (1 vista julgada)');
   });
 });

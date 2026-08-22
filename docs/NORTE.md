@@ -184,10 +184,14 @@ para escolher com honestidade.
 
 Duas coisas que mudam o preço e não se adivinham:
 
-- **O `depois` de código novo vai com `DOZERO=1`.** Sem ele o gate RETOMA
-  os md5 que ficaram em disco (a retomada existe para não perder uma
-  bateria interrompida) e o veredito sai vazio, com `(de disco)` em cada
-  linha. Custo igual; prova, nenhuma.
+- **A retomada de disco não atravessa mais uma edição.** Cada lado grava,
+  ao lado dos md5, o CARIMBO DO CÓDIGO que os produziu (commit + árvore
+  suja); carimbo diferente é estado de outro binário e é descartado, com
+  linha na tela. Era daqui que saía o `depois` inteiro em `(de disco)` —
+  custo igual, prova nenhuma —, e o único remédio era alguém lembrar do
+  `DOZERO=1`. Ele fica de pé como força bruta: recapturar o MESMO código.
+  O veredito passa a imprimir os dois carimbos, e **0 vistas julgadas não
+  é mais "bit-idêntico"** — é veredito inválido, com saída ≠ 0.
 - **As contas puras vêm de graça.** `ab-identidade`, `chrome`,
   `luz-do-quadro`, `planeta-pixel` e `z-fighting` têm cada um o seu
   `.test.mjs`, que julga o molde sem subir Chrome e roda dentro do
