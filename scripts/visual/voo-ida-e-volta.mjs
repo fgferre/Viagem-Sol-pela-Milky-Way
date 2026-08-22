@@ -132,28 +132,50 @@ async function voar() {
     // prontidão geral da página; medir antes fotografa uma bola lisa e
     // pálida que não existe no produto assentado — foi exatamente a
     // assimetria que a primeira rodada deste harness acusou a 0,05 UA.
-    // ARMADILHA MEDIDA (15/08): `assentado` PISCA true no quadro ~50,
-    // ANTES de o forno começar, e só volta a true minutos depois, no
-    // fim do bake — uma leitura isolada cai na piscada. Exigem-se três
-    // leituras verdadeiras seguidas com o app já rodado (quadro > 300).
+    // Exigem-se três retratos COMPLETOS com o app já rodado (quadro > 300).
+    //
+    // A CONTA É NO RELÓGIO DE QUADROS, e não no de parede (item 58b,
+    // medido em 22/08). O critério anterior era três leituras verdadeiras
+    // seguidas a 500 ms; a medida do sinal explica por que ele nunca
+    // fechava: o bake estrutural são 8 fatias, uma por quadro, e quando a
+    // oitava publica o acumulador de 0,12 s já estourou de novo — o forno
+    // recomeça no quadro seguinte, para sempre. `assentado` fica true UM
+    // quadro em cada nove. A 0,05 UA isso é 24 quadros em 199 (12,1%, a
+    // 19,9 fps, 2,40 retratos por segundo): o sinal chega o tempo todo, e
+    // três leituras SEGUIDAS de um sinal com 12% de duty é uma loteria de
+    // 1 em 600. Medido: 240 giros, 28 leituras true, ZERO sequências de
+    // três — 121 s sem fechar, rumo ao teto de 480 s. Contando as BORDAS
+    // dentro da página, os mesmos três retratos saem em ~1,3 s.
+    //
+    // A diagnose do comentário antigo ("pisca no quadro ~50 e só volta
+    // minutos depois") estava errada: o forno nunca para.
     const t0 = Date.now();
-    let seguidas = 0;
-    for (let i = 0; i < 960 && seguidas < 3; i++) {
-      const ok = await aval(
-        'window.__f > 300 && window.__director?.sun?.assentado === true'
-      );
-      seguidas = ok ? seguidas + 1 : 0;
-      await dorme(500);
+    await aval(`(() => {
+      window.__forno = 0;
+      let antes = false;
+      const passo = () => {
+        const agora = window.__director?.sun?.assentado === true;
+        if (agora && !antes && window.__f > 300) window.__forno++;
+        antes = agora;
+        requestAnimationFrame(passo);
+      };
+      requestAnimationFrame(passo);
+      return 'armado';
+    })()`);
+    let retratos = 0;
+    for (let i = 0; i < 960 && retratos < 3; i++) {
+      retratos = await aval('window.__forno | 0');
+      if (retratos < 3) await dorme(500);
     }
     // E O TETO NÃO SE CONFUNDE COM O POUSO (censo dos juízes, 21/08): antes
     // desta linha o harness imprimia "assentado" mesmo quando o laço tinha
     // esgotado os 960 giros — 480 s de espera cega travestidos de sinal. O
-    // preço deste juiz é quase todo AQUI, então quem o lê tem de saber se
+    // preço deste juiz era quase todo AQUI, então quem o lê tem de saber se
     // pagou por um pouso ou por um teto.
     const esperou = ((Date.now() - t0) / 1000).toFixed(0);
     console.log(
-      seguidas >= 3
-        ? `forno do Sol assentado em ${esperou} s`
+      retratos >= 3
+        ? `forno do Sol assentado em ${esperou} s (${retratos} retratos completos)`
         : `forno do Sol NÃO assentou: teto de espera esgotado em ${esperou} s `
           + '— as medidas abaixo saem de um retrato a meio caminho'
     );

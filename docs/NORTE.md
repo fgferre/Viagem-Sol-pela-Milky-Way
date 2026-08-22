@@ -180,7 +180,7 @@ para escolher com honestidade.
 | `rodada.mjs <n> "nota"` | as duas vistas da galáxia contra as referências, e **escreve a linha** no ledger `docs/reference/EVOLUCAO.md` | **0,3 min** | mudança na galáxia (a última linha do ledger é de 11/08) |
 | `gpu-profile.mjs "?q" s w h dpr` | o tempo que a GPU passa DENTRO de cada draw, passe a passe, por timer query | **0,2 min** com janela de 8 s | performance, custo de pós-processamento |
 | `diff-pixel.mjs a.png b.png` | depois de um `DIFERE`: quantos pixels, de quanto e onde, com mapa de blocos 16×16 | segundos | sempre que o A/B der diferente |
-| `voo-ida-e-volta.mjs` | ida e volta em 34 degraus na MESMA sessão — o único que enxerga transição e histerese | **9,3 min, e 8,1 deles são espera** pelo forno do Sol a 0,05 UA, que hoje esgota o teto de 480 s sem assentar | só quando a mudança for de transição ou histerese — não é obrigatório desde 21/08 |
+| `voo-ida-e-volta.mjs` | ida e volta em 34 degraus na MESMA sessão — o único que enxerga transição e histerese | **1,0 min** (eram 9,3, e 8,1 deles eram espera cega pelo forno do Sol a 0,05 UA; a espera passou a contar bordas por quadro em 22/08 e fecha em 2 s) | só quando a mudança for de transição ou histerese — não é obrigatório desde 21/08 |
 
 Duas coisas que mudam o preço e não se adivinham:
 

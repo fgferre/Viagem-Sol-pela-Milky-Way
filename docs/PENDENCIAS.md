@@ -400,18 +400,13 @@ preguiçosa de textura. Enquanto viver, qualquer A/B pode acusá-las em
 falso; a prova de inocência é uma captura do lado acusado bater byte a
 byte com o baseline (funcionou nas duas).
 
-**58.** (Achado no censo dos juízes de 21/08, que fechou o item 57.) Duas
-réguas rodam e não julgam. A dos planetas (`planeta-pixel.mjs`) voltou a
-funcionar — travava desde o M1 pedindo um `uGain` que a lei tinha matado —
-e agora REPROVA por outro motivo: a 150 UA o clarão do Sol é uma mancha de
-37.132 px que engole seis dos dez corpos, e a lente `&nobloom=1` já não
-isola o que a régua veio medir. Ela precisa de lente nova (a porta
-`?nosun=1` existe) antes de voltar a valer veredito. E a ida e volta
-(`voo-ida-e-volta.mjs`) gasta 8,1 dos seus 9,3 minutos esperando o forno do
-Sol assentar a 0,05 UA, e ESGOTA o teto de 480 s sem assentar — as medidas
-saem de um retrato a meio caminho. O harness já passou a dizer isso em voz
-alta em vez de imprimir "assentado"; **por que o sinal não chega não foi
-medido** — pode ser o bake, pode ser o critério de três leituras seguidas.
+**58.** (Achado no censo dos juízes de 21/08, que fechou o item 57. A
+metade da ida e volta FECHOU em 22/08; sobra esta.) A régua dos planetas
+(`planeta-pixel.mjs`) voltou a funcionar — travava desde o M1 pedindo um
+`uGain` que a lei tinha matado — e agora REPROVA por outro motivo: a 150 UA
+o clarão do Sol é uma mancha de 37.132 px que engole seis dos dez corpos, e
+a lente `&nobloom=1` já não isola o que a régua veio medir. Ela precisa de
+lente nova (a porta `?nosun=1` existe) antes de voltar a valer veredito.
 
 **64.** (Ruído de instrumento, visto UMA vez em 21/08.) Um filho do
 `ab-identidade` mediu as suas 18 vistas, gravou o estado e o arquivo de
