@@ -231,7 +231,9 @@ custo, e a coluna existe para escolher — não para consolar.
   101); `59b099e` diz "111" e a corrida daquele código deu **108**. Os
   três números que foram MEDIDOS na rodada, cada um na sua corrida: 105
   (`71d0f90`, o zoom da abertura), 108 (`59b099e`, o `?d=`) e 113
-  (`c8507ba`, o fecho).
+  (`c8507ba`, o fecho). **Hoje ele dá 114** — medido em cinco corridas
+  seguidas de 22/08, e o veredito que faltava na conta veio depois do
+  fecho da rodada.
 
 Duas coisas que mudam o preço e não se adivinham:
 

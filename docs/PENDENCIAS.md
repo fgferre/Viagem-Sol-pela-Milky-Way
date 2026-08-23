@@ -42,6 +42,14 @@ ao primeiro gesto. Do 61 segue aberto o **modo único** (obra grande, de
 produto) e o nome *"Explorar livremente"* na barra do filme, que é gosto
 dele.
 
+**E OS DOIS JUÍZES PARARAM DE ACUSAR INOCENTE (item 76, FECHADO em
+22/08).** Eles reprovavam o app quando a MÁQUINA estava ocupada — o do
+filme chegou a dar 8 reprovações num código sem defeito nenhum. Os três
+vereditos doentes esperavam um número de milissegundos e cobravam que a
+cena já tivesse chegado; agora esperam a cena CHEGAR, e publicam quanto
+demorou. Prova: dez corridas do juiz do filme e cinco do juiz do Atlas,
+todas com a máquina de propósito sobrecarregada, todas verdes.
+
 **O BASTÃO DE 17/08 (tarde): A RODADA DA ESTRELA POUSOU.** Palavras do
 dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
 e o app na mão: *"a soltura ficou boa, pode considerar pousada —
@@ -764,9 +772,16 @@ com o pai parado no `Promise.allSettled`. As 52 vistas já estavam em
 disco; matar o filho fez o pai fundir os três baldes normalmente e só
 então lançar `filho j0 saiu com null`, sem imprimir o veredito. O lado
 `antes` da mesma bateria, com os mesmos três filhos, terminou sozinho.
-Não foi diagnosticado. Enquanto viver, uma leva que pare com todos os
-baldes cheios se resolve matando o filho preso — o veredito sai da
-segunda invocação, que lê tudo de disco.
+Enquanto viver, uma leva que pare com todos os baldes cheios se resolve
+matando o filho preso — o veredito sai da segunda invocação, que lê tudo
+de disco. **O suspeito ganhou nome em 22/08, medindo o item 76:** cada
+chamada de CDP fica pendurada num `id` que só o Chrome responde, e o
+`send` do `chrome.mjs` não tinha nenhuma saída para o Chrome que morre
+SEM responder — a promessa ficava viva para sempre, e com ela o processo.
+O buraco foi tapado (fechar o socket agora reprova os pendentes, nos dois
+lugares que falam CDP), mas isto NÃO é a prova: o defeito não se
+reproduz sob comando, e o item só fecha quando uma leva presa voltar a
+acontecer e sair com erro legível em vez de sono.
 
 **72.** (Achado em 22/08, medindo o item 70.) **A porta `?nobloom=1`
 mente: ela não desliga o bloom todo.** Ela só apaga `post.bloom.enabled`,
@@ -781,46 +796,6 @@ foi essa crença que quase enterrou o diagnóstico do item 70. O conserto
 vistas que hoje usam a porta, então tem de entrar com `ab-identidade`
 cheio e o delta declarado — não é conserto de fim de rodada.
 
-**76.** (Medido em 22/08, fechando o item 73.) **O `filme-smoke` reprova
-sem defeito nenhum nesta máquina.** O veredito "avançou X s em movimento"
-solta o relógio por 420 ms em sete instantes e cobra mais de 0,1 s de
-filme andado — ou seja, mais de 24% do tempo real. Nos shots pesados
-(mergulho, Sagittarius A*, face-on, galáxia final) a máquina não entrega
-isso, e o número muda a cada corrida: TRÊS corridas do MESMO binário
-deram 3, 1 e 4 falhas — e uma quarta, no fecho do 73 em 22/08, deu 2
-(mergulho e Sagittarius A*), sempre os mesmos shots pesados. A prova de que não é regressão foi feita com
-worktree no commit anterior à obra do 73, num segundo dev server: **as
-MESMAS 4 falhas, no código de antes**. Ou seja, o gate hoje mede a carga
-da máquina e chama isso de defeito do filme — e um juiz que reprova sem
-defeito treina quem o roda a ignorá-lo, que é o pior desfecho possível
-para um gate. O conserto não é afrouxar o número: é medir o que a régua
-quer medir (o relógio ANDA quando solto), por exemplo cobrando avanço
-maior que zero e publicando a taxa como REGISTRO, do jeito que o
-`a11y.mjs` já faz com os cantos fora da faixa declarada.
-
-**A CONTA PIOROU EM 22/08, e ela mede a máquina:** na rodada do chrome
-do filme o `filme-smoke` deu **8 falhas** — as oito do mesmo veredito —,
-e o `751d270` limpo, na mesma máquina, deu **as mesmas 8** (418 OK nos
-dois lados; só muda QUAL dos shots pesados cai). Ou seja: 3, 1, 4, 2 e
-agora 8 — o número é a carga do dia.
-
-**E A MESMA DOENÇA ESTÁ NO `atlas-smoke`, medida em 22/08.** Dois dos
-113 vereditos dele reprovam nesta máquina sem defeito nenhum, e a prova
-é a de sempre — **as MESMAS duas falhas no código de ANTES**, com a
-árvore em `ff1252c` e sem nada mais rodando:
-
-- *"o véu fecha por passos"* mede `--veu-atlas` 150 ms depois do clique,
-  e essa porta é escrita POR QUADRO. Uma sonda de 5 repetições deu
-  `0,00 · 0,00 · 0,11 · 0,00 · 0,00` — **1 verde em 5** — e deu os
-  MESMOS cinco números na árvore de trabalho e no `ff1252c` limpo. O
-  gate mede quantos quadros couberam em 150 ms, não se o véu fecha.
-- *"a pinça (ctrlKey) faz o mesmo, em fração de estalo"* espera 600 ms
-  depois de quatro eventos pequenos e cobra que a distância mude; com o
-  quadro engasgado a câmera não andou (30,236 → 30,236 raios).
-
-O conserto é o do 76: esperar o EFEITO em vez do relógio de parede (o
-`esperarPor` do `a11y.mjs` já faz isso e imprime quanto esperou).
-
 **78.** (Ruído de instrumento, visto UMA vez em 22/08.) **O
 `ab-identidade` com `JOBS=3` travou DEPOIS de terminar.** Os três
 processos-filhos capturaram as 52 vistas, gravaram os arquivos de
@@ -831,8 +806,12 @@ resolveu, e o pai nem chegou a fundir os três `-j*.json` (eles
 continuavam em disco, e a fusão os apaga). Contornado à mão: fundir os
 três num `ab-identidade-depois.json` e rodar o lado de novo — as 52
 vieram `(de disco)`, com o CARIMBO conferido (`c8507bad1eb9-d41d8cd9`),
-e o veredito saiu em segundos. Se voltar a acontecer, o suspeito é o
-`stdio: 'inherit'` dos filhos com Chrome órfão segurando o descritor.
+e o veredito saiu em segundos. **O suspeito mudou em 22/08:** não é o
+`stdio: 'inherit'` — é o mesmo `send` sem saída do item 64 (uma chamada
+de CDP que espera para sempre a resposta de um Chrome morto). O `send`
+dos dois caminhos (`abrirSessao` e `capturarCDP`) agora reprova os
+pendentes quando o socket fecha; enquanto o travamento não voltar a
+acontecer para mostrar o erro, o item fica aberto.
 
 **79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
 `bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo
