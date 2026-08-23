@@ -64,6 +64,7 @@ Como o renderer os come: [`docs/RENDERER_CARTOGRAPHY.md`](docs/RENDERER_CARTOGRA
 npm run data:stars
 npm run data:galaxy
 npm run data:fit
+npm run data:corpos    # corpos.json: editorial pt-BR + órbita, de scripts/data/atlas/fonte/
 npm run data:verify
 npm run data:all
 ```
@@ -74,15 +75,21 @@ npm run data:all
 src/
 ├─ App.tsx                  fases (loading → intro → journey / atlas / free)
 ├─ hooks/                   useDirector + useEspelhoDaUrl (governados pelo
-│                           selo) + useAtalhos
+│                           selo) + useAtalhos + useGavetas (as quatro
+│                           gavetas do HUD, uma aberta por vez)
 ├─ components/
 │  ├─ Hud.tsx               HUD do filme
 │  ├─ HudDoAtlas.tsx        HUD do Atlas
 │  ├─ PaletaDeBusca.tsx     busca unificada (corpos + estrelas)
+│  ├─ FichaDoObjeto.tsx     a ficha do alvo em foco (só desenha)
 │  └─ LabelCanvas.ts        rótulos, colisão, clique
 ├─ hud/                     o CSS do HUD em 8 fatias contíguas
 │                           (01-base … 08-ajustes; a ordem É a cascata)
-├─ lib/atlas/               física pura: efemérides, IAU, tempo, luz
+├─ lib/atlas/               física pura, sem three e sem React: efemérides,
+│                           IAU, tempo, luz, massas + fisicaDoCorpo (gravidade,
+│                           escape, "×Terra"), geometriaNoCeu (elongação e
+│                           disco iluminado), constelacoes (Bayer) e ficha.ts,
+│                           que MONTA a ficha que FichaDoObjeto desenha
 ├─ three/
 │  ├─ director.ts           orquestrador (fachadas + tick)
 │  ├─ director/             os módulos do director: escada (a navegação

@@ -17,11 +17,6 @@
 //  2. A TABELA DOS QUATRO ESTADOS do seletor de qualidade (Ajustes D),
 //     pela MESMA razão e com a mesma história: dois leitores (o painel
 //     e o `<select>` da barra) e a lista digitada duas vezes.
-//  (O item 3 desta lista era o NOME do enquadramento de abertura,
-//   "Sistema solar", que a `ContextLine` lia quando o foco não tinha nome
-//   próprio. A linha virou o cabeçalho da FICHA DO OBJETO em 22/08 (item
-//   74) e a ficha não monta sem seleção: ninguém mais lê aquele nome, e a
-//   constante saiu junto com a peça.)
 //
 // E o que este arquivo é PERANTE O SELO: governado. Ele está em
 // `ARQUIVOS_GOVERNADOS` (`selo.ts`), então porta de URL nova aqui sem

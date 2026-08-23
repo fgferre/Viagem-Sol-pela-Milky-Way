@@ -60,14 +60,13 @@ const conferir = (ok, texto) => {
 /**
  * O NOME DO QUE ESTÁ EM QUADRO, lido do BOTÃO da ficha e não da ficha.
  *
- * Até 22/08 quem anunciava o alvo era a `ContextLine`, uma linha permanente
- * no alto à esquerda. O item 74 a transformou no cabeçalho da FICHA DO
- * OBJETO — um DIÁLOGO, e uma gaveta de cada vez: abrir Camadas fecha a
- * ficha, e as provas abaixo abrem Camadas de propósito. O que sobrevive a
- * isso, e é o que mede "o alvo está intacto", é o gatilho na barra de
- * controles: ele existe sempre que há seleção e carrega o nome dela
- * ("Ficha de Sirius"). Trecho de JS injetado, não função de Node: cada
- * chamada entra dentro de um `sessao.js`.
+ * Quem anuncia o alvo é o cabeçalho da FICHA DO OBJETO, e a ficha é um
+ * DIÁLOGO: uma gaveta de cada vez, então abrir Camadas a fecha — e as provas
+ * abaixo abrem Camadas de propósito. O que sobrevive a isso, e é o que mede
+ * "o alvo está intacto", é o gatilho na barra de controles: ele existe
+ * sempre que há seleção e carrega o nome dela ("Ficha de Sirius"). Trecho de
+ * JS injetado, não função de Node: cada chamada entra dentro de um
+ * `sessao.js`.
  */
 const nomeEmQuadro = () =>
   "((document.querySelector('[data-abre-dialogo=\"ficha\"]') || {})"

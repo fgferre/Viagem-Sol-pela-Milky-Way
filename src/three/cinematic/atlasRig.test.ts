@@ -148,7 +148,7 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     expect(util.esquerda).toBe(0);
     expect(util.direita).toBe(0);
     expect(giroY).toBe(0);
-    // o selo (base) é mais alto que a ContextLine (topo), então o
+    // o selo (base) é mais alto que a faixa da barra (topo), então o
     // retângulo útil tem o centro ACIMA do centro do quadro — e o alvo
     // tem de subir junto. `rotateX(+)` levanta a câmera e leva o alvo
     // para baixo; aqui o giro é NEGATIVO.

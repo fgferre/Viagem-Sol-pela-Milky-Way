@@ -57,12 +57,9 @@ const LETTERBOX_FRACAO = 0.065;
  * declarado ≥ medido em cada canto (ver `LARGURA_UTIL_MINIMA_PX`).
  */
 /**
- * F2b: a ContextLine ganhou a linha da ESCADA (nome + botões
- * aproximar/sistema em linha) e a faixa do topo cresceu a altura de um
- * `.hud-btn.small` sobre a do nome — medido pelo juiz de a11y (que
- * cobra declarado ≥ medido em toda a grade largura×ui): 0,075 → 0,09.
- * O nome continua sendo o da peça que já não existe porque a FRAÇÃO é a
- * mesma e a câmera não se move; o que ela cobre hoje é a barra sozinha.
+ * A FAIXA DO TOPO que a barra de controles ocupa, em fração da altura —
+ * medida pelo juiz de a11y, que cobra declarado ≥ medido em toda a grade
+ * largura×ui.
  */
 const CONTEXTO_FRACAO = 0.09;
 
@@ -214,15 +211,14 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
  * componente nenhum: quem enquadra pergunta aqui.
  *
  * As duas áreas do HUD entram no eixo VERTICAL e não no horizontal
- * mesmo estando encostadas nas laterais (ContextLine à esquerda, selo à
- * direita): o retângulo é um recorte retangular do quadro, e descontar
- * meia largura por causa de uma faixa que ocupa 7% da altura empurraria
- * a câmera para trás sem necessidade. Descontar a FAIXA inteira é o
- * corte honesto — é o que garante que nada do alvo caia atrás do texto.
- * (A peça da esquerda era a ContextLine, que virou a ficha do objeto em
- * 22/08; a ficha é um DIÁLOGO e, como os outros três, não entra nesta
- * conta — retângulo útil desconta área PERMANENTE, nunca painel que o
- * visitante abriu por um instante.)
+ * mesmo estando encostadas nas laterais (a barra em cima, o selo em
+ * baixo à direita): o retângulo é um recorte retangular do quadro, e
+ * descontar meia largura por causa de uma faixa que ocupa 7% da altura
+ * empurraria a câmera para trás sem necessidade. Descontar a FAIXA
+ * inteira é o corte honesto — é o que garante que nada do alvo caia
+ * atrás do texto. As QUATRO GAVETAS não entram nesta conta: o retângulo
+ * útil desconta área PERMANENTE, nunca painel que o visitante abriu por
+ * um instante.
  *
  * `fatorUi` é a escala do texto do HUD (`?ui=`, F6). As tarjas não
  * escalam — são `vh` puro —; as faixas do HUD, sim.

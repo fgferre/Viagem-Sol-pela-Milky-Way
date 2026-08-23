@@ -61,8 +61,7 @@ describe('as fases e os dois mapas', () => {
     expect(atlas.veuDeTitulo).toBe(false);
     expect(atlas.botoesDaViagem).toBe(false);
     expect(atlas.botaoReviver).toBe(false);
-    // as peças da F2: a ficha do objeto (a antiga ContextLine, item 74), a
-    // gaveta de camadas e o selo
+    // as peças da F2: a ficha do objeto, a gaveta de camadas e o selo
     expect(atlas.ficha).toBe(true);
     expect(atlas.gaveta).toBe(true);
     expect(atlas.selo).toBe(true);

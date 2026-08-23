@@ -54,12 +54,10 @@ const conferir = (ok, texto) => {
 };
 
 /**
- * QUEM ANUNCIA O ALVO — e desde o item 74 (22/08) é o cabeçalho da FICHA DO
- * OBJETO, que abre sozinha com a seleção. Era a `ContextLine`, no alto à
- * esquerda; a peça mudou, a promessa é a mesma. Sem seleção não há ficha, e
- * a leitura sai VAZIA — que é o que a prova 2 (`?foco=` que não acha) passou
- * a cobrar: antes ela lia "Sistema solar", agora ela lê nada, porque nada é
- * o que a casa sabe.
+ * QUEM ANUNCIA O ALVO: o cabeçalho da FICHA DO OBJETO, que abre sozinha com
+ * a seleção. Sem seleção não há ficha, e a leitura sai VAZIA — que é o que a
+ * prova 2 (`?foco=` que não acha) cobra: nada na tela, porque nada é o que a
+ * casa sabe.
  */
 const contexto = (s) =>
   s.js("(document.querySelector('.atlas-ficha-nome') || {}).textContent || ''");

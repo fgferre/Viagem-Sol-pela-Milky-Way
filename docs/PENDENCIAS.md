@@ -42,8 +42,8 @@ abre a FICHA dele do lado direito:
 - a distância e a velocidade no instante do céu que estiver na tela, e
   quanto do disco se vê iluminado **daqui**, do ponto onde a câmera está;
 - o raio, a gravidade, a massa e o escape, com o "×Terra";
-- a órbita, e — para quem gira em volta do Sol — a elongação e o disco
-  iluminado **vistos da Terra**;
+- a órbita, e — para quem gira em volta do Sol, e para a Lua — a elongação
+  e o disco iluminado **vistos da Terra**;
 - a enciclopédia dos 39 corpos **em português**, traduzida campo a campo
   do texto que ele mesmo escreveu no doador (**a leitura é dele**);
 - de onde veio a foto de cada mundo, sob que licença, a quem creditar —
@@ -145,13 +145,15 @@ RENUMEROU 55→56, quem matou o 55 foi `6d2278a`), **16** e **57** em 21/08
 (`ade2c3e`, `841d57d`), **60**, **63**, **66**,
 **67**, **68**, **58**, **65**, **71** e **73** em 22/08 (`a8a3168`,
 `d562f5a`, `92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`,
-`d2fb2c7`, `c8507ba`), e o **20** e o **74** também em 22/08 (`b381762`,
-`8fd151d`). O **73** é o único que levou OITO commits: a obra
+`d2fb2c7`, `c8507ba`), e o **20** e o **74** em 23/08, os dois no MESMO
+diff (`dd0d99c`). O **73** é o único que levou OITO commits: a obra
 inteira é a sequência `3f2a290` → `c8507ba`, e o hash da lista é o do
-fecho. O **74** levou SETE, de `659a580` a `8fd151d`, e o **20** morreu no
-meio deles — a ficha do objeto é a casa onde a confissão da forma passou a
-morar. O **19** NÃO saiu: fechou a metade da confissão e ficou a das
-texturas. (Os sete créditos de 22/08 — **6**, **21**, **33**, **41**, **47**,
+fecho. A OBRA do **74** levou SETE, de `659a580` (22/08) a `8fd151d`
+(23/08), e o **20** fechou dentro dela, em `b381762` — mas quem tirou os
+dois DESTA LISTA foi `dd0d99c`, e é esse o hash que a linha de cima cita:
+aqui se registra a saída, não o conserto. A ficha do objeto é a casa onde
+a confissão da forma passou a morar. O **19** NÃO saiu: fechou a metade da
+confissão e ficou a das texturas. (Os sete créditos de 22/08 — **6**, **21**, **33**, **41**, **47**,
 **50** e **63** — foram achados por varredura: eram os números que não
 estavam nem vivos nem aposentados.)
 O 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do código e os
@@ -818,6 +820,14 @@ dos dois caminhos (`abrirSessao` e `capturarCDP`) agora reprova os
 pendentes quando o socket fecha (`6dacdc4`); enquanto o travamento não
 voltar a acontecer para mostrar o erro, o item fica aberto.
 
+**79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
+`bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo
+(`webglcontextlost`) e a exceção em quadro — nunca foi visto por ele: as
+fotos são `capturas/erro-contexto-perdido.png` e `capturas/erro-no-tick.png`,
+e elas ficam no disco até ele olhar. **Não apagar na próxima limpeza de
+`capturas/`** — a regra 5 vale para captura que terminou de servir, e
+estas não terminaram.
+
 **80.** (Ruído de instrumento, achado em 22/08 fechando o item 74.) **Uma
 das 52 vistas oficiais não repetiu a si mesma.** O `ab-identidade` captura
 cada vista DUAS vezes por lado, e é assim que ele sabe distinguir "mudou"
@@ -833,14 +843,6 @@ há o que medir. Quando voltar, o passo é guardar os DOIS PNG e rodar o
 `diff-pixel` — o suspeito de sempre nessa vista é a textura chegando em
 estados diferentes, e o gate tem defesa contra isso (`friaNoGate`), o que
 torna a hipótese menos provável e o achado mais interessante.
-
-**79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
-`bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo
-(`webglcontextlost`) e a exceção em quadro — nunca foi visto por ele: as
-fotos são `capturas/erro-contexto-perdido.png` e `capturas/erro-no-tick.png`,
-e elas ficam no disco até ele olhar. **Não apagar na próxima limpeza de
-`capturas/`** — a regra 5 vale para captura que terminou de servir, e
-estas não terminaram.
 
 ---
 

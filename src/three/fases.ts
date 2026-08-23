@@ -89,10 +89,8 @@ export interface HudDaFase {
   /** barra de controles — é ela que hospeda o ⚙ Ajustes */
   controles: boolean;
   /**
-   * A FICHA DO OBJETO (item 74, 22/08) — o painel do corpo selecionado, e
-   * a herdeira da `ContextLine`: o "em quadro" deixou de ser peça solta no
-   * alto e virou o CABEÇALHO dela, com o nome, a classe e os dois gestos da
-   * escada.
+   * A FICHA DO OBJETO (item 74) — o painel do corpo selecionado. O "em
+   * quadro" é o CABEÇALHO dela: nome, classe e os dois gestos da escada.
    *
    * Só no Atlas, e o motivo é de dramaturgia. Na coda do filme a Terra e a
    * Lua estão em quadro por ROTEIRO, não por seleção: quem responde "o que
@@ -224,8 +222,8 @@ export const HUD_POR_FASE = {
   },
   // O HUD do Atlas nasce MÍNIMO de propósito: barra de controles (que
   // é a porta dos Ajustes — sem ela a F5/F6 chegariam sem acesso) e a
-  // saída. A ficha do objeto (a antiga ContextLine), a gaveta de camadas e
-  // o selo de honestidade são da F2; a máquina do tempo é da F4; a barra de progresso NUNCA
+  // saída. A ficha do objeto, a gaveta de camadas e o selo de honestidade
+  // são da F2; a máquina do tempo é da F4; a barra de progresso NUNCA
   // entra (é o slider de capítulos do filme, e daria scrub do filme
   // dentro do Atlas — e o tempo do Atlas é OUTRO tempo: o do céu).
   atlas: {

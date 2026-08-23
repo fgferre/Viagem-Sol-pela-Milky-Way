@@ -219,9 +219,7 @@ export class AtlasRig {
    * O NÚMERO DA ABERTURA, num lugar só (quem mais precisar dele cita
    * esta docstring em vez de repeti-lo): com o retângulo útil vigente em
    * `ui = 1` e tela de mesa (aspecto ≥ 1, onde quem aperta é o vertical)
-   * a câmera fica a **226,84 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`
-   * (era 221,55 até a F2b: a linha da ESCADA na ContextLine cresceu a
-   * faixa do topo — ver CONTEXTO_FRACAO),
+   * a câmera fica a **226,84 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`,
    * e como o alvo é a própria origem essa distância é a distância a casa,
    * sem triângulo nenhum. Ela ANDA com o HUD e com `?ui=`: 213,37 UA em
    * `ui = 0,85`, 296,76 UA em `ui = 1,4`. O trilho de `atlasRig.test.ts`

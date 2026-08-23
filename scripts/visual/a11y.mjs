@@ -685,10 +685,8 @@ async function julgarListbox(s) {
     foiParaAFicha !== null,
     `busca: e o foco passa para a FICHA do alvo escolhido (em ${foiParaAFicha} ms; com o foco: ${comOFoco})`
   );
-  // O QUE ANUNCIA O ALVO mudou de peça no item 74: era a `ContextLine` no
-  // alto à esquerda, é o cabeçalho da FICHA — que abre sozinha com a
-  // seleção, inclusive para estrela (ali ela é só o cabeçalho até o
-  // commit 7).
+  // O QUE ANUNCIA O ALVO é o cabeçalho da FICHA, que abre sozinha com a
+  // seleção — inclusive para estrela.
   const contexto = await s.js(
     "(document.querySelector('.atlas-ficha-nome') || {}).textContent || ''"
   );
@@ -1106,9 +1104,8 @@ try {
   // o Esc que sobe UM degrau — e a interação declarada com os diálogos:
   // diálogo aberto come o Esc PRIMEIRO.
   //
-  // ELES MUDARAM DE CASA NO ITEM 74: eram a segunda linha da `ContextLine`,
-  // no alto à esquerda, e agora são o cabeçalho da FICHA DO OBJETO, que
-  // abre sozinha com a seleção. Os `aria-label` são os mesmos.
+  // ELES MORAM NO CABEÇALHO DA FICHA DO OBJETO, que abre sozinha com a
+  // seleção.
   await sessao.ir(`foco=terra&${PIN}`);
   const escadaBotoes = await sessao.js(`(() => {
     const ctx = document.querySelector('.atlas-ficha-escada');
@@ -1176,9 +1173,8 @@ try {
   })`);
   const d3 = JSON.parse(sub2);
   // NO SISTEMA NÃO HÁ SELEÇÃO, logo não há ficha e não há botão para
-  // abri-la — é o "nunca chuta" do item 74 medido na tela: antes a
-  // `ContextLine` escrevia "Sistema solar" e escondia os dois botões; agora
-  // a peça inteira não monta. Sem seleção, nada ocupa o topo.
+  // abri-la — é o "nunca chuta" do item 74 medido na tela: a peça inteira
+  // não monta, e nada ocupa aquele canto.
   conferir(
     sub1 === 'orbita' && d3.degrau === 'sistema' && d3.corpoId === null
       && !d3.ficha && !d3.botaoDaFicha,
@@ -1264,9 +1260,9 @@ try {
   // começaria a ser enquadrado por baixo do selo sem ninguém notar.
   await sessao.ir(`atlas=1&${PIN}`);
   await medirCobertura(sessao, 'ui = 1 (o de sempre)');
-  // ...e com a LINHA DA ESCADA na tela (F2b): com um corpo em foco a
-  // ContextLine carrega os dois botões e é o estado mais alto do topo —
-  // é ELE que a fração declarada tem de cobrir
+  // ...e com a LINHA DA ESCADA na tela (F2b): com um corpo em foco a barra
+  // carrega o gatilho da ficha e é o estado mais alto do topo — é ELE que a
+  // fração declarada tem de cobrir
   await sessao.ir(`foco=terra&${PIN}`);
   await medirCobertura(sessao, 'ui = 1 com a linha da escada');
   await sessao.ir(`atlas=1&${PIN}`);
