@@ -211,16 +211,73 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
     });
     const { f, c } = JSON.parse(r.result.value);
     if (cartografia() && base === null) base = f;
-    if (c && c.pronto) return { via: 'sinal', ms: Date.now() - t0, quadros: c.quadros };
+    if (c && c.pronto) {
+      return { via: 'sinal', ms: Date.now() - t0, quadros: c.quadros, fase: c.fase };
+    }
     // o teto de segurança é o método antigo INTEIRO, não uma aproximação
     if (base !== null && f - base > quadros) {
-      return { via: 'quadros', ms: Date.now() - t0, quadros: f - base };
+      return { via: 'quadros', ms: Date.now() - t0, quadros: f - base, fase: c?.fase ?? null };
     }
     if (Date.now() - t0 > teto) {
       throw new Error(
         `não assentou (cart=${cartografia()}, f=${f}, sinal=${c ? JSON.stringify(c) : 'ausente'})`
       );
     }
+    await dorme(100);
+  }
+}
+
+/**
+ * ESPERA A CAPA DO CARREGAMENTO SAIR DA FRENTE — o segundo termo do
+ * obturador, e a resposta a "a foto mostra o app ou mostra a tela de
+ * carga?".
+ *
+ * O QUE ACONTECIA, medido em 2026-08-23 com `?atlas=1` a 1200×900: o
+ * sinal de prontidão acende aos 5,2 s e está CERTO — a fase já é
+ * `atlas`, a cena já assentou. Mas a `LoadingVeil` (`.cv-veil`,
+ * `z-index: 52`, ver `hud/05-loading.css`) é camada PERSISTENTE: o App
+ * só a desmonta `MERGE_MS` depois do `done`, para o crossfade do núcleo
+ * sobre o Sol não piscar. Medido: ela sai **2,13 s DEPOIS** do sinal. O
+ * obturador disparava no meio disso e a foto saía com a cartografia da
+ * carga — outra Via Láctea, de dois braços (item 34) — no lugar do app.
+ *
+ * POR QUE NENHUM JUIZ ADOECEU COM ISSO, e é o que explica os meses de
+ * silêncio: todo consumidor de `capturarCDP` pina `?shot=2`
+ * (`ab-identidade`, `luz-do-quadro`, `rodada`, `sky-capture`,
+ * `planeta-pixel`), e sob `?shot=2` (`bareMode`) a capa NEM MONTA. Quem
+ * sofria era a foto COM HUD — exatamente a que se tira para o dono ver.
+ *
+ * POR QUE AQUI E NÃO EM `esperarAssentar`: aquela responde "a cena
+ * assentou?" e a resposta dela não mudou — quem a chama sem tirar foto
+ * (`a11y`, `busca-smoke`, os passos de DOM do `atlas-smoke`: 91
+ * navegações na casa) pagaria ~2 s cada por uma espera que não mede
+ * nada do que aquele juiz julga. Isto é do OBTURADOR, e só ele o paga.
+ *
+ * E NÃO SE MEDE POR "dois md5 iguais seguidos", que foi a primeira
+ * hipótese: com o HUD na tela o md5 NUNCA estabiliza (medido: 0c78…,
+ * 9386…, 3b82… em quadros consecutivos, já sem a capa — o HUD vive).
+ * Esse critério travaria justamente as fotos que este conserto existe
+ * para salvar.
+ *
+ * Devolve o `estado`, e quem chama o IMPRIME: `ausente` (a capa nem
+ * montou — o caso do `?shot=2`), `saiu` (esperou e ela saiu), `erro` (a
+ * capa é a tela de falha, e aí ELA é a verdade do quadro: fotografa-se),
+ * `ficou` (o teto estourou — a foto sai suspeita e diz que é).
+ */
+export async function esperarCapaSair(send, teto = 8000) {
+  const t0 = Date.now();
+  let estava = false;
+  for (;;) {
+    const r = await send('Runtime.evaluate', {
+      expression: "((document.querySelector('.cv-veil')||{}).className)||''",
+      returnByValue: true,
+    });
+    const capa = String(r.result.value || '');
+    const ms = Date.now() - t0;
+    if (!capa) return { estado: estava ? 'saiu' : 'ausente', ms };
+    estava = true;
+    if (capa.includes('cv-error')) return { estado: 'erro', ms };
+    if (ms > teto) return { estado: 'ficou', ms };
     await dorme(100);
   }
 }
@@ -444,6 +501,11 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
       return r.result.value;
     },
     md5: async () => {
+      // o segundo termo do obturador — ver `esperarCapaSair`. Sob
+      // `?shot=2` (o pino de todo md5 desta casa) ela devolve `ausente`
+      // sem esperar nada; num quadro COM HUD ela é o que impede a foto
+      // de sair com a tela de carga por cima.
+      await esperarCapaSair(send);
       const shot = await send('Page.captureScreenshot', { format: 'png' });
       const buf = Buffer.from(shot.data, 'base64');
       if (buf.length < 20000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
@@ -542,11 +604,20 @@ export async function capturarCDP({
     const assentou = await esperarAssentar({
       send, cartografia: () => cartografia, quadros, teto,
     });
-    process.stdout.write(`  assentou por ${assentou.via} em ${(assentou.ms / 1000).toFixed(1)}s\n`);
+    // O SEGUNDO TERMO DO OBTURADOR (23/08) — ver `esperarCapaSair`. A
+    // prontidão diz que a CENA assentou; esta diz que nada do app está
+    // por CIMA dela. Sob `?shot=2` sai `ausente` em ~5 ms.
+    const capa = await esperarCapaSair(send);
+    process.stdout.write(
+      `  assentou por ${assentou.via} em ${(assentou.ms / 1000).toFixed(1)}s`
+      + ` · fase=${assentou.fase ?? '?'} · capa=${capa.estado}`
+      + (capa.estado === 'ausente' ? '' : ` (+${(capa.ms / 1000).toFixed(1)}s)`)
+      + '\n'
+    );
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     const buf = Buffer.from(shot.data, 'base64');
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
-    return { png: buf, via: assentou.via, ms: assentou.ms, linhas };
+    return { png: buf, via: assentou.via, ms: assentou.ms, fase: assentou.fase, capa, linhas };
   } finally {
     socket?.fechar();
     chrome.kill();

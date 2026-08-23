@@ -10,7 +10,7 @@
 // bundle; aqui ficam as combinações restantes, incluindo as parciais, que
 // nenhum arranjo de servidor encena de propósito.
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair } from './chrome.mjs';
 
 const sinal = (n) => Array(n).fill('sinal');
 const quadros = (n) => Array(n).fill('quadros');
@@ -148,5 +148,41 @@ describe('ligarSocketCDP', () => {
     ws.receber({ id: 1, result: {} });
     await pedido;
     expect(vistos.map((m) => m.method)).toEqual(['Runtime.consoleAPICalled']);
+  });
+});
+
+/**
+ * O SEGUNDO TERMO DO OBTURADOR. O defeito que ele fecha foi medido no
+ * navegador em 2026-08-23 (`?atlas=1`, 1200×900): a prontidão acendia
+ * aos 5,2 s com a fase já em `atlas` e a `.cv-veil` do carregamento
+ * ficava mais **2,13 s** por cima — a foto saía com a cartografia da
+ * carga no lugar do app. Aqui prova-se a REGRA, com um `send` de
+ * mentira: o navegador é o que a folha `capturas/captura-errada-antes-
+ * depois.png` mostra.
+ */
+const sendDeCapa = (respostas) => {
+  const fila = [...respostas];
+  return async () => ({ result: { value: fila.length > 1 ? fila.shift() : fila[0] } });
+};
+
+describe('esperarCapaSair', () => {
+  it('sem capa no documento: `ausente`, e o obturador não espera nada', async () => {
+    const r = await esperarCapaSair(sendDeCapa(['']));
+    expect(r.estado).toBe('ausente');
+  });
+
+  it('a capa que sai vira `saiu` — é o caso que a foto com HUD sofria', async () => {
+    const r = await esperarCapaSair(sendDeCapa(['cv-veil cv-done cv-em-voo', '']));
+    expect(r.estado).toBe('saiu');
+  });
+
+  it('a capa de ERRO é a verdade do quadro: fotografa-se, não se espera', async () => {
+    const r = await esperarCapaSair(sendDeCapa(['cv-veil cv-error']));
+    expect(r.estado).toBe('erro');
+  });
+
+  it('capa que nunca sai estoura o teto e DIZ que ficou, em vez de travar', async () => {
+    const r = await esperarCapaSair(sendDeCapa(['cv-veil cv-done']), 0);
+    expect(r.estado).toBe('ficou');
   });
 });
