@@ -42,9 +42,14 @@ inteiro é o terreno (MOLA). Sem gate esperando.
 
 ### Conteúdo e didática (ex-Onda 8, sem pupila)
 
-- Painel por corpo lendo `corpos.json`.
+- ~~Painel por corpo lendo `corpos.json`.~~ **FEITO em 22/08 (item 74,
+  parte A)**: `FichaDoObjeto` + `lib/atlas/ficha.ts`, quatro seções vivas
+  (agora · físico · órbita · no céu) com a procedência de cada número. O que
+  falta dela é a PARTE B, e mora em `PENDENCIAS.md`: o texto em pt-BR (o
+  editorial dos 45 está em inglês e não vai para a tela), a procedência da
+  textura, o conteúdo da ficha de estrela e a iluminação vista da câmera.
 - Camada de fatos relacionais (idade da luz, o Sol visto de lá, a Lua
-  conferível hoje à noite).
+  conferível hoje à noite). A ficha é a casa dela — a casa agora existe.
 - Wikipedia no painel, opt-out persistido (desligado ⇒ zero requisições).
   2ª prova ainda pendente: IndexedDB, CORS no GitHub Pages, opt-out
   verificável. Se falhar, a linha cai para Renasce.

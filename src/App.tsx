@@ -20,7 +20,6 @@ import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import {
-  ContextLine,
   GavetaDeCamadas,
   BotaoDaGaveta,
   Selo,
@@ -28,6 +27,7 @@ import {
 } from './components/HudDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca, BotaoDaBusca } from './components/PaletaDeBusca';
+import { FichaDoObjeto, BotaoDaFicha } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
 import { Convite, PASSOS_DO_CONVITE_DO_ATLAS } from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
@@ -74,9 +74,6 @@ const MERGE_MS = 2200;
  *    em 800×600, reservar a CAIXA apagava "ALDHANAB · B8III · 183
  *    anos-luz" a 290 px do botão mais próximo. Reservar o que tem tinta
  *    não apaga nada por engano.
- *  - `.atlas-contexto` vai de 30vw a borda-a-borda na tela estreita — e
- *    lá a caixa É o território: o nome se corta com reticências para
- *    caber nela.
  *  - `.atlas-rodape` empilha três blocos numa coluna só abaixo de 761 px;
  *  - `.atlas-selo` é `fixed` no canto de mesa e volta ao FLUXO na tela
  *    estreita — os dois arranjos com a mesma lei, e de quebra o rótulo
@@ -103,7 +100,11 @@ const AREAS_RESERVADAS = [
   // não tem altura e não reserva nada.
   '.letterbox',
   '.controls-bar > *',
-  '.atlas-contexto',
+  // A FICHA DO OBJETO não precisa de linha própria (item 74): ela é um
+  // diálogo de verdade, então o `[data-dialogo]` lá em cima já a alcança —
+  // que é exatamente o que aquele seletor promete ("diálogo novo passa a
+  // afastar os rótulos no dia em que nascer"). A `.atlas-contexto`, que
+  // morava aqui, virou o cabeçalho dela e deixou de existir.
   '.atlas-rodape',
   '.atlas-selo',
   // A GAVETA DO SELO (item 61, 22/08) entra por conta própria: ela é
@@ -116,7 +117,15 @@ const AREAS_RESERVADAS = [
   '.filme-rodape',
 ].join(', ');
 
-
+/**
+ * AS QUATRO GAVETAS DO HUD — uma aberta por vez, um mecanismo só.
+ *
+ * Elas já se ancoravam na mesma régua (`.hud-dialogo`, fatia 1 do HUD) e já
+ * eram exclusivas entre si; o que não era único era a REGRA: cada função de
+ * abrir desligava as outras à mão, e um painel novo obrigava a tocar todas.
+ * Aqui a exclusividade é o tipo — não há estado que represente duas abertas.
+ */
+export type Gaveta = 'camadas' | 'busca' | 'ajustes' | 'ficha';
 
 export default function App() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -165,11 +174,6 @@ export default function App() {
   const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
   // a loading é camada persistente: só desmonta DEPOIS do merge terminar
   const [loadingMontada, setLoadingMontada] = useState(true);
-  // ?ajustes=1 abre o painel direto: uma configuração inteira cabe num link,
-  // inclusive com o painel visível para conferência.
-  const [ajustes, setAjustes] = useState(
-    new URLSearchParams(window.location.search).has('ajustes')
-  );
   /**
    * `?cart=off` — a cartografia procedural POR ESCOLHA. Lida uma vez,
    * como o tier do boot: é porta de alocação e não troca ao vivo. Quem a
@@ -180,8 +184,21 @@ export default function App() {
   const [cartografiaDesligada] = useState(
     () => new URLSearchParams(window.location.search).get('cart') === 'off'
   );
-  const [gaveta, setGaveta] = useState(false);
-  const [busca, setBusca] = useState(false);
+  /**
+   * A GAVETA ÚNICA (item 74, 22/08). Eram TRÊS booleanos — `gaveta`,
+   * `busca`, `ajustes` — e cada função de abrir desligava as outras duas à
+   * mão. Sempre foi "uma de cada vez"; o que faltava era a regra estar
+   * escrita UMA vez em vez de três. A quarta porta (a ficha do objeto) seria
+   * a quarta cópia da mesma linha, e é ela que obrigou a unificação.
+   *
+   * O ⚙ AJUSTES ENTRA NO ENUM e continua com a exceção dele: ele não é o
+   * painel de uma fase, é o da casa, e o `?ajustes=1` o abre sobre a tela de
+   * título, onde fase nenhuma o hospeda. O que muda com a fase (o efeito de
+   * travessia, mais abaixo) continua fechando só os que a fase hospeda.
+   */
+  const [gaveta, setGaveta] = useState<Gaveta | null>(() =>
+    new URLSearchParams(window.location.search).has('ajustes') ? 'ajustes' : null
+  );
   /**
    * AS 1.726 NOMEADAS, publicadas pelo Director quando o `init` termina
    * — a paleta da busca monta o índice sobre elas (F3). Estado e não
@@ -205,11 +222,12 @@ export default function App() {
   const [capturaNegada, setCapturaNegada] = useState(false);
   /** o que está EM QUADRO no Atlas; null = o enquadramento de abertura */
   const [foco, setFoco] = useState<string | null>(null);
-  /** o DEGRAU da escada (F2b/D7) — decide os botões da ContextLine e o
-   *  `?ver=corpo` do link; publicado pelo Director junto com o foco */
+  /** o DEGRAU da escada (F2b/D7) — decide os botões do cabeçalho da ficha
+   *  e o `?ver=corpo` do link; publicado pelo Director junto com o foco */
   const [escada, setEscada] = useState<EstadoDaEscada>({
     degrau: 'sistema',
     podeAproximar: false,
+    corpoId: null,
   });
   /**
    * O MOSTRADOR DA MÁQUINA DO TEMPO (F4). Estado e não leitura direta
@@ -225,6 +243,34 @@ export default function App() {
    * novo — a lição é do visitante, não da fase.
    */
   const [girouNoAtlas, setGirouNoAtlas] = useState(false);
+
+  /**
+   * HÁ SELEÇÃO ⇒ HÁ FICHA (item 74). Escolher um corpo — na paleta, no
+   * rótulo, pelo `?foco=` — abre a ficha dele; trocar de corpo troca o
+   * conteúdo sem fechar; soltar a seleção (Esc até o sistema) fecha.
+   *
+   * FECHAR A FICHA NÃO DESFAZ A SELEÇÃO: fechar é leitura, não navegação.
+   * Por isso o efeito olha o corpoId ANTERIOR e não o estado da gaveta —
+   * quem fechou a ficha de Marte não a vê renascer no quadro seguinte, e
+   * quem escolhe Titã depois disso a vê abrir com Titã.
+   *
+   * O ⚙ AJUSTES RESISTE, pela terceira vez neste arquivo e pela mesma razão
+   * das outras duas: ele é o painel da CASA, não o de uma fase nem o de um
+   * alvo. Sem esta cláusula o link `?ajustes=1&foco=hd48915` — uma
+   * configuração inteira num endereço, com o painel aberto para conferência
+   * — perdia o painel no instante em que o foco chegava. O nome do alvo
+   * continua na barra, no gatilho da ficha.
+   */
+  const corpoAnterior = useRef<string | null>(null);
+  useEffect(() => {
+    const alvo = escada.corpoId ?? (escada.degrau === 'estrela' ? foco : null);
+    if (alvo !== corpoAnterior.current) {
+      corpoAnterior.current = alvo;
+      setGaveta((atual) =>
+        atual === 'ajustes' ? atual : alvo ? 'ficha' : atual === 'ficha' ? null : atual
+      );
+    }
+  }, [escada.corpoId, escada.degrau, foco]);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
   // (onda da arquitetura, corte 6) — os fios são os mesmos de sempre.
@@ -346,7 +392,7 @@ export default function App() {
       observador.disconnect();
       window.removeEventListener('resize', medir);
     };
-  }, [phase, ajustes, gaveta, busca]);
+  }, [phase, gaveta]);
 
   // estado da camada de carregamento; `done` é o que dispara o merge.
   // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado
@@ -399,8 +445,14 @@ export default function App() {
    * não o remonta nem lhe entrega o foco.
    */
   useEffect(() => {
-    setBusca(false);
-    setGaveta(false);
+    // FECHA AS DUAS QUE TINHAM O DEFEITO, e só elas. Com o enum único isso
+    // virou uma condição em vez de dois `set` — e passou a ser possível
+    // dizer QUAIS, que é o que a regra sempre quis dizer: a busca e as
+    // camadas renasciam sozinhas ao voltar. O ⚙ Ajustes é o painel da casa
+    // (ver acima) e a FICHA obedece à seleção, não à fase: se ainda há um
+    // corpo em foco quando o modo volta, a ficha dele é a resposta certa, e
+    // se não há ela não monta (`hud.ficha` e `corpoId` já a gateiam).
+    setGaveta((atual) => (atual === 'busca' || atual === 'camadas' ? null : atual));
     // e o botão da captura volta a se oferecer com o modo: o backoff é
     // do MODO, não da sessão (`EstadoDaCaptura.desistiu`), e sem esta
     // linha o rótulo do rig e o do React discordariam — o rig esquecia
@@ -478,27 +530,26 @@ export default function App() {
   const entrarNoAtlas = () => directorRef.current?.entrarNoAtlas();
   const partirDoAtlas = () => directorRef.current?.partirDoAtlas();
 
-  // Um diálogo de cada vez: os três se ancoram no mesmo canto e os três
-  // se declaram `aria-modal` — dois modais abertos ao mesmo tempo seriam
-  // uma mentira para quem ouve a tela, além de sobreposição na tela.
-  const abrirGaveta = () => {
-    setAjustes(false);
-    setBusca(false);
-    setGaveta((v) => !v);
-  };
-  const abrirAjustes = () => {
-    setGaveta(false);
-    setBusca(false);
-    setAjustes((v) => !v);
-  };
-  const abrirBusca = () => {
-    setGaveta(false);
-    setAjustes(false);
-    setBusca((v) => !v);
-  };
-  // depois do `abrirBusca` porque o passa ao atalho de teclado ("/" e
-  // Ctrl+K, item 8) — a ordem dos hooks não muda entre renders
-  useAtalhos(directorRef, setPaused, abrirBusca);
+  // Um diálogo de cada vez: as quatro gavetas se ancoram no mesmo canto e
+  // as quatro se declaram `aria-modal` — dois modais abertos ao mesmo tempo
+  // seriam uma mentira para quem ouve a tela, além de sobreposição.
+  // O estado é UM, então abrir é escolher: não há como duas ficarem abertas
+  // por um `set` esquecido.
+  const alternarGaveta = (qual: Gaveta) =>
+    setGaveta((atual) => (atual === qual ? null : qual));
+  /**
+   * FECHAR É "FECHE-ME", e não "feche o que estiver aberto". A diferença
+   * apareceu no primeiro dia do enum: a paleta de busca fecha NO TIQUE
+   * SEGUINTE ao Enter (`confirmar`, em `PaletaDeBusca` — sem o adiamento a
+   * ação padrão do Enter caía no botão recém-focado e a paleta se reabria
+   * sozinha), e nesse meio-tempo a escolha já abriu a FICHA do alvo. Um
+   * `setGaveta(null)` cru fecharia a ficha que acabou de nascer.
+   */
+  const fecharGaveta = (qual: Gaveta) =>
+    setGaveta((atual) => (atual === qual ? null : atual));
+  // depois do `alternarGaveta` porque passa a busca ao atalho de teclado
+  // ("/" e Ctrl+K, item 8) — a ordem dos hooks não muda entre renders
+  useAtalhos(directorRef, setPaused, () => alternarGaveta('busca'));
 
   /**
    * A ESCOLHA DA PALETA. O verbo é da FASE, não do botão: o Director
@@ -703,17 +754,6 @@ export default function App() {
         />
       )}
 
-      {/* o que está EM QUADRO no Atlas — e os dois gestos da escada */}
-      {hud.contexto && (
-        <ContextLine
-          foco={foco}
-          podeAproximar={escada.podeAproximar}
-          noSistema={escada.degrau === 'sistema'}
-          onAproximar={() => directorRef.current?.aproximarDoCorpo()}
-          onSistema={() => directorRef.current?.focarNoSistema()}
-        />
-      )}
-
       {/* O RODAPÉ DO ATLAS: a máquina do tempo (F4), a dica do modo e o
           selo, numa COLUNA só. Eram duas peças `position: fixed`
           penduradas em dois `vh` escolhidos à mão, e a folga entre elas
@@ -831,9 +871,28 @@ export default function App() {
               Entrar no Atlas
             </button>
           )}
-          {hud.busca && <BotaoDaBusca aberta={busca} onAlternar={abrirBusca} />}
+          {hud.busca && (
+            <BotaoDaBusca
+              aberta={gaveta === 'busca'}
+              onAlternar={() => alternarGaveta('busca')}
+            />
+          )}
           {hud.gaveta && (
-            <BotaoDaGaveta aberta={gaveta} onAlternar={abrirGaveta} />
+            <BotaoDaGaveta
+              aberta={gaveta === 'camadas'}
+              onAlternar={() => alternarGaveta('camadas')}
+            />
+          )}
+          {/* A FICHA só se oferece quando há SELEÇÃO: sem alvo em foco não
+              há ficha para abrir, e botão que não faz nada é pior que botão
+              nenhum. O rótulo carrega o nome do alvo — é ele que devolve à
+              barra o que a antiga linha "em quadro" dizia no alto. */}
+          {hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela') && (
+            <BotaoDaFicha
+              aberta={gaveta === 'ficha'}
+              nome={foco}
+              onAlternar={() => alternarGaveta('ficha')}
+            />
           )}
           {hud.botaoPartir && (
             <button className="hud-btn small" onClick={partirDoAtlas}>
@@ -900,9 +959,9 @@ export default function App() {
           </select>
           <button
             className="hud-btn small"
-            onClick={abrirAjustes}
+            onClick={() => alternarGaveta('ajustes')}
             aria-label="Ajustes de renderização"
-            {...gatilhoDoDialogo('ajustes', ajustes)}
+            {...gatilhoDoDialogo('ajustes', gaveta === 'ajustes')}
           >
             ⚙ Ajustes
           </button>
@@ -917,10 +976,27 @@ export default function App() {
           junto com o resto do HUD (a regra do .bare-mode só alcança
           filhos diretos). */}
       <GavetaDeCamadas
-        aberta={gaveta && hud.gaveta}
-        onFechar={() => setGaveta(false)}
+        aberta={gaveta === 'camadas' && hud.gaveta}
+        onFechar={() => fecharGaveta('camadas')}
         escondidas={escondidas}
         onCamada={alternarCamada}
+      />
+
+      {/* A FICHA DO OBJETO (item 74) — a quarta gaveta, e a herdeira da
+          antiga linha "em quadro". Filha DIRETA de .hud-root como as
+          outras: é a regra do `.bare-mode` (`> *:not(.scene-canvas)`) que a
+          apaga no `?shot=2`, e ela só alcança filhos diretos. */}
+      <FichaDoObjeto
+        aberta={gaveta === 'ficha' && hud.ficha}
+        onFechar={() => fecharGaveta('ficha')}
+        corpoId={escada.corpoId}
+        estrelaEmFoco={escada.degrau === 'estrela' ? foco : null}
+        jd={tempo?.jd ?? null}
+        fonte={directorRef.current?.efemerideViva ?? null}
+        podeAproximar={escada.podeAproximar}
+        noSistema={escada.degrau === 'sistema'}
+        onAproximar={() => directorRef.current?.aproximarDoCorpo()}
+        onSistema={() => directorRef.current?.focarNoSistema()}
       />
 
       {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo
@@ -928,9 +1004,9 @@ export default function App() {
           que faz a consulta anterior não sobrar para a próxima abertura.
           O verbo vem da fase: no Atlas a escolha enquadra, no voo livre
           ela voa. */}
-      {busca && hud.busca && (
+      {gaveta === 'busca' && hud.busca && (
         <PaletaDeBusca
-          onFechar={() => setBusca(false)}
+          onFechar={() => fecharGaveta('busca')}
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
           onEscolher={(entrada) => escolherAlvo(entrada, directorRef.current)}
@@ -938,8 +1014,8 @@ export default function App() {
       )}
 
       <Ajustes
-        aberto={ajustes}
-        onFechar={() => setAjustes(false)}
+        aberto={gaveta === 'ajustes'}
+        onFechar={() => fecharGaveta('ajustes')}
         qualidade={quality}
         onQualidade={changeQuality}
         tom={tom}
@@ -952,7 +1028,7 @@ export default function App() {
         onReverConvite={
           hud.dicaDeVoo || phase === 'atlas'
             ? () => {
-                setAjustes(false);
+                fecharGaveta('ajustes');
                 setConvite({ onde: phase === 'atlas' ? 'atlas' : 'voo', passo: 0 });
               }
             : undefined

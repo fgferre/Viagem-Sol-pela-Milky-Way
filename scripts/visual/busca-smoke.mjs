@@ -53,8 +53,16 @@ const conferir = (ok, texto) => {
   if (!ok) falhas.push(texto);
 };
 
+/**
+ * QUEM ANUNCIA O ALVO — e desde o item 74 (22/08) é o cabeçalho da FICHA DO
+ * OBJETO, que abre sozinha com a seleção. Era a `ContextLine`, no alto à
+ * esquerda; a peça mudou, a promessa é a mesma. Sem seleção não há ficha, e
+ * a leitura sai VAZIA — que é o que a prova 2 (`?foco=` que não acha) passou
+ * a cobrar: antes ela lia "Sistema solar", agora ela lê nada, porque nada é
+ * o que a casa sabe.
+ */
 const contexto = (s) =>
-  s.js("(document.querySelector('.atlas-contexto-nome') || {}).textContent || ''");
+  s.js("(document.querySelector('.atlas-ficha-nome') || {}).textContent || ''");
 
 /** abre a paleta pelo gatilho, como quem clica nela */
 async function abrirPaleta(s) {
@@ -159,10 +167,15 @@ try {
   // "alfa cen" é o caso REAL do dado: o nome próprio da IAU expulsou a
   // designação de Bayer, e nenhuma chave irmã pode ser fabricada.
   await sessao.ir(`foco=alfa%20cen&${PIN}`);
-  const semPalpite = await contexto(sessao);
+  const semPalpite = JSON.parse(await sessao.js(`JSON.stringify({
+    nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
+    ficha: document.querySelector('.atlas-ficha') !== null,
+    degrau: window.__director.escadaViva.degrau,
+  })`));
   conferir(
-    semPalpite === 'Sistema solar',
-    `?foco= sem correspondência NÃO chuta: fica no sistema ("${semPalpite}")`
+    semPalpite.nome === '' && !semPalpite.ficha && semPalpite.degrau === 'sistema',
+    `?foco= sem correspondência NÃO chuta: fica no sistema e não abre ficha `
+      + `(degrau '${semPalpite.degrau}', ficha ${semPalpite.ficha})`
   );
 
   // ---- 3: ida e volta pelo escritor vivo ---------------------------
@@ -438,6 +451,37 @@ try {
     voltouNetuno === 'Netuno'
       && (await sessao.js('location.search')).includes('foco=netuno'),
     `e o link vivo carrega o corpo e reabre nele (${urlDoCorpo} → "${voltouNetuno}")`
+  );
+
+  // ---- A FICHA ABRE COM O ALVO (item 74, 22/08) --------------------
+  // Escolher na paleta não anuncia mais o nome numa linha no alto: abre a
+  // FICHA daquele corpo, com o nome, a classe e os números vivos dele. A
+  // prova pede "Titã" de propósito — é uma LUA, o caso em que a ficha mede
+  // a distância ao PAI e a escada mostra o degrau da lua.
+  await abrirPaleta(sessao);
+  await sessao.digitar('tita');
+  await dorme(300);
+  await sessao.teclar('Enter');
+  await sessao.assentar();
+  const naFicha = JSON.parse(await sessao.js(`JSON.stringify({
+    nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
+    classe: (document.querySelector('.atlas-ficha-classe') || {}).textContent || '',
+    corpoId: window.__director.escadaViva.corpoId,
+    secoes: [...document.querySelectorAll('.atlas-ficha-titulo button')]
+      .map((b) => b.innerText.trim().split(String.fromCharCode(10))[0]),
+    primeiraLinha: (document.querySelector('.atlas-ficha-linha dt') || {}).textContent || '',
+    valor: (document.querySelector('.atlas-ficha-valor') || {}).textContent || '',
+  })`));
+  conferir(
+    naFicha.nome === 'Titã' && naFicha.classe === 'lua' && naFicha.corpoId === 'titan',
+    `a paleta acha "tita" e a FICHA abre com ele ("${naFicha.nome}" · "${naFicha.classe}")`
+  );
+  conferir(
+    naFicha.secoes.length >= 3
+      && /SATURNO/i.test(naFicha.primeiraLinha)
+      && /km/.test(naFicha.valor),
+    `e a primeira seção é o AGORA, com a distância ao pai `
+      + `("${naFicha.primeiraLinha}" = "${naFicha.valor}"; seções: ${naFicha.secoes.join(', ')})`
   );
 
   // O CLIQUE. Perto do centro do retângulo útil, no enquadramento da

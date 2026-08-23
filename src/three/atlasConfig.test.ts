@@ -18,7 +18,6 @@ import {
   ANOES_DO_SISTEMA,
   ASTEROIDES_DO_SISTEMA,
   NOMES_DOS_CORPOS,
-  NOME_DO_SISTEMA,
   QUALIDADES,
   rotuloDaQualidade,
   tituloDeCorpo,
@@ -464,14 +463,6 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     for (const fase of ['loading', 'intro', 'end'] as const) {
       expect(HUD_POR_FASE[fase].gaveta, fase).toBe(false);
     }
-  });
-});
-
-describe('o nome do enquadramento de abertura', () => {
-  it('é o do SISTEMA, não o do Sol — a ContextLine não chuta', () => {
-    // o alvo de abertura é a órbita mais externa do retrato: o que
-    // aparece é o sistema inteiro visto de fora, e é isso que se lê
-    expect(NOME_DO_SISTEMA).toBe('Sistema solar');
   });
 });
 

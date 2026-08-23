@@ -50,37 +50,6 @@
   .atlas-rodape {
     left: 4vw;
   }
-  /* A LINHA DE CONTEXTO ANTES DOS BOTÕES. As duas peças do topo se
-     ancoram na mesma linha (`top`), e numa tela estreita a barra de
-     controles ocupa a largura inteira e passava POR CIMA do "em
-     quadro". Aqui a barra desce o que a linha de contexto ocupa — e o
-     número é em `rem` porque a altura dela é toda em `rem`: a folga
-     sobrevive a qualquer `?ui=`. O `:has()` mantém isto restrito ao
-     Atlas; no filme, onde não há linha de contexto, a barra fica onde
-     sempre esteve. */
-  .hud-root:has(.atlas-contexto) .controls-bar {
-    top: calc(6.5vh + 3.2rem);
-    /* aqui a barra é de borda a borda (`left` E `right` acima), e um
-       `max-width` sobre isso desancoraria a direita — o navegador
-       descarta o `right` quando os três brigam. A garantia horizontal
-       do bloco de cima não vale nesta faixa: quem separa as duas peças
-       é a linha, não a coluna. */
-    max-width: none;
-  }
-  .atlas-contexto {
-    left: 4vw;
-    right: 4vw;
-    max-width: none;
-  }
-  /* uma linha só, sempre: é a altura da linha de contexto que a barra
-     desconta acima, e um nome comprido que dobrasse de linha comeria a
-     folga. Cortado com reticências continua honesto — o nome inteiro
-     está no rótulo da estrela em quadro. */
-  .atlas-contexto-nome {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .atlas-tempo-linha {
     flex-wrap: wrap;
     gap: 0.4rem;

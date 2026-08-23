@@ -258,7 +258,7 @@ export function chaveDeLink(entrada: EntradaDaBusca): string {
 
 /**
  * A CHAVE DO QUE ESTÁ EM QUADRO, achada pelo NOME que o Director
- * anunciou (é o que a ContextLine mostra). `null` quando o nome não é do
+ * anunciou (é o que o cabeçalho da ficha mostra). `null` quando o nome não é do
  * índice — o Sagittarius A✱ é o caso, e o link volta ao modo sem o alvo
  * em vez de inventar uma porta que a busca não saberia resolver.
  */

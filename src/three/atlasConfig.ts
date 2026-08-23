@@ -17,8 +17,11 @@
 //  2. A TABELA DOS QUATRO ESTADOS do seletor de qualidade (Ajustes D),
 //     pela MESMA razão e com a mesma história: dois leitores (o painel
 //     e o `<select>` da barra) e a lista digitada duas vezes.
-//  3. O nome do enquadramento de abertura — o que a ContextLine lê
-//     quando o foco não tem nome (ela NUNCA chuta).
+//  (O item 3 desta lista era o NOME do enquadramento de abertura,
+//   "Sistema solar", que a `ContextLine` lia quando o foco não tinha nome
+//   próprio. A linha virou o cabeçalho da FICHA DO OBJETO em 22/08 (item
+//   74) e a ficha não monta sem seleção: ninguém mais lê aquele nome, e a
+//   constante saiu junto com a peça.)
 //
 // E o que este arquivo é PERANTE O SELO: governado. Ele está em
 // `ARQUIVOS_GOVERNADOS` (`selo.ts`), então porta de URL nova aqui sem
@@ -211,14 +214,6 @@ export function rotuloDaQualidade(e: EstadoDaQualidade): string {
 }
 
 /**
- * O nome do que o Atlas enquadra quando abre — e o que a ContextLine lê
- * quando o foco não tem nome próprio. "Sistema solar" e não "Sol": o
- * enquadramento de abertura é a órbita mais externa do retrato, ou seja,
- * o sistema inteiro visto de fora (ver `AtlasRig.focarNoSistema`).
- */
-export const NOME_DO_SISTEMA = 'Sistema solar';
-
-/**
  * OS DEZ CORPOS DO RETRATO, com o nome que o visitante lê e a palavra
  * que diz o que eles são. Até a Onda 5 a camada os DESENHAVA no Atlas e
  * nenhum deles era alvo de nada — sem rótulo, sem clique, sem busca, sem
@@ -241,8 +236,8 @@ export const NOME_DO_SISTEMA = 'Sistema solar';
 export interface CorpoDoSistema {
   /** id da camada — o mesmo de `IDS_FOTOMETRIA` e do retrato */
   id: string;
-  /** nome pt-BR: o que se digita, o que a lista mostra, o que a
-   *  ContextLine anuncia */
+  /** nome pt-BR: o que se digita, o que a lista mostra, o que o cabeçalho
+   *  da ficha do objeto anuncia */
   nome: string;
   /** a palavra que diz o que ele é, no vocabulário da legenda */
   classe: string;

@@ -101,6 +101,23 @@ export interface EstadoDaEscada {
    *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
    *  de um ponto fotométrico enquadraria um clarão sem corpo. */
   podeAproximar: boolean;
+  /**
+   * O ID do corpo em foco — `null` no enquadramento de abertura e quando
+   * o foco é uma estrela (item 74, 22/08).
+   *
+   * O `onFoco` sempre emitiu só o NOME, que serve para escrever na tela e
+   * não serve para procurar nada: a ficha precisa do id para casar o corpo
+   * com `GM_CORPOS`, com `BODY_AXES` e com `corpos.json`. Ele viaja junto
+   * com o degrau porque a escada é a ÚNICA escritora do foco — a fronteira
+   * declarada no cabeçalho de `escolha.ts` —, e uma segunda rota do id para
+   * o React seria a segunda escritora.
+   *
+   * `degrau === 'estrela'` continua sendo o que diz que o foco é estelar:
+   * um campo `estrela` ao lado seria a mesma verdade escrita duas vezes. A
+   * ficha de ESTRELA (item 74, parte B) vai precisar do `NamedStar` inteiro,
+   * e é ela que o traz.
+   */
+  corpoId: string | null;
 }
 
 export class Escada {
@@ -370,8 +387,8 @@ export class Escada {
    * o raio do ALVO (`raioDeEnquadramentoEstelar`, D5) e ignora o
    * `arriveDist` que veio.
    *
-   * `nome` só serve ao Atlas: é o que a ContextLine passa a ler. No voo
-   * livre quem anuncia o destino é a linha de rumo, que já existe.
+   * `nome` só serve ao Atlas: é o que o cabeçalho da ficha passa a ler. No
+   * voo livre quem anuncia o destino é a linha de rumo, que já existe.
    */
   irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
     if (this.phase === 'atlas') {
@@ -521,6 +538,7 @@ export class Escada {
             : 'sistema';
     return {
       degrau,
+      corpoId: this.focoCorpoId,
       // aproximar só desce para corpo com MESH resolvido — a lista é
       // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a), os
       // planetas rochosos (F3) e os gigantes (F4)
@@ -810,7 +828,7 @@ export class Escada {
     this.events.onFoco(entrada.nome);
     this.emitirEscada();
     if (!this.maquinaDoTempo.efemeride) {
-      // a ContextLine já anuncia a lua; o enquadramento chega com a fonte
+      // a ficha já anuncia a lua; o enquadramento chega com a fonte
       // (`reenquadrarAposEfemeride`) — nenhuma posição inventada antes
       this.maquinaDoTempo.garantirEfemerides();
       return;
@@ -1022,8 +1040,8 @@ export class Escada {
    * Com a roda escrevendo DISTÂNCIA (`AtlasRig.pinarDistancia`) os dois
    * somem por construção — não há caminho da roda até o alvo. A descida
    * continua existindo como gesto, com os donos que sempre teve e nos
-   * quais o visitante ESCOLHE o corpo: o botão "⊕ Aproximar" da
-   * ContextLine (`aproximarDoCorpo`), o clique no mesmo corpo já focado
+   * quais o visitante ESCOLHE o corpo: o botão "⊕ Aproximar" do cabeçalho
+   * da ficha (`aproximarDoCorpo`), o clique no mesmo corpo já focado
    * (`focarNoCorpo`), a busca e o `?ver=corpo`. A SUBIDA fica inteira —
    * ela é o Esc, e Esc é preset, não gesto contínuo.
    */

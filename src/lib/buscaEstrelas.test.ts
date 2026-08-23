@@ -310,7 +310,7 @@ describe('os corpos do sistema entram no MESMO índice', () => {
     }
   });
 
-  it('chaveDoFoco acha pelo nome que a ContextLine mostra — corpo ou estrela', () => {
+  it('chaveDoFoco acha pelo nome que a ficha mostra — corpo ou estrela', () => {
     expect(chaveDoFoco('Terra', comCorpos)).toBe('terra');
     expect(chaveDoFoco('Sirius', comCorpos)).toBe('hd48915');
     // o que não está no índice não inventa porta (o Sagittarius A✱)

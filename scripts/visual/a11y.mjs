@@ -92,7 +92,7 @@ const MEDIR_QUEBRAS = `(() => {
   const W = window.innerWidth;
   const H = window.innerHeight;
   const alvos = [
-    '.controls-bar', '.atlas-contexto', '.atlas-selo', '.atlas-tempo',
+    '.controls-bar', '.atlas-ficha', '.atlas-selo', '.atlas-tempo',
     '.free-hint', '.ajustes', '.atlas-gaveta', '.progress-wrap', '.dest-line',
   ];
   const pecas = [];
@@ -660,25 +660,41 @@ async function julgarListbox(s) {
   await s.teclar('Enter');
   const fechouEm = await esperarPor(s, "!document.querySelector('[data-dialogo=\"busca\"]')");
   conferir(fechouEm !== null, `busca: Enter fecha a paleta (em ${fechouEm} ms)`);
-  const devolveuEm = await esperarPor(
+  // PARA ONDE O FOCO VAI, e ele MUDOU DE DESTINO no item 74 — de
+  // propósito, e é a mudança certa. Até 22/08 a paleta devolvia o foco ao
+  // "⌕ Buscar" porque não havia nada para onde entregá-lo; agora escolher
+  // um alvo ABRE A FICHA dele, e o foco passa ao diálogo NOVO, como manda
+  // qualquer padrão de diálogo: quem escolheu quer ler o que escolheu, não
+  // voltar ao botão de procurar.
+  //
+  // A promessa que continua de pé, e é ela que se cobra aqui, é que o foco
+  // NÃO SE PERDE: ele tem de acabar DENTRO de um diálogo aberto, nunca no
+  // `<body>` — que é onde ele cai quando um gatilho desmonta junto com a
+  // peça. As quatro promessas do diálogo novo (entra, fica preso, Esc
+  // fecha, volta ao gatilho) são cobradas de ponta a ponta em
+  // `julgarDialogo`, na ficha como em qualquer outro.
+  const foiParaAFicha = await esperarPor(
     s,
-    'document.activeElement === document.querySelector(\'[data-abre-dialogo="busca"]\')'
+    "Boolean(document.querySelector('.atlas-ficha')"
+      + ' && document.querySelector(\'.atlas-ficha\').contains(document.activeElement))'
   );
-  // quem ficou com o foco, quando não foi o gatilho: falha que não diz
-  // onde o foco parou custa uma sessão de navegador para ser lida
   const comOFoco = await s.js(
     "document.activeElement.tagName + ' [' + (document.activeElement.innerText||'').trim().slice(0, 24) + ']'"
   );
   conferir(
-    devolveuEm !== null,
-    `busca: e devolve o foco ao gatilho (em ${devolveuEm} ms; com o foco: ${comOFoco})`
+    foiParaAFicha !== null,
+    `busca: e o foco passa para a FICHA do alvo escolhido (em ${foiParaAFicha} ms; com o foco: ${comOFoco})`
   );
+  // O QUE ANUNCIA O ALVO mudou de peça no item 74: era a `ContextLine` no
+  // alto à esquerda, é o cabeçalho da FICHA — que abre sozinha com a
+  // seleção, inclusive para estrela (ali ela é só o cabeçalho até o
+  // commit 7).
   const contexto = await s.js(
-    "(document.querySelector('.atlas-contexto-nome') || {}).textContent || ''"
+    "(document.querySelector('.atlas-ficha-nome') || {}).textContent || ''"
   );
   conferir(
     contexto === alvo,
-    `busca: o Enter enquadrou a opção ESCOLHIDA ("${alvo}" → em quadro "${contexto}")`
+    `busca: o Enter enquadrou a opção ESCOLHIDA ("${alvo}" → na ficha "${contexto}")`
   );
 }
 
@@ -702,8 +718,10 @@ try {
   // única prova da casa que roda com o relógio da viagem SOLTO.
   await julgarChromeDoFilme(sessao);
 
-  // O ATLAS: os diálogos do modo novo, pelo mesmo contrato.
-  const vivasAtlas = await julgarPagina(sessao, 'atlas=1', 'atlas');
+  // O ATLAS: os diálogos do modo novo, pelo mesmo contrato. Com `?foco=` de
+  // propósito desde o item 74 — a ficha do objeto é o quarto diálogo e só
+  // existe quando há SELEÇÃO, e sem ela o juiz não teria o que abrir.
+  const vivasAtlas = await julgarPagina(sessao, 'atlas=1&foco=terra', 'atlas');
   await julgarGavetaDeCamadas(sessao, 'atlas');
   conferir(
     vivasAtlas.some((r) => r.papel === 'status' && r.v === 'polite' && r.texto),
@@ -714,8 +732,17 @@ try {
   // A REGIÃO VIVA É VIVA MESMO: mudar o foco do Atlas muda o que ela
   // anuncia. Sem esta prova, um `aria-live` sobre texto imóvel passaria
   // como acessibilidade — é o modo educado de não dizer nada.
+  // A FICHA PRECISA ESTAR ABERTA para ser lida, e a prova da gaveta de
+  // camadas, logo acima, a fechou — é o que "uma gaveta de cada vez"
+  // significa, e é comportamento de produto, não defeito. Reabri-la pelo
+  // gatilho é o gesto do visitante.
+  await sessao.js(`(() => {
+    const b = document.querySelector('[data-abre-dialogo="ficha"]');
+    if (b && b.getAttribute('aria-expanded') !== 'true') b.click();
+  })()`);
+  await dorme(200);
   const antes = await sessao.js(
-    "(document.querySelector('.atlas-contexto')||{}).innerText||''"
+    "(document.querySelector('.atlas-ficha-nome')||{}).textContent||''"
   );
   const tinta = await sessao.js(`(() => {
     const c = document.querySelector('.label-canvas');
@@ -733,12 +760,11 @@ try {
     await sessao.clicar(tinta.x, tinta.y);
     await sessao.assentar();
     const depois = await sessao.js(
-      "(document.querySelector('.atlas-contexto')||{}).innerText||''"
+      "(document.querySelector('.atlas-ficha-nome')||{}).textContent||''"
     );
     conferir(
       Boolean(antes) && depois !== antes,
-      `atlas: a linha de contexto MUDA com o foco ("${antes.replace(/\n/g, ' ')}"`
-        + ` → "${depois.replace(/\n/g, ' ')}")`
+      `atlas: o nome na ficha MUDA com o foco ("${antes}" → "${depois}")`
     );
     // E O SELO ACOMPANHA O MESMO GESTO. Visitar uma estrela leva a
     // câmera a dezenas de parsecs, onde o 1:1 ficou para trás — o selo
@@ -1072,13 +1098,20 @@ try {
   // ---- A ÁREA DO SELO E A GAVETA QUE PARA ACIMA DELE (item 61) -----
   await julgarAreaDoSelo(sessao);
 
+  // ---- A FICHA DO OBJETO: dobra, cabe e não cobre o selo (item 74) --
+  await julgarAreaDaFicha(sessao);
+
   // ---- A ESCADA DE NAVEGAÇÃO (F2b/D7) -----------------------------
-  // Os dois botões novos da ContextLine com nome acessível pt-BR, o
-  // gesto de descer, o Esc que sobe UM degrau — e a interação declarada
-  // com os diálogos: diálogo aberto come o Esc PRIMEIRO.
+  // Os dois botões da escada com nome acessível pt-BR, o gesto de descer,
+  // o Esc que sobe UM degrau — e a interação declarada com os diálogos:
+  // diálogo aberto come o Esc PRIMEIRO.
+  //
+  // ELES MUDARAM DE CASA NO ITEM 74: eram a segunda linha da `ContextLine`,
+  // no alto à esquerda, e agora são o cabeçalho da FICHA DO OBJETO, que
+  // abre sozinha com a seleção. Os `aria-label` são os mesmos.
   await sessao.ir(`foco=terra&${PIN}`);
   const escadaBotoes = await sessao.js(`(() => {
-    const ctx = document.querySelector('.atlas-contexto');
+    const ctx = document.querySelector('.atlas-ficha-escada');
     const botoes = [...ctx.querySelectorAll('button')];
     return botoes.map((b) => b.getAttribute('aria-label'));
   })()`);
@@ -1091,14 +1124,14 @@ try {
   // descer: "aproximar" enquadra o CORPO com raio físico — a câmera sai
   // de ~6,3 UA do Sol para ~0,0006 UA da Terra
   await sessao.js(`(() => {
-    [...document.querySelectorAll('.atlas-contexto button')]
+    [...document.querySelectorAll('.atlas-ficha-escada button')]
       .find((b) => /Aproximar/.test(b.getAttribute('aria-label'))).click();
   })()`);
   await sessao.assentar();
   const desceu = await sessao.js(`JSON.stringify({
     ver: window.__director.verDaEscada,
     degrau: window.__director.escadaViva.degrau,
-    contexto: (document.querySelector('.atlas-contexto-nome') || {}).textContent,
+    contexto: (document.querySelector('.atlas-ficha-nome') || {}).textContent,
   })`);
   const d1 = JSON.parse(desceu);
   conferir(
@@ -1137,14 +1170,19 @@ try {
   await sessao.assentar();
   const sub2 = await sessao.js(`JSON.stringify({
     degrau: window.__director.escadaViva.degrau,
-    contexto: (document.querySelector('.atlas-contexto-nome') || {}).textContent,
-    botoes: [...document.querySelectorAll('.atlas-contexto button')].length,
+    corpoId: window.__director.escadaViva.corpoId,
+    ficha: document.querySelector('.atlas-ficha') !== null,
+    botaoDaFicha: document.querySelector('[data-abre-dialogo="ficha"]') !== null,
   })`);
   const d3 = JSON.parse(sub2);
+  // NO SISTEMA NÃO HÁ SELEÇÃO, logo não há ficha e não há botão para
+  // abri-la — é o "nunca chuta" do item 74 medido na tela: antes a
+  // `ContextLine` escrevia "Sistema solar" e escondia os dois botões; agora
+  // a peça inteira não monta. Sem seleção, nada ocupa o topo.
   conferir(
-    sub1 === 'orbita' && d3.degrau === 'sistema' && d3.contexto === 'Sistema solar'
-      && d3.botoes === 0,
-    `escada: Esc sobe um degrau por vez (corpo → '${sub1}' → '${d3.degrau}'), e no sistema os botões somem`
+    sub1 === 'orbita' && d3.degrau === 'sistema' && d3.corpoId === null
+      && !d3.ficha && !d3.botaoDaFicha,
+    `escada: Esc sobe um degrau por vez (corpo → '${sub1}' → '${d3.degrau}'), e no sistema a ficha não monta`
   );
 
   // ---- O CONVITE DO ATLAS (item 73, 22/08) ------------------------
@@ -1345,6 +1383,112 @@ async function julgarAreaDoSelo(s) {
   await s.send('Emulation.clearDeviceMetricsOverride');
 }
 
+/**
+ * A FICHA DO OBJETO (item 74) — as promessas que são DELA.
+ *
+ * As quatro do diálogo (o foco entra, fica preso, Esc fecha, volta ao
+ * gatilho) ela ganha de graça, porque nasce no `dialogFocus` como todo
+ * diálogo da casa — `julgarPagina` já as cobra. O que se mede aqui é o que
+ * nenhum outro juiz cobriria:
+ *
+ *  1. AS SEÇÕES DOBRAM, e o `aria-expanded` acompanha. Sem isso, quem ouve
+ *     a tela recebe um acordeão que não diz se está aberto ou fechado — e a
+ *     primeira nasce ABERTA, que é a lição do doador ("live state first"):
+ *     abrir a ficha e ver quatro títulos fechados seria pedir um clique
+ *     para responder a pergunta que a ficha existe para responder.
+ *  2. A ÁREA NO CELULAR. A ficha é a mais alta dos quatro diálogos, e
+ *     nenhum juiz da casa abria 390 px antes do item 62 — este é o
+ *     primeiro. O teto é metade da tela: acima disso o painel deixa de ser
+ *     um painel sobre a cena e vira a tela.
+ *  3. ELA NÃO COBRE O SELO, a mesma prova geométrica que
+ *     `julgarAreaDoSelo` faz para a gaveta de camadas — e pelo mesmo
+ *     conserto: o teto dela desconta `--selo-base` e `--selo-linha`.
+ *  4. NÃO TRANSBORDA a janela. Um cartão `fixed` encostado à direita que
+ *     não coubesse sairia pela borda sem barra de rolagem que o traga de
+ *     volta — o defeito que a barra de controles teve a 768 px.
+ */
+async function julgarAreaDaFicha(s) {
+  const MEDIR = `(() => {
+    const W = innerWidth, H = innerHeight;
+    const cx = (sel) => {
+      const e = document.querySelector(sel);
+      if (!e) return null;
+      const b = e.getBoundingClientRect();
+      return { x: b.left, y: b.top, w: b.width, h: b.height };
+    };
+    const ficha = cx('.atlas-ficha');
+    const selo = cx('.atlas-selo');
+    const bate = (p, q) => Boolean(p && q && p.x < q.x + q.w && q.x < p.x + p.w
+      && p.y < q.y + q.h && q.y < p.y + p.h);
+    return { W, H, ficha, selo, cobre: bate(ficha, selo),
+      pct: ficha ? (ficha.w * ficha.h) / (W * H) * 100 : null,
+      dentro: Boolean(ficha && ficha.x >= -0.5 && ficha.y >= -0.5
+        && ficha.x + ficha.w <= W + 0.5 && ficha.y + ficha.h <= H + 0.5) };
+  })()`;
+  // Metade da tela. Não é folga escolhida no escuro: medido em 22/08, a
+  // ficha da Terra ocupa 17,1% a 1440×813 e 32,3% a 390×844 com a seção
+  // "agora" aberta. O teto existe para o dia em que uma seção nova ou uma
+  // tradução comprida a empurrem — e para que esse dia acenda vermelho
+  // aqui em vez de na tela do dono.
+  const TETO_PCT = 50;
+  for (const fator of [0.85, 1, 1.4]) {
+    for (const [w, h] of [[390, 844], [320, 568]]) {
+      await s.send('Emulation.setDeviceMetricsOverride', {
+        width: w, height: h, deviceScaleFactor: 1, mobile: false,
+      });
+      await s.ir(`foco=terra&ui=${fator}&${PIN}`);
+      const m = await s.js(MEDIR);
+      const onde = `${w}×${h}, ui = ${fator}`;
+      conferir(
+        m.ficha !== null && m.pct <= TETO_PCT,
+        `ficha (${onde}): ocupa ${m.pct?.toFixed(1)}% da tela ≤ teto ${TETO_PCT}%`
+      );
+      const r = (p) => (p ? `[${p.x | 0},${p.y | 0} ${p.w | 0}×${p.h | 0}]` : 'ausente');
+      conferir(
+        m.ficha !== null && !m.cobre,
+        `ficha (${onde}): NÃO cobre o selo — ficha ${r(m.ficha)}, selo ${r(m.selo)}`
+      );
+      conferir(m.dentro, `ficha (${onde}): cabe inteira na janela — ${r(m.ficha)}`);
+    }
+  }
+  await s.send('Emulation.clearDeviceMetricsOverride');
+
+  // ---- AS SEÇÕES DOBRAM, na janela do juiz
+  await s.ir(`foco=terra&${PIN}`);
+  const secoes = () => s.js(`[...document.querySelectorAll('.atlas-ficha-titulo button')].map((b) => ({
+    titulo: b.innerText.trim().split(String.fromCharCode(10))[0],
+    aberta: b.getAttribute('aria-expanded') === 'true',
+    controla: b.getAttribute('aria-controls'),
+    corpo: Boolean(document.getElementById(b.getAttribute('aria-controls'))),
+  }))`);
+  const nascidas = await secoes();
+  conferir(
+    nascidas.length >= 3 && nascidas[0].aberta && nascidas.slice(1).every((x) => !x.aberta),
+    `ficha: ${nascidas.length} seções, a PRIMEIRA aberta e as outras fechadas `
+      + `(${nascidas.map((x) => `${x.titulo}:${x.aberta ? '▾' : '▸'}`).join(' ')})`
+  );
+  conferir(
+    nascidas.every((x) => x.aberta === x.corpo),
+    'ficha: o corpo de cada seção existe no DOM exatamente quando ela está aberta'
+      + ` (${nascidas.map((x) => `${x.titulo}:${x.corpo ? 'com' : 'sem'}`).join(' ')})`
+  );
+  // abre a segunda e fecha a primeira: os dois sentidos do gesto
+  await s.js(`[...document.querySelectorAll('.atlas-ficha-titulo button')][1].click()`);
+  await dorme(150);
+  const abriu = await secoes();
+  await s.js(`[...document.querySelectorAll('.atlas-ficha-titulo button')][0].click()`);
+  await dorme(150);
+  const fechou = await secoes();
+  conferir(
+    abriu[1].aberta && abriu[1].corpo && abriu[0].aberta,
+    `ficha: clicar na segunda a ABRE sem fechar a primeira (${abriu.map((x) => (x.aberta ? '▾' : '▸')).join('')})`
+  );
+  conferir(
+    !fechou[0].aberta && !fechou[0].corpo && fechou[1].aberta,
+    `ficha: clicar na primeira a FECHA, e o corpo dela sai do DOM (${fechou.map((x) => (x.aberta ? '▾' : '▸')).join('')})`
+  );
+}
+
 // ============================================================
 // O RETÂNGULO ÚTIL e A ESCALA DA UI — as duas provas que a F6 trouxe,
 // em funções porque agora rodam mais de uma vez (uma por tamanho de
@@ -1363,7 +1507,16 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
       return { sel, topo: b.bottom / H, base: (H - b.top) / H };
     };
     const pecas = [
-      '.atlas-contexto', '.controls-bar', '.atlas-selo', '.free-hint',
+      // A FICHA DO OBJETO NÃO ENTRA AQUI, e é decisão declarada (item 74):
+      // ela é um DIÁLOGO, como o painel de Ajustes, a gaveta de camadas e
+      // a paleta de busca — nenhum dos quatro está nesta lista. O
+      // retângulo útil desconta área PERMANENTE do HUD, nunca painel que o
+      // visitante abriu por um instante; medi-la aqui reprovaria uma
+      // declaração correta. A .atlas-contexto, que morava nesta lista,
+      // virou o cabeçalho dela e deixou de existir — quem dimensiona o
+      // topo hoje é a barra, que já era quem dimensionava antes.
+      // A área que a ficha ocupa tem prova PRÓPRIA: julgarAreaDaFicha.
+      '.controls-bar', '.atlas-selo', '.free-hint',
       // a máquina do tempo entrou na base pela F4: sem esta linha o
       // juiz mediria um HUD que não é mais o que está na tela
       '.atlas-tempo',

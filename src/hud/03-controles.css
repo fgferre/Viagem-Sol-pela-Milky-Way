@@ -51,9 +51,10 @@
    `?ui=1,4` a 768 px ela começava em −218 px — dois botões inteiros
    fora do quadro, sem barra de rolagem que os traga de volta (medido
    em 2026-08-20; a 899 px, −91 px).
-   O teto e a quebra já existiam DENTRO do Atlas (`:has(.atlas-contexto)`
-   logo abaixo, com 60vw por causa da linha de contexto); aqui é a mesma
-   lei, com a única margem que existe em toda tela — os 3vw da direita,
+   O teto e a quebra existiam DENTRO do Atlas desde antes (com 60vw, por
+   causa da linha de contexto que morava à esquerda); aqui é a mesma lei
+   para toda fase, com a única margem que existe em toda tela — os 3vw da
+   direita,
    espelhados à esquerda. Onde a barra cabe, nada muda: `fixed` sem
    `left` continua encolhendo até o conteúdo. */
 .controls-bar {
@@ -99,24 +100,15 @@
   opacity: 0;
 }
 
-/* A FAIXA DE CIMA DO ATLAS, com a mesma garantia geométrica do rodapé.
-   A linha de contexto (esquerda) e a barra de controles (direita) se
-   penduram na MESMA linha, e as duas crescem com o texto: sem limite
-   declarado elas se encontram no meio — foi o que aconteceu a 800 px de
-   largura com o texto em 140%. Aqui a linha de contexto termina no
-   máximo em 6vw + 30vw = 36vw e a barra começa no mínimo em
-   100vw − 3vw − 60vw = 37vw; entre as duas sobra 1vw em qualquer
-   tamanho de texto. A barra quebra linha em vez de crescer para a
-   esquerda, e o `:has()` mantém a regra dentro do Atlas — no filme,
-   onde não há linha de contexto, a barra é a de sempre. */
-.atlas-contexto {
-  max-width: 30vw;
-}
-.hud-root:has(.atlas-contexto) .controls-bar {
-  max-width: 60vw;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
+/* A FAIXA DE CIMA DO ATLAS FICOU SÓ COM A BARRA (item 74, 22/08).
+   Aqui morava a garantia geométrica entre DUAS peças que se penduravam na
+   mesma linha: a linha de contexto à esquerda (teto de 6vw + 30vw = 36vw) e
+   a barra de controles à direita (começando no mínimo em 100vw − 3vw − 60vw
+   = 37vw), com 1vw de folga em qualquer tamanho de texto. A linha de
+   contexto virou o cabeçalho da ficha do objeto e saiu do topo; sem uma
+   segunda peça para encontrar no meio, a barra volta ao `max-width: 94vw` de
+   toda fase — que é o teto que a impede de sair pela esquerda. O `:has()` e
+   os 60vw saem com a peça que os justificava. */
 
 /* --- linha de rumo (destino com distância viva) --- */
 .dest-line {

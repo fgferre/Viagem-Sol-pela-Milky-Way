@@ -57,6 +57,23 @@ const conferir = (ok, texto) => {
   if (!ok) falhas.push(texto);
 };
 
+/**
+ * O NOME DO QUE ESTÁ EM QUADRO, lido do BOTÃO da ficha e não da ficha.
+ *
+ * Até 22/08 quem anunciava o alvo era a `ContextLine`, uma linha permanente
+ * no alto à esquerda. O item 74 a transformou no cabeçalho da FICHA DO
+ * OBJETO — um DIÁLOGO, e uma gaveta de cada vez: abrir Camadas fecha a
+ * ficha, e as provas abaixo abrem Camadas de propósito. O que sobrevive a
+ * isso, e é o que mede "o alvo está intacto", é o gatilho na barra de
+ * controles: ele existe sempre que há seleção e carrega o nome dela
+ * ("Ficha de Sirius"). Trecho de JS injetado, não função de Node: cada
+ * chamada entra dentro de um `sessao.js`.
+ */
+const nomeEmQuadro = () =>
+  "((document.querySelector('[data-abre-dialogo=\"ficha\"]') || {})"
+  + ".getAttribute ? document.querySelector('[data-abre-dialogo=\"ficha\"]')"
+  + ".getAttribute('aria-label').replace('Ficha de ', '') : '')";
+
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
@@ -572,7 +589,7 @@ try {
     url: location.search,
     fase: window.__director.captura.fase,
     jd: window.__director.tempo.jd,
-    foco: (document.querySelector('.atlas-contexto-nome') || {}).textContent || '',
+    foco: ${nomeEmQuadro()},
     marca: window.__semRecarga,
   })`);
   const dc = JSON.parse(depoisDaCamada);
@@ -701,7 +718,7 @@ try {
       marca: window.__marcaQ,
       fase: window.__director.captura.fase,
       jd: window.__director.tempo.jd,
-      foco: (document.querySelector('.atlas-contexto-nome') || {}).textContent || '',
+      foco: ${nomeEmQuadro()},
     })`));
     conferir(
       t.marca === 1 && t.tier === q && t.mundo === q && t.url.includes(`q=${q}`),

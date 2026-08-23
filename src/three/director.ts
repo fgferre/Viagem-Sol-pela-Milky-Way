@@ -11,6 +11,7 @@ import type {
   QualityLevel,
 } from './core/engine';
 import type { EstadoDaVista } from './selo';
+import type { MotorEfemerides } from '../lib/atlas/efemerides';
 import { CAMADA_DO_CAMPO, Post } from './core/post';
 // (A PUPILA morreu INTEIRA no M2 da LEI-DA-ESTRELA — arquivo, teste e a
 // espinha de `uExposicao`. O que substitui a adaptação é a compressão
@@ -180,7 +181,7 @@ interface DirectorEvents {
    * O QUE ESTÁ EM QUADRO no Atlas — o nome do alvo enquadrado, ou
    * `null` quando é o enquadramento de abertura (o sistema inteiro) ou
    * quando o Director não tem nome para dar. `null` não é "vazio": é a
-   * ContextLine lendo o nome do sistema em vez de chutar (D6).
+   * a ficha do objeto NÃO montando, em vez de chutar um nome (D6).
    */
   onFoco: (nome: string | null) => void;
   /**
@@ -191,9 +192,11 @@ interface DirectorEvents {
   onTempo: (estado: EstadoDoTempo) => void;
   /**
    * O DEGRAU DA ESCADA (F2b/D7) — sai junto com `onFoco`, sempre que o
-   * enquadramento troca. É dele que a ContextLine decide quais botões
-   * mostrar (aproximar/sistema) e que o `urlComMomento` decide se
-   * `?ver=corpo` entra no link.
+   * enquadramento troca. É dele que o cabeçalho da ficha do objeto decide
+   * quais botões mostrar (aproximar/sistema), que a barra decide se oferece
+   * a ficha, e que o `urlComMomento` decide se `?ver=corpo` entra no link.
+   * Desde o item 74 ele carrega também o `corpoId` — o NOME serve para
+   * escrever, e o id para procurar.
    */
   onEscada: (estado: EstadoDaEscada) => void;
   /**
@@ -1889,6 +1892,20 @@ export class Director {
    */
   get retanguloUtil() {
     return retanguloUtilDoAtlas(escalaDaUi(), larguraDeCss());
+  }
+
+  /**
+   * A EFEMÉRIDE VIVA, somente leitura — o que a ficha do objeto (item 74)
+   * consulta a cada `onTempo` para escrever distância, velocidade e
+   * geometria no céu do corpo em foco.
+   *
+   * `null` até ela chegar pela rede, e a ficha nasce útil assim mesmo: raio,
+   * gravidade, massa e escape não dependem dela. Getter e não cópia no
+   * React pelo mesmo motivo do `selo` logo abaixo — um segundo dono do
+   * motor seria a segunda fonte de verdade sobre onde os corpos estão.
+   */
+  get efemerideViva(): MotorEfemerides | null {
+    return this.maquinaDoTempo.efemeride;
   }
 
   /**

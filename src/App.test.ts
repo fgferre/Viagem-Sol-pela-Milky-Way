@@ -56,10 +56,9 @@ describe('a reserva dos rótulos cobre o HUD fixo (item 56)', () => {
     FONTE.indexOf("].join(', ');")
   );
 
-  it('cita o rodapé, o selo e a linha de contexto — o HUD do flagrante', () => {
+  it('cita o rodapé, o selo e as tarjas — o HUD do flagrante', () => {
     expect(LISTA).toContain("':scope > [data-dialogo]'");
     for (const peca of [
-      '.atlas-contexto',
       '.atlas-rodape',
       '.atlas-selo',
       '.filme-rodape',

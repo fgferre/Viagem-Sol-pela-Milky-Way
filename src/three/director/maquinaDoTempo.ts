@@ -18,7 +18,7 @@ import {
 import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from '../tempoDoAtlas';
 import { dateToTDB } from '../../lib/atlas/time';
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
-import type { FonteDeEfemerides } from '../world/planetas/planetas';
+import type { MotorEfemerides } from '../../lib/atlas/efemerides';
 import { carregarEfemerides } from '../config';
 
 /**
@@ -52,7 +52,18 @@ export class MaquinaDoTempo {
   /** o relógio segue o tempo real do visitante */
   aoVivo = false;
   /** a fonte viva; `null` enquanto ninguém pediu, ou se a rede faltou */
-  efemeride: FonteDeEfemerides | null = null;
+  /**
+   * O MOTOR, e não a fatia dele. O campo era declarado como
+   * `FonteDeEfemerides` — a interface de UMA pergunta que a camada dos
+   * planetas define para não depender do motor. Só que o que mora aqui É um
+   * `MotorEfemerides` (é o que `carregarEfemerides` constrói), e desde o
+   * item 74 a ficha do objeto precisa de outras três perguntas dele:
+   * `posicao`, `velocidade` e `notaDeValidade`. Declarar o tipo verdadeiro
+   * não amplia acoplamento nenhum — a interface estreita continua de pé para
+   * quem só quer a posição, e `import type` some na compilação, então o
+   * `import()` dinâmico de `efemerides` continua fora do bundle inicial.
+   */
+  efemeride: MotorEfemerides | null = null;
   faseDaEfemeride: FaseDaEfemeride = 'retrato';
   /** acumuladores do passo do AO VIVO e do mostrador */
   private relogioAoVivo = 0;

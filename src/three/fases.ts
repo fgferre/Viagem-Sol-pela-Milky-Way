@@ -88,8 +88,18 @@ export interface HudDaFase {
   progresso: boolean;
   /** barra de controles — é ela que hospeda o ⚙ Ajustes */
   controles: boolean;
-  /** ContextLine: o que está EM QUADRO (nunca chuta — D6) */
-  contexto: boolean;
+  /**
+   * A FICHA DO OBJETO (item 74, 22/08) — o painel do corpo selecionado, e
+   * a herdeira da `ContextLine`: o "em quadro" deixou de ser peça solta no
+   * alto e virou o CABEÇALHO dela, com o nome, a classe e os dois gestos da
+   * escada.
+   *
+   * Só no Atlas, e o motivo é de dramaturgia. Na coda do filme a Terra e a
+   * Lua estão em quadro por ROTEIRO, não por seleção: quem responde "o que
+   * é isso?" ali é a legenda do beat, e a porta para o resto é o "Entrar no
+   * Atlas" do pausar-e-olhar — que já leva o `jd` do filme junto.
+   */
+  ficha: boolean;
   /**
    * gaveta de camadas — as 17 da casa em três famílias, config único.
    * Em TODA fase que tem barra de controles desde o item 61 (22/08): ela
@@ -129,7 +139,7 @@ export const HUD_POR_FASE = {
     rumo: false,
     progresso: false,
     controles: false,
-    contexto: false,
+    ficha: false,
     gaveta: false,
     selo: false,
     tempo: false,
@@ -147,7 +157,7 @@ export const HUD_POR_FASE = {
     rumo: false,
     progresso: false,
     controles: false,
-    contexto: false,
+    ficha: false,
     gaveta: false,
     selo: false,
     tempo: false,
@@ -165,7 +175,7 @@ export const HUD_POR_FASE = {
     rumo: true,
     progresso: true,
     controles: true,
-    contexto: false,
+    ficha: false,
     gaveta: true,
     selo: false,
     tempo: false,
@@ -183,7 +193,7 @@ export const HUD_POR_FASE = {
     rumo: false,
     progresso: true,
     controles: false,
-    contexto: false,
+    ficha: false,
     gaveta: false,
     selo: false,
     tempo: false,
@@ -201,7 +211,7 @@ export const HUD_POR_FASE = {
     rumo: false,
     progresso: false,
     controles: true,
-    contexto: false,
+    ficha: false,
     gaveta: true,
     selo: false,
     tempo: false,
@@ -214,8 +224,8 @@ export const HUD_POR_FASE = {
   },
   // O HUD do Atlas nasce MÍNIMO de propósito: barra de controles (que
   // é a porta dos Ajustes — sem ela a F5/F6 chegariam sem acesso) e a
-  // saída. A ContextLine, a gaveta de camadas e o selo de honestidade
-  // são da F2; a máquina do tempo é da F4; a barra de progresso NUNCA
+  // saída. A ficha do objeto (a antiga ContextLine), a gaveta de camadas e
+  // o selo de honestidade são da F2; a máquina do tempo é da F4; a barra de progresso NUNCA
   // entra (é o slider de capítulos do filme, e daria scrub do filme
   // dentro do Atlas — e o tempo do Atlas é OUTRO tempo: o do céu).
   atlas: {
@@ -225,7 +235,7 @@ export const HUD_POR_FASE = {
     rumo: false,
     progresso: false,
     controles: true,
-    contexto: true,
+    ficha: true,
     gaveta: true,
     selo: true,
     tempo: true,

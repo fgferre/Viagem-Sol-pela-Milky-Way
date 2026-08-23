@@ -18,10 +18,18 @@ export function useAtalhos(
       if (!d) return;
       // O ATALHO DA BUSCA (item 8): `/` — e Ctrl/Cmd+K, o costume das
       // paletas — nas fases que HOSPEDAM a busca (quem decide é o mapa
-      // das fases, não uma lista daqui). As guardas: diálogo aberto
-      // fica com o teclado dele (quem digita "/" na própria paleta está
-      // escrevendo, não atalhando) e alvo de texto idem; botão focado
-      // NÃO bloqueia — "/" sobre um botão não escreve nada.
+      // das fases, não uma lista daqui). As guardas: quem está DIGITANDO
+      // não atalha (alvo de texto), e a PRÓPRIA paleta fica com o teclado
+      // dela — "/" dentro dela é digitação. Botão focado NÃO bloqueia:
+      // "/" sobre um botão não escreve nada.
+      //
+      // A GUARDA ERA "QUALQUER DIÁLOGO ABERTO" ATÉ 22/08, e o item 74 a
+      // estreitou para a paleta. O motivo é medido: a ficha do objeto abre
+      // sozinha a cada seleção, então com a guarda antiga o "/" morria em
+      // quase todo instante do Atlas — um atalho que só funciona quando
+      // nada está selecionado não é um atalho. As gavetas são exclusivas
+      // entre si, e trocar a que está aberta pela busca é justamente o que
+      // o gesto pede.
       const pedeBusca =
         (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) ||
         ((event.ctrlKey || event.metaKey) &&
@@ -31,7 +39,7 @@ export function useAtalhos(
         pedeBusca &&
         HUD_POR_FASE[d.fase].busca &&
         !event.defaultPrevented &&
-        !document.querySelector('[data-dialogo]') &&
+        !document.querySelector('[data-dialogo="busca"]') &&
         !(event.target as HTMLElement | null)?.closest(
           'input, select, textarea, [contenteditable]'
         )

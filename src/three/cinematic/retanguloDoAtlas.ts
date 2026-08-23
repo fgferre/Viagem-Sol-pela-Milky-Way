@@ -22,11 +22,17 @@ const LETTERBOX_FRACAO = 0.065;
  * retângulo útil cobre o HUD do Atlas"). Se a CSS crescer, o gate
  * quebra antes de o alvo começar a ser enquadrado por baixo do selo.
  *
- * TOPO: `.atlas-contexto` e `.controls-bar`, ancoradas em `top: 8,5vh`
- * (a mesma linha) — medido 12,5% da altura a 1280×720, tarja incluída.
- * Desde a F3 a barra carrega o botão da busca e QUEBRA LINHA no texto
- * grande: medido 19,7% a 1200×900 com `?ui=1,4` — é ela, e não a linha
- * de contexto, quem dimensiona a fração do topo.
+ * TOPO: era `.atlas-contexto` e `.controls-bar` na mesma linha (`top:
+ * 8,5vh`) — medido 12,5% da altura a 1280×720, tarja incluída. Desde a F3 a
+ * barra carrega o botão da busca e QUEBRA LINHA no texto grande: medido
+ * 19,7% a 1200×900 com `?ui=1,4`, e já era ela, e não a linha de contexto,
+ * quem dimensionava a faixa. Em 22/08 a linha de contexto virou o cabeçalho
+ * da FICHA DO OBJETO (item 74) e saiu do topo: sobrou a barra sozinha, que
+ * era quem mandava. `CONTEXTO_FRACAO` fica onde está de propósito — baixá-lo
+ * moveria a CÂMERA de todas as vistas do Atlas, e essa é decisão de
+ * enquadramento com foto para o dono, não efeito colateral de uma obra de
+ * HUD. Enquanto isso a declaração sobra em vez de faltar, que é o lado
+ * seguro do erro declarado logo abaixo.
  * BASE: `.atlas-selo`, ancorado em `bottom: 7,4vh`. Ele foi a peça mais
  * alta do modo enquanto eram quatro blocos de texto sempre abertos
  * (19,6% da altura com a tarja). O item 61 o dobrou numa LINHA em
@@ -55,6 +61,8 @@ const LETTERBOX_FRACAO = 0.065;
  * aproximar/sistema em linha) e a faixa do topo cresceu a altura de um
  * `.hud-btn.small` sobre a do nome — medido pelo juiz de a11y (que
  * cobra declarado ≥ medido em toda a grade largura×ui): 0,075 → 0,09.
+ * O nome continua sendo o da peça que já não existe porque a FRAÇÃO é a
+ * mesma e a câmera não se move; o que ela cobre hoje é a barra sozinha.
  */
 const CONTEXTO_FRACAO = 0.09;
 
@@ -211,6 +219,10 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
  * meia largura por causa de uma faixa que ocupa 7% da altura empurraria
  * a câmera para trás sem necessidade. Descontar a FAIXA inteira é o
  * corte honesto — é o que garante que nada do alvo caia atrás do texto.
+ * (A peça da esquerda era a ContextLine, que virou a ficha do objeto em
+ * 22/08; a ficha é um DIÁLOGO e, como os outros três, não entra nesta
+ * conta — retângulo útil desconta área PERMANENTE, nunca painel que o
+ * visitante abriu por um instante.)
  *
  * `fatorUi` é a escala do texto do HUD (`?ui=`, F6). As tarjas não
  * escalam — são `vh` puro —; as faixas do HUD, sim.

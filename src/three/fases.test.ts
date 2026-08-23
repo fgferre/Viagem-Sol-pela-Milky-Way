@@ -61,8 +61,9 @@ describe('as fases e os dois mapas', () => {
     expect(atlas.veuDeTitulo).toBe(false);
     expect(atlas.botoesDaViagem).toBe(false);
     expect(atlas.botaoReviver).toBe(false);
-    // as peças da F2: a ContextLine, a gaveta de camadas e o selo
-    expect(atlas.contexto).toBe(true);
+    // as peças da F2: a ficha do objeto (a antiga ContextLine, item 74), a
+    // gaveta de camadas e o selo
+    expect(atlas.ficha).toBe(true);
     expect(atlas.gaveta).toBe(true);
     expect(atlas.selo).toBe(true);
     // e a da F4: a máquina do tempo — o tempo do CÉU, que não é o
@@ -71,7 +72,7 @@ describe('as fases e os dois mapas', () => {
   });
 
   it('as peças do Atlas não vazam para o filme', () => {
-    expect(FASES.filter((f) => HUD_POR_FASE[f].contexto)).toEqual(['atlas']);
+    expect(FASES.filter((f) => HUD_POR_FASE[f].ficha)).toEqual(['atlas']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].selo)).toEqual(['atlas']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].tempo)).toEqual(['atlas']);
   });

@@ -6,46 +6,172 @@
    que as apaga em ?shot=2, e ela só alcança filhos diretos.
    NADA aqui pisca, pulsa ou anima: o modo é silencioso como o filme. */
 
-/* a ContextLine: o que está EM QUADRO. As áreas desta faixa e a do selo
-   entram no retângulo útil do enquadramento (atlasRig.ts) — se mudarem
-   de altura aqui, mudam lá, e o juiz de a11y mede as duas. */
-.atlas-contexto {
-  position: fixed;
-  top: 8.5vh;
-  left: 6vw;
-  z-index: 40;
-  pointer-events: none;
+/* A FICHA DO OBJETO (item 74, 22/08) — a QUARTA `.hud-dialogo`.
+   O que é comum aos quatro diálogos (o topo pendurado na barra medida, o
+   encosto à direita, o teto, a camada, o respiro e o corpo de texto) mora na
+   fatia 1; aqui fica só o que é DELA — a largura e o desenho de dentro.
+
+   A LARGURA É A MAIOR DAS QUATRO por conteúdo, não por gosto: cada linha tem
+   rótulo, valor, o selo "×Terra" e a procedência, e os `min()` continuam
+   sendo a tela — em janela estreita ela encolhe como as outras.
+
+   E ELA PARA ACIMA DO SELO, pela mesma conta da gaveta de camadas: o teto
+   desconta a linha de base do selo, a altura da linha fechada e um respiro.
+   O que não couber ROLA dentro dela (o `overflow-y: auto` vem da fatia 1) —
+   nunca cobre o selo. */
+.atlas-ficha {
+  width: min(23rem, calc(100vw - 3.2rem));
+  max-height: calc(
+    100vh - var(--barra-fim) - var(--selo-base) - var(--selo-linha) - 2.4rem
+  );
+}
+
+/* O CABEÇALHO É A ANTIGA `ContextLine`: o "em quadro" era uma peça solta no
+   alto à esquerda com o nome do alvo e os dois gestos da escada, e virou o
+   topo desta ficha — agora com a CLASSE ao lado do nome, que a linha antiga
+   não tinha espaço para dizer. */
+.atlas-ficha-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.atlas-ficha-topo button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+}
+.atlas-ficha-topo button:hover {
+  color: #fff;
+}
+.atlas-ficha-identidade {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  color: rgba(235, 240, 250, 0.92);
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  gap: 0.15rem;
+  min-width: 0;
 }
-.atlas-contexto-olho {
+/* uma linha só, sempre: nome comprido corta com reticências em vez de
+   empurrar a altura do cabeçalho — o nome inteiro está no rótulo em quadro
+   e no botão da barra */
+.atlas-ficha-nome {
+  font-size: 1.02rem;
+  font-weight: 300;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.atlas-ficha-classe {
   font-size: 0.54rem;
   letter-spacing: 0.34em;
   text-transform: uppercase;
   color: rgba(200, 214, 235, 0.62);
 }
-.atlas-contexto-nome {
-  font-size: 1.02rem;
-  font-weight: 300;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-/* a linha nome + escada (F2b/D7): o nome e os dois gestos de degrau
-   ("aproximar"/"sistema") lado a lado — em LINHA e não embaixo, para a
-   faixa do topo crescer o mínimo (a fração declarada em atlasRig.ts
-   cobre a altura REAL, e o juiz de a11y confere as duas). O contêiner
-   segue pointer-events: none; só os BOTÕES voltam a receber clique —
-   texto de contexto não pode engolir o arrasto do canvas. */
-.atlas-contexto-linha {
+/* os dois gestos da escada, em linha e logo abaixo do nome */
+.atlas-ficha-escada {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 0.55rem;
+  margin-bottom: 0.7rem;
 }
-.atlas-contexto-linha .hud-btn {
-  pointer-events: auto;
+.atlas-ficha-escada:empty {
+  margin-bottom: 0;
+}
+
+/* AS SEÇÕES DOBRÁVEIS, no vocabulário do `.atlas-gaveta-titulo`: caixa
+   alta, espaçada, fria, com uma régua embaixo. O título INTEIRO é o botão —
+   alvo de toque de linha cheia, que é o que uma tela pequena precisa. */
+.atlas-ficha-secao + .atlas-ficha-secao {
+  margin-top: 0.7rem;
+}
+.atlas-ficha-titulo {
+  margin: 0 0 0.3rem;
+  /* o `h3` traz tamanho e peso do navegador; os dois são zerados aqui, e o
+     tamanho em `rem` porque o HUD inteiro reage ao `?ui=` (uiScale.test.ts
+     cobra que nenhuma declaração de `font-size` fuja da raiz) */
+  font-size: 0.6rem;
+  font-weight: 300;
+}
+.atlas-ficha-titulo button {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.2rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.14);
+  background: none;
+  cursor: pointer;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  color: rgba(200, 214, 235, 0.7);
+}
+.atlas-ficha-titulo button:hover {
+  color: rgba(235, 240, 250, 0.95);
+}
+.atlas-ficha-seta {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.atlas-ficha-linhas {
+  margin: 0;
+  padding: 0;
+}
+/* rótulo em cima, valor embaixo — e não duas colunas: a 23rem de largura um
+   valor como "1,898e+27 kg" mais o selo "317,83× Terra" não cabem ao lado de
+   um rótulo, e a coluna estreita quebraria os dois em três linhas cada. */
+.atlas-ficha-linha {
+  padding: 0.35rem 0;
+}
+.atlas-ficha-linha + .atlas-ficha-linha {
+  border-top: 1px solid rgba(220, 230, 248, 0.07);
+}
+.atlas-ficha-linha dt {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(200, 214, 235, 0.62);
+}
+.atlas-ficha-linha dd {
+  margin: 0.15rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.atlas-ficha-valor {
+  font-size: 0.78rem;
+  color: rgba(235, 240, 250, 0.95);
+}
+/* o "×Terra" — o mesmo âmbar dos números do rodapé do Atlas */
+.atlas-ficha-badge {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 214, 150, 0.85);
+}
+/* A PROCEDÊNCIA DE CADA NÚMERO, na linha inteira e fria: ela é para ser
+   lida quando se procura, não para competir com o valor. As três cores são
+   as do selo — verde para medido, âmbar para derivado. */
+.atlas-ficha-proc {
+  flex-basis: 100%;
+  font-size: 0.54rem;
+  letter-spacing: 0.06em;
+  color: rgba(200, 214, 235, 0.45);
+}
+.atlas-ficha-proc.medido {
+  color: rgba(150, 220, 180, 0.6);
+}
+.atlas-ficha-proc.derivado {
+  color: rgba(255, 214, 150, 0.55);
 }
 
 /* O SELO DE HONESTIDADE, DOBRADO EM UMA LINHA (item 61, 22/08): canto

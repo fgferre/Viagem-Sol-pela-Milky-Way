@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 80.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 81.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -29,7 +29,21 @@ por importância (dez corpos com nome na abertura, contra três) e o
 modo ganhou o convite dele. Ficou de fora, de propósito, o **77** (as
 linhas de órbita). **Espera o olho dele no app**, com as fotos em
 `capturas/item73-*`. Palavras dele no fim da mensagem: *"enfim muitas
-ideias que precisam ser organizadas."* Do **61** já fechou UMA parte: o
+ideias que precisam ser organizadas."*
+
+**E O PAINEL DO "EM QUADRO" VOLTOU (item 74, PARTE A fechada em 22/08).**
+Ele perguntou onde tinha ido parar "um elemento grande do HUD cheio de
+informacoes incriveis sobre os objetos selecionados"; a resposta medida
+foi que ele NUNCA veio — a fusão trouxe a mecânica do Atlas e deixou o
+conteúdo do doador para trás. Agora existe: escolher um corpo abre a
+FICHA dele do lado direito, com a distância e a velocidade no instante
+do céu que estiver na tela, o raio, a gravidade, a massa e o escape com
+o "×Terra", a órbita e — para quem orbita o Sol — quanto do disco está
+iluminado visto da Terra. Cada número diz de onde veio, na mesma língua
+do selo. A antiga linha "em quadro" virou o cabeçalho dela. Fotos em
+`capturas/item74-ficha-*`. O que falta é a PARTE B, e é sobretudo TEXTO:
+a enciclopédia dos 45 corpos está em inglês e não vai para a tela até a
+tradução. Do **61** já fechou UMA parte: o
 **selo de honestidade**, que não fechava e comia de 3,19% (mesa) a 10,10%
 (celular) da tela, virou UMA LINHA de 0,31% a 1,03% — a mesma peça nas
 duas telas, com gaveta que sobe ao clique, os culpados finalmente na
@@ -44,11 +58,13 @@ dele.
 
 **E OS DOIS JUÍZES PARARAM DE ACUSAR INOCENTE (item 76, FECHADO em
 22/08).** Eles reprovavam o app quando a MÁQUINA estava ocupada — o do
-filme chegou a dar 8 reprovações num código sem defeito nenhum. Os três
-vereditos doentes esperavam um número de milissegundos e cobravam que a
-cena já tivesse chegado; agora esperam a cena CHEGAR, e publicam quanto
-demorou. Prova: dez corridas do juiz do filme e cinco do juiz do Atlas,
-todas com a máquina de propósito sobrecarregada, todas verdes.
+filme chegou a dar 8 reprovações num código sem defeito nenhum. Os CINCO
+vereditos doentes — três no juiz do Atlas e dois no do filme — esperavam
+um número de milissegundos e cobravam que a cena já tivesse chegado;
+agora esperam a cena CHEGAR, e publicam quanto demorou. O conserto está
+em `6dacdc4` e `72c76b9`; a prova é `3235aa7`: dez corridas do juiz do
+filme e cinco do juiz do Atlas, todas com a máquina de propósito
+sobrecarregada, todas verdes.
 
 **O BASTÃO DE 17/08 (tarde): A RODADA DA ESTRELA POUSOU.** Palavras do
 dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
@@ -313,36 +329,67 @@ está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
 estavam?
 
 **74. O painel grande do "em quadro" do Atlas orbital — onde foi
-parar?** (Dono em 22/08. **A metade (a) está RESPONDIDA, na mesma data;
-o que fica aberto é a obra (b).**) Palavras dele:
+parar?** (Dono em 22/08. **A metade (a) está RESPONDIDA e a PARTE A da
+obra (b) FECHOU, na mesma data. O que segue aberto é a parte B.**)
+Palavras dele:
 
 > *"o "em quadro" no projeto atlas orbital havia um elemento grande do
 > HUD cheio de informacoes incriveis sobre os objetos selecionados.
 > onde isso foi parar? (será que está perdido dentro do proejto sem
 > nenhuma ligacao atual com o UI?)"*
 
-O que existe hoje com esse nome: a `ContextLine` — UMA linha, "o que
-está EM QUADRO no Atlas", com o nome do alvo enquadrado e os dois
-gestos da escada. Não é um elemento grande e não traz informação sobre
-o objeto.
+**(a) NÃO ESTAVA PERDIDO AQUI: nunca veio.** O painel é o `Sidebar.tsx`
+do doador (778 linhas), alimentado por `celestialBodies.ts` (45 corpos).
+Neste repositório não havia arquivo nenhum dessa família: a fusão trouxe
+a MECÂNICA do Atlas e deixou o CONTEÚDO para trás.
 
-**(a) NÃO ESTÁ PERDIDO AQUI: nunca veio.** O painel é o `Sidebar.tsx`
-do doador (`~/Github/atlas-orbital/src/components/ui/Sidebar.tsx`, 778
-linhas), alimentado por `src/data/celestialBodies.ts` (45 corpos), com
-dez seções por objeto — telemetria em tempo real, dados físicos
-(×Terra), contexto, fidelidade visual, recordes, exploração, dados
-orbitais, geometria no céu (fase/elongação), atmosfera e curiosidades.
-Neste repositório não há arquivo nenhum dessa família, ligado ou
-desligado: a busca por painel/sidebar não devolve peça, e o "em quadro"
-daqui É a `ContextLine`. Ou seja, a fusão trouxe a MECÂNICA do Atlas e
-deixou o CONTEÚDO para trás.
+**(b) PARTE A — FECHADA em 22/08.** A ficha do objeto existe, abre
+sozinha com a seleção e vive do lado direito junto de Buscar, Camadas e
+Ajustes, uma gaveta aberta por vez. O que ela mostra hoje, com a
+procedência de cada número escrita na mesma língua do selo:
 
-**(b) O QUE VOLTA, e por onde:** é a fila "Conteúdo e didática" do
-[`PLANO-ATLAS.md`](PLANO-ATLAS.md) — *painel por corpo lendo
-`corpos.json`*, *camada de fatos relacionais* e *Wikipedia no painel*.
-O plano antigo a chamava de Onda 8; hoje ela está listada **sem onda
-marcada**, e é isso que precisa mudar quando a onda da UI/UX decidir a
-ordem. A obra é portar, não procurar.
+- **agora** — a distância ao pai e a velocidade orbital, no instante do
+  céu que a máquina do tempo estiver mostrando (Titã: "1187 mil km" de
+  Saturno, "5,7 km/s");
+- **físico** — raio, gravidade, escape e massa, cada um com o "×Terra"
+  quando ele diz alguma coisa;
+- **órbita** — período, a distância mínima e máxima, excentricidade, o
+  dia sideral (Vênus diz "retrógrado") e a janela de validade do modelo;
+- **no céu** — a elongação do Sol e quanto do disco está iluminado,
+  vistos DA TERRA, para os corpos que orbitam o Sol e para a Lua.
+
+A antiga linha "em quadro" virou o CABEÇALHO dela, com o nome, a classe
+e os dois gestos da escada. Sem seleção, nada ocupa o topo. As fotos são
+`capturas/item74-ficha-tita.png` (mesa) e `capturas/item74-ficha-celular.png`
+(390×844). **Espera o olho dele no app.**
+
+**O que fica para a PARTE B**, nesta ordem:
+
+1. **O texto em pt-BR.** Os 45 corpos têm ~37 KB de descrição,
+   curiosidade, fatos, recordes e exploração — **em inglês**, herdados do
+   doador. Enquanto a tradução não chega, essas três seções não aparecem
+   na tela: inglês seria a casa decidindo por ele que meia língua serve.
+   A fonte já está versionada aqui (`scripts/data/atlas/fonte/corpos-fonte.json`)
+   e o caminho do `pt` já existe no código — a parte B é DADO, não obra.
+2. **A imagem que confessa** — fecha os itens **19** e **20**: a
+   procedência da textura de cada mundo na ficha (fonte, licença,
+   atribuição) e o defeito dito na cara (Ceres inventado pela fonte, as
+   emendas de Titã, as 68 linhas de Europa, os asteroides que são
+   elipsoides sem malha).
+3. **A ficha de estrela.** Hoje escolher uma estrela abre a ficha só com
+   o cabeçalho — o nome, a palavra "estrela" e o gesto de voltar. Falta o
+   conteúdo: constelação, tipo espectral, temperatura e distância. A
+   constelação já é lida na construção do catálogo e descartada; um campo
+   no `named` a devolve.
+4. **A iluminação vista DAQUI.** A ficha diz quanto do disco está
+   iluminado visto da Terra; falta dizer o mesmo visto da CÂMERA, que é o
+   que o visitante tem na tela. A conta existe (a camada dos planetas já a
+   faz para acender o ponto), mas a posição da câmera em coordenadas de
+   eclíptica não: falta o caminho de volta de
+   `heliocentricaEclipticaUAParaBaseGalactocentricaPc`.
+5. **Makemake não tem massa.** O kernel de massas da NASA não o lista —
+   não há satélite que a fixe —, então a ficha dele não escreve as linhas
+   de massa, gravidade e escape. É ausência honesta, não esquecimento.
 
 ---
 
@@ -778,8 +825,9 @@ de disco. **O suspeito ganhou nome em 22/08, medindo o item 76:** cada
 chamada de CDP fica pendurada num `id` que só o Chrome responde, e o
 `send` do `chrome.mjs` não tinha nenhuma saída para o Chrome que morre
 SEM responder — a promessa ficava viva para sempre, e com ela o processo.
-O buraco foi tapado (fechar o socket agora reprova os pendentes, nos dois
-lugares que falam CDP), mas isto NÃO é a prova: o defeito não se
+O buraco foi tapado em `6dacdc4` (fechar o socket agora reprova os
+pendentes, nos dois lugares que falam CDP), mas isto NÃO é a prova: o
+defeito não se
 reproduz sob comando, e o item só fecha quando uma leva presa voltar a
 acontecer e sair com erro legível em vez de sono.
 
@@ -810,8 +858,24 @@ e o veredito saiu em segundos. **O suspeito mudou em 22/08:** não é o
 `stdio: 'inherit'` — é o mesmo `send` sem saída do item 64 (uma chamada
 de CDP que espera para sempre a resposta de um Chrome morto). O `send`
 dos dois caminhos (`abrirSessao` e `capturarCDP`) agora reprova os
-pendentes quando o socket fecha; enquanto o travamento não voltar a
-acontecer para mostrar o erro, o item fica aberto.
+pendentes quando o socket fecha (`6dacdc4`); enquanto o travamento não
+voltar a acontecer para mostrar o erro, o item fica aberto.
+
+**80.** (Ruído de instrumento, achado em 22/08 fechando o item 74.) **Uma
+das 52 vistas oficiais não repetiu a si mesma.** O `ab-identidade` captura
+cada vista DUAS vezes por lado, e é assim que ele sabe distinguir "mudou"
+de "oscila". Na corrida `antes` (HEAD `3235aa7`, árvore limpa) a vista
+`lua` devolveu `e90581bdd9d0` numa captura e `6550cae71307` na outra — o
+MESMO código, dois md5. Não é regressão da obra: o lado `depois` deu
+`6550cae71307` em oito capturas seguidas (a leva inteira mais três
+recapturas forçadas com `DOZERO=1`), e as outras 51 vistas saíram
+IGUAL contra IGUAL. Ou seja, o que oscila é a vista, não a mudança — e o
+juiz a marcou `INSTÁVEL`, que é exatamente o que ele existe para fazer.
+Fica aberto porque não se reproduz sob comando: enquanto não voltar, não
+há o que medir. Quando voltar, o passo é guardar os DOIS PNG e rodar o
+`diff-pixel` — o suspeito de sempre nessa vista é a textura chegando em
+estados diferentes, e o gate tem defesa contra isso (`friaNoGate`), o que
+torna a hipótese menos provável e o achado mais interessante.
 
 **79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
 `bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo

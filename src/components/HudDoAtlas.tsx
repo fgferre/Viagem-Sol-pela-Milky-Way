@@ -15,7 +15,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
-import { CAMADAS_POR_FAMILIA, NOME_DO_SISTEMA } from '../three/atlasConfig';
+import { CAMADAS_POR_FAMILIA } from '../three/atlasConfig';
 import {
   BRILHO_ASSISTIDO,
   BRILHO_REAL,
@@ -27,67 +27,6 @@ import {
 } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
-
-/**
- * A CONTEXTLINE: o que está EM QUADRO. Segue o padrão do `Caption` do
- * filme (`role="status"` + `aria-live="polite"`) na LEITURA — e, desde
- * a F2b, carrega os DOIS gestos da escada de navegação (D7) ao lado
- * dela: "aproximar" (desce ao degrau corpo — só quando o corpo em foco
- * tem mesh resolvido) e "sistema" (volta à abertura — some quando já se
- * está nela). Os botões ficam FORA do span `role="status"`: controle
- * dentro de região viva seria anunciado como texto a cada troca.
- *
- * NUNCA CHUTA (D6): foco sem nome próprio lê o nome do sistema, que é
- * o que o enquadramento de abertura mostra de fato. Inventar um nome
- * para o que o Director não sabe nomear seria a única forma de esta
- * linha mentir.
- */
-export function ContextLine({
-  foco,
-  podeAproximar,
-  noSistema,
-  onAproximar,
-  onSistema,
-}: {
-  foco: string | null;
-  /** o corpo em foco tem degrau abaixo (mesh resolvido)? */
-  podeAproximar: boolean;
-  /** já estamos no enquadramento de abertura? (o botão some) */
-  noSistema: boolean;
-  onAproximar: () => void;
-  onSistema: () => void;
-}) {
-  return (
-    <div className="atlas-contexto">
-      <span className="atlas-contexto-olho">em quadro</span>
-      <div className="atlas-contexto-linha">
-        <span className="atlas-contexto-nome" role="status" aria-live="polite">
-          {foco ?? NOME_DO_SISTEMA}
-        </span>
-        {podeAproximar && (
-          <button
-            type="button"
-            className="hud-btn small"
-            onClick={onAproximar}
-            aria-label={`Aproximar: enquadrar ${foco ?? 'o corpo'} de perto`}
-          >
-            ⊕ Aproximar
-          </button>
-        )}
-        {!noSistema && (
-          <button
-            type="button"
-            className="hud-btn small"
-            onClick={onSistema}
-            aria-label="Voltar ao enquadramento do sistema solar"
-          >
-            ⌂ Sistema
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /**
  * A GAVETA DE CAMADAS — a ÚNICA porta das camadas desde 22/08 (item 61).
