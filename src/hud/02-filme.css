@@ -104,6 +104,9 @@
   /* clicável (scrub) com área de toque generosa via pseudo-elemento */
   pointer-events: auto;
   cursor: pointer;
+  /* ela é CHROME: some junto com a barra de controles quando o filme
+     corre e o ponteiro para (item 61, `.hud-sumido` na fatia 3) */
+  transition: opacity 0.45s ease;
 }
 .progress-wrap::before {
   content: '';

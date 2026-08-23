@@ -331,6 +331,7 @@ export function ProgressBar({
   onScrub,
   onSkipChapter,
   capituloAtual,
+  chromeVisivel = true,
 }: {
   progressRef: RefObject<HTMLDivElement | null>;
   ticks: { t: number; text: string }[];
@@ -338,6 +339,15 @@ export function ProgressBar({
   onSkipChapter: (dir: 1 | -1) => void;
   /** índice da legenda no ar; -1 entre capítulos */
   capituloAtual: number;
+  /**
+   * O CHROME DO FILME ESTÁ NA TELA? (item 61, 22/08 — *"2) somem
+   * sozinhos"*.) Esta barra é o scrubber, ou seja, chrome: com o filme
+   * correndo e o ponteiro parado há 3 s ela esmaece junto com a barra de
+   * controles. Some por OPACIDADE, com a caixa no lugar (`.hud-sumido`).
+   * O padrão é `true` porque na tela FINAL ela continua de pé — lá não
+   * há filme correndo, e é por ela que se volta a um momento preferido.
+   */
+  chromeVisivel?: boolean;
 }) {
   const scrubDoEvento = (
     event: React.PointerEvent<HTMLDivElement>
@@ -347,7 +357,7 @@ export function ProgressBar({
   };
   return (
     <div
-      className="progress-wrap"
+      className={`progress-wrap${chromeVisivel ? '' : ' hud-sumido'}`}
       role="slider"
       tabIndex={0}
       aria-label="Progresso da viagem"

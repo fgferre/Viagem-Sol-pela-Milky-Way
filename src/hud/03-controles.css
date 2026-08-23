@@ -66,6 +66,37 @@
   justify-content: flex-end;
   max-width: 94vw;
   gap: 0.6rem;
+  transition: opacity 0.45s ease;
+}
+
+/* ---- O CHROME QUE SOME SOZINHO (item 61, 22/08) ---------------------
+   Resposta do dono aos mockups, em duas palavras: *"2) somem sozinhos"*.
+   Com o filme correndo e o ponteiro parado há 3 s, a barra de controles
+   e a barra de capítulos saem da tela; o primeiro gesto — ponteiro,
+   toque, roda ou tecla — as traz de volta. Quem decide é o
+   `useChromeDoFilme`; aqui só se pinta.
+
+   POR OPACIDADE, COM A CAIXA NO LUGAR. `display: none` encolheria o
+   `--barra-fim` (que o App MEDE da barra) e o retângulo que os rótulos
+   contornam, e a geometria do HUD daria um pulo no meio do filme. É a
+   mesma lição da dica do rodapé do Atlas (`3f2a290`, `.free-hint.apagada`).
+
+   E `pointer-events: none` NOS FILHOS TAMBÉM: a barra é uma caixa
+   `fixed` que recebe ponteiro em toda a sua área mesmo transparente, e
+   `.hud-btn` religa o ponteiro por conta própria — sem o segundo
+   seletor, um botão invisível continuaria comendo o clique no céu.
+
+   A REGRA MORA NESTA FATIA, e não na do vocabulário comum (fatia 1),
+   por CASCATA: `.progress-wrap` declara `pointer-events: auto` na fatia
+   2, e entre duas classes de mesma especificidade quem decide é a ordem
+   — uma `.hud-sumido` declarada antes perderia justamente para quem ela
+   precisa vencer. */
+.hud-sumido,
+.hud-sumido * {
+  pointer-events: none;
+}
+.hud-sumido {
+  opacity: 0;
 }
 
 /* A FAIXA DE CIMA DO ATLAS, com a mesma garantia geométrica do rodapé.

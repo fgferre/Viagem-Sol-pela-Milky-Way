@@ -34,6 +34,7 @@ import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { useDirector, escolherAlvo } from './hooks/useDirector';
 import { useAtalhos } from './hooks/useAtalhos';
+import { useChromeDoFilme } from './hooks/useChromeDoFilme';
 import { useEspelhoDaUrl } from './hooks/useEspelhoDaUrl';
 // O HUD em 8 fatias contíguas — a ORDEM destes imports é a cascata do
 // antigo hud.css e não pode se reordenar (empates de especificidade,
@@ -563,6 +564,22 @@ export default function App() {
   } = useEspelhoDaUrl({ directorRef, phase, foco, tempo, indice, quality });
 
   const inJourney = phase === 'journey';
+  /**
+   * O CHROME DO FILME SOME SOZINHO (item 61, 22/08). Resposta do dono
+   * aos mockups, em duas palavras: *"2) somem sozinhos"*. Com o filme
+   * CORRENDO e nenhum gesto por 3 s, a barra de controles e a barra de
+   * capítulos esmaecem; o primeiro movimento de ponteiro, toque, roda ou
+   * tecla as traz de volta. Pausado, ficam: quem pausou parou para usar
+   * alguma coisa.
+   *
+   * O QUE SOME É O CHROME, e só ele. A legenda do beat e a dica do
+   * pausar-e-olhar (`.filme-rodape`) são CONTEÚDO — é o que o visitante
+   * está lendo —, e a linha de rumo é o instrumento do destino. Um filme
+   * que apagasse a própria legenda por inatividade estaria escondendo a
+   * obra, não o controle remoto.
+   */
+  const chromeVisivel = useChromeDoFilme(inJourney && !paused);
+  const chromeSumido = chromeVisivel ? '' : ' hud-sumido';
   // As peças que só decidem PRESENÇA por fase saem do mapa único
   // (`fases.ts`); as condições compostas continuam aqui, sobre ele.
   const hud = HUD_POR_FASE[phase];
@@ -682,6 +699,7 @@ export default function App() {
           onScrub={scrub}
           onSkipChapter={(dir) => directorRef.current?.skipChapter(dir)}
           capituloAtual={caption.idx}
+          chromeVisivel={chromeVisivel}
         />
       )}
 
@@ -792,9 +810,14 @@ export default function App() {
         </div>
       )}
 
-      {/* controles */}
+      {/* controles — e é ELA que some sozinha no filme correndo (item 61):
+          `hud-sumido` esmaece por opacidade e desliga o ponteiro dela e
+          dos filhos, sem tirar a caixa do fluxo. A altura desta barra é
+          o `--barra-fim` que o efeito acima MEDE e o retângulo que os
+          rótulos contornam; tirá-la do fluxo daria um pulo na geometria
+          do HUD no meio da viagem. */}
       {hud.controles && (
-        <div className="controls-bar">
+        <div className={`controls-bar${chromeSumido}`}>
           {hud.botaoReviver && (
             <button className="hud-btn small" onClick={play}>
                   ↻ Reviver

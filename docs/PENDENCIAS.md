@@ -34,8 +34,13 @@ ideias que precisam ser organizadas."* Do **61** já fechou UMA parte: o
 (celular) da tela, virou UMA LINHA de 0,3% a 1,0% — a mesma peça nas
 duas telas, com gaveta que sobe ao clique, os culpados finalmente na
 tela e a gaveta de camadas parando acima dele. Fotos em
-`capturas/item61-*`. O resto do 61 (camadas × ajustes, o modo único, os
-controles do filme que somem sozinhos) segue aberto.
+`capturas/item61-*`. Em 22/08 fecharam mais DUAS partes dele: as
+**camadas saíram do painel de Ajustes** e a gaveta virou a porta única —
+17 caixas em três famílias com contagem, nos dois modos (`751d270`) —, e
+os **controles do filme somem sozinhos** depois de 3 s parado, voltando
+ao primeiro gesto. Do 61 segue aberto o **modo único** (obra grande, de
+produto) e o nome *"Explorar livremente"* na barra do filme, que é gosto
+dele.
 
 **O BASTÃO DE 17/08 (tarde): A RODADA DA ESTRELA POUSOU.** Palavras do
 dono, com as imagens do recuo (1 → 40 → 15.800 UA), a abertura do Atlas
@@ -448,12 +453,22 @@ três perguntas e respondeu numa linha só:
    224.00×42.19 px (ui=1) e 313.59×58.06 px (ui=1,4). Fica de pé, para
    ele decidir na mesma onda: "Explorar livremente" continua sendo o
    nome na barra de controles do filme e no véu do fim.
-2. **Os controles do filme somem sozinhos.** Falta fazer.
+2. **Os controles do filme somem sozinhos. FEITO em 22/08.** Com o filme
+   CORRENDO e nenhum gesto por 3 s, a barra de controles do topo e a
+   barra de capítulos esmaecem; o primeiro movimento de ponteiro, toque,
+   roda ou tecla as traz de volta, e em PAUSA ficam sempre (quem pausou
+   parou para usar alguma coisa). O que NÃO some é a obra: a legenda do
+   beat, a dica do pausar-e-olhar e a linha de rumo. Somem por
+   OPACIDADE, com a caixa no lugar — a altura da barra é geometria do
+   HUD — e com o ponteiro desligado enquanto invisíveis, para não comer
+   o clique no céu; espaço, setas e Esc continuam valendo. Nenhuma foto
+   oficial muda (`?shot=2` não tem HUD). Foto:
+   `capturas/item61-filme-controles-somem.png`.
 3. **A máquina do tempo vira alça** no celular. Falta fazer — e a mesma
    resposta está registrada no item **62**, que é onde o celular mora.
 
-**"camadas e ajustes concorrem", 22/08 — FEITO em 22/08.** Palavras
-dele:
+**"camadas e ajustes concorrem", 22/08 — FEITO em 22/08 (`751d270`).**
+Palavras dele:
 
 > *"atlas - camadas e ajustes concorrem. vc nao acha que varios
 > elementos que hj estao em ajustes na verdade deveriam ser camadas?"*
@@ -782,6 +797,12 @@ para um gate. O conserto não é afrouxar o número: é medir o que a régua
 quer medir (o relógio ANDA quando solto), por exemplo cobrando avanço
 maior que zero e publicando a taxa como REGISTRO, do jeito que o
 `a11y.mjs` já faz com os cantos fora da faixa declarada.
+
+**A CONTA PIOROU EM 22/08, e ela mede a máquina:** na rodada do chrome
+do filme o `filme-smoke` deu **8 falhas** — as oito do mesmo veredito —,
+e o `751d270` limpo, na mesma máquina, deu **as mesmas 8** (418 OK nos
+dois lados; só muda QUAL dos shots pesados cai). Ou seja: 3, 1, 4, 2 e
+agora 8 — o número é a carga do dia.
 
 **E A MESMA DOENÇA ESTÁ NO `atlas-smoke`, medida em 22/08.** Dois dos
 113 vereditos dele reprovam nesta máquina sem defeito nenhum, e a prova

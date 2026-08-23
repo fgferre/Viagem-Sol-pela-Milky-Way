@@ -451,6 +451,134 @@ async function julgarGavetaDeCamadas(s, onde) {
 }
 
 /**
+ * O CHROME DO FILME SOME SOZINHO (item 61, 22/08).
+ *
+ * A resposta do dono aos mockups, em duas palavras: *"2) somem
+ * sozinhos"*. As quatro promessas, e cada uma é um caso da tela:
+ *  1. COM O FILME CORRENDO, três segundos parado e o chrome sai — a
+ *     barra de controles e a barra de capítulos em opacidade 0;
+ *  2. SEM MEXER NA CAIXA: a mesma largura e a mesma altura de antes. A
+ *     altura da barra alimenta `--barra-fim` e o retângulo que os
+ *     rótulos contornam; tirá-la do fluxo daria um pulo na geometria do
+ *     HUD no meio do filme;
+ *  3. E SEM COMER O CLIQUE: `pointer-events: none` enquanto invisível,
+ *     nos filhos também — a barra é uma caixa `fixed` que recebe
+ *     ponteiro em toda a área mesmo transparente;
+ *  4. VOLTA AO PRIMEIRO GESTO, e PAUSADO NUNCA SOME.
+ *
+ * E o que NÃO some: a LEGENDA do beat, que é conteúdo. Um gate que só
+ * medisse o desaparecimento passaria com a tela inteira apagada.
+ *
+ * O relógio é o de PAREDE, não o do filme: sob `?shot=1` o tempo da
+ * viagem congela, e a espera aqui é `dorme()` de verdade. O `?shot=1`
+ * também mata as transições, então a opacidade medida é 0 ou 1 — nunca
+ * um meio-termo de crossfade.
+ */
+async function julgarChromeDoFilme(s) {
+  const MEDIR = `(() => {
+    const ler = (sel) => {
+      const e = document.querySelector(sel);
+      if (!e) return null;
+      const cs = getComputedStyle(e);
+      const b = e.getBoundingClientRect();
+      return {
+        opacidade: Number(cs.opacity),
+        ponteiro: cs.pointerEvents,
+        classe: typeof e.className === 'string' ? e.className : '',
+        caixa: Math.round(b.width) + 'x' + Math.round(b.height),
+      };
+    };
+    return {
+      barra: ler('.controls-bar'),
+      trilho: ler('.progress-wrap'),
+      // o RODAPÉ do filme, que é onde a legenda do beat e a dica do
+      // pausar-e-olhar moram: ele existe em toda a fase 'journey', e a
+      // legenda vai e vem com a janela do roteiro — medir a legenda
+      // seria medir o corte, não o chrome
+      rodape: ler('.filme-rodape'),
+      pausado: window.__director.pausado,
+      fase: window.__director.captura.fase,
+    };
+  })()`;
+  // A ESPERA, com folga de meio segundo para o relógio do navegador
+  const PARADO = 3600;
+
+  // ---- 1. PAUSADO: o chrome fica, e fica para sempre ---------------
+  // `?t=` sozinho congela a viagem (contrato das capturas), então esta
+  // é a tela de quem apertou pausa.
+  await s.ir(`t=100&${PIN}`);
+  const pausadoAntes = await s.js(MEDIR);
+  await dorme(PARADO);
+  const pausadoDepois = await s.js(MEDIR);
+  conferir(
+    pausadoAntes.pausado === true && pausadoDepois.barra.opacidade === 1
+      && pausadoDepois.trilho.opacidade === 1,
+    `chrome do filme PAUSADO: ${PARADO} ms parado e a barra segue em`
+      + ` ${pausadoDepois.barra.opacidade} (trilho ${pausadoDepois.trilho.opacidade})`
+  );
+
+  // ---- 2. CORRENDO: some depois de 3 s ------------------------------
+  // o Espaço é o gesto do visitante para retomar, e passa pelo MESMO
+  // caminho do botão (`useAtalhos` → `togglePause` → o estado do React)
+  const ESPACO = {
+    key: ' ', code: 'Space', windowsVirtualKeyCode: 32,
+    nativeVirtualKeyCode: 32, text: ' ', unmodifiedText: ' ',
+  };
+  await s.send('Input.dispatchKeyEvent', { ...ESPACO, type: 'keyDown' });
+  await s.send('Input.dispatchKeyEvent', { ...ESPACO, type: 'keyUp' });
+  await dorme(300);
+  const correndo = await s.js(MEDIR);
+  conferir(
+    correndo.pausado === false && correndo.fase === 'journey'
+      && correndo.barra.opacidade === 1,
+    `chrome do filme: o Espaço retomou a viagem e a barra está na tela`
+      + ` (pausado ${correndo.pausado}, opacidade ${correndo.barra.opacidade})`
+  );
+  await dorme(PARADO);
+  const sumiu = await s.js(MEDIR);
+  conferir(
+    sumiu.barra.opacidade === 0 && sumiu.trilho.opacidade === 0,
+    `chrome do filme: ${PARADO} ms sem gesto e ele SAI — barra`
+      + ` ${sumiu.barra.opacidade}, trilho ${sumiu.trilho.opacidade}`
+  );
+  conferir(
+    sumiu.barra.caixa === correndo.barra.caixa
+      && sumiu.trilho.caixa === correndo.trilho.caixa,
+    `chrome do filme: a CAIXA fica onde estava (barra ${sumiu.barra.caixa},`
+      + ` trilho ${sumiu.trilho.caixa}) — a altura dela é geometria do HUD`
+  );
+  conferir(
+    sumiu.barra.ponteiro === 'none' && sumiu.trilho.ponteiro === 'none'
+      && /hud-sumido/.test(sumiu.barra.classe),
+    `chrome do filme: invisível não come o clique no céu`
+      + ` (pointer-events ${sumiu.barra.ponteiro}/${sumiu.trilho.ponteiro})`
+  );
+  conferir(
+    sumiu.rodape !== null && sumiu.rodape.opacidade === 1
+      && !/hud-sumido/.test(sumiu.rodape.classe),
+    `chrome do filme: o RODAPÉ (legenda + dica) não é chrome e continua na`
+      + ` tela — opacidade ${sumiu.rodape?.opacidade}, classe`
+      + ` "${sumiu.rodape?.classe}"`
+  );
+
+  // ---- 3. O PRIMEIRO GESTO TRAZ DE VOLTA ---------------------------
+  // um movimento de ponteiro de verdade, que é o gesto mais barato que
+  // o visitante faz — e o que um `click` faria de diferente (mexer na
+  // cena) não é o que se mede aqui
+  await s.send('Input.dispatchMouseEvent', {
+    type: 'mouseMoved', x: 600, y: 450, buttons: 0, pointerType: 'mouse',
+  });
+  await dorme(300);
+  const voltou = await s.js(MEDIR);
+  conferir(
+    voltou.barra.opacidade === 1 && voltou.trilho.opacidade === 1
+      && voltou.barra.ponteiro !== 'none',
+    `chrome do filme: o primeiro movimento do ponteiro o traz de volta`
+      + ` (${voltou.barra.opacidade}, pointer-events ${voltou.barra.ponteiro})`
+  );
+}
+
+/**
  * Espera uma condição VALER no navegador e devolve em quantos ms ela
  * valeu (`null` no estouro). O número entra no log de propósito: gate
  * que espera sem dizer quanto esperou esconde a piora do dia em que ela
@@ -585,6 +713,9 @@ try {
   // Ajustes que servia as camadas ao filme, e com elas fora dele o filme
   // ficaria sem nenhuma se a gaveta fosse só do Atlas.
   await julgarGavetaDeCamadas(sessao, 'journey');
+  // …e o CHROME do filme, que some sozinho desde o item 61 — esta é a
+  // única prova da casa que roda com o relógio da viagem SOLTO.
+  await julgarChromeDoFilme(sessao);
 
   // O ATLAS: os diálogos do modo novo, pelo mesmo contrato.
   const vivasAtlas = await julgarPagina(sessao, 'atlas=1', 'atlas');
