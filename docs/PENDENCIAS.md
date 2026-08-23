@@ -18,11 +18,23 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
+**O BASTÃO DE 23/08: O CELULAR FECHOU.** O item **62** — *"podemos criar
+alternativas de cotnrole menores e escondigos que expandam para
+celular"* — saiu da lista inteiro (`0199895`, `879d1de`). No telefone os
+controles do Atlas viraram **uma fileira de alças no pé**, cada uma
+sobe uma **folha de baixo** que fecha por três saídas, a **câmera parou
+de recuar** por um rodapé que já não existe (o céu à câmera foi de
+44,5% para 77,0%) e a **pinça de dois dedos passou a dar zoom** — ela
+simplesmente não existia em tela de toque. **Espera o olho dele no
+app**, com as fotos em `capturas/item62-*`. Ficaram duas escolhas para
+ele, escritas no item **61**: as tarjas pretas no telefone (gosto) e o
+arrasto para baixo (possível, não pedido).
+
 **O BASTÃO DE 22/08: A ONDA DA UI/UX ABRIU, E A NAVEGAÇÃO FECHOU.** O
 dono respondeu às três perguntas dos mockups e, na mesma mensagem,
 trouxe queixas e ideias novas: a onda da UI/UX está aberta e é feita
-dos itens **61**, **62**, **75** e **77** — o **74** fechou em 22/08 e
-saiu da lista. O **73** — *"foi
+dos itens **61**, **75** e **77** — o **74** fechou em 22/08 e o **62**
+em 23/08, e os dois saíram da lista. O **73** — *"foi
 criado um monstro frankstein"* — FECHOU em 22/08, nas duas etapas: a
 roda virou zoom contínuo, o arrasto dá a volta inteira, um clique
 escolhe e dois vão, a distância entra no link, os nomes se organizam
@@ -478,8 +490,28 @@ três perguntas e respondeu numa linha só:
    o clique no céu; espaço, setas e Esc continuam valendo. Nenhuma foto
    oficial muda (`?shot=2` não tem HUD). Foto:
    `capturas/item61-filme-controles-somem.png`.
-3. **A máquina do tempo vira alça** no celular. Falta fazer — e a mesma
-   resposta está registrada no item **62**, que é onde o celular mora.
+3. **A máquina do tempo vira alça** no celular. **FEITO em 23/08**, no
+   item **62**, que fechou inteiro e saiu da lista (`0199895`,
+   `879d1de`).
+
+**DUAS COISAS DO CELULAR FICARAM PARA ELE DECIDIR (item 62, fechado em
+23/08).** Nenhuma das duas é defeito; as duas são escolha:
+
+1. **As tarjas pretas no telefone — é gosto dele.** As faixas de cima e
+   de baixo custam ~9% da tela do celular e ficaram porque são "o mesmo
+   quadro do filme", que é decisão de composição. Se ele quiser, elas
+   somem no celular e o céu cresce de 80,2% para ~89% num aparelho
+   comum. É uma linha de código e uma decisão dele.
+2. **Arrastar a folha para baixo para fechá-la: possível, não pedido.**
+   O drawer do telefone já tem TRÊS saídas (a alça, o Esc e o toque no
+   céu), e a ideia que ele pediu do projeto Atlas era a ALÇA, não o
+   arrasto — o doador não tem arrasto em lugar nenhum. O que falta não é
+   a mecânica (o `ArrastoDePonteiro` já serve): é uma decisão de
+   desenho, porque a folha ROLA por dentro, e um arrasto para baixo em
+   cima do painel de Ajustes tanto pode querer dizer "fecha" quanto
+   "rola". Quem resolve isso é uma barra de pegar no topo da folha, ou a
+   regra "só fecha se a rolagem já estiver no topo" — e isso é escolha
+   de produto, não de código.
 
 **"camadas e ajustes concorrem", 22/08 — FEITO em 22/08 (`751d270`).**
 Palavras dele:
@@ -550,69 +582,6 @@ morreu no M1 e os dois modos desenham igual — se os gráficos ainda
 parecem mudar, é medida a fazer, não desenho a mudar. O que falta é a
 UI parar de tratar os dois como concorrentes, e o Atlas parar de
 parecer mais vazio.
-
-**62. Celular: controles menores que expandem — DECISÃO DELE, 21/08.**
-Perguntado se telas pequenas valem o esforço (medido: no Atlas, a
-320×568 sobram 103 px de universo, 18% da tela; a 390×844 sobram 42%;
-nenhum juiz abre 320 ou 390 px, e a quebra de CSS em 760 px ninguém
-julga), ele respondeu:
-
-> *"3. tela grande resultado melhor, mas acho que podemos criar
-> alternativas de cotnrole menores e escondigos que expandam para
-> celular, o proprio projeto atlas tinhas as abas animadas (drawer) que
-> podiamos trazer a ideia (com execucao bem melhor fieta por sua
-> coordenacao)"*
-
-Tela grande continua sendo o resultado principal. O que entra é o
-controle pequeno e escondido que expande — a ideia das abas animadas
-(drawer) do projeto Atlas, com execução melhor. Junto vai um juiz que
-abra 390 px, porque hoje nenhum abre.
-
-**A FORMA, decidida em 22/08 no mockup do celular.** Terceira resposta
-dele às três perguntas — *"3) vira alça"*: no celular a **máquina do
-tempo vira alça**, o controle pequeno que se puxa. É a mesma resposta
-registrada no item **61**, e é aqui que ela vira obra.
-
-**METADE FEITA em 23/08 — os CONTROLES.** No telefone (abaixo de 761 px)
-a barra de controles do Atlas se desfaz e vira **uma fileira de alças no
-pé da tela**: ⌕ Buscar · ⧉ Camadas · ⏱ Tempo · ⚙ Ajustes, e a **ficha
-como quinta**, só quando você escolheu alguma coisa. Tocar numa alça faz
-**subir uma folha de baixo**, de borda a borda, uma de cada vez, em 260
-ms — o mesmo movimento que o resto do app já usa. **Três saídas:** a
-mesma alça, o Esc, ou **um toque no céu**. A máquina do tempo saiu do
-rodapé e virou a alça ⏱ (a resposta dele); o `Partir` subiu para a tarja
-de cima; o seletor de qualidade saiu (era duplicata do painel de
-Ajustes). São **as mesmas peças de sempre**, só vestidas de outro jeito —
-nada foi duplicado. **Na tela grande não muda um pixel**, e isso está
-medido: `atlas-smoke` e `busca-smoke` verdes, e as vistas oficiais
-bit-idênticas.
-
-E passou a existir **um juiz que abre o app em 390 e 320 px** — antes
-nenhum abria. Ele veste APARELHO (toque de verdade, não só janela
-estreita) e dá **273 vereditos**: as alças, a folha que sobe e as três
-saídas, o selo nunca coberto, uma gaveta por vez e o foco preso. O
-`a11y.mjs` foi de 238 para **511** vereditos, de 4,5 para 6,1 min.
-
-Fotos: `capturas/item62-celular-recolhido.png` e
-`capturas/item62-celular-folha.png` (Camadas e Tempo, lado a lado).
-**Espera o olho dele no app.**
-
-**O QUE FALTA — a ETAPA 2, e são três coisas:**
-
-1. **A CÂMERA AINDA NÃO GANHOU O QUADRO.** O céu livre já é maior na
-   tela, mas `retanguloUtilDoAtlas` continua descontando a base de MESA:
-   a câmera ainda recua como se o rodapé antigo estivesse lá. Falta o
-   ramo do celular, com as frações MEDIDAS.
-2. **O TOQUE.** A **pinça não dá zoom** em tela de toque — o que chega
-   hoje como zoom é a pinça de *trackpad*, que vira `wheel`; num telefone
-   ela produz dois dedos e nenhum `wheel`. E o limiar do clique curto é
-   de mouse (6 px): um toque de dedo anda 8–12 px e vira arrasto.
-3. **O arraste da folha para baixo**, se valer a pena depois de (1) e (2).
-
-**UMA PERGUNTA DE GOSTO, para ele:** as **tarjas pretas** de cima e de
-baixo custam ~9% da tela do telefone. Elas são "o mesmo quadro do filme",
-que é decisão de composição — por isso ficaram. Se ele quiser, elas somem
-no celular e o céu cresce mais.
 
 **70. Girar a câmera acende e apaga o céu inteiro.** (Achado em 22/08
 pelo juiz novo de movimento, o MB1 — `scripts/visual/
