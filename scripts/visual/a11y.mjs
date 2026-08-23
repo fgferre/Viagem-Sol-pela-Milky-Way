@@ -110,6 +110,18 @@ const MEDIR_CELULAR = `(() => {
     })(),
     dialogos: [...document.querySelectorAll('[data-dialogo]')]
       .map((d) => d.getAttribute('data-dialogo')),
+    folha: cx('[data-dialogo]'),
+    folhaCobreSelo: bate(cx('[data-dialogo]'), selo),
+    folhaCobreAlca: bate(cx('[data-dialogo]'), caixaDaFileira),
+    folhaPct: (() => {
+      const f = cx('[data-dialogo]');
+      return f ? (f.w * f.h) / (W * H) * 100 : null;
+    })(),
+    folhaDentro: (() => {
+      const f = cx('[data-dialogo]');
+      return Boolean(f && f.x >= -0.5 && f.y >= -0.5 && f.x + f.w <= W + 0.5
+        && f.y + f.h <= H + 0.5);
+    })(),
   };
 })()`;
 
@@ -1567,6 +1579,131 @@ async function julgarCelular(s) {
       }
     }
   }
+
+  // ---- PARTE 2: A FOLHA DE BAIXO -----------------------------------
+  // O `@media` converte as CINCO de uma vez, então as cinco são medidas —
+  // a Ficha e o painel de Ajustes são as mais altas da casa, e o teto de
+  // 48vh existe para elas. As promessas: a folha vai de borda a borda,
+  // para ACIMA do selo e ACIMA da alça que a abriu, cabe na janela e não
+  // passa de metade da tela (o teto que `julgarAreaDaFicha` já cobra para
+  // a ficha, aqui cobrado para as cinco).
+  const TETO_DA_FOLHA_PCT = 50;
+  for (const fator of [0.85, 1, 1.4]) {
+    await vestirAparelho(s, ...APARELHOS[0]);
+    await s.ir(`foco=marte&ui=${fator}&${PIN}`);
+    for (const [w, h] of APARELHOS) {
+      await vestirAparelho(s, w, h);
+      await dorme(200);
+      for (const nome of ['camadas', 'busca', 'tempo', 'ajustes', 'ficha']) {
+        await s.js(`(() => {
+          const b = document.querySelector('[data-abre-dialogo="${nome}"]');
+          if (b && b.getAttribute('aria-expanded') !== 'true') b.click();
+        })()`);
+        await dorme(200);
+        const m = await s.js(MEDIR_CELULAR);
+        const onde = `${nome}, ${w}×${h}, ui = ${fator}`;
+        const r = (p) => (p ? `[${p.x | 0},${p.y | 0} ${p.w | 0}×${p.h | 0}]` : 'ausente');
+        // UMA GAVETA POR VEZ: abrir a seguinte fecha a anterior, e é o
+        // TIPO do estado que garante isso (`useGavetas`) — nunca um
+        // `set` esquecido. Com cinco folhas de borda a borda, duas
+        // abertas seriam uma pilha de cartões, não um HUD.
+        conferir(
+          m.dialogos.length === 1 && m.dialogos[0] === nome,
+          `folha (${onde}): exatamente UMA aberta — ${m.dialogos.join(', ') || 'nenhuma'}`
+        );
+        conferir(
+          m.folha !== null && Math.abs(m.folha.w - m.W) < 1.5,
+          `folha (${onde}): de borda a borda — ${r(m.folha)} numa tela de ${m.W} px`
+        );
+        conferir(
+          m.folha !== null && !m.folhaCobreSelo && !m.folhaCobreAlca,
+          `folha (${onde}): NÃO cobre o selo ${r(m.selo)} nem a fileira ${r(m.fileira)}`
+        );
+        conferir(
+          m.folhaDentro && m.folhaPct <= TETO_DA_FOLHA_PCT,
+          `folha (${onde}): cabe na janela e ocupa ${m.folhaPct?.toFixed(1)}% da tela`
+            + ` ≤ teto ${TETO_DA_FOLHA_PCT}%`
+        );
+      }
+    }
+  }
+
+  // ---- PARTE 3: A FOLHA SOBE ---------------------------------------
+  // SEM O PINO, e é a armadilha declarada deste juiz: `PIN` traz
+  // `?shot=1`, e a fatia 7 zera TODA transição e TODA animação
+  // (`.shot-mode * { animation: none !important }`). Medir a subida com o
+  // pino seria medir a folha já parada e chamar isso de movimento. Roda
+  // com o relógio solto, como `julgarChromeDoFilme`.
+  //
+  // TRÊS ESTADOS, 0 / 130 / 260 ms: fora da tela, no meio do caminho, e
+  // em repouso. A amostragem é DE DENTRO da página (um `rAF` e dois
+  // `setTimeout` gravando num vetor), porque medir daqui custaria uma ida
+  // e volta de CDP por amostra — 10 a 20 ms de incerteza sobre uma
+  // animação de 260.
+  await vestirAparelho(s, ...APARELHOS[0]);
+  await s.ir('atlas=1');
+  await dorme(300);
+  await s.js(`(() => {
+    window.__folha = [];
+    // O RELÓGIO COMEÇA NA MONTAGEM, não no clique. Entre um e outro há um
+    // render do React e um paint, e sob a cena do Atlas correndo isso
+    // custou 130 ms na primeira versão desta prova — que é meia animação:
+    // as três amostras caíam todas antes do movimento e o juiz acusava
+    // uma folha parada que na verdade nem tinha nascido. Ancorado na
+    // montagem, o que se mede é a ANIMAÇÃO, que é o objeto do juízo.
+    let t0 = null;
+    const inicio = performance.now();
+    const passo = () => {
+      const d = document.querySelector('[data-dialogo]');
+      if (d) {
+        const r = d.getBoundingClientRect();
+        if (t0 === null) t0 = performance.now();
+        window.__folha.push([Math.round(performance.now() - t0),
+          Math.round(r.top), Math.round(r.height)]);
+      }
+      if (performance.now() - inicio < 900) requestAnimationFrame(passo);
+    };
+    document.querySelector('[data-abre-dialogo="camadas"]').click();
+    requestAnimationFrame(passo);
+    return true;
+  })()`);
+  await dorme(1400);
+  const subida = await s.js('window.__folha');
+  /** a amostra mais perto de `ms` desde a montagem */
+  const em = (ms) => subida.reduce(
+    (a, b) => (Math.abs(b[0] - ms) < Math.abs(a[0] - ms) ? b : a),
+    subida[0]
+  );
+  const inicio = subida[0];
+  const meio = em(130);
+  // O TERCEIRO ESTADO É "JÁ CHEGOU AOS 260", e por isso ele é a primeira
+  // amostra a partir de 260 ms e não a mais PERTO de 260: a cena do Atlas
+  // desenha a ~18 quadros por segundo num aparelho emulado, então a grade
+  // de amostragem tem ~55 ms de passo e a vizinha de 260 tanto pode ser
+  // 287 (parada) quanto 221 (ainda andando). A promessa é um teto de
+  // tempo, e teto se cobra pelo lado de cima.
+  const fim = subida.find((a) => a[0] >= 260) ?? subida[subida.length - 1];
+  const repouso = subida[subida.length - 1];
+  const alto = repouso ? repouso[2] : 0;
+  conferir(
+    subida.length >= 10,
+    `folha sobe: ${subida.length} amostras em 900 ms — a varredura mediu de verdade`
+  );
+  conferir(
+    Boolean(inicio && repouso) && inicio[1] >= repouso[1] + 0.8 * alto,
+    `folha sobe: no primeiro quadro ela está FORA da tela — topo ${inicio?.[1]} px`
+      + ` contra ${repouso?.[1]} em repouso (altura ${alto})`
+  );
+  conferir(
+    Boolean(meio) && meio[1] > repouso[1] + 1 && meio[1] < inicio[1] - 1,
+    `folha sobe: a ${meio?.[0]} ms ela está NO MEIO do caminho — topo ${meio?.[1]} px`
+      + ` entre ${repouso?.[1]} e ${inicio?.[1]}`
+  );
+  conferir(
+    Boolean(fim && repouso) && Math.abs(fim[1] - repouso[1]) <= 3,
+    `folha sobe: a ${fim?.[0]} ms ela já chegou — topo ${fim?.[1]} px contra`
+      + ` ${repouso?.[1]} em repouso (260 ms, a curva da casa)`
+  );
 
   // ---- A QUEBRA: o CSS e o TypeScript viram celular no MESMO pixel ----
   // `LARGURA_DO_CELULAR_PX` é 760, e o `@media` repete o literal porque

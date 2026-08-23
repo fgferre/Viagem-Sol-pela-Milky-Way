@@ -124,6 +124,74 @@
     display: none;
   }
 
+  /* ---- A FOLHA DE BAIXO ----------------------------------------------
+     UM `@media` CONVERTE AS CINCO. Ajustes, Camadas, Busca, Ficha e Tempo
+     já eram o MESMO diálogo (`.hud-dialogo`, fatia 1): pendurado na barra
+     medida, encostado à direita, com o mesmo teto. Aqui essa âncora vira
+     a de telefone — de borda a borda, subindo do pé — e as cinco vão
+     juntas, sem componente novo, sem segundo mecanismo e sem uma linha
+     por peça.
+
+     A GEOMETRIA É UMA EXPRESSÃO SÓ, e ela reusa `--selo-base`, que já é o
+     número que três peças leem: como o celular soma a fileira DENTRO dele
+     (acima), `bottom: --selo-base + --selo-linha + respiro` garante as
+     DUAS promessas de uma vez — a folha não cobre o selo nem a alça que a
+     abriu. No filme e no voo livre, onde não há fileira nem selo,
+     `--alcas-altura` é zero e a mesma linha vira um respiro de 3,4rem no
+     pé; a expressão continua sendo uma.
+
+     O TETO É 48vh PARA AS CINCO, e o número é derivado, não escolhido. A
+     regra de área que o juiz já cobra é "o diálogo não passa de metade da
+     tela" (`julgarAreaDaFicha`), e uma folha de borda a borda ocupa 100%
+     da largura: 50% de área É 50vh de altura, NO LIMITE. Limite não é
+     margem — daí 48. (Os 52vh de `--teto-dialogo-tela`, fatia 6, foram
+     derivados do mesmo jeito quando o diálogo media 86% da largura.) Quem
+     não couber ROLA por dentro, porque `.hud-dialogo` é `overflow-y:
+     auto`; o que muda é que a folha para de empurrar a janela.
+
+     `svh` DEPOIS DE `vh`, e as duas linhas são de propósito: no iOS a
+     barra de URL vai e vem e `vh` mede a janela GRANDE, então a folha
+     mediria mais que a tela em metade dos instantes. `svh` é a janela
+     PEQUENA (estável); a linha em `vh` fica antes como reserva para quem
+     não a entender. A casa não tem gate de Safari — limite declarado.
+
+     A CASCATA É A FATIA. `.ajustes` (fatia 8), `.atlas-ficha` (4),
+     `.atlas-gaveta` (4) e `.atlas-busca` (4) declaram a LARGURA de cada
+     uma, e o painel de Ajustes declara também o teto dele; todas com a
+     mesma especificidade de `.hud-dialogo`. Entre iguais decide a ORDEM,
+     e esta fatia é lida por último — então uma regra só neutraliza as
+     quatro, em vez de quatro regras repetindo o contrário. */
+  .hud-dialogo {
+    top: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    bottom: calc(var(--selo-base) + var(--selo-linha) + 0.4rem);
+    max-height: 48vh;
+    max-height: 48svh;
+    /* de borda a borda a moldura lateral não emoldura nada: some, e a
+       folha vira uma faixa que sobe */
+    border-left: 0;
+    border-right: 0;
+    /* A ENTRADA É UMA ANIMAÇÃO, e não uma transição, porque as cinco
+       gavetas DESMONTAM ao fechar: sem quadro inicial no DOM não há de
+       onde uma transição partir. Um `@keyframes` roda sozinho na
+       montagem — nenhum estado a mais no React, nenhum quadro de atraso,
+       nenhum risco de a folha piscar no lugar antes de descer. É o mesmo
+       recurso do `captionIn` (fatia 2), com a curva da casa. A SAÍDA é
+       outra história e não cabe em CSS nenhum: o nó já foi. */
+    animation: folhaSobe 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes folhaSobe {
+    from {
+      transform: translateY(110%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
   /* A DICA DOS GESTOS SAI DO FLUXO, e é a mesma lei de sempre com outro
      remédio: ela APAGA depois do primeiro arrasto (`.free-hint.apagada`),
      e no fluxo isso encolheria a coluna do rodapé, cresceria o retângulo
@@ -138,5 +206,28 @@
     bottom: 100%;
     margin-bottom: 0.4rem;
     text-align: right;
+  }
+
+  /* E ELA CEDE À FOLHA. Fora do fluxo a dica passa a ficar logo acima do
+     selo, e a folha para 0,4rem acima do selo — as duas disputam a mesma
+     faixa de ~18 px, e o que se via era meia linha de texto espiando por
+     baixo da folha. Quem cede é a dica: ela é ENSINO DE GESTO e some
+     sozinha no primeiro arrasto; a folha é o que o visitante acabou de
+     abrir. Por opacidade, como sempre — ela já está fora do fluxo, então
+     não há geometria para mover. */
+  .hud-root:has([data-dialogo]) .atlas-rodape .free-hint {
+    opacity: 0;
+  }
+}
+
+/* MOVIMENTO REDUZIDO: a folha APARECE, não sobe.
+   A lista de transições zeradas da casa mora na fatia 6, e esta regra NÃO
+   podia entrar lá: `.hud-dialogo` com a animação é declarado nesta fatia,
+   e entre seletores de mesma especificidade decide a ORDEM — uma regra
+   escrita na 6 perderia para a 9 e o movimento reduzido não valeria.
+   Quem declara o movimento é quem tem de declarar a ausência dele. */
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .hud-dialogo {
+    animation: none;
   }
 }
