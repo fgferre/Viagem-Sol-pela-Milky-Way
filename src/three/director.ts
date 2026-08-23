@@ -1457,8 +1457,8 @@ export class Director {
 
   /**
    * A FICHA ABRIU (ou fechou). O React é quem sabe, e a posição da
-   * câmera só sobe para lá enquanto alguém a lê — ver `emitCamera` em
-   * `director/rotulos.ts` (item 78).
+   * câmera só sobe para lá enquanto alguém a lê — a doutrina inteira
+   * mora em `emitCamera`, em `director/rotulos.ts`.
    */
   lerCamera(quer: boolean) {
     this.rotulos.lerCamera(quer);

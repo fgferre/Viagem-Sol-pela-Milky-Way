@@ -1,5 +1,5 @@
 // ============================================================
-// A CÂMERA SÓ SOBE PARA O REACT COM QUEM A LEIA (item 78).
+// A CÂMERA SÓ SOBE PARA O REACT COM QUEM A LEIA.
 //
 // O destino de `onCamera` é um `setState`, e a ficha do objeto é a única
 // que lê a posição. Com a ficha FECHADA, publicar a 4 Hz durante um

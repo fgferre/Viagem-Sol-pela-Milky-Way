@@ -280,7 +280,7 @@ export class Rotulos {
    * de planetas — comparar o vetor com o anterior —, porque a pergunta é
    * a mesma: mudou o ponto de onde se olha?
    *
-   * O LEITOR ENTRA NA CONTA porque o destino é `setState` (item 78): a
+   * O LEITOR ENTRA NA CONTA porque o destino é `setState`: a
    * ficha é a única que lê esta posição, e com ela FECHADA cada
    * publicação re-renderizava o HUD inteiro por um painel que ninguém
    * abriu — 4 vezes por segundo, durante todo arrasto no Atlas. Fora do

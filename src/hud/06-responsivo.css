@@ -202,7 +202,9 @@
 
    52vh e não 58: com 86% de largura a conta do teto de área dá 58vh NO
    LIMITE, e limite não é margem. Com 52 o pior caso medido (a ficha de
-   Marte, a mais alta, a 390×844 com `?ui=1`) fica em 45,1%. */
+   Marte, a mais alta, a 390×844 com `?ui=1`) fica em 45,2% — o número é
+   o que o `a11y` MEDE, e o 45,1 que estava aqui não vinha de corrida
+   nenhuma. */
 @media (max-width: 760px), (max-height: 640px) {
   .atlas-ficha {
     max-height: min(

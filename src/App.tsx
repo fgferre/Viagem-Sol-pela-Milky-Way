@@ -665,7 +665,8 @@ export default function App() {
   const hud = HUD_POR_FASE[phase];
   /**
    * A FICHA É A ÚNICA LEITORA DA CÂMERA, e o Director precisa saber
-   * disso (item 78). Com ela fechada, a posição subia por `setState` 4
+   * disso (ver `emitCamera`, em `director/rotulos.ts`). Com ela
+   * fechada, a posição subia por `setState` 4
    * vezes por segundo durante todo arrasto no Atlas e re-renderizava o
    * HUD inteiro por um painel que ninguém abriu. O `useEffect` vem
    * DEPOIS do `useDirector` (que já pôs o Director no ref, síncrono),
