@@ -180,6 +180,65 @@ function hermite(
   return { x: eixo(0), y: eixo(1), z: eixo(2) };
 }
 
+/**
+ * A DERIVADA da mesma Hermite — UA/dia, no mesmo segmento e no mesmo frame.
+ *
+ * OS TRÊS FLOATS QUE A `hermite` DESCARTA: cada amostra do `.bin` guarda
+ * `[x,y,z,vx,vy,vz]`, e até 2026-08-22 os três últimos serviam só como
+ * TANGENTES da interpolação de posição — ninguém nunca perguntou a
+ * velocidade. Este é o segundo consumidor deles, e ele os lê pela porta
+ * certa: derivar o polinômio que a casa JÁ desenha é o que garante que a
+ * velocidade mostrada seja a da trajetória mostrada. Nos nós ela devolve
+ * exatamente o `v` gravado; entre eles, a inclinação da curva que passa
+ * por ali. Interpolar os `v` por conta própria daria um terceiro número,
+ * parecido e incoerente com os outros dois.
+ *
+ * As bases derivadas em `t` (o parâmetro 0..1 do segmento):
+ *   h00' = 6t²−6t   h10' = 3t²−4t+1   h01' = −6t²+6t   h11' = 3t²−2t
+ * e o `1/h` converte de "por segmento" para "por dia" nos termos de
+ * posição — os de velocidade já vêm multiplicados por `h` na fórmula
+ * original, então o fator cancela neles.
+ */
+function hermiteVelocidade(
+  tabela: TabelaCorpo,
+  jdInicio: number,
+  jdTdb: number
+): PosicaoEcliptica {
+  const h = tabela.passoDias;
+  const i = Math.min(
+    Math.max(0, Math.floor((jdTdb - jdInicio) / h)),
+    tabela.n - 2
+  );
+  const t = (jdTdb - (jdInicio + i * h)) / h;
+  const t2 = t * t;
+  const dh00 = 6 * t2 - 6 * t;
+  const dh10 = 3 * t2 - 4 * t + 1;
+  const dh01 = -6 * t2 + 6 * t;
+  const dh11 = 3 * t2 - 2 * t;
+  const d = tabela.dados;
+  const a = i * 6;
+  const b = (i + 1) * 6;
+  const eixo = (k: number) =>
+    (dh00 * d[a + k]! + dh01 * d[b + k]!) / h +
+    dh10 * d[a + 3 + k]! +
+    dh11 * d[b + 3 + k]!;
+  return { x: eixo(0), y: eixo(1), z: eixo(2) };
+}
+
+/**
+ * O passo da diferença central para os corpos de KEPLER, em dias (~86 s).
+ *
+ * Eles não têm tabela — a posição sai de uma solução analítica —, e derivar
+ * essa solução à mão significaria abrir `posicaoKepler` para devolver a
+ * anomalia excêntrica só para este uso. A diferença central custa duas
+ * chamadas e erra em O(dt²·p‴): no pior corpo do catálogo (Mimas, período de
+ * 0,94 dia) isso é ~5e-5 relativo, ou 0,7 m/s numa órbita de 14,3 km/s. O
+ * passo não pode encolher muito mais: abaixo disso o cancelamento de ponto
+ * flutuante entre duas posições quase iguais começa a comer os dígitos que a
+ * fórmula acabou de ganhar.
+ */
+const PASSO_DA_DERIVADA_DIAS = 1e-3;
+
 // ------------------------------------------------------------- motor
 
 const TTL_CACHE_MS = 1000;
@@ -312,6 +371,61 @@ export class MotorEfemerides {
     }
     // Registrado mas sem tabela nem elementos: erro de montagem, não
     // de chamador — lança com o mesmo tom alto.
+    throw new Error(
+      `MotorEfemerides: "${bodyId}" consta no registro (${registro.modelo}) ` +
+        `mas não tem tabela nem elementos Kepler embarcados`
+    );
+  }
+
+  /**
+   * VELOCIDADE parent-centered em UA/dia, no mesmo frame e no mesmo instante
+   * da `posicao()`. É a grandeza que a ficha do objeto mostra como
+   * "velocidade orbital" depois de multiplicar por `AU_KM/86400`.
+   *
+   * NÃO PASSA PELO CACHE, de propósito. O contrato do cache (as cinco
+   * cicatrizes do topo) é sobre POSIÇÃO — `hitRate`, teto de 2.000 entradas,
+   * TTL — e um segundo tipo de valor no mesmo Map envenenaria os contadores
+   * que o `memoria.mjs` e o painel de estatísticas leem. O consumidor desta
+   * chamada é texto de HUD a 4 Hz, não o laço de quadro: duas avaliações de
+   * Kepler por segundo não pedem cache nenhum.
+   *
+   * O Sol devolve zero sem contar bypass, pela mesma razão: quem conta é a
+   * `posicao()`.
+   */
+  velocidade(bodyId: string, jdTdb: number): PosicaoEcliptica {
+    if (!Number.isFinite(jdTdb)) {
+      throw new Error(
+        `MotorEfemerides.velocidade: jdTdb não-finito (${jdTdb}) para "${bodyId}"`
+      );
+    }
+    const registro = this.registroDe(bodyId);
+    if (bodyId === 'sun') return { x: 0, y: 0, z: 0 };
+
+    const tabela = this.tabelas.corpos.get(bodyId);
+    if (tabela) {
+      const { jdInicio, jdFim } = this.tabelas.janela;
+      if (jdTdb < jdInicio || jdTdb > jdFim) {
+        // A MESMA adaptação b da posicao(): fora da janela nada de
+        // extrapolação silenciosa. A mensagem cita esta chamada para o
+        // rastro não apontar a irmã errada.
+        throw new Error(
+          `MotorEfemerides.velocidade: jd ${jdTdb} fora da janela da tabela ` +
+            `de "${bodyId}" (${jdInicio}..${jdFim} TDB, 1950–2050); ` +
+            `a tabela regenera via npm run data:atlas quando a janela mudar`
+        );
+      }
+      return hermiteVelocidade(tabela, jdInicio, jdTdb);
+    }
+    if (IDS_KEPLER_SET.has(bodyId)) {
+      const dt = PASSO_DA_DERIVADA_DIAS;
+      const antes = posicaoKepler(bodyId, jdTdb - dt);
+      const depois = posicaoKepler(bodyId, jdTdb + dt);
+      return {
+        x: (depois.x - antes.x) / (2 * dt),
+        y: (depois.y - antes.y) / (2 * dt),
+        z: (depois.z - antes.z) / (2 * dt),
+      };
+    }
     throw new Error(
       `MotorEfemerides: "${bodyId}" consta no registro (${registro.modelo}) ` +
         `mas não tem tabela nem elementos Kepler embarcados`
