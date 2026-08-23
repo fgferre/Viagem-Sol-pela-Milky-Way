@@ -15,7 +15,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
-import { CAMADAS_DO_ATLAS, NOME_DO_SISTEMA } from '../three/atlasConfig';
+import { CAMADAS_POR_FAMILIA, NOME_DO_SISTEMA } from '../three/atlasConfig';
 import {
   BRILHO_ASSISTIDO,
   BRILHO_REAL,
@@ -90,9 +90,31 @@ export function ContextLine({
 }
 
 /**
- * A GAVETA DE CAMADAS. Lê o config único (`atlasConfig.ts`): a lista, os
- * rótulos e os ícones vêm de lá, e é impossível ela oferecer uma camada
- * que o Director não conheça.
+ * A GAVETA DE CAMADAS — a ÚNICA porta das camadas desde 22/08 (item 61).
+ *
+ * A QUEIXA DO DONO, palavra por palavra: *"atlas - camadas e ajustes
+ * concorrem. vc nao acha que varios elementos que hj estao em ajustes na
+ * verdade deveriam ser camadas?"*. E o fato que ela media: as 17 camadas
+ * da casa eram 17 dos 32 controles do painel de Ajustes E seis linhas
+ * desta gaveta — duas superfícies desenhando da MESMA tabela, uma com 17
+ * e outra com 6. Agora a tabela tem UM leitor: esta gaveta mostra as 17,
+ * e a seção "Camadas" saiu do painel.
+ *
+ * EM TRÊS FAMÍLIAS, COM CONTAGEM, e não numa fileira de dezessete: 17
+ * caixas seguidas são um inventário, três grupos com "quantas estão
+ * ligadas" são um mapa. O agrupamento é campo da tabela (`familia`),
+ * derivado em `CAMADAS_POR_FAMILIA` — nunca uma segunda lista aqui.
+ *
+ * A CONTAGEM É O RESUMO DO GRUPO, e é o que se lê sem abrir nada: "3 de
+ * 4" diz que alguma coisa do sistema solar está desligada sem obrigar a
+ * varrer as caixas. Para quem ouve a tela ela vai no `aria-label` do
+ * grupo; na tela é o par de números ao lado do título.
+ *
+ * ELA EXISTE NOS DOIS MODOS — e, por consequência, em toda fase que tem
+ * barra de controles: filme, voo livre e Atlas. É a MESMA peça nas três
+ * (o botão "⧉ Camadas" é o mesmo), o estado é o mesmo (o dono é o App) e
+ * a URL espelha as mesmas `?no…`. Um segundo painel de camadas do lado
+ * do filme seria exatamente a concorrência que esta obra desfaz.
  *
  * É um diálogo de verdade — nasce no `dialogFocus` como todo diálogo da
  * casa (D7), e por isso o juiz de a11y a julga sem uma linha a mais.
@@ -111,30 +133,51 @@ export function GavetaDeCamadas({
   const dialogo = useDialogFocus('camadas', aberta, onFechar);
   if (!aberta) return null;
   return (
-    <div className="hud-cartao hud-dialogo atlas-gaveta" aria-label="Camadas do Atlas" {...dialogo}>
+    <div className="hud-cartao hud-dialogo atlas-gaveta" aria-label="Camadas da cena" {...dialogo}>
       <div className="atlas-gaveta-topo">
         <span>Camadas</span>
         <button type="button" onClick={onFechar} aria-label="Fechar camadas">
           ✕
         </button>
       </div>
-      {CAMADAS_DO_ATLAS.map((c) => {
-        const ligada = !escondidas.has(c.flag);
+      {CAMADAS_POR_FAMILIA.map(({ familia, camadas }) => {
+        const ligadas = camadas.filter((c) => !escondidas.has(c.flag)).length;
         return (
-          <label key={c.flag} className="atlas-gaveta-linha">
-            <input
-              type="checkbox"
-              checked={ligada}
-              onChange={() => onCamada(c.flag, !ligada)}
-            />
-            {/* o ícone é ornamento do rótulo que vem logo ao lado: quem
-                ouve a tela já recebe o nome, e ouvir "asterisco" antes
-                dele seria ruído */}
-            <span className="atlas-gaveta-icone" aria-hidden="true">
-              {c.icone}
-            </span>
-            <span>{c.nome}</span>
-          </label>
+          <div
+            key={familia}
+            className="atlas-gaveta-familia"
+            role="group"
+            aria-label={`${familia}: ${ligadas} de ${camadas.length} camadas ligadas`}
+          >
+            <h3 className="atlas-gaveta-titulo">
+              <span>{familia}</span>
+              {/* a contagem já foi dita no `aria-label` do grupo, e ouvi-la
+                  duas vezes a cada caixa seria ruído */}
+              <span className="atlas-gaveta-conta" aria-hidden="true">
+                {ligadas}/{camadas.length}
+              </span>
+            </h3>
+            {camadas.map((c) => {
+              const ligada = !escondidas.has(c.flag);
+              return (
+                <label key={c.flag} className="atlas-gaveta-linha">
+                  <input
+                    type="checkbox"
+                    checked={ligada}
+                    onChange={() => onCamada(c.flag, !ligada)}
+                  />
+                  {/* o ícone é ornamento do rótulo que vem logo ao lado: quem
+                      ouve a tela já recebe o nome, e ouvir "asterisco" antes
+                      dele seria ruído. A coluna fica mesmo sem glifo — é ela
+                      que alinha os nomes da família uns com os outros. */}
+                  <span className="atlas-gaveta-icone" aria-hidden="true">
+                    {c.icone ?? ''}
+                  </span>
+                  <span>{c.nome}</span>
+                </label>
+              );
+            })}
+          </div>
         );
       })}
     </div>
@@ -440,7 +483,12 @@ export function BarraDoTempo({
   );
 }
 
-/** O botão que abre a gaveta, na barra de controles. */
+/**
+ * O botão que abre a gaveta, na barra de controles — e ele está na barra
+ * dos DOIS modos desde o item 61 (`HUD_POR_FASE`): mesma peça, mesma
+ * gaveta, mesmo estado. Mora neste arquivo por herança do modo em que
+ * nasceu; o que ele abre não é mais só do Atlas.
+ */
 export function BotaoDaGaveta({
   aberta,
   onAlternar,
@@ -452,7 +500,7 @@ export function BotaoDaGaveta({
     <button
       className="hud-btn small"
       onClick={onAlternar}
-      aria-label="Camadas do Atlas"
+      aria-label="Camadas da cena"
       {...gatilhoDoDialogo('camadas', aberta)}
     >
       ⧉ Camadas

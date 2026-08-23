@@ -1,16 +1,18 @@
 // ============================================================
 // O CONFIG ÚNICO existe para não haver duas listas de camadas. Estes
-// testes cobram exatamente isso: que a gaveta do Atlas seja um RECORTE
-// da tabela da casa (nunca uma segunda lista), que o recorte seja o
-// declarado em D6, e que nenhuma flag oferecida na UI seja flag que o
-// Director não conhece — oferecer um controle que não controla nada é a
-// forma mais barata de a UI mentir.
+// testes cobram exatamente isso: que a gaveta desenhe a tabela da casa
+// INTEIRA (nunca uma segunda lista), que as três famílias a repartam sem
+// sobra, que o painel de Ajustes não a desenhe mais — a concorrência que
+// o dono nomeou em 22/08 — e que nenhuma flag oferecida na UI seja flag
+// que o Director não conhece: oferecer um controle que não controla nada
+// é a forma mais barata de a UI mentir.
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   CAMADAS,
-  CAMADAS_DO_ATLAS,
+  CAMADAS_POR_FAMILIA,
+  FAMILIAS_DE_CAMADAS,
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
   ANOES_DO_SISTEMA,
@@ -22,6 +24,7 @@ import {
   tituloDeCorpo,
 } from './atlasConfig';
 import { TIER_DE_PRODUTO, lerPortaQualidade, tierMedido } from './core/engine';
+import { HUD_POR_FASE } from './fases';
 
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GALAXY = readFileSync(new URL('./world/galaxy.ts', import.meta.url), 'utf8');
@@ -41,6 +44,11 @@ const ESPELHO = readFileSync(
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 const AJUSTES = readFileSync(
   new URL('../components/Ajustes.tsx', import.meta.url),
+  'utf8'
+);
+// o hospedeiro ÚNICO das camadas desde o item 61 (22/08)
+const GAVETA = readFileSync(
+  new URL('../components/HudDoAtlas.tsx', import.meta.url),
   'utf8'
 );
 const ENGINE = readFileSync(new URL('./core/engine.ts', import.meta.url), 'utf8');
@@ -363,9 +371,59 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
   });
 });
 
-describe('a gaveta do Atlas', () => {
-  it('oferece as cinco de D6 + a do palco (Onda 6) — e as galácticas ficam de fora', () => {
-    expect(CAMADAS_DO_ATLAS.map((c) => c.flag)).toEqual([
+describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
+  it('as 17 se repartem nas TRÊS famílias, sem sobra e sem repetição', () => {
+    const naGaveta = CAMADAS_POR_FAMILIA.flatMap((g) => g.camadas);
+    // sem sobra: a gaveta desenha a tabela inteira. Uma camada sem
+    // família cairia fora do laço e viraria um controle que ninguém
+    // alcança — o defeito que as quatro só-URL tiveram até o item 33.
+    expect(naGaveta.map((c) => c.flag).sort()).toEqual(
+      CAMADAS.map((c) => c.flag).sort()
+    );
+    expect(naGaveta).toHaveLength(17);
+    expect(CAMADAS_POR_FAMILIA.map((g) => g.familia)).toEqual(FAMILIAS_DE_CAMADAS);
+    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 2, 4]);
+  });
+
+  it('a família diz o que a flag desliga — as escalas da casa, não a ordem da linha', () => {
+    const de = (flag: string) => CAMADAS.find((c) => c.flag === flag)?.familia;
+    // as onze da galáxia, inclusive o buraco negro do centro e a poeira
+    // interestelar vista de perto (`world/dust.ts`)
+    for (const galactica of [
+      'nogal', 'nodisc', 'nogdust', 'noglow', 'nocart', 'noco',
+      'noforge', 'nonebula', 'nowrap', 'nodust', 'nobh',
+    ]) {
+      expect(de(galactica), galactica).toBe('Galáxia');
+    }
+    expect(de('nocat')).toBe('Estrelas');
+    expect(de('noclarao')).toBe('Estrelas');
+    for (const local of ['nosun', 'nomarker', 'noplan', 'nocorpos']) {
+      expect(de(local), local).toBe('Sistema solar');
+    }
+  });
+
+  it('é RECORTE da tabela da casa, não uma segunda lista', () => {
+    for (const g of CAMADAS_POR_FAMILIA) {
+      for (const c of g.camadas) expect(CAMADAS).toContain(c);
+    }
+  });
+
+  it('toda camada da gaveta troca AO VIVO', () => {
+    // uma gaveta que recarrega a página tiraria o visitante do modo —
+    // e o Atlas é um lugar onde se está, não uma tela de configuração
+    for (const g of CAMADAS_POR_FAMILIA) {
+      for (const c of g.camadas) expect(c.viva).toBe(true);
+    }
+  });
+
+  it('cada uma tem rótulo em pt-BR, e o ícone é ornamento de seis delas', () => {
+    for (const c of CAMADAS) expect(c.nome.length).toBeGreaterThan(2);
+    // o glifo deixou de decidir QUEM entra na gaveta (era o recorte D6)
+    // e voltou a ser o que o nome dele diz. Seis o têm; as outras onze
+    // ficam com a coluna vazia, que é o que alinha os nomes.
+    const comIcone = CAMADAS.filter((c) => c.icone);
+    expect(comIcone.map((c) => c.flag)).toEqual([
+      'nobh',
       'nocat',
       // era 'nohero' até o M2 — a chave passou a desligar a camada do
       // clarão de asas, e o nome acompanhou o que ela desliga
@@ -373,29 +431,38 @@ describe('a gaveta do Atlas', () => {
       'nomarker',
       'noplan',
       'nocorpos',
-      'nobh',
     ]);
-    for (const galactica of ['nogal', 'nodisc', 'nogdust', 'noglow', 'nowrap', 'nocart']) {
-      expect(CAMADAS_DO_ATLAS.some((c) => c.flag === galactica)).toBe(false);
+    for (const c of comIcone) expect(c.icone).toHaveLength(1);
+  });
+
+  it('a gaveta é a única porta: o painel de Ajustes não desenha mais camadas', () => {
+    // A concorrência que o dono nomeou em 22/08 — *"camadas e ajustes
+    // concorrem"* — era ESTA: 17 dos 32 controles do painel eram as
+    // camadas, e a gaveta mostrava seis das mesmas. Duas superfícies
+    // sobre a mesma tabela. Cobrado por ausência, que é como a casa
+    // vigia porta que morreu — e sobre o que o arquivo LÊ, não sobre a
+    // prosa dele (o cabeçalho conta a história e cita a tabela pelo nome).
+    const doConfig = AJUSTES.match(
+      /import \{([^}]*)\} from '\.\.\/three\/atlasConfig';/
+    )?.[1];
+    expect(doConfig, 'Ajustes.tsx nem importa mais o config único').toBeTruthy();
+    expect(doConfig).not.toContain('CAMADAS');
+    expect(AJUSTES).not.toContain('ajustes-check');
+    expect(AJUSTES).not.toContain('escondidas');
+    // …e o hospedeiro novo desenha a tabela agrupada
+    expect(GAVETA).toContain('CAMADAS_POR_FAMILIA.map(');
+  });
+
+  it('a gaveta existe nas DUAS fases com barra de controles', () => {
+    // uma porta que só existisse no Atlas deixaria o filme sem camadas —
+    // e era o painel de Ajustes que as servia lá até 22/08
+    for (const fase of ['journey', 'free', 'atlas'] as const) {
+      expect(HUD_POR_FASE[fase].controles, fase).toBe(true);
+      expect(HUD_POR_FASE[fase].gaveta, fase).toBe(true);
     }
-  });
-
-  it('é RECORTE da tabela da casa, não uma segunda lista', () => {
-    for (const c of CAMADAS_DO_ATLAS) {
-      expect(CAMADAS).toContain(c);
-    }
-  });
-
-  it('toda camada da gaveta troca AO VIVO', () => {
-    // uma gaveta que recarrega a página tiraria o visitante do modo —
-    // e o Atlas é um lugar onde se está, não uma tela de configuração
-    for (const c of CAMADAS_DO_ATLAS) expect(c.viva).toBe(true);
-  });
-
-  it('cada uma tem ícone e rótulo em pt-BR', () => {
-    for (const c of CAMADAS_DO_ATLAS) {
-      expect(c.icone && c.icone.length).toBeGreaterThan(0);
-      expect(c.nome.length).toBeGreaterThan(2);
+    // e não nasce onde não há barra que a abra
+    for (const fase of ['loading', 'intro', 'end'] as const) {
+      expect(HUD_POR_FASE[fase].gaveta, fase).toBe(false);
     }
   });
 });

@@ -374,7 +374,7 @@ export default function App() {
   }, [phase]);
 
   /**
-   * OS OVERLAYS SÃO DA FASE QUE OS HOSPEDA. A presença deles é
+   * TRAVESSIA FECHA O QUE ESTAVA ABERTO. A presença dos dois overlays é
    * `busca && hud.busca` / `gaveta && hud.gaveta` — o `hud.*` some com a
    * fase, mas o estado de aberto NÃO sumia, e eles RENASCIAM sozinhos ao
    * voltar. Pior que reaparecer: `useDialogFocus` põe o foco no primeiro
@@ -382,17 +382,24 @@ export default function App() {
    * formulário do `FreeRoam` engole o WASD — o visitante entrava no voo
    * livre e as teclas de voar viravam texto na busca.
    *
+   * A REGRA ERA "fecha quem a fase nova não hospeda", e virou "fecha nos
+   * DOIS" no item 61 (22/08), quando a gaveta de camadas passou a existir
+   * também no filme: com dois hospedeiros, a condição antiga deixava de
+   * fechá-la, e um modal atravessava o véu do Atlas com o foco preso
+   * dentro dele. Trocar de modo é véu, câmera reposta e outro HUD — o
+   * painel aberto do modo que ficou para trás é o mesmo "renasce" com
+   * outro nome.
+   *
    * O ⚙ AJUSTES NÃO ENTRA AQUI, e é decisão escrita: ele não é o painel
    * de uma fase, é o da casa (qualidade, tom, exposição, tamanho do
-   * texto, camadas), e o `?ajustes=1` o abre DE PROPÓSITO sobre a tela de
-   * título, onde nenhuma fase o hospeda — fechá-lo por fase mataria a
-   * porta. Ele também não sofre o defeito: fica montado sempre, então
-   * trocar de fase não o remonta nem lhe entrega o foco.
+   * texto), e o `?ajustes=1` o abre DE PROPÓSITO sobre a tela de título,
+   * onde nenhuma fase o hospeda — fechá-lo por fase mataria a porta. Ele
+   * também não sofre o defeito: fica montado sempre, então trocar de fase
+   * não o remonta nem lhe entrega o foco.
    */
   useEffect(() => {
-    const hospeda = HUD_POR_FASE[phase];
-    if (!hospeda.busca) setBusca(false);
-    if (!hospeda.gaveta) setGaveta(false);
+    setBusca(false);
+    setGaveta(false);
     // e o botão da captura volta a se oferecer com o modo: o backoff é
     // do MODO, não da sessão (`EstadoDaCaptura.desistiu`), e sem esta
     // linha o rótulo do rig e o do React discordariam — o rig esquecia
@@ -879,7 +886,10 @@ export default function App() {
         </div>
       )}
 
-      {/* A GAVETA DE CAMADAS do Atlas — filha DIRETA de .hud-root, como o
+      {/* A GAVETA DE CAMADAS, e ela é a ÚNICA porta das camadas desde o
+          item 61 (22/08) — em TODA fase que tem barra de controles
+          (filme, voo livre e Atlas), com a mesma peça, o mesmo estado e a
+          mesma URL. Filha DIRETA de .hud-root, como o
           painel de Ajustes e o véu: é assim que o ?shot=2 a esconde
           junto com o resto do HUD (a regra do .bare-mode só alcança
           filhos diretos). */}
@@ -915,8 +925,6 @@ export default function App() {
         onExposicao={trocarExposicao}
         escalaUi={escalaUi}
         onEscalaUi={trocarEscalaUi}
-        escondidas={escondidas}
-        onCamada={alternarCamada}
         urlParaCopiar={() => urlComMomento().toString()}
         onReverConvite={
           hud.dicaDeVoo || phase === 'atlas'

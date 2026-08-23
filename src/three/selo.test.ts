@@ -17,7 +17,7 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CAMADAS, CAMADAS_DO_ATLAS } from './atlasConfig';
+import { CAMADAS } from './atlasConfig';
 import {
   ARQUIVOS_GOVERNADOS,
   BRILHO_ASSISTIDO,
@@ -109,7 +109,12 @@ describe('1. completude do registro', () => {
   });
 
   it('toda camada oferecida na UI tem entrada no registro', () => {
-    for (const c of [...CAMADAS, ...CAMADAS_DO_ATLAS]) {
+    // UMA lista desde o item 61 (22/08): a gaveta desenha a tabela
+    // inteira, e o painel de Ajustes deixou de desenhá-la. O
+    // `CAMADAS_DO_ATLAS` que este laço juntava aqui era um RECORTE de
+    // `CAMADAS` — varrer os dois sempre foi varrer o mesmo conjunto duas
+    // vezes; agora nem a lista do recorte existe.
+    for (const c of CAMADAS) {
       expect(CHAVES.has(c.flag), `camada ${c.flag} fora do registro`).toBe(true);
     }
   });
@@ -165,8 +170,8 @@ describe('2. nenhum controle desmente o selo', () => {
     expect(v.desvios).toEqual([]);
   });
 
-  it('desligar QUALQUER camada dos dois hospedeiros vira desvio declarado', () => {
-    for (const c of [...CAMADAS, ...CAMADAS_DO_ATLAS]) {
+  it('desligar QUALQUER camada da gaveta vira desvio declarado', () => {
+    for (const c of CAMADAS) {
       const v = estadoDoSelo(com({ camadasEscondidas: [c.flag] }));
       expect(v.brilho, `${c.flag} não moveu o selo`).toBe('assistido');
       expect(v.desvios.map((d) => d.chave)).toContain(c.flag);

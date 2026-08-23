@@ -365,7 +365,11 @@ try {
     `a paleta NÃO renasce ao reentrar na fase (${aoVoltar})`
   );
 
-  // e o mesmo para a gaveta de camadas, que atravessava Atlas→filme→Atlas
+  // e o mesmo para a gaveta de camadas, que atravessava Atlas→filme→Atlas.
+  // Desde o item 61 (22/08) ela EXISTE nos dois modos — então o que a
+  // fecha não é mais "a fase nova não a hospeda", e sim a TRAVESSIA: véu,
+  // câmera reposta e outro HUD não podem carregar junto um modal com o
+  // foco preso dentro dele. A promessa medida é a mesma.
   await sessao.ir(`atlas=1&${PIN}`);
   await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
   await dorme(200);

@@ -3,13 +3,17 @@
 // de verdade, dois consumidores.
 //
 // O que mora aqui:
-//  1. A TABELA DE CAMADAS da casa. Ela vivia dentro do `Ajustes.tsx`
-//     enquanto o painel do filme era o único a lê-la; com a gaveta do
-//     Atlas ela passou a ter DOIS leitores, e tabela com dois leitores
-//     dentro de um deles é a segunda fonte de verdade nascendo (AGENTS 4).
-//     A seleção do Atlas é um CAMPO da mesma tabela, não uma segunda
-//     lista: assim é impossível a gaveta oferecer uma camada que o
-//     Director não conhece.
+//  1. A TABELA DE CAMADAS da casa, com a FAMÍLIA de cada uma. Ela vivia
+//     dentro do `Ajustes.tsx` enquanto o painel do filme era o único a
+//     lê-la; depois teve dois leitores (o painel e a gaveta do Atlas), e
+//     desde 22/08 (item 61) tem UM SÓ: a gaveta. Palavras do dono:
+//     *"atlas - camadas e ajustes concorrem. vc nao acha que varios
+//     elementos que hj estao em ajustes na verdade deveriam ser
+//     camadas?"* — as 17 camadas eram 17 dos 32 controles do painel de
+//     Ajustes E seis linhas da gaveta, duas portas para a mesma lista.
+//     Agora a porta é uma, e a `familia` é o que a torna legível: 17
+//     caixas em fileira são um inventário, três famílias com contagem
+//     são um mapa.
 //  2. A TABELA DOS QUATRO ESTADOS do seletor de qualidade (Ajustes D),
 //     pela MESMA razão e com a mesma história: dois leitores (o painel
 //     e o `<select>` da barra) e a lista digitada duas vezes.
@@ -32,37 +36,61 @@ import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
 // — este arquivo continua sem importar three nem React.
 import type { EscolhaDeQualidade, EstadoDaQualidade } from './core/engine';
 
-/** Uma família de coisas na cena que pode ser desligada. */
+/**
+ * O AGRUPAMENTO DA GAVETA — três, e são as três escalas da casa: o que
+ * é da galáxia, o que é das estrelas e o que é do sistema solar. A
+ * família não é decoração de UI: é a resposta à pergunta "o que essa
+ * caixa desliga?", e ela sai do que a flag realmente apaga na cena, não
+ * do lugar em que a linha caiu na tabela.
+ */
+export type FamiliaDeCamada = 'Galáxia' | 'Estrelas' | 'Sistema solar';
+
+/** A ordem em que a gaveta as mostra — de fora para dentro. */
+export const FAMILIAS_DE_CAMADAS: readonly FamiliaDeCamada[] = [
+  'Galáxia',
+  'Estrelas',
+  'Sistema solar',
+];
+
+/** Uma CAMADA da cena: um conjunto de coisas que se desliga de uma vez. */
 export interface Camada {
   /** a flag que o Director já lê (`?nogal=1`, `hide.has('nogal')`) */
   flag: string;
-  /** rótulo em pt-BR, o mesmo nos dois hospedeiros */
+  /** rótulo em pt-BR — o que a gaveta mostra e o que o selo nomeia */
   nome: string;
+  /** em que grupo da gaveta ela aparece */
+  familia: FamiliaDeCamada;
   /**
    * A flag é lida POR QUADRO (troca ao vivo); `false` exigiria recarga.
    * Desde 2026-08-12 **todas** são vivas — as três últimas a recarregar
-   * (nodisc/nogdust/noglow) nunca foram lidas no bake, e o campo fica
-   * como contrato: quem escrever `viva: false` liga de volta o ↻ do
-   * painel e o ramo de recarga do App, os dois derivados desta linha.
+   * (nodisc/nogdust/noglow) nunca foram lidas no bake. Quem lê este
+   * campo hoje é o REGISTRO DO SELO (`selo.ts`, que declara cada porta
+   * como `vivo` ou `recarregar`); o ↻ que a UI mostrava morreu com a
+   * seção "Camadas" do painel de Ajustes (item 61, 22/08), e quem
+   * escrever `viva: false` vai ter de dar a ela uma marca nova na
+   * gaveta — além de provar que o mundo precisa MESMO ser reconstruído,
+   * que é o que `atlasConfig.test.ts` cobra.
    */
   viva: boolean;
   /**
-   * Presente ⇒ a camada aparece na GAVETA do Atlas, com este ícone.
-   * As galácticas (nogal/nodisc/nogdust/noglow/nowrap/nocart) ficam de
-   * fora de propósito (D6): dentro do Atlas elas não são o assunto, e a
-   * gaveta é para o que está no quadro de um enquadramento privilegiado.
+   * O GLIFO da linha na gaveta, quando existe. Era ele que decidia
+   * QUEM entrava na gaveta (D6, seis das dezessete); desde 22/08 a
+   * gaveta é a única porta e mostra as 17 — o ícone voltou a ser o que
+   * o nome dele diz: ornamento do rótulo, nas seis que já o tinham. A
+   * COLUNA dele existe em todas as linhas mesmo quando o glifo falta,
+   * senão os nomes de uma mesma família não se alinhariam entre si.
    */
   icone?: string;
 }
 
 /**
- * As camadas da casa, na ordem em que o painel do filme sempre as
- * mostrou. TODAS TROCAM AO VIVO desde 2026-08-12: as três da galáxia
- * (lâminas, extinção por partícula, bojo) eram `viva: false` por um
- * comentário podre — `bakeDiscLayers` roda inteiro de qualquer jeito, o
- * τRT inclusive, e elas só governam `mesh.visible` e o bind de
- * `uTauMap`, que a `Galaxy` reescreve por quadro. Nenhuma opção do
- * painel recarrega a página.
+ * As camadas da casa, agrupadas por FAMÍLIA e, dentro de cada uma, na
+ * ordem de sempre. TODAS TROCAM AO VIVO desde 2026-08-12: as três da
+ * galáxia (lâminas, extinção por partícula, bojo) eram `viva: false` por
+ * um comentário podre — `bakeDiscLayers` roda inteiro de qualquer jeito,
+ * o τRT inclusive, e elas só governam `mesh.visible` e o bind de
+ * `uTauMap`, que a `Galaxy` reescreve por quadro. Nenhuma delas recarrega
+ * a página.
  *
  * Esta tabela é a ÚNICA lista de camadas (item 33): o registro do selo
  * e o laço de flags do Director DERIVAM dela. Quatro delas nasceram
@@ -71,47 +99,53 @@ export interface Camada {
  * com `?nosun=1` não tinha onde religar.
  */
 export const CAMADAS: readonly Camada[] = [
-  { flag: 'nogal', nome: 'Galáxia (tudo)', viva: true },
-  { flag: 'nodisc', nome: 'Lâminas do disco', viva: true },
-  { flag: 'nogdust', nome: 'Extinção por partícula', viva: true },
-  { flag: 'noglow', nome: 'Brilho do bojo', viva: true },
-  { flag: 'nocart', nome: 'Cartografia observada', viva: true },
+  { flag: 'nogal', nome: 'Galáxia (tudo)', familia: 'Galáxia', viva: true },
+  { flag: 'nodisc', nome: 'Lâminas do disco', familia: 'Galáxia', viva: true },
+  { flag: 'nogdust', nome: 'Extinção por partícula', familia: 'Galáxia', viva: true },
+  { flag: 'noglow', nome: 'Brilho do bojo', familia: 'Galáxia', viva: true },
+  { flag: 'nocart', nome: 'Cartografia observada', familia: 'Galáxia', viva: true },
   // a bissecção de `nocart`: nuvens CO medidas e forjas estelares têm
   // chave própria — o tick as lê por quadro junto com a cartografia
-  { flag: 'noco', nome: 'Nuvens de CO', viva: true },
-  { flag: 'noforge', nome: 'Forjas estelares', viva: true },
-  { flag: 'nonebula', nome: 'Nebulosa volumétrica', viva: true },
-  { flag: 'nowrap', nome: 'Campo envolvente', viva: true },
+  { flag: 'noco', nome: 'Nuvens de CO', familia: 'Galáxia', viva: true },
+  { flag: 'noforge', nome: 'Forjas estelares', familia: 'Galáxia', viva: true },
+  { flag: 'nonebula', nome: 'Nebulosa volumétrica', familia: 'Galáxia', viva: true },
+  { flag: 'nowrap', nome: 'Campo envolvente', familia: 'Galáxia', viva: true },
   // a poeira de paralaxe perto da câmera (`world/dust.ts`) — o tick lê
-  // `hide.has('nodust')` por quadro no fade dela
-  { flag: 'nodust', nome: 'Poeira próxima', viva: true },
-  { flag: 'nocat', nome: 'Catálogo HYG', viva: true, icone: '⁂' },
+  // `hide.has('nodust')` por quadro no fade dela. É poeira INTERESTELAR
+  // vista de perto, não poeira do sistema solar: a família é a galáxia.
+  { flag: 'nodust', nome: 'Poeira próxima', familia: 'Galáxia', viva: true },
+  { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', familia: 'Galáxia', viva: true, icone: '✱' },
+  { flag: 'nocat', nome: 'Catálogo HYG', familia: 'Estrelas', viva: true, icone: '⁂' },
   // M2 da Lei: `nohero` virou `noclarao`. O que a chave desliga são as
   // DUAS camadas de fonte forte, e voltou a incluir as 16 heroes de
   // autor com o resgate de 16/08 (`world/heroStars.ts`): o tick esconde
   // `heroes.group` e o clarão de asas (`world/clarao.ts`, o Sol) pela
   // mesma `hide.has('noclarao')`.
-  { flag: 'noclarao', nome: 'Clarão das estrelas', viva: true, icone: '✦' },
+  { flag: 'noclarao', nome: 'Clarão das estrelas', familia: 'Estrelas', viva: true, icone: '✦' },
   // o Sol inteiro em cena — o gate por quadro vive em
   // `director/solNoQuadro.ts` (`fios.escondido('nosun')`)
-  { flag: 'nosun', nome: 'Sol', viva: true },
-  { flag: 'nomarker', nome: 'Marcador do Sol', viva: true, icone: '⌖' },
-  { flag: 'noplan', nome: 'Planetas', viva: true, icone: '◉' },
+  { flag: 'nosun', nome: 'Sol', familia: 'Sistema solar', viva: true },
+  { flag: 'nomarker', nome: 'Marcador do Sol', familia: 'Sistema solar', viva: true, icone: '⌖' },
+  { flag: 'noplan', nome: 'Planetas', familia: 'Sistema solar', viva: true, icone: '◉' },
   // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de
   // perto, distintos dos PONTOS fotométricos de `noplan`. Entra vazio
   // nesta fase (nenhum mesh ainda; o toggle não muda pixel até F2),
   // mas nasce DECLARADO aqui e no selo, como a lei das portas manda.
-  { flag: 'nocorpos', nome: 'Corpos de perto', viva: true, icone: '◐' },
-  { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', viva: true, icone: '✱' },
+  { flag: 'nocorpos', nome: 'Corpos de perto', familia: 'Sistema solar', viva: true, icone: '◐' },
 ];
 
 /**
- * O que a gaveta do Atlas oferece: as cinco de D6 (Onda 5) mais a do
- * palco local (Onda 6), derivadas da tabela acima — nunca redigitadas.
- * Todas são `viva: true` por construção (uma gaveta que recarrega a
- * página tiraria o visitante do modo), e o teste cobra isso.
+ * A TABELA JÁ AGRUPADA — o que a gaveta desenha, derivado e nunca
+ * redigitado. A família vazia não nasce: um grupo com zero linhas seria
+ * um título prometendo o que não há.
  */
-export const CAMADAS_DO_ATLAS = CAMADAS.filter((c) => c.icone !== undefined);
+export const CAMADAS_POR_FAMILIA: readonly {
+  familia: FamiliaDeCamada;
+  camadas: readonly Camada[];
+}[] = FAMILIAS_DE_CAMADAS.map((familia) => ({
+  familia,
+  camadas: CAMADAS.filter((c) => c.familia === familia),
+})).filter((g) => g.camadas.length > 0);
 
 /** Um estado do seletor de qualidade, como o visitante o lê. */
 export interface EscolhaNaUi {

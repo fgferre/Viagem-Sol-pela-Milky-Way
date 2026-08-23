@@ -189,7 +189,7 @@ custo, e a coluna existe para escolher — não para consolar.
 | `atlas-smoke.mjs` | o portal do Atlas em pixel: ida e volta com `journeyT` exato, prontidão da fase nova, abertura reprodutível (as três do filme e a porta da abertura, item 60), o Sol pela data e a NAVEGAÇÃO inteira (item 73: a roda dá zoom sem trocar o alvo, o piso e o teto seguram, `?d=` faz a ida e volta pelo escritor vivo, um clique escolhe com a câmera parada e o duplo mergulha, e a abertura mostra os 8 planetas e o Sol com nome) — 113 vereditos | **7,4 min** | portal, fases, enquadramento do Atlas, calendário do Sol, gestos, rótulos |
 | `estabilidade-temporal.mjs [família…]` | MB1: fervura e re-semeadura entre quadros CONSECUTIVOS com o relógio andando, depois de reprojetar o quadro anterior pela câmera conhecida — 9 famílias, 97 passos, tolerâncias declaradas no cabeçalho (§5.17/§5.20); a 9ª (`zoomDeRoda`, 22/08) é a única que corre DENTRO do Atlas, pela porta do gesto | **2,9 min** a corrida inteira · ~0,3 min por família | qualquer coisa que só apareça em MOVIMENTO: campo procedural, PSF, crossfade, clarão, histerese, fronteira de promoção |
 | `memoria.mjs` | vazamento em número: texturas, **bytes de texel**, geometrias, heap e workers vivos em 5 idas ao Atlas, 3 trocas de tier pelo caminho vivo e 5 focos. Autovalida-se — `--sabotagem` TEM de reprovar | **2,9 min** por tier | troca de tier, entrar/sair do Atlas, foco, carga em worker, **dose de textura** |
-| `a11y.mjs` (`?shot=1`) | os diálogos do HUD: o foco entra, fica preso, Esc devolve; nenhum diálogo órfão; escala de UI em três telas; a ABERTURA — as três portas com a sua linha, a mesma tinta nas três, o Tab na ordem da tela e nada fora dela (desde 22/08, item 60); e o CONVITE DO ATLAS — quatro passos, furo no pedaço real da dica, chave `conviteAtlasVisto` própria (desde 22/08, item 73); e o SELO DE HONESTIDADE — a linha fechada com os dois eixos, `aria-expanded`, as três saídas da gaveta (clique, Esc sem subir a escada, clique fora), os culpados nomeados na tela, o TETO de UMA LINHA de altura e a gaveta de camadas que NÃO cobre o selo (desde 22/08, item 61) — 182 vereditos | **4,5 min** | HUD, diálogo novo, escala de texto, abertura, convite, selo |
+| `a11y.mjs` (`?shot=1`) | os diálogos do HUD: o foco entra, fica preso, Esc devolve; nenhum diálogo órfão; escala de UI em três telas; a ABERTURA — as três portas com a sua linha, a mesma tinta nas três, o Tab na ordem da tela e nada fora dela (desde 22/08, item 60); e o CONVITE DO ATLAS — quatro passos, furo no pedaço real da dica, chave `conviteAtlasVisto` própria (desde 22/08, item 73); e o SELO DE HONESTIDADE — a linha fechada com os dois eixos, `aria-expanded`, as três saídas da gaveta (clique, Esc sem subir a escada, clique fora), os culpados nomeados na tela, o TETO de UMA LINHA de altura e a gaveta de camadas que NÃO cobre o selo (desde 22/08, item 61); e a GAVETA DE CAMADAS nos DOIS modos — 17 caixas com rótulo, três famílias que as repartem, e a contagem de cada uma batendo com as caixas marcadas (desde 22/08, item 61) — 202 vereditos | **4,5 min** | HUD, diálogo novo, escala de texto, abertura, convite, selo, camadas |
 | `filme-smoke.mjs` | o roteiro na tela: texto e corte nas margens das 25 janelas de legenda, responsividade, e 420 ms de relógio solto em sete instantes | **2,6 min** | legenda, corte, retemporização, responsividade |
 | `filme-ritmo.mjs` | quanto a imagem muda por segundo no corte inteiro — 97 quadros parados — mais as folhas de contato | **~2,3 min** no passo padrão (extrapolado de 10 quadros em 0,3 min) | revisão de ritmo, e só como onde-olhar: a curva não mede tédio |
 | `busca-smoke.mjs` | a paleta de busca, o `?foco=` e o `?d=`: os dez corpos, a ida e volta pelo escritor vivo da URL (com a DISTÂNCIA dentro desde 22/08), latência por tecla, o atalho de teclado, e o par clique/duplo clique num corpo | **1,9 min** | busca, deep-link de foco, rótulo clicável, gestos do Atlas |
@@ -350,14 +350,16 @@ exposição, a B pôs a cadeia de carga no worker, a C matou o último
 reload (o da qualidade) e a D pôs o Auto como 4º estado do seletor. O
 que fica aqui é só o que ainda decide alguma coisa.
 
-**EM REVISÃO, e a decisão desta seção NÃO muda por isso:** o dono em
-22/08 — *"atlas - camadas e ajustes concorrem. vc nao acha que varios
-elementos que hj estao em ajustes na verdade deveriam ser camadas?"*.
-As 17 camadas estarem DENTRO dos Ajustes (dos 32 controles) enquanto a
-gaveta do Atlas mostra 6 delas é o que ele chama de concorrência, e
-está em revisão pelo **item 61**. O que esta seção decide — nada
-recarrega; detecção nunca decide, medição sugere, o visitante escolhe —
-continua de pé e vale onde quer que a camada acabe morando.
+**ONDE A CAMADA MORA, decidido em 22/08 (item 61):** na GAVETA, e só
+nela. O dono: *"atlas - camadas e ajustes concorrem. vc nao acha que
+varios elementos que hj estao em ajustes na verdade deveriam ser
+camadas?"*. As 17 estavam DENTRO dos Ajustes (17 dos 32 controles) e a
+gaveta do Atlas mostrava 6 das mesmas — duas portas para uma tabela. A
+gaveta passou a mostrar as 17 em três famílias com contagem, a existir
+em toda fase com barra de controles (filme, voo livre e Atlas) e o
+painel ficou com 15 controles. O que esta seção decide — nada recarrega;
+detecção nunca decide, medição sugere, o visitante escolhe — continua de
+pé e vale na gaveta como valia no painel.
 
 **A LEI QUE A D DEIXOU, e ela é política, não mecânica:** *detecção
 nunca decide; medição sugere; o visitante escolhe.* Sem `?q=` o tier é

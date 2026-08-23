@@ -377,6 +377,80 @@ async function julgarPagina(s, query, onde) {
 }
 
 /**
+ * A GAVETA DE CAMADAS, nos DOIS modos (item 61, 22/08).
+ *
+ * O que ela era: seis linhas no Atlas, enquanto as MESMAS camadas
+ * viviam também no painel de Ajustes, todas as 17, em qualquer fase.
+ * Palavras do dono: *"atlas - camadas e ajustes concorrem"*. Agora a
+ * porta é uma só, e é esta — então ela tem de existir onde o painel
+ * existia, e mostrar a tabela INTEIRA.
+ *
+ * As três cobranças, e cada uma mede uma promessa da tela:
+ *  1. AS 17, todas com rótulo — uma caixa sem nome é um controle que
+ *     ninguém sabe o que faz, e era assim que as quatro só-URL viviam
+ *     antes do item 33;
+ *  2. TRÊS FAMÍLIAS que repartem as 17 sem sobra, cada uma com nome
+ *     acessível próprio (`role="group"` + `aria-label`): quem ouve a
+ *     tela recebe o mapa, não dezessete caixas em fila;
+ *  3. A CONTAGEM DIZ A VERDADE — o "n/m" do título bate com as caixas
+ *     realmente marcadas. Número decorado seria a gaveta contando outra
+ *     coisa que não a cena, que é a doença que o selo existe para não
+ *     ter.
+ *
+ * A quarta promessa — desligar uma camada MOVE O SELO — mora no bloco
+ * do selo, que é de quem ela fala.
+ *
+ * Assume a página já na fase certa (roda depois do `julgarPagina`), e
+ * devolve a gaveta FECHADA como a encontrou.
+ */
+async function julgarGavetaDeCamadas(s, onde) {
+  await s.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
+  await dorme(200);
+  const g = await s.js(`(() => {
+    const d = document.querySelector('[data-dialogo="camadas"]');
+    if (!d) return null;
+    const linha = '.atlas-gaveta-linha';
+    return {
+      caixas: d.querySelectorAll(linha + ' input[type=checkbox]').length,
+      semNome: [...d.querySelectorAll(linha)]
+        .filter((l) => !l.textContent.trim()).length,
+      familias: [...d.querySelectorAll('.atlas-gaveta-familia')].map((f) => ({
+        rotulo: f.getAttribute('aria-label') || '',
+        papel: f.getAttribute('role') || '',
+        conta: (f.querySelector('.atlas-gaveta-conta') || {}).textContent || '',
+        linhas: f.querySelectorAll(linha).length,
+        ligadas: [...f.querySelectorAll('input[type=checkbox]')]
+          .filter((i) => i.checked).length,
+      })),
+    };
+  })()`);
+  if (!g) {
+    conferir(false, `${onde} · camadas: a gaveta não abriu`);
+    return;
+  }
+  conferir(
+    g.caixas === 17 && g.semNome === 0,
+    `${onde} · camadas: ${g.caixas} caixas na gaveta, ${g.semNome} sem rótulo`
+  );
+  const soma = g.familias.reduce((n, f) => n + f.linhas, 0);
+  conferir(
+    g.familias.length === 3 && soma === 17
+      && g.familias.every((f) => f.papel === 'group' && f.rotulo),
+    `${onde} · camadas: três famílias repartem as ${soma}`
+      + ` — ${g.familias.map((f) => f.rotulo || '(sem nome)').join(' · ')}`
+  );
+  const mentem = g.familias.filter((f) => f.conta !== `${f.ligadas}/${f.linhas}`);
+  conferir(
+    mentem.length === 0,
+    `${onde} · camadas: a contagem de cada família bate com as caixas marcadas`
+      + ` (${g.familias.map((f) => f.conta).join(' · ')})`
+      + (mentem.length ? ` — mente em ${mentem.map((f) => f.rotulo).join(', ')}` : '')
+  );
+  await s.teclar('Escape');
+  await dorme(150);
+}
+
+/**
  * Espera uma condição VALER no navegador e devolve em quantos ms ela
  * valeu (`null` no estouro). O número entra no log de propósito: gate
  * que espera sem dizer quanto esperou esconde a piora do dia em que ela
@@ -507,9 +581,14 @@ try {
   // O FILME PAUSADO: é lá que o painel de Ajustes sempre viveu, e é a
   // prova de que a reforma do D7 não é privilégio do modo novo.
   await julgarPagina(sessao, 't=100', 'journey');
+  // …e a GAVETA DE CAMADAS existe AQUI desde o item 61: era o painel de
+  // Ajustes que servia as camadas ao filme, e com elas fora dele o filme
+  // ficaria sem nenhuma se a gaveta fosse só do Atlas.
+  await julgarGavetaDeCamadas(sessao, 'journey');
 
   // O ATLAS: os diálogos do modo novo, pelo mesmo contrato.
   const vivasAtlas = await julgarPagina(sessao, 'atlas=1', 'atlas');
+  await julgarGavetaDeCamadas(sessao, 'atlas');
   conferir(
     vivasAtlas.some((r) => r.papel === 'status' && r.v === 'polite' && r.texto),
     'atlas: há região viva com role="status" e texto'
@@ -758,15 +837,20 @@ try {
   //    clique na linha BRILHO desfaz.
   await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
   await dorme(150);
-  await sessao.js(`(() => {
-    const g = document.querySelector('[data-dialogo="camadas"]');
-    g.querySelector('input[type=checkbox]').click();
+  // A CAIXA É NOMEADA no veredito: com as 17 na gaveta em três famílias
+  // (item 61), "a primeira caixa" deixou de dizer qual camada foi — e
+  // veredito que não nomeia o sujeito custa uma sessão de navegador para
+  // ser lido.
+  const desligada = await sessao.js(`(() => {
+    const l = document.querySelector('[data-dialogo="camadas"] .atlas-gaveta-linha');
+    l.querySelector('input[type=checkbox]').click();
+    return l.textContent.trim();
   })()`);
   await dorme(200);
   const sujo = await abrirSelo();
   conferir(
     sujo.brilho === 'BRILHO ASSISTIDO' && /camada desligada/.test(sujo.detalhe),
-    `selo depois de desligar uma camada na gaveta: "${sujo.brilho}" — ${sujo.detalhe}`
+    `selo depois de desligar "${desligada}" na gaveta: "${sujo.brilho}" — ${sujo.detalhe}`
   );
   conferir(sujo.brilhoClicavel, 'selo: com desvio desfazível, a linha BRILHO vira controle');
 
@@ -1137,11 +1221,11 @@ async function julgarAreaDoSelo(s) {
       );
     }
   }
-  // devolve a janela do juiz: as provas seguintes medem nela
-  const [w, h] = JANELA.split('x').map(Number);
-  await s.send('Emulation.setDeviceMetricsOverride', {
-    width: w, height: h, deviceScaleFactor: 1, mobile: false,
-  });
+  // devolve a janela do juiz: as provas seguintes medem nela. LIMPAR
+  // basta — a janela real do Chrome é a de `JANELA`, e o override que
+  // este bloco pôs é o único que a esconde. Havia aqui um
+  // `setDeviceMetricsOverride` para `JANELA` na linha ANTERIOR a este
+  // `clear`, ou seja, quatro linhas que o `clear` desfazia no ato.
   await s.send('Emulation.clearDeviceMetricsOverride');
 }
 

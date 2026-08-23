@@ -72,9 +72,25 @@ describe('as fases e os dois mapas', () => {
 
   it('as peças do Atlas não vazam para o filme', () => {
     expect(FASES.filter((f) => HUD_POR_FASE[f].contexto)).toEqual(['atlas']);
-    expect(FASES.filter((f) => HUD_POR_FASE[f].gaveta)).toEqual(['atlas']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].selo)).toEqual(['atlas']);
     expect(FASES.filter((f) => HUD_POR_FASE[f].tempo)).toEqual(['atlas']);
+  });
+
+  it('a gaveta de camadas (item 61) monta em TODA fase com barra, e só nelas', () => {
+    // Ela DEIXOU de ser peça do Atlas em 22/08. Palavras do dono:
+    // *"atlas - camadas e ajustes concorrem"* — as camadas eram 17 dos 32
+    // controles do painel de Ajustes E seis linhas desta gaveta. Com uma
+    // porta só, ela tem de existir onde o painel existia: nas três fases
+    // com barra de controles. Uma gaveta só do Atlas deixaria o filme sem
+    // camadas nenhuma.
+    expect(FASES.filter((f) => HUD_POR_FASE[f].gaveta)).toEqual([
+      'journey',
+      'free',
+      'atlas',
+    ]);
+    expect(FASES.filter((f) => HUD_POR_FASE[f].gaveta)).toEqual(
+      FASES.filter((f) => HUD_POR_FASE[f].controles)
+    );
   });
 
   it('a busca (F3) monta nas DUAS fases que têm destino, e em nenhuma outra', () => {

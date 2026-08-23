@@ -424,12 +424,12 @@ try {
     'e o sinal de prontidão da captura volta a ficar pronto no filme'
   );
 
-  // ---- 11: AS DOZE CAMADAS TROCAM SEM RECARREGAR --------------------
-  // A régua do dono: nenhuma opção do painel de Ajustes recarrega a
-  // página. Até 2026-08-12 três delas (nodisc/nogdust/noglow) recarregavam
-  // por um comentário podre — "são lidas no bake" —, e este bloco julgava
-  // justamente a recarga. Agora ele julga o contrário, e com quatro provas
-  // por camada, todas no MESMO documento:
+  // ---- 11: AS 17 CAMADAS TROCAM SEM RECARREGAR ----------------------
+  // A régua do dono: nenhuma opção recarrega a página. Até 2026-08-12
+  // três delas (nodisc/nogdust/noglow) recarregavam por um comentário
+  // podre — "são lidas no bake" —, e este bloco julgava justamente a
+  // recarga. Agora ele julga o contrário, e com quatro provas por camada,
+  // todas no MESMO documento:
   //
   //   1. não houve navegação  — uma marca posta na `window` sobrevive;
   //   2. a cena reagiu        — `captura.quadros` volta a ZERO no mesmo
@@ -438,19 +438,46 @@ try {
   //   3. a URL espelha        — `replaceState`, como as vivas de sempre;
   //   4. o selo declara       — a camada desligada vira desvio de brilho.
   //
+  // O HOSPEDEIRO MUDOU EM 22/08 (item 61): as camadas saíram do painel de
+  // Ajustes e a GAVETA passou a ser a única porta delas — 17 caixas em
+  // três famílias, nos dois modos. O que se julga aqui é o mesmo de
+  // sempre; o seletor é o da gaveta.
+  //
   // E de dentro do Atlas, que é onde uma recarga custa mais caro: modo,
   // instante do céu e alvo em quadro seguem no lugar por construção.
-  await sessao.ir('atlas=1&jd=2465000&foco=hd48915&ajustes=1&q=cinema&shot=1');
+  await sessao.ir('atlas=1&jd=2465000&foco=hd48915&q=cinema&shot=1');
   await sessao.js('window.__semRecarga = 1');
+  await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
+  await dorme(200);
   const camadas = JSON.parse(await sessao.js(`JSON.stringify(
-    [...document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')]
+    [...document.querySelectorAll('[data-dialogo="camadas"] .atlas-gaveta-linha')]
       .map((e) => e.textContent.trim())
   )`));
   // 17 desde o item 33: as 13 de sempre mais as quatro que eram só-URL
   // (nosun/nodust/noco/noforge). Quem PINA o número contra a tabela
   // única é `atlasConfig.test.ts` (`CAMADAS.length`); aqui ele serve só
-  // para o painel não deixar nenhuma de fora na hora de desenhar.
-  conferir(camadas.length === 17, `o painel oferece ${camadas.length} camadas`);
+  // para a gaveta não deixar nenhuma de fora na hora de desenhar.
+  conferir(camadas.length === 17, `a gaveta oferece ${camadas.length} camadas`);
+  // AS TRÊS FAMÍLIAS, com a contagem que cada uma mostra: é o resumo do
+  // grupo, e ele tem de bater com as caixas ligadas de verdade — um
+  // número decorado seria a gaveta contando outra coisa que não a cena.
+  const familias = JSON.parse(await sessao.js(`JSON.stringify(
+    [...document.querySelectorAll('[data-dialogo="camadas"] .atlas-gaveta-familia')]
+      .map((g) => ({
+        rotulo: g.getAttribute('aria-label'),
+        conta: g.querySelector('.atlas-gaveta-conta').textContent,
+        linhas: g.querySelectorAll('.atlas-gaveta-linha').length,
+        ligadas: [...g.querySelectorAll('input[type=checkbox]')]
+          .filter((i) => i.checked).length,
+      }))
+  )`));
+  conferir(
+    familias.length === 3
+      && familias.every((f) => f.conta === `${f.ligadas}/${f.linhas}`)
+      && familias.reduce((n, f) => n + f.linhas, 0) === 17,
+    `as três famílias e a contagem de cada uma — `
+      + familias.map((f) => `${f.rotulo} (${f.conta})`).join(' · ')
+  );
   conferir(
     !camadas.some((n) => n.includes('↻')),
     `nenhuma marcada com ↻ (${camadas.join(' · ')})`
@@ -460,7 +487,9 @@ try {
   // onChange do React sincronamente, então `captura.quadros` já é o de
   // DEPOIS do perturbar() quando esta função retorna
   const trocar = (indice) => sessao.js(`(() => {
-    const l = document.querySelectorAll('[data-dialogo="ajustes"] .ajustes-check')[${indice}];
+    const l = document.querySelectorAll(
+      '[data-dialogo="camadas"] .atlas-gaveta-linha'
+    )[${indice}];
     const input = l.querySelector('input');
     const antes = window.__director.captura.quadros;
     input.click();
@@ -507,7 +536,7 @@ try {
   }
   conferir(
     vivas === camadas.length,
-    `as ${vivas} de ${camadas.length} camadas do painel trocam sem reload`
+    `as ${vivas} de ${camadas.length} camadas da gaveta trocam sem reload`
   );
 
   await sessao.assentar();

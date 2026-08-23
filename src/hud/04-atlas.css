@@ -342,7 +342,11 @@
    promessa em comentário: a marcação pede `hud-cartao hud-dialogo`
    (fatia 1) e aqui fica só o que é DELA. */
 .atlas-gaveta {
-  width: min(15rem, calc(100vw - 3.2rem));
+  /* 17 linhas em três famílias desde o item 61 (22/08), e os nomes mais
+     longos da tabela — "Extinção por partícula", "Buraco negro (Sgr A✱)"
+     — não cabiam nos 15rem de quando a gaveta mostrava seis. O termo do
+     `min()` continua sendo a tela: em janela estreita ela encolhe. */
+  width: min(17rem, calc(100vw - 3.2rem));
   /* A GAVETA PARA ACIMA DO SELO (item 61, 22/08). Ela herda de
      `.hud-dialogo` um teto que desce até o pé da tela, e a 768×600 com
      `?ui=1,4` isso a punha POR CIMA do selo — o mockup do dono mostrou a
@@ -378,18 +382,53 @@
 .atlas-gaveta-topo button:hover {
   color: #fff;
 }
+/* AS TRÊS FAMÍLIAS (item 61). O título de cada grupo carrega a
+   contagem à direita — "3/4" —, e é ela que diz, sem varrer as caixas,
+   que alguma coisa daquela escala está desligada. Mesmo vocabulário do
+   `.atlas-gaveta-topo`: caixa alta, espaçada, fria. */
+.atlas-gaveta-familia + .atlas-gaveta-familia {
+  margin-top: 0.7rem;
+}
+.atlas-gaveta-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0 0 0.3rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.14);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-size: 0.56rem;
+  font-weight: 400;
+  color: rgba(255, 214, 150, 0.72);
+}
+.atlas-gaveta-conta {
+  letter-spacing: 0.1em;
+  color: rgba(200, 214, 235, 0.55);
+}
+/* 0,18rem e não 0,22: com 17 linhas em três famílias a gaveta passou a
+   disputar altura com o selo (o teto dela desconta os dois), e quatro
+   centésimos de rem por linha são os ~22 px que fazem as três famílias
+   caberem inteiras numa janela de mesa. O que não couber continua
+   rolando — o teto é geometria, não gosto. */
 .atlas-gaveta-linha {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.22rem 0;
+  padding: 0.18rem 0;
   cursor: pointer;
 }
 .atlas-gaveta-linha input {
   accent-color: rgba(255, 200, 130, 0.9);
   cursor: pointer;
 }
+/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: seis das
+   dezessete têm ícone, e sem a coluna reservada os nomes da mesma
+   família começariam em dois recuos diferentes. `flex: 0 0 auto` para a
+   célula vazia não encolher a zero. */
 .atlas-gaveta-icone {
+  flex: 0 0 auto;
   width: 1.1rem;
   text-align: center;
   color: rgba(255, 214, 150, 0.8);

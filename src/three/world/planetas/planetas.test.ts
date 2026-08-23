@@ -1121,16 +1121,24 @@ const maquina = readFileSync(
   // A tabela de camadas saiu do `Ajustes.tsx` na F2 da Onda 5: com a
   // gaveta do Atlas ela ganhou um SEGUNDO leitor, e tabela com dois
   // leitores dentro de um deles é a segunda fonte de verdade nascendo.
-  // O que este teste cobra é o mesmo de sempre — a camada dos planetas
-  // está listada como VIVA (troca sem reload) —, agora no config único.
-  it('o config único lista a camada como viva, e o painel desenha a tabela dele', () => {
+  // Em 22/08 (item 61) ela voltou a ter UM leitor — a gaveta, que passou
+  // a mostrar as 17 em três famílias e a existir nos dois modos; o painel
+  // de Ajustes deixou de desenhá-la. O que este teste cobra é o mesmo de
+  // sempre: a camada dos planetas está listada como VIVA (troca sem
+  // reload) e o hospedeiro do momento desenha a tabela do config único.
+  it('o config único lista a camada como viva, e a gaveta desenha a tabela dele', () => {
     const config = readFileSync(new URL('../../atlasConfig.ts', import.meta.url), 'utf8');
-    expect(config).toContain("{ flag: 'noplan', nome: 'Planetas', viva: true");
-    const ajustes = readFileSync(new URL('../../../components/Ajustes.tsx', import.meta.url), 'utf8');
-    // (a lista dos quatro estados do seletor de qualidade entrou no
-    // mesmo import na letra D dos Ajustes, pelo mesmo motivo)
-    expect(ajustes).toMatch(/import \{[^}]*\bCAMADAS\b[^}]*\} from '\.\.\/three\/atlasConfig'/);
-    expect(ajustes).toContain('CAMADAS.map(');
+    expect(config).toContain(
+      "{ flag: 'noplan', nome: 'Planetas', familia: 'Sistema solar', viva: true"
+    );
+    const gaveta = readFileSync(
+      new URL('../../../components/HudDoAtlas.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(gaveta).toMatch(
+      /import \{[^}]*\bCAMADAS_POR_FAMILIA\b[^}]*\} from '\.\.\/three\/atlasConfig'/
+    );
+    expect(gaveta).toContain('CAMADAS_POR_FAMILIA.map(');
   });
 });
 

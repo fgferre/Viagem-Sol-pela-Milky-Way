@@ -1,12 +1,18 @@
 // ============================================================
 // Painel de ajustes — o que é GOSTO vira controle, não constante.
 //
-// AO VIVO: tom, exposição, tamanho do texto e as DOZE camadas — o tick
-// lê essas flags a cada quadro (`setLayerHidden`), então a troca é
-// imediata. As três últimas a recarregar (nodisc/nogdust/noglow) viraram
-// vivas em 2026-08-12: a alegação de que eram "lidas no bake" era falsa
-// (o bake roda inteiro de qualquer jeito; elas só governam visibilidade
-// e bind por quadro).
+// O QUE ELE É DESDE 22/08 (item 61): quinze controles de RENDERIZAÇÃO e
+// de sessão — curva de tom, exposição, qualidade, tamanho do texto, o
+// convite e o link. As CAMADAS saíram daqui. Palavras do dono: *"atlas -
+// camadas e ajustes concorrem. vc nao acha que varios elementos que hj
+// estao em ajustes na verdade deveriam ser camadas?"* — e o fato que a
+// queixa media: 17 dos 32 controles deste painel ERAM as camadas, que
+// tinham ao mesmo tempo uma gaveta própria com seis delas. Duas portas
+// para a mesma tabela. A porta agora é a gaveta (`GavetaDeCamadas`), nos
+// dois modos, e este painel ficou com o que é dele.
+//
+// AO VIVO: tom, exposição e tamanho do texto — o tick lê a cada quadro,
+// então a troca é imediata.
 //
 // A QUALIDADE também troca ao vivo desde 2026-08-20 (Ajustes C): a
 // metade assada dela — população da galáxia, tier do Sol, alvo de
@@ -18,18 +24,15 @@
 // captura headless (?t=&shot=2) enxerga exatamente o que a tela mostra —
 // que é o que mantém scripts/visual/rodada.mjs honesto.
 //
-// DESDE A F2 DA ONDA 5 o painel não guarda mais tom, exposição nem
-// camadas: esse estado subiu para o App. Não foi arrumação — o Atlas
-// ganhou uma SEGUNDA porta para as mesmas camadas (a gaveta) e um selo
-// que declara desvio de brilho; com o estado aqui dentro, desligar uma
-// camada na gaveta deixava a caixa do painel marcada, e o selo dizendo
-// "voltei ao real" deixava o slider mostrando o valor antigo. Um estado,
-// um dono.
+// DESDE A F2 DA ONDA 5 o painel não guarda tom nem exposição: esse
+// estado subiu para o App. Não foi arrumação — o selo declara desvio de
+// brilho, e com o estado aqui dentro o selo dizendo "voltei ao real"
+// deixava o slider mostrando o valor antigo. Um estado, um dono.
 // ============================================================
 import { useState } from 'react';
 import { useDialogFocus } from '../lib/dialogFocus';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
-import { CAMADAS, QUALIDADES, rotuloDaQualidade } from '../three/atlasConfig';
+import { QUALIDADES, rotuloDaQualidade } from '../three/atlasConfig';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
@@ -54,8 +57,6 @@ export function Ajustes({
   onExposicao,
   escalaUi,
   onEscalaUi,
-  escondidas,
-  onCamada,
   urlParaCopiar,
   onReverConvite,
 }: {
@@ -71,9 +72,6 @@ export function Ajustes({
   /** fator do tamanho do texto do HUD (`?ui=`) — 1 é o de sempre */
   escalaUi: number;
   onEscalaUi: (v: number) => void;
-  /** flags das camadas ESCONDIDAS agora — o dono do estado é o App */
-  escondidas: ReadonlySet<string>;
-  onCamada: (flag: string, ligar: boolean) => void;
   /** a URL de agora COM o instante da viagem (App.urlComMomento) */
   urlParaCopiar: () => string;
   /**
@@ -190,31 +188,6 @@ export function Ajustes({
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="ajustes-secao">
-        <h3>Camadas</h3>
-        {/* A nota SAI DA TABELA, não de uma frase decorada à mão: hoje as
-            doze trocam ao vivo, e no dia em que voltar a haver uma
-            `viva: false` o ↻ dela e o aviso aparecem juntos. */}
-        <p className="ajustes-nota">
-          {CAMADAS.some((c) => !c.viva)
-            ? 'Trocam ao vivo; as marcadas com ↻ recarregam a página (são decididas na construção do mundo).'
-            : 'Trocam ao vivo, sem recarregar a página.'}
-        </p>
-        {CAMADAS.map((c) => {
-          const ligado = !escondidas.has(c.flag);
-          return (
-            <label key={c.flag} className="ajustes-check">
-              <input
-                type="checkbox"
-                checked={ligado}
-                onChange={() => onCamada(c.flag, !ligado)}
-              />
-              <span>{c.viva ? c.nome : `${c.nome} ↻`}</span>
-            </label>
-          );
-        })}
       </div>
 
       {onReverConvite && (

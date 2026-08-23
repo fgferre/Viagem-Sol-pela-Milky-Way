@@ -452,18 +452,29 @@ três perguntas e respondeu numa linha só:
 3. **A máquina do tempo vira alça** no celular. Falta fazer — e a mesma
    resposta está registrada no item **62**, que é onde o celular mora.
 
-**"camadas e ajustes concorrem", 22/08.** Palavras dele:
+**"camadas e ajustes concorrem", 22/08 — FEITO em 22/08.** Palavras
+dele:
 
 > *"atlas - camadas e ajustes concorrem. vc nao acha que varios
 > elementos que hj estao em ajustes na verdade deveriam ser camadas?"*
 
-O fato ao lado: os Ajustes têm **32 controles**, e **17 deles SÃO as
-camadas** — a tabela `CAMADAS` do `atlasConfig.ts`, uma por flag
-`?no…`. A gaveta do Atlas mostra **6** dessas 17 (as que têm ícone:
-catálogo HYG, clarão das estrelas, marcador do Sol, planetas, corpos de
-perto, buraco negro). Ou seja, as duas superfícies desenham da MESMA
-lista e o visitante vê duas portas para a mesma coisa, uma com 17 e
-outra com 6.
+O fato que a queixa media: os Ajustes tinham **32 controles**, e **17
+deles ERAM as camadas** — a tabela `CAMADAS` do `atlasConfig.ts`, uma
+por flag `?no…`. A gaveta do Atlas mostrava **6** dessas 17. Duas
+superfícies desenhando da MESMA lista, uma com 17 e outra com 6.
+
+Agora a porta é **uma**: a gaveta de Camadas mostra as **17**, em **três
+famílias com contagem** — Galáxia (11), Estrelas (2) e Sistema solar (4)
+—, e a seção "Camadas" saiu do painel, que ficou com **15 controles**
+(curva de tom, exposição, qualidade, texto, convite, link). A gaveta
+passou a existir **nos dois modos**, pelo mesmo botão "⧉ Camadas" da
+barra: no Atlas, no filme e no voo livre — era o painel que servia as
+camadas ao filme, e sem isso o filme ficaria sem nenhuma. O estado, a
+URL `?no…` e o selo são os mesmos. A lista dos seis com ícone
+(`CAMADAS_DO_ATLAS`) morreu: a gaveta inteira já as cobre.
+
+Foto: `capturas/item61-camadas-gaveta.png` (Atlas e filme, lado a lado).
+**Espera o olho dele no app.**
 
 **"o selo de honestidade é complexo e nao funciona direito", 22/08 —
 FEITO em 22/08 (`3b1d4e2`).** Palavras dele:
@@ -771,6 +782,23 @@ para um gate. O conserto não é afrouxar o número: é medir o que a régua
 quer medir (o relógio ANDA quando solto), por exemplo cobrando avanço
 maior que zero e publicando a taxa como REGISTRO, do jeito que o
 `a11y.mjs` já faz com os cantos fora da faixa declarada.
+
+**E A MESMA DOENÇA ESTÁ NO `atlas-smoke`, medida em 22/08.** Dois dos
+113 vereditos dele reprovam nesta máquina sem defeito nenhum, e a prova
+é a de sempre — **as MESMAS duas falhas no código de ANTES**, com a
+árvore em `ff1252c` e sem nada mais rodando:
+
+- *"o véu fecha por passos"* mede `--veu-atlas` 150 ms depois do clique,
+  e essa porta é escrita POR QUADRO. Uma sonda de 5 repetições deu
+  `0,00 · 0,00 · 0,11 · 0,00 · 0,00` — **1 verde em 5** — e deu os
+  MESMOS cinco números na árvore de trabalho e no `ff1252c` limpo. O
+  gate mede quantos quadros couberam em 150 ms, não se o véu fecha.
+- *"a pinça (ctrlKey) faz o mesmo, em fração de estalo"* espera 600 ms
+  depois de quatro eventos pequenos e cobra que a distância mude; com o
+  quadro engasgado a câmera não andou (30,236 → 30,236 raios).
+
+O conserto é o do 76: esperar o EFEITO em vez do relógio de parede (o
+`esperarPor` do `a11y.mjs` já faz isso e imprime quanto esperou).
 
 **78.** (Ruído de instrumento, visto UMA vez em 22/08.) **O
 `ab-identidade` com `JOBS=3` travou DEPOIS de terminar.** Os três
