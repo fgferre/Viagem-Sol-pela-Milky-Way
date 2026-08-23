@@ -213,6 +213,19 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   return {
     esquecerRoda: () => roda.esquecer(),
     /**
+     * A RODA AINDA TEM EMBALO? — a única LEITURA que sai do gesto, e ela
+     * existe para o juiz poder perguntar "o gesto acabou?" em vez de
+     * dormir 600 ms e torcer (item 76: `atlas-smoke` reprovava a pinça
+     * `30,236 → 30,236 raios` quando o quadro engasgava, num HEAD limpo).
+     * A velocidade sobe no PRÓPRIO listener do `wheel`, síncrona com o
+     * evento, e só o tick a gasta — então logo depois de despachar a roda
+     * ela é `true` sem depender de quadro nenhum, e o `false` é o fim do
+     * gesto medido pelo app, não pelo relógio de parede de quem observa.
+     */
+    get embalandoZoom(): boolean {
+      return roda.embalando;
+    },
+    /**
      * UM QUADRO DE INÉRCIA. Chamado do tick, do mesmo ponto em que o
      * Atlas escreve a câmera: a roda deixa velocidade guardada e é o
      * relógio que a gasta, com atrito exponencial e zona morta

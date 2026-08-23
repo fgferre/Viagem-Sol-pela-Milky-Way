@@ -41,7 +41,7 @@
 // da captura — era defesa contra o autoQuality até a letra D dos
 // Ajustes), `?shot=2` (só a cena), e o SINAL de prontidão do próprio app
 // no lugar de espera cega.
-import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const PIN = 'shot=2&q=cinema';
@@ -166,15 +166,43 @@ try {
   // ele abre. Com `prefers-reduced-motion` a troca é INSTANTÂNEA e o
   // véu nunca sai de 0 — quem interpola é o número do Director, então
   // é nele que a promessa se mede, não numa classe de CSS.
+  //
+  // A PORTA `--veu-atlas` É ESCRITA POR QUADRO, e até 22/08 este veredito
+  // a espiava UMA vez, 150 ms de PAREDE depois do clique (item 76). Uma
+  // sonda de 5 repetições deu `0,00 · 0,00 · 0,11 · 0,00 · 0,00` — 1 verde
+  // em 5, os MESMOS cinco números num HEAD limpo: o que ele media era
+  // quantos quadros couberam em 150 ms, não se o véu fecha por passos.
+  // Agora quem amostra é o PRÓPRIO relógio de quadro da página (um `rAF`
+  // que anota a porta a cada quadro): a rampa não tem como escapar entre
+  // duas espiadas, e o veredito lê a série inteira. Um valor estritamente
+  // entre 0 e 1 é o que "fechar por passos" quer dizer — o salto
+  // instantâneo do `prefers-reduced-motion` não teria nenhum.
   const veu = "getComputedStyle(document.querySelector('.hud-root'))"
     + ".getPropertyValue('--veu-atlas').trim()";
   await sessao.ir('t=100&q=cinema');
+  await sessao.js(`(() => {
+    window.__veuAmostras = [];
+    const raiz = document.querySelector('.hud-root');
+    const passo = () => {
+      window.__veuAmostras.push(Number(
+        getComputedStyle(raiz).getPropertyValue('--veu-atlas').trim()));
+      window.__veuRaf = requestAnimationFrame(passo);
+    };
+    passo();
+  })()`);
   await sessao.js("[...document.querySelectorAll('.controls-bar button')]"
     + ".find((b) => b.innerText.toUpperCase().includes('ATLAS')).click()");
-  await dorme(150);
-  const meio = Number(await sessao.js(veu));
-  conferir(meio > 0 && meio < 1, `o véu fecha por passos (medido em ${meio.toFixed(2)})`);
   await sessao.assentar();
+  const rampaDoVeu = JSON.parse(await sessao.js(`(() => {
+    cancelAnimationFrame(window.__veuRaf);
+    return JSON.stringify(window.__veuAmostras);
+  })()`));
+  const passos = rampaDoVeu.filter((v) => v > 0 && v < 1);
+  conferir(
+    passos.length > 0,
+    `o véu fecha por passos: ${passos.length} de ${rampaDoVeu.length} quadros`
+      + ` entre 0 e 1 (topo ${Math.max(0, ...rampaDoVeu).toFixed(2)})`
+  );
   conferir(
     (await sessao.js('window.__director.captura.fase')) === 'atlas'
       && Number(await sessao.js(veu)) === 0,
@@ -860,11 +888,37 @@ try {
     sessao.js(`(() => document.querySelector('canvas').dispatchEvent(
       new WheelEvent('wheel', { deltaY: ${deltaY}, deltaMode: 0,
         ctrlKey: ${ctrlKey}, bubbles: true, cancelable: true })))()`);
-  // a inércia é curta (meia-vida 87 ms, zona morta em ~0,5 s): esperar
-  // por ela é esperar o gesto acabar, não uma trava de produto
+  /**
+   * O GESTO ACABOU? — e não "passaram 600 ms?" (item 76).
+   *
+   * A inércia é curta em tempo de FILME (meia-vida 87 ms, zona morta em
+   * ~0,5 s), mas ela é gasta pelo TICK: com o quadro engasgado, 600 ms de
+   * parede podiam não conter tick nenhum e a câmera não andava —
+   * `30,236 → 30,236 raios`, e o gate chamava de defeito a máquina
+   * ocupada. Agora a espera é por ESTADO, em dois tempos, e nenhum deles
+   * é relógio de parede:
+   *  - `zoomEmbalando` cai para `false` quando a velocidade da roda se
+   *    esgota. Ele sobe no PRÓPRIO listener do `wheel`, síncrono com o
+   *    evento, então não há corrida: quando `rodar` volta, ele já é true;
+   *  - `captura.pronto` volta a true dez quadros depois do último
+   *    `perturbar()` — a câmera parada, não só o embalo gasto.
+   */
+  const TETO_DO_ZOOM_MS = 30000;
+  const assentarZoom = async (teto = TETO_DO_ZOOM_MS) => {
+    const t0 = Date.now();
+    // `=== false` e não `!`: porta ausente é `undefined`, e `!undefined`
+    // devolveria "gesto acabou" no primeiro instante — um juiz que se
+    // desliga sozinho quando a peça que ele mede some
+    const gasto = await esperarPor(sessao, 'window.__director.zoomEmbalando === false', teto);
+    if (gasto === null) return null;
+    const parado = await esperarPor(
+      sessao, 'window.__director.captura.pronto', teto - (Date.now() - t0)
+    );
+    return parado === null ? null : Date.now() - t0;
+  };
   const estalo = async (deltaY, ctrlKey = false) => {
     await rodar(deltaY, ctrlKey);
-    await dorme(600);
+    await assentarZoom();
     return doZoom();
   };
 
@@ -894,7 +948,7 @@ try {
   // são 120.536 km de centro — 2 raios equatoriais, o topo das nuvens.
   let noPiso = paraDentro[5];
   for (let i = 0; i < 80; i++) await rodar(-100);
-  await dorme(900);
+  await assentarZoom();
   noPiso = await doZoom();
   conferir(
     Math.abs(noPiso.dist / noPiso.piso - 1) < 1e-9 && noPiso.foco === zoomInicio.foco,
@@ -904,7 +958,7 @@ try {
 
   // O TETO: o sistema em quadro, centrado no alvo
   for (let i = 0; i < 90; i++) await rodar(100);
-  await dorme(900);
+  await assentarZoom();
   const noTeto = await doZoom();
   conferir(
     Math.abs(noTeto.dist - noTeto.teto) / noTeto.teto < 1e-9
@@ -926,13 +980,14 @@ try {
   // nenhum: eventos pequenos viram fração de estalo e a câmera anda
   const antesDaPinca = await doZoom();
   for (let i = 0; i < 4; i++) await rodar(-30, true);
-  await dorme(600);
+  const pincaAssentouEm = await assentarZoom();
   const depoisDaPinca = await doZoom();
   conferir(
     depoisDaPinca.dist < antesDaPinca.dist && depoisDaPinca.foco === zoomInicio.foco,
     `a pinça (ctrlKey) faz o mesmo, em fração de estalo`
       + ` (${(antesDaPinca.dist / antesDaPinca.raio).toFixed(3)} →`
-      + ` ${(depoisDaPinca.dist / depoisDaPinca.raio).toFixed(3)} raios)`
+      + ` ${(depoisDaPinca.dist / depoisDaPinca.raio).toFixed(3)} raios,`
+      + ` assentou em ${pincaAssentouEm === null ? '—' : `${pincaAssentouEm} ms`})`
   );
 
   // e o gesto NÃO rola a página nem deixa o navegador dar zoom: o
@@ -969,7 +1024,11 @@ try {
   await sessao.ir('atlas=1&foco=saturno&q=cinema&shot=1');
   await sessao.assentar();
   for (let i = 0; i < 6; i++) await rodar(-100);
-  await dorme(800);
+  // pelo MESMO motivo do 15 (item 76): 800 ms de parede não são o fim do
+  // gesto. Sob carga a inércia ainda gastava aqui, `antesDoLink` saía
+  // MID-VOO e o `?d=` — escrito depois, com a câmera já parada — era
+  // acusado de errar 6,3%. O link estava certo; a régua é que media cedo.
+  await assentarZoom();
   const antesDoLink = await doZoom();
   const linkComD = await espelhar();
   const dEscrito = new URLSearchParams(linkComD).get('d');
