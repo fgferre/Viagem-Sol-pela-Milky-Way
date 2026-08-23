@@ -92,6 +92,18 @@ const TIERS = {
   mid: { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 22, prom: 6, chromo: 1024, granFreq: 30.0, lic7: true, loops: 12, larc: 7, lseg: 36, cstep: 22, cmestep: 16, cmen: 1024 },
   high: { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 26, prom: 7, chromo: 2048, granFreq: 34.0, lic7: true, loops: 16, larc: 9, lseg: 44, cstep: 36, cmestep: 24, cmen: 2048 },
 } as const;
+/**
+ * SEGMENTOS DA ESFERA DA FOTOSFERA NO PIOR TIER — a única grandeza do
+ * `TIERS` que alguém de fora precisa saber, e por um motivo geométrico: a
+ * silhueta de uma esfera TESSELADA é o polígono INSCRITO, e o oclusor da
+ * nebulosa (`world/nebula.ts`, `sunCone`) tem de encolher o raio por
+ * `cos(π/N)` usando o N do pior caso. Era 96 redigitado lá, com o tier
+ * citado só no comentário ao lado — e comentário não muda quando o tier
+ * muda: baixar `low.seg` sem mexer na cópia faria o oclusor apagar pixel
+ * visível, calado.
+ */
+export const SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER = TIERS.low.seg;
+
 const TIER_FOR: Record<QualityLevel, keyof typeof TIERS> = {
   cinema: 'high',
   alta: 'mid',

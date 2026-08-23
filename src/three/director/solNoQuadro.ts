@@ -28,9 +28,7 @@ import type { StarField } from '../world/stars';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import type { Phase } from '../fases';
-
-/** o centro do frame heliocêntrico — o Sol não sai daqui, ninguém muta */
-const ORIGEM = new THREE.Vector3(0, 0, 0);
+import { ORIGEM } from '../cinematic/enquadramento';
 
 export class SolNoQuadro {
   /**

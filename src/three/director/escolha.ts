@@ -24,7 +24,7 @@ import type { StarsMeta } from '../config';
 import type { StarLabel } from '../world/labels';
 import type { Rotulos } from './rotulos';
 import type { Escada } from './escada';
-import { ORIGEM } from './escada';
+import { ORIGEM } from '../cinematic/enquadramento';
 import { CHAVE_DE_CORPO } from '../atlasConfig';
 import { GAL } from '../world/baseGalactica';
 import { raioDeEnquadramentoEstelar } from '../cinematic/atlasRig';

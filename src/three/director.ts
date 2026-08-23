@@ -76,6 +76,7 @@ import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
+import { ORIGEM } from './cinematic/enquadramento';
 import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
 import {
   CAMADAS,
@@ -94,9 +95,6 @@ import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
 import type { CorpoBuscavel } from '../lib/buscaEstrelas';
-
-// A fotosfera fica na origem do mundo — o grupo do Sol só é escalado.
-const ORIGEM = new THREE.Vector3(0, 0, 0);
 
 /**
  * O INSTRUMENTO DA CASA na parte que não muda com o quadro (M4 da Lei

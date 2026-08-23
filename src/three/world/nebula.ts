@@ -10,6 +10,7 @@ import {
   NEBULA_BLUR_FRAG,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
+import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
 
 // Luzes embutidas no gás — posições reais do catálogo HYG (pc)
 const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682); // supergigante vermelha
@@ -33,14 +34,16 @@ const passosDoRaymarch = (bruto: number) =>
   Number.isFinite(bruto) && bruto > 0 ? Math.min(bruto, TETO_DE_PASSOS_DA_NEBULOSA) : 0;
 
 /**
- * Segmentos da esfera da fotosfera no PIOR tier (`TIERS.low.seg` em
- * `world/stellarBody.ts`) — é a contagem que `sunCone` usa para achar o
- * polígono INSCRITO da silhueta. Terceira grandeza da casa que calha de
- * valer 96, e pelo mesmo motivo da nota acima ela tem nome próprio: era
- * literal no `Math.cos(Math.PI / 96)` com o "N = 96" só no comentário ao
- * lado, e o comentário não muda quando o tier muda.
+ * Segmentos da esfera da fotosfera no PIOR tier — a contagem que
+ * `sunCone` usa para achar o polígono INSCRITO da silhueta.
+ *
+ * DIFERENTE das duas grandezas da nota acima: aquelas CALHAM de valer 96
+ * e por isso não se amarram; esta É o `TIERS.low.seg` do
+ * `world/stellarBody.ts`, o mesmo número pelo mesmo motivo, e agora vem
+ * de lá. Era um 96 redigitado — o dia em que o tier baixasse, o oclusor
+ * encolheria o raio de menos e apagaria pixel visível sem avisar.
  */
-const SEGMENTOS_DA_FOTOSFERA = 96;
+const SEGMENTOS_DA_FOTOSFERA = SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER;
 
 export class Nebula {
   readonly texture: THREE.Texture;

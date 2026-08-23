@@ -7,6 +7,7 @@ import { WORLD } from '../config';
 import { GLSL_CARTOGRAPHY, LUT_DISK } from '../cartography/galacticModel';
 import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore } from './common';
 import { blackbodyLinear } from '../luzDaCasa';
+import { glslNumber } from '../glslNumber';
 import { GLSL_UNRESOLVED, glslResolvedCatalog } from '../world/wrappedStars';
 
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
@@ -224,6 +225,11 @@ const riftGLSL = (): string =>
       `\n  light *= exp(-riftAv * 0.921065);\n`;
 
 // A cavidade H II "hero" é o 5º núcleo do corredor visto por dentro.
+// O 5º NÚCLEO DO CORREDOR, e ele é impresso pelo MESMO cinto
+// (`glslNumber`) que `common.ts` usa nos sete: os dois textos saem do
+// mesmo `corridorCore(4)`, e um arredondar duas casas enquanto o outro
+// imprime sete poria a cavidade HII e o núcleo que a hospeda em lugares
+// diferentes assim que `?corewall=` deslocasse o corredor (item 51).
 const HERO = corridorCore(4);
 const SPHEROID =
   BULGEQ === 1
@@ -601,7 +607,7 @@ void main() {
       // do volume dela (fora, heroVolume < 1e-5 e não compra nada)
       // mora NO 5º núcleo do corredor: posição e raio vêm de lá, então
       // ela anda junto quando o corredor se desloca (rodada 34)
-      vec3 hq = (p - vec3(${HERO[0].toFixed(2)}, ${HERO[1].toFixed(2)}, ${HERO[2].toFixed(2)})) / ${HERO[3].toFixed(2)};
+      vec3 hq = (p - vec3(${glslNumber(HERO[0])}, ${glslNumber(HERO[1])}, ${glslNumber(HERO[2])})) / ${glslNumber(HERO[3])};
       float hq2 = dot(hq, hq);
       if (hq2 < 9.0) {
         float heroVolume = exp(-hq2 * 1.25);

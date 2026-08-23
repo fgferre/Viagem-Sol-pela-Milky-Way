@@ -598,6 +598,12 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
 // → 0,0039216) nem `1 / BETA_DA_ASA` (0,4166666666666667 → 0,4166667) — os
 // dois caem em float32 DIFERENTE, e passá-los pelo cinto moveria pixel. Nesses
 // dois a interpolação crua é que é a precisão cheia, e é ela que fica.
+//
+// E UMA TERCEIRA, que não é do mesmo tipo: o `2 × BETA_DA_ASA` do comentário
+// dentro do GLSL abaixo segue em `toFixed(1)` porque é PROSA — o expoente que
+// o texto explica ao leitor, não um número que o compilador leia. O cinto é
+// para o literal que vira instrução; escrever `F^(1/2.4000000)` numa frase
+// seria trocar clareza por cerimônia (auditoria de 22/08, item 51).
 export const GLSL_LEI_DA_ESTRELA = /* glsl */ `
 // A repartição da Lei da Estrela — dois eixos, pesos que somam 1 por
 // construção. Constantes interpoladas de estrela.ts, a fonte única.

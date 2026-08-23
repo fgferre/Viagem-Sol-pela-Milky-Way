@@ -270,9 +270,10 @@ endereço só — `picoDaPsf`/`psfPointSizePx` em `luzDaCasa.ts`,
 constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
 `simbolosProibidos.test.ts`.)*
 
-- **O β mora no shader, não na lei — exceção declarada no M4.**
-  `BETA_DA_EMISSAO`/`lerBetaDaEmissao` continuam resolvidos em
-  `shaders/starShaders.ts`, e não em `luzDaCasa.ts`: a leitura é PURA de propósito,
+- **A PORTA do β mora no shader, não na lei — exceção declarada no M4.** Quem
+  RESOLVE a porta é `shaders/starShaders.ts` (`BETA_DA_EMISSAO`, uma vez, no
+  módulo dono do fragment); o LEITOR e o padrão — `lerBetaDaEmissao` e
+  `BETA_EMISSAO` — moram em `luzDaCasa.ts`: a leitura é PURA de propósito,
   para a suíte a julgar em `node`, e mover a porta mexeria em sete consumidores que
   não são de migração nenhuma. A lei é dona da fórmula e da constante; o shader é
   dono da porta.
@@ -592,9 +593,10 @@ sem correção** — pela receita crua, Rigel dá 52,9 R☉; com BC(12.100 K) �
 passa a viver na banda de render — **decisão explícita, nunca implícita**. (O
 oráculo pinado de 283 R☉ é valor de RENDER: reescreve-se, não se satisfaz.)
 **DECIDIDA NO L1, e a decisão foi a banda de render:** `integralPlanckCie` +
-`radianciaVisivelDeCorpoNegro` são produção em `luzDaCasa.ts`, exportadas por
-`estrela.ts`, e reproduzem os números desta cláusula (30.000 K dá 65,9, não 729 —
-cravado em `estrela.test.ts`). O que segue em aberto é só a tabela BC(Teff) do raio
+`radianciaVisivelDeCorpoNegro` são produção em `luzDaCasa.ts` — a integral é
+PRIVADA do módulo (só `radianciaVisivelDeCorpoNegro` é exportada, e `estrela.ts`
+a CONSOME, não a reexporta) —, e reproduzem os números desta cláusula (30.000 K
+dá 65,9, não 729 — cravado em `estrela.test.ts`). O que segue em aberto é só a tabela BC(Teff) do raio
 por Stefan-Boltzmann, que é do M3.
 
 **5.6 A lei é invariante com a resolução.** `peak = E/(2πσ²)` com `σ ∝ alturaPx` dá

@@ -29,6 +29,7 @@ import {
 } from './enquadramento';
 import { LARGURA_DE_MESA_PX, retanguloUtilDoAtlas } from './retanguloDoAtlas';
 import type { OrbitaDoVisitante } from './enquadramento';
+import { ORIGEM } from './enquadramento';
 
 // A FACHADA: o retângulo útil e a matemática do enquadramento moram
 // ao lado (./retanguloDoAtlas, ./enquadramento) e este arquivo os
@@ -37,9 +38,6 @@ import type { OrbitaDoVisitante } from './enquadramento';
 // (a11y.mjs importa o ARQUIVO por URL no navegador).
 export * from './retanguloDoAtlas';
 export * from './enquadramento';
-
-/** O Sol está na ORIGEM do mundo heliocêntrico. */
-const SOL = new THREE.Vector3(0, 0, 0);
 
 export const RAMPA_DO_DEGRAU_S = 0.5;
 
@@ -231,7 +229,7 @@ export class AtlasRig {
    */
   focarNoSistema() {
     const fora = orbitaMaisExterna();
-    this.focar(SOL, fora.raio, fora.posicao);
+    this.focar(ORIGEM, fora.raio, fora.posicao);
   }
 
   /**
@@ -358,14 +356,14 @@ export class AtlasRig {
     // 1. a pose de agora, no mundo
     if (this.pai) {
       direcaoDaLua(
-        _dir.copy(this.eixoDe).sub(SOL),
+        _dir.copy(this.eixoDe).sub(ORIGEM),
         _dirPai.copy(this.alvo).sub(this.pai),
         this.polo,
         this.orbita,
         _dir
       );
     } else {
-      direcaoPrivilegiada(_dir.copy(this.eixoDe).sub(SOL), this.polo, this.orbita, _dir);
+      direcaoPrivilegiada(_dir.copy(this.eixoDe).sub(ORIGEM), this.polo, this.orbita, _dir);
     }
     _posPartida.copy(this.alvo).addScaledVector(_dir, this.distancia);
     // 2. o referencial novo
@@ -393,7 +391,7 @@ export class AtlasRig {
     }
     orbitaQueProduz(
       _dirB.multiplyScalar(1 / distancia),
-      _dir.copy(this.eixoDe).sub(SOL),
+      _dir.copy(this.eixoDe).sub(ORIGEM),
       this.polo,
       this.orbita
     );
@@ -723,14 +721,14 @@ export class AtlasRig {
     // arrasto vertical deixaria de ser vertical na tela
     if (pai) {
       direcaoDaLua(
-        _dir.copy(eixoDe).sub(SOL),
+        _dir.copy(eixoDe).sub(ORIGEM),
         _dirPai.copy(alvo).sub(pai),
         polo,
         orbita,
         _dir
       );
     } else {
-      direcaoPrivilegiada(_dir.copy(eixoDe).sub(SOL), polo, orbita, _dir);
+      direcaoPrivilegiada(_dir.copy(eixoDe).sub(ORIGEM), polo, orbita, _dir);
     }
     const escrita = pinada !== null && Number.isFinite(pinada) && pinada > 0
       ? pinada

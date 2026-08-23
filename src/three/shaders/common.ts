@@ -3,6 +3,7 @@
 // função de densidade da nebulosa e cor de corpo negro.
 // ============================================================
 import { WORLD } from '../config';
+import { glslNumber } from '../glslNumber';
 import {
   ALTURA_DE_CALIBRACAO_DO_SIGMA_PX,
   CORPO_NEGRO_B,
@@ -94,6 +95,19 @@ export const corridorCore = (i: number): number[] => pushCore(WORLD.nebulaCores[
 // Constrói a função de densidade com os núcleos de nuvem injetados
 // como constantes (evita uniforms extras e permite otimização do driver).
 function coresGLSL(): string {
+  // OS NÚMEROS SAEM DO `glslNumber`, COM UMA EXCEÇÃO DECLARADA (item 51,
+  // 22/08). As posições dos núcleos e o deslocamento `i × 13,7` passam
+  // pelo cinto sem mover um bit: com `?corewall=` no padrão (0) o
+  // `pushCore` devolve os literais de `WORLD.nebulaCores`, e sete casas
+  // reproduzem os mesmos float32 que duas — a diferença aparece só quando
+  // `?corewall=` desloca o corredor, e aí o cinto é justamente o que faz o
+  // shader concordar com o `corridorCore` que o TS lê.
+  //
+  // O `i × 7,31` NÃO PASSA: `toFixed(1)` ali ARREDONDA (7,31 vira 7,3;
+  // 43,86 vira 43,9) e o float32 muda de verdade. Passá-lo pelo cinto
+  // moveria a semente do fbm — e com ela o gás na tela. Fica cru, com o
+  // número que o shader sempre teve.
+  //
   // O gate espacial vem ANTES dos 2 fbm de cada núcleo: fora de ~3
   // raios (g < 6e-7, invisível) a amostra custa uma subtração e um
   // dot — sem ele, os 7 núcleos eram ~80% do custo do raymarch
@@ -102,12 +116,12 @@ function coresGLSL(): string {
     .map(pushCore)
     .map(
       (c, i) =>
-        `  { vec3 q = (p - vec3(${c[0].toFixed(2)}, ${c[1].toFixed(2)}, ${c[2].toFixed(2)})) / ${c[3].toFixed(2)};
+        `  { vec3 q = (p - vec3(${glslNumber(c[0])}, ${glslNumber(c[1])}, ${glslNumber(c[2])})) / ${glslNumber(c[3])};
      float q2 = dot(q, q);
      if (q2 < 9.0) {
        float g = exp(-q2 * 1.6);
        // bolsões densos separados por vãos + detalhe fino (~3 pc)
-       float core = g * (0.04 + 1.5 * smoothstep(0.50, 0.85, fbm(p * 0.09 + ${(i * 13.7).toFixed(1)}, oct)));
+       float core = g * (0.04 + 1.5 * smoothstep(0.50, 0.85, fbm(p * 0.09 + ${glslNumber(i * 13.7)}, oct)));
        core *= 0.50 + 0.95 * fbm(p * 0.30 + ${(i * 7.31).toFixed(1)}, 2);
        d += core * 0.95;
      } }`
@@ -257,7 +271,7 @@ ${coresGLSL()}
   // fundamentada: superbolhas de ~300 pc povoam todo o disco)
   float cav = length(p - uCavityPos);
   d *= mix(1.0, smoothstep(25.0, 240.0, cav), uCavityGate);
-  return d * ${WORLD.gasDensity.toFixed(2)};
+  return d * ${glslNumber(WORLD.gasDensity)};
 }
 
 `;
@@ -288,7 +302,7 @@ ${coresGLSL()}
   // mesma cavidade do raymarch (coerência na faixa dHome 600–2300)
   float cav = length(p - uCavityPos);
   d *= mix(1.0, smoothstep(25.0, 240.0, cav), uCavityGate);
-  return d * ${WORLD.gasDensity.toFixed(2)};
+  return d * ${glslNumber(WORLD.gasDensity)};
 }
 
 // Transmissão + avermelhamento aproximados ao longo do raio (extinção interestelar)
@@ -327,7 +341,7 @@ void starPSF(
   float m, float expoM0, float sigmaPx, float screenH,
   out float size, out float peak, out float sigmaFrac
 ) {
-  float sigma = sigmaPx * screenH / ${ALTURA_DE_CALIBRACAO_DO_SIGMA_PX.toFixed(1)};
+  float sigma = sigmaPx * screenH / ${glslNumber(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX)};
   float E = pow(10.0, -0.4 * (m - expoM0));
   peak = E / (${DOIS_PI_DO_SHADER} * sigma * sigma);
   float rSat = peak > 1.0 ? sigma * sqrt(2.0 * log(peak)) : 0.0;
@@ -426,12 +440,12 @@ export const GLSL_BRANCO_DO_NUCLEO = /* glsl */ `vec3(1.0, 0.98, 0.95)`;
 // O texto gerado é o mesmo de sempre; redigitar um coeficiente aqui é
 // recriar a cópia que o F0 matou (a varredura invertida vigia).
 const polinomioDoCorpoNegro = (c: readonly [number, number, number]): string =>
-  `${c[0].toFixed(3)} ${c[1] < 0 ? '-' : '+'} ${Math.abs(c[1]).toFixed(3)} * u ` +
-  `${c[2] < 0 ? '-' : '+'} ${Math.abs(c[2]).toFixed(3)} * u * u`;
+  `${glslNumber(c[0])} ${c[1] < 0 ? '-' : '+'} ${glslNumber(Math.abs(c[1]))} * u ` +
+  `${c[2] < 0 ? '-' : '+'} ${glslNumber(Math.abs(c[2]))} * u * u`;
 
 export const GLSL_STAR_COLOR = /* glsl */ `
 vec3 blackbodyLinear(float T) {
-  float u = clamp(${CORPO_NEGRO_U_REF_K.toFixed(1)} / T, ${CORPO_NEGRO_U_MIN}, ${CORPO_NEGRO_U_MAX.toFixed(1)});
+  float u = clamp(${glslNumber(CORPO_NEGRO_U_REF_K)} / T, ${glslNumber(CORPO_NEGRO_U_MIN)}, ${glslNumber(CORPO_NEGRO_U_MAX)});
   return vec3(${polinomioDoCorpoNegro(CORPO_NEGRO_R)},
               ${polinomioDoCorpoNegro(CORPO_NEGRO_G)},
               ${polinomioDoCorpoNegro(CORPO_NEGRO_B)});
@@ -441,7 +455,7 @@ vec3 blackbodyLinear(float T) {
 // devolve 16.600 K em vez dos ~30.000 K de uma O), o que afeta ~100 das
 // 18.543 do HYG — todas já no extremo azul, onde a cor satura.
 vec3 bvToColor(float bv) {
-  float t = ${BALLESTEROS_T0_K.toFixed(1)} * (1.0 / (${BALLESTEROS_A} * bv + ${BALLESTEROS_B.toFixed(2)}) + 1.0 / (${BALLESTEROS_A} * bv + ${BALLESTEROS_C}));
+  float t = ${glslNumber(BALLESTEROS_T0_K)} * (1.0 / (${glslNumber(BALLESTEROS_A)} * bv + ${glslNumber(BALLESTEROS_B)}) + 1.0 / (${glslNumber(BALLESTEROS_A)} * bv + ${glslNumber(BALLESTEROS_C)}));
   return blackbodyLinear(t);
 }
 `;

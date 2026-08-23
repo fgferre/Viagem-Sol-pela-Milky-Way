@@ -30,8 +30,8 @@ modo ganhou o convite dele. Ficou de fora, de propósito, o **77** (as
 linhas de órbita). **Espera o olho dele no app**, com as fotos em
 `capturas/item73-*`. Palavras dele no fim da mensagem: *"enfim muitas
 ideias que precisam ser organizadas."* Do **61** já fechou UMA parte: o
-**selo de honestidade**, que não fechava e comia de 3,2% (mesa) a 10,1%
-(celular) da tela, virou UMA LINHA de 0,3% a 1,0% — a mesma peça nas
+**selo de honestidade**, que não fechava e comia de 3,19% (mesa) a 10,10%
+(celular) da tela, virou UMA LINHA de 0,31% a 1,03% — a mesma peça nas
 duas telas, com gaveta que sobe ao clique, os culpados finalmente na
 tela e a gaveta de camadas parando acima dele. Fotos em
 `capturas/item61-*`. Em 22/08 fecharam mais DUAS partes dele: as

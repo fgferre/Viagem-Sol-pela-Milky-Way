@@ -14,6 +14,22 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalact
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { RetanguloUtil } from './retanguloDoAtlas';
 
+/**
+ * O CENTRO DO FRAME HELIOCÊNTRICO — o Sol não sai daqui, e ninguém muta
+ * este vetor (quem precisa de um vetor próprio usa `.clone()`).
+ *
+ * MORA AQUI porque era QUATRO vetores idênticos: `director.ts`,
+ * `director/solNoQuadro.ts`, `director/escada.ts` (que o exportava) e o
+ * `SOL` privado do `atlasRig.ts` — e a exportação da escada era o único
+ * CICLO de import de valor de todo o `src/` (`escada` → `escolha` →
+ * `escada`, nascido quando o gesto se mudou para `escolha.ts` em 22/08).
+ * Este módulo é o vizinho neutro dos quatro: geometria pura do Atlas,
+ * sem director atrás. O `atlasRig.ts` o reexporta junto com o resto
+ * (`export * from './enquadramento'`), então quem sempre o pediu de lá
+ * segue servido.
+ */
+export const ORIGEM = new THREE.Vector3(0, 0, 0);
+
 // ---- as quatro constantes medidas, num lugar só ------------------
 // Herdadas do doador como VALORES MEDIDOS a reaproveitar, não como
 // código: quem quiser mudar uma delas muda aqui, e o teste da função

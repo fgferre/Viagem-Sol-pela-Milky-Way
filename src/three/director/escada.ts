@@ -67,10 +67,11 @@ import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
 import { Escolha } from './escolha';
-
-/** o centro do frame heliocêntrico — o Sol não sai daqui, ninguém muta.
- *  Exportado para `escolha.ts`, que escolhe o Sol pelo MESMO ponto. */
-export const ORIGEM = new THREE.Vector3(0, 0, 0);
+// o centro do frame heliocêntrico mora no vizinho neutro
+// (`cinematic/enquadramento.ts`): exportá-lo DAQUI fazia o único ciclo de
+// import de valor do `src/` — a escada precisa da `Escolha`, e a escolha
+// precisava do ponto
+import { ORIGEM } from '../cinematic/enquadramento';
 
 /** rascunho do polo do corpo — o rig COPIA, ninguém guarda a referência */
 const POLO_DO_CORPO = new THREE.Vector3();
