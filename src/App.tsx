@@ -230,8 +230,7 @@ export default function App() {
   // AS QUATRO GAVETAS (Ajustes, Camadas, Busca, Ficha) — uma aberta por vez,
   // e o mecanismo inteiro mora em `useGavetas`: o enum, os dois gatilhos e a
   // regra "há seleção ⇒ há ficha", que é por onde a escada as abre.
-  const { gaveta, alternarGaveta, fecharGaveta, fecharNaTravessia } =
-    useGavetas(escada, foco);
+  const { gaveta, alternarGaveta, fecharGaveta } = useGavetas(escada, foco, phase);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
   // (onda da arquitetura, corte 6) — os fios são os mesmos de sempre.
@@ -383,18 +382,17 @@ export default function App() {
   }, [phase]);
 
   /**
-   * TRAVESSIA FECHA O QUE ESTAVA ABERTO — a busca e as camadas, pelas razões
-   * que `useGavetas` declara (o ⚙ Ajustes e a ficha não entram). Aqui fica só
-   * o gatilho: é a FASE que dispara, e a fase é deste arquivo.
+   * O BOTÃO DA CAPTURA VOLTA A SE OFERECER COM O MODO: o backoff é do
+   * MODO, não da sessão (`EstadoDaCaptura.desistiu`), e sem esta linha o
+   * rótulo do rig e o do React discordariam — o rig esquecia as negativas
+   * ao sair, o React continuava mostrando o botão morto.
+   *
+   * A TRAVESSIA TAMBÉM FECHA A BUSCA E AS CAMADAS, e esse efeito mora
+   * INTEIRO em `useGavetas` desde 23/08 — a fase é um parâmetro dele.
    */
   useEffect(() => {
-    fecharNaTravessia();
-    // e o botão da captura volta a se oferecer com o modo: o backoff é
-    // do MODO, não da sessão (`EstadoDaCaptura.desistiu`), e sem esta
-    // linha o rótulo do rig e o do React discordariam — o rig esquecia
-    // as negativas ao sair, o React continuava mostrando o botão morto.
     setCapturaNegada(directorRef.current?.capturaDePonteiro.desistiu ?? false);
-  }, [phase, fecharNaTravessia]);
+  }, [phase]);
 
   // ---- captura de ponteiro: o HUD só OFERECE (F5) ---------------------
   // As quatro defesas moram no rig (`cameraRig.ts`); daqui sai o pedido e
