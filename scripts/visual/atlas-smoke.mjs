@@ -14,16 +14,29 @@
 //     por `via=sinal`. Se ela cair no teto de segurança (`via=quadros`),
 //     o getter `captura` não aprendeu a fase e todo gate futuro do Atlas
 //     estaria medindo espera cega — o modo caro de falhar.
-//  3. ABERTURA REPRODUZÍVEL. Entrar no Atlas a partir de t=10 e t=100
-//     tem de dar o MESMO md5: nenhum resíduo do trajeto pode atravessar
-//     o portal. Foi esta trinca que denunciou a LUT do raymarch herdada
-//     do voo. A TERCEIRA entrada (t=250) mudou de papel em 23/08 (item
-//     61, §6): ela vem da CODA, com o disco já para trás, e a trava do
-//     disco passou a atravessar o portal — então o md5 dela TEM de
-//     diferir, e é esse veredito que denuncia o modo mudando os
-//     gráficos sozinho. Os três instantes seguem sendo escolhidos por
-//     regime: t=10 dentro dos 2 pc de casa, t=100 a 1.911 pc, t=250 de
-//     volta em casa com o palco quente.
+//  3. O PORTAL LEVA A CÂMERA. A prova MUDOU DE PERGUNTA em 23/08 (item
+//     61, §2). Ela cobrava que as três entradas dessem o MESMO md5, e
+//     cobrava certo enquanto `entrarNoAtlas` chamava `focarNoSistema()`
+//     e jogava a pose fora. Isso ERA o defeito: entrar em t=10, t=100 ou
+//     t=250 devolvia sempre a vista de abertura, a 224 UA de casa, e o
+//     Atlas parecia outro programa. Agora ela cobra o contrário —
+//     **três entradas, três vistas** — mais a prova que importa: a
+//     POSIÇÃO da câmera antes e depois do portal, e o fov em 35°.
+//
+//     A POSIÇÃO É COBRADA POR ERRO RELATIVO, não por `Object.is`, e o
+//     desvio é declarado: o pouso reconstrói a pose como (direção,
+//     distância) contra o eixo do degrau, e a ida e volta por ângulo não
+//     é exata em ponto flutuante. Medido: a coda sai BIT-IDÊNTICA nos
+//     três eixos, e as outras duas concordam em 1 ulp (~1e-16
+//     relativo). O teto é 1e-9 do raio, três ordens acima do pior visto
+//     e sete abaixo de qualquer erro que mova pixel.
+//
+//     Os três instantes seguem sendo escolhidos por REGIME, e agora cada
+//     um cai num degrau diferente do pouso — que é o que faz a trinca
+//     valer a pena: t=10 a 0,34 UA do Sol, sem corpo mais perto que ele
+//     (degrau `sistema`); t=100 a 1.911 pc, fora do sistema (degrau
+//     `céu`, o que nasceu com esta obra); t=250 na coda, a 10 mil km da
+//     Terra (degrau `corpo`).
 //
 //     O RELÓGIO DO CÉU VAI PINADO (`&jd=EPOCA`), e não é conforto. O
 //     `?t=250` é grampeado no FIM do filme (193 s), e a partir de
@@ -100,10 +113,17 @@ try {
   const PIN_DO_TRIO = `${PIN}&jd=EPOCA`;
   const doAtlas = new Map();
   const relogios = new Map();
+  const degraus = new Map();
+  const poses = new Map();
+  // a pose lida do MESMO objeto dos dois lados do portal — é ela que
+  // responde "o Atlas nasceu onde o filme estava?"
+  const POSE = 'JSON.stringify((()=>{const c=window.__director.engine.camera;'
+    + 'return {p:[c.position.x,c.position.y,c.position.z],fov:c.fov};})())';
   for (const T of [10, 100, 250]) {
     await sessao.ir(`t=${T}&${PIN_DO_TRIO}`);
     const antesFase = await sessao.js('window.__director.captura.fase');
     const antesT = await sessao.js('window.__director.currentTime');
+    const poseAntes = JSON.parse(await sessao.js(POSE));
     const antes = await sessao.md5();
     conferir(antesFase === 'journey', `t=${T}: parte de 'journey' congelada em t=${antesT}`);
 
@@ -113,6 +133,15 @@ try {
     const md5Atlas = await sessao.md5();
     doAtlas.set(T, md5Atlas);
     relogios.set(T, await sessao.js('window.__director.tempo.jd'));
+    const poseDepois = JSON.parse(await sessao.js(POSE));
+    degraus.set(T, await sessao.js('window.__director.escadaViva.degrau'));
+    const raio = Math.hypot(...poseAntes.p);
+    const desvio = Math.hypot(...poseAntes.p.map((v, i) => v - poseDepois.p[i]));
+    poses.set(T, {
+      erro: raio > 0 ? desvio / raio : desvio,
+      exata: poseAntes.p.every((v, i) => Object.is(v, poseDepois.p[i])),
+      fov: poseDepois.fov,
+    });
     conferir(faseDentro === 'atlas', `t=${T}: entrou — fase = '${faseDentro}'`);
     conferir(
       dentro.via === 'sinal',
@@ -137,31 +166,28 @@ try {
     `o relógio do céu vai PINADO nas três entradas — a coda não o move`
       + ` (${[...relogios].map(([t, jd]) => `t=${t} ${jd}`).join(' · ')})`
   );
-  // A ABERTURA É REPRODUZÍVEL DE DENTRO DO DISCO, e a CODA traz o disco
-  // consigo (item 61, §6 — 23/08). Até aqui a prova cobrava as TRÊS
-  // entradas com o mesmo md5, e cobrava certo enquanto a troca de fase
-  // APAGAVA a trava do disco. Ela deixou de apagar: a trava atravessa o
-  // portal, então quem entra vindo da coda (t=250, grampeado em 193 s,
-  // com `T_SAIDA_DO_DISCO` muito para trás) chega ao Atlas com o
-  // ambiente de FORA do disco — cartão da galáxia aceso, nebulosa
-  // apagada —, e quem entra de t=10 ou t=100 chega com o ambiente de
-  // dentro. As duas de dentro continuam bit a bit idênticas: é elas que
-  // provam que nenhum resíduo do TRAJETO atravessa o portal (foi esta
-  // trinca que denunciou a LUT do raymarch herdada do voo).
-  //
-  // O md5 da coda ser DIFERENTE é o veredito, não o defeito: era ele
-  // que denunciava o modo mudando os gráficos sozinho.
-  const deDentro = [...new Set([10, 100].map((t) => doAtlas.get(t)))];
+  // TRÊS ENTRADAS, TRÊS VISTAS — o veredito invertido (ver a prova 3 no
+  // cabeçalho). Enquanto o portal jogava a pose fora, este número era 1.
+  const vistas = [...new Set(doAtlas.values())];
   const legenda = [...doAtlas].map(([t, h]) => `t=${t} ${h}`).join(' · ');
   conferir(
-    deDentro.length === 1,
-    `abertura reproduzível de DENTRO do disco (t=10 e t=100): ${legenda}`
+    vistas.length === 3,
+    `o portal leva a câmera: três entradas, ${vistas.length} vista(s) — ${legenda}`
   );
+  const degrausDoPouso = [...new Set(degraus.values())];
   conferir(
-    doAtlas.get(250) !== deDentro[0],
-    `...e a CODA leva o disco consigo: o ambiente atravessa o portal`
-      + ` (t=250 ${doAtlas.get(250)} ≠ ${deDentro[0]})`
+    degrausDoPouso.length === 3,
+    `...e cada instante cai num degrau diferente do pouso:`
+      + ` ${[...degraus].map(([t, d]) => `t=${t} ${d}`).join(' · ')}`
   );
+  for (const [T, p] of poses) {
+    conferir(
+      p.erro < 1e-9,
+      `t=${T}: a POSIÇÃO atravessa o portal — desvio ${p.erro.toExponential(2)}`
+        + ` do raio (teto 1e-9)${p.exata ? ', bit-idêntica nos três eixos' : ''}`
+    );
+    conferir(p.fov === 35, `t=${T}: o fov corta para 35° atrás do véu (${p.fov})`);
+  }
 
   // ---- 3b: A QUARTA ENTRADA, a porta da ABERTURA (item 60) ---------
   // Desde 22/08 dá para entrar no Atlas sem ver o filme, pelo terceiro
@@ -173,6 +199,14 @@ try {
   // O clique vai no botão mesmo, e não no método: sob `?shot=2` o véu
   // está em `display: none` e o `.click()` do DOM dispara igual, o que
   // é justamente o que se quer — a prova é do BOTÃO.
+  //
+  // E O ESPELHO MUDOU em 23/08 (item 61, §2): a comparação era com "os
+  // três cliques", e os três cliques deixaram de dar uma vista só — cada
+  // um pousa onde o filme estava. Quem entra SEM filme atrás continua
+  // caindo no enquadramento de abertura, e é com o `?atlas=1` puro (o
+  // outro endereço sem filme) que a porta tem de bater.
+  await sessao.ir(`atlas=1&${PIN}`);
+  const daUrl = await sessao.md5();
   await sessao.ir(PIN);
   await sessao.js("[...document.querySelectorAll('.veil-intro button')]"
     + ".find((b) => b.textContent.trim() === 'Entrar no Atlas').click()");
@@ -184,9 +218,9 @@ try {
     `a porta da abertura entra no Atlas: fase = '${faseDaPorta}'`
   );
   conferir(
-    daPorta === deDentro[0],
-    `a porta da abertura chega ao MESMO Atlas de quem entra de dentro`
-      + ` do disco (${daPorta} vs ${deDentro[0]})`
+    daPorta === daUrl,
+    `a porta da abertura chega ao MESMO Atlas do \`?atlas=1\``
+      + ` (${daPorta} vs ${daUrl})`
   );
 
   // ---- 4: o deep-link e o "Partir" sem viagem anterior -------------
@@ -252,6 +286,18 @@ try {
   // O Atlas herdou o ramo de rótulos do voo livre, e o clique curto
   // passou a FOCAR em vez de voar. Sem esta prova, a busca da F3
   // nasceria sobre um pipeline que ninguém verificou estar de pé.
+  //
+  // E ELAS COMEÇAM DA VISTA DE ABERTURA, desde 23/08 (item 61, §2). O
+  // portal acima entrou vindo de t=100 e agora POUSA onde o filme
+  // estava — 1.911 pc de casa, o degrau `céu`. Lá o rótulo que o
+  // hit-test acha primeiro é o `sol-home`, e clicar nele é a exceção
+  // declarada de `selecionarNoPonto`: a esta distância "SOL" quer dizer
+  // VOLTAR, e o gesto move a câmera de propósito. As provas daqui para
+  // baixo medem o GESTO, não o portal — então elas pedem a casa antes de
+  // medir, em vez de julgar o clique num quadro em que ele promete outra
+  // coisa.
+  await sessao.js('window.__director.focarNoSistema()');
+  await sessao.assentar();
   const tinta = await sessao.js(`(() => {
     const c = document.querySelector('.label-canvas');
     const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;

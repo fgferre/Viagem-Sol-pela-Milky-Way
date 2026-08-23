@@ -1902,3 +1902,85 @@ describe('selecionar — o alvo troca e a câmera NÃO sai do lugar', () => {
     expect(camera.position.distanceTo(antes)).toBeLessThan(1e-12 * antes.length());
   });
 });
+
+// ============================================================
+// O POUSO VINDO DO FILME (item 61, §2 — 2026-08-23). O portal deixou de
+// jogar a câmera fora: `AtlasRig.pousar` é o irmão de `selecionar`, com
+// a pose de partida chegando por argumento em vez de sair do rig.
+// ============================================================
+describe('pousar — o portal leva a câmera', () => {
+  it('a POSE que veio de fora é a pose que a câmera escreve', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1e6);
+    const rig = new AtlasRig();
+    // uma posição arbitrária, fora do sistema: o degrau `céu`
+    const pos = new THREE.Vector3(-447.7578554320078, -1203.9213299912858, -1415.640649901612);
+    rig.pousar(pos, new THREE.Vector3(), pos.length(), pos);
+    rig.apply(camera);
+    expect(camera.position.distanceTo(pos) / pos.length()).toBeLessThan(1e-12);
+  });
+
+  it('o fov é o do Atlas no primeiro quadro — o corte que o véu cobre', () => {
+    const camera = new THREE.PerspectiveCamera(70, 1.6, 1e-9, 1e6);
+    const rig = new AtlasRig();
+    const pos = new THREE.Vector3(0, 0, 3e-6);
+    rig.pousar(pos, new THREE.Vector3(), pos.length(), pos);
+    rig.apply(camera);
+    expect(camera.fov).toBe(ATLAS_FOV_GRAUS);
+  });
+
+  it('a distância NÃO é grampeada: o rig ainda não tem réguas quando o pouso chega', () => {
+    // é a única diferença de verdade contra `selecionar`. Rig recém-nascido
+    // tem `distanciaEnquadrada` e `fatorDeEnquadramento` em zero, então o
+    // teto do zoom é zero e o grampo puxaria a câmera para o piso no ato.
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1e6);
+    const rig = new AtlasRig();
+    const pos = new THREE.Vector3(0, 0, 0.13);
+    rig.pousar(pos, new THREE.Vector3(), pos.length(), pos);
+    expect(rig.distanciaEstaPinada).toBe(true);
+    rig.apply(camera);
+    expect(camera.position.length()).toBeCloseTo(0.13, 10);
+  });
+
+  it('com alvo e câmera no MESMO ponto cai no enquadramento, sem NaN', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1e6);
+    const rig = new AtlasRig();
+    rig.pousar(new THREE.Vector3(), new THREE.Vector3(), 1e-7, new THREE.Vector3(1, 0, 0));
+    rig.apply(camera);
+    expect(Number.isFinite(camera.position.x)).toBe(true);
+    expect(rig.distanciaEstaPinada).toBe(false);
+  });
+
+  it('o EIXO vem de fora — é contra ele que a pose é guardada', () => {
+    // o religador do relógio recompõe contra o eixo do DEGRAU; se o pouso
+    // guardasse a órbita contra outro eixo, o primeiro tique giraria a
+    // câmera. Aqui: mesma posição, dois eixos, duas órbitas — e cada uma
+    // reproduz a MESMA pose quando o eixo dela é o usado.
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1e6);
+    const pos = new THREE.Vector3(0.03, -0.05, 0.02);
+    for (const eixo of [pos.clone(), new THREE.Vector3(1, 0.2, -0.4)]) {
+      const rig = new AtlasRig();
+      rig.pousar(pos, new THREE.Vector3(), pos.length(), eixo);
+      rig.apply(camera);
+      expect(camera.position.distanceTo(pos) / pos.length()).toBeLessThan(1e-12);
+    }
+  });
+
+  it('a escada deriva o alvo em TRÊS degraus, e o `céu` anda no mesmo diff', () => {
+    // o degrau `céu` sem o `pousar` não existe, e o `pousar` sem ele sai
+    // mentindo: `tetoDeZoom` com o raio do sistema grampeia o pouso de
+    // 26.911 pc em ~226,8 UA no primeiro gesto de roda
+    const ESCADA = readFileSync(
+      new URL('../director/escada.ts', import.meta.url),
+      'utf8'
+    );
+    expect(ESCADA).toContain("degrau: 'ceu',");
+    expect(ESCADA).toContain('raio: distancia,');
+    // e o religador NÃO recompõe o degrau `céu` — a esfera do observador
+    // não tem efeméride, e cair no ramo do sistema puxaria a câmera
+    const vivo = ESCADA.slice(
+      ESCADA.indexOf('  private enquadreVivo()'),
+      ESCADA.indexOf('  private posicaoDesenhada(')
+    );
+    expect(vivo).toContain("if (degrau === 'ceu') return null;");
+  });
+});

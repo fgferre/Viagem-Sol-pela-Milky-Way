@@ -1533,16 +1533,36 @@ export class Director {
     this.veuDoAtlas.atravessar(
       opcoes.instantaneo === true || this.reducedMotion || this.shotMode,
       () => {
-      // focar ANTES da fase virar: `rampaDaEscada()` ainda vê a fase
-      // velha e a reposição é seca — a entrada acontece atrás do véu,
-      // nunca por rampa (D3: não é travessia física)
-      this.focarNoSistema();
+      // O PORTAL LEVA A CÂMERA (item 61, §2 — 23/08). Até aqui a entrada
+      // chamava `focarNoSistema()` e jogava a pose fora: t=12, t=90 e
+      // t=160 saíam todos na MESMA vista, a 224 UA de casa. Agora ela
+      // POUSA — posição exata, alvo derivado em três degraus (o corpo no
+      // eixo de vista, senão o Sol, senão o degrau `céu`) — e o fov corta
+      // para os 35° do Atlas ATRÁS DO VÉU, que é o que o véu existe para
+      // cobrir.
+      //
+      // Sem pose de filme atrás (o `?atlas=1` puro e o botão da abertura)
+      // não há o que pousar, e a vista de abertura continua sendo a
+      // resposta: é o mesmo caminho de sempre, bit a bit.
+      //
+      // Focar ANTES da fase virar, nos dois ramos: `rampaDaEscada()`
+      // ainda vê a fase velha e a reposição é seca — a entrada acontece
+      // atrás do véu, nunca por rampa (D3: não é travessia física).
+      // e o pouso é de quem vem do FILME COM CÂMERA VIVA (`daViagem`),
+      // não de quem tem `retomada`: o deep-link `?atlas=1&t=100` também
+      // guarda uma volta, mas a câmera dele é a do boot e não a do
+      // instante — pousar ali fotografaria o lugar onde a intro parou.
+      if (daViagem) {
+        this.escada.pousarDoFilme(this.engine.camera.position.clone());
+      } else {
+        this.focarNoSistema();
+      }
       // A TRAVA DO DISCO ATRAVESSA O PORTAL NOS DOIS SENTIDOS (item 61,
       // §6). O `partirDoAtlas` já a devolvia; a ENTRADA passa a aplicá-la.
-      // Vem DEPOIS do `focarNoSistema` de propósito: aquele método é o
-      // gesto "me leve para casa" e por isso DESARMA a trava — mas aqui
-      // ele não é gesto nenhum, é só como a entrada põe a câmera. A
-      // história é do visitante, não da colocação.
+      // Vem DEPOIS do foco de propósito: `focarNoSistema` é o gesto "me
+      // leve para casa" e por isso DESARMA a trava — mas ali ele não é
+      // gesto nenhum, é só como a entrada põe a câmera. A história é do
+      // visitante, não da colocação.
       if (this.retomada) this.leftDisk = this.retomada.leftDisk;
       this.setPhase('atlas');
     });

@@ -366,6 +366,22 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
   }
   if (!alvo) throw new Error('CDP não respondeu');
   let cartografia = false;
+  /**
+   * O DOCUMENTO NOVO JÁ EXISTE? A terceira armadilha do harness, medida
+   * em 23/08 (as duas primeiras estão em `esperarCapaSair` e no
+   * `NORTE.md`). `Page.navigate` volta assim que o pedido é ACEITO, e por
+   * alguns milissegundos o documento VELHO continua vivo — com o
+   * `window.__director` dele já assentado. `esperarAssentar` perguntava
+   * "está pronto?", a página velha respondia "estou", e o md5 saía da
+   * vista ANTERIOR. Um `atlas-smoke` inteiro passou verde ao lado disso e
+   * o veredito só quebrou quando duas vistas vizinhas ficaram
+   * parecidas o bastante para alguém olhar: `?ver=corpo` legado devolveu
+   * o md5 do link de Saturno do passo de cima.
+   *
+   * O marcador é o `Page.loadEventFired` do DOCUMENTO NOVO — evento do
+   * navegador, não heurística de conteúdo.
+   */
+  let carregou = false;
   // O QUE O APP GRITA. Só o que o app diz por conta própria
   // (`console.error`/`console.warn` e exceção não capturada) — falha de
   // rede o navegador registra por conta dele, e cobrar isso do app seria
@@ -373,6 +389,7 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
   // o gate "sem rede, zero erro de console" da F4 lê.
   const gritos = [];
   const { send, fechar: fecharSocket } = await ligarSocketCDP(alvo, (m) => {
+    if (m.method === 'Page.loadEventFired') carregou = true;
     if (m.method === 'Runtime.consoleAPICalled') {
       const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
       if (txt.includes('[cartografia]')) cartografia = true;
@@ -413,7 +430,16 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     },
     ir: async (query) => {
       cartografia = false;
+      carregou = false;
       await send('Page.navigate', { url: `${app}/?${query}` });
+      // O DOCUMENTO NOVO PRIMEIRO — ver `carregou`. Sem esta espera a
+      // prontidão da página VELHA responde pela nova e o md5 sai da
+      // vista anterior.
+      const t0 = Date.now();
+      while (!carregou) {
+        if (Date.now() - t0 > 30000) throw new Error(`?${query}: o documento novo não carregou`);
+        await dorme(20);
+      }
       // o rAF contador morre com o documento; a navegação recria tudo
       return esperarAssentar({ send, cartografia: () => cartografia, quadros: 700, teto: 180000 });
     },

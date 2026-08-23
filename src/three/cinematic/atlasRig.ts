@@ -405,6 +405,89 @@ export class AtlasRig {
   }
 
   /**
+   * POUSA A CÂMERA NUMA POSE QUE VEIO DE FORA — o portal do filme (item
+   * 61, §2). É o IRMÃO de `selecionar`: os mesmos passos 2, 3 e 4, com a
+   * pose de partida chegando por ARGUMENTO em vez de sair do próprio
+   * rig.
+   *
+   * POR QUE O IRMÃO EXISTE. `selecionar` deriva a pose de agora do rig
+   * (`alvo + direção · distância`), e isso só é verdade quando o rig É
+   * quem escreveu o último quadro. Vindo do filme ele está com a pose
+   * VELHA — o Atlas nunca desenhou nada nesta sessão —, então a conta
+   * fechada dele daria a vista de abertura de sempre, que é exatamente o
+   * defeito: entrar no Atlas em t=12, t=90 ou t=160 saía sempre no mesmo
+   * lugar, e o modo parecia outro programa.
+   *
+   * A DIFERENÇA DE VERDADE, e é uma só: aqui a distância NÃO é
+   * grampeada. `selecionar` roda DENTRO do modo, onde `distanciaEnquadrada`
+   * e `fatorDeEnquadramento` são do quadro anterior e valem; `pousar`
+   * roda antes do primeiro `apply` da fase, quando os dois ainda são
+   * zero — grampear contra um teto nulo puxaria a câmera para o piso do
+   * zoom no ato, e o pouso sairia mentindo. A distância que veio é a que
+   * fica; o `apply` do quadro seguinte recompõe as duas réguas com o
+   * raio novo, e daí em diante a roda grampeia como sempre.
+   *
+   * O RAIO é escolha de quem chama (`Escada.pousarDoFilme`), e não
+   * detalhe: é ele que decide onde o teto do zoom vai cair no primeiro
+   * quadro. Pousar a 26.911 pc com o raio do SISTEMA poria o teto em
+   * 226,8 UA e o primeiro estalo de roda teleportaria o visitante para
+   * casa — por isso existe o degrau `céu`, com `raio = |posição|`.
+   *
+   * E O `eixoDe` VEM DE FORA, o que `selecionar` não precisa: a pose é
+   * guardada como (altura, volta) CONTRA ESSE EIXO, e o religador do
+   * relógio (`Escada.recomporAlvo`) vai recompor a mesma pose contra o
+   * eixo que o DEGRAU define. Se os dois não forem o mesmo vetor, o
+   * primeiro tique do relógio gira a câmera — medido: pousar no degrau
+   * `sistema` com o eixo da câmera devolvia a vista de abertura no
+   * quadro seguinte, exatamente o defeito que este método existe para
+   * matar.
+   */
+  pousar(
+    posicao: THREE.Vector3,
+    alvo: THREE.Vector3,
+    raio: number,
+    eixoDe: THREE.Vector3,
+    opcoes: { polo?: THREE.Vector3 | null; pisoRaio?: number | null } = {}
+  ) {
+    // 2. o referencial novo (o passo 1 do `selecionar` é o argumento)
+    const polo = opcoes.polo ?? POLO_ECLIPTICO;
+    this.alvo.copy(alvo);
+    this.raio = raio;
+    this.eixoDe.copy(eixoDe);
+    this.pai = null;
+    this.polo.copy(polo);
+    this.pisoRaio =
+      opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
+        ? opcoes.pisoRaio
+        : null;
+    this.rampaT = 1;
+    // 3. a MESMA pose, escrita no referencial novo
+    _dirB.copy(posicao).sub(this.alvo);
+    const distancia = _dirB.length();
+    if (!(distancia > 0)) {
+      // a câmera está EM CIMA do alvo: não há direção a preservar, e o
+      // enquadramento é a única resposta honesta (o mesmo ramo do
+      // `selecionar`)
+      this.orbita.altura = 0;
+      this.orbita.volta = 0;
+      this.distanciaPinada = null;
+      return;
+    }
+    // com o eixo nulo `direcaoPrivilegiada` cairia no ramo degenerado:
+    // a própria posição da câmera serve de eixo, e aí a pose se preserva
+    // por construção
+    if (this.eixoDe.lengthSq() === 0) this.eixoDe.copy(posicao);
+    orbitaQueProduz(
+      _dirB.clone().multiplyScalar(1 / distancia),
+      _dir.copy(this.eixoDe).sub(ORIGEM),
+      this.polo,
+      this.orbita
+    );
+    // 4. a distância vira PINO, sem grampo — ver a docstring
+    this.distanciaPinada = distancia;
+  }
+
+  /**
    * O ALVO VIVO (Onda 7) — o mesmo enquadramento, no lugar em que o
    * corpo está AGORA.
    *

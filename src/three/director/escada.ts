@@ -96,7 +96,7 @@ function paraPc(p: { x: number; y: number; z: number }): THREE.Vector3 {
  * corpo resolvido dela é Onda 7), mas o botão "sistema" e o Esc valem.
  */
 export interface EstadoDaEscada {
-  degrau: 'sistema' | 'orbita' | 'corpo' | 'lua' | 'estrela';
+  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela';
   /** existe degrau abaixo alcançável pelo botão "aproximar"? Só quando
    *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
    *  de um ponto fotométrico enquadraria um clarão sem corpo. */
@@ -496,6 +496,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = false;
+    this.noCeu = false;
     this.ver = 'orbita';
     this.events.onFoco(null);
     this.emitirEscada();
@@ -539,6 +540,20 @@ export class Escada {
     );
   }
 
+  /**
+   * O DEGRAU `céu` está de pé (item 61, §2) — a esfera de vizinhança do
+   * PRÓPRIO OBSERVADOR, e o único degrau em que o raio enquadrado não é
+   * de um corpo nem do sistema, mas da distância a que a câmera está.
+   *
+   * Ele nasce em UM lugar só (`pousarDoFilme`, quando o filme deixa a
+   * câmera fora do sistema) e morre em UM lugar só (`focarNoSistema`, o
+   * gesto que pede a casa). Todos os outros focos o apagam por
+   * construção: o degrau só é `céu` quando não há corpo nem estrela em
+   * foco, e escrever qualquer foco já tira o estado daqui — é por isso
+   * que este campo não precisa ser zerado em nove métodos.
+   */
+  private noCeu = false;
+
   /** o degrau vivo — o que o `onEscada` publica e o `?ver=` espelha. */
   private get escada(): EstadoDaEscada {
     const degrau: EstadoDaEscada['degrau'] =
@@ -550,7 +565,9 @@ export class Escada {
             : 'orbita'
           : this.focoEstrela
             ? 'estrela'
-            : 'sistema';
+            : this.noCeu
+              ? 'ceu'
+              : 'sistema';
     return {
       degrau,
       corpoId: this.focoCorpoId,
@@ -952,6 +969,10 @@ export class Escada {
       // câmera de volta para o Sol no primeiro tique
       return { alvo: pos, raio: pos.length(), eixoDe: pos, pai: null, polo: null };
     }
+    // o degrau `céu` não tem alvo vivo: o raio é a distância do próprio
+    // observador, e o religador do relógio puxaria a câmera para casa se
+    // caísse no ramo do sistema logo abaixo
+    if (degrau === 'ceu') return null;
     // sistema: a esfera é centrada no Sol e o raio é a órbita mais
     // externa VIVA — a MESMA conta de `focarNoSistema`, e agora
     // literalmente a mesma função (`casaViva`): era este trecho
@@ -1025,6 +1046,12 @@ export class Escada {
     }
     const { degrau } = this.escada;
     if (degrau === 'sistema') return false;
+    // do degrau `céu` o Esc pede a casa — sem isto quem entrasse no
+    // Atlas a 26.911 pc não teria saída por teclado para o sistema
+    if (degrau === 'ceu') {
+      this.focarNoSistema();
+      return true;
+    }
     if (degrau === 'lua') {
       // sobe para o CORPO do pai (o degrau imediatamente acima)
       const entrada = LUAS_DO_SISTEMA.find((l) => l.id === this.focoCorpoId);
@@ -1071,6 +1098,9 @@ export class Escada {
   reenquadrarAposEfemeride() {
     if (this.phase !== 'atlas' || this.focoEstrela) return;
     const { degrau } = this.escada;
+    // o degrau `céu` é a esfera do observador: ela não depende de
+    // efeméride nenhuma, e reenquadrá-la seria mover a câmera sem gesto
+    if (degrau === 'ceu') return;
     if (degrau === 'sistema') this.focarNoSistema();
     else if (degrau === 'lua') this.focarNaLua(this.focoCorpoId ?? 'moon');
     // o corpo do SOL tem método próprio (`aproximarDoCorpo` só conhece
@@ -1201,5 +1231,196 @@ export class Escada {
    */
   private enquadrarAgora() {
     this.atlas.apply(this.engine.camera, escalaDaUi(), larguraDeCss());
+  }
+
+  /**
+   * O POUSO VINDO DO FILME — o portal levando a câmera (item 61, §2).
+   *
+   * A TESE, nas palavras do dono: *"o modo atlas na minha visão deveria
+   * ser o modo único, a viagem na verdade para mim é só uma ferramenta do
+   * modo atlas"*. O que o código fazia era o contrário: `entrarNoAtlas`
+   * chamava `focarNoSistema()` e JOGAVA A CÂMERA FORA — entrar em t=12,
+   * t=90 ou t=160 devolvia sempre a mesma vista, a 224 UA de casa. É por
+   * isso que o Atlas parecia outro programa.
+   *
+   * O ALVO É DERIVADO, em três degraus, do mais específico ao mais
+   * genérico — e a fronteira entre eles é UMA pergunta geométrica: o
+   * observador está DENTRO do sistema?
+   *
+   *  1. dentro, com um corpo perto do eixo de vista → o CORPO, com o
+   *     raio físico dele (o degrau `corpo` de sempre). É o caso da coda,
+   *     e é o que faz "Ficar aqui" pousar na Terra em vez de girar para
+   *     o Sol;
+   *  2. dentro, sem corpo em quadro → o SOL, com a órbita mais externa
+   *     (o degrau `sistema`);
+   *  3. fora — e é o caso dos 26.911 pc do meio do filme → o degrau
+   *     `céu`: alvo no Sol, raio igual à distância do PRÓPRIO
+   *     observador.
+   *
+   * POR QUE O DEGRAU `céu` É OBRIGATÓRIO, e ele anda no mesmo diff que o
+   * `pousar` de propósito: sem ele o pouso é desfeito no primeiro gesto.
+   * Com o raio do sistema, `AtlasRig.tetoDeZoom` cai em ~226,8 UA e o
+   * primeiro estalo de roda teleportaria o visitante de 26.911 pc para a
+   * vista de abertura. Com `raio = |posição|` a distância enquadrada
+   * nasce da ordem da real e o teto acompanha o observador. E não serve
+   * `raioDeEnquadramentoEstelar`: ele satura em 9 pc, o que poria a
+   * câmera a 58 pc do Sol.
+   *
+   * A MIRA. O rig do Atlas olha o ALVO por construção (`escreverPose`
+   * termina em `lookAt`), então o que atravessa o portal EXATO é a
+   * POSIÇÃO; a direção passa a ser a do alvo derivado. Uma mira livre
+   * seria um segundo escritor de pose contra o rig, e mataria a
+   * reprodutibilidade de `?foco=`/`?d=`. É a razão de o degrau 1 existir:
+   * onde há um corpo no eixo de vista, a mira derivada É a que o filme
+   * tinha.
+   */
+  pousarDoFilme(posicao: THREE.Vector3) {
+    const p = this.alvoDoPouso(posicao);
+    this.atlas.pousar(posicao, p.alvo, p.raio, p.eixoDe, {
+      polo: p.polo,
+      pisoRaio: p.pisoRaio,
+    });
+    this.enquadrarAgora();
+    this.focoCorpoId = p.corpoId;
+    this.focoEstrela = false;
+    this.noCeu = p.degrau === 'ceu';
+    this.ver = p.corpoId ? 'corpo' : 'orbita';
+    this.events.onFoco(
+      p.corpoId ? CORPOS_DO_SISTEMA.find((c) => c.id === p.corpoId)?.nome ?? null : null
+    );
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /** os três degraus do pouso — ver `pousarDoFilme` */
+  private alvoDoPouso(posicao: THREE.Vector3): {
+    degrau: 'corpo' | 'sistema' | 'ceu';
+    alvo: THREE.Vector3;
+    raio: number;
+    eixoDe: THREE.Vector3;
+    corpoId: string | null;
+    polo: THREE.Vector3 | null;
+    pisoRaio: number | null;
+  } {
+    const distancia = posicao.length();
+    // A FRONTEIRA: a esfera do sistema. Fora dela nem o corpo nem o
+    // sistema servem de alvo — enquadrar a Terra de 1.911 pc poria o
+    // raio de enquadramento em 25 mil km e a régua do zoom seria a de
+    // um planeta para uma câmera a mil parsecs.
+    if (distancia <= orbitaMaisExterna().raio) {
+      const perto = this.corpoMaisPerto(posicao);
+      if (perto) return { degrau: 'corpo', ...perto };
+      const casa = this.casaViva() ?? {
+        raio: orbitaMaisExterna().raio,
+        eixo: orbitaMaisExterna().posicao,
+      };
+      return {
+        degrau: 'sistema',
+        alvo: ORIGEM.clone(),
+        raio: casa.raio,
+        // o MESMO eixo que `focarNoSistema` e o religador usam: a pose é
+        // guardada CONTRA ele, e um eixo diferente aqui faria o primeiro
+        // tique do relógio girar a câmera de volta para a abertura
+        eixoDe: casa.eixo,
+        corpoId: null,
+        polo: null,
+        pisoRaio: this.solRaioPc,
+      };
+    }
+    return {
+      degrau: 'ceu',
+      alvo: ORIGEM.clone(),
+      raio: distancia,
+      // no degrau `céu` o alvo é a origem e o eixo Sol→alvo seria nulo:
+      // o eixo é a própria posição do observador, e a esfera de
+      // vizinhança dele fica com a pose exata por construção. O
+      // religador não recompõe este degrau (`enquadreVivo` devolve
+      // `null`), então não há segundo dono do eixo.
+      eixoDe: posicao.clone(),
+      corpoId: null,
+      polo: null,
+      pisoRaio: null,
+    };
+  }
+
+  /**
+   * O CORPO DE QUE A CÂMERA ESTÁ MAIS PERTO DO QUE DO SOL — o degrau 1
+   * do pouso, e a pergunta é "ao lado de que mundo eu estou?".
+   *
+   * NÃO É O EIXO DE VISTA, e a razão é medida: na coda a câmera está a
+   * ~10 mil km da Terra, e dali qualquer diferença de horas entre a
+   * efeméride do FILME e a do instante pedido move a direção câmera→Terra
+   * dezenas de graus. Um teste angular reprovava o caso mais importante
+   * que existe — o "Ficar aqui" da coda. A distância não tem essa
+   * fragilidade: quem está a 10 mil km da Terra está ao lado da Terra,
+   * qualquer que seja a hora.
+   *
+   * E É GEOMETRIA, não a lista de RÓTULOS: os rótulos dos corpos só são
+   * projetados DENTRO do Atlas (`projectCorpos`), e quem pergunta aqui
+   * ainda está no filme.
+   */
+  private corpoMaisPerto(posicao: THREE.Vector3): {
+    alvo: THREE.Vector3;
+    raio: number;
+    eixoDe: THREE.Vector3;
+    corpoId: string;
+    polo: THREE.Vector3 | null;
+    pisoRaio: number | null;
+  } | null {
+    const aoSol = posicao.length();
+    let melhor: { id: string; centro: THREE.Vector3; d: number } | null = null;
+    for (const c of CORPOS_DO_SISTEMA) {
+      if (c.id === 'sun') continue;
+      if (this.raioDeCorpoResolvido(c.id) === null) continue;
+      const centro = this.centroDoCorpo(c.id);
+      if (!centro) continue;
+      const d = centro.distanceTo(posicao);
+      if (d >= aoSol) continue;
+      if (!melhor || d < melhor.d) melhor = { id: c.id, centro, d };
+    }
+    if (!melhor) return null;
+    const raioPc = this.raioDeCorpoResolvido(melhor.id)!;
+    return {
+      alvo: melhor.centro,
+      raio: raioPc,
+      // o alvo É o eixo nos degraus de corpo, como em `aproximarDoCorpo`
+      eixoDe: melhor.centro,
+      corpoId: melhor.id,
+      polo: this.poloDoCorpo(melhor.id)?.clone() ?? null,
+      pisoRaio: raioPc,
+    };
+  }
+
+  /** o raio FÍSICO dos corpos com malha construída; `null` nos outros —
+   *  a mesma lista viva que `aproximarDoCorpo` aceita descer */
+  private raioDeCorpoResolvido(id: string): number | null {
+    if (id === 'earth') return RAIO_EQ_TERRA_PC;
+    if (this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === id)) {
+      return raiosDoGigantePc(id).a;
+    }
+    if (
+      this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === id) ||
+      this.rochosos.some(
+        (r) => !r.corpo.planeta && HELIO_SEM_PONTO.some((a) => a.id === id) && r.corpo.id === id
+      )
+    ) {
+      return raiosDoRochosoPc(id).a;
+    }
+    return null;
+  }
+
+  /** o centro do corpo na MESMA cadeia do mesh (efeméride viva, retrato
+   *  sem ela) — a conta de `aproximarDoCorpo`, num lugar só */
+  private centroDoCorpo(id: string): THREE.Vector3 | null {
+    const jd = this.maquinaDoTempo.jdVivo;
+    const ef = this.maquinaDoTempo.efemeride;
+    const p =
+      id === 'earth'
+        ? posicaoDaTerraUA(jd, ef)
+        : this.gigantes.some((g) => g.corpo.id === id)
+          ? posicaoDoGiganteUA(id, jd, ef)
+          : posicaoDoRochosoUA(id, jd, ef);
+    if (!p) return null;
+    return paraPc(p);
   }
 }
