@@ -173,6 +173,13 @@ interface DirectorEvents {
   onDest: (text: string) => void;
   /** distância viva do Sol ("SOL · 40,2 UA"); vazio = esconder */
   onSol: (text: string) => void;
+  /**
+   * ONDE A CÂMERA ESTÁ, em eclíptica heliocêntrica UA — só no Atlas, a
+   * 4 Hz e só quando ela se move (item 74, parte B). É com ela que a ficha
+   * do objeto diz quanto do disco está iluminado visto DAQUI, ao lado do
+   * "visto da Terra". `null` fora do Atlas.
+   */
+  onCamera: (posUA: readonly [number, number, number] | null) => void;
   /** etapa viva do carregamento — a mesma que o HUD desenha */
   onStage: (stage: LoadStage) => void;
   /** opacidade do véu do Atlas (0..1); custom property, não estado */
@@ -443,6 +450,7 @@ export class Director {
     onLabels: (labels) => this.events.onLabels(labels),
     onDest: (text) => this.events.onDest(text),
     onSol: (text) => this.events.onSol(text),
+    onCamera: (posUA) => this.events.onCamera(posUA),
     beatDaViagem: () => this.rig.metaAt(this.journeyT),
   });
 

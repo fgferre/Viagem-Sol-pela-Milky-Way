@@ -46,6 +46,7 @@ export interface FiosDoDirector {
   setRuntime: (v: number) => void;
   setDest: (v: string) => void;
   setSol: (v: string) => void;
+  setCamera: (v: readonly [number, number, number] | null) => void;
   setQuality: (v: EstadoDaQualidade) => void;
   setLoadStage: (v: LoadStage) => void;
   setLoadError: (v: string) => void;
@@ -71,6 +72,7 @@ export function useDirector(fios: FiosDoDirector) {
     setRuntime,
     setDest,
     setSol,
+    setCamera,
     setQuality,
     setLoadStage,
     setLoadError,
@@ -103,6 +105,7 @@ export function useDirector(fios: FiosDoDirector) {
       onQuality: setQuality,
       onDest: setDest,
       onSol: setSol,
+      onCamera: setCamera,
       onStage: setLoadStage,
       // custom property, como o warp: o véu do Atlas anda a 60 Hz e um
       // setState por quadro re-renderizaria o HUD inteiro à toa

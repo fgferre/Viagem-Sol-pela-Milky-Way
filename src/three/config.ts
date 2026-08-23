@@ -133,6 +133,11 @@ export const CALIBRACAO_ATLAS = {
 export type NamedStar = {
   n: string; x: number; y: number; z: number; m: number; s: string; d: number; t?: number;
   ci?: number; hd?: number; hip?: number; gl?: string;
+  /** letra de Bayer, só o glifo ("α", "γ²") — item 74, 2026-08-22 */
+  b?: string;
+  /** sigla IAU de três letras da constelação ("CMa"); o genitivo mora em
+   *  `lib/atlas/constelacoes.ts`, que é nomenclatura e não medida */
+  c?: string;
 };
 export type StarsMeta = {
   count: number;

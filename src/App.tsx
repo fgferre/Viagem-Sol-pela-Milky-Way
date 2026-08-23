@@ -145,6 +145,13 @@ export default function App() {
   const [runtime, setRuntime] = useState(0);
   const [dest, setDest] = useState('');
   const [sol, setSol] = useState('');
+  /**
+   * ONDE A CÂMERA ESTÁ, em eclíptica heliocêntrica UA — só no Atlas, a
+   * 4 Hz e só quando ela anda (item 74, parte B). A ficha do objeto a usa
+   * para dizer quanto do disco está iluminado visto DAQUI, ao lado do
+   * "visto da Terra". `null` fora do Atlas, e aí a linha some.
+   */
+  const [camera, setCamera] = useState<readonly [number, number, number] | null>(null);
   // A semente é o padrão de produto e nada mais: quem publica a verdade
   // é o Director, no fim do construtor (`publicarQualidade`).
   const [quality, setQuality] = useState<EstadoDaQualidade>({
@@ -287,6 +294,7 @@ export default function App() {
     setRuntime,
     setDest,
     setSol,
+    setCamera,
     setQuality,
     setLoadStage,
     setLoadError,
@@ -596,6 +604,27 @@ export default function App() {
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [nomeadas, phase, tempo?.aviso]
+  );
+
+  /**
+   * A ESTRELA EM FOCO, inteira — a LINHA do catálogo que o nome endereça
+   * (item 74, parte B).
+   *
+   * Ela NÃO viaja em `EstadoDaEscada`, e a fronteira é a razão: a escada é a
+   * única escritora do FOCO, e o foco é o NOME. O `NamedStar` é a linha de
+   * uma tabela que este componente já tem na mão desde o `init` — mandá-la
+   * pelo mesmo cano seria a mesma tabela indo ao React duas vezes.
+   *
+   * `null` para o centro galáctico (Sagittarius A✱), que é foco e não é
+   * estrela do catálogo: a ficha dele fica com o cabeçalho e o "⌂ Sistema",
+   * sem uma linha inventada.
+   */
+  const estrelaEmFoco = useMemo(
+    () =>
+      escada.degrau === 'estrela' && foco
+        ? (nomeadas.find((s) => s.n === foco) ?? null)
+        : null,
+    [escada.degrau, foco, nomeadas]
   );
 
   // A URL COMO ESPELHO (corte 6): o gosto nasce dela e volta para ela
@@ -991,7 +1020,9 @@ export default function App() {
         onFechar={() => fecharGaveta('ficha')}
         corpoId={escada.corpoId}
         estrelaEmFoco={escada.degrau === 'estrela' ? foco : null}
+        estrela={estrelaEmFoco}
         jd={tempo?.jd ?? null}
+        camaraUa={camera}
         fonte={directorRef.current?.efemerideViva ?? null}
         podeAproximar={escada.podeAproximar}
         noSistema={escada.degrau === 'sistema'}

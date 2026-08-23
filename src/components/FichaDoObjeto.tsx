@@ -39,6 +39,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
 import { montarFicha, montarFichaDeEstrela } from '../lib/atlas/ficha';
+import type { NamedStar } from '../three/config';
 import type { ManifestDeTexturas } from '../three/world/corpos/texturas';
 import { PROCEDENCIA } from '../three/selo';
 
@@ -80,7 +81,9 @@ export function FichaDoObjeto({
   onFechar,
   corpoId,
   estrelaEmFoco,
+  estrela,
   jd,
+  camaraUa,
   fonte,
   podeAproximar,
   noSistema,
@@ -91,11 +94,16 @@ export function FichaDoObjeto({
   onFechar: () => void;
   /** o corpo em FOCO — a escada é a única escritora dele */
   corpoId: string | null;
-  /** o NOME da estrela em foco, quando o foco é estelar (o conteúdo dela é
-   *  o commit 7 do item 74; por ora ela é só o cabeçalho) */
+  /** o NOME da estrela em foco, quando o foco é estelar */
   estrelaEmFoco: string | null;
+  /** a LINHA do catálogo daquele nome — `null` para o centro galáctico,
+   *  que é foco e não é estrela nomeada (a ficha dele fica só no cabeçalho) */
+  estrela: NamedStar | null;
   /** o instante MOSTRADO pela máquina do tempo */
   jd: number | null;
+  /** onde a CÂMERA está, em eclíptica heliocêntrica UA — `null` fora do
+   *  Atlas, e aí a linha do "daqui" some */
+  camaraUa: readonly [number, number, number] | null;
   /** a efeméride viva; `null` até ela chegar pela rede */
   fonte: FonteDaFicha | null;
   /** o corpo em foco tem degrau abaixo (mesh resolvido)? */
@@ -166,11 +174,12 @@ export function FichaDoObjeto({
             fonte,
             editorial: corpos?.get(corpoId) ?? null,
             texturas,
+            camaraUa,
           })
         : estrelaEmFoco
-          ? montarFichaDeEstrela(estrelaEmFoco)
+          ? montarFichaDeEstrela(estrelaEmFoco, estrela)
           : null,
-    [corpoId, estrelaEmFoco, jd, fonte, corpos, texturas]
+    [corpoId, estrelaEmFoco, estrela, jd, fonte, corpos, texturas, camaraUa]
   );
 
   if (!aberta || !ficha) return null;

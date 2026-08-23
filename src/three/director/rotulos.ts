@@ -22,6 +22,7 @@ import type { StarLabel } from '../world/labels';
 import { GAL } from '../world/galaxy';
 import { numeroPtBr } from '../tempoDoAtlas';
 import { notaDeDistancia } from '../../lib/unidades';
+import { cenaPcParaHeliocentricaEclipticaUA } from '../../lib/atlas/frameGalactico';
 import { UA_POR_PC } from '../world/planetas/planetas';
 import type { Planetas } from '../world/planetas/planetas';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
@@ -85,6 +86,9 @@ export class Rotulos {
   private destTimer = 0;
   private lastSol = '';
   private solTimer = 0;
+  /** a última posição de câmera PUBLICADA, em pc de cena (item 74) */
+  private readonly ultimaCam = new THREE.Vector3(NaN, NaN, NaN);
+  private camTimer = 0;
   /** posições VIVAS das luas para os rótulos (projectCorpos) —
    *  3 floats por entrada de `LUAS_DO_SISTEMA`, NaN sem efeméride
    *  (projectCorpos ignora NaN — rótulo só onde há corpo). */
@@ -103,6 +107,18 @@ export class Rotulos {
     onDest: (text: string) => void;
     /** distância viva do Sol ("SOL · 40,2 UA"); vazio = esconder */
     onSol: (text: string) => void;
+    /**
+     * ONDE A CÂMERA ESTÁ, em eclíptica heliocêntrica UA — só no Atlas, e
+     * só quando ela se MOVE (item 74, parte B).
+     *
+     * A ficha do objeto diz quanto do disco está iluminado visto DAQUI, e
+     * "daqui" é a câmera. A conta é da ficha; o que este fio entrega é a
+     * posição, no mesmo remédio de 4 Hz do rumo e do Sol — sem ele, um
+     * `setState` por quadro re-renderizaria o HUD inteiro durante todo
+     * arrasto. `null` fora do Atlas: lá não há ficha, e mandar posição
+     * para ninguém é pagar alocação por quadro no filme.
+     */
+    onCamera: (posUA: readonly [number, number, number] | null) => void;
     /** o meta do beat da viagem — só o ramo `journey` o paga */
     beatDaViagem: () => JourneyMeta;
   };
@@ -155,6 +171,7 @@ export class Rotulos {
   tique(dt: number) {
     this.destTimer += dt;
     this.solTimer += dt;
+    this.camTimer += dt;
   }
 
   /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | nome HYG) */
@@ -244,6 +261,26 @@ export class Rotulos {
       this.solTimer = 0;
       this.fios.onSol(text);
     }
+  }
+
+  /**
+   * A CÂMERA EM ECLÍPTICA, a 4 Hz e só quando ela andou. O gatilho é o
+   * MESMO de `escreverFase` na camada de planetas — comparar o vetor com o
+   * anterior —, porque a pergunta é a mesma: mudou o ponto de onde se
+   * olha? Fora do Atlas publica `null` UMA vez e cala.
+   */
+  private emitCamera(camPos: THREE.Vector3, fase: Phase) {
+    if (fase !== 'atlas') {
+      if (!Number.isNaN(this.ultimaCam.x)) {
+        this.ultimaCam.set(NaN, NaN, NaN);
+        this.fios.onCamera(null);
+      }
+      return;
+    }
+    if (this.ultimaCam.equals(camPos) || this.camTimer <= 0.25) return;
+    this.ultimaCam.copy(camPos);
+    this.camTimer = 0;
+    this.fios.onCamera(cenaPcParaHeliocentricaEclipticaUA([camPos.x, camPos.y, camPos.z]));
   }
 
   /**
@@ -362,5 +399,7 @@ export class Rotulos {
 
     // a distância viva do Sol — roda todo tique e se auto-apaga fora do voo
     this.emitSol(cam.position, fase);
+    // e onde a câmera ESTÁ, para a ficha dizer o que se vê iluminado daqui
+    this.emitCamera(cam.position, fase);
   }
 }

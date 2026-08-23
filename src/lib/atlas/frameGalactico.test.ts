@@ -22,6 +22,7 @@ import {
   equatorialParaEcliptica,
   equatorialParaGalactica,
   galacticaParaEquatorial,
+  cenaPcParaHeliocentricaEclipticaUA,
   heliocentricaEclipticaUAParaBaseGalactocentricaPc,
   radecParaGalactica,
 } from './frameGalactico';
@@ -267,6 +268,59 @@ describe('frameGalactico', () => {
         (v) => v * AU_PARA_PC
       );
       for (const v of direto) expect(Object.is(v, 0)).toBe(true);
+    });
+  });
+
+  /**
+   * GATE (g): O CAMINHO DE VOLTA DA CENA — a ponte que a ficha do objeto
+   * pediu (item 74, parte B). A ida é a mesma que `planetas.ts` usa a cada
+   * instante para pôr os dez corpos na cena; a volta é a que põe a CÂMERA em
+   * eclíptica, para dizer quanto do disco está iluminado DAQUI.
+   *
+   * IDA E VOLTA A 1e-9 RELATIVO, e não absoluto: os vetores vão de 1 UA
+   * (Terra) a 1e5 UA (a borda do enquadramento do Atlas), e um teto absoluto
+   * ou seria frouxo perto de casa ou impossível longe. 1e-9 relativo é ~10
+   * ULP de double — o que sobra de duas rotações e uma divisão.
+   */
+  describe('gate (g): cena ⇄ eclíptica, a ponte da câmera', () => {
+    const VETORES: [number, number, number][] = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+      [0.983, -0.174, 0.0001], // a Terra em janeiro
+      [-5.2, 1.9, -0.11], // Júpiter
+      [39.5, -7.2, 9.8], // Plutão
+      [-1.2e5, 3.4e4, -8.9e3], // a câmera no recuo do Atlas
+    ];
+
+    it('a volta desfaz a ida a 1e-9 relativo, nos sete', () => {
+      for (const vAU of VETORES) {
+        const cenaPc = eclipticaParaEquatorial(vAU).map((v) => v * AU_PARA_PC) as
+          [number, number, number];
+        const volta = cenaPcParaHeliocentricaEclipticaUA(cenaPc);
+        const norma = Math.hypot(...vAU);
+        for (let i = 0; i < 3; i++) {
+          expect(Math.abs(volta[i] - vAU[i]) / norma, `${vAU}[${i}]`).toBeLessThan(1e-9);
+        }
+      }
+    });
+
+    it('a origem volta EXATA — a câmera no Sol não inventa deslocamento', () => {
+      // O contraste com o gate (f) é o ponto: o caminho composto pela base
+      // galactocêntrica erra a origem por 0,1134 UA; este erra por zero.
+      for (const v of cenaPcParaHeliocentricaEclipticaUA([0, 0, 0])) {
+        expect(Object.is(v, 0)).toBe(true);
+      }
+    });
+
+    it('a volta é ROTAÇÃO: preserva o comprimento em pc→UA', () => {
+      for (const vAU of VETORES) {
+        const cenaPc = eclipticaParaEquatorial(vAU).map((v) => v * AU_PARA_PC) as
+          [number, number, number];
+        const volta = cenaPcParaHeliocentricaEclipticaUA(cenaPc);
+        const emUa = Math.hypot(...cenaPc) / AU_PARA_PC;
+        expect(Math.abs(Math.hypot(...volta) / emUa - 1)).toBeLessThan(1e-12);
+      }
     });
   });
 });

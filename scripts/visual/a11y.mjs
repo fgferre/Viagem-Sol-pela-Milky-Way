@@ -1399,7 +1399,9 @@ async function julgarAreaDoSelo(s) {
  *  2. A ÁREA NO CELULAR. A ficha é a mais alta dos quatro diálogos, e
  *     nenhum juiz da casa abria 390 px antes do item 62 — este é o
  *     primeiro. O teto é metade da tela: acima disso o painel deixa de ser
- *     um painel sobre a cena e vira a tela.
+ *     um painel sobre a cena e vira a tela. Medida em MARTE (as sete
+ *     seções), que é a ficha mais alta que existe — ver o comentário do
+ *     laço.
  *  3. ELA NÃO COBRE O SELO, a mesma prova geométrica que
  *     `julgarAreaDoSelo` faz para a gaveta de camadas — e pelo mesmo
  *     conserto: o teto dela desconta `--selo-base` e `--selo-linha`.
@@ -1429,16 +1431,24 @@ async function julgarAreaDaFicha(s) {
   // ficha da Terra ocupa 17,1% a 1440×813 e 32,3% a 390×844 com a seção
   // "agora" aberta. O teto existe para o dia em que uma seção nova ou uma
   // tradução comprida a empurrem — e para que esse dia acenda vermelho
-  // aqui em vez de na tela do dono.
+  // aqui em vez de na tela do dono. Ele acendeu na PARTE B do item 74: com
+  // o texto em pt-BR e a procedência da imagem, a ficha passou de três
+  // seções a seis e estourou (55,6% a 320×568 com `?ui=0.85`).
+  //
+  // E O ALVO PASSOU A SER MARTE, não a Terra, e é a lição do mesmo dia: o
+  // que dá altura à ficha fechada é o NÚMERO DE SEÇÕES, e a Terra é a que
+  // tem MENOS — ela é o observador, então não ganha a seção "no céu". Medir
+  // nela era medir a ficha mais baixa e chamar isso de teto. Marte tem as
+  // sete, é a mais alta que existe, e é ela que o teto tem de segurar.
   const TETO_PCT = 50;
   for (const fator of [0.85, 1, 1.4]) {
     for (const [w, h] of [[390, 844], [320, 568]]) {
       await s.send('Emulation.setDeviceMetricsOverride', {
         width: w, height: h, deviceScaleFactor: 1, mobile: false,
       });
-      await s.ir(`foco=terra&ui=${fator}&${PIN}`);
+      await s.ir(`foco=marte&ui=${fator}&${PIN}`);
       const m = await s.js(MEDIR);
-      const onde = `${w}×${h}, ui = ${fator}`;
+      const onde = `Marte, ${w}×${h}, ui = ${fator}`;
       conferir(
         m.ficha !== null && m.pct <= TETO_PCT,
         `ficha (${onde}): ocupa ${m.pct?.toFixed(1)}% da tela ≤ teto ${TETO_PCT}%`

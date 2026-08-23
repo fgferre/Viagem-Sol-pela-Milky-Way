@@ -238,6 +238,34 @@ export function radecParaGalactica(
  * heliocêntrica equatorial J2000 em pc com o Sol na origem, e essa ponte
  * é uma rotação e uma multiplicação, sem nenhuma origem para errar.
  */
+/**
+ * O CAMINHO DE VOLTA DA CENA — [x, y, z] em pc na cena (heliocêntrica
+ * EQUATORIAL J2000, o Sol na origem) → posição heliocêntrica ECLÍPTICA em
+ * UA. É a inversa exata da ponte de ida que `planetas.ts` e `escada.ts`
+ * usam há ondas: `eclipticaParaEquatorial(vAU) × AU_PARA_PC`.
+ *
+ * QUEM PEDIU ELA (item 74, parte B, 2026-08-22): a ficha do objeto diz
+ * quanto do disco de um corpo está iluminado VISTO DA TERRA, e faltava dizer
+ * o mesmo visto DAQUI — do ponto em que a câmera está, que é o que o
+ * visitante tem na tela. `geometriaNoCeu` aceita qualquer observador, desde
+ * que em eclíptica heliocêntrica; a câmera vive na cena, e esta função é a
+ * tradução entre as duas.
+ *
+ * NÃO É A INVERSA DE `heliocentricaEclipticaUAParaBaseGalactocentricaPc`, e
+ * a distinção é a mesma que o cabeçalho daquela função já declara: aquela
+ * leva à BASE GALACTOCÊNTRICA dos binários de `public/data/galaxy` (com o
+ * deslocamento de R0 e o sinal de Y da casa), que é onde as ESTRELAS moram —
+ * a câmera nunca esteve nesse referencial. A pendência escrita em 22/08
+ * nomeou a função errada; o caminho que faltava era este, e ele é uma
+ * rotação e uma divisão, sem origem nenhuma para errar.
+ */
+export function cenaPcParaHeliocentricaEclipticaUA(
+  vPc: Vec3
+): [number, number, number] {
+  const ecl = equatorialParaEcliptica(vPc);
+  return [ecl[0] / AU_PARA_PC, ecl[1] / AU_PARA_PC, ecl[2] / AU_PARA_PC];
+}
+
 export function heliocentricaEclipticaUAParaBaseGalactocentricaPc(
   vAU: Vec3
 ): [number, number, number] {

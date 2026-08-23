@@ -78,11 +78,23 @@ const GREEK = {
   Chi: 'χ', Psi: 'ψ', Ome: 'ω',
 };
 
-function greekName(bayer, con) {
+/**
+ * A LETRA DE BAYER SOZINHA — "α", "γ²". Separada de `greekName` em 22/08
+ * porque ela passou a ser DADO e não só rótulo: a estrela de nome próprio
+ * ("Sirius") perdia a designação inteira, e a ficha do objeto (item 74)
+ * precisa dizer "α Canis Majoris" ao lado do nome que a pessoa conhece.
+ */
+function bayerGlifo(bayer) {
   const [letter, index] = bayer.split('-');
   const glyph = GREEK[letter];
-  if (!glyph || !con) return '';
-  return `${glyph}${index ? `¹²³⁴⁵⁶⁷⁸⁹`[Number(index) - 1] ?? index : ''} ${con}`;
+  if (!glyph) return '';
+  return `${glyph}${index ? `¹²³⁴⁵⁶⁷⁸⁹`[Number(index) - 1] ?? index : ''}`;
+}
+
+function greekName(bayer, con) {
+  const glifo = bayerGlifo(bayer);
+  if (!glifo || !con) return '';
+  return `${glifo} ${con}`;
 }
 
 /** split de CSV ciente de aspas — o HYG cita campos e o proper pode ter vírgula */
@@ -284,6 +296,15 @@ for (let k = 1; k < athyg.lines.length; k++) {
     if (hd !== null) entry.hd = hd;
     if (hip !== null) entry.hip = hip;
     if (gl) entry.gl = gl;
+    // A DESIGNAÇÃO DE BAYER E A CONSTELAÇÃO (item 74, parte B, 22/08). Elas
+    // sempre foram LIDAS aqui e descartadas: `label` juntava as duas numa
+    // string e, quando havia nome próprio, jogava as duas fora. "Sirius"
+    // saía sem a menor pista de que é a α do Cão Maior. Agora atravessam
+    // como campos, e a ficha as remonta ("α Canis Majoris"); a sigla de três
+    // letras é a do HYG, e `lib/atlas/constelacoes.ts` a expande no runtime.
+    const glifo = bayer ? bayerGlifo(bayer) : '';
+    if (glifo) entry.b = glifo;
+    if (con) entry.c = con;
     named.push(entry);
   }
 }

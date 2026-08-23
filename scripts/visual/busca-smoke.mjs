@@ -99,6 +99,36 @@ try {
     `e o selo conta a verdade da vista sem a porta se declarar ("${selo}")`
   );
 
+  // ---- 1a: A FICHA DA ESTRELA (item 74, parte B, 22/08) ------------
+  // Até aqui escolher uma estrela abria a ficha só com o CABEÇALHO — o
+  // nome, a palavra "estrela" e o gesto de voltar. Agora ela diz o que o
+  // catálogo mede. A prova pede as três coisas que só existem com o dado
+  // NOVO atravessando: a designação de Bayer (a letra e a constelação
+  // eram lidas na construção do catálogo e jogadas fora quando havia
+  // nome próprio), a distância na escada da casa, e a temperatura, que é
+  // a primeira conta de `stellarPhysics` a chegar à TELA.
+  const daEstrela = JSON.parse(await sessao.js(`JSON.stringify(
+    [...document.querySelectorAll('.atlas-ficha-linha')].map((d) => ({
+      rotulo: d.querySelector('dt').textContent,
+      valor: d.querySelector('.atlas-ficha-valor').textContent,
+      proc: (d.querySelector('.atlas-ficha-proc') || {}).textContent || '',
+    })))`));
+  const linhaDe = (r) => daEstrela.find((l) => l.rotulo === r) || {};
+  conferir(
+    linhaDe('designação').valor === 'α Canis Majoris'
+      && linhaDe('distância').valor === '8,6 anos-luz',
+    `a ficha de Sirius diz a designação e a distância `
+      + `("${linhaDe('designação').valor}" · "${linhaDe('distância').valor}")`
+  );
+  conferir(
+    /^\d+ K$/.test(linhaDe('temperatura').valor || '')
+      && linhaDe('temperatura').proc.startsWith('derivado')
+      && linhaDe('catálogos').valor === 'HD 48915 · HIP 32349 · Gl 244A',
+    `e a temperatura é derivada da cor, com os índices de catálogo ao lado `
+      + `("${linhaDe('temperatura').valor}" ${linhaDe('temperatura').proc}; `
+      + `"${linhaDe('catálogos').valor}")`
+  );
+
   // ---- 1b: a mesma porta duas vezes dá a MESMA vista ---------------
   // O Atlas ENQUADRA (a câmera é posta, não voa), então o raio de
   // enquadramento tem de ser propriedade do ALVO. Enquanto ele saía da

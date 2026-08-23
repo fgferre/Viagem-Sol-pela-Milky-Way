@@ -10,7 +10,10 @@
 //
 // SETE SEÇÕES NA ORDEM DO INTERESSE, que é a lição que o doador aprendeu
 // tarde ("live state first, reference after"): o que está acontecendo AGORA,
-// depois o corpo, depois a órbita, depois o céu, e só então a enciclopédia.
+// depois o corpo, depois a órbita, depois o céu, e só então a enciclopédia —
+// e a imagem, que é a única que fala do INSTRUMENTO e não do mundo. A ficha
+// de ESTRELA tem UMA seção e nenhuma dessas: ela vive de catálogo, e o que
+// se escrevesse de prosa sobre as 1.726 nomeadas seria inventado.
 //
 // CAMPO AUSENTE NÃO VIRA LINHA. Nunca "N/A", nunca "—", nunca zero no lugar
 // de uma medida que não existe. Makemake não tem massa no kernel: a ficha
@@ -33,7 +36,7 @@
 // decide km, UA ou anos-luz, e `numeroPtBr` decide a vírgula. Quem escrever
 // aqui uma quinta formatação de distância está criando bug, não exceção.
 // ============================================================
-import { notaDeDistancia } from '../unidades';
+import { notaDeDistancia, UA_POR_PC } from '../unidades';
 import { NOMES_DOS_CORPOS } from '../../three/atlasConfig';
 import type { Procedencia } from '../../three/selo';
 import { numeroPtBr } from '../../three/tempoDoAtlas';
@@ -50,6 +53,9 @@ import { geometriaNoCeu, quemTemGeometriaNoCeu } from './geometriaNoCeu';
 import { IAU_ORIENTATIONS } from './iauOrientation';
 import type { PosicaoEcliptica } from './kepler';
 import { REGISTRO_ORBITAL } from './registroOrbital';
+import { designacaoDeBayer } from './constelacoes';
+import { temperatureFromBV } from './stellarPhysics';
+import type { NamedStar } from '../../three/config';
 import type {
   EntradaDeTextura,
   ManifestDeTexturas,
@@ -75,7 +81,9 @@ export type IdDeSecao =
   | 'ceu'
   | 'contexto'
   | 'curiosidades'
-  | 'imagem';
+  | 'imagem'
+  /** a única de ESTRELA — as outras sete são todas de corpo */
+  | 'estrela';
 
 export interface SecaoDaFicha {
   id: IdDeSecao;
@@ -137,6 +145,9 @@ export interface EntradaDaFicha {
   editorial?: CorpoNoJson | null;
   /** o manifesto de `texturas.json`; `null` antes de o arquivo chegar */
   texturas?: ManifestDeTexturas | null;
+  /** onde a CÂMERA está, em eclíptica heliocêntrica UA; `null` fora do
+   *  Atlas — é o "daqui" da linha de iluminação */
+  camaraUa?: readonly [number, number, number] | null;
 }
 
 // ------------------------------------------------------------ formatação
@@ -232,6 +243,43 @@ function selo(
   return razao === null ? undefined : formatarRazaoTerra(razao);
 }
 
+/**
+ * QUANTO DO DISCO ESTÁ ILUMINADO VISTO DAQUI — "daqui" sendo a câmera, que
+ * é o único ponto de vista que o visitante realmente tem.
+ *
+ * É A OUTRA PERGUNTA, e o cabeçalho de `geometriaNoCeu` já nomeia as duas: a
+ * seção "no céu" responde "dá para ver isso hoje à noite?", medida DA TERRA;
+ * esta linha responde "o que estou vendo agora?", medida do ponto em que a
+ * câmera está. A conta é a mesma função, com outro observador — e é isso que
+ * fazia dela uma armadilha: rodá-la com o vetor errado devolve um número
+ * plausível e falso.
+ *
+ * VALE PARA TODO CORPO, e não só para os heliocêntricos: a fase de Titã
+ * vista de perto é exatamente o que está na tela. `quemTemGeometriaNoCeu` é
+ * a régua da outra pergunta (lá "Titã a 46,2°" ao lado de "Saturno a 46,1°"
+ * seria ruído), e não desta.
+ */
+function iluminacaoDaqui(entrada: EntradaDaFicha): string | null {
+  const { id, jd, fonte, camaraUa } = entrada;
+  if (!fonte || !camaraUa || jd === null || jd === undefined || !Number.isFinite(jd)) {
+    return null;
+  }
+  if (id === 'sun') return null;
+  let geometria: ReturnType<typeof geometriaNoCeu> = null;
+  try {
+    geometria = geometriaNoCeu(fonte.posicaoHeliocentrica(id, jd), {
+      x: camaraUa[0],
+      y: camaraUa[1],
+      z: camaraUa[2],
+    });
+  } catch {
+    return null;
+  }
+  return geometria === null
+    ? null
+    : `${Math.round(geometria.fracaoIluminada * 100)}%`;
+}
+
 function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   const { id, jd, fonte } = entrada;
   if (!fonte || jd === null || jd === undefined || !Number.isFinite(jd)) return [];
@@ -256,6 +304,12 @@ function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   return [
     linha(`distância — ${pai}`, distancia, 'medido', registro.modelo),
     linha('velocidade orbital', velocidade, 'derivado', 'da efeméride'),
+    linha(
+      'iluminado daqui',
+      iluminacaoDaqui(entrada),
+      'derivado',
+      'do ponto de vista da câmera'
+    ),
   ].filter((l): l is LinhaDaFicha => l !== null);
 }
 
@@ -546,27 +600,86 @@ const TITULOS: Record<IdDeSecao, string> = {
   contexto: 'contexto',
   curiosidades: 'curiosidades',
   imagem: 'a imagem',
+  estrela: 'a estrela',
 };
 
 /**
- * A FICHA DE UMA ESTRELA, ainda só com o CABEÇALHO (item 74, parte A).
+ * A FICHA DE UMA ESTRELA (item 74; o cabeçalho na parte A, o conteúdo aqui).
  *
- * Ela existe agora, vazia de seções, porque a antiga `ContextLine`
- * anunciava QUALQUER foco — corpo ou estrela — e carregava o gesto de voltar
- * ao sistema. Se a ficha só nascesse para corpos, escolher Sirius deixaria o
- * HUD sem dizer o que foi escolhido e sem o "⌂ Sistema": um buraco de
- * função, não uma seção que falta.
+ * ELA NASCEU VAZIA por um motivo de FUNÇÃO e não de conteúdo: a antiga
+ * `ContextLine` anunciava QUALQUER foco — corpo ou estrela — e carregava o
+ * gesto de voltar ao sistema. Se a ficha só existisse para corpos, escolher
+ * Sirius deixaria o HUD sem dizer o que foi escolhido e sem o "⌂ Sistema".
  *
- * O CONTEÚDO É O COMMIT 7 do item 74 (a constelação que o
- * `build-star-catalog.mjs` lê e descarta, a temperatura de
- * `stellarPhysics.temperatureFromBV`, a distância em anos-luz). Aqui não se
- * inventa nada: a escada sabe o NOME e mais nada, então é o nome que
- * aparece. "estrela" é a classe genérica porque o tipo espectral mora no
- * `NamedStar`, que ainda não chega até aqui.
+ * UMA SEÇÃO SÓ, e é decisão medida: são sete linhas, e a ficha desenha
+ * FECHADAS todas as seções menos a primeira. Duas seções aqui esconderiam
+ * metade do que existe atrás de um clique que ninguém pediu — o corpo tem
+ * cinco seções porque tem cinquenta linhas.
+ *
+ * TUDO MEDIDO OU DERIVADO, NADA DE EDITORIAL. As 1.726 nomeadas não têm
+ * prosa nesta casa e não vão ter: o que se escreveria sobre elas seria
+ * inventado ou copiado, e nenhuma das duas coisas passa no selo. O que a
+ * ficha diz é o que o catálogo mede (distância, magnitude, tipo espectral,
+ * B−V, os índices HD/HIP/GJ) mais UMA conta: a temperatura efetiva por
+ * Ballesteros. Esta linha é o primeiro consumidor de TELA de
+ * `temperatureFromBV` — até aqui a fórmula só alimentava cor de shader.
+ *
+ * SEM `NamedStar`, SÓ O CABEÇALHO. É o caso do centro galáctico
+ * (Sagittarius A✱), que é foco e não é estrela do catálogo: ele continua
+ * abrindo a ficha com o nome e o "⌂ Sistema", e sem uma linha inventada.
  */
-export function montarFichaDeEstrela(nome: string): Ficha | null {
+export function montarFichaDeEstrela(
+  nome: string,
+  estrela?: NamedStar | null
+): Ficha | null {
   if (!nome) return null;
-  return { id: 'estrela', nome, classe: 'estrela', secoes: [] };
+  const linhas: (LinhaDaFicha | null)[] = [];
+  if (estrela) {
+    const CATALOGO = 'catálogo HYG/AT-HYG';
+    const designacao = designacaoDeBayer(estrela.b, estrela.c);
+    const catalogos = [
+      estrela.hd === undefined ? null : `HD ${estrela.hd}`,
+      estrela.hip === undefined ? null : `HIP ${estrela.hip}`,
+      estrela.gl || null,
+    ].filter((x): x is string => x !== null);
+    linhas.push(
+      // A designação de Bayer é a MESMA estrela dita de outro jeito, e para
+      // quem só conhece "Sirius" ela é a ponte com qualquer carta do céu.
+      linha('designação', designacao, 'medido', 'Bayer, sigla IAU'),
+      linha(
+        'distância',
+        notaDeDistancia(estrela.d * UA_POR_PC, numeroPtBr),
+        'medido',
+        'paralaxe Gaia DR3'
+      ),
+      linha('magnitude aparente', comCasas(estrela.m, 2), 'medido', CATALOGO),
+      linha('tipo espectral', estrela.s || null, 'medido', CATALOGO),
+      linha(
+        'cor B−V',
+        estrela.ci === undefined ? null : comCasas(estrela.ci, 3),
+        'medido',
+        CATALOGO
+      ),
+      linha(
+        'temperatura',
+        estrela.ci === undefined
+          ? null
+          : `${numeroPtBr(Number(temperatureFromBV(estrela.ci).toPrecision(3)))} K`,
+        'derivado',
+        'de B−V, por Ballesteros'
+      ),
+      // OS TRÊS ÍNDICES NUMA LINHA SÓ: eles não são três fatos, são três
+      // endereços do mesmo objeto, e é assim que se procura por ele.
+      linha('catálogos', catalogos.join(' · ') || null, 'medido', CATALOGO)
+    );
+  }
+  const cheias = linhas.filter((l): l is LinhaDaFicha => l !== null);
+  return {
+    id: 'estrela',
+    nome,
+    classe: 'estrela',
+    secoes: cheias.length > 0 ? [{ id: 'estrela', titulo: TITULOS.estrela, linhas: cheias }] : [],
+  };
 }
 
 /**

@@ -17,9 +17,11 @@ import {
 import { PROCEDENCIA } from '../../three/selo';
 import type { MetaEfemerides } from './efemerides';
 import { decodeEfemerides, MotorEfemerides } from './efemerides';
+import type { StarsMeta } from '../../three/config';
 import type { ManifestDeTexturas } from '../../three/world/corpos/texturas';
 import type { CorpoNoJson, CorposDoAtlas, Ficha } from './ficha';
-import { formatarDuracao, formatarMassaKg, montarFicha } from './ficha';
+import { formatarDuracao, formatarMassaKg, montarFicha, montarFichaDeEstrela } from './ficha';
+import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
 
 const DATA_DIR = fileURLToPath(
@@ -42,6 +44,12 @@ const texturas = JSON.parse(
   readFileSync(join(DATA_DIR, 'texturas.json'), 'utf8')
 ) as ManifestDeTexturas;
 const porId = new Map<string, CorpoNoJson>(corposJson.corpos.map((c) => [c.id, c]));
+const starsMeta = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL('../../../public/data/stars_meta.json', import.meta.url)),
+    'utf8'
+  )
+) as StarsMeta;
 
 const JD = dateToTDB(new Date('2026-08-22T00:00:00Z'));
 const ALVOS = [
@@ -453,6 +461,155 @@ describe('a imagem confessa — itens 19 e 20', () => {
       .linhas.find((l) => l.rotulo === 'fonte')!;
     expect(fonteDaLinha.procedencia).toBe('medido');
     expect(fonteDaLinha.fonte).toMatch(/px de largura$/);
+  });
+});
+
+describe('iluminado daqui — o ponto de vista da câmera (item 74, parte B)', () => {
+  // A CÂMERA NO LUGAR DA TERRA tem de dar a MESMA resposta que a seção "no
+  // céu" dá: as duas perguntas usam a mesma conta e diferem só no vértice.
+  // Se um dia os dois números divergirem com o observador no mesmo ponto, um
+  // dos dois caminhos passou a medir outra coisa.
+  const daTerra = motor.posicaoHeliocentrica('earth', JD);
+  const naTerra: [number, number, number] = [daTerra.x, daTerra.y, daTerra.z];
+
+  it('com a câmera na Terra, "daqui" bate com "visto da Terra"', () => {
+    for (const id of ['mercury', 'venus', 'mars', 'jupiter', 'moon']) {
+      const f = montarFicha({
+        id,
+        jd: JD,
+        fonte: motor,
+        editorial: porId.get(id),
+        texturas,
+        camaraUa: naTerra,
+      })!;
+      const daqui = f.secoes
+        .find((s) => s.id === 'agora')!
+        .linhas.find((l) => l.rotulo === 'iluminado daqui')!.valor;
+      const doCeu = f.secoes
+        .find((s) => s.id === 'ceu')!
+        .linhas.find((l) => l.rotulo === 'disco iluminado')!.valor;
+      expect(daqui, id).toBe(doCeu);
+    }
+  });
+
+  it('a linha VALE PARA LUA DE PLANETA, que a seção "no céu" não cobre', () => {
+    // Titã não ganha elongação (a dele fica a menos de um grau da de
+    // Saturno e seria ruído), mas a fase DELE visto de perto é o que está
+    // na tela.
+    const f = montarFicha({
+      id: 'titan',
+      jd: JD,
+      fonte: motor,
+      editorial: porId.get('titan'),
+      texturas,
+      camaraUa: naTerra,
+    })!;
+    expect(f.secoes.map((s) => s.id)).not.toContain('ceu');
+    const agora = f.secoes.find((s) => s.id === 'agora')!;
+    expect(agora.linhas.map((l) => l.rotulo)).toContain('iluminado daqui');
+  });
+
+  it('a câmera ENTRE o Sol e o corpo vê o disco CHEIO; atrás dele, escuro', () => {
+    // Falsificação, não amostra: pondo a câmera na linha Sol–Marte, dos dois
+    // lados, os dois extremos têm de aparecer.
+    const marte = motor.posicaoHeliocentrica('mars', JD);
+    const r = Math.hypot(marte.x, marte.y, marte.z);
+    const dentro: [number, number, number] = [
+      (marte.x / r) * (r - 0.5),
+      (marte.y / r) * (r - 0.5),
+      (marte.z / r) * (r - 0.5),
+    ];
+    const fora: [number, number, number] = [
+      (marte.x / r) * (r + 0.5),
+      (marte.y / r) * (r + 0.5),
+      (marte.z / r) * (r + 0.5),
+    ];
+    const ler = (cam: [number, number, number]) =>
+      montarFicha({ id: 'mars', jd: JD, fonte: motor, editorial: porId.get('mars'), camaraUa: cam })!
+        .secoes.find((s) => s.id === 'agora')!
+        .linhas.find((l) => l.rotulo === 'iluminado daqui')!.valor;
+    expect(ler(dentro)).toBe('100%');
+    expect(ler(fora)).toBe('0%');
+  });
+
+  it('sem câmera a linha some — fora do Atlas não há "daqui"', () => {
+    const f = montarFicha({ id: 'mars', jd: JD, fonte: motor, editorial: porId.get('mars') })!;
+    const agora = f.secoes.find((s) => s.id === 'agora')!;
+    expect(agora.linhas.map((l) => l.rotulo)).not.toContain('iluminado daqui');
+    // e o Sol não tem "daqui" nem com câmera: ele é a fonte da luz
+    const sol = montarFicha({ id: 'sun', jd: JD, fonte: motor, camaraUa: naTerra })!;
+    expect(sol.secoes.map((s) => s.id)).not.toContain('agora');
+  });
+});
+
+describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
+  const sirius = starsMeta.named.find((s) => s.n === 'Sirius')!;
+  const linhasDe = (f: Ficha) => new Map(f.secoes[0]?.linhas.map((l) => [l.rotulo, l]) ?? []);
+
+  it('Sirius traz designação, distância, magnitude, tipo, cor e temperatura', () => {
+    const f = montarFichaDeEstrela('Sirius', sirius)!;
+    expect(f.nome).toBe('Sirius');
+    expect(f.classe).toBe('estrela');
+    expect(f.secoes).toHaveLength(1);
+    const l = linhasDe(f);
+    expect(l.get('designação')!.valor).toBe('α Canis Majoris');
+    expect(l.get('distância')!.valor).toBe('8,6 anos-luz');
+    expect(l.get('magnitude aparente')!.valor).toBe('-1,44');
+    expect(l.get('tipo espectral')!.valor).toBe(sirius.s);
+    expect(l.get('cor B−V')!.valor).toBe('0,009');
+    expect(l.get('catálogos')!.valor).toBe('HD 48915 · HIP 32349 · Gl 244A');
+  });
+
+  it('a temperatura é DERIVADA, e é o primeiro consumidor de tela de temperatureFromBV', () => {
+    const linha = linhasDe(montarFichaDeEstrela('Sirius', sirius)!).get('temperatura')!;
+    expect(linha.procedencia).toBe('derivado');
+    expect(linha.fonte).toContain('Ballesteros');
+    // três algarismos significativos: Ballesteros não vale mais que isso, e
+    // "9927 K" fingiria uma precisão que a fórmula não tem.
+    const t = temperatureFromBV(sirius.ci!);
+    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`);
+    expect(t).toBeGreaterThan(9000);
+    expect(t).toBeLessThan(11000);
+  });
+
+  it('a distância sai na escada da casa: anos-luz, nunca parsec', () => {
+    for (const estrela of starsMeta.named.slice(0, 200)) {
+      const l = linhasDe(montarFichaDeEstrela(estrela.n, estrela)!);
+      const d = l.get('distância')!.valor;
+      expect(d, estrela.n).toMatch(/anos?-luz$/);
+      expect(d, estrela.n).not.toContain('pc');
+    }
+  });
+
+  it('nenhuma estrela do catálogo monta linha vazia, e nenhuma tem prosa', () => {
+    const EDITORIAL = ['o que é', 'curiosidade', 'fato', 'recorde', 'exploração'];
+    for (const estrela of starsMeta.named) {
+      const f = montarFichaDeEstrela(estrela.n, estrela)!;
+      expect(f.secoes.length, estrela.n).toBe(1);
+      for (const l of f.secoes[0]!.linhas) {
+        expect(l.valor.length, `${estrela.n}/${l.rotulo}`).toBeGreaterThan(0);
+        expect(`${l.valor}`, `${estrela.n}/${l.rotulo}`).not.toMatch(/undefined|NaN/);
+        expect(EDITORIAL, estrela.n).not.toContain(l.rotulo);
+      }
+    }
+  });
+
+  it('as 204 sem Bayer não inventam designação', () => {
+    const semBayer = starsMeta.named.filter((s) => !s.b);
+    expect(semBayer.length).toBeGreaterThan(0);
+    for (const estrela of semBayer) {
+      const l = linhasDe(montarFichaDeEstrela(estrela.n, estrela)!);
+      expect(l.has('designação'), estrela.n).toBe(false);
+      // e o resto continua de pé
+      expect(l.has('distância'), estrela.n).toBe(true);
+    }
+  });
+
+  it('sem NamedStar sobra o cabeçalho — é o caso de Sagittarius A✱', () => {
+    const f = montarFichaDeEstrela('Sagittarius A✱', null)!;
+    expect(f.nome).toBe('Sagittarius A✱');
+    expect(f.secoes).toEqual([]);
+    expect(montarFichaDeEstrela('')).toBeNull();
   });
 });
 

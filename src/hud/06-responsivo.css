@@ -180,6 +180,38 @@
   }
 }
 
+/* TELEFONE OU TELA BAIXA: A FICHA PARA DE COMER O QUADRO (item 74, 22/08).
+
+   O teto de `.atlas-ficha` sempre foi "o que sobra debaixo da barra menos o
+   selo", e as três parcelas subtraídas são em `rem` — então elas ENCOLHEM
+   junto com o `?ui=` e o teto CRESCE quando o texto diminui. Numa tela de
+   568 px com `?ui=0.85` isso deixava 480 px de teto para uma ficha que
+   passou a ter seis seções: medido, 276×365 px, 55,6% da tela, contra o
+   piso doutrinário de "o HUD deixa mais da metade da altura livre". O juiz
+   de a11y acendeu vermelho exatamente onde o comentário dele prometia
+   ("para o dia em que uma seção nova ou uma tradução comprida a empurrem").
+
+   O CONSERTO É UM SEGUNDO TETO, em fração da TELA, e ele vale onde o teto
+   de ÁREA morde: no TELEFONE, onde a ficha toma quase toda a largura (num
+   320 ela mede 276 px, 86%), e em qualquer tela BAIXA, onde qualquer painel
+   de altura fixa vira uma fração grande. As duas condições são um `or`
+   porque são dois modos de a mesma conta estourar; a tela de mesa não casa
+   com nenhuma das duas e não muda um pixel. A ficha já rola por dentro
+   (`overflow-y: auto` da `.hud-dialogo`), então o que sobra do conteúdo
+   continua alcançável — o que muda é que ele para de empurrar a janela.
+
+   52vh e não 58: com 86% de largura a conta do teto de área dá 58vh NO
+   LIMITE, e limite não é margem. Com 52 o pior caso medido (a ficha de
+   Marte, a mais alta, a 390×844 com `?ui=1`) fica em 45,1%. */
+@media (max-width: 760px), (max-height: 640px) {
+  .atlas-ficha {
+    max-height: min(
+      calc(100vh - var(--barra-fim) - var(--selo-base) - var(--selo-linha) - 2.4rem),
+      52vh
+    );
+  }
+}
+
 /* paisagem baixa (844×390): a composição sobe e o bloco de texto encolhe
    para caber entre a galáxia e o trilho */
 @media (max-height: 480px) and (orientation: landscape) {

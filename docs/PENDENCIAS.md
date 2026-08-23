@@ -389,20 +389,25 @@ e os dois gestos da escada. Sem seleção, nada ocupa o topo. As fotos são
    lida por máquina**: quem corrige o veredito corrige o documento e a
    tela acompanha. Fecha a metade da confissão do item **19** e o item
    **20** inteiro. Foto: `capturas/item74-ficha-ceres-vesta.png`.
-3. **A ficha de estrela.** Hoje escolher uma estrela abre a ficha só com
-   o cabeçalho — o nome, a palavra "estrela" e o gesto de voltar. Falta o
-   conteúdo: constelação, tipo espectral, temperatura e distância. A
-   constelação já é lida na construção do catálogo e descartada; um campo
-   no `named` a devolve.
-4. **A iluminação vista DAQUI.** A ficha diz quanto do disco está
-   iluminado visto da Terra; falta dizer o mesmo visto da CÂMERA, que é o
-   que o visitante tem na tela. A conta existe (a camada dos planetas já a
-   faz para acender o ponto), mas a posição da câmera em coordenadas de
-   eclíptica não: falta o caminho de volta de
-   `heliocentricaEclipticaUAParaBaseGalactocentricaPc`.
+3. **A ficha de estrela — FEITO em 22/08.** Escolher uma estrela abre a
+   ficha com o que o catálogo mede dela: a designação de Bayer inteira
+   ("Sirius" é a **α Canis Majoris**), a distância em anos-luz, a
+   magnitude, o tipo espectral, a cor e a temperatura da superfície. A
+   letra e a constelação eram lidas na construção do catálogo e jogadas
+   fora quando a estrela tinha nome próprio; agora atravessam. **Não há
+   texto editorial nas estrelas e não vai haver** — o que se escrevesse
+   seria inventado ou copiado. Foto:
+   `capturas/item74-ficha-sirius.png`.
+4. **A iluminação vista DAQUI — FEITO em 22/08.** A ficha já dizia quanto
+   do disco está iluminado visto da Terra; agora diz também quanto se vê
+   iluminado **daqui**, do ponto em que a câmera está — que é o que o
+   visitante tem na tela. Vale para toda lua também, e não só para quem
+   orbita o Sol.
 5. **Makemake não tem massa.** O kernel de massas da NASA não o lista —
    não há satélite que a fixe —, então a ficha dele não escreve as linhas
-   de massa, gravidade e escape. É ausência honesta, não esquecimento.
+   de massa, gravidade e escape. É ausência honesta, não esquecimento: o
+   resto da ficha dele está inteiro, e um teste cobra isso, para que a
+   única coisa que falte na tela seja a que o kernel não mede.
 
 ---
 
