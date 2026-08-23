@@ -296,6 +296,32 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   emissor de `gl_PointSize` não tiver linha no cadastro. O que segue ABERTO é a
   dívida em si: `wrappedStars.ts` apaga zerando o tamanho no vertex — a **terceira
   convenção de cessão** da casa —, e quem a paga é o M3 (entrada `cascas`).
+- **O TETO DE OCUPAÇÃO DO CLARÃO tem DOIS valores, e agora a divergência
+  está MEDIDA.** `OCUPACAO_MAXIMA_DA_TELA = 0,55` (filme e voo livre) e
+  `OCUPACAO_NA_OBSERVACAO = 0,07` (Atlas), escolhidos por fase em
+  `director/solNoQuadro.ts`. É o último `if (fase)` que sobra em desenho,
+  e ele NÃO é a segunda lei que o M1 matou: é a assistência DECLARADA que
+  o dono pediu em 17/08 (o selo diz BRILHO ASSISTIDO), e o `NORTE.md` a
+  registra na tabela de decisões.
+  Em 23/08 propôs-se matá-lo, alegando que a foto era a mesma com os dois
+  números em três poses. **A medida refutou**: a comparação anterior punha
+  o Atlas (lente de 35°) contra `?pos=` (58°), que são duas lentes. Com a
+  MESMA lente e a MESMA pose — no degrau do corpo do Sol (6,40 raios) o
+  md5 é IDÊNTICO (`5c29ca0bd49c`), mas no enquadramento de Vênus
+  (4,045 UA) **23,40% do quadro ganha luz**, 100% unilateral, delta até
+  224 de 255. A faixa em que os dois divergem é estreita e é a de PERTO —
+  e é justamente onde o Atlas observa.
+  O que entrou foi o JUIZ que faltava: `luz-do-quadro.mjs` ganhou a perna
+  do ATLAS (`PERNA=atlas`), que roda a escada pelo endereço do próprio
+  modo. **PASSA 7 de 7 com os dois números** — o que os separa é a
+  IMAGEM, não a lei da lavagem. O fov passou a viajar por `discoRealPx`,
+  `solturaDaLei`, `claraoDaLeiPx`, `tetoDeLavagem` e `julgarEscada`
+  (padrão 58°, e um teste varre a escada provando que sem o argumento
+  nada mudou), e o PISO DE FAÍSCAS virou número POR LENTE: 68–87 a 58°
+  contra 14–18 a 35° na mesma direção, então uma contagem absoluta mediria
+  a lente. Unificar o teto segue sendo escolha do dono, com as quatro
+  fotos de `capturas/item61-um-sol-so-antes-depois.png` na mão.
+
 - **A galáxia já tem a lei certa E o mesmo defeito** — e desde o M5 o defeito é
   da LEI, num endereço só (`leiDeTela`, `estrela.ts`). Abaixo de 0,7 px o fluxo cai
   com `px²` (a troca sub-pixel, **certa**); de 0,7 a 3 px, brilho de superfície

@@ -13,10 +13,30 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 81.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 82.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
+
+**O BASTÃO DE 23/08 (noite): O MODO ÚNICO ANDOU QUATRO PASSOS.** A parte
+grande do item **61** — *"o modo atlas na minha visão deveria ser o modo
+único, a viagem na verdade para mim é só uma ferramenta do modo atlas"* —
+saiu do papel. O que fechou:
+
+- **o Atlas nasce ONDE O FILME ESTAVA.** Antes ele jogava a câmera fora:
+  pausar em t=12, t=90 ou t=160 e entrar dava sempre a mesma vista, a 224
+  UA de casa. Agora o portal POUSA — e o fim do filme ganhou "Ficar
+  aqui", que deixa o visitante na Terra em vez de devolvê-lo para longe;
+- **a viagem virou ferramenta:** a barra do Atlas ganhou **▶ Ver o filme**
+  e **↗ Explorar**, e o "Partir" que devolvia a TELA DE TÍTULO virou
+  **↩ Voltar ao filme**, que só existe quando há filme atrás;
+- **o ambiente parou de mudar só por trocar de modo:** entrar no Atlas na
+  coda acendia a nebulosa e apagava o cartão da galáxia no mesmo lugar;
+- **o relógio do céu abre andando** (a data corre no mostrador).
+
+**Espera o olho dele no app**, com as fotos em `capturas/item61-*`. E
+ficaram DUAS escolhas dele, as duas com foto na mão: a **vista com que o
+Atlas abre** e o **brilho do Sol** — ver o item 61.
 
 **O BASTÃO DE 23/08: O CELULAR FECHOU.** O item **62** — *"podemos criar
 alternativas de cotnrole menores e escondigos que expandam para
@@ -77,9 +97,10 @@ tela e a gaveta de camadas parando acima dele. Fotos em
 **camadas saíram do painel de Ajustes** e a gaveta virou a porta única —
 17 caixas em três famílias com contagem, nos dois modos (`751d270`) —, e
 os **controles do filme somem sozinhos** depois de 3 s parado, voltando
-ao primeiro gesto. Do 61 segue aberto o **modo único** (obra grande, de
-produto) e o nome *"Explorar livremente"* na barra do filme, que é gosto
-dele.
+ao primeiro gesto. **Em 23/08 o modo único andou quatro passos** (ver o
+bastão da noite, no alto). Do 61 seguem abertas as ESCOLHAS dele — a
+vista de abertura e o brilho do Sol — e o nome *"Explorar livremente"* na
+barra do filme, que é gosto dele.
 
 **E OS DOIS JUÍZES PARARAM DE ACUSAR INOCENTE (item 76, FECHADO em
 22/08).** Eles reprovavam o app quando a MÁQUINA estava ocupada — o do
@@ -496,6 +517,55 @@ três perguntas e respondeu numa linha só:
    item **62**, que fechou inteiro e saiu da lista (`0199895`,
    `879d1de`).
 
+**O MODO ÚNICO — QUATRO PASSOS FEITOS EM 23/08.** A parte grande do item,
+com as fotos em `capturas/item61-*`:
+
+1. **O Atlas nasce onde o filme estava** (`9d0ef09`). O portal jogava a
+   câmera fora: entrar em t=10, t=100 ou t=250 dava sempre a MESMA vista,
+   a 224 UA de casa. Agora ele POUSA, e o alvo sai de três degraus — o
+   corpo de que você está mais perto, senão o Sol, senão o degrau novo
+   **`céu`** (a esfera de vizinhança do próprio observador, que é o que
+   torna o pouso a 1.911 pc possível). Medido: a coda pousa
+   **bit-idêntica nos três eixos**. Foto:
+   `capturas/item61-portal-leva-a-camera.png`.
+2. **A viagem virou ferramenta** (`760b96d`). A barra do Atlas ganhou
+   **▶ Ver o filme** e **↗ Explorar**; o "Partir" — que sem filme atrás
+   devolvia a TELA DE TÍTULO — virou **↩ Voltar ao filme** e só existe
+   quando há filme guardado. E o véu do FIM ganhou **"Ficar aqui"**, que
+   entra no Atlas na pose da coda: o visitante fica na Terra em vez de
+   ser devolvido para longe. Foto:
+   `capturas/item61-viagem-vira-ferramenta.png`.
+3. **O ambiente parou de mudar só por trocar de modo** (`715b9f9`).
+   Entrar no Atlas na coda acendia a nebulosa e apagava o cartão da
+   galáxia NO MESMO LUGAR. A trava do disco virou lei dos dois modos.
+   Foto: `capturas/item61-trava-do-disco-antes-depois.png`.
+4. **O relógio do céu abre andando** (`0f18242`) — a data corre no
+   mostrador, como no NASA Eyes. Foto:
+   `capturas/item61-relogio-ao-vivo.png`.
+
+**E DUAS ESCOLHAS FICARAM PARA ELE, as duas com foto na mão:**
+
+- **A VISTA COM QUE O ATLAS ABRE.** Hoje é o sistema visto de 224 UA:
+  dez nomes num nó de 40 px em volta de um ponto — a tela diz que há dez
+  mundos e mostra um. Foram renderizados três candidatos
+  (`capturas/modo-unico-candidato-*.png`): **(a)** o sistema interno com
+  as **linhas de órbita** desenhadas *(exige o item 77 primeiro)*,
+  **(b)** a **Terra em primeiro plano** com o céu atrás *(existe hoje, e
+  é a mais bonita das três sem código novo)*, **(c)** a de hoje. A
+  recomendação de mecânica é (b) agora e (a) depois do 77; a escolha é
+  dele.
+- **O BRILHO DO SOL — e aqui a medida mudou a pergunta** (`f88d877`). O
+  plano propunha um teto ÚNICO (0,55, o do filme) alegando que a foto era
+  a mesma com os dois números. **Não é.** Medido com a MESMA lente e a
+  MESMA pose: no corpo do Sol o md5 é idêntico, mas no enquadramento de
+  **Vênus** (4,045 UA) **23,40% do quadro ganha luz** e a cruz do Sol come
+  o quadro — Vênus, o corpo enquadrado, vira uma faísca dentro do brilho.
+  É exatamente o que ele perguntou em 17/08 (*"não vai dominar toda a
+  cena?"*), e o 0,07 é a resposta DELE. Nada foi mudado no app; o que
+  entrou foi o JUIZ que faltava (a régua de luz agora entra no Atlas). A
+  folha com as quatro fotos é
+  `capturas/item61-um-sol-so-antes-depois.png`.
+
 **DUAS COISAS DO CELULAR FICARAM PARA ELE DECIDIR (item 62, fechado em
 23/08).** Nenhuma das duas é defeito; as duas são escolha:
 
@@ -855,6 +925,23 @@ há o que medir. Quando voltar, o passo é guardar os DOIS PNG e rodar o
 `diff-pixel` — o suspeito de sempre nessa vista é a textura chegando em
 estados diferentes, e o gate tem defesa contra isso (`friaNoGate`), o que
 torna a hipótese menos provável e o achado mais interessante.
+
+**81.** (Achado em 23/08, medindo o item 61.) **MB1 reprova em cinco
+famílias de VOO LIVRE, e o vermelho é herdado.** O juiz de estabilidade
+temporal (`estabilidade-temporal.mjs`) acusa 18 defeitos de fervura e
+re-semeadura em `pan`, `fov`, `orbita`, `aproxEstrela` e `reversao` — as
+cinco que voam por `placeCamera`, nenhuma dentro do Atlas. **Não é
+regressão de nenhuma obra desta sessão**, e a prova é medida: com `src/`
+inteiro revertido para `1127190` (o commit em que a sessão começou), ele
+reprova IGUAL — 14 defeitos, as mesmas cinco famílias e os mesmos números
+de pior caso (pan 5,30 · fov 6,06 · órbita 0,73 · aproxEstrela 30,70 ·
+reversão 2,28, contra 5,29 · 6,06 · 0,73 · 30,68 · 2,27 hoje; a diferença
+de contagem é ruído entre corridas). A nona família, `zoomDeRoda` — a
+única que corre DENTRO do Atlas —, **passa** nos dois lados (piso 0,35 ·
+pior 0,44). Ninguém sabe desde quando: o `capturas/estabilidade-temporal.json`
+guarda a última corrida, não a história. O primeiro passo é datar o
+vermelho por bissecção nas famílias baratas (~0,3 min cada), não consertar
+no escuro.
 
 ---
 
