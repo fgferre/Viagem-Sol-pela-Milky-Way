@@ -115,14 +115,44 @@ export interface GiroDeRoda {
   deltaMode: number;
   /**
    * A PINÇA DO TRACKPAD chega assim: `wheel` com `ctrlKey` ligado. O
-   * campo NÃO decide nada aqui, e é de propósito — a pinça é o mesmo
-   * evento, com `deltaY` pequeno, e fração de estalo é fração de
-   * câmera. Ele fica escrito porque é ele que explica por que não há um
-   * segundo tratador para o gesto de dois dedos (e por que o
+   * campo NÃO decide nada aqui, e é de propósito — a pinça de trackpad
+   * é o mesmo evento, com `deltaY` pequeno, e fração de estalo é fração
+   * de câmera. Ele fica escrito porque explica por que o
    * `preventDefault` do canvas é obrigatório: sem ele o Chrome dá zoom
-   * na PÁGINA).
+   * na PÁGINA.
+   *
+   * A PINÇA DE TELA DE TOQUE É OUTRA COISA, e até 2026-08-23 ela
+   * simplesmente não existia: num telefone, com `touch-action: none`,
+   * dois dedos produzem dois PONTEIROS e nenhum `wheel`. Ela entra pelo
+   * `empurrar`, com a régua de `pixelsDaPinca`.
    */
   ctrlKey: boolean;
+}
+
+/**
+ * A PINÇA DE DOIS DEDOS, em pixels de roda — a régua que o gesto de
+ * TOQUE usa, e ela não traz número novo: é `ESTALO_EM_PX` dividido por
+ * `PASSO_LOG_PERTO`, os dois já declarados acima.
+ *
+ * A LEI É MANIPULAÇÃO DIRETA: afastar os dedos ao DOBRO aproxima a
+ * câmera à METADE, que é o que todo mapa de telefone faz e o que a mão
+ * espera. Meia distância é 0,301 década; junto ao piso um estalo vale
+ * `PASSO_LOG_PERTO` (0,05 década), então a dobra vale 6,02 estalos —
+ * 602 px pela régua do `ESTALO_EM_PX`. O 1:1 é EXATO junto ao piso e
+ * fica mais forte à medida que a câmera se afasta (o passo cresce até
+ * `PASSO_LOG_LONGE`), que é o mesmo tempero que a roda já tem: longe, um
+ * gesto atravessa mais escala.
+ *
+ * O SINAL é o da casa: negativo APROXIMA. Razão > 1 são dedos se
+ * afastando, e afastar aproxima.
+ *
+ * Razão inválida (zero, negativa, não finita — dedos no mesmo pixel)
+ * devolve zero em vez de infinito: um dos dois dedos ainda vai chegar,
+ * e um impulso infinito seria a câmera no piso num quadro.
+ */
+export function pixelsDaPinca(razao: number): number {
+  if (!Number.isFinite(razao) || razao <= 0) return 0;
+  return (-ESTALO_EM_PX * Math.log10(razao)) / PASSO_LOG_PERTO;
 }
 
 /**
@@ -202,11 +232,27 @@ export function distanciaAposEstalos(
 export class ZoomDaRoda {
   private velocidade = 0;
 
-  /** Consome um evento do navegador. */
-  girar(giro: GiroDeRoda, alturaDaPaginaPx = PAGINA_PADRAO_PX) {
-    const estalos = estalosDoGiro(giro, alturaDaPaginaPx);
+  /**
+   * O IMPULSO, em PIXELS de roda — o único dono do empurrão, e a porta
+   * pela qual entram os DOIS gestos que dão zoom: a roda/pinça de
+   * trackpad (`girar`, que é a casca que traduz o `wheel`) e a pinça de
+   * dois dedos (`pixelsDaPinca`, do `gestos.ts`).
+   *
+   * ELE NASCE EM 2026-08-23 e não traz mecânica nova: o corpo é o que o
+   * `girar` já fazia. O que muda é que o gesto de toque passa a somar na
+   * MESMA velocidade, com o MESMO atrito e a MESMA zona morta — dois
+   * donos do impulso seriam duas inércias somando na câmera, e o
+   * `esquecer` da troca de fase só apagaria uma.
+   */
+  empurrar(pixels: number) {
+    const estalos = pixels / ESTALO_EM_PX;
     if (!Number.isFinite(estalos)) return;
     this.velocidade += estalos * IMPULSO_POR_ESTALO;
+  }
+
+  /** Consome um evento do navegador — a casca do `empurrar`. */
+  girar(giro: GiroDeRoda, alturaDaPaginaPx = PAGINA_PADRAO_PX) {
+    this.empurrar(pixelsDoGiro(giro, alturaDaPaginaPx));
   }
 
   /**

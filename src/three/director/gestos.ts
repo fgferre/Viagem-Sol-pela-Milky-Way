@@ -5,9 +5,17 @@
 // Parte 1, corte 6); a semântica é a mesma, linha a linha. As duas máquinas de gesto
 // (ArrastoDePonteiro, ZoomDaRoda) moram AQUI — quem precisa esquecer
 // a roda na troca de fase usa o punho devolvido.
+//
+// A PINÇA DE DOIS DEDOS entra em 2026-08-23 (item 62): ela é o gesto de
+// zoom de TELA DE TOQUE, e não existia. O que existia era a pinça de
+// TRACKPAD, que o navegador entrega como `wheel` com `ctrlKey` — num
+// telefone o mesmo gesto produz dois PONTEIROS e nenhum `wheel`. O ramo
+// novo mede a razão entre as distâncias dos dedos e a converte em
+// pixels de roda (`pixelsDaPinca`), que somam no MESMO impulso: um dono
+// do empurrão, uma inércia, um `esquecer`.
 // ============================================================
-import { ArrastoDePonteiro, CLIQUE_PX } from '../arrastoDePonteiro';
-import { ZoomDaRoda } from '../zoomDaRoda';
+import { ArrastoDePonteiro, limiarDeClique } from '../arrastoDePonteiro';
+import { ZoomDaRoda, pixelsDaPinca } from '../zoomDaRoda';
 
 export interface FiosDosGestos {
   /** viagem congelada — arrastar olha ao redor */
@@ -80,6 +88,32 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   let gestoFechouGaveta = false;
 
   /**
+   * OS DEDOS VIVOS NO CANVAS — a memória da PINÇA, e ela existe porque a
+   * pinça de TELA DE TOQUE não é a de trackpad. A de trackpad chega como
+   * `wheel` com `ctrlKey` e já tinha dono (`onRoda`); num telefone, com
+   * `touch-action: none`, dois dedos produzem DOIS PONTEIROS e nenhum
+   * `wheel` — e o `ArrastoDePonteiro` ignora o segundo de propósito
+   * (é a linha que impede os 25° de um evento só). Ou seja: até
+   * 2026-08-23 a pinça simplesmente NÃO EXISTIA no aparelho em que ela é
+   * o gesto de zoom.
+   *
+   * O mapa guarda só o que está encostado, e a distância entre os dois é
+   * a única grandeza que interessa: a RAZÃO entre a distância de agora e
+   * a do evento anterior vira pixels de roda por `pixelsDaPinca`, e daí
+   * para dentro é o MESMO impulso da roda — mesma inércia, mesmo atrito,
+   * mesma zona morta. Um dono do empurrão, não dois.
+   */
+  const dedos = new Map<number, { x: number; y: number }>();
+  /** a distância entre os dois dedos no último evento; 0 = sem pinça */
+  let pincaAnterior = 0;
+
+  const distanciaDosDedos = (): number => {
+    if (dedos.size !== 2) return 0;
+    const [a, b] = [...dedos.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  /**
    * Os MESMOS listeners servem o Atlas — arrastar orbita o alvo, clique
    * curto escolhe o nome mais próximo. Registrar um segundo conjunto para
    * a fase nova compraria dois donos do mesmo gesto no mesmo canvas; o
@@ -93,13 +127,40 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     gestoFechouGaveta = gavetaQueOToqueFecha();
     if (gestoFechouGaveta) fios.fecharGavetas();
     if (!fios.pauseLookAtivo() && !fios.noAtlas()) return;
+    dedos.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    // O SEGUNDO DEDO SUSPENDE O ARRASTO. Sem isto o primeiro dedo
+    // continuaria ORBITANDO durante a pinça — a mão inteira se move
+    // numa pinça, e o giro sairia de graça por cima do zoom. É
+    // `esquecer` e não `cancelar` porque aqui não há o evento DO DONO
+    // para conferir: quem chama já sabe que o gesto perdeu o sentido,
+    // que é a frase escrita no próprio método.
+    if (dedos.size === 2) {
+      arrasto.esquecer();
+      pincaAnterior = distanciaDosDedos();
+      return;
+    }
     arrasto.comecar(event, performance.now());
   };
 
   const onPointerMove = (event: PointerEvent) => {
-    // o passo vem `null` para qualquer ponteiro que não seja o dono do
-    // gesto: é ISSO que impede o segundo dedo de girar 25° medido
-    // contra a última posição do primeiro (ver `arrastoDePonteiro.ts`)
+    // A PINÇA vem ANTES do arrasto, e não depois: com dois dedos o
+    // arrasto já não tem dono (o `esquecer` acima), então `mover`
+    // devolveria `null` e o gesto morreria no `return` de baixo.
+    if (dedos.has(event.pointerId)) {
+      dedos.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (dedos.size === 2 && fios.noAtlas()) {
+        const agora = distanciaDosDedos();
+        if (pincaAnterior > 0 && agora > 0) roda.empurrar(pixelsDaPinca(agora / pincaAnterior));
+        pincaAnterior = agora;
+        return;
+      }
+    }
+    // o passo vem `null` em dois casos, e os dois querem dizer "não mexa
+    // na cena": ponteiro que não é o dono do gesto — é ISSO que impede o
+    // segundo dedo de girar 25° medido contra a última posição do
+    // primeiro — e gesto ainda dentro da ZONA MORTA do dedo, que é o que
+    // deixa um toque com tremor soltar em cima do nome em que pousou
+    // (ver `arrastoDePonteiro.ts`)
     const passo = arrasto.mover(event);
     if (!passo) return;
     if (fios.noAtlas()) {
@@ -138,21 +199,29 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   let ultimoCliqueY = 0;
 
   const onPointerUp = (event: PointerEvent) => {
-    // clique curto e parado no Atlas = ESCOLHER. Os dois limiares (6 px,
-    // 400 ms) são os do voo livre, não números novos — moram em
-    // `CLIQUE_PX`/`CLIQUE_MS` (`arrastoDePonteiro.ts`), um lugar só para
-    // os dois gestos, e a imobilidade do PAR usa o mesmo `CLIQUE_PX`.
+    // clique curto e parado no Atlas = ESCOLHER. Os limiares moram em
+    // `arrastoDePonteiro.ts`, um lugar só para os dois gestos, e a
+    // imobilidade do PAR usa o MESMO `limiarDeClique` — que desde
+    // 2026-08-23 responde ao `pointerType`: 6 px são de mão sobre botão,
+    // e um dedo anda o dobro disso só de apoiar.
     const fechouNesteGesto = gestoFechouGaveta;
     gestoFechouGaveta = false;
+    // O DEDO SAIU: fim da pinça enquanto sobrar menos de dois. O
+    // `pincaAnterior` zera para o próximo par começar do zero, senão a
+    // primeira razão do gesto seguinte seria medida contra uma distância
+    // de outro gesto — um salto de câmera no primeiro quadro.
+    dedos.delete(event.pointerId);
+    if (dedos.size < 2) pincaAnterior = 0;
     const agora = performance.now();
     const curto = arrasto.soltar(event, agora);
     if (!curto || !fios.noAtlas()) return;
     // o gesto já fez a coisa dele lá no `pointerdown`
     if (fechouNesteGesto) return;
+    const parado = limiarDeClique(event.pointerType);
     const segundoDoPar =
       agora - ultimoCliqueMs < JANELA_DO_DUPLO_MS &&
-      Math.abs(event.clientX - ultimoCliqueX) <= CLIQUE_PX &&
-      Math.abs(event.clientY - ultimoCliqueY) <= CLIQUE_PX;
+      Math.abs(event.clientX - ultimoCliqueX) <= parado &&
+      Math.abs(event.clientY - ultimoCliqueY) <= parado;
     ultimoCliqueMs = agora;
     ultimoCliqueX = event.clientX;
     ultimoCliqueY = event.clientY;
@@ -196,6 +265,8 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
    */
   const onPointerCancel = (event: PointerEvent) => {
     gestoFechouGaveta = false;
+    dedos.delete(event.pointerId);
+    if (dedos.size < 2) pincaAnterior = 0;
     arrasto.cancelar(event);
   };
 
@@ -291,6 +362,8 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
       canvas.removeEventListener('dblclick', onDuploClique);
       canvas.removeEventListener('wheel', onRoda);
       arrasto.esquecer();
+      dedos.clear();
+      pincaAnterior = 0;
     },
   };
 }

@@ -1270,6 +1270,215 @@ try {
     `datas diferentes, Sóis diferentes — o Sol do Atlas tem calendário`
       + ` (${de10.md5} vs ${outraData.md5})`
   );
+
+  // ---- 19: OS GESTOS DE DEDO, num APARELHO (item 62, etapa 2) -------
+  //
+  // A prova 15 mede a roda e a pinça de TRACKPAD — as duas chegam como
+  // `wheel`, e a de trackpad traz `ctrlKey`. Num TELEFONE não existe
+  // `wheel` nenhum: com `touch-action: none` a pinça produz dois
+  // PONTEIROS, e o `ArrastoDePonteiro` ignora o segundo de propósito.
+  // Ou seja, o gesto de zoom do aparelho em que ele é O gesto de zoom
+  // simplesmente não existia — e nenhum juiz da casa podia dizê-lo,
+  // porque nenhum abria um aparelho com toque de verdade.
+  //
+  // AQUI SE VESTE O APARELHO (`mobile: true` + `setTouchEmulationEnabled`)
+  // e se dispara `Input.dispatchTouchEvent`, que é o que produz
+  // `pointerType: 'touch'`. Três gestos, os três do dedo:
+  //
+  //  (a) O TOQUE ESCOLHE, e ele anda: um dedo se apoia e escorrega, e
+  //      com o limiar de MOUSE (6 px de quarteirão) o toque virava
+  //      arrasto e não escolhia nada. O gesto aqui anda 12 px de
+  //      quarteirão de propósito — é o caso que reprovava —, e a câmera
+  //      NÃO pode andar com ele (a zona morta do dedo).
+  //  (b) O TOQUE DUPLO VAI, e o par sobrevive ao mesmo tremor.
+  //  (c) A PINÇA. Afastar os dedos APROXIMA — é a lei da casa, escrita
+  //      desde `estalosDoGiro` ("a roda para cima e a pinça ABRINDO ...
+  //      querem dizer APROXIMAR") —, e aproximar afasta. E o que ela NÃO
+  //      pode fazer: trocar `alvo`, `foco` ou degrau. É a mesma queixa
+  //      do item 73 ("nem conseguimos mais selecionar para onde vamos"),
+  //      agora pela porta do dedo.
+  //
+  // A PINÇA É A ÚLTIMA, E NADA NAVEGA DEPOIS DELA. Não é gosto de ordem:
+  // é limite MEDIDO do instrumento. Depois de uma sequência de DOIS
+  // dedos, a primeira navegação da sessão mata o emulador de toque do
+  // Chrome — calado. Medido em 2026-08-23, isolando a variável (a mesma
+  // sessão, as mesmas esperas, com e sem a pinça): sem ela o toque
+  // depois de navegar continua chegando; com ela, `dispatchTouchEvent`
+  // deixa de produzir `pointerdown` NENHUM, enquanto o mouse continua
+  // chegando, `navigator.maxTouchPoints` continua 5 e `pointer: coarse`
+  // continua verdadeiro. E não há volta: desligar e religar o toque,
+  // limpar e repor as métricas do aparelho, navegar de novo — os três
+  // remédios foram medidos e os três falham. Quem acrescentar prova de
+  // toque aqui põe-na ANTES da pinça.
+  const APARELHO = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true };
+  await sessao.send('Emulation.setDeviceMetricsOverride', APARELHO);
+  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  const dedo = (type, touchPoints) =>
+    sessao.send('Input.dispatchTouchEvent', { type, touchPoints });
+
+  // (a) e (b): o TOQUE escolhe e o TOQUE DUPLO vai, com o tremor que um
+  // dedo tem de verdade.
+  //
+  // O ALVO É O RÓTULO MAIS ISOLADO da tela, e isso é medida e não
+  // capricho: a primeira versão desta prova pegava o PRIMEIRO rótulo
+  // sobre o canvas, que na abertura é o Sol — e a 390×844 o sistema
+  // inteiro cabe num punhado de pixels (medido: Sol em 195,384 ·
+  // Mercúrio 197,383 · Vênus 196,382 · Marte 197,381 · Terra 193,386).
+  // Com os vizinhos a 2 px, um tremor de 12 px muda qual nome está mais
+  // PERTO do dedo, e o toque escolhia Mercúrio — o que não é defeito do
+  // gesto, é o hit-test fazendo exatamente o que promete. Escolhendo o
+  // rótulo mais solto da tela, a prova volta a medir o LIMIAR.
+  //
+  // E ELE TEM DE ESTAR SOBRE O CANVAS: num telefone a ficha é uma folha
+  // de baixo de 48vh (item 62), então metade da tela NÃO é céu — um
+  // rótulo perfeitamente desenhado atrás dela nunca foi tocável.
+  // `elementFromPoint` é quem responde isso.
+  await sessao.ir('atlas=1&q=cinema');
+  await sessao.assentar();
+  const nome = JSON.parse(await sessao.js(`JSON.stringify((() => {
+    const a = window.__director.rotulos.alvos
+      .filter((l) => l.desenhado === true && l.opacity >= 0.15)
+      .map((l) => ({ nome: l.name, x: Math.round(l.x * innerWidth),
+        y: Math.round(l.y * innerHeight) }))
+      .filter((l) => {
+        const e = document.elementFromPoint(l.x, l.y);
+        return Boolean(e && e.classList.contains('scene-canvas'));
+      });
+    let melhor = null, solidao = -1;
+    for (const l of a) {
+      const d = Math.min(...a.filter((o) => o !== l)
+        .map((o) => Math.hypot(o.x - l.x, o.y - l.y)));
+      if (d > solidao) { solidao = d; melhor = { ...l, vizinho: Math.round(d) }; }
+    }
+    return melhor;
+  })())`));
+  if (!nome) {
+    conferir(false, 'toque: nenhum rótulo sobre o canvas a 390×844');
+  } else {
+    /**
+     * UM TOQUE QUE ANDA 12 px de quarteirão — o que um dedo faz —, e os
+     * três eventos vão JUNTOS ao navegador.
+     *
+     * O `await` entre eles era o defeito da prova, e ele mediu-se: cada
+     * `Input.dispatchTouchEvent` custa uma ida e volta de CDP, e com a
+     * cena do Atlas ocupando o processo isso foi de 200 ms (a sessão
+     * sozinha) a mais de 500 (a sessão inteira do smoke, com o navegador
+     * aquecido). O gesto SINTÉTICO passava de meio segundo e o app o
+     * classificava, com razão, como "segurar" — a prova reprovava o
+     * produto por lentidão do instrumento. Despachados de uma vez, os
+     * três comandos entram na MESMA fila da sessão, em ordem, e o gesto
+     * dura microssegundos: mais perto de um toque real (50–150 ms).
+     *
+     * E O FECHO É A LISTA VAZIA: `touchPoints` é o que CONTINUA
+     * encostado, nunca o que saiu.
+     */
+    const tocar = () => Promise.all([
+      dedo('touchStart', [{ x: nome.x, y: nome.y, id: 1 }]),
+      dedo('touchMove', [{ x: nome.x + 6, y: nome.y + 6, id: 1 }]),
+      dedo('touchEnd', []),
+    ]);
+    const ondeEstaACamera = async () => JSON.parse(await sessao.js(
+      'JSON.stringify(window.__director.engine.camera.position.toArray())'
+    ));
+    const andou = (a, b) =>
+      Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / Math.hypot(...b);
+    const cameraAntes = await ondeEstaACamera();
+    await tocar();
+    await sessao.assentar();
+    const escolhido = await sessao.js(
+      `(document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || ''`
+    );
+    const cameraDoToque = await ondeEstaACamera();
+    conferir(
+      escolhido.includes(nome.nome) && andou(cameraDoToque, cameraAntes) < 1e-9,
+      `o TOQUE ESCOLHE mesmo andando 12 px (o limiar de mouse é 6) e a câmera NÃO`
+        + ` anda (zona morta do dedo): "${nome.nome}" (vizinho a ${nome.vizinho} px)`
+        + ` → ficha "${escolhido || 'nenhuma'}", deslocamento`
+        + ` ${andou(cameraDoToque, cameraAntes).toExponential(2)} do raio`
+    );
+    // O PAR, DO ZERO — e a página nova não é conforto: mergulhar no
+    // objeto em que já se está é um NÃO-EVENTO, no dedo e no mouse
+    // (medido nos dois em 23/08: com a estrela já focada, o duplo não
+    // move a câmera um bit). É a mesma partida que a prova 7 usa para o
+    // mouse. O veredito é a CÂMERA, e não o degrau: escolher uma
+    // ESTRELA já põe o degrau em 'estrela' no primeiro toque, e o que o
+    // mergulho faz é VOAR.
+    await sessao.ir('atlas=1&q=cinema');
+    await sessao.assentar();
+    const doZero = await ondeEstaACamera();
+    await tocar();
+    await tocar();
+    await dorme(1500);
+    await sessao.assentar();
+    const cameraDoDuplo = await ondeEstaACamera();
+    conferir(
+      andou(cameraDoDuplo, doZero) > 1e-3,
+      `o TOQUE DUPLO VAI: a câmera reposicionou (andou`
+        + ` ${andou(cameraDoDuplo, doZero).toExponential(2)} do raio,`
+        + ` degrau ${await sessao.js('window.__director.escadaViva.degrau')})`
+    );
+  }
+
+  // (c) A PINÇA — e daqui para baixo NÃO SE NAVEGA (ver a nota acima).
+  await sessao.ir('atlas=1&foco=saturno&q=cinema');
+  await sessao.assentar();
+  const CEU_Y = 180;
+  const noPonto = await sessao.js(
+    `(document.elementFromPoint(195, ${CEU_Y}) || {}).className || ''`
+  );
+  conferir(
+    noPonto.includes('scene-canvas'),
+    `pinça: o ponto (195, ${CEU_Y}) numa tela de 390×844 é CÉU e não painel`
+      + ` (elemento: "${noPonto}")`
+  );
+  /**
+   * DOIS DEDOS de `de` a `ate` pixels de distância, em 12 passos.
+   *
+   * `touchPoints` É A LISTA DO QUE CONTINUA ENCOSTADO, e não a do que
+   * saiu. Soltar os dois com dois `touchEnd` de um ponto cada faz o
+   * segundo dizer "agora só o dedo 2 está encostado" DEPOIS de o dedo 2
+   * já ter saído — sequência impossível. O fecho correto é a lista com
+   * o que sobra e, por fim, a lista VAZIA.
+   */
+  const pincar = async (de, ate) => {
+    await dedo('touchStart', [
+      { x: 195 - de / 2, y: CEU_Y, id: 1 }, { x: 195 + de / 2, y: CEU_Y, id: 2 }]);
+    for (let k = 1; k <= 12; k++) {
+      const d = de + ((ate - de) * k) / 12;
+      await dedo('touchMove', [
+        { x: 195 - d / 2, y: CEU_Y, id: 1 }, { x: 195 + d / 2, y: CEU_Y, id: 2 }]);
+    }
+    await dedo('touchEnd', [{ x: 195 - ate / 2, y: CEU_Y, id: 1 }]);
+    await dedo('touchEnd', []);
+  };
+  const antesDaPincaDeDedo = await doZoom();
+  await pincar(60, 240);
+  const pincaDeDedoEm = await assentarZoom('a pinça de dois dedos');
+  const depoisDeAfastar = await doZoom();
+  conferir(
+    depoisDeAfastar.dist < antesDaPincaDeDedo.dist
+      && depoisDeAfastar.alvo === antesDaPincaDeDedo.alvo
+      && depoisDeAfastar.foco === antesDaPincaDeDedo.foco
+      && depoisDeAfastar.degrau === antesDaPincaDeDedo.degrau,
+    `a PINÇA DE DOIS DEDOS aproxima e não troca o alvo:`
+      + ` ${(antesDaPincaDeDedo.dist / antesDaPincaDeDedo.raio).toFixed(3)} →`
+      + ` ${(depoisDeAfastar.dist / depoisDeAfastar.raio).toFixed(3)} raios`
+      + ` (dedos 60→240 px), foco "${depoisDeAfastar.foco}", degrau`
+      + ` ${depoisDeAfastar.degrau}, assentou em`
+      + ` ${pincaDeDedoEm === null ? '—' : `${pincaDeDedoEm} ms`}`
+  );
+  await pincar(240, 60);
+  await assentarZoom('a pinça ao contrário');
+  const depoisDeAproximar = await doZoom();
+  conferir(
+    depoisDeAproximar.dist > depoisDeAfastar.dist
+      && depoisDeAproximar.foco === antesDaPincaDeDedo.foco,
+    `...e aproximar os dedos AFASTA, pelo mesmo caminho:`
+      + ` ${(depoisDeAfastar.dist / depoisDeAfastar.raio).toFixed(3)} →`
+      + ` ${(depoisDeAproximar.dist / depoisDeAproximar.raio).toFixed(3)} raios`
+  );
+  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  await sessao.send('Emulation.clearDeviceMetricsOverride');
 } finally {
   sessao.fechar();
 }

@@ -28,7 +28,12 @@ import {
   ArrastoDePonteiro,
   BOTAO_PRINCIPAL,
   CLIQUE_MS,
+  CLIQUE_MS_DEDO,
   CLIQUE_PX,
+  CLIQUE_PX_DEDO,
+  janelaDeClique,
+  limiarDeClique,
+  zonaMortaDoArrasto,
 } from './arrastoDePonteiro';
 import type { ToqueDePonteiro } from './arrastoDePonteiro';
 
@@ -37,8 +42,9 @@ const toque = (
   pointerId: number,
   clientX: number,
   clientY: number,
-  button = BOTAO_PRINCIPAL
-): ToqueDePonteiro => ({ pointerId, button, clientX, clientY });
+  button = BOTAO_PRINCIPAL,
+  pointerType?: string
+): ToqueDePonteiro => ({ pointerId, button, clientX, clientY, pointerType });
 
 // ------------------------------------------------------------
 // 1. A MÁQUINA
@@ -173,6 +179,74 @@ describe('ArrastoDePonteiro — o clique curto continua o de sempre', () => {
   it('os limiares são os dois de sempre — 6 px e 400 ms', () => {
     expect(CLIQUE_PX).toBe(6);
     expect(CLIQUE_MS).toBe(400);
+  });
+
+  it('...mas o DEDO não é o mouse: 16 px de quarteirão e 500 ms', () => {
+    // 6 px é tolerância de MÃO SOBRE BOTÃO; um dedo apoia e escorrega
+    // muito mais que isso, e com a régua de mouse tocar num nome no
+    // telefone virava arrasto — o céu não respondia ao toque. 16 são os
+    // 8 px de `touchSlop` do Chrome em CADA eixo, na régua de
+    // quarteirão que esta classe usa; 500 ms é o long-press das DUAS
+    // plataformas (Android e iOS), e 400 é o número do mouse.
+    expect(limiarDeClique('touch')).toBe(CLIQUE_PX_DEDO);
+    expect(janelaDeClique('touch')).toBe(CLIQUE_MS_DEDO);
+    expect(CLIQUE_PX_DEDO).toBe(16);
+    expect(CLIQUE_MS_DEDO).toBe(500);
+    // mouse, caneta e evento sem tipo ficam com os de sempre — a caneta
+    // apoia numa ponta, como o mouse num botão
+    for (const tipo of ['mouse', 'pen', undefined]) {
+      expect(limiarDeClique(tipo)).toBe(CLIQUE_PX);
+      expect(janelaDeClique(tipo)).toBe(CLIQUE_MS);
+    }
+
+    // e os limiares são os do GESTO: quem decide é o `pointerType` do
+    // `pointerdown`, guardado no dono
+    const dedo = new ArrastoDePonteiro();
+    dedo.comecar(toque(1, 100, 100, BOTAO_PRINCIPAL, 'touch'), 0);
+    dedo.mover(toque(1, 106, 106, BOTAO_PRINCIPAL, 'touch')); // 12 de quarteirão
+    expect(dedo.soltar(toque(1, 106, 106, BOTAO_PRINCIPAL, 'touch'), CLIQUE_MS)).toBe(true);
+    // o MESMO gesto com o mouse é arrasto, e continua sendo
+    const mouse = new ArrastoDePonteiro();
+    mouse.comecar(toque(1, 100, 100), 0);
+    mouse.mover(toque(1, 106, 106));
+    expect(mouse.soltar(toque(1, 106, 106), 1)).toBe(false);
+    // 16 já é arrasto até para o dedo — o limiar é estrito nos dois
+    const longe = new ArrastoDePonteiro();
+    longe.comecar(toque(1, 100, 100, BOTAO_PRINCIPAL, 'touch'), 0);
+    longe.mover(toque(1, 100 + CLIQUE_PX_DEDO, 100, BOTAO_PRINCIPAL, 'touch'));
+    expect(longe.soltar(toque(1, 116, 100, BOTAO_PRINCIPAL, 'touch'), 1)).toBe(false);
+    // ...e 500 ms já é segurar
+    const demorou = new ArrastoDePonteiro();
+    demorou.comecar(toque(1, 100, 100, BOTAO_PRINCIPAL, 'touch'), 0);
+    expect(demorou.soltar(toque(1, 100, 100, BOTAO_PRINCIPAL, 'touch'), CLIQUE_MS_DEDO))
+      .toBe(false);
+  });
+
+  it('A ZONA MORTA DO DEDO: enquanto é toque, a cena não anda', () => {
+    // MEDIDO a 390×844 em 2026-08-23: sem ela, 12 px de tremor de dedo
+    // arrastavam os rótulos até 21,5 px na tela ANTES de a soltura
+    // decidir que aquilo era um toque — o dedo pousava num nome e
+    // soltava em cima de outro. Escolher o objeto errado é pior que não
+    // escolher.
+    expect(zonaMortaDoArrasto('touch')).toBe(CLIQUE_PX_DEDO);
+    // e ela é SÓ do dedo: o mouse não treme sobre o botão, e uma zona
+    // morta ali seria mudança de tato na mesa sem defeito que a peça
+    for (const tipo of ['mouse', 'pen', undefined]) expect(zonaMortaDoArrasto(tipo)).toBe(0);
+
+    const dedo = new ArrastoDePonteiro();
+    dedo.comecar(toque(1, 100, 100, BOTAO_PRINCIPAL, 'touch'), 0);
+    // dentro da zona morta: o percurso conta, o passo não sai
+    expect(dedo.mover(toque(1, 104, 104, BOTAO_PRINCIPAL, 'touch'))).toBeNull(); // 8
+    expect(dedo.mover(toque(1, 106, 106, BOTAO_PRINCIPAL, 'touch'))).toBeNull(); // 12
+    expect(dedo.percorrido).toBe(12);
+    // o passo que ATRAVESSA a zona morta sai inteiro, e o que ela comeu
+    // é descartado — o trecho abaixo do limiar pertence ao TOQUE
+    expect(dedo.mover(toque(1, 116, 106, BOTAO_PRINCIPAL, 'touch'))).toEqual({ dx: 10, dy: 0 });
+    expect(dedo.soltar(toque(1, 116, 106, BOTAO_PRINCIPAL, 'touch'), 1)).toBe(false);
+    // no MOUSE o primeiro pixel já move a cena, como sempre moveu
+    const mouse = new ArrastoDePonteiro();
+    mouse.comecar(toque(1, 100, 100), 0);
+    expect(mouse.mover(toque(1, 101, 100))).toEqual({ dx: 1, dy: 0 });
   });
 });
 
@@ -433,11 +507,14 @@ const CSS = readdirSync(HUD_DIR)
 
 describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', () => {
   it('os dois gestos da casa importam uma máquina só', () => {
-    // os gestos trazem junto o `CLIQUE_PX`: a imobilidade do PAR de
+    // os gestos trazem junto o `limiarDeClique`: a imobilidade do PAR de
     // cliques é o MESMO limiar do clique curto, e ele tem um endereço só
+    // — e desde 2026-08-23 esse endereço responde ao `pointerType`, para
+    // que a régua de mão sobre botão (6 px) não seja aplicada ao dedo
     expect(GESTOS).toContain(
-      "import { ArrastoDePonteiro, CLIQUE_PX } from '../arrastoDePonteiro'"
+      "import { ArrastoDePonteiro, limiarDeClique } from '../arrastoDePonteiro'"
     );
+    expect(GESTOS).toContain('limiarDeClique(event.pointerType)');
     expect(GESTOS).not.toMatch(/const IMOVEL_PX\b/);
     expect(RIG).toContain("import { ArrastoDePonteiro } from '../arrastoDePonteiro'");
     // e nenhum dos dois guarda mais o estado do gesto por conta própria

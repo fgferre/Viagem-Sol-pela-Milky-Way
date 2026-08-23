@@ -172,6 +172,25 @@ export const PASSOS_DO_CONVITE_DO_ATLAS = [
   { alvo: 'escolher', texto: 'dois cliques para ir até ele' },
 ] as const;
 
+/**
+ * OS MESMOS QUATRO GESTOS, NA LÍNGUA DO DEDO (item 62, etapa 2). Até
+ * 2026-08-23 o convite do Atlas era PULADO em tela de toque, e a razão
+ * escrita era verdadeira: "o gesto do meio é a RODA, que não existe em
+ * tela de toque". Com a PINÇA existindo, ela deixou de ser — e um modo
+ * que nunca se apresenta ao visitante de telefone é pior que um convite.
+ *
+ * O QUARTO PASSO GANHA ALVO PRÓPRIO, e é a única diferença de estrutura:
+ * no mouse escolher e ir são o MESMO botão, e a dica os junta numa linha
+ * ("clique — escolher"); no dedo são dois gestos diferentes, então a
+ * dica tem dois pedaços e o convite aponta cada um no seu.
+ */
+export const PASSOS_DO_CONVITE_DO_ATLAS_TOQUE = [
+  { alvo: 'girar', texto: 'arraste para girar em volta do que está em quadro' },
+  { alvo: 'zoom', texto: 'a pinça de dois dedos aproxima e afasta' },
+  { alvo: 'escolher', texto: 'toque num nome para escolher o objeto' },
+  { alvo: 'ir', texto: 'toque duas vezes para ir até ele' },
+] as const;
+
 export function Convite({
   passo,
   passos = PASSOS_DO_CONVITE,

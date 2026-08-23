@@ -1532,6 +1532,67 @@ async function despirAparelho(s) {
  */
 async function julgarCelular(s) {
   const ALVO_DE_TOQUE_PX = 44;
+
+  // ---- PARTE 0: O CONVITE, QUE AGORA ABRE NO TELEFONE --------------
+  // Até 2026-08-23 o convite do Atlas era PULADO em `pointer: coarse`, e
+  // a razão escrita era verdadeira: "o gesto do meio é a RODA, que não
+  // existe em tela de toque". Com a PINÇA existindo ela deixou de ser, e
+  // o modo passa a se apresentar a quem chega de telefone. Os quatro
+  // passos falam a língua do dedo, e cada um aponta um pedaço REAL da
+  // dica do rodapé — que também trocou de gestos.
+  //
+  // ELE VEM PRIMEIRO de propósito: o convite abre na PRIMEIRA entrada, e
+  // as partes 1 a 5 medem o estado de regime. Fechá-lo aqui com o
+  // "entendi" grava `conviteAtlasVisto` e tira-o do caminho delas; no
+  // fim da função o storage é limpo, porque o juiz do convite de MESA
+  // (mais abaixo) precisa de uma primeira entrada de novo.
+  await vestirAparelho(s, ...APARELHOS[0]);
+  await s.js("window.localStorage.removeItem('viagem-prefs')");
+  await s.ir(`atlas=1&${PIN}`);
+  await dorme(300);
+  const passos = [];
+  for (let i = 0; i < 4; i++) {
+    passos.push(JSON.parse(await s.js(`JSON.stringify({
+      texto: (document.querySelector('.convite-texto') || {}).innerText || '',
+      conta: (document.querySelector('.convite-conta') || {}).innerText || '',
+      alvo: (() => {
+        const r = [...document.querySelectorAll('.spotlight-mascara rect')]
+          .map((n) => Number(n.getAttribute('width')))
+          .find((w) => Number.isFinite(w) && w > 0 && w < innerWidth);
+        return r ?? null;
+      })(),
+    })`)));
+    await s.js(`(() => { const b = [...document.querySelectorAll('.convite-linha button')]
+      .find((x) => /continuar|entendi/.test(x.textContent.trim())); if (b) b.click(); })()`);
+    await dorme(150);
+  }
+  const dicaDeToque = await s.js(
+    "(document.querySelector('.atlas-rodape .free-hint') || {}).textContent || ''"
+  );
+  conferir(
+    passos.every((p) => p.texto && p.alvo !== null),
+    `convite no telefone: os 4 passos abrem e cada um FURA um pedaço da dica —`
+      + ` ${passos.map((p) => `${p.conta.trim()}:${p.alvo}px`).join(' · ')}`
+  );
+  conferir(
+    /pinça/i.test(passos[1].texto) && /toque num nome/i.test(passos[2].texto)
+      && /duas vezes/i.test(passos[3].texto),
+    `convite no telefone: os gestos são os do DEDO — "${passos.map((p) => p.texto).join('" · "')}"`
+  );
+  conferir(
+    /pinça — zoom/.test(dicaDeToque) && /toque duplo — ir/.test(dicaDeToque)
+      // os dois gestos que NÃO existem no aparelho: a roda e a tecla.
+      // (`esc — voltar` inteiro, e não só "esc": "escolher" tem as três
+      // letras dentro, e a primeira versão desta linha reprovou por isso)
+      && !/roda/.test(dicaDeToque) && !/esc —/.test(dicaDeToque),
+    `dica no telefone: a roda e o Esc saem, a pinça e o toque duplo entram —`
+      + ` "${dicaDeToque}"`
+  );
+  conferir(
+    (await s.js("!!document.querySelector('.spotlight')")) === false,
+    'convite no telefone: o "entendi" fecha, e as partes seguintes medem o regime'
+  );
+
   for (const fator of [0.85, 1, 1.4]) {
     for (const [query, esperadas] of [
       ['atlas=1', ALCAS_SEM_SELECAO],
@@ -1985,6 +2046,9 @@ async function julgarCelular(s) {
   await s.ir(`atlas=1&${PIN}`);
   await dorme(200);
   await medirCobertura(s, 'a FRESTA entre as duas faixas (761–767)', false);
+  // o convite de MESA precisa de uma primeira entrada, e a parte 0
+  // gravou `conviteAtlasVisto` neste perfil
+  await s.js("window.localStorage.removeItem('viagem-prefs')");
   await despirAparelho(s);
 }
 

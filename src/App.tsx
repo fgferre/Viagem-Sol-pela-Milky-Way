@@ -31,7 +31,11 @@ import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca, BotaoDaBusca } from './components/PaletaDeBusca';
 import { FichaDoObjeto, BotaoDaFicha } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
-import { Convite, PASSOS_DO_CONVITE_DO_ATLAS } from './components/Spotlight';
+import {
+  Convite,
+  PASSOS_DO_CONVITE_DO_ATLAS,
+  PASSOS_DO_CONVITE_DO_ATLAS_TOQUE,
+} from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { useDirector, escolherAlvo } from './hooks/useDirector';
@@ -126,6 +130,15 @@ const AREAS_RESERVADAS = [
   '.atlas-selo-detalhe',
   '.filme-rodape',
 ].join(', ');
+
+/**
+ * A TELA É DE TOQUE? — `pointer: coarse`, lido num lugar só. Ele é
+ * CAPACIDADE e não largura: quem decide GEOMETRIA é
+ * `LARGURA_DO_CELULAR_PX` (o `useCelular`), e a casa reservou o `coarse`
+ * para CONTEÚDO — quais gestos a dica nomeia e se o convite abre. Fora
+ * do componente porque não tem estado e é chamado de dois lugares.
+ */
+const telaDeToque = () => window.matchMedia?.('(pointer: coarse)').matches ?? false;
 
 export default function App() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -436,18 +449,21 @@ export default function App() {
   // ---- o convite, na PRIMEIRA entrada no voo livre (F5) ---------------
   // `conviteVisto` é marca de primeira visita, não gosto: ele mora no
   // storage (que é onde a casa guarda alocação e onboarding) e não na
-  // URL. Em tela de toque o convite não abre — dois dos três gestos são
-  // de teclado e mouse, e ensinar WASD a quem não tem teclado é mentir.
+  // URL.
   useEffect(() => {
     if (phase !== 'free' && phase !== 'atlas') return;
     const onde = phase === 'free' ? 'voo' : 'atlas';
     const chave = onde === 'voo' ? 'conviteVisto' : 'conviteAtlasVisto';
     if (lerPreferencias()[chave]) return;
-    // O GATE DE TELA DE TOQUE VALE PARA OS DOIS, e por razões irmãs: no
-    // voo livre dois dos três gestos são de teclado; no Atlas o gesto do
-    // meio é a RODA, que não existe em tela de toque. Ensinar um gesto
-    // que o aparelho não tem é mentir.
-    if (window.matchMedia?.('(pointer: coarse)').matches) return;
+    // O GATE DE TELA DE TOQUE ESTREITA PARA O VOO LIVRE (item 62, etapa
+    // 2). Ele valia para os dois, e a razão escrita no lado do Atlas era
+    // "o gesto do meio é a RODA, que não existe em tela de toque" —
+    // verdade até 2026-08-23, e falsa desde que a PINÇA existe. Agora o
+    // Atlas em toque tem os quatro gestos, e ensiná-los é o contrário de
+    // mentir. No VOO LIVRE o gate fica: lá dois dos três gestos são
+    // WASD, e ensinar teclado a quem não tem teclado continua sendo
+    // mentira.
+    if (onde === 'voo' && telaDeToque()) return;
     setConvite({ onde, passo: 0 });
   }, [phase]);
 
@@ -704,7 +720,7 @@ export default function App() {
             desta linha, que fica na tela depois que o convite sai. */}
         {hud.dicaDeVoo && (
           <div className="free-hint">
-            {window.matchMedia?.('(pointer: coarse)').matches ? (
+            {telaDeToque() ? (
               <>
                 <span data-spot="olhar">toque e arraste — olhar</span> ·{' '}
                 <span data-spot="visitar">toque num nome — visitar</span>
@@ -842,10 +858,33 @@ export default function App() {
               mockups), por OPACIDADE e com a caixa no lugar: ver
               `.free-hint.apagada`. Tirá-la do fluxo cresceria o retângulo
               útil e a câmera daria um pulo no meio da sessão. */}
+          {/* E A DICA TROCA DE GESTOS NA TELA DE TOQUE (item 62, etapa
+              2). Não é uma segunda dica: são as MESMAS quatro coisas
+              ditas na língua do aparelho. Duas trocam de nome (a roda
+              vira a PINÇA, que passou a existir; o clique vira o toque)
+              e a quarta troca de conteúdo — no mouse "escolher" e "ir"
+              são o mesmo botão e cabem numa palavra só, no dedo são
+              gestos diferentes (um toque, dois toques) e o "esc — voltar"
+              sai porque não há tecla para tocar.
+              O ORÇAMENTO É O MESMO, e continua medido: 68 caracteres
+              contra os 64 do mouse, dentro das duas linhas que o juiz de
+              a11y mede a 320×568 — uma terceira linha comeria o céu que
+              esta mesma etapa acabou de devolver. */}
           <div className={`free-hint ${girouNoAtlas ? 'apagada' : ''}`}>
-            <span data-spot="girar">arraste — girar</span> ·{' '}
-            <span data-spot="zoom">roda — zoom</span> ·{' '}
-            <span data-spot="escolher">clique — escolher</span> · esc — voltar
+            {telaDeToque() ? (
+              <>
+                <span data-spot="girar">arraste — girar</span> ·{' '}
+                <span data-spot="zoom">pinça — zoom</span> ·{' '}
+                <span data-spot="escolher">toque — escolher</span> ·{' '}
+                <span data-spot="ir">toque duplo — ir</span>
+              </>
+            ) : (
+              <>
+                <span data-spot="girar">arraste — girar</span> ·{' '}
+                <span data-spot="zoom">roda — zoom</span> ·{' '}
+                <span data-spot="escolher">clique — escolher</span> · esc — voltar
+              </>
+            )}
           </div>
 
           {/* O SELO. Lê o estado da vista do Director a cada render — e o
@@ -1120,7 +1159,9 @@ export default function App() {
       {convite?.onde === 'atlas' && phase === 'atlas' && !girouNoAtlas && (
         <Convite
           passo={convite.passo}
-          passos={PASSOS_DO_CONVITE_DO_ATLAS}
+          passos={
+            telaDeToque() ? PASSOS_DO_CONVITE_DO_ATLAS_TOQUE : PASSOS_DO_CONVITE_DO_ATLAS
+          }
           onPasso={(n) => setConvite({ onde: 'atlas', passo: n })}
           onFechar={fecharConvite}
         />

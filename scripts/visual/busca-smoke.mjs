@@ -653,6 +653,85 @@ try {
     nua.existe && nua.filhaDireta && !nua.desenhada,
     `a paleta é filha direta de .hud-root e o ?shot=2 a esconde (${JSON.stringify(nua)})`
   );
+
+  // ---- 10: A PALETA NUM APARELHO, PELO DEDO (item 62) ---------------
+  //
+  // Tudo acima abre a paleta pelo TECLADO — a tecla "/" e o Ctrl+K —,
+  // e num telefone não há nem uma nem outra. Lá a porta é a ALÇA ⌕
+  // Buscar, e o que a abre é um DEDO: `Input.dispatchTouchEvent` num
+  // aparelho vestido (`mobile: true` + toque emulado), que é o que
+  // produz `pointerType: 'touch'`. A digitação continua sendo do
+  // teclado de verdade (é o teclado do sistema no aparelho), e o que se
+  // cobra é a cadeia inteira do dedo: a alça abre a folha, a busca acha,
+  // a escolha enquadra e a FICHA do alvo sobe.
+  const APARELHO = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true };
+  await sessao.send('Emulation.setDeviceMetricsOverride', APARELHO);
+  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  await sessao.ir(`atlas=1&${PIN}`);
+  await dorme(300);
+  const alca = await sessao.js(`(() => {
+    const b = document.querySelector('.atlas-alcas [data-abre-dialogo="busca"]');
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    return JSON.stringify({ x: Math.round(r.left + r.width / 2),
+      y: Math.round(r.top + r.height / 2), alto: Math.round(r.height) });
+  })()`);
+  if (!alca) {
+    conferir(false, 'toque: a alça ⌕ Buscar não existe a 390×844');
+  } else {
+    const p = JSON.parse(alca);
+    const dedo = (type, touchPoints) =>
+      sessao.send('Input.dispatchTouchEvent', { type, touchPoints });
+    // Um toque de dedo ANDA: 12 px de quarteirão, o caso que o limiar de
+    // mouse (6 px) reprovava. Os três eventos vão JUNTOS ao navegador —
+    // um `await` por evento custa uma ida e volta de CDP, e medido no
+    // `atlas-smoke` isso esticou o gesto sintético além de meio segundo,
+    // que o app classifica como "segurar". Na mesma fila da sessão eles
+    // chegam em ordem e o gesto dura microssegundos.
+    // `touchPoints` é a lista do que CONTINUA encostado, não a do que
+    // saiu: o fecho é a lista VAZIA. Ver a nota do `pincar` no
+    // `atlas-smoke` — a leitura errada wedgeia o emulador de toque da
+    // sessão inteira, calado.
+    await Promise.all([
+      dedo('touchStart', [{ x: p.x, y: p.y, id: 1 }]),
+      dedo('touchMove', [{ x: p.x + 6, y: p.y + 6, id: 1 }]),
+      dedo('touchEnd', []),
+    ]);
+    await dorme(400);
+    const aberta = JSON.parse(await sessao.js(`JSON.stringify((() => {
+      const campo = document.querySelector('.atlas-busca-campo');
+      const f = document.querySelector('[data-dialogo="busca"]');
+      const r = f ? f.getBoundingClientRect() : null;
+      return { aberta: Boolean(f), focada: document.activeElement === campo,
+        folha: r ? [Math.round(r.left), Math.round(r.top),
+          Math.round(r.width), Math.round(r.height)] : null };
+    })())`));
+    conferir(
+      aberta.aberta && aberta.focada && aberta.folha[2] === 390,
+      `o DEDO abre a paleta pela alça ⌕ (alvo de ${p.alto} px de alto):`
+        + ` folha [${aberta.folha ?? 'ausente'}] de borda a borda, campo focado`
+        + ` ${aberta.focada}`
+    );
+    await sessao.digitar('netuno');
+    await dorme(300);
+    await sessao.teclar('Enter');
+    await sessao.assentar();
+    const noAparelho = JSON.parse(await sessao.js(`JSON.stringify({
+      alvo: (document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || '',
+      ficha: [...document.querySelectorAll('[data-dialogo]')]
+        .map((d) => d.getAttribute('data-dialogo')),
+      foco: window.__director.escada.focoCorpoId,
+    })`));
+    conferir(
+      noAparelho.foco === 'neptune'
+        && noAparelho.ficha.length === 1 && noAparelho.ficha[0] === 'ficha',
+      `...e a escolha enquadra e sobe a FICHA no lugar da paleta —`
+        + ` foco "${noAparelho.foco}", alça "${noAparelho.alvo}",`
+        + ` folhas: ${noAparelho.ficha.join(', ') || 'nenhuma'}`
+    );
+  }
+  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  await sessao.send('Emulation.clearDeviceMetricsOverride');
 } finally {
   sessao.fechar();
 }

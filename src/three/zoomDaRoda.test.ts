@@ -26,6 +26,7 @@ import {
   distanciaAposEstalos,
   estalosDoGiro,
   passoDeZoomLog,
+  pixelsDaPinca,
   pixelsDoGiro,
 } from './zoomDaRoda';
 
@@ -171,6 +172,59 @@ describe('a inércia — impulso, atrito, zona morta', () => {
   });
 });
 
+describe('a PINÇA DE DOIS DEDOS — o gesto que não existia em tela de toque', () => {
+  it('afastar os dedos ao DOBRO aproxima a câmera à METADE', () => {
+    // a lei é manipulação direta, e o 1:1 é EXATO junto ao piso, onde um
+    // estalo vale `PASSO_LOG_PERTO`: meia distância são log10(2) = 0,301
+    // década, ou 6,02 estalos, ou 602 px pela régua de `ESTALO_EM_PX`
+    expect(pixelsDaPinca(2)).toBeCloseTo(-(ESTALO_EM_PX * Math.log10(2)) / PASSO_LOG_PERTO, 12);
+    expect(pixelsDaPinca(2) / ESTALO_EM_PX).toBeCloseTo(-6.0206, 4);
+    const meia = distanciaAposEstalos(100, 1, 1e6, pixelsDaPinca(2) / ESTALO_EM_PX);
+    // a 100 de uma faixa [1, 1e6] o passo já não é o de perto — o gesto
+    // é MAIS forte longe, que é o mesmo tempero da roda
+    expect(meia).toBeLessThan(50);
+    // ...e junto ao piso ele é a metade exata
+    expect(distanciaAposEstalos(1.0001, 1, 1e6, pixelsDaPinca(2) / ESTALO_EM_PX))
+      .toBeCloseTo(1, 3);
+  });
+
+  it('o sinal e a simetria: aproximar os dedos AFASTA, e ida e volta se cancelam', () => {
+    expect(pixelsDaPinca(2)).toBeLessThan(0);
+    expect(pixelsDaPinca(0.5)).toBeGreaterThan(0);
+    // (`-0`: log10(1) é zero e o sinal negativo da fórmula o carrega —
+    // impulso zero é impulso zero, e a velocidade nem se mexe)
+    expect(pixelsDaPinca(1)).toBeCloseTo(0, 15);
+    // log é aditivo: uma pinça em N passos vale o mesmo que num passo só
+    const emUm = pixelsDaPinca(2);
+    let emQuatro = 0;
+    for (let i = 0; i < 4; i++) emQuatro += pixelsDaPinca(Math.pow(2, 1 / 4));
+    expect(emQuatro).toBeCloseTo(emUm, 10);
+  });
+
+  it('dedos no mesmo pixel não mandam a câmera para o infinito', () => {
+    for (const cru of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(pixelsDaPinca(cru)).toBe(0);
+    }
+  });
+
+  it('um dono do impulso: `girar` é a casca de `empurrar`', () => {
+    const pelaRoda = new ZoomDaRoda();
+    pelaRoda.girar(pixel(-100));
+    const peloEmpurrao = new ZoomDaRoda();
+    peloEmpurrao.empurrar(-100);
+    expect(peloEmpurrao.avancar(1 / 60)).toBe(pelaRoda.avancar(1 / 60));
+    // e a pinça soma na MESMA velocidade, com o MESMO atrito e a MESMA
+    // zona morta — dois donos seriam duas inércias na câmera
+    const misto = new ZoomDaRoda();
+    misto.girar(pixel(-100));
+    misto.empurrar(pixelsDaPinca(2));
+    let total = 0;
+    for (let i = 0; i < 600 && misto.embalando; i++) total += misto.avancar(1 / 60);
+    expect(total).toBeCloseTo((-100 + pixelsDaPinca(2)) / ESTALO_EM_PX, 1);
+    expect(misto.embalando).toBe(false);
+  });
+});
+
 describe('o passo em LOG — velocidade proporcional à distância, de graça', () => {
   it('um estalo vale a MESMA fração da distância em qualquer escala', () => {
     // é isto que o log compra: 0,05 década é 12,2% da distância, seja
@@ -292,6 +346,36 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
 
   it('a dica conta ao visitante que a roda dá zoom', () => {
     expect(APP).toMatch(/roda — zoom/);
+    // ...e em TELA DE TOQUE ela conta o gesto que existe lá: a pinça. O
+    // convite do Atlas deixou de ser pulado no `coarse` pela mesma razão
+    // — a frase que o pulava ("a roda não existe em tela de toque")
+    // deixou de valer no dia em que a pinça passou a existir.
+    expect(APP).toMatch(/pinça — zoom/);
+    expect(APP).toMatch(/toque duplo — ir/);
+    expect(APP).toContain("if (onde === 'voo' && telaDeToque()) return;");
+  });
+
+  it('a PINÇA DE DOIS DEDOS está ligada, e o segundo dedo suspende o arrasto', () => {
+    // o gesto de toque existe no canvas: dois ponteiros vivos, a razão
+    // entre as distâncias, e o MESMO impulso da roda
+    expect(GESTOS).toContain('roda.empurrar(pixelsDaPinca(agora / pincaAnterior))');
+    // sem esta linha o primeiro dedo continuaria ORBITANDO durante a
+    // pinça — a mão inteira anda numa pinça, e o giro sairia de graça
+    const abertura = GESTOS.slice(
+      GESTOS.indexOf('const onPointerDown'),
+      GESTOS.indexOf('const onPointerMove')
+    );
+    expect(abertura).toContain('arrasto.esquecer();');
+    expect(abertura.indexOf('arrasto.esquecer()')).toBeLessThan(
+      abertura.indexOf('arrasto.comecar')
+    );
+    // e o par se desfaz nas DUAS saídas do gesto, senão a primeira razão
+    // do gesto seguinte seria medida contra uma distância de outro gesto
+    for (const saida of ['const onPointerUp', 'const onPointerCancel']) {
+      const corpo = GESTOS.slice(GESTOS.indexOf(saida), GESTOS.indexOf(saida) + 900);
+      expect(corpo).toContain('dedos.delete(event.pointerId)');
+      expect(corpo).toContain('if (dedos.size < 2) pincaAnterior = 0;');
+    }
   });
 });
 
