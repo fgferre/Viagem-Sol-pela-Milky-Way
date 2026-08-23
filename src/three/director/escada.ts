@@ -166,6 +166,14 @@ export class Escada {
   /** a câmera saltou — o punho é do director (LUT do raymarch, snap da
    *  cessão e contagem da captura moram lá) */
   private readonly teletransportou: () => void;
+  /**
+   * O VISITANTE PEDIU A CASA — o gesto que desarma a trava do disco
+   * (item 61, §6). O dono da trava é o director (`leftDisk`, lido no
+   * tick); o único gesto que a apaga é este enquadramento, e ele nasce
+   * aqui: é o Esc, o botão "sistema" do cabeçalho da ficha e a linha
+   * ESCALA do selo, os três pelo mesmo `focarNoSistema`.
+   */
+  private readonly pediuACasa: () => void;
   /** as duas emissões da escada para o React — fio de DirectorEvents */
   private readonly events: {
     onFoco: (nome: string | null) => void;
@@ -191,6 +199,7 @@ export class Escada {
     rotulos: Rotulos;
     solRaioPc: number;
     teletransportou: () => void;
+    pediuACasa: () => void;
     events: Escada['events'];
     fios: Escada['fios'];
   }) {
@@ -198,6 +207,7 @@ export class Escada {
     this.maquinaDoTempo = dono.maquinaDoTempo;
     this.solRaioPc = dono.solRaioPc;
     this.teletransportou = dono.teletransportou;
+    this.pediuACasa = dono.pediuACasa;
     this.events = dono.events;
     this.fios = dono.fios;
     this.escolha = new Escolha({
@@ -490,6 +500,11 @@ export class Escada {
     this.events.onFoco(null);
     this.emitirEscada();
     this.teletransportou();
+    // ESTE é o gesto que pede a casa, e é ele que desarma a trava do
+    // disco (item 61, §6): quem volta ao enquadramento de abertura está
+    // pedindo o ambiente de casa, não a história do trajeto. A trava
+    // mora no director; aqui só se diz que o gesto aconteceu.
+    this.pediuACasa();
   }
 
   /**

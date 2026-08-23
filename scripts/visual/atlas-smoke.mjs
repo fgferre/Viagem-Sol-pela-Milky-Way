@@ -14,10 +14,16 @@
 //     por `via=sinal`. Se ela cair no teto de segurança (`via=quadros`),
 //     o getter `captura` não aprendeu a fase e todo gate futuro do Atlas
 //     estaria medindo espera cega — o modo caro de falhar.
-//  3. ABERTURA REPRODUZÍVEL. Entrar no Atlas a partir de t=10, t=100 e
-//     t=250 tem de dar o MESMO md5: nenhum resíduo do trajeto pode
-//     atravessar o portal. Foi esta trinca que denunciou a LUT do
-//     raymarch herdada do voo.
+//  3. ABERTURA REPRODUZÍVEL. Entrar no Atlas a partir de t=10 e t=100
+//     tem de dar o MESMO md5: nenhum resíduo do trajeto pode atravessar
+//     o portal. Foi esta trinca que denunciou a LUT do raymarch herdada
+//     do voo. A TERCEIRA entrada (t=250) mudou de papel em 23/08 (item
+//     61, §6): ela vem da CODA, com o disco já para trás, e a trava do
+//     disco passou a atravessar o portal — então o md5 dela TEM de
+//     diferir, e é esse veredito que denuncia o modo mudando os
+//     gráficos sozinho. Os três instantes seguem sendo escolhidos por
+//     regime: t=10 dentro dos 2 pc de casa, t=100 a 1.911 pc, t=250 de
+//     volta em casa com o palco quente.
 //
 //     O RELÓGIO DO CÉU VAI PINADO (`&jd=EPOCA`), e não é conforto. O
 //     `?t=250` é grampeado no FIM do filme (193 s), e a partir de
@@ -131,10 +137,30 @@ try {
     `o relógio do céu vai PINADO nas três entradas — a coda não o move`
       + ` (${[...relogios].map(([t, jd]) => `t=${t} ${jd}`).join(' · ')})`
   );
-  const vistas = [...new Set(doAtlas.values())];
+  // A ABERTURA É REPRODUZÍVEL DE DENTRO DO DISCO, e a CODA traz o disco
+  // consigo (item 61, §6 — 23/08). Até aqui a prova cobrava as TRÊS
+  // entradas com o mesmo md5, e cobrava certo enquanto a troca de fase
+  // APAGAVA a trava do disco. Ela deixou de apagar: a trava atravessa o
+  // portal, então quem entra vindo da coda (t=250, grampeado em 193 s,
+  // com `T_SAIDA_DO_DISCO` muito para trás) chega ao Atlas com o
+  // ambiente de FORA do disco — cartão da galáxia aceso, nebulosa
+  // apagada —, e quem entra de t=10 ou t=100 chega com o ambiente de
+  // dentro. As duas de dentro continuam bit a bit idênticas: é elas que
+  // provam que nenhum resíduo do TRAJETO atravessa o portal (foi esta
+  // trinca que denunciou a LUT do raymarch herdada do voo).
+  //
+  // O md5 da coda ser DIFERENTE é o veredito, não o defeito: era ele
+  // que denunciava o modo mudando os gráficos sozinho.
+  const deDentro = [...new Set([10, 100].map((t) => doAtlas.get(t)))];
+  const legenda = [...doAtlas].map(([t, h]) => `t=${t} ${h}`).join(' · ');
   conferir(
-    vistas.length === 1,
-    `abertura reproduzível: ${[...doAtlas].map(([t, h]) => `t=${t} ${h}`).join(' · ')}`
+    deDentro.length === 1,
+    `abertura reproduzível de DENTRO do disco (t=10 e t=100): ${legenda}`
+  );
+  conferir(
+    doAtlas.get(250) !== deDentro[0],
+    `...e a CODA leva o disco consigo: o ambiente atravessa o portal`
+      + ` (t=250 ${doAtlas.get(250)} ≠ ${deDentro[0]})`
   );
 
   // ---- 3b: A QUARTA ENTRADA, a porta da ABERTURA (item 60) ---------
@@ -158,9 +184,9 @@ try {
     `a porta da abertura entra no Atlas: fase = '${faseDaPorta}'`
   );
   conferir(
-    daPorta === vistas[0],
-    `a porta da abertura chega ao MESMO Atlas dos três cliques`
-      + ` (${daPorta} vs ${vistas[0]})`
+    daPorta === deDentro[0],
+    `a porta da abertura chega ao MESMO Atlas de quem entra de dentro`
+      + ` do disco (${daPorta} vs ${deDentro[0]})`
   );
 
   // ---- 4: o deep-link e o "Partir" sem viagem anterior -------------

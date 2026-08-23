@@ -271,8 +271,14 @@ export const HUD_POR_FASE = {
  * 10. `tick` — ramo do voo livre ....................... não.
  * 11. `tick` — ramo da intro ........................... não; o Atlas
  *     ganha ramo próprio, que escreve a câmera pelo AtlasRig.
- * 12. `tick` — latch `leftDisk` ........................ cai no `else`
- *     como todas as fases fora da viagem: sem latch, ambiente relocável.
+ * 12. `tick` — latch `leftDisk` ........................ ARMA, como toda
+ *     fase que escreve câmera (item 61, §6 — 23/08). Era o contrário: a
+ *     trava caía num `else` que a apagava fora da viagem, e o preço era
+ *     medido — entrar no Atlas na coda acendia a nebulosa e apagava o
+ *     cartão da galáxia no mesmo lugar, só por trocar de modo. Hoje ela
+ *     arma por POSIÇÃO onde `ESCRITOR_DE_CAMERA` não é 'nenhum',
+ *     atravessa o portal nos dois sentidos e só é desarmada pelos dois
+ *     gestos que pedem a casa (`escada.focarNoSistema` e `play()`).
  * 13. `tick` — rótulos em 'journey' ou 'free' .......... ganha 'atlas'.
  * 14. `tick` — ramo editorial de rótulos da viagem ..... não; o Atlas usa
  *     o ramo do voo livre (7 rótulos, sem filtro de centro).

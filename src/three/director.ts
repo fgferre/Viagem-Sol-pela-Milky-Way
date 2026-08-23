@@ -545,6 +545,11 @@ export class Director {
     rotulos: this.rotulos,
     solRaioPc: this.solRaioPc,
     teletransportou: () => this.teletransportou(),
+    // o gesto que pede a casa desarma a trava do disco (item 61, §6) —
+    // a trava é campo do director, o gesto nasce na escada
+    pediuACasa: () => {
+      this.leftDisk = false;
+    },
     events: {
       onFoco: (nome) => this.events.onFoco(nome),
       onEscada: (estado) => this.events.onEscada(estado),
@@ -1532,6 +1537,13 @@ export class Director {
       // velha e a reposição é seca — a entrada acontece atrás do véu,
       // nunca por rampa (D3: não é travessia física)
       this.focarNoSistema();
+      // A TRAVA DO DISCO ATRAVESSA O PORTAL NOS DOIS SENTIDOS (item 61,
+      // §6). O `partirDoAtlas` já a devolvia; a ENTRADA passa a aplicá-la.
+      // Vem DEPOIS do `focarNoSistema` de propósito: aquele método é o
+      // gesto "me leve para casa" e por isso DESARMA a trava — mas aqui
+      // ele não é gesto nenhum, é só como a entrada põe a câmera. A
+      // história é do visitante, não da colocação.
+      if (this.retomada) this.leftDisk = this.retomada.leftDisk;
       this.setPhase('atlas');
     });
   }
@@ -2268,10 +2280,30 @@ export class Director {
     // galáxia. Só camadas fisicamente solares continuam com dHome. A
     // conta mora em `baseGalactica` porque o roteiro também a lê.
     const inDisk = dentroDoDisco(cam.position);
-    if (this.phase === 'journey') {
-      if (inDisk <= LIMIAR_FORA_DO_DISCO) this.leftDisk = true;
-    } else {
-      this.leftDisk = false;
+    // A TRAVA DO DISCO É LEI DOS DOIS MODOS (item 61, §6 — 23/08). Até
+    // aqui ela era só da viagem: `if (fase === 'journey') arma; else
+    // leftDisk = false`. O `else` era o defeito — ele apagava HISTÓRIA
+    // por troca de FASE, e o sintoma é medível: entrar no Atlas na coda
+    // (t=188, câmera em casa, disco já para trás) devolvia `env = 1`
+    // onde o filme mostrava `env = 0`. Nebulosa acendendo e cartão da
+    // galáxia apagando no MESMO lugar, só porque o modo mudou — é
+    // literalmente "os gráficos mudam de um modo para o outro".
+    //
+    // Agora a trava ARMA POR POSIÇÃO em toda fase que ESCREVE CÂMERA, e
+    // quem responde quais são é o mapa (`ESCRITOR_DE_CAMERA`), nunca uma
+    // cadeia de `if` — o idioma da casa desde a Onda 5. Em 'end' e
+    // 'loading' ninguém escreve câmera e ninguém arma: a trava fica como
+    // a última fase que escreveu a deixou, que é a verdade (a câmera
+    // também ficou).
+    //
+    // E ela não é apagada por troca de fase nenhuma. Só DOIS gestos a
+    // desarmam, e os dois PEDEM A CASA: `escada.focarNoSistema` (o Esc,
+    // o botão "sistema" e a linha ESCALA do selo) e `play()`. Assim
+    // `env` é função da POSIÇÃO mais uma HISTÓRIA que os dois modos
+    // compartilham, e o par nebulosa/galáxia deixa de saber que existe
+    // modo.
+    if (ESCRITOR_DE_CAMERA[this.phase] !== 'nenhum' && inDisk <= LIMIAR_FORA_DO_DISCO) {
+      this.leftDisk = true;
     }
     const env = this.leftDisk ? 0 : inDisk;
 
