@@ -40,7 +40,14 @@ const ESPELHO = readFileSync(
   'utf8'
 );
 // os DOIS hospedeiros do seletor de qualidade (Ajustes D) e o medidor
-const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
+// O QUE O APP DESENHA são DOIS arquivos desde 23/08: a barra de
+// controles e a fileira de alças saíram do `App.tsx` para
+// `components/BarraOuAlcas.tsx` (§11 do AGENTS), e as duas continuam
+// sendo o mesmo assunto para quem lê daqui. Ler só um deles faria estas
+// provas passarem a acusar a MUDANÇA DE ENDEREÇO em vez do defeito.
+const APP =
+  readFileSync(new URL('../App.tsx', import.meta.url), 'utf8') +
+  readFileSync(new URL('../components/BarraOuAlcas.tsx', import.meta.url), 'utf8');
 const AJUSTES = readFileSync(
   new URL('../components/Ajustes.tsx', import.meta.url),
   'utf8'

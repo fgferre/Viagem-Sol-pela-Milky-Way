@@ -2208,9 +2208,17 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
       // acima de 760 px, e o medidor devolve nulo para quem não está no
       // DOM — a mesma linha serve os dois arranjos.
       '.atlas-alcas',
-      // ...e a TARJA de baixo, que no telefone é o piso da base e no
-      // arranjo de mesa já está dentro do que o selo mede
-      '.letterbox.bottom',
+      // AS DUAS TARJAS DE CINEMA, e as duas por inteiro: elas são o PISO
+      // de cada borda, e é justamente o que a declaração soma primeiro
+      // (LETTERBOX_FRACAO na mesa, LETTERBOX_CELULAR no telefone). A de
+      // CIMA faltava aqui até 23/08, e a falta era assimétrica: o
+      // "topo declarado ≥ medido"
+      // comparava contra uma medida que nunca via a tarja, então bastava a
+      // peça mais alta do topo ser MENOR que ela — que é exatamente o
+      // telefone, onde só o "Partir" mora lá em cima, dentro da tarja —
+      // para o piso real do topo ficar fora da cobrança. No arranjo de
+      // mesa a barra já a engolia, e por isso o buraco passou calado.
+      '.letterbox.top', '.letterbox.bottom',
     ].map(medir).filter(Boolean);
     // A DICA SAI DA COBRANÇA NO TELEFONE, e é a decisão declarada do
     // item 62 (ver retanguloDoAtlas.ts): lá ela é position absolute, apaga

@@ -13,23 +13,14 @@ import type { NamedStar } from './three/config';
 import { cartografiaMedida } from './three/cartography/galacticAssets';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import { TIER_DE_PRODUTO } from './three/core/engine';
-import type { EscolhaDeQualidade } from './three/core/engine';
-import { QUALIDADES, rotuloDaQualidade } from './three/atlasConfig';
 import { LabelCanvas } from './components/LabelCanvas';
-import { gatilhoDoDialogo } from './lib/dialogFocus';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
-import {
-  GavetaDeCamadas,
-  GavetaDoTempo,
-  BotaoDaGaveta,
-  BotaoDoTempo,
-  Selo,
-  BarraDoTempo,
-} from './components/HudDoAtlas';
+import { BarraOuAlcas } from './components/BarraOuAlcas';
+import { GavetaDeCamadas, GavetaDoTempo, Selo, BarraDoTempo } from './components/HudDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
-import { PaletaDeBusca, BotaoDaBusca } from './components/PaletaDeBusca';
-import { FichaDoObjeto, BotaoDaFicha } from './components/FichaDoObjeto';
+import { PaletaDeBusca } from './components/PaletaDeBusca';
+import { FichaDoObjeto } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
 import {
   Convite,
@@ -44,7 +35,7 @@ import { useChromeDoFilme } from './hooks/useChromeDoFilme';
 import { useEspelhoDaUrl } from './hooks/useEspelhoDaUrl';
 import { useGavetas } from './hooks/useGavetas';
 import { useCelular } from './hooks/useCelular';
-// O HUD em 8 fatias contíguas — a ORDEM destes imports é a cascata do
+// O HUD em 9 fatias contíguas — a ORDEM destes imports é a cascata do
 // antigo hud.css e não pode se reordenar (empates de especificidade,
 // @media e .shot-mode dependem dela).
 import './hud/01-base.css';
@@ -649,22 +640,6 @@ export default function App() {
    */
   const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela'));
 
-  /**
-   * O ⚙ AJUSTES é o único gatilho que não tem componente próprio, e ele
-   * nasce aqui para caber nos DOIS lugares sem ser escrito duas vezes: na
-   * barra (mesa, filme e voo livre) ou na fileira de alças (Atlas em
-   * telefone).
-   */
-  const botaoDeAjustes = (
-    <button
-      className="hud-btn small"
-      onClick={() => alternarGaveta('ajustes')}
-      aria-label="Ajustes de renderização"
-      {...gatilhoDoDialogo('ajustes', gaveta === 'ajustes')}
-    >
-      ⚙ Ajustes
-    </button>
-  );
   // ?shot=1 — modo foto: sem transições, capturas determinísticas
   // ?shot=2 — só a cena: sem HUD, para medir o quadro contra a referência
   const shotParam = new URLSearchParams(window.location.search).get('shot');
@@ -909,156 +884,34 @@ export default function App() {
         </div>
       )}
 
-      {/* controles — e é ELA que some sozinha no filme correndo (item 61):
-          `hud-sumido` esmaece por opacidade e desliga o ponteiro dela e
-          dos filhos, sem tirar a caixa do fluxo. A altura desta barra é
-          o `--barra-fim` que o efeito acima MEDE e o retângulo que os
-          rótulos contornam; tirá-la do fluxo daria um pulo na geometria
-          do HUD no meio da viagem. */}
-      {hud.controles && (
-        <div className={`controls-bar${chromeSumido}`}>
-          {hud.botaoReviver && (
-            <button className="hud-btn small" onClick={play}>
-                  ↻ Reviver
-            </button>
-          )}
-          {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
-              em que o visitante já parou por conta própria e a pergunta
-              "onde é isso?" tem lugar (D3). */}
-          {inJourney && paused && (
-            <button className="hud-btn small" onClick={entrarNoAtlas}>
-              Entrar no Atlas
-            </button>
-          )}
-          {/* AS QUATRO PORTAS ESTÃO AQUI OU NA FILEIRA DE ALÇAS, nunca nas
-              duas (item 62): elas carregam o `data-abre-dialogo`, e duas
-              cópias seriam dois gatilhos com o mesmo nome no documento. O
-              rótulo da ficha carrega o nome do alvo — é ele que devolve à
-              barra o que a antiga linha "em quadro" dizia no alto. */}
-          {hud.busca && !alcas && (
-            <BotaoDaBusca
-              aberta={gaveta === 'busca'}
-              onAlternar={() => alternarGaveta('busca')}
-            />
-          )}
-          {hud.gaveta && !alcas && (
-            <BotaoDaGaveta
-              aberta={gaveta === 'camadas'}
-              onAlternar={() => alternarGaveta('camadas')}
-            />
-          )}
-          {ofereceFicha && !alcas && foco && (
-            <BotaoDaFicha
-              aberta={gaveta === 'ficha'}
-              nome={foco}
-              onAlternar={() => alternarGaveta('ficha')}
-            />
-          )}
-          {hud.botaoPartir && (
-            <button className="hud-btn small" onClick={partirDoAtlas}>
-              Partir
-            </button>
-          )}
-          {hud.botoesDaViagem && (
-            <>
-              <button
-                className="hud-btn small"
-                onClick={togglePause}
-                aria-label={paused ? 'Retomar a viagem' : 'Pausar a viagem'}
-              >
-                {paused ? '⏵ Retomar' : '⏸ Pausar'}
-              </button>
-              <button
-                className="hud-btn small"
-                onClick={() =>
-                  setRate(directorRef.current?.cyclePlaybackRate() ?? 1)
-                }
-                aria-label="Velocidade de reprodução"
-                title="← → pulam de capítulo"
-              >
-                {rate}×
-              </button>
-              <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
-                Ver a galáxia
-              </button>
-              <button className="hud-btn small" onClick={freeRoam}>
-                Explorar livremente
-              </button>
-            </>
-          )}
-          {/* O SELETOR DE QUALIDADE — quatro estados desde os Ajustes D
-              (o Auto é o quarto). Os rótulos saem da tabela única
-              (`QUALIDADES`, atlasConfig), NUNCA digitados aqui: o painel
-              oferece a mesma lista e as duas discordariam no primeiro
-              estado novo.
-
-              O RÓTULO DO AUTO NÃO CARREGA O TIER VIVO, e é orçamento de
-              largura, não descuido: um `<select>` nativo se dimensiona
-              pela opção MAIS LARGA, então "⟳ Auto · performance" alargaria
-              a barra de controles em toda tela — inclusive nas estreitas
-              que o juiz de a11y mede com o texto em 140%. O tier em que o
-              Auto pousou é dito onde há espaço para dizê-lo: no `title`
-              (abaixo) e na nota do painel.
-
-              O `aria-label` FICA PARADO enquanto o `title` anda: nome
-              acessível que muda a cada janela de medida desorienta quem
-              ouve a tela — o que muda é ESTADO, e estado se anuncia pela
-              região `aria-live` do painel, não renomeando o controle. */}
-          <select
-            className="hud-btn small"
-            aria-label="Qualidade gráfica"
-            title={rotuloDaQualidade(quality)}
-            value={quality.escolha}
-            onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
-          >
-            {QUALIDADES.map((q) => (
-              <option key={q.id} value={q.id}>
-                {q.simbolo} {q.nome}
-              </option>
-            ))}
-          </select>
-          {!alcas && botaoDeAjustes}
-        </div>
-      )}
-
-      {/* A FILEIRA DE ALÇAS (item 62) — filha DIRETA de .hud-root, como
-          todo overlay da casa: é a regra do `.bare-mode`
-          (`> *:not(.scene-canvas)`) que a apaga no `?shot=2`, e ela só
-          alcança filhos diretos.
-          A ORDEM é a do mockup: buscar, camadas, tempo, ajustes — e a
-          ficha como QUINTA, só com seleção. Uma linha que nunca quebra
-          (fatia 9): quebrar em duas mudaria a base declarada e moveria a
-          câmera no meio da sessão. */}
-      {alcas && (
-        <div className="atlas-alcas" role="group" aria-label="Controles do Atlas">
-          {hud.busca && (
-            <BotaoDaBusca
-              aberta={gaveta === 'busca'}
-              onAlternar={() => alternarGaveta('busca')}
-            />
-          )}
-          {hud.gaveta && (
-            <BotaoDaGaveta
-              aberta={gaveta === 'camadas'}
-              onAlternar={() => alternarGaveta('camadas')}
-            />
-          )}
-          {hud.tempo && tempo && (
-            <BotaoDoTempo
-              aberta={gaveta === 'tempo'}
-              onAlternar={() => alternarGaveta('tempo')}
-            />
-          )}
-          {botaoDeAjustes}
-          {ofereceFicha && foco && (
-            <BotaoDaFicha
-              aberta={gaveta === 'ficha'}
-              nome={foco}
-              onAlternar={() => alternarGaveta('ficha')}
-            />
-          )}
-        </div>
-      )}
+      {/* A BARRA DE CONTROLES OU A FILEIRA DE ALÇAS — as duas moram em
+          `BarraOuAlcas` porque são o MESMO assunto: onde as portas do HUD
+          nascem. As duas são filhas DIRETAS de .hud-root (o fragmento não
+          cria nó), como todo overlay da casa — é a regra do `.bare-mode`
+          (`> *:not(.scene-canvas)`) que as apaga no `?shot=2`, e ela só
+          alcança filhos diretos. */}
+      <BarraOuAlcas
+        hud={hud}
+        alcas={alcas}
+        chromeSumido={chromeSumido}
+        gaveta={gaveta}
+        alternarGaveta={alternarGaveta}
+        ofereceFicha={ofereceFicha}
+        foco={foco}
+        tempo={tempo}
+        inJourney={inJourney}
+        paused={paused}
+        rate={rate}
+        quality={quality}
+        play={play}
+        entrarNoAtlas={entrarNoAtlas}
+        partirDoAtlas={partirDoAtlas}
+        togglePause={togglePause}
+        ciclarVelocidade={() => setRate(directorRef.current?.cyclePlaybackRate() ?? 1)}
+        revealGalaxy={revealGalaxy}
+        freeRoam={freeRoam}
+        changeQuality={changeQuality}
+      />
 
       {/* A GAVETA DE CAMADAS, e ela é a ÚNICA porta das camadas desde o
           item 61 (22/08) — em TODA fase que tem barra de controles

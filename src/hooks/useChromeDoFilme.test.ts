@@ -18,7 +18,14 @@ const HUD = (fatia: string) =>
   readFileSync(new URL(`../hud/${fatia}`, import.meta.url), 'utf8');
 const CONTROLES = HUD('03-controles.css');
 const FILME = HUD('02-filme.css');
-const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
+// O QUE O APP DESENHA são DOIS arquivos desde 23/08: a barra de
+// controles e a fileira de alças saíram do `App.tsx` para
+// `components/BarraOuAlcas.tsx` (§11 do AGENTS), e as duas continuam
+// sendo o mesmo assunto para quem lê daqui. Ler só um deles faria estas
+// provas passarem a acusar a MUDANÇA DE ENDEREÇO em vez do defeito.
+const APP =
+  readFileSync(new URL('../App.tsx', import.meta.url), 'utf8') +
+  readFileSync(new URL('../components/BarraOuAlcas.tsx', import.meta.url), 'utf8');
 
 /** a regra `.hud-sumido { … }` sozinha, sem o seletor dos filhos */
 const REGRA_SUMIDO = CONTROLES.slice(
