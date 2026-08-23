@@ -46,16 +46,55 @@ import type { QualityLevel } from '../../core/engine';
  */
 export const RECARGAS_ATE_DESISTIR = 2;
 
-/** Uma entrada do manifest de texturas (public/data/atlas/texturas.json)
- *  — só os campos que a escada consome. */
+/**
+ * DE ONDE VEIO ESTA IMAGEM — os quatro campos que `texturas.json` guarda por
+ * entrada desde a Onda 6, e que até 22/08 não tinham leitor nenhum: o
+ * manifesto os escrevia e o app os ignorava. A ficha do objeto (item 74) é o
+ * primeiro consumidor, na seção "a imagem".
+ */
+export interface OrigemDaTextura {
+  fonte: string | null;
+  url: string | null;
+  licenca: string;
+  atribuicao: string | null;
+}
+
+/**
+ * Uma entrada do manifest de texturas (public/data/atlas/texturas.json).
+ *
+ * SÃO DOIS LEITORES E NÃO UM, e é por isso que a interface deixou de
+ * declarar só os quatro campos da carga: o PIPELINE usa `corpo`, `canal`,
+ * `arquivo` e `larguraPx` para escolher a variante e baixá-la; a FICHA usa
+ * `origem`, `proveniencia` e `nota` para dizer ao visitante de onde a foto
+ * veio, sob que licença, e qual é o defeito medido dela. O tipo é a forma do
+ * ARQUIVO, e agora ele a declara inteira até onde alguém a lê.
+ */
 export interface EntradaDeTextura {
   corpo: string;
   canal: string;
   arquivo: string;
   larguraPx: number;
+  origem?: OrigemDaTextura;
+  /** o vocabulário do selo, mais o `nao-resolvida` da política do dono */
+  proveniencia?: 'medido' | 'derivado' | 'nao-resolvida';
+  /**
+   * O DEFEITO MEDIDO, quando a bancada achou um — Ceres inventado pela
+   * fonte, as emendas de Titã, as 68 linhas de Europa, Vênus sem luz
+   * visível. A frase nasce em `docs/reference/ASSETS.md` (§ A CONFISSÃO NA
+   * TELA), o gerador a lê de lá, e AUSÊNCIA quer dizer "a bancada não achou
+   * defeito" — nunca "ninguém olhou".
+   */
+  nota?: string;
 }
 export interface ManifestDeTexturas {
   entradas: EntradaDeTextura[];
+  /**
+   * A FORMA, por corpo: os quatro que têm malha irregular publicada e são
+   * desenhados como elipsoide de `BODY_AXES` (item 20). Fica no topo e não
+   * na entrada porque Palas e Haumea não têm textura nenhuma — a superfície
+   * deles é procedural — e não teriam onde pendurar a confissão.
+   */
+  formas?: Record<string, string>;
 }
 
 /** Teto de cinema para os canais de APOIO (tudo que não é `map`) —

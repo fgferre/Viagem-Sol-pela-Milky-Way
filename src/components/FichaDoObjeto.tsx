@@ -25,10 +25,11 @@
 // linha antiga não tinha espaço para dizer. Sem seleção não há ficha, e sem
 // ficha nada ocupa o topo.
 //
-// O DADO CHEGA NA PRIMEIRA ABERTURA, nunca no boot: `corpos.json` tem 65 KB
-// hoje e vai a ~110 KB com a tradução. Quem nunca abre a ficha não paga um
-// byte. A memoização é a mesma de `buscarManifestUmaVez` — uma promessa por
-// URL, guardada no módulo.
+// O DADO CHEGA NA PRIMEIRA ABERTURA, nunca no boot: são dois arquivos, o
+// `corpos.json` (114 KB com a tradução) e o `texturas.json` (110 KB, que o
+// mundo já baixou ao entrar no Atlas e o navegador serve do cache). Quem
+// nunca abre a ficha não paga um byte. A memoização é a mesma de
+// `buscarManifestUmaVez` — uma promessa por URL, guardada no módulo.
 //
 // E O "AGORA" RELÊ NO `onTempo`, nunca no laço de quadro (anti-padrão 3 do
 // `PLANO-ATLAS`): o `jd` chega por prop, já limitado a 4 Hz pelo mostrador
@@ -38,33 +39,40 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
 import { montarFicha, montarFichaDeEstrela } from '../lib/atlas/ficha';
+import type { ManifestDeTexturas } from '../three/world/corpos/texturas';
 import { PROCEDENCIA } from '../three/selo';
 
 /**
- * A promessa única do `corpos.json`. Módulo e não estado: duas fichas
- * abertas em sequência (ou o StrictMode montando duas vezes em dev) pedem o
- * mesmo arquivo, e o segundo pedido tem de encontrar o primeiro em voo.
- * Falha NÃO fica grudada: a promessa é limpa, e a próxima abertura tenta de
- * novo — o precedente é o `RECARGAS_ATE_DESISTIR` das texturas, onde um 404
- * transitório matava o globo a sessão inteira.
+ * OS DOIS ARQUIVOS DA FICHA, cada um com a sua promessa única. Módulo e não
+ * estado: duas fichas abertas em sequência (ou o StrictMode montando duas
+ * vezes em dev) pedem o mesmo arquivo, e o segundo pedido tem de encontrar o
+ * primeiro em voo. Falha NÃO fica grudada: a promessa é limpa, e a próxima
+ * abertura tenta de novo — o precedente é o `RECARGAS_ATE_DESISTIR` das
+ * texturas, onde um 404 transitório matava o globo a sessão inteira.
+ *
+ * O SEGUNDO ARQUIVO É O MANIFESTO DE TEXTURAS (item 74, parte B), e ele é
+ * quase de graça: o mundo já o baixou ao entrar no Atlas, pela mesma URL, e
+ * o navegador o serve do cache. São 110 KB, e a alternativa — copiar a
+ * `origem` de cada corpo para dentro do `corpos.json` — seria a mesma
+ * procedência escrita em dois artefatos.
  */
-let corposEmVoo: Promise<CorposDoAtlas> | null = null;
+const emVoo = new Map<string, Promise<unknown>>();
 
-function buscarCorposUmaVez(): Promise<CorposDoAtlas> {
-  if (corposEmVoo) return corposEmVoo;
-  const url = `${import.meta.env.BASE_URL}data/atlas/corpos.json`;
-  corposEmVoo = fetch(url)
+function buscarUmaVez<T>(caminho: string): Promise<T> {
+  const url = `${import.meta.env.BASE_URL}${caminho}`;
+  const anterior = emVoo.get(url) as Promise<T> | undefined;
+  if (anterior) return anterior;
+  const nova = fetch(url)
     .then((resposta) => {
-      if (!resposta.ok) {
-        throw new Error(`corpos.json indisponível (${resposta.status})`);
-      }
-      return resposta.json() as Promise<CorposDoAtlas>;
+      if (!resposta.ok) throw new Error(`${caminho} indisponível (${resposta.status})`);
+      return resposta.json() as Promise<T>;
     })
     .catch((erro: Error) => {
-      corposEmVoo = null;
+      emVoo.delete(url);
       throw erro;
     });
-  return corposEmVoo;
+  emVoo.set(url, nova);
+  return nova;
 }
 
 export function FichaDoObjeto({
@@ -99,6 +107,7 @@ export function FichaDoObjeto({
 }) {
   const dialogo = useDialogFocus('ficha', aberta, onFechar);
   const [corpos, setCorpos] = useState<Map<string, CorpoNoJson> | null>(null);
+  const [texturas, setTexturas] = useState<ManifestDeTexturas | null>(null);
   /**
    * QUE SEÇÕES ESTÃO ABERTAS — e de QUE corpo, no mesmo estado.
    *
@@ -124,21 +133,29 @@ export function FichaDoObjeto({
   // A CARGA COMEÇA NA PRIMEIRA ABERTURA. `aberta` na lista de dependências
   // e não `corpoId`: trocar de corpo com a ficha fechada não pede rede.
   useEffect(() => {
-    if (!aberta || corpos) return;
+    if (!aberta) return;
     let vivo = true;
-    buscarCorposUmaVez()
-      .then((doc) => {
-        if (vivo) setCorpos(new Map(doc.corpos.map((c) => [c.id, c])));
-      })
-      .catch(() => {
-        // SEM O JSON A FICHA CONTINUA ÚTIL: raio, gravidade, escape,
-        // distância e velocidade não dependem dele. O que falta é a órbita
-        // e a prosa, e cada uma some sozinha — não há linha a explicar.
-      });
+    // SEM OS JSONs A FICHA CONTINUA ÚTIL: raio, gravidade, escape, distância
+    // e velocidade não dependem deles. O que falta é a órbita, a prosa e a
+    // procedência da imagem — e cada uma some sozinha, sem linha a explicar.
+    if (!corpos) {
+      buscarUmaVez<CorposDoAtlas>('data/atlas/corpos.json')
+        .then((doc) => {
+          if (vivo) setCorpos(new Map(doc.corpos.map((c) => [c.id, c])));
+        })
+        .catch(() => {});
+    }
+    if (!texturas) {
+      buscarUmaVez<ManifestDeTexturas>('data/atlas/texturas.json')
+        .then((doc) => {
+          if (vivo) setTexturas(doc);
+        })
+        .catch(() => {});
+    }
     return () => {
       vivo = false;
     };
-  }, [aberta, corpos]);
+  }, [aberta, corpos, texturas]);
 
   const ficha = useMemo(
     () =>
@@ -148,11 +165,12 @@ export function FichaDoObjeto({
             jd,
             fonte,
             editorial: corpos?.get(corpoId) ?? null,
+            texturas,
           })
         : estrelaEmFoco
           ? montarFichaDeEstrela(estrelaEmFoco)
           : null,
-    [corpoId, estrelaEmFoco, jd, fonte, corpos]
+    [corpoId, estrelaEmFoco, jd, fonte, corpos, texturas]
   );
 
   if (!aberta || !ficha) return null;

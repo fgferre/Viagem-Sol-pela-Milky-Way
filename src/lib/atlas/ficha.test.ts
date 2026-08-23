@@ -17,6 +17,7 @@ import {
 import { PROCEDENCIA } from '../../three/selo';
 import type { MetaEfemerides } from './efemerides';
 import { decodeEfemerides, MotorEfemerides } from './efemerides';
+import type { ManifestDeTexturas } from '../../three/world/corpos/texturas';
 import type { CorpoNoJson, CorposDoAtlas, Ficha } from './ficha';
 import { formatarDuracao, formatarMassaKg, montarFicha } from './ficha';
 import { dateToTDB } from './time';
@@ -37,6 +38,9 @@ const motor = new MotorEfemerides(
 const corposJson = JSON.parse(
   readFileSync(join(DATA_DIR, 'corpos.json'), 'utf8')
 ) as CorposDoAtlas;
+const texturas = JSON.parse(
+  readFileSync(join(DATA_DIR, 'texturas.json'), 'utf8')
+) as ManifestDeTexturas;
 const porId = new Map<string, CorpoNoJson>(corposJson.corpos.map((c) => [c.id, c]));
 
 const JD = dateToTDB(new Date('2026-08-22T00:00:00Z'));
@@ -48,7 +52,19 @@ const ALVOS = [
 ].map((c) => c.id);
 
 function ficha(id: string): Ficha | null {
-  return montarFicha({ id, jd: JD, fonte: motor, editorial: porId.get(id) ?? null });
+  return montarFicha({
+    id,
+    jd: JD,
+    fonte: motor,
+    editorial: porId.get(id) ?? null,
+    texturas,
+  });
+}
+
+/** As linhas de uma seção, por rótulo — o atalho de meia dúzia de provas. */
+function porRotulo(id: string, secao: string): Map<string, string> {
+  const s = ficha(id)!.secoes.find((x) => x.id === secao);
+  return new Map((s?.linhas ?? []).map((l) => [l.rotulo, l.valor]));
 }
 
 const todasAsLinhas = (f: Ficha) => f.secoes.flatMap((s) => s.linhas);
@@ -293,8 +309,18 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
   });
 
   it('nenhuma palavra inglesa de ligação sobra em linha de tela', () => {
+    // AS TRÊS LINHAS QUE FICAM EM INGLÊS DE PROPÓSITO são as que CITAM o
+    // licenciante: o nome do arquivo na fonte ("8k_moon"), o nome do
+    // instrumento jurídico ("CC BY 4.0", "NASA images and media usage
+    // guidelines") e a frase de crédito que ele exige verbatim. Traduzi-las
+    // não seria zelo com a língua — seria descumprir a licença que permite a
+    // foto estar aqui, e apagar o nome pelo qual o arquivo é procurável.
+    // O que a CASA escreveu na mesma seção — o defeito, a forma, a
+    // superfície inventada — continua no varredor.
+    const CITACAO_DE_LICENCA = new Set(['fonte', 'licença', 'atribuição']);
     for (const id of ALVOS) {
       for (const l of todasAsLinhas(ficha(id)!)) {
+        if (CITACAO_DE_LICENCA.has(l.rotulo)) continue;
         const naTela = `${l.rotulo} ${l.valor} ${l.badge ?? ''} ${l.fonte ?? ''}`;
         for (const palavra of naTela.toLowerCase().split(/[^\p{L}]+/u)) {
           expect(
@@ -333,6 +359,103 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
   });
 });
 
+describe('a imagem confessa — itens 19 e 20', () => {
+  it('todo corpo com mesh tem a seção, e ela diz fonte, licença e crédito', () => {
+    // 38 dos 39: o Sol não entra (a imagem dele é a Lei da Estrela).
+    for (const id of ALVOS.filter((i) => i !== 'sun')) {
+      const imagem = porRotulo(id, 'imagem');
+      expect(imagem.size, id).toBeGreaterThan(0);
+      // ou tem mapa com licença, ou confessa que a superfície é inventada
+      expect(imagem.has('licença') || imagem.has('superfície'), id).toBe(true);
+      if (imagem.has('licença')) {
+        expect(imagem.get('licença'), id).not.toBe('nao-resolvida');
+        expect(imagem.get('fonte'), id).toBeTruthy();
+        expect(imagem.get('atribuição'), id).toBeTruthy();
+      }
+    }
+  });
+
+  it('Ceres diz na cara que o mapa é inventado pela fonte (item 19)', () => {
+    const defeito = porRotulo('ceres', 'imagem').get('o defeito');
+    expect(defeito).toContain('inventado');
+  });
+
+  it('Titã confessa as emendas, Europa as 68 linhas, Vênus a falta de luz visível', () => {
+    expect(porRotulo('titan', 'imagem').get('o defeito')).toContain('emendas');
+    expect(porRotulo('europa', 'imagem').get('o defeito')).toContain('68 linhas');
+    expect(porRotulo('venus', 'imagem').get('o defeito')).toContain('luz visível');
+  });
+
+  it('a Terra NÃO tem defeito — ausência de nota não é falta de conferência', () => {
+    const imagem = porRotulo('earth', 'imagem');
+    expect(imagem.has('o defeito')).toBe(false);
+    expect(imagem.get('fonte')).toContain('Solar System Scope');
+  });
+
+  it('o defeito leva o selo de MEDIDO: quem o mediu foi a bancada', () => {
+    const linhas = ficha('ceres')!.secoes.find((s) => s.id === 'imagem')!.linhas;
+    const defeito = linhas.find((l) => l.rotulo === 'o defeito')!;
+    expect(defeito.procedencia).toBe('medido');
+    expect(defeito.fonte).toBe('bancada de texturas');
+  });
+
+  it('os quatro elipsoides confessam a forma, e ninguém mais (item 20)', () => {
+    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea'];
+    for (const id of ALVOS.filter((i) => i !== 'sun')) {
+      const forma = porRotulo(id, 'imagem').get('forma');
+      if (COM_MALHA_PUBLICADA.includes(id)) {
+        expect(forma, id).toContain('elipsoide, sem malha');
+      } else {
+        expect(forma, id).toBeUndefined();
+      }
+    }
+    // O elipsoide no lugar da malha medida é ARTIFÍCIO, e leva o tier que
+    // diz isso — a mesma palavra que o selo usa para a cruz de luz.
+    const linhas = ficha('vesta')!.secoes.find((s) => s.id === 'imagem')!.linhas;
+    expect(linhas.find((l) => l.rotulo === 'forma')!.procedencia).toBe('artistico');
+  });
+
+  it('os cinco sem textura dizem que a superfície é inventada', () => {
+    // Palas, Haumea, Makemake, Éris e Quaoar — `superficie: procedural` em
+    // `rochoso.ts`, e é o terceiro tier do selo estreando nesta peça.
+    for (const id of ['pallas', 'haumea', 'makemake', 'eris', 'quaoar']) {
+      const linhas = ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas;
+      const superficie = linhas.find((l) => l.rotulo === 'superfície')!;
+      expect(superficie.valor, id).toContain('inventados');
+      expect(superficie.procedencia, id).toBe('artistico');
+      expect(linhas.find((l) => l.rotulo === 'licença'), id).toBeUndefined();
+    }
+  });
+
+  it('sem o manifesto a seção some inteira, sem uma linha a explicar', () => {
+    const f = montarFicha({
+      id: 'ceres',
+      jd: JD,
+      fonte: motor,
+      editorial: porId.get('ceres'),
+      texturas: null,
+    })!;
+    expect(f.secoes.map((s) => s.id)).not.toContain('imagem');
+  });
+
+  it('a fonte de um canal é a variante MAIS LARGA, e não o webp reencodado', () => {
+    // A Terra tem `map.jpg` e `map.webp` com a MESMA largura, e só o
+    // primeiro carrega a procedência da fonte declarada: o webp é reencode
+    // nosso. Escolher pela largura sozinha daria 'derivado' na metade das
+    // vezes, conforme a ordem em que o manifesto foi varrido.
+    const variantes = texturas.entradas.filter(
+      (e) => e.corpo === 'earth' && e.canal === 'map'
+    );
+    const maisLarga = Math.max(...variantes.map((e) => e.larguraPx));
+    expect(variantes.filter((e) => e.larguraPx === maisLarga).length).toBeGreaterThan(1);
+    const fonteDaLinha = ficha('earth')!
+      .secoes.find((s) => s.id === 'imagem')!
+      .linhas.find((l) => l.rotulo === 'fonte')!;
+    expect(fonteDaLinha.procedencia).toBe('medido');
+    expect(fonteDaLinha.fonte).toMatch(/px de largura$/);
+  });
+});
+
 describe('as unidades e os selos que o visitante lê', () => {
   it('a ordem das seções é a do interesse: o vivo antes da enciclopédia', () => {
     const f = ficha('titan')!;
@@ -342,6 +465,7 @@ describe('as unidades e os selos que o visitante lê', () => {
       'orbita',
       'contexto',
       'curiosidades',
+      'imagem',
     ]);
     expect(f.secoes[0]!.titulo).toBe('agora');
   });
@@ -387,6 +511,9 @@ describe('as unidades e os selos que o visitante lê', () => {
   it('o Sol é a origem: sem "agora", sem órbita, com físico', () => {
     const ids = ficha('sun')!.secoes.map((s) => s.id);
     expect(ids).toEqual(['fisico', 'contexto', 'curiosidades']);
+    // e a IMAGEM dele fica de fora de propósito: o Sol não tem textura, tem
+    // a LEI-DA-ESTRELA — uma linha aqui seria a segunda fonte sobre isso.
+    expect(ids).not.toContain('imagem');
   });
 
   it('Vênus gira ao contrário, e a ficha diz', () => {

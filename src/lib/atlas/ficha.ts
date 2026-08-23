@@ -50,6 +50,10 @@ import { geometriaNoCeu, quemTemGeometriaNoCeu } from './geometriaNoCeu';
 import { IAU_ORIENTATIONS } from './iauOrientation';
 import type { PosicaoEcliptica } from './kepler';
 import { REGISTRO_ORBITAL } from './registroOrbital';
+import type {
+  EntradaDeTextura,
+  ManifestDeTexturas,
+} from '../../three/world/corpos/texturas';
 
 // ---------------------------------------------------------------- formas
 
@@ -131,6 +135,8 @@ export interface EntradaDaFicha {
   fonte?: FonteDaFicha | null;
   /** o corpo em `corpos.json`; `null` antes de o arquivo chegar */
   editorial?: CorpoNoJson | null;
+  /** o manifesto de `texturas.json`; `null` antes de o arquivo chegar */
+  texturas?: ManifestDeTexturas | null;
 }
 
 // ------------------------------------------------------------ formatação
@@ -425,6 +431,113 @@ function secaoCuriosidades(pt: EditorialDoCorpo | undefined): LinhaDaFicha[] {
   return linhas.filter((l): l is LinhaDaFicha => l !== null);
 }
 
+/**
+ * A FONTE DE UM CANAL, entre as variantes que o manifesto lista. A regra é
+ * de uma linha: a mais LARGA, e no empate a que não é reencode nosso — o
+ * `map.jpg` de 8192 px e o `map.webp` de 8192 px são a mesma imagem, e só o
+ * primeiro carrega a procedência da fonte declarada.
+ *
+ * `origem` e `nota` são idênticos em todas as variantes (o mapa de Ceres
+ * continua inventado em 512 px); quem varia é a `proveniencia`, e é por ela
+ * que a escolha existe.
+ */
+function fonteDoCanal(
+  entradas: readonly EntradaDeTextura[],
+  corpo: string,
+  canal: string
+): EntradaDeTextura | null {
+  let melhor: EntradaDeTextura | null = null;
+  for (const e of entradas) {
+    if (e.corpo !== corpo || e.canal !== canal) continue;
+    if (
+      !melhor ||
+      e.larguraPx > melhor.larguraPx ||
+      (e.larguraPx === melhor.larguraPx &&
+        melhor.proveniencia === 'derivado' &&
+        e.proveniencia !== 'derivado')
+    ) {
+      melhor = e;
+    }
+  }
+  return melhor;
+}
+
+/**
+ * O TIER DA IMAGEM na língua do selo. `medido` e `derivado` casam nome a
+ * nome; `nao-resolvida` é a política do dono (a imagem entra MARCADA em vez
+ * de ficar de fora) e não tem par entre os três — quem não conseguiu fechar
+ * a fonte não pode chamar a foto de medida, então ela cai no tier que diz
+ * "não tome isto por observação". Hoje são ZERO entradas assim, e o
+ * `data:verify` cobra que continuem zero.
+ */
+const TIER_DA_IMAGEM: Record<
+  NonNullable<EntradaDeTextura['proveniencia']>,
+  Procedencia
+> = {
+  medido: 'medido',
+  derivado: 'derivado',
+  'nao-resolvida': 'artistico',
+};
+
+/**
+ * A IMAGEM CONFESSA (item 74 parte B; fecha os itens 19 e 20).
+ *
+ * `texturas.json` guardava `origem{fonte,url,licenca,atribuicao}` e
+ * `proveniencia` por entrada desde a Onda 6 — e nada no app lia esses
+ * campos. A ficha é o primeiro leitor, e ela imprime as quatro coisas que o
+ * visitante tem direito de saber sobre a foto que está olhando: de onde
+ * veio, sob que licença, a quem creditar, e QUAL É O DEFEITO dela.
+ *
+ * O DEFEITO É MEDIDO, e por isso leva o selo `medido`: a frase nasce na
+ * bancada de texturas (`docs/reference/ASSETS.md`), o gerador do manifesto a
+ * lê de lá, e ela chega aqui como dado. Ausência de nota quer dizer "a
+ * bancada não achou defeito", nunca "ninguém olhou".
+ *
+ * SEM MAPA, A SUPERFÍCIE É INVENTADA: Palas, Haumea, Makemake, Éris e Quaoar
+ * não têm textura licenciada e `rochoso.ts` os desenha com o `−3` procedural.
+ * A ficha diz isso na cara, com o terceiro tier do selo — que até aqui não
+ * tinha nenhum uso nesta peça.
+ *
+ * O SOL FICA DE FORA, e é decisão declarada: a imagem dele não é textura
+ * nenhuma, é a `LEI-DA-ESTRELA` inteira (forma assada, tinta por cor,
+ * granulação). Uma linha aqui seria a segunda fonte de verdade sobre um
+ * assunto que tem contrato próprio.
+ */
+function secaoImagem(
+  id: string,
+  manifest: ManifestDeTexturas | null | undefined
+): LinhaDaFicha[] {
+  if (!manifest || id === 'sun') return [];
+  const linhas: (LinhaDaFicha | null)[] = [];
+  const mapa = fonteDoCanal(manifest.entradas, id, 'map');
+
+  if (mapa?.origem) {
+    const tier = TIER_DA_IMAGEM[mapa.proveniencia ?? 'nao-resolvida'];
+    linhas.push(
+      linha('fonte', mapa.origem.fonte, tier, `${numeroPtBr(mapa.larguraPx)} px de largura`),
+      linha('licença', mapa.origem.licenca, tier),
+      linha('atribuição', mapa.origem.atribuicao, tier)
+    );
+    if (mapa.nota) {
+      linhas.push(linha('o defeito', mapa.nota, 'medido', 'bancada de texturas'));
+    }
+  } else {
+    linhas.push(
+      linha(
+        'superfície',
+        'sem mapa: a cor e o relevo deste corpo são inventados',
+        'artistico',
+        'não há textura com licença fechada'
+      )
+    );
+  }
+
+  const forma = manifest.formas?.[id];
+  if (forma) linhas.push(linha('forma', forma, 'artistico', 'bancada de texturas'));
+
+  return linhas.filter((l): l is LinhaDaFicha => l !== null);
+}
+
 const TITULOS: Record<IdDeSecao, string> = {
   agora: 'agora',
   fisico: 'físico',
@@ -474,11 +587,7 @@ export function montarFicha(entrada: EntradaDaFicha): Ficha | null {
     { id: 'ceu', titulo: TITULOS.ceu, linhas: secaoCeu(entrada) },
     { id: 'contexto', titulo: TITULOS.contexto, linhas: secaoContexto(pt) },
     { id: 'curiosidades', titulo: TITULOS.curiosidades, linhas: secaoCuriosidades(pt) },
-    // A IMAGEM é o commit 6 do item 74 (a procedência da textura, com a
-    // licença e o defeito confessado). A seção existe na ordem certa desde
-    // agora para que ela seja DADO quando chegar, e nasce vazia — logo, não
-    // é desenhada.
-    { id: 'imagem', titulo: TITULOS.imagem, linhas: [] },
+    { id: 'imagem', titulo: TITULOS.imagem, linhas: secaoImagem(entrada.id, entrada.texturas) },
   ];
 
   return {

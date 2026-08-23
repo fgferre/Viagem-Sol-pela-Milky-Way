@@ -28,6 +28,19 @@
 //                       bake — checklist item 14);
 //   - 'nao-resolvida' — a política do dono acima: entra, marcada.
 //
+// A CONFISSÃO SAI DO ASSETS.md (item 74 parte B, 2026-08-22, que
+// fecha os itens 19 e 20). A ficha do objeto imprime, na seção "a
+// imagem", o defeito MEDIDO de cada mapa — Ceres inventado pela
+// fonte, as emendas de Titã, as 68 linhas de Europa, Vênus sem foto
+// em luz visível — e a forma dos quatro corpos que são elipsoide
+// tendo malha publicada. Esses vereditos já moram, inteiros, em
+// `docs/reference/ASSETS.md`; então é ELE que este gerador lê, numa
+// seção de tabelas com título fixo. Copiá-los para cá criaria a
+// segunda cópia que o próprio ASSETS existe para não ter — e seria a
+// cópia que envelhece calada, porque quem edita o veredito edita o
+// documento. O gerador FALHA se a seção sumir, se uma linha vier
+// malformada ou se citar um corpo/canal fora de `ORIGENS`.
+//
 // DETERMINÍSTICO: sem timestamp, entradas ordenadas por
 // (corpo, canal, arquivo); rodar de novo com a árvore parada
 // produz JSON bit-idêntico (disciplina do stars.bin/corpos.json).
@@ -357,6 +370,66 @@ const ORIGEM_NAO_RESOLVIDA = {
   proveniencia: 'nao-resolvida',
 };
 
+const assetsPath = path.join(rootDirectory, 'docs', 'reference', 'ASSETS.md');
+const TITULO_DA_CONFISSAO = '## A CONFISSÃO NA TELA';
+
+/**
+ * As duas tabelas da seção de confissão do ASSETS.md, lidas com rigor: o
+ * título tem de existir, cada linha tem de ser `| chave | frase |`, e o
+ * resultado é um Map. Sem tolerância a "quase" — nota que sumir por causa de
+ * um pipe a menos some da TELA, e ninguém repara na falta de uma frase.
+ */
+function lerTabelasDaConfissao(markdown) {
+  const inicio = markdown.indexOf(TITULO_DA_CONFISSAO);
+  if (inicio < 0) {
+    throw new Error(
+      `${assetsPath} perdeu a seção "${TITULO_DA_CONFISSAO}" — ela é lida por ` +
+        'máquina e é a fonte única das notas que a ficha imprime.'
+    );
+  }
+  const secao = markdown.slice(inicio);
+  const tabelas = new Map();
+  let atual = null;
+  for (const linha of secao.split('\n')) {
+    const sub = /^###\s+(.+?)\s*$/.exec(linha);
+    if (sub) {
+      atual = new Map();
+      tabelas.set(sub[1], atual);
+      continue;
+    }
+    if (!atual || !linha.startsWith('|')) continue;
+    const celulas = linha.split('|').slice(1, -1).map((c) => c.trim());
+    if (celulas.length !== 2) {
+      throw new Error(`${assetsPath}: linha de tabela malformada — "${linha}".`);
+    }
+    const [chave, nota] = celulas;
+    if (/^-+$/.test(chave) || chave === 'corpo/canal' || chave === 'corpo') continue;
+    if (!nota) throw new Error(`${assetsPath}: "${chave}" sem nota.`);
+    if (atual.has(chave)) {
+      throw new Error(`${assetsPath}: "${chave}" aparece duas vezes na mesma tabela.`);
+    }
+    atual.set(chave, nota);
+  }
+  const imagem = [...tabelas].find(([t]) => t.startsWith('a imagem'))?.[1];
+  const forma = [...tabelas].find(([t]) => t.startsWith('a forma'))?.[1];
+  if (!imagem || !forma) {
+    throw new Error(
+      `${assetsPath}: a seção da confissão precisa das DUAS tabelas ` +
+        '("### a imagem …" e "### a forma …").'
+    );
+  }
+  return { imagem, forma };
+}
+
+const confissao = lerTabelasDaConfissao(await readFile(assetsPath, 'utf8'));
+for (const chave of confissao.imagem.keys()) {
+  if (!ORIGENS[chave]) {
+    throw new Error(
+      `${assetsPath}: a nota de "${chave}" não casa com nenhuma entrada de ORIGENS.`
+    );
+  }
+}
+
 async function listarArquivos(diretorio) {
   const resultado = [];
   const entradas = (await readdir(diretorio, { withFileTypes: true })).sort(
@@ -386,6 +459,7 @@ async function main() {
     // Dimensões MEDIDAS — o nome do arquivo nunca é fonte de verdade.
     const meta = await sharp(arquivo).metadata();
     const { size } = await stat(arquivo);
+    const nota = confissao.imagem.get(`${corpo}/${canal}`);
     entradas.push({
       corpo,
       canal,
@@ -401,6 +475,11 @@ async function main() {
         atribuicao: declarada.atribuicao,
       },
       proveniencia: ehFonte ? declarada.proveniencia : 'derivado',
+      // O DEFEITO É DA IMAGEM, não da variante: a escada de tamanhos e o
+      // webp saem do MESMO mapa, e o mapa de Ceres continua inventado em
+      // 512 px. A nota acompanha todas as variantes daquele canal, e a
+      // ausência dela é a declaração de que a bancada não achou defeito.
+      ...(nota ? { nota } : {}),
     });
   }
 
@@ -414,6 +493,13 @@ async function main() {
   const manifest = {
     formato: 'texturas-atlas-v1',
     geradoPor: 'scripts/data/atlas/gera-manifest-texturas.mjs',
+    confissao: 'docs/reference/ASSETS.md § A CONFISSÃO NA TELA',
+    // A FORMA NÃO É UMA VARIANTE, e por isso ela é chave de topo e não
+    // campo de entrada: Palas e Haumea não têm textura nenhuma (superfície
+    // procedural em `rochoso.ts`) e não teriam onde pendurar a nota. O que
+    // se confessa aqui é o MESH — o elipsoide de BODY_AXES no lugar da
+    // malha irregular que existe publicada (item 20).
+    formas: Object.fromEntries([...confissao.forma].sort(([a], [b]) => a.localeCompare(b, 'en'))),
     entradas,
   };
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -422,10 +508,13 @@ async function main() {
   const naoResolvidas = entradas.filter(
     (e) => e.origem.licenca === 'nao-resolvida'
   ).length;
+  const comNota = new Set(entradas.filter((e) => e.nota).map((e) => `${e.corpo}/${e.canal}`));
   console.log(
     `texturas.json: ${entradas.length} variantes, ` +
       `${(totalBytes / 1048576).toFixed(2)} MB em disco, ` +
-      `${naoResolvidas} com origem não resolvida.`
+      `${naoResolvidas} com origem não resolvida, ` +
+      `${comNota.size} canais com defeito confessado (${[...comNota].join(', ')}), ` +
+      `${Object.keys(manifest.formas).length} corpos elipsoide sem malha.`
   );
 }
 

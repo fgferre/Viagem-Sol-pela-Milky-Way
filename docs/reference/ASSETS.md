@@ -48,3 +48,40 @@ Pendência **P-F7-MESH**.
 A autoridade de textura da casa é `public/data/atlas/texturas.json`
 (crédito por linha). Sem licença documentada não entra. O inventário
 do repositório atlas-orbital não vale aqui.
+
+## A CONFISSÃO NA TELA — este arquivo é lido por máquina
+
+**Não edite as duas tabelas abaixo achando que são prosa.**
+`scripts/data/atlas/gera-manifest-texturas.mjs` LÊ esta seção e grava cada
+linha em `public/data/atlas/texturas.json`; a ficha do objeto (item 74)
+imprime a frase na seção “a imagem”. É por isso que ela mora aqui e não em
+código: os vereditos da bancada estão nas seções acima, e uma segunda cópia
+deles num arquivo `.mjs` envelheceria calada — que é exatamente o defeito
+que este documento existe para não ter. Os parágrafos acima são o veredito
+completo; a tabela é a UMA FRASE que cabe na tela.
+
+O gerador **falha** se este título sumir, se uma linha vier malformada ou se
+citar um `corpo/canal` que não existe em `ORIGENS`. Frase curta, sem ponto
+final, na voz de quem admite — o visitante lê isto ao lado da foto.
+
+### a imagem (item 19)
+
+| corpo/canal | nota |
+| --- | --- |
+| ceres/map | a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente |
+| titan/map | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
+| europa/map | mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou |
+| venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
+
+### a forma (item 20)
+
+Os quatro corpos cujo modelo de forma IRREGULAR existe publicado e **não** é
+carregado: a casa não tem `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**,
+acima) e desenha o elipsoide de `BODY_AXES`.
+
+| corpo | nota |
+| --- | --- |
+| vesta | elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega |
+| pallas | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
+| hygiea | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
+| haumea | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |

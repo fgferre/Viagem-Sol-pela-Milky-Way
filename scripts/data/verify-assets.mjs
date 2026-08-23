@@ -737,10 +737,57 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
   const naoResolvidas = texturasDoc.entradas.filter(
     (e) => e.proveniencia === 'nao-resolvida'
   ).length;
+
+  // ---- A CONFISSÃO (itens 19 e 20, fechados em 22/08) -------------------
+  // As frases que a ficha imprime nascem em `docs/reference/ASSETS.md` e
+  // chegam ao artefato pelo gerador. Aqui o ARTEFATO é cobrado contra o
+  // DOCUMENTO: um ASSETS editado sem regenerar o manifesto deixaria a tela
+  // com o veredito velho, e essa é a divergência que ninguém vê acontecer.
+  const assetsMd = await readFile(
+    path.join(rootDirectory, 'docs', 'reference', 'ASSETS.md'),
+    'utf8'
+  );
+  const notasNoManifesto = new Map();
+  for (const e of texturasDoc.entradas) {
+    if (e.nota) notasNoManifesto.set(`${e.corpo}/${e.canal}`, e.nota);
+  }
+  const CONFESSAM = ['ceres/map', 'europa/map', 'titan/map', 'venus/map'];
+  for (const chave of CONFESSAM) {
+    const nota = notasNoManifesto.get(chave);
+    if (!nota) {
+      throw new Error(
+        `atlas/texturas: "${chave}" perdeu a nota de defeito (item 19) — ` +
+          'rode npm run data:texturas.'
+      );
+    }
+    if (!assetsMd.includes(nota)) {
+      throw new Error(
+        `atlas/texturas: a nota de "${chave}" no manifesto não existe mais no ` +
+          'ASSETS.md — o documento é a fonte; rode npm run data:texturas.'
+      );
+    }
+  }
+  const ELIPSOIDES = ['haumea', 'hygiea', 'pallas', 'vesta'];
+  const formas = texturasDoc.formas ?? {};
+  if (Object.keys(formas).sort().join(',') !== ELIPSOIDES.join(',')) {
+    throw new Error(
+      `atlas/texturas: os corpos com forma confessada são [${Object.keys(formas).sort().join(', ')}]; ` +
+        `esperados [${ELIPSOIDES.join(', ')}] (item 20).`
+    );
+  }
+  for (const [id, nota] of Object.entries(formas)) {
+    if (!nota.startsWith('elipsoide, sem malha') || !assetsMd.includes(nota)) {
+      throw new Error(
+        `atlas/texturas: a forma de "${id}" não confere com o ASSETS.md ("${nota}").`
+      );
+    }
+  }
+
   console.log(
     `atlas/texturas: ${texturasDoc.entradas.length} variantes conferidas ` +
       `(sha + dimensões medidas), ${(totalBytes / 1048576).toFixed(2)} MB, ` +
-      `${naoResolvidas} com origem não resolvida.`
+      `${naoResolvidas} com origem não resolvida, ` +
+      `${CONFESSAM.length} defeitos e ${ELIPSOIDES.length} formas confessados.`
   );
 }
 

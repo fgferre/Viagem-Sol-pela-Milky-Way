@@ -41,9 +41,12 @@ do céu que estiver na tela, o raio, a gravidade, a massa e o escape com
 o "×Terra", a órbita e — para quem orbita o Sol — quanto do disco está
 iluminado visto da Terra. Cada número diz de onde veio, na mesma língua
 do selo. A antiga linha "em quadro" virou o cabeçalho dela. Fotos em
-`capturas/item74-ficha-*`. O que falta é a PARTE B, e é sobretudo TEXTO:
-a enciclopédia dos 45 corpos está em inglês e não vai para a tela até a
-tradução. Do **61** já fechou UMA parte: o
+`capturas/item74-ficha-*`. **A PARTE B veio na mesma data:** os 39
+corpos falam PORTUGUÊS na ficha (a enciclopédia que o dono escreveu em
+inglês no doador, traduzida campo a campo — a leitura é dele), e a foto
+de cada mundo passou a confessar de onde veio, sob que licença e qual é
+o defeito dela (Ceres inventado pela fonte, as emendas de Titã, as 68
+linhas de Europa, os asteroides que são elipsoides). Do **61** já fechou UMA parte: o
 **selo de honestidade**, que não fechava e comia de 3,19% (mesa) a 10,10%
 (celular) da tela, virou UMA LINHA de 0,31% a 1,03% — a mesma peça nas
 duas telas, com gaveta que sobe ao clique, os culpados finalmente na
@@ -374,11 +377,18 @@ e os dois gestos da escada. Sem seleção, nada ocupa o topo. As fotos são
    parágrafo em inglês da tela. **Ele é o autor: a leitura é dele.** O
    texto mora em `scripts/data/atlas/fonte/editorial-pt.json`, editável
    à mão. A foto é `capturas/item74-ficha-tita-pt.png`.
-2. **A imagem que confessa** — fecha os itens **19** e **20**: a
-   procedência da textura de cada mundo na ficha (fonte, licença,
-   atribuição) e o defeito dito na cara (Ceres inventado pela fonte, as
-   emendas de Titã, as 68 linhas de Europa, os asteroides que são
-   elipsoides sem malha).
+2. **A imagem que confessa — FEITO em 22/08.** A ficha tem a seção "a
+   imagem": de onde a foto veio, sob que licença, a quem creditar, e o
+   defeito medido dela quando há um. Os quatro que confessam são Ceres
+   ("a fonte admite que este mapa é inventado"), Titã (as emendas do
+   mosaico que não entrou), Europa (as 68 linhas de vazio no polo sul) e
+   Vênus ("é o topo de nuvens, não o chão"). Os cinco sem textura
+   licenciada — Palas, Haumea, Makemake, Éris e Quaoar — dizem que a
+   superfície é inventada, e Vesta, Palas, Hígia e Haumea dizem
+   "elipsoide, sem malha". **A frase sai do `docs/reference/ASSETS.md`,
+   lida por máquina**: quem corrige o veredito corrige o documento e a
+   tela acompanha. Fecha a metade da confissão do item **19** e o item
+   **20** inteiro. Foto: `capturas/item74-ficha-ceres-vesta.png`.
 3. **A ficha de estrela.** Hoje escolher uma estrela abre a ficha só com
    o cabeçalho — o nome, a palavra "estrela" e o gesto de voltar. Falta o
    conteúdo: constelação, tipo espectral, temperatura e distância. A
@@ -413,13 +423,24 @@ do projeto irmão e está desligado. Ligar depende de editar `sol/activity.js`.
 **18.** A luz trata o Sol como ponto sem tamanho. Certo para planetas,
 errado a poucos raios solares — e agora a câmera chega lá. Sem penumbra.
 
-**19.** Texturas que não passaram e um mapa inventado. Titã tem emendas,
-Europa tem 68 linhas pretas no polo sul, Ceres é inventado pela fonte,
-Vênus não tem foto em luz visível.
-→ `docs/reference/ASSETS.md`.
+**19. (A METADE DA CONFISSÃO FECHOU em 22/08; a das texturas segue
+aberta.)** Titã tem emendas, Europa tem 68 linhas pretas no polo sul,
+Ceres é inventado pela fonte, Vênus não tem foto em luz visível.
+→ `docs/reference/ASSETS.md`. **O que fechou:** a ficha do objeto agora
+DIZ isso na tela, corpo a corpo, junto com a fonte, a licença e o
+crédito da imagem — a frase sai do próprio ASSETS.md, lida por máquina.
+**O que fica:** as texturas continuam sendo as piores das duas, e
+trocá-las é trabalho de bancada (o mosaico Cassini de Titã com as
+emendas tratadas, as 68 linhas de Europa preenchidas, o mosaico Dawn de
+Ceres com licença fechada).
 
-**20.** Asteroides são elipsoides, e o HUD não confessa. Diz “cartografia
-real” sem admitir o recuo procedural.
+**20. FECHADO em 22/08 — sai da lista no commit seguinte, com o hash.**
+Vesta, Palas, Hígia e Haumea têm forma irregular medida e publicada, e
+esta casa desenha um elipsoide. A ficha de cada um agora diz
+**"elipsoide, sem malha"**, com o selo de artifício. Carregar a malha de
+verdade continua pendente, e não é este item: é a **P-F7-MESH** do
+`docs/reference/ASSETS.md` (falta `GLTFLoader`/`OBJLoader`), que mora
+lá.
 
 **34.** A tela de carregamento desenha outra Via Láctea, de dois braços.
 O modelo da casa tem quatro.

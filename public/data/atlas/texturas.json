@@ -1,6 +1,13 @@
 {
   "formato": "texturas-atlas-v1",
   "geradoPor": "scripts/data/atlas/gera-manifest-texturas.mjs",
+  "confissao": "docs/reference/ASSETS.md § A CONFISSÃO NA TELA",
+  "formas": {
+    "haumea": "elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega",
+    "hygiea": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
+    "pallas": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
+    "vesta": "elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega"
+  },
   "entradas": [
     {
       "corpo": "ariel",
@@ -128,7 +135,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente"
     },
     {
       "corpo": "ceres",
@@ -144,7 +152,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": "a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente"
     },
     {
       "corpo": "ceres",
@@ -160,7 +169,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente"
     },
     {
       "corpo": "charon",
@@ -992,7 +1002,8 @@
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou"
     },
     {
       "corpo": "europa",
@@ -1008,7 +1019,8 @@
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou"
     },
     {
       "corpo": "europa",
@@ -1024,7 +1036,8 @@
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": "mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou"
     },
     {
       "corpo": "europa",
@@ -1040,7 +1053,8 @@
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou"
     },
     {
       "corpo": "ganymede",
@@ -2368,7 +2382,8 @@
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": "720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou"
     },
     {
       "corpo": "titan",
@@ -2384,7 +2399,8 @@
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou"
     },
     {
       "corpo": "titania",
@@ -2656,7 +2672,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor"
     },
     {
       "corpo": "venus",
@@ -2672,7 +2689,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor"
     },
     {
       "corpo": "venus",
@@ -2688,7 +2706,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor"
     },
     {
       "corpo": "venus",
@@ -2704,7 +2723,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor"
     },
     {
       "corpo": "venus",
@@ -2720,7 +2740,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor"
     },
     {
       "corpo": "venus",
@@ -2736,7 +2757,8 @@
         "licenca": "CC BY 4.0",
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor"
     },
     {
       "corpo": "vesta",
