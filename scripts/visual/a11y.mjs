@@ -1807,23 +1807,40 @@ async function julgarCelular(s) {
   // c) O TOQUE NO CÉU — e a prova é de DOIS lados, porque um lado só não
   //    distingue "a regra funciona" de "o dedo caiu no vazio": o MESMO
   //    pixel, com a folha aberta, FECHA e não escolhe; sem folha aberta,
-  //    ESCOLHE. O alvo é um pixel com tinta no canvas dos rótulos, que é
-  //    onde há nome para escolher.
+  //    ESCOLHE.
+  //
+  //    O ALVO É A ÂNCORA DE UM RÓTULO DESENHADO, e não o primeiro pixel
+  //    com tinta do canvas. A varredura de pixel media o CANTO de uma
+  //    letra — que pode ficar meia palavra longe do ponto contra o qual
+  //    o hit-test compara (`alvoNoPonto`, raio de ~6% da tela) — e por
+  //    isso reprovava sozinha sempre que a câmera mudava de
+  //    enquadramento: a 390 px, com o retângulo útil do telefone, o
+  //    rótulo mais alto da tela passou a ser outro e o canto dele caiu
+  //    fora do raio. A âncora é o ponto que o produto usa, e as duas
+  //    condições do hit-test (desenhado, opacidade ≥ 0,15) entram na
+  //    escolha em vez de ficarem implícitas.
+  //
+  //    E O PONTO TEM DE SER CÉU DE VERDADE: a folha sobe até 48vh e a
+  //    fileira ocupa o pé, então um rótulo perfeitamente desenhado pode
+  //    estar ATRÁS deles — e aí o toque acerta o painel, não o canvas.
+  //    Quem responde isso é `elementFromPoint`, com a folha JÁ ABERTA,
+  //    que é o estado do primeiro dos três toques.
+  await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
+  await dorme(300);
   const tinta = await s.js(`(() => {
-    const c = document.querySelector('.label-canvas');
-    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-    for (let y = 0; y < c.height * 0.45; y += 2) {
-      for (let x = 0; x < c.width; x += 2) {
-        if (d[(y * c.width + x) * 4 + 3] > 200) return { x, y };
-      }
+    const alvos = window.__director.rotulos.alvos
+      .filter((l) => l.desenhado === true && l.opacity >= 0.15);
+    for (const l of alvos) {
+      const x = Math.round(l.x * innerWidth), y = Math.round(l.y * innerHeight);
+      if (x < 1 || y < 1 || x > innerWidth - 2 || y > innerHeight - 2) continue;
+      const alvo = document.elementFromPoint(x, y);
+      if (alvo && alvo.classList.contains('scene-canvas')) return { x, y, nome: l.name };
     }
     return null;
   })()`);
   if (!tinta) {
-    conferir(false, 'toque no céu: nenhum rótulo desenhado para tocar');
+    conferir(false, 'toque no céu: nenhum rótulo desenhado sobre o canvas para tocar');
   } else {
-    await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
-    await dorme(250);
     await s.clicar(tinta.x, tinta.y);
     await dorme(600);
     const depoisDoToque = await s.js(`(() => ({
@@ -1854,7 +1871,7 @@ async function julgarCelular(s) {
     }))()`);
     conferir(
       semFolha.alvo !== null,
-      `toque no céu SEM folha aberta: continua escolhendo — alvo`
+      `toque no céu SEM folha aberta: continua escolhendo ("${tinta.nome}") — alvo`
         + ` ${semFolha.alvo ?? 'nenhum'}`
     );
     // …e a FICHA é a exceção: ela é o painel da SELEÇÃO, não uma folha
@@ -1907,6 +1924,67 @@ async function julgarCelular(s) {
         + ` ${q.teto === '52vh' ? 'celular' : 'mesa'} (--teto-dialogo-tela: ${q.teto})`
     );
   }
+
+  // ---- PARTE 5: O CÉU ----------------------------------------------
+  // A SEGUNDA FAIXA DECLARADA. Até 2026-08-23 o retângulo útil tinha uma
+  // só (`LARGURA_UTIL_MINIMA_PX`, 768 px para cima) e o telefone era
+  // registro: a câmera recuava pela base de MESA — o selo grande, a
+  // máquina do tempo e os dois degraus dela, todos disparados numa tela
+  // de 390 px — por um rodapé que a fatia 9 já tinha desmontado. Agora o
+  // ramo do celular tem quatro frações próprias, e elas são COBRADAS
+  // aqui, nos seis cantos da faixa: dois aparelhos × três `?ui=`.
+  //
+  // O QUE ESTA PROVA MEDE, e o que ela NÃO mede: ela cobra declarado ≥
+  // medido, que é a promessa de que nada do alvo cai atrás do HUD. O
+  // ganho de céu é o outro lado — `medirCobertura` imprime os dois
+  // números em cada canto, e a meta do item 62 (≥ 75% a 390, ≥ 70% a
+  // 320) é conferida logo abaixo, no tamanho de fábrica.
+  const META_DO_CEU = { 390: 75, 320: 70 };
+  for (const fator of [0.85, 1, 1.4]) {
+    for (const [w, h] of APARELHOS) {
+      await vestirAparelho(s, w, h);
+      await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+      await dorme(200);
+      await medirCobertura(s, `celular ${w}×${h}, ui = ${fator}`, true, fator);
+    }
+  }
+  // A META, no TAMANHO DE FÁBRICA e com a dica NA TELA — ou seja, o pior
+  // instante do pior estado, contando até o que a declaração não paga.
+  // Foi assim que os 42% e os 18% de antes foram medidos (item 62), e
+  // comparar de outro jeito seria trocar a régua no meio da conta.
+  for (const [w, h] of APARELHOS) {
+    await vestirAparelho(s, w, h);
+    await s.ir(`atlas=1&${PIN}`);
+    await dorme(200);
+    const c = await s.js(`(() => {
+      const H = innerHeight;
+      const cx = (sel) => {
+        const e = document.querySelector(sel);
+        if (!e) return 0;
+        const b = e.getBoundingClientRect();
+        return b.height === 0 ? 0 : b;
+      };
+      const topo = Math.max(...['.controls-bar', '.letterbox.top']
+        .map(cx).filter(Boolean).map((b) => b.bottom / H));
+      const base = Math.max(...['.atlas-selo', '.free-hint', '.atlas-alcas', '.letterbox.bottom']
+        .map(cx).filter(Boolean).map((b) => (H - b.top) / H));
+      return { pct: (1 - topo - base) * 100, util: window.__director.retanguloUtil };
+    })()`);
+    conferir(
+      c.pct >= META_DO_CEU[w],
+      `o CÉU a ${w}×${h}: ${c.pct.toFixed(1)}% da tela livre de HUD ≥ meta`
+        + ` ${META_DO_CEU[w]}% (declarado à câmera:`
+        + ` ${((1 - c.util.topo - c.util.base) * 100).toFixed(1)}%)`
+    );
+  }
+  // A FRESTA de 761 a 767 px — o que sobra entre as duas faixas
+  // declaradas. Ali o `@media` ainda diz mesa (é `max-width: 760px`) e a
+  // janela já é estreita demais para a declaração de mesa não pagar os
+  // três degraus. Continua REGISTRO, e continua nomeada.
+  await vestirAparelho(s, 764, 844);
+  await s.ir(`atlas=1&${PIN}`);
+  await dorme(200);
+  await medirCobertura(s, 'a FRESTA entre as duas faixas (761–767)', false);
   await despirAparelho(s);
 }
 
@@ -2057,36 +2135,74 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
       // a máquina do tempo entrou na base pela F4: sem esta linha o
       // juiz mediria um HUD que não é mais o que está na tela
       '.atlas-tempo',
+      // A FILEIRA DE ALÇAS (item 62): a base do TELEFONE. Ela não existe
+      // acima de 760 px, e o medidor devolve nulo para quem não está no
+      // DOM — a mesma linha serve os dois arranjos.
+      '.atlas-alcas',
+      // ...e a TARJA de baixo, que no telefone é o piso da base e no
+      // arranjo de mesa já está dentro do que o selo mede
+      '.letterbox.bottom',
     ].map(medir).filter(Boolean);
-    const noTopo = pecas.filter((p) => p.topo < 0.5);
-    const naBase = pecas.filter((p) => p.topo >= 0.5);
+    // A DICA SAI DA COBRANÇA NO TELEFONE, e é a decisão declarada do
+    // item 62 (ver retanguloDoAtlas.ts): lá ela é position absolute, apaga
+    // sozinha no primeiro arrasto e cede à folha por opacidade — o
+    // oposto de área permanente. Na MESA ela conta, porque está no
+    // FLUXO: a caixa fica, só a tinta some. Quem diz qual arranjo está
+    // na tela é a presença da fileira, não uma largura redigitada aqui.
+    const noTelefone = Boolean(document.querySelector('.atlas-alcas'));
+    const cobradas = pecas.filter((p) => !(noTelefone && p.sel === '.free-hint'));
+    const dica = pecas.find((p) => p.sel === '.free-hint');
+    const noTopo = cobradas.filter((p) => p.topo < 0.5);
+    const naBase = cobradas.filter((p) => p.topo >= 0.5);
     return {
       util,
       largura: window.innerWidth,
+      noTelefone,
+      dicaBase: noTelefone && dica ? dica.base : null,
       noTopo: noTopo.length,
       naBase: naBase.length,
       topoMedido: Math.max(...noTopo.map((p) => p.topo)),
       baseMedida: Math.max(...naBase.map((p) => p.base)),
-      pecas: pecas.map((p) => p.sel + ':' + p.topo.toFixed(3) + '/' + p.base.toFixed(3)),
+      pecas: cobradas.map((p) => p.sel + ':' + p.topo.toFixed(3) + '/' + p.base.toFixed(3)),
     };
   })()`);
   const sobra = 1 - cobertura.topoMedido - cobertura.baseMedida;
-  // JANELA MUITO BAIXA, ou abaixo da faixa declarada
-  // (`LARGURA_UTIL_MINIMA_PX`): a medição é REGISTRO, não gate. A
-  // declaração é fração de ALTURA e não sabe da altura da janela, então
-  // num viewport de 450 px a mesma peça de HUD é o dobro de fração; e
-  // abaixo da faixa o HUD do Atlas troca de arranjo (uma coluna só, de
-  // borda a borda — fatia 6 do CSS), onde a base é maior de propósito.
+  // A DICA, quando ela ficou de fora da cobrança (telefone): o número
+  // aparece SEMPRE, como registro. O que não é cobrado não pode ficar
+  // invisível — é ela que decide se a decisão de não declará-la
+  // continua barata.
+  if (cobertura.dicaBase !== null) {
+    process.stdout.write(
+      `  ·     retângulo útil (${quando}, ${cobertura.largura} px): a dica dos gestos ocupa `
+        + `${(cobertura.dicaBase * 100).toFixed(1)}% da altura — REGISTRO, fora do fluxo e `
+        + `apaga no primeiro arrasto (céu com ela na tela: `
+        + `${((1 - cobertura.topoMedido - Math.max(cobertura.baseMedida, cobertura.dicaBase)) * 100).toFixed(1)}%)\n`
+    );
+  }
+  // JANELA MUITO BAIXA, ou na FRESTA entre as duas faixas declaradas
+  // (761–767 px): a medição é REGISTRO, não gate. A declaração é fração
+  // de ALTURA e não sabe da altura da janela, então num viewport de 450
+  // px a mesma peça de HUD é o dobro de fração; e na fresta o CSS ainda
+  // diz mesa enquanto a janela já é estreita demais para a barra caber
+  // sem a quebra que a declaração de mesa paga.
   // O número sai daqui em vez de sair de um adjetivo.
   if (!cobra) {
     process.stdout.write(
       `  ·     retângulo útil (${quando}, ${cobertura.largura} px de largura): `
         + `topo ${cobertura.topoMedido.toFixed(3)}/${cobertura.util.topo.toFixed(3)} · `
         + `base ${cobertura.baseMedida.toFixed(3)}/${cobertura.util.base.toFixed(3)} · `
-        + `sobra ${(sobra * 100).toFixed(1)}% — REGISTRO (fora da faixa declarada)\n`
+        + `sobra ${(sobra * 100).toFixed(1)}% — REGISTRO (fora das faixas declaradas)\n`
     );
     return;
   }
+  // O CÉU LIVRE, impresso em toda cobrança: é o número do item 62, e é o
+  // que a DECLARAÇÃO entrega à câmera (o medido é o HUD real; o
+  // declarado é o que faz a câmera recuar).
+  process.stdout.write(
+    `  ·     céu livre (${quando}, ${cobertura.largura} px): declarado `
+      + `${((1 - cobertura.util.topo - cobertura.util.base) * 100).toFixed(1)}% · `
+      + `medido ${(sobra * 100).toFixed(1)}%\n`
+  );
   // MEDIU ALGUMA COISA? Com `noTopo` (ou `naBase`) vazio, `Math.max()`
   // devolve −Infinity e as duas provas abaixo passam imprimindo "medido
   // -Infinity" — HUD ausente vira indistinguível de HUD coberto, que é

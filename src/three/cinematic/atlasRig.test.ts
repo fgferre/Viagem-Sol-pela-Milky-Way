@@ -33,6 +33,7 @@ import {
   retanguloUtilDoAtlas,
 } from './atlasRig';
 import { distanciaAposEstalos } from '../zoomDaRoda';
+import { LARGURA_DO_CELULAR_PX } from '../../lib/uiScale';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { RAIO_DO_SOL_NA_CENA, RAIO_SOL_KM, RAIO_SOL_PC } from '../escala';
 import { EPOCA_JD_TDB, RETRATO_2026 } from '../world/planetas/retrato2026';
@@ -284,6 +285,44 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // a faixa declarada de validade é um número, não um adjetivo
     expect(LARGURA_UTIL_MINIMA_PX).toBeGreaterThan(0);
     expect(LARGURA_UTIL_MINIMA_PX).toBeLessThan(LARGURA_DE_MESA_PX);
+  });
+
+  it('o TELEFONE tem conta própria, e ela vira no mesmo pixel que o CSS', () => {
+    // A fronteira é `LARGURA_DO_CELULAR_PX` (760), o número que o
+    // `@media` do HUD usa e que o `useCelular` lê. A 760 o retângulo é o
+    // do telefone; a 761 é o de mesa — se os dois lados discordassem, a
+    // câmera recuaria por um rodapé que o CSS já desmontou (ou o
+    // contrário, que é pior: o alvo atrás do selo).
+    const celular = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX);
+    const mesa = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX + 1);
+    expect(celular.topo).toBeCloseTo(0.045 + 0.025, 12);
+    expect(celular.base).toBeCloseTo(0.11 + 0.05, 12);
+    // ...e a conta de mesa nessa largura é a que ela sempre foi: a barra
+    // quebrada em cima, a primeira quebra da máquina do tempo embaixo (a
+    // segunda só entra abaixo de 714 px)
+    expect(mesa.topo).toBeCloseTo(0.065 + 0.09 + 0.04, 12);
+    expect(mesa.base).toBeCloseTo(0.065 + 0.175 + 0.03, 12);
+
+    // O GANHO É O ASSUNTO DO ITEM 62: numa tela de 390 px a conta de
+    // mesa disparava TODOS os degraus e deixava 44,5% de céu; a do
+    // telefone deixa 77,0% — a câmera para de recuar por peças que a
+    // fatia 9 do HUD já desmontou.
+    const ceu = (u: ReturnType<typeof retanguloUtilDoAtlas>) => 1 - u.topo - u.base;
+    expect(ceu(retanguloUtilDoAtlas(1, 390))).toBeCloseTo(0.77, 12);
+    expect(ceu(retanguloUtilDoAtlas(1, 320))).toBeCloseTo(0.77, 12);
+    // a conta de MESA a 390 px, que é o que valia até 2026-08-23:
+    // 0,065 + 0,09 + 0,04 de topo e 0,065 + 0,175 + 0,03 + 0,09 de base
+    expect(1 - (0.065 + 0.09 + 0.04) - (0.065 + 0.175 + 0.03 + 0.09)).toBeCloseTo(0.445, 12);
+
+    // O TEXTO GRANDE ESCALA as três frações do telefone, como na mesa —
+    // e a tarja não, que é `vh` puro nos dois arranjos.
+    const grande = retanguloUtilDoAtlas(1.4, 390);
+    expect(grande.topo).toBeCloseTo(0.045 + 0.025 * 1.4, 12);
+    expect(grande.base).toBeCloseTo((0.11 + 0.05) * 1.4, 12);
+    // ...e o texto MENOR nunca deixa a base cair abaixo da tarja de
+    // baixo: a fileira a engole hoje, e o `Math.max` é quem garante que
+    // ela continue coberta se o alvo de toque encolher um dia
+    expect(retanguloUtilDoAtlas(0.1, 390).base).toBeCloseTo(0.045, 12);
   });
 
   it('painel só à direita joga o alvo para a esquerda do quadro', () => {

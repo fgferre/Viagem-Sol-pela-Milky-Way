@@ -4,12 +4,23 @@
 // Tudo aqui é layout: as frações que o CSS do HUD come de cada
 // borda e a conta que as soma. Zero THREE, zero câmera — quem
 // enquadra é ./enquadramento; quem liga à câmera é ./atlasRig.
+//
+// SÃO DOIS ARRANJOS DE HUD, e por isso duas contas: a MESA (a barra
+// de controles em cima, o selo e a máquina do tempo embaixo) e o
+// TELEFONE (item 62: o "Partir" dentro da tarja, a fileira de alças
+// no pé e o selo numa linha em cima dela). A fronteira é
+// `LARGURA_DO_CELULAR_PX`, o mesmo número que o `@media` do HUD usa
+// e que o `useCelular` lê para decidir quem está no DOM — a câmera
+// não pode recuar por um rodapé que o CSS já desmontou.
 // ============================================================
+import { LARGURA_DO_CELULAR_PX } from '../../lib/uiScale';
+
 /**
  * As tarjas de cinema comem 6,5% da altura em CADA borda
  * (`.letterbox.on { height: 6.5vh }`, hud.css) e o Atlas as mantém —
  * é o mesmo quadro do filme. Fonte única do número para o retângulo
- * útil; se a tarja mudar no CSS, muda aqui.
+ * útil; se a tarja mudar no CSS, muda aqui. No TELEFONE a mesma tarja
+ * mede 4,5vh (fatia 6 do HUD) — o número de lá é `LETTERBOX_CELULAR`.
  */
 const LETTERBOX_FRACAO = 0.065;
 
@@ -159,13 +170,14 @@ export const LARGURA_DE_MESA_PX = 1200;
  * coluna, então o que ela ocupa virou altura declarável em vez de
  * transbordo invisível.
  *
- * ABAIXO DE 761 px o HUD do Atlas troca de arranjo: a faixa de baixo
- * deixa de ser duas colunas de ~45vw e vira UMA coluna de borda a borda
- * (fatia 6 do HUD). Ali a base é maior de propósito — três blocos
- * empilhados numa tela de celular ocupam mais altura do que dois lado a
- * lado, e em troca nada é cortado, sobreposto nem pintado fora do lugar.
- * É medição de REGISTRO, não gate: o juiz de a11y imprime os números
- * dessas larguras e cobra como gate a faixa declarada aqui.
+ * ELE É O PISO DA FAIXA DE MESA, e desde 2026-08-23 há uma SEGUNDA faixa
+ * declarada: até `LARGURA_DO_CELULAR_PX` (760) vale o ramo do telefone,
+ * medido e cobrado nos mesmos termos (`julgarCelular`, parte 5). O que
+ * sobra entre as duas — a fresta de 761 a 767 px — continua sendo
+ * REGISTRO, e continua nomeada: ali o CSS ainda diz mesa (o `@media` é
+ * `max-width: 760px`) mas a janela é estreita demais para a barra de
+ * controles caber sem a quebra que a declaração de mesa paga. O juiz
+ * imprime o número dessa fresta em vez de cobrá-lo.
  */
 export const LARGURA_UTIL_MINIMA_PX = 768;
 
@@ -184,6 +196,102 @@ export const LARGURA_UTIL_MINIMA_PX = 768;
  * é este número que o juiz confere contra o retângulo real.
  */
 const TEMPO_FRACAO = 0.175;
+
+/**
+ * ---- O TELEFONE (item 62, etapa 2) ---------------------------------
+ *
+ * ABAIXO DE 761 px O HUD É OUTRO, e até 2026-08-23 a câmera não sabia:
+ * a fatia 9 do HUD desfez a barra de controles (só o "Partir" ficou, e
+ * DENTRO da tarja), tirou a máquina do tempo do rodapé (virou a alça ⏱),
+ * pôs as portas numa fileira de alças no pé e reduziu o selo a uma linha
+ * em cima dela — e o retângulo continuava descontando a base de MESA,
+ * `Math.max(SELO_FRACAO, TEMPO_FRACAO)` mais os dois degraus da máquina
+ * do tempo, que numa tela de 390 px disparam os dois. Ou seja: a câmera
+ * recuava por um rodapé que o CSS já tinha desmontado. Medido a 390×844
+ * com `ui = 1`: 44,5% de céu declarado contra 84,5% de HUD real fora do
+ * caminho.
+ *
+ * AS QUATRO FRAÇÕES SÃO MEDIDAS, uma a uma, pelo juiz de a11y
+ * (`julgarCelular`, parte 5) nos SEIS cantos da faixa nova — 390×844 e
+ * 320×568, com `?ui=` 0,85, 1 e 1,4 —, e ele cobra declarado ≥ medido em
+ * cada um. É a disciplina de `LARGURA_DA_QUEBRA_DO_TEMPO_PX`: número que
+ * entra aqui nasce de uma leitura de `getBoundingClientRect`, nunca de
+ * aritmética de comentário.
+ *
+ * MEDIDO em 2026-08-23 (Chrome com `mobile: true` e toque emulado,
+ * `?atlas=1&q=cinema&shot=1`), em fração da altura da janela:
+ *
+ *              tarja   "Partir"      fileira    selo (linha + vão)
+ *   390, 0,85  0,0450   0,0327       0,0580     0,0847 − 0,0580 = 0,0267
+ *   390, 1,00  0,0450   0,0364       0,0682     0,0987 − 0,0682 = 0,0305
+ *   390, 1,40  0,0450   0,0492       0,0955     0,1389 − 0,0955 = 0,0434
+ *   320, 0,85  0,0450   0,0466       0,0862     0,1258 − 0,0862 = 0,0396
+ *   320, 1,00  0,0450   0,0522       0,1014     0,1466 − 0,1014 = 0,0452
+ *   320, 1,40  0,0450   0,0712       0,1419     0,2064 − 0,1419 = 0,0645
+ *
+ * NORMALIZADAS por `ui`, a fileira dá 0,0682 (390) e 0,1014 (320) em
+ * TODOS os três degraus — ela é `rem` puro (`--alcas-altura: 3.6rem`), e
+ * a diferença entre os dois aparelhos é só a altura da janela. O selo
+ * acima dela dá 0,0314 (390) e 0,0466 (320). O aparelho PEQUENO manda,
+ * porque a mesma peça em `rem` é fração maior numa tela mais baixa.
+ */
+
+/**
+ * A TARJA NO TELEFONE — `.letterbox.on { height: 4.5vh }` na fatia 6,
+ * contra os 6,5vh da mesa. Fonte única do número, como o
+ * `LETTERBOX_FRACAO`: se a tarja mudar no CSS, muda aqui. (Tirá-las no
+ * celular é a única pergunta de GOSTO que o item 62 deixou para o dono —
+ * elas custam ~9% da tela e ficaram porque são "o mesmo quadro do
+ * filme".)
+ */
+const LETTERBOX_CELULAR = 0.045;
+
+/**
+ * O "PARTIR", a única SAÍDA por ponteiro do modo, ancorado DENTRO da
+ * tarja (`top: 0.4vh`). Ele quase não sobra da tarja — no aparelho comum
+ * cabe inteiro nela —, mas num de 320 px com o texto grande transborda
+ * 2,6% da altura. 0,025 cobre o pior caso medido (0,0712 contra 0,0450
+ * de tarja, ou seja 0,0187 por unidade de `ui`) com 0,0088 de folga para
+ * fonte de outra máquina — o juiz roda no macOS do dono e na nuvem.
+ */
+const SAIDA_FRACAO = 0.025;
+
+/**
+ * A FILEIRA DE ALÇAS, que é a base de verdade do telefone. Ela é `fixed`
+ * no pé e ENGOLE a tarja de baixo, então não se soma nada a ela: 0,11
+ * cobre o pior medido (0,1014 no aparelho pequeno) com 0,0086 de folga.
+ * O alvo de toque dela — 2,75rem, 44 px em `ui = 1` — é o que a dimensiona,
+ * e é ele que não se aperta (o commit anterior apertou LARGURA, nunca o
+ * alvo).
+ */
+const ALCAS_FRACAO = 0.11;
+
+/**
+ * O SELO, que no telefone é UMA LINHA acima da fileira — `--selo-base`
+ * soma `--alcas-altura` dentro de si (fatia 9), então o que entra aqui é
+ * só o que ele acrescenta POR CIMA dela. 0,05 cobre o pior medido
+ * (0,0466) com 0,0034 de folga. Nada do `SELO_FRACAO` de mesa (0,14)
+ * atravessa: lá ele dividia a faixa com a máquina do tempo, e aqui a
+ * máquina do tempo é uma alça.
+ */
+const SELO_FRACAO_CELULAR = 0.05;
+
+/**
+ * A DICA DOS GESTOS NÃO ENTRA NA BASE DO TELEFONE, e é decisão declarada
+ * do item 62 — a mesma que a tirou do fluxo. Ela é a única peça do HUD
+ * que se apaga sozinha (`.free-hint.apagada`, no primeiro arrasto) e que
+ * cede à folha por opacidade quando um painel abre: o retângulo útil
+ * desconta área PERMANENTE, e ela é o oposto disso. Na MESA ela conta
+ * porque está NO FLUXO — a caixa fica, só a tinta some.
+ *
+ * O preço é declarado e medido: enquanto ela está na tela, ocupa 0,1533
+ * da altura a 390×844 e 0,3689 a 320×568 com `ui = 1,4`. Declará-la
+ * levaria a base a 0,264 por unidade de `ui` e devolveria o céu a 66,6%
+ * — abaixo da meta de 70% —, ou seja, pagaríamos o quadro inteiro por
+ * uma linha de ensino que some no primeiro gesto. O juiz de a11y IMPRIME
+ * o número dela em todos os seis cantos, como registro: o que não é
+ * cobrado não fica invisível.
+ */
 
 /**
  * O que o HUD come do quadro, em FRAÇÃO de cada borda. Um só produtor
@@ -216,7 +324,7 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
  * descontar meia largura por causa de uma faixa que ocupa 7% da altura
  * empurraria a câmera para trás sem necessidade. Descontar a FAIXA
  * inteira é o corte honesto — é o que garante que nada do alvo caia
- * atrás do texto. As QUATRO GAVETAS não entram nesta conta: o retângulo
+ * atrás do texto. As CINCO GAVETAS não entram nesta conta: o retângulo
  * útil desconta área PERMANENTE, nunca painel que o visitante abriu por
  * um instante.
  *
@@ -235,6 +343,18 @@ export function retanguloUtilDoAtlas(
   const k = Number.isFinite(fatorUi) && fatorUi > 0 ? fatorUi : 1;
   const largura =
     Number.isFinite(larguraPx) && larguraPx > 0 ? larguraPx : LARGURA_DE_MESA_PX;
+  // O TELEFONE É OUTRO HUD, não o de mesa apertado — ver o bloco das
+  // quatro frações acima. O `Math.max` na base é o piso da tarja: a
+  // fileira já a engole nos dois aparelhos medidos, e o `max` garante
+  // que ela nunca fique de fora se o alvo de toque encolher um dia.
+  if (largura <= LARGURA_DO_CELULAR_PX) {
+    return {
+      esquerda: 0,
+      direita: 0,
+      topo: LETTERBOX_CELULAR + SAIDA_FRACAO * k,
+      base: Math.max(LETTERBOX_CELULAR, (ALCAS_FRACAO + SELO_FRACAO_CELULAR) * k),
+    };
+  }
   return {
     esquerda: 0,
     direita: 0,
