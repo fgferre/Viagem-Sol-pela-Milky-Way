@@ -236,10 +236,21 @@ export default function App() {
    */
   const [girouNoAtlas, setGirouNoAtlas] = useState(false);
 
-  // AS QUATRO GAVETAS (Ajustes, Camadas, Busca, Ficha) — uma aberta por vez,
-  // e o mecanismo inteiro mora em `useGavetas`: o enum, os dois gatilhos e a
-  // regra "há seleção ⇒ há ficha", que é por onde a escada as abre.
-  const { gaveta, alternarGaveta, fecharGaveta } = useGavetas(escada, foco, phase);
+  /**
+   * A JANELA É DE CELULAR? (item 62) — `LARGURA_DO_CELULAR_PX`, lida por
+   * `matchMedia` com ouvinte. Vem antes das gavetas porque elas precisam
+   * dela: no telefone a folha DESCE antes de sumir, e na mesa não há o
+   * que descer.
+   */
+  const celular = useCelular();
+
+  // AS CINCO GAVETAS (Ajustes, Camadas, Busca, Ficha, Tempo) — uma aberta por
+  // vez, e o mecanismo inteiro mora em `useGavetas`: o enum, os dois gatilhos,
+  // a regra "há seleção ⇒ há ficha" (por onde a escada as abre) e a saída de
+  // 260 ms da folha do telefone. `montada` é a que está DESENHADA — a aberta,
+  // ou a que está descendo.
+  const { gaveta, montada, alternarGaveta, fecharGaveta, fecharTodas } =
+    useGavetas(escada, foco, phase, celular);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
   // (onda da arquitetura, corte 6) — os fios são os mesmos de sempre.
@@ -265,6 +276,7 @@ export default function App() {
     setTempo,
     setEscada,
     girou: () => setGirouNoAtlas(true),
+    fecharGavetas: fecharTodas,
   });
 
   // ?loader=<id> fixa uma etapa da tela de carregamento e a mantém no ar
@@ -612,7 +624,6 @@ export default function App() {
    * daria dois gatilhos com o mesmo nome no documento, que é o que o
    * contrato do `dialogFocus` proíbe e o que o juiz varre.
    */
-  const celular = useCelular();
   const alcas = celular && phase === 'atlas';
 
   /**
@@ -1018,7 +1029,7 @@ export default function App() {
           junto com o resto do HUD (a regra do .bare-mode só alcança
           filhos diretos). */}
       <GavetaDeCamadas
-        aberta={gaveta === 'camadas' && hud.gaveta}
+        aberta={montada === 'camadas' && hud.gaveta}
         onFechar={() => fecharGaveta('camadas')}
         escondidas={escondidas}
         onCamada={alternarCamada}
@@ -1029,7 +1040,7 @@ export default function App() {
           Filha DIRETA de .hud-root como as outras. */}
       {alcas && hud.tempo && tempo && (
         <GavetaDoTempo
-          aberta={gaveta === 'tempo'}
+          aberta={montada === 'tempo'}
           onFechar={() => fecharGaveta('tempo')}
           tempo={tempo}
           onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
@@ -1044,7 +1055,7 @@ export default function App() {
           outras: é a regra do `.bare-mode` (`> *:not(.scene-canvas)`) que a
           apaga no `?shot=2`, e ela só alcança filhos diretos. */}
       <FichaDoObjeto
-        aberta={fichaAberta}
+        aberta={montada === 'ficha' && hud.ficha}
         onFechar={() => fecharGaveta('ficha')}
         corpoId={escada.corpoId}
         estrelaEmFoco={escada.degrau === 'estrela' ? foco : null}
@@ -1063,7 +1074,7 @@ export default function App() {
           que faz a consulta anterior não sobrar para a próxima abertura.
           O verbo vem da fase: no Atlas a escolha enquadra, no voo livre
           ela voa. */}
-      {gaveta === 'busca' && hud.busca && (
+      {montada === 'busca' && hud.busca && (
         <PaletaDeBusca
           onFechar={() => fecharGaveta('busca')}
           indice={indice}
@@ -1073,7 +1084,7 @@ export default function App() {
       )}
 
       <Ajustes
-        aberto={gaveta === 'ajustes'}
+        aberto={montada === 'ajustes'}
         onFechar={() => fecharGaveta('ajustes')}
         qualidade={quality}
         onQualidade={changeQuality}

@@ -216,6 +216,12 @@ interface DirectorEvents {
    */
   onGirou: () => void;
   /**
+   * O TOQUE NO CÉU FECHOU A GAVETA (item 62). Quem decide QUAL toque
+   * fecha é `director/gestos.ts`; este fio só entrega o recado ao React,
+   * que é quem tem o estado das gavetas.
+   */
+  onFecharGavetas: () => void;
+  /**
    * A SESSÃO MORREU DEPOIS DO BOOT — contexto WebGL perdido ou exceção
    * em quadro. É o MESMO canal do véu de erro do carregamento (o App
    * escreve `loadError`): a casa tem um véu de falha só, e o que muda
@@ -725,6 +731,7 @@ export class Director {
       // dois gestos: o primeiro troca o alvo com a câmera parada, o
       // segundo é o preset da escada, com rampa.
       selecionar: (x, y) => this.escada.selecionarNoPonto(x, y),
+      fecharGavetas: () => this.events.onFecharGavetas(),
       mergulhar: () => this.escada.mergulharNoEscolhido(),
       // A RODA ESCREVE DISTÂNCIA, e só distância (item 73): nem
       // `focoCorpoId`, nem alvo, nem degrau. É por construção que o

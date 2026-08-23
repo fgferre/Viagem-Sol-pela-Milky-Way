@@ -31,7 +31,38 @@ export interface FiosDosGestos {
    * o rig, que é quem sabe o piso e o teto do alvo.
    */
   zoom: (estalos: number) => void;
+  /**
+   * FECHA A GAVETA ABERTA — a terceira saída da folha do telefone (item
+   * 62), ao lado do toque na própria alça e do Esc. Do outro lado do fio
+   * há `setState` do React; a REGRA de qual toque fecha o quê é daqui.
+   */
+  fecharGavetas: () => void;
 }
+
+/**
+ * O TOQUE NO CÉU FECHA A FOLHA — e o MESMO gesto não escolhe: fechar um
+ * painel e trocar o alvo da câmera são duas coisas, e um toque é um.
+ *
+ * A GUARDA É A QUE A CASA JÁ ESCREVE em dois lugares (`useAtalhos` e o
+ * `Selo`): `[data-dialogo]`, o contrato que todo diálogo desta casa
+ * publica. Vale nos DOIS modos, porque o Atlas e o filme hospedam as
+ * mesmas gavetas.
+ *
+ * A FICHA É A EXCEÇÃO, e ela é o ponto em que esta obra se afasta do
+ * plano — com a razão medida. A ficha do objeto NÃO é uma folha que o
+ * visitante abriu: ela é o painel da SELEÇÃO, e abre sozinha a cada
+ * escolha (item 74). Se ela contasse, o clique num nome deixaria de
+ * escolher em quase todo instante do Atlas — só fecharia a ficha do
+ * corpo anterior —, e a queixa que o item 73 fechou (*"nem conseguimos
+ * mais selecionar para onde vamos"*) voltaria inteira, na mesa e no
+ * telefone. Com a exceção, o gesto continua o que sempre foi: escolher
+ * um corpo troca o alvo e a folha da ficha acompanha o novo alvo, que é
+ * o "live state first" que a ficha promete.
+ */
+const gavetaQueOToqueFecha = (): boolean => {
+  const nome = document.querySelector('[data-dialogo]')?.getAttribute('data-dialogo');
+  return Boolean(nome) && nome !== 'ficha';
+};
 
 /**
  * Liga os gestos no canvas e devolve o punho: `desligar()` (o teardown
@@ -45,6 +76,9 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   const arrasto = new ArrastoDePonteiro();
   const roda = new ZoomDaRoda();
 
+  /** este gesto começou fechando uma folha? então ele não escolhe nada */
+  let gestoFechouGaveta = false;
+
   /**
    * Os MESMOS listeners servem o Atlas — arrastar orbita o alvo, clique
    * curto escolhe o nome mais próximo. Registrar um segundo conjunto para
@@ -52,6 +86,12 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
    * dono muda com a fase, o listener não.
    */
   const onPointerDown = (event: PointerEvent) => {
+    // ANTES de qualquer gate de fase: o `pointerdown` no CANVAS já é "o
+    // toque foi no céu" — quem toca a própria folha não passa por aqui,
+    // porque ela é outro nó, por cima. É o mesmo lugar em que o selo
+    // escuta o clique fora dele.
+    gestoFechouGaveta = gavetaQueOToqueFecha();
+    if (gestoFechouGaveta) fios.fecharGavetas();
     if (!fios.pauseLookAtivo() && !fios.noAtlas()) return;
     arrasto.comecar(event, performance.now());
   };
@@ -102,9 +142,13 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     // 400 ms) são os do voo livre, não números novos — moram em
     // `CLIQUE_PX`/`CLIQUE_MS` (`arrastoDePonteiro.ts`), um lugar só para
     // os dois gestos, e a imobilidade do PAR usa o mesmo `CLIQUE_PX`.
+    const fechouNesteGesto = gestoFechouGaveta;
+    gestoFechouGaveta = false;
     const agora = performance.now();
     const curto = arrasto.soltar(event, agora);
     if (!curto || !fios.noAtlas()) return;
+    // o gesto já fez a coisa dele lá no `pointerdown`
+    if (fechouNesteGesto) return;
     const segundoDoPar =
       agora - ultimoCliqueMs < JANELA_DO_DUPLO_MS &&
       Math.abs(event.clientX - ultimoCliqueX) <= CLIQUE_PX &&
@@ -151,6 +195,7 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
    * assumiu o gesto), este é o único aviso que chega.
    */
   const onPointerCancel = (event: PointerEvent) => {
+    gestoFechouGaveta = false;
     arrasto.cancelar(event);
   };
 

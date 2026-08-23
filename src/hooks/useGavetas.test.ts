@@ -105,7 +105,7 @@ describe('5. os dois efeitos são do HOOK, e não do App', () => {
   });
 
   it('o App só CONSOME o enum — nenhuma regra dele sobrou lá', () => {
-    expect(APP).toContain('useGavetas(escada, foco, phase)');
+    expect(APP).toContain('useGavetas(escada, foco, phase, celular)');
     for (const regra of ['aoFocar', 'aoTravessar', 'aoAlternar', 'aoFechar']) {
       expect(APP, `${regra} voltou para o App`).not.toContain(regra);
     }

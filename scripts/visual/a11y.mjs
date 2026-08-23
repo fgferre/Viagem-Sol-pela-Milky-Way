@@ -1645,20 +1645,20 @@ async function julgarCelular(s) {
   await dorme(300);
   await s.js(`(() => {
     window.__folha = [];
-    // O RELÓGIO COMEÇA NA MONTAGEM, não no clique. Entre um e outro há um
-    // render do React e um paint, e sob a cena do Atlas correndo isso
-    // custou 130 ms na primeira versão desta prova — que é meia animação:
-    // as três amostras caíam todas antes do movimento e o juiz acusava
-    // uma folha parada que na verdade nem tinha nascido. Ancorado na
-    // montagem, o que se mede é a ANIMAÇÃO, que é o objeto do juízo.
-    let t0 = null;
+    // O RELÓGIO É O DA PRÓPRIA ANIMAÇÃO (getAnimations()[0].currentTime),
+    // e não o de parede. Entre o clique e o primeiro quadro animado há um
+    // render do React, um paint e o que a cena do Atlas estiver fazendo —
+    // medido, isso custou de 0 a 130 ms conforme a carga, e a 18 quadros
+    // por segundo (que é o que um aparelho emulado dá) uma grade de
+    // parede põe as três amostras em qualquer lugar da animação. Perguntar
+    // à animação em que ponto ELA está tira o escalonador da conta.
     const inicio = performance.now();
     const passo = () => {
       const d = document.querySelector('[data-dialogo]');
       if (d) {
+        const a = d.getAnimations()[0];
         const r = d.getBoundingClientRect();
-        if (t0 === null) t0 = performance.now();
-        window.__folha.push([Math.round(performance.now() - t0),
+        window.__folha.push([a ? Math.round(Number(a.currentTime)) : null,
           Math.round(r.top), Math.round(r.height)]);
       }
       if (performance.now() - inicio < 900) requestAnimationFrame(passo);
@@ -1668,42 +1668,188 @@ async function julgarCelular(s) {
     return true;
   })()`);
   await dorme(1400);
-  const subida = await s.js('window.__folha');
-  /** a amostra mais perto de `ms` desde a montagem */
+  const subida = (await s.js('window.__folha')).filter((a) => a[0] !== null);
+  const receita = await s.js(`(() => {
+    const d = document.querySelector('[data-dialogo]');
+    const cs = d ? getComputedStyle(d) : null;
+    return cs ? { dur: cs.animationDuration, curva: cs.animationTimingFunction,
+      nome: cs.animationName } : null;
+  })()`);
+  conferir(
+    receita !== null && receita.dur === '0.26s'
+      && receita.curva === 'cubic-bezier(0.22, 1, 0.36, 1)',
+    `folha sobe: 260 ms com a curva da casa — ${receita?.nome} ${receita?.dur}`
+      + ` ${receita?.curva}`
+  );
+  /** a amostra cujo relógio DA ANIMAÇÃO está mais perto de `ms` */
   const em = (ms) => subida.reduce(
     (a, b) => (Math.abs(b[0] - ms) < Math.abs(a[0] - ms) ? b : a),
     subida[0]
   );
-  const inicio = subida[0];
+  const inicio = em(0);
   const meio = em(130);
-  // O TERCEIRO ESTADO É "JÁ CHEGOU AOS 260", e por isso ele é a primeira
-  // amostra a partir de 260 ms e não a mais PERTO de 260: a cena do Atlas
-  // desenha a ~18 quadros por segundo num aparelho emulado, então a grade
-  // de amostragem tem ~55 ms de passo e a vizinha de 260 tanto pode ser
-  // 287 (parada) quanto 221 (ainda andando). A promessa é um teto de
-  // tempo, e teto se cobra pelo lado de cima.
   const fim = subida.find((a) => a[0] >= 260) ?? subida[subida.length - 1];
   const repouso = subida[subida.length - 1];
   const alto = repouso ? repouso[2] : 0;
   conferir(
-    subida.length >= 10,
-    `folha sobe: ${subida.length} amostras em 900 ms — a varredura mediu de verdade`
+    subida.length >= 8,
+    `folha sobe: ${subida.length} amostras com o relógio da animação —`
+      + ` a varredura mediu de verdade`
   );
   conferir(
-    Boolean(inicio && repouso) && inicio[1] >= repouso[1] + 0.8 * alto,
-    `folha sobe: no primeiro quadro ela está FORA da tela — topo ${inicio?.[1]} px`
+    Boolean(inicio && repouso) && inicio[0] <= 60
+      && inicio[1] >= repouso[1] + 0.7 * alto,
+    `folha sobe: aos ${inicio?.[0]} ms ela está FORA da tela — topo ${inicio?.[1]} px`
       + ` contra ${repouso?.[1]} em repouso (altura ${alto})`
   );
   conferir(
     Boolean(meio) && meio[1] > repouso[1] + 1 && meio[1] < inicio[1] - 1,
-    `folha sobe: a ${meio?.[0]} ms ela está NO MEIO do caminho — topo ${meio?.[1]} px`
-      + ` entre ${repouso?.[1]} e ${inicio?.[1]}`
+    `folha sobe: aos ${meio?.[0]} ms ela está NO MEIO do caminho — topo ${meio?.[1]}`
+      + ` px entre ${repouso?.[1]} e ${inicio?.[1]}`
   );
   conferir(
     Boolean(fim && repouso) && Math.abs(fim[1] - repouso[1]) <= 3,
-    `folha sobe: a ${fim?.[0]} ms ela já chegou — topo ${fim?.[1]} px contra`
-      + ` ${repouso?.[1]} em repouso (260 ms, a curva da casa)`
+    `folha sobe: aos ${fim?.[0]} ms ela já chegou — topo ${fim?.[1]} px contra`
+      + ` ${repouso?.[1]} em repouso`
   );
+
+  // ---- PARTE 4: AS TRÊS SAÍDAS -------------------------------------
+  // A folha fecha pela PRÓPRIA ALÇA (o gatilho já é um interruptor), pelo
+  // Esc (que vem de graça do `dialogFocus`) e pelo TOQUE NO CÉU, que é
+  // novo. Sem pino, porque a saída também é animada — e é a saída que
+  // obriga o hook a existir: o nó desmonta, e CSS nenhum anima um nó que
+  // já não está lá.
+  await vestirAparelho(s, ...APARELHOS[0]);
+  await s.ir('atlas=1');
+  await dorme(300);
+
+  // a) A ALÇA — e a folha DESCE antes de sumir, com o nó segurado por
+  //    `inert`: sem toque, sem foco, fora da árvore de quem ouve a tela
+  await s.js(`(() => {
+    window.__saida = [];
+    document.querySelector('[data-abre-dialogo="camadas"]').click();
+    setTimeout(() => {
+      const t0 = performance.now();
+      document.querySelector('[data-abre-dialogo="camadas"]').click();
+      const passo = () => {
+        const d = document.querySelector('[data-dialogo]');
+        window.__saida.push([Math.round(performance.now() - t0),
+          d ? Math.round(d.getBoundingClientRect().top) : null,
+          d ? d.hasAttribute('inert') : null]);
+        if (performance.now() - t0 < 700) requestAnimationFrame(passo);
+      };
+      requestAnimationFrame(passo);
+    }, 500);
+    return true;
+  })()`);
+  await dorme(1600);
+  const saida = await s.js('window.__saida');
+  const descendo = saida.filter((a) => a[1] !== null);
+  const sumiu = saida.filter((a) => a[1] === null);
+  conferir(
+    descendo.length >= 3 && descendo.every((a) => a[2] === true),
+    `saída pela alça: o nó fica ${descendo.length} quadro(s) DESCENDO, todo o tempo`
+      + ` com \`inert\` — sem toque, sem foco, fora da árvore de quem ouve`
+  );
+  conferir(
+    descendo.length > 0 && sumiu.length > 0
+      && descendo[descendo.length - 1][1] > descendo[0][1] + 20
+      && sumiu[0][0] >= 200 && sumiu[0][0] <= 500,
+    `saída pela alça: desce de ${descendo[0]?.[1]} a ${descendo[descendo.length - 1]?.[1]} px`
+      + ` e some aos ${sumiu[0]?.[0]} ms (260 ms, a curva da casa)`
+  );
+
+  // b) O Esc — o mesmo `dialogFocus` de sempre, agora com a saída pela frente
+  await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
+  await dorme(250);
+  const comEsc = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
+  await s.teclar('Escape');
+  await dorme(500);
+  const semEsc = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
+  conferir(
+    comEsc === 1 && semEsc === 0,
+    `saída pelo Esc: ${comEsc} folha aberta → ${semEsc} depois do Esc`
+  );
+
+  // c) O TOQUE NO CÉU — e a prova é de DOIS lados, porque um lado só não
+  //    distingue "a regra funciona" de "o dedo caiu no vazio": o MESMO
+  //    pixel, com a folha aberta, FECHA e não escolhe; sem folha aberta,
+  //    ESCOLHE. O alvo é um pixel com tinta no canvas dos rótulos, que é
+  //    onde há nome para escolher.
+  const tinta = await s.js(`(() => {
+    const c = document.querySelector('.label-canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    for (let y = 0; y < c.height * 0.45; y += 2) {
+      for (let x = 0; x < c.width; x += 2) {
+        if (d[(y * c.width + x) * 4 + 3] > 200) return { x, y };
+      }
+    }
+    return null;
+  })()`);
+  if (!tinta) {
+    conferir(false, 'toque no céu: nenhum rótulo desenhado para tocar');
+  } else {
+    await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
+    await dorme(250);
+    await s.clicar(tinta.x, tinta.y);
+    await dorme(600);
+    const depoisDoToque = await s.js(`(() => ({
+      folhas: document.querySelectorAll('[data-dialogo]').length,
+      // O MARCADOR DA SELEÇÃO é a ALÇA DA FICHA, e não
+      // escada.focoCorpoId: aquele campo só existe para corpo do
+      // sistema solar, e metade dos nomes clicáveis do Atlas é ESTRELA
+      // — a ficha delas abre pelo degrau, com o corpoId nulo. A alça é
+      // o que o visitante vê, e ela nasce exatamente quando há alvo.
+      alvo: (document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || null,
+    }))()`);
+    conferir(
+      depoisDoToque.folhas === 0 && depoisDoToque.alvo === null,
+      `toque no céu com a folha aberta: FECHA e NÃO escolhe —`
+        + ` ${depoisDoToque.folhas} folha(s), alvo ${depoisDoToque.alvo ?? 'nenhum'}`
+    );
+    await s.clicar(tinta.x, tinta.y);
+    await s.assentar();
+    const semFolha = await s.js(`(() => ({
+      folhas: [...document.querySelectorAll('[data-dialogo]')]
+        .map((d) => d.getAttribute('data-dialogo')),
+      // O MARCADOR DA SELEÇÃO é a ALÇA DA FICHA, e não
+      // escada.focoCorpoId: aquele campo só existe para corpo do
+      // sistema solar, e metade dos nomes clicáveis do Atlas é ESTRELA
+      // — a ficha delas abre pelo degrau, com o corpoId nulo. A alça é
+      // o que o visitante vê, e ela nasce exatamente quando há alvo.
+      alvo: (document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || null,
+    }))()`);
+    conferir(
+      semFolha.alvo !== null,
+      `toque no céu SEM folha aberta: continua escolhendo — alvo`
+        + ` ${semFolha.alvo ?? 'nenhum'}`
+    );
+    // …e a FICHA é a exceção: ela é o painel da SELEÇÃO, não uma folha
+    // que o visitante abriu. Sem esta cláusula o clique num nome
+    // deixaria de escolher em quase todo instante do Atlas.
+    conferir(
+      semFolha.folhas.length === 1 && semFolha.folhas[0] === 'ficha',
+      `toque no céu: a escolha abriu a FICHA do alvo, e ela é a EXCEÇÃO da`
+        + ` regra — folhas: ${semFolha.folhas.join(', ') || 'nenhuma'}`
+    );
+    const antes = semFolha.alvo;
+    await s.clicar(tinta.x, tinta.y);
+    await s.assentar();
+    const comFicha = await s.js(`(() => ({
+      folhas: document.querySelectorAll('[data-dialogo]').length,
+      // O MARCADOR DA SELEÇÃO é a ALÇA DA FICHA, e não
+      // escada.focoCorpoId: aquele campo só existe para corpo do
+      // sistema solar, e metade dos nomes clicáveis do Atlas é ESTRELA
+      // — a ficha delas abre pelo degrau, com o corpoId nulo. A alça é
+      // o que o visitante vê, e ela nasce exatamente quando há alvo.
+      alvo: (document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || null,
+    }))()`);
+    conferir(
+      comFicha.folhas === 1 && comFicha.alvo !== null,
+      `toque no céu com a FICHA aberta: ela NÃO fecha e o gesto continua`
+        + ` escolhendo (era "${antes}", ficou "${comFicha.alvo}")`
+    );
+  }
 
   // ---- A QUEBRA: o CSS e o TypeScript viram celular no MESMO pixel ----
   // `LARGURA_DO_CELULAR_PX` é 760, e o `@media` repete o literal porque

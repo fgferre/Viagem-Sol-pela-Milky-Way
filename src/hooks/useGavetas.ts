@@ -13,7 +13,7 @@
 // aqui. O que se pina em `useGavetas.test.ts` são as regras — que é onde
 // a decisão mora; o `useState` em volta delas é encanamento.
 // ============================================================
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { EstadoDaEscada, Phase } from '../three/director';
 
 /**
@@ -86,19 +86,36 @@ export const aoTravessar = (atual: Gaveta | null): Gaveta | null =>
 export const aoFocar = (atual: Gaveta | null, alvo: string | null): Gaveta | null =>
   atual === 'ajustes' ? atual : alvo ? 'ficha' : atual === 'ficha' ? null : atual;
 
+/**
+ * QUANTO DURA A SAÍDA DA FOLHA — o mesmo 260 ms da entrada (o
+ * `@keyframes folhaSobe`, fatia 9), porque é o mesmo movimento ao
+ * contrário. Mora aqui e não no CSS porque quem segura o nó desmontando
+ * é JavaScript: uma folha que fechou já não tem elemento para animar.
+ */
+export const SAIDA_DA_FOLHA_MS = 260;
+
 export interface Gavetas {
   /** qual está aberta AGORA, ou `null` */
   gaveta: Gaveta | null;
+  /**
+   * qual está DESENHADA — a aberta, ou a que está descendo. Enquanto ela
+   * desce o nó fica `inert`: não recebe toque, não recebe foco e some da
+   * árvore de quem ouve a tela, apesar de continuar na tela.
+   */
+  montada: Gaveta | null;
   /** o gatilho de uma gaveta: abre a dela e fecha a que estiver aberta */
   alternarGaveta: (qual: Gaveta) => void;
   /** o "✕" de uma gaveta: fecha se for ELA que está aberta */
   fecharGaveta: (qual: Gaveta) => void;
+  /** o TOQUE NO CÉU: fecha a folha que estiver aberta, seja qual for */
+  fecharTodas: () => void;
 }
 
 export function useGavetas(
   escada: EstadoDaEscada,
   foco: string | null,
-  phase: Phase
+  phase: Phase,
+  celular: boolean
 ): Gavetas {
   /**
    * A GAVETA ÚNICA (item 74, 22/08). Eram TRÊS booleanos — `gaveta`,
@@ -144,6 +161,74 @@ export function useGavetas(
     setGaveta(aoTravessar);
   }, [phase]);
 
+  /**
+   * A FOLHA DESCE ANTES DE SUMIR (item 62) — e este hook é o dono do
+   * tempo porque não há outro possível: as cinco gavetas DESMONTAM ao
+   * fechar, e CSS nenhum anima um nó que já não existe. É a máquina
+   * `activePanel`/`queuedPanel` do doador, em português e com uma
+   * simplificação medida.
+   *
+   * A SIMPLIFICAÇÃO: só desce quem fecha para NADA. Trocar de alça troca
+   * o CONTEÚDO da mesma folha, no ato — o doador descia a folha inteira,
+   * esperava a saída e só então subia a outra (500 ms de dança para uma
+   * troca de painel), e uma folha de baixo que já está na tela não tem
+   * por que sair da tela para voltar. De quebra, isto é o que mantém a
+   * promessa de UMA gaveta por vez literal: nunca há dois
+   * `[data-dialogo]` no documento, nem por 260 ms.
+   *
+   * E SÓ NO TELEFONE. Na mesa o diálogo não sobe de lugar nenhum, não há
+   * o que descer, e segurar o nó por 260 ms mudaria o que os juízes da
+   * casa medem — `julgarDialogo` cobra que o Esc feche o diálogo, e
+   * "fechou" lá quer dizer "saiu do DOM".
+   *
+   * DERIVADO DURANTE O RENDER, e não num efeito: um efeito roda DEPOIS
+   * do commit, e no commit em que `gaveta` vira `null` o nó já foi
+   * removido — a folha piscaria fora da tela e voltaria para descer.
+   * Ajustar estado durante o render é o caminho que o React documenta
+   * para exatamente isto, e ele re-renderiza antes de tocar o DOM.
+   */
+  const [saindo, setSaindo] = useState<Gaveta | null>(null);
+  // o "anterior" é um SEGUNDO estado e não um `useRef`, e é o que a
+  // regra dos refs cobra com razão: ref lido durante o render não faz o
+  // componente re-renderizar, e é justamente do re-render antes do
+  // commit que este ajuste depende
+  const [anterior, setAnterior] = useState<Gaveta | null>(gaveta);
+  if (anterior !== gaveta) {
+    setAnterior(gaveta);
+    setSaindo(celular && anterior !== null && gaveta === null ? anterior : null);
+  }
+
+  /**
+   * `useLayoutEffect` e não `useEffect`: o `inert` tem de estar no nó
+   * ANTES do primeiro paint em que ele já é a folha que sai. Um efeito
+   * comum roda depois do paint, e nesse quadro a folha ainda receberia
+   * toque — e, pior, o CSS da saída (`.hud-dialogo[inert]`, fatia 9) só
+   * começaria um quadro atrasado, com a folha parada no lugar.
+   */
+  useLayoutEffect(() => {
+    if (!saindo) return;
+    document
+      .querySelector(`[${'data-dialogo'}="${saindo}"]`)
+      ?.setAttribute('inert', '');
+    const id = window.setTimeout(() => setSaindo(null), SAIDA_DA_FOLHA_MS);
+    return () => window.clearTimeout(id);
+  }, [saindo]);
+
+  /**
+   * A ALÇA ABERTA VEM PARA A TELA. A fileira não quebra linha (quebrar
+   * moveria a câmera), então ela ROLA — e num aparelho de 390 px a quinta
+   * alça, a da ficha, nasce fora da tela. Como a ficha abre SOZINHA a
+   * cada seleção, sem esta linha o visitante escolhia um corpo, a folha
+   * subia, e o botão que a fecha estava fora do quadro.
+   * `inline: 'nearest'` rola o mínimo necessário, e só no eixo que rola.
+   */
+  useEffect(() => {
+    if (!celular || !gaveta) return;
+    document
+      .querySelector(`[${'data-abre-dialogo'}="${gaveta}"]`)
+      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [celular, gaveta]);
+
   const alternarGaveta = useCallback(
     (qual: Gaveta) => setGaveta((atual) => aoAlternar(atual, qual)),
     []
@@ -154,5 +239,20 @@ export function useGavetas(
     []
   );
 
-  return { gaveta, alternarGaveta, fecharGaveta };
+  /**
+   * O TOQUE NO CÉU (item 62). Quem o chama é `director/gestos.ts`, que é
+   * onde mora a regra de qual toque fecha o quê — aqui é só a porta.
+   * `useCallback` com lista vazia porque o consumidor é o Director, que
+   * nasce UMA vez: identidade nova a cada render seria um fio pendurado
+   * na primeira.
+   */
+  const fecharTodas = useCallback(() => setGaveta(null), []);
+
+  return {
+    gaveta,
+    montada: gaveta ?? saindo,
+    alternarGaveta,
+    fecharGaveta,
+    fecharTodas,
+  };
 }

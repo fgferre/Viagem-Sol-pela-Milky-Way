@@ -192,6 +192,26 @@
     }
   }
 
+  /* A SAÍDA, e ela é a metade que CSS nenhum resolve sozinho: quando a
+     folha fecha, o nó DESMONTA. Quem o segura por 260 ms é o
+     `useGavetas`, e o sinal de que ele está segurando é o `inert` — o
+     mesmo atributo que já é a coisa CERTA a pôr num painel que está
+     saindo: nada dentro dele recebe toque, nada recebe foco, e ele some
+     da árvore de quem ouve a tela apesar de continuar na tela.
+     Um atributo, três garantias, e nenhuma classe inventada. */
+  .hud-dialogo[inert] {
+    animation: folhaDesce 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes folhaDesce {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(110%);
+    }
+  }
+
   /* A DICA DOS GESTOS SAI DO FLUXO, e é a mesma lei de sempre com outro
      remédio: ela APAGA depois do primeiro arrasto (`.free-hint.apagada`),
      e no fluxo isso encolheria a coluna do rodapé, cresceria o retângulo
@@ -227,7 +247,8 @@
    escrita na 6 perderia para a 9 e o movimento reduzido não valeria.
    Quem declara o movimento é quem tem de declarar a ausência dele. */
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) {
-  .hud-dialogo {
+  .hud-dialogo,
+  .hud-dialogo[inert] {
     animation: none;
   }
 }
