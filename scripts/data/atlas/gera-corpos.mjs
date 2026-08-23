@@ -18,6 +18,15 @@
 // Nenhum `a`, `e` ou período novo entra à mão: tudo sai das tabelas desta
 // casa (elementos, efeméride embarcada e `GM_CORPOS`).
 //
+// E DESDE 22/08 ELE FUNDE A LÍNGUA. O pt-BR mora em `fonte/editorial-pt.json`,
+// arquivo IRMÃO do inglês e não substituto dele: um texto por campo, os 39
+// alvos, e nada para os seis sem alvo (ficha que ninguém abre não paga
+// tradução). O casamento é COBRADO campo a campo — o pt tem de ter
+// exatamente os campos que o en tem, com o mesmo número de fatos e de
+// recordes e o mesmo `year` de exploração. Campo a mais, campo a menos ou
+// lista mais curta derrubam a geração: meia tradução na tela seria pior que
+// nenhuma, porque a linha some sem dizer por quê.
+//
 // TRÊS CAMINHOS, E A RAZÃO DE NÃO SER UM SÓ. Cada corpo vem por onde o
 // número é melhor, e a fronteira entre eles é medida (ver `orbitaDoCorpo`):
 // o osculante do estado, sozinho, erraria Mimas em 2% e o ano da Terra em
@@ -65,14 +74,9 @@ const rootDirectory = path.resolve(
   '..',
   '..'
 );
-const fontePath = path.join(
-  rootDirectory,
-  'scripts',
-  'data',
-  'atlas',
-  'fonte',
-  'corpos-fonte.json'
-);
+const fonteDir = path.join(rootDirectory, 'scripts', 'data', 'atlas', 'fonte');
+const fontePath = path.join(fonteDir, 'corpos-fonte.json');
+const fontePtPath = path.join(fonteDir, 'editorial-pt.json');
 const dadosDir = path.join(rootDirectory, 'public', 'data', 'atlas');
 const outputPath = path.join(dadosDir, 'corpos.json');
 
@@ -313,6 +317,65 @@ if (!Array.isArray(fonte.corpos)) {
   throw new Error(`${fontePath} não tem um array "corpos" — a fonte mudou de forma.`);
 }
 
+// ---- a tradução, arquivo irmão (item 74, parte B)
+const fontePt = JSON.parse(await readFile(fontePtPath, 'utf8'));
+if (!fontePt.corpos || typeof fontePt.corpos !== 'object') {
+  throw new Error(`${fontePtPath} não tem um objeto "corpos" — a tradução mudou de forma.`);
+}
+
+/**
+ * O CASAMENTO DE UMA LÍNGUA COM A OUTRA, campo a campo. A ficha mostra só o
+ * `pt`, e linha sem `pt` SOME — então uma tradução pela metade não aparece
+ * como erro na tela, aparece como assunto que sumiu. Aqui ela derruba a
+ * geração, que é o único lugar onde alguém está olhando.
+ *
+ * O QUE SE COBRA: os mesmos campos (nem a mais nem a menos), o mesmo número
+ * de fatos e de recordes, e o mesmo `year` de exploração — o texto pode (e
+ * deve) mudar de forma ao mudar de língua, mas a DATA é medida, não redação.
+ */
+function traduzir(id, en) {
+  const pt = fontePt.corpos[id];
+  if (!pt) return undefined;
+  const camposEn = CAMPOS_EDITORIAIS.filter((c) => en[c] !== undefined);
+  const camposPt = Object.keys(pt);
+  const sobrando = camposPt.filter((c) => !camposEn.includes(c));
+  if (sobrando.length > 0) {
+    throw new Error(`Tradução de "${id}" tem campo que o inglês não tem: ${sobrando.join(', ')}.`);
+  }
+  const saida = {};
+  for (const campo of camposEn) {
+    const valor = pt[campo];
+    if (valor === undefined) {
+      throw new Error(`Tradução de "${id}" sem o campo "${campo}", que o inglês tem.`);
+    }
+    if (Array.isArray(en[campo])) {
+      if (!Array.isArray(valor) || valor.length !== en[campo].length) {
+        throw new Error(
+          `Tradução de "${id}", campo "${campo}": ${Array.isArray(valor) ? valor.length : 'não é lista'} ` +
+            `contra ${en[campo].length} no inglês.`
+        );
+      }
+      if (valor.some((v) => typeof v !== 'string' || v.trim() === '')) {
+        throw new Error(`Tradução de "${id}", campo "${campo}": item vazio na lista.`);
+      }
+    } else if (campo === 'explorationMilestone') {
+      if (valor?.year !== en[campo].year) {
+        throw new Error(
+          `Tradução de "${id}": ano da exploração ${valor?.year} contra ${en[campo].year} no inglês — ` +
+            'a data é medida, não redação.'
+        );
+      }
+      if (typeof valor.description !== 'string' || valor.description.trim() === '') {
+        throw new Error(`Tradução de "${id}": exploração sem descrição.`);
+      }
+    } else if (typeof valor !== 'string' || valor.trim() === '') {
+      throw new Error(`Tradução de "${id}", campo "${campo}": vazio.`);
+    }
+    saida[campo] = valor;
+  }
+  return saida;
+}
+
 const corpos = fonte.corpos.map((body) => {
   if (typeof body.id !== 'string' || typeof body.type !== 'string') {
     throw new Error(`Corpo sem id/type na fonte: ${JSON.stringify(body?.id)}.`);
@@ -326,9 +389,16 @@ const corpos = fonte.corpos.map((body) => {
     if (valor !== undefined) en[campo] = valor;
   }
   const editorial = { en };
-  // A chave `pt` atravessa quando existir (parte B do item 74) — o gerador
-  // não a inventa e não a perde.
-  if (body.editorial?.pt !== undefined) editorial.pt = body.editorial.pt;
+  // A LÍNGUA VEM DE UM LUGAR SÓ: o arquivo irmão. Se um dia alguém escrever
+  // `pt` também dentro de `corpos-fonte.json`, são duas fontes para o mesmo
+  // texto — e a que perder a briga envelhece calada.
+  if (body.editorial?.pt !== undefined) {
+    throw new Error(
+      `Corpo "${body.id}" tem "pt" em corpos-fonte.json — a tradução mora só em editorial-pt.json.`
+    );
+  }
+  const pt = traduzir(body.id, en);
+  if (pt) editorial.pt = pt;
 
   const saida = {
     id: body.id,
@@ -385,11 +455,32 @@ if (semAlvo.length !== TOTAL_ESPERADO - ALVOS.size) {
   );
 }
 
+// TODO ALVO FALA PORTUGUÊS, e só os alvos: a tradução cobre exatamente os
+// 39 que ganham ficha. Um id na tradução sem corpo na fonte seria texto que
+// nunca chega à tela; um alvo sem tradução seria ficha muda.
+const traduzidos = corpos.filter((c) => c.editorial.pt).map((c) => c.id);
+const alvosSemPt = corpos.filter((c) => ALVOS.has(c.id) && !c.editorial.pt).map((c) => c.id);
+if (alvosSemPt.length > 0) {
+  throw new Error(`Alvos sem tradução pt-BR: ${alvosSemPt.join(', ')}.`);
+}
+const ptSemAlvo = traduzidos.filter((id) => !ALVOS.has(id));
+if (ptSemAlvo.length > 0) {
+  throw new Error(`Tradução de corpo sem alvo nesta casa: ${ptSemAlvo.join(', ')}.`);
+}
+const ptOrfaos = Object.keys(fontePt.corpos).filter(
+  (id) => !corpos.some((c) => c.id === id)
+);
+if (ptOrfaos.length > 0) {
+  throw new Error(`editorial-pt.json traduz id que não existe na fonte: ${ptOrfaos.join(', ')}.`);
+}
+
 const saida = {
   _fonte: fonte._fonte,
   _proveniencia: {
     gerador: 'scripts/data/atlas/gera-corpos.mjs',
     editorial: 'scripts/data/atlas/fonte/corpos-fonte.json',
+    editorialPt: 'scripts/data/atlas/fonte/editorial-pt.json',
+    traducao: fontePt._proveniencia,
     doadorCommit: fonte._proveniencia?.doadorCommit,
     orbita:
       'derivada por três caminhos, cada um o melhor número desta casa para ' +
@@ -413,5 +504,5 @@ console.log(
       .map(([tipo, n]) => `${tipo} ${n}`)
       .join(', ') +
     `) — ${ALVOS.size} alvos, ${ALVOS.size - 1} com órbita, ` +
-    `${semAlvo.length} sem alvo (${semAlvo.join(', ')}).`
+    `${traduzidos.length} com pt-BR, ${semAlvo.length} sem alvo (${semAlvo.join(', ')}).`
 );

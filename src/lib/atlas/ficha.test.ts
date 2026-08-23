@@ -156,15 +156,21 @@ describe('silêncio — campo ausente não vira linha', () => {
     expect(orbita.linhas.map((l) => l.rotulo)).not.toContain('período orbital');
   });
 
-  it('as três seções de prosa nascem VAZIAS enquanto não houver pt-BR', () => {
-    // O editorial dos 45 está em inglês; a tradução é a parte B do item 74.
-    // Inglês na tela seria a casa decidindo por ele que meia língua serve.
-    for (const id of ALVOS) {
-      const ids = ficha(id)!.secoes.map((s) => s.id);
-      expect(ids, id).not.toContain('contexto');
-      expect(ids, id).not.toContain('curiosidades');
-      expect(ids, id).not.toContain('imagem');
-    }
+  it('sem pt-BR as duas seções de prosa somem, e a ficha continua útil', () => {
+    // O caminho continua sendo o de sempre: a ficha lê `editorial.pt` e mais
+    // nada. Um corpo cujo `pt` não chegou (JSON velho em cache, geração pela
+    // metade) perde a prosa e mantém número, unidade e procedência — nunca
+    // inglês na tela, nunca uma linha explicando a falta.
+    const marte = porId.get('mars')!;
+    const semPt: CorpoNoJson = {
+      ...marte,
+      editorial: { en: marte.editorial.en },
+    };
+    const f = montarFicha({ id: 'mars', jd: JD, fonte: motor, editorial: semPt })!;
+    const ids = f.secoes.map((s) => s.id);
+    expect(ids).not.toContain('contexto');
+    expect(ids).not.toContain('curiosidades');
+    expect(ids).toContain('fisico');
   });
 
   it('desenha a prosa no dia em que ela existir em pt', () => {
@@ -196,10 +202,147 @@ describe('silêncio — campo ausente não vira linha', () => {
   });
 });
 
+/**
+ * AS PALAVRAS QUE DENUNCIAM O INGLÊS. Não são substantivos (esses viram
+ * nome próprio e atravessam de propósito: Voyager, Kraken Mare, Star Wars) —
+ * são as palavras de LIGAÇÃO, que nenhuma frase inglesa consegue evitar e
+ * nenhuma frase portuguesa produz. Ficam de fora, de propósito, as que as
+ * duas línguas compartilham como palavra inteira ("no", "do", "as", "e"):
+ * incluí-las trocaria um detector por um gerador de falso positivo.
+ */
+const PALAVRAS_INGLESAS = new Set([
+  'the', 'of', 'and', 'is', 'are', 'was', 'were', 'with', 'that', 'this',
+  'from', 'for', 'its', 'it', 'has', 'have', 'been', 'by', 'than', 'which',
+  'their', 'they', 'but', 'about', 'also', 'only', 'other', 'into', 'over',
+  'would', 'could', 'can', 'all', 'most', 'more', 'first', 'second',
+  'largest', 'smallest', 'moon', 'moons', 'planet', 'surface', 'water',
+  'ice', 'spacecraft', 'discovered', 'years', 'orbit', 'orbits',
+]);
+
+/** Os números que uma frase carrega, com a régua decimal de cada língua. */
+function numerosDe(texto: string, decimal: ',' | '.'): Set<string> {
+  const milhar = decimal === ',' ? '.' : ',';
+  const semMilhar = texto.replaceAll(
+    new RegExp(`(\\d)\\${milhar}(\\d\\d\\d)(?!\\d)`, 'g'),
+    '$1$2'
+  );
+  const normalizado =
+    decimal === ',' ? semMilhar.replaceAll(/(\d),(\d)/g, '$1.$2') : semMilhar;
+  return new Set(normalizado.match(/\d+(?:\.\d+)?/g) ?? []);
+}
+
+describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, parte B)', () => {
+  it('os 39 alvos têm as duas seções de prosa, e nenhuma nasce vazia', () => {
+    for (const id of ALVOS) {
+      const f = ficha(id)!;
+      const contexto = f.secoes.find((s) => s.id === 'contexto');
+      const curiosidades = f.secoes.find((s) => s.id === 'curiosidades');
+      expect(contexto, id).toBeDefined();
+      expect(curiosidades, id).toBeDefined();
+      expect(contexto!.linhas.length, id).toBeGreaterThan(0);
+      expect(curiosidades!.linhas.length, id).toBeGreaterThan(0);
+    }
+  });
+
+  it('todo campo que o inglês tem, o português tem — e nada além', () => {
+    const CAMPOS = [
+      'description',
+      'curiosity',
+      'facts',
+      'records',
+      'explorationMilestone',
+      'info',
+    ] as const;
+    for (const id of ALVOS) {
+      const corpo = porId.get(id)!;
+      const en = corpo.editorial.en as Record<string, unknown>;
+      const pt = corpo.editorial.pt as Record<string, unknown> | undefined;
+      expect(pt, id).toBeDefined();
+      for (const campo of CAMPOS) {
+        expect(pt![campo] === undefined, `${id}/${campo}`).toBe(
+          en[campo] === undefined
+        );
+      }
+      expect(Object.keys(pt!).every((k) => (CAMPOS as readonly string[]).includes(k)), id).toBe(true);
+    }
+  });
+
+  it('Miranda continua sem recordes e sem exploração, nas DUAS línguas', () => {
+    // A pendência do doador é dela, não da tradução: inventar em português
+    // o que o inglês não tem seria fechar em silêncio um trabalho do dono.
+    const miranda = porId.get('miranda')!;
+    expect(miranda.editorial.pt).toBeDefined();
+    expect(miranda.editorial.pt!.records).toBeUndefined();
+    expect(miranda.editorial.pt!.explorationMilestone).toBeUndefined();
+    const curiosidades = ficha('miranda')!.secoes.find((s) => s.id === 'curiosidades')!;
+    expect(curiosidades.linhas.map((l) => l.rotulo)).toEqual(['curiosidade', 'fato']);
+  });
+
+  it('Makemake não fala de massa e FALA de tudo o mais — a ausência é do kernel', () => {
+    // A única coisa que falta na ficha dele é a que o gm_de440 não mede.
+    // Se a prosa também faltasse, o visitante veria duas ausências e não
+    // saberia qual delas é honesta.
+    const f = ficha('makemake')!;
+    const ids = f.secoes.map((s) => s.id);
+    expect(ids).toContain('contexto');
+    expect(ids).toContain('curiosidades');
+    expect(ids).toContain('orbita');
+    expect(f.secoes.find((s) => s.id === 'fisico')!.linhas.map((l) => l.rotulo)).toEqual([
+      'raio (equador)',
+    ]);
+  });
+
+  it('nenhuma palavra inglesa de ligação sobra em linha de tela', () => {
+    for (const id of ALVOS) {
+      for (const l of todasAsLinhas(ficha(id)!)) {
+        const naTela = `${l.rotulo} ${l.valor} ${l.badge ?? ''} ${l.fonte ?? ''}`;
+        for (const palavra of naTela.toLowerCase().split(/[^\p{L}]+/u)) {
+          expect(
+            PALAVRAS_INGLESAS.has(palavra),
+            `${id}: "${palavra}" em «${naTela.trim()}»`
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('a tradução não perdeu número nem data pelo caminho', () => {
+    // A prova mais dura da tradução: o conjunto de números da frase inglesa
+    // tem de reaparecer inteiro na portuguesa, com a régua decimal trocada
+    // ("20,000 times" → "20.000 vezes"; "1.39 million" → "1,39 milhão").
+    // Um fato reescrito com o número errado passaria por qualquer leitura.
+    for (const id of ALVOS) {
+      const { en, pt } = porId.get(id)!.editorial;
+      const textoDe = (e: typeof en) =>
+        [
+          e.description,
+          e.curiosity,
+          e.info,
+          ...(e.facts ?? []),
+          ...(e.records ?? []),
+          e.explorationMilestone
+            ? `${e.explorationMilestone.year} ${e.explorationMilestone.description}`
+            : '',
+        ].join(' ');
+      const doIngles = numerosDe(textoDe(en), '.');
+      const doPortugues = numerosDe(textoDe(pt!), ',');
+      for (const n of doIngles) {
+        expect(doPortugues.has(n), `${id}: o número ${n} sumiu na tradução`).toBe(true);
+      }
+    }
+  });
+});
+
 describe('as unidades e os selos que o visitante lê', () => {
   it('a ordem das seções é a do interesse: o vivo antes da enciclopédia', () => {
     const f = ficha('titan')!;
-    expect(f.secoes.map((s) => s.id)).toEqual(['agora', 'fisico', 'orbita']);
+    expect(f.secoes.map((s) => s.id)).toEqual([
+      'agora',
+      'fisico',
+      'orbita',
+      'contexto',
+      'curiosidades',
+    ]);
     expect(f.secoes[0]!.titulo).toBe('agora');
   });
 
@@ -243,7 +386,7 @@ describe('as unidades e os selos que o visitante lê', () => {
 
   it('o Sol é a origem: sem "agora", sem órbita, com físico', () => {
     const ids = ficha('sun')!.secoes.map((s) => s.id);
-    expect(ids).toEqual(['fisico']);
+    expect(ids).toEqual(['fisico', 'contexto', 'curiosidades']);
   });
 
   it('Vênus gira ao contrário, e a ficha diz', () => {

@@ -1,5 +1,5 @@
 {
-  "_fonte": "O EDITORIAL DOS 45 CORPOS DO ATLAS — a fonte VERSIONADA, e a única. Extraído uma vez de SOLAR_SYSTEM_BODIES (src/data/celestialBodies.ts do atlas-orbital) pelo próprio gera-corpos.mjs, quando ele ainda executava o arquivo do doador; desde 2026-08-22 o doador não é mais lido em geração nenhuma. Texto em INGLÊS por ora: a tradução é trabalho editorial do dono e mora na pendência abaixo — enquanto ela não chega, a ficha não mostra prosa nenhuma na tela (linha sem pt some), só número, unidade e procedência.",
+  "_fonte": "O EDITORIAL DOS 45 CORPOS DO ATLAS — a fonte VERSIONADA, e a única. Extraído uma vez de SOLAR_SYSTEM_BODIES (src/data/celestialBodies.ts do atlas-orbital) pelo próprio gera-corpos.mjs, quando ele ainda executava o arquivo do doador; desde 2026-08-22 o doador não é mais lido em geração nenhuma. Este arquivo guarda o INGLÊS e só ele: o pt-BR mora no arquivo irmão editorial-pt.json, e é o pt que vai para a tela. Escrever pt aqui derruba a geração — duas fontes para o mesmo texto e uma delas envelhece calada.",
   "_proveniencia": {
     "doador": "atlas-orbital",
     "doadorCommit": "4c52bca0d055b6cb97f88a8ae4144c3b9bfa7951",
@@ -14,7 +14,7 @@
     "nota": "Campo ausente no doador fica AUSENTE aqui — inventar fecharia em silêncio um trabalho que é do dono. Editar à mão é permitido e esperado: este arquivo é fonte, não saída de máquina."
   },
   "_pendencias": [
-    "tradução pt-BR integral dos campos editoriais — trabalho do dono (item 74, parte B)",
+    "a tradução pt-BR dos 39 alvos existe desde 22/08 (fonte/editorial-pt.json) e ESPERA A LEITURA DO DONO, que é o autor do original em inglês",
     "miranda: redação editorial — sem records, sem explorationMilestone, facts com 1 item",
     "seis corpos do doador não têm alvo nesta casa (sem textura e sem BODY_AXES): gonggong, orcus, sedna, salacia, vanth, weywot. Eles ficam no editorial e NÃO ganham ficha — ficha sem corpo na cena é promessa."
   ],

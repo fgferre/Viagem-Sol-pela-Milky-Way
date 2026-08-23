@@ -236,21 +236,21 @@ describe('notaDeValidade — contrato de honestidade nos dois braços', () => {
       dateToTDB(new Date('1900-01-01T00:00:00Z'))
     );
     expect(fora).toContain('Fora de 1950–2050');
-    expect(fora).not.toContain('arcsecond');
+    expect(fora).not.toContain('arcsegundo');
   });
 
   it('does not collide a BCE start year with the range separator', () => {
     // The Moon's theory window starts at year -3000; a bare
     // `${start}-${end}` template renders the unreadable "-3000-3000".
     const nota = motor.notaDeValidade('moon', JD);
-    expect(nota).toContain('3000 BCE');
+    expect(nota).toContain('3000 a.C.');
     expect(nota).not.toContain('-3000-');
   });
 
   it('catalog moons disclose the fabricated orientation and never quote accuracy', () => {
     const nota = motor.notaDeValidade('vanth', JD);
-    expect(nota).toContain('fabricated');
-    expect(nota).toContain('never predicts');
+    expect(nota).toContain('FABRICADAS');
+    expect(nota).toContain('nunca prevê');
   });
 });
 

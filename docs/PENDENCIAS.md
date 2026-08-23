@@ -365,12 +365,15 @@ e os dois gestos da escada. Sem seleção, nada ocupa o topo. As fotos são
 
 **O que fica para a PARTE B**, nesta ordem:
 
-1. **O texto em pt-BR.** Os 45 corpos têm ~37 KB de descrição,
-   curiosidade, fatos, recordes e exploração — **em inglês**, herdados do
-   doador. Enquanto a tradução não chega, essas três seções não aparecem
-   na tela: inglês seria a casa decidindo por ele que meia língua serve.
-   A fonte já está versionada aqui (`scripts/data/atlas/fonte/corpos-fonte.json`)
-   e o caminho do `pt` já existe no código — a parte B é DADO, não obra.
+1. **O texto em pt-BR — FEITO em 22/08, e ESPERA A LEITURA DELE.** Os 39
+   corpos que a casa desenha agora falam português na ficha: descrição,
+   uma linha, curiosidade, fatos, recordes e exploração. É **tradução**
+   do texto que ele mesmo escreveu em inglês no projeto doador, campo a
+   campo, sem acrescentar nem tirar fato — o original continua guardado
+   ao lado. Junto foi a nota de modelo e validade, que era o último
+   parágrafo em inglês da tela. **Ele é o autor: a leitura é dele.** O
+   texto mora em `scripts/data/atlas/fonte/editorial-pt.json`, editável
+   à mão. A foto é `capturas/item74-ficha-tita-pt.png`.
 2. **A imagem que confessa** — fecha os itens **19** e **20**: a
    procedência da textura de cada mundo na ficha (fonte, licença,
    atribuição) e o defeito dito na cara (Ceres inventado pela fonte, as

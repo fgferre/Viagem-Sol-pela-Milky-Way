@@ -6,6 +6,13 @@
 // a ESTRUTURA renasce, porque a máquina de providers/fallback do
 // doador morreu na travessia (ver adaptação 2 abaixo).
 //
+// ADAPTAÇÃO 5 (2026-08-22): A REDAÇÃO DAS NOTAS FALA PORTUGUÊS. Enquanto
+// `notaDeValidade` não tinha leitor na tela, o inglês do doador era só
+// procedência guardada; desde a ficha do objeto (item 74) ela é IMPRESSA
+// inteira, ao lado do editorial em pt-BR. O que mudou foi a frase; os
+// NÚMEROS — 3.6°, 5.2°, 7.4°, as janelas — seguem verbatim, ponto decimal
+// incluído, porque são a medição e não a redação.
+//
 // CONSTANTES MEDIDAS HERDADAS (não recalibrar sem fixture novo):
 //   - VSOP87D: nível de arcsec em −2000..6000; Pluto-Meeus 1885..2099;
 //     ELP/MPP02-trunc −3000..3000.
@@ -68,31 +75,50 @@ export interface RegistroCorpo {
   janela?: JanelaAnos;
   /** Para fonte 'tabela': a janela da TEORIA que gerou a tabela. */
   janelaTeoria?: JanelaAnos;
-  /** Nota de acurácia medida, verbatim do doador (inglês). */
+  /**
+   * Nota de acurácia MEDIDA, na língua da casa.
+   *
+   * O NÚMERO É VERBATIM do doador e não se toca: `3.6°`, `5.2°`, `7.4°`,
+   * `1885-2099` são a MEDIÇÃO, e reescrevê-los (nem que fosse só a vírgula
+   * decimal) seria mexer no dado para arrumar a redação. A PROSA em volta
+   * deles passou para pt-BR em 22/08, quando a ficha do objeto começou a
+   * imprimir esta nota inteira na tela ao lado do editorial traduzido — meia
+   * língua num painel só era a coisa que o item 74 existe para não fazer.
+   * O inglês original mora no doador (`registry.ts`) e no git.
+   */
   nota: string;
 }
 
 /** Adaptação 1: janela amostrada em efemerides.bin (regenerável). */
 export const JANELA_TABELA: JanelaAnos = { anoInicio: 1950, anoFim: 2050 };
 
-// Notas por família — VERBATIM de registry.ts do doador (inglês).
-const NOTA_VSOP87 = 'VSOP87D truncated series, arcsecond-level 2000 BCE - 6000 CE';
-const NOTA_PLUTO = 'Meeus Ch. 37 Pluto theory valid 1885-2099';
-const NOTA_ELP = 'ELP/MPP02 truncated (few-arcsecond level over millennia)';
+// Notas por família — a medição do doador, a redação em pt-BR (22/08).
+// O PREFIXO REPETIDO das seis famílias de satélite e dos asteroides sai de
+// uma constante só: ele é a mesma frase seis vezes, e seis cópias de uma
+// frase é como um número acaba divergindo de si mesmo.
+const KEPLER_2025 = 'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01';
+const RESSONANTE =
+  'taxa publicada; lua ressonante de período curto não se sustenta em dois corpos por ±1 ano';
+const SEM_VALIDACAO = 'sem validação fora dessa faixa';
+const NOTA_VSOP87 =
+  'série VSOP87D truncada, nível de arcsegundo entre 2000 a.C. e 6000 d.C.';
+const NOTA_PLUTO = 'teoria de Plutão do Meeus (cap. 37), válida de 1885 a 2099';
+const NOTA_ELP =
+  'ELP/MPP02 truncada (nível de poucos arcsegundos ao longo de milênios)';
 const NOTA_MARTIAN =
-  'Two-body Kepler from 2025-01-01 osculating elements; worst 3.6° over epoch ±1 yr measured both sides (Phobos, pub rate; short-period resonant moon two-body cannot hold ±1 yr), unvalidated beyond';
+  `${KEPLER_2025}; pior caso 3.6° em ±1 ano da época, medido dos DOIS lados (Fobos, ${RESSONANTE}), ${SEM_VALIDACAO}`;
 const NOTA_GALILEAN =
-  'Two-body Kepler from 2025-01-01 osculating elements; worst 1.6° over epoch ±1 yr measured both sides (Europa), unvalidated beyond';
+  `${KEPLER_2025}; pior caso 1.6° em ±1 ano da época, medido dos DOIS lados (Europa), ${SEM_VALIDACAO}`;
 const NOTA_SATURNIAN =
-  'Two-body Kepler from 2025-01-01 osculating elements; worst 5.2° over epoch ±1 yr measured both sides (Mimas, pub rate; short-period resonant moon two-body cannot hold ±1 yr), unvalidated beyond';
+  `${KEPLER_2025}; pior caso 5.2° em ±1 ano da época, medido dos DOIS lados (Mimas, ${RESSONANTE}), ${SEM_VALIDACAO}`;
 const NOTA_URANIAN =
-  'Two-body Kepler from 2025-01-01 osculating elements; worst 1.3° over epoch ±1 yr measured both sides (Miranda), unvalidated beyond';
+  `${KEPLER_2025}; pior caso 1.3° em ±1 ano da época, medido dos DOIS lados (Miranda), ${SEM_VALIDACAO}`;
 const NOTA_NEPTUNIAN =
-  'Two-body Kepler from 2025-01-01 osculating elements; worst 0.16° at epoch +1 yr (one-sided — no pre-epoch fixture), unvalidated beyond';
+  `${KEPLER_2025}; pior caso 0.16° em +1 ano da época (um lado só — não há fixture antes da época), ${SEM_VALIDACAO}`;
 const NOTA_PLUTOSAT =
-  'Two-body Kepler from 2025-01-01 osculating elements; worst 0.01° at epoch +1 yr (one-sided — no pre-epoch fixture), unvalidated beyond';
+  `${KEPLER_2025}; pior caso 0.01° em +1 ano da época (um lado só — não há fixture antes da época), ${SEM_VALIDACAO}`;
 const NOTA_ASTEROID =
-  'Two-body Kepler from 2025-01-01 osculating elements; ~0.01° near epoch, extrapolated to ~1° at the 2000/2050 edges (only far-epoch check: 7.4° at 1890)';
+  `${KEPLER_2025}; ~0.01° perto da época, extrapolado a ~1° nas bordas de 2000/2050 (única conferência longe da época: 7.4° em 1890)`;
 
 // Janelas por família, verbatim do doador.
 const JANELA_SATELITES: JanelaAnos = { anoInicio: 2020, anoFim: 2030 };
@@ -136,7 +162,7 @@ export const REGISTRO_ORBITAL: Record<string, RegistroCorpo> = {
     modelo: 'Solar System Barycenter',
     fonte: 'tabela',
     centro: 'sun',
-    nota: 'Solar system origin reference',
+    nota: 'referência de origem do sistema solar',
   },
   mercury: registroTabela('VSOP87D', 'sun', JANELA_VSOP, NOTA_VSOP87),
   venus: registroTabela('VSOP87D', 'sun', JANELA_VSOP, NOTA_VSOP87),
@@ -198,7 +224,9 @@ export const REGISTRO_ORBITAL: Record<string, RegistroCorpo> = {
           modelo: 'Kepler',
           fonte: 'kepler',
           centro: parent,
-          nota: 'Catalog Kepler orbit; plane orientation and phase fabricated (Ω/ω/M0 = 0) — draws a plausible orbit, never predicts a position',
+          nota:
+            'órbita de catálogo por Kepler; orientação do plano e fase FABRICADAS ' +
+            '(Ω/ω/M0 = 0) — desenha uma órbita plausível, nunca prevê uma posição',
         } satisfies RegistroCorpo,
       ]
     )

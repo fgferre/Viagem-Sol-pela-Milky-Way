@@ -363,6 +363,74 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
   if (alvos.length !== 39) {
     throw new Error(`atlas/corpos: esperados 39 alvos, obtidos ${alvos.length}.`);
   }
+
+  // ---- A LÍNGUA (item 74, parte B, 2026-08-22) --------------------------
+  // A ficha mostra `editorial.pt` e mais nada. Um alvo sem `pt` não dá erro
+  // na tela: as três seções de prosa dele somem, caladas. Aqui a falta grita.
+  // Campo a campo, porque meia tradução é o modo silencioso de falhar — e a
+  // simetria com o inglês é o que garante que nenhum fato ficou para trás.
+  const CAMPOS_EDITORIAIS_PT = [
+    'description',
+    'curiosity',
+    'facts',
+    'records',
+    'explorationMilestone',
+    'info',
+  ];
+  for (const corpo of alvos) {
+    const en = corpo.editorial?.en ?? {};
+    const pt = corpo.editorial?.pt;
+    if (!pt) {
+      throw new Error(
+        `atlas/corpos: alvo "${corpo.id}" sem editorial.pt — a ficha dele ficaria muda; ` +
+          'rode npm run data:corpos.'
+      );
+    }
+    for (const campo of CAMPOS_EDITORIAIS_PT) {
+      const temEn = en[campo] !== undefined;
+      const temPt = pt[campo] !== undefined;
+      if (temEn !== temPt) {
+        throw new Error(
+          `atlas/corpos: "${corpo.id}", campo "${campo}": inglês ${temEn ? 'tem' : 'não tem'} ` +
+            `e português ${temPt ? 'tem' : 'não tem'}.`
+        );
+      }
+      if (!temEn) continue;
+      if (Array.isArray(en[campo]) && pt[campo].length !== en[campo].length) {
+        throw new Error(
+          `atlas/corpos: "${corpo.id}", campo "${campo}": ${pt[campo].length} itens em pt ` +
+            `contra ${en[campo].length} em en.`
+        );
+      }
+      if (campo === 'explorationMilestone' && pt[campo].year !== en[campo].year) {
+        throw new Error(
+          `atlas/corpos: "${corpo.id}": ano da exploração ${pt[campo].year} em pt contra ` +
+            `${en[campo].year} em en — a data é medida, não redação.`
+        );
+      }
+    }
+  }
+  // E OS SEIS SEM ALVO CONTINUAM SÓ EM INGLÊS: traduzir texto que nenhuma
+  // ficha abre é trabalho para a gaveta, e a ausência aqui é a declaração.
+  for (const corpo of corpos.filter((c) => c.semAlvo === true)) {
+    if (corpo.editorial?.pt !== undefined) {
+      throw new Error(
+        `atlas/corpos: "${corpo.id}" é semAlvo e ganhou tradução — ninguém abre a ficha dele.`
+      );
+    }
+  }
+  // MAKEMAKE NÃO TEM MASSA e isso não é falta de tradução: o kernel
+  // gm_de440 não o lista (SEM_GM_NO_KERNEL, em massas.ts), então a ficha
+  // dele não escreve massa, gravidade nem escape. O que se cobra aqui é que
+  // a PROSA dele esteja inteira — para que a ausência que sobrar na tela
+  // seja a do kernel, e não a de um arquivo pela metade.
+  const makemake = corpos.find((c) => c.id === 'makemake');
+  if (!makemake?.editorial?.pt?.description || !makemake?.orbita) {
+    throw new Error(
+      'atlas/corpos: makemake sem prosa em pt ou sem órbita — a única ausência ' +
+        'declarada dele é a massa (sem GM no kernel).'
+    );
+  }
   for (const corpo of alvos) {
     // O SOL É A ÚNICA EXCEÇÃO: ele é a origem e não orbita nada.
     if (corpo.id === 'sun') {

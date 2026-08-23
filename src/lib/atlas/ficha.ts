@@ -18,11 +18,11 @@
 // linha não é desenhada.
 //
 // E O INGLÊS NÃO VAI PARA A TELA. Os campos editoriais dos 45 corpos vieram
-// do doador em inglês e a tradução é trabalho do dono (item 74, parte B).
-// Enquanto ela não chega, `editorial.pt` não existe e as três seções de
-// prosa nascem vazias — a ficha é útil só com número, unidade e
-// procedência, que já são pt-BR. Mostrar inglês "por enquanto" seria a casa
-// decidindo por ele que meia língua é melhor que nenhuma.
+// do doador em inglês; desde 22/08 os 39 alvos têm o par em pt-BR
+// (`fonte/editorial-pt.json`) e é ELE que a ficha lê — `editorial.en` existe
+// no JSON e não tem consumidor de tela nenhum. Onde o `pt` faltar, a linha
+// SOME: mostrar inglês "por enquanto" seria a casa decidindo pelo dono que
+// meia língua é melhor que nenhuma.
 //
 // UM VOCABULÁRIO DE PROCEDÊNCIA SÓ: os três tiers de `selo.ts`
 // (`medido | derivado | artistico`). O doador tinha quatro rótulos próprios
@@ -389,10 +389,9 @@ function secaoCeu(entrada: EntradaDaFicha): LinhaDaFicha[] {
 }
 
 /**
- * AS TRÊS SEÇÕES DE PROSA. Elas leem `editorial.pt` e mais nada: enquanto a
- * tradução não chega (item 74, parte B) as três nascem vazias e não são
- * desenhadas. O caminho existe pronto para que a parte B seja DADO, e não
- * código.
+ * AS DUAS SEÇÕES DE PROSA. Elas leem `editorial.pt` e mais nada — e é por
+ * isso que a parte B do item 74 foi DADO e não código: o arquivo de tradução
+ * nasceu, o gerador o fundiu, e estas funções não mudaram uma linha.
  */
 function secaoContexto(pt: EditorialDoCorpo | undefined): LinhaDaFicha[] {
   if (!pt) return [];

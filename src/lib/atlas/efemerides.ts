@@ -50,8 +50,10 @@
 //      janela cita a acurácia MEDIDA do registro (e, para tabelas, soma
 //      o erro de interpolação medido do manifest); fora, avisa que os
 //      elementos congelados de 2025-01-01 estão extrapolados e NUNCA
-//      cita a acurácia medida. Janela formatada com en-dash e BCE/CE
-//      (a do doador imprimia "-3000-3000" — ilegível).
+//      cita a acurácia medida. Janela formatada com en-dash e a.C./d.C.
+//      (a do doador imprimia "-3000-3000" — ilegível; e o BCE/CE que a
+//      casa herdou virou a.C./d.C. em 22/08, quando a ficha do objeto
+//      passou a imprimir esta nota inteira na tela, em português).
 // ============================================================
 
 import type { PosicaoEcliptica } from './kepler';
@@ -260,12 +262,12 @@ export interface EstatisticasCache {
 
 /** Formata janela de anos com en-dash e era explícita (adaptação d). */
 function formatarJanela(anoInicio: number, anoFim: number): string {
-  const inicio = anoInicio < 0 ? `${Math.abs(anoInicio)} BCE` : `${anoInicio}`;
+  const inicio = anoInicio < 0 ? `${Math.abs(anoInicio)} a.C.` : `${anoInicio}`;
   const fim =
     anoFim < 0
-      ? `${Math.abs(anoFim)} BCE`
+      ? `${Math.abs(anoFim)} a.C.`
       : anoInicio < 0
-        ? `${anoFim} CE`
+        ? `${anoFim} d.C.`
         : `${anoFim}`;
   return `${inicio}–${fim}`;
 }
@@ -482,7 +484,7 @@ export class MotorEfemerides {
       return (
         `${registro.modelo}: ${registro.nota}. Tabela embarcada ${janela} ` +
         `(teoria válida ${formatarJanela(registro.janelaTeoria!.anoInicio, registro.janelaTeoria!.anoFim)}); ` +
-        `interpolação Hermite medida ≤ ${tabela.erroMedidoAu.toExponential(2)} AU (manifest).`
+        `interpolação Hermite medida ≤ ${tabela.erroMedidoAu.toExponential(2)} UA (manifesto).`
       );
     }
 

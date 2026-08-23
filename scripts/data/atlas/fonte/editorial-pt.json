@@ -1,0 +1,730 @@
+{
+  "_fonte": "A TRADUÇÃO pt-BR do editorial, campo a campo, dos 39 corpos que esta casa desenha. O inglês mora em corpos-fonte.json e continua lá, intocado: este arquivo é o par dele, não o substituto. O gerador funde os dois em corpos.json (editorial.en + editorial.pt) e a ficha do objeto mostra SÓ o pt — onde faltar, a linha some.",
+  "_proveniencia": {
+    "traduzidoDe": "scripts/data/atlas/fonte/corpos-fonte.json (editorial.en)",
+    "data": "2026-08-22",
+    "por": "tradução de agente, campo a campo, sem acrescentar nem retirar fato",
+    "regras": [
+      "número e data iguais aos do inglês, com a vírgula decimal e o ponto de milhar do pt-BR",
+      "unidade na régua da casa: km, UA, anos-luz — parsec não aparece",
+      "nome próprio de corpo na grafia que NOMES_DOS_CORPOS já usa (Titã, Encélado, Jápeto, Tétis, Reia, Tritão, Caronte, Palas, Hígia, Éris)",
+      "nome de missão, de cratera e de acidente geográfico fica no original (Voyager, Cassini, Herschel, Olympus Mons)",
+      "sem floreio: a frase pt diz o que a frase en dizia, nem mais nem menos",
+      "campo ausente no inglês fica AUSENTE aqui — Miranda não tem records nem explorationMilestone, e continua sem"
+    ],
+    "nota": "ESPERA A LEITURA DO DONO. O texto original é dele, escrito no projeto doador; esta é a passagem para a língua da casa e o julgamento de conteúdo é dele. Editar à mão é o caminho esperado — este arquivo é fonte, não saída de máquina."
+  },
+  "_pendencias": [
+    "os seis corpos sem alvo nesta casa (gonggong, orcus, sedna, salacia, vanth, weywot) NÃO são traduzidos: eles não ganham ficha, e traduzir texto que ninguém lê é trabalho para a gaveta"
+  ],
+  "corpos": {
+    "sun": {
+      "description": "O Sol é a estrela no centro do nosso Sistema Solar. É uma esfera quase perfeita de plasma quente, aquecida até a incandescência por reações de fusão nuclear no núcleo. Irradiando a energia sobretudo como luz visível e radiação infravermelha, ele é de longe a fonte de energia mais importante para a vida na Terra. O diâmetro dele é de cerca de 1,39 milhão de quilômetros, ou 109 vezes o da Terra.",
+      "curiosity": "O Sol responde por 99,86% da massa total de todo o Sistema Solar. Ele consome cerca de 600 milhões de toneladas de hidrogênio a cada segundo.",
+      "facts": [
+        "A luz do Sol leva 8 minutos e 20 segundos para chegar à Terra.",
+        "A temperatura do núcleo do Sol é de cerca de 15 milhões de graus Celsius.",
+        "Ele gira mais rápido no equador do que nos polos (rotação diferencial).",
+        "Erupções solares podem perturbar as comunicações e as redes elétricas na Terra."
+      ],
+      "records": [
+        "Objeto mais massivo do sistema",
+        "Superfície mais quente do sistema"
+      ],
+      "explorationMilestone": {
+        "year": 2018,
+        "description": "A Parker Solar Probe foi lançada para tocar o Sol"
+      },
+      "info": "O coração do nosso sistema solar."
+    },
+    "mercury": {
+      "description": "Mercúrio é o menor planeta do Sistema Solar e o mais próximo do Sol. A órbita dele em torno do Sol leva 87,97 dias terrestres, a mais curta de todos os planetas do Sol. O nome vem da divindade romana Mercúrio, o mensageiro dos deuses. Como Vênus, Mercúrio orbita o Sol por dentro da órbita da Terra, como planeta inferior, e a distância aparente dele ao Sol vista da Terra nunca passa de 28°.",
+      "curiosity": "Apesar de ser o mais próximo do Sol, Mercúrio não é o planeta mais quente — Vênus é. Mercúrio não tem atmosfera para reter calor, o que leva a oscilações extremas de temperatura.",
+      "facts": [
+        "Mercúrio tem um núcleo metálico enorme, que ocupa cerca de 85% do raio dele.",
+        "Um dia em Mercúrio (de nascer do Sol a nascer do Sol) dura 176 dias terrestres.",
+        "Ele tem a órbita mais excêntrica de todos os planetas.",
+        "As temperaturas vão de −173 °C à noite a 427 °C durante o dia."
+      ],
+      "records": [
+        "Menor planeta",
+        "Planeta com mais crateras"
+      ],
+      "explorationMilestone": {
+        "year": 2011,
+        "description": "A MESSENGER foi a primeira sonda a orbitar Mercúrio"
+      },
+      "info": "O menor planeta."
+    },
+    "venus": {
+      "description": "Vênus é o segundo planeta a partir do Sol. O nome vem da deusa romana do amor e da beleza. Como o objeto natural mais brilhante do céu noturno da Terra depois da Lua, Vênus pode projetar sombras e pode ser visto a olho nu em plena luz do dia. Vênus é um planeta rochoso e às vezes é chamado de \"planeta irmão\" da Terra, pela semelhança de tamanho, massa, proximidade do Sol e composição geral.",
+      "curiosity": "Vênus gira no sentido contrário ao da maioria dos outros planetas (rotação retrógrada). Isso quer dizer que o Sol nasce a oeste e se põe a leste.",
+      "facts": [
+        "A atmosfera espessa retém calor e faz dele o planeta mais quente (462 °C).",
+        "A pressão atmosférica é 92 vezes maior que a da Terra.",
+        "Vênus dá uma volta em torno de si mesmo a cada 243 dias — mais que o ano dele, de 225 dias —, mas gira ao contrário, então de um nascer do Sol ao outro passam só cerca de 117 dias.",
+        "É o objeto natural mais brilhante do céu noturno da Terra depois da Lua."
+      ],
+      "records": [
+        "Planeta mais quente",
+        "Rotação mais lenta"
+      ],
+      "explorationMilestone": {
+        "year": 1970,
+        "description": "A Venera 7 foi a primeira sonda a pousar em outro planeta"
+      },
+      "info": "Atmosfera espessa."
+    },
+    "earth": {
+      "description": "A Terra é o terceiro planeta a partir do Sol e o único objeto astronômico que se sabe abrigar vida. Cerca de 29% da superfície da Terra é terra firme, feita de continentes e ilhas. Os 71% restantes são cobertos de água, na maior parte por oceanos, mares, golfos e outros corpos de água salgada, mas também por lagos, rios e outras águas doces, que juntos formam a hidrosfera.",
+      "curiosity": "A Terra é o único planeta que não leva o nome de um deus grego ou romano. O nome vem de palavras do inglês antigo e do germânico que querem dizer \"chão\".",
+      "facts": [
+        "A atmosfera da Terra é 78% de nitrogênio e 21% de oxigênio.",
+        "Ela tem um campo magnético poderoso que nos protege do vento solar.",
+        "O planeta é na verdade um esferoide achatado, mais largo no equador.",
+        "71% da superfície é coberta por água."
+      ],
+      "records": [
+        "Planeta mais denso",
+        "Única vida conhecida"
+      ],
+      "explorationMilestone": {
+        "year": 1961,
+        "description": "Yuri Gagarin foi o primeiro humano no espaço"
+      },
+      "info": "A nossa casa."
+    },
+    "mars": {
+      "description": "Marte é o quarto planeta a partir do Sol e o segundo menor do Sistema Solar, maior apenas que Mercúrio. Marte leva o nome do deus romano da guerra e é muitas vezes chamado de \"planeta vermelho\". O apelido vem do óxido de ferro abundante na superfície de Marte, que lhe dá uma aparência avermelhada, distinta entre os corpos astronômicos visíveis a olho nu.",
+      "curiosity": "Marte abriga o Olympus Mons, o maior vulcão do sistema solar, e o Valles Marineris, um dos maiores cânions.",
+      "facts": [
+        "Marte tem duas luas pequenas, Fobos e Deimos.",
+        "Há indício forte de que Marte já teve água líquida na superfície.",
+        "Tempestades de poeira podem cobrir o planeta inteiro e durar meses.",
+        "Um ano em Marte tem 687 dias terrestres — quase o dobro."
+      ],
+      "records": [
+        "Montanha mais alta (Olympus Mons)",
+        "Maior cânion (Valles Marineris)"
+      ],
+      "explorationMilestone": {
+        "year": 2021,
+        "description": "O rover Perseverance pousou e soltou o helicóptero Ingenuity"
+      },
+      "info": "O planeta vermelho."
+    },
+    "phobos": {
+      "description": "Fobos é o maior e o mais próximo dos dois satélites naturais de Marte. É um objeto pequeno, de forma irregular, com raio médio de 11 km. Fobos orbita Marte muito mais perto do que qualquer outra lua principal orbita o seu planeta, completando uma volta em apenas 7 horas e 39 minutos. Por causa disso, ele nasce a oeste, atravessa o céu em 4 horas e 15 minutos e se põe a leste, duas vezes a cada dia marciano.",
+      "curiosity": "Fobos está espiralando para dentro a uma taxa de 2 metros por século. Em cerca de 50 milhões de anos, ou ele cai em Marte ou se despedaça num anel.",
+      "facts": [
+        "O nome vem do deus grego Fobos, filho de Ares (Marte) e Afrodite (Vênus).",
+        "A superfície dele é coberta de regolito e tem uma grande cratera de impacto chamada Stickney.",
+        "Fobos é provavelmente um asteroide capturado."
+      ],
+      "records": [
+        "Lua que orbita mais perto",
+        "Menor período orbital de uma lua"
+      ],
+      "explorationMilestone": {
+        "year": 1971,
+        "description": "A Mariner 9 forneceu as primeiras imagens de perto"
+      },
+      "info": "Lua de Marte."
+    },
+    "deimos": {
+      "description": "Deimos é o menor e o mais externo dos dois satélites naturais de Marte. Tem raio médio de 6,2 km e leva 30,3 horas para orbitar Marte. Como Fobos, Deimos tem forma irregular, nada esférica, e é muito craterizado, embora as crateras dele sejam em geral menores e preenchidas de regolito, o que lhe dá uma aparência mais lisa.",
+      "curiosity": "De Marte, Deimos apareceria como um objeto brilhante parecido com uma estrela, um pouco maior do que Vênus aparece da Terra. Não seria grande o bastante para causar um eclipse solar total.",
+      "facts": [
+        "Deimos está se afastando de Marte aos poucos.",
+        "O nome vem de Deimos, o deus grego do pavor e do terror.",
+        "A velocidade de escape dele é de apenas 5,6 m/s — dava para saltar fora dele de bicicleta."
+      ],
+      "records": [
+        "Menor lua principal",
+        "Superfície mais lisa entre as luas pequenas"
+      ],
+      "explorationMilestone": {
+        "year": 1977,
+        "description": "Os orbitadores Viking forneceram imagens detalhadas"
+      },
+      "info": "Lua de Marte."
+    },
+    "jupiter": {
+      "description": "Júpiter é o maior planeta do Sistema Solar, com massa mais de duas vezes e meia a de todos os outros planetas somados. É um gigante gasoso com massa de um milésimo da do Sol. Júpiter é composto sobretudo de hidrogênio, com um quarto da massa em hélio. Falta a ele uma superfície sólida bem definida. Por causa da rotação rápida, a forma do planeta é a de um esferoide achatado.",
+      "curiosity": "Júpiter tem o dia mais curto de todos os planetas, girando uma vez a cada 9 horas e 55 minutos. Essa rotação rápida cria o campo magnético forte dele.",
+      "facts": [
+        "A Grande Mancha Vermelha é uma tempestade maior que a Terra, que dura há séculos.",
+        "Júpiter tem um sistema de anéis tênue, descoberto pela Voyager 1 em 1979.",
+        "O campo magnético dele é 20.000 vezes mais forte que o da Terra.",
+        "Ele age como um \"aspirador de pó\", protegendo os planetas interiores dos cometas."
+      ],
+      "records": [
+        "Maior planeta",
+        "Dia mais curto",
+        "Campo magnético mais forte"
+      ],
+      "explorationMilestone": {
+        "year": 1973,
+        "description": "A Pioneer 10 foi a primeira sonda a visitar Júpiter"
+      },
+      "info": "Gigante gasoso."
+    },
+    "saturn": {
+      "description": "Saturno é o sexto planeta a partir do Sol e o segundo maior do Sistema Solar, depois de Júpiter. É um gigante gasoso com raio médio de cerca de nove vezes e meia o da Terra. Tem só um oitavo da densidade média da Terra; ainda assim, com o volume maior, Saturno é mais de 95 vezes mais massivo. Saturno é famoso pelo sistema de anéis proeminente, feito sobretudo de partículas de gelo, com uma parcela menor de detritos rochosos e poeira.",
+      "curiosity": "Saturno é o único planeta do Sistema Solar menos denso que a água. Se houvesse uma banheira grande o bastante para ele, Saturno flutuaria.",
+      "facts": [
+        "Os anéis de Saturno são incrivelmente finos: estima-se que tenham menos de 1 km de espessura.",
+        "Os ventos na atmosfera alta dele podem chegar a 1.800 km/h.",
+        "Ele irradia para o espaço 2,5 vezes mais energia do que recebe do Sol.",
+        "A tempestade em forma de hexágono no polo norte é uma feição atmosférica única."
+      ],
+      "records": [
+        "Anéis mais extensos",
+        "Planeta menos denso"
+      ],
+      "explorationMilestone": {
+        "year": 2004,
+        "description": "A Cassini-Huygens entrou em órbita e estudou o sistema por 13 anos"
+      },
+      "info": "O sistema de anéis."
+    },
+    "uranus": {
+      "description": "Urano é o sétimo planeta a partir do Sol. O nome vem do deus grego do céu. Tem o terceiro maior raio planetário e a quarta maior massa planetária do Sistema Solar. Urano é parecido com Netuno na composição, e os dois têm composições químicas gerais diferentes das dos gigantes gasosos maiores, Júpiter e Saturno.",
+      "curiosity": "Urano gira deitado, com uma inclinação de eixo de 98 graus. Essa inclinação única causa as estações mais extremas do sistema solar, com cada polo recebendo 42 anos de luz do Sol seguidos de 42 anos de escuridão.",
+      "facts": [
+        "Foi o primeiro planeta descoberto com a ajuda de um telescópio (1781).",
+        "A cor azul-esverdeada dele vem do gás metano na atmosfera.",
+        "É muitas vezes chamado de \"gigante de gelo\" por causa do manto gelado.",
+        "Urano tem a atmosfera planetária mais fria, com temperatura mínima de −224 °C."
+      ],
+      "records": [
+        "Atmosfera mais fria",
+        "Inclinação de eixo mais extrema"
+      ],
+      "explorationMilestone": {
+        "year": 1986,
+        "description": "A Voyager 2 é a única sonda que visitou Urano"
+      },
+      "info": "Gigante de gelo."
+    },
+    "neptune": {
+      "description": "Netuno é o oitavo e mais distante planeta conhecido do Sol. No Sistema Solar, é o quarto maior planeta em diâmetro, o terceiro mais massivo e o gigante mais denso. Tem 17 vezes a massa da Terra, um pouco mais massivo que o quase gêmeo dele, Urano. Netuno é mais denso e fisicamente menor que Urano porque a massa maior comprime mais a atmosfera pela gravidade.",
+      "curiosity": "Netuno foi o primeiro planeta localizado por cálculo matemático, e não por observação direta. Irregularidades na órbita de Urano levaram os astrônomos a prever a existência de Netuno.",
+      "facts": [
+        "Os ventos em Netuno são os mais rápidos do sistema solar, chegando a 2.100 km/h.",
+        "Ele tem uma \"Grande Mancha Escura\" parecida com a Mancha Vermelha de Júpiter.",
+        "Netuno leva 165 anos terrestres para dar uma volta em torno do Sol.",
+        "A lua dele, Tritão, orbita no sentido contrário ao da rotação do planeta."
+      ],
+      "records": [
+        "Planeta mais distante",
+        "Ventos mais rápidos"
+      ],
+      "explorationMilestone": {
+        "year": 1989,
+        "description": "A Voyager 2 passou por Netuno e confirmou os anéis e as luas dele"
+      },
+      "info": "Os ventos."
+    },
+    "moon": {
+      "description": "A Lua é o único satélite natural da Terra. É o quinto maior satélite do Sistema Solar e o maior entre os satélites planetários em relação ao tamanho do planeta que orbita. A Lua é um corpo rochoso com a superfície craterizada por impactos de asteroides e coberta de regolito. A influência gravitacional dela produz as marés dos oceanos, as marés do corpo sólido e o pequeno alongamento do dia.",
+      "curiosity": "A Lua está em rotação síncrona com a Terra, o que quer dizer que ela sempre nos mostra a mesma face. O \"lado escuro\" não é escuro de fato: ele só nunca é visível da Terra.",
+      "facts": [
+        "A Lua está se afastando da Terra a uma taxa de 3,8 cm por ano.",
+        "Ela dá uma volta em torno de si mesma a cada 27,3 dias, mas leva 29,5 dias para percorrer as fases, porque a Terra segue andando na própria órbita nesse meio-tempo.",
+        "As temperaturas na superfície vão de 127 °C ao sol a −173 °C na sombra.",
+        "Há gelo de água nos polos, em crateras permanentemente na sombra.",
+        "É o quinto maior satélite do Sistema Solar."
+      ],
+      "records": [
+        "Maior satélite em relação ao corpo que orbita",
+        "Único corpo celeste visitado por humanos"
+      ],
+      "explorationMilestone": {
+        "year": 1969,
+        "description": "A Apollo 11 pousou os primeiros humanos na superfície"
+      },
+      "info": "O satélite da Terra."
+    },
+    "ganymede": {
+      "description": "Ganimedes é um satélite de Júpiter e a maior e mais massiva das luas do Sistema Solar. É o nono maior objeto do Sistema Solar e é maior que o planeta Mercúrio, embora tenha só cerca de metade da massa dele. Ganimedes é composto de quantidades aproximadamente iguais de rocha de silicato e gelo de água. É um corpo inteiramente diferenciado, com núcleo líquido rico em ferro e um oceano interno que pode conter mais água do que todos os oceanos da Terra juntos.",
+      "curiosity": "Ganimedes é a única lua do Sistema Solar que se sabe ter uma magnetosfera substancial, provavelmente criada por convecção dentro do núcleo de ferro líquido dele.",
+      "facts": [
+        "Ele tem uma atmosfera tênue de oxigênio.",
+        "A superfície dele mistura dois tipos de terreno: regiões escuras e craterizadas e regiões mais claras e sulcadas.",
+        "Ele participa de uma ressonância orbital 1:2:4 com Europa e Io."
+      ],
+      "records": [
+        "Maior lua do Sistema Solar",
+        "Única lua com campo magnético"
+      ],
+      "explorationMilestone": {
+        "year": 1996,
+        "description": "A sonda Galileo fez vários sobrevoos rasantes"
+      },
+      "info": "A maior lua do sistema solar."
+    },
+    "callisto": {
+      "description": "Calisto é a segunda maior lua de Júpiter e a terceira maior lua do Sistema Solar. Ela não está em ressonância orbital como as outras três luas galileanas, então não sofre aquecimento de maré significativo. Calisto é composta de quantidades aproximadamente iguais de rocha e gelos. A superfície dela é a mais craterizada do Sistema Solar, o que sugere uma superfície muito antiga, sem atividade geológica há bilhões de anos.",
+      "curiosity": "Calisto é muitas vezes tida como a mais \"sem graça\" das luas galileanas, pela falta de atividade, mas é uma candidata de primeira para a exploração humana, por causa do nível baixo de radiação.",
+      "facts": [
+        "Ela tem uma atmosfera muito rarefeita de dióxido de carbono.",
+        "Valhalla é a maior cratera de impacto de múltiplos anéis de Calisto.",
+        "Ela pode ter um oceano de água líquida sob a superfície."
+      ],
+      "records": [
+        "Objeto com mais crateras",
+        "Superfície mais antiga"
+      ],
+      "explorationMilestone": {
+        "year": 1979,
+        "description": "As missões Voyager forneceram os primeiros mapas detalhados"
+      },
+      "info": "Coberta de crateras."
+    },
+    "io": {
+      "description": "Io é a mais interna e a terceira maior das quatro luas galileanas do planeta Júpiter. É a quarta maior lua do Sistema Solar, tem a maior densidade de todas as luas e a menor quantidade de água (por razão atômica) de qualquer objeto astronômico conhecido do Sistema Solar. Com mais de 400 vulcões ativos, Io é o objeto geologicamente mais ativo do Sistema Solar.",
+      "curiosity": "A atividade vulcânica extrema de Io é resultado do aquecimento de maré, do atrito gerado dentro dela enquanto é puxada entre Júpiter e as outras luas galileanas.",
+      "facts": [
+        "Plumas de enxofre e dióxido de enxofre sobem até 500 km acima da superfície.",
+        "A superfície dela é renovada o tempo todo por escoamentos de lava, que apagam qualquer cratera de impacto.",
+        "Io corta as linhas do campo magnético de Júpiter e gera uma corrente elétrica poderosa.",
+        "Em 1676, Ole Rømer mediu a velocidade da luz pelos eclipses de Io: eles adiantavam quando a Terra se aproximava de Júpiter e atrasavam quando ela se afastava — até ~17 minutos ao longo da órbita da Terra. O Atlas mostra os tempos geométricos, sem esse atraso de viagem da luz."
+      ],
+      "records": [
+        "Corpo com mais atividade vulcânica",
+        "Objeto mais seco do Sistema Solar"
+      ],
+      "explorationMilestone": {
+        "year": 1979,
+        "description": "A Voyager 1 descobriu o vulcanismo ativo"
+      },
+      "info": "Mundo vulcânico."
+    },
+    "europa": {
+      "description": "Europa é a menor das quatro luas galileanas que orbitam Júpiter e a sexta mais próxima do planeta entre as 95 luas conhecidas de Júpiter. É também a sexta maior lua do Sistema Solar. Europa tem a superfície mais lisa de qualquer objeto sólido conhecido do Sistema Solar. A juventude e a lisura aparentes da superfície levaram à hipótese de que existe um oceano de água sob ela.",
+      "curiosity": "Europa é um dos lugares mais promissores do sistema solar para procurar vida fora da Terra. O oceano sob a superfície dela é mantido líquido pelo aquecimento de maré.",
+      "facts": [
+        "A superfície dela é cortada por fraturas longas e retilíneas chamadas lineae.",
+        "Há pouquíssimas crateras, o que indica uma superfície jovem (de 20 a 180 milhões de anos).",
+        "Já foram detectadas plumas de vapor de água irrompendo da superfície."
+      ],
+      "records": [
+        "Superfície mais lisa",
+        "Maior chance de abrigar vida"
+      ],
+      "explorationMilestone": {
+        "year": 1995,
+        "description": "A missão Galileo trouxe indícios do oceano sob a superfície"
+      },
+      "info": "Oceano sob o gelo."
+    },
+    "titan": {
+      "description": "Titã é a maior lua de Saturno e o segundo maior satélite natural do Sistema Solar. É a única lua que se sabe ter uma atmosfera densa, e o único corpo conhecido no espaço, fora a Terra, onde se achou indício claro de corpos estáveis de líquido na superfície. Titã é 50% maior (em diâmetro) que a Lua da Terra e 80% mais massivo.",
+      "curiosity": "Titã tem lagos e mares de metano e etano líquidos. O maior, o Kraken Mare, é maior que o mar Cáspio na Terra.",
+      "facts": [
+        "A atmosfera dele é 98% de nitrogênio, parecida com a da Terra.",
+        "A pressão na superfície é 1,45 vez a da Terra.",
+        "Em Titã chove metano líquido.",
+        "É a única lua que se sabe ter uma atmosfera densa."
+      ],
+      "records": [
+        "Única lua com atmosfera densa",
+        "Únicos mares líquidos fora da Terra"
+      ],
+      "explorationMilestone": {
+        "year": 2005,
+        "description": "A sonda Huygens pousou na superfície"
+      },
+      "info": "Atmosfera espessa."
+    },
+    "rhea": {
+      "description": "Reia é a segunda maior lua de Saturno e a nona maior lua do Sistema Solar. É um corpo gelado, com densidade de cerca de 1,236 g/cm³, o que sugere que ela é feita de cerca de 25% de rocha e 75% de gelo de água. A superfície de Reia é muito craterizada e parece com a de Dione, com um terreno claro de traços finos no hemisfério de trás.",
+      "curiosity": "Reia pode ter um sistema de anéis próprio, embora isso não tenha sido confirmado em definitivo.",
+      "facts": [
+        "Ela tem uma atmosfera muito tênue, com oxigênio e dióxido de carbono.",
+        "A superfície se divide em duas áreas geologicamente diferentes, pela densidade de crateras.",
+        "O nome vem da titã Reia, mãe dos deuses."
+      ],
+      "records": [
+        "Segunda maior lua de Saturno",
+        "Possível sistema de anéis"
+      ],
+      "explorationMilestone": {
+        "year": 1980,
+        "description": "A Voyager 1 confirmou a natureza gelada dela"
+      },
+      "info": "Corpo gelado."
+    },
+    "iapetus": {
+      "description": "Jápeto é o terceiro maior satélite natural de Saturno. É famoso pela coloração dramática em dois tons: um hemisfério é claro como neve, o outro é escuro como carvão. Jápeto tem densidade baixa, o que indica que ele é feito sobretudo de gelo, com pouco material rochoso.",
+      "curiosity": "Jápeto tem uma crista equatorial enorme que dá três quartos da volta na lua, o que o faz parecer uma noz.",
+      "facts": [
+        "Acredita-se que o material escuro seja poeira de outra lua, Febe.",
+        "Ele orbita muito mais longe de Saturno que as outras luas principais.",
+        "A órbita dele é bastante inclinada em relação ao equador de Saturno."
+      ],
+      "records": [
+        "Superfície de maior contraste",
+        "Formato de noz"
+      ],
+      "explorationMilestone": {
+        "year": 2007,
+        "description": "Um sobrevoo da Cassini revelou a crista equatorial"
+      },
+      "info": "A lua de dois tons."
+    },
+    "dione": {
+      "description": "Dione é a quarta maior lua de Saturno. É feita de cerca de dois terços de gelo de água e um terço de rocha densa. O hemisfério da frente dela é muito craterizado e claro de modo uniforme, enquanto o hemisfério de trás tem uma rede de falésias de gelo brilhantes (chasmata), que criam a aparência de traços finos.",
+      "curiosity": "Dione divide a órbita dela com duas luas coorbitais pequenas, Helena e Polideuces, que ficam nos pontos de Lagrange dela.",
+      "facts": [
+        "Ela tem um oceano de água líquida sob a superfície.",
+        "Já foram detectados íons de oxigênio na exosfera dela.",
+        "Os \"traços\" são, na verdade, falésias de gelo brilhantes criadas por fraturas tectônicas."
+      ],
+      "records": [
+        "Luas coorbitais",
+        "Falésias de gelo"
+      ],
+      "explorationMilestone": {
+        "year": 1980,
+        "description": "A Voyager 1 fotografou o terreno de traços finos"
+      },
+      "info": "Gelo craterizado."
+    },
+    "tethys": {
+      "description": "Tétis é a quinta maior lua de Saturno. É uma lua de tamanho médio, feita quase inteiramente de gelo de água, como indica a densidade baixa dela. Tétis é muito craterizada e cortada por várias falhas e fossas grandes (grabens). A maior cratera de impacto, Odysseus, tem cerca de 400 km de diâmetro, quase 2/5 do diâmetro de Tétis.",
+      "curiosity": "Um vale enorme chamado Ithaca Chasma tem cerca de 2.000 km de comprimento e cobre três quartos da circunferência de Tétis.",
+      "facts": [
+        "Ela tem duas luas coorbitais, Telesto e Calipso.",
+        "A superfície é muito brilhante, atrás só da de Encélado.",
+        "A cratera Odysseus se achatou com a relaxação da crosta gelada."
+      ],
+      "records": [
+        "Vale de fenda enorme",
+        "Luas troianas"
+      ],
+      "explorationMilestone": {
+        "year": 1981,
+        "description": "A Voyager 2 forneceu imagens de alta resolução"
+      },
+      "info": "Um cânion enorme."
+    },
+    "enceladus": {
+      "description": "Encélado é a sexta maior lua de Saturno. Tem cerca de 500 quilômetros de diâmetro, mais ou menos um décimo do diâmetro da maior lua de Saturno, Titã. Encélado é coberto de gelo novo e limpo, o que faz dele um dos corpos mais refletivos do Sistema Solar. Por causa disso, a temperatura da superfície dele ao meio-dia chega apenas a −198 °C.",
+      "curiosity": "Encélado tem criovulcões perto do polo sul que lançam ao espaço jatos parecidos com gêiseres, de vapor de água, hidrogênio molecular, outros voláteis e material sólido, incluindo cristais de cloreto de sódio e partículas de gelo.",
+      "facts": [
+        "Ele é a fonte do anel E de Saturno.",
+        "Ele tem um oceano global de água líquida sob a superfície.",
+        "Fontes hidrotermais no fundo desse oceano poderiam sustentar vida."
+      ],
+      "records": [
+        "Corpo mais refletivo",
+        "Criovulcanismo ativo"
+      ],
+      "explorationMilestone": {
+        "year": 2005,
+        "description": "A Cassini descobriu as plumas de água"
+      },
+      "info": "Gêiseres de gelo."
+    },
+    "mimas": {
+      "description": "Mimas é uma lua de Saturno, descoberta em 1789 por William Herschel. O nome vem de Mimas, filho de Gaia na mitologia grega. Com 396 quilômetros de diâmetro, é o menor corpo astronômico que se sabe ser arredondado pela própria gravidade.",
+      "curiosity": "Mimas é dominado pela cratera Herschel, tão grande que o impacto quase estilhaçou a lua. Isso lhe dá uma semelhança marcante com a Estrela da Morte de Star Wars.",
+      "facts": [
+        "O impacto que criou a Herschel abriu fraturas no lado oposto da lua.",
+        "Ele é o responsável por limpar a Divisão de Cassini nos anéis de Saturno.",
+        "Ele é feito sobretudo de gelo de água, com pouca rocha."
+      ],
+      "records": [
+        "Menor corpo arredondado",
+        "Sósia da Estrela da Morte"
+      ],
+      "explorationMilestone": {
+        "year": 1980,
+        "description": "A Voyager 1 revelou a cratera gigante"
+      },
+      "info": "Sósia da Estrela da Morte."
+    },
+    "triton": {
+      "description": "Tritão é o maior satélite natural do planeta Netuno e a primeira lua netuniana a ser descoberta. É a única lua grande do Sistema Solar com órbita retrógrada, uma órbita no sentido contrário ao da rotação do planeta. Com 2.710 quilômetros de diâmetro, é a sétima maior lua do Sistema Solar. Pela órbita retrógrada e pela composição parecida com a de Plutão, acredita-se que Tritão tenha sido um planeta anão capturado do cinturão de Kuiper.",
+      "curiosity": "Tritão é geologicamente ativo; a superfície dele é jovem e tem poucas crateras de impacto. Terrenos criovulcânicos e tectônicos complexos sugerem uma história geológica complexa.",
+      "facts": [
+        "Ele tem uma atmosfera tênue de nitrogênio.",
+        "Gêiseres lançam gás nitrogênio e poeira a até 8 km de altura.",
+        "Ele está espiralando aos poucos na direção de Netuno e um dia será despedaçado.",
+        "É a única lua grande do Sistema Solar com órbita retrógrada."
+      ],
+      "records": [
+        "Única lua grande retrógrada",
+        "Objeto do cinturão de Kuiper capturado"
+      ],
+      "explorationMilestone": {
+        "year": 1989,
+        "description": "A Voyager 2 trouxe os únicos dados de perto"
+      },
+      "info": "Órbita retrógrada."
+    },
+    "titania": {
+      "description": "Titânia é a maior das luas de Urano e a oitava maior lua do Sistema Solar, com 1.578 quilômetros de diâmetro. Foi descoberta por William Herschel em 1787. Titânia é feita de quantidades aproximadamente iguais de gelo e rocha, e é provavelmente diferenciada em um núcleo rochoso e um manto gelado.",
+      "curiosity": "Titânia é marcada por um sistema de cânions imenso, que faz o Grand Canyon da Terra parecer pequeno, o que indica atividade tectônica no passado.",
+      "facts": [
+        "Ela tem uma superfície relativamente escura e levemente avermelhada.",
+        "Foram encontradas crateras de impacto que chegam a 326 km de diâmetro.",
+        "A espectroscopia no infravermelho revelou a presença de gelo de água e dióxido de carbono."
+      ],
+      "records": [
+        "Maior lua de Urano",
+        "Sistema de cânions imenso"
+      ],
+      "explorationMilestone": {
+        "year": 1986,
+        "description": "A Voyager 2 fotografou cerca de 40% da superfície"
+      },
+      "info": "A maior lua de Urano."
+    },
+    "oberon": {
+      "description": "Oberon é a lua principal mais externa do planeta Urano. É a segunda maior e a segunda mais massiva das luas de Urano, e a nona lua mais massiva do Sistema Solar. Feito de quantidades aproximadamente iguais de gelo e rocha, Oberon é provavelmente diferenciado em um núcleo rochoso e um manto gelado.",
+      "curiosity": "Oberon tem a superfície mais avermelhada entre as luas principais de Urano. A superfície dele é muito craterizada, o que sugere que ele está estável desde o começo da história do sistema solar.",
+      "facts": [
+        "Ele tem montanhas altas, entre elas uma que sobe 11 km.",
+        "Material escuro cobre o fundo de muitas crateras.",
+        "O nome vem do rei das fadas de Sonho de uma Noite de Verão, de Shakespeare."
+      ],
+      "records": [
+        "Lua principal mais externa",
+        "Pico mais alto entre as luas de Urano"
+      ],
+      "explorationMilestone": {
+        "year": 1986,
+        "description": "A Voyager 2 fotografou cerca de 40% da superfície"
+      },
+      "info": "A lua principal mais externa."
+    },
+    "umbriel": {
+      "description": "Umbriel é uma lua de Urano, descoberta em 24 de outubro de 1851 por William Lassell. Foi descoberta ao mesmo tempo que Ariel e recebeu o nome de um personagem do poema O Rapto da Madeixa, de Alexander Pope. Umbriel é feito sobretudo de gelo, com uma fração considerável de rocha, e pode ser diferenciado em um núcleo rochoso e um manto gelado.",
+      "curiosity": "Umbriel é a mais escura das luas principais de Urano: reflete só cerca de metade da luz que Ariel reflete. A superfície dele é antiga e muito craterizada.",
+      "facts": [
+        "A cratera Wunda tem um anel brilhante de material no fundo, ainda sem explicação.",
+        "Ele tem pouquíssimas feições geológicas além das crateras.",
+        "Ele tem mais ou menos o mesmo tamanho de Ariel."
+      ],
+      "records": [
+        "Lua mais escura de Urano",
+        "Anel brilhante sem explicação"
+      ],
+      "explorationMilestone": {
+        "year": 1986,
+        "description": "A Voyager 2 fotografou cerca de 40% da superfície"
+      },
+      "info": "A lua mais escura."
+    },
+    "ariel": {
+      "description": "Ariel é a quarta maior das 27 luas conhecidas de Urano. Ariel orbita e gira no plano equatorial de Urano, que é quase perpendicular à órbita de Urano, e por isso tem um ciclo de estações extremo. É a mais brilhante das luas principais de Urano.",
+      "curiosity": "Ariel tem a superfície mais jovem de todas as luas de Urano, com poucas crateras grandes e muitos vales de fenda extensos e interligados (cânions).",
+      "facts": [
+        "Há indícios de atividade geológica recente.",
+        "A superfície dela é cortada por escarpas e cristas.",
+        "Feições que parecem escoamentos sugerem criovulcanismo no passado."
+      ],
+      "records": [
+        "Lua mais brilhante de Urano",
+        "Superfície mais jovem entre as luas de Urano"
+      ],
+      "explorationMilestone": {
+        "year": 1986,
+        "description": "A Voyager 2 fotografou cerca de 35% da superfície"
+      },
+      "info": "A lua mais brilhante."
+    },
+    "miranda": {
+      "description": "Miranda tem terrenos misturados, montanhas e falhas.",
+      "curiosity": "Ela tem \"condições de Frankenstein\": uma paisagem feita de retalhos distintos.",
+      "facts": [
+        "Fissuras profundas e regiões de relevo fora do comum."
+      ],
+      "info": "Terreno embaralhado."
+    },
+    "pluto": {
+      "description": "Plutão é um planeta anão do cinturão de Kuiper, um anel de corpos além da órbita de Netuno. Foi o primeiro e o maior objeto do cinturão de Kuiper a ser descoberto. Plutão é feito sobretudo de gelo e rocha e é relativamente pequeno — cerca de um sexto da massa da Lua e um terço do volume dela. Tem uma órbita moderadamente excêntrica e inclinada, na qual ele varia de 30 a 49 unidades astronômicas (UA) do Sol.",
+      "curiosity": "Plutão tem um \"coração\" na superfície, uma planície imensa de gelo de nitrogênio chamada Sputnik Planitia. Ela se renova o tempo todo por correntes de convecção.",
+      "facts": [
+        "Plutão é menor que a Lua da Terra.",
+        "A órbita dele é tão excêntrica que às vezes ele chega mais perto do Sol que Netuno.",
+        "Ele tem cinco luas: Caronte, Estige, Nix, Cérbero e Hidra.",
+        "Um dia em Plutão dura 153 horas."
+      ],
+      "records": [
+        "Maior planeta anão",
+        "Sistema binário mais complexo"
+      ],
+      "explorationMilestone": {
+        "year": 2015,
+        "description": "A New Horizons fez o primeiro sobrevoo histórico"
+      },
+      "info": "Planeta anão."
+    },
+    "ceres": {
+      "description": "Ceres é o maior objeto do cinturão principal de asteroides, que fica entre as órbitas de Marte e Júpiter. Com 940 km de diâmetro, Ceres é ao mesmo tempo o maior dos asteroides e o único planeta anão do Sistema Solar interior. É o 25º maior corpo do Sistema Solar dentro da órbita de Netuno.",
+      "curiosity": "Ceres é o único planeta anão do sistema solar interior. Ele responde por 25% da massa total do cinturão de asteroides.",
+      "facts": [
+        "Os pontos brilhantes na superfície dele são depósitos de carbonato de sódio (sal).",
+        "Ele libera vapor de água no espaço, o que cria uma atmosfera temporária.",
+        "O Ahuna Mons é um criovulcão que expele água salgada em vez de lava."
+      ],
+      "records": [
+        "Maior asteroide",
+        "Único planeta anão do sistema solar interior"
+      ],
+      "explorationMilestone": {
+        "year": 2015,
+        "description": "A sonda Dawn entrou em órbita e mapeou a superfície"
+      },
+      "info": "Cinturão de asteroides."
+    },
+    "haumea": {
+      "description": "Haumea é um planeta anão que fica além da órbita de Netuno. Foi descoberto em 2004 por uma equipe chefiada por Mike Brown, do Caltech, no Observatório Palomar. A massa de Haumea é cerca de um terço da de Plutão, e 1/1400 da da Terra. Embora a forma dele não tenha sido observada diretamente, o cálculo a partir da curva de luz é compatível com um elipsoide de Jacobi (a forma que ele teria se fosse um planeta anão), com os eixos maiores duas vezes mais longos que os menores.",
+      "curiosity": "Haumea gira tão rápido que foi puxado para a forma de uma bola de rúgbi. Ele completa uma rotação em menos de 4 horas.",
+      "facts": [
+        "É o único objeto transnetuniano conhecido com sistema de anéis.",
+        "A superfície dele é coberta de gelo de água cristalino.",
+        "Ele tem duas luas, Hi'iaka e Namaka."
+      ],
+      "records": [
+        "Objeto grande de rotação mais rápida",
+        "Único TNO com anéis"
+      ],
+      "explorationMilestone": {
+        "year": 2004,
+        "description": "Descoberto por equipes do Caltech e de Sierra Nevada"
+      },
+      "info": "Gira rápido."
+    },
+    "makemake": {
+      "description": "Makemake é um planeta anão e talvez o segundo maior objeto do cinturão de Kuiper na população clássica, com diâmetro de cerca de dois terços do de Plutão. Makemake tem um satélite conhecido, S/2015 (136472) 1, apelidado de MK 2. A temperatura média extremamente baixa dele, de cerca de 30 K (−243,2 °C), faz com que a superfície seja coberta de gelos de metano, etano e possivelmente nitrogênio.",
+      "curiosity": "Makemake é o segundo objeto mais brilhante do cinturão de Kuiper visto da Terra (depois de Plutão). Ele é coberto de gelo de metano e etano.",
+      "facts": [
+        "Falta a ele uma atmosfera significativa, ao contrário de Plutão.",
+        "A superfície dele é extremamente fria, em torno de −243 °C.",
+        "Ele foi descoberto pouco depois da Páscoa, daí o codinome \"Easterbunny\" (coelhinho da Páscoa)."
+      ],
+      "records": [
+        "Segundo TNO mais brilhante",
+        "Objeto clássico do cinturão de Kuiper"
+      ],
+      "explorationMilestone": {
+        "year": 2005,
+        "description": "A descoberta levou à criação da categoria \"planeta anão\""
+      },
+      "info": "Planeta anão."
+    },
+    "eris": {
+      "description": "Éris é o planeta anão mais massivo e o segundo maior conhecido do Sistema Solar. É um objeto transnetuniano (TNO) do disco disperso e tem órbita de alta excentricidade. Éris foi descoberto em janeiro de 2005 por uma equipe do Observatório Palomar chefiada por Mike Brown, e verificado mais tarde no mesmo ano.",
+      "curiosity": "Éris é mais massivo que Plutão, mas um pouco menor em diâmetro. A descoberta dele foi a gota d'água que levou ao rebaixamento de Plutão.",
+      "facts": [
+        "Ele leva 558 anos terrestres para dar uma volta em torno do Sol.",
+        "A superfície dele é muito refletiva, o que sugere uma camada nova de gelo de metano.",
+        "Ele tem uma lua, Disnomia."
+      ],
+      "records": [
+        "Planeta anão mais massivo",
+        "Planeta anão mais distante"
+      ],
+      "explorationMilestone": {
+        "year": 2005,
+        "description": "Descoberto por Mike Brown, Chad Trujillo e David Rabinowitz"
+      },
+      "info": "Anão massivo."
+    },
+    "quaoar": {
+      "description": "Quaoar é um candidato a planeta anão do cinturão de Kuiper. Foi descoberto em 2002. Quaoar tem cerca de metade do tamanho de Plutão. Ele tem uma lua conhecida, Weywot. Foram encontrados sinais de gelo de água na superfície, o que sugere que pode haver criovulcanismo. Há uma pequena quantidade de metano na superfície dele, que só os maiores objetos do cinturão de Kuiper conseguem reter.",
+      "curiosity": "Quaoar tem um sistema de anéis que orbita muito mais longe que o limite de Roche, o que desafia as teorias atuais de formação de anéis.",
+      "facts": [
+        "O nome veio do deus criador do povo Tongva.",
+        "Ele tem uma lua pequena chamada Weywot.",
+        "Foi detectado gelo de água cristalino na superfície dele, o que sugere criovulcanismo."
+      ],
+      "records": [
+        "Anel além do limite de Roche",
+        "TNO denso"
+      ],
+      "explorationMilestone": {
+        "year": 2002,
+        "description": "Descoberto por Chad Trujillo e Mike Brown"
+      },
+      "info": "Tem anéis."
+    },
+    "charon": {
+      "description": "Caronte é a maior das cinco luas conhecidas do planeta anão Plutão. Com raio médio de 606 km, Caronte é o sexto maior objeto transnetuniano, atrás de Plutão, Éris, Haumea, Makemake e Gonggong. Foi descoberto em 1978 no Observatório Naval dos Estados Unidos, em Washington, D.C., em chapas fotográficas feitas na estação de Flagstaff do mesmo observatório (NOFS).",
+      "curiosity": "Caronte é tão grande em relação a Plutão que os dois corpos orbitam um centro de gravidade comum fora de Plutão, o que faz deles um sistema binário de planeta anão.",
+      "facts": [
+        "O polo norte dele é coberto de tolinas avermelhadas, apelidadas de \"Mordor Macula\".",
+        "Ele tem cânions mais fundos que o Grand Canyon.",
+        "Caronte não tem atmosfera significativa."
+      ],
+      "records": [
+        "Maior lua em relação ao corpo que orbita",
+        "Planeta anão binário"
+      ],
+      "explorationMilestone": {
+        "year": 2015,
+        "description": "A New Horizons trouxe as primeiras imagens detalhadas"
+      },
+      "info": "Parceiro binário."
+    },
+    "vesta": {
+      "description": "Vesta é um dos maiores objetos do cinturão de asteroides, com diâmetro médio de 525 quilômetros. Foi descoberto pelo astrônomo alemão Heinrich Wilhelm Matthias Olbers em 29 de março de 1807 e leva o nome de Vesta, a deusa virgem do lar e da lareira da mitologia romana. Vesta é o segundo corpo mais massivo e o segundo maior do cinturão de asteroides, atrás do planeta anão Ceres.",
+      "curiosity": "Vesta é o asteroide mais brilhante visto da Terra. É o único asteroide do cinturão principal visível a olho nu.",
+      "facts": [
+        "Ele tem uma montanha gigante no polo sul, o Rheasilvia, com 22 km de altura.",
+        "Vesta responde por cerca de 6% de todos os meteoritos achados na Terra (os meteoritos HED).",
+        "Ele tem um interior diferenciado, com crosta, manto e núcleo."
+      ],
+      "records": [
+        "Asteroide mais brilhante",
+        "Montanha mais alta do cinturão de asteroides"
+      ],
+      "explorationMilestone": {
+        "year": 2011,
+        "description": "A sonda Dawn orbitou Vesta por mais de um ano"
+      },
+      "info": "O asteroide mais brilhante."
+    },
+    "pallas": {
+      "description": "Palas foi o segundo asteroide a ser descoberto (depois de Ceres) e é um dos maiores asteroides do Sistema Solar. Estima-se que ele tenha 7% da massa do cinturão de asteroides, e o diâmetro de 512 km faz dele o terceiro maior asteroide, um pouco menor que Vesta. Ele é provavelmente um protoplaneta que sobrou.",
+      "curiosity": "Palas tem uma órbita muito inclinada, de 34,8 graus, o que é fora do comum para um asteroide grande. Isso o torna difícil de alcançar com uma sonda.",
+      "facts": [
+        "É o terceiro maior asteroide em volume.",
+        "A superfície dele é provavelmente feita de minerais de silicato.",
+        "Palas foi o segundo asteroide a ser descoberto."
+      ],
+      "records": [
+        "Asteroide grande mais inclinado",
+        "Segundo asteroide descoberto"
+      ],
+      "explorationMilestone": {
+        "year": 1802,
+        "description": "Descoberto por Heinrich Wilhelm Olbers"
+      },
+      "info": "Inclinação alta."
+    },
+    "hygiea": {
+      "description": "Hígia é um asteroide grande, que fica no cinturão principal de asteroides. Com 434 km de diâmetro, é o quarto maior asteroide do Sistema Solar, tanto em volume quanto em massa. Hígia é o maior da classe dos asteroides escuros de tipo C, de superfície carbonácea, que dominam o cinturão de asteroides externo.",
+      "curiosity": "Hígia é o quarto maior asteroide, mas foi descoberto bem depois dos outros por causa da superfície escura. Ele é o membro principal da família de asteroides de Hígia.",
+      "facts": [
+        "Ele é quase esférico, o que abriu o debate sobre se deveria ser um planeta anão.",
+        "A superfície dele é muito escura, parecida com a de Ceres.",
+        "Ele tem gelo de água na superfície."
+      ],
+      "records": [
+        "Maior asteroide escuro",
+        "Candidato a asteroide esférico"
+      ],
+      "explorationMilestone": {
+        "year": 1849,
+        "description": "Descoberto por Annibale de Gasparis"
+      },
+      "info": "Carbonáceo."
+    }
+  }
+}
