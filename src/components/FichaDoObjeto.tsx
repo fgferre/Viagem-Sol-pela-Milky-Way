@@ -19,14 +19,12 @@
 // faz o juiz de a11y julgar as quatro promessas do diálogo (o foco entra,
 // fica preso, Esc fecha, volta ao gatilho) sem uma linha a mais.
 //
-// O CABEÇALHO É A ANTIGA `ContextLine`. O "em quadro" era uma peça solta no
-// alto à esquerda: nome do alvo e os dois gestos da escada. Ele não some —
-// vira o topo fixo da ficha, com a CLASSE do corpo ao lado do nome, que a
-// linha antiga não tinha espaço para dizer. Sem seleção não há ficha, e sem
-// ficha nada ocupa o topo.
+// O CABEÇALHO É O "EM QUADRO": o nome do alvo, a CLASSE dele ao lado e os
+// dois gestos da escada, no topo fixo da ficha. Sem seleção não há ficha, e
+// sem ficha nada ocupa aquele canto.
 //
 // O DADO CHEGA NA PRIMEIRA ABERTURA, nunca no boot: são dois arquivos, o
-// `corpos.json` (114 KB com a tradução) e o `texturas.json` (110 KB, que o
+// `corpos.json` (61 KB, o pt-BR e a órbita) e o `texturas.json` (110 KB, que o
 // mundo já baixou ao entrar no Atlas e o navegador serve do cache). Quem
 // nunca abre a ficha não paga um byte. A memoização é a mesma de
 // `buscarManifestUmaVez` — uma promessa por URL, guardada no módulo.
@@ -193,8 +191,8 @@ export function FichaDoObjeto({
     >
       <div className="atlas-ficha-topo">
         <div className="atlas-ficha-identidade">
-          {/* `role="status"` como a antiga ContextLine e como a legenda do
-              filme: trocar de alvo é notícia para quem ouve a tela. Os
+          {/* `role="status"` como a legenda do filme: trocar de alvo é
+              notícia para quem ouve a tela. Os
               BOTÕES ficam fora dele — controle dentro de região viva seria
               relido inteiro a cada troca. */}
           <span className="atlas-ficha-nome" role="status" aria-live="polite">
@@ -267,13 +265,19 @@ export function FichaDoObjeto({
                         <span className="atlas-ficha-badge">{l.badge}</span>
                       )}
                       {/* A PROCEDÊNCIA DE CADA NÚMERO, no vocabulário do
-                          selo e em nenhum outro. O `title` carrega o que o
-                          tier quer dizer, com as MESMAS palavras que a
-                          legenda do selo usa — uma segunda redação aqui
-                          seria o quarto tier fantasma. */}
+                          selo e em nenhum outro — o `rotulo` é o do tier, e
+                          uma segunda redação aqui seria o quarto tier
+                          fantasma.
+                          O `title` é o da LINHA (`l.fonte`), não o do tier: o
+                          `oQue` do selo fala das ESTRELAS ("cor e temperatura
+                          por modelo"), e ele estava aparecendo ao passar o
+                          mouse na gravidade, na massa e no escape de um
+                          PLANETA, que saem de GM e do raio. Cada linha já
+                          declara de onde veio; é essa frase que o ponteiro
+                          tem de repetir. */}
                       <span
                         className={`atlas-ficha-proc ${l.procedencia}`}
-                        title={PROCEDENCIA[l.procedencia].oQue}
+                        title={l.fonte}
                       >
                         {PROCEDENCIA[l.procedencia].rotulo}
                         {l.fonte ? ` · ${l.fonte}` : ''}

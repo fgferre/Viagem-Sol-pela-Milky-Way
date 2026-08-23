@@ -21,8 +21,8 @@
   /* ONDE O SELO ENCOSTA no pé da tela, e QUANTO ele reserva ali. Duas
      linhas porque três peças precisam do mesmo número e nenhuma pode
      tê-lo digitado: o selo (`bottom`), o rodapé do Atlas (`bottom`, a
-     mesma linha de base) e a GAVETA DE CAMADAS, que desconta os dois
-     para PARAR ACIMA do selo em vez de cobri-lo.
+     mesma linha de base) e o TETO DOS DIÁLOGOS logo abaixo, que desconta
+     os dois para PARAR ACIMA do selo em vez de cobri-lo.
      `--selo-linha` é o TETO da linha fechada, não a medida dela: a linha
      mede ~17 px em `ui = 1` e ~24 px em `ui = 1,4`, e 2,4rem (38,4 e
      53,8 px) declara isso com folga. Errar para cima custa uma gaveta que
@@ -32,8 +32,26 @@
      toquem. */
   --selo-base: 7.4vh;
   --selo-linha: 2.4rem;
-  /* A CAMADA DOS TRÊS DIÁLOGOS (Ajustes, Camadas, Busca), e a razão em
-     uma linha: QUEM CEDE É O SELO, porque informação permanente pode
+  /* O TETO DOS QUATRO DIÁLOGOS, em UM lugar. Ele tem duas partes, e as
+     duas nasceram privadas da ficha do objeto (item 74) enquanto valiam
+     para as quatro gavetas:
+     1) O QUE SOBRA debaixo da barra, DESCONTANDO o selo — a linha de
+        base (`--selo-base`), o teto da linha fechada (`--selo-linha`) e
+        um respiro. É o que faz o diálogo parar ACIMA do selo em vez de
+        cobri-lo (o defeito do item 61); o que não couber ROLA dentro
+        dele, porque `.hud-dialogo` é `overflow-y: auto`.
+     2) UM TETO EM FRAÇÃO DA TELA (`--teto-dialogo-tela`), que só morde
+        onde a conta de cima estoura: as três parcelas de (1) são `rem`,
+        então elas ENCOLHEM com o `?ui=` e o teto CRESCE quando o texto
+        diminui. Aqui ele é `100vh` (inerte, porque (1) é sempre menor);
+        quem o aperta é a fatia 6, no telefone e na tela baixa. */
+  --teto-dialogo-tela: 100vh;
+  --teto-dialogo: min(
+    calc(100vh - var(--barra-fim) - var(--selo-base) - var(--selo-linha) - 2.4rem),
+    var(--teto-dialogo-tela)
+  );
+  /* A CAMADA DOS QUATRO DIÁLOGOS (Ajustes, Camadas, Busca, Ficha), e a
+     razão em uma linha: QUEM CEDE É O SELO, porque informação permanente pode
      esperar e ação em curso não — quem abriu um painel precisa poder
      fechá-lo.
      O selo mora no canto de baixo à direita e os painéis descem da barra
@@ -47,10 +65,9 @@
      40 do selo), e o "✕" de fechar ficava debaixo do selo junto com o
      clique.
      A GEOMETRIA PASSOU A EXISTIR em 22/08, com o selo dobrado numa linha
-     (item 61): a gaveta de camadas desconta `--selo-base` e
-     `--selo-linha` do próprio teto e para acima dele. A pilha fica de pé
-     para o painel de Ajustes e a paleta de busca, que são modais de tela
-     cheia e não têm esse "acima".
+     (item 61): `--teto-dialogo` desconta `--selo-base` e `--selo-linha`,
+     e os quatro param acima do selo. A pilha continua de pé porque ela
+     resolve o clique, não a geometria.
      Entre a barra de controles (45) e o holofote (48), e abaixo dos véus
      (50+): o painel cobre o HUD fixo, nunca o filme passando por cima. */
   --camada-dialogo: 46;
@@ -123,14 +140,19 @@
    Também estava escrito três vezes — e os comentários das três já
    diziam "mesmo topo do painel de Ajustes", "mesmo teto", "pela mesma
    medida", que é duplicação pedindo socorro em prosa.
+   O TETO É DOS QUATRO desde 23/08. Ele descontava o selo em duas delas
+   (a ficha e a gaveta de camadas, cada uma com a sua cópia da conta) e
+   nas outras duas descia até o pé da tela; a fração de tela do telefone
+   era privada da ficha. As duas coisas viraram `--teto-dialogo` (fatia
+   1), que é o que "vale para as quatro" quer dizer.
    O QUE NÃO É COMUM continua em cada um, nomeado: a LARGURA (cada
-   diálogo tem a sua) e as duas exceções do Ajustes — o teto de três
-   termos e o rodapé mais alto. */
+   diálogo tem a sua) e as duas exceções do Ajustes — o teto com dois
+   termos a mais e o rodapé mais alto. */
 .hud-dialogo {
   position: absolute;
   top: calc(var(--barra-fim) + 0.8rem);
   right: 1.6rem;
-  max-height: calc(100vh - var(--barra-fim) - 2.4rem);
+  max-height: var(--teto-dialogo);
   overflow-y: auto;
   pointer-events: auto;
   z-index: var(--camada-dialogo);

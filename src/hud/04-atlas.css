@@ -13,23 +13,16 @@
 
    A LARGURA É A MAIOR DAS QUATRO por conteúdo, não por gosto: cada linha tem
    rótulo, valor, o selo "×Terra" e a procedência, e os `min()` continuam
-   sendo a tela — em janela estreita ela encolhe como as outras.
-
-   E ELA PARA ACIMA DO SELO, pela mesma conta da gaveta de camadas: o teto
-   desconta a linha de base do selo, a altura da linha fechada e um respiro.
-   O que não couber ROLA dentro dela (o `overflow-y: auto` vem da fatia 1) —
-   nunca cobre o selo. */
+   sendo a tela — em janela estreita ela encolhe como as outras. É a única
+   coisa que esta caixa declara: o teto (parar acima do selo, e a fração de
+   tela do telefone) nasceu aqui e virou `--teto-dialogo`, da fatia 1, no dia
+   em que ficou claro que valia para as quatro. */
 .atlas-ficha {
   width: min(23rem, calc(100vw - 3.2rem));
-  max-height: calc(
-    100vh - var(--barra-fim) - var(--selo-base) - var(--selo-linha) - 2.4rem
-  );
 }
 
-/* O CABEÇALHO É A ANTIGA `ContextLine`: o "em quadro" era uma peça solta no
-   alto à esquerda com o nome do alvo e os dois gestos da escada, e virou o
-   topo desta ficha — agora com a CLASSE ao lado do nome, que a linha antiga
-   não tinha espaço para dizer. */
+/* O CABEÇALHO É O "EM QUADRO": nome do alvo, a CLASSE dele ao lado e os dois
+   gestos da escada, no topo fixo da ficha. */
 .atlas-ficha-topo {
   display: flex;
   justify-content: space-between;
@@ -473,18 +466,11 @@
      — não cabiam nos 15rem de quando a gaveta mostrava seis. O termo do
      `min()` continua sendo a tela: em janela estreita ela encolhe. */
   width: min(17rem, calc(100vw - 3.2rem));
-  /* A GAVETA PARA ACIMA DO SELO (item 61, 22/08). Ela herda de
-     `.hud-dialogo` um teto que desce até o pé da tela, e a 768×600 com
-     `?ui=1,4` isso a punha POR CIMA do selo — o mockup do dono mostrou a
-     frase do selo cortada em "…" por baixo dela. Com o selo dobrado numa
-     linha existe geometria para separar os dois, e ela se declara aqui:
-     o teto desconta a linha de base do selo (`--selo-base`), o teto da
-     linha fechada (`--selo-linha`) e um respiro. O que não couber ROLA
-     dentro da gaveta (o `overflow-y: auto` já vem da fatia 1) — nunca
-     cobre o selo. */
-  max-height: calc(
-    100vh - var(--barra-fim) - var(--selo-base) - var(--selo-linha) - 2.4rem
-  );
+  /* A GAVETA PARA ACIMA DO SELO desde o item 61 (22/08) — a 768×600 com
+     `?ui=1,4` ela ficava POR CIMA dele, e o mockup do dono mostrou a frase
+     do selo cortada em "…" por baixo. A conta que a faz parar é
+     `--teto-dialogo` e vem da fatia 1: era daqui e da ficha, escrita duas
+     vezes, e agora é dos quatro diálogos. */
 }
 .atlas-gaveta-topo {
   display: flex;

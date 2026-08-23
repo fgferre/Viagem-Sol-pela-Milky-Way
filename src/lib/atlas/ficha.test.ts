@@ -20,7 +20,7 @@ import { decodeEfemerides, MotorEfemerides } from './efemerides';
 import type { StarsMeta } from '../../three/config';
 import type { ManifestDeTexturas } from '../../three/world/corpos/texturas';
 import type { CorpoNoJson, CorposDoAtlas, EditorialDoCorpo, Ficha } from './ficha';
-import { formatarDuracao, formatarMassaKg, montarFicha, montarFichaDeEstrela } from './ficha';
+import { formatarDuracao, montarFicha, montarFichaDeEstrela } from './ficha';
 import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
 
@@ -712,20 +712,10 @@ describe('formatarDuracao', () => {
   });
 });
 
-describe('formatarMassaKg', () => {
-  it('escreve a potência de dez como se escreve, não como o JS escreve', () => {
-    // O `1.345e+23` do JavaScript é endereço de programador. O visitante
-    // desta casa é leigo, e viu "× 10²³" na escola.
-    expect(formatarMassaKg(1.345e23)).toBe('1,34 × 10²³ kg');
-    expect(formatarMassaKg(5.9722e24)).toBe('5,97 × 10²⁴ kg');
-    expect(formatarMassaKg(1.06e16)).toBe('1,06 × 10¹⁶ kg');
-  });
-
-  it('recusa massa sem medida', () => {
-    expect(formatarMassaKg(0)).toBeNull();
-    expect(formatarMassaKg(Number.NaN)).toBeNull();
-  });
-
+describe('a massa na ficha', () => {
+  // A GRAFIA em si (a potência de dez, a recusa de massa sem medida) é de
+  // `formatarMassaKg` e o gate dela é `unidades.test.ts`. Aqui se cobra o
+  // outro lado: que a ficha USE essa grafia, e não outra.
   it('é a grafia que a ficha usa de verdade', () => {
     const fisico = ficha('earth')!.secoes.find((s) => s.id === 'fisico')!;
     expect(fisico.linhas.find((l) => l.rotulo === 'massa')!.valor).toBe(

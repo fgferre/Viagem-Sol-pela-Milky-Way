@@ -4,8 +4,8 @@ import {
   MU_PARENT,
   MU_SUN_AU3_PER_DAY2,
 } from './elementosOrbitais';
+import { formatarRazaoTerra } from '../unidades';
 import {
-  formatarRazaoTerra,
   gravidadeSuperficie,
   massaDeGm,
   raioEquatorialKm,

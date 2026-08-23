@@ -9,7 +9,13 @@
 // virou uma função; o gate dela é este arquivo.
 // ============================================================
 import { describe, expect, it } from 'vitest';
-import { UA_POR_AL, UA_POR_PC, notaDeDistancia } from './unidades';
+import {
+  UA_POR_AL,
+  UA_POR_PC,
+  comCasas,
+  formatarMassaKg,
+  notaDeDistancia,
+} from './unidades';
 
 /** o formatador injetado dos testes: uma casa, vírgula decimal */
 const fmt = (v: number) => String(Math.round(v * 100) / 100).replace('.', ',');
@@ -71,5 +77,36 @@ describe('notaDeDistancia — o degrau dos anos-luz', () => {
     // sistema: 6.324 UA ainda é UA, 6.325 já é ano-luz
     expect(notaDeDistancia(6324, fmt)).toBe('6324 UA');
     expect(notaDeDistancia(6325, fmt)).toBe('0,1 ano-luz');
+  });
+});
+
+// ============================================================
+// A VÍRGULA DECIMAL. As três grafias abaixo nasceram na obra da ficha do
+// objeto, cada uma no arquivo onde o número era usado — e vieram para cá
+// pela mesma razão que a escada: grafia mora onde a grafia mora. Quem as
+// consome é `atlas/ficha.ts`; o que a ficha prova, no gate dela, é que
+// USA estas e não outras.
+// ============================================================
+describe('formatarMassaKg', () => {
+  it('escreve a potência de dez como se escreve, não como o JS escreve', () => {
+    // O `1.345e+23` do JavaScript é endereço de programador. O visitante
+    // desta casa é leigo, e viu "× 10²³" na escola.
+    expect(formatarMassaKg(1.345e23)).toBe('1,34 × 10²³ kg');
+    expect(formatarMassaKg(5.9722e24)).toBe('5,97 × 10²⁴ kg');
+    expect(formatarMassaKg(1.06e16)).toBe('1,06 × 10¹⁶ kg');
+  });
+
+  it('recusa massa sem medida', () => {
+    expect(formatarMassaKg(0)).toBeNull();
+    expect(formatarMassaKg(Number.NaN)).toBeNull();
+  });
+});
+
+describe('comCasas', () => {
+  it('não achata a excentricidade da Terra, que é 0,017', () => {
+    // Duas casas escreveriam "0,02" e uma casa "0,0" — o número que a
+    // seção da órbita existe para mostrar sumiria no arredondamento.
+    expect(comCasas(0.0167, 3)).toBe('0,017');
+    expect(comCasas(0.5, 2)).toBe('0,50');
   });
 });

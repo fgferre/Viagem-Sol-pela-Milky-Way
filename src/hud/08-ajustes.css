@@ -8,17 +8,17 @@
    se pendura em `8.5vh` e acima de ~881 px de altura descia por cima do
    painel, comendo o "✕" de fechar junto com o clique dele.
    Aqui ficam a largura e as DUAS EXCEÇÕES deste painel — os únicos dois
-   pontos em que ele não é a gaveta nem a paleta. */
+   pontos em que ele não é a gaveta, a paleta nem a ficha. */
 .ajustes {
   width: min(19rem, calc(100vw - 3.2rem));
-  /* EXCEÇÃO 1 — o teto tem três termos, não um. Os outros dois diálogos
-     cabem na tela sozinhos; este é o mais alto da casa e precisa parar
-     antes. Os dois primeiros termos mandam em qualquer tela com espaço,
-     e o terceiro (o teto comum, o da âncora medida) só ganha quando o
-     espaço acabou — foi ele que impediu o conserto do topo de virar
-     outro defeito, com o pé do painel 57 px fora de uma janela de
-     600×450 e o texto em 140%. */
-  max-height: min(66vh, 40rem, calc(100vh - var(--barra-fim) - 2.4rem));
+  /* EXCEÇÃO 1 — o teto tem dois termos A MAIS que o comum. Os outros três
+     diálogos cabem na tela sozinhos; este é o mais alto da casa e precisa
+     parar antes. Os dois primeiros mandam em qualquer tela com espaço, e
+     `--teto-dialogo` (o comum, o da âncora medida — que desconta o selo e,
+     no telefone, aperta em fração de tela) só ganha quando o espaço acabou
+     — foi ele que impediu o conserto do topo de virar outro defeito, com o
+     pé do painel 57 px fora de uma janela de 600×450 e o texto em 140%. */
+  max-height: min(66vh, 40rem, var(--teto-dialogo));
   /* EXCEÇÃO 2 — o rodapé é 0,2rem mais alto que o dos outros dois. */
   padding-bottom: 1.2rem;
 }

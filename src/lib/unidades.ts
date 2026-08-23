@@ -111,3 +111,66 @@ export function notaDeDistancia(
   if (al < 10_000) return `${formatar(Math.round(al))} ${unidade}`;
   return `${formatar(al / 1000)} mil anos-luz`;
 }
+
+// ============================================================
+// A VÍRGULA DECIMAL, e ela nasce AQUI.
+//
+// As três funções abaixo formatam número para o visitante ler e são as
+// únicas da ficha do objeto que decidem grafia. Elas nasceram espalhadas
+// pela obra da ficha — duas em `atlas/ficha.ts` e uma em
+// `atlas/fisicaDoCorpo.ts` —, que é como a escada de distância tinha
+// nascido em quatro cópias antes deste arquivo existir. Não é o mesmo
+// bug (elas não divergiam), é o mesmo CAMINHO: regra de grafia escrita
+// onde o valor é usado, e não onde a grafia mora.
+//
+// `numeroPtBr` (`three/tempoDoAtlas`) não vem para cá e a razão é a do
+// cabeçalho: ele é o formatador INJETADO em `notaDeDistancia`, e
+// importá-lo daqui inverteria a seta. As três de baixo não dependem de
+// nada — são função de número em texto.
+// ============================================================
+
+/**
+ * Um número adimensional com casas fixas e vírgula — excentricidade e
+ * fração iluminada. Duas casas achatariam a excentricidade da Terra
+ * (0,017) em "0,02", e uma casa a mataria de vez.
+ */
+export function comCasas(valor: number, casas: number): string {
+  return valor.toFixed(casas).replace('.', ',');
+}
+
+const SOBRESCRITOS = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
+
+/**
+ * A MASSA EM NOTAÇÃO CIENTÍFICA COMO SE ESCREVE, e não como o JavaScript
+ * escreve: `1,35 × 10²³ kg` no lugar de `1.345e+23 kg`. Um `e+23` é
+ * endereço de programador; o visitante desta casa é leigo, e a potência de
+ * dez com o expoente sobrescrito é a forma que ele viu na escola.
+ *
+ * A IRONIA DECLARADA: o doador guardava a massa exatamente assim, como
+ * STRING de exibição ("3.301 × 10²³ kg"), e a reparseava em runtime varrendo
+ * sobrescritos Unicode para recuperar o número. Aqui o caminho vai na
+ * direção certa — o número vem do kernel, a conta é `GM/G`, e a grafia
+ * bonita nasce no fim, sem ninguém precisar desfazê-la depois.
+ */
+export function formatarMassaKg(kg: number): string | null {
+  if (!Number.isFinite(kg) || kg <= 0) return null;
+  const [mantissa, expoente] = kg.toExponential(2).split('e');
+  const n = Number(expoente);
+  const digitos = String(Math.abs(n))
+    .split('')
+    .map((d) => SOBRESCRITOS[Number(d)])
+    .join('');
+  return `${mantissa!.replace('.', ',')} × 10${n < 0 ? '⁻' : ''}${digitos} kg`;
+}
+
+/**
+ * O SELO "×TERRA" ESCRITO: `11,21× Terra`. Duas casas de 1 para cima, dois
+ * algarismos significativos abaixo de 1. Quem decide se a razão CARREGA
+ * informação é `razaoTerra` (`atlas/fisicaDoCorpo.ts`), e separar as duas
+ * coisas é o que permite a um teste julgar a regra sem julgar a vírgula.
+ */
+export function formatarRazaoTerra(razao: number): string {
+  const texto =
+    razao >= 1 ? razao.toFixed(2) : Number(razao.toPrecision(2)).toString();
+  return `${texto.replace('.', ',')}× Terra`;
+}

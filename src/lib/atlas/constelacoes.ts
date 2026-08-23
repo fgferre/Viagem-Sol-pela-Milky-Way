@@ -21,7 +21,12 @@
 // que sejam exatamente 88.
 // ============================================================
 
-/** Sigla IAU de três letras → genitivo latino. */
+/**
+ * Sigla IAU de três letras → genitivo latino. `export` é ARESTA DE TESTE:
+ * o consumidor é `designacaoDeBayer`, logo abaixo, e o gate precisa do
+ * MAPA para contar as 88 e cobrar que nenhum genitivo se repita — coisa
+ * que a designação de uma estrela, sozinha, não revela.
+ */
 export const CONSTELACOES: Record<string, string> = {
   And: 'Andromedae',
   Ant: 'Antliae',

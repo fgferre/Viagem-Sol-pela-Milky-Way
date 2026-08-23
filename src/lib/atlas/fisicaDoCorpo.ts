@@ -30,7 +30,9 @@
 // AS REGRAS DO "×Terra" MIGRAM COMO REQUISITO, não como código: o
 // `getEarthComparison` do doador (`Sidebar.tsx`) resolveu dois problemas
 // reais que valem aqui, e as duas soluções estão reproduzidas em
-// `razaoTerra`/`formatarRazaoTerra` com as razões dele:
+// `razaoTerra` com as razões dele — a GRAFIA do selo é
+// `formatarRazaoTerra`, e mora com as outras vírgulas da casa
+// (`lib/unidades.ts`):
 //
 //   1. ABAIXO DE 1e-3 NÃO HÁ SELO. Mimas é 6,3e-6 da massa da Terra, e duas
 //      casas decimais escreveriam "0,00× Terra" para um corpo que
@@ -52,8 +54,10 @@ import { GM_CORPOS } from './massas';
  * e não o primeiro: `G` é a constante fundamental pior conhecida da física
  * (incerteza relativa de 2,2e-5), enquanto `GM` é medido direto. Gravidade e
  * escape não passam por aqui.
+ *
+ * Sem `export`: quem quiser julgá-la julga a massa que ela produz.
  */
-export const G_M3_KG_S2 = 6.6743e-11;
+const G_M3_KG_S2 = 6.6743e-11;
 
 /**
  * O raio EQUATORIAL em km — `a` de `BODY_AXES`, com o Sol vindo de
@@ -67,8 +71,12 @@ export function raioEquatorialKm(id: string): number | null {
   return eixos ? eixos[0] : null;
 }
 
-/** O GM do corpo em km³/s², ou `null` quando o kernel não o cobre. */
-export function gmDoCorpo(id: string): number | null {
+/**
+ * O GM do corpo em km³/s², ou `null` quando o kernel não o cobre. Interno:
+ * é a leitura que as quatro funções públicas abaixo compartilham, e nada
+ * fora deste arquivo pergunta um μ cru.
+ */
+function gmDoCorpo(id: string): number | null {
   const gm = GM_CORPOS[id];
   return gm === undefined ? null : gm;
 }
@@ -111,9 +119,9 @@ export function massaDeGm(id: string): number | null {
 /**
  * A RAZÃO CONTRA A TERRA, ou `null` quando ela não carrega informação — as
  * duas regras herdadas do doador, com os motivos no cabeçalho. Devolve
- * NÚMERO e não texto: quem decide a grafia é `formatarRazaoTerra`, e separar
- * as duas coisas é o que permite a um teste julgar a regra sem julgar a
- * vírgula.
+ * NÚMERO e não texto: quem decide a grafia é `formatarRazaoTerra`
+ * (`lib/unidades.ts`), e separar as duas coisas é o que permite a um teste
+ * julgar a regra sem julgar a vírgula.
  */
 export function razaoTerra(
   valor: number | null,
@@ -132,17 +140,4 @@ export function razaoTerra(
   if (razao >= 0.99 && razao <= 1.01) return 1;
   if (razao < 1e-3) return null;
   return razao;
-}
-
-/**
- * O selo escrito: `11,21× Terra`. Duas casas de 1 para cima, dois
- * algarismos significativos abaixo de 1, vírgula decimal como em toda a
- * casa. Não é formatador de DISTÂNCIA — a escada única de distância
- * continua sendo `notaDeDistancia` (`lib/unidades.ts`), e nada aqui a
- * duplica.
- */
-export function formatarRazaoTerra(razao: number): string {
-  const texto =
-    razao >= 1 ? razao.toFixed(2) : Number(razao.toPrecision(2)).toString();
-  return `${texto.replace('.', ',')}× Terra`;
 }

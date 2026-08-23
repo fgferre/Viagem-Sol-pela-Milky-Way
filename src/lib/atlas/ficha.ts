@@ -32,17 +32,24 @@
 // ("measured asset", "observational model", "interpretive", "procedural") e
 // trazê-los criaria a segunda fonte de verdade sobre honestidade nesta casa.
 //
-// AS UNIDADES SÃO AS DA ESCADA ÚNICA: `notaDeDistancia` (`lib/unidades.ts`)
-// decide km, UA ou anos-luz, e `numeroPtBr` decide a vírgula. Quem escrever
-// aqui uma quinta formatação de distância está criando bug, não exceção.
+// A GRAFIA NÃO NASCE AQUI. `lib/unidades.ts` decide o degrau da distância
+// (`notaDeDistancia`) e a vírgula das três grandezas que a ficha escreve —
+// `comCasas`, `formatarMassaKg`, `formatarRazaoTerra` —, e `numeroPtBr`
+// (`three/tempoDoAtlas`) é o formatador injetado. Quem escrever aqui uma
+// formatação nova está criando bug, não exceção.
 // ============================================================
-import { notaDeDistancia, UA_POR_PC } from '../unidades';
+import {
+  comCasas,
+  formatarMassaKg,
+  formatarRazaoTerra,
+  notaDeDistancia,
+  UA_POR_PC,
+} from '../unidades';
 import { NOMES_DOS_CORPOS } from '../../three/atlasConfig';
 import type { Procedencia } from '../../three/selo';
 import { numeroPtBr } from '../../three/tempoDoAtlas';
 import { AU_KM } from './elementosOrbitais';
 import {
-  formatarRazaoTerra,
   gravidadeSuperficie,
   massaDeGm,
   raioEquatorialKm,
@@ -166,6 +173,10 @@ const DIAS_POR_ANO = 365.25;
  * tem nome próprio para o tempo real. Aqui o piso é a HORA — nenhum corpo do
  * catálogo gira ou orbita em minutos, e "27.383 segundos" não é uma resposta
  * para "quanto dura o dia dele".
+ *
+ * `export` é ARESTA DE TESTE: quem a consome é este arquivo (o período
+ * orbital e o dia sideral), e o gate dela cobra os degraus — a meia hora, o
+ * plural, a duração sem medida — que nenhum corpo do catálogo exercita.
  */
 export function formatarDuracao(dias: number): string | null {
   if (!Number.isFinite(dias) || dias <= 0) return null;
@@ -178,40 +189,6 @@ export function formatarDuracao(dias: number): string | null {
   }
   const anos = dias / DIAS_POR_ANO;
   return `${numeroPtBr(anos)} anos`;
-}
-
-const SOBRESCRITOS = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
-
-/**
- * A MASSA EM NOTAÇÃO CIENTÍFICA COMO SE ESCREVE, e não como o JavaScript
- * escreve: `1,35 × 10²³ kg` no lugar de `1.345e+23 kg`. Um `e+23` é
- * endereço de programador; o visitante desta casa é leigo, e a potência de
- * dez com o expoente sobrescrito é a forma que ele viu na escola.
- *
- * A IRONIA DECLARADA: o doador guardava a massa exatamente assim, como
- * STRING de exibição ("3.301 × 10²³ kg"), e a reparseava em runtime varrendo
- * sobrescritos Unicode para recuperar o número. Aqui o caminho vai na
- * direção certa — o número vem do kernel, a conta é `GM/G`, e a grafia
- * bonita nasce no fim, sem ninguém precisar desfazê-la depois.
- */
-export function formatarMassaKg(kg: number): string | null {
-  if (!Number.isFinite(kg) || kg <= 0) return null;
-  const [mantissa, expoente] = kg.toExponential(2).split('e');
-  const n = Number(expoente);
-  const digitos = String(Math.abs(n))
-    .split('')
-    .map((d) => SOBRESCRITOS[Number(d)])
-    .join('');
-  return `${mantissa!.replace('.', ',')} × 10${n < 0 ? '⁻' : ''}${digitos} kg`;
-}
-
-/**
- * Um número adimensional com casas fixas e vírgula — excentricidade e
- * fração iluminada. Duas casas achatariam a excentricidade da Terra (0,017)
- * em "0,02", e uma casa a mataria de vez.
- */
-function comCasas(valor: number, casas: number): string {
-  return valor.toFixed(casas).replace('.', ',');
 }
 
 const modulo = (v: PosicaoEcliptica) => Math.hypot(v.x, v.y, v.z);
@@ -607,10 +584,10 @@ const TITULOS: Record<IdDeSecao, string> = {
 /**
  * A FICHA DE UMA ESTRELA (item 74; o cabeçalho na parte A, o conteúdo aqui).
  *
- * ELA NASCEU VAZIA por um motivo de FUNÇÃO e não de conteúdo: a antiga
- * `ContextLine` anunciava QUALQUER foco — corpo ou estrela — e carregava o
- * gesto de voltar ao sistema. Se a ficha só existisse para corpos, escolher
- * Sirius deixaria o HUD sem dizer o que foi escolhido e sem o "⌂ Sistema".
+ * ELA EXISTE por FUNÇÃO e não por conteúdo: o cabeçalho da ficha é quem
+ * anuncia o foco — corpo ou estrela — e quem carrega o gesto de voltar ao
+ * sistema. Se a ficha só valesse para corpos, escolher Sirius deixaria o HUD
+ * sem dizer o que foi escolhido e sem o "⌂ Sistema".
  *
  * UMA SEÇÃO SÓ, e é decisão medida: são sete linhas, e a ficha desenha
  * FECHADAS todas as seções menos a primeira. Duas seções aqui esconderiam
