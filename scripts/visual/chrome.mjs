@@ -59,20 +59,19 @@ export const GPU_FLAGS = [
 export const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * ESPERAR O ESTADO, NUNCA O RELÓGIO DE PAREDE — a peça que o item 76
- * fechou, e a régua de todo juiz que interage com o app.
+ * ESPERAR O ESTADO, NUNCA O RELÓGIO DE PAREDE — a régua de todo juiz
+ * que interage com o app, e a única casa desta doutrina no projeto.
+ *
+ * Pergunta-se "ACONTECEU?", jamais "passaram N ms?": quem dorme mede a
+ * carga da máquina e chama isso de defeito do app, e um juiz que acusa
+ * inocente é pior que nenhum — ele treina quem o roda a ignorá-lo. O
+ * caso medido que fundou a regra mora no commit `72c76b9`.
  *
  * Espera uma condição VALER no navegador e devolve em quantos ms ela
  * valeu (`null` no estouro). O número entra no veredito de propósito:
  * juiz que espera sem dizer quanto esperou esconde a piora do dia em que
- * ela começar.
- *
- * POR QUE ELA SUBIU PARA CÁ (22/08): nasceu privada no `a11y.mjs`, e
- * enquanto os outros juízes usavam `dorme(N)` para o MESMO fim eles
- * mediam a carga da máquina e chamavam isso de defeito do app — oito
- * vereditos do `filme-smoke` e dois do `atlas-smoke` reprovavam num HEAD
- * limpo só porque a máquina estava ocupada. Um juiz que acusa inocente é
- * pior que nenhum: ele treina quem o roda a ignorá-lo.
+ * ela começar. E o `null` REPROVA em quem chama — estouro é veredito,
+ * não rodapé.
  *
  * QUANDO `dorme` AINDA É O CERTO: quando o veredito é "NADA acontece" —
  * ali esperar mais só fortalece a prova (o `ESPERA_DO_MANUAL_MS` do
@@ -227,6 +226,58 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
 }
 
 /**
+ * O SOCKET DO CDP, ligado e pronto a falar — a plataforma dos dois
+ * harnesses (`abrirSessao` e `capturarCDP`).
+ *
+ * Eram DUAS cópias das mesmas quatro peças (`seq`, `esperando`, `send` e
+ * `derrubarPendentes`), que é o defeito que o cabeçalho deste arquivo
+ * existe para não repetir: a segunda cópia nasceu já sem a rede de
+ * segurança e só a ganhou meses depois, num conserto que precisou ser
+ * feito duas vezes.
+ *
+ * `aoEvento` recebe o que NÃO é resposta a um `send` (console, exceção):
+ * é a única parte que difere entre os dois, e por isso é o parâmetro.
+ *
+ * O SOCKET QUE MORRE NÃO PODE DEIXAR UMA PROMESSA VIVA PARA SEMPRE.
+ * Cada `send` fica pendurado num `id` que só o Chrome responde: se o
+ * Chrome cai (ou é morto por fora) sem responder, o `await` nunca
+ * resolve, o processo não termina e quem o espera fica parado — é o
+ * desenho dos itens 64 e 78 (`ab-identidade` vivo 12 e 25 minutos
+ * depois de ter terminado o trabalho). Fechar o socket REPROVA os
+ * pendentes, que vira erro legível em vez de sono eterno; e é por isso
+ * que `fechar` existe: quem mata o Chrome fecha o socket ANTES.
+ */
+export async function ligarSocketCDP(alvo, aoEvento = () => {}) {
+  const ws = new WebSocket(alvo);
+  await new Promise((r, j) => {
+    const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
+    ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
+    ws.addEventListener('error', () => { clearTimeout(relogio); j(new Error('WebSocket falhou')); });
+  });
+  let seq = 0;
+  const esperando = new Map();
+  ws.addEventListener('message', (e) => {
+    const m = JSON.parse(e.data);
+    if (m.id && esperando.has(m.id)) { esperando.get(m.id)(m); esperando.delete(m.id); }
+    else aoEvento(m);
+  });
+  const derrubarPendentes = (porque) => {
+    for (const responder of esperando.values()) responder({ error: { message: porque } });
+    esperando.clear();
+  };
+  ws.addEventListener('close', () => derrubarPendentes('o WebSocket do CDP fechou'));
+  ws.addEventListener('error', () => derrubarPendentes('o WebSocket do CDP falhou'));
+  return {
+    send: (method, params = {}) => new Promise((res, rej) => {
+      const n = ++seq;
+      esperando.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));
+      ws.send(JSON.stringify({ id: n, method, params }));
+    }),
+    fechar: () => ws.close(),
+  };
+}
+
+/**
  * UMA SESSÃO DE CHROME VIVA, dirigida por CDP — a base dos harnesses que
  * INTERAGEM com o app (o smoke do portal, o juiz de a11y), em oposição a
  * `capturarCDP`, que sobe um Chrome por vista e o mata em seguida.
@@ -257,14 +308,6 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     if (!alvo) await dorme(200);
   }
   if (!alvo) throw new Error('CDP não respondeu');
-  const ws = new WebSocket(alvo);
-  await new Promise((r, j) => {
-    const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
-    ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
-    ws.addEventListener('error', () => { clearTimeout(relogio); j(new Error('WebSocket falhou')); });
-  });
-  let seq = 0;
-  const esperando = new Map();
   let cartografia = false;
   // O QUE O APP GRITA. Só o que o app diz por conta própria
   // (`console.error`/`console.warn` e exceção não capturada) — falha de
@@ -272,10 +315,8 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
   // cobrar o contrário do que a degradação honesta faz. É esta lista que
   // o gate "sem rede, zero erro de console" da F4 lê.
   const gritos = [];
-  ws.addEventListener('message', (e) => {
-    const m = JSON.parse(e.data);
-    if (m.id && esperando.has(m.id)) { esperando.get(m.id)(m); esperando.delete(m.id); }
-    else if (m.method === 'Runtime.consoleAPICalled') {
+  const { send, fechar: fecharSocket } = await ligarSocketCDP(alvo, (m) => {
+    if (m.method === 'Runtime.consoleAPICalled') {
       const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
       if (txt.includes('[cartografia]')) cartografia = true;
       if (m.params.type === 'error' || m.params.type === 'warning') {
@@ -284,24 +325,6 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     } else if (m.method === 'Runtime.exceptionThrown') {
       gritos.push(`exceção: ${m.params.exceptionDetails?.text ?? '?'}`);
     }
-  });
-  // O SOCKET QUE MORRE NÃO PODE DEIXAR UMA PROMESSA VIVA PARA SEMPRE.
-  // Cada `send` fica pendurado num `id` que só o Chrome responde: se o
-  // Chrome cai (ou é morto por fora) sem responder, o `await` nunca
-  // resolve, o processo não termina e quem o espera fica parado — é o
-  // desenho dos itens 64 e 78 (`ab-identidade` vivo 12 e 25 minutos
-  // depois de ter terminado o trabalho). Fechar o socket agora
-  // REPROVA os pendentes, que vira erro legível em vez de sono eterno.
-  const derrubarPendentes = (porque) => {
-    for (const responder of esperando.values()) responder({ error: { message: porque } });
-    esperando.clear();
-  };
-  ws.addEventListener('close', () => derrubarPendentes('o WebSocket do CDP fechou'));
-  ws.addEventListener('error', () => derrubarPendentes('o WebSocket do CDP falhou'));
-  const send = (method, params = {}) => new Promise((res, rej) => {
-    const n = ++seq;
-    esperando.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));
-    ws.send(JSON.stringify({ id: n, method, params }));
   });
   await send('Page.enable');
   await send('Runtime.enable');
@@ -312,6 +335,7 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
   return {
     send,
     fechar: () => {
+      fecharSocket();
       chrome.kill();
       matarPerfil(perfil);
       try { rmSync(perfil, { recursive: true, force: true }); } catch { /* preso */ }
@@ -469,7 +493,7 @@ export async function capturarCDP({
     '--force-device-scale-factor=1', `--window-size=${largura},${altura}`,
     `--user-data-dir=${perfil}`, `--remote-debugging-port=${porta}`, 'about:blank',
   ], { stdio: 'ignore' });
-  let seq = 0;
+  let socket = null;
   try {
     let alvo = null;
     for (let i = 0; i < 100 && !alvo; i++) {
@@ -480,37 +504,16 @@ export async function capturarCDP({
       if (!alvo) await dorme(200);
     }
     if (!alvo) throw new Error('CDP não respondeu');
-    const ws = new WebSocket(alvo);
-    await new Promise((r, j) => {
-      const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
-      ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
-      ws.addEventListener('error', () => { clearTimeout(relogio); j(new Error('WebSocket falhou')); });
-    });
-    const esperando = new Map();
     let cartografia = false;
     const linhas = [];
-    ws.addEventListener('message', (e) => {
-      const m = JSON.parse(e.data);
-      if (m.id && esperando.has(m.id)) { esperando.get(m.id)(m); esperando.delete(m.id); }
-      else if (m.method === 'Runtime.consoleAPICalled') {
+    socket = await ligarSocketCDP(alvo, (m) => {
+      if (m.method === 'Runtime.consoleAPICalled') {
         const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
         if (txt.includes('[cartografia]')) cartografia = true;
         if (coletar && coletar.test(txt)) linhas.push(txt);
       }
     });
-    // a MESMA rede de segurança do `abrirSessao` (itens 64 e 78): Chrome
-    // que morre sem responder deixaria o `await` pendurado para sempre
-    const derrubarPendentes = (porque) => {
-      for (const responder of esperando.values()) responder({ error: { message: porque } });
-      esperando.clear();
-    };
-    ws.addEventListener('close', () => derrubarPendentes('o WebSocket do CDP fechou'));
-    ws.addEventListener('error', () => derrubarPendentes('o WebSocket do CDP falhou'));
-    const send = (method, params = {}) => new Promise((res, rej) => {
-      const n = ++seq;
-      esperando.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));
-      ws.send(JSON.stringify({ id: n, method, params }));
-    });
+    const { send } = socket;
     await send('Page.enable');
     await send('Runtime.enable');
     // A PERNA RETINA (item 2 do mapa da R2): o escândalo de instrumento da
@@ -545,6 +548,7 @@ export async function capturarCDP({
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
     return { png: buf, via: assentou.via, ms: assentou.ms, linhas };
   } finally {
+    socket?.fechar();
     chrome.kill();
     matarPerfil(perfil);
     await dorme(400);

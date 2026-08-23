@@ -10,7 +10,7 @@
 // bundle; aqui ficam as combinações restantes, incluindo as parciais, que
 // nenhum arranjo de servidor encena de propósito.
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP } from './chrome.mjs';
 
 const sinal = (n) => Array(n).fill('sinal');
 const quadros = (n) => Array(n).fill('quadros');
@@ -62,5 +62,91 @@ describe('julgarProntidao', () => {
 
   it('sem captura nenhuma (tudo de disco, ou --so-medir) não há juízo', () => {
     expect(julgarProntidao({ vias: [] })).toMatchObject({ total: 0, erro: false, mensagem: null });
+  });
+});
+
+// ============================================================
+// O SOCKET DO CDP, sem Chrome. `ligarSocketCDP` fala com o global
+// `WebSocket`, então é o global que se troca por um falso — e é a única
+// forma de exercitar a rede de segurança dos itens 64 e 78 (o Chrome que
+// morre SEM responder), que nenhuma corrida verde percorre.
+// ============================================================
+class SocketFalso extends EventTarget {
+  constructor() {
+    super();
+    this.enviadas = [];
+    this.fechado = false;
+    queueMicrotask(() => this.dispatchEvent(new Event('open')));
+  }
+
+  send(texto) {
+    this.enviadas.push(JSON.parse(texto));
+  }
+
+  close() {
+    this.fechado = true;
+    this.dispatchEvent(new Event('close'));
+  }
+
+  /** o Chrome falando: resposta a um `send`, ou evento espontâneo */
+  receber(mensagem) {
+    const e = new Event('message');
+    e.data = JSON.stringify(mensagem);
+    this.dispatchEvent(e);
+  }
+}
+
+async function ligarFalso(aoEvento) {
+  const original = globalThis.WebSocket;
+  let ws = null;
+  globalThis.WebSocket = class extends SocketFalso {
+    constructor(alvo) {
+      super();
+      this.alvo = alvo;
+      ws = this;
+    }
+  };
+  try {
+    return { ...(await ligarSocketCDP('ws://falso', aoEvento)), ws };
+  } finally {
+    globalThis.WebSocket = original;
+  }
+}
+
+describe('ligarSocketCDP', () => {
+  it('casa a resposta com o pedido pelo id e devolve o `result`', async () => {
+    const { send, ws } = await ligarFalso();
+    const pedido = send('Runtime.evaluate', { expression: '1+1' });
+    expect(ws.enviadas).toHaveLength(1);
+    expect(ws.enviadas[0]).toMatchObject({ id: 1, method: 'Runtime.evaluate' });
+    ws.receber({ id: 1, result: { value: 2 } });
+    await expect(pedido).resolves.toEqual({ value: 2 });
+  });
+
+  it('erro do CDP vira exceção com o método no texto', async () => {
+    const { send, ws } = await ligarFalso();
+    const pedido = send('Page.navigate');
+    ws.receber({ id: 1, error: { message: 'sem alvo' } });
+    await expect(pedido).rejects.toThrow('Page.navigate: sem alvo');
+  });
+
+  it('o socket que MORRE reprova os pendentes, em vez de dormir para sempre', async () => {
+    const { send, fechar, ws } = await ligarFalso();
+    const um = send('Runtime.evaluate');
+    const dois = send('Page.captureScreenshot');
+    fechar();
+    expect(ws.fechado).toBe(true);
+    await expect(um).rejects.toThrow('o WebSocket do CDP fechou');
+    await expect(dois).rejects.toThrow('o WebSocket do CDP fechou');
+  });
+
+  it('o que não é resposta vai para `aoEvento` — dali saem cartografia e gritos', async () => {
+    const vistos = [];
+    const { send, ws } = await ligarFalso((m) => vistos.push(m));
+    ws.receber({ method: 'Runtime.consoleAPICalled', params: { type: 'error' } });
+    const pedido = send('Runtime.evaluate');
+    ws.receber({ id: 1, result: {} });
+    await pedido;
+    expect(vistos.map((m) => m.method)).toEqual(['Runtime.consoleAPICalled']);
   });
 });

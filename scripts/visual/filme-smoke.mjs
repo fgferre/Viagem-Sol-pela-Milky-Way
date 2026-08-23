@@ -110,32 +110,35 @@ async function salvarFolha(frames) {
 const TETO_DO_MOVIMENTO_MS = 10000;
 
 /**
+ * O PISO DO MOVIMENTO, em QUADROS do próprio app. Um quadro é epsilon:
+ * `currentTime > antes` também é verdade num integrador 10× lento por
+ * DEFEITO, que é exatamente o que este veredito existe para pegar. Três
+ * quadros é o piso, e ele se converte em segundos de filme pelo grampo
+ * do passo que o app publica (`window.__director.grampoDoPasso`) —
+ * abaixo de 20 q/s cada quadro vale um grampo inteiro de filme. Redigitar
+ * o número aqui faria a régua e o integrador discordarem no dia em que
+ * um dos dois mudasse.
+ */
+const QUADROS_DE_PISO = 3;
+
+/**
  * O RELÓGIO ANDA QUANDO SOLTO — e é ISSO que se mede.
  *
- * O QUE ESTE VEREDITO ERA ATÉ 22/08 (item 76): soltar o relógio, dormir
- * 420 ms de PAREDE e cobrar mais de 0,1 s de filme andado. A conta que
- * ninguém tinha feito: o integrador grampeia o passo em
- * `GRAMPO_DO_PASSO_S` = 0,05 s (`core/engine.ts`), então abaixo de 20 q/s
- * cada quadro vale 0,05 s de filme e "mais de 0,1 s" quer dizer TRÊS
- * quadros em 420 ms — o gate cobrava 7,1 q/s do shot pesado e chamava de
- * defeito do filme a máquina que não os entregava. Medido nesta máquina:
- * 3, 1, 4, 2 e 8 falhas em corridas do MESMO binário, e as MESMAS falhas
- * num HEAD limpo. Com oito `yes > /dev/null` de carga, 8 de 9 caíam —
- * `0.00 s` no shot da galáxia final, ou seja ZERO quadro em 420 ms.
- *
- * O QUE ELE É AGORA: espera pelo ESTADO (`esperarPor`) — o relógio andou?
- * —, com teto grande e generoso, e PUBLICA a taxa como REGISTRO, do jeito
- * que o `a11y.mjs` faz com os cantos fora da faixa. Relógio parado
- * continua reprovando; máquina lenta vira número no log, que é o que ela é.
+ * A espera é por ESTADO (`esperarPor`), com teto grande e generoso, e a
+ * taxa sai como REGISTRO, do jeito que o `a11y.mjs` faz com os cantos
+ * fora da faixa. Relógio parado — ou lento demais para andar o piso em
+ * dez segundos — reprova; máquina lenta vira número no log, que é o que
+ * ela é.
  */
-async function conferirMovimento(sessao, nome, t, legenda) {
+async function conferirMovimento(sessao, nome, t, legenda, grampo) {
   await saltar(sessao, t);
   const antes = await sessao.js('window.__director.currentTime');
+  const piso = QUADROS_DE_PISO * grampo;
   const t0 = Date.now();
   const pausouAoSoltar = await sessao.js('window.__director.togglePause()');
   const esperou = await esperarPor(
     sessao,
-    `window.__director.currentTime > ${antes}`,
+    `window.__director.currentTime > ${antes + piso}`,
     TETO_DO_MOVIMENTO_MS
   );
   const depois = await sessao.js('window.__director.currentTime');
@@ -147,6 +150,7 @@ async function conferirMovimento(sessao, nome, t, legenda) {
   conferir(
     esperou !== null,
     `${nome}: o relógio ANDOU solto — ${(depois - antes).toFixed(2)} s de filme`
+      + ` (piso ${piso.toFixed(2)} s = ${QUADROS_DE_PISO} quadros)`
       + ` em ${parede.toFixed(2)} s de parede`
       + ` (${(parede > 0 ? (depois - antes) / parede : 0).toFixed(2)}× o tempo real)`
   );
@@ -259,23 +263,32 @@ async function julgarLargura(largura, altura, captura) {
         frames.push({ png: await capturar(sessao), rotulo });
       }
 
-      if (captura === 'todas') for (const [nome, t, legenda] of [
-        ['Sirius', 33.2, 'SIRIUS'],
-        ['Casa', 76.5, 'CASA'],
-        ['mergulho', 98, 'O MERGULHO'],
-        ['Sagittarius A*', 123.2, 'SAGITTARIUS A✱'],
-        ['perfil', 152, 'ELA NÃO É PLANA'],
-        ['face-on', 166, 'NOSSA GALÁXIA'],
-        ['galáxia final', 172, 'VOCÊ ESTÁ AQUI'],
-        ['a Lua', 183, 'A LUA'],
-        ['a Terra', 187, 'A TERRA'],
-      ]) await conferirMovimento(sessao, nome, t, legenda);
+      if (captura === 'todas') {
+        // o piso do movimento vem do APP (ver `QUADROS_DE_PISO`); se a
+        // porta sumir, reprova aqui em vez de medir com `NaN`
+        const grampo = await sessao.js('window.__director.grampoDoPasso');
+        conferir(
+          typeof grampo === 'number' && grampo > 0,
+          `${largura}px · o app publica o grampo do passo (${grampo} s)`
+        );
+        for (const [nome, t, legenda] of [
+          ['Sirius', 33.2, 'SIRIUS'],
+          ['Casa', 76.5, 'CASA'],
+          ['mergulho', 98, 'O MERGULHO'],
+          ['Sagittarius A*', 123.2, 'SAGITTARIUS A✱'],
+          ['perfil', 152, 'ELA NÃO É PLANA'],
+          ['face-on', 166, 'NOSSA GALÁXIA'],
+          ['galáxia final', 172, 'VOCÊ ESTÁ AQUI'],
+          ['a Lua', 183, 'A LUA'],
+          ['a Terra', 187, 'A TERRA'],
+        ]) await conferirMovimento(sessao, nome, t, legenda, grampo);
+      }
     }
 
     // OS ÚLTIMOS 0,2 s DO CORTE, e a mesma régua do movimento: pergunta-se
-    // "CHEGOU?", não "passaram 3 s?". Com o passo grampeado em 0,05 s, os
-    // 0,2 s que faltam são QUATRO quadros — cobrar que eles caibam num teto
-    // curto de parede é cobrar taxa de quadros da máquina outra vez.
+    // "CHEGOU?", não "passaram 3 s?". Com o passo grampeado, o que falta
+    // são uns poucos quadros — cobrar que eles caibam num teto curto de
+    // parede é cobrar taxa de quadros da máquina outra vez.
     await saltar(sessao, 192.8);
     await sessao.js('window.__director.togglePause()');
     const chegouEm = await esperarPor(
