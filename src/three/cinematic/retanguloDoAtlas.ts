@@ -261,8 +261,9 @@ const SAIDA_FRACAO = 0.025;
  * no pé e ENGOLE a tarja de baixo, então não se soma nada a ela: 0,11
  * cobre o pior medido (0,1014 no aparelho pequeno) com 0,0086 de folga.
  * O alvo de toque dela — 2,75rem, 44 px em `ui = 1` — é o que a dimensiona,
- * e é ele que não se aperta (o commit anterior apertou LARGURA, nunca o
- * alvo).
+ * e é ele que não se aperta: quando as quatro alças não couberam em 390 px,
+ * quem cedeu foram o `gap` e o `padding` da `.atlas-alcas` (fatia 9 do
+ * HUD), que são LARGURA; o `min-height` de 2,75rem ficou onde estava.
  */
 const ALCAS_FRACAO = 0.11;
 

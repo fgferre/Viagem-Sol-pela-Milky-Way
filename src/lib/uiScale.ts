@@ -105,7 +105,7 @@ export function larguraDeCss(): number {
  *
  *  1. 760 JÁ REORGANIZA O ATLAS. A fatia 6 do HUD põe o rodapé em coluna
  *     única de borda a borda e devolve o selo ao fluxo nessa largura, e o
- *     teto de tela dos diálogos (`--teto-dialogo-tela: 52vh`) é dessa
+ *     teto de tela dos diálogos (`--teto-dialogo-tela`) é dessa
  *     mesma quebra. Escolher outro número criaria uma segunda fronteira
  *     onde já havia uma.
  *  2. 768 É FRONTEIRA DE CÂMERA, não de CSS. `LARGURA_UTIL_MINIMA_PX`

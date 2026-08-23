@@ -13,7 +13,7 @@
 // aqui. O que se pina em `useGavetas.test.ts` são as regras — que é onde
 // a decisão mora; o `useState` em volta delas é encanamento.
 // ============================================================
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import type { EstadoDaEscada, Phase } from '../three/director';
 
 /**
@@ -91,8 +91,12 @@ export const aoFocar = (atual: Gaveta | null, alvo: string | null): Gaveta | nul
  * `@keyframes folhaSobe`, fatia 9), porque é o mesmo movimento ao
  * contrário. Mora aqui e não no CSS porque quem segura o nó desmontando
  * é JavaScript: uma folha que fechou já não tem elemento para animar.
+ *
+ * PRIVADA: quem a lê é o `useLayoutEffect` daqui de baixo e mais ninguém.
+ * Ela nasceu exportada por hábito, e um `export` sem consumidor é
+ * superfície pública que envelhece calada.
  */
-export const SAIDA_DA_FOLHA_MS = 260;
+const SAIDA_DA_FOLHA_MS = 260;
 
 export interface Gavetas {
   /** qual está aberta AGORA, ou `null` */
@@ -133,33 +137,40 @@ export function useGavetas(
     new URLSearchParams(window.location.search).has('ajustes') ? 'ajustes' : null
   );
 
-  const corpoAnterior = useRef<string | null>(null);
-  useEffect(() => {
-    const alvo = escada.corpoId ?? (escada.degrau === 'estrela' ? foco : null);
-    if (alvo !== corpoAnterior.current) {
-      corpoAnterior.current = alvo;
-      // O `set` DENTRO do efeito é o desenho, não descuido: o que dispara é
-      // a chegada de um foco NOVO publicado pelo Director (evento de fora do
-      // React), e o guarda acima faz o efeito ser inerte em todo render que
-      // não seja esse. A alternativa que a regra recomenda — ajustar estado
-      // durante o render — trocaria o `useRef` por um segundo `useState` e
-      // reescreveria a regra; o item 76 pede mover, não reescrever.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setGaveta((atual) => aoFocar(atual, alvo));
-    }
-  }, [escada.corpoId, escada.degrau, foco]);
+  /**
+   * AS DUAS REAÇÕES SÃO AJUSTE DURANTE O RENDER, e não efeitos — o mesmo
+   * caminho que a folha que sai usa mais abaixo (`anterior`/`saindo`), e o
+   * que a regra `set-state-in-effect` pede em vez da supressão que estava
+   * aqui. Nenhuma das duas toca DOM, rede ou relógio: as duas só derivam
+   * `gaveta` de uma entrada que MUDOU, que é literalmente o caso de uso
+   * que o React documenta para isto.
+   *
+   * O "anterior" de cada uma é um SEGUNDO estado e não um `useRef`, pela
+   * mesma razão escrita lá embaixo: ref lido durante o render não faz o
+   * componente re-renderizar, e é do re-render ANTES do commit que o
+   * ajuste depende. Os dois nascem no valor que o efeito via na montagem
+   * (`null` e a fase de entrada), então a primeira passagem é inerte —
+   * como era.
+   */
+  const [alvoAnterior, setAlvoAnterior] = useState<string | null>(null);
+  const alvo = escada.corpoId ?? (escada.degrau === 'estrela' ? foco : null);
+  if (alvo !== alvoAnterior) {
+    setAlvoAnterior(alvo);
+    setGaveta((atual) => aoFocar(atual, alvo));
+  }
 
   /**
-   * A TRAVESSIA DE MODO fecha a busca e as camadas — o efeito inteiro, e
-   * não só a função que ele chama. Ele morava no `App.tsx` como "o
+   * A TRAVESSIA DE MODO fecha a busca e as camadas — a reação inteira, e
+   * não só a função que ela chama. Ela morava no `App.tsx` como "o
    * gatilho, porque é a FASE que dispara"; a fase é um parâmetro, e a
    * regra de quem fecha o quê é deste arquivo (§11 do AGENTS: um
    * arquivo, um assunto).
    */
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  const [faseAnterior, setFaseAnterior] = useState<Phase>(phase);
+  if (faseAnterior !== phase) {
+    setFaseAnterior(phase);
     setGaveta(aoTravessar);
-  }, [phase]);
+  }
 
   /**
    * A FOLHA DESCE ANTES DE SUMIR (item 62) — e este hook é o dono do

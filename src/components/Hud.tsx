@@ -3,12 +3,22 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { LARGURA_DO_CELULAR_PX } from '../lib/uiScale';
 import { LOAD_STAGES } from '../three/director';
 import type { LoadStage } from '../three/director';
 import { CartografiaCanvas } from './CartografiaCanvas';
 
-/** telas curtas escondem só a telemetria dos cantos */
-const ehCompacto = () => window.innerWidth < 760 || window.innerHeight < 480;
+/**
+ * Telas curtas escondem só a telemetria dos cantos.
+ *
+ * A LARGURA É A FAIXA DECLARADA (`LARGURA_DO_CELULAR_PX`), e o `<=` é o
+ * mesmo do `@media (max-width: 760px)`: aqui havia um terceiro leitor de
+ * largura com o 760 cru e um `<`, então EM 760 px exatos o CSS já vestia
+ * o telefone e esta linha ainda dizia mesa. A altura de 480 é outro
+ * fenômeno (paisagem baixa) e continua sendo dela.
+ */
+const ehCompacto = () =>
+  window.innerWidth <= LARGURA_DO_CELULAR_PX || window.innerHeight < 480;
 
 /**
  * A tela de carregamento: uma camada PERSISTENTE por baixo do véu de

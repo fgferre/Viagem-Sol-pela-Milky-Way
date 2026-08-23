@@ -134,4 +134,51 @@ describe('3. a quebra do celular: o CSS e o TypeScript dizem o mesmo número', (
     expect(LARGURA_DO_CELULAR_PX).toBe(760);
     expect(LARGURA_DO_CELULAR_PX).toBeLessThan(768);
   });
+
+  // ============================================================
+  // …E A MESMA VARREDURA DO LADO DO TYPESCRIPT. A regra sobre o CSS não
+  // via o defeito de 23/08: `ehCompacto` (`components/Hud.tsx`) era um
+  // TERCEIRO leitor de largura, com o 760 cru e um `<` — em 760 px
+  // exatos o `@media` já vestia o telefone e ele ainda dizia mesa. O
+  // literal repetido é o que faz duas leituras da mesma fronteira
+  // discordarem sem ninguém ver.
+  //
+  // O CSS TEM DIREITO AO LITERAL (media query não lê `var()`); o
+  // TypeScript não tem — ele importa a constante. Os dois arquivos de
+  // fora são os donos do número: quem o DECLARA e quem o PINA.
+  // ============================================================
+  const SRC = new URL('../', import.meta.url);
+  const DONOS = ['lib/uiScale.ts', 'lib/uiScale.test.ts'];
+  const varrer = (dir: URL, prefixo = ''): { arquivo: string; codigo: string }[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory()
+        ? varrer(new URL(`${e.name}/`, dir), `${prefixo}${e.name}/`)
+        : /\.tsx?$/.test(e.name)
+          ? [{
+              arquivo: `${prefixo}${e.name}`,
+              // comentário não é código: o 760 citado em prosa é
+              // documentação da fronteira, e é bem-vindo
+              codigo: readFileSync(new URL(e.name, dir), 'utf8')
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/\/\/[^\n]*/g, ''),
+            }]
+          : []
+    );
+  const FONTES = varrer(SRC).filter((f) => !DONOS.includes(f.arquivo));
+  // `760.` e `1760` não são a fronteira: as bordas excluem ponto e dígito
+  const CRU = /(?<![\w.])760(?![\w.])/;
+
+  it('a varredura acha os arquivos e o código de verdade — um walker quebrado passaria calado', () => {
+    expect(FONTES.length).toBeGreaterThan(100);
+    expect(FONTES.some((f) => f.arquivo === 'hooks/useCelular.ts')).toBe(true);
+    // o corte de comentários não pode ter comido o código junto
+    expect(
+      FONTES.filter((f) => f.codigo.includes('LARGURA_DO_CELULAR_PX')).map((f) => f.arquivo)
+    ).toContain('hooks/useCelular.ts');
+    expect(CRU.test('const x = 760;')).toBe(true);
+  });
+
+  it('nenhum TS/TSX repete o 760 cru — quem lê a fronteira importa a constante', () => {
+    expect(FONTES.filter((f) => CRU.test(f.codigo)).map((f) => f.arquivo)).toEqual([]);
+  });
 });

@@ -1966,9 +1966,13 @@ async function julgarCelular(s) {
   // `LARGURA_DO_CELULAR_PX` é 760, e o `@media` repete o literal porque
   // media query não lê `var()`. O lado do TypeScript é a PRESENÇA da
   // fileira (quem a desenha é o `useCelular`); o lado do CSS é o teto de
-  // tela dos diálogos, que só a fatia 6 aperta. Os dois têm de virar no
-  // mesmo pixel: uma faixa em que um diz celular e o outro diz mesa é
-  // a fileira no pé com a barra de controles inteira em cima.
+  // tela dos diálogos, que a fatia 9 aperta a 48svh. Ele é a MESMA
+  // variável que governa a altura da folha — até 23/08 a fatia 9 escrevia
+  // um `max-height` literal ao lado dela, e o que esta prova lia era o
+  // 52vh da fatia 6, que no telefone não governava nada. Os dois têm de
+  // virar no mesmo pixel: uma faixa em que um diz celular e o outro diz
+  // mesa é a fileira no pé com a barra de controles inteira em cima.
+  const TETO_DE_TELA_DO_CELULAR = '48svh';
   await s.ir(`atlas=1&${PIN}`);
   for (const [largura, esperado] of [[760, true], [761, false]]) {
     await vestirAparelho(s, largura, 844);
@@ -1978,11 +1982,12 @@ async function julgarCelular(s) {
       teto: getComputedStyle(document.querySelector('.hud-root'))
         .getPropertyValue('--teto-dialogo-tela').trim(),
     }))()`);
+    const tetoDeCelular = q.teto === TETO_DE_TELA_DO_CELULAR;
     conferir(
-      q.fileira === esperado && (q.teto === '52vh') === esperado,
+      q.fileira === esperado && tetoDeCelular === esperado,
       `a quebra de 760 px (janela de ${largura}): TypeScript diz`
         + ` ${q.fileira ? 'celular' : 'mesa'} e o CSS diz`
-        + ` ${q.teto === '52vh' ? 'celular' : 'mesa'} (--teto-dialogo-tela: ${q.teto})`
+        + ` ${tetoDeCelular ? 'celular' : 'mesa'} (--teto-dialogo-tela: ${q.teto})`
     );
   }
 

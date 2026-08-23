@@ -147,35 +147,49 @@
      `--alcas-altura` é zero e a mesma linha vira um respiro de 3,4rem no
      pé; a expressão continua sendo uma.
 
-     O TETO É 48vh PARA AS CINCO, e o número é derivado, não escolhido. A
-     regra de área que o juiz já cobra é "o diálogo não passa de metade da
-     tela" (`julgarAreaDaFicha`), e uma folha de borda a borda ocupa 100%
-     da largura: 50% de área É 50vh de altura, NO LIMITE. Limite não é
-     margem — daí 48. (Os 52vh de `--teto-dialogo-tela`, fatia 6, foram
-     derivados do mesmo jeito quando o diálogo media 86% da largura.) Quem
-     não couber ROLA por dentro, porque `.hud-dialogo` é `overflow-y:
-     auto`; o que muda é que a folha para de empurrar a janela.
-
-     `svh` DEPOIS DE `vh`, e as duas linhas são de propósito: no iOS a
-     barra de URL vai e vem e `vh` mede a janela GRANDE, então a folha
-     mediria mais que a tela em metade dos instantes. `svh` é a janela
-     PEQUENA (estável); a linha em `vh` fica antes como reserva para quem
-     não a entender. A casa não tem gate de Safari — limite declarado.
-
      A CASCATA É A FATIA. `.ajustes` (fatia 8), `.atlas-ficha` (4),
      `.atlas-gaveta` (4) e `.atlas-busca` (4) declaram a LARGURA de cada
      uma, e o painel de Ajustes declara também o teto dele; todas com a
      mesma especificidade de `.hud-dialogo`. Entre iguais decide a ORDEM,
      e esta fatia é lida por último — então uma regra só neutraliza as
      quatro, em vez de quatro regras repetindo o contrário. */
+
+  /* O TETO DA FOLHA É 48svh PARA AS CINCO, e o número é derivado, não
+     escolhido. A regra de área que o juiz já cobra é "o diálogo não passa
+     de metade da tela" (`julgarAreaDaFicha`), e uma folha de borda a
+     borda ocupa 100% da largura: 50% de área É 50vh de altura, NO LIMITE.
+     Limite não é margem — daí 48. (Os 52vh de `--teto-dialogo-tela`,
+     fatia 6, foram derivados do mesmo jeito quando o diálogo media 86% da
+     largura.) Quem não couber ROLA por dentro, porque `.hud-dialogo` é
+     `overflow-y: auto`; o que muda é que a folha para de empurrar a
+     janela.
+
+     E ELE É A VARIÁVEL, não um `max-height` literal na folha. Escrito
+     como literal, o telefone tinha DUAS medidas do mesmo teto — este 48 e
+     o `--teto-dialogo-tela: 52vh` da fatia 6 — e o 52 não governava nada,
+     apesar de ser ele que o juiz lia como prova de "virou celular".
+     Apertando a variável aqui, a mesma linha de sempre (`--teto-dialogo`,
+     fatia 1) a aplica às cinco, o painel de Ajustes (fatia 8) a recebe no
+     `min()` dele, e o que o juiz lê é o número que manda.
+
+     `svh` E NÃO `vh`: no iOS a barra de URL vai e vem e `vh` mede a
+     janela GRANDE, então a folha mediria mais que a tela em metade dos
+     instantes. `svh` é a janela PEQUENA (estável). Aqui não cabe a
+     reserva de duas linhas que o `max-height` permitia — propriedade
+     customizada não é validada na análise, então a segunda declaração
+     ganha SEMPRE e a primeira nunca seria reserva de nada. `svh` é base
+     desde 2022 nos três motores; a casa não tem gate de Safari — limite
+     declarado. */
+  .hud-root {
+    --teto-dialogo-tela: 48svh;
+  }
+
   .hud-dialogo {
     top: auto;
     left: 0;
     right: 0;
     width: auto;
     bottom: calc(var(--selo-base) + var(--selo-linha) + 0.4rem);
-    max-height: 48vh;
-    max-height: 48svh;
     /* de borda a borda a moldura lateral não emoldura nada: some, e a
        folha vira uma faixa que sobe */
     border-left: 0;

@@ -210,7 +210,12 @@
    ERA PRIVADO DA FICHA até 23/08, e o defeito é o mesmo do teto do selo:
    a ficha é só a mais alta das quatro, não a única que estoura. Aqui se
    aperta a fração da tela e `--teto-dialogo` (fatia 1) a aplica aos
-   quatro. */
+   quatro.
+
+   NO TELEFONE QUEM MANDA É A FATIA 9 (48svh): lá a folha vai de borda a
+   borda, e o teto de área dá outro número. Este 52 governa a outra metade
+   da condição — a tela BAIXA de mesa, em que o diálogo ainda mede 86% da
+   largura e a conta que derivou o 52 continua sendo a certa. */
 @media (max-width: 760px), (max-height: 640px) {
   .hud-root {
     --teto-dialogo-tela: 52vh;
