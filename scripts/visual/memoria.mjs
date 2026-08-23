@@ -99,7 +99,22 @@ const JANELA = process.env.JANELA || '1200x900';
  * scripts/visual/memoria.mjs`. O teto sai de `TETO_MIB[TIER]`.
  */
 const TIER = process.env.TIER || 'alta';
-const BOOT = `atlas=1&q=${TIER}`;
+/**
+ * O BOOT DA MEDIDA, com o relógio do céu PINADO (`&jd=`) desde 23/08
+ * (item 61, §3). O Atlas passou a abrir com o relógio AO VIVO, e relógio
+ * andando é cena mudando: o sinal de prontidão (`captura.pronto`) fica
+ * eternamente em `andando` e o juiz cai no teto de segurança dos 700
+ * quadros — medido, 44,8 s por boot, com o veredito acusando
+ * `via=quadros`. É o modo caro de falhar que `julgarProntidao` existe
+ * para não deixar passar, e ele funcionou.
+ *
+ * O pino é o idioma da casa para isto (o `atlas-smoke` e MB1 fazem o
+ * mesmo), e aqui ele não custa nada de medida: este juiz conta TEXTURAS,
+ * BYTES, geometrias, heap e workers — nada disso é função da data do céu.
+ * A data é o instante das vistas oficiais da Terra.
+ */
+const JD_PINADO = 2460409.26395835;
+const BOOT = `atlas=1&jd=${JD_PINADO}&q=${TIER}`;
 const CICLOS = 5;
 const TROCAS = 3;
 // os 5 corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=)

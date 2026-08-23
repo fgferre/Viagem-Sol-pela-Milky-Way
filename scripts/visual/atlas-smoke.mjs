@@ -351,7 +351,14 @@ try {
     // escolher RE-MIRA a câmera, então o rótulo que estava em `tinta`
     // já não está lá — clicar duas vezes no mesmo pixel com segundos de
     // intervalo é outro gesto, e mediria outra coisa.
-    await sessao.ir('atlas=1&q=cinema');
+    // O `&jd=EPOCA` É PINO, e ele entrou em 23/08 (item 61, §3): o Atlas
+  // passou a abrir com o relógio do céu AO VIVO, e relógio andando é cena
+  // mudando — o sinal de prontidão fica em `andando` e o `assentar()`
+  // destas provas cai no teto de segurança. Medido sem o pino: a pinça
+  // estourou os 30 s do embalo e o toque duplo não teve tempo de mover a
+  // câmera. Provas de GESTO precisam de céu parado, e o pino é o idioma
+  // da casa para isso (o mesmo do trio do portal, de MB1 e do `memoria`).
+  await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
     await sessao.assentar();
     const tintaDoDuplo = await sessao.js(`(() => {
       const c = document.querySelector('.label-canvas');
@@ -1181,7 +1188,7 @@ try {
   // A promessa é contada em CORPOS COM NOME, não em rótulos desenhados:
   // quantas estrelas cabem depende do céu daquela data, e o que o dono
   // pediu foi ver os objetos do sistema.
-  await sessao.ir('atlas=1&q=cinema');
+  await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
   await sessao.assentar();
   // a capa da abertura cobre a cena por alguns segundos DEPOIS de a
   // prontidão fechar (ver o NORTE, "Como rodar") — e é o desenho dos
@@ -1405,7 +1412,7 @@ try {
   // de baixo de 48vh (item 62), então metade da tela NÃO é céu — um
   // rótulo perfeitamente desenhado atrás dela nunca foi tocável.
   // `elementFromPoint` é quem responde isso.
-  await sessao.ir('atlas=1&q=cinema');
+  await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
   await sessao.assentar();
   const nome = JSON.parse(await sessao.js(`JSON.stringify((() => {
     const a = window.__director.rotulos.alvos
@@ -1475,7 +1482,7 @@ try {
     // mouse. O veredito é a CÂMERA, e não o degrau: escolher uma
     // ESTRELA já põe o degrau em 'estrela' no primeiro toque, e o que o
     // mergulho faz é VOAR.
-    await sessao.ir('atlas=1&q=cinema');
+    await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
     await sessao.assentar();
     const doZero = await ondeEstaACamera();
     await tocar();
@@ -1492,7 +1499,7 @@ try {
   }
 
   // (c) A PINÇA — e daqui para baixo NÃO SE NAVEGA (ver a nota acima).
-  await sessao.ir('atlas=1&foco=saturno&q=cinema');
+  await sessao.ir('atlas=1&foco=saturno&jd=EPOCA&q=cinema');
   await sessao.assentar();
   const CEU_Y = 180;
   const noPonto = await sessao.js(

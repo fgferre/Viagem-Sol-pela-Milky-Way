@@ -1565,6 +1565,36 @@ export class Director {
       // visitante, não da colocação.
       if (this.retomada) this.leftDisk = this.retomada.leftDisk;
       this.setPhase('atlas');
+      // O RELÓGIO DO CÉU ABRE ANDANDO (item 61, §3 — 23/08). O Atlas é o
+      // relógio do VISITANTE, e nascia parado: o mostrador dizia uma data
+      // e ficava nela para sempre, como se o céu fosse um retrato. É o
+      // que o NASA Eyes faz, e é o que faz o app parecer ligado ao mundo.
+      //
+      // O CUSTO EM QUADRO É ZERO NA PRÁTICA: `andarORelogio` relê o
+      // calendário a 1 Hz (`PASSO_DO_AO_VIVO_S`) e `recomporAlvo` roda uma
+      // vez por INSTANTE de céu, não por quadro.
+      //
+      // E A HONESTIDADE QUE ISTO PEDE, escrita aqui porque é aqui que a
+      // decisão mora: a 224 UA da vista de abertura, 1× NÃO MOVE PIXEL —
+      // 1 UA vale ~6,4 px nessa vista e a Terra anda 2,0e-7 UA/s, ou seja
+      // 1,3e-6 px/s. O que ganha vida é o MOSTRADOR (a data corre) e o
+      // Sol de perto, onde o relógio rápido já mexia. Quem quiser o
+      // quadro cheio muda a VISTA, não o relógio.
+      //
+      // AS TRÊS PORTAS QUE O CALAM são as três que pedem uma cena
+      // REPRODUZÍVEL: `?jd=` (o operador escolheu o instante), `?shot=`
+      // (é foto) e `?t=` (veio de um instante do filme). Consequência
+      // declarada: uma captura SEM nenhuma das três nunca vai assentar
+      // pelo sinal — e está certo, porque a cena de fato não assenta.
+      // Quem fotografa o Atlas pina `&jd=`.
+      if (
+        !this.maquinaDoTempo.aoVivo &&
+        !this.debug.has('jd') &&
+        !this.debug.has('shot') &&
+        !this.debug.has('t')
+      ) {
+        this.maquinaDoTempo.alternarAoVivo();
+      }
     });
   }
 

@@ -1258,7 +1258,15 @@ async function familiaFronteiraTerra(s) {
  * livre com outro nome.
  */
 async function familiaZoomDeRoda(s) {
-  await s.ir('atlas=1&foco=saturno&q=cinema');
+  // O `&jd=` É PINO, e ele entrou em 23/08 (item 61, §3): desde então o
+  // Atlas abre com o relógio do céu AO VIVO, e MB1 mede FERVURA entre
+  // quadros consecutivos — com os dez corpos andando entre eles, o piso
+  // da família subiria por efeméride e não por instabilidade de campo.
+  // O pino é o idioma da casa para isto (o `atlas-smoke` faz o mesmo na
+  // prova do portal), e é o mais honesto dos dois caminhos possíveis:
+  // medir o piso novo escreveria "fervura" num número que é do
+  // calendário.
+  await s.ir(`atlas=1&foco=saturno&jd=${JD_DA_TERRA}&q=cinema`);
   await s.js(SO_A_CENA);
   await s.assentar();
   const faixa = JSON.parse(await s.js(`JSON.stringify((() => {
