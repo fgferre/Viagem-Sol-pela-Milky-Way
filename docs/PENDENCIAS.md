@@ -18,6 +18,34 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
+**O BASTÃO DE 23/08 (fim do dia): A ONDA DA UI/UX POUSOU, E ELE DECIDIU AS
+QUATRO QUE FALTAVAM.** Nesta onda fecharam os itens **73** (a navegação),
+**74** (a ficha do objeto) e **62** (o celular), e do **61** fecharam o
+**selo de honestidade**, as **camadas numa porta só**, os **controles do
+filme que somem sozinhos** e o **modo único** (os commits **1 a 5** do
+plano — o 6, a vista inicial, é o que fica). Em 23/08 ele respondeu às
+QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
+
+1. **A vista com que o Atlas abre: ÓRBITAS PRIMEIRO.** Ele escolheu o
+   candidato **(a)** — o sistema com as linhas de órbita desenhadas — e
+   AUTORIZOU o item **77** a entrar antes. Ver os itens **77** e **61**.
+2. **O clarão do Sol: IGUALAR.** Teto único de 0,55, o do filme, nos dois
+   modos — *"nao quero essa distincao entre modo atlas e modo filme, para
+   mim o filme é um feature do atlas"*. Se atrapalhar a observação, o
+   conserto é GLOBAL. Ver o item **61**.
+3. **As tarjas pretas no celular: TIRAR.** No telefone a imagem passa a
+   ocupar a tela inteira; na mesa nada muda. Ver o item **61**.
+4. **Dois retoques aprovados:** *"Explorar livremente"* encurta para
+   **"Explorar"** na barra do filme, e no celular a folha fecha
+   **arrastando para baixo**. Ver o item **61**.
+
+**A ORDEM DA PRÓXIMA CONVERSA:** item **77** (as linhas de órbita) → a
+**vista inicial** (o commit **6** do plano — o candidato (a), que só
+existe depois do 77) → o **clarão único** → as **tarjas do celular** → os
+**dois retoques**. Só depois disso o **81** (o vermelho do MB1 no voo
+livre), o **70** e o **75**. O plano da fila mora em
+`scratchpad/planos/plano-modo-unico-item61.md`.
+
 **O BASTÃO DE 23/08 (noite): O MODO ÚNICO ANDOU QUATRO PASSOS.** A parte
 grande do item **61** — *"o modo atlas na minha visão deveria ser o modo
 único, a viagem na verdade para mim é só uma ferramenta do modo atlas"* —
@@ -34,9 +62,10 @@ saiu do papel. O que fechou:
   coda acendia a nebulosa e apagava o cartão da galáxia no mesmo lugar;
 - **o relógio do céu abre andando** (a data corre no mostrador).
 
-**Espera o olho dele no app**, com as fotos em `capturas/item61-*`. E
-ficaram DUAS escolhas dele, as duas com foto na mão: a **vista com que o
-Atlas abre** e o **brilho do Sol** — ver o item 61.
+**Espera o olho dele no app**, com as fotos em `capturas/item61-*`. As
+DUAS escolhas que ficaram — a **vista com que o Atlas abre** e o **brilho
+do Sol** — ele DECIDIU em 23/08: órbitas primeiro e teto único (ver o
+bastão do fim do dia, no alto, e o item 61).
 
 **O BASTÃO DE 23/08: O CELULAR FECHOU.** O item **62** — *"podemos criar
 alternativas de cotnrole menores e escondigos que expandam para
@@ -46,9 +75,9 @@ sobe uma **folha de baixo** que fecha por três saídas, a **câmera parou
 de recuar** por um rodapé que já não existe (o céu à câmera foi de
 44,5% para 77,0%) e a **pinça de dois dedos passou a dar zoom** — ela
 simplesmente não existia em tela de toque. **Espera o olho dele no
-app**, com as fotos em `capturas/item62-*`. Ficaram duas escolhas para
-ele, escritas no item **61**: as tarjas pretas no telefone (gosto) e o
-arrasto para baixo (possível, não pedido).
+app**, com as fotos em `capturas/item62-*`. As duas escolhas que ficaram,
+escritas no item **61**, ele DECIDIU em 23/08: as tarjas pretas do
+telefone **saem**, e a folha passa a fechar **arrastando para baixo**.
 
 **O BASTÃO DE 22/08: A ONDA DA UI/UX ABRIU, E A NAVEGAÇÃO FECHOU.** O
 dono respondeu às três perguntas dos mockups e, na mesma mensagem,
@@ -98,9 +127,11 @@ tela e a gaveta de camadas parando acima dele. Fotos em
 17 caixas em três famílias com contagem, nos dois modos (`751d270`) —, e
 os **controles do filme somem sozinhos** depois de 3 s parado, voltando
 ao primeiro gesto. **Em 23/08 o modo único andou quatro passos** (ver o
-bastão da noite, no alto). Do 61 seguem abertas as ESCOLHAS dele — a
-vista de abertura e o brilho do Sol — e o nome *"Explorar livremente"* na
-barra do filme, que é gosto dele.
+bastão da noite, no alto). **Em 23/08 as ESCOLHAS dele fecharam todas** —
+a vista de abertura (órbitas primeiro), o brilho do Sol (igualar), as
+tarjas do celular (tirar) e o nome *"Explorar livremente"* na barra do
+filme (encurtar para "Explorar") —, e o que resta do 61 é a OBRA dessas
+quatro decisões.
 
 **E OS DOIS JUÍZES PARARAM DE ACUSAR INOCENTE (item 76, FECHADO em
 22/08).** Eles reprovavam o app quando a MÁQUINA estava ocupada — o do
@@ -178,7 +209,10 @@ RENUMEROU 55→56, quem matou o 55 foi `6d2278a`), **16** e **57** em 21/08
 (`ade2c3e`, `841d57d`), **60**, **63**, **66**,
 **67**, **68**, **58**, **65**, **71** e **73** em 22/08 (`a8a3168`,
 `d562f5a`, `92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`,
-`d2fb2c7`, `c8507ba`), o **20** e o **74** em 23/08, os dois no MESMO
+`d2fb2c7`, `c8507ba`), o **76** também em 22/08 (`3235aa7` — ele fechou
+com o resto da leva e a linha aqui é de 23/08, achado pela conferência
+dos números: era o único que estava nem vivo nem aposentado), o **20** e
+o **74** em 23/08, os dois no MESMO
 diff (`dd0d99c`), e o **62** em 23/08 (`80de6da`) — a obra dele é a
 sequência `9be6d78` → `879d1de`, mas quem o tirou DESTA LISTA foi
 `80de6da`. O **73** é o único que levou OITO commits: a obra
@@ -501,7 +535,10 @@ três perguntas e respondeu numa linha só:
    medir o retângulo das três nos DOIS degraus de `?ui=`: verde em
    224.00×42.19 px (ui=1) e 313.59×58.06 px (ui=1,4). Fica de pé, para
    ele decidir na mesma onda: "Explorar livremente" continua sendo o
-   nome na barra de controles do filme e no véu do fim.
+   nome na barra de controles do filme e no véu do fim. **DECIDIDO em
+   23/08: encurta.** Na BARRA do filme o botão passa a dizer só
+   **"Explorar"**, como na abertura. Obra a fazer, pequena
+   (`components/BarraOuAlcas.tsx`); o juiz de a11y mede o rótulo.
 2. **Os controles do filme somem sozinhos. FEITO em 22/08.** Com o filme
    CORRENDO e nenhum gesto por 3 s, a barra de controles do topo e a
    barra de capítulos esmaecem; o primeiro movimento de ponteiro, toque,
@@ -543,7 +580,8 @@ com as fotos em `capturas/item61-*`:
    mostrador, como no NASA Eyes. Foto:
    `capturas/item61-relogio-ao-vivo.png`.
 
-**E DUAS ESCOLHAS FICARAM PARA ELE, as duas com foto na mão:**
+**E DUAS ESCOLHAS FICARAM PARA ELE — as duas RESPONDIDAS em 23/08, com as
+fotos na mão:**
 
 - **A VISTA COM QUE O ATLAS ABRE.** Hoje é o sistema visto de 224 UA:
   dez nomes num nó de 40 px em volta de um ponto — a tela diz que há dez
@@ -552,8 +590,15 @@ com as fotos em `capturas/item61-*`:
   as **linhas de órbita** desenhadas *(exige o item 77 primeiro)*,
   **(b)** a **Terra em primeiro plano** com o céu atrás *(existe hoje, e
   é a mais bonita das três sem código novo)*, **(c)** a de hoje. A
-  recomendação de mecânica é (b) agora e (a) depois do 77; a escolha é
-  dele.
+  recomendação de mecânica era (b) agora e (a) depois do 77.
+  **ELE ESCOLHEU (a) — ÓRBITAS PRIMEIRO, em 23/08.** Não aceitou o
+  atalho: o Atlas vai abrir mostrando o sistema COM as linhas, e por
+  isso AUTORIZOU o item **77** a entrar antes, sabendo que ele muda a
+  imagem de toda vista do Atlas. A ordem fica sendo **77 → vista
+  inicial**, e a vista é o commit **6** do plano do modo único
+  (`scratchpad/planos/plano-modo-unico-item61.md`), que naquela fila
+  ganha o 77 como commit 0. A folha dos candidatos é
+  `capturas/modo-unico-candidatos.png`.
 - **O BRILHO DO SOL — e aqui a medida mudou a pergunta** (`f88d877`). O
   plano propunha um teto ÚNICO (0,55, o do filme) alegando que a foto era
   a mesma com os dois números. **Não é.** Medido com a MESMA lente e a
@@ -566,15 +611,52 @@ com as fotos em `capturas/item61-*`:
   folha com as quatro fotos é
   `capturas/item61-um-sol-so-antes-depois.png`.
 
-**DUAS COISAS DO CELULAR FICARAM PARA ELE DECIDIR (item 62, fechado em
-23/08).** Nenhuma das duas é defeito; as duas são escolha:
+  **ELE DECIDIU EM 23/08: IGUALAR — e a medida não o demoveu.** Palavras
+  dele, inteiras:
 
-1. **As tarjas pretas no telefone — é gosto dele.** As faixas de cima e
-   de baixo custam ~9% da tela do celular e ficaram porque são "o mesmo
-   quadro do filme", que é decisão de composição. Se ele quiser, elas
-   somem no celular e o céu cresce de 80,2% para ~89% num aparelho
-   comum. É uma linha de código e uma decisão dele.
-2. **Arrastar a folha para baixo para fechá-la: possível, não pedido.**
+  > *"vamos igualar o clarao, se percebermos que é um problema para
+  > observacao do sisztema solar, vamos pensar em como consertar
+  > globalmente, nao quero essa distincao entre modo atlas e modo filme,
+  > para mim o filme é um feature do atlas… já falei sobre isso."*
+
+  O que isso fecha, ponto a ponto:
+
+  - **teto ÚNICO de 0,55** — o do filme — valendo nos DOIS modos;
+  - o **preço medido fica ACEITO por ele**: os 23,40% do quadro que
+    ganham luz no enquadramento de Vênus são o custo conhecido da
+    decisão, não uma surpresa a descobrir depois;
+  - **se atrapalhar a observação, o conserto é GLOBAL** — mexe no clarão
+    para todo mundo. Voltar a distinguir por modo está fora: é a mesma
+    lei do "um universo só", agora dita por ele pela segunda vez;
+  - **`OCUPACAO_NA_OBSERVACAO` (0,07) MORRE** quando a obra executar, e
+    com ela o último `if (fase)` em desenho (`director/solNoQuadro.ts`,
+    `world/clarao.ts` e o teste que pina o número);
+  - **o juiz é a régua de luz com `PERNA=atlas`** (`luz-do-quadro`), a
+    que nasceu em `f88d877` justamente para medir isto — a escada verde
+    nas duas fases é o que fecha a obra.
+
+  É o commit **2** do plano
+  (`scratchpad/planos/plano-modo-unico-item61.md`). **A obra é da
+  próxima conversa; aqui está só a decisão.**
+
+**DUAS COISAS DO CELULAR FICARAM PARA ELE DECIDIR (item 62, fechado em
+23/08) — e ele DECIDIU AS DUAS em 23/08.** Nenhuma das duas era defeito;
+as duas eram escolha, e as duas viraram obra a fazer:
+
+1. **As tarjas pretas no telefone — é gosto dele. DECIDIDO: TIRAR.** As
+   faixas de cima e de baixo custam ~9% da tela do celular e ficaram
+   porque são "o mesmo quadro do filme", que é decisão de composição.
+   Ele escolheu que **no celular a imagem ocupa a tela inteira**, sem a
+   moldura de cinema — o céu cresce de 80,2% para ~89% num aparelho
+   comum. **No computador NADA muda:** a moldura fica lá. Obra pequena,
+   e mexe em duas peças: o ramo do celular de
+   `cinematic/retanguloDoAtlas.ts` (que hoje desconta a tarja de 4,5vh
+   da base da câmera) e a fatia 9 do HUD (`hud/09-celular.css`), que é
+   quem as desenha. As duas andam no mesmo diff — tirar o desenho sem
+   tirar o desconto deixaria a câmera recuando por uma faixa que já não
+   existe, que é exatamente o defeito que a etapa 2 do 62 consertou.
+2. **Arrastar a folha para baixo para fechá-la: possível, não pedido.
+   DECIDIDO em 23/08: APROVADO, entra.**
    O drawer do telefone já tem TRÊS saídas (a alça, o Esc e o toque no
    céu), e a ideia que ele pediu do projeto Atlas era a ALÇA, não o
    arrasto — o doador não tem arrasto em lugar nenhum. O que falta não é
@@ -583,7 +665,9 @@ com as fotos em `capturas/item61-*`:
    cima do painel de Ajustes tanto pode querer dizer "fecha" quanto
    "rola". Quem resolve isso é uma barra de pegar no topo da folha, ou a
    regra "só fecha se a rolagem já estiver no topo" — e isso é escolha
-   de produto, não de código.
+   de produto, não de código. **A escolha de produto está feita:** a
+   folha ganha a QUARTA saída, reusando o `ArrastoDePonteiro` como o
+   plano do item **62** descreveu — nenhuma mecânica nova. Obra a fazer.
 
 **"camadas e ajustes concorrem", 22/08 — FEITO em 22/08 (`751d270`).**
 Palavras dele:
@@ -808,6 +892,23 @@ sempre. O desenho é um `world/orbitas.ts` que amostre
 divergem no primeiro salto de data), ~256 pontos por corpo, `LineLoop`
 aditivo com fade por tamanho angular (some quando a órbita não cabe no
 quadro), e as luas só com o pai enquadrado.
+
+**ELE AUTORIZOU EM 23/08 — E O 77 É A PRIMEIRA TAREFA DA PRÓXIMA
+CONVERSA.** Perguntado se as linhas podiam entrar ANTES, sabendo que elas
+mudam a imagem de toda vista do Atlas, ele respondeu **"órbitas
+primeiro"**. E o propósito imediato tem nome: é a **vista com que o Atlas
+abre** — ele escolheu o candidato **(a)** da folha
+`capturas/modo-unico-candidatos.png`, o sistema COM as órbitas
+desenhadas, e essa vista não existe sem elas (ver o item **61**).
+
+Por isso o 77 deixa de ser obra solta e vira o **commit 0** da fila do
+modo único: logo atrás dele vem o commit **6** daquele plano, a vista
+padrão (`scratchpad/planos/plano-modo-unico-item61.md`). Nada do que está
+escrito acima muda — a camada na tabela única `CAMADAS`, o
+`world/orbitas.ts` pela efeméride VIVA e o `ab-identidade` cheio com o
+**delta DECLARADO** (a imagem muda de propósito, então o veredito é a
+foto aberta com o `diff-pixel` assinado, nunca "bit-idêntico") seguem
+sendo o contrato.
 
 ---
 

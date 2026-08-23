@@ -319,8 +319,15 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   (padrão 58°, e um teste varre a escada provando que sem o argumento
   nada mudou), e o PISO DE FAÍSCAS virou número POR LENTE: 68–87 a 58°
   contra 14–18 a 35° na mesma direção, então uma contagem absoluta mediria
-  a lente. Unificar o teto segue sendo escolha do dono, com as quatro
-  fotos de `capturas/item61-um-sol-so-antes-depois.png` na mão.
+  a lente. **E O DONO ESCOLHEU UNIFICAR, em 23/08**, com as quatro fotos
+  de `capturas/item61-um-sol-so-antes-depois.png` na mão: *"vamos igualar
+  o clarao… nao quero essa distincao entre modo atlas e modo filme"*.
+  Vale o 0,55 nos DOIS modos, o preço dos 23,40% fica aceito por ele, e
+  se atrapalhar a observação o conserto será GLOBAL — nunca a volta da
+  distinção por fase. `OCUPACAO_NA_OBSERVACAO` morre quando a obra
+  executar, e com ela o último `if (fase)` em desenho; o juiz da obra é
+  esta perna `PERNA=atlas`. A decisão está no item **61** do
+  `PENDENCIAS.md` e na tabela do `NORTE.md`; a obra ainda não foi feita.
 
 - **A galáxia já tem a lei certa E o mesmo defeito** — e desde o M5 o defeito é
   da LEI, num endereço só (`leiDeTela`, `estrela.ts`). Abaixo de 0,7 px o fluxo cai
