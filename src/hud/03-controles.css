@@ -1,4 +1,4 @@
-/* HUD, fatia 3/8 — a cascata é a ordem dos prefixos numéricos:
+/* HUD, fatia 3/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 /* --- botões --- */
 .hud-btn {

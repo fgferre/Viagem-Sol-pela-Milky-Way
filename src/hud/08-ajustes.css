@@ -1,4 +1,4 @@
-/* HUD, fatia 8/8 — a cascata é a ordem dos prefixos numéricos:
+/* HUD, fatia 8/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 /* ---- Painel de ajustes ---------------------------------------------
    Fica fora do fluxo do HUD e some sozinho em ?shot=2 pela regra de

@@ -21,7 +21,9 @@ import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import {
   GavetaDeCamadas,
+  GavetaDoTempo,
   BotaoDaGaveta,
+  BotaoDoTempo,
   Selo,
   BarraDoTempo,
 } from './components/HudDoAtlas';
@@ -37,6 +39,7 @@ import { useAtalhos } from './hooks/useAtalhos';
 import { useChromeDoFilme } from './hooks/useChromeDoFilme';
 import { useEspelhoDaUrl } from './hooks/useEspelhoDaUrl';
 import { useGavetas } from './hooks/useGavetas';
+import { useCelular } from './hooks/useCelular';
 // O HUD em 8 fatias contíguas — a ORDEM destes imports é a cascata do
 // antigo hud.css e não pode se reordenar (empates de especificidade,
 // @media e .shot-mode dependem dela).
@@ -48,6 +51,7 @@ import './hud/05-loading.css';
 import './hud/06-responsivo.css';
 import './hud/07-foto.css';
 import './hud/08-ajustes.css';
+import './hud/09-celular.css';
 
 /** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
 const MERGE_MS = 2200;
@@ -108,6 +112,11 @@ const AREAS_RESERVADAS = [
   // morava aqui, virou o cabeçalho dela e deixou de existir.
   '.atlas-rodape',
   '.atlas-selo',
+  // A FILEIRA DE ALÇAS (item 62): só existe no Atlas em telefone, e ali
+  // ela é a peça mais baixa do HUD — um rótulo escrito atrás dela é um
+  // nome que ninguém lê. Fora do telefone o seletor não casa com nada e
+  // não reserva nada.
+  '.atlas-alcas',
   // A GAVETA DO SELO (item 61, 22/08) entra por conta própria: ela é
   // `absolute` e SOBE da linha fechada, então o retângulo dela não está
   // dentro do `.atlas-selo` acima. Enquanto está aberta é um cartão
@@ -586,6 +595,49 @@ export default function App() {
   useEffect(() => {
     directorRef.current?.lerCamera(fichaAberta);
   }, [fichaAberta]);
+
+  /**
+   * AS ALÇAS DO CELULAR (item 62) — a resposta do dono à terceira
+   * pergunta dos mockups: *"3) vira alça"*.
+   *
+   * Elas existem no ATLAS e em telefone, e em mais lugar nenhum: no
+   * filme e no voo livre a barra de controles já respondeu à mesma
+   * pergunta de outro jeito ("2) somem sozinhos", item 61), e uma
+   * segunda resposta seria ruído. A largura é `LARGURA_DO_CELULAR_PX`,
+   * lida por `matchMedia` com ouvinte (`useCelular`).
+   *
+   * O QUE ELAS SÃO: as MESMAS peças da barra, com o mesmo
+   * `data-abre-dialogo`, em outro lugar da tela. Por isso a decisão é de
+   * TypeScript e não de CSS — desenhar as duas cópias e esconder uma
+   * daria dois gatilhos com o mesmo nome no documento, que é o que o
+   * contrato do `dialogFocus` proíbe e o que o juiz varre.
+   */
+  const celular = useCelular();
+  const alcas = celular && phase === 'atlas';
+
+  /**
+   * A FICHA SÓ SE OFERECE QUANDO HÁ SELEÇÃO — a mesma regra na barra e na
+   * fileira, escrita uma vez: sem alvo em foco não há ficha para abrir, e
+   * botão que não faz nada é pior que botão nenhum.
+   */
+  const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela'));
+
+  /**
+   * O ⚙ AJUSTES é o único gatilho que não tem componente próprio, e ele
+   * nasce aqui para caber nos DOIS lugares sem ser escrito duas vezes: na
+   * barra (mesa, filme e voo livre) ou na fileira de alças (Atlas em
+   * telefone).
+   */
+  const botaoDeAjustes = (
+    <button
+      className="hud-btn small"
+      onClick={() => alternarGaveta('ajustes')}
+      aria-label="Ajustes de renderização"
+      {...gatilhoDoDialogo('ajustes', gaveta === 'ajustes')}
+    >
+      ⚙ Ajustes
+    </button>
+  );
   // ?shot=1 — modo foto: sem transições, capturas determinísticas
   // ?shot=2 — só a cena: sem HUD, para medir o quadro contra a referência
   const shotParam = new URLSearchParams(window.location.search).get('shot');
@@ -728,6 +780,11 @@ export default function App() {
           filhos DIRETOS, e some com este rodapé inteiro. */}
       {phase === 'atlas' && (
         <div className="atlas-rodape">
+          {/* NO TELEFONE ELA VIRA ALÇA (item 62) e é desenhada dentro da
+              gaveta `tempo`, com a MESMA peça — quem a esconde AQUI é a
+              fatia 9, pelo rodapé, e não este `if`: a caixa continua no
+              fluxo enquanto a fase a hospeda, e é a fatia que decide a
+              tela. */}
           {hud.tempo && tempo && (
             <BarraDoTempo
               tempo={tempo}
@@ -823,23 +880,24 @@ export default function App() {
               Entrar no Atlas
             </button>
           )}
-          {hud.busca && (
+          {/* AS QUATRO PORTAS ESTÃO AQUI OU NA FILEIRA DE ALÇAS, nunca nas
+              duas (item 62): elas carregam o `data-abre-dialogo`, e duas
+              cópias seriam dois gatilhos com o mesmo nome no documento. O
+              rótulo da ficha carrega o nome do alvo — é ele que devolve à
+              barra o que a antiga linha "em quadro" dizia no alto. */}
+          {hud.busca && !alcas && (
             <BotaoDaBusca
               aberta={gaveta === 'busca'}
               onAlternar={() => alternarGaveta('busca')}
             />
           )}
-          {hud.gaveta && (
+          {hud.gaveta && !alcas && (
             <BotaoDaGaveta
               aberta={gaveta === 'camadas'}
               onAlternar={() => alternarGaveta('camadas')}
             />
           )}
-          {/* A FICHA só se oferece quando há SELEÇÃO: sem alvo em foco não
-              há ficha para abrir, e botão que não faz nada é pior que botão
-              nenhum. O rótulo carrega o nome do alvo — é ele que devolve à
-              barra o que a antiga linha "em quadro" dizia no alto. */}
-          {hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela') && (
+          {ofereceFicha && !alcas && foco && (
             <BotaoDaFicha
               aberta={gaveta === 'ficha'}
               nome={foco}
@@ -909,14 +967,46 @@ export default function App() {
               </option>
             ))}
           </select>
-          <button
-            className="hud-btn small"
-            onClick={() => alternarGaveta('ajustes')}
-            aria-label="Ajustes de renderização"
-            {...gatilhoDoDialogo('ajustes', gaveta === 'ajustes')}
-          >
-            ⚙ Ajustes
-          </button>
+          {!alcas && botaoDeAjustes}
+        </div>
+      )}
+
+      {/* A FILEIRA DE ALÇAS (item 62) — filha DIRETA de .hud-root, como
+          todo overlay da casa: é a regra do `.bare-mode`
+          (`> *:not(.scene-canvas)`) que a apaga no `?shot=2`, e ela só
+          alcança filhos diretos.
+          A ORDEM é a do mockup: buscar, camadas, tempo, ajustes — e a
+          ficha como QUINTA, só com seleção. Uma linha que nunca quebra
+          (fatia 9): quebrar em duas mudaria a base declarada e moveria a
+          câmera no meio da sessão. */}
+      {alcas && (
+        <div className="atlas-alcas" role="group" aria-label="Controles do Atlas">
+          {hud.busca && (
+            <BotaoDaBusca
+              aberta={gaveta === 'busca'}
+              onAlternar={() => alternarGaveta('busca')}
+            />
+          )}
+          {hud.gaveta && (
+            <BotaoDaGaveta
+              aberta={gaveta === 'camadas'}
+              onAlternar={() => alternarGaveta('camadas')}
+            />
+          )}
+          {hud.tempo && tempo && (
+            <BotaoDoTempo
+              aberta={gaveta === 'tempo'}
+              onAlternar={() => alternarGaveta('tempo')}
+            />
+          )}
+          {botaoDeAjustes}
+          {ofereceFicha && foco && (
+            <BotaoDaFicha
+              aberta={gaveta === 'ficha'}
+              nome={foco}
+              onAlternar={() => alternarGaveta('ficha')}
+            />
+          )}
         </div>
       )}
 
@@ -933,6 +1023,21 @@ export default function App() {
         escondidas={escondidas}
         onCamada={alternarCamada}
       />
+
+      {/* A MÁQUINA DO TEMPO ATRÁS DA ALÇA (item 62) — a MESMA
+          `BarraDoTempo` do rodapé, só que numa gaveta, e só no telefone.
+          Filha DIRETA de .hud-root como as outras. */}
+      {alcas && hud.tempo && tempo && (
+        <GavetaDoTempo
+          aberta={gaveta === 'tempo'}
+          onFechar={() => fecharGaveta('tempo')}
+          tempo={tempo}
+          onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
+          onDegrau={() => directorRef.current?.ciclarDegrau()}
+          onAoVivo={() => directorRef.current?.alternarAoVivo()}
+          onEpoca={() => directorRef.current?.voltarAEpoca()}
+        />
+      )}
 
       {/* A FICHA DO OBJETO (item 74) — a quarta gaveta, e a herdeira da
           antiga linha "em quadro". Filha DIRETA de .hud-root como as

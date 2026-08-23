@@ -1,0 +1,142 @@
+/* HUD, fatia 9/9 — a cascata é a ordem dos prefixos numéricos:
+   App.tsx importa nessa ordem e os testes concatenam por sort(). */
+/* ============================================================
+   O HUD DO CELULAR (item 62) — as alças no pé e a folha que sobe.
+
+   POR QUE UMA FATIA NOVA, e não mais um bloco na 6. Por CASCATA, e o caso
+   é concreto: `.ajustes` declara o próprio `max-height` na fatia 8, com a
+   MESMA especificidade de `.hud-dialogo` — entre iguais decide a ORDEM, e
+   um teto de celular escrito na fatia 6 perderia justamente para o painel
+   mais alto da casa, que é o que ele existe para segurar. A fatia 9 é lida
+   depois das oito e ganha de todas.
+
+   A fatia 6 continua sendo o RESPONSIVO de sempre — o que a tela estreita
+   faz com as peças que já existiam. Aqui mora o que só existe no telefone:
+   a fileira de alças, a folha de baixo e o que sai da tela para dar lugar
+   a elas.
+
+   O NÚMERO 760 é `LARGURA_DO_CELULAR_PX` (`lib/uiScale.ts`), que é quem o
+   TypeScript lê para decidir se desenha a fileira. `@media` não lê
+   `var()`: quem cobra que os dois digam o mesmo número é
+   `uiScale.test.ts`, por varredura de toda condição de media do HUD.
+   ============================================================ */
+@media (max-width: 760px) {
+  /* ---- O QUE FICA DEBAIXO DA FOLHA -----------------------------------
+     `--alcas-altura` é a reserva da fileira, e ela é ZERO onde a fileira
+     não existe (o filme e o voo livre, que continuam com a barra de
+     controles de sempre — resposta do dono no item 61: no filme os
+     controles "somem sozinhos", e uma segunda resposta à mesma pergunta
+     seria ruído).
+     `:has(.atlas-alcas)` é o Atlas em telefone, e é lá que ela vale. O
+     seletor tem especificidade maior que `.hud-root` sozinho, então a
+     ordem destas duas linhas não decide nada — o que decide é qual das
+     duas casa. */
+  .hud-root {
+    --alcas-altura: 0rem;
+  }
+  .hud-root:has(.atlas-alcas) {
+    /* MEDIDA, não escolhida: a alça tem 2,75rem de alvo de toque e a
+       fileira 0,35rem de respiro em cima e embaixo — 3,45rem, e 3,6
+       declara isso com folga. Errar para baixo põe o selo por cima da
+       fileira, que é o defeito que o juiz de a11y cobra a 390 e 320. */
+    --alcas-altura: 3.6rem;
+    /* O SELO SOBE JUNTO. `--selo-base` é a linha de base que TRÊS peças
+       leem (fatia 1) — o selo, o rodapé do Atlas e o teto dos diálogos —,
+       então somar a fileira aqui basta para as três pararem acima dela.
+       `env(safe-area-inset-bottom)` entra porque a barra de gestos do iOS
+       come esse pedaço; o Chrome sem cabeça reporta 0 e o juiz não a mede
+       — limite declarado, conferido à mão. */
+    --selo-base: calc(var(--alcas-altura) + 0.6rem + env(safe-area-inset-bottom));
+  }
+
+  /* ---- A FILEIRA DE ALÇAS -------------------------------------------
+     ⌕ Buscar · ⧉ Camadas · ⏱ Tempo · ⚙ Ajustes, e a Ficha como quinta
+     quando há seleção. São as MESMAS peças da barra de controles, com o
+     mesmo `data-abre-dialogo`: quem decide em qual das duas elas nascem é
+     o `useCelular`, nunca o CSS — duas cópias no documento seriam dois
+     gatilhos com o mesmo nome, e o contrato do `dialogFocus` proíbe.
+
+     UMA LINHA QUE NUNCA QUEBRA. `flex-wrap: nowrap` com `overflow-x:
+     auto`: quebrar em duas linhas mudaria a altura da base declarada e
+     MOVERIA A CÂMERA no meio da sessão — a mesma lição da dica do rodapé
+     (`.free-hint.apagada`, fatia 3). Com cinco alças e o texto em 140%
+     num aparelho de 320 px a fileira não cabe, e o certo é ela ROLAR. */
+  .atlas-alcas {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: env(safe-area-inset-bottom);
+    z-index: 45;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    min-height: var(--alcas-altura);
+    background: linear-gradient(to top, rgba(3, 5, 10, 0.88), rgba(3, 5, 10, 0));
+    /* a barra de rolagem não é desenho: a fileira rola com o dedo */
+    scrollbar-width: none;
+  }
+  .atlas-alcas::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* O ALVO DE TOQUE MORA NA ALÇA, nunca no `.hud-btn` comum: `.hud-btn
+     .small` mede ~27 px, e crescer o botão da casa moveria pixel na mesa,
+     na barra do filme e no painel de Ajustes. 2,75rem é 44 px no tamanho
+     de fábrica, que é o alvo mínimo que as duas plataformas pedem — e
+     acompanha o `?ui=`, como todo o resto do HUD.
+     `flex: 0 0 auto` porque a fileira ROLA: alça que encolhe para caber
+     é alça que ninguém acerta. */
+  .atlas-alcas > .hud-btn {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.8rem;
+  }
+
+  /* ---- O QUE SAI DA TELA PARA DAR LUGAR ------------------------------
+     A BARRA DE CONTROLES DO ATLAS FICA SÓ COM O "PARTIR", ancorado na
+     TARJA DE CIMA. `Partir` fica porque é a única saída por ponteiro do
+     modo — `subirDegrau()` devolve `false` no degrau `sistema` e o Esc
+     não sai do Atlas —, e sobe para a tarja porque com ele lá o topo do
+     retângulo útil volta a ser a tarja, e não uma barra pendurada em
+     6,5vh. As outras quatro peças da barra viraram alças; o `<select>`
+     de qualidade some por ser DUPLICATA — o painel de Ajustes tem a
+     mesma seção, a uma alça de distância.
+     Vale só onde a fileira existe: no filme e no voo livre a barra fica
+     exatamente onde a fatia 6 a deixou. */
+  .hud-root:has(.atlas-alcas) .controls-bar {
+    top: 0.4vh;
+  }
+  .hud-root:has(.atlas-alcas) .controls-bar select.hud-btn {
+    display: none;
+  }
+
+  /* A MÁQUINA DO TEMPO PERMANENTE SAI DO RODAPÉ — ela virou a alça ⏱
+     Tempo (resposta do dono nos mockups: *"3) vira alça"*). O seletor
+     nomeia o RODAPÉ de propósito: a mesma `BarraDoTempo`, a MESMA peça,
+     continua desenhada dentro da gaveta `tempo`, e um `.atlas-tempo`
+     solto apagaria as duas. Na mesa nada muda — `TEMPO_FRACAO` segue
+     governando a base declarada a partir de 761 px. */
+  .hud-root:has(.atlas-alcas) .atlas-rodape .atlas-tempo {
+    display: none;
+  }
+
+  /* A DICA DOS GESTOS SAI DO FLUXO, e é a mesma lei de sempre com outro
+     remédio: ela APAGA depois do primeiro arrasto (`.free-hint.apagada`),
+     e no fluxo isso encolheria a coluna do rodapé, cresceria o retângulo
+     útil e daria um pulo de câmera no meio da sessão. Na mesa ela some
+     por OPACIDADE com a caixa no lugar; aqui ela nunca entra na caixa —
+     `absolute` sobre o rodapé, acima do selo e portanto acima da fileira.
+     Fora do fluxo desde o começo, apagar não move nada. */
+  .atlas-rodape .free-hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    margin-bottom: 0.4rem;
+    text-align: right;
+  }
+}

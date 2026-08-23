@@ -1,4 +1,4 @@
-/* HUD, fatia 2/8 — a cascata é a ordem dos prefixos numéricos:
+/* HUD, fatia 2/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 /* --- letterbox ---
    A TARJA NÃO RECEBE PONTEIRO, e não é opção de fase: ela é pintura

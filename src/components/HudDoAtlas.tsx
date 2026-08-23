@@ -423,6 +423,86 @@ export function BarraDoTempo({
 }
 
 /**
+ * A MÁQUINA DO TEMPO DENTRO DE UMA GAVETA (item 62, 23/08) — a resposta
+ * do dono aos mockups, em duas palavras: *"3) vira alça"*.
+ *
+ * É a MESMA `BarraDoTempo` de sempre, e isso é o ponto: no telefone ela
+ * sai do rodapé permanente (a fatia 9 esconde a de LÁ, nomeando o
+ * rodapé) e passa a ser desenhada aqui dentro, atrás da alça ⏱ Tempo.
+ * Nenhum controle novo, nenhum segundo estado, nenhuma segunda régua —
+ * e na mesa nada disto existe: a barra continua no rodapé e
+ * `TEMPO_FRACAO` continua governando a base declarada.
+ *
+ * Por que uma gaveta e não a barra flutuando: os seis controles do tempo
+ * ocupam duas linhas de altura permanente num aparelho estreito, e
+ * altura de rodapé é DISTÂNCIA DE CÂMERA (`retanguloUtilDoAtlas`). Atrás
+ * de uma alça eles custam uma linha de 44 px quando ninguém os está
+ * usando.
+ */
+export function GavetaDoTempo({
+  aberta,
+  onFechar,
+  tempo,
+  onSentido,
+  onDegrau,
+  onAoVivo,
+  onEpoca,
+}: {
+  aberta: boolean;
+  onFechar: () => void;
+  tempo: EstadoDoTempo;
+  onSentido: (sentido: SentidoDoTempo) => void;
+  onDegrau: () => void;
+  onAoVivo: () => void;
+  onEpoca: () => void;
+}) {
+  const dialogo = useDialogFocus('tempo', aberta, onFechar);
+  if (!aberta) return null;
+  return (
+    <div
+      className="hud-cartao hud-dialogo atlas-gaveta"
+      aria-label="Máquina do tempo"
+      {...dialogo}
+    >
+      <div className="atlas-gaveta-topo">
+        <span>Tempo</span>
+        <button type="button" onClick={onFechar} aria-label="Fechar a máquina do tempo">
+          ✕
+        </button>
+      </div>
+      <BarraDoTempo
+        tempo={tempo}
+        onSentido={onSentido}
+        onDegrau={onDegrau}
+        onAoVivo={onAoVivo}
+        onEpoca={onEpoca}
+      />
+    </div>
+  );
+}
+
+/** A alça ⏱ Tempo — só existe no telefone, e só na fase que a hospeda. */
+export function BotaoDoTempo({
+  aberta,
+  onAlternar,
+}: {
+  aberta: boolean;
+  onAlternar: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="hud-btn small"
+      onClick={onAlternar}
+      aria-label="Máquina do tempo"
+      {...gatilhoDoDialogo('tempo', aberta)}
+    >
+      ⏱ Tempo
+    </button>
+  );
+}
+
+/**
  * O botão que abre a gaveta, na barra de controles — e ele está na barra
  * dos DOIS modos desde o item 61 (`HUD_POR_FASE`): mesma peça, mesma
  * gaveta, mesmo estado. Mora neste arquivo por herança do modo em que

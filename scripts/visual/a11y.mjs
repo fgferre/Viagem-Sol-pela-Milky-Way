@@ -44,6 +44,76 @@ const PIN = 'q=cinema&shot=1';
  * declarar o número junto dela dava ReferenceError.
  */
 const TETO_DA_LINHA_PX = 24;
+/**
+ * OS APARELHOS E A LEITURA DO TELEFONE (item 62). Moram AQUI EM CIMA pela
+ * mesma razão que `TETO_DA_LINHA_PX`: `const` não sobe, e `julgarCelular`
+ * é chamado do corpo do módulo, que roda antes da metade de baixo do
+ * arquivo. A derivação de cada promessa está na função, lá embaixo.
+ */
+/** os aparelhos que este juiz abre — o comum e o pequeno */
+const APARELHOS = [[390, 844], [320, 568]];
+
+/** a fileira do pé, na ordem do mockup; a ficha é a quinta, com seleção */
+const ALCAS_SEM_SELECAO = ['busca', 'camadas', 'tempo', 'ajustes'];
+const ALCAS_COM_SELECAO = [...ALCAS_SEM_SELECAO, 'ficha'];
+
+/**
+ * O QUE A TELA DO TELEFONE DIZ DE SI — uma leitura só, porque as
+ * promessas são geométricas e têm de ser medidas no MESMO instante.
+ */
+const MEDIR_CELULAR = `(() => {
+  const W = innerWidth, H = innerHeight;
+  const cx = (sel) => {
+    const e = document.querySelector(sel);
+    if (!e) return null;
+    const b = e.getBoundingClientRect();
+    return { x: b.left, y: b.top, w: b.width, h: b.height };
+  };
+  const bate = (p, q) => Boolean(p && q && p.x < q.x + q.w && q.x < p.x + p.w
+    && p.y < q.y + q.h && q.y < p.y + p.h);
+  const fileira = document.querySelector('.atlas-alcas');
+  const botoes = fileira ? [...fileira.querySelectorAll(':scope > .hud-btn')] : [];
+  const alcas = botoes.map((b) => {
+    const r = b.getBoundingClientRect();
+    return {
+      nome: b.getAttribute('data-abre-dialogo'),
+      rotulo: b.textContent.trim(),
+      topo: Math.round(r.top),
+      alto: r.height,
+    };
+  });
+  const linhas = new Set(alcas.map((a) => a.topo));
+  const selo = cx('.atlas-selo');
+  const caixaDaFileira = cx('.atlas-alcas');
+  const seletor = document.querySelector('.controls-bar select');
+  const partir = [...document.querySelectorAll('.controls-bar .hud-btn')]
+    .find((b) => b.textContent.trim() === 'Partir');
+  const tarja = cx('.letterbox.top');
+  return {
+    W, H,
+    alcas,
+    linhas: linhas.size,
+    fileira: caixaDaFileira,
+    dentro: Boolean(caixaDaFileira && caixaDaFileira.x >= -0.5
+      && caixaDaFileira.x + caixaDaFileira.w <= W + 0.5
+      && caixaDaFileira.y + caixaDaFileira.h <= H + 0.5),
+    selo,
+    cobreSelo: bate(caixaDaFileira, selo),
+    // a máquina do tempo PERMANENTE do rodapé; a de dentro da gaveta é outra
+    tempoNoRodape: cx('.atlas-rodape .atlas-tempo'),
+    seletorVisivel: Boolean(seletor && seletor.getClientRects().length > 0),
+    partirNaTarja: Boolean(partir && tarja
+      && partir.getBoundingClientRect().top < tarja.h + 1),
+    dicaFora: (() => {
+      const d = document.querySelector('.atlas-rodape .free-hint');
+      return d ? getComputedStyle(d).position : null;
+    })(),
+    dialogos: [...document.querySelectorAll('[data-dialogo]')]
+      .map((d) => d.getAttribute('data-dialogo')),
+  };
+})()`;
+
+
 const falhas = [];
 const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
@@ -1099,6 +1169,9 @@ try {
   // ---- A FICHA DO OBJETO: dobra, cabe e não cobre o selo (item 74) --
   await julgarAreaDaFicha(sessao);
 
+  // ---- O HUD DO CELULAR: as alças no pé e a folha que sobe (item 62) --
+  await julgarCelular(sessao);
+
   // ---- A ESCADA DE NAVEGAÇÃO (F2b/D7) -----------------------------
   // Os dois botões da escada com nome acessível pt-BR, o gesto de descer,
   // o Esc que sobe UM degrau — e a interação declarada com os diálogos:
@@ -1377,6 +1450,148 @@ async function julgarAreaDoSelo(s) {
   // `setDeviceMetricsOverride` para `JANELA` na linha ANTERIOR a este
   // `clear`, ou seja, quatro linhas que o `clear` desfazia no ato.
   await s.send('Emulation.clearDeviceMetricsOverride');
+}
+
+// ============================================================
+// O HUD DO CELULAR (item 62, 23/08) — a perna que NENHUM juiz tinha.
+//
+// Até aqui a casa media telefone em UM lugar só: `julgarAreaDaFicha`, que
+// abre 390 e 320 px para conferir a ÁREA de um diálogo. Nada abria o modo
+// inteiro num aparelho, e o pedido do dono é justamente o modo inteiro:
+// *"podemos criar alternativas de controle menores e escondidos que
+// expandam para celular"*.
+//
+// A EMULAÇÃO É DE APARELHO, e não de janela estreita: `mobile: true` no
+// override de métricas (que é o que faz o `width=device-width` do
+// `index.html` valer) e `setTouchEmulationEnabled` com cinco dedos. Uma
+// janela de 390 px num Chrome de mesa continua sendo mesa para tudo que
+// pergunte por toque, e o item 62 mexe justamente nos alvos de toque.
+//
+// A CONTA DE NAVEGAÇÕES É DESENHO, não pressa. Trocar o tamanho da tela
+// NÃO exige recarregar — quem responde é o `matchMedia` do `useCelular`,
+// e medir os dois aparelhos na mesma página é, de quebra, a prova de que
+// o ouvinte existe (sem ele o HUD ficaria congelado no tamanho do boot).
+// Só o `?ui=` exige navegação, porque a escala é lida da URL no boot.
+// ============================================================
+
+/** liga (ou desliga) o aparelho: métricas de celular e dedos de verdade */
+async function vestirAparelho(s, w, h) {
+  await s.send('Emulation.setDeviceMetricsOverride', {
+    width: w, height: h, deviceScaleFactor: 1, mobile: true,
+  });
+  await s.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+}
+
+async function despirAparelho(s) {
+  await s.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  await s.send('Emulation.clearDeviceMetricsOverride');
+}
+
+/**
+ * PARTE 1 — A FILEIRA EXISTE, E É UMA LINHA SÓ.
+ *
+ * As promessas, e cada uma responde a uma decisão escrita do item 62:
+ *  1. QUATRO ALÇAS sem seleção e CINCO com — a ficha só se oferece quando
+ *     há alvo, porque botão que não faz nada é pior que botão nenhum;
+ *  2. TODAS SE DECLARAM (`data-abre-dialogo`), na ordem do mockup: sem
+ *     isso o contrato do `dialogFocus` não as alcança e nenhuma das
+ *     quatro promessas de diálogo pode ser cobrada;
+ *  3. UMA LINHA SÓ. Duas linhas mudariam a altura da base declarada e
+ *     MOVERIAM A CÂMERA no meio da sessão (a lição da `.free-hint`);
+ *  4. O ALVO DE TOQUE de cada alça — 44 px no tamanho de fábrica, o
+ *     mínimo que as duas plataformas pedem, e ele acompanha o `?ui=`;
+ *  5. A FILEIRA NÃO COBRE O SELO, o mesmo `bate()` de `julgarAreaDaFicha`;
+ *  6. A MÁQUINA DO TEMPO permanente saiu do rodapé (virou a alça ⏱) e o
+ *     `<select>` de qualidade saiu da barra (é duplicata do painel);
+ *  7. O "PARTIR" está na TARJA de cima — com ele lá, o topo do retângulo
+ *     útil volta a ser a tarja;
+ *  8. A DICA está FORA DO FLUXO, que é o que a deixa apagar sem dar pulo.
+ */
+async function julgarCelular(s) {
+  const ALVO_DE_TOQUE_PX = 44;
+  for (const fator of [0.85, 1, 1.4]) {
+    for (const [query, esperadas] of [
+      ['atlas=1', ALCAS_SEM_SELECAO],
+      ['foco=marte', ALCAS_COM_SELECAO],
+    ]) {
+      await vestirAparelho(s, ...APARELHOS[0]);
+      await s.ir(`${query}&ui=${fator}&${PIN}`);
+      for (const [w, h] of APARELHOS) {
+        await vestirAparelho(s, w, h);
+        await dorme(200);
+        const m = await s.js(MEDIR_CELULAR);
+        const onde = `${w}×${h}, ui = ${fator}, ${esperadas.length === 5 ? 'com' : 'sem'} seleção`;
+        conferir(
+          JSON.stringify(m.alcas.map((a) => a.nome)) === JSON.stringify(esperadas),
+          `alças (${onde}): ${m.alcas.length} na fileira, na ordem do mockup`
+            + ` — ${m.alcas.map((a) => a.rotulo).join(' · ') || 'NENHUMA'}`
+        );
+        conferir(
+          m.alcas.length > 0 && m.alcas.every((a) => a.nome),
+          `alças (${onde}): todas se declaram com data-abre-dialogo`
+        );
+        conferir(
+          m.linhas === 1 && m.dentro,
+          `alças (${onde}): UMA linha só e dentro da tela — ${m.linhas} linha(s),`
+            + ` fileira [${m.fileira ? [m.fileira.x | 0, m.fileira.y | 0, m.fileira.w | 0, m.fileira.h | 0].join(',') : 'ausente'}]`
+        );
+        const menor = Math.min(...m.alcas.map((a) => a.alto));
+        conferir(
+          menor >= ALVO_DE_TOQUE_PX * fator - 0.5,
+          `alças (${onde}): a menor mede ${menor.toFixed(1)} px de alto ≥ alvo de toque`
+            + ` ${(ALVO_DE_TOQUE_PX * fator).toFixed(1)} px`
+        );
+        conferir(
+          m.selo !== null && !m.cobreSelo,
+          `alças (${onde}): a fileira NÃO cobre o selo — selo`
+            + ` [${m.selo ? [m.selo.x | 0, m.selo.y | 0, m.selo.w | 0, m.selo.h | 0].join(',') : 'ausente'}]`
+        );
+        conferir(
+          m.tempoNoRodape === null || m.tempoNoRodape.h === 0,
+          `alças (${onde}): a máquina do tempo saiu do rodapé — ela é a alça ⏱`
+        );
+        conferir(
+          !m.seletorVisivel,
+          `alças (${onde}): o <select> de qualidade saiu da barra — é duplicata do painel`
+        );
+        conferir(
+          m.partirNaTarja,
+          `alças (${onde}): o "Partir" está ancorado na TARJA de cima — o topo do`
+            + ` retângulo útil volta a ser a tarja`
+        );
+        conferir(
+          m.dicaFora === 'absolute',
+          `alças (${onde}): a dica está FORA DO FLUXO (position: ${m.dicaFora}) —`
+            + ` apagá-la não move a câmera`
+        );
+      }
+    }
+  }
+
+  // ---- A QUEBRA: o CSS e o TypeScript viram celular no MESMO pixel ----
+  // `LARGURA_DO_CELULAR_PX` é 760, e o `@media` repete o literal porque
+  // media query não lê `var()`. O lado do TypeScript é a PRESENÇA da
+  // fileira (quem a desenha é o `useCelular`); o lado do CSS é o teto de
+  // tela dos diálogos, que só a fatia 6 aperta. Os dois têm de virar no
+  // mesmo pixel: uma faixa em que um diz celular e o outro diz mesa é
+  // a fileira no pé com a barra de controles inteira em cima.
+  await s.ir(`atlas=1&${PIN}`);
+  for (const [largura, esperado] of [[760, true], [761, false]]) {
+    await vestirAparelho(s, largura, 844);
+    await dorme(200);
+    const q = await s.js(`(() => ({
+      fileira: Boolean(document.querySelector('.atlas-alcas')),
+      teto: getComputedStyle(document.querySelector('.hud-root'))
+        .getPropertyValue('--teto-dialogo-tela').trim(),
+    }))()`);
+    conferir(
+      q.fileira === esperado && (q.teto === '52vh') === esperado,
+      `a quebra de 760 px (janela de ${largura}): TypeScript diz`
+        + ` ${q.fileira ? 'celular' : 'mesa'} e o CSS diz`
+        + ` ${q.teto === '52vh' ? 'celular' : 'mesa'} (--teto-dialogo-tela: ${q.teto})`
+    );
+  }
+  await despirAparelho(s);
 }
 
 /**

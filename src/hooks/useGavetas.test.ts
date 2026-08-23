@@ -25,7 +25,7 @@ const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 const HOOK = readFileSync(new URL('./useGavetas.ts', import.meta.url), 'utf8');
 
 /** as quatro do enum, escritas uma vez para os laços abaixo */
-const TODAS: Gaveta[] = ['camadas', 'busca', 'ajustes', 'ficha'];
+const TODAS: Gaveta[] = ['camadas', 'busca', 'ajustes', 'ficha', 'tempo'];
 
 describe('1. abrir é ESCOLHER — uma de cada vez, por construção', () => {
   it('a alça abre a dela e fecha a que estiver aberta', () => {
@@ -59,9 +59,11 @@ describe('2. fechar é "FECHE-ME", nunca "feche o que estiver aberto"', () => {
 });
 
 describe('3. a travessia de modo fecha as DUAS que tinham o defeito', () => {
-  it('a busca e as camadas fecham — elas renasciam sozinhas ao voltar', () => {
+  it('a busca, as camadas e o tempo fecham — renasciam sozinhos ao voltar', () => {
     expect(aoTravessar('busca')).toBeNull();
     expect(aoTravessar('camadas')).toBeNull();
+    // a máquina do tempo é do telefone, e só a fase que a hospeda a tem
+    expect(aoTravessar('tempo')).toBeNull();
   });
 
   it('o ⚙ Ajustes e a FICHA resistem — nenhum dos dois é painel de fase', () => {

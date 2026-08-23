@@ -16,7 +16,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EstadoDaEscada, Phase } from '../three/director';
 
-export type Gaveta = 'camadas' | 'busca' | 'ajustes' | 'ficha';
+/**
+ * A QUINTA É DO TELEFONE (item 62, 23/08): `tempo` é a MESMA
+ * `BarraDoTempo` do rodapé, desenhada dentro de uma gaveta quando a
+ * janela é de celular. O enum cresce em vez de ganhar um estado paralelo
+ * — "uma aberta por vez" tem de valer entre as cinco, não entre quatro e
+ * mais uma. Quem a gateia por largura é o App (`useCelular`); aqui ela é
+ * uma gaveta como as outras.
+ */
+export type Gaveta = 'camadas' | 'busca' | 'ajustes' | 'ficha' | 'tempo';
 
 /**
  * ABRIR É ESCOLHER: o gatilho de uma gaveta abre a dela e fecha a que
@@ -44,6 +52,10 @@ export const aoFechar = (atual: Gaveta | null, qual: Gaveta): Gaveta | null =>
  * `useDialogFocus` punha o foco no primeiro focável, que na paleta é a
  * caixa de texto: o visitante entrava no voo livre e o WASD virava texto.
  *
+ * A MÁQUINA DO TEMPO ENTRA pela mesma porta que as duas: ela existe só
+ * onde a fase a hospeda (`hud.tempo`), e um estado de "aberta" que
+ * sobrevivesse à travessia a faria renascer sozinha na volta.
+ *
  * O ⚙ AJUSTES NÃO ENTRA, e é decisão escrita: ele é o painel da casa
  * (qualidade, tom, exposição, tamanho do texto), e o `?ajustes=1` o abre
  * DE PROPÓSITO sobre a tela de título, onde nenhuma fase o hospeda —
@@ -52,7 +64,7 @@ export const aoFechar = (atual: Gaveta | null, qual: Gaveta): Gaveta | null =>
  * ficha dele é a resposta certa, e se não há ela nem monta.
  */
 export const aoTravessar = (atual: Gaveta | null): Gaveta | null =>
-  atual === 'busca' || atual === 'camadas' ? null : atual;
+  atual === 'busca' || atual === 'camadas' || atual === 'tempo' ? null : atual;
 
 /**
  * HÁ SELEÇÃO ⇒ HÁ FICHA (item 74). Escolher um corpo — na paleta, no

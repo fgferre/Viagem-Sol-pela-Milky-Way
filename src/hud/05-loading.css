@@ -1,4 +1,4 @@
-/* HUD, fatia 5/8 — a cascata é a ordem dos prefixos numéricos:
+/* HUD, fatia 5/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 /* --- loading: Cartografia Viva ---------------------------------------
    Camada persistente montada desde o primeiro frame. O desenho pesado
