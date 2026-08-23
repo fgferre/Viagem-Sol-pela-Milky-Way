@@ -35,10 +35,14 @@
  *   node scripts/derive-iau-orientation.js moon triton    # a subset
  *   node scripts/derive-iau-orientation.js --radii        # BODY_AXES table
  *                                                         # for subSolarPoint.test.ts
+ *   node scripts/derive-iau-orientation.js --gm           # GM_CORPOS table
+ *                                                         # for src/lib/atlas/massas.ts
  *
  * Environment:
  *   PCK_FILE=/path/to/pck00011.tpc   use a local copy instead of fetching
  *   PCK_URL=...                      override the NAIF download URL
+ *   GM_FILE=/path/to/gm_de440.tpc    ditto, for --gm (a SECOND kernel)
+ *   GM_URL=...                       override the NAIF download URL for it
  *
  * ## The kernel's model, and how it maps onto `IauOrientation`
  *
@@ -69,6 +73,17 @@ import fs from "node:fs";
 const PCK_URL =
   process.env.PCK_URL ??
   "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc";
+
+/**
+ * Casa (obra 74b): o SEGUNDO kernel, o das massas. `pck00011.tpc` não tem
+ * `BODY<n>_GM` nenhum — orientação e massa são arquivos diferentes na NAIF —,
+ * e `MU_PARENT` (`src/lib/atlas/elementosOrbitais.ts`) já cita este aqui para
+ * os sete pais que ele usa. `--gm` emite a tabela inteira pela MESMA
+ * disciplina do `--radii`: transcrição de arquivo legível por máquina.
+ */
+const GM_URL =
+  process.env.GM_URL ??
+  "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/gm_de440.tpc";
 
 /**
  * NAIF id → catalog id, for every body the app draws that has a kernel entry.
@@ -108,6 +123,66 @@ const BODIES = {
   801: "triton",
   901: "charon",
   999: "pluto",
+};
+
+/**
+ * Casa (obra 74b): NAIF id → id do catálogo para `BODY<n>_GM` de
+ * `gm_de440.tpc`. É uma tabela SEPARADA de `BODIES` por três razões de dado,
+ * não de arrumação:
+ *
+ *  1. Os sete corpos daqui que `BODIES` não tem — Ceres, Palas, Vesta, Hígia,
+ *     Quaoar, Haumea e Éris — só existem no kernel das massas (os quatro
+ *     primeiros com id de asteroide `2000nnn`, os três últimos com id de
+ *     sistema `20nnnnnn`), e são alvo no Atlas.
+ *  2. Os TNOs com satélite trazem TRÊS entradas: o sistema (`20nnnnnn`), o
+ *     primário (`920nnnnnn`) e a lua (`120nnnnnn`). Quem responde por
+ *     gravidade de superfície é o PRIMÁRIO — usar a massa do sistema daria a
+ *     Haumea a gravidade dela mais a das duas luas. Pelo mesmo motivo Plutão
+ *     é `BODY999` (o corpo) e não `BODY9` (o sistema, que carrega Caronte).
+ *  3. MAKEMAKE NÃO ESTÁ NO KERNEL, e fica de fora: o `BODY000_GMLIST` não o
+ *     lista, porque a massa dele não é medida — não há satélite que a fixe. O
+ *     doador imprimia "~3,1 × 10²¹ kg" com til; aqui a ausência fica ausente
+ *     (a ficha simplesmente não escreve a linha da massa dele).
+ */
+const GM_BODIES = {
+  10: "sun",
+  199: "mercury",
+  299: "venus",
+  399: "earth",
+  499: "mars",
+  599: "jupiter",
+  699: "saturn",
+  799: "uranus",
+  899: "neptune",
+  999: "pluto",
+  301: "moon",
+  401: "phobos",
+  402: "deimos",
+  501: "io",
+  502: "europa",
+  503: "ganymede",
+  504: "callisto",
+  601: "mimas",
+  602: "enceladus",
+  603: "tethys",
+  604: "dione",
+  605: "rhea",
+  606: "titan",
+  608: "iapetus",
+  701: "ariel",
+  702: "umbriel",
+  703: "titania",
+  704: "oberon",
+  705: "miranda",
+  801: "triton",
+  901: "charon",
+  2000001: "ceres",
+  2000002: "pallas",
+  2000004: "vesta",
+  2000010: "hygiea",
+  920050000: "quaoar",
+  920136108: "haumea",
+  920136199: "eris",
 };
 
 /** Fortran-style exponents (`-1.4D-12`) are legal in a text kernel. */
@@ -261,21 +336,21 @@ function emitBlock(catalogId, naifId, o) {
 const peak = (terms, key) =>
   terms.reduce((max, t) => Math.max(max, Math.abs(t[key] ?? 0)), 0);
 
-async function loadKernel() {
-  if (process.env.PCK_FILE) {
-    return fs.readFileSync(process.env.PCK_FILE, "utf8");
+async function loadKernel(url = PCK_URL, localFile = process.env.PCK_FILE) {
+  if (localFile) {
+    return fs.readFileSync(localFile, "utf8");
   }
-  const response = await fetch(PCK_URL);
+  const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`${PCK_URL} → HTTP ${response.status}`);
+    throw new Error(`${url} → HTTP ${response.status}`);
   }
   // Casa: um redirect que troque de host entregaria um "kernel" de outra
   // origem sob a URL da NAIF (checklist pré-fusão, item 13).
-  const hostPedido = new URL(PCK_URL).host;
+  const hostPedido = new URL(url).host;
   const hostFinal = new URL(response.url).host;
   if (hostFinal !== hostPedido) {
     throw new Error(
-      `${PCK_URL} redirecionou para ${response.url} — host diferente do pedido, recusado`
+      `${url} redirecionou para ${response.url} — host diferente do pedido, recusado`
     );
   }
   const text = await response.text();
@@ -283,7 +358,7 @@ async function loadKernel() {
   // catalog, which reads as "these bodies have no solution" rather than as a
   // failed download.
   if (!text.startsWith("KPL/PCK")) {
-    throw new Error(`${PCK_URL} did not return a text PCK kernel`);
+    throw new Error(`${url} did not return a text PCK kernel`);
   }
   return text;
 }
@@ -308,10 +383,46 @@ function emitRadii(assignments, wanted) {
   }
 }
 
+/**
+ * Casa (obra 74b): `BODY<n>_GM` em km³/s², o bloco que cola em
+ * `src/lib/atlas/massas.ts`.
+ *
+ * GM É O DADO, e massa/gravidade/escape são derivados dele — `g = GM/R²`,
+ * `v_esc = √(2GM/R)`. Sem `G` no caminho o número vale o que o kernel vale;
+ * com `G` (incerto na 5ª casa) a massa em quilos entraria como intermediária
+ * de precisão pior do que a das duas contas que a usariam.
+ *
+ * Falta no kernel é FALTA e sai na cara — a linha vira comentário, e não uma
+ * entrada com número de outra origem.
+ */
+function emitGm(assignments, wanted) {
+  console.log("// `BODY<n>_GM` (km³/s²), gm_de440.tpc:");
+  for (const [naifId, catalogId] of Object.entries(GM_BODIES)) {
+    if (wanted.size && !wanted.has(catalogId)) continue;
+    const gm = coefficients(assignments, `BODY${naifId}_GM`);
+    if (gm.length < 1) {
+      console.log(`  // ${catalogId}: SEM BODY${naifId}_GM no kernel`);
+      continue;
+    }
+    console.log(`  ${catalogId}: ${gm[0]}, // BODY${naifId}_GM`);
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const radiiOnly = args.includes("--radii");
+  const gmOnly = args.includes("--gm");
   const wanted = new Set(args.filter((a) => !a.startsWith("--")));
+
+  if (gmOnly) {
+    const kernelGm = await loadKernel(GM_URL, process.env.GM_FILE);
+    const gmAssignments = parseKernel(kernelGm);
+    console.log(`// Source: ${process.env.GM_FILE ?? GM_URL}`);
+    console.log(`// ${gmAssignments.size} kernel assignments parsed\n`);
+    emitGm(gmAssignments, wanted);
+    return;
+  }
+
   const kernel = await loadKernel();
   const assignments = parseKernel(kernel);
 
