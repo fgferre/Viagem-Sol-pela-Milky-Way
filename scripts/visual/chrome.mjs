@@ -59,6 +59,35 @@ export const GPU_FLAGS = [
 export const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * ESPERAR O ESTADO, NUNCA O RELÓGIO DE PAREDE — a peça que o item 76
+ * fechou, e a régua de todo juiz que interage com o app.
+ *
+ * Espera uma condição VALER no navegador e devolve em quantos ms ela
+ * valeu (`null` no estouro). O número entra no veredito de propósito:
+ * juiz que espera sem dizer quanto esperou esconde a piora do dia em que
+ * ela começar.
+ *
+ * POR QUE ELA SUBIU PARA CÁ (22/08): nasceu privada no `a11y.mjs`, e
+ * enquanto os outros juízes usavam `dorme(N)` para o MESMO fim eles
+ * mediam a carga da máquina e chamavam isso de defeito do app — oito
+ * vereditos do `filme-smoke` e dois do `atlas-smoke` reprovavam num HEAD
+ * limpo só porque a máquina estava ocupada. Um juiz que acusa inocente é
+ * pior que nenhum: ele treina quem o roda a ignorá-lo.
+ *
+ * QUANDO `dorme` AINDA É O CERTO: quando o veredito é "NADA acontece" —
+ * ali esperar mais só fortalece a prova (o `ESPERA_DO_MANUAL_MS` do
+ * `atlas-smoke` é o caso). Para "ACONTECEU?", é esta peça.
+ */
+export async function esperarPor(s, expressao, teto = 3000) {
+  const t0 = Date.now();
+  for (;;) {
+    if (await s.js(expressao)) return Date.now() - t0;
+    if (Date.now() - t0 > teto) return null;
+    await dorme(50);
+  }
+}
+
+/**
  * O ALVO PADRÃO dos harnesses: o dev server do vite. Todo script de
  * `scripts/visual/` resolve o app do mesmo jeito (`APP_URL || APP_PADRAO`), e
  * a regra do fallback (`julgarProntidao`) precisa da constante para saber se
@@ -256,6 +285,19 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
       gritos.push(`exceção: ${m.params.exceptionDetails?.text ?? '?'}`);
     }
   });
+  // O SOCKET QUE MORRE NÃO PODE DEIXAR UMA PROMESSA VIVA PARA SEMPRE.
+  // Cada `send` fica pendurado num `id` que só o Chrome responde: se o
+  // Chrome cai (ou é morto por fora) sem responder, o `await` nunca
+  // resolve, o processo não termina e quem o espera fica parado — é o
+  // desenho dos itens 64 e 78 (`ab-identidade` vivo 12 e 25 minutos
+  // depois de ter terminado o trabalho). Fechar o socket agora
+  // REPROVA os pendentes, que vira erro legível em vez de sono eterno.
+  const derrubarPendentes = (porque) => {
+    for (const responder of esperando.values()) responder({ error: { message: porque } });
+    esperando.clear();
+  };
+  ws.addEventListener('close', () => derrubarPendentes('o WebSocket do CDP fechou'));
+  ws.addEventListener('error', () => derrubarPendentes('o WebSocket do CDP falhou'));
   const send = (method, params = {}) => new Promise((res, rej) => {
     const n = ++seq;
     esperando.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));
@@ -456,6 +498,14 @@ export async function capturarCDP({
         if (coletar && coletar.test(txt)) linhas.push(txt);
       }
     });
+    // a MESMA rede de segurança do `abrirSessao` (itens 64 e 78): Chrome
+    // que morre sem responder deixaria o `await` pendurado para sempre
+    const derrubarPendentes = (porque) => {
+      for (const responder of esperando.values()) responder({ error: { message: porque } });
+      esperando.clear();
+    };
+    ws.addEventListener('close', () => derrubarPendentes('o WebSocket do CDP fechou'));
+    ws.addEventListener('error', () => derrubarPendentes('o WebSocket do CDP falhou'));
     const send = (method, params = {}) => new Promise((res, rej) => {
       const n = ++seq;
       esperando.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));

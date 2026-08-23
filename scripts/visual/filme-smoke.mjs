@@ -5,13 +5,13 @@
 //
 // `?shot=1` mantém o HUD e congela o instante. O gate salta para as duas
 // margens das janelas alteradas, lê o DOM que o espectador vê e depois solta
-// o relógio em sete trechos. A folha de contato é temporária por padrão: o
+// o relógio em NOVE trechos. A folha de contato é temporária por padrão: o
 // repositório não acumula capturas de revisão.
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
-import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, esperarPor } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const SAIDA = process.env.FILME_SMOKE_SAIDA
@@ -101,17 +101,55 @@ async function salvarFolha(frames) {
   }))).png().toFile(SAIDA);
 }
 
+/**
+ * O TETO da espera pelo primeiro quadro em movimento. Não é tolerância de
+ * ritmo: é o limite acima do qual "o relógio não anda" deixa de ser máquina
+ * ocupada e vira relógio PARADO — o defeito que este veredito procura.
+ * Mesmo a 1 quadro/s isto são dez quadros de folga.
+ */
+const TETO_DO_MOVIMENTO_MS = 10000;
+
+/**
+ * O RELÓGIO ANDA QUANDO SOLTO — e é ISSO que se mede.
+ *
+ * O QUE ESTE VEREDITO ERA ATÉ 22/08 (item 76): soltar o relógio, dormir
+ * 420 ms de PAREDE e cobrar mais de 0,1 s de filme andado. A conta que
+ * ninguém tinha feito: o integrador grampeia o passo em
+ * `GRAMPO_DO_PASSO_S` = 0,05 s (`core/engine.ts`), então abaixo de 20 q/s
+ * cada quadro vale 0,05 s de filme e "mais de 0,1 s" quer dizer TRÊS
+ * quadros em 420 ms — o gate cobrava 7,1 q/s do shot pesado e chamava de
+ * defeito do filme a máquina que não os entregava. Medido nesta máquina:
+ * 3, 1, 4, 2 e 8 falhas em corridas do MESMO binário, e as MESMAS falhas
+ * num HEAD limpo. Com oito `yes > /dev/null` de carga, 8 de 9 caíam —
+ * `0.00 s` no shot da galáxia final, ou seja ZERO quadro em 420 ms.
+ *
+ * O QUE ELE É AGORA: espera pelo ESTADO (`esperarPor`) — o relógio andou?
+ * —, com teto grande e generoso, e PUBLICA a taxa como REGISTRO, do jeito
+ * que o `a11y.mjs` faz com os cantos fora da faixa. Relógio parado
+ * continua reprovando; máquina lenta vira número no log, que é o que ela é.
+ */
 async function conferirMovimento(sessao, nome, t, legenda) {
   await saltar(sessao, t);
   const antes = await sessao.js('window.__director.currentTime');
+  const t0 = Date.now();
   const pausouAoSoltar = await sessao.js('window.__director.togglePause()');
-  await dorme(420);
+  const esperou = await esperarPor(
+    sessao,
+    `window.__director.currentTime > ${antes}`,
+    TETO_DO_MOVIMENTO_MS
+  );
   const depois = await sessao.js('window.__director.currentTime');
+  const parede = (Date.now() - t0) / 1000;
   const atual = await lerLegenda(sessao);
   await sessao.js('window.__director.togglePause()');
   await sessao.assentar();
   conferir(pausouAoSoltar === false, `${nome}: o relógio foi solto`);
-  conferir(depois > antes + 0.1, `${nome}: avançou ${(depois - antes).toFixed(2)} s em movimento`);
+  conferir(
+    esperou !== null,
+    `${nome}: o relógio ANDOU solto — ${(depois - antes).toFixed(2)} s de filme`
+      + ` em ${parede.toFixed(2)} s de parede`
+      + ` (${(parede > 0 ? (depois - antes) / parede : 0).toFixed(2)}× o tempo real)`
+  );
   conferir(atual.title === legenda, `${nome}: manteve “${atual.title || '—'}” durante o movimento`);
 }
 
@@ -234,15 +272,22 @@ async function julgarLargura(largura, altura, captura) {
       ]) await conferirMovimento(sessao, nome, t, legenda);
     }
 
+    // OS ÚLTIMOS 0,2 s DO CORTE, e a mesma régua do movimento: pergunta-se
+    // "CHEGOU?", não "passaram 3 s?". Com o passo grampeado em 0,05 s, os
+    // 0,2 s que faltam são QUATRO quadros — cobrar que eles caibam num teto
+    // curto de parede é cobrar taxa de quadros da máquina outra vez.
     await saltar(sessao, 192.8);
     await sessao.js('window.__director.togglePause()');
-    const limite = Date.now() + 3000;
-    let fase = '';
-    while (Date.now() < limite && fase !== 'end') {
-      fase = await sessao.js('window.__director.captura.fase');
-      if (fase !== 'end') await dorme(50);
-    }
-    conferir(fase === 'end', `${largura}px · a viagem alcança a tela final`);
+    const chegouEm = await esperarPor(
+      sessao,
+      "window.__director.captura.fase === 'end'",
+      TETO_DO_MOVIMENTO_MS
+    );
+    conferir(
+      chegouEm !== null,
+      `${largura}px · a viagem alcança a tela final`
+        + (chegouEm === null ? '' : ` (em ${(chegouEm / 1000).toFixed(2)} s)`)
+    );
     const final = normalizar(await sessao.js("document.querySelector('.veil-end')?.textContent"));
     conferir(final.includes('de volta a casa'), `${largura}px · a coda assina a tela final`);
     conferir(

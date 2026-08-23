@@ -29,7 +29,7 @@
 // Diálogo novo que nasça no módulo é julgado no mesmo dia, sem uma linha
 // a mais aqui. Diálogo que nasça FORA do módulo não se declara e não é
 // julgado — e é por isso que todo diálogo do Atlas nasce nele.
-import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -576,21 +576,6 @@ async function julgarChromeDoFilme(s) {
     `chrome do filme: o primeiro movimento do ponteiro o traz de volta`
       + ` (${voltou.barra.opacidade}, pointer-events ${voltou.barra.ponteiro})`
   );
-}
-
-/**
- * Espera uma condição VALER no navegador e devolve em quantos ms ela
- * valeu (`null` no estouro). O número entra no log de propósito: gate
- * que espera sem dizer quanto esperou esconde a piora do dia em que ela
- * começar.
- */
-async function esperarPor(s, expressao, teto = 3000) {
-  const t0 = Date.now();
-  for (;;) {
-    if (await s.js(expressao)) return Date.now() - t0;
-    if (Date.now() - t0 > teto) return null;
-    await dorme(50);
-  }
 }
 
 /**
