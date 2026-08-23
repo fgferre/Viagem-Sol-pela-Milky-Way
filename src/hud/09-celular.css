@@ -72,8 +72,15 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.6rem;
+    /* O RESPIRO É ORÇAMENTO DE LARGURA, e o orçamento tem um número: as
+       QUATRO alças do estado de sempre têm de caber INTEIRAS num aparelho
+       de 390 px no tamanho de fábrica, que é a primeira tela que o
+       visitante vê. Com 0,4rem de vão e 0,8rem de folga lateral por alça
+       elas somavam 414 px e o ⚙ Ajustes nascia cortado pela borda — a
+       fileira rolava desde o primeiro quadro, o que é a saída certa para
+       a QUINTA alça e para o texto grande, nunca para o estado comum. */
+    gap: 0.3rem;
+    padding: 0.35rem 0.45rem;
     min-height: var(--alcas-altura);
     background: linear-gradient(to top, rgba(3, 5, 10, 0.88), rgba(3, 5, 10, 0));
     /* a barra de rolagem não é desenho: a fileira rola com o dedo */
@@ -93,7 +100,7 @@
   .atlas-alcas > .hud-btn {
     flex: 0 0 auto;
     min-height: 2.75rem;
-    padding: 0.45rem 0.8rem;
+    padding: 0.45rem 0.55rem;
   }
 
   /* ---- O QUE SAI DA TELA PARA DAR LUGAR ------------------------------

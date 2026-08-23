@@ -94,6 +94,17 @@ const MEDIR_CELULAR = `(() => {
     alcas,
     linhas: linhas.size,
     fileira: caixaDaFileira,
+    // quanto a fileira MEDE por dentro: maior que a caixa = ela rola
+    fileiraConteudo: fileira ? fileira.scrollWidth : null,
+    // a alça ABERTA está visível dentro da fileira? (a fileira rola, e a
+    // ficha — que abre sozinha — é a quinta, que nasce fora do quadro)
+    alcaAbertaVisivel: (() => {
+      const b = fileira && fileira.querySelector('[aria-expanded="true"]');
+      if (!b || !caixaDaFileira) return null;
+      const r = b.getBoundingClientRect();
+      return r.left >= caixaDaFileira.x - 0.5
+        && r.right <= caixaDaFileira.x + caixaDaFileira.w + 0.5;
+    })(),
     dentro: Boolean(caixaDaFileira && caixaDaFileira.x >= -0.5
       && caixaDaFileira.x + caixaDaFileira.w <= W + 0.5
       && caixaDaFileira.y + caixaDaFileira.h <= H + 0.5),
@@ -1576,6 +1587,19 @@ async function julgarCelular(s) {
           `alças (${onde}): a dica está FORA DO FLUXO (position: ${m.dicaFora}) —`
             + ` apagá-la não move a câmera`
         );
+        // O ESTADO DE SEMPRE CABE INTEIRO. A fileira ROLA de propósito —
+        // é a saída certa para a QUINTA alça e para o texto grande —,
+        // mas a primeira tela que o visitante vê tem QUATRO alças num
+        // aparelho comum no tamanho de fábrica, e ali nada pode nascer
+        // cortado pela borda. Medido: eram 414 px de conteúdo em 390 de
+        // tela, com o ⚙ Ajustes pela metade.
+        if (w === 390 && fator === 1 && esperadas.length === 4) {
+          conferir(
+            m.fileiraConteudo <= m.fileira.w + 0.5,
+            `alças (${onde}): as quatro cabem INTEIRAS — ${m.fileiraConteudo} px de`
+              + ` conteúdo em ${m.fileira.w | 0} px de tela, sem rolar`
+          );
+        }
       }
     }
   }
@@ -1623,6 +1647,15 @@ async function julgarCelular(s) {
           m.folhaDentro && m.folhaPct <= TETO_DA_FOLHA_PCT,
           `folha (${onde}): cabe na janela e ocupa ${m.folhaPct?.toFixed(1)}% da tela`
             + ` ≤ teto ${TETO_DA_FOLHA_PCT}%`
+        );
+        // A ALÇA ABERTA ESTÁ NA TELA. A fileira rola, e a ficha — que
+        // abre SOZINHA a cada seleção — é a quinta: sem o
+        // `scrollIntoView` do `useGavetas`, o visitante escolheria um
+        // corpo, a folha subiria, e o botão que a fecha estaria fora do
+        // quadro.
+        conferir(
+          m.alcaAbertaVisivel === true,
+          `folha (${onde}): a alça que a abriu está VISÍVEL na fileira`
         );
       }
     }

@@ -573,6 +573,47 @@ dele às três perguntas — *"3) vira alça"*: no celular a **máquina do
 tempo vira alça**, o controle pequeno que se puxa. É a mesma resposta
 registrada no item **61**, e é aqui que ela vira obra.
 
+**METADE FEITA em 23/08 — os CONTROLES.** No telefone (abaixo de 761 px)
+a barra de controles do Atlas se desfaz e vira **uma fileira de alças no
+pé da tela**: ⌕ Buscar · ⧉ Camadas · ⏱ Tempo · ⚙ Ajustes, e a **ficha
+como quinta**, só quando você escolheu alguma coisa. Tocar numa alça faz
+**subir uma folha de baixo**, de borda a borda, uma de cada vez, em 260
+ms — o mesmo movimento que o resto do app já usa. **Três saídas:** a
+mesma alça, o Esc, ou **um toque no céu**. A máquina do tempo saiu do
+rodapé e virou a alça ⏱ (a resposta dele); o `Partir` subiu para a tarja
+de cima; o seletor de qualidade saiu (era duplicata do painel de
+Ajustes). São **as mesmas peças de sempre**, só vestidas de outro jeito —
+nada foi duplicado. **Na tela grande não muda um pixel**, e isso está
+medido: `atlas-smoke` e `busca-smoke` verdes, e as vistas oficiais
+bit-idênticas.
+
+E passou a existir **um juiz que abre o app em 390 e 320 px** — antes
+nenhum abria. Ele veste APARELHO (toque de verdade, não só janela
+estreita) e dá **273 vereditos**: as alças, a folha que sobe e as três
+saídas, o selo nunca coberto, uma gaveta por vez e o foco preso. O
+`a11y.mjs` foi de 238 para **511** vereditos, de 4,5 para 6,1 min.
+
+Fotos: `capturas/item62-celular-recolhido.png` e
+`capturas/item62-celular-folha.png` (Camadas e Tempo, lado a lado).
+**Espera o olho dele no app.**
+
+**O QUE FALTA — a ETAPA 2, e são três coisas:**
+
+1. **A CÂMERA AINDA NÃO GANHOU O QUADRO.** O céu livre já é maior na
+   tela, mas `retanguloUtilDoAtlas` continua descontando a base de MESA:
+   a câmera ainda recua como se o rodapé antigo estivesse lá. Falta o
+   ramo do celular, com as frações MEDIDAS.
+2. **O TOQUE.** A **pinça não dá zoom** em tela de toque — o que chega
+   hoje como zoom é a pinça de *trackpad*, que vira `wheel`; num telefone
+   ela produz dois dedos e nenhum `wheel`. E o limiar do clique curto é
+   de mouse (6 px): um toque de dedo anda 8–12 px e vira arrasto.
+3. **O arraste da folha para baixo**, se valer a pena depois de (1) e (2).
+
+**UMA PERGUNTA DE GOSTO, para ele:** as **tarjas pretas** de cima e de
+baixo custam ~9% da tela do telefone. Elas são "o mesmo quadro do filme",
+que é decisão de composição — por isso ficaram. Se ele quiser, elas somem
+no celular e o céu cresce mais.
+
 **70. Girar a câmera acende e apaga o céu inteiro.** (Achado em 22/08
 pelo juiz novo de movimento, o MB1 — `scripts/visual/
 estabilidade-temporal.mjs`. **DIAGNOSTICADO em 22/08, ainda NÃO
