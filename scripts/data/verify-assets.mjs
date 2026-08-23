@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from './lib/binary.mjs';
 import { heliocentricGalacticToProject } from './lib/galactic.mjs';
+import { lerTabelasDaConfissao } from './atlas/lib-texturas.mjs';
 import {
   decodeSpiralAnchors,
   evaluateSpiralModel,
@@ -274,6 +275,12 @@ if (starMetadata.quantization.maxLogLumError > 0.001) {
 // O contrato numérico (45 corpos, contagens por tipo) vive também em
 // gera-corpos.mjs; aqui ele é cobrado no ARTEFATO publicado, para pegar
 // edição manual do JSON ou gerador que mudou sem regenerar.
+//
+// E A FONTE ENTRA JUNTO. Cobrar só o artefato deixava passar a edição à mão
+// do texto: quem reescrevesse uma frase dentro de `corpos.json` — sem tocar
+// em `fonte/` e sem rodar o gerador — passava verde, e a tela mostrava prosa
+// que fonte nenhuma respalda. Os dois arquivos da fonte são lidos aqui e o
+// artefato é conferido CONTRA eles, campo a campo.
 let corposDoc;
 try {
   corposDoc = JSON.parse(
@@ -283,6 +290,22 @@ try {
   throw new Error(
     `atlas/corpos.json ausente ou inválido (${error.message}) — ` +
       'rode node scripts/data/atlas/gera-corpos.mjs.'
+  );
+}
+const corposFonteDir = path.join(rootDirectory, 'scripts', 'data', 'atlas', 'fonte');
+let corposFonte;
+let editorialPt;
+try {
+  corposFonte = JSON.parse(
+    await readFile(path.join(corposFonteDir, 'corpos-fonte.json'), 'utf8')
+  );
+  editorialPt = JSON.parse(
+    await readFile(path.join(corposFonteDir, 'editorial-pt.json'), 'utf8')
+  );
+} catch (error) {
+  throw new Error(
+    `atlas/corpos: a fonte do editorial não abriu (${error.message}) — ` +
+      'scripts/data/atlas/fonte/{corpos-fonte,editorial-pt}.json.'
   );
 }
 const corpos = corposDoc.corpos;
@@ -322,9 +345,10 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
   if (!miranda) {
     throw new Error('atlas/corpos: miranda ausente do catálogo.');
   }
+  const mirandaNaFonte = corposFonte.corpos?.find((c) => c.id === 'miranda');
   if (
-    miranda.editorial?.en?.records !== undefined ||
-    miranda.editorial?.en?.explorationMilestone !== undefined
+    mirandaNaFonte?.editorial?.en?.records !== undefined ||
+    mirandaNaFonte?.editorial?.en?.explorationMilestone !== undefined
   ) {
     throw new Error(
       'atlas/corpos: miranda ganhou records/explorationMilestone — a pendência ' +
@@ -364,11 +388,17 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
     throw new Error(`atlas/corpos: esperados 39 alvos, obtidos ${alvos.length}.`);
   }
 
-  // ---- A LÍNGUA (item 74, parte B, 2026-08-22) --------------------------
-  // A ficha mostra `editorial.pt` e mais nada. Um alvo sem `pt` não dá erro
-  // na tela: as três seções de prosa dele somem, caladas. Aqui a falta grita.
-  // Campo a campo, porque meia tradução é o modo silencioso de falhar — e a
-  // simetria com o inglês é o que garante que nenhum fato ficou para trás.
+  // ---- A LÍNGUA, E O CADEADO CONTRA A EDIÇÃO À MÃO ----------------------
+  // A ficha mostra `editorial.pt` e mais nada, e o INGLÊS FICA NA FONTE. Isso
+  // parte a cobrança em duas, e as duas moram aqui:
+  //
+  //  1. NA FONTE, a simetria en↔pt campo a campo. É ela que garante que
+  //     nenhum fato ficou para trás na tradução — meia tradução é o modo
+  //     silencioso de falhar, porque a linha some da tela sem dizer por quê.
+  //  2. NO ARTEFATO, cada bloco `pt` conferido TEXTO POR TEXTO contra
+  //     `editorial-pt.json`. É este o cadeado: prosa reescrita dentro de
+  //     `corpos.json`, sem passar pela fonte nem pelo gerador, passava verde,
+  //     e a tela mostrava frase que fonte nenhuma respalda.
   const CAMPOS_EDITORIAIS_PT = [
     'description',
     'curiosity',
@@ -377,18 +407,25 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
     'explorationMilestone',
     'info',
   ];
+  const enDaFonte = new Map(
+    (corposFonte.corpos ?? []).map((c) => [c.id, c.editorial?.en ?? {}])
+  );
+  let camposConferidos = 0;
   for (const corpo of alvos) {
-    const en = corpo.editorial?.en ?? {};
-    const pt = corpo.editorial?.pt;
-    if (!pt) {
+    const en = enDaFonte.get(corpo.id);
+    if (!en) {
+      throw new Error(`atlas/corpos: alvo "${corpo.id}" não existe em corpos-fonte.json.`);
+    }
+    const daFonte = editorialPt.corpos?.[corpo.id];
+    if (!daFonte) {
       throw new Error(
-        `atlas/corpos: alvo "${corpo.id}" sem editorial.pt — a ficha dele ficaria muda; ` +
-          'rode npm run data:corpos.'
+        `atlas/corpos: alvo "${corpo.id}" sem tradução em editorial-pt.json — ` +
+          'a ficha dele ficaria muda.'
       );
     }
     for (const campo of CAMPOS_EDITORIAIS_PT) {
       const temEn = en[campo] !== undefined;
-      const temPt = pt[campo] !== undefined;
+      const temPt = daFonte[campo] !== undefined;
       if (temEn !== temPt) {
         throw new Error(
           `atlas/corpos: "${corpo.id}", campo "${campo}": inglês ${temEn ? 'tem' : 'não tem'} ` +
@@ -396,26 +433,53 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
         );
       }
       if (!temEn) continue;
-      if (Array.isArray(en[campo]) && pt[campo].length !== en[campo].length) {
+      if (Array.isArray(en[campo]) && daFonte[campo].length !== en[campo].length) {
         throw new Error(
-          `atlas/corpos: "${corpo.id}", campo "${campo}": ${pt[campo].length} itens em pt ` +
+          `atlas/corpos: "${corpo.id}", campo "${campo}": ${daFonte[campo].length} itens em pt ` +
             `contra ${en[campo].length} em en.`
         );
       }
-      if (campo === 'explorationMilestone' && pt[campo].year !== en[campo].year) {
+      if (campo === 'explorationMilestone' && daFonte[campo].year !== en[campo].year) {
         throw new Error(
-          `atlas/corpos: "${corpo.id}": ano da exploração ${pt[campo].year} em pt contra ` +
+          `atlas/corpos: "${corpo.id}": ano da exploração ${daFonte[campo].year} em pt contra ` +
             `${en[campo].year} em en — a data é medida, não redação.`
         );
       }
     }
-  }
-  // E OS SEIS SEM ALVO CONTINUAM SÓ EM INGLÊS: traduzir texto que nenhuma
-  // ficha abre é trabalho para a gaveta, e a ausência aqui é a declaração.
-  for (const corpo of corpos.filter((c) => c.semAlvo === true)) {
-    if (corpo.editorial?.pt !== undefined) {
+    // O CADEADO. Comparação pelo JSON dos dois lados: pega frase reescrita,
+    // fato acrescentado, item de lista removido e campo inteiro inventado.
+    const pt = corpo.editorial?.pt;
+    if (!pt) {
       throw new Error(
-        `atlas/corpos: "${corpo.id}" é semAlvo e ganhou tradução — ninguém abre a ficha dele.`
+        `atlas/corpos: alvo "${corpo.id}" sem editorial.pt — a ficha dele ficaria muda; ` +
+          'rode npm run data:corpos.'
+      );
+    }
+    for (const campo of new Set([...Object.keys(daFonte), ...Object.keys(pt)])) {
+      if (JSON.stringify(pt[campo]) !== JSON.stringify(daFonte[campo])) {
+        throw new Error(
+          `atlas/corpos: "${corpo.id}", campo "${campo}": o texto em corpos.json não é o de ` +
+            'editorial-pt.json — a fonte é o documento; rode npm run data:corpos.'
+        );
+      }
+      camposConferidos++;
+    }
+  }
+  // E O INGLÊS NÃO ATRAVESSA. Ele é a régua da tradução e vive na fonte; um
+  // `editorial.en` de volta ao artefato são 268 campos que tela nenhuma lê.
+  const comIngles = corpos.filter((c) => c.editorial?.en !== undefined).map((c) => c.id);
+  if (comIngles.length > 0) {
+    throw new Error(
+      `atlas/corpos: [${comIngles.join(', ')}] trazem editorial.en de volta ao artefato — ` +
+        'o inglês mora em fonte/corpos-fonte.json, onde a tradução se confere.'
+    );
+  }
+  // E OS SEIS SEM ALVO NÃO TÊM EDITORIAL NENHUM: ficha que ninguém abre não
+  // paga tradução, e a ausência aqui é a declaração.
+  for (const corpo of corpos.filter((c) => c.semAlvo === true)) {
+    if (corpo.editorial !== undefined) {
+      throw new Error(
+        `atlas/corpos: "${corpo.id}" é semAlvo e ganhou editorial — ninguém abre a ficha dele.`
       );
     }
   }
@@ -471,6 +535,11 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
       );
     }
   }
+
+  console.log(
+    `atlas/corpos: ${camposConferidos} campos editoriais conferidos contra a fonte ` +
+      `(${alvos.length} alvos), 0 divergentes; o inglês fica em corpos-fonte.json.`
+  );
 }
 
 // Onda 2: atlas/efemerides — tabelas Hermite geradas por
@@ -751,7 +820,14 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
   for (const e of texturasDoc.entradas) {
     if (e.nota) notasNoManifesto.set(`${e.corpo}/${e.canal}`, e.nota);
   }
-  const CONFESSAM = ['ceres/map', 'europa/map', 'titan/map', 'venus/map'];
+  // AS DUAS LISTAS SAEM DO DOCUMENTO, e pela MESMA função que o gerador usa
+  // (`lerTabelasDaConfissao`). Estavam escritas à mão aqui — quatro chaves de
+  // imagem e quatro de forma —, e uma quinta linha legítima na tabela
+  // reprovava o gate: o documento que é a fonte não podia crescer sem que
+  // alguém se lembrasse de editar um `.mjs`. Agora crescer é só escrever a
+  // linha, e o que o gate cobra é o manifesto BATER com ela.
+  const confissao = lerTabelasDaConfissao(assetsMd, 'docs/reference/ASSETS.md');
+  const CONFESSAM = [...confissao.imagem.keys()].sort();
   for (const chave of CONFESSAM) {
     const nota = notasNoManifesto.get(chave);
     if (!nota) {
@@ -760,23 +836,23 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
           'rode npm run data:texturas.'
       );
     }
-    if (!assetsMd.includes(nota)) {
+    if (nota !== confissao.imagem.get(chave)) {
       throw new Error(
-        `atlas/texturas: a nota de "${chave}" no manifesto não existe mais no ` +
-          'ASSETS.md — o documento é a fonte; rode npm run data:texturas.'
+        `atlas/texturas: a nota de "${chave}" no manifesto não é a do ASSETS.md — ` +
+          'o documento é a fonte; rode npm run data:texturas.'
       );
     }
   }
-  const ELIPSOIDES = ['haumea', 'hygiea', 'pallas', 'vesta'];
+  const ELIPSOIDES = [...confissao.forma.keys()].sort();
   const formas = texturasDoc.formas ?? {};
   if (Object.keys(formas).sort().join(',') !== ELIPSOIDES.join(',')) {
     throw new Error(
       `atlas/texturas: os corpos com forma confessada são [${Object.keys(formas).sort().join(', ')}]; ` +
-        `esperados [${ELIPSOIDES.join(', ')}] (item 20).`
+        `o ASSETS.md diz [${ELIPSOIDES.join(', ')}] (item 20) — rode npm run data:texturas.`
     );
   }
   for (const [id, nota] of Object.entries(formas)) {
-    if (!nota.startsWith('elipsoide, sem malha') || !assetsMd.includes(nota)) {
+    if (nota !== confissao.forma.get(id)) {
       throw new Error(
         `atlas/texturas: a forma de "${id}" não confere com o ASSETS.md ("${nota}").`
       );

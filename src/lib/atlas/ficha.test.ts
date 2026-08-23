@@ -19,7 +19,7 @@ import type { MetaEfemerides } from './efemerides';
 import { decodeEfemerides, MotorEfemerides } from './efemerides';
 import type { StarsMeta } from '../../three/config';
 import type { ManifestDeTexturas } from '../../three/world/corpos/texturas';
-import type { CorpoNoJson, CorposDoAtlas, Ficha } from './ficha';
+import type { CorpoNoJson, CorposDoAtlas, EditorialDoCorpo, Ficha } from './ficha';
 import { formatarDuracao, formatarMassaKg, montarFicha, montarFichaDeEstrela } from './ficha';
 import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
@@ -44,6 +44,23 @@ const texturas = JSON.parse(
   readFileSync(join(DATA_DIR, 'texturas.json'), 'utf8')
 ) as ManifestDeTexturas;
 const porId = new Map<string, CorpoNoJson>(corposJson.corpos.map((c) => [c.id, c]));
+/**
+ * O INGLÊS, QUE NÃO ESTÁ NO ARTEFATO. Ele é a régua da tradução e mora na
+ * fonte; `corpos.json` só carrega o pt-BR, que é o que a tela lê. As duas
+ * provas de fidelidade abaixo comparam as DUAS línguas, então leem daqui.
+ */
+const editorialEn = new Map<string, EditorialDoCorpo>(
+  (
+    JSON.parse(
+      readFileSync(
+        fileURLToPath(
+          new URL('../../../scripts/data/atlas/fonte/corpos-fonte.json', import.meta.url)
+        ),
+        'utf8'
+      )
+    ) as { corpos: { id: string; editorial?: { en?: EditorialDoCorpo } }[] }
+  ).corpos.map((c) => [c.id, c.editorial?.en ?? {}])
+);
 const starsMeta = JSON.parse(
   readFileSync(
     fileURLToPath(new URL('../../../public/data/stars_meta.json', import.meta.url)),
@@ -186,10 +203,7 @@ describe('silêncio — campo ausente não vira linha', () => {
     // metade) perde a prosa e mantém número, unidade e procedência — nunca
     // inglês na tela, nunca uma linha explicando a falta.
     const marte = porId.get('mars')!;
-    const semPt: CorpoNoJson = {
-      ...marte,
-      editorial: { en: marte.editorial.en },
-    };
+    const semPt: CorpoNoJson = { ...marte, editorial: undefined };
     const f = montarFicha({ id: 'mars', jd: JD, fonte: motor, editorial: semPt })!;
     const ids = f.secoes.map((s) => s.id);
     expect(ids).not.toContain('contexto');
@@ -202,7 +216,6 @@ describe('silêncio — campo ausente não vira linha', () => {
     const comPt: CorpoNoJson = {
       ...marte,
       editorial: {
-        ...marte.editorial,
         pt: {
           description: 'O planeta vermelho.',
           curiosity: 'Tem a maior montanha do sistema.',
@@ -279,8 +292,8 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
     ] as const;
     for (const id of ALVOS) {
       const corpo = porId.get(id)!;
-      const en = corpo.editorial.en as Record<string, unknown>;
-      const pt = corpo.editorial.pt as Record<string, unknown> | undefined;
+      const en = editorialEn.get(id) as unknown as Record<string, unknown>;
+      const pt = corpo.editorial?.pt as Record<string, unknown> | undefined;
       expect(pt, id).toBeDefined();
       for (const campo of CAMPOS) {
         expect(pt![campo] === undefined, `${id}/${campo}`).toBe(
@@ -295,9 +308,10 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
     // A pendência do doador é dela, não da tradução: inventar em português
     // o que o inglês não tem seria fechar em silêncio um trabalho do dono.
     const miranda = porId.get('miranda')!;
-    expect(miranda.editorial.pt).toBeDefined();
-    expect(miranda.editorial.pt!.records).toBeUndefined();
-    expect(miranda.editorial.pt!.explorationMilestone).toBeUndefined();
+    expect(miranda.editorial?.pt).toBeDefined();
+    expect(miranda.editorial!.pt.records).toBeUndefined();
+    expect(miranda.editorial!.pt.explorationMilestone).toBeUndefined();
+    expect(editorialEn.get('miranda')!.records).toBeUndefined();
     const curiosidades = ficha('miranda')!.secoes.find((s) => s.id === 'curiosidades')!;
     expect(curiosidades.linhas.map((l) => l.rotulo)).toEqual(['curiosidade', 'fato']);
   });
@@ -346,8 +360,9 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
     // ("20,000 times" → "20.000 vezes"; "1.39 million" → "1,39 milhão").
     // Um fato reescrito com o número errado passaria por qualquer leitura.
     for (const id of ALVOS) {
-      const { en, pt } = porId.get(id)!.editorial;
-      const textoDe = (e: typeof en) =>
+      const en = editorialEn.get(id)!;
+      const pt = porId.get(id)!.editorial?.pt;
+      const textoDe = (e: EditorialDoCorpo) =>
         [
           e.description,
           e.curiosity,

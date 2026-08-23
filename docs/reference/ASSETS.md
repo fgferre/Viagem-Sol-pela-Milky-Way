@@ -64,6 +64,23 @@ O gerador **falha** se este título sumir, se uma linha vier malformada ou se
 citar um `corpo/canal` que não existe em `ORIGENS`. Frase curta, sem ponto
 final, na voz de quem admite — o visitante lê isto ao lado da foto.
 
+**As três regras do formato** — quem lê é `lerTabelasDaConfissao`
+(`scripts/data/atlas/lib-texturas.mjs`), a mesma função no gerador e no
+`data:verify`:
+
+1. Os subtítulos das tabelas **começam** com `a imagem` e `a forma`; o que
+   vem depois (o número do item) é livre.
+2. Esta seção é a **última do arquivo** — a leitura vai deste título até o
+   fim, então um `##` depois dele engoliria as tabelas. Seção nova entra
+   **acima**.
+3. Editar uma linha aqui não muda a tela sozinha: quem republica é
+   `npm run data:texturas`, e o `data:verify` reprova enquanto o manifesto
+   não trouxer exatamente estas frases.
+
+As duas listas de corpos **não** estão escritas em código nenhum: quem manda
+são as linhas abaixo, e uma quinta linha legítima passa a ser cobrada sem
+tocar num `.mjs`.
+
 ### a imagem (item 19)
 
 | corpo/canal | nota |

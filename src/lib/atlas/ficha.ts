@@ -20,12 +20,12 @@
 // dele simplesmente não tem a linha da massa. Seção que ficou sem nenhuma
 // linha não é desenhada.
 //
-// E O INGLÊS NÃO VAI PARA A TELA. Os campos editoriais dos 45 corpos vieram
-// do doador em inglês; desde 22/08 os 39 alvos têm o par em pt-BR
-// (`fonte/editorial-pt.json`) e é ELE que a ficha lê — `editorial.en` existe
-// no JSON e não tem consumidor de tela nenhum. Onde o `pt` faltar, a linha
-// SOME: mostrar inglês "por enquanto" seria a casa decidindo pelo dono que
-// meia língua é melhor que nenhuma.
+// E O INGLÊS NÃO CHEGA AQUI. Os campos editoriais dos 45 corpos vieram do
+// doador em inglês, e ele ficou na fonte (`fonte/corpos-fonte.json`), que é
+// onde a tradução se confere contra ele; o que `corpos.json` traz é o pt-BR
+// dos 39 alvos e mais nada. Onde o `pt` faltar, a linha SOME: mostrar inglês
+// "por enquanto" seria a casa decidindo pelo dono que meia língua é melhor
+// que nenhuma.
 //
 // UM VOCABULÁRIO DE PROCEDÊNCIA SÓ: os três tiers de `selo.ts`
 // (`medido | derivado | artistico`). O doador tinha quatro rótulos próprios
@@ -116,7 +116,8 @@ export interface CorpoNoJson {
   name: { en: string; pt: string };
   orbita?: { periodoDias: number; minUa: number; maxUa: number };
   semAlvo?: boolean;
-  editorial: { en: EditorialDoCorpo; pt?: EditorialDoCorpo };
+  /** só os 39 alvos têm; os seis sem alvo saem do gerador sem a chave */
+  editorial?: { pt: EditorialDoCorpo };
 }
 
 export interface CorposDoAtlas {

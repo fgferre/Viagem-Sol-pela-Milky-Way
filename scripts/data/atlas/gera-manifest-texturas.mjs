@@ -53,7 +53,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { sha256 } from '../lib/binary.mjs';
-import { analisarNomeDeTextura } from './lib-texturas.mjs';
+import { analisarNomeDeTextura, lerTabelasDaConfissao } from './lib-texturas.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -371,57 +371,7 @@ const ORIGEM_NAO_RESOLVIDA = {
 };
 
 const assetsPath = path.join(rootDirectory, 'docs', 'reference', 'ASSETS.md');
-const TITULO_DA_CONFISSAO = '## A CONFISSÃO NA TELA';
-
-/**
- * As duas tabelas da seção de confissão do ASSETS.md, lidas com rigor: o
- * título tem de existir, cada linha tem de ser `| chave | frase |`, e o
- * resultado é um Map. Sem tolerância a "quase" — nota que sumir por causa de
- * um pipe a menos some da TELA, e ninguém repara na falta de uma frase.
- */
-function lerTabelasDaConfissao(markdown) {
-  const inicio = markdown.indexOf(TITULO_DA_CONFISSAO);
-  if (inicio < 0) {
-    throw new Error(
-      `${assetsPath} perdeu a seção "${TITULO_DA_CONFISSAO}" — ela é lida por ` +
-        'máquina e é a fonte única das notas que a ficha imprime.'
-    );
-  }
-  const secao = markdown.slice(inicio);
-  const tabelas = new Map();
-  let atual = null;
-  for (const linha of secao.split('\n')) {
-    const sub = /^###\s+(.+?)\s*$/.exec(linha);
-    if (sub) {
-      atual = new Map();
-      tabelas.set(sub[1], atual);
-      continue;
-    }
-    if (!atual || !linha.startsWith('|')) continue;
-    const celulas = linha.split('|').slice(1, -1).map((c) => c.trim());
-    if (celulas.length !== 2) {
-      throw new Error(`${assetsPath}: linha de tabela malformada — "${linha}".`);
-    }
-    const [chave, nota] = celulas;
-    if (/^-+$/.test(chave) || chave === 'corpo/canal' || chave === 'corpo') continue;
-    if (!nota) throw new Error(`${assetsPath}: "${chave}" sem nota.`);
-    if (atual.has(chave)) {
-      throw new Error(`${assetsPath}: "${chave}" aparece duas vezes na mesma tabela.`);
-    }
-    atual.set(chave, nota);
-  }
-  const imagem = [...tabelas].find(([t]) => t.startsWith('a imagem'))?.[1];
-  const forma = [...tabelas].find(([t]) => t.startsWith('a forma'))?.[1];
-  if (!imagem || !forma) {
-    throw new Error(
-      `${assetsPath}: a seção da confissão precisa das DUAS tabelas ` +
-        '("### a imagem …" e "### a forma …").'
-    );
-  }
-  return { imagem, forma };
-}
-
-const confissao = lerTabelasDaConfissao(await readFile(assetsPath, 'utf8'));
+const confissao = lerTabelasDaConfissao(await readFile(assetsPath, 'utf8'), assetsPath);
 for (const chave of confissao.imagem.keys()) {
   if (!ORIGENS[chave]) {
     throw new Error(

@@ -1,31 +1,23 @@
 // ============================================================
-// corpos.json — o editorial dos 45 corpos do atlas, mais a ÓRBITA dos 39
-// que esta casa desenha.
+// corpos.json — o que a ficha do objeto lê dos 45 corpos do atlas: o nome, a
+// ÓRBITA dos 38 alvos que orbitam alguma coisa e o editorial em pt-BR dos 39.
 //
-// O DOADOR SAIU DO CAMINHO (2026-08-22, item 74). Até aqui este script
-// EXECUTAVA `src/data/celestialBodies.ts` de `~/Github/atlas-orbital` — ele
-// reescrevia o arquivo do doador em memória, gravava um .ts temporário e o
-// importava. Funcionava, e tinha um defeito de fundo: `npm run data:corpos`
-// só rodava numa máquina que tivesse o doador clonado no caminho certo, e o
-// dado da casa dependia de um repositório que a casa não versiona. O
-// editorial virou fonte AQUI — `fonte/corpos-fonte.json`, com a proveniência
-// do doador dentro dela —, e o doador voltou a ser o que o NORTE manda que
-// ele seja: especificação, nunca fornecedor em runtime.
+// A FONTE SÃO DOIS ARQUIVOS IRMÃOS, os dois desta casa:
+// `fonte/corpos-fonte.json` (o editorial em inglês, com a proveniência do
+// doador dentro dele) e `fonte/editorial-pt.json` (a tradução, um texto por
+// campo, os 39 alvos e nada para os seis sem alvo — ficha que ninguém abre
+// não paga tradução). O doador é especificação, nunca fornecedor em runtime.
 //
-// O QUE O GERADOR FAZ, e é a metade nova: casa o editorial com o que a casa
-// já sabe. Cada um dos 38 alvos que orbitam alguma coisa ganha
-// `orbita{periodoDias,minUa,maxUa}` — e o Sol, que é a origem, não ganha.
-// Nenhum `a`, `e` ou período novo entra à mão: tudo sai das tabelas desta
-// casa (elementos, efeméride embarcada e `GM_CORPOS`).
+// O INGLÊS NÃO ATRAVESSA para o artefato. Ele é a RÉGUA contra a qual o pt se
+// mede, campo a campo: o pt tem de ter exatamente os campos que o en tem, com
+// o mesmo número de fatos e de recordes e o mesmo `year` de exploração. Campo
+// a mais, campo a menos ou lista mais curta derrubam a geração — meia
+// tradução some da tela sem dizer por quê. Medida a régua, o inglês fica na
+// fonte: no artefato ele seriam 268 campos que tela nenhuma lê.
 //
-// E DESDE 22/08 ELE FUNDE A LÍNGUA. O pt-BR mora em `fonte/editorial-pt.json`,
-// arquivo IRMÃO do inglês e não substituto dele: um texto por campo, os 39
-// alvos, e nada para os seis sem alvo (ficha que ninguém abre não paga
-// tradução). O casamento é COBRADO campo a campo — o pt tem de ter
-// exatamente os campos que o en tem, com o mesmo número de fatos e de
-// recordes e o mesmo `year` de exploração. Campo a mais, campo a menos ou
-// lista mais curta derrubam a geração: meia tradução na tela seria pior que
-// nenhuma, porque a linha some sem dizer por quê.
+// A ÓRBITA — `orbita{periodoDias,minUa,maxUa}` — sai das tabelas desta casa
+// (elementos, efeméride embarcada e `GM_CORPOS`); nenhum `a`, `e` ou período
+// entra à mão, e o Sol, que é a origem, não ganha órbita.
 //
 // TRÊS CAMINHOS, E A RAZÃO DE NÃO SER UM SÓ. Cada corpo vem por onde o
 // número é melhor, e a fronteira entre eles é medida (ver `orbitaDoCorpo`):
@@ -388,7 +380,6 @@ const corpos = fonte.corpos.map((body) => {
     const valor = body.editorial?.en?.[campo];
     if (valor !== undefined) en[campo] = valor;
   }
-  const editorial = { en };
   // A LÍNGUA VEM DE UM LUGAR SÓ: o arquivo irmão. Se um dia alguém escrever
   // `pt` também dentro de `corpos-fonte.json`, são duas fontes para o mesmo
   // texto — e a que perder a briga envelhece calada.
@@ -398,14 +389,17 @@ const corpos = fonte.corpos.map((body) => {
     );
   }
   const pt = traduzir(body.id, en);
-  if (pt) editorial.pt = pt;
 
   const saida = {
     id: body.id,
     type: body.type,
     name: { en: body.name.en, pt: body.name.pt },
-    editorial,
   };
+  // O INGLÊS NÃO ATRAVESSA. `en` entra na conferência acima (é contra ele que
+  // o pt se mede, campo a campo) e fica na fonte; no artefato ele seria 268
+  // campos que tela nenhuma lê. `editorial` só existe quando há `pt`, então
+  // os seis sem alvo saem daqui sem a chave.
+  if (pt) saida.editorial = { pt };
   if (ALVOS.has(body.id)) {
     const orbita = orbitaDoCorpo(body.id);
     if (orbita) saida.orbita = orbita;
@@ -458,8 +452,8 @@ if (semAlvo.length !== TOTAL_ESPERADO - ALVOS.size) {
 // TODO ALVO FALA PORTUGUÊS, e só os alvos: a tradução cobre exatamente os
 // 39 que ganham ficha. Um id na tradução sem corpo na fonte seria texto que
 // nunca chega à tela; um alvo sem tradução seria ficha muda.
-const traduzidos = corpos.filter((c) => c.editorial.pt).map((c) => c.id);
-const alvosSemPt = corpos.filter((c) => ALVOS.has(c.id) && !c.editorial.pt).map((c) => c.id);
+const traduzidos = corpos.filter((c) => c.editorial?.pt).map((c) => c.id);
+const alvosSemPt = corpos.filter((c) => ALVOS.has(c.id) && !c.editorial?.pt).map((c) => c.id);
 if (alvosSemPt.length > 0) {
   throw new Error(`Alvos sem tradução pt-BR: ${alvosSemPt.join(', ')}.`);
 }

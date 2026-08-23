@@ -106,3 +106,81 @@ export function hostPermitido(url) {
 export function webpCompensa(bytesFonte, bytesWebp) {
   return bytesWebp < bytesFonte;
 }
+
+// ---- A CONFISSÃO, LIDA DO DOCUMENTO --------------------------------
+// As frases que a ficha do objeto imprime na seção "a imagem" — Ceres
+// inventado pela fonte, as emendas de Titã, as 68 linhas de Europa,
+// Vênus sem foto em luz visível — e a forma dos corpos que são
+// elipsoide tendo malha publicada nascem em `docs/reference/ASSETS.md`,
+// onde os vereditos da bancada moram inteiros. Uma segunda cópia num
+// `.mjs` é a que envelhece calada, porque quem edita o veredito edita o
+// documento. Por isso o gerador LÊ o documento — e por isso o verify o
+// lê pela MESMA função, e não por uma segunda leitura que discorde.
+//
+// AS REGRAS DO FORMATO estão declaradas no próprio ASSETS.md, na
+// abertura da seção, e são estas três: os subtítulos começam com
+// "a imagem"/"a forma"; a seção é a ÚLTIMA do arquivo; e quem republica
+// é `npm run data:texturas`.
+
+/** O título que abre a seção legível por máquina. */
+export const TITULO_DA_CONFISSAO = '## A CONFISSÃO NA TELA';
+
+/**
+ * As duas tabelas da seção de confissão, lidas com rigor: o título tem de
+ * existir, a seção tem de ir até o fim do arquivo, cada linha tem de ser
+ * `| chave | frase |`, e o resultado é um par de Maps. Sem tolerância a
+ * "quase" — nota que sumir por causa de um pipe a menos some da TELA, e
+ * ninguém repara na falta de uma frase.
+ *
+ * `onde` entra só para a mensagem de erro apontar o arquivo certo.
+ */
+export function lerTabelasDaConfissao(markdown, onde = 'docs/reference/ASSETS.md') {
+  const inicio = markdown.indexOf(TITULO_DA_CONFISSAO);
+  if (inicio < 0) {
+    throw new Error(
+      `${onde} perdeu a seção "${TITULO_DA_CONFISSAO}" — ela é lida por ` +
+        'máquina e é a fonte única das notas que a ficha imprime.'
+    );
+  }
+  const secao = markdown.slice(inicio);
+  const tabelas = new Map();
+  let atual = null;
+  for (const linha of secao.split('\n')) {
+    // A SEÇÃO É A ÚLTIMA DO ARQUIVO, e isto é o que torna a regra
+    // verdadeira em vez de esperançosa: a leitura vai daqui até o fim,
+    // então um `##` depois deste título engoliria as tabelas dele.
+    if (linha.startsWith('## ') && !linha.startsWith(TITULO_DA_CONFISSAO)) {
+      throw new Error(
+        `${onde}: "${linha.trim()}" vem DEPOIS da confissão — ela tem de ser a ` +
+          'última seção do arquivo (a leitura por máquina vai até o fim).'
+      );
+    }
+    const sub = /^###\s+(.+?)\s*$/.exec(linha);
+    if (sub) {
+      atual = new Map();
+      tabelas.set(sub[1], atual);
+      continue;
+    }
+    if (!atual || !linha.startsWith('|')) continue;
+    const celulas = linha.split('|').slice(1, -1).map((c) => c.trim());
+    if (celulas.length !== 2) {
+      throw new Error(`${onde}: linha de tabela malformada — "${linha}".`);
+    }
+    const [chave, nota] = celulas;
+    if (/^-+$/.test(chave) || chave === 'corpo/canal' || chave === 'corpo') continue;
+    if (!nota) throw new Error(`${onde}: "${chave}" sem nota.`);
+    if (atual.has(chave)) {
+      throw new Error(`${onde}: "${chave}" aparece duas vezes na mesma tabela.`);
+    }
+    atual.set(chave, nota);
+  }
+  const imagem = [...tabelas].find(([t]) => t.startsWith('a imagem'))?.[1];
+  const forma = [...tabelas].find(([t]) => t.startsWith('a forma'))?.[1];
+  if (!imagem || !forma) {
+    throw new Error(
+      `${onde}: a seção da confissão precisa das DUAS tabelas ` +
+        '("### a imagem …" e "### a forma …").'
+    );
+  }
+  return { imagem, forma };
+}

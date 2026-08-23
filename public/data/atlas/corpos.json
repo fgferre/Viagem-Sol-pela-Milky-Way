@@ -43,25 +43,6 @@
         "pt": "SOL"
       },
       "editorial": {
-        "en": {
-          "description": "The Sun is the star at the center of our Solar System. It is a nearly perfect sphere of hot plasma, heated to incandescence by nuclear fusion reactions in its core. Radiating the energy mainly as visible light and infrared radiation, it is by far the most important source of energy for life on Earth. Its diameter is about 1.39 million kilometers, or 109 times that of Earth.",
-          "curiosity": "The Sun accounts for 99.86% of the total mass of the entire Solar System. It consumes about 600 million tons of hydrogen every second.",
-          "facts": [
-            "Light from the Sun takes 8 minutes and 20 seconds to reach Earth.",
-            "The Sun's core temperature is about 15 million degrees Celsius.",
-            "It rotates faster at its equator than at its poles (differential rotation).",
-            "Solar flares can disrupt communications and power grids on Earth."
-          ],
-          "records": [
-            "Most massive object in the system",
-            "Hottest surface in the system"
-          ],
-          "explorationMilestone": {
-            "year": 2018,
-            "description": "Parker Solar Probe launched to touch the Sun"
-          },
-          "info": "The heart of our solar system."
-        },
         "pt": {
           "description": "O Sol é a estrela no centro do nosso Sistema Solar. É uma esfera quase perfeita de plasma quente, aquecida até a incandescência por reações de fusão nuclear no núcleo. Irradiando a energia sobretudo como luz visível e radiação infravermelha, ele é de longe a fonte de energia mais importante para a vida na Terra. O diâmetro dele é de cerca de 1,39 milhão de quilômetros, ou 109 vezes o da Terra.",
           "curiosity": "O Sol responde por 99,86% da massa total de todo o Sistema Solar. Ele consome cerca de 600 milhões de toneladas de hidrogênio a cada segundo.",
@@ -91,25 +72,6 @@
         "pt": "MERCÚRIO"
       },
       "editorial": {
-        "en": {
-          "description": "Mercury is the smallest planet in the Solar System and the closest to the Sun. Its orbit around the Sun takes 87.97 Earth days, the shortest of all the Sun's planets. It is named after the Roman deity Mercury, the messenger of the gods. Like Venus, Mercury orbits the Sun within Earth's orbit as an inferior planet, and its apparent distance from the Sun as viewed from Earth never exceeds 28°.",
-          "curiosity": "Despite being closest to the Sun, Mercury is not the hottest planet—Venus is. Mercury has no atmosphere to trap heat, leading to extreme temperature swings.",
-          "facts": [
-            "Mercury has a huge metallic core, comprising about 85% of its radius.",
-            "A day on Mercury (sunrise to sunrise) lasts 176 Earth days.",
-            "It has the most eccentric orbit of all the planets.",
-            "Temperatures range from -173°C at night to 427°C during the day."
-          ],
-          "records": [
-            "Smallest planet",
-            "Most cratered planet"
-          ],
-          "explorationMilestone": {
-            "year": 2011,
-            "description": "MESSENGER became the first spacecraft to orbit Mercury"
-          },
-          "info": "Smallest planet."
-        },
         "pt": {
           "description": "Mercúrio é o menor planeta do Sistema Solar e o mais próximo do Sol. A órbita dele em torno do Sol leva 87,97 dias terrestres, a mais curta de todos os planetas do Sol. O nome vem da divindade romana Mercúrio, o mensageiro dos deuses. Como Vênus, Mercúrio orbita o Sol por dentro da órbita da Terra, como planeta inferior, e a distância aparente dele ao Sol vista da Terra nunca passa de 28°.",
           "curiosity": "Apesar de ser o mais próximo do Sol, Mercúrio não é o planeta mais quente — Vênus é. Mercúrio não tem atmosfera para reter calor, o que leva a oscilações extremas de temperatura.",
@@ -144,25 +106,6 @@
         "pt": "VÊNUS"
       },
       "editorial": {
-        "en": {
-          "description": "Venus is the second planet from the Sun. It is named after the Roman goddess of love and beauty. As the brightest natural object in Earth's night sky after the Moon, Venus can cast shadows and can be visible to the naked eye in broad daylight. Venus is a terrestrial planet and is sometimes called Earth's 'sister planet' because of their similar size, mass, proximity to the Sun, and bulk composition.",
-          "curiosity": "Venus spins in the opposite direction to most other planets (retrograde rotation). This means the Sun rises in the west and sets in the east.",
-          "facts": [
-            "Its thick atmosphere traps heat, making it the hottest planet (462°C).",
-            "Atmospheric pressure is 92 times greater than Earth's.",
-            "Venus turns once every 243 days — longer than its 225-day year — but it spins backwards, so sunrise to sunrise takes only about 117 days.",
-            "It is the brightest natural object in Earth's night sky after the Moon."
-          ],
-          "records": [
-            "Hottest planet",
-            "Slowest rotation"
-          ],
-          "explorationMilestone": {
-            "year": 1970,
-            "description": "Venera 7 became the first spacecraft to land on another planet"
-          },
-          "info": "Thick atmosphere."
-        },
         "pt": {
           "description": "Vênus é o segundo planeta a partir do Sol. O nome vem da deusa romana do amor e da beleza. Como o objeto natural mais brilhante do céu noturno da Terra depois da Lua, Vênus pode projetar sombras e pode ser visto a olho nu em plena luz do dia. Vênus é um planeta rochoso e às vezes é chamado de \"planeta irmão\" da Terra, pela semelhança de tamanho, massa, proximidade do Sol e composição geral.",
           "curiosity": "Vênus gira no sentido contrário ao da maioria dos outros planetas (rotação retrógrada). Isso quer dizer que o Sol nasce a oeste e se põe a leste.",
@@ -197,25 +140,6 @@
         "pt": "TERRA"
       },
       "editorial": {
-        "en": {
-          "description": "Earth is the third planet from the Sun and the only astronomical object known to harbor life. About 29% of Earth's surface is land consisting of continents and islands. The remaining 71% is covered with water, mostly by oceans, seas, gulfs, and other salt-water bodies, but also by lakes, rivers, and other freshwater, which together constitute the hydrosphere.",
-          "curiosity": "Earth is the only planet not named after a Greek or Roman god. The name comes from Old English and Germanic words meaning 'ground'.",
-          "facts": [
-            "Earth's atmosphere is 78% nitrogen and 21% oxygen.",
-            "It has a powerful magnetic field that protects us from solar wind.",
-            "The planet is actually an oblate spheroid, bulging at the equator.",
-            "71% of the surface is covered by water."
-          ],
-          "records": [
-            "Densest planet",
-            "Only known life"
-          ],
-          "explorationMilestone": {
-            "year": 1961,
-            "description": "Yuri Gagarin became the first human in space"
-          },
-          "info": "Our home."
-        },
         "pt": {
           "description": "A Terra é o terceiro planeta a partir do Sol e o único objeto astronômico que se sabe abrigar vida. Cerca de 29% da superfície da Terra é terra firme, feita de continentes e ilhas. Os 71% restantes são cobertos de água, na maior parte por oceanos, mares, golfos e outros corpos de água salgada, mas também por lagos, rios e outras águas doces, que juntos formam a hidrosfera.",
           "curiosity": "A Terra é o único planeta que não leva o nome de um deus grego ou romano. O nome vem de palavras do inglês antigo e do germânico que querem dizer \"chão\".",
@@ -250,25 +174,6 @@
         "pt": "MARTE"
       },
       "editorial": {
-        "en": {
-          "description": "Mars is the fourth planet from the Sun and the second-smallest planet in the Solar System, being larger than only Mercury. In English, Mars carries the name of the Roman god of war and is often referred to as the 'Red Planet'. The latter refers to the effect of the iron oxide prevalent on Mars's surface, which gives it a reddish appearance distinctive among the astronomical bodies visible to the naked eye.",
-          "curiosity": "Mars is home to Olympus Mons, the largest volcano in the solar system, and Valles Marineris, one of the largest canyons.",
-          "facts": [
-            "Mars has two small moons, Phobos and Deimos.",
-            "There is strong evidence that Mars once had liquid water on its surface.",
-            "Dust storms can cover the entire planet and last for months.",
-            "A year on Mars is 687 Earth days - nearly twice as long."
-          ],
-          "records": [
-            "Tallest mountain (Olympus Mons)",
-            "Largest canyon (Valles Marineris)"
-          ],
-          "explorationMilestone": {
-            "year": 2021,
-            "description": "Perseverance rover landed and deployed the Ingenuity helicopter"
-          },
-          "info": "Red planet."
-        },
         "pt": {
           "description": "Marte é o quarto planeta a partir do Sol e o segundo menor do Sistema Solar, maior apenas que Mercúrio. Marte leva o nome do deus romano da guerra e é muitas vezes chamado de \"planeta vermelho\". O apelido vem do óxido de ferro abundante na superfície de Marte, que lhe dá uma aparência avermelhada, distinta entre os corpos astronômicos visíveis a olho nu.",
           "curiosity": "Marte abriga o Olympus Mons, o maior vulcão do sistema solar, e o Valles Marineris, um dos maiores cânions.",
@@ -303,24 +208,6 @@
         "pt": "FOBOS"
       },
       "editorial": {
-        "en": {
-          "description": "Phobos is the larger and closer of the two natural satellites of Mars. It is a small, irregularly shaped object with a mean radius of 11 km. Phobos orbits Mars much closer than any other major moon orbits its planet, completing an orbit in just 7 hours and 39 minutes. As a result, it rises in the west, moves across the sky in 4 hours and 15 minutes, and sets in the east, twice each Martian day.",
-          "curiosity": "Phobos is spiraling inward at a rate of 2 meters every century. In about 50 million years, it will either crash into Mars or break up into a ring.",
-          "facts": [
-            "It is named after the Greek god Phobos, a son of Ares (Mars) and Aphrodite (Venus).",
-            "Its surface is covered in regolith and has a large impact crater named Stickney.",
-            "Phobos is likely a captured asteroid."
-          ],
-          "records": [
-            "Closest orbiting moon",
-            "Shortest orbital period for a moon"
-          ],
-          "explorationMilestone": {
-            "year": 1971,
-            "description": "Mariner 9 provided the first close-up images"
-          },
-          "info": "Mars moon."
-        },
         "pt": {
           "description": "Fobos é o maior e o mais próximo dos dois satélites naturais de Marte. É um objeto pequeno, de forma irregular, com raio médio de 11 km. Fobos orbita Marte muito mais perto do que qualquer outra lua principal orbita o seu planeta, completando uma volta em apenas 7 horas e 39 minutos. Por causa disso, ele nasce a oeste, atravessa o céu em 4 horas e 15 minutos e se põe a leste, duas vezes a cada dia marciano.",
           "curiosity": "Fobos está espiralando para dentro a uma taxa de 2 metros por século. Em cerca de 50 milhões de anos, ou ele cai em Marte ou se despedaça num anel.",
@@ -354,24 +241,6 @@
         "pt": "DEIMOS"
       },
       "editorial": {
-        "en": {
-          "description": "Deimos is the smaller and outer of the two natural satellites of Mars. It has a mean radius of 6.2 km and takes 30.3 hours to orbit Mars. Like Phobos, Deimos has a lumpy, non-spherical shape and is heavily cratered, though its craters are generally smaller and filled with regolith, giving it a smoother appearance.",
-          "curiosity": "From Mars, Deimos would appear as a bright star-like object, slightly larger than Venus appears from Earth. It would not be large enough to cause a total solar eclipse.",
-          "facts": [
-            "Deimos is gradually moving away from Mars.",
-            "It is named after Deimos, the Greek god of dread and terror.",
-            "Its escape velocity is only 5.6 m/s - you could jump off it with a bike."
-          ],
-          "records": [
-            "Smallest major moon",
-            "Smoothest surface among small moons"
-          ],
-          "explorationMilestone": {
-            "year": 1977,
-            "description": "Viking orbiters provided detailed imagery"
-          },
-          "info": "Mars moon."
-        },
         "pt": {
           "description": "Deimos é o menor e o mais externo dos dois satélites naturais de Marte. Tem raio médio de 6,2 km e leva 30,3 horas para orbitar Marte. Como Fobos, Deimos tem forma irregular, nada esférica, e é muito craterizado, embora as crateras dele sejam em geral menores e preenchidas de regolito, o que lhe dá uma aparência mais lisa.",
           "curiosity": "De Marte, Deimos apareceria como um objeto brilhante parecido com uma estrela, um pouco maior do que Vênus aparece da Terra. Não seria grande o bastante para causar um eclipse solar total.",
@@ -405,26 +274,6 @@
         "pt": "JÚPITER"
       },
       "editorial": {
-        "en": {
-          "description": "Jupiter is the largest planet in the Solar System, with a mass more than two and a half times that of all the other planets combined. It is a gas giant with a mass one-thousandth that of the Sun. Jupiter is primarily composed of hydrogen with a quarter of its mass being helium. It lacks a well-defined solid surface. Because of its rapid rotation, the planet's shape is that of an oblate spheroid.",
-          "curiosity": "Jupiter has the shortest day of all the planets, rotating once every 9 hours and 55 minutes. This rapid rotation creates its strong magnetic field.",
-          "facts": [
-            "The Great Red Spot is a storm larger than Earth that has raged for centuries.",
-            "Jupiter has a faint ring system, discovered by Voyager 1 in 1979.",
-            "Its magnetic field is 20,000 times stronger than Earth's.",
-            "It acts as a 'vacuum cleaner', protecting inner planets from comets."
-          ],
-          "records": [
-            "Largest planet",
-            "Shortest day",
-            "Strongest magnetic field"
-          ],
-          "explorationMilestone": {
-            "year": 1973,
-            "description": "Pioneer 10 became the first spacecraft to visit Jupiter"
-          },
-          "info": "Gas giant."
-        },
         "pt": {
           "description": "Júpiter é o maior planeta do Sistema Solar, com massa mais de duas vezes e meia a de todos os outros planetas somados. É um gigante gasoso com massa de um milésimo da do Sol. Júpiter é composto sobretudo de hidrogênio, com um quarto da massa em hélio. Falta a ele uma superfície sólida bem definida. Por causa da rotação rápida, a forma do planeta é a de um esferoide achatado.",
           "curiosity": "Júpiter tem o dia mais curto de todos os planetas, girando uma vez a cada 9 horas e 55 minutos. Essa rotação rápida cria o campo magnético forte dele.",
@@ -460,25 +309,6 @@
         "pt": "SATURNO"
       },
       "editorial": {
-        "en": {
-          "description": "Saturn is the sixth planet from the Sun and the second-largest in the Solar System, after Jupiter. It is a gas giant with an average radius of about nine and a half times that of Earth. It has only one-eighth the average density of Earth; however, with its larger volume, Saturn is over 95 times more massive. Saturn is famous for its prominent ring system, which is composed mainly of ice particles, with a smaller amount of rocky debris and dust.",
-          "curiosity": "Saturn is the only planet in the Solar System that is less dense than water. If there were a bathtub large enough to hold it, Saturn would float.",
-          "facts": [
-            "Saturn's rings are incredibly thin, estimated to be less than 1 km thick.",
-            "Winds in its upper atmosphere can reach 1,800 km/h.",
-            "It radiates 2.5 times more energy into space than it receives from the Sun.",
-            "The hexagon-shaped storm at its north pole is a unique atmospheric feature."
-          ],
-          "records": [
-            "Most extensive rings",
-            "Least dense planet"
-          ],
-          "explorationMilestone": {
-            "year": 2004,
-            "description": "Cassini-Huygens entered orbit and studied the system for 13 years"
-          },
-          "info": "Ring system."
-        },
         "pt": {
           "description": "Saturno é o sexto planeta a partir do Sol e o segundo maior do Sistema Solar, depois de Júpiter. É um gigante gasoso com raio médio de cerca de nove vezes e meia o da Terra. Tem só um oitavo da densidade média da Terra; ainda assim, com o volume maior, Saturno é mais de 95 vezes mais massivo. Saturno é famoso pelo sistema de anéis proeminente, feito sobretudo de partículas de gelo, com uma parcela menor de detritos rochosos e poeira.",
           "curiosity": "Saturno é o único planeta do Sistema Solar menos denso que a água. Se houvesse uma banheira grande o bastante para ele, Saturno flutuaria.",
@@ -513,25 +343,6 @@
         "pt": "URANO"
       },
       "editorial": {
-        "en": {
-          "description": "Uranus is the seventh planet from the Sun. It is named after the Greek god of the sky. It has the third-largest planetary radius and fourth-largest planetary mass in the Solar System. Uranus is similar in composition to Neptune, and both have bulk chemical compositions which differ from that of the larger gas giants Jupiter and Saturn.",
-          "curiosity": "Uranus rotates on its side, with an axial tilt of 98 degrees. This unique tilt causes the most extreme seasons in the solar system, with each pole getting 42 years of continuous sunlight followed by 42 years of darkness.",
-          "facts": [
-            "It was the first planet found with the aid of a telescope (1781).",
-            "Its blue-green color comes from methane gas in its atmosphere.",
-            "It is often called an 'Ice Giant' because of its icy mantle.",
-            "Uranus has the coldest planetary atmosphere, with a minimum temperature of -224°C."
-          ],
-          "records": [
-            "Coldest atmosphere",
-            "Most extreme axial tilt"
-          ],
-          "explorationMilestone": {
-            "year": 1986,
-            "description": "Voyager 2 is the only spacecraft to have visited Uranus"
-          },
-          "info": "Ice giant."
-        },
         "pt": {
           "description": "Urano é o sétimo planeta a partir do Sol. O nome vem do deus grego do céu. Tem o terceiro maior raio planetário e a quarta maior massa planetária do Sistema Solar. Urano é parecido com Netuno na composição, e os dois têm composições químicas gerais diferentes das dos gigantes gasosos maiores, Júpiter e Saturno.",
           "curiosity": "Urano gira deitado, com uma inclinação de eixo de 98 graus. Essa inclinação única causa as estações mais extremas do sistema solar, com cada polo recebendo 42 anos de luz do Sol seguidos de 42 anos de escuridão.",
@@ -566,25 +377,6 @@
         "pt": "NETUNO"
       },
       "editorial": {
-        "en": {
-          "description": "Neptune is the eighth and farthest-known Solar planet from the Sun. In the Solar System, it is the fourth-largest planet by diameter, the third-most-massive planet, and the densest giant planet. It is 17 times the mass of Earth, slightly more massive than its near-twin Uranus. Neptune is denser and physically smaller than Uranus because its greater mass causes more gravitational compression of its atmosphere.",
-          "curiosity": "Neptune was the first planet located through mathematical calculations rather than empirical observation. Irregularities in the orbit of Uranus led astronomers to predict Neptune's existence.",
-          "facts": [
-            "Winds on Neptune are the fastest in the solar system, reaching 2,100 km/h.",
-            "It has a 'Great Dark Spot' similar to Jupiter's Red Spot.",
-            "Neptune takes 165 Earth years to orbit the Sun.",
-            "Its moon Triton orbits in the opposite direction to the planet's rotation."
-          ],
-          "records": [
-            "Farthest planet",
-            "Fastest winds"
-          ],
-          "explorationMilestone": {
-            "year": 1989,
-            "description": "Voyager 2 passed by Neptune, confirming its rings and moons"
-          },
-          "info": "Winds."
-        },
         "pt": {
           "description": "Netuno é o oitavo e mais distante planeta conhecido do Sol. No Sistema Solar, é o quarto maior planeta em diâmetro, o terceiro mais massivo e o gigante mais denso. Tem 17 vezes a massa da Terra, um pouco mais massivo que o quase gêmeo dele, Urano. Netuno é mais denso e fisicamente menor que Urano porque a massa maior comprime mais a atmosfera pela gravidade.",
           "curiosity": "Netuno foi o primeiro planeta localizado por cálculo matemático, e não por observação direta. Irregularidades na órbita de Urano levaram os astrônomos a prever a existência de Netuno.",
@@ -619,26 +411,6 @@
         "pt": "LUA"
       },
       "editorial": {
-        "en": {
-          "description": "The Moon is Earth's only natural satellite. It is the fifth-largest satellite in the Solar System and the largest among planetary satellites relative to the size of the planet that it orbits. The Moon is a rocky body with a surface cratered by asteroid impacts and covered in regolith. Its gravitational influence produces the ocean tides, body tides, and the slight lengthening of the day.",
-          "curiosity": "The Moon is in synchronous rotation with Earth, which means it always shows the same face to us. The 'dark side' is not actually dark, just never visible from Earth.",
-          "facts": [
-            "The Moon is drifting away from Earth at a rate of 3.8 cm per year.",
-            "It turns once every 27.3 days but takes 29.5 days to run through its phases, because Earth keeps moving along its own orbit meanwhile.",
-            "Temperatures on the surface range from 127°C in sunlight to -173°C in shadow.",
-            "There is water ice at the poles in permanently shadowed craters.",
-            "It is the fifth-largest satellite in the Solar System."
-          ],
-          "records": [
-            "Largest satellite relative to parent",
-            "Only celestial body visited by humans"
-          ],
-          "explorationMilestone": {
-            "year": 1969,
-            "description": "Apollo 11 landed the first humans on the surface"
-          },
-          "info": "Earth satellite."
-        },
         "pt": {
           "description": "A Lua é o único satélite natural da Terra. É o quinto maior satélite do Sistema Solar e o maior entre os satélites planetários em relação ao tamanho do planeta que orbita. A Lua é um corpo rochoso com a superfície craterizada por impactos de asteroides e coberta de regolito. A influência gravitacional dela produz as marés dos oceanos, as marés do corpo sólido e o pequeno alongamento do dia.",
           "curiosity": "A Lua está em rotação síncrona com a Terra, o que quer dizer que ela sempre nos mostra a mesma face. O \"lado escuro\" não é escuro de fato: ele só nunca é visível da Terra.",
@@ -674,24 +446,6 @@
         "pt": "GANIMEDES"
       },
       "editorial": {
-        "en": {
-          "description": "Ganymede is a satellite of Jupiter and the largest and most massive of the Solar System's moons. It is the ninth-largest object in the Solar System and is larger than the planet Mercury, though only about half as massive. Ganymede is composed of approximately equal amounts of silicate rock and water ice. It is a fully differentiated body with an iron-rich, liquid core, and an internal ocean that may contain more water than all of Earth's oceans combined.",
-          "curiosity": "Ganymede is the only moon in the Solar System known to have a substantial magnetosphere, likely created by convection within its liquid iron core.",
-          "facts": [
-            "It has a thin oxygen atmosphere.",
-            "Its surface is a mix of two types of terrain: dark, cratered regions and lighter, grooved regions.",
-            "It participates in a 1:2:4 orbital resonance with Europa and Io."
-          ],
-          "records": [
-            "Largest moon in Solar System",
-            "Only moon with magnetic field"
-          ],
-          "explorationMilestone": {
-            "year": 1996,
-            "description": "Galileo spacecraft made multiple close flybys"
-          },
-          "info": "Largest moon in solar system."
-        },
         "pt": {
           "description": "Ganimedes é um satélite de Júpiter e a maior e mais massiva das luas do Sistema Solar. É o nono maior objeto do Sistema Solar e é maior que o planeta Mercúrio, embora tenha só cerca de metade da massa dele. Ganimedes é composto de quantidades aproximadamente iguais de rocha de silicato e gelo de água. É um corpo inteiramente diferenciado, com núcleo líquido rico em ferro e um oceano interno que pode conter mais água do que todos os oceanos da Terra juntos.",
           "curiosity": "Ganimedes é a única lua do Sistema Solar que se sabe ter uma magnetosfera substancial, provavelmente criada por convecção dentro do núcleo de ferro líquido dele.",
@@ -725,24 +479,6 @@
         "pt": "CALISTO"
       },
       "editorial": {
-        "en": {
-          "description": "Callisto is the second-largest moon of Jupiter and the third-largest moon in the Solar System. It is not in an orbital resonance like the other three Galilean moons, so it is not subject to significant tidal heating. Callisto is composed of approximately equal amounts of rock and ices. Its surface is the most heavily cratered in the Solar System, suggesting a very old surface with no geological activity for billions of years.",
-          "curiosity": "Callisto is often considered the most 'boring' of the Galilean moons due to its lack of activity, but it is a prime candidate for human exploration due to low radiation levels.",
-          "facts": [
-            "It has a very tenuous atmosphere of carbon dioxide.",
-            "Valhalla is the largest multi-ring impact crater on Callisto.",
-            "It may have a subsurface ocean of liquid water."
-          ],
-          "records": [
-            "Most cratered object",
-            "Oldest surface"
-          ],
-          "explorationMilestone": {
-            "year": 1979,
-            "description": "Voyager missions provided first detailed maps"
-          },
-          "info": "Heavily cratered."
-        },
         "pt": {
           "description": "Calisto é a segunda maior lua de Júpiter e a terceira maior lua do Sistema Solar. Ela não está em ressonância orbital como as outras três luas galileanas, então não sofre aquecimento de maré significativo. Calisto é composta de quantidades aproximadamente iguais de rocha e gelos. A superfície dela é a mais craterizada do Sistema Solar, o que sugere uma superfície muito antiga, sem atividade geológica há bilhões de anos.",
           "curiosity": "Calisto é muitas vezes tida como a mais \"sem graça\" das luas galileanas, pela falta de atividade, mas é uma candidata de primeira para a exploração humana, por causa do nível baixo de radiação.",
@@ -776,25 +512,6 @@
         "pt": "IO"
       },
       "editorial": {
-        "en": {
-          "description": "Io is the innermost and third-largest of the four Galilean moons of the planet Jupiter. It is the fourth-largest moon in the Solar System, has the highest density of all the moons, and has the lowest amount of water (by atomic ratio) of any known astronomical object in the Solar System. With over 400 active volcanoes, Io is the most geologically active object in the Solar System.",
-          "curiosity": "Io's extreme volcanic activity is the result of tidal heating from friction generated within Io's interior as it is pulled between Jupiter and the other Galilean moons.",
-          "facts": [
-            "Plumes of sulfur and sulfur dioxide climb as high as 500 km above the surface.",
-            "Its surface is constantly being renewed by lava flows, erasing any impact craters.",
-            "Io cuts across Jupiter's magnetic field lines, generating a powerful electric current.",
-            "In 1676, Ole Rømer measured the speed of light from Io's eclipses: they ran early when Earth approached Jupiter and late as it receded — up to ~17 minutes across Earth's orbit. Atlas shows the geometric times, without that light-travel delay."
-          ],
-          "records": [
-            "Most volcanically active body",
-            "Driest object in Solar System"
-          ],
-          "explorationMilestone": {
-            "year": 1979,
-            "description": "Voyager 1 discovered active volcanism"
-          },
-          "info": "Volcanic world."
-        },
         "pt": {
           "description": "Io é a mais interna e a terceira maior das quatro luas galileanas do planeta Júpiter. É a quarta maior lua do Sistema Solar, tem a maior densidade de todas as luas e a menor quantidade de água (por razão atômica) de qualquer objeto astronômico conhecido do Sistema Solar. Com mais de 400 vulcões ativos, Io é o objeto geologicamente mais ativo do Sistema Solar.",
           "curiosity": "A atividade vulcânica extrema de Io é resultado do aquecimento de maré, do atrito gerado dentro dela enquanto é puxada entre Júpiter e as outras luas galileanas.",
@@ -829,24 +546,6 @@
         "pt": "EUROPA"
       },
       "editorial": {
-        "en": {
-          "description": "Europa is the smallest of the four Galilean moons orbiting Jupiter, and the sixth-closest to the planet of all the 95 known moons of Jupiter. It is also the sixth-largest moon in the Solar System. Europa has the smoothest surface of any known solid object in the Solar System. The apparent youth and smoothness of the surface have led to the hypothesis that a water ocean exists beneath the surface.",
-          "curiosity": "Europa is one of the most promising places in the solar system to look for extraterrestrial life. Its subsurface ocean is kept liquid by tidal heating.",
-          "facts": [
-            "Its surface is crisscrossed by long, linear fractures called lineae.",
-            "There are very few craters, indicating a young surface (20-180 million years old).",
-            "Water vapor plumes have been detected erupting from the surface."
-          ],
-          "records": [
-            "Smoothest surface",
-            "Most likely to harbor life"
-          ],
-          "explorationMilestone": {
-            "year": 1995,
-            "description": "Galileo mission provided evidence of subsurface ocean"
-          },
-          "info": "Subsurface ocean."
-        },
         "pt": {
           "description": "Europa é a menor das quatro luas galileanas que orbitam Júpiter e a sexta mais próxima do planeta entre as 95 luas conhecidas de Júpiter. É também a sexta maior lua do Sistema Solar. Europa tem a superfície mais lisa de qualquer objeto sólido conhecido do Sistema Solar. A juventude e a lisura aparentes da superfície levaram à hipótese de que existe um oceano de água sob ela.",
           "curiosity": "Europa é um dos lugares mais promissores do sistema solar para procurar vida fora da Terra. O oceano sob a superfície dela é mantido líquido pelo aquecimento de maré.",
@@ -880,25 +579,6 @@
         "pt": "TITÃ"
       },
       "editorial": {
-        "en": {
-          "description": "Titan is the largest moon of Saturn and the second-largest natural satellite in the Solar System. It is the only moon known to have a dense atmosphere, and the only known body in space, other than Earth, where clear evidence of stable bodies of surface liquid has been found. Titan is 50% larger (in diameter) than Earth's Moon and 80% more massive.",
-          "curiosity": "Titan has lakes and seas of liquid methane and ethane. The largest, Kraken Mare, is larger than the Caspian Sea on Earth.",
-          "facts": [
-            "Its atmosphere is 98% nitrogen, similar to Earth's.",
-            "The surface pressure is 1.45 times that of Earth's.",
-            "It rains liquid methane on Titan.",
-            "It is the only moon known to have a dense atmosphere."
-          ],
-          "records": [
-            "Only moon with dense atmosphere",
-            "Only extraterrestrial liquid seas"
-          ],
-          "explorationMilestone": {
-            "year": 2005,
-            "description": "Huygens probe landed on the surface"
-          },
-          "info": "Thick atmosphere."
-        },
         "pt": {
           "description": "Titã é a maior lua de Saturno e o segundo maior satélite natural do Sistema Solar. É a única lua que se sabe ter uma atmosfera densa, e o único corpo conhecido no espaço, fora a Terra, onde se achou indício claro de corpos estáveis de líquido na superfície. Titã é 50% maior (em diâmetro) que a Lua da Terra e 80% mais massivo.",
           "curiosity": "Titã tem lagos e mares de metano e etano líquidos. O maior, o Kraken Mare, é maior que o mar Cáspio na Terra.",
@@ -933,24 +613,6 @@
         "pt": "REIA"
       },
       "editorial": {
-        "en": {
-          "description": "Rhea is the second-largest moon of Saturn and the ninth-largest moon in the Solar System. It is an icy body with a density of about 1.236 g/cm³, suggesting it is composed of about 25% rock and 75% water ice. Rhea's surface is heavily cratered and resembles Dione's, with bright wispy terrain on its trailing hemisphere.",
-          "curiosity": "Rhea may have a tenuous ring system of its own, although this has not been definitively confirmed.",
-          "facts": [
-            "It has a very thin atmosphere containing oxygen and carbon dioxide.",
-            "The surface is divided into two geologically different areas based on crater density.",
-            "It is named after the Titan Rhea, mother of the gods."
-          ],
-          "records": [
-            "Second largest Saturn moon",
-            "Possible ring system"
-          ],
-          "explorationMilestone": {
-            "year": 1980,
-            "description": "Voyager 1 confirmed its icy nature"
-          },
-          "info": "Icy body."
-        },
         "pt": {
           "description": "Reia é a segunda maior lua de Saturno e a nona maior lua do Sistema Solar. É um corpo gelado, com densidade de cerca de 1,236 g/cm³, o que sugere que ela é feita de cerca de 25% de rocha e 75% de gelo de água. A superfície de Reia é muito craterizada e parece com a de Dione, com um terreno claro de traços finos no hemisfério de trás.",
           "curiosity": "Reia pode ter um sistema de anéis próprio, embora isso não tenha sido confirmado em definitivo.",
@@ -984,24 +646,6 @@
         "pt": "JÁPETO"
       },
       "editorial": {
-        "en": {
-          "description": "Iapetus is the third-largest natural satellite of Saturn. It is famous for its dramatic two-tone coloration; one hemisphere is bright as snow, while the other is dark as coal. Iapetus has a low density, indicating it is composed mostly of ice with a small amount of rocky materials.",
-          "curiosity": "Iapetus has a massive equatorial ridge running three-quarters of the way around the moon, making it look like a walnut.",
-          "facts": [
-            "The dark material is believed to be dust from another moon, Phoebe.",
-            "It orbits much farther from Saturn than the other major moons.",
-            "Its orbit is significantly inclined to Saturn's equator."
-          ],
-          "records": [
-            "Highest contrast surface",
-            "Walnut shape"
-          ],
-          "explorationMilestone": {
-            "year": 2007,
-            "description": "Cassini flyby revealed the equatorial ridge"
-          },
-          "info": "Two-tone moon."
-        },
         "pt": {
           "description": "Jápeto é o terceiro maior satélite natural de Saturno. É famoso pela coloração dramática em dois tons: um hemisfério é claro como neve, o outro é escuro como carvão. Jápeto tem densidade baixa, o que indica que ele é feito sobretudo de gelo, com pouco material rochoso.",
           "curiosity": "Jápeto tem uma crista equatorial enorme que dá três quartos da volta na lua, o que o faz parecer uma noz.",
@@ -1035,24 +679,6 @@
         "pt": "DIONE"
       },
       "editorial": {
-        "en": {
-          "description": "Dione is the fourth-largest moon of Saturn. It consists of about two-thirds water ice and one-third dense rock. Its leading hemisphere is heavily cratered and uniformly bright, while its trailing hemisphere contains a network of bright ice cliffs (chasmata) creating a wispy appearance.",
-          "curiosity": "Dione shares its orbit with two small co-orbital moons, Helene and Polydeuces, which sit at its Lagrangian points.",
-          "facts": [
-            "It has a subsurface ocean of liquid water.",
-            "Oxygen ions have been detected in its exosphere.",
-            "The 'wisps' are actually bright ice cliffs created by tectonic fractures."
-          ],
-          "records": [
-            "Co-orbital moons",
-            "Ice cliffs"
-          ],
-          "explorationMilestone": {
-            "year": 1980,
-            "description": "Voyager 1 imaged the wispy terrain"
-          },
-          "info": "Cratered ice."
-        },
         "pt": {
           "description": "Dione é a quarta maior lua de Saturno. É feita de cerca de dois terços de gelo de água e um terço de rocha densa. O hemisfério da frente dela é muito craterizado e claro de modo uniforme, enquanto o hemisfério de trás tem uma rede de falésias de gelo brilhantes (chasmata), que criam a aparência de traços finos.",
           "curiosity": "Dione divide a órbita dela com duas luas coorbitais pequenas, Helena e Polideuces, que ficam nos pontos de Lagrange dela.",
@@ -1086,24 +712,6 @@
         "pt": "TÉTIS"
       },
       "editorial": {
-        "en": {
-          "description": "Tethys is the fifth-largest moon of Saturn. It is a mid-sized moon composed almost entirely of water ice, as indicated by its low density. Tethys is heavily cratered and cut by a number of large faults/grabens. The largest impact crater, Odysseus, is about 400 km in diameter, nearly 2/5 of Tethys's diameter.",
-          "curiosity": "A huge valley called Ithaca Chasma runs about 2,000 km long, covering three-quarters of Tethys' circumference.",
-          "facts": [
-            "It has two co-orbital moons, Telesto and Calypso.",
-            "The surface is very bright, second only to Enceladus.",
-            "Odysseus crater flattened out due to the relaxation of the icy crust."
-          ],
-          "records": [
-            "Huge rift valley",
-            "Trojan moons"
-          ],
-          "explorationMilestone": {
-            "year": 1981,
-            "description": "Voyager 2 provided high-resolution images"
-          },
-          "info": "Huge canyon."
-        },
         "pt": {
           "description": "Tétis é a quinta maior lua de Saturno. É uma lua de tamanho médio, feita quase inteiramente de gelo de água, como indica a densidade baixa dela. Tétis é muito craterizada e cortada por várias falhas e fossas grandes (grabens). A maior cratera de impacto, Odysseus, tem cerca de 400 km de diâmetro, quase 2/5 do diâmetro de Tétis.",
           "curiosity": "Um vale enorme chamado Ithaca Chasma tem cerca de 2.000 km de comprimento e cobre três quartos da circunferência de Tétis.",
@@ -1137,24 +745,6 @@
         "pt": "ENCÉLADO"
       },
       "editorial": {
-        "en": {
-          "description": "Enceladus is the sixth-largest moon of Saturn. It is about 500 kilometers in diameter, about a tenth of that of Saturn's largest moon, Titan. Enceladus is covered by fresh, clean ice, making it one of the most reflective bodies of the Solar System. Consequently, its surface temperature at noon only reaches −198 °C.",
-          "curiosity": "Enceladus has cryovolcanoes near the south pole which shoot geyser-like jets of water vapor, molecular hydrogen, other volatiles, and solid material, including sodium chloride crystals and ice particles, into space.",
-          "facts": [
-            "It is the source of Saturn's E ring.",
-            "It has a global subsurface ocean of liquid water.",
-            "Hydrothermal vents at the ocean floor could support life."
-          ],
-          "records": [
-            "Most reflective body",
-            "Active cryovolcanism"
-          ],
-          "explorationMilestone": {
-            "year": 2005,
-            "description": "Cassini discovered the water plumes"
-          },
-          "info": "Ice geysers."
-        },
         "pt": {
           "description": "Encélado é a sexta maior lua de Saturno. Tem cerca de 500 quilômetros de diâmetro, mais ou menos um décimo do diâmetro da maior lua de Saturno, Titã. Encélado é coberto de gelo novo e limpo, o que faz dele um dos corpos mais refletivos do Sistema Solar. Por causa disso, a temperatura da superfície dele ao meio-dia chega apenas a −198 °C.",
           "curiosity": "Encélado tem criovulcões perto do polo sul que lançam ao espaço jatos parecidos com gêiseres, de vapor de água, hidrogênio molecular, outros voláteis e material sólido, incluindo cristais de cloreto de sódio e partículas de gelo.",
@@ -1188,24 +778,6 @@
         "pt": "MIMAS"
       },
       "editorial": {
-        "en": {
-          "description": "Mimas is a moon of Saturn which was discovered in 1789 by William Herschel. It is named after Mimas, a son of Gaia in Greek mythology. With a diameter of 396 kilometres, it is the smallest astronomical body that is known to be rounded in shape because of self-gravitation.",
-          "curiosity": "Mimas is dominated by the Herschel crater, which is so large that the impact nearly shattered the moon. This gives it a striking resemblance to the Death Star from Star Wars.",
-          "facts": [
-            "The impact that created Herschel caused fractures on the opposite side of the moon.",
-            "It is responsible for clearing the Cassini Division in Saturn's rings.",
-            "It is composed mostly of water ice with a small amount of rock."
-          ],
-          "records": [
-            "Smallest rounded body",
-            "Death Star lookalike"
-          ],
-          "explorationMilestone": {
-            "year": 1980,
-            "description": "Voyager 1 revealed the giant crater"
-          },
-          "info": "Death Star lookalike."
-        },
         "pt": {
           "description": "Mimas é uma lua de Saturno, descoberta em 1789 por William Herschel. O nome vem de Mimas, filho de Gaia na mitologia grega. Com 396 quilômetros de diâmetro, é o menor corpo astronômico que se sabe ser arredondado pela própria gravidade.",
           "curiosity": "Mimas é dominado pela cratera Herschel, tão grande que o impacto quase estilhaçou a lua. Isso lhe dá uma semelhança marcante com a Estrela da Morte de Star Wars.",
@@ -1239,25 +811,6 @@
         "pt": "TRITÃO"
       },
       "editorial": {
-        "en": {
-          "description": "Triton is the largest natural satellite of the planet Neptune, and the first Neptunian moon to be discovered. It is the only large moon in the Solar System with a retrograde orbit, an orbit in the direction opposite to its planet's rotation. At 2,710 kilometers in diameter, it is the seventh-largest moon in the Solar System. Because of its retrograde orbit and composition similar to Pluto, Triton is thought to have been a dwarf planet captured from the Kuiper belt.",
-          "curiosity": "Triton is geologically active; its surface is young and has few impact craters. Complex cryovolcanic and tectonic terrains suggest a complex geological history.",
-          "facts": [
-            "It has a tenuous nitrogen atmosphere.",
-            "Geysers erupt nitrogen gas and dust up to 8 km high.",
-            "It is gradually spiraling toward Neptune and will eventually be torn apart.",
-            "It is the only large moon in the Solar System with a retrograde orbit."
-          ],
-          "records": [
-            "Only large retrograde moon",
-            "Captured Kuiper Belt Object"
-          ],
-          "explorationMilestone": {
-            "year": 1989,
-            "description": "Voyager 2 provided the only close-up data"
-          },
-          "info": "Retrograde orbit."
-        },
         "pt": {
           "description": "Tritão é o maior satélite natural do planeta Netuno e a primeira lua netuniana a ser descoberta. É a única lua grande do Sistema Solar com órbita retrógrada, uma órbita no sentido contrário ao da rotação do planeta. Com 2.710 quilômetros de diâmetro, é a sétima maior lua do Sistema Solar. Pela órbita retrógrada e pela composição parecida com a de Plutão, acredita-se que Tritão tenha sido um planeta anão capturado do cinturão de Kuiper.",
           "curiosity": "Tritão é geologicamente ativo; a superfície dele é jovem e tem poucas crateras de impacto. Terrenos criovulcânicos e tectônicos complexos sugerem uma história geológica complexa.",
@@ -1292,24 +845,6 @@
         "pt": "TITÂNIA"
       },
       "editorial": {
-        "en": {
-          "description": "Titania is the largest of the moons of Uranus and the eighth largest moon in the Solar System at a diameter of 1,578 kilometres. It was discovered by William Herschel in 1787. Titania consists of approximately equal amounts of ice and rock, and is likely differentiated into a rocky core and an icy mantle.",
-          "curiosity": "Titania is marked by a massive canyon system that dwarfs the Grand Canyon on Earth, indicating past tectonic activity.",
-          "facts": [
-            "It has a relatively dark, slightly red surface.",
-            "Impact craters reaching 326 km in diameter have been found.",
-            "Infrared spectroscopy revealed the presence of water ice and carbon dioxide."
-          ],
-          "records": [
-            "Largest Uranus moon",
-            "Massive canyon system"
-          ],
-          "explorationMilestone": {
-            "year": 1986,
-            "description": "Voyager 2 imaged about 40% of the surface"
-          },
-          "info": "Largest Uranus moon."
-        },
         "pt": {
           "description": "Titânia é a maior das luas de Urano e a oitava maior lua do Sistema Solar, com 1.578 quilômetros de diâmetro. Foi descoberta por William Herschel em 1787. Titânia é feita de quantidades aproximadamente iguais de gelo e rocha, e é provavelmente diferenciada em um núcleo rochoso e um manto gelado.",
           "curiosity": "Titânia é marcada por um sistema de cânions imenso, que faz o Grand Canyon da Terra parecer pequeno, o que indica atividade tectônica no passado.",
@@ -1343,24 +878,6 @@
         "pt": "OBERON"
       },
       "editorial": {
-        "en": {
-          "description": "Oberon is the outermost major moon of the planet Uranus. It is the second-largest and second most massive of the Uranian moons, and the ninth most massive moon in the Solar System. Consisting of approximately equal amounts of ice and rock, Oberon is likely differentiated into a rocky core and an icy mantle.",
-          "curiosity": "Oberon has the reddest surface among the major Uranian moons. Its surface is heavily cratered, suggesting it has been stable since the early history of the solar system.",
-          "facts": [
-            "It has high mountains, including one that rises 11 km.",
-            "Dark material covers the floors of many craters.",
-            "It is named after the King of the Fairies in Shakespeare's Midsummer Night's Dream."
-          ],
-          "records": [
-            "Outermost major moon",
-            "Highest peak on Uranian moons"
-          ],
-          "explorationMilestone": {
-            "year": 1986,
-            "description": "Voyager 2 imaged about 40% of the surface"
-          },
-          "info": "Outermost major moon."
-        },
         "pt": {
           "description": "Oberon é a lua principal mais externa do planeta Urano. É a segunda maior e a segunda mais massiva das luas de Urano, e a nona lua mais massiva do Sistema Solar. Feito de quantidades aproximadamente iguais de gelo e rocha, Oberon é provavelmente diferenciado em um núcleo rochoso e um manto gelado.",
           "curiosity": "Oberon tem a superfície mais avermelhada entre as luas principais de Urano. A superfície dele é muito craterizada, o que sugere que ele está estável desde o começo da história do sistema solar.",
@@ -1394,24 +911,6 @@
         "pt": "UMBRIEL"
       },
       "editorial": {
-        "en": {
-          "description": "Umbriel is a moon of Uranus discovered on October 24, 1851, by William Lassell. It was discovered at the same time as Ariel and named after a character in Alexander Pope's poem The Rape of the Lock. Umbriel consists mainly of ice with a substantial fraction of rock, and may be differentiated into a rocky core and an icy mantle.",
-          "curiosity": "Umbriel is the darkest of Uranus's major moons, reflecting only about half as much light as Ariel. Its surface is old and heavily cratered.",
-          "facts": [
-            "The Wunda crater has a mysterious bright ring of material on its floor.",
-            "It has very few geological features other than craters.",
-            "It is about the same size as Ariel."
-          ],
-          "records": [
-            "Darkest Uranian moon",
-            "Mysterious bright ring"
-          ],
-          "explorationMilestone": {
-            "year": 1986,
-            "description": "Voyager 2 imaged about 40% of the surface"
-          },
-          "info": "Darkest moon."
-        },
         "pt": {
           "description": "Umbriel é uma lua de Urano, descoberta em 24 de outubro de 1851 por William Lassell. Foi descoberta ao mesmo tempo que Ariel e recebeu o nome de um personagem do poema O Rapto da Madeixa, de Alexander Pope. Umbriel é feito sobretudo de gelo, com uma fração considerável de rocha, e pode ser diferenciado em um núcleo rochoso e um manto gelado.",
           "curiosity": "Umbriel é a mais escura das luas principais de Urano: reflete só cerca de metade da luz que Ariel reflete. A superfície dele é antiga e muito craterizada.",
@@ -1445,24 +944,6 @@
         "pt": "ARIEL"
       },
       "editorial": {
-        "en": {
-          "description": "Ariel is the fourth-largest of the 27 known moons of Uranus. Ariel orbits and rotates in the equatorial plane of Uranus, which is almost perpendicular to the orbit of Uranus and so has an extreme seasonal cycle. It is the brightest of Uranus's major moons.",
-          "curiosity": "Ariel has the youngest surface of all Uranian moons, with few large craters and many extensive interconnected rift valleys (canyons).",
-          "facts": [
-            "Evidence suggests recent geological activity.",
-            "Its surface is crisscrossed by scarps and ridges.",
-            "Flow-like features suggest past cryovolcanism."
-          ],
-          "records": [
-            "Brightest Uranian moon",
-            "Youngest surface among Uranian moons"
-          ],
-          "explorationMilestone": {
-            "year": 1986,
-            "description": "Voyager 2 imaged about 35% of the surface"
-          },
-          "info": "Brightest moon."
-        },
         "pt": {
           "description": "Ariel é a quarta maior das 27 luas conhecidas de Urano. Ariel orbita e gira no plano equatorial de Urano, que é quase perpendicular à órbita de Urano, e por isso tem um ciclo de estações extremo. É a mais brilhante das luas principais de Urano.",
           "curiosity": "Ariel tem a superfície mais jovem de todas as luas de Urano, com poucas crateras grandes e muitos vales de fenda extensos e interligados (cânions).",
@@ -1496,14 +977,6 @@
         "pt": "MIRANDA"
       },
       "editorial": {
-        "en": {
-          "description": "Miranda has mixed terrains, mountains, and faults.",
-          "curiosity": "It has “Frankenstein conditions”, a landscape composed of distinct patches.",
-          "facts": [
-            "Deep fissures and regions of unusual relief."
-          ],
-          "info": "Jumbled terrain."
-        },
         "pt": {
           "description": "Miranda tem terrenos misturados, montanhas e falhas.",
           "curiosity": "Ela tem \"condições de Frankenstein\": uma paisagem feita de retalhos distintos.",
@@ -1527,25 +1000,6 @@
         "pt": "PLUTÃO"
       },
       "editorial": {
-        "en": {
-          "description": "Pluto is a dwarf planet in the Kuiper belt, a ring of bodies beyond the orbit of Neptune. It was the first and the largest Kuiper belt object to be discovered. Pluto is primarily made of ice and rock and is relatively small—about one-sixth the mass of the Moon and one-third its volume. It has a moderately eccentric and inclined orbit during which it ranges from 30 to 49 astronomical units or AU from the Sun.",
-          "curiosity": "Pluto has a 'heart' on its surface, a vast nitrogen-ice plain named Sputnik Planitia. It is constantly renewing itself through convection currents.",
-          "facts": [
-            "Pluto is smaller than Earth's moon.",
-            "Its orbit is so eccentric that it sometimes comes closer to the Sun than Neptune.",
-            "It has five moons: Charon, Styx, Nix, Kerberos, and Hydra.",
-            "A day on Pluto lasts 153 hours."
-          ],
-          "records": [
-            "Largest dwarf planet",
-            "Most complex binary system"
-          ],
-          "explorationMilestone": {
-            "year": 2015,
-            "description": "New Horizons performed the first historic flyby"
-          },
-          "info": "Dwarf planet."
-        },
         "pt": {
           "description": "Plutão é um planeta anão do cinturão de Kuiper, um anel de corpos além da órbita de Netuno. Foi o primeiro e o maior objeto do cinturão de Kuiper a ser descoberto. Plutão é feito sobretudo de gelo e rocha e é relativamente pequeno — cerca de um sexto da massa da Lua e um terço do volume dela. Tem uma órbita moderadamente excêntrica e inclinada, na qual ele varia de 30 a 49 unidades astronômicas (UA) do Sol.",
           "curiosity": "Plutão tem um \"coração\" na superfície, uma planície imensa de gelo de nitrogênio chamada Sputnik Planitia. Ela se renova o tempo todo por correntes de convecção.",
@@ -1580,24 +1034,6 @@
         "pt": "CERES"
       },
       "editorial": {
-        "en": {
-          "description": "Ceres is the largest object in the main asteroid belt that lies between the orbits of Mars and Jupiter. With a diameter of 940 km, Ceres is both the largest of the asteroids and the only dwarf planet in the inner Solar System. It is the 25th-largest body in the Solar System within the orbit of Neptune.",
-          "curiosity": "Ceres is the only dwarf planet located in the inner solar system. It comprises 25% of the asteroid belt's total mass.",
-          "facts": [
-            "Bright spots on its surface are deposits of sodium carbonate (salt).",
-            "It releases water vapor into space, creating a temporary atmosphere.",
-            "Ahuna Mons is a cryovolcano that erupts salty water instead of lava."
-          ],
-          "records": [
-            "Largest asteroid",
-            "Only dwarf planet in inner solar system"
-          ],
-          "explorationMilestone": {
-            "year": 2015,
-            "description": "Dawn spacecraft entered orbit and mapped the surface"
-          },
-          "info": "Asteroid belt."
-        },
         "pt": {
           "description": "Ceres é o maior objeto do cinturão principal de asteroides, que fica entre as órbitas de Marte e Júpiter. Com 940 km de diâmetro, Ceres é ao mesmo tempo o maior dos asteroides e o único planeta anão do Sistema Solar interior. É o 25º maior corpo do Sistema Solar dentro da órbita de Netuno.",
           "curiosity": "Ceres é o único planeta anão do sistema solar interior. Ele responde por 25% da massa total do cinturão de asteroides.",
@@ -1631,24 +1067,6 @@
         "pt": "HAUMEA"
       },
       "editorial": {
-        "en": {
-          "description": "Haumea is a dwarf planet located beyond Neptune's orbit. It was discovered in 2004 by a team headed by Mike Brown of Caltech at the Palomar Observatory. Haumea's mass is about one-third that of Pluto, and 1/1400 that of Earth. Although its shape has not been directly observed, calculations from its light curve are consistent with it being a Jacobi ellipsoid (the shape it would be if it were a dwarf planet), with major axes twice as long as its minor axes.",
-          "curiosity": "Haumea spins so fast that it has been pulled into the shape of a rugby ball. It completes a rotation in less than 4 hours.",
-          "facts": [
-            "It is the only known trans-Neptunian object with a ring system.",
-            "Its surface is covered in crystalline water ice.",
-            "It has two moons, Hi'iaka and Namaka."
-          ],
-          "records": [
-            "Fastest rotating large object",
-            "Only TNO with rings"
-          ],
-          "explorationMilestone": {
-            "year": 2004,
-            "description": "Discovered by teams from Caltech and Sierra Nevada"
-          },
-          "info": "Fast spinner."
-        },
         "pt": {
           "description": "Haumea é um planeta anão que fica além da órbita de Netuno. Foi descoberto em 2004 por uma equipe chefiada por Mike Brown, do Caltech, no Observatório Palomar. A massa de Haumea é cerca de um terço da de Plutão, e 1/1400 da da Terra. Embora a forma dele não tenha sido observada diretamente, o cálculo a partir da curva de luz é compatível com um elipsoide de Jacobi (a forma que ele teria se fosse um planeta anão), com os eixos maiores duas vezes mais longos que os menores.",
           "curiosity": "Haumea gira tão rápido que foi puxado para a forma de uma bola de rúgbi. Ele completa uma rotação em menos de 4 horas.",
@@ -1682,24 +1100,6 @@
         "pt": "MAKEMAKE"
       },
       "editorial": {
-        "en": {
-          "description": "Makemake is a dwarf planet and perhaps the second-largest Kuiper belt object in the classical population, with a diameter approximately two-thirds that of Pluto. Makemake has one known satellite, S/2015 (136472) 1, nicknamed MK 2. Its extremely low average temperature, about 30 K (−243.2 °C), means its surface is covered with methane, ethane, and possibly nitrogen ices.",
-          "curiosity": "Makemake is the second-brightest object in the Kuiper Belt as seen from Earth (after Pluto). It is covered in methane and ethane ice.",
-          "facts": [
-            "It lacks a significant atmosphere, unlike Pluto.",
-            "Its surface is extremely cold, around -243°C.",
-            "It was discovered shortly after Easter, hence the code name 'Easterbunny'."
-          ],
-          "records": [
-            "Second brightest TNO",
-            "Classic Kuiper Belt Object"
-          ],
-          "explorationMilestone": {
-            "year": 2005,
-            "description": "Discovery led to the creation of the 'dwarf planet' category"
-          },
-          "info": "Dwarf planet."
-        },
         "pt": {
           "description": "Makemake é um planeta anão e talvez o segundo maior objeto do cinturão de Kuiper na população clássica, com diâmetro de cerca de dois terços do de Plutão. Makemake tem um satélite conhecido, S/2015 (136472) 1, apelidado de MK 2. A temperatura média extremamente baixa dele, de cerca de 30 K (−243,2 °C), faz com que a superfície seja coberta de gelos de metano, etano e possivelmente nitrogênio.",
           "curiosity": "Makemake é o segundo objeto mais brilhante do cinturão de Kuiper visto da Terra (depois de Plutão). Ele é coberto de gelo de metano e etano.",
@@ -1733,24 +1133,6 @@
         "pt": "ÉRIS"
       },
       "editorial": {
-        "en": {
-          "description": "Eris is the most massive and second-largest known dwarf planet in the Solar System. It is a trans-Neptunian object (TNO) in the scattered disk and has a high-eccentricity orbit. Eris was discovered in January 2005 by a Palomar Observatory-based team led by Mike Brown and verified later that year.",
-          "curiosity": "Eris is more massive than Pluto but slightly smaller in diameter. Its discovery was the final straw that led to Pluto's demotion.",
-          "facts": [
-            "It takes 558 Earth years to orbit the Sun.",
-            "Its surface is highly reflective, suggesting a fresh coating of methane ice.",
-            "It has one moon, Dysnomia."
-          ],
-          "records": [
-            "Most massive dwarf planet",
-            "Farthest dwarf planet"
-          ],
-          "explorationMilestone": {
-            "year": 2005,
-            "description": "Discovery by Mike Brown, Chad Trujillo, and David Rabinowitz"
-          },
-          "info": "Massive dwarf."
-        },
         "pt": {
           "description": "Éris é o planeta anão mais massivo e o segundo maior conhecido do Sistema Solar. É um objeto transnetuniano (TNO) do disco disperso e tem órbita de alta excentricidade. Éris foi descoberto em janeiro de 2005 por uma equipe do Observatório Palomar chefiada por Mike Brown, e verificado mais tarde no mesmo ano.",
           "curiosity": "Éris é mais massivo que Plutão, mas um pouco menor em diâmetro. A descoberta dele foi a gota d'água que levou ao rebaixamento de Plutão.",
@@ -1783,26 +1165,6 @@
         "en": "GONGGONG",
         "pt": "GONGGONG"
       },
-      "editorial": {
-        "en": {
-          "description": "Gonggong is a trans-Neptunian object in the scattered disc, orbiting the Sun. It is the fifth-largest known trans-Neptunian object (not counting Charon). Gonggong is red in color, likely due to the presence of organic compounds called tholins on its surface. It has a rotation period of roughly 22 hours.",
-          "curiosity": "Gonggong is named after a Chinese water god responsible for floods and chaos. It is likely a dwarf planet, though not yet officially recognized.",
-          "facts": [
-            "It has a small moon named Xiangliu.",
-            "Its surface is very red, likely due to tholins (organic compounds).",
-            "It has a highly eccentric orbit, taking it far from the Sun."
-          ],
-          "records": [
-            "Reddest TNO",
-            "Largest unnamed dwarf planet candidate"
-          ],
-          "explorationMilestone": {
-            "year": 2007,
-            "description": "Discovered by Megan Schwamb, Mike Brown, and David Rabinowitz"
-          },
-          "info": "Reddish surface."
-        }
-      },
       "semAlvo": true
     },
     {
@@ -1813,24 +1175,6 @@
         "pt": "QUAOAR"
       },
       "editorial": {
-        "en": {
-          "description": "Quaoar is a dwarf planet candidate in the Kuiper belt. It was discovered in 2002. Quaoar is about half the size of Pluto. It has one known moon, Weywot. Signs of water ice have been found on the surface, which suggests that cryovolcanism may be occurring. A small amount of methane is present on its surface, which can only be retained by the largest Kuiper belt objects.",
-          "curiosity": "Quaoar has a ring system that orbits much further out than the Roche limit, challenging current theories of ring formation.",
-          "facts": [
-            "It was named after the creator god of the Tongva people.",
-            "It has a small moon named Weywot.",
-            "Crystalline water ice has been detected on its surface, suggesting cryovolcanism."
-          ],
-          "records": [
-            "Ring beyond Roche limit",
-            "Dense TNO"
-          ],
-          "explorationMilestone": {
-            "year": 2002,
-            "description": "Discovered by Chad Trujillo and Mike Brown"
-          },
-          "info": "Has rings."
-        },
         "pt": {
           "description": "Quaoar é um candidato a planeta anão do cinturão de Kuiper. Foi descoberto em 2002. Quaoar tem cerca de metade do tamanho de Plutão. Ele tem uma lua conhecida, Weywot. Foram encontrados sinais de gelo de água na superfície, o que sugere que pode haver criovulcanismo. Há uma pequena quantidade de metano na superfície dele, que só os maiores objetos do cinturão de Kuiper conseguem reter.",
           "curiosity": "Quaoar tem um sistema de anéis que orbita muito mais longe que o limite de Roche, o que desafia as teorias atuais de formação de anéis.",
@@ -1863,26 +1207,6 @@
         "en": "ORCUS",
         "pt": "ORCUS"
       },
-      "editorial": {
-        "en": {
-          "description": "Orcus is a trans-Neptunian object in the Kuiper belt. It has a large moon, Vanth. Orcus is a plutino, meaning it is locked in a 2:3 orbital resonance with Neptune, like Pluto. However, its orbit is oriented opposite to Pluto's, earning it the nickname 'anti-Pluto'.",
-          "curiosity": "Orcus is often called the 'anti-Pluto' because its orbit is almost a mirror image of Pluto's. When Pluto is at perihelion (closest to Sun), Orcus is at aphelion (farthest).",
-          "facts": [
-            "It has a large moon, Vanth, making it a binary system like Pluto-Charon.",
-            "Its surface is covered in crystalline water ice and ammonia.",
-            "It is named after the Etruscan god of the underworld."
-          ],
-          "records": [
-            "Anti-Pluto orbit",
-            "Ammonia-rich surface"
-          ],
-          "explorationMilestone": {
-            "year": 2004,
-            "description": "Discovered by Mike Brown, Chad Trujillo, and David Rabinowitz"
-          },
-          "info": "Anti-Pluto."
-        }
-      },
       "semAlvo": true
     },
     {
@@ -1892,26 +1216,6 @@
         "en": "SEDNA",
         "pt": "SEDNA"
       },
-      "editorial": {
-        "en": {
-          "description": "Sedna is a large trans-Neptunian object, which as of 2024 is about 84 AU from the Sun, about three times as far as Neptune. Spectroscopy has revealed that Sedna's surface composition is similar to that of some other trans-Neptunian objects, being largely a mixture of water, methane, and nitrogen ices with tholins.",
-          "curiosity": "Sedna's orbit is exceptionally long and elliptical, taking about 11,400 years to complete one trip around the Sun.",
-          "facts": [
-            "It is one of the reddest objects in the Solar System.",
-            "It never comes close enough to the Sun to be affected by Neptune's gravity.",
-            "Its origin is a mystery; it may have been captured from another star system."
-          ],
-          "records": [
-            "Longest orbital period (major body)",
-            "Most distant perihelion"
-          ],
-          "explorationMilestone": {
-            "year": 2003,
-            "description": "Discovered by Mike Brown, Chad Trujillo, and David Rabinowitz"
-          },
-          "info": "Far distant object."
-        }
-      },
       "semAlvo": true
     },
     {
@@ -1920,26 +1224,6 @@
       "name": {
         "en": "SALACIA",
         "pt": "SALÁCIA"
-      },
-      "editorial": {
-        "en": {
-          "description": "Salacia is a large trans-Neptunian object in the Kuiper belt. It is approximately 850 kilometers in diameter. Salacia has one known moon, Actaea. Both are named after Roman sea deities. Salacia's low density implies that it is composed primarily of water ice.",
-          "curiosity": "Salacia has a very low albedo (reflectivity) compared to other large TNOs, meaning its surface is quite dark.",
-          "facts": [
-            "It orbits the Sun at an average distance of 42 AU.",
-            "It has a moon named Actaea.",
-            "Its density is low, suggesting it is composed mostly of water ice."
-          ],
-          "records": [
-            "Darkest large TNO",
-            "Low density"
-          ],
-          "explorationMilestone": {
-            "year": 2004,
-            "description": "Discovered by Henry Roe, Michael Brown, and Kristina Barkume"
-          },
-          "info": "Dark surface."
-        }
       },
       "semAlvo": true
     },
@@ -1951,24 +1235,6 @@
         "pt": "CARONTE"
       },
       "editorial": {
-        "en": {
-          "description": "Charon is the largest of the five known moons of the dwarf planet Pluto. With a mean radius of 606 km, Charon is the sixth-largest trans-Neptunian object after Pluto, Eris, Haumea, Makemake, and Gonggong. It was discovered in 1978 at the United States Naval Observatory in Washington, D.C., using photographic plates taken at the United States Naval Observatory Flagstaff Station (NOFS).",
-          "curiosity": "Charon is so large relative to Pluto that the two bodies orbit a common center of gravity outside of Pluto, making them a binary dwarf planet system.",
-          "facts": [
-            "Its north pole is covered in reddish tholins, nicknamed 'Mordor Macula'.",
-            "It has canyons deeper than the Grand Canyon.",
-            "Charon does not have a significant atmosphere."
-          ],
-          "records": [
-            "Largest moon relative to parent",
-            "Binary dwarf planet"
-          ],
-          "explorationMilestone": {
-            "year": 2015,
-            "description": "New Horizons provided the first detailed images"
-          },
-          "info": "Binary partner."
-        },
         "pt": {
           "description": "Caronte é a maior das cinco luas conhecidas do planeta anão Plutão. Com raio médio de 606 km, Caronte é o sexto maior objeto transnetuniano, atrás de Plutão, Éris, Haumea, Makemake e Gonggong. Foi descoberto em 1978 no Observatório Naval dos Estados Unidos, em Washington, D.C., em chapas fotográficas feitas na estação de Flagstaff do mesmo observatório (NOFS).",
           "curiosity": "Caronte é tão grande em relação a Plutão que os dois corpos orbitam um centro de gravidade comum fora de Plutão, o que faz deles um sistema binário de planeta anão.",
@@ -2001,26 +1267,6 @@
         "en": "VANTH",
         "pt": "VANTH"
       },
-      "editorial": {
-        "en": {
-          "description": "Vanth is the single known natural satellite of the plutino and likely dwarf planet Orcus. It was discovered by Mike Brown in imagery taken by the Hubble Space Telescope on November 13, 2005. Vanth is massive compared to Orcus, with a mass ratio of about 1:12.",
-          "curiosity": "Vanth is remarkably large compared to Orcus; if Orcus were a planet, Vanth would be the third largest moon relative to its planet in the Solar System.",
-          "facts": [
-            "It orbits Orcus in a nearly perfect circle.",
-            "Its surface is much darker than Orcus, suggesting a different composition.",
-            "It is likely a captured object or formed from a giant impact."
-          ],
-          "records": [
-            "Large moon relative to parent",
-            "Dark surface"
-          ],
-          "explorationMilestone": {
-            "year": 2005,
-            "description": "Discovered by Mike Brown using the Hubble Space Telescope"
-          },
-          "info": "Moon of Orcus."
-        }
-      },
       "semAlvo": true
     },
     {
@@ -2029,26 +1275,6 @@
       "name": {
         "en": "WEYWOT",
         "pt": "WEYWOT"
-      },
-      "editorial": {
-        "en": {
-          "description": "Weywot is the only known moon of the trans-Neptunian object Quaoar. It was discovered by Michael Brown in images acquired on February 14, 2006, by the Hubble Space Telescope. Weywot is estimated to be about 81 km in diameter.",
-          "curiosity": "Weywot is named after the Tongva sky father, the son of Quaoar. It was discovered in images taken to search for a ring system around Quaoar.",
-          "facts": [
-            "It is estimated to be only about 80 km in diameter.",
-            "It orbits Quaoar every 12.4 days.",
-            "Its formation was likely due to a collision event."
-          ],
-          "records": [
-            "Moon of a ringed TNO",
-            "Collision fragment"
-          ],
-          "explorationMilestone": {
-            "year": 2007,
-            "description": "Discovered by Michael Brown"
-          },
-          "info": "Moon of Quaoar."
-        }
       },
       "semAlvo": true
     },
@@ -2060,24 +1286,6 @@
         "pt": "VESTA"
       },
       "editorial": {
-        "en": {
-          "description": "Vesta is one of the largest objects in the asteroid belt, with a mean diameter of 525 kilometers. It was discovered by the German astronomer Heinrich Wilhelm Matthias Olbers on 29 March 1807 and is named after Vesta, the virgin goddess of home and hearth from Roman mythology. Vesta is the second-most-massive and second-largest body in the asteroid belt after the dwarf planet Ceres.",
-          "curiosity": "Vesta is the brightest asteroid visible from Earth. It is the only main-belt asteroid visible to the naked eye.",
-          "facts": [
-            "It has a giant mountain at its south pole, Rheasilvia, which is 22 km high.",
-            "Vesta is responsible for about 6% of all meteorites found on Earth (HED meteorites).",
-            "It has a differentiated interior with a crust, mantle, and core."
-          ],
-          "records": [
-            "Brightest asteroid",
-            "Tallest mountain in asteroid belt"
-          ],
-          "explorationMilestone": {
-            "year": 2011,
-            "description": "Dawn spacecraft orbited Vesta for over a year"
-          },
-          "info": "Brightest asteroid."
-        },
         "pt": {
           "description": "Vesta é um dos maiores objetos do cinturão de asteroides, com diâmetro médio de 525 quilômetros. Foi descoberto pelo astrônomo alemão Heinrich Wilhelm Matthias Olbers em 29 de março de 1807 e leva o nome de Vesta, a deusa virgem do lar e da lareira da mitologia romana. Vesta é o segundo corpo mais massivo e o segundo maior do cinturão de asteroides, atrás do planeta anão Ceres.",
           "curiosity": "Vesta é o asteroide mais brilhante visto da Terra. É o único asteroide do cinturão principal visível a olho nu.",
@@ -2111,24 +1319,6 @@
         "pt": "PALAS"
       },
       "editorial": {
-        "en": {
-          "description": "Pallas is the second asteroid to have been discovered (after Ceres), and it is one of the largest asteroids in the Solar System. It is estimated to comprise 7% of the mass of the asteroid belt, and its diameter of 512 km makes it the third-largest asteroid, slightly smaller than Vesta. It is likely a remnant protoplanet.",
-          "curiosity": "Pallas has a highly inclined orbit of 34.8 degrees, which is unusually steep for a large asteroid. This makes it difficult to reach with spacecraft.",
-          "facts": [
-            "It is the third-largest asteroid by volume.",
-            "Its surface is likely composed of silicate minerals.",
-            "Pallas was the second asteroid to be discovered."
-          ],
-          "records": [
-            "Most inclined major asteroid",
-            "Second discovered asteroid"
-          ],
-          "explorationMilestone": {
-            "year": 1802,
-            "description": "Discovered by Heinrich Wilhelm Olbers"
-          },
-          "info": "High inclination."
-        },
         "pt": {
           "description": "Palas foi o segundo asteroide a ser descoberto (depois de Ceres) e é um dos maiores asteroides do Sistema Solar. Estima-se que ele tenha 7% da massa do cinturão de asteroides, e o diâmetro de 512 km faz dele o terceiro maior asteroide, um pouco menor que Vesta. Ele é provavelmente um protoplaneta que sobrou.",
           "curiosity": "Palas tem uma órbita muito inclinada, de 34,8 graus, o que é fora do comum para um asteroide grande. Isso o torna difícil de alcançar com uma sonda.",
@@ -2162,24 +1352,6 @@
         "pt": "HÍGIA"
       },
       "editorial": {
-        "en": {
-          "description": "Hygiea is a major asteroid located in the main asteroid belt. With a diameter of 434 km, it is the fourth-largest asteroid in the Solar System by both volume and mass. Hygiea is the largest of the class of dark C-type asteroids with a carbonaceous surface that dominates the outer asteroid belt.",
-          "curiosity": "Hygiea is the fourth-largest asteroid but was discovered much later than the others because of its dark surface. It is the main member of the Hygiea family of asteroids.",
-          "facts": [
-            "It is nearly spherical, leading to debates about whether it should be a dwarf planet.",
-            "Its surface is very dark, similar to Ceres.",
-            "It contains water ice on its surface."
-          ],
-          "records": [
-            "Largest dark asteroid",
-            "Spherical asteroid candidate"
-          ],
-          "explorationMilestone": {
-            "year": 1849,
-            "description": "Discovered by Annibale de Gasparis"
-          },
-          "info": "Carbonaceous."
-        },
         "pt": {
           "description": "Hígia é um asteroide grande, que fica no cinturão principal de asteroides. Com 434 km de diâmetro, é o quarto maior asteroide do Sistema Solar, tanto em volume quanto em massa. Hígia é o maior da classe dos asteroides escuros de tipo C, de superfície carbonácea, que dominam o cinturão de asteroides externo.",
           "curiosity": "Hígia é o quarto maior asteroide, mas foi descoberto bem depois dos outros por causa da superfície escura. Ele é o membro principal da família de asteroides de Hígia.",
