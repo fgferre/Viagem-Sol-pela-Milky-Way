@@ -89,6 +89,8 @@ export class Rotulos {
   /** a última posição de câmera PUBLICADA, em pc de cena (item 74) */
   private readonly ultimaCam = new THREE.Vector3(NaN, NaN, NaN);
   private camTimer = 0;
+  /** alguém do outro lado está LENDO a câmera? Ver `emitCamera`. */
+  private cameraTemLeitor = false;
   /** posições VIVAS das luas para os rótulos (projectCorpos) —
    *  3 floats por entrada de `LUAS_DO_SISTEMA`, NaN sem efeméride
    *  (projectCorpos ignora NaN — rótulo só onde há corpo). */
@@ -165,6 +167,15 @@ export class Rotulos {
       const sep = Math.hypot(lua.x - pai.x, lua.y - pai.y);
       lua.opacity *= THREE.MathUtils.smoothstep(sep, LUA_ACENDE_EM, LUA_ACESA_EM);
     }
+  }
+
+  /**
+   * A FICHA ABRIU (ou fechou) — o único leitor da câmera se declara.
+   * Ver `emitCamera`: sem esta porta, publicar era trabalho feito para
+   * ninguém, 4 vezes por segundo, durante todo arrasto no Atlas.
+   */
+  lerCamera(quer: boolean) {
+    this.cameraTemLeitor = quer;
   }
 
   /** os relógios de 4 Hz do rumo e do Sol andam com o quadro */
@@ -264,13 +275,22 @@ export class Rotulos {
   }
 
   /**
-   * A CÂMERA EM ECLÍPTICA, a 4 Hz e só quando ela andou. O gatilho é o
-   * MESMO de `escreverFase` na camada de planetas — comparar o vetor com o
-   * anterior —, porque a pergunta é a mesma: mudou o ponto de onde se
-   * olha? Fora do Atlas publica `null` UMA vez e cala.
+   * A CÂMERA EM ECLÍPTICA, a 4 Hz, só quando ela andou e SÓ COM A FICHA
+   * ABERTA. O gatilho do movimento é o MESMO de `escreverFase` na camada
+   * de planetas — comparar o vetor com o anterior —, porque a pergunta é
+   * a mesma: mudou o ponto de onde se olha?
+   *
+   * O LEITOR ENTRA NA CONTA porque o destino é `setState` (item 78): a
+   * ficha é a única que lê esta posição, e com ela FECHADA cada
+   * publicação re-renderizava o HUD inteiro por um painel que ninguém
+   * abriu — 4 vezes por segundo, durante todo arrasto no Atlas. Fora do
+   * Atlas, ou sem leitor, publica `null` UMA vez e cala; ao voltar, o
+   * `ultimaCam` já é NaN e o quadro seguinte republica sozinho, mesmo
+   * com a câmera parada — que é o que faz a ficha nascer com a posição
+   * de AGORA e não com a da última vez.
    */
   private emitCamera(camPos: THREE.Vector3, fase: Phase) {
-    if (fase !== 'atlas') {
+    if (fase !== 'atlas' || !this.cameraTemLeitor) {
       if (!Number.isNaN(this.ultimaCam.x)) {
         this.ultimaCam.set(NaN, NaN, NaN);
         this.fios.onCamera(null);

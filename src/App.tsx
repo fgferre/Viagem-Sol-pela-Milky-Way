@@ -663,6 +663,19 @@ export default function App() {
   // As peças que só decidem PRESENÇA por fase saem do mapa único
   // (`fases.ts`); as condições compostas continuam aqui, sobre ele.
   const hud = HUD_POR_FASE[phase];
+  /**
+   * A FICHA É A ÚNICA LEITORA DA CÂMERA, e o Director precisa saber
+   * disso (item 78). Com ela fechada, a posição subia por `setState` 4
+   * vezes por segundo durante todo arrasto no Atlas e re-renderizava o
+   * HUD inteiro por um painel que ninguém abriu. O `useEffect` vem
+   * DEPOIS do `useDirector` (que já pôs o Director no ref, síncrono),
+   * então o pedido nunca cai no vazio — inclusive no boot com a ficha
+   * já aberta por `?foco=`.
+   */
+  const fichaAberta = gaveta === 'ficha' && hud.ficha;
+  useEffect(() => {
+    directorRef.current?.lerCamera(fichaAberta);
+  }, [fichaAberta]);
   // ?shot=1 — modo foto: sem transições, capturas determinísticas
   // ?shot=2 — só a cena: sem HUD, para medir o quadro contra a referência
   const shotParam = new URLSearchParams(window.location.search).get('shot');
@@ -1016,7 +1029,7 @@ export default function App() {
           outras: é a regra do `.bare-mode` (`> *:not(.scene-canvas)`) que a
           apaga no `?shot=2`, e ela só alcança filhos diretos. */}
       <FichaDoObjeto
-        aberta={gaveta === 'ficha' && hud.ficha}
+        aberta={fichaAberta}
         onFechar={() => fecharGaveta('ficha')}
         corpoId={escada.corpoId}
         estrelaEmFoco={escada.degrau === 'estrela' ? foco : null}

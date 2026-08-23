@@ -1456,6 +1456,15 @@ export class Director {
   }
 
   /**
+   * A FICHA ABRIU (ou fechou). O React é quem sabe, e a posição da
+   * câmera só sobe para lá enquanto alguém a lê — ver `emitCamera` em
+   * `director/rotulos.ts` (item 78).
+   */
+  lerCamera(quer: boolean) {
+    this.rotulos.lerCamera(quer);
+  }
+
+  /**
    * O PASSO MÁXIMO QUE O INTEGRADOR ANDA num quadro, em segundos
    * (`GRAMPO_DO_PASSO_S`, em `core/engine.ts`). Mesma porta de leitura
    * das duas acima, e pelo mesmo motivo: o juiz do filme mede "o relógio
