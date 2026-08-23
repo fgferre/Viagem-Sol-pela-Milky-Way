@@ -42,14 +42,11 @@ inteiro é o terreno (MOLA). Sem gate esperando.
 
 ### Conteúdo e didática (ex-Onda 8, sem pupila)
 
-- ~~Painel por corpo lendo `corpos.json`.~~ **FEITO em 22/08 (item 74,
-  parte A)**: `FichaDoObjeto` + `lib/atlas/ficha.ts`, quatro seções vivas
-  (agora · físico · órbita · no céu) com a procedência de cada número. O que
-  falta dela é a PARTE B, e mora em `PENDENCIAS.md`: o texto em pt-BR (o
-  editorial dos 45 está em inglês e não vai para a tela), a procedência da
-  textura, o conteúdo da ficha de estrela e a iluminação vista da câmera.
 - Camada de fatos relacionais (idade da luz, o Sol visto de lá, a Lua
-  conferível hoje à noite). A ficha é a casa dela — a casa agora existe.
+  conferível hoje à noite). A ficha do objeto é a casa dela, e a casa está
+  pronta: `FichaDoObjeto` + `lib/atlas/ficha.ts` desde 22/08 (item 74,
+  fechado nas duas partes), com o editorial em pt-BR, a procedência da
+  imagem e a ficha de estrela dentro.
 - Wikipedia no painel, opt-out persistido (desligado ⇒ zero requisições).
   2ª prova ainda pendente: IndexedDB, CORS no GitHub Pages, opt-out
   verificável. Se falhar, a linha cai para Renasce.
@@ -70,8 +67,12 @@ parametrizado”. Deste plano sobram só:
 
 - `arriveDist` com termo angular (câmera, não luz) — hoje a câmera pousaria
   igual em Betelgeuse e em Proxima.
-- Consumir `stellarPhysics.ts` no runtime (hoje só oráculo; vários valores
-  pinados não são físicos).
+- Consumir `stellarPhysics.ts` no runtime. **`temperatureFromBV` saiu do
+  oráculo em 22/08**: a ficha de estrela imprime a temperatura efetiva de
+  cada nomeada, derivada do B−V do catálogo — é a primeira conta deste
+  módulo a chegar à TELA (antes ela só alimentava cor de shader, por
+  `bvToColor`). O resto do arquivo — raio, luminosidade, os valores pinados
+  que não são físicos — segue sem consumidor.
 - `teffK` e `convective` nos 14 vendorizados — exige editar o núcleo; a
   regra M3 que proibia isso era a mesma doutrina da tela congelada,
   revogada. Ainda assim: sem 2ª instância enquanto `SUN_RADIUS = 2.2` e

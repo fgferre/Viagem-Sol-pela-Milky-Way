@@ -21,7 +21,8 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 **O BASTÃO DE 22/08: A ONDA DA UI/UX ABRIU, E A NAVEGAÇÃO FECHOU.** O
 dono respondeu às três perguntas dos mockups e, na mesma mensagem,
 trouxe queixas e ideias novas: a onda da UI/UX está aberta e é feita
-dos itens **61**, **62**, **74**, **75** e **77**. O **73** — *"foi
+dos itens **61**, **62**, **75** e **77** — o **74** fechou em 22/08 e
+saiu da lista. O **73** — *"foi
 criado um monstro frankstein"* — FECHOU em 22/08, nas duas etapas: a
 roda virou zoom contínuo, o arrasto dá a volta inteira, um clique
 escolhe e dois vão, a distância entra no link, os nomes se organizam
@@ -31,22 +32,31 @@ linhas de órbita). **Espera o olho dele no app**, com as fotos em
 `capturas/item73-*`. Palavras dele no fim da mensagem: *"enfim muitas
 ideias que precisam ser organizadas."*
 
-**E O PAINEL DO "EM QUADRO" VOLTOU (item 74, PARTE A fechada em 22/08).**
-Ele perguntou onde tinha ido parar "um elemento grande do HUD cheio de
-informacoes incriveis sobre os objetos selecionados"; a resposta medida
-foi que ele NUNCA veio — a fusão trouxe a mecânica do Atlas e deixou o
-conteúdo do doador para trás. Agora existe: escolher um corpo abre a
-FICHA dele do lado direito, com a distância e a velocidade no instante
-do céu que estiver na tela, o raio, a gravidade, a massa e o escape com
-o "×Terra", a órbita e — para quem orbita o Sol — quanto do disco está
-iluminado visto da Terra. Cada número diz de onde veio, na mesma língua
-do selo. A antiga linha "em quadro" virou o cabeçalho dela. Fotos em
-`capturas/item74-ficha-*`. **A PARTE B veio na mesma data:** os 39
-corpos falam PORTUGUÊS na ficha (a enciclopédia que o dono escreveu em
-inglês no doador, traduzida campo a campo — a leitura é dele), e a foto
-de cada mundo passou a confessar de onde veio, sob que licença e qual é
-o defeito dela (Ceres inventado pela fonte, as emendas de Titã, as 68
-linhas de Europa, os asteroides que são elipsoides). Do **61** já fechou UMA parte: o
+**E O PAINEL DO "EM QUADRO" VOLTOU — INTEIRO (item 74, FECHADO em
+22/08).** Ele perguntou onde tinha ido parar "um elemento grande do HUD
+cheio de informacoes incriveis sobre os objetos selecionados"; a resposta
+medida foi que ele NUNCA veio — a fusão trouxe a mecânica do Atlas e
+deixou o conteúdo do doador para trás. Agora existe, e escolher um corpo
+abre a FICHA dele do lado direito:
+
+- a distância e a velocidade no instante do céu que estiver na tela, e
+  quanto do disco se vê iluminado **daqui**, do ponto onde a câmera está;
+- o raio, a gravidade, a massa e o escape, com o "×Terra";
+- a órbita, e — para quem gira em volta do Sol — a elongação e o disco
+  iluminado **vistos da Terra**;
+- a enciclopédia dos 39 corpos **em português**, traduzida campo a campo
+  do texto que ele mesmo escreveu no doador (**a leitura é dele**);
+- de onde veio a foto de cada mundo, sob que licença, a quem creditar —
+  e o defeito dela: Ceres é inventado pela fonte, Titã tem as emendas,
+  Europa as 68 linhas, Vênus não tem foto em luz visível, e Vesta, Palas,
+  Hígia e Haumea são elipsoides sem malha;
+- e, escolhendo uma ESTRELA, a designação de Bayer ("Sirius" é a **α
+  Canis Majoris**), a distância em anos-luz, a magnitude, o tipo, a cor e
+  a temperatura.
+
+Cada número diz de onde veio, na mesma língua do selo. A antiga linha "em
+quadro" virou o cabeçalho dela. **Espera o olho dele no app**, e as fotos
+são `capturas/item74-ficha-*`. Do **61** já fechou UMA parte: o
 **selo de honestidade**, que não fechava e comia de 3,19% (mesa) a 10,10%
 (celular) da tela, virou UMA LINHA de 0,31% a 1,03% — a mesma peça nas
 duas telas, com gaveta que sobe ao clique, os culpados finalmente na
@@ -135,9 +145,13 @@ RENUMEROU 55→56, quem matou o 55 foi `6d2278a`), **16** e **57** em 21/08
 (`ade2c3e`, `841d57d`), **60**, **63**, **66**,
 **67**, **68**, **58**, **65**, **71** e **73** em 22/08 (`a8a3168`,
 `d562f5a`, `92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`,
-`d2fb2c7`, `c8507ba`). O **73** é o único que levou OITO commits: a obra
+`d2fb2c7`, `c8507ba`), e o **20** e o **74** também em 22/08 (`b381762`,
+`8fd151d`). O **73** é o único que levou OITO commits: a obra
 inteira é a sequência `3f2a290` → `c8507ba`, e o hash da lista é o do
-fecho. (Os sete créditos de 22/08 — **6**, **21**, **33**, **41**, **47**,
+fecho. O **74** levou SETE, de `659a580` a `8fd151d`, e o **20** morreu no
+meio deles — a ficha do objeto é a casa onde a confissão da forma passou a
+morar. O **19** NÃO saiu: fechou a metade da confissão e ficou a das
+texturas. (Os sete créditos de 22/08 — **6**, **21**, **33**, **41**, **47**,
 **50** e **63** — foram achados por varredura: eram os números que não
 estavam nem vivos nem aposentados.)
 O 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do código e os
@@ -331,84 +345,6 @@ está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
 — fica mais bonito com os berçários assim, mais fracos, ou como
 estavam?
 
-**74. O painel grande do "em quadro" do Atlas orbital — onde foi
-parar?** (Dono em 22/08. **A metade (a) está RESPONDIDA e a PARTE A da
-obra (b) FECHOU, na mesma data. O que segue aberto é a parte B.**)
-Palavras dele:
-
-> *"o "em quadro" no projeto atlas orbital havia um elemento grande do
-> HUD cheio de informacoes incriveis sobre os objetos selecionados.
-> onde isso foi parar? (será que está perdido dentro do proejto sem
-> nenhuma ligacao atual com o UI?)"*
-
-**(a) NÃO ESTAVA PERDIDO AQUI: nunca veio.** O painel é o `Sidebar.tsx`
-do doador (778 linhas), alimentado por `celestialBodies.ts` (45 corpos).
-Neste repositório não havia arquivo nenhum dessa família: a fusão trouxe
-a MECÂNICA do Atlas e deixou o CONTEÚDO para trás.
-
-**(b) PARTE A — FECHADA em 22/08.** A ficha do objeto existe, abre
-sozinha com a seleção e vive do lado direito junto de Buscar, Camadas e
-Ajustes, uma gaveta aberta por vez. O que ela mostra hoje, com a
-procedência de cada número escrita na mesma língua do selo:
-
-- **agora** — a distância ao pai e a velocidade orbital, no instante do
-  céu que a máquina do tempo estiver mostrando (Titã: "1187 mil km" de
-  Saturno, "5,7 km/s");
-- **físico** — raio, gravidade, escape e massa, cada um com o "×Terra"
-  quando ele diz alguma coisa;
-- **órbita** — período, a distância mínima e máxima, excentricidade, o
-  dia sideral (Vênus diz "retrógrado") e a janela de validade do modelo;
-- **no céu** — a elongação do Sol e quanto do disco está iluminado,
-  vistos DA TERRA, para os corpos que orbitam o Sol e para a Lua.
-
-A antiga linha "em quadro" virou o CABEÇALHO dela, com o nome, a classe
-e os dois gestos da escada. Sem seleção, nada ocupa o topo. As fotos são
-`capturas/item74-ficha-tita.png` (mesa) e `capturas/item74-ficha-celular.png`
-(390×844). **Espera o olho dele no app.**
-
-**O que fica para a PARTE B**, nesta ordem:
-
-1. **O texto em pt-BR — FEITO em 22/08, e ESPERA A LEITURA DELE.** Os 39
-   corpos que a casa desenha agora falam português na ficha: descrição,
-   uma linha, curiosidade, fatos, recordes e exploração. É **tradução**
-   do texto que ele mesmo escreveu em inglês no projeto doador, campo a
-   campo, sem acrescentar nem tirar fato — o original continua guardado
-   ao lado. Junto foi a nota de modelo e validade, que era o último
-   parágrafo em inglês da tela. **Ele é o autor: a leitura é dele.** O
-   texto mora em `scripts/data/atlas/fonte/editorial-pt.json`, editável
-   à mão. A foto é `capturas/item74-ficha-tita-pt.png`.
-2. **A imagem que confessa — FEITO em 22/08.** A ficha tem a seção "a
-   imagem": de onde a foto veio, sob que licença, a quem creditar, e o
-   defeito medido dela quando há um. Os quatro que confessam são Ceres
-   ("a fonte admite que este mapa é inventado"), Titã (as emendas do
-   mosaico que não entrou), Europa (as 68 linhas de vazio no polo sul) e
-   Vênus ("é o topo de nuvens, não o chão"). Os cinco sem textura
-   licenciada — Palas, Haumea, Makemake, Éris e Quaoar — dizem que a
-   superfície é inventada, e Vesta, Palas, Hígia e Haumea dizem
-   "elipsoide, sem malha". **A frase sai do `docs/reference/ASSETS.md`,
-   lida por máquina**: quem corrige o veredito corrige o documento e a
-   tela acompanha. Fecha a metade da confissão do item **19** e o item
-   **20** inteiro. Foto: `capturas/item74-ficha-ceres-vesta.png`.
-3. **A ficha de estrela — FEITO em 22/08.** Escolher uma estrela abre a
-   ficha com o que o catálogo mede dela: a designação de Bayer inteira
-   ("Sirius" é a **α Canis Majoris**), a distância em anos-luz, a
-   magnitude, o tipo espectral, a cor e a temperatura da superfície. A
-   letra e a constelação eram lidas na construção do catálogo e jogadas
-   fora quando a estrela tinha nome próprio; agora atravessam. **Não há
-   texto editorial nas estrelas e não vai haver** — o que se escrevesse
-   seria inventado ou copiado. Foto:
-   `capturas/item74-ficha-sirius.png`.
-4. **A iluminação vista DAQUI — FEITO em 22/08.** A ficha já dizia quanto
-   do disco está iluminado visto da Terra; agora diz também quanto se vê
-   iluminado **daqui**, do ponto em que a câmera está — que é o que o
-   visitante tem na tela. Vale para toda lua também, e não só para quem
-   orbita o Sol.
-5. **Makemake não tem massa.** O kernel de massas da NASA não o lista —
-   não há satélite que a fixe —, então a ficha dele não escreve as linhas
-   de massa, gravidade e escape. É ausência honesta, não esquecimento: o
-   resto da ficha dele está inteiro, e um teste cobra isso, para que a
-   única coisa que falte na tela seja a que o kernel não mede.
-
 ---
 
 ## MÉDIA — afeta o produto, não salta aos olhos
@@ -438,14 +374,6 @@ crédito da imagem — a frase sai do próprio ASSETS.md, lida por máquina.
 trocá-las é trabalho de bancada (o mosaico Cassini de Titã com as
 emendas tratadas, as 68 linhas de Europa preenchidas, o mosaico Dawn de
 Ceres com licença fechada).
-
-**20. FECHADO em 22/08 — sai da lista no commit seguinte, com o hash.**
-Vesta, Palas, Hígia e Haumea têm forma irregular medida e publicada, e
-esta casa desenha um elipsoide. A ficha de cada um agora diz
-**"elipsoide, sem malha"**, com o selo de artifício. Carregar a malha de
-verdade continua pendente, e não é este item: é a **P-F7-MESH** do
-`docs/reference/ASSETS.md` (falta `GLTFLoader`/`OBJLoader`), que mora
-lá.
 
 **34.** A tela de carregamento desenha outra Via Láctea, de dois braços.
 O modelo da casa tem quatro.
