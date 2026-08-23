@@ -3,7 +3,7 @@
 // API consumida pelo React: eventos de legenda/progresso/fase.
 // ============================================================
 import * as THREE from 'three';
-import { Engine, modoDoToneMapping } from './core/engine';
+import { Engine, GRAMPO_DO_PASSO_S, modoDoToneMapping } from './core/engine';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
@@ -1443,15 +1443,28 @@ export class Director {
   /**
    * O ZOOM DA RODA AINDA TEM EMBALO? Porta de LEITURA, publicada junto
    * com `captura` em `window.__director` pelo mesmo motivo dela: quem
-   * observa o app de fora precisa perguntar "CHEGOU?" e não "passaram N
-   * ms?" (§7 — se o juiz não cobre, cria-se a vista que cobre). Sem ela
-   * o `atlas-smoke` só sabia dormir 600 ms e cobrar que a câmera tivesse
-   * andado, o que numa máquina ocupada é cobrar taxa de quadros e
-   * chamar de defeito (item 76). Não move um pixel: só conta o que o
-   * gesto já sabia.
+   * observa o app de fora pergunta "CHEGOU?" e não "passaram N ms?"
+   * (§7 — se o juiz não cobre, cria-se a vista que cobre). Não move um
+   * pixel: só conta o que o gesto já sabia.
+   *
+   * `undefined` SEM PUNHO DE GESTOS, e não `false`: "não sei" não é "o
+   * gesto acabou". Um `?? false` aqui desligaria sozinho o juiz que
+   * espera por `=== false` no dia em que o punho sumisse.
    */
-  get zoomEmbalando(): boolean {
-    return this.gestos?.embalandoZoom ?? false;
+  get zoomEmbalando(): boolean | undefined {
+    return this.gestos?.embalandoZoom;
+  }
+
+  /**
+   * O PASSO MÁXIMO QUE O INTEGRADOR ANDA num quadro, em segundos
+   * (`GRAMPO_DO_PASSO_S`, em `core/engine.ts`). Mesma porta de leitura
+   * das duas acima, e pelo mesmo motivo: o juiz do filme mede "o relógio
+   * andou?" em QUADROS do app, e um quadro de filme vale este número.
+   * Redigitá-lo no gate faria a régua e o integrador discordarem no dia
+   * em que um dos dois mudasse.
+   */
+  get grampoDoPasso(): number {
+    return GRAMPO_DO_PASSO_S;
   }
 
   // ---- portal do Atlas ---------------------------------------------

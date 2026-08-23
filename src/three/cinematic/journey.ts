@@ -56,6 +56,7 @@ import {
 } from '../world/baseGalactica';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
+import { ORIGEM } from './enquadramento';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
 // rodada.mjs e docs/reference/VISUAL_TARGETS.md). As posições vêm da
@@ -82,7 +83,6 @@ const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682);
 const ALNILAM = new THREE.Vector3(62.8, 602.7, -12.7);
 const RIGEL = new THREE.Vector3(51.601, 256.71, -37.74);
 const ANTARES = new THREE.Vector3(-58.5, -140.3, -75.6);
-const SOL = new THREE.Vector3(0, 0, 0);
 
 // ---- eases ------------------------------------------------------------
 type Ease = (x: number) => number;
@@ -396,7 +396,7 @@ export function distanciaDaAbertura(k: number): number {
  */
 function heliceDaAbertura(): PosFn {
   const direcao = orbit(
-    SOL,
+    ORIGEM,
     0.062, 0.55,
     THREE.MathUtils.degToRad(-150), THREE.MathUtils.degToRad(60),
     0.012, 0.17
@@ -746,7 +746,7 @@ const SHOTS: Shot[] = [
     // Sol REAL — ver `SUN_WALL` e a conta do K lá em cima.
     dur: 6,
     pos: still(SUN_WALL),
-    look: still(SOL),
+    look: still(ORIGEM),
     fov0: 26, fov1: 26,
     quiet: true,
     captions: [{
@@ -773,7 +773,7 @@ const SHOTS: Shot[] = [
     // `fovEase`.
     dur: 24,
     pos: heliceDaAbertura(),
-    look: still(SOL),
+    look: still(ORIGEM),
     fov0: 26, fov1: 56,
     ease: linear,
     fovEase: glide,
@@ -788,12 +788,12 @@ const SHOTS: Shot[] = [
   // ================= ATO II — ÓRION =================
   {
     // partida À FRENTE: o olhar vira cedo para Sirius (DIREÇÃO a
-    // partir da câmera, não ponto em mundo — o lerp de SOL→Sirius×2,4
+    // partir da câmera, não ponto em mundo — o lerp de Sol→Sirius×2,4
     // girava 445 °/s e o play borrava 1 s), ela incha de ponto a farol
     // na passagem a 0,35 pc e o olhar entrega o rumo do cinturão.
     dur: 7,
     pos: SIRIUS_PATH,
-    look: lookEvento(SIRIUS_PATH, SOL, SIRIUS.clone().multiplyScalar(2.4), ALNILAM, 0.58, 0.82),
+    look: lookEvento(SIRIUS_PATH, ORIGEM, SIRIUS.clone().multiplyScalar(2.4), ALNILAM, 0.58, 0.82),
     fov0: 56, fov1: 63,
     ease: glide,
     warp: (k) => 0.25 * Math.sin(Math.PI * k),
@@ -921,7 +921,7 @@ const SHOTS: Shot[] = [
     // O fim do giro já entrega o Escorpião pela borda.
     dur: 7,
     pos: line(RIGEL_PASS, LOOKBACK_2),
-    look: panThenHold(RIGEL, SOL, 0.4),
+    look: panThenHold(RIGEL, ORIGEM, 0.4),
     fov0: 60, fov1: 34,
     ease: settle,
     target: ['SOL'],
@@ -942,7 +942,7 @@ const SHOTS: Shot[] = [
       new THREE.Vector3(30, -40, -30),
       ANT_GATE
     ),
-    look: panThenHold(SOL, ANTARES, 0.3),
+    look: panThenHold(ORIGEM, ANTARES, 0.3),
     fov0: 34, fov1: 50,
     ease: glide,
     warp: (k) => 0.45 * Math.sin(Math.PI * k),

@@ -127,8 +127,10 @@ export function lerPortaQualidade(
 const JANELA_DA_MEDIDA_S = 2.5;
 
 /** o passo que o INTEGRADOR aceita — depois de um engasgo a animação
- *  anda `GRAMPO_DO_PASSO_S` e não salta o buraco inteiro */
-const GRAMPO_DO_PASSO_S = 0.05;
+ *  anda `GRAMPO_DO_PASSO_S` e não salta o buraco inteiro. Exportado
+ *  porque é a régua de quem mede o filme em QUADROS e não em parede
+ *  (o Director o republica em `grampoDoPasso`, para o harness). */
+export const GRAMPO_DO_PASSO_S = 0.05;
 
 /**
  * O MEDIDOR DE QUADROS — puro, para ser julgado sem GPU.

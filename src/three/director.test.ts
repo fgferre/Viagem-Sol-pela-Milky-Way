@@ -194,3 +194,34 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
     expect(stepCorpos).toBeLessThan(stepPalco);
   });
 });
+
+// ============================================================
+// AS PORTAS DE LEITURA do harness (`window.__director`). Elas existem
+// para quem observa o app de fora perguntar "CHEGOU?" em vez de dormir e
+// torcer — e um juiz que se desliga sozinho quando a peça que ele mede
+// some é pior que nenhum.
+// ============================================================
+describe('as portas de leitura do harness', () => {
+  /** roda o corpo REAL do getter, com o `this` que se quiser */
+  const porta = (nome: string, alvo: object) => {
+    const m = FONTE.match(new RegExp(`\\n  get ${nome}\\(\\)[^{]*\\{\\n([^}]*)\\n  \\}`));
+    expect(m, `o getter ${nome} sumiu do director.ts`).not.toBeNull();
+    return new Function(`return (function () {${m![1]}}).call(this);`).call(alvo);
+  };
+
+  it('zoomEmbalando sem punho de gestos é `undefined` — "não sei" não é "acabou"', () => {
+    // `?? false` aqui desligaria o `atlas-smoke`, que espera por
+    // `=== false`: o juiz veria "o gesto acabou" no primeiro instante
+    expect(porta('zoomEmbalando', { gestos: null })).toBeUndefined();
+    expect(porta('zoomEmbalando', { gestos: { embalandoZoom: true } })).toBe(true);
+    expect(porta('zoomEmbalando', { gestos: { embalandoZoom: false } })).toBe(false);
+    expect(FONTE).toContain('get zoomEmbalando(): boolean | undefined {');
+  });
+
+  it('grampoDoPasso publica o passo do integrador — o piso do juiz do filme', () => {
+    // o gate lê daqui em vez de redigitar 0,05 (`filme-smoke`,
+    // `QUADROS_DE_PISO`); o valor é o do engine, não uma cópia
+    expect(FONTE).toContain('return GRAMPO_DO_PASSO_S;');
+    expect(ENGINE).toContain('export const GRAMPO_DO_PASSO_S = 0.05;');
+  });
+});
