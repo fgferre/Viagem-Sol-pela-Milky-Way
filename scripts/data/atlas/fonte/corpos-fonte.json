@@ -1,23 +1,22 @@
 {
   "_fonte": "O EDITORIAL DOS 45 CORPOS DO ATLAS — a fonte VERSIONADA, e a única. Extraído uma vez de SOLAR_SYSTEM_BODIES (src/data/celestialBodies.ts do atlas-orbital) pelo próprio gera-corpos.mjs, quando ele ainda executava o arquivo do doador; desde 2026-08-22 o doador não é mais lido em geração nenhuma. Texto em INGLÊS por ora: a tradução é trabalho editorial do dono e mora na pendência abaixo — enquanto ela não chega, a ficha não mostra prosa nenhuma na tela (linha sem pt some), só número, unidade e procedência.",
   "_proveniencia": {
-    "gerador": "scripts/data/atlas/gera-corpos.mjs",
-    "editorial": "scripts/data/atlas/fonte/corpos-fonte.json",
+    "doador": "atlas-orbital",
     "doadorCommit": "4c52bca0d055b6cb97f88a8ae4144c3b9bfa7951",
-    "orbita": "derivada por três caminhos, cada um o melhor número desta casa para aquele corpo: (1) corpo de Kepler — 360/nDegPerDay e a(1∓e) dos elementos publicados do registro; (2) corpo de tabela com 20+ voltas na janela 1950–2050 — taxa MEDIDA varrendo efemerides.bin, com a e e do osculante médio; (3) corpo de tabela sem voltas suficientes — Kepler III do osculante médio em torno de JD 2460676.5 TDB, com μ de GM_CORPOS (gm_de440.tpc). Derivado, nunca medido diretamente."
+    "campos": [
+      "description",
+      "curiosity",
+      "facts",
+      "records",
+      "explorationMilestone",
+      "info"
+    ],
+    "nota": "Campo ausente no doador fica AUSENTE aqui — inventar fecharia em silêncio um trabalho que é do dono. Editar à mão é permitido e esperado: este arquivo é fonte, não saída de máquina."
   },
   "_pendencias": [
     "tradução pt-BR integral dos campos editoriais — trabalho do dono (item 74, parte B)",
     "miranda: redação editorial — sem records, sem explorationMilestone, facts com 1 item",
     "seis corpos do doador não têm alvo nesta casa (sem textura e sem BODY_AXES): gonggong, orcus, sedna, salacia, vanth, weywot. Eles ficam no editorial e NÃO ganham ficha — ficha sem corpo na cena é promessa."
-  ],
-  "_semAlvo": [
-    "gonggong",
-    "orcus",
-    "sedna",
-    "salacia",
-    "vanth",
-    "weywot"
   ],
   "corpos": [
     {
@@ -76,11 +75,6 @@
           },
           "info": "Smallest planet."
         }
-      },
-      "orbita": {
-        "periodoDias": 87.95055,
-        "minUa": 0.30748952,
-        "maxUa": 0.46666396
       }
     },
     {
@@ -110,11 +104,6 @@
           },
           "info": "Thick atmosphere."
         }
-      },
-      "orbita": {
-        "periodoDias": 224.69683,
-        "minUa": 0.7183941,
-        "maxUa": 0.72816571
       }
     },
     {
@@ -144,11 +133,6 @@
           },
           "info": "Our home."
         }
-      },
-      "orbita": {
-        "periodoDias": 365.26411,
-        "minUa": 0.98333897,
-        "maxUa": 1.01668875
       }
     },
     {
@@ -178,11 +162,6 @@
           },
           "info": "Red planet."
         }
-      },
-      "orbita": {
-        "periodoDias": 687.23915,
-        "minUa": 1.38133444,
-        "maxUa": 1.66595833
       }
     },
     {
@@ -211,11 +190,6 @@
           },
           "info": "Mars moon."
         }
-      },
-      "orbita": {
-        "periodoDias": 0.31891,
-        "minUa": 0.00006172,
-        "maxUa": 0.00006367
       }
     },
     {
@@ -244,11 +218,6 @@
           },
           "info": "Mars moon."
         }
-      },
-      "orbita": {
-        "periodoDias": 1.26244,
-        "minUa": 0.00015678,
-        "maxUa": 0.00015686
       }
     },
     {
@@ -279,11 +248,6 @@
           },
           "info": "Gas giant."
         }
-      },
-      "orbita": {
-        "periodoDias": 4332.72436,
-        "minUa": 4.95131073,
-        "maxUa": 5.4545149
       }
     },
     {
@@ -313,11 +277,6 @@
           },
           "info": "Ring system."
         }
-      },
-      "orbita": {
-        "periodoDias": 10777.0854,
-        "minUa": 9.03272572,
-        "maxUa": 10.06609847
       }
     },
     {
@@ -347,11 +306,6 @@
           },
           "info": "Ice giant."
         }
-      },
-      "orbita": {
-        "periodoDias": 30749.3914,
-        "minUa": 18.29984666,
-        "maxUa": 20.11758973
       }
     },
     {
@@ -381,11 +335,6 @@
           },
           "info": "Winds."
         }
-      },
-      "orbita": {
-        "periodoDias": 60339.05492,
-        "minUa": 29.80590878,
-        "maxUa": 30.40901891
       }
     },
     {
@@ -416,11 +365,6 @@
           },
           "info": "Earth satellite."
         }
-      },
-      "orbita": {
-        "periodoDias": 27.32075,
-        "minUa": 0.00241619,
-        "maxUa": 0.00270287
       }
     },
     {
@@ -449,11 +393,6 @@
           },
           "info": "Largest moon in solar system."
         }
-      },
-      "orbita": {
-        "periodoDias": 7.15448,
-        "minUa": 0.00714424,
-        "maxUa": 0.00716706
       }
     },
     {
@@ -482,11 +421,6 @@
           },
           "info": "Heavily cratered."
         }
-      },
-      "orbita": {
-        "periodoDias": 16.6891,
-        "minUa": 0.01248944,
-        "maxUa": 0.01267401
       }
     },
     {
@@ -516,11 +450,6 @@
           },
           "info": "Volcanic world."
         }
-      },
-      "orbita": {
-        "periodoDias": 1.76914,
-        "minUa": 0.00280882,
-        "maxUa": 0.00283245
       }
     },
     {
@@ -549,11 +478,6 @@
           },
           "info": "Subsurface ocean."
         }
-      },
-      "orbita": {
-        "periodoDias": 3.55122,
-        "minUa": 0.00444298,
-        "maxUa": 0.00452914
       }
     },
     {
@@ -583,11 +507,6 @@
           },
           "info": "Thick atmosphere."
         }
-      },
-      "orbita": {
-        "periodoDias": 15.94548,
-        "minUa": 0.00793284,
-        "maxUa": 0.00840371
       }
     },
     {
@@ -616,11 +535,6 @@
           },
           "info": "Icy body."
         }
-      },
-      "orbita": {
-        "periodoDias": 4.5175,
-        "minUa": 0.00352009,
-        "maxUa": 0.00352653
       }
     },
     {
@@ -649,11 +563,6 @@
           },
           "info": "Two-tone moon."
         }
-      },
-      "orbita": {
-        "periodoDias": 79.3315,
-        "minUa": 0.02309274,
-        "maxUa": 0.02448412
       }
     },
     {
@@ -682,11 +591,6 @@
           },
           "info": "Cratered ice."
         }
-      },
-      "orbita": {
-        "periodoDias": 2.73691,
-        "minUa": 0.00251764,
-        "maxUa": 0.00252993
       }
     },
     {
@@ -715,11 +619,6 @@
           },
           "info": "Huge canyon."
         }
-      },
-      "orbita": {
-        "periodoDias": 1.8878,
-        "minUa": 0.00196965,
-        "maxUa": 0.00197296
       }
     },
     {
@@ -748,11 +647,6 @@
           },
           "info": "Ice geysers."
         }
-      },
-      "orbita": {
-        "periodoDias": 1.37023,
-        "minUa": 0.00158591,
-        "maxUa": 0.00160065
       }
     },
     {
@@ -781,11 +675,6 @@
           },
           "info": "Death Star lookalike."
         }
-      },
-      "orbita": {
-        "periodoDias": 0.94242,
-        "minUa": 0.00121614,
-        "maxUa": 0.00127039
       }
     },
     {
@@ -815,11 +704,6 @@
           },
           "info": "Retrograde orbit."
         }
-      },
-      "orbita": {
-        "periodoDias": 5.87685,
-        "minUa": 0.00237141,
-        "maxUa": 0.00237154
       }
     },
     {
@@ -848,11 +732,6 @@
           },
           "info": "Largest Uranus moon."
         }
-      },
-      "orbita": {
-        "periodoDias": 8.70587,
-        "minUa": 0.00291283,
-        "maxUa": 0.00291979
       }
     },
     {
@@ -881,11 +760,6 @@
           },
           "info": "Outermost major moon."
         }
-      },
-      "orbita": {
-        "periodoDias": 13.46299,
-        "minUa": 0.00389379,
-        "maxUa": 0.00390567
       }
     },
     {
@@ -914,11 +788,6 @@
           },
           "info": "Darkest moon."
         }
-      },
-      "orbita": {
-        "periodoDias": 4.14417,
-        "minUa": 0.00177043,
-        "maxUa": 0.00178526
       }
     },
     {
@@ -947,11 +816,6 @@
           },
           "info": "Brightest moon."
         }
-      },
-      "orbita": {
-        "periodoDias": 2.52038,
-        "minUa": 0.00127588,
-        "maxUa": 0.00127672
       }
     },
     {
@@ -970,11 +834,6 @@
           ],
           "info": "Jumbled terrain."
         }
-      },
-      "orbita": {
-        "periodoDias": 1.41347,
-        "minUa": 0.00086692,
-        "maxUa": 0.00086921
       }
     },
     {
@@ -1004,11 +863,6 @@
           },
           "info": "Dwarf planet."
         }
-      },
-      "orbita": {
-        "periodoDias": 90849.65902,
-        "minUa": 29.68282692,
-        "maxUa": 49.41779773
       }
     },
     {
@@ -1037,11 +891,6 @@
           },
           "info": "Asteroid belt."
         }
-      },
-      "orbita": {
-        "periodoDias": 1680.58904,
-        "minUa": 2.54704596,
-        "maxUa": 2.9856745
       }
     },
     {
@@ -1070,11 +919,6 @@
           },
           "info": "Fast spinner."
         }
-      },
-      "orbita": {
-        "periodoDias": 103779.29603,
-        "minUa": 35.093016,
-        "maxUa": 51.342984
       }
     },
     {
@@ -1103,11 +947,6 @@
           },
           "info": "Dwarf planet."
         }
-      },
-      "orbita": {
-        "periodoDias": 112884.51287,
-        "minUa": 38.446315,
-        "maxUa": 52.983685
       }
     },
     {
@@ -1136,11 +975,6 @@
           },
           "info": "Massive dwarf."
         }
-      },
-      "orbita": {
-        "periodoDias": 203815.88632,
-        "minUa": 37.95736,
-        "maxUa": 97.60464
       }
     },
     {
@@ -1169,8 +1003,7 @@
           },
           "info": "Reddish surface."
         }
-      },
-      "semAlvo": true
+      }
     },
     {
       "id": "quaoar",
@@ -1198,11 +1031,6 @@
           },
           "info": "Has rings."
         }
-      },
-      "orbita": {
-        "periodoDias": 102857.14286,
-        "minUa": 42.0394,
-        "maxUa": 45.3606
       }
     },
     {
@@ -1231,8 +1059,7 @@
           },
           "info": "Anti-Pluto."
         }
-      },
-      "semAlvo": true
+      }
     },
     {
       "id": "sedna",
@@ -1260,8 +1087,7 @@
           },
           "info": "Far distant object."
         }
-      },
-      "semAlvo": true
+      }
     },
     {
       "id": "salacia",
@@ -1289,8 +1115,7 @@
           },
           "info": "Dark surface."
         }
-      },
-      "semAlvo": true
+      }
     },
     {
       "id": "charon",
@@ -1318,11 +1143,6 @@
           },
           "info": "Binary partner."
         }
-      },
-      "orbita": {
-        "periodoDias": 6.38722,
-        "minUa": 0.00013097,
-        "maxUa": 0.00013099
       }
     },
     {
@@ -1351,8 +1171,7 @@
           },
           "info": "Moon of Orcus."
         }
-      },
-      "semAlvo": true
+      }
     },
     {
       "id": "weywot",
@@ -1380,8 +1199,7 @@
           },
           "info": "Moon of Quaoar."
         }
-      },
-      "semAlvo": true
+      }
     },
     {
       "id": "vesta",
@@ -1409,11 +1227,6 @@
           },
           "info": "Brightest asteroid."
         }
-      },
-      "orbita": {
-        "periodoDias": 1325.14742,
-        "minUa": 2.14853228,
-        "maxUa": 2.57362566
       }
     },
     {
@@ -1442,11 +1255,6 @@
           },
           "info": "High inclination."
         }
-      },
-      "orbita": {
-        "periodoDias": 1684.12099,
-        "minUa": 2.13169565,
-        "maxUa": 3.40877388
       }
     },
     {
@@ -1475,11 +1283,6 @@
           },
           "info": "Carbonaceous."
         }
-      },
-      "orbita": {
-        "periodoDias": 2034.3445,
-        "minUa": 2.79590226,
-        "maxUa": 3.48825982
       }
     }
   ]

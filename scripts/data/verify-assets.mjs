@@ -269,7 +269,8 @@ if (starMetadata.quantization.maxLogLumError > 0.001) {
   }
 }
 
-// Onda 2: atlas/corpos — conteúdo editorial migrado verbatim do doador.
+// Onda 2 (+ item 74, 2026-08-22): atlas/corpos — o editorial dos 45, agora
+// com a ÓRBITA dos 38 alvos que orbitam alguma coisa.
 // O contrato numérico (45 corpos, contagens por tipo) vive também em
 // gera-corpos.mjs; aqui ele é cobrado no ARTEFATO publicado, para pegar
 // edição manual do JSON ou gerador que mudou sem regenerar.
@@ -327,8 +328,80 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
   ) {
     throw new Error(
       'atlas/corpos: miranda ganhou records/explorationMilestone — a pendência ' +
-        'deixou de ser verdadeira; remova-a de _pendencias em gera-corpos.mjs.'
+        'deixou de ser verdadeira; remova-a de fonte/corpos-fonte.json.'
     );
+  }
+
+  // ---- O CONTRATO NOVO (item 74, 2026-08-22): ÓRBITA E ALVO ------------
+  // O JSON deixou de ser só editorial. Cada corpo é uma de duas coisas, e
+  // nunca as duas nem nenhuma: ou tem ALVO nesta casa (e então tem órbita,
+  // porque a ficha dele vai mostrá-la), ou é `semAlvo` (e então não tem
+  // órbita nenhuma, porque ficha sem corpo na cena é promessa).
+  const SEM_ALVO_ESPERADOS = ['gonggong', 'orcus', 'sedna', 'salacia', 'vanth', 'weywot'];
+  const semAlvo = corpos.filter((c) => c.semAlvo === true).map((c) => c.id);
+  if (semAlvo.join(',') !== SEM_ALVO_ESPERADOS.join(',')) {
+    throw new Error(
+      `atlas/corpos: os corpos sem alvo são [${semAlvo.join(', ')}]; ` +
+        `esperados [${SEM_ALVO_ESPERADOS.join(', ')}].`
+    );
+  }
+  if ((corposDoc._semAlvo ?? []).join(',') !== semAlvo.join(',')) {
+    throw new Error(
+      'atlas/corpos: _semAlvo no cabeçalho discorda das marcas nos corpos — ' +
+        'o resumo do arquivo não pode divergir do dado dele.'
+    );
+  }
+  if (
+    !corposDoc._pendencias?.some(
+      (p) => typeof p === 'string' && SEM_ALVO_ESPERADOS.every((id) => p.includes(id))
+    )
+  ) {
+    throw new Error('atlas/corpos: _pendencias não nomeia os seis corpos sem alvo.');
+  }
+
+  const alvos = corpos.filter((c) => c.semAlvo !== true);
+  if (alvos.length !== 39) {
+    throw new Error(`atlas/corpos: esperados 39 alvos, obtidos ${alvos.length}.`);
+  }
+  for (const corpo of alvos) {
+    // O SOL É A ÚNICA EXCEÇÃO: ele é a origem e não orbita nada.
+    if (corpo.id === 'sun') {
+      if (corpo.orbita !== undefined) {
+        throw new Error('atlas/corpos: o Sol ganhou órbita — ele é a origem.');
+      }
+      continue;
+    }
+    const o = corpo.orbita;
+    if (
+      !o ||
+      !(o.periodoDias > 0) ||
+      !(o.minUa > 0) ||
+      !(o.maxUa >= o.minUa)
+    ) {
+      throw new Error(
+        `atlas/corpos: "${corpo.id}" sem órbita utilizável (${JSON.stringify(o)}) — ` +
+          'rode npm run data:corpos.'
+      );
+    }
+  }
+  // AS DUAS PONTAS DA ESCALA, cobradas no artefato: um número trocado de
+  // lugar entre corpos é a classe de erro que uma varredura de forma não
+  // pega, e um par de âncoras pega. Fobos leva 7,7 h para dar a volta em
+  // Marte; Éris leva 558 anos para dar a volta no Sol.
+  const porId = new Map(corpos.map((c) => [c.id, c]));
+  const ancoras = [
+    ['phobos', 0.3189, 0.001],
+    ['earth', 365.26, 0.5],
+    ['eris', 203816, 500],
+  ];
+  for (const [id, esperado, tolerancia] of ancoras) {
+    const medido = porId.get(id)?.orbita?.periodoDias;
+    if (medido === undefined || Math.abs(medido - esperado) > tolerancia) {
+      throw new Error(
+        `atlas/corpos: período de "${id}" é ${medido} dias, esperado ${esperado} ` +
+          `± ${tolerancia} — a tabela de órbitas saiu do lugar.`
+      );
+    }
   }
 }
 

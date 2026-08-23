@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  elementosDe,
   elementosParaCartesiano,
   IDS_KEPLER,
   perifocalParaEcliptica,
@@ -33,11 +34,9 @@ import {
 import {
   ASTEROIDS,
   AU_KM,
-  CATALOG_MOONS,
   MU_PARENT,
   MU_SUN_AU3_PER_DAY2,
   SATELLITES,
-  type EclipticElements,
 } from './elementosOrbitais';
 
 const FIXTURES_DIR = path.join(
@@ -56,13 +55,6 @@ interface FixtureHorizons {
 function lerFixture(id: string, data: string): FixtureHorizons {
   const arquivo = path.join(FIXTURES_DIR, `${id}-${data}.json`);
   return JSON.parse(fs.readFileSync(arquivo, 'utf-8')) as FixtureHorizons;
-}
-
-function elementosDe(id: string): EclipticElements {
-  const bloco =
-    SATELLITES[id]?.elements ?? CATALOG_MOONS[id]?.elements ?? ASTEROIDS[id];
-  if (!bloco) throw new Error(`sem bloco de elementos para ${id}`);
-  return bloco;
 }
 
 // Conversão ISO (00:00:00Z UT) → JD TDB, portada de
@@ -277,7 +269,7 @@ describe('kepler / inversão na época (fixtures 2025-01-01)', () => {
       const fx = lerFixture(id, '2025-01-01');
       // Satélites: fixture já é parent-centered (center 500@<pai>);
       // heliocêntricos: center 500@10. Mesmo frame do propagador.
-      const pos = posicaoKepler(id, elementosDe(id).epochJD);
+      const pos = posicaoKepler(id, elementosDe(id)!.elements.epochJD);
       expect(Math.abs(pos.x - fx.position.x)).toBeLessThan(limiar);
       expect(Math.abs(pos.y - fx.position.y)).toBeLessThan(limiar);
       expect(Math.abs(pos.z - fx.position.z)).toBeLessThan(limiar);
@@ -387,5 +379,41 @@ describe('kepler / multi-época (uma por família)', () => {
     const esperadoR = Math.hypot(fx.position.x, fx.position.y, fx.position.z);
     expect(separacaoAngularDeg(pos, fx.position)).toBeLessThan(0.3);
     expect(Math.abs(norma(pos) - esperadoR) / esperadoR).toBeLessThan(0.002);
+  });
+});
+
+describe('elementosDe — a taxa resolvida, uma vez só', () => {
+  it('devolve a taxa EXPLÍCITA de quem a tem, e o período que sai dela', () => {
+    // Mimas está entre os que usam a taxa PUBLICADA (o período dele é curto
+    // demais para o espaçamento de seis meses dos fixtures não aliasar a
+    // fase). 360/n = 0,9424 dia, o período sideral de tabela — e é o número
+    // que o osculante do estado erra em 2%.
+    const mimas = elementosDe('mimas')!;
+    expect(mimas.parent).toBe('saturn');
+    expect(360 / mimas.nDegPerDay).toBeCloseTo(0.9424, 4);
+    const titan = elementosDe('titan')!;
+    expect(360 / titan.nDegPerDay).toBeCloseTo(15.945, 3);
+  });
+
+  it('cai em Kepler III para os asteroides, que não trazem taxa', () => {
+    // Ceres, Palas, Vesta e Hígia são heliocêntricos com elementos
+    // osculantes e sem `nDegPerDay` — a taxa sai de μ☉ e do semieixo, que é
+    // o caminho correto para quem não sofre o J2 de um primário.
+    const ceres = elementosDe('ceres')!;
+    expect(ceres.parent).toBe('sun');
+    expect(ceres.elements.nDegPerDay).toBeUndefined();
+    expect(360 / ceres.nDegPerDay).toBeCloseTo(1680.6, 0);
+  });
+
+  it('cobre exatamente os ids de IDS_KEPLER, e devolve null fora deles', () => {
+    for (const id of IDS_KEPLER) {
+      const e = elementosDe(id);
+      expect(e, id).not.toBeNull();
+      expect(e!.nDegPerDay, id).toBeGreaterThan(0);
+    }
+    // corpo de TABELA: tem efeméride, não tem elementos
+    expect(elementosDe('earth')).toBeNull();
+    expect(elementosDe('moon')).toBeNull();
+    expect(elementosDe('nibiru')).toBeNull();
   });
 });

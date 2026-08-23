@@ -1,47 +1,63 @@
 // ============================================================
-// corpos.json — o conteúdo editorial dos 45 corpos do atlas.
+// corpos.json — o editorial dos 45 corpos do atlas, mais a ÓRBITA dos 39
+// que esta casa desenha.
 //
-// POR QUE EXECUTAR O DOADOR EM VEZ DE COPIAR À MÃO. A lição
-// herdada do próprio atlas (derive-iau-orientation.js) é que
-// transcrição por olho é como um número acaba no campo errado —
-// lá era uma amplitude no argumento errado, aqui seria um fact
-// de Encélado na ficha de Titã. Este script lê o arquivo do
-// doador, faz DOIS retoques puramente textuais (remove a linha
-// do import de tipo, que apontaria para um módulo que não
-// existe fora do doador, e troca `import.meta.env.BASE_URL` por
-// "/", porque .mjs puro não tem import.meta.env do Vite), grava
-// o resultado num .ts temporário e o importa dinamicamente — o
-// Node 25 executa TypeScript por type stripping. O JSON emitido
-// é transcrição de fonte legível por máquina, nunca cópia humana.
+// O DOADOR SAIU DO CAMINHO (2026-08-22, item 74). Até aqui este script
+// EXECUTAVA `src/data/celestialBodies.ts` de `~/Github/atlas-orbital` — ele
+// reescrevia o arquivo do doador em memória, gravava um .ts temporário e o
+// importava. Funcionava, e tinha um defeito de fundo: `npm run data:corpos`
+// só rodava numa máquina que tivesse o doador clonado no caminho certo, e o
+// dado da casa dependia de um repositório que a casa não versiona. O
+// editorial virou fonte AQUI — `fonte/corpos-fonte.json`, com a proveniência
+// do doador dentro dela —, e o doador voltou a ser o que o NORTE manda que
+// ele seja: especificação, nunca fornecedor em runtime.
 //
-// Se depois dos dois retoques sobrar QUALQUER outro import, o
-// script explode em vez de silenciar: um import novo no doador
-// significa que o pré-processamento precisa ser revisto, e
-// remover linhas às cegas executaria um arquivo com semântica
-// diferente da do doador.
+// O QUE O GERADOR FAZ, e é a metade nova: casa o editorial com o que a casa
+// já sabe. Cada um dos 38 alvos que orbitam alguma coisa ganha
+// `orbita{periodoDias,minUa,maxUa}` — e o Sol, que é a origem, não ganha.
+// Nenhum `a`, `e` ou período novo entra à mão: tudo sai das tabelas desta
+// casa (elementos, efeméride embarcada e `GM_CORPOS`).
 //
-// DETERMINÍSTICO de propósito: sem timestamp. Rodar de novo com
-// o doador parado produz arquivo bit-idêntico — mesma disciplina
-// do stars.bin da Onda 1a, para o diff do git mostrar só mudança
-// de conteúdo real. A proveniência é o commit do doador, não a
-// hora da máquina.
+// TRÊS CAMINHOS, E A RAZÃO DE NÃO SER UM SÓ. Cada corpo vem por onde o
+// número é melhor, e a fronteira entre eles é medida (ver `orbitaDoCorpo`):
+// o osculante do estado, sozinho, erraria Mimas em 2% e o ano da Terra em
+// 0,12% ("366 dias"); a taxa varrida na tabela, sozinha, erraria Plutão em
+// 28%, porque em 100 anos ele só anda 0,4 volta. O pior erro de período que
+// sobra, com os três, é 0,32% (Plutão) — e o das cinco famílias medidas fica
+// abaixo de 0,05%.
 //
-// CAMPO AUSENTE FICA AUSENTE. Miranda não tem records nem
-// explorationMilestone no doador — inventar aqui fecharia em
-// silêncio um trabalho editorial que é do dono (PLANO §4:
-// redação de Miranda e tradução pt-BR = Onda 8). A ausência
-// vira pendência nomeada em _pendencias, e o verify-assets
-// cobra que a pendência continue verdadeira no dado. A chave
-// `editorial.pt` só nascerá quando houver tradução.
+// DETERMINÍSTICO de propósito: sem timestamp, época fixa. Rodar de novo com
+// a fonte parada produz arquivo bit-idêntico — mesma disciplina do stars.bin
+// da Onda 1a, para o diff do git mostrar só mudança de conteúdo real.
 //
 //   node scripts/data/atlas/gera-corpos.mjs
-//   ATLAS_DIR=/outro/caminho node scripts/data/atlas/gera-corpos.mjs
 // ============================================================
-import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import os from 'node:os';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { registerHooks } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * O `.ts` QUE O VITE PÕE E O NODE NÃO. Os módulos da casa importam-se uns
+ * aos outros sem extensão (`from './kepler'`) — é o que o bundler espera e o
+ * que o `tsc` resolve. O Node executa TypeScript por type stripping desde a
+ * 22, mas resolve especificador como ESM puro, e ESM puro exige extensão.
+ * Este gancho tenta a resolução normal e, só quando ela falha por módulo não
+ * encontrado, tenta de novo com `.ts` — nunca inventa arquivo, nunca engole
+ * outro erro.
+ */
+registerHooks({
+  resolve(especificador, contexto, proximo) {
+    try {
+      return proximo(especificador, contexto);
+    } catch (erro) {
+      if (erro?.code !== 'ERR_MODULE_NOT_FOUND' || especificador.endsWith('.ts')) {
+        throw erro;
+      }
+      return proximo(`${especificador}.ts`, contexto);
+    }
+  },
+});
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -49,15 +65,46 @@ const rootDirectory = path.resolve(
   '..',
   '..'
 );
-const atlasDirectory = process.env.ATLAS_DIR ?? '/Users/fgferre/Github/atlas-orbital';
-const donorPath = path.join(atlasDirectory, 'src', 'data', 'celestialBodies.ts');
-const outputPath = path.join(rootDirectory, 'public', 'data', 'atlas', 'corpos.json');
+const fontePath = path.join(
+  rootDirectory,
+  'scripts',
+  'data',
+  'atlas',
+  'fonte',
+  'corpos-fonte.json'
+);
+const dadosDir = path.join(rootDirectory, 'public', 'data', 'atlas');
+const outputPath = path.join(dadosDir, 'corpos.json');
+
+// Os módulos da casa entram por type stripping do Node — os mesmos arquivos
+// que o app importa, e não uma segunda cópia da tabela aqui dentro.
+const { decodeEfemerides, MotorEfemerides } = await import(
+  path.join(rootDirectory, 'src/lib/atlas/efemerides.ts')
+);
+const { AU_KM } = await import(
+  path.join(rootDirectory, 'src/lib/atlas/elementosOrbitais.ts')
+);
+const { elementosDe } = await import(
+  path.join(rootDirectory, 'src/lib/atlas/kepler.ts')
+);
+const { GM_CORPOS } = await import(
+  path.join(rootDirectory, 'src/lib/atlas/massas.ts')
+);
+const { REGISTRO_ORBITAL } = await import(
+  path.join(rootDirectory, 'src/lib/atlas/registroOrbital.ts')
+);
+const {
+  ANOES_DO_SISTEMA,
+  ASTEROIDES_DO_SISTEMA,
+  CORPOS_DO_SISTEMA,
+  LUAS_DO_SISTEMA,
+} = await import(path.join(rootDirectory, 'src/three/atlasConfig.ts'));
 
 // ---- contagens esperadas: o mesmo contrato vive em verify-assets.mjs
 const TOTAL_ESPERADO = 45;
 const CONTAGENS_ESPERADAS = { star: 1, planet: 8, moon: 23, dwarf: 5, tno: 5, asteroid: 3 };
 
-// ---- os 6 campos editoriais do PLANO §4, na ordem canônica do JSON
+// ---- os 6 campos editoriais, na ordem canônica do JSON
 const CAMPOS_EDITORIAIS = [
   'description',
   'curiosity',
@@ -67,68 +114,242 @@ const CAMPOS_EDITORIAIS = [
   'info',
 ];
 
-// ---- pré-processamento textual (as DUAS únicas adaptações; qualquer
-//      outra diferença entre doador e temporário é bug deste script)
-let fonte = await readFile(donorPath, 'utf8');
+/**
+ * A ÉPOCA DOS ELEMENTOS — 2025-01-01T00:00:00 TDB, a mesma de
+ * `EPOCH_2025_JD` em `elementosOrbitais.ts`. Escrita como literal e não como
+ * `Date.now()` porque este arquivo tem de sair bit-idêntico a cada corrida.
+ */
+const EPOCA_JD = 2460676.5;
 
-// 1) a linha do import de tipo — cobre `import { type X }` e `import type { X }`,
-//    e SÓ eles: um import de valor não casa aqui de propósito, para cair no
-//    guarda abaixo em vez de ser removido às cegas
-fonte = fonte.replace(
-  /^import\s+(?:type\s+\{\s*[A-Za-z_$][\w$]*\s*\}|\{\s*type\s+[A-Za-z_$][\w$]*\s*\})\s+from\s+["'][^"']+["'];?[^\S\n]*\n/m,
-  ''
+const SEGUNDOS_POR_DIA = 86_400;
+
+/** km³/s² → UA³/dia². */
+function paraUa3PorDia2(gmKm3PorS2) {
+  return (gmKm3PorS2 * SEGUNDOS_POR_DIA * SEGUNDOS_POR_DIA) / AU_KM ** 3;
+}
+
+const modulo = (v) => Math.hypot(v.x, v.y, v.z);
+const escalar = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+const vetorial = (a, b) => ({
+  x: a.y * b.z - a.z * b.y,
+  y: a.z * b.x - a.x * b.z,
+  z: a.x * b.y - a.y * b.x,
+});
+
+/**
+ * Elementos osculantes a partir do ESTADO, pelo caminho clássico: energia
+ * específica dá o semieixo, e o vetor de Laplace–Runge–Lenz dá a
+ * excentricidade.
+ *
+ * `mu` é o μ RELATIVO — G(M + m), a soma do pai com o corpo —, que é o que
+ * governa a órbita relativa de dois corpos. Para a Lua isso importa (ela é
+ * 1,2% da Terra); para Fobos não muda um dígito. Corpo sem GM no kernel
+ * (Makemake) entra só com o μ do pai, e o erro que isso comete é da ordem de
+ * 1e-11.
+ */
+function osculantes(id, jd) {
+  const registro = REGISTRO_ORBITAL[id];
+  const mu = paraUa3PorDia2(GM_CORPOS[registro.centro] + (GM_CORPOS[id] ?? 0));
+  const r = motor.posicao(id, jd);
+  const v = motor.velocidade(id, jd);
+  const rMod = modulo(r);
+  const v2 = escalar(v, v);
+  const a = 1 / (2 / rMod - v2 / mu);
+  const rv = escalar(r, v);
+  // vetor de excentricidade: ((v² − μ/r)·r − (r·v)·v) / μ
+  const k = v2 - mu / rMod;
+  const e = modulo({
+    x: (k * r.x - rv * v.x) / mu,
+    y: (k * r.y - rv * v.y) / mu,
+    z: (k * r.z - rv * v.z) / mu,
+  });
+  if (!Number.isFinite(a) || a <= 0 || !Number.isFinite(e) || e >= 1) {
+    throw new Error(
+      `orbita de "${id}": elementos não elípticos (a=${a}, e=${e}) — ` +
+        `estado ou μ errados, não arredonde isto`
+    );
+  }
+  return { a, e, mu };
+}
+
+/**
+ * OS OSCULANTES MÉDIOS, e não os de um instante. O elemento osculante de um
+ * corpo real balança: a Terra tem o termo mensal da Lua (o par gira em torno
+ * do baricentro, e a tabela guarda a TERRA, não o baricentro), e ele sozinho
+ * põe 0,12% no período — "366 dias" para um ano que todo mundo sabe que tem
+ * 365. Média de 64 amostras sobre uma volta (com piso de um ano e teto na
+ * metade da janela da tabela, que é o que cabe simétrico em torno da época)
+ * derruba isso para 0,002%.
+ */
+function osculantesMedios(id, periodoInicial) {
+  const AMOSTRAS = 64;
+  const METADE_DA_JANELA = 18_262; // 50 anos, o que sobra de cada lado da época
+  const janela = Math.min(Math.max(periodoInicial, 365.25), METADE_DA_JANELA);
+  let somaA = 0;
+  let somaE = 0;
+  for (let i = 0; i < AMOSTRAS; i += 1) {
+    const { a, e } = osculantes(id, EPOCA_JD - janela / 2 + (janela * i) / AMOSTRAS);
+    somaA += a;
+    somaE += e;
+  }
+  return { a: somaA / AMOSTRAS, e: somaE / AMOSTRAS };
+}
+
+/**
+ * A TAXA MÉDIA MEDIDA NA TABELA — o ângulo que o corpo varre de ponta a
+ * ponta da janela embarcada, dividido pelo tempo. É a definição de período
+ * sideral, sem passar por elemento nenhum.
+ *
+ * POR QUE ELA EXISTE, e a Lua é o caso: para um corpo muito perturbado o
+ * período NÃO obedece Kepler III com o semieixo médio. A Lua osculante dá
+ * 27,1 dias contra os 27,32 sideral — 0,7% de erro no número mais conhecido
+ * do céu. Varrendo a tabela, 27,3207 dias: 0,004%.
+ *
+ * O passo tem de ser bem menor que meia volta (senão o `atan2` do ângulo
+ * entre duas amostras "encurta o caminho" e conta menos do que o corpo
+ * andou), e por isso ele é uma fração do período, não um número fixo.
+ */
+function taxaMedidaNaTabela(id, periodoInicial) {
+  const { jdInicio, jdFim } = meta.janela;
+  const passo = periodoInicial / 16;
+  const passos = Math.floor((jdFim - jdInicio) / passo);
+  let anguloTotal = 0;
+  let anterior = motor.posicao(id, jdInicio);
+  for (let i = 1; i <= passos; i += 1) {
+    const atual = motor.posicao(id, jdInicio + i * passo);
+    anguloTotal += Math.atan2(
+      modulo(vetorial(anterior, atual)),
+      escalar(anterior, atual)
+    );
+    anterior = atual;
+  }
+  return (2 * Math.PI * (passos * passo)) / anguloTotal;
+}
+
+/**
+ * QUANTAS VOLTAS PRECISAM CABER na janela para a medição valer. Abaixo
+ * disso a varredura mede um PEDAÇO de órbita, e num corpo excêntrico pedaço
+ * de órbita tem taxa própria: Plutão, com 0,4 volta em 100 anos, "mede"
+ * 65.520 dias contra os 90.560 verdadeiros. Vinte voltas põem o pior resto
+ * parcial abaixo de 0,05%, e é onde a fronteira fica.
+ */
+const VOLTAS_MINIMAS_PARA_MEDIR = 20;
+
+/**
+ * A ÓRBITA DE UM CORPO — período em dias e a distância ao pai no periastro e
+ * no apoastro. TRÊS CAMINHOS, e a escolha é sempre "o melhor número que esta
+ * casa tem para este corpo":
+ *
+ *  1. CORPO DE KEPLER (29 dos 39): o registro já carrega a taxa calibrada
+ *     (`nDegPerDay`, com procedência `pub`/`fix` anotada entrada a entrada)
+ *     e o `a`/`e` publicados. Aqui é TRANSCRIÇÃO, não conta — e é o único
+ *     caminho que acerta Mimas, cujo período de 0,94 dia o osculante do
+ *     estado erra em 2%.
+ *  2. CORPO DE TABELA COM VOLTAS SUFICIENTES (Mercúrio, Vênus, Terra,
+ *     Marte, Lua): taxa MEDIDA varrendo a efeméride embarcada, e o `a`/`e`
+ *     do osculante médio para as distâncias. Erro medido no período: 0,05%
+ *     no pior (Marte).
+ *  3. CORPO DE TABELA SEM VOLTAS SUFICIENTES (Júpiter a Plutão): Kepler III
+ *     do osculante médio. Erro medido: 0,003% (Júpiter) a 0,32% (Plutão).
+ *
+ * O Sol é a origem e não tem órbita — `undefined`, e o verificador cobra que
+ * ele seja o ÚNICO alvo assim.
+ */
+function orbitaDoCorpo(id) {
+  if (id === 'sun') return undefined;
+
+  // Seis casas em UA são ~150 km e cinco em dias são ~1 s: o arredondamento
+  // impede que ruído de última casa apareça como diff no git a cada
+  // regeneração. É EXIBIÇÃO — quem precisa da órbita para MOVER coisa
+  // continua indo aos elementos, nunca a este JSON.
+  const arredondar = (x, casas) => Number(x.toFixed(casas));
+  const escrever = (periodoDias, a, e) => ({
+    periodoDias: arredondar(periodoDias, 5),
+    minUa: arredondar(a * (1 - e), 8),
+    maxUa: arredondar(a * (1 + e), 8),
+  });
+
+  const kepler = elementosDe(id);
+  if (kepler) {
+    return escrever(360 / kepler.nDegPerDay, kepler.elements.aAU, kepler.elements.e);
+  }
+
+  const inicial = osculantes(id, EPOCA_JD);
+  const periodoInicial = 2 * Math.PI * Math.sqrt(inicial.a ** 3 / inicial.mu);
+  const { a, e } = osculantesMedios(id, periodoInicial);
+  const voltas = (meta.janela.jdFim - meta.janela.jdInicio) / periodoInicial;
+  const periodo =
+    voltas >= VOLTAS_MINIMAS_PARA_MEDIR
+      ? taxaMedidaNaTabela(id, periodoInicial)
+      : 2 * Math.PI * Math.sqrt(a ** 3 / inicial.mu);
+  return escrever(periodo, a, e);
+}
+
+// ---- a efeméride embarcada, lida do disco como o app a lê
+const meta = JSON.parse(
+  await readFile(path.join(dadosDir, 'efemerides_meta.json'), 'utf8')
+);
+const bin = await readFile(path.join(dadosDir, 'efemerides.bin'));
+const motor = new MotorEfemerides(
+  decodeEfemerides(
+    bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength),
+    meta
+  )
 );
 
-// 2) o BASE_URL do Vite vira raiz literal
-fonte = fonte.replaceAll('import.meta.env.BASE_URL', '"/"');
+// ---- os alvos desta casa: quem ganha ficha, derivado das tabelas do Atlas
+const ALVOS = new Set(
+  [
+    ...CORPOS_DO_SISTEMA,
+    ...LUAS_DO_SISTEMA,
+    ...ANOES_DO_SISTEMA,
+    ...ASTEROIDES_DO_SISTEMA,
+  ].map((c) => c.id)
+);
 
-// 3) sobrou import? explode — nunca silencie. `\bimport\b` no início de
-//    linha não morde "important" dentro das strings editoriais.
-if (/^\s*import\b/m.test(fonte) || /\bimport\s*\(/.test(fonte) || /\bimport\.meta\b/.test(fonte)) {
-  throw new Error(
-    'celestialBodies.ts do doador tem import além do import de tipo esperado — ' +
-      'o pré-processamento de gera-corpos.mjs precisa ser revisto, não silenciado.'
-  );
+// ---- a fonte versionada
+const fonte = JSON.parse(await readFile(fontePath, 'utf8'));
+if (!Array.isArray(fonte.corpos)) {
+  throw new Error(`${fontePath} não tem um array "corpos" — a fonte mudou de forma.`);
 }
 
-// ---- executa o doador pré-processado (type stripping do Node 25)
-const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'gera-corpos-'));
-let bodies;
-try {
-  const temporaryFile = path.join(temporaryDirectory, 'celestialBodies.ts');
-  await writeFile(temporaryFile, fonte);
-  ({ SOLAR_SYSTEM_BODIES: bodies } = await import(pathToFileURL(temporaryFile).href));
-} finally {
-  await rm(temporaryDirectory, { recursive: true, force: true });
-}
-
-if (!Array.isArray(bodies)) {
-  throw new Error('SOLAR_SYSTEM_BODIES não é um array — o doador mudou de forma.');
-}
-
-// ---- extração: só identidade + editorial; campo ausente fica ausente
-const corpos = bodies.map((body) => {
+const corpos = fonte.corpos.map((body) => {
   if (typeof body.id !== 'string' || typeof body.type !== 'string') {
-    throw new Error(`Corpo sem id/type no doador: ${JSON.stringify(body?.id)}.`);
+    throw new Error(`Corpo sem id/type na fonte: ${JSON.stringify(body?.id)}.`);
   }
   if (typeof body.name?.en !== 'string' || typeof body.name?.pt !== 'string') {
-    throw new Error(`Corpo "${body.id}" sem name.en/name.pt no doador.`);
+    throw new Error(`Corpo "${body.id}" sem name.en/name.pt na fonte.`);
   }
   const en = {};
   for (const campo of CAMPOS_EDITORIAIS) {
-    if (body[campo] !== undefined) en[campo] = body[campo];
+    const valor = body.editorial?.en?.[campo];
+    if (valor !== undefined) en[campo] = valor;
   }
-  return {
+  const editorial = { en };
+  // A chave `pt` atravessa quando existir (parte B do item 74) — o gerador
+  // não a inventa e não a perde.
+  if (body.editorial?.pt !== undefined) editorial.pt = body.editorial.pt;
+
+  const saida = {
     id: body.id,
     type: body.type,
     name: { en: body.name.en, pt: body.name.pt },
-    editorial: { en },
+    editorial,
   };
+  if (ALVOS.has(body.id)) {
+    const orbita = orbitaDoCorpo(body.id);
+    if (orbita) saida.orbita = orbita;
+  } else {
+    // SEM ALVO NESTA CASA, dito no dado e não só na prosa: sem textura e sem
+    // BODY_AXES não há corpo na cena, e ficha sem corpo é promessa.
+    saida.semAlvo = true;
+  }
+  return saida;
 });
 
-// ---- validação: contagens do PLANO §4 (45 corpos, nenhum fica para trás)
+// ---- validação: as contagens do contrato (45 corpos, nenhum fica para trás)
 if (corpos.length !== TOTAL_ESPERADO) {
-  throw new Error(`Esperados ${TOTAL_ESPERADO} corpos; o doador entregou ${corpos.length}.`);
+  throw new Error(`Esperados ${TOTAL_ESPERADO} corpos; a fonte entregou ${corpos.length}.`);
 }
 const contagens = {};
 for (const corpo of corpos) {
@@ -147,22 +368,40 @@ if (new Set(corpos.map((c) => c.id)).size !== corpos.length) {
   throw new Error('Há ids duplicados entre os corpos.');
 }
 
-const doadorCommit = execFileSync('git', ['-C', atlasDirectory, 'rev-parse', 'HEAD'], {
-  encoding: 'utf8',
-}).trim();
+// TODO ALVO TEM ÓRBITA, e a falta grita: o Sol é a origem e não tem órbita
+// nenhuma — é a ÚNICA exceção, e ela é escrita, não tolerada.
+const semOrbita = corpos
+  .filter((c) => ALVOS.has(c.id) && c.orbita === undefined)
+  .map((c) => c.id);
+if (semOrbita.length !== 1 || semOrbita[0] !== 'sun') {
+  throw new Error(
+    `Alvos sem órbita além do Sol: ${semOrbita.join(', ') || '(nenhum, e o Sol sumiu)'}.`
+  );
+}
+const semAlvo = corpos.filter((c) => c.semAlvo).map((c) => c.id);
+if (semAlvo.length !== TOTAL_ESPERADO - ALVOS.size) {
+  throw new Error(
+    `${semAlvo.length} corpos sem alvo, esperados ${TOTAL_ESPERADO - ALVOS.size}: ${semAlvo.join(', ')}.`
+  );
+}
 
 const saida = {
-  _fonte:
-    'SOLAR_SYSTEM_BODIES de src/data/celestialBodies.ts (atlas-orbital) — ' +
-    'campos editoriais migrados verbatim, em inglês',
+  _fonte: fonte._fonte,
   _proveniencia: {
     gerador: 'scripts/data/atlas/gera-corpos.mjs',
-    doadorCommit,
+    editorial: 'scripts/data/atlas/fonte/corpos-fonte.json',
+    doadorCommit: fonte._proveniencia?.doadorCommit,
+    orbita:
+      'derivada por três caminhos, cada um o melhor número desta casa para ' +
+      'aquele corpo: (1) corpo de Kepler — 360/nDegPerDay e a(1∓e) dos ' +
+      'elementos publicados do registro; (2) corpo de tabela com 20+ voltas ' +
+      'na janela 1950–2050 — taxa MEDIDA varrendo efemerides.bin, com a e e ' +
+      'do osculante médio; (3) corpo de tabela sem voltas suficientes — ' +
+      `Kepler III do osculante médio em torno de JD ${EPOCA_JD} TDB, com μ ` +
+      'de GM_CORPOS (gm_de440.tpc). Derivado, nunca medido diretamente.',
   },
-  _pendencias: [
-    'tradução pt-BR integral dos campos editoriais — Onda 8, trabalho do dono',
-    'miranda: redação editorial — sem records, sem explorationMilestone, facts com 1 item',
-  ],
+  _pendencias: fonte._pendencias,
+  _semAlvo: semAlvo,
   corpos,
 };
 
@@ -173,5 +412,6 @@ console.log(
     Object.entries(CONTAGENS_ESPERADAS)
       .map(([tipo, n]) => `${tipo} ${n}`)
       .join(', ') +
-    `) — doador ${doadorCommit.slice(0, 7)}.`
+    `) — ${ALVOS.size} alvos, ${ALVOS.size - 1} com órbita, ` +
+    `${semAlvo.length} sem alvo (${semAlvo.join(', ')}).`
 );

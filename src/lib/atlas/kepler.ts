@@ -208,3 +208,31 @@ export function posicaoKepler(bodyId: string, jdTdb: number): PosicaoEcliptica {
     MRad,
   });
 }
+
+/**
+ * OS ELEMENTOS DE UM CORPO DE KEPLER, com o movimento médio JÁ RESOLVIDO —
+ * o acessório de leitura do registro que este módulo monta logo acima.
+ *
+ * Existe porque a taxa é a única coisa aqui que não é literal de tabela: ela
+ * é explícita para os 26 satélites e TNOs (com a procedência `pub`/`fix`
+ * anotada entrada a entrada em `elementosOrbitais.ts`) e cai em Kepler III
+ * para os quatro asteroides. Quem precisa do período orbital de um corpo —
+ * o gerador de `corpos.json`, e por ele a ficha — precisa dessa resolução, e
+ * copiá-la seria criar a segunda regra de qual taxa vale.
+ *
+ * `null` para corpo de tabela (que tem efeméride e não elementos) e para id
+ * desconhecido: quem chama decide o que fazer, e a decisão fica visível.
+ */
+export function elementosDe(bodyId: string): {
+  parent: string;
+  elements: EclipticElements;
+  nDegPerDay: number;
+} | null {
+  const corpo = CORPOS[bodyId];
+  if (!corpo) return null;
+  return {
+    parent: corpo.parent,
+    elements: corpo.elements,
+    nDegPerDay: movimentoMedioDegPorDia(corpo.elements, corpo.parent, bodyId),
+  };
+}
