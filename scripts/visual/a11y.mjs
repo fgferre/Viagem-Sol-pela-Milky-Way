@@ -703,6 +703,119 @@ async function julgarListbox(s) {
   );
 }
 
+/**
+ * AS DUAS FERRAMENTAS DO ATLAS, e a saída que só existe quando há para
+ * onde voltar (item 61, 23/08).
+ *
+ * A frase do dono que virou código: *"o modo atlas na minha visão deveria
+ * ser o modo único, a viagem na verdade para mim é só uma ferramenta do
+ * modo atlas"*. Até aqui a barra do Atlas tinha UMA porta — "Partir" —, e
+ * "Partir" sem filme atrás devolvia a TELA DE TÍTULO: o modo confessando
+ * ser o secundário. Agora ele oferece ▶ Ver o filme e ↗ Explorar, e a
+ * saída ↩ Voltar ao filme só monta quando o portal guardou um instante.
+ *
+ * O QUE SE COBRA: os rótulos, a ORDEM do Tab (a barra é o que ela lê), a
+ * ausência da saída sem filme guardado e a presença dela com filme, e —
+ * no telefone — que a tarja de cima continue UMA linha. Esta última não é
+ * estética: a altura dessa barra entra na base declarada do retângulo
+ * útil (item 62), e uma barra que cresce move a câmera calada.
+ */
+async function julgarFerramentasDoAtlas(s) {
+  const LER = `JSON.stringify([...document.querySelectorAll('.controls-bar button')]
+    .map((b) => b.textContent.trim()))`;
+  const ALTURA = `(() => { const b = document.querySelector('.controls-bar');
+    if (!b) return null; const r = b.getBoundingClientRect();
+    const tops = new Set([...b.querySelectorAll('button')]
+      .map((x) => Math.round(x.getBoundingClientRect().top)));
+    return { h: +r.height.toFixed(1), linhas: tops.size }; })()`;
+
+  // 1. SEM FILME ATRÁS (o `?atlas=1` puro, que é a porta da abertura)
+  await s.ir(`atlas=1&foco=terra&${PIN}`);
+  await s.assentar();
+  const semFilme = JSON.parse(await s.js(LER));
+  conferir(
+    semFilme.includes('▶ Ver o filme') && semFilme.includes('↗ Explorar'),
+    `atlas: as duas ferramentas estão na barra (${semFilme.join(' · ')})`
+  );
+  conferir(
+    !semFilme.some((t) => t.includes('Voltar ao filme')),
+    'atlas sem filme guardado: NÃO oferece "↩ Voltar ao filme" — não há para onde voltar'
+  );
+  // e a ORDEM do Tab é a da tela, como manda a casa
+  const ordem = JSON.parse(await s.js(
+    `JSON.stringify([...document.querySelectorAll('.controls-bar button')]
+      .map((b) => ({ t: b.textContent.trim(), x: Math.round(b.getBoundingClientRect().left) })))`
+  ));
+  const porTela = [...ordem].sort((a, b) => a.x - b.x).map((b) => b.t);
+  conferir(
+    JSON.stringify(porTela) === JSON.stringify(ordem.map((b) => b.t)),
+    `atlas: o Tab anda na ordem da tela (${porTela.join(' → ')})`
+  );
+
+  // 2. COM FILME ATRÁS — o portal do pausar-e-olhar
+  await s.ir(`t=100&${PIN}`);
+  await s.js('window.__director.entrarNoAtlas()');
+  await s.assentar();
+  const comFilme = JSON.parse(await s.js(LER));
+  conferir(
+    comFilme.some((t) => t.includes('Voltar ao filme')),
+    `atlas vindo do filme: a saída existe e diz para onde vai (${comFilme.join(' · ')})`
+  );
+
+  // 3. O FIM DO FILME oferece "Ficar aqui" — a coda vira Atlas na pose.
+  // A fase `end` não se alcança por `?t=`: ela é o roteiro CHEGANDO ao
+  // fim, então o juiz solta o relógio meio segundo antes e ESPERA a fase
+  // (nunca um número de ms — a régua da casa).
+  await s.ir(`t=192.5&play=1&${PIN}`);
+  const chegou = await esperarPor(s, "window.__director.captura.fase === 'end'", 15000);
+  conferir(chegou !== null, `o filme chega ao fim e a fase vira 'end' (${chegou} ms)`);
+  const noFim = JSON.parse(await s.js(
+    `JSON.stringify([...document.querySelectorAll('.veil-end button')]
+      .map((b) => b.textContent.trim()))`
+  ));
+  conferir(
+    noFim.includes('Ficar aqui'),
+    `o véu do fim oferece as TRÊS saídas (${noFim.join(' · ')})`
+  );
+  // ...e ela LEVA a câmera: entrar dali pousa na pose da coda, não na
+  // vista de abertura a 224 UA
+  const antesDoFim = JSON.parse(await s.js(
+    'JSON.stringify(window.__director.engine.camera.position.toArray())'
+  ));
+  await s.js("[...document.querySelectorAll('.veil-end button')]"
+    + ".find((b) => b.textContent.trim() === 'Ficar aqui').click()");
+  await s.assentar();
+  const depoisDoFim = JSON.parse(await s.js(
+    'JSON.stringify(window.__director.engine.camera.position.toArray())'
+  ));
+  const raio = Math.hypot(...antesDoFim);
+  const desvio = Math.hypot(...antesDoFim.map((v, i) => v - depoisDoFim[i]));
+  conferir(
+    (await s.js('window.__director.captura.fase')) === 'atlas' && desvio / raio < 1e-9,
+    `"Ficar aqui" entra no Atlas NA POSE da coda — desvio`
+      + ` ${(desvio / raio).toExponential(2)} do raio, degrau`
+      + ` '${await s.js('window.__director.escadaViva.degrau')}'`
+  );
+
+  // 4. O TELEFONE: a tarja de cima continua UMA linha nos quatro cantos
+  for (const [w, h] of [[390, 844], [320, 568]]) {
+    for (const ui of [1, 1.4]) {
+      await s.send('Emulation.setDeviceMetricsOverride', {
+        width: w, height: h, deviceScaleFactor: 1, mobile: true,
+      });
+      await s.ir(`atlas=1&ui=${ui}&${PIN}`);
+      await s.assentar();
+      const m = await s.js(ALTURA);
+      conferir(
+        m !== null && m.linhas === 1,
+        `${w}×${h} ui=${ui}: a barra do Atlas é UMA linha (${m ? m.linhas : '?'} linha(s),`
+          + ` ${m ? m.h : '?'} px) — ela é a tarja de cima e a altura dela é base declarada`
+      );
+    }
+  }
+  await s.send('Emulation.clearDeviceMetricsOverride');
+}
+
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
@@ -722,6 +835,9 @@ try {
   // …e o CHROME do filme, que some sozinho desde o item 61 — esta é a
   // única prova da casa que roda com o relógio da viagem SOLTO.
   await julgarChromeDoFilme(sessao);
+
+  // AS DUAS FERRAMENTAS DO ATLAS e a saída condicional (item 61, 23/08).
+  await julgarFerramentasDoAtlas(sessao);
 
   // O ATLAS: os diálogos do modo novo, pelo mesmo contrato. Com `?foco=` de
   // propósito desde o item 74 — a ficha do objeto é o quarto diálogo e só

@@ -60,8 +60,14 @@ const MEDIR_CELULAR = `(() => {
   const selo = cx('.atlas-selo');
   const caixaDaFileira = cx('.atlas-alcas');
   const seletor = document.querySelector('.controls-bar select');
-  const partir = [...document.querySelectorAll('.controls-bar .hud-btn')]
-    .find((b) => b.textContent.trim() === 'Partir');
+  // A BARRA DE CIMA, e não um botão pelo NOME (item 61, 23/08). Ela
+  // guardava o literal 'Partir', e o que importa nunca foi o rótulo: é a
+  // BARRA que tem de estar ancorada na tarja, porque é a altura dela que
+  // entra na base declarada do retângulo útil. Desde o item 61 ela pode
+  // ter três botões (▶ Ver o filme · ↗ Explorar · ↩ Voltar ao filme), e
+  // o último só existe com filme guardado — cobrar um nome era cobrar
+  // uma composição, e a composição mudou.
+  const barra = document.querySelector('.controls-bar');
   const tarja = cx('.letterbox.top');
   return {
     W, H,
@@ -87,8 +93,22 @@ const MEDIR_CELULAR = `(() => {
     // a máquina do tempo PERMANENTE do rodapé; a de dentro da gaveta é outra
     tempoNoRodape: cx('.atlas-rodape .atlas-tempo'),
     seletorVisivel: Boolean(seletor && seletor.getClientRects().length > 0),
-    partirNaTarja: Boolean(partir && tarja
-      && partir.getBoundingClientRect().top < tarja.h + 1),
+    barraNaTarja: Boolean(barra && tarja
+      && barra.getBoundingClientRect().top < tarja.h + 1),
+    // ...e ela é UMA linha: duas cresceriam a base declarada em silêncio
+    // só o que está DESENHADO: o seletor de qualidade continua no DOM
+    // apagado por CSS (é duplicata do painel), e contá-lo daria uma
+    // segunda "linha" no topo da tela que ninguém vê
+    barraLinhas: barra
+      ? new Set([...barra.querySelectorAll('.hud-btn')]
+        .filter((b) => b.getClientRects().length > 0)
+        .map((b) => Math.round(b.getBoundingClientRect().top))).size
+      : 0,
+    barraRotulos: barra
+      ? [...barra.querySelectorAll('.hud-btn')]
+        .filter((b) => b.getClientRects().length > 0)
+        .map((b) => b.textContent.trim())
+      : [],
     dicaFora: (() => {
       const d = document.querySelector('.atlas-rodape .free-hint');
       return d ? getComputedStyle(d).position : null;
@@ -274,9 +294,11 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
           `alças (${onde}): o <select> de qualidade saiu da barra — é duplicata do painel`
         );
         conferir(
-          m.partirNaTarja,
-          `alças (${onde}): o "Partir" está ancorado na TARJA de cima — o topo do`
-            + ` retângulo útil volta a ser a tarja`
+          m.barraNaTarja && m.barraLinhas === 1,
+          `alças (${onde}): a barra de cima está ancorada na TARJA e é UMA linha`
+            + ` (${m.barraLinhas} linha(s): ${m.barraRotulos.join(' · ') || 'vazia'})`
+            + ` — o topo do retângulo útil volta a ser a tarja, e a altura dela`
+            + ` é base declarada`
         );
         conferir(
           m.dicaFora === 'absolute',

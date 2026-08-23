@@ -41,6 +41,14 @@ export interface BarraOuAlcasProps {
   alternarGaveta: (qual: Gaveta) => void;
   /** há alvo em foco? sem ele não há ficha para abrir */
   ofereceFicha: boolean;
+  /**
+   * HÁ FILME GUARDADO ATRÁS DO PORTAL? (item 61, 23/08) É o que decide
+   * se o Atlas oferece "↩ Voltar ao filme". Sem filme atrás o botão
+   * devolvia a TELA DE TÍTULO — o Atlas confessando ser o modo
+   * secundário —, e quem entrou pela porta da abertura via uma saída que
+   * não voltava para lugar nenhum.
+   */
+  temFilmeGuardado: boolean;
   foco: string | null;
   tempo: EstadoDoTempo | null;
   inJourney: boolean;
@@ -64,6 +72,7 @@ export function BarraOuAlcas({
   gaveta,
   alternarGaveta,
   ofereceFicha,
+  temFilmeGuardado,
   foco,
   tempo,
   inJourney,
@@ -166,9 +175,33 @@ export function BarraOuAlcas({
           {portaDaFicha}
         </>
       )}
-      {hud.botaoPartir && (
+      {/* AS DUAS FERRAMENTAS DO ATLAS (item 61, 23/08). Palavras do
+          dono: *"a viagem na verdade para mim é só uma ferramenta do
+          modo atlas"*. Elas ficam na BARRA e não na fileira de alças do
+          telefone, e a escolha é de significado: a fileira é feita de
+          PORTAS — cada alça sobe uma folha e volta a fechar —, e estas
+          duas TROCAM DE MODO. Pôr uma troca de modo entre gavetas seria
+          prometer que ela também "abre e fecha". No telefone elas
+          entram na mesma tarja de cima que já hospeda a saída, que é
+          exatamente o lugar onde as trocas de modo moram. */}
+      {hud.saidasDoAtlas && (
+        <>
+          <button
+            className="hud-btn small"
+            onClick={play}
+            aria-label="Ver o filme desde o começo"
+          >
+            ▶ Ver o filme
+          </button>
+          <button className="hud-btn small" onClick={freeRoam} aria-label="Explorar a galáxia">
+            ↗ Explorar
+          </button>
+        </>
+      )}
+      {/* ...e a SAÍDA só existe quando há para onde voltar */}
+      {hud.botaoPartir && temFilmeGuardado && (
         <button className="hud-btn small" onClick={partirDoAtlas}>
-          Partir
+          ↩ Voltar ao filme
         </button>
       )}
       {hud.botoesDaViagem && (

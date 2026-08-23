@@ -897,6 +897,13 @@ export default function App() {
         gaveta={gaveta}
         alternarGaveta={alternarGaveta}
         ofereceFicha={ofereceFicha}
+        // o filme guardado é LIDO do director na hora, sem canal novo: ele
+        // só muda quando a FASE muda (é o portal que o escreve), e a fase já
+        // re-renderiza o HUD inteiro. É o mesmo padrão da ficha, que lê
+        // `efemerideViva` daqui.
+        temFilmeGuardado={
+          phase === 'atlas' && (directorRef.current?.momentoGuardado ?? null) !== null
+        }
         foco={foco}
         tempo={tempo}
         inJourney={inJourney}

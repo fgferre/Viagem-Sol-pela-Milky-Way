@@ -121,6 +121,30 @@
     display: none;
   }
 
+  /* ...E ELA ROLA EM VEZ DE QUEBRAR (item 61, 23/08). Com as duas
+     ferramentas do Atlas (▶ Ver o filme · ↗ Explorar) e a saída, a barra
+     de MESA quebraria linha por `flex-wrap: wrap` — medido em 320×568
+     com `?ui=1.4`: 3 linhas e 89,8 px de altura, contra 38,2 px em 390.
+     E quebrar aqui não é cosmético: esta barra é a TARJA DE CIMA, e a
+     altura dela entra na base declarada do retângulo útil
+     (`retanguloUtilDoAtlas`, item 62) — uma barra que cresce moveria a
+     câmera no meio da sessão, calada.
+     O remédio é o mesmo que a fileira de alças já usa, e pela mesma
+     razão: `flex: 0 0 auto` porque botão que encolhe para caber é botão
+     que ninguém acerta. A barra vira uma linha que ROLA. */
+  .hud-root:has(.atlas-alcas) .controls-bar {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .hud-root:has(.atlas-alcas) .controls-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .hud-root:has(.atlas-alcas) .controls-bar > .hud-btn {
+    flex: 0 0 auto;
+  }
+
   /* A MÁQUINA DO TEMPO PERMANENTE SAI DO RODAPÉ — ela virou a alça ⏱
      Tempo (resposta do dono nos mockups: *"3) vira alça"*). O seletor
      nomeia o RODAPÉ de propósito: a mesma `BarraDoTempo`, a MESMA peça,

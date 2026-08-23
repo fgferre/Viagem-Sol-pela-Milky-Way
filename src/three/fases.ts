@@ -121,8 +121,22 @@ export interface HudDaFase {
   botoesDaViagem: boolean;
   /** ↻ Reviver */
   botaoReviver: boolean;
-  /** Partir — a saída do Atlas */
+  /**
+   * ↩ Voltar ao filme — a saída do Atlas para a viagem GUARDADA. Só
+   * monta quando há filme atrás (`momentoGuardado !== null`): sem ele o
+   * botão devolvia a TELA DE TÍTULO, que era o Atlas confessando ser o
+   * modo secundário.
+   */
   botaoPartir: boolean;
+  /**
+   * ▶ Ver o filme · ↗ Explorar — as duas FERRAMENTAS do Atlas (item 61,
+   * 23/08). Palavras do dono em 22/08: *"o modo atlas na minha visão
+   * deveria ser o modo único, a viagem na verdade para mim é só uma
+   * ferramenta do modo atlas"*. Até aqui a barra do Atlas só tinha a
+   * saída; agora a viagem e o voo livre são coisas que se PEDEM de
+   * dentro dele, e o Atlas deixa de ser um lugar de onde só se sai.
+   */
+  saidasDoAtlas: boolean;
   /** dica de teclas do voo livre */
   dicaDeVoo: boolean;
   /** tela de título / tela final */
@@ -145,6 +159,7 @@ export const HUD_POR_FASE = {
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
+    saidasDoAtlas: false,
     dicaDeVoo: false,
     veuDeTitulo: false,
   },
@@ -163,6 +178,7 @@ export const HUD_POR_FASE = {
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
+    saidasDoAtlas: false,
     dicaDeVoo: false,
     veuDeTitulo: true,
   },
@@ -181,6 +197,7 @@ export const HUD_POR_FASE = {
     botoesDaViagem: true,
     botaoReviver: false,
     botaoPartir: false,
+    saidasDoAtlas: false,
     dicaDeVoo: false,
     veuDeTitulo: false,
   },
@@ -199,6 +216,7 @@ export const HUD_POR_FASE = {
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: false,
+    saidasDoAtlas: false,
     dicaDeVoo: false,
     veuDeTitulo: true,
   },
@@ -217,6 +235,7 @@ export const HUD_POR_FASE = {
     botoesDaViagem: false,
     botaoReviver: true,
     botaoPartir: false,
+    saidasDoAtlas: false,
     dicaDeVoo: true,
     veuDeTitulo: false,
   },
@@ -241,6 +260,7 @@ export const HUD_POR_FASE = {
     botoesDaViagem: false,
     botaoReviver: false,
     botaoPartir: true,
+    saidasDoAtlas: true,
     dicaDeVoo: false,
     veuDeTitulo: false,
   },
@@ -301,5 +321,7 @@ export const HUD_POR_FASE = {
  *     dos Ajustes na fase nova. [mapa]
  * 27. botão ↻ Reviver ................................ não monta. [mapa]
  * 28. botões da viagem ............................... não; em lugar
- *     deles, o botão "Partir". [mapa]
+ *     deles, as DUAS ferramentas (`saidasDoAtlas`: ▶ Ver o filme e
+ *     ↗ Explorar) e o ↩ Voltar ao filme, que só monta com filme
+ *     guardado (item 61, 23/08). [mapa]
  */

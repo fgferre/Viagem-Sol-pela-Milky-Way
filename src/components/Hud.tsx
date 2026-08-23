@@ -298,10 +298,23 @@ export function TitleVeil({
             estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos
           </div>
           <div className="title-rule" />
+          {/* A TERCEIRA SAÍDA DO FIM (item 61, 23/08): "Ficar aqui" entra
+              no Atlas NA POSE DA CODA. É a frase do dono virada em botão —
+              *"a viagem na verdade para mim é só uma ferramenta do modo
+              atlas"*: o filme acabou onde acabou, e o visitante fica ali,
+              com a Terra em quadro e a data do pouso, em vez de ser
+              devolvido para uma vista a 224 UA de casa. Quem leva a
+              câmera é o mesmo `entrarNoAtlas` do pausar-e-olhar, agora
+              com o pouso (`Escada.pousarDoFilme`). */}
           <div style={{ display: 'flex', gap: '0.8rem' }}>
             <button className="hud-btn" onClick={onPlay}>
               Reviver a viagem
             </button>
+            {onAtlas && (
+              <button className="hud-btn" onClick={onAtlas}>
+                Ficar aqui
+              </button>
+            )}
             {onExplore && (
               <button className="hud-btn" onClick={onExplore}>
                 Explorar livremente
