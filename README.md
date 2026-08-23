@@ -75,16 +75,17 @@ npm run data:all
 src/
 ├─ App.tsx                  fases (loading → intro → journey / atlas / free)
 ├─ hooks/                   useDirector + useEspelhoDaUrl (governados pelo
-│                           selo) + useAtalhos + useGavetas (as quatro
-│                           gavetas do HUD, uma aberta por vez)
+│                           selo) + useAtalhos + useCelular (a faixa de
+│                           760 px) + useGavetas (as cinco gavetas do
+│                           HUD, uma aberta por vez)
 ├─ components/
 │  ├─ Hud.tsx               HUD do filme
 │  ├─ HudDoAtlas.tsx        HUD do Atlas
 │  ├─ PaletaDeBusca.tsx     busca unificada (corpos + estrelas)
 │  ├─ FichaDoObjeto.tsx     a ficha do alvo em foco (só desenha)
 │  └─ LabelCanvas.ts        rótulos, colisão, clique
-├─ hud/                     o CSS do HUD em 8 fatias contíguas
-│                           (01-base … 08-ajustes; a ordem É a cascata)
+├─ hud/                     o CSS do HUD em 9 fatias contíguas
+│                           (01-base … 09-celular; a ordem É a cascata)
 ├─ lib/atlas/               física pura, sem three e sem React: efemérides,
 │                           IAU, tempo, luz, massas + fisicaDoCorpo (gravidade,
 │                           escape, "×Terra"), geometriaNoCeu (elongação e

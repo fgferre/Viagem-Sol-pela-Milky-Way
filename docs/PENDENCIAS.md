@@ -20,7 +20,7 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 **O BASTÃO DE 23/08: O CELULAR FECHOU.** O item **62** — *"podemos criar
 alternativas de cotnrole menores e escondigos que expandam para
-celular"* — saiu da lista inteiro (`0199895`, `879d1de`). No telefone os
+celular"* — saiu da lista inteiro (`80de6da`). No telefone os
 controles do Atlas viraram **uma fileira de alças no pé**, cada uma
 sobe uma **folha de baixo** que fecha por três saídas, a **câmera parou
 de recuar** por um rodapé que já não existe (o céu à câmera foi de
@@ -157,8 +157,10 @@ RENUMEROU 55→56, quem matou o 55 foi `6d2278a`), **16** e **57** em 21/08
 (`ade2c3e`, `841d57d`), **60**, **63**, **66**,
 **67**, **68**, **58**, **65**, **71** e **73** em 22/08 (`a8a3168`,
 `d562f5a`, `92f0232`, `64f8ed9`, `4c14bfd`, `e4b2295`, `8014ed5`,
-`d2fb2c7`, `c8507ba`), e o **20** e o **74** em 23/08, os dois no MESMO
-diff (`dd0d99c`). O **73** é o único que levou OITO commits: a obra
+`d2fb2c7`, `c8507ba`), o **20** e o **74** em 23/08, os dois no MESMO
+diff (`dd0d99c`), e o **62** em 23/08 (`80de6da`) — a obra dele é a
+sequência `9be6d78` → `879d1de`, mas quem o tirou DESTA LISTA foi
+`80de6da`. O **73** é o único que levou OITO commits: a obra
 inteira é a sequência `3f2a290` → `c8507ba`, e o hash da lista é o do
 fecho. A OBRA do **74** levou SETE, de `659a580` (22/08) a `8fd151d`
 (23/08), e o **20** fechou dentro dela, em `b381762` — mas quem tirou os
