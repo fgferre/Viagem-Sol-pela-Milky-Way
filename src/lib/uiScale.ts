@@ -95,3 +95,32 @@ export const escalaDaUi = () => viva;
 export function larguraDeCss(): number {
   return window.innerWidth;
 }
+
+/**
+ * A LARGURA EM QUE O HUD VIRA CELULAR (item 62, 23/08) — o número que o
+ * CSS já usava sem dono. Mora ao lado de `larguraDeCss` porque é a mesma
+ * pergunta: quanta janela existe.
+ *
+ * POR QUE 760 e não `LARGURA_UTIL_MINIMA_PX` (768) nem `pointer: coarse`:
+ *
+ *  1. 760 JÁ REORGANIZA O ATLAS. A fatia 6 do HUD põe o rodapé em coluna
+ *     única de borda a borda e devolve o selo ao fluxo nessa largura, e o
+ *     teto de tela dos diálogos (`--teto-dialogo-tela: 52vh`) é dessa
+ *     mesma quebra. Escolher outro número criaria uma segunda fronteira
+ *     onde já havia uma.
+ *  2. 768 É FRONTEIRA DE CÂMERA, não de CSS. `LARGURA_UTIL_MINIMA_PX`
+ *     (`cinematic/retanguloDoAtlas.ts`) é o piso da faixa em que o
+ *     retângulo útil é COBRADO pelo juiz; usá-la aqui criaria a faixa de
+ *     761–767 px em que o CSS diz celular e a declaração de câmera diz
+ *     "fora da faixa". A fresta de 8 px continua existindo e continua
+ *     sendo registro, nomeada aqui.
+ *  3. `pointer: coarse` É CAPACIDADE, não largura. Um portátil de toque
+ *     de 1920 px recolheria o chrome sem motivo. A casa já reservou
+ *     `pointer: coarse` para CONTEÚDO — quais gestos a dica nomeia —,
+ *     nunca para geometria.
+ *
+ * O CSS REPETE O LITERAL (`@media (max-width: 760px)`) porque media query
+ * não lê `var()`; quem cobra que os dois digam o mesmo número é
+ * `uiScale.test.ts`, por varredura de TODA condição de media do HUD.
+ */
+export const LARGURA_DO_CELULAR_PX = 760;

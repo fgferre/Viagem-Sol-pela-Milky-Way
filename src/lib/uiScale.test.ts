@@ -21,6 +21,7 @@ import {
   ESCALA_MAX,
   ESCALA_MIN,
   ESCALA_PADRAO,
+  LARGURA_DO_CELULAR_PX,
   lerEscalaDaUi,
   rotuloDaEscala,
 } from './uiScale';
@@ -95,5 +96,42 @@ describe('2. a regra do CSS: nenhum texto do HUD ignora a raiz', () => {
 
   it('nenhum texto do HUD é cravado em px — px não reage à raiz nem ao zoom de fonte', () => {
     expect(DECLARACOES.filter((d) => /[\d.]+px/.test(d))).toEqual([]);
+  });
+});
+
+// ============================================================
+// A QUEBRA DO CELULAR (item 62, 23/08). O `@media` não lê `var()`: o
+// número 760 é escrito no CSS como literal e em `LARGURA_DO_CELULAR_PX`
+// como constante, e nada no navegador cobra que os dois digam o mesmo.
+// Um dos dois mudando sozinho abre uma faixa de larguras em que o CSS
+// veste o telefone e o TypeScript continua desenhando a mesa — as alças
+// no pé e os botões na barra ao mesmo tempo, dois gatilhos com o mesmo
+// `data-abre-dialogo` no documento.
+//
+// A COBRANÇA É UMA REGRA, não uma lista de seletores: TODA condição de
+// media do HUD que fale em `max-width` fala nesta largura. Uma segunda
+// fronteira de largura no HUD passa a exigir uma decisão escrita aqui,
+// em vez de nascer calada no meio de uma fatia.
+// ============================================================
+describe('3. a quebra do celular: o CSS e o TypeScript dizem o mesmo número', () => {
+  const CONDICOES = [...HUD_CSS.matchAll(/@media([^{]+)\{/g)].map((m) => m[1]);
+  const LARGURAS = CONDICOES.flatMap((c) =>
+    [...c.matchAll(/max-width:\s*(\d+)px/g)].map((m) => Number(m[1]))
+  );
+
+  it('a varredura acha as condições de verdade — um regex quebrado passaria calado', () => {
+    expect(CONDICOES.length).toBeGreaterThan(3);
+    expect(LARGURAS.length).toBeGreaterThan(2);
+  });
+
+  it('TODA quebra de largura do HUD é LARGURA_DO_CELULAR_PX', () => {
+    expect([...new Set(LARGURAS)]).toEqual([LARGURA_DO_CELULAR_PX]);
+  });
+
+  it('o número é 760, e a fresta 761–767 até o piso da câmera é declarada', () => {
+    // `LARGURA_UTIL_MINIMA_PX` (768) é fronteira de CÂMERA e não de CSS —
+    // a derivação inteira está no comentário da constante
+    expect(LARGURA_DO_CELULAR_PX).toBe(760);
+    expect(LARGURA_DO_CELULAR_PX).toBeLessThan(768);
   });
 });
