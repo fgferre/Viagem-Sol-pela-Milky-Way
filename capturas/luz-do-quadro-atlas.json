@@ -1,0 +1,98 @@
+{
+  "janela": [
+    900,
+    900
+  ],
+  "dpr": 1,
+  "extra": "",
+  "perna": "atlas",
+  "fovGraus": 35,
+  "comBloom": true,
+  "veredito": ">>> PASSA — 7 degraus dentro da lei",
+  "linhas": [
+    {
+      "ua": 0.067,
+      "via": "sinal",
+      "luzMedia": 0.05992378531285884,
+      "acimaDeMeia": 0.03793086419753086,
+      "pico": 0.9429160784313726,
+      "faiscantes": 29,
+      "borrao": 109,
+      "disco": 198.30848245916872,
+      "clarao": 0,
+      "claraoNucleo": 14.466551593087996
+    },
+    {
+      "ua": 1,
+      "via": "sinal",
+      "luzMedia": 0.014479205849466893,
+      "acimaDeMeia": 0.0004320987654320988,
+      "pico": 0.9429160784313726,
+      "faiscantes": 12,
+      "borrao": 0,
+      "disco": 13.286668324764305,
+      "clarao": 0,
+      "claraoNucleo": 13.466560442925418
+    },
+    {
+      "ua": 3.6,
+      "via": "sinal",
+      "luzMedia": 0.015295239045295986,
+      "acimaDeMeia": 0.0009518518518518518,
+      "pico": 0.9971952941176471,
+      "faiscantes": 15,
+      "borrao": 0,
+      "disco": 3.6907412013234193,
+      "clarao": 514.7725788537351,
+      "claraoNucleo": 12.95725855802764
+    },
+    {
+      "ua": 7.2,
+      "via": "sinal",
+      "luzMedia": 0.01600335076254766,
+      "acimaDeMeia": 0.0015049382716049383,
+      "pico": 0.9971952941176471,
+      "faiscantes": 15,
+      "borrao": 0,
+      "disco": 1.8453706006617097,
+      "clarao": 570.8278527035985,
+      "claraoNucleo": 12.670347483992579
+    },
+    {
+      "ua": 20,
+      "via": "sinal",
+      "luzMedia": 0.0159273732345893,
+      "acimaDeMeia": 0.0014506172839506173,
+      "pico": 0.9971952941176471,
+      "faiscantes": 13,
+      "borrao": 0,
+      "disco": 0.6643334162382154,
+      "clarao": 372.9271573956419,
+      "claraoNucleo": 12.231008544149086
+    },
+    {
+      "ua": 40,
+      "via": "sinal",
+      "luzMedia": 0.015914320066833416,
+      "acimaDeMeia": 0.001437037037037037,
+      "pico": 0.9971952941176471,
+      "faiscantes": 11,
+      "borrao": 0,
+      "disco": 0.3321667081191077,
+      "clarao": 279.3733944513899,
+      "claraoNucleo": 11.92046108990552
+    },
+    {
+      "ua": 150,
+      "via": "sinal",
+      "luzMedia": 0.015906519039479407,
+      "acimaDeMeia": 0.0014296296296296297,
+      "pico": 0.9971952941176471,
+      "faiscantes": 11,
+      "borrao": 0,
+      "disco": 0.08857778883176204,
+      "clarao": 161.0499079774241,
+      "claraoNucleo": 11.295666234704107
+    }
+  ]
+}

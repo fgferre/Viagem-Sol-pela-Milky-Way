@@ -102,7 +102,28 @@ const PIN = '&q=cinema';
 // caminho e não deixava rastro do knob no NOME: a culpa é dela, não de quem
 // rodou. Com o sufixo, cada modo tem o seu arquivo e o "antes" oficial é
 // intocável.
-const CHAVE_DO_ESTADO = `${EXTRA}${process.env.JANELA || ''}${DPR !== 1 ? `dpr${DPR}` : ''}`;
+// A PERNA DO ATLAS (`PERNA=atlas node …`, item 61 — 23/08). Até aqui a
+// escada inteira rodava por `?pos=`, isto é, SEMPRE na fase `free`, com
+// lente de 58° e com o teto de ocupação do clarão em 0,55. O Atlas tinha
+// o SEU teto — 0,07 — e a régua nunca tinha entrado no modo para medi-lo:
+// os dois números divergiam numa faixa estreita que ninguém julgava. O
+// item 61 fez o teto virar UM; esta perna é o juiz que faltava para o
+// fecho, e continua servindo depois dele — é ela que prova que a escada
+// está verde DENTRO do modo, e não só fora.
+//
+// Ela entra pelo endereço do próprio modo (`?atlas=1&foco=sol&ver=corpo&d=`),
+// então mede o Atlas de verdade: lente de 35°, retângulo útil do Atlas,
+// enquadramento pelo rig. O fov entra na CONTA — `discoRealPx`,
+// `solturaDaLei`, `claraoDaLeiPx`, `tetoDeLavagem` e `julgarEscada` o
+// recebem —, porque a 35° o disco do Sol é 1,76× maior em px e o direito
+// de espalhar do clarão muda com ele (a 1 UA o teto de borrão cai de
+// 313 px para 40 px: o disco passa de 8,2 px para 13,6 px, cruza os 10 px
+// em que a soltura zera, e o clarão dá lugar à fotosfera). Régua que
+// ignorasse isso estaria julgando outra lente.
+const PERNA = process.env.PERNA === 'atlas' ? 'atlas' : 'pos';
+const CHAVE_DO_ESTADO =
+  `${PERNA === 'atlas' ? 'atlas' : ''}${EXTRA}${process.env.JANELA || ''}`
+  + `${DPR !== 1 ? `dpr${DPR}` : ''}`;
 const SUFIXO = CHAVE_DO_ESTADO ? `-${CHAVE_DO_ESTADO.replace(/[^a-z0-9]+/gi, '')}` : '';
 
 // ── as constantes da conta, todas com procedência ─────────────────────────
@@ -114,6 +135,10 @@ const RAIO_SOL_PC = 2.2566840209436597e-8;
  *  (`engine.ts:217`, `new THREE.PerspectiveCamera(58, …)`). `?fov=` não é
  *  usado por nenhuma vista desta escada. */
 const FOV_GRAUS = 58;
+/** a lente do ATLAS — `ATLAS_FOV_GRAUS` (`cinematic/enquadramento.ts`),
+ *  redigitada aqui pela mesma razão que toda a família: node puro. O
+ *  acordo com a fonte é cobrado em `luz-do-quadro.test.mjs`. */
+export const ATLAS_FOV_GRAUS = 35;
 
 /**
  * Diâmetro aparente do Sol, em px — a coluna `discoReal`.
@@ -209,8 +234,8 @@ const SOLTURA_PLENA_PX = 2;
 
 /** espelho de `solturaDoClarao` (estrela.ts) — cobrado por conformidade
  *  numérica no teste, como toda a família */
-export function solturaDaLei(distanciaUa, alturaPx = JH) {
-  const disco = discoRealPx(distanciaUa, alturaPx);
+export function solturaDaLei(distanciaUa, alturaPx = JH, fovGraus = FOV_GRAUS) {
+  const disco = discoRealPx(distanciaUa, alturaPx, fovGraus);
   if (!(disco > 0)) return 1;
   return (
     1 -
@@ -238,7 +263,13 @@ export function vaoDoFiltro(alturaPx = JH) {
 }
 
 
-export function claraoDaLeiPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigmaPx = SIGMA_PX) {
+export function claraoDaLeiPx(
+  distanciaUa,
+  alturaPx = JH,
+  expoM0 = EXPO_M0,
+  sigmaPx = SIGMA_PX,
+  fovGraus = FOV_GRAUS
+) {
   const dPc = distanciaUa * UA_EM_PC;
   const m = PONTO_ZERO_SOL_PC + 5 * (Math.log2(dPc) * 0.30103);
   const sigma = (sigmaPx * alturaPx) / 1080;
@@ -254,7 +285,7 @@ export function claraoDaLeiPx(distanciaUa, alturaPx = JH, expoM0 = EXPO_M0, sigm
     excesso > 1
       ? NUCLEO_DA_ASA_EM_SIGMAS * sigma * Math.sqrt(Math.pow(excesso, 1 / BETA_DA_ASA) - 1)
       : 0;
-  return Math.max(nucleo, 2 * raioDaAsa) * solturaDaLei(distanciaUa, alturaPx);
+  return Math.max(nucleo, 2 * raioDaAsa) * solturaDaLei(distanciaUa, alturaPx, fovGraus);
 }
 
 /**
@@ -424,9 +455,34 @@ const PISO_LUZ_MEDIA_SEM_BLOOM = 0.039;
  * achadas na mesma pasta, têm 1 (o Sol sozinho). O piso é ~⅗ do mínimo
  * observado — folga declarada para cintilação e variação de vista,
  * morte certa para o colapso (70 → 1 é o defeito; 70 → 60 é uma noite
- * diferente). Vale para as DUAS pernas.
+ * diferente).
+ *
+ * E ELE É POR LENTE, não por quadro (item 61 — 23/08). Faísca é mancha
+ * acima de meia luz, e o brilho de pico de uma estrela NÃO muda com o fov
+ * (o fluxo é a distância dela e a PSF mede em PIXELS): o que muda é
+ * QUANTAS cabem no cone. Um piso em contagem absoluta mediria a lente.
+ * Medido a 900×900, DPR 1, na MESMA direção da escada oficial: 68–87
+ * faíscas a 58° e **14–18 a 35°** (`EXTRA='&fov=35'`). A perna do Atlas
+ * tem o número dela logo abaixo.
  */
 const PISO_DE_FAISCAS = 40;
+
+/**
+ * O PISO DA PERNA DO ATLAS (lente de 35°). Medido pelo MESMO método e com
+ * a mesma receita do de cima — "~⅗ do mínimo observado, folga declarada
+ * para cintilação e variação de vista" —, em duas DIREÇÕES: a da escada
+ * oficial com `&fov=35` (14–63 faíscas) e a do próprio modo, que é o eixo
+ * de `direcaoPrivilegiada` no degrau do corpo do Sol (11–29). Mínimo
+ * observado 11 ⇒ piso 7.
+ *
+ * A diferença entre as duas direções — ~20% — é ANISOTROPIA do céu, não
+ * defeito: a foto de 150 UA (`capturas/luz-150ua-atlas.png`) mostra
+ * centenas de estrelas, só que 11 delas passam de meia luz. É para essa
+ * variação que a folga de ⅗ existe, e está escrito assim desde 17/08. O
+ * que o piso continua matando é o COLAPSO: com o campo apagado a perna do
+ * Atlas devolveria 1 — o Sol sozinho —, e 7 pega isso com sobra.
+ */
+const PISO_DE_FAISCAS_DO_ATLAS = 7;
 /**
  * A margem da luz média sobre o piso, e por que ela existe separada do
  * orçamento geométrico: `acimaDeMeia` conta pixel acima de MEIA LUZ, então a
@@ -445,10 +501,13 @@ const MARGEM_DA_CAUDA = 1.15;
  * parede de fogo — a âncora do dono é R ≈ 450 px já a 1 UA); longe, o
  * orçamento encolhe com a asa e cegueira volta a ser defeito.
  */
-export function tetoDeLavagem(ua, { alturaPx = JH, larguraPx = JW, comBloom = true } = {}) {
+export function tetoDeLavagem(
+  ua,
+  { alturaPx = JH, larguraPx = JW, comBloom = true, fovGraus = FOV_GRAUS } = {}
+) {
   const folga = comBloom ? FOLGA_COM_BLOOM : FOLGA_SEM_BLOOM;
-  const disco = discoRealPx(ua, alturaPx);
-  const clarao = claraoDaLeiPx(ua, alturaPx);
+  const disco = discoRealPx(ua, alturaPx, fovGraus);
+  const clarao = claraoDaLeiPx(ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus);
   const teto = folga * Math.max(disco, clarao);
   const orcamento = (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
   const pisoAcima = comBloom ? PISO_ACIMA_DE_MEIA_COM_BLOOM : PISO_ACIMA_DE_MEIA_SEM_BLOOM;
@@ -490,6 +549,8 @@ export function julgarEscada({
   alturaPx = JH,
   larguraPx = JW,
   comBloom = true,
+  fovGraus = FOV_GRAUS,
+  pisoDeFaiscas = PISO_DE_FAISCAS,
 } = {}) {
   const folga = comBloom ? FOLGA_COM_BLOOM : FOLGA_SEM_BLOOM;
   const ordenadas = [...linhas].sort((a, b) => a.ua - b.ua);
@@ -504,8 +565,14 @@ export function julgarEscada({
   for (let i = 1; i < ordenadas.length; i++) {
     const ant = ordenadas[i - 1];
     const cur = ordenadas[i];
-    const leiAnt = Math.max(claraoDaLeiPx(ant.ua, alturaPx), discoRealPx(ant.ua, alturaPx));
-    const leiCur = Math.max(claraoDaLeiPx(cur.ua, alturaPx), discoRealPx(cur.ua, alturaPx));
+    const leiAnt = Math.max(
+      claraoDaLeiPx(ant.ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus),
+      discoRealPx(ant.ua, alturaPx, fovGraus)
+    );
+    const leiCur = Math.max(
+      claraoDaLeiPx(cur.ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus),
+      discoRealPx(cur.ua, alturaPx, fovGraus)
+    );
     const leiCresce = leiCur > leiAnt * 1.001;
     if (!leiCresce && cur.borrao > ant.borrao + TOLERANCIA_MONOTONIA_PX) {
       motivosPorUa
@@ -543,7 +610,7 @@ export function julgarEscada({
     const motivos = motivosPorUa.get(l.ua);
     // as regras 2 e 3 saem do MESMO endereço que o voo consome
     // (`tetoDeLavagem`) — o disco pode vir pré-calculado da captura
-    const t = tetoDeLavagem(l.ua, { alturaPx, larguraPx, comBloom });
+    const t = tetoDeLavagem(l.ua, { alturaPx, larguraPx, comBloom, fovGraus });
     const disco = l.disco ?? t.disco;
     const clarao = t.clarao;
     const teto = folga * Math.max(disco, clarao);
@@ -577,9 +644,9 @@ export function julgarEscada({
     //    quando o M2 apagou o campo: as três acima só têm TETO, e céu
     //    morto passa por qualquer teto. Linhas antigas (sem a contagem)
     //    não são julgadas — replay de json histórico continua honesto.
-    if (l.faiscantes !== undefined && l.faiscantes < PISO_DE_FAISCAS) {
+    if (l.faiscantes !== undefined && l.faiscantes < pisoDeFaiscas) {
       motivos.push(
-        `céu com ${l.faiscantes} faísca(s) — piso ${PISO_DE_FAISCAS} `
+        `céu com ${l.faiscantes} faísca(s) — piso ${pisoDeFaiscas} `
         + '("o céu nunca vazio", item 4)'
       );
     }
@@ -624,14 +691,52 @@ export function julgarEscada({
  */
 export const ESCADA_UA = [0.067, 1, 3.6, 7.2, 20, 40, 150, 500, 2000, 4000, 15800];
 
+/**
+ * O RAIO FÍSICO DO SOL em UA — a régua de `?d=`, que fala em RAIOS do
+ * alvo. Redigitado de `RAIO_SOL_PC` (acima) pela mesma razão de toda a
+ * família: esta régua roda em node puro.
+ */
+const RAIO_SOL_UA = RAIO_SOL_PC / UA_EM_PC;
+
+/**
+ * ATÉ ONDE O ATLAS CHEGA, em UA. O modo tem teto de zoom próprio
+ * (`AtlasRig.tetoDeZoom` = fator de enquadramento × órbita mais externa),
+ * e ele não é conforto: é a lei "um alvo e uma distância" — pedir mais
+ * longe que o enquadramento do sistema é pedir para sair do alvo. Medido
+ * no navegador a 900×900 em 23/08: `?d=` de 500, 2.000 e 15.800 UA todos
+ * param em **255,54 UA**, enquanto os sete primeiros degraus pousam no
+ * pedido com erro de 1e-6 (0,06699953 para 0,067 UA).
+ *
+ * Por isso a perna do Atlas julga SETE dos onze degraus, e a diferença é
+ * declarada em vez de disfarçada: os quatro de fora não são degraus que a
+ * perna falhou em medir — são distâncias em que o modo não põe a câmera.
+ * E são justamente os quatro em que o teto de ocupação nunca teve como
+ * grampear (lá a asa da lei é pequena); a faixa em que os dois números
+ * divergiam é a de perto, e ela está inteira aqui dentro.
+ */
+const TETO_DO_ATLAS_UA = 255.5;
+
+const escadaDaPerna = () =>
+  PERNA === 'atlas' ? ESCADA_UA.filter((ua) => ua <= TETO_DO_ATLAS_UA) : ESCADA_UA;
+
+/** o fov da perna: a lente do voo livre (58°) ou a do Atlas (35°) */
+const FOV_DA_PERNA = PERNA === 'atlas' ? ATLAS_FOV_GRAUS : FOV_GRAUS;
+
 function urlDaDistancia(ua) {
+  if (PERNA === 'atlas') {
+    // `?d=` fala em RAIOS do alvo, e no degrau do CORPO do Sol o alvo é
+    // o Sol com o raio FÍSICO dele — a mesma régua que o `?d=` da roda
+    // escreve no link (`pinarEmRaios`)
+    const d = (ua / RAIO_SOL_UA).toPrecision(8);
+    return `${APP}/?atlas=1&foco=sol&ver=corpo&d=${d}&shot=2${PIN}${EXTRA}`;
+  }
   const z = (ua * UA_EM_PC).toPrecision(8);
   return `${APP}/?pos=0,0,${z}&look=0,0,0&shot=2${PIN}${EXTRA}`;
 }
 
 async function principal() {
   const pedidas = process.argv.slice(2).map(Number).filter(Number.isFinite);
-  const escada = pedidas.length ? pedidas : ESCADA_UA;
+  const escada = pedidas.length ? pedidas : escadaDaPerna();
   const saida = resolve(ROOT, 'capturas');
   mkdirSync(saida, { recursive: true });
 
@@ -665,10 +770,10 @@ async function principal() {
       // o borrão volta à régua de referência (px de CSS): é NELA que os
       // tetos moram, e é ela que a invariância promete igual nas duas pernas
       borrao: m.borrao / DPR,
-      disco: discoRealPx(ua),
+      disco: discoRealPx(ua, JH, FOV_DA_PERNA),
       // o DIREITO da lei (núcleo + asa) e o núcleo sozinho, lado a lado —
       // a diferença entre os dois é exatamente o que o M2 vai construir
-      clarao: claraoDaLeiPx(ua),
+      clarao: claraoDaLeiPx(ua, JH, EXPO_M0, SIGMA_PX, FOV_DA_PERNA),
       claraoNucleo: claraoPsfPx(ua),
     });
   }
@@ -677,6 +782,7 @@ async function principal() {
   process.stdout.write('\n');
   process.stdout.write(
     `janela ${JW}x${JH}${DPR !== 1 ? ` · DPR ${DPR} (borrão em px de CSS)` : ''}`
+    + `  perna=${PERNA} (lente ${FOV_DA_PERNA}°)`
     + `${EXTRA ? `  EXTRA=${EXTRA}` : ''}\n\n`
   );
   process.stdout.write(
@@ -696,7 +802,15 @@ async function principal() {
   // Hoje ele REPROVA, e reprovar é o comportamento certo: é a linha de base do
   // item 3, medida em vez de citada de comentário.
   const comBloom = !/nobloom=1/.test(EXTRA);
-  const juizo = julgarEscada({ linhas, alturaPx: JH, larguraPx: JW, comBloom });
+  const juizo = julgarEscada({
+    linhas,
+    alturaPx: JH,
+    larguraPx: JW,
+    comBloom,
+    fovGraus: FOV_DA_PERNA,
+    // o piso de faíscas é por LENTE — ver as duas constantes e as medidas
+    pisoDeFaiscas: PERNA === 'atlas' ? PISO_DE_FAISCAS_DO_ATLAS : PISO_DE_FAISCAS,
+  });
   process.stdout.write('\n');
   if (juizo.texto) process.stdout.write(`${juizo.texto}\n`);
   process.stdout.write(`${juizo.resumo}\n`);
@@ -705,7 +819,10 @@ async function principal() {
   writeFileSync(
     jsonPath,
     JSON.stringify(
-      { janela: [JW, JH], dpr: DPR, extra: EXTRA, comBloom, veredito: juizo.resumo, linhas },
+      {
+        janela: [JW, JH], dpr: DPR, extra: EXTRA, perna: PERNA, fovGraus: FOV_DA_PERNA,
+        comBloom, veredito: juizo.resumo, linhas,
+      },
       null,
       2
     )

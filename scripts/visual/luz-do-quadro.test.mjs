@@ -17,6 +17,7 @@ import {
   medirQuadro,
   vaoDoFiltro,
   ESCADA_UA,
+  ATLAS_FOV_GRAUS,
 } from './luz-do-quadro.mjs';
 // a lei da casa, no endereço único do F0 — o vitest transpila o TS; a régua
 // `.mjs` em node puro continua redigitando, e É ESTE teste que cobra o acordo.
@@ -28,6 +29,7 @@ import {
   radianciaDeTela,
 } from '../../src/three/luzDaCasa';
 import { repartir } from '../../src/three/estrela';
+import { ATLAS_FOV_GRAUS as ATLAS_FOV_DA_FONTE } from '../../src/three/cinematic/enquadramento';
 import { RAIO_SOL_PC } from '../../src/three/escala';
 
 const ler = (rel) => readFileSync(new URL(`../../${rel}`, import.meta.url), 'utf8');
@@ -443,5 +445,40 @@ describe('claraoDaLeiPx — o teto derivado da LEI (§5.10)', () => {
     expect(vaoDoFiltro(900)).toBeLessThan(2.8e10);
     // (o espelho do filtro SOBRE O CLARÃO morreu na R2 do item 44 — o
     // filtro é dono da superfície, e do clarão quem manda é a soltura)
+  });
+});
+
+describe('a perna do ATLAS — a lente entra na conta (item 61, 23/08)', () => {
+  it('o fov do Atlas redigitado aqui é o da fonte, não um número parecido', () => {
+    // o mesmo contrato de procedência de `claraoPsfPx` e da família toda:
+    // a régua roda em node puro e redigita; é ESTE teste que cobra o acordo
+    expect(ATLAS_FOV_GRAUS).toBe(ATLAS_FOV_DA_FONTE);
+  });
+
+  it('a 35° o disco do Sol é maior, e o direito de espalhar do clarão cede a ele', () => {
+    // a 1 UA e 900 px: 8,2 px de disco a 58°, 13,6 px a 35°. Os 10 px são
+    // onde a soltura zera (a superfície vira dona, §5.7), então a lente do
+    // Atlas atravessa essa fronteira e o teto de borrão desaba de 313 para
+    // 40 px. Uma régua que ignorasse o fov julgaria OUTRA lente — e é por
+    // isso que o fov passou a viajar por `discoRealPx`, `solturaDaLei`,
+    // `claraoDaLeiPx`, `tetoDeLavagem` e `julgarEscada`.
+    const dLivre = discoRealPx(1, 900);
+    const dAtlas = discoRealPx(1, 900, ATLAS_FOV_GRAUS);
+    expect(dAtlas).toBeGreaterThan(dLivre);
+    expect(dAtlas / dLivre).toBeCloseTo(
+      Math.tan((58 * Math.PI) / 360) / Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360),
+      6
+    );
+    expect(claraoDaLeiPx(1, 900, EXPO_M0, SIGMA_PX, ATLAS_FOV_GRAUS)).toBe(0);
+    expect(claraoDaLeiPx(1, 900)).toBeGreaterThan(0);
+  });
+
+  it('sem o fov, tudo continua na lente de sempre — bit a bit', () => {
+    // o padrão é 58°: nenhum consumidor antigo (o `voo-ida-e-volta` lê
+    // `tetoDeLavagem`) muda de veredito por esta obra
+    for (const ua of ESCADA_UA) {
+      expect(claraoDaLeiPx(ua, 900, EXPO_M0, SIGMA_PX, 58)).toBe(claraoDaLeiPx(ua, 900));
+      expect(discoRealPx(ua, 900, 58)).toBe(discoRealPx(ua, 900));
+    }
   });
 });
