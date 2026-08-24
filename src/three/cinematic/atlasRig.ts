@@ -198,50 +198,11 @@ export class AtlasRig {
   };
 
   /**
-   * O ENQUADRAMENTO DO SISTEMA INTEIRO: a esfera é CENTRADA NO SOL com
-   * raio igual à órbita mais externa do retrato.
-   *
-   * ELE FOI A ABERTURA ATÉ 23/08, e deixou de ser: a abertura desceu
-   * para a borda do sistema INTERNO (item 61, `Escada.focarNoSistema`), e
-   * o que sobrou aqui é o TETO DO ZOOM — o lugar mais longe a que a roda
-   * chega, e o mesmo número que `tetoDeZoom` deriva. Por isso o `226,84
-   * UA` abaixo continua vivo e continua conferível: ele agora mede até
-   * onde se pode SAIR, não de onde se ENTRA.
-   *
-   * Centrada no Sol e não no corpo: uma esfera de 35,4 UA pendurada em
-   * Plutão não contém o sistema — um corpo do lado oposto da mesma
-   * órbita fica a até ~71 UA do centro dela, e a promessa "quem enquadra
-   * a órbita de fora enquadra tudo que está dentro" seria falsa. Com o
-   * centro na origem ela é verdade por construção: toda órbita do
-   * retrato cabe dentro da mais externa.
-   *
-   * A DIREÇÃO continua saindo do corpo (`eixoDe`), porque o alvo é a
-   * origem e o eixo Sol→alvo seria nulo.
-   *
-   * Por que não a Terra, que seria "casa": enquadrar a órbita da Terra
-   * põe a câmera a ~4 UA do Sol, e a 4 UA o Sol estoura o quadro
-   * inteiro de branco — é fotometria correta (o Sol a 4 UA É ofuscante)
-   * contra uma exposição de 1,02 que só a gradação por contexto da F6
-   * vai saber tratar.
-   *
-   * O NÚMERO DO TETO, num lugar só (quem mais precisar dele cita
-   * esta docstring em vez de repeti-lo): com o retângulo útil vigente em
-   * `ui = 1` e tela de mesa (aspecto ≥ 1, onde quem aperta é o vertical)
-   * a câmera fica a **226,84 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`,
-   * e como o alvo é a própria origem essa distância é a distância a casa,
-   * sem triângulo nenhum. Ela ANDA com o HUD e com `?ui=`: 213,37 UA em
-   * `ui = 0,85`, 296,76 UA em `ui = 1,4`. O trilho de `atlasRig.test.ts`
-   * deriva o número de `enquadrar()` e quebra se ele envelhecer aqui.
-   */
-  focarNoSistema() {
-    const fora = orbitaMaisExterna();
-    this.focar(ORIGEM, fora.raio, fora.posicao);
-  }
-
-  /**
    * Foca um ponto da cena, enquadrando uma esfera de `raio` pc nele.
    * `eixoDe` é o ponto de onde sai o eixo solar — o próprio alvo, salvo
-   * na abertura (ver `focarNoSistema`).
+   * quando o alvo É a origem: aí o eixo Sol→alvo seria nulo e quem chama
+   * entrega a direção de fora (`Escada.casaViva`, na abertura e nos
+   * degraus centrados no Sol).
    *
    * `opcoes.pai` liga o degrau "lua" (direção por `direcaoDaLua`);
    * `opcoes.rampa` pede a transição suave a partir do enquadramento
@@ -603,13 +564,39 @@ export class AtlasRig {
    * torna a promessa verdadeira para um alvo fora do centro: uma esfera
    * da órbita de Plutão pendurada em Saturno não conteria o sistema.
    *
-   * Com o alvo no Sol ele REDUZ ao enquadramento do sistema inteiro
-   * (`focarNoSistema`), que é onde o Atlas nascia até 23/08. Desde o
-   * item 61 ele nasce mais perto — na borda do sistema interno —, e este
-   * teto passou a ser um lugar aonde se CHEGA puxando a roda para fora,
-   * em vez do lugar de onde não se podia sair. A leitura de sempre segue
-   * valendo do lado de lá: mais longe que "o sistema em quadro" não há
-   * assunto, há fundo de céu.
+   * A ESFERA É CENTRADA NO SOL e não no corpo, e isso é o que a torna
+   * honesta: uma esfera de 35,4 UA pendurada em Plutão não contém o
+   * sistema — um corpo do lado oposto da mesma órbita fica a até ~71 UA
+   * do centro dela, e a promessa "quem enquadra a órbita de fora
+   * enquadra tudo que está dentro" seria falsa. Com o centro na origem
+   * ela é verdade por construção: toda órbita do retrato cabe dentro da
+   * mais externa.
+   *
+   * O NÚMERO DO TETO, NUM LUGAR SÓ — aqui, que é onde ele é CALCULADO
+   * (quem precisar dele cita esta docstring em vez de repeti-lo). Com o
+   * alvo no Sol, o retângulo útil vigente em `ui = 1` e tela de mesa
+   * (aspecto ≥ 1, onde quem aperta é o vertical), a roda para a
+   * **226,84 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`,
+   * e como o alvo é a própria origem essa distância é a distância a
+   * casa, sem triângulo nenhum. Ela ANDA com o HUD e com `?ui=`: 213,37
+   * UA em `ui = 0,85`, ~317 UA em `ui = 1,4` (subiu de 296,8 em
+   * 2026-08-20, item 9 — a 1.200 px com o texto em 140% os controles do
+   * tempo quebram em duas linhas e a câmera recua o que o HUD ocupa). O
+   * trilho de `atlasRig.test.ts` deriva o número de `enquadrar()` e
+   * quebra se ele envelhecer aqui.
+   *
+   * ATÉ 23/08 ESTE NÚMERO MORAVA num método `focarNoSistema` do rig, que
+   * enquadrava esta mesma esfera. Ele morreu com o item 61: a abertura
+   * desceu para a borda do sistema interno e nenhum caminho de produção
+   * chamava mais aquele método — o que a Escada chama é o `focar` de
+   * baixo, direto. Dois métodos com o mesmo nome e esferas diferentes
+   * eram uma armadilha para quem lesse depois.
+   *
+   * O Atlas nascia NESTE teto até 23/08. Desde o item 61 ele nasce mais
+   * perto — na borda do sistema interno —, e o teto passou a ser um lugar
+   * aonde se CHEGA puxando a roda para fora, em vez do lugar de onde não
+   * se podia sair. A leitura de sempre segue valendo do lado de lá: mais
+   * longe que "o sistema em quadro" não há assunto, há fundo de céu.
    *
    * O `max` com a distância do último enquadramento é a guarda do
    * relógio: a órbita mais externa aqui vem do RETRATO congelado, e com

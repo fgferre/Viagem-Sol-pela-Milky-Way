@@ -530,8 +530,8 @@ export class Escada {
    * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
-    // SEM EFEMÉRIDE CARREGADA fica o RETRATO congelado — o caminho que o
-    // `AtlasRig.focarNoSistema` sempre fez, e que a limitação declarada
+    // SEM EFEMÉRIDE CARREGADA fica o RETRATO congelado — o caminho de
+    // sempre, e que a limitação declarada
     // do item 77 (§6 de `orbitas.ts`: sem fonte não há linha) torna a
     // única resposta possível. A vista continua sendo a MESMA geometria,
     // só sem os laços desenhados: o raio vem do retrato pela borda de

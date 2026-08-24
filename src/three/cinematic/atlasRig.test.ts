@@ -57,6 +57,24 @@ function semiAnguloOcupado(rAlvo: number, distancia: number) {
   return Math.asin((rAlvo * MARGEM_DE_ENQUADRAMENTO) / distancia);
 }
 
+/**
+ * ENQUADRA O SISTEMA INTEIRO — a esfera centrada no Sol com o raio da
+ * órbita mais externa do retrato. Hoje é o TETO do zoom; foi a vista de
+ * ABERTURA até 23/08 (item 61), e muitos trilhos abaixo a usam só como
+ * um estado inicial conhecido, sem julgá-la.
+ *
+ * ISTO ERA UM MÉTODO DO RIG (`AtlasRig.focarNoSistema`) e virou fixture
+ * de bancada: nenhum caminho de PRODUÇÃO o chamava — quem enquadra é
+ * `Escada.focarNoSistema`, com a esfera do sistema INTERNO e por
+ * `focar` direto. Duas rotinas com o mesmo nome enquadrando esferas
+ * diferentes era armadilha; o que os testes precisavam dele são estas
+ * duas linhas, e elas moram aqui, do lado de quem as usa.
+ */
+function noSistemaInteiro(rig: AtlasRig) {
+  const fora = orbitaMaisExterna();
+  rig.focar(new THREE.Vector3(), fora.raio, fora.posicao);
+}
+
 /** semi-ângulos úteis do quadro, vertical e horizontal */
 function semiAngulosUteis(fovDeg: number, aspect: number, fracaoV: number, fracaoH: number) {
   const tanV = Math.tan((fovDeg * GRAU) / 2);
@@ -628,7 +646,7 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
     // (coluna X = direita da tela, coluna Y = cima) e pergunta para que
     // lado a câmera andou. Trocar um sinal em `addOrbitDelta` reprova.
     const medir = (dx: number, dy: number) => {
-      rig.focarNoSistema();
+      noSistemaInteiro(rig);
       rig.apply(camera);
       const antes = camera.position.clone();
       const direita = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
@@ -656,7 +674,7 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
   it('uma volta inteira do dedo são 2.856 px, e devolve a MESMA vista', () => {
     const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(camera);
     const inicial = camera.position.clone();
     const pxPorVolta = (2 * Math.PI) / ARRASTO_RAD_POR_PX;
@@ -678,7 +696,7 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
     const casa = orbitaMaisExterna();
     const iluminada = casa.posicao.clone().negate().normalize();
     const faseDepoisDe = (dy: number) => {
-      rig.focarNoSistema();
+      noSistemaInteiro(rig);
       for (let i = 0; i < 500; i++) rig.addOrbitDelta(0, dy);
       rig.apply(camera);
       return camera.position.clone().sub(rig.alvo).normalize().angleTo(iluminada) / GRAU;
@@ -705,7 +723,7 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
     // mover a câmera na hora.
     const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     for (let i = 0; i < 500; i++) rig.addOrbitDelta(0, 50);
     rig.apply(camera);
     const noLimite = camera.position.clone();
@@ -715,8 +733,8 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
   });
 });
 
-describe('o rig e o alvo de abertura', () => {
-  it('a abertura é a órbita mais externa do retrato, pelo caminho da camada de planetas', () => {
+describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
+  it('a esfera do sistema é a órbita mais externa do retrato, pelo caminho da camada de planetas', () => {
     const { posicao, raio } = orbitaMaisExterna();
     const eq = eclipticaParaEquatorial(RETRATO_2026.pluto.vetorUA);
     expect(posicao.x).toBe(eq[0] * AU_PARA_PC);
@@ -724,20 +742,20 @@ describe('o rig e o alvo de abertura', () => {
     expect(posicao.z).toBe(eq[2] * AU_PARA_PC);
     expect(raio).toBe(RETRATO_2026.pluto.rUA * AU_PARA_PC);
     // é mesmo o MAIOR do retrato — o teste falha se alguém acrescentar
-    // um corpo mais distante e esquecer de reconferir a vista de abertura
+    // um corpo mais distante e esquecer de reconferir o teto do zoom
     for (const c of Object.values(RETRATO_2026)) {
       expect(c.rUA).toBeLessThanOrEqual(RETRATO_2026.pluto.rUA);
     }
-    // o raio é ORBITAL, e a esfera de abertura é CENTRADA NO SOL: o
+    // o raio é ORBITAL, e a esfera é CENTRADA NO SOL: o
     // corpo mais externo fica sobre a superfície dela (|posição| = raio)
     // e tudo que orbita por dentro fica dentro — que é a promessa
     expect(posicao.length()).toBeCloseTo(raio, 15);
   });
 
-  it('a abertura enquadra a esfera do SISTEMA, centrada no Sol', () => {
+  it('enquadrar a esfera do SISTEMA a centra no Sol, e tudo cabe dentro', () => {
     const camera = new THREE.PerspectiveCamera(112, 1.6, 0.001, 100);
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(camera);
     const casa = orbitaMaisExterna();
     // o alvo é a ORIGEM: a câmera olha o Sol, e a distância a ele é a
@@ -760,35 +778,50 @@ describe('o rig e o alvo de abertura', () => {
     }
   });
 
-  it('a DISTÂNCIA DO TETO é a que a docstring de focarNoSistema declara', () => {
-    // o número mora num lugar só (`AtlasRig.focarNoSistema`) e este
-    // trilho o deriva de `enquadrar()`: quando a próxima faixa de HUD
-    // entrar, ele quebra em vez de deixar a docstring envelhecer calada.
-    // Ele foi a ABERTURA até 23/08 e hoje é o TETO do zoom — o item 61
-    // desceu a abertura para a borda do sistema interno, e a conta que
-    // este trilho confere é a mesma.
+  it('a DISTÂNCIA DO TETO é a que a docstring de tetoDeZoom declara', () => {
+    // O número mora num lugar só — `AtlasRig.tetoDeZoom`, que é onde ele
+    // é CALCULADO —, e este trilho o deriva de `enquadrar()`: quando a
+    // próxima faixa de HUD entrar, ele quebra em vez de deixar a
+    // docstring envelhecer calada.
+    //
+    // O RIG VAI NO ESTADO DE PRODUÇÃO, e é a mudança de 23/08: a câmera
+    // é posta na ABERTURA (a borda do sistema interno, item 61) e o que
+    // se lê é `tetoDeZoom` — ou seja, o mais longe a que a RODA leva o
+    // visitante. Antes o trilho enquadrava a esfera do sistema e media a
+    // câmera; isso media um método que produção nenhuma chamava.
     const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    rig.focar(
+      new THREE.Vector3(),
+      BORDA_DO_SISTEMA_INTERNO.raio,
+      orbitaMaisExterna().posicao,
+      { pisoRaio: RAIO_DO_SOL_NA_CENA }
+    );
     rig.apply(camera);
-    const emUA = () => camera.position.length() / AU_PARA_PC;
+    const tetoEmUA = () => rig.tetoDeZoom / AU_PARA_PC;
     // 226,84 UA — a faixa de meio UA é o que separa "a docstring está
     // certa" de "a docstring envelheceu" (era 221,55 até a linha da
     // escada da F2b crescer a faixa do topo)
-    expect(emUA()).toBeGreaterThan(226.6);
-    expect(emUA()).toBeLessThan(227.1);
-    // e ela ANDA com `?ui=` nos dois sentidos (213,4 e 317,1 UA). O
+    expect(tetoEmUA()).toBeGreaterThan(226.6);
+    expect(tetoEmUA()).toBeLessThan(227.1);
+    // e ele ANDA com `?ui=` nos dois sentidos (213,4 e 317,1 UA). O
     // extremo de cima subiu de 296,8 em 2026-08-20 (item 9): a 1.200 px
     // com o texto em 140% os controles do tempo quebram em duas linhas,
     // a base declarada paga o degrau, e a câmera recua o que o HUD
     // ocupa. Recuo é o preço declarado de HUD mais alto — o contrário
     // (declarar menos) é o alvo atrás do texto.
     rig.apply(camera, 0.85);
-    expect(emUA()).toBeGreaterThan(213.1);
-    expect(emUA()).toBeLessThan(213.6);
+    expect(tetoEmUA()).toBeGreaterThan(213.1);
+    expect(tetoEmUA()).toBeLessThan(213.6);
     rig.apply(camera, 1.4);
-    expect(emUA()).toBeGreaterThan(316.9);
-    expect(emUA()).toBeLessThan(317.4);
+    expect(tetoEmUA()).toBeGreaterThan(316.9);
+    expect(tetoEmUA()).toBeLessThan(317.4);
+    // e o teto é o mesmo com a câmera POSTA nele: a conta não depende de
+    // onde o visitante está, só do alvo e da lente
+    rig.apply(camera);
+    noSistemaInteiro(rig);
+    rig.apply(camera);
+    expect(camera.position.length() / AU_PARA_PC).toBeCloseTo(tetoEmUA(), 9);
   });
 
   it('a ABERTURA encolheu e o TETO do zoom NÃO desceu junto (item 61)', () => {
@@ -811,9 +844,8 @@ describe('o rig e o alvo de abertura', () => {
     // a abertura: ~9,1 UA, e ela É menor que a esfera do sistema
     expect(emUA(rig.distanciaDoEnquadramento)).toBeGreaterThan(8);
     expect(emUA(rig.distanciaDoEnquadramento)).toBeLessThan(11);
-    // o teto: o sistema inteiro, os mesmos 226,84 UA da docstring
-    expect(emUA(rig.tetoDeZoom)).toBeGreaterThan(226.6);
-    expect(emUA(rig.tetoDeZoom)).toBeLessThan(227.1);
+    // o VALOR do teto tem dono, e não é este trilho: quem o pina é "a
+    // DISTÂNCIA DO TETO", acima. Aqui o que se cobra é a RELAÇÃO —
     // ...e por isso a roda tem curso para OS DOIS LADOS, que é o que o
     // visitante perdia quando nascia colado no teto
     expect(rig.tetoDeZoom).toBeGreaterThan(rig.distanciaDoEnquadramento);
@@ -889,7 +921,7 @@ describe('o rig e o alvo de abertura', () => {
   it('o fov do Atlas é pino, não herança: o rig o escreve todo quadro', () => {
     const camera = new THREE.PerspectiveCamera(112, 1.6, 0.001, 100);
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(camera);
     expect(camera.fov).toBe(ATLAS_FOV_GRAUS);
   });
@@ -897,7 +929,7 @@ describe('o rig e o alvo de abertura', () => {
   it('a câmera do TETO fica do lado ACESO do corpo mais externo', () => {
     const camera = new THREE.PerspectiveCamera(35, 1.6, 0.001, 100);
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(camera);
     // o eixo sai do CORPO (o alvo é a origem, e Sol→origem é nulo), e a
     // câmera se põe do lado do Sol em relação a ele: o ângulo entre
@@ -909,7 +941,7 @@ describe('o rig e o alvo de abertura', () => {
   it('a órbita do ponteiro é determinística e grampeada', () => {
     const camera = new THREE.PerspectiveCamera(35, 1.6, 0.001, 100);
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(camera);
     const inicial = camera.position.clone();
     for (let i = 0; i < 2000; i++) rig.addOrbitDelta(50, 50);
@@ -923,7 +955,7 @@ describe('o rig e o alvo de abertura', () => {
     const polar = daCamera.angleTo(POLO_ECLIPTICO);
     expect(Math.min(polar, Math.PI - polar)).toBeGreaterThanOrEqual(MIN_POLAR_RAD - 1e-9);
     // e focar de novo zera a órbita — o alvo novo nasce no pino
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(camera);
     expect(camera.position.distanceTo(inicial)).toBeCloseTo(0, 15);
   });
@@ -1246,7 +1278,7 @@ describe('o alvo vivo — recompor sem quebrar o que o visitante estava fazendo'
     const camera = cam();
     const rig = new AtlasRig();
     const casa = orbitaMaisExterna();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.addOrbitDelta(300, 120);
     rig.apply(camera);
     const antes = direcaoDa(camera, rig);
@@ -1369,10 +1401,10 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
     const a = cam();
     const b = cam();
     const rig1 = new AtlasRig();
-    rig1.focarNoSistema();
+    noSistemaInteiro(rig1);
     rig1.apply(a);
     const rig2 = new AtlasRig();
-    rig2.focarNoSistema();
+    noSistemaInteiro(rig2);
     rig2.apply(b, 1, LARGURA_DE_MESA_PX, 0.016); // dt não muda nada fora da rampa
     expect(a.position.equals(b.position)).toBe(true);
     expect(a.quaternion.equals(b.quaternion)).toBe(true);
@@ -1381,14 +1413,14 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
   it('a rampa TERMINA na pose exata do destino — ?foco= continua reproduzível', () => {
     const seco = cam();
     const rigSeco = new AtlasRig();
-    rigSeco.focarNoSistema();
+    noSistemaInteiro(rigSeco);
     const alvo = new THREE.Vector3(1e-6, 2e-6, 0.5e-6);
     rigSeco.focar(alvo, 1e-7);
     rigSeco.apply(seco);
 
     const animado = cam();
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(animado);
     rig.focar(alvo, 1e-7, alvo, { rampa: true });
     expect(rig.animando).toBe(true);
@@ -1405,7 +1437,7 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
 
   it('focar o MESMO alvo com rampa é no-op — nem reinicia a animação', () => {
     const rig = new AtlasRig();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(cam());
     const alvo = new THREE.Vector3(1e-6, 0, 0);
     rig.focar(alvo, 1e-7, alvo, { rampa: true });
@@ -1459,7 +1491,7 @@ describe('o degrau do CORPO DO SOL', () => {
     const camera = new THREE.PerspectiveCamera(112, 1.6, 1e-12, 100);
     const rig = new AtlasRig();
     const casa = orbitaMaisExterna();
-    rig.focarNoSistema();
+    noSistemaInteiro(rig);
     rig.apply(camera);
     const deCasa = camera.position.clone().normalize();
     const distCasa = camera.position.length();
