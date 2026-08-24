@@ -376,16 +376,21 @@ export const FATOR_DE_ENCHIMENTO_DO_SOL = 1.0;
  *  solar"*. O teto único passa a ser 0,07 — o número que a observação
  *  tinha —, agora valendo no filme, no voo livre e no Atlas.
  *
- *  POR QUE TETO E NÃO AUTO-EXPOSIÇÃO, já que a redação anterior desta
- *  docstring prometia auto-exposição como o "conserto global": porque o
- *  NORTE a PROÍBE, em letra ("Proibido: teto de brilho. Proibido:
- *  exposição que depende do que está em foco. A pupila adaptativa está
- *  reprovada pelo dono"), e porque a queixa DELE é GEOMÉTRICA — o
- *  TAMANHO que a estrela ocupa —, não fotométrica. Auto-exposição
- *  apagaria o resto da cena para caber uma fonte só; o que ele pediu foi
- *  que a fonte encolhesse. Este limitador é exatamente esse eixo, e é a
- *  mesma fronteira do §7 regra 1: medir a FONTE é lícito; medir a CENA
- *  para decidir brilho, não.
+ *  POR QUE TETO E NÃO EXPOSIÇÃO ADAPTATIVA, já que a redação anterior
+ *  desta docstring prometia "auto-exposição" como o conserto global.
+ *  Duas razões, e a primeira exige PRECISÃO no termo: o que o NORTE
+ *  proíbe não é auto-exposição em geral, é a que LÊ A CENA — "Proibido:
+ *  teto de brilho. Proibido: exposição que depende do que está em foco.
+ *  A pupila adaptativa está reprovada pelo dono". A exposição que a casa
+ *  TEM continua viva e lícita (`setExposure(1.02 + 0.03·galaxyFade)` no
+ *  director, com `?exp=` por cima): ela depende de ONDE A CÂMERA ESTÁ,
+ *  não do que caiu no quadro — é a mesma fronteira do §7 regra 1. O que
+ *  seria proibido aqui é fechar a exposição PORQUE o Sol está grande na
+ *  tela, que é a pupila com outro nome.
+ *  A segunda razão é que a queixa DELE é GEOMÉTRICA — o TAMANHO que a
+ *  estrela ocupa —, não fotométrica: qualquer exposição apagaria o resto
+ *  da cena para caber uma fonte só, e o que ele pediu foi que a FONTE
+ *  encolhesse. Este limitador é exatamente esse eixo.
  *
  *  O PREÇO, medido e declarado, agora no sentido inverso: o clarão
  *  encolhe 7,9× em linha para TODO MUNDO, e o filme paga junto — foi ele

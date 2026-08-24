@@ -34,6 +34,40 @@ interface SimboloProibido {
   razao: string;
 }
 
+/**
+ * O CANAL FORA-DE-BANDA DO CLARÃO (2026-08-24) — a mesma regra aplicada à
+ * FORMA, e não a um nome.
+ *
+ * POR QUE ELA NASCEU. O `clarao.test.ts` prometia que os dentes dele
+ * tornavam a volta da distinção por modo "impossível de passar
+ * despercebida". Uma sonda de auditoria provou que não: um SEGUNDO teto
+ * declarado como variável de módulo com setter exportado
+ * (`let tetoDaLeitura` + `export function setTetoDaLeitura`) atravessou
+ * 20/20 no `clarao.test.ts`, 67/67 aqui e a suíte inteira. Nenhum nome
+ * proibido foi usado, `q.fase` não foi tocado e `QuadroDoClarao` não
+ * ganhou campo — o estado entrou POR FORA do quadro, que é justamente o
+ * que a lista fechada de campos não pode ver.
+ *
+ * É A TERCEIRA VEZ que a casa encontra esta doença na mesma família: o
+ * `setGradacao(fator)` do bloom (morto no M1) tinha ESTA forma, e o dente
+ * de nome próprio de 23/08 já tinha cedido a uma sonda antes. A resposta
+ * é a mesma da §4: proibir a FORMA.
+ *
+ * O QUE ELA PROÍBE: qualquer binding mutável em escopo de MÓDULO dentro
+ * de `clarao.ts` — `let`/`var` na coluna zero, com ou sem `export`. O
+ * `let` LOCAL dentro de função continua livre (o arquivo tem vários, e
+ * são legítimos), porque não sobrevive ao quadro e ninguém o alcança de
+ * fora. Sem estado de módulo, um setter exportado não tem onde guardar a
+ * dose, e a lista FECHADA de `QuadroDoClarao` volta a ser a única porta.
+ *
+ * O QUE ELA NÃO PROMETE: fechar TODO canal concebível. Uma propriedade
+ * mutável dentro de um objeto exportado (`export const x = { teto }`)
+ * ainda passaria, e o arquivo tem uma tabela exportada legítima
+ * (`BV_MEDIDO`) que impede proibir a forma inteira sem falso positivo.
+ * Isto fecha o canal que a sonda usou, medido; não é um lacre.
+ */
+const MUTAVEL_DE_MODULO = /^(?:export\s+)?(?:let|var)\s+/m;
+
 const PROIBIDOS: SimboloProibido[] = [
   // ─── F0 (2026-08-16): PSF e Ballesteros num endereço só ────────────────
   {
@@ -497,6 +531,16 @@ const PROIBIDOS: SimboloProibido[] = [
       'zoomDaRoda.ts, com a citação do dono que revogou o degrau) — se ' +
       'alguém o recriar, esta linha o lê e reprova',
   },
+  {
+    arquivo: 'src/three/world/clarao.ts',
+    padrao: MUTAVEL_DE_MODULO,
+    migracao: 'clarão único',
+    razao:
+      'ESTADO MUTÁVEL DE MÓDULO é o canal fora-de-banda por onde um SEGUNDO ' +
+      'teto volta sem passar por QuadroDoClarao — a forma exata do falecido ' +
+      'setGradacao. Sem ele, um setter exportado não tem onde guardar a dose ' +
+      'e a lista fechada do quadro volta a ser a única porta de entrada',
+  },
 ];
 
 /**
@@ -534,6 +578,24 @@ describe('os símbolos proibidos não renasceram', () => {
       expect(ler(arquivo), `${razao}`).not.toMatch(padrao);
     });
   }
+});
+
+describe('o teto do clarão não tem canal fora-de-banda', () => {
+  it('a varredura acha o que procura — um padrão quebrado passaria calado', () => {
+    // o cinto do selo: a FORMA que a sonda de auditoria usou, byte a byte
+    expect('let tetoDaLeitura = OCUPACAO_MAXIMA_DA_TELA;').toMatch(MUTAVEL_DE_MODULO);
+    expect('export function setTetoDaLeitura(v: number): void {\n}').not.toMatch(
+      MUTAVEL_DE_MODULO
+    ); // o setter sozinho é inofensivo — quem ela mata é o estado
+    expect('export let doseDoQuadro = 0.55;').toMatch(MUTAVEL_DE_MODULO);
+    expect('var teto = 0;').toMatch(MUTAVEL_DE_MODULO);
+    // ...e não confunde o `let` LOCAL, que é legítimo e existe no arquivo
+    expect('  let p = el.length;').not.toMatch(MUTAVEL_DE_MODULO);
+    expect('    let temSlot = false;').not.toMatch(MUTAVEL_DE_MODULO);
+    // nem palavra que só COMEÇA com let/var
+    expect('const letreiro = 1;').not.toMatch(MUTAVEL_DE_MODULO);
+    expect('variacao = 2;').not.toMatch(MUTAVEL_DE_MODULO);
+  });
 });
 
 describe('as âncoras da galáxia são GERADAS, nunca cravadas', () => {

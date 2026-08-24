@@ -321,27 +321,36 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
 
   O conserto foi GLOBAL como ele exigiu: **um teto só, mais baixo**,
   valendo para todo mundo, filme incluído.
-  **POR QUE TETO SECO E NÃO AUTO-EXPOSIÇÃO** — a redação anterior deste
-  item prometia auto-exposição como "o conserto global", e ela estava
-  ERRADA em duas frentes. (a) O `NORTE` a PROÍBE, em letra: *"Proibido:
-  teto de brilho. Proibido: exposição que depende do que está em foco. A
-  pupila adaptativa está reprovada pelo dono"* — e a pupila foi enterrada
-  no M2 justamente por reprovação dele. Prometer aqui o que o NORTE veta
-  era contradição entre dois documentos da casa, e some agora. (b) A
-  queixa dele é **GEOMÉTRICA** — o tamanho que a fonte ocupa —, não
-  fotométrica: auto-exposição apagaria o resto da cena para caber uma
-  fonte só, quando o que ele pediu foi que a fonte encolhesse. Este
-  limitador é exatamente esse eixo, e respeita a fronteira do §7 regra 1
-  (medir a FONTE é lícito; medir a CENA para decidir brilho, não).
+  **POR QUE TETO SECO E NÃO EXPOSIÇÃO ADAPTATIVA** — a redação anterior
+  deste item prometia "auto-exposição" como o conserto global, e errava
+  em duas frentes. (a) **O termo era largo demais, e condenava um
+  mecanismo VIVO.** O `NORTE` não proíbe auto-exposição em geral; proíbe
+  a que LÊ A CENA: *"Proibido: teto de brilho. Proibido: exposição que
+  depende do que está em foco. A pupila adaptativa está reprovada pelo
+  dono"* — e a pupila foi enterrada no M2 por reprovação dele. A
+  exposição que a casa TEM segue lícita e em uso
+  (`setExposure(1.02 + 0.03·galaxyFade)` no director, com `?exp=` por
+  cima): ela depende de ONDE A CÂMERA ESTÁ, não do que caiu no quadro —
+  a mesma fronteira do §7 regra 1 (medir a FONTE, ou a POSE, é lícito;
+  medir a CENA para decidir brilho, não). O que estaria proibido é
+  fechar a exposição PORQUE o Sol está grande na tela: é a pupila com
+  outro nome. Prometer isso aqui contradizia o `NORTE`, e a promessa
+  some. (b) A queixa dele é **GEOMÉTRICA** — o tamanho que a fonte ocupa
+  —, não fotométrica: exposição nenhuma encolhe uma fonte, ela só apaga
+  o resto da cena para caber. Ele pediu que a FONTE encolhesse, e este
+  limitador é exatamente esse eixo.
   **O PREÇO, medido — e em Vênus é a devolução EXATA do que 23/08
-  somou.** Na mesma janela (1200×900, lente do Atlas de 35°), o
-  enquadramento de Vênus a 4,045 UA **perde 23,36% do quadro em luz**:
-  **227.854 px**, delta até 224 de 255, **100% UNILATERAL — nada
-  acrescentado, só removido**. São os MESMOS 227.854 px que a obra de
-  23/08 tinha acendido, com o mesmo delta máximo: a reversão é pixel a
-  pixel. A vista de ABERTURA (~9 UA) perde **15,04%** (146.737 px de
-  975.600, delta até 227) e a vista AFASTADA (40 UA) perde **4,50%**
-  (43.869 px, delta até 166), as duas 100% unilaterais.
+  somou.** Na mesma janela do apuramento (pedida 1200×900, lente do Atlas
+  de 35°; a ÁREA ÚTIL que o Chrome devolve é 1200×813 = **975.600 px**, e
+  é ELA o denominador de todos os percentuais abaixo — dividir por
+  1.080.000 dá 21,10% e não fecha), o enquadramento de Vênus a 4,045 UA
+  **perde 23,36% do quadro em luz — 227.854 px de 975.600**, delta até
+  224 de 255, **100% UNILATERAL: nada acrescentado, só removido**. São os
+  MESMOS 227.854 px que a obra de 23/08 tinha acendido, com o mesmo delta
+  máximo: a reversão é pixel a pixel. A vista de ABERTURA (~9 UA) perde
+  **15,04% — 146.737 px de 975.600**, delta até 227; a vista AFASTADA
+  (40 UA) perde **4,50% — 43.869 px de 975.600**, delta até 166; as duas
+  100% unilaterais.
   **E O FILME PAGA JUNTO, que era o ponto:** em `t=16 s` — o Sol grande
   da hélice de abertura, o instante mais rico em Sol do corte — o quadro
   perde **11,08%** (108.102 px, delta até 209, unilateral). Foi ele quem
@@ -370,8 +379,13 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   MAIS, não menos — é a lente em que o filme corre: a 3,6 UA a luz média
   cai 0,118347 → 0,061463 (−48%) e o borrão desaba de **325 px para
   53**; a 7,2 UA de 245 para 53; a 20 UA de 158 para 53; a 40 UA de 118
-  para 54; a 150 UA de 69 para 53. A 1 UA anda 1 ULP, e 0,067, 500,
-  2.000, 4.000 e 15.800 UA saem bit-idênticas.
+  para 54; a 150 UA de 69 para 53. A **1 UA** a luz média anda de
+  0,060859110 para 0,060857997 — **1,11e−6 absoluto, 1,8e−5 relativo**,
+  com faíscas (73) e borrão (30 px) inalterados; *(a redação anterior
+  chamou isso de "1 ULP", o que era retórica e não medida: 1 ULP em
+  0,0608 vale 6,9e−18, então o desvio real são ~1,6e11 ULPs. É pequeno
+  para o olho, não para a aritmética.)* As de 0,067, 500, 2.000, 4.000 e
+  15.800 UA saem bit-idênticas.
   **UMA CORREÇÃO DE FATO, medida hoje: a coluna FAÍSCAS não é do teto.**
   A redação de 23/08 atribuiu ao teto o salto de 15 → 1.367 faíscas a
   3,6 UA (e 11 → 1.577 a 150 UA), e concluiu dali que "o quadro inteiro
@@ -385,10 +399,24 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   comparação de 23/08 pôs oito horas e uma dúzia de commits dentro de uma
   coluna e leu tudo como efeito do clarão. Fica registrado como a lição
   que a casa já conhece: **JSON de datas diferentes não é A/B.**
-  **VOLTAR A DISTINGUIR POR MODO SEGUE FORA**, e o `clarao.test.ts`
-  guarda a LEI com três dentes — o número (que se recalibra com
-  declaração, como agora), a proibição de um segundo teto por qualquer
-  nome ou caminho, e a lista FECHADA de campos do quadro do clarão.
+  **VOLTAR A DISTINGUIR POR MODO SEGUE FORA**, e a guarda tem QUATRO
+  dentes, cada um cobrindo o que cobre de fato: (1) o **pino do número**
+  em `clarao.test.ts`, que se recalibra com declaração, como agora;
+  (2) o **comportamento no caminho PADRÃO** — onde o teto morde, a meia
+  do Sol É o teto, lida do uniform; (3) a **lista FECHADA de campos** de
+  `QuadroDoClarao`, que barra a entrada por dado; e (4) o **símbolo
+  proibido** de 24/08 em `simbolosProibidos.test.ts` — nenhum estado
+  mutável de módulo em `clarao.ts` —, que barra a entrada por FORA do
+  quadro. O dente (4) nasceu de um furo medido: uma sonda pôs um segundo
+  teto como `let` de módulo com setter exportado (a forma exata do
+  falecido `setGradacao`) e atravessou 20/20 + 67/67 + a suíte inteira,
+  porque um `it` de unidade mede o caminho padrão e não pode provar que
+  nenhum outro existe — essa é a pergunta da varredura invertida (§4).
+  **A guarda ENCARECE muito a volta da distinção; não a torna
+  impossível** (uma propriedade mutável dentro de objeto exportado ainda
+  passaria, e o arquivo tem uma tabela exportada legítima que impede
+  proibir a forma inteira sem falso positivo). Quem vier depois:
+  acrescente o dente, não a promessa.
   Fotos: `capturas/clarao-v2-afastada-antes-depois.png`,
   `clarao-v2-venus-antes-depois.png`,
   `clarao-v2-abertura-antes-depois.png` e

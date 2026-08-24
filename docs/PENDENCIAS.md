@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 87.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 88.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -241,12 +241,9 @@ comentário de `.abertura-porta` justificava os 14rem dizendo "acima dos
 conclusão do comentário estava certa, a aritmética não.
 
 **UMA SOBRA HONESTA, VISTA NA MESMA CONFERÊNCIA e NÃO consertada:** a
-390×844 com `?ui=1.4` o VÉU INTEIRO não cabe na vertical — a tarja de
-cima ("HYG · VIA LÁCTEA · TEMPO REAL") e a linha do rodapé
-("experiência cinematográfica · 3 min 13 s") saem cortadas pela borda.
-Os BOTÕES estão certos; quem não cabe é a página. É o degrau de fonte
-mais alto no aparelho mais estreito, não é o que ele reportou, e mexer
-nisso é decisão de composição — fica registrado para ele decidir.
+390×844 com `?ui=1.4` o VÉU INTEIRO não cabe na vertical. Os BOTÕES estão
+certos; quem não cabe é a página. Virou o **item 87** (defeito ABERTO,
+esperando decisão dele) — o detalhe mora lá.
 
 **E OS DOIS JUÍZES PARARAM DE ACUSAR INOCENTE (item 76, FECHADO em
 22/08).** Eles reprovavam o app quando a MÁQUINA estava ocupada — o do
@@ -1072,6 +1069,12 @@ fotos na mão:**
   que pinava o número velho foi substituído por um que pina a LEI NOVA,
   com três dentes: o número, a proibição de um segundo teto entrar por um
   nome novo, e a proibição de `q.fase` voltar ao módulo do Sol no quadro.
+  *(Os três viraram QUATRO em 24/08, quando uma sonda de auditoria furou
+  a guarda por um canal que nenhum deles via — variável de módulo com
+  setter exportado. O quarto dente é uma regra nova em
+  `simbolosProibidos.test.ts`, e a promessa de "impossível de passar
+  despercebida" foi reescrita como o que ela é: encarecimento, não
+  lacre. Detalhe na `LEI-DA-ESTRELA`.)*
   **O preço saiu igual ao que ele aceitou**, remedido na mesma janela em
   que fora apurado (1200×900, lente do Atlas): Vênus a 4,045 UA ganha
   **23,36%** do quadro em luz — contra os 23,40% de antes —, e a vista de
@@ -1559,6 +1562,23 @@ está certo:
   pelas bordas. **Não copiar** — e não confundir este achado estreito
   com superioridade de conjunto, que não existe.
 
+**87. O véu da abertura não cabe na tela do telefone com a fonte
+grande.** (Achado em 24/08, conferindo a queixa dos três botões — item
+**61**.) A 390×844 com `?ui=1.4` — o degrau de fonte MAIS ALTO no
+aparelho MAIS ESTREITO — o véu inteiro transborda na vertical: a tarja de
+cima (*"HYG · VIA LÁCTEA · TEMPO REAL"*) e a linha do rodapé
+(*"experiência cinematográfica · 3 min 13 s"*) saem **cortadas pela
+borda**. Os TRÊS BOTÕES estão certos e medidos (313,59×58,06 px, iguais,
+nada fora da tela na horizontal); quem não cabe é a PÁGINA.
+**Não é o que ele reportou** — a queixa dele era o botão mal formatado, e
+essa não reproduz mais. Este é vizinho, achado na mesma conferência.
+**Por que fica ABERTO e não foi consertado na hora:** o conserto é
+composição — encolher a tarja, o subtítulo ou o rodapé no telefone, ou
+deixar o véu rolar —, e composição é dele. Quem tem fonte grande é
+justamente quem mais precisa ler o rodapé, então "cortar e ignorar" não
+serve de resposta. Foto: `capturas/abertura-botoes.png`, painel da
+direita.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -1745,17 +1765,6 @@ itens 64 e 78, e porque juiz que reprova inocente já custou uma
 investigação inteira (item 76). Se reaparecer, o passo é datar por
 repetição antes de mexer em qualquer coisa.
 
-**85.** (Ruído de instrumento, visto UMA vez em 24/08.) **O
-`atlas-smoke` reprovou o TOQUE DUPLO sem defeito nenhum.** Numa corrida
-ele acusou *"o TOQUE DUPLO VAI: a câmera reposicionou (andou 2.63e-16 do
-raio, degrau orbita)"* — ou seja, a câmera NÃO andou. Na corrida
-seguinte, com o MESMO código, passou (*"andou 1.10e+0 do raio, degrau
-corpo"*), e no código anterior também passava. É flutuação do gesto
-sintético, não regressão. Fica registrado porque é o mesmo gênero dos
-itens 64 e 78, e porque juiz que reprova inocente já custou uma
-investigação inteira (item 76). Se reaparecer, o passo é datar por
-repetição antes de mexer em qualquer coisa.
-
 **86.** (Aberto em 24/08, respondendo a uma impressão dele.) **O céu de
 fundo PARECE mais apagado no Atlas — e parece com razão, mas a causa é a
 LENTE, não uma regra por modo.** Ele relatou a impressão; a resposta vem
@@ -1796,8 +1805,6 @@ mexer no fov quebra a reprodutibilidade que o pino existe para dar, e
 mexer no brilho POR MODO é exatamente o que ele proibiu. O caminho
 honesto, se ele quiser o céu mais cheio no Atlas, é um **eixo global de
 lente** — para todo mundo, nunca por modo. **Decisão dele.**
-
-
 
 ---
 

@@ -426,14 +426,42 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     // nao quero essa distincao entre modo atlas e modo filme, para mim o
     // filme é um feature do atlas"*.
     //
-    // ESTE TRILHO JÁ FOI SABOTADO E CEDEU — a versão de 23/08 guardava a
-    // decisão com REGEX DE NOME PRÓPRIO (`OCUPACAO_NA_OBSERVACAO`,
-    // `tetoDeOcupacao`, `q.fase`), e uma sonda de auditoria atravessou
-    // 20/20 verdes: bastou chamar o segundo teto de outro nome
-    // (`TETO_DA_LEITURA`), passá-lo por um campo de outro nome
-    // (`doseDoQuadro`) e escolher por modo sem tocar em `q.fase`. Dente
-    // que decora nomes não guarda comportamento nenhum. Os dentes de
-    // agora não perguntam COMO a coisa se chama:
+    // ESTE TRILHO JÁ FOI SABOTADO E CEDEU DUAS VEZES, e a segunda é a
+    // razão de este comentário não prometer mais o que promete um lacre.
+    //
+    //  · 23/08 — a versão de então guardava a decisão com REGEX DE NOME
+    //    PRÓPRIO (`OCUPACAO_NA_OBSERVACAO`, `tetoDeOcupacao`, `q.fase`), e
+    //    uma sonda atravessou 20/20: bastou chamar o segundo teto de
+    //    outro nome (`TETO_DA_LEITURA`), passá-lo por um campo de outro
+    //    nome (`doseDoQuadro`) e escolher por modo sem tocar em `q.fase`.
+    //    Dente que decora nome não guarda comportamento nenhum.
+    //  · 24/08 — os dentes de FORMA que substituíram aqueles cederam a
+    //    uma sonda nova: um segundo teto como VARIÁVEL DE MÓDULO com
+    //    setter exportado (`let tetoDaLeitura` + `setTetoDaLeitura`, a
+    //    forma exata do falecido `setGradacao`) passou 20/20 aqui, 67/67
+    //    em `simbolosProibidos` e a suíte inteira. O estado entrou POR
+    //    FORA de `QuadroDoClarao` — e a lista fechada de campos, por
+    //    construção, não enxerga o que não passa pelo quadro.
+    //
+    // A LIÇÃO, escrita para não se perder: um `it` de unidade mede o
+    // CAMINHO PADRÃO. Ele não pode provar que nenhum caminho existe —
+    // essa é a pergunta que a varredura invertida responde, e por isso a
+    // resposta ao segundo furo foi uma regra nova em
+    // `simbolosProibidos.test.ts` (estado mutável de módulo em
+    // `clarao.ts`), provada por sabotagem antes e depois.
+    //
+    // OS DENTES REAIS, sem retórica — o que cada um cobre DE FATO:
+    //  (1) o PINO do número, aqui;
+    //  (2) o COMPORTAMENTO NO PADRÃO: com a construção normal da camada,
+    //      quem manda no tamanho é o teto;
+    //  (3) as PORTAS NOMEADAS: a lista FECHADA de campos do quadro, que
+    //      barra a entrada por dado;
+    //  (4) o SÍMBOLO PROIBIDO (`simbolosProibidos`), que barra a entrada
+    //      por estado de módulo — o canal do furo de 24/08.
+    // Juntos encarecem muito a volta da distinção por modo; NÃO a tornam
+    // impossível. Uma propriedade mutável dentro de um objeto exportado,
+    // por exemplo, ainda passaria. Quem vier depois: acrescente o dente,
+    // não a promessa.
     //
     //  1. o NÚMERO — recalibrar é mudar aqui junto, e o pino MUDOU em
     //     24/08, com declaração. Era 0,55 (o do filme, escolhido em
@@ -444,18 +472,20 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     //     único desceu para 0,07, o número que a observação tinha.
     //     O QUE NÃO MUDOU é a LEI que este `it` guarda: continua sendo
     //     UM teto para o app inteiro, filme incluído. Este dente pina o
-    //     valor; os dentes 2 e 3 proíbem o SEGUNDO teto, e são eles que
-    //     tornariam uma volta à distinção por modo impossível de passar
-    //     despercebida — mexer no número é recalibrar, mexer na lei é
-    //     outra coisa.
+    //     VALOR — mexer no número é recalibrar (com declaração, como
+    //     agora); mexer na lei é outra coisa.
     expect(OCUPACAO_MAXIMA_DA_TELA).toBe(0.07);
 
-    //  2. COMPORTAMENTO: onde o teto MORDE, a meia do Sol É o teto — e
-    //     o número sai do UNIFORM do material, não de uma constante
-    //     relida. A 1 UA a asa pede 649,7 px numa tela de 900 e o teto
-    //     só deixa 495: quem manda no número é o teto. Qualquer segundo
-    //     teto MENOR — com qualquer nome, por qualquer caminho, escolhido
-    //     por qualquer modo — muda este número e reprova aqui.
+    //  2. COMPORTAMENTO NO CAMINHO PADRÃO: onde o teto MORDE, a meia do
+    //     Sol É o teto — e o número sai do UNIFORM do material, não de
+    //     uma constante relida. A 1 UA a asa pede 649,7 px numa tela de
+    //     900 e o teto só deixa 63,0 (eram 495 com o 0,55 de 23/08):
+    //     quem manda no número é o teto. Um segundo teto MENOR que
+    //     agisse na construção NORMAL da camada muda este número e
+    //     reprova aqui — mas um que só acenda por chamada externa em
+    //     runtime NÃO passa por este caminho, e foi assim que a sonda de
+    //     24/08 sobreviveu. Quem cobre aquele canal é a varredura
+    //     invertida, não este `it`.
     //     (A soltura entra em 1 pelo fixture: é entrada SINTÉTICA, o
     //     "regime de longe" que ele declara. Em produção a 1 UA a rampa
     //     já estaria entregando a óptica ao bloom — o que se mede aqui é
