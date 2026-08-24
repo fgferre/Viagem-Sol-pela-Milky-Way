@@ -247,12 +247,10 @@ export function TitleVeil({
               outros, sugiro tirar a palavra livremente"* —, mas o
               tamanho igual NÃO vem do texto: vem do CSS
               (`.abertura-porta`), senão o próximo nome que crescer
-              desalinha a fileira de novo. Dos dois lugares que ainda
-              diziam "Explorar livremente", a BARRA DO FILME encurtou em
-              24/08, por decisão dele; sobrou o VÉU DO FIM, que ele não
-              nomeou — lá as três saídas são frases inteiras ("Reviver a
-              viagem", "Ficar aqui"), e encurtar uma só é gosto, que é
-              dele. */}
+              desalinha a fileira de novo. Dos três lugares que diziam
+              "Explorar livremente" não sobrou nenhum: a BARRA DO FILME
+              encurtou em 24/08 e o VÉU DO FIM foi junto no mesmo dia,
+              quando ele nomeou a sobra. Uma ação, uma palavra. */}
           <div className="abertura-portas">
             <div className="abertura-porta">
               <button className="hud-btn" onClick={onPlay} aria-describedby="porta-filme">
@@ -318,9 +316,20 @@ export function TitleVeil({
                 Ficar aqui
               </button>
             )}
+            {/* "EXPLORAR", e não "Explorar livremente" (24/08). Era a
+                ÚLTIMA sobra da frase no app, e a folha do item 61 a
+                deixou de fora porque ele tinha nomeado só a barra do
+                filme — composição é gosto, e gosto é dele. Em 24/08 ele
+                nomeou: *"não entendi esse explorar livremente novo, mas
+                não precisa ser explorar, pode ser navegar"*. A resposta
+                é UMA AÇÃO, UMA PALAVRA: a barra do Atlas diz "↗
+                Explorar", a barra do filme diz "Explorar" e o véu do fim
+                passa a dizer o mesmo. O "Navegar" que ele ofereceu fica
+                REGISTRADO como alternativa aceita (PENDENCIAS, item 61):
+                se ele preferir, é uma palavra em dois lugares. */}
             {onExplore && (
               <button className="hud-btn" onClick={onExplore}>
-                Explorar livremente
+                Explorar
               </button>
             )}
           </div>

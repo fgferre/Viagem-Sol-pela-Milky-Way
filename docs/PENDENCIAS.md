@@ -72,7 +72,8 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > 24/08** — ele olhou e o teto desceu de 0,55 para **0,07**) →
 > ~~**82 (N1 + N2: os nomes)**~~
 > (FEITO em 24/08) → ~~**tarjas do celular**~~ (FEITO em 24/08) →
-> ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08) →
+> ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08; o **véu do
+> fim** encurtou junto em 24/08, quando ele nomeou a sobra) →
 > ⟨**CONFERÊNCIA DO DONO**: itens **61** e **77**, com as fotos⟩ →
 > **83 (L1 + L2: a linha)** → **81** → **70** → **75**.
 
@@ -204,12 +205,48 @@ tarjas do celular (tirar) e o nome *"Explorar livremente"* na barra do
 filme (encurtar para "Explorar") —, **e em 24/08 a OBRA das quatro
 fechou**. O que resta do 61 é o OLHO DELE.
 
-**UMA SOBRA HONESTA DO RETOQUE DO NOME, e ela é GOSTO, não descuido.**
-Ele nomeou *"a barra do filme"*, e foi só ela que encurtou. A frase
-*"Explorar livremente"* ainda existe em UM lugar: o **véu do fim**, onde
-as três saídas são frases inteiras — "Reviver a viagem", "Ficar aqui",
-"Explorar livremente". Encurtar uma só ali é escolha de composição, e
-composição é dele. **Se ele quiser, é uma palavra em `components/Hud.tsx`.**
+**A SOBRA DO RETOQUE DO NOME FECHOU em 24/08 — ele nomeou.** Em 23/08 ele
+tinha nomeado só *"a barra do filme"*, e a frase *"Explorar livremente"*
+sobreviveu no **véu do fim**; ficou escrito aqui que encurtar ali era
+gosto dele. Em 24/08 ele falou da sobra: *"não entendi esse explorar
+livremente novo, mas não precisa ser explorar, pode ser navegar"*. A
+resposta é **uma ação, uma palavra**: o véu passou a dizer **"Explorar"**,
+igual à barra do Atlas (↗ Explorar) e à barra do filme. Não sobrou
+nenhum "Explorar livremente" no app.
+
+> **"NAVEGAR" FICA REGISTRADO COMO ALTERNATIVA ACEITA POR ELE.** Ele
+> ofereceu a palavra e não a exigiu. Se preferir depois, é **uma palavra
+> em dois lugares**: `components/Hud.tsx` (o véu do fim) e
+> `components/BarraOuAlcas.tsx` (as duas barras). Trocar exige trocar as
+> DUAS, senão o app volta a ter dois nomes para a mesma ação.
+
+**E A QUEIXA DOS TRÊS BOTÕES NÃO REPRODUZ MAIS — medido em 24/08.** Ele
+relatou que *"na abertura do app apareciam 3 botões, um deles estava mal
+formatado por causa do texto maior que o botão"*. Conferido no navegador,
+com o HUD à vista: na MESA os três medem o MESMO retângulo
+(**224,00×42,19 px**), no maior degrau de fonte (`?ui=1.4`) medem
+**313,59×58,06 px**, também iguais, e o juiz de a11y cobra que nada saia
+da tela nos dois. No CELULAR de 390×844 (aparelho emulado de verdade, não
+janela estreita) e a 320×568 os três empilham com a mesma largura e
+**nenhum texto quebra linha**. A folga é real e agora está medida: a
+caixa de texto tem 163,2 px e o nome mais largo ("Entrar no Atlas", caixa
+alta com 0,3em de tracking) pede **147,2 px** — sobram 16,0 px. Foto:
+`capturas/abertura-botoes.png` (mesa · 390×844 · 390×844 com `ui=1,4`).
+O que ele viu foi o estado ANTERIOR aos retoques de 22–24/08 (a fileira
+igual do item 61 e o encurtamento de "Explorar livremente"), que já
+tinham fechado a queixa. **DE CARONA, uma conta ERRADA morreu:** o
+comentário de `.abertura-porta` justificava os 14rem dizendo "acima dos
+205,78 px do nome mais largo" — esquecendo os 60,8 px de recheio do
+`.hud-btn`. O número certo é 147,2 px contra 163,2 px de caixa; a
+conclusão do comentário estava certa, a aritmética não.
+
+**UMA SOBRA HONESTA, VISTA NA MESMA CONFERÊNCIA e NÃO consertada:** a
+390×844 com `?ui=1.4` o VÉU INTEIRO não cabe na vertical — a tarja de
+cima ("HYG · VIA LÁCTEA · TEMPO REAL") e a linha do rodapé
+("experiência cinematográfica · 3 min 13 s") saem cortadas pela borda.
+Os BOTÕES estão certos; quem não cabe é a página. É o degrau de fonte
+mais alto no aparelho mais estreito, não é o que ele reportou, e mexer
+nisso é decisão de composição — fica registrado para ele decidir.
 
 **E OS DOIS JUÍZES PARARAM DE ACUSAR INOCENTE (item 76, FECHADO em
 22/08).** Eles reprovavam o app quando a MÁQUINA estava ocupada — o do
@@ -1708,6 +1745,17 @@ itens 64 e 78, e porque juiz que reprova inocente já custou uma
 investigação inteira (item 76). Se reaparecer, o passo é datar por
 repetição antes de mexer em qualquer coisa.
 
+**85.** (Ruído de instrumento, visto UMA vez em 24/08.) **O
+`atlas-smoke` reprovou o TOQUE DUPLO sem defeito nenhum.** Numa corrida
+ele acusou *"o TOQUE DUPLO VAI: a câmera reposicionou (andou 2.63e-16 do
+raio, degrau orbita)"* — ou seja, a câmera NÃO andou. Na corrida
+seguinte, com o MESMO código, passou (*"andou 1.10e+0 do raio, degrau
+corpo"*), e no código anterior também passava. É flutuação do gesto
+sintético, não regressão. Fica registrado porque é o mesmo gênero dos
+itens 64 e 78, e porque juiz que reprova inocente já custou uma
+investigação inteira (item 76). Se reaparecer, o passo é datar por
+repetição antes de mexer em qualquer coisa.
+
 **86.** (Aberto em 24/08, respondendo a uma impressão dele.) **O céu de
 fundo PARECE mais apagado no Atlas — e parece com razão, mas a causa é a
 LENTE, não uma regra por modo.** Ele relatou a impressão; a resposta vem
@@ -1748,6 +1796,8 @@ mexer no fov quebra a reprodutibilidade que o pino existe para dar, e
 mexer no brilho POR MODO é exatamente o que ele proibiu. O caminho
 honesto, se ele quiser o céu mais cheio no Atlas, é um **eixo global de
 lente** — para todo mundo, nunca por modo. **Decisão dele.**
+
+
 
 ---
 

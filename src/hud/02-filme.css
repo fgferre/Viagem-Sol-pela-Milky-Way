@@ -279,9 +279,17 @@
   flex-direction: column;
   align-items: center;
   gap: 0.55rem;
-  /* 14rem = 224 px no tamanho de sempre, acima dos 205,78 px do nome
-     mais largo ("Entrar no Atlas") — o texto nunca aperta, e a três
-     colunas lado a lado a fileira ainda cabe no maior degrau de `?ui=`. */
+  /* 14rem = 224 px no tamanho de sempre. A FOLGA, REMEDIDA em 24/08
+     porque o número que estava aqui não fechava: dizia "acima dos
+     205,78 px do nome mais largo", esquecendo que o `.hud-btn` gasta
+     `0 1.9rem` de recheio dos dois lados (60,8 px). A conta certa é
+     contra a CAIXA DE TEXTO, não contra o botão: 224 − 60,8 = 163,2 px
+     de caixa, e o nome mais largo ("Entrar no Atlas", em caixa alta com
+     0,3em de tracking) pede 147,2 px medidos no navegador. Sobram
+     16,0 px — o texto não aperta, e nenhum dos três quebra linha.
+     A três colunas lado a lado a fileira ainda cabe no maior degrau de
+     `?ui=` (a 1,4 os três medem 313,59×58,06 px, iguais, e o juiz de
+     a11y cobra que nada saia da tela). */
   width: 14rem;
 }
 .abertura-porta .hud-btn {
