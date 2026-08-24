@@ -1347,7 +1347,9 @@ O buraco foi tapado em `6dacdc4` (fechar o socket agora reprova os
 pendentes, nos dois lugares que falam CDP), mas isto NÃO é a prova: o
 defeito não se
 reproduz sob comando, e o item só fecha quando uma leva presa voltar a
-acontecer e sair com erro legível em vez de sono.
+acontecer e sair com erro legível em vez de sono. **A OUTRA METADE
+MORREU em 23/08** — o Chrome que sobrevivia ao juiz é o assunto do item
+**78**, e o conserto está lá. O que segura ESTE item é só o sono.
 
 **72.** (Achado em 22/08, medindo o item 70.) **A porta `?nobloom=1`
 mente: ela não desliga o bloom todo.** Ela só apaga `post.bloom.enabled`,
@@ -1378,6 +1380,30 @@ de CDP que espera para sempre a resposta de um Chrome morto). O `send`
 dos dois caminhos (`abrirSessao` e `capturarCDP`) agora reprova os
 pendentes quando o socket fecha (`6dacdc4`); enquanto o travamento não
 voltar a acontecer para mostrar o erro, o item fica aberto.
+
+**OS 20 CHROME ÓRFÃOS SÃO OUTRO DEFEITO, E ESSE MORREU EM 23/08.** Não
+era consequência do travamento: o `finally` que mata o Chrome é o
+caminho FELIZ, e quando o Node morria no MEIO (Ctrl+C, `kill` de agente,
+`process.exit` dentro de um `try` — o `--cru` do `gpu-profile` fazia
+exatamente isso) ele não rodava, o browser reparentava para o launchd e
+ficava desenhando o app com contexto Metal para sempre. Custo medido na
+casa: dois headless de 1,5 dia com `PPID=1`, ~45% de CPU e ~1,2 GB
+disputando o M1 do dono — e o próprio `chrome.mjs` já tinha medido a
+baseline caindo de **20,0 para 8,0 fps** com órfãos vivos. Era, de longe,
+a maior perda de quadro desta máquina, e não estava no app.
+
+O conserto é estrutural: os OITO `spawn(CHROME)` soltos do projeto
+viraram UMA porta (`lancarChrome`, em `chrome.mjs`), toda sessão viva
+entra num registro, e UM vigia só — `exit` + `SIGINT` + `SIGTERM`,
+armado uma vez e nunca por chamada — mata browser e helpers pelo
+`user-data-dir` quando o Node cai. Provado com o mesmo juiz nos dois
+lados: morto no meio por `kill -INT`, **antes** deixava 2 headless de pé
+(o browser e o Helper de GPU com Metal), **depois** deixa ZERO; até o
+fim normal, zero; e num laço de 8 capturas os ouvintes de sinal ficam em
+**1, 1 e 1** (um tratador por chamada seria vazamento com outro nome).
+Origem: relatório externo de degradação, verificado por leitura
+independente antes de virar código. A conferência do dono é só o fps que
+ele sentir — o número de processos já está provado.
 
 **79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
 `bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo

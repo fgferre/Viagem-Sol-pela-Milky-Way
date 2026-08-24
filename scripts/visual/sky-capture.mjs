@@ -19,12 +19,13 @@
 // A MEDIÇÃO mora aqui de propósito. Capturar e medir eram dois comandos,
 // e o segundo (um Chrome com file:// e --dump-dom) foi reescrito do zero
 // em pelo menos duas rodadas porque vivia no scratchpad. Um comando só.
-import { spawn } from 'node:child_process';
 import { mkdirSync, existsSync, rmSync, readFileSync, writeFileSync, openSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { CHROME, GPU_FLAGS, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO } from './chrome.mjs';
+import {
+  GPU_FLAGS, lancarChrome, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO,
+} from './chrome.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const MEASURE = resolve(ROOT, 'scripts/visual/sky-measure.html');
@@ -136,21 +137,24 @@ if (existsSync(dom)) rmSync(dom);
 // o processo custava os 600 s do teto inteiro por execução. O produto é o
 // arquivo, então o critério de pronto é o arquivo: assim que o bloco <pre>
 // aparece, o resto do processo não interessa e morre.
-const medidor = spawn(CHROME, [
-  ...GPU_FLAGS,
-  '--allow-file-access-from-files', '--no-first-run', `--user-data-dir=${PERFIS}/pm`,
-  '--window-size=900,900', '--virtual-time-budget=25000', '--dump-dom',
-  `file:///${MEASURE.replace(/\\/g, '/')}?dir=${OUT.replace(/\\/g, '/')}` +
-    `&ref=${REF.replace(/\\/g, '/')}`,
-], { stdio: ['ignore', openSync(dom, 'w'), 'ignore'] });
+const { processo: medidor, encerrar: encerrarMedidor } = lancarChrome({
+  perfil: `${PERFIS}/pm`,
+  args: [
+    ...GPU_FLAGS,
+    '--allow-file-access-from-files', '--no-first-run',
+    '--window-size=900,900', '--virtual-time-budget=25000', '--dump-dom',
+    `file:///${MEASURE.replace(/\\/g, '/')}?dir=${OUT.replace(/\\/g, '/')}` +
+      `&ref=${REF.replace(/\\/g, '/')}`,
+  ],
+  stdio: ['ignore', openSync(dom, 'w'), 'ignore'],
+});
 const prazo = Date.now() + TIMEOUT;
 for (;;) {
   await new Promise((r) => setTimeout(r, 1000));
   const pronto = existsSync(dom) && /<pre[^>]*>[\s\S]*?<\/pre>/i.test(readFileSync(dom, 'utf8'));
   if (pronto || Date.now() > prazo || medidor.exitCode !== null) break;
 }
-medidor.kill();
-matarPerfil(`${PERFIS}/pm`);
+await encerrarMedidor();
 
 const bloco = readFileSync(dom, 'utf8').match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
 if (!bloco) throw new Error('a métrica não devolveu resultado — confira o dev server e a referência');

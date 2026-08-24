@@ -136,12 +136,11 @@
 //             mancha no lugar errado, corpo que deveria acender e não acendeu,
 //             e luz que apareceu onde corpo nenhum foi previsto.
 // ============================================================
-import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { CHROME, GPU_FLAGS, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO } from './chrome.mjs';
+import { GPU_FLAGS, lancarChrome, capturarCDP, julgarProntidao, APP_PADRAO } from './chrome.mjs';
 import { VISTAS, PIN } from './ab-identidade.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -693,11 +692,15 @@ ${manchaSaturada.toString()}
 </script>`);
 
   const perfil = resolve(dir, 'perfil');
-  const chrome = spawn(CHROME, [
-    ...GPU_FLAGS, '--allow-file-access-from-files', '--no-first-run',
-    `--user-data-dir=${perfil}`, '--window-size=600,400',
-    '--virtual-time-budget=60000', '--dump-dom', `file://${pagina}`,
-  ], { stdio: ['ignore', 'pipe', 'ignore'] });
+  const { processo: chrome, encerrar } = lancarChrome({
+    perfil,
+    args: [
+      ...GPU_FLAGS, '--allow-file-access-from-files', '--no-first-run',
+      '--window-size=600,400',
+      '--virtual-time-budget=60000', '--dump-dom', `file://${pagina}`,
+    ],
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
   let dom = '';
   chrome.stdout.on('data', (c) => { dom += c; });
   try {
@@ -707,8 +710,7 @@ ${manchaSaturada.toString()}
       if (/<pre[^>]*>\{[\s\S]*?\}<\/pre>/.test(dom) || Date.now() > prazo) break;
     }
   } finally {
-    chrome.kill();
-    matarPerfil(perfil);
+    await encerrar();
   }
   const bloco = dom.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
   if (!bloco || !bloco[1].trim().startsWith('{')) throw new Error('a análise não devolveu resultado');

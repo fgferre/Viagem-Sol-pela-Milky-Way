@@ -19,11 +19,10 @@
 // E a repetição do PRÓPRIO lado vem antes de comparar os lados — a guarda da
 // cavidade tinha 65 px de tremor entre execuções, e citar o par mais favorável
 // teria "provado" 1 pixel de diferença que não existia.
-import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
-import { CHROME, GPU_FLAGS, matarPerfil } from './chrome.mjs';
+import { GPU_FLAGS, lancarChrome } from './chrome.mjs';
 
 const [A, B] = process.argv.slice(2);
 if (!A || !B) throw new Error('uso: diff-pixel.mjs <a.png> <b.png>');
@@ -103,11 +102,15 @@ writeFileSync(pagina, `<!doctype html><meta charset="utf-8"><pre id="o">…</pre
 </script>`);
 
 const perfil = resolve(dir, 'perfil');
-const chrome = spawn(CHROME, [
-  ...GPU_FLAGS, '--allow-file-access-from-files', '--no-first-run',
-  `--user-data-dir=${perfil}`, '--window-size=600,400',
-  '--virtual-time-budget=20000', '--dump-dom', `file://${pagina}`,
-], { stdio: ['ignore', 'pipe', 'ignore'] });
+const { processo: chrome, encerrar } = lancarChrome({
+  perfil,
+  args: [
+    ...GPU_FLAGS, '--allow-file-access-from-files', '--no-first-run',
+    '--window-size=600,400',
+    '--virtual-time-budget=20000', '--dump-dom', `file://${pagina}`,
+  ],
+  stdio: ['ignore', 'pipe', 'ignore'],
+});
 let dom = '';
 chrome.stdout.on('data', (c) => { dom += c; });
 try {
@@ -117,8 +120,7 @@ try {
     if (/<pre[^>]*>\{[\s\S]*?\}<\/pre>/.test(dom) || Date.now() > prazo) break;
   }
 } finally {
-  chrome.kill();
-  matarPerfil(perfil);
+  await encerrar();
 }
 const bloco = dom.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
 if (!bloco || !bloco[1].trim().startsWith('{')) throw new Error('o diff não devolveu resultado');

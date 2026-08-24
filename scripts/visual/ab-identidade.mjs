@@ -71,7 +71,7 @@ import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
-  CHROME, GPU_FLAGS, matarPerfil, portaDoPerfil, esperarAssentar, julgarProntidao, APP_PADRAO, dorme,
+  GPU_FLAGS, lancarChrome, portaDoPerfil, esperarAssentar, julgarProntidao, APP_PADRAO, dorme,
 } from './chrome.mjs';
 
 const LADO = process.argv[2] || 'antes';
@@ -681,12 +681,15 @@ async function capturar(query, png, janela) {
   // DevToolsActivePort do próprio perfil. Com N filhos em paralelo (e duas
   // levas simultâneas na mesma máquina) não sobra aritmética de porta para
   // errar — era a única corrida de verdade do paralelismo por lista.
-  const chrome = spawn(CHROME, [
-    ...GPU_FLAGS,
-    '--hide-scrollbars', '--no-first-run', '--mute-audio',
-    '--force-device-scale-factor=1', `--window-size=${jw},${jh}`,
-    `--user-data-dir=${perfil}`, '--remote-debugging-port=0', 'about:blank',
-  ], { stdio: 'ignore' });
+  const { encerrar } = lancarChrome({
+    perfil,
+    args: [
+      ...GPU_FLAGS,
+      '--hide-scrollbars', '--no-first-run', '--mute-audio',
+      '--force-device-scale-factor=1', `--window-size=${jw},${jh}`,
+      '--remote-debugging-port=0', 'about:blank',
+    ],
+  });
   try {
     const porta = await portaDoPerfil(perfil);
     let url = null;
@@ -746,10 +749,7 @@ async function capturar(query, png, janela) {
       ms: assentou.ms,
     };
   } finally {
-    chrome.kill();
-    matarPerfil(perfil);
-    await dorme(400);
-    try { rmSync(perfil, { recursive: true, force: true }); } catch { /* perfil preso */ }
+    await encerrar({ carencia: 400 });
   }
 }
 

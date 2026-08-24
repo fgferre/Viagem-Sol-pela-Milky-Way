@@ -18,11 +18,9 @@
 // draws pesados é bem medido, um com muito trabalho fora de draw não. O total
 // é conferível — quando ele cruza 16,67 ms os quadros caem, e foi assim que
 // esta medida se validou (16,15 ms → 60,0 fps; 16,92 ms → 56,3 fps).
-import { spawn } from 'node:child_process';
-import { rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { CHROME, GPU_FLAGS, matarPerfil, dorme } from './chrome.mjs';
+import { GPU_FLAGS, lancarChrome, dorme } from './chrome.mjs';
 
 const QUERY = process.argv[2] || '?t=100';
 const SECONDS = Number(process.argv[3] || 15);
@@ -169,13 +167,16 @@ const INSTRUMENT = `(() => {
 })();`;
 
 const PROFILE = resolve(tmpdir(), `gpuprof-${process.pid}`);
-const chrome = spawn(CHROME, [
-  ...GPU_FLAGS,
-  '--hide-scrollbars', '--no-first-run', '--mute-audio',
-  `--force-device-scale-factor=${DPR}`, `--window-size=${W},${H}`,
-  `--user-data-dir=${PROFILE}`, `--remote-debugging-port=${PORT}`,
-  'about:blank',
-], { stdio: 'ignore' });
+const { encerrar } = lancarChrome({
+  perfil: PROFILE,
+  args: [
+    ...GPU_FLAGS,
+    '--hide-scrollbars', '--no-first-run', '--mute-audio',
+    `--force-device-scale-factor=${DPR}`, `--window-size=${W},${H}`,
+    `--remote-debugging-port=${PORT}`,
+    'about:blank',
+  ],
+});
 
 async function endpoint() {
   for (let i = 0; i < 100; i++) {
@@ -260,6 +261,10 @@ try {
   console.log(`${p.frames} quadros em ${SECONDS}s = ${(p.frames / SECONDS).toFixed(1)} fps`
     + `  | rAF p50 ${q(0.5)} p90 ${q(0.9)} p99 ${q(0.99)}`
     + `  | calls/quadro ${cpf.toFixed(1)}  descartes ${p.drops}`);
+  // `process.exit` NÃO roda o `finally` deste bloco — este atalho deixava um
+  // Chrome com contexto Metal vivo a cada `--cru`. Quem o mata agora é o vigia
+  // do `chrome.mjs`, que escuta o `exit` do processo; a linha fica porque o
+  // veredito CRU é só a primeira linha e o resto seria ruído.
   if (CRU) process.exit(0);
   console.log(`GPU ${total.toFixed(3)} ms/quadro  |  POS ${pos.toFixed(3)} ms `
     + `(${(100 * pos / total).toFixed(1)}%)`);
@@ -268,8 +273,5 @@ try {
       + ' ms  x' + r.n.toFixed(1));
   }
 } finally {
-  chrome.kill();
-  matarPerfil(PROFILE);
-  await dorme(500);
-  try { rmSync(PROFILE, { recursive: true, force: true }); } catch { /* perfil preso */ }
+  await encerrar({ carencia: 500 });
 }

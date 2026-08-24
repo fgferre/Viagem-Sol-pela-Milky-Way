@@ -20,6 +20,17 @@
 // total. `rodada.mjs` já tinha a limpeza — só que só no ramo `win32`, e a
 // morte silenciosa dos outros três harnesses estava embutida no valor que
 // eles imprimiam. Regra: quem sobe Chrome mata pelo `user-data-dir`, sempre.
+//
+// E `lancarChrome`, porque `finally` NÃO basta: o `finally` é o caminho FELIZ.
+// Quando o Node morre no MEIO — Ctrl+C, `kill` de agente, `process.exit`
+// dentro de um `try` (o `--cru` do gpu-profile fazia exatamente isso) — o
+// `finally` não roda, o Chrome reparenta para o launchd e fica desenhando o
+// app com contexto Metal para SEMPRE. Medido na casa em 23/08: dois headless
+// de 1,5 dia com `PPID=1`, somando ~45 % de CPU, ~1,2 GB e dois contextos de
+// GPU no mesmo M1 que o dono usa. Era a causa dos itens 64 e 78. A resposta é
+// o REGISTRO abaixo: toda sessão viva num Set, um vigia só (`exit` + `SIGINT`
+// + `SIGTERM`), e o lançamento por uma porta única — nenhum `spawn(CHROME)`
+// solto no projeto.
 import { existsSync, rmSync, readFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -57,6 +68,109 @@ export const GPU_FLAGS = [
  * e os doze arquivos já importam este módulo. Uma linha só, aqui.
  */
 export const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * AS SESSÕES VIVAS deste processo — `{ processo, perfil }` de cada Chrome que
+ * subiu e ainda não foi encerrado. É a lista que o vigia percorre quando o
+ * Node morre no meio.
+ *
+ * A sessão SÓ sai daqui em `encerrar`, nunca no `exit` do filho: o browser
+ * principal morrer sem os helpers é exatamente o caso órfão, e é pelo PERFIL
+ * (não pelo pid do pai) que se alcança um helper de GPU já reparentado.
+ */
+const sessoesVivas = new Set();
+let vigiaArmado = false;
+
+/** Mata o browser e os helpers do perfil. Idempotente: chamar duas vezes é nada. */
+function matarSessao(sessao) {
+  if (!sessoesVivas.delete(sessao)) return;
+  try { sessao.processo.kill(); } catch { /* já saiu sozinho */ }
+  matarPerfil(sessao.perfil);
+}
+
+const apagarPerfil = (perfil) => {
+  try { rmSync(perfil, { recursive: true, force: true }); } catch { /* preso por helper */ }
+};
+
+/**
+ * O VIGIA — UM ÚNICO conjunto de tratadores para o processo inteiro, armado na
+ * primeira sessão e nunca mais.
+ *
+ * POR QUE UMA VEZ SÓ, e não um `process.on` por sessão: `capturarCDP` roda em
+ * laço (52 vistas na leva do `ab-identidade`), e um tratador por chamada
+ * empilharia 52 ouvintes no mesmo sinal — `MaxListenersExceededWarning` e
+ * vazamento, trocando um defeito por outro.
+ *
+ * POR QUE `process.exit` NO FIM DO SINAL: registrar `SIGINT` DESLIGA a saída
+ * automática do Node. Sem a saída explícita o juiz ficaria pendurado depois do
+ * Ctrl+C — vivo, mudo e sem Chrome. 130 e 143 são os códigos convencionais
+ * (128 + o número do sinal).
+ *
+ * O QUE O VIGIA NÃO ALCANÇA: `SIGKILL`. Não há tratador para ele em processo
+ * nenhum; a rede que sobra ali é o `matarPerfil` da próxima leva.
+ */
+function armarVigia() {
+  if (vigiaArmado) return;
+  vigiaArmado = true;
+  const limpar = () => {
+    // tudo aqui é SÍNCRONO de propósito: no `exit` o Node não roda mais
+    // nenhuma volta do laço de eventos, então promessa aqui não existe
+    for (const sessao of [...sessoesVivas]) {
+      const { perfil } = sessao;
+      matarSessao(sessao);
+      apagarPerfil(perfil);
+    }
+  };
+  process.on('exit', limpar);
+  for (const [sinal, codigo] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+    process.on(sinal, () => { limpar(); process.exit(codigo); });
+  }
+}
+
+/**
+ * A ÚNICA PORTA por onde Chrome sobe neste projeto — ver o cabeçalho.
+ *
+ * Eram OITO `spawn(CHROME, …)` soltos (os dois daqui e mais seis nos
+ * harnesses), e cada um deles era uma fábrica de órfãos independente. Aqui o
+ * `spawn` acontece uma vez, a sessão entra no registro no mesmo instante em
+ * que nasce, e o vigia passa a cobri-la — inclusive nos harnesses que só
+ * emprestam o Chrome para um `--dump-dom` e nem falam CDP.
+ *
+ * O PERFIL É DA PEÇA, não do chamador: é ele o cabo pelo qual a sessão é
+ * puxada para a morte (`matarPerfil` casa pela linha de comando), então quem
+ * lança é quem põe a flag. Passar `--user-data-dir` em `args` é erro e grita.
+ *
+ * `detached` FICA FALSO, e é escolha declarada. Com `detached: true` viria a
+ * morte por grupo (`process.kill(-pid)`), que alcança helper reparentado — mas
+ * tirar o Chrome do grupo do terminal significa que o Ctrl+C deixa de chegar
+ * NELE, e o vigia daqui viraria a ÚNICA linha de defesa. `matarPerfil` já
+ * alcança os mesmos helpers (casa pelo `--user-data-dir`, que eles carregam na
+ * própria linha de comando), então o grupo compraria uma segunda faca ao preço
+ * de perder o cinto que já existe de graça. Falso é o desenho com DUAS redes.
+ */
+export function lancarChrome({ perfil, args, stdio = 'ignore' }) {
+  if (args.some((a) => String(a).startsWith('--user-data-dir'))) {
+    throw new Error('lancarChrome é quem põe o --user-data-dir: passe `perfil`, não a flag');
+  }
+  armarVigia();
+  const processo = spawn(CHROME, [`--user-data-dir=${perfil}`, ...args], { stdio });
+  const sessao = { processo, perfil };
+  sessoesVivas.add(sessao);
+  return {
+    processo,
+    /**
+     * O caminho feliz: mata, espera a `carencia` e APAGA o perfil (matar não é
+     * apagar — cada perfil deixa ~8 MB no TEMP e a pasta nunca é reusada).
+     * Com `carencia: 0` é síncrono na prática, e devolve promessa resolvida
+     * para quem prefere sempre `await`.
+     */
+    encerrar: ({ carencia = 0 } = {}) => {
+      matarSessao(sessao);
+      if (!carencia) { apagarPerfil(perfil); return Promise.resolve(); }
+      return dorme(carencia).then(() => apagarPerfil(perfil));
+    },
+  };
+}
 
 /**
  * ESPERAR O ESTADO, NUNCA O RELÓGIO DE PAREDE — a régua de todo juiz
@@ -349,12 +463,15 @@ export async function ligarSocketCDP(alvo, aoEvento = () => {}) {
 export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefixo = 'sessao' } = {}) {
   const [w, h] = String(janela).split('x');
   const perfil = resolve(tmpdir(), `${prefixo}-${process.pid}`);
-  const chrome = spawn(CHROME, [
-    ...GPU_FLAGS,
-    '--hide-scrollbars', '--no-first-run', '--mute-audio',
-    '--force-device-scale-factor=1', `--window-size=${w},${h}`,
-    `--user-data-dir=${perfil}`, '--remote-debugging-port=0', 'about:blank',
-  ], { stdio: 'ignore' });
+  const { encerrar } = lancarChrome({
+    perfil,
+    args: [
+      ...GPU_FLAGS,
+      '--hide-scrollbars', '--no-first-run', '--mute-audio',
+      '--force-device-scale-factor=1', `--window-size=${w},${h}`,
+      '--remote-debugging-port=0', 'about:blank',
+    ],
+  });
   const porta = await portaDoPerfil(perfil);
   let alvo = null;
   for (let i = 0; i < 100 && !alvo; i++) {
@@ -410,9 +527,7 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     send,
     fechar: () => {
       fecharSocket();
-      chrome.kill();
-      matarPerfil(perfil);
-      try { rmSync(perfil, { recursive: true, force: true }); } catch { /* preso */ }
+      return encerrar();
     },
     /** o que o app gritou desde a última limpeza (ver `gritos`) */
     gritos: () => [...gritos],
@@ -541,11 +656,6 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
 }
 
 /**
- * Mata TODO processo cuja linha de comando cite este `user-data-dir` — o
- * browser e os helpers que sobrevivem a ele. Casa pelo perfil, e não pelo
- * nome, para nunca encostar no Chrome que o usuário está usando.
- */
-/**
  * Captura uma vista por CDP, esperando a cena ASSENTAR — a alternativa a
  * `--virtual-time-budget --screenshot`, que neste Chrome/macOS simplesmente
  * NÃO TERMINA: medido, uma janela de 400×400 com 8 s de orçamento ficou mais
@@ -575,12 +685,15 @@ export async function capturarCDP({
   url, largura, altura, porta, quadros = 700, teto = 300000, coletar = null, dpr = null,
 }) {
   const perfil = resolve(tmpdir(), `cdp-${process.pid}-${porta}`);
-  const chrome = spawn(CHROME, [
-    ...GPU_FLAGS,
-    '--hide-scrollbars', '--no-first-run', '--mute-audio',
-    '--force-device-scale-factor=1', `--window-size=${largura},${altura}`,
-    `--user-data-dir=${perfil}`, `--remote-debugging-port=${porta}`, 'about:blank',
-  ], { stdio: 'ignore' });
+  const { encerrar } = lancarChrome({
+    perfil,
+    args: [
+      ...GPU_FLAGS,
+      '--hide-scrollbars', '--no-first-run', '--mute-audio',
+      '--force-device-scale-factor=1', `--window-size=${largura},${altura}`,
+      `--remote-debugging-port=${porta}`, 'about:blank',
+    ],
+  });
   let socket = null;
   try {
     let alvo = null;
@@ -646,13 +759,15 @@ export async function capturarCDP({
     return { png: buf, via: assentou.via, ms: assentou.ms, fase: assentou.fase, capa, linhas };
   } finally {
     socket?.fechar();
-    chrome.kill();
-    matarPerfil(perfil);
-    await dorme(400);
-    try { rmSync(perfil, { recursive: true, force: true }); } catch { /* perfil preso */ }
+    await encerrar({ carencia: 400 });
   }
 }
 
+/**
+ * Mata TODO processo cuja linha de comando cite este `user-data-dir` — o
+ * browser e os helpers que sobrevivem a ele. Casa pelo perfil, e não pelo
+ * nome, para nunca encostar no Chrome que o usuário está usando.
+ */
 export function matarPerfil(perfil) {
   if (process.platform === 'win32') {
     spawnSync('powershell', ['-NoProfile', '-Command',

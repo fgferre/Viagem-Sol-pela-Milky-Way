@@ -10,7 +10,7 @@
 // bundle; aqui ficam as combinações restantes, incluindo as parciais, que
 // nenhum arranjo de servidor encena de propósito.
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, lancarChrome } from './chrome.mjs';
 
 const sinal = (n) => Array(n).fill('sinal');
 const quadros = (n) => Array(n).fill('quadros');
@@ -184,5 +184,23 @@ describe('esperarCapaSair', () => {
   it('capa que nunca sai estoura o teto e DIZ que ficou, em vez de travar', async () => {
     const r = await esperarCapaSair(sendDeCapa(['cv-veil cv-done']), 0);
     expect(r.estado).toBe('ficou');
+  });
+});
+
+/**
+ * O PERFIL É DA PEÇA — a única parte de `lancarChrome` que se prova sem subir
+ * Chrome, e a que mais importa manter: o `--user-data-dir` é o CABO pelo qual
+ * a sessão é puxada para a morte (`matarPerfil` casa pela linha de comando).
+ * O dia em que um chamador puser a flag por conta própria, o registro guarda
+ * um perfil e o Chrome roda com outro — e o vigia mata o vazio enquanto o
+ * headless de verdade fica desenhando com Metal. É a fábrica de órfãos do
+ * item 78 renascendo por um caminho novo, e por isso a peça GRITA em vez de
+ * aceitar.
+ */
+describe('lancarChrome', () => {
+  it('recusa quem traz o próprio --user-data-dir: o perfil é o cabo da morte', () => {
+    expect(() => lancarChrome({
+      perfil: '/tmp/qualquer', args: ['--headless=new', '--user-data-dir=/tmp/outro'],
+    })).toThrow(/user-data-dir/);
   });
 });

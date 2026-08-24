@@ -31,13 +31,12 @@
 // caminho. Os números anteriores vieram de outro protocolo de captura (tempo
 // virtual, tier livre) — a comparação válida é 42 contra 43 em diante, e a
 // descontinuidade está declarada no próprio EVOLUCAO.md.
-import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, openSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
-  CHROME, GPU_FLAGS, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO, dorme,
+  GPU_FLAGS, lancarChrome, matarPerfil, capturarCDP, julgarProntidao, APP_PADRAO, dorme,
 } from './chrome.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -89,12 +88,16 @@ async function medir(png, extra = '') {
   const perfil = `${PROFILE}-m${seq++}`;
   const dom = resolve(tmpdir(), `rodada-${process.pid}-dom-${seq}.html`);
   if (existsSync(dom)) rmSync(dom);
-  const medidor = spawn(CHROME, [
-    ...GPU_FLAGS,
-    '--allow-file-access-from-files', '--no-first-run', `--user-data-dir=${perfil}`,
-    '--window-size=900,900', '--virtual-time-budget=14000', '--dump-dom',
-    `file:///${METRIC.replace(/\\/g, '/')}?a=${png.replace(/\\/g, '/')}${extra}`,
-  ], { stdio: ['ignore', openSync(dom, 'w'), 'ignore'] });
+  const { processo: medidor, encerrar } = lancarChrome({
+    perfil,
+    args: [
+      ...GPU_FLAGS,
+      '--allow-file-access-from-files', '--no-first-run',
+      '--window-size=900,900', '--virtual-time-budget=14000', '--dump-dom',
+      `file:///${METRIC.replace(/\\/g, '/')}?a=${png.replace(/\\/g, '/')}${extra}`,
+    ],
+    stdio: ['ignore', openSync(dom, 'w'), 'ignore'],
+  });
   const prazo = Date.now() + TIMEOUT;
   let texto = '';
   let bloco = null;
@@ -104,9 +107,7 @@ async function medir(png, extra = '') {
     bloco = texto.match(/\{\s*"(harmonicError|edgeError)"[\s\S]*?\n\}/);
     if (bloco || /ERRO: /.test(texto) || Date.now() > prazo || medidor.exitCode !== null) break;
   }
-  medidor.kill();
-  matarPerfil(perfil);
-  try { rmSync(perfil, { recursive: true, force: true }); } catch { /* perfil preso */ }
+  await encerrar();
   if (!bloco) {
     const erro = texto.match(/ERRO: [^<]*/);
     throw new Error(`métrica não devolveu JSON${erro ? ` — ${erro[0]}` : ''}`);
