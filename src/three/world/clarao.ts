@@ -357,24 +357,43 @@ export const FATOR_DE_ENCHIMENTO_DO_SOL = 1.0;
  *  entre modo atlas e modo filme, para mim o filme é um feature do
  *  atlas"*.
  *
- *  O que morreu aqui: a DOSE POR FASE de 17/08 — 0,07 no Atlas contra
+ *  O que morreu ali: a DOSE POR FASE de 17/08 — 0,07 no Atlas contra
  *  0,55 no filme, sob o nome `OCUPACAO_NA_OBSERVACAO` —, que nasceu de
  *  uma pergunta legítima dele — *"não vai dominar toda a cena?"* — e
  *  virou, com o tempo, a distinção entre os modos que ele proíbe. Ela
  *  era assistência declarada; deixou de existir, e com ela o
- *  `tetoDeOcupacao` que o director mandava por quadro.
+ *  `tetoDeOcupacao` que o director mandava por quadro. A LEI DA
+ *  UNIFICAÇÃO NÃO SE MEXE: um número, nunca dois.
  *
- *  O PREÇO ESTÁ MEDIDO E ACEITO por ele: com a MESMA lente e a MESMA
- *  pose, no corpo do Sol a foto é bit-idêntica, mas no enquadramento de
- *  Vênus (4,045 UA) 23,36% do quadro ganha luz — medido DEPOIS da obra,
- *  na mesma janela de 1200×900 em que os 23,40% de antes foram apurados
- *  (janela outra muda o denominador, não a luz) — e o corpo enquadrado
- *  vira faísca dentro do brilho. Se isso atrapalhar a observação do
- *  sistema, o conserto é GLOBAL (auto-exposição, para todo mundo) —
- *  voltar a distinguir por fase está FORA.
+ *  E EM 24/08 O NÚMERO DESCEU — a segunda metade da mesma decisão, que
+ *  ele já tinha pré-autorizado (*"se percebermos que é um problema…
+ *  vamos pensar em como consertar globalmente"*). Ele OLHOU as fotos do
+ *  teto unificado e reprovou: *"não gostei do resultado novo, acho que a
+ *  versão anterior fica melhor em todo o app, unificada, essa estrela
+ *  spiked desse tamanho (sol) ocupa todo sistema solar na visão
+ *  afastada… fica um pouco prejudicado"*, e *"uma coisa é o background
+ *  vivo, outra coisa é o tamanho que o Sol está ocupando do sistema
+ *  solar"*. O teto único passa a ser 0,07 — o número que a observação
+ *  tinha —, agora valendo no filme, no voo livre e no Atlas.
+ *
+ *  POR QUE TETO E NÃO AUTO-EXPOSIÇÃO, já que a redação anterior desta
+ *  docstring prometia auto-exposição como o "conserto global": porque o
+ *  NORTE a PROÍBE, em letra ("Proibido: teto de brilho. Proibido:
+ *  exposição que depende do que está em foco. A pupila adaptativa está
+ *  reprovada pelo dono"), e porque a queixa DELE é GEOMÉTRICA — o
+ *  TAMANHO que a estrela ocupa —, não fotométrica. Auto-exposição
+ *  apagaria o resto da cena para caber uma fonte só; o que ele pediu foi
+ *  que a fonte encolhesse. Este limitador é exatamente esse eixo, e é a
+ *  mesma fronteira do §7 regra 1: medir a FONTE é lícito; medir a CENA
+ *  para decidir brilho, não.
+ *
+ *  O PREÇO, medido e declarado, agora no sentido inverso: o clarão
+ *  encolhe 7,9× em linha para TODO MUNDO, e o filme paga junto — foi ele
+ *  quem mandou unificar para baixo, sabendo que o drama do filme desce
+ *  também. Os números degrau a degrau estão na `LEI-DA-ESTRELA`.
  *
  *  Segue sendo limitador POR ESTRELA, nunca exposição de cena. */
-export const OCUPACAO_MAXIMA_DA_TELA = 0.55;
+export const OCUPACAO_MAXIMA_DA_TELA = 0.07;
 
 export class ClaraoDeAsas {
   readonly group = new THREE.Group();

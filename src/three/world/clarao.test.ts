@@ -435,8 +435,20 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     // que decora nomes não guarda comportamento nenhum. Os dentes de
     // agora não perguntam COMO a coisa se chama:
     //
-    //  1. o NÚMERO é o do filme, 0,55 — recalibrar é mudar aqui junto.
-    expect(OCUPACAO_MAXIMA_DA_TELA).toBe(0.55);
+    //  1. o NÚMERO — recalibrar é mudar aqui junto, e o pino MUDOU em
+    //     24/08, com declaração. Era 0,55 (o do filme, escolhido em
+    //     23/08 quando a unificação subiu); ele OLHOU as fotos e
+    //     reprovou o tamanho — *"essa estrela spiked desse tamanho (sol)
+    //     ocupa todo sistema solar na visão afastada… acho que a versão
+    //     anterior fica melhor em todo o app, unificada"* —, e o teto
+    //     único desceu para 0,07, o número que a observação tinha.
+    //     O QUE NÃO MUDOU é a LEI que este `it` guarda: continua sendo
+    //     UM teto para o app inteiro, filme incluído. Este dente pina o
+    //     valor; os dentes 2 e 3 proíbem o SEGUNDO teto, e são eles que
+    //     tornariam uma volta à distinção por modo impossível de passar
+    //     despercebida — mexer no número é recalibrar, mexer na lei é
+    //     outra coisa.
+    expect(OCUPACAO_MAXIMA_DA_TELA).toBe(0.07);
 
     //  2. COMPORTAMENTO: onde o teto MORDE, a meia do Sol É o teto — e
     //     o número sai do UNIFORM do material, não de uma constante

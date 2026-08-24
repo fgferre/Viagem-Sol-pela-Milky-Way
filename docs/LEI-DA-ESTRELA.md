@@ -296,59 +296,103 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   emissor de `gl_PointSize` não tiver linha no cadastro. O que segue ABERTO é a
   dívida em si: `wrappedStars.ts` apaga zerando o tamanho no vertex — a **terceira
   convenção de cessão** da casa —, e quem a paga é o M3 (entrada `cascas`).
-- **O TETO DE OCUPAÇÃO DO CLARÃO É UM SÓ — a obra executou em 23/08.**
-  `OCUPACAO_MAXIMA_DA_TELA = 0,55`, e mais nada: vale no filme, no voo
-  livre e no Atlas. A dose por fase (`OCUPACAO_NA_OBSERVACAO = 0,07` no
-  Atlas), que era o último `if (fase)` no desenho do mundo, **morreu com
-  o número, com o campo `tetoDeOcupacao` do quadro e com o ternário do
+- **O TETO DE OCUPAÇÃO DO CLARÃO É UM SÓ — e desde 24/08 o número é
+  0,07.** `OCUPACAO_MAXIMA_DA_TELA = 0,07`, e mais nada: vale no filme,
+  no voo livre e no Atlas. A dose por fase (`OCUPACAO_NA_OBSERVACAO` no
+  Atlas), que era o último `if (fase)` no desenho do mundo, **morreu em
+  23/08 com o campo `tetoDeOcupacao` do quadro e com o ternário do
   `director/solNoQuadro.ts`** — o teto passou a morar só onde é
-  calculado.
-  A ORDEM É DELE, dada em 23/08 com as quatro fotos de
+  calculado, e assim fica.
+  **A LEI E O NÚMERO SÃO DUAS COISAS, e só o número andou.** Em 23/08 ele
+  mandou UNIFICAR, com as quatro fotos de
   `capturas/item61-um-sol-so-antes-depois.png` na mão: *"vamos igualar o
-  clarao… nao quero essa distincao entre modo atlas e modo filme, para
-  mim o filme é um feature do atlas"*. A dose por fase tinha nascido
-  legítima — era a assistência DECLARADA que ele mesmo pediu em 17/08 —,
-  e foi ele quem a revogou, sabendo o preço.
-  **O PREÇO, remedido na obra e igual ao que ele aceitou:** na mesma
-  janela em que o número foi apurado em 23/08 (1200×900, lente de 35°),
-  o enquadramento de Vênus a 4,045 UA ganha **23,36% do quadro em luz**
-  (227.854 px, delta até 224 de 255), contra os 23,40% registrados antes
-  da obra — e **100% UNILATERAL: nada foi apagado, só somado**. A vista
-  de ABERTURA do Atlas (~9 UA) ganha **8,08%** (249.272 px de 3.083.400,
-  delta até 210), também unilateral. Fotos:
-  `capturas/clarao-unico-venus-antes-depois.png` e
-  `capturas/clarao-unico-abertura-antes-depois.png`.
+  clarao, **se percebermos que é um problema para observacao do sisztema
+  solar, vamos pensar em como consertar globalmente**, nao quero essa
+  distincao entre modo atlas e modo filme"*. A unificação subiu para
+  0,55, o número do filme. Em **24/08 ele OLHOU o resultado e reprovou o
+  TAMANHO**, acionando a segunda metade da própria frase:
+  > *"não gostei do resultado novo, acho que a versão anterior fica
+  > melhor em todo o app, unificada, essa estrela spiked desse tamanho
+  > (sol) ocupa todo sistema solar na visão afastada… fica um pouco
+  > prejudicado"*, e *"uma coisa é o background vivo, outra coisa é o
+  > tamanho que o Sol está ocupando do sistema solar… não quero mais
+  > 'modo' filme ou atlas… não pode haver diferença na iluminação, nos
+  > modelos, etc"*.
+
+  O conserto foi GLOBAL como ele exigiu: **um teto só, mais baixo**,
+  valendo para todo mundo, filme incluído.
+  **POR QUE TETO SECO E NÃO AUTO-EXPOSIÇÃO** — a redação anterior deste
+  item prometia auto-exposição como "o conserto global", e ela estava
+  ERRADA em duas frentes. (a) O `NORTE` a PROÍBE, em letra: *"Proibido:
+  teto de brilho. Proibido: exposição que depende do que está em foco. A
+  pupila adaptativa está reprovada pelo dono"* — e a pupila foi enterrada
+  no M2 justamente por reprovação dele. Prometer aqui o que o NORTE veta
+  era contradição entre dois documentos da casa, e some agora. (b) A
+  queixa dele é **GEOMÉTRICA** — o tamanho que a fonte ocupa —, não
+  fotométrica: auto-exposição apagaria o resto da cena para caber uma
+  fonte só, quando o que ele pediu foi que a fonte encolhesse. Este
+  limitador é exatamente esse eixo, e respeita a fronteira do §7 regra 1
+  (medir a FONTE é lícito; medir a CENA para decidir brilho, não).
+  **O PREÇO, medido — e em Vênus é a devolução EXATA do que 23/08
+  somou.** Na mesma janela (1200×900, lente do Atlas de 35°), o
+  enquadramento de Vênus a 4,045 UA **perde 23,36% do quadro em luz**:
+  **227.854 px**, delta até 224 de 255, **100% UNILATERAL — nada
+  acrescentado, só removido**. São os MESMOS 227.854 px que a obra de
+  23/08 tinha acendido, com o mesmo delta máximo: a reversão é pixel a
+  pixel. A vista de ABERTURA (~9 UA) perde **15,04%** (146.737 px de
+  975.600, delta até 227) e a vista AFASTADA (40 UA) perde **4,50%**
+  (43.869 px, delta até 166), as duas 100% unilaterais.
+  **E O FILME PAGA JUNTO, que era o ponto:** em `t=16 s` — o Sol grande
+  da hélice de abertura, o instante mais rico em Sol do corte — o quadro
+  perde **11,08%** (108.102 px, delta até 209, unilateral). Foi ele quem
+  mandou unificar para BAIXO; o drama do filme desce com o resto, e a
+  foto existe para ele ver o preço.
   **O JUIZ é a perna do ATLAS** (`PERNA=atlas node
-  scripts/visual/luz-do-quadro.mjs`), que nasceu em 23/08 para medir
-  exatamente isto e **PASSA 7 de 7 com o número novo** — a lei da lavagem
-  nunca esteve em jogo; o que mudou foi a IMAGEM.
-  **E O ALCANCE É A ESCADA QUASE INTEIRA — 6 dos 7 degraus.** (A primeira
-  redação disse "só a faixa de perto"; o JSON do próprio commit a
-  desmentiu, e fica corrigida aqui.) Só **0,067 UA** saiu idêntico, e por
-  construção: ali a soltura é zero e não há clarão sobre a fotosfera —
-  o teto não tem o que grampear. Do resto:
+  scripts/visual/luz-do-quadro.mjs`) e **PASSA 7 de 7**; a perna do voo
+  livre/filme passa **11 de 11**, e as pernas retina e `noplan1` também.
+  A lei da lavagem nunca esteve em jogo; o que muda é a IMAGEM.
+  **O ALCANCE, degrau a degrau (0,55 → 0,07).** Na perna do ATLAS
+  mudaram **5 de 7**; 0,067 UA e 1 UA voltaram bit-idênticos, e por
+  construção — ali a soltura é zero ou o disco já tomou conta, e não há
+  clarão para o teto grampear:
 
-  | UA | luz média | acima de meia | faíscas | borrão px |
-  |---|---|---|---|---|
-  | 0,067 | 0,059924 → **igual** | 3,793% → igual | 29 → 29 | 109 → 109 |
-  | 1 | 0,014479 → 0,014858 | 0,043% → igual | 12 → 12 | 0 → 0 |
-  | 3,6 | 0,015295 → 0,034923 | 0,095% → 1,688% | 15 → 1367 | 0 → 72 |
-  | 7,2 | 0,016003 → 0,049046 | 0,150% → 2,710% | 15 → 826 | 0 → 119 |
-  | 20 | 0,015927 → 0,030005 | 0,145% → 1,343% | 13 → 919 | 0 → 56 |
-  | 40 | 0,015914 → 0,023979 | 0,144% → 0,913% | 11 → 958 | 0 → 24 |
-  | 150 | 0,015907 → 0,020054 | 0,143% → 0,738% | 11 → **1577** | 0 → 0 |
+  | UA | luz média | acima de meia | borrão px |
+  |---|---|---|---|
+  | 0,067 | 0,059924 → **igual** | 3,793% → igual | 109 → 109 |
+  | 1 | 0,014858 → **igual** | 0,043% → igual | 0 → 0 |
+  | 3,6 | 0,034923 → 0,018395 | 1,688% → 0,567% | 72 → **0** |
+  | 7,2 | 0,049046 → 0,018323 | 2,710% → 0,485% | 119 → **0** |
+  | 20 | 0,030005 → 0,018086 | 1,343% → 0,499% | 56 → **0** |
+  | 40 | 0,023979 → 0,018037 | 0,913% → 0,501% | 24 → **0** |
+  | 150 | 0,020054 → 0,019128 | 0,738% → 0,666% | 0 → 0 |
 
-  O pico do EFEITO está em 7,2 UA (a luz média triplica), mas o pico da
-  CONTAGEM de faíscas está em **150 UA** — o degrau mais longe da escada,
-  onde o borrão continua em 0. Ou seja: de 1 UA para fora o quadro inteiro
-  ganha estrelas acesas, e não só a vizinhança do Sol. Nada afrouxou — os
-  sete seguem dentro da lei —, mas dizer "só a faixa de perto" era
-  subdeclarar o que a obra faz.
-  **E SE ATRAPALHAR A OBSERVAÇÃO, o conserto é GLOBAL** — auto-exposição,
-  para todo mundo. Voltar a distinguir por fase está FORA, e o teste
-  `clarao.test.ts` guarda essa decisão com três dentes: o número, a
-  proibição de um segundo teto e a proibição de `q.fase` no módulo do Sol
-  no quadro.
+  Na perna do **VOO LIVRE/FILME** (58°) mudaram **6 de 11**, e ela mudou
+  MAIS, não menos — é a lente em que o filme corre: a 3,6 UA a luz média
+  cai 0,118347 → 0,061463 (−48%) e o borrão desaba de **325 px para
+  53**; a 7,2 UA de 245 para 53; a 20 UA de 158 para 53; a 40 UA de 118
+  para 54; a 150 UA de 69 para 53. A 1 UA anda 1 ULP, e 0,067, 500,
+  2.000, 4.000 e 15.800 UA saem bit-idênticas.
+  **UMA CORREÇÃO DE FATO, medida hoje: a coluna FAÍSCAS não é do teto.**
+  A redação de 23/08 atribuiu ao teto o salto de 15 → 1.367 faíscas a
+  3,6 UA (e 11 → 1.577 a 150 UA), e concluiu dali que "o quadro inteiro
+  ganha estrelas acesas". **Não é o teto.** A/B do MESMO dia, mesma
+  máquina, só o número trocando: **0,55 → 1.367 faíscas · 0,07 → 1.369**
+  a 3,6 UA — o teto move essa coluna em **+2**, não em +1.352. O salto
+  real veio de outra coisa: o `capturas/luz-do-quadro-atlas.json` foi
+  escrito em `f88d877` (23/08 15:38) e reescrito em `9e3a58e` (23/08
+  23:31), e **entre os dois nasceram as LINHAS DE ÓRBITA** (`141b483`,
+  19:27, item 77) mais a vista de abertura nova (`9f746ab`, 21:41). A
+  comparação de 23/08 pôs oito horas e uma dúzia de commits dentro de uma
+  coluna e leu tudo como efeito do clarão. Fica registrado como a lição
+  que a casa já conhece: **JSON de datas diferentes não é A/B.**
+  **VOLTAR A DISTINGUIR POR MODO SEGUE FORA**, e o `clarao.test.ts`
+  guarda a LEI com três dentes — o número (que se recalibra com
+  declaração, como agora), a proibição de um segundo teto por qualquer
+  nome ou caminho, e a lista FECHADA de campos do quadro do clarão.
+  Fotos: `capturas/clarao-v2-afastada-antes-depois.png`,
+  `clarao-v2-venus-antes-depois.png`,
+  `clarao-v2-abertura-antes-depois.png` e
+  `clarao-v2-filme-antes-depois.png`.
 
 - **A galáxia já tem a lei certa E o mesmo defeito** — e desde o M5 o defeito é
   da LEI, num endereço só (`leiDeTela`, `estrela.ts`). Abaixo de 0,7 px o fluxo cai

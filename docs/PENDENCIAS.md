@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 85.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 86.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -32,10 +32,16 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
    AUTORIZOU o item **77** a entrar antes. **AS DUAS POUSARAM em 23/08**
    e esperam o olho dele: o Atlas abre no sistema interno, a ~9 UA, com
    as quatro linhas de dentro. Ver os itens **77** e **61**.
-2. **O clarão do Sol: IGUALAR.** Teto único de 0,55, o do filme, nos dois
-   modos — *"nao quero essa distincao entre modo atlas e modo filme, para
-   mim o filme é um feature do atlas"*. Se atrapalhar a observação, o
-   conserto é GLOBAL. Ver o item **61**.
+2. **O clarão do Sol: IGUALAR — e, em 24/08, IGUALAR MAIS BAIXO.** Ele
+   mandou unificar em 23/08 (*"nao quero essa distincao entre modo atlas
+   e modo filme, para mim o filme é um feature do atlas"*) e o teto único
+   subiu para 0,55. Em **24/08 ele olhou as fotos e reprovou o tamanho**:
+   *"não gostei do resultado novo, acho que a versão anterior fica melhor
+   em todo o app, unificada, essa estrela spiked desse tamanho (sol)
+   ocupa todo sistema solar na visão afastada"*. O **conserto GLOBAL** que
+   ele mesmo tinha pré-autorizado virou obra no mesmo dia: **teto único
+   de 0,07**, o número da observação, agora valendo TAMBÉM no filme. Ver
+   o item **61**.
 3. **As tarjas pretas no celular: TIRAR. FEITO em 24/08.** No telefone a
    imagem passa a ocupar a tela inteira; na mesa nada muda (a vista de
    desktop saiu bit-idêntica). Foto:
@@ -62,7 +68,9 @@ Eyes por observação de tela, entraram dois blocos de obra: os **nomes**
 (item **82**, degraus N1 e N2) e as **órbitas AAA** (item **83**,
 degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 
-> ~~**clarão único**~~ (FEITO em 23/08) → ~~**82 (N1 + N2: os nomes)**~~
+> ~~**clarão único**~~ (FEITO em 23/08; **REABRIU e FECHOU DE NOVO em
+> 24/08** — ele olhou e o teto desceu de 0,55 para **0,07**) →
+> ~~**82 (N1 + N2: os nomes)**~~
 > (FEITO em 24/08) → ~~**tarjas do celular**~~ (FEITO em 24/08) →
 > ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08) →
 > ⟨**CONFERÊNCIA DO DONO**: itens **61** e **77**, com as fotos⟩ →
@@ -232,9 +240,11 @@ cada um. O que segue à espera de
 conferência ESPECÍFICA do dono no app:
 item 39 (focar estrela não pode apagar as outras), item 40 (rótulo
 dobrado do Sol), item 43 da ALTA (a cruz de Vênus na dose do fluxo). A
-dose 0,07 do Atlas **MORREU em 23/08** — ele mandou igualar, o teto virou
-um só (0,55) e o teste do clarão proíbe um segundo voltar; o que ficou
-para ele calibrar, se quiser, é o teto ÚNICO. A extensão da escada às
+dose 0,07 POR FASE **MORREU em 23/08** — ele mandou igualar, o teto virou
+um só e o teste do clarão proíbe um segundo voltar. O NÚMERO do teto
+único já foi calibrado uma vez por ele: subiu para 0,55 em 23/08 e, com
+as fotos na mão em 24/08, **desceu para 0,07** — o valor da observação,
+agora valendo no app inteiro, filme incluído. A extensão da escada às
 nomeadas mora na Lei (M3+), com o visto dele antes de qualquer
 unificação estética estrela↔Sol.
 
@@ -947,9 +957,81 @@ fotos na mão:**
     que nasceu em `f88d877` justamente para medir isto — a escada verde
     nas duas fases é o que fecha a obra.
 
-  **A OBRA EXECUTOU em 23/08, e ESPERA O OLHO DELE.** O teto é UM só
-  (0,55) nos dois modos; morreram o 0,07, o campo `tetoDeOcupacao` que o
-  director mandava por quadro e o ternário que perguntava a fase. O teste
+  **ELE OLHOU EM 24/08 E REPROVOU O TAMANHO — e a segunda metade da
+  frase dele virou obra no mesmo dia.** Palavras dele, dos comentários na
+  galeria:
+
+  > *"não gostei do resultado novo, acho que a versão anterior fica
+  > melhor em todo o app, unificada, essa estrela spiked desse tamanho
+  > (sol) ocupa todo sistema solar na visão afastada... fica um pouco
+  > prejudicado"*, e *"uma coisa é o background vivo, outra coisa é o
+  > tamanho que o Sol está ocupando do sistema solar... não quero mais
+  > 'modo' filme ou atlas... não pode haver diferença na iluminação, nos
+  > modelos, etc"*.
+
+  Isto NÃO revoga a unificação — ele a reafirma ("unificada", "não quero
+  mais modo"). O que ele reprova é o NÚMERO. E era exatamente o caso que
+  ele mesmo tinha previsto em 23/08 ao autorizar o teto alto: *"se
+  percebermos que é um problema para observacao do sisztema solar, vamos
+  pensar em como consertar globalmente"*. **O conserto global é um teto
+  só, mais baixo: `OCUPACAO_MAXIMA_DA_TELA = 0,07`**, o número que a
+  observação tinha, agora valendo no filme, no voo livre e no Atlas.
+
+  **O MECANISMO É TETO SECO, E NÃO AUTO-EXPOSIÇÃO** — apesar de o texto
+  antigo daqui e da `LEI-DA-ESTRELA` prometerem auto-exposição como "o
+  conserto global". Duas razões, as duas escritas: o `NORTE` PROÍBE
+  auto-exposição em letra (*"Proibido: teto de brilho. Proibido:
+  exposição que depende do que está em foco. A pupila adaptativa está
+  reprovada pelo dono"* — ela foi enterrada no M2 por reprovação DELE), e
+  a queixa é GEOMÉTRICA: ele fala de TAMANHO, não de brilho.
+  Auto-exposição apagaria o resto da cena para caber uma fonte só; o que
+  ele pediu foi que a fonte encolhesse. A promessa contrária foi apagada
+  dos dois documentos.
+
+  **O PREÇO, medido — e em Vênus é a devolução EXATA.** Na mesma janela
+  (1200×900, lente do Atlas): Vênus a 4,045 UA **perde 23,36%** do quadro
+  em luz, **227.854 px**, delta até 224 — os MESMOS 227.854 px e o mesmo
+  delta que a obra de 23/08 tinha acendido, 100% UNILATERAL nas duas
+  direções. A abertura (~9 UA) perde **15,04%** (146.737 px) e a vista
+  afastada (40 UA) perde **4,50%** (43.869 px). **E O FILME PAGA JUNTO**,
+  que era o ponto: em `t=16 s` — o Sol grande da hélice de abertura — o
+  quadro perde **11,08%** (108.102 px). Ele mandou unificar para BAIXO
+  sabendo que o drama do filme desce com o resto, e a foto existe para
+  ele ver esse preço.
+
+  **OS JUÍZES da descida:** régua de luz **7/7** no Atlas e **11/11** no
+  voo livre (mais as pernas retina e `noplan1`); na perna do Atlas
+  mudaram **5 de 7** degraus (0,067 e 1 UA voltaram bit-idênticos, por
+  construção), e o borrão do Sol vai a **ZERO** em quatro deles; na perna
+  do voo livre mudaram **6 de 11**, com o borrão caindo de **325 px para
+  53** a 3,6 UA. `ab-identidade` cheio: **44 de 52 bit-idênticas**,
+  mudando 8 — a vista `atlas`, seis do voo livre e **uma do FILME**
+  (`mergulho`, t=180); as outras do filme não mudam porque ali o Sol é
+  disco resolvido (sem clarão) ou está fora de quadro. `atlas-smoke`,
+  `a11y`, typecheck, lint e **2.085 testes** verdes.
+  **AS FOTOS PARA ELE:** `capturas/clarao-v2-afastada-antes-depois.png`
+  (a visão afastada que ele apontou — as órbitas de dentro voltam a
+  existir), `clarao-v2-venus-antes-depois.png`,
+  `clarao-v2-abertura-antes-depois.png` e
+  `clarao-v2-filme-antes-depois.png` (o preço no filme).
+
+  **UMA CORREÇÃO DE FATO, medida em 24/08: a coluna FAÍSCAS não era do
+  teto.** O texto de 23/08 (aqui, no `NORTE` e na `LEI`) atribuiu ao teto
+  o salto de 15 → 1.367 faíscas a 3,6 UA e 11 → 1.577 a 150 UA, e tirou
+  dali a conclusão de que "de 1 UA para fora o quadro inteiro ganha
+  estrelas acesas". **A/B do MESMO dia, mesma máquina, só o número
+  trocando: 0,55 → 1.367 · 0,07 → 1.369.** O teto move essa coluna em
+  **+2**. O salto veio de outra coisa: o `luz-do-quadro-atlas.json` foi
+  escrito em `f88d877` (23/08 15:38) e reescrito em `9e3a58e` (23/08
+  23:31), e ENTRE OS DOIS nasceram as **linhas de órbita** (`141b483`,
+  item 77) e a vista de abertura nova (`9f746ab`). Oito horas e uma dúzia
+  de commits foram lidos como efeito do clarão. A lição é a da casa:
+  **JSON de datas diferentes não é A/B.**
+
+  *(Registro do que a obra de 23/08 tinha feito, para a história ficar
+  inteira.)* O teto virou UM só; morreram o 0,07 por fase, o campo
+  `tetoDeOcupacao` que o director mandava por quadro e o ternário que
+  perguntava a fase. O teste
   que pinava o número velho foi substituído por um que pina a LEI NOVA,
   com três dentes: o número, a proibição de um segundo teto entrar por um
   nome novo, e a proibição de `q.fase` voltar ao módulo do Sol no quadro.
@@ -962,22 +1044,17 @@ fotos na mão:**
   remedir tem de ser NELA — a 900×900 o denominador encolhe e a MESMA luz
   vira 34%. A área acesa é praticamente a mesma (227.854 px contra
   228.315); o que muda é o quadro que a divide.
-  Os juízes: a régua de luz do Atlas **passa 7 de 7** — e o alcance dela é
-  a escada QUASE INTEIRA, **6 dos 7 degraus** (só 0,067 UA saiu idêntico,
-  porque ali a soltura é zero e não há clarão a grampear). O efeito é
-  maior a 7,2 UA, mas as faíscas crescem mais a **150 UA** (11→1577), que
-  é o degrau mais LONGE: de 1 UA para fora o quadro inteiro ganha estrelas
-  acesas, não só a vizinhança do Sol. A tabela degrau a degrau mora na
-  `LEI-DA-ESTRELA`. O `ab-identidade` cheio deu **51 de 52 bit-idênticas**
-  (só a vista do Atlas mudou, e é a única do gate que roda naquela fase),
-  `atlas-smoke` e `a11y` verdes, 2.054 testes verdes.
-  **AS DUAS FOTOS PARA ELE:**
-  `capturas/clarao-unico-venus-antes-depois.png` (o enquadramento de
-  Vênus, que é o caso mais duro — Vênus vira uma faísca dentro do brilho,
-  exatamente o que a medida prometia) e
-  `capturas/clarao-unico-abertura-antes-depois.png` (a vista com que o
-  Atlas abre). **Se ele achar que atrapalha a observação, o conserto é
-  GLOBAL — auto-exposição —, nunca a volta da distinção por modo.**
+  Os juízes daquele dia: a régua de luz do Atlas passou **7 de 7**. *(A
+  frase que vinha aqui — "as faíscas crescem mais a 150 UA (11→1577), de
+  1 UA para fora o quadro inteiro ganha estrelas acesas" — está
+  DESMENTIDA pela medida de 24/08: aquela coluna era das linhas de
+  órbita, não do teto. Ver a correção de fato, acima.)* O
+  `ab-identidade` cheio deu **51 de 52 bit-idênticas** (só a vista do
+  Atlas mudou, e é a única do gate que roda naquela fase), `atlas-smoke`
+  e `a11y` verdes, 2.054 testes verdes. As fotos daquele passo foram
+  `capturas/clarao-unico-venus-antes-depois.png` e
+  `capturas/clarao-unico-abertura-antes-depois.png` — são elas que ele
+  olhou para dar o veredito de 24/08.
 
 **DUAS COISAS DO CELULAR FICARAM PARA ELE DECIDIR (item 62, fechado em
 23/08) — e ele DECIDIU AS DUAS em 23/08.** Nenhuma das duas era defeito;
@@ -1619,6 +1696,17 @@ conserto é somar vistas de Atlas ao gate (o enquadramento de um corpo, o
 teto do zoom, o close-up de uma lua), e o preço é ~6 s de captura por
 vista por lado. **Não fazer isto às cegas junto de outra obra:** cada
 vista nova pede o lado "antes" recapturado, senão nasce sem base.
+
+**85.** (Ruído de instrumento, visto UMA vez em 24/08.) **O
+`atlas-smoke` reprovou o TOQUE DUPLO sem defeito nenhum.** Numa corrida
+ele acusou *"o TOQUE DUPLO VAI: a câmera reposicionou (andou 2.63e-16 do
+raio, degrau orbita)"* — ou seja, a câmera NÃO andou. Na corrida
+seguinte, com o MESMO código, passou (*"andou 1.10e+0 do raio, degrau
+corpo"*), e no código anterior também passava. É flutuação do gesto
+sintético, não regressão. Fica registrado porque é o mesmo gênero dos
+itens 64 e 78, e porque juiz que reprova inocente já custou uma
+investigação inteira (item 76). Se reaparecer, o passo é datar por
+repetição antes de mexer em qualquer coisa.
 
 ---
 
