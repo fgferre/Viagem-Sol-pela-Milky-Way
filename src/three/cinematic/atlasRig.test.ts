@@ -335,7 +335,7 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // contrário, que é pior: o alvo atrás do selo).
     const celular = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX);
     const mesa = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX + 1);
-    // O TELEFONE NÃO PAGA TARJA desde 23/08 (decisão do dono): o topo é a
+    // O TELEFONE NÃO PAGA TARJA desde 24/08 (decisão dele em 23/08): o topo é a
     // caixa da barra de cima e nada mais, a base é a fileira mais o selo.
     // Os 0,045 de tarja que somavam em cada borda saíram das duas contas.
     expect(celular.topo).toBeCloseTo(0.065, 12);
@@ -349,7 +349,7 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // O GANHO É O ASSUNTO DO ITEM 62: numa tela de 390 px a conta de
     // mesa disparava TODOS os degraus e deixava 44,5% de céu; a do
     // telefone deixa 77,5% — a câmera para de recuar por peças que a
-    // fatia 9 do HUD já desmontou, e desde 23/08 nem por tarja, que lá
+    // fatia 9 do HUD já desmontou, e desde 24/08 nem por tarja, que lá
     // não existe.
     const ceu = (u: ReturnType<typeof retanguloUtilDoAtlas>) => 1 - u.topo - u.base;
     expect(ceu(retanguloUtilDoAtlas(1, 390))).toBeCloseTo(0.775, 12);

@@ -37,7 +37,7 @@ import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
  * 17 camadas de então eram 17 dos 32 controles do painel de Ajustes E
  * seis linhas desta gaveta — duas superfícies desenhando da MESMA
  * tabela, uma com 17 e outra com 6. Agora a tabela tem UM leitor: esta
- * gaveta mostra TODAS (18 desde o item 77), e a seção "Camadas" saiu do
+ * gaveta mostra TODAS (19 desde o item 82), e a seção "Camadas" saiu do
  * painel. O número não se digita aqui — quem o conta é a tabela.
  *
  * EM TRÊS FAMÍLIAS, COM CONTAGEM, e não numa fileira só: uma fila de

@@ -183,11 +183,15 @@ describe('6. a QUARTA saída: arrastar a folha para baixo (item 62, 23/08)', () 
     // manda `pointercancel` ~30 px depois do primeiro toque e assume a
     // rolagem; os `touchmove` do MESMO gesto continuam chegando. Escutar
     // ponteiro aqui é escutar um fluxo que morre antes do limiar.
-    // sem o parêntese de fecho: o que se cobra é QUEM escuta O QUÊ, e
-    // não a pontuação — em 24/08 o `touchstart` ganhou `{ passive: true }`
-    // e quebrou este veredito sem mudar promessa nenhuma
-    expect(HOOK).toContain("folha.addEventListener('touchstart', comecar");
-    expect(HOOK).toContain("window.addEventListener('touchmove', mover");
+    // O `touchstart` ganhou `{ passive: true }` em 24/08 e o parêntese de
+    // fecho saiu daqui — mas tirar a pontuação sem pôr FRONTEIRA abriu um
+    // buraco estreito: `comecar` virou PREFIXO, e um ouvinte ligado a um
+    // `comecarNada` qualquer passava verde. A borda de palavra (`\b`)
+    // cobra o nome inteiro e continua aceitando as opções depois dele.
+    expect(HOOK).toMatch(/folha\.addEventListener\('touchstart', comecar\b/);
+    // e este NUNCA precisou ceder: o fonte tem o parêntese, então o dente
+    // fica exato. Afrouxar o que não quebrou é perder medida de graça.
+    expect(HOOK).toContain("window.addEventListener('touchmove', mover)");
     expect(HOOK).not.toContain("addEventListener('pointermove'");
     // ...e o mouse fica de fora de graça: `touchstart` não existe para ele
     expect(HOOK).not.toContain("addEventListener('pointerdown'");

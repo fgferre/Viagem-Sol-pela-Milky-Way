@@ -22,7 +22,8 @@ import { LARGURA_DO_CELULAR_PX } from '../../lib/uiScale';
  * (`.letterbox.on { height: 6.5vh }`, fatia 2 do HUD) e o Atlas as
  * mantém — é o mesmo quadro do filme. Fonte única do número para o
  * retângulo útil; se a tarja mudar no CSS, muda aqui. NO TELEFONE NÃO HÁ
- * TARJA desde 23/08 (a fatia 6 a tira do documento), e por isso este
+ * TARJA desde 24/08 (a fatia 6 a tira do documento; a decisão foi
+ * dele em 23/08, o código pousou no dia seguinte), e por isso este
  * número não aparece no ramo de lá.
  */
 const LETTERBOX_FRACAO = 0.065;
@@ -219,7 +220,7 @@ const TEMPO_FRACAO = 0.175;
  * 320×568, com `?ui=` 0,85, 1 e 1,4 —, e ele cobra declarado ≥ medido em
  * cada um. É a disciplina de `LARGURA_DA_QUEBRA_DO_TEMPO_PX`: número que
  * entra aqui nasce de uma leitura de `getBoundingClientRect`, nunca de
- * aritmética de comentário. Eram QUATRO até 23/08; a quarta era a tarja,
+ * aritmética de comentário. Eram QUATRO até 24/08; a quarta era a tarja,
  * e ela saiu do telefone inteira (ver logo abaixo).
  *
  * MEDIDO em 2026-08-23 (Chrome com `mobile: true` e toque emulado,
@@ -262,7 +263,7 @@ const TEMPO_FRACAO = 0.175;
  * em `top: 0.4vh`, fatia 9) e carrega hoje ▶ Ver o filme · ↗ Explorar,
  * mais ↩ Voltar ao filme quando há filme guardado.
  *
- * ATÉ 23/08 ESTE NÚMERO ERA UM EXCEDENTE — os 0,025 que a barra sobrava
+ * ATÉ 24/08 ESTE NÚMERO ERA UM EXCEDENTE — os 0,025 que a barra sobrava
  * DA TARJA —, e o topo era a soma dos dois. Sem tarja não há de que
  * sobrar: a fração passa a ser a caixa inteira, do topo da janela até o
  * pé da barra. É a mesma medida que o juiz já cobrava; o que mudou foi
@@ -379,7 +380,8 @@ export function retanguloUtilDoAtlas(
   const largura =
     Number.isFinite(larguraPx) && larguraPx > 0 ? larguraPx : LARGURA_DE_MESA_PX;
   // O TELEFONE É OUTRO HUD, não o de mesa apertado — ver o bloco das
-  // três frações acima. Ele não tem tarja desde 23/08 (decisão do dono),
+  // três frações acima. Ele não tem tarja desde 24/08 (decisão dele em
+  // 23/08, código no dia seguinte),
   // e por isso as duas bordas são só HUD: a barra em cima, a fileira mais
   // o selo embaixo. O `Math.max` que segurava o piso da tarja na base
   // morreu com ela — sem uma faixa preta a cobrir, não há piso a garantir,

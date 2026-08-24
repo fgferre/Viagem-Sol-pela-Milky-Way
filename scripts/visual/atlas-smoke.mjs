@@ -1339,9 +1339,11 @@ try {
       + ` na tela (${nomesDaAbertura.luasAcesas} acesas)`
   );
 
-  // ---- 15d: OS DEZ NOMES NO TETO (item 73, mudado de endereço) -----
-  // A promessa original do item 73, cobrada onde ela ainda tem dente: o
-  // teto do zoom, que é a vista de onde o Atlas abria até 23/08. O `?d=`
+  // ---- 15d: OS NOMES QUE SOBREVIVEM NO TETO (item 82) -------------
+  // Eram DEZ até 24/08 — a promessa do item 73, cobrada aqui porque é
+  // onde os corpos ainda projetam colados. A régua de relevância a
+  // revogou e hoje são TRÊS: o teto do zoom é a vista de onde o Atlas
+  // abria até 23/08. O `?d=`
   // sai DA CENA e não é digitado — a régua é "raios do alvo", e o alvo
   // da abertura encolheu com o item 61; um literal aqui envelheceria no
   // dia seguinte.

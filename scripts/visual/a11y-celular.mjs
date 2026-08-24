@@ -199,7 +199,7 @@ async function despirAparelho(s) {
  *     `<select>` de qualidade saiu da barra (é duplicata do painel);
  *  7. A BARRA DE CIMA encosta no TOPO da tela — ela é o topo declarado do
  *     retângulo útil, e NÃO HÁ TARJA por baixo dela: as duas faixas de
- *     cinema saíram do telefone em 23/08, por decisão do dono, e a imagem
+ *     cinema saíram do telefone em 24/08, por decisão dele em 23/08, e a imagem
  *     passou a ocupar a tela inteira;
  *  8. A DICA está FORA DO FLUXO, que é o que a deixa apagar sem dar pulo.
  */
@@ -319,7 +319,8 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
             + ` linha moveria a câmera calada`
         );
         // A IMAGEM OCUPA A TELA INTEIRA (item 61, decisão do dono em
-        // 23/08). Esta é a prova que MEDE a mudança: as duas tarjas de
+        // 23/08; o código pousou em 24/08). Esta é a prova que MEDE a
+        // mudança: as duas tarjas de
         // cinema saíram do documento no telefone, e com elas os 9% de tela
         // que elas comiam. Na MESA elas ficam — quem as guarda lá é a
         // fatia 2, e o gate de mesa não passa por aqui.
@@ -782,7 +783,7 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   // números em cada canto, e a meta do item 62 (≥ 75% a 390, ≥ 70% a
   // 320) é conferida logo abaixo, no tamanho de fábrica.
   //
-  // A META NÃO SUBIU quando as tarjas saíram do telefone (23/08), e é
+  // A META NÃO SUBIU quando as tarjas saíram do telefone (24/08), e é
   // decisão declarada: elas moveram esta régua 0,8 ponto a 390 e ZERO a
   // 320, porque moravam dentro de faixas que outras peças já definiam.
   // Subir a meta para raspar os 81,0% medidos seria pinar a altura da

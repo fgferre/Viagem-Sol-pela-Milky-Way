@@ -720,7 +720,7 @@ async function julgarListbox(s) {
  * ausência da saída sem filme guardado e a presença dela com filme, e —
  * no telefone — que a barra de cima continue UMA linha. Esta última não é
  * estética: a altura dessa barra É o topo declarado do retângulo útil
- * (`SAIDA_FRACAO`, desde que a tarja saiu do telefone em 23/08), e uma
+ * (`SAIDA_FRACAO`, desde que a tarja saiu do telefone em 24/08), e uma
  * barra que cresce move a câmera calada.
  */
 async function julgarFerramentasDoAtlas(s) {
