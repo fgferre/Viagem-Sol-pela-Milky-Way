@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 86.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 87.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -1707,6 +1707,47 @@ sintético, não regressão. Fica registrado porque é o mesmo gênero dos
 itens 64 e 78, e porque juiz que reprova inocente já custou uma
 investigação inteira (item 76). Se reaparecer, o passo é datar por
 repetição antes de mexer em qualquer coisa.
+
+**86.** (Aberto em 24/08, respondendo a uma impressão dele.) **O céu de
+fundo PARECE mais apagado no Atlas — e parece com razão, mas a causa é a
+LENTE, não uma regra por modo.** Ele relatou a impressão; a resposta vem
+com número, porque impressão dele merece medida, não silêncio.
+**O QUE NÃO EXISTE:** varredura completa de `src/` não achou NENHUMA
+dependência de fase/modo no brilho, exposição, bloom ou ganho do campo
+estelar. Os uniformes do campo (`STAR_VERT`/`STAR_FRAG`, escritos por
+`StarField` e `WrappedStars`) saem de constantes, de resolução, de
+posição e do `catFade` — que depende da DISTÂNCIA de casa, não da fase.
+As três regras por modo que já existiram (`claraoDoAtlas`, o
+`setGradacao` do bloom e a dose por fase do clarão) estão mortas, com
+lápide e com `simbolosProibidos.test.ts` guardando o túmulo. E a *dose do
+Sol por fase* de `director.ts` foi seguida até o fim do fio: alimenta só
+`cycleAmpK` em `world/sol/activity.js` (manchas e plages do CORPO do
+Sol) e não toca o campo.
+**A GRADAÇÃO TAMBÉM NÃO DIFERE**, medido com `?dbgfade=1` na mesma
+distância: Atlas e voo livre dão os MESMOS `gal=0.00 loc=1.00`. A
+suspeita de que a trava `leftDisk` atravessasse o portal e deixasse o
+Atlas com bloom de "vista externa" DENTRO do sistema **não se confirma na
+entrada por link**; ela só poderia acender vindo de um instante do filme
+já fora do disco, e nesse caso é a lei declarada do item 61 (o ambiente
+parou de mudar por troca de fase) — história, não modo.
+**O QUE EXISTE, medido nas duas pernas versionadas da régua de luz, na
+MESMA distância:** a luz média do quadro no Atlas é **0,0180** contra
+**0,0613** no voo livre a 3,6 UA, e **0,0191 contra 0,0612** a 150 UA —
+o quadro do Atlas tem ~**3,1× menos luz**. E é exatamente o que a LENTE
+prevê: o Atlas roda pinado em **35°** (`ATLAS_FOV_GRAUS`) e o voo
+livre/filme em **58°**; como a PSF do campo é de PIXEL FIXO (não cresce
+com a lente), estreitar o fov não escurece estrela nenhuma — só cabem
+menos estrelas por tela. A razão de área de céu é
+`(tan 17,5° / tan 29°)² = 0,324`, isto é **3,09× menos céu por tela**,
+contra os 3,1× medidos. **Mesma estrela, mesmo brilho, menos estrelas.**
+Some-se o `uZoom` das heroes (`heroStars.ts`), que por LEI encolhe o
+clarão sob teleobjetiva: a 35° vale 0,569 contra ~0,95–1,0 nos atos
+largos do filme.
+**NÃO HÁ CONSERTO PEQUENO E LÍCITO**, e por isso isto é item e não obra:
+mexer no fov quebra a reprodutibilidade que o pino existe para dar, e
+mexer no brilho POR MODO é exatamente o que ele proibiu. O caminho
+honesto, se ele quiser o céu mais cheio no Atlas, é um **eixo global de
+lente** — para todo mundo, nunca por modo. **Decisão dele.**
 
 ---
 
