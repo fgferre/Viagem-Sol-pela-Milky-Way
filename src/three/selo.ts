@@ -592,6 +592,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   neutra('dbgfade', 'depuração: política de dominância'),
   neutra('dbgstar', 'depuração: projeção de Betelgeuse'),
   neutra('dbgplan', 'depuração: régua dos planetas'),
+  neutra('dbgorbitas', 'depuração: fade das linhas de órbita'),
   neutra('galstat', 'depuração: contagem no frustum'),
 ];
 

@@ -1,0 +1,278 @@
+// ============================================================
+// AS LINHAS DE ÓRBITA (item 77) — julgadas contra a efeméride REAL da
+// casa, nunca contra um dublê. É o que o teste da ficha já faz
+// (`lib/atlas/ficha.test.ts`): o motor de verdade, a tabela de verdade,
+// o mesmo `jd` que a tela usa.
+//
+// O QUE ESTE ARQUIVO COBRA, e cada item existe por um defeito possível:
+//  1. O LAÇO PASSA PELO PONTO. É a promessa inteira do item 77 — "a
+//     efeméride VIVA, nunca o retrato congelado — senão a linha e o
+//     ponto divergem no primeiro salto de data". Aqui ela é cobrada
+//     como identidade, e em DUAS datas separadas por nove anos.
+//  2. O μ derivado do kernel bate com as duas constantes independentes
+//     da casa (k² e `MU_PARENT`) — a checagem que impede a conversão de
+//     unidade de errar em silêncio (§3 de `orbitas.ts`).
+//  3. As luas giram no PAI. O laço de uma lua tem o raio da órbita
+//     dela, não o da órbita do pai em volta do Sol — que é o que sairia
+//     se alguém trocasse `posicao` por `posicaoHeliocentrica`.
+//  4. O centro derivado do config único bate com o `REGISTRO_ORBITAL`
+//     do motor, corpo a corpo. Se um dia uma lista mudar de pai, quebra
+//     aqui e não na tela.
+//  5. A JANELA DA TABELA, que é a razão de a cônica osculadora existir:
+//     o caminho do contrato (`jd + k·T/N` ao longo de um período)
+//     LANÇA para Saturno em diante a partir da época. O teste prova a
+//     acusação em vez de acreditar nela.
+// ============================================================
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { MetaEfemerides } from '../../lib/atlas/efemerides';
+import { MotorEfemerides, decodeEfemerides } from '../../lib/atlas/efemerides';
+import { REGISTRO_ORBITAL } from '../../lib/atlas/registroOrbital';
+import {
+  MU_PARENT,
+  MU_SUN_AU3_PER_DAY2,
+} from '../../lib/atlas/elementosOrbitais';
+import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
+import { EPOCA_JD_TDB } from './planetas/retrato2026';
+import {
+  CORPOS_COM_ORBITA,
+  Orbitas,
+  PONTOS_POR_ORBITA,
+  conicaOsculadora,
+  muDoPar,
+  muEmUaDia,
+} from './orbitas';
+
+// A MESMA carga do `efemerides.test.ts` — o motor de verdade, sobre o
+// mesmo artefato que o navegador baixa.
+const DATA_DIR = fileURLToPath(new URL('../../../public/data/atlas/', import.meta.url));
+const meta = JSON.parse(
+  readFileSync(join(DATA_DIR, 'efemerides_meta.json'), 'utf8')
+) as MetaEfemerides;
+const binNode = readFileSync(join(DATA_DIR, 'efemerides.bin'));
+const motor = new MotorEfemerides(
+  decodeEfemerides(
+    binNode.buffer.slice(binNode.byteOffset, binNode.byteOffset + binNode.byteLength),
+    meta
+  )
+);
+
+describe('a cônica osculadora — o laço passa pelo ponto', () => {
+  // nove anos depois da época: mais de um período de Júpiter, um terço
+  // do de Saturno, e bem dentro da janela da tabela (1950–2050)
+  const DATAS = [EPOCA_JD_TDB, EPOCA_JD_TDB + 3287];
+
+  it('o vértice 0 É a posição viva do corpo, nas duas datas', () => {
+    const buffer = new Float64Array(PONTOS_POR_ORBITA * 3);
+    for (const jd of DATAS) {
+      for (const corpo of CORPOS_COM_ORBITA) {
+        const mu = muDoPar(corpo.centro, corpo.id);
+        expect(mu, corpo.id).not.toBeNull();
+        const r = motor.posicao(corpo.id, jd);
+        const conica = conicaOsculadora(
+          r,
+          motor.velocidade(corpo.id, jd),
+          mu!,
+          buffer,
+          PONTOS_POR_ORBITA
+        );
+        expect(conica, `${corpo.id} sem elipse`).not.toBeNull();
+        // IDENTIDADE, não tolerância de desenho: sobre um destino de
+        // float64 a folga é só a do arredondamento em cima de |r|. O
+        // pior caso da tabela é DEIMOS (e = 2,6e-4, medido 2,6e-14): a
+        // órbita quase circular cancela quatro dígitos no vetor de
+        // Laplace-Runge-Lenz (`(v×h)/μ − r̂` é 1,0003 − 1,0000), e é por
+        // isso que a folga é 1e-12 e não 1e-15. (No buffer de float32
+        // da camada o que resta é a quantização dele, ~1e-7 — julgada
+        // no último bloco.)
+        const escala = Math.hypot(r.x, r.y, r.z);
+        expect(Math.abs(buffer[0] - r.x) / escala, corpo.id).toBeLessThan(1e-12);
+        expect(Math.abs(buffer[1] - r.y) / escala, corpo.id).toBeLessThan(1e-12);
+        expect(Math.abs(buffer[2] - r.z) / escala, corpo.id).toBeLessThan(1e-12);
+      }
+    }
+  });
+
+  it('o laço FECHA — o último vértice encosta no primeiro', () => {
+    const buffer = new Float64Array(PONTOS_POR_ORBITA * 3);
+    for (const corpo of CORPOS_COM_ORBITA) {
+      const conica = conicaOsculadora(
+        motor.posicao(corpo.id, EPOCA_JD_TDB),
+        motor.velocidade(corpo.id, EPOCA_JD_TDB),
+        muDoPar(corpo.centro, corpo.id)!,
+        buffer,
+        PONTOS_POR_ORBITA
+      );
+      const u = PONTOS_POR_ORBITA - 1;
+      const passo = Math.hypot(
+        buffer[u * 3] - buffer[0],
+        buffer[u * 3 + 1] - buffer[1],
+        buffer[u * 3 + 2] - buffer[2]
+      );
+      // o segmento de fechamento é UM passo de amostragem, não um salto:
+      // menos de 3% do semieixo com 256 pontos, mesmo em órbita excêntrica
+      expect(passo / conica!.semieixoUa, corpo.id).toBeLessThan(0.03);
+    }
+  });
+
+  it('o semieixo bate com a distância média do corpo ao centro', () => {
+    // uma cônica com `a` errado passaria pelo ponto e mentiria no resto
+    // — este é o oráculo do TAMANHO, e ele é grosseiro de propósito
+    // (osculante contra publicado, sem tabela nova no repositório)
+    const buffer = new Float64Array(PONTOS_POR_ORBITA * 3);
+    const publicado: Record<string, number> = {
+      mercury: 0.3871, venus: 0.7233, earth: 1.0, mars: 1.5237,
+      jupiter: 5.2029, saturn: 9.5367, uranus: 19.189, neptune: 30.07,
+      pluto: 39.48, ceres: 2.7658, eris: 67.78,
+      moon: 0.00257, titan: 0.00817, io: 0.00282,
+    };
+    for (const [id, aUa] of Object.entries(publicado)) {
+      const corpo = CORPOS_COM_ORBITA.find((c) => c.id === id)!;
+      const conica = conicaOsculadora(
+        motor.posicao(id, EPOCA_JD_TDB),
+        motor.velocidade(id, EPOCA_JD_TDB),
+        muDoPar(corpo.centro, id)!,
+        buffer,
+        PONTOS_POR_ORBITA
+      );
+      // 1% cobre a oscilação do osculante sob perturbação de terceiro
+      // corpo e o arredondamento do valor publicado
+      expect(Math.abs(conica!.semieixoUa - aUa) / aUa, id).toBeLessThan(0.01);
+    }
+  });
+});
+
+describe('o μ, e as duas conferências independentes (§3)', () => {
+  it('o μ do Sol pelo kernel gm_de440 bate com k², a constante gaussiana', () => {
+    const nosso = muDoPar('sun', 'earth')!;
+    // a massa da Terra entra no par e vale 3e-6 de μ☉; a conta abaixo
+    // desconta exatamente ela para comparar como igual com igual
+    const soDoSol = muEmUaDia(132712440041.27942);
+    expect(Math.abs(soDoSol - MU_SUN_AU3_PER_DAY2) / MU_SUN_AU3_PER_DAY2)
+      .toBeLessThan(1e-6);
+    expect(nosso).toBeGreaterThan(soDoSol);
+  });
+
+  it('os μ dos seis pais batem com `MU_PARENT` dentro de 1e-3', () => {
+    // `MU_PARENT` é valor de SISTEMA (pai + luas) e o `BODY<n>_GM` do
+    // kernel é o do planeta só — então a comparação honesta é contra o
+    // μ DO PAR que a camada realmente usa, com uma lua de cada pai. Em
+    // Plutão isso não é sutileza: Caronte vale 12% da massa, e comparar
+    // só o planeta erraria por 11%.
+    const parDeCada: Record<string, string> = {
+      mars: 'phobos', jupiter: 'io', saturn: 'titan',
+      uranus: 'ariel', neptune: 'triton', pluto: 'charon',
+    };
+    for (const [pai, lua] of Object.entries(parDeCada)) {
+      const doPar = muDoPar(pai, lua)!;
+      const referencia = MU_PARENT[pai];
+      expect(Math.abs(doPar - referencia) / referencia, pai).toBeLessThan(1e-3);
+    }
+  });
+});
+
+describe('a lista de quem ganha linha', () => {
+  it('são 38: os nove do retrato, os oito sem ponto e as 21 luas', () => {
+    expect(CORPOS_COM_ORBITA).toHaveLength(38);
+    expect(CORPOS_COM_ORBITA.some((c) => c.id === 'sun')).toBe(false);
+  });
+
+  it('o centro derivado do config bate com o registro do motor', () => {
+    for (const corpo of CORPOS_COM_ORBITA) {
+      expect(REGISTRO_ORBITAL[corpo.id], corpo.id).toBeDefined();
+      expect(REGISTRO_ORBITAL[corpo.id].centro, corpo.id).toBe(corpo.centro);
+    }
+  });
+
+  it('a lua gira no PAI, não no Sol', () => {
+    // trocar `posicao` por `posicaoHeliocentrica` daria à Lua um laço de
+    // raio 1 UA em volta do Sol; o certo é 0,0026 UA em volta da Terra
+    const buffer = new Float64Array(PONTOS_POR_ORBITA * 3);
+    const conica = conicaOsculadora(
+      motor.posicao('moon', EPOCA_JD_TDB),
+      motor.velocidade('moon', EPOCA_JD_TDB),
+      muDoPar('earth', 'moon')!,
+      buffer,
+      PONTOS_POR_ORBITA
+    );
+    expect(conica!.semieixoUa).toBeLessThan(0.01);
+    expect(conica!.semieixoUa).toBeGreaterThan(0.002);
+  });
+});
+
+describe('a janela da tabela — por que o caminho do contrato não existe', () => {
+  it('amostrar UM período pela efeméride LANÇA de Saturno em diante', () => {
+    // A acusação escrita no §1 de `orbitas.ts`, provada em vez de
+    // acreditada: a tabela embarcada cobre 1950–2050 e o motor lança
+    // fora dela, de propósito (adaptação b de `efemerides.ts`). Da época
+    // do retrato, um período inteiro sai da janela em quatro dos nove.
+    const periodoDias: Record<string, number> = {
+      saturn: 10777, uranus: 30749, neptune: 60339, pluto: 90560,
+    };
+    // PARA A FRENTE, os quatro saem da janela
+    for (const [id, T] of Object.entries(periodoDias)) {
+      expect(() => motor.posicao(id, EPOCA_JD_TDB + T), id).toThrow();
+    }
+    // e para TRÁS não salva: Saturno caberia (1996), mas Urano, Netuno
+    // e Plutão saem dos dois lados — não há sentido de varredura que
+    // feche o laço deles
+    for (const id of ['uranus', 'neptune', 'pluto']) {
+      expect(() => motor.posicao(id, EPOCA_JD_TDB - periodoDias[id]), id).toThrow();
+    }
+    // …e Júpiter, que CABE, é a prova de que a janela é o limite e não
+    // um erro de chamada
+    expect(() => motor.posicao('jupiter', EPOCA_JD_TDB + 4333)).not.toThrow();
+  });
+});
+
+describe('a camada no quadro', () => {
+  it('desligada não deixa nada visível, e não pergunta nada ao motor', () => {
+    const orbitas = new Orbitas();
+    orbitas.ligado = false;
+    const camera = new (class {
+      position = { distanceTo: () => 1 };
+    })();
+    // o `update` sai na primeira linha quando a porta está fechada
+    orbitas.update(
+      camera as unknown as never,
+      1080,
+      Math.tan((26 * Math.PI) / 360)
+    );
+    expect(orbitas.group.visible).toBe(false);
+    expect(orbitas.acesas).toBe(0);
+    orbitas.dispose();
+  });
+
+  it('sem efeméride não há linha — o retrato congelado não entra (§6)', () => {
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    // nenhum `escreverInstante`: é o estado do filme antes da coda
+    expect(orbitas.acesas).toBe(0);
+    expect(orbitas.dbg()).toContain('0 acesas');
+    orbitas.dispose();
+  });
+
+  it('com efeméride, o laço da Terra nasce no lugar da Terra', () => {
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    expect(orbitas.escreverInstante(EPOCA_JD_TDB, motor)).toBe(true);
+    // a ordem do grupo é a de `CORPOS_COM_ORBITA`, que é a do config
+    const iTerra = CORPOS_COM_ORBITA.findIndex((c) => c.id === 'earth');
+    expect(iTerra).toBeGreaterThanOrEqual(0);
+    const loop = orbitas.group.children[iTerra] as unknown as {
+      geometry: { getAttribute(n: string): { array: Float32Array } };
+    };
+    const p = motor.posicaoHeliocentrica('earth', EPOCA_JD_TDB);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const arr = loop.geometry.getAttribute('position').array;
+    // float32 do atributo contra float64 da efeméride: a folga é a da
+    // quantização do buffer, e é relativa ao raio da órbita
+    const escala = Math.hypot(eq[0], eq[1], eq[2]) * AU_PARA_PC;
+    expect(Math.abs(arr[0] - eq[0] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
+    expect(Math.abs(arr[1] - eq[1] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
+    expect(Math.abs(arr[2] - eq[2] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
+    orbitas.dispose();
+  });
+});

@@ -387,18 +387,20 @@ async function julgarPagina(s, query, onde) {
  * A GAVETA DE CAMADAS, nos DOIS modos (item 61, 22/08).
  *
  * O que ela era: seis linhas no Atlas, enquanto as MESMAS camadas
- * viviam também no painel de Ajustes, todas as 17, em qualquer fase.
+ * viviam também no painel de Ajustes, todas as dezessete de então, em
+ * qualquer fase.
  * Palavras do dono: *"atlas - camadas e ajustes concorrem"*. Agora a
  * porta é uma só, e é esta — então ela tem de existir onde o painel
  * existia, e mostrar a tabela INTEIRA.
  *
  * As três cobranças, e cada uma mede uma promessa da tela:
- *  1. AS 17, todas com rótulo — uma caixa sem nome é um controle que
+ *  1. AS 18 (item 77, 23/08, trouxe as linhas de órbita), todas com
+ *     rótulo — uma caixa sem nome é um controle que
  *     ninguém sabe o que faz, e era assim que as quatro só-URL viviam
  *     antes do item 33;
- *  2. TRÊS FAMÍLIAS que repartem as 17 sem sobra, cada uma com nome
+ *  2. TRÊS FAMÍLIAS que repartem as 18 sem sobra, cada uma com nome
  *     acessível próprio (`role="group"` + `aria-label`): quem ouve a
- *     tela recebe o mapa, não dezessete caixas em fila;
+ *     tela recebe o mapa, não dezoito caixas em fila;
  *  3. A CONTAGEM DIZ A VERDADE — o "n/m" do título bate com as caixas
  *     realmente marcadas. Número decorado seria a gaveta contando outra
  *     coisa que não a cena, que é a doença que o selo existe para não
@@ -436,12 +438,12 @@ async function julgarGavetaDeCamadas(s, onde) {
     return;
   }
   conferir(
-    g.caixas === 17 && g.semNome === 0,
+    g.caixas === 18 && g.semNome === 0,
     `${onde} · camadas: ${g.caixas} caixas na gaveta, ${g.semNome} sem rótulo`
   );
   const soma = g.familias.reduce((n, f) => n + f.linhas, 0);
   conferir(
-    g.familias.length === 3 && soma === 17
+    g.familias.length === 3 && soma === 18
       && g.familias.every((f) => f.papel === 'group' && f.rotulo),
     `${onde} · camadas: três famílias repartem as ${soma}`
       + ` — ${g.familias.map((f) => f.rotulo || '(sem nome)').join(' · ')}`
@@ -1100,7 +1102,7 @@ try {
   //    clique na linha BRILHO desfaz.
   await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
   await dorme(150);
-  // A CAIXA É NOMEADA no veredito: com as 17 na gaveta em três famílias
+  // A CAIXA É NOMEADA no veredito: com as 18 na gaveta em três famílias
   // (item 61), "a primeira caixa" deixou de dizer qual camada foi — e
   // veredito que não nomeia o sujeito custa uma sessão de navegador para
   // ser lido.

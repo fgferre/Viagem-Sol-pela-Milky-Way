@@ -559,8 +559,9 @@ try {
   //   4. o selo declara       — a camada desligada vira desvio de brilho.
   //
   // O HOSPEDEIRO MUDOU EM 22/08 (item 61): as camadas saíram do painel de
-  // Ajustes e a GAVETA passou a ser a única porta delas — 17 caixas em
-  // três famílias, nos dois modos. O que se julga aqui é o mesmo de
+  // Ajustes e a GAVETA passou a ser a única porta delas — 18 caixas em
+  // três famílias, nos dois modos (a décima oitava é o item 77, as
+  // linhas de órbita). O que se julga aqui é o mesmo de
   // sempre; o seletor é o da gaveta.
   //
   // E de dentro do Atlas, que é onde uma recarga custa mais caro: modo,
@@ -573,11 +574,11 @@ try {
     [...document.querySelectorAll('[data-dialogo="camadas"] .atlas-gaveta-linha')]
       .map((e) => e.textContent.trim())
   )`));
-  // 17 desde o item 33: as 13 de sempre mais as quatro que eram só-URL
-  // (nosun/nodust/noco/noforge). Quem PINA o número contra a tabela
+  // 18 desde o item 77: as 13 de sempre, as quatro que eram só-URL
+  // (nosun/nodust/noco/noforge) e as linhas de órbita. Quem PINA o número contra a tabela
   // única é `atlasConfig.test.ts` (`CAMADAS.length`); aqui ele serve só
   // para a gaveta não deixar nenhuma de fora na hora de desenhar.
-  conferir(camadas.length === 17, `a gaveta oferece ${camadas.length} camadas`);
+  conferir(camadas.length === 18, `a gaveta oferece ${camadas.length} camadas`);
   // AS TRÊS FAMÍLIAS, com a contagem que cada uma mostra: é o resumo do
   // grupo, e ele tem de bater com as caixas ligadas de verdade — um
   // número decorado seria a gaveta contando outra coisa que não a cena.

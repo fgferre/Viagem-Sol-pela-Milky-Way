@@ -11,9 +11,11 @@
 //     elementos que hj estao em ajustes na verdade deveriam ser
 //     camadas?"* — as 17 camadas eram 17 dos 32 controles do painel de
 //     Ajustes E seis linhas da gaveta, duas portas para a mesma lista.
-//     Agora a porta é uma, e a `familia` é o que a torna legível: 17
-//     caixas em fileira são um inventário, três famílias com contagem
-//     são um mapa.
+//     Agora a porta é uma, e a `familia` é o que a torna legível: uma
+//     fileira de caixas é um inventário, três famílias com contagem são
+//     um mapa. (A conta cresce — o item 77 trouxe a décima oitava —, e
+//     é justamente por isso que nenhum número dela se digita: os três
+//     hospedeiros derivam desta tabela.)
 //  2. A TABELA DOS QUATRO ESTADOS do seletor de qualidade (Ajustes D),
 //     pela MESMA razão e com a mesma história: dois leitores (o painel
 //     e o `<select>` da barra) e a lista digitada duas vezes.
@@ -73,8 +75,8 @@ export interface Camada {
   /**
    * O GLIFO da linha na gaveta, quando existe. Era ele que decidia
    * QUEM entrava na gaveta (D6, seis das dezessete); desde 22/08 a
-   * gaveta é a única porta e mostra as 17 — o ícone voltou a ser o que
-   * o nome dele diz: ornamento do rótulo, nas seis que já o tinham. A
+   * gaveta é a única porta e mostra TODAS — o ícone voltou a ser o que
+   * o nome dele diz: ornamento do rótulo, nas que o têm. A
    * COLUNA dele existe em todas as linhas mesmo quando o glifo falta,
    * senão os nomes de uma mesma família não se alinhariam entre si.
    */
@@ -130,6 +132,13 @@ export const CAMADAS: readonly Camada[] = [
   // nesta fase (nenhum mesh ainda; o toggle não muda pixel até F2),
   // mas nasce DECLARADO aqui e no selo, como a lei das portas manda.
   { flag: 'nocorpos', nome: 'Corpos de perto', familia: 'Sistema solar', viva: true, icone: '◐' },
+  // AS LINHAS DE ÓRBITA (item 77, 23/08) — `world/orbitas.ts`. A órbita
+  // é o DADO, não enfeite: sem ela o Atlas mostra dez pontos soltos e
+  // ninguém lê que Marte está entre a Terra e Júpiter. É instrumento de
+  // leitura, da família do marcador e dos rótulos, e não matéria — o
+  // que a chave desliga é a curva, nunca um fóton. Com ícone ela entra
+  // na gaveta de graça e o selo a declara pela derivação de sempre.
+  { flag: 'noorbitas', nome: 'Linhas de órbita', familia: 'Sistema solar', viva: true, icone: '◜' },
 ];
 
 /**

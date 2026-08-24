@@ -105,9 +105,10 @@ describe('a tabela de camadas da casa', () => {
     // comentário podre — `bakeDiscLayers` roda inteiro de qualquer
     // jeito. Quem marcar uma camada como `viva: false` quebra aqui e
     // vai ter de provar que o mundo precisa MESMO ser reconstruído.
-    // 17 = as 13 de sempre + as quatro que eram só-URL até o item 33
-    // (nosun/nodust/noco/noforge), todas lidas por quadro desde sempre.
-    expect(CAMADAS.length).toBe(17);
+    // 18 = as 13 de sempre + as quatro que eram só-URL até o item 33
+    // (nosun/nodust/noco/noforge), todas lidas por quadro desde sempre,
+    // + as LINHAS DE ÓRBITA (`noorbitas`, item 77, 23/08).
+    expect(CAMADAS.length).toBe(18);
     expect(CAMADAS.filter((c) => !c.viva)).toEqual([]);
   });
 
@@ -378,7 +379,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
 });
 
 describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
-  it('as 17 se repartem nas TRÊS famílias, sem sobra e sem repetição', () => {
+  it('as 18 se repartem nas TRÊS famílias, sem sobra e sem repetição', () => {
     const naGaveta = CAMADAS_POR_FAMILIA.flatMap((g) => g.camadas);
     // sem sobra: a gaveta desenha a tabela inteira. Uma camada sem
     // família cairia fora do laço e viraria um controle que ninguém
@@ -386,9 +387,10 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     expect(naGaveta.map((c) => c.flag).sort()).toEqual(
       CAMADAS.map((c) => c.flag).sort()
     );
-    expect(naGaveta).toHaveLength(17);
+    expect(naGaveta).toHaveLength(18);
     expect(CAMADAS_POR_FAMILIA.map((g) => g.familia)).toEqual(FAMILIAS_DE_CAMADAS);
-    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 2, 4]);
+    // a quinta do sistema solar é `noorbitas` (item 77)
+    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 2, 5]);
   });
 
   it('a família diz o que a flag desliga — as escalas da casa, não a ordem da linha', () => {
@@ -403,7 +405,7 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     }
     expect(de('nocat')).toBe('Estrelas');
     expect(de('noclarao')).toBe('Estrelas');
-    for (const local of ['nosun', 'nomarker', 'noplan', 'nocorpos']) {
+    for (const local of ['nosun', 'nomarker', 'noplan', 'nocorpos', 'noorbitas']) {
       expect(de(local), local).toBe('Sistema solar');
     }
   });
@@ -422,10 +424,10 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     }
   });
 
-  it('cada uma tem rótulo em pt-BR, e o ícone é ornamento de seis delas', () => {
+  it('cada uma tem rótulo em pt-BR, e o ícone é ornamento de sete delas', () => {
     for (const c of CAMADAS) expect(c.nome.length).toBeGreaterThan(2);
     // o glifo deixou de decidir QUEM entra na gaveta (era o recorte D6)
-    // e voltou a ser o que o nome dele diz. Seis o têm; as outras onze
+    // e voltou a ser o que o nome dele diz. Sete o têm; as outras onze
     // ficam com a coluna vazia, que é o que alinha os nomes.
     const comIcone = CAMADAS.filter((c) => c.icone);
     expect(comIcone.map((c) => c.flag)).toEqual([
@@ -437,6 +439,8 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
       'nomarker',
       'noplan',
       'nocorpos',
+      // item 77: o arco ◜ das linhas de órbita
+      'noorbitas',
     ]);
     for (const c of comIcone) expect(c.icone).toHaveLength(1);
   });

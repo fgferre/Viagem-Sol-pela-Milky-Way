@@ -37,6 +37,7 @@ import { LuaResolvida } from './world/corpos/lua';
 import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
+import { Orbitas } from './world/orbitas';
 import { deslocamentoEVAssistida } from '../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { lerPortaLuz } from './selo';
@@ -254,6 +255,11 @@ export class Director {
   /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
   private planetas: Planetas | null = null;
+  /** AS LINHAS DE ÓRBITA (item 77) — o QUARTO irmão do `sun.group`, pela
+   *  mesma razão dos outros três: de dentro do grupo do Sol herdaria a
+   *  escala do doador. Só desenha com efeméride viva (ver `orbitas.ts`,
+   *  §6): a curva sai do estado do instante, nunca do retrato. */
+  private orbitas: Orbitas | null = null;
   /** O PALCO LOCAL (Onda 6, F0 — D1): o grupo dos corpos resolvidos,
    *  vazio nesta fase. Irmão do `sun.group` e do `planetas.points`; a
    *  superfície mais próxima dele entra no `updateClip` a cada tick.
@@ -1014,6 +1020,12 @@ export class Director {
     // deles copia do outro.
     this.planetas = new Planetas(CALIBRACAO_DA_CASA);
     this.engine.scene.add(this.planetas.points);
+    // AS LINHAS DE ÓRBITA (item 77): quarto irmão, pela mesma razão da
+    // linha acima. Construtor barato — 38 laços vazios, sem uma pergunta
+    // à efeméride: a primeira cônica é escrita no tick, quando o motor
+    // existir (`orbitas.ts`, §6).
+    this.orbitas = new Orbitas();
+    this.engine.scene.add(this.orbitas.group);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
     // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
     // Terra — construtor barato, sem geometria e sem um byte de textura
@@ -2480,6 +2492,29 @@ export class Director {
       // a doutrina inteira em director/solNoQuadro.ts, §8.5 incluído)
       this.solNoQuadro.cederPonto(this.planetas);
     }
+    // AS LINHAS DE ÓRBITA (item 77), logo depois dos pontos porque são a
+    // leitura deles: o ponto diz ONDE o corpo está, a linha diz por onde
+    // ele anda. A chave governa a CAMADA e só ela, no mesmo idioma de
+    // `?noplan`.
+    //
+    // O INSTANTE VIVO ANTES DO QUADRO, e pela mesma disciplina da camada
+    // de cima: o método tem guarda por jd e por linha apagada, então
+    // todo quadro de Atlas parado (e todo quadro do filme, que nem
+    // chega aqui sem efeméride) sai dele na primeira comparação. SEM
+    // EFEMÉRIDE NÃO HÁ LINHA — a curva sai do estado do instante, e o
+    // retrato congelado desenharia a órbita de 2026 sob o ponto de 2035
+    // (`orbitas.ts`, §6). Nenhum download novo nasce daqui: o Atlas já
+    // acende a efeméride ao entrar (`palcoQuente`).
+    if (this.orbitas) {
+      this.orbitas.ligado = !this.hide.has('noorbitas');
+      if (this.orbitas.ligado && this.maquinaDoTempo.efemeride) {
+        this.orbitas.escreverInstante(
+          this.maquinaDoTempo.jdVivo,
+          this.maquinaDoTempo.efemeride
+        );
+      }
+      this.orbitas.update(this.engine.camera, hPx, tanHalfFov);
+    }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado
@@ -2579,6 +2614,13 @@ export class Director {
     // leitor por CDP recebe a tabela em UMA mensagem.
     if (this.debug.has('dbgplan') && this.planetas) {
       console.log(this.planetas.dbg(cam, this.engine.renderer.domElement.width, hPx));
+    }
+
+    // debug: as linhas de órbita ACESAS (item 77) — a régua do fade por
+    // tamanho angular, que a olho só se julga por ausência ("sumiu por
+    // quê?"). Uma mensagem por quadro, no molde do `?dbgplan`.
+    if (this.debug.has('dbgorbitas') && this.orbitas) {
+      console.log(this.orbitas.dbg());
     }
 
     // rótulos a cada frame — projeção, linha de rumo e distância do Sol
@@ -2685,6 +2727,7 @@ export class Director {
     // a camada nasce depois do await do init: falha de carga chega aqui
     // com ela indefinida
     step('planetas', () => this.planetas?.dispose());
+    step('orbitas', () => this.orbitas?.dispose());
     // um passo por corpo, e não um por grupo: `passoBlindado` isola a
     // falha (teardown que falha não leva os outros junto — NORTE)
     for (const posto of this.noPalco) {
