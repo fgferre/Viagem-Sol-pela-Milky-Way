@@ -12,6 +12,8 @@
 //  4. A PORTA `?jd=` lê a palavra e o número, e recusa o resto.
 //  5. OS RÓTULOS são pt-BR e derivados do número — nenhum deles é
 //     digitado ao lado de um degrau.
+//  6. O MOSTRADOR SÓ FALA QUANDO TEM O QUE DIZER — a guarda que tirou o
+//     re-render do App de 4 Hz enquanto o relógio anda ao vivo.
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -35,6 +37,7 @@ import {
   formatarTaxa,
   grampearJd,
   lerPortaJd,
+  mesmoMostrador,
   taxaDoDegrau,
 } from './tempoDoAtlas';
 
@@ -249,5 +252,84 @@ describe('5. os rótulos são pt-BR e DERIVADOS do número', () => {
 
   it('instante impossível não vira NaN na tela', () => {
     expect(formatarInstante(Number.NaN)).toBe('instante indefinido');
+  });
+});
+
+// ============================================================
+// 6. O mostrador só fala quando tem o que dizer
+// ============================================================
+describe('6. mesmoMostrador cala o que já foi dito', () => {
+  // LONGE DA ÉPOCA de propósito: é onde o relógio ao vivo vive (o "agora"
+  // do visitante não é 2026-08-16), e é a condição em que `naEpoca` fica
+  // parado enquanto o resto anda.
+  const T0 = EPOCA_JD_TDB + 10;
+  const base = {
+    jdPedido: T0,
+    jdDaEpoca: EPOCA_JD_TDB,
+    degrau: 0,
+    sentido: 0 as const,
+    aoVivo: true,
+    efemeride: 'viva' as const,
+  };
+  const em = (jd: number) => estadoDoTempo({ ...base, jdPedido: jd });
+
+  it('o mesmo instante duas vezes é a MESMA fala', () => {
+    expect(mesmoMostrador(em(T0), em(T0))).toBe(true);
+  });
+
+  /**
+   * O CASO QUE PAGA O CONSERTO. Ao vivo o `jd` anda a cada segundo, mas a
+   * data tem resolução de MINUTO: durante quase todo minuto o mostrador
+   * publicava um estado cuja única diferença é um número que não está na
+   * tela — e cada publicação re-renderizava o App inteiro. Medido antes do
+   * conserto: 13,8 ms/s de JS com a ficha fechada, ~3,5 ms por publicação.
+   */
+  it('meio minuto depois, o jd andou e o mostrador NÃO tem o que dizer', () => {
+    const depois = em(T0 + 20 / 86400);
+    expect(depois.jd).not.toBe(em(T0).jd);
+    expect(depois.data).toBe(em(T0).data);
+    expect(mesmoMostrador(em(T0), depois)).toBe(true);
+  });
+
+  it('o MINUTO virando é fala nova — é o que o visitante vê mudar', () => {
+    const depois = em(T0 + 120 / 86400);
+    expect(depois.data).not.toBe(em(T0).data);
+    expect(mesmoMostrador(em(T0), depois)).toBe(false);
+  });
+
+  /**
+   * `naEpoca` ENTRA na comparação, e este é o caso que obriga: 30 s depois
+   * da época o MINUTO ainda é o mesmo, mas o instante deixou de ser o do
+   * retrato congelado — e é `naEpoca` que acende o botão "voltar à época".
+   * Sem este termo o botão ficaria mentindo por até um minuto.
+   */
+  it('sair da época é fala nova mesmo dentro do mesmo minuto', () => {
+    const naEpoca = estadoDoTempo({ ...base, jdPedido: EPOCA_JD_TDB });
+    const logoDepois = estadoDoTempo({ ...base, jdPedido: EPOCA_JD_TDB + 30 / 86400 });
+    expect(logoDepois.data).toBe(naEpoca.data);
+    expect(naEpoca.naEpoca).toBe(true);
+    expect(logoDepois.naEpoca).toBe(false);
+    expect(mesmoMostrador(naEpoca, logoDepois)).toBe(false);
+  });
+
+  it('cada gesto do visitante é fala nova: degrau, sentido, ao vivo', () => {
+    const mudou = [
+      { ...base, degrau: 3 },
+      { ...base, sentido: 1 as const },
+      { ...base, aoVivo: false },
+    ];
+    for (const e of mudou) {
+      expect(mesmoMostrador(em(T0), estadoDoTempo(e))).toBe(false);
+    }
+  });
+
+  it('o AVISO que chega e o que sai são fala nova — a honestidade não pode calar', () => {
+    const buscando = estadoDoTempo({ ...base, efemeride: 'buscando' });
+    const indisponivel = estadoDoTempo({ ...base, efemeride: 'indisponivel' });
+    expect(buscando.aviso).toBe(AVISO_BUSCANDO);
+    expect(indisponivel.aviso).toBe(AVISO_SEM_EFEMERIDE);
+    expect(mesmoMostrador(em(T0), buscando)).toBe(false);
+    expect(mesmoMostrador(buscando, indisponivel)).toBe(false);
+    expect(mesmoMostrador(buscando, em(T0))).toBe(false);
   });
 });

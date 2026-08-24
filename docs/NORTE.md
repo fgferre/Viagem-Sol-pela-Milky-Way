@@ -200,6 +200,28 @@ Três cegueiras declaradas:
   GPU e sem pós. O filme inteiro continua sendo julgado pelo olho do dono.
 - **Referência visual entre 1 e 40 UA.** As vistas `ua2`…`ua2000` existem;
   foto-oráculo nessa faixa, não (item 12).
+- **O FPS É CEGO A CUSTO DE THREAD — medido em 24/08.** No M1, a 1200×900
+  em cinema, o app anda a **36–42 fps** preso pela GPU: sobram ~25 ms de
+  orçamento por quadro, e trabalho de JS de poucos milissegundos se
+  ESCONDE inteiro atrás da folga. Um A/B de quadro não o enxerga — e não
+  enxergar não é não existir. Quando a mudança é de CPU (React, HUD,
+  `setState`), a régua é o relógio da própria thread:
+  `Performance.getMetrics` do CDP devolve `ScriptDuration` acumulado, e a
+  conta é **ms de JS por segundo** entre dois estados da MESMA página.
+  Foi assim que o mostrador do relógio ao vivo foi pego custando 13,8 ms/s
+  com a ficha fechada e 16,7 ms/s com ela aberta, com o fps IDÊNTICO nos
+  dois lados. Quem julgar custo de HUD por fps nesta máquina vai concluir
+  "não há gargalo" de um trabalho que existe — o mesmo modo de errar da
+  medição de 2026-07-31 que o `gpu-profile` já documenta.
+- **E O CONTROLE TEM DE MUDAR SÓ O QUE SE MEDE.** Na mesma medição,
+  `?jd=EPOCA` parecia o controle óbvio para "relógio parado" e é
+  ARMADILHA: ele troca a efeméride viva pelo retrato congelado, ou seja
+  muda a CENA junto com o relógio — medido assim, o lado "parado" saiu
+  **mais LENTO** que o vivo (34,3 contra 49,6 fps), que é o contrário do
+  que a hipótese dizia. O controle honesto foi ligar e desligar o relógio
+  na MESMA página, pelo gesto (`alternarAoVivo()`), com a vista e o
+  instante parados. Régua de A/B: se o controle mexe em duas coisas, ele
+  não é controle.
 
 Como rodar — e quanto cada um cobra. `npm run dev` primeiro: todos falam
 com o dev server em `127.0.0.1:5173`. Os minutos são MEDIDOS nesta máquina

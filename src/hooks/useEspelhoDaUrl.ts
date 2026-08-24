@@ -9,7 +9,6 @@ import { useLayoutEffect, useState } from 'react';
 import type { Director, EstadoDaQualidade, Phase } from '../three/director';
 import type { EscolhaDeQualidade, ToneMapMode } from '../three/core/engine';
 import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
-import type { EstadoDoTempo } from '../three/tempoDoAtlas';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
 import { estadoDoSelo } from '../three/selo';
@@ -36,11 +35,10 @@ export function useEspelhoDaUrl(dep: {
   directorRef: React.MutableRefObject<Director | null>;
   phase: Phase;
   foco: string | null;
-  tempo: EstadoDoTempo | null;
   indice: ReturnType<typeof construirIndice>;
   quality: EstadoDaQualidade;
 }) {
-  const { directorRef, phase, foco, tempo, indice, quality } = dep;
+  const { directorRef, phase, foco, indice, quality } = dep;
   // O ESTADO DE GOSTO, com um dono só (F2). Ele nasce da URL — que segue
   // sendo a fonte de verdade — e é lido por três hospedeiros: o painel de
   // Ajustes, a gaveta do Atlas e o selo de honestidade. Enquanto morava
@@ -172,7 +170,17 @@ export function useEspelhoDaUrl(dep: {
     // URL (e o F5 de quem trocou de tier a relê), e sem esta linha o
     // visitante que viajou no tempo voltaria à época sem ter pedido. Na
     // época a porta sai da URL em vez de gravar o valor padrão.
-    if (tempo && !tempo.naEpoca) url.searchParams.set('jd', String(tempo.jd));
+    //
+    // LIDO DO DIRECTOR NA HORA, como o `?d=` logo acima — não do estado
+    // empurrado. O mostrador deixou de publicar a cada segundo (o `jd`
+    // anda, mas a data tem resolução de minuto: ver `mesmoMostrador`), e
+    // um `?jd=` que viesse do último empurrão congelaria no minuto. Este
+    // texto é escrito em GESTO — copiar link, trocar de tier, voltar ao
+    // brilho real —, nunca num relógio, então "na hora" é sempre a hora
+    // certa. De quebra o link ficou EXATO: antes ele saía com o instante
+    // de até 250 ms atrás.
+    const agora = d.tempo;
+    if (!agora.naEpoca) url.searchParams.set('jd', String(agora.jd));
     else url.searchParams.delete('jd');
     if (instante !== null && instante > 0.5) {
       url.searchParams.set('t', instante.toFixed(1));

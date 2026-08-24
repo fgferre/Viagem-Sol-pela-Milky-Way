@@ -517,10 +517,15 @@ export default function App() {
   /**
    * O ÍNDICE DA BUSCA — construído quando as nomeadas chegam e quando a
    * fase muda. O `useMemo` não é zelo: dentro do Atlas o mostrador da
-   * máquina do tempo re-renderiza o App a 4 Hz, e sem ele as ~5 mil
+   * máquina do tempo re-renderizava o App a 4 Hz, e sem ele as ~5 mil
    * chaves seriam reconstruídas quatro vezes por segundo enquanto o céu
    * anda. Trocar de fase é raro e acontece atrás do véu — os 9 ms de
    * reconstrução cabem lá.
+   *
+   * O 4 Hz MORREU em 24/08 (`mesmoMostrador`): o relógio ao vivo publica
+   * quando a data vira de minuto, não quatro vezes por segundo. O
+   * `useMemo` FICA — a viagem no tempo em degrau rápido ainda publica
+   * depressa, e é dela que estas 5 mil chaves precisam de abrigo.
    *
    * OS DEZ CORPOS DO SISTEMA só entram na fase que sabe enquadrar
    * órbitas. No voo livre a escolha VOA, e a lei de aproximação de lá é
@@ -578,7 +583,7 @@ export default function App() {
     voltarAoBrilhoReal,
     trocarEscalaUi,
     alternarCamada,
-  } = useEspelhoDaUrl({ directorRef, phase, foco, tempo, indice, quality });
+  } = useEspelhoDaUrl({ directorRef, phase, foco, indice, quality });
 
   const inJourney = phase === 'journey';
   /**

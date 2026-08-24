@@ -12,6 +12,7 @@ import {
   degrauValido,
   estadoDoTempo,
   grampearJd,
+  mesmoMostrador,
   taxaDoDegrau,
   DEGRAUS_DE_TEMPO,
 } from '../tempoDoAtlas';
@@ -31,10 +32,18 @@ import { carregarEfemerides } from '../config';
 const PASSO_DO_AO_VIVO_S = 1;
 
 /**
- * De quanto em quanto tempo o mostrador do tempo é publicado para o
- * React enquanto o relógio anda, em segundos. Mesmo remédio da linha de
- * rumo (`updateDest`, 4 Hz): sem ele um `setState` por quadro
- * re-renderizaria o HUD inteiro 60×/s durante toda a viagem no tempo.
+ * De quanto em quanto tempo o mostrador do tempo é CONFERIDO enquanto o
+ * relógio anda, em segundos. Mesmo remédio da linha de rumo (`updateDest`,
+ * 4 Hz): sem ele um `setState` por quadro re-renderizaria o HUD inteiro
+ * 60×/s durante toda a viagem no tempo.
+ *
+ * CONFERIDO, não PUBLICADO — a diferença entrou em 24/08. Este passo é a
+ * AMOSTRAGEM (de quanto em quanto tempo vale a pena montar o estado e
+ * perguntar "mudou?"); quem decide se o React é acordado é
+ * `mesmoMostrador`. Na viagem rápida o mostrador anda e as quatro
+ * conferências por segundo viram quatro publicações, que é o que a viagem
+ * precisa; no AO VIVO a data vira de minuto em minuto e as mesmas quatro
+ * conferências viram UMA publicação por minuto.
  */
 const PASSO_DO_MOSTRADOR_S = 0.25;
 
@@ -68,6 +77,8 @@ export class MaquinaDoTempo {
   /** acumuladores do passo do AO VIVO e do mostrador */
   private relogioAoVivo = 0;
   private mostradorTimer = 0;
+  /** o último estado que FOI DITO ao React — ver `publicarTempo` */
+  private ultimoPublicado: EstadoDoTempo | null = null;
   /**
    * O relógio bateu na borda da tabela e PAROU ali. Uma máquina do
    * tempo honesta faz isso: a fita acaba, ela para na última volta e
@@ -217,10 +228,27 @@ export class MaquinaDoTempo {
     this.publicarTempo();
   }
 
-  /** o mostrador sai agora, e o relógio do mostrador recomeça */
+  /**
+   * O mostrador sai agora SE tiver o que dizer, e o relógio do mostrador
+   * recomeça de qualquer jeito.
+   *
+   * A GUARDA (24/08): publicar é acordar o React no RAIZ — `onTempo` é
+   * `setTempo` no `App`, e o App re-renderiza o HUD inteiro. Enquanto o
+   * relógio anda AO VIVO isso acontecia 4×/s para dizer exatamente a mesma
+   * coisa, porque a data tem resolução de minuto. Agora quem não mudou não
+   * fala. Ver `mesmoMostrador` (`tempoDoAtlas`) para o que conta como
+   * "mudou" — e por que o `jd` não conta.
+   *
+   * NÃO É CACHE E NÃO É SEGUNDA VERDADE: `this.tempo` continua sendo
+   * calculado na leitura e continua sendo a fonte única. O que se guarda
+   * aqui é só a lembrança do que já foi DITO, para não repetir.
+   */
   publicarTempo() {
     this.mostradorTimer = 0;
-    this.fios.onTempo(this.tempo);
+    const agora = this.tempo;
+    if (this.ultimoPublicado && mesmoMostrador(this.ultimoPublicado, agora)) return;
+    this.ultimoPublicado = agora;
+    this.fios.onTempo(agora);
   }
 
   /**

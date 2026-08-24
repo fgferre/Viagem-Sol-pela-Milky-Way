@@ -30,8 +30,12 @@
 // `buscarManifestUmaVez` — uma promessa por URL, guardada no módulo.
 //
 // E O "AGORA" RELÊ NO `onTempo`, nunca no laço de quadro (anti-padrão 3 do
-// `PLANO-ATLAS`): o `jd` chega por prop, já limitado a 4 Hz pelo mostrador
-// da máquina do tempo.
+// `PLANO-ATLAS`): o `jd` chega por prop, na cadência do mostrador da máquina
+// do tempo. Desde 24/08 essa cadência é o MINUTO enquanto o relógio anda ao
+// vivo (era 4 Hz — ver `mesmoMostrador`), que é a mesma resolução da data na
+// tela: o "AGORA" da ficha e o relógio do rodapé deixaram de contar minutos
+// diferentes. Na viagem em degrau rápido ela continua rápida, porque ali a
+// data realmente muda.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';

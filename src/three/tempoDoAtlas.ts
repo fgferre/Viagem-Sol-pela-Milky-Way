@@ -203,6 +203,39 @@ export interface EstadoDoTempo {
   aviso: string;
 }
 
+/**
+ * AS DUAS LEITURAS MOSTRAM A MESMA COISA? — a pergunta que decide se o
+ * mostrador vai ao React ou fica calado.
+ *
+ * `jd` FICA DE FORA, e é a linha inteira deste conserto. No AO VIVO o
+ * instante anda a cada segundo, mas `data` tem resolução de MINUTO
+ * (`formatarInstante` arredonda), e nenhum outro campo se mexe: o mostrador
+ * publicava quatro vezes por segundo um estado que, das duas uma, era
+ * BIT A BIT o anterior (3 de cada 4) ou diferia só num número que ninguém
+ * tem na tela (as outras). Medido: 13,8 ms/s de JS com a ficha fechada e
+ * 16,7 ms/s com ela aberta, ~3,5 ms por publicação — o re-render do App
+ * inteiro, que no M1 divide a thread com o WebGL.
+ *
+ * QUEM PRECISA DO `jd` EXATO não o recebe empurrado: lê `director.tempo` na
+ * hora do gesto. É o caso do `?jd=` do "copiar link" (`useEspelhoDaUrl`),
+ * que assim passou a sair EXATO em vez de até 250 ms atrasado.
+ *
+ * QUEM MOSTRA O `jd` — a ficha do objeto, no "AGORA" — passa a relê-lo
+ * quando o MINUTO vira, que é a mesma cadência do relógio na tela: a ficha
+ * e o mostrador deixaram de contar minutos diferentes.
+ */
+export function mesmoMostrador(a: EstadoDoTempo, b: EstadoDoTempo): boolean {
+  return (
+    a.data === b.data
+    && a.degrau === b.degrau
+    && a.taxa === b.taxa
+    && a.sentido === b.sentido
+    && a.aoVivo === b.aoVivo
+    && a.naEpoca === b.naEpoca
+    && a.aviso === b.aviso
+  );
+}
+
 /** De onde vem a efeméride agora — o que decide o aviso. */
 export type FaseDaEfemeride = 'retrato' | 'buscando' | 'viva' | 'indisponivel';
 
