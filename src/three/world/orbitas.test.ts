@@ -24,6 +24,7 @@
 //     acusação em vez de acreditar nela.
 // ============================================================
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,11 +37,15 @@ import {
 } from '../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from './planetas/retrato2026';
+import { Planetas, UA_POR_PC } from './planetas/planetas';
+import { IDS_FOTOMETRIA } from './planetas/fotometria';
+import { HELIO_SEM_PONTO } from '../atlasConfig';
 import {
   CORPOS_COM_ORBITA,
   Orbitas,
   PONTOS_POR_ORBITA,
   conicaOsculadora,
+  escreverLaco,
   muDoPar,
   muEmUaDia,
 } from './orbitas';
@@ -71,14 +76,14 @@ describe('a cônica osculadora — o laço passa pelo ponto', () => {
         const mu = muDoPar(corpo.centro, corpo.id);
         expect(mu, corpo.id).not.toBeNull();
         const r = motor.posicao(corpo.id, jd);
-        const conica = conicaOsculadora(
-          r,
-          motor.velocidade(corpo.id, jd),
-          mu!,
-          buffer,
-          PONTOS_POR_ORBITA
-        );
+        const conica = conicaOsculadora(r, motor.velocidade(corpo.id, jd), mu!);
         expect(conica, `${corpo.id} sem elipse`).not.toBeNull();
+        // a BASE CRUA e escala 1: o laço sai em UA no frame eclíptico, o
+        // mesmo em que o motor respondeu — a álgebra julgada sem a ponte
+        // de frame no meio
+        escreverLaco(
+          conica!, conica!.periastro, conica!.lateral, 1, buffer, PONTOS_POR_ORBITA
+        );
         // IDENTIDADE, não tolerância de desenho: sobre um destino de
         // float64 a folga é só a do arredondamento em cima de |r|. O
         // pior caso da tabela é DEIMOS (e = 2,6e-4, medido 2,6e-14): a
@@ -101,10 +106,9 @@ describe('a cônica osculadora — o laço passa pelo ponto', () => {
       const conica = conicaOsculadora(
         motor.posicao(corpo.id, EPOCA_JD_TDB),
         motor.velocidade(corpo.id, EPOCA_JD_TDB),
-        muDoPar(corpo.centro, corpo.id)!,
-        buffer,
-        PONTOS_POR_ORBITA
-      );
+        muDoPar(corpo.centro, corpo.id)!
+      )!;
+      escreverLaco(conica, conica.periastro, conica.lateral, 1, buffer, PONTOS_POR_ORBITA);
       const u = PONTOS_POR_ORBITA - 1;
       const passo = Math.hypot(
         buffer[u * 3] - buffer[0],
@@ -113,7 +117,7 @@ describe('a cônica osculadora — o laço passa pelo ponto', () => {
       );
       // o segmento de fechamento é UM passo de amostragem, não um salto:
       // menos de 3% do semieixo com 256 pontos, mesmo em órbita excêntrica
-      expect(passo / conica!.semieixoUa, corpo.id).toBeLessThan(0.03);
+      expect(passo / conica.semieixoUa, corpo.id).toBeLessThan(0.03);
     }
   });
 
@@ -121,21 +125,18 @@ describe('a cônica osculadora — o laço passa pelo ponto', () => {
     // uma cônica com `a` errado passaria pelo ponto e mentiria no resto
     // — este é o oráculo do TAMANHO, e ele é grosseiro de propósito
     // (osculante contra publicado, sem tabela nova no repositório)
-    const buffer = new Float64Array(PONTOS_POR_ORBITA * 3);
     const publicado: Record<string, number> = {
       mercury: 0.3871, venus: 0.7233, earth: 1.0, mars: 1.5237,
       jupiter: 5.2029, saturn: 9.5367, uranus: 19.189, neptune: 30.07,
-      pluto: 39.48, ceres: 2.7658, eris: 67.78,
-      moon: 0.00257, titan: 0.00817, io: 0.00282,
+      pluto: 39.48,
+      moon: 0.00257, titan: 0.00817, io: 0.00282, charon: 0.0001310,
     };
     for (const [id, aUa] of Object.entries(publicado)) {
       const corpo = CORPOS_COM_ORBITA.find((c) => c.id === id)!;
       const conica = conicaOsculadora(
         motor.posicao(id, EPOCA_JD_TDB),
         motor.velocidade(id, EPOCA_JD_TDB),
-        muDoPar(corpo.centro, id)!,
-        buffer,
-        PONTOS_POR_ORBITA
+        muDoPar(corpo.centro, id)!
       );
       // 1% cobre a oscilação do osculante sob perturbação de terceiro
       // corpo e o arredondamento do valor publicado
@@ -174,9 +175,17 @@ describe('o μ, e as duas conferências independentes (§3)', () => {
 });
 
 describe('a lista de quem ganha linha', () => {
-  it('são 38: os nove do retrato, os oito sem ponto e as 21 luas', () => {
-    expect(CORPOS_COM_ORBITA).toHaveLength(38);
+  it('são 30: os nove do retrato e as 21 luas — e mais ninguém', () => {
+    expect(CORPOS_COM_ORBITA).toHaveLength(30);
+    // o Sol é a origem: não orbita nada
     expect(CORPOS_COM_ORBITA.some((c) => c.id === 'sun')).toBe(false);
+    // OS OITO SEM PONTO FICAM FORA por decisão tomada com a foto na mão
+    // (ver o cabeçalho da lista): linha sem corpo desenhado no mesmo
+    // enquadramento não está lendo nada, e as oito juntas viravam um
+    // novelo por cima dos planetas na abertura do Atlas.
+    for (const semPonto of HELIO_SEM_PONTO) {
+      expect(CORPOS_COM_ORBITA.some((c) => c.id === semPonto.id), semPonto.id).toBe(false);
+    }
   });
 
   it('o centro derivado do config bate com o registro do motor', () => {
@@ -189,13 +198,10 @@ describe('a lista de quem ganha linha', () => {
   it('a lua gira no PAI, não no Sol', () => {
     // trocar `posicao` por `posicaoHeliocentrica` daria à Lua um laço de
     // raio 1 UA em volta do Sol; o certo é 0,0026 UA em volta da Terra
-    const buffer = new Float64Array(PONTOS_POR_ORBITA * 3);
     const conica = conicaOsculadora(
       motor.posicao('moon', EPOCA_JD_TDB),
       motor.velocidade('moon', EPOCA_JD_TDB),
-      muDoPar('earth', 'moon')!,
-      buffer,
-      PONTOS_POR_ORBITA
+      muDoPar('earth', 'moon')!
     );
     expect(conica!.semieixoUa).toBeLessThan(0.01);
     expect(conica!.semieixoUa).toBeGreaterThan(0.002);
@@ -251,6 +257,66 @@ describe('a camada no quadro', () => {
     // nenhum `escreverInstante`: é o estado do filme antes da coda
     expect(orbitas.acesas).toBe(0);
     expect(orbitas.dbg()).toContain('0 acesas');
+    orbitas.dispose();
+  });
+
+  it('A PROMESSA DO ITEM 77: a linha não larga o ponto em salto de data', () => {
+    // O ORÁCULO DAS DUAS CAMADAS DE VERDADE, e é o teste que o contrato
+    // do item 77 pede pelo nome: "a efeméride VIVA, nunca o retrato
+    // congelado — senão a linha e o ponto divergem no primeiro salto de
+    // data". Aqui os dois consumidores REAIS são construídos lado a
+    // lado — a camada dos dez pontos e a das linhas — e mandados ao
+    // mesmo instante duas vezes, com dez anos entre elas. O vértice 0
+    // do laço, posto no centro vivo, tem de cair EM CIMA do ponto.
+    const pontos = new Planetas({ expoM0: 3.5, sigmaPx: 0.85, beta: 300 });
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    // A CÂMERA DA ABERTURA DO ATLAS — 224 UA, lente de 35°: é dela que
+    // sai o fade, e o fade é quem decide QUEM se reamostra. Sem um
+    // quadro de verdade aqui o teste mediria um estado que a tela nunca
+    // tem (todas as linhas apagadas, nenhuma se renovando).
+    const camera = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    camera.position.set(0, 0, 224 / UA_POR_PC);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    const tanHalfFov = Math.tan((35 * Math.PI) / 360);
+    const quadro = (jd: number) => {
+      // a ORDEM DO TICK, e ela importa: o instante antes do quadro, nas
+      // duas camadas (`director.ts`)
+      pontos.escreverInstante(jd, motor);
+      orbitas.escreverInstante(jd, motor);
+      orbitas.update(camera, 1800, tanHalfFov);
+    };
+    for (const jd of [EPOCA_JD_TDB, EPOCA_JD_TDB + 3653]) {
+      // DOIS quadros, e o segundo é o contrato: uma linha que estava
+      // APAGADA no quadro anterior se renova no quadro seguinte ao de
+      // acender — nunca mais tarde que isso, e no instante em que isso
+      // acontece ela está saindo do zero do fade.
+      quadro(jd);
+      quadro(jd);
+      const pos = pontos.posicoes;
+      for (let i = 0; i < CORPOS_COM_ORBITA.length; i++) {
+        const corpo = CORPOS_COM_ORBITA[i];
+        const j = (IDS_FOTOMETRIA as readonly string[]).indexOf(corpo.id);
+        if (j < 0) continue; // as luas não têm ponto fotométrico
+        const loop = orbitas.group.children[i] as unknown as {
+          geometry: { getAttribute(n: string): { array: Float32Array } };
+          position: { x: number; y: number; z: number };
+        };
+        const g = loop.geometry.getAttribute('position').array;
+        const c = loop.position;
+        const d = Math.hypot(
+          g[0] + c.x - pos[j * 3],
+          g[1] + c.y - pos[j * 3 + 1],
+          g[2] + c.z - pos[j * 3 + 2]
+        );
+        const r = Math.hypot(pos[j * 3], pos[j * 3 + 1], pos[j * 3 + 2]);
+        // os dois buffers são float32 e vieram por contas diferentes: a
+        // folga é a quantização deles, não uma tolerância de desenho
+        expect(d / r, `${corpo.id} @ ${jd}`).toBeLessThan(1e-6);
+      }
+    }
+    pontos.dispose();
     orbitas.dispose();
   });
 

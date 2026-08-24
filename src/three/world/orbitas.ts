@@ -95,8 +95,8 @@
 // banda) NORMALIZADO no canal mais forte: assim a órbita de Marte é
 // ferrugem e a de Netuno é azul, mas nenhuma delas fica mais fraca que
 // a outra por ter albedo menor — brilho de linha é escolha de
-// instrumento, e uma só. Lua herda o matiz do pai; anão e asteroide,
-// que não têm linha na fotometria, ficam no cinza frio da casa.
+// instrumento, e uma só. Lua herda o matiz do pai — é assim que o olho
+// lê "estas quatro são de Júpiter" sem um rótulo em cima de cada uma.
 //
 // O FADE É POR TAMANHO ANGULAR, nas duas pontas, e cada ponta responde
 // a uma pergunta diferente:
@@ -104,10 +104,14 @@
 //     cima do próprio ponto do corpo — pior que nada, porque suja a
 //     fotometria que a camada dos planetas mede.
 //   - EM CIMA: quando a órbita não CABE no quadro ela deixa de ser uma
-//     órbita e vira um risco atravessando o céu. É o caso de toda vista
-//     de dentro do sistema (a câmera na Terra tem a órbita da Terra
-//     passando por trás dela) e é o que mantém as vistas de corpo
-//     limpas.
+//     órbita e vira um risco atravessando o céu — e o caso extremo é a
+//     CÂMERA DENTRO DO LAÇO, onde a órbita envolve o observador e não
+//     há lente que a enquadre. Foi o que a primeira foto do
+//     enquadramento da Lua mostrou (a órbita da Terra cruzando o quadro
+//     a meia força), e é por isso que esta ponta é medida em ÂNGULO —
+//     semi-ângulo de tangência ao apoastro contra o semi-ângulo da
+//     lente — e não pela aproximação `r/d`, que morre exatamente onde
+//     r/d → 1. É o que mantém limpas as vistas de corpo.
 // As luas ainda pedem o PAI ENQUADRADO: fora do quadro o pai não dá
 // referência nenhuma, e a elipse solta seria um anel sem dono.
 //
@@ -128,7 +132,7 @@ import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 import { GM_CORPOS } from '../../lib/atlas/massas';
-import { CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
 import { FOTOMETRIA } from './planetas/fotometria';
 
 /** segundos num dia — o fator da conversão de μ, escrito uma vez */
@@ -168,12 +172,12 @@ export const RAIO_MIN_PX = 3;
 export const RAIO_CHEIO_PX = 16;
 
 /**
- * O fade DE CIMA, em frações da MEIA-ALTURA do quadro: em 1,0 a órbita
- * encosta nas duas bordas, e a partir daí ela deixa de caber. Some de
- * vez em 2,6, que é onde nem o eixo maior estaria no campo.
+ * O fade DE CIMA, em frações do SEMI-ÂNGULO VERTICAL da lente: em 1,0 o
+ * apoastro encosta na borda do quadro, e a partir daí a órbita deixa de
+ * caber. Some de vez em 1,8.
  */
 export const CABE_NO_QUADRO = 1.0;
-export const FORA_DO_QUADRO = 2.6;
+export const FORA_DO_QUADRO = 1.8;
 
 /**
  * A margem do teste "pai enquadrado", em NDC. 1,0 é a borda exata do
@@ -232,18 +236,32 @@ function matizDe(id: string): readonly [number, number, number] | null {
 }
 
 /**
- * QUEM GANHA LINHA — derivado das três listas do config único, nunca
- * uma quarta lista digitada: os nove do retrato (o Sol é a origem e não
- * orbita nada), os oito heliocêntricos sem ponto (anões + asteroides) e
- * as 21 luas, que trazem o pai dentro.
+ * QUEM GANHA LINHA — derivado das listas do config único, nunca uma
+ * lista nova digitada: os NOVE do retrato (o Sol é a origem e não
+ * orbita nada) e as 21 LUAS, que trazem o pai dentro.
+ *
+ * OS OITO HELIOCÊNTRICOS SEM PONTO FICAM DE FORA (`HELIO_SEM_PONTO` —
+ * Ceres, Éris, Haumea, Makemake, Quaoar, Vesta, Palas, Hígia), e a
+ * decisão foi tomada com a FOTO na mão, não no papel. A regra que ela
+ * obedece: **a linha é a LEITURA de um corpo que a cena desenha no
+ * mesmo enquadramento.** Os oito não têm ponto fotométrico — o nome da
+ * lista diz isso —, então de longe a linha seria um anel em volta de
+ * nada; e de perto, onde eles ganham globo, a órbita já não cabe no
+ * quadro por duas ordens de grandeza. Não há distância em que a linha
+ * deles esteja lendo alguma coisa.
+ *
+ * O QUE ELA CUSTAVA, medido na abertura do Atlas (224 UA, lente de
+ * 35°): as quatro transnetunianas são inclinadas e excêntricas, e as
+ * quatro do cinturão são quase o mesmo anel repetido — as oito juntas
+ * viravam um novelo cruzando o quadro inteiro, e os PLANETAS, que são o
+ * que o item 77 existe para deixar legível ("o visitante não tem como
+ * ler que Marte está entre a Terra e Júpiter"), sumiam dentro dele.
+ *
+ * Voltar atrás é uma linha — `...HELIO_SEM_PONTO.map(…)` aqui — se o
+ * dono quiser as oito de volta.
  */
 export const CORPOS_COM_ORBITA: readonly CorpoComOrbita[] = [
   ...CORPOS_DO_SISTEMA.filter((c) => c.id !== 'sun').map((c) => ({
-    id: c.id,
-    centro: 'sun',
-    cor: matizDe(c.id) ?? COR_NEUTRA,
-  })),
-  ...HELIO_SEM_PONTO.map((c) => ({
     id: c.id,
     centro: 'sun',
     cor: matizDe(c.id) ?? COR_NEUTRA,
@@ -259,25 +277,35 @@ export const CORPOS_COM_ORBITA: readonly CorpoComOrbita[] = [
 
 /**
  * A CÔNICA OSCULADORA de um estado, amostrada em anomalia excêntrica
- * (§2). Escreve `saida` com `n` pontos (x,y,z) em UA, no MESMO frame
- * eclíptico da entrada, e devolve o semieixo maior e a excentricidade —
- * ou `null` quando o estado não define elipse (órbita aberta, μ
- * desconhecido, vetor degenerado).
+ * (§2), devolvida como GEOMETRIA e não como pontos: o tamanho, a forma,
+ * os dois versores do plano e a fase do corpo. `null` quando o estado
+ * não define elipse (órbita aberta, μ ausente, movimento radial).
  *
- * O vértice 0 é `r`, exatamente: é a identidade que faz linha e ponto
- * não divergirem. "Exatamente" tem número — 1e-15 relativo, medido em
- * `orbitas.test.ts` sobre um destino de float64; num destino de
- * float32 (o que a camada usa, porque é o que a GPU lê) o que sobra é a
- * quantização do buffer, ~1e-7. O destino é dos DOIS tipos por isso: o
- * teste julga a ÁLGEBRA sem a quantização no meio.
+ * SEPARAR A CÔNICA DO LAÇO não é gosto de arquitetura, é o que tira 256
+ * matrizes e 256 alocações do caminho do quadro: a ponte de frame é
+ * LINEAR, então basta girar os DOIS versores e o laço já nasce no frame
+ * da cena (`escreverLaco`). Antes cada um dos 256 vértices era rodado
+ * um a um, e `eclipticaParaEquatorial` devolve um array novo por
+ * chamada — 256 alocações por corpo e por instante, num método que roda
+ * a cada quadro em que o relógio anda.
  */
+export interface Conica {
+  /** semieixo maior, na unidade de `r` (UA) */
+  semieixoUa: number;
+  excentricidade: number;
+  /** versor ao periastro, no frame de `r` */
+  periastro: readonly [number, number, number];
+  /** versor ortogonal no plano, no sentido do movimento */
+  lateral: readonly [number, number, number];
+  /** anomalia excêntrica DO CORPO — a fase em que o laço começa */
+  anomalia0: number;
+}
+
 export function conicaOsculadora(
   r: { x: number; y: number; z: number },
   v: { x: number; y: number; z: number },
-  mu: number,
-  saida: Float32Array | Float64Array,
-  n: number
-): { semieixoUa: number; excentricidade: number } | null {
+  mu: number
+): Conica | null {
   const rMod = Math.hypot(r.x, r.y, r.z);
   const v2 = v.x * v.x + v.y * v.y + v.z * v.z;
   if (!(rMod > 0) || !(mu > 0) || !Number.isFinite(v2)) return null;
@@ -326,16 +354,49 @@ export function conicaOsculadora(
   const sen0 = b > 0 ? (r.x * qx + r.y * qy + r.z * qz) / b : 0;
   const e0 = Math.atan2(sen0, cos0);
 
+  return {
+    semieixoUa: a,
+    excentricidade: e,
+    periastro: [px, py, pz],
+    lateral: [qx, qy, qz],
+    anomalia0: e0,
+  };
+}
+
+/**
+ * O LAÇO, escrito num destino qualquer: `n` vértices varridos em
+ * anomalia excêntrica a partir da fase do corpo, na base que o chamador
+ * entregar. Os dois versores vêm SEPARADOS da cônica de propósito — é
+ * por aí que a camada entrega a base já rodada para o frame da cena (e
+ * o teste entrega a base crua, para julgar a álgebra em UA no frame
+ * eclíptico, sem a ponte no meio).
+ *
+ * O VÉRTICE 0 É `r`, exatamente: `anomalia0` é a anomalia do próprio
+ * estado lido, e é essa identidade que faz linha e ponto não
+ * divergirem. "Exatamente" tem número — 1e-12 relativo num destino de
+ * float64, medido em `orbitas.test.ts` (o pior caso é Deimos, que quase
+ * não tem excentricidade para dividir); num destino de float32, que é o
+ * que a GPU lê, o que sobra é a quantização do buffer, ~1e-7.
+ */
+export function escreverLaco(
+  c: Conica,
+  periastro: readonly [number, number, number],
+  lateral: readonly [number, number, number],
+  escala: number,
+  saida: Float32Array | Float64Array,
+  n: number
+): void {
+  const a = c.semieixoUa * escala;
+  const b = a * Math.sqrt(1 - c.excentricidade * c.excentricidade);
   const passo = (2 * Math.PI) / n;
   for (let k = 0; k < n; k++) {
-    const anomalia = e0 + k * passo;
-    const cosE = Math.cos(anomalia) - e;
-    const senE = Math.sin(anomalia);
-    saida[k * 3] = a * cosE * px + b * senE * qx;
-    saida[k * 3 + 1] = a * cosE * py + b * senE * qy;
-    saida[k * 3 + 2] = a * cosE * pz + b * senE * qz;
+    const anomalia = c.anomalia0 + k * passo;
+    const ca = a * (Math.cos(anomalia) - c.excentricidade);
+    const sa = b * Math.sin(anomalia);
+    saida[k * 3] = ca * periastro[0] + sa * lateral[0];
+    saida[k * 3 + 1] = ca * periastro[1] + sa * lateral[1];
+    saida[k * 3 + 2] = ca * periastro[2] + sa * lateral[2];
   }
-  return { semieixoUa: a, excentricidade: e };
 }
 
 /** Uma linha viva: o objeto do three mais o que o quadro precisa dela. */
@@ -347,8 +408,10 @@ interface LinhaDeOrbita {
   readonly mu: number | null;
   /** o instante da cônica desenhada; NaN enquanto ela não existe */
   jd: number;
-  /** semieixo maior em pc — a régua do fade */
+  /** semieixo maior em pc — a régua da ponta de BAIXO do fade */
   semieixoPc: number;
+  /** apoastro em pc — a régua da ponta de CIMA, e do recorte de frustum */
+  apoastroPc: number;
   /** o alfa do quadro anterior, que é quem decide o reamostrar */
   alfa: number;
 }
@@ -367,14 +430,12 @@ export class Orbitas {
   /** o instante em que os CENTROS foram postos no lugar */
   private jdDosCentros = Number.NaN;
   /** rascunhos reusados — nada aloca no caminho do quadro */
-  private readonly amostraUa: Float32Array;
   private readonly pontoEq: [number, number, number] = [0, 0, 0];
   private readonly rascunhoNdc = new THREE.Vector3();
   private readonly centroDoPai = new THREE.Vector3();
 
   constructor(corpos: readonly CorpoComOrbita[] = CORPOS_COM_ORBITA) {
     this.group.name = 'orbitas';
-    this.amostraUa = new Float32Array(PONTOS_POR_ORBITA * 3);
     for (const corpo of corpos) {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute(
@@ -405,6 +466,7 @@ export class Orbitas {
         mu: muDoPar(corpo.centro, corpo.id),
         jd: Number.NaN,
         semieixoPc: 0,
+        apoastroPc: 0,
         alfa: 0,
       });
     }
@@ -474,20 +536,19 @@ export class Orbitas {
       linha.loop.position.set(0, 0, 0);
       linha.jd = Number.NaN;
       linha.semieixoPc = 0;
+      linha.apoastroPc = 0;
     }
   }
 
   /** Reescreve a cônica de uma linha no instante dado. */
   private reamostrar(linha: LinhaDeOrbita, jdTdb: number, fonte: FonteDeOrbitas): boolean {
     if (linha.mu === null) return false;
-    let conica: ReturnType<typeof conicaOsculadora> = null;
+    let conica: Conica | null = null;
     try {
       conica = conicaOsculadora(
         fonte.posicao(linha.corpo.id, jdTdb),
         fonte.velocidade(linha.corpo.id, jdTdb),
-        linha.mu,
-        this.amostraUa,
-        PONTOS_POR_ORBITA
+        linha.mu
       );
     } catch {
       conica = null;
@@ -500,28 +561,30 @@ export class Orbitas {
       // instante é tentado UMA vez; o semieixo zerado apaga a linha.
       linha.jd = jdTdb;
       linha.semieixoPc = 0;
+      linha.apoastroPc = 0;
       return false;
     }
 
+    // A MESMA PONTE DE FRAME dos dez pontos (`planetas.ts`, D1): uma
+    // rotação e uma multiplicação. Um segundo caminho aqui seria a
+    // divergência silenciosa entre a linha e o corpo que ela cerca — e
+    // como a ponte é LINEAR, girar os DOIS VERSORES da cônica gira o
+    // laço inteiro: duas chamadas por corpo, não 256.
     const attr = linha.loop.geometry.getAttribute('position') as THREE.BufferAttribute;
-    const destino = attr.array as Float32Array;
-    for (let k = 0; k < PONTOS_POR_ORBITA; k++) {
-      // A MESMA PONTE DE FRAME dos dez pontos (`planetas.ts`, D1): uma
-      // rotação e uma multiplicação. Um segundo caminho aqui seria a
-      // divergência silenciosa entre a linha e o corpo que ela cerca.
-      this.pontoEq[0] = this.amostraUa[k * 3];
-      this.pontoEq[1] = this.amostraUa[k * 3 + 1];
-      this.pontoEq[2] = this.amostraUa[k * 3 + 2];
-      const eq = eclipticaParaEquatorial(this.pontoEq);
-      destino[k * 3] = eq[0] * AU_PARA_PC;
-      destino[k * 3 + 1] = eq[1] * AU_PARA_PC;
-      destino[k * 3 + 2] = eq[2] * AU_PARA_PC;
-    }
+    escreverLaco(
+      conica,
+      eclipticaParaEquatorial(conica.periastro as [number, number, number]),
+      eclipticaParaEquatorial(conica.lateral as [number, number, number]),
+      AU_PARA_PC,
+      attr.array as Float32Array,
+      PONTOS_POR_ORBITA
+    );
     attr.needsUpdate = true;
     linha.semieixoPc = conica.semieixoUa * AU_PARA_PC;
-    // o apoastro é o raio que o recorte de frustum precisa conhecer
-    const raio = linha.semieixoPc * (1 + conica.excentricidade);
-    (linha.loop.geometry.boundingSphere as THREE.Sphere).radius = raio;
+    // o apoastro é o raio que o recorte de frustum precisa conhecer — e
+    // é o mesmo que decide se a órbita CABE no quadro
+    linha.apoastroPc = linha.semieixoPc * (1 + conica.excentricidade);
+    (linha.loop.geometry.boundingSphere as THREE.Sphere).radius = linha.apoastroPc;
     linha.jd = jdTdb;
     return true;
   }
@@ -566,17 +629,35 @@ export class Orbitas {
     const d = camPos.distanceTo(centro);
     if (!(d > 0) || !(tanHalfFov > 0)) return 0;
 
-    // raio da órbita em pixels de tela — a mesma conta de tamanho
-    // angular que a casa usa para decidir ponto↔disco
+    // A CÂMERA DENTRO DO LAÇO é o corte que não é escolha de gosto: se
+    // ela está mais perto do centro que o apoastro, a órbita ENVOLVE o
+    // observador e não existe lente que a enquadre — de dentro da órbita
+    // da Terra, a órbita da Terra é um risco dando a volta no céu. Foi o
+    // que a primeira foto mostrou (a órbita da Terra atravessando o
+    // enquadramento da Lua a meia força) e o que a régua de tamanho
+    // angular não pegava sozinha: `r/d` aproxima seno por ângulo, e a
+    // aproximação morre exatamente aqui, onde r/d → 1.
+    if (d <= linha.apoastroPc) return 0;
+
+    // A PONTA DE BAIXO é uma pergunta de PIXEL ("dá para ver a curva?"),
+    // e ali o ângulo é pequeno e a aproximação vale: o semieixo é a
+    // medida do tamanho típico do laço.
     const raioPx = ((linha.semieixoPc / d) / tanHalfFov) * meiaAltura;
     const entra = THREE.MathUtils.smoothstep(raioPx, RAIO_MIN_PX, RAIO_CHEIO_PX);
     if (entra <= 0) return 0;
+
+    // A PONTA DE CIMA é uma pergunta de ÂNGULO ("cabe no quadro?"), e
+    // ali a aproximação não vale mais: a conta é o semi-ângulo de
+    // TANGÊNCIA ao apoastro contra o semi-ângulo vertical da lente.
+    const raioAngular = Math.asin(
+      Math.min(1, linha.apoastroPc / d)
+    );
     const sai =
       1 -
       THREE.MathUtils.smoothstep(
-        raioPx,
-        CABE_NO_QUADRO * meiaAltura,
-        FORA_DO_QUADRO * meiaAltura
+        raioAngular / Math.atan(tanHalfFov),
+        CABE_NO_QUADRO,
+        FORA_DO_QUADRO
       );
     if (sai <= 0) return 0;
 
