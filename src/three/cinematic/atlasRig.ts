@@ -198,8 +198,16 @@ export class AtlasRig {
   };
 
   /**
-   * O ENQUADRAMENTO DE ABERTURA: o SISTEMA inteiro, e a esfera dele é
-   * CENTRADA NO SOL com raio igual à órbita mais externa do retrato.
+   * O ENQUADRAMENTO DO SISTEMA INTEIRO: a esfera é CENTRADA NO SOL com
+   * raio igual à órbita mais externa do retrato.
+   *
+   * ELE FOI A ABERTURA ATÉ 23/08, e deixou de ser: a abertura desceu
+   * para a borda do sistema INTERNO (item 61, `Escada.focarNoSistema`), e
+   * o que sobrou aqui é o TETO DO ZOOM — o lugar mais longe a que a roda
+   * chega, e o mesmo número que `tetoDeZoom` deriva. Por isso o `226,84
+   * UA` abaixo continua vivo e continua conferível: ele agora mede até
+   * onde se pode SAIR, não de onde se ENTRA.
+   *
    * Centrada no Sol e não no corpo: uma esfera de 35,4 UA pendurada em
    * Plutão não contém o sistema — um corpo do lado oposto da mesma
    * órbita fica a até ~71 UA do centro dela, e a promessa "quem enquadra
@@ -216,7 +224,7 @@ export class AtlasRig {
    * contra uma exposição de 1,02 que só a gradação por contexto da F6
    * vai saber tratar.
    *
-   * O NÚMERO DA ABERTURA, num lugar só (quem mais precisar dele cita
+   * O NÚMERO DO TETO, num lugar só (quem mais precisar dele cita
    * esta docstring em vez de repeti-lo): com o retângulo útil vigente em
    * `ui = 1` e tela de mesa (aspecto ≥ 1, onde quem aperta é o vertical)
    * a câmera fica a **226,84 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`,
@@ -595,10 +603,13 @@ export class AtlasRig {
    * torna a promessa verdadeira para um alvo fora do centro: uma esfera
    * da órbita de Plutão pendurada em Saturno não conteria o sistema.
    *
-   * Com o alvo no Sol ele REDUZ ao enquadramento de abertura, que é o
-   * que o Atlas já mostrava — ou seja, na vista de abertura o visitante
-   * nasce NO teto e só pode aproximar. É a leitura certa: mais longe que
-   * "o sistema em quadro" não há assunto, há fundo de céu.
+   * Com o alvo no Sol ele REDUZ ao enquadramento do sistema inteiro
+   * (`focarNoSistema`), que é onde o Atlas nascia até 23/08. Desde o
+   * item 61 ele nasce mais perto — na borda do sistema interno —, e este
+   * teto passou a ser um lugar aonde se CHEGA puxando a roda para fora,
+   * em vez do lugar de onde não se podia sair. A leitura de sempre segue
+   * valendo do lado de lá: mais longe que "o sistema em quadro" não há
+   * assunto, há fundo de céu.
    *
    * O `max` com a distância do último enquadramento é a guarda do
    * relógio: a órbita mais externa aqui vem do RETRATO congelado, e com

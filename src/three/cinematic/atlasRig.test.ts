@@ -22,6 +22,7 @@ import {
   POLO_ECLIPTICO,
   RETANGULO_CHEIO,
   RAMPA_DO_DEGRAU_S,
+  BORDA_DO_SISTEMA_INTERNO,
   CEDER_COMECA_GRAUS,
   direcaoDaLua,
   direcaoPrivilegiada,
@@ -759,10 +760,13 @@ describe('o rig e o alvo de abertura', () => {
     }
   });
 
-  it('a DISTÂNCIA DE ABERTURA é a que a docstring de focarNoSistema declara', () => {
+  it('a DISTÂNCIA DO TETO é a que a docstring de focarNoSistema declara', () => {
     // o número mora num lugar só (`AtlasRig.focarNoSistema`) e este
     // trilho o deriva de `enquadrar()`: quando a próxima faixa de HUD
     // entrar, ele quebra em vez de deixar a docstring envelhecer calada.
+    // Ele foi a ABERTURA até 23/08 e hoje é o TETO do zoom — o item 61
+    // desceu a abertura para a borda do sistema interno, e a conta que
+    // este trilho confere é a mesma.
     const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
     const rig = new AtlasRig();
     rig.focarNoSistema();
@@ -785,6 +789,37 @@ describe('o rig e o alvo de abertura', () => {
     rig.apply(camera, 1.4);
     expect(emUA()).toBeGreaterThan(316.9);
     expect(emUA()).toBeLessThan(317.4);
+  });
+
+  it('a ABERTURA encolheu e o TETO do zoom NÃO desceu junto (item 61)', () => {
+    // A CONTRAPARTIDA DA VISTA NOVA, e é o que a torna aceitável: o
+    // Atlas passou a abrir na borda do sistema INTERNO, mas o teto
+    // continua sendo o sistema INTEIRO — quem quiser a vista antiga
+    // puxa a roda para fora e chega nela. Se um dia o teto passar a
+    // sair do raio enquadrado, o visitante nasce numa vista de onde não
+    // pode mais sair, e é este trilho que grita.
+    const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
+    const rig = new AtlasRig();
+    rig.focar(
+      new THREE.Vector3(),
+      BORDA_DO_SISTEMA_INTERNO.raio,
+      orbitaMaisExterna().posicao,
+      { pisoRaio: RAIO_DO_SOL_NA_CENA }
+    );
+    rig.apply(camera);
+    const emUA = (pc: number) => pc / AU_PARA_PC;
+    // a abertura: ~9,1 UA, e ela É menor que a esfera do sistema
+    expect(emUA(rig.distanciaDoEnquadramento)).toBeGreaterThan(8);
+    expect(emUA(rig.distanciaDoEnquadramento)).toBeLessThan(11);
+    // o teto: o sistema inteiro, os mesmos 226,84 UA da docstring
+    expect(emUA(rig.tetoDeZoom)).toBeGreaterThan(226.6);
+    expect(emUA(rig.tetoDeZoom)).toBeLessThan(227.1);
+    // ...e por isso a roda tem curso para OS DOIS LADOS, que é o que o
+    // visitante perdia quando nascia colado no teto
+    expect(rig.tetoDeZoom).toBeGreaterThan(rig.distanciaDoEnquadramento);
+    expect(rig.pisoDeZoom).toBeLessThan(rig.distanciaDoEnquadramento);
+    // e a esfera de dentro CABE na de fora, que é a promessa do nome
+    expect(BORDA_DO_SISTEMA_INTERNO.raio).toBeLessThan(orbitaMaisExterna().raio);
   });
 
   it('a roda desce da ABERTURA até o corpo do Sol — 40 estalos, não cinco', () => {

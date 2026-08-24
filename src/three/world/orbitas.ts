@@ -276,8 +276,11 @@ function matizDe(id: string): readonly [number, number, number] | null {
  * quadro por duas ordens de grandeza. Não há distância em que a linha
  * deles esteja lendo alguma coisa.
  *
- * O QUE ELA CUSTAVA, medido na abertura do Atlas (224 UA, lente de
- * 35°): as quatro transnetunianas são inclinadas e excêntricas, e as
+ * O QUE ELA CUSTAVA, medido a 224 UA com a lente de 35° — a vista de
+ * onde o Atlas abria quando a medida foi feita, e que desde o item 61 é
+ * o TETO do zoom (a abertura desceu para a borda do sistema interno; lá
+ * as oito nem chegam ao quadro): as quatro transnetunianas são
+ * inclinadas e excêntricas, e as
  * quatro do cinturão são quase o mesmo anel repetido — as oito juntas
  * viravam um novelo cruzando o quadro inteiro, e os PLANETAS, que são o
  * que o item 77 existe para deixar legível ("o visitante não tem como

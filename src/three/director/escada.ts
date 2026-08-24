@@ -50,6 +50,7 @@ import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
 import {
+  BORDA_DO_SISTEMA_INTERNO,
   orbitaMaisExterna,
   raioDeEnquadramentoEstelar,
 } from '../cinematic/atlasRig';
@@ -428,35 +429,93 @@ export class Escada {
    * a descida casa→Sol é um DOLLY PURO no eixo em que o visitante já
    * estava — só a distância muda —, e duas contas do "mais externo"
    * seriam duas direções que divergiriam no primeiro salto de data.
+   *
+   * OS DOIS SAEM DE CORPOS DIFERENTES desde o item 61 (23/08), e isso é
+   * DECISÃO, não descuido — são duas perguntas, e cada uma tem o dono
+   * certo:
+   *
+   *  · O RAIO é «o que eu enquadro», e passou a ser a BORDA DO SISTEMA
+   *    INTERNO (a órbita de Marte, `BORDA_DO_SISTEMA_INTERNO`). É a vista
+   *    que o dono escolheu: a de antes punha a câmera a 226,84 UA, onde
+   *    os dez nomes viravam um nó de 40 px — *"a tela diz que há dez
+   *    mundos e mostra um"*.
+   *  · A DIREÇÃO é «de onde eu olho», e continua saindo do corpo mais
+   *    externo. Ela NÃO acompanhou o raio, e a razão é o relógio: a
+   *    direção é recomposta a cada instante de céu (`recomporAlvo`), e o
+   *    mais externo leva 248 anos para dar a volta enquanto Marte leva
+   *    687 dias. Pendurar a direção em Marte faria a máquina do tempo
+   *    girar o visitante em torno do Sol a 60°/s na velocidade de cima —
+   *    ele pediu para ver o tempo passar, não para ser rodado. Como a
+   *    inclinação da pose é fixa (`PHASE_OFFSET_GRAUS` contra o polo da
+   *    eclíptica), trocar de eixo só mudaria a LONGITUDE da câmera: a
+   *    composição do quadro é a mesma dos dois jeitos, e o desempate é
+   *    inteiro do relógio.
+   *
+   * A promessa do RAIO fica de pé com a esfera menor, e por construção:
+   * a órbita de Marte centrada no Sol contém Mercúrio, Vênus e a Terra
+   * em qualquer data (ver `BORDA_DO_SISTEMA_INTERNO`).
    */
   private casaViva(): { raio: number; eixo: THREE.Vector3 } | null {
     if (!this.maquinaDoTempo.efemeride) return null;
     const jd = this.maquinaDoTempo.jdVivo;
-    let raioUA = 0;
+    // a DIREÇÃO: quem é o mais externo AGORA, perguntado ao dado
+    let maisLonge = 0;
     const externo = { x: 0, y: 0, z: 0 };
     for (const c of CORPOS_DO_SISTEMA) {
       if (c.id === 'sun') continue;
       const p = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(c.id, jd);
       const r = Math.hypot(p.x, p.y, p.z);
-      if (r > raioUA) {
-        raioUA = r;
+      if (r > maisLonge) {
+        maisLonge = r;
         externo.x = p.x;
         externo.y = p.y;
         externo.z = p.z;
       }
     }
     const eq = eclipticaParaEquatorial([externo.x, externo.y, externo.z]);
+    // e o RAIO: a borda do sistema interno NO MESMO INSTANTE — a mesma
+    // efeméride viva e o mesmo `jd`, para que a esfera nunca descreva
+    // uma data e o ponto do corpo outra
+    const borda = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(
+      BORDA_DO_SISTEMA_INTERNO.id,
+      jd
+    );
     return {
-      raio: raioUA * AU_PARA_PC,
+      raio: Math.hypot(borda.x, borda.y, borda.z) * AU_PARA_PC,
       eixo: new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC),
     };
   }
 
   /**
-   * O ENQUADRAMENTO DE ABERTURA: o sistema inteiro, visto de fora da
-   * órbita mais externa. É a vista com que o Atlas abre, o destino do
+   * O ENQUADRAMENTO DE ABERTURA: o SISTEMA INTERNO, visto de fora da
+   * órbita de Marte. É a vista com que o Atlas abre, o destino do
    * clique no Sol e — desde a F2 — a ação da linha ESCALA do selo, que
    * é o único enquadramento em que o que domina o quadro é 1:1.
+   *
+   * A VISTA QUE O DONO ESCOLHEU (item 61, o último passo do modo único —
+   * 23/08). Ela era o sistema INTEIRO, a 226,84 UA, e o que a foto
+   * mostrava eram *"dez nomes num nó de 40 px em volta de um ponto — a
+   * tela diz que há dez mundos e mostra um"*. Ele viu quatro candidatos e
+   * escolheu o **(a)**, o sistema interno COM as linhas de órbita, e
+   * mandou o item 77 (as linhas) na frente exatamente para que a vista
+   * padrão já nascesse com elas.
+   *
+   * O QUE MUDA NO QUADRO, e é o item 77 quem o desenha: a esta distância
+   * o fade das linhas acende as QUATRO de dentro e apaga o resto sozinho,
+   * sem uma regra a mais — Júpiter para fora sai pelo corte de "não cabe
+   * no quadro", e do lado de dentro nenhuma lua chega aos 3 px de raio
+   * que o fade de baixo exige.
+   *
+   * O QUE NÃO MUDA: o TETO do zoom (`AtlasRig.tetoDeZoom`) segue sendo o
+   * sistema INTEIRO, porque ele não sai daqui — sai de
+   * `orbitaMaisExterna`. Quem quiser a vista antiga puxa a roda para
+   * fora e chega nela; o que o visitante perdeu foi a obrigação de
+   * COMEÇAR lá.
+   *
+   * CONSEQUÊNCIA DECLARADA: a porta `?d=` fala em RAIOS DO ALVO, e o
+   * alvo da abertura encolheu — um `?d=` copiado antes de 23/08 pousa
+   * mais perto do Sol do que pousava. É o preço de a régua ser relativa,
+   * e o espelho da URL reescreve o valor certo no primeiro gesto.
    *
    * ABERTURA NA ÉPOCA VIVA (F2b) — OVERRIDE DECLARADO (emendas
    * D-E5/T-E12): isto REVERTE a pendência 7 da Onda 5 ("compor a
@@ -471,11 +530,17 @@ export class Escada {
    * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
-    const congelada = orbitaMaisExterna();
-    // sem efeméride carregada fica o RETRATO congelado, que é o que o
-    // `AtlasRig.focarNoSistema` sempre fez — a conta agora é uma só
-    // porque o piso do zoom precisa entrar nas DUAS entradas
-    const casa = this.casaViva() ?? { raio: congelada.raio, eixo: congelada.posicao };
+    // SEM EFEMÉRIDE CARREGADA fica o RETRATO congelado — o caminho que o
+    // `AtlasRig.focarNoSistema` sempre fez, e que a limitação declarada
+    // do item 77 (§6 de `orbitas.ts`: sem fonte não há linha) torna a
+    // única resposta possível. A vista continua sendo a MESMA geometria,
+    // só sem os laços desenhados: o raio vem do retrato pela borda de
+    // dentro, e a direção pelo corpo mais externo dele — o mesmo par de
+    // donos de `casaViva`, congelado.
+    const casa = this.casaViva() ?? {
+      raio: BORDA_DO_SISTEMA_INTERNO.raio,
+      eixo: orbitaMaisExterna().posicao,
+    };
     // O PISO DO ZOOM DA ABERTURA É O SOL, e não a esfera enquadrada
     // (item 73, 22/08). Na abertura o ALVO É O SOL — a esfera do
     // sistema é centrada nele —, e a lei do modo é "um alvo e uma
@@ -806,7 +871,7 @@ export class Escada {
    * aqui: a lente é que decide, pelo `d = r·1,2/sen(θ/2)` de todo
    * enquadramento privilegiado. O número que sai é **6,40 raios
    * solares — 4,46 milhões de km**, e ele é conferível: é a mesma conta
-   * que põe a abertura a 226,84 UA. Não foi ajustado à mão, e vizinha
+   * que põe o TETO do zoom a 226,84 UA. Não foi ajustado à mão, e vizinha
    * de perto o lugar de onde o FILME já filma o Sol (5,74 raios
    * solares, 4,00 milhões de km), que é a prova medida de que a
    * composição aguenta esta distância.
@@ -1310,8 +1375,12 @@ export class Escada {
     if (distancia <= orbitaMaisExterna().raio) {
       const perto = this.corpoMaisPerto(posicao);
       if (perto) return { degrau: 'corpo', ...perto };
+      // o MESMO par de `focarNoSistema`, e tem de ser: o degrau
+      // `sistema` do pouso É a vista de abertura, e um raio diferente
+      // aqui poria o religador do relógio (`enquadreVivo`) puxando a
+      // câmera para outra esfera no primeiro tique
       const casa = this.casaViva() ?? {
-        raio: orbitaMaisExterna().raio,
+        raio: BORDA_DO_SISTEMA_INTERNO.raio,
         eixo: orbitaMaisExterna().posicao,
       };
       return {

@@ -22,13 +22,16 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 QUATRO QUE FALTAVAM.** Nesta onda fecharam os itens **73** (a navegação),
 **74** (a ficha do objeto) e **62** (o celular), e do **61** fecharam o
 **selo de honestidade**, as **camadas numa porta só**, os **controles do
-filme que somem sozinhos** e o **modo único** (os quatro passos do
-item **61** — a **vista inicial** é o que fica). Em 23/08 ele respondeu às
+filme que somem sozinhos** e o **modo único INTEIRO** — os quatro passos
+do item **61** mais a **vista inicial**, que era o último e pousou na
+mesma noite, atrás do item **77**. Em 23/08 ele respondeu às
 QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
 
 1. **A vista com que o Atlas abre: ÓRBITAS PRIMEIRO.** Ele escolheu o
    candidato **(a)** — o sistema com as linhas de órbita desenhadas — e
-   AUTORIZOU o item **77** a entrar antes. Ver os itens **77** e **61**.
+   AUTORIZOU o item **77** a entrar antes. **AS DUAS POUSARAM em 23/08**
+   e esperam o olho dele: o Atlas abre no sistema interno, a 8,9 UA, com
+   as quatro linhas de dentro. Ver os itens **77** e **61**.
 2. **O clarão do Sol: IGUALAR.** Teto único de 0,55, o do filme, nos dois
    modos — *"nao quero essa distincao entre modo atlas e modo filme, para
    mim o filme é um feature do atlas"*. Se atrapalhar a observação, o
@@ -39,9 +42,9 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
    **"Explorar"** na barra do filme, e no celular a folha fecha
    **arrastando para baixo**. Ver o item **61**.
 
-**A ORDEM DA PRÓXIMA CONVERSA:** o item **77** (as linhas de órbita)
-POUSOU em 23/08 e só espera a conferência dele — a próxima obra é a
-**vista inicial** (o candidato (a), que agora existe) → o
+**A ORDEM DA PRÓXIMA CONVERSA:** o item **77** (as linhas de órbita) e a
+**vista inicial** (o candidato (a), agora com as linhas dentro) POUSARAM
+os dois em 23/08 e só esperam a conferência dele — a próxima obra é o
 **clarão único** → as **tarjas do celular** → os **dois retoques**. Só
 depois disso o **81** (o vermelho do MB1 no voo livre), o **70** e o
 **75**. O arquivo que numerava essa fila morava na pasta temporária e se
@@ -583,8 +586,9 @@ três perguntas e respondeu numa linha só:
    item **62**, que fechou inteiro e saiu da lista (`0199895`,
    `879d1de`).
 
-**O MODO ÚNICO — QUATRO PASSOS FEITOS EM 23/08.** A parte grande do item,
-com as fotos em `capturas/item61-*`:
+**O MODO ÚNICO — CINCO PASSOS FEITOS EM 23/08.** A parte grande do item,
+com as fotos em `capturas/item61-*` (a do quinto passo, a vista, é
+`capturas/vista-padrao-*`):
 
 1. **O Atlas nasce onde o filme estava** (`9d0ef09`). O portal jogava a
    câmera fora: entrar em t=10, t=100 ou t=250 dava sempre a MESMA vista,
@@ -608,33 +612,44 @@ com as fotos em `capturas/item61-*`:
 4. **O relógio do céu abre andando** (`0f18242`) — a data corre no
    mostrador, como no NASA Eyes. Foto:
    `capturas/item61-relogio-ao-vivo.png`.
+5. **A VISTA PADRÃO virou o candidato (a)** — o último passo, e o que
+   esperava o item 77. O Atlas deixou de abrir a 226,84 UA e passa a
+   enquadrar a **borda do sistema interno** (a órbita de Marte): nasce a
+   **8,9 UA**, com as quatro linhas de dentro acesas e nenhuma de fora.
+   O detalhe e o preço estão na escolha "A VISTA COM QUE O ATLAS ABRE",
+   logo abaixo. Fotos: `capturas/vista-padrao-abertura.png` e
+   `capturas/vista-padrao-sem-hud.png`.
 
 **E DUAS ESCOLHAS FICARAM PARA ELE — as duas RESPONDIDAS em 23/08, com as
 fotos na mão:**
 
-- **A VISTA COM QUE O ATLAS ABRE.** Hoje é o sistema visto de 224 UA:
-  dez nomes num nó de 40 px em volta de um ponto — a tela diz que há dez
-  mundos e mostra um. Foram renderizados quatro candidatos
-  (`capturas/modo-unico-candidato-*.png`): **(a)** o sistema interno com
-  as **linhas de órbita** desenhadas *(exige o item 77 primeiro)*,
-  **(b)** a **Terra em primeiro plano** com o céu atrás *(existe hoje, e
-  é a mais bonita das três que existem sem código novo)*, **(c)** a de
-  hoje, **(d)** a **livre** — o Sol com Mercúrio, Vênus, Terra e Marte
-  no mesmo quadro. A recomendação de mecânica era (b) agora e (a) depois
-  do 77.
-  **ELE ESCOLHEU (a) — ÓRBITAS PRIMEIRO, em 23/08.** Não aceitou o
-  atalho: o Atlas vai abrir mostrando o sistema COM as linhas, e por
-  isso AUTORIZOU o item **77** a entrar antes, sabendo que ele muda a
-  imagem de toda vista do Atlas. A ordem fica sendo **77 → vista
-  inicial**, e a vista é o ÚLTIMO passo do modo único, com o 77 na
-  frente dela (o arquivo que numerava essa fila se perdeu com a pasta
-  temporária). **A foto do escolhido NÃO é o alvo:**
-  `capturas/modo-unico-candidato-a-sem-orbitas.png` mostra o
-  enquadramento SEM as linhas — a folha por isso o chama de **(a')** —, e
-  o alvo é esse enquadramento SOMADO às órbitas do item **77**. É
-  exatamente por isso que ele mandou órbitas primeiro: quem fizer a vista
-  padrão não pode tomar a foto como chegada. A folha dos candidatos é
-  `capturas/modo-unico-candidatos.png`.
+- **A VISTA COM QUE O ATLAS ABRE — ELE ESCOLHEU (a), E ELA POUSOU EM
+  23/08. Falta só o olho dele.** Era o sistema visto de 224 UA: dez nomes
+  num nó de 40 px em volta de um ponto — a tela dizia que havia dez
+  mundos e mostrava um. Dos quatro candidatos ele escolheu o **(a)**, o
+  sistema interno COM as linhas de órbita, e AUTORIZOU o item **77** a
+  entrar antes por causa disso. As duas obras estão feitas: o 77 em
+  `141b483`–`c32eab3`, e a vista agora.
+  **O QUE MUDOU:** a esfera que o Atlas enquadra ao abrir deixou de ser a
+  órbita mais externa e passou a ser a **órbita de Marte** — a borda do
+  sistema interno. A câmera nasce a **8,9 UA** em vez de 226,84 (o número
+  anda com a data: são 9,15 UA na época), e as linhas do 77 acendem ali
+  as QUATRO de dentro **e só elas** — Júpiter para fora não cabe no
+  quadro e some sozinho, sem uma regra a mais. **O teto do zoom NÃO
+  desceu junto:** continua em 226,84 UA, então a vista antiga virou um
+  lugar aonde se CHEGA puxando a roda, em vez do lugar de onde não se
+  podia sair. Foto: `capturas/vista-padrao-abertura.png` (com HUD) e
+  `capturas/vista-padrao-sem-hud.png`.
+  **A FOTO DO ESCOLHIDO NÃO ERA O ALVO, e o alvo foi cumprido:**
+  `capturas/modo-unico-candidato-a-sem-orbitas.png` mostrava o
+  enquadramento SEM as linhas — a folha o chama de **(a')** —, e a
+  entrega é esse enquadramento SOMADO às órbitas. Ela ficou 8% mais perto
+  que a foto (8,9 UA contra 9,6), e os corpos em quadro são os mesmos
+  cinco: Sol, Mercúrio, Vênus, Terra e Marte.
+  **UMA SOBRA HONESTA, medida:** a esta distância a linha de **Jápeto**
+  acende a 1,7% do brilho cheio (1,4 de 255 antes do bloom) porque
+  Saturno passa raspando a borda do quadro. É o fade fazendo o que o item
+  77 mandou, no degrau mais baixo dele; não é visível, e não foi mexido.
 - **O BRILHO DO SOL — e aqui a medida mudou a pergunta** (`f88d877`). O
   plano propunha um teto ÚNICO (0,55, o do filme) alegando que a foto era
   a mesma com os dois números. **Não é.** Medido com a MESMA lente e a

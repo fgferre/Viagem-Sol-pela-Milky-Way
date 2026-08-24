@@ -1587,11 +1587,13 @@ export class Director {
       // vez por INSTANTE de céu, não por quadro.
       //
       // E A HONESTIDADE QUE ISTO PEDE, escrita aqui porque é aqui que a
-      // decisão mora: a 224 UA da vista de abertura, 1× NÃO MOVE PIXEL —
-      // 1 UA vale ~6,4 px nessa vista e a Terra anda 2,0e-7 UA/s, ou seja
-      // 1,3e-6 px/s. O que ganha vida é o MOSTRADOR (a data corre) e o
-      // Sol de perto, onde o relógio rápido já mexia. Quem quiser o
-      // quadro cheio muda a VISTA, não o relógio.
+      // decisão mora: 1× NÃO MOVE PIXEL, e a vista de abertura ter
+      // encolhido 24× (item 61: 224 UA → ~9,1 UA, a borda do sistema
+      // interno) não muda a conclusão, só o quanto ela sobra. Ali 1 UA
+      // vale ~156 px em vez de ~6,4, e a Terra anda 2,0e-7 UA/s: são
+      // 3,1e-5 px/s, um pixel a cada nove horas. O que ganha vida é o
+      // MOSTRADOR (a data corre) e o Sol de perto, onde o relógio rápido
+      // já mexia. Quem quiser o quadro cheio muda a VISTA, não o relógio.
       //
       // AS TRÊS PORTAS QUE O CALAM são as três que pedem uma cena
       // REPRODUZÍVEL: `?jd=` (o operador escolheu o instante), `?shot=`

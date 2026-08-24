@@ -688,3 +688,40 @@ export function orbitaMaisExterna(): { posicao: THREE.Vector3; raio: number } {
     raio: corpo.rUA * AU_PARA_PC,
   };
 }
+
+/**
+ * A BORDA DO SISTEMA INTERNO — a esfera que o Atlas ENQUADRA AO ABRIR
+ * desde o item 61 (a vista que o dono escolheu em 23/08: *"o sistema
+ * interno com as linhas de órbita desenhadas"*).
+ *
+ * A IRMÃ DE CIMA NÃO PERDEU EMPREGO: a esfera do sistema INTEIRO
+ * (`orbitaMaisExterna`) segue sendo o TETO do zoom (`AtlasRig.tetoDeZoom`)
+ * e a fronteira do pouso (`Escada.alvoDoPouso`). O que ela deixou de ser
+ * é a ABERTURA — e é por isso que o visitante continua podendo puxar a
+ * roda para fora até ver o sistema todo, de onde o Atlas costumava nascer.
+ *
+ * POR QUE AQUI MARTE É PINADO e ali o "mais externo" é PERGUNTADO AO
+ * DADO — a distinção é o que impede isto de ser a segunda fonte de
+ * verdade que a nota de `orbitaMaisExterna` proíbe:
+ *
+ *  · «quem é o mais externo» é uma PERGUNTA, e a resposta troca com a
+ *    data — Netuno e Plutão trocaram de lugar entre 1979 e 1999;
+ *  · «onde acaba o sistema interno» é uma DEFINIÇÃO: os rochosos são
+ *    Mercúrio, Vênus, Terra e Marte, e Marte é o de fora em QUALQUER
+ *    data, porque o periélio dele (1,381 UA) fica fora do afélio da
+ *    Terra (1,017 UA). A esfera da órbita de Marte centrada no Sol
+ *    contém os outros três por construção e não por sorte — a MESMA
+ *    promessa que `orbitaMaisExterna` faz para o sistema todo.
+ *
+ * SÓ O RAIO SAI DAQUI. A DIREÇÃO de onde a abertura olha continua saindo
+ * do corpo mais externo, e o porquê está em `Escada.casaViva`.
+ */
+export const BORDA_DO_SISTEMA_INTERNO = {
+  /** a chave da efeméride VIVA (`posicaoHeliocentrica`) — a abertura na
+   *  época viva (F2b) lê o raio no instante pedido, como sempre leu */
+  id: 'mars',
+  /** e o raio do RETRATO congelado, o caminho SEM efeméride: ali não há
+   *  linha de órbita nenhuma para desenhar (§6 de `orbitas.ts`), e o
+   *  enquadramento é o que sobra de honesto */
+  raio: RETRATO_2026.mars.rUA * AU_PARA_PC,
+} as const;

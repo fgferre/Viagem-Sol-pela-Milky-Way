@@ -41,6 +41,12 @@ import { Planetas, UA_POR_PC } from './planetas/planetas';
 import { IDS_FOTOMETRIA } from './planetas/fotometria';
 import { HELIO_SEM_PONTO } from '../atlasConfig';
 import {
+  ATLAS_FOV_GRAUS,
+  BORDA_DO_SISTEMA_INTERNO,
+  enquadrar,
+  retanguloUtilDoAtlas,
+} from '../cinematic/atlasRig';
+import {
   CORPOS_COM_ORBITA,
   Orbitas,
   PONTOS_POR_ORBITA,
@@ -234,8 +240,13 @@ describe('a janela da tabela — por que o caminho do contrato não existe', () 
 });
 
 describe('a camada no quadro', () => {
-  /** A câmera da abertura do Atlas — a que ACENDE as linhas (224 UA). */
-  function cameraDaAbertura(): THREE.PerspectiveCamera {
+  /** A câmera do TETO do zoom do Atlas, 224 UA — a que ACENDE as linhas
+   *  de fora. Era a ABERTURA até 23/08; desde o item 61 o Atlas nasce na
+   *  borda do sistema interno, e quem mede LÁ é o teste do fim deste
+   *  bloco. Aqui o teto continua sendo o banco de prova certo: é a vista
+   *  em que MAIS linhas acendem, e um teste de "acende/não acende" quer
+   *  justamente o caso mais cheio. */
+  function cameraDoTeto(): THREE.PerspectiveCamera {
     const c = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
     c.position.set(0, 0, 224 / UA_POR_PC);
     c.lookAt(0, 0, 0);
@@ -269,7 +280,7 @@ describe('a camada no quadro', () => {
     // linhas se ela estivesse aberta — senão o teste passaria por falta
     // de assunto em vez de por causa da porta
     orbitas.ligado = false;
-    orbitas.update(cameraDaAbertura(), 1800, TAN_35);
+    orbitas.update(cameraDoTeto(), 1800, TAN_35);
     expect(orbitas.group.visible).toBe(false);
     expect(orbitas.acesas).toBe(0);
     // o QUADRO é caminho puro: quem fala com o motor é `escreverInstante`,
@@ -280,7 +291,7 @@ describe('a camada no quadro', () => {
     // veredito acima mede a porta, e não um enquadramento vazio
     orbitas.ligado = true;
     orbitas.escreverInstante(EPOCA_JD_TDB, fonte);
-    orbitas.update(cameraDaAbertura(), 1800, TAN_35);
+    orbitas.update(cameraDoTeto(), 1800, TAN_35);
     expect(orbitas.acesas).toBeGreaterThan(0);
     expect(fonte.contagem()).toBeGreaterThan(0);
     orbitas.dispose();
@@ -294,7 +305,7 @@ describe('a camada no quadro', () => {
     // com ou sem motor. Sem ESTE update o teste passaria mesmo que o
     // quadro acendesse linha a partir do retrato congelado, que é
     // exatamente o defeito que o §6 proíbe.
-    orbitas.update(cameraDaAbertura(), 1800, TAN_35);
+    orbitas.update(cameraDoTeto(), 1800, TAN_35);
     expect(orbitas.acesas).toBe(0);
     expect(orbitas.dbg()).toContain('0 acesas');
     // e a geometria continua VAZIA: nada foi escrito de lugar nenhum
@@ -318,10 +329,12 @@ describe('a camada no quadro', () => {
     const pontos = new Planetas({ expoM0: 3.5, sigmaPx: 0.85, beta: 300 });
     const orbitas = new Orbitas();
     orbitas.ligado = true;
-    // A CÂMERA DA ABERTURA DO ATLAS — 224 UA, lente de 35°: é dela que
+    // A CÂMERA DO TETO DO ATLAS — 224 UA, lente de 35°: é dela que
     // sai o fade, e o fade é quem decide QUEM se reamostra. Sem um
     // quadro de verdade aqui o teste mediria um estado que a tela nunca
-    // tem (todas as linhas apagadas, nenhuma se renovando).
+    // tem (todas as linhas apagadas, nenhuma se renovando). Aqui é o
+    // teto, e não a abertura, porque é a vista em que MAIS linhas
+    // acendem — e o que se cobra é a reamostragem de todas elas.
     const camera = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
     camera.position.set(0, 0, 224 / UA_POR_PC);
     camera.lookAt(0, 0, 0);
@@ -364,6 +377,59 @@ describe('a camada no quadro', () => {
       }
     }
     pontos.dispose();
+    orbitas.dispose();
+  });
+
+  it('A VISTA QUE O DONO ESCOLHEU: na ABERTURA acendem as quatro de dentro, e só elas', () => {
+    // O CANDIDATO (a) DO ITEM 61, cobrado como número. Ele escolheu "o
+    // sistema interno COM as linhas de órbita" e mandou o item 77 na
+    // frente exatamente para que a vista padrão nascesse com elas. Quem
+    // faz a vista é a Escada (`focarNoSistema`) e quem faz as linhas é
+    // esta camada — as duas se encontram SÓ na tela, e sem este teste
+    // nada guarda o encontro: mexer no fade, no fator de enquadramento
+    // ou na borda enquadrada degrada a vista dele em silêncio.
+    //
+    // A DISTÂNCIA NÃO É LITERAL: sai de `enquadrar()` sobre a MESMA
+    // esfera que a Escada enquadra, então ela acompanha a lente e o
+    // retângulo útil em vez de envelhecer aqui.
+    const distancia = enquadrar({
+      rAlvo: BORDA_DO_SISTEMA_INTERNO.raio,
+      fovDeg: ATLAS_FOV_GRAUS,
+      aspect: 4 / 3,
+      retanguloUtil: retanguloUtilDoAtlas(),
+    }).distancia;
+    // ~9,1 UA: a faixa é larga porque quem a move é o HUD, e estreita o
+    // bastante para pegar uma troca de esfera (o teto são 226 UA)
+    expect(distancia * UA_POR_PC).toBeGreaterThan(8);
+    expect(distancia * UA_POR_PC).toBeLessThan(11);
+
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 4 / 3, 1e-9, 1e6);
+    camera.position.set(0, 0, distancia);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    orbitas.update(camera, 900, Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360));
+
+    const alfaDe = (id: string) => {
+      const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
+      const loop = orbitas.group.children[i] as unknown as {
+        material: { opacity: number };
+      };
+      return loop.material.opacity;
+    };
+    // AS QUATRO DE DENTRO, no brilho CHEIO — nenhuma no meio do fade: a
+    // vista dele não é "quase dá para ver as linhas"
+    for (const id of ['mercury', 'venus', 'earth', 'mars']) {
+      expect(alfaDe(id), `${id} devia acender na abertura`).toBeGreaterThan(0.3);
+    }
+    // ...e NENHUMA heliocêntrica de fora, que é a outra metade da
+    // escolha: de Júpiter para fora a órbita não cabe no quadro, e uma
+    // linha que não cabe é um risco atravessando o céu (§5)
+    for (const id of ['jupiter', 'saturn', 'uranus', 'neptune', 'pluto']) {
+      expect(alfaDe(id), `${id} não devia acender na abertura`).toBe(0);
+    }
     orbitas.dispose();
   });
 
