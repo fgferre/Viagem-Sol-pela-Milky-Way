@@ -617,16 +617,20 @@ Três degraus, nesta ordem:
   **ELE DECIDIU (24/08): nenhuma das três saídas baratas — o caso é do
   MOTOR DE FILMES.** Palavras dele: "não acho que ficou bom o caso
   Alnilam... nesse caso específico do filme, talvez isso tenha que
-  entrar no motor de filmes". E refinou no mesmo dia: **a REGRA GERAL
-  DESLIGA quando o filme toca.** O filme é um roteiro montado pelo
-  motor (item 75), que controla câmera, zoom, lente — e a tela: durante
-  a exibição, quem fala é o que o roteiro declara, não a régua de
-  relevância. Não é segundo universo: o MUNDO é um só (órbitas, luz,
-  física idênticas nos dois modos); quem NOMEIA é direção, e direção é
-  assistência declarada — o Atlas observa com a régua, o filme dramatiza
-  com o roteiro. Até o 75 pousar, o estado fica como está (Alnilam sem
-  nome em t=45), aceito como provisório; o caso ALNILAM é o caso de
-  prova do vocabulário novo.
+  entrar no motor de filmes". E refinou duas vezes no mesmo dia até a
+  forma final: **DIRIGIR, não desligar.** A regra geral continua viva
+  por baixo — ela segue governando o que o roteiro não fala (os nomes
+  de fundo). O que o roteiro DECLARA assume a frente: o motor (item 75)
+  dirige câmera, zoom, lente, legenda e nome, e o beat que nomeia as
+  Três Marias garante as três na tela. E o modo pode ser ESCOLHIDO
+  MANUALMENTE se alguém quiser — o visitante não perde a soberania
+  sobre a própria tela (a gaveta já lhe dá a chave dos nomes; o modo
+  dirigido é o padrão do filme, não uma prisão). Não é segundo
+  universo: o MUNDO é um só (órbitas, luz, física idênticas nos dois
+  modos); quem nomeia é direção, e direção é assistência declarada.
+  Até o 75 pousar, o estado fica como está (Alnilam sem nome em t=45),
+  aceito como provisório; o caso ALNILAM é o caso de prova do
+  vocabulário novo.
   **E UMA DECISÃO QUE ESTAVA SÓ NA CABEÇA DE QUEM FEZ, agora escrita:** o
   estudo do Eyes pede que o detalhe `classe · distância` SAIA do céu
   ("nomes magros" no sentido estrito — o nome e nada mais). Não saiu, e

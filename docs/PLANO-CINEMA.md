@@ -77,12 +77,14 @@ item 54 do `PENDENCIAS.md`. O trabalho segue nesta ordem:
    do `PENDENCIAS.md`** — é ele o dono deste assunto; aqui fica só o critério
    técnico de saída. Movimentos nomeados, legendas, preload e marcadores de QA
    passam a ser dados leves do filme — e, por decisão dele em 24/08, também os
-   **nomes em cena**: durante a exibição a régua de relevância do Atlas
-   DESLIGA, e quem fala na tela é o que o roteiro declara — o motor é o autor
-   de câmera, zoom, lente, legenda e nome. (O mundo continua um só: órbitas,
-   luz e física não mudam por modo; isto é direção declarada, não segundo
-   universo.) O caso de prova é o ALNILAM do item 82 — a Três Marias do meio
-   que perdeu o nome: o motor só está certo quando as três falarem. Conclui quando o filme galáctico roda
+   **nomes em cena**: o roteiro DIRIGE, não desliga. O que o beat declara
+   assume a frente da tela; a régua de relevância segue viva por baixo,
+   governando o que o roteiro não fala (os nomes de fundo); e o modo pode ser
+   escolhido manualmente por quem assiste — o dirigido é o padrão do filme,
+   não uma prisão. (O mundo continua um só: órbitas, luz e física não mudam
+   por modo; isto é direção declarada, não segundo universo.) O caso de prova
+   é o ALNILAM do item 82 — a Três Marias do meio que perdeu o nome: o motor
+   só está certo quando as três falarem. Conclui quando o filme galáctico roda
    pelo novo formato sem diferença visual — prova A/B bit a bit, com o lado
    novo capturado de disco zerado — nem perda dos gates, e um filme novo não
    exige editar o núcleo do aplicativo.
