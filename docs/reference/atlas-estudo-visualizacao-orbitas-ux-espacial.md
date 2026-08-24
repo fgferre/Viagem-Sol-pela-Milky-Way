@@ -6,6 +6,21 @@
 > - A §6 (point sprites, B-V→RGB) é mais simples do que a fotometria que a casa já tem calibrada por gates sobre 328k estrelas — não orienta nada.
 > - A §4 (NavBall, prograde/retrograde, grade eclíptica) é UX de simulador de pilotagem, sugestão de survey, não lição vivida — só entraria por decisão editorial do dono.
 > **O que vale:** fórmula do log-Z e o Reversed-Z com float 32-bit (as duas candidatas exatas da Decisão 3); floating origin com física em double na CPU; técnica MeshLine (SE um dia a casa desenhar órbitas como linha grossa); instancing para cinturões.
+>
+> ⚠️ **DUAS TESES DESTE TEXTO FORAM CORRIGIDAS POR MEDIÇÃO em 23/08/2026**, quando a casa foi
+> ao NASA Eyes com leitura de pixel em vez de survey. A correção mora em
+> [`estudo-orbitas-eyes-observacao.md`](estudo-orbitas-eyes-observacao.md), e nada aqui foi
+> apagado — o texto original fica de pé para quem quiser conferir o raciocínio antigo:
+> 1. **A §2.4 (_Trail Fading_) NÃO descreve as órbitas de planeta do Eyes.** Medido: a elipse
+>    de planeta tem opacidade **constante na volta inteira** (Marte: pico 116 em seis amostras
+>    independentes, dois lados do laço). O esmaecimento existe, mas numa camada SEPARADA
+>    (`Trails`, de sonda e de cometa), com chave própria na gaveta do Eyes. Órbita e rastro são
+>    coisas diferentes — a §2.4 é receita de rastro, não de órbita.
+> 2. **O MeshLine da §2.2 ENVELHECEU.** O repositório `THREE.MeshLine` está parado; quem
+>    resolve linha grossa hoje é o caminho **`Line2`/`LineSegments2` + `LineMaterial`** dos
+>    exemplos do three (MIT, vivo em r185), com largura em px CSS e `resolution` automático
+>    desde r165. A técnica descrita na §2.2 continua correta como TEORIA (é o que o `Line2`
+>    faz por dentro); o que caducou é a recomendação de biblioteca — e com ela o fecho da §8.
 
 ---
 
@@ -48,6 +63,14 @@ Historicamente, a biblioteca OpenGL fornecia a primitiva GL_LINES, que permitia 
 3. **Falta de Suporte a Materiais Complexos:** Primitivas de linha não possuem coordenadas de textura (UV) consistentes ou normais de superfície, impedindo a aplicação de efeitos essenciais como texturas tracejadas (_dashed lines_), gradientes de cor complexos ou iluminação.9
 
 ### **2.2 A Técnica _MeshLine_: Expansão Geométrica em Vertex Shader**
+
+> ⚠️ **CORRIGIDO em 23/08/2026 — a TÉCNICA vale, a BIBLIOTECA não.** A expansão em fita
+> descrita abaixo é exatamente o que o three faz hoje em `LineSegments2`/`LineMaterial` (MIT,
+> mantido, r185), que é o caminho a usar. O pacote `THREE.MeshLine` que este texto recomenda
+> está parado e **não é aposta segura**. Ver
+> [`estudo-orbitas-eyes-observacao.md`](estudo-orbitas-eyes-observacao.md) §10 (degrau D1) e
+> §11, que trazem também o número medido da linha do Eyes (~1,25 px CSS) e as armadilhas do
+> `Line2` — entre elas a de que **alfa por vértice não é nativo** ali.
 
 Para superar as limitações das linhas nativas, a indústria adotou a técnica conhecida como **MeshLine**, _Polyline Expansion_ ou _Fat Lines_. Esta abordagem abandona a primitiva de linha em favor de triângulos (GL_TRIANGLES ou GL_TRIANGLE_STRIP), construindo uma "fita" geométrica que segue o caminho da órbita.
 
@@ -98,6 +121,17 @@ void main() {
 Isso produz linhas com qualidade sub-pixel, essenciais para a estética limpa e futurista associada a interfaces como a do _NASA Eyes_.
 
 ### **2.4 _Trail Fading_ e Dinâmica Temporal**
+
+> ⚠️ **CORRIGIDO em 23/08/2026 — isto NÃO é o que o Eyes faz nas órbitas de planeta.** A
+> medição de pixel no app real (leitura de coluna dentro do `requestAnimationFrame`) mostra
+> **opacidade constante na volta inteira**: Marte deu pico 116 em seis amostras, em três
+> colunas e nos dois lados do laço; os oito planetas diferem em MATIZ, não em alfa. O
+> esmaecimento que esta seção descreve existe no Eyes numa camada **separada** — `Trails`, de
+> sonda e de cometa, com chave própria na gaveta —, e é lá que o modelo temporal vive (janela
+> de tempo relativa ao agora, anel de pontos, `setAlphaFade`). Ler a receita abaixo como
+> receita de ÓRBITA leva ao erro de gradiente que a casa não deve copiar. Ver
+> [`estudo-orbitas-eyes-observacao.md`](estudo-orbitas-eyes-observacao.md) §1.1, §2 e §3, e o
+> degrau D3 do §10 — que é onde esta fórmula tem lugar legítimo.
 
 Uma órbita completa é uma elipse estática. Para transmitir a dinâmica temporal — onde o objeto está e para onde vai — utiliza-se o **Trail Fading** (rastro desvanecente).
 
@@ -261,7 +295,7 @@ A combinação de técnicas de precisão numérica (Origem Flutuante), renderiza
 
 | Componente              | Desafio Técnico                               | Solução Recomendada (Estado da Arte)                                                                           |
 | :---------------------- | :-------------------------------------------- | :------------------------------------------------------------------------------------------------------------- |
-| **Linhas de Órbita**    | Largura de linha inconsistente, aliasing.     | **MeshLine** (Triangle Strips expandidos no Vertex Shader) com **Anti-aliasing Analítico** no Fragment Shader. |
+| **Linhas de Órbita**    | Largura de linha inconsistente, aliasing.     | **MeshLine** (Triangle Strips expandidos no Vertex Shader) com **Anti-aliasing Analítico** no Fragment Shader. ⚠️ **Leia-se `LineSegments2`/`LineMaterial`** — ver a correção no topo deste arquivo. |
 | **Precisão de Posição** | Jitter, tremedeira em grandes coordenadas.    | **Floating Origin** (Cálculo relativo à câmera em Double Precision na CPU).                                    |
 | **Z-Fighting**          | Conflito de profundidade em escalas extremas. | **Logarithmic Depth Buffer** ou Reversed Z-Buffer (com float de 32-bit depth).                                 |
 | **Dados de Efemérides** | Precisão científica vs. performance.          | Arquivos **SPICE (.bsp)** lidos via **WASM (cspice.js)** ou interpolação de tabelas JSON do servidor.          |

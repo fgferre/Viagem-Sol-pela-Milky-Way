@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 83.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 84.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -45,12 +45,53 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
 **A ORDEM DA PRÓXIMA CONVERSA:** o item **77** (as linhas de órbita) e a
 **vista inicial** (o candidato (a), agora com as linhas dentro) POUSARAM
 os dois em 23/08 e só esperam a conferência dele — a próxima obra é o
-**clarão único** → as **tarjas do celular** → os **dois retoques**. Só
-depois disso o **81** (o vermelho do MB1 no voo livre), o **70** e o
-**75**. O arquivo que numerava essa fila morava na pasta temporária e se
-perdeu com ela — nunca foi versionado. A fila é esta linha aqui; o
-detalhe de cada passo mora nos itens **61** e **77**, e em lugar nenhum
-mais.
+**clarão único**, e daí em diante vale a FILA INTEIRA logo abaixo, que
+recebeu os itens **82** e **83** e mudou de ordem na mesma noite. O
+arquivo que numerava a fila antiga morava na pasta temporária e se
+perdeu com ela — nunca foi versionado. A fila é esta seção aqui; o
+detalhe de cada passo mora nos itens **61**, **77**, **82** e **83**, e
+em lugar nenhum mais.
+
+**A FILA INTEIRA, com os itens novos no lugar (23/08, decisão de
+coordenação — conferência do dono PENDENTE).** Depois de medir o NASA
+Eyes por observação de tela, entraram dois blocos de obra: os **nomes**
+(item **82**, degraus N1 e N2) e as **órbitas AAA** (item **83**,
+degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
+
+> **clarão único** → **82 (N1 + N2: os nomes)** → **tarjas do celular** →
+> **"Explorar" e o arrasto da folha** → ⟨**CONFERÊNCIA DO DONO**: itens
+> **61** e **77**, com as fotos⟩ → **83 (L1 + L2: a linha)** → **81** →
+> **70** → **75**.
+
+**POR QUE OS NOMES SOBEM PARA O SEGUNDO LUGAR:** a **poluição visual é a
+dor declarada mais recente** dele — reafirmada na noite de 23/08, depois
+de a vista de abertura já ter melhorado. Tarjas e retoques são acabamento
+de coisas que ele já aprovou; o nó de nomes é queixa aberta, e queixa
+aberta anda primeiro.
+
+**E A RAZÃO DO PINO, escrita para não se perder:** mexer na LINHA antes
+da conferência **invalidaria as fotos** que estão à espera dele
+(`capturas/item77-*` e `capturas/vista-padrao-*`) e a base medida de
+**41 de 52 vistas bit-idênticas** do item 77 — ele julgaria uma coisa e
+veria outra. Os nomes (82) não têm esse problema: mexem numa camada que
+aquelas fotos não julgam. As órbitas AAA (83) esperam do outro lado do
+pino, e não é atraso: é a única ordem em que a conferência dele
+significa alguma coisa.
+
+**E A VISTA (a) NÃO É DEFINITIVA — ele disse por quê, na noite de
+23/08.** O que ele apontou é que o **contexto de abertura do NASA Eyes é
+muito melhor que o nosso**: o Eyes abre no sistema INTEIRO e mesmo assim
+é legível — câmera inclinada, com profundidade; fitas finas na cor do
+corpo; poucos nomes, bem escolhidos. Isto obriga a uma confissão sobre a
+escolha do candidato **(a)**: ela foi **parcialmente FORÇADA pela
+dívida**, não preferência final. A vista larga da casa era "dez nomes num
+nó de 40 px" sobre linhas de um pixel — ilegível —, e descer para o
+sistema interno foi o jeito de fugir do nó, não o jeito de dar o melhor
+contexto. Depois que **N1** (nomes magros) e **L2** (a fita) pousarem, a
+vista larga passa a ser contexto VIÁVEL, e a **pergunta da abertura se
+RE-JULGA**: fotos lado a lado — sistema inteiro no estilo Eyes ×
+interno atual × meio-termo — e a decisão é dele. Ninguém trate a (a)
+como resposta final até isso acontecer.
 
 **O BASTÃO DE 23/08 (noite): O MODO ÚNICO ANDOU QUATRO PASSOS.** A parte
 grande do item **61** — *"o modo atlas na minha visão deveria ser o modo
@@ -459,6 +500,72 @@ cobrava os 8 planetas com nome na ABERTURA e já mudou de endereço em
 23/08 (item 61) — na abertura ele cobra os cinco em quadro, e a
 promessa dos dez passou a ser cobrada no TETO do zoom, que é onde o
 aperto ficou.
+
+**A ESCADA DA OBRA, escrita em 23/08 depois de MEDIR o NASA Eyes.** A
+revisão que ele pediu está feita e versionada: o Eyes foi dirigido no
+navegador com leitura de pixel, e o censo dos rótulos dele saiu de uma
+vista só — **103 nomes no DOM, 40 acesos, 52 em corte duro, 11 mortos
+por colisão**, todos `div` de DOM, esmaecendo por opacidade em vez de
+piscar. O estudo inteiro é
+`docs/reference/estudo-orbitas-eyes-observacao.md` (§5 é a resposta a
+este item). A lição vem em duas metades, e **a segunda é a que importa**:
+o mecanismo "inteligente" que ele pediu existe e tem nome (filtro por
+classe + opacidade contínua + colisão em espaço de tela), **e mesmo
+assim o Eyes falha na Terra** — 40 nomes acesos é confusão. A colisão
+resolve SOBREPOSIÇÃO; não resolve POPULAÇÃO. O Eyes nunca decide que uma
+sonda **não interessa**; só decide que ela **não cabe**. É essa peça — a
+régua de relevância — que falta nos dois lados, e é por onde a obra
+começa.
+
+**E o registro honesto, para não haver ilusão de placar:** no CONJUNTO,
+os nomes e os rastros do Eyes são hoje **mais inteligentes e mais
+bonitos que os nossos**. O que a medição nos dá razão é estreito e está
+nomeado no item **83** (dois comportamentos da LINHA, mais a honestidade
+da efeméride) — não vale como veredito geral, e não é isso que está em
+jogo aqui. O que está em jogo é que a nossa abertura tem **poluição
+visual real**, que é queixa VIVA dele, reafirmada na noite de 23/08.
+Três degraus, nesta ordem:
+
+- **N1 — nomes magros, e a régua de relevância ANTES da geometria.**
+  Corte por importância primeiro (a tabela `PRIORIDADE_DO_ROTULO` de
+  `world/labels.ts` já é essa régua, com a histerese de quem já estava
+  na tela — **reusar, não escrever outra, e NÃO importar o `weightMap`
+  do Eyes**: a hierarquia da casa é dela), e só depois a colisão em
+  espaço de tela: **colidiu, o menor SOME**, sem traço-aranha. O traço de
+  até 102 px do item 73 acaba aqui — nome que não cabe não se salva
+  puxando um risco, que é justamente o que faz o nó que ele vê. As ~20
+  estrelas com traço em volta do sistema, que são a queixa VIVA depois do
+  item 61, morrem neste degrau.
+  **AVISO ESCRITO, para quem executar não se assustar:** a prova
+  `atlas-smoke` cobra hoje **os oito planetas e o Sol com nome no TETO do
+  zoom** (a conferência `nomesDoTeto`, que mudou de endereço em 23/08).
+  Com a régua de relevância nova ela **vai reprovar — E COM RAZÃO**: a
+  promessa velha era "encaixar o máximo de nomes", e é essa promessa que
+  este item revoga. A promessa NOVA se escreve **no mesmo commit**, com
+  número medido na tela (quantos nomes o teto passa a mostrar, e quais),
+  nunca afrouxando o dente para o juiz calar. Um juiz que só perdeu o
+  dente não mede nada.
+  **A REGRA DOS JUÍZES, que estreia aqui (EXPERIMENTAL, e proporcional
+  — vale para o juiz que GUARDA UMA DECISÃO DELE, não para teste comum):
+  mudar um pino nasce com número medido E passa por auditor independente
+  que tenta SABOTAR o teste novo; afrouxar dente sem decisão do dono é
+  ACHADO, não conserto.** Junto vai o princípio que a sustenta: um juiz
+  só existe se souber dizer **a quem serve** — decisão do dono, lei
+  física da casa, ou chão de regressão. Juiz que não responde a essa
+  pergunta MORRE, em vez de ser re-pinado num número novo. Se em duas ou
+  três etapas isto não pegar sabotagem nenhuma, a regra sai — ela também
+  tem de provar que serve.
+- **N2 — a camada "Nomes" na gaveta.** As órbitas têm `noorbitas`; os
+  nomes não têm nada. Vira mais uma linha da tabela única `CAMADAS`, com
+  ícone, e entra na gaveta e no selo **pela derivação de sempre** — sem
+  superfície nova, sem regra nova. É a chave `Labels` que o Eyes tem e
+  nós não temos.
+- **N3 — a oclusão em 3D, e ela fica ATRÁS.** Nome de corpo escondido
+  atrás de outro corpo ainda nasce, e "atrás da câmera" já some. A conta
+  existe e está pronta: `escondidaPorDisco`, em `world/labels.ts`, hoje
+  serve só às estrelas por `projectLabels` — falta **chamá-la também em
+  `projectCorpos`**. Não sobe na fila por conta própria: só entra se ele
+  reclamar de nome flutuando sobre um globo no close-up.
 
 ---
 
@@ -1047,6 +1154,108 @@ E a prova de que o delta é da CAMADA e de mais nada: a MESMA leva
 rodada com `?noorbitas=1` no binário NOVO devolve **as 52 vistas
 bit-idênticas** ao antes. Nada mudou de carona; a chave desliga de
 verdade.
+
+**83. Órbitas AAA — a fita e o foco.** (Aberto em 23/08, DEPOIS de
+medir o NASA Eyes. Ninguém reclamou disto: é a diferença que sobra entre
+a camada 77 que pousou e a referência do ramo, com número dos dois
+lados.) O estudo é `docs/reference/estudo-orbitas-eyes-observacao.md`,
+feito por observação de tela — pixel lido do app real, nomes lidos da
+API viva do motor.
+
+**O placar, dito sem inflar:** o que a medida nos dá razão são **dois
+comportamentos estreitos da LINHA** (o corte quando a câmera está DENTRO
+do laço, e o fade angular de quando a órbita não cabe no quadro) mais a
+**honestidade da efeméride** (sem dado vivo não há linha). Isso não é
+veredito geral, e não deve ser lido como um: **no conjunto, os nomes e
+os rastros do Eyes são mais inteligentes e mais bonitos que os nossos** —
+e é por isso que o item **82** passa à frente deste. O que falta AQUI
+são dois buracos que se veem na tela:
+
+- **L1 — o foco manda na cena.** Um multiplicador de alfa por linha,
+  ligado ao corpo enquadrado: a órbita do alvo e as das LUAS dele sobem,
+  as demais recuam um passo. É **um número dentro do `alfaDa` que já
+  existe** em `world/orbitas.ts` — o degrau mais barato da lista inteira.
+  O Eyes não faz isto (medido: enquadrar Saturno lá não acende a órbita
+  de Saturno nem as das luas dele), então aqui não há de onde copiar — é
+  desenho a decidir, e a decisão é barata.
+- **L2 — a linha ganha corpo.** Hoje é `LineLoop` + `LineBasicMaterial`:
+  **1 pixel de dispositivo**, borda dura — e num Retina isso é MEIO pixel
+  CSS, fio de teia serrilhado. `linewidth` é ignorado em WebGL, sempre,
+  então não há número a mexer: é troca de primitiva. O caminho é
+  **`LineSegments2` + `LineMaterial`** (o `Line2` dos exemplos do three,
+  MIT, vivo em r185), mirando a fita de **~1,25 px CSS** que o Eyes
+  desenha — número confirmado por DOIS métodos independentes (o perfil de
+  cobertura sub-pixel 0,25/0,50/0,75/1,00 lido do pixel, e a leitura da
+  API do motor deles). Vem com juntas resolvidas, e de brinde **dezenas
+  de laços num único objeto: 1 draw call** no lugar dos 30 de hoje.
+
+  **Os cuidados técnicos, todos VERIFICADOS no fonte do three — quem
+  executar não precisa redescobrir:** (a) **alfa por vértice NÃO é
+  nativo** no `Line2` (`setColors` só aceita RGB; a issue #23680 está
+  aberta desde 2022) — a receita que funciona é atributo instanciado
+  próprio + `USE_COLOR_ALPHA` + `onBeforeCompile` escrevendo `vColor.w`,
+  e ela só é necessária para L4; (b) o `resolution` se acerta sozinho
+  desde r165, e a largura passa a ser em **px CSS**, independente do
+  `pixelRatio` — que é exatamente a invariância que a casa já exige do
+  clarão; (c) **NUNCA `setPositions()` por quadro** — ele aloca buffer de
+  GPU novo e recomputa a bounding sphere; o certo é mutar o array do
+  buffer interleaved e marcar `needsUpdate`. **A disciplina certa já está
+  escrita** em `world/orbitas.ts` (o `escreverLaco` muta o atributo e
+  marca `needsUpdate`) — a migração tem de MANTÊ-LA, não voltar ao
+  caminho caro; (d) origem flutuante segue como está: vértices relativos
+  ao centro e só a MATRIZ recalculada por quadro, em double na CPU —
+  reescrever buffer não é preciso; (e) **`MeshLine` está morto** (repo
+  parado), e por isso o estudo herdado
+  `atlas-estudo-visualizacao-orbitas-ux-espacial.md` levou um ⚠️ no topo.
+
+Atrás desses dois, na mesma família:
+
+- **G1 — a gaveta devolve os oito.** Os oito de `HELIO_SEM_PONTO`
+  (Ceres, Éris, Haumea, Makemake, Quaoar, Vesta, Palas, Hígia) voltam
+  como classe própria, **desligada por padrão**, atrás de uma caixinha —
+  em vez de ficarem enterrados numa decisão de código. O próprio
+  `world/orbitas.ts` promete que voltar é UMA LINHA; este degrau é essa
+  linha, com dono. **É literalmente o que o Eyes faz** com as 60 anãs e
+  asteroides dele: tem no acervo, nasce desligado, e a escolha é do
+  visitante.
+- **L3 — matiz que separa sem mentir.** Manter a fotometria (a
+  honestidade é nossa: o Eyes pinta Mercúrio de VIOLETA e Vênus de
+  ÂMBAR, que não são as cores deles), mas garantir distância mínima de
+  matiz entre linhas vizinhas na tela, com o empurrão DECLARADO no selo,
+  como a casa já faz com assistência. Mais o glow, que dá presença sem
+  engrossar.
+- **L4 — o rastro, e só quando houver sonda no acervo.** É camada IRMÃ,
+  não a mesma: no Eyes, `Trails` e `Orbits` são chaves separadas, e o
+  esmaecimento vive só na primeira. Janela de tempo relativa ao agora,
+  cauda fria e cabeça quente NO corpo, anel de amostras em que só a
+  cabeça se reenvia. Depende do alfa por vértice do L2 (cuidado *a*).
+- **L5 — a linha responde ao mouse.** Passar o ponteiro e ela se
+  identificar; clicar e enquadrar o corpo. **No Eyes a linha é matéria
+  morta** — medido, com o ponteiro posto em cima da órbita de Marte por
+  leitura de pixel: nem tooltip, nem realce, nem cursor. É vaga aberta.
+  Cuidado: `raycast` antes do primeiro render falha **em silêncio**.
+
+**O QUE NÃO SE REFAZ — verificado com TRÊS testemunhas independentes
+(o pixel do Eyes, a API do motor deles, e as fontes MIT abertas).** Esta
+lista existe para impedir que uma conversa futura "melhore" o que já
+está certo:
+
+- a **cônica osculadora do estado vivo** (decisão 1 do item 77) é
+  exatamente o que o motor do Eyes faz — o método dele que monta órbita a
+  partir de posição E velocidade tem o mesmo papel da nossa
+  `conicaOsculadora`;
+- a **amostragem em anomalia excêntrica com 256 pontos** é a escolha
+  certa, e a nossa é MAIS fina que a do Eyes (que anda de 1° em 1°);
+- **lua no frame do pai**, e não do Sol — o motor deles tem a mesma
+  regra, com outro nome;
+- **cor por fotometria** — a deles é paleta inventada (ver L3);
+- e o **corte de câmera dentro do laço + o fade angular** — que é um dos
+  dois pontos estreitos em que a medida nos dá razão. Enquadrando
+  Saturno, Netuno e Urano atravessam o quadro do Eyes como riscos retos
+  **a alfa cheia** (170 e 163 de 255), porque a câmera está dentro das
+  duas órbitas; na Terra é um feixe de retas quase paralelas entrando
+  pelas bordas. **Não copiar** — e não confundir este achado estreito
+  com superioridade de conjunto, que não existe.
 
 ---
 
