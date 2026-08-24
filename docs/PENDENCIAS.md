@@ -614,12 +614,15 @@ Três degraus, nesta ordem:
   Alnilam, Mintaka — três supergigantes alinhadas só daqui"), e é essa
   discordância que pede o olho dele. A foto é
   `capturas/item82-filme-legendas-antes-depois.png`.
-  **O que ele escolhe, e nenhuma escolha é cara:** (a) fica como está —
-  a lei é a mesma nos dois modos, e o nome do meio volta assim que a
-  câmera separa as estrelas; (b) o rótulo FORÇADO do beat (só ele, que é
-  o assunto que o roteiro nomeia) ganha UM lugar alternativo, e aí a
-  teia não volta porque é uma vaga, não catorze; (c) a legenda do beat
-  passa a dizer duas. Nenhuma se faz sem ele dizer qual.
+  **ELE DECIDIU (24/08): nenhuma das três saídas baratas — o caso é do
+  MOTOR DE FILMES.** Palavras dele: "não acho que ficou bom o caso
+  Alnilam... nesse caso específico do filme, talvez isso tenha que
+  entrar no motor de filmes". Ou seja: remendo na régua não; o beat que
+  NOMEIA suas estrelas na legenda tem de poder DECLARAR os nomes em
+  cena — nome em cena vira vocabulário do motor declarativo (item 75),
+  ao lado de câmera, velocidade e legenda. Até o 75 pousar, o estado
+  fica como está (Alnilam sem nome em t=45), aceito como provisório; o
+  caso ALNILAM é o caso de prova do vocabulário novo.
   **E UMA DECISÃO QUE ESTAVA SÓ NA CABEÇA DE QUEM FEZ, agora escrita:** o
   estudo do Eyes pede que o detalhe `classe · distância` SAIA do céu
   ("nomes magros" no sentido estrito — o nome e nada mais). Não saiu, e

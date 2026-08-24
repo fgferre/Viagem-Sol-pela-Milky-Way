@@ -76,7 +76,10 @@ item 54 do `PENDENCIAS.md`. O trabalho segue nesta ordem:
 1. **Motor declarativo.** A decisão e as palavras do dono moram no **item 75
    do `PENDENCIAS.md`** — é ele o dono deste assunto; aqui fica só o critério
    técnico de saída. Movimentos nomeados, legendas, preload e marcadores de QA
-   passam a ser dados leves do filme. Conclui quando o filme galáctico roda
+   passam a ser dados leves do filme — e, por decisão dele em 24/08, também os
+   **nomes em cena**: o beat que nomeia estrelas na legenda declara esses nomes
+   na tela, em vez de disputá-los com a régua de relevância do Atlas. O caso de
+   prova é o ALNILAM do item 82 (a Três Marias do meio que perdeu o nome). Conclui quando o filme galáctico roda
    pelo novo formato sem diferença visual — prova A/B bit a bit, com o lado
    novo capturado de disco zerado — nem perda dos gates, e um filme novo não
    exige editar o núcleo do aplicativo.
