@@ -21,7 +21,7 @@ import {
   gateBinario,
 } from '../world/corpos/corpos';
 import { repartir } from '../estrela';
-import { ClaraoDeAsas, OCUPACAO_MAXIMA_DA_TELA, OCUPACAO_NA_OBSERVACAO } from '../world/clarao';
+import { ClaraoDeAsas } from '../world/clarao';
 import type { StellarBody } from '../world/stellarBody';
 import type { Planetas } from '../world/planetas/planetas';
 import type { StarField } from '../world/stars';
@@ -202,12 +202,12 @@ export class SolNoQuadro {
           !this.fios.escondido('noplan') &&
           (this.fios.planetas()?.points.visible ?? false),
         solturaDoSol: leiDoSol.solturaDoClarao,
-        // a DOSE pela fase (pergunta do dono, 17/08): o filme e o voo
-        // livre ficam com o drama; o Atlas é o modo de OBSERVAÇÃO — o
-        // selo já declara BRILHO ASSISTIDO, e o clarão compacto (família
-        // NASA Eyes) faz parte da mesma assistência declarada
-        tetoDeOcupacao:
-          q.fase === 'atlas' ? OCUPACAO_NA_OBSERVACAO : OCUPACAO_MAXIMA_DA_TELA,
+        // A DOSE NÃO PERGUNTA MAIS A FASE (decisão do dono, 23/08:
+        // *"vamos igualar o clarao… nao quero essa distincao entre modo
+        // atlas e modo filme, para mim o filme é um feature do atlas"*).
+        // O teto é UM, mora onde é calculado (`OCUPACAO_MAXIMA_DA_TELA`,
+        // em `world/clarao`), e este módulo deixou de mandá-lo por
+        // quadro. O que sobrou aqui é fiação; o número tem um dono só.
         expoM0: stars?.expoM0 ?? EXPO_M0,
         sigmaPx: stars?.sigmaPx ?? SIGMA_PX,
         pr: q.prAtual,

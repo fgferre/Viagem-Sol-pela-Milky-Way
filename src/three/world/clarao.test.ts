@@ -28,7 +28,6 @@ import {
   ELEGIVEIS_POR_QUADRO,
   FATOR_DE_ENCHIMENTO_DO_SOL,
   OCUPACAO_MAXIMA_DA_TELA,
-  OCUPACAO_NA_OBSERVACAO,
   ORCAMENTO_DO_CLARAO,
   RAZAO_DE_TROCA,
   SOL_BV,
@@ -385,21 +384,33 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     expect(ELEGIVEIS_POR_QUADRO).toBe(ORCAMENTO_DO_CLARAO + 8);
   });
 
-  it('a dose de OBSERVAÇÃO é o número do dono, abaixo do drama — e a fase é quem troca', () => {
-    // 0,07 é a resposta dele à pergunta de 17/08 ("como os apps como o
-    // NASA Eyes fazem?") — recalibrar é mudar AQUI junto, nunca deriva
-    expect(OCUPACAO_NA_OBSERVACAO).toBe(0.07);
-    expect(OCUPACAO_NA_OBSERVACAO).toBeLessThan(OCUPACAO_MAXIMA_DA_TELA);
-    // e quem escolhe a dose por FASE é o módulo do Sol no quadro: o
-    // Atlas observa, o filme e o voo dramatizam — assistência DECLARADA
-    // (o selo diz BRILHO ASSISTIDO; o a11y vigia o rodapé que nomeia o
-    // clarão como artístico). Item 48: hoje alguém vigia.
+  it('o teto do clarão é UM SÓ, e nenhum quadro pode escolher outro', () => {
+    // A LEI NOVA, decidida por ele em 23/08: *"vamos igualar o clarao…
+    // nao quero essa distincao entre modo atlas e modo filme, para mim o
+    // filme é um feature do atlas"*. O que este trilho guarda é a
+    // DECISÃO DELE, e por isso ele tem três dentes em vez de um:
+    //
+    //  1. o NÚMERO é o do filme, 0,55 — recalibrar é mudar aqui junto;
+    expect(OCUPACAO_MAXIMA_DA_TELA).toBe(0.55);
+    //  2. a dose de observação (0,07) NÃO VOLTA como segundo número, e
+    //     o teto NÃO volta a entrar por quadro. Se um dia atrapalhar a
+    //     observação do sistema, o conserto é GLOBAL (auto-exposição,
+    //     para todo mundo) — nunca um segundo teto atrás de um nome
+    //     novo. O que se proíbe é a DECLARAÇÃO e o CAMPO, não a
+    //     menção: a docstring desta lei conta o que morreu, e citar o
+    //     defunto pelo nome é o contrário de ressuscitá-lo;
+    const CLARAO = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
+    expect(CLARAO).not.toMatch(/OCUPACAO_NA_OBSERVACAO\s*=/);
+    expect(CLARAO).not.toMatch(/tetoDeOcupacao\s*\??:/);
+    //  3. e o módulo do Sol no quadro NÃO PERGUNTA A FASE para dosar o
+    //     clarão — era o último `if (fase)` no desenho do mundo, e ele
+    //     morreu com a decisão. Um `q.fase` reaparecendo aqui é a
+    //     distinção entre os modos voltando pela porta dos fundos.
     const SOL_NO_QUADRO = readFileSync(
       new URL('../director/solNoQuadro.ts', import.meta.url),
       'utf8'
     );
-    expect(SOL_NO_QUADRO).toContain(
-      "q.fase === 'atlas' ? OCUPACAO_NA_OBSERVACAO : OCUPACAO_MAXIMA_DA_TELA"
-    );
+    expect(SOL_NO_QUADRO).not.toContain('q.fase');
+    expect(SOL_NO_QUADRO).not.toContain('tetoDeOcupacao');
   });
 });

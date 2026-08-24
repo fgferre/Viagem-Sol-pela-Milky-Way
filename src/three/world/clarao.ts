@@ -335,10 +335,6 @@ export interface QuadroDoClarao {
    *  convertidos para o buffer; sem isso o clarão desarma/encolhe
    *  exatamente no modo cinema (pico cai com pr²). 1 = referência. */
   pr?: number;
-  /** teto de ocupação deste quadro (fração da altura) — o director
-   *  escolhe a dose pela FASE: drama no filme/voo (0,55), observação no
-   *  Atlas (0,07). Ausente = o teto do filme. */
-  tetoDeOcupacao?: number;
 }
 
 /** Teto de sanidade do billboard, em px: além da diagonal de qualquer
@@ -353,23 +349,30 @@ const TETO_DO_BILLBOARD_PX = 4096;
  *  rapidamente"*. Nenhum clarão passa desta fração da altura da tela,
  *  nunca — o limitador é POR ESTRELA, jamais exposição de cena. */
 export const FATOR_DE_ENCHIMENTO_DO_SOL = 1.0;
-export const OCUPACAO_MAXIMA_DA_TELA = 0.55;
 
-/** A DOSE DE OBSERVAÇÃO (pergunta do dono, 17/08: *"quando estiver
- *  observando os obejtos em movimento do nosso sistemqa solar ele nao
- *  vai dominar toda a cena? como os apps como o solar system scope ou
- *  nasa eyes... fazem isso?"*). Medido na moldura de Vênus: com o teto
- *  do filme (0,55) o clarão comia o centro do quadro e o CORPO
- *  ENQUADRADO virava um pontinho dentro do brilho. Os apps de
- *  referência de-dramatizam o Sol quando o assunto é o sistema — o
- *  NASA Eyes o mantém em ~10–15% do quadro. No ATLAS (o modo de
- *  observação; o selo já declara BRILHO ASSISTIDO) o teto de ocupação
- *  do clarão do Sol desce para esta fração da altura: meia-largura
- *  0,07·H ⇒ cartaz de ~14% do quadro. O filme e o voo livre ficam com
- *  o drama (0,55); a troca de modo já atravessa o véu do Atlas — não
- *  há pulo em cena. Segue sendo limitador POR ESTRELA, nunca exposição
- *  de cena. */
-export const OCUPACAO_NA_OBSERVACAO = 0.07;
+/** O TETO É UM SÓ, NOS DOIS MODOS — decisão do dono, 23/08, com as
+ *  quatro fotos da comparação na mão: *"vamos igualar o clarao, se
+ *  percebermos que é um problema para observacao do sisztema solar,
+ *  vamos pensar em como consertar globalmente, nao quero essa distincao
+ *  entre modo atlas e modo filme, para mim o filme é um feature do
+ *  atlas"*.
+ *
+ *  O que morreu aqui: a DOSE POR FASE de 17/08 — 0,07 no Atlas contra
+ *  0,55 no filme, sob o nome `OCUPACAO_NA_OBSERVACAO` —, que nasceu de uma pergunta
+ *  legítima dele — *"não vai dominar toda a cena?"* — e virou, com o
+ *  tempo, a distinção entre os modos que ele proíbe. Ela era assistência
+ *  declarada; deixou de existir, e com ela o `tetoDeOcupacao` que o
+ *  director mandava por quadro.
+ *
+ *  O PREÇO ESTÁ MEDIDO E ACEITO por ele: com a MESMA lente e a MESMA
+ *  pose, no corpo do Sol a foto é bit-idêntica, mas no enquadramento de
+ *  Vênus (4,045 UA) 23,40% do quadro ganha luz e o corpo enquadrado vira
+ *  faísca dentro do brilho. Se isso atrapalhar a observação do sistema,
+ *  o conserto é GLOBAL (auto-exposição, para todo mundo) — voltar a
+ *  distinguir por fase está FORA.
+ *
+ *  Segue sendo limitador POR ESTRELA, nunca exposição de cena. */
+export const OCUPACAO_MAXIMA_DA_TELA = 0.55;
 
 export class ClaraoDeAsas {
   readonly group = new THREE.Group();
@@ -455,14 +458,9 @@ export class ClaraoDeAsas {
    * cartaz, a receita do filme faz o resto: brilho apertado, braço
    * longo. (O piso de presença das nomeadas saiu no resgate das heroes.)
    */
-  private meiaDaLei(
-    pico: number,
-    sigma: number,
-    screenH: number,
-    ocupacao = OCUPACAO_MAXIMA_DA_TELA
-  ): number {
+  private meiaDaLei(pico: number, sigma: number, screenH: number): number {
     const asa = Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
-    const teto = Math.min(ocupacao * screenH, TETO_DO_BILLBOARD_PX);
+    const teto = Math.min(OCUPACAO_MAXIMA_DA_TELA * screenH, TETO_DO_BILLBOARD_PX);
     return Math.min(FATOR_DE_ENCHIMENTO_DO_SOL * asa, teto);
   }
 
@@ -482,10 +480,6 @@ export class ClaraoDeAsas {
       Number.isFinite(q.solturaDoSol) && q.solturaDoSol >= 0 && q.solturaDoSol <= 1
         ? q.solturaDoSol
         : 1;
-    const ocupacao =
-      Number.isFinite(q.tetoDeOcupacao) && (q.tetoDeOcupacao as number) > 0
-        ? (q.tetoDeOcupacao as number)
-        : OCUPACAO_MAXIMA_DA_TELA;
     // RESGATE (16/08, ordem do dono): as nomeadas voltaram às heroes de
     // autor (world/heroStars.ts) — esta camada fica SÓ com o Sol. A
     // unificação volta à mesa no M3, com o visto DELE na estética.
@@ -508,7 +502,7 @@ export class ClaraoDeAsas {
       // elegível quando a óptica alcança além do que o sprite já desenha
       const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
       if (
-        !(2 * this.meiaDaLei(pico, sigma, cssH, ocupacao) * (i === 0 ? solturaDoSol : 1) > nucleo)
+        !(2 * this.meiaDaLei(pico, sigma, cssH) * (i === 0 ? solturaDoSol : 1) > nucleo)
       )
         continue;
       // inserção ordenada (pico DESC, índice ASC no empate), teto K
@@ -542,7 +536,7 @@ export class ClaraoDeAsas {
       // a soltura veste o TAMANHO por fora do teto de ocupação: o clarão
       // desabrocha DO teto estacionado (o espelho do brief do dono —
       // "chega no máximo rapidamente e estaciona"), nunca além dele
-      const meiaPx = this.meiaDaLei(pico, sigma, cssH, ocupacao) * soltura * pr;
+      const meiaPx = this.meiaDaLei(pico, sigma, cssH) * soltura * pr;
       if (!(meiaPx > 0) || !(entrada > 0)) {
         mesh.visible = false;
         continue;

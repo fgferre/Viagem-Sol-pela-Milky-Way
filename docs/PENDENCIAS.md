@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 84.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 85.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -58,10 +58,10 @@ Eyes por observação de tela, entraram dois blocos de obra: os **nomes**
 (item **82**, degraus N1 e N2) e as **órbitas AAA** (item **83**,
 degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 
-> **clarão único** → **82 (N1 + N2: os nomes)** → **tarjas do celular** →
-> **"Explorar" e o arrasto da folha** → ⟨**CONFERÊNCIA DO DONO**: itens
-> **61** e **77**, com as fotos⟩ → **83 (L1 + L2: a linha)** → **81** →
-> **70** → **75**.
+> ~~**clarão único**~~ (FEITO em 23/08) → **82 (N1 + N2: os nomes)** →
+> **tarjas do celular** → **"Explorar" e o arrasto da folha** →
+> ⟨**CONFERÊNCIA DO DONO**: itens **61** e **77**, com as fotos⟩ →
+> **83 (L1 + L2: a linha)** → **81** → **70** → **75**.
 
 **POR QUE OS NOMES SOBEM PARA O SEGUNDO LUGAR:** a **poluição visual é a
 dor declarada mais recente** dele — reafirmada na noite de 23/08, depois
@@ -134,7 +134,9 @@ em 23/08, e os dois saíram da lista. O **73** — *"foi
 criado um monstro frankstein"* — FECHOU em 22/08, nas duas etapas: a
 roda virou zoom contínuo, o arrasto dá a volta inteira, um clique
 escolhe e dois vão, a distância entra no link, os nomes se organizam
-por importância (dez corpos com nome na abertura, contra três) e o
+por importância (dez corpos com nome onde antes eram três — e desde que
+o item 61 desceu a abertura, esses dez moram no TETO do zoom; na
+abertura são os CINCO em quadro) e o
 modo ganhou o convite dele. Ficou de fora, de propósito, o **77** (as
 linhas de órbita). **Espera o olho dele no app**, com as fotos em
 `capturas/item73-*`. Palavras dele no fim da mensagem: *"enfim muitas
@@ -738,8 +740,17 @@ com as fotos em `capturas/item61-*` (a do quinto passo, a vista, é
    número anda com a data porque a esfera é a órbita VIVA de Marte), com
    as quatro linhas de dentro acesas e nenhuma de fora.
    O detalhe e o preço estão na escolha "A VISTA COM QUE O ATLAS ABRE",
-   logo abaixo. Fotos: `capturas/vista-padrao-abertura.png` e
-   `capturas/vista-padrao-sem-hud.png`.
+   logo abaixo. Fotos: `capturas/vista-padrao-abertura.png` (com HUD),
+   `capturas/vista-padrao-sem-hud.png` e
+   `capturas/vista-padrao-sem-efemeride.png` — esta última é a MESMA
+   vista pelo caminho do retrato congelado (sem efeméride viva): o
+   enquadramento sai da mesma borda, e nenhuma linha de órbita é
+   desenhada, que é a honestidade declarada do item 77.
+   **UMA CONSEQUÊNCIA QUE ELE PODE VER:** a porta `?d=` fala em RAIOS DO
+   ALVO, e o alvo encolheu ~24× (226,84 UA contra 9,1) — então um link
+   com `?d=` copiado ANTES de 23/08 pousa ~24 vezes mais perto do Sol do
+   que pousava. É o preço de a régua ser relativa, e o espelho da URL
+   escreve o valor certo de volta no primeiro gesto.
 
 **E DUAS ESCOLHAS FICARAM PARA ELE — as duas RESPONDIDAS em 23/08, com as
 fotos na mão:**
@@ -808,9 +819,27 @@ fotos na mão:**
     que nasceu em `f88d877` justamente para medir isto — a escada verde
     nas duas fases é o que fecha a obra.
 
-  Na fila do bastão, no alto, o clarão único vem logo depois da vista
-  padrão — o arquivo que numerava aquela fila se perdeu com a pasta
-  temporária. **A obra é da próxima conversa; aqui está só a decisão.**
+  **A OBRA EXECUTOU em 23/08, e ESPERA O OLHO DELE.** O teto é UM só
+  (0,55) nos dois modos; morreram o 0,07, o campo `tetoDeOcupacao` que o
+  director mandava por quadro e o ternário que perguntava a fase. O teste
+  que pinava o número velho foi substituído por um que pina a LEI NOVA,
+  com três dentes: o número, a proibição de um segundo teto entrar por um
+  nome novo, e a proibição de `q.fase` voltar ao módulo do Sol no quadro.
+  **O preço saiu igual ao que ele aceitou**, remedido na mesma janela em
+  que fora apurado (1200×900, lente do Atlas): Vênus a 4,045 UA ganha
+  **23,36%** do quadro em luz — contra os 23,40% de antes —, e a vista de
+  ABERTURA ganha **8,08%**. Nas duas, **100% UNILATERAL: nada foi
+  apagado, só somado.** Os juízes: a régua de luz do Atlas **passa 7 de
+  7**, o `ab-identidade` cheio deu **51 de 52 bit-idênticas** (só a vista
+  do Atlas mudou, e é a única do gate que roda naquela fase), `atlas-smoke`
+  e `a11y` verdes, 2.054 testes verdes.
+  **AS DUAS FOTOS PARA ELE:**
+  `capturas/clarao-unico-venus-antes-depois.png` (o enquadramento de
+  Vênus, que é o caso mais duro — Vênus vira uma faísca dentro do brilho,
+  exatamente o que a medida prometia) e
+  `capturas/clarao-unico-abertura-antes-depois.png` (a vista com que o
+  Atlas abre). **Se ele achar que atrapalha a observação, o conserto é
+  GLOBAL — auto-exposição —, nunca a volta da distinção por modo.**
 
 **DUAS COISAS DO CELULAR FICARAM PARA ELE DECIDIR (item 62, fechado em
 23/08) — e ele DECIDIU AS DUAS em 23/08.** Nenhuma das duas era defeito;
@@ -1390,6 +1419,21 @@ pior 0,44). Ninguém sabe desde quando: o `capturas/estabilidade-temporal.json`
 guarda a última corrida, não a história. O primeiro passo é datar o
 vermelho por bissecção nas famílias baratas (~0,3 min cada), não consertar
 no escuro.
+
+**84.** (Achado em 23/08, fechando o clarão único.) **O `ab-identidade`
+cobre a fase ATLAS com UMA vista só, de 52.** Medido sem querer: uma
+mudança que só tocava o Atlas (o teto do clarão) devolveu **51 de 52
+bit-idênticas** — e não porque quase nada mudou, mas porque 51 daquelas
+vistas rodam por `?pos=`, isto é, na fase do voo livre. A única que
+mudou foi `atlas`, e mudou muito (8,08% do quadro). O gate está certo no
+que faz; o que ele não tem é POPULAÇÃO no modo que virou o produto. Hoje
+quem cobre o Atlas de verdade é a perna `PERNA=atlas` da régua de luz
+(sete distâncias, JSON versionado) — e ela cobre LUZ, não composição:
+nomes, órbitas e HUD do Atlas não têm vista bit-exata que os guarde. O
+conserto é somar vistas de Atlas ao gate (o enquadramento de um corpo, o
+teto do zoom, o close-up de uma lua), e o preço é ~6 s de captura por
+vista por lado. **Não fazer isto às cegas junto de outra obra:** cada
+vista nova pede o lado "antes" recapturado, senão nasce sem base.
 
 ---
 
