@@ -247,9 +247,12 @@ export function TitleVeil({
               outros, sugiro tirar a palavra livremente"* —, mas o
               tamanho igual NÃO vem do texto: vem do CSS
               (`.abertura-porta`), senão o próximo nome que crescer
-              desalinha a fileira de novo. O rótulo "Explorar livremente"
-              continua na barra de controles do filme e no véu do fim:
-              renomear ali é a onda da UI/UX (item 61), que é dele. */}
+              desalinha a fileira de novo. Dos dois lugares que ainda
+              diziam "Explorar livremente", a BARRA DO FILME encurtou em
+              24/08, por decisão dele; sobrou o VÉU DO FIM, que ele não
+              nomeou — lá as três saídas são frases inteiras ("Reviver a
+              viagem", "Ficar aqui"), e encurtar uma só é gosto, que é
+              dele. */}
           <div className="abertura-portas">
             <div className="abertura-porta">
               <button className="hud-btn" onClick={onPlay} aria-describedby="porta-filme">

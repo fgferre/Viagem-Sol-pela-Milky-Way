@@ -493,12 +493,12 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
       + ` ${repouso?.[1]} em repouso`
   );
 
-  // ---- PARTE 4: AS TRÊS SAÍDAS -------------------------------------
+  // ---- PARTE 4: AS QUATRO SAÍDAS -----------------------------------
   // A folha fecha pela PRÓPRIA ALÇA (o gatilho já é um interruptor), pelo
-  // Esc (que vem de graça do `dialogFocus`) e pelo TOQUE NO CÉU, que é
-  // novo. Sem pino, porque a saída também é animada — e é a saída que
-  // obriga o hook a existir: o nó desmonta, e CSS nenhum anima um nó que
-  // já não está lá.
+  // Esc (que vem de graça do `dialogFocus`), pelo TOQUE NO CÉU e — desde
+  // 23/08, por decisão do dono — pelo ARRASTO PARA BAIXO. Sem pino,
+  // porque a saída também é animada, e é ela que obriga o hook a existir:
+  // o nó desmonta, e CSS nenhum anima um nó que já não está lá.
   await vestirAparelho(s, ...APARELHOS[0]);
   await s.ir('atlas=1');
   await dorme(300);
@@ -675,6 +675,65 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
         + ` escolhendo (era "${antes}", ficou "${comFicha.alvo}")`
     );
   }
+
+  // d) O ARRASTO PARA BAIXO — a QUARTA saída (item 62, decisão do dono em
+  //    23/08). É DEDO DE VERDADE: `Input.dispatchTouchEvent`, e não o
+  //    `s.clicar` das outras provas, porque o gesto só arma em
+  //    `pointerType === 'touch'` — com mouse, na mesma largura, arrastar
+  //    sobre a folha é selecionar texto. Um teste que dispensasse o dedo
+  //    provaria uma regra que o produto não tem.
+  //
+  //    E A PROVA É DE DOIS LADOS, como a do toque no céu: um arrasto CURTO
+  //    (dentro da zona morta mais o limiar) tem de deixar a folha aberta,
+  //    senão "fecha" seria só "encostou". O limiar é 48 px devolvidos por
+  //    `mover`, e a zona morta do dedo come 16 antes do primeiro passo.
+  const arrastarNaFolha = async (percurso, passos = 12) => {
+    const r = await s.js(`(() => {
+      const f = document.querySelector('[data-dialogo]');
+      if (!f) return null;
+      const b = f.getBoundingClientRect();
+      return { x: Math.round(b.left + b.width / 2), y: Math.round(b.top + 12) };
+    })()`);
+    if (!r) return;
+    await s.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: r.x, y: r.y }],
+    });
+    for (let n = 1; n <= passos; n++) {
+      await s.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: r.x, y: r.y + Math.round((percurso * n) / passos) }],
+      });
+    }
+    await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await dorme(600);
+  };
+  await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
+  await dorme(300);
+  await arrastarNaFolha(45, 3);
+  const depoisDoCurto = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
+  conferir(
+    depoisDoCurto === 1,
+    `arrasto CURTO (45 px) na folha: ela FICA aberta —`
+      + ` ${depoisDoCurto} folha(s). Encostar não é fechar`
+  );
+  await arrastarNaFolha(180);
+  const depoisDoArrasto = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
+  conferir(
+    depoisDoArrasto === 0,
+    `saída pelo ARRASTO PARA BAIXO (180 px de dedo): ${depoisDoCurto} folha aberta →`
+      + ` ${depoisDoArrasto} — a QUARTA saída, com o ArrastoDePonteiro da casa`
+  );
+  // …e SUBIR não fecha: a folha sai por baixo, nunca por cima.
+  await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
+  await dorme(300);
+  await arrastarNaFolha(-180);
+  const depoisDeSubir = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
+  conferir(
+    depoisDeSubir === 1,
+    `arrasto para CIMA (180 px) na folha: ela FICA aberta — ${depoisDeSubir} folha(s)`
+  );
+  await s.teclar('Escape');
+  await dorme(400);
 
   // ---- A QUEBRA: o CSS e o TypeScript viram celular no MESMO pixel ----
   // `LARGURA_DO_CELULAR_PX` é 760, e o `@media` repete o literal porque

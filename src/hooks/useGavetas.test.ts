@@ -19,7 +19,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Gaveta } from './useGavetas';
-import { aoAlternar, aoFechar, aoFocar, aoTravessar } from './useGavetas';
+import {
+  ARRASTO_QUE_FECHA_PX,
+  aoAlternar,
+  aoFechar,
+  aoFocar,
+  aoTravessar,
+  arrastoFecha,
+} from './useGavetas';
 
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 const HOOK = readFileSync(new URL('./useGavetas.ts', import.meta.url), 'utf8');
@@ -109,5 +116,55 @@ describe('5. os dois efeitos são do HOOK, e não do App', () => {
     for (const regra of ['aoFocar', 'aoTravessar', 'aoAlternar', 'aoFechar']) {
       expect(APP, `${regra} voltou para o App`).not.toContain(regra);
     }
+  });
+});
+
+describe('6. a QUARTA saída: arrastar a folha para baixo (item 62, 23/08)', () => {
+  it('desce o bastante e mais para baixo do que para o lado ⇒ fecha', () => {
+    expect(arrastoFecha(0, ARRASTO_QUE_FECHA_PX)).toBe(true);
+    expect(arrastoFecha(10, 200)).toBe(true);
+    // o limiar é inclusivo, e um pixel abaixo dele não fecha
+    expect(arrastoFecha(0, ARRASTO_QUE_FECHA_PX - 1)).toBe(false);
+  });
+
+  it('subir NUNCA fecha — a folha sai por baixo, não por cima', () => {
+    expect(arrastoFecha(0, -200)).toBe(false);
+    expect(arrastoFecha(0, 0)).toBe(false);
+  });
+
+  it('gesto que anda mais para o LADO não fecha — é rolar, ou um controle', () => {
+    // a folha de Ajustes tem deslizantes e a fileira de alças rola em X:
+    // descer 60 px enquanto anda 200 é qualquer coisa menos "fecha"
+    expect(arrastoFecha(200, 60)).toBe(false);
+    expect(arrastoFecha(-200, 60)).toBe(false);
+    // ...e o empate também não fecha: quem fecha é o vertical DOMINANTE
+    expect(arrastoFecha(60, 60)).toBe(false);
+  });
+
+  it('a mecânica é a da casa: o ArrastoDePonteiro, e nenhuma outra', () => {
+    // o item 62 decidiu isto por escrito ("reusando o ArrastoDePonteiro"),
+    // e o que o dedo anda de verdade são os 48 px MAIS a zona morta do
+    // toque, que a classe come antes do primeiro passo
+    expect(HOOK).toContain("import { ArrastoDePonteiro } from '../three/arrastoDePonteiro'");
+    expect(HOOK).toContain('arrasto.mover(comoPonteiro(dedo))');
+    // e a decisão de desenho que o item deixou em aberto: só arma com a
+    // rolagem NO TOPO, senão o mesmo gesto seria "rola" e "fecha"
+    expect(HOOK).toContain('folha.scrollTop > 0');
+  });
+
+  it('escuta TOQUE, e não ponteiro — o navegador cancela o ponteiro', () => {
+    // MEDIDO a 390×844 com dedo sintético: numa folha rolável o Chrome
+    // manda `pointercancel` ~30 px depois do primeiro toque e assume a
+    // rolagem; os `touchmove` do MESMO gesto continuam chegando. Escutar
+    // ponteiro aqui é escutar um fluxo que morre antes do limiar.
+    expect(HOOK).toContain("folha.addEventListener('touchstart', comecar)");
+    expect(HOOK).toContain("window.addEventListener('touchmove', mover)");
+    expect(HOOK).not.toContain("addEventListener('pointermove'");
+    // ...e o mouse fica de fora de graça: `touchstart` não existe para ele
+    expect(HOOK).not.toContain("addEventListener('pointerdown'");
+  });
+
+  it('fecha "a mim", como as outras três saídas', () => {
+    expect(HOOK).toContain('setGaveta((atual) => aoFechar(atual, gaveta))');
   });
 });

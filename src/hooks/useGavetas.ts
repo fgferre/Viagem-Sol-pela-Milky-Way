@@ -14,6 +14,7 @@
 // a decisão mora; o `useState` em volta delas é encanamento.
 // ============================================================
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { ArrastoDePonteiro } from '../three/arrastoDePonteiro';
 import type { EstadoDaEscada, Phase } from '../three/director';
 
 /**
@@ -97,6 +98,34 @@ export const aoFocar = (atual: Gaveta | null, alvo: string | null): Gaveta | nul
  * superfície pública que envelhece calada.
  */
 const SAIDA_DA_FOLHA_MS = 260;
+
+/**
+ * QUANTO O DEDO DESCE PARA A FOLHA FECHAR — a QUARTA saída (item 62,
+ * decisão do dono em 23/08). A folha do telefone já fechava pela alça,
+ * pelo Esc e pelo toque no céu; ele aprovou a quarta, *"arrastando para
+ * baixo"*, e o plano do item 62 já dizia com o quê: o `ArrastoDePonteiro`
+ * que a casa tem, sem mecânica nova.
+ *
+ * 48 px É O QUE `mover` DEVOLVE, e não o que o dedo anda: a zona morta do
+ * toque (`zonaMortaDoArrasto`, 16 px) é comida antes do primeiro passo e
+ * DESCARTADA, então o gesto real são 64 px — 7,6% da altura num aparelho
+ * de 844. Abaixo disso um polegar que apenas encosta na folha para rolar
+ * a fecharia; muito acima, o gesto vira exercício.
+ */
+export const ARRASTO_QUE_FECHA_PX = 48;
+
+/**
+ * O ARRASTO QUE FECHA é PARA BAIXO e mais vertical que horizontal. A
+ * segunda metade não é preciosismo: a folha de Ajustes tem controles
+ * deslizantes e a fileira de alças rola em X — um gesto que desce 50 px
+ * enquanto anda 200 para o lado é qualquer coisa menos "fecha".
+ *
+ * PURA, como as outras quatro regras deste arquivo, e pela mesma razão: o
+ * runner da casa é `node`, sem DOM. O que se pina em `useGavetas.test.ts`
+ * é esta função; o ouvinte em volta dela é encanamento.
+ */
+export const arrastoFecha = (dx: number, dy: number): boolean =>
+  dy >= ARRASTO_QUE_FECHA_PX && dy > Math.abs(dx);
 
 export interface Gavetas {
   /** qual está aberta AGORA, ou `null` */
@@ -238,6 +267,112 @@ export function useGavetas(
     document
       .querySelector(`[${'data-abre-dialogo'}="${gaveta}"]`)
       ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [celular, gaveta]);
+
+  /**
+   * A QUARTA SAÍDA: ARRASTAR A FOLHA PARA BAIXO (item 62, decisão do dono
+   * em 23/08). As três que já existiam — a alça, o Esc e o toque no céu —
+   * continuam inteiras; esta é a que o telefone pede sem que ninguém
+   * ensine.
+   *
+   * NENHUMA MECÂNICA NOVA: o gesto é o `ArrastoDePonteiro` da casa, o
+   * mesmo que o canvas usa, com o mesmo dono de ponteiro, a mesma zona
+   * morta do dedo e o mesmo `mover` que devolve o passo em pixels. O que
+   * este bloco acrescenta é a REGRA (`arrastoFecha`) e onde escutar.
+   *
+   * A FOLHA ROLA POR DENTRO, e era essa a decisão de desenho que faltava:
+   * um arrasto para baixo sobre o painel de Ajustes tanto pode dizer
+   * "fecha" quanto "rola". Quem desempata é `scrollTop`: só arma quando a
+   * rolagem JÁ ESTÁ NO TOPO, que é a regra que todo telefone usa e a que
+   * o item 62 listou como uma das duas saídas possíveis. A outra era uma
+   * barra de pegar, e ela custaria um nó novo em cinco componentes.
+   *
+   * O GESTO CHEGA POR `touch`, E NÃO POR `pointer` — e isto foi MEDIDO,
+   * não escolhido. A folha é rolável (`overflow-y: auto`), e num elemento
+   * rolável o Chrome decide, ~30 px depois do primeiro toque, que o gesto
+   * é dele: manda um `pointercancel` e assume a rolagem. Medido a 390×844
+   * com dedo sintético: chegavam DOIS `pointermove` e o fluxo morria — o
+   * arrasto nunca alcançava o limiar. Os `touchmove`, no MESMO gesto,
+   * continuavam chegando até o fim. Ou seja, o fluxo de ponteiro não
+   * sobrevive à decisão do navegador e o de toque sobrevive.
+   *
+   * NÃO É MECÂNICA NOVA: o `ArrastoDePonteiro` é DOM-nenhum de propósito —
+   * ele pede cinco campos, não um `PointerEvent` —, e um `Touch` os tem
+   * todos (o `identifier` é o dono, como o `pointerId`). O adaptador de
+   * três linhas abaixo é a tradução, e a máquina de estado, a zona morta
+   * do dedo e o passo em pixels continuam sendo os da casa.
+   *
+   * E SÓ DEDO, de graça: `touchstart` não existe para mouse. Na mesma
+   * largura, com mouse, arrastar sobre a folha é selecionar texto — fechar
+   * o painel no meio da seleção seria um defeito.
+   *
+   * A ROLAGEM CANCELA O GESTO, e não só o desarma na largada: se o dedo
+   * subir primeiro (rolando o conteúdo) e voltar a descer, `scrollTop` já
+   * não é zero e o arrasto é esquecido. Sem isso, voltar ao topo rolando
+   * fecharia a folha na cara de quem só queria ler o começo.
+   *
+   * FECHA "A MIM", nunca "o que estiver aberto": `aoFechar` com o nome da
+   * folha que recebeu o dedo, pela razão escrita lá em cima — entre o
+   * gesto e o `set` a escolha de um corpo pode ter aberto a ficha.
+   */
+  useEffect(() => {
+    if (!celular || !gaveta) return;
+    const folha = document.querySelector<HTMLElement>(`[${'data-dialogo'}="${gaveta}"]`);
+    if (!folha) return;
+    const arrasto = new ArrastoDePonteiro();
+    let dx = 0;
+    let dy = 0;
+    const comoPonteiro = (t: Touch) => ({
+      pointerId: t.identifier,
+      button: 0,
+      clientX: t.clientX,
+      clientY: t.clientY,
+      pointerType: 'touch',
+    });
+    const comecar = (e: TouchEvent) => {
+      const dedo = e.changedTouches[0];
+      // um segundo dedo é PINÇA, e a pinça não fecha nada — a mesma
+      // resposta que `director/gestos.ts` dá ao segundo dedo
+      if (!dedo || e.touches.length > 1) {
+        arrasto.esquecer();
+        return;
+      }
+      if (folha.scrollTop > 0) return;
+      dx = 0;
+      dy = 0;
+      arrasto.comecar(comoPonteiro(dedo), performance.now());
+    };
+    const mover = (e: TouchEvent) => {
+      const dedo = e.changedTouches[0];
+      if (!dedo) return;
+      if (folha.scrollTop > 0) {
+        arrasto.esquecer();
+        return;
+      }
+      const passo = arrasto.mover(comoPonteiro(dedo));
+      if (!passo) return;
+      dx += passo.dx;
+      dy += passo.dy;
+      if (!arrastoFecha(dx, dy)) return;
+      // o gesto cumpriu o que tinha a cumprir: o resto dele não é de
+      // ninguém, e sem isto cada quadro seguinte repetiria o `set`
+      arrasto.esquecer();
+      setGaveta((atual) => aoFechar(atual, gaveta));
+    };
+    const soltar = (e: TouchEvent) => {
+      const dedo = e.changedTouches[0];
+      if (dedo) arrasto.cancelar(comoPonteiro(dedo));
+    };
+    folha.addEventListener('touchstart', comecar);
+    window.addEventListener('touchmove', mover);
+    window.addEventListener('touchend', soltar);
+    window.addEventListener('touchcancel', soltar);
+    return () => {
+      folha.removeEventListener('touchstart', comecar);
+      window.removeEventListener('touchmove', mover);
+      window.removeEventListener('touchend', soltar);
+      window.removeEventListener('touchcancel', soltar);
+    };
   }, [celular, gaveta]);
 
   const alternarGaveta = useCallback(

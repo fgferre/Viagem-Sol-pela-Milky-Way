@@ -40,9 +40,10 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
    imagem passa a ocupar a tela inteira; na mesa nada muda (a vista de
    desktop saiu bit-idêntica). Foto:
    `capturas/tarjas-fora-celular-antes-depois.png`. Ver o item **61**.
-4. **Dois retoques aprovados:** *"Explorar livremente"* encurta para
-   **"Explorar"** na barra do filme, e no celular a folha fecha
-   **arrastando para baixo**. Ver o item **61**.
+4. **Dois retoques aprovados. FEITOS em 24/08.** *"Explorar livremente"*
+   encurtou para **"Explorar"** na barra do filme, e no celular a folha
+   passou a fechar **arrastando para baixo** — a QUARTA saída. Ver o
+   item **61**.
 
 **A ORDEM DA PRÓXIMA CONVERSA:** o item **77** (as linhas de órbita) e a
 **vista inicial** (o candidato (a), agora com as linhas dentro) POUSARAM
@@ -63,9 +64,15 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 
 > ~~**clarão único**~~ (FEITO em 23/08) → ~~**82 (N1 + N2: os nomes)**~~
 > (FEITO em 24/08) → ~~**tarjas do celular**~~ (FEITO em 24/08) →
-> **"Explorar" e o arrasto da folha** →
+> ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08) →
 > ⟨**CONFERÊNCIA DO DONO**: itens **61** e **77**, com as fotos⟩ →
 > **83 (L1 + L2: a linha)** → **81** → **70** → **75**.
+
+**A FILA CHEGOU AO PINO (24/08).** Tudo o que estava ANTES da conferência
+está feito. O próximo passo não é código: é o **olho dele** nos itens
+**61** e **77**, com as fotos na mão. Mexer na LINHA (item **83**) antes
+disso invalidaria as fotos que estão à espera — a razão está escrita logo
+abaixo, e ela não mudou.
 
 **POR QUE OS NOMES SOBEM PARA O SEGUNDO LUGAR:** a **poluição visual é a
 dor declarada mais recente** dele — reafirmada na noite de 23/08, depois
@@ -185,8 +192,15 @@ ao primeiro gesto. **Em 23/08 o modo único andou quatro passos** (ver o
 bastão da noite, no alto). **Em 23/08 as ESCOLHAS dele fecharam todas** —
 a vista de abertura (órbitas primeiro), o brilho do Sol (igualar), as
 tarjas do celular (tirar) e o nome *"Explorar livremente"* na barra do
-filme (encurtar para "Explorar") —, e o que resta do 61 é a OBRA dessas
-quatro decisões.
+filme (encurtar para "Explorar") —, **e em 24/08 a OBRA das quatro
+fechou**. O que resta do 61 é o OLHO DELE.
+
+**UMA SOBRA HONESTA DO RETOQUE DO NOME, e ela é GOSTO, não descuido.**
+Ele nomeou *"a barra do filme"*, e foi só ela que encurtou. A frase
+*"Explorar livremente"* ainda existe em UM lugar: o **véu do fim**, onde
+as três saídas são frases inteiras — "Reviver a viagem", "Ficar aqui",
+"Explorar livremente". Encurtar uma só ali é escolha de composição, e
+composição é dele. **Se ele quiser, é uma palavra em `components/Hud.tsx`.**
 
 **E OS DOIS JUÍZES PARARAM DE ACUSAR INOCENTE (item 76, FECHADO em
 22/08).** Eles reprovavam o app quando a MÁQUINA estava ocupada — o do
@@ -949,19 +963,28 @@ as duas eram escolha, e as duas viraram obra a fazer:
    77,5% (o topo cai de 0,070 para 0,065, e a base fica em 0,160). No
    desktop a prova é o md5: a vista `atlas` do `ab-identidade` saiu
    **bit-idêntica** (`e6697fc5502e`, nos dois lados).
-2. **Arrastar a folha para baixo para fechá-la: possível, não pedido.
-   DECIDIDO em 23/08: APROVADO, entra.**
-   O drawer do telefone já tem TRÊS saídas (a alça, o Esc e o toque no
-   céu), e a ideia que ele pediu do projeto Atlas era a ALÇA, não o
-   arrasto — o doador não tem arrasto em lugar nenhum. O que falta não é
-   a mecânica (o `ArrastoDePonteiro` já serve): é uma decisão de
-   desenho, porque a folha ROLA por dentro, e um arrasto para baixo em
-   cima do painel de Ajustes tanto pode querer dizer "fecha" quanto
-   "rola". Quem resolve isso é uma barra de pegar no topo da folha, ou a
-   regra "só fecha se a rolagem já estiver no topo" — e isso é escolha
-   de produto, não de código. **A escolha de produto está feita:** a
-   folha ganha a QUARTA saída, reusando o `ArrastoDePonteiro` como o
-   plano do item **62** descreveu — nenhuma mecânica nova. Obra a fazer.
+2. **Arrastar a folha para baixo para fechá-la: APROVADO em 23/08. FEITO
+   em 24/08, e espera o dedo dele.** A folha do telefone tinha TRÊS
+   saídas (a alça, o Esc e o toque no céu); agora tem **quatro**. Nenhuma
+   mecânica nova: é o `ArrastoDePonteiro` da casa, como o plano do item
+   **62** descreveu.
+   **A DECISÃO DE DESENHO QUE FALTAVA** era entre uma barra de pegar no
+   topo e a regra "só fecha se a rolagem já estiver no topo". Ficou a
+   REGRA: ela não custa um nó novo em cinco componentes, e é o que todo
+   telefone faz. Se o dedo rolar o conteúdo no meio do gesto, o arrasto é
+   esquecido — voltar ao topo rolando não fecha a folha na cara de quem
+   só queria ler o começo.
+   **UM ACHADO QUE MUDOU A FIAÇÃO, medido:** numa folha ROLÁVEL o Chrome
+   decide, ~30 px depois do primeiro toque, que o gesto é dele: manda
+   `pointercancel` e assume a rolagem. Com ponteiro chegavam DOIS eventos
+   e o arrasto morria antes do limiar. Os `touchmove` do MESMO gesto
+   continuam chegando até o fim — então o ouvinte é de TOQUE, e o
+   `ArrastoDePonteiro` (que é DOM-nenhum de propósito, e pede cinco
+   campos, não um `PointerEvent`) recebe o dedo por um adaptador de três
+   linhas. De quebra o mouse fica de fora sozinho, que é o certo: na
+   mesma largura, com mouse, arrastar sobre a folha é selecionar texto.
+   **O gesto são 64 px de dedo** — 48 devolvidos por `mover` mais os 16
+   que a zona morta do toque come antes do primeiro passo.
 
 **"camadas e ajustes concorrem", 22/08 — FEITO em 22/08 (`751d270`).**
 Palavras dele:

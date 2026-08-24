@@ -224,8 +224,16 @@ export function BarraOuAlcas({
           <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
             Ver a galáxia
           </button>
+          {/* "EXPLORAR", e não "Explorar livremente" (item 61, decisão do
+              dono em 23/08). É a segunda vez que ele corta a mesma
+              palavra: na abertura ela saiu em 22/08 — *"sugiro tirar a
+              palavra livremente"* —, e aqui ela era a sobra da mesma
+              frase, no botão mais largo da barra do filme. Com o corte a
+              barra fala como o resto da casa: a porta da abertura, a
+              ferramenta do Atlas (↗ Explorar) e esta dizem o MESMO nome
+              para o MESMO destino. */}
           <button className="hud-btn small" onClick={freeRoam}>
-            Explorar livremente
+            Explorar
           </button>
         </>
       )}
