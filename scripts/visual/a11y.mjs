@@ -718,9 +718,10 @@ async function julgarListbox(s) {
  *
  * O QUE SE COBRA: os rótulos, a ORDEM do Tab (a barra é o que ela lê), a
  * ausência da saída sem filme guardado e a presença dela com filme, e —
- * no telefone — que a tarja de cima continue UMA linha. Esta última não é
- * estética: a altura dessa barra entra na base declarada do retângulo
- * útil (item 62), e uma barra que cresce move a câmera calada.
+ * no telefone — que a barra de cima continue UMA linha. Esta última não é
+ * estética: a altura dessa barra É o topo declarado do retângulo útil
+ * (`SAIDA_FRACAO`, desde que a tarja saiu do telefone em 23/08), e uma
+ * barra que cresce move a câmera calada.
  */
 async function julgarFerramentasDoAtlas(s) {
   const LER = `JSON.stringify([...document.querySelectorAll('.controls-bar button')]
@@ -799,7 +800,7 @@ async function julgarFerramentasDoAtlas(s) {
       + ` '${await s.js('window.__director.escadaViva.degrau')}'`
   );
 
-  // 4. O TELEFONE: a tarja de cima continua UMA linha nos quatro cantos
+  // 4. O TELEFONE: a barra de cima continua UMA linha nos quatro cantos
   for (const [w, h] of [[390, 844], [320, 568]]) {
     for (const ui of [1, 1.4]) {
       await s.send('Emulation.setDeviceMetricsOverride', {
@@ -811,7 +812,7 @@ async function julgarFerramentasDoAtlas(s) {
       conferir(
         m !== null && m.linhas === 1,
         `${w}×${h} ui=${ui}: a barra do Atlas é UMA linha (${m ? m.linhas : '?'} linha(s),`
-          + ` ${m ? m.h : '?'} px) — ela é a tarja de cima e a altura dela é base declarada`
+          + ` ${m ? m.h : '?'} px) — ela é o topo do modo e a altura dela é o topo declarado`
       );
     }
   }
@@ -1659,16 +1660,21 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
       // acima de 760 px, e o medidor devolve nulo para quem não está no
       // DOM — a mesma linha serve os dois arranjos.
       '.atlas-alcas',
-      // AS DUAS TARJAS DE CINEMA, e as duas por inteiro: elas são o PISO
-      // de cada borda, e é justamente o que a declaração soma primeiro
-      // (LETTERBOX_FRACAO na mesa, LETTERBOX_CELULAR no telefone). A de
-      // CIMA faltava aqui até 23/08, e a falta era assimétrica: o
-      // "topo declarado ≥ medido"
-      // comparava contra uma medida que nunca via a tarja, então bastava a
-      // peça mais alta do topo ser MENOR que ela — que é exatamente o
-      // telefone, onde só o "Partir" mora lá em cima, dentro da tarja —
-      // para o piso real do topo ficar fora da cobrança. No arranjo de
-      // mesa a barra já a engolia, e por isso o buraco passou calado.
+      // AS DUAS TARJAS DE CINEMA, e as duas por inteiro: na MESA elas são
+      // o PISO de cada borda, e é justamente o que a declaração soma
+      // primeiro (LETTERBOX_FRACAO). A de CIMA faltava aqui até 23/08, e
+      // a falta era assimétrica: o "topo declarado ≥ medido" comparava
+      // contra uma medida que nunca via a tarja, então bastava a peça mais
+      // alta do topo ser MENOR que ela para o piso real ficar fora da
+      // cobrança. No arranjo de mesa a barra já a engolia, e por isso o
+      // buraco passou calado.
+      // NO TELEFONE AS DUAS DEIXARAM DE PINTAR no fim de 23/08 (decisão
+      // do dono: a imagem ocupa a tela inteira), e o medir devolve nulo
+      // para quem mede zero — a mesma linha serve os dois arranjos, como
+      // já servia para .atlas-alcas ao contrário. Elas ficam
+      // NOMEADAS aqui de propósito: é esta lista que faz o censo do que
+      // pode comer borda, e uma tarja que voltasse ao telefone por um nome
+      // novo cairia na cobrança em vez de passar calada.
       '.letterbox.top', '.letterbox.bottom',
     ].map(medir).filter(Boolean);
     // A DICA SAI DA COBRANÇA NO TELEFONE, e é a decisão declarada do

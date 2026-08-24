@@ -104,14 +104,19 @@
   }
 
   /* ---- O QUE SAI DA TELA PARA DAR LUGAR ------------------------------
-     A BARRA DE CONTROLES DO ATLAS FICA SÓ COM O "PARTIR", ancorado na
-     TARJA DE CIMA. `Partir` fica porque é a única saída por ponteiro do
-     modo — `subirDegrau()` devolve `false` no degrau `sistema` e o Esc
-     não sai do Atlas —, e sobe para a tarja porque com ele lá o topo do
-     retângulo útil volta a ser a tarja, e não uma barra pendurada em
-     6,5vh. As outras quatro peças da barra viraram alças; o `<select>`
-     de qualidade some por ser DUPLICATA — o painel de Ajustes tem a
-     mesma seção, a uma alça de distância.
+     A BARRA DE CONTROLES DO ATLAS ENCOSTA NO TOPO DA TELA. Sobraram nela
+     as SAÍDAS do modo (▶ Ver o filme · ↗ Explorar, e ↩ Voltar ao filme
+     quando há filme guardado) porque saída por ponteiro não vira alça —
+     `subirDegrau()` devolve `false` no degrau `sistema` e o Esc não sai
+     do Atlas. Os 0,4vh a encostam no alto: ali ela é a ÚNICA peça
+     permanente do topo, e o retângulo útil desconta a caixa dela e mais
+     nada. Até 23/08 ela subia para dentro da TARJA de 4,5vh, que pagava
+     a primeira parcela do desconto; a tarja saiu do telefone (decisão do
+     dono, fatia 6) e a barra ficou onde estava — o que mudou foi que
+     agora ela responde pelo topo inteiro. As outras quatro peças da
+     barra viraram alças; o `<select>` de qualidade some por ser
+     DUPLICATA — o painel de Ajustes tem a mesma seção, a uma alça de
+     distância.
      Vale só onde a fileira existe: no filme e no voo livre a barra fica
      exatamente onde a fatia 6 a deixou. */
   .hud-root:has(.atlas-alcas) .controls-bar {
@@ -125,10 +130,10 @@
      ferramentas do Atlas (▶ Ver o filme · ↗ Explorar) e a saída, a barra
      de MESA quebraria linha por `flex-wrap: wrap` — medido em 320×568
      com `?ui=1.4`: 3 linhas e 89,8 px de altura, contra 38,2 px em 390.
-     E quebrar aqui não é cosmético: esta barra é a TARJA DE CIMA, e a
-     altura dela entra na base declarada do retângulo útil
-     (`retanguloUtilDoAtlas`, item 62) — uma barra que cresce moveria a
-     câmera no meio da sessão, calada.
+     E quebrar aqui não é cosmético: esta barra É o topo do modo, e a
+     altura dela é o topo declarado do retângulo útil
+     (`SAIDA_FRACAO`, em `retanguloUtilDoAtlas`) — uma barra que cresce
+     moveria a câmera no meio da sessão, calada.
      O remédio é o mesmo que a fileira de alças já usa, e pela mesma
      razão: `flex: 0 0 auto` porque botão que encolhe para caber é botão
      que ninguém acerta. A barra vira uma linha que ROLA. */

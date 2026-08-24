@@ -335,7 +335,10 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // contrário, que é pior: o alvo atrás do selo).
     const celular = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX);
     const mesa = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX + 1);
-    expect(celular.topo).toBeCloseTo(0.045 + 0.025, 12);
+    // O TELEFONE NÃO PAGA TARJA desde 23/08 (decisão do dono): o topo é a
+    // caixa da barra de cima e nada mais, a base é a fileira mais o selo.
+    // Os 0,045 de tarja que somavam em cada borda saíram das duas contas.
+    expect(celular.topo).toBeCloseTo(0.065, 12);
     expect(celular.base).toBeCloseTo(0.11 + 0.05, 12);
     // ...e a conta de mesa nessa largura é a que ela sempre foi: a barra
     // quebrada em cima, a primeira quebra da máquina do tempo embaixo (a
@@ -345,24 +348,33 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
 
     // O GANHO É O ASSUNTO DO ITEM 62: numa tela de 390 px a conta de
     // mesa disparava TODOS os degraus e deixava 44,5% de céu; a do
-    // telefone deixa 77,0% — a câmera para de recuar por peças que a
-    // fatia 9 do HUD já desmontou.
+    // telefone deixa 77,5% — a câmera para de recuar por peças que a
+    // fatia 9 do HUD já desmontou, e desde 23/08 nem por tarja, que lá
+    // não existe.
     const ceu = (u: ReturnType<typeof retanguloUtilDoAtlas>) => 1 - u.topo - u.base;
-    expect(ceu(retanguloUtilDoAtlas(1, 390))).toBeCloseTo(0.77, 12);
-    expect(ceu(retanguloUtilDoAtlas(1, 320))).toBeCloseTo(0.77, 12);
+    expect(ceu(retanguloUtilDoAtlas(1, 390))).toBeCloseTo(0.775, 12);
+    expect(ceu(retanguloUtilDoAtlas(1, 320))).toBeCloseTo(0.775, 12);
     // a conta de MESA a 390 px, que é o que valia até 2026-08-23:
     // 0,065 + 0,09 + 0,04 de topo e 0,065 + 0,175 + 0,03 + 0,09 de base
     expect(1 - (0.065 + 0.09 + 0.04) - (0.065 + 0.175 + 0.03 + 0.09)).toBeCloseTo(0.445, 12);
 
-    // O TEXTO GRANDE ESCALA as três frações do telefone, como na mesa —
-    // e a tarja não, que é `vh` puro nos dois arranjos.
+    // O TEXTO GRANDE ESCALA as três frações do telefone, como na mesa.
     const grande = retanguloUtilDoAtlas(1.4, 390);
-    expect(grande.topo).toBeCloseTo(0.045 + 0.025 * 1.4, 12);
+    expect(grande.topo).toBeCloseTo(0.065 * 1.4, 12);
     expect(grande.base).toBeCloseTo((0.11 + 0.05) * 1.4, 12);
-    // ...e o texto MENOR nunca deixa a base cair abaixo da tarja de
-    // baixo: a fileira a engole hoje, e o `Math.max` é quem garante que
-    // ela continue coberta se o alvo de toque encolher um dia
-    expect(retanguloUtilDoAtlas(0.1, 390).base).toBeCloseTo(0.045, 12);
+    // NENHUMA PARCELA FIXA SOBROU NO TELEFONE, e é a lei que a saída da
+    // tarja escreveu: as duas bordas são HUD puro, e HUD escala com o
+    // texto. Uma tarja de volta — ou qualquer faixa em `vh` — apareceria
+    // aqui como termo constante, e as duas contas deixariam de dobrar
+    // quando o `?ui=` dobra. É o dente que impede a moldura de cinema de
+    // voltar ao telefone por um nome novo.
+    const dobro = retanguloUtilDoAtlas(2, 390);
+    expect(dobro.topo).toBeCloseTo(2 * celular.topo, 12);
+    expect(dobro.base).toBeCloseTo(2 * celular.base, 12);
+    // ...e com texto MINÚSCULO a base encolhe junto: até 23/08 o
+    // `Math.max` a segurava nos 0,045 da tarja de baixo, e sem tarja não
+    // há piso a garantir.
+    expect(retanguloUtilDoAtlas(0.1, 390).base).toBeCloseTo(0.016, 12);
   });
 
   it('painel só à direita joga o alvo para a esquerda do quadro', () => {

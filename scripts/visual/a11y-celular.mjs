@@ -62,13 +62,12 @@ const MEDIR_CELULAR = `(() => {
   const seletor = document.querySelector('.controls-bar select');
   // A BARRA DE CIMA, e não um botão pelo NOME (item 61, 23/08). Ela
   // guardava o literal 'Partir', e o que importa nunca foi o rótulo: é a
-  // BARRA que tem de estar ancorada na tarja, porque é a altura dela que
-  // entra na base declarada do retângulo útil. Desde o item 61 ela pode
+  // BARRA que tem de estar encostada no topo, porque é a altura dela que
+  // é o topo declarado do retângulo útil. Desde o item 61 ela pode
   // ter três botões (▶ Ver o filme · ↗ Explorar · ↩ Voltar ao filme), e
   // o último só existe com filme guardado — cobrar um nome era cobrar
   // uma composição, e a composição mudou.
   const barra = document.querySelector('.controls-bar');
-  const tarja = cx('.letterbox.top');
   return {
     W, H,
     alcas,
@@ -93,8 +92,25 @@ const MEDIR_CELULAR = `(() => {
     // a máquina do tempo PERMANENTE do rodapé; a de dentro da gaveta é outra
     tempoNoRodape: cx('.atlas-rodape .atlas-tempo'),
     seletorVisivel: Boolean(seletor && seletor.getClientRects().length > 0),
-    barraNaTarja: Boolean(barra && tarja
-      && barra.getBoundingClientRect().top < tarja.h + 1),
+    // A BARRA ENCOSTA NO TOPO DA TELA (item 61, 23/08). Era "está dentro
+    // da tarja"; a tarja saiu do telefone, e a promessa que sobra é a que
+    // sempre importou — que o topo declarado (SAIDA_FRACAO, em
+    // retanguloDoAtlas) responda por UMA caixa encostada no alto, e não
+    // por uma barra pendurada mais abaixo com céu morto acima dela. O CSS
+    // a ancora em top: 0.4vh; 2% da altura é o dobro disso, folga para a
+    // fonte de outra máquina.
+    barraNoTopo: Boolean(barra && barra.getBoundingClientRect().top <= H * 0.02),
+    // AS TARJAS NÃO PINTAM NADA AQUI — a prova direta da decisão do dono.
+    // O que se mede é ALTURA e não presença: os dois nós continuam no
+    // documento (o App.tsx os desenha sempre, e é a fatia 6 que os apaga
+    // com display: none), e o que a decisão promete é que eles não comam
+    // um pixel de tela. Somar as duas alturas responde às duas coisas de
+    // uma vez — sumiram, e sumiram INTEIRAS.
+    tarjaPx: ['.letterbox.top', '.letterbox.bottom']
+      .reduce((soma, sel) => {
+        const e = document.querySelector(sel);
+        return soma + (e ? e.getBoundingClientRect().height : 0);
+      }, 0),
     // ...e ela é UMA linha: duas cresceriam a base declarada em silêncio
     // só o que está DESENHADO: o seletor de qualidade continua no DOM
     // apagado por CSS (é duplicata do painel), e contá-lo daria uma
@@ -181,8 +197,10 @@ async function despirAparelho(s) {
  *  5. A FILEIRA NÃO COBRE O SELO, o mesmo `bate()` de `julgarAreaDaFicha`;
  *  6. A MÁQUINA DO TEMPO permanente saiu do rodapé (virou a alça ⏱) e o
  *     `<select>` de qualidade saiu da barra (é duplicata do painel);
- *  7. O "PARTIR" está na TARJA de cima — com ele lá, o topo do retângulo
- *     útil volta a ser a tarja;
+ *  7. A BARRA DE CIMA encosta no TOPO da tela — ela é o topo declarado do
+ *     retângulo útil, e NÃO HÁ TARJA por baixo dela: as duas faixas de
+ *     cinema saíram do telefone em 23/08, por decisão do dono, e a imagem
+ *     passou a ocupar a tela inteira;
  *  8. A DICA está FORA DO FLUXO, que é o que a deixa apagar sem dar pulo.
  */
 export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
@@ -294,11 +312,22 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
           `alças (${onde}): o <select> de qualidade saiu da barra — é duplicata do painel`
         );
         conferir(
-          m.barraNaTarja && m.barraLinhas === 1,
-          `alças (${onde}): a barra de cima está ancorada na TARJA e é UMA linha`
+          m.barraNoTopo && m.barraLinhas === 1,
+          `alças (${onde}): a barra de cima ENCOSTA no topo e é UMA linha`
             + ` (${m.barraLinhas} linha(s): ${m.barraRotulos.join(' · ') || 'vazia'})`
-            + ` — o topo do retângulo útil volta a ser a tarja, e a altura dela`
-            + ` é base declarada`
+            + ` — ela é o topo declarado do retângulo útil, e uma segunda`
+            + ` linha moveria a câmera calada`
+        );
+        // A IMAGEM OCUPA A TELA INTEIRA (item 61, decisão do dono em
+        // 23/08). Esta é a prova que MEDE a mudança: as duas tarjas de
+        // cinema saíram do documento no telefone, e com elas os 9% de tela
+        // que elas comiam. Na MESA elas ficam — quem as guarda lá é a
+        // fatia 2, e o gate de mesa não passa por aqui.
+        conferir(
+          m.tarjaPx === 0,
+          `alças (${onde}): NÃO HÁ TARJA no telefone — a imagem ocupa a tela`
+            + ` inteira (${m.tarjaPx.toFixed(1)} px de faixa preta,`
+            + ` ${(m.tarjaPx / m.H * 100).toFixed(2)}% da tela; eram 9,00%)`
         );
         conferir(
           m.dicaFora === 'absolute',
@@ -690,6 +719,14 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   // ganho de céu é o outro lado — `medirCobertura` imprime os dois
   // números em cada canto, e a meta do item 62 (≥ 75% a 390, ≥ 70% a
   // 320) é conferida logo abaixo, no tamanho de fábrica.
+  //
+  // A META NÃO SUBIU quando as tarjas saíram do telefone (23/08), e é
+  // decisão declarada: elas moveram esta régua 0,8 ponto a 390 e ZERO a
+  // 320, porque moravam dentro de faixas que outras peças já definiam.
+  // Subir a meta para raspar os 81,0% medidos seria pinar a altura da
+  // DICA DOS GESTOS — que é texto, e muda de máquina para máquina — em
+  // nome de uma obra que não foi essa. Quem pina a obra é a prova da
+  // IMAGEM, logo abaixo, e ela é exata: zero pixel de tarja.
   const META_DO_CEU = { 390: 75, 320: 70 };
   for (const fator of [0.85, 1, 1.4]) {
     for (const [w, h] of APARELHOS) {
@@ -726,6 +763,28 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
       `o CÉU a ${w}×${h}: ${c.pct.toFixed(1)}% da tela livre de HUD ≥ meta`
         + ` ${META_DO_CEU[w]}% (declarado à câmera:`
         + ` ${((1 - c.util.topo - c.util.base) * 100).toFixed(1)}%)`
+    );
+    // A IMAGEM OCUPA A TELA INTEIRA — e esta é a régua que MEDE a decisão
+    // do dono de 23/08, porque a de cima não mede. O "céu livre de HUD"
+    // toma a FAIXA inteira de cada borda, e as tarjas moravam DENTRO de
+    // faixas que outras peças já definiam (embaixo a dica dos gestos; a
+    // 320 px, em cima, a própria barra): tirá-las moveu aquele número de
+    // 80,2% para 81,0% a 390 e de 72,0% para 72,0% a 320 — quase nada,
+    // enquanto 9% da tela deixavam de ser pintados de PRETO. O que mudou
+    // é PINTURA, então a régua é pintura: quanto da tela as duas faixas
+    // opacas cobrem. Era 9,00% nos dois aparelhos (4,5vh + 4,5vh); é zero.
+    const img = await s.js(`(() => {
+      const H = innerHeight;
+      const preta = ['.letterbox.top', '.letterbox.bottom'].reduce((soma, sel) => {
+        const e = document.querySelector(sel);
+        return soma + (e ? e.getBoundingClientRect().height : 0);
+      }, 0);
+      return { pct: (1 - preta / H) * 100, px: preta };
+    })()`);
+    conferir(
+      img.pct === 100,
+      `a IMAGEM a ${w}×${h}: ocupa ${img.pct.toFixed(1)}% da tela —`
+        + ` ${img.px.toFixed(1)} px de tarja preta (eram 9,00% da tela até 23/08)`
     );
   }
   // A FRESTA de 761 a 767 px — o que sobra entre as duas faixas

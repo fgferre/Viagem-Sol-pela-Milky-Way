@@ -1,8 +1,38 @@
 /* HUD, fatia 6/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 @media (max-width: 760px) {
-  .letterbox.on {
-    height: 4.5vh;
+  /* AS TARJAS NÃO EXISTEM NO TELEFONE (item 61, decisão do dono em
+     23/08). Elas mediam 4,5vh de cada lado aqui — 9% da tela — e ficaram
+     enquanto a razão foi "é o mesmo quadro do filme", que é composição.
+     Ele decidiu o contrário: *"no celular a imagem ocupa a tela
+     inteira"*.
+
+     O QUE ISSO VALE, MEDIDO — e não é o número que o plano previa. A
+     imagem passa a ocupar 100% da tela contra 91,0% (as duas faixas
+     somam 4,5vh + 4,5vh = 9,00% exatos, nos dois aparelhos). Já o "céu
+     livre de HUD" que o juiz do celular mede sobe pouco: 80,2% → 81,0%
+     a 390×844, e 72,0% → 72,0% a 320×568. A razão é que aquela régua
+     toma a FAIXA inteira de cada borda, e as tarjas já estavam
+     escondidas atrás de peças mais altas — embaixo a dica dos gestos,
+     e a 320 px a própria barra de cima. Ou seja: o que muda não é
+     quanto HUD há, é que 9% da tela deixaram de ser pintados de PRETO.
+
+     `display: none` E NÃO `height: 0`. A tarja é pintura preta de altura
+     variável (fatia 2), e zerar a altura deixaria uma caixa de 0 px ainda
+     participando do layout, com transição de 2,2s a animar de 6,5vh até
+     nada a cada troca de fase — movimento que ninguém vê e que o
+     navegador paga. Fora do desenho ela não anima, não pinta e não mede.
+     O nó CONTINUA no documento (quem o desenha é o `App.tsx`, sempre), e
+     é por isso que a prova do juiz conta PIXELS e não presença
+     (`julgarCelular`, parte 1: 0 px de faixa preta em cima e embaixo).
+
+     NA MESA NADA MUDA: quem declara os 6,5vh é a fatia 2, e este bloco é
+     `max-width: 760px`. O ramo do telefone de `retanguloUtilDoAtlas`
+     anda no MESMO diff — tirar a pintura sem tirar o desconto deixaria a
+     câmera recuando por uma faixa que já não existe, que é exatamente o
+     defeito que a etapa 2 do item 62 consertou. */
+  .letterbox {
+    display: none;
   }
 
   .title-big {

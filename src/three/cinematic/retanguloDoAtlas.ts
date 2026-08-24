@@ -17,10 +17,11 @@ import { LARGURA_DO_CELULAR_PX } from '../../lib/uiScale';
 
 /**
  * As tarjas de cinema comem 6,5% da altura em CADA borda
- * (`.letterbox.on { height: 6.5vh }`, hud.css) e o Atlas as mantém —
- * é o mesmo quadro do filme. Fonte única do número para o retângulo
- * útil; se a tarja mudar no CSS, muda aqui. No TELEFONE a mesma tarja
- * mede 4,5vh (fatia 6 do HUD) — o número de lá é `LETTERBOX_CELULAR`.
+ * (`.letterbox.on { height: 6.5vh }`, fatia 2 do HUD) e o Atlas as
+ * mantém — é o mesmo quadro do filme. Fonte única do número para o
+ * retângulo útil; se a tarja mudar no CSS, muda aqui. NO TELEFONE NÃO HÁ
+ * TARJA desde 23/08 (a fatia 6 a tira do documento), e por isso este
+ * número não aparece no ramo de lá.
  */
 const LETTERBOX_FRACAO = 0.065;
 
@@ -201,8 +202,8 @@ const TEMPO_FRACAO = 0.175;
  * ---- O TELEFONE (item 62, etapa 2) ---------------------------------
  *
  * ABAIXO DE 761 px O HUD É OUTRO, e até 2026-08-23 a câmera não sabia:
- * a fatia 9 do HUD desfez a barra de controles (só o "Partir" ficou, e
- * DENTRO da tarja), tirou a máquina do tempo do rodapé (virou a alça ⏱),
+ * a fatia 9 do HUD desfez a barra de controles (sobrou uma linha só, no
+ * alto), tirou a máquina do tempo do rodapé (virou a alça ⏱),
  * pôs as portas numa fileira de alças no pé e reduziu o selo a uma linha
  * em cima dela — e o retângulo continuava descontando a base de MESA,
  * `Math.max(SELO_FRACAO, TEMPO_FRACAO)` mais os dois degraus da máquina
@@ -211,23 +212,27 @@ const TEMPO_FRACAO = 0.175;
  * com `ui = 1`: 44,5% de céu declarado contra 84,5% de HUD real fora do
  * caminho.
  *
- * AS QUATRO FRAÇÕES SÃO MEDIDAS, uma a uma, pelo juiz de a11y
+ * AS TRÊS FRAÇÕES SÃO MEDIDAS, uma a uma, pelo juiz de a11y
  * (`julgarCelular`, parte 5) nos SEIS cantos da faixa nova — 390×844 e
  * 320×568, com `?ui=` 0,85, 1 e 1,4 —, e ele cobra declarado ≥ medido em
  * cada um. É a disciplina de `LARGURA_DA_QUEBRA_DO_TEMPO_PX`: número que
  * entra aqui nasce de uma leitura de `getBoundingClientRect`, nunca de
- * aritmética de comentário.
+ * aritmética de comentário. Eram QUATRO até 23/08; a quarta era a tarja,
+ * e ela saiu do telefone inteira (ver logo abaixo).
  *
  * MEDIDO em 2026-08-23 (Chrome com `mobile: true` e toque emulado,
- * `?atlas=1&q=cinema&shot=1`), em fração da altura da janela:
+ * `?atlas=1&q=cinema&shot=1`), em fração da altura da janela. A coluna da
+ * TARJA fica no registro porque é ela que explica os números do topo: até
+ * 23/08 a barra era declarada como o que SOBRAVA dela, e hoje a caixa da
+ * barra é o topo inteiro.
  *
- *              tarja   "Partir"      fileira    selo (linha + vão)
- *   390, 0,85  0,0450   0,0327       0,0580     0,0847 − 0,0580 = 0,0267
- *   390, 1,00  0,0450   0,0364       0,0682     0,0987 − 0,0682 = 0,0305
- *   390, 1,40  0,0450   0,0492       0,0955     0,1389 − 0,0955 = 0,0434
- *   320, 0,85  0,0450   0,0466       0,0862     0,1258 − 0,0862 = 0,0396
- *   320, 1,00  0,0450   0,0522       0,1014     0,1466 − 0,1014 = 0,0452
- *   320, 1,40  0,0450   0,0712       0,1419     0,2064 − 0,1419 = 0,0645
+ *              tarja    barra       fileira    selo (linha + vão)
+ *   390, 0,85  0,0450   0,0327      0,0580     0,0847 − 0,0580 = 0,0267
+ *   390, 1,00  0,0450   0,0364      0,0682     0,0987 − 0,0682 = 0,0305
+ *   390, 1,40  0,0450   0,0492      0,0955     0,1389 − 0,0955 = 0,0434
+ *   320, 0,85  0,0450   0,0466      0,0862     0,1258 − 0,0862 = 0,0396
+ *   320, 1,00  0,0450   0,0522      0,1014     0,1466 − 0,1014 = 0,0452
+ *   320, 1,40  0,0450   0,0712      0,1419     0,2064 − 0,1419 = 0,0645
  *
  * NORMALIZADAS por `ui`, a fileira dá 0,0682 (390) e 0,1014 (320) em
  * TODOS os três degraus — ela é `rem` puro (`--alcas-altura: 3.6rem`), e
@@ -237,29 +242,52 @@ const TEMPO_FRACAO = 0.175;
  */
 
 /**
- * A TARJA NO TELEFONE — `.letterbox.on { height: 4.5vh }` na fatia 6,
- * contra os 6,5vh da mesa. Fonte única do número, como o
- * `LETTERBOX_FRACAO`: se a tarja mudar no CSS, muda aqui. (Tirá-las no
- * celular é a única pergunta de GOSTO que o item 62 deixou para o dono —
- * elas custam ~9% da tela e ficaram porque são "o mesmo quadro do
- * filme".)
+ * NÃO HÁ TARJA NO TELEFONE desde 2026-08-23, e é decisão do DONO, não de
+ * enquadramento: *"no celular a imagem ocupa a tela inteira"*. Ela media
+ * 4,5vh de cada borda (contra os 6,5vh da mesa) e custava 9% da tela; a
+ * fatia 6 do HUD agora a tira do documento (`.letterbox { display: none }`
+ * dentro do `@media`), e este ramo parou de descontá-la. As duas metades
+ * andaram no mesmo diff de propósito — tirar a pintura sem tirar o
+ * desconto deixaria a câmera recuando por uma faixa que já não existe.
+ *
+ * NA MESA A TARJA FICA: `LETTERBOX_FRACAO` continua governando o ramo de
+ * baixo, e nenhum pixel de tela grande se moveu.
  */
-const LETTERBOX_CELULAR = 0.045;
 
 /**
- * O "PARTIR", a única SAÍDA por ponteiro do modo, ancorado DENTRO da
- * tarja (`top: 0.4vh`). Ele quase não sobra da tarja — no aparelho comum
- * cabe inteiro nela —, mas num de 320 px com o texto grande transborda
- * 2,6% da altura. 0,025 cobre o pior caso medido (0,0712 contra 0,0450
- * de tarja, ou seja 0,0187 por unidade de `ui`) com 0,0088 de folga para
- * fonte de outra máquina — o juiz roda no macOS do dono e na nuvem.
+ * A BARRA DE CIMA DO TELEFONE, medida do TOPO DA JANELA até a base dela.
+ * Ela é a única peça permanente do alto do modo (`.controls-bar` ancorada
+ * em `top: 0.4vh`, fatia 9) e carrega hoje ▶ Ver o filme · ↗ Explorar,
+ * mais ↩ Voltar ao filme quando há filme guardado.
+ *
+ * ATÉ 23/08 ESTE NÚMERO ERA UM EXCEDENTE — os 0,025 que a barra sobrava
+ * DA TARJA —, e o topo era a soma dos dois. Sem tarja não há de que
+ * sobrar: a fração passa a ser a caixa inteira, do topo da janela até o
+ * pé da barra. É a mesma medida que o juiz já cobrava; o que mudou foi
+ * quem paga a primeira parcela.
+ *
+ * MEDIDO em 2026-08-23 (Chrome com `mobile: true`, `?atlas=1&shot=1`), em
+ * fração da altura da janela, e NORMALIZADO por `ui` — a âncora de 0,4vh
+ * não escala com o texto, então o pior caso é o `ui` MENOR, e não o maior:
+ *
+ *   390, 0,85 → 0,0327 / 0,85 = 0,0385
+ *   390, 1,00 → 0,0364
+ *   390, 1,40 → 0,0492 / 1,40 = 0,0351
+ *   320, 0,85 → 0,0466 / 0,85 = 0,0548   ← o pior
+ *   320, 1,00 → 0,0522
+ *   320, 1,40 → 0,0712 / 1,40 = 0,0509
+ *
+ * 0,065 cobre o pior (0,0548) com 0,0087 de folga por unidade de `ui`,
+ * para fonte de outra máquina — o juiz roda no macOS do dono e na nuvem.
+ * É a MESMA folga que o excedente antigo declarava (0,0088); o que sumiu
+ * do topo foram os 0,045 da tarja, que a câmera não paga mais.
  */
-const SAIDA_FRACAO = 0.025;
+const SAIDA_FRACAO = 0.065;
 
 /**
  * A FILEIRA DE ALÇAS, que é a base de verdade do telefone. Ela é `fixed`
- * no pé e ENGOLE a tarja de baixo, então não se soma nada a ela: 0,11
- * cobre o pior medido (0,1014 no aparelho pequeno) com 0,0086 de folga.
+ * no pé e é a ÚNICA peça permanente de lá desde que a tarja de baixo saiu:
+ * 0,11 cobre o pior medido (0,1014 no aparelho pequeno) com 0,0086 de folga.
  * O alvo de toque dela — 2,75rem, 44 px em `ui = 1` — é o que a dimensiona,
  * e é ele que não se aperta: quando as quatro alças não couberam em 390 px,
  * quem cedeu foram o `gap` e o `padding` da `.atlas-alcas` (fatia 9 do
@@ -345,15 +373,17 @@ export function retanguloUtilDoAtlas(
   const largura =
     Number.isFinite(larguraPx) && larguraPx > 0 ? larguraPx : LARGURA_DE_MESA_PX;
   // O TELEFONE É OUTRO HUD, não o de mesa apertado — ver o bloco das
-  // quatro frações acima. O `Math.max` na base é o piso da tarja: a
-  // fileira já a engole nos dois aparelhos medidos, e o `max` garante
-  // que ela nunca fique de fora se o alvo de toque encolher um dia.
+  // três frações acima. Ele não tem tarja desde 23/08 (decisão do dono),
+  // e por isso as duas bordas são só HUD: a barra em cima, a fileira mais
+  // o selo embaixo. O `Math.max` que segurava o piso da tarja na base
+  // morreu com ela — sem uma faixa preta a cobrir, não há piso a garantir,
+  // e um `max` contra zero é ruído que finge decidir algo.
   if (largura <= LARGURA_DO_CELULAR_PX) {
     return {
       esquerda: 0,
       direita: 0,
-      topo: LETTERBOX_CELULAR + SAIDA_FRACAO * k,
-      base: Math.max(LETTERBOX_CELULAR, (ALCAS_FRACAO + SELO_FRACAO_CELULAR) * k),
+      topo: SAIDA_FRACAO * k,
+      base: (ALCAS_FRACAO + SELO_FRACAO_CELULAR) * k,
     };
   }
   return {

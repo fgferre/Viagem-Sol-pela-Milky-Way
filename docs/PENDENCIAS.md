@@ -36,8 +36,10 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
    modos — *"nao quero essa distincao entre modo atlas e modo filme, para
    mim o filme é um feature do atlas"*. Se atrapalhar a observação, o
    conserto é GLOBAL. Ver o item **61**.
-3. **As tarjas pretas no celular: TIRAR.** No telefone a imagem passa a
-   ocupar a tela inteira; na mesa nada muda. Ver o item **61**.
+3. **As tarjas pretas no celular: TIRAR. FEITO em 24/08.** No telefone a
+   imagem passa a ocupar a tela inteira; na mesa nada muda (a vista de
+   desktop saiu bit-idêntica). Foto:
+   `capturas/tarjas-fora-celular-antes-depois.png`. Ver o item **61**.
 4. **Dois retoques aprovados:** *"Explorar livremente"* encurta para
    **"Explorar"** na barra do filme, e no celular a folha fecha
    **arrastando para baixo**. Ver o item **61**.
@@ -59,8 +61,9 @@ Eyes por observação de tela, entraram dois blocos de obra: os **nomes**
 (item **82**, degraus N1 e N2) e as **órbitas AAA** (item **83**,
 degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 
-> ~~**clarão único**~~ (FEITO em 23/08) → **82 (N1 + N2: os nomes)** →
-> **tarjas do celular** → **"Explorar" e o arrasto da folha** →
+> ~~**clarão único**~~ (FEITO em 23/08) → ~~**82 (N1 + N2: os nomes)**~~
+> (FEITO em 24/08) → ~~**tarjas do celular**~~ (FEITO em 24/08) →
+> **"Explorar" e o arrasto da folha** →
 > ⟨**CONFERÊNCIA DO DONO**: itens **61** e **77**, com as fotos⟩ →
 > **83 (L1 + L2: a linha)** → **81** → **70** → **75**.
 
@@ -922,18 +925,30 @@ fotos na mão:**
 23/08) — e ele DECIDIU AS DUAS em 23/08.** Nenhuma das duas era defeito;
 as duas eram escolha, e as duas viraram obra a fazer:
 
-1. **As tarjas pretas no telefone — é gosto dele. DECIDIDO: TIRAR.** As
-   faixas de cima e de baixo custam ~9% da tela do celular e ficaram
-   porque são "o mesmo quadro do filme", que é decisão de composição.
-   Ele escolheu que **no celular a imagem ocupa a tela inteira**, sem a
-   moldura de cinema — o céu cresce de 80,2% para ~89% num aparelho
-   comum. **No computador NADA muda:** a moldura fica lá. Obra pequena,
-   e mexe em duas peças: o ramo do celular de
-   `cinematic/retanguloDoAtlas.ts` (que hoje desconta a tarja de 4,5vh
-   da base da câmera) e a fatia 9 do HUD (`hud/09-celular.css`), que é
-   quem as desenha. As duas andam no mesmo diff — tirar o desenho sem
-   tirar o desconto deixaria a câmera recuando por uma faixa que já não
-   existe, que é exatamente o defeito que a etapa 2 do 62 consertou.
+1. **As tarjas pretas no telefone — DECIDIDO: TIRAR. FEITO em 24/08, e
+   espera o olho dele.** No celular a imagem passa a ocupar **a tela
+   inteira**, sem a moldura de cinema; **no computador nada muda**. As
+   duas peças andaram no mesmo diff, como o plano mandava: o desenho
+   (a fatia **6** do HUD, `hud/06-responsivo.css`) e o desconto da
+   câmera (o ramo do telefone de `cinematic/retanguloDoAtlas.ts`).
+   Foto: `capturas/tarjas-fora-celular-antes-depois.png`.
+   **O NÚMERO PROMETIDO ESTAVA ERRADO, e o medido é outro — vale
+   escrever, porque a diferença é a lição.** Este item dizia que "o céu
+   cresce de 80,2% para ~89%". Os 89% eram **conta de comentário**: 80,2
+   mais os 9 pontos das tarjas. Medido no juiz do celular, o céu livre de
+   HUD vai a **81,0%** a 390×844 e fica em **72,0%** a 320×568 — porque
+   aquela régua toma a FAIXA inteira de cada borda, e as tarjas moravam
+   DENTRO de faixas que outras peças já definiam (embaixo, a dica dos
+   gestos; a 320 px, em cima, a própria barra). **O que mudou de verdade,
+   e é o que ele vai ver: 9,00% da tela deixaram de ser pintados de
+   PRETO — a imagem sai de 91,0% para 100% da tela.** O juiz ganhou a
+   prova que mede isso (a régua velha não media), e a meta de céu ficou
+   onde estava, de propósito: subi-la seria pinar a altura de uma linha
+   de texto em nome de uma obra que não foi essa.
+   **A CÂMERA QUASE NÃO ANDOU:** o retângulo declarado vai de 77,0% para
+   77,5% (o topo cai de 0,070 para 0,065, e a base fica em 0,160). No
+   desktop a prova é o md5: a vista `atlas` do `ab-identidade` saiu
+   **bit-idêntica** (`e6697fc5502e`, nos dois lados).
 2. **Arrastar a folha para baixo para fechá-la: possível, não pedido.
    DECIDIDO em 23/08: APROVADO, entra.**
    O drawer do telefone já tem TRÊS saídas (a alça, o Esc e o toque no
