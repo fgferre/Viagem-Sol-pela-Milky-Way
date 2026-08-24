@@ -35,3 +35,6 @@ capturas/
 # Idem para o gate do ceu: sky/ na baseline, sky_<tag>/ nas ablacoes
 sky/
 sky_*/
+
+# Pastas temporárias de agentes: relatório efêmero não se versiona (AGENTS, regra 10)
+scratchpad/
