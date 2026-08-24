@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 82.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 83.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -417,6 +417,32 @@ edge-on inteiro não se mexeram. Re-dosar é GOSTO, não migração: a foto
 está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
 — fica mais bonito com os berçários assim, mais fracos, ou como
 estavam?
+
+**82. Os nomes na tela estão muito intrusivos — o default parece todos
+ligados, fica uma confusão.**
+Palavras do dono, 23/08: *"estou achando que ele está muito
+intrusivo, acho que precisaria ser um sistema mais inteligente do que
+é."* E: *"A impressao que tenho é que o default todos os objetos estao
+com o label ligado, fica uma confusao na tela."* Pediu revisão de como
+é e do que poderia ser, olhando o NASA Eyes — sem conserto nesta
+conversa (outro agente estava mexendo no projeto).
+
+O que ele VÊ: na abertura do Atlas, um nó de nomes e traços em volta
+do Sol. A foto é `capturas/item73-rotulos-abertura-antes-depois.png` —
+o "depois" do item 73, que passou de **3 nomes** (Sol, Netuno, Plutão)
+para **10** (os 8 planetas, o Sol e Plutão) mais um punhado de
+estrelas. Com as órbitas do item 77 na mesma vista, a teia piora.
+
+A causa, numa linha: o item 73 leu *"rótulos de todos objetos de forma
+inteligente"* como "encaixar o máximo de nomes", e o Atlas tenta
+rotular os 10 corpos + 21 luas + 24 estrelas candidatas, com sete
+lugares por nome e traço de até 102 px. Não existe camada para
+desligar os nomes (órbitas têm `noorbitas`; nomes, não). O filme já é
+o outro jeito: o assunto tem nome, o fundo fica mudo. NASA Eyes,
+Celestia e SpaceEngine escondem o nome que não cabe — não puxam um
+traço para salvá-lo. Obra: o dono escolhe o gosto; o juiz
+`atlas-smoke` hoje cobra os 8 planetas com nome na abertura e terá de
+mudar junto.
 
 ---
 
