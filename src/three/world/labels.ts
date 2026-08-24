@@ -70,8 +70,8 @@ export interface StarLabel {
  * abertura até 23/08, e desde o item 61 o lugar aonde a roda leva): os
  * dez corpos e as 21 luas projetam a menos de 1% de tela uns dos
  * outros, e quem chegava primeiro na lista ocupava. O resultado era
- * Saturno nascendo
- * `desenhado: false` por colidir com "SOL", e a queixa do dono —
+ * Saturno nascendo `desenhado: false` por colidir com "SOL", e a queixa
+ * do dono —
  * *"conseguíamos ver os rótulos de todos objetos de forma
  * inteligente"*.
  *
@@ -332,8 +332,8 @@ export interface CorpoRotulavel {
  * sistema estes dez são o assunto". Dentro do sistema continua sendo
  * verdade e nada muda — o fade só começa a morder a 0,01 pc (2.060 UA),
  * que é 9× mais longe que o TETO do zoom (224 UA) e 226× mais longe que
- * a vista de abertura desde o item 61, e fecha em 0,05 pc. O
- * que ele conserta é a outra ponta: visitar uma estrela a parsecs de
+ * a vista de abertura desde o item 61, e fecha em 0,05 pc. O que ele
+ * conserta é a outra ponta: visitar uma estrela a parsecs de
  * casa e continuar lendo "NETUNO · planeta" sobre um ponto que já não
  * existe no quadro.
  */

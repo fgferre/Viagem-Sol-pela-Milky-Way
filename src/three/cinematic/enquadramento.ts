@@ -720,8 +720,12 @@ export function orbitaMaisExterna(): { posicao: THREE.Vector3; raio: number } {
  */
 export const BORDA_DO_SISTEMA_INTERNO = {
   /** a chave da efeméride VIVA (`posicaoHeliocentrica`) — a abertura na
-   *  época viva (F2b) lê o raio no instante pedido, como sempre leu */
-  id: 'mars',
+   *  época viva (F2b) lê o raio no instante pedido, como sempre leu.
+   *  O `satisfies` é a amarra: a chave tem de existir no RETRATO, que é
+   *  a mesma tabela de onde o `raio` abaixo sai e a mesma que alimenta
+   *  `IDS_FOTOMETRIA`. Sem ela, uma string solta aqui só quebraria em
+   *  runtime, e a vista de abertura é o pior lugar para descobrir isso. */
+  id: 'mars' satisfies keyof typeof RETRATO_2026,
   /** e o raio do RETRATO congelado, o caminho SEM efeméride: ali não há
    *  linha de órbita nenhuma para desenhar (§6 de `orbitas.ts`), e o
    *  enquadramento é o que sobra de honesto */

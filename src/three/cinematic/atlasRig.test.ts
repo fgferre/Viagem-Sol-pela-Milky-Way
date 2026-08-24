@@ -75,6 +75,27 @@ function noSistemaInteiro(rig: AtlasRig) {
   rig.focar(new THREE.Vector3(), fora.raio, fora.posicao);
 }
 
+/**
+ * A ABERTURA DE PRODUÇÃO (item 61) — a esfera é a borda do sistema
+ * INTERNO, a direção continua saindo do corpo mais externo, e o piso do
+ * zoom é o raio FÍSICO do Sol. É o estado em que `Escada.focarNoSistema`
+ * deixa o rig, e o irmão de `noSistemaInteiro`: um é o TETO, o outro é o
+ * lugar de onde o visitante parte.
+ *
+ * MORA AQUI porque eram estas seis linhas redigitadas em dois trilhos —
+ * e trilho que redigita o estado acaba medindo estados diferentes com o
+ * mesmo nome, que é exatamente a armadilha que aposentou o
+ * `AtlasRig.focarNoSistema`.
+ */
+function naAberturaDeProducao(rig: AtlasRig) {
+  rig.focar(
+    new THREE.Vector3(),
+    BORDA_DO_SISTEMA_INTERNO.raio,
+    orbitaMaisExterna().posicao,
+    { pisoRaio: RAIO_DO_SOL_NA_CENA }
+  );
+}
+
 /** semi-ângulos úteis do quadro, vertical e horizontal */
 function semiAngulosUteis(fovDeg: number, aspect: number, fracaoV: number, fracaoH: number) {
   const tanV = Math.tan((fovDeg * GRAU) / 2);
@@ -791,12 +812,7 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     // câmera; isso media um método que produção nenhuma chamava.
     const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
     const rig = new AtlasRig();
-    rig.focar(
-      new THREE.Vector3(),
-      BORDA_DO_SISTEMA_INTERNO.raio,
-      orbitaMaisExterna().posicao,
-      { pisoRaio: RAIO_DO_SOL_NA_CENA }
-    );
+    naAberturaDeProducao(rig);
     rig.apply(camera);
     const tetoEmUA = () => rig.tetoDeZoom / AU_PARA_PC;
     // 226,84 UA — a faixa de meio UA é o que separa "a docstring está
@@ -816,12 +832,20 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     rig.apply(camera, 1.4);
     expect(tetoEmUA()).toBeGreaterThan(316.9);
     expect(tetoEmUA()).toBeLessThan(317.4);
-    // e o teto é o mesmo com a câmera POSTA nele: a conta não depende de
-    // onde o visitante está, só do alvo e da lente
+    // E O TETO NÃO DEPENDE DE ONDE O VISITANTE ESTÁ — só do alvo e da
+    // lente. A prova é MOVER o visitante e reler: pinar a distância lá
+    // embaixo, no piso, deixa a câmera a menos de um centésimo do teto, e
+    // o teto não se mexe um dígito. (Antes este trecho REFOCAVA o rig no
+    // sistema inteiro e comparava a câmera com o teto NOVO: isso mede que
+    // o teto é o enquadramento do sistema — verdade, mas outra verdade,
+    // e não a que a frase acima promete.)
     rig.apply(camera);
-    noSistemaInteiro(rig);
+    const tetoParado = tetoEmUA();
+    rig.pinarDistancia(rig.pisoDeZoom);
     rig.apply(camera);
-    expect(camera.position.length() / AU_PARA_PC).toBeCloseTo(tetoEmUA(), 9);
+    expect(camera.position.length() / AU_PARA_PC).toBeLessThan(tetoParado / 100);
+    expect(tetoEmUA()).toBeCloseTo(tetoParado, 12);
+    rig.pinarDistancia(null);
   });
 
   it('a ABERTURA encolheu e o TETO do zoom NÃO desceu junto (item 61)', () => {
@@ -833,21 +857,17 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     // pode mais sair, e é este trilho que grita.
     const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
     const rig = new AtlasRig();
-    rig.focar(
-      new THREE.Vector3(),
-      BORDA_DO_SISTEMA_INTERNO.raio,
-      orbitaMaisExterna().posicao,
-      { pisoRaio: RAIO_DO_SOL_NA_CENA }
-    );
+    naAberturaDeProducao(rig);
     rig.apply(camera);
     const emUA = (pc: number) => pc / AU_PARA_PC;
     // a abertura: ~9,1 UA, e ela É menor que a esfera do sistema
     expect(emUA(rig.distanciaDoEnquadramento)).toBeGreaterThan(8);
     expect(emUA(rig.distanciaDoEnquadramento)).toBeLessThan(11);
     // o VALOR do teto tem dono, e não é este trilho: quem o pina é "a
-    // DISTÂNCIA DO TETO", acima. Aqui o que se cobra é a RELAÇÃO —
-    // ...e por isso a roda tem curso para OS DOIS LADOS, que é o que o
-    // visitante perdia quando nascia colado no teto
+    // DISTÂNCIA DO TETO", acima. Aqui o que se cobra é a RELAÇÃO — a
+    // abertura fica ENTRE o piso e o teto, e não colada em nenhum dos
+    // dois —, e por isso a roda tem curso para OS DOIS LADOS, que é o
+    // que o visitante perdia quando nascia colado no teto
     expect(rig.tetoDeZoom).toBeGreaterThan(rig.distanciaDoEnquadramento);
     expect(rig.pisoDeZoom).toBeLessThan(rig.distanciaDoEnquadramento);
     // e a esfera de dentro CABE na de fora, que é a promessa do nome
@@ -1669,8 +1689,11 @@ describe('o degrau do CORPO DO SOL', () => {
     // ...e o retrato congelado, o caminho SEM efeméride, tem de usar a
     // MESMA borda — senão a vista muda quando a rede cai
     expect(abertura).toContain('raio: BORDA_DO_SISTEMA_INTERNO.raio');
-    // o degrau `sistema` do POUSO é a mesma vista, e o religador do
-    // relógio a recompõe: os três têm de citar a mesma esfera
+    // TRÊS sítios da escada citam a mesma esfera, e o terceiro é o
+    // degrau `sistema` do POUSO, que o religador do relógio recompõe. O
+    // primeiro (`casaViva`) a cita pelo `.id`, e está cobrado logo
+    // acima; os OUTROS DOIS a citam pelo `.raio` — daí o 2, que é a
+    // contagem de `.raio`, não a de sítios.
     expect(ESCADA.split('BORDA_DO_SISTEMA_INTERNO.raio').length - 1).toBe(2);
   });
 });

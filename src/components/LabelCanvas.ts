@@ -30,7 +30,8 @@ const FAMILIA = '"Segoe UI", Arial, sans-serif';
  * zoom, que é onde a promessa foi feita ("os 8 planetas e o Sol com
  * nome, contra 3 hoje") e onde os dez ainda se empilham. Era a vista de
  * ABERTURA quando a medida foi tirada; o item 61 desceu a abertura para
- * o sistema interno, e o aperto ficou no teto. O aglomerado interno tem CINCO corpos dentro de 6 px
+ * o sistema interno, e o aperto ficou no teto. O aglomerado interno tem
+ * CINCO corpos dentro de 6 px
  * (Sol, Mercúrio, Vênus, Terra, Marte) e mais três vizinhos na mesma
  * faixa vertical (Júpiter, Saturno, Urano): com cinco lugares num lado
  * só cabem 5 nomes, com os cinco nos dois lados cabem 8, e são os SETE

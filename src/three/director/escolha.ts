@@ -80,8 +80,8 @@ export class Escolha {
    * (224 UA — a vista de abertura até 23/08, e desde o item 61 o lugar
    * aonde a roda leva): os dez corpos e as 21 luas projetam a menos de
    * 1% de tela uns dos outros, e só o Sol sobrevive à colisão. O
-   * resultado medido era o
-   * defeito 1 do commit `51d7777` — clicar no "SOL" escrito na tela
+   * resultado medido era o defeito 1 do commit `51d7777` — clicar no
+   * "SOL" escrito na tela
    * enquadrava FOBOS, cujo rótulo invisível estava 0,4% de tela mais
    * perto do ponteiro (Sol em 0,500/0,458; Marte, Fobos e Deimos
    * empilhados em 0,503/0,453). Eram duas listas onde tem de haver uma.

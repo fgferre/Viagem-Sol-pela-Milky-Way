@@ -1212,8 +1212,9 @@ try {
   //
   //   · na ABERTURA cobra-se que TODO corpo em quadro tem nome (os
   //     cinco de dentro, nenhum perdido para a colisão com o Sol);
-  //   · no TETO cobra-se a promessa original, inteira — os oito
-  //     planetas e o Sol —, que é onde os dez ainda projetam colados.
+  //   · no TETO cobra-se a promessa original, inteira — os DEZ: os oito
+  //     planetas, o Sol e Plutão —, que é onde eles ainda projetam
+  //     colados.
   //
   // Trocar o endereço e manter o dente é o que separa re-pinar de
   // afrouxar: se alguém desfizer o item 73, a segunda metade grita.
@@ -1223,17 +1224,20 @@ try {
   // prontidão fechar (ver o NORTE, "Como rodar") — e é o desenho dos
   // rótulos que se mede aqui, não a prontidão
   await dorme(4000);
-  const nomesDaAbertura = JSON.parse(await sessao.js(`JSON.stringify((() => {
+  // O CENSO DOS NOMES, uma sonda só para os dois endereços: era esta
+  // mesma IIFE copiada em dois lugares, e cópia de sonda é como cópia de
+  // régua — uma delas envelhece calada.
+  const censoDeNomes = async () => JSON.parse(await sessao.js(`JSON.stringify((() => {
     const alvos = window.__director.rotulos.alvos;
     return {
       projetados: alvos.length,
-      desenhados: alvos.filter((l) => l.desenhado === true).length,
       corpos: alvos.filter((l) => l.desenhado === true && l.key.startsWith('corpo:'))
         .map((l) => l.key.slice(6)),
       luasAcesas: alvos.filter((l) => l.desenhado === true && l.opacity > 0.08
         && ['moon','titan','io','europa','ganymede','callisto'].includes(l.key.slice(6))).length,
     };
   })())`));
+  const nomesDaAbertura = await censoDeNomes();
   const OITO_PLANETAS = [
     'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune',
   ];
@@ -1278,18 +1282,19 @@ try {
   await sessao.ir(`atlas=1&jd=EPOCA&q=cinema&d=${raiosDoTeto}`);
   await sessao.assentar();
   await dorme(4000);
-  const nomesDoTeto = JSON.parse(await sessao.js(`JSON.stringify((() => {
-    const alvos = window.__director.rotulos.alvos;
-    return {
-      projetados: alvos.length,
-      corpos: alvos.filter((l) => l.desenhado === true && l.key.startsWith('corpo:'))
-        .map((l) => l.key.slice(6)),
-    };
-  })())`));
-  const faltandoNoTeto = OITO_PLANETAS.filter((p) => !nomesDoTeto.corpos.includes(p));
+  const nomesDoTeto = await censoDeNomes();
+  // OS DEZ, e são DEZ MESMO: a promessa do item 73 é "de três nomes para
+  // dez" — os oito planetas, o Sol e PLUTÃO, que era um dos três que já
+  // sobreviviam antes da obra. O juiz cobrava nove (Plutão ficava de
+  // fora da lista e não era conferido) enquanto o cabeçalho, o commit e
+  // o NORTE diziam dez. Alinhado pelo lado que APERTA, não pelo que
+  // afrouxa: quem some agora grita.
+  const OS_DEZ_DO_TETO = ['sun', ...OITO_PLANETAS, 'pluto'];
+  const faltandoNoTeto = OS_DEZ_DO_TETO.filter((p) => !nomesDoTeto.corpos.includes(p));
   conferir(
-    faltandoNoTeto.length === 0 && nomesDoTeto.corpos.includes('sun'),
-    `no teto do zoom os 8 planetas e o Sol têm nome — ${nomesDoTeto.corpos.length}`
+    faltandoNoTeto.length === 0,
+    `no teto do zoom os DEZ têm nome (8 planetas, o Sol e Plutão) —`
+      + ` ${nomesDoTeto.corpos.length}`
       + ` corpos de ${nomesDoTeto.projetados} projetados`
       + ` (${nomesDoTeto.corpos.join(', ')})`
       + (faltandoNoTeto.length ? ` · FALTAM ${faltandoNoTeto.join(', ')}` : '')
