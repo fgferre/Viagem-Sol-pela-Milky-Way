@@ -358,18 +358,20 @@ export const FATOR_DE_ENCHIMENTO_DO_SOL = 1.0;
  *  atlas"*.
  *
  *  O que morreu aqui: a DOSE POR FASE de 17/08 — 0,07 no Atlas contra
- *  0,55 no filme, sob o nome `OCUPACAO_NA_OBSERVACAO` —, que nasceu de uma pergunta
- *  legítima dele — *"não vai dominar toda a cena?"* — e virou, com o
- *  tempo, a distinção entre os modos que ele proíbe. Ela era assistência
- *  declarada; deixou de existir, e com ela o `tetoDeOcupacao` que o
- *  director mandava por quadro.
+ *  0,55 no filme, sob o nome `OCUPACAO_NA_OBSERVACAO` —, que nasceu de
+ *  uma pergunta legítima dele — *"não vai dominar toda a cena?"* — e
+ *  virou, com o tempo, a distinção entre os modos que ele proíbe. Ela
+ *  era assistência declarada; deixou de existir, e com ela o
+ *  `tetoDeOcupacao` que o director mandava por quadro.
  *
  *  O PREÇO ESTÁ MEDIDO E ACEITO por ele: com a MESMA lente e a MESMA
  *  pose, no corpo do Sol a foto é bit-idêntica, mas no enquadramento de
- *  Vênus (4,045 UA) 23,40% do quadro ganha luz e o corpo enquadrado vira
- *  faísca dentro do brilho. Se isso atrapalhar a observação do sistema,
- *  o conserto é GLOBAL (auto-exposição, para todo mundo) — voltar a
- *  distinguir por fase está FORA.
+ *  Vênus (4,045 UA) 23,36% do quadro ganha luz — medido DEPOIS da obra,
+ *  na mesma janela de 1200×900 em que os 23,40% de antes foram apurados
+ *  (janela outra muda o denominador, não a luz) — e o corpo enquadrado
+ *  vira faísca dentro do brilho. Se isso atrapalhar a observação do
+ *  sistema, o conserto é GLOBAL (auto-exposição, para todo mundo) —
+ *  voltar a distinguir por fase está FORA.
  *
  *  Segue sendo limitador POR ESTRELA, nunca exposição de cena. */
 export const OCUPACAO_MAXIMA_DA_TELA = 0.55;

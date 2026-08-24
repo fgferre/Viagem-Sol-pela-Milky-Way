@@ -1588,7 +1588,7 @@ export class Director {
       //
       // E A HONESTIDADE QUE ISTO PEDE, escrita aqui porque é aqui que a
       // decisão mora: 1× NÃO MOVE PIXEL, e a vista de abertura ter
-      // encolhido 24× (item 61: 224 UA → ~9,1 UA, a borda do sistema
+      // encolhido ~25× (item 61: 226,84 UA → ~9,1 UA, a borda do sistema
       // interno) não muda a conclusão, só o quanto ela sobra. Ali 1 UA
       // vale ~156 px em vez de ~6,4, e a Terra anda 2,0e-7 UA/s: são
       // 3,1e-5 px/s, um pixel a cada nove horas. O que ganha vida é o
@@ -2441,7 +2441,6 @@ export class Director {
       tanHalfFov,
       camPos: cam.position,
       dtS: dt,
-      fase: this.phase,
     });
     // O SOL OBEDECE AO CALENDÁRIO (item 5): a fase do ciclo sai da data
     // simulada, e o filme só atenua a OCUPAÇÃO no arranque — uma dose

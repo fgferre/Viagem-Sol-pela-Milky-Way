@@ -44,8 +44,9 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
 
 **A ORDEM DA PRÓXIMA CONVERSA:** o item **77** (as linhas de órbita) e a
 **vista inicial** (o candidato (a), agora com as linhas dentro) POUSARAM
-os dois em 23/08 e só esperam a conferência dele — a próxima obra é o
-**clarão único**, e daí em diante vale a FILA INTEIRA logo abaixo, que
+os dois em 23/08 e só esperam a conferência dele — e o **clarão único**,
+que era a próxima obra, **FECHOU em 23/08**. Daí em diante vale a FILA
+INTEIRA logo abaixo (a próxima é o item **82**, os nomes), que
 recebeu os itens **82** e **83** e mudou de ordem na mesma noite. O
 arquivo que numerava a fila antiga morava na pasta temporária e se
 perdeu com ela — nunca foi versionado. A fila é esta seção aqui; o
@@ -211,9 +212,11 @@ cada um. O que segue à espera de
 conferência ESPECÍFICA do dono no app:
 item 39 (focar estrela não pode apagar as outras), item 40 (rótulo
 dobrado do Sol), item 43 da ALTA (a cruz de Vênus na dose do fluxo). A
-dose 0,07 do Atlas segue sendo número DELE para calibrar quando quiser;
-a extensão da escada às nomeadas mora na Lei (M3+), com o visto dele
-antes de qualquer unificação estética estrela↔Sol.
+dose 0,07 do Atlas **MORREU em 23/08** — ele mandou igualar, o teto virou
+um só (0,55) e o teste do clarão proíbe um segundo voltar; o que ficou
+para ele calibrar, se quiser, é o teto ÚNICO. A extensão da escada às
+nomeadas mora na Lei (M3+), com o visto dele antes de qualquer
+unificação estética estrela↔Sol.
 
 **⚠ A PUPILA ESTÁ REPROVADA — e foi ENTERRADA no M2 (16/08).**
 `src/three/core/pupila.ts` e o teste morreram inteiros na data marcada
@@ -539,8 +542,10 @@ Três degraus, nesta ordem:
   estrelas com traço em volta do sistema, que são a queixa VIVA depois do
   item 61, morrem neste degrau.
   **AVISO ESCRITO, para quem executar não se assustar:** a prova
-  `atlas-smoke` cobra hoje **os oito planetas e o Sol com nome no TETO do
-  zoom** (a conferência `nomesDoTeto`, que mudou de endereço em 23/08).
+  `atlas-smoke` cobra hoje **os DEZ com nome no TETO do zoom** — os oito
+  planetas, o Sol e Plutão (a conferência `nomesDoTeto`, que mudou de
+  endereço em 23/08 e passou a cobrar os dez em 24/08, quando se viu que
+  cobrava nove e dizia dez).
   Com a régua de relevância nova ela **vai reprovar — E COM RAZÃO**: a
   promessa velha era "encaixar o máximo de nomes", e é essa promessa que
   este item revoga. A promessa NOVA se escreve **no mesmo commit**, com
@@ -747,8 +752,8 @@ com as fotos em `capturas/item61-*` (a do quinto passo, a vista, é
    enquadramento sai da mesma borda, e nenhuma linha de órbita é
    desenhada, que é a honestidade declarada do item 77.
    **UMA CONSEQUÊNCIA QUE ELE PODE VER:** a porta `?d=` fala em RAIOS DO
-   ALVO, e o alvo encolheu ~24× (226,84 UA contra 9,1) — então um link
-   com `?d=` copiado ANTES de 23/08 pousa ~24 vezes mais perto do Sol do
+   ALVO, e o alvo encolheu ~25× (226,84 ÷ 9,1 = 24,9) — então um link
+   com `?d=` copiado ANTES de 23/08 pousa ~25 vezes mais perto do Sol do
    que pousava. É o preço de a régua ser relativa, e o espelho da URL
    escreve o valor certo de volta no primeiro gesto.
 
@@ -829,10 +834,20 @@ fotos na mão:**
   que fora apurado (1200×900, lente do Atlas): Vênus a 4,045 UA ganha
   **23,36%** do quadro em luz — contra os 23,40% de antes —, e a vista de
   ABERTURA ganha **8,08%**. Nas duas, **100% UNILATERAL: nada foi
-  apagado, só somado.** Os juízes: a régua de luz do Atlas **passa 7 de
-  7**, o `ab-identidade` cheio deu **51 de 52 bit-idênticas** (só a vista
-  do Atlas mudou, e é a única do gate que roda naquela fase), `atlas-smoke`
-  e `a11y` verdes, 2.054 testes verdes.
+  apagado, só somado.** **A PROCEDÊNCIA dos dois números**, para ninguém
+  tropeçar na diferença: o 23,40% foi apurado numa janela de 1200×900, e
+  remedir tem de ser NELA — a 900×900 o denominador encolhe e a MESMA luz
+  vira 34%. A área acesa é praticamente a mesma (227.854 px contra
+  228.315); o que muda é o quadro que a divide.
+  Os juízes: a régua de luz do Atlas **passa 7 de 7** — e o alcance dela é
+  a escada QUASE INTEIRA, **6 dos 7 degraus** (só 0,067 UA saiu idêntico,
+  porque ali a soltura é zero e não há clarão a grampear). O efeito é
+  maior a 7,2 UA, mas as faíscas crescem mais a **150 UA** (11→1577), que
+  é o degrau mais LONGE: de 1 UA para fora o quadro inteiro ganha estrelas
+  acesas, não só a vizinhança do Sol. A tabela degrau a degrau mora na
+  `LEI-DA-ESTRELA`. O `ab-identidade` cheio deu **51 de 52 bit-idênticas**
+  (só a vista do Atlas mudou, e é a única do gate que roda naquela fase),
+  `atlas-smoke` e `a11y` verdes, 2.054 testes verdes.
   **AS DUAS FOTOS PARA ELE:**
   `capturas/clarao-unico-venus-antes-depois.png` (o enquadramento de
   Vênus, que é o caso mais duro — Vênus vira uma faísca dentro do brilho,

@@ -321,11 +321,29 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   **O JUIZ é a perna do ATLAS** (`PERNA=atlas node
   scripts/visual/luz-do-quadro.mjs`), que nasceu em 23/08 para medir
   exatamente isto e **PASSA 7 de 7 com o número novo** — a lei da lavagem
-  nunca esteve em jogo; o que mudou foi a IMAGEM. O que ela mede de
-  diferente está na faixa de PERTO, que é onde o Atlas observa: a 3,6 UA
-  a luz média foi de 0,015 para 0,035 e o borrão de 0 para 72 px; a
-  7,2 UA, de 0,016 para 0,049 e de 0 para 119 px. Nos extremos (0,067 e
-  1 UA) nada mudou.
+  nunca esteve em jogo; o que mudou foi a IMAGEM.
+  **E O ALCANCE É A ESCADA QUASE INTEIRA — 6 dos 7 degraus.** (A primeira
+  redação disse "só a faixa de perto"; o JSON do próprio commit a
+  desmentiu, e fica corrigida aqui.) Só **0,067 UA** saiu idêntico, e por
+  construção: ali a soltura é zero e não há clarão sobre a fotosfera —
+  o teto não tem o que grampear. Do resto:
+
+  | UA | luz média | acima de meia | faíscas | borrão px |
+  |---|---|---|---|---|
+  | 0,067 | 0,059924 → **igual** | 3,793% → igual | 29 → 29 | 109 → 109 |
+  | 1 | 0,014479 → 0,014858 | 0,043% → igual | 12 → 12 | 0 → 0 |
+  | 3,6 | 0,015295 → 0,034923 | 0,095% → 1,688% | 15 → 1367 | 0 → 72 |
+  | 7,2 | 0,016003 → 0,049046 | 0,150% → 2,710% | 15 → 826 | 0 → 119 |
+  | 20 | 0,015927 → 0,030005 | 0,145% → 1,343% | 13 → 919 | 0 → 56 |
+  | 40 | 0,015914 → 0,023979 | 0,144% → 0,913% | 11 → 958 | 0 → 24 |
+  | 150 | 0,015907 → 0,020054 | 0,143% → 0,738% | 11 → **1577** | 0 → 0 |
+
+  O pico do EFEITO está em 7,2 UA (a luz média triplica), mas o pico da
+  CONTAGEM de faíscas está em **150 UA** — o degrau mais longe da escada,
+  onde o borrão continua em 0. Ou seja: de 1 UA para fora o quadro inteiro
+  ganha estrelas acesas, e não só a vizinhança do Sol. Nada afrouxou — os
+  sete seguem dentro da lei —, mas dizer "só a faixa de perto" era
+  subdeclarar o que a obra faz.
   **E SE ATRAPALHAR A OBSERVAÇÃO, o conserto é GLOBAL** — auto-exposição,
   para todo mundo. Voltar a distinguir por fase está FORA, e o teste
   `clarao.test.ts` guarda essa decisão com três dentes: o número, a

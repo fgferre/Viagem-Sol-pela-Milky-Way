@@ -27,7 +27,6 @@ import type { Planetas } from '../world/planetas/planetas';
 import type { StarField } from '../world/stars';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
-import type { Phase } from '../fases';
 import { ORIGEM } from '../cinematic/enquadramento';
 
 export class SolNoQuadro {
@@ -128,7 +127,6 @@ export class SolNoQuadro {
     tanHalfFov: number;
     camPos: THREE.Vector3;
     dtS: number;
-    fase: Phase;
   }) {
     const sun = this.fios.sun();
     const stars = this.fios.stars();
@@ -202,12 +200,8 @@ export class SolNoQuadro {
           !this.fios.escondido('noplan') &&
           (this.fios.planetas()?.points.visible ?? false),
         solturaDoSol: leiDoSol.solturaDoClarao,
-        // A DOSE NÃO PERGUNTA MAIS A FASE (decisão do dono, 23/08:
-        // *"vamos igualar o clarao… nao quero essa distincao entre modo
-        // atlas e modo filme, para mim o filme é um feature do atlas"*).
-        // O teto é UM, mora onde é calculado (`OCUPACAO_MAXIMA_DA_TELA`,
-        // em `world/clarao`), e este módulo deixou de mandá-lo por
-        // quadro. O que sobrou aqui é fiação; o número tem um dono só.
+        // a dose NÃO entra por aqui: o teto é um só e mora onde é
+        // calculado (`OCUPACAO_MAXIMA_DA_TELA`, com a lei na docstring)
         expoM0: stars?.expoM0 ?? EXPO_M0,
         sigmaPx: stars?.sigmaPx ?? SIGMA_PX,
         pr: q.prAtual,

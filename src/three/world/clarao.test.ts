@@ -51,6 +51,43 @@ const META = JSON.parse(
 /** um passo de quadro típico (60 fps) */
 const DT = 1 / 60;
 
+/**
+ * OS INSTRUMENTOS DOS DENTES DE ESTRUTURA — lista FECHADA de campos, em
+ * vez de regex de nome próprio.
+ *
+ * Existem porque um dente de nome já cedeu: a sonda de auditoria que
+ * ressuscitou o teto por fase só precisou batizar tudo de outro jeito.
+ * Um `toEqual` sobre a lista de campos não tem esse buraco — o campo
+ * novo reprova sem que ninguém tenha de adivinhar como ele se chamaria.
+ */
+const semComentarios = (fonte: string) =>
+  fonte.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+function corpoDoBloco(fonte: string, abertura: string): string {
+  const limpa = semComentarios(fonte);
+  const i = limpa.indexOf(abertura);
+  if (i < 0) throw new Error(`bloco não encontrado: ${abertura}`);
+  const inicio = limpa.indexOf('{', i + abertura.length - 1);
+  let nivel = 0;
+  for (let k = inicio; k < limpa.length; k++) {
+    if (limpa[k] === '{') nivel += 1;
+    else if (limpa[k] === '}') {
+      nivel -= 1;
+      if (nivel === 0) return limpa.slice(inicio + 1, k);
+    }
+  }
+  throw new Error(`bloco não fecha: ${abertura}`);
+}
+
+const camposDoBloco = (corpo: string) =>
+  [...corpo.matchAll(/^\s*(\w+)\??:/gm)].map((m) => m[1]);
+
+const camposDaInterface = (fonte: string, nome: string) =>
+  camposDoBloco(corpoDoBloco(fonte, `interface ${nome} {`));
+
+const camposDoParametro = (fonte: string, metodo: string) =>
+  camposDoBloco(corpoDoBloco(fonte, `${metodo}(q: {`));
+
 function elegiveis(...pares: [number, number][]): CandidatoAoClarao[] {
   return pares
     .map(([indice, pico]) => ({ indice, pico }))
@@ -384,33 +421,87 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     expect(ELEGIVEIS_POR_QUADRO).toBe(ORCAMENTO_DO_CLARAO + 8);
   });
 
-  it('o teto do clarão é UM SÓ, e nenhum quadro pode escolher outro', () => {
+  it('o teto do clarão é UM SÓ, e não há porta por onde um segundo entrar', () => {
     // A LEI NOVA, decidida por ele em 23/08: *"vamos igualar o clarao…
     // nao quero essa distincao entre modo atlas e modo filme, para mim o
-    // filme é um feature do atlas"*. O que este trilho guarda é a
-    // DECISÃO DELE, e por isso ele tem três dentes em vez de um:
+    // filme é um feature do atlas"*.
     //
-    //  1. o NÚMERO é o do filme, 0,55 — recalibrar é mudar aqui junto;
+    // ESTE TRILHO JÁ FOI SABOTADO E CEDEU — a versão de 23/08 guardava a
+    // decisão com REGEX DE NOME PRÓPRIO (`OCUPACAO_NA_OBSERVACAO`,
+    // `tetoDeOcupacao`, `q.fase`), e uma sonda de auditoria atravessou
+    // 20/20 verdes: bastou chamar o segundo teto de outro nome
+    // (`TETO_DA_LEITURA`), passá-lo por um campo de outro nome
+    // (`doseDoQuadro`) e escolher por modo sem tocar em `q.fase`. Dente
+    // que decora nomes não guarda comportamento nenhum. Os dentes de
+    // agora não perguntam COMO a coisa se chama:
+    //
+    //  1. o NÚMERO é o do filme, 0,55 — recalibrar é mudar aqui junto.
     expect(OCUPACAO_MAXIMA_DA_TELA).toBe(0.55);
-    //  2. a dose de observação (0,07) NÃO VOLTA como segundo número, e
-    //     o teto NÃO volta a entrar por quadro. Se um dia atrapalhar a
-    //     observação do sistema, o conserto é GLOBAL (auto-exposição,
-    //     para todo mundo) — nunca um segundo teto atrás de um nome
-    //     novo. O que se proíbe é a DECLARAÇÃO e o CAMPO, não a
-    //     menção: a docstring desta lei conta o que morreu, e citar o
-    //     defunto pelo nome é o contrário de ressuscitá-lo;
+
+    //  2. COMPORTAMENTO: onde o teto MORDE, a meia do Sol É o teto — e
+    //     o número sai do UNIFORM do material, não de uma constante
+    //     relida. A 1 UA a asa pede 649,7 px numa tela de 900 e o teto
+    //     só deixa 495: quem manda no número é o teto. Qualquer segundo
+    //     teto MENOR — com qualquer nome, por qualquer caminho, escolhido
+    //     por qualquer modo — muda este número e reprova aqui.
+    //     (A soltura entra em 1 pelo fixture: é entrada SINTÉTICA, o
+    //     "regime de longe" que ele declara. Em produção a 1 UA a rampa
+    //     já estaria entregando a óptica ao bloom — o que se mede aqui é
+    //     a lei do teto, e para isso o clarão precisa existir.)
+    const meiaDoSolEm = (screenH: number) => {
+      const c = new ClaraoDeAsas(META.named);
+      const dPc = 1 / 206264.80624548031;
+      const q = {
+        ...quadroEmCasa(true),
+        screenH,
+        camPos: new THREE.Vector3(0, 0, dPc),
+      };
+      for (let i = 0; i < 30; i++) c.atualizar(q);
+      const m = -0.15 + 5 * Math.log10(dPc);
+      const pico = picoDaPsf(m, EXPO_M0, SIGMA_PX, screenH);
+      const sigma = sigmaDaPsfPx(SIGMA_PX, screenH);
+      const asa =
+        FATOR_DE_ENCHIMENTO_DO_SOL *
+        Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
+      const doSol = (
+        c.group.children.filter((f) => (f as THREE.Mesh).visible) as THREE.Mesh[]
+      ).find((mh) => mh.position.length() === 0)!;
+      const meia = (
+        (doSol.material as THREE.ShaderMaterial).uniforms.uMeiaPx as { value: number }
+      ).value;
+      c.dispose();
+      return { asa, meia };
+    };
+    // a 900 px de tela: a asa PASSA do teto, logo quem manda é o teto
+    const alto = meiaDoSolEm(900);
+    expect(alto.asa).toBeGreaterThan(OCUPACAO_MAXIMA_DA_TELA * 900);
+    expect(alto.meia).toBeCloseTo(OCUPACAO_MAXIMA_DA_TELA * 900, 9);
+    // e o número É o teto, não uma coincidência de escala: com a tela
+    // pela metade a meia acompanha o teto, não a asa
+    const baixo = meiaDoSolEm(450);
+    expect(baixo.asa).toBeGreaterThan(OCUPACAO_MAXIMA_DA_TELA * 450);
+    expect(baixo.meia).toBeCloseTo(OCUPACAO_MAXIMA_DA_TELA * 450, 9);
+    expect(alto.meia / baixo.meia).toBeCloseTo(2, 9);
+
+    //  3. ESTRUTURA: o quadro do clarão declara ESTES campos e mais
+    //     nenhum. É a porta que a sonda usou — ela entrou por um campo
+    //     novo no quadro —, e uma lista fechada a fecha sem depender do
+    //     nome que o próximo invente. Campo novo aqui é decisão de
+    //     desenho: passa por quem decide, não por um diff distraído.
     const CLARAO = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
-    expect(CLARAO).not.toMatch(/OCUPACAO_NA_OBSERVACAO\s*=/);
-    expect(CLARAO).not.toMatch(/tetoDeOcupacao\s*\??:/);
-    //  3. e o módulo do Sol no quadro NÃO PERGUNTA A FASE para dosar o
-    //     clarão — era o último `if (fase)` no desenho do mundo, e ele
-    //     morreu com a decisão. Um `q.fase` reaparecendo aqui é a
-    //     distinção entre os modos voltando pela porta dos fundos.
+    expect(camposDaInterface(CLARAO, 'QuadroDoClarao')).toEqual([
+      'camPos', 'screenH', 'dtS', 'solVisivel', 'solturaDoSol', 'expoM0', 'sigmaPx', 'pr',
+    ]);
+    //     ...e o módulo do Sol no quadro não recebe MODO nenhum para
+    //     repassar: o `fase: Phase` que sobrava no parâmetro (sem leitor,
+    //     desde que o ternário morreu) saiu, e a lista fechada impede que
+    //     ele volte com outro nome.
     const SOL_NO_QUADRO = readFileSync(
       new URL('../director/solNoQuadro.ts', import.meta.url),
       'utf8'
     );
-    expect(SOL_NO_QUADRO).not.toContain('q.fase');
-    expect(SOL_NO_QUADRO).not.toContain('tetoDeOcupacao');
+    expect(camposDoParametro(SOL_NO_QUADRO, 'atualizarCorpoEClarao')).toEqual([
+      'dHome', 'hPx', 'prAtual', 'tanHalfFov', 'camPos', 'dtS',
+    ]);
   });
 });

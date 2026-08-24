@@ -71,8 +71,7 @@ export interface StarLabel {
  * dez corpos e as 21 luas projetam a menos de 1% de tela uns dos
  * outros, e quem chegava primeiro na lista ocupava. O resultado era
  * Saturno nascendo `desenhado: false` por colidir com "SOL", e a queixa
- * do dono —
- * *"conseguíamos ver os rótulos de todos objetos de forma
+ * do dono — *"conseguíamos ver os rótulos de todos objetos de forma
  * inteligente"*.
  *
  * OS NÚMEROS, e a razão de cada degrau:

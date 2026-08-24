@@ -843,6 +843,11 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     const tetoParado = tetoEmUA();
     rig.pinarDistancia(rig.pisoDeZoom);
     rig.apply(camera);
+    // o companheiro, com o número medido para não virar limiar solto: a
+    // câmera pousa em 0,0093 UA (dois raios solares, o piso do zoom)
+    // contra um limiar de 2,268 UA — 244× de folga. Ele não está aqui
+    // para ser apertado; está para provar que a câmera SAIU do lugar,
+    // que é o que dá sentido à igualdade da linha seguinte.
     expect(camera.position.length() / AU_PARA_PC).toBeLessThan(tetoParado / 100);
     expect(tetoEmUA()).toBeCloseTo(tetoParado, 12);
     rig.pinarDistancia(null);
