@@ -398,7 +398,18 @@ try {
   // O A/B da porta no render DEFAULT (com bloom, as 18 vistas oficiais)
   // continua sendo o da leva — lá o que se prova é outra coisa, que o
   // filme não perde um pixel por a porta existir.
-  const UA150 = 'pos=0,0,0.00072722&look=0,0,0&nobloom=1';
+  // E VAI TAMBÉM COM `&noorbitas=1`, pela MESMÍSSIMA razão do `nobloom`
+  // acima — é lente de régua, não conveniência. O que estas três linhas
+  // provam é que o CAMINHO VIVO (busca, decodificação, escrita dos dois
+  // atributos) reproduz o retrato congelado bit a bit; o sujeito são os
+  // dez PONTOS. Desde o item 77 há uma segunda coisa que depende da
+  // efeméride estar viva: as LINHAS DE ÓRBITA, que não desenham sem ela
+  // (é o contrato delas — nunca o retrato). Sem o corte, o lado
+  // `jd=EPOCA` ganharia as linhas que o lado sem porta não tem, e o
+  // teste passaria a medir "a camada de órbitas existe" em vez de "a
+  // efeméride viva acerta a posição dos pontos" — perderia o dente que
+  // o `nobloom` foi posto ali para lhe dar.
+  const UA150 = 'pos=0,0,0.00072722&look=0,0,0&nobloom=1&noorbitas=1';
   await sessao.ir(`${UA150}&${PIN}`);
   const semPorta = await sessao.md5();
   await sessao.ir(`${UA150}&jd=EPOCA&${PIN}`);
@@ -595,7 +606,7 @@ try {
   conferir(
     familias.length === 3
       && familias.every((f) => f.conta === `${f.ligadas}/${f.linhas}`)
-      && familias.reduce((n, f) => n + f.linhas, 0) === 17,
+      && familias.reduce((n, f) => n + f.linhas, 0) === 18,
     `as três famílias e a contagem de cada uma — `
       + familias.map((f) => `${f.rotulo} (${f.conta})`).join(' · ')
   );

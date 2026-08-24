@@ -39,8 +39,9 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
    **"Explorar"** na barra do filme, e no celular a folha fecha
    **arrastando para baixo**. Ver o item **61**.
 
-**A ORDEM DA PRÓXIMA CONVERSA:** item **77** (as linhas de órbita) → a
-**vista inicial** (o candidato (a), que só existe depois do 77) → o
+**A ORDEM DA PRÓXIMA CONVERSA:** o item **77** (as linhas de órbita)
+POUSOU em 23/08 e só espera a conferência dele — a próxima obra é a
+**vista inicial** (o candidato (a), que agora existe) → o
 **clarão único** → as **tarjas do celular** → os **dois retoques**. Só
 depois disso o **81** (o vermelho do MB1 no voo livre), o **70** e o
 **75**. O arquivo que numerava essa fila morava na pasta temporária e se
@@ -126,7 +127,7 @@ duas telas, com gaveta que sobe ao clique, os culpados finalmente na
 tela e a gaveta de camadas parando acima dele. Fotos em
 `capturas/item61-*`. Em 22/08 fecharam mais DUAS partes dele: as
 **camadas saíram do painel de Ajustes** e a gaveta virou a porta única —
-17 caixas em três famílias com contagem, nos dois modos (`751d270`) —, e
+18 caixas em três famílias com contagem, nos dois modos (`751d270`; a décima oitava é a das linhas de órbita, item 77) —, e
 os **controles do filme somem sozinhos** depois de 3 s parado, voltando
 ao primeiro gesto. **Em 23/08 o modo único andou quatro passos** (ver o
 bastão da noite, no alto). **Em 23/08 as ESCOLHAS dele fecharam todas** —
@@ -902,49 +903,112 @@ usar zoom, virar e se mover por "algoritmos claros de movimento
 inteligente cinematográfico" — e o destinatário: o motor é ferramenta do
 agente, com instruções.
 
-**77. As linhas de órbita, ligadas por padrão.** (Nasceu em 22/08, do
-plano da navegação — o item 73, aposentado em `c8507ba` —, e ficou de
-fora dele por decisão declarada. O que aquele plano dizia das órbitas
-está reescrito aqui embaixo, que passa a ser o único lugar.) A órbita é o DADO, não enfeite: NASA Eyes, Celestia e
+**77. As linhas de órbita, ligadas por padrão. — O CÓDIGO POUSOU EM
+23/08; FALTA ELE OLHAR.** (Nasceu em 22/08, do plano da navegação — o
+item 73, aposentado em `c8507ba` —, e ficou de fora dele por decisão
+declarada.) A órbita é o DADO, não enfeite: NASA Eyes, Celestia e
 SpaceEngine desenham as três. Sem elas o Atlas mostra dez pontos soltos
 e o visitante não tem como ler que Marte está entre a Terra e Júpiter.
 
-**POR QUE FICOU DE FORA DA OBRA DA NAVEGAÇÃO, e a razão é medida:** elas
-mudam pixel em TODA vista do Atlas, inclusive as três md5 da prova 3 do
-`atlas-smoke` e as vistas oficiais de dentro do sistema. Ou seja, pedem
-`ab-identidade` cheio com o delta DECLARADO (não bit-idêntico — a
-imagem muda de propósito) e a conferência do dono à parte. Entrar junto
-com a navegação teria misturado "a câmera mudou" com "o desenho mudou"
-no mesmo A/B.
+**O QUE ESTÁ EM PÉ, e é só isto: A CONFERÊNCIA DELE.** As fotos estão
+prontas e nomeadas no fim deste item. O que ele tem de julgar são as
+DUAS decisões abaixo, porque as duas mudam o que aparece na tela e
+nenhuma das duas estava no contrato que ele leu.
 
-**O QUE ELAS PRECISAM, escrito para quem as fizer:** uma camada nova na
-tabela única `CAMADAS` (`atlasConfig.ts`) — `{ flag: 'noorbitas', nome:
-'Linhas de órbita', viva: true, icone: '◜' }` —, e com ícone ela aparece
-na gaveta do Atlas de graça e o selo a declara pela derivação de
-sempre. O desenho é um `world/orbitas.ts` que amostre
-`efemeride.posicaoHeliocentrica(id, jd + k·T/N)` ao longo de um período
-(a efeméride VIVA, nunca o retrato congelado — senão a linha e o ponto
-divergem no primeiro salto de data), ~256 pontos por corpo, `LineLoop`
-aditivo com fade por tamanho angular (some quando a órbita não cabe no
-quadro), e as luas só com o pai enquadrado.
+**DECISÃO 1 — A CURVA NÃO SAI DE "AMOSTRAR UM PERÍODO", porque esse
+caminho NÃO EXISTE.** O contrato escrito aqui mandava amostrar
+`posicaoHeliocentrica(id, jd + k·T/N)` ao longo de um período inteiro. A
+tabela de efemérides embarcada cobre **1950–2050** e o motor LANÇA fora
+dela, de propósito. Da época do retrato (2026), um período inteiro cai
+fora da janela em **quatro dos nove planetas** — Saturno (chega em
+2055), Urano (84 anos), Netuno (165) e Plutão (248) —, e amostrar para
+trás não salva: Urano em 1942 já está fora. Metade do sistema solar
+ficaria sem linha, para sempre. A prova está pinada em teste
+(`orbitas.test.ts` chama o motor e cobra que ele lance).
 
-**ELE AUTORIZOU EM 23/08 — E O 77 É A PRIMEIRA TAREFA DA PRÓXIMA
-CONVERSA.** Perguntado se as linhas podiam entrar ANTES, sabendo que elas
-mudam a imagem de toda vista do Atlas, ele respondeu **"órbitas
-primeiro"**. E o propósito imediato tem nome: é a **vista com que o Atlas
-abre** — ele escolheu o candidato **(a)** da folha
-`capturas/modo-unico-candidatos.png`, o sistema COM as órbitas
-desenhadas, e essa vista não existe sem elas (ver o item **61**).
+O que foi construído no lugar: a **cônica osculadora do estado vivo** —
+posição E velocidade lidas do mesmo motor, no mesmo instante, viradas em
+elipse. É o que "linha de órbita" significa nos três programas de
+referência. E ela cumpre o que o contrato queria garantir, mais forte do
+que a amostragem cumpriria: o primeiro vértice do laço **É** a posição
+viva do corpo, por identidade algébrica — linha e ponto não divergem em
+data nenhuma, e isso é cobrado por um teste que constrói as DUAS camadas
+de verdade lado a lado e salta dez anos entre elas.
 
-Por isso o 77 deixa de ser obra solta e vira o **primeiro** da fila do
-modo único: logo atrás dele vem a **vista padrão** (o arquivo que
-numerava aquela fila se perdeu com a pasta temporária; a ordem viva é a
-do bastão, no alto). Nada do que está
-escrito acima muda — a camada na tabela única `CAMADAS`, o
-`world/orbitas.ts` pela efeméride VIVA e o `ab-identidade` cheio com o
-**delta DECLARADO** (a imagem muda de propósito, então o veredito é a
-foto aberta com o `diff-pixel` assinado, nunca "bit-idêntico") seguem
-sendo o contrato.
+**DECISÃO 2 — OS OITO CORPOS SEM PONTO FICARAM DE FORA, e a decisão foi
+tomada com a FOTO na mão.** Ceres, Éris, Haumea, Makemake, Quaoar,
+Vesta, Palas e Hígia (a lista `HELIO_SEM_PONTO`) tinham linha na
+primeira versão. Na abertura do Atlas as quatro transnetunianas são
+inclinadas e excêntricas e as quatro do cinturão são quase o mesmo anel
+repetido: juntas viravam um **novelo** cruzando o quadro inteiro, e os
+PLANETAS — que são o que este item existe para deixar legível — sumiam
+dentro dele. A regra que ficou escrita no código: *a linha é a LEITURA
+de um corpo que a cena desenha no mesmo enquadramento*. Os oito não têm
+ponto fotométrico; de longe a linha seria um anel em volta de nada, e de
+perto, onde eles ganham globo, a órbita já não cabe no quadro por duas
+ordens de grandeza. **Se ele quiser os oito de volta, é UMA LINHA de
+código** (`...HELIO_SEM_PONTO.map(…)` em `world/orbitas.ts`), e está
+dito lá.
+
+**O QUE APARECEU NA TELA:** 30 laços — os nove planetas e as 21 luas.
+Camada nova `noorbitas` na tabela única `CAMADAS` (a décima oitava), com
+ícone, então ela entra na gaveta e no selo pela derivação de sempre.
+Fade por tamanho angular nas duas pontas: some quando é rabisco de
+poucos pixels e some quando não cabe no quadro — inclusive o corte duro
+de quando a **câmera está DENTRO da órbita**, onde o laço envolve o
+observador e não há lente que o enquadre (foi a primeira foto do
+enquadramento da Lua que mostrou o defeito: a órbita da Terra
+atravessando o quadro a meia força). Lua só com o **pai enquadrado**, e
+o laço dela gira no PAI, não no Sol. Matiz da fotometria da casa, brilho
+de instrumento. **Sem efeméride viva não há linha** — o retrato
+congelado não desenha órbita nenhuma, que é o que o contrato proibia
+pelo nome.
+
+**DECISÃO 3 — A CAMADA VALE NO FILME TAMBÉM, e ele tem de olhar UMA
+foto por causa disso.** A chave governa a CAMADA e nada mais: não há
+`if (fase)` nenhum aqui, que é a lei dele de 23/08 — *"nao quero essa
+distincao entre modo atlas e modo filme, para mim o filme é um feature
+do atlas"*. Na prática o filme quase não muda, porque a efeméride é
+preguiçosa e o fade é severo: das SETE vistas de filme do gate, **seis
+saem BIT-IDÊNTICAS** (`sol`, `interno`, `travessia`, `edgeon`,
+`faceon`, `retrato`). O que muda é UMA — a volta para casa (t=180), em
+que a câmera está a 4,9 UA e as órbitas dos quatro planetas de dentro
+entram no quadro, quase de perfil, atrás do Sol. Está em
+`capturas/item77-filme-volta-para-casa.png`, e é a foto que ele deve
+olhar com mais atenção: é a única mudança no FILME, e ninguém a pediu.
+Se ele não a quiser, o conserto é um gate de fase — mas isso
+RESSUSCITARIA a distinção entre os modos que ele acabou de proibir, e
+por isso não foi feito por conta própria.
+
+**AS FOTOS PARA ELE OLHAR** (em `capturas/`, que não se versiona — a
+mesma convenção das quatro do item 61):
+
+- `capturas/item77-atlas-com-orbitas.png` e
+  `capturas/item77-atlas-sem-orbitas.png` — **o par que decide**: a
+  abertura do Atlas com as linhas e a MESMA vista com `?noorbitas=1`.
+  É o candidato (a) que ele escolheu, agora existindo.
+- `capturas/item77-jupiter-luas.png` — as quatro galileanas em volta de
+  Júpiter, que é a lua funcionando.
+- `capturas/item77-lua-fade.png` — o enquadramento da Lua: a órbita
+  dela aparece, e as heliocêntricas SOMEM porque a câmera está dentro
+  delas. É o fade sendo julgado pela ausência.
+- `capturas/item77-filme-volta-para-casa.png` — a ÚNICA mudança no
+  filme (decisão 3). É a que pede o olho mais duro dele.
+
+**O QUE OS JUÍZES DISSERAM, com número.** Typecheck, 2.052 testes e
+lint verdes. O `ab-identidade` cheio rodado dos DOIS lados: **41 das 52
+vistas bit-idênticas, 11 mudaram** — a do Atlas, as quatro de lua
+(`titan`, `saturno-anel` e os pares sem bloom), as de Mercúrio e Vênus,
+o eclipse lunar e a volta para casa do filme. O `diff-pixel` assinou as
+diferenças e todas têm a MESMA assinatura: **luz somada, nada apagado**
+(no Atlas, 16.658 px de 3.083.400 — 0,54% —, 16.585 deles só ganhando
+luz e ZERO só perdendo; em Mercúrio são 91 px, e a ferramenta escreve
+"UNILATERAL: adição").
+
+E a prova de que o delta é da CAMADA e de mais nada: a MESMA leva
+rodada com `?noorbitas=1` no binário NOVO devolve **as 52 vistas
+bit-idênticas** ao antes. Nada mudou de carona; a chave desliga de
+verdade.
 
 ---
 
