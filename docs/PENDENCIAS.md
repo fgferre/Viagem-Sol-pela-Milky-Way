@@ -30,7 +30,7 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
 1. **A vista com que o Atlas abre: ÓRBITAS PRIMEIRO.** Ele escolheu o
    candidato **(a)** — o sistema com as linhas de órbita desenhadas — e
    AUTORIZOU o item **77** a entrar antes. **AS DUAS POUSARAM em 23/08**
-   e esperam o olho dele: o Atlas abre no sistema interno, a 8,9 UA, com
+   e esperam o olho dele: o Atlas abre no sistema interno, a ~9 UA, com
    as quatro linhas de dentro. Ver os itens **77** e **61**.
 2. **O clarão do Sol: IGUALAR.** Teto único de 0,55, o do filme, nos dois
    modos — *"nao quero essa distincao entre modo atlas e modo filme, para
@@ -437,6 +437,16 @@ o "depois" do item 73, que passou de **3 nomes** (Sol, Netuno, Plutão)
 para **10** (os 8 planetas, o Sol e Plutão) mais um punhado de
 estrelas. Com as órbitas do item 77 na mesma vista, a teia piora.
 
+**MEIO CAMINHO ANDADO SEM QUERER, em 23/08 (item 61).** A vista de
+abertura desceu para o sistema interno, e o NÓ DOS CORPOS morreu com
+ela: em quadro sobraram CINCO nomes (Sol, Mercúrio, Vênus, Terra,
+Marte), bem separados, em vez de dez empilhados. **O que NÃO morreu são
+as ESTRELAS** — a foto nova (`capturas/vista-padrao-abertura.png`) ainda
+traz ~20 nomes de estrela com traço em volta do sistema, e a queixa dele
+(*"o default todos os objetos estao com o label ligado, fica uma
+confusao na tela"*) continua de pé por causa delas. O nó dos dez corpos
+ainda existe no TETO do zoom, aonde a roda leva.
+
 A causa, numa linha: o item 73 leu *"rótulos de todos objetos de forma
 inteligente"* como "encaixar o máximo de nomes", e o Atlas tenta
 rotular os 10 corpos + 21 luas + 24 estrelas candidatas, com sete
@@ -444,9 +454,11 @@ lugares por nome e traço de até 102 px. Não existe camada para
 desligar os nomes (órbitas têm `noorbitas`; nomes, não). O filme já é
 o outro jeito: o assunto tem nome, o fundo fica mudo. NASA Eyes,
 Celestia e SpaceEngine escondem o nome que não cabe — não puxam um
-traço para salvá-lo. Obra: o dono escolhe o gosto; o juiz
-`atlas-smoke` hoje cobra os 8 planetas com nome na abertura e terá de
-mudar junto.
+traço para salvá-lo. Obra: o dono escolhe o gosto; o juiz `atlas-smoke`
+cobrava os 8 planetas com nome na ABERTURA e já mudou de endereço em
+23/08 (item 61) — na abertura ele cobra os cinco em quadro, e a
+promessa dos dez passou a ser cobrada no TETO do zoom, que é onde o
+aperto ficou.
 
 ---
 
@@ -615,7 +627,9 @@ com as fotos em `capturas/item61-*` (a do quinto passo, a vista, é
 5. **A VISTA PADRÃO virou o candidato (a)** — o último passo, e o que
    esperava o item 77. O Atlas deixou de abrir a 226,84 UA e passa a
    enquadrar a **borda do sistema interno** (a órbita de Marte): nasce a
-   **8,9 UA**, com as quatro linhas de dentro acesas e nenhuma de fora.
+   **~9 UA** (9,15 na época; 8,89 no `jd` da foto dos candidatos — o
+   número anda com a data porque a esfera é a órbita VIVA de Marte), com
+   as quatro linhas de dentro acesas e nenhuma de fora.
    O detalhe e o preço estão na escolha "A VISTA COM QUE O ATLAS ABRE",
    logo abaixo. Fotos: `capturas/vista-padrao-abertura.png` e
    `capturas/vista-padrao-sem-hud.png`.
@@ -632,8 +646,9 @@ fotos na mão:**
   `141b483`–`c32eab3`, e a vista agora.
   **O QUE MUDOU:** a esfera que o Atlas enquadra ao abrir deixou de ser a
   órbita mais externa e passou a ser a **órbita de Marte** — a borda do
-  sistema interno. A câmera nasce a **8,9 UA** em vez de 226,84 (o número
-  anda com a data: são 9,15 UA na época), e as linhas do 77 acendem ali
+  sistema interno. A câmera nasce a **~9 UA** em vez de 226,84 — 9,15 na
+  época e 8,89 no `jd` da foto dos candidatos, porque a esfera é a órbita
+  VIVA de Marte —, e as linhas do 77 acendem ali
   as QUATRO de dentro **e só elas** — Júpiter para fora não cabe no
   quadro e some sozinho, sem uma regra a mais. **O teto do zoom NÃO
   desceu junto:** continua em 226,84 UA, então a vista antiga virou um
@@ -644,7 +659,7 @@ fotos na mão:**
   `capturas/modo-unico-candidato-a-sem-orbitas.png` mostrava o
   enquadramento SEM as linhas — a folha o chama de **(a')** —, e a
   entrega é esse enquadramento SOMADO às órbitas. Ela ficou 8% mais perto
-  que a foto (8,9 UA contra 9,6), e os corpos em quadro são os mesmos
+  que a foto (8,89 UA contra 9,6, no mesmo `jd`), e os corpos em quadro são os mesmos
   cinco: Sol, Mercúrio, Vênus, Terra e Marte.
   **UMA SOBRA HONESTA, medida:** a esta distância a linha de **Jápeto**
   acende a 1,7% do brilho cheio (1,4 de 255 antes do bloom) porque
@@ -953,9 +968,11 @@ de verdade lado a lado e salta dez anos entre elas.
 **DECISÃO 2 — OS OITO CORPOS SEM PONTO FICARAM DE FORA, e a decisão foi
 tomada com a FOTO na mão.** Ceres, Éris, Haumea, Makemake, Quaoar,
 Vesta, Palas e Hígia (a lista `HELIO_SEM_PONTO`) tinham linha na
-primeira versão. Na abertura do Atlas as quatro transnetunianas são
-inclinadas e excêntricas e as quatro do cinturão são quase o mesmo anel
-repetido: juntas viravam um **novelo** cruzando o quadro inteiro, e os
+primeira versão. A 224 UA — a vista de onde o Atlas abria quando a foto
+foi tirada, e que desde o item 61 é o TETO do zoom — as quatro
+transnetunianas são inclinadas e excêntricas e as quatro do cinturão são
+quase o mesmo anel repetido: juntas viravam um **novelo** cruzando o
+quadro inteiro, e os
 PLANETAS — que são o que este item existe para deixar legível — sumiam
 dentro dele. A regra que ficou escrita no código: *a linha é a LEITURA
 de um corpo que a cena desenha no mesmo enquadramento*. Os oito não têm
@@ -1000,8 +1017,14 @@ mesma convenção das quatro do item 61):
 
 - `capturas/item77-atlas-com-orbitas.png` e
   `capturas/item77-atlas-sem-orbitas.png` — **o par que decide**: a
-  abertura do Atlas com as linhas e a MESMA vista com `?noorbitas=1`.
-  É o candidato (a) que ele escolheu, agora existindo.
+  vista do Atlas a 226,84 UA com as linhas e a MESMA vista com
+  `?noorbitas=1`. **CORRIGIDO em 23/08:** este par NÃO é o candidato (a).
+  Ele foi tirado quando o Atlas ainda ABRIA a 226,84 UA, e o que se vê
+  nele são as linhas de Júpiter, Saturno, Urano, Netuno e Plutão — as de
+  fora. O candidato (a) é o sistema INTERNO a ~9 UA, e ele passou a
+  existir com a vista padrão (item 61, §5); a foto dele é
+  `capturas/vista-padrao-abertura.png`. Esta vista de 226,84 UA continua
+  alcançável — virou o TETO do zoom.
 - `capturas/item77-jupiter-luas.png` — as quatro galileanas em volta de
   Júpiter, que é a lua funcionando.
 - `capturas/item77-lua-fade.png` — o enquadramento da Lua: a órbita

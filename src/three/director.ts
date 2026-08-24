@@ -187,7 +187,7 @@ interface DirectorEvents {
   onVeu: (k: number) => void;
   /**
    * O QUE ESTÁ EM QUADRO no Atlas — o nome do alvo enquadrado, ou
-   * `null` quando é o enquadramento de abertura (o sistema inteiro) ou
+   * `null` quando é o enquadramento de abertura (o degrau `sistema`) ou
    * quando o Director não tem nome para dar. `null` não é "vazio": é a
    * a ficha do objeto NÃO montando, em vez de chutar um nome (D6).
    */

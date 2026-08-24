@@ -658,9 +658,11 @@ export function raioDeEnquadramentoEstelar(distanciaAoSolPc: number): number {
  * POSIÇÃO e o RAIO vêm da tabela congelada de 1º de janeiro de 2026
  * (`RETRATO_2026`), e nada neste caminho consulta a efeméride viva nem
  * o `jd` do Director. Consequência: depois de um salto de data a esfera
- * de abertura continua a do retrato — o Sol segue no centro dela (a
- * esfera é centrada na origem, e é essa a promessa que importa), mas o
- * corpo que dá nome ao enquadramento não está mais onde estava.
+ * do SISTEMA INTEIRO continua a do retrato — o Sol segue no centro dela
+ * (a esfera é centrada na origem, e é essa a promessa que importa), mas
+ * o corpo que dá nome ao enquadramento não está mais onde estava. (Esta
+ * esfera FOI a de abertura até 23/08; desde o item 61 ela é o teto do
+ * zoom, e quem abre é a irmã abaixo.)
  *
  * A PENDÊNCIA DA ONDA 5 ("abertura ancorada na época") FECHOU na F2b da
  * Onda 6, com OVERRIDE DECLARADO do destino registrado: o conserto era

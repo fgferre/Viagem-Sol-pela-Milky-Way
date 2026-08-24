@@ -1192,14 +1192,31 @@ try {
   // ---- 15c: OS NOMES DA ABERTURA (item 73, plano §3) ---------------
   // A segunda coisa que o dono pediu, com as palavras dele:
   // *"conseguíamos ver os rótulos de todos objetos de forma
-  // inteligente"*. A medida de antes desta obra: 38 projetados → 7
+  // inteligente"*. A medida de antes daquela obra: 38 projetados → 7
   // desenhados → TRÊS corpos com nome (Sol, Netuno, Plutão). Os quatro
-  // planetas internos projetam a menos de 6 px do Sol e perdiam a vaga
-  // para ele; Saturno perdia para Júpiter.
+  // planetas internos projetavam a menos de 6 px do Sol e perdiam a
+  // vaga para ele; Saturno perdia para Júpiter.
   //
   // A promessa é contada em CORPOS COM NOME, não em rótulos desenhados:
   // quantas estrelas cabem depende do céu daquela data, e o que o dono
   // pediu foi ver os objetos do sistema.
+  //
+  // A PROVA VIROU DUAS EM 23/08 (item 61), e não por conveniência: a
+  // abertura deixou de ser o sistema INTEIRO a 226,84 UA e passou a ser
+  // o sistema INTERNO a ~9 UA. Cobrar "os oito planetas com nome" na
+  // abertura virou cobrar que a tela nomeie quem NÃO está no quadro —
+  // Júpiter fica a 32° do eixo de vista, Urano a 84°, e o corte de
+  // `projectPoint` os descarta antes de haver rótulo. O aperto que o
+  // item 73 consertou não sumiu: ele MUDOU DE ENDEREÇO, e agora mora no
+  // TETO do zoom, aonde o visitante chega puxando a roda. Então:
+  //
+  //   · na ABERTURA cobra-se que TODO corpo em quadro tem nome (os
+  //     cinco de dentro, nenhum perdido para a colisão com o Sol);
+  //   · no TETO cobra-se a promessa original, inteira — os oito
+  //     planetas e o Sol —, que é onde os dez ainda projetam colados.
+  //
+  // Trocar o endereço e manter o dente é o que separa re-pinar de
+  // afrouxar: se alguém desfizer o item 73, a segunda metade grita.
   await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
   await sessao.assentar();
   // a capa da abertura cobre a cena por alguns segundos DEPOIS de a
@@ -1220,18 +1237,62 @@ try {
   const OITO_PLANETAS = [
     'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune',
   ];
-  const faltando = OITO_PLANETAS.filter((p) => !nomesDaAbertura.corpos.includes(p));
+  // O SISTEMA INTERNO é o que cabe no quadro da abertura (item 61): o
+  // Sol e os quatro rochosos. Não é lista nova — é a mesma de cima,
+  // cortada onde a esfera enquadrada corta.
+  const CINCO_DE_DENTRO = ['sun', 'mercury', 'venus', 'earth', 'mars'];
+  const faltandoNaAbertura = CINCO_DE_DENTRO.filter(
+    (p) => !nomesDaAbertura.corpos.includes(p)
+  );
+  // e o AVESSO: nenhum corpo de fora do quadro ganhou nome — se um
+  // aparecer, quem quebrou foi o corte de `projectPoint`, não a colisão
+  const intrusos = nomesDaAbertura.corpos.filter((c) => !CINCO_DE_DENTRO.includes(c));
   conferir(
-    faltando.length === 0 && nomesDaAbertura.corpos.includes('sun'),
-    `na abertura os 8 planetas e o Sol têm nome — ${nomesDaAbertura.corpos.length}`
-      + ` corpos de ${nomesDaAbertura.projetados} projetados`
-      + ` (${nomesDaAbertura.corpos.join(', ')})`
-      + (faltando.length ? ` · FALTAM ${faltando.join(', ')}` : '')
+    faltandoNaAbertura.length === 0 && intrusos.length === 0,
+    `na abertura TODO corpo em quadro tem nome — os cinco de dentro, e só eles`
+      + ` (${nomesDaAbertura.corpos.length} corpos de ${nomesDaAbertura.projetados}`
+      + ` projetados: ${nomesDaAbertura.corpos.join(', ')})`
+      + (faltandoNaAbertura.length ? ` · FALTAM ${faltandoNaAbertura.join(', ')}` : '')
+      + (intrusos.length ? ` · INTRUSOS ${intrusos.join(', ')}` : '')
   );
   conferir(
     nomesDaAbertura.luasAcesas === 0,
     `...e nenhuma LUA acende colada no pai: elas esmaecem por separação`
       + ` na tela (${nomesDaAbertura.luasAcesas} acesas)`
+  );
+
+  // ---- 15d: OS DEZ NOMES NO TETO (item 73, mudado de endereço) -----
+  // A promessa original do item 73, cobrada onde ela ainda tem dente: o
+  // teto do zoom, que é a vista de onde o Atlas abria até 23/08. O `?d=`
+  // sai DA CENA e não é digitado — a régua é "raios do alvo", e o alvo
+  // da abertura encolheu com o item 61; um literal aqui envelheceria no
+  // dia seguinte.
+  const raiosDoTeto = Number(
+    await sessao.js('String(window.__director.atlas.tetoDeZoom'
+      + ' / window.__director.atlas.raioDoAlvo)')
+  );
+  conferir(
+    Number.isFinite(raiosDoTeto) && raiosDoTeto > 1,
+    `o teto do zoom fica ACIMA da abertura — ${raiosDoTeto.toFixed(1)} raios do alvo`
+  );
+  await sessao.ir(`atlas=1&jd=EPOCA&q=cinema&d=${raiosDoTeto}`);
+  await sessao.assentar();
+  await dorme(4000);
+  const nomesDoTeto = JSON.parse(await sessao.js(`JSON.stringify((() => {
+    const alvos = window.__director.rotulos.alvos;
+    return {
+      projetados: alvos.length,
+      corpos: alvos.filter((l) => l.desenhado === true && l.key.startsWith('corpo:'))
+        .map((l) => l.key.slice(6)),
+    };
+  })())`));
+  const faltandoNoTeto = OITO_PLANETAS.filter((p) => !nomesDoTeto.corpos.includes(p));
+  conferir(
+    faltandoNoTeto.length === 0 && nomesDoTeto.corpos.includes('sun'),
+    `no teto do zoom os 8 planetas e o Sol têm nome — ${nomesDoTeto.corpos.length}`
+      + ` corpos de ${nomesDoTeto.projetados} projetados`
+      + ` (${nomesDoTeto.corpos.join(', ')})`
+      + (faltandoNoTeto.length ? ` · FALTAM ${faltandoNoTeto.join(', ')}` : '')
   );
 
   // ---- 16: O POLO DO CORPO NO ALTO (Onda 7) ------------------------

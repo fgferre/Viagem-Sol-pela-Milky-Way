@@ -34,9 +34,11 @@ export interface StarLabel {
    *
    * Por que a marca e não uma segunda lista: o desenho descarta por
    * três leis suas (quase-transparente, faixa reservada do HUD e
-   * colisão com um nome que chegou antes), e na vista de abertura do
-   * Atlas ela descarta MUITO — os dez corpos e as 21 luas projetam
-   * quase no mesmo ponto e só o Sol sobrevive. Sem a marca, o clique
+   * colisão com um nome que chegou antes), e no TETO do zoom do Atlas
+   * ela descarta MUITO — os dez corpos e as 21 luas projetam quase no
+   * mesmo ponto e só o Sol sobrevive. (Era a vista de ABERTURA até
+   * 23/08; o item 61 desceu a abertura para o sistema interno, e o
+   * aperto ficou no teto, aonde a roda ainda leva.) Sem a marca, o clique
    * no "SOL" escrito na tela caía em Fobos, que estava 0,4% de tela
    * mais perto do dedo e nunca fora desenhado.
    *
@@ -64,9 +66,11 @@ export interface StarLabel {
  * A HIERARQUIA DOS NOMES, numa tabela só — a reimplementação do
  * `OverlayPositionTracker` do atlas doador (item 73, plano §3).
  *
- * O que ela resolve, medido: na abertura do Atlas os dez corpos e as 21
- * luas projetam a menos de 1% de tela uns dos outros, e quem chegava
- * primeiro na lista ocupava. O resultado era Saturno nascendo
+ * O que ela resolve, medido no TETO do zoom (224 UA — a vista de
+ * abertura até 23/08, e desde o item 61 o lugar aonde a roda leva): os
+ * dez corpos e as 21 luas projetam a menos de 1% de tela uns dos
+ * outros, e quem chegava primeiro na lista ocupava. O resultado era
+ * Saturno nascendo
  * `desenhado: false` por colidir com "SOL", e a queixa do dono —
  * *"conseguíamos ver os rótulos de todos objetos de forma
  * inteligente"*.
@@ -327,7 +331,8 @@ export interface CorpoRotulavel {
  * era 0,95 FIXA, e a docstring de então dizia "sem fade, dentro do
  * sistema estes dez são o assunto". Dentro do sistema continua sendo
  * verdade e nada muda — o fade só começa a morder a 0,01 pc (2.060 UA),
- * que é 9× mais longe que a vista de abertura, e fecha em 0,05 pc. O
+ * que é 9× mais longe que o TETO do zoom (224 UA) e 226× mais longe que
+ * a vista de abertura desde o item 61, e fecha em 0,05 pc. O
  * que ele conserta é a outra ponta: visitar uma estrela a parsecs de
  * casa e continuar lendo "NETUNO · planeta" sobre um ponto que já não
  * existe no quadro.

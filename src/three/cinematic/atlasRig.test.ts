@@ -822,7 +822,7 @@ describe('o rig e o alvo de abertura', () => {
     expect(BORDA_DO_SISTEMA_INTERNO.raio).toBeLessThan(orbitaMaisExterna().raio);
   });
 
-  it('a roda desce da ABERTURA até o corpo do Sol — 40 estalos, não cinco', () => {
+  it('a roda desce do TETO até o corpo do Sol — 40 estalos, não cinco', () => {
     // item 73, 22/08. Na abertura o ALVO É O SOL (a esfera do sistema é
     // centrada nele), então o piso do zoom é o raio FÍSICO dele. Com o
     // piso na esfera enquadrada eram 70,8 UA e cinco estalos: a roda
@@ -894,7 +894,7 @@ describe('o rig e o alvo de abertura', () => {
     expect(camera.fov).toBe(ATLAS_FOV_GRAUS);
   });
 
-  it('a câmera da abertura fica do lado ACESO do corpo mais externo', () => {
+  it('a câmera do TETO fica do lado ACESO do corpo mais externo', () => {
     const camera = new THREE.PerspectiveCamera(35, 1.6, 0.001, 100);
     const rig = new AtlasRig();
     rig.focarNoSistema();
@@ -1467,7 +1467,8 @@ describe('o degrau do CORPO DO SOL', () => {
     rig.focar(new THREE.Vector3(0, 0, 0), RAIO_DO_SOL_NA_CENA, casa.posicao);
     rig.apply(camera);
     expect(camera.position.clone().normalize().distanceTo(deCasa)).toBeLessThan(1e-12);
-    // só a distância muda — e muda 7.612× (226,84 UA → 0,0298 UA)
+    // só a distância muda — e muda 7.612× (226,84 UA → 0,0298 UA); da
+    // abertura de hoje (~9,15 UA) o mesmo dolly é de ~307×
     expect(distCasa / camera.position.length()).toBeCloseTo(7609, -1);
     expect(camera.position.length() / RAIO_DO_SOL_NA_CENA).toBeCloseTo(6.4042, 4);
   });
@@ -1606,7 +1607,7 @@ describe('o degrau do CORPO DO SOL', () => {
     expect(ESCADA.slice(ESCADA.indexOf('  subirDegrau'))).not.toContain('paiDaLua');
   });
 
-  it('a abertura e o corpo do Sol leem UMA conta do "mais externo"', () => {
+  it('a abertura e o corpo do Sol leem UMA conta da DIREÇÃO privilegiada', () => {
     // duas contas seriam duas direções, e elas divergiriam no primeiro
     // salto de data — a descida deixaria de ser dolly puro sem aviso
     const ESCADA = readFileSync(
@@ -1620,6 +1621,25 @@ describe('o degrau do CORPO DO SOL', () => {
     );
     expect(abertura).toContain('this.casaViva() ??');
     expect(abertura.split('this.casaViva()').length - 1).toBe(1);
+
+    // E O RAIO VEM DA BORDA DE DENTRO (item 61) — a outra metade de
+    // `casaViva`, e a única amarra que liga a ESCADA à vista que o dono
+    // escolheu. Sem ela, trocar a borda de volta pelo corpo mais externo
+    // devolveria a abertura para 226,84 UA sem nenhum trilho vermelho:
+    // os outros dois testes desta vista recebem a esfera pela constante,
+    // não pela escada, e passariam iguais.
+    const casaViva = ESCADA.slice(
+      ESCADA.indexOf('  private casaViva()'),
+      ESCADA.indexOf('  focarNoSistema() {')
+    );
+    expect(casaViva).toContain('BORDA_DO_SISTEMA_INTERNO.id');
+    expect(casaViva).toContain('raio: Math.hypot(borda.x, borda.y, borda.z) * AU_PARA_PC');
+    // ...e o retrato congelado, o caminho SEM efeméride, tem de usar a
+    // MESMA borda — senão a vista muda quando a rede cai
+    expect(abertura).toContain('raio: BORDA_DO_SISTEMA_INTERNO.raio');
+    // o degrau `sistema` do POUSO é a mesma vista, e o religador do
+    // relógio a recompõe: os três têm de citar a mesma esfera
+    expect(ESCADA.split('BORDA_DO_SISTEMA_INTERNO.raio').length - 1).toBe(2);
   });
 });
 

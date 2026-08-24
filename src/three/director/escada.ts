@@ -547,7 +547,9 @@ export class Escada {
     // distância": a roda tem de descer continuamente até o corpo do
     // alvo, como desce em Saturno. Com o piso na esfera enquadrada eram
     // 70,8 UA e CINCO estalos de curso; com o raio físico do Sol são
-    // 0,00930 UA e 40 estalos, a mesma ordem das ~50 de Saturno.
+    // 0,00930 UA e 40 estalos DO TETO até o Sol — ~27 da abertura de
+    // hoje, que nasce no meio do curso (item 61). A mesma ordem das ~50
+    // de Saturno, e agora com estalos sobrando para os DOIS lados.
     //
     // A queda não abre regime de brilho novo: 2 raios solares é MAIS
     // PERTO que o degrau do corpo do Sol (6,40 raios), que a
@@ -1038,12 +1040,11 @@ export class Escada {
     // observador, e o religador do relógio puxaria a câmera para casa se
     // caísse no ramo do sistema logo abaixo
     if (degrau === 'ceu') return null;
-    // sistema: a esfera é centrada no Sol e o raio é a órbita mais
-    // externa VIVA — a MESMA conta de `focarNoSistema`, e agora
+    // sistema: a esfera é centrada no Sol e o raio é a BORDA DO SISTEMA
+    // INTERNO viva (item 61) — a MESMA conta de `focarNoSistema`, e
     // literalmente a mesma função (`casaViva`): era este trecho
-    // redigitado, e duas cópias do "quem é o mais externo" divergiriam
-    // sem ninguém ver — a câmera religada iria para um lugar e o gesto
-    // para outro
+    // redigitado, e duas cópias da conta divergiriam sem ninguém ver —
+    // a câmera religada iria para um lugar e o gesto para outro
     const casa = this.casaViva();
     if (!casa || casa.raio === 0) return null;
     return { alvo: ORIGEM, raio: casa.raio, eixoDe: casa.eixo, pai: null, polo: null };
@@ -1316,8 +1317,10 @@ export class Escada {
    *     raio físico dele (o degrau `corpo` de sempre). É o caso da coda,
    *     e é o que faz "Ficar aqui" pousar na Terra em vez de girar para
    *     o Sol;
-   *  2. dentro, sem corpo em quadro → o SOL, com a órbita mais externa
-   *     (o degrau `sistema`);
+   *  2. dentro, sem corpo em quadro → o SOL, com a esfera do degrau
+   *     `sistema` — que desde o item 61 é a borda do sistema INTERNO, a
+   *     mesma da abertura (`focarNoSistema`), e não mais a órbita mais
+   *     externa;
    *  3. fora — e é o caso dos 26.911 pc do meio do filme → o degrau
    *     `céu`: alvo no Sol, raio igual à distância do PRÓPRIO
    *     observador.

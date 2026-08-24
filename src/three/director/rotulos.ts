@@ -362,9 +362,12 @@ export class Rotulos {
             ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
             : [];
         // A LUA SÓ ACENDE QUANDO SE DESCOLA DO PAI (item 73, plano §3):
-        // na abertura as 21 luas projetam em cima dos planetas delas, e
-        // o nome "Titã" escrito sobre o nome "Saturno" não é
-        // informação, é ruído que ainda por cima disputa vaga.
+        // de longe as 21 luas projetam em cima dos planetas delas, e o
+        // nome "Titã" escrito sobre o nome "Saturno" não é informação, é
+        // ruído que ainda por cima disputa vaga. (Medido no teto do
+        // zoom, que era a vista de abertura até o item 61; na abertura
+        // de hoje Saturno já nem entra no quadro, e a Lua, Fobos e
+        // Deimos continuam colados nos pais deles.)
         this.esmaecerLuasColadasNoPai(corpos, luas);
         // AS ESTRELAS entram por CANDIDATAS, não por vagas: o teto de 7
         // era um corte ANTES da disputa, e era ele que fazia uma vizinha
