@@ -234,29 +234,76 @@ describe('a janela da tabela — por que o caminho do contrato não existe', () 
 });
 
 describe('a camada no quadro', () => {
-  it('desligada não deixa nada visível, e não pergunta nada ao motor', () => {
+  /** A câmera da abertura do Atlas — a que ACENDE as linhas (224 UA). */
+  function cameraDaAbertura(): THREE.PerspectiveCamera {
+    const c = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    c.position.set(0, 0, 224 / UA_POR_PC);
+    c.lookAt(0, 0, 0);
+    c.updateMatrixWorld(true);
+    return c;
+  }
+  const TAN_35 = Math.tan((35 * Math.PI) / 360);
+
+  /**
+   * Um motor ESPIÃO: conta as perguntas e é a única forma de o teste
+   * abaixo cobrar "não pergunta nada". Delega ao motor de verdade, para
+   * não trocar o oráculo por um dublê que responde o que se quer ouvir.
+   */
+  function espiao() {
+    let perguntas = 0;
+    return {
+      contagem: () => perguntas,
+      posicao: (id: string, jd: number) => { perguntas++; return motor.posicao(id, jd); },
+      velocidade: (id: string, jd: number) => { perguntas++; return motor.velocidade(id, jd); },
+      posicaoHeliocentrica: (id: string, jd: number) => {
+        perguntas++;
+        return motor.posicaoHeliocentrica(id, jd);
+      },
+    };
+  }
+
+  it('desligada não deixa nada visível — e o quadro NÃO pergunta ao motor', () => {
     const orbitas = new Orbitas();
+    const fonte = espiao();
+    // um quadro inteiro com a porta fechada, na câmera que ACENDERIA as
+    // linhas se ela estivesse aberta — senão o teste passaria por falta
+    // de assunto em vez de por causa da porta
     orbitas.ligado = false;
-    const camera = new (class {
-      position = { distanceTo: () => 1 };
-    })();
-    // o `update` sai na primeira linha quando a porta está fechada
-    orbitas.update(
-      camera as unknown as never,
-      1080,
-      Math.tan((26 * Math.PI) / 360)
-    );
+    orbitas.update(cameraDaAbertura(), 1800, TAN_35);
     expect(orbitas.group.visible).toBe(false);
     expect(orbitas.acesas).toBe(0);
+    // o QUADRO é caminho puro: quem fala com o motor é `escreverInstante`,
+    // e o director só o chama com a camada ligada
+    expect(fonte.contagem(), 'o update falou com o motor').toBe(0);
+
+    // e com a porta ABERTA a mesma câmera acende — a prova de que o
+    // veredito acima mede a porta, e não um enquadramento vazio
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, fonte);
+    orbitas.update(cameraDaAbertura(), 1800, TAN_35);
+    expect(orbitas.acesas).toBeGreaterThan(0);
+    expect(fonte.contagem()).toBeGreaterThan(0);
     orbitas.dispose();
   });
 
   it('sem efeméride não há linha — o retrato congelado não entra (§6)', () => {
     const orbitas = new Orbitas();
     orbitas.ligado = true;
-    // nenhum `escreverInstante`: é o estado do filme antes da coda
+    // NENHUM `escreverInstante` — é o estado do filme antes da coda, e o
+    // quadro roda assim mesmo: o director chama `update` todo quadro,
+    // com ou sem motor. Sem ESTE update o teste passaria mesmo que o
+    // quadro acendesse linha a partir do retrato congelado, que é
+    // exatamente o defeito que o §6 proíbe.
+    orbitas.update(cameraDaAbertura(), 1800, TAN_35);
     expect(orbitas.acesas).toBe(0);
     expect(orbitas.dbg()).toContain('0 acesas');
+    // e a geometria continua VAZIA: nada foi escrito de lugar nenhum
+    for (const filho of orbitas.group.children) {
+      const g = (filho as unknown as {
+        geometry: { getAttribute(n: string): { array: Float32Array } };
+      }).geometry.getAttribute('position').array;
+      expect(g.every((v) => v === 0)).toBe(true);
+    }
     orbitas.dispose();
   });
 

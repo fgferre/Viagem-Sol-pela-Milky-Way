@@ -1021,9 +1021,9 @@ export class Director {
     this.planetas = new Planetas(CALIBRACAO_DA_CASA);
     this.engine.scene.add(this.planetas.points);
     // AS LINHAS DE ÓRBITA (item 77): quarto irmão, pela mesma razão da
-    // linha acima. Construtor barato — 38 laços vazios, sem uma pergunta
-    // à efeméride: a primeira cônica é escrita no tick, quando o motor
-    // existir (`orbitas.ts`, §6).
+    // linha acima. Construtor barato — 30 laços vazios (os nove do
+    // retrato e as 21 luas), sem uma pergunta à efeméride: a primeira
+    // cônica é escrita no tick, quando o motor existir (`orbitas.ts`, §6).
     this.orbitas = new Orbitas();
     this.engine.scene.add(this.orbitas.group);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra

@@ -99,7 +99,7 @@ export interface HudDaFase {
    */
   ficha: boolean;
   /**
-   * gaveta de camadas — as 17 da casa em três famílias, config único.
+   * gaveta de camadas — as da casa em três famílias, config único.
    * Em TODA fase que tem barra de controles desde o item 61 (22/08): ela
    * é a única porta das camadas, e uma porta que só existisse no Atlas
    * deixaria o filme sem elas. Mesma peça, mesmo estado, mesma URL.

@@ -9,7 +9,7 @@
 //     desde 22/08 (item 61) tem UM SÓ: a gaveta. Palavras do dono:
 //     *"atlas - camadas e ajustes concorrem. vc nao acha que varios
 //     elementos que hj estao em ajustes na verdade deveriam ser
-//     camadas?"* — as 17 camadas eram 17 dos 32 controles do painel de
+//     camadas?"* — as 17 camadas de então eram 17 dos 32 controles do painel de
 //     Ajustes E seis linhas da gaveta, duas portas para a mesma lista.
 //     Agora a porta é uma, e a `familia` é o que a torna legível: uma
 //     fileira de caixas é um inventário, três famílias com contagem são
@@ -74,7 +74,7 @@ export interface Camada {
   viva: boolean;
   /**
    * O GLIFO da linha na gaveta, quando existe. Era ele que decidia
-   * QUEM entrava na gaveta (D6, seis das dezessete); desde 22/08 a
+   * QUEM entrava na gaveta (D6, seis das dezessete de então); desde 22/08 a
    * gaveta é a única porta e mostra TODAS — o ícone voltou a ser o que
    * o nome dele diz: ornamento do rótulo, nas que o têm. A
    * COLUNA dele existe em todas as linhas mesmo quando o glifo falta,

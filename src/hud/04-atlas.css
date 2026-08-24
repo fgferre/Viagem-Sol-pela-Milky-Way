@@ -535,8 +535,8 @@
   accent-color: rgba(255, 200, 130, 0.9);
   cursor: pointer;
 }
-/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: seis das
-   dezessete têm ícone, e sem a coluna reservada os nomes da mesma
+/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: sete das
+   dezoito têm ícone, e sem a coluna reservada os nomes da mesma
    família começariam em dois recuos diferentes. `flex: 0 0 auto` para a
    célula vazia não encolher a zero. */
 .atlas-gaveta-icone {

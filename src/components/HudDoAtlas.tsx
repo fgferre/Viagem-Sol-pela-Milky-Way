@@ -33,14 +33,15 @@ import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
  *
  * A QUEIXA DO DONO, palavra por palavra: *"atlas - camadas e ajustes
  * concorrem. vc nao acha que varios elementos que hj estao em ajustes na
- * verdade deveriam ser camadas?"*. E o fato que ela media: as 17 camadas
- * da casa eram 17 dos 32 controles do painel de Ajustes E seis linhas
- * desta gaveta — duas superfícies desenhando da MESMA tabela, uma com 17
- * e outra com 6. Agora a tabela tem UM leitor: esta gaveta mostra as 17,
- * e a seção "Camadas" saiu do painel.
+ * verdade deveriam ser camadas?"*. E o fato que ela media, em 22/08: as
+ * 17 camadas de então eram 17 dos 32 controles do painel de Ajustes E
+ * seis linhas desta gaveta — duas superfícies desenhando da MESMA
+ * tabela, uma com 17 e outra com 6. Agora a tabela tem UM leitor: esta
+ * gaveta mostra TODAS (18 desde o item 77), e a seção "Camadas" saiu do
+ * painel. O número não se digita aqui — quem o conta é a tabela.
  *
- * EM TRÊS FAMÍLIAS, COM CONTAGEM, e não numa fileira de dezessete: 17
- * caixas seguidas são um inventário, três grupos com "quantas estão
+ * EM TRÊS FAMÍLIAS, COM CONTAGEM, e não numa fileira só: uma fila de
+ * caixas é um inventário, três grupos com "quantas estão
  * ligadas" são um mapa. O agrupamento é campo da tabela (`familia`),
  * derivado em `CAMADAS_POR_FAMILIA` — nunca uma segunda lista aqui.
  *

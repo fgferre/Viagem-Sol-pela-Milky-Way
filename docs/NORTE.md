@@ -400,9 +400,10 @@ que fica aqui é só o que ainda decide alguma coisa.
 **ONDE A CAMADA MORA, decidido em 22/08 (item 61):** na GAVETA, e só
 nela. O dono: *"atlas - camadas e ajustes concorrem. vc nao acha que
 varios elementos que hj estao em ajustes na verdade deveriam ser
-camadas?"*. As 17 estavam DENTRO dos Ajustes (17 dos 32 controles) e a
-gaveta do Atlas mostrava 6 das mesmas — duas portas para uma tabela. A
-gaveta passou a mostrar as 17 em três famílias com contagem, a existir
+camadas?"*. As 17 de então estavam DENTRO dos Ajustes (17 dos 32
+controles) e a gaveta do Atlas mostrava 6 das mesmas — duas portas para
+uma tabela. A gaveta passou a mostrar TODAS (18 desde o item 77, e o
+número deriva da tabela) em três famílias com contagem, a existir
 em toda fase com barra de controles (filme, voo livre e Atlas) e o
 painel ficou com 15 controles. O que esta seção decide — nada recarrega;
 detecção nunca decide, medição sugere, o visitante escolhe — continua de

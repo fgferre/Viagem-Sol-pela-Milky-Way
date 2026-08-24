@@ -106,12 +106,9 @@
 //   - EM CIMA: quando a órbita não CABE no quadro ela deixa de ser uma
 //     órbita e vira um risco atravessando o céu — e o caso extremo é a
 //     CÂMERA DENTRO DO LAÇO, onde a órbita envolve o observador e não
-//     há lente que a enquadre. Foi o que a primeira foto do
-//     enquadramento da Lua mostrou (a órbita da Terra cruzando o quadro
-//     a meia força), e é por isso que esta ponta é medida em ÂNGULO —
-//     semi-ângulo de tangência ao apoastro contra o semi-ângulo da
-//     lente — e não pela aproximação `r/d`, que morre exatamente onde
-//     r/d → 1. É o que mantém limpas as vistas de corpo.
+//     há lente que a enquadre. Por isso esta ponta é medida em ÂNGULO,
+//     e não pela aproximação `r/d`: o porquê mora em `alfaDa`, junto do
+//     corte. É o que mantém limpas as vistas de corpo.
 // As luas ainda pedem o PAI ENQUADRADO: fora do quadro o pai não dá
 // referência nenhuma, e a elipse solta seria um anel sem dono.
 //
@@ -125,8 +122,20 @@
 // exatamente o defeito que o contrato do item 77 proíbe pelo nome —
 // linha de 2026 sob ponto de 2035 — e desenhar a partir de uma tabela
 // de elementos própria seria a segunda fonte de verdade da órbita.
-// O Atlas já acende a efeméride ao entrar (`palcoQuente`), que é onde
-// as linhas têm de estar.
+//
+// O CASO OBSERVÁVEL, dito para ninguém o descobrir como bug: um
+// deep-link de `?pos=` SEM `?jd=` não acende efeméride nenhuma, e
+// portanto não tem linha — é a fase `free` das vistas de bancada. O
+// `atlas-smoke` DEPENDE disso: a prova `?jd=EPOCA é NEUTRA` compara o
+// retrato congelado contra a efeméride viva na época, e a vista dela
+// leva `&noorbitas=1` justamente porque as linhas só existiriam de um
+// dos dois lados.
+//
+// E no Atlas o comum é HAVER linha, não o certo: quem acende a
+// efeméride ao entrar é o `palcoQuente`, e ela chega pela REDE. Sem
+// rede a máquina do tempo fica em `indisponivel`, os dez corpos ficam
+// no retrato e esta camada fica vazia junto — degradação declarada, do
+// mesmo feitio da que o HUD já anuncia ao visitante.
 // ============================================================
 import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
@@ -151,9 +160,14 @@ export function muEmUaDia(gmKm3PorS2: number): number {
  * O μ de dois corpos do problema relativo: o centro MAIS o corpo que
  * gira nele. Para um planeta em torno do Sol a segunda parcela é ruído
  * (1e-6 em Júpiter); para a Lua em torno da Terra ela vale 1,2% de μ, e
- * ignorá-la deixaria a elipse 0,4% grande. Corpo sem GM no kernel
- * (Éris, Makemake, os asteroides) entra com zero — todos são
- * heliocêntricos, onde a própria massa é irrelevante.
+ * ignorá-la deixaria a elipse 0,4% grande.
+ *
+ * O `?? 0` é para a ausência que a casa JÁ DECLARA num lugar só —
+ * `SEM_GM_NO_KERNEL` (`lib/atlas/massas.ts`), e ela tem um único nome
+ * hoje. Redigitar a lista aqui seria a segunda cópia de sempre; o que
+ * este comentário promete é só que o corpo sem GM cai num zero em vez
+ * de num NaN. Quem entra nesse ramo é heliocêntrico, onde a própria
+ * massa não muda o semieixo em nada que chegue a um pixel.
  */
 export function muDoPar(centro: string, corpo: string): number | null {
   const gmCentro = GM_CORPOS[centro];
@@ -168,23 +182,23 @@ export const PONTOS_POR_ORBITA = 256;
  * O piso e o topo do fade DE BAIXO, em pixels de raio na tela. Abaixo
  * do piso a elipse não é curva, é sujeira sobre o ponto do corpo.
  */
-export const RAIO_MIN_PX = 3;
-export const RAIO_CHEIO_PX = 16;
+const RAIO_MIN_PX = 3;
+const RAIO_CHEIO_PX = 16;
 
 /**
  * O fade DE CIMA, em frações do SEMI-ÂNGULO VERTICAL da lente: em 1,0 o
  * apoastro encosta na borda do quadro, e a partir daí a órbita deixa de
  * caber. Some de vez em 1,8.
  */
-export const CABE_NO_QUADRO = 1.0;
-export const FORA_DO_QUADRO = 1.8;
+const CABE_NO_QUADRO = 1.0;
+const FORA_DO_QUADRO = 1.8;
 
 /**
  * A margem do teste "pai enquadrado", em NDC. 1,0 é a borda exata do
  * quadro; a folga de 25% evita que a linha da lua pisque quando o pai
  * encosta na moldura.
  */
-export const MARGEM_DO_PAI_NDC = 1.25;
+const MARGEM_DO_PAI_NDC = 1.25;
 
 /**
  * O BRILHO DA LINHA — o único número de intensidade desta camada, e ele
@@ -192,10 +206,22 @@ export const MARGEM_DO_PAI_NDC = 1.25;
  * demais e a linha vira a fonte de luz mais forte do quadro dentro do
  * sistema; baixo demais e ela não sobrevive ao bloom.
  */
-export const BRILHO_DA_LINHA = 0.32;
+const BRILHO_DA_LINHA = 0.32;
 
-/** O cinza frio de quem não tem cor medida na fotometria (§5). */
-export const COR_NEUTRA: readonly [number, number, number] = [0.62, 0.70, 0.85];
+/**
+ * O cinza frio de quem não tem cor medida na fotometria (§5).
+ *
+ * HOJE NINGUÉM CAI AQUI, e isso é declarado em vez de apagado: os 30
+ * corpos com linha ou estão na `FOTOMETRIA` (os nove) ou têm pai que
+ * está (as 21 luas). O fallback é a RESTRIÇÃO que sustenta a promessa
+ * escrita no item 77 do `PENDENCIAS.md` — que devolver os oito
+ * heliocêntricos sem ponto é UMA linha (`...HELIO_SEM_PONTO.map(…)`
+ * em `CORPOS_COM_ORBITA`). Sem ele, aquela "uma linha" seriam três, e
+ * a nota do documento viraria mentira no dia em que alguém tentasse.
+ * Ceres, Éris e os asteroides não têm linha na fotometria: é este
+ * cinza que os vestiria.
+ */
+const COR_NEUTRA: readonly [number, number, number] = [0.62, 0.70, 0.85];
 
 /** Abaixo disto o alfa não vale um passo de 8 bits — a linha sai da cena. */
 const ALFA_INVISIVEL = 1 / 512;
@@ -281,13 +307,12 @@ export const CORPOS_COM_ORBITA: readonly CorpoComOrbita[] = [
  * os dois versores do plano e a fase do corpo. `null` quando o estado
  * não define elipse (órbita aberta, μ ausente, movimento radial).
  *
- * SEPARAR A CÔNICA DO LAÇO não é gosto de arquitetura, é o que tira 256
- * matrizes e 256 alocações do caminho do quadro: a ponte de frame é
- * LINEAR, então basta girar os DOIS versores e o laço já nasce no frame
- * da cena (`escreverLaco`). Antes cada um dos 256 vértices era rodado
- * um a um, e `eclipticaParaEquatorial` devolve um array novo por
- * chamada — 256 alocações por corpo e por instante, num método que roda
- * a cada quadro em que o relógio anda.
+ * SEPARAR A CÔNICA DO LAÇO não é gosto de arquitetura: a ponte de frame
+ * é LINEAR, então girar os DOIS versores gira o laço inteiro
+ * (`escreverLaco`). Girar vértice a vértice custaria 256 matrizes e 256
+ * alocações por corpo e por instante — `eclipticaParaEquatorial` devolve
+ * um array novo por chamada — num método que roda a cada quadro em que
+ * o relógio anda.
  */
 export interface Conica {
   /** semieixo maior, na unidade de `r` (UA) */
