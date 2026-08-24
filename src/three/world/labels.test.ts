@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA } from '../atlasConfig';
 import { IDS_FOTOMETRIA } from './planetas/fotometria';
+import type { StarLabel } from './labels';
 
 // O RUNNER DA CASA É `node` (vitest.config.ts) e `labels.ts` puxa
 // `galaxy.ts`, que lê `window.location.search` no topo do módulo para as
@@ -31,6 +32,9 @@ const {
   BONUS_DE_HISTERESE,
   CORPO_FADE_COMECA_PC,
   CORPO_FADE_TERMINA_PC,
+  aplicarReguaDeRelevancia,
+  ORCAMENTO_DE_NOMES,
+  OPACIDADE_MINIMA_DO_ROTULO,
 } = await import('./labels');
 
 /** uma câmera olhando a origem de 10 unidades no eixo z */
@@ -215,5 +219,118 @@ describe('o fade dos corpos — dentro do sistema nada muda', () => {
     // (0,0011 pc): o fade nunca morde dentro do sistema
     expect(CORPO_FADE_COMECA_PC).toBeGreaterThan(0.005);
     expect(CORPO_FADE_TERMINA_PC).toBeGreaterThan(CORPO_FADE_COMECA_PC);
+  });
+});
+
+// ============================================================
+// A RÉGUA DE RELEVÂNCIA (item 82, N1) — a metade que o NASA Eyes não
+// tem. A quadtree deles resolve SOBREPOSIÇÃO e resolve bem; e ainda
+// assim mede-se quarenta nomes acesos numa vista da Terra, que é
+// confusão. O Eyes nunca decide que um objeto não INTERESSA; só decide
+// que ele não CABE. Estes vereditos guardam a decisão que falta.
+//
+// São de comportamento: nenhum pergunta o valor do orçamento nem o nome
+// de uma constante. O que se cobra é a ORDEM (importância primeiro) e o
+// TETO (a tela não carrega nomes sem fim), que é o que o dono vê.
+// ============================================================
+describe('a régua de relevância — importância antes de geometria', () => {
+  const nome = (key: string, prioridade: number, distPc = 1): StarLabel => ({
+    name: key, spect: '', distPc, x: 0.5, y: 0.5, opacity: 0.9, key, prioridade,
+  });
+
+  /** um céu com mais nomes do que a tela carrega */
+  const ceuLotado = () => [
+    ...Array.from({ length: 30 }, (_, i) =>
+      nome(`bayer${i}`, PRIORIDADE_DO_ROTULO.estrelaBayer, 10 + i)
+    ),
+    ...Array.from({ length: 6 }, (_, i) =>
+      nome(`propria${i}`, PRIORIDADE_DO_ROTULO.estrelaPropria, 5 + i)
+    ),
+    nome('planeta', PRIORIDADE_DO_ROTULO.planeta, 0.001),
+    nome('sol', PRIORIDADE_DO_ROTULO.sol, 0.0001),
+  ];
+
+  it('a tela tem TETO: sobra nome de fora, por mais que projete', () => {
+    const lista = aplicarReguaDeRelevancia(ceuLotado());
+    const passaram = lista.filter((l) => !l.cortadoPelaRegua);
+    expect(passaram.length).toBeLessThan(lista.length);
+    expect(passaram.length).toBe(ORCAMENTO_DE_NOMES);
+  });
+
+  it('quem passa vale MAIS que quem some — sempre, sem exceção', () => {
+    // é isto que separa uma régua de relevância de um corte arbitrário:
+    // o menor prioritário que ficou ainda é ≥ o maior que saiu
+    const lista = aplicarReguaDeRelevancia(ceuLotado());
+    const passaram = lista.filter((l) => !l.cortadoPelaRegua);
+    const cortados = lista.filter((l) => l.cortadoPelaRegua);
+    const menorQueFicou = Math.min(...passaram.map((l) => l.prioridade!));
+    const maiorQueSaiu = Math.max(...cortados.map((l) => l.prioridade!));
+    expect(menorQueFicou).toBeGreaterThanOrEqual(maiorQueSaiu);
+  });
+
+  it('o Sol e o planeta NUNCA cedem a estrela de fundo', () => {
+    const lista = aplicarReguaDeRelevancia(ceuLotado());
+    for (const chave of ['sol', 'planeta']) {
+      expect(lista.find((l) => l.key === chave)!.cortadoPelaRegua, chave).toBeFalsy();
+    }
+  });
+
+  it('a designação de Bayer é o primeiro degrau a cair', () => {
+    // as dezessete estrelas que faziam o nó na abertura eram quase todas
+    // designações (ε Ind, ι Pav, τ PsA…): o último degrau da tabela some
+    // sozinho, sem uma regra nova que o nomeie
+    const lista = aplicarReguaDeRelevancia(ceuLotado());
+    const bayerVivas = lista.filter(
+      (l) => l.prioridade === PRIORIDADE_DO_ROTULO.estrelaBayer && !l.cortadoPelaRegua
+    );
+    const propriasVivas = lista.filter(
+      (l) => l.prioridade === PRIORIDADE_DO_ROTULO.estrelaPropria && !l.cortadoPelaRegua
+    );
+    expect(propriasVivas.length).toBe(6);
+    expect(bayerVivas.length).toBeLessThan(propriasVivas.length);
+  });
+
+  it('a ORDEM da lista é a disputa: quem vale mais chega antes', () => {
+    // o `LabelCanvas` ocupa na ordem em que recebe, então ordenar aqui É
+    // decidir quem sobrevive à colisão
+    const lista = aplicarReguaDeRelevancia(ceuLotado());
+    for (let i = 1; i < lista.length; i++) {
+      expect(lista[i - 1].prioridade!).toBeGreaterThanOrEqual(lista[i].prioridade!);
+    }
+  });
+
+  it('a histerese segura quem já estava na tela — o corte não PISCA', () => {
+    // dois de mesmo peso disputando a última vaga trocariam de lugar a
+    // cada quadro em que a projeção andasse um pixel
+    const lista = () => [
+      nome('sol', PRIORIDADE_DO_ROTULO.sol, 0.0001),
+      nome('longe', PRIORIDADE_DO_ROTULO.estrelaPropria, 9),
+      nome('perto', PRIORIDADE_DO_ROTULO.estrelaPropria, 8),
+    ];
+    // sem memória, o mais PERTO vem antes
+    expect(aplicarReguaDeRelevancia(lista(), undefined, 2).map((l) => l.key))
+      .toEqual(['sol', 'perto', 'longe']);
+    // com o bônus de quem estava desenhado, o que já se lia continua lido
+    const comMemoria = aplicarReguaDeRelevancia(lista(), new Set(['longe']), 2);
+    expect(comMemoria.map((l) => l.key)).toEqual(['sol', 'longe', 'perto']);
+    expect(comMemoria.find((l) => l.key === 'perto')!.cortadoPelaRegua).toBe(true);
+  });
+
+  it('nome invisível não gasta vaga — a lua colada no pai não expulsa ninguém', () => {
+    // `esmaecerLuasColadasNoPai` derruba a opacidade das 21 luas quase a
+    // zero; se elas consumissem orçamento, empurrariam para fora nomes
+    // que o visitante VÊ
+    const fantasmas = Array.from({ length: 20 }, (_, i) => {
+      const l = nome(`lua${i}`, PRIORIDADE_DO_ROTULO.lua, 0.01);
+      l.opacity = OPACIDADE_MINIMA_DO_ROTULO / 2;
+      return l;
+    });
+    const visiveis = Array.from({ length: 4 }, (_, i) =>
+      nome(`propria${i}`, PRIORIDADE_DO_ROTULO.estrelaPropria, 5 + i)
+    );
+    const lista = aplicarReguaDeRelevancia([...fantasmas, ...visiveis]);
+    for (const v of visiveis) {
+      expect(lista.find((l) => l.key === v.key)!.cortadoPelaRegua, v.key).toBeFalsy();
+    }
   });
 });

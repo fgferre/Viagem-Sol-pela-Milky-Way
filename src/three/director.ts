@@ -2635,6 +2635,9 @@ export class Director {
       // o alvo escolhido tem prioridade 100 na disputa dos nomes (item
       // 73): o dono do foco é a escada, e o rótulo só precisa do id
       foco: this.escada.focoCorpoId,
+      // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
+      // outras dezoito, e entregue pronta ao produtor
+      nomesEscondidos: this.hide.has('nonomes'),
     });
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);

@@ -543,16 +543,44 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   //    estar ATRÁS deles — e aí o toque acerta o painel, não o canvas.
   //    Quem responde isso é `elementFromPoint`, com a folha JÁ ABERTA,
   //    que é o estado do primeiro dos três toques.
+  //
+  //    OS DOIS ESTADOS SÃO DOIS, e a escolha do ponto tem de respeitar
+  //    isso — conserto de 24/08 (item 82). O candidato saía da lista de
+  //    rótulos DESENHADOS com a folha JÁ ABERTA, e essa é a pergunta
+  //    errada: com a folha aberta o retângulo dela é área reservada, e
+  //    todo rótulo que encosta nela cede o lugar (item 56). O que o
+  //    teste precisa é de um ponto que ESCOLHE com a folha fechada
+  //    (segundo e terceiro toques) e que seja CÉU com a folha aberta
+  //    (primeiro toque) — duas perguntas, dois estados. Então a lista se
+  //    colhe ANTES de abrir, e a folha só decide se o ponto está livre.
+  //
+  //    E O DEDO NÃO PRECISA CAIR NO PIXEL DO NOME: o hit-test compara
+  //    contra a âncora com um RAIO de ~6% da tela (`alvoNoPonto`), que a
+  //    390×844 são ~23 px na horizontal e ~50 na vertical. Por isso cada
+  //    âncora entra na lista com dois pontos ACIMA dela — bem dentro do
+  //    raio, e é assim que um polegar de verdade acerta um nome que está
+  //    encostado no topo de um painel. Sem isso, a prova exigia que
+  //    houvesse um nome inteiro no céu livre acima da folha, e enquanto a
+  //    tela carregava vinte nomes sempre havia; com a régua de
+  //    relevância do item 82 a conta baixou, os nomes que restam se
+  //    agrupam no sistema, e a folha de camadas (405 px de altura, topo
+  //    a 327) cobre todos eles.
+  const candidatosNoCeu = await s.js(`(() => JSON.stringify(
+    window.__director.rotulos.alvos
+      .filter((l) => l.desenhado === true && l.opacity >= 0.15)
+      .flatMap((l) => [0, 20, 40].map((acima) => ({
+        x: Math.round(l.x * innerWidth),
+        y: Math.round(l.y * innerHeight) - acima,
+        nome: l.name,
+      })))
+      .filter((l) => l.x > 0 && l.y > 0 && l.x < innerWidth - 1 && l.y < innerHeight - 1)
+  ))()`);
   await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
   await dorme(300);
   const tinta = await s.js(`(() => {
-    const alvos = window.__director.rotulos.alvos
-      .filter((l) => l.desenhado === true && l.opacity >= 0.15);
-    for (const l of alvos) {
-      const x = Math.round(l.x * innerWidth), y = Math.round(l.y * innerHeight);
-      if (x < 1 || y < 1 || x > innerWidth - 2 || y > innerHeight - 2) continue;
-      const alvo = document.elementFromPoint(x, y);
-      if (alvo && alvo.classList.contains('scene-canvas')) return { x, y, nome: l.name };
+    for (const l of ${candidatosNoCeu}) {
+      const alvo = document.elementFromPoint(l.x, l.y);
+      if (alvo && alvo.classList.contains('scene-canvas')) return l;
     }
     return null;
   })()`);

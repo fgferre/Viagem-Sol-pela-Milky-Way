@@ -1757,23 +1757,16 @@ describe('os dois defeitos declarados do degrau do Sol', () => {
     expect(visita).not.toContain('if (!label.desenhado) continue;');
   });
 
-  it('quem escreve a marca é o desenho, no mesmo objeto que o clique lê', () => {
-    const CANVAS = readFileSync(
-      new URL('../../components/LabelCanvas.ts', import.meta.url),
-      'utf8'
-    );
-    const laco = CANVAS.slice(CANVAS.indexOf('for (const label of labels) {'));
-    expect(laco).toContain('label.desenhado = false;');
-    expect(laco).toContain('label.desenhado = true;');
-    // nasce `false` ANTES do primeiro descarte e vira `true` só depois
-    // do último — as três leis de descarte do desenho ficam num lugar só
-    expect(laco.indexOf('label.desenhado = false;')).toBeLessThan(
-      laco.indexOf('if (label.opacity < 0.08) continue;')
-    );
-    expect(laco.indexOf('occupied.push(candidate);')).toBeLessThan(
-      laco.indexOf('label.desenhado = true;')
-    );
-  });
+  // A OUTRA METADE — que quem ESCREVE a marca é o desenho, no mesmo
+  // objeto que o clique lê — vive em `components/LabelCanvas.test.ts`,
+  // que é onde o duplo do canvas 2D já existe. Ela era medida AQUI
+  // lendo o texto-fonte do laço, e em 24/08 (item 82) a leitura quebrou
+  // por dois motivos que não mudavam promessa nenhuma: o laço passou a
+  // ser indexado e a soleira de opacidade ganhou nome. Um dente que se
+  // quebra quando o código melhora não estava medindo a promessa — ele
+  // estava medindo a redação. Agora a mesma promessa é cobrada pelo
+  // COMPORTAMENTO: nenhum rótulo sai do desenho sem resposta, e a
+  // resposta é escrita no objeto que o Director guarda.
 
   it('a rampa exige um quadro do modo JÁ DESENHADO — o deep-link nasce seco', () => {
     const rampa = ESCADA.slice(

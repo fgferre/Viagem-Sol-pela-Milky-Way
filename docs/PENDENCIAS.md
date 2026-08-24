@@ -174,7 +174,9 @@ duas telas, com gaveta que sobe ao clique, os culpados finalmente na
 tela e a gaveta de camadas parando acima dele. Fotos em
 `capturas/item61-*`. Em 22/08 fecharam mais DUAS partes dele: as
 **camadas saíram do painel de Ajustes** e a gaveta virou a porta única —
-18 caixas em três famílias com contagem, nos dois modos (`751d270`; a décima oitava é a das linhas de órbita, item 77) —, e
+19 caixas em três famílias com contagem, nos dois modos (`751d270`; a décima
+oitava é a das linhas de órbita, item 77, e a décima nona é a dos nomes na
+tela, item 82) —, e
 os **controles do filme somem sozinhos** depois de 3 s parado, voltando
 ao primeiro gesto. **Em 23/08 o modo único andou quatro passos** (ver o
 bastão da noite, no alto). **Em 23/08 as ESCOLHAS dele fecharam todas** —
@@ -493,11 +495,12 @@ traz ~20 nomes de estrela com traço em volta do sistema, e a queixa dele
 confusao na tela"*) continua de pé por causa delas. O nó dos dez corpos
 ainda existe no TETO do zoom, aonde a roda leva.
 
-A causa, numa linha: o item 73 leu *"rótulos de todos objetos de forma
-inteligente"* como "encaixar o máximo de nomes", e o Atlas tenta
+A causa, numa linha (e as duas metades dela morreram em 24/08, ver os
+degraus N1 e N2 abaixo): o item 73 leu *"rótulos de todos objetos de
+forma inteligente"* como "encaixar o máximo de nomes", e o Atlas tentava
 rotular os 10 corpos + 21 luas + 24 estrelas candidatas, com sete
-lugares por nome e traço de até 102 px. Não existe camada para
-desligar os nomes (órbitas têm `noorbitas`; nomes, não). O filme já é
+lugares por nome e traço de até 102 px. E não existia camada para
+desligar os nomes (órbitas tinham `noorbitas`; nomes, não). O filme já é
 o outro jeito: o assunto tem nome, o fundo fica mudo. NASA Eyes,
 Celestia e SpaceEngine escondem o nome que não cabe — não puxam um
 traço para salvá-lo. Obra: o dono escolhe o gosto; o juiz `atlas-smoke`
@@ -532,26 +535,41 @@ visual real**, que é queixa VIVA dele, reafirmada na noite de 23/08.
 Três degraus, nesta ordem:
 
 - **N1 — nomes magros, e a régua de relevância ANTES da geometria.**
-  Corte por importância primeiro (a tabela `PRIORIDADE_DO_ROTULO` de
-  `world/labels.ts` já é essa régua, com a histerese de quem já estava
-  na tela — **reusar, não escrever outra, e NÃO importar o `weightMap`
-  do Eyes**: a hierarquia da casa é dela), e só depois a colisão em
-  espaço de tela: **colidiu, o menor SOME**, sem traço-aranha. O traço de
-  até 102 px do item 73 acaba aqui — nome que não cabe não se salva
-  puxando um risco, que é justamente o que faz o nó que ele vê. As ~20
-  estrelas com traço em volta do sistema, que são a queixa VIVA depois do
-  item 61, morrem neste degrau.
-  **AVISO ESCRITO, para quem executar não se assustar:** a prova
-  `atlas-smoke` cobra hoje **os DEZ com nome no TETO do zoom** — os oito
-  planetas, o Sol e Plutão (a conferência `nomesDoTeto`, que mudou de
-  endereço em 23/08 e passou a cobrar os dez em 24/08, quando se viu que
-  cobrava nove e dizia dez).
-  Com a régua de relevância nova ela **vai reprovar — E COM RAZÃO**: a
-  promessa velha era "encaixar o máximo de nomes", e é essa promessa que
-  este item revoga. A promessa NOVA se escreve **no mesmo commit**, com
-  número medido na tela (quantos nomes o teto passa a mostrar, e quais),
-  nunca afrouxando o dente para o juiz calar. Um juiz que só perdeu o
-  dente não mede nada.
+  **POUSOU em 24/08.** A régua é uma frase: *a tela carrega DEZ nomes,
+  e quem os ocupa é a hierarquia da casa*. Sai da tabela
+  `PRIORIDADE_DO_ROTULO` que já existia, com a histerese de quem já
+  estava na tela (nada do `weightMap` do Eyes entrou), e ela corta ANTES
+  da geometria — que é a metade que o Eyes não tem: a quadtree deles
+  resolve sobreposição, nunca população. Depois dela vem a colisão, e
+  agora é a lei dos atlas de referência: **um lugar por nome, colidiu, o
+  menor SOME**. Os sete deslocamentos × dois lados e o traço de até
+  102 px do item 73 morreram; o que restou é o risco horizontal de 10 px,
+  o desenho anterior àquele item.
+  **O QUE MUDOU NA TELA, medido:** a abertura desenhava **22 nomes** (os
+  cinco corpos e DEZESSETE estrelas, quase todas designações de Bayer —
+  ε Ind, ι Pav, τ PsA, φ² Pav) e passou a desenhar **8** — o Sol, Vênus,
+  Terra e Marte, mais Alnair, Tiaki, Peacock e Aldhanab, as quatro de
+  nome próprio. Nenhuma designação de Bayer sobra na tela: elas são o
+  último degrau da tabela e caem sozinhas. No teto do zoom, **27 → 4**
+  nomes na janela da foto (1600×1000) e 3 na janela do juiz (1200×900):
+  sobra o que a tela consegue SEPARAR. Mercúrio perdeu o nome na
+  abertura — ele projeta dentro da caixa do rótulo do Sol, e é a lei
+  nova funcionando. A foto é `capturas/item82-abertura-antes-depois.png`,
+  com o teto em `capturas/item82-teto-antes-depois.png`.
+  Junto vieram os dois consertos baratos do relatório de performance: o
+  quadro que não mudou **não se repinta** e a largura de cada string se
+  mede **uma vez**. Medido no navegador, com o Atlas parado por 5 s:
+  antes, **183 repintes em 183 quadros** (todos eles, limpando 3,7 M px
+  e redesenhando tudo); depois, **ZERO em 192 quadros**.
+  **OS JUÍZES MUDARAM DE PROMESSA NO MESMO COMMIT**, como estava
+  escrito: a conferência da abertura e a do teto cobravam "todo corpo em
+  quadro tem nome" e "os DEZ no teto", que eram a promessa do item 73
+  ("encaixar o máximo de nomes") — a promessa que este item revoga por
+  decisão dele. No lugar entraram números medidos (8 na abertura, 3 no
+  teto) e o avesso: nenhuma designação de Bayer na tela, nenhuma estrela
+  de fundo tomando a vaga de um corpo do sistema, e o menor peso que
+  ficou valendo o maior que a régua cortou. Um dente que só se perde não
+  mede nada.
   **A REGRA DOS JUÍZES, que estreia aqui (EXPERIMENTAL, e proporcional
   — vale para o juiz que GUARDA UMA DECISÃO DELE, não para teste comum):
   mudar um pino nasce com número medido E passa por auditor independente
@@ -562,17 +580,61 @@ Três degraus, nesta ordem:
   pergunta MORRE, em vez de ser re-pinado num número novo. Se em duas ou
   três etapas isto não pegar sabotagem nenhuma, a regra sai — ela também
   tem de provar que serve.
-- **N2 — a camada "Nomes" na gaveta.** As órbitas têm `noorbitas`; os
-  nomes não têm nada. Vira mais uma linha da tabela única `CAMADAS`, com
-  ícone, e entra na gaveta e no selo **pela derivação de sempre** — sem
-  superfície nova, sem regra nova. É a chave `Labels` que o Eyes tem e
-  nós não temos.
+  **UM DENTE MORREU DE VELHICE nesta etapa, e vale registrar:** um
+  veredito de `cinematic/atlasRig.test.ts` lia o TEXTO-FONTE do laço do
+  `LabelCanvas` para provar que a marca do clique nasce antes do primeiro
+  descarte. Ele quebrou porque o laço passou a ser indexado e a soleira
+  de opacidade ganhou nome — duas melhorias que não mudam promessa
+  nenhuma. A promessa foi reescrita como COMPORTAMENTO em
+  `components/LabelCanvas.test.ts` (nenhum rótulo volta sem resposta).
+  **E UM DEFEITO ANTIGO DO INSTRUMENTO ACORDOU:** a prova do DEDO no
+  `atlas-smoke` escolhe o rótulo mais SOLTO da tela e perguntava
+  `elementFromPoint` com a ficha FECHADA. O primeiro toque abria a folha
+  de baixo, que engolia aquele ponto, e o segundo toque do par caía
+  sobre a ficha em vez do céu — o duplo nunca chegava ao gesto, e o
+  veredito acusava o produto por um defeito da prova. Dormia desde
+  sempre; acordou porque a régua mudou QUEM está desenhado a 390×844.
+  Agora a prova TESTA a condição de verdade: percorre os candidatos do
+  mais solto para o mais apertado e fica com o primeiro que continua
+  sendo céu com a ficha DAQUELE objeto aberta (medido: a folha cobre
+  tudo abaixo de ~310 px num aparelho de 844 de altura, bem mais que os
+  48vh que se supunha).
+- **N2 — a camada "Nomes" na gaveta. POUSOU em 24/08.** A flag é
+  `nonomes` ("Nomes na tela", família Estrelas, ícone ⌶) e é a décima
+  nona linha da tabela única `CAMADAS`: a gaveta e o selo a receberam
+  pela derivação de sempre, sem superfície nova. Desligada, não sobra
+  nome nenhum — nem de corpo, nem de estrela — e o clicar-para-visitar
+  fica sem alvo junto, que é a mesma lista única da pendência 30. É a
+  chave `Labels` que o Eyes tem. A foto é
+  `capturas/item82-camada-nomes.png`.
+- **O QUE FICA ABERTO NESTE ITEM:** a **conferência do dono** — ele
+  julga por foto se a abertura ficou como ele queria, e se OITO nomes é
+  o número certo (a régua está numa constante só, `ORCAMENTO_DE_NOMES`
+  em `world/labels.ts`, e mudá-la é uma linha) —, o **achado do
+  orçamento gasto atrás do painel** logo abaixo, e o degrau **N3**.
+- **ACHADO DE 24/08, medido enquanto se consertava o juiz do celular: a
+  régua gasta vaga com nome que o HUD vai comer.** A régua ordena e
+  corta ANTES da geometria, e é isso que o contrato pede — mas ela não
+  sabe onde está o HUD. Num telefone de 390×844, com a gaveta de camadas
+  aberta (405 px de altura, topo a 327), os quatro nomes que a régua
+  escolheu caem todos DENTRO do retângulo dela e cedem o lugar, e o céu
+  livre acima fica sem nome NENHUM — enquanto 19 candidatos foram
+  cortados, alguns deles projetando justamente ali em cima. Antes da
+  régua sobravam nomes de sobra e ninguém via o desperdício. NÃO É
+  URGENTE (painel aberto é hora de ler o painel, não o céu) e não se
+  conserta de graça: contar o orçamento no DESENHO, e não na projeção,
+  encheria o céu livre — e passaria a régua para depois da geometria,
+  que é o contrário do que este item decidiu. Fica escrito para quando o
+  dono reclamar, ou para quando alguém quiser pesar as duas leituras.
 - **N3 — a oclusão em 3D, e ela fica ATRÁS.** Nome de corpo escondido
   atrás de outro corpo ainda nasce, e "atrás da câmera" já some. A conta
   existe e está pronta: `escondidaPorDisco`, em `world/labels.ts`, hoje
   serve só às estrelas por `projectLabels` — falta **chamá-la também em
   `projectCorpos`**. Não sobe na fila por conta própria: só entra se ele
-  reclamar de nome flutuando sobre um globo no close-up.
+  reclamar de nome flutuando sobre um globo no close-up. (Em 24/08,
+  fotografando o N1, o caso apareceu: no close-up de Júpiter os nomes
+  CITALÁ e MULIPHEIN ficam escritos POR CIMA do globo. A régua nova não
+  toca nisso — ela decide quem interessa, não quem está atrás de quê.)
 
 ---
 

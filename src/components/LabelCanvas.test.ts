@@ -20,9 +20,12 @@
 // perto entre os DESENHADOS está de fato escrito na tela).
 //
 // EM 22/08 (item 73) o desenho ganhou SETE lugares por nome — a âncora
-// e três de cada lado — e TRÊS pesos visuais, e o que sobra na tela deixou de ser um só — as duas
-// metades acima continuam valendo palavra por palavra, e o que muda é
-// quantos nomes cabem.
+// e três de cada lado — e TRÊS pesos visuais. EM 24/08 (item 82) os
+// sete lugares MORRERAM: o dono viu a teia de traços que eles desenham
+// (*"fica uma confusao na tela"*) e a lei virou a dos atlas de
+// referência — um lugar por nome, e quem não cabe SOME. As duas metades
+// acima continuam valendo palavra por palavra: o que muda é que agora
+// some MAIS gente, e a marca é ainda mais necessária.
 //
 // O runner da casa é `node`: o canvas 2D é um duplo mínimo — o que se
 // julga aqui é a decisão de colisão, que é aritmética, não pintura.
@@ -32,22 +35,35 @@ import type { StarLabel } from '../three/world/labels';
 
 (globalThis as { window?: unknown }).window = { devicePixelRatio: 1 };
 
-const { LabelCanvas, DESLOCAMENTOS, PESOS_DO_ROTULO, pesoVisual } = await import(
-  './LabelCanvas'
-);
+const { LabelCanvas, PESOS_DO_ROTULO, pesoVisual } = await import('./LabelCanvas');
 
-/** contexto 2D de mentira: mede texto por caractere e não pinta nada. */
+/** o que o desenho escreveu: texto e onde ele pousou */
+interface Pintada {
+  texto: string;
+  x: number;
+  y: number;
+}
+
+/** contexto 2D de mentira: mede texto por caractere e ANOTA o que pinta. */
 function contextoFalso() {
   const nada = () => {};
+  const pintadas: Pintada[] = [];
+  /** quantas vezes `measureText` foi chamado de verdade */
+  const medicoes = { conta: 0 };
   return {
-    measureText: (t: string) => ({ width: t.length * 7 }),
+    pintadas,
+    medicoes,
+    measureText: (t: string) => {
+      medicoes.conta++;
+      return { width: t.length * 7 };
+    },
     setTransform: nada,
-    clearRect: nada,
+    clearRect: () => pintadas.splice(0, pintadas.length),
     beginPath: nada,
     moveTo: nada,
     lineTo: nada,
     stroke: nada,
-    fillText: nada,
+    fillText: (texto: string, x: number, y: number) => pintadas.push({ texto, x, y }),
     font: '',
     fillStyle: '',
     strokeStyle: '',
@@ -62,13 +78,22 @@ function contextoFalso() {
 }
 
 function canvasFalso(largura = 1200, altura = largura) {
+  const ctx = contextoFalso();
   return {
     clientWidth: largura,
     clientHeight: altura,
     width: 0,
     height: 0,
-    getContext: () => contextoFalso(),
+    getContext: () => ctx,
   } as unknown as HTMLCanvasElement;
+}
+
+/** um canvas de rótulos com o contexto de mentira à mão */
+function bancada(largura = 1200, altura = largura) {
+  const canvas = canvasFalso(largura, altura);
+  const ctx = (canvas as unknown as { getContext: () => ReturnType<typeof contextoFalso> })
+    .getContext();
+  return { canvas, ctx, rotulos: new LabelCanvas(canvas) };
 }
 
 function rotulo(
@@ -131,14 +156,26 @@ function aberturaCheia(): StarLabel[] {
 }
 
 describe('o clique bate com o nome escrito na tela', () => {
-  it('o desenho MARCA quem sobreviveu — e o aglomerado inteiro passa a caber', () => {
+  it('o desenho MARCA quem sobreviveu — no aglomerado fica quem chegou primeiro', () => {
     const labels = aberturaDoAtlas();
     new LabelCanvas(canvasFalso()).draw(labels);
-    // ATÉ 22/08 SOBRAVA UM SÓ: o Sol chegava primeiro e os quatro
-    // planetas internos e as três luas caíam DENTRO da caixa dele. Com
-    // sete lugares por nome nos dois lados (item 73) o aglomerado de 6 px cabe
-    // inteiro — é esta a promessa que a foto do dono mostra.
-    for (const l of labels) expect(l.desenhado, l.key).toBe(true);
+    // A LEI DO ITEM 82: um lugar por nome, e colidiu — some. Quem chega
+    // primeiro na lista ocupa, e a lista chega ordenada pela régua de
+    // relevância, então quem some é sempre o MENOR da disputa. O Sol
+    // abre a fila e fica; os quatro rochosos e as três luas caem DENTRO
+    // da caixa dele e somem; Netuno, longe do nó, fica.
+    const desenhados = labels.filter((l) => l.desenhado).map((l) => l.key);
+    expect(desenhados).toContain('corpo:sun');
+    expect(desenhados).toContain('corpo:neptune');
+    // e o que morreu morreu por ESTAR EM CIMA: cada perdedor projeta a
+    // menos de 8 px do Sol, que é menos que a altura da caixa
+    for (const l of labels) {
+      if (l.desenhado) continue;
+      const sol = labels[0];
+      const dx = (l.x - sol.x) * 1200;
+      const dy = (l.y - sol.y) * 1200;
+      expect(Math.hypot(dx, dy), l.key).toBeLessThan(24);
+    }
   });
 
   it('A ARMADILHA É REAL: sem a marca, o clique acha um invisível', () => {
@@ -164,6 +201,27 @@ describe('o clique bate com o nome escrito na tela', () => {
     // a promessa da pendência 30, palavra por palavra: o que o clique
     // acha É o que está escrito na tela
     expect(achado.desenhado).toBe(true);
+  });
+
+  it('NINGUÉM sai do desenho sem resposta — e a resposta vai no objeto do Director', () => {
+    // Esta promessa era medida em `cinematic/atlasRig.test.ts` lendo o
+    // TEXTO do laço deste arquivo (que `label.desenhado = false` viesse
+    // antes do primeiro `continue`). Em 24/08 ela passou a ser medida
+    // pelo comportamento: o que importa é que nenhum rótulo volte com a
+    // marca `undefined`, porque o clique só descarta o `false` explícito
+    // — um `undefined` faria o "SOL" escrito na tela valer Fobos.
+    const labels = [
+      rotulo('corpo:sun', 'Sol', 0.5, 0.4575, 90),
+      // este some por ser quase transparente (a lua colada no pai)
+      { ...rotulo('corpo:moon', 'Lua', 0.2, 0.3, 6), opacity: 0.01 },
+      // este some porque a régua de relevância já disse não
+      { ...rotulo('star:kdra', 'κ Dra', 0.8, 0.7, 3), cortadoPelaRegua: true },
+      // e este some por colidir com o Sol
+      rotulo('corpo:mercury', 'Mercúrio', 0.5028, 0.4567, 10),
+    ];
+    new LabelCanvas(canvasFalso()).draw(labels);
+    for (const l of labels) expect(typeof l.desenhado, l.key).toBe('boolean');
+    expect(labels.map((l) => l.desenhado)).toEqual([true, false, false, false]);
   });
 
   it('a marca é reescrita a cada quadro — rótulo que volta à tela volta a ser alvo', () => {
@@ -213,7 +271,7 @@ describe('o HUD fixo afasta o nome (item 56)', () => {
     canvas.reservar([RODAPE]);
     const labels = sobreORodape();
     canvas.draw(labels);
-    // OS SETE LUGARES NÃO SALVAM QUEM ESTÁ ATRÁS DO PAINEL, e é o
+    // NÃO HÁ SEGUNDO LUGAR PARA QUEM ESTÁ ATRÁS DO PAINEL, e é o
     // certo: as duas âncoras estão DENTRO do retângulo do rodapé, e o
     // traço que ligaria o texto ao ponto teria de atravessar tinta
     // opaca para chegar lá. Um nome apontando para um ponto invisível é
@@ -247,75 +305,167 @@ describe('o HUD fixo afasta o nome (item 56)', () => {
 
 
 // ============================================================
-// OS SETE LUGARES E OS TRÊS PESOS (item 73, plano §3). O que se julga
-// é a decisão — onde o texto pousa e com que tinta —, que é aritmética e
-// tabela; a pintura é do navegador.
+// UM LUGAR POR NOME (item 82, N1) — a lei que substituiu os catorze
+// lugares do item 73. O que se julga é a DECISÃO: onde o texto pousa, se
+// ele pousa, e quem cede quando dois se atropelam. A pintura é do
+// navegador; aqui só entra aritmética.
+//
+// Estes vereditos são de COMPORTAMENTO de propósito: nenhum deles
+// pergunta o nome de uma constante nem conta linhas de tabela. Trocar a
+// implementação inteira é permitido; mudar o que o visitante VÊ, não.
 // ============================================================
-describe('sete lugares por nome — a âncora e três de cada lado', () => {
-  it('o PRIMEIRO lugar é o de sempre: quem já cabia não se move', () => {
-    const canvas = new LabelCanvas(canvasFalso());
-    const sozinho = [rotulo('corpo:mars', 'Marte', 0.5, 0.45)];
-    canvas.draw(sozinho);
-    expect(sozinho[0].desenhado).toBe(true);
-    // o deslocamento zero é o PRIMEIRO da tabela, sempre: é ele que faz
-    // o rótulo que já cabia continuar exatamente onde estava
-    expect(DESLOCAMENTOS[0]).toBe(0);
-  });
-
-  it('o passo LIMPA a caixa de colisão — 34 > 24 + 8', () => {
-    // não é o ±18 do doador: nesta geometria 18 px ainda cruza, e as
-    // cinco posições viravam uma
-    for (const passo of DESLOCAMENTOS) {
-      if (passo === 0) continue;
-      expect(Math.abs(passo)).toBeGreaterThan(24 + 8);
+describe('um lugar por nome — ou cabe ali, ou some', () => {
+  it('o nome pousa na MESMA ALTURA da âncora: acabaram os traços em diagonal', () => {
+    // A TEIA QUE O DONO VIU eram os deslocamentos verticais: um nome que
+    // não cabia subia até 102 px e puxava um risco diagonal até o ponto.
+    // Com um lugar só, todo texto pousa na linha da própria âncora — e
+    // é isso que faz o traço voltar a ser o risco horizontal de 10 px.
+    const { ctx, rotulos } = bancada();
+    const espalhados = Array.from({ length: 6 }, (_, i) =>
+      rotulo(`corpo:c${i}`, `Corpo ${i}`, 0.2 + i * 0.1, 0.2 + i * 0.09)
+    );
+    rotulos.draw(espalhados);
+    const desenhados = espalhados.filter((l) => l.desenhado);
+    expect(desenhados.length).toBe(6);
+    for (const l of desenhados) {
+      const alturaDaAncora = l.y * 1200;
+      const escritos = ctx.pintadas.filter((p) => Math.abs(p.y - alturaDaAncora) < 0.5);
+      // o nome E o detalhe, os dois na linha da âncora
+      expect(escritos.length, l.key).toBe(2);
     }
-    // SETE e não os cinco do plano: com cinco lugares nos dois lados
-    // cabiam 8 dos 10 corpos da abertura, medido no navegador (ver a
-    // docstring). Sete LUGARES ao todo: a âncora (o zero) e três de cada
-    // lado dela.
-    expect(DESLOCAMENTOS.length).toBe(7);
-    expect(DESLOCAMENTOS.filter((p) => p < 0)).toHaveLength(3);
-    expect(DESLOCAMENTOS.filter((p) => p > 0)).toHaveLength(3);
-    // simétricas em torno da âncora, e em ordem de distância
-    expect([...DESLOCAMENTOS].sort((a, b) => Math.abs(a) - Math.abs(b))).toEqual([
-      ...DESLOCAMENTOS,
-    ]);
   });
 
-  it('catorze empilhados cabem — os sete lugares nos dois lados; o 15º não', () => {
-    const canvas = new LabelCanvas(canvasFalso());
-    // quinze nomes no MESMO ponto — o pior caso do aglomerado interno,
-    // exagerado: os sete lugares × dois lados = catorze vagas
+  it('empilhados, sobra UM — e não catorze', () => {
+    const { rotulos } = bancada();
+    // quinze nomes no MESMO ponto: até 23/08 catorze deles achavam um
+    // lugar e a tela virava uma coluna de texto saindo de um pixel
     const muitos = Array.from({ length: 15 }, (_, i) =>
       rotulo(`corpo:c${i}`, `Corpo ${i}`, 0.5, 0.45)
     );
-    canvas.draw(muitos);
-    expect(muitos.filter((l) => l.desenhado).length).toBe(
-      DESLOCAMENTOS.length * 2
-    );
-    expect(muitos[14].desenhado).toBe(false);
+    rotulos.draw(muitos);
+    expect(muitos.filter((l) => l.desenhado).length).toBe(1);
+    expect(muitos[0].desenhado).toBe(true);
   });
 
-  it('o LADO é alternativa, e o preferido vem primeiro', () => {
-    const canvas = new LabelCanvas(canvasFalso());
-    // dois no mesmo ponto, com a caixa alta o bastante para o primeiro
-    // ocupar os sete lugares de um lado é caro — aqui basta ver
-    // que os dois cabem, o que só é possível com dois lugares
-    const dois = [
-      rotulo('corpo:a', 'A', 0.5, 0.45),
-      rotulo('corpo:b', 'B', 0.5, 0.45),
+  it('COLIDIU, O MENOR SOME: quem a régua pôs à frente é quem fica', () => {
+    const { rotulos } = bancada();
+    // a lista chega ordenada pela régua de relevância — o Sol antes do
+    // planeta, o planeta antes da estrela. Quem chega primeiro ocupa, e
+    // é assim que "o menor some" acontece sem uma segunda lei
+    const doisNoMesmoPonto = [
+      rotulo('corpo:sun', 'Sol', 0.5, 0.45, 90),
+      rotulo('star:kdra', 'κ Dra', 0.5, 0.45, 3),
     ];
-    canvas.draw(dois);
-    expect(dois.every((l) => l.desenhado)).toBe(true);
+    rotulos.draw(doisNoMesmoPonto);
+    expect(doisNoMesmoPonto[0].desenhado).toBe(true);
+    expect(doisNoMesmoPonto[1].desenhado).toBe(false);
   });
 
-  it('o HUD ocupa PRIMEIRO, e os cinco lugares não o furam', () => {
-    const canvas = new LabelCanvas(canvasFalso(1200, 900));
-    // um painel no meio da tela, alto o bastante para engolir os cinco
-    canvas.reservar([{ left: 500, right: 1100, top: 300, bottom: 560 }]);
+  it('a régua manda ANTES da geometria: cortado não disputa lugar nenhum', () => {
+    const { rotulos } = bancada();
+    // sozinho no quadro, com a tela inteira à disposição — e mesmo assim
+    // não nasce, porque a régua de relevância já disse não
+    const cortado = rotulo('star:kdra', 'κ Dra', 0.3, 0.3, 3);
+    cortado.cortadoPelaRegua = true;
+    const passa = rotulo('star:vega', 'Vega', 0.7, 0.6, 5);
+    rotulos.draw([cortado, passa]);
+    expect(cortado.desenhado).toBe(false);
+    expect(passa.desenhado).toBe(true);
+  });
+
+  it('perto da borda direita o nome cresce para DENTRO da tela', () => {
+    const { ctx, rotulos } = bancada();
+    const naBorda = [rotulo('star:x', 'X', 0.9, 0.45)];
+    rotulos.draw(naBorda);
+    expect(naBorda[0].desenhado).toBe(true);
+    // o texto pousa à ESQUERDA da âncora: do outro lado ele sairia do
+    // quadro. O lado não é vaga alternativa — é a borda mandando.
+    const ancora = 0.9 * 1200;
+    expect(ctx.pintadas.every((p) => p.x < ancora)).toBe(true);
+  });
+
+  it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {
+    const { rotulos } = bancada(1200, 900);
+    // um painel no meio da tela: até 23/08 o nome procurava outra vaga
+    // e podia contornar a borda dele
+    rotulos.reservar([{ left: 500, right: 1100, top: 300, bottom: 560 }]);
     const labels = [rotulo('star:x', 'X', 0.52, 0.48)];
-    canvas.draw(labels);
+    rotulos.draw(labels);
     expect(labels[0].desenhado).toBe(false);
+  });
+});
+
+// ============================================================
+// O QUADRO QUE NÃO MUDOU NÃO SE REPINTA (item 82, N1) — os dois
+// consertos baratos que vieram junto com a lei nova.
+//
+// `draw` limpava 3,7 M px e repintava tudo sessenta vezes por segundo,
+// inclusive com o Atlas parado, e media cada string duas vezes por
+// rótulo por quadro. O que NÃO pode mudar é o que o visitante vê e o que
+// o clique acha — e é isso que estes vereditos guardam.
+// ============================================================
+describe('o quadro parado não se repinta', () => {
+  it('o mesmo quadro duas vezes: a segunda não pinta nada', () => {
+    const { ctx, rotulos } = bancada();
+    const primeiro = aberturaDoAtlas();
+    rotulos.draw(primeiro);
+    const quantoPintou = ctx.pintadas.length;
+    expect(quantoPintou).toBeGreaterThan(0);
+    // a projeção do quadro seguinte é uma lista NOVA de objetos, com os
+    // mesmos nomes nos mesmos pixels — é o Atlas parado
+    rotulos.draw(aberturaDoAtlas());
+    expect(ctx.pintadas.length).toBe(quantoPintou);
+  });
+
+  it('…e ainda assim a MARCA do clique é reescrita nos objetos novos', () => {
+    // o defeito silencioso que este atalho poderia criar: a lista é
+    // nova, e sem a marca ela nasceria `undefined` — que o clique lê
+    // como "pode ser alvo". O "SOL" escrito na tela voltaria a valer
+    // Fobos (pendência 30).
+    const { rotulos } = bancada();
+    const primeiro = aberturaDoAtlas();
+    rotulos.draw(primeiro);
+    const segundo = aberturaDoAtlas();
+    rotulos.draw(segundo);
+    // quadro pulado ou não, as marcas são as MESMAS, e nenhuma fica sem
+    // resposta — é a lista única do desenho e do clique
+    expect(segundo.map((l) => l.desenhado)).toEqual(primeiro.map((l) => l.desenhado));
+    for (const l of segundo) expect(typeof l.desenhado, l.key).toBe('boolean');
+  });
+
+  it('o nome que ANDA repinta — o atalho é sobre o que não mudou', () => {
+    const { ctx, rotulos } = bancada();
+    rotulos.draw([rotulo('corpo:mars', 'Marte', 0.5, 0.45)]);
+    const antes = ctx.pintadas.length;
+    // meio por cento de tela: seis pixels, que o olho vê
+    rotulos.draw([rotulo('corpo:mars', 'Marte', 0.505, 0.45)]);
+    expect(ctx.pintadas.length).toBe(antes);
+    expect(ctx.pintadas[0].x).not.toBe(600 + 18);
+  });
+
+  it('o HUD que muda de forma repinta, ainda com os nomes parados', () => {
+    const { ctx, rotulos } = bancada(1200, 900);
+    const primeiro = [rotulo('star:x', 'X', 0.52, 0.48)];
+    rotulos.draw(primeiro);
+    expect(primeiro[0].desenhado).toBe(true);
+    // um painel abriu debaixo do nome: os pixels do rótulo são os
+    // mesmos, e mesmo assim o quadro é outro
+    rotulos.reservar([{ left: 500, right: 1100, top: 300, bottom: 560 }]);
+    const segundo = [rotulo('star:x', 'X', 0.52, 0.48)];
+    rotulos.draw(segundo);
+    expect(segundo[0].desenhado).toBe(false);
+    expect(ctx.pintadas.length).toBe(0);
+  });
+
+  it('a mesma string não se mede duas vezes', () => {
+    const { ctx, rotulos } = bancada();
+    // dois quadros com os nomes ANDANDO: sem cache seriam duas medições
+    // por rótulo por quadro, e as strings são exatamente as mesmas
+    rotulos.draw([rotulo('corpo:mars', 'Marte', 0.3, 0.3)]);
+    const medidoNoPrimeiro = ctx.medicoes.conta;
+    expect(medidoNoPrimeiro).toBe(2); // o nome e o detalhe
+    rotulos.draw([rotulo('corpo:mars', 'Marte', 0.6, 0.5)]);
+    expect(ctx.medicoes.conta).toBe(medidoNoPrimeiro);
   });
 });
 

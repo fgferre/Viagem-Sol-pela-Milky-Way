@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import {
   PRIORIDADE_DO_ROTULO,
-  pesoDoRotulo,
+  aplicarReguaDeRelevancia,
   prioridadeDeEstrela,
   projectCorpos,
   projectLabels,
@@ -47,6 +47,19 @@ export interface QuadroDeRotulos {
    * prioridade 100 e não cede a nada (item 73).
    */
   foco: string | null;
+  /**
+   * A CAMADA "NOMES NA TELA" ESTÁ DESLIGADA? (item 82, N2 — a flag
+   * `nonomes` da tabela única `CAMADAS`.) É o gesto do visitante: as
+   * órbitas tinham `noorbitas` e os nomes não tinham nada, e o único
+   * jeito de calar a tela era sair do Atlas.
+   *
+   * Quem lê a flag é o Director, com o `hide.has` de todas as outras —
+   * o produtor recebe a resposta pronta, do mesmo jeito que recebe a
+   * fase e o foco. Desliga TODOS os nomes: é a chave `Labels` do NASA
+   * Eyes, não um filtro por classe. Quem decide quem aparece com ela
+   * LIGADA é a régua de relevância.
+   */
+  nomesEscondidos: boolean;
 }
 
 /**
@@ -315,6 +328,23 @@ export class Rotulos {
    */
   projetar(cam: THREE.PerspectiveCamera, quadro: QuadroDeRotulos) {
     const { fase, named, dHome, planetas } = quadro;
+    // A CAMADA DESLIGADA CALA A TELA INTEIRA (item 82, N2) — e cala
+    // antes de projetar, porque projetar para jogar fora seria pagar a
+    // conta de um quadro que ninguém vê. A lista fica VAZIA, e com ela o
+    // clicar-para-visitar: o que não está escrito não se clica, que é a
+    // mesma lei única da pendência 30.
+    if (quadro.nomesEscondidos) {
+      if (this.lastLabels.length > 0) {
+        this.lastLabels = [];
+        this.prevLabelKeys.clear();
+        this.prevDesenhados.clear();
+      }
+      this.fios.onLabels(this.lastLabels);
+      this.emitDest(undefined, cam.position, named);
+      this.emitSol(cam.position, fase);
+      this.emitCamera(cam.position, fase);
+      return;
+    }
     if ((fase === 'journey' || fase === 'free' || fase === 'atlas') && named) {
       if (fase === 'journey') {
         // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
@@ -395,16 +425,14 @@ export class Rotulos {
             if (l.key === chaveDoFoco) l.prioridade = PRIORIDADE_DO_ROTULO.foco;
           }
         }
-        // A ORDEM É A DISPUTA: o `LabelCanvas` desenha na ordem que
-        // recebe e quem chega primeiro ocupa, então ordenar aqui É
-        // decidir a hierarquia. Empate desempata pelo mais PERTO, que é
-        // a régua que a lista já usava entre estrelas.
-        lista.sort(
-          (a, b) =>
-            pesoDoRotulo(b, this.prevDesenhados) - pesoDoRotulo(a, this.prevDesenhados) ||
-            a.distPc - b.distPc
-        );
-        this.lastLabels = lista;
+        // A RÉGUA DE RELEVÂNCIA (item 82, N1): ordena pela hierarquia da
+        // casa — que é o que decide quem vence a colisão, porque o
+        // desenho ocupa na ordem em que recebe — e marca o que passa do
+        // ORÇAMENTO de nomes da tela. O corte por IMPORTÂNCIA vem antes
+        // da geometria: sem ele, vinte estrelas espalhadas pelo quadro
+        // nunca colidem entre si e ficam todas na tela, que foi
+        // exatamente a confusão que o dono viu na abertura.
+        this.lastLabels = aplicarReguaDeRelevancia(lista, this.prevDesenhados);
         this.emitDest(undefined, cam.position, named);
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));

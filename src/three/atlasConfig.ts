@@ -13,9 +13,10 @@
 //     Ajustes E seis linhas da gaveta, duas portas para a mesma lista.
 //     Agora a porta é uma, e a `familia` é o que a torna legível: uma
 //     fileira de caixas é um inventário, três famílias com contagem são
-//     um mapa. (A conta cresce — o item 77 trouxe a décima oitava —, e
-//     é justamente por isso que nenhum número dela se digita: os três
-//     hospedeiros derivam desta tabela.)
+//     um mapa. (A conta cresce — o item 77 trouxe a décima oitava e o
+//     item 82 a DÉCIMA NONA, os nomes na tela —, e é justamente por isso
+//     que nenhum número dela se digita: os três hospedeiros derivam
+//     desta tabela.)
 //  2. A TABELA DOS QUATRO ESTADOS do seletor de qualidade (Ajustes D),
 //     pela MESMA razão e com a mesma história: dois leitores (o painel
 //     e o `<select>` da barra) e a lista digitada duas vezes.
@@ -116,6 +117,19 @@ export const CAMADAS: readonly Camada[] = [
   { flag: 'nodust', nome: 'Poeira próxima', familia: 'Galáxia', viva: true },
   { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', familia: 'Galáxia', viva: true, icone: '✱' },
   { flag: 'nocat', nome: 'Catálogo HYG', familia: 'Estrelas', viva: true, icone: '⁂' },
+  // OS NOMES NA TELA (item 82, N2) — a chave `Labels` que o NASA Eyes
+  // tem e nós não tínhamos. As órbitas ganharam `noorbitas` no item 77 e
+  // os nomes não tinham nada: quem achasse a tela poluída só podia sair
+  // do Atlas. A flag desliga TODOS os nomes, dos corpos e das estrelas;
+  // quem decide QUAIS aparecem com ela ligada é a régua de relevância
+  // (`aplicarReguaDeRelevancia`), que é outra lei.
+  //
+  // A FAMÍLIA é "Estrelas" porque é o que a flag realmente apaga em
+  // quantidade e é de onde veio a queixa: a abertura desenhava cinco
+  // nomes de corpo e DEZESSETE de estrela. Ela mora ao lado das outras
+  // duas coisas que uma estrela põe na tela — o ponto do catálogo e o
+  // clarão —, e a terceira é o nome dela.
+  { flag: 'nonomes', nome: 'Nomes na tela', familia: 'Estrelas', viva: true, icone: '⌶' },
   // M2 da Lei: `nohero` virou `noclarao`. O que a chave desliga são as
   // DUAS camadas de fonte forte, e voltou a incluir as 16 heroes de
   // autor com o resgate de 16/08 (`world/heroStars.ts`): o tick esconde

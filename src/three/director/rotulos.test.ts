@@ -15,6 +15,8 @@
 import * as THREE from 'three';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { JourneyMeta } from '../cinematic/journey';
+import type { NamedStar } from '../config';
+import type { StarLabel } from '../world/labels';
 import type { Rotulos as TipoRotulos, QuadroDeRotulos } from './rotulos';
 
 let Rotulos: typeof TipoRotulos;
@@ -41,6 +43,7 @@ function bancada() {
   // da câmera, e ele roda em todo quadro, depois do ramo
   const quadro: QuadroDeRotulos = {
     fase: 'atlas', named: null, dHome: 0, planetas: null, foco: null,
+    nomesEscondidos: false,
   };
   /** um quadro do Atlas com a câmera em `x` (pc de cena) */
   const passo = (x: number) => {
@@ -102,7 +105,79 @@ describe('a câmera só sobe para o React com quem a leia', () => {
     rotulos.tique(0.5);
     rotulos.projetar(cam, {
       fase: 'free', named: null, dHome: 0, planetas: null, foco: null,
+      nomesEscondidos: false,
     });
     expect(publicadas).toEqual([publicadas[0], null]);
+  });
+});
+
+// ============================================================
+// A CAMADA "NOMES NA TELA" (item 82, N2) — o gesto que cala a tela.
+//
+// As órbitas tinham `noorbitas` desde o item 77; os nomes não tinham
+// nada, e quem achasse a tela poluída só podia sair do Atlas. O que se
+// julga aqui é o CONTRATO da camada, não o nome da flag: desligada, não
+// sobra nome nenhum e o clique fica sem alvo; e o resto do quadro — a
+// posição da câmera, que a ficha do objeto lê — continua vivo, porque
+// calar os nomes não é calar o Atlas.
+// ============================================================
+describe('a camada "Nomes na tela" (item 82, N2)', () => {
+  /** uma estrela brilhante logo à frente da câmera */
+  const CEU: NamedStar[] = [
+    { n: 'Vizinha', x: 0.4, y: 0.2, z: 0, m: 1, s: 'A0V', d: 5, t: 0 },
+  ];
+
+  function comCeu() {
+    const publicados: StarLabel[][] = [];
+    const camPublicadas: Publicada[] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicados.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onCamera: (posUA) => camPublicadas.push(posUA),
+      beatDaViagem: () => ({}) as JourneyMeta,
+    });
+    const cam = new THREE.PerspectiveCamera();
+    cam.position.set(0, 0, 5);
+    cam.updateMatrixWorld();
+    const quadro = (nomesEscondidos: boolean): QuadroDeRotulos => ({
+      fase: 'free', named: CEU, dHome: 5, planetas: null, foco: null, nomesEscondidos,
+    });
+    return { rotulos, publicados, camPublicadas, cam, quadro };
+  }
+
+  it('LIGADA a tela tem nome; DESLIGADA não sobra nenhum', () => {
+    const { rotulos, publicados, cam, quadro } = comCeu();
+    rotulos.projetar(cam, quadro(false));
+    expect(publicados.at(-1)!.length).toBeGreaterThan(0);
+    rotulos.projetar(cam, quadro(true));
+    expect(publicados.at(-1)).toEqual([]);
+  });
+
+  it('desligada, o clique fica SEM ALVO — a mesma lista única do desenho', () => {
+    // pendência 30: o que se clica é o que está escrito. Se a lista de
+    // alvos sobrevivesse à camada, um duplo clique no céu vazio ainda
+    // viajaria para uma estrela cujo nome ninguém vê.
+    const { rotulos, cam, quadro } = comCeu();
+    rotulos.projetar(cam, quadro(false));
+    expect(rotulos.alvos.length).toBeGreaterThan(0);
+    rotulos.projetar(cam, quadro(true));
+    expect(rotulos.alvos).toEqual([]);
+  });
+
+  it('calar os nomes não cala o Atlas: a ficha continua sabendo onde a câmera está', () => {
+    const { rotulos, camPublicadas, cam, quadro } = comCeu();
+    rotulos.lerCamera(true);
+    rotulos.tique(0.5);
+    rotulos.projetar(cam, { ...quadro(true), fase: 'atlas' });
+    expect(camPublicadas).toHaveLength(1);
+    expect(camPublicadas[0]?.every(Number.isFinite)).toBe(true);
+  });
+
+  it('religar devolve os nomes — a camada não é caminho sem volta', () => {
+    const { rotulos, publicados, cam, quadro } = comCeu();
+    rotulos.projetar(cam, quadro(true));
+    rotulos.projetar(cam, quadro(false));
+    expect(publicados.at(-1)!.length).toBeGreaterThan(0);
   });
 });

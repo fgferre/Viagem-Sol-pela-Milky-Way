@@ -1,6 +1,7 @@
 import { escalaDaUi } from '../lib/uiScale';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroPtBr } from '../three/tempoDoAtlas';
+import { OPACIDADE_MINIMA_DO_ROTULO } from '../three/world/labels';
 import type { StarLabel } from '../three/world/labels';
 
 interface Rect {
@@ -14,35 +15,28 @@ interface Rect {
 const FAMILIA = '"Segoe UI", Arial, sans-serif';
 
 /**
- * OS LUGARES ALTERNATIVOS de um nome, em pixels de deslocamento
- * VERTICAL a partir da âncora (item 73, plano §3) — e tanto o passo
- * quanto a CONTAGEM são MEDIDOS, não copiados.
+ * UM LUGAR POR NOME (item 82, N1) — e a lei que substituiu os sete.
  *
- * O PASSO. A caixa de colisão tem 24 px de altura (`anchorY ± 12`) e a
- * folga entre duas caixas é 8 px, então dois textos empilhados só se
- * livram um do outro a partir de 24 + 8 = 32 px. O doador usa ±18 e
- * ±36, que na geometria DESTE canvas não separam nada: a 18 px as
- * caixas ainda se cruzam, e as cinco posições dele viravam uma. 34 px é
- * o primeiro passo que limpa, com 2 px de margem.
+ * O item 73 deu a cada nome SETE deslocamentos verticais × dois lados =
+ * catorze vagas, com traço de até 102 px ligando o texto ao ponto. A
+ * promessa era "encaixar o máximo de nomes", e ela foi cumprida: dez
+ * nomes onde cabiam três. O preço foi a queixa do dono em 23/08 —
+ * *"acho que precisaria ser um sistema mais inteligente"*, *"fica uma
+ * confusao na tela"* —, porque catorze vagas por nome desenham uma teia
+ * de traços em volta do sistema em vez de uma legenda.
  *
- * A CONTAGEM: SETE LUGARES — a âncora e três de cada lado. O plano
- * pedia CINCO, e cinco não bastam — está medido a 224 UA, o TETO do
- * zoom, que é onde a promessa foi feita ("os 8 planetas e o Sol com
- * nome, contra 3 hoje") e onde os dez ainda se empilham. Era a vista de
- * ABERTURA quando a medida foi tirada; o item 61 desceu a abertura para
- * o sistema interno, e o aperto ficou no teto. O aglomerado interno tem
- * CINCO corpos dentro de 6 px (Sol, Mercúrio, Vênus, Terra, Marte) e
- * mais três vizinhos na mesma
- * faixa vertical (Júpiter, Saturno, Urano): com cinco lugares num lado
- * só cabem 5 nomes, com os cinco nos dois lados cabem 8, e são os SETE
- * (nos dois lados, 14 vagas) que dão os 10. Cada par a mais custa 34 px
- * de traço, e o traço agora é conferido contra o HUD (ver `draw`), então
- * ele não pode se esconder atrás da tarja.
+ * A LEI DE HOJE é a dos atlas que o dono aponta como referência (NASA
+ * Eyes, Celestia, SpaceEngine): o nome nasce no lugar dele — ao lado da
+ * âncora, do lado que a borda da tela permite — e se ali não couber,
+ * ele SOME. Nome não se salva puxando um risco. Como a lista chega
+ * ordenada pela régua de relevância (`aplicarReguaDeRelevancia`), quem
+ * chega primeiro ocupa e quem some é sempre o MENOR da disputa.
  *
- * A ordem é centro → cima → baixo → mais longe, alternando, e o
- * PRIMEIRO é o zero: quem já cabia continua exatamente onde estava.
+ * O que sobrou do traço é o risco de 10 px na horizontal, que é o
+ * desenho anterior ao item 73: ele diz de que ponto o nome fala, e não
+ * atravessa nada.
  */
-export const DESLOCAMENTOS = [0, -34, 34, -68, 68, -102, 102] as const;
+const RECUO_DO_TEXTO = 18;
 
 /**
  * OS TRÊS PESOS VISUAIS, numa tabela só — à moda do `labelTier.ts` do
@@ -141,18 +135,94 @@ export class LabelCanvas {
   /** Quem publica é o App; lista vazia = nenhum HUD na tela. */
   reservar(areas: readonly Rect[]): void {
     this.reservadas = areas;
+    // o HUD mudou de forma: o quadro de agora não é mais o de antes,
+    // ainda que os nomes estejam nos mesmos pixels (ver `assinatura`)
+    this.assinatura = '';
+  }
+
+  /**
+   * AS LARGURAS DE TEXTO JÁ MEDIDAS, por fonte + string (item 82, N1).
+   *
+   * `measureText` é a única conta cara deste arquivo — ela obriga o
+   * navegador a moldar o texto — e era chamada DUAS vezes por rótulo por
+   * quadro, sempre sobre as mesmas poucas dezenas de strings. O nome de
+   * um corpo não muda nunca; o detalhe só muda quando a casa decimal da
+   * distância anda.
+   */
+  private readonly larguras = new Map<string, number>();
+
+  /**
+   * O QUADRO ANTERIOR, em uma string — e a razão de ele existir (item
+   * 82, N1).
+   *
+   * `draw` limpava 3,7 M px e repintava TUDO a cada quadro, inclusive
+   * com o Atlas parado: o único atalho (`lastHadContent`) só dispara com
+   * a tela SEM nome nenhum, que é justamente quando não há o que
+   * economizar. A assinatura fecha o buraco certo — mesmos nomes, nos
+   * mesmos pixels inteiros, com a mesma tinta e o mesmo HUD ⇒ o canvas
+   * já está pintado, e repintá-lo desenharia exatamente o que está lá.
+   *
+   * O pixel INTEIRO é a granularidade de propósito: é o que o olho vê, e
+   * é o que faz um planeta andando devagar pela efeméride repintar
+   * quando ele de fato se mexe, e não sessenta vezes por segundo.
+   */
+  private assinatura = '';
+
+  /**
+   * QUEM SOBREVIVEU no quadro anterior. Sem isto o atalho da assinatura
+   * seria um defeito silencioso: a projeção cria objetos NOVOS a cada
+   * quadro, e um quadro pulado os deixaria com `desenhado: undefined` —
+   * que o clique lê como "pode ser alvo" (só o `false` explícito é
+   * descartado). O "SOL" escrito na tela voltaria a valer Fobos.
+   */
+  private desenhadosAntes = new Set<string>();
+
+  /** o plano do quadro: nome e detalhe prontos, reusados na pintura */
+  private readonly nomes: string[] = [];
+  private readonly detalhes: string[] = [];
+
+  private medir(texto: string, fonte: string): number {
+    const chave = `${fonte}\u0000${texto}`;
+    const guardada = this.larguras.get(chave);
+    if (guardada !== undefined) return guardada;
+    this.context.font = fonte;
+    const medida = this.context.measureText(texto).width;
+    // O TETO, e ele é necessário: o detalhe carrega a distância VIVA e
+    // inventa uma string nova a cada casa decimal que anda. Sem teto, um
+    // voo longo faria o mapa crescer sem parar.
+    if (this.larguras.size > 512) this.larguras.clear();
+    this.larguras.set(chave, medida);
+    return medida;
+  }
+
+  /**
+   * O QUE ESTE QUADRO ESCREVERIA — prepara nome e detalhe de cada rótulo
+   * (a pintura os reaproveita) e devolve a assinatura do conjunto.
+   */
+  private planejar(labels: readonly StarLabel[], k: number): string {
+    this.nomes.length = 0;
+    this.detalhes.length = 0;
+    let assinatura = `${this.width}x${this.height}@${this.dpr}:${k}`;
+    for (const label of labels) {
+      const nome = label.name.toLocaleUpperCase('pt-BR');
+      // o `detalhe` é dos corpos do sistema (a classe em pt-BR, que não
+      // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é o
+      // tipo espectral
+      const detalhe = detalheDoRotulo(label);
+      this.nomes.push(nome);
+      this.detalhes.push(detalhe);
+      assinatura +=
+        `|${label.key},${Math.round(label.x * this.width)}` +
+        `,${Math.round(label.y * this.height)},${label.opacity.toFixed(2)}` +
+        `,${label.prioridade ?? ''},${label.cortadoPelaRegua ? 1 : 0},${nome},${detalhe}`;
+    }
+    return assinatura;
   }
 
   draw(labels: StarLabel[]): void {
     // vazio→vazio (60×/s fora da viagem): não limpar 3,7 M px à toa
     if (labels.length === 0 && !this.lastHadContent) return;
     this.resizeIfNeeded();
-    const ctx = this.context;
-    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    ctx.clearRect(0, 0, this.width, this.height);
-    this.lastHadContent = labels.length > 0;
-    if (labels.length === 0) return;
-
     // A ESCALA DA UI (F6) alcança ESTES rótulos também. Eles são texto
     // do HUD como a legenda e o selo — só que pintados à mão, e por
     // isso fora do alcance do `font-size` da raiz. Escalam junto o
@@ -162,6 +232,21 @@ export class LabelCanvas {
     // Em `ui = 1` cada produto é exato (`x * 1 === x` em IEEE754) e o
     // desenho é o de sempre, pixel a pixel.
     const k = escalaDaUi();
+    const assinatura = this.planejar(labels, k);
+    if (assinatura === this.assinatura) {
+      // O QUADRO JÁ ESTÁ NA TELA. Só as MARCAS se reescrevem: os objetos
+      // são novos, e a decisão de quem foi desenhado é a mesma — a
+      // assinatura é exatamente a prova disso.
+      for (const label of labels) label.desenhado = this.desenhadosAntes.has(label.key);
+      return;
+    }
+    this.assinatura = assinatura;
+    const ctx = this.context;
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.clearRect(0, 0, this.width, this.height);
+    this.lastHadContent = labels.length > 0;
+    this.desenhadosAntes.clear();
+    if (labels.length === 0) return;
     // O HUD ENTRA COMO SE FOSSE RÓTULO JÁ DESENHADO: a lei de colisão
     // que faz um nome ceder a outro é a mesma que o faz ceder a um
     // painel, ao rodapé ou ao selo. Sem caso novo, sem z-index, sem
@@ -170,15 +255,22 @@ export class LabelCanvas {
     ctx.textBaseline = 'middle';
     ctx.lineCap = 'round';
 
-    for (const label of labels) {
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i];
       // A MARCA QUE O CLIQUE LÊ (pendência 30). Ela nasce `false` aqui e
-      // só vira `true` depois de o rótulo passar pelas TRÊS leis de
-      // descarte deste laço — é o que faz "o que se vê" e "o que se
-      // clica" serem a mesma lista, sem o Director precisar repetir
-      // nenhuma delas. O objeto é o mesmo que ele guarda em
-      // `lastLabels`, então a escrita chega lá sem plumbing.
+      // só vira `true` depois de o rótulo passar pelas leis de descarte
+      // deste laço — é o que faz "o que se vê" e "o que se clica" serem
+      // a mesma lista, sem o Director precisar repetir nenhuma delas. O
+      // objeto é o mesmo que ele guarda em `lastLabels`, então a escrita
+      // chega lá sem plumbing.
       label.desenhado = false;
-      if (label.opacity < 0.08) continue;
+      // A RÉGUA DE RELEVÂNCIA JÁ DECIDIU (item 82, N1): este nome
+      // projetou, mas a tela está cheia de nomes que importam mais. O
+      // corte é por IMPORTÂNCIA e vem ANTES da geometria — é a metade
+      // que a colisão sozinha nunca resolve, porque colisão trata
+      // sobreposição e não POPULAÇÃO.
+      if (label.cortadoPelaRegua) continue;
+      if (label.opacity < OPACIDADE_MINIMA_DO_ROTULO) continue;
       const anchorX = label.x * this.width;
       const anchorY = label.y * this.height;
       // A MARGEM DA COMPOSIÇÃO — a faixa de baixo e o canto dos
@@ -205,78 +297,55 @@ export class LabelCanvas {
       ) {
         continue;
       }
-      const ladoPreferido = anchorX > this.width * 0.72;
-      const name = label.name.toLocaleUpperCase('pt-BR');
-      // o `detalhe` é dos corpos do sistema (a classe em pt-BR, que não
-      // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é o
-      // tipo espectral
-      const detail = detalheDoRotulo(label);
+      // O LADO é a única liberdade que sobrou, e ela não é alternativa:
+      // é a borda da tela mandando o texto para dentro. Perto da direita
+      // o nome cresce para a esquerda, senão sairia do quadro.
+      const toLeft = anchorX > this.width * 0.72;
+      const direction = toLeft ? -1 : 1;
+      const name = this.nomes[i];
+      const detail = this.detalhes[i];
       const peso = pesoVisual(label);
 
-      ctx.font = `${peso.pesoDoNome} ${peso.tamanhoDoNome * k}px ${FAMILIA}`;
-      const nameWidth = ctx.measureText(name).width;
-      ctx.font = `400 ${peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
-      const detailWidth = ctx.measureText(detail).width;
+      const fonteDoNome = `${peso.pesoDoNome} ${peso.tamanhoDoNome * k}px ${FAMILIA}`;
+      const fonteDoDetalhe = `400 ${peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
+      const nameWidth = this.medir(name, fonteDoNome);
+      const detailWidth = this.medir(detail, fonteDoDetalhe);
       const contentWidth = nameWidth + 9 * k + detailWidth;
-      // AS CINCO POSIÇÕES, EM CADA LADO (item 73, plano §3): prioridade
-      // não salva Vênus colidindo com o Sol — outro LUGAR para o texto,
-      // sim. O primeiro candidato é o de sempre (lado preferido,
-      // deslocamento ZERO), e é isso que mantém intacto todo rótulo que
-      // já cabia: em `ui = 1` o produto é exato e a caixa é a mesma, bit
-      // a bit.
-      let candidate: Rect | null = null;
-      let textY = anchorY;
-      let toLeft = ladoPreferido;
-      let textX = anchorX + (ladoPreferido ? -1 : 1) * 18 * k;
-      for (const lado of [ladoPreferido, !ladoPreferido]) {
-        const direcao = lado ? -1 : 1;
-        const x = anchorX + direcao * 18 * k;
-        const left = lado ? x - contentWidth : x;
-        for (const passo of DESLOCAMENTOS) {
-          const y = anchorY + passo * k;
-          const tentativa: Rect = {
-            left: left - 5 * k,
-            right: left + contentWidth + 5 * k,
-            top: y - 12 * k,
-            bottom: y + 12 * k,
-          };
-          if (occupied.some((rect) => intersects(tentativa, rect, 8 * k))) continue;
-          // O TRAÇO TAMBÉM É TINTA, e com deslocamento ele deixa de ser
-          // um risco de 10 px para virar uma diagonal de até 102: ela
-          // não pode atravessar o HUD. A caixa do texto continua sendo
-          // a régua da disputa ENTRE nomes (incluir a âncora nela faria
-          // todo empilhamento colidir consigo mesmo — medido, os 10
-          // nomes da abertura voltavam a 4); contra o HUD, que é opaco,
-          // vale a tinta inteira.
-          const traco: Rect = {
-            left: Math.min(anchorX, anchorX + direcao * 10 * k),
-            right: Math.max(anchorX, anchorX + direcao * 10 * k),
-            top: Math.min(anchorY, y),
-            bottom: Math.max(anchorY, y),
-          };
-          if (this.reservadas.some((rect) => intersects(traco, rect, 0))) continue;
-          candidate = tentativa;
-          textY = y;
-          toLeft = lado;
-          textX = x;
-          break;
-        }
-        if (candidate) break;
-      }
-      if (!candidate) continue;
-      const direction = toLeft ? -1 : 1;
+      // UM LUGAR, E É O DELE: ao lado da âncora, na mesma altura dela.
+      // Colidiu — com o HUD ou com um nome que a régua pôs à frente — e
+      // este SOME. Era aqui que moravam as catorze vagas do item 73.
+      const textX = anchorX + direction * RECUO_DO_TEXTO * k;
+      const left = toLeft ? textX - contentWidth : textX;
+      const candidate: Rect = {
+        left: left - 5 * k,
+        right: left + contentWidth + 5 * k,
+        top: anchorY - 12 * k,
+        bottom: anchorY + 12 * k,
+      };
+      if (occupied.some((rect) => intersects(candidate, rect, 8 * k))) continue;
+      // O TRAÇO TAMBÉM É TINTA: o risco de 10 px sai da âncora e vai em
+      // direção ao texto, por fora da caixa dele, e não pode atravessar
+      // um painel opaco para apontar um ponto que ninguém vê.
+      const traco: Rect = {
+        left: Math.min(anchorX, anchorX + direction * 10 * k),
+        right: Math.max(anchorX, anchorX + direction * 10 * k),
+        top: anchorY,
+        bottom: anchorY,
+      };
+      if (this.reservadas.some((rect) => intersects(traco, rect, 0))) continue;
+      const textY = anchorY;
       occupied.push(candidate);
-      // passou pelas três leis: está NA TELA, e portanto é clicável
+      // passou por todas as leis: está NA TELA, e portanto é clicável
       label.desenhado = true;
+      this.desenhadosAntes.add(label.key);
 
       ctx.globalAlpha = label.opacity;
       ctx.strokeStyle = 'rgba(255, 211, 145, 0.72)';
       ctx.lineWidth = 0.75;
       ctx.beginPath();
       ctx.moveTo(anchorX, anchorY);
-      // o traço vai da ÂNCORA até a altura do texto: com deslocamento
-      // zero ele é a horizontal de sempre, pixel a pixel; deslocado, ele
-      // é a linha que diz de qual ponto aquele nome está falando
+      // o risco de 10 px na horizontal, que diz de que ponto o nome
+      // fala — o desenho anterior ao item 73, de volta inteiro
       ctx.lineTo(anchorX + direction * 10 * k, textY);
       ctx.stroke();
 

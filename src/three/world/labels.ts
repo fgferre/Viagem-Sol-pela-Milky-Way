@@ -60,6 +60,18 @@ export interface StarLabel {
    * multiplicação, não um caso novo.
    */
   prioridade?: number;
+  /**
+   * A RÉGUA DE RELEVÂNCIA DISSE NÃO (item 82, N1) — este nome projetou,
+   * mas a tela já está cheia de nomes que importam mais.
+   *
+   * É uma MARCA e não uma remoção da lista de propósito: `alvos` continua
+   * sendo a projeção inteira (o que o Director publica e o juiz lê), e
+   * quem foi cortado nasce `desenhado: false` como qualquer outro
+   * descarte do desenho. Sem a marca, o corte teria de acontecer
+   * removendo da lista, e aí a diferença entre "a régua não quis" e "não
+   * coube" ficaria invisível para quem mede.
+   */
+  cortadoPelaRegua?: boolean;
 }
 
 /**
@@ -135,6 +147,79 @@ export function pesoDoRotulo(
 ): number {
   const base = label.prioridade ?? PRIORIDADE_DO_ROTULO.outros;
   return desenhadosAntes?.has(label.key) ? base * BONUS_DE_HISTERESE : base;
+}
+
+/**
+ * ABAIXO DISTO O NOME JÁ NÃO SE LÊ, e quem o descarta é o desenho. O
+ * número vivia digitado dentro do `LabelCanvas` e é lido agora também
+ * pela régua, que não pode gastar vaga com um nome invisível: uma lua
+ * colada no pai esmaece até quase zero (`esmaecerLuasColadasNoPai`) e
+ * ainda assim empurraria uma estrela para fora do orçamento.
+ */
+export const OPACIDADE_MINIMA_DO_ROTULO = 0.08;
+
+/**
+ * QUANTOS NOMES A TELA CARREGA AO MESMO TEMPO — a régua de relevância do
+ * item 82, e a metade que o NASA Eyes não tem.
+ *
+ * O estudo do Eyes (`docs/reference/estudo-orbitas-eyes-observacao.md`,
+ * §5) mediu numa vista só: 103 nomes no DOM, 40 acesos, 11 mortos por
+ * colisão. A quadtree deles resolve SOBREPOSIÇÃO e resolve bem — e ainda
+ * assim quarenta nomes acesos é confusão. O Eyes nunca decide que um
+ * objeto **não interessa**; só decide que ele **não cabe**. Esta
+ * constante é a decisão que falta: primeiro corta-se por IMPORTÂNCIA,
+ * e só o que sobra vai disputar lugar na tela.
+ *
+ * O NÚMERO É MEDIDO, não escolhido no ar. Antes dele a abertura do Atlas
+ * desenhava 22 nomes — os cinco corpos em quadro e DEZESSETE estrelas,
+ * quase todas designações de Bayer (ε Ind, ι Pav, τ PsA…) com traço de
+ * até 102 px em volta do sistema. Era a queixa viva do dono:
+ * *"o default todos os objetos estao com o label ligado, fica uma
+ * confusao na tela"*. Com dez vagas a mesma abertura desenha o Sol, os
+ * quatro rochosos e as estrelas de NOME PRÓPRIO que couberem — e as
+ * designações de Bayer, que são o último degrau da tabela, caem
+ * sozinhas, sem uma regra nova que as nomeie.
+ *
+ * Dez e não cinco: no TETO do zoom os dez corpos do sistema são o
+ * assunto inteiro do quadro, e um orçamento menor cortaria planeta para
+ * caber estrela de fundo. Quem some lá é a COLISÃO, que é outra lei.
+ */
+export const ORCAMENTO_DE_NOMES = 10;
+
+/**
+ * A RÉGUA DE RELEVÂNCIA, ANTES DA GEOMETRIA (item 82, N1) — ordena a
+ * lista pela hierarquia da casa e marca o que passa do orçamento.
+ *
+ * A ORDEM É A DISPUTA: o `LabelCanvas` desenha na ordem que recebe e
+ * quem chega primeiro ocupa, então ordenar aqui É decidir quem vence a
+ * colisão. Empate desempata pelo mais PERTO, que é a régua que a lista
+ * já usava entre estrelas.
+ *
+ * Não há tabela nova: o peso é o `pesoDoRotulo` de sempre
+ * (`PRIORIDADE_DO_ROTULO` × a histerese de quem já estava na tela). O
+ * bônus dos 20% é o que impede o corte de PISCAR — dois nomes de mesmo
+ * peso disputando a última vaga trocariam de lugar a cada quadro em que
+ * a projeção andasse um pixel.
+ */
+export function aplicarReguaDeRelevancia(
+  lista: StarLabel[],
+  desenhadosAntes?: ReadonlySet<string>,
+  orcamento: number = ORCAMENTO_DE_NOMES
+): StarLabel[] {
+  lista.sort(
+    (a, b) =>
+      pesoDoRotulo(b, desenhadosAntes) - pesoDoRotulo(a, desenhadosAntes) ||
+      a.distPc - b.distPc
+  );
+  let vagas = orcamento;
+  for (const l of lista) {
+    // o que já está invisível não gasta vaga: quem o descarta é o
+    // desenho, pela mesma soleira
+    if (l.opacity < OPACIDADE_MINIMA_DO_ROTULO) continue;
+    if (vagas > 0) vagas--;
+    else l.cortadoPelaRegua = true;
+  }
+  return lista;
 }
 
 const _v = new THREE.Vector3();

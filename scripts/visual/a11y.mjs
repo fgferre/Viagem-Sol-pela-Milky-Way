@@ -394,13 +394,13 @@ async function julgarPagina(s, query, onde) {
  * existia, e mostrar a tabela INTEIRA.
  *
  * As três cobranças, e cada uma mede uma promessa da tela:
- *  1. AS 18 (item 77, 23/08, trouxe as linhas de órbita), todas com
- *     rótulo — uma caixa sem nome é um controle que
- *     ninguém sabe o que faz, e era assim que as quatro só-URL viviam
- *     antes do item 33;
- *  2. TRÊS FAMÍLIAS que repartem as 18 sem sobra, cada uma com nome
+ *  1. AS 19 (item 77, 23/08, trouxe as linhas de órbita; item 82,
+ *     24/08, os nomes na tela), todas com rótulo — uma caixa sem nome
+ *     é um controle que ninguém sabe o que faz, e era assim que as
+ *     quatro só-URL viviam antes do item 33;
+ *  2. TRÊS FAMÍLIAS que repartem as 19 sem sobra, cada uma com nome
  *     acessível próprio (`role="group"` + `aria-label`): quem ouve a
- *     tela recebe o mapa, não dezoito caixas em fila;
+ *     tela recebe o mapa, não dezenove caixas em fila;
  *  3. A CONTAGEM DIZ A VERDADE — o "n/m" do título bate com as caixas
  *     realmente marcadas. Número decorado seria a gaveta contando outra
  *     coisa que não a cena, que é a doença que o selo existe para não
@@ -438,12 +438,12 @@ async function julgarGavetaDeCamadas(s, onde) {
     return;
   }
   conferir(
-    g.caixas === 18 && g.semNome === 0,
+    g.caixas === 19 && g.semNome === 0,
     `${onde} · camadas: ${g.caixas} caixas na gaveta, ${g.semNome} sem rótulo`
   );
   const soma = g.familias.reduce((n, f) => n + f.linhas, 0);
   conferir(
-    g.familias.length === 3 && soma === 18
+    g.familias.length === 3 && soma === 19
       && g.familias.every((f) => f.papel === 'group' && f.rotulo),
     `${onde} · camadas: três famílias repartem as ${soma}`
       + ` — ${g.familias.map((f) => f.rotulo || '(sem nome)').join(' · ')}`

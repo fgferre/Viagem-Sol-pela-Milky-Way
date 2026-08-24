@@ -589,7 +589,7 @@ try {
   // (nosun/nodust/noco/noforge) e as linhas de órbita. Quem PINA o número contra a tabela
   // única é `atlasConfig.test.ts` (`CAMADAS.length`); aqui ele serve só
   // para a gaveta não deixar nenhuma de fora na hora de desenhar.
-  conferir(camadas.length === 18, `a gaveta oferece ${camadas.length} camadas`);
+  conferir(camadas.length === 19, `a gaveta oferece ${camadas.length} camadas`);
   // AS TRÊS FAMÍLIAS, com a contagem que cada uma mostra: é o resumo do
   // grupo, e ele tem de bater com as caixas ligadas de verdade — um
   // número decorado seria a gaveta contando outra coisa que não a cena.
@@ -606,7 +606,7 @@ try {
   conferir(
     familias.length === 3
       && familias.every((f) => f.conta === `${f.ligadas}/${f.linhas}`)
-      && familias.reduce((n, f) => n + f.linhas, 0) === 18,
+      && familias.reduce((n, f) => n + f.linhas, 0) === 19,
     `as três famílias e a contagem de cada uma — `
       + familias.map((f) => `${f.rotulo} (${f.conta})`).join(' · ')
   );
@@ -1218,6 +1218,16 @@ try {
   //
   // Trocar o endereço e manter o dente é o que separa re-pinar de
   // afrouxar: se alguém desfizer o item 73, a segunda metade grita.
+  //
+  // E EM 24/08 A PROMESSA MUDOU DE NATUREZA (item 82). O dono viu a
+  // conta daquela promessa — *"o default todos os objetos estao com o
+  // label ligado, fica uma confusao na tela"* — e o que ela cobrava
+  // ("encaixar o máximo de nomes") foi revogado por decisão dele. Os
+  // dois vereditos abaixo passaram a cobrar a régua de RELEVÂNCIA: um
+  // número medido de nomes na tela, quais são, e o avesso — que quem
+  // ficou vale mais que quem saiu, e que designação de Bayer não ocupa
+  // vaga de nome próprio. Um juiz que só perdesse o dente não mediria
+  // nada; estes ganharam dente novo no mesmo commit em que a lei mudou.
   await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
   await sessao.assentar();
   // a capa da abertura cobre a cena por alguns segundos DEPOIS de a
@@ -1229,11 +1239,23 @@ try {
   // régua — uma delas envelhece calada.
   const censoDeNomes = async () => JSON.parse(await sessao.js(`JSON.stringify((() => {
     const alvos = window.__director.rotulos.alvos;
+    const naTela = alvos.filter((l) => l.desenhado === true);
+    // O QUE A RÉGUA DE RELEVÂNCIA CORTOU (item 82, N1): a marca fica no
+    // objeto, e é por isso que ela existe — sem ela, "a régua não quis"
+    // e "não coube" seriam a mesma ausência, e ninguém mediria a régua.
+    const corte = alvos.filter((l) => l.cortadoPelaRegua === true);
     return {
       projetados: alvos.length,
-      corpos: alvos.filter((l) => l.desenhado === true && l.key.startsWith('corpo:'))
-        .map((l) => l.key.slice(6)),
-      luasAcesas: alvos.filter((l) => l.desenhado === true && l.opacity > 0.08
+      desenhados: naTela.length,
+      corpos: naTela.filter((l) => l.key.startsWith('corpo:')).map((l) => l.key.slice(6)),
+      // tier 0 = nome próprio, 1 = designação de Bayer ("ε Ind", "ι Pav")
+      estrelasProprias: naTela.filter((l) => !l.key.startsWith('corpo:') && !l.tier).length,
+      estrelasBayer: naTela.filter((l) => !l.key.startsWith('corpo:') && l.tier === 1)
+        .map((l) => l.name),
+      cortadosPelaRegua: corte.length,
+      menorQueFicou: Math.min(...naTela.map((l) => l.prioridade ?? 4)),
+      maiorQueSaiu: corte.length ? Math.max(...corte.map((l) => l.prioridade ?? 4)) : 0,
+      luasAcesas: naTela.filter((l) => l.opacity > 0.08
         && ['moon','titan','io','europa','ganymede','callisto'].includes(l.key.slice(6))).length,
     };
   })())`));
@@ -1241,23 +1263,57 @@ try {
   const OITO_PLANETAS = [
     'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune',
   ];
-  // O SISTEMA INTERNO é o que cabe no quadro da abertura (item 61): o
-  // Sol e os quatro rochosos. Não é lista nova — é a mesma de cima,
-  // cortada onde a esfera enquadrada corta.
-  const CINCO_DE_DENTRO = ['sun', 'mercury', 'venus', 'earth', 'mars'];
-  const faltandoNaAbertura = CINCO_DE_DENTRO.filter(
-    (p) => !nomesDaAbertura.corpos.includes(p)
-  );
-  // e o AVESSO: nenhum corpo de fora do quadro ganhou nome — se um
-  // aparecer, quem quebrou foi o corte de `projectPoint`, não a colisão
-  const intrusos = nomesDaAbertura.corpos.filter((c) => !CINCO_DE_DENTRO.includes(c));
+  // ---- A PROMESSA NOVA, MEDIDA EM 24/08 (item 82, N1) --------------
+  // A velha ("todo corpo em quadro tem nome") era a promessa do item 73
+  // — encaixar o máximo de nomes com catorze vagas e traço de até 102 px
+  // por nome. É essa promessa que o item 82 REVOGA, e por decisão do
+  // dono: *"fica uma confusao na tela"*. A abertura desenhava VINTE E
+  // DOIS nomes (os cinco corpos e DEZESSETE estrelas, quase todas
+  // designações de Bayer). Com a régua de relevância ela desenha OITO.
+  //
+  // O número é medido nesta janela (1200×900) e com este relógio
+  // (`jd=EPOCA`): quem mudar `JANELA` mede outro céu. Mercúrio projeta
+  // dentro da caixa do rótulo do Sol e perde o nome para ele — é a lei
+  // nova em ação ("colidiu, o menor some"), não um defeito. Se um dia
+  // ele voltar a ter nome, este pino se REESCREVE com o número novo, do
+  // jeito que este aqui foi escrito; afrouxar o dente para o juiz calar
+  // é que não vale.
+  const NA_ABERTURA = 8;
+  const CORPOS_COM_NOME = ['earth', 'mars', 'sun', 'venus'];
+  const corposDaAbertura = [...nomesDaAbertura.corpos].sort();
+  const bateOsCorpos =
+    corposDaAbertura.length === CORPOS_COM_NOME.length
+    && CORPOS_COM_NOME.every((c, i) => corposDaAbertura[i] === c);
   conferir(
-    faltandoNaAbertura.length === 0 && intrusos.length === 0,
-    `na abertura TODO corpo em quadro tem nome — os cinco de dentro, e só eles`
-      + ` (${nomesDaAbertura.corpos.length} corpos de ${nomesDaAbertura.projetados}`
-      + ` projetados: ${nomesDaAbertura.corpos.join(', ')})`
-      + (faltandoNaAbertura.length ? ` · FALTAM ${faltandoNaAbertura.join(', ')}` : '')
-      + (intrusos.length ? ` · INTRUSOS ${intrusos.join(', ')}` : '')
+    nomesDaAbertura.desenhados === NA_ABERTURA && bateOsCorpos,
+    `a abertura desenha ${NA_ABERTURA} nomes de ${nomesDaAbertura.projetados} projetados`
+      + ` (eram 22 antes da régua) — e os corpos com nome são exatamente`
+      + ` ${CORPOS_COM_NOME.join(', ')}`
+      + ` · medido: ${nomesDaAbertura.desenhados} nomes, corpos`
+      + ` [${corposDaAbertura.join(', ')}]`
+  );
+  // O AVESSO, e ele é a metade que dá dente ao veredito de cima: as
+  // estrelas que sobram são de NOME PRÓPRIO, e nenhuma designação de
+  // Bayer fica na tela. Eram elas — ε Ind, ι Pav, τ PsA, φ² Pav… — o nó
+  // que o dono viu, e elas caem por serem o último degrau da tabela de
+  // prioridade, sem uma regra nova que as nomeie.
+  conferir(
+    nomesDaAbertura.estrelasBayer.length === 0 && nomesDaAbertura.estrelasProprias === 4,
+    `...e as estrelas que ficam são as de NOME PRÓPRIO —`
+      + ` ${nomesDaAbertura.estrelasProprias} próprias,`
+      + ` ${nomesDaAbertura.estrelasBayer.length} designações de Bayer`
+      + (nomesDaAbertura.estrelasBayer.length
+        ? ` (${nomesDaAbertura.estrelasBayer.join(', ')})` : '')
+  );
+  // A RÉGUA É UMA RÉGUA, e não um corte por acaso: o menor peso que
+  // ficou na tela ainda vale o maior que ela cortou. Um corte por
+  // proximidade, por ordem de chegada ou por sorteio quebra aqui.
+  conferir(
+    nomesDaAbertura.cortadosPelaRegua > 0
+      && nomesDaAbertura.menorQueFicou >= nomesDaAbertura.maiorQueSaiu,
+    `...e o corte é por IMPORTÂNCIA: ${nomesDaAbertura.cortadosPelaRegua} nomes cortados,`
+      + ` o menor que ficou vale ${nomesDaAbertura.menorQueFicou}`
+      + ` e o maior que saiu vale ${nomesDaAbertura.maiorQueSaiu}`
   );
   conferir(
     nomesDaAbertura.luasAcesas === 0,
@@ -1283,21 +1339,40 @@ try {
   await sessao.assentar();
   await dorme(4000);
   const nomesDoTeto = await censoDeNomes();
-  // OS DEZ, e são DEZ MESMO: a promessa do item 73 é "de três nomes para
-  // dez" — os oito planetas, o Sol e PLUTÃO, que era um dos três que já
-  // sobreviviam antes da obra. O juiz cobrava nove (Plutão ficava de
-  // fora da lista e não era conferido) enquanto o cabeçalho, o commit e
-  // o NORTE diziam dez. Alinhado pelo lado que APERTA, não pelo que
-  // afrouxa: quem some agora grita.
+  // ---- A PROMESSA DOS DEZ, REVOGADA EM 24/08 (item 82, N1) ---------
+  // Até aqui este veredito cobrava os DEZ com nome — os oito planetas, o
+  // Sol e Plutão —, e cobrava certo enquanto a promessa era "encaixar o
+  // máximo de nomes": a 226,8 UA os dez projetam a menos de 1% de tela
+  // uns dos outros, e só cabiam porque cada nome tinha catorze vagas e
+  // um traço de até 102 px para chegar até elas. ERA ESSA A TEIA. Com um
+  // lugar por nome, os que se empilham sobre o clarão do Sol somem, e
+  // sobra o que a tela consegue de fato SEPARAR — três nomes, medido:
+  // o Sol, Netuno e Plutão, que são os que estão longe do nó.
+  //
+  // O QUE ESTE VEREDITO GUARDA AGORA é a lei, não a contagem: no teto
+  // quem tem nome é o TOPO da hierarquia. Enquanto um CORPO do sistema
+  // ficou sem nome, nenhuma estrela de fundo pode ter um — o sistema é o
+  // assunto do quadro. Um corte por proximidade, por ordem de chegada ou
+  // por sorteio deixaria estrela na tela e planeta mudo, e quebra aqui.
+  // os dez que PROJETAM colados no teto — a régua de comparação, não uma
+  // promessa: é contra eles que se mede quantos a tela consegue separar
   const OS_DEZ_DO_TETO = ['sun', ...OITO_PLANETAS, 'pluto'];
-  const faltandoNoTeto = OS_DEZ_DO_TETO.filter((p) => !nomesDoTeto.corpos.includes(p));
+  const NO_TETO = 3;
   conferir(
-    faltandoNoTeto.length === 0,
-    `no teto do zoom os DEZ têm nome (8 planetas, o Sol e Plutão) —`
-      + ` ${nomesDoTeto.corpos.length}`
-      + ` corpos de ${nomesDoTeto.projetados} projetados`
-      + ` (${nomesDoTeto.corpos.join(', ')})`
-      + (faltandoNoTeto.length ? ` · FALTAM ${faltandoNoTeto.join(', ')}` : '')
+    nomesDoTeto.desenhados === NO_TETO
+      && nomesDoTeto.corpos.includes('sun')
+      && nomesDoTeto.corpos.length === NO_TETO,
+    `no teto do zoom sobra o que a tela SEPARA — ${NO_TETO} nomes de`
+      + ` ${nomesDoTeto.projetados} projetados (eram 27 antes da régua):`
+      + ` ${nomesDoTeto.corpos.join(', ')}`
+      + ` · medido ${nomesDoTeto.desenhados}`
+  );
+  conferir(
+    nomesDoTeto.estrelasProprias + nomesDoTeto.estrelasBayer.length === 0
+      && nomesDoTeto.corpos.length < OS_DEZ_DO_TETO.length,
+    `...e nenhuma estrela de fundo toma a vaga de um corpo do sistema:`
+      + ` ${nomesDoTeto.corpos.length} dos ${OS_DEZ_DO_TETO.length} corpos com nome,`
+      + ` ${nomesDoTeto.estrelasProprias + nomesDoTeto.estrelasBayer.length} estrelas`
   );
 
   // ---- 16: O POLO DO CORPO NO ALTO (Onda 7) ------------------------
@@ -1487,28 +1562,71 @@ try {
   // rótulo mais solto da tela, a prova volta a medir o LIMIAR.
   //
   // E ELE TEM DE ESTAR SOBRE O CANVAS: num telefone a ficha é uma folha
-  // de baixo de 48vh (item 62), então metade da tela NÃO é céu — um
-  // rótulo perfeitamente desenhado atrás dela nunca foi tocável.
+  // de baixo (item 62), então boa parte da tela NÃO é céu — um rótulo
+  // perfeitamente desenhado atrás dela nunca foi tocável.
   // `elementFromPoint` é quem responde isso.
+  //
+  // E TEM DE CONTINUAR SENDO CÉU DEPOIS DO PRIMEIRO TOQUE — a metade que
+  // faltava, descoberta em 24/08 (item 82). O `elementFromPoint` era
+  // consultado com a ficha FECHADA e respondia "céu"; o primeiro toque
+  // então ABRIA a folha de baixo, que engolia aquele ponto, e o segundo
+  // toque do par caía sobre a ficha em vez do céu. O par nunca chegava
+  // ao gesto, e o veredito acusava o PRODUTO por um defeito do
+  // INSTRUMENTO (medido: a câmera andava 2,6e-16 do raio, que é "não
+  // andou"). O defeito era antigo e estava dormindo: enquanto o alvo
+  // mais solto calhava de cair longe da folha, ninguém o via. A régua de
+  // relevância mudou QUEM está desenhado a 390×844, o alvo passou a ser
+  // o "Sol" a 45% da altura, e o que dormia acordou.
+  //
+  // O REMÉDIO É MEDIR A CONDIÇÃO DE VERDADE, não adivinhar uma fração de
+  // tela: a folha muda de altura com o CONTEÚDO da ficha — a de Marte
+  // tem sete seções e é a mais alta que existe, a da Terra é a mais
+  // baixa —, então um `y < 0,5` decorado erraria no primeiro alvo de
+  // outro corpo. Percorrem-se os candidatos do mais SOLTO para o mais
+  // apertado e, para cada um, faz-se o teste que o par vai enfrentar:
+  // toca-se UMA vez, e pergunta-se se aquele ponto continua sendo céu
+  // com a ficha DAQUELE objeto aberta. O primeiro que passa é o alvo.
   await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
   await sessao.assentar();
-  const nome = JSON.parse(await sessao.js(`JSON.stringify((() => {
-    const a = window.__director.rotulos.alvos
+  const sobreOCanvas = async () => JSON.parse(await sessao.js(`JSON.stringify(
+    window.__director.rotulos.alvos
       .filter((l) => l.desenhado === true && l.opacity >= 0.15)
       .map((l) => ({ nome: l.name, x: Math.round(l.x * innerWidth),
         y: Math.round(l.y * innerHeight) }))
       .filter((l) => {
         const e = document.elementFromPoint(l.x, l.y);
         return Boolean(e && e.classList.contains('scene-canvas'));
-      });
-    let melhor = null, solidao = -1;
-    for (const l of a) {
-      const d = Math.min(...a.filter((o) => o !== l)
-        .map((o) => Math.hypot(o.x - l.x, o.y - l.y)));
-      if (d > solidao) { solidao = d; melhor = { ...l, vizinho: Math.round(d) }; }
+      })
+  )`));
+  const candidatos = await sobreOCanvas();
+  // do mais SOLTO para o mais apertado: a solidão é a distância ao
+  // vizinho mais próximo, e é ela que faz a prova medir o LIMIAR do
+  // dedo em vez de medir o hit-test escolhendo o vizinho errado
+  for (const l of candidatos) {
+    const d = Math.min(...candidatos.filter((o) => o !== l)
+      .map((o) => Math.hypot(o.x - l.x, o.y - l.y)));
+    l.vizinho = Number.isFinite(d) ? Math.round(d) : 0;
+  }
+  candidatos.sort((a, b) => b.vizinho - a.vizinho);
+  let nome = null;
+  for (const candidato of candidatos) {
+    await Promise.all([
+      dedo('touchStart', [{ x: candidato.x, y: candidato.y, id: 1 }]),
+      dedo('touchEnd', []),
+    ]);
+    await sessao.assentar();
+    const aindaCeu = await sessao.js(`(() => {
+      const e = document.elementFromPoint(${candidato.x}, ${candidato.y});
+      return String(Boolean(e && e.classList.contains('scene-canvas')));
+    })()`);
+    // volta ao ZERO: o par corre sem a ficha que o reconhecimento abriu
+    await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
+    await sessao.assentar();
+    if (aindaCeu === 'true') {
+      nome = candidato;
+      break;
     }
-    return melhor;
-  })())`));
+  }
   if (!nome) {
     conferir(false, 'toque: nenhum rótulo sobre o canvas a 390×844');
   } else {
