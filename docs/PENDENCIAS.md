@@ -22,8 +22,8 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 QUATRO QUE FALTAVAM.** Nesta onda fecharam os itens **73** (a navegação),
 **74** (a ficha do objeto) e **62** (o celular), e do **61** fecharam o
 **selo de honestidade**, as **camadas numa porta só**, os **controles do
-filme que somem sozinhos** e o **modo único** (os commits **1 a 5** do
-plano — o 6, a vista inicial, é o que fica). Em 23/08 ele respondeu às
+filme que somem sozinhos** e o **modo único** (os quatro passos do
+item **61** — a **vista inicial** é o que fica). Em 23/08 ele respondeu às
 QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
 
 1. **A vista com que o Atlas abre: ÓRBITAS PRIMEIRO.** Ele escolheu o
@@ -40,11 +40,13 @@ QUATRO perguntas que estavam de pé, e as quatro respostas viram obra:
    **arrastando para baixo**. Ver o item **61**.
 
 **A ORDEM DA PRÓXIMA CONVERSA:** item **77** (as linhas de órbita) → a
-**vista inicial** (o commit **6** do plano — o candidato (a), que só
-existe depois do 77) → o **clarão único** → as **tarjas do celular** → os
-**dois retoques**. Só depois disso o **81** (o vermelho do MB1 no voo
-livre), o **70** e o **75**. O plano da fila mora em
-`scratchpad/planos/plano-modo-unico-item61.md`.
+**vista inicial** (o candidato (a), que só existe depois do 77) → o
+**clarão único** → as **tarjas do celular** → os **dois retoques**. Só
+depois disso o **81** (o vermelho do MB1 no voo livre), o **70** e o
+**75**. O arquivo que numerava essa fila morava na pasta temporária e se
+perdeu com ela — nunca foi versionado. A fila é esta linha aqui; o
+detalhe de cada passo mora nos itens **61** e **77**, e em lugar nenhum
+mais.
 
 **O BASTÃO DE 23/08 (noite): O MODO ÚNICO ANDOU QUATRO PASSOS.** A parte
 grande do item **61** — *"o modo atlas na minha visão deveria ser o modo
@@ -585,19 +587,26 @@ fotos na mão:**
 
 - **A VISTA COM QUE O ATLAS ABRE.** Hoje é o sistema visto de 224 UA:
   dez nomes num nó de 40 px em volta de um ponto — a tela diz que há dez
-  mundos e mostra um. Foram renderizados três candidatos
+  mundos e mostra um. Foram renderizados quatro candidatos
   (`capturas/modo-unico-candidato-*.png`): **(a)** o sistema interno com
   as **linhas de órbita** desenhadas *(exige o item 77 primeiro)*,
   **(b)** a **Terra em primeiro plano** com o céu atrás *(existe hoje, e
-  é a mais bonita das três sem código novo)*, **(c)** a de hoje. A
-  recomendação de mecânica era (b) agora e (a) depois do 77.
+  é a mais bonita das três que existem sem código novo)*, **(c)** a de
+  hoje, **(d)** a **livre** — o Sol com Mercúrio, Vênus, Terra e Marte
+  no mesmo quadro. A recomendação de mecânica era (b) agora e (a) depois
+  do 77.
   **ELE ESCOLHEU (a) — ÓRBITAS PRIMEIRO, em 23/08.** Não aceitou o
   atalho: o Atlas vai abrir mostrando o sistema COM as linhas, e por
   isso AUTORIZOU o item **77** a entrar antes, sabendo que ele muda a
   imagem de toda vista do Atlas. A ordem fica sendo **77 → vista
-  inicial**, e a vista é o commit **6** do plano do modo único
-  (`scratchpad/planos/plano-modo-unico-item61.md`), que naquela fila
-  ganha o 77 como commit 0. A folha dos candidatos é
+  inicial**, e a vista é o ÚLTIMO passo do modo único, com o 77 na
+  frente dela (o arquivo que numerava essa fila se perdeu com a pasta
+  temporária). **A foto do escolhido NÃO é o alvo:**
+  `capturas/modo-unico-candidato-a-sem-orbitas.png` mostra o
+  enquadramento SEM as linhas — a folha por isso o chama de **(a')** —, e
+  o alvo é esse enquadramento SOMADO às órbitas do item **77**. É
+  exatamente por isso que ele mandou órbitas primeiro: quem fizer a vista
+  padrão não pode tomar a foto como chegada. A folha dos candidatos é
   `capturas/modo-unico-candidatos.png`.
 - **O BRILHO DO SOL — e aqui a medida mudou a pergunta** (`f88d877`). O
   plano propunha um teto ÚNICO (0,55, o do filme) alegando que a foto era
@@ -635,9 +644,9 @@ fotos na mão:**
     que nasceu em `f88d877` justamente para medir isto — a escada verde
     nas duas fases é o que fecha a obra.
 
-  É o commit **2** do plano
-  (`scratchpad/planos/plano-modo-unico-item61.md`). **A obra é da
-  próxima conversa; aqui está só a decisão.**
+  Na fila do bastão, no alto, o clarão único vem logo depois da vista
+  padrão — o arquivo que numerava aquela fila se perdeu com a pasta
+  temporária. **A obra é da próxima conversa; aqui está só a decisão.**
 
 **DUAS COISAS DO CELULAR FICARAM PARA ELE DECIDIR (item 62, fechado em
 23/08) — e ele DECIDIU AS DUAS em 23/08.** Nenhuma das duas era defeito;
@@ -901,9 +910,10 @@ abre** — ele escolheu o candidato **(a)** da folha
 `capturas/modo-unico-candidatos.png`, o sistema COM as órbitas
 desenhadas, e essa vista não existe sem elas (ver o item **61**).
 
-Por isso o 77 deixa de ser obra solta e vira o **commit 0** da fila do
-modo único: logo atrás dele vem o commit **6** daquele plano, a vista
-padrão (`scratchpad/planos/plano-modo-unico-item61.md`). Nada do que está
+Por isso o 77 deixa de ser obra solta e vira o **primeiro** da fila do
+modo único: logo atrás dele vem a **vista padrão** (o arquivo que
+numerava aquela fila se perdeu com a pasta temporária; a ordem viva é a
+do bastão, no alto). Nada do que está
 escrito acima muda — a camada na tabela única `CAMADAS`, o
 `world/orbitas.ts` pela efeméride VIVA e o `ab-identidade` cheio com o
 **delta DECLARADO** (a imagem muda de propósito, então o veredito é a
