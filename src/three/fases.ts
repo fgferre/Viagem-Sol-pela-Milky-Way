@@ -117,7 +117,7 @@ export interface HudDaFase {
    * seria um controle que não faz nada.
    */
   busca: boolean;
-  /** ⏸ Pausar · velocidade · Ver a galáxia · Explorar livremente */
+  /** ⏸ Pausar · velocidade · Ver a galáxia · Explorar */
   botoesDaViagem: boolean;
   /** ↻ Reviver */
   botaoReviver: boolean;

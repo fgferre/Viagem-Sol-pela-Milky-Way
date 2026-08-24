@@ -436,11 +436,13 @@ describe('o quadro parado não se repinta', () => {
   it('o nome que ANDA repinta — o atalho é sobre o que não mudou', () => {
     const { ctx, rotulos } = bancada();
     rotulos.draw([rotulo('corpo:mars', 'Marte', 0.5, 0.45)]);
-    const antes = ctx.pintadas.length;
-    // meio por cento de tela: seis pixels, que o olho vê
+    expect(ctx.pintadas[0].x).toBe(600 + 18);
+    // meio por cento de tela: seis pixels, que o olho vê. O dente está
+    // em cobrar ONDE o texto foi pintado, e não quantas pinceladas
+    // houve: a contagem passa com e sem o defeito, porque um quadro
+    // pulado deixa na lista exatamente as pinceladas do quadro anterior.
     rotulos.draw([rotulo('corpo:mars', 'Marte', 0.505, 0.45)]);
-    expect(ctx.pintadas.length).toBe(antes);
-    expect(ctx.pintadas[0].x).not.toBe(600 + 18);
+    expect(ctx.pintadas[0].x).toBe(606 + 18);
   });
 
   it('o HUD que muda de forma repinta, ainda com os nomes parados', () => {

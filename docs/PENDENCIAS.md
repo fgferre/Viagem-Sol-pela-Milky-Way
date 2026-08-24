@@ -129,7 +129,8 @@ bastão do fim do dia, no alto, e o item 61).
 alternativas de cotnrole menores e escondigos que expandam para
 celular"* — saiu da lista inteiro (`80de6da`). No telefone os
 controles do Atlas viraram **uma fileira de alças no pé**, cada uma
-sobe uma **folha de baixo** que fecha por três saídas, a **câmera parou
+sobe uma **folha de baixo** que fecha por QUATRO saídas (a quarta — o
+arrasto para baixo — foi decisão dele e pousou em 24/08), a **câmera parou
 de recuar** por um rodapé que já não existe (o céu à câmera foi de
 44,5% para 77,0%) e a **pinça de dois dedos passou a dar zoom** — ela
 simplesmente não existia em tela de toque. **Espera o olho dele no
@@ -597,6 +598,35 @@ Três degraus, nesta ordem:
   pergunta MORRE, em vez de ser re-pinado num número novo. Se em duas ou
   três etapas isto não pegar sabotagem nenhuma, a regra sai — ela também
   tem de provar que serve.
+  **O FILME LEVOU A MUDANÇA JUNTO, E UMA LEGENDA CAIU — decisão de gosto,
+  para o olho dele** (achado do auditor, 24/08). O desenho é UM SÓ: uma
+  instância de `LabelCanvas` serve o Atlas e o filme, então a morte dos
+  sete lugares e do traço alcança as legendas do filme também — e o
+  comentário do código dizia o contrário. Medido pelo md5 da tinta do
+  canvas em cinco instantes (t=20/45/60/90/150): quatro saem
+  **bit-idênticos**, porque no filme cabem no máximo quatro nomes de
+  fundo mais os forçados do beat e eles nascem espalhados. **O quinto
+  não.** No beat **AS TRÊS MARIAS** (t=45) o cinturão de Órion põe
+  Alnitak, Alnilam e Mintaka quase em linha; a caixa de Alnilam encosta
+  na de Alnitak e, sem os deslocamentos, **ALNILAM PERDE O NOME** — três
+  nomes viraram dois, e a tinta caiu de 6.722 para 4.104 pixels.
+  **A legenda do beat, embaixo, continua dizendo os três** ("Alnitak,
+  Alnilam, Mintaka — três supergigantes alinhadas só daqui"), e é essa
+  discordância que pede o olho dele. A foto é
+  `capturas/item82-filme-legendas-antes-depois.png`.
+  **O que ele escolhe, e nenhuma escolha é cara:** (a) fica como está —
+  a lei é a mesma nos dois modos, e o nome do meio volta assim que a
+  câmera separa as estrelas; (b) o rótulo FORÇADO do beat (só ele, que é
+  o assunto que o roteiro nomeia) ganha UM lugar alternativo, e aí a
+  teia não volta porque é uma vaga, não catorze; (c) a legenda do beat
+  passa a dizer duas. Nenhuma se faz sem ele dizer qual.
+  **E UMA DECISÃO QUE ESTAVA SÓ NA CABEÇA DE QUEM FEZ, agora escrita:** o
+  estudo do Eyes pede que o detalhe `classe · distância` SAIA do céu
+  ("nomes magros" no sentido estrito — o nome e nada mais). Não saiu, e
+  pela mesma razão de cima: apagá-lo apagaria a legenda do FILME
+  ("BETELGEUSE · M2Ib · 49,7 anos-luz"), que não estava em discussão
+  neste item. Continua sendo boa ideia; precisa é ser julgada com o filme
+  na tela.
   **UM DENTE MORREU DE VELHICE nesta etapa, e vale registrar:** um
   veredito de `cinematic/atlasRig.test.ts` lia o TEXTO-FONTE do laço do
   `LabelCanvas` para provar que a marca do clique nasce antes do primeiro
@@ -774,8 +804,11 @@ três perguntas e respondeu numa linha só:
    ele decidir na mesma onda: "Explorar livremente" continua sendo o
    nome na barra de controles do filme e no véu do fim. **DECIDIDO em
    23/08: encurta.** Na BARRA do filme o botão passa a dizer só
-   **"Explorar"**, como na abertura. Obra a fazer, pequena
-   (`components/BarraOuAlcas.tsx`); o juiz de a11y mede o rótulo.
+   **"Explorar"**, como na abertura. **FEITO em 24/08**
+   (`components/BarraOuAlcas.tsx`). Quem o toca num juiz é o
+   `busca-smoke`, que clica nele — e clica por PEDAÇO do texto, então
+   não pina a palavra; quem pina "↗ Explorar" é o `a11y`, e ali é o
+   botão da barra do ATLAS, que é outro.
 2. **Os controles do filme somem sozinhos. FEITO em 22/08.** Com o filme
    CORRENDO e nenhum gesto por 3 s, a barra de controles do topo e a
    barra de capítulos esmaecem; o primeiro movimento de ponteiro, toque,

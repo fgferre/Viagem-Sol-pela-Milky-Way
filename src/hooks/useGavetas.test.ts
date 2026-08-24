@@ -27,6 +27,9 @@ import {
   aoTravessar,
   arrastoFecha,
 } from './useGavetas';
+// a zona morta do dedo vem da peça que o arrasto realmente usa: o gesto
+// que o dono aprovou é a SOMA dos dois números, e ela só se mede juntando
+import { zonaMortaDoArrasto } from '../three/arrastoDePonteiro';
 
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 const HOOK = readFileSync(new URL('./useGavetas.ts', import.meta.url), 'utf8');
@@ -121,10 +124,33 @@ describe('5. os dois efeitos são do HOOK, e não do App', () => {
 
 describe('6. a QUARTA saída: arrastar a folha para baixo (item 62, 23/08)', () => {
   it('desce o bastante e mais para baixo do que para o lado ⇒ fecha', () => {
-    expect(arrastoFecha(0, ARRASTO_QUE_FECHA_PX)).toBe(true);
+    // OS NÚMEROS SÃO LITERAIS, e isso é o dente (apertado em 24/08,
+    // depois de o auditor sabotar a constante para 8 e os dezesseis
+    // vereditos deste arquivo passarem verdes). Escrever o limiar em
+    // função de si mesmo — `arrastoFecha(0, ARRASTO_QUE_FECHA_PX)` — não
+    // mede número nenhum: prova só que a função lê a própria constante,
+    // e segue verde com ela valendo 8 ou 800. O que o dono aprovou foi
+    // um GESTO, e gesto se mede em pixels de tela.
+    expect(arrastoFecha(0, 47)).toBe(false);
+    expect(arrastoFecha(0, 48)).toBe(true);
     expect(arrastoFecha(10, 200)).toBe(true);
-    // o limiar é inclusivo, e um pixel abaixo dele não fecha
-    expect(arrastoFecha(0, ARRASTO_QUE_FECHA_PX - 1)).toBe(false);
+    // ...e a constante é o mesmo 48, escrito uma vez só
+    expect(ARRASTO_QUE_FECHA_PX).toBe(48);
+  });
+
+  it('o que o DEDO anda são 64 px — a zona morta é comida antes', () => {
+    // `arrastoFecha` recebe o que `mover` devolve, e `mover` já
+    // DESCARTOU a zona morta do toque. O número que o polegar sente é a
+    // soma dos dois, e é ele que o comentário da constante promete: 16
+    // (zona morta do dedo) + 48 = 64 px, 7,6% da altura num aparelho de
+    // 844. Sem esta conta, mexer na zona morta mudaria o gesto do dono
+    // sem quebrar nada.
+    const zonaMorta = zonaMortaDoArrasto('touch');
+    expect(zonaMorta).toBe(16);
+    expect(zonaMorta + ARRASTO_QUE_FECHA_PX).toBe(64);
+    // um dedo que desce 63 px NÃO fecha; 64 fecha
+    expect(arrastoFecha(0, 63 - zonaMorta)).toBe(false);
+    expect(arrastoFecha(0, 64 - zonaMorta)).toBe(true);
   });
 
   it('subir NUNCA fecha — a folha sai por baixo, não por cima', () => {
@@ -157,8 +183,11 @@ describe('6. a QUARTA saída: arrastar a folha para baixo (item 62, 23/08)', () 
     // manda `pointercancel` ~30 px depois do primeiro toque e assume a
     // rolagem; os `touchmove` do MESMO gesto continuam chegando. Escutar
     // ponteiro aqui é escutar um fluxo que morre antes do limiar.
-    expect(HOOK).toContain("folha.addEventListener('touchstart', comecar)");
-    expect(HOOK).toContain("window.addEventListener('touchmove', mover)");
+    // sem o parêntese de fecho: o que se cobra é QUEM escuta O QUÊ, e
+    // não a pontuação — em 24/08 o `touchstart` ganhou `{ passive: true }`
+    // e quebrou este veredito sem mudar promessa nenhuma
+    expect(HOOK).toContain("folha.addEventListener('touchstart', comecar");
+    expect(HOOK).toContain("window.addEventListener('touchmove', mover");
     expect(HOOK).not.toContain("addEventListener('pointermove'");
     // ...e o mouse fica de fora de graça: `touchstart` não existe para ele
     expect(HOOK).not.toContain("addEventListener('pointerdown'");

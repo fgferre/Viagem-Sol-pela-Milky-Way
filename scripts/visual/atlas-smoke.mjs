@@ -570,10 +570,10 @@ try {
   //   4. o selo declara       — a camada desligada vira desvio de brilho.
   //
   // O HOSPEDEIRO MUDOU EM 22/08 (item 61): as camadas saíram do painel de
-  // Ajustes e a GAVETA passou a ser a única porta delas — 18 caixas em
+  // Ajustes e a GAVETA passou a ser a única porta delas — 19 caixas em
   // três famílias, nos dois modos (a décima oitava é o item 77, as
-  // linhas de órbita). O que se julga aqui é o mesmo de
-  // sempre; o seletor é o da gaveta.
+  // linhas de órbita; a décima nona é o item 82, os nomes na tela). O
+  // que se julga aqui é o mesmo de sempre; o seletor é o da gaveta.
   //
   // E de dentro do Atlas, que é onde uma recarga custa mais caro: modo,
   // instante do céu e alvo em quadro seguem no lugar por construção.
@@ -1210,14 +1210,12 @@ try {
   // item 73 consertou não sumiu: ele MUDOU DE ENDEREÇO, e agora mora no
   // TETO do zoom, aonde o visitante chega puxando a roda. Então:
   //
-  //   · na ABERTURA cobra-se que TODO corpo em quadro tem nome (os
-  //     cinco de dentro, nenhum perdido para a colisão com o Sol);
-  //   · no TETO cobra-se a promessa original, inteira — os DEZ: os oito
-  //     planetas, o Sol e Plutão —, que é onde eles ainda projetam
-  //     colados.
-  //
   // Trocar o endereço e manter o dente é o que separa re-pinar de
-  // afrouxar: se alguém desfizer o item 73, a segunda metade grita.
+  // afrouxar. O QUE CADA ENDEREÇO COBRAVA ATÉ 23/08 — na abertura, que
+  // TODO corpo em quadro tem nome; no teto, os DEZ (os oito planetas, o
+  // Sol e Plutão) — está escrito no passado de propósito: as duas
+  // promessas foram REVOGADAS no dia seguinte, e o que cada endereço
+  // cobra hoje está logo abaixo, nos vereditos.
   //
   // E EM 24/08 A PROMESSA MUDOU DE NATUREZA (item 82). O dono viu a
   // conta daquela promessa — *"o default todos os objetos estao com o
@@ -1250,6 +1248,9 @@ try {
       corpos: naTela.filter((l) => l.key.startsWith('corpo:')).map((l) => l.key.slice(6)),
       // tier 0 = nome próprio, 1 = designação de Bayer ("ε Ind", "ι Pav")
       estrelasProprias: naTela.filter((l) => !l.key.startsWith('corpo:') && !l.tier).length,
+      // QUAIS estrelas, pelo nome — sem isto o veredito cobra quantas e
+      // de que classe, e qualquer outro quarteto de nome próprio passa
+      nomesDeEstrela: naTela.filter((l) => !l.key.startsWith('corpo:')).map((l) => l.name),
       estrelasBayer: naTela.filter((l) => !l.key.startsWith('corpo:') && l.tier === 1)
         .map((l) => l.name),
       cortadosPelaRegua: corte.length,
@@ -1291,6 +1292,23 @@ try {
       + ` ${CORPOS_COM_NOME.join(', ')}`
       + ` · medido: ${nomesDaAbertura.desenhados} nomes, corpos`
       + ` [${corposDaAbertura.join(', ')}]`
+  );
+  // E AS QUATRO ESTRELAS SÃO ESTAS QUATRO, pelo nome (apertado em 24/08,
+  // depois de o auditor mostrar que contagem + classe deixava passar
+  // QUALQUER quarteto de nome próprio — trocar Alnair por Vega passaria
+  // calado, e é justamente QUEM a régua escolhe que este item decidiu).
+  // A régua ordena por peso e desempata pelo mais PERTO, então o
+  // conjunto é função do céu daquela data (`jd=EPOCA`) e desta janela
+  // (1200×900) — as duas coisas estão pinadas acima.
+  const ESTRELAS_DA_ABERTURA = ['Aldhanab', 'Alnair', 'Peacock', 'Tiaki'];
+  const estrelasNaTela = [...nomesDaAbertura.nomesDeEstrela].sort();
+  const bateEstrelas =
+    estrelasNaTela.length === ESTRELAS_DA_ABERTURA.length
+    && ESTRELAS_DA_ABERTURA.every((n, i) => estrelasNaTela[i] === n);
+  conferir(
+    bateEstrelas,
+    `...e as estrelas com nome são exatamente ${ESTRELAS_DA_ABERTURA.join(', ')}`
+      + ` · medido: [${estrelasNaTela.join(', ')}]`
   );
   // O AVESSO, e ele é a metade que dá dente ao veredito de cima: as
   // estrelas que sobram são de NOME PRÓPRIO, e nenhuma designação de
@@ -1357,15 +1375,22 @@ try {
   // os dez que PROJETAM colados no teto — a régua de comparação, não uma
   // promessa: é contra eles que se mede quantos a tela consegue separar
   const OS_DEZ_DO_TETO = ['sun', ...OITO_PLANETAS, 'pluto'];
-  const NO_TETO = 3;
+  // OS TRÊS, PELO NOME (apertado em 24/08): conferir só o `sun` deixava
+  // passar qualquer par a mais — e QUEM sobrevive é o veredito, porque é
+  // ele que diz que a tela guarda os que estão LONGE do nó (Netuno e
+  // Plutão, nas órbitas de fora) e cala os que se empilham sobre o
+  // clarão. Trocar Netuno por Júpiter seria outra lei, não outro número.
+  const NO_TETO = ['neptune', 'pluto', 'sun'];
+  const corposDoTeto = [...nomesDoTeto.corpos].sort();
+  const bateOTeto =
+    corposDoTeto.length === NO_TETO.length
+    && NO_TETO.every((c, i) => corposDoTeto[i] === c);
   conferir(
-    nomesDoTeto.desenhados === NO_TETO
-      && nomesDoTeto.corpos.includes('sun')
-      && nomesDoTeto.corpos.length === NO_TETO,
-    `no teto do zoom sobra o que a tela SEPARA — ${NO_TETO} nomes de`
-      + ` ${nomesDoTeto.projetados} projetados (eram 27 antes da régua):`
-      + ` ${nomesDoTeto.corpos.join(', ')}`
-      + ` · medido ${nomesDoTeto.desenhados}`
+    nomesDoTeto.desenhados === NO_TETO.length && bateOTeto,
+    `no teto do zoom sobra o que a tela SEPARA — ${NO_TETO.length} nomes de`
+      + ` ${nomesDoTeto.projetados} projetados (eram 27 antes da régua), e são`
+      + ` exatamente ${NO_TETO.join(', ')}`
+      + ` · medido ${nomesDoTeto.desenhados}: [${corposDoTeto.join(', ')}]`
   );
   conferir(
     nomesDoTeto.estrelasProprias + nomesDoTeto.estrelasBayer.length === 0

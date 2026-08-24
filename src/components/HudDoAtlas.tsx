@@ -295,8 +295,8 @@ export function Selo({
       )}
 
       {/* A LINHA FECHADA, e ela é a última no DOM de propósito: a gaveta
-          sobe por cima da cena e esta linha fica encostada na tarja de
-          baixo, onde o selo sempre morou. */}
+          sobe por cima da cena e esta linha fica no pé da tela, onde o
+          selo sempre morou (no telefone já não há tarja ali). */}
       <button
         type="button"
         className={`atlas-selo-resumo ${algumDesvia ? 'desvio' : 'real'}`}

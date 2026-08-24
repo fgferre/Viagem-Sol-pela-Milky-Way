@@ -770,8 +770,11 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   // registro: a câmera recuava pela base de MESA — o selo grande, a
   // máquina do tempo e os dois degraus dela, todos disparados numa tela
   // de 390 px — por um rodapé que a fatia 9 já tinha desmontado. Agora o
-  // ramo do celular tem quatro frações próprias, e elas são COBRADAS
-  // aqui, nos seis cantos da faixa: dois aparelhos × três `?ui=`.
+  // ramo do celular tem TRÊS frações próprias — as mesmas três que
+  // `retanguloDoAtlas` declara ("AS TRÊS FRAÇÕES SÃO MEDIDAS") —, e elas
+  // são COBRADAS aqui, nos seis cantos da faixa: dois aparelhos × três
+  // `?ui=`. (Eram quatro até 24/08, quando a tarja de cima saiu do
+  // telefone e levou a fração dela junto.)
   //
   // O QUE ESTA PROVA MEDE, e o que ela NÃO mede: ela cobra declarado ≥
   // medido, que é a promessa de que nada do alvo cai atrás do HUD. O
@@ -843,7 +846,7 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
     conferir(
       img.pct === 100,
       `a IMAGEM a ${w}×${h}: ocupa ${img.pct.toFixed(1)}% da tela —`
-        + ` ${img.px.toFixed(1)} px de tarja preta (eram 9,00% da tela até 23/08)`
+        + ` ${img.px.toFixed(1)} px de tarja preta (eram 9,00% da tela até 24/08)`
     );
   }
   // A FRESTA de 761 a 767 px — o que sobra entre as duas faixas

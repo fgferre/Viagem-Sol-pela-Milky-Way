@@ -298,9 +298,10 @@ export function useGavetas(
    *
    * NÃO É MECÂNICA NOVA: o `ArrastoDePonteiro` é DOM-nenhum de propósito —
    * ele pede cinco campos, não um `PointerEvent` —, e um `Touch` os tem
-   * todos (o `identifier` é o dono, como o `pointerId`). O adaptador de
-   * três linhas abaixo é a tradução, e a máquina de estado, a zona morta
-   * do dedo e o passo em pixels continuam sendo os da casa.
+   * todos (o `identifier` é o dono, como o `pointerId`). O adaptador
+   * abaixo (`comoPonteiro`, sete linhas) é a tradução, e a máquina de
+   * estado, a zona morta do dedo e o passo em pixels continuam sendo os
+   * da casa.
    *
    * E SÓ DEDO, de graça: `touchstart` não existe para mouse. Na mesma
    * largura, com mouse, arrastar sobre a folha é selecionar texto — fechar
@@ -363,7 +364,10 @@ export function useGavetas(
       const dedo = e.changedTouches[0];
       if (dedo) arrasto.cancelar(comoPonteiro(dedo));
     };
-    folha.addEventListener('touchstart', comecar);
+    // PASSIVO, e de graça: `comecar` não chama `preventDefault` em
+    // caminho nenhum — declarar isso deixa o navegador começar a rolagem
+    // sem esperar o ouvinte responder.
+    folha.addEventListener('touchstart', comecar, { passive: true });
     window.addEventListener('touchmove', mover);
     window.addEventListener('touchend', soltar);
     window.addEventListener('touchcancel', soltar);

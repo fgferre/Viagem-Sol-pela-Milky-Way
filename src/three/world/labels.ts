@@ -216,6 +216,12 @@ export function aplicarReguaDeRelevancia(
     // o que já está invisível não gasta vaga: quem o descarta é o
     // desenho, pela mesma soleira
     if (l.opacity < OPACIDADE_MINIMA_DO_ROTULO) continue;
+    // A MARCA SÓ SE ACENDE, NUNCA SE APAGA — e é por isso que o contrato
+    // é lista NOVA a cada quadro. `projectCorpos` e `projectLabels`
+    // constroem os objetos do zero em toda projeção, então um rótulo
+    // nunca chega aqui trazendo o "não" do quadro anterior. Quem
+    // reaproveitar uma lista entre quadros tem de limpar a marca antes,
+    // senão o corte de um quadro vira sentença perpétua.
     if (vagas > 0) vagas--;
     else l.cortadoPelaRegua = true;
   }

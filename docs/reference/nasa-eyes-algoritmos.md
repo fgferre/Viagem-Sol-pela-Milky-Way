@@ -24,9 +24,13 @@ O Eyes tem uma lei só, e ela vale para nome e para linha:
 > tela, que **some** quando atrapalha o objeto, e que **não se
 > empurra** para caber — quem perde a vaga desaparece.
 
-O Atlas faz o contrário nos nomes (item 73: sete lugares e traço de até
-102 px para salvar o texto) e o parente pobre nas órbitas (`LineLoop` de
-1 px, some no zoom).
+O Atlas FAZIA o contrário nos nomes — o item 73 dava sete lugares e um
+traço de até 102 px para salvar o texto — e segue o parente pobre nas
+órbitas (`LineLoop` de 1 px, some no zoom). A metade dos nomes está
+paga: em 24/08 o item 82 (N1) matou os sete lugares e o traço, e pôs a
+régua de relevância na frente da geometria. O que este documento diz dos
+nomes, daqui para baixo, é o retrato de ANTES — vale como diagnóstico e
+como origem da obra, não como descrição do que está na tela.
 
 A ordem abaixo é a do **impacto na tela desta casa**, não a do
 organograma do Eyes. Missão (Cassini, Voyager) vem por último: a gente
@@ -91,8 +95,10 @@ Quem ganha, nesta ordem:
 
 A CSS `hiddenByLabelQuadtree` é o interruptor. **Não há posição
 alternativa. Não há traço.** O item 73 da casa fez o oposto: 7
-deslocamentos × 2 lados = 14 vagas, traço até 102 px. É por isso que a
-abertura parece um porco-espinho.
+deslocamentos × 2 lados = 14 vagas, traço até 102 px — e era por isso
+que a abertura PARECIA um porco-espinho. Em 24/08 o item 82 (N1) adotou
+a política daqui: um lugar por nome, colidiu e o menor some. A abertura
+caiu de 22 nomes para 8.
 
 Peso de fábrica:
 
@@ -342,13 +348,18 @@ assunto forçado). Não copiar o painel da Cassini.
 
 A obra não é “portar o Eyes”. É três cortes, cada um com foto.
 
-**Corte 1 — nomes magros (item 82).** Trocar a política do
-`LabelCanvas`: colidiu, o menor some. Tirar o detalhe
-`classe · distância` do céu (a ficha já diz). Ícone ou ponto no astro,
-texto curto ao lado, sem haste. Default: Sol + planetas que têm lugar
-próprio no quadro; o nó interno e as estrelas calados. Camada “Nomes”
-na gaveta. O juiz `atlas-smoke` que cobra “os 8 planetas com nome na
-abertura” muda junto, senão defende a teia.
+**Corte 1 — nomes magros (item 82). PAGO em 24/08, menos um pedaço.**
+Trocou-se a política do `LabelCanvas` (colidiu, o menor some; um lugar
+por nome, sem haste), pôs-se a régua de relevância ANTES da geometria,
+nasceu a camada “Nomes na tela” na gaveta, e o juiz `atlas-smoke` mudou
+de promessa no mesmo commit. Abertura: 22 nomes → 8.
+**O pedaço que NÃO foi feito, e por decisão:** tirar o detalhe
+`classe · distância` do céu. O desenho é UM SÓ para o Atlas e para o
+FILME — uma instância de `LabelCanvas` serve os dois —, e apagar o
+detalhe apagaria também a legenda do filme, que não está em discussão
+neste item. Fica como pedido em aberto, para quando alguém quiser
+julgar a legenda do filme junto; enquanto isso, a ficha continua sendo
+onde a classe e a distância se leem com folga.
 
 **Corte 2 — nomes no mundo.** Teste de oclusão esfera (o que
 `escondidaPorDisco` já faz para estrela/Sol) para **todo** nome, mais

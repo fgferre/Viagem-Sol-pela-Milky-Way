@@ -7,8 +7,10 @@
 //
 // SÃO DOIS ARRANJOS DE HUD, e por isso duas contas: a MESA (a barra
 // de controles em cima, o selo e a máquina do tempo embaixo) e o
-// TELEFONE (item 62: o "Partir" dentro da tarja, a fileira de alças
-// no pé e o selo numa linha em cima dela). A fronteira é
+// TELEFONE (item 62: a barra de cima com as trocas de modo, a fileira
+// de alças no pé e o selo numa linha em cima dela — SEM tarja nenhuma
+// desde 23/08, ver `SAIDA_FRACAO` e o `Math.max` que caiu no fim deste
+// arquivo). A fronteira é
 // `LARGURA_DO_CELULAR_PX`, o mesmo número que o `@media` do HUD usa
 // e que o `useCelular` lê para decidir quem está no DOM — a câmera
 // não pode recuar por um rodapé que o CSS já desmontou.
@@ -277,10 +279,14 @@ const TEMPO_FRACAO = 0.175;
  *   320, 1,00 → 0,0522
  *   320, 1,40 → 0,0712 / 1,40 = 0,0509
  *
- * 0,065 cobre o pior (0,0548) com 0,0087 de folga por unidade de `ui`,
- * para fonte de outra máquina — o juiz roda no macOS do dono e na nuvem.
- * É a MESMA folga que o excedente antigo declarava (0,0088); o que sumiu
- * do topo foram os 0,045 da tarja, que a câmera não paga mais.
+ * 0,065 cobre o pior (0,0548) com **0,0102 de folga por unidade de
+ * `ui`** — que no canto que aperta (320 px, `ui` 0,85) são 0,0087 DE
+ * TELA. Os dois números são a mesma folga lida em duas réguas, e o
+ * rótulo estava trocado até 24/08: num arquivo que proíbe aritmética de
+ * comentário, dizer "por unidade" sobre o número da tela é o defeito que
+ * ele existe para não ter. A folga é para fonte de outra máquina — o
+ * juiz roda no macOS do dono e na nuvem. O que sumiu do topo foram os
+ * 0,045 da tarja, que a câmera não paga mais.
  */
 const SAIDA_FRACAO = 0.065;
 

@@ -182,8 +182,9 @@ export function BarraOuAlcas({
           PORTAS — cada alça sobe uma folha e volta a fechar —, e estas
           duas TROCAM DE MODO. Pôr uma troca de modo entre gavetas seria
           prometer que ela também "abre e fecha". No telefone elas
-          entram na mesma tarja de cima que já hospeda a saída, que é
-          exatamente o lugar onde as trocas de modo moram. */}
+          entram na mesma BARRA de cima que já hospeda a saída, que é
+          exatamente o lugar onde as trocas de modo moram. (Era "tarja"
+          até 24/08, quando ela saiu do telefone; a barra ficou.) */}
       {hud.saidasDoAtlas && (
         <>
           <button

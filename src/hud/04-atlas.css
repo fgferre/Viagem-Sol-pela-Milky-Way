@@ -168,9 +168,10 @@
 }
 
 /* O SELO DE HONESTIDADE, DOBRADO EM UMA LINHA (item 61, 22/08): canto
-   oposto ao da dica, encostado na tarja de baixo. O que fica NA TELA o
-   tempo inteiro é a linha `.atlas-selo-resumo` e nada mais — a caixa
-   `.atlas-selo` mede exatamente ela.
+   oposto ao da dica, no pé da tela — colado na tarja de baixo onde ela
+   existe (mesa), e na borda quando não existe (telefone, desde 24/08).
+   O que fica NA TELA o tempo inteiro é a linha `.atlas-selo-resumo` e
+   nada mais — a caixa `.atlas-selo` mede exatamente ela.
 
    O DETALHE É `position: absolute` E CRESCE PARA CIMA. Não é traje: é o
    que mantém a altura permanente do HUD igual aberta e fechada. O
@@ -181,8 +182,8 @@
 .atlas-selo {
   position: fixed;
   right: 3vw;
-  /* encostado na tarja de baixo: cada 1vh a mais aqui é 1vh a menos de
-     quadro útil, e o enquadramento paga isso em distância. O número é o
+  /* colado no pé: cada 1vh a mais aqui é 1vh a menos de quadro útil, e
+     o enquadramento paga isso em distância. O número é o
      `--selo-base` da fatia 1 — o MESMO de que a gaveta desconta a folga
      para parar acima daqui (e o mesmo do `.atlas-rodape`). */
   bottom: var(--selo-base);
@@ -535,8 +536,9 @@
   accent-color: rgba(255, 200, 130, 0.9);
   cursor: pointer;
 }
-/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: sete das
-   dezoito têm ícone, e sem a coluna reservada os nomes da mesma
+/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: oito das
+   dezenove têm ícone (a oitava é `nonomes`, item 82 — quem conta é
+   `atlasConfig.test.ts`), e sem a coluna reservada os nomes da mesma
    família começariam em dois recuos diferentes. `flex: 0 0 auto` para a
    célula vazia não encolher a zero. */
 .atlas-gaveta-icone {

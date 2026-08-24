@@ -411,9 +411,30 @@ export class Rotulos {
           this.oclusoresDeRotulo
         );
         // a prioridade das ESTRELAS é escrita AQUI e não dentro de
-        // `projectLabels`: aquele é o mesmo caminho do FILME, e o filme
-        // não é tocado por esta obra — sem `prioridade` o desenho cai no
-        // peso do meio, que é o desenho de sempre, pixel a pixel
+        // `projectLabels`, que é o mesmo caminho do FILME: sem
+        // `prioridade` o rótulo do filme cai no peso VISUAL do meio, que
+        // é a tinta de sempre, e não passa pela régua de relevância —
+        // ela só corre neste ramo.
+        //
+        // O QUE ISSO NÃO QUER DIZER (corrigido em 24/08, achado do
+        // auditor): que o filme esteja fora do alcance desta obra. O
+        // `LabelCanvas` é UM SÓ para os dois modos (`useDirector`
+        // constrói uma instância e a entrega ao Director), então a morte
+        // dos sete deslocamentos e do traço de 102 px alcança as
+        // legendas do filme também — e ALCANÇOU.
+        //
+        // MEDIDO em cinco instantes (t=20/45/60/90/150), pelo md5 da
+        // tinta do canvas: quatro deles saem bit-idênticos, porque no
+        // filme cabem no máximo quatro nomes de fundo mais os forçados
+        // do beat e eles nascem espalhados. O quinto NÃO: no beat das
+        // TRÊS MARIAS (t=45) o cinturão de Órion põe Alnitak, Alnilam e
+        // Mintaka quase em linha, a caixa de Alnilam encosta na de
+        // Alnitak, e sem os deslocamentos ALNILAM PERDE O NOME — 3 nomes
+        // viraram 2, a tinta caiu de 6.722 para 4.104 pixels. A legenda
+        // do beat, embaixo, continua dizendo os três. É a lei nova
+        // funcionando, e ainda assim é uma quebra editorial: está
+        // registrada no item 82 para o olho do dono decidir, com a foto
+        // em `capturas/item82-filme-legendas-antes-depois.png`.
         for (const e of estrelas) e.prioridade = prioridadeDeEstrela(e.tier);
         const lista = [...corpos, ...luas, ...estrelas];
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a

@@ -292,7 +292,9 @@ E há `selection` para o corpo focado — exatamente um, sempre.
   que ela **não cabe**.
 
 Nota de contraste: o Eyes **não puxa traço** para salvar rótulo que não cabe. O nosso item 73
-puxa traço de até 102 px, e é isso que faz o "nó de nomes" que o dono viu.
+PUXAVA traço de até 102 px, e era isso que fazia o "nó de nomes" que o dono viu — o item 82
+(N1) o matou em 24/08, e hoje a casa faz o mesmo que o Eyes: um lugar por nome, colidiu e o
+menor some.
 
 ---
 
@@ -421,11 +423,16 @@ dispensa reescrever os 256 vértices a cada quadro.
 
 ---
 
-**D4 · Nomes com quadtree** *(fecha o item 82). Prioridade alta. Custo: médio.*
-Espaço de tela + quadtree de caixas + opacidade contínua + **régua de relevância que corta por
-importância ANTES da geometria** (a parte que o Eyes não tem, §5). E **acabar com o traço de
-102 px**: nome que não cabe, some.
-*O juiz veria:* a abertura do Atlas deixa de ser um nó de nomes.
+**D4 · Nomes com quadtree** *(item 82). Prioridade alta. Custo: médio.*
+**FEITO em 24/08 (N1), na parte que importava:** a **régua de relevância que corta por
+importância ANTES da geometria** (a parte que o Eyes não tem, §5) e o **fim do traço de
+102 px** — nome que não cabe, some. Medido: a abertura caiu de 22 nomes para 8, e nenhuma
+designação de Bayer sobra na tela.
+**O QUE NÃO ENTROU:** a *quadtree* propriamente dita — a colisão da casa é o laço linear de
+sempre, e com um orçamento de dez nomes na tela ele não custa nada, então a estrutura seria
+otimizar o que já é grátis. A **oclusão em 3D** (nome atrás do globo) tampouco: ela é o
+degrau **N3** do item 82, e continua aberta.
+*O juiz viu:* a abertura do Atlas deixou de ser um nó de nomes.
 
 ---
 

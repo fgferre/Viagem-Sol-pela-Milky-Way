@@ -871,8 +871,9 @@ export default function App() {
               render acontece quando o foco muda, que é quando a vista
               muda (dentro de um enquadramento a câmera não anda
               sozinha). É o ÚLTIMO da coluna porque é o que cede: na tela
-              estreita ele fica encostado na tarja de baixo, como no
-              canto de mesa, e a leitura desce controle → gesto → selo. */}
+              estreita ele fica no pé da coluna — onde a tarja de baixo
+              estava antes de sair do telefone —, como no canto de mesa,
+              e a leitura desce controle → gesto → selo. */}
           {hud.selo && directorRef.current && (
             <Selo
               vista={directorRef.current.selo}

@@ -404,6 +404,15 @@ function intersects(a: Rect, b: Rect, padding: number): boolean {
  * ou não finita, e aí fica só o tipo. É o caso do Sol, cujo rótulo
  * anunciava "0 UA" — e o de um corpo a menos de meio quilômetro da
  * câmera, que a cópia antiga arredondava para o mesmo "0 UA".
+ *
+ * E ELE FICOU, EM 24/08, POR DECISÃO — o estudo do NASA Eyes pede que
+ * este detalhe SAIA do céu ("nomes magros": o nome e nada mais, que a
+ * ficha já diz a classe e a distância), e o item 82 não o tirou. A razão
+ * é que este desenho é UM SÓ: a mesma instância de `LabelCanvas` serve o
+ * Atlas e o FILME, e apagar o detalhe apagaria junto a legenda do filme
+ * ("BETELGEUSE · M2Ib · 49,7 anos-luz"), que não estava em discussão
+ * naquele item. Tirar continua sendo uma boa ideia; ela só precisa ser
+ * julgada com o filme na tela, e não de passagem.
  */
 function detalheDoRotulo(label: StarLabel): string {
   const base = label.detalhe ?? label.spect.slice(0, 5);
