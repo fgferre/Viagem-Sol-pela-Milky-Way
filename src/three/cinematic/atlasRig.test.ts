@@ -1278,7 +1278,9 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
     expect(ESCADA).toContain(
       "import { baseCorpoEquatorial } from '../../lib/atlas/orientacao'"
     );
-    expect(ESCADA).toContain('polo: this.poloDoCorpo(id),');
+    // (a linha que casava 'polo: this.poloDoCorpo(id),' saiu: casava em
+    // DOIS lugares e não mordia a reversão do item 88 — quem julga o
+    // polo por VALOR é o dente de escada.test.ts)
     // ...e os degraus de fora NÃO o pedem: lá o assunto é o plano do
     // sistema, e o eixo de um corpo qualquer não governa o horizonte
     const sistema = ESCADA.slice(

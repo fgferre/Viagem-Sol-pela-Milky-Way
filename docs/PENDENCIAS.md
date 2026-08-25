@@ -33,7 +33,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 101.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 102.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **100** saiu em 25/08: o HUD de lente e zoom, ideia dele.)*
 
@@ -1409,15 +1409,10 @@ de Saturno visto de Titã — Titã orbita no plano do equador dele, então
 com o eixo dela no alto o anel TEM de sair na horizontal, e é o que
 acontece agora).
 
-**UMA COISA ACHADA DE PASSAGEM, e ela não é obra deste item:** o anel de
-Saturno **treme entre capturas do MESMO código**. Medido em 25/08:
-`foco-titan` 651 px de 3.083.400 (0,021%, delta máx 35) numa caixa de
-211×88 sobre a linha do anel e a sombra dela no globo; e a `saturno-anel`,
-que está na leva desde a F6, dá 828 px (0,027%, delta máx 47) pela mesma
-assinatura — ou seja, **é tremor antigo, não vem daqui**. A câmera está
-fora de suspeita: `camera.up` e `camera.position` saíram bit a bit iguais
-em duas navegações e depois do religador. Fica registrado sem número
-porque ninguém decidiu obra sobre ele.
+**O achado de passagem desta obra — o anel que treme entre capturas —
+virou o item 101**, para não morrer no museu junto com este quando ele
+fechar. A câmera está fora de suspeita: `camera.up` e `camera.position`
+saíram bit a bit iguais em duas navegações e depois do religador.
 
 **90. Upscaling espacial como feature experimental (beta).** (Decisão do
 dono em 24/08, em resposta ao levantamento de desempenho. **Fila futura,
@@ -1524,6 +1519,18 @@ conferido contra o código em 25/08:
   importa (documento que afirma faltar algo já pronto) é invisível para
   qualquer máquina. Quem confere se o escrito é verdade é gente, com
   auditoria por onda.
+
+**101.** (Ruído de instrumento, achado em 25/08 fechando o item 88 —
+irmão dos itens 49, 80 e 85.) **O anel de Saturno treme entre capturas do
+MESMO código.** A vista `saturno-anel`, na leva desde a F6, contra ela
+mesma dá **828 px** (0,027%, delta máx 47) — a auditoria reproduziu ao
+pixel; a `foco-titan` nova dá **605 px numa medição e 262 px noutra**
+(estocástico: o número muda por leva, e por isso nenhum vale como pino) —
+sempre na caixa sobre a linha do anel e a sombra dela no globo. A câmera
+está fora de suspeita (pose bit a bit igual nas duas navegações); o
+suspeito de sempre é textura chegando em estados diferentes. Enquanto
+viver, um A/B pode acusar essas vistas em falso — a prova de inocência é
+o par nulo (o mesmo lado contra ele mesmo), que já pegou este.
 
 ---
 

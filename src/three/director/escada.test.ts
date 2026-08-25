@@ -240,6 +240,10 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
     // Aqui a mira não chega perto do eixo, então o `up` sai EXATO.
     escada.focarNoCorpo('io', 'corpo');
     aplicar();
+    // O 0,01 é ESTRUTURAL, não capricho: Io×Júpiter distam só 0,026°,
+    // e esta é a ÚNICA asserção da família que separa "polo da lua" de
+    // "polo do pai" (Titã×Saturno = 0,165° passa na folga de 5°;
+    // Caronte×Plutão = 0°). Afrouxar para 0,05 abre a classe inteira.
     expect(graus(camera.up, poloDe('io'))).toBeLessThan(0.01);
     expect(graus(camera.up, daLua)).toBeGreaterThan(1.5);
     const altoDeIo = camera.up.toArray();
