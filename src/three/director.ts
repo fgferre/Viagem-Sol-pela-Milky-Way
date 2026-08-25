@@ -1203,7 +1203,13 @@ export class Director {
       // não chegou — o mesmo argumento da efeméride e da textura acima.
       // Sem este termo o gate fotografaria o mundo VELHO com o `?q=`
       // novo no selo, e mediria a corrida em vez da imagem.
-      this.trocaPedida !== null;
+      this.trocaPedida !== null ||
+      // O REALCE DO FOCO (item 83 · L1): as linhas de órbita atravessam
+      // do neutro para a hierarquia em ~0,45 s, e uma vista de `?foco=`
+      // fotografada no meio da travessia devolveria md5 diferente a cada
+      // corrida. Mesmo papel de `atlas.animando` logo acima — cena
+      // mudando por construção até assentar.
+      (this.orbitas?.animando ?? false);
     // CORPO NO GATE A FRIO (auditoria item 5b): o gate diz que o corpo
     // devia estar na tela e a textura não está quente — capturar agora
     // fotografaria o ponto (ou nada) fingindo a vista do globo. O
@@ -2508,13 +2514,20 @@ export class Director {
     // acende a efeméride ao entrar (`palcoQuente`).
     if (this.orbitas) {
       this.orbitas.ligado = !this.hide.has('noorbitas');
+      // O FOCO MANDA NA CENA (item 83 · L1): a camada LÊ o `focoCorpoId`
+      // da Escada, que é a única escritora do foco na casa — o mesmo
+      // valor que o selo lê para o ΔEV. Escrito aqui, junto da porta,
+      // porque as duas são estado de quadro e têm de andar no mesmo
+      // passo: uma camada que aprendesse o foco um quadro depois
+      // realçaria a órbita do alvo ANTERIOR.
+      this.orbitas.foco = this.escada.focoCorpoId;
       if (this.orbitas.ligado && this.maquinaDoTempo.efemeride) {
         this.orbitas.escreverInstante(
           this.maquinaDoTempo.jdVivo,
           this.maquinaDoTempo.efemeride
         );
       }
-      this.orbitas.update(this.engine.camera, hPx, tanHalfFov);
+      this.orbitas.update(this.engine.camera, hPx, tanHalfFov, dt);
     }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);

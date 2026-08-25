@@ -113,6 +113,35 @@
 // referência nenhuma, e a elipse solta seria um anel sem dono.
 //
 // ------------------------------------------------------------
+// 5b. O FOCO MANDA NA CENA (item 83 · L1)
+// ------------------------------------------------------------
+// Quando o visitante enquadra um corpo, a órbita DELE — e as das LUAS
+// dele — sobem, e as demais recuam um passo. É um MULTIPLICADOR por
+// linha em cima do alfa do fade, e não um segundo alfa: as duas pontas
+// do §5 continuam decidindo quem tem direito a aparecer, e o realce só
+// decide QUEM É O ASSUNTO entre as que já apareceram. Sem foco nenhum —
+// a abertura, o filme, toda vista de bancada — o multiplicador é 1 e
+// esta seção não existe para o pixel.
+//
+// A FAMÍLIA é derivada, nunca digitada: `id === foco` (o alvo) ou
+// `centro === foco` (as luas dele). Enquadrar Júpiter acende as quatro
+// galileanas junto porque elas têm Júpiter como centro, e enquadrar Io
+// acende só Io — as três irmãs recuam, que é o que faz o olho achar a
+// que o visitante pediu.
+//
+// A TRANSIÇÃO É SUAVE, e não é enfeite: trocar de alvo com corte seco
+// faz as trinta linhas piscarem juntas. O realce persegue o alvo por
+// decaimento exponencial (o idioma de `zoomDaRoda`), e ENCOSTA quando
+// chega perto — sem o encosto ele convergiria para sempre e a régua
+// abaixo nunca assentaria.
+//
+// E ELE ENTRA NA PRONTIDÃO DA CAPTURA (`animando`, lido pelo `captura`
+// do director): realce ainda andando é cena mudando, exatamente como o
+// véu do Atlas e a rampa do rig. Sem esse termo, um `?foco=` fotografado
+// no meio da transição devolveria md5 diferente a cada corrida — a
+// captura mediria a corrida, e não a imagem.
+//
+// ------------------------------------------------------------
 // 6. SEM EFEMÉRIDE, SEM LINHA — a decisão escrita
 // ------------------------------------------------------------
 // A efeméride é preguiçosa (`maquinaDoTempo.garantirEfemerides`) e o
@@ -207,6 +236,47 @@ const MARGEM_DO_PAI_NDC = 1.25;
  * sistema; baixo demais e ela não sobrevive ao bloom.
  */
 const BRILHO_DA_LINHA = 0.32;
+
+/**
+ * O REALCE DO FOCO (§5b), em multiplicadores do brilho de instrumento.
+ * Os dois números foram escolhidos com a FOTO na mão, na vista
+ * `foco-luas` do `ab-identidade` — oito linhas repartidas ao meio, as
+ * quatro galileanas contra as quatro heliocêntricas de dentro:
+ *
+ *   - 1,75 leva a linha do assunto de 0,32 a **0,56**. Acima disso ela
+ *     começa a alimentar o bloom e vira a fonte mais forte do quadro
+ *     dentro do sistema, que é o teto que o §5 já impunha ao 0,32.
+ *   - 0,35 leva as demais a **0,112**. Elas têm de CONTINUAR LEGÍVEIS —
+ *     recuar não é apagar, e a leitura que o item 77 existe para dar
+ *     ("Marte está entre a Terra e Júpiter") morre se o vizinho some.
+ *     Abaixo de ~0,08 a linha fina não sobrevive ao céu.
+ *
+ * A razão entre os dois é 5×, e é ela que o olho lê como hierarquia.
+ */
+const REALCE_DO_FOCO = 1.75;
+const RECUO_FORA_DO_FOCO = 0.35;
+
+/**
+ * A VELOCIDADE DA TRANSIÇÃO do realce, em 1/s — o decaimento por quadro
+ * é `exp(-k·dt)`, o idioma de `zoomDaRoda`. Com k = 9 a constante de
+ * tempo é 0,11 s e a troca de alvo chega a 99% em ~0,5 s: rápido o
+ * bastante para não parecer preguiça, lento o bastante para o olho ver
+ * QUEM mudou.
+ */
+const VELOCIDADE_DO_REALCE = 9;
+
+/**
+ * Onde o realce ENCOSTA no alvo. Sem encosto o exponencial convergiria
+ * para sempre e `animando` nunca ficaria falso — a captura esperaria
+ * até o teto e o gate acusaria sinal quebrado.
+ *
+ * 1e-3 DE MULTIPLICADOR É 3e-4 DE ALFA: um décimo do passo de 8 bits,
+ * ou seja invisível por construção. E o número tem um segundo dono: é
+ * ele que fixa em ~0,75 s o quanto uma vista de `?foco=` segura o
+ * obturador do gate. Apertá-lo para 1e-4 custaria 1 s por captura para
+ * comprar um centésimo de passo de 8 bits — que ninguém vê.
+ */
+const REALCE_ASSENTADO = 1e-3;
 
 /**
  * O cinza frio de quem não tem cor medida na fotometria (§5).
@@ -442,6 +512,8 @@ interface LinhaDeOrbita {
   apoastroPc: number;
   /** o alfa do quadro anterior, que é quem decide o reamostrar */
   alfa: number;
+  /** o multiplicador do foco (§5b), perseguindo o alvo — nasce neutro */
+  realce: number;
 }
 
 export class Orbitas {
@@ -453,6 +525,15 @@ export class Orbitas {
    * e a mais nada.
    */
   ligado = false;
+
+  /**
+   * O CORPO EM FOCO (§5b), escrito pelo director antes do `update` pela
+   * mesma disciplina de `ligado`. É o `focoCorpoId` da Escada, que é a
+   * única escritora do foco na casa — esta camada só LÊ, e não guarda
+   * uma segunda ideia de quem está em quadro. `null` na abertura, no
+   * filme e quando o foco é uma estrela.
+   */
+  foco: string | null = null;
 
   private readonly linhas: LinhaDeOrbita[] = [];
   /** o instante em que os CENTROS foram postos no lugar */
@@ -496,6 +577,7 @@ export class Orbitas {
         semieixoPc: 0,
         apoastroPc: 0,
         alfa: 0,
+        realce: 1,
       });
     }
   }
@@ -623,25 +705,70 @@ export class Orbitas {
    * e visibilidade, uma por linha.
    *
    * `tanHalfFov` é o mesmo que o tick já calcula para as outras camadas.
+   * `dtS` é o dt do tick, e serve só ao realce do foco (§5b).
    */
   update(
     camera: THREE.PerspectiveCamera,
     hPx: number,
-    tanHalfFov: number
+    tanHalfFov: number,
+    dtS: number
   ) {
     this.group.visible = this.ligado;
     if (!this.ligado) {
-      for (const linha of this.linhas) linha.alfa = 0;
+      // CAMADA FECHADA: o realce ENCOSTA no alvo em vez de perseguir no
+      // escuro. Sem isto, abrir a gaveta depois de um `?foco=` mostraria
+      // as trinta linhas subindo do neutro — animação que ninguém pediu,
+      // e que nasceria já atrasada.
+      for (const linha of this.linhas) {
+        linha.alfa = 0;
+        linha.realce = this.realceAlvo(linha);
+      }
       return;
     }
     const meiaAltura = hPx / 2;
     const camPos = camera.position;
     for (const linha of this.linhas) {
+      linha.realce = this.perseguirRealce(linha, dtS);
       linha.alfa = this.alfaDa(linha, camera, camPos, meiaAltura, tanHalfFov);
       const aceso = linha.alfa > ALFA_INVISIVEL;
       linha.loop.visible = aceso;
       if (aceso) linha.material.opacity = linha.alfa;
     }
+  }
+
+  /**
+   * O REALCE AINDA ANDA? (§5b) — a porta de leitura que o `captura` do
+   * director soma ao `andando`, no mesmo papel de `atlas.animando` e do
+   * véu: mudança JÁ PEDIDA que ainda não chegou segura o obturador.
+   */
+  get animando(): boolean {
+    return this.linhas.some(
+      (l) => Math.abs(l.realce - this.realceAlvo(l)) >= REALCE_ASSENTADO
+    );
+  }
+
+  /**
+   * O ALVO do multiplicador desta linha (§5b). Sem foco, 1 para todas —
+   * e é essa saída que faz a abertura, o filme e toda vista de bancada
+   * desenharem o pixel de sempre.
+   */
+  private realceAlvo(linha: LinhaDeOrbita): number {
+    if (this.foco === null) return 1;
+    const daFamilia =
+      linha.corpo.id === this.foco || linha.corpo.centro === this.foco;
+    return daFamilia ? REALCE_DO_FOCO : RECUO_FORA_DO_FOCO;
+  }
+
+  /** Um passo do realce rumo ao alvo, com encosto (§5b). */
+  private perseguirRealce(linha: LinhaDeOrbita, dtS: number): number {
+    const alvo = this.realceAlvo(linha);
+    // SEM RELÓGIO NÃO HÁ TRANSIÇÃO, e o encosto é imediato: um `dtS`
+    // ausente, zero ou negativo (quadro sem tempo, teste que só quer o
+    // regime permanente) nunca deixa o realce preso no meio do caminho.
+    if (!(dtS > 0)) return alvo;
+    const resto = alvo - linha.realce;
+    if (Math.abs(resto) < REALCE_ASSENTADO) return alvo;
+    return alvo - resto * Math.exp(-VELOCIDADE_DO_REALCE * dtS);
   }
 
   /** O fade de uma linha: as duas pontas do §5, mais o pai enquadrado. */
@@ -690,7 +817,11 @@ export class Orbitas {
     if (sai <= 0) return 0;
 
     if (linha.corpo.centro !== 'sun' && !this.paiEnquadrado(centro, camera)) return 0;
-    return BRILHO_DA_LINHA * entra * sai;
+    // O REALCE ENTRA POR ÚLTIMO (§5b), e por isso não abre porta nenhuma:
+    // quem já foi cortado pelas duas pontas ou pelo pai fora do quadro
+    // continua cortado, por mais que esteja em foco. O foco escolhe o
+    // ASSUNTO entre as linhas que a cena já decidiu mostrar.
+    return BRILHO_DA_LINHA * entra * sai * linha.realce;
   }
 
   /** O pai está no quadro? (§5 — só as luas perguntam.) */
@@ -708,14 +839,15 @@ export class Orbitas {
   dbg(): string {
     const linhas = [
       `[dbgorbitas] ${this.linhas.length} órbitas · ${this.acesas} acesas · ` +
-        `camada ${this.ligado ? 'ligada' : 'desligada'}`,
+        `camada ${this.ligado ? 'ligada' : 'desligada'} · ` +
+        `foco=${this.foco ?? '—'}${this.animando ? ' (andando)' : ''}`,
     ];
     for (const l of this.linhas) {
       if (!l.loop.visible) continue;
       linhas.push(
         `[dbgorbitas] ${l.corpo.id.padEnd(9)} centro=${l.corpo.centro.padEnd(8)} ` +
           `a=${(l.semieixoPc / AU_PARA_PC).toFixed(6)} UA · ` +
-          `alfa=${l.alfa.toFixed(4)} · jd=${l.jd}`
+          `alfa=${l.alfa.toFixed(4)} · realce=${l.realce.toFixed(2)} · jd=${l.jd}`
       );
     }
     return linhas.join('\n');

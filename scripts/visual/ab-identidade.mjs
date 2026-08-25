@@ -556,6 +556,37 @@ export const VISTAS = [
   // efeméride é dado de imagem, e sem ele a Terra e a Lua entrariam no
   // quadro no retrato congelado — que é outro céu.
   ['atlas', '?atlas=1&jd=2460409.26395835&shot=2'],
+  // ------------------------------------------------------------------
+  // AS DUAS DO FOCO (item 83 · L1, 24/08) — e elas nasceram de um BURACO
+  // MEDIDO, não de zelo: das 52 vistas acima, NENHUMA tem corpo em foco.
+  // As de corpo (`terra`, `jupiter`, `titan`…) cravam a câmera com
+  // `?pos=&look=`, que é voo livre — `focoCorpoId` fica `null` nas 52. Um
+  // degrau que só muda a cena QUANDO há foco seria, para este gate,
+  // invisível: as 52 sairiam bit-idênticas e o veredito "não mudou nada"
+  // mediria a ausência de assunto, não o trabalho (AGENTS.md §7 — a
+  // obrigação é criar a vista que cobre).
+  //
+  // `?foco=` ENTRA NO ATLAS SOZINHA (useDirector.ts) e enquadra pelo mesmo
+  // caminho do clique num nome, então as duas exercem o par inteiro: a
+  // Escada escreve o foco, a camada das órbitas o lê.
+  //
+  //  - `foco-jupiter` é o contraste HELIOCÊNTRICO, no enquadramento da
+  //    órbita do próprio alvo: acendem CINCO linhas — as quatro de dentro
+  //    mais a de Júpiter —, e de Saturno para fora a órbita já não cabe no
+  //    quadro. É a vista em que UMA sobe e QUATRO recuam.
+  //  - `foco-luas` é o contraste ENTRE FAMÍLIAS, que nenhuma outra vista
+  //    tem: `?d=0.01` desce ao sistema de Júpiter e acende OITO linhas
+  //    repartidas ao meio — as quatro galileanas (a família do alvo) e as
+  //    quatro heliocêntricas de dentro (que não são dele). Medido no
+  //    binário de 23/08, antes do L1: as oito a 0,32/0,30, sem hierarquia
+  //    nenhuma. É a vista que cobra a segunda metade do L1 — "e as das
+  //    LUAS dele" —, que a de cima não alcança.
+  //
+  // `&jd=` pelo motivo de sempre: sem efeméride viva esta camada não
+  // desenha NADA (`orbitas.ts` §6), e uma vista de foco sem linha nenhuma
+  // não guardaria o que se quer guardar.
+  ['foco-jupiter', '?foco=jupiter&jd=2460409.26395835&shot=2'],
+  ['foco-luas', '?foco=jupiter&d=0.01&jd=2460409.26395835&shot=2'],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);

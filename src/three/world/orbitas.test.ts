@@ -280,7 +280,7 @@ describe('a camada no quadro', () => {
     // linhas se ela estivesse aberta — senão o teste passaria por falta
     // de assunto em vez de por causa da porta
     orbitas.ligado = false;
-    orbitas.update(cameraDoTeto(), 1800, TAN_35);
+    orbitas.update(cameraDoTeto(), 1800, TAN_35, 0);
     expect(orbitas.group.visible).toBe(false);
     expect(orbitas.acesas).toBe(0);
     // o QUADRO é caminho puro: quem fala com o motor é `escreverInstante`,
@@ -291,7 +291,7 @@ describe('a camada no quadro', () => {
     // veredito acima mede a porta, e não um enquadramento vazio
     orbitas.ligado = true;
     orbitas.escreverInstante(EPOCA_JD_TDB, fonte);
-    orbitas.update(cameraDoTeto(), 1800, TAN_35);
+    orbitas.update(cameraDoTeto(), 1800, TAN_35, 0);
     expect(orbitas.acesas).toBeGreaterThan(0);
     expect(fonte.contagem()).toBeGreaterThan(0);
     orbitas.dispose();
@@ -305,7 +305,7 @@ describe('a camada no quadro', () => {
     // com ou sem motor. Sem ESTE update o teste passaria mesmo que o
     // quadro acendesse linha a partir do retrato congelado, que é
     // exatamente o defeito que o §6 proíbe.
-    orbitas.update(cameraDoTeto(), 1800, TAN_35);
+    orbitas.update(cameraDoTeto(), 1800, TAN_35, 0);
     expect(orbitas.acesas).toBe(0);
     expect(orbitas.dbg()).toContain('0 acesas');
     // e a geometria continua VAZIA: nada foi escrito de lugar nenhum
@@ -345,7 +345,7 @@ describe('a camada no quadro', () => {
       // duas camadas (`director.ts`)
       pontos.escreverInstante(jd, motor);
       orbitas.escreverInstante(jd, motor);
-      orbitas.update(camera, 1800, tanHalfFov);
+      orbitas.update(camera, 1800, tanHalfFov, 0);
     };
     for (const jd of [EPOCA_JD_TDB, EPOCA_JD_TDB + 3653]) {
       // DOIS quadros, e o segundo é o contrato: uma linha que estava
@@ -410,7 +410,7 @@ describe('a camada no quadro', () => {
     camera.position.set(0, 0, distancia);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld(true);
-    orbitas.update(camera, 900, Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360));
+    orbitas.update(camera, 900, Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360), 0);
 
     const alfaDe = (id: string) => {
       const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
@@ -452,6 +452,169 @@ describe('a camada no quadro', () => {
     expect(Math.abs(arr[0] - eq[0] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
     expect(Math.abs(arr[1] - eq[1] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
     expect(Math.abs(arr[2] - eq[2] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
+    orbitas.dispose();
+  });
+});
+
+describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
+  /**
+   * A CÂMERA DO SISTEMA DE JÚPITER — 0,05 UA do pai, olhando para ele.
+   * É o único enquadramento em que as DUAS metades da lei podem ser
+   * cobradas no mesmo quadro: as quatro galileanas (a família do alvo)
+   * e as quatro heliocêntricas de dentro (que não são dele) estão
+   * acesas ao mesmo tempo. Medida na tela antes de virar teste — é a
+   * vista `foco-luas` do `ab-identidade`, com oito linhas.
+   */
+  function cameraNoSistemaDeJupiter(): THREE.PerspectiveCamera {
+    const p = motor.posicaoHeliocentrica('jupiter', EPOCA_JD_TDB);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const centro = new THREE.Vector3(
+      eq[0] * AU_PARA_PC,
+      eq[1] * AU_PARA_PC,
+      eq[2] * AU_PARA_PC
+    );
+    const c = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 4 / 3, 1e-12, 1e6);
+    c.position.copy(centro).add(new THREE.Vector3(0, 0.05 * AU_PARA_PC, 0));
+    c.lookAt(centro);
+    c.updateMatrixWorld(true);
+    return c;
+  }
+  const TAN_ATLAS = Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360);
+  const GALILEANAS = ['io', 'europa', 'ganymede', 'callisto'];
+  const DE_DENTRO = ['mercury', 'venus', 'earth', 'mars'];
+
+  /** o alfa de cada linha ACESA, pelo objeto do three — não pelo campo */
+  function alfas(orbitas: Orbitas): Record<string, number> {
+    const fora: Record<string, number> = {};
+    CORPOS_COM_ORBITA.forEach((corpo, i) => {
+      const o = orbitas.group.children[i] as unknown as {
+        material: { opacity: number };
+        visible: boolean;
+      };
+      if (o.visible) fora[corpo.id] = o.material.opacity;
+    });
+    return fora;
+  }
+
+  function armar() {
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    const cam = cameraNoSistemaDeJupiter();
+    // `dtS = 0` é o REGIME PERMANENTE: o realce encosta no alvo no
+    // mesmo quadro, e o que sobra para medir é a LEI, sem a rampa no
+    // meio. A rampa tem teste próprio, abaixo.
+    const quadro = () => {
+      orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+      orbitas.update(cam, 900, TAN_ATLAS, 0);
+    };
+    return { orbitas, quadro };
+  }
+
+  it('sem foco o alfa é o de sempre; com foco a família sobe e o resto recua', () => {
+    const { orbitas, quadro } = armar();
+    quadro();
+    const neutro = alfas(orbitas);
+    // A VISTA TEM DE TER AS DUAS METADES, senão o resto do teste mede o
+    // vazio e passa por falta de assunto — o defeito que o item 83
+    // encontrou no gate inteiro.
+    for (const id of [...GALILEANAS, ...DE_DENTRO]) {
+      expect(neutro[id], `${id} devia estar acesa nesta vista`).toBeGreaterThan(0);
+    }
+
+    orbitas.foco = 'jupiter';
+    quadro();
+    const comFoco = alfas(orbitas);
+    // AS LUAS DELE SOBEM — a segunda metade da lei, e a que só esta
+    // vista alcança. A razão é medida contra o PRÓPRIO neutro de cada
+    // linha, e não contra um número copiado da implementação: se o fade
+    // mudar, o teste continua cobrando a MESMA lei.
+    for (const id of GALILEANAS) {
+      expect(comFoco[id] / neutro[id], id).toBeCloseTo(1.75, 6);
+    }
+    // ...e quem não é da família recua
+    for (const id of DE_DENTRO) {
+      expect(comFoco[id] / neutro[id], id).toBeCloseTo(0.35, 6);
+    }
+    // A HIERARQUIA QUE O OLHO LÊ são 5× entre uma metade e a outra
+    expect(comFoco.io / comFoco.earth).toBeCloseTo(5 * (neutro.io / neutro.earth), 6);
+    // RECUAR NÃO É APAGAR: a leitura que o item 77 existe para dar morre
+    // se o vizinho some do quadro
+    for (const id of DE_DENTRO) expect(comFoco[id], id).toBeGreaterThan(0.08);
+
+    // E O FOCO SE DESFAZ SEM DEIXAR RASTRO: tirar o alvo devolve o
+    // quadro neutro EXATO, e não um estado parecido
+    orbitas.foco = null;
+    quadro();
+    expect(alfas(orbitas)).toEqual(neutro);
+    orbitas.dispose();
+  });
+
+  it('a LUA em foco separa-se das IRMÃS — o alvo sobe e as três recuam', () => {
+    const { orbitas, quadro } = armar();
+    quadro();
+    const neutro = alfas(orbitas);
+    orbitas.foco = 'io';
+    quadro();
+    const comFoco = alfas(orbitas);
+    expect(comFoco.io / neutro.io).toBeCloseTo(1.75, 6);
+    for (const id of ['europa', 'ganymede', 'callisto']) {
+      expect(comFoco[id] / neutro[id], id).toBeCloseTo(0.35, 6);
+    }
+    orbitas.dispose();
+  });
+
+  it('o foco NÃO abre porta: quem o fade cortou continua cortado', () => {
+    // A câmera está DENTRO da órbita heliocêntrica de Júpiter (o corte
+    // do §5 que não é gosto), e Júpiter está EM FOCO. Se o realce
+    // entrasse antes dos cortes, a linha voltaria — e voltaria como um
+    // risco dando a volta no céu, que é o defeito que o corte existe
+    // para impedir.
+    const { orbitas, quadro } = armar();
+    orbitas.foco = 'jupiter';
+    quadro();
+    const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === 'jupiter');
+    const alvo = orbitas.group.children[i] as unknown as { visible: boolean };
+    expect(alvo.visible, 'a órbita do alvo não pode furar o corte').toBe(false);
+    expect(alfas(orbitas).jupiter).toBeUndefined();
+    orbitas.dispose();
+  });
+
+  it('a transição ATRAVESSA sem piscar, assenta, e sem foco nunca segura a captura', () => {
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    const cam = cameraNoSistemaDeJupiter();
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const passo = 1 / 60;
+
+    // SEM FOCO A CAMADA NUNCA SEGURA O OBTURADOR — é o que mantém as 52
+    // vistas antigas capturando no tempo de antes. Um `animando` que
+    // ficasse verdadeiro aqui somaria segundos a TODA a leva.
+    orbitas.update(cam, 900, TAN_ATLAS, passo);
+    expect(orbitas.animando).toBe(false);
+
+    orbitas.foco = 'jupiter';
+    orbitas.update(cam, 900, TAN_ATLAS, passo);
+    expect(orbitas.animando, 'a troca de alvo tem de ATRAVESSAR').toBe(true);
+
+    // E ATRAVESSA MONOTONICAMENTE: subir e descer no caminho é o pisca
+    // que o §5b proíbe pelo nome.
+    const io = CORPOS_COM_ORBITA.findIndex((c) => c.id === 'io');
+    const linha = orbitas.group.children[io] as unknown as {
+      material: { opacity: number };
+    };
+    let anterior = 0;
+    let assentouEm = -1;
+    for (let k = 0; k < 90; k++) {
+      orbitas.update(cam, 900, TAN_ATLAS, passo);
+      expect(linha.material.opacity, `quadro ${k}`).toBeGreaterThanOrEqual(anterior);
+      anterior = linha.material.opacity;
+      if (assentouEm < 0 && !orbitas.animando) assentouEm = k;
+    }
+    // ...e ENCOSTA: sem o encosto o exponencial nunca fecha e a captura
+    // esperaria até o teto. ~0,75 s é o número declarado na constante.
+    expect(assentouEm, 'o realce tem de encostar').toBeGreaterThan(0);
+    expect(assentouEm * passo).toBeLessThan(1.0);
+    expect(orbitas.animando).toBe(false);
     orbitas.dispose();
   });
 });
