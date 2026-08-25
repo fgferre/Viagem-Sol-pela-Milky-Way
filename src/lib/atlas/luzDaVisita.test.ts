@@ -760,20 +760,66 @@ describe('3c. peça (d) — o véu palha de Saturno', () => {
   });
 
   /**
-   * `?luz=real` NÃO GANHA BRILHO INDEVIDO. O véu não tem luz própria: o
-   * que ele acende é o `luzSol` do quadro, que em `real` já traz E(d).
-   * Então a palha de Saturno em `real` é EXATAMENTE E(d) vezes a de
-   * `assistida` — a penumbra física do dono continua de pé, escalada,
-   * não desfeita.
+   * `?luz=real` NÃO GANHA BRILHO INDEVIDO, e a lei EXATA que garante
+   * isso é a LINEARIDADE: o termo do véu é `cor × luzSol × opacidade`,
+   * sem parcela própria, então E(d) vezes o MESMO `luzSol` dá E(d) vezes
+   * o véu — e nada mais. A penumbra física do dono continua de pé,
+   * escalada, não desfeita.
+   *
+   * O QUE ESTE PINO DEIXOU DE PROMETER (o achado A5 da auditoria de
+   * 25/08): que o véu de `real` seja E(d) vezes o de `assistida` PIXEL A
+   * PIXEL. Não é, e o pino antigo só parecia prová-lo porque entregava
+   * aos dois modos um `luzSol` que nenhum dos dois produz — o ganho
+   * cru, sem terminador. O bloco seguinte mede o desmentido.
    */
-  it('em `real` o véu vale E(d) vezes o de `assistida` — a decisão 2 intacta', () => {
+  it('o véu é LINEAR no Sol: E(d) × o MESMO luzSol, e nenhuma luz própria', () => {
     const a = opacidadeDoVeu(0);
     const E = ganhoDoGlobo(D_SATURNO, 'real');
-    // o TERMO do véu sozinho (albedo 0 isola a palha)
-    const assistida = globoComVeu(0, ganhoDoGlobo(D_SATURNO, 'assistida'), 0, a);
-    const real = globoComVeu(0, E, 0, a);
-    expect(real / assistida).toBeCloseTo(E, 12);
-    expect(real / assistida).toBeLessThan(1 / 90);
+    expect(E).toBeCloseTo(0.011037, 6);
+    // os quatro `luzSol` são pontos REAIS da curva de `assistida`
+    // (subsolar, flanco, meio e o vazamento do terminador), e o véu
+    // escala com cada um deles pelo mesmo E(d) — o TERMO da palha sai
+    // sozinho com albedo 0
+    for (const luzSol of [1, 0.709057, 0.36, 0.055103]) {
+      const cheio = globoComVeu(0, luzSol, 0, a);
+      const escalado = globoComVeu(0, E * luzSol, 0, a);
+      expect(escalado / cheio, `luzSol=${luzSol}`).toBeCloseTo(E, 12);
+      expect(escalado, `luzSol=${luzSol}`).toBeLessThan(cheio / 90);
+    }
+    // e sem Sol nenhum não há véu: a linearidade passa pela origem
+    expect(globoComVeu(0, 0, 0, a)).toBe(0);
+  });
+
+  /**
+   * E(d) É O TETO DA RAZÃO ENTRE MODOS, NÃO A RAZÃO. Os dois modos não
+   * entregam o mesmo `luzSol` para o mesmo N·L: `real` manda o Lambert
+   * cru vezes E(d), `assistida` manda a logística. A razão entre eles
+   * anda com o N·L, e no terminador ela vai a ZERO — porque a logística
+   * ainda vaza 5,5 % onde o Lambert cru já não vaza nada.
+   */
+  it('a razão entre MODOS anda com o N·L — E(d) só no subsolar', () => {
+    const E = ganhoDoGlobo(D_SATURNO, 'real');
+    const s = sDoTerminador('assistida', densidadeDoVeu('saturn'));
+    const luzDe = (ndotl: number) => ({
+      assistida: terminadorSuave(ndotl, s),
+      real: E * Math.max(ndotl, 0),
+    });
+    const razao = (ndotl: number) => {
+      const { assistida, real } = luzDe(ndotl);
+      return real / assistida;
+    };
+    // no subsolar as duas curvas valem 1, e SÓ ali a razão é E(d)
+    expect(luzDe(1).assistida).toBe(1);
+    expect(razao(1)).toBeCloseTo(E, 12);
+    // no flanco a logística já levantou a `assistida`: a razão cede ~30 %
+    expect(razao(0.5) / E).toBeCloseTo(0.705, 3);
+    // e no terminador vai a ZERO: a logística vaza 5,5 %, o Lambert não
+    expect(luzDe(0).assistida).toBeCloseTo(0.055103, 6);
+    expect(razao(0)).toBe(0);
+    // o teto nunca é ultrapassado no disco iluminado
+    for (const ndotl of [0, 0.1, 0.2, 0.35, 0.5, 0.7, 0.85, 0.95, 1]) {
+      expect(razao(ndotl), `N·L=${ndotl}`).toBeLessThanOrEqual(E);
+    }
   });
 
   it('os uniformes do véu nascem por CORPO, e só Saturno os traz acesos', () => {

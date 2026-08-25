@@ -499,10 +499,22 @@ vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
  *    de três canais iguais, então a croma dele nunca anda. O poente da
  *    Terra do Eyes avermelha; o de Saturno não existe, e o que prova a
  *    ausência é a razão R/B do termo do véu ficar parada.
- *  - `?luz=real` NÃO GANHA BRILHO INDEVIDO: ali `luzSol` já traz E(d) =
- *    1/90 e o Lambert cru, então o véu é 1/90 de si mesmo. A decisão 2
- *    do dono não pode ser desfeita por uma casca que brilha sozinha, e
- *    esta não brilha: ela só sabe repetir a luz que o globo recebeu.
+ *  - `?luz=real` NÃO GANHA BRILHO INDEVIDO, e quem garante isso é a
+ *    LINEARIDADE: o termo do véu é `uVeuCor × luzSol × aVeu`, sem uma
+ *    parcela própria, então E(d) vezes o MESMO `luzSol` dá E(d) vezes o
+ *    véu — e nada mais. A decisão 2 do dono não pode ser desfeita por
+ *    uma casca que brilha sozinha, e esta não brilha: ela só sabe
+ *    repetir a luz que o globo recebeu.
+ *
+ *    O QUE ISSO NÃO DIZ — e a frase que estava aqui até 25/08 dizia, o
+ *    achado A5 da auditoria: que o véu de `real` seja E(d) vezes o de
+ *    `assistida` PIXEL A PIXEL. Não é, porque o `luzSol` dos dois modos
+ *    não é o mesmo: em `real` ele é `E(d)·max(N·L,0)` e em `assistida` é
+ *    `terminadorSuave(N·L)`. A razão entre MODOS anda com o N·L — vale
+ *    E(d) no subsolar (as duas curvas valem 1 lá), cede a ~0,7·E(d) no
+ *    flanco e vai a ZERO no terminador, onde a logística ainda vaza
+ *    5,5 % e o Lambert cru já não vaza nada. E(d) é o TETO da razão, não
+ *    a razão.
  */
 export const GLSL_VEU_DE_SATURNO = /* glsl */ `
 uniform float uVeuColuna;    // ρ₀H do corpo; 0 = corpo sem véu

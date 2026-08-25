@@ -241,8 +241,12 @@ até na Lua) é pior que a casa.
 **O VÉU NÃO APAGA em `real` — ele ENCOLHE, e isso é de propósito.** Ele
 não tem luz própria (`emissivity` 0 no Eyes): o que o acende é o MESMO
 termo do Sol que a superfície usa, e em `real` esse termo já traz
-E(d) = 0,0106. Então a palha de Saturno em `real` vale **exatamente
-E(d) vezes** a de `assistida` — escalada, não desfeita. Medido: 3.757 px
+E(d) = 0,0106. A palha é **LINEAR nessa luz** — E(d) vezes o MESMO
+`luzSol` dá E(d) vezes o véu, e nada mais —, então ela encolhe junto com o
+globo em vez de brilhar por cima dele: escalada, não desfeita. (Entre os
+dois MODOS a razão não é fixa: o `luzSol` de `real` é o Lambert cru e o de
+`assistida` é a logística, então E(d) é o TETO — atingido no subsolar — e a
+razão cai até zero no terminador.) Medido: 3.757 px
 de 990.000 (0,38 % do quadro), **Δmáx 4,3 de 255**, média do quadro
 8,770 → 8,771. A penumbra física continua a que ele decidiu.
 

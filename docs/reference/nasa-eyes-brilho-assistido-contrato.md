@@ -44,12 +44,17 @@ superfície acende primeiro e a palha se mistura por cima, no limbo.
   flanco cede 1 %. Nenhum outro corpo desta casa tem véu, e todos
   continuam em 3 exato.
 
-**COMO O VÉU RESPONDE AO E(d), declarado:** em `?luz=real` ele é
-**exatamente E(d) vezes** o de `assistida`, porque o que ele acende é o
-`luzSol` do quadro e ali esse termo já traz E(d) = 0,0106 e o Lambert
-cru. A decisão 2 do dono não é desfeita por uma casca que brilha
-sozinha — esta não brilha: ela só sabe repetir a luz que o globo
-recebeu. Medido na mesma vista: 3.757 px de 990.000 (0,38 %), **Δmáx
+**COMO O VÉU RESPONDE AO E(d), declarado:** ele é **LINEAR no `luzSol`** —
+o termo dele é `cor × luzSol × opacidade`, sem parcela própria —, então em
+`?luz=real`, onde esse mesmo termo já traz E(d) = 0,0106 e o Lambert cru,
+o véu sai multiplicado por E(d) e por nada mais. A decisão 2 do dono não é
+desfeita por uma casca que brilha sozinha — esta não brilha: ela só sabe
+repetir a luz que o globo recebeu. **E cuidado com a leitura fácil:** isto
+NÃO diz que o véu de `real` seja E(d) vezes o de `assistida` pixel a pixel.
+O `luzSol` dos dois modos vem de curvas diferentes — `E(d)·max(N·L,0)`
+contra `terminadorSuave(N·L)` —, então a razão entre MODOS anda com o N·L:
+E(d) no subsolar, ~0,7·E(d) no flanco e ZERO no terminador. E(d) é o TETO
+da razão, não a razão. Medido na mesma vista: 3.757 px de 990.000 (0,38 %), **Δmáx
 4,3 de 255**, média do quadro 8,770 → 8,771. Com o véu apagado, `real`
 volta ao ruído do instrumento (87 px contra 71 px do par nulo).
 
