@@ -1362,7 +1362,7 @@ export class Escada {
    * saída honesta quando a malha ainda não existe: o degrau pedido não
    * existe ainda, e a órbita é o degrau que existe.
    */
-  private focarNoAnao(id: string, ver: VerDaEscada = 'orbita') {
+  private focarNoAnao(id: string, ver: VerDaEscada) {
     const entrada = HELIO_SEM_PONTO.find((a) => a.id === id);
     if (!entrada) return;
     this.focoCorpoId = id;

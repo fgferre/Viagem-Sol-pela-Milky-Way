@@ -427,6 +427,22 @@ describe('anões e asteroides: o degrau do globo (item 92)', () => {
     expect(noQuadro(camera, ERIS, RAIO_ERIS).alturas).toBeGreaterThan(0.2);
   });
 
+  it('ANTI-DERIVA do religador: sem `?ver=`, a fonte que chega TARDE não desce', () => {
+    // O gêmeo obrigatório do `verDoBoot`: o religador só pode descer
+    // quando o ENDEREÇO pediu. Um religador que devolvesse 'corpo'
+    // fixo passaria no teste acima e forçaria ao globo todo corpo cuja
+    // efeméride chega tarde — e era exatamente a sabotagem que esta
+    // suíte não pegava (achado da auditoria de 25/08; a vista
+    // `anao-eris-orbita` do gate pegava, mas só no portão de captura).
+    const { escada, aplicar, maquinaDoTempo } = bancada({ comAnoes: true });
+    escada.focarNoCorpo('eris');
+    expect(escada.escadaViva).toMatchObject({ degrau: 'orbita', corpoId: 'eris' });
+    maquinaDoTempo.efemeride = efemerideDeMentira();
+    escada.reenquadrarAposEfemeride();
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'orbita', corpoId: 'eris' });
+  });
+
   it('`?foco=Éris` SEM `?ver=` continua na órbita — o contrato não mudou', () => {
     // O contraponto obrigatório: o padrão de `?foco=` é o degrau de
     // órbita, e um conserto que descesse sempre trocaria um defeito
