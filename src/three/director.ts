@@ -38,8 +38,8 @@ import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { Orbitas } from './world/orbitas';
-import { deslocamentoEVAssistida } from '../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
+import { stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
 import type { VerDaEscada } from './selo';
 import { sondarGl } from '../lib/glProbe';
@@ -2049,7 +2049,7 @@ export class Director {
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
       luz: this.politicaDeLuz,
-      evLuzDoFoco: this.evLuzDoFoco(),
+      stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,
       // e é aí que o selo tem o que declarar
       doseDoSol: this.phase === 'journey' ? doseDaDramaturgia(this.journeyT) : 1,
@@ -2060,44 +2060,50 @@ export class Director {
   }
 
   /**
-   * O ΔEV da assistência sobre o corpo EM FOCO, para o rótulo vivo da
-   * linha `?luz=` do selo ("+N passos de luz · por corpo"). Lê a
-   * distância heliocêntrica VIVA do atributo da camada (a mesma que a
-   * máquina do tempo reescreve) — nunca o retrato congelado. Sem corpo
-   * em foco (ou com o Sol, que não tem assistência a declarar) devolve
+   * OS PASSOS DE LUZ que o GLOBO em foco está exposto acima (ou abaixo)
+   * da luz física que aquele corpo realmente recebe — o rótulo vivo da
+   * linha `?luz=` do selo. Lê a distância heliocêntrica VIVA (a mesma
+   * que a máquina do tempo reescreve), nunca o retrato congelado. Sem
+   * corpo em foco (ou com o Sol, que não tem visita a declarar) devolve
    * null e o rótulo fica só com a copy: o selo não inventa número.
+   *
+   * MUDOU NO ITEM 91, e mudou porque o número de antes era MENTIRA.
+   * Até 25/08 isto devolvia `deslocamentoEVAssistida(dUA)` — o ΔEV que a
+   * política `assistida` aplica sobre a `real`. Só que aquele número
+   * descrevia a lei do PONTO, e o ponto (`planetas.ts`, MH18) nunca
+   * consumiu `ganhoFundido`: o único consumidor sempre foi o globo. O
+   * selo declarava +4,2 para Saturno enquanto o globo gastava outra
+   * coisa. Agora declara `stopsDaVisita`, que é o gasto REAL da malha —
+   * +6,5 em Saturno, +9,8 em Netuno, −2,4 em Mercúrio — e em `real` é
+   * 0 exato, porque em `real` não há nada a declarar.
    */
-  private evLuzDoFoco(): number | null {
-    if (!this.escada.focoCorpoId || !this.planetas) return null;
+  private stopsDoGloboEmFoco(): number | null {
+    const id = this.escada.focoCorpoId;
+    if (!id || !this.planetas) return null;
+    const stops = (dUA: number | undefined) =>
+      dUA !== undefined && Number.isFinite(dUA)
+        ? stopsDaVisita(dUA, id, this.politicaDeLuz)
+        : null;
     // as luas (F2b/F3): o dUA é o da CADEIA heliocêntrica dela,
     // publicado pelo próprio mesh (NaN sem efeméride ⇒ o rótulo fica
     // sem número)
-    if (LUAS_DO_SISTEMA.some((l) => l.id === this.escada.focoCorpoId)) {
-      const rUA =
-        this.escada.focoCorpoId === 'moon'
+    if (LUAS_DO_SISTEMA.some((l) => l.id === id)) {
+      return stops(
+        id === 'moon'
           ? this.lua?.corpo.estadoVivo.rUA
-          : this.rochosos.find((r) => r.corpo.id === this.escada.focoCorpoId)?.corpo
-              .estadoVivo.rUA;
-      return rUA !== undefined && Number.isFinite(rUA)
-        ? deslocamentoEVAssistida(rUA)
-        : null;
+          : this.rochosos.find((r) => r.corpo.id === id)?.corpo.estadoVivo.rUA
+      );
     }
     // anões/asteroides não têm ponto na camada: o dUA é o do mesh
     // (Kepler/retrato). Sem este ramo o selo dizia ASSISTIDO e omitia
-    // os passos — justamente nos corpos de maior ΔEV.
-    if (HELIO_SEM_PONTO.some((a) => a.id === this.escada.focoCorpoId)) {
-      const rUA = this.rochosos.find((r) => r.corpo.id === this.escada.focoCorpoId)
-        ?.corpo.estadoVivo.rUA;
-      return rUA !== undefined && Number.isFinite(rUA)
-        ? deslocamentoEVAssistida(rUA)
-        : null;
+    // os passos — justamente nos corpos de maior gasto.
+    if (HELIO_SEM_PONTO.some((a) => a.id === id)) {
+      return stops(this.rochosos.find((r) => r.corpo.id === id)?.corpo.estadoVivo.rUA);
     }
-    const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === this.escada.focoCorpoId);
+    const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
     if (i <= 0) return null;
     const p = this.planetas.posicoes;
-    const dUA =
-      Math.hypot(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]) * UA_POR_PC;
-    return deslocamentoEVAssistida(dUA);
+    return stops(Math.hypot(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]) * UA_POR_PC);
   }
 
   /**

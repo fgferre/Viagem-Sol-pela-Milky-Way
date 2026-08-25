@@ -77,7 +77,7 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('corpo fora de quadro NÃO envelhece (item 16)', () => {
     // O ORÁCULO É A ORDEM, e ela não tem como ser provada sem GPU: o
     // `update` real precisa de um renderer. Então se cobra a ORDEM NO
-    // FONTE, no precedente do teste que lê `evLuzDoFoco` em selo.test.
+    // FONTE, no precedente do teste que lê `stopsDoGloboEmFoco` em selo.test.
     // Até 21/08 o relógio rápido era somado ANTES do retorno de
     // invisibilidade, e o Sol reaparecia com um salto de tudo o que
     // "viveu" enquanto ninguém o via.

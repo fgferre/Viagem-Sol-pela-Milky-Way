@@ -30,7 +30,7 @@
 // foco (`ver`/`focoEstrela`/`focoCorpoId`) e o `pinoDeBoot` têm UM
 // dono: só a escada os escreve — é por isso que `selecionarCorpo` e
 // `selecionarPonto` ficaram aqui e não foram com o gesto. O director lê
-// `focoCorpoId` para o selo (`evLuzDoFoco`). Os punhos de instância
+// `focoCorpoId` para o selo (`stopsDoGloboEmFoco`). Os punhos de instância
 // (atlas, máquina do tempo, rótulos, o raio do Sol e o punho do salto)
 // entram pelo construtor com o nome que os textos dos métodos exigem;
 // o que só existe depois do construtor do director (engine, roam) e o
@@ -133,7 +133,7 @@ export class Escada {
   /** o foco vivo é uma ESTRELA (fora da escada de corpos)? */
   private focoEstrela = false;
   /** o corpo em FOCO no Atlas (id do retrato) — só a escada escreve;
-   *  o director o lê para o selo (o ΔEV de `evLuzDoFoco` é dele). */
+   *  o director o lê para o selo (os passos de `stopsDoGloboEmFoco` são dele). */
   focoCorpoId: string | null = null;
   /**
    * O `?d=` QUE CHEGOU PELO LINK, em raios do alvo — e ele precisa

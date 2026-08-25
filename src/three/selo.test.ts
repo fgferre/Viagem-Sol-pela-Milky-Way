@@ -27,7 +27,7 @@ import {
   FORA_DE_ESCALA,
   PROCEDENCIA,
   REGISTRO,
-  aoVoltarAoReal,
+  aoClicarEmBrilho,
   escalaDaVista,
   estadoDoSelo,
   legendaDaProcedencia,
@@ -35,7 +35,7 @@ import {
 } from './selo';
 import type { EstadoDaVista } from './selo';
 import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
-import { deslocamentoEVAssistida } from '../lib/atlas/luz';
+import { stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { DRAMA_T1, doseDaDramaturgia } from './director/doseDoSol';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { TONE_MAPPINGS } from './core/engine';
@@ -59,7 +59,7 @@ const LIMPA: EstadoDaVista = {
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
   // testes (bloco 2c), porque ele É desvio declarado.
   luz: 'real',
-  evLuzDoFoco: null,
+  stopsDoGloboEmFoco: null,
   // dose PLENA na fixture, pelo mesmo motivo do `luz: 'real'`: é o
   // estado sem assistência nenhuma. O arranque do filme tem os seus
   // testes próprios (bloco da dose).
@@ -235,47 +235,62 @@ describe('2. nenhum controle desmente o selo', () => {
 // Estrela junto com `claraoDoAtlas`: o Atlas não modera mais o clarão, e
 // a linha `grad` saiu do registro. A varredura invertida vigia o nome.)
 
-describe('2c. a política de luz se declara (Onda 6, D2/D8)', () => {
+describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91)', () => {
   it('`assistida` — o default do Atlas — é desvio declarado, vivo e desfazível', () => {
     const v = estadoDoSelo(com({ luz: 'assistida' }));
     expect(v.brilho).toBe('assistido');
     const linha = v.desvios.find((d) => d.chave === 'luz');
     expect(linha, 'a política assistida não moveu o selo').toBeDefined();
     expect(linha!.volta).toBe('vivo');
-    // a copy herdada do doador, verbatim — leiga primeiro
-    expect(linha!.rotulo).toContain('faixa comprimida');
-    expect(linha!.rotulo).toContain('A ordem de brilho é preservada.');
+    // A COPY MUDOU NO ITEM 91, e mudou porque a antiga descrevia a lei do
+    // PONTO ("faixa comprimida… a ordem de brilho é preservada") numa
+    // política que só governa o GLOBO. Ali as duas metades mentiam: a
+    // faixa não se comprime (cada mundo é exposto para si) e a ordem
+    // ENTRE GLOBOS deixa de valer de propósito.
+    expect(linha!.rotulo).toContain('exposto para a luz que ELE recebe');
+    expect(linha!.rotulo).toContain('A ordem verdadeira de brilho continua no céu');
+    expect(linha!.rotulo).not.toContain('faixa comprimida');
   });
 
-  it('`real` não é desvio: o 1/d² cru é a posição sem assistência', () => {
+  it('`real` não é desvio: a penumbra física verdadeira é a posição sem assistência', () => {
     expect(estadoDoSelo(com({ luz: 'real' })).brilho).toBe('real');
   });
 
-  it('com corpo em foco o rótulo diz o número: "+N passos de luz (por corpo)"', () => {
-    // Netuno ~29,9 UA → ΔEV = (σ−1)·log2(E) ≈ +6,4 passos
-    const ev = deslocamentoEVAssistida(29.884744842988464);
-    const v = estadoDoSelo(com({ luz: 'assistida', evLuzDoFoco: ev }));
+  it('com corpo em foco o rótulo diz o gasto EXATO do globo, não um "+N" genérico', () => {
+    // O NÚMERO MUDOU DE SUJEITO NO ITEM 91. Era o ΔEV da `assistida`
+    // sobre a `real` — que descrevia o ponto, e o ponto nunca passou por
+    // esta política. Agora é `stopsDaVisita`: quanto o GLOBO está exposto
+    // acima da luz física que o corpo recebe. Netuno sai de +6,4 (o
+    // número velho, de outra coisa) para +9,8 (o que a malha gasta).
+    const stops = stopsDaVisita(29.884744842988464, 'neptune', 'assistida')!;
+    const v = estadoDoSelo(com({ luz: 'assistida', stopsDoGloboEmFoco: stops }));
     const linha = v.desvios.find((d) => d.chave === 'luz')!;
-    expect(linha.rotulo).toContain('+6,4 passos de luz (por corpo)');
+    expect(linha.rotulo).toContain('Este globo: +9,8 passos de luz sobre a luz física.');
     // e o formatador puro é o mesmo caminho
-    expect(rotuloDaLuzAssistida(ev)).toBe(linha.rotulo);
-    // Mercúrio aquém de 1 UA: negativo, com o sinal dele
-    expect(rotuloDaLuzAssistida(deslocamentoEVAssistida(0.4625482713261739))).toContain(
-      '-1,4 passos de luz'
-    );
+    expect(rotuloDaLuzAssistida(stops)).toBe(linha.rotulo);
+    // Saturno — o corpo da queixa do dono — declara os seus +6,5
+    expect(
+      rotuloDaLuzAssistida(stopsDaVisita(9.5185438390236552, 'saturn', 'assistida'))
+    ).toContain('+6,5 passos de luz');
+    // Mercúrio é NEGATIVO, com o sinal dele: a visita gasta para BAIXO
+    expect(
+      rotuloDaLuzAssistida(stopsDaVisita(0.4625482713261739, 'mercury', 'assistida'))
+    ).toContain('-2,4 passos de luz');
     // sem corpo em foco (ou número envenenado): só a copy — sem inventar
     expect(rotuloDaLuzAssistida(null)).toBe(COPY_LUZ_ASSISTIDA);
     expect(rotuloDaLuzAssistida(Number.NaN)).toBe(COPY_LUZ_ASSISTIDA);
   });
 
-  it('o ΔEV do selo também lê anões/asteroides (não só os dez + luas)', () => {
+  it('os passos do selo também leem anões/asteroides (não só os dez + luas)', () => {
     const fonte = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
     const fn = fonte.slice(
-      fonte.indexOf('private evLuzDoFoco()'),
+      fonte.indexOf('private stopsDoGloboEmFoco()'),
       fonte.indexOf('definirLuz(')
     );
     expect(fn).toContain('HELIO_SEM_PONTO');
-    expect(fn).toContain('deslocamentoEVAssistida');
+    expect(fn).toContain('stopsDaVisita');
+    // e o número é do GLOBO, não mais o ΔEV da lei do ponto
+    expect(fn).not.toContain('deslocamentoEVAssistida');
   });
 
   it('a dose do arranque é desvio DECLARADO, e some sozinha no fim da hélice', () => {
@@ -294,14 +309,14 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8)', () => {
     expect(estadoDoSelo(com({ doseDoSol: 1 })).brilho).toBe('real');
     // e o clique "voltar ao real" NÃO a apaga (nada a apaga)
     expect(
-      estadoDoSelo(aoVoltarAoReal(com({ doseDoSol: 0.2 }))).desvios.some(
+      estadoDoSelo(aoClicarEmBrilho(com({ doseDoSol: 0.2 }))).desvios.some(
         (d) => d.chave === 'dose-do-sol'
       )
     ).toBe(true);
   });
 
-  it('clicar volta ao real: aoVoltarAoReal escreve `real` e o selo limpa', () => {
-    const limpo = aoVoltarAoReal(com({ luz: 'assistida' }));
+  it('clicar volta ao real: aoClicarEmBrilho escreve `real` e o selo limpa', () => {
+    const limpo = aoClicarEmBrilho(com({ luz: 'assistida' }));
     expect(limpo.luz).toBe('real');
     expect(estadoDoSelo(limpo).brilho).toBe('real');
   });
@@ -332,7 +347,7 @@ describe('3. clicar volta ao real', () => {
       portas: ['exp', 'tone', 'noplan', 'nobloom', 'chromsat', 't', 'atlas'],
     });
     expect(estadoDoSelo(sujo).brilho).toBe('assistido');
-    const limpo = aoVoltarAoReal(sujo);
+    const limpo = aoClicarEmBrilho(sujo);
     expect(estadoDoSelo(limpo).brilho).toBe('real');
     // o que NÃO era desvio fica na URL: voltar ao brilho real não pode
     // custar ao visitante o instante da viagem nem o modo
@@ -343,9 +358,76 @@ describe('3. clicar volta ao real', () => {
 
   it('o que não é desfazível fica declarado — sem fingir que o clique resolveu', () => {
     const so = com({ tier: 'performance' });
-    const depois = aoVoltarAoReal(so);
+    const depois = aoClicarEmBrilho(so);
     expect(estadoDoSelo(depois).brilho).toBe('assistido');
     expect(estadoDoSelo(depois).desvios.map((d) => d.chave)).toEqual(['q']);
+  });
+});
+
+/**
+ * A PORTA DE DUAS VIAS (decisão 3 do dono, item 91, 25/08). Até então a
+ * linha BRILHO só tinha IDA: chegando em BRILHO REAL ela ficava
+ * desabilitada, e a única volta à luz assistida era editar `?luz=` na URL
+ * e recarregar. Este bloco cobra o interruptor inteiro — e cobra também
+ * onde ele NÃO arma, que é a metade fácil de errar.
+ */
+describe('3b. e clicar de novo devolve a assistência — a porta é de duas vias', () => {
+  it('o ciclo fecha: assistida → real → assistida, sem passar por recarga', () => {
+    const inicio = com({ luz: 'assistida' });
+    expect(estadoDoSelo(inicio).brilho).toBe('assistido');
+
+    const real = aoClicarEmBrilho(inicio);
+    expect(real.luz).toBe('real');
+    expect(estadoDoSelo(real).brilho).toBe('real');
+
+    const devolta = aoClicarEmBrilho(real);
+    expect(devolta.luz).toBe('assistida');
+    expect(estadoDoSelo(devolta).brilho).toBe('assistido');
+    // e o estado é o MESMO do início: o interruptor não deixa resíduo
+    expect(devolta).toEqual(inicio);
+  });
+
+  it('a volta NÃO arma enquanto a linha ainda diz ASSISTIDO por outro motivo', () => {
+    // tier abaixo de cinema é desvio de volta 'nenhuma': o selo segue
+    // dizendo ASSISTIDO. Oferecer MAIS assistência aqui contradiria a
+    // palavra na linha — o clique não pode virar o seu contrário no meio
+    // de uma vista que ainda tem o que declarar.
+    const comTier = com({ tier: 'performance', luz: 'real' });
+    expect(estadoDoSelo(comTier).brilho).toBe('assistido');
+    expect(aoClicarEmBrilho(comTier).luz).toBe('real');
+  });
+
+  it('desfazer PRIMEIRO, devolver DEPOIS: dois cliques, na ordem certa', () => {
+    // uma vista com exposição na mão E luz assistida: o primeiro clique
+    // desfaz as duas coisas (é a ida), e só o SEGUNDO — já em BRILHO
+    // REAL — devolve a foto.
+    const sujo = com({ luz: 'assistida', exposicaoManual: true, portas: ['exp'] });
+    const um = aoClicarEmBrilho(sujo);
+    expect(um.luz).toBe('real');
+    expect(um.exposicaoManual).toBe(false);
+    expect(estadoDoSelo(um).brilho).toBe('real');
+    const dois = aoClicarEmBrilho(um);
+    expect(dois.luz).toBe('assistida');
+    // e a exposição NÃO volta para a mão: o clique devolve a luz da casa,
+    // não os ajustes que o visitante tinha feito
+    expect(dois.exposicaoManual).toBe(false);
+  });
+
+  it('o HUD e o espelho da URL usam a MESMA guarda do oráculo', () => {
+    // o gesto mora em dois arquivos (o botão e a escrita da URL) e a
+    // conta mora aqui; um terceiro critério escrito à mão em qualquer um
+    // deles é como o selo do doador envelheceu calado
+    const hud = readFileSync(new URL('../components/HudDoAtlas.tsx', import.meta.url), 'utf8');
+    expect(hud).toContain('const podeReassistir = desvios.length === 0;');
+    const espelho = readFileSync(
+      new URL('../hooks/useEspelhoDaUrl.ts', import.meta.url),
+      'utf8'
+    );
+    expect(espelho).toContain('if (veredito.desvios.length === 0) {');
+    expect(espelho).toContain("d.definirLuz('assistida');");
+    // a URL espelha a VOLTA apagando a chave — `assistida` é o padrão, e
+    // `?luz=assistida` seria painel em vez de espelho
+    expect(espelho).toContain("volta.searchParams.delete('luz');");
   });
 });
 
@@ -493,7 +575,7 @@ describe('5. a copy do selo', () => {
 describe('F3 — o Sol saiu da acusação de escala, sem porta nenhuma', () => {
   // o `com` da casa, e não um fixture novo: assim este bloco continua
   // correto quando `EstadoDaVista` ganhar campo. Foi como ele nasceu
-  // ERRADO — faltavam `tier` e `evLuzDoFoco` —, e quem pegou foi o tsc.
+  // ERRADO — faltavam `tier` e `stopsDoGloboEmFoco` —, e quem pegou foi o tsc.
   // 0,1 pc (a vista `soldisco`): é onde o eixo ESCALA declara desvio e a
   // acusação sai. ACHADO ao escrever isto na F1: a 1 UA o selo já diz
   // ESCALA REAL sozinho — `escalaDaVista` compara as duas rampas da

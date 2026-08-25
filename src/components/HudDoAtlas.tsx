@@ -150,9 +150,11 @@ export function GavetaDeCamadas({
  * quanto — o campo que `estadoDoSelo` devolve desde 4e8bedb e que a tela
  * nunca mostrou: era promessa cobrada só pelo teste) e o rodapé de
  * procedência. Cada linha continua sendo o PRÓPRIO controle: clicar em
- * ESCALA enquadra o sistema, clicar em BRILHO desfaz o que é desfazível,
- * e a linha que já está em real fica desabilitada em vez de mentir uma
- * ação.
+ * ESCALA enquadra o sistema e clicar em BRILHO desfaz o que é desfazível
+ * — e desde 25/08 a linha BRILHO é uma PORTA DE DUAS VIAS: quando não
+ * sobra mais nada a desfazer, o mesmo clique devolve a luz assistida
+ * (decisão 3 do dono, item 91). Ela só fica desabilitada no estado em
+ * que clicar não faria nada mesmo.
  *
  * A GAVETA É `position: absolute` (fatia 4 do HUD): ela cresce PARA CIMA
  * sem mover a caixa fechada. Não é estilo — é o que mantém a área do HUD
@@ -190,6 +192,15 @@ export function Selo({
   const { escala, brilho, desvios, culpados } = estadoDoSelo(vista);
   const lista = desvios.map((d) => d.rotulo).join(' · ');
   const daParaVoltar = desvios.some((d) => d.volta !== 'nenhuma');
+  /**
+   * A SEGUNDA VIA da linha BRILHO: com a luz já em `real` e nada mais a
+   * desfazer, o clique devolve a assistência em vez de não fazer nada.
+   * Arma pelo VEREDITO — a linha lendo BRILHO REAL, sem desvio nenhum —,
+   * a mesma guarda do oráculo puro `aoClicarEmBrilho`. É o que transforma
+   * o selo de porta de mão única em interruptor;
+   * `useEspelhoDaUrl.voltarAoBrilhoReal` executa os dois sentidos.
+   */
+  const podeReassistir = desvios.length === 0;
   const escalaReal = escala === 'real';
   const brilhoReal = brilho === 'real';
   /** o PIOR EIXO decide a bolinha do resumo: um desvio já tinge os dois */
@@ -265,26 +276,38 @@ export function Selo({
             </ul>
           )}
 
+          {/* A PORTA DE DUAS VIAS (decisão 3 do dono, 25/08). Esta linha
+              tinha só IDA: em BRILHO REAL ficava desabilitada, e a única
+              volta era editar `?luz=` na URL e recarregar. Agora o mesmo
+              clique faz a próxima coisa sensata — desfaz enquanto houver o
+              que desfazer, e devolve a luz assistida quando não houver.
+              Por isso a linha deixou de ser desabilitada em `real`: ali
+              existe ação, e desabilitar passou a ser a mentira. Ela só
+              adormece no estado sem saída nenhuma (desvio de volta
+              'nenhuma' com a luz já real), onde clicar não faria nada. */}
           <button
             type="button"
             className={`atlas-selo-linha ${brilhoReal ? 'real' : 'desvio'}`}
             onClick={onBrilhoReal}
-            disabled={brilhoReal || !daParaVoltar}
+            disabled={!daParaVoltar && !podeReassistir}
             aria-label={
               brilhoReal
-                ? `${BRILHO_REAL}: nada foi ajustado nesta vista`
+                ? `${BRILHO_REAL}: nada foi ajustado nesta vista.`
+                  + (podeReassistir ? ' Clique para voltar à luz assistida.' : '')
                 : `${BRILHO_ASSISTIDO}. Ajustado: ${lista}.`
-                + (daParaVoltar ? ' Clique para voltar ao brilho real.' : '')
+                  + (daParaVoltar ? ' Clique para voltar ao brilho real.' : '')
             }
           >
             <span className="atlas-selo-eixo">brilho</span>
             <strong>{brilhoReal ? BRILHO_REAL : BRILHO_ASSISTIDO}</strong>
             <em>
-              {brilhoReal
-                ? 'a fotometria da casa, sem ajuste'
-                : daParaVoltar
-                  ? `clique: voltar ao real — ${lista}`
-                  : lista}
+              {daParaVoltar
+                ? `clique: voltar ao real — ${lista}`
+                : podeReassistir
+                  ? 'a fotometria da casa, sem ajuste — clique: voltar à luz assistida'
+                  : brilhoReal
+                    ? 'a fotometria da casa, sem ajuste'
+                    : lista}
             </em>
           </button>
 

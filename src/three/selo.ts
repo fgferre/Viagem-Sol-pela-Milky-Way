@@ -137,26 +137,42 @@ export function legendaDaProcedencia(
 }
 
 /**
- * A COPY da política de luz `assistida` — herdada do fidelityBadge
- * pt-BR do doador, verbatim (D2 da Onda 6): a explicação leiga primeiro,
- * o número como complemento.
+ * A COPY da política de luz `assistida`. A explicação leiga primeiro, o
+ * número como complemento — a forma herdada do fidelityBadge pt-BR do
+ * doador fica; o TEXTO mudou no item 91, e mudou porque o antigo
+ * descrevia outra coisa.
+ *
+ * ELE DIZIA: *"faixa comprimida para mundos distantes continuarem
+ * visíveis. A ordem de brilho é preservada."* Era a copy da lei do
+ * PONTO, e o ponto (MH18) nunca passou por esta política. Quem
+ * `assistida` governa é o GLOBO visitado, e ali a frase mentia duas
+ * vezes: não é a faixa que se comprime (cada mundo é exposto para si), e
+ * a ordem de brilho ENTRE GLOBOS deixa de valer de propósito — Saturno
+ * visitado fica tão claro quanto a Terra visitada, que é a decisão 1 do
+ * dono. A ordem verdadeira continua inteira onde ela se lê: no ponto de
+ * cada corpo no céu.
  */
 export const COPY_LUZ_ASSISTIDA =
-  'faixa comprimida para mundos distantes continuarem visíveis. ' +
-  'A ordem de brilho é preservada.';
+  'cada mundo visitado é exposto para a luz que ELE recebe — uma foto tirada ali, ' +
+  'não com o ajuste da Terra. A ordem verdadeira de brilho continua no céu, ' +
+  'no ponto de cada corpo.';
 
 /**
- * O rótulo VIVO da linha `?luz=`: a copy herdada + o deslocamento do
- * corpo EM FOCO em "passos de luz" (não "stops" cru — copy leiga),
- * rotulado "por corpo" porque o ganho é POR CORPO — a divergência
- * declarada do §7.4 (a exposição de CENA é da Onda 8). Sem corpo em
- * foco (ou número envenenado) o rótulo fica só com a copy: o selo
- * nunca inventa um número que não mediu.
+ * O rótulo VIVO da linha `?luz=`: a copy leiga + o gasto do GLOBO em
+ * foco em "passos de luz" (não "stops" cru — copy leiga). Sem corpo em
+ * foco (ou número envenenado) o rótulo fica só com a copy: o selo nunca
+ * inventa um número que não mediu.
+ *
+ * O NÚMERO É POR CORPO E É O EXATO, não um "+N passos" genérico: Saturno
+ * declara +6,5, Netuno +9,8, Éris +12,8, Mercúrio −2,4 (a visita também
+ * gasta para BAIXO, domando quem está perto demais do Sol). É o preço
+ * da fotografia, dito na cara — mentir o EV do globo seria pior do que
+ * não ter consertado.
  */
-export function rotuloDaLuzAssistida(ev: number | null): string {
-  if (ev === null || !Number.isFinite(ev)) return COPY_LUZ_ASSISTIDA;
-  const passos = `${ev >= 0 ? '+' : ''}${ev.toFixed(1).replace('.', ',')}`;
-  return `${COPY_LUZ_ASSISTIDA} ${passos} passos de luz (por corpo)`;
+export function rotuloDaLuzAssistida(stops: number | null): string {
+  if (stops === null || !Number.isFinite(stops)) return COPY_LUZ_ASSISTIDA;
+  const passos = `${stops >= 0 ? '+' : ''}${stops.toFixed(1).replace('.', ',')}`;
+  return `${COPY_LUZ_ASSISTIDA} Este globo: ${passos} passos de luz sobre a luz física.`;
 }
 
 /**
@@ -212,11 +228,16 @@ export interface EstadoDaVista {
    */
   luz: PoliticaDeLuz;
   /**
-   * O ΔEV da assistência sobre o corpo EM FOCO, em passos de luz
-   * (`deslocamentoEVAssistida` do dUA vivo dele) — `null` quando nenhum
-   * corpo está em foco, e aí o rótulo fica sem número.
+   * OS PASSOS DE LUZ que o GLOBO em foco está exposto acima (ou abaixo)
+   * da luz física que aquele corpo recebe — `stopsDaVisita` do dUA vivo
+   * dele. `null` quando nenhum corpo está em foco, e aí o rótulo fica
+   * sem número.
+   *
+   * ERA o ΔEV de `deslocamentoEVAssistida`, e aquilo descrevia a lei do
+   * PONTO — que nunca consumiu `ganhoFundido`. O selo declarava um gasto
+   * que o globo não fazia. Item 91: o número agora é o da malha.
    */
-  evLuzDoFoco: number | null;
+  stopsDoGloboEmFoco: number | null;
   /**
    * A DOSE DE OCUPAÇÃO DO SOL (item 5, 21/08): quanta da atividade que a
    * DATA pede o quadro está mostrando. 1 = toda — o valor fora do filme,
@@ -390,37 +411,39 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     desvia: (e) => e.doseDoSol < 1,
   },
   /**
-   * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — a linha
-   * da primeira lei de luz, no eixo BRILHO existente (registro único,
-   * NUNCA eixo novo). `assistida` é o DEFAULT do Atlas: o material dos
-   * corpos resolvidos multiplica E^σ em vez do E = 1/d² cru, para os
-   * mundos distantes continuarem visíveis — a ORDEM de brilho é
-   * preservada (x^σ é estritamente crescente), a RAZÃO é comprimida, e
-   * é por isso que é DESVIO declarado e não café grátis.
+   * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8; reescrita no
+   * item 91) — a linha da lei de luz, no eixo BRILHO existente (registro
+   * único, NUNCA eixo novo). `assistida` é o DEFAULT do Atlas: o globo
+   * visitado é exposto para a luz que ELE recebe, e não com o ajuste da
+   * Terra (`luzDaVisita.ts`). É DESVIO declarado e não café grátis — em
+   * Saturno a foto custa +6,5 passos de luz sobre o físico.
    *
-   * O rótulo é VIVO: a copy leiga herdada + o "+N passos de luz" do
-   * corpo em foco (`deslocamentoEVAssistida`), rotulado "por corpo" —
-   * a divergência declarada do §7.4 (exposição de CENA é da Onda 8).
+   * O rótulo é VIVO: a copy leiga + o gasto EXATO do corpo em foco
+   * (`stopsDaVisita`). O número de antes (`deslocamentoEVAssistida`)
+   * descrevia a lei do PONTO e não o que a malha fazia — ver o
+   * `rotuloDaLuzAssistida` acima.
    *
-   * `volta: 'vivo'`: o clique escreve `real` no Director e o PRÓXIMO
-   * estado visível já sai sem compressão — a affordance que o doador
-   * não tinha.
+   * `volta: 'vivo'`, E A PORTA É DE DUAS VIAS desde 25/08 (decisão 3 do
+   * dono): o clique escreve `real` no Director e o PRÓXIMO estado
+   * visível já sai com a penumbra física; quando não sobra mais nada a
+   * desfazer, o MESMO clique devolve a assistência. Nem recarga, nem
+   * URL editada à mão — e a URL espelha o gesto nos dois sentidos
+   * (`useEspelhoDaUrl.ts`).
    *
    * A POLÍTICA VALE EM TODA FASE, e esta linha já disse o contrário.
    * Ela afirmava que fora do Atlas o estado era neutro POR CONSTRUÇÃO,
    * "não há superfície resolvida no filme para o escalar multiplicar".
    * Deixou de ser verdade na coda "a volta para casa" (19/08), que
    * RESOLVE Terra e Lua no fim do filme (`palcoQuente`, a partir de
-   * `REVEAL_T`): o material dos corpos chama `ganhoFundido(rUA,
+   * `REVEAL_T`): o material dos corpos chama `ganhoDoGlobo(rUA, corpo,
    * politica)` sem perguntar em que modo a cena está, e o default é
    * `assistida` nas duas.
    *
-   * O DESVIO É MINÚSCULO, e é por estar na ÂNCORA, não por construção:
-   * ΔEV = (σ−1)·log₂(E) zera exatamente a 1 UA, e a coda chega em
-   * casa. Medido a ~1 UA, a Lua sai −0,027 passos de luz — ~2% mais
-   * escura que em `real`. Pequeno não é neutro, e é o motivo de o selo
-   * declarar ASSISTIDO na coda como declara no Atlas. (Número medido
-   * na cena; sem imagem que o ateste.)
+   * O DESVIO NA CODA É MINÚSCULO, e é por estar na ÂNCORA: a distância
+   * da visita da Terra É `ANCORA_UA`, a compensação vale 1 exato e o
+   * gasto do globo de casa fica em ~0,0 passos. Pequeno não é neutro, e
+   * é o motivo de o selo declarar ASSISTIDO na coda como declara no
+   * Atlas. (Número da lei; sem imagem que o ateste.)
    */
   {
     chave: 'luz',
@@ -428,7 +451,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotulo: COPY_LUZ_ASSISTIDA,
     volta: 'vivo',
     desvia: (e) => e.luz === 'assistida',
-    rotuloVivo: (e) => rotuloDaLuzAssistida(e.evLuzDoFoco),
+    rotuloVivo: (e) => rotuloDaLuzAssistida(e.stopsDoGloboEmFoco),
   },
   // (A linha da pupila morreu no M2 com a pupila inteira — não há mais
   // adaptação por quadro para o selo declarar. O caminho dela no
@@ -653,22 +676,42 @@ export function escalaDaVista(distanciaPc: number): 'real' | 'fora' {
 }
 
 /**
- * A PROMESSA "CLICAR VOLTA AO REAL", escrita como conta pura: o estado
- * que sobra depois de desfazer TUDO que é desfazível. É o oráculo da
- * linha BRILHO — o HUD faz os gestos (limpar o latch da exposição,
- * devolver o tom, religar as camadas, tirar as portas da URL) e este
- * teste cobra que o resultado deles seja mesmo o real.
+ * O QUE O CLIQUE NA LINHA BRILHO FAZ, escrito como conta pura — o
+ * oráculo da linha. O HUD faz os gestos (limpar o latch da exposição,
+ * devolver o tom, religar as camadas, tirar as portas da URL, trocar a
+ * política no Director) e o teste cobra que o resultado deles seja mesmo
+ * este estado.
  *
- * O que não é desfazível (`volta: 'nenhuma'`) fica: o selo continua
- * dizendo ASSISTIDO e diz por quê, em vez de fingir que o clique
- * resolveu.
+ * A PORTA É DE DUAS VIAS desde 25/08 (decisão 3 do dono, item 91), e a
+ * regra cabe numa frase: **enquanto sobrar algo a desfazer, o clique
+ * desfaz; quando não sobra mais nada, o clique devolve a assistência.**
+ *
+ * Antes disto só havia IDA. Chegando em BRILHO REAL a linha ficava
+ * desabilitada e a única volta era editar `?luz=` na URL e recarregar —
+ * uma porta de mão única num selo que se propõe a ser o controle da
+ * vista. Chamava-se `aoClicarEmBrilho`, e o nome já não descrevia metade
+ * do que ela faz.
+ *
+ * O que não é desfazível (`volta: 'nenhuma'` — o tier, a dose do
+ * arranque) fica: o selo continua dizendo ASSISTIDO e diz por quê, em
+ * vez de fingir que o clique resolveu. E é por isso que a segunda via só
+ * arma com a luz JÁ em `real`: nesse estado o clique não tem o que
+ * desfazer e a assistência da luz é a única coisa que ele pode devolver.
  */
-export function aoVoltarAoReal(e: EstadoDaVista): EstadoDaVista {
+export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
+  const veredito = estadoDoSelo(e);
+  // A SEGUNDA VIA arma pelo VEREDITO, não pelo que resta a desfazer: só
+  // com a linha lendo BRILHO REAL — nenhum desvio, de nenhum tipo —
+  // devolver a assistência é o gesto que faz sentido. Numa vista que
+  // ainda diz ASSISTIDO por algo indesfazível (o tier, a dose do
+  // arranque), oferecer MAIS assistência seria o contrário do que a
+  // palavra na linha promete. `desvios` vazio já implica `luz === 'real'`
+  // (a `assistida` é sempre desvio), então não há segunda condição.
+  if (veredito.desvios.length === 0) return { ...e, luz: 'assistida' };
   const chaves = new Set(
-    estadoDoSelo(e)
-      .desvios.filter((c) => c.volta !== 'nenhuma')
-      .map((c) => c.chave)
+    veredito.desvios.filter((c) => c.volta !== 'nenhuma').map((c) => c.chave)
   );
+  if (chaves.size === 0) return e;
   return {
     ...e,
     portas: e.portas.filter((p) => !chaves.has(p)),

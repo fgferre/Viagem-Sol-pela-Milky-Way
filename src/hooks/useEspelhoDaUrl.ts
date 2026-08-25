@@ -252,21 +252,51 @@ export function useEspelhoDaUrl(dep: {
   };
 
   /**
-   * VOLTAR AO BRILHO REAL — a ação da linha BRILHO do selo (D1). Ela não
-   * tem lista própria de coisas a desfazer: pergunta ao registro quais
-   * caminhos estão ativos AGORA e desfaz os que têm volta.
+   * A LINHA BRILHO DO SELO É UMA PORTA DE DUAS VIAS (decisão 3 do dono,
+   * 25/08). Até então ela só tinha ida: o clique desfazia a assistência e
+   * NÃO havia caminho de volta sem editar a URL e recarregar — a linha em
+   * BRILHO REAL ficava desabilitada, e quem quisesse a foto de novo
+   * precisava saber que existe uma porta `?luz=` para apagar à mão.
    *
-   * Os de volta 'vivo' são desfeitos no lugar; se houver algum que só o
-   * boot lê (`?nobloom=`, `?knee=`, as camadas do bake), o caminho é o
-   * mesmo que a troca de qualidade já usa: reescrever a URL sem eles e
-   * recarregar — e a URL sai do `urlComMomento`, que carrega o `atlas=1`
-   * e o instante guardado, para o visitante voltar exatamente para onde
-   * estava. O que não tem volta (o tier) fica, e o selo segue dizendo.
+   * A REGRA, em uma frase: **enquanto sobrar algo a desfazer, o clique
+   * desfaz; quando não sobra mais nada, o clique devolve a assistência.**
+   *
+   * Ela não tem lista própria de coisas a desfazer: pergunta ao registro
+   * quais caminhos estão ativos AGORA e desfaz os que têm volta. Os de
+   * volta 'vivo' são desfeitos no lugar; se houver algum que só o boot lê
+   * (`?nobloom=`, `?knee=`, as camadas do bake), o caminho é o mesmo que
+   * a troca de qualidade já usa: reescrever a URL sem eles e recarregar —
+   * e a URL sai do `urlComMomento`, que carrega o `atlas=1` e o instante
+   * guardado, para o visitante voltar exatamente para onde estava. O que
+   * não tem volta (o tier) fica, e o selo segue dizendo.
+   *
+   * A VOLTA É AO VIVO, SEM RECARGA: `definirLuz('assistida')` e o tick
+   * seguinte já entrega o escalar novo ao material. E a URL espelha o
+   * gesto nos DOIS sentidos — indo, escreve `?luz=real`; voltando, APAGA
+   * a chave, porque `assistida` é o padrão e a URL desta casa é espelho
+   * da vista, nunca painel de controle.
    */
   const voltarAoBrilhoReal = () => {
     const d = directorRef.current;
     if (!d) return;
-    const desvios = estadoDoSelo(d.selo).desvios.filter((c) => c.volta !== 'nenhuma');
+    const veredito = estadoDoSelo(d.selo);
+    // A SEGUNDA VIA, e ela arma pelo VEREDITO (a linha lendo BRILHO REAL),
+    // não pelo que resta a desfazer — a mesma guarda de `aoClicarEmBrilho`,
+    // que é o oráculo puro deste gesto. Numa vista que ainda diz ASSISTIDO
+    // por algo indesfazível, oferecer MAIS assistência contradiria a
+    // palavra na linha.
+    if (veredito.desvios.length === 0) {
+      d.definirLuz('assistida');
+      redesenhar();
+      const volta = urlComMomento();
+      // `assistida` é o PADRÃO: o espelho da volta é a AUSÊNCIA da chave,
+      // nunca `?luz=assistida`. A URL desta casa descreve a vista, e uma
+      // chave que só repete o default seria painel, não espelho.
+      volta.searchParams.delete('luz');
+      window.history.replaceState(null, '', `${volta.pathname}${volta.search}`);
+      return;
+    }
+    const desvios = veredito.desvios.filter((c) => c.volta !== 'nenhuma');
     if (desvios.length === 0) return;
     const url = urlComMomento();
     for (const c of desvios) url.searchParams.delete(c.chave);
