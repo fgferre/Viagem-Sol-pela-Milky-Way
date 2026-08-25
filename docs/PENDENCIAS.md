@@ -435,11 +435,66 @@ exatamente esta:** ficou melhor domado ou ficou apagado?
 `capturas/item91-modo-real.png` e
 `capturas/item91-selo-porta-de-duas-vias.png`.
 
+**O ANEL FICOU DE FORA, E ELE VIU.** Palavras dele em 2026-08-25, olhando
+as fotos acima: *"os anéis de Saturno não estão visíveis"*. A legenda da
+etapa anterior dizia "e o anel volta"; a imagem desmentia. O globo saiu
+do carvão para a palha e o anel continuou uma mancha marrom nas quatro
+vistas.
+
+**A CAUSA NÃO ERA O GANHO — era o SOMBREAMENTO.** O ganho da visita já
+chegava certo no anel (o pino cobre isso, e continua cobrindo). O que o
+apagava é que o anel era uma CHAPA Lambert com piso, `max(|cos|, 0,12)`.
+Anel não é chapa: inclinar uma camada de partículas empilha mais
+partículas na linha de visada na mesma medida em que espalha a luz, e os
+dois efeitos se cancelam — o brilho de superfície de um anel não desaba
+com a incidência. E na data da vista oficial (abril de 2024) o Sol está a
+**5,73° do plano do anel**, então o cosseno vale 0,0998, ABAIXO do piso:
+o piso assumia e o anel inteiro virava 0,12 × placa. Dois defeitos
+somados, porque a placa `ring` também estava sendo usada como se fosse
+albedo — o pico dela é 0,25 em linear, contra ~0,7 do globo.
+
+**O QUE POUSOU.** O anel passa a ser uma CAMADA DE PARTÍCULAS
+(espalhamento simples plano-paralelo, com τ lido da opacidade da placa),
+ancorada no I/F que Voyager e Cassini mediram no anel A/B — 0,5 em baixa
+fase, que é por que nas fotos deles o anel bate o globo. A placa deixa de
+ser albedo e vira o PERFIL radial; a croma dela passa a valer só onde ela
+é opaca, porque medido no próprio arquivo a razão azul/vermelho sobe a
+2,7 onde alpha < 0,2, e anel nenhum é azul: era a matte do arquivo de
+origem (apareceu como um halo violeta no anel C na primeira foto desta
+obra, visto a olho). A sombra do globo sobre o anel e a transparência da
+divisão de Cassini ficam de pé. Urano/Netuno/Quaoar passam a usar a MESMA
+camada — a chapa com piso estava copiada lá também; o que os separa de
+Saturno é o albedo (carvão, não gelo), não o modelo de luz.
+
+Medido em bytes de tela, na máscara do anel: **22 → 69** de perto
+(p90 30 → 103) e **23 → 72** de longe, com o globo bit a bit parado. Em
+`?luz=real` o anel fica em ~4 de 255 antes e depois: a física manda ali
+também, que é a decisão 2 dele valendo para o anel.
+
+**O QUE A DATA DA VISTA ESCONDE, e é honesto dizer:** com o Sol a 5,73°
+do plano, nem a física certa põe o anel tão claro quanto o globo — o
+equinócio de 2025 estava chegando e o anel de verdade fica rasante. Na
+mesma cena em 2017, com o Sol a ~26,7° acima do plano, o anel vai a
+**40 → 102** (p99 167) contra 168–210 do globo: aí sim é a foto da
+Cassini que ele descreveu. As duas datas estão lado a lado na foto.
+
+**Fotos do anel:** `capturas/item91-anel-antes-depois.png` (de perto, de
+longe, e 2017 com o anel aberto) e `capturas/item91-anel-modo-real.png`.
+
+**O QUE ELE VAI VER DE NOVO, e não estava lá antes:** com o anel aceso, a
+sombra do globo sobre ele virou um dedo escuro de borda dura atravessando
+meia volta do anel. A borda dura está certa (o Sol rasante estica a
+sombra, e a penumbra real é fina demais para caber num pixel), mas o
+INTERIOR da sombra é um `0,22` herdado do doador, não um número medido.
+Se incomodar, é uma linha.
+
 **A CONFERÊNCIA DELE ESTÁ PENDENTE**, e é só ela que fecha o item. Três
 perguntas que só ele responde: (a) Saturno está no ponto ou passou do
-ponto? (b) Mercúrio ficou melhor domado ou ficou apagado? (c) o modo
-real, com Saturno quase preto, é a honestidade que ele quer ver ou é
-escuro demais para servir de modo?
+ponto? — **e o adendo do anel (25/08): o anel ficou no ponto, ou ainda
+está escuro para o que ele espera das fotos da Cassini?** (b) Mercúrio
+ficou melhor domado ou ficou apagado? (c) o modo real, com Saturno quase
+preto, é a honestidade que ele quer ver ou é escuro demais para servir de
+modo?
 
 **93. O brilho assistido tem de ser o mesmo algoritmo do NASA Eyes.**
 Palavras do dono, 2026-08-25: *"estou perguntado do brilho assistido...

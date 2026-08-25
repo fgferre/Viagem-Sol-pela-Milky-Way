@@ -30,10 +30,13 @@ import type { ManifestDeTexturas } from './terra';
 import {
   ANEIS_CITADOS,
   ANEL_FRAG,
+  ANEL_PROC_FRAG,
   ANEL_SATURNO,
+  G_DO_ANEL,
   GIGANTE_LAMBERT_FRAG,
   GIGANTES,
   GiganteResolvido,
+  K_DIFRACAO,
   posicaoDoGiganteUA,
   raiosDoGigantePc,
 } from './gigante';
@@ -113,10 +116,97 @@ describe('2. o needle dos GLSL montados', () => {
 
   it('scattering frente/trás no anel — o 0,34 fixo do doador não atravessa', () => {
     expect(ANEL_FRAG).toContain('mesmoLado');
-    expect(ANEL_FRAG).toContain('1.6 * frente');
+    // os dois ramos da camada, que é o que "frente/trás" virou
+    expect(ANEL_FRAG).toContain('1.0 - exp(-tau * (1.0 / mu + 1.0 / mu0))');
+    expect(ANEL_FRAG).toContain('exp(-tau / mu0) - exp(-tau / mu)');
+    expect(ANEL_FRAG).toContain('K_DIFRACAO * pow(max(cosTheta, 0.0), 6.0)');
     expect(ANEL_FRAG).not.toContain('0.34');
     expect(GIGANTE_LAMBERT_FRAG).not.toContain('0.34');
     expect(FONTE).not.toMatch(/RING_SHADOW_INTENSITY/);
+  });
+
+  /**
+   * PINO 91-ANEL — a queixa do dono de 2026-08-25: "os anéis de Saturno
+   * não estão visíveis". O que o apagava não era o ganho da visita (esse
+   * já chegava certo no uniform, e o pino de baixo o cobre): era o
+   * SOMBREAMENTO. O anel era `max(abs(nDotL), 0.12)`, uma chapa Lambert
+   * com piso, e na data da vista `saturno-anel` (jd 2460409, latitude
+   * subsolar 5,73°) o cosseno vale 0,0998 — ABAIXO do piso. O piso
+   * assumia, e o anel inteiro virava 0,12 × uma placa que é foto escura.
+   *
+   * O ORÁCULO VEM DE FORA: 0,398170346608 é o que o espalhamento simples
+   * de camada plano-paralela devolve na geometria daquela vista
+   * (μ₀ = sen 5,73°, μ = sen 23,7°, retro, τ = −ln 0,05), calculado à
+   * parte. O espelho abaixo é o MESMO cálculo escrito em JS — se ele e o
+   * GLSL divergirem, os `toContain` acima caem; se os dois mudarem
+   * juntos, este literal cai. Sabotagem declarada: com o piso de volta o
+   * número seria 0,12, e o anel voltaria a 6,6× mais escuro.
+   */
+  it('PINO 91-ANEL: a camada de partículas substitui o piso Lambert de 0,12', () => {
+    const fase = (cosTheta: number) => {
+      const g2 = G_DO_ANEL * G_DO_ANEL;
+      const hg = (1 - g2) * Math.pow(1 + g2 - 2 * G_DO_ANEL * cosTheta, -1.5);
+      const retro = (1 - g2) * Math.pow(1 + g2 + 2 * G_DO_ANEL, -1.5);
+      return hg / retro + K_DIFRACAO * Math.pow(Math.max(cosTheta, 0), 6);
+    };
+    const camada = (tau: number, mu0: number, mu: number, f: number, mesmoLado: number) => {
+      const cobertura = 1 - Math.exp(-tau / mu);
+      const amp = 2 * f;
+      const d = mu0 - mu;
+      const iF =
+        mesmoLado > 0
+          ? amp * (mu0 / (mu + mu0)) * (1 - Math.exp(-tau * (1 / mu + 1 / mu0)))
+          : Math.abs(d) < 1e-3
+            ? amp * (tau / mu0) * Math.exp(-tau / mu0)
+            : amp * (mu0 / d) * (Math.exp(-tau / mu0) - Math.exp(-tau / mu));
+      return { brilho: iF / Math.max(cobertura, 1e-4), cobertura };
+    };
+
+    // A ÂNCORA, e é ela que dá sentido a IF_RETRO_DO_GELO: camada
+    // espessa, Sol às costas da câmera, μ = μ₀ → o modelo devolve 1, e o
+    // anel sai exatamente no I/F medido pela Voyager/Cassini.
+    expect(camada(40, 0.4, 0.4, fase(-1), 1).brilho).toBeCloseTo(1, 12);
+    expect(fase(-1)).toBeCloseTo(1, 12);
+
+    // A VISTA `saturno-anel`, onde o dono viu a lama.
+    const mu0 = Math.sin((5.73 * Math.PI) / 180);
+    const mu = Math.sin((23.7 * Math.PI) / 180);
+    const tau = -Math.log(1 - 0.95); // a banda mais opaca do B na placa
+    const naVista = camada(tau, mu0, mu, fase(-1), 1);
+    expect(naVista.brilho).toBeCloseTo(0.398170346608, 9);
+    expect(naVista.cobertura).toBeGreaterThan(0.999);
+
+    // O PISO É O QUE SAIU, e o dono vê a diferença em bytes de tela.
+    const SOB_A_REVERSAO = 0.12;
+    expect(naVista.brilho).not.toBeCloseTo(SOB_A_REVERSAO, 2);
+    expect(naVista.brilho / SOB_A_REVERSAO).toBeCloseTo(3.318, 3);
+    // e o piso mordia porque a data põe o Sol quase no plano do anel
+    expect(mu0).toBeLessThan(0.12);
+
+    // A DIVISÃO DE CASSINI CONTINUA TRANSPARENTE — o conserto não pode
+    // fechar o vão. Com a opacidade dela na placa, a cobertura fica em
+    // ~0,60: o céu atravessa, e é isso que desenha a divisão.
+    const divisao = camada(-Math.log(1 - 0.31), mu0, mu, fase(-1), 1);
+    expect(divisao.cobertura).toBeCloseTo(0.602739845018, 9);
+    expect(divisao.cobertura).toBeLessThan(naVista.cobertura);
+
+    // A FASE CAI COM O ÂNGULO, mas não desaba: em 90° sobra ~38%, e
+    // contra o Sol o lobo de difração acende o anel.
+    expect(fase(0)).toBeCloseTo(0.385203639764, 9);
+    expect(fase(1)).toBeCloseTo(1.716, 9);
+  });
+
+  it('o anel procedural usa a MESMA camada — nenhuma segunda política', () => {
+    for (const glsl of [ANEL_FRAG, ANEL_PROC_FRAG]) {
+      expect(glsl).toContain('vec2 camadaDeParticulas(');
+      expect(glsl).toContain('float tauDaOpacidade(');
+      expect(glsl).toContain('float a = dot(d, d)'); // a sombra elipsoide
+      expect(glsl).not.toContain('0.12'); // o piso Lambert não voltou
+      expect(glsl).not.toMatch(/uAmbient|ambientLight|uPiso/);
+    }
+    // o que separa os dois é o ALBEDO, não o modelo de luz
+    expect(ANEL_FRAG).toContain('IF_RETRO');
+    expect(ANEL_PROC_FRAG).toContain('vec3(0.06, 0.055, 0.05)');
   });
 
   it('não existe termo ambiente (anti-padrões 3 e 9)', () => {

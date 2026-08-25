@@ -27,7 +27,10 @@
 //     (D-ring 66 900 km / 60 268; F-ring 140 180 km / 60 268 —
 //     cicatriz W5-B, celestialBodies.ts do doador)
 //   - placa alpha (canal `ring` do manifest)
-//   - scattering frente/trás no lugar do 0,34 fixo
+//   - CAMADA DE PARTÍCULAS (espalhamento simples plano-paralelo) no
+//     lugar da chapa Lambert com piso — a queixa do dono de 25/08,
+//     "os anéis de Saturno não estão visíveis"; ver
+//     `GLSL_CAMADA_DO_ANEL`. O 0,34 fixo do doador segue fora.
 //   - sombra planeta→anel: ocultador ELIPSOIDE; squash no eixo
 //     POLAR do frame do anel (.z após RingGeometry + Rx(−π/2);
 //     o comentário W5-B do doador); direção NÃO-unitária depois
@@ -215,20 +218,136 @@ void main() {
 `;
 
 /**
- * Anel: placa alpha + scattering frente/trás + sombra do planeta
- * elipsoide. vPos está no frame da RingGeometry (plano XY); o mesh
- * aplica Rx(−π/2), então +Z deste frame é o POLO (W5-B). O squash
- * do ocultador é em .z; depois dele d' NÃO é unitário.
+ * I/F do anel A/B em RETROESPALHAMENTO, com Sol e câmera à mesma
+ * elevação sobre o plano — o número âncora desta casa para o gelo.
+ *
+ * É a grandeza que Voyager e Cassini de fato mediram (o anel B sai em
+ * ~0,5 em baixa fase, contra ~0,6 no centro do disco de Saturno), e é
+ * por isso que nas fotos o anel bate ou passa o globo. Ancora-se ELA,
+ * e não `ϖ₀` e `P(α)` soltos: destes dois a casa não tem tabela, e
+ * fingir que tem seria número inventado com cara de ciência.
  */
-export const ANEL_FRAG = /* glsl */ `
-uniform sampler2D uMapaAnel;
-uniform vec3 uDirSolLocal;
-uniform vec3 uCamLocal;
-uniform float uLuzGanho;
-uniform float uKPolar;
-uniform vec2 uAnelRaios;
-varying vec3 vPos;
-vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
+export const IF_RETRO_DO_GELO = 0.5;
+
+/**
+ * O PICO de `luminância_linear / alpha` da placa `ring` de Saturno,
+ * medido texel a texel na linha central de `ring.png` (8192×500; a
+ * placa é constante em v), contado só onde ela é opaca. Vale 0,2873, no
+ * anel B (u = 0,531) — e é ele que denuncia o segundo defeito: a placa
+ * é uma FOTOGRAFIA escura, não um albedo. Mesmo com iluminação cheia,
+ * `placa.rgb` sozinho não passa de 0,25 em linear, enquanto o globo
+ * chega a ~0,7. Dividir pela cobertura (`alpha`, que a foto já embutiu)
+ * e por este pico devolve o PERFIL RADIAL por partícula — que é o que a
+ * placa realmente sabe: gradações do B, o C mais sujo, a divisão.
+ */
+export const PICO_DA_PLACA_DO_ANEL = 0.2873;
+
+/**
+ * A COR do gelo do anel, normalizada a luminância 1 — medida na PRÓPRIA
+ * placa, na média dos 1 803 texels em que ela é opaca (alpha > 0,90),
+ * que é a única parte dela em que a croma é confiável.
+ *
+ * POR QUE NÃO USAR A CROMA DA PLACA INTEIRA: ela tem MATTE. Medido no
+ * arquivo, faixa a faixa, a razão azul/vermelho acompanha o alpha —
+ * 0,75 (o tan correto) onde alpha > 0,8, e 2,7 onde alpha < 0,2. Anel
+ * nenhum é azul; aquilo é o fundo do arquivo de origem sangrando no
+ * semitransparente. Sob a chapa Lambert antiga o azul não aparecia
+ * porque tudo estava escuro demais para ter cor; ao acender o anel ele
+ * virou um halo violeta no C — visto a olho na primeira foto desta
+ * obra, não medido por régua nenhuma.
+ */
+export const COR_DO_GELO_DO_ANEL = [1.145, 0.97, 0.867] as const;
+
+/**
+ * O ANEL É UMA CAMADA DE PARTÍCULAS, NÃO UMA CHAPA LAMBERT.
+ *
+ * A QUEIXA DO DONO (2026-08-25, olhando as fotos do item 91): "os anéis
+ * de Saturno não estão visíveis". A foto lhe dava razão — o globo saiu
+ * do carvão para a palha e o anel continuou uma mancha marrom.
+ *
+ * O QUE CAIU, e por quê: o anel era `max(abs(nDotL), 0.12)`, uma chapa
+ * Lambert com piso. Inclinar uma chapa Lambert espalha a mesma luz por
+ * mais área e o brilho cai com o cosseno. Inclinar uma CAMADA empilha
+ * mais partículas na linha de visada na MESMA proporção, e os dois
+ * efeitos se cancelam: o brilho de superfície de um anel não desaba com
+ * a incidência. Com o Sol rasante sobre o plano — o caso de Saturno
+ * agora, logo depois do equinócio de 2025 — o cosseno afundava, o piso
+ * de 0,12 assumia, e o anel virava 0,12 × placa escura. Era a lama.
+ *
+ * O QUE ENTRA: espalhamento simples de camada plano-paralela, a forma
+ * clássica (Chandrasekhar) com que a fotometria dos anéis se escreve,
+ * com τ lido da opacidade da própria placa:
+ *
+ *   reflexão (câmera do lado iluminado):
+ *     I/F = A · μ₀/(μ+μ₀) · [1 − e^{−τ(1/μ + 1/μ₀)}]
+ *   transmissão (câmera do lado escuro):
+ *     I/F = A · μ₀/(μ₀−μ) · [e^{−τ/μ₀} − e^{−τ/μ}]
+ *
+ * A transmissão não é enfeite: é ela que faz o anel B espesso ficar
+ * PRETO visto por trás enquanto a divisão de Cassini ACENDE — a imagem
+ * que a Cassini tornou famosa, e que a chapa Lambert não sabia fazer.
+ *
+ * A amplitude `A` sai da âncora, não de constantes soltas: `2 · fase`
+ * faz o modelo devolver exatamente {@link IF_RETRO_DO_GELO} quando o
+ * Sol está às costas da câmera, a camada é espessa e μ = μ₀. O teste
+ * cobra esse identidade.
+ */
+export const G_DO_ANEL = -0.25;
+export const K_DIFRACAO = 1.5;
+
+const GLSL_CAMADA_DO_ANEL = /* glsl */ `
+// assimetria da fase: partícula de regolito de gelo RETROESPALHA
+// (g < 0). Suave de propósito — Henyey-Greenstein forte derrubaria o
+// anel a um nono do brilho em fase 90°, e o céu real não faz isso.
+const float G_DO_ANEL = ${G_DO_ANEL};
+// o lobo de DIFRAÇÃO para a frente, que acende o anel contra o Sol. O
+// lobo verdadeiro tem segundos de arco (partículas de cm a m) e não
+// sobrevive a um pixel: a LARGURA aqui é de cinema (expoente 6, o
+// mesmo que a casa já usava), a presença é física.
+const float K_DIFRACAO = ${K_DIFRACAO};
+
+// opacidade e profundidade óptica são a mesma coisa em duas línguas:
+// a placa guarda α = 1 − e^{−τ} visto de cima.
+float tauDaOpacidade(float alfa) {
+  return -log(max(1.0 - alfa, 1.0e-3));
+}
+
+// a FORMA da curva de fase, normalizada em retro (vale 1 quando o Sol
+// está às costas da câmera). cosTheta é o cosseno do ângulo de
+// ESPALHAMENTO: +1 para a frente, −1 em retro.
+float faseDoAnel(float cosTheta) {
+  float g2 = G_DO_ANEL * G_DO_ANEL;
+  float hg = (1.0 - g2) * pow(max(1.0 + g2 - 2.0 * G_DO_ANEL * cosTheta, 1.0e-4), -1.5);
+  float retro = (1.0 - g2) * pow(1.0 + g2 + 2.0 * G_DO_ANEL, -1.5);
+  return hg / retro + K_DIFRACAO * pow(max(cosTheta, 0.0), 6.0);
+}
+
+// x = brilho ONDE a camada cobre, em unidades da âncora de retro;
+// y = COBERTURA na linha de visada — mais opaca de esguelha que de
+// cima, que é a razão de a divisão fechar quando o anel se deita.
+vec2 camadaDeParticulas(float tau, float mu0, float mu, float fase, float mesmoLado) {
+  float cobertura = 1.0 - exp(-tau / mu);
+  float amp = 2.0 * fase;
+  float iF;
+  if (mesmoLado > 0.0) {
+    iF = amp * (mu0 / (mu + mu0)) * (1.0 - exp(-tau * (1.0 / mu + 1.0 / mu0)));
+  } else {
+    float d = mu0 - mu;
+    iF = abs(d) < 1.0e-3
+      ? amp * (tau / mu0) * exp(-tau / mu0)
+      : amp * (mu0 / d) * (exp(-tau / mu0) - exp(-tau / mu));
+  }
+  return vec2(iF / max(cobertura, 1.0e-4), cobertura);
+}
+`;
+
+/**
+ * A SOMBRA DO GLOBO SOBRE O ANEL — ocultador ELIPSOIDE, squash no eixo
+ * polar do frame do anel (W5-B); depois do squash a direção não é
+ * unitária, daí `a = dot(d',d')` no discriminante. Fica como estava: é
+ * o que o dono manda preservar.
+ */
+const GLSL_SOMBRA_DO_PLANETA_NO_ANEL = /* glsl */ `
 float sombraDoPlaneta(vec3 p) {
   vec3 dir = uDirSolLocal;
   float k = max(uKPolar, 1.0e-4);
@@ -241,25 +360,57 @@ float sombraDoPlaneta(vec3 p) {
   bool hit = delta >= 0.0 && b < 0.0;
   return hit ? 0.22 : 1.0;
 }
+`;
+
+/**
+ * Anel de Saturno: placa alpha + camada de partículas + sombra do
+ * planeta elipsoide. vPos está no frame da RingGeometry (plano XY); o
+ * mesh aplica Rx(−π/2), então +Z deste frame é o POLO (W5-B).
+ */
+export const ANEL_FRAG = /* glsl */ `
+uniform sampler2D uMapaAnel;
+uniform vec3 uDirSolLocal;
+uniform vec3 uCamLocal;
+uniform float uLuzGanho;
+uniform float uKPolar;
+uniform vec2 uAnelRaios;
+varying vec3 vPos;
+const float IF_RETRO = ${IF_RETRO_DO_GELO};
+const float PICO_DA_PLACA = ${PICO_DA_PLACA_DO_ANEL};
+const vec3 COR_DO_GELO = vec3(${COR_DO_GELO_DO_ANEL.join(', ')});
+vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
+${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
+${GLSL_CAMADA_DO_ANEL}
 void main() {
   float r = length(vPos.xy);
   float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
   vec4 placa = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5));
-  float alpha = placa.a;
-  if (alpha < 0.004) discard;
+  float alfa = placa.a;
+  if (alfa < 0.004) discard;
   vec3 n = vec3(0.0, 0.0, 1.0);
   vec3 view = normSeguro(uCamLocal - vPos);
   float nDotL = dot(n, uDirSolLocal);
   float nDotV = dot(n, view);
-  float phase = max(dot(-uDirSolLocal, view), 0.0);
+  float mu0 = max(abs(nDotL), 0.02);
+  float mu = max(abs(nDotV), 0.02);
+  float cosTheta = clamp(-dot(uDirSolLocal, view), -1.0, 1.0);
   float mesmoLado = nDotL * nDotV;
-  float frente = pow(phase, 6.0);
-  float lambert = max(abs(nDotL), 0.12);
-  float brilho = mesmoLado > 0.0 ? lambert : (0.18 + 1.6 * frente);
-  vec3 albedo = placa.rgb;
-  if (dot(albedo, albedo) < 1.0e-6) albedo = vec3(0.72, 0.68, 0.58);
-  vec3 direta = albedo * (brilho * uLuzGanho) * sombraDoPlaneta(vPos);
-  gl_FragColor = vec4(direta, alpha);
+  vec2 camada = camadaDeParticulas(
+    tauDaOpacidade(alfa), mu0, mu, faseDoAnel(cosTheta), mesmoLado
+  );
+  // a placa é foto: tirar a cobertura que ela já embutiu e o pico
+  // medido devolve o PERFIL por partícula, que é o que ela sabe. A
+  // CROMA dela só vale onde é opaca — abaixo disso é a matte, e a cor
+  // cai para o gelo medido no próprio anel B.
+  vec3 crua = placa.rgb / max(alfa * PICO_DA_PLACA, 1.0e-4);
+  float perfil = dot(crua, vec3(0.2126, 0.7152, 0.0722));
+  vec3 tinta = clamp(
+    mix(COR_DO_GELO * perfil, crua, smoothstep(0.30, 0.80, alfa)), 0.0, 1.0
+  );
+  if (dot(tinta, tinta) < 1.0e-6) tinta = COR_DO_GELO;
+  vec3 direta =
+    (tinta * IF_RETRO) * (camada.x * uLuzGanho) * sombraDoPlaneta(vPos);
+  gl_FragColor = vec4(direta, clamp(camada.y, 0.0, 1.0));
 }
 `;
 
@@ -268,6 +419,12 @@ void main() {
  * Dosagem honesta: partículas de carvão (albedo ~0,05); Urano ε
  * assimétrico (peri 19,7 → apo 96,4 km); Netuno só arcos
  * Fraternité+Égalité; o resto é traço/véu.
+ *
+ * A CAMADA É A MESMA de Saturno — {@link GLSL_CAMADA_DO_ANEL}, uma
+ * fonte de verdade. A chapa Lambert com piso 0,12 morava aqui também,
+ * copiada linha a linha; o que separa estes anéis do de Saturno não é
+ * o modelo de luz, é o ALBEDO: carvão em vez de gelo. O I/F de retro
+ * entra pela cor, e a cor continua sendo a deles.
  */
 export const ANEL_PROC_FRAG = /* glsl */ `
 uniform vec3 uDirSolLocal;
@@ -278,18 +435,8 @@ uniform vec2 uAnelRaios;
 uniform float uModo; // 0=Urano 1=Netuno 2=Quaoar
 varying vec3 vPos;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
-float sombraDoPlaneta(vec3 p) {
-  vec3 dir = uDirSolLocal;
-  float k = max(uKPolar, 1.0e-4);
-  vec3 o = vec3(p.x, p.y, p.z / k);
-  vec3 d = vec3(dir.x, dir.y, dir.z / k);
-  float a = dot(d, d);
-  float b = 2.0 * dot(o, d);
-  float c = dot(o, o) - 1.0;
-  float delta = b * b - 4.0 * a * c;
-  bool hit = delta >= 0.0 && b < 0.0;
-  return hit ? 0.22 : 1.0;
-}
+${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
+${GLSL_CAMADA_DO_ANEL}
 void main() {
   float r = length(vPos.xy);
   float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
@@ -323,14 +470,18 @@ void main() {
   vec3 view = normSeguro(uCamLocal - vPos);
   float nDotL = dot(n, uDirSolLocal);
   float nDotV = dot(n, view);
-  float phase = max(dot(-uDirSolLocal, view), 0.0);
+  float mu0 = max(abs(nDotL), 0.02);
+  float mu = max(abs(nDotV), 0.02);
+  float cosTheta = clamp(-dot(uDirSolLocal, view), -1.0, 1.0);
   float mesmoLado = nDotL * nDotV;
-  float frente = pow(phase, 6.0);
-  float lambert = max(abs(nDotL), 0.12);
-  float brilho = mesmoLado > 0.0 ? lambert : (0.18 + 1.6 * frente);
+  vec2 camada = camadaDeParticulas(
+    tauDaOpacidade(alpha), mu0, mu, faseDoAnel(cosTheta), mesmoLado
+  );
+  // carvão (Urano/Netuno) e o cinza avermelhado de Quaoar: é o I/F de
+  // retro DELES, e é só nisto que diferem do gelo de Saturno.
   vec3 albedo = uModo > 1.5 ? vec3(0.42, 0.34, 0.26) : vec3(0.06, 0.055, 0.05);
-  vec3 direta = albedo * (brilho * uLuzGanho) * sombraDoPlaneta(vPos);
-  gl_FragColor = vec4(direta, alpha);
+  vec3 direta = albedo * (camada.x * uLuzGanho) * sombraDoPlaneta(vPos);
+  gl_FragColor = vec4(direta, clamp(camada.y, 0.0, 1.0));
 }
 `;
 
