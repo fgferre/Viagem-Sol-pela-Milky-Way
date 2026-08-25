@@ -202,22 +202,33 @@ Três cegueiras declaradas:
   só existe depois do M6; o interior do clarão de um corpo próximo, que sai do
   resíduo por pixel e é julgado só por identidade; e o resíduo por
   pixel onde a paralaxe do passo passa de 1 px — em `aproxEstrela` isso
-  suspende a família inteira e sobra a estrela-alvo; **o pedaço de um traço
-  que esmaeceu e se partiu** (a regra do traço barra a linha inteira, não o
-  fragmento compacto dela — declarado em `nucleoCompacto` com os números); e
+  suspende a família inteira e sobra a estrela-alvo; e
   **o céu que `pan` e `orbita` varrem, que não é fixo**: o passo das duas é de
   4 px, então o ALCANCE angular delas encolhe quando a janela cresce, e o
   veredito dessas duas famílias não é comparável entre janelas diferentes
-  (achado em 25/08, item 81); e **o traço que se FUNDE com um núcleo
-  compacto**, que é a cegueira que sobrou depois do item 70 (25/08): a
-  regra de bloco fundido do juiz só dispara quando DUAS âncoras reclamam a
-  MESMA fonte, então uma linha de órbita que atravessa o planeta e soma
-  com ele acima do limiar 0,40 passa por fonte legítima, e o centroide do
-  bloco — que anda enquanto a linha entra e sai — é cobrado da âncora do
-  corpo. É este o único defeito que o MB1 ainda acusa (`zoomDeRoda` passo
-  8, Vênus sobre a própria elipse), e ele é do INSTRUMENTO ou da arte da
-  órbita, não do cobertor: medido, o salto não muda com a faixa de guarda
-  nem com os dois cobertores apagados, e SOME com `?noorbitas=1`.
+  (achado em 25/08, item 81).
+  **DUAS CEGUEIRAS DE LINHA DE ÓRBITA MORRERAM em 25/08, e a segunda deixou
+  uma herdeira menor.** A primeira era o traço que se FUNDE com o núcleo do
+  corpo (o planeta está sobre a própria elipse por construção algébrica, as
+  duas luzes viravam uma componente só e o passeio do centroide era cobrado da
+  âncora): morreu na TELA, com a cessão que o dono decidiu — a linha cede
+  brilho no miolo aceso do corpo (`RAIO_DA_CESSAO_PX`). A segunda era o
+  PEDAÇO de um traço partido — a regra do traço barra a linha inteira e não o
+  fragmento compacto dela, e a cessão, ao cortar o laço em arcos, fabricou
+  seis desses fragmentos: morreu no JUIZ, com a **faixa de instrumento**
+  (`mascaraDasOrbitas`), que projeta a geometria REAL das fitas acesas e tira
+  do veredito de identidade a componente cujo núcleo cai inteiro sobre o
+  traçado. MB1 completo foi de 6 defeitos a ZERO sem afrouxar tolerância
+  nenhuma; 11 fontes de 2.282 saem por instrumento, e a conta aparece no
+  relatório do juiz. **A HERDEIRA, declarada:** a exclusão é geométrica, então
+  uma ESTRELA DO CAMPO exatamente debaixo de uma linha desenhada também sai —
+  o núcleo dela tem 2 px e não se distingue de um pedaço de fita pela forma.
+  O tamanho da cegueira está medido e é a área da faixa: **1,17% do quadro em
+  `zoomDeRoda`, 0,25% em `fronteiraTerra` e 0,00% nas outras sete famílias**,
+  onde a camada não desenha e o juiz é o de sempre. A âncora NUNCA é calada
+  (11 das 218 âncoras compactas da corrida têm o núcleo sobre a faixa), e o
+  resíduo por pixel e a banda alta continuam medindo a linha: o que sai é a
+  identidade, nunca a fervura.
   **E A CEGUEIRA MAIS CARA É A DE SINAL, medida na própria pele em 25/08:
   o MB1 PREMIA CÉU MAIS ESCURO.** Ele mede o EXCESSO de resíduo sobre o
   piso, e um cobertor mais fraco tem menos pedestal para perder quando uma

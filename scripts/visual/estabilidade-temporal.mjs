@@ -621,6 +621,198 @@ export function unirMascaras(a, b) {
 }
 
 // ------------------------------------------------------------
+// A MÁSCARA DO INSTRUMENTO — onde a camada das órbitas desenhou linha
+// ------------------------------------------------------------
+
+/**
+ * O RAIO DA FAIXA DE INSTRUMENTO, em px, em volta do traçado projetado. É
+ * dilatação de Chebyshev (a mesma `dilatar` do clarão), então o número é o
+ * meio-lado do quadrado: 1 px é uma faixa de 3 px de largura.
+ *
+ * ELE É MEDIDO, e a medida está no item 70. A fita da camada tem
+ * `LARGURA_DA_FITA_PX` = 1,25 px CSS; 3 px de faixa a cobrem com quase um pixel
+ * de folga de cada lado, e é essa a conta que o número quer honrar. Varrido
+ * contra `zoomDeRoda` com a cessão do dono ativa (defeitos · fontes excluídas
+ * por instrumento, uma corrida por linha):
+ *
+ *     raio 0 px → 5 · 3     (só o traço de 1 px, sem dilatação: NÃO fecha)
+ *     raio 1 px → 0 · 11    ← escolhido
+ *     raio 2 px → 0 · 11
+ *     raio 3 px → 0 · 10
+ *     raio 4 px → 0 · 8
+ *
+ * Ficou no MENOR que fecha, pela mesma disciplina do `RAIO_DA_CESSAO_PX`, e o
+ * preço de subir está medido: a faixa ocupa **1,17%** do quadro em `zoomDeRoda`
+ * a raio 1 e **2,03%** a raio 2 — dobrar o céu calado sem comprar defeito
+ * nenhum seria pagar por medo. E não é escolha no fio: no raio 1, a corrida
+ * INTEIRA não tem uma única componente compacta na zona cinzenta (ver
+ * `FRACAO_NA_LINHA`).
+ *
+ * O zero repete: quatro corridas seguidas (três de `zoomDeRoda` e uma corrida
+ * completa), 11 a 12 exclusões, nenhum defeito.
+ */
+export const RAIO_DA_LINHA_PX = 1;
+
+/**
+ * QUANTO DO NÚCLEO de uma componente tem de cair sobre a faixa para ela ser
+ * PEDAÇO DE LINHA e não fonte. Não é "quase tudo" por gosto: é o que separa
+ * uma fita de 5 px de largura de um núcleo REDONDO da PSF desta casa.
+ *
+ * A conta, e ela é geometria: o núcleo de meia-altura de uma PSF de σ = 0,85 px
+ * tem raio σ·√(2 ln 2) = 1,0 px — dois pixels de diâmetro, que cabem inteiros
+ * na faixa. Uma estrela do campo bem em cima da linha, portanto, NÃO se
+ * distingue de um pedaço de linha pela forma, e este é o buraco que a regra
+ * deixa aberta (declarado no censo). O que a fração PEGA é o resto: qualquer
+ * componente com núcleo maior que a faixa — planeta, clarão, platô do Sol,
+ * estrela forte — transborda e continua sendo julgada.
+ *
+ * MEDIDO na corrida INTEIRA (9 famílias, 2.282 fontes julgáveis), com a faixa
+ * escolhida, olhando só as componentes COMPACTAS (o traço já sai antes):
+ *
+ *     excluídas por instrumento          11  — fração 1,000 em TODAS
+ *     zona cinzenta (0,02 < f < 0,98)     2  — fração 0,244 e 0,333
+ *     o resto (2.027 fontes)                 — fração 0,000
+ *
+ * A população é BIMODAL e o corte cai no vazio: entre 0,34 e 1,00 não existe
+ * uma única componente na corrida inteira. Um corte a 0,50 ou a 1,00 daria o
+ * MESMO veredito — o 0,90 não está no fio de nada.
+ *
+ * E A GUARDA DA ÂNCORA NÃO É ENFEITE: 11 das 218 âncoras compactas da corrida
+ * têm fração ≥ 0,9 (o corpo está sobre a própria elipse por construção
+ * algébrica). Sem a guarda, a faixa calaria a identidade de um planeta em cada
+ * vinte — exatamente a régua que o item 70 veio consertar.
+ */
+export const FRACAO_NA_LINHA = 0.9;
+
+/**
+ * Recorta o segmento (a→b) na moldura do quadro, com folga. Liang–Barsky, e
+ * ele existe por uma razão de custo, não de correção: um vértice de elipse
+ * projetado perto do plano da câmera sai a dezenas de milhares de pixels do
+ * quadro, e traçar essa reta inteira custaria mais que o resto do juiz.
+ * Devolve `null` quando o segmento não toca a moldura.
+ */
+export function recortarNoQuadro(ax, ay, bx, by, W, H, folga = 0) {
+  const x0 = -folga;
+  const y0 = -folga;
+  const x1 = W - 1 + folga;
+  const y1 = H - 1 + folga;
+  const dx = bx - ax;
+  const dy = by - ay;
+  let t0 = 0;
+  let t1 = 1;
+  const bordas = [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]];
+  for (const [p, q] of bordas) {
+    if (p === 0) {
+      if (q < 0) return null;
+      continue;
+    }
+    const r = q / p;
+    if (p < 0) {
+      if (r > t1) return null;
+      if (r > t0) t0 = r;
+    } else {
+      if (r < t0) return null;
+      if (r < t1) t1 = r;
+    }
+  }
+  return [ax + t0 * dx, ay + t0 * dy, ax + t1 * dx, ay + t1 * dy];
+}
+
+/** Risca um segmento de 1 px na máscara (Bresenham), já recortado. */
+function riscar(m, W, H, ax, ay, bx, by) {
+  let x = Math.round(ax - 0.5);
+  let y = Math.round(ay - 0.5);
+  const xf = Math.round(bx - 0.5);
+  const yf = Math.round(by - 0.5);
+  const sx = x < xf ? 1 : -1;
+  const sy = y < yf ? 1 : -1;
+  let ex = Math.abs(xf - x);
+  let ey = -Math.abs(yf - y);
+  let erro = ex + ey;
+  for (let guarda = 0; guarda <= ex - ey + 2; guarda++) {
+    if (x >= 0 && y >= 0 && x < W && y < H) m[y * W + x] = 1;
+    if (x === xf && y === yf) break;
+    const e2 = 2 * erro;
+    if (e2 >= ey) { erro += ey; x += sx; }
+    if (e2 <= ex) { erro += ex; y += sy; }
+  }
+}
+
+/**
+ * ONDE A CAMADA DAS ÓRBITAS DESENHOU LINHA NESTE QUADRO — a máscara do
+ * INSTRUMENTO, e ela nasce da GEOMETRIA REAL, não de uma hipótese sobre a
+ * forma do que apareceu no céu.
+ *
+ * POR QUE ELA EXISTE. A linha de órbita é instrumento e não matéria — o topo
+ * de `world/orbitas.ts` escreve que ela "não é fóton de lugar nenhum" —, e o
+ * juiz sempre a excluiu da identidade: enquanto a elipse é um LAÇO fechado ela
+ * é uma componente comprida e cai em `nucleoCompacto`. Desde a cessão do dono
+ * (25/08, `RAIO_DA_CESSAO_PX`) o laço é CORTADO no miolo aceso do corpo, vira
+ * ARCO, e onde o arco entra e sai do quadro sobram pedaços COMPACTOS que a
+ * regra do traço não reconhece mais. Seis deles reprovavam `zoomDeRoda`.
+ *
+ * A ESCOLHA DO MECANISMO, e ela foi medida contra a alternativa. O outro
+ * caminho era alargar `nucleoCompacto` para reconhecer ARCO por forma
+ * (curvatura, alongamento local). Foi descartado, e o motivo é a régua do
+ * próprio pedaço: os seis fragmentos acusados têm `nMeia` de 4 a 10 px e razão
+ * lado/√nMeia de 1,5 a 3,2 — dentro do corte do traço (≤ 3) e na MESMA faixa
+ * de uma estrela do campo (≤ 1,7) e do platô do Sol (1,6). Um corte de forma
+ * que os pegasse pegaria estrela junto, e seria exatamente a cegueira nova que
+ * não se pode criar: "tudo que é pequeno e fraco passa". A geometria da linha,
+ * ao contrário, é CONHECIDA — a camada a desenha a partir de uma cônica —, e
+ * perguntar "este pixel está em cima do traçado?" é uma pergunta com resposta,
+ * não um palpite sobre a forma do que apareceu.
+ *
+ * DE ONDE VÊM OS VÉRTICES: do próprio objeto do three, no quadro que acabou de
+ * ser fotografado (`LER_CAMERA`) — os `PONTOS_POR_ORBITA` do laço, levados ao
+ * frame do mundo pelo `matrixWorld` da fita (é ele que põe a órbita de uma lua
+ * no centro vivo do pai). Só entram as fitas ACESAS (`visible` e opacidade
+ * acima de zero), que são as que deitaram luz no quadro. O juiz projeta esses
+ * pontos com a MESMA `projetarPonto` das âncoras: não há segunda cópia da
+ * câmera nem segunda cópia da cônica, e por isso a máscara não pode divergir
+ * do que foi desenhado.
+ *
+ * E É POR CONSTRUÇÃO QUE `?noorbitas=1` NÃO MUDA NADA: sem a camada não há
+ * fita acesa, a lista chega vazia, esta função devolve `null` e todo o resto do
+ * juiz roda pelo caminho de sempre.
+ *
+ * O SEGMENTO COM VÉRTICE ATRÁS DA CÂMERA é PULADO, e isto é um buraco
+ * declarado: o app corta esse segmento no plano de recorte e desenha o pedaço
+ * da frente, e a máscara não o cobre. Vale para os dois vértices de um
+ * segmento em 256 — na prática, dois segmentos por elipse que cruza o observador.
+ */
+export function mascaraDasOrbitas(cam, orbitas, raioPx = RAIO_DA_LINHA_PX) {
+  if (!orbitas || !orbitas.length) return null;
+  const { W, H } = cam;
+  const m = new Uint8Array(W * H);
+  const folga = raioPx + 1;
+  for (const o of orbitas) {
+    const n = o.n | 0;
+    if (n < 2 || !o.p || o.p.length < n * 3) continue;
+    const e = o.m;
+    const proj = new Array(n);
+    for (let k = 0; k < n; k++) {
+      const x = o.p[k * 3];
+      const y = o.p[k * 3 + 1];
+      const z = o.p[k * 3 + 2];
+      proj[k] = projetarPonto(cam, [
+        e[0] * x + e[4] * y + e[8] * z + e[12],
+        e[1] * x + e[5] * y + e[9] * z + e[13],
+        e[2] * x + e[6] * y + e[10] * z + e[14],
+      ]);
+    }
+    for (let k = 0; k < n; k++) {
+      const a = proj[k];
+      const b = proj[(k + 1) % n];
+      if (a.atras || b.atras) continue;
+      const seg = recortarNoQuadro(a.x, a.y, b.x, b.y, W, H, folga);
+      if (seg) riscar(m, W, H, seg[0], seg[1], seg[2], seg[3]);
+    }
+  }
+  return dilatar(m, W, H, raioPx);
+}
+
+// ------------------------------------------------------------
 // AS FONTES — quem tem identidade a preservar (§5.20)
 // ------------------------------------------------------------
 
@@ -637,7 +829,9 @@ export function unirMascaras(a, b) {
  * núcleo. `cxTudo/cyTudo` ficam publicados ao lado porque dizem onde a
  * componente INTEIRA se espalha.
  */
-export function fontesDoQuadro(y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTES } = {}) {
+export function fontesDoQuadro(
+  y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTES, mascaraLinha = null } = {}
+) {
   const rotulo = new Int32Array(W * H).fill(-1);
   const pilha = new Int32Array(W * H);
   const fontes = [];
@@ -690,6 +884,7 @@ export function fontesDoQuadro(y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTE
     let mx = 0;
     let my = 0;
     let nMeia = 0;
+    let naLinha = 0;
     let x0 = W;
     let y0 = H;
     let x1 = -1;
@@ -700,6 +895,7 @@ export function fontesDoQuadro(y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTE
       const ix = p % W;
       const iy = (p / W) | 0;
       nMeia++;
+      if (mascaraLinha && mascaraLinha[p]) naLinha++;
       pm += w;
       mx += w * (ix + 0.5);
       my += w * (iy + 0.5);
@@ -710,6 +906,10 @@ export function fontesDoQuadro(y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTE
     }
     fontes.push({
       id, n, nMeia, pico, px, py,
+      // QUANTO DO NÚCLEO caiu sobre o traçado das órbitas (`mascaraDasOrbitas`).
+      // Sem máscara é 0 — e 0 é o que mantém o juiz idêntico ao de sempre onde
+      // a camada não desenhou nada.
+      fracLinha: mascaraLinha ? naLinha / Math.max(nMeia, 1) : 0,
       cx: mx / pm, cy: my / pm,
       cxTudo: sx / peso, cyTudo: sy / peso,
       x0, y0, x1, y1,
@@ -800,6 +1000,9 @@ export function casarFontes({
   // quantas fontes saíram do veredito por serem TRAÇO — exclusão que ninguém
   // conta é exclusão que ninguém confere (a mesma lição da soleira calada)
   let tracos = 0;
+  // ...e quantas saíram por serem PEDAÇO DE LINHA de órbita (`FRACAO_NA_LINHA`),
+  // que é a mesma exclusão pela outra porta e se conta pela mesma razão
+  let instrumentos = 0;
   const dentroDoClarao = (x, y) => {
     if (!mascara) return false;
     const i = Math.round(x - 0.5);
@@ -860,6 +1063,13 @@ export function casarFontes({
     // veredito poder DIZER quantas fontes a regra calou.
     if (!nucleoCompacto(a)) { tracos++; continue; }
     const ancora = daAncora.get(a.id);
+    // E UM PEDAÇO DE LINHA TAMBÉM NÃO ENTRA — é a MESMA doutrina do traço,
+    // sobrevivendo ao corte que a cessão do dono abriu na elipse
+    // (`mascaraDasOrbitas`). A ÂNCORA É INTOCÁVEL: um corpo está sobre a
+    // própria elipse por construção algébrica, e calar a identidade dele seria
+    // desligar justamente a fronteira de promoção que o §5.20 manda interrogar
+    // — a régua que este item inteiro veio consertar viraria fumaça.
+    if (!ancora && a.fracLinha >= FRACAO_NA_LINHA) { instrumentos++; continue; }
     let prev;
     if (ancora && Number.isFinite(ancora.emB?.x)) {
       // o deslocamento da ÂNCORA aplicado ao centroide da fonte: a fonte é o
@@ -930,7 +1140,7 @@ export function casarFontes({
       sumidos.push({ de: p.a.id, prev: p.prev, pico: p.a.pico, naBorda, via: p.prev.via });
     }
   }
-  return { casados, sumidos, tracos };
+  return { casados, sumidos, tracos, instrumentos };
 }
 
 // ------------------------------------------------------------
@@ -999,6 +1209,18 @@ export function julgarFamilia({ nome, passos = [], piso = null, altura = null })
       + '(componente comprida demais para ter centroide — ver `nucleoCompacto`)'
     );
   }
+  // ...E QUANTAS A FAIXA DO INSTRUMENTO CALOU, pela mesma razão e no mesmo
+  // lugar. É esta linha que torna a exclusão nova conferível: se ela crescer
+  // num dia em que ninguém mexeu na camada das órbitas, a faixa está comendo
+  // céu — e o número aparece antes de a cegueira aparecer.
+  const instrumentos = passos.reduce((m, p) => m + (p.instrumentos ?? 0), 0);
+  if (instrumentos) {
+    declaracoes.push(
+      `${nome}: ${instrumentos} fonte(s) fora do veredito de identidade por serem `
+      + 'PEDAÇO DE LINHA DE ÓRBITA (núcleo sobre o traçado projetado da camada — '
+      + 'ver `mascaraDasOrbitas`)'
+    );
+  }
   for (const p of passos) {
     const rotulo = `${nome} passo ${p.k}`;
     const cegoPorParalaxe = p.paralaxePx > PARALAXE_CEGA_PX;
@@ -1050,7 +1272,8 @@ export function julgarFamilia({ nome, passos = [], piso = null, altura = null })
     }
   }
   return {
-    nome, piso, altura, passos: passos.length, erros, suspensos, declaracoes, descalibrada, tracos,
+    nome, piso, altura, passos: passos.length, erros, suspensos, declaracoes, descalibrada,
+    tracos, instrumentos,
   };
 }
 
@@ -1077,15 +1300,20 @@ export function medirPar(a, b, k, ancoras = [], julgada = LIMIAR_JULGADA) {
   const mB = mascaraDoClarao(b.y, b.cam.W, b.cam.H, visiveis('emB'));
   const mascara = unirMascaras(mA, mB);
   const r = residuoDoPar({ yA: a.y, yB: b.y, camA: a.cam, camB: b.cam, mascara });
-  const fontesA = fontesDoQuadro(a.y, a.cam.W, a.cam.H);
+  // A FAIXA DO INSTRUMENTO É DO QUADRO A, e não a união dos dois: quem se
+  // julga aqui são as fontes DE A, no grid de A. Unir as duas faixas alargaria
+  // a exclusão para onde a linha AINDA NÃO estava, que é céu calado de graça.
+  const linhaA = mascaraDasOrbitas(a.cam, a.orbitas);
+  const fontesA = fontesDoQuadro(a.y, a.cam.W, a.cam.H, { mascaraLinha: linhaA });
   const fontesB = fontesDoQuadro(b.y, b.cam.W, b.cam.H);
-  const { casados, sumidos, tracos } = casarFontes({
+  const { casados, sumidos, tracos, instrumentos } = casarFontes({
     fontesA, fontesB, camA: a.cam, camB: b.cam, ancoras: centros, mascara, julgada,
   });
   return {
     k,
     julgada,
     tracos,
+    instrumentos,
     paralaxePx: paralaxeMaximaPx(a.cam, b.cam),
     quadrosEntre: (b.cam.f ?? 0) - (a.cam.f ?? 0),
     solArmado: b.cam.solArmado,
@@ -1203,6 +1431,37 @@ const LER_CAMERA = `(() => {
       const p = (d.noPalco || []).find((x) => x.id === 'earth');
       return p && p.corpo.estadoVivo ? p.corpo.estadoVivo.cede : null;
     })(),
+    // AS LINHAS DE ÓRBITA ACESAS neste quadro — o laço de cada fita e a matriz
+    // que a põe no mundo. É a GEOMETRIA REAL da camada, e é dela que sai a
+    // faixa de instrumento (ver mascaraDasOrbitas): o juiz não re-deriva cônica
+    // nenhuma, lê o que foi desenhado. Camada fechada (?noorbitas=1) devolve
+    // lista vazia, e é assim que a exclusão nova some sem tocar em mais nada.
+    //
+    // instanceStart é a janela de passo 6 do interleaved da fita (§5 de
+    // world/orbitas.ts): o início do segmento k É o vértice k do laço, então
+    // ler de 6 em 6 recupera o laço inteiro, em ordem e fechado.
+    orbitas: (() => {
+      const g = d.orbitas && d.orbitas.group;
+      if (!g || !g.visible) return [];
+      const fora = [];
+      for (const f of g.children) {
+        if (!f.visible || !f.material || !(f.material.opacity > 0)) continue;
+        const at = f.geometry && f.geometry.getAttribute('instanceStart');
+        if (!at || !at.data || !at.data.array) continue;
+        const n = f.geometry.instanceCount | 0;
+        const arr = at.data.array;
+        if (n < 2 || arr.length < n * 6) continue;
+        f.updateWorldMatrix(true, false);
+        const p = new Array(n * 3);
+        for (let k = 0; k < n; k++) {
+          p[k * 3] = arr[k * 6];
+          p[k * 3 + 1] = arr[k * 6 + 1];
+          p[k * 3 + 2] = arr[k * 6 + 2];
+        }
+        fora.push({ n, p, m: Array.from(f.matrixWorld.elements) });
+      }
+      return fora;
+    })(),
   });
 })()`;
 
@@ -1225,8 +1484,16 @@ async function retrato(s, tag) {
     writeFileSync(resolve(CAPTURAS, `mb1-${tag}.png`), png);
   }
   const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+  // O LAÇO DAS ÓRBITAS SAI DA CÂMERA e anda ao lado: são milhares de floats por
+  // retrato, e `cam` é justamente o que vai INTEIRO para o JSON do veredito
+  // (`quadros`). Guardá-lo ali engordaria o arquivo em ordens de grandeza sem
+  // acrescentar nada que se leia.
+  const orbitas = cam.orbitas ?? [];
+  delete cam.orbitas;
   const cams = { ...cam, W: info.width, H: info.height };
-  return { cam: cams, y: luminancia(data, info.width, info.height, info.channels) };
+  return {
+    cam: cams, orbitas, y: luminancia(data, info.width, info.height, info.channels),
+  };
 }
 
 /**

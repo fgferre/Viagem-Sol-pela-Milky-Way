@@ -38,6 +38,10 @@ import {
   casarFontes,
   residuoDoPar,
   mascaraDoClarao,
+  mascaraDasOrbitas,
+  recortarNoQuadro,
+  RAIO_DA_LINHA_PX,
+  FRACAO_NA_LINHA,
   medirPar,
   julgarFamilia,
   julgarCorrida,
@@ -632,6 +636,236 @@ describe('a MÁSCARA do clarão — o que o resíduo por pixel não julga', () =
     const cobertos = m.reduce((a, b) => a + b, 0);
     expect(cobertos).toBeGreaterThan(100);
     expect(cobertos).toBeLessThan(W * H * 0.4);
+  });
+});
+
+// ------------------------------------------------------------
+// A FAIXA DO INSTRUMENTO — pedaço de linha de órbita continua sendo linha
+// ------------------------------------------------------------
+
+/**
+ * Uma "camada de órbitas" de bancada: um laço de `n` vértices num círculo de
+ * raio `r` no plano z = −1, no formato que `LER_CAMERA` entrega (o laço em
+ * coordenadas do objeto mais a matriz que o leva ao mundo).
+ */
+function lacoDeBancada({ r = 0.25, n = 128, centro = [0, 0, -1] } = {}) {
+  const p = new Array(n * 3);
+  for (let k = 0; k < n; k++) {
+    p[k * 3] = r * Math.cos((k * 2 * Math.PI) / n);
+    p[k * 3 + 1] = r * Math.sin((k * 2 * Math.PI) / n);
+    p[k * 3 + 2] = 0;
+  }
+  // coluna-maior do three: os 12 primeiros são a base, os 3 seguintes a posição
+  const m = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, centro[0], centro[1], centro[2], 1];
+  return { n, p, m };
+}
+
+/** o céu com um ARCO desenhado ao longo do laço, do vértice `de` ao `ate` */
+function fotografarArco(cam, laco, de, ate, brilho = 0.62, fundo = 0.02) {
+  const y = new Float32Array(cam.W * cam.H).fill(fundo);
+  const e = laco.m;
+  for (let k = de; k <= ate; k++) {
+    const i = ((k % laco.n) + laco.n) % laco.n;
+    const [x, yy, z] = [laco.p[i * 3], laco.p[i * 3 + 1], laco.p[i * 3 + 2]];
+    const p = projetarPonto(cam, [
+      e[0] * x + e[4] * yy + e[8] * z + e[12],
+      e[1] * x + e[5] * yy + e[9] * z + e[13],
+      e[2] * x + e[6] * yy + e[10] * z + e[14],
+    ]);
+    if (p.atras) continue;
+    // um traço FINO, como a fita de 1,25 px CSS do app
+    for (let dj = -1; dj <= 1; dj++) {
+      for (let di = -1; di <= 1; di++) {
+        const ix = Math.round(p.x - 0.5) + di;
+        const iy = Math.round(p.y - 0.5) + dj;
+        if (ix < 0 || iy < 0 || ix >= cam.W || iy >= cam.H) continue;
+        const peso = Math.exp(-(di * di + dj * dj) / 1.2);
+        y[iy * cam.W + ix] = Math.max(y[iy * cam.W + ix], fundo + brilho * peso);
+      }
+    }
+  }
+  return y;
+}
+
+describe('a FAIXA DO INSTRUMENTO — o pedaço de linha de órbita (item 70)', () => {
+  const cam = camera([0, 0, 0], [0, 0, -1]);
+  const laco = lacoDeBancada();
+
+  it('a faixa nasce da geometria da camada, e sem camada ela não existe', () => {
+    const m = mascaraDasOrbitas(cam, [laco]);
+    expect(m).not.toBe(null);
+    // o traçado passa pelo topo do círculo projetado e NÃO pelo centro dele
+    const topo = projetarPonto(cam, [0, 0.25, -1]);
+    const centro = projetarPonto(cam, [0, 0, -1]);
+    expect(m[Math.round(topo.y - 0.5) * W + Math.round(topo.x - 0.5)]).toBe(1);
+    expect(m[Math.round(centro.y - 0.5) * W + Math.round(centro.x - 0.5)]).toBe(0);
+    // ELA É FINA: uma faixa que comesse o quadro seria cegueira, não exclusão
+    expect(m.reduce((a, b) => a + b, 0)).toBeLessThan(W * H * 0.2);
+    // E É POR CONSTRUÇÃO que `?noorbitas=1` não muda nada: sem fita acesa a
+    // lista chega vazia e a máscara não existe
+    expect(mascaraDasOrbitas(cam, [])).toBe(null);
+    expect(mascaraDasOrbitas(cam, null)).toBe(null);
+  });
+
+  it('o segmento que não toca o quadro é recortado, e o que toca sobrevive', () => {
+    expect(recortarNoQuadro(-500, -500, -400, -400, W, H, 0)).toBe(null);
+    const dentro = recortarNoQuadro(-500, 10, 500, 10, W, H, 0);
+    expect(dentro[0]).toBeCloseTo(0, 6);
+    expect(dentro[2]).toBeCloseTo(W - 1, 6);
+  });
+
+  it('PEDAÇO DE ARCO sai do veredito de identidade, e a saída é CONTADA', () => {
+    // o defeito real, reproduzido: a cessão corta o laço, o arco entra e sai do
+    // quadro, e o pedaço TROCA de identidade entre um quadro e o outro
+    const yA = fotografarArco(cam, laco, 0, 24);
+    const yB = fotografarArco(cam, laco, 8, 32);
+    const linhaA = mascaraDasOrbitas(cam, [laco]);
+    const fA = fontesDoQuadro(yA, W, H, { mascaraLinha: linhaA });
+    const fB = fontesDoQuadro(yB, W, H);
+    const pedaco = fA.find((f) => f.pico >= LIMIAR_JULGADA && !f.naBorda);
+    expect(pedaco).toBeDefined();
+    // ele é COMPACTO — a regra do traço não o pega, e é esse o buraco
+    expect(nucleoCompacto(pedaco)).toBe(true);
+    expect(pedaco.fracLinha).toBeGreaterThanOrEqual(FRACAO_NA_LINHA);
+    const r = casarFontes({ fontesA: fA, fontesB: fB, camA: cam, camB: cam });
+    expect(r.instrumentos).toBeGreaterThan(0);
+    expect(r.sumidos).toEqual([]);
+    // SABOTAGEM: sem a faixa, o mesmo quadro volta a acusar
+    const semFaixa = casarFontes({
+      fontesA: fontesDoQuadro(yA, W, H), fontesB: fB, camA: cam, camB: cam,
+    });
+    expect(semFaixa.instrumentos).toBe(0);
+    expect(semFaixa.casados.length + semFaixa.sumidos.length).toBeGreaterThan(0);
+  });
+
+  it('SABOTAGEM 1 — um salto REAL de céu continua reprovando com a faixa ligada', () => {
+    // a exclusão não pode engolir o mundo: uma fonte GENUÍNA, longe do traçado,
+    // que salta 1,7 px sem motivo físico, tem de continuar sendo acusada
+    const onde = norm([0.28, -0.20, -1]);
+    const desviada = norm([0.28 + 1.7 / pxPorRad(cam), -0.20, -1]);
+    const comArco = (dir) => {
+      const y = fotografarArco(cam, laco, 0, 24);
+      const p = projetarDirecaoMundo(cam, dir);
+      for (let j = -6; j <= 6; j++) {
+        for (let i = -6; i <= 6; i++) {
+          const ix = Math.round(p.x - 0.5) + i;
+          const iy = Math.round(p.y - 0.5) + j;
+          if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue;
+          const dx = ix + 0.5 - p.x;
+          const dy = iy + 0.5 - p.y;
+          y[iy * W + ix] = Math.min(1, y[iy * W + ix] + 0.9 * Math.exp(-(dx * dx + dy * dy) / 8));
+        }
+      }
+      return y;
+    };
+    const linhaA = mascaraDasOrbitas(cam, [laco]);
+    const r = casarFontes({
+      fontesA: fontesDoQuadro(comArco(onde), W, H, { mascaraLinha: linhaA }),
+      fontesB: fontesDoQuadro(comArco(desviada), W, H),
+      camA: cam, camB: cam,
+    });
+    // a faixa está LIGADA (calou o arco) e mesmo assim o salto é acusado
+    expect(r.instrumentos).toBeGreaterThan(0);
+    const acusada = r.casados.find((c) => c.salto > TOLERANCIA_SALTO_PX);
+    expect(acusada).toBeDefined();
+    expect(acusada.salto).toBeGreaterThan(1.5);
+  });
+
+  it('SABOTAGEM 3 — um arco FORA de qualquer elipse da camada NÃO é excluído', () => {
+    // o mesmo pedaço de arco, desenhado onde a camada não desenhou nada: a
+    // exclusão é geométrica, e sem geometria embaixo ela não vale
+    // o laço da CAMADA fica no centro (raio 0,25); o intruso é um arco do mesmo
+    // feitio desenhado longe dele, mas BEM dentro do quadro
+    const outroLugar = lacoDeBancada({ r: 0.25, centro: [0, 0, -1] });
+    const forasteiro = lacoDeBancada({ r: 0.09, centro: [0.40, 0.28, -1] });
+    const yA = fotografarArco(cam, forasteiro, 0, 24);
+    const linhaA = mascaraDasOrbitas(cam, [outroLugar]);
+    const fA = fontesDoQuadro(yA, W, H, { mascaraLinha: linhaA });
+    const intruso = fA.find((f) => f.pico >= LIMIAR_JULGADA && !f.naBorda);
+    expect(intruso).toBeDefined();
+    expect(intruso.fracLinha).toBe(0);
+    const r = casarFontes({
+      fontesA: fA,
+      fontesB: fontesDoQuadro(fotografarArco(cam, forasteiro, 8, 32), W, H),
+      camA: cam, camB: cam,
+    });
+    expect(r.instrumentos).toBe(0);
+    expect(r.casados.length + r.sumidos.length).toBeGreaterThan(0);
+  });
+
+  it('A ÂNCORA É INTOCÁVEL — um corpo sobre a PRÓPRIA elipse continua julgado', () => {
+    // é a razão de o item 70 existir: o planeta está sobre a linha por
+    // construção algébrica. Se a faixa o calasse, a fronteira de promoção que o
+    // §5.20 manda interrogar sairia do veredito em silêncio.
+    const noLaco = [0.25, 0, -1];
+    const naLinha = projetarPonto(cam, noLaco);
+    const corpo = (dx) => {
+      const y = fotografarArco(cam, laco, 0, 120);
+      for (let j = -5; j <= 5; j++) {
+        for (let i = -5; i <= 5; i++) {
+          const ix = Math.round(naLinha.x - 0.5) + i + dx;
+          const iy = Math.round(naLinha.y - 0.5) + j;
+          if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue;
+          y[iy * W + ix] = Math.min(1, y[iy * W + ix] + 0.95 * Math.exp(-(i * i + j * j) / 4));
+        }
+      }
+      return y;
+    };
+    const linhaA = mascaraDasOrbitas(cam, [laco]);
+    const fA = fontesDoQuadro(corpo(0), W, H, { mascaraLinha: linhaA });
+    const alvo = fA.find((f) => Math.hypot(f.cx - naLinha.x, f.cy - naLinha.y) < 4);
+    expect(alvo).toBeDefined();
+    const ancora = {
+      nome: 'venus',
+      emA: { x: naLinha.x, y: naLinha.y, atras: false },
+      emB: { x: naLinha.x + 2, y: naLinha.y, atras: false },
+    };
+    // o corpo anda 2 px na tela mas a fonte fica onde estava: é re-semeadura,
+    // e a acusação TEM de sair mesmo com o corpo em cima do próprio traçado
+    const r = casarFontes({
+      fontesA: fA,
+      fontesB: fontesDoQuadro(corpo(0), W, H),
+      camA: cam, camB: cam, ancoras: [ancora],
+    });
+    const daAncora = r.casados.find((c) => c.via === 'ancora:venus');
+    expect(daAncora).toBeDefined();
+    expect(daAncora.salto).toBeGreaterThan(TOLERANCIA_SALTO_PX);
+  });
+
+  it('a exclusão por PEDAÇO DE LINHA é contada e declarada, nunca silenciosa', () => {
+    const v = julgarFamilia({
+      nome: 'zoomDeRoda',
+      passos: [{
+        k: 1, paralaxePx: 0, fracaoValida: 1, residuoMedio: 0, bandaAlta: 0,
+        casados: [], sumidos: [], julgada: LIMIAR_JULGADA, instrumentos: 3,
+      }],
+      piso: { residuoMedio: 0, bandaAlta: 0 },
+      altura: ALTURA_DE_CALIBRACAO_PX,
+    });
+    expect(v.instrumentos).toBe(3);
+    expect(v.declaracoes.join(' ')).toContain('PEDAÇO DE LINHA DE ÓRBITA');
+    expect(v.suspensos).toEqual([]);
+    expect(v.erros).toEqual([]);
+    // família sem órbita acesa não ganha declaração nenhuma — é o controle do
+    // `?noorbitas=1` na forma que o oráculo consegue exercer
+    const semLinha = julgarFamilia({
+      nome: 'pan',
+      passos: [{
+        k: 1, paralaxePx: 0, fracaoValida: 1, residuoMedio: 0, bandaAlta: 0,
+        casados: [], sumidos: [], julgada: LIMIAR_JULGADA,
+      }],
+      piso: { residuoMedio: 0, bandaAlta: 0 },
+      altura: ALTURA_DE_CALIBRACAO_PX,
+    });
+    expect(semLinha.instrumentos).toBe(0);
+    expect(semLinha.declaracoes).toEqual([]);
+  });
+
+  it('o RAIO da faixa é o declarado, e a fração não é "quase nada"', () => {
+    // guarda de número: se alguém alargar a faixa ou afrouxar a fração sem
+    // medir de novo, isto quebra antes de a cegueira aparecer
+    expect(RAIO_DA_LINHA_PX).toBe(1);
+    expect(FRACAO_NA_LINHA).toBeGreaterThanOrEqual(0.9);
   });
 });
 

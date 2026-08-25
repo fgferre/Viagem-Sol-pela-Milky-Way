@@ -1409,19 +1409,25 @@ parecem mudar, é medida a fazer, não desenho a mudar. O que falta é a
 UI parar de tratar os dois como concorrentes, e o Atlas parar de
 parecer mais vazio.
 
-**70. O ponto que morre seco na borda — e o pedaço de linha que o juiz
-passou a ver.** *(O sintoma que dava nome a este item — "girar a câmera
-acende e apaga o céu inteiro" — MORREU em 25/08 com a faixa de guarda; o
-título mudou para nomear o que está ABERTO, e não o que já foi
-consertado. A história inteira segue abaixo, porque é ela que explica os
-números.)* (Achado em 22/08
+**70. O ponto que morre seco na borda.** *(Este item já perdeu DOIS
+nomes, e sempre pela mesma disciplina: o título nomeia o que está
+ABERTO, nunca o que já foi consertado. Morreram "girar a câmera acende e
+apaga o céu inteiro" (25/08, a faixa de guarda) e "o pedaço de linha que
+o juiz passou a ver" (25/08, a faixa de instrumento). Sobra a CAUSA 2, e
+é ela que dá o nome de hoje. A história inteira segue abaixo, porque é
+ela que explica os números que estão no código.)* (Achado em 22/08
 pelo juiz novo de movimento, o MB1 — `scripts/visual/
 estabilidade-temporal.mjs`. **A METADE DO COBERTOR FOI CONSERTADA em
 25/08; a metade do PONTO segue aberta** — os números das duas estão
-abaixo. **Falta o dono olhar as fotos:**
-`capturas/item70-giro-antes-depois.png` e
-`capturas/item72-nobloom-antes-depois.png` — não apagar na próxima
-limpeza de `capturas/`, pela mesma razão do item 79.) Quando uma
+abaixo. **Falta o dono olhar as três fotos que esta história já produziu:**
+`capturas/item70-giro-antes-depois.png` (a faixa de guarda),
+`capturas/item70-linha-cede-antes-depois.png` (a cessão que ele decidiu) e
+`capturas/item72-nobloom-antes-depois.png` (a porta honesta) — não apagar
+na próxima limpeza de `capturas/`, pela mesma razão do item 79. **A faixa
+de instrumento não tem foto, e não deve ter:** ela mudou o JUIZ e não a
+tela — as duas corridas desenham o mesmo céu, e uma captura "antes e
+depois" dela seria dois PNGs idênticos. O que se confere nela é o
+veredito, e ele está abaixo.) Quando uma
 estrela muito brilhante sai pela borda do quadro, o brilhão dela some de
 uma vez e **o céu inteiro perde
 quase um terço da luz num único passo de câmera** — quatro pixels de
@@ -1606,8 +1612,11 @@ proporcionalmente mais forte. Medido nas mesmas famílias, com o mesmo
 junto. **O defeito é real e segue de pé — o que não é fixo é a magnitude,
 e quem for consertar tem de dizer em que janela mediu.**
 
-**O DEFEITO QUE SOBRA NO MB1 NÃO É DESTE ITEM — é a LINHA DE ÓRBITA
-passando por cima do planeta, e isso foi medido em 25/08.** O juiz acusa
+**O DEFEITO QUE SOBRAVA NO MB1 NÃO ERA DESTE ITEM — era a LINHA DE ÓRBITA
+passando por cima do planeta, e isso foi medido em 25/08** *(e morreu no
+mesmo dia, duas vezes: a cessão matou o salto de Vênus e a faixa de
+instrumento matou os pedaços que a cessão criou — ver o fim do item)*. O
+juiz acusava
 `zoomDeRoda passo 8: RE-SEMEIA — âncora de Vênus saltou 1,74 px (teto
 1,02)`. Três medidas, e as duas primeiras inocentam este item: **com a
 faixa de guarda o salto não se move** (1,74 px antes e depois); **com
@@ -1636,24 +1645,68 @@ ceder ou não ceder; havia uma inferência minha, escrita como se fosse
 palavra dele, pré-fechando uma porta que ele nunca fechou. Documento não
 inventa decisão do dono a partir de decisão de prioridade.
 
-**O QUE A CESSÃO CUSTOU, medido — e é por isso que o MB1 ainda não fecha
-em zero.** Cortar uma curva FECHADA fragmenta-a: enquanto a elipse é
-laço, o juiz a exclui por TRAÇO (`nucleoCompacto`); com o corte ela vira
-arco, e onde o arco entra e sai do quadro sobram pedaços COMPACTOS de
-brilho marginal (pico 0,58–0,60 contra a soleira de identidade 0,565) que
-o juiz passa a julgar e que trocam de identidade quando o corte anda com
-o planeta. Monotônico no tamanho do corte, em `zoomDeRoda`: **sem cessão
-1 defeito** (a âncora de Vênus), **raio 0,5 px 2 defeitos** (Vênus ainda
-salta 1,75 px), **raio 2 px 6 defeitos** (Vênus consertado, seis
-pedaços). O defeito que ele mandou matar MORREU e a tela faz o que ele
-pediu; o que sobra é do INSTRUMENTO.
+**O QUE A CESSÃO CUSTOU, medido.** Cortar uma curva FECHADA fragmenta-a:
+enquanto a elipse é laço, o juiz a exclui por TRAÇO (`nucleoCompacto`);
+com o corte ela vira arco, e onde o arco entra e sai do quadro sobram
+pedaços COMPACTOS de brilho marginal (pico 0,58–0,60 contra a soleira de
+identidade 0,565) que o juiz passa a julgar e que trocam de identidade
+quando o corte anda com o planeta. Monotônico no tamanho do corte, em
+`zoomDeRoda`: **sem cessão 1 defeito** (a âncora de Vênus), **raio 0,5 px
+2 defeitos** (Vênus ainda salta 1,75 px), **raio 2 px 6 defeitos** (Vênus
+consertado, seis pedaços). O defeito que ele mandou matar MORREU e a tela
+faz o que ele pediu; o que sobrava era do INSTRUMENTO.
 
-**A SEGUNDA PORTA CONTINUA ABERTA, e agora é ela que segura o zero:** a
-exclusão de traço do MB1 não sobrevive ao corte, e precisa aprender que
-pedaço de linha de órbita continua sendo INSTRUMENTO — o topo de
-`orbitas.ts` já escreve que a linha "não é fóton de lugar nenhum". Isso é
-mexer em dente de juiz: pede número, declaração e sabotagem própria, e é
-o passo seguinte deste item.
+**A SEGUNDA PORTA FECHOU EM 25/08 — o juiz aprendeu, e a decisão dele
+ficou de pé.** A saída fácil era reverter a cessão (`RAIO_DA_CESSAO_PX =
+0` devolve 1 defeito); foi recusada, porque o desenho é dele e o
+instrumento é nosso. Quem mudou foi o MB1: a exclusão de traço ganhou uma
+irmã, a **faixa de instrumento** (`mascaraDasOrbitas` em
+`estabilidade-temporal.mjs`), e agora **pedaço de linha continua sendo
+linha**.
+
+**O MECANISMO é geométrico, e essa foi a escolha.** O juiz LÊ do quadro
+que acabou de fotografar o laço de cada fita ACESA da camada — os
+vértices que a cônica escreveu, mais a matriz que os põe no mundo — e
+projeta esses pontos com a MESMA conta que já usa para as âncoras. Não há
+segunda cópia da cônica nem segunda cópia da câmera: a faixa não pode
+divergir do que foi desenhado. Uma componente cujo núcleo cai INTEIRO
+sobre essa faixa sai do veredito de identidade, e a saída é contada e
+declarada no relatório. *O caminho alternativo — alargar a regra de forma
+para reconhecer ARCO por curvatura — foi medido e descartado: os seis
+fragmentos têm razão lado/√núcleo de 1,5 a 3,2, a MESMA faixa de uma
+estrela do campo (≤ 1,7) e do platô do Sol (1,6). Um corte de forma que
+os pegasse pegaria estrela junto, que é a cegueira que não se pode criar.*
+
+**OS NÚMEROS, e eles são de corrida inteira.** MB1 completo passou de
+**6 defeitos a ZERO**, sem afrouxar soleira nenhuma — nenhuma tolerância
+foi tocada. A faixa tem raio 1 px (3 px de largura, contra a fita de 1,25
+px CSS da camada), e o raio é o MENOR que fecha: a 0 px sobram 5
+defeitos. Na corrida inteira, **11 fontes** saem por instrumento de
+**2.282** julgáveis, e a faixa ocupa **1,17%** do quadro em `zoomDeRoda`,
+**0,25%** em `fronteiraTerra` e **0,00%** nas outras sete famílias — onde
+a camada não desenha, o juiz é o de sempre, por construção. A separação
+não está no fio: a fração do núcleo sobre a faixa é BIMODAL — as 11
+excluídas medem 1,000 e a vizinha mais próxima mede 0,333.
+
+**AS TRÊS SABOTAGENS, e o controle.** *(1)* Um salto REAL de céu (fonte
+genuína a 1,7 px, com a faixa ligada) continua reprovando — a exclusão
+não engoliu o mundo. *(2)* Desativada a exclusão, os **mesmos 6 defeitos
+voltam, nas mesmas coordenadas**. *(3)* Um arco sintético desenhado FORA
+de qualquer elipse da camada NÃO é excluído. *(controle)* Com
+`?noorbitas=1` o veredito é IDÊNTICO ao do código de antes — as duas
+corridas dão `PASSA`, pior resíduo 0,43, ZERO declarações. As três
+primeiras estão pinadas em `estabilidade-temporal.test.mjs`, sem
+navegador.
+
+**A GUARDA QUE FAZ A REGRA NÃO VIRAR CEGUEIRA: a âncora é intocável.** Um
+corpo está sobre a própria elipse por construção algébrica, e 11 das 218
+âncoras compactas da corrida têm o núcleo inteiro sobre a faixa. Se a
+faixa as calasse, a fronteira de promoção que o §5.20 manda interrogar
+sairia do veredito em silêncio — e a régua que este item veio consertar
+viraria fumaça. **O que a exclusão NÃO cobre está no censo do
+`NORTE.md`**, e é uma só coisa: uma estrela do campo exatamente debaixo
+de uma linha desenhada tem núcleo de 2 px e não se distingue de um pedaço
+de fita pela forma.
 
 *Na mesma medição:* **(a)** Vênus. O que o juiz acusa é 13,4 px na VOLTA
 da fronteira do Sol e não na ida — mas **a Vênus DESENHADA não salta**:
