@@ -75,7 +75,7 @@ const KNEE_SHADER = {
  * curvas comprimem a mesma faixa de HDR, e usar dois joelhos diferentes para
  * isso seria a casa discordando de si mesma sem ter medido nada a mais.
  *
- * O CAMINHO DE VOLTA é `?bbloom=0`, que devolve o passa-alta do vendorizado
+ * O CAMINHO DE VOLTA é `?bbloom=0`, que devolve o passa-alta de addons
  * intacto, byte a byte — o lado A do A/B.
  */
 export const BETA_DO_BLOOM = 0.45;
@@ -153,12 +153,7 @@ export const OMBRO_DO_BLOOM = 40;
 
 /**
  * A CIRURGIA DE TEXTO no passa-alta do `UnrealBloomPass` — ombro + `β·asinh`
- * dentro do filtro. (O passe NÃO é vendorizado: vem de `three/addons`, sem
- * cópia no repositório. Esta rodada escreveu "vendorizado" seis vezes por
- * herança de vocabulário e a palavra saiu — quem a lesse procuraria um
- * arquivo copiado que não existe. As ocorrências ANTIGAS deste arquivo
- * ficaram como estavam: não são desta rodada.)
- * do filtro, o item 2 da cadeia de curvas. Vive aqui, solta, porque desde a
+ * dentro do filtro, o item 2 da cadeia de curvas. Vive aqui, solta, porque desde a
  * faixa de guarda do item 70 são DUAS máquinas de bloom por quadro (a da lei e
  * a do campo) e as duas precisam da MESMA curva: escrever a segunda cópia numa
  * casa que já tem Ballesteros em três lugares seria o erro conhecido.
@@ -352,8 +347,8 @@ export function criarSomaComRecorte(): THREE.ShaderMaterial {
 /**
  * O PASSE DO CAMPO — o segundo cobertor, SEM segunda máquina.
  *
- * O desenho da R2 pedia "modo só-brilho no vendorizado"; a leitura do
- * vendorizado mostrou um caminho mais barato que a flag: o
+ * O desenho da R2 pedia "modo só-brilho no passe"; a leitura do
+ * passe de addons mostrou um caminho mais barato que a flag: o
  * `UnrealBloomPass` já deposita o clarão puro numa textura própria
  * (`renderTargetsHorizontal[0]`) ANTES do blend aditivo final. Então o
  * passe (1) desenha só o campo — catálogo, cascas, heroes, via
@@ -361,9 +356,9 @@ export function criarSomaComRecorte(): THREE.ShaderMaterial {
  * bloom principal não troca buffers, e knee/OutputPass reescrevem cada
  * pixel dele depois — rascunho de graça, zero alvo novo na VRAM);
  * (2) roda a MESMA máquina do bloom vestida de filme em cima do
- * rascunho — o blend interno do vendorizado cai no próprio rascunho e
+ * rascunho — o blend interno do passe cai no próprio rascunho e
  * morre ali; (3) soma SÓ o clarão ao quadro principal, com o mesmo
- * blend aditivo do vendorizado. As estrelas não contam duas vezes: a
+ * blend aditivo dele. As estrelas não contam duas vezes: a
  * imagem direta delas só existe no render principal.
  *
  * LIMITE DECLARADO (v1): o rascunho do campo não tem os ocultadores
@@ -482,7 +477,7 @@ class ClaraoDoCampo extends Pass {
     readBuffer: THREE.WebGLRenderTarget
   ) {
     // O autoClear fica PRESO em falso do primeiro ao último draw — a
-    // mesma disciplina do corpo do vendorizado, e ela não é estilo: o
+    // mesma disciplina do corpo do passe de addons, e ela não é estilo: o
     // FullScreenQuad.render é um renderer.render(), e com a limpeza
     // automática ligada a soma do passo 3 LIMPARIA o quadro inteiro
     // antes de somar (o Sol e a nebulosa sumiam da tela — defeito da
@@ -608,7 +603,7 @@ export class Post {
       // O COBERTOR deixou de ser um só (R2 do item 44, ordem do dono:
       // "cada camada com seu cobertor"): este passe é o PRINCIPAL —
       // pirâmide da LEI via governarPiramide, com o raio pinado em 0
-      // para o lerp do vendorizado não achatar os pesos derivados — e
+      // para o lerp do passe não achatar os pesos derivados — e
       // disciplina o que vive na camada 0: Sol, planetas, galáxia,
       // nebulosa. O respiro do campo estelar mora no segundo cobertor,
       // o ClaraoDoCampo logo abaixo.
@@ -670,7 +665,7 @@ export class Post {
    * A COMPRESSÃO DENTRO DO BLOOM, no filtro de passa-alta — PADRÃO desde
    * 15/08, com `BETA_DO_BLOOM` e `OMBRO_DO_BLOOM`. As portas `?bbloom=β` e
    * `?bombro=T` viraram o caminho de volta e a bancada de comparação:
-   * ausentes ⇒ o pacote; `?bbloom=0` ⇒ o passa-alta do vendorizado intacto,
+   * ausentes ⇒ o pacote; `?bbloom=0` ⇒ o passa-alta de addons intacto,
    * sem uma linha de cirurgia, que é o lado A do A/B.
    *
    * POR QUE AQUI E NÃO ANTES DO BLOOM. Medido em 15/08: um joelho aplicado ao
@@ -692,7 +687,7 @@ export class Post {
    * Sol encolher.
    *
    * A cirurgia é de texto, no molde de `ctx.tuneLic` (`world/stellarBody.ts`):
-   * o fragment do vendorizado é reescrito no ponto de uso, com agulha em
+   * o fragment de addons é reescrito no ponto de uso, com agulha em
    * `post.test`… que não existe — quem cobra é `luzDaCasa.test.ts`, por
    * varredura, e a régua da luz, por medição.
    */
@@ -704,7 +699,7 @@ export class Post {
    * A PIRÂMIDE GOVERNADA PELA LEI (M2, de volta na R2): os pesos por mip
    * saem de `PESO_POR_MIP` (derivado de `BETA_DA_ASA` — a conta no
    * cabeçalho da constante), com o raio pinado em 0 na construção para o
-   * lerp do vendorizado não os achatar de volta. O bloom fica cuidando
+   * lerp do passe não os achatar de volta. O bloom fica cuidando
    * do BRILHO perto da fonte (abaixo do ombro); a EXTENSÃO é da asa
    * explícita (`world/clarao.ts`), que é a dona declarada (§1).
    *
