@@ -1621,7 +1621,7 @@ antes/depois cuja saída não foi guardada; para refazer:
 com `cru` no fim para o fps sem instrumento), alternando os lados. Tratar
 como ordem de grandeza declarada, não como número arquivado. A conta de VRAM é uma segunda máquina de bloom
 (a da lei não pode ser emprestada: o rascunho com faixa não cabe em
-buffer nenhum do composer, e o `setSize` do vendorizado realocaria 11
+buffer nenhum do composer, e o `setSize` do passe de addons realocaria 11
 alvos DUAS VEZES POR QUADRO).
 
 **O A/B CHEIO DESTA RODADA — o delta declarado, com carimbo.** O item 72
@@ -1637,6 +1637,20 @@ editor fez em paralelo (`143ba7d`/`9c1a254`, que só tocam
 `corpos/gigante.ts`): esse arquivo é idêntico nos dois lados.
 
 *Carimbos:* `antes = dcb4b5e4d759-8f7146c7` · `depois = dcb4b5e4d759-c13b1c11`.
+
+> **O LADO "DEPOIS" NÃO ERA A ÁRVORE LIMPA, e a auditoria de 25/08 achou
+> isso.** O carimbo do juiz é `commit-árvore`, e a árvore limpa daquele
+> commit dá `d41d8cd9`; o lado depois carimbou `c13b1c11`. Ou seja: havia
+> sujeira na árvore além dos três arquivos declarados, e **o que era essa
+> sujeira é irrecuperável** — a árvore não foi guardada. O lado ANTES está
+> provado byte a byte (o `8f7146c7` reproduz), o veredito 52/54 e os dois
+> md5 acima se sustentam, mas o "depois" carregava algo não identificado, e
+> a tabela tem de ser lida com essa ressalva. **A REGRA, daqui para a
+> frente: A/B se roda de ÁRVORE LIMPA dos dois lados — e se não der, o que
+> sobrou de sujo entra NOMEADO no carimbo, arquivo por arquivo.** Foi assim
+> que a foto de `capturas/item70-linha-cede-antes-depois.png` foi refeita em
+> 25/08: dois worktrees limpos (`1dd7e38` e `ec7fe95`), o carimbo escrito
+> na própria imagem.
 
 *Veredito:* **52 de 54 vistas mudam; 2 não mudam** (`edgeon` e `faceon` —
 ali o campo estelar está apagado por `setFade`, então não há cobertor a
@@ -1709,6 +1723,20 @@ A imagem desenhada não salta — quem salta é a medida.
 órbita CEDE BRILHO onde cruza o miolo aceso de um corpo.** Está
 implementada (`RAIO_DA_CESSAO_PX` em `world/orbitas.ts`), com foto em
 `capturas/item70-linha-cede-antes-depois.png`.
+
+> **E ELA NÃO FUNCIONAVA NA TELA DELE ATÉ 25/08 À TARDE.** Achado por
+> auditoria: a conta misturava dois espaços de pixel — o raio saía dividido
+> pela altura de BUFFER e voltava multiplicado por `resolution`, que o three
+> guarda em px de CSS. Em `pixelRatio` 1 os dois erros se cancelam, e o MB1
+> captura a 1×: por isso o juiz deu verde. No Mac dele (2×) o disco pousava
+> **a meio caminho entre a origem do quadro e o planeta, com metade do
+> raio** — a linha nunca cedeu. Hoje a régua é uma só (px de buffer, o
+> espaço do `gl_FragCoord`), a foto acima é de dois worktrees LIMPOS a 2×, e
+> a conta é aferida em teste de unidade nas duas telas. A guarda anterior
+> procurava `uniform vec4 uNucleo;` no arquivo e passava com o disco no
+> lugar errado; as de hoje medem o `Vector4` que a GPU recebe, o raio pela
+> luz que sobra dentro do núcleo medido de Vênus (0,5 px reprova, 2 px
+> passa) e o fio pela assinatura — apagar a fonte não compila mais.
 
 **E A PROCEDÊNCIA PRECISA FICAR CERTA, porque esta lista chegou a contar a
 história errada.** A redação anterior dizia que ele "acabou de decidir, em
