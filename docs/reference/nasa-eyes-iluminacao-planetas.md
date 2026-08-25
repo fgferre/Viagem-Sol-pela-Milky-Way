@@ -1,5 +1,55 @@
 # NASA Eyes — iluminação dos planetas
 
+> ## ⚠️ ESTE RELATÓRIO FOI CONSUMIDO — leia esta caixa antes do resto
+>
+> A obra do item **91 aconteceu em 2026-08-25**, e o que está no código
+> **diverge deste documento em quatro pontos**. O diagnóstico central
+> daqui está certo e é o que guiou a obra: *o app colou a regra do
+> pontinho no céu no globo visitado*. O resto se lê como estudo do
+> Eyes, não como especificação viva. **A especificação viva é
+> `src/lib/atlas/luzDaVisita.ts` e a entrada do `NORTE.md`.**
+>
+> **1. O §11.1 pede ganho 1 no globo TAMBÉM em `?luz=real`. O dono
+> decidiu o contrário, e a decisão dele prevalece.** No `real` a casa
+> mantém a **penumbra física verdadeira** — E(d) de verdade, Saturno
+> visivelmente mais escuro que a Terra. O app conserva uma posição 1:1,
+> e é isso que faz do `real` um modo, e não um segundo assistido.
+> Onde este arquivo disser "`?luz=real` no globo **não** volta a E(d)",
+> leia o contrário.
+>
+> **2. O conserto não foi "`ganhoFundido` SAI da malha" (§11.1, §14).**
+> Apagar a lei não é endereçá-la. O escalar da malha continua sendo UM
+> e virou o produto `ganhoFundido(distância viva) ×
+> compensacaoDaVisita(corpo)`, com a compensação constante por corpo. O
+> §11.1 chama "dois ganhos empilhados" de anti-padrão 1 e **cita o
+> anti-padrão ao contrário**: o anti-padrão 1 do `PLANO-ATLAS.md` é
+> *"lei física em duas camadas que NÃO SE CONHECEM (`decay=0` +
+> 1/r² por material)"* — duas camadas cegas uma para a outra. O
+> conserto legítimo é exatamente as camadas **se conhecerem**, que é o
+> que este produto faz.
+>
+> **3. §11.1 e §11.6 afirmam que o PONTO consome `ganhoFundido`. É
+> falso.** `planetas.ts` é MH18 puro e nunca passou por
+> `ganhoFundido` — o único consumidor sempre foi o globo. Por isso o
+> selo declarava, até 25/08, um gasto que a malha não fazia; agora ele
+> declara `stopsDaVisita`, que é o gasto do globo.
+>
+> **4. Os números de §8.3, §11.7.1 e §12 estão em LINEAR pós-ACES, e a
+> régua desta casa mede BYTES do PNG** (`luz-do-quadro.mjs`,
+> `medirQuadro` — luminância Rec.709 sobre o byte, que é sRGB). "o
+> disco de hoje ≈ 0,09" é linear; **em bytes de tela o disco de Saturno
+> media 58 de 255 na vista oficial e 84 de 255 de perto**, e passou a
+> **139** e **187**. O alvo de §11.7.1 ("acima de ~0,35 depois do
+> ACES") em bytes é ~0,63 · 255 ≈ 160. Comparar os dois espaços sem
+> dizer qual é qual faz a prova nascer ambígua — foi o que quase
+> aconteceu.
+>
+> **O que NÃO foi implementado, e não por esquecimento:** a lanterna de
+> leitura de 15 % (§11.3), a logística s=3 no terminador dos gigantes
+> (§11.2) e o véu de atmosfera no limbo de Saturno (§11.5). Depois que
+> o dia voltou a ser dia, nenhuma delas era necessária para o defeito
+> que o dono viu. Continuam disponíveis como segunda leva.
+
 O que o Eyes realmente faz com a luz dos globos, lido no JavaScript
 público (`https://eyes.nasa.gov/apps/solar-system/app.js`, 1.740.345
 bytes, baixado em 2026-08-24). Não é os `atlas-estudo-*.md` (pesquisa
@@ -604,9 +654,15 @@ lei escreve o escalar**, e ela é diferente no ponto e no globo.
 
 ### 11.1 Dois consumidores, uma honestidade
 
+> ⚠️ **Esta seção foi superada pela obra de 25/08 em três pontos** — o
+> `real` no globo, o "`ganhoFundido` sai da malha" e a atribuição do
+> `ganhoFundido` ao ponto. Ver a caixa no topo do arquivo. O que
+> sobrevive daqui é a **partição**: duas leis, dois endereços.
+
 ```
-ponto  (camada planetas, PSF)  → MH18 + 1/d² + assistida/real
-globo  (malha Terra/Lua/rochoso/gigante/anel) → exposição LOCAL
+ponto  (camada planetas, PSF)  → MH18 + 1/d²    (NUNCA ganhoFundido)
+globo  (malha Terra/Lua/rochoso/gigante/anel)
+       → ganhoFundido(d) × compensacaoDaVisita(corpo)
 ```
 
 Exposição local = o Sol no globo vale **1** (o texel no subsolar é
@@ -657,6 +713,11 @@ globo já lê; com isso, lê como o Eyes. Não bloqueia o 11.1.
 
 ### 11.6 O que o selo passa a dizer
 
+> ⚠️ **Corrigido em 25/08:** o ΔEV que o selo mostrava NÃO era "da
+> camada ponto" — o ponto nunca consumiu `ganhoFundido`. Era um número
+> da lei do ponto exibido sobre o gasto do globo. O selo agora declara
+> `stopsDaVisita`, o gasto REAL da malha, corpo a corpo.
+
 Hoje o selo reporta o ΔEV da `assistida` **por corpo**, como se o
 globo o usasse. No dia em que o globo deixar de usar, a frase
 muda: o ΔEV continua sendo da **camada ponto** e da política
@@ -664,6 +725,12 @@ heliocêntrica; o globo declara “exposição local” / “lanterna 15 %”.
 Mentir o EV do globo é pior do que não ter consertado.
 
 ### 11.7 Prova — a vista tem de cobrir o que mudou
+
+> ⚠️ **O item (3) desta lista foi REVOGADO pelo dono:** em `?luz=real`
+> o dia de Saturno **não** continua palha — volta a ser E(d), a
+> penumbra física. Os outros seis foram cumpridos. E os limiares do
+> item (1) estão em LINEAR: em bytes de tela o alvo é ~160 de 255, e o
+> medido foi 187. Ver a caixa do topo.
 
 Gate bit-idêntico das 18 do filme **não prova** Saturno. Se o filme
 não pousa no globo de Saturno, o gate sai verde e o dono continua
@@ -694,6 +761,9 @@ A prova (1) é a que o dono julga. O resto é regressão.
 ---
 
 ## 12. Números-oráculo, para não chutar de novo
+
+> ⚠️ **Espaço de cor:** os `ACES(...)` desta lista estão em LINEAR. A
+> régua da casa mede BYTES do PNG. Ver o ponto 4 da caixa do topo.
 
 ```
 SIGMA_ASSISTIDA           0,35     // continua valendo no PONTO

@@ -622,17 +622,44 @@ Não reabrir sem que a condição listada mude.
   não fórmulas; hot path sem alocação; gate só vê o próprio escopo;
   unidades explícitas na fronteira) e L37–L42. Jurisprudência herdada
   do atlas, ainda válida.
-- **O globo visitado não herda o 1/d² do ponto.** Item **91** (aberto
-  em 24/08): Saturno no Atlas some mesmo com `assistida` porque a
-  malha multiplica `ganhoFundido` (E^0,35 ≈ 0,21 a 9,5 UA) e o ACES
-  come o resto. O NASA Eyes, no globo, manda o Sol branco (ganho 1),
-  lanterna de leitura 15 % na câmera, logística no terminador — e
-  deixa o 1/d² para o **ponto** no céu. A casa já acerta o ponto
-  (MH18). O globo é fotografia de quem chegou, não ISO da Terra.
-  Contrato e números:
-  `docs/reference/nasa-eyes-iluminacao-planetas.md`. Auto-exposição
-  pelo que está em quadro continua recusada; piso de ambiente no
-  BRDF também. O que muda é **qual lei escreve o escalar da malha**.
+- **DUAS LEIS DE LUZ, DOIS ENDEREÇOS — e o globo não usa a do ponto.**
+  Item **91**, obra feita em 25/08. O **PONTO** no céu segue a
+  irradiância (`ganhoFundido`, 1/d² comprimido): Vênus brilha, Netuno
+  some, e a ordem verdadeira de brilho é lida ali. O **GLOBO** visitado
+  segue a **exposição da visita** (`luzDaVisita.ts`), que é fotografia
+  de quem chegou, não ISO da Terra.
+
+  O mecanismo, para não renascer torto: o escalar da malha continua
+  sendo **um**, e é o PRODUTO `ganhoFundido(distância viva) ×
+  compensacaoDaVisita(corpo)`. A compensação é **constante por corpo**,
+  derivada do semieixo (as luas herdam a do pai), declarada em UM
+  arquivo. Em `assistida` ela cancela a lei e o produto dá ~1; em
+  `real` vale 1 exato e o produto volta a ser E(d) — **a penumbra
+  física fica**, e isso é decisão do dono que CONTRARIA o §11.1 do
+  relatório do Eyes. Nunca "ganho = 1 seco": apagar a lei não é
+  endereçá-la.
+
+  **O que isto NÃO é:** auto-exposição. A conta não olha o quadro, nem
+  a câmera, nem o relógio — a alavanca que o dono reprovou continua
+  recusada, e o piso de ambiente no BRDF também.
+
+  **O que isto CUSTA, e o custo é declarado:** entre GLOBOS a ordem de
+  brilho deixa de valer (Saturno visitado fica tão claro quanto a Terra
+  visitada). É de propósito, é a decisão 1 dele, e o selo declara o
+  gasto EXATO por corpo em passos de luz. A ordem verdadeira continua
+  inteira no ponto, que é onde o céu se lê.
+
+  **O resíduo é física, não erro:** constante ÷ lei viva deixa
+  `(dRef/d)^0,7`, então o mesmo mundo é mais claro no periélio que no
+  afélio. É o único sinal de distância que sobrevive à visita, e
+  sobrevive de propósito.
+
+  Contrato e números do Eyes:
+  `docs/reference/nasa-eyes-iluminacao-planetas.md` (com os avisos do
+  25/08). O que ficou para uma segunda leva, e **não** entrou: a
+  lanterna de leitura de 15 % na câmera, a logística s=3 no terminador
+  dos gigantes e o véu de atmosfera no limbo de Saturno. Nenhuma delas
+  era necessária depois que o dia voltou a ser dia.
 
 ---
 

@@ -146,12 +146,24 @@ gaveta), não a decoração.
 
 ## 4. Riscos que ainda valem
 
-- Primeira superfície iluminada: 9.400:1 num display de ~25:1. Recalibrar
-  contra ACES; não mergear sem selo `?luz=`. **O diagnóstico fechou em
-  24/08 (item 91):** o globo herdou `ganhoFundido` e some (Saturno a
-  0,21 × ACES ≈ carvão). A recalibração não é outro σ — é o globo
-  deixar de usar 1/d². Ver
-  `docs/reference/nasa-eyes-iluminacao-planetas.md`.
+- ~~Primeira superfície iluminada: 9.400:1 num display de ~25:1.~~
+  **PAGO em 25/08 (item 91).** O diagnóstico fechou em 24/08 — o globo
+  herdou `ganhoFundido` e sumia (Saturno a 0,21 × ACES ≈ carvão) — e a
+  recalibração não foi outro σ: o globo visitado passou a ter
+  **exposição própria** (`src/lib/atlas/luzDaVisita.ts`), constante por
+  corpo, multiplicando a lei em vez de a substituir. A faixa de 9.400:1
+  era do PONTO e continua sendo dele, que é onde ela se lê; o globo
+  entra na tela entre ~55 e ~200 de 255. Contrato: o `NORTE.md`. O
+  estudo do Eyes que guiou a obra
+  (`docs/reference/nasa-eyes-iluminacao-planetas.md`) foi consumido e
+  leva os avisos do que divergiu.
+
+  **E ele mostrou o anti-padrão 1 sendo citado ao contrário**, o que
+  vale registrar aqui, ao lado da lista: "dois ganhos empilhados" NÃO é
+  o anti-padrão. O anti-padrão é **duas camadas que não se conhecem**
+  (`decay=0` + 1/r² por material) — o defeito é a cegueira mútua, não a
+  multiplicação. Dois termos que se conhecem, escritos no mesmo lugar e
+  declarados no selo, são o conserto legítimo.
 - Alocação irreversível pelo tier — o amostrador da Fase B é o instrumento.
 - Persistência contra a honestidade dos gates: tom/exposição/camadas fora
   do envelope. A cascata `URL > storage > detecção` valia para o TIER e

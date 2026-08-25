@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 92.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 93.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -74,12 +74,23 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > (FEITO em 24/08) → ~~**tarjas do celular**~~ (FEITO em 24/08) →
 > ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08; o **véu do
 > fim** encurtou junto em 24/08, quando ele nomeou a sobra) →
-> **83 (L1 + L2: FEITOS)** → **91 (Saturno escuro — a luz dos
-> planetas)** → ~~**81**~~ (FEITO em 25/08: o vermelho do MB1 era do
+> **83 (L1 + L2: FEITOS)** → ~~**91 (Saturno escuro — a luz dos
+> planetas)**~~ (**FEITO em 25/08**; o item continua aberto só à espera
+> do olho dele, e mudou de seção: subiu para **ALTA**) → ~~**81**~~
+> (FEITO em 25/08: o vermelho do MB1 era do
 > próprio juiz, que media numa janela em que a régua dele não valia — o
 > que sobrou dos 18 defeitos são 2 a 4, e todos são o item 70) → **70** →
 > **75**, com o resto do **83** (G1, L3, L4, L5) na fila da mesma
 > família.
+
+**A REORDENAÇÃO DESTA FILA DEIXOU DE SER PALPITE E VIROU DECISÃO
+(25/08).** Ela entrou aqui em 23/08 como "decisão de coordenação, com a
+conferência do dono pendente" — o **91** tinha sido enfiado entre o 83 e
+o 81 por quem orquestrava, não por ele. Em 25/08 **ele mandou fazer a
+obra do 91**, e com as três decisões de desenho junto: quem manda uma
+obra andar confirmou a posição dela na fila. A ordem acima é decisão, e
+o que sobra à espera dele agora é a IMAGEM (as fotos do 91 e do 83), não
+a prioridade.
 
 **O PINO FOI SOLTO PELO DONO, em 24/08.** Ele conferiu a galeria e
 liberou: *"pode dar push e seguir em frente orquestrando"*. Só por isso
@@ -359,6 +370,65 @@ pousaram com o aceite do dono em 17/08.
 ---
 
 ## ALTA — o dono vê e incomoda
+
+**91. Saturno estava quase escuro mesmo com brilho assistido — agora ele
+é palha clara, e falta ele ver.**
+Palavras do dono, 2026-08-24: *"acho que estamos com algortimos de
+iluminacao q nao estao funcionando bem... saturno, mesmo com brilho
+assistido, quase escuro e saturno é um objeto claro no ceu... mesmo a
+olho nu."* (Este item nasceu na seção MÉDIA e **subiu para ALTA em
+25/08**: é queixa visual direta dele, e a régua desta lista é o quanto
+incomoda quem usa.)
+
+**A CAUSA, que ele mesmo cravou em 25/08:** *o app colou a regra de uma
+coisa na outra*. Existem duas coisas — o **pontinho no céu** (quanto
+mais longe do Sol, mais fraco: é o céu de verdade, e a casa já acerta)
+e o **globo quando se chegou** (o Sol ilumina aquele mundo ALI, e a
+imagem se ajusta a isso). A conta do pontinho estava escrita no globo.
+Saturno recebe mesmo ~1/90 da luz da Terra, e isso não é mentira;
+mentira é fotografar a visita com o ISO de casa — nem o olho, nem a
+Cassini, nem o NASA Eyes fazem isso.
+
+**AS TRÊS DECISÕES DELE (25/08), com as palavras que fecharam o
+desenho** — não se reabrem:
+
+1. **Modo assistido (o padrão): dia claro em TODOS os corpos
+   visitados**, como a Cassini e o Eyes — a "exposição de foto" da
+   visita.
+2. **Modo real (`?luz=real`) mantém a penumbra FÍSICA verdadeira no
+   globo** — E(d) de verdade, Saturno visivelmente mais escuro que a
+   Terra. O app conserva uma posição 1:1. (Isto CONTRARIA o §11.1 do
+   relatório do Eyes, que pedia ganho 1 também no real; a decisão dele
+   prevalece e o relatório levou o aviso.)
+3. **A porta vira de duas vias:** alternar real↔assistida ao vivo, sem
+   recarregar, com a URL espelhando o gesto.
+
+**O QUE POUSOU em 25/08.** O escalar da malha continua sendo UM, e passa
+a ser `ganhoFundido(distância viva) × compensação da visita`, onde a
+compensação é uma constante por corpo que mora só em `luzDaVisita.ts`.
+Não é auto-exposição: o número não olha o quadro, nem a câmera, nem o
+relógio — é o ISO escolhido uma vez para aquele mundo. O anel de Saturno
+paga a mesma conta, e era o que o apagava junto com o globo.
+
+Medido em bytes de tela (disco médio, 0–255): **Saturno 58 → 139** na
+vista oficial e **84 → 187** de perto do lado do Sol; Netuno 15 → 105;
+Éris 26 → 166; Titã 31 → 105; Urano 66 → 199; Júpiter 109 → 186;
+Encélado 49 → 126; Vesta 34 → 55; Marte 104 → 123. Mercúrio **desce**,
+164 → 118, porque a visita também doma quem está perto demais do Sol. A
+**Terra e a Lua não se mexeram um bit** — a distância da visita da Terra
+é a própria âncora da lei. O selo agora diz o gasto exato por corpo
+("Este globo: +6,5 passos de luz sobre a luz física" em Saturno).
+
+**Fotos, à espera do olho dele:** `capturas/item91-saturno-antes-depois.png`
+(a prova), `capturas/item91-familia-antes-depois.png`,
+`capturas/item91-modo-real.png` e
+`capturas/item91-selo-porta-de-duas-vias.png`.
+
+**A CONFERÊNCIA DELE ESTÁ PENDENTE**, e é só ela que fecha o item. Três
+perguntas que só ele responde: (a) Saturno está no ponto ou passou do
+ponto? (b) Mercúrio ficou melhor domado ou ficou apagado? (c) o modo
+real, com Saturno quase preto, é a honestidade que ele quer ver ou é
+escuro demais para servir de modo?
 
 **5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
 ao calendário; falta ele ver.**
@@ -1879,24 +1949,26 @@ render falha **em silêncio** (verificado no fonte do three) — se a
 implementação passar a usar geometria em vez da lista de rótulos, a
 primeira leva de cliques some sem erro nenhum.
 
-**91. Saturno, mesmo com brilho assistido, quase escuro — e Saturno
-é um objeto claro no céu, mesmo a olho nu.**
-Palavras do dono, 2026-08-24: *"acho que estamos com algortimos de
-iluminacao q nao estao funcionando bem... saturno, mesmo com brilho
-assistido, quase escuro e saturno é um objeto claro no ceu... mesmo a
-olho nu."*
+**92. Descer ao corpo de Éris não põe Éris na tela.** (Aberto em 25/08,
+achado com a régua na mão ao fotografar o item **91**. Não é queixa
+dele.) `?foco=Éris` ACHA o alvo — a ficha abre com o nome certo —, mas
+`?foco=Éris&ver=corpo&d=6`, que é o degrau declarado dos anões
+("órbita heliocêntrica → aproximar o globo"), devolve um quadro **sem
+globo nenhum**.
 
-A textura NÃO é a culpada (mapa SSS, luma sRGB média 0,76 — é palha
-clara). O globo some porque a malha herda `ganhoFundido` = E^0,35 da
-distância ao Sol: em Saturno (~9,5 UA) isso vale **0,21**, Lambert
-ainda corta o disco, o ACES esmaga o que sobrou (~0,08 linear → ~0,09
-na tela). O NASA Eyes **não aplica 1/d² no globo** — o Sol chega
-branco, o dia é a textura, e uma lanterna na câmera a 15 % lê a noite.
-Relatório para implementar: `docs/reference/nasa-eyes-iluminacao-planetas.md`.
-Em 25/08 ele cravou o diagnóstico: *o app colou a regra de uma
-coisa na outra* — a conta do pontinho no céu, no globo visitado.
-O Eyes tem modo Natural; isso só apaga a lanterna, **não** o dia
-de Saturno.
+**A prova é indireta e é forte:** a obra do 91 multiplicou o globo de
+Éris por 6,5, e o quadro dessa URL saiu **byte a byte igual** nos dois
+binários (antes e depois do 91), enquanto TODOS os outros corpos
+mudaram. Quadro que não muda quando a luz do corpo muda é quadro sem o
+corpo. Com a câmera posta à mão sobre a efeméride (`?pos=`/`?look=`), a
+mesma Éris aparece e mede 25,5 → 165,6 de 255 — ou seja, o mesh existe
+e desenha; quem falha é o **enquadramento** do degrau.
+
+Não foi investigado além disto: sai do escopo do 91, e a foto de Éris
+que o dono vai julgar foi tirada pelo caminho manual. Suspeitos a
+conferir quando o item subir: Éris está a **93,8 UA** (a mais distante
+que a escada tenta), e o degrau pode estar mirando a órbita e não o
+corpo, ou parando antes por algum teto de distância.
 
 ---
 
