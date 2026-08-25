@@ -1263,6 +1263,14 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
     // (o Director precisa de WebGL). A fonte do dado é cobrada junto —
     // é a MESMA que orienta a malha, e uma segunda tabela de eixos aqui
     // faria a câmera e o planeta discordarem sem ninguém notar.
+    //
+    // QUEM MEDE O VALOR mora em `director/escada.test.ts` desde o item
+    // 88: lá a escada roda com o rig REAL e o julgamento é o
+    // `camera.up` publicado — Titã sobe com o eixo de Titã, e o
+    // religador do relógio repete o mesmo alto de tela bit a bit. Esta
+    // prova aqui ficou só com o que grep faz melhor que bancada: dizer
+    // de que TABELA o eixo sai, e que os degraus de fora não pedem polo
+    // nenhum.
     const ESCADA = readFileSync(
       new URL('../director/escada.ts', import.meta.url),
       'utf8'
@@ -1271,7 +1279,6 @@ describe('o polo do corpo no alto, e a guarda da mira', () => {
       "import { baseCorpoEquatorial } from '../../lib/atlas/orientacao'"
     );
     expect(ESCADA).toContain('polo: this.poloDoCorpo(id),');
-    expect(ESCADA).toContain('polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id),');
     // ...e os degraus de fora NÃO o pedem: lá o assunto é o plano do
     // sistema, e o eixo de um corpo qualquer não governa o horizonte
     const sistema = ESCADA.slice(

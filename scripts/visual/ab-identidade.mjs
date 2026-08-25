@@ -587,6 +587,56 @@ export const VISTAS = [
   // não guardaria o que se quer guardar.
   ['foco-jupiter', '?foco=jupiter&jd=2460409.26395835&shot=2'],
   ['foco-luas', '?foco=jupiter&d=0.01&jd=2460409.26395835&shot=2'],
+  // ------------------------------------------------------------------
+  // AS TRÊS DO POLO DA LUA ENQUADRADA (item 88, 25/08) — o mesmo buraco
+  // medido do bloco de cima, uma camada abaixo: as duas de `foco-` são
+  // do degrau ÓRBITA (Júpiter é planeta), e as de lua do lote da F5
+  // (`titan`, `europa`) cravam a câmera com `?pos=&look=`, que é voo
+  // livre. NENHUMA das 54 desce ao degrau `lua` pelo enquadramento do
+  // app, e por isso o alto da tela de quem enquadra Titã podia ser o
+  // eixo da NOSSA Lua sem nenhum gate piscar.
+  //
+  // `?foco=<lua>` cai em `Escada.focarNaLua` (para uma lua os dois
+  // valores de `?ver=` dão o mesmo degrau), que é o gesto, e o primeiro
+  // tique do relógio passa pelo religador (`enquadreVivo`) — os DOIS
+  // escritores de câmera do degrau ficam sob a régua na mesma captura.
+  //
+  // As três são famílias diferentes E doses diferentes do mesmo efeito,
+  // medidas contra o polo da Lua na época (sem os termos de nutação):
+  //  - `foco-titan`   (Saturno)  28,1° — o caso canônico do item, e o
+  //    que roda o horizonte o bastante para o olho ver sem régua.
+  //  - `foco-caronte` (Plutão)  112,8° — o extremo: o polo de Caronte
+  //    aponta quase para o lado oposto, e aqui a cena vira de cabeça.
+  //  - `foco-io`      (Júpiter)   2,2° — a dose MÍNIMA da família das
+  //    21, e é ela que impede o gate de virar teatro: se o conserto
+  //    fosse só um caso especial de Saturno, esta sairia bit-idêntica.
+  //
+  // `&jd=` é o mesmo instante pinado das luas da F5 (2024-04-08): sem
+  // efeméride viva não há posição de lua nenhuma (`focarNaLua` devolve
+  // sem enquadrar), e a vista não guardaria nada.
+  //
+  // E O VALOR DE `?foco=` É O NOME pt-BR NORMALIZADO, não o id inglês da
+  // camada — a porta carrega uma CONSULTA, resolvida pelo mesmo `buscar`
+  // da caixa de busca (`buscaEstrelas.ts`). Custou uma leva descobrir:
+  // `?foco=titan` casa por PREFIXO com "Titânia" e devolve a lua de
+  // URANO, e `?foco=charon` não casa com nada (o alvo fica nulo e a
+  // vista vira a abertura do Atlas). `tita` e `caronte` casam por degrau
+  // EXATO; `io` também, e o exato ganha de qualquer prefixo.
+  //
+  // ⚠ `foco-titan` TREME SOZINHA, e o tremor NÃO é dela: é do anel de
+  // Saturno, que a leva já carregava. Medido em 25/08, o mesmo lado
+  // contra ele mesmo — `foco-titan` 651 px de 3.083.400 (0,021%, delta
+  // máx 35), numa caixa de 211×88 sobre a linha do anel e a sombra dela
+  // no globo; a `saturno-anel`, que está na lista desde a F6, dá 828 px
+  // (0,027%, delta máx 47) pela mesma assinatura. A CÂMERA não treme:
+  // `camera.up` e `camera.position` saíram bit a bit iguais em duas
+  // navegações e depois do religador do relógio. Quem julgar esta vista
+  // lê o diff de pixel, não o md5 sozinho — e a régua da mudança que ela
+  // existe para medir é de outra ordem: 2,3 milhões de px, 74,9% do
+  // quadro.
+  ['foco-titan', '?foco=tita&jd=2460409.26395835&shot=2'],
+  ['foco-caronte', '?foco=caronte&jd=2460409.26395835&shot=2'],
+  ['foco-io', '?foco=io&jd=2460409.26395835&shot=2'],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);

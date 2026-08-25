@@ -69,18 +69,22 @@ delas já serviram; o **modo real do 91** volta à prancheta com palavra dele
 decididos; e a fita do **83** ficou com uma queixa pela metade, à espera das
 palavras dele. **A fila decidida, que se ACRESCENTA à de cima e não a
 substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
-esperam o olho dele) → **88 → 92 → 95** (a ordem é
+esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
+esperam o olho dele) → **92 → 95** (a ordem é
 DELE, e cada um volta com foto) → **gate do filme (77)** → **rolagem do véu
 (87)** → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
 de abertura (**61**) → **70**, a causa 2 → **99** → **75**.
 
-**O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** Sobra **UM
-item**: o **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, a
+**O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** São **DOIS
+itens**. O **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, a
 divergência da lanterna e agora o **véu palha**, que pousou no fim do
 dia com três pranchas próprias), e nele moram também as perguntas
 **Q9–Q11**, que
 herdaram o **(a)** e o **(b)** do item **91** porque a receita do 93 mexeu
-nos dois depois das fotos de lá. **E há uma pendência que não é de olho, é
+nos dois depois das fotos de lá. E o **88** (o alto da tela de quem
+enquadra uma lua), que pousou no fim do dia com duas pranchas —
+`item88-polo-da-lua-antes-depois.png` e `item88-titan-plano-do-anel.png`.
+**E há uma pendência que não é de olho, é
 de PALAVRAS DELE:** a fita do item **83** — ele *"estranhou algo (explico no
 chat)"* (C3), e até a explicação chegar nenhuma obra de linha anda ali. Nada
 disso é obra pendente — é conferência, e agora é curta.
@@ -1372,6 +1376,48 @@ do relógio. Consertar os dois é uma linha em cada — mas MUDA O QUE SE VÊ
 nunca olhou. **É obra de olhar, não de conserto**: quem a fizer cria a
 vista que a cobre (uma lua de outro pai, tipo Titã ou Io) e volta com a
 foto do antes e depois.
+
+**A OBRA POUSOU EM 25/08 — falta SÓ o olho dele.** Os dois lugares
+caíram no MESMO commit, e cada um passou a pedir o polo do corpo em
+quadro: `focarNaLua` pelo `id` que recebeu, `enquadreVivo` pelo
+`entrada.id` da lua em foco. As 21 têm registro em `IAU_ORIENTATIONS` —
+a mesma tabela que orienta a MALHA de cada uma, que é o que faz a lei da
+Onda 7 valer (câmera e globo lendo o mesmo eixo).
+
+**O DEFEITO, MEDIDO EM NAVEGADOR ANTES DE MEXER:** `?foco=tita`,
+`?foco=caronte` e `?foco=io` devolviam o MESMO `camera.up` —
+(−0,006780, −0,373991, 0,927408), que é o polo da nossa Lua no instante.
+Três pais diferentes, um horizonte só. Depois do conserto cada uma sobe
+com o eixo dela, e o horizonte roda **26,7° em Titã, 111,5° em Caronte e
+3,5° em Io**. A prova de que as duas metades concordam é que o gesto e o
+religador devolvem a pose bit a bit igual nas três.
+
+**A VISTA QUE FALTAVA nasceu com a obra:** `foco-titan`, `foco-caronte` e
+`foco-io` entraram na leva do `ab-identidade` — nenhuma das 54 de antes
+descia ao degrau `lua` pelo enquadramento do app (as de lua da F5 cravam
+a câmera com `?pos=&look=`, que é voo livre). O A/B: **74,9%, 72,3% e
+33,9% do quadro** mudaram; as vizinhas `foco-jupiter`, `foco-luas`,
+`atlas` e `terra` saíram **bit-idênticas**. O dente de comportamento mora
+em `director/escada.test.ts` e julga o `camera.up` publicado nos dois
+escritores; reverter as duas linhas reprova 1 teste, e reverter **só uma
+delas** reprova 2 — que é a prova, em número, de por que o conserto tinha
+de ser de uma vez só.
+
+**AS FOTOS:** `capturas/item88-polo-da-lua-antes-depois.png` (as três
+luas, antes × depois) e `capturas/item88-titan-plano-do-anel.png` (o anel
+de Saturno visto de Titã — Titã orbita no plano do equador dele, então
+com o eixo dela no alto o anel TEM de sair na horizontal, e é o que
+acontece agora).
+
+**UMA COISA ACHADA DE PASSAGEM, e ela não é obra deste item:** o anel de
+Saturno **treme entre capturas do MESMO código**. Medido em 25/08:
+`foco-titan` 651 px de 3.083.400 (0,021%, delta máx 35) numa caixa de
+211×88 sobre a linha do anel e a sombra dela no globo; e a `saturno-anel`,
+que está na leva desde a F6, dá 828 px (0,027%, delta máx 47) pela mesma
+assinatura — ou seja, **é tremor antigo, não vem daqui**. A câmera está
+fora de suspeita: `camera.up` e `camera.position` saíram bit a bit iguais
+em duas navegações e depois do religador. Fica registrado sem número
+porque ninguém decidiu obra sobre ele.
 
 **90. Upscaling espacial como feature experimental (beta).** (Decisão do
 dono em 24/08, em resposta ao levantamento de desempenho. **Fila futura,

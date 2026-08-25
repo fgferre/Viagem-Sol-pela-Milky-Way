@@ -943,7 +943,17 @@ export class Escada {
     this.atlas.focar(lua, raioPc, lua, {
       rampa: this.rampaDaEscada(),
       pai,
-      polo: this.poloDoCorpo(LUAS_DO_SISTEMA[0].id),
+      // O POLO É O DA LUA EM QUADRO, e não o da nossa Lua (item 88). O
+      // literal era o terceiro e último da herança da Onda 7, de quando
+      // a Terra e a Lua eram os únicos corpos com malha: as 21 luas
+      // saíam enquadradas com o eixo da Lua no alto da tela — medido
+      // em navegador, Titã, Caronte e Io devolviam o MESMO `camera.up`
+      // (−0,006780, −0,373991, 0,927408, que é o polo lunar do
+      // instante). A fonte é a de sempre, `IAU_ORIENTATIONS`, e as 21
+      // têm registro lá — a mesma que orienta a MALHA de cada uma, que
+      // é o que faz a lei da Onda 7 valer (câmera e globo lendo o mesmo
+      // eixo).
+      polo: this.poloDoCorpo(id),
     });
     this.enquadrarAgora();
     this.teletransportou();
@@ -1006,13 +1016,14 @@ export class Escada {
         pai: comPai
           ? paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(entrada.pai, jd))
           : null,
-        // O POLO CONTINUA SENDO O DA LUA para todas elas, e é PROPOSITAL:
-        // `focarNaLua` — o gesto — também o escreve assim, e o religador
-        // que corrigisse só o seu lado giraria a câmera no primeiro tique
-        // do relógio. É o terceiro literal da mesma herança, e ele muda o
-        // ALTO DA TELA de quem enquadra uma lua: mexer nele é obra de
-        // olhar, não de conserto — está no item 88.
-        polo: comPai ? this.poloDoCorpo(LUAS_DO_SISTEMA[0].id)?.clone() ?? null : null,
+        // O POLO É O DA LUA EM QUADRO (item 88), e este lado tinha de
+        // cair no MESMO commit do gesto: consertar só um giraria a
+        // câmera no primeiro tique do relógio, que é o defeito ao
+        // contrário. Sem pai não há polo — uma lua SELECIONADA com um
+        // clique nasce na pose do visitante, e o rig ficou na eclíptica
+        // (ver `selecionar`); devolver polo aqui torceria no primeiro
+        // tique o horizonte que o gesto não pediu.
+        polo: comPai ? this.poloDoCorpo(entrada.id)?.clone() ?? null : null,
       };
     }
     if (degrau === 'corpo') {

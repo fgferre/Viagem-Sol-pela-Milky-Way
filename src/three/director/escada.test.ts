@@ -30,6 +30,8 @@ import type { GiganteResolvido } from '../world/corpos/gigante';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
+import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
 import { raiosDoRochosoPc } from '../world/corpos/rochoso';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
@@ -61,6 +63,14 @@ const DESLOCAMENTO_DA_LUA: Record<string, number> = {
   io: 0.00282,
   titan: 0.00817,
 };
+
+/** o polo IAU de um corpo no frame da cena — a MESMA fonte da escada */
+function poloDe(id: string): THREE.Vector3 {
+  const p = baseCorpoEquatorial(IAU_ORIENTATIONS[id], EPOCA_JD_TDB).polo;
+  return new THREE.Vector3(p[0], p[1], p[2]).normalize();
+}
+/** o ângulo entre dois vetores, em graus — a unidade em que se olha */
+const graus = (a: THREE.Vector3, b: THREE.Vector3) => (a.angleTo(b) * 180) / Math.PI;
 function efemerideDeMentira() {
   return {
     posicaoHeliocentrica(id: string): { x: number; y: number; z: number } {
@@ -182,6 +192,60 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
     // e o alvo não é a Lua: as duas estão a 4,2 UA uma da outra
     const lua = paraPc(efemerideDeMentira().posicaoHeliocentrica('moon'));
     expect(atlas.alvo.distanceTo(lua)).toBeGreaterThan(3 * AU_PARA_PC);
+  });
+
+  it('o ALTO DA TELA de uma lua é o eixo DELA — nos dois escritores (item 88)', () => {
+    // O TERCEIRO E ÚLTIMO literal da Onda 7, e o único que não punha o
+    // corpo errado em quadro: ele só INCLINAVA a cena. Medido em
+    // navegador antes do conserto (`?foco=tita`, `?foco=caronte` e
+    // `?foco=io`, jd 2460409,26395835): as TRÊS devolviam o MESMO
+    // `camera.up` — (−0,006780, −0,373991, 0,927408), que é o polo da
+    // NOSSA Lua no instante. Três pais diferentes, um horizonte só.
+    //
+    // Julga-se em `camera.up`, que é o que o visitante vê no alto da
+    // tela, e nos DOIS escritores do degrau: o gesto (`focarNaLua`) e o
+    // religador do relógio (`recomporAlvo` → `enquadreVivo`). Consertar
+    // um só giraria a câmera no primeiro tique — por isso as duas
+    // metades moram no mesmo dente.
+    const { escada, camera, aplicar } = bancada({ comEfemeride: true });
+    const daLua = poloDe('moon');
+
+    escada.focarNoCorpo('titan', 'corpo');
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'lua', corpoId: 'titan' });
+    // o gesto sobe com o eixo de TITÃ — o mesmo que orienta a malha dela
+    // O TETO É 5° e não zero, e o motivo é do RIG, não do polo: o `up`
+    // publicado passa por `upDoAtlas`, que mistura na direção da
+    // eclíptica e grampeia contra a mira quando a câmera se aproxima do
+    // eixo. Nesta geometria de bancada isso vale 2,68° — contra os
+    // 26,55° que separam o polo de Titã do da Lua na época. A margem
+    // entre o certo e o errado é de uma ordem de grandeza.
+    expect(graus(camera.up, poloDe('titan'))).toBeLessThan(5);
+    // ...e ele NÃO é o da nossa Lua: 23,87° de horizonte rodado
+    expect(graus(camera.up, daLua)).toBeGreaterThan(20);
+    const altoDoGesto = camera.up.toArray();
+
+    // O TIQUE DO RELÓGIO no MESMO instante: recompor reescreve o mesmo
+    // enquadramento, então o alto da tela sai bit a bit igual. É esta
+    // linha que reprova o conserto pela metade.
+    escada.recomporAlvo();
+    aplicar();
+    expect(camera.up.toArray()).toEqual(altoDoGesto);
+    expect(graus(camera.up, daLua)).toBeGreaterThan(20);
+
+    // IO É A DOSE MÍNIMA da família das 21 — o eixo de Júpiter é quase
+    // o da Lua (3,72° na época, contra 26,55° de Titã) —, e é ela que
+    // impede o dente de virar teatro: um conserto que fosse só um caso
+    // especial de Saturno passaria na metade de cima e reprovaria aqui.
+    // Aqui a mira não chega perto do eixo, então o `up` sai EXATO.
+    escada.focarNoCorpo('io', 'corpo');
+    aplicar();
+    expect(graus(camera.up, poloDe('io'))).toBeLessThan(0.01);
+    expect(graus(camera.up, daLua)).toBeGreaterThan(1.5);
+    const altoDeIo = camera.up.toArray();
+    escada.recomporAlvo();
+    aplicar();
+    expect(camera.up.toArray()).toEqual(altoDeIo);
   });
 
   it('corpo sem malha construída: o religador não move a câmera para outro mundo', () => {
