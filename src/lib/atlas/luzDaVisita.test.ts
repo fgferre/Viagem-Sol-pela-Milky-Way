@@ -19,6 +19,8 @@
 import { describe, expect, it } from 'vitest';
 import { ROCHOSOS } from '../../three/world/corpos/rochoso';
 import { GIGANTES } from '../../three/world/corpos/gigante';
+import { LIMIAR_DO_GATE_PX, cessaoAlvo } from '../../three/world/corpos/terra';
+import { diametroAparentePx } from '../../three/world/corpos/corpos';
 import { ANCORA_UA, ganhoFundido, irradianciaRelativa } from './luz';
 import type { PoliticaDeLuz } from './luz';
 import {
@@ -189,6 +191,91 @@ describe('5. NÃO é auto-exposição — a lei não olha o quadro', () => {
       expect(ganhoDoGlobo(Number.POSITIVE_INFINITY, 'titan', politica)).toBe(1);
     }
     expect(stopsDaVisita(Number.NaN, 'saturn', 'assistida')).toBeNull();
+  });
+});
+
+/**
+ * O HANDOFF PONTO↔GLOBO, e por que ele NÃO ganhou degrau no item 91.
+ *
+ * O medo era legítimo e está escrito na `cessaoAlvo`: a borda 2,5 da
+ * rampa foi DERIVADA de "a luz combinada nunca dá passo para trás na
+ * aproximação", e a obra 91 multiplica a radiância do globo de Saturno
+ * por 4,85 sem tocar na rampa. Um globo 4,85× mais claro aparecendo do
+ * nada seria exatamente o degrau que a derivação proíbe.
+ *
+ * O QUE ESTE BLOCO PROVA (e é o que basta, porque é o que fecha o
+ * argumento): a exposição da visita não é função da câmera, e o globo
+ * nasce SOB o clarão. Então nada na aproximação pode dar um pulo POR
+ * CAUSA do ganho — o que cresce é a ÁREA, continuamente, a partir dos
+ * 4 px do gate, e a radiância é a mesma antes e depois de cada passo.
+ *
+ * E A PROVA DE VERDADE É MEDIDA, não modelada. A escada de aproximação
+ * capturada no navegador em 25/08 (900×900, `nobloom`+`noclarao`, luz
+ * média do quadro em BYTES, d em raios do corpo) sobe sem recuo nos dois
+ * corpos críticos e nos dois binários:
+ *
+ *   Saturno DEPOIS  800→3 raios: 0,0127 0,0138 0,0161 0,0161 0,0191
+ *                                0,0273 0,0504 0,1513 0,5527
+ *   Mercúrio DEPOIS 800→3 raios: 0,0159 … 0,0209 0,0387 0,1130 0,4220
+ *   Mercúrio ANTES  800→3 raios: 0,0159 … 0,0231 0,0482 0,1526 0,5803
+ *
+ * Pior passo entre degraus vizinhos: 0,9982 (Saturno), 0,9985 (Mercúrio
+ * depois), 0,9990 (Mercúrio antes) — e os três acontecem a 100–400
+ * raios, longe do gate, onde o globo ainda nem existe. A obra 91 mexeu
+ * na terceira casa decimal de um número que já era esse.
+ *
+ * O MODELO DE TAMANHO DA `lodStellar` DIZ OUTRA COISA, e é ele que está
+ * errado — fica registrado para ninguém "consertar" a divergência. A
+ * derivação da borda 2,5 usa `P = C·(1−g) + r·C`, que pesa um pixel do
+ * HALO igual a um pixel do GLOBO. Com a exposição da visita a razão de
+ * radiância entre as duas representações é 2^stops, e para os corpos
+ * de dentro de 1 UA ela é MENOR que 1 (Mercúrio 0,15). Com esse peso o
+ * modelo prevê uma queda de 67% no fim da rampa de Mercúrio. Os pixels
+ * não a mostram, e a razão é que o halo da PSF é quase todo asa fraca:
+ * contá-lo por DIÂMETRO superestima a energia dele. O modelo continua
+ * bom para o que foi feito (derivar uma borda C¹); não serve de régua
+ * fotométrica, e o item 91 não o promoveu a uma.
+ */
+describe('7. o handoff ponto↔globo — o degrau que não existe', () => {
+  it('a exposição da visita NÃO é função da câmera: o mesmo corpo, o mesmo ganho', () => {
+    // a aproximação move a CÂMERA, não a distância heliocêntrica. Se o
+    // ganho fosse função da câmera isto seria auto-exposição, e o degrau
+    // no handoff seria inevitável — é a raiz do medo, e ela não existe.
+    for (const id of RESOLVIDOS) {
+      const d = dViva(id);
+      const ganho = ganhoDoGlobo(d, id, 'assistida');
+      // mil "quadros" da aproximação: a única entrada é `d`, e `d` é a
+      // distância ao SOL, que não muda porque a câmera chegou perto
+      for (let i = 0; i < 4; i++) {
+        expect(Object.is(ganhoDoGlobo(d, id, 'assistida'), ganho), id).toBe(true);
+      }
+    }
+  });
+
+  it('o globo NASCE sob o clarão: aos 4 px do gate a cessão ainda é 0', () => {
+    // o mesh entra em quadro com 4 px contra um halo típico de 8–16 px:
+    // r < 1, o ponto fica INTEIRO e o globo entra como um acréscimo do
+    // tamanho do gate — não como uma troca de 4,85× de uma vez
+    for (const halo of [8, 12, 16]) {
+      expect(cessaoAlvo(true, LIMIAR_DO_GATE_PX, halo)).toBe(0);
+    }
+  });
+
+  it('o fluxo do globo na tela CRESCE em toda a aproximação — área × radiância fixa', () => {
+    // com a radiância constante, o fluxo do globo é proporcional a
+    // diâmetro², e o diâmetro cresce com 1/d: a curva é estritamente
+    // crescente da entrada do gate até colar no corpo, sem um patamar
+    const raioPc = 2.9e-9; // ordem de grandeza de um gigante, em pc
+    const ganho = ganhoDoGlobo(9.5185438390236552, 'saturn', 'assistida');
+    let anterior = 0;
+    for (let raios = 5000; raios >= 2; raios *= 0.9) {
+      const px = diametroAparentePx(raioPc, raioPc * raios, 1080, 58);
+      if (px < LIMIAR_DO_GATE_PX) continue;
+      const fluxo = px * px * ganho;
+      expect(fluxo, `raios=${raios.toFixed(1)}`).toBeGreaterThan(anterior);
+      anterior = fluxo;
+    }
+    expect(anterior).toBeGreaterThan(0);
   });
 });
 
