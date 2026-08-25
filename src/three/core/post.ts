@@ -152,6 +152,47 @@ export const PESO_DA_PIRAMIDE = FRACAO_DA_ASA / SOMA_DAS_RAZOES;
 export const OMBRO_DO_BLOOM = 40;
 
 /**
+ * A CIRURGIA DE TEXTO no passa-alta do vendorizado — ombro + `β·asinh` dentro
+ * do filtro, o item 2 da cadeia de curvas. Vive aqui, solta, porque desde a
+ * faixa de guarda do item 70 são DUAS máquinas de bloom por quadro (a da lei e
+ * a do campo) e as duas precisam da MESMA curva: escrever a segunda cópia numa
+ * casa que já tem Ballesteros em três lugares seria o erro conhecido.
+ *
+ * O porquê de comprimir DENTRO do passa-alta (e não antes do bloom) está no
+ * cabeçalho de `Post.domarOBloom`, que é quem a chama pela lei.
+ */
+function domarPassaAlta(bloom: UnrealBloomPass) {
+  // LEI SEM PORTA desde o M2 (regra iv do §4): `?bbloom=`/`?bombro=`
+  // morreram no commit que migrou o bloom para a lei — o lado A do A/B
+  // vive nas capturas versionadas e nos números deste cabeçalho, nunca
+  // num ramo de runtime.
+  const beta = BETA_DO_BLOOM;
+  const t = OMBRO_DO_BLOOM;
+  const mat = (bloom as unknown as { materialHighPassFilter: THREE.ShaderMaterial })
+    .materialHighPassFilter;
+  const u = (bloom as unknown as { highPassUniforms: Record<string, { value: unknown }> })
+    .highPassUniforms;
+  u.uBetaBloom = { value: beta };
+  u.uOmbroT = { value: t };
+  mat.uniforms.uBetaBloom = u.uBetaBloom as { value: number };
+  mat.uniforms.uOmbroT = u.uOmbroT as { value: number };
+  const ALVO = 'vec4 texel = texture2D( tDiffuse, vUv );';
+  if (!mat.fragmentShader.includes(ALVO)) {
+    throw new Error('domarOBloom: o passa-alta do UnrealBloomPass mudou de forma');
+  }
+  mat.fragmentShader = mat.fragmentShader
+    .replace(
+      'uniform sampler2D tDiffuse;',
+      `uniform sampler2D tDiffuse;\nuniform float uBetaBloom;\nuniform float uOmbroT;\n${GLSL_COMPRESSAO}`
+    )
+    .replace(
+      ALVO,
+      `${ALVO}\n\ttexel.rgb = min( texel.rgb, uOmbroT ) + comprimir3( max( texel.rgb - uOmbroT, vec3( 0.0 ) ), uBetaBloom );`
+    );
+  mat.needsUpdate = true;
+}
+
+/**
  * O COBERTOR DO CAMPO — a resposta da R2 ao "cobertor curto" que o dono
  * nomeou (item 44): o bloom era UM para a cena inteira, e o kernel que dá
  * respiro ao campo estelar lava o Sol distante (4/11 na escada), enquanto
@@ -193,6 +234,46 @@ export const CAMADA_DOS_OCULTADORES = 2;
 const FORMA_DO_FILME = [1.0, 0.8, 0.6, 0.4, 0.2];
 const FORCA_DO_FILME = 0.72;
 const RAIO_DO_FILME = 0.58;
+
+/**
+ * A FAIXA DE GUARDA do cobertor do campo, em px de CSS — o conserto do item
+ * 70 ("girar a câmera acende e apaga o céu inteiro").
+ *
+ * A DOENÇA, medida pelo MB1 em 25/08: o rascunho do campo era do TAMANHO DO
+ * QUADRO, então uma estrela forte deixava de existir para o cobertor no pixel
+ * em que o centro dela cruzava a borda — e o pedestal de 250–300 px que ela
+ * deitava sobre a tela inteira ia embora de uma vez. Na família `fov` do MB1
+ * isso valia resíduo 3,80 degraus contra piso 0,34 + folga 2,00, com a luz do
+ * quadro caindo 27,0% num passo de câmera só; na `zoomDeRoda`, o Sol saindo
+ * pela borda de baixo levava junto a âncora de Vênus, 1,74 px de salto contra
+ * um teto de 1,02.
+ *
+ * O CONSERTO é enxergar ALÉM do quadro: o rascunho passa a ter `2·MARGEM` px
+ * a mais em cada eixo, e a câmera do rascunho ganha o mesmo tanto de frustum
+ * (`setViewOffset` com deslocamento negativo — a densidade de pixel NÃO muda,
+ * é o mesmo px de CSS de sempre, só há mais deles). A fonte continua
+ * contribuindo enquanto estiver a menos de `MARGEM` px de fora, e some quando
+ * o que lhe restava de pedestal já não chegava ao quadro.
+ *
+ * O NÚMERO É MEDIDO, e é o menor que zera o MB1 com folga — a varredura
+ * inteira está no registro do commit e no item 70:
+ *
+ *   margem   fov k5 (resíduo / luz)     zoomDeRoda k8 (salto)
+ *   0 px     3,80 degraus / −27,0%      1,74 px      ← a doença
+ *   64 px    (ver o registro)           (ver o registro)
+ *   128 px   ...                        ...
+ *
+ * MÚLTIPLO DE 32 por obrigação, não por gosto: a pirâmide tem cinco mips e o
+ * mais grosso vive a 1/32 da resolução; margem que não seja múltiplo de 32
+ * desalinha a grade de texels de algum nível contra a grade do quadro, e o
+ * interior — que este conserto NÃO quer mexer — passaria a se reamostrar
+ * sozinho.
+ *
+ * O PREÇO ESTÁ DECLARADO: o passe do campo é o mais caro do quadro, e a área
+ * dele cresce ((w+2M)·(h+2M))/(w·h). O número medido com `gpu-profile` está no
+ * registro do commit e no item 70.
+ */
+export const MARGEM_DO_CAMPO = 128;
 /**
  * O LIMIAR DO CAMPO É ZERO — e o zero é a correção do aceite negado
  * (17/08, dono: "perdemos muitas estrelas, densidade parece que caiu").
@@ -230,43 +311,154 @@ const LIMIAR_DO_CAMPO = 0;
  * Se a tela cobrar, o conserto conhecido é desenhar os ocultadores no
  * rascunho só com profundidade (colorWrite falso) — nunca voltar ao
  * cobertor único.
+ *
+ * O QUE MUDOU NO ITEM 70 (a faixa de guarda, `MARGEM_DO_CAMPO`). O
+ * "SEM segunda máquina" acima era verdade enquanto o rascunho tinha o
+ * TAMANHO DO QUADRO: dava para pegar o buffer ocioso do composer
+ * emprestado e vestir a máquina da lei de filme por um passe. Com a
+ * faixa de guarda o rascunho é MAIOR que o quadro, e nenhum buffer do
+ * composer tem esse tamanho — nem a pirâmide da lei, que vive no
+ * tamanho do quadro e teria de ser realocada DUAS VEZES POR QUADRO para
+ * ser emprestada (o `setSize` do vendorizado dispara `dispose()` em 11
+ * alvos quando a medida muda). Então agora são duas máquinas de
+ * verdade, cada uma no seu tamanho, e o preço — VRAM e tempo de GPU —
+ * está declarado no cabeçalho de `MARGEM_DO_CAMPO`. Em troca some a
+ * dança de vestir e despir a máquina da lei a cada quadro: esta nasce
+ * de filme e morre de filme.
  */
 class ClaraoDoCampo extends Pass {
   private readonly quad = new FullScreenQuad();
   private readonly corDeLimpezaVelha = new THREE.Color();
-  private readonly roupaDaLei: number[] = [];
   private readonly bloom: UnrealBloomPass;
   private readonly cena: THREE.Scene;
   private readonly camera: THREE.Camera;
+  /** o rascunho COM a faixa de guarda — quadro + 2·MARGEM em cada eixo */
+  private rascunho: THREE.WebGLRenderTarget;
+  /** o quadro em px de CSS, para a conta da janela dentro do rascunho */
+  private larguraCss = 1;
+  private alturaCss = 1;
   /** o traje dos ocultadores: geometria verdadeira, zero cor — só depth */
   private readonly fantasma = new THREE.MeshBasicMaterial({ colorWrite: false });
+  /**
+   * A SOMA COM RECORTE — o blend aditivo do vendorizado mais a janela: o
+   * composite agora cobre o rascunho INTEIRO (quadro + faixa de guarda) e
+   * o quadro é o retângulo do meio dele. `uEscala`/`uDeslocamento` são
+   * essa janela em UV, e são a única diferença para o `CopyShader` que o
+   * `blendMaterial` do vendorizado usava (`opacity` valia 1 — identidade).
+   */
+  private readonly somaComRecorte = new THREE.ShaderMaterial({
+    uniforms: {
+      tDiffuse: { value: null as THREE.Texture | null },
+      uEscala: { value: new THREE.Vector2(1, 1) },
+      uDeslocamento: { value: new THREE.Vector2(0, 0) },
+    },
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tDiffuse;
+      uniform vec2 uEscala;
+      uniform vec2 uDeslocamento;
+      varying vec2 vUv;
+      void main() {
+        gl_FragColor = texture2D(tDiffuse, vUv * uEscala + uDeslocamento);
+      }
+    `,
+    blending: THREE.AdditiveBlending,
+    depthTest: false,
+    depthWrite: false,
+    transparent: true,
+    // `premultipliedAlpha` NÃO é detalhe, e custou uma tarde: com ele o
+    // aditivo do three é `blendFuncSeparate(ONE, ONE, ...)` — a cor entra
+    // inteira; sem ele é `blendFunc(SRC_ALPHA, ONE)` e a cor entra
+    // MULTIPLICADA pelo alpha do composite, que é `bloomStrength · Σ
+    // fatores · alpha` e quase nunca vale 1. O `blendMaterial` do
+    // vendorizado nasce premultiplicado; a primeira versão desta soma não,
+    // e o céu saiu 28% mais escuro (luz média do quadro 10,17 contra 14,10
+    // bytes na vista `fov-0` do MB1) — o respiro das estrelas que o dono
+    // cobrou em 17/08, pago sem ninguém pedir. Com a linha abaixo a soma
+    // reproduz o vendorizado: `MARGEM_DO_CAMPO = 0` devolve o quadro de
+    // antes da obra (14,10 bytes, resíduo 3,80, luz −27,0%), e é assim que
+    // se sabe que a faixa de guarda é a ÚNICA coisa que esta obra mudou.
+    premultipliedAlpha: true,
+  });
 
-  constructor(bloom: UnrealBloomPass, cena: THREE.Scene, camera: THREE.Camera) {
+  constructor(
+    cena: THREE.Scene,
+    camera: THREE.Camera,
+    largura: number,
+    altura: number,
+    pixelRatio: number
+  ) {
     super();
-    this.bloom = bloom;
     this.cena = cena;
     this.camera = camera;
     this.needsSwap = false;
+    // A MÁQUINA DO CAMPO nasce vestida de filme e no tamanho do rascunho.
+    // O raio 0,58 entra na CONSTRUÇÃO (a máquina da lei o pina em 0 pelo
+    // motivo oposto — ver `governarPiramide`).
+    this.bloom = new UnrealBloomPass(
+      new THREE.Vector2(largura + 2 * MARGEM_DO_CAMPO, altura + 2 * MARGEM_DO_CAMPO),
+      FORCA_DO_FILME,
+      RAIO_DO_FILME,
+      LIMIAR_DO_CAMPO
+    );
     const m = this.maquina();
-    if (!m.compositeMaterial || !m.renderTargetsHorizontal?.length || !m.blendMaterial) {
+    if (!m.compositeMaterial || !m.renderTargetsHorizontal?.length) {
       throw new Error('ClaraoDoCampo: o UnrealBloomPass mudou de forma');
     }
+    // a MESMA curva do passa-alta da máquina da lei: as duas comprimem a
+    // mesma faixa de HDR, e duas curvas seria a casa discordando de si
+    domarPassaAlta(this.bloom);
+    const fatores = m.compositeMaterial.uniforms.bloomFactors.value as number[];
+    for (let i = 0; i < fatores.length; i++) fatores[i] = FORMA_DO_FILME[i];
+    this.rascunho = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+    this.rascunho.texture.name = 'ClaraoDoCampo.rascunho';
+    this.redimensionar(largura, altura, pixelRatio);
   }
 
   private maquina() {
     return this.bloom as unknown as {
-      strength: number;
-      radius: number;
-      threshold: number;
       compositeMaterial: THREE.ShaderMaterial;
       renderTargetsHorizontal: Array<{ texture: THREE.Texture }>;
-      blendMaterial: THREE.Material;
     };
+  }
+
+  /**
+   * O composer chama `setSize` de todo passe com px de BUFFER; este passe
+   * precisa do quadro em px de CSS (a faixa de guarda é do mesmo lado da
+   * fronteira que a pirâmide, que vive em CSS desde a parte 3 da
+   * invariância) E do pixelRatio, então quem o dimensiona é o `Post`, por
+   * `redimensionar`. Sobrescrito para o composer não o dimensionar errado.
+   */
+  setSize() {}
+
+  redimensionar(largura: number, altura: number, pixelRatio: number) {
+    this.larguraCss = Math.max(1, largura);
+    this.alturaCss = Math.max(1, altura);
+    const lg = this.larguraCss + 2 * MARGEM_DO_CAMPO;
+    const al = this.alturaCss + 2 * MARGEM_DO_CAMPO;
+    // o rascunho em px de BUFFER (a densidade do quadro, sem mudança de
+    // amostragem); a pirâmide em px de CSS, como a da lei
+    this.rascunho.setSize(Math.round(lg * pixelRatio), Math.round(al * pixelRatio));
+    this.bloom.setSize(lg, al);
+    (this.somaComRecorte.uniforms.uEscala.value as THREE.Vector2).set(
+      this.larguraCss / lg,
+      this.alturaCss / al
+    );
+    (this.somaComRecorte.uniforms.uDeslocamento.value as THREE.Vector2).set(
+      MARGEM_DO_CAMPO / lg,
+      MARGEM_DO_CAMPO / al
+    );
   }
 
   render(
     renderer: THREE.WebGLRenderer,
-    writeBuffer: THREE.WebGLRenderTarget,
+    _writeBuffer: THREE.WebGLRenderTarget,
     readBuffer: THREE.WebGLRenderTarget
   ) {
     // O autoClear fica PRESO em falso do primeiro ao último draw — a
@@ -286,7 +478,26 @@ class ClaraoDoCampo extends Pass {
     const alphaVelho = renderer.getClearAlpha();
     this.cena.background = null;
     renderer.setClearColor(0x000000, 0);
-    renderer.setRenderTarget(writeBuffer);
+    // A FAIXA DE GUARDA (item 70): a MESMA densidade de pixel, mais
+    // frustum. `setViewOffset` com deslocamento NEGATIVO pede o quadro
+    // inteiro MAIS `MARGEM` px de cada lado; a estrela que acabou de sair
+    // pela borda continua sendo desenhada, e o pedestal dela continua
+    // caindo sobre o quadro em vez de sumir de uma vez.
+    const camera = this.camera as THREE.PerspectiveCamera;
+    const janelaVelha = camera.view?.enabled === true ? { ...camera.view } : null;
+    // e a faixa SOMA-se a uma janela que já exista: o `z-fighting` chacoalha
+    // a câmera por `setViewOffset` de fora, e sobrescrever a janela dele
+    // apagaria o chacoalho justo no passe que ele está medindo
+    const jv = janelaVelha;
+    camera.setViewOffset(
+      jv ? jv.fullWidth : this.larguraCss,
+      jv ? jv.fullHeight : this.alturaCss,
+      (jv ? jv.offsetX : 0) - MARGEM_DO_CAMPO,
+      (jv ? jv.offsetY : 0) - MARGEM_DO_CAMPO,
+      (jv ? jv.width : this.larguraCss) + 2 * MARGEM_DO_CAMPO,
+      (jv ? jv.height : this.alturaCss) + 2 * MARGEM_DO_CAMPO
+    );
+    renderer.setRenderTarget(this.rascunho);
     renderer.clear();
     // 1a. os OCULTADORES primeiro, só profundidade: as superfícies
     //     opacas enchem o depth do rascunho e o depth test que o campo
@@ -302,40 +513,39 @@ class ClaraoDoCampo extends Pass {
     this.cena.background = fundo;
     this.camera.layers.mask = mascara;
     renderer.setClearColor(this.corDeLimpezaVelha, alphaVelho);
-
-    // 2. a mesma máquina, vestida de filme — e despida no fim: força e
-    //    limiar vivos são do setWarp, escritos a cada quadro ANTES do
-    //    composer, e o passe devolve exatamente o que encontrou
-    const m = this.maquina();
-    const forca = m.strength;
-    const raio = m.radius;
-    const limiar = m.threshold;
-    const fatores = m.compositeMaterial.uniforms.bloomFactors.value as number[];
-    for (let i = 0; i < fatores.length; i++) {
-      this.roupaDaLei[i] = fatores[i];
-      fatores[i] = FORMA_DO_FILME[i];
+    // a lente do quadro de volta, ANTES de qualquer outro passe olhar
+    if (janelaVelha) {
+      camera.setViewOffset(
+        janelaVelha.fullWidth,
+        janelaVelha.fullHeight,
+        janelaVelha.offsetX,
+        janelaVelha.offsetY,
+        janelaVelha.width,
+        janelaVelha.height
+      );
+    } else {
+      camera.clearViewOffset();
     }
-    m.strength = FORCA_DO_FILME;
-    m.radius = RAIO_DO_FILME;
-    m.threshold = LIMIAR_DO_CAMPO;
-    this.bloom.render(renderer, writeBuffer, writeBuffer, 0, false);
 
-    // 3. só o clarão, somado ao quadro principal — o blendMaterial do
-    //    vendorizado já aponta para o composite do passo 2
-    this.quad.material = m.blendMaterial;
+    // 2. a máquina do campo, que já é de filme, sobre o rascunho inteiro
+    this.bloom.render(renderer, this.rascunho, this.rascunho, 0, false);
+
+    // 3. só o clarão, somado ao quadro principal — e RECORTADO: o
+    //    composite cobre o rascunho, o quadro é a janela do meio dele
+    this.somaComRecorte.uniforms.tDiffuse.value = this.maquina().renderTargetsHorizontal[0].texture;
+    this.quad.material = this.somaComRecorte;
     renderer.setRenderTarget(readBuffer);
     this.quad.render(renderer);
 
-    // 4. a roupa da lei de volta
-    m.strength = forca;
-    m.radius = raio;
-    m.threshold = limiar;
-    for (let i = 0; i < fatores.length; i++) fatores[i] = this.roupaDaLei[i];
     renderer.autoClear = limpavaSozinho;
   }
 
   dispose() {
     this.quad.dispose();
+    this.somaComRecorte.dispose();
+    this.fantasma.dispose();
+    this.rascunho.dispose();
+    this.bloom.dispose();
   }
 }
 
@@ -384,7 +594,14 @@ export class Post {
     this.governarPiramide();
     // o segundo cobertor: o clarão do campo entra ANTES do knee/ACES,
     // aditivo, como o mapa da R2 manda
-    this.claraoDoCampo = new ClaraoDoCampo(this.bloom, scene, camera);
+    const tamanho = renderer.getSize(new THREE.Vector2());
+    this.claraoDoCampo = new ClaraoDoCampo(
+      scene,
+      camera,
+      tamanho.x,
+      tamanho.y,
+      renderer.getPixelRatio()
+    );
     this.composer.addPass(this.claraoDoCampo);
 
     // knee asinh no HDR composto (depois do bloom, antes do ACES).
@@ -454,34 +671,7 @@ export class Post {
    * varredura, e a régua da luz, por medição.
    */
   private domarOBloom() {
-    // LEI SEM PORTA desde o M2 (regra iv do §4): `?bbloom=`/`?bombro=`
-    // morreram no commit que migrou o bloom para a lei — o lado A do A/B
-    // vive nas capturas versionadas e nos números deste cabeçalho, nunca
-    // num ramo de runtime.
-    const beta = BETA_DO_BLOOM;
-    const t = OMBRO_DO_BLOOM;
-    const mat = (this.bloom as unknown as { materialHighPassFilter: THREE.ShaderMaterial })
-      .materialHighPassFilter;
-    const u = (this.bloom as unknown as { highPassUniforms: Record<string, { value: unknown }> })
-      .highPassUniforms;
-    u.uBetaBloom = { value: beta };
-    u.uOmbroT = { value: t };
-    mat.uniforms.uBetaBloom = u.uBetaBloom as { value: number };
-    mat.uniforms.uOmbroT = u.uOmbroT as { value: number };
-    const ALVO = 'vec4 texel = texture2D( tDiffuse, vUv );';
-    if (!mat.fragmentShader.includes(ALVO)) {
-      throw new Error('domarOBloom: o passa-alta do UnrealBloomPass mudou de forma');
-    }
-    mat.fragmentShader = mat.fragmentShader
-      .replace(
-        'uniform sampler2D tDiffuse;',
-        `uniform sampler2D tDiffuse;\nuniform float uBetaBloom;\nuniform float uOmbroT;\n${GLSL_COMPRESSAO}`
-      )
-      .replace(
-        ALVO,
-        `${ALVO}\n\ttexel.rgb = min( texel.rgb, uOmbroT ) + comprimir3( max( texel.rgb - uOmbroT, vec3( 0.0 ) ), uBetaBloom );`
-      );
-    mat.needsUpdate = true;
+    domarPassaAlta(this.bloom);
   }
 
   /**
@@ -551,6 +741,29 @@ export class Post {
     // retina. O blend final amostra o composite para o buffer cheio, como
     // sempre fez.
     this.bloom.setSize(w, h);
+    // e o cobertor do campo no MESMO lado da fronteira, mais a faixa de
+    // guarda do item 70 (o rascunho dele precisa também do pixelRatio —
+    // ver `ClaraoDoCampo.redimensionar`)
+    this.claraoDoCampo.redimensionar(w, h, this.renderer.getPixelRatio());
+  }
+
+  /**
+   * A PORTA `?nobloom=1`, e ela deixou de mentir (item 72). Até 25/08 a porta
+   * apagava só `bloom.enabled`, e o SEGUNDO cobertor — o `ClaraoDoCampo` —
+   * seguia inteiro, porque chama a própria máquina na mão e nunca passou pelo
+   * `enabled` de ninguém. Medido então: `?nobloom=1` mudava 0,35% da luz do
+   * quadro a 40 UA e o halo de 250–300 px de uma estrela forte continuava lá.
+   * Quem lia a linha do `NORTE.md` ("perto do Sol, A/B só com `&nobloom=1`")
+   * acreditava estar sem bloom nenhum e não estava — foi essa crença que quase
+   * enterrou o diagnóstico do item 70.
+   *
+   * Agora a porta apaga OS DOIS passes. Ela move pixel nas vistas que a usam,
+   * e o delta entrou declarado (as dez vistas `…nb` do `ab-identidade`, o
+   * `z-fighting`, a prova 8 do `atlas-smoke` e a lente do `planeta-pixel`).
+   */
+  set bloomLigado(ligado: boolean) {
+    this.bloom.enabled = ligado;
+    this.claraoDoCampo.enabled = ligado;
   }
 
   private galaxyMode = 0;

@@ -675,9 +675,11 @@ export class Director {
     });
     this.nebula.setSize(window.innerWidth, window.innerHeight);
 
-    // debug via URL: ?nobloom=1
+    // debug via URL: ?nobloom=1 — apaga OS DOIS cobertores (item 72: até
+    // 25/08 a porta só apagava o principal e o clarão do campo seguia
+    // inteiro; ver `Post.bloomLigado`)
     if (this.debug.has('nobloom')) {
-      this.post.bloom.enabled = false;
+      this.post.bloomLigado = false;
     }
     // (A GRADAÇÃO POR CONTEXTO do Atlas — `claraoDoAtlas` — e a porta
     // `?grad=` morreram no M1 da Lei da Estrela: o clarão do Sol passou a
