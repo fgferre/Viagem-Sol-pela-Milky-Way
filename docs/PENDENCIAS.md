@@ -1476,44 +1476,121 @@ os rastros do Eyes são mais inteligentes e mais bonitos que os nossos** —
 e é por isso que o item **82** passa à frente deste. O que falta AQUI
 são dois buracos que se veem na tela:
 
-- **L1 — o foco manda na cena.** Um multiplicador de alfa por linha,
-  ligado ao corpo enquadrado: a órbita do alvo e as das LUAS dele sobem,
-  as demais recuam um passo. É **um número dentro do `alfaDa` que já
-  existe** em `world/orbitas.ts` — o degrau mais barato da lista inteira.
-  O Eyes não faz isto (medido: enquadrar Saturno lá não acende a órbita
-  de Saturno nem as das luas dele), então aqui não há de onde copiar — é
-  desenho a decidir, e a decisão é barata.
-- **L2 — a linha ganha corpo.** Hoje é `LineLoop` + `LineBasicMaterial`:
-  **1 pixel de dispositivo**, borda dura — e num Retina isso é MEIO pixel
-  CSS, fio de teia serrilhado. `linewidth` é ignorado em WebGL, sempre,
-  então não há número a mexer: é troca de primitiva. O caminho é
-  **`LineSegments2` + `LineMaterial`** (o `Line2` dos exemplos do three,
-  MIT, vivo em r185), mirando a fita de **~1,25 px CSS** que o Eyes
-  desenha — número confirmado por DOIS métodos independentes (o perfil de
-  cobertura sub-pixel 0,25/0,50/0,75/1,00 lido do pixel, e a leitura da
-  API do motor deles). Vem com juntas resolvidas, e de brinde **dezenas
-  de laços num único objeto: 1 draw call** no lugar dos 30 de hoje.
+**L1 E L2 POUSARAM em 24/08** (`574baed` e `8be508f`) — o que segue é o
+que eles viraram, com número. **Falta o OLHO DO DONO**: ele ainda não
+julgou nenhuma das fotos.
 
-  **Os cuidados técnicos, todos VERIFICADOS no fonte do three — quem
-  executar não precisa redescobrir:** (a) **alfa por vértice NÃO é
-  nativo** no `Line2` (`setColors` só aceita RGB; a issue #23680 está
-  aberta desde 2022) — a receita que funciona é atributo instanciado
-  próprio + `USE_COLOR_ALPHA` + `onBeforeCompile` escrevendo `vColor.w`,
-  e ela só é necessária para L4; (b) o `resolution` se acerta sozinho
-  desde r165, e a largura passa a ser em **px CSS**, independente do
-  `pixelRatio` — que é exatamente a invariância que a casa já exige do
-  clarão; (c) **NUNCA `setPositions()` por quadro** — ele aloca buffer de
-  GPU novo e recomputa a bounding sphere; o certo é mutar o array do
-  buffer interleaved e marcar `needsUpdate`. **A disciplina certa já está
-  escrita** em `world/orbitas.ts` (o `escreverLaco` muta o atributo e
-  marca `needsUpdate`) — a migração tem de MANTÊ-LA, não voltar ao
-  caminho caro; (d) origem flutuante segue como está: vértices relativos
-  ao centro e só a MATRIZ recalculada por quadro, em double na CPU —
-  reescrever buffer não é preciso; (e) **`MeshLine` está morto** (repo
-  parado), e por isso o estudo herdado
-  `atlas-estudo-visualizacao-orbitas-ux-espacial.md` levou um ⚠️ no topo.
+- **L1 — o foco manda na cena. FEITO.** `realce`, um multiplicador por
+  linha em cima do alfa do fade (§5b de `world/orbitas.ts`), com a
+  família DERIVADA e nunca digitada: `id === foco` (o alvo) ou
+  `centro === foco` (as luas dele). **Os dois números, medidos na tela:**
+  a linha do assunto vai de 0,32 a **0,5600** (×1,75) e as demais a
+  **0,1120** (×0,35) — razão de **5×**, que é o que o olho lê como
+  hierarquia. Recuar NÃO é apagar: abaixo de ~0,08 a linha fina não
+  sobrevive ao céu, e a leitura que o item 77 existe para dar morreria
+  com o vizinho. O realce entra POR ÚLTIMO, depois dos cortes, então não
+  abre porta: enquadrando Júpiter com a câmera dentro da órbita dele, a
+  linha do alvo segue apagada. Transição por decaimento exponencial
+  (k = 9 → 99% em ~0,5 s) que ENCOSTA em 1e-3, e o encosto tem segundo
+  dono: `Orbitas.animando` entra no `andando` do `captura` do director,
+  ao lado de `atlas.animando` — sem ele um `?foco=` fotografado no meio
+  da travessia daria md5 diferente a cada corrida.
+- **L2 — a linha ganha corpo. FEITO.** `LineSegments2` + `LineMaterial`
+  no lugar de `LineLoop` + `LineBasicMaterial`, a **1,25 px CSS** — o
+  número do Eyes, confirmado por dois métodos independentes no estudo. E
+  é CSS de verdade: o `resolution` vem de `renderer.getViewport()`, que
+  o three guarda em unidades CSS, então a fita sai igual em 1×, 1,5× e
+  2×. **Custo medido** com o `gpu-profile` na vista das galileanas:
+  **81 calls/quadro com a camada contra 77 sem ela — 4 draw calls, os
+  MESMOS 4 do `LineLoop`** (oito linhas acesas, quatro sobrevivem ao
+  frustum), e 22,8 fps dos dois lados. O custo não sai do ruído do
+  instrumento.
 
-Atrás desses dois, na mesma família:
+  **DUAS DECISÕES ALÉM DO CONTRATO, declaradas:**
+  1. **Trinta objetos, e não um.** O "1 draw call de brinde" foi medido
+     contra o que custava e NÃO SE PAGA: concatenar mataria a origem
+     flutuante (a órbita de Io é 1e-8 pc ao lado de um centro a 5,2 UA, e
+     o pai anda todo quadro) e exigiria o alfa por vértice que o fade e o
+     realce tornam obrigatório — a receita do cuidado (a), reservada ao
+     L4. E não se perdeu nada: já eram 30 draw calls e continuam 30, com
+     só as ACESAS desenhando.
+  2. **`alphaToCoverage: false`.** Ele depende de MSAA e **esta casa não
+     tem MSAA** — o renderer nasce com `antialias: false` e o AA vem do
+     supersampling por pixelRatio, com os alvos do composer sem
+     `samples`. Ligar a chave escreveria cobertura que ninguém amostra.
+     Pela mesma conferência: o `logdepthbuf` que o `LineMaterial` traz
+     fica inerte, porque a casa não usa profundidade logarítmica.
+
+  Os cuidados (a)–(e) do estudo foram todos respeitados; o (c) — **nunca
+  `setPositions()` por quadro** — virou DENTE: o buffer interleaved nasce
+  à mão no construtor e o teste segura a IDENTIDADE dele e a do array em
+  três saltos de data (com a câmera dentro do teste, porque linha apagada
+  não se reamostra). `escreverLaco`, a álgebra provada do item 77, ficou
+  INTACTA: a expansão para o passo 6 é função à parte (`espelharNaFita`).
+
+**O BURACO DO GATE, achado ao executar e tapado.** Das 52 vistas do
+`ab-identidade`, **NENHUMA tinha corpo em foco** — as de corpo cravam a
+câmera com `?pos=&look=`, que é voo livre, e `focoCorpoId` fica `null`
+nas 52. O L1 sairia "52 bit-idênticas" e o veredito mediria a ausência de
+assunto (AGENTS.md §7). Entraram duas vistas: **`foco-jupiter`** (o alvo
+sobe, quatro recuam) e **`foco-luas`** (`?d=0.01`, oito linhas repartidas
+ao meio — as quatro galileanas contra as quatro heliocêntricas de
+dentro), a única que alcança a segunda metade da lei. O gate passou a
+**54 vistas, 7,1 min por lado**.
+
+**O QUE OS JUÍZES DISSERAM, com número.** Typecheck, **2.094 testes** e
+lint verdes. `ab-identidade` cheio dos dois lados: **41 das 54 vistas
+bit-idênticas, 13 mudaram, 0 instáveis** — e as 13 são EXATAMENTE as que
+têm linha de órbita na tela (`atlas`, as duas de foco, `mercurio`,
+`venus`, `saturno-anel`, `titan` e os pares sem bloom, `eclipse-lunar` e
+o `mergulho` do filme, que na coda já tem efeméride e acende quatro
+linhas). O `diff-pixel` assinou, e a assinatura é a mesma do item 77 —
+**luz somada, nada apagado**: em `mercurio`, 2.095 px de 4.320.000
+(0,049%) e **100% unilateral**; em `titan`, 15.371 px com 15.333 só
+ganhando, **0 só perdendo** e 38 mistos que perdem 1 nível cada (1 ULP);
+no `mergulho`, 18.827 px com 18.792 só ganhando e **0 só perdendo**.
+
+**E DEGRAU A DEGRAU**, na vista `foco-luas`: o L1 sozinho move
+**19.622 px (0,454%)**, delta máx 38, nada só perdendo; a fita sozinha
+move **83.238 px (1,93%)**, delta máx 235. Na abertura, onde não há foco
+e portanto só a fita age: **24.663 px (0,571%)**, delta máx 223.
+
+**E A PROVA DE QUE O DELTA É DA CAMADA E DE MAIS NADA**, o mesmo controle
+do item 77: com `?noorbitas=1`, `mergulho` e `titan` saem **bit-idênticos
+nos dois binários** (md5 `b54c78c9…` e `2f5777fb…` dos dois lados). Nada
+mudou de carona.
+
+**A RÉGUA DE LUZ DEU O ACHADO DA OBRA.** `PERNA=atlas luz-do-quadro`
+passou (`capturas/luz-do-quadro-atlas.json`, versionado). A luz somada
+subiu como se esperava de uma linha mais grossa — **+9,8% a +13,0%** de
+`luzMedia` de 3,6 UA a 150 UA (a 3,6 UA: 0,018395 → 0,020727), e ZERO a
+0,067 UA, onde não há linha acesa. Mas a coluna que importa é outra: as
+**FAÍSCAS DESABARAM**.
+
+| UA | faíscas antes | depois |
+|---|---|---|
+| 3,6 | 1.369 | **211** |
+| 7,2 | 925 | **228** |
+| 20 | 1.041 | **178** |
+| 40 | 1.057 | **186** |
+| 150 | 1.578 | **318** |
+
+Isto FECHA a conta que o item **61** deixou aberta. Lá se escreveu que o
+salto de faíscas de 23/08 "era das linhas de órbita nascidas entre as
+duas medições" — verdade, e agora se sabe POR QUÊ: uma linha de 1 pixel
+de DISPOSITIVO, serrilhada, é literalmente um rastro de pixels isolados
+acesos, e é assim que o detector de faísca a lê. A fita contínua de
+1,25 px CSS não é um campo de faíscas: **~85% delas eram o serrilhado**,
+e sumiram sem que a linha sumisse — ela ficou MAIS forte (a luz subiu) e
+MENOS pontilhada ao mesmo tempo. É a confirmação do diagnóstico "fio de
+teia" por um instrumento que não estava olhando para isso.
+
+**Fotos** — `capturas/item83-fita-zoom-antes-depois.png` é a que decide:
+5×, o mesmo trecho de linha, o degrau em escada de 1 px contra a fita.
+Mais `item83-abertura-antes-depois.png` (a vista de abertura dele) e
+`item83-foco-antes-depois.png` (as galileanas, com o foco em ação).
+
+Atrás desses dois, na mesma família — **os quatro que FICAM**:
 
 - **G1 — a gaveta devolve os oito.** Os oito de `HELIO_SEM_PONTO`
   (Ceres, Éris, Haumea, Makemake, Quaoar, Vesta, Palas, Hígia) voltam
