@@ -110,11 +110,22 @@ describe('2. o needle dos GLSL montados', () => {
       expect(frag).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
       expect(frag).toContain('fatorDeEclipse(pElip, n,');
     }
-    expect(ROCHOSO_LS_FRAG).toContain('vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
-    expect(ROCHOSO_PROC_LS_FRAG).toContain('vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
-    expect(ROCHOSO_LAMBERT_FRAG).toContain(
-      'vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo)'
-    );
+    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_PROC_LS_FRAG]) {
+      expect(frag).toContain('vec3 sombras = fatorDeEclipse(pElip, n, mu0);');
+      expect(frag).toContain('vec3 luzSol = vec3(ls * uLuzGanho) * sombras;');
+    }
+    for (const frag of [ROCHOSO_LAMBERT_FRAG, ROCHOSO_PROC_FRAG]) {
+      expect(frag).toContain('vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);');
+      expect(frag).toContain(
+        'vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;'
+      );
+    }
+    // A DIVERGENCIA DECLARADA do item 93: a lanterna leva as MESMAS
+    // sombras. Sem isso ela acenderia a umbra de um eclipse.
+    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_PROC_LS_FRAG,
+      ROCHOSO_LAMBERT_FRAG, ROCHOSO_PROC_FRAG]) {
+      expect(frag).toMatch(/lanternaDeLeitura\([^)]*sombras\)/);
+    }
   });
 
   /**

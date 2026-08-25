@@ -17,16 +17,31 @@
 > Onde este arquivo disser "`?luz=real` no globo **não** volta a E(d)",
 > leia o contrário.
 >
-> **2. O conserto não foi "`ganhoFundido` SAI da malha" (§11.1, §14).**
-> Apagar a lei não é endereçá-la. O escalar da malha continua sendo UM
-> e virou o produto `ganhoFundido(distância viva) ×
-> compensacaoDaVisita(corpo)`, com a compensação constante por corpo. O
-> §11.1 chama "dois ganhos empilhados" de anti-padrão 1 e **cita o
-> anti-padrão ao contrário**: o anti-padrão 1 do `PLANO-ATLAS.md` é
-> *"lei física em duas camadas que NÃO SE CONHECEM (`decay=0` +
-> 1/r² por material)"* — duas camadas cegas uma para a outra. O
-> conserto legítimo é exatamente as camadas **se conhecerem**, que é o
-> que este produto faz.
+> **2. O escalar da malha (§11.1, §14) — e ele mudou DUAS vezes.** No
+> item **91** virou o produto `ganhoFundido(distância viva) ×
+> compensacaoDaVisita(corpo)`, com a compensação constante por corpo.
+> No item **93** (25/08, o pedido do dono de copiar o ALGORITMO) o
+> produto morreu: em `assistida` o escalar é **1 LITERAL**, como em
+> `setLightSourceUniforms`, e a compensação por corpo saiu inteira do
+> código porque não tinha mais o que compensar. Em `real` ele é E(d)
+> exato. Onde este arquivo disser "`ganhoFundido` sai da malha", leia:
+> sai **em `assistida`**, e continua inteiro em `real` — que é a
+> divergência 1 acima. O §11.1 chama "dois ganhos empilhados" de
+> anti-padrão 1 e **cita o anti-padrão ao contrário**: o anti-padrão 1
+> do `PLANO-ATLAS.md` é *"lei física em duas camadas que NÃO SE
+> CONHECEM (`decay=0` + 1/r² por material)"* — duas camadas cegas uma
+> para a outra.
+>
+> **2b. A LANTERNA DE 15 % DA CASA RESPEITA AS SOMBRAS (item 93).** O
+> §11.2 lê certo o fonte do Eyes — lá a luz de câmera tem raio −1 e
+> nenhum oclusor a alcança —, mas ao pé da letra ela **inverte a
+> umbra**: medido em 25/08, o núcleo do eclipse solar de 08/04/2024
+> sobre Durango ia de 2,76 para **42,2** de 255, contra 30,5 do deserto
+> vizinho, e o cobre de Danjon da Lua eclipsada perdia metade da razão
+> vermelho/azul. A casa multiplica o fill pelas mesmas duas sombras do
+> Sol; como as duas valem 1 no lado noturno, a lanterna não perde nada
+> do que veio fazer. Divergência DECLARADA, com foto:
+> `capturas/item93-lanterna-e-a-sombra.png`.
 >
 > **3. §11.1 e §11.6 afirmam que o PONTO consome `ganhoFundido`. É
 > falso.** `planetas.ts` é MH18 puro e nunca passou por
@@ -686,8 +701,12 @@ substituição da lei):
 ```
 ponto  (camada planetas, PSF)  → MH18 + 1/d²    (NUNCA ganhoFundido)
 globo  (malha Terra/Lua/rochoso/gigante/anel)
-       → ganhoFundido(d) × compensacaoDaVisita(corpo)
+       → 1 LITERAL em `assistida`; ganhoFundido(d,'real') em `real`
 ```
+
+*(O produto `ganhoFundido(d) × compensacaoDaVisita(corpo)` foi o
+mecanismo do item 91 e viveu um dia: o item 93 o substituiu pelo Sol =
+1 do Eyes, e a compensação por corpo saiu do código.)*
 
 Exposição local = o Sol no globo vale **1** (o texel no subsolar é
 o texel). `?luz=real` no globo **não** volta a E(d): isso reabre o

@@ -52,12 +52,15 @@ fila. O que sobra à espera dele agora é a IMAGEM, não a prioridade.
 > da folha**~~ (24/08) → ~~**83 (L1+L2)**~~ (24/08) → ~~**91 (Saturno
 > escuro — a luz dos planetas)**~~ (25/08) → ~~**81**~~ (25/08; o vermelho
 > que sobrava era do **70**, e ele também fechou em 25/08 — **o MB1 fecha
-> em ZERO, e o zero repete**) → **93 (brilho assistido = algoritmo do
-> Eyes)** → **70** (a causa 2, o ponto que morre na borda) → **75**, com o
-> resto do **83** (L2.5, G1, L3, L4, L5) na fila da mesma família.
+> em ZERO, e o zero repete**) → ~~**93 (brilho assistido = algoritmo do
+> Eyes)**~~ (25/08 — a receita pousou; falta o véu de Saturno e o olho
+> dele) → **99 (a dieta dos juízes)** → **70** (a causa 2, o ponto que
+> morre na borda) → **75**, com o resto do **83** (L2.5, G1, L3, L4, L5)
+> na fila da mesma família.
 
 **O QUE ESPERA O OLHO DELE, e é a maior dívida da casa:** as fotos dos
-itens **91** (Saturno, o anel, a sombra, Mercúrio), **83** (a fita),
+itens **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, e a
+divergência da lanterna), **91** (Saturno, o anel, a sombra, Mercúrio), **83** (a fita),
 **82** (os nomes), **77** (as órbitas), **61** (a onda da UI/UX inteira),
 **70** (o giro e a cessão), **5** (o Sol pelo calendário), **7** (a troca
 de qualidade sem reload) e **79** (as duas telas de erro). Nada disso é
@@ -161,18 +164,85 @@ que ela nomeou viraram os itens **95** e **96**.
 
 **A história completa está no ARQUIVO, item 91.**
 
-**93. O brilho assistido tem de ser o mesmo algoritmo do NASA Eyes.**
-Palavras do dono, 2026-08-25: *"estou perguntado do brilho assistido...
-quero que o nosso conserte isso para ficar igual ao algortimo usado no
-nasa eyes"*.
+**93. O brilho assistido tem de ser o mesmo algoritmo do NASA Eyes — a
+obra pousou em 25/08, e falta ELE VER.** Palavras do dono, 2026-08-25:
+*"estou perguntado do brilho assistido... quero que o nosso conserte
+isso para ficar igual ao algortimo usado no nasa eyes"*.
 
-O item **91** pagou o **dia** (Saturno palha). A receita ainda não é
-a deles: ainda sobra um resto de 1/d² no globo, não há a lanterna da
-câmera, o corte dia/noite continua duro. O Eyes, no modo padrão
-(Shadow), é Sol cheio + lanterna fraca + corte suave. Contrato para
-implementar:
+O item **91** pagou o **dia** (Saturno palha); faltava a **receita**.
+Ela pousou em três peças que acendem por um interruptor só, todas
+nascidas em `luzDaVisita.ts` — número e GLSL no mesmo arquivo:
+
+- **o Sol do globo vale 1 LITERAL** em `assistida`, como no Eyes. O
+  resto de 1/d² que ainda torcia o globo morreu, e com ele saiu a
+  compensação por corpo do item 91 (tabela de semieixos, distância da
+  visita, constante por corpo) — não tinha mais o que compensar;
+- **a lanterna de leitura de 15 %** presa à câmera, somada depois do
+  Sol, com a soma saturando em 1: a noite voltada para quem olha deixou
+  de ser buraco, e o dia não estoura;
+- **o terminador logístico s = 3** nos Lambert (gigantes, rochosos
+  Lambert e a direta da Terra). O corte seco virou borda macia.
+
+**Em `?luz=real` as três peças APAGAM** e o globo volta ao Lambert cru
+com E(d) — a decisão 2 dele, intacta. **A Lua e os rochosos de regolito
+não ganham a logística**: o disco chato de Lommel-Seeliger é o fato que
+se confere contra uma fotografia, e ali o Eyes (que usa Phong até na
+Lua) é pior que a casa.
+
+**O QUE FALTA É A CONFERÊNCIA DELE**, e são três perguntas:
+
+- **(a)** Saturno assistido está no ponto? A foto que decide é
+  `capturas/item93-saturno-assistida.png` — o dia continua palha e a
+  noite agora se lê.
+- **(b)** O flanco dos gigantes ficou no ponto ou clareou demais?
+  (`item93-flanco-gigante.png` — na faixa N·L ≈ 0,5 o pixel sobe ×1,41.)
+- **(c)** Mercúrio, que o item 91 domava com ganho 0,883, volta a 1.
+  Ficou melhor ou voltou a incomodar? (`item93-mercurio-subsolar.png`.)
+
+**A CASA DIVERGIU DO CONTRATO EM UM PONTO, e a foto é a razão.** O
+contrato manda a lanterna entrar SEM eclipse e SEM sombra de anel (no
+Eyes a luz de câmera não é ocluída por nada). Ao pé da letra ela não
+escurece a umbra: **inverte-a**. Medido no núcleo do eclipse de
+08/04/2024 sobre Durango, de 255 — item 91: **2,76** contra 24,4 do
+deserto vizinho; contrato literal: **42,21** contra 30,5 (a umbra fica
+MAIS CLARA que o chão ao lado, e a totalidade sai do mapa); a casa:
+**2,80** contra 28,1. Na Lua eclipsada o cobre de Danjon perdia metade
+da razão vermelho/azul (4,28 → 2,24). Aqui a lanterna leva as duas
+sombras junto, e não perde nada com isso: as duas valem 1 no lado
+noturno, que é onde ela trabalha. Foto:
+`capturas/item93-lanterna-e-a-sombra.png`.
+
+**O QUE NÃO POUSOU, e por isso o item não fecha nem com a conferência
+dele:** o **véu palha de Saturno** (§4.4 do contrato) — a casca de
+atmosfera com `density 5e−5`, `scaleHeight 200 km` e a cor palha
+(234,202,151)/255 misturada no limbo. O contrato o autoriza a ficar
+para uma segunda leva se a prova de 4.1–4.3 já mostrar palha + noite
+legível, e ela mostrou; mas ele **faz parte do algoritmo** e o item só
+fecha com ele.
+
+**Os pinos bit-idênticos de Terra e Lua do item 91 CAÍRAM**, autorizados
+pelo contrato, e caíram medidos: o ganho de casa era 0,998953 (Terra) e
+1,000635 (Lua) e virou 1 exato — 0,10 % e 0,063 %, menos de um nível de
+255. Quem as move na tela são a logística e a lanterna, não isso.
+
+**AS FOTOS:** `capturas/item93-saturno-assistida.png` (a que ele julga),
+`item93-saturno-real.png`, `item93-flanco-gigante.png`,
+`item93-mercurio-subsolar.png`, `item93-lua-cheia.png`,
+`item93-anel.png`, `item93-pontinho.png`, `item93-terra.png`,
+`item93-lanterna-e-a-sombra.png` e `item93-selo.png`.
+
+**O QUE O A/B MEDIU** (árvore limpa dos dois lados, `21cb669` × a obra,
+1100×900, dpr 1, bytes de tela): Saturno de perto 34,4 → 38,5 (×1,12,
+3.728 px nasceram do preto); Júpiter no flanco 20,9 → 25,2 (×1,21);
+Mercúrio 22,3 → 24,0 sem um pixel saturado novo; a Lua 27,9 → 29,3 com
+o disco ainda chato; o anel 20,3 → 21,6; a Terra 53,1 → 57,5 com a
+umbra parada em 2,8. **O modo `real` não se mexeu**: Júpiter sai com
+ZERO pixel diferente, e Saturno com 47 px num fio escuro do limbo (5–10
+de 255) que o MESMO binário reproduz contra ele mesmo. **O pontinho
+MH18 sai byte a byte igual** a 150 UA e a 40 UA.
+
+Contrato vivo, com o que pousou e o que não pousou:
 `docs/reference/nasa-eyes-brilho-assistido-contrato.md`.
-O modo `real` e o pontinho no céu **não entram**.
 
 **5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
 ao calendário; falta ele ver.**

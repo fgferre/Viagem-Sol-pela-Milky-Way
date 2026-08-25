@@ -197,11 +197,13 @@ float sombraDoAnel(vec3 p, float ndotl) {
  *
  * ITEM 93 — A RECEITA DO EYES. O `max(N·L, 0)` cru virou
  * `terminadorSuave` (a logística s=3 do Phong deles), e a LANTERNA DE
- * LEITURA de 15 % entra DEPOIS do Sol, sem eclipse e sem sombra de anel,
- * com a soma saturada em 1. As três peças vêm de `luzDaVisita.ts` e
- * acendem juntas em `assistida`; em `real` os dois uniformes são 0 e
- * este fragmento devolve o Lambert cru de antes. Ver
- * `docs/reference/nasa-eyes-brilho-assistido-contrato.md` §4.
+ * LEITURA de 15 % entra DEPOIS do Sol, com a soma saturada em 1. As três
+ * peças vêm de `luzDaVisita.ts` e acendem juntas em `assistida`; em
+ * `real` os dois uniformes são 0 e este fragmento devolve o Lambert cru
+ * de antes. Ver `docs/reference/nasa-eyes-brilho-assistido-contrato.md`
+ * §4 — e a DIVERGÊNCIA declarada em `luzDaVisita.ts`: a lanterna aqui
+ * respeita as duas sombras, porque acender uma sombra é apagar um fato
+ * medido.
  *
  * O `ndotlGeo` CRU continua sendo quem manda no eclipse e no fade da
  * sombra do anel: os dois são geometria, não luz — passar a curva macia
@@ -229,11 +231,10 @@ void main() {
   vec3 pElip = vLocal * uEscalaLocal;
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
-  vec3 luzSol =
-    vec3(terminadorSuave(ndotlGeo)) * uLuzGanho
-    * fatorDeEclipse(pElip, n, ndotlGeo)
-    * sombraDoAnel(pElip, ndotlGeo);
-  float fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip));
+  vec3 sombras =
+    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip, ndotlGeo);
+  vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
+  vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
   gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
 }
 `;

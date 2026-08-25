@@ -532,11 +532,12 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
     // depois do BRDF de Lommel-Seeliger, na direta e só nela — não há
     // outro termo no shader para o fator tocar
     expect(LUA_FRAG).toContain(
-      'vec3(ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal))'
+      'vec3 sombras = fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal));'
     );
+    expect(LUA_FRAG).toContain('vec3 luzSol = vec3(ls * uLuzGanho) * sombras;');
     // e a LANTERNA (item 93) entra DEPOIS, fora do fator: no Eyes a luz
     // de câmera tem raio −1, isto é, nenhuma sombra a alcança
-    expect(LUA_FRAG).toContain('luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam))');
+    expect(LUA_FRAG).toContain('luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras))');
   });
 
 });

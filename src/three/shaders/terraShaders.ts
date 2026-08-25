@@ -136,13 +136,16 @@ void main() {
   float fresnel = 0.04 + 0.96 * pow(1.0 - vdoth, 5.0);
   float espec = dEspec * fresnel * ndotl;
 
-  // A LUZ ANTES DO ALBEDO (item 93): o Sol passa pelo ganho, pelo
-  // eclipse, e a LANTERNA soma-se depois — sem eclipse, com a soma
-  // saturada em 1. O especular é lóbulo, não albedo: ele acompanha o
-  // Sol e fica fora da lanterna (um fill de câmera não faz brilho de
-  // espelho).
-  vec3 luzSol = vec3(uLuzGanho) * fatorDeEclipse(pElip, n, ndotlGeo);
-  vec3 luz = luzDoGlobo(vec3(ndotl) * luzSol, lanternaDeLeitura(nRelevo, v));
+  // A LUZ ANTES DO ALBEDO (item 93): o Sol passa pelo ganho e pelo
+  // eclipse, e a LANTERNA soma-se depois, com a soma saturada em 1. A
+  // lanterna leva a sombra do eclipse junto — sem isso a umbra sobre
+  // Durango deixava de ser preta e a totalidade sumia do mapa (a
+  // divergencia declarada em luzDaVisita.ts). O especular e' lobulo,
+  // nao albedo: ele acompanha o Sol e fica fora da lanterna (um fill de
+  // camera nao faz brilho de espelho).
+  vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
+  vec3 luzSol = vec3(uLuzGanho) * sombras;
+  vec3 luz = luzDoGlobo(vec3(ndotl) * luzSol, lanternaDeLeitura(nRelevo, v, sombras));
   vec3 direta = albedo * luz + vec3(espec) * luzSol;
 
   // luzes noturnas: EMISSÃO — só no lado escuro, pelo linstep do espec

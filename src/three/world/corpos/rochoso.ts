@@ -237,9 +237,9 @@ void main() {
   vec3 pElip = vLocal * uEscalaLocal;
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
-  vec3 luzSol =
-    vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo);
-  float fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip));
+  vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
+  vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
+  vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
   gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
 }
 `;
@@ -278,9 +278,10 @@ void main() {
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
   float mu = clamp(dot(n, dirCam), 0.0, 1.0);
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
-  vec3 luzSol = vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0);
+  vec3 sombras = fatorDeEclipse(pElip, n, mu0);
+  vec3 luzSol = vec3(ls * uLuzGanho) * sombras;
   gl_FragColor = vec4(
-    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam)), 1.0
+    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
   );
 }
 `;
@@ -332,9 +333,9 @@ void main() {
   float ndotlGeo = dot(n, uDirSolLocal);
   float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
   vec3 albedo = uAlbedoBase * (0.72 + 0.56 * g);
-  vec3 luzSol =
-    vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo);
-  float fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip));
+  vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
+  vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
+  vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
   gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
 }
 `;
@@ -388,9 +389,10 @@ void main() {
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
   float mu = clamp(dot(n, dirCam), 0.0, 1.0);
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
-  vec3 luzSol = vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0);
+  vec3 sombras = fatorDeEclipse(pElip, n, mu0);
+  vec3 luzSol = vec3(ls * uLuzGanho) * sombras;
   gl_FragColor = vec4(
-    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam)), 1.0
+    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
   );
 }
 `;

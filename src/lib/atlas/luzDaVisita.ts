@@ -233,14 +233,47 @@ export function escreverLuzDaVisita(u: Uniformes, politica: PoliticaDeLuz): void
  * convenção de "Lambert cru" (o modo real), e o ramo devolve
  * `max(x, 0.0)`: o MESMO valor que o shader calculava antes desta obra.
  *
- * `lanternaDeLeitura` — o fill da câmera. Repare que ele NÃO recebe
- * eclipse nem sombra de anel: é de propósito, e é o Eyes.
+ * `lanternaDeLeitura` — o fill da câmera, JÁ multiplicado pelas sombras
+ * do quadro. Ver a divergência declarada logo abaixo.
  *
  * `luzDoGlobo` — a soma que satura em 1. O teto vale só para o que a
  * LANTERNA acrescenta: onde o Sol sozinho já passa de 1 — o modo `real`
  * em Mercúrio (E = 6,7) e o realce de limbo do Lommel-Seeliger — o teto
  * NÃO morde. Cortar ali seria teto de brilho, e o `NORTE.md` o proíbe em
  * letra. Com a lanterna em 0 a função é a identidade, bit a bit.
+ *
+ * ------------------------------------------------------------
+ * A DIVERGÊNCIA DECLARADA — a lanterna RESPEITA a sombra
+ * ------------------------------------------------------------
+ * O §4.2 do contrato manda a lanterna entrar "SEM eclipse e SEM sombra
+ * de anel", porque no Eyes a luz de câmera tem raio −1 e nenhum oclusor
+ * a alcança. **A casa diverge, e a foto é a razão.** Implementada ao pé
+ * da letra, a lanterna não escurece a umbra: ela a INVERTE. Medido em
+ * 25/08, no mesmo binário, com os dois caminhos:
+ *
+ *   eclipse solar 08/04/2024, núcleo da umbra sobre Durango, de 255:
+ *     item 91 . . . . . . . . . 2,76  contra 24,4 do vizinho  (8,8×)
+ *     lanterna sem sombra . .  42,21  contra 30,5 do vizinho  (0,7×)
+ *     lanterna com sombra . . . 2,80  contra 28,1 do vizinho (10,0×)
+ *
+ *   Lua eclipsada 27/07/2018, cor do disco (R/B do cobre de Danjon):
+ *     item 91 . . . . . . 34,1/19,4/8,0   R/B 4,28
+ *     lanterna sem sombra 43,2/29,6/19,3  R/B 2,24  (o cobre esmaece)
+ *     lanterna com sombra 37,4/21,4/8,4   R/B 4,47
+ *
+ * A umbra ficava MAIS CLARA que o deserto ao lado — a totalidade
+ * literalmente saía do mapa —, e o cobre de Danjon perdia metade da sua
+ * razão vermelho/azul. São dois fatos MEDIDOS que a auditoria do item 91
+ * conferiu contra a realidade (a umbra caiu em Durango, por onde a
+ * totalidade passou), e trocá-los por um fill de câmera é a mesma pressa
+ * que o contrato recusa em quatro outras linhas (o ambiente 0,02, o
+ * flood, o ×2 do anel, o Phong na Lua).
+ *
+ * O CONSERTO NÃO CUSTA NADA À LANTERNA. As duas sombras valem **1 no
+ * lado noturno** por construção (a de eclipse tem o portão do lado
+ * próximo e o fade pelo terminador; a do anel só existe com N·L > 0), e
+ * a noite é justamente onde a lanterna trabalha. Ela perde exatamente o
+ * que não devia ter: o direito de acender uma sombra.
  */
 export const GLSL_LUZ_DA_VISITA = /* glsl */ `
 uniform float uLanternaLeitura; // 0,15 em assistida; 0 em real
@@ -252,11 +285,11 @@ float terminadorSuave(float x) {
   return clamp(${EXPR_TERMINADOR}, 0.0, 1.0);
 }
 
-float lanternaDeLeitura(vec3 n, vec3 dirCam) {
-  return uLanternaLeitura * clamp(dot(n, dirCam), 0.0, 1.0);
+vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 sombras) {
+  return (uLanternaLeitura * clamp(dot(n, dirCam), 0.0, 1.0)) * sombras;
 }
 
-vec3 luzDoGlobo(vec3 luzSol, float fill) {
+vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
   vec3 teto = vec3(1.0);
   return ${EXPR_LUZ_DO_GLOBO};
 }

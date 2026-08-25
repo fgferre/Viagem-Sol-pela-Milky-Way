@@ -171,12 +171,15 @@ void main() {
   // Lommel-Seeliger com C derivado por neutralidade de fluxo — o disco
   // cheio é CHATO (mu == mu0 ⇒ fator constante C/2), não Lambertiano.
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
-  vec3 luzSol = vec3(ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal));
-  // ITEM 93: a LANTERNA DE LEITURA entra; a LOGÍSTICA não (contrato
-  // §4.3). O disco chato de LS é o fato da foto, e o teto de 1 não
-  // morde o realce de limbo — a borda dura continua dura.
+  vec3 sombras = fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal));
+  vec3 luzSol = vec3(ls * uLuzGanho) * sombras;
+  // ITEM 93: a LANTERNA DE LEITURA entra; a LOGISTICA nao (contrato
+  // 4.3). O disco chato de LS e' o fato da foto, e o teto de 1 nao
+  // morde o realce de limbo — a borda dura continua dura. A lanterna
+  // leva as SOMBRAS junto: sem isso o cobre de Danjon do eclipse lunar
+  // viraria um cinza de 15 %.
   gl_FragColor = vec4(
-    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam)), 1.0
+    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
   );
 }
 `;

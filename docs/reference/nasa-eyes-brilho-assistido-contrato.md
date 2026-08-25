@@ -4,6 +4,44 @@
 de usar o **mesmo algoritmo** de iluminação de globo do NASA Eyes, não
 só “o dia ficou claro”.
 
+---
+
+## ⚠️ O QUE POUSOU EM 25/08, E O QUE NÃO POUSOU
+
+**Pousaram 4.1, 4.2, 4.3 e 4.5.** O Sol vale 1 literal em `assistida`
+(e a compensação por corpo do item 91 saiu do código inteira); a
+lanterna de leitura de 15 % entra depois do Sol com a soma saturada em
+1; o terminador logístico s = 3 entra nos Lambert e não entra na Lua nem
+nos rochosos LS; e as três peças nascem em `luzDaVisita.ts` — número e
+GLSL no mesmo arquivo, com **um** escritor de uniformes.
+
+**NÃO pousou o 4.4, o véu palha de Saturno.** O item **não fecha** por
+isso, e a prova o declara — é o que este contrato manda fazer quando o
+véu atrasa.
+
+**UMA DIVERGÊNCIA DECLARADA, do §4.2: a lanterna RESPEITA as sombras.**
+O contrato manda-a entrar sem eclipse e sem sombra de anel, porque no
+Eyes a luz de câmera tem raio −1. Ao pé da letra ela não escurece a
+umbra: **inverte-a**. Medido no mesmo binário, nos dois caminhos, o
+núcleo do eclipse solar de 08/04/2024 sobre Durango, de 255 — item 91:
+**2,76** contra 24,4 do deserto vizinho (8,8×); lanterna sem sombra:
+**42,21** contra 30,5 (0,7× — a umbra fica MAIS CLARA que o chão);
+lanterna com sombra: **2,80** contra 28,1 (10,0×). E o cobre de Danjon
+da Lua eclipsada ia de R/B 4,28 para 2,24. O conserto não custa nada à
+lanterna: as duas sombras valem 1 no lado noturno por construção, que é
+onde ela trabalha. Foto: `capturas/item93-lanterna-e-a-sombra.png`.
+
+**UMA DECISÃO DE ESCOPO, do §4.3: a logística é da `assistida`.** O
+uniforme `uTerminadorS` vale 0 em `real`, e 0 significa Lambert cru. Um
+terminador inventado no modo que promete *penumbra física verdadeira*
+seria a decisão 2 do dono desfeita por dentro. Medido: em `?luz=real` a
+vista de Júpiter sai com **zero** pixel diferente.
+
+**Os pinos bit-idênticos de Terra e Lua do item 91 CAÍRAM**, como este
+contrato autoriza em letra (§3), e caíram medidos: o ganho de casa era
+0,998953 (Terra) e 1,000635 (Lua) e passou a 1 exato — 0,10 % e
+0,063 %, menos de um nível de 255.
+
 Este arquivo é a especificação **viva**. O estudo
 `nasa-eyes-iluminacao-planetas.md` continua sendo a leitura do fonte
 do Eyes; o ⚠️ de 25/08 lá descreve o que o item **91** fez. O 91 pagou

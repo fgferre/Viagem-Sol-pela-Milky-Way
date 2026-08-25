@@ -109,13 +109,18 @@ describe('2. o needle dos GLSL montados', () => {
   it('o chunk do eclipse existe e multiplica SÓ a direta, depois do BRDF', () => {
     expect(GIGANTE_LAMBERT_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
     expect(GIGANTE_LAMBERT_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
-    expect(GIGANTE_LAMBERT_FRAG).toContain('fatorDeEclipse(pElip, n, ndotlGeo)');
-    expect(GIGANTE_LAMBERT_FRAG).toContain('sombraDoAnel(pElip, ndotlGeo)');
+    expect(GIGANTE_LAMBERT_FRAG).toContain(
+      'vec3 sombras =\n    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip, ndotlGeo);'
+    );
     // ITEM 93: a luz do Sol passa pela logística e SÓ DEPOIS a lanterna
     // soma-se — ela fica FORA do eclipse e fora da sombra do anel, que é
     // o que o Eyes faz (a luz de câmera tem raio −1 lá)
     expect(GIGANTE_LAMBERT_FRAG).toContain(
-      'vec3(terminadorSuave(ndotlGeo)) * uLuzGanho'
+      'vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;'
+    );
+    // a LANTERNA leva as MESMAS sombras — a divergencia declarada do 93
+    expect(GIGANTE_LAMBERT_FRAG).toContain(
+      'lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras)'
     );
     expect(GIGANTE_LAMBERT_FRAG).toContain(
       'gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);'

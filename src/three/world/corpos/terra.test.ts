@@ -750,7 +750,7 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
 
   it('a luz direta multiplica o ESCALAR ÚNICO, e as luzes de cidade ficam fora', () => {
     // o único lugar do fragment em que o ganho entra na superfície
-    expect(FONTE_SHADERS).toContain('vec3 luzSol = vec3(uLuzGanho) * fatorDeEclipse(');
+    expect(FONTE_SHADERS).toContain('vec3 luzSol = vec3(uLuzGanho) * sombras;');
     expect(FONTE_SHADERS).toContain('vec3 direta = albedo * luz + vec3(espec) * luzSol;');
     // emissão: máscara × intensidade, SEM o ganho — cidade não é reflexo
     expect(FONTE_SHADERS).toContain('.rgb * (mascaraNoite * uNoiteGanho)');
@@ -861,10 +861,10 @@ describe('8. o eclipse na tela (F2c/D3)', () => {
     // a LANTERNA (item 93) entra FORA dele, que é o Eyes: a luz de
     // câmera não sofre eclipse
     expect(TERRA_FRAG).toContain(
-      'vec3 luzSol = vec3(uLuzGanho) * fatorDeEclipse(pElip, n, ndotlGeo);'
+      'vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);'
     );
     expect(TERRA_FRAG).toContain(
-      'luzDoGlobo(vec3(ndotl) * luzSol, lanternaDeLeitura(nRelevo, v))'
+      'luzDoGlobo(vec3(ndotl) * luzSol, lanternaDeLeitura(nRelevo, v, sombras))'
     );
     // a emissão (luzes de cidade) soma DEPOIS do fator — fora da sombra
     expect(TERRA_FRAG).toContain('gl_FragColor = vec4(direta + luzes, 1.0);');

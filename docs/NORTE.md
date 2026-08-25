@@ -685,15 +685,40 @@ Não reabrir sem que a condição listada mude.
   segue a **exposição da visita** (`luzDaVisita.ts`), que é fotografia
   de quem chegou, não ISO da Terra.
 
-  O mecanismo, para não renascer torto: o escalar da malha continua
-  sendo **um**, e é o PRODUTO `ganhoFundido(distância viva) ×
-  compensacaoDaVisita(corpo)`. A compensação é **constante por corpo**,
-  derivada do semieixo (as luas herdam a do pai), declarada em UM
-  arquivo. Em `assistida` ela cancela a lei e o produto dá ~1; em
-  `real` vale 1 exato e o produto volta a ser E(d) — **a penumbra
-  física fica**, e isso é decisão do dono que CONTRARIA o §11.1 do
-  relatório do Eyes. Nunca "ganho = 1 seco": apagar a lei não é
-  endereçá-la.
+  O mecanismo, para não renascer torto — e ele mudou no **item 93**, em
+  25/08. O escalar da malha continua sendo **um**:
+
+  - em `assistida` ele vale **1 LITERAL**. É o Sol do NASA Eyes
+    (`setLightSourceUniforms` multiplica a cor da luz por 1 e ignora a
+    magnitude absoluta escrita no cadastro deles). O produto do item 91
+    — `ganhoFundido(d) × compensacaoDaVisita(corpo)` — deixava um
+    resíduo `(dRef/d)^0,7` do 1/d² do PONTO dentro do globo, e é isso
+    que morreu; com ele saíram a tabela de semieixos, a distância da
+    visita e a constante por corpo, que não tinham mais o que compensar;
+  - em `real` ele é `ganhoFundido(d, 'real')` = E(d) EXATO — **a
+    penumbra física fica**, e isso é decisão do dono que CONTRARIA o
+    §11.1 do relatório do Eyes.
+
+  Nunca "ganho = 1 seco em toda parte": a lei continua viva em
+  `ganhoFundido` e no modo `real`; o que ela deixou de fazer é governar
+  o globo de quem chegou.
+
+  **AS TRÊS PEÇAS DA RECEITA acendem por um interruptor só**, e todas
+  nascem em `luzDaVisita.ts` (número e GLSL no mesmo arquivo): o Sol = 1,
+  a **lanterna de leitura** de 15 % presa à câmera, e o **terminador
+  logístico s = 3** nos Lambert. Em `real` os dois uniformes vão a 0, e
+  0 no `s` significa Lambert cru, bit a bit. A logística NÃO entra na
+  Lua nem nos rochosos Lommel-Seeliger — o disco chato é o fato da foto,
+  e ali o Eyes é pior que a casa.
+
+  **A DIVERGÊNCIA DECLARADA, e ela tem foto:** o §4.2 do contrato manda
+  a lanterna entrar sem eclipse e sem sombra de anel (no Eyes a luz de
+  câmera tem raio −1). Ao pé da letra ela **inverte a umbra**: medido, o
+  núcleo do eclipse de 08/04/2024 sobre Durango ia de 2,76 para **42,2**
+  de 255 e ficava MAIS CLARO que o deserto ao lado, e o cobre de Danjon
+  da Lua eclipsada perdia metade da razão vermelho/azul. Na casa a
+  lanterna **respeita as duas sombras** — e não perde nada com isso: as
+  duas valem 1 no lado noturno por construção, que é onde ela trabalha.
 
   **O que isto NÃO é:** auto-exposição. A conta não olha o quadro, nem
   a câmera, nem o relógio — a alavanca que o dono reprovou continua
@@ -702,25 +727,19 @@ Não reabrir sem que a condição listada mude.
   **O que isto CUSTA, e o custo é declarado:** entre GLOBOS a ordem de
   brilho deixa de valer (Saturno visitado fica tão claro quanto a Terra
   visitada). É de propósito, é a decisão 1 dele, e o selo declara o
-  gasto EXATO por corpo em passos de luz. A ordem verdadeira continua
-  inteira no ponto, que é onde o céu se lê.
-
-  **O resíduo é física, não erro:** constante ÷ lei viva deixa
-  `(dRef/d)^0,7`, então o mesmo mundo é mais claro no periélio que no
-  afélio. É o único sinal de distância que sobrevive à visita, e
-  sobrevive de propósito.
+  gasto EXATO por corpo em passos de luz — agora `2·log2(d)`, sem o
+  resíduo que o torcia. A ordem verdadeira continua inteira no ponto,
+  que é onde o céu se lê. **E a Terra e a Lua deixaram de ser
+  bit-idênticas** ao pré-91: o ganho de casa era 0,998953 (Terra) e
+  1,000635 (Lua) e passou a 1 exato. O contrato autoriza a queda em
+  letra, e ela está medida nos testes das duas classes.
 
   Contrato e números do Eyes:
-  `docs/reference/nasa-eyes-iluminacao-planetas.md` (com os avisos do
-  25/08). O que ficou para uma segunda leva, e **não** entrou no 91: a
-  lanterna de leitura de 15 % na câmera, a logística s=3 no terminador
-  dos gigantes e o véu de atmosfera no limbo de Saturno.
-
-  **Item 93 (aberto 25/08): essa segunda leva virou pedido.** O dono
-  quer o brilho **assistido** igual ao **algoritmo** do Eyes (Shadow),
-  não só o dia claro. Contrato vivo:
-  `docs/reference/nasa-eyes-brilho-assistido-contrato.md`. O `real` e
-  o pontinho não se reabrem.
+  `docs/reference/nasa-eyes-brilho-assistido-contrato.md` (o item 93) e
+  `docs/reference/nasa-eyes-iluminacao-planetas.md` (o estudo do fonte,
+  com os avisos do 25/08). **O que NÃO pousou no 93:** o véu de
+  atmosfera palha no limbo de Saturno (§4.4 do contrato), e por isso o
+  item continua aberto.
 
 ---
 
