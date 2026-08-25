@@ -87,8 +87,51 @@
 // ------------------------------------------------------------
 // 5. O DESENHO — e quem manda a linha sumir
 // ------------------------------------------------------------
-// `LineLoop` aditivo, 1 px, sem escrever profundidade e TESTANDO
-// profundidade (linha atrás de globo resolvido some, como deve).
+// A LINHA É UMA FITA (item 83 · L2), aditiva, sem escrever profundidade
+// e TESTANDO profundidade (linha atrás de globo resolvido some, como
+// deve). Até 24/08 era `LineLoop` + `LineBasicMaterial`: `linewidth` é
+// IGNORADO em WebGL — sempre 1 pixel de DISPOSITIVO —, e num Retina isso
+// é meio pixel CSS, fio de teia serrilhado. Não havia número a mexer; era
+// troca de primitiva.
+//
+// Hoje é `LineSegments2` + `LineMaterial` (o caminho `Line2` dos
+// exemplos do three, MIT, vivo em r185): um quad instanciado por
+// segmento, expandido em clip space, com junta resolvida. A largura é
+// `LARGURA_DA_FITA_PX`, em pixels CSS.
+//
+// POR QUE A LARGURA É EM PIXEL CSS, e não de dispositivo: desde r165 o
+// `LineSegments2.onBeforeRender` escreve o `resolution` sozinho a partir
+// de `renderer.getViewport()`, que o three guarda em unidades CSS (a
+// multiplicação pelo pixelRatio acontece depois, no `gl.viewport`). A
+// fita sai com a MESMA grossura aparente em 1×, 1,5× e 2× — que é
+// exatamente a invariância que a casa já exige do clarão. NÃO SE ESCREVE
+// `resolution` no resize: escrever à mão é reintroduzir o bug que o
+// upstream fechou.
+//
+// O ANTI-ALIASING É O DA CASA, e a escolha é declarada: `alphaToCoverage`
+// do `LineMaterial` depende de MSAA, e ESTA CASA NÃO TEM MSAA — o
+// renderer nasce com `antialias: false` e o AA vem do supersampling por
+// pixelRatio (`core/engine.ts`), com os alvos do composer sem `samples`.
+// Ligar a chave escreveria uma cobertura que ninguém amostra. As bordas
+// da fita são resolvidas no mesmo downsample que resolve todo o resto da
+// cena, e o `logdepthbuf` que o `LineMaterial` traz fica inerte porque a
+// casa não usa profundidade logarítmica.
+//
+// TRINTA OBJETOS, E NÃO UM — o "1 draw call" que o estudo oferecia de
+// brinde foi MEDIDO CONTRA O QUE CUSTAVA, e não se paga:
+//   - a ORIGEM FLUTUANTE morreria. Os vértices são relativos ao centro e
+//     só a MATRIZ anda por quadro, em double na CPU (§4). Concatenar os
+//     laços obrigaria a assar a posição do pai em cada vértice — e a
+//     órbita de Io é 1e-8 pc ao lado de um centro a 5,2 UA, que float32
+//     não resolve — e a reescrever o buffer a cada quadro em que o pai
+//     anda, que é todo quadro com o relógio ligado.
+//   - o ALFA É POR LINHA. O fade das duas pontas e o realce do foco
+//     (§5b) dão um alfa DIFERENTE a cada laço, e no `LineMaterial` o
+//     alfa é um uniform global (issue #23680, aberta desde 2022). Um
+//     objeto só exigiria a receita de alfa por vértice que o item 83
+//     reserva ao L4.
+// O que se perde é nada: já eram 30 draw calls, e continuam 30 — só as
+// ACESAS desenham.
 //
 // A COR É O DADO, O BRILHO É O INSTRUMENTO. O matiz sai da fotometria
 // da casa (`FOTOMETRIA[id].corLinear`, o RGB linear de albedo por
@@ -167,6 +210,9 @@
 // mesmo feitio da que o HUD já anuncia ao visitante.
 // ============================================================
 import * as THREE from 'three';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 import { GM_CORPOS } from '../../lib/atlas/massas';
@@ -206,6 +252,21 @@ export function muDoPar(centro: string, corpo: string): number | null {
 
 /** Quantos vértices tem um laço. 256 é o número do contrato do item 77. */
 export const PONTOS_POR_ORBITA = 256;
+
+/**
+ * A LARGURA DA FITA, em PIXELS CSS (§5, item 83 · L2).
+ *
+ * 1,25 é o número do NASA Eyes, e ele foi medido por DOIS métodos
+ * independentes que fecharam (`docs/reference/estudo-orbitas-eyes-observacao.md`):
+ * o perfil de cobertura sub-pixel lido do pixel da tela deles — níveis em
+ * 0,25/0,50/0,75/1,00 sobre ~2,5 px de dispositivo a DPR 2 — e a leitura
+ * da API do motor. A nossa tinha 1 px de DISPOSITIVO, que num Retina é
+ * 0,5 px CSS: a deles era 2,5× mais grossa.
+ *
+ * NÃO CONFUNDIR COM RAIO: no shader do `LineMaterial` o `linewidth` é a
+ * largura CHEIA (o offset do quad é metade dele para cada lado).
+ */
+export const LARGURA_DA_FITA_PX = 1.25;
 
 /**
  * O piso e o topo do fade DE BAIXO, em pixels de raio na tela. Abaixo
@@ -497,11 +558,54 @@ export function escreverLaco(
   }
 }
 
+/**
+ * O LAÇO DE PONTOS VIRA FITA DE SEGMENTOS (§5, item 83 · L2).
+ *
+ * O `LineSegmentsGeometry` guarda DOIS pontos por segmento num único
+ * buffer interleaved de passo 6 (início xyz, fim xyz), e cada ponto
+ * interior aparece DUAS vezes — como fim do segmento anterior e como
+ * início do seguinte. Esta função faz exatamente essa expansão, e o
+ * segmento `n-1` FECHA o laço ligando o último ponto ao primeiro (é o
+ * que o `LineLoop` fazia sozinho e o `LineSegments2` não faz).
+ *
+ * POR QUE NÃO ESCREVER A CÔNICA DIRETO NO PASSO 6: `escreverLaco` é a
+ * álgebra provada do item 77, cobrada vértice a vértice contra a
+ * efeméride viva. Trocar o layout dela seria mexer no que está certo
+ * para atender ao que é desenho; aqui a álgebra continua intacta e a
+ * expansão é uma cópia, sem uma conta nova. O custo é uma passada de
+ * 256 cópias de 6 floats, contra os 256 senos que a antecedem.
+ */
+export function espelharNaFita(
+  pontos: Float32Array | Float64Array,
+  saida: Float32Array | Float64Array,
+  n: number
+): void {
+  for (let k = 0; k < n; k++) {
+    const x = pontos[k * 3];
+    const y = pontos[k * 3 + 1];
+    const z = pontos[k * 3 + 2];
+    // início do segmento k
+    saida[k * 6] = x;
+    saida[k * 6 + 1] = y;
+    saida[k * 6 + 2] = z;
+    // ...e fim do segmento anterior, que para k = 0 é o do FECHAMENTO
+    const anterior = (k + n - 1) % n;
+    saida[anterior * 6 + 3] = x;
+    saida[anterior * 6 + 4] = y;
+    saida[anterior * 6 + 5] = z;
+  }
+}
+
 /** Uma linha viva: o objeto do three mais o que o quadro precisa dela. */
 interface LinhaDeOrbita {
   readonly corpo: CorpoComOrbita;
-  readonly loop: THREE.LineLoop;
-  readonly material: THREE.LineBasicMaterial;
+  readonly fita: LineSegments2;
+  readonly material: LineMaterial;
+  /**
+   * O buffer interleaved dos segmentos — guardado porque é ELE que leva
+   * o `needsUpdate`, e não o atributo. Ver `reamostrar`.
+   */
+  readonly segmentos: THREE.InstancedInterleavedBuffer;
   /** μ do par centro+corpo, ou `null` se o kernel não tem o centro */
   readonly mu: number | null;
   /** o instante da cônica desenhada; NaN enquanto ela não existe */
@@ -540,21 +644,37 @@ export class Orbitas {
   private jdDosCentros = Number.NaN;
   /** rascunhos reusados — nada aloca no caminho do quadro */
   private readonly pontoEq: [number, number, number] = [0, 0, 0];
+  /**
+   * O laço em pontos, antes de virar fita (§5) — UM por camada, não um
+   * por linha: `reamostrar` o preenche e o consome no mesmo passo, e
+   * nada dele sobrevive à chamada.
+   */
+  private readonly rascunhoDoLaco = new Float32Array(PONTOS_POR_ORBITA * 3);
   private readonly rascunhoNdc = new THREE.Vector3();
   private readonly centroDoPai = new THREE.Vector3();
 
   constructor(corpos: readonly CorpoComOrbita[] = CORPOS_COM_ORBITA) {
     this.group.name = 'orbitas';
     for (const corpo of corpos) {
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute(
-        'position',
-        new THREE.BufferAttribute(new Float32Array(PONTOS_POR_ORBITA * 3), 3)
+      const geo = new LineSegmentsGeometry();
+      // O BUFFER NASCE AQUI E NÃO MORRE MAIS (§5): `setPositions()` aloca
+      // um `InstancedInterleavedBuffer` novo e recomputa as duas
+      // bounding volumes a cada chamada, e esta camada reescreve o laço
+      // a cada salto de data. O buffer é montado UMA vez, à mão, e o
+      // caminho do quadro só muta o array dele.
+      const segmentos = new THREE.InstancedInterleavedBuffer(
+        new Float32Array(PONTOS_POR_ORBITA * 6),
+        6,
+        1
       );
+      geo.setAttribute('instanceStart', new THREE.InterleavedBufferAttribute(segmentos, 3, 0));
+      geo.setAttribute('instanceEnd', new THREE.InterleavedBufferAttribute(segmentos, 3, 3));
+      geo.instanceCount = PONTOS_POR_ORBITA;
       // nasce com raio zero: sem cônica escrita não há nada para cortar
       geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 0);
-      const material = new THREE.LineBasicMaterial({
+      const material = new LineMaterial({
         color: new THREE.Color(corpo.cor[0], corpo.cor[1], corpo.cor[2]),
+        linewidth: LARGURA_DA_FITA_PX,
         transparent: true,
         opacity: 0,
         blending: THREE.AdditiveBlending,
@@ -562,16 +682,19 @@ export class Orbitas {
         // linha atrás de globo resolvido SOME — é o palco quem escreve
         // profundidade, e é o comportamento certo (§5)
         depthTest: true,
+        // sem MSAA nesta casa não há cobertura para escrever (§5)
+        alphaToCoverage: false,
       });
-      const loop = new THREE.LineLoop(geo, material);
+      const fita = new LineSegments2(geo, material);
       // slots ocupados: … 6 (marcador), 7 (pontos dos planetas)
-      loop.renderOrder = 8;
-      loop.visible = false;
-      this.group.add(loop);
+      fita.renderOrder = 8;
+      fita.visible = false;
+      this.group.add(fita);
       this.linhas.push({
         corpo,
-        loop,
+        fita,
         material,
+        segmentos,
         mu: muDoPar(corpo.centro, corpo.id),
         jd: Number.NaN,
         semieixoPc: 0,
@@ -584,7 +707,7 @@ export class Orbitas {
 
   /** quantas linhas estão acesas neste quadro — leitura de régua/teste */
   get acesas(): number {
-    return this.linhas.reduce((n, l) => n + (l.loop.visible ? 1 : 0), 0);
+    return this.linhas.reduce((n, l) => n + (l.fita.visible ? 1 : 0), 0);
   }
 
   /**
@@ -624,7 +747,7 @@ export class Orbitas {
    */
   private reporCentro(linha: LinhaDeOrbita, jdTdb: number, fonte: FonteDeOrbitas) {
     if (linha.corpo.centro === 'sun') {
-      linha.loop.position.set(0, 0, 0);
+      linha.fita.position.set(0, 0, 0);
       return;
     }
     try {
@@ -633,7 +756,7 @@ export class Orbitas {
       this.pontoEq[1] = p.y;
       this.pontoEq[2] = p.z;
       const eq = eclipticaParaEquatorial(this.pontoEq);
-      linha.loop.position.set(
+      linha.fita.position.set(
         eq[0] * AU_PARA_PC,
         eq[1] * AU_PARA_PC,
         eq[2] * AU_PARA_PC
@@ -643,7 +766,7 @@ export class Orbitas {
       // some em vez de ficar num lugar velho — a máquina do tempo já
       // avisa o visitante que a fita acabou, e uma órbita ancorada na
       // data errada seria a casa mentindo em silêncio.
-      linha.loop.position.set(0, 0, 0);
+      linha.fita.position.set(0, 0, 0);
       linha.jd = Number.NaN;
       linha.semieixoPc = 0;
       linha.apoastroPc = 0;
@@ -680,21 +803,33 @@ export class Orbitas {
     // divergência silenciosa entre a linha e o corpo que ela cerca — e
     // como a ponte é LINEAR, girar os DOIS VERSORES da cônica gira o
     // laço inteiro: duas chamadas por corpo, não 256.
-    const attr = linha.loop.geometry.getAttribute('position') as THREE.BufferAttribute;
     escreverLaco(
       conica,
       eclipticaParaEquatorial(conica.periastro as [number, number, number]),
       eclipticaParaEquatorial(conica.lateral as [number, number, number]),
       AU_PARA_PC,
-      attr.array as Float32Array,
+      this.rascunhoDoLaco,
       PONTOS_POR_ORBITA
     );
-    attr.needsUpdate = true;
+    // A DISCIPLINA DO BUFFER (§5): muta-se o array do interleaved e
+    // marca-se ELE — nunca `setPositions()`, que alocaria buffer de GPU
+    // novo e recomputaria as bounding volumes a cada salto de data. O
+    // `needsUpdate` vai no `InstancedInterleavedBuffer` porque os dois
+    // atributos (`instanceStart` e `instanceEnd`) são janelas do MESMO
+    // array: marcar um atributo não marcaria o outro.
+    // o `array` do interleaved é `TypedArray` no tipo e Float32Array de
+    // fato — o construtor acima é quem o cria, três linhas de distância
+    espelharNaFita(
+      this.rascunhoDoLaco,
+      linha.segmentos.array as Float32Array,
+      PONTOS_POR_ORBITA
+    );
+    linha.segmentos.needsUpdate = true;
     linha.semieixoPc = conica.semieixoUa * AU_PARA_PC;
     // o apoastro é o raio que o recorte de frustum precisa conhecer — e
     // é o mesmo que decide se a órbita CABE no quadro
     linha.apoastroPc = linha.semieixoPc * (1 + conica.excentricidade);
-    (linha.loop.geometry.boundingSphere as THREE.Sphere).radius = linha.apoastroPc;
+    (linha.fita.geometry.boundingSphere as THREE.Sphere).radius = linha.apoastroPc;
     linha.jd = jdTdb;
     return true;
   }
@@ -731,7 +866,7 @@ export class Orbitas {
       linha.realce = this.perseguirRealce(linha, dtS);
       linha.alfa = this.alfaDa(linha, camera, camPos, meiaAltura, tanHalfFov);
       const aceso = linha.alfa > ALFA_INVISIVEL;
-      linha.loop.visible = aceso;
+      linha.fita.visible = aceso;
       if (aceso) linha.material.opacity = linha.alfa;
     }
   }
@@ -780,7 +915,7 @@ export class Orbitas {
     tanHalfFov: number
   ): number {
     if (!Number.isFinite(linha.jd) || !(linha.semieixoPc > 0)) return 0;
-    const centro = linha.loop.position;
+    const centro = linha.fita.position;
     const d = camPos.distanceTo(centro);
     if (!(d > 0) || !(tanHalfFov > 0)) return 0;
 
@@ -843,7 +978,7 @@ export class Orbitas {
         `foco=${this.foco ?? '—'}${this.animando ? ' (andando)' : ''}`,
     ];
     for (const l of this.linhas) {
-      if (!l.loop.visible) continue;
+      if (!l.fita.visible) continue;
       linhas.push(
         `[dbgorbitas] ${l.corpo.id.padEnd(9)} centro=${l.corpo.centro.padEnd(8)} ` +
           `a=${(l.semieixoPc / AU_PARA_PC).toFixed(6)} UA · ` +
@@ -855,7 +990,7 @@ export class Orbitas {
 
   dispose() {
     for (const linha of this.linhas) {
-      linha.loop.geometry.dispose();
+      linha.fita.geometry.dispose();
       linha.material.dispose();
     }
     this.linhas.length = 0;

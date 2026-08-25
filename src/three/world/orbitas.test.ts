@@ -49,6 +49,7 @@ import {
 import {
   CORPOS_COM_ORBITA,
   Orbitas,
+  LARGURA_DA_FITA_PX,
   PONTOS_POR_ORBITA,
   conicaOsculadora,
   escreverLaco,
@@ -312,7 +313,7 @@ describe('a camada no quadro', () => {
     for (const filho of orbitas.group.children) {
       const g = (filho as unknown as {
         geometry: { getAttribute(n: string): { array: Float32Array } };
-      }).geometry.getAttribute('position').array;
+      }).geometry.getAttribute('instanceStart').array;
       expect(g.every((v) => v === 0)).toBe(true);
     }
     orbitas.dispose();
@@ -363,7 +364,7 @@ describe('a camada no quadro', () => {
           geometry: { getAttribute(n: string): { array: Float32Array } };
           position: { x: number; y: number; z: number };
         };
-        const g = loop.geometry.getAttribute('position').array;
+        const g = loop.geometry.getAttribute('instanceStart').array;
         const c = loop.position;
         const d = Math.hypot(
           g[0] + c.x - pos[j * 3],
@@ -445,13 +446,132 @@ describe('a camada no quadro', () => {
     };
     const p = motor.posicaoHeliocentrica('earth', EPOCA_JD_TDB);
     const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
-    const arr = loop.geometry.getAttribute('position').array;
+    const arr = loop.geometry.getAttribute('instanceStart').array;
     // float32 do atributo contra float64 da efeméride: a folga é a da
     // quantização do buffer, e é relativa ao raio da órbita
     const escala = Math.hypot(eq[0], eq[1], eq[2]) * AU_PARA_PC;
     expect(Math.abs(arr[0] - eq[0] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
     expect(Math.abs(arr[1] - eq[1] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
     expect(Math.abs(arr[2] - eq[2] * AU_PARA_PC) / escala).toBeLessThan(1e-6);
+    orbitas.dispose();
+  });
+});
+
+describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
+  /** o buffer interleaved de uma linha, pelo objeto do three */
+  function segmentosDe(orbitas: Orbitas, id: string) {
+    const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
+    const g = (orbitas.group.children[i] as unknown as {
+      geometry: {
+        getAttribute(n: string): { data: { array: Float32Array }; array: Float32Array };
+        instanceCount: number;
+      };
+    }).geometry;
+    return {
+      atributo: g.getAttribute('instanceStart'),
+      dados: g.getAttribute('instanceStart').data,
+      instancias: g.instanceCount,
+    };
+  }
+
+  it('a fita é CONTÍNUA e FECHADA — o fim de cada segmento é o começo do próximo', () => {
+    // O DEFEITO QUE ISTO PEGA: escrever só os inícios (ou esquecer o
+    // segmento de fechamento) desenha uma fita tracejada, ou um laço
+    // aberto com uma fatia faltando — e as duas passariam por qualquer
+    // teste que só olhasse o vértice 0.
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    for (const id of ['earth', 'io', 'pluto']) {
+      const { dados, instancias } = segmentosDe(orbitas, id);
+      expect(instancias, id).toBe(PONTOS_POR_ORBITA);
+      const a = dados.array;
+      for (let k = 0; k < PONTOS_POR_ORBITA; k++) {
+        const proximo = (k + 1) % PONTOS_POR_ORBITA;
+        for (let eixo = 0; eixo < 3; eixo++) {
+          // fim do segmento k === início do segmento k+1, BIT A BIT: os
+          // dois saíram da mesma cópia do mesmo ponto
+          expect(a[k * 6 + 3 + eixo], `${id} seg ${k} eixo ${eixo}`)
+            .toBe(a[proximo * 6 + eixo]);
+        }
+      }
+      // ...e o laço FECHA: o último segmento volta ao ponto 0
+      const u = PONTOS_POR_ORBITA - 1;
+      expect(a[u * 6 + 3], id).toBe(a[0]);
+    }
+    orbitas.dispose();
+  });
+
+  it('NUNCA realoca o buffer: o salto de data muta o array que já existe', () => {
+    // O CUIDADO (c) DO ITEM 83, cobrado como comportamento e não como
+    // promessa: `setPositions()` aloca um `InstancedInterleavedBuffer`
+    // NOVO e recomputa as duas bounding volumes. Se alguém trocar a
+    // mutação por ele, a IDENTIDADE do buffer e a do array mudam — e é
+    // exatamente isso que este teste segura, em três datas.
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    // A CÂMERA É PARTE DO TESTE, e não cenário: uma linha APAGADA não se
+    // reamostra (é a guarda de `escreverInstante`), então sem um quadro
+    // de verdade este teste passaria sem nunca reescrever nada — que é
+    // exatamente o falso positivo que ele existe para não ser. A 10 UA a
+    // órbita da Terra acende cheia.
+    const cam = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    cam.position.set(0, 0, 10 / UA_POR_PC);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const tan = Math.tan((35 * Math.PI) / 360);
+    const quadro = (jd: number) => {
+      orbitas.escreverInstante(jd, motor);
+      orbitas.update(cam, 1800, tan, 0);
+    };
+
+    quadro(EPOCA_JD_TDB);
+    quadro(EPOCA_JD_TDB);
+    const { dados } = segmentosDe(orbitas, 'earth');
+    const bufferOriginal = dados;
+    const arrayOriginal = dados.array;
+    const primeiroX = arrayOriginal[0];
+
+    for (const jd of [EPOCA_JD_TDB + 200, EPOCA_JD_TDB + 1500, EPOCA_JD_TDB - 900]) {
+      quadro(jd);
+      const agora = segmentosDe(orbitas, 'earth');
+      expect(agora.dados, 'o buffer foi realocado').toBe(bufferOriginal);
+      expect(agora.dados.array, 'o array foi realocado').toBe(arrayOriginal);
+    }
+    // e a reescrita ACONTECEU de verdade — senão o teste acima passaria
+    // com uma camada que não desenha nada
+    expect(arrayOriginal[0]).not.toBe(primeiroX);
+    orbitas.dispose();
+  });
+
+  it('a largura é a do estudo, em px CSS, e a camada não escreve `resolution`', () => {
+    // A LARGURA em px CSS depende de o `resolution` vir do renderer
+    // (`LineSegments2.onBeforeRender`, r165+). Escrevê-lo à mão no
+    // resize — o reflexo antigo — reintroduz o bug que o upstream
+    // fechou, e a fita passa a depender do pixelRatio. Aqui a camada
+    // roda um instante inteiro SEM renderer: se ela mexesse no
+    // `resolution`, ele não estaria mais no zero de fábrica.
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const material = (orbitas.group.children[0] as unknown as {
+      material: {
+        linewidth: number;
+        worldUnits: boolean;
+        alphaToCoverage: boolean;
+        resolution: { x: number; y: number };
+      };
+    }).material;
+    expect(material.linewidth).toBe(LARGURA_DA_FITA_PX);
+    expect(LARGURA_DA_FITA_PX).toBe(1.25);
+    // em unidades de MUNDO a largura deixaria de ser um pixel e passaria
+    // a encolher com a distância — o oposto do que a fita é
+    expect(material.worldUnits).toBe(false);
+    // sem MSAA nesta casa (o renderer nasce com `antialias: false`), a
+    // cobertura não teria quem a amostrasse
+    expect(material.alphaToCoverage).toBe(false);
+    expect(material.resolution.x, 'a camada escreveu `resolution`').toBe(0);
+    expect(material.resolution.y, 'a camada escreveu `resolution`').toBe(0);
     orbitas.dispose();
   });
 });
