@@ -16,6 +16,11 @@
 // medidor usa, e assim o valor esperado é aritmética exata em vez de
 // refém do arredondamento do cinza. O leitor de PNG tem bloco só dele.
 // ============================================================
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
@@ -329,15 +334,24 @@ describe('medirAneis — o disco em dez anéis, e o quão chato ele é', () => {
 
 describe('medirCroma — a COR do que mudou, separada pelo sinal', () => {
   /**
-   * O QUADRO DE PROVA, 4×1 = 4 pixels, contado à mão:
+   * O QUADRO DE PROVA, 5×1 = 5 pixels, contado à mão:
    *
    *   px 0: 100,100,100 → 100,100,100   parado
    *   px 1:  50, 50, 50 →  70, 60, 52   ACENDE com tinta palha (Δ 20/10/2)
    *   px 2:  50, 50, 50 →  90, 70, 54   ACENDE com a MESMA tinta, o dobro
    *   px 3: 100,100,100 →  90, 90, 90   APAGA achatado (Δ −10 nos três)
+   *   px 4: 100,100,100 → 120, 90,100   APAGA com o VERMELHO SUBINDO
+   *                                     (Δ +20/−10/0, Δlum = −2,90)
    *
-   *   acendeu: n=2, médias 30/15/3 → cor 1 : 0,5 : 0,1
-   *   apagou:  n=1, médias −10/−10/−10 → cor 1 : 1 : 1
+   *   acendeu: n=2, médias 30/15/3    → cor  1 :  0,5 : 0,1
+   *   apagou:  n=2, médias 5/−10/−5   → cor  1 : −2   : −1
+   *
+   * O PX 4 É O JUIZ DA LUMINÂNCIA, e entrou em 25/08 porque sem ele o
+   * balde não tinha juiz nenhum: nos quatro primeiros pixels o ΔR e a
+   * Δluminância concordam de SINAL, então trocar a Rec.709 desta linha
+   * por um `dR` cru passava calado. No px 4 eles discordam — o vermelho
+   * sobe 20, o verde cai 10, e a Rec.709 pesa o verde 3,4× mais que o
+   * vermelho, de modo que o pixel ESCURECEU.
    */
   const png = (trincas) => ({
     largura: trincas.length,
@@ -345,14 +359,18 @@ describe('medirCroma — a COR do que mudou, separada pelo sinal', () => {
     canais: 3,
     dados: Uint8Array.from(trincas.flat()),
   });
-  const antes = png([[100, 100, 100], [50, 50, 50], [50, 50, 50], [100, 100, 100]]);
-  const depois = png([[100, 100, 100], [70, 60, 52], [90, 70, 54], [90, 90, 90]]);
+  const antes = png([
+    [100, 100, 100], [50, 50, 50], [50, 50, 50], [100, 100, 100], [100, 100, 100],
+  ]);
+  const depois = png([
+    [100, 100, 100], [70, 60, 52], [90, 70, 54], [90, 90, 90], [120, 90, 100],
+  ]);
   const c = medirCroma(antes, depois);
 
   it('separa quem acendeu de quem apagou pelo sinal da LUMINÂNCIA', () => {
-    expect(c.pixels).toBe(4);
+    expect(c.pixels).toBe(5);
     expect(c.acendeu.n).toBe(2);
-    expect(c.apagou.n).toBe(1);
+    expect(c.apagou.n).toBe(2);
   });
 
   it('a média do delta sai canal a canal, e a COR é a razão normalizada em R', () => {
@@ -363,14 +381,74 @@ describe('medirCroma — a COR do que mudou, separada pelo sinal', () => {
   });
 
   /**
-   * O BALDE `apagou` TEM OS TRÊS DELTAS NEGATIVOS, e é aí que uma
-   * normalização ingênua explode: dividir por `max(ΣdR, 1e-9)` devolveria
-   * 1e13 em vez de 1. A cor é do MÓDULO, e mudança achatada sai 1:1:1 —
-   * que é exatamente como se lê "mexeu na dose, não na tinta".
+   * O BALDE É O DA LUMINÂNCIA, NÃO O DE UM CANAL — e o px 4 é quem prova.
+   * Ele ganha 20 de vermelho e mesmo assim ESCURECE, porque perdeu 10 de
+   * verde e a Rec.709 pesa o verde 3,4× mais. Um medidor que repartisse
+   * pelo ΔR o mandaria para `acendeu` e os DOIS baldes passariam a
+   * mentir: o `apagou` perderia o pixel e o `acendeu` diluiria a tinta.
+   */
+  it('quem escurece com o VERMELHO subindo cai em `apagou` — o balde é da luminância', () => {
+    // o Δlum do px 4, à mão: 0,2126·20 − 0,7152·10 = −2,90
+    expect(0.2126 * 20 + 0.7152 * -10).toBeCloseTo(-2.9, 6);
+    expect(c.apagou.n).toBe(2); // o achatado E o px 4
+    expect(c.apagou.dR).toBe(5); // (−10 + 20)/2 — o ΔR do balde `apagou` é POSITIVO
+    expect(c.apagou.dG).toBe(-10);
+    expect(c.apagou.dB).toBe(-5);
+    // e a cor do balde denuncia a discordância: o verde e o azul andaram
+    // ao CONTRÁRIO do vermelho, e por isso saem negativos
+    expect(c.apagou.corRGB).toEqual([1, -2, -1]);
+    // e o px 4 NÃO foi parar do outro lado: repartir pelo ΔR daria
+    // acendeu n=3 e dR médio 26,667, não estes dois números
+    expect(c.acendeu.n).toBe(2);
+    expect(c.acendeu.dR).toBe(30);
+  });
+
+  /**
+   * O BALDE `apagou` TEM OS TRÊS DELTAS NEGATIVOS QUANDO A MUDANÇA É DE
+   * DOSE, e é aí que uma normalização ingênua explode: dividir por
+   * `max(ΣdR, 1e-9)` devolveria 1e13 em vez de 1. O quadro é só disto,
+   * para que a leitura "mexeu na dose, não na tinta" tenha um pino limpo.
    */
   it('mudança de DOSE sai achatada (1:1:1) — e o balde negativo não explode', () => {
-    expect(c.apagou.dR).toBe(-10);
-    expect(c.apagou.corRGB).toEqual([1, 1, 1]);
+    const dose = medirCroma(png([[100, 100, 100]]), png([[90, 90, 90]]));
+    expect(dose.apagou.n).toBe(1);
+    expect(dose.apagou.dR).toBe(-10);
+    expect(dose.apagou.corRGB).toEqual([1, 1, 1]);
+  });
+
+  /**
+   * A FRAÇÃO GUARDA O SINAL, e é a diferença entre ler o fato e o oposto
+   * dele. Até 25/08 a normalização era `|dG|/|dR|` e `|dB|/|dR|`: um azul
+   * que CAIU enquanto o vermelho subia saía POSITIVO — a leitura era
+   * "entrou azul" quando o azul tinha ido embora. Aqui o pixel acende no
+   * vermelho e PERDE azul, e o relatório diz isso.
+   */
+  it('a fração guarda o SINAL: canal que anda ao contrário do R sai negativo', () => {
+    const tinta = medirCroma(png([[10, 10, 100]]), png([[60, 30, 60]]));
+    expect(tinta.acendeu.n).toBe(1);
+    expect(tinta.acendeu.dR).toBe(50);
+    expect(tinta.acendeu.dG).toBe(20);
+    expect(tinta.acendeu.dB).toBe(-40);
+    // com `Math.abs` por canal isto saía [1, 0,4, +0,8] — "entrou azul"
+    expect(tinta.acendeu.corRGB).toEqual([1, 0.4, -0.8]);
+  });
+
+  /**
+   * O LIMIAR é o terceiro argumento, e ele MOVE pixel de balde: com meio
+   * nível o px 4 conta como apagado; com 5 níveis a Δlum de −2,90 já não
+   * passa, e ele vira ruído de arredondamento. É este argumento que a
+   * linha de comando passou a honrar.
+   */
+  it('o limiar reparte de verdade: subir a régua tira o pixel do balde', () => {
+    const largo = medirCroma(antes, depois, 5);
+    expect(largo.apagou.n).toBe(1); // só o achatado (Δlum −10) sobrevive
+    expect(largo.apagou.dR).toBe(-10);
+    expect(largo.acendeu.n).toBe(2); // os dois de tinta palha continuam
+  });
+
+  it('quadro sem cor ou de outro tamanho REPROVA — não devolve croma inventada', () => {
+    expect(() => medirCroma(antes, png([[1, 1, 1]]))).toThrow(/tamanhos diferentes/);
+    expect(() => medirCroma({ ...antes, canais: 1 }, depois)).toThrow(/sem cor/);
   });
 
   it('o pico é o pixel de maior ΔR, com as duas trincas inteiras', () => {
@@ -381,9 +459,37 @@ describe('medirCroma — a COR do que mudou, separada pelo sinal', () => {
     expect(c.pico.depois).toEqual([90, 70, 54]);
   });
 
-  it('quadro sem cor ou de outro tamanho REPROVA — não devolve croma inventada', () => {
-    expect(() => medirCroma(antes, png([[1, 1, 1]]))).toThrow(/tamanhos diferentes/);
-    expect(() => medirCroma({ ...antes, canais: 1 }, depois)).toThrow(/sem cor/);
+});
+
+/**
+ * A LINHA DE COMANDO — o encanamento, que é onde o defeito morava. Até
+ * 25/08 o modo `croma` era o único dos cinco que ENGOLIA o 4º argumento
+ * (`aneis` e `umbra` o liam), e nenhuma chamada de função pegava isso:
+ * `medirCroma` sempre soube receber o limiar; quem não o passava era o
+ * CLI. Um juiz que só chama a função nunca vê esse buraco, então este
+ * bloco RODA o script.
+ */
+describe('a linha de comando do medidor', () => {
+  const SCRIPT = fileURLToPath(new URL('./luz-ab.mjs', import.meta.url));
+
+  it('o modo `croma` honra o 4º argumento `limiar`, como os outros modos', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'luz-ab-croma-'));
+    try {
+      const a = join(dir, 'antes.png');
+      const b = join(dir, 'depois.png');
+      // um quadro 2×1 chapado: o px 0 apaga FORTE (Δlum −10) e o px 1
+      // apaga FRACO (Δ +20/−10/0, Δlum −2,90 — o px 4 do quadro de prova)
+      writeFileSync(a, png(2, 1, () => [100, 100, 100]));
+      writeFileSync(b, png(2, 1, (x) => (x === 0 ? [90, 90, 90] : [120, 90, 100])));
+      const rodar = (...extra) =>
+        JSON.parse(
+          execFileSync(process.execPath, [SCRIPT, 'croma', a, b, ...extra], { encoding: 'utf8' })
+        );
+      expect(rodar().apagou.n).toBe(2); // padrão: meio nível, os dois entram
+      expect(rodar('5').apagou.n).toBe(1); // régua de 5: o fraco não passa
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

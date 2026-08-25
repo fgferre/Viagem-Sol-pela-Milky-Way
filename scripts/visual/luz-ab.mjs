@@ -7,7 +7,7 @@
 //   node scripts/visual/luz-ab.mjs faixas antes.png depois.png
 //   node scripts/visual/luz-ab.mjs aneis  antes.png depois.png [limiar]
 //   node scripts/visual/luz-ab.mjs umbra  antes.png depois.png [ref.png]
-//   node scripts/visual/luz-ab.mjs croma  antes.png depois.png
+//   node scripts/visual/luz-ab.mjs croma  antes.png depois.png [limiar]
 //
 // Imprime JSON no formato dos `capturas/item93-*.json`. Sem navegador e
 // sem dependência: o PNG é decodificado aqui (zlib do próprio Node), e a
@@ -84,13 +84,14 @@
 //    `chato` = anel 0,8–0,9 sobre anel 0,0–0,1 — 1 é o disco chato de
 //    Lommel-Seeliger, e quanto menor, mais o limbo cai.
 //  · CROMA (25/08, o véu do §4.4): reparte o quadro pelo SINAL da
-//    mudança de luminância — `acendeu` (Δ ≥ +0,5) e `apagou` (Δ ≤ −0,5) —
+//    mudança de LUMINÂNCIA — `acendeu` (Δ ≥ +0,5) e `apagou` (Δ ≤ −0,5) —
 //    e dá a média do delta CANAL A CANAL em cada balde, mais a razão
-//    R:G:B normalizada em R. Existe porque o cinza não separa mudança de
-//    DOSE (todo canal na mesma proporção) de TINTA acrescentada: num
-//    quadro em que as duas acontecem, a peça que escurece 1 % o disco
-//    inteiro tem cem vezes mais pixels que a que acende a borda. Cor
-//    achatada (1 : ~1 : ~1) é dose; cor inclinada é tinta.
+//    R:G:B normalizada em R, COM SINAL. Existe porque o cinza não separa
+//    mudança de DOSE (todo canal na mesma proporção) de TINTA
+//    acrescentada: num quadro em que as duas acontecem, a peça que
+//    escurece 1 % o disco inteiro tem cem vezes mais pixels que a que
+//    acende a borda. Cor achatada (1 : ~1 : ~1) é dose; cor inclinada é
+//    tinta; fração NEGATIVA é um canal que andou ao contrário do R.
 //  · UMBRA: o próprio script ACHA o ponto mais escuro do lado de
 //    referência dentro do disco (varredura de 2 em 2 px, média de 5×5
 //    amostras), e mede janelas de 17×17 ali e a 220 px ao lado.
@@ -360,11 +361,16 @@ export function medirAneis(antes, depois, largura, altura, limiar = LIMIAR_DO_DI
  * a peça que escurece 1 % o disco inteiro tem cem vezes mais pixels que
  * a que acende a borda.
  *
- * A SEPARAÇÃO É PELO SINAL. `acendeu` são os pixels cuja LUMINÂNCIA
- * subiu meio nível ou mais; `apagou`, os que caíram. Para cada conjunto
- * sai a média do delta canal a canal e a razão R:G:B normalizada em R —
- * que é a COR do que entrou (ou saiu). Cor achatada (1 : ~1 : ~1) é
- * mudança de dose; cor inclinada é tinta, e a inclinação diz qual.
+ * A SEPARAÇÃO É PELO SINAL DA LUMINÂNCIA, e não pelo de um canal:
+ * `acendeu` são os pixels cuja Rec.709 subiu meio nível ou mais;
+ * `apagou`, os que caíram. Os dois não são a mesma pergunta — o verde
+ * pesa 3,4× mais que o vermelho, então um pixel pode GANHAR vermelho e
+ * mesmo assim escurecer, e é a luminância que decide de que lado ele cai.
+ *
+ * Para cada conjunto sai a média do delta canal a canal e a razão R:G:B
+ * normalizada em R — que é a COR do que entrou (ou saiu). Cor achatada
+ * (1 : ~1 : ~1) é mudança de dose; cor inclinada é tinta, e a inclinação
+ * diz qual; fração NEGATIVA é um canal que andou ao contrário do R.
  *
  * `pico` é o pixel de maior ΔR, com as duas trincas inteiras: é onde se
  * confere a olho que o número não veio de um canto do quadro.
@@ -404,17 +410,23 @@ export function medirCroma(antes, depois, limiar = LIMIAR_DE_MUDANCA) {
     }
   }
   const fecha = (b) => {
-    // a normalização é pelo MÓDULO do R: no balde `apagou` os três deltas
-    // são negativos, e dividir por um R negativo devolveria uma cor de
-    // sinal trocado — pior, um `Math.max(dR, 1e-9)` devolveria 1e14
-    const escala = Math.max(Math.abs(b.dR), 1e-9);
+    // A NORMALIZAÇÃO É PELO R COM SINAL, e as duas metades importam. O
+    // MÓDULO no piso impede a explosão quando o R do balde é ~0 (um
+    // `Math.max(b.dR, 1e-9)` devolveria 1e14 no balde `apagou`, todo
+    // negativo). O SINAL do próprio `dR` é quem faz `dG/dR` valer 1
+    // quando os três caem juntos — dose achatada, a leitura de sempre —
+    // e sair NEGATIVO quando um canal anda ao contrário dos outros. Até
+    // 25/08 havia aqui um `Math.abs` POR CANAL: um azul que CAIU
+    // enquanto o vermelho subia era relatado positivo, isto é, lia-se
+    // "entrou azul" quando o fato era o oposto.
+    const escala = Math.abs(b.dR) < 1e-9 ? 1e-9 : b.dR;
     return {
       n: b.n,
       dR: arred(b.dR / Math.max(b.n, 1), 3),
       dG: arred(b.dG / Math.max(b.n, 1), 3),
       dB: arred(b.dB / Math.max(b.n, 1), 3),
-      // a COR do que entrou (ou saiu), normalizada no R
-      corRGB: [1, arred(Math.abs(b.dG) / escala, 3), arred(Math.abs(b.dB) / escala, 3)],
+      // a COR do que entrou (ou saiu), normalizada no R — com sinal
+      corRGB: [1, arred(b.dG / escala, 3), arred(b.dB / escala, 3)],
     };
   };
   return { pixels: total, acendeu: fecha(acendeu), apagou: fecha(apagou), pico };
@@ -483,14 +495,18 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const [modo, alvo, arqB, extra] = process.argv.slice(2);
   if (!modo || !alvo) {
     throw new Error(
-      'uso: luz-ab.mjs <par|faixas|aneis|umbra|croma> <pasta | antes.png depois.png>'
+      'uso: luz-ab.mjs <par|faixas|aneis|umbra|croma> <pasta | antes.png depois.png> [limiar]'
     );
   }
   let saida;
   if (modo === 'par' && !arqB) saida = medirPasta(alvo);
   else if (modo === 'croma') {
     if (!arqB) throw new Error('o modo `croma` precisa de DOIS arquivos');
-    saida = medirCroma(lerPng(readFileSync(alvo)), lerPng(readFileSync(arqB)));
+    saida = medirCroma(
+      lerPng(readFileSync(alvo)),
+      lerPng(readFileSync(arqB)),
+      extra === undefined ? LIMIAR_DE_MUDANCA : Number(extra)
+    );
   } else {
     if (!arqB) throw new Error(`o modo \`${modo}\` precisa de DOIS arquivos`);
     const A = cinzaDoArquivo(alvo);
