@@ -64,7 +64,10 @@ import {
   GANHO_OBSERVADOR_ECLIPSE_LUNAR,
   GATE_LADO_PROXIMO,
   GLSL_SOMBRA_ECLIPSE,
+  ILUMINANCIA_SOL_PLENO_LUX,
+  ILUMINANCIA_TOTALIDADE_LUX,
   PARES_DE_ECLIPSE,
+  PISO_CREPUSCULO_NO_AR,
   PISO_REFRACAO_LUNAR,
   RAIO_SOL_KM,
   criaGeometriaDoCone,
@@ -75,6 +78,7 @@ import {
   type CorposDoCone,
   type Vetor3Km,
 } from "./eclipse";
+import { BODY_AXES } from "./iauOrientation";
 import { REGISTRO_ORBITAL } from "./registroOrbital";
 
 // Raios de catálogo (radiusKm do doador). O DO SOL vem da lib — fonte
@@ -757,5 +761,509 @@ describe("relógio único (D2/D-E6) — texto-fonte do módulo", () => {
     expect(fonte).not.toContain("Date.now");
     expect(fonte).not.toContain("new Date(");
     expect(fonte).not.toContain("performance.now");
+  });
+});
+
+// ============================================================
+// O INSTRUMENTO DO ITEM 95 — como este arquivo EXECUTA o chunk
+//
+// O chunk do eclipse é a peça mais crítica de shader da casa (o
+// cabeçalho de `eclipse.ts` diz por quê: selo e render discordarem
+// sobre um eclipse é o pior resultado que um produto honesto pode
+// dar), e até 25/08 ninguém a media POR VALOR — só por needle de
+// texto. O item 95 precisou medi-la para provar o piso do ar, e o que
+// nasceu disso fica: um tradutor GLSL → JS de uma página, para o
+// dialeto que `GLSL_SOMBRA_ECLIPSE` usa e SÓ para ele.
+//
+// A DIFERENÇA PARA O JUIZ DA RECEITA (`luzDaVisita.test.ts`): aquele
+// mede UM CANAL, porque o chunk de lá é canal a canal. Este não pode —
+// `dot` e `length` amarram os três —, então aqui um vec3 é um TRIO e os
+// operadores infixos viram chamadas por um analisador de precedência.
+// São dois dialetos diferentes, não duas cópias do mesmo tradutor.
+//
+// ELE RECUSA O QUE NÃO ENTENDE, pela mesma doutrina: identificador
+// desconhecido, swizzle fora de .x/.y/.z, comando com chaves ou
+// recursão fazem o juiz LANÇAR. Quem levar construção nova ao chunk
+// ensina o tradutor no mesmo commit — juiz que não consegue medir
+// reprova, não avisa.
+// ============================================================
+
+/** um valor do dialeto: `float` é número, `vec3` é um trio. */
+type Valor = number | [number, number, number];
+
+const trio = (v: Valor): [number, number, number] =>
+  typeof v === "number" ? [v, v, v] : v;
+
+/**
+ * Binária componente a componente, com broadcast de escalar — a regra do
+ * GLSL. Escalar × escalar continua ESCALAR: é o que mantém `s <= 0.0` e
+ * `perp - umbra` sendo contas de float, como no shader.
+ */
+const porComponente =
+  (f: (a: number, b: number) => number) =>
+  (a: Valor, b: Valor): Valor => {
+    if (typeof a === "number" && typeof b === "number") return f(a, b);
+    const [ax, ay, az] = trio(a);
+    const [bx, by, bz] = trio(b);
+    return [f(ax, bx), f(ay, by), f(az, bz)];
+  };
+
+const soma = porComponente((a, b) => a + b);
+const subt = porComponente((a, b) => a - b);
+const mul = porComponente((a, b) => a * b);
+const divi = porComponente((a, b) => a / b);
+const neg = (a: Valor): Valor => mul(a, -1);
+const canal = (a: Valor, k: number): number => trio(a)[k]!;
+
+/** um float onde o GLSL exige float — a comparação relacional é escalar */
+const escalar = (v: Valor, onde: string): number => {
+  if (typeof v !== "number") {
+    throw new Error(`comparação de vec3 em \`${onde}\` — o GLSL não permite`);
+  }
+  return v;
+};
+
+const EMBUTIDOS: Record<string, (...a: Valor[]) => Valor> = {
+  vec3: (...a: Valor[]) => (a.length === 1 ? trio(a[0]!) : [
+    canal(a[0]!, 0), canal(a[1]!, 1), canal(a[2]!, 2),
+  ]),
+  max: (a, b) => porComponente(Math.max)(a!, b!),
+  min: (a, b) => porComponente(Math.min)(a!, b!),
+  clamp: (x, lo, hi) => porComponente(Math.min)(
+    porComponente(Math.max)(x!, lo!), hi!
+  ),
+  mix: (x, y, a) => soma(mul(x!, subt(1, a!)), mul(y!, a!)),
+  smoothstep: (e0, e1, x) => {
+    const t = Math.min(
+      Math.max(
+        (escalar(x!, "smoothstep") - escalar(e0!, "smoothstep")) /
+          (escalar(e1!, "smoothstep") - escalar(e0!, "smoothstep")),
+        0
+      ),
+      1
+    );
+    return t * t * (3 - 2 * t);
+  },
+  dot: (a, b) => {
+    const [ax, ay, az] = trio(a!);
+    const [bx, by, bz] = trio(b!);
+    return ax * bx + ay * by + az * bz;
+  },
+  length: (a) => Math.hypot(...trio(a!)),
+};
+
+/** os uniformes que o chunk declara — lidos DELE, nunca redigitados. */
+const UNIFORMES_DO_CHUNK = [
+  ...GLSL_SOMBRA_ECLIPSE.matchAll(/^uniform\s+(?:float|vec3)\s+(\w+)\s*;/gm),
+].map((m) => m[1]!);
+
+type Ligados = Partial<Record<string, Valor>>;
+
+/** os nomes que o PRÓPRIO chunk declara — é por aqui que uma peça sabe
+ *  que a irmã existe (o mesmo desenho do juiz da receita). */
+const PECAS_DO_CHUNK = [
+  ...GLSL_SOMBRA_ECLIPSE.matchAll(/\b(?:float|vec3)\s+(\w+)\s*\(/g),
+].map((m) => m[1]!);
+
+/** o corpo CRU de uma peça do chunk, achado por contagem de chaves */
+function corpoNoChunk(nome: string): { params: string[]; corpo: string } {
+  const decl = new RegExp(`(?:float|vec3)\\s+${nome}\\s*\\(([^)]*)\\)\\s*\\{`)
+    .exec(GLSL_SOMBRA_ECLIPSE);
+  if (!decl) throw new Error(`o chunk não declara \`${nome}\``);
+  const abre = decl.index + decl[0].length;
+  let nivel = 1;
+  let i = abre;
+  for (; i < GLSL_SOMBRA_ECLIPSE.length && nivel > 0; i++) {
+    if (GLSL_SOMBRA_ECLIPSE[i] === "{") nivel++;
+    else if (GLSL_SOMBRA_ECLIPSE[i] === "}") nivel--;
+  }
+  if (nivel !== 0) throw new Error(`chave que não fecha em \`${nome}\``);
+  const lista = decl[1]!.trim();
+  const params =
+    lista === ""
+      ? []
+      : lista.split(",").map((p) => {
+          const m = /^\s*(?:float|vec3)\s+(\w+)\s*$/.exec(p);
+          if (!m) {
+            throw new Error(
+              `parâmetro que o tradutor não entende em \`${nome}\`: "${p.trim()}"`
+            );
+          }
+          return m[1]!;
+        });
+  return { params, corpo: GLSL_SOMBRA_ECLIPSE.slice(abre, i - 1) };
+}
+
+/** GLSL → fichas. Caractere que não casa PARA o juiz, não o deixa passar. */
+export function fichasDoGlsl(corpo: string, nome: string): string[] {
+  const re =
+    /\s+|\/\/[^\n]*|\d+\.\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?|\d+(?:[eE][+-]?\d+)?|[A-Za-z_]\w*|<=|>=|[-+*/(),;<>=.]/y;
+  const saida: string[] = [];
+  let i = 0;
+  while (i < corpo.length) {
+    re.lastIndex = i;
+    const m = re.exec(corpo);
+    if (!m) {
+      throw new Error(
+        `o tradutor de GLSL não entende "${corpo.slice(i, i + 24)}" (em \`${nome}\`)`
+      );
+    }
+    i = re.lastIndex;
+    const f = m[0];
+    if (!/^\s/.test(f) && !f.startsWith("//")) saida.push(f);
+  }
+  return saida;
+}
+
+/**
+ * Fichas → JS, por análise de precedência. O que ele entende é o que o
+ * chunk usa: declaração com tipo, `if` de um comando só, `return`,
+ * chamada, swizzle .x/.y/.z, unário `-`, `* / + -` e as relacionais.
+ */
+export function traduzirGlsl(
+  corpo: string,
+  params: readonly string[],
+  nome: string
+): string {
+  const fichas = fichasDoGlsl(corpo, nome);
+  const conhecidos = new Set<string>([
+    ...params,
+    ...UNIFORMES_DO_CHUNK,
+    ...Object.keys(EMBUTIDOS),
+    ...PECAS_DO_CHUNK,
+  ]);
+  let i = 0;
+  const ver = () => fichas[i];
+  const comer = (esperada?: string): string => {
+    const f = fichas[i];
+    if (f === undefined) throw new Error(`fim inesperado em \`${nome}\``);
+    if (esperada !== undefined && f !== esperada) {
+      throw new Error(`esperava "${esperada}" e veio "${f}" (em \`${nome}\`)`);
+    }
+    i++;
+    return f;
+  };
+  const eNumero = (f: string) => /^[\d.]/.test(f);
+  const eNome = (f: string) => /^[A-Za-z_]/.test(f);
+
+  function primaria(): string {
+    const f = comer();
+    if (eNumero(f)) return f;
+    if (f === "(") {
+      const e = expr();
+      comer(")");
+      return `(${e})`;
+    }
+    if (!eNome(f)) throw new Error(`ficha inesperada "${f}" (em \`${nome}\`)`);
+    if (!conhecidos.has(f)) {
+      throw new Error(
+        `o tradutor de GLSL não conhece \`${f}\` (em \`${nome}\`) — ensine-o aqui`
+      );
+    }
+    if (ver() !== "(") return f;
+    if (f === nome) {
+      throw new Error(`\`${nome}\` chama a SI MESMA — este juiz não executa recursão`);
+    }
+    comer("(");
+    const args: string[] = [];
+    if (ver() !== ")") {
+      args.push(expr());
+      while (ver() === ",") {
+        comer(",");
+        args.push(expr());
+      }
+    }
+    comer(")");
+    return `${f}(${args.join(", ")})`;
+  }
+  function posfixa(): string {
+    let e = primaria();
+    while (ver() === ".") {
+      comer(".");
+      const c = comer();
+      const k = { x: 0, y: 1, z: 2 }[c];
+      if (k === undefined) {
+        throw new Error(`swizzle que o tradutor não conhece: ".${c}" (em \`${nome}\`)`);
+      }
+      e = `canal(${e}, ${k})`;
+    }
+    return e;
+  }
+  function unaria(): string {
+    if (ver() === "-") {
+      comer("-");
+      return `neg(${unaria()})`;
+    }
+    return posfixa();
+  }
+  function produto(): string {
+    let e = unaria();
+    for (;;) {
+      if (ver() === "*") { comer(); e = `mul(${e}, ${unaria()})`; }
+      else if (ver() === "/") { comer(); e = `divi(${e}, ${unaria()})`; }
+      else return e;
+    }
+  }
+  function adicao(): string {
+    let e = produto();
+    for (;;) {
+      if (ver() === "+") { comer(); e = `soma(${e}, ${produto()})`; }
+      else if (ver() === "-") { comer(); e = `subt(${e}, ${produto()})`; }
+      else return e;
+    }
+  }
+  function expr(): string {
+    const e = adicao();
+    const f = ver();
+    if (f === "<" || f === "<=" || f === ">" || f === ">=") {
+      comer();
+      const d = adicao();
+      return `(escalar(${e}, "${nome}") ${f} escalar(${d}, "${nome}"))`;
+    }
+    return e;
+  }
+  function comando(): string {
+    const f = ver();
+    if (f === "return") {
+      comer("return");
+      const e = expr();
+      comer(";");
+      return `return ${e};`;
+    }
+    if (f === "float" || f === "vec3") {
+      comer();
+      const alvo = comer();
+      if (!eNome(alvo)) throw new Error(`nome inválido "${alvo}" (em \`${nome}\`)`);
+      comer("=");
+      const e = expr();
+      comer(";");
+      conhecidos.add(alvo);
+      return `const ${alvo} = ${e};`;
+    }
+    throw new Error(`comando que o tradutor não entende: "${f}" (em \`${nome}\`)`);
+  }
+
+  const linhas: string[] = [];
+  while (i < fichas.length) {
+    if (ver() === "if") {
+      comer("if");
+      comer("(");
+      const cond = expr();
+      comer(")");
+      linhas.push(`if (${cond}) ${comando()}`);
+    } else {
+      linhas.push(comando());
+    }
+  }
+  return linhas.join("\n");
+}
+
+/**
+ * A TRADUÇÃO É PREGUIÇOSA (a lição do juiz da receita): um chunk que o
+ * tradutor não entende tem de derrubar o TESTE que o mede, não a coleta
+ * do arquivo inteiro.
+ */
+const compiladas = new Map<string, (args: readonly Valor[], u: Ligados) => Valor>();
+
+function pecaDoChunk(nome: string) {
+  const pronta = compiladas.get(nome);
+  if (pronta) return pronta;
+  const { params, corpo } = corpoNoChunk(nome);
+  const js = traduzirGlsl(corpo, params, nome);
+  const irmas = PECAS_DO_CHUNK.filter((n) => n !== nome);
+  const ajudas = { soma, subt, mul, divi, neg, canal, escalar };
+  const assinatura = [
+    ...params,
+    ...UNIFORMES_DO_CHUNK,
+    ...Object.keys(ajudas),
+    ...Object.keys(EMBUTIDOS),
+    ...irmas,
+  ];
+  const fn = new Function(...assinatura, js) as (...a: unknown[]) => Valor;
+  const roda = (args: readonly Valor[], u: Ligados = {}): Valor =>
+    fn(
+      ...args,
+      ...UNIFORMES_DO_CHUNK.map((chave) => u[chave] ?? 0),
+      ...Object.values(ajudas),
+      ...Object.values(EMBUTIDOS),
+      ...irmas.map((irma) => (...a: Valor[]) => pecaDoChunk(irma)(a, u))
+    );
+  compiladas.set(nome, roda);
+  return roda;
+}
+
+// ------------------------------------------------------------
+// A geometria dos casos: tudo sai do DRIVER (`resolveSombraNaCena`), no
+// frame da cena. O chunk é cego a frame — só faz dot e length —, então
+// medir na cena mede a mesma conta que o material mede no frame local.
+// ------------------------------------------------------------
+
+/** os uniformes do quadro, a partir da sombra que o driver resolveu */
+function uniformesDaSombra(s: ReturnType<typeof criaSombraNaCena>): Ligados {
+  return {
+    uEclipseAtivo: s.ativo ? 1 : 0,
+    uEclipseEixo: [...s.eixoCena] as [number, number, number],
+    uEclipseEclipsador: [...s.eclipsadorRaios] as [number, number, number],
+    uEclipseCone: [s.raioEclipsadorRaios, s.inclinacaoUmbra, s.inclinacaoPenumbra],
+    uEclipsePisoCor: [...s.pisoUmbral] as [number, number, number],
+    uEclipsePisoEscalar: s.minSombra,
+  };
+}
+
+/**
+ * O PONTO SOB A SOMBRA: onde o eixo, saindo do eclipsador, fura a esfera
+ * unitária do receptor. Derivado da saída do driver — nenhuma segunda
+ * geometria de sombra neste arquivo.
+ */
+function pontoSobAMancha(s: ReturnType<typeof criaSombraNaCena>): [number, number, number] {
+  const [ex, ey, ez] = s.eclipsadorRaios;
+  const [ux, uy, uz] = s.eixoCena;
+  const b = 2 * (ex * ux + ey * uy + ez * uz);
+  const c = ex * ex + ey * ey + ez * ez - 1;
+  const t = 0.5 * (-b - Math.sqrt(b * b - 4 * c));
+  return [ex + t * ux, ey + t * uy, ez + t * uz];
+}
+
+describe("o chunk EXECUTADO — o fator do ar no eclipse (item 95)", () => {
+  /** distância perpendicular ao eixo da sombra, em raios do receptor —
+   *  a MESMA grandeza que o chunk chama de `perp`, para o caso poder
+   *  dizer ONDE está o ponto que ele mede. */
+  const aoEixo = (
+    q: readonly number[],
+    e: readonly number[],
+    u: readonly number[]
+  ): number => {
+    const r = [q[0]! - e[0]!, q[1]! - e[1]!, q[2]! - e[2]!];
+    const s = r[0]! * u[0]! + r[1]! * u[1]! + r[2]! * u[2]!;
+    return Math.hypot(s * u[0]! - r[0]!, s * u[1]! - r[1]!, s * u[2]! - r[2]!);
+  };
+
+  /** o ponto da esfera a `ang` da mancha, andando para LONGE do eixo */
+  const afastando = (
+    p: readonly number[],
+    u: readonly number[],
+    ang: number
+  ): [number, number, number] => {
+    // direção radial-a-partir-do-eixo em p, tirada a componente ao longo de p
+    const pu = p[0]! * u[0]! + p[1]! * u[1]! + p[2]! * u[2]!;
+    const w = [p[0]! - pu * u[0]!, p[1]! - pu * u[1]!, p[2]! - pu * u[2]!];
+    const wp = w[0]! * p[0]! + w[1]! * p[1]! + w[2]! * p[2]!;
+    const t = [w[0]! - wp * p[0]!, w[1]! - wp * p[1]!, w[2]! - wp * p[2]!];
+    const n = Math.hypot(t[0]!, t[1]!, t[2]!);
+    const c = Math.cos(ang);
+    const sn = Math.sin(ang) / n;
+    return [
+      p[0]! * c + t[0]! * sn,
+      p[1]! * c + t[1]! * sn,
+      p[2]! * c + t[2]! * sn,
+    ];
+  };
+
+  /** a sombra real da Lua sobre a Terra em 2024-04-08 (a vista `eclipse-solar`) */
+  const sombraSolar = () =>
+    resolveSombraNaCena(
+      "earth",
+      uaDe("earth", JD_SOLAR),
+      uaDe("moon", JD_SOLAR),
+      criaSombraNaCena()
+    );
+
+  it("o piso do ar é DERIVADO em lux, nunca redigitado — e o GLSL interpola o derivado", () => {
+    expect(PISO_CREPUSCULO_NO_AR).toBe(
+      ILUMINANCIA_TOTALIDADE_LUX / ILUMINANCIA_SOL_PLENO_LUX
+    );
+    expect(PISO_CREPUSCULO_NO_AR).toBeGreaterThan(0); // zerar o ar é o OUTRO erro
+    expect(GLSL_SOMBRA_ECLIPSE).toContain(`vec3(${PISO_CREPUSCULO_NO_AR})`);
+  });
+
+  it("sem eclipse o ar é identidade EXATA — vec3(1.0) canal a canal", () => {
+    const fora = pecaDoChunk("fatorDeEclipseNoAr")([[0, 0, 1], [0, 0, 1], 1], {
+      uEclipseAtivo: 0,
+    });
+    for (const c of trio(fora)) expect(Object.is(c, 1)).toBe(true);
+  });
+
+  it("com eclipse ativo o ar CAI sob a mancha, e o piso do crepúsculo o segura", () => {
+    const s = sombraSolar();
+    expect(s.ativo).toBe(true);
+    const u = uniformesDaSombra(s);
+    const p = pontoSobAMancha(s);
+    // o eixo é ANTI-solar, e o ponto está a gamma do centro: N·L = √(1−γ²)
+    const nl = -(p[0] * s.eixoCena[0] + p[1] * s.eixoCena[1] + p[2] * s.eixoCena[2]);
+    expect(nl).toBeGreaterThan(0.9); // pleno dia: o fade do terminador está aberto
+    // e o ponto está DENTRO da umbra da lib, medido na mesma unidade
+    const raioTerraKm = BODY_AXES.earth[0]!;
+    expect(aoEixo(p, s.eclipsadorRaios, s.eixoCena) * raioTerraKm).toBeLessThan(
+      s.umbraKm
+    );
+
+    const cone = pecaDoChunk("fatorDeEclipse")([p, p, nl], u);
+    const ar = pecaDoChunk("fatorDeEclipseNoAr")([p, p, nl], u);
+    // totalidade: o cone geométrico vai a ZERO no núcleo…
+    expect(canal(cone, 0)).toBeCloseTo(0, 12);
+    // …e o AR fica no piso do crepúsculo, nunca no preto. A comparação é
+    // com o CHÃO daquele mesmo ponto: onde o chão apaga, o ar ainda tem
+    // o crepúsculo de 360°, e é ISSO que o item 95 exige — zerar o ar
+    // seria trocar um erro por outro.
+    for (const k of [0, 1, 2]) {
+      expect(canal(ar, k)).toBe(PISO_CREPUSCULO_NO_AR);
+      expect(canal(ar, k)).toBeGreaterThan(canal(cone, k));
+    }
+  });
+
+  it("fora da penumbra o ar não se mexe — identidade EXATA com o eclipse LIGADO", () => {
+    const s = sombraSolar();
+    const u = uniformesDaSombra(s);
+    const raioTerraKm = BODY_AXES.earth[0]!;
+    // 45° para longe da mancha: ~5.780 km do eixo contra a penumbra de
+    // ~3.390 km, e ainda a 65° do subsolar — pleno dia, fade aberto
+    const q = afastando(pontoSobAMancha(s), s.eixoCena, Math.PI / 4);
+    // o caso prova ONDE está: além da penumbra da lib, e ainda em pleno dia
+    expect(aoEixo(q, s.eclipsadorRaios, s.eixoCena) * raioTerraKm).toBeGreaterThan(
+      s.penumbraKm
+    );
+    const nl = -(q[0] * s.eixoCena[0] + q[1] * s.eixoCena[1] + q[2] * s.eixoCena[2]);
+    expect(nl).toBeGreaterThan(FADE_TERMINADOR_FIM);
+    for (const c of trio(pecaDoChunk("fatorDeEclipseNoAr")([q, q, nl], u))) {
+      expect(Object.is(c, 1)).toBe(true);
+    }
+  });
+
+  it("o instrumento confere com a LIB: a rampa cruza a meia-luz ENTRE umbra e penumbra", () => {
+    // quem julga o juiz. A rampa que o GLSL executa é a do cone desta
+    // lib: então o ponto em que ela passa de 0,5 tem de cair entre os
+    // raios de umbra e penumbra que `resolveConeDeEclipse` devolveu.
+    const s = sombraSolar();
+    const u = uniformesDaSombra(s);
+    const p = pontoSobAMancha(s);
+    const raioTerraKm = BODY_AXES.earth[0]!;
+    const fator = pecaDoChunk("fatorDeEclipse");
+    let anterior = -1;
+    let cruzouKm = Number.NaN;
+    for (let g = 0; g <= 600; g++) {
+      const ang = (g / 600) * (Math.PI / 3);
+      const q = afastando(p, s.eixoCena, ang);
+      const nl = -(q[0] * s.eixoCena[0] + q[1] * s.eixoCena[1] + q[2] * s.eixoCena[2]);
+      if (nl <= FADE_TERMINADOR_FIM) break; // fora do dia o fade manda, não a rampa
+      const v = canal(fator([q, q, nl], u), 0);
+      expect(v).toBeGreaterThanOrEqual(anterior - 1e-12); // monótona: só clareia
+      if (!(anterior >= 0.5) && v >= 0.5) {
+        cruzouKm = aoEixo(q, s.eclipsadorRaios, s.eixoCena) * raioTerraKm;
+      }
+      anterior = v;
+    }
+    expect(anterior).toBe(1); // além da penumbra volta a ser identidade EXATA
+    expect(cruzouKm).toBeGreaterThan(s.umbraKm);
+    expect(cruzouKm).toBeLessThan(s.penumbraKm);
+  });
+
+  it("o tradutor RECUSA o que não entende, em vez de dar passe livre", () => {
+    expect(() => traduzirGlsl("return inventada(x);", ["x"], "t")).toThrow(/não conhece/);
+    expect(() => traduzirGlsl("return p.w;", ["p"], "t")).toThrow(/swizzle/);
+    expect(() => traduzirGlsl("for (int i = 0; i < 2; i++) {}", [], "t")).toThrow();
+    expect(() =>
+      traduzirGlsl("return fatorDeEclipse(p, p, 1.0);", ["p"], "fatorDeEclipse")
+    ).toThrow(/recursão/);
+    expect(() => traduzirGlsl("return dot(p, p) < 1.0;", ["p"], "t")).not.toThrow();
   });
 });

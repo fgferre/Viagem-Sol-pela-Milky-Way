@@ -36,6 +36,7 @@ import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import {
   ALVO_DE_APOIO_CINEMA,
   ATMOSFERA,
+  ATMOSFERA_FRAG,
   CANAIS_DA_TERRA,
   CUSHION_DO_GATE,
   DERIVA_DAS_NUVENS,
@@ -57,6 +58,7 @@ import {
   orientacaoDaTerraNaCena,
   orientacaoDoCorpoNaCena,
   posicaoDaTerraUA,
+  uniformsDaAtmosfera,
   uniformsDeEclipseNeutros,
 } from './terra';
 import type { ManifestDeTexturas } from './terra';
@@ -868,9 +870,36 @@ describe('8. o eclipse na tela (F2c/D3)', () => {
     );
     // a emissão (luzes de cidade) soma DEPOIS do fator — fora da sombra
     expect(TERRA_FRAG).toContain('gl_FragColor = vec4(direta + luzes, 1.0);');
-    // a casca das nuvens recebe o MESMO chunk (escurece junto): duas
-    // interpolações do chunk da lib no texto-fonte, nenhuma cópia redigitada
-    expect(FONTE_SHADERS.match(/\$\{GLSL_SOMBRA_ECLIPSE\}/g)).toHaveLength(2);
+    // a casca das nuvens e a de ATMOSFERA (item 95) recebem o MESMO
+    // chunk: três interpolações no texto-fonte, nenhuma cópia redigitada
+    expect(FONTE_SHADERS.match(/\$\{GLSL_SOMBRA_ECLIPSE\}/g)).toHaveLength(3);
+  });
+
+  it('o AR no eclipse (item 95): o material OFERECE exatamente o que o shader montado DECLARA', () => {
+    // O DEFEITO DO ITEM 95 ERA ESTA FRONTEIRA. `ATMOSFERA_FRAG` não
+    // montava o chunk e o material não oferecia os uniformes — os dois
+    // lados calados, e nada no projeto sabia perguntar. Este caso EXECUTA
+    // a pergunta: o conjunto que `uniformsDaAtmosfera()` devolve tem de
+    // ser, nome a nome, o que o shader MONTADO declara. Tirar o chunk do
+    // shader ou os uniformes do material quebra a igualdade.
+    const declarados = new Set(
+      [...ATMOSFERA_FRAG.matchAll(/^uniform\s+\w+\s+(\w+)\s*;/gm)].map((m) => m[1]!)
+    );
+    const oferecidos = new Set(Object.keys(uniformsDaAtmosfera()));
+    expect([...oferecidos].sort()).toEqual([...declarados].sort());
+    // e a família do eclipse está nos DOIS lados — o que o defeito negava
+    for (const nome of Object.keys(uniformsDeEclipseNeutros())) {
+      expect(declarados.has(nome)).toBe(true);
+      expect(oferecidos.has(nome)).toBe(true);
+    }
+    // a sombra entra na FONTE do espalhamento, amostra a amostra, e com
+    // o piso do crepúsculo — não como um fator único no fim do laço
+    expect(ATMOSFERA_FRAG).toContain(
+      'vec3 sombraDoAr = fatorDeEclipseNoAr(ponto, ponto / altura, angLuz);'
+    );
+    expect(ATMOSFERA_FRAG).toContain(
+      'acumulada += (atenua * sombraDoAr) * (prof * passoEscalado);'
+    );
   });
 
   it('a ponte cena→local: o eixo da sombra no frame local É o anti-Sol, nos dois jd pinados', () => {

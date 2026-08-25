@@ -116,6 +116,25 @@ export * from './eclipseNoMaterial';
 export * from '../../shaders/terraShaders';
 
 
+/**
+ * OS UNIFORMES DO MATERIAL DA ATMOSFERA — extraídos do construtor para
+ * que exista uma peça que o juiz possa EXECUTAR. O defeito do item 95
+ * era exatamente uma discordância entre os dois lados desta fronteira: o
+ * shader não declarava o eclipse e o material não o oferecia, e nada no
+ * projeto sabia perguntar. Agora `terra.test.ts` compara este conjunto
+ * com os `uniform` que o `ATMOSFERA_FRAG` MONTADO declara, e a
+ * divergência reprova por valor.
+ */
+export function uniformsDaAtmosfera(): Record<string, THREE.IUniform> {
+  return {
+    uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
+    uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
+    uLuzGanho: { value: 1 },
+    // ITEM 95: a casca de ar passou a receber a MESMA sombra do chão.
+    ...uniformsDeEclipseNeutros(),
+  };
+}
+
 /** Raio equatorial da Terra em pc — BODY_AXES (km) → UA → pc pelos
  *  conversores únicos da casa; nenhum literal novo de comprimento. */
 export const RAIO_EQ_TERRA_PC = (BODY_AXES.earth[0] / AU_KM) * AU_PARA_PC;
@@ -566,6 +585,9 @@ export class TerraResolvida {
     (uA.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
     (uA.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     uA.uLuzGanho.value = ganho;
+    // ITEM 95: a MESMA sombra do chão, pela MESMA base e sem deriva — a
+    // casca de atmosfera é esférica e não gira com as nuvens.
+    escreverSombraDeEclipse(uA, this.sombra, this.vX, this.vY, this.vZ, 0);
   }
 
   /** geometria + materiais + meshes, UMA vez, na primeira necessidade. */
@@ -627,11 +649,7 @@ export class TerraResolvida {
     this.matAtmosfera = new THREE.ShaderMaterial({
       vertexShader: ATMOSFERA_VERT,
       fragmentShader: ATMOSFERA_FRAG,
-      uniforms: {
-        uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
-        uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
-        uLuzGanho: { value: 1 },
-      },
+      uniforms: uniformsDaAtmosfera(),
       // aditiva, face de TRÁS (o desenho clássico do sky-from-space):
       // o fragmento é a SAÍDA do raio da casca, então o caminho
       // integrado é a corda inteira da atmosfera — na face da frente o
@@ -640,12 +658,15 @@ export class TerraResolvida {
       // fragmentos de trás morrem no depth da superfície (depthTest
       // true): o que sobra é o anel de limbo, azul-dominante e fino —
       // a dose honesta. Nunca escreve depth.
-      // ECLIPSE (F2c): a atmosfera NÃO recebe o fator — omissão
-      // declarada. Sobre o disco o depth da superfície a mata; o anel
-      // de limbo fica a ≥ ~6.000 km do eixo da sombra nos pares da
-      // tabela (além da penumbra, ~3.400 km) — fora da sombra em toda
-      // geometria alcançável. O cobre de Danjon do eclipse lunar nasce
-      // no shader da LUA (o piso umbral da lib), não aqui.
+      // ECLIPSE (F2c, corrigido no item 95): a atmosfera RECEBE o
+      // fator, amostra a amostra dentro do laço de Nishita. A omissão
+      // antiga dizia que o anel de limbo ficava sempre além da
+      // penumbra; ela estava errada — a penumbra tem r ≈ 3.400 km e
+      // cobre meio disco, e num eclipse RASANTE o cilindro de sombra
+      // se deita justamente sobre o limbo, que é onde a casca é
+      // brilhante. O cobre de Danjon do eclipse lunar continua nascendo
+      // no shader da LUA (o piso umbral da lib), não aqui: com a Lua
+      // eclipsando a Terra o piso é neutro por `pisoUmbralDoEclipsador`.
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       depthTest: true,

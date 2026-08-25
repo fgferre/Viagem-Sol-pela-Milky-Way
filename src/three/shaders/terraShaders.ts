@@ -201,6 +201,17 @@ void main() {
  * scaleDepth 0,25 e casca 1,025 — os DOIS números estão pinados nas
  * constantes exportadas. Tudo em unidades de raio equatorial, frame
  * local: nenhum número da cena (1e-10 pc) entra aqui.
+ *
+ * ITEM 95 — O ECLIPSE CHEGA AQUI, e chega AMOSTRA A AMOSTRA. Até 25/08
+ * este shader nem montava o chunk da sombra: a casca espalhava luz
+ * CHEIA por cima de um chão preto. O conserto entra na FONTE do
+ * espalhamento, DENTRO do laço — cada amostra do caminho pergunta ao
+ * MESMO cone se o Sol a alcança —, e não como um fator único no fim. É
+ * a diferença entre modelar o crepúsculo de 360° e apagá-lo: a umbra
+ * tem ~200 km e o caminho rasante do raio tem ~2.850 km de ar, então o
+ * que sobrevive é a fração ILUMINADA do caminho, ponderada pela
+ * densidade. O piso do ar (`PISO_CREPUSCULO_NO_AR`) segura o caso em
+ * que o caminho INTEIRO cai na sombra. A derivação mora em `eclipse.ts`.
  */
 export const ATMOSFERA_FRAG = /* glsl */ `
 uniform vec3 uCamLocal;
@@ -208,6 +219,7 @@ uniform vec3 uDirSolLocal;
 uniform float uLuzGanho;
 varying vec3 vPosRaios;
 ${GLSL_GUARDAS}
+${GLSL_SOMBRA_ECLIPSE}
 const float RAIO_INT = 1.0;
 const float RAIO_EXT = ${RAZAO_CASCA_ATMOSFERA};
 const float ESCALA = ${(1 / (RAZAO_CASCA_ATMOSFERA - 1)).toFixed(1)};
@@ -264,7 +276,13 @@ void main() {
       0.0, 50.0
     );
     vec3 atenua = exp(-dispersao * (INV_LAMBDA4 * (KR * QUATRO_PI) + KM * QUATRO_PI));
-    acumulada += atenua * (prof * passoEscalado);
+    // ITEM 95: a sombra entra na FONTE desta amostra, com o piso do
+    // crepúsculo. angLuz já é o cosseno Sol-zênite do ponto — o mesmo
+    // ndotlGeo que o chunk usa para esvair a sombra pelo terminador — e
+    // ponto/altura é a normal radial dele. Fora de eclipse o chunk
+    // devolve vec3(1.0) EXATO e a multiplicação é identidade bit a bit.
+    vec3 sombraDoAr = fatorDeEclipseNoAr(ponto, ponto / altura, angLuz);
+    acumulada += (atenua * sombraDoAr) * (prof * passoEscalado);
     ponto += passoVec;
   }
 

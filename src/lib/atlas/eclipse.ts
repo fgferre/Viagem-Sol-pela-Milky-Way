@@ -304,6 +304,80 @@ export const EV_OBSERVADOR_ECLIPSE_LUNAR = 10;
 /** O ganho linear do EV acima — derivado, nunca redigitado. */
 export const GANHO_OBSERVADOR_ECLIPSE_LUNAR = 2 ** EV_OBSERVADOR_ECLIPSE_LUNAR;
 
+// ------------------------------------------------------------
+// O PISO DO AR (item 95) — o irmão solar do piso umbral acima
+// ------------------------------------------------------------
+// O piso de cima é a luz que ENTRA na umbra pela refração no limbo da
+// Terra, e só existe num eclipse LUNAR. Este é o outro: a luz que entra
+// na umbra de um eclipse SOLAR vinda do próprio AR de fora dela.
+//
+// O DEFEITO QUE ELE FECHA: a casca de atmosfera da Terra espalhava luz
+// CHEIA por cima de um chão preto, porque `ATMOSFERA_FRAG` nem montava
+// este chunk. Mas o conserto não é multiplicar pelo fator e pronto — na
+// totalidade o céu NÃO é preto, ele é o crepúsculo de 360°, e zerar o ar
+// trocaria um erro por outro.
+//
+// QUEM RESPONDE PELO CREPÚSCULO É O CAMINHO, NÃO ESTE PISO. A umbra tem
+// 100–270 km de largura e a atmosfera espalha de centenas de km em
+// volta: um raio de visada rasante atravessa ~2·√(2·R·h) ≈ 2.850 km de
+// ar (R 6.378 km, casca 160 km), então mesmo passando pelo NÚCLEO da
+// umbra ele só tem ~7 % do caminho às escuras. O `ATMOSFERA_FRAG` aplica
+// o fator AMOSTRA A AMOSTRA no laço de Nishita: o que sobrevive é
+// exatamente a fração ILUMINADA do caminho, ponderada pela densidade.
+// A penumbra, essa sim, é enorme (r ≈ 3.400 km) e escurece o ar num
+// gradiente por meio disco — que é o que um eclipse parcial faz com o
+// céu de verdade.
+//
+// O PISO ABAIXO É A SEGUNDA GARANTIA, para o caminho que cai INTEIRO
+// dentro da sombra (o eclipse rasante, em que o cilindro de sombra se
+// deita ao longo do limbo): ali o caminho não tem trecho iluminado para
+// salvar o ar, e sem piso o limbo iria a zero.
+// ------------------------------------------------------------
+
+/**
+ * A ILUMINÂNCIA DO SOL PLENO no chão, em lux — céu limpo, Sol alto. É o
+ * denominador da conta do piso, e o número de manual (~10⁵ lux).
+ */
+export const ILUMINANCIA_SOL_PLENO_LUX = 1e5;
+
+/**
+ * A ILUMINÂNCIA NO CHÃO DENTRO DA UMBRA, na totalidade — a ordem do
+ * crepúsculo civil, ~10 lux. É o numerador, e ele é MEDIDO: essa luz é
+ * literalmente o anel de ar iluminado de FORA da umbra espalhando para
+ * dentro (a coroa entra com ~0,25 lux, o brilho de uma lua cheia, e não
+ * manda na conta).
+ *
+ * NOTA DE HONESTIDADE, no molde de {@link PISO_REFRACAO_LUNAR}: o valor
+ * de uma totalidade ESPECÍFICA varre de ~1 a ~100 lux com o tamanho da
+ * umbra, a transparência do ar e a altura do Sol. O que é firme é a
+ * ORDEM — quatro ordens de grandeza abaixo do Sol pleno —, e é ela que
+ * este piso embarca.
+ */
+export const ILUMINANCIA_TOTALIDADE_LUX = 10;
+
+/**
+ * O PISO DO CREPÚSCULO NO AR — quanto do Sol direto um pedaço de ar
+ * dentro da umbra ainda recebe do anel iluminado em volta:
+ *
+ *     piso = E_totalidade / E_sol_pleno = 10 lux / 100.000 lux = 1e−4
+ *
+ * DERIVADO, NUNCA REDIGITADO — o oráculo pina a divisão. Ele entra como
+ * PISO do fator (`max`), e não como parcela somada, porque o que a conta
+ * mede é uma FRAÇÃO da irradiância direta: o espalhamento simples do
+ * shader é linear na luz que chega, então floreá-la no fator é a mesma
+ * coisa que floreá-la na fonte.
+ *
+ * CHECK INDEPENDENTE (o que este piso NÃO faz): 1e−4 atravessado pela
+ * cadeia de display da casa (knee + ACES + sRGB) quantiza para ~0 — ele
+ * é invisível sozinho, de propósito. Não existe aqui a EXPOSIÇÃO DO
+ * OBSERVADOR que o eclipse lunar ganhou ({@link EV_OBSERVADOR_ECLIPSE_LUNAR}):
+ * a umbra solar da casa é escura por decisão medida (2,80 de 255 sobre
+ * Durango, o número que o item 93 calibrou), e um ganho no ar
+ * desmancharia justamente isso.
+ */
+export const PISO_CREPUSCULO_NO_AR =
+  ILUMINANCIA_TOTALIDADE_LUX / ILUMINANCIA_SOL_PLENO_LUX;
+
 // Derivados uma vez, na carga do módulo — o oráculo pina que cada
 // canal é COR × PISO exato (derivado, nunca redigitado).
 const PISO_UMBRAL_TERRA: readonly [number, number, number] = [
@@ -627,5 +701,13 @@ vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo) {
   // corta uma linha dura no lado noturno
   float fade = smoothstep(${FADE_TERMINADOR_INICIO}, ${FADE_TERMINADOR_FIM}, ndotlGeo);
   return mix(vec3(1.0), sombra, fade);
+}
+
+// O MESMO CONE, com o piso do crepúsculo (item 95) — o que o AR usa.
+// Não há segunda geometria de sombra aqui: só a chamada acima e um max.
+// Fora de eclipse fatorDeEclipse já devolveu vec3(1.0) e o piso não
+// morde, então a identidade bit a bit do chunk atravessa inteira.
+vec3 fatorDeEclipseNoAr(vec3 p, vec3 n, float ndotlGeo) {
+  return max(fatorDeEclipse(p, n, ndotlGeo), vec3(${PISO_CREPUSCULO_NO_AR}));
 }
 `;

@@ -71,12 +71,13 @@ palavras dele. **A fila decidida, que se ACRESCENTA à de cima e não a
 substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
 esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
 esperam o olho dele) → ~~**92**~~ (25/08 — pousou, e não era de Éris: era
-da classe dos oito; as duas pranchas esperam o olho dele) → **95** (a ordem é
-DELE, e cada um volta com foto) → **gate do filme (77)** → **rolagem do véu
+da classe dos oito; as duas pranchas esperam o olho dele) → ~~**95**~~
+(25/08 — pousou; o ar no eclipse ganhou dose derivada e quatro fotos
+esperam o olho dele) → **gate do filme (77)** → **rolagem do véu
 (87)** → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
 de abertura (**61**) → **70**, a causa 2 → **99** → **75**.
 
-**O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** São **TRÊS
+**O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** São **QUATRO
 itens**. O **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, a
 divergência da lanterna e agora o **véu palha**, que pousou no fim do
 dia com três pranchas próprias), e nele moram também as perguntas
@@ -88,6 +89,10 @@ enquadra uma lua), que pousou no fim do dia com duas pranchas —
 E o **92** (descer ao corpo de um anão não punha o corpo na tela — e era
 a classe dos oito, não Éris), com `item92-eris-antes-depois.png` e
 `item92-vesta-antes-depois.png`.
+E o **95** (num eclipse o chão escurecia e o AR não), com
+`item95-limbo-prancha.png` — o par no limbo, que é o que decide —,
+`item95-limbo-mapa.png` e o par de controle `item95-durango-*.png`, que
+prova que a umbra de Durango não andou um bit.
 **E há uma pendência que não é de olho, é
 de PALAVRAS DELE:** a fita do item **83** — ele *"estranhou algo (explico no
 chat)"* (C3), e até a explicação chegar nenhuma obra de linha anda ali. Nada
@@ -1157,8 +1162,76 @@ casca é brilhante: um eclipse rasante hoje aparece com o ar aceso por
 cima. **Não é multiplicar pelo fator e pronto**, e é por isso que fica
 como item em vez de conserto de uma linha: na totalidade de verdade o
 céu não é preto, ele é o crepúsculo de 360° — luz espalhada de FORA da
-umbra. Zerar o ar seria trocar um erro por outro. Quem pegar decide a
-dose e volta com a foto de um eclipse no limbo.
+umbra. Zerar o ar seria trocar um erro por outro.
+
+**A OBRA POUSOU EM 25/08 — falta SÓ o olho dele.**
+
+**A DOSE, e ela tem duas peças, não uma.** A primeira responde pelo
+crepúsculo e NÃO é um número escolhido: a sombra entra **amostra a
+amostra** dentro do laço de Nishita do `ATMOSFERA_FRAG`, na FONTE da luz
+que cada pedaço de ar espalha — cada uma das 23 amostras pergunta ao
+MESMO cone (`fatorDeEclipse`, o chunk único da lib) se o Sol a alcança.
+O que sobrevive é então a fração ILUMINADA do caminho, ponderada pela
+densidade, e é ela que reproduz o crepúsculo de 360° sem inventá-lo: a
+umbra tem ~200 km de largura e um raio de visada rasante atravessa
+~2.850 km de ar (2·√(2·R·h), R 6.378 km, casca 160 km), então mesmo
+passando pelo núcleo da umbra ele só fica ~7 % do caminho às escuras. A
+penumbra, essa sim, é enorme — r ≈ 3.430 km — e escurece o ar num
+gradiente por meio disco, que é o que um eclipse parcial faz com o céu
+de verdade.
+
+A segunda peça é o **piso do crepúsculo**, para o caminho que cai
+INTEIRO na sombra (o rasante, em que o cilindro de sombra se deita ao
+longo do limbo). Ele é **derivado em lux, e a conta está no código**
+(`PISO_CREPUSCULO_NO_AR`, em `eclipse.ts`):
+
+>  piso = E_totalidade / E_sol_pleno = **10 lux / 100.000 lux = 1e−4**
+
+— a iluminância no chão dentro da umbra sobre a do Sol pleno, e essa luz
+é literalmente o anel de ar iluminado de fora espalhando para dentro (a
+coroa entra com ~0,25 lux e não manda na conta). É o irmão SOLAR do
+`PISO_REFRACAO_LUNAR`, com a mesma nota de honestidade: a totalidade de
+uma data específica varre de ~1 a ~100 lux, o que é firme é a ORDEM.
+**Sem ganho de observador**: 1e−4 quantiza para ~0 na cadeia de display,
+e é de propósito — a umbra solar desta casa é escura por decisão medida
+(o 2,80 do item 93), e um ganho no ar desmancharia isso.
+
+**O QUE SE VÊ, medido com `scripts/visual/luz-ab.mjs`.** A vista nova
+`eclipse-limbo` (2026-08-12 17:48 UTC, o total RASANTE sobre Islândia e
+Espanha — gamma **0,8964** pela nossa efeméride, umbra r 53 km, câmera a
+2 raios com a mancha a 0,966 do raio do disco, dentro do anel de ar):
+**56.610 px mudaram (1,84 % do quadro) e TODOS os 56.610 perderam luz**,
+delta máximo **83,8 de 255**, média do quadro 83,63 → 83,32. O mapa da
+perda (`item95-limbo-mapa.png`) mostra um ARCO no anel de limbo, forte
+onde a sombra o cruza e esvaindo para os lados — zero em todo o resto do
+quadro, inclusive no chão embaixo dele.
+
+**E o 2,80 do item 93 NÃO se mexeu:** a vista `eclipse-solar` (Durango,
+08/04/2024) saiu **BIT-IDÊNTICA**, `7a1ca6d6f19b` dos dois lados; a régua
+da umbra lê núcleo **2,71** e vizinho **13,62** antes e depois, contraste
+5,0 nos dois. `terra`, `terranb`, `terralua`, `lua` e `eclipse-lunar`
+também bit-idênticas.
+
+**FOTOS:** `item95-limbo-antes.png` × `item95-limbo-depois.png` (crus),
+`item95-limbo-prancha.png` (o par recortado no limbo, lado a lado),
+`item95-limbo-mapa.png` (onde a luz saiu) e o par de controle
+`item95-durango-antes.png` × `item95-durango-depois.png`.
+
+**O DENTE, e o que ele pega.** O chunk do eclipse — a peça mais crítica
+de shader da casa — passou a ser medido **por valor**: `eclipse.test.ts`
+ganhou um tradutor GLSL → JS com vec3 de verdade (o de `luzDaVisita` mede
+um canal só e não serve aqui, porque `dot` e `length` amarram os três) e
+EXECUTA `fatorDeEclipse` e `fatorDeEclipseNoAr` sobre a geometria real de
+08/04/2024. Ele recusa o que não entende, e quem julga o juiz é a
+própria lib: a rampa que o GLSL executa cruza a meia-luz entre os raios
+de umbra e penumbra que `resolveConeDeEclipse` devolveu. Do outro lado,
+`terra.test.ts` compara, nome a nome, o que `uniformsDaAtmosfera()`
+oferece com o que o `ATMOSFERA_FRAG` MONTADO declara — a fronteira em
+que o defeito morava, com os dois lados calados.
+
+**SABOTAGEM (worktree), o placar:** reverter o conserto inteiro reprova
+**2**; tirar só a multiplicação do laço, deixando os uniformes, reprova
+**1**; `piso = 0` reprova **2**. No HEAD sem a obra, nenhum reprovava.
 
 **96.** (Da mesma auditoria, 25/08. **Risco latente, não defeito visível.**)
 **"O Sol está na origem" é combinado, não é verificado.** A cena inteira

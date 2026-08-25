@@ -337,6 +337,27 @@ export const VISTAS = [
       + '&look=0.0000027958946899936873,-0.000003732529698720039,-0.0000016180463950766712'
       + '&jd=2458327.34980323&corpos=1&shot=2',
   ],
+  // ITEM 95 — O ECLIPSE NO LIMBO, a vista que julga o AR na sombra.
+  // As duas de cima põem a mancha no MEIO do disco, e ali a atmosfera
+  // não pesa: sobre o disco o depth da superfície mata a casca, e o que
+  // sobra do ar é o anel de limbo, longe da mancha. O defeito do item 95
+  // mora justamente onde essas duas não olham.
+  //
+  // `eclipse-limbo` (?jd=2461265.241840278 — 2026-08-12 17:48 UTC, o
+  // máximo segundo a NOSSA efeméride): o total RASANTE sobre a Islândia
+  // e a Espanha, gamma 0,8964 — a sombra raspa o limbo norte em vez de
+  // furar o meio do disco. Umbra r ≈ 53 km, penumbra r ≈ 3.430 km. A
+  // câmera fica a 2 raios terrestres do centro, 11,3° fora do eixo
+  // Terra→Sol PARA LONGE da mancha, de modo que o ponto sob a sombra caia
+  // a 75° do eixo da câmera — 0,966 do raio do disco, dentro do anel de
+  // atmosfera, que é onde a casca é brilhante. O `look` é o centro da
+  // Terra na mesma efeméride e no mesmo jd.
+  [
+    'eclipse-limbo',
+    '?pos=0.0000037447483183244700,-0.0000029167355069276228,-0.0000012644663511367701'
+      + '&look=0.0000037450523018411245,-0.0000029170137720666862,-0.0000012644989746445182'
+      + '&jd=2461265.241840278&corpos=1&shot=2',
+  ],
   // ------------------------------------------------------------------
   // ONDA 6 (F3) — OS ROCHOSOS, no MESMO jd pinado da onda
   // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
