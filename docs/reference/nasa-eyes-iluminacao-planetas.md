@@ -760,3 +760,20 @@ pelo quadro.
 A prova tem de mostrar o que mudou: Saturno de perto, lado do
 Sol, depois do ACES, palha — não carvão. Vista nova, não as 18
 do filme. Detalhe do contrato: §11. Selo honesto: §11.6.
+
+### O que o Grok já tocou nesta sessão (além deste relatório)
+
+A obra do globo **ainda não rolou**. O Grok só estudou o Eyes,
+escreveu este arquivo e alinhou os contratos vivos. Commits
+`4bc4810` e `38ccecf` (locais, sem push). Não releia o mundo
+como se só este `.md` tivesse nascido:
+
+| arquivo | o que mudou |
+|---|---|
+| `docs/PENDENCIAS.md` | item **91** aberto com as palavras do dono; fila agora passa por 91; em 25/08 o diagnóstico da mistura e o modo Natural |
+| `docs/NORTE.md` | regra que ainda manda: o globo visitado não herda o 1/d² do ponto; fila da obra 91 |
+| `docs/PLANO-ATLAS.md` | o risco da primeira superfície 9.400:1 aponta para este diagnóstico, não para outro σ |
+| `docs/reference/nasa-eyes-algoritmos.md` | uma linha: iluminação dos globos é o irmão (este arquivo) |
+
+Código, shader, `ganhoFundido`, gates: **intocados**. Quem implementa
+é este agente, a partir daqui.
