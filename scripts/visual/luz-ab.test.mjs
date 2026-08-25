@@ -1,0 +1,381 @@
+// ============================================================
+// O JUIZ DO MEDIDOR — cada definição do A/B de luz num quadro cuja
+// resposta se sabe à mão.
+//
+// O medidor tem DUAS provas, e elas cobrem coisas diferentes:
+//
+//  1. A DE FORA, feita uma vez e relatada: rodado sobre os quadros crus
+//     de 1100×900 de 25/08, ele devolve os oito `capturas/item93-*.json`
+//     campo por campo, 473 de 473. É o que prova que o que veio da
+//     bancada para dentro do projeto é o MESMO instrumento.
+//  2. ESTA, que fica: quadros montados aqui, com a conta ao lado, para
+//     que nenhuma definição possa mudar em silêncio depois. É ela que
+//     protege a de fora — os PNG de 25/08 são efêmeros, este arquivo não.
+//
+// As contas de luz recebem `Float32Array` direto: é o mesmo tipo que o
+// medidor usa, e assim o valor esperado é aritmética exata em vez de
+// refém do arredondamento do cinza. O leitor de PNG tem bloco só dele.
+// ============================================================
+import { deflateSync } from 'node:zlib';
+import { describe, expect, it } from 'vitest';
+import {
+  LIMIAR_DE_MUDANCA,
+  LIMIAR_DE_SATURACAO,
+  LIMIAR_DO_PRETO,
+  cinzaDoPng,
+  lerPng,
+  medirAneis,
+  medirFaixas,
+  medirPar,
+  medirUmbra,
+  nucleoMaisEscuro,
+  percentil,
+} from './luz-ab.mjs';
+
+const CRC = (() => {
+  const t = new Int32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c;
+  }
+  return (buf) => {
+    let c = -1;
+    for (const b of buf) c = t[(c ^ b) & 255] ^ (c >>> 8);
+    return (c ^ -1) >>> 0;
+  };
+})();
+
+function pedaco(tipo, dados) {
+  const tamanho = Buffer.alloc(4);
+  tamanho.writeUInt32BE(dados.length);
+  const corpo = Buffer.concat([Buffer.from(tipo, 'latin1'), dados]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(CRC(corpo));
+  return Buffer.concat([tamanho, corpo, crc]);
+}
+
+/**
+ * Um PNG RGBA de 8 bits com o FILTRO pedido em cada linha — 0 e 4 (Paeth)
+ * são os que aparecem no que o Chrome grava, e os dois passam por aqui.
+ */
+function png(largura, altura, corDoPixel, filtro = 0) {
+  const canais = 4;
+  const linha = largura * canais;
+  const cru = Buffer.alloc(altura * (linha + 1));
+  const anterior = Buffer.alloc(linha);
+  for (let y = 0; y < altura; y++) {
+    const bruto = Buffer.alloc(linha);
+    for (let x = 0; x < largura; x++) {
+      const [r, g, b] = corDoPixel(x, y);
+      bruto[x * 4] = r;
+      bruto[x * 4 + 1] = g;
+      bruto[x * 4 + 2] = b;
+      bruto[x * 4 + 3] = 255;
+    }
+    cru[y * (linha + 1)] = filtro;
+    for (let i = 0; i < linha; i++) {
+      if (filtro === 0) cru[y * (linha + 1) + 1 + i] = bruto[i];
+      else {
+        const a = i >= canais ? bruto[i - canais] : 0;
+        const b = anterior[i];
+        const c = i >= canais ? anterior[i - canais] : 0;
+        const p = a + b - c;
+        const da = Math.abs(p - a);
+        const db = Math.abs(p - b);
+        const dc = Math.abs(p - c);
+        const prev = da <= db && da <= dc ? a : db <= dc ? b : c;
+        cru[y * (linha + 1) + 1 + i] = (bruto[i] - prev) & 255;
+      }
+    }
+    bruto.copy(anterior);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(largura, 0);
+  ihdr.writeUInt32BE(altura, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pedaco('IHDR', ihdr),
+    pedaco('IDAT', deflateSync(cru)),
+    pedaco('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+describe('o leitor de PNG', () => {
+  it('lê os dois filtros que aparecem no arquivo e devolve o MESMO cinza', () => {
+    const desenho = (x, y) => {
+      const v = (x * 7 + y * 13) % 256;
+      return [v, v, v];
+    };
+    const semFiltro = cinzaDoPng(lerPng(png(9, 5, desenho, 0)));
+    const comPaeth = cinzaDoPng(lerPng(png(9, 5, desenho, 4)));
+    expect([...comPaeth]).toEqual([...semFiltro]);
+    expect(semFiltro[0]).toBe(0);
+    expect(semFiltro[1]).toBeCloseTo(7, 4);
+  });
+
+  it('a luminância Rec.709 é a declarada, canal a canal', () => {
+    const g = cinzaDoPng(
+      lerPng(png(3, 1, (x) => [x === 0 ? 255 : 0, x === 1 ? 255 : 0, x === 2 ? 255 : 0]))
+    );
+    expect(g[0]).toBeCloseTo(0.2126 * 255, 3);
+    expect(g[1]).toBeCloseTo(0.7152 * 255, 3);
+    expect(g[2]).toBeCloseTo(0.0722 * 255, 3);
+  });
+
+  it('recusa o que não sabe ler, em vez de devolver pixel inventado', () => {
+    expect(() => lerPng(Buffer.from('isto não é um png'))).toThrow(/não é PNG/);
+    const dezesseis = Buffer.from(png(2, 2, () => [10, 10, 10]));
+    dezesseis[24] = 16; // a profundidade de bits, dentro do IHDR
+    expect(() => lerPng(dezesseis)).toThrow(/16 bits/);
+  });
+});
+
+describe('percentil', () => {
+  it('devolve uma AMOSTRA que existe, na posição floor(p·n) — sem interpolar', () => {
+    const v = [0, 10, 20, 30, 40];
+    expect(percentil(v, 0)).toBe(0);
+    expect(percentil(v, 0.5)).toBe(20); // floor(2,5) = 2
+    expect(percentil(v, 0.9)).toBe(40); // floor(4,5) = 4
+    expect(percentil(v, 1)).toBe(40); // e nunca sai do vetor
+    expect(percentil([0, 10], 0.25)).toBe(0); // interpolado daria 2,5
+    expect(percentil([], 0.9)).toBe(0);
+  });
+});
+
+describe('medirPar — o bloco A/B, campo a campo', () => {
+  /**
+   * O QUADRO DE PROVA, 10×10 = 100 pixels, contado à mão:
+   *
+   *   linha 0 (10 px): antes 0,   depois 0    → PRETO dos dois lados
+   *   linha 1 (10 px): antes 0,   depois 40   → NASCE do preto
+   *   linha 2 (10 px): antes 40,  depois 0    → MORRE no preto
+   *   linha 3 (10 px): antes 100, depois 90   → escurece (Δ 10)
+   *   linhas 4–9 (60): antes 100, depois 120  → clareia (Δ 20)
+   *
+   *   máscara = 90 (tudo menos a linha 0)
+   *   mediaAntes  = (0·10 + 40·10 + 100·70)/90 = 7.400/90 = 82,222
+   *   mediaDepois = (40·10 + 0·10 + 90·10 + 120·60)/90 = 8.500/90 = 94,444
+   *   razão = 8.500/7.400 = 1,1486
+   *   mudaram = 90; deltaMedio = (400+400+100+1.200)/90 = 23,333
+   */
+  const quadro = (f) => {
+    const v = new Float32Array(100);
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) v[y * 10 + x] = f(y);
+    return v;
+  };
+  const antes = quadro((y) => (y <= 1 ? 0 : y === 2 ? 40 : 100));
+  const depois = quadro((y) => (y === 0 ? 0 : y === 1 ? 40 : y === 2 ? 0 : y === 3 ? 90 : 120));
+  const m = medirPar(antes, depois);
+
+  it('conta o quadro, a máscara e as médias', () => {
+    expect(m.pixels).toBe(100);
+    expect(m.mascara).toBe(90);
+    expect(m.mediaAntes).toBe(82.222);
+    expect(m.mediaDepois).toBe(94.444);
+    expect(m.razao).toBe(1.1486);
+  });
+
+  it('conta quem mudou, e a porcentagem é do QUADRO, não da máscara', () => {
+    expect(m.pixelsQueMudaram).toBe(90);
+    expect(m.pctQueMudaram).toBe(90); // 90/100, e NÃO 100 (90/90)
+    expect(m.deltaMedio).toBe(23.333);
+    expect(m.deltaMax).toBe(40);
+  });
+
+  it('separa clarear de acender: nasceu, morreu e perdeu luz', () => {
+    expect(m.nasceramDoPreto).toBe(10);
+    expect(m.morreramNoPreto).toBe(10);
+    expect(m.pixelsQuePerderamLuz).toBe(20); // a linha 2 (40 → 0) e a linha 3 (Δ 10)
+  });
+
+  it('os percentis saem da máscara ordenada, sem interpolar', () => {
+    expect(m.p90Antes).toBe(100);
+    expect(m.p99Antes).toBe(100);
+    expect(m.p90Depois).toBe(120);
+    expect(m.p99Depois).toBe(120);
+  });
+
+  /**
+   * O PRETO É 2, NÃO 0, e isto é a definição que mais muda o veredito:
+   * abaixo de 2 de 255 não há imagem, há o piso de ruído do quadro. Um
+   * pixel que sai de 0,4 para 1,6 não "nasceu" — continuou preto.
+   */
+  it('o limiar do preto é 2: quem não cruza o 2 não nasce nem morre', () => {
+    expect(LIMIAR_DO_PRETO).toBe(2);
+    const a = new Float32Array([0.4, 0.4, 3, 3]);
+    const b = new Float32Array([1.6, 3, 0.5, 3]);
+    const q = medirPar(a, b);
+    expect(q.mascara).toBe(3); // o par 0,4 → 1,6 fica de fora dos dois lados
+    expect(q.nasceramDoPreto).toBe(1); // só o 0,4 → 3
+    expect(q.morreramNoPreto).toBe(1); // só o 3 → 0,5
+  });
+
+  it('o limiar de meio nível separa mudança de arredondamento', () => {
+    expect(LIMIAR_DE_MUDANCA).toBe(0.5);
+    const a = new Float32Array([100, 100, 100, 100]);
+    const b = new Float32Array([100.4, 100.5, 100.6, 101]);
+    const q = medirPar(a, b);
+    expect(q.pixelsQueMudaram).toBe(3); // o 100,4 não passa; o 100,5 passa (é `≥`)
+    expect(q.pixelsQuePerderamLuz).toBe(0); // todos clarearam
+  });
+
+  it('conta os saturados na máscara e recusa quadros de tamanhos diferentes', () => {
+    expect(LIMIAR_DE_SATURACAO).toBe(254);
+    const cheio = new Float32Array([255, 254, 253.9, 1]);
+    const s = medirPar(cheio, cheio);
+    expect(s.mascara).toBe(3); // o 1 é preto
+    expect(s.saturadosAntes).toBe(2);
+    expect(s.saturadosDepois).toBe(2);
+    expect(s.pixelsQueMudaram).toBe(0);
+    expect(s.razao).toBe(1);
+    expect(() => medirPar(cheio, new Float32Array(2))).toThrow(/tamanhos diferentes/);
+  });
+});
+
+describe('medirFaixas — o quadro repartido pelo nível do lado ANTES', () => {
+  it('cada faixa recebe o nível que lhe cabe, e a razão é a da faixa', () => {
+    // 10 px, o k-ésimo com antes = 20·k: os níveis caem em 0,1 … 1,0, um
+    // por faixa. O depois é o dobro em toda parte.
+    const antes = Float32Array.from({ length: 10 }, (_, k) => 20 * (k + 1));
+    const depois = antes.map((v) => v * 2);
+    const f = medirFaixas(antes, depois);
+    expect(f.pico).toBe(200);
+    expect(f.faixas).toHaveLength(10);
+    expect(f.faixas[0]).toEqual({ faixa: '0.05–0.15', n: 1, antes: 20, depois: 40, razao: 2 });
+    expect(f.faixas[9]).toEqual({ faixa: '0.95–1.05', n: 1, antes: 200, depois: 400, razao: 2 });
+    expect(f.faixas.reduce((s, x) => s + x.n, 0)).toBe(10);
+  });
+
+  it('o flanco e o subsolar podem ter razões DIFERENTES — é para isso que serve', () => {
+    const f = medirFaixas(new Float32Array([50, 100]), new Float32Array([72, 100]));
+    expect(f.faixas[4]).toMatchObject({ faixa: '0.45–0.55', n: 1, razao: 1.44 });
+    expect(f.faixas[9]).toMatchObject({ faixa: '0.95–1.05', n: 1, razao: 1 });
+  });
+
+  /**
+   * POR QUE O PICO É O p99,9 E NÃO O MÁXIMO: uma estrela do fundo é mais
+   * brilhante que o subsolar do planeta. Com o máximo por régua, o disco
+   * inteiro desceria para a faixa de baixo e as dez faixas mediriam o
+   * céu, não o corpo.
+   */
+  it('o pico é o p99,9: uma estrela do fundo não manda a régua para o espaço', () => {
+    const antes = new Float32Array(10000);
+    antes.fill(200);
+    for (let i = 9995; i < 10000; i++) antes[i] = 1000; // cinco estrelas
+    const f = medirFaixas(antes, antes);
+    expect(f.pico).toBe(200); // e não 1000
+    expect(f.faixas[9].n).toBe(9995); // o disco inteiro no subsolar
+  });
+});
+
+describe('medirAneis — o disco em dez anéis, e o quão chato ele é', () => {
+  /** um disco de raio R num quadro L×L, com o brilho dado por r/R */
+  const disco = (L, R, brilhoNoRaio) => {
+    const v = new Float32Array(L * L);
+    const c = L / 2;
+    for (let y = 0; y < L; y++) {
+      for (let x = 0; x < L; x++) {
+        const r = Math.hypot(x - c, y - c);
+        v[y * L + x] = r <= R ? brilhoNoRaio(r / R) : 0;
+      }
+    }
+    return v;
+  };
+
+  it('acha o centro e o raio equivalente do disco', () => {
+    const d = disco(300, 60, () => 200);
+    const a = medirAneis(d, d, 300, 300);
+    expect(a.centro[0]).toBeCloseTo(150, 0);
+    expect(a.centro[1]).toBeCloseTo(150, 0);
+    expect(a.raioPx).toBeCloseTo(60, 0);
+  });
+
+  it('disco de brilho CONSTANTE é chato = 1 — o fato da foto da Lua', () => {
+    const d = disco(300, 60, () => 200);
+    const a = medirAneis(d, d, 300, 300);
+    expect(a.chatoAntes).toBe(1);
+    expect(a.chatoDepois).toBe(1);
+    for (const anel of a.aneis) expect(anel.razao).toBe(1);
+  });
+
+  it('limbo que cai puxa o chato para baixo, e o número diz quanto', () => {
+    const plano = disco(300, 60, () => 200);
+    const caindo = disco(300, 60, (t) => 200 * (1 - 0.5 * t));
+    const a = medirAneis(plano, caindo, 300, 300);
+    expect(a.chatoAntes).toBe(1);
+    // o anel 0,8–0,9 recebe ~200·(1−0,5·0,85) e o 0,0–0,1 ~200·(1−0,5·0,05)
+    expect(a.chatoDepois).toBeCloseTo(0.59, 1);
+    expect(a.aneis[9].razao).toBeLessThan(a.aneis[0].razao);
+  });
+
+  /** o último décimo para em 0,98 porque é no limbo que a máscara mente */
+  it('os anéis param em 0,98: o último é MEIO anel, e isso é de propósito', () => {
+    const d = disco(300, 60, () => 200);
+    const a = medirAneis(d, d, 300, 300);
+    expect(a.aneis[9].n).toBeLessThan(a.aneis[8].n);
+    const raio = a.raioPx;
+    expect(a.aneis.reduce((s, x) => s + x.n, 0)).toBeLessThan(Math.PI * raio * raio);
+  });
+
+  it('sem disco acima do limiar, REPROVA em vez de devolver um centro inventado', () => {
+    const escuro = new Float32Array(300 * 300);
+    expect(() => medirAneis(escuro, escuro, 300, 300)).toThrow(/nenhum disco/);
+  });
+});
+
+describe('medirUmbra — o buraco contra o chão ao lado', () => {
+  /**
+   * Um quadro 700×600 chapado em `fundo`, com um POÇO de meia-largura 6
+   * em (200, 300). A meia-largura é 6 de propósito: é o alcance exato da
+   * amostragem do varredor, então só o centro tem as 25 amostras dentro
+   * do poço — o mínimo é ÚNICO e o teste sabe onde ele está.
+   */
+  const comPoco = (fundo, poco) => {
+    const v = new Float32Array(700 * 600);
+    v.fill(fundo);
+    for (let y = 294; y <= 306; y++) for (let x = 194; x <= 206; x++) v[y * 700 + x] = poco;
+    return v;
+  };
+
+  it('o varredor acha o ponto mais escuro do quadro, não um chute', () => {
+    expect(nucleoMaisEscuro(comPoco(24, 2.76), 700, 600)).toEqual({ x: 200, y: 300 });
+  });
+
+  it('a janela é 17×17 e o vizinho fica a 220 px — o contraste sai daí', () => {
+    const antes = comPoco(24, 2.76);
+    const depois = comPoco(28, 2.8);
+    const m = medirUmbra(antes, depois, 700, 600);
+    expect(m.nucleo).toEqual({ x: 200, y: 300 });
+    // 13×13 = 169 px de poço e 120 de fundo, nos 17×17 = 289 da janela
+    expect(m.antes.media).toBe(+((169 * 2.76 + 120 * 24) / 289).toFixed(2));
+    expect(m.antes.min).toBe(2.76);
+    expect(m.vizinhoAntes.media).toBe(24); // a 220 px o poço já não alcança
+    expect(m.contrasteAntes).toBe(+(24 / m.antes.media).toFixed(1));
+    expect(m.contrasteDepois).toBe(+(28 / m.depois.media).toFixed(1));
+  });
+
+  /**
+   * O NÚMERO QUE CONDENOU A LANTERNA SEM SOMBRA: com o fill de câmera
+   * entrando na umbra, o núcleo fica MAIS CLARO que o chão ao lado e o
+   * contraste cai abaixo de 1 — a totalidade sai do mapa.
+   */
+  it('uma lanterna que ACENDE a umbra derruba o contraste abaixo de 1', () => {
+    const antes = comPoco(24, 2.76);
+    const invertido = comPoco(30.45, 42.21);
+    const m = medirUmbra(antes, invertido, 700, 600);
+    expect(m.contrasteAntes).toBeGreaterThan(1);
+    expect(m.contrasteDepois).toBeLessThan(1);
+    expect(m.depois.media).toBeGreaterThan(m.vizinhoDepois.media);
+  });
+
+  it('o lado que ESCOLHE o ponto pode ser um terceiro quadro', () => {
+    const chapado = new Float32Array(700 * 600).fill(24);
+    const guia = comPoco(24, 2.76);
+    // sem guia o quadro é chapado e o mínimo é o primeiro ponto varrido
+    expect(nucleoMaisEscuro(chapado, 700, 600)).toEqual({ x: 120, y: 120 });
+    expect(medirUmbra(chapado, chapado, 700, 600, guia).nucleo).toEqual({ x: 200, y: 300 });
+  });
+});

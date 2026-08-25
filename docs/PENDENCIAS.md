@@ -239,6 +239,15 @@ lado delas: `capturas/item93-medidas.json` (o A/B das nove vistas),
 `capturas/`**, pela mesma razão dos itens 70 e 79: elas ainda não
 serviram.
 
+**E AGORA DÁ PARA CONFERIR TODOS ELES.** O medidor de 25/08 era de
+bancada e vivia fora do projeto; virou `scripts/visual/luz-ab.mjs`, com
+cada definição escrita no cabeçalho e cada uma provada em
+`luz-ab.test.mjs`. Rodado sobre os quadros crus de 1100×900, ele devolve
+os oito arquivos acima **campo por campo — 473 de 473**. Os quadros crus
+ficaram guardados em `capturas/item93-cru/`, e o cabeçalho do script traz
+a linha de comando de cada arquivo. **Não apagar essa pasta junto com o
+resto**: é ela que faz a conferência ser refazível.
+
 **O QUE O A/B MEDIU** (árvore limpa dos dois lados, `21cb669` × a obra,
 1100×900, dpr 1, bytes de tela): Saturno de perto 34,4 → 38,5 (×1,12,
 3.728 px nasceram do preto); Júpiter no flanco 20,9 → 25,2 (×1,21);
