@@ -1335,8 +1335,12 @@ parecer mais vazio.
 
 **70. Girar a câmera acende e apaga o céu inteiro.** (Achado em 22/08
 pelo juiz novo de movimento, o MB1 — `scripts/visual/
-estabilidade-temporal.mjs`. **DIAGNOSTICADO em 22/08, ainda NÃO
-consertado** — a causa está escrita abaixo, com os números.) Quando uma
+estabilidade-temporal.mjs`. **A METADE DO COBERTOR FOI CONSERTADA em
+25/08; a metade do PONTO segue aberta** — os números das duas estão
+abaixo. **Falta o dono olhar as fotos:**
+`capturas/item70-giro-antes-depois.png` e
+`capturas/item72-nobloom-antes-depois.png` — não apagar na próxima
+limpeza de `capturas/`, pela mesma razão do item 79.) Quando uma
 estrela muito brilhante sai pela borda do quadro, o brilhão dela some de
 uma vez e **o céu inteiro perde
 quase um terço da luz num único passo de câmera** — quatro pixels de
@@ -1387,8 +1391,62 @@ fora do quadro* — em dois lugares:
 
 O conserto não é margem mágica: o cobertor do campo tem de enxergar
 ALÉM do quadro (faixa de guarda no rascunho e na pirâmide) e o sprite
-tem de sobreviver enquanto qualquer pedaço dele estiver na tela. Nenhum
-dos dois é mudança pequena, e nenhum dos dois entrou nesta rodada.
+tem de sobreviver enquanto qualquer pedaço dele estiver na tela.
+
+**A CAUSA 1 MORREU EM 25/08 — a faixa de guarda, `MARGEM_DO_CAMPO` em
+`core/post.ts`.** O rascunho do campo passou a ter 128 px a mais de cada
+lado, e a câmera do rascunho ganha o mesmo tanto de frustum (a densidade
+de pixel NÃO muda; só há mais pixels). O 128 é MEDIDO, na família `fov`,
+com o resíduo do passo 5 contra o teto (piso 0,34 + folga 2,00):
+
+| margem | luz do quadro | resíduo k5 | ΔLuz k5 | pior da família |
+|---|---|---|---|---|
+| 0 px | 14,10 bytes | 3,80 | −27,0% | 3,80 ← a doença |
+| 32 px | 13,73 | 0,61 | +2,2% | 2,14 |
+| 64 px | 13,52 | 0,39 | −1,0% | 2,84 |
+| 96 px | 13,47 | 0,44 | −2,0% | 0,85 |
+| **128 px** | **13,41** | **0,44** | **−2,1%** | **0,51** ← escolhido |
+| 192 px | 13,41 | 0,46 | −2,2% | 0,57 |
+| 256 px | 13,39 | 0,47 | −2,7% | 0,53 |
+
+128 é o joelho: de 96 para cima a curva assenta, e 192/256 não compram
+nada. É múltiplo de 32 por obrigação — a pirâmide tem cinco mips e o mais
+grosso vive a 1/32 da resolução. **MB1 na corrida inteira:** `fov`
+3,80 → 0,51 degraus, `pan` 0,64 → 0,36 (o piso da família é 0,35),
+`orbita` 0,44 → 0,38; os defeitos caíram de 2 para 1. Na foto do giro a
+luz do quadro num passo de câmera deixa de cair 28,8% e cai 5,7%.
+
+**O CONTROLE que torna a medida honesta:** com `MARGEM_DO_CAMPO = 0` a
+obra reproduz o código de antes dela (luz 14,097 contra 14,098 bytes,
+resíduo 3,80, ΔLuz −27,0%; e a vista `mercurio` do `ab-identidade` sai
+com o md5 IDÊNTICO). A faixa é a única coisa que mudou.
+
+**O PREÇO, medido com `gpu-profile` (1920×1080, dPR 1):** o passe do
+campo ganha 1,43× de área, e o pós-processamento sai de 17,1% para 24,7%
+do tempo de GPU dos draws (27,4 → ~48 ms na soma instrumentada). **Em
+quadros por segundo o custo não aparece:** 31,3 → 32,7 fps na cena do
+filme e 37,9 → 37,3 perto do Sol, as duas dentro da dispersão entre
+corridas do MESMO código. A conta de VRAM é uma segunda máquina de bloom
+(a da lei não pode ser emprestada: o rascunho com faixa não cabe em
+buffer nenhum do composer, e o `setSize` do vendorizado realocaria 11
+alvos DUAS VEZES POR QUADRO).
+
+**A CAUSA 2 SEGUE ABERTA — o ponto que morre seco na borda.** A faixa de
+guarda conserta o COBERTOR: no rascunho a estrela que saiu continua sendo
+desenhada, porque ela ainda está dentro do frustum alargado. O que ela
+NÃO conserta é a IMAGEM DIRETA do ponto no quadro principal — ali o
+`THREE.Points` continua sendo descartado inteiro quando o vértice cruza o
+volume de clip, e a metade do sprite que ainda estava na tela some de uma
+vez. O desenho conhecido para consertar (não executado, e não medido
+depois da faixa): prender o vértice DENTRO do volume de clip e avaliar a
+PSF pela distância VERDADEIRA (`gl_FragCoord` menos o centro real), como
+o quad das heroes já faz por construção — o fragment do campo usa `uv` só
+em módulo (`r2`, `abs(uv.x)`, `abs(uv.y)`), então a troca não vira arte
+nova. Custa um uniforme de viewport, que precisa valer o quadro no render
+principal e o rascunho no passe do campo. **O MB1 não cobra mais este
+pedaço** (as nove famílias passam sem ele), então quem o pegar tem de
+trazer a régua junto — e a LEI já marca o catálogo e as cascas como
+território do M3.
 
 **O TAMANHO DO EFEITO DEPENDE DA JANELA, e isso é de 25/08 (item 81).**
 Os números acima ("quase um terço da luz") foram medidos num quadro de
@@ -1402,6 +1460,26 @@ proporcionalmente mais forte. Medido nas mesmas famílias, com o mesmo
 `zoomDeRoda` o Sol saindo pela borda de baixo continua levando o quadro
 junto. **O defeito é real e segue de pé — o que não é fixo é a magnitude,
 e quem for consertar tem de dizer em que janela mediu.**
+
+**O DEFEITO QUE SOBRA NO MB1 NÃO É DESTE ITEM — é a LINHA DE ÓRBITA
+passando por cima do planeta, e isso foi medido em 25/08.** O juiz acusa
+`zoomDeRoda passo 8: RE-SEMEIA — âncora de Vênus saltou 1,74 px (teto
+1,02)`. Três medidas, e as duas primeiras inocentam este item: **com a
+faixa de guarda o salto não se move** (1,74 px antes e depois); **com
+`?nobloom=1`, isto é, com os DOIS cobertores apagados, ele continua**
+(1,73 px) — logo não é bloom nenhum. **Com `?noorbitas=1` ele SOME**: o
+centroide da fonte de Vênus, que estava a 1,3 px da posição prevista do
+planeta, passa a 0,2 px, o `nMeia` da componente cai de 22 para 12, e a
+família inteira PASSA (pior resíduo 0,43). O que acontece é que Vênus
+está SOBRE a própria elipse de órbita, a linha atravessa o limiar de
+fonte do juiz (0,40) e se funde com o núcleo do planeta; o centroide do
+bloco anda enquanto a linha entra e sai, e o juiz cobra isso da âncora.
+A imagem desenhada não salta — quem salta é a medida. **A decisão é do
+dono e são duas portas:** ou a linha de órbita cede brilho onde cruza um
+corpo (mas ele acabou de decidir, em 23/08, que *"as órbitas passam à
+frente"*), ou a regra de bloco fundido do MB1 passa a cobrir traço+núcleo
+— e mexer em dente de juiz pede número, declaração e sabotagem própria.
+Enquanto ele não decide, o MB1 fecha em 1 defeito, e este é o defeito.
 
 *Na mesma medição:* **(a)** Vênus. O que o juiz acusa é 13,4 px na VOLTA
 da fronteira do Sol e não na ida — mas **a Vênus DESENHADA não salta**:
@@ -2044,19 +2122,6 @@ reproduz sob comando, e o item só fecha quando uma leva presa voltar a
 acontecer e sair com erro legível em vez de sono. **A OUTRA METADE
 MORREU em 23/08** — o Chrome que sobrevivia ao juiz é o assunto do item
 **78**, e o conserto está lá. O que segura ESTE item é só o sono.
-
-**72.** (Achado em 22/08, medindo o item 70.) **A porta `?nobloom=1`
-mente: ela não desliga o bloom todo.** Ela só apaga `post.bloom.enabled`,
-e o SEGUNDO cobertor — o `ClaraoDoCampo` do `core/post.ts`, que veste a
-pirâmide do filme por cima do rascunho do campo — chama `bloom.render`
-na mão, sem passar pelo `enabled`. Medido: com `?nobloom=1` a luz média
-do quadro muda 0,35% a 40 UA, e o halo de 250–300 px de uma estrela
-forte continua inteiro. Quem lê a linha do `NORTE.md` ("perto do Sol,
-A/B só com `&nobloom=1`") acredita estar sem bloom nenhum e não está —
-foi essa crença que quase enterrou o diagnóstico do item 70. O conserto
-é uma linha (o passe respeita a mesma chave), mas ele MOVE PIXEL nas
-vistas que hoje usam a porta, então tem de entrar com `ab-identidade`
-cheio e o delta declarado — não é conserto de fim de rodada.
 
 **78.** (Ruído de instrumento, visto UMA vez em 22/08.) **O
 `ab-identidade` com `JOBS=3` travou DEPOIS de terminar.** Os três

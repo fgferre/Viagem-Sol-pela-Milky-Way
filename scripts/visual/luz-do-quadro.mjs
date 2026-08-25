@@ -433,9 +433,16 @@ const PISO_DO_BORRAO_PX = 8;
  *
  * O PAR SEM BLOOM está VIVO. Quem morreu no M2 foi `?bbloom=` (a DOSE do
  * bloom, hoje proibida em `simbolosProibidos.test.ts`); `?nobloom=` é porta
- * declarada no selo e lida pelo director, e é a mesma lente que as onze
- * vistas `…nb` do `ab-identidade`, o `planeta-pixel` e o `z-fighting` já
- * pinam. A trava de 17/08 confundiu as duas e recusou o par por seis dias.
+ * declarada no selo e lida pelo director, e é a mesma lente que as DEZ
+ * vistas `…nb` do `ab-identidade` (eram "onze" aqui até 25/08, e eram dez —
+ * contadas uma a uma), o `planeta-pixel` e o `z-fighting` já pinam. A trava
+ * de 17/08 confundiu as duas e recusou o par por seis dias.
+ *
+ * E DESDE 25/08 A LENTE É OUTRA, item 72: a porta passou a apagar os DOIS
+ * cobertores (o principal e o `ClaraoDoCampo`), não só o principal. Os
+ * pisos `PISO_ACIMA_DE_MEIA_SEM_BLOOM` e as folgas deste arquivo foram
+ * medidos com a porta VELHA, que deixava o cobertor do campo inteiro —
+ * quem for recalibrá-los tem de remedir, não converter.
  */
 const PISO_ACIMA_DE_MEIA_COM_BLOOM = 6.3e-3;
 const PISO_ACIMA_DE_MEIA_SEM_BLOOM = 1.133e-3;

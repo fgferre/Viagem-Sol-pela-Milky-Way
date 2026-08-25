@@ -208,7 +208,17 @@ Três cegueiras declaradas:
   **o céu que `pan` e `orbita` varrem, que não é fixo**: o passo das duas é de
   4 px, então o ALCANCE angular delas encolhe quando a janela cresce, e o
   veredito dessas duas famílias não é comparável entre janelas diferentes
-  (achado em 25/08, item 81). `voo-ida-e-volta.mjs`
+  (achado em 25/08, item 81); e **o traço que se FUNDE com um núcleo
+  compacto**, que é a cegueira que sobrou depois do item 70 (25/08): a
+  regra de bloco fundido do juiz só dispara quando DUAS âncoras reclamam a
+  MESMA fonte, então uma linha de órbita que atravessa o planeta e soma
+  com ele acima do limiar 0,40 passa por fonte legítima, e o centroide do
+  bloco — que anda enquanto a linha entra e sai — é cobrado da âncora do
+  corpo. É este o único defeito que o MB1 ainda acusa (`zoomDeRoda` passo
+  8, Vênus sobre a própria elipse), e ele é do INSTRUMENTO ou da arte da
+  órbita, não do cobertor: medido, o salto não muda com a faixa de guarda
+  nem com os dois cobertores apagados, e SOME com `?noorbitas=1`.
+  `voo-ida-e-volta.mjs`
   continua sendo outra régua para outra pergunta (ida e volta em 34
   degraus DISTANTES, cego a cintilação por construção) e não é juiz
   obrigatório desde 21/08 — ver a tabela de decisões fechadas.
@@ -375,7 +385,12 @@ O harness espera `window.__director.captura.pronto`. Sem isso cai no teto
 de 700 quadros e, no alvo padrão, **sai com status ≠ 0**. Chrome morre
 pelo perfil (`matarPerfil`), nunca pelo nome. Gate de imagem **pina**
 `?q=cinema`. Perto do Sol, A/B só com `&nobloom=1` — com bloom, `ua150` e
-`ua40` devolvem md5 iguais com céus diferentes.
+`ua40` devolvem md5 iguais com céus diferentes. **E desde 25/08 esta linha
+é verdade:** até então `?nobloom=1` apagava só o bloom principal e o
+cobertor do campo seguia inteiro (item 72), então quem lia aqui acreditava
+estar sem bloom nenhum e não estava — a porta mudava 0,49% da luz do
+quadro. Agora apaga os DOIS passes, e a mesma vista muda 31,4%
+(`capturas/item72-nobloom-antes-depois.png`).
 
 Holds do gate externo: o MEIO dos holds de perfil e face-on, com o roll
 assado do rig antigo. O que descompara o histórico é mexer no QUADRO
