@@ -181,6 +181,12 @@ export const LIMIAR_FONTE = 0.40;
  * shader do campo escreve `sigma = SIGMA_PX · alturaDoQuadro / 1080`
  * (`GLSL_STAR_PSF`, `shaders/common.ts`). Ou seja: **a PSF que MB1 mede
  * encolhe com a janela**, e toda a aritmética de fase abaixo depende dela.
+ *
+ * OS DOIS SÃO CÓPIAS, e cópia sem pino é divergência marcada. Um harness `.mjs`
+ * roda em node puro e não importa TypeScript — o idioma da casa para isto é o
+ * do vizinho `luz-do-quadro.test.mjs`: o HARNESS redeclara, e o TESTE importa
+ * `src/three/luzDaCasa` e cobra a igualdade. É `estabilidade-temporal.test.mjs`
+ * ("os dois números da PSF são os de `luzDaCasa.ts`") que guarda estes dois.
  */
 export const ALTURA_DE_CALIBRACAO_PX = 1080;
 /** σ da PSF em px NA altura de calibração — `SIGMA_PX` de `luzDaCasa.ts`. */
@@ -190,7 +196,10 @@ export const SIGMA_DA_PSF_PX = 0.85;
  * QUANTO DO PICO uma PSF perde por cair entre dois pixels da grade, e A CONTA
  * DEPENDE DA ALTURA DO QUADRO. Uma gaussiana de σ px amostrada meio pixel fora
  * do centro nos dois eixos lê exp(−0,25/σ²) do seu pico verdadeiro; com σ =
- * 0,85 (a altura de calibração) isso dá 0,70, e a soleira julgada 0,57. É por
+ * 0,85 (a altura de calibração) isso dá **0,7075**, e a soleira julgada
+ * **0,5654**. (Até 25/08 os dois eram digitados como 0,70 e 0,5714; passar a
+ * derivá-los da conta mudou o terceiro decimal, e a soleira ficou um fio mais
+ * BAIXA — três milésimos de luminância a mais de população julgada.) É por
  * isso que existe uma SEGUNDA soleira: uma fonte cujo pico está a um fio do
  * `LIMIAR_FONTE` entra e sai da lista conforme a estrela atravessa a fronteira
  * entre dois pixels — e o vizinho fraco que aparece no lugar dela vira uma
@@ -201,17 +210,35 @@ export const SIGMA_DA_PSF_PX = 0.85;
  * POR QUE ISTO DEIXOU DE SER UMA CONSTANTE (item 81, 25/08). MB1 nasceu com
  * `0,70` digitado e com a janela padrão `640x700`, que depois de a moldura do
  * Chrome comer 87 px entrega um quadro de **613** px de altura — onde o app
- * desenha σ = 0,85 · 613/1080 = **0,48 px**, uma PSF abaixo de Nyquist. A
- * soleira honesta ali é 0,40/exp(−0,25/0,48²) = **1,17**, isto é ACIMA do
+ * desenha σ = 0,85 · 613/1080 = **0,482 px**, uma PSF abaixo de Nyquist. A
+ * soleira honesta ali é 0,40/exp(−0,25/0,482²) = **1,171**, isto é ACIMA do
  * máximo de um quadro de 8 bits: naquela janela NENHUMA fonte do campo tem
- * identidade medível, e o juiz cobrava identidade de todas. Medido com o
- * PRÓPRIO `fontesDoQuadro`, sobre gaussianas sintéticas em 441 fases de
- * sub-pixel: a σ = 0,48 uma fonte de amplitude 1,0 SOME do censo em 4 fases
- * de 441 e lê pico entre 0,40 e 0,72; a de amplitude 0,7 some em 84 de 441.
- * Era essa a família de acusações "SUMIU — fonte de pico 0,57…0,93
- * desapareceu, longe da borda". A σ = 0,85 nada disso acontece: nenhuma fonte
- * de amplitude ≥ 0,55 some em nenhuma das 441 fases, e o erro de centroide
- * nunca passa de 0,67 px contra a régua de 1,00 px.
+ * identidade medível, e o juiz cobrava identidade de todas.
+ *
+ * OS NÚMEROS SAEM DE UM SCRIPT, e o script é `fase-da-grade.mjs` — ele varre
+ * a metade simétrica das fases de sub-pixel (o canto (0,5; 0,5), que é o pior
+ * caso, SEMPRE incluído) e mede com o PRÓPRIO `fontesDoQuadro`:
+ *
+ *   quadro de 1080 px (σ = 0,850) — fator no canto 0,7075 · soleira 0,5654
+ *     amp 0,50 some em 10,0% das fases · 0,55 em 0,7% · 0,5654 em 0,0%
+ *     piso de sobrevivência por bisseção: 0,5654 — a soleira derivada, a 0,00%
+ *   quadro de 613 px (σ = 0,482) — fator no canto 0,3416 · soleira 1,1709
+ *     amp 0,70 some em 20,9% das fases · 0,90 em 4,8% · 1,00 em **2,3%**
+ *     piso de sobrevivência por bisseção: 1,1709 — de novo a soleira, a 0,00%
+ *
+ * A bisseção fechando na soleira derivada nas DUAS alturas é o que prova que
+ * ela não é um chute calibrado: é a mesma conta, medida por fora. Era essa a
+ * família de acusações "SUMIU — fonte de pico 0,57…0,93 desapareceu, longe da
+ * borda" — a 613 px até uma fonte de amplitude CHEIA some em 2,3% das fases.
+ * O erro de centroide, esse, nunca passa de **0,672 px** em nenhuma das duas
+ * alturas, contra a régua de 1,00 px: quem estoura a régua de salto é o
+ * VIZINHO, não a fase de uma fonte isolada.
+ *
+ * (A primeira escrita deste bloco, em 25/08, trouxe números de um ensaio que
+ * não ficou no projeto e que varria as fases a partir de zero em passos de
+ * 1/21 — pulando o canto exato. Duas afirmações caíram na auditoria: "lê pico
+ * entre 0,40 e 0,72" — 0,72 era a MÉDIA das fases, e o máximo é a própria
+ * amplitude — e "nenhuma de amplitude ≥ 0,55 some", que é falsa por 0,7%.)
  */
 export function fatorDeFase(alturaPx = ALTURA_DE_CALIBRACAO_PX) {
   const sigma = (SIGMA_DA_PSF_PX * alturaPx) / ALTURA_DE_CALIBRACAO_PX;
@@ -703,8 +730,27 @@ export function fontesDoQuadro(y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTE
 /**
  * QUANTAS VEZES o lado do núcleo pode passar de `√nMeia` e a componente ainda
  * ser uma MANCHA. Um disco de n pixels tem lado 2·√(n/π) = 1,13·√n; três é
- * folga de 2,7× sobre o disco perfeito, e o vão medido é enorme: platô do Sol
- * 1,6 · estrela do campo ≤ 1,7 · **traço de órbita 17,2**.
+ * folga de 2,7× sobre o disco perfeito. Medido nas formas que existem no
+ * quadro (`lado/√nMeia`): estrela do campo ≤ 1,7 · platô do Sol 1,6 ·
+ * **traço de órbita 17,2**.
+ *
+ * O QUE ESTE CORTE **NÃO** PEGA, e é honesto dizer porque a régua não é de
+ * "comprimento", é de lado contra raiz da área:
+ *
+ *  · **forma CHEIA e comprida.** Num retângulo maciço a×b o critério vira
+ *    `a ≤ 9b` — razão de aspecto 9:1. Barras cheias de 390×45, 60×8 e 20×3
+ *    passam por mancha. Nenhuma dessas formas existe no céu deste app hoje (o
+ *    que é comprido aqui é fino: linha de órbita de 1,25 px CSS), e um blob
+ *    alongado CHEIO tem centroide que anda com ele — o que o corte quer matar
+ *    é a curva que atravessa o quadro, não a elipse gorda.
+ *  · **o FRAGMENTO de um traço que esmaeceu.** Quando a linha se parte, os
+ *    pedaços são compactos e voltam a ser julgados: o pedaço medido no caso
+ *    que abriu esta regra tinha n=22 e razão 2,35, e entra em identidade sem
+ *    ser barrado. **Este buraco é real e já disparou uma vez** (a acusação de
+ *    1,97 px em `fronteiraTerra` k8). A forma sozinha não distingue "pedaço de
+ *    linha" de "manchinha", então o corte não tenta — quem quiser fechar o
+ *    buraco tem de olhar a HISTÓRIA da componente, não a geometria de um
+ *    quadro, e isso é obra maior do que esta regra.
  */
 export const LADO_POR_RAIZ_DO_NUCLEO = 3;
 
@@ -746,6 +792,14 @@ export function nucleoCompacto(f) {
 export function casarFontes({
   fontesA, fontesB, camA, camB, ancoras = [], mascara = null, julgada = LIMIAR_JULGADA,
 }) {
+  // O FATOR DE FASE DESTA ALTURA, tirado da soleira que veio junto — as duas
+  // são a mesma conta (`soleira = LIMIAR_FONTE / fator`), e derivar uma da
+  // outra é o que impede metade da aritmética de continuar digitada enquanto a
+  // outra metade segue a janela.
+  const fatorDaFase = LIMIAR_FONTE / julgada;
+  // quantas fontes saíram do veredito por serem TRAÇO — exclusão que ninguém
+  // conta é exclusão que ninguém confere (a mesma lição da soleira calada)
+  let tracos = 0;
   const dentroDoClarao = (x, y) => {
     if (!mascara) return false;
     const i = Math.round(x - 0.5);
@@ -802,8 +856,9 @@ export function casarFontes({
   for (const a of fontesA) {
     if (a.pico < julgada || a.naBorda || ambiguas.has(a.id)) continue;
     // e um TRAÇO não entra: o centroide de uma linha que atravessa o quadro
-    // não é posição de coisa nenhuma (`nucleoCompacto`)
-    if (!nucleoCompacto(a)) continue;
+    // não é posição de coisa nenhuma (`nucleoCompacto`). Conta-se, para o
+    // veredito poder DIZER quantas fontes a regra calou.
+    if (!nucleoCompacto(a)) { tracos++; continue; }
     const ancora = daAncora.get(a.id);
     let prev;
     if (ancora && Number.isFinite(ancora.emB?.x)) {
@@ -864,7 +919,7 @@ export function casarFontes({
         // enquanto a posição não pode mudar — §5.20.)
         mudouDeBrilho:
           Math.min(ida.melhor.pico, p.a.pico) / Math.max(ida.melhor.pico, p.a.pico)
-            < FATOR_DE_FASE,
+            < fatorDaFase,
       });
     } else {
       const naBorda =
@@ -875,7 +930,7 @@ export function casarFontes({
       sumidos.push({ de: p.a.id, prev: p.prev, pico: p.a.pico, naBorda, via: p.prev.via });
     }
   }
-  return { casados, sumidos };
+  return { casados, sumidos, tracos };
 }
 
 // ------------------------------------------------------------
@@ -897,23 +952,51 @@ export function casarFontes({
  * `PARALAXE_CEGA_PX` ou onde o clarão comeu o quadro — e isso vai escrito no
  * veredito, nunca em silêncio.
  */
-export function julgarFamilia({ nome, passos = [], piso = null }) {
+export function julgarFamilia({ nome, passos = [], piso = null, altura = null }) {
   const pisoResiduo = piso ? piso.residuoMedio : 0;
   const pisoBanda = piso ? piso.bandaAlta : 0;
   const erros = [];
   const suspensos = [];
-  // A SOLEIRA DE FASE DESTA CORRIDA, declarada uma vez por família. Quando ela
-  // passa de 1,00 não há população possível num quadro de 8 bits — a régua de
-  // identidade está fora de calibração e o veredito TEM de dizer, senão a
-  // ausência de acusações passa por aprovação (item 81).
+  // TESTE QUE NÃO CONSEGUE MEDIR REPROVA. A altura vem do QUADRO CAPTURADO —
+  // não do que foi pedido ao Chrome —, e com ela a soleira de fase. Fora da
+  // calibração a régua de identidade não vale (acima de 1,00 ela não tem
+  // população nenhuma num quadro de 8 bits), e a primeira escrita disto punha
+  // a declaração em `suspensos`, que NÃO reprova: o juiz descalibrado saía
+  // VERDE, com a ausência de acusações passando por aprovação. Agora é ERRO,
+  // com a mesma cara do resto — e `descalibrada` leva a linha inteira para o
+  // rodapé que nunca se trunca.
   const julgada = passos.find((p) => Number.isFinite(p.julgada))?.julgada;
-  if (Number.isFinite(julgada) && Math.abs(julgada - LIMIAR_JULGADA) > 1e-9) {
-    suspensos.push(
-      `${nome}: soleira de fase ${julgada.toFixed(2)} (a de calibração é `
-      + `${LIMIAR_JULGADA.toFixed(2)}) — a PSF encolhe com a altura do quadro`
-      + (julgada > 1
-        ? '; ACIMA DE 1,00 nenhuma fonte do campo tem identidade medível nesta janela'
-        : '')
+  let descalibrada = null;
+  if (Number.isFinite(altura) && altura !== ALTURA_DE_CALIBRACAO_PX) {
+    descalibrada =
+      `${nome}: DESCALIBRADO — o quadro capturado tem ${altura} px de altura e a `
+      + `PSF da casa só vale ${SIGMA_DA_PSF_PX} px a ${ALTURA_DE_CALIBRACAO_PX}; aqui ela `
+      + `vale ${((SIGMA_DA_PSF_PX * altura) / ALTURA_DE_CALIBRACAO_PX).toFixed(3)} px e a `
+      + `soleira de fase vai a ${soleiraJulgada(altura).toFixed(4)} `
+      + `(a de calibração é ${LIMIAR_JULGADA.toFixed(4)})`
+      + (soleiraJulgada(altura) > 1
+        ? ' — ACIMA DE 1,00: NENHUMA fonte do campo tem identidade medível nesta janela, '
+          + 'e um veredito sem acusações aqui não é aprovação, é cegueira'
+        : ' — a régua de identidade está fora da faixa em que foi derivada');
+  } else if (Number.isFinite(julgada) && Math.abs(julgada - LIMIAR_JULGADA) > 1e-9) {
+    // altura certa e soleira diferente: alguém passou a soleira na mão
+    descalibrada =
+      `${nome}: DESCALIBRADO — a soleira usada foi ${julgada.toFixed(4)} e a altura do `
+      + `quadro (${altura ?? '?'}) pede ${LIMIAR_JULGADA.toFixed(4)}`;
+  }
+  if (descalibrada) erros.push(descalibrada);
+  // QUANTAS FONTES A REGRA DO TRAÇO CALOU. Exclusão silenciosa é a mesma
+  // doença da soleira calada: some do veredito e ninguém confere.
+  const tracos = passos.reduce((m, p) => m + (p.tracos ?? 0), 0);
+  const declaracoes = [];
+  if (tracos) {
+    // DECLARAÇÃO DE FAMÍLIA, não suspensão de passo — e a diferença é o
+    // truncamento. `suspensos` são dezenas de linhas do mesmo gênero e o
+    // rodapé corta em dez; isto aqui é UMA linha por família dizendo o que
+    // saiu do veredito, e cortar já escondeu declaração antes (item 81).
+    declaracoes.push(
+      `${nome}: ${tracos} fonte(s) fora do veredito de identidade por serem TRAÇO `
+      + '(componente comprida demais para ter centroide — ver `nucleoCompacto`)'
     );
   }
   for (const p of passos) {
@@ -955,7 +1038,7 @@ export function julgarFamilia({ nome, passos = [], piso = null }) {
         );
       }
     }
-    // quem chega aqui já passou por `LIMIAR_JULGADA`: uma fonte sólida que
+    // quem chega aqui já passou pela soleira DA ALTURA do quadro: uma sólida que
     // desaparece sem sucessora, longe da borda, é o outro rosto do §5.20
     for (const s of p.sumidos ?? []) {
       if (!s.naBorda) {
@@ -966,7 +1049,9 @@ export function julgarFamilia({ nome, passos = [], piso = null }) {
       }
     }
   }
-  return { nome, piso, passos: passos.length, erros, suspensos };
+  return {
+    nome, piso, altura, passos: passos.length, erros, suspensos, declaracoes, descalibrada, tracos,
+  };
 }
 
 /**
@@ -994,12 +1079,13 @@ export function medirPar(a, b, k, ancoras = [], julgada = LIMIAR_JULGADA) {
   const r = residuoDoPar({ yA: a.y, yB: b.y, camA: a.cam, camB: b.cam, mascara });
   const fontesA = fontesDoQuadro(a.y, a.cam.W, a.cam.H);
   const fontesB = fontesDoQuadro(b.y, b.cam.W, b.cam.H);
-  const { casados, sumidos } = casarFontes({
+  const { casados, sumidos, tracos } = casarFontes({
     fontesA, fontesB, camA: a.cam, camB: b.cam, ancoras: centros, mascara, julgada,
   });
   return {
     k,
     julgada,
+    tracos,
     paralaxePx: paralaxeMaximaPx(a.cam, b.cam),
     quadrosEntre: (b.cam.f ?? 0) - (a.cam.f ?? 0),
     solArmado: b.cam.solArmado,
@@ -1016,7 +1102,11 @@ export function medirPar(a, b, k, ancoras = [], julgada = LIMIAR_JULGADA) {
 export function julgarCorrida(familias) {
   const erros = familias.flatMap((f) => f.erros);
   const suspensos = familias.flatMap((f) => f.suspensos);
-  return { familias, erros, suspensos, passa: erros.length === 0 };
+  // as linhas de descalibração saem SEPARADAS porque elas nunca podem ser
+  // truncadas: é a única acusação que diz "o resto deste veredito não vale"
+  const descalibradas = familias.map((f) => f.descalibrada).filter(Boolean);
+  const declaracoes = familias.flatMap((f) => f.declaracoes ?? []);
+  return { familias, erros, suspensos, declaracoes, descalibradas, passa: erros.length === 0 };
 }
 
 // ------------------------------------------------------------
@@ -1183,7 +1273,9 @@ async function medirPercurso(s, { nome, poses, ancorasDe = ancorasDaCasa }) {
       residuoMedio: p.residuoMedio, bandaAlta: p.bandaAlta, quadrosEntre: p.quadrosEntre,
     })),
   };
-  return { nome, passos, piso, quadros: quadros.map((q) => q.cam) };
+  // a ALTURA REAL do quadro que a captura devolveu — é ela, e não a janela
+  // pedida ao Chrome, que decide se a régua de fase vale nesta corrida
+  return { nome, passos, piso, altura: quadros[0].cam.H, quadros: quadros.map((q) => q.cam) };
 }
 
 // ------------------------------------------------------------
@@ -1434,10 +1526,14 @@ async function correr() {
 
   const t0 = Date.now();
   const alturaPedida = Number(JANELA.split('x')[1]);
+  // ESTA LINHA É O PEDIDO, e ela diz isso: o override pode falhar, e a altura
+  // que decide a régua é a do quadro CAPTURADO — cada família publica a sua no
+  // resumo, e `julgarFamilia` reprova quem sair da calibração.
   console.log(
-    `quadro ${JANELA} · σ da PSF ${((SIGMA_DA_PSF_PX * alturaPedida) / ALTURA_DE_CALIBRACAO_PX).toFixed(2)} px`
-    + ` · soleira de fase ${soleiraJulgada(alturaPedida).toFixed(2)}`
-    + (alturaPedida === ALTURA_DE_CALIBRACAO_PX ? ' (calibrada)' : ' (FORA da calibração)')
+    `quadro PEDIDO ${JANELA} · σ da PSF ${((SIGMA_DA_PSF_PX * alturaPedida) / ALTURA_DE_CALIBRACAO_PX).toFixed(3)} px`
+    + ` · soleira de fase ${soleiraJulgada(alturaPedida).toFixed(4)}`
+    + (alturaPedida === ALTURA_DE_CALIBRACAO_PX ? '' : '  (o PEDIDO já está fora da calibração)')
+    + '  — a altura que vale é a MEDIDA, abaixo'
   );
   const s = await novaSessao();
   const cruas = [];
@@ -1474,6 +1570,7 @@ async function correr() {
       const pior = r.passos.reduce((m, p) => Math.max(m, p.residuoMedio), 0);
       console.log(
         `${nome.padEnd(15)} ${String(r.passos.length).padStart(2)} passos  `
+        + `h ${String(r.altura).padStart(4)}  `
         + `piso ${(r.piso.residuoMedio * 255).toFixed(2).padStart(6)}  `
         + `pior ${(pior * 255).toFixed(2).padStart(6)} degraus  `
         + `banda ${(r.piso.bandaAlta * 100).toFixed(1).padStart(5)}%  `
@@ -1485,7 +1582,7 @@ async function correr() {
     s.fechar();
   }
 
-  const familias = cruas.map((r) => julgarFamilia(r));
+  const familias = cruas.map((r) => julgarFamilia(r));  // `r` já carrega `altura`
   const veredito = julgarCorrida(familias);
   const minutos = (Date.now() - t0) / 60000;
 
@@ -1496,13 +1593,17 @@ async function correr() {
     JSON.stringify(
       {
         janela: JANELA,
+        // a altura MEDIDA em cada família (o quadro que a captura devolveu),
+        // nunca a pedida: é dela que sai a soleira, e publicar a declarada
+        // seria publicar a intenção no lugar do fato
+        alturasMedidas: [...new Set(cruas.map((r) => r.altura))],
         minutos,
         tolerancias: {
           EXCESSO_RESIDUO, EXCESSO_BANDA_ALTA, TOLERANCIA_SALTO_PX,
           D_MIN_PC, PARALAXE_CEGA_PX, LIMIAR_FONTE, QUADROS_ENTRE,
           // a soleira de fase é DESTA corrida (depende da altura do quadro),
           // e o número de calibração vai ao lado para se ver a diferença
-          soleiraDeFase: soleiraJulgada(Number(JANELA.split('x')[1])),
+          soleiraDeFase: [...new Set(cruas.map((r) => soleiraJulgada(r.altura)))],
           LIMIAR_JULGADA,
         },
         familias: cruas.map((r) => ({
@@ -1546,6 +1647,23 @@ async function correr() {
   );
 
   console.log(`\ncorrida em ${minutos.toFixed(2)} min`);
+  // A DESCALIBRAÇÃO VEM PRIMEIRO E VEM INTEIRA. As outras listas se truncam
+  // (são dezenas de linhas do mesmo gênero); esta não pode, porque cada linha
+  // dela diz que o veredito de UMA família não vale — e foi exatamente uma
+  // truncagem que escondeu 4 de 5 declarações na primeira escrita.
+  // as declarações de família vêm INTEIRAS, pelo mesmo motivo
+  if (veredito.declaracoes.length) {
+    console.log(`\ndeclarado (não reprova) — ${veredito.declaracoes.length}:`);
+    for (const d of veredito.declaracoes) console.log('  · ' + d);
+  }
+  if (veredito.descalibradas.length) {
+    console.log(`\n>>> FORA DE CALIBRAÇÃO — ${veredito.descalibradas.length} família(s):`);
+    for (const d of veredito.descalibradas) console.log('  · ' + d);
+    console.log(
+      `  a régua de fase deste juiz só vale com o quadro de ${ALTURA_DE_CALIBRACAO_PX} px `
+      + '(ver `fatorDeFase` e `scripts/visual/fase-da-grade.mjs`).'
+    );
+  }
   if (veredito.suspensos.length) {
     console.log(`\nsuspensos (declarados, não reprovam) — ${veredito.suspensos.length}:`);
     for (const x of veredito.suspensos.slice(0, 10)) console.log('  · ' + x);

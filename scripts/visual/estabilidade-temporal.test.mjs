@@ -41,7 +41,10 @@ import {
   medirPar,
   julgarFamilia,
   julgarCorrida,
+  SIGMA_DA_PSF_PX,
 } from './estabilidade-temporal.mjs';
+import { censoDaAmplitude, pisoDeSobrevivencia, sigmaNaAltura } from './fase-da-grade.mjs';
+import { SIGMA_PX, ALTURA_DE_CALIBRACAO_DO_SIGMA_PX } from '../../src/three/luzDaCasa';
 
 // ------------------------------------------------------------
 // A BANCADA: um céu sintético e uma câmera que o fotografa
@@ -406,6 +409,25 @@ describe('quem NÃO entra no veredito de identidade, e por quê', () => {
     expect(v.erros).toEqual([]);
   });
 
+  it('o guarda de BRILHO também segue a altura — não sobra metade digitada', () => {
+    // `mudouDeBrilho` compara a razão dos picos contra o FATOR DE FASE. Ele
+    // tem de vir da mesma altura que a soleira, senão metade da aritmética
+    // continua na constante de 1080 enquanto a outra metade segue a janela.
+    const onde = norm([0.05, 0.05, -1]);
+    const desviada = norm([0.05 + 6 / pxPorRad(camA), 0.05, -1]);
+    const fA = fontesDoQuadro(fotografar(camA, [{ dir: onde, brilho: 0.95 }]), W, H);
+    const fB = fontesDoQuadro(fotografar(camB, [{ dir: desviada, brilho: 0.72 }]), W, H);
+    const com = (julgada) =>
+      casarFontes({ fontesA: fA, fontesB: fB, camA, camB, julgada }).casados[0];
+    const r = com(LIMIAR_FONTE).pico / com(LIMIAR_FONTE).picoAntes;
+    expect(r).toBeGreaterThan(0.3);
+    expect(r).toBeLessThan(1);
+    // uma soleira que implica um fator ACIMA da razão cala a acusação…
+    expect(com(LIMIAR_FONTE / (r + 0.05)).mudouDeBrilho).toBe(true);
+    // …e uma que implica um fator ABAIXO dela deixa a acusação de pé
+    expect(com(LIMIAR_FONTE / (r - 0.05)).mudouDeBrilho).toBe(false);
+  });
+
   it('mas uma ÂNCORA que muda de brilho SEGUE julgada — é a fronteira de promoção', () => {
     // o mesmo caso de cima, com a fonte declarada como ponto 3D conhecido: na
     // promoção ponto→corpo o brilho muda de propósito e a posição não pode
@@ -430,6 +452,37 @@ describe('quem NÃO entra no veredito de identidade, e por quê', () => {
   it('a soleira de fase é o inverso da perda de pico da grade, e nada mais', () => {
     expect(LIMIAR_JULGADA).toBeCloseTo(LIMIAR_FONTE / FATOR_DE_FASE, 12);
     expect(FATOR_DE_FASE).toBeCloseTo(Math.exp(-0.25 / (0.85 * 0.85)), 1);
+  });
+
+  it('os dois números da PSF são os de `luzDaCasa.ts` — cópia com pino', () => {
+    // o harness roda em node puro e não importa TypeScript, então redeclara os
+    // dois; é ESTE teste que impede a cópia de divergir do original (o mesmo
+    // arranjo do vizinho `luz-do-quadro.test.mjs`)
+    expect(SIGMA_DA_PSF_PX).toBe(SIGMA_PX);
+    expect(ALTURA_DE_CALIBRACAO_PX).toBe(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX);
+  });
+
+  it('a bancada de fases REPRODUZ a soleira derivada, nas duas alturas', () => {
+    // `fase-da-grade.mjs` mede o piso de sobrevivência por bisseção, com o
+    // canto (0,5; 0,5) incluído; ele TEM de bater com `LIMIAR_FONTE/fator`,
+    // senão a soleira é um número escolhido e não uma conta
+    for (const altura of [ALTURA_DE_CALIBRACAO_PX, 613]) {
+      const medido = pisoDeSobrevivencia(sigmaNaAltura(altura), 8);
+      expect(medido).toBeCloseTo(soleiraJulgada(altura), 3);
+    }
+  });
+
+  it('e os números que o cabeçalho cita são os que a bancada dá', () => {
+    const s85 = sigmaNaAltura(ALTURA_DE_CALIBRACAO_PX);
+    // a 0,85 uma fonte de amplitude 0,55 SOME em alguma fase (a afirmação
+    // "nenhuma ≥ 0,55 some" era falsa, e caiu na auditoria de 25/08)
+    expect(censoDaAmplitude(0.55, s85).fracaoQueSome).toBeGreaterThan(0);
+    // e a soleira, essa, não some em nenhuma
+    expect(censoDaAmplitude(soleiraJulgada(ALTURA_DE_CALIBRACAO_PX), s85).fracaoQueSome).toBe(0);
+    // o pico LIDO chega à amplitude inteira na fase centrada — nunca a 0,72
+    expect(censoDaAmplitude(1.0, s85).picoMax).toBeCloseTo(1.0, 6);
+    // e no quadro de 613 px até a amplitude cheia some em alguma fase
+    expect(censoDaAmplitude(1.0, sigmaNaAltura(613)).fracaoQueSome).toBeGreaterThan(0);
   });
 
   it('a soleira SEGUE A ALTURA DO QUADRO — a PSF do app encolhe com a janela', () => {
@@ -471,8 +524,11 @@ describe('quem NÃO entra no veredito de identidade, e por quê', () => {
       return y;
     };
     const cam = camera([0, 0, 0], [0, 0, -1]);
-    const fA = fontesDoQuadro(linha(4, W - 5), W, H);
-    const fB = fontesDoQuadro(linha(60, W - 5), W, H);
+    // as pontas ficam DENTRO da margem de borda, como a elipse real: uma
+    // linha que encosta na borda já sairia por `naBorda`, e o que se testa
+    // aqui é a regra do traço, não a da borda
+    const fA = fontesDoQuadro(linha(20, W - 21), W, H);
+    const fB = fontesDoQuadro(linha(70, W - 21), W, H);
     const traco = fA.find((f) => f.nMeia > 50);
     expect(traco).toBeDefined();
     expect(nucleoCompacto(traco)).toBe(false);
@@ -495,26 +551,74 @@ describe('quem NÃO entra no veredito de identidade, e por quê', () => {
     expect(r.casados.some((c) => c.via.startsWith('ancora:'))).toBe(false);
     expect(r.casados).toEqual([]);
     expect(r.sumidos).toEqual([]);
+    // e a exclusão é CONTADA — quem sai do veredito aparece no veredito
+    expect(r.tracos).toBe(1);
   });
 
-  it('o veredito DECLARA a soleira quando ela não é a de calibração', () => {
+  it('JUIZ QUE NÃO CONSEGUE MEDIR REPROVA — descalibrado não sai verde', () => {
     const passo = {
       k: 1, paralaxePx: 0, fracaoValida: 1, residuoMedio: 0, bandaAlta: 0,
       casados: [], sumidos: [], julgada: soleiraJulgada(613),
     };
+    // um quadro de 613 px: nada a acusar, e MESMO ASSIM tem de reprovar —
+    // ausência de acusação numa régua que não vale não é aprovação
     const v = julgarFamilia({
-      nome: 'pan', passos: [passo], piso: { residuoMedio: 0, bandaAlta: 0 },
+      nome: 'pan', passos: [passo], piso: { residuoMedio: 0, bandaAlta: 0 }, altura: 613,
     });
-    expect(v.erros).toEqual([]);
-    expect(v.suspensos.join(' ')).toContain('soleira de fase 1.17');
-    expect(v.suspensos.join(' ')).toContain('ACIMA DE 1,00');
-    // e na calibração ele não enche o veredito de declaração inútil
+    expect(v.erros.length).toBe(1);
+    expect(v.erros[0]).toContain('DESCALIBRADO');
+    expect(v.erros[0]).toContain('1.1709');
+    expect(v.erros[0]).toContain('ACIMA DE 1,00');
+    expect(v.descalibrada).toBe(v.erros[0]);
+    // e a corrida inteira REPROVA por causa dele
+    const corrida = julgarCorrida([v]);
+    expect(corrida.passa).toBe(false);
+    expect(corrida.descalibradas).toEqual([v.erros[0]]);
+
+    // na altura de calibração ele não enche o veredito de declaração inútil
     const calibrado = julgarFamilia({
       nome: 'pan',
       passos: [{ ...passo, julgada: LIMIAR_JULGADA }],
       piso: { residuoMedio: 0, bandaAlta: 0 },
+      altura: ALTURA_DE_CALIBRACAO_PX,
     });
-    expect(calibrado.suspensos).toEqual([]);
+    expect(calibrado.erros).toEqual([]);
+    expect(calibrado.descalibrada).toBe(null);
+    expect(julgarCorrida([calibrado]).passa).toBe(true);
+  });
+
+  it('a altura que julga é a MEDIDA, não a pedida — soleira na mão também reprova', () => {
+    // altura certa, soleira trocada por fora: o juiz não aceita
+    const v = julgarFamilia({
+      nome: 'pan',
+      passos: [{
+        k: 1, paralaxePx: 0, fracaoValida: 1, residuoMedio: 0, bandaAlta: 0,
+        casados: [], sumidos: [], julgada: 0.9,
+      }],
+      piso: { residuoMedio: 0, bandaAlta: 0 },
+      altura: ALTURA_DE_CALIBRACAO_PX,
+    });
+    expect(v.erros[0]).toContain('DESCALIBRADO');
+    expect(v.erros[0]).toContain('0.9000');
+  });
+
+  it('a exclusão por TRAÇO é contada e declarada, nunca silenciosa', () => {
+    const v = julgarFamilia({
+      nome: 'fronteiraTerra',
+      passos: [{
+        k: 1, paralaxePx: 0, fracaoValida: 1, residuoMedio: 0, bandaAlta: 0,
+        casados: [], sumidos: [], julgada: LIMIAR_JULGADA, tracos: 2,
+      }],
+      piso: { residuoMedio: 0, bandaAlta: 0 },
+      altura: ALTURA_DE_CALIBRACAO_PX,
+    });
+    expect(v.tracos).toBe(2);
+    // vai em `declaracoes`, que o rodapé imprime INTEIRO — e não em
+    // `suspensos`, que se trunca em dez linhas
+    expect(v.declaracoes.join(' ')).toContain('2 fonte(s) fora do veredito');
+    expect(v.suspensos).toEqual([]);
+    expect(v.erros).toEqual([]);
+    expect(julgarCorrida([v]).declaracoes).toEqual(v.declaracoes);
   });
 });
 
