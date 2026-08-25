@@ -78,7 +78,6 @@ import {
   type CorposDoCone,
   type Vetor3Km,
 } from "./eclipse";
-import { BODY_AXES } from "./iauOrientation";
 import { REGISTRO_ORBITAL } from "./registroOrbital";
 
 // Raios de catálogo (radiusKm do doador). O DO SOL vem da lib — fonte
