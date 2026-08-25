@@ -217,7 +217,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalact
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 import { GM_CORPOS } from '../../lib/atlas/massas';
 import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
-import { FOTOMETRIA } from './planetas/fotometria';
+import { FOTOMETRIA, IDS_FOTOMETRIA } from './planetas/fotometria';
 
 /** segundos num dia — o fator da conversão de μ, escrito uma vez */
 const SEGUNDOS_POR_DIA = 86_400;
@@ -274,6 +274,84 @@ export const PONTOS_POR_ORBITA = 256;
  * largura CHEIA (o offset do quad é metade dele para cada lado).
  */
 export const LARGURA_DA_FITA_PX = 1.25;
+
+/**
+ * A CESSÃO DA LINHA AO NÚCLEO ACESO — decisão do dono, 25/08, com as
+ * palavras dele: **a linha de órbita CEDE BRILHO onde cruza o miolo aceso
+ * de um corpo**. É a porta (a) das duas que a medição do item 70 deixou
+ * abertas, e ela NÃO conflita com a decisão de 23/08 ("as órbitas passam
+ * à frente"): aquela era sobre a ORDEM DA FILA — o item 77 vinha
+ * primeiro —, nunca sobre desenho. A procedência está no `fe29483`.
+ *
+ * POR QUE ELA EXISTE, medido: o planeta está SOBRE a própria elipse, e a
+ * linha atravessa o limiar de fonte do MB1 (0,40) exatamente onde o
+ * núcleo do corpo também está. As duas luzes viram UMA componente, o
+ * centroide do bloco anda enquanto a linha entra e sai do limiar, e o
+ * juiz cobra esse passeio da âncora do corpo — `zoomDeRoda` passo 8,
+ * âncora de Vênus, 1,74 px contra um teto de 1,02. Com `?noorbitas=1` o
+ * salto some (0,2 px), o que prova de quem é a luz.
+ *
+ * A REGRA, e ela é de TELA porque o defeito é de tela: cada um dos dez
+ * corpos fotométricos deita um disco de cessão na sua posição projetada;
+ * dentro de `RAIO_DA_CESSAO_PX` a linha some, e volta ao cheio em
+ * `BORDA_DA_CESSAO_PX`, com `smoothstep` no meio — transição suave, sem
+ * degrau que o MB1 leria como fervura.
+ *
+ * OS DOIS NÚMEROS SÃO MEDIDOS, não escolhidos. A componente de Vênus que o
+ * juiz casava tinha `nMeia = 22` px acima da meia altura — raio de núcleo de
+ * ~2,6 px. Varrendo o raio contra o MB1 (`zoomDeRoda`): **0,5 px não basta**
+ * (a âncora de Vênus segue saltando 1,75 px, teto 1,02) e **2 px basta** (o
+ * salto some da corrida inteira). 5 px de borda devolvem a linha antes de ela
+ * virar tracejado. Ficou no MÍNIMO que cumpre, e o motivo está logo abaixo.
+ *
+ * O PREÇO, MEDIDO E DECLARADO — cortar uma curva FECHADA fragmenta-a, e o
+ * juiz passa a ver os pedaços. Enquanto a elipse é um laço, ela é UMA
+ * componente comprida e o MB1 a exclui por TRAÇO (`nucleoCompacto`); com o
+ * corte ela vira arco, e onde o arco entra e sai do quadro sobram pedaços
+ * COMPACTOS de brilho marginal (pico 0,58–0,60 contra a soleira de identidade
+ * 0,565) que o juiz passa a julgar — e que trocam de identidade quando o
+ * corte anda com o planeta. A conta é monotônica no tamanho do corte:
+ *
+ *     sem cessão   → 1 defeito  (a âncora de Vênus, o que se veio consertar)
+ *     raio 0,5 px  → 2 defeitos (Vênus AINDA salta, mais 1 pedaço)
+ *     raio 2 px    → 6 defeitos (Vênus consertado, 6 pedaços em `zoomDeRoda`)
+ *
+ * Ou seja: a decisão do dono está cumprida e o defeito que ele mandou matar
+ * morreu, mas o MB1 NÃO fecha em zero — ele troca uma acusação por seis, e as
+ * seis são do INSTRUMENTO, não da tela. A exclusão de traço do juiz não
+ * sobrevive ao corte, e é ela que precisa aprender que pedaço de linha de
+ * órbita continua sendo instrumento (a própria casa já escreve, no topo deste
+ * arquivo, que a linha "não é fóton de lugar nenhum"). Mexer nisso é mexer em
+ * dente de juiz: pede número, declaração e sabotagem própria, e está
+ * registrado no item 70 como o passo seguinte.
+ *
+ * SÃO PIXELS DE CSS: entram no shader como fração da altura do quadro
+ * (`raio / hPx`) e voltam a pixel contra `resolution`, que é o mesmo
+ * espaço do `gl_FragCoord`. Mesmo buraco visual em qualquer tela.
+ */
+export const RAIO_DA_CESSAO_PX = 2;
+export const BORDA_DA_CESSAO_PX = 5;
+
+/**
+ * O ESCOPO É O DONO DA LINHA, e isto foi MEDIDO, não preferido. A primeira
+ * versão deitava um disco de CADA um dos dez corpos sobre TODAS as linhas,
+ * que é a leitura literal da frase do dono. O MB1 reprovou na hora, e com
+ * razão: dez discos cortam cada elipse em vários arcos, e arco curto deixa
+ * de ser TRAÇO (a exclusão que o juiz dá a uma linha comprida) para virar
+ * fonte compacta de brilho marginal — sete acusações de SUMIU em
+ * `zoomDeRoda`, todas de pedaço de linha piscando em cima da soleira de
+ * identidade (pico 0,57–0,59 contra a soleira 0,565), e o pior resíduo da
+ * família subindo de 0,65 para 1,35 degraus.
+ *
+ * Com UM disco por linha — o do corpo DONO daquela órbita — a elipse
+ * fechada vira UM arco aberto, que segue sendo traço e segue fora do
+ * veredito de identidade. E é onde o defeito realmente mora: o que funde
+ * com o núcleo é a linha DO PRÓPRIO corpo, porque o corpo está sobre a
+ * própria elipse por construção algébrica (§1 — o vértice 0 do laço É a
+ * posição viva). Cruzamento de tela entre a linha de um e o núcleo de outro
+ * é raro, passageiro, e não foi visto por juiz nenhum; o dia em que for,
+ * volta com número.
+ */
 
 /**
  * O piso e o topo do fade DE BAIXO, em pixels de raio na tela. Abaixo
@@ -655,6 +733,14 @@ interface LinhaDeOrbita {
   alfa: number;
   /** o multiplicador do foco (§5b), perseguindo o alvo — nasce neutro */
   realce: number;
+  /**
+   * O DISCO DE CESSÃO desta linha — `(ndcX, ndcY, raio, borda)`, os dois
+   * raios em fração da ALTURA do quadro. É UM por linha, e o corpo do
+   * disco é o DONO da órbita (ver `RAIO_DA_CESSAO_PX`). `borda = 0` é
+   * disco apagado: corpo atrás da câmera, corpo sem ponto no palco, ou
+   * camada dos corpos desligada.
+   */
+  readonly nucleo: { value: THREE.Vector4 };
 }
 
 export class Orbitas {
@@ -722,6 +808,8 @@ export class Orbitas {
         // sem MSAA nesta casa não há cobertura para escrever (§5)
         alphaToCoverage: false,
       });
+      const nucleo = { value: new THREE.Vector4(0, 0, 0, 0) };
+      this.cederAoNucleo(material, nucleo);
       const fita = new LineSegments2(geo, material);
       // slots ocupados: … 6 (marcador), 7 (pontos dos planetas)
       fita.renderOrder = 8;
@@ -738,7 +826,77 @@ export class Orbitas {
         apoastroPc: 0,
         alfa: 0,
         realce: 1,
+        nucleo,
       });
+    }
+  }
+
+  /**
+   * A CIRURGIA DA CESSÃO no fragment do `LineMaterial` (three/addons) —
+   * ver o cabeçalho de `RAIO_DA_CESSAO_PX` para a decisão do dono e os
+   * números. É de texto, no molde de `domarPassaAlta` (`core/post.ts`):
+   * o `alpha` do fragment é multiplicado pelo `smoothstep` da distância
+   * ao disco de cada corpo ANTES de virar `gl_FragColor`.
+   *
+   * `resolution` já é uniform do `LineMaterial` (o `onBeforeRender` do
+   * `LineSegments2` a escreve sozinho, em px de viewport — o MESMO espaço
+   * do `gl_FragCoord`), mas só é DECLARADA no vertex; aqui ela é
+   * declarada também no fragment, e o valor é o mesmo objeto.
+   *
+   * Sem contador dinâmico no laço: slot apagado tem `borda = 0` e cai no
+   * `continue`. É o que mantém o laço com limite CONSTANTE, que é o que
+   * o GLSL ES 1.00 exige.
+   */
+  private cederAoNucleo(material: LineMaterial, nucleo: { value: THREE.Vector4 }) {
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.uNucleo = nucleo as unknown as THREE.IUniform;
+      const ALVO = 'gl_FragColor = vec4( diffuseColor.rgb, alpha );';
+      if (!shader.fragmentShader.includes(ALVO)) {
+        throw new Error('cederAoNucleo: o fragment do LineMaterial mudou de forma');
+      }
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          'void main() {',
+          'uniform vec4 uNucleo;\nuniform vec2 resolution;\nvoid main() {'
+        )
+        .replace(
+          ALVO,
+          'if (uNucleo.w > 0.0) {\n'
+            + '\t\tvec2 cpx = (uNucleo.xy * 0.5 + 0.5) * resolution;\n'
+            + '\t\talpha *= smoothstep(uNucleo.z * resolution.y, uNucleo.w * resolution.y,\n'
+            + '\t\t                    length(gl_FragCoord.xy - cpx));\n'
+            + `\t}\n\t${ALVO}`
+        );
+    };
+  }
+
+  /**
+   * ONDE ESTÁ O NÚCLEO DE CADA DONO neste quadro. Recebe o Float32Array
+   * VIVO de `Planetas.posicoes` (a ordem é a de `IDS_FOTOMETRIA`) e projeta
+   * o corpo DONO de cada linha. Corpo ATRÁS da câmera sai apagado —
+   * `project` devolveria a posição espelhada, e um disco de cessão fantasma
+   * comeria a linha do lado errado do céu. Lua não tem ponto no palco
+   * (`IDS_FOTOMETRIA` é o Sol mais os nove), então a órbita dela não cede a
+   * ninguém — e nem precisa: o defeito é o corpo sobre a PRÓPRIA elipse.
+   */
+  escreverNucleos(camera: THREE.PerspectiveCamera, posicoes: Float32Array | null, hPx: number) {
+    const raio = hPx > 0 ? RAIO_DA_CESSAO_PX / hPx : 0;
+    const borda = hPx > 0 ? BORDA_DA_CESSAO_PX / hPx : 0;
+    for (const linha of this.linhas) {
+      const alvo = linha.nucleo.value;
+      const i = IDS_FOTOMETRIA.indexOf(linha.corpo.id as (typeof IDS_FOTOMETRIA)[number]);
+      const j = i * 3;
+      if (!posicoes || i < 0 || j + 2 >= posicoes.length || !(borda > 0)) {
+        alvo.set(0, 0, 0, 0);
+        continue;
+      }
+      this.rascunhoNdc.set(posicoes[j], posicoes[j + 1], posicoes[j + 2]);
+      this.rascunhoNdc.project(camera);
+      if (this.rascunhoNdc.z > 1) {
+        alvo.set(0, 0, 0, 0);
+        continue;
+      }
+      alvo.set(this.rascunhoNdc.x, this.rascunhoNdc.y, raio, borda);
     }
   }
 

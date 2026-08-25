@@ -2535,6 +2535,18 @@ export class Director {
           this.maquinaDoTempo.efemeride
         );
       }
+      // ONDE OS CORPOS ESTÃO ACESOS, para a linha ceder ao núcleo deles
+      // (decisão do dono, 25/08 — ver `RAIO_DA_CESSAO_PX`). A fonte é a
+      // MESMA que os rótulos do Atlas leem (`Planetas.posicoes`, o
+      // Float32Array vivo do atributo), e não um segundo cadastro: uma
+      // cópia aqui seria a fonte que a máquina do tempo desmentiria no
+      // primeiro salto de data. Camada apagada ⇒ nenhum núcleo, e a
+      // linha volta a ser inteira.
+      this.orbitas.escreverNucleos(
+        this.engine.camera,
+        this.planetas?.ligado ? this.planetas.posicoes : null,
+        hPx
+      );
       this.orbitas.update(this.engine.camera, hPx, tanHalfFov, dt);
     }
     this.dust.update(cam.position, hPx, time);
