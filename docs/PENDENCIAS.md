@@ -245,8 +245,9 @@ serviram.
 Mercúrio 22,3 → 24,0 sem um pixel saturado novo; a Lua 27,9 → 29,3 com
 o disco ainda chato; o anel 20,3 → 21,6; a Terra 53,1 → 57,5 com a
 umbra parada em 2,8. **O modo `real` não se mexeu**: Júpiter sai com
-ZERO pixel diferente, e Saturno com 47 px num fio escuro do limbo (5–10
-de 255) que o MESMO binário reproduz contra ele mesmo. **O pontinho
+ZERO pixel diferente, e Saturno com 56 px num fio escuro do limbo (5–10
+de 255) — contra os 37 px que o MESMO binário move contra ele mesmo
+(`item93-ruido-do-instrumento.json`). **O pontinho
 MH18 sai byte a byte igual** a 150 UA e a 40 UA.
 
 Contrato vivo, com o que pousou e o que não pousou:

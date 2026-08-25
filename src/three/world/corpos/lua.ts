@@ -38,7 +38,7 @@
 // olho reprova.
 //
 // AS QUATRO LEIS de `terra.ts` valem palavra por palavra:
-//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoDoGlobo(dUA, corpo, política)`
+//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoDoGlobo(dUA, política)`
 //     multiplica a componente direta e nada mais; SEM piso de ambiente —
 //     o lado escuro em `real` é escuro (e a Lua não tem cidade).
 //     O dUA é a distância HELIOCÊNTRICA da CADEIA de efeméride da LUA

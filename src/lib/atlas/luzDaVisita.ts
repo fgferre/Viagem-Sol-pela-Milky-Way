@@ -62,9 +62,10 @@
 //      subsolar. Aqui ela RESPEITA as sombras do Sol, e é a única
 //      divergência da casa — a razão está medida em
 //      {@link GLSL_LUZ_DA_VISITA};
-//   c. TERMINADOR LOGÍSTICO s = 3 — {@link S_DO_TERMINADOR} e
-//      {@link EXPR_TERMINADOR}, o `MaterialUtilsPhong` deles. Flanco a
-//      N·L = 0,5 sobe de 0,50 para 0,72 (+43 %).
+//   c. TERMINADOR LOGÍSTICO s = 3 — {@link S_DO_TERMINADOR} e o
+//      `terminadorSuave` de {@link GLSL_LUZ_DA_VISITA}, o
+//      `MaterialUtilsPhong` deles. Flanco a N·L = 0,5 sobe de 0,50 para
+//      0,72 (+43 %).
 //
 // O QUE NÃO ATRAVESSOU, e por quê (o contrato §3): o ambiente 0,02 de
 // cena (anti-padrões 3 e 9 — a lanterna já lê a noite), o flood branco
@@ -137,35 +138,6 @@ export const LANTERNA_DE_LEITURA = 0.15;
 export const S_DO_TERMINADOR = 3;
 
 /**
- * A CURVA DO TERMINADOR, escrita UMA VEZ SÓ.
- *
- * Esta expressão é válida em GLSL e em JavaScript ao mesmo tempo: o
- * shader a interpola dentro de `terminadorSuave` (ver
- * {@link GLSL_LUZ_DA_VISITA}) e o teste a EXECUTA com `Math.exp` para
- * cobrar a tabela do Eyes. Não existem duas fórmulas para divergirem —
- * que é a doença que o item 99 nomeia (pino de texto que envelhece
- * enquanto o código melhora).
- *
- * `x` é o cosseno de incidência CRU (pode ser negativo — o Eyes o
- * alimenta sem clamp) e `s` é a dureza. O clamp em [0,1] mora fora, no
- * chamador, porque é ele que faz o lado noturno ser preto.
- */
-export const EXPR_TERMINADOR = '2.0 * (1.0 + exp(-s)) / (1.0 + exp(-s * x)) - 1.0';
-
-/**
- * A SOMA QUE SATURA EM 1, pela mesma disciplina de {@link EXPR_TERMINADOR}:
- * uma expressão só, válida em GLSL (sobre `vec3`) e em JS (sobre
- * `number`), que o shader interpola e o teste executa.
- *
- * `max(luzSol, min(luzSol + fill, teto))` é `saturate(luzSol + fill)`
- * SEMPRE que `luzSol ≤ 1` — o caso da `assistida`, que é onde a lanterna
- * existe — e é a IDENTIDADE onde o Sol sozinho já passa de 1: o modo
- * `real` em Mercúrio (E = 6,7) e o realce de limbo do Lommel-Seeliger.
- * Cortar ali seria teto de brilho, e o `NORTE.md` o proíbe em letra.
- */
-export const EXPR_LUZ_DO_GLOBO = 'max(luzSol, min(luzSol + fill, teto))';
-
-/**
  * O ESCALAR ÚNICO que o material de um corpo RESOLVIDO multiplica na sua
  * luz direta — `uLuzGanho` de gigante, rochoso, lua, Terra e anel.
  *
@@ -219,9 +191,11 @@ export function uniformsDaLuzDaVisita(): Uniformes {
 }
 
 /**
- * O ÚNICO ESCRITOR dos dois uniformes — as cinco classes de corpo o
- * chamam, nenhuma redigita 0,15 nem 3. É o que impede a receita de
- * virar quatro cópias (contrato §4.5).
+ * O ÚNICO ESCRITOR dos dois uniformes — as QUATRO classes de corpo o
+ * chamam (`Gigante`, `Rochoso`, `Lua`, `Terra`), nenhuma redigita 0,15
+ * nem 3. O anel fica de fora de propósito: ele bebe o `uLuzGanho` do
+ * globo e nada mais (ver "O QUE ESTA LEI NÃO GOVERNA", acima). É o que
+ * impede a receita de virar quatro cópias (contrato §4.5).
  */
 export function escreverLuzDaVisita(u: Uniformes, politica: PoliticaDeLuz): void {
   u.uLanternaLeitura!.value = lanternaDaVisita(politica);
@@ -231,6 +205,22 @@ export function escreverLuzDaVisita(u: Uniformes, politica: PoliticaDeLuz): void
 /**
  * O GLSL COMPARTILHADO da receita — um helper por peça, e as peças
  * moram todas aqui. Quem inclui este chunk NÃO redeclara os uniformes.
+ *
+ * ------------------------------------------------------------
+ * ESTE TEXTO É A RECEITA, E É ELE QUE O JUIZ EXECUTA
+ * ------------------------------------------------------------
+ * As três funções abaixo não têm irmã gêmea em JavaScript. Elas moram
+ * AQUI e em lugar nenhum mais: `luzDaVisita.test.ts` extrai o CORPO de
+ * cada uma desta string, traduz o dialeto para JS e RODA o resultado
+ * contra a tabela do Eyes. Não há duas fórmulas para divergirem, e não
+ * há pino de texto pedindo licença — mudar qualquer linha daqui muda o
+ * que o juiz executa, e o oráculo reprova na hora.
+ *
+ * O tradutor de lá entende só o que este chunk usa (declaração com
+ * tipo, `if`/`return`, `vec3(x)` de um canal, e os embutidos `max`,
+ * `min`, `clamp`, `exp`, `dot`) e RECUSA o resto: construção nova aqui
+ * reprova o teste até alguém ensiná-la lá, que é o comportamento certo
+ * de um juiz — quem não consegue medir reprova, não avisa.
  *
  * `terminadorSuave` — a logística do Eyes. `uTerminadorS <= 0` é a
  * convenção de "Lambert cru" (o modo real), e o ramo devolve
@@ -285,7 +275,7 @@ uniform float uTerminadorS;     // 3 em assistida; 0 = Lambert cru (real)
 float terminadorSuave(float x) {
   if (uTerminadorS <= 0.0) return max(x, 0.0);
   float s = uTerminadorS;
-  return clamp(${EXPR_TERMINADOR}, 0.0, 1.0);
+  return clamp(2.0 * (1.0 + exp(-s)) / (1.0 + exp(-s * x)) - 1.0, 0.0, 1.0);
 }
 
 vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 sombras) {
@@ -294,7 +284,7 @@ vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 sombras) {
 
 vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
   vec3 teto = vec3(1.0);
-  return ${EXPR_LUZ_DO_GLOBO};
+  return max(luzSol, min(luzSol + fill, teto));
 }
 `;
 

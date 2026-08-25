@@ -92,7 +92,7 @@ uniform sampler2D uMapaNormal;
 uniform sampler2D uMapaRugosidade;
 uniform vec3 uDirSolLocal;  // corpo→Sol, frame LOCAL do globo (unitário)
 uniform vec3 uCamLocal;     // câmera no frame local, em raios equatoriais
-uniform float uLuzGanho;    // ganhoDoGlobo(dUA, corpo, política) — O escalar único
+uniform float uLuzGanho;    // ganhoDoGlobo(dUA, política) — O escalar único
 uniform float uNoiteGanho;  // EARTH_NIGHT_LIGHT_INTENSITY (emissão)
 uniform vec3 uNormalEsc;    // (1, a/c, 1): normal do elipsoide escalado
 uniform vec3 uEscalaLocal;  // (1, c/a, 1): ponto real do elipsoide

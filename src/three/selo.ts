@@ -454,15 +454,14 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    * "não há superfície resolvida no filme para o escalar multiplicar".
    * Deixou de ser verdade na coda "a volta para casa" (19/08), que
    * RESOLVE Terra e Lua no fim do filme (`palcoQuente`, a partir de
-   * `REVEAL_T`): o material dos corpos chama `ganhoDoGlobo(rUA, corpo,
+   * `REVEAL_T`): o material dos corpos chama `ganhoDoGlobo(rUA,
    * politica)` sem perguntar em que modo a cena está, e o default é
    * `assistida` nas duas.
    *
    * O DESVIO NA CODA É MINÚSCULO, e é por estar na ÂNCORA: a distância
-   * da visita da Terra É `ANCORA_UA`, a compensação vale 1 exato e o
-   * gasto do globo de casa fica em ~0,0 passos. Pequeno não é neutro, e
-   * é o motivo de o selo declarar ASSISTIDO na coda como declara no
-   * Atlas. (Número da lei; sem imagem que o ateste.)
+   * da Terra É ~`ANCORA_UA`, então `−log2(E(d))` fica em ~0,0 passos.
+   * Pequeno não é neutro, e é o motivo de o selo declarar ASSISTIDO na
+   * coda como declara no Atlas. (Número da lei; sem imagem que o ateste.)
    */
   {
     chave: 'luz',

@@ -10,7 +10,7 @@
 // linha de código dele atravessou (doutrina de travessia, PLANO-ATLAS §0).
 //
 // AS QUATRO LEIS QUE ESTE ARQUIVO OBEDECE:
-//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoDoGlobo(dUA, corpo, política)`
+//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoDoGlobo(dUA, política)`
 //     multiplica a componente DIRETA (difusa + especular) e nada mais.
 //     Nunca dois multiplicadores empilhados (anti-padrão 1); SEM piso de
 //     ambiente (anti-padrões 3 e 9) — o lado escuro em `real` é escuro, e

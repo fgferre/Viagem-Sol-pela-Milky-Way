@@ -297,7 +297,10 @@ Mínimo:
    olha para a câmera.
 2. O mesmo em `?luz=real`: noite preta, dia ~1/90 (o 91.2 fica).
 3. Flanco (N·L ≈ 0,5) de um gigante em assistida: **mais claro** que
-   Lambert puro (a logística). Número: razão Eyes 0,72/0,50 = 1,44.
+   Lambert puro (a logística). Número: a curva EXECUTADA dá **1,433**
+   (**+43 %**) — é dele que sai o "+43 %" escrito em toda a casa. O
+   1,44 é a mesma razão lida na tabela ARREDONDADA do §1.2
+   (0,72/0,50): uma casa decimal, não outra conta.
 4. Pontinho MH18 **bit-idêntico** (`planetas.test.ts`).
 5. Lua cheia continua chata (LS). Sem logística.
 6. Mercúrio assistido no subsolar: ganho **1**, não 0,88. Foto: não

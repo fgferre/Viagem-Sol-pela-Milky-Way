@@ -494,18 +494,18 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
   });
 
   /**
-   * A PROMESSA MUDOU NO ITEM 91, e muda DECLARADA. Até 25/08 este oráculo
-   * pinava `ganhoFundido(rUA, política)` — a lei do PONTO aplicada no
-   * globo, que é exatamente o defeito que o dono viu em Saturno. Agora
-   * pina `ganhoDoGlobo(rUA, 'earth', política)`: lei viva × compensação
-   * constante do corpo (`luzDaVisita.ts`).
+   * A PROMESSA MUDOU DUAS VEZES, e as duas DECLARADAS. Até o item 91 este
+   * oráculo pinava `ganhoFundido(rUA, política)` — a lei do PONTO aplicada
+   * no globo, que é exatamente o defeito que o dono viu em Saturno. O 91
+   * trocou por `lei viva × compensação constante do corpo`, e o item 93
+   * matou o produto inteiro: em `assistida` o Sol do globo vale **1
+   * literal**, como no Eyes, e a compensação por corpo saiu do código —
+   * sem resíduo de 1/d², não havia mais o que compensar.
    *
-   * E A TERRA É O CASO EM QUE OS DOIS COINCIDEM BIT A BIT — de propósito,
-   * não por sorte: a distância da visita dela é `ANCORA_UA`, a mesma
-   * normalização da lei, logo a compensação é 1 EXATO. O segundo bloco
-   * cobra a identidade sob `Object.is`, e é ELE que garante que a obra do
-   * 91 não moveu um pixel das vistas oficiais de casa (terra, terranb,
-   * lua, terralua, os dois eclipses).
+   * O PINO BIT-IDÊNTICO DA TERRA CAIU COM ISSO, e cai medido no fim deste
+   * bloco: a Terra vivia na âncora, onde a compensação valia 1 exato e o
+   * ganho batia com `ganhoFundido`; agora o ganho é 1 e a diferença é de
+   * 0,10 %, menos de um nível de 255.
    */
   it('uLuzGanho é 1 em assistida e E(d) em real — e o pino do 91 caiu, com o delta medido', async () => {
     const { terra } = terraDeTeste();
@@ -857,9 +857,9 @@ describe('8. o eclipse na tela (F2c/D3)', () => {
     // (TERRA_FRAG exportado para isto), nunca só o texto-fonte
     expect(TERRA_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
     expect(TERRA_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
-    // o fator entra DEPOIS do BRDF, na componente direta e só nela — e
-    // a LANTERNA (item 93) entra FORA dele, que é o Eyes: a luz de
-    // câmera não sofre eclipse
+    // o fator entra DEPOIS do BRDF, na componente direta e só nela — e a
+    // LANTERNA (item 93) recebe o MESMO `sombras`, que é a divergência
+    // declarada do 93: um fill de câmera não acende a umbra de Durango
     expect(TERRA_FRAG).toContain(
       'vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);'
     );

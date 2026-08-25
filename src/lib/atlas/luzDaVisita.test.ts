@@ -2,11 +2,13 @@
 // A RECEITA DO GLOBO — os juízes da segunda lei de luz (itens 91 e 93).
 //
 // O QUE ESTE ARQUIVO COBRA, e por quê. Ele não pina texto de shader:
-// pina o NÚMERO que a malha consome e EXECUTA a expressão que o shader
-// interpola. As duas fórmulas da receita (`EXPR_TERMINADOR` e
-// `EXPR_LUZ_DO_GLOBO`) existem UMA vez cada, em GLSL e em JS ao mesmo
-// tempo — quem as mudar muda o que este arquivo executa, e o oráculo do
-// Eyes reprova na hora.
+// pina o NÚMERO que a malha consome e EXECUTA o CORPO das três funções
+// que o shader compila. `GLSL_LUZ_DA_VISITA` é a única casa da receita;
+// este arquivo lê aquele texto, traduz o dialeto para JS e roda o que
+// saiu contra o oráculo do Eyes. Não existe uma segunda cópia da conta
+// para divergir, e não existe pino de texto que passe raspando: apagar
+// o `* sombras` do corpo da lanterna, tirar a guarda do `s <= 0` ou
+// trocar a curva por `max(x, 0)` muda o que roda aqui, e reprova.
 //
 //  1. AS TRÊS PEÇAS DA RECEITA: Sol = 1 em `assistida`, lanterna 0,15,
 //     terminador logístico s = 3. Reverter qualquer uma reprova aqui.
@@ -26,8 +28,6 @@ import { diametroAparentePx } from '../../three/world/corpos/corpos';
 import { ganhoFundido, irradianciaRelativa } from './luz';
 import type { PoliticaDeLuz } from './luz';
 import {
-  EXPR_LUZ_DO_GLOBO,
-  EXPR_TERMINADOR,
   GLSL_LUZ_DA_VISITA,
   LANTERNA_DE_LEITURA,
   S_DO_TERMINADOR,
@@ -53,38 +53,149 @@ const D_SATURNO = 9.5185438390236552;
 const D_MERCURIO = 0.46254827132617393;
 const D_TERRA = 0.98332668220797514;
 
+// ============================================================
+// O INSTRUMENTO — como este arquivo EXECUTA o shader
+//
+// Um tradutor de meia página, GLSL → JS, para o dialeto que
+// `GLSL_LUZ_DA_VISITA` usa e SÓ para ele. Ele extrai o corpo de uma
+// função do chunk, troca a declaração com tipo por `const`, lê `vec3(x)`
+// como o próprio x (a conta é canal a canal: o shader faz o mesmo em R,
+// G e B) e monta a função com `new Function`.
+//
+// ELE RECUSA O QUE NÃO ENTENDE. Todo identificador que sobra na tradução
+// tem de ser um parâmetro, um uniforme, um local declarado ali mesmo, um
+// embutido da lista ou uma palavra de JS — qualquer outro faz o juiz
+// LANÇAR, isto é, reprovar. É de propósito: juiz que não consegue medir
+// reprova, não avisa. Quem levar uma construção nova para o chunk ensina
+// o tradutor no mesmo commit.
+// ============================================================
+
+/** os embutidos do GLSL que este chunk usa, em JS. `dot` é o de VERDADE,
+ *  sobre três componentes — a lanterna depende dele. */
+const EMBUTIDOS = {
+  max: (a: number, b: number) => Math.max(a, b),
+  min: (a: number, b: number) => Math.min(a, b),
+  clamp: (x: number, a: number, b: number) => Math.min(Math.max(x, a), b),
+  exp: (x: number) => Math.exp(x),
+  dot: (a: readonly number[], b: readonly number[]) =>
+    a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!,
+};
+
+/** os uniformes do chunk, sempre injetados — o corpo usa o que precisar */
+const UNIFORMES = ['uTerminadorS', 'uLanternaLeitura'] as const;
+
+const PALAVRAS_DE_JS = new Set(['if', 'else', 'return', 'const', 'true', 'false']);
+
+/** o corpo CRU de uma função do chunk, achado por contagem de chaves */
+function corpoNoChunk(nome: string): { params: string[]; corpo: string } {
+  const decl = new RegExp(`(?:float|vec3)\\s+${nome}\\s*\\(([^)]*)\\)\\s*\\{`)
+    .exec(GLSL_LUZ_DA_VISITA);
+  if (!decl) throw new Error(`o chunk não declara \`${nome}\``);
+  const abre = decl.index + decl[0].length;
+  let nivel = 1;
+  let i = abre;
+  for (; i < GLSL_LUZ_DA_VISITA.length && nivel > 0; i++) {
+    if (GLSL_LUZ_DA_VISITA[i] === '{') nivel++;
+    else if (GLSL_LUZ_DA_VISITA[i] === '}') nivel--;
+  }
+  if (nivel !== 0) throw new Error(`chave que não fecha em \`${nome}\``);
+  const lista = decl[1]!.trim();
+  const params = lista === '' ? [] : lista.split(',').map((p) => {
+    const m = /^\s*(?:float|vec3)\s+(\w+)\s*$/.exec(p);
+    if (!m) throw new Error(`parâmetro que o tradutor não entende em \`${nome}\`: "${p.trim()}"`);
+    return m[1]!;
+  });
+  return { params, corpo: GLSL_LUZ_DA_VISITA.slice(abre, i - 1) };
+}
+
 /**
- * A EXPRESSÃO DO SHADER, EXECUTADA. Não é uma segunda cópia da fórmula:
- * é a MESMA string que `GLSL_LUZ_DA_VISITA` interpola, rodando em JS. Se
- * alguém trocar a curva no módulo, é esta função que muda — e a tabela
- * do Eyes lá embaixo é quem reprova.
+ * `vec3(x)` é o PRÓPRIO x — a conta deste juiz é canal a canal, e o
+ * shader faz a mesma em R, G e B. `vec3(a, b, c)` não é: três
+ * componentes distintas pediriam outro juiz, e por isso o tradutor para.
  */
-const curvaCrua = new Function('x', 's', 'exp', `return ${EXPR_TERMINADOR};`) as (
-  x: number,
-  s: number,
-  exp: (v: number) => number
-) => number;
+function abrirVec3(texto: string, nome: string): string {
+  let js = texto;
+  for (;;) {
+    const i = js.search(/\bvec3\s*\(/);
+    if (i < 0) return js;
+    const abre = js.indexOf('(', i);
+    let nivel = 1;
+    let virgula = false;
+    let j = abre + 1;
+    for (; j < js.length && nivel > 0; j++) {
+      if (js[j] === '(') nivel++;
+      else if (js[j] === ')') nivel--;
+      else if (js[j] === ',' && nivel === 1) virgula = true;
+    }
+    if (nivel !== 0) throw new Error(`\`vec3(\` que não fecha em \`${nome}\``);
+    if (virgula) {
+      throw new Error(`\`vec3\` de vários componentes em \`${nome}\` — este juiz mede um canal`);
+    }
+    js = `${js.slice(0, i)}(${js.slice(abre + 1, j - 1)})${js.slice(j)}`;
+  }
+}
 
+/** GLSL → JS, e um berro em vez de um passe livre quando não dá */
+function traduzirGlsl(corpo: string, params: readonly string[], nome: string): string {
+  const js = abrirVec3(corpo.replace(/\/\/[^\n]*/g, ''), nome)
+    .replace(/\b(?:float|vec3)\s+(\w+)\s*=/g, 'const $1 =');
+  const locais = [...js.matchAll(/\bconst\s+(\w+)/g)].map((m) => m[1]!);
+  const conhecidos = new Set<string>([
+    ...params, ...locais, ...UNIFORMES, ...Object.keys(EMBUTIDOS), ...PALAVRAS_DE_JS,
+  ]);
+  const semNumeros = js.replace(/\b\d+\.?\d*(?:[eE][+-]?\d+)?/g, ' ');
+  for (const [ident] of semNumeros.matchAll(/[A-Za-z_]\w*/g)) {
+    if (!conhecidos.has(ident)) {
+      throw new Error(
+        `o tradutor de GLSL não conhece \`${ident}\` (em \`${nome}\`) — ensine-o aqui`
+      );
+    }
+  }
+  return js;
+}
+
+/** a função do chunk, pronta para rodar: `(argumentos, uniformes) => número` */
+function funcaoDoChunk(nome: string) {
+  const { params, corpo } = corpoNoChunk(nome);
+  const js = traduzirGlsl(corpo, params, nome);
+  const assinatura = [...params, ...UNIFORMES, ...Object.keys(EMBUTIDOS)];
+  const fn = new Function(...assinatura, js) as (...a: unknown[]) => number;
+  return (args: readonly unknown[], u: { s?: number; lanterna?: number } = {}): number =>
+    fn(...args, u.s ?? 0, u.lanterna ?? 0, ...Object.values(EMBUTIDOS));
+}
+
+/**
+ * A TRADUÇÃO É PREGUIÇOSA DE PROPÓSITO. Se ela morresse no topo do
+ * arquivo, um chunk que o tradutor não entende derrubaria a COLETA — e
+ * uma suíte que não coleta reprova com "nenhum teste", que é um veredito
+ * pior de ler do que trinta linhas vermelhas dizendo o que quebrou.
+ */
+const MEMORIA = new Map<string, ReturnType<typeof funcaoDoChunk>>();
+const doChunk = (nome: string) => {
+  const pronta = MEMORIA.get(nome) ?? funcaoDoChunk(nome);
+  MEMORIA.set(nome, pronta);
+  return pronta;
+};
+
+/** `terminadorSuave(x)` do shader, com o `s` que a política acende */
 const terminadorSuave = (x: number, s = S_DO_TERMINADOR): number =>
-  s <= 0 ? Math.max(x, 0) : Math.min(1, Math.max(0, curvaCrua(x, s, Math.exp)));
+  doChunk('terminadorSuave')([x], { s });
 
-const luzDoGlobo = new Function(
-  'luzSol',
-  'fill',
-  'teto',
-  'max',
-  'min',
-  `return ${EXPR_LUZ_DO_GLOBO};`
-) as (
-  luzSol: number,
-  fill: number,
-  teto: number,
-  max: (a: number, b: number) => number,
-  min: (a: number, b: number) => number
-) => number;
+/**
+ * `lanternaDeLeitura(n, dirCam, sombras)` do shader, num canal.
+ *
+ * `n` e `dirCam` entram como VERSORES de verdade, montados para que
+ * `dot(n, dirCam)` valha exatamente o `ndotv` pedido — o `dot` do
+ * tradutor é o produto escalar, não um atalho.
+ */
+const lanterna = (ndotv: number, sombras: number, acesa = LANTERNA_DE_LEITURA): number => {
+  const seno = Math.sqrt(Math.max(0, 1 - ndotv * ndotv));
+  return doChunk('lanternaDeLeitura')([[ndotv, seno, 0], [1, 0, 0], sombras], { lanterna: acesa });
+};
 
-const somaComTeto = (luzSol: number, fill: number) =>
-  luzDoGlobo(luzSol, fill, 1, Math.max, Math.min);
+/** `luzDoGlobo(luzSol, fill)` do shader, num canal */
+const somaComTeto = (luzSol: number, fill: number): number =>
+  doChunk('luzDoGlobo')([luzSol, fill]);
 
 describe('1. peça (a) — o Sol do globo vale 1 em `assistida`', () => {
   it.each(RESOLVIDOS)('%s: 1 LITERAL, em qualquer distância', (id) => {
@@ -96,16 +207,18 @@ describe('1. peça (a) — o Sol do globo vale 1 em `assistida`', () => {
   /**
    * O QUE A REVERSÃO PRODUZIRIA, por extenso. Antes do 93 o ganho era
    * `ganhoFundido(d) × compensação(corpo)`, e o resíduo `(dRef/d)^0,7`
-   * deixava Saturno em 0,9875 e Mercúrio em 0,883 — a conta do PONTINHO
-   * ainda viva dentro do globo. Os dois números vêm do pino do item 91,
-   * que era o estado anterior desta mesma linha.
+   * deixava o globo fora de 1 — a conta do PONTINHO ainda viva lá dentro.
+   *
+   * O DONO DESTE PINO É O `toBe(1)`, e ele basta porque é EXATO: o
+   * resíduo não tem um valor só (depende da distância viva de cada
+   * quadro), e qualquer um deles — 0,9875, 1,0013, 0,883 — deixa de ser
+   * 1 e reprova. Até 25/08 havia aqui um `not.toBeCloseTo(0,9875)` que
+   * prometia mais do que fazia: nas distâncias VIVAS destas linhas a
+   * reversão daria ~1,0013, longe de 0,9875, e o pino passava calado.
    */
   it('o resíduo do 1/d² MORREU: nem Saturno nem Mercúrio ficam fora de 1', () => {
     expect(ganhoDoGlobo(D_SATURNO, 'assistida')).toBe(1);
     expect(ganhoDoGlobo(D_MERCURIO, 'assistida')).toBe(1);
-    // e o que o item 91 punha ali, que agora seria a assinatura da reversão
-    expect(ganhoDoGlobo(D_SATURNO, 'assistida')).not.toBeCloseTo(0.9875, 3);
-    expect(ganhoDoGlobo(D_MERCURIO, 'assistida')).not.toBeCloseTo(0.883, 3);
   });
 
   it('Saturno sai do carvão: a lei crua daria 0,207 — o globo vê 1', () => {
@@ -159,6 +272,31 @@ describe('2. peça (b) — a lanterna de leitura, 15 % na câmera', () => {
       expect(Object.is(somaComTeto(luzSol, lanternaDaVisita('real')), luzSol)).toBe(true);
     }
   });
+
+  /**
+   * A DIVERGÊNCIA DECLARADA, EXECUTADA. O `* sombras` do corpo de
+   * `lanternaDeLeitura` é o que impede a lanterna de acender a umbra de
+   * um eclipse — sem ele o núcleo sobre Durango ia de 2,80 para 42,21 e
+   * ficava MAIS CLARO que o deserto ao lado.
+   *
+   * Este bloco roda o corpo do chunk: apagar a multiplicação lá reprova
+   * aqui, na mesma execução, e não numa foto seis meses depois. (O guarda
+   * de texto dos corpos — `rochoso.test.ts`, `gigante.test.ts` — prova
+   * outra coisa, e continua valendo: que o SHADER passa `sombras` para
+   * esta função. Ele nunca soube o que o corpo dela faz com o argumento.)
+   */
+  it('a lanterna LEVA as sombras: 0 na umbra, 15 % cheios fora dela', () => {
+    // noite de frente para a câmera, fora de qualquer sombra: os 15 %
+    expect(lanterna(1, 1)).toBeCloseTo(LANTERNA_DE_LEITURA, 12);
+    // no núcleo da umbra a lanterna é ZERO EXATO — é isto que o `* sombras` faz
+    expect(lanterna(1, 0)).toBe(0);
+    // e na penumbra ela entra pela FRAÇÃO da sombra, sem degrau
+    expect(lanterna(1, 0.5)).toBeCloseTo(LANTERNA_DE_LEITURA / 2, 12);
+    // costas para a câmera: o clamp do N·V a apaga, sombra ou não
+    expect(lanterna(-0.4, 1)).toBe(0);
+    // e em `real` a lanterna está apagada: não há fill para sombra nenhuma
+    expect(lanterna(1, 1, lanternaDaVisita('real'))).toBe(0);
+  });
 });
 
 describe('3. peça (c) — o terminador logístico s = 3', () => {
@@ -170,9 +308,9 @@ describe('3. peça (c) — o terminador logístico s = 3', () => {
 
   /**
    * O ORÁCULO VEM DE FORA: é a tabela do §1.2 do contrato, lida no fonte
-   * do NASA Eyes em 24/08. A função que a responde é a expressão que o
-   * shader interpola, executada — trocar a curva no módulo muda o que
-   * roda aqui, e a tabela reprova.
+   * do NASA Eyes em 24/08. Quem a responde é o CORPO de `terminadorSuave`
+   * tal como está no chunk, executado — trocar a curva por `max(x, 0)` ou
+   * mexer no `s` muda o que roda aqui, e a tabela reprova.
    */
   it.each([
     [1.0, 1.0],
@@ -185,10 +323,12 @@ describe('3. peça (c) — o terminador logístico s = 3', () => {
     expect(terminadorSuave(ndotl)).toBeCloseTo(esperado, 2);
   });
 
-  it('o flanco a N·L = 0,5 sobe 44 % sobre o Lambert puro — o ganho da peça', () => {
+  it('o flanco a N·L = 0,5 sobe 43 % sobre o Lambert puro — o ganho da peça', () => {
     const razao = terminadorSuave(0.5) / 0.5;
+    // 1,433 é o número EXECUTADO, e é dele que sai o "+43 %" escrito no
+    // módulo e no contrato. O 1,44 do §1.2 é a mesma razão lida na tabela
+    // ARREDONDADA do Eyes (0,72/0,50) — uma casa decimal, não outra conta.
     expect(razao).toBeCloseTo(1.433, 3);
-    // a razão que o contrato pede (0,72/0,50) é esta, arredondada
     expect(razao).toBeGreaterThan(1.4);
   });
 
@@ -208,15 +348,46 @@ describe('3. peça (c) — o terminador logístico s = 3', () => {
     }
   });
 
+  /**
+   * A IDENTIDADE DO MODO REAL, e ela mora numa LINHA SÓ do chunk: a
+   * guarda `if (uTerminadorS <= 0.0) return max(x, 0.0);`. Sem ela a
+   * logística com s = 0 degenera na CONSTANTE 1 — `2·(1+1)/(1+1) − 1` —
+   * e o globo inteiro do modo real sairia em dia pleno, noite incluída.
+   * Por isso o pino é bit a bit e varre também o lado escuro.
+   */
   it('com s = 0 o shader devolve o Lambert cru, BIT A BIT (o modo real)', () => {
-    for (const x of [-1, -0.3, 0, 0.2, 0.5, 1]) {
-      expect(Object.is(terminadorSuave(x, sDoTerminador('real')), Math.max(x, 0))).toBe(true);
+    for (const x of [-1, -0.7, -0.3, -0.05, 0, 0.2, 0.5, 0.9, 1]) {
+      expect(Object.is(terminadorSuave(x, sDoTerminador('real')), Math.max(x, 0)), `x=${x}`)
+        .toBe(true);
+    }
+  });
+});
+
+/**
+ * O JUIZ CONFERE O PRÓPRIO INSTRUMENTO. O tradutor de GLSL desta página é
+ * quem faz os blocos de cima serem execução e não texto; se ele passar a
+ * engolir o que não entende, os blocos de cima viram teatro sem avisar.
+ */
+describe('3b. o instrumento — o tradutor que executa o chunk', () => {
+  it('as três peças da receita moram no chunk, e é o corpo delas que roda', () => {
+    for (const nome of ['terminadorSuave', 'lanternaDeLeitura', 'luzDoGlobo']) {
+      expect(GLSL_LUZ_DA_VISITA, nome).toContain(`${nome}(`);
+      expect(() => funcaoDoChunk(nome)).not.toThrow();
     }
   });
 
-  it('o GLSL da casa interpola ESTAS expressões — não uma cópia delas', () => {
-    expect(GLSL_LUZ_DA_VISITA).toContain(EXPR_TERMINADOR);
-    expect(GLSL_LUZ_DA_VISITA).toContain(EXPR_LUZ_DO_GLOBO);
+  it('função que não existe no chunk REPROVA — não devolve um zero educado', () => {
+    expect(() => funcaoDoChunk('lanternaQueNinguemEscreveu')).toThrow(/não declara/);
+  });
+
+  it('construção que o tradutor não conhece REPROVA — quem não mede, reprova', () => {
+    expect(() => traduzirGlsl('return mix(x, 0.0, 0.5);', ['x'], 'inventada'))
+      .toThrow(/mix/);
+    expect(() => traduzirGlsl('return texture2D(uMapa, vUv).r;', [], 'inventada'))
+      .toThrow(/texture2D/);
+    // e o que ele CONHECE atravessa: declaração com tipo, vec3 de um canal
+    expect(traduzirGlsl('vec3 t = vec3(1.0);\nreturn max(x, t);', ['x'], 'ok'))
+      .toContain('const t =');
   });
 });
 

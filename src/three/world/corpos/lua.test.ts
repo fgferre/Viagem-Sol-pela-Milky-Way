@@ -535,8 +535,9 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
       'vec3 sombras = fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal));'
     );
     expect(LUA_FRAG).toContain('vec3 luzSol = vec3(ls * uLuzGanho) * sombras;');
-    // e a LANTERNA (item 93) entra DEPOIS, fora do fator: no Eyes a luz
-    // de câmera tem raio −1, isto é, nenhuma sombra a alcança
+    // e a LANTERNA (item 93) entra DEPOIS do BRDF, levando as MESMAS
+    // sombras — a divergência declarada do 93, que impede o fill de
+    // câmera de acender a umbra de um eclipse
     expect(LUA_FRAG).toContain('luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras))');
   });
 
