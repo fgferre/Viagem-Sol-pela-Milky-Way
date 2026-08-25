@@ -339,6 +339,9 @@ class ClaraoDoCampo extends Pass {
   private alturaCss = 1;
   /** o traje dos ocultadores: geometria verdadeira, zero cor — só depth */
   private readonly fantasma = new THREE.MeshBasicMaterial({ colorWrite: false });
+  /** a câmera de lente larga do rascunho — cópia, para a do app não ser
+   *  tocada por este passe (ver a cicatriz em `render`) */
+  private readonly cameraLarga = new THREE.PerspectiveCamera();
   /**
    * A SOMA COM RECORTE — o blend aditivo do vendorizado mais a janela: o
    * composite agora cobre o rascunho INTEIRO (quadro + faixa de guarda) e
@@ -473,7 +476,6 @@ class ClaraoDoCampo extends Pass {
     // 1. só o campo no rascunho — com o fundo (a nebulosa panorâmica)
     //    FORA, senão o céu inteiro entraria no cobertor do campo
     const fundo = this.cena.background;
-    const mascara = this.camera.layers.mask;
     renderer.getClearColor(this.corDeLimpezaVelha);
     const alphaVelho = renderer.getClearAlpha();
     this.cena.background = null;
@@ -483,13 +485,34 @@ class ClaraoDoCampo extends Pass {
     // inteiro MAIS `MARGEM` px de cada lado; a estrela que acabou de sair
     // pela borda continua sendo desenhada, e o pedestal dela continua
     // caindo sobre o quadro em vez de sumir de uma vez.
+    //
+    // E A LENTE LARGA VIVE NUMA CÂMERA À PARTE. A primeira versão chamava
+    // `setViewOffset` na câmera DO APP e desfazia no fim do passe, e isso
+    // é uma armadilha conhecida do three: `setViewOffset` escreve
+    // `camera.aspect = fullWidth/fullHeight` e o `clearViewOffset` NÃO o
+    // devolve — a câmera sai do passe com o aspect reescrito. Aqui os dois
+    // valores COINCIDEM (o quadro é a janela), então nada se movia; mas o
+    // passe passaria a depender de uma coincidência, e quem mudasse
+    // `redimensionar` herdaria uma câmera adulterada sem nenhum aviso.
+    // Com a cópia, a câmera do app sai deste passe sem um bit mexido — e
+    // o `z-fighting`, que chacoalha a câmera de fora por `setViewOffset`,
+    // continua chacoalhando o que ele quer medir.
     const camera = this.camera as THREE.PerspectiveCamera;
-    const janelaVelha = camera.view?.enabled === true ? { ...camera.view } : null;
+    const larga = this.cameraLarga;
+    // `false` porque `Object3D.copy` é RECURSIVO por omissão: com filhos
+    // na câmera (um rig, uma luz pendurada) isto clonaria a árvore inteira
+    // a cada quadro.
+    larga.copy(camera, false);
+    // a matriz de mundo vem PRONTA da câmera do app (ela pode estar num
+    // rig, e recalcular a partir do local devolveria outra pose)
+    larga.matrixWorld.copy(camera.matrixWorld);
+    larga.matrixWorldInverse.copy(camera.matrixWorldInverse);
+    larga.matrixWorldAutoUpdate = false;
     // e a faixa SOMA-se a uma janela que já exista: o `z-fighting` chacoalha
     // a câmera por `setViewOffset` de fora, e sobrescrever a janela dele
     // apagaria o chacoalho justo no passe que ele está medindo
-    const jv = janelaVelha;
-    camera.setViewOffset(
+    const jv = camera.view?.enabled === true ? camera.view : null;
+    larga.setViewOffset(
       jv ? jv.fullWidth : this.larguraCss,
       jv ? jv.fullHeight : this.alturaCss,
       (jv ? jv.offsetX : 0) - MARGEM_DO_CAMPO,
@@ -503,29 +526,15 @@ class ClaraoDoCampo extends Pass {
     //     opacas enchem o depth do rascunho e o depth test que o campo
     //     já carrega corta estrela ATRÁS de corpo — nem ponto, nem
     //     clarão ("vejo estrelas através do sol", item 47, morto aqui)
-    this.camera.layers.set(CAMADA_DOS_OCULTADORES);
+    larga.layers.set(CAMADA_DOS_OCULTADORES);
     this.cena.overrideMaterial = this.fantasma;
-    renderer.render(this.cena, this.camera);
+    renderer.render(this.cena, larga);
     this.cena.overrideMaterial = null;
     // 1b. e o campo por cima, agora com o mundo sólido no caminho
-    this.camera.layers.set(CAMADA_DO_CAMPO);
-    renderer.render(this.cena, this.camera);
+    larga.layers.set(CAMADA_DO_CAMPO);
+    renderer.render(this.cena, larga);
     this.cena.background = fundo;
-    this.camera.layers.mask = mascara;
     renderer.setClearColor(this.corDeLimpezaVelha, alphaVelho);
-    // a lente do quadro de volta, ANTES de qualquer outro passe olhar
-    if (janelaVelha) {
-      camera.setViewOffset(
-        janelaVelha.fullWidth,
-        janelaVelha.fullHeight,
-        janelaVelha.offsetX,
-        janelaVelha.offsetY,
-        janelaVelha.width,
-        janelaVelha.height
-      );
-    } else {
-      camera.clearViewOffset();
-    }
 
     // 2. a máquina do campo, que já é de filme, sobre o rascunho inteiro
     this.bloom.render(renderer, this.rascunho, this.rascunho, 0, false);
