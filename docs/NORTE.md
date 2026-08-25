@@ -182,7 +182,10 @@ A prova tem de tocar o que a mudança tocou. As vistas oficiais rodam com
 `?shot=2` e **apagaram o HUD**. Trabalho de HUD é julgado por `a11y.mjs`
 (`?shot=1`). Se nenhum juiz cobre a mudança, cria-se a vista que cobre.
 
-Três cegueiras declaradas:
+As cegueiras declaradas — **a lista É a contagem, e por isso não há número
+aqui**: esta linha dizia "três" com cinco itens embaixo, que é a errata de
+sempre da casa (número decorado não acompanha lista que cresce). Quem
+acrescentar uma cegueira acrescenta um item, e mais nada:
 
 - **Movimento — ENCOLHEU em 22/08, e o que sobra está nomeado.** `?shot=`
   congela o relógio, e as 54 vistas oficiais são todas paradas. Quem
@@ -219,16 +222,25 @@ Três cegueiras declaradas:
   (`mascaraDasOrbitas`), que projeta a geometria REAL das fitas acesas e tira
   do veredito de identidade a componente cujo núcleo cai inteiro sobre o
   traçado. MB1 completo foi de 6 defeitos a ZERO sem afrouxar tolerância
-  nenhuma; 11 fontes de 2.282 saem por instrumento, e a conta aparece no
-  relatório do juiz. **A HERDEIRA, declarada:** a exclusão é geométrica, então
-  uma ESTRELA DO CAMPO exatamente debaixo de uma linha desenhada também sai —
-  o núcleo dela tem 2 px e não se distingue de um pedaço de fita pela forma.
-  O tamanho da cegueira está medido e é a área da faixa: **1,17% do quadro em
-  `zoomDeRoda`, 0,25% em `fronteiraTerra` e 0,00% nas outras sete famílias**,
-  onde a camada não desenha e o juiz é o de sempre. A âncora NUNCA é calada
-  (11 das 218 âncoras compactas da corrida têm o núcleo sobre a faixa), e o
-  resíduo por pixel e a banda alta continuam medindo a linha: o que sai é a
-  identidade, nunca a fervura.
+  nenhuma; **10 a 11 fontes saem por instrumento de ~221 julgáveis** nas duas
+  famílias que têm linha, e a conta é gravada no JSON do juiz
+  (`censoDaFaixa`), não só impressa. **A HERDEIRA, e ela é maior do que a
+  primeira redação admitiu:** a exclusão é geométrica, e o que protege uma
+  fonte é TAMANHO, **nunca brilho**. Medido: uma gaussiana debaixo da faixa é
+  calada com σ 0,85 e σ 1,2, e só escapa em σ 1,5 — enquanto o pico dela SOBE
+  de 0,75 para 0,89. Como a PSF desta casa é σ 0,85 px, **qualquer estrela do
+  campo exatamente debaixo de uma linha desenhada perde a identidade, por mais
+  forte que seja**; a fronteira fica entre σ 1,2 e σ 1,5. O tamanho da cegueira
+  é a área da faixa, gravada por passo: **1,17% do quadro em `zoomDeRoda`,
+  0,35% em `fronteiraTerra` e ZERO nas outras sete famílias**, onde a camada
+  não acende órbita nenhuma e o juiz é o de sempre. A âncora NUNCA é calada — a
+  guarda salvou 1 âncora na corrida medida —, e o resíduo por pixel e a banda
+  alta continuam medindo a linha: o que sai é a identidade, nunca a fervura.
+  **A faixa cobre DEMAIS em três pontos declarados** (o miolo cedido pela
+  cessão, a linha escondida atrás de um globo por `depthTest`, e o alfa, que
+  ela ignora — fita a 0,008 cala tanto quanto fita a 0,56); um portão de alfa
+  foi tentado e MEDIDO, e falha, porque o brilho de tela de uma linha vem do
+  clarão do campo e não do alfa dela.
   **E A CEGUEIRA MAIS CARA É A DE SINAL, medida na própria pele em 25/08:
   o MB1 PREMIA CÉU MAIS ESCURO.** Ele mede o EXCESSO de resíduo sobre o
   piso, e um cobertor mais fraco tem menos pedestal para perder quando uma

@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 94.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 95.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -78,9 +78,11 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > planetas)**~~ (**FEITO em 25/08**; o item continua aberto só à espera
 > do olho dele, e mudou de seção: subiu para **ALTA**) → ~~**81**~~
 > (FEITO em 25/08: o vermelho do MB1 era do
-> próprio juiz, que media numa janela em que a régua dele não valia — o
-> que sobrou dos 18 defeitos são 2 a 4, flutuando entre corridas, e todos
-> são o item 70) → **93 (brilho assistido = algoritmo do Eyes)** →
+> próprio juiz, que media numa janela em que a régua dele não valia — dos
+> 18 defeitos sobraram 2 a 4, flutuando entre corridas, e todos eram o
+> item 70. **Esses também morreram em 25/08, ainda no item 70: a cessão do
+> dono e a faixa de instrumento do juiz. O MB1 fecha em ZERO, e o zero
+> repete.**) → **93 (brilho assistido = algoritmo do Eyes)** →
 > **70** →
 > **75**, com o resto do **83** (G1, L3, L4, L5) na fila da mesma
 > família.
@@ -1754,32 +1756,63 @@ os pegasse pegaria estrela junto, que é a cegueira que não se pode criar.*
 **6 defeitos a ZERO**, sem afrouxar soleira nenhuma — nenhuma tolerância
 foi tocada. A faixa tem raio 1 px (3 px de largura, contra a fita de 1,25
 px CSS da camada), e o raio é o MENOR que fecha: a 0 px sobram 5
-defeitos. Na corrida inteira, **11 fontes** saem por instrumento de
-**2.282** julgáveis, e a faixa ocupa **1,17%** do quadro em `zoomDeRoda`,
-**0,25%** em `fronteiraTerra` e **0,00%** nas outras sete famílias — onde
-a camada não desenha, o juiz é o de sempre, por construção. A separação
-não está no fio: a fração do núcleo sobre a faixa é BIMODAL — as 11
-excluídas medem 1,000 e a vizinha mais próxima mede 0,333.
+defeitos. Na corrida gravada, **10 fontes** saem por instrumento de **221
+julgáveis** nas duas famílias que têm linha (os dois números andam ±1
+entre corridas, como todo o resto do MB1 — poses determinísticas, fase do
+relógio não), e a faixa ocupa **1,17%** do quadro em
+`zoomDeRoda`, **0,35%** em `fronteiraTerra` e **ZERO** nas outras sete —
+onde a camada não acende órbita, o juiz é o de sempre, por construção.
+*(Os números acima já foram outros nesta lista: a primeira redação dizia
+"11 de 2.282", que dividia as exclusões de duas famílias pelas fontes de
+NOVE — denominador errado, achado por auditoria. Todos estes números
+agora são GRAVADOS pelo juiz no JSON da corrida, e não copiados de uma
+sonda que se apagou depois de medir.)*
+
+**O CORTE NÃO ESTÁ NUM VAZIO, e a primeira redação exagerou.** Dizia-se
+que a fração era bimodal com a vizinha mais próxima em 0,333; medido e
+gravado, há **16 componentes na zona cinzenta e a pior delas está em
+0,889** — a **0,011** do corte. O que sustenta o 0,90 não é distância, é
+**platô de veredito**: varrido em `zoomDeRoda`, o corte a 0,75 · 0,80 ·
+0,90 · 1,00 dá zero defeito em todos, mudando só quantas fontes saem
+(10 · 11 · 11 · 10). E como `piorCinzenta` passa a ser gravada todo
+passo, a margem apodrecendo aparece no arquivo antes de aparecer no
+veredito.
 
 **AS TRÊS SABOTAGENS, e o controle.** *(1)* Um salto REAL de céu (fonte
 genuína a 1,7 px, com a faixa ligada) continua reprovando — a exclusão
 não engoliu o mundo. *(2)* Desativada a exclusão, os **mesmos 6 defeitos
 voltam, nas mesmas coordenadas**. *(3)* Um arco sintético desenhado FORA
-de qualquer elipse da camada NÃO é excluído. *(controle)* Com
-`?noorbitas=1` o veredito é IDÊNTICO ao do código de antes — as duas
-corridas dão `PASSA`, pior resíduo 0,43, ZERO declarações. As três
-primeiras estão pinadas em `estabilidade-temporal.test.mjs`, sem
-navegador.
+de qualquer elipse da camada NÃO é excluído. *(4, de 25/08, achada por
+auditoria)* **apagar o FIO** que liga a faixa às fontes dentro de
+`medirPar` reprova — antes disso a exclusão inteira podia ser apagada com
+a suíte passando 52/52, que é sabotagem que ninguém sentia. *(controle)*
+Com `?noorbitas=1` o veredito é IDÊNTICO ao do código de antes — as duas
+corridas dão `PASSA`, pior resíduo 0,43, ZERO declarações. As quatro
+estão pinadas em `estabilidade-temporal.test.mjs`, sem navegador.
 
 **A GUARDA QUE FAZ A REGRA NÃO VIRAR CEGUEIRA: a âncora é intocável.** Um
-corpo está sobre a própria elipse por construção algébrica, e 11 das 218
-âncoras compactas da corrida têm o núcleo inteiro sobre a faixa. Se a
-faixa as calasse, a fronteira de promoção que o §5.20 manda interrogar
-sairia do veredito em silêncio — e a régua que este item veio consertar
-viraria fumaça. **O que a exclusão NÃO cobre está no censo do
-`NORTE.md`**, e é uma só coisa: uma estrela do campo exatamente debaixo
-de uma linha desenhada tem núcleo de 2 px e não se distingue de um pedaço
-de fita pela forma.
+corpo está sobre a própria elipse por construção algébrica, e na corrida
+medida **1 âncora** teve o núcleo inteiro sobre a faixa e seguiu julgada
+por causa da guarda. Se a faixa a calasse, a fronteira de promoção que o
+§5.20 manda interrogar sairia do veredito em silêncio — e a régua que
+este item veio consertar viraria fumaça.
+
+**O QUE A EXCLUSÃO NÃO COBRE, medido — e é MAIOR do que a primeira
+redação admitiu.** Ela dizia "uma estrela de núcleo 2 px". O medido é que
+**brilho não protege**: uma gaussiana debaixo da faixa é calada com σ 0,85
+e σ 1,2 e só escapa em σ 1,5, enquanto o PICO dela sobe de 0,75 para 0,89.
+Como a PSF desta casa é σ 0,85 px, **qualquer estrela do campo debaixo de
+uma linha desenhada perde a identidade, por mais forte que seja** — o que
+salva é transbordar a faixa, e a fronteira fica entre σ 1,2 e σ 1,5.
+**E a faixa cobre DEMAIS em três pontos**, todos declarados no código: o
+miolo CEDIDO pela cessão (a linha não está lá e a faixa cobre), a linha
+escondida atrás de um globo por `depthTest`, e o ALFA — a faixa é binária,
+e uma fita a 0,008 cala tanto quanto uma a 0,56. **Um portão de alfa foi
+tentado e MEDIDO, e falha:** a 0,5 ele traz os 6 defeitos de volta
+inteiros, porque as fitas que produzem os fragmentos vivem a 0,112 e quem
+as levanta acima da soleira é o clarão do campo, não o alfa delas. Ficou
+declarado em vez de ajustado — soleira que não se deriva é soleira que se
+chuta.
 
 *Na mesma medição:* **(a)** Vênus. O que o juiz acusa é 13,4 px na VOLTA
 da fronteira do Sol e não na ida — mas **a Vênus DESENHADA não salta**:
@@ -2598,7 +2631,10 @@ que o app desenha), com o veredito DECLARANDO o número quando ele não é o
 de calibração. **18 defeitos em 5 famílias → 2 a 4 em 2**, com o mesmo
 `src/` dos dois lados (o `fov` k5 e o salto na âncora de Vênus repetem em
 toda corrida; os dois SUMIU do `zoomDeRoda` vão e voltam, e são o mesmo
-passo do Sol saindo pela borda). Custo: 1,8 → 3,9 min. O censo que justifica
+passo do Sol saindo pela borda). *(Estes são os números DAQUELE dia, e
+ficam como estão porque são a medida deste item. O que veio depois é do
+item 70, no mesmo 25/08: a faixa de guarda, a cessão do dono e a faixa de
+instrumento levaram os 2 a 4 a **ZERO**.)* Custo: 1,8 → 3,9 min. O censo que justifica
 `LIMIAR_FONTE` foi refeito na janela nova e o 0,40 continua certo: 93
 fontes com 2 (2,2%) andando mais de 1 px, contra 238 com 8 (3,4%) — e das
 238 antigas, **123 eram componentes de UM pixel**.

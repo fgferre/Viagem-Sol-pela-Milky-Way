@@ -42,6 +42,7 @@ import {
   recortarNoQuadro,
   RAIO_DA_LINHA_PX,
   FRACAO_NA_LINHA,
+  censoDaFaixa,
   medirPar,
   julgarFamilia,
   julgarCorrida,
@@ -699,8 +700,13 @@ describe('a FAIXA DO INSTRUMENTO — o pedaço de linha de órbita (item 70)', (
     const centro = projetarPonto(cam, [0, 0, -1]);
     expect(m[Math.round(topo.y - 0.5) * W + Math.round(topo.x - 0.5)]).toBe(1);
     expect(m[Math.round(centro.y - 0.5) * W + Math.round(centro.x - 0.5)]).toBe(0);
-    // ELA É FINA: uma faixa que comesse o quadro seria cegueira, não exclusão
-    expect(m.reduce((a, b) => a + b, 0)).toBeLessThan(W * H * 0.2);
+    // ELA É FINA, e o teto MORDE: nesta bancada a faixa mede 3,03% do quadro a
+    // raio 1 e 5,25% · 7,48% · 9,71% a raio 2 · 3 · 4. O teto de 5% reprova
+    // qualquer alargamento do raio — o de 20% que esteve aqui não reprovava
+    // nem o raio 4, e um pino que não morde é decoração.
+    expect(m.reduce((a, b) => a + b, 0)).toBeLessThan(W * H * 0.05);
+    expect(mascaraDasOrbitas(cam, [laco], 2).reduce((a, b) => a + b, 0))
+      .toBeGreaterThan(W * H * 0.05);
     // E É POR CONSTRUÇÃO que `?noorbitas=1` não muda nada: sem fita acesa a
     // lista chega vazia e a máscara não existe
     expect(mascaraDasOrbitas(cam, [])).toBe(null);
@@ -859,6 +865,72 @@ describe('a FAIXA DO INSTRUMENTO — o pedaço de linha de órbita (item 70)', (
     });
     expect(semLinha.instrumentos).toBe(0);
     expect(semLinha.declaracoes).toEqual([]);
+  });
+
+  it('A FIAÇÃO: `medirPar` LIGA a faixa às fontes — apagar o fio reprova', () => {
+    // A GUARDA QUE FALTAVA. Todos os testes acima montam a máscara na mão e a
+    // passam a `fontesDoQuadro`; nenhum exercia o CAMINHO REAL. Apagar
+    // `{ mascaraLinha: linhaA }` de `medirPar` matava a exclusão inteira e a
+    // suíte passava 52/52 — a sabotagem que ninguém sentia.
+    const laco = lacoDeBancada();
+    const orbitas = [laco];
+    const a = { cam, y: fotografarArco(cam, laco, 0, 24), orbitas };
+    const b = { cam, y: fotografarArco(cam, laco, 8, 32), orbitas };
+    const passo = medirPar(a, b, 1);
+    // o fio chegou: a exclusão aconteceu DENTRO de `medirPar`
+    expect(passo.instrumentos).toBeGreaterThan(0);
+    // e o censo veio junto, que é o que o JSON grava
+    expect(passo.faixa).not.toBe(null);
+    expect(passo.faixa.naFaixa).toBe(passo.instrumentos);
+    expect(passo.faixa.areaFaixa).toBeGreaterThan(0);
+    // MESMO par, sem a camada: nada é excluído e o censo nem existe — é o
+    // controle do `?noorbitas=1` no caminho real
+    const semCamada = medirPar({ cam, y: a.y }, { cam, y: b.y }, 1);
+    expect(semCamada.instrumentos).toBe(0);
+    expect(semCamada.faixa).toBe(null);
+    expect(semCamada.sumidos.length + semCamada.casados.length).toBeGreaterThan(0);
+  });
+
+  it('faixa NENHUMA é `null`, e não uma máscara de zeros', () => {
+    // "sem linha no quadro o juiz é o de sempre" tem de ser verdade em UM
+    // lugar só: quem não riscou nada devolve `null`, e o censo não publica
+    // uma faixa que não existe
+    const vazio = { n: 4, p: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1], m: lacoDeBancada().m };
+    expect(mascaraDasOrbitas(cam, [vazio])).toBe(null);
+    expect(censoDaFaixa([], null, cam, LIMIAR_JULGADA)).toBe(null);
+  });
+
+  it('A CEGUEIRA MEDIDA: o que protege é TAMANHO, nunca brilho', () => {
+    // O CENSO PRECISA DIZER A VERDADE, e a verdade é esta: uma fonte redonda
+    // debaixo da faixa é calada por ser PEQUENA, não por ser fraca. Uma
+    // gaussiana de pico 0,75-0,85 — forte, muito acima da soleira — sai do
+    // veredito se o σ dela for o da casa. Quem escapa é quem TRANSBORDA.
+    const laco = lacoDeBancada();
+    const mask = mascaraDasOrbitas(cam, [laco]);
+    const topo = projetarPonto(cam, [0, 0.25, -1]);
+    const gaussiana = (sigma) => {
+      const y = new Float32Array(W * H).fill(0.02);
+      const R = Math.ceil(sigma * 4);
+      for (let j = Math.max(0, Math.floor(topo.y - R)); j <= Math.min(H - 1, Math.ceil(topo.y + R)); j++) {
+        for (let i = Math.max(0, Math.floor(topo.x - R)); i <= Math.min(W - 1, Math.ceil(topo.x + R)); i++) {
+          const dx = i + 0.5 - topo.x;
+          const dy = j + 0.5 - topo.y;
+          y[j * W + i] = Math.min(1, y[j * W + i] + 0.95 * Math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma)));
+        }
+      }
+      return fontesDoQuadro(y, W, H, { mascaraLinha: mask })
+        .find((f) => Math.hypot(f.cx - topo.x, f.cy - topo.y) < 3);
+    };
+    // a PSF desta casa (σ 0,85) debaixo da faixa: CALADA, e com pico 0,75
+    const daCasa = gaussiana(SIGMA_DA_PSF_PX);
+    expect(daCasa.pico).toBeGreaterThan(0.7);
+    expect(daCasa.fracLinha).toBe(1);
+    // a fronteira está entre σ 1,2 (ainda calada) e σ 1,5 (escapa)
+    expect(gaussiana(1.2).fracLinha).toBe(1);
+    expect(gaussiana(1.5).fracLinha).toBeLessThan(FRACAO_NA_LINHA);
+    // e o que escapa é maior, não mais brilhante — o pico SOBE enquanto a
+    // fração cai, que é a prova de que brilho não é a régua
+    expect(gaussiana(1.5).pico).toBeGreaterThan(daCasa.pico);
   });
 
   it('o RAIO da faixa é o declarado, e a fração não é "quase nada"', () => {
