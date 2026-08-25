@@ -478,8 +478,15 @@ mesma cena em 2017, com o Sol a ~26,7° acima do plano, o anel vai a
 **40 → 102** (p99 167) contra 168–210 do globo: aí sim é a foto da
 Cassini que ele descreveu. As duas datas estão lado a lado na foto.
 
+Urano e Netuno herdaram a mesma camada e foram OLHADOS, porque mudar o
+sombreamento deles sem ver seria a mesma pressa que gerou esta queixa: o
+efeito é pequeno e é para melhor — média 32 → 35 em Urano e 10 → 11 em
+Netuno, e os anéis passam a se ler como anéis finos em vez de manchas.
+Nenhuma vista do gate cobre esses dois anéis; a prova é a foto.
+
 **Fotos do anel:** `capturas/item91-anel-antes-depois.png` (de perto, de
-longe, e 2017 com o anel aberto) e `capturas/item91-anel-modo-real.png`.
+longe, e 2017 com o anel aberto), `capturas/item91-anel-modo-real.png` e
+`capturas/item91-anel-proc-antes-depois.png` (Urano e Netuno).
 
 **O QUE ELE VAI VER DE NOVO, e não estava lá antes:** com o anel aceso, a
 sombra do globo sobre ele virou um dedo escuro de borda dura atravessando
