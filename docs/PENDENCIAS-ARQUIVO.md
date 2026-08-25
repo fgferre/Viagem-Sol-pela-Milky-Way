@@ -384,6 +384,92 @@ O 4 (Atlas com brilho apagado 100×) morreu no M1 — `claraoDoAtlas` saiu do c�
 dois modos desenham igual, decisão do dono cumprida. O **3** e o **44**
 pousaram com o aceite do dono em 17/08.
 
+**ADENDO DE 25/08 (fim do dia), e não reescreve nada acima — acrescenta.**
+A conferência que chegou pela **Sala de Conferência** aposentou mais
+QUATRO números, todos por olho dele e nenhum por obra nova: **5** (o Sol do
+Atlas pelo calendário, C6), **7** (a troca de qualidade sem reload, C9 —
+*"testei e ficou bom"*), **69** (a dose dos berçários, Q5 — *"ficou bom
+assim"*) e **79** (as duas telas de erro, C7). A história dos quatro mora
+neste arquivo, cada uma na sua seção, com o número intacto.
+
+---
+
+## Item 5 — O Sol do Atlas obedece ao calendário
+
+*(A obra pousou em 21/08 e o item ficou aberto só à espera do olho dele.
+**FECHOU em 25/08**, na conferência que chegou pela Sala de Conferência:
+**C6 — confirmado como bom**. O que segue é o texto do vivo, verbatim, na
+véspera da saída.)*
+
+**5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
+ao calendário; falta ele ver.**
+Cheio de manchas e explosões em QUALQUER data; o do filme começa limpo.
+Implementado em 21/08, e o item fica aberto até ele conferir nas fotos e
+no app.
+
+**A frase, para quem for olhar:** *hoje o Sol do Atlas é o mesmo em
+qualquer data; agora ele obedece ao calendário — e 2026 segue um Sol
+ativo porque o Sol de 2026 É ativo.*
+
+**As fotos:** `capturas/item5-sol-do-atlas-cinco-datas.png` (o mesmo
+enquadramento em 2019-12, 2024-10, 2026-01, 2030-05 e 2035-01 — em cima
+o Sol de antes, sempre igual; embaixo o de agora, com o mínimo quase
+limpo e o máximo cheio de manchas) e
+`capturas/item5-arranque-antes-depois.png` (o arranque do filme em t=0,
+6 e 29 s, que NÃO podia mudar — e não mudou).
+
+*(A fase do ciclo saiu do acumulador e virou função pura da data, com
+âncora declarada: mínimo do ciclo 25 em dezembro de 2019 e máximo em
+outubro de 2024, o que obriga a subida a ser mais curta que a descida.
+O estado das regiões ativas e dos grupos de manchas virou função do
+mesmo instante — semente POR VIDA e deriva em forma fechada —, então o
+relógio anda para trás sem re-integrar nada e o mesmo instante devolve
+sempre o mesmo Sol. Morreram o pino `ATLAS_JOURNEY_T`, a torção de fase
+da dramaturgia e os dois acumuladores do núcleo. A dramaturgia do filme
+virou DOSE de ocupação declarada no selo: o arranque mostra menos
+atividade do que a data pede, e diz isso — nunca inventa uma data. O
+`atlas-smoke` ganhou a prova que faltava, no degrau do corpo do Sol:
+mesma data por dois caminhos dá o MESMO pixel, e data diferente dá Sol
+diferente.)*
+
+---
+
+## Item 7 — Trocar a qualidade não recarrega mais a página
+
+*(As quatro letras fecharam em 20/08 e o item ficou aberto só à espera do
+olho dele. **FECHOU em 25/08**, pela Sala de Conferência, com as palavras
+dele em **C9**: *"testei e ficou bom"*. Texto do vivo, verbatim, na véspera
+da saída.)*
+
+**7. Trocar a qualidade recarregava a página — o reload morreu; falta ele ver.**
+O dono pediu “nada recarrega, padrão AAA”. Hoje NADA no painel recarrega,
+a qualidade inclusive; o item fica aberto até ele conferir no app —
+clicar em outro tier, com o filme andando ou de dentro do Atlas, e ver a
+cena continuar de onde estava. E de quebra, olhar o **Auto**, que agora
+é o 4º estado do seletor.
+→ `docs/NORTE.md`, seção “Ajustes”. *(As QUATRO letras fecharam em
+20/08. A B pôs a cadeia de carga inteira num worker. A **C** matou o
+reload: o mundo novo (galáxia, os dois mapas e o Sol) assa em segundo
+plano enquanto o atual continua desenhando, e a troca é num quadro só,
+sem véu; medido: o mundo trocado ao vivo sai BIT-IDÊNTICO ao do boot
+direto naquele tier, nos dois sentidos, e seis trocas seguidas não
+acumulam uma textura. A **D** pôs o Auto no seletor e tirou do boot
+quem decidia pelo visitante: sem `?q=` o tier é cinema por constante —
+o storage e a detecção por aparelho saíram do caminho. A medição de
+quadros continua rodando e SUGERE (o painel diz "Cinema, a 28
+quadros/s — Alta deve andar melhor"), mas só troca de tier se ele
+escolher Auto; medido no navegador: em manual, 18 s com a medição
+pedindo outro tier e nada se moveu. Fica de pé o pior bloqueio de
+thread do swap, que é o `prime` do Sol — 136 ms medidos em 21/08 nesta
+máquina. O item 5 entrou no miolo de `stellarBody.ts` e construiu a
+máquina que vai fatiá-lo (o re-bake por data já roda a MESMA semente e a
+MESMA contagem repartidas por quadro), mas não fatiou o `prime` em si —
+e não o piorou: 137 ms depois.)*
+
+**O QUE SOBREVIVE AO FECHO, e não é deste item:** o **59** — trocar de
+qualidade não troca a textura dos corpos JÁ carregados — segue vivo no
+`PENDENCIAS.md`, e é o herdeiro natural de quem vier mexer aqui.
+
 ---
 
 ## Item 61 — Rever a UI/UX inteira — a onda que pousou em 22–24/08
@@ -803,6 +889,34 @@ morreu no M1 e os dois modos desenham igual — se os gráficos ainda
 parecem mudar, é medida a fazer, não desenho a mudar. O que falta é a
 UI parar de tratar os dois como concorrentes, e o Atlas parar de
 parecer mais vazio.
+
+---
+
+## Item 69 — A dose das forjas (os berçários) de longe
+
+*(Achado no M5, 22/08, e desde então era pergunta de GOSTO, não obra.
+**FECHOU em 25/08**, pela Sala de Conferência, com as palavras dele em
+**Q5**: *"ficou bom assim"* — a dose nova fica como está, e ninguém
+re-dosa sem pedido novo. Texto do vivo, verbatim, na véspera da saída.)*
+
+**69. As forjas ficaram mais claras de longe — a dose delas espera o
+olho dele.** (Achado no M5, 22/08.) As 5.400 e tantas regiões de
+formação de estrelas (H II, masers, aglomerados jovens, Cefeidas,
+proxy OB) largaram a cópia própria da lei de tela e passaram à lei da
+casa: piso 0,85 → 0,7 px e teto 26 → 20 px. De longe elas clareiam até
+1,47× e de perto escurecem para 0,59×. O fluxo total no sub-pixel é o
+mesmo dos dois lados — o que muda é a repartição —, mas a DOSE delas
+(`aIntensity`, artística) foi calibrada sob o piso velho, e a régua da
+galáxia mediu o preço: no face-on o `clumpError` piorou 0,1581 → 0,1741
+e o `grain` 0,0874 → 0,0877 (ledger, rodada 44); as outras notas e o
+edge-on inteiro não se mexeram. Re-dosar é GOSTO, não migração: a foto
+está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
+— fica mais bonito com os berçários assim, mais fracos, ou como
+estavam?
+
+**A RESPOSTA:** *"ficou bom assim"*. A piora medida das duas notas da
+régua da galáxia (`clumpError` e `grain`) fica DECLARADA e aceita — ele
+julgou a tela, que é o juiz de cima.
 
 ---
 
@@ -1325,6 +1439,47 @@ rodada com `?noorbitas=1` no binário NOVO devolve **as 52 vistas
 bit-idênticas** ao antes. Nada mudou de carona; a chave desliga de
 verdade.
 
+### A DECISÃO 3, COMO ELA FOI PERGUNTADA — e o item 77 segue VIVO no `PENDENCIAS.md`
+
+*(Guardado aqui em 25/08 porque a pergunta saiu do vivo quando ele a
+respondeu. O texto abaixo é o que estava no vivo na véspera; a resposta dele
+e a obra que nasceu dela moram no item 77 do `PENDENCIAS.md`.)*
+
+> 3. **A camada vale NO FILME também, e ele tem de olhar UMA foto por causa
+>    disso.** Não há `if (fase)` nenhum, que é a lei dele. Das sete vistas de
+>    filme do gate, seis saem bit-idênticas; muda UMA — a volta para casa
+>    (t=180). **É a foto que ele deve olhar com mais atenção: é a única
+>    mudança no FILME, e ninguém a pediu.** Se ele não a quiser, o conserto é
+>    um gate de fase — mas isso RESSUSCITARIA a distinção entre modos que ele
+>    acabou de proibir, e por isso não foi feito por conta própria.
+
+**A RESPOSTA DELE, 25/08:** *"tirar do filme (aceito recriar a separação
+entre modos só aí)"*. O gate de fase que a pergunta chamava de ressurreição
+proibida virou **exceção autorizada por ele**, e só para a camada de
+órbitas.
+
+---
+
+## Item 79 — As duas telas de erro
+
+*(O véu das falhas depois do boot pousou em 22/08 (`bb65fff`) e o item
+ficou aberto só à espera do olho dele. **FECHOU em 25/08**, pela Sala de
+Conferência: **C7 — confirmado como bom**. Texto do vivo, verbatim, na
+véspera da saída.)*
+
+**79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
+`bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo
+(`webglcontextlost`) e a exceção em quadro — nunca foi visto por ele: as
+fotos são `capturas/erro-contexto-perdido.png` e `capturas/erro-no-tick.png`,
+e elas ficam no disco até ele olhar. **Não apagar na próxima limpeza de
+`capturas/`** — a regra 5 vale para captura que terminou de servir, e
+estas não terminaram.
+
+**E AGORA TERMINARAM.** Com a conferência feita, `erro-contexto-perdido.png`
+e `erro-no-tick.png` deixam de ser intocáveis: a nota de "não apagar" morre
+junto com o item, e as duas voltam a ser captura comum, sujeita à regra 5
+do `AGENTS.md` como qualquer outra.
+
 ---
 
 ## Item 81 — O MB1 media numa janela em que a régua dele não valia
@@ -1664,6 +1819,21 @@ Três degraus, nesta ordem:
   fotografando o N1, o caso apareceu: no close-up de Júpiter os nomes
   CITALÁ e MULIPHEIN ficam escritos POR CIMA do globo. A régua nova não
   toca nisso — ela decide quem interessa, não quem está atrás de quê.)
+
+### A PERGUNTA DO OITO, COMO ELA FOI FEITA — e o item 82 segue VIVO no `PENDENCIAS.md`
+
+*(Guardada aqui em 25/08 porque ela saiu do vivo quando ele a respondeu.)*
+
+> - **a conferência dele** — se a abertura ficou como ele queria, e se OITO é
+>   o número certo (mudar é UMA LINHA). Fotos:
+>   `capturas/item82-abertura-antes-depois.png`,
+>   `item82-teto-antes-depois.png`, `item82-camada-nomes.png` e
+>   `item82-filme-legendas-antes-depois.png`.
+
+**A RESPOSTA DELE, 25/08 (C2):** confirmou os nomes na tela como bons. O
+**8** do `ORCAMENTO_DE_NOMES` deixou de ser pergunta e virou o número da
+casa; as quatro fotos serviram. O que sobrou aberto (Alnilam, N3, a vaga do
+HUD, o `classe · distância`) continua no item 82 do `PENDENCIAS.md`.
 
 ---
 

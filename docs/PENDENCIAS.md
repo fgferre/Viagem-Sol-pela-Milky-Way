@@ -33,8 +33,9 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 100.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 101.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
+  *(O **100** saiu em 25/08: o HUD de lente e zoom, ideia dele.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
@@ -58,13 +59,27 @@ fila. O que sobra à espera dele agora é a IMAGEM, não a prioridade.
 > morre na borda) → **75**, com o resto do **83** (L2.5, G1, L3, L4, L5)
 > na fila da mesma família.
 
-**O QUE ESPERA O OLHO DELE, e é a maior dívida da casa:** as fotos dos
-itens **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, e a
-divergência da lanterna), **91** (Saturno, o anel, a sombra, Mercúrio), **83** (a fita),
-**82** (os nomes), **77** (as órbitas), **61** (a onda da UI/UX inteira),
-**70** (o giro e a cessão), **5** (o Sol pelo calendário), **7** (a troca
-de qualidade sem reload) e **79** (as duas telas de erro). Nada disso é
-obra pendente — é conferência.
+**25/08, FIM DO DIA — A CONFERÊNCIA CHEGOU PELA SALA DE CONFERÊNCIA, E A
+FILA DECIDIDA GANHOU OBRAS.** Ele respondeu a folha inteira de fotos e
+perguntas naquele artefato, e as respostas pousaram item a item: **5, 7, 69
+e 79 FECHARAM**; **61, 70, 77 e 82** tiveram a conferência aceita e as fotos
+delas já serviram; o **modo real do 91** volta à prancheta com palavra dele
+(*"escuro demais, repensar"*); **86**, **87** e o novo **100** nasceram
+decididos; e a fita do **83** ficou com uma queixa pela metade, à espera das
+palavras dele. **A fila decidida, que se ACRESCENTA à de cima e não a
+substitui:** **véu palha do 93** (em obra) → **88 → 92 → 95** (a ordem é
+DELE, e cada um volta com foto) → **gate do filme (77)** → **rolagem do véu
+(87)** → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
+de abertura (**61**) → **70**, a causa 2 → **99** → **75**.
+
+**O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** Sobra **UM
+item**: o **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, e a
+divergência da lanterna), e nele moram também as perguntas **Q9–Q11**, que
+herdaram o **(a)** e o **(b)** do item **91** porque a receita do 93 mexeu
+nos dois depois das fotos de lá. **E há uma pendência que não é de olho, é
+de PALAVRAS DELE:** a fita do item **83** — ele *"estranhou algo (explico no
+chat)"* (C3), e até a explicação chegar nenhuma obra de linha anda ali. Nada
+disso é obra pendente — é conferência, e agora é curta.
 
 **A DOUTRINA DO PINO, escrita para a próxima vez que houver foto à espera.**
 Mexer na LINHA da fila antes da conferência **invalida as fotos** que estão
@@ -111,21 +126,28 @@ hash: **1–4, 6, 8–11, 14, 16, 20, 21, 29–33, 35, 41, 42, 44, 47, 48, 50,
 51, 55–58, 60, 62, 63, 65–68, 71, 73, 74, 76**. O **19** NÃO saiu — fechou
 a metade da confissão e ficou a das texturas.
 
+**E QUATRO SAÍRAM EM 25/08, todos por OLHO DELE e nenhum por obra nova** —
+a conferência que chegou pela Sala de Conferência: **5** (o Sol do Atlas
+pelo calendário, C6), **7** (a troca de qualidade sem reload, C9 — *"testei
+e ficou bom"*), **69** (a dose dos berçários, Q5 — *"ficou bom assim"*) e
+**79** (as duas telas de erro, C7). A história dos quatro está no ARQUIVO,
+verbatim e com o número intacto.
+
 **E o 72 entra aqui agora, achado pela conferência dos números de 25/08** —
 a mesma varredura que já pegara o 76 e os sete créditos de 22/08: ele era o
 único número que não estava nem vivo nem aposentado. **72** (a porta
 `?nobloom=1` que só apagava METADE do bloom) **fechou em 25/08**, dentro da
 rodada da faixa de guarda, e a história dele mora no ARQUIVO — não numa
 seção própria, mas dentro do **item 70**, que é onde a obra aconteceu. A
-foto é `capturas/item72-nobloom-antes-depois.png`, e ela está na lista das
-que esperam o olho dele.
+foto é `capturas/item72-nobloom-antes-depois.png`, e ela **já serviu**: saiu
+da lista das que esperam o olho dele com a conferência de 25/08 (C5).
 
 ---
 
 ## ALTA — o dono vê e incomoda
 
-**91. Saturno estava quase escuro mesmo com brilho assistido — a obra
-pousou em 25/08, e falta ELE VER.** Palavras do dono, 2026-08-24: *"acho
+**91. Saturno estava quase escuro — a obra pousou, ele conferiu em 25/08, e
+o que sobra é UM assunto: o MODO REAL ficou escuro demais.** Palavras do dono, 2026-08-24: *"acho
 que estamos com algortimos de iluminacao q nao estao funcionando bem...
 saturno, mesmo com brilho assistido, quase escuro e saturno é um objeto
 claro no ceu... mesmo a olho nu."*
@@ -138,20 +160,36 @@ vivo, com a URL espelhando o gesto. O globo saiu do carvão para a palha, o
 anel acendeu junto e a sombra dele, que caía do lado do Sol, voltou ao lado
 certo — os números estão no ARQUIVO.
 
-**O QUE FALTA É SÓ A CONFERÊNCIA DELE**, e são três perguntas que só ele
-responde:
+**A CONFERÊNCIA DELE CHEGOU EM 25/08, pela Sala de Conferência, e mudou o
+que este item é.** As três perguntas que estavam de pé tiveram três destinos
+diferentes:
 
-- **(a)** Saturno está no ponto ou passou do ponto? — e o adendo do anel
-  (25/08, olhando as fotos: *"os anéis de Saturno não estão visíveis"*):
-  ficou no ponto, ou ainda está escuro para o que ele espera das fotos da
-  Cassini?
-- **(b)** **Mercúrio DESCE, 164 → 118**, e isso é a lei funcionando (ele
-  recebe ~6,7× a irradiância da Terra; expor "para o mundo em que se está"
-  ali significa FECHAR o diafragma). Ficou melhor domado ou ficou apagado?
-- **(c)** o modo real, com Saturno quase preto, é a honestidade que ele
-  quer ver ou é escuro demais para servir de modo?
+- **(c) RESPONDIDA, e a resposta é OBRA. Palavras dele: _"escuro demais,
+  repensar"_.** O modo `?luz=real`, com Saturno quase preto, **não serve
+  como modo**: a honestidade física fica de pé, a legibilidade não. **E A
+  PRÓXIMA JOGADA É NOSSA, não dele** — quem pegar isto volta com
+  **PROPOSTAS e IMAGENS** de um real que seja honesto E legível, nunca com
+  outra pergunta. Ele já disse o que sentiu; o desenho é nosso, e a régua da
+  casa é decidir e voltar com foto. **Duas fronteiras, para não perder tempo
+  no caminho errado:** teto de brilho continua **PROIBIDO** em letra pelo
+  `NORTE.md`, e a decisão 2 acima (o real mantém a penumbra FÍSICA no globo)
+  não se revoga — o que se estuda é a **exposição do quadro**, não ganho
+  colado no corpo.
+- **(a) e (b) MUDARAM DE CASA, e não se perguntam mais aqui.** "Saturno está
+  no ponto?" e "Mercúrio ficou domado ou apagado?" foram feitas sobre as
+  fotos do 91 — e o item **93** mexeu nos DOIS depois delas (Saturno 34,4 →
+  38,5; Mercúrio volta do ganho 0,883 a 1). Repetir a pergunta aqui seria
+  pedir que ele julgasse a mesma coisa duas vezes com fotos diferentes.
+  **Elas vivem agora nas Q9–Q11 da Sala de Conferência, e quem as responde é
+  o item 93.**
+- **A DATA PADRÃO DE SATURNO FECHOU, e virou lei dele. Palavras: _"sempre a
+  data real, mesmo com anel fino"_.** A visita a Saturno abre na data
+  VERDADEIRA, ponto — nunca numa data escolhida a dedo para deixar o anel
+  bonito. Anel fino porque o Sol está quase no plano dele é o que se mostra.
+  **Não se reabre.**
 
-**Fotos:** `capturas/item91-saturno-antes-depois.png` (a prova),
+**Fotos** (as do modo real já serviram — ele julgou por elas):
+`capturas/item91-saturno-antes-depois.png` (a prova),
 `item91-familia-antes-depois.png`, `item91-modo-real.png`,
 `item91-selo-porta-de-duas-vias.png`, `item91-anel-antes-depois.png`,
 `item91-anel-modo-real.png`, `item91-anel-proc-antes-depois.png`,
@@ -262,61 +300,14 @@ MH18 sai byte a byte igual** a 150 UA e a 40 UA.
 Contrato vivo, com o que pousou e o que não pousou:
 `docs/reference/nasa-eyes-brilho-assistido-contrato.md`.
 
-**5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
-ao calendário; falta ele ver.**
-Cheio de manchas e explosões em QUALQUER data; o do filme começa limpo.
-Implementado em 21/08, e o item fica aberto até ele conferir nas fotos e
-no app.
+**5.** O Sol do Atlas estava congelado no máximo solar e passou a obedecer
+ao calendário — **FECHADO em 25/08**, conferido por ele na Sala de
+Conferência (**C6**); história no ARQUIVO.
 
-**A frase, para quem for olhar:** *hoje o Sol do Atlas é o mesmo em
-qualquer data; agora ele obedece ao calendário — e 2026 segue um Sol
-ativo porque o Sol de 2026 É ativo.*
-
-**As fotos:** `capturas/item5-sol-do-atlas-cinco-datas.png` (o mesmo
-enquadramento em 2019-12, 2024-10, 2026-01, 2030-05 e 2035-01 — em cima
-o Sol de antes, sempre igual; embaixo o de agora, com o mínimo quase
-limpo e o máximo cheio de manchas) e
-`capturas/item5-arranque-antes-depois.png` (o arranque do filme em t=0,
-6 e 29 s, que NÃO podia mudar — e não mudou).
-
-*(A fase do ciclo saiu do acumulador e virou função pura da data, com
-âncora declarada: mínimo do ciclo 25 em dezembro de 2019 e máximo em
-outubro de 2024, o que obriga a subida a ser mais curta que a descida.
-O estado das regiões ativas e dos grupos de manchas virou função do
-mesmo instante — semente POR VIDA e deriva em forma fechada —, então o
-relógio anda para trás sem re-integrar nada e o mesmo instante devolve
-sempre o mesmo Sol. Morreram o pino `ATLAS_JOURNEY_T`, a torção de fase
-da dramaturgia e os dois acumuladores do núcleo. A dramaturgia do filme
-virou DOSE de ocupação declarada no selo: o arranque mostra menos
-atividade do que a data pede, e diz isso — nunca inventa uma data. O
-`atlas-smoke` ganhou a prova que faltava, no degrau do corpo do Sol:
-mesma data por dois caminhos dá o MESMO pixel, e data diferente dá Sol
-diferente.)*
-
-**7. Trocar a qualidade recarregava a página — o reload morreu; falta ele ver.**
-O dono pediu “nada recarrega, padrão AAA”. Hoje NADA no painel recarrega,
-a qualidade inclusive; o item fica aberto até ele conferir no app —
-clicar em outro tier, com o filme andando ou de dentro do Atlas, e ver a
-cena continuar de onde estava. E de quebra, olhar o **Auto**, que agora
-é o 4º estado do seletor.
-→ `docs/NORTE.md`, seção “Ajustes”. *(As QUATRO letras fecharam em
-20/08. A B pôs a cadeia de carga inteira num worker. A **C** matou o
-reload: o mundo novo (galáxia, os dois mapas e o Sol) assa em segundo
-plano enquanto o atual continua desenhando, e a troca é num quadro só,
-sem véu; medido: o mundo trocado ao vivo sai BIT-IDÊNTICO ao do boot
-direto naquele tier, nos dois sentidos, e seis trocas seguidas não
-acumulam uma textura. A **D** pôs o Auto no seletor e tirou do boot
-quem decidia pelo visitante: sem `?q=` o tier é cinema por constante —
-o storage e a detecção por aparelho saíram do caminho. A medição de
-quadros continua rodando e SUGERE (o painel diz "Cinema, a 28
-quadros/s — Alta deve andar melhor"), mas só troca de tier se ele
-escolher Auto; medido no navegador: em manual, 18 s com a medição
-pedindo outro tier e nada se moveu. Fica de pé o pior bloqueio de
-thread do swap, que é o `prime` do Sol — 136 ms medidos em 21/08 nesta
-máquina. O item 5 entrou no miolo de `stellarBody.ts` e construiu a
-máquina que vai fatiá-lo (o re-bake por data já roda a MESMA semente e a
-MESMA contagem repartidas por quadro), mas não fatiou o `prime` em si —
-e não o piorou: 137 ms depois.)*
+**7.** Trocar a qualidade recarregava a página, e o reload morreu —
+**FECHADO em 25/08**, palavras dele: *"testei e ficou bom"*; história no
+ARQUIVO. *(O herdeiro VIVO é o item **59**: trocar de tier ainda não troca
+a textura de quem já carregou.)*
 
 **39. Estrela focada apaga as outras, ligando e desligando de repente.**
 Palavras do dono: *"uma coisa que percebi é que agora quando uma estrela
@@ -430,23 +421,11 @@ E um aviso dele sobre as legendas novas (que ele gostou): *“gostei das
 suas sugestoes, mas talvez teria que adaptar um pouco design/layout UI
 para acomodar”* — conferir na mesma exibição.
 
-**69. As forjas ficaram mais claras de longe — a dose delas espera o
-olho dele.** (Achado no M5, 22/08.) As 5.400 e tantas regiões de
-formação de estrelas (H II, masers, aglomerados jovens, Cefeidas,
-proxy OB) largaram a cópia própria da lei de tela e passaram à lei da
-casa: piso 0,85 → 0,7 px e teto 26 → 20 px. De longe elas clareiam até
-1,47× e de perto escurecem para 0,59×. O fluxo total no sub-pixel é o
-mesmo dos dois lados — o que muda é a repartição —, mas a DOSE delas
-(`aIntensity`, artística) foi calibrada sob o piso velho, e a régua da
-galáxia mediu o preço: no face-on o `clumpError` piorou 0,1581 → 0,1741
-e o `grain` 0,0874 → 0,0877 (ledger, rodada 44); as outras notas e o
-edge-on inteiro não se mexeram. Re-dosar é GOSTO, não migração: a foto
-está em `capturas/m5-glows-forjas-antes-depois.png` e a decisão é dele
-— fica mais bonito com os berçários assim, mais fracos, ou como
-estavam?
+**69.** A dose das forjas (os berçários) vista de longe — **FECHADA em
+25/08**, palavras dele: *"ficou bom assim"*; história no ARQUIVO.
 
-**82. Os nomes na tela estão muito intrusivos — N1 e N2 pousaram em 24/08,
-e falta ELE VER.** Palavras do dono, 23/08: *"estou achando que ele está
+**82. Os nomes na tela estão muito intrusivos — N1 e N2 pousaram em 24/08 e
+ELE CONFERIU em 25/08; o que sobra é Alnilam, N3 e duas vagas.** Palavras do dono, 23/08: *"estou achando que ele está
 muito intrusivo, acho que precisaria ser um sistema mais inteligente do que
 é."* E: *"A impressao que tenho é que o default todos os objetos estao com
 o label ligado, fica uma confusao na tela."*
@@ -457,13 +436,17 @@ colisão virou a lei dos atlas de referência (um lugar por nome; colidiu, o
 menor SOME), e a camada **`nonomes`** entrou na gaveta. A abertura foi de
 22 nomes para **8**; o teto do zoom, de 27 para 4.
 
+**A CONFERÊNCIA FECHOU — C2, 25/08, pela Sala de Conferência: ele confirmou
+os nomes na tela como bons.** A abertura com **OITO** nomes, o teto do zoom
+em quatro e as legendas do filme param de ser pergunta: o
+`ORCAMENTO_DE_NOMES` = 8 vira o número da casa, e mudá-lo passa a exigir
+pedido novo dele. As quatro fotos —
+`capturas/item82-abertura-antes-depois.png`,
+`item82-teto-antes-depois.png`, `item82-camada-nomes.png` e
+`item82-filme-legendas-antes-depois.png` — **já serviram**.
+
 **O QUE FICA ABERTO:**
 
-- **a conferência dele** — se a abertura ficou como ele queria, e se OITO é
-  o número certo (mudar é UMA LINHA). Fotos:
-  `capturas/item82-abertura-antes-depois.png`,
-  `item82-teto-antes-depois.png`, `item82-camada-nomes.png` e
-  `item82-filme-legendas-antes-depois.png`.
 - **o caso ALNILAM**, aceito como provisório por decisão DELE (24/08). No
   beat AS TRÊS MARIAS o nome de Alnilam cede e a legenda embaixo continua
   dizendo os três. Palavras dele: *"não acho que ficou bom o caso
@@ -618,8 +601,8 @@ cópias — o estado (`texturas`, `recargas`, `texturasVivas`) ainda mora em
 cada classe; o passo honesto é esse estado mudar de casa para o pipeline
 único primeiro, e o double-buffer nascer lá, uma vez.)*
 
-**61. Rever a UI/UX inteira — DECISÃO DELE, 21/08. A ONDA POUSOU; falta
-ELE VER.** Palavras dele: *"nao, mas acho que podemos rever essa UI/UX
+**61. Rever a UI/UX inteira — DECISÃO DELE, 21/08. A ONDA POUSOU E ELE
+CONFERIU EM 25/08; o que sobra é RE-JULGAR A VISTA DE ABERTURA.** Palavras dele: *"nao, mas acho que podemos rever essa UI/UX
 (atlas tinha ideias boas de UX/UI e outros Apps tem até coisas melhores)"*
 — ou seja, **não** é para separar os Ajustes; é revisão da interface
 inteira. E a parte grande: *"o modo atlas na minha visao deveria ser o modo
@@ -633,10 +616,22 @@ padrão a ~9 UA; as tarjas pretas saíram do celular; *"Explorar livremente"*
 encurtou para **"Explorar"**; a folha do celular ganhou a quarta saída; e o
 clarão do Sol virou **teto único de 0,07**, decisão dele em duas etapas.
 
+**A CARA NOVA ESTÁ CONFERIDA — C8, 25/08, pela Sala de Conferência: ele
+confirmou o modo único e a interface nova como bons.** As fotos
+`capturas/item61-*`, `capturas/vista-padrao-*` e `capturas/clarao-v2-*` **já
+serviram**. E com C7 (as telas de erro, item **79**) fechando no mesmo
+olhar, a onda da UI/UX está aceita por inteiro — menos a vista de abertura,
+que é o que sobra abaixo.
+
+**"EXPLORAR" É A PALAVRA, E O ASSUNTO MORREU EM 25/08 (Q7).** Ele tinha
+oferecido *"navegar"* como alternativa sem exigi-la; perguntado, cravou
+**"Explorar (como está)"**. O bullet do NAVEGAR **saiu desta lista** —
+não é mais alternativa aceita, é caminho fechado. `components/Hud.tsx` e
+`components/BarraOuAlcas.tsx` ficam como estão, e trocar a palavra passa a
+exigir pedido novo dele.
+
 **O QUE FICA ABERTO:**
 
-- **o olho dele no app**, com as fotos em `capturas/item61-*`,
-  `capturas/vista-padrao-*` e `capturas/clarao-v2-*`.
 - **A VISTA (a) NÃO É DEFINITIVA, e a hora de RE-JULGAR chegou.** Ele
   apontou, na noite de 23/08, que o **contexto de abertura do NASA Eyes é
   muito melhor que o nosso** — o Eyes abre no sistema INTEIRO e mesmo
@@ -648,17 +643,18 @@ clarão do Sol virou **teto único de 0,07**, decisão dele em duas etapas.
   isso que a vista larga esperava. Falta a folha de fotos lado a lado —
   sistema inteiro no estilo Eyes × interno atual × meio-termo. **A decisão
   é DELE, e ninguém trate a (a) como resposta final até isso acontecer.**
-- **"NAVEGAR" fica registrado como alternativa aceita por ele.** Ele
-  ofereceu a palavra e não a exigiu (*"não precisa ser explorar, pode ser
-  navegar"*). Trocar é **uma palavra em dois arquivos** —
-  `components/Hud.tsx` (o véu do fim) e `components/BarraOuAlcas.tsx` (as
-  duas barras) —, e as DUAS têm de andar juntas, senão o app volta a ter
-  dois nomes para a mesma ação.
+  **E ELA ANDA EMPARELHADA COM A LENTE (item 86), por decisão de 25/08:**
+  ele mandou abrir o fov do filme para o app inteiro, e a lente é metade da
+  razão pela qual a vista larga era ilegível. **As duas folhas de foto — a
+  do A/B da lente e a da vista de abertura — saem da MESMA sessão de
+  captura**, no mesmo binário, senão ele julga a vista larga sob uma lente
+  que já não vai existir.
 - **o Atlas parar de parecer mais vazio que o filme** (*"parece que o modo
   atlas fica mais morto, vazio..."*). **Um mundo só JÁ É LEI e já é
   código.** A medida de 24/08 achou a causa, e ela não é regra por modo: é
-  a **LENTE** (35° no Atlas contra 58°). Está no item **86**, e é decisão
-  dele.
+  a **LENTE** (35° no Atlas contra 58°). Está no item **86** — e **ele
+  DECIDIU em 25/08: abrir a lente do filme para o app inteiro**, com foto
+  A/B antes de cravar.
 
 **A história completa está no ARQUIVO, item 61.**
 
@@ -702,11 +698,14 @@ números originais saíram de um quadro de 613 px, onde cada estrela é
 defeito é real e segue de pé — o que não é fixo é a magnitude, e quem for
 consertar tem de dizer em que janela mediu.**
 
-**Falta o dono olhar as três fotos que esta história produziu:**
+**AS TRÊS FOTOS DESTA HISTÓRIA JÁ SERVIRAM — C5, 25/08:** ele olhou
 `capturas/item70-giro-antes-depois.png`,
 `capturas/item70-linha-cede-antes-depois.png` e
-`capturas/item72-nobloom-antes-depois.png`. **Não apagar na próxima limpeza
-de `capturas/`**, pela mesma razão do item 79.
+`capturas/item72-nobloom-antes-depois.png` pela Sala de Conferência e
+confirmou **o giro e a borda como bons**. Com isso a metade que fechou está
+ACEITA por ele, a nota de "não apagar" morre com a conferência, e **o que
+este item ainda é resume-se à CAUSA 2 acima** — a imagem direta do ponto no
+quadro principal.
 
 **DUAS REGRAS NASCERAM AQUI e valem para toda a casa:** *A/B se roda de
 ÁRVORE LIMPA dos dois lados — e se não der, o que sobrou de sujo entra
@@ -749,14 +748,16 @@ usar zoom, virar e se mover por "algoritmos claros de movimento
 inteligente cinematográfico" — e o destinatário: o motor é ferramenta do
 agente, com instruções.
 
-**77. As linhas de órbita, ligadas por padrão — O CÓDIGO POUSOU EM 23/08;
-FALTA ELE OLHAR.** A órbita é o DADO, não enfeite: NASA Eyes, Celestia e
-SpaceEngine desenham as três. Apareceram **30 laços** (os nove planetas e
-as 21 luas), com camada `noorbitas` na gaveta, fade nas duas pontas, lua só
-com o pai enquadrado, e **sem efeméride viva não há linha**.
+**77. As linhas de órbita, ligadas por padrão — A CONFERÊNCIA DELE FECHOU
+EM 25/08, E SOBROU UMA OBRA: TIRAR AS LINHAS DO FILME.** A órbita é o DADO,
+não enfeite: NASA Eyes, Celestia e SpaceEngine desenham as três. Apareceram
+**30 laços** (os nove planetas e as 21 luas), com camada `noorbitas` na
+gaveta, fade nas duas pontas, lua só com o pai enquadrado, e **sem efeméride
+viva não há linha**.
 
-**O QUE ESTÁ EM PÉ É SÓ A CONFERÊNCIA DELE**, e são três decisões que mudam
-o que aparece na tela e que não estavam no contrato que ele leu:
+**O QUE ELE APROVOU (C1, pela Sala de Conferência):** as linhas **no
+Atlas**. Com isso as decisões **1** e **2**, que iam junto na conferência,
+ficam de pé como estão e não se re-litigam:
 
 1. **A curva NÃO sai de "amostrar um período", porque esse caminho não
    existe.** A efeméride cobre 1950–2050, e um período inteiro cai fora
@@ -771,13 +772,22 @@ o que aparece na tela e que não estavam no contrato que ele leu:
    item existe para deixar legível — sumiam dentro dele. Devolvê-los é
    **UMA LINHA** (`HELIO_SEM_PONTO`, em `world/orbitas.ts`), e virou o
    degrau **G1** do item 83.
-3. **A camada vale NO FILME também, e ele tem de olhar UMA foto por causa
-   disso.** Não há `if (fase)` nenhum, que é a lei dele. Das sete vistas de
-   filme do gate, seis saem bit-idênticas; muda UMA — a volta para casa
-   (t=180). **É a foto que ele deve olhar com mais atenção: é a única
-   mudança no FILME, e ninguém a pediu.** Se ele não a quiser, o conserto é
-   um gate de fase — mas isso RESSUSCITARIA a distinção entre modos que ele
-   acabou de proibir, e por isso não foi feito por conta própria.
+
+**A DECISÃO 3 ELE RESPONDEU, E A RESPOSTA É OBRA. Palavras dele, 25/08:**
+*"tirar do filme (aceito recriar a separação entre modos só aí)"*.
+
+**A OBRA, declarada e ÚNICA:** um **gate de fase só para a camada de
+órbitas** — ela continua ligada por padrão no Atlas e **não desenha nada
+durante o filme**. Isto é **EXCEÇÃO AUTORIZADA POR ELE** à lei do mundo
+único (item **61**: *"o modo atlas na minha visao deveria ser o modo
+único"*), e a autorização é **só aí, com as palavras dele**: ninguém a
+estende para brilho, lente, nomes, bloom ou qualquer outra camada, e quem
+tentar está inventando permissão que ele não deu. A vista que volta ao que
+era é a **volta para casa (t=180)**, a mesma de
+`capturas/item77-filme-volta-para-casa.png` — as outras seis vistas de filme
+do gate já saíam bit-idênticas. Quem executar escreve a exceção **no lugar
+onde o `if (fase)` nascer**, cita este item e volta com o par de fotos de
+t=180.
 
 **AS FOTOS:** `capturas/item77-atlas-com-orbitas.png` e
 `item77-atlas-sem-orbitas.png` (o par que decide, na vista de 226,84 UA que
@@ -793,6 +803,17 @@ NASA Eyes. Ninguém reclamou disto: é a diferença que sobra entre a camada
 77 que pousou e a referência do ramo.) Estudo:
 `docs/reference/estudo-orbitas-eyes-observacao.md`.
 
+**⛔ ELE ESTRANHOU ALGO NA FITA, E A EXPLICAÇÃO ESTÁ PENDENTE DELE — C3,
+25/08.** Na Sala de Conferência, diante de
+`capturas/item83-fita-zoom-antes-depois.png`, a resposta dele foi:
+*"estranhei algo (explico no chat)"* — e as palavras ainda não chegaram.
+**Isto não é aprovação nem reprovação: é uma queixa sem descrição.** Enquanto
+ela não vier, **NENHUMA obra de linha anda neste item** — o Passo 0 continua
+sendo o veredito dele, agora meio-respondido. Quem pegar o 83 primeiro
+PERGUNTA o que ele estranhou; consertar por palpite é apostar em qual dos
+degraus (L2.5, G1, L3, L4, L5) ele estava olhando, e é exatamente o erro que
+o Passo 0 existe para impedir.
+
 **O placar, dito sem inflar:** o que a medida nos dá razão são **dois
 comportamentos estreitos da LINHA** (o corte quando a câmera está DENTRO do
 laço, e o fade angular) mais a **honestidade da efeméride**. Não é veredito
@@ -807,9 +828,11 @@ mandar chegar perto punha a **TERRA** em quadro. **Falta o OLHO DO DONO:**
 
 **O PLANO DO QUE FALTA, em ordem — e ele começa pelo OLHO, não por código:**
 
-- **Passo 0 — o veredito do dono sobre o L1/L2.** **Nada de segunda onda de
-  linha antes disso.** Uma segunda obra por cima de fotos ainda não
-  julgadas repete exatamente o erro que o pino existe para impedir.
+- **Passo 0 — o veredito do dono sobre o L1/L2. MEIO-RESPONDIDO em 25/08**
+  (*"estranhei algo (explico no chat)"* — ver o topo deste item). **Nada de
+  segunda onda de linha antes disso.** Uma segunda obra por cima de fotos
+  ainda não julgadas repete exatamente o erro que o pino existe para
+  impedir — e uma queixa pela metade é ainda menos base que nenhuma.
 - **L2.5 — O COLAR DE CONTAS, e ele é DEFEITO MEDIDO, não gosto.** A fita
   tem contas de luz nas juntas: **54 de 340 colunas** com pico ≥ 215, a
   espaçamento **rigorosamente constante de 14 px** — é o espaçamento
@@ -868,7 +891,8 @@ por fotometria**; e o **corte de câmera dentro do laço + o fade angular**.
 **A história completa está no ARQUIVO, item 83.**
 
 **87. O véu da abertura não cabe na tela do telefone com a fonte
-grande.** (Achado em 24/08, conferindo a queixa dos três botões — item
+grande — ELE DECIDIU EM 25/08: DEIXAR A PÁGINA ROLAR. Obra autorizada,
+pequena.** (Achado em 24/08, conferindo a queixa dos três botões — item
 **61**.) A 390×844 com `?ui=1.4` — o degrau de fonte MAIS ALTO no
 aparelho MAIS ESTREITO — o véu inteiro transborda na vertical: a tarja de
 cima (*"HYG · VIA LÁCTEA · TEMPO REAL"*) e a linha do rodapé
@@ -883,6 +907,14 @@ deixar o véu rolar —, e composição é dele. Quem tem fonte grande é
 justamente quem mais precisa ler o rodapé, então "cortar e ignorar" não
 serve de resposta. Foto: `capturas/abertura-botoes.png`, painel da
 direita.
+
+**A COMPOSIÇÃO ERA DELE E ELE ESCOLHEU, em 25/08 (Q6). Palavras dele:**
+*"deixar a página rolar"*. Das três saídas oferecidas, a escolhida é a que
+**não encolhe nada**: nem tarja, nem subtítulo, nem rodapé — quem tem fonte
+grande rola e lê tudo, no tamanho que pediu. Encolher tipografia no telefone
+está **descartado por decisão dele**, e não volta sem pedido novo. Quem
+executar volta com a foto de 390×844 com `?ui=1.4`, mostrando o véu rolando
+até o rodapé inteiro.
 
 **89. Desligar os nomes deixa o céu INCLICÁVEL — o ícone tem de sobreviver
 ao texto.** (Aberto em 24/08, medido ao fechar o item **83**. Não é queixa
@@ -912,7 +944,9 @@ primeira leva de cliques some sem erro nenhum.
 
 **92. Descer ao corpo de Éris não põe Éris na tela.** (Aberto em 25/08,
 achado com a régua na mão ao fotografar o item **91**. Não é queixa
-dele.) `?foco=Éris` ACHA o alvo — a ficha abre com o nome certo —, mas
+dele. **AUTORIZADO POR ELE em 25/08 — Q8, e é o SEGUNDO dos três:**
+*"vai fazendo na ordem, cada um volta com foto"*; a ordem é
+**88 → 92 → 95**.) `?foco=Éris` ACHA o alvo — a ficha abre com o nome certo —, mas
 `?foco=Éris&ver=corpo&d=6`, que é o degrau declarado dos anões
 ("órbita heliocêntrica → aproximar o globo"), devolve um quadro **sem
 globo nenhum**.
@@ -931,12 +965,44 @@ conferir quando o item subir: Éris está a **93,8 UA** (a mais distante
 que a escada tenta), e o degrau pode estar mirando a órbita e não o
 corpo, ou parando antes por algum teto de distância.
 
+**100. Mostrar e mexer na lente — o HUD de fotografia, como nos jogos.**
+(**IDEIA DELE**, 25/08, dita junto com a decisão de abrir a lente — item
+**86**. O **escopo ainda é decisão dele**: entra aqui em MÉDIA pela régua do
+"quanto incomoda", e pode subir ou descer quando ele disser o tamanho que
+quer.) Palavras dele, verbatim, a partir de onde a decisão do 86 termina:
+
+> *"mas acho que podemos criar uma dinamica tb de indicar a lente que
+> estamos usando e colocar tb um controle de zoom (que muda a lente
+> automaticamente ou vc escolhe a lente e o zoom muda de acordo se for
+> lentes de zoom variável tb muda as inidicacoes, isso é especialemnte
+> interessante para o modo filme quando tem vezes que nao sabemos se o
+> ponto de observacao está mudando ou o zoom está sneod ativado (como no
+> caso das 3 marias), podiamos colcoar um pequeno indicador de posicao e
+> zoom discreto e cool, como se fosse um hud de jogo que usa essa tecnica
+> para parte de fotografia que alguns jogos tem esse modo..."*
+
+**Em uma linha, o que isso é tecnicamente:** um indicador discreto de
+lente/zoom mais um controle de zoom que **muda a lente** — zoom ÓPTICO
+declarado (o fov anda de verdade), nunca recorte da imagem —, com os dois
+mostradores amarrados um ao outro; e o valor dele está no **filme**, onde
+hoje não dá para distinguir **"a câmera está andando"** de **"o zoom está
+fechando"** (o caso das Três Marias, que foi ele quem apontou).
+
+**O que fica dito e não se re-litiga:** o painel é **discreto**, no espírito
+do modo fotografia de jogo, e não vira mais um painel de ajustes — a lei do
+item 61 (uma porta só) continua valendo. E ele é **irmão**, não filho, do
+item **86**: lá se decide *qual* lente o app usa; aqui se **mostra e se
+mexe** nela. O 86 anda primeiro — mostrar uma lente que está prestes a mudar
+é trabalho jogado fora.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
 
 **95.** (Achado pela auditoria da direção da luz, 25/08 — a pergunta dele
-"estamos com problemas bizarros de iluminação em todo app?".) **Num
+"estamos com problemas bizarros de iluminação em todo app?". **AUTORIZADO
+POR ELE em 25/08 — Q8, e é o TERCEIRO dos três:** *"vai fazendo na ordem,
+cada um volta com foto"*; a ordem é **88 → 92 → 95**.) **Num
 eclipse, o chão escurece e o AR não.** Dos três shaders da Terra,
 `TERRA_FRAG` e `NUVENS_FRAG` chamam `fatorDeEclipse`; `ATMOSFERA_FRAG`
 nem monta o `GLSL_SOMBRA_ECLIPSE`. Então a casca de atmosfera continua
@@ -1087,13 +1153,10 @@ Origem: relatório externo de degradação, verificado por leitura
 independente antes de virar código. A conferência do dono é só o fps que
 ele sentir — o número de processos já está provado.
 
-**79.** (22/08.) **As duas telas de erro esperam o olho dele.** O véu que
-`bb65fff` pôs nas falhas DEPOIS do boot — a placa de vídeo desistindo
-(`webglcontextlost`) e a exceção em quadro — nunca foi visto por ele: as
-fotos são `capturas/erro-contexto-perdido.png` e `capturas/erro-no-tick.png`,
-e elas ficam no disco até ele olhar. **Não apagar na próxima limpeza de
-`capturas/`** — a regra 5 vale para captura que terminou de servir, e
-estas não terminaram.
+**79.** As duas telas de erro esperavam o olho dele — **FECHADO em 25/08**,
+conferido na Sala de Conferência (**C7**); história no ARQUIVO. *(As fotos
+`capturas/erro-contexto-perdido.png` e `capturas/erro-no-tick.png`
+TERMINARAM de servir: a nota de "não apagar" morreu com o item.)*
 
 **80.** (Ruído de instrumento, achado em 22/08 fechando o item 74.) **Uma
 das 52 vistas oficiais não repetiu a si mesma.** O `ab-identidade` captura
@@ -1153,9 +1216,10 @@ itens 64 e 78, e porque juiz que reprova inocente já custou uma
 investigação inteira (item 76). Se reaparecer, o passo é datar por
 repetição antes de mexer em qualquer coisa.
 
-**86.** (Aberto em 24/08, respondendo a uma impressão dele.) **O céu de
-fundo PARECE mais apagado no Atlas — e parece com razão, mas a causa é a
-LENTE, não uma regra por modo.** Ele relatou a impressão; a resposta vem
+**86.** (Aberto em 24/08, respondendo a uma impressão dele. **DECIDIDO POR
+ELE em 25/08 — vira OBRA: abrir a lente do filme para o app inteiro.**)
+**O céu de fundo PARECE mais apagado no Atlas — e parece com razão, mas a
+causa é a LENTE, não uma regra por modo.** Ele relatou a impressão; a resposta vem
 com número, porque impressão dele merece medida, não silêncio.
 **O QUE NÃO EXISTE:** varredura completa de `src/` não achou NENHUMA
 dependência de fase/modo no brilho, exposição, bloom ou ganho do campo
@@ -1194,8 +1258,39 @@ mexer no brilho POR MODO é exatamente o que ele proibiu. O caminho
 honesto, se ele quiser o céu mais cheio no Atlas, é um **eixo global de
 lente** — para todo mundo, nunca por modo. **Decisão dele.**
 
+**ELE DECIDIU EM 25/08, pela Sala de Conferência (Q4). Palavras dele:**
+*"abrir a lente (lente do modo filme) para o app inteiro — voltem com foto
+A/B"*. Ou seja: o **58°** do filme passa a valer também no Atlas, os
+`ATLAS_FOV_GRAUS` de 35° saem do caminho, e o eixo é **global**, como a
+medida acima já apontava ser o único caminho lícito.
+
+**A OBRA, e ela tem uma condição que é dele:** fazer o A/B da lente e
+**voltar com FOTO antes de cravar** — Atlas a 35° × Atlas a 58°, na mesma
+distância, mesma data, árvore limpa dos dois lados. Três coisas para quem
+executar: (i) o `uZoom` das heroes (`heroStars.ts`) responde à lente por
+LEI — a 58° o clarão delas cresce de 0,569 para ~0,95, e isso É parte do
+efeito, não bug a compensar; (ii) mudar o fov re-baseliza as vistas de Atlas
+do gate, e isso se declara; (iii) o teto do zoom e o enquadramento padrão
+mudam de tamanho aparente junto — o par de fotos tem de mostrar isso, não
+só o céu.
+
+**⚠ ESTA FOTO NÃO SAI SOZINHA.** Ela conversa direto com o **re-julgamento
+da vista de abertura** (item **61**): a vista larga era ilegível em parte
+por causa da lente, e ele vai julgar as duas coisas no mesmo olhar. **As
+duas folhas de foto — a da lente e a da vista de abertura — saem da MESMA
+sessão de captura**, senão ele compara maçã com laranja e a conferência não
+vale.
+
+**A ideia que veio junto com esta decisão virou o item 100** — o indicador e
+o controle de lente/zoom. São coisas separadas: aqui é *qual* lente o app
+usa; lá é *mostrar e mexer* nela.
+
 **88.** (Achado em 24/08, consertando o teleporte do religador do
-relógio.) **Ao enquadrar QUALQUER lua, o que fica no alto da tela é o
+relógio. **AUTORIZADO POR ELE em 25/08 — Q8, e é o PRIMEIRO dos três:**
+*"vai fazendo na ordem, cada um volta com foto"*. A ordem dele é
+**88 → 92 → 95**, e "cada um volta com foto" é condição, não sugestão: o
+próximo só começa depois que o anterior voltou com a imagem.)
+**Ao enquadrar QUALQUER lua, o que fica no alto da tela é o
 eixo da nossa Lua.** É o último dos três literais da Onda 7 que sobraram
 de quando a Terra e a Lua eram os únicos corpos com malha: os outros dois
 — o corpo e a lua que o relógio ia buscar — caíram no mesmo dia, porque
