@@ -528,6 +528,20 @@ literalmente do lado do Sol — que é o que ele viu.
 depois: a data dele vista de cima, a mesma na vista `saturno-anel`, e
 2017 com o anel aberto).
 
+**O A/B, com o delta DECLARADO.** Em worktrees isoladas, pinadas em
+`e6f444b` (antes) e `f9a7c54` (depois), com `EXTRA='&nobloom=1'` dos dois
+lados para não pisar na baseline oficial:
+
+| vista | veredito | por quê |
+| --- | --- | --- |
+| `saturno-anel` / `saturno-anelnb` | **DIFERE**, de propósito | `b537355e2f62` → `05bc07d3b6e2`. A sombra mudou de lado; era o objetivo. |
+| `jupiter` / `jupiternb` | **BIT-IDÊNTICO** | `76ccb03e39e3` dos dois lados — o controle: Júpiter não tem anel, e nada mais foi tocado. |
+
+Quanto o pixel andou, medido nas MESMAS três poses da foto: 8,4% dos
+pixels na vista do gate (Δ médio 1,7 de 255), 46,9% em 2017 com o anel
+aberto (Δ médio 12,2) e 16,1% na pose de cima. O 2017 é o maior porque é
+onde a sombra é maior — que é exatamente onde ela estava mais errada.
+
 ### A AUDITORIA DO BÁSICO — "problemas bizarros de iluminação em todo app?"
 
 Foi a pergunta dele ao ver a sombra invertida. A resposta MEDIDA é: **não.
