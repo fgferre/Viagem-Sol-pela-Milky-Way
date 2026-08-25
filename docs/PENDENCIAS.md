@@ -33,7 +33,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 99.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 100.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -403,6 +403,32 @@ menor SOME), e a camada **`nonomes`** entrou na gaveta. A abertura foi de
 **A história completa está no ARQUIVO, item 82.**
 
 ---
+
+**99. A dieta dos juízes — o custo cresce sem teto e a deriva virou medo dele.**
+(Aberto em 25/08, palavras do dono: *"os testes estão demorando muito e crescendo
+cada vez mais... começam a derivar e se tornam um problema... estou com medo
+deles... isso não deveria ser avaliado ao invés de criar mais testes?"*.)
+O medo tem número: só na rodada 23–25/08 os testes de unidade foram de 2.023 a
+2.293 (+13%), o MB1 dobrou de preço (1,8 → ~3,9 min, pela janela calibrada — que
+era necessária), as vistas do A/B foram de 52 a 54, e cada etapa roda a suíte
+inteira 3 a 6 vezes (editor valida, auditor refaz em worktree, conserto
+revalida) — o custo cresce em duas direções ao mesmo tempo. E a deriva é
+documentada: pinos de texto-fonte quebraram quando o código MELHOROU, contagens
+decoradas mentiram em seis lugares, "17 camadas" mudou de pino a cada obra.
+**A obra, em quatro peças:** (1) **censo com preço e dono** (herdeiro do item 57):
+cada teste e juiz responde "a quem sirvo" — decisão do dono, lei física, ou chão
+de regressão; quem não responde MORRE em vez de ser re-pinado; redundantes se
+fundem; (2) **portões em camadas**: por commit só o rápido (typecheck + lint +
+testes dos arquivos tocados); suíte cheia UMA vez por etapa, no fechamento; A/B
+cheio só quando pixel muda de propósito; auditor sabota ALVOS, não re-roda o
+mundo; (3) **teto de custo com porteiro**: a rodada padrão tem orçamento em
+minutos (o item 57 fixou ~15); quem estoura só entra aposentando ou fundindo
+alguém; (4) **anti-deriva**: contagem derivada em vez de decorada, pino declara
+a quem serve, e o censo sabota POR AMOSTRA os testes velhos (hoje só os novos
+provam que mordem — os velhos nunca). **Fila: entra ANTES do item 75** — o motor
+de filmes é rodada longa, e emagrecer os portões antes dela paga a obra em uma
+semana. A prova de saída: o preço da rodada padrão medido antes/depois, e o
+censo publicado com cada morte justificada (nenhum juiz morre em silêncio).
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
