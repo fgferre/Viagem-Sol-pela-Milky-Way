@@ -70,12 +70,13 @@ decididos; e a fita do **83** ficou com uma queixa pela metade, à espera das
 palavras dele. **A fila decidida, que se ACRESCENTA à de cima e não a
 substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
 esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
-esperam o olho dele) → **92 → 95** (a ordem é
+esperam o olho dele) → ~~**92**~~ (25/08 — pousou, e não era de Éris: era
+da classe dos oito; as duas pranchas esperam o olho dele) → **95** (a ordem é
 DELE, e cada um volta com foto) → **gate do filme (77)** → **rolagem do véu
 (87)** → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
 de abertura (**61**) → **70**, a causa 2 → **99** → **75**.
 
-**O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** São **DOIS
+**O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** São **TRÊS
 itens**. O **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, a
 divergência da lanterna e agora o **véu palha**, que pousou no fim do
 dia com três pranchas próprias), e nele moram também as perguntas
@@ -84,6 +85,9 @@ herdaram o **(a)** e o **(b)** do item **91** porque a receita do 93 mexeu
 nos dois depois das fotos de lá. E o **88** (o alto da tela de quem
 enquadra uma lua), que pousou no fim do dia com duas pranchas —
 `item88-polo-da-lua-antes-depois.png` e `item88-titan-plano-do-anel.png`.
+E o **92** (descer ao corpo de um anão não punha o corpo na tela — e era
+a classe dos oito, não Éris), com `item92-eris-antes-depois.png` e
+`item92-vesta-antes-depois.png`.
 **E há uma pendência que não é de olho, é
 de PALAVRAS DELE:** a fita do item **83** — ele *"estranhou algo (explico no
 chat)"* (C3), e até a explicação chegar nenhuma obra de linha anda ali. Nada
@@ -1035,6 +1039,74 @@ conferir quando o item subir: Éris está a **93,8 UA** (a mais distante
 que a escada tenta), e o degrau pode estar mirando a órbita e não o
 corpo, ou parando antes por algum teto de distância.
 
+**A OBRA POUSOU EM 25/08 — falta SÓ o olho dele. E NÃO ERA DE ÉRIS: era
+da CLASSE INTEIRA.** Os oito heliocêntricos sem ponto (Ceres, Haumea,
+Makemake, Éris, Quaoar, Vesta, Palas e Hígia) faziam a mesma coisa.
+
+**A CAUSA, medida antes de tocar em nada, e ela era de ORDEM.** Em
+`focarNoCorpo` (`director/escada.ts`) o desvio da classe —
+`focarNoAnao` — saía **duas linhas antes** de qualquer caminho de
+descida ser consultado, e `focarNoAnao` nem recebia o argumento `ver`.
+Resultado: os dois caminhos até o globo estavam mortos para os oito, o
+do link (`?ver=corpo`) e o do gesto (clicar no anão já focado). Medido
+nos oito por URL: `?foco=X&ver=corpo&d=6` devolvia `degrau: 'orbita'` e
+um globo de **0,00003 a 0,0005 px** de diâmetro. Em Éris a câmera parava
+a **77.040.000 raios dela mesma** — o `?d=6` medindo seis raios da
+ÓRBITA (520 UA) em vez de seis do CORPO. **Marte, o controle no mesmo
+endereço, sempre parou a 6,4.** Nenhum teto de distância: o degrau
+existia e funcionava — o botão "⊕ Aproximar" punha os mesmos oito em
+quadro com 61 a 399 px. **Depois do conserto**, pela mesma URL: degrau
+`corpo`, globo de **399 px** e a câmera a **6,404 raios** do corpo, que é
+o enquadramento do degrau (o `?d=6` do link fica ABAIXO do piso do zoom e
+é grampeado nele — a mesma constante 6,4042 que o degrau do Sol usa).
+E a vizinhança fecha o círculo, medida no navegador: `⊕ Aproximar` desce,
+`Esc` volta à órbita nos MESMOS números, e clicar de novo no anão já
+focado desce outra vez.
+
+**O CONSERTO SÃO TRÊS PEÇAS, e cada uma tem dente próprio.**
+(1) O gesto da descida sobe para cima do desvio, e `focarNoAnao` passa a
+receber o `ver` — a cláusula é a mesma dos planetas, palavra por palavra.
+(2) O NOME: `aproximarDoCorpo` resolvia nome varrendo só os DEZ corpos da
+camada, então o gesto que põe Éris em quadro **apagava o "Ⓘ ÉRIS" da
+linha de contexto** (medido: `⧉ CAMADAS Ⓘ ÉRIS ▶ VER O FILME` na órbita
+virava `⧉ CAMADAS ▶ VER O FILME` no corpo; em Marte o nome sobrevive).
+Sem ela o conserto entregaria o globo com a legenda em branco. A
+varredura por LISTA virou uma leitura da tabela única
+(`nomeDoCorpo`, `atlasConfig.ts`), que é a fonte de que as três listas se
+montam — a armadilha era ter de lembrar das três.
+(3) `verDoBoot`, o gêmeo do `pinoDeBoot`: os oito estão FORA do
+`RETRATO_2026`, então no boot, quando `?foco=` roda, não há posição
+nenhuma para eles. A escada pede a fonte e volta com a órbita; quando a
+fonte chega, `reenquadrarAposEfemeride` reaplicava o degrau VIVO e o
+`corpo` do endereço morria ali. Sem esta peça o conserto passava na
+bancada e **falhava pela URL de verdade** — foi o navegador que a exigiu.
+
+**A PROVA.** Cinco dentes de comportamento novos em
+`director/escada.test.ts`, e eles julgam o que o visitante VÊ: a posição
+e a direção da câmera contra a posição do corpo (`noQuadro`), não texto.
+As duas metades são necessárias — no degrau errado o corpo também cai no
+meio da tela, e só o TAMANHO denuncia que ali não há globo. **Sabotagem
+em worktree:** reverter a peça (1) reprova **4**; só o `ver` engolido,
+**3**; a peça (2) do nome, **2**; a peça (3) do boot, **1**; as três
+juntas, **4**.
+
+**O A/B de árvore limpa (60 vistas):** as três vistas novas
+(`anao-eris-corpo`, `anao-vesta-corpo`, `anao-eris-orbita`) nasceram com
+a obra, porque nenhuma das 57 de antes descia ao degrau `corpo` de um
+anão ou asteroide. As duas do degrau consertado **MUDARAM** — 22,76% do
+quadro em Éris, 95,17% em Vesta — e a terceira, a **anti-deriva**, saiu
+**bit-idêntica**: `?foco=eris` sem `?ver=` continua na órbita, que é o
+contrato de sempre. O placar fecha em **55 IGUAL, 2 DIFERE, 3 INSTÁVEL**
+— a anti-deriva é uma das 55, e as três `INSTÁVEL` (`saturno-anel`,
+`saturno-anelnb`, `foco-titan`) são o tremor do anel do item **101**, que
+o par nulo inocenta como ele manda.
+
+**AS FOTOS:** `capturas/item92-eris-antes-depois.png` e
+`capturas/item92-vesta-antes-depois.png` (o quadro sem globo × o corpo na
+tela, a MESMA URL nos dois lados). Vesta está lá porque é a outra família
+e a outra ordem de distância (2,4 UA contra 93,5): é ela que prova que o
+conserto é da classe, não um caso especial de Éris.
+
 **100. Mostrar e mexer na lente — o HUD de fotografia, como nos jogos.**
 (**IDEIA DELE**, 25/08, dita junto com a decisão de abrir a lente — item
 **86**. O **escopo ainda é decisão dele**: entra aqui em MÉDIA pela régua do
@@ -1524,7 +1596,9 @@ conferido contra o código em 25/08:
 irmão dos itens 49, 80 e 85.) **O anel de Saturno treme entre capturas do
 MESMO código.** A vista `saturno-anel`, na leva desde a F6, contra ela
 mesma dá **828 px** (0,027%, delta máx 47) — a auditoria reproduziu ao
-pixel; a `foco-titan` nova dá **605 px numa medição e 262 px noutra**
+pixel; a irmã dela `saturno-anelnb` (a mesma vista sem bloom) entrou na
+lista em 25/08, pela leva do item **92**, com os dois lados instáveis
+contra si mesmos; a `foco-titan` nova dá **605 px numa medição e 262 px noutra**
 (estocástico: o número muda por leva, e por isso nenhum vale como pino) —
 sempre na caixa sobre a linha do anel e a sombra dela no globo. A câmera
 está fora de suspeita (pose bit a bit igual nas duas navegações); o

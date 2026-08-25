@@ -370,6 +370,22 @@ export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
 ];
 
 /**
+ * O NOME pt-BR DE UM CORPO PELO `id`, ou `null` para quem não é corpo
+ * desta casa — a leitura única da tabela acima.
+ *
+ * ELA NASCEU DO ITEM 92 (25/08): o Director resolvia nome varrendo as
+ * LISTAS (`CORPOS_DO_SISTEMA` → `LUAS_DO_SISTEMA` → `HELIO_SEM_PONTO`),
+ * e uma varredura por lista é uma armadilha que se arma sozinha —
+ * quem escrevesse um ramo novo tinha de lembrar das três. Um esqueceu,
+ * e descer ao globo de Éris publicava `null`. A tabela já é a fonte
+ * única de todas as listas (cada uma se monta com `...NOMES_DOS_CORPOS[id]`),
+ * então perguntar a ELA é a mesma resposta por um caminho que não
+ * depende de o corpo estar na lista certa.
+ */
+export const nomeDoCorpo = (id: string): string | null =>
+  NOMES_DOS_CORPOS[id]?.nome ?? null;
+
+/**
  * ANÕES SEM PONTO FOTOMÉTRICO (F6) — fora de CORPOS_DO_SISTEMA (aquela
  * lista é o vértice da camada) e fora de LUAS (não orbitam um planeta
  * com mesh de pai). A busca os acha; o degrau é o de planeta

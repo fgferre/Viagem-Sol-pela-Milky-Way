@@ -54,7 +54,12 @@ import {
   orbitaMaisExterna,
   raioDeEnquadramentoEstelar,
 } from '../cinematic/atlasRig';
-import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA, HELIO_SEM_PONTO } from '../atlasConfig';
+import {
+  CORPOS_DO_SISTEMA,
+  LUAS_DO_SISTEMA,
+  HELIO_SEM_PONTO,
+  nomeDoCorpo,
+} from '../atlasConfig';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
@@ -151,6 +156,26 @@ export class Escada {
    * partir dali quem manda é a mão, não o endereço.
    */
   private pinoDeBoot: number | null = null;
+  /**
+   * O `?ver=corpo` QUE CHEGOU PELO LINK PARA UM DOS OITO HELIOCÊNTRICOS
+   * SEM PONTO — o gêmeo exato do `pinoDeBoot`, e pelo mesmo motivo
+   * (item 92, 25/08).
+   *
+   * A classe inteira está FORA do `RETRATO_2026`: sem efeméride viva
+   * não há posição nenhuma para eles, então `?foco=Éris&ver=corpo`
+   * chega ao boot, pede a fonte e volta com o degrau de órbita — o
+   * degrau que se pode ter naquele instante. Quando a fonte chega,
+   * `reenquadrarAposEfemeride` reaplica o degrau VIVO, que é `orbita`,
+   * e o `corpo` do endereço morria ali sem ninguém ver. MEDIDO no
+   * navegador: pela URL, Éris parava a 77.040.000 raios dela mesma
+   * (`?foco=marte&ver=corpo&d=6`, o controle, para a 6,4).
+   *
+   * Ele CARREGA O ID a que se refere, e é isso que o dispensa de ser
+   * limpo em meia dúzia de gestos: se o visitante escolheu outro corpo
+   * enquanto a fonte vinha, o id não casa e o link não manda em ninguém.
+   * Ele é lido e esvaziado uma vez só, na chegada da efeméride.
+   */
+  private verDoBoot: { id: string; ver: VerDaEscada } | null = null;
 
   /** o GESTO — hit-test, memória do clique, escolher e mergulhar
    *  (`escolha.ts`); nasce no construtor e só a escada o segura */
@@ -330,12 +355,7 @@ export class Escada {
     this.focoEstrela = false;
     this.ver = r.ver;
     this.pinoDeBoot = null;
-    const nome =
-      CORPOS_DO_SISTEMA.find((c) => c.id === id)?.nome ??
-      LUAS_DO_SISTEMA.find((l) => l.id === id)?.nome ??
-      HELIO_SEM_PONTO.find((a) => a.id === id)?.nome ??
-      null;
-    this.events.onFoco(nome);
+    this.events.onFoco(nomeDoCorpo(id));
     this.emitirEscada();
     this.teletransportou();
   }
@@ -718,12 +738,20 @@ export class Escada {
       this.focarNaLua(id);
       return;
     }
-    if (HELIO_SEM_PONTO.some((a) => a.id === id)) {
-      this.focarNoAnao(id);
-      return;
-    }
     // O GESTO DA DESCIDA (D7): clicar no MESMO corpo já focado em
     // órbita desce um degrau — é o gesto irmão do botão "aproximar".
+    //
+    // ELE SUBIU PARA CIMA DO DESVIO DOS ANÕES (item 92, 25/08), e a
+    // ordem ERA o defeito: os oito heliocêntricos sem ponto saíam por
+    // `focarNoAnao` duas linhas antes de qualquer um dos dois caminhos
+    // de descida ser consultado, então a classe inteira ficava PRESA no
+    // degrau de órbita — o `?ver=corpo` do link era engolido em silêncio
+    // e o duplo clique no anão já focado só refazia a órbita. Medido
+    // nos oito: `?foco=X&ver=corpo&d=6` devolvia `degrau: 'orbita'` e um
+    // globo de 0,00003 a 0,0005 px de diâmetro (Éris a 93,5 UA com a
+    // câmera a 520 UA — seis raios da ÓRBITA, não do corpo). Marte, o
+    // controle, já descia. O degrau existia e funcionava: o botão
+    // "⊕ Aproximar" punha os mesmos oito em quadro com 61 a 399 px.
     if (
       ver === 'orbita' &&
       id === this.focoCorpoId &&
@@ -731,6 +759,10 @@ export class Escada {
       this.escada.podeAproximar
     ) {
       this.aproximarDoCorpo();
+      return;
+    }
+    if (HELIO_SEM_PONTO.some((a) => a.id === id)) {
+      this.focarNoAnao(id, ver);
       return;
     }
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
@@ -853,7 +885,15 @@ export class Escada {
     this.focoCorpoId = id;
     this.focoEstrela = false;
     this.ver = 'corpo';
-    this.events.onFoco(CORPOS_DO_SISTEMA.find((c) => c.id === id)?.nome ?? null);
+    // O NOME SAI DA TABELA ÚNICA (item 92): esta linha lia só os DEZ
+    // corpos da camada, então descer ao globo de um anão ou de um
+    // asteroide publicava `null` — a linha de contexto perdia o "Ⓘ
+    // ÉRIS" no exato gesto em que Éris entra em quadro (medido:
+    // "⧉ CAMADAS Ⓘ ÉRIS ▶ VER O FILME" na órbita virava "⧉ CAMADAS ▶
+    // VER O FILME" no corpo; em Marte o nome sobrevive). Sem esta
+    // troca o conserto do `?ver=corpo` acima ENTREGARIA o globo com a
+    // legenda apagada.
+    this.events.onFoco(nomeDoCorpo(id));
     this.emitirEscada();
     this.teletransportou();
   }
@@ -904,7 +944,7 @@ export class Escada {
     this.focoCorpoId = 'sun';
     this.focoEstrela = false;
     this.ver = 'corpo';
-    this.events.onFoco(CORPOS_DO_SISTEMA.find((c) => c.id === 'sun')?.nome ?? null);
+    this.events.onFoco(nomeDoCorpo('sun'));
     this.emitirEscada();
     this.teletransportou();
   }
@@ -1221,10 +1261,17 @@ export class Escada {
     }
     else if (this.focoCorpoId) {
       // órbita: reaplica SEM passar pelo gesto de descida (focarNoCorpo
-      // no MESMO corpo desceria a escada — aqui é correção, não gesto)
+      // no MESMO corpo desceria a escada — aqui é correção, não gesto).
+      //
+      // O `ver=corpo` DO LINK é a única exceção, e ela não é gesto: é o
+      // degrau que o endereço PEDIU e que só agora tem posição para
+      // existir (item 92 — ver `verDoBoot`). O campo se esvazia aqui,
+      // valha ou não valha: ele é do boot, não do estado.
       const id = this.focoCorpoId;
+      const doLink = this.verDoBoot;
+      this.verDoBoot = null;
       this.focoCorpoId = null;
-      this.focarNoCorpo(id, 'orbita');
+      this.focarNoCorpo(id, doLink?.id === id ? doLink.ver : 'orbita');
     }
     // o `?d=` do link sobrevive ao reenquadramento — ver `pinoDeBoot`
     if (this.pinoDeBoot !== null) this.pinarEmRaios(this.pinoDeBoot);
@@ -1302,8 +1349,20 @@ export class Escada {
     return [...dez, ...luas, ...anoes];
   }
 
-  /** anão ou asteroide heliocêntrico: órbita em torno do Sol, depois o globo. */
-  private focarNoAnao(id: string) {
+  /**
+   * anão ou asteroide heliocêntrico: órbita em torno do Sol, depois o
+   * globo — os DOIS degraus, como em qualquer planeta (é o contrato
+   * escrito em `ANOES_DO_SISTEMA`: *"órbita em torno do Sol → aproximar
+   * o globo"*).
+   *
+   * O `ver` CHEGA ATÉ AQUI desde o item 92: ele era o argumento que
+   * `focarNoCorpo` deixava cair no desvio desta classe, e sem ele o
+   * degrau de baixo não tinha porta de URL nenhuma. A cláusula é a
+   * MESMA do ramo dos planetas, palavra por palavra — inclusive a
+   * saída honesta quando a malha ainda não existe: o degrau pedido não
+   * existe ainda, e a órbita é o degrau que existe.
+   */
+  private focarNoAnao(id: string, ver: VerDaEscada = 'orbita') {
     const entrada = HELIO_SEM_PONTO.find((a) => a.id === id);
     if (!entrada) return;
     this.focoCorpoId = id;
@@ -1311,8 +1370,20 @@ export class Escada {
     this.ver = 'orbita';
     this.events.onFoco(entrada.nome);
     this.emitirEscada();
+    // A EFEMÉRIDE VEM ANTES DOS DOIS DEGRAUS, e nesta classe isso não é
+    // detalhe: os oito estão FORA do `RETRATO_2026`, então sem a fonte
+    // nem a órbita nem o globo têm posição — `aproximarDoCorpo` sairia
+    // sem enquadrar nada e a câmera ficaria onde estava, sem ninguém
+    // pedir a fonte. Pedir e voltar é o contrato de sempre; quem
+    // reaplica é `reenquadrarAposEfemeride`, e o `ver` do link
+    // atravessa a espera em `verDoBoot`.
     if (!this.maquinaDoTempo.efemeride) {
+      this.verDoBoot = { id, ver };
       this.maquinaDoTempo.garantirEfemerides();
+      return;
+    }
+    if (ver === 'corpo' && this.escada.podeAproximar) {
+      this.aproximarDoCorpo();
       return;
     }
     const jd = this.maquinaDoTempo.jdVivo;
@@ -1397,9 +1468,7 @@ export class Escada {
     this.focoEstrela = false;
     this.noCeu = p.degrau === 'ceu';
     this.ver = p.corpoId ? 'corpo' : 'orbita';
-    this.events.onFoco(
-      p.corpoId ? CORPOS_DO_SISTEMA.find((c) => c.id === p.corpoId)?.nome ?? null : null
-    );
+    this.events.onFoco(p.corpoId ? nomeDoCorpo(p.corpoId) : null);
     this.emitirEscada();
     this.teletransportou();
   }

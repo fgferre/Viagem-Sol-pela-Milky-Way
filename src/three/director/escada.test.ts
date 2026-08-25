@@ -29,7 +29,9 @@ import type { Planetas } from '../world/planetas/planetas';
 import type { GiganteResolvido } from '../world/corpos/gigante';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
-import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA, HELIO_SEM_PONTO } from '../atlasConfig';
+import { posicaoKepler } from '../../lib/atlas/kepler';
+import type { RochosoResolvido } from '../world/corpos/rochoso';
 import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
 import { raiosDoRochosoPc } from '../world/corpos/rochoso';
@@ -74,6 +76,13 @@ const graus = (a: THREE.Vector3, b: THREE.Vector3) => (a.angleTo(b) * 180) / Mat
 function efemerideDeMentira() {
   return {
     posicaoHeliocentrica(id: string): { x: number; y: number; z: number } {
+      // OS OITO HELIOCÊNTRICOS SEM PONTO saem do propagador do projeto
+      // (`posicaoKepler`, `elementosOrbitais.ts`) e não de número
+      // digitado aqui: eles estão FORA do `RETRATO_2026`, então é o
+      // Kepler da casa que responde por eles quando não há provedor.
+      if (HELIO_SEM_PONTO.some((a) => a.id === id)) {
+        return posicaoKepler(id, EPOCA_JD_TDB);
+      }
       const desloca = DESLOCAMENTO_DA_LUA[id];
       if (desloca === undefined) {
         const p =
@@ -90,25 +99,69 @@ function efemerideDeMentira() {
   };
 }
 
+/**
+ * O CORPO ESTÁ NO QUADRO? — a pergunta do item 92, em valores
+ * EXECUTADOS: a POSIÇÃO e a DIREÇÃO da câmera viva contra a posição do
+ * corpo, e o tamanho que o globo ocupa da altura da tela.
+ *
+ * As DUAS metades são necessárias, e é o defeito que ensina: no degrau
+ * de órbita a câmera olha o corpo em cheio (o alvo É o corpo), então o
+ * centro cai no meio da tela e só o TAMANHO denuncia que ali não há
+ * globo nenhum — Éris a 93,5 UA vista de 520 UA rende 3·10⁻⁸ da altura
+ * do quadro. "Está no eixo" não é "está em quadro".
+ *
+ * EM ÂNGULO, e não em `project`: o `near`/`far` da câmera é escrito
+ * pelo ENGINE a cada quadro (medido no navegador: near = 9,8·10⁻⁶ pc),
+ * e a bancada não tem engine. Com o `near` de fábrica (0,1 pc) todo
+ * corpo do sistema cai atrás do plano de corte e o NDC responde
+ * "fora" para as duas vistas — a régua mediria a bancada, não o app.
+ * O ângulo entre o olhar e o corpo não depende dos planos de corte.
+ */
+function noQuadro(camera: THREE.PerspectiveCamera, centro: THREE.Vector3, raio: number) {
+  camera.updateMatrixWorld();
+  const olhar = camera.getWorldDirection(new THREE.Vector3());
+  const paraOCorpo = centro.clone().sub(camera.position);
+  const distancia = paraOCorpo.length();
+  const meiaVertical = (camera.fov * Math.PI) / 360;
+  const meiaHorizontal = Math.atan(Math.tan(meiaVertical) * camera.aspect);
+  return {
+    // o centro do corpo dentro da abertura MAIS APERTADA da lente
+    noEixo: olhar.angleTo(paraOCorpo) <= Math.min(meiaVertical, meiaHorizontal),
+    // o diâmetro angular do globo sobre a abertura vertical
+    alturas: Math.atan2(raio, distancia) / meiaVertical,
+    raios: distancia / raio,
+  };
+}
+
 /** a escada com o rig REAL e o mundo de mentira em volta */
-function bancada({ comEfemeride = false } = {}) {
+function bancada({ comEfemeride = false, comAnoes = false } = {}) {
   const atlas = new AtlasRig();
   const camera = new THREE.PerspectiveCamera(35, 4 / 3, 0.1, 1e6);
+  // sem efeméride: as posições saem do retrato, e o instante é o da
+  // época. Com ela (o caso das LUAS e dos oito heliocêntricos sem
+  // ponto, que não estão no retrato) vale a de mentira acima. É um
+  // objeto VIVO porque a fonte chega TARDE no app de verdade, e o item
+  // 92 julga justamente o que acontece quando ela chega.
+  const maquinaDoTempo = {
+    jdVivo: EPOCA_JD_TDB,
+    efemeride: comEfemeride ? efemerideDeMentira() : null,
+    garantirEfemerides() {},
+  };
+  /** tudo que o HUD ouviu, na ordem — o `onFoco` é o nome em quadro */
+  const focos: (string | null)[] = [];
   const escada = new Escada({
     atlas,
-    // sem efeméride: as posições saem do retrato, e o instante é o da
-    // época. Com ela (o caso das LUAS, que não estão no retrato) vale a
-    // de mentira acima.
-    maquinaDoTempo: {
-      jdVivo: EPOCA_JD_TDB,
-      efemeride: comEfemeride ? efemerideDeMentira() : null,
-      garantirEfemerides() {},
-    } as unknown as MaquinaDoTempo,
+    maquinaDoTempo: maquinaDoTempo as unknown as MaquinaDoTempo,
     rotulos: {} as Rotulos,
     solRaioPc: 2.2546e-8,
     teletransportou: () => {},
     pediuACasa: () => {},
-    events: { onFoco: () => {}, onEscada: () => {} },
+    events: {
+      onFoco: (nome: string | null) => {
+        focos.push(nome);
+      },
+      onEscada: () => {},
+    },
     fios: {
       engine: () => ({ camera }) as unknown as Engine,
       roam: () => ({}) as unknown as FreeRoam,
@@ -120,7 +173,17 @@ function bancada({ comEfemeride = false } = {}) {
       planetas: () =>
         ({ posicoes: new Float32Array(CORPOS_DO_SISTEMA.length * 3) }) as unknown as Planetas,
       meta: () => undefined,
-      rochosos: () => [],
+      // a lista viva dos rochosos CONSTRUÍDOS. Os anões e asteroides
+      // entram aqui com `planeta: false`, que é o que os distingue na
+      // lista real — é essa marca que abre (ou não) o degrau do globo
+      // deles em `podeAproximar`.
+      rochosos: () =>
+        comAnoes
+          ? [
+              { corpo: { id: 'eris', planeta: false } as unknown as RochosoResolvido },
+              { corpo: { id: 'vesta', planeta: false } as unknown as RochosoResolvido },
+            ]
+          : [],
       // a lista viva dos gigantes CONSTRUÍDOS — é ela que abre o degrau
       gigantes: () => [
         { corpo: { id: 'jupiter', planeta: true } as unknown as GiganteResolvido },
@@ -129,7 +192,7 @@ function bancada({ comEfemeride = false } = {}) {
   });
   /** o que o tick faz depois de recompor: escreve a câmera */
   const aplicar = () => atlas.apply(camera, 1, 1200);
-  return { escada, atlas, camera, aplicar };
+  return { escada, atlas, camera, aplicar, focos, maquinaDoTempo };
 }
 
 const JUPITER = paraPc(posicaoDoGiganteUA('jupiter', EPOCA_JD_TDB, null)!);
@@ -264,5 +327,115 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
     aplicar();
     expect(atlas.alvo.distanceTo(TERRA)).toBeGreaterThan(3 * AU_PARA_PC);
     expect(camera.position.toArray()).toEqual(poseDoGesto);
+  });
+});
+
+// ============================================================
+// OS OITO HELIOCÊNTRICOS SEM PONTO TÊM OS DOIS DEGRAUS (item 92).
+//
+// O CASO MEDIDO, em navegador, no binário anterior a este dente:
+// `?foco=Éris&ver=corpo&d=6` — o degrau que `ANOES_DO_SISTEMA` declara
+// ("órbita em torno do Sol → aproximar o globo") — parava no degrau de
+// ÓRBITA e devolvia um quadro sem globo nenhum. A câmera terminava a
+// 77.040.000 raios de Éris (contra 6,4 de Marte, o controle, no mesmo
+// endereço), e o globo media 0,00003 px de diâmetro. Não era de Éris:
+// os OITO faziam o mesmo, com 0,00003 a 0,0005 px.
+//
+// O QUE SE JULGA AQUI é o que o visitante vê: o corpo está NO QUADRO?
+// (`noQuadro` — projeção do centro pela câmera viva e o tamanho que o
+// globo ocupa da altura da tela). Não texto, não o nome do degrau
+// sozinho: no degrau errado o degrau também dizia `orbita` com o corpo
+// no meio da tela, e só o TAMANHO separava as duas vistas.
+// ============================================================
+const ERIS = paraPc(posicaoKepler('eris', EPOCA_JD_TDB));
+const RAIO_ERIS = raiosDoRochosoPc('eris').a;
+const VESTA = paraPc(posicaoKepler('vesta', EPOCA_JD_TDB));
+const RAIO_VESTA = raiosDoRochosoPc('vesta').a;
+
+describe('anões e asteroides: o degrau do globo (item 92)', () => {
+  it('`?foco=Éris&ver=corpo` põe ÉRIS em quadro — não a órbita de 93 UA', () => {
+    const { escada, camera, aplicar, focos } = bancada({ comEfemeride: true, comAnoes: true });
+    escada.focarNoCorpo('eris', 'corpo');
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'eris' });
+
+    const q = noQuadro(camera, ERIS, RAIO_ERIS);
+    expect(q.noEixo).toBe(true);
+    // o globo ocupa a tela: no degrau de órbita isto valia 3·10⁻⁸
+    expect(q.alturas).toBeGreaterThan(0.2);
+    // ...e a câmera está a poucos raios DELE, não da órbita dele
+    expect(q.raios).toBeLessThan(10);
+
+    // O NOME SOBREVIVE À DESCIDA, e esta linha é a segunda metade do
+    // item: `aproximarDoCorpo` resolvia nome só nos DEZ corpos da
+    // camada, então o gesto que põe Éris em quadro apagava "Ⓘ ÉRIS" da
+    // linha de contexto. Sem ela o conserto entregaria o globo com a
+    // legenda em branco.
+    expect(focos.at(-1)).toBe('Éris');
+  });
+
+  it('VESTA também — é a classe, não um caso especial de Éris', () => {
+    // A dose que impede o dente de virar teatro: outra FAMÍLIA
+    // (asteroide, não anão) e outra ordem de distância (2,4 UA contra
+    // 93,5). Um conserto escrito só para Éris passa acima e reprova
+    // aqui.
+    const { escada, camera, aplicar, focos } = bancada({ comEfemeride: true, comAnoes: true });
+    escada.focarNoCorpo('vesta', 'corpo');
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'vesta' });
+    const q = noQuadro(camera, VESTA, RAIO_VESTA);
+    expect(q.noEixo).toBe(true);
+    expect(q.alturas).toBeGreaterThan(0.2);
+    expect(q.raios).toBeLessThan(10);
+    expect(focos.at(-1)).toBe('Vesta');
+  });
+
+  it('o GESTO da descida (clicar no mesmo anão já focado) desce um degrau', () => {
+    // O irmão do `?ver=corpo`: o duplo clique no anão JÁ focado em
+    // órbita. Os dois caminhos saíam pelo mesmo desvio, duas linhas
+    // antes de qualquer descida ser consultada.
+    const { escada, camera, aplicar } = bancada({ comEfemeride: true, comAnoes: true });
+    escada.focarNoCorpo('eris');
+    expect(escada.escadaViva).toMatchObject({ degrau: 'orbita', corpoId: 'eris' });
+    aplicar();
+    // na órbita o globo é invisível — é o quadro sem corpo do item
+    expect(noQuadro(camera, ERIS, RAIO_ERIS).alturas).toBeLessThan(1e-5);
+
+    escada.focarNoCorpo('eris');
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'eris' });
+    expect(noQuadro(camera, ERIS, RAIO_ERIS).alturas).toBeGreaterThan(0.2);
+  });
+
+  it('`?ver=corpo` atravessa a efeméride que chega TARDE (verDoBoot)', () => {
+    // A METADE QUE O NAVEGADOR EXIGIU. Os oito estão fora do
+    // `RETRATO_2026`: no boot, quando `?foco=` roda, não há posição
+    // nenhuma para eles, então o degrau de órbita é o que se pode ter.
+    // Quando a fonte chega, `reenquadrarAposEfemeride` reaplica o
+    // degrau VIVO — e sem `verDoBoot` o `corpo` do endereço morria ali
+    // sem ninguém ver. Medido pela URL real antes desta metade: degrau
+    // `orbita`, 77.040.000 raios; depois: `corpo`, 6,4 raios.
+    const { escada, camera, aplicar, maquinaDoTempo } = bancada({ comAnoes: true });
+    escada.focarNoCorpo('eris', 'corpo');
+    // sem fonte não há degrau nenhum para dar: a escada pediu e voltou
+    expect(escada.escadaViva).toMatchObject({ degrau: 'orbita', corpoId: 'eris' });
+
+    maquinaDoTempo.efemeride = efemerideDeMentira();
+    escada.reenquadrarAposEfemeride();
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'eris' });
+    expect(noQuadro(camera, ERIS, RAIO_ERIS).alturas).toBeGreaterThan(0.2);
+  });
+
+  it('`?foco=Éris` SEM `?ver=` continua na órbita — o contrato não mudou', () => {
+    // O contraponto obrigatório: o padrão de `?foco=` é o degrau de
+    // órbita, e um conserto que descesse sempre trocaria um defeito
+    // por outro. Medido pela URL depois do conserto: `?foco=Éris`
+    // sozinha segue a 77.040.000 raios, como sempre esteve.
+    const { escada, camera, aplicar } = bancada({ comEfemeride: true, comAnoes: true });
+    escada.focarNoCorpo('eris');
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'orbita', corpoId: 'eris' });
+    expect(noQuadro(camera, ERIS, RAIO_ERIS).raios).toBeGreaterThan(1e6);
   });
 });

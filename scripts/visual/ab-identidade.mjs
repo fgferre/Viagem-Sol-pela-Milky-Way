@@ -637,6 +637,39 @@ export const VISTAS = [
   ['foco-titan', '?foco=tita&jd=2460409.26395835&shot=2'],
   ['foco-caronte', '?foco=caronte&jd=2460409.26395835&shot=2'],
   ['foco-io', '?foco=io&jd=2460409.26395835&shot=2'],
+  // ------------------------------------------------------------------
+  // AS TRÊS DOS HELIOCÊNTRICOS SEM PONTO (item 92, 25/08) — o mesmo
+  // buraco medido dos dois blocos acima, na última família que faltava.
+  // Das 57 vistas de cima, NENHUMA desce ao degrau `corpo` de um anão
+  // ou de um asteroide: as de `foco-` são de órbita (Júpiter) ou de lua
+  // (Titã, Caronte, Io), e nenhum dos oito tem vista própria. Por isso
+  // a classe inteira podia devolver quadro SEM GLOBO — o `?ver=corpo`
+  // do link era engolido em silêncio — sem nenhum gate piscar.
+  //
+  // AS DUAS PRIMEIRAS MUDAM DE PROPÓSITO, e é isso que elas compram: a
+  // régua de identidade só serve para o que NÃO devia mudar, e uma
+  // vista que se move é a prova de que o degrau passou a existir.
+  // Medido pela URL: a câmera sai de 77.040.000 raios de Éris para 6,4
+  // (o `?d=6` do endereço), e o globo de 0,00003 px para 399 px.
+  //
+  //  - `anao-eris-corpo`  é o caso do item: o mais DISTANTE que a
+  //    escada tenta (93,5 UA), e o único em que a efeméride que chega
+  //    tarde decide o degrau — os oito estão fora do `RETRATO_2026`.
+  //  - `anao-vesta-corpo` é a outra FAMÍLIA (asteroide) e a outra
+  //    ordem de distância (2,4 UA). Ela impede o gate de virar caso
+  //    especial de Éris: um conserto escrito só para um corpo deixaria
+  //    esta parada.
+  //  - `anao-eris-orbita` é a ANTI-DERIVA, e tem de sair BIT-IDÊNTICA:
+  //    `?foco=` sem `?ver=` é o degrau de órbita desde sempre, e um
+  //    conserto que descesse por conta própria trocaria um defeito por
+  //    outro. Sem ela o par de cima não distingue "o degrau de baixo
+  //    passou a existir" de "o de cima morreu".
+  //
+  // `&jd=` é o mesmo instante das vistas de foco acima: sem efeméride
+  // viva estes oito não têm posição NENHUMA (nem órbita, nem globo).
+  ['anao-eris-corpo', '?foco=eris&ver=corpo&d=6&jd=2460409.26395835&shot=2'],
+  ['anao-vesta-corpo', '?foco=vesta&ver=corpo&d=6&jd=2460409.26395835&shot=2'],
+  ['anao-eris-orbita', '?foco=eris&jd=2460409.26395835&shot=2'],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
