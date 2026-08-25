@@ -2542,10 +2542,17 @@ export class Director {
       // cópia aqui seria a fonte que a máquina do tempo desmentiria no
       // primeiro salto de data. Camada apagada ⇒ nenhum núcleo, e a
       // linha volta a ser inteira.
+      //
+      // AS TRÊS MEDIDAS SÃO DO BUFFER, e é o que o shader espera: largura e
+      // altura do canvas mais o `pixelRatio` vivo. `hPx` já era buffer (vem
+      // de `domElement.height`); o que faltava era a largura e a escala, e
+      // era dessa falta que o disco de cessão nascia torto em Retina.
       this.orbitas.escreverNucleos(
         this.engine.camera,
         this.planetas?.ligado ? this.planetas.posicoes : null,
-        hPx
+        this.engine.renderer.domElement.width,
+        hPx,
+        this.engine.renderer.getPixelRatio()
       );
       this.orbitas.update(this.engine.camera, hPx, tanHalfFov, dt);
     }

@@ -801,32 +801,85 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
 });
 
 // ============================================================
-// A CESSÃO AO NÚCLEO (decisão do dono, 25/08) — a guarda que faltava.
-// A reversão exata que ela pega: pôr o raio de volta em 0, ou apagar a
-// cirurgia do fragment. Nos dois casos a linha volta a atravessar o
-// planeta, as duas luzes voltam a ser UMA componente para o MB1 e a
-// âncora de Vênus volta a saltar 1,74 px contra um teto de 1,02.
+// A CESSÃO AO NÚCLEO (decisão do dono, 25/08) — e a RÉGUA dela.
+//
+// A GUARDA DE ANTES ERA DE TEXTO e não media espaço nenhum: procurava
+// `uniform vec4 uNucleo;` no arquivo e dava por bom. O disco pousava a MEIO
+// CAMINHO entre a origem do quadro e o planeta em qualquer tela Retina, e a
+// varredura seguia verde — porque o texto continuava lá. Estes medem o
+// `Vector4` que a GPU recebe, nas duas telas.
 // ============================================================
-describe('a linha cede ao núcleo do corpo que ela desenha', () => {
-  const fonte = readFileSync(
-    join(fileURLToPath(new URL('.', import.meta.url)), 'orbitas.ts'),
-    'utf8'
-  );
+describe('o disco de cessão chega ao shader na régua do `gl_FragCoord`', () => {
+  // A POSE É DE LABORATÓRIO, para o NDC ser conta e não sorteio: câmera em
+  // (0,0,D) olhando a origem, então um ponto do plano z=0 tem coordenada de
+  // vista (x, y, −D) e NDC (x / (D·t·aspecto), y / (D·t)), com
+  // t = tan(fov/2). Postos os alvos, o pixel esperado sai da régua de
+  // sempre — (ndc·0,5 + 0,5) · tamanho do BUFFER —, escrita aqui à mão.
+  const FOV = 35;
+  const D = 1;
+  const T = Math.tan((FOV * Math.PI) / 360);
+  const I_VENUS = IDS_FOTOMETRIA.indexOf('venus');
 
-  it('o raio da cessão é MAIOR QUE ZERO — em zero o defeito volta', () => {
-    // 0,5 px não bastava (Vênus seguia saltando 1,75 px); 2 px basta.
-    expect(RAIO_DA_CESSAO_PX).toBeGreaterThan(0);
-    expect(BORDA_DA_CESSAO_PX).toBeGreaterThan(RAIO_DA_CESSAO_PX);
+  /** um palco com Vênus no NDC pedido, e mais nada aceso */
+  function palco(ndcX: number, ndcY: number, larguraPx: number, alturaPx: number, pr: number) {
+    const aspecto = larguraPx / alturaPx;
+    const camera = new THREE.PerspectiveCamera(FOV, aspecto, 1e-9, 1e6);
+    camera.position.set(0, 0, D);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    const posicoes = new Float32Array(IDS_FOTOMETRIA.length * 3);
+    posicoes[I_VENUS * 3] = ndcX * D * T * aspecto;
+    posicoes[I_VENUS * 3 + 1] = ndcY * D * T;
+    const orbitas = new Orbitas();
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    orbitas.escreverNucleos(camera, posicoes, larguraPx, alturaPx, pr);
+    return { orbitas, camera, posicoes };
+  }
+
+  it('em tela comum o disco pousa no planeta, com o raio pedido', () => {
+    const { orbitas } = palco(0.25, 0.5, 1600, 900, 1);
+    const disco = orbitas.nucleoDe('venus');
+    expect(disco, 'Vênus tem linha, e linha tem disco').not.toBeNull();
+    expect(disco!.x).toBeCloseTo(0.625 * 1600, 3);
+    expect(disco!.y).toBeCloseTo(0.75 * 900, 3);
+    expect(disco!.z).toBeCloseTo(RAIO_DA_CESSAO_PX, 6);
+    expect(disco!.w).toBeCloseTo(BORDA_DA_CESSAO_PX, 6);
+    orbitas.dispose();
   });
 
-  it('a cirurgia do fragment está no lugar, com transição suave', () => {
-    expect(fonte).toMatch(/uniform vec4 uNucleo;/);
-    expect(fonte).toMatch(/alpha \*= smoothstep\(/);
+  it('em RETINA ele pousa NO MESMO LUGAR da tela, e não a meio caminho', () => {
+    // O DEFEITO EXATO, achado por auditoria em 25/08: o centro saía contra
+    // `resolution`, que é px de CSS, e o `gl_FragCoord` é de BUFFER. Em 1× os
+    // dois erros se cancelavam — e o MB1 captura a 1×, então não via nada. Em
+    // 2× o disco pousava na METADE do caminho entre a origem do quadro e o
+    // planeta, com METADE do raio: o buraco caía no vazio e a linha seguia
+    // por cima do corpo, que é o defeito que a cessão veio matar.
+    const { orbitas } = palco(0.25, 0.5, 1600, 900, 2);
+    const disco = orbitas.nucleoDe('venus')!;
+    expect(disco.x).toBeCloseTo(0.625 * 1600, 3);
+    expect(disco.y).toBeCloseTo(0.75 * 900, 3);
+    // e o buraco com o MESMO tamanho APARENTE: px de CSS vezes o pixelRatio
+    expect(disco.z).toBeCloseTo(RAIO_DA_CESSAO_PX * 2, 6);
+    expect(disco.w).toBeCloseTo(BORDA_DA_CESSAO_PX * 2, 6);
+    orbitas.dispose();
   });
 
-  it('o disco é do DONO da linha, e não um por corpo do palco', () => {
-    // dez discos por fita cortam cada elipse em vários arcos: o pior
-    // resíduo de `zoomDeRoda` subia de 0,65 para 1,35 degraus.
-    expect(fonte).toMatch(/IDS_FOTOMETRIA\.indexOf\(linha\.corpo\.id/);
+  it('corpo ATRÁS da câmera não deita disco — buraco fantasma não existe', () => {
+    // `project` devolveria a posição espelhada, e o buraco comeria a linha
+    // do lado errado do céu.
+    const { orbitas, camera, posicoes } = palco(0.25, 0.5, 1600, 900, 1);
+    expect(orbitas.nucleoDe('venus')!.w).toBeGreaterThan(0);
+    posicoes[I_VENUS * 3 + 2] = D * 2;
+    orbitas.escreverNucleos(camera, posicoes, 1600, 900, 1);
+    expect(orbitas.nucleoDe('venus')!.w).toBe(0);
+    orbitas.dispose();
+  });
+
+  it('sem os corpos no palco a linha volta INTEIRA', () => {
+    const { orbitas, camera } = palco(0.25, 0.5, 1600, 900, 1);
+    expect(orbitas.nucleoDe('venus')!.w).toBeGreaterThan(0);
+    orbitas.escreverNucleos(camera, null, 1600, 900, 1);
+    expect(orbitas.nucleoDe('venus')!.w).toBe(0);
+    orbitas.dispose();
   });
 });
