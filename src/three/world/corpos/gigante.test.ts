@@ -112,8 +112,7 @@ describe('2. o needle dos GLSL montados', () => {
     expect(GIGANTE_LAMBERT_FRAG).toContain(
       'vec3 sombras =\n    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip, ndotlGeo);'
     );
-    // ITEM 93: a luz do Sol passa pela logística e SÓ DEPOIS a lanterna
-    // soma-se
+    // ITEM 93: a luz do Sol passa pela logística e SÓ DEPOIS a lanterna soma-se
     expect(GIGANTE_LAMBERT_FRAG).toContain(
       'vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;'
     );
