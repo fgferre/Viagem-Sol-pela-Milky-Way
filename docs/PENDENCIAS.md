@@ -413,11 +413,20 @@ paga a mesma conta, e era o que o apagava junto com o globo.
 Medido em bytes de tela (disco médio, 0–255): **Saturno 58 → 139** na
 vista oficial e **84 → 187** de perto do lado do Sol; Netuno 15 → 105;
 Éris 26 → 166; Titã 31 → 105; Urano 66 → 199; Júpiter 109 → 186;
-Encélado 49 → 126; Vesta 34 → 55; Marte 104 → 123. Mercúrio **desce**,
-164 → 118, porque a visita também doma quem está perto demais do Sol. A
-**Terra e a Lua não se mexeram um bit** — a distância da visita da Terra
-é a própria âncora da lei. O selo agora diz o gasto exato por corpo
-("Este globo: +6,5 passos de luz sobre a luz física" em Saturno).
+Encélado 49 → 126; Vesta 34 → 55; Marte 104 → 123. A **Terra e a Lua não
+se mexeram um bit** — a distância da visita da Terra é a própria âncora
+da lei. O selo agora diz o gasto exato por corpo ("Este globo: +6,5
+passos de luz sobre a luz física" em Saturno).
+
+**MERCÚRIO DESCE, 164 → 118, e isso é a lei funcionando — não um efeito
+colateral.** Mercúrio está a 0,39 UA do Sol e recebe **~6,7× a
+irradiância que a Terra recebe**: expor a visita "para o mundo em que se
+está" significa, ali, FECHAR o diafragma. A compensação da visita dele é
+de **−2,4 passos de luz** — o único número negativo da tabela —, e é o
+mesmo princípio que clareia Saturno em +6,5: cada mundo fotografado para
+si. Antes, o globo de Mercúrio recebia ganho 1,72 e estourava o branco
+do regolito; agora recebe ~0,88. **A pergunta (b) da conferência é
+exatamente esta:** ficou melhor domado ou ficou apagado?
 
 **Fotos, à espera do olho dele:** `capturas/item91-saturno-antes-depois.png`
 (a prova), `capturas/item91-familia-antes-depois.png`,

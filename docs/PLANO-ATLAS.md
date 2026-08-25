@@ -158,6 +158,16 @@ gaveta), não a decoração.
   (`docs/reference/nasa-eyes-iluminacao-planetas.md`) foi consumido e
   leva os avisos do que divergiu.
 
+  **A DIVERGÊNCIA QUE VALE REGISTRAR AQUI, porque é decisão do dono
+  contra uma especificação escrita:** o §11.1 daquele relatório pedia
+  ganho 1 no globo **também** em `?luz=real` ("isso reabre o carvão").
+  Em 25/08 o dono decidiu o contrário — no `real` a casa mantém a
+  **penumbra física verdadeira**, E(d) de verdade, com Saturno
+  visivelmente mais escuro que a Terra —, e é isso que faz do `real` um
+  modo em vez de um segundo assistido. Quando uma proposta de relatório
+  e uma decisão dele discordarem, ganha a decisão, e a discordância
+  fica escrita nos dois lugares.
+
   **E ele mostrou o anti-padrão 1 sendo citado ao contrário**, o que
   vale registrar aqui, ao lado da lista: "dois ganhos empilhados" NÃO é
   o anti-padrão. O anti-padrão é **duas camadas que não se conhecem**

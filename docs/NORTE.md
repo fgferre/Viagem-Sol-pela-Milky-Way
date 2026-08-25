@@ -713,8 +713,13 @@ A lista completa das hipóteses de espiral está em
 - `q2<7` no raymarch segue fora.
 - Baseline do gate indexada pela GPU, fora do TMPDIR — ainda não
   existe; o ritual acima é manual.
-- Item **91**: a luz dos globos (Saturno palha, não carvão). O
-  relatório está escrito; a obra ainda não.
+- ~~Item **91**: a luz dos globos (Saturno palha, não carvão).~~ **A OBRA
+  FOI FEITA em 25/08** — esta linha dizia "o relatório está escrito; a
+  obra ainda não" e contradizia, noventa linhas acima, a entrada que já
+  descrevia o mecanismo pronto. O que ainda manda mora lá em cima
+  ("DUAS LEIS DE LUZ, DOIS ENDEREÇOS"); o que sobra do 91 é a
+  **conferência do dono**, e conferência de imagem é assunto do
+  `PENDENCIAS.md`, não desta fila.
 
 ---
 

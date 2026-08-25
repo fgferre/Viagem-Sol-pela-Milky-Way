@@ -513,6 +513,10 @@ casa (`H = −8,914`). O dono não está reclamando deste.
 
 ### 8.2 O globo (errado para visitar)
 
+> ⚠️ **Retrato de ANTES da obra (24/08).** Os números desta seção
+> descrevem o defeito, não o app: desde 25/08 a malha não multiplica
+> `ganhoFundido` sozinho. Ver a caixa no topo.
+
 Gigantes: Lambert `albedo * ndotl * uLuzGanho`, **zero** ambiente,
 **zero** lanterna, **zero** logística no terminador.
 `uLuzGanho = ganhoFundido(rUA, politica)`.
@@ -546,6 +550,11 @@ ganho) + Nishita. Na Terra `ganho = 1` e o globo lê. Saturno não
 tem esse privilégio.
 
 ### 8.3 A cadeia de display (o multiplicador escondido)
+
+> ⚠️ **Números de ANTES da obra E em LINEAR pós-ACES.** A régua desta
+> casa mede BYTES do PNG (`luz-do-quadro.mjs`): "0,09 na tela" é linear;
+> em bytes o disco de Saturno media 58 de 255 e passou a 139. Ver a
+> caixa no topo.
 
 A casa é linear de verdade: texel sRGB → linear (`SRGBColorSpace`),
 Lambert, `uLuzGanho`, depois **ACES** (`toneMappingExposure = 1,02`)
@@ -658,6 +667,20 @@ lei escreve o escalar**, e ela é diferente no ponto e no globo.
 > `real` no globo, o "`ganhoFundido` sai da malha" e a atribuição do
 > `ganhoFundido` ao ponto. Ver a caixa no topo do arquivo. O que
 > sobrevive daqui é a **partição**: duas leis, dois endereços.
+
+**O que este bloco dizia** (proposta do relatório, 24/08 — história, não
+contrato; restaurada em 25/08 porque numa primeira passada ela foi
+SOBRESCRITA, que é a única coisa que "corrigir sem apagar" proíbe):
+
+```
+ponto  (camada planetas, PSF)  → MH18 + 1/d² + assistida/real
+globo  (malha Terra/Lua/rochoso/gigante/anel) → exposição LOCAL
+```
+
+**O que o código faz desde 25/08** — e as duas divergências estão na
+linha do ponto (ele nunca teve `assistida/real`, porque nunca passou por
+`ganhoFundido`) e na do globo (a exposição local é um PRODUTO, não a
+substituição da lei):
 
 ```
 ponto  (camada planetas, PSF)  → MH18 + 1/d²    (NUNCA ganhoFundido)
@@ -806,6 +829,16 @@ próprio Eyes não usa.
 ---
 
 ## 14. Recado para o Claude (item 91)
+
+> ⚠️ **RECADO CUMPRIDO — e em parte REVOGADO pelo dono.** A obra do
+> globo rolou em 25/08 (o texto abaixo ainda diz que não). O diagnóstico
+> deste recado guiou a obra e está certo. O CONTRATO de uma linha, não:
+> `ganhoFundido` **não saiu** da malha (virou um produto com a
+> compensação da visita), e `?luz=real` no globo **volta a E(d)** — a
+> penumbra física verdadeira, decisão 2 do dono, que contraria
+> frontalmente o "dia ainda na textura" escrito aqui. A lanterna de
+> 15 % e a logística s=3 não entraram. Contrato vivo:
+> `src/lib/atlas/luzDaVisita.ts` e o `NORTE.md`.
 
 Lê este arquivo inteiro. A obra é o globo, não o ponto. O ponto
 (MH18, PSF, `planetas.ts`) **não se mexe**.
