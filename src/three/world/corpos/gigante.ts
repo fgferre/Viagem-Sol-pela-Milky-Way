@@ -33,8 +33,14 @@
 //     `GLSL_CAMADA_DO_ANEL`. O 0,34 fixo do doador segue fora.
 //   - sombra planeta→anel: ocultador ELIPSOIDE; squash no eixo
 //     POLAR do frame do anel (.z após RingGeometry + Rx(−π/2);
-//     o comentário W5-B do doador); direção NÃO-unitária depois
-//     do squash (`a = dot(d',d')` no discriminante)
+//     o comentário W5-B do doador). ESTRITAMENTE ANTI-SOLAR desde
+//     2026-08-25: o Sol e a câmera entravam no frame do anel pela
+//     rotação PARA A FRENTE em vez da inversa, e a sombra saía
+//     espelhada — o dono a viu do lado do Sol na foto do item 91.
+//     A ponte agora é `componentesNoFrameDoAnel`, uma só, porque o
+//     erro estava copiado aqui e no anel de Quaoar. O interior
+//     herdado de 0,22 caiu: umbra ZERO e penumbra de um Sol de
+//     raio angular MEDIDO (`uSolAngRad`).
 //   - sombra anel→planeta: interseção analítica do plano y=0
 //   - fade de terminador (smoothstep 0…0,05)
 //   - Saturno NÃO é receptor de eclipse (CORPOS_COM_ANEL)
@@ -73,9 +79,11 @@ import { cessaoAlvo, gateBinario } from './terra';
 import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
 import type { CanalPedido, EstadoDasTexturas, OpcoesDeTextura } from './texturas';
 import {
+  componentesNoFrameDoAnel,
   orientacaoDoCorpoNaCena,
   orientacaoInercialDoAnelNaCena,
 } from './orientacaoNaCena';
+import { RAIO_SOL_KM } from '../../escala';
 import {
   escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
@@ -343,22 +351,44 @@ vec2 camadaDeParticulas(float tau, float mu0, float mu, float fase, float mesmoL
 
 /**
  * A SOMBRA DO GLOBO SOBRE O ANEL — ocultador ELIPSOIDE, squash no eixo
- * polar do frame do anel (W5-B); depois do squash a direção não é
- * unitária, daí `a = dot(d',d')` no discriminante. Fica como estava: é
- * o que o dono manda preservar.
+ * polar do frame do anel (a cicatriz W5-B, que o dono manda preservar).
+ *
+ * DEVOLVE A FRAÇÃO DO DISCO SOLAR que o ponto do anel ainda enxerga: 1
+ * fora da sombra, 0 na umbra, e no meio a área de um disco cortado por
+ * um limbo reto. Duas coisas mudaram, e as duas são medida no lugar de
+ * herança:
+ *
+ * 1. O INTERIOR. Era `0,22` — um número que ninguém mediu, dizendo que
+ *    22% da luz atravessa o corpo de Saturno. Não atravessa: luz DIRETA
+ *    do Sol na umbra é ZERO, e zero é o que entra. (O que de fato
+ *    ilumina a umbra é o brilho do próprio globo, medido e registrado
+ *    como pendência em `docs/PENDENCIAS.md`: entre ~5% da luz solar na
+ *    borda do anel D e ~0,2% no F — isto é, de 4× a 100× menos do que
+ *    o 0,22 pintava, e caindo com o raio em vez de constante.)
+ *
+ * 2. A BORDA. O Sol é um DISCO, não um ponto: visto de Saturno tem raio
+ *    angular de 0,0275° (`uSolAngRad`, medido da distância do corpo).
+ *    A meia-penumbra no plano do anel é esse ângulo vezes o caminho até
+ *    o ocultador — ~70 km, sub-pixel na maioria das vistas, mas é ela
+ *    que troca o degrau serrilhado por uma borda. A aproximação
+ *    declarada é o LIMBO RETO (o globo é ~2 000× maior em ângulo que a
+ *    penumbra) e o disco solar UNIFORME (sem escurecimento de bordo);
+ *    a meia-penumbra sai no frame já achatado, o que a distorce em até
+ *    10% num número que vale menos de um pixel.
  */
 const GLSL_SOMBRA_DO_PLANETA_NO_ANEL = /* glsl */ `
 float sombraDoPlaneta(vec3 p) {
-  vec3 dir = uDirSolLocal;
   float k = max(uKPolar, 1.0e-4);
+  // o achatamento vira esfera unitária; o anel mora em z = 0
   vec3 o = vec3(p.x, p.y, p.z / k);
-  vec3 d = vec3(dir.x, dir.y, dir.z / k);
-  float a = dot(d, d);
-  float b = 2.0 * dot(o, d);
-  float c = dot(o, o) - 1.0;
-  float delta = b * b - 4.0 * a * c;
-  bool hit = delta >= 0.0 && b < 0.0;
-  return hit ? 0.22 : 1.0;
+  vec3 d = normalize(vec3(uDirSolLocal.x, uDirSolLocal.y, uDirSolLocal.z / k));
+  // caminhar PARA o Sol: só o lado anti-solar pode topar no globo
+  float aproxima = -dot(o, d);
+  if (aproxima <= 0.0) return 1.0;
+  float impacto = length(o + d * aproxima);
+  float meia = max(uSolAngRad * aproxima, 1.0e-6);
+  float x = clamp((impacto - 1.0) / meia, -1.0, 1.0);
+  return 1.0 - (acos(x) - x * sqrt(max(1.0 - x * x, 0.0))) / 3.14159265358979;
 }
 `;
 
@@ -373,6 +403,7 @@ uniform vec3 uDirSolLocal;
 uniform vec3 uCamLocal;
 uniform float uLuzGanho;
 uniform float uKPolar;
+uniform float uSolAngRad;
 uniform vec2 uAnelRaios;
 varying vec3 vPos;
 const float IF_RETRO = ${IF_RETRO_DO_GELO};
@@ -431,6 +462,7 @@ uniform vec3 uDirSolLocal;
 uniform vec3 uCamLocal;
 uniform float uLuzGanho;
 uniform float uKPolar;
+uniform float uSolAngRad;
 uniform vec2 uAnelRaios;
 uniform float uModo; // 0=Urano 1=Netuno 2=Quaoar
 varying vec3 vPos;
@@ -567,6 +599,7 @@ export class GiganteResolvido {
   private readonly vAnelY = new THREE.Vector3();
   private readonly vAnelZ = new THREE.Vector3();
   private readonly vTmp = new THREE.Vector3();
+  private readonly vSol = new THREE.Vector3();
   private readonly vEscala = new THREE.Vector3();
   private readonly mRx = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
   private readonly estado: EstadoDoGigante;
@@ -708,7 +741,11 @@ export class GiganteResolvido {
     // ANEL recebe o MESMO `ganho` lá embaixo — o anel de Saturno paga a
     // mesma conta do globo, e era o 0,21 dele que o apagava junto.
     const ganho = ganhoDoGlobo(this.rUA, this.idCorpo, q.politica);
-    const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
+    // ONDE ESTÁ O SOL, uma vez só por corpo: na ORIGEM da cena. O anel
+    // lá embaixo bebe DESTE vetor — tinha um segundo cálculo idêntico
+    // só para ele, e dois cadastros da mesma verdade é como uma inversão
+    // se esconde (item 91).
+    const dirSol = this.vSol.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);
     const sLx = dirSol.dot(this.vX);
@@ -741,20 +778,17 @@ export class GiganteResolvido {
         .multiply(this.mRx)
         .setPosition(this.centro);
       const ua = this.matAnel.uniforms;
-      const nSol = Math.max(this.centro.length(), 1e-30);
-      const solX = -this.centro.x / nSol;
-      const solY = -this.centro.y / nSol;
-      const solZ = -this.centro.z / nSol;
-      const sAx = solX * this.vAnelX.x + solY * this.vAnelX.y + solZ * this.vAnelX.z;
-      const sAy = solX * this.vAnelY.x + solY * this.vAnelY.y + solZ * this.vAnelY.z;
-      const sAz = solX * this.vAnelZ.x + solY * this.vAnelZ.y + solZ * this.vAnelZ.z;
-      const cAx = delta.dot(this.vAnelX) / this.raioA;
-      const cAy = delta.dot(this.vAnelY) / this.raioA;
-      const cAz = delta.dot(this.vAnelZ) / this.raioA;
-      // frame do anel: X=vAnelX, Y=vAnelZ, Z=−vAnelY (Rx(−π/2))
-      (ua.uDirSolLocal.value as THREE.Vector3).set(sAx, sAz, -sAy);
-      (ua.uCamLocal.value as THREE.Vector3).set(cAx, cAz, -cAy);
+      componentesNoFrameDoAnel(
+        dirSol, this.vAnelX, this.vAnelY, this.vAnelZ,
+        ua.uDirSolLocal.value as THREE.Vector3
+      );
+      componentesNoFrameDoAnel(
+        delta, this.vAnelX, this.vAnelY, this.vAnelZ,
+        ua.uCamLocal.value as THREE.Vector3
+      ).divideScalar(this.raioA);
       ua.uLuzGanho.value = ganho;
+      // o Sol é um DISCO: raio angular visto DESTE corpo, para a penumbra
+      ua.uSolAngRad.value = RAIO_SOL_KM / Math.max(this.rUA * AU_KM, 1e-30);
     }
   }
 
@@ -812,6 +846,7 @@ export class GiganteResolvido {
           uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
           uLuzGanho: { value: 1 },
           uKPolar: { value: this.kPolar },
+          uSolAngRad: { value: 0 },
           uAnelRaios: { value: new THREE.Vector2(anel.rInt, anel.rExt) },
           uModo: { value: modo },
         },

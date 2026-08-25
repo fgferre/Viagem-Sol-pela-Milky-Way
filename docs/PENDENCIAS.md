@@ -488,12 +488,55 @@ Nenhuma vista do gate cobre esses dois anéis; a prova é a foto.
 longe, e 2017 com o anel aberto), `capturas/item91-anel-modo-real.png` e
 `capturas/item91-anel-proc-antes-depois.png` (Urano e Netuno).
 
-**O QUE ELE VAI VER DE NOVO, e não estava lá antes:** com o anel aceso, a
-sombra do globo sobre ele virou um dedo escuro de borda dura atravessando
-meia volta do anel. A borda dura está certa (o Sol rasante estica a
-sombra, e a penumbra real é fina demais para caber num pixel), mas o
-INTERIOR da sombra é um `0,22` herdado do doador, não um número medido.
-Se incomodar, é uma linha.
+### A SOMBRA DO ANEL ESTAVA DO LADO DO SOL (queixa de 25/08, RESOLVIDA)
+
+Assim que o anel acendeu, ele viu o que o anel-lama escondia e disse, na
+foto `capturas/item91-anel-antes-depois.png`: **"o globo está iluminado
+pela ESQUERDA e a sombra sobre o anel também aparece à esquerda"**. Está
+certo, e é impossível: sombra é anti-solar.
+
+**A CAUSA, e ela é velha.** A geometria dessa sombra é herdada — existia
+antes, invisível numa mancha marrom. O erro não era da conta da sombra
+(essa estava certa): era do FRAME em que o Sol entrava nela. O anel é uma
+`RingGeometry`, que mora no plano XY, e o mesh a levanta com
+`Base(anel) · S(a) · Rx(−π/2)`. Para escrever o Sol nas coordenadas do
+anel é preciso a INVERSA dessa rotação; o código aplicava a rotação PARA
+A FRENTE. As duas diferem por meia volta em torno de x̂ — a sombra saía
+espelhada no plano do anel, e a fotometria da camada ainda lia uma câmera
+que não era a da cena. O mesmo erro estava COPIADO no anel de Quaoar
+(`rochoso.ts`). Agora existe uma função só, `componentesNoFrameDoAnel`, e
+o Sol nasce UMA vez por corpo em vez de duas.
+
+**E O 0,22 CAIU JUNTO.** O interior da sombra era um número herdado que
+dizia que 22% da luz do Sol atravessa o corpo de Saturno. Não atravessa:
+luz DIRETA na umbra é ZERO, e zero é o que entra. A borda deixou de ser
+um degrau e virou a fração do disco solar cortada por um limbo reto, com
+a meia-penumbra dada pelo raio ANGULAR do Sol visto do corpo (0,0275° em
+Saturno, `uSolAngRad`) vezes o caminho até o globo — ~70 km, sub-pixel na
+maioria das vistas, mas é ela que tira o serrilhado da borda.
+
+**O JUIZ.** `gigante.test.ts` §4b lê o uniform que a classe escreveu e a
+matriz que o mesh gravou, acha os pontos escuros do anel e pergunta EM
+CENA de que lado do Sol eles estão — em QUATRO datas (2024, 2017 com a
+face norte aberta, 2003 com a face sul, e a época), porque um
+espelhamento acerta por acaso em algumas poses. A sombra tem de cair a
+menos de 0,5° do anti-Sol projetado no plano do anel. O controle negativo
+repõe o frame errado e as quatro reprovam, uma delas com a sombra
+literalmente do lado do Sol — que é o que ele viu.
+
+**Foto:** `capturas/item91-sombra-antes-depois.png` (três poses, antes e
+depois: a data dele vista de cima, a mesma na vista `saturno-anel`, e
+2017 com o anel aberto).
+
+**O QUE FICA DECLARADO, com número:** dentro da umbra o anel não é
+rigorosamente preto — ele recebe o brilho do PRÓPRIO globo. Medido pela
+razão padrão `p · Φ(α) · (R/D)²` com o albedo geométrico de Saturno, isso
+vale ~5% da luz solar na borda interna do anel D e ~0,2% no F, caindo com
+o raio. O `0,22` pintava de 4× a 100× mais luz do que existe, e constante.
+Modelar isso direito precisa integrar uma fonte EXTENSA (do anel interno
+o globo cobre meio céu), o que não cabe no fragmento por ora; entra como
+pendência nomeada. Enquanto isso a umbra é preta, que é o que as fotos da
+Cassini mostram e é o erro MENOR dos dois.
 
 **A CONFERÊNCIA DELE ESTÁ PENDENTE**, e é só ela que fecha o item. Três
 perguntas que só ele responde: (a) Saturno está no ponto ou passou do

@@ -23,7 +23,9 @@ import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides
 import { CORPOS_COM_ANEL } from '../../../lib/atlas/eclipse';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
+import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
+import { RAIO_SOL_KM } from '../../escala';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
@@ -107,11 +109,36 @@ describe('2. o needle dos GLSL montados', () => {
     expect(GIGANTE_LAMBERT_FRAG).toContain('gl_FragColor = vec4(direta, 1.0);');
   });
 
-  it('a sombra planeta→anel é elipsoide: squash no .z e a = dot(d,d)', () => {
+  it('a sombra planeta→anel é elipsoide: squash no eixo POLAR do anel', () => {
+    // o ocultador continua ELIPSOIDE — o squash no polo é a cicatriz W5-B
+    // que o dono manda preservar. O que saiu foi o teste BINÁRIO com
+    // interior 0,22; entrou a fração do disco solar (ver PENUMBRA_DO_ANEL).
     expect(ANEL_FRAG).toContain('p.z / k');
-    expect(ANEL_FRAG).toContain('dir.z / k');
-    expect(ANEL_FRAG).toContain('float a = dot(d, d)');
-    expect(ANEL_FRAG).toContain('delta >= 0.0 && b < 0.0');
+    expect(ANEL_FRAG).toContain('uDirSolLocal.z / k');
+    // o degrau com interior herdado não voltou em nenhum dos dois
+    // (o 0,22 que sobra no procedural é a opacidade do ε de Urano)
+    for (const glsl of [ANEL_FRAG, ANEL_PROC_FRAG]) {
+      expect(glsl).not.toMatch(/hit \? 0\.22/);
+      expect(glsl).not.toMatch(/bool hit/);
+    }
+  });
+
+  /**
+   * PENUMBRA MEDIDA — o interior da sombra não é mais um número herdado.
+   * A umbra vale ZERO (nenhuma luz DIRETA do Sol entra ali) e a borda é a
+   * fração do disco solar cortada por um limbo reto, com a meia-penumbra
+   * dada pelo raio ANGULAR do Sol visto do corpo.
+   */
+  it('o interior é 0 e a borda é a fração do disco solar, não um degrau', () => {
+    expect(ANEL_FRAG).toContain('uniform float uSolAngRad;');
+    expect(ANEL_PROC_FRAG).toContain('uniform float uSolAngRad;');
+    expect(ANEL_FRAG).toContain('uSolAngRad * aproxima');
+    expect(ANEL_FRAG).toContain('acos(x) - x * sqrt(');
+    // a fração do disco: 0 em x=−1, 1/2 em x=0, 1 em x=+1
+    const fracao = (x: number) => 1 - (Math.acos(x) - x * Math.sqrt(1 - x * x)) / Math.PI;
+    expect(fracao(-1)).toBeCloseTo(0, 12);
+    expect(fracao(0)).toBeCloseTo(0.5, 12);
+    expect(fracao(1)).toBeCloseTo(1, 12);
   });
 
   it('scattering frente/trás no anel — o 0,34 fixo do doador não atravessa', () => {
@@ -200,7 +227,7 @@ describe('2. o needle dos GLSL montados', () => {
     for (const glsl of [ANEL_FRAG, ANEL_PROC_FRAG]) {
       expect(glsl).toContain('vec2 camadaDeParticulas(');
       expect(glsl).toContain('float tauDaOpacidade(');
-      expect(glsl).toContain('float a = dot(d, d)'); // a sombra elipsoide
+      expect(glsl).toContain('float sombraDoPlaneta('); // a sombra elipsoide
       expect(glsl).not.toContain('0.12'); // o piso Lambert não voltou
       expect(glsl).not.toMatch(/uAmbient|ambientLight|uPiso/);
     }
@@ -256,6 +283,66 @@ describe('4. o anel de Saturno (D6 / W5-B)', () => {
 const flush = async () => {
   for (let i = 0; i < 8; i++) await Promise.resolve();
 };
+
+// ------------------------------------------------------------
+// O JUIZ DA SOMBRA (item 91) — a mesma conta do fragmento, em TS.
+// Não é oráculo da FÓRMULA (essa é trivial e as duas concordariam
+// mesmo erradas): é o juiz do FRAME. Ele come o uniform que a classe
+// escreveu e o transform que o mesh gravou, e pergunta em COORDENADAS
+// DE CENA onde a sombra caiu.
+// ------------------------------------------------------------
+function coberturaDoSol(
+  pAnel: THREE.Vector3,
+  dirSolLocal: THREE.Vector3,
+  kPolar: number,
+  solAngRad: number
+): number {
+  const k = Math.max(kPolar, 1e-4);
+  const o = new THREE.Vector3(pAnel.x, pAnel.y, pAnel.z / k);
+  const d = new THREE.Vector3(dirSolLocal.x, dirSolLocal.y, dirSolLocal.z / k).normalize();
+  const aproxima = -o.dot(d);
+  if (aproxima <= 0) return 1;
+  const impacto = o.clone().addScaledVector(d, aproxima).length();
+  const meia = Math.max(solAngRad * aproxima, 1e-6);
+  const x = Math.min(1, Math.max(-1, (impacto - 1) / meia));
+  return 1 - (Math.acos(x) - x * Math.sqrt(Math.max(1 - x * x, 0))) / Math.PI;
+}
+
+/**
+ * Onde a sombra caiu, EM CENA: a direção média (unitária) dos pontos do
+ * anel que o globo escurece, medida a partir do centro do planeta.
+ * Devolve `null` quando nenhum ponto ficou na sombra.
+ */
+function direcaoDaSombraNaCena(
+  malha: THREE.Mesh,
+  dirSolLocal: THREE.Vector3,
+  kPolar: number,
+  solAngRad: number,
+  centro: THREE.Vector3,
+  raio = 1.7
+): { direcao: THREE.Vector3; sombreados: number; claros: number } | null {
+  const soma = new THREE.Vector3();
+  let sombreados = 0;
+  let claros = 0;
+  const N = 720;
+  for (let i = 0; i < N; i++) {
+    const fi = (2 * Math.PI * i) / N;
+    const p = new THREE.Vector3(raio * Math.cos(fi), raio * Math.sin(fi), 0);
+    const cobertura = coberturaDoSol(p, dirSolLocal, kPolar, solAngRad);
+    const mundo = p.clone().applyMatrix4(malha.matrix).sub(centro).normalize();
+    if (cobertura < 0.5) {
+      sombreados++;
+      soma.add(mundo);
+    } else if (cobertura > 0.999) {
+      claros++;
+    }
+  }
+  if (sombreados === 0 || soma.length() < 1e-9) return null;
+  return { direcao: soma.normalize(), sombreados, claros };
+}
+
+const grausEntre = (a: THREE.Vector3, b: THREE.Vector3) =>
+  (Math.acos(Math.max(-1, Math.min(1, a.dot(b)))) * 180) / Math.PI;
 
 function giganteDeTeste(id: string) {
   const chamadas: string[] = [];
@@ -361,6 +448,149 @@ describe('1. o oráculo de orientação por corpo (D-E4)', () => {
       a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     expect(dot(xAnel1, xAnel2)).toBeGreaterThan(0.999);
     expect(dot(xGlobo1, xGlobo2)).toBeLessThan(0.5);
+    corpo.dispose();
+  });
+});
+
+/**
+ * ITEM 91 — A SOMBRA DO GLOBO NO ANEL É ANTI-SOLAR.
+ *
+ * A QUEIXA DO DONO (2026-08-25, olhando `item91-anel-antes-depois.png`):
+ * "o globo está iluminado pela ESQUERDA e a sombra sobre o anel também
+ * aparece à esquerda — do lado do Sol". Fisicamente impossível.
+ *
+ * A causa era de FRAME, não de fórmula: a classe escrevia o Sol e a
+ * câmera no frame do anel aplicando Rx(−π/2) PARA A FRENTE, quando o que
+ * leva um vetor da base da cena para a base local é a INVERSA. As duas
+ * diferem por meia volta em torno de x̂ — a sombra saía espelhada.
+ *
+ * ESTE JUIZ NÃO OLHA O FRAME: ele lê o uniform que a classe escreveu e a
+ * matriz que o mesh gravou, acha os pontos escuros e pergunta, EM CENA,
+ * de que lado do Sol eles estão. Um espelhamento pode acertar por acaso
+ * numa pose — por isso são TRÊS datas, com Saturno em pedaços bem
+ * diferentes da órbita.
+ */
+describe('4b. item 91 — a sombra do globo cai do lado OPOSTO ao Sol', () => {
+  // Quatro poses, de propósito em pedaços bem diferentes da órbita E com
+  // o anel apresentando as DUAS faces: 2017 mostra a face NORTE aberta,
+  // 2003 a face SUL. Um erro de sinal no eixo polar acerta numa e erra
+  // na outra; a época do retrato entra porque o anel quase de perfil é o
+  // caso em que qualquer engano é mais difícil de ver a olho.
+  const DATAS: readonly { jd: number; nome: string }[] = [
+    { jd: 2460409.26395835, nome: '2024-04-01' },
+    { jd: 2457920.5, nome: '2017-06-15 (face norte)' },
+    { jd: 2452641.0, nome: '2003-01-01 (face sul)' },
+    { jd: EPOCA_JD_TDB, nome: 'época do retrato' },
+  ];
+
+  async function anelDeSaturno(jd: number) {
+    const { corpo } = giganteDeTeste('saturn');
+    const q = quadro('saturn', 4, { jdTdb: jd });
+    corpo.atualizar(q);
+    await flush();
+    expect(corpo.atualizar(q).emQuadro).toBe(true);
+    const malha = malhaDoAnel(corpo.group);
+    const mat = malha.material as THREE.ShaderMaterial;
+    const centro = centroPc('saturn', jd);
+    const dirSolCena = centro.clone().multiplyScalar(-1).normalize();
+    return { corpo, malha, mat, centro, dirSolCena, q };
+  }
+
+  for (const { jd, nome } of DATAS) {
+    it(`${nome}: o uniform do anel volta ao Sol de verdade quando o mesh o desfaz`, async () => {
+      const { corpo, malha, mat, centro, dirSolCena, q } = await anelDeSaturno(jd);
+      // o uniform, levado de volta à cena pelo PRÓPRIO transform do mesh,
+      // tem de ser o vetor Saturno→Sol. É o teste de transposta.
+      const solDeVolta = (mat.uniforms.uDirSolLocal.value as THREE.Vector3)
+        .clone()
+        .transformDirection(malha.matrix);
+      expect(grausEntre(solDeVolta, dirSolCena)).toBeLessThan(1e-6);
+
+      // e a câmera do uniform tem de voltar à câmera do quadro
+      const camDeVolta = (mat.uniforms.uCamLocal.value as THREE.Vector3)
+        .clone()
+        .applyMatrix4(malha.matrix);
+      expect(camDeVolta.distanceTo(q.camPosPc)).toBeLessThan(1e-9 * centro.length());
+      corpo.dispose();
+    });
+
+    it(`${nome}: os pontos escuros do anel estão no lado anti-solar`, async () => {
+      const { corpo, malha, mat, centro, dirSolCena } = await anelDeSaturno(jd);
+      const achado = direcaoDaSombraNaCena(
+        malha,
+        mat.uniforms.uDirSolLocal.value as THREE.Vector3,
+        mat.uniforms.uKPolar.value as number,
+        mat.uniforms.uSolAngRad.value as number,
+        centro
+      );
+      expect(achado, `${nome}: nenhum ponto na sombra`).not.toBeNull();
+      // a vista não é vazia dos dois lados: há sombra E há anel aceso
+      expect(achado!.sombreados).toBeGreaterThan(20);
+      expect(achado!.claros).toBeGreaterThan(200);
+
+      // A LEI, na língua do dono: a sombra fica do lado oposto ao Sol.
+      expect(achado!.direcao.dot(dirSolCena)).toBeLessThan(0);
+
+      // E não só "do outro lado": o eixo do cone de sombra É o anti-Sol,
+      // e o que ele risca no plano do anel é a PROJEÇÃO desse eixo nesse
+      // plano — o Sol está elevado sobre o anel, e é essa elevação que
+      // separa a mancha do anti-Sol em 3D. Comparar com o anti-Sol cru
+      // acusaria 26,7° em 2017 e chamaria de erro a abertura do anel.
+      const normalDoAnel = new THREE.Vector3(0, 0, 1).transformDirection(malha.matrix);
+      const antiNoPlano = dirSolCena
+        .clone()
+        .multiplyScalar(-1)
+        .addScaledVector(normalDoAnel, dirSolCena.dot(normalDoAnel))
+        .normalize();
+      expect(grausEntre(achado!.direcao, antiNoPlano)).toBeLessThan(0.5);
+      corpo.dispose();
+    });
+  }
+
+  /**
+   * CONTROLE NEGATIVO — a sabotagem que o dono viu na foto. Repor o
+   * frame ERRADO (Rx(−π/2) para a frente: y e z do uniform trocados de
+   * sinal) tem de reprovar o mesmo juiz, e reprovar FEIO.
+   */
+  it('sabotagem: com o frame invertido, a sombra sai do lugar em todas as datas', async () => {
+    const desvios: number[] = [];
+    let doLadoDoSol = 0;
+    for (const { jd } of DATAS) {
+      const { corpo, malha, mat, centro, dirSolCena } = await anelDeSaturno(jd);
+      const certo = mat.uniforms.uDirSolLocal.value as THREE.Vector3;
+      const invertido = new THREE.Vector3(certo.x, -certo.y, -certo.z);
+      const achado = direcaoDaSombraNaCena(
+        malha,
+        invertido,
+        mat.uniforms.uKPolar.value as number,
+        mat.uniforms.uSolAngRad.value as number,
+        centro
+      );
+      expect(achado).not.toBeNull();
+      const normalDoAnel = new THREE.Vector3(0, 0, 1).transformDirection(malha.matrix);
+      const antiNoPlano = dirSolCena
+        .clone()
+        .multiplyScalar(-1)
+        .addScaledVector(normalDoAnel, dirSolCena.dot(normalDoAnel))
+        .normalize();
+      desvios.push(grausEntre(achado!.direcao, antiNoPlano));
+      if (achado!.direcao.dot(dirSolCena) > 0) doLadoDoSol++;
+      corpo.dispose();
+    }
+    // nenhuma das três poses "acerta por coincidência"
+    for (const d of desvios) expect(d).toBeGreaterThan(30);
+    // e o que o dono viu na foto — sombra DO LADO DO SOL — acontece
+    // mesmo, em pelo menos uma das três
+    expect(doLadoDoSol).toBeGreaterThan(0);
+  });
+
+  it('o raio angular do Sol é MEDIDO da distância do corpo, não constante', async () => {
+    const { corpo, mat, q } = await anelDeSaturno(DATAS[0].jd);
+    const p = motor.posicaoHeliocentrica('saturn', q.jdTdb);
+    const esperado = RAIO_SOL_KM / (Math.hypot(p.x, p.y, p.z) * AU_KM);
+    expect(mat.uniforms.uSolAngRad.value as number).toBeCloseTo(esperado, 12);
+    // ~0,0275° em Saturno: o Sol daqui é quase um ponto, mas não é um ponto
+    expect((mat.uniforms.uSolAngRad.value as number) * (180 / Math.PI)).toBeCloseTo(0.0275, 3);
     corpo.dispose();
   });
 });

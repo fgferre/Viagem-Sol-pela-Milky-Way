@@ -80,6 +80,36 @@ export function orientacaoInercialDoAnelNaCena(
 }
 
 /**
+ * O SOL (OU A CÂMERA) NAS COORDENADAS DA `RingGeometry` — a ponte que
+ * faltava, e que custou ao dono a sombra invertida do item 91.
+ *
+ * O anel é uma `RingGeometry`, que mora no plano XY; o mesh a levanta
+ * com `M = Base(anelX, anelY, anelZ) · S(a) · Rx(−π/2)`. Logo a base
+ * local do anel, escrita na cena, é
+ *
+ *     x̂ = anelX      ŷ = −anelZ      ẑ = anelY   (o polo)
+ *
+ * e as COMPONENTES de um vetor da cena nessa base são os produtos
+ * escalares com esses três — que é a INVERSA de `Rx(−π/2)`, não ela
+ * mesma. Aplicar a rotação para a frente (o que o código fazia até
+ * 2026-08-25) devolve o mesmo vetor girado MEIA VOLTA em torno de x̂:
+ * a sombra do globo saía espelhada no plano do anel e ia parar do lado
+ * do Sol, e a fotometria da camada lia uma câmera que não era a da cena.
+ *
+ * Existe UMA função porque existia o MESMO erro copiado em dois lugares
+ * (o anel de Saturno em `gigante.ts` e o de Quaoar em `rochoso.ts`).
+ */
+export function componentesNoFrameDoAnel(
+  v: THREE.Vector3,
+  anelX: THREE.Vector3,
+  anelY: THREE.Vector3,
+  anelZ: THREE.Vector3,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  return out.set(v.dot(anelX), -v.dot(anelZ), v.dot(anelY));
+}
+
+/**
  * Eixos unitários como o MESH os gravou (colunas da matriz, sem a
  * escala). O oráculo D-E4 lê ISTO — não a função que escreveu a
  * matriz. Deitar o polo no equador na malha tem de reprovar.

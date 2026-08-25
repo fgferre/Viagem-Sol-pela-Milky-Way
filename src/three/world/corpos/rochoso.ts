@@ -78,9 +78,11 @@ import { LIMIAR_DO_GATE_PX, cessaoAlvo, gateBinario } from './terra';
 import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
 import type { EstadoDasTexturas, OpcoesDeTextura } from './texturas';
 import {
+  componentesNoFrameDoAnel,
   orientacaoDoCorpoNaCena,
   orientacaoInercialDoAnelNaCena,
 } from './orientacaoNaCena';
+import { RAIO_SOL_KM } from '../../escala';
 import {
   escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
@@ -451,6 +453,7 @@ export class RochosoResolvido {
   private readonly vAnelY = new THREE.Vector3();
   private readonly vAnelZ = new THREE.Vector3();
   private readonly vTmp = new THREE.Vector3();
+  private readonly vSol = new THREE.Vector3();
   private readonly vEscala = new THREE.Vector3();
   private readonly estado: EstadoDoRochoso;
 
@@ -618,7 +621,10 @@ export class RochosoResolvido {
     // 20 luas daqui herdam a constante do PAI (Titã expõe como Saturno),
     // e o anel de Quaoar recebe o mesmo `ganho`. Ver `luzDaVisita.ts`.
     const ganho = ganhoDoGlobo(this.rUA, this.config.id, q.politica);
-    const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
+    // ONDE ESTÁ O SOL, uma vez só por corpo: a ORIGEM da cena. O anel
+    // de Quaoar bebe DESTE vetor — tinha um segundo cálculo idêntico
+    // só para ele (item 91).
+    const dirSol = this.vSol.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);
     const sLx = dirSol.dot(this.vX);
@@ -650,20 +656,20 @@ export class RochosoResolvido {
         .scale(this.vEscala.set(this.raioA, this.raioA, this.raioA))
         .multiply(this.mRx)
         .setPosition(this.centro);
+      // A MESMA ponte do anel de Saturno — e o mesmo conserto: as
+      // componentes no frame da RingGeometry são a INVERSA de Rx(−π/2).
+      // O erro estava copiado aqui; agora só existe uma função (item 91).
       const ua = this.matAnel.uniforms;
-      const nSol = Math.max(this.centro.length(), 1e-30);
-      const solX = -this.centro.x / nSol;
-      const solY = -this.centro.y / nSol;
-      const solZ = -this.centro.z / nSol;
-      const sAx = solX * this.vAnelX.x + solY * this.vAnelX.y + solZ * this.vAnelX.z;
-      const sAy = solX * this.vAnelY.x + solY * this.vAnelY.y + solZ * this.vAnelY.z;
-      const sAz = solX * this.vAnelZ.x + solY * this.vAnelZ.y + solZ * this.vAnelZ.z;
-      const cAx = delta.dot(this.vAnelX) / this.raioA;
-      const cAy = delta.dot(this.vAnelY) / this.raioA;
-      const cAz = delta.dot(this.vAnelZ) / this.raioA;
-      (ua.uDirSolLocal.value as THREE.Vector3).set(sAx, sAz, -sAy);
-      (ua.uCamLocal.value as THREE.Vector3).set(cAx, cAz, -cAy);
+      componentesNoFrameDoAnel(
+        dirSol, this.vAnelX, this.vAnelY, this.vAnelZ,
+        ua.uDirSolLocal.value as THREE.Vector3
+      );
+      componentesNoFrameDoAnel(
+        delta, this.vAnelX, this.vAnelY, this.vAnelZ,
+        ua.uCamLocal.value as THREE.Vector3
+      ).divideScalar(this.raioA);
       ua.uLuzGanho.value = ganho;
+      ua.uSolAngRad.value = RAIO_SOL_KM / Math.max(this.rUA * AU_KM, 1e-30);
     }
   }
 
@@ -719,6 +725,7 @@ export class RochosoResolvido {
           uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
           uLuzGanho: { value: 1 },
           uKPolar: { value: this.razaoC },
+          uSolAngRad: { value: 0 },
           uAnelRaios: { value: new THREE.Vector2(anel.rInt, anel.rExt) },
           uModo: { value: 2 },
         },
