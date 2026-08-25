@@ -190,6 +190,59 @@ describe('prioridade — quem ganha a vaga', () => {
     expect(pesoDoRotulo(lua, new Set([lua.key]))).toBeLessThan(pesoDoRotulo(terra));
   });
 
+  it('O BÔNUS NÃO INVERTE NENHUM PAR DA TABELA — a trava, degrau a degrau', () => {
+    // A SEGURANÇA "estrela nunca rouba a vaga de lua" tinha margem
+    // EXATAMENTE ZERO e NENHUM juiz a guardava: `lua` 6 contra
+    // `estrelaPropria` 5 × 1,2 = 6,0. Bastava o bônus virar 1,25, ou
+    // `estrelaPropria` virar 6, para a hierarquia inverter com a suíte
+    // inteira verde. Este teste é essa trava, e ela é sobre a TABELA
+    // INTEIRA, não sobre o par que alguém lembrou de escrever.
+    //
+    // A LEI: para dois degraus vizinhos, o de BAIXO com bônus não pode
+    // PASSAR o de cima sem bônus. Empatar é permitido — o desempate por
+    // distância resolve, e é onde `lua`/`estrelaPropria` vive hoje.
+    // um rótulo qualquer, só para carregar a prioridade: o que se mede
+    // aqui é o PESO, e ele não olha mais nada do objeto
+    const base = projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes()).find(
+      (l) => l.key === `${CHAVE_DE_CORPO}earth`
+    )!;
+    const degraus = [...new Set(Object.values(PRIORIDADE_DO_ROTULO))].sort(
+      (a, b) => b - a
+    );
+    for (let i = 0; i + 1 < degraus.length; i++) {
+      const cima = degraus[i];
+      const baixo = degraus[i + 1];
+      expect(
+        baixo * BONUS_DE_HISTERESE,
+        `o bônus faz ${baixo} passar ${cima}`
+      ).toBeLessThanOrEqual(cima);
+    }
+
+    // E A MESMA LEI PELO PESO, que é quem manda de verdade — a conta
+    // acima é da tabela, esta é da função que a lê.
+    const nomes = Object.keys(PRIORIDADE_DO_ROTULO) as (keyof typeof PRIORIDADE_DO_ROTULO)[];
+    for (const alto of nomes) {
+      for (const baixo of nomes) {
+        if (PRIORIDADE_DO_ROTULO[baixo] >= PRIORIDADE_DO_ROTULO[alto]) continue;
+        const a = { ...base, key: 'a', prioridade: PRIORIDADE_DO_ROTULO[alto] };
+        const b = { ...base, key: 'b', prioridade: PRIORIDADE_DO_ROTULO[baixo] };
+        expect(
+          pesoDoRotulo(b, new Set(['b'])),
+          `${baixo} com bônus passou ${alto} sem bônus`
+        ).toBeLessThanOrEqual(pesoDoRotulo(a));
+      }
+    }
+
+    // O PAR QUE ESTAVA QUEBRADO até 24/08, pinado pelo nome para nunca
+    // mais voltar em silêncio: o `foco` é o topo, e um SOL já desenhado
+    // não pode passar à frente de um alvo recém-escolhido.
+    const sol = { ...base, key: 'sol', prioridade: PRIORIDADE_DO_ROTULO.sol };
+    const foco = { ...base, key: 'foco', prioridade: PRIORIDADE_DO_ROTULO.foco };
+    expect(pesoDoRotulo(sol, new Set(['sol']))).toBeLessThanOrEqual(
+      pesoDoRotulo(foco)
+    );
+  });
+
   it('sem prioridade vale o piso — é o rótulo do FILME, que não é tocado', () => {
     expect(pesoDoRotulo({ ...projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes())[0], prioridade: undefined }))
       .toBe(PRIORIDADE_DO_ROTULO.outros);

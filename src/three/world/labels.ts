@@ -87,7 +87,13 @@ export interface StarLabel {
  * inteligente"*.
  *
  * OS NÚMEROS, e a razão de cada degrau:
- *  · `foco` 100 — o que o visitante escolheu nunca cede a nada;
+ *  · `foco` 120 — o que o visitante escolheu nunca cede a nada. **Era
+ *    100, e 100 NÃO CUMPRIA a própria promessa** (achado em 24/08, ao
+ *    escrever a trava de hierarquia): o bônus de histerese multiplica o
+ *    peso de quem já estava na tela, e `sol` 90 × 1,2 = **108 > 100** —
+ *    um Sol já desenhado passava à frente de um alvo recém-escolhido que
+ *    ainda não tivesse aparecido, que é exatamente o que esta linha jura
+ *    que não acontece. 120 é o menor degrau redondo acima de 108;
  *  · `sol` 90 — a estrela da casa é o centro do frame e a referência de
  *    escala de toda vista do Atlas;
  *  · `planeta` 10, `anao` 8, `lua` 6 — a hierarquia do próprio objeto;
@@ -97,7 +103,7 @@ export interface StarLabel {
  *  · `outros` 4 — Sagittarius A✱ e o que mais chegar sem classe.
  */
 export const PRIORIDADE_DO_ROTULO = {
-  foco: 100,
+  foco: 120,
   sol: 90,
   planeta: 10,
   anao: 8,
@@ -107,7 +113,17 @@ export const PRIORIDADE_DO_ROTULO = {
   estrelaBayer: 3,
 } as const;
 
-/** O bônus de quem JÁ ESTAVA na tela — a histerese, em fator. */
+/**
+ * O bônus de quem JÁ ESTAVA na tela — a histerese, em fator.
+ *
+ * **ELE NÃO PODE INVERTER A TABELA ACIMA**, e essa é a trava que
+ * `labels.test.ts` guarda par a par: para todo degrau vizinho, o de
+ * baixo COM bônus não passa o de cima sem bônus. A folga mais apertada é
+ * `lua` 6 contra `estrelaPropria` 5 × 1,2 = **6,0** — empate exato, que
+ * o desempate por distância resolve. Subir este fator para 1,25 já
+ * inverteria esse par (6,25 > 6) e uma estrela roubaria a vaga de uma
+ * lua; foi assim que a trava nasceu.
+ */
 export const BONUS_DE_HISTERESE = 1.2;
 
 /**

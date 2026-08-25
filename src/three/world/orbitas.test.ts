@@ -39,7 +39,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalact
 import { EPOCA_JD_TDB } from './planetas/retrato2026';
 import { Planetas, UA_POR_PC } from './planetas/planetas';
 import { IDS_FOTOMETRIA } from './planetas/fotometria';
-import { HELIO_SEM_PONTO } from '../atlasConfig';
+import { CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA } from '../atlasConfig';
 import {
   ATLAS_FOV_GRAUS,
   BORDA_DO_SISTEMA_INTERNO,
@@ -55,6 +55,7 @@ import {
   escreverLaco,
   muDoPar,
   muEmUaDia,
+  realceDoFoco,
 } from './orbitas';
 
 // A MESMA carga do `efemerides.test.ts` — o motor de verdade, sobre o
@@ -360,12 +361,12 @@ describe('a camada no quadro', () => {
         const corpo = CORPOS_COM_ORBITA[i];
         const j = (IDS_FOTOMETRIA as readonly string[]).indexOf(corpo.id);
         if (j < 0) continue; // as luas não têm ponto fotométrico
-        const loop = orbitas.group.children[i] as unknown as {
+        const fita = orbitas.group.children[i] as unknown as {
           geometry: { getAttribute(n: string): { array: Float32Array } };
           position: { x: number; y: number; z: number };
         };
-        const g = loop.geometry.getAttribute('instanceStart').array;
-        const c = loop.position;
+        const g = fita.geometry.getAttribute('instanceStart').array;
+        const c = fita.position;
         const d = Math.hypot(
           g[0] + c.x - pos[j * 3],
           g[1] + c.y - pos[j * 3 + 1],
@@ -415,10 +416,10 @@ describe('a camada no quadro', () => {
 
     const alfaDe = (id: string) => {
       const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
-      const loop = orbitas.group.children[i] as unknown as {
+      const fita = orbitas.group.children[i] as unknown as {
         material: { opacity: number };
       };
-      return loop.material.opacity;
+      return fita.material.opacity;
     };
     // AS QUATRO DE DENTRO, no brilho CHEIO — nenhuma no meio do fade: a
     // vista dele não é "quase dá para ver as linhas"
@@ -441,12 +442,12 @@ describe('a camada no quadro', () => {
     // a ordem do grupo é a de `CORPOS_COM_ORBITA`, que é a do config
     const iTerra = CORPOS_COM_ORBITA.findIndex((c) => c.id === 'earth');
     expect(iTerra).toBeGreaterThanOrEqual(0);
-    const loop = orbitas.group.children[iTerra] as unknown as {
+    const fita = orbitas.group.children[iTerra] as unknown as {
       geometry: { getAttribute(n: string): { array: Float32Array } };
     };
     const p = motor.posicaoHeliocentrica('earth', EPOCA_JD_TDB);
     const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
-    const arr = loop.geometry.getAttribute('instanceStart').array;
+    const arr = fita.geometry.getAttribute('instanceStart').array;
     // float32 do atributo contra float64 da efeméride: a folga é a da
     // quantização do buffer, e é relativa ao raio da órbita
     const escala = Math.hypot(eq[0], eq[1], eq[2]) * AU_PARA_PC;
@@ -667,6 +668,64 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     quadro();
     expect(alfas(orbitas)).toEqual(neutro);
     orbitas.dispose();
+  });
+
+  it('A FAMÍLIA, cobrada sobre os TRINTA — e não só sobre as que acendem', () => {
+    // POR QUE ESTE TESTE EXISTE, dito por extenso: o teste de imagem
+    // abaixo mede as OITO linhas acesas na vista de Júpiter, e uma
+    // sabotagem que metesse as luas de SATURNO na família de Júpiter
+    // passaria por ele — as linhas de Saturno não acendem naquele
+    // enquadramento, e o que não acende não é medido. Aqui a lei é
+    // cobrada na função pura, corpo a corpo, nos trinta.
+    //
+    // O ORÁCULO É O CONFIG, não a implementação: a família esperada sai
+    // de `LUAS_DO_SISTEMA.pai`, que é outra fonte. Repetir
+    // `centro === foco` aqui seria o teste conferindo a si mesmo.
+    // O SOL ENTRA NA LISTA, e o caso dele é DESENHO e não acidente:
+    // enquadrar o Sol acende as NOVE heliocêntricas (o `centro` delas é
+    // ele) e recolhe as 21 luas — "mostre-me o sistema". A família do
+    // Sol são os planetas, pela mesma regra que dá a Júpiter as
+    // galileanas; não há ramo especial para ele.
+    const focos = ['jupiter', 'saturn', 'earth', 'io', 'titan', 'pluto', 'sun'];
+    for (const foco of focos) {
+      const esperados = new Set<string>([
+        foco,
+        ...(foco === 'sun'
+          ? CORPOS_DO_SISTEMA.filter((c) => c.id !== 'sun').map((c) => c.id)
+          : LUAS_DO_SISTEMA.filter((l) => l.pai === foco).map((l) => l.id)),
+      ]);
+      let subiram = 0;
+      for (const corpo of CORPOS_COM_ORBITA) {
+        const r = realceDoFoco(corpo, foco);
+        if (esperados.has(corpo.id)) {
+          expect(r, `${corpo.id} devia SUBIR com foco=${foco}`).toBeCloseTo(1.75, 9);
+          subiram++;
+        } else {
+          expect(r, `${corpo.id} devia RECUAR com foco=${foco}`).toBeCloseTo(0.35, 9);
+        }
+      }
+      // e a família não é vazia nem é o mundo inteiro — senão o laço
+      // acima passaria por não ter o que comparar
+      expect(subiram, foco).toBeGreaterThan(0);
+      expect(subiram, foco).toBeLessThan(CORPOS_COM_ORBITA.length);
+    }
+
+    // SEM FOCO, os trinta valem 1 — é o que mantém a abertura, o filme e
+    // toda vista de bancada no pixel de sempre
+    for (const corpo of CORPOS_COM_ORBITA) {
+      expect(realceDoFoco(corpo, null), corpo.id).toBe(1);
+    }
+
+    // E UM FORASTEIRO — quem não tem linha NEM é centro de ninguém — não
+    // promove ninguém por engano: todos recuam, e nenhum sobe. Ceres é o
+    // caso fino: ele É corpo do sistema, mas está em `HELIO_SEM_PONTO` e
+    // não é pai de nada.
+    for (const forasteiro of ['Sirius', 'ceres']) {
+      const subiu = CORPOS_COM_ORBITA.filter(
+        (c) => realceDoFoco(c, forasteiro) > 1
+      );
+      expect(subiu.map((c) => c.id), forasteiro).toEqual([]);
+    }
   });
 
   it('a LUA em foco separa-se das IRMÃS — o alvo sobe e as três recuam', () => {

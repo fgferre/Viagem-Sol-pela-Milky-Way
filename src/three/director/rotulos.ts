@@ -198,6 +198,28 @@ export class Rotulos {
     this.camTimer += dt;
   }
 
+  /**
+   * OS NOMES FORÇADOS DO BEAT — a fala do roteiro, num lugar só.
+   *
+   * Ela tem DOIS chamadores de propósito: o ramo do filme, onde os
+   * forçados se somam aos nomes da régua; e o gate da camada desligada,
+   * onde eles são a ÚNICA coisa que sobra. Uma segunda cópia aqui seria a
+   * divergência silenciosa entre "o que o filme diz" e "o que o filme diz
+   * com os nomes desligados".
+   */
+  private forcadosDoBeat(
+    cam: THREE.PerspectiveCamera,
+    named: NamedStar[],
+    target: readonly string[] | undefined
+  ): StarLabel[] {
+    const forced: StarLabel[] = [];
+    for (const name of target ?? []) {
+      const l = this.resolveForcedLabel(cam, named, name);
+      if (l) forced.push(l);
+    }
+    return forced;
+  }
+
   /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | nome HYG) */
   private resolveForcedLabel(
     cam: THREE.PerspectiveCamera,
@@ -334,13 +356,32 @@ export class Rotulos {
     // clicar-para-visitar: o que não está escrito não se clica, que é a
     // mesma lei única da pendência 30.
     if (quadro.nomesEscondidos) {
-      if (this.lastLabels.length > 0) {
-        this.lastLabels = [];
-        this.prevLabelKeys.clear();
-        this.prevDesenhados.clear();
-      }
+      // A CHAVE GOVERNA A RÉGUA, NÃO O ROTEIRO (24/08). Ela nasceu para
+      // o ATLAS, onde o visitante escolhe o que quer ver e a lei é dura:
+      // sem nome escrito não há clique (a pendência 30). Mas ela vale em
+      // toda fase, a gaveta existe DURANTE o filme, e o gate ficava ANTES
+      // do ramo `journey` — então dois cliques calavam o ROTEIRO: os
+      // nomes FORÇADOS do beat (o assunto do plano, que a regra editorial
+      // manda sempre ter nome) e até a LINHA DE RUMO ("→ SIRIUS · 8,6
+      // anos-luz"), que nem nome de corpo é. O filme é o roteiro dirigindo
+      // a cena; uma chave de camada não tem autoridade para emudecê-lo.
+      //
+      // O QUE FICA IGUAL: no Atlas e no voo livre, tudo cala — inclusive
+      // o clique, que é decisão declarada e testada. O que muda é só o
+      // FILME, e só a fala dele.
+      const roteiro =
+        fase === 'journey' && named
+          ? this.fios.beatDaViagem()
+          : null;
+      const falados = roteiro
+        ? this.forcadosDoBeat(cam, named as NamedStar[], roteiro.target)
+        : [];
+      // a memória da régua não sobrevive: ela não está correndo
+      if (this.prevLabelKeys.size > 0) this.prevLabelKeys.clear();
+      if (this.prevDesenhados.size > 0) this.prevDesenhados.clear();
+      this.lastLabels = falados;
       this.fios.onLabels(this.lastLabels);
-      this.emitDest(undefined, cam.position, named);
+      this.emitDest(roteiro?.dest, cam.position, named);
       this.emitSol(cam.position, fase);
       this.emitCamera(cam.position, fase);
       return;
@@ -364,11 +405,7 @@ export class Rotulos {
             );
         if (dHome < 1.5 && !meta.target) labels = [];
         if (meta.target) {
-          const forced: StarLabel[] = [];
-          for (const name of meta.target) {
-            const l = this.resolveForcedLabel(cam, named, name);
-            if (l) forced.push(l);
-          }
+          const forced = this.forcadosDoBeat(cam, named, meta.target);
           const keys = new Set(forced.map((l) => l.key));
           labels = labels.filter((l) => !keys.has(l.key)).slice(0, 2);
           labels.push(...forced);

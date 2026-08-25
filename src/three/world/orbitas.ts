@@ -596,6 +596,36 @@ export function espelharNaFita(
   }
 }
 
+/**
+ * O MULTIPLICADOR DO FOCO de um corpo (§5b) — a lei da família, isolada
+ * do quadro de propósito.
+ *
+ * ELA É PURA E É EXPORTADA porque a família tem de ser cobrável sobre os
+ * TRINTA corpos, e não só sobre os poucos que estão acesos na vista de
+ * teste. Enquanto esta regra viveu dentro do laço do quadro, uma
+ * sabotagem que metesse as luas de Saturno na família de Júpiter passava
+ * a suíte inteira: as linhas de Saturno não estavam acesas naquele
+ * enquadramento, e o que não acende não é medido.
+ *
+ * A FAMÍLIA É DERIVADA, NUNCA DIGITADA: o alvo (`id === foco`) e as luas
+ * dele (`centro === foco`). Não há lista de ids aqui, e é isso que faz a
+ * regra continuar certa no dia em que uma lua mudar de pai no config.
+ *
+ * O SOL CAI NA MESMA REGRA, e é desenho e não acidente: enquadrar o Sol
+ * acende as NOVE heliocêntricas (o `centro` delas é ele) e recolhe as 21
+ * luas — "mostre-me o sistema". Não há ramo especial para ele, e é isso
+ * que se quer: a família do Sol são os planetas pelo MESMO motivo que a
+ * de Júpiter são as galileanas.
+ */
+export function realceDoFoco(
+  corpo: CorpoComOrbita,
+  foco: string | null
+): number {
+  if (foco === null) return 1;
+  const daFamilia = corpo.id === foco || corpo.centro === foco;
+  return daFamilia ? REALCE_DO_FOCO : RECUO_FORA_DO_FOCO;
+}
+
 /** Uma linha viva: o objeto do three mais o que o quadro precisa dela. */
 interface LinhaDeOrbita {
   readonly corpo: CorpoComOrbita;
@@ -882,16 +912,9 @@ export class Orbitas {
     );
   }
 
-  /**
-   * O ALVO do multiplicador desta linha (§5b). Sem foco, 1 para todas —
-   * e é essa saída que faz a abertura, o filme e toda vista de bancada
-   * desenharem o pixel de sempre.
-   */
+  /** O alvo do multiplicador desta linha (§5b) — ver `realceDoFoco`. */
   private realceAlvo(linha: LinhaDeOrbita): number {
-    if (this.foco === null) return 1;
-    const daFamilia =
-      linha.corpo.id === this.foco || linha.corpo.centro === this.foco;
-    return daFamilia ? REALCE_DO_FOCO : RECUO_FORA_DO_FOCO;
+    return realceDoFoco(linha.corpo, this.foco);
   }
 
   /** Um passo do realce rumo ao alvo, com encosto (§5b). */

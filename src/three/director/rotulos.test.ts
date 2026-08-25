@@ -165,6 +165,54 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
     expect(rotulos.alvos).toEqual([]);
   });
 
+  it('a chave cala a RÉGUA, não o ROTEIRO: no filme a fala do beat sobrevive', () => {
+    // O DEFEITO QUE ISTO FECHA (24/08): o gate da camada vinha ANTES do
+    // ramo `journey`, então desligar os nomes calava o FILME — o nome
+    // FORÇADO do beat (o assunto do plano, que a regra editorial manda
+    // sempre ter nome) e a LINHA DE RUMO, que nem nome de corpo é. A
+    // gaveta existe durante o filme: eram dois cliques para emudecer o
+    // roteiro. O filme é o roteiro dirigindo a cena; uma chave de camada
+    // não tem autoridade sobre ele.
+    const publicados: StarLabel[][] = [];
+    const dests: (string | null)[] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicados.push(l),
+      onDest: (d) => dests.push(d),
+      onSol: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({ target: ['Vizinha'], dest: 'Vizinha' }) as JourneyMeta,
+    });
+    const cam = new THREE.PerspectiveCamera();
+    cam.position.set(0, 0, 5);
+    cam.updateMatrixWorld();
+    const noFilme = (nomesEscondidos: boolean): QuadroDeRotulos => ({
+      fase: 'journey', named: CEU, dHome: 5, planetas: null, foco: null,
+      nomesEscondidos,
+    });
+
+    // COM a camada ligada, o beat fala
+    rotulos.projetar(cam, noFilme(false));
+    expect(publicados.at(-1)!.some((l) => l.name === 'Vizinha')).toBe(true);
+    expect(dests.at(-1)).toBeTruthy();
+
+    // ...e DESLIGADA ele continua falando: é o mesmo nome forçado e a
+    // mesma linha de rumo
+    rotulos.projetar(cam, noFilme(true));
+    expect(
+      publicados.at(-1)!.some((l) => l.name === 'Vizinha'),
+      'a chave calou o assunto do beat'
+    ).toBe(true);
+    expect(dests.at(-1), 'a chave calou a linha de rumo').toBeTruthy();
+
+    // E NO ATLAS NADA DISSO VALE — lá a chave cala tudo, que é a decisão
+    // declarada e testada acima. Sem esta metade, o conserto do filme
+    // teria afrouxado o Atlas em silêncio.
+    rotulos.projetar(cam, { ...noFilme(true), fase: 'atlas' });
+    expect(publicados.at(-1)).toEqual([]);
+    expect(rotulos.alvos).toEqual([]);
+    expect(dests.at(-1)).toBeFalsy();
+  });
+
   it('calar os nomes não cala o Atlas: a ficha continua sabendo onde a câmera está', () => {
     const { rotulos, camPublicadas, cam, quadro } = comCeu();
     rotulos.lerCamera(true);
