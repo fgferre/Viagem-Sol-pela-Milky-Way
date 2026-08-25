@@ -1016,18 +1016,23 @@ try {
   // 2. ABERTO: tudo que o selo dizia antes continua sendo dito, e é
   //    aqui que se cobra.
   const inicial = await abrirSelo();
-  // DESDE O M2 a abertura do Atlas declara o BRILHO ASSISTIDO: a faixa
-  // é comprimida na emissão para mundos distantes continuarem visíveis
-  // (é a LEI da luz, não um desvio por quadro), e a política de luz dos
-  // corpos nasce `assistida` (E^σ — Onda 6, D2), com a copy leiga no
+  // DESDE O M2 a abertura do Atlas declara o BRILHO ASSISTIDO: a política
+  // de luz dos corpos nasce `assistida` (Onda 6, D2), com a copy leiga no
   // detalhe do selo. Um Atlas que abrisse dizendo BRILHO REAL sobre uma
   // imagem tratada seria o selo mentindo — que é o defeito que ele
   // existe para não ter. (A GRADAÇÃO POR CONTEXTO da era F6 morreu no
   // M1 — o vigia dela mudou de alvo, logo abaixo.)
+  //
+  // A COPY MUDOU NO ITEM 91 (25/08), e este vigia muda com ela. Ele pinava
+  // `faixa comprimida`, que era a copy da lei do PONTO — e o ponto nunca
+  // passou por esta política. Quem `assistida` governa é o GLOBO visitado,
+  // e a frase nova diz o que ele realmente faz. Pinar a frase, e não só o
+  // rótulo do eixo, continua sendo o certo: é o texto que o visitante lê
+  // que precisa envelhecer junto com a lei.
   conferir(
     inicial !== null && inicial.escala === 'ESCALA REAL'
       && inicial.brilho === 'BRILHO ASSISTIDO'
-      && /faixa comprimida/.test(inicial.detalhe),
+      && /exposto para a luz que ELE recebe/.test(inicial.detalhe),
     `selo aberto na abertura: "${inicial?.escala}" · "${inicial?.brilho}" — ${inicial?.detalhe}`
   );
   const aberto = await lerResumo();
@@ -1147,6 +1152,43 @@ try {
       // e não pode voltar à URL.
       && urlLimpa.includes('luz=real') && !urlLimpa.includes('grad'),
     `selo: a volta limpa a porta, escreve a luz e preserva o modo (${urlLimpa})`
+  );
+
+  // 4b. A PORTA DE DUAS VIAS (decisão 3 do dono, item 91 — 25/08). Até
+  //     aqui esta linha só tinha IDA: chegando em BRILHO REAL ela ficava
+  //     DESABILITADA, e a única volta à luz assistida era editar `?luz=`
+  //     na URL e recarregar. Um selo que é o controle da vista não pode
+  //     ser porta de mão única — e este juiz, que já dirigia o selo por
+  //     clique, cobria só metade do gesto.
+  //
+  //     A regra: enquanto sobrar algo a desfazer, o clique desfaz; quando
+  //     não sobra mais nada, o MESMO clique devolve a assistência. Aqui a
+  //     vista já está limpa (a volta acima desfez a camada e a luz), então
+  //     este segundo clique tem de virar o gesto do avesso — AO VIVO, sem
+  //     recarga —, e a URL tem de espelhar apagando a chave, porque
+  //     `assistida` é o padrão e a URL desta casa é espelho, não painel.
+  conferir(
+    voltou.brilhoClicavel,
+    'selo: em BRILHO REAL a linha CONTINUA sendo controle — é a volta que não existia'
+  );
+  await sessao.js(`(() => {
+    const [, brilho] = [...document.querySelectorAll('.atlas-selo-detalhe .atlas-selo-linha')];
+    brilho.click();
+  })()`);
+  await dorme(250);
+  const reassistido = await abrirSelo();
+  const resumoDaReassistencia = await lerResumo();
+  const urlDaVolta = await sessao.js('location.search');
+  const luzViva = await sessao.js('String(window.__director.selo.luz)');
+  conferir(
+    reassistido.brilho === 'BRILHO ASSISTIDO' && luzViva === 'assistida'
+      && /BRILHO ASSISTIDO/.test(resumoDaReassistencia.texto),
+    `selo: clicar de novo devolve a luz assistida AO VIVO ("${reassistido.brilho}",`
+      + ` director.luz=${luzViva}, linha fechada: "${resumoDaReassistencia.texto}")`
+  );
+  conferir(
+    !urlDaVolta.includes('luz=') && urlDaVolta.includes('atlas'),
+    `selo: a URL espelha a volta APAGANDO a chave (o padrão não se escreve) — ${urlDaVolta}`
   );
 
   // A LINHA-CONTROLE PRÓPRIA da luz — todo caminho que altera o
