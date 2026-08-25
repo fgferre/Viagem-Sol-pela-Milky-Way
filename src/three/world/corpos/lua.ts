@@ -38,7 +38,7 @@
 // olho reprova.
 //
 // AS QUATRO LEIS de `terra.ts` valem palavra por palavra:
-//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoFundido(dUA, política)`
+//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoDoGlobo(dUA, corpo, política)`
 //     multiplica a componente direta e nada mais; SEM piso de ambiente —
 //     o lado escuro em `real` é escuro (e a Lua não tem cidade).
 //     O dUA é a distância HELIOCÊNTRICA da CADEIA de efeméride da LUA
@@ -83,8 +83,8 @@ import {
   eclipticaParaEquatorial,
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
+import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
 import {
   PARES_DE_ECLIPSE,
   GLSL_SOMBRA_ECLIPSE,
@@ -151,7 +151,7 @@ export const LUA_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
 uniform vec3 uDirSolLocal;  // corpo→Sol, frame LOCAL (unitário)
 uniform vec3 uCamLocal;     // câmera no frame local, em raios
-uniform float uLuzGanho;    // ganhoFundido(dUA da CADEIA da Lua) — o escalar único
+uniform float uLuzGanho;    // ganhoDoGlobo(dUA da CADEIA da Lua) — o escalar único
 varying vec3 vLocal;
 varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
@@ -355,7 +355,10 @@ export class LuaResolvida {
       .setPosition(this.centro);
 
     // frame local (CPU em float64): câmera em raios, Sol unitário
-    const ganho = ganhoFundido(this.rUA, q.politica);
+    // a exposição da visita (item 91): a Lua é visitada à distância do
+    // pai, e o pai é a ÂNCORA — compensação 1 exata, uniform idêntico ao
+    // de antes do 91, bit a bit. Ver `luzDaVisita.ts`.
+    const ganho = ganhoDoGlobo(this.rUA, 'moon', q.politica);
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);

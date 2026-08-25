@@ -26,6 +26,7 @@ import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { ganhoFundido } from '../../../lib/atlas/luz';
+import { compensacaoDaVisita, ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import {
@@ -488,7 +489,21 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
     terra.dispose();
   });
 
-  it('uLuzGanho É ganhoFundido(rUA da efeméride, política) — um uniform, nunca dois', async () => {
+  /**
+   * A PROMESSA MUDOU NO ITEM 91, e muda DECLARADA. Até 25/08 este oráculo
+   * pinava `ganhoFundido(rUA, política)` — a lei do PONTO aplicada no
+   * globo, que é exatamente o defeito que o dono viu em Saturno. Agora
+   * pina `ganhoDoGlobo(rUA, 'earth', política)`: lei viva × compensação
+   * constante do corpo (`luzDaVisita.ts`).
+   *
+   * E A TERRA É O CASO EM QUE OS DOIS COINCIDEM BIT A BIT — de propósito,
+   * não por sorte: a distância da visita dela é `ANCORA_UA`, a mesma
+   * normalização da lei, logo a compensação é 1 EXATO. O segundo bloco
+   * cobra a identidade sob `Object.is`, e é ELE que garante que a obra do
+   * 91 não moveu um pixel das vistas oficiais de casa (terra, terranb,
+   * lua, terralua, os dois eclipses).
+   */
+  it('uLuzGanho É ganhoDoGlobo(rUA, corpo, política) — e na Terra é o MESMO double de antes do 91', async () => {
     const { terra } = terraDeTeste();
     const perto = centroPc(JD);
     perto.z += RAIO_EQ_TERRA_PC * 4;
@@ -502,12 +517,22 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
     );
     expect(mats).toHaveLength(3);
     for (const m of mats) {
-      expect(m.uniforms.uLuzGanho.value).toBe(ganhoFundido(rUA, 'assistida'));
+      expect(m.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'earth', 'assistida'));
     }
     // e a política troca o MESMO uniform no tick seguinte, sem recarga
     terra.atualizar(quadro(perto, { politica: 'real' }));
     for (const m of mats) {
-      expect(m.uniforms.uLuzGanho.value).toBe(ganhoFundido(rUA, 'real'));
+      expect(m.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'earth', 'real'));
+    }
+    // A PROVA DE QUE A CASA NÃO SE MEXEU: compensação 1 exata nas duas
+    // políticas ⇒ o uniform é o mesmo double que a lei antiga produzia.
+    expect(compensacaoDaVisita('earth', 'assistida')).toBe(1);
+    expect(compensacaoDaVisita('earth', 'real')).toBe(1);
+    for (const politica of ['assistida', 'real'] as const) {
+      expect(
+        Object.is(ganhoDoGlobo(rUA, 'earth', politica), ganhoFundido(rUA, politica)),
+        `Terra em ${politica} deixou de ser bit-idêntica`
+      ).toBe(true);
     }
     terra.dispose();
   });
@@ -688,7 +713,10 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(FONTE_SHADERS).toContain('(albedo * ndotl + vec3(espec)) * uLuzGanho');
     // emissão: máscara × intensidade, SEM o ganho — cidade não é reflexo
     expect(FONTE_SHADERS).toContain('.rgb * (mascaraNoite * uNoiteGanho)');
-    expect(FONTE_SHADERS).toContain('ganhoFundido(');
+    // o NOME do escalar mudou no item 91: a malha deixou de chamar a lei
+    // do ponto e passa a chamar a exposição da visita
+    expect(FONTE_SHADERS).toContain('ganhoDoGlobo(');
+    expect(FONTE_SHADERS).not.toContain('ganhoFundido(');
   });
 
   it('não existe termo ambiente (anti-padrões 3 e 9): a saída é direta + emissão e nada mais', () => {

@@ -36,6 +36,7 @@ import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { ganhoFundido, irradianciaRelativa } from '../../../lib/atlas/luz';
+import { compensacaoDaVisita, ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import {
@@ -283,7 +284,15 @@ describe('3. a cadeia de luz da Lua (o oráculo Europa/Júpiter, adaptado)', () 
     expect(irradianciaRelativa(rGeo) / irradianciaRelativa(1)).toBeGreaterThan(100);
   });
 
-  it('uLuzGanho do MESH é ganhoFundido(rUA da CADEIA), bit a bit', async () => {
+  /**
+   * A PROMESSA MUDOU NO ITEM 91, declarada: o uniform passou a ser
+   * `ganhoDoGlobo(rUA, 'moon', política)` — lei viva × compensação da
+   * visita (`luzDaVisita.ts`). A LUA É VISITADA À DISTÂNCIA DO PAI, e o
+   * pai é a `ANCORA_UA`: a compensação vale 1 EXATO e o double é o mesmo
+   * de antes. É esta identidade que mantém `lua` e `terralua`
+   * bit-idênticas no gate.
+   */
+  it('uLuzGanho do MESH é ganhoDoGlobo(rUA da CADEIA) — e na Lua é o MESMO double de antes do 91', async () => {
     const { lua } = luaDeTeste();
     const perto = centroPc(JD);
     perto.z += RAIO_LUA_PC * 4;
@@ -295,10 +304,18 @@ describe('3. a cadeia de luz da Lua (o oráculo Europa/Júpiter, adaptado)', () 
     const rUA = Math.hypot(p.x, p.y, p.z);
     expect(e.rUA).toBe(rUA);
     const mat = (lua.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial;
-    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoFundido(rUA, 'assistida'));
+    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'moon', 'assistida'));
     // a política troca o MESMO uniform no tick seguinte
     lua.atualizar(quadro(perto, { politica: 'real' }));
-    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoFundido(rUA, 'real'));
+    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'moon', 'real'));
+    // a prova de que a casa não se mexeu: compensação 1 exata ⇒ o mesmo double
+    expect(compensacaoDaVisita('moon', 'assistida')).toBe(1);
+    for (const politica of ['assistida', 'real'] as const) {
+      expect(
+        Object.is(ganhoDoGlobo(rUA, 'moon', politica), ganhoFundido(rUA, politica)),
+        `Lua em ${politica} deixou de ser bit-idêntica`
+      ).toBe(true);
+    }
     lua.dispose();
   });
 
@@ -436,7 +453,9 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
 
   it('a luz direta multiplica o ESCALAR ÚNICO e não existe outro termo', () => {
     expect(FONTE).toContain('albedo * (ls * uLuzGanho)');
-    expect(FONTE).toContain('ganhoFundido(');
+    // o NOME do escalar mudou no item 91 (a malha deixou de chamar a lei do ponto)
+    expect(FONTE).toContain('ganhoDoGlobo(');
+    expect(FONTE).not.toContain('ganhoFundido(');
     // sem ambiente, sem especular, sem emissão: regolito é o que é —
     // os NOMES de uniform/termos, não a palavra (o cabeçalho fala deles)
     expect(LUA_FRAG).not.toMatch(/uAmbient|ambientLight|uPiso|uEspec|dEspec|fresnel|uNoite/);

@@ -52,8 +52,8 @@ import {
   eclipticaParaEquatorial,
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
+import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
 import {
   GLSL_SOMBRA_ECLIPSE,
   PARES_DE_ECLIPSE,
@@ -211,7 +211,7 @@ export const ROCHOSO_LAMBERT_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
 uniform vec3 uDirSolLocal;  // corpo→Sol, frame LOCAL (unitário)
 uniform vec3 uCamLocal;     // câmera no frame local, em raios de a
-uniform float uLuzGanho;    // ganhoFundido(dUA da CADEIA) — o escalar único
+uniform float uLuzGanho;    // ganhoDoGlobo(dUA da CADEIA, corpo) — o escalar único
 uniform vec3 uNormalEsc;    // (1, a²/c², a²/b²): gradiente do elipsoide
 uniform vec3 uEscalaLocal;  // (1, c/a, b/a): ponto real do elipsoide
 varying vec3 vLocal;
@@ -614,7 +614,10 @@ export class RochosoResolvido {
       .setPosition(this.centro);
 
     // frame local (CPU em float64): câmera em raios de a, Sol unitário
-    const ganho = ganhoFundido(this.rUA, q.politica);
+    // a exposição da visita (item 91): lei viva × constante do corpo. As
+    // 20 luas daqui herdam a constante do PAI (Titã expõe como Saturno),
+    // e o anel de Quaoar recebe o mesmo `ganho`. Ver `luzDaVisita.ts`.
+    const ganho = ganhoDoGlobo(this.rUA, this.config.id, q.politica);
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);

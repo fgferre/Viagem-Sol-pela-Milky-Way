@@ -44,8 +44,8 @@ import {
   eclipticaParaEquatorial,
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
+import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
 import {
   CORPOS_COM_ANEL,
   GLSL_SOMBRA_ECLIPSE,
@@ -553,7 +553,10 @@ export class GiganteResolvido {
       .scale(this.vEscala.set(this.raioA, this.raioA * this.razaoC, this.raioA * this.razaoB))
       .setPosition(this.centro);
 
-    const ganho = ganhoFundido(this.rUA, q.politica);
+    // a exposição da visita (item 91): lei viva × constante do corpo. O
+    // ANEL recebe o MESMO `ganho` lá embaixo — o anel de Saturno paga a
+    // mesma conta do globo, e era o 0,21 dele que o apagava junto.
+    const ganho = ganhoDoGlobo(this.rUA, this.idCorpo, q.politica);
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);

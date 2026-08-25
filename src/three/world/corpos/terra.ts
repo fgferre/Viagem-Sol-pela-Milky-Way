@@ -10,7 +10,7 @@
 // linha de código dele atravessou (doutrina de travessia, PLANO-ATLAS §0).
 //
 // AS QUATRO LEIS QUE ESTE ARQUIVO OBEDECE:
-//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoFundido(dUA, política)`
+//  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoDoGlobo(dUA, corpo, política)`
 //     multiplica a componente DIRETA (difusa + especular) e nada mais.
 //     Nunca dois multiplicadores empilhados (anti-padrão 1); SEM piso de
 //     ambiente (anti-padrões 3 e 9) — o lado escuro em `real` é escuro, e
@@ -67,8 +67,8 @@ import {
   eclipticaParaEquatorial,
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { ganhoFundido } from '../../../lib/atlas/luz';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
+import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
 import {
   PARES_DE_ECLIPSE,
   criaSombraNaCena,
@@ -514,7 +514,11 @@ export class TerraResolvida {
       .setPosition(this.centro);
 
     // ---- frame local (CPU em float64): câmera em raios, Sol unitário
-    const ganho = ganhoFundido(this.rUA, q.politica);
+    // A EXPOSIÇÃO DA VISITA (item 91): lei viva × constante do corpo. Na
+    // Terra a constante é 1 EXATO — a distância da visita dela É a
+    // `ANCORA_UA` da lei —, então este double é o mesmo de antes do 91 e
+    // o globo de casa não move um bit. Ver `luzDaVisita.ts`.
+    const ganho = ganhoDoGlobo(this.rUA, 'earth', q.politica);
 
     // direção Terra→Sol na cena: o Sol é a ORIGEM (−centro normalizado)
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
