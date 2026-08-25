@@ -665,11 +665,18 @@ carregamento.
 
 *(MB1 — o juiz de estabilidade temporal — FECHOU em 22/08 (`a11112b`):
 `estabilidade-temporal.mjs`, sessão viva com o relógio andando, o quadro
-comparado com o ANTERIOR REPROJETADO — nove famílias, 97 passos, e nasceu
-REPROVANDO 15 defeitos, todos no item 70 das PENDENCIAS. O que ele mede e o
-que ele NÃO vê está no censo do `NORTE.md`; o resto mora no commit. **Segue
-decidindo: MB1 entra ANTES do M6** — 4,02 M partículas é o que mais pode
-chiar — e é o único juiz que enxerga o §5.20.)*
+comparado com o ANTERIOR REPROJETADO — nove famílias, 97 passos. Ele nasceu
+REPROVANDO, e a leitura de então — "todos no item 70" — **não se sustentou**:
+em 25/08 o item 81 mediu que a maior parte daquele vermelho era do PRÓPRIO
+JUIZ, que pedia uma janela de 640×700 e media um quadro de 613 px, onde a PSF
+da casa encolhe para 0,48 px e a soleira de identidade dele vai a 1,17 —
+acima do máximo de um quadro de 8 bits, isto é, sem população nenhuma. Com o
+quadro fixado na altura de calibração (1128×1080), os 18 defeitos de então
+caem para 2 a 4, e ESSES sim são o item 70 (uma fonte forte cruzando a borda
+leva o pedestal de tela junto). O que ele mede e o que ele NÃO vê está no
+censo do `NORTE.md`; o resto mora no commit. **Segue decidindo: MB1 entra
+ANTES do M6** — 4,02 M partículas é o que mais pode chiar — e é o único juiz
+que enxerga o §5.20.)*
 
 ### O saldo
 Se as migrações forem executadas inteiras: ~1.560 linhas de produção apagadas
@@ -859,7 +866,9 @@ declarada. E cobre **cinco famílias de movimento**, não só zoom: aproximaçã
 **órbita**, **reversão de sentido** (onde a histerese aparece), **mudança de FOV** e
 as **fronteiras de promoção** (partícula→catálogo→corpo), que é onde a identidade
 pode escorregar. *(22/08: MB1 EXISTE — `scripts/visual/estabilidade-temporal.mjs`,
-nove famílias, 97 passos, 2,9 min; a entrada dele no §4 traz a linha de base. O
+nove famílias, 97 passos, **3,9 min** no quadro de 1128×1080 que ele passou a
+exigir em 25/08 (item 81: a régua de fase dele só vale na altura em que a PSF
+da casa vale 0,85 px); a entrada dele no §4 traz a linha de base. O
 `voo-ida-e-volta.mjs` continua amostrando 34 degraus **distantes** e continua cego a
 cintilação por construção — é outra régua, para outra pergunta.)* Sem MB1, "não
 ferve" era opinião.

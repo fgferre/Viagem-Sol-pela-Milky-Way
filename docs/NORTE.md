@@ -202,7 +202,13 @@ Três cegueiras declaradas:
   só existe depois do M6; o interior do clarão de um corpo próximo, que sai do
   resíduo por pixel e é julgado só por identidade; e o resíduo por
   pixel onde a paralaxe do passo passa de 1 px — em `aproxEstrela` isso
-  suspende a família inteira e sobra a estrela-alvo. `voo-ida-e-volta.mjs`
+  suspende a família inteira e sobra a estrela-alvo; **o pedaço de um traço
+  que esmaeceu e se partiu** (a regra do traço barra a linha inteira, não o
+  fragmento compacto dela — declarado em `nucleoCompacto` com os números); e
+  **o céu que `pan` e `orbita` varrem, que não é fixo**: o passo das duas é de
+  4 px, então o ALCANCE angular delas encolhe quando a janela cresce, e o
+  veredito dessas duas famílias não é comparável entre janelas diferentes
+  (achado em 25/08, item 81). `voo-ida-e-volta.mjs`
   continua sendo outra régua para outra pergunta (ida e volta em 34
   degraus DISTANTES, cego a cintilação por construção) e não é juiz
   obrigatório desde 21/08 — ver a tabela de decisões fechadas.

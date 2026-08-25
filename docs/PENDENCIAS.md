@@ -79,7 +79,8 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > do olho dele, e mudou de seção: subiu para **ALTA**) → ~~**81**~~
 > (FEITO em 25/08: o vermelho do MB1 era do
 > próprio juiz, que media numa janela em que a régua dele não valia — o
-> que sobrou dos 18 defeitos são 2 a 4, e todos são o item 70) → **70** →
+> que sobrou dos 18 defeitos são 2 a 4, flutuando entre corridas, e todos
+> são o item 70) → **70** →
 > **75**, com o resto do **83** (G1, L3, L4, L5) na fila da mesma
 > família.
 
@@ -2122,8 +2123,11 @@ há o que medir. Quando voltar, o passo é guardar os DOIS PNG e rodar o
 estados diferentes, e o gate tem defesa contra isso (`friaNoGate`), o que
 torna a hipótese menos provável e o achado mais interessante.
 
-**81.** (Achado em 23/08, medindo o item 61. **DIAGNOSTICADO E QUASE TODO
-FECHADO em 25/08** — o que sobra está no fim, e é o item 70.) **MB1
+**81.** (Achado em 23/08, medindo o item 61. **FECHADO em 25/08**: o defeito
+DO JUIZ está consertado e provado, e não sobrou obra atribuída a este item —
+o vermelho que o MB1 ainda acusa é do item 70, e está escrito lá. Fica na
+lista porque a causa é nova e longa, e porque o item deixa DUAS limitações
+declaradas que quem for medir depois precisa saber.) **MB1
 reprovava em cinco famílias, e a culpa era do próprio juiz: ele media
 numa janela em que a régua dele não vale.**
 
@@ -2144,13 +2148,32 @@ a aritmética de fase do juiz supõe 0,85. A soleira honesta de identidade
 máximo de um quadro de 8 bits: **naquela janela nenhuma fonte do campo
 tinha identidade medível, e o juiz cobrava identidade de todas.**
 
-Medido com o PRÓPRIO `fontesDoQuadro`, sobre gaussianas em 441 fases de
-sub-pixel: a σ=0,48 uma fonte de amplitude 1,0 SOME do censo em 4 fases
-de 441; a de 0,7, em 84. Era a família inteira de "SUMIU — fonte de pico
-0,57…0,93 desapareceu, longe da borda". A σ=0,85 nenhuma fonte de
-amplitude ≥ 0,55 some em nenhuma das 441 fases, e o erro de centroide
-nunca passa de 0,67 px contra a régua de 1,00 — nem com vizinho colado
-(0,92 px no pior caso). Eram os saltos de 1,02 a 1,13 px.
+**Medido por um script que ficou no projeto** —
+`scripts/visual/fase-da-grade.mjs`, que varre a metade simétrica das fases
+de sub-pixel (com o canto (0,5; 0,5), o pior caso, SEMPRE incluído) e mede
+com o PRÓPRIO `fontesDoQuadro`:
+
+| quadro | σ | fator no canto | soleira | amp 1,0 some em | amp 0,7 some em |
+|---|---|---|---|---|---|
+| 1080 px | 0,850 | 0,7075 | **0,5654** | 0,0% das fases | 0,0% |
+| 613 px | 0,482 | 0,3416 | **1,1709** | **2,3%** | **20,9%** |
+
+A prova que fecha: o piso de sobrevivência medido por bisseção dá 0,5654 e
+1,1709 — **exatamente a soleira derivada, a 0,00% de erro nas duas alturas**.
+Ela não é um número calibrado para o resultado dar certo; é a mesma conta,
+medida por fora. Era essa a família de acusações "SUMIU — fonte de pico
+0,57…0,93 desapareceu, longe da borda": a 613 px até uma fonte de amplitude
+CHEIA some em 2,3% das fases. O erro de centroide de uma fonte isolada nunca
+passa de **0,672 px** em nenhuma das duas alturas, contra a régua de 1,00 —
+quem estoura a régua de salto é o VIZINHO, não a fase.
+
+*(A primeira escrita deste item, no mesmo dia, trouxe números de um ensaio de
+bancada que não ficou no projeto e que varria as fases a partir de zero em
+passos de 1/21 — pulando justamente o canto. Uma auditoria independente não
+reproduziu, e com razão: duas afirmações eram falsas — "lê pico entre 0,40 e
+0,72", quando 0,72 era a MÉDIA das fases e o máximo é a própria amplitude, e
+"nenhuma de amplitude ≥ 0,55 some", que erra por 0,7%. Número de documento sem
+script é número que ninguém confere; agora tem script.)*
 
 **O CONSERTO** (`60d9ed3`): o quadro passa a ser EXATO
 (`Emulation.setDeviceMetricsOverride`, o remédio que a casa já tinha) e o
@@ -2173,6 +2196,22 @@ da âncora — escrito para um platô saturado — dava 53 px de raio. Foto:
 `capturas/item81-traco-da-orbita.png`. Não muda veredito hoje; fecha uma
 armadilha que continuava armada.
 
+**O TERCEIRO CONSERTO** (`760d9cf` + `7541961`), e ele veio de uma
+auditoria dos dois primeiros — que achou um buraco grave: **o juiz
+descalibrado saía VERDE.** A declaração de "esta janela não serve" ia para
+`suspensos`, que por construção não reprova, e o rodapé ainda truncava a
+lista em dez linhas. Agora **teste que não consegue medir REPROVA**, a
+declaração sai num bloco próprio impresso inteiro, e a altura que julga é a
+do quadro CAPTURADO (antes o cabeçalho lia a variável de ambiente e um
+override que falhasse passava batido). Junto: o guarda de brilho passou a
+usar o fator da altura em vez da constante de 1080; a exclusão por traço
+passou a ser contada e declarada (`fronteiraTerra` cala 6); e os números
+das fases ganharam script (`scripts/visual/fase-da-grade.mjs`) porque os
+primeiros, escritos sem lastro, não reproduziam. **Uma correção de honestidade:**
+derivar a soleira em vez de digitá-la mudou o terceiro decimal — 0,70 →
+0,7075 e 0,5714 → 0,5654. Eu tinha escrito "os valores de sempre", e não
+eram.
+
 **O QUE SOBRA, e é o item 70 e mais nada:** `fov` passo 5 (FERVE 3,80,
 com a luz do quadro caindo 27,0%) e `zoomDeRoda` passos 7–8 (o Sol saindo
 pela borda de baixo: 1,74 px de salto na âncora de VÊNUS, que está dentro
@@ -2181,7 +2220,21 @@ não em outras). Os dois são o MESMO passo: uma fonte muito forte
 cruzando a borda do quadro leva o pedestal de tela junto. **Não se
 conserta aqui** — é obra do item 70, com A/B declarado.
 
-**REGISTRADO, NÃO CONSERTADO:** `pan` e `orbita` definem o passo em
+**AS DUAS LIMITAÇÕES DECLARADAS** — não são obra pendente deste item; são o
+que a régua reconhecidamente não faz.
+
+**(a) A regra do traço barra a LINHA, não o PEDAÇO dela.** Depois que a linha
+esmaece e se parte, os fragmentos ficam compactos e voltam a ser julgados: o
+fragmento medido no caso que abriu a regra tinha n=22 e razão 2,35, e foi ele
+a acusação de 1,97 px em `fronteiraTerra` k8. E o corte, escrito por extenso,
+é `lado ≤ 3·√nMeia` — o que num blob CHEIO equivale a razão de aspecto 9:1,
+então barras maciças compridas (390×45, 60×8, 20×3) passam por mancha. Nenhuma
+dessas formas existe no céu deste app hoje (o que é comprido aqui é fino), mas
+o vão anunciado antes — "estrela 1,7 · traço 17,2" — dava a impressão de uma
+separação que a régua não tem. Fechar o buraco do fragmento pede olhar a
+HISTÓRIA da componente, não a geometria de um quadro.
+
+**(b)** `pan` e `orbita` definem o passo em
 PIXELS (`4 / pxPorRad`), então o CÉU que elas varrem encolhe quando a
 janela cresce — os vereditos das duas não são comparáveis entre janelas,
 e o silêncio delas a 1080 é em parte outro experimento. Quem quiser as
