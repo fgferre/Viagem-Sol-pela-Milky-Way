@@ -307,6 +307,51 @@ describe('5. a classe — gate, carga, cessão, anel', () => {
     expect(Math.hypot(p!.x, p!.y, p!.z)).toBeGreaterThan(4);
     expect(Math.hypot(p!.x, p!.y, p!.z)).toBeLessThan(6);
   });
+
+  /**
+   * O PINO DE REGRESSÃO DO ITEM 91 — e ele nasceu de uma SABOTAGEM que
+   * passou. Em 25/08 o auditor reverteu a obra inteira alimentando
+   * `ganhoDoGlobo` com o id `'earth'` em vez do id do corpo, aqui e no
+   * rochoso, e os 2.249 testes passaram TODOS. O conserto de Saturno
+   * existia sem nada que o protegesse: bastava um `find`/`replace`
+   * distraído para o dono voltar a ver carvão, em silêncio.
+   *
+   * O buraco era de COBERTURA, não de lei. A lib estava pinada
+   * (`luzDaVisita.test.ts`), a Terra e a Lua estavam pinadas — e as duas
+   * têm compensação 1 EXATA, então a reversão não as move um bit. Ninguém
+   * pinava o que gigante e rochoso ESCREVEM no uniform. Com `'earth'` a
+   * compensação vale 1 e o produto vira `ganhoFundido` puro: exatamente a
+   * lei do ponto no globo, que é o defeito original.
+   *
+   * O NÚMERO É LITERAL, e é a lição da casa: um oráculo que recalcula a
+   * fórmula do código concorda com o código mesmo quando os dois estão
+   * errados. Este vem de fora — 0,987500172598 é o que Saturno deve valer
+   * a 9,709593622 UA no JD do teste, e sob a reversão o uniform sairia
+   * 0,203685100863 (4,85× menor). Se um dia mudar a efeméride ou a
+   * política, este número muda COM DECLARAÇÃO, nunca por conveniência.
+   */
+  it('PINO 91: o uniform de Saturno é a EXPOSIÇÃO DA VISITA, não a lei do ponto', async () => {
+    const { corpo } = giganteDeTeste('saturn');
+    corpo.atualizar(quadro('saturn', 4));
+    await flush();
+    expect(corpo.atualizar(quadro('saturn', 4)).emQuadro).toBe(true);
+
+    // o esperado, de fora do código: ganhoFundido(9,709593622 UA) × 4,848170869702
+    const ESPERADO_SATURNO = 0.987500172598;
+    const globo = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
+    expect(globo.uniforms.uLuzGanho.value).toBeCloseTo(ESPERADO_SATURNO, 9);
+
+    // O ANEL PAGA A MESMA CONTA — era o 0,2 dele que o apagava junto com
+    // o globo, e um anel que ficasse para trás seria meio conserto.
+    const anel = malhaDoAnel(corpo.group).material as THREE.ShaderMaterial;
+    expect(anel.uniforms.uLuzGanho.value).toBe(globo.uniforms.uLuzGanho.value);
+
+    // E O QUE A SABOTAGEM PRODUZIRIA, dito por extenso para o próximo a
+    // ler: com `'earth'` no lugar do id, o uniform cairia neste valor.
+    const SOB_A_REVERSAO = 0.203685100863;
+    expect(globo.uniforms.uLuzGanho.value).not.toBeCloseTo(SOB_A_REVERSAO, 6);
+    corpo.dispose();
+  });
 });
 
 describe('6. texto-fonte (as leis do cabeçalho, pinadas)', () => {

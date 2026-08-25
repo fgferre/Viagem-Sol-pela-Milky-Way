@@ -366,6 +366,56 @@ describe('4. a classe — gate, carga, retrato × sem-retrato, cessão', () => {
     expect(e.gateArmado).toBe(true); // o gate a frio que a captura segura
     corpo.dispose();
   });
+
+  /**
+   * O PINO DE REGRESSÃO DO ITEM 91, o irmão do de `gigante.test.ts` — e
+   * os dois nasceram de uma SABOTAGEM que passou. Em 25/08 o auditor
+   * reverteu a obra alimentando `ganhoDoGlobo` com o id `'earth'` em vez
+   * do id do corpo, aqui e no gigante, e os 2.249 testes passaram TODOS:
+   * o conserto existia sem nada que o protegesse.
+   *
+   * Esta classe serve TRÊS famílias com uma lei só, e por isso as três
+   * são pinadas separadamente — um pino em Marte não prova Titã, que
+   * herda a distância do PAI, nem Éris, que puxa o semieixo da tabela de
+   * TNOs. São três caminhos distintos dentro de `distanciaDaVisitaUA`, e
+   * um pino por caminho é o que impede que dois deles quebrem calados.
+   *
+   * OS NÚMEROS SÃO LITERAIS, de fora do código: um oráculo que recalcula
+   * a fórmula do código concorda com ele mesmo quando os dois estão
+   * errados. Sob a reversão a compensação vale 1 e o uniform cai para o
+   * `ganhoFundido` puro — a lei do PONTO no globo, que é o defeito
+   * original. A margem é grande em toda parte e enorme em Éris (19×),
+   * que é o corpo em que a visita mais gasta.
+   */
+  describe('PINO 91: o uniform é a EXPOSIÇÃO DA VISITA, e cada família tem o seu', () => {
+    for (const caso of [
+      // corpo      brdf        superficie      esperado         sob a reversão
+      { id: 'mars', brdf: 'lambert' as const, sup: undefined, esperado: 1.067588635207, revertido: 0.795009377980, familia: 'rochoso' },
+      { id: 'titan', brdf: 'lambert' as const, sup: undefined, esperado: 0.987842741269, revertido: 0.203755760228, familia: 'lua (herda o pai)' },
+      { id: 'eris', brdf: 'lambert' as const, sup: 'procedural' as const, esperado: 0.796563463514, revertido: 0.041633680220, familia: 'TNO' },
+    ]) {
+      it(`${caso.id} — ${caso.familia}`, async () => {
+        const { corpo } = rochosoDeTeste(caso.id, caso.brdf, caso.sup);
+        corpo.atualizar(quadro(caso.id, 4));
+        await flush();
+        expect(corpo.atualizar(quadro(caso.id, 4)).emQuadro, caso.id).toBe(true);
+        const mat = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
+        expect(mat.uniforms.uLuzGanho.value, caso.id).toBeCloseTo(caso.esperado, 9);
+        // e o valor que a reversão produziria fica de fora, por extenso
+        expect(mat.uniforms.uLuzGanho.value, `${caso.id} sob a reversão`).not.toBeCloseTo(
+          caso.revertido,
+          6
+        );
+        corpo.dispose();
+      });
+    }
+
+    it('Éris é o caso em que a visita mais gasta: ~19× sobre a lei crua', () => {
+      // o número que separa este pino de um teste decorativo — se a
+      // compensação sumisse, Éris cairia para 4% do que está na tela
+      expect(0.796563463514 / 0.041633680220).toBeCloseTo(19.13, 2);
+    });
+  });
 });
 
 describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
