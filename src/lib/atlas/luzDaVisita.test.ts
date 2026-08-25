@@ -77,6 +77,13 @@ const D_TERRA = 0.98332668220797514;
 // juiz que não consegue medir reprova, não avisa. Quem levar uma
 // construção nova para o chunk ensina o tradutor no mesmo commit.
 //
+// E RECUSA TAMBÉM A RECURSÃO, nomeando a peça: uma função que chama a si
+// mesma escapa da varredura de identificadores (o nome dela está em
+// `nomesDoChunk()`) e só estouraria em tempo de execução, num
+// `ReferenceError` que não diz nada. QUEM LISTA AS PEÇAS É O CHUNK —
+// `nomesDoChunk()`, nunca uma lista redigitada: peça nova é compilada
+// pelo juiz no dia em que nasce, chamada pelo `main` ou não.
+//
 // O QUE O VÉU (§4.4) ENSINOU A ELE, em 2026-08-25: `sqrt` e `mix`, e
 // CHAMADA ENTRE PEÇAS — `globoComVeu` chama o `luzDoGlobo` da receita, e
 // sem isso o juiz não conseguiria executar a última linha do fragmento,
@@ -176,6 +183,19 @@ function abrirVec3(texto: string, nome: string): string {
 function traduzirGlsl(corpo: string, params: readonly string[], nome: string): string {
   const js = abrirVec3(corpo.replace(/\/\/[^\n]*/g, ''), nome)
     .replace(/\b(?:float|vec3)\s+(\w+)\s*=/g, 'const $1 =');
+  /**
+   * RECURSÃO NÃO PASSA, e a recusa é NOMEADA. A varredura de
+   * identificadores logo abaixo NÃO pegaria uma peça que chama a si
+   * mesma: o próprio nome está em `nomesDoChunk()`, portanto em
+   * `conhecidos`. Quem a pegaria seria a assinatura de `funcaoDoChunk`,
+   * que amarra as IRMÃS e exclui o próprio nome — mas ali o estouro
+   * chega como um `ReferenceError` cru em tempo de execução, sem dizer
+   * que peça nem o que fazer. Juiz que não consegue medir reprova, e
+   * reprova NOMEANDO.
+   */
+  if (new RegExp(`\\b${nome}\\s*\\(`).test(js)) {
+    throw new Error(`\`${nome}\` chama a SI MESMA — este juiz não executa recursão`);
+  }
   const locais = [...js.matchAll(/\bconst\s+(\w+)/g)].map((m) => m[1]!);
   const conhecidos = new Set<string>([
     ...params, ...locais, ...UNIFORMES, ...Object.keys(EMBUTIDOS),
@@ -478,14 +498,34 @@ describe('3. peça (c) — o terminador logístico s = 3', () => {
  * engolir o que não entende, os blocos de cima viram teatro sem avisar.
  */
 describe('3b. o instrumento — o tradutor que executa o chunk', () => {
-  it('as QUATRO peças da receita moram no chunk, e é o corpo delas que roda', () => {
-    for (const nome of [
+  /**
+   * A LISTA DAS PEÇAS SAI DO TEXTO, não da memória de quem escreveu o
+   * teste — e até 25/08 saía da memória. Redigitados à mão, os cinco
+   * nomes ficavam para trás do chunk: uma SEXTA peça, com uma construção
+   * que o tradutor não conhece, entrava sem reprovar nada enquanto o
+   * `main` do shader não a chamasse, e este bloco jurava executar "as
+   * peças" medindo só as de que se lembrava. Agora quem lista é
+   * `nomesDoChunk()`, o mesmo descobridor que o tradutor usa.
+   */
+  it('TODA peça do chunk COMPILA no juiz — a lista sai do texto', () => {
+    const pecas = nomesDoChunk();
+    expect(pecas.length).toBeGreaterThan(0);
+    for (const nome of pecas) {
+      expect(CHUNK, nome).toContain(`${nome}(`);
+      expect(() => funcaoDoChunk(nome), nome).not.toThrow();
+    }
+  });
+
+  /**
+   * E O CENSO FECHA. A lista derivada cobre a peça que CHEGA; este pino
+   * cobre a que SOME — peça apagada ou renomeada sem que ninguém aqui
+   * soubesse deixaria o laço de cima passeando por quatro nomes e verde.
+   */
+  it('o censo fecha: as CINCO peças da receita, nem uma a mais nem a menos', () => {
+    expect(nomesDoChunk()).toEqual([
       'terminadorSuave', 'lanternaDeLeitura', 'luzDoGlobo',
       'opacidadeDoVeu', 'globoComVeu',
-    ]) {
-      expect(CHUNK, nome).toContain(`${nome}(`);
-      expect(() => funcaoDoChunk(nome)).not.toThrow();
-    }
+    ]);
   });
 
   /**
@@ -516,6 +556,24 @@ describe('3b. o instrumento — o tradutor que executa o chunk', () => {
     // e o que ele CONHECE atravessa: declaração com tipo, vec3 de um canal
     expect(traduzirGlsl('vec3 t = vec3(1.0);\nreturn max(x, t);', ['x'], 'ok'))
       .toContain('const t =');
+  });
+
+  /**
+   * RECURSÃO REPROVA COM O NOME. É o único buraco que a varredura de
+   * identificadores não podia fechar sozinha: o nome da própria peça
+   * está em `nomesDoChunk()`, logo em `conhecidos`, e passaria — para
+   * estourar depois num `ReferenceError` cru, porque a assinatura de
+   * `funcaoDoChunk` amarra as IRMÃS e exclui o próprio nome.
+   */
+  it('peça que chama a SI MESMA reprova, e a recusa DIZ qual peça', () => {
+    // o nome é o de uma peça DE VERDADE do chunk, e é isso que prova o
+    // buraco: `terminadorSuave` está em `nomesDoChunk()`, portanto em
+    // `conhecidos`, e a varredura de identificadores o deixaria passar
+    expect(() => traduzirGlsl('return terminadorSuave(x);', ['x'], 'terminadorSuave'))
+      .toThrow(/`terminadorSuave` chama a SI MESMA/);
+    // e a chamada a uma IRMÃ continua atravessando — é ela que faz
+    // `globoComVeu` executar o `luzDoGlobo` de verdade
+    expect(() => traduzirGlsl('return luzDoGlobo(x, x);', ['x'], 'vizinha')).not.toThrow();
   });
 });
 
