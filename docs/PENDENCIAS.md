@@ -984,6 +984,20 @@ Três degraus, nesta ordem:
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
+**11. A órbita acende mais cedo no Retina do que numa tela comum.** Achado
+em 25/08 ao consertar a régua da cessão (item 70), na mesma peça e pela
+mesma doença: o fade de entrada da linha compara o raio aparente da elipse
+com `RAIO_MIN_PX = 3` e `RAIO_CHEIO_PX = 16` (`world/orbitas.ts`), só que o
+raio é calculado contra a meia-altura do quadro em px de **buffer**. Num Mac
+(2×) o mesmo céu dá o dobro de pixels, então a linha cruza os dois limiares
+com **metade do tamanho aparente**: numa tela ela já está cheia enquanto na
+outra ainda está nascendo. O tamanho aparente é o que a casa exige de tudo
+que tem medida de tela (a fita é px de CSS, o clarão corrige DPR), então o
+provável certo é dividir pelo `pixelRatio` — mas isso MUDA o que aparece na
+tela e em que momento, e por isso pede medida e o olho dele, não conserto de
+passagem. **Não medido ainda:** em quanto anda a distância em que cada órbita
+aparece. Fica aqui porque foi visto, não porque foi julgado.
+
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela
 lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
 
