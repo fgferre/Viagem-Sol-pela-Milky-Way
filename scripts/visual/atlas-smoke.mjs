@@ -1189,6 +1189,40 @@ try {
       + ` (${porPortaLegada} vs ${peloGesto})`
   );
 
+  // O MESMO `?ver=corpo` COM UM CORPO QUE NÃO É A TERRA — e esta prova
+  // é NOVA (24/08), porque a de cima passava por EMPATE. Ela compara a
+  // porta com o gesto, e quando o religador do relógio (`enquadreVivo`)
+  // tinha a posição e o raio da TERRA em literal os DOIS caminhos caíam
+  // na Terra: md5 igual, veredito verde, defeito de pé. Escolher a
+  // Terra como corpo de prova era escolher o único caso que o defeito
+  // não movia.
+  //
+  // O que denuncia é a IDENTIDADE do que ficou em quadro, e ela se lê
+  // no rig: o alvo a 5,21 UA do Sol e a esfera com o RAIO DE JÚPITER.
+  // MEDIDO com o defeito: 0,9833 UA e 6.378 km — a Terra, com a ficha
+  // anunciando "Júpiter". A tolerância do raio é a da tabela (1e-3
+  // relativo); a da distância é 1% porque a efeméride que chega tarde
+  // não põe o planeta no mesmo bit do retrato.
+  await sessao.ir(`atlas=1&foco=jupiter&ver=corpo&jd=EPOCA&${PIN}`);
+  await sessao.assentar();
+  const emQuadro = JSON.parse(
+    await sessao.js(
+      'JSON.stringify((()=>{const r=window.__director.atlas;const k=206264.806247096;'
+      + 'return {ua:Math.hypot(r.alvo.x,r.alvo.y,r.alvo.z)*k,'
+      + ' km:r.raioDoAlvo*k*149597870.7,'
+      + ' corpo:window.__director.escadaViva.corpoId,'
+      + ' degrau:window.__director.escadaViva.degrau};})())'
+    )
+  );
+  conferir(
+    emQuadro.corpo === 'jupiter'
+      && emQuadro.degrau === 'corpo'
+      && Math.abs(emQuadro.ua / 5.2119 - 1) < 1e-2
+      && Math.abs(emQuadro.km / 71492 - 1) < 1e-3,
+    `?foco=jupiter&ver=corpo enquadra JÚPITER e nele FICA depois do tique do relógio`
+      + ` (${emQuadro.ua.toFixed(4)} UA do Sol, esfera de ${emQuadro.km.toFixed(0)} km)`
+  );
+
   // ---- 15c: OS NOMES DA ABERTURA (item 73, plano §3) ---------------
   // A segunda coisa que o dono pediu, com as palavras dele:
   // *"conseguíamos ver os rótulos de todos objetos de forma

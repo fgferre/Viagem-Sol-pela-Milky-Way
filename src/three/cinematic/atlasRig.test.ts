@@ -1636,10 +1636,14 @@ describe('o degrau do CORPO DO SOL', () => {
       ESCADA.indexOf('  private posicaoDesenhada(')
     );
     const ramo = vivo.slice(vivo.indexOf("if (degrau === 'corpo')"));
-    // o ramo do Sol vem ANTES do de sempre (que devolve a TERRA), e o
-    // Sol não anda: ele É a origem do frame heliocêntrico
+    // o ramo do Sol vem ANTES do de sempre (que só conhece os corpos com
+    // efeméride e malha), e o Sol não anda: ele É a origem do frame
+    // heliocêntrico. O ramo de sempre DEVOLVIA A TERRA em literal até
+    // 24/08 — o defeito que punha a Terra em quadro com a ficha
+    // anunciando Júpiter; hoje ele lê o corpo em foco, e quem julga isso
+    // em câmera é `director/escada.test.ts`
     expect(ramo.indexOf("id === 'sun'")).toBeGreaterThan(-1);
-    expect(ramo.indexOf("id === 'sun'")).toBeLessThan(ramo.indexOf('posicaoDaTerraUA'));
+    expect(ramo.indexOf("id === 'sun'")).toBeLessThan(ramo.indexOf('this.centroDoCorpo(id)'));
     const doSol = ramo.slice(ramo.indexOf("if (id === 'sun')"));
     expect(doSol).toContain('raio: this.solRaioPc,');
     expect(doSol).toContain('alvo: ORIGEM.clone(),');

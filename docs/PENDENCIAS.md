@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 88.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 89.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -1480,6 +1480,29 @@ são dois buracos que se veem na tela:
 que eles viraram, com número. **Falta o OLHO DO DONO**: ele ainda não
 julgou nenhuma das fotos.
 
+**UM DEFEITO ANTIGO CAIU DE PASSAGEM, no mesmo dia.** Conferindo o L1
+alguém viu que **pedir Júpiter e mandar chegar perto punha a TERRA em
+quadro**, com a ficha anunciando "Júpiter" o tempo todo. Não era do L1
+nem do L2: vem da **Onda 7**, de quando a Terra era o único corpo com
+malha e o *religador do relógio* — a peça que faz o enquadramento seguir
+o corpo enquanto o tempo anda (`enquadreVivo`, em `director/escada.ts`)
+— ficou com a posição e o raio da Terra escritos à mão. Quem estivesse
+perto de QUALQUER planeta era levado para a Terra no primeiro tique de
+céu: pelo link (`?foco=jupiter&ver=corpo`) e pelo botão "aproximar"
+igual. Medido no navegador: o enquadramento saía de 5,21 UA e raio de
+71.492 km (Júpiter) para 0,98 UA e 6.378 km (Terra). Agora ele lê o
+corpo em foco pelas mesmas contas do gesto, e na Terra o resultado é bit
+a bit o de antes. Tem dente em câmera (`director/escada.test.ts`) e o
+`atlas-smoke` ganhou a prova que faltava: a antiga usava a **Terra** dos
+dois lados e por isso passava com o defeito de pé.
+**O MESMO literal existia na família das LUAS**, duas linhas acima, e
+caiu junto: pedir Io e mandar chegar perto mostrava **a nossa Lua**
+(medido: 0,985 UA e 1.737,4 km, contra 5,21 UA e 1.829,4 km de Io).
+Sobrou o TERCEIRO da herança, que não põe corpo errado em quadro mas
+inclina a cena — está no item **88**, porque mexer nele muda o que se vê.
+As três vistas do gate que passam pelo rig do Atlas (`atlas`,
+`foco-jupiter`, `foco-luas`) saíram **bit-idênticas**.
+
 - **L1 — o foco manda na cena. FEITO.** `realce`, um multiplicador por
   linha em cima do alfa do fade (§5b de `world/orbitas.ts`), com a
   família DERIVADA e nunca digitada: `id === foco` (o alvo) ou
@@ -1882,6 +1905,24 @@ mexer no fov quebra a reprodutibilidade que o pino existe para dar, e
 mexer no brilho POR MODO é exatamente o que ele proibiu. O caminho
 honesto, se ele quiser o céu mais cheio no Atlas, é um **eixo global de
 lente** — para todo mundo, nunca por modo. **Decisão dele.**
+
+**88.** (Achado em 24/08, consertando o teleporte do religador do
+relógio.) **Ao enquadrar QUALQUER lua, o que fica no alto da tela é o
+eixo da nossa Lua.** É o último dos três literais da Onda 7 que sobraram
+de quando a Terra e a Lua eram os únicos corpos com malha: os outros dois
+— o corpo e a lua que o relógio ia buscar — caíram no mesmo dia, porque
+punham o corpo ERRADO em quadro. Este não põe: ele só inclina a cena.
+A lei já está decidida desde a Onda 7 — *polo do CORPO nos degraus
+"corpo" e "lua"* — e Titã, Io, Tritão e as outras dezoito estão sendo
+enquadradas com o polo da Lua.
+**POR QUE NÃO CAIU JUNTO:** ele mora em DOIS lugares que precisam
+concordar (o gesto, `focarNaLua`, e o religador, `enquadreVivo`, ambos em
+`director/escada.ts`); consertar um só giraria a câmera no primeiro tique
+do relógio. Consertar os dois é uma linha em cada — mas MUDA O QUE SE VÊ
+(o horizonte da cena roda) numa vista que nenhum juiz cobre e que ele
+nunca olhou. **É obra de olhar, não de conserto**: quem a fizer cria a
+vista que a cobre (uma lua de outro pai, tipo Titã ou Io) e volta com a
+foto do antes e depois.
 
 ---
 

@@ -980,7 +980,17 @@ export class Escada {
     if (degrau === 'estrela') return null;
     if (degrau === 'lua') {
       if (!this.maquinaDoTempo.efemeride) return null;
-      const lua = paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica('moon', jd));
+      // A LUA EM FOCO, e não a Lua: o mesmo literal da Onda 7 do ramo
+      // abaixo, na família das 21 — `?foco=io&ver=corpo` anunciava Io e
+      // punha a LUA em quadro (medido: 0,985 UA e 1.737,4 km, contra os
+      // 5,2 UA e 1.821,5 km de Io). O degrau só é `lua` quando o foco É
+      // uma lua (ver o getter `escada`), então o `find` sempre acha.
+      const entrada = LUAS_DO_SISTEMA.find((l) => l.id === this.focoCorpoId);
+      if (!entrada) return null;
+      const lua = paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(entrada.id, jd));
+      // o raio é o de BODY_AXES, a MESMA fonte de `focarNaLua` (a Lua é
+      // a exceção declarada: `RAIO_LUA_PC` deriva dela bit a bit)
+      const raio = entrada.id === 'moon' ? RAIO_LUA_PC : raiosDoRochosoPc(entrada.id).a;
       // A MISTURA DO PAI É DO PRESET, e o religador não a inventa: ele
       // pergunta ao RIG se ela está de pé (item 73, 22/08). Uma lua
       // SELECIONADA com um clique nasce sem pai — a pose é a do
@@ -991,11 +1001,17 @@ export class Escada {
       const comPai = this.atlas.temPai;
       return {
         alvo: lua,
-        raio: RAIO_LUA_PC,
+        raio,
         eixoDe: lua,
         pai: comPai
-          ? paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(LUAS_DO_SISTEMA[0].pai, jd))
+          ? paraPc(this.maquinaDoTempo.efemeride.posicaoHeliocentrica(entrada.pai, jd))
           : null,
+        // O POLO CONTINUA SENDO O DA LUA para todas elas, e é PROPOSITAL:
+        // `focarNaLua` — o gesto — também o escreve assim, e o religador
+        // que corrigisse só o seu lado giraria a câmera no primeiro tique
+        // do relógio. É o terceiro literal da mesma herança, e ele muda o
+        // ALTO DA TELA de quem enquadra uma lua: mexer nele é obra de
+        // olhar, não de conserto — está no item 88.
         polo: comPai ? this.poloDoCorpo(LUAS_DO_SISTEMA[0].id)?.clone() ?? null : null,
       };
     }
@@ -1003,9 +1019,10 @@ export class Escada {
       const id = this.focoCorpoId ?? LUAS_DO_SISTEMA[0].pai;
       // O SOL NÃO ANDA: ele É a origem do frame heliocêntrico, e o
       // religador tem de dizer isso em vez de cair no ramo abaixo — que
-      // devolve a TERRA (e teleportaria a câmera para o globo dela no
-      // primeiro tique do relógio). O eixo segue o da casa pelo mesmo
-      // motivo do enquadramento: uma direção só para os dois degraus.
+      // só conhece os corpos com efeméride e malha, e devolveria "nada a
+      // recompor" para o único corpo cujo eixo de vista muda com o
+      // relógio. O eixo segue o da casa pelo mesmo motivo do
+      // enquadramento: uma direção só para os dois degraus.
       if (id === 'sun') {
         return {
           alvo: ORIGEM.clone(),
@@ -1015,10 +1032,26 @@ export class Escada {
           polo: null,
         };
       }
-      const centro = paraPc(posicaoDaTerraUA(jd, this.maquinaDoTempo.efemeride));
+      // O CORPO É O QUE ESTÁ EM FOCO, e não a Terra: esta linha nasceu na
+      // Onda 7, quando a Terra era o ÚNICO corpo com malha, e ficou
+      // literal enquanto a F3 e a F4 traziam os outros nove. O `id` já
+      // era lido aqui — mas só para o polo —, então o religador do
+      // relógio teleportava para a TERRA todo enquadramento de corpo que
+      // não fosse dela: `?foco=jupiter&ver=corpo` anunciava Júpiter e
+      // punha a Terra em quadro no primeiro tique de céu, e o botão
+      // "aproximar" de qualquer planeta fazia o mesmo assim que o
+      // relógio andava. As duas contas são as MESMAS de
+      // `aproximarDoCorpo`, lidas das funções que já as guardam num
+      // lugar só — e na Terra o resultado é bit a bit o de antes.
+      const centro = this.centroDoCorpo(id);
+      const raio = this.raioDeCorpoResolvido(id);
+      // corpo sem malha construída não tem degrau `corpo` para recompor:
+      // "nada a recompor" é a resposta honesta (a de antes era mover a
+      // câmera para outro mundo)
+      if (!centro || raio === null) return null;
       return {
         alvo: centro,
-        raio: RAIO_EQ_TERRA_PC,
+        raio,
         eixoDe: centro,
         pai: null,
         polo: this.poloDoCorpo(id)?.clone() ?? null,
