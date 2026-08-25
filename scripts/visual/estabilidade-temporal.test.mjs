@@ -18,6 +18,9 @@ import {
   TOLERANCIA_SALTO_PX,
   LIMIAR_JULGADA,
   FATOR_DE_FASE,
+  ALTURA_DE_CALIBRACAO_PX,
+  fatorDeFase,
+  soleiraJulgada,
   D_MIN_PC,
   PARALAXE_CEGA_PX,
   LIMIAR_FONTE,
@@ -426,6 +429,52 @@ describe('quem NÃO entra no veredito de identidade, e por quê', () => {
   it('a soleira de fase é o inverso da perda de pico da grade, e nada mais', () => {
     expect(LIMIAR_JULGADA).toBeCloseTo(LIMIAR_FONTE / FATOR_DE_FASE, 12);
     expect(FATOR_DE_FASE).toBeCloseTo(Math.exp(-0.25 / (0.85 * 0.85)), 1);
+  });
+
+  it('a soleira SEGUE A ALTURA DO QUADRO — a PSF do app encolhe com a janela', () => {
+    // na altura de calibração ela é a de sempre
+    expect(fatorDeFase(ALTURA_DE_CALIBRACAO_PX)).toBeCloseTo(FATOR_DE_FASE, 12);
+    expect(soleiraJulgada(ALTURA_DE_CALIBRACAO_PX)).toBeCloseTo(LIMIAR_JULGADA, 12);
+    // e no quadro de 613 px que MB1 media até 25/08 (item 81) ela vai a 1,17:
+    // acima do máximo de um quadro de 8 bits, ou seja SEM população
+    expect(soleiraJulgada(613)).toBeGreaterThan(1);
+    expect(soleiraJulgada(613)).toBeCloseTo(1.17, 2);
+  });
+
+  it('e uma soleira sem população não julga NINGUÉM em vez de acusar todo mundo', () => {
+    const onde = norm([0.05, 0.05, -1]);
+    const desviada = norm([0.05 + 6 / pxPorRad(camA), 0.05, -1]);
+    const cena = (b) => fontesDoQuadro(fotografar(camA, [{ dir: onde, brilho: b }]), W, H);
+    const cenaB = (b) => fontesDoQuadro(fotografar(camB, [{ dir: desviada, brilho: b }]), W, H);
+    const com = (julgada) => casarFontes({
+      fontesA: cena(0.9), fontesB: cenaB(0.9), camA, camB, julgada,
+    });
+    // com a soleira calibrada a fonte de pico 0,9 é julgada e acusada
+    expect(com(LIMIAR_JULGADA).casados[0].salto).toBeGreaterThan(TOLERANCIA_SALTO_PX);
+    // com a soleira do quadro de 613 px ninguém entra no veredito — e é isso
+    // que impede o juiz de cobrar identidade de quem a grade sozinha apaga
+    expect(com(soleiraJulgada(613)).casados).toEqual([]);
+    expect(com(soleiraJulgada(613)).sumidos).toEqual([]);
+  });
+
+  it('o veredito DECLARA a soleira quando ela não é a de calibração', () => {
+    const passo = {
+      k: 1, paralaxePx: 0, fracaoValida: 1, residuoMedio: 0, bandaAlta: 0,
+      casados: [], sumidos: [], julgada: soleiraJulgada(613),
+    };
+    const v = julgarFamilia({
+      nome: 'pan', passos: [passo], piso: { residuoMedio: 0, bandaAlta: 0 },
+    });
+    expect(v.erros).toEqual([]);
+    expect(v.suspensos.join(' ')).toContain('soleira de fase 1.17');
+    expect(v.suspensos.join(' ')).toContain('ACIMA DE 1,00');
+    // e na calibração ele não enche o veredito de declaração inútil
+    const calibrado = julgarFamilia({
+      nome: 'pan',
+      passos: [{ ...passo, julgada: LIMIAR_JULGADA }],
+      piso: { residuoMedio: 0, bandaAlta: 0 },
+    });
+    expect(calibrado.suspensos).toEqual([]);
   });
 });
 

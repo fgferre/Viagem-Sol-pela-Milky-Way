@@ -4,7 +4,12 @@
 //   node scripts/visual/estabilidade-temporal.mjs                 # a corrida inteira
 //   node scripts/visual/estabilidade-temporal.mjs pan orbita      # só estas famílias
 //   PNGS=1 node scripts/visual/estabilidade-temporal.mjs pan      # guarda os retratos
-//   JANELA=640x700 node scripts/visual/estabilidade-temporal.mjs  # (padrão)
+//   JANELA=1128x1080 node scripts/visual/estabilidade-temporal.mjs # (padrão)
+//
+// A JANELA É O QUADRO EXATO, e a altura dela NÃO é gosto: 1080 é a altura em
+// que a PSF da casa vale os 0,85 px que a aritmética de fase deste arquivo
+// supõe (`fatorDeFase`). Rodar mais baixo encolhe a PSF do app e desqualifica
+// a régua de identidade — o veredito passa a dizer a soleira que sobrou.
 //
 // POR QUE ELE EXISTE. A §5.17 é a única cláusula da Lei que nenhuma régua da
 // casa mede: "nenhum campo procedural, nenhuma PSF, nenhum crossfade e nenhum
@@ -112,8 +117,9 @@
 // ruído — o que entrou no item 70 das PENDENCIAS repetiu em corridas
 // sucessivas, com a mesma assinatura e no mesmo passo.
 //
-// CUSTO: 2,7 min a corrida inteira, ~0,3 min por família — medido nesta máquina
-// em 22/08, com o dev server no ar. O censo está em docs/NORTE.md.
+// CUSTO: ~4 min a corrida inteira, ~0,4 min por família — medido nesta máquina
+// em 25/08, com o dev server no ar e o quadro de 1128×1080 (eram 1,8 min no
+// quadro de 613 px que não servia). O censo está em docs/NORTE.md.
 // ============================================================
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -170,23 +176,61 @@ export const PARALAXE_CEGA_PX = 1.0;
 export const LIMIAR_FONTE = 0.40;
 
 /**
- * QUANTO DO PICO uma PSF perde por cair entre dois pixels da grade. Uma
- * gaussiana de σ ≈ 0,85 px amostrada meio pixel fora do centro nos dois eixos
- * lê exp(−0,25/σ²) ≈ 0,70 do seu pico verdadeiro. É por isso que existe uma
- * SEGUNDA soleira: uma fonte cujo pico está a um fio do `LIMIAR_FONTE` entra e
- * sai da lista conforme a estrela atravessa a fronteira entre dois pixels —
- * e o vizinho fraco que aparece no lugar dela vira uma acusação falsa de
- * re-semeadura. Medido nesta máquina no pan de 40 UA: com a soleira única, 7
- * das 245 fontes por passo "saltavam" de 3 a 14 px, e TODAS eram componentes
- * de UM pixel com pico entre 0,40 e 0,49.
+ * A ALTURA em que a PSF da casa vale 0,85 px. NÃO é um número deste arquivo:
+ * é `ALTURA_DE_CALIBRACAO_DO_SIGMA_PX` de `src/three/luzDaCasa.ts`, e o
+ * shader do campo escreve `sigma = SIGMA_PX · alturaDoQuadro / 1080`
+ * (`GLSL_STAR_PSF`, `shaders/common.ts`). Ou seja: **a PSF que MB1 mede
+ * encolhe com a janela**, e toda a aritmética de fase abaixo depende dela.
  */
-export const FATOR_DE_FASE = 0.70;
+export const ALTURA_DE_CALIBRACAO_PX = 1080;
+/** σ da PSF em px NA altura de calibração — `SIGMA_PX` de `luzDaCasa.ts`. */
+export const SIGMA_DA_PSF_PX = 0.85;
 
-/** O pico mínimo para uma fonte ser JULGADA. Quem define o contorno é o
- *  `LIMIAR_FONTE`; quem entra no veredito de identidade é só quem sobrevive à
- *  pior fase da grade. Fontes abaixo disto seguem servindo de ALVO de
- *  casamento — elas existem, só não se cobra identidade delas. */
-export const LIMIAR_JULGADA = LIMIAR_FONTE / FATOR_DE_FASE;
+/**
+ * QUANTO DO PICO uma PSF perde por cair entre dois pixels da grade, e A CONTA
+ * DEPENDE DA ALTURA DO QUADRO. Uma gaussiana de σ px amostrada meio pixel fora
+ * do centro nos dois eixos lê exp(−0,25/σ²) do seu pico verdadeiro; com σ =
+ * 0,85 (a altura de calibração) isso dá 0,70, e a soleira julgada 0,57. É por
+ * isso que existe uma SEGUNDA soleira: uma fonte cujo pico está a um fio do
+ * `LIMIAR_FONTE` entra e sai da lista conforme a estrela atravessa a fronteira
+ * entre dois pixels — e o vizinho fraco que aparece no lugar dela vira uma
+ * acusação falsa de re-semeadura. Medido nesta máquina no pan de 40 UA: com a
+ * soleira única, 7 das 245 fontes por passo "saltavam" de 3 a 14 px, e TODAS
+ * eram componentes de UM pixel com pico entre 0,40 e 0,49.
+ *
+ * POR QUE ISTO DEIXOU DE SER UMA CONSTANTE (item 81, 25/08). MB1 nasceu com
+ * `0,70` digitado e com a janela padrão `640x700`, que depois de a moldura do
+ * Chrome comer 87 px entrega um quadro de **613** px de altura — onde o app
+ * desenha σ = 0,85 · 613/1080 = **0,48 px**, uma PSF abaixo de Nyquist. A
+ * soleira honesta ali é 0,40/exp(−0,25/0,48²) = **1,17**, isto é ACIMA do
+ * máximo de um quadro de 8 bits: naquela janela NENHUMA fonte do campo tem
+ * identidade medível, e o juiz cobrava identidade de todas. Medido com o
+ * PRÓPRIO `fontesDoQuadro`, sobre gaussianas sintéticas em 441 fases de
+ * sub-pixel: a σ = 0,48 uma fonte de amplitude 1,0 SOME do censo em 4 fases
+ * de 441 e lê pico entre 0,40 e 0,72; a de amplitude 0,7 some em 84 de 441.
+ * Era essa a família de acusações "SUMIU — fonte de pico 0,57…0,93
+ * desapareceu, longe da borda". A σ = 0,85 nada disso acontece: nenhuma fonte
+ * de amplitude ≥ 0,55 some em nenhuma das 441 fases, e o erro de centroide
+ * nunca passa de 0,67 px contra a régua de 1,00 px.
+ */
+export function fatorDeFase(alturaPx = ALTURA_DE_CALIBRACAO_PX) {
+  const sigma = (SIGMA_DA_PSF_PX * alturaPx) / ALTURA_DE_CALIBRACAO_PX;
+  return Math.exp(-0.25 / (sigma * sigma));
+}
+
+/** O pico mínimo para uma fonte ser JULGADA, NA altura de quadro dada. Quem
+ *  define o contorno é o `LIMIAR_FONTE`; quem entra no veredito de identidade
+ *  é só quem sobrevive à pior fase da grade. Fontes abaixo disto seguem
+ *  servindo de ALVO de casamento — elas existem, só não se cobra identidade
+ *  delas. Acima de 1,0 a soleira não tem população possível num quadro de 8
+ *  bits, e é o veredito que diz isso (`julgarFamilia`), nunca o silêncio. */
+export function soleiraJulgada(alturaPx = ALTURA_DE_CALIBRACAO_PX) {
+  return LIMIAR_FONTE / fatorDeFase(alturaPx);
+}
+
+/** os dois valores NA altura de calibração — a régua que o cabeçalho declara */
+export const FATOR_DE_FASE = fatorDeFase();
+export const LIMIAR_JULGADA = soleiraJulgada();
 
 /** Teto de fontes por quadro, só para o custo não explodir. NÃO é um ranking:
  *  quem decide quem é fonte é o `LIMIAR_FONTE`, e um teto que morde aparece no
@@ -666,7 +710,9 @@ export function fontesDoQuadro(y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTE
  * achada, e o salto (a distância entre as duas). É este salto que o §5.20
  * proíbe.
  */
-export function casarFontes({ fontesA, fontesB, camA, camB, ancoras = [], mascara = null }) {
+export function casarFontes({
+  fontesA, fontesB, camA, camB, ancoras = [], mascara = null, julgada = LIMIAR_JULGADA,
+}) {
   const dentroDoClarao = (x, y) => {
     if (!mascara) return false;
     const i = Math.round(x - 0.5);
@@ -709,11 +755,13 @@ export function casarFontes({ fontesA, fontesB, camA, camB, ancoras = [], mascar
     else daAncora.set(melhor.id, k);
   }
   // 1. onde cada fonte de A deveria estar em B. Só as que passam de
-  //    `LIMIAR_JULGADA` entram: as fracas continuam servindo de ALVO (estão em
+  //    `julgada` entram: as fracas continuam servindo de ALVO (estão em
   //    `fontesB`), mas não se cobra identidade de quem some por meio degrau.
+  //    A soleira é ARGUMENTO e não constante porque ela depende da ALTURA do
+  //    quadro — ver `soleiraJulgada`.
   const previstos = [];
   for (const a of fontesA) {
-    if (a.pico < LIMIAR_JULGADA || a.naBorda || ambiguas.has(a.id)) continue;
+    if (a.pico < julgada || a.naBorda || ambiguas.has(a.id)) continue;
     const ancora = daAncora.get(a.id);
     let prev;
     if (ancora && Number.isFinite(ancora.emB?.x)) {
@@ -812,6 +860,20 @@ export function julgarFamilia({ nome, passos = [], piso = null }) {
   const pisoBanda = piso ? piso.bandaAlta : 0;
   const erros = [];
   const suspensos = [];
+  // A SOLEIRA DE FASE DESTA CORRIDA, declarada uma vez por família. Quando ela
+  // passa de 1,00 não há população possível num quadro de 8 bits — a régua de
+  // identidade está fora de calibração e o veredito TEM de dizer, senão a
+  // ausência de acusações passa por aprovação (item 81).
+  const julgada = passos.find((p) => Number.isFinite(p.julgada))?.julgada;
+  if (Number.isFinite(julgada) && Math.abs(julgada - LIMIAR_JULGADA) > 1e-9) {
+    suspensos.push(
+      `${nome}: soleira de fase ${julgada.toFixed(2)} (a de calibração é `
+      + `${LIMIAR_JULGADA.toFixed(2)}) — a PSF encolhe com a altura do quadro`
+      + (julgada > 1
+        ? '; ACIMA DE 1,00 nenhuma fonte do campo tem identidade medível nesta janela'
+        : '')
+    );
+  }
   for (const p of passos) {
     const rotulo = `${nome} passo ${p.k}`;
     const cegoPorParalaxe = p.paralaxePx > PARALAXE_CEGA_PX;
@@ -874,7 +936,7 @@ export function julgarFamilia({ nome, passos = [], piso = null }) {
  * navegador só produz os `{ cam, y }` e chama isto aqui. Juiz cujo miolo só
  * roda com Chrome é juiz que ninguém confere.
  */
-export function medirPar(a, b, k, ancoras = []) {
+export function medirPar(a, b, k, ancoras = [], julgada = LIMIAR_JULGADA) {
   // uma âncora pode ter UM ponto (o Sol, na origem, e a estrela do catálogo)
   // ou DOIS (os corpos do sistema, cuja efeméride anda com o relógio entre um
   // retrato e o outro) — a predição usa o ponto de cada lado
@@ -891,10 +953,11 @@ export function medirPar(a, b, k, ancoras = []) {
   const fontesA = fontesDoQuadro(a.y, a.cam.W, a.cam.H);
   const fontesB = fontesDoQuadro(b.y, b.cam.W, b.cam.H);
   const { casados, sumidos } = casarFontes({
-    fontesA, fontesB, camA: a.cam, camB: b.cam, ancoras: centros, mascara,
+    fontesA, fontesB, camA: a.cam, camB: b.cam, ancoras: centros, mascara, julgada,
   });
   return {
     k,
+    julgada,
     paralaxePx: paralaxeMaximaPx(a.cam, b.cam),
     quadrosEntre: (b.cam.f ?? 0) - (a.cam.f ?? 0),
     solArmado: b.cam.solArmado,
@@ -921,7 +984,19 @@ export function julgarCorrida(familias) {
 /* c8 ignore start */
 
 const APP = process.env.APP_URL || APP_PADRAO;
-const JANELA = process.env.JANELA || '640x700';
+/**
+ * O QUADRO, e ele é EXATO — `Emulation.setDeviceMetricsOverride`, o mesmo
+ * remédio que `capturarCDP` já usava ("a janela `--window-size=900,900`
+ * desconta a barra do navegador e a viewport real era 900×813"). MB1 vivia
+ * exatamente desse engano: pedia `640x700` e media 640×**613**.
+ *
+ * E A ALTURA É A DE CALIBRAÇÃO DA PSF, 1080 — não é gosto, é a única em que
+ * os números deste arquivo são verdade (ver `fatorDeFase`). A 613 px o app
+ * desenha σ = 0,48 px, a soleira honesta de fase vai a 1,17 e a régua de
+ * identidade fica sem população nenhuma. O preço está medido e é o custo do
+ * quadro: a corrida inteira passou de ~1,8 min para ~4 min nesta máquina.
+ */
+const JANELA = process.env.JANELA || `${1128}x${ALTURA_DE_CALIBRACAO_PX}`;
 const GUARDAR_PNGS = process.env.PNGS === '1';
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CAPTURAS = resolve(RAIZ, 'capturas');
@@ -936,7 +1011,15 @@ const SO_A_CENA =
   + ' document.head.appendChild(s); return true; })()';
 
 async function novaSessao() {
-  const s = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'mb1' });
+  const [largura, altura] = JANELA.split('x').map(Number);
+  // a janela do SO é a pedida MAIS a moldura, para o override nunca ter de
+  // encolher a página; quem manda no quadro é o override logo abaixo
+  const s = await abrirSessao({ janela: `${largura}x${altura + 120}`, app: APP, prefixo: 'mb1' });
+  // O QUADRO EXATO — ver o comentário de `JANELA`. Sem isto a altura medida é
+  // a da janela menos a barra do navegador, e é dela que sai o σ da PSF.
+  await s.send('Emulation.setDeviceMetricsOverride', {
+    width: largura, height: altura, deviceScaleFactor: 1, mobile: false,
+  });
   await s.send('Page.addScriptToEvaluateOnNewDocument', {
     source: "try{localStorage.setItem('viagem-prefs',JSON.stringify({conviteVisto:true}))}catch{}",
   });
@@ -1038,11 +1121,18 @@ async function medirPercurso(s, { nome, poses, ancorasDe = ancorasDaCasa }) {
       pisos.push([quadros[quadros.length - 1], await retrato(s, `${nome}-piso-ate`)]);
     }
   }
+  // A SOLEIRA DE FASE SAI DO QUADRO QUE FOI CAPTURADO, não de uma constante:
+  // a PSF do app encolhe com a altura da tela (`soleiraJulgada`), e uma
+  // soleira digitada é uma soleira que mente numa janela e não na outra.
+  const julgada = soleiraJulgada(quadros[0].cam.H);
   const passos = [];
   for (let k = 1; k < quadros.length; k++) {
-    passos.push(medirPar(quadros[k - 1], quadros[k], k, ancorasDe(quadros[k - 1].cam, quadros[k].cam)));
+    passos.push(medirPar(
+      quadros[k - 1], quadros[k], k, ancorasDe(quadros[k - 1].cam, quadros[k].cam), julgada
+    ));
   }
-  const parados = pisos.map(([a, b], i) => medirPar(a, b, `piso${i}`, ancorasDe(a.cam, b.cam)));
+  const parados = pisos.map(([a, b], i) =>
+    medirPar(a, b, `piso${i}`, ancorasDe(a.cam, b.cam), julgada));
   // o piso da família é o MAIOR das duas pontas — conservador e declarado
   const piso = {
     residuoMedio: Math.max(...parados.map((p) => p.residuoMedio)),
@@ -1301,6 +1391,12 @@ async function correr() {
   }
 
   const t0 = Date.now();
+  const alturaPedida = Number(JANELA.split('x')[1]);
+  console.log(
+    `quadro ${JANELA} · σ da PSF ${((SIGMA_DA_PSF_PX * alturaPedida) / ALTURA_DE_CALIBRACAO_PX).toFixed(2)} px`
+    + ` · soleira de fase ${soleiraJulgada(alturaPedida).toFixed(2)}`
+    + (alturaPedida === ALTURA_DE_CALIBRACAO_PX ? ' (calibrada)' : ' (FORA da calibração)')
+  );
   const s = await novaSessao();
   const cruas = [];
   let gritos = [];
@@ -1362,6 +1458,10 @@ async function correr() {
         tolerancias: {
           EXCESSO_RESIDUO, EXCESSO_BANDA_ALTA, TOLERANCIA_SALTO_PX,
           D_MIN_PC, PARALAXE_CEGA_PX, LIMIAR_FONTE, QUADROS_ENTRE,
+          // a soleira de fase é DESTA corrida (depende da altura do quadro),
+          // e o número de calibração vai ao lado para se ver a diferença
+          soleiraDeFase: soleiraJulgada(Number(JANELA.split('x')[1])),
+          LIMIAR_JULGADA,
         },
         familias: cruas.map((r) => ({
           nome: r.nome,
