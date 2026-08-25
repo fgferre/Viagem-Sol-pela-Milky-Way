@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 95.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 98.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -984,7 +984,7 @@ Três degraus, nesta ordem:
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
-**11. A órbita acende mais cedo no Retina do que numa tela comum.** Achado
+**97. A órbita acende mais cedo no Retina do que numa tela comum.** Achado
 em 25/08 ao consertar a régua da cessão (item 70), na mesma peça e pela
 mesma doença: o fade de entrada da linha compara o raio aparente da elipse
 com `RAIO_MIN_PX = 3` e `RAIO_CHEIO_PX = 16` (`world/orbitas.ts`), só que o
