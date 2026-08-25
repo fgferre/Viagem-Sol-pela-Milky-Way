@@ -75,8 +75,11 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08; o **véu do
 > fim** encurtou junto em 24/08, quando ele nomeou a sobra) →
 > **83 (L1 + L2: FEITOS)** → **91 (Saturno escuro — a luz dos
-> planetas)** → **81** → **70** → **75**, com o resto do
-> **83** (G1, L3, L4, L5) na fila da mesma família.
+> planetas)** → ~~**81**~~ (FEITO em 25/08: o vermelho do MB1 era do
+> próprio juiz, que media numa janela em que a régua dele não valia — o
+> que sobrou dos 18 defeitos são 2 a 4, e todos são o item 70) → **70** →
+> **75**, com o resto do **83** (G1, L3, L4, L5) na fila da mesma
+> família.
 
 **O PINO FOI SOLTO PELO DONO, em 24/08.** Ele conferiu a galeria e
 liberou: *"pode dar push e seguir em frente orquestrando"*. Só por isso
@@ -1307,6 +1310,19 @@ ALÉM do quadro (faixa de guarda no rascunho e na pirâmide) e o sprite
 tem de sobreviver enquanto qualquer pedaço dele estiver na tela. Nenhum
 dos dois é mudança pequena, e nenhum dos dois entrou nesta rodada.
 
+**O TAMANHO DO EFEITO DEPENDE DA JANELA, e isso é de 25/08 (item 81).**
+Os números acima ("quase um terço da luz") foram medidos num quadro de
+613 px de altura. O pico de uma estrela é `E/(2πσ²)` e σ escala com a
+altura da tela (`uPr2` corrige DPR, **não** a janela), então num quadro
+de 613 px cada estrela é **3,1× mais quente** que num de 1080, três
+vezes mais fontes cruzam o limiar e o pedestal do `ClaraoDoCampo` é
+proporcionalmente mais forte. Medido nas mesmas famílias, com o mesmo
+`src/`: no `pan` a queda de luz do passo cai de −24,6% (613 px) para
+**menos de 5%** (1080 px); no `fov` ela FICA (−29,4% contra −27,0%), e no
+`zoomDeRoda` o Sol saindo pela borda de baixo continua levando o quadro
+junto. **O defeito é real e segue de pé — o que não é fixo é a magnitude,
+e quem for consertar tem de dizer em que janela mediu.**
+
 *Na mesma medição:* **(a)** Vênus. O que o juiz acusa é 13,4 px na VOLTA
 da fronteira do Sol e não na ida — mas **a Vênus DESENHADA não salta**:
 nas poses 5→8 da reversão ela caminha (133,290) → (156,291) →
@@ -1340,7 +1356,10 @@ centroide do bloco TEM de andar — e aí é assunto da §1.
 na órbita — estes
 mudam de corrida para corrida, porque as POSES do juiz são
 determinísticas mas a fase do relógio não é, e no fio da régua isso
-basta. Fora isso a casa passa: o piso é 0,33 degrau de 8 bits nas oito
+basta. *(25/08, item 81: eram do INSTRUMENTO, e a causa está medida —
+naquele quadro de 613 px a PSF do app tinha 0,48 px e o centroide de uma
+fonte de um pixel não se localiza a 1 px. No quadro de calibração
+sumiram os seis.)* Fora isso a casa passa: o piso é 0,33 degrau de 8 bits nas oito
 famílias e a mediana do maior salto por passo fica entre 0,19 e 0,99 px
 — ninguém ferve onde nada cruza fronteira.
 
@@ -2022,22 +2041,76 @@ há o que medir. Quando voltar, o passo é guardar os DOIS PNG e rodar o
 estados diferentes, e o gate tem defesa contra isso (`friaNoGate`), o que
 torna a hipótese menos provável e o achado mais interessante.
 
-**81.** (Achado em 23/08, medindo o item 61.) **MB1 reprova em cinco
-famílias de VOO LIVRE, e o vermelho é herdado.** O juiz de estabilidade
-temporal (`estabilidade-temporal.mjs`) acusa 18 defeitos de fervura e
-re-semeadura em `pan`, `fov`, `orbita`, `aproxEstrela` e `reversao` — as
-cinco que voam por `placeCamera`, nenhuma dentro do Atlas. **Não é
-regressão de nenhuma obra desta sessão**, e a prova é medida: com `src/`
-inteiro revertido para `1127190` (o commit em que a sessão começou), ele
-reprova IGUAL — 14 defeitos, as mesmas cinco famílias e os mesmos números
-de pior caso (pan 5,30 · fov 6,06 · órbita 0,73 · aproxEstrela 30,70 ·
-reversão 2,28, contra 5,29 · 6,06 · 0,73 · 30,68 · 2,27 hoje; a diferença
-de contagem é ruído entre corridas). A nona família, `zoomDeRoda` — a
-única que corre DENTRO do Atlas —, **passa** nos dois lados (piso 0,35 ·
-pior 0,44). Ninguém sabe desde quando: o `capturas/estabilidade-temporal.json`
-guarda a última corrida, não a história. O primeiro passo é datar o
-vermelho por bissecção nas famílias baratas (~0,3 min cada), não consertar
-no escuro.
+**81.** (Achado em 23/08, medindo o item 61. **DIAGNOSTICADO E QUASE TODO
+FECHADO em 25/08** — o que sobra está no fim, e é o item 70.) **MB1
+reprovava em cinco famílias, e a culpa era do próprio juiz: ele media
+numa janela em que a régua dele não vale.**
+
+**O QUE ELE ACUSAVA, no dia em que a caça começou:** 18 defeitos, mas
+NÃO nas cinco famílias do registro de 23/08 — `pan`, `orbita`, `fov`,
+`fronteiraTerra` e **`zoomDeRoda`**, esta última a que corre DENTRO do
+Atlas e que o registro dava como aprovada. `aproxEstrela` e `reversao`,
+que constavam, estavam verdes.
+
+**A CAUSA, MEDIDA.** MB1 pedia `--window-size=640,700` e media
+640×**613**: a moldura do Chrome come 87 px, e o `capturarCDP` já tinha
+diagnosticado esse mesmo engano em 17/08 ("a viewport real era
+900×813"). Só que aqui a altura do quadro não é decoração: o shader do
+campo escreve `sigma = SIGMA_PX · alturaDoQuadro / 1080`, então a 613 px
+o app desenha uma PSF de **0,48 px** — abaixo de Nyquist — enquanto toda
+a aritmética de fase do juiz supõe 0,85. A soleira honesta de identidade
+(`LIMIAR_FONTE / exp(−0,25/σ²)`) sai de 0,57 para **1,17**, acima do
+máximo de um quadro de 8 bits: **naquela janela nenhuma fonte do campo
+tinha identidade medível, e o juiz cobrava identidade de todas.**
+
+Medido com o PRÓPRIO `fontesDoQuadro`, sobre gaussianas em 441 fases de
+sub-pixel: a σ=0,48 uma fonte de amplitude 1,0 SOME do censo em 4 fases
+de 441; a de 0,7, em 84. Era a família inteira de "SUMIU — fonte de pico
+0,57…0,93 desapareceu, longe da borda". A σ=0,85 nenhuma fonte de
+amplitude ≥ 0,55 some em nenhuma das 441 fases, e o erro de centroide
+nunca passa de 0,67 px contra a régua de 1,00 — nem com vizinho colado
+(0,92 px no pior caso). Eram os saltos de 1,02 a 1,13 px.
+
+**O CONSERTO** (`60d9ed3`): o quadro passa a ser EXATO
+(`Emulation.setDeviceMetricsOverride`, o remédio que a casa já tinha) e o
+padrão vira 1128×**1080** — a altura de calibração da PSF; e a soleira de
+fase deixa de ser digitada (`fatorDeFase`/`soleiraJulgada` derivam da PSF
+que o app desenha), com o veredito DECLARANDO o número quando ele não é o
+de calibração. **18 defeitos em 5 famílias → 2 a 4 em 2**, com o mesmo
+`src/` dos dois lados (o `fov` k5 e o salto na âncora de Vênus repetem em
+toda corrida; os dois SUMIU do `zoomDeRoda` vão e voltam, e são o mesmo
+passo do Sol saindo pela borda). Custo: 1,8 → 3,9 min. O censo que justifica
+`LIMIAR_FONTE` foi refeito na janela nova e o 0,40 continua certo: 93
+fontes com 2 (2,2%) andando mais de 1 px, contra 238 com 8 (3,4%) — e das
+238 antigas, **123 eram componentes de UM pixel**.
+
+**O SEGUNDO CONSERTO** (`8f53cc6`): a âncora deixou de reclamar a LINHA
+DE ÓRBITA que passa por cima dela. As linhas nasceram em 23/08 (`141b483`)
+e engordaram em 24/08 (`8be508f`); a da Lua atravessa o quadro e é UMA
+componente de 2.863 px, e o `√nMeia` que alarga o raio de reconhecimento
+da âncora — escrito para um platô saturado — dava 53 px de raio. Foto:
+`capturas/item81-traco-da-orbita.png`. Não muda veredito hoje; fecha uma
+armadilha que continuava armada.
+
+**O QUE SOBRA, e é o item 70 e mais nada:** `fov` passo 5 (FERVE 3,80,
+com a luz do quadro caindo 27,0%) e `zoomDeRoda` passos 7–8 (o Sol saindo
+pela borda de baixo: 1,74 px de salto na âncora de VÊNUS, que está dentro
+do clarão dele, mais duas fontes engolidas que aparecem numas corridas e
+não em outras). Os dois são o MESMO passo: uma fonte muito forte
+cruzando a borda do quadro leva o pedestal de tela junto. **Não se
+conserta aqui** — é obra do item 70, com A/B declarado.
+
+**REGISTRADO, NÃO CONSERTADO:** `pan` e `orbita` definem o passo em
+PIXELS (`4 / pxPorRad`), então o CÉU que elas varrem encolhe quando a
+janela cresce — os vereditos das duas não são comparáveis entre janelas,
+e o silêncio delas a 1080 é em parte outro experimento. Quem quiser as
+duas comparáveis tem de fixar o alcance em ÂNGULO e deixar o passo em
+pixels mandar no NÚMERO de poses.
+
+**Fotos:** `capturas/item81-estrelas-antes-e-depois.png` (a mesma nesga
+de céu nas duas janelas, ampliada sem interpolação: à esquerda, o que o
+juiz media — estrela de um pixel só sobre um fundo leitoso; à direita, o
+mesmo céu na janela certa).
 
 **84.** (Achado em 23/08, fechando o clarão único.) **O `ab-identidade`
 cobre a fase ATLAS com UMA vista só, de 52.** Medido sem querer: uma
