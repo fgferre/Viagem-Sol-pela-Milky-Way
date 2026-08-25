@@ -1409,7 +1409,12 @@ parecem mudar, é medida a fazer, não desenho a mudar. O que falta é a
 UI parar de tratar os dois como concorrentes, e o Atlas parar de
 parecer mais vazio.
 
-**70. Girar a câmera acende e apaga o céu inteiro.** (Achado em 22/08
+**70. O ponto que morre seco na borda — e o pedaço de linha que o juiz
+passou a ver.** *(O sintoma que dava nome a este item — "girar a câmera
+acende e apaga o céu inteiro" — MORREU em 25/08 com a faixa de guarda; o
+título mudou para nomear o que está ABERTO, e não o que já foi
+consertado. A história inteira segue abaixo, porque é ela que explica os
+números.)* (Achado em 22/08
 pelo juiz novo de movimento, o MB1 — `scripts/visual/
 estabilidade-temporal.mjs`. **A METADE DO COBERTOR FOI CONSERTADA em
 25/08; a metade do PONTO segue aberta** — os números das duas estão
@@ -1439,7 +1444,13 @@ descartado, cada um com a sua medida: **não é auto-exposição** — a
 QUANDO a causa foi medida (hoje são 97, com a nona família — a medida
 não foi refeita); **não é o bloom
 principal** — `?nobloom=1` muda 0,35% da luz do quadro e não muda a
-queda; **não é a galáxia** — `?nogal=1` repete a queda igual. Desligando
+queda *(número de 22/08, e ele é HISTÓRIA: naquela data a porta ainda
+mentia e só apagava o cobertor principal — era ESSA a razão de a mudança
+ser tão pequena. Desde 25/08 a porta apaga os dois passes e a mesma
+medida dá **0,49% antes / 31,4% depois**; ver o NORTE e a foto
+`capturas/item72-nobloom-antes-depois.png`. A conclusão de então segue de
+pé — o bloom principal não era a causa —, mas o 0,35% não descreve mais
+o app de hoje)*; **não é a galáxia** — `?nogal=1` repete a queda igual. Desligando
 catálogo E clarão juntos (`?nocat=1&noclarao=1`) o resíduo do passo cai
 para 0,37 degrau, que É o piso, e o quadro não perde luz nenhuma. O
 resíduo do MESMO passo de 4 px, camada por camada: piso 0,33 · só o
@@ -1485,27 +1496,85 @@ com o resíduo do passo 5 contra o teto (piso 0,34 + folga 2,00):
 | 192 px | 13,41 | 0,46 | −2,2% | 0,57 |
 | 256 px | 13,39 | 0,47 | −2,7% | 0,53 |
 
-128 é o joelho: de 96 para cima a curva assenta, e 192/256 não compram
-nada. É múltiplo de 32 por obrigação — a pirâmide tem cinco mips e o mais
+**O RASTRO DESTA TABELA, declarado:** o JSON do MB1
+(`capturas/estabilidade-temporal.json`) é SOBRESCRITO a cada corrida, e
+esta varredura foi feita em corridas sucessivas — os pontos
+intermediários (32/64/96/192/256) foram medidos e **não ficaram
+arquivados**. O que é reproduzível sob demanda são as duas pontas, e elas
+é que sustentam a escolha: **margem 0** (o controle, que a guarda
+`post.test.ts` cobra e que reproduz o código de antes da obra) e **margem
+128** (o valor que roda). Portanto o 128 é uma **escolha justificada pelo
+joelho observado**, e não um ótimo provado em cinco pontos arquivados —
+quem quiser o ótimo re-roda a varredura guardando um rastro por margem.
+
+Com essa ressalva: 128 é o joelho — de 96 para cima a curva assenta, e
+192/256 não compram nada. É múltiplo de 32 por obrigação — a pirâmide tem cinco mips e o mais
 grosso vive a 1/32 da resolução. **MB1 na corrida inteira:** `fov`
 3,80 → 0,51 degraus, `pan` 0,64 → 0,36 (o piso da família é 0,35),
 `orbita` 0,44 → 0,38; os defeitos caíram de 2 para 1. Na foto do giro a
 luz do quadro num passo de câmera deixa de cair 28,8% e cai 5,7%.
+
+**OS DOIS PARES DE NÚMEROS DO MESMO GIRO NÃO SÃO O MESMO ESTIMADOR, e é
+por isso que não batem.** A tabela acima (−27,0% → −2,1%) é o `deltaLuz`
+do MB1: `luzMedia` em luminância 0..1, do passo 5 da família, calculado
+pelo juiz. A foto (−28,8% → −5,7%) é a média de BYTE do PNG salvo, do
+mesmo passo, em OUTRA corrida — e o relógio do app anda entre corridas
+(é o requisito do MB1: nada de `?shot=`). Mesmo passo, duas réguas e
+duas corridas; nenhum dos dois é o outro, e citar um no lugar do outro
+seria inventar precisão.
 
 **O CONTROLE que torna a medida honesta:** com `MARGEM_DO_CAMPO = 0` a
 obra reproduz o código de antes dela (luz 14,097 contra 14,098 bytes,
 resíduo 3,80, ΔLuz −27,0%; e a vista `mercurio` do `ab-identidade` sai
 com o md5 IDÊNTICO). A faixa é a única coisa que mudou.
 
-**O PREÇO, medido com `gpu-profile` (1920×1080, dPR 1):** o passe do
-campo ganha 1,43× de área, e o pós-processamento sai de 17,1% para 24,7%
-do tempo de GPU dos draws (27,4 → ~48 ms na soma instrumentada). **Em
-quadros por segundo o custo não aparece:** 31,3 → 32,7 fps na cena do
-filme e 37,9 → 37,3 perto do Sol, as duas dentro da dispersão entre
-corridas do MESMO código. A conta de VRAM é uma segunda máquina de bloom
+**O PREÇO, medido com `gpu-profile` (1920×1080, dPR 1) — e a medição
+NÃO FICOU REGISTRADA em arquivo:** o passe do campo ganha 1,43× de área
+(essa é geometria, não medida), e o pós-processamento saiu de 17,1% para
+24,7% do tempo de GPU dos draws (27,4 → ~48 ms na soma instrumentada).
+**Em quadros por segundo o custo não apareceu:** 31,3 → 32,7 fps na cena
+do filme e 37,9 → 37,3 perto do Sol, as duas dentro da dispersão entre
+corridas do MESMO código. Os números acima vieram de corridas alternadas
+antes/depois cuja saída não foi guardada; para refazer:
+`node scripts/visual/gpu-profile.mjs "?t=100" 12 1920 1080 1` (e o mesmo
+com `cru` no fim para o fps sem instrumento), alternando os lados. Tratar
+como ordem de grandeza declarada, não como número arquivado. A conta de VRAM é uma segunda máquina de bloom
 (a da lei não pode ser emprestada: o rascunho com faixa não cabe em
 buffer nenhum do composer, e o `setSize` do vendorizado realocaria 11
 alvos DUAS VEZES POR QUADRO).
+
+**O A/B CHEIO DESTA RODADA — o delta declarado, com carimbo.** O item 72
+(a porta `?nobloom=1` que só apagava metade do bloom) foi fechado nesta
+rodada, e o texto dele exigia `ab-identidade` cheio antes de fechar. Ele
+foi rodado; como `capturas/` é gitignored, os números moram AQUI.
+
+*Método:* os dois lados no MESMO commit (`dcb4b5e4d759`), trocando apenas
+os TRÊS arquivos desta rodada (`core/post.ts`, `director.ts`,
+`world/orbitas.ts`) pela versão de antes dela. Isso isola o diff desta
+rodada e deixa de FORA, por construção, o conserto dos anéis que outro
+editor fez em paralelo (`143ba7d`/`9c1a254`, que só tocam
+`corpos/gigante.ts`): esse arquivo é idêntico nos dois lados.
+
+*Carimbos:* `antes = dcb4b5e4d759-8f7146c7` · `depois = dcb4b5e4d759-c13b1c11`.
+
+*Veredito:* **52 de 54 vistas mudam; 2 não mudam** (`edgeon` e `faceon` —
+ali o campo estelar está apagado por `setFade`, então não há cobertor a
+enxergar borda nenhuma); **0 instáveis**. As dez vistas `…nb` mudam por
+causa da porta; o resto muda pela faixa de guarda.
+
+*Os dois deltas medidos a pixel* (arquivo conferido por md5 contra o
+carimbo do juiz, depois de esta rodada ter perdido meia tarde comparando
+contra um PNG velho de outra sessão):
+
+| vista | md5 antes → depois | pixels | delta máx | assinatura |
+|---|---|---|---|---|
+| `mercurio` (só a faixa) | `3b6e36c3c44a` → `bbc47e8279f5` | 0,164% | **4** de 255 | difusa, o quadro inteiro |
+| `terranb` (faixa + porta) | `0f140f82703b` → `fa75549fb4f1` | 7,48% | **85** de 255 | 230.626 px PERDEM luz, 12 ganham |
+
+O `mercurio` é a assinatura de um pedestal que mudou de valor sem mudar
+de forma — é o que a faixa de guarda faz. O `terranb` é o cobertor do
+campo sendo DESLIGADO de propósito pela porta honesta, que é o item 72
+inteiro num número.
 
 **A CAUSA 2 SEGUE ABERTA — o ponto que morre seco na borda.** A faixa de
 guarda conserta o COBERTOR: no rascunho a estrela que saiu continua sendo
@@ -1550,12 +1619,41 @@ família inteira PASSA (pior resíduo 0,43). O que acontece é que Vênus
 está SOBRE a própria elipse de órbita, a linha atravessa o limiar de
 fonte do juiz (0,40) e se funde com o núcleo do planeta; o centroide do
 bloco anda enquanto a linha entra e sai, e o juiz cobra isso da âncora.
-A imagem desenhada não salta — quem salta é a medida. **A decisão é do
-dono e são duas portas:** ou a linha de órbita cede brilho onde cruza um
-corpo (mas ele acabou de decidir, em 23/08, que *"as órbitas passam à
-frente"*), ou a regra de bloco fundido do MB1 passa a cobrir traço+núcleo
-— e mexer em dente de juiz pede número, declaração e sabotagem própria.
-Enquanto ele não decide, o MB1 fecha em 1 defeito, e este é o defeito.
+A imagem desenhada não salta — quem salta é a medida.
+
+**A DECISÃO DELE VEIO EM 25/08, e é a primeira das duas portas: a linha de
+órbita CEDE BRILHO onde cruza o miolo aceso de um corpo.** Está
+implementada (`RAIO_DA_CESSAO_PX` em `world/orbitas.ts`), com foto em
+`capturas/item70-linha-cede-antes-depois.png`.
+
+**E A PROCEDÊNCIA PRECISA FICAR CERTA, porque esta lista chegou a contar a
+história errada.** A redação anterior dizia que ele "acabou de decidir, em
+23/08, que as órbitas passam à frente" e usava isso para dar a entender
+que esta porta estava fechada. **Estava errado, e o erro era meu:** a
+decisão de 23/08 (`fe29483`) é sobre a ORDEM DA FILA — o item 77 vinha
+primeiro —, e não sobre desenho. Nunca houve decisão dele sobre a linha
+ceder ou não ceder; havia uma inferência minha, escrita como se fosse
+palavra dele, pré-fechando uma porta que ele nunca fechou. Documento não
+inventa decisão do dono a partir de decisão de prioridade.
+
+**O QUE A CESSÃO CUSTOU, medido — e é por isso que o MB1 ainda não fecha
+em zero.** Cortar uma curva FECHADA fragmenta-a: enquanto a elipse é
+laço, o juiz a exclui por TRAÇO (`nucleoCompacto`); com o corte ela vira
+arco, e onde o arco entra e sai do quadro sobram pedaços COMPACTOS de
+brilho marginal (pico 0,58–0,60 contra a soleira de identidade 0,565) que
+o juiz passa a julgar e que trocam de identidade quando o corte anda com
+o planeta. Monotônico no tamanho do corte, em `zoomDeRoda`: **sem cessão
+1 defeito** (a âncora de Vênus), **raio 0,5 px 2 defeitos** (Vênus ainda
+salta 1,75 px), **raio 2 px 6 defeitos** (Vênus consertado, seis
+pedaços). O defeito que ele mandou matar MORREU e a tela faz o que ele
+pediu; o que sobra é do INSTRUMENTO.
+
+**A SEGUNDA PORTA CONTINUA ABERTA, e agora é ela que segura o zero:** a
+exclusão de traço do MB1 não sobrevive ao corte, e precisa aprender que
+pedaço de linha de órbita continua sendo INSTRUMENTO — o topo de
+`orbitas.ts` já escreve que a linha "não é fóton de lugar nenhum". Isso é
+mexer em dente de juiz: pede número, declaração e sabotagem própria, e é
+o passo seguinte deste item.
 
 *Na mesma medição:* **(a)** Vênus. O que o juiz acusa é 13,4 px na VOLTA
 da fronteira do Sol e não na ida — mas **a Vênus DESENHADA não salta**:
@@ -2137,6 +2235,25 @@ corpo, ou parando antes por algum teto de distância.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
+
+**94.** (Achado pela auditoria da rodada da faixa de guarda, 25/08.) **O
+segundo cobertor compõe um quadro inteiro que ninguém lê — e agora ele é
+1,43× mais caro.** O `UnrealBloomPass` (three/addons) termina sempre
+somando o clarão de volta no `readBuffer` que recebeu; o `ClaraoDoCampo`
+passa o RASCUNHO nos dois argumentos, então essa soma final cai no
+próprio rascunho e morre ali — o passe seguinte lê `renderTargetsHorizontal[0]`
+direto, pelo recorte. É um passe aditivo de tela cheia por quadro,
+jogado fora. Já era desperdício antes; com a faixa de guarda o rascunho
+tem 1,43× a área do quadro (a 1920×1080), então o desperdício cresceu na
+mesma razão. **É ganho de graça para quem pegar:** não muda um pixel do
+que se vê, só para de desenhar o que ninguém amostra. O caminho conhecido
+é não chamar `bloom.render` inteiro — repetir as três etapas que
+importam (passa-alta, pirâmide, composite) sem a soma final —, e o preço
+disso é passar a depender da forma interna do passe, que hoje já é
+cobrada por `throw` no construtor. Medir com `gpu-profile` antes e
+depois; o rótulo do passe é `pos:bloom-blend`, que na medição de 25/08
+aparecia com ~1,6 ms.
+
 
 **22.** 35 imagens de referência citadas que não existem, e as 6 fotos
 reais do Sol nunca foram baixadas. As seis passam na régua da bancada;

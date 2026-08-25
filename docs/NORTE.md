@@ -218,6 +218,18 @@ Três cegueiras declaradas:
   8, Vênus sobre a própria elipse), e ele é do INSTRUMENTO ou da arte da
   órbita, não do cobertor: medido, o salto não muda com a faixa de guarda
   nem com os dois cobertores apagados, e SOME com `?noorbitas=1`.
+  **E A CEGUEIRA MAIS CARA É A DE SINAL, medida na própria pele em 25/08:
+  o MB1 PREMIA CÉU MAIS ESCURO.** Ele mede o EXCESSO de resíduo sobre o
+  piso, e um cobertor mais fraco tem menos pedestal para perder quando uma
+  fonte cruza a borda — então apagar luz melhora a nota. Não é hipótese:
+  a soma com recorte da faixa de guarda nasceu sem `premultipliedAlpha`,
+  o céu saiu **28% mais escuro** (luz média 10,17 contra 14,10 bytes na
+  vista `fov-0`), e o juiz aplaudiu — o resíduo do passo caiu de 3,80 para
+  0,80 degraus. Passaria por melhoria se o controle de margem 0 não
+  tivesse desmentido. **Regra que fica: melhora do MB1 acompanhada de
+  QUEDA de luz do quadro é suspeita até prova em contrário, e a prova é
+  uma vista parada com a luz medida** (o `luz-do-quadro` e a média de byte
+  da captura). Hoje a guarda disso é `core/post.test.ts`.
   `voo-ida-e-volta.mjs`
   continua sendo outra régua para outra pergunta (ida e volta em 34
   degraus DISTANTES, cego a cintilação por construção) e não é juiz

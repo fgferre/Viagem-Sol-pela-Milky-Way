@@ -152,7 +152,12 @@ export const PESO_DA_PIRAMIDE = FRACAO_DA_ASA / SOMA_DAS_RAZOES;
 export const OMBRO_DO_BLOOM = 40;
 
 /**
- * A CIRURGIA DE TEXTO no passa-alta do vendorizado — ombro + `β·asinh` dentro
+ * A CIRURGIA DE TEXTO no passa-alta do `UnrealBloomPass` — ombro + `β·asinh`
+ * dentro do filtro. (O passe NÃO é vendorizado: vem de `three/addons`, sem
+ * cópia no repositório. Esta rodada escreveu "vendorizado" seis vezes por
+ * herança de vocabulário e a palavra saiu — quem a lesse procuraria um
+ * arquivo copiado que não existe. As ocorrências ANTIGAS deste arquivo
+ * ficaram como estavam: não são desta rodada.)
  * do filtro, o item 2 da cadeia de curvas. Vive aqui, solta, porque desde a
  * faixa de guarda do item 70 são DUAS máquinas de bloom por quadro (a da lei e
  * a do campo) e as duas precisam da MESMA curva: escrever a segunda cópia numa
@@ -319,7 +324,7 @@ const LIMIAR_DO_CAMPO = 0;
  * faixa de guarda o rascunho é MAIOR que o quadro, e nenhum buffer do
  * composer tem esse tamanho — nem a pirâmide da lei, que vive no
  * tamanho do quadro e teria de ser realocada DUAS VEZES POR QUADRO para
- * ser emprestada (o `setSize` do vendorizado dispara `dispose()` em 11
+ * ser emprestada (o `setSize` do passe de addons dispara `dispose()` em 11
  * alvos quando a medida muda). Então agora são duas máquinas de
  * verdade, cada uma no seu tamanho, e o preço — VRAM e tempo de GPU —
  * está declarado no cabeçalho de `MARGEM_DO_CAMPO`. Em troca some a
@@ -343,11 +348,11 @@ class ClaraoDoCampo extends Pass {
    *  tocada por este passe (ver a cicatriz em `render`) */
   private readonly cameraLarga = new THREE.PerspectiveCamera();
   /**
-   * A SOMA COM RECORTE — o blend aditivo do vendorizado mais a janela: o
+   * A SOMA COM RECORTE — o blend aditivo do passe de addons mais a janela: o
    * composite agora cobre o rascunho INTEIRO (quadro + faixa de guarda) e
    * o quadro é o retângulo do meio dele. `uEscala`/`uDeslocamento` são
    * essa janela em UV, e são a única diferença para o `CopyShader` que o
-   * `blendMaterial` do vendorizado usava (`opacity` valia 1 — identidade).
+   * `blendMaterial` do `UnrealBloomPass` usava (`opacity` valia 1 — identidade).
    */
   private readonly somaComRecorte = new THREE.ShaderMaterial({
     uniforms: {
@@ -380,11 +385,11 @@ class ClaraoDoCampo extends Pass {
     // inteira; sem ele é `blendFunc(SRC_ALPHA, ONE)` e a cor entra
     // MULTIPLICADA pelo alpha do composite, que é `bloomStrength · Σ
     // fatores · alpha` e quase nunca vale 1. O `blendMaterial` do
-    // vendorizado nasce premultiplicado; a primeira versão desta soma não,
+    // `UnrealBloomPass` nasce premultiplicado; a primeira versão desta não,
     // e o céu saiu 28% mais escuro (luz média do quadro 10,17 contra 14,10
     // bytes na vista `fov-0` do MB1) — o respiro das estrelas que o dono
     // cobrou em 17/08, pago sem ninguém pedir. Com a linha abaixo a soma
-    // reproduz o vendorizado: `MARGEM_DO_CAMPO = 0` devolve o quadro de
+    // reproduz o de addons: `MARGEM_DO_CAMPO = 0` devolve o quadro de
     // antes da obra (14,10 bytes, resíduo 3,80, luz −27,0%), e é assim que
     // se sabe que a faixa de guarda é a ÚNICA coisa que esta obra mudou.
     premultipliedAlpha: true,
