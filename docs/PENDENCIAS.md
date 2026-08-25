@@ -528,6 +528,22 @@ literalmente do lado do Sol — que é o que ele viu.
 depois: a data dele vista de cima, a mesma na vista `saturno-anel`, e
 2017 com o anel aberto).
 
+### A AUDITORIA DO BÁSICO — "problemas bizarros de iluminação em todo app?"
+
+Foi a pergunta dele ao ver a sombra invertida. A resposta MEDIDA é: **não.
+O básico está são. Achou-se UM defeito, o do anel, e ele está consertado;
+sobrou uma falta pequena, o ar num eclipse.** Foto:
+`capturas/item91-auditoria-da-luz.png`.
+
+| caso | veredito | a evidência |
+| --- | --- | --- |
+| (a) terminadouro de Terra, Marte, Júpiter, Saturno e Lua | **CERTO** | A câmera dá a volta no corpo em três posições — do lado do Sol, de lado, e por trás. O brilho médio no meio do disco cai 71→39→4 (Terra), 149→20→3 (Marte), 193→35→3 (Júpiter), 189→53→3 (Saturno), 169→31→3 (Lua). Luz invertida trocaria a primeira coluna pela última. |
+| sem luz de enfeite | **CERTO** | A noite de Júpiter mede **2,58** de 255 contra **2,66** do céu vazio ao lado: o globo escuro é mais escuro que o fundo, ou seja, não há ambiente somado por baixo em canto nenhum. |
+| (b) fase da Lua contra a data | **CERTO** | Julgado por dois fatos sabidos FORA do app: 25/03/2024 (eclipse lunar → lua cheia) a efeméride dá elongação 174,9° e 99,8% iluminada, e a tela mostra 100% do disco aceso; 08/04/2024 (eclipse solar total → lua nova) dá elongação **0,35°** e 0,001%, e a tela mostra o disco preto tapando o Sol. No quarto, 54,2% contra 39% de pixels acesos (Lambert cai perto do terminadouro). |
+| (c) sombra do anel SOBRE o globo | **CERTO** | Com o Sol 5,7° ao NORTE do plano do anel, a faixa escura cai logo ao SUL do equador. E não é sorte: a conta exige `t = −p.y / dirSol.y > 0`, isto é, o hemisfério tem de ter o sinal CONTRÁRIO ao do Sol — inverter é impossível. Em 2017, com o Sol a 26,7°, a faixa vai para −62°…−89° de latitude, que já é noite polar: some, e sumir ali é o certo. |
+| (d) eclipse solar na Terra | **CERTO, com uma falta** | Em 08/04/2024 às 18h20 UT a umbra cai em **25,2°N 104,5°O** — Durango, no México, que é por onde a totalidade passou de verdade. O núcleo mede 2,9 de 255 contra 53 do deserto vizinho: é preto. **A falta:** `ATMOSFERA_FRAG` não recebe o fator de eclipse — o chão e as nuvens escurecem, o AR não. Ver o item abaixo. |
+| (e) quantos cadastros de "onde está o Sol" | **UM só — e havia um segundo escondido** | O Sol é a ORIGEM da cena, e é assim em toda parte: os quatro corpos resolvidos fazem `-centro` normalizado, e não existe `DirectionalLight`/`PointLight` no projeto inteiro. **Mas o anel refazia a conta por conta própria**, três linhas idênticas ao lado da original, em `gigante.ts` E em `rochoso.ts` — e foi exatamente aí que a inversão morou sem ser vista: o globo acendia certo e o anel não. Removido; agora há um `dirSol` por corpo, e o teste reprova quem reintroduzir a segunda conta. |
+
 **O QUE FICA DECLARADO, com número:** dentro da umbra o anel não é
 rigorosamente preto — ele recebe o brilho do PRÓPRIO globo. Medido pela
 razão padrão `p · Φ(α) · (R/D)²` com o albedo geométrico de Saturno, isso
@@ -2331,6 +2347,37 @@ corpo, ou parando antes por algum teto de distância.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
+
+**95.** (Achado pela auditoria da direção da luz, 25/08 — a pergunta dele
+"estamos com problemas bizarros de iluminação em todo app?".) **Num
+eclipse, o chão escurece e o AR não.** Dos três shaders da Terra,
+`TERRA_FRAG` e `NUVENS_FRAG` chamam `fatorDeEclipse`; `ATMOSFERA_FRAG`
+nem monta o `GLSL_SOMBRA_ECLIPSE`. Então a casca de atmosfera continua
+espalhando luz cheia por cima de um chão que está preto.
+
+**O tamanho medido:** no eclipse de 08/04/2024 o núcleo da umbra sai em
+2,9 de 255 contra 53 do deserto vizinho — a atmosfera quase não pesa no
+MEIO do disco, que é onde caiu essa sombra. O erro mora no LIMBO, onde a
+casca é brilhante: um eclipse rasante hoje aparece com o ar aceso por
+cima. **Não é multiplicar pelo fator e pronto**, e é por isso que fica
+como item em vez de conserto de uma linha: na totalidade de verdade o
+céu não é preto, ele é o crepúsculo de 360° — luz espalhada de FORA da
+umbra. Zerar o ar seria trocar um erro por outro. Quem pegar decide a
+dose e volta com a foto de um eclipse no limbo.
+
+**96.** (Da mesma auditoria, 25/08. **Risco latente, não defeito visível.**)
+**"O Sol está na origem" é combinado, não é verificado.** A cena inteira
+depende disso: os quatro corpos resolvidos fazem `-centro` normalizado
+sem consultar ninguém, a camada de planetas põe o Sol no vértice 0 em
+`(0,0,0)`, o enquadramento usa a constante `ORIGEM`, e a malha do Sol
+(`StellarBody`) fica na origem por OMISSÃO — o `group.position` dela
+nunca é escrito. Não há `DirectionalLight` nem `PointLight` em `src`
+inteiro, então não existe uma segunda fonte hoje. **Mas nada afirma o
+combinado**: bastaria alguém transladar a raiz da cena ou posicionar a
+malha do Sol para a luz de todo o app discordar de onde o Sol é
+desenhado, em silêncio, e o modo de falha seria exatamente o do item 91.
+É um teste de uma linha (`sun.group.position` é `ORIGEM`) para quem
+estiver em `director/` — o arquivo não é de quem levantou isto.
 
 **94.** (Achado pela auditoria da rodada da faixa de guarda, 25/08.) **O
 segundo cobertor compõe um quadro inteiro que ninguém lê — e agora ele é

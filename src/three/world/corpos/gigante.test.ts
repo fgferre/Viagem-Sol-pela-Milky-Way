@@ -584,6 +584,23 @@ describe('4b. item 91 — a sombra do globo cai do lado OPOSTO ao Sol', () => {
     expect(doLadoDoSol).toBeGreaterThan(0);
   });
 
+  /**
+   * UM CADASTRO SÓ DE "ONDE ESTÁ O SOL". Antes de 25/08 o anel refazia a
+   * conta por conta própria (`-this.centro.x / nSol`, três linhas) em vez
+   * de beber do `dirSol` que o globo já tinha. Duas derivações da mesma
+   * verdade no MESMO método foi o esconderijo da inversão: o globo
+   * acendia certo e o anel não, e nada acusava. Vale para os dois
+   * arquivos que têm anel.
+   */
+  it('o Sol nasce UMA vez por corpo — o anel não refaz a conta', () => {
+    const rochoso = readFileSync(new URL('./rochoso.ts', import.meta.url), 'utf8');
+    for (const fonte of [FONTE, rochoso]) {
+      expect(fonte).not.toMatch(/-\s*this\.centro\.[xyz]\s*\/\s*nSol/);
+      expect((fonte.match(/copy\(this\.centro\)\.multiplyScalar\(-1\)/g) ?? []).length).toBe(1);
+      expect(fonte).toContain('componentesNoFrameDoAnel(');
+    }
+  });
+
   it('o raio angular do Sol é MEDIDO da distância do corpo, não constante', async () => {
     const { corpo, mat, q } = await anelDeSaturno(DATAS[0].jd);
     const p = motor.posicaoHeliocentrica('saturn', q.jdTdb);
