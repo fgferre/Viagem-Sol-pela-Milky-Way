@@ -30,6 +30,11 @@ import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import {
+  LANTERNA_DE_LEITURA,
+  S_DO_TERMINADOR,
+  ganhoDoGlobo,
+} from '../../../lib/atlas/luzDaVisita';
+import {
   ANEIS_CITADOS,
   ANEL_FRAG,
   ANEL_PROC_FRAG,
@@ -104,9 +109,17 @@ describe('2. o needle dos GLSL montados', () => {
   it('o chunk do eclipse existe e multiplica SÓ a direta, depois do BRDF', () => {
     expect(GIGANTE_LAMBERT_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
     expect(GIGANTE_LAMBERT_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
-    expect(GIGANTE_LAMBERT_FRAG).toContain('fatorDeEclipse(pElip, n,');
-    expect(GIGANTE_LAMBERT_FRAG).toContain('sombraDoAnel(pElip, ndotl)');
-    expect(GIGANTE_LAMBERT_FRAG).toContain('gl_FragColor = vec4(direta, 1.0);');
+    expect(GIGANTE_LAMBERT_FRAG).toContain('fatorDeEclipse(pElip, n, ndotlGeo)');
+    expect(GIGANTE_LAMBERT_FRAG).toContain('sombraDoAnel(pElip, ndotlGeo)');
+    // ITEM 93: a luz do Sol passa pela logística e SÓ DEPOIS a lanterna
+    // soma-se — ela fica FORA do eclipse e fora da sombra do anel, que é
+    // o que o Eyes faz (a luz de câmera tem raio −1 lá)
+    expect(GIGANTE_LAMBERT_FRAG).toContain(
+      'vec3(terminadorSuave(ndotlGeo)) * uLuzGanho'
+    );
+    expect(GIGANTE_LAMBERT_FRAG).toContain(
+      'gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);'
+    );
   });
 
   it('a sombra planeta→anel é elipsoide: squash no eixo POLAR do anel', () => {
@@ -667,26 +680,44 @@ describe('5. a classe — gate, carga, cessão, anel', () => {
    * 0,203685100863 (4,85× menor). Se um dia mudar a efeméride ou a
    * política, este número muda COM DECLARAÇÃO, nunca por conveniência.
    */
-  it('PINO 91: o uniform de Saturno é a EXPOSIÇÃO DA VISITA, não a lei do ponto', async () => {
+  it('PINO 93: o uniform de Saturno é o SOL DO EYES — 1 literal, sem resíduo de 1/d²', async () => {
     const { corpo } = giganteDeTeste('saturn');
     corpo.atualizar(quadro('saturn', 4));
     await flush();
-    expect(corpo.atualizar(quadro('saturn', 4)).emQuadro).toBe(true);
+    const e = corpo.atualizar(quadro('saturn', 4));
+    expect(e.emQuadro).toBe(true);
 
-    // o esperado, de fora do código: ganhoFundido(9,709593622 UA) × 4,848170869702
-    const ESPERADO_SATURNO = 0.987500172598;
     const globo = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
-    expect(globo.uniforms.uLuzGanho.value).toBeCloseTo(ESPERADO_SATURNO, 9);
+    expect(globo.uniforms.uLuzGanho.value).toBe(1);
 
     // O ANEL PAGA A MESMA CONTA — era o 0,2 dele que o apagava junto com
     // o globo, e um anel que ficasse para trás seria meio conserto.
     const anel = malhaDoAnel(corpo.group).material as THREE.ShaderMaterial;
     expect(anel.uniforms.uLuzGanho.value).toBe(globo.uniforms.uLuzGanho.value);
 
-    // E O QUE A SABOTAGEM PRODUZIRIA, dito por extenso para o próximo a
-    // ler: com `'earth'` no lugar do id, o uniform cairia neste valor.
-    const SOB_A_REVERSAO = 0.203685100863;
-    expect(globo.uniforms.uLuzGanho.value).not.toBeCloseTo(SOB_A_REVERSAO, 6);
+    // AS DUAS REVERSÕES POSSÍVEIS, ditas por extenso. 0,9875 é o que o
+    // ITEM 91 escrevia aqui (lei viva × compensação — o resíduo do
+    // pontinho ainda vivo no globo); 0,2037 é o que a sabotagem do
+    // auditor produzia (compensação de `'earth'`), e foi ela que passou
+    // calada em 25/08 antes de existir pino nenhum.
+    expect(globo.uniforms.uLuzGanho.value).not.toBeCloseTo(0.987500172598, 6);
+    expect(globo.uniforms.uLuzGanho.value).not.toBeCloseTo(0.203685100863, 6);
+
+    // AS DUAS PEÇAS NOVAS chegam ao GLOBO e NÃO chegam ao ANEL — o
+    // modelo do anel é camada de partículas com função de fase, e um
+    // fill de câmera por cima quebraria o I/F ancorado na Cassini.
+    expect(globo.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    expect(globo.uniforms.uTerminadorS.value).toBe(S_DO_TERMINADOR);
+    expect(anel.uniforms.uLanternaLeitura).toBeUndefined();
+    expect(anel.uniforms.uTerminadorS).toBeUndefined();
+
+    // EM `real` AS TRÊS PEÇAS APAGAM JUNTAS: o ganho volta a ser E(d) na
+    // rUA viva, e os dois uniformes zeram. É a decisão 2 do dono.
+    corpo.atualizar(quadro('saturn', 4, { politica: 'real' }));
+    expect(globo.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(e.rUA, 'real'));
+    expect(globo.uniforms.uLuzGanho.value).toBeCloseTo(0.010607130027, 9);
+    expect(globo.uniforms.uLanternaLeitura.value).toBe(0);
+    expect(globo.uniforms.uTerminadorS.value).toBe(0);
     corpo.dispose();
   });
 });

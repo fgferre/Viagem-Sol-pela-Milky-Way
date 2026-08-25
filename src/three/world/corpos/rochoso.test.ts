@@ -34,11 +34,18 @@ import { LS_NORMALIZACAO_GLSL } from './lua';
 import { LIMIAR_DO_GATE_PX, eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import { ANEIS_CITADOS } from './gigante';
+import { ganhoFundido } from '../../../lib/atlas/luz';
+import {
+  LANTERNA_DE_LEITURA,
+  S_DO_TERMINADOR,
+  ganhoDoGlobo,
+} from '../../../lib/atlas/luzDaVisita';
 import {
   LIMIAR_LUA_ROCHOSA_PX,
   ROCHOSOS,
   ROCHOSO_LAMBERT_FRAG,
   ROCHOSO_LS_FRAG,
+  ROCHOSO_PROC_FRAG,
   ROCHOSO_PROC_LS_FRAG,
   RochosoResolvido,
   posicaoDoRochosoUA,
@@ -102,13 +109,34 @@ describe('2. o needle dos GLSL montados', () => {
       expect(frag).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
       expect(frag).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
       expect(frag).toContain('fatorDeEclipse(pElip, n,');
-      expect(frag).toContain('gl_FragColor = vec4(direta, 1.0);');
     }
-    expect(ROCHOSO_LS_FRAG).toContain('albedo * (ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
-    expect(ROCHOSO_PROC_LS_FRAG).toContain('albedo * (ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
+    expect(ROCHOSO_LS_FRAG).toContain('vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
+    expect(ROCHOSO_PROC_LS_FRAG).toContain('vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0)');
     expect(ROCHOSO_LAMBERT_FRAG).toContain(
-      '(albedo * ndotl) * uLuzGanho * fatorDeEclipse(pElip, n, dot(n, uDirSolLocal))'
+      'vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo)'
     );
+  });
+
+  /**
+   * ITEM 93 — QUEM RECEBE A LOGÍSTICA E QUEM NÃO RECEBE, contado por
+   * DERIVAÇÃO e não por lista decorada: os quatro fragmentos desta
+   * classe repartem-se pelo BRDF, e é o BRDF que decide. Lambert (com
+   * mapa ou procedural) usa a curva do Eyes; Lommel-Seeliger fica com o
+   * disco chato, que é o fato da foto. Todos os quatro recebem a
+   * lanterna — ela é a mesma luz para todo mundo.
+   */
+  it('a logística entra nos Lambert e NÃO nos Lommel-Seeliger; a lanterna entra em todos', () => {
+    const main = (glsl: string) => glsl.slice(glsl.indexOf('void main()'));
+    const comLogistica = [ROCHOSO_LAMBERT_FRAG, ROCHOSO_PROC_FRAG];
+    const semLogistica = [ROCHOSO_LS_FRAG, ROCHOSO_PROC_LS_FRAG];
+    // a contagem é derivada das listas acima, e elas cobrem os QUATRO
+    expect(new Set([...comLogistica, ...semLogistica]).size).toBe(4);
+    for (const frag of comLogistica) expect(main(frag)).toContain('terminadorSuave(');
+    for (const frag of semLogistica) expect(main(frag)).not.toContain('terminadorSuave(');
+    for (const frag of [...comLogistica, ...semLogistica]) {
+      expect(main(frag)).toContain('lanternaDeLeitura(');
+      expect(main(frag)).toContain('luzDoGlobo(');
+    }
   });
 
   it('o C de Lommel-Seeliger é o LITERAL da Lua — uma fonte só, nunca redigitado', () => {
@@ -374,46 +402,61 @@ describe('4. a classe — gate, carga, retrato × sem-retrato, cessão', () => {
    * do id do corpo, aqui e no gigante, e os 2.249 testes passaram TODOS:
    * o conserto existia sem nada que o protegesse.
    *
-   * Esta classe serve TRÊS famílias com uma lei só, e por isso as três
-   * são pinadas separadamente — um pino em Marte não prova Titã, que
-   * herda a distância do PAI, nem Éris, que puxa o semieixo da tabela de
-   * TNOs. São três caminhos distintos dentro de `distanciaDaVisitaUA`, e
-   * um pino por caminho é o que impede que dois deles quebrem calados.
-   *
-   * OS NÚMEROS SÃO LITERAIS, de fora do código: um oráculo que recalcula
-   * a fórmula do código concorda com ele mesmo quando os dois estão
-   * errados. Sob a reversão a compensação vale 1 e o uniform cai para o
-   * `ganhoFundido` puro — a lei do PONTO no globo, que é o defeito
-   * original. A margem é grande em toda parte e enorme em Éris (19×),
-   * que é o corpo em que a visita mais gasta.
+   * NO ITEM 93 O PINO MUDOU DE ALVO, e ficou mais duro: a compensação
+   * por corpo saiu inteira, e o que o uniform tem de dizer em
+   * `assistida` é **1 literal**. Qualquer resíduo de distância no globo
+   * — inclusive o do próprio item 91 — reprova aqui.
    */
-  describe('PINO 91: o uniform é a EXPOSIÇÃO DA VISITA, e cada família tem o seu', () => {
+  describe('PINO 93: o uniform é o SOL DO EYES — 1 literal em assistida, E(d) em real', () => {
+    /**
+     * TRÊS FAMÍLIAS, TRÊS PINOS. Esta classe serve rochoso, lua e TNO
+     * com uma lei só; um pino em Marte não prova Titã nem Éris. O que
+     * mudou no item 93 é que a lei parou de ter caminhos: em `assistida`
+     * o Sol é 1 para os três, e a distância só reaparece em `real`.
+     *
+     * OS NÚMEROS DA REVERSÃO SÃO LITERAIS, de fora do código: são os
+     * valores que o item 91 escrevia aqui, com o resíduo do 1/d² ainda
+     * vivo dentro do globo. Se um deles voltar, este pino morde.
+     */
     for (const caso of [
-      // corpo      brdf        superficie      esperado         sob a reversão
-      { id: 'mars', brdf: 'lambert' as const, sup: undefined, esperado: 1.067588635207, revertido: 0.795009377980, familia: 'rochoso' },
-      { id: 'titan', brdf: 'lambert' as const, sup: undefined, esperado: 0.987842741269, revertido: 0.203755760228, familia: 'lua (herda o pai)' },
-      { id: 'eris', brdf: 'lambert' as const, sup: 'procedural' as const, esperado: 0.796563463514, revertido: 0.041633680220, familia: 'TNO' },
+      // corpo      brdf        superficie      sob a reversão (item 91)
+      { id: 'mars', brdf: 'lambert' as const, sup: undefined, revertido: 1.067588635207, familia: 'rochoso' },
+      { id: 'titan', brdf: 'lambert' as const, sup: undefined, revertido: 0.987842741269, familia: 'lua (herda o pai)' },
+      { id: 'eris', brdf: 'lambert' as const, sup: 'procedural' as const, revertido: 0.796563463514, familia: 'TNO' },
     ]) {
       it(`${caso.id} — ${caso.familia}`, async () => {
         const { corpo } = rochosoDeTeste(caso.id, caso.brdf, caso.sup);
         corpo.atualizar(quadro(caso.id, 4));
         await flush();
-        expect(corpo.atualizar(quadro(caso.id, 4)).emQuadro, caso.id).toBe(true);
+        const e = corpo.atualizar(quadro(caso.id, 4));
+        expect(e.emQuadro, caso.id).toBe(true);
         const mat = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
-        expect(mat.uniforms.uLuzGanho.value, caso.id).toBeCloseTo(caso.esperado, 9);
-        // e o valor que a reversão produziria fica de fora, por extenso
+        expect(mat.uniforms.uLuzGanho.value, caso.id).toBe(1);
+        // e o valor que a reversão ao item 91 produziria fica de fora
         expect(mat.uniforms.uLuzGanho.value, `${caso.id} sob a reversão`).not.toBeCloseTo(
           caso.revertido,
           6
+        );
+        // AS DUAS PEÇAS NOVAS chegam ao material, e apagam em `real`
+        expect(mat.uniforms.uLanternaLeitura.value, caso.id).toBe(LANTERNA_DE_LEITURA);
+        expect(mat.uniforms.uTerminadorS.value, caso.id).toBe(S_DO_TERMINADOR);
+        corpo.atualizar(quadro(caso.id, 4, { politica: 'real' }));
+        expect(mat.uniforms.uLanternaLeitura.value, caso.id).toBe(0);
+        expect(mat.uniforms.uTerminadorS.value, caso.id).toBe(0);
+        // e em `real` o ganho volta a ser a lei física, na rUA viva
+        expect(mat.uniforms.uLuzGanho.value, caso.id).toBe(
+          ganhoDoGlobo(e.rUA, 'real')
         );
         corpo.dispose();
       });
     }
 
-    it('Éris é o caso em que a visita mais gasta: ~19× sobre a lei crua', () => {
-      // o número que separa este pino de um teste decorativo — se a
-      // compensação sumisse, Éris cairia para 4% do que está na tela
-      expect(0.796563463514 / 0.041633680220).toBeCloseTo(19.13, 2);
+    it('Éris é o caso em que a visita mais gasta: ~24,2× sobre a lei crua', () => {
+      // o número que separa este pino de um teste decorativo — sem a
+      // exposição da visita, Éris cairia para 4% do que está na tela
+      const dEris = 95.0;
+      expect(1 / ganhoDoGlobo(dEris, 'assistida')).toBe(1);
+      expect(1 / ganhoFundido(dEris, 'assistida')).toBeCloseTo(24.233, 3);
     });
   });
 });

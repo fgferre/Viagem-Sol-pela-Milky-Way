@@ -2083,15 +2083,19 @@ export class Director {
    * consumiu `ganhoFundido`: o único consumidor sempre foi o globo. O
    * selo declarava +4,2 para Saturno enquanto o globo gastava outra
    * coisa. Agora declara `stopsDaVisita`, que é o gasto REAL da malha —
-   * +6,5 em Saturno, +9,8 em Netuno, −2,4 em Mercúrio — e em `real` é
-   * 0 exato, porque em `real` não há nada a declarar.
+   * e em `real` é 0 exato, porque em `real` não há nada a declarar.
+   *
+   * NO ITEM 93 O NÚMERO FICOU EXATO: com o Sol do globo em 1 literal, o
+   * gasto é `2·log2(d)` — +6,6 em Saturno, +9,8 em Netuno, −2,2 em
+   * Mercúrio. O resíduo do 1/d² que ainda o torcia morreu junto com a
+   * compensação por corpo, e por isso o `id` saiu da chamada.
    */
   private stopsDoGloboEmFoco(): number | null {
     const id = this.escada.focoCorpoId;
     if (!id || !this.planetas) return null;
     const stops = (dUA: number | undefined) =>
       dUA !== undefined && Number.isFinite(dUA)
-        ? stopsDaVisita(dUA, id, this.politicaDeLuz)
+        ? stopsDaVisita(dUA, this.politicaDeLuz)
         : null;
     // as luas (F2b/F3): o dUA é o da CADEIA heliocêntrica dela,
     // publicado pelo próprio mesh (NaN sem efeméride ⇒ o rótulo fica

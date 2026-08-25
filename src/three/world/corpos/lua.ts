@@ -84,7 +84,12 @@ import {
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
-import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
+import {
+  GLSL_LUZ_DA_VISITA,
+  escreverLuzDaVisita,
+  ganhoDoGlobo,
+  uniformsDaLuzDaVisita,
+} from '../../../lib/atlas/luzDaVisita';
 import {
   PARES_DE_ECLIPSE,
   GLSL_SOMBRA_ECLIPSE,
@@ -156,16 +161,23 @@ varying vec3 vLocal;
 varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_ECLIPSE}
+${GLSL_LUZ_DA_VISITA}
 void main() {
   vec3 n = normSeguro(vLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  vec3 dirCam = normSeguro(uCamLocal - vLocal);
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
-  float mu = clamp(dot(n, normSeguro(uCamLocal - vLocal)), 0.0, 1.0);
+  float mu = clamp(dot(n, dirCam), 0.0, 1.0);
   // Lommel-Seeliger com C derivado por neutralidade de fluxo — o disco
   // cheio é CHATO (mu == mu0 ⇒ fator constante C/2), não Lambertiano.
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
-  vec3 direta = albedo * (ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal));
-  gl_FragColor = vec4(direta, 1.0);
+  vec3 luzSol = vec3(ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal));
+  // ITEM 93: a LANTERNA DE LEITURA entra; a LOGÍSTICA não (contrato
+  // §4.3). O disco chato de LS é o fato da foto, e o teto de 1 não
+  // morde o realce de limbo — a borda dura continua dura.
+  gl_FragColor = vec4(
+    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam)), 1.0
+  );
 }
 `;
 
@@ -355,10 +367,9 @@ export class LuaResolvida {
       .setPosition(this.centro);
 
     // frame local (CPU em float64): câmera em raios, Sol unitário
-    // a exposição da visita (item 91): a Lua é visitada à distância do
-    // pai, e o pai é a ÂNCORA — compensação 1 exata, uniform idêntico ao
-    // de antes do 91, bit a bit. Ver `luzDaVisita.ts`.
-    const ganho = ganhoDoGlobo(this.rUA, 'moon', q.politica);
+    // a exposição da visita (item 91, reescrita no 93): Sol = 1 em
+    // `assistida`, E(d) em `real`. Ver `luzDaVisita.ts`.
+    const ganho = ganhoDoGlobo(this.rUA, q.politica);
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);
@@ -375,6 +386,8 @@ export class LuaResolvida {
     (u.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
     (u.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     u.uLuzGanho.value = ganho;
+    // a lanterna de leitura (item 93) — a Lua a recebe, a logística não
+    escreverLuzDaVisita(u, q.politica);
     // a sombra do eclipse (F2c) — o mesmo fio da Terra
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
   }
@@ -391,6 +404,7 @@ export class LuaResolvida {
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },
+        ...uniformsDaLuzDaVisita(),
         ...uniformsDeEclipseNeutros(),
       },
       // corpo resolvido OPACO: escreve e testa o depth do palco (F0) —

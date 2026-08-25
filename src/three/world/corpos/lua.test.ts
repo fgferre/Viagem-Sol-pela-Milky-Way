@@ -36,7 +36,11 @@ import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { ganhoFundido, irradianciaRelativa } from '../../../lib/atlas/luz';
-import { compensacaoDaVisita, ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
+import {
+  LANTERNA_DE_LEITURA,
+  S_DO_TERMINADOR,
+  ganhoDoGlobo,
+} from '../../../lib/atlas/luzDaVisita';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import {
@@ -285,14 +289,19 @@ describe('3. a cadeia de luz da Lua (o oráculo Europa/Júpiter, adaptado)', () 
   });
 
   /**
-   * A PROMESSA MUDOU NO ITEM 91, declarada: o uniform passou a ser
-   * `ganhoDoGlobo(rUA, 'moon', política)` — lei viva × compensação da
-   * visita (`luzDaVisita.ts`). A LUA É VISITADA À DISTÂNCIA DO PAI, e o
-   * pai é a `ANCORA_UA`: a compensação vale 1 EXATO e o double é o mesmo
-   * de antes. É esta identidade que mantém `lua` e `terralua`
-   * bit-idênticas no gate.
+   * A PROMESSA MUDOU DUAS VEZES, e as duas estão declaradas. No ITEM 91
+   * o uniform passou a ser a exposição da visita; no ITEM 93 ele virou
+   * **1 literal** em `assistida` — o Sol do NASA Eyes —, e E(d) bit a
+   * bit em `real`.
+   *
+   * O PINO BIT-IDÊNTICO DO 91 CAIU AQUI, e caiu autorizado: o contrato
+   * do 93 diz em letra que "bit-idêntico da Terra/Lua do item 91: cai".
+   * Antes o ganho da Lua era `ganhoFundido(rUA, 'assistida')` ≈ 1,0118 —
+   * a âncora quase, mas não exatamente, em 1. Este bloco mede a queda em
+   * vez de a esconder: o número velho fica escrito, e a diferença é de
+   * 1,2 %.
    */
-  it('uLuzGanho do MESH é ganhoDoGlobo(rUA da CADEIA) — e na Lua é o MESMO double de antes do 91', async () => {
+  it('uLuzGanho do MESH é 1 em assistida e E(d) em real — e o pino do 91 caiu, com o delta medido', async () => {
     const { lua } = luaDeTeste();
     const perto = centroPc(JD);
     perto.z += RAIO_LUA_PC * 4;
@@ -304,18 +313,57 @@ describe('3. a cadeia de luz da Lua (o oráculo Europa/Júpiter, adaptado)', () 
     const rUA = Math.hypot(p.x, p.y, p.z);
     expect(e.rUA).toBe(rUA);
     const mat = (lua.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial;
-    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'moon', 'assistida'));
+    expect(mat.uniforms.uLuzGanho.value).toBe(1);
+    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'assistida'));
     // a política troca o MESMO uniform no tick seguinte
     lua.atualizar(quadro(perto, { politica: 'real' }));
-    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'moon', 'real'));
-    // a prova de que a casa não se mexeu: compensação 1 exata ⇒ o mesmo double
-    expect(compensacaoDaVisita('moon', 'assistida')).toBe(1);
-    for (const politica of ['assistida', 'real'] as const) {
-      expect(
-        Object.is(ganhoDoGlobo(rUA, 'moon', politica), ganhoFundido(rUA, politica)),
-        `Lua em ${politica} deixou de ser bit-idêntica`
-      ).toBe(true);
-    }
+    expect(mat.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'real'));
+    expect(Object.is(ganhoDoGlobo(rUA, 'real'), ganhoFundido(rUA, 'real'))).toBe(true);
+    // O QUE CAIU, com número: neste jd a Lua está a 0,9991 UA e o ganho
+    // de antes era 1,000635 — o pino bit-idêntico morre por 0,063 %, que
+    // é MENOS de um nível de 255. Quem move `lua` e `terralua` na tela é
+    // a LANTERNA, não este número.
+    const ANTES_DO_93 = ganhoFundido(rUA, 'assistida');
+    expect(ANTES_DO_93).toBeCloseTo(1.000634968993, 9);
+    expect(Object.is(ganhoDoGlobo(rUA, 'assistida'), ANTES_DO_93)).toBe(false);
+    expect(Math.abs(1 / ANTES_DO_93 - 1)).toBeCloseTo(0.000634566, 8);
+    lua.dispose();
+  });
+
+  /**
+   * ITEM 93, PROVA 5 — A LUA RECEBE A LANTERNA E **NÃO** RECEBE A
+   * LOGÍSTICA. É a decisão do contrato §4.3: o disco chato de
+   * Lommel-Seeliger é o fato que se confere contra uma fotografia, e o
+   * Eyes, que usa Phong até aqui, é PIOR nisto.
+   *
+   * O JUIZ LÊ O UNIFORM, não o texto: com a receita revertida os dois
+   * uniformes ficariam em 0 nas duas políticas, e o `uTerminadorS`
+   * declarado a 3 seria a assinatura de alguém ter posto a logística na
+   * Lua por engano — o shader dela não o consome, e por isso ele vale 3
+   * aqui SEM mudar um pixel do disco (a prova de que não mudou é a foto
+   * `capturas/item93-lua-cheia.png`).
+   */
+  it('PINO 93: a Lua recebe a lanterna de leitura, e o BRDF continua LS', async () => {
+    const { lua } = luaDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto));
+    await flush();
+    expect(lua.atualizar(quadro(perto)).emQuadro).toBe(true);
+    const mat = (lua.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial;
+    expect(mat.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    // em `real` a lanterna APAGA — a decisão 2 do dono vale aqui também
+    lua.atualizar(quadro(perto, { politica: 'real' }));
+    expect(mat.uniforms.uLanternaLeitura.value).toBe(0);
+    expect(mat.uniforms.uTerminadorS.value).toBe(0);
+    lua.atualizar(quadro(perto));
+    expect(mat.uniforms.uTerminadorS.value).toBe(S_DO_TERMINADOR);
+    // e o MAIN não consome o `s`: o BRDF continua sendo o LS puro. Lê-se
+    // o corpo do main, não o shader inteiro — o helper da logística está
+    // no chunk compartilhado e ESTAR lá não é usá-lo.
+    const main = LUA_FRAG.slice(LUA_FRAG.indexOf('void main()'));
+    expect(main).not.toContain('terminadorSuave(');
+    expect(main).toContain('lanternaDeLeitura(');
     lua.dispose();
   });
 
@@ -452,7 +500,7 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
   });
 
   it('a luz direta multiplica o ESCALAR ÚNICO e não existe outro termo', () => {
-    expect(FONTE).toContain('albedo * (ls * uLuzGanho)');
+    expect(FONTE).toContain('vec3(ls * uLuzGanho)');
     // o NOME do escalar mudou no item 91 (a malha deixou de chamar a lei do ponto)
     expect(FONTE).toContain('ganhoDoGlobo(');
     expect(FONTE).not.toContain('ganhoFundido(');
@@ -484,9 +532,11 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
     // depois do BRDF de Lommel-Seeliger, na direta e só nela — não há
     // outro termo no shader para o fator tocar
     expect(LUA_FRAG).toContain(
-      'albedo * (ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal))'
+      'vec3(ls * uLuzGanho) * fatorDeEclipse(vLocal, n, dot(n, uDirSolLocal))'
     );
-    expect(LUA_FRAG).toContain('gl_FragColor = vec4(direta, 1.0);');
+    // e a LANTERNA (item 93) entra DEPOIS, fora do fator: no Eyes a luz
+    // de câmera tem raio −1, isto é, nenhuma sombra a alcança
+    expect(LUA_FRAG).toContain('luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam))');
   });
 
 });

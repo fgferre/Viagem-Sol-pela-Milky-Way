@@ -53,7 +53,12 @@ import {
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
-import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
+import {
+  GLSL_LUZ_DA_VISITA,
+  escreverLuzDaVisita,
+  ganhoDoGlobo,
+  uniformsDaLuzDaVisita,
+} from '../../../lib/atlas/luzDaVisita';
 import {
   GLSL_SOMBRA_ECLIPSE,
   PARES_DE_ECLIPSE,
@@ -208,12 +213,17 @@ vec3 normalDoCorpo(vec3 p, vec3 esc) { return normSeguro(p * esc); }
  * regolito: difusa cos(incidência) e nada mais (a esfera Lambertiana
  * estática do doador). O eclipse entra pelo chunk único da lib, SÓ
  * na direta, depois do BRDF.
+ *
+ * ITEM 93 — a superfície Lambert dos rochosos é uma das três famílias
+ * que o contrato manda pôr sob a logística do Eyes (§4.3), e todas as
+ * famílias daqui recebem a lanterna de leitura. Em `real` os dois
+ * uniformes são 0 e o fragmento devolve o Lambert cru de antes.
  */
 export const ROCHOSO_LAMBERT_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
 uniform vec3 uDirSolLocal;  // corpo→Sol, frame LOCAL (unitário)
 uniform vec3 uCamLocal;     // câmera no frame local, em raios de a
-uniform float uLuzGanho;    // ganhoDoGlobo(dUA da CADEIA, corpo) — o escalar único
+uniform float uLuzGanho;    // ganhoDoGlobo(dUA da CADEIA) — o escalar único
 uniform vec3 uNormalEsc;    // (1, a²/c², a²/b²): gradiente do elipsoide
 uniform vec3 uEscalaLocal;  // (1, c/a, b/a): ponto real do elipsoide
 varying vec3 vLocal;
@@ -221,14 +231,16 @@ varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
+${GLSL_LUZ_DA_VISITA}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
-  float ndotl = max(dot(n, uDirSolLocal), 0.0);
+  float ndotlGeo = dot(n, uDirSolLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
-  vec3 direta =
-    (albedo * ndotl) * uLuzGanho * fatorDeEclipse(pElip, n, dot(n, uDirSolLocal));
-  gl_FragColor = vec4(direta, 1.0);
+  vec3 luzSol =
+    vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo);
+  float fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip));
+  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
 }
 `;
 
@@ -237,6 +249,13 @@ void main() {
  * (Vesta/Palas/Hígia + Haumea, só o BRDF): a MESMA lei, com o
  * C = 4/3 importado da Lua (a derivação por quadratura mora em
  * lua.test.ts e cobre TODOS os consumidores — o literal é UM só).
+ *
+ * ITEM 93 — AQUI NÃO ENTRA A LOGÍSTICA, e é decisão do contrato (§4.3):
+ * o disco chato de LS é o fato que se confere contra uma fotografia, e
+ * o Eyes, que usa Phong até na Lua, é PIOR nisto. Entra só a LANTERNA
+ * DE LEITURA, e ela chega junto com o teto de 1 — que não morde o
+ * realce de limbo do LS (`luzDoGlobo`), então o disco não perde a borda
+ * dura que o define.
  */
 export const ROCHOSO_LS_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -250,21 +269,28 @@ varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
+${GLSL_LUZ_DA_VISITA}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  vec3 dirCam = normSeguro(uCamLocal - pElip);
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
-  float mu = clamp(dot(n, normSeguro(uCamLocal - pElip)), 0.0, 1.0);
+  float mu = clamp(dot(n, dirCam), 0.0, 1.0);
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
-  vec3 direta = albedo * (ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0);
-  gl_FragColor = vec4(direta, 1.0);
+  vec3 luzSol = vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0);
+  gl_FragColor = vec4(
+    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam)), 1.0
+  );
 }
 `;
 
 /**
  * PROCEDURAL (F6) — o −3 inventado do doador, declarado. Sem mapa:
- * albedo = cor-base + ruído 3 oitavas. Lambert + eclipse como as irmãs.
+ * albedo = cor-base + ruído 3 oitavas. Lambert + eclipse como as irmãs
+ * — e, no item 93, a MESMA logística e a MESMA lanterna do Lambert
+ * texturado: o que separa este shader do outro é de onde vem o albedo,
+ * nunca o modelo de luz.
  */
 export const ROCHOSO_PROC_FRAG = /* glsl */ `
 uniform vec3 uAlbedoBase;
@@ -278,6 +304,7 @@ varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
+${GLSL_LUZ_DA_VISITA}
 float hash31(vec3 p) {
   return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
 }
@@ -302,19 +329,21 @@ float ruido(vec3 p) {
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
-  float ndotl = max(dot(n, uDirSolLocal), 0.0);
+  float ndotlGeo = dot(n, uDirSolLocal);
   float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
   vec3 albedo = uAlbedoBase * (0.72 + 0.56 * g);
-  vec3 direta =
-    (albedo * ndotl) * uLuzGanho * fatorDeEclipse(pElip, n, dot(n, uDirSolLocal));
-  gl_FragColor = vec4(direta, 1.0);
+  vec3 luzSol =
+    vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo);
+  float fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip));
+  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
 }
 `;
 
 /**
  * PROCEDURAL + LS (F7) — o mesmo −3, com o C = 4/3 importado da
  * Lua. Palas (sem mapa licenciado) e Haumea (corpo da F6, só o
- * BRDF muda: a casa não refaz a figura).
+ * BRDF muda: a casa não refaz a figura). Como no LS texturado, o item
+ * 93 lhe dá a LANTERNA e NÃO lhe dá a logística.
  */
 export const ROCHOSO_PROC_LS_FRAG = /* glsl */ `
 uniform vec3 uAlbedoBase;
@@ -328,6 +357,7 @@ varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
+${GLSL_LUZ_DA_VISITA}
 float hash31(vec3 p) {
   return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
 }
@@ -354,11 +384,14 @@ void main() {
   vec3 pElip = vLocal * uEscalaLocal;
   float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
   vec3 albedo = uAlbedoBase * (0.72 + 0.56 * g);
+  vec3 dirCam = normSeguro(uCamLocal - pElip);
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
-  float mu = clamp(dot(n, normSeguro(uCamLocal - pElip)), 0.0, 1.0);
+  float mu = clamp(dot(n, dirCam), 0.0, 1.0);
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
-  vec3 direta = albedo * (ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0);
-  gl_FragColor = vec4(direta, 1.0);
+  vec3 luzSol = vec3(ls * uLuzGanho) * fatorDeEclipse(pElip, n, mu0);
+  gl_FragColor = vec4(
+    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam)), 1.0
+  );
 }
 `;
 
@@ -617,10 +650,10 @@ export class RochosoResolvido {
       .setPosition(this.centro);
 
     // frame local (CPU em float64): câmera em raios de a, Sol unitário
-    // a exposição da visita (item 91): lei viva × constante do corpo. As
-    // 20 luas daqui herdam a constante do PAI (Titã expõe como Saturno),
-    // e o anel de Quaoar recebe o mesmo `ganho`. Ver `luzDaVisita.ts`.
-    const ganho = ganhoDoGlobo(this.rUA, this.config.id, q.politica);
+    // a exposição da visita (item 91, reescrita no 93): Sol = 1 em
+    // `assistida`, E(d) em `real`. O anel de Quaoar recebe o mesmo
+    // `ganho` — e nenhuma lanterna. Ver `luzDaVisita.ts`.
+    const ganho = ganhoDoGlobo(this.rUA, q.politica);
     // ONDE ESTÁ O SOL, uma vez só por corpo: a ORIGEM da cena. O anel
     // de Quaoar bebe DESTE vetor — tinha um segundo cálculo idêntico
     // só para ele (item 91).
@@ -640,6 +673,11 @@ export class RochosoResolvido {
     (u.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
     (u.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     u.uLuzGanho.value = ganho;
+    // a lanterna de leitura e o `s` do terminador (item 93), pelo único
+    // escritor da casa — as três famílias de BRDF desta classe recebem
+    // os MESMOS dois uniformes; quem decide o que fazer com eles é o
+    // fragmento (a LS ignora o `s`).
+    escreverLuzDaVisita(u, q.politica);
     // a sombra do eclipse — o mesmo fio das irmãs (sem deriva: casca única)
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 
@@ -700,6 +738,7 @@ export class RochosoResolvido {
           value: new THREE.Vector3(1, 1 / (this.razaoC * this.razaoC), 1 / (this.razaoB * this.razaoB)),
         },
         uEscalaLocal: { value: new THREE.Vector3(1, this.razaoC, this.razaoB) },
+        ...uniformsDaLuzDaVisita(),
         ...uniformsDeEclipseNeutros(),
       },
       // corpo resolvido OPACO: escreve e testa o depth do palco (F0)

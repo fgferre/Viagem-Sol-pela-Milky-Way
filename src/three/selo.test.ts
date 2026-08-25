@@ -34,8 +34,13 @@ import {
   CARTOGRAFIA_DESLIGADA,
 } from './selo';
 import type { EstadoDaVista } from './selo';
-import { COPY_LUZ_ASSISTIDA, lerPortaLuz, rotuloDaLuzAssistida } from './selo';
-import { stopsDaVisita } from '../lib/atlas/luzDaVisita';
+import {
+  COPY_LANTERNA_DE_LEITURA,
+  COPY_LUZ_ASSISTIDA,
+  lerPortaLuz,
+  rotuloDaLuzAssistida,
+} from './selo';
+import { LANTERNA_DE_LEITURA, stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { DRAMA_T1, doseDaDramaturgia } from './director/doseDoSol';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { TONE_MAPPINGS } from './core/engine';
@@ -256,13 +261,42 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91
     expect(estadoDoSelo(com({ luz: 'real' })).brilho).toBe('real');
   });
 
+  /**
+   * ITEM 93, PROVA 8 — a assistência NOVA também se declara. A lanterna
+   * de leitura é uma segunda luz que a física não tem; ela acende só em
+   * `assistida`, e é ali, e só ali, que o selo a nomeia.
+   *
+   * O NÚMERO NÃO É REDIGITADO: sai de `LANTERNA_DE_LEITURA`. Trocar o
+   * desenho para 0,20 muda a frase junto — nunca deixa o selo com um
+   * número velho na tela.
+   */
+  it('a lanterna de leitura é declarada em `assistida`, e só lá', () => {
+    const ligada = estadoDoSelo(com({ luz: 'assistida' })).desvios.find(
+      (d) => d.chave === 'luz'
+    );
+    expect(ligada!.rotulo).toContain(
+      `Lanterna de leitura ${Math.round(LANTERNA_DE_LEITURA * 100)} %`
+    );
+    expect(ligada!.rotulo).toContain('lado noturno legível');
+    // em `real` a linha inteira não existe: não há nada a declarar
+    expect(
+      estadoDoSelo(com({ luz: 'real' })).desvios.some((d) => d.chave === 'luz')
+    ).toBe(false);
+    // e a copy da lanterna acompanha o número da lei, não uma cópia dele
+    expect(COPY_LANTERNA_DE_LEITURA).toContain(
+      `${Math.round(LANTERNA_DE_LEITURA * 100)} %`
+    );
+  });
+
   it('com corpo em foco o rótulo diz o gasto EXATO do globo, não um "+N" genérico', () => {
     // O NÚMERO MUDOU DE SUJEITO NO ITEM 91. Era o ΔEV da `assistida`
     // sobre a `real` — que descrevia o ponto, e o ponto nunca passou por
     // esta política. Agora é `stopsDaVisita`: quanto o GLOBO está exposto
     // acima da luz física que o corpo recebe. Netuno sai de +6,4 (o
     // número velho, de outra coisa) para +9,8 (o que a malha gasta).
-    const stops = stopsDaVisita(29.884744842988464, 'neptune', 'assistida')!;
+    // NO ITEM 93 o número ficou EXATO — 2·log2(d), sem o resíduo do
+    // 1/d² que o torcia —, e por isso Mercúrio foi de −2,4 para −2,2.
+    const stops = stopsDaVisita(29.884744842988464, 'assistida')!;
     const v = estadoDoSelo(com({ luz: 'assistida', stopsDoGloboEmFoco: stops }));
     const linha = v.desvios.find((d) => d.chave === 'luz')!;
     expect(linha.rotulo).toContain('Este globo: +9,8 passos de luz sobre a luz física.');
@@ -270,15 +304,17 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91
     expect(rotuloDaLuzAssistida(stops)).toBe(linha.rotulo);
     // Saturno — o corpo da queixa do dono — declara os seus +6,5
     expect(
-      rotuloDaLuzAssistida(stopsDaVisita(9.5185438390236552, 'saturn', 'assistida'))
+      rotuloDaLuzAssistida(stopsDaVisita(9.5185438390236552, 'assistida'))
     ).toContain('+6,5 passos de luz');
     // Mercúrio é NEGATIVO, com o sinal dele: a visita gasta para BAIXO
     expect(
-      rotuloDaLuzAssistida(stopsDaVisita(0.4625482713261739, 'mercury', 'assistida'))
-    ).toContain('-2,4 passos de luz');
-    // sem corpo em foco (ou número envenenado): só a copy — sem inventar
-    expect(rotuloDaLuzAssistida(null)).toBe(COPY_LUZ_ASSISTIDA);
-    expect(rotuloDaLuzAssistida(Number.NaN)).toBe(COPY_LUZ_ASSISTIDA);
+      rotuloDaLuzAssistida(stopsDaVisita(0.4625482713261739, 'assistida'))
+    ).toContain('-2,2 passos de luz');
+    // sem corpo em foco (ou número envenenado): só a copy + a lanterna —
+    // sem inventar número nenhum
+    expect(rotuloDaLuzAssistida(null)).toContain(COPY_LUZ_ASSISTIDA);
+    expect(rotuloDaLuzAssistida(null)).not.toContain('passos de luz');
+    expect(rotuloDaLuzAssistida(Number.NaN)).toBe(rotuloDaLuzAssistida(null));
   });
 
   it('os passos do selo também leem anões/asteroides (não só os dez + luas)', () => {

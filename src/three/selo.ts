@@ -33,6 +33,7 @@ import { LIMIAR_SISTEMA_SOLAR_PC, acusacaoDaEscala } from './escala';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
+import { LANTERNA_DE_LEITURA } from '../lib/atlas/luzDaVisita';
 
 // ---- a copy herdada (D1). Três pares são verbatim do i18n do doador;
 // "BRILHO ASSISTIDO" é MELHORIA declarada: o doador escreve só
@@ -158,6 +159,23 @@ export const COPY_LUZ_ASSISTIDA =
   'no ponto de cada corpo.';
 
 /**
+ * A LANTERNA DE LEITURA, declarada em copy leiga (item 93).
+ *
+ * Ela é a SEGUNDA luz da receita do NASA Eyes: uma lâmpada fraca presa à
+ * câmera, que acende o lado escuro voltado para quem olha. É assistência
+ * — a noite de um mundo sem ar é PRETA —, e assistência se declara. O
+ * número sai de `LANTERNA_DE_LEITURA`, nunca redigitado aqui: se o
+ * desenho mudar de 15 % para outra coisa, a frase muda junto.
+ *
+ * Só aparece com a lanterna LIGADA, e ela só liga em `assistida`. Em
+ * `?luz=real` a linha do selo nem existe — não há desvio nenhum a
+ * declarar, que é a decisão 2 do dono valendo também para a copy.
+ */
+export const COPY_LANTERNA_DE_LEITURA =
+  `Lanterna de leitura ${Math.round(LANTERNA_DE_LEITURA * 100)} %: ` +
+  'uma luz fraca na câmera deixa o lado noturno legível.';
+
+/**
  * O rótulo VIVO da linha `?luz=`: a copy leiga + o gasto do GLOBO em
  * foco em "passos de luz" (não "stops" cru — copy leiga). Sem corpo em
  * foco (ou número envenenado) o rótulo fica só com a copy: o selo nunca
@@ -170,9 +188,10 @@ export const COPY_LUZ_ASSISTIDA =
  * não ter consertado.
  */
 export function rotuloDaLuzAssistida(stops: number | null): string {
-  if (stops === null || !Number.isFinite(stops)) return COPY_LUZ_ASSISTIDA;
+  const base = `${COPY_LUZ_ASSISTIDA} ${COPY_LANTERNA_DE_LEITURA}`;
+  if (stops === null || !Number.isFinite(stops)) return base;
   const passos = `${stops >= 0 ? '+' : ''}${stops.toFixed(1).replace('.', ',')}`;
-  return `${COPY_LUZ_ASSISTIDA} Este globo: ${passos} passos de luz sobre a luz física.`;
+  return `${base} Este globo: ${passos} passos de luz sobre a luz física.`;
 }
 
 /**

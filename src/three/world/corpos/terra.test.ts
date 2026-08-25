@@ -26,7 +26,11 @@ import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { ganhoFundido } from '../../../lib/atlas/luz';
-import { compensacaoDaVisita, ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
+import {
+  LANTERNA_DE_LEITURA,
+  S_DO_TERMINADOR,
+  ganhoDoGlobo,
+} from '../../../lib/atlas/luzDaVisita';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import {
@@ -503,7 +507,7 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
    * 91 não moveu um pixel das vistas oficiais de casa (terra, terranb,
    * lua, terralua, os dois eclipses).
    */
-  it('uLuzGanho É ganhoDoGlobo(rUA, corpo, política) — e na Terra é o MESMO double de antes do 91', async () => {
+  it('uLuzGanho é 1 em assistida e E(d) em real — e o pino do 91 caiu, com o delta medido', async () => {
     const { terra } = terraDeTeste();
     const perto = centroPc(JD);
     perto.z += RAIO_EQ_TERRA_PC * 4;
@@ -516,24 +520,60 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
       (m) => (m as THREE.Mesh).material as THREE.ShaderMaterial
     );
     expect(mats).toHaveLength(3);
+    // AS TRÊS CASCAS continuam bebendo o MESMO escalar — a nuvem não
+    // pode ficar num ISO e o chão em outro
     for (const m of mats) {
-      expect(m.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'earth', 'assistida'));
+      expect(m.uniforms.uLuzGanho.value).toBe(1);
+      expect(m.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'assistida'));
     }
     // e a política troca o MESMO uniform no tick seguinte, sem recarga
     terra.atualizar(quadro(perto, { politica: 'real' }));
     for (const m of mats) {
-      expect(m.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'earth', 'real'));
+      expect(m.uniforms.uLuzGanho.value).toBe(ganhoDoGlobo(rUA, 'real'));
+      expect(Object.is(m.uniforms.uLuzGanho.value, ganhoFundido(rUA, 'real'))).toBe(true);
     }
-    // A PROVA DE QUE A CASA NÃO SE MEXEU: compensação 1 exata nas duas
-    // políticas ⇒ o uniform é o mesmo double que a lei antiga produzia.
-    expect(compensacaoDaVisita('earth', 'assistida')).toBe(1);
-    expect(compensacaoDaVisita('earth', 'real')).toBe(1);
-    for (const politica of ['assistida', 'real'] as const) {
-      expect(
-        Object.is(ganhoDoGlobo(rUA, 'earth', politica), ganhoFundido(rUA, politica)),
-        `Terra em ${politica} deixou de ser bit-idêntica`
-      ).toBe(true);
+    // O PINO BIT-IDÊNTICO DO ITEM 91 CAIU AQUI, e caiu AUTORIZADO: o
+    // contrato do 93 diz em letra "bit-idêntico da Terra/Lua do item 91:
+    // cai". O número velho fica escrito para que a queda seja medida —
+    // era 0,998953, e agora é 1 exato: 0,10 %, menos de um nível de 255.
+    // Quem move a Terra na tela são a LOGÍSTICA e a LANTERNA, não isto.
+    const ANTES_DO_93 = ganhoFundido(rUA, 'assistida');
+    expect(ANTES_DO_93).toBeCloseTo(0.998953185723, 9);
+    expect(Object.is(ganhoDoGlobo(rUA, 'assistida'), ANTES_DO_93)).toBe(false);
+    terra.dispose();
+  });
+
+  /**
+   * ITEM 93 — A TERRA RECEBE AS DUAS PEÇAS NA SUPERFÍCIE, E SÓ NELA.
+   *
+   * O contrato manda pôr a logística no `ndotl` da DIRETA e somar a
+   * lanterna depois do Sol; manda, com todas as letras, deixar as
+   * CIDADES e o NISHITA como estavam. O juiz lê os uniformes que as três
+   * cascas receberam: a superfície tem os dois, as nuvens e a atmosfera
+   * não têm nenhum — e é isso que impede alguém de "uniformizar" a
+   * receita para as cascas sem ver a foto.
+   */
+  it('PINO 93: a receita entra na superfície; nuvens e atmosfera ficam de fora', async () => {
+    const { terra } = terraDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    terra.atualizar(quadro(perto));
+    await flush();
+    terra.atualizar(quadro(perto));
+    const [sup, ...cascas] = terra.group.children.map(
+      (m) => (m as THREE.Mesh).material as THREE.ShaderMaterial
+    );
+    expect(sup!.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    expect(sup!.uniforms.uTerminadorS.value).toBe(S_DO_TERMINADOR);
+    expect(cascas).toHaveLength(2);
+    for (const c of cascas) {
+      expect(c.uniforms.uLanternaLeitura).toBeUndefined();
+      expect(c.uniforms.uTerminadorS).toBeUndefined();
     }
+    // em `real` as duas peças APAGAM na superfície também
+    terra.atualizar(quadro(perto, { politica: 'real' }));
+    expect(sup!.uniforms.uLanternaLeitura.value).toBe(0);
+    expect(sup!.uniforms.uTerminadorS.value).toBe(0);
     terra.dispose();
   });
 
@@ -710,7 +750,8 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
 
   it('a luz direta multiplica o ESCALAR ÚNICO, e as luzes de cidade ficam fora', () => {
     // o único lugar do fragment em que o ganho entra na superfície
-    expect(FONTE_SHADERS).toContain('(albedo * ndotl + vec3(espec)) * uLuzGanho');
+    expect(FONTE_SHADERS).toContain('vec3 luzSol = vec3(uLuzGanho) * fatorDeEclipse(');
+    expect(FONTE_SHADERS).toContain('vec3 direta = albedo * luz + vec3(espec) * luzSol;');
     // emissão: máscara × intensidade, SEM o ganho — cidade não é reflexo
     expect(FONTE_SHADERS).toContain('.rgb * (mascaraNoite * uNoiteGanho)');
     // o NOME do escalar mudou no item 91: a malha deixou de chamar a lei
@@ -816,9 +857,14 @@ describe('8. o eclipse na tela (F2c/D3)', () => {
     // (TERRA_FRAG exportado para isto), nunca só o texto-fonte
     expect(TERRA_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
     expect(TERRA_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
-    // o fator entra DEPOIS do BRDF, na componente direta e só nela
+    // o fator entra DEPOIS do BRDF, na componente direta e só nela — e
+    // a LANTERNA (item 93) entra FORA dele, que é o Eyes: a luz de
+    // câmera não sofre eclipse
     expect(TERRA_FRAG).toContain(
-      '(albedo * ndotl + vec3(espec)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo)'
+      'vec3 luzSol = vec3(uLuzGanho) * fatorDeEclipse(pElip, n, ndotlGeo);'
+    );
+    expect(TERRA_FRAG).toContain(
+      'luzDoGlobo(vec3(ndotl) * luzSol, lanternaDeLeitura(nRelevo, v))'
     );
     // a emissão (luzes de cidade) soma DEPOIS do fator — fora da sombra
     expect(TERRA_FRAG).toContain('gl_FragColor = vec4(direta + luzes, 1.0);');

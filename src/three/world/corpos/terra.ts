@@ -68,7 +68,11 @@ import {
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
-import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
+import {
+  escreverLuzDaVisita,
+  ganhoDoGlobo,
+  uniformsDaLuzDaVisita,
+} from '../../../lib/atlas/luzDaVisita';
 import {
   PARES_DE_ECLIPSE,
   criaSombraNaCena,
@@ -514,11 +518,12 @@ export class TerraResolvida {
       .setPosition(this.centro);
 
     // ---- frame local (CPU em float64): câmera em raios, Sol unitário
-    // A EXPOSIÇÃO DA VISITA (item 91): lei viva × constante do corpo. Na
-    // Terra a constante é 1 EXATO — a distância da visita dela É a
-    // `ANCORA_UA` da lei —, então este double é o mesmo de antes do 91 e
-    // o globo de casa não move um bit. Ver `luzDaVisita.ts`.
-    const ganho = ganhoDoGlobo(this.rUA, 'earth', q.politica);
+    // A EXPOSIÇÃO DA VISITA (item 91, reescrita no 93): em `assistida` o
+    // Sol do globo vale 1 literal, como no Eyes; em `real` é E(d) bit a
+    // bit. A Terra deixou de ser bit-idêntica ao pré-91 — a âncora valia
+    // ~1 e agora vale 1 exato, e a lanterna e a logística movem o resto.
+    // É o preço declarado de copiar a receita. Ver `luzDaVisita.ts`.
+    const ganho = ganhoDoGlobo(this.rUA, q.politica);
 
     // direção Terra→Sol na cena: o Sol é a ORIGEM (−centro normalizado)
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
@@ -537,6 +542,10 @@ export class TerraResolvida {
     (uS.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
     (uS.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     uS.uLuzGanho.value = ganho;
+    // a lanterna de leitura e o `s` do terminador (item 93) — SÓ na
+    // superfície: as cidades, as nuvens e o Nishita ficam como estavam,
+    // que é o que o contrato manda.
+    escreverLuzDaVisita(uS, q.politica);
     // a sombra do eclipse (F2c) — resolvida no cache de jd; aqui só vira
     // uniform, no frame local pela mesma base do uDirSolLocal
     escreverSombraDeEclipse(uS, this.sombra, this.vX, this.vY, this.vZ, 0);
@@ -580,6 +589,7 @@ export class TerraResolvida {
         uNoiteGanho: { value: CALIBRACAO_ATLAS.EARTH_NIGHT_LIGHT_INTENSITY },
         uNormalEsc: { value: new THREE.Vector3(1, 1 / achat, 1) },
         uEscalaLocal: { value: new THREE.Vector3(1, achat, 1) },
+        ...uniformsDaLuzDaVisita(),
         ...uniformsDeEclipseNeutros(),
       },
       // a composição da F0: o corpo resolvido é OPACO e escreve o único

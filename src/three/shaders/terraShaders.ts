@@ -5,6 +5,7 @@
 // padrão da casa é *Shaders.ts em shaders/.
 // ============================================================
 import { GLSL_SOMBRA_ECLIPSE } from '../../lib/atlas/eclipse';
+import { GLSL_LUZ_DA_VISITA } from '../../lib/atlas/luzDaVisita';
 
 /** Casca das nuvens: +0,15% do raio — alto o bastante para o depth
  *  separar (medido: ~800× o passo de depth nesta geometria de câmera),
@@ -72,6 +73,17 @@ void main() {
  *
  * Exportado (como LUA_FRAG) para o needle-teste da F2c ler o shader
  * montado, não o texto-fonte.
+ *
+ * ITEM 93 — A RECEITA DO EYES CHEGA AQUI EM DUAS PEÇAS, e só duas: o
+ * `ndotl` da DIRETA passa pelo terminador logístico, e a LANTERNA DE
+ * LEITURA soma-se ao termo de luz depois do Sol. O que o contrato manda
+ * NÃO tocar fica intacto: o `linstep` das CIDADES continua no
+ * terminador GEOMÉTRICO (senão as luzes noturnas vazariam para o dia),
+ * as nuvens e o Nishita da atmosfera ficam como estavam.
+ *
+ * O ESPECULAR DO OCEANO segue o mesmo `ndotl` da difusa — é o mesmo
+ * cosseno de incidência, e deixá-lo com o cru daria dois terminadores
+ * na mesma superfície.
  */
 export const TERRA_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -88,6 +100,7 @@ varying vec3 vLocal;
 varying vec2 vUv;
 ${GLSL_GUARDAS}
 ${GLSL_SOMBRA_ECLIPSE}
+${GLSL_LUZ_DA_VISITA}
 void main() {
   vec3 n = normSeguro(vLocal * uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
@@ -105,7 +118,9 @@ void main() {
   }
 
   float ndotlGeo = dot(n, uDirSolLocal);          // terminador geométrico
-  float ndotl = max(dot(nRelevo, uDirSolLocal), 0.0);
+  // o terminador da LUZ passa pela logística do Eyes (item 93); em
+  // real o uniform é 0 e isto volta a ser max(N.L, 0)
+  float ndotl = terminadorSuave(dot(nRelevo, uDirSolLocal));
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
 
   // especular do oceano: Blinn-Phong normalizado com Fresnel de Schlick,
@@ -121,8 +136,14 @@ void main() {
   float fresnel = 0.04 + 0.96 * pow(1.0 - vdoth, 5.0);
   float espec = dEspec * fresnel * ndotl;
 
-  vec3 direta =
-    (albedo * ndotl + vec3(espec)) * uLuzGanho * fatorDeEclipse(pElip, n, ndotlGeo);
+  // A LUZ ANTES DO ALBEDO (item 93): o Sol passa pelo ganho, pelo
+  // eclipse, e a LANTERNA soma-se depois — sem eclipse, com a soma
+  // saturada em 1. O especular é lóbulo, não albedo: ele acompanha o
+  // Sol e fica fora da lanterna (um fill de câmera não faz brilho de
+  // espelho).
+  vec3 luzSol = vec3(uLuzGanho) * fatorDeEclipse(pElip, n, ndotlGeo);
+  vec3 luz = luzDoGlobo(vec3(ndotl) * luzSol, lanternaDeLeitura(nRelevo, v));
+  vec3 direta = albedo * luz + vec3(espec) * luzSol;
 
   // luzes noturnas: EMISSÃO — só no lado escuro, pelo linstep do espec
   // (o smoothstep do doador vazava 16% no lado diurno), fora do ganho.

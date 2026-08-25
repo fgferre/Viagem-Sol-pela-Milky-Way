@@ -54,7 +54,12 @@ import {
 } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
-import { ganhoDoGlobo } from '../../../lib/atlas/luzDaVisita';
+import {
+  GLSL_LUZ_DA_VISITA,
+  escreverLuzDaVisita,
+  ganhoDoGlobo,
+  uniformsDaLuzDaVisita,
+} from '../../../lib/atlas/luzDaVisita';
 import {
   CORPOS_COM_ANEL,
   GLSL_SOMBRA_ECLIPSE,
@@ -187,7 +192,21 @@ float sombraDoAnel(vec3 p, float ndotl) {
 }
 `;
 
-/** Lambert dos quatro; Saturno liga a sombra do anel pelo flag. */
+/**
+ * Lambert dos quatro; Saturno liga a sombra do anel pelo flag.
+ *
+ * ITEM 93 — A RECEITA DO EYES. O `max(N·L, 0)` cru virou
+ * `terminadorSuave` (a logística s=3 do Phong deles), e a LANTERNA DE
+ * LEITURA de 15 % entra DEPOIS do Sol, sem eclipse e sem sombra de anel,
+ * com a soma saturada em 1. As três peças vêm de `luzDaVisita.ts` e
+ * acendem juntas em `assistida`; em `real` os dois uniformes são 0 e
+ * este fragmento devolve o Lambert cru de antes. Ver
+ * `docs/reference/nasa-eyes-brilho-assistido-contrato.md` §4.
+ *
+ * O `ndotlGeo` CRU continua sendo quem manda no eclipse e no fade da
+ * sombra do anel: os dois são geometria, não luz — passar a curva macia
+ * ali acenderia a sombra meio pixel antes do terminador de verdade.
+ */
 export const GIGANTE_LAMBERT_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
 uniform sampler2D uMapaAnel;
@@ -203,17 +222,19 @@ varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
+${GLSL_LUZ_DA_VISITA}
 ${GLSL_SOMBRA_ANEL_NO_PLANETA}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
-  float ndotl = max(dot(n, uDirSolLocal), 0.0);
+  float ndotlGeo = dot(n, uDirSolLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
-  vec3 direta =
-    (albedo * ndotl) * uLuzGanho
-    * fatorDeEclipse(pElip, n, dot(n, uDirSolLocal))
-    * sombraDoAnel(pElip, ndotl);
-  gl_FragColor = vec4(direta, 1.0);
+  vec3 luzSol =
+    vec3(terminadorSuave(ndotlGeo)) * uLuzGanho
+    * fatorDeEclipse(pElip, n, ndotlGeo)
+    * sombraDoAnel(pElip, ndotlGeo);
+  float fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip));
+  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
 }
 `;
 
@@ -737,10 +758,11 @@ export class GiganteResolvido {
       .scale(this.vEscala.set(this.raioA, this.raioA * this.razaoC, this.raioA * this.razaoB))
       .setPosition(this.centro);
 
-    // a exposição da visita (item 91): lei viva × constante do corpo. O
+    // a exposição da visita (item 91, reescrita no 93): em `assistida` o
+    // Sol do globo vale 1 literal, como no Eyes; em `real` é E(d). O
     // ANEL recebe o MESMO `ganho` lá embaixo — o anel de Saturno paga a
     // mesma conta do globo, e era o 0,21 dele que o apagava junto.
-    const ganho = ganhoDoGlobo(this.rUA, this.idCorpo, q.politica);
+    const ganho = ganhoDoGlobo(this.rUA, q.politica);
     // ONDE ESTÁ O SOL, uma vez só por corpo: na ORIGEM da cena. O anel
     // lá embaixo bebe DESTE vetor — tinha um segundo cálculo idêntico
     // só para ele, e dois cadastros da mesma verdade é como uma inversão
@@ -761,6 +783,10 @@ export class GiganteResolvido {
     (u.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
     (u.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     u.uLuzGanho.value = ganho;
+    // a lanterna de leitura e o `s` do terminador (item 93) — a MESMA
+    // política, escrita pelo único escritor da casa. O ANEL fica de
+    // fora: o modelo dele é camada de partículas com função de fase.
+    escreverLuzDaVisita(u, q.politica);
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 
     if (this.anel && this.matAnel) {
@@ -819,6 +845,7 @@ export class GiganteResolvido {
             (ANEIS_CITADOS[this.idCorpo] ?? ANEL_SATURNO).rExt
           ),
         },
+        ...uniformsDaLuzDaVisita(),
         ...uniformsDeEclipseNeutros(),
       },
       depthWrite: true,
