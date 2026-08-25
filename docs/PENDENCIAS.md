@@ -90,8 +90,8 @@ E o **92** (descer ao corpo de um anão não punha o corpo na tela — e era
 a classe dos oito, não Éris), com `item92-eris-antes-depois.png` e
 `item92-vesta-antes-depois.png`.
 E o **95** (num eclipse o chão escurecia e o AR não), com
-`item95-limbo-prancha.png` — o par no limbo, que é o que decide —,
-`item95-limbo-mapa.png` e o par de controle `item95-durango-*.png`, que
+`item95-limbo-antes-depois.png` — o par no limbo, que é o que decide —,
+`item95-limbo-mapa-v2.png` e o par de controle `item95-durango-*.png`, que
 prova que a umbra de Durango não andou um bit.
 **E há uma pendência que não é de olho, é
 de PALAVRAS DELE:** a fita do item **83** — ele *"estranhou algo (explico no
@@ -1212,10 +1212,34 @@ da umbra lê núcleo **2,71** e vizinho **13,62** antes e depois, contraste
 5,0 nos dois. `terra`, `terranb`, `terralua`, `lua` e `eclipse-lunar`
 também bit-idênticas.
 
+**O CUSTO, declarado (e NÃO medido).** A dose amostra a amostra põe o
+cone de eclipse **dentro** do laço: são **23 chamadas de
+`fatorDeEclipseNoAr` por fragmento** do anel de ar, não uma por
+fragmento — essa é a FORMA do custo. A mitigação é real e está escrita
+no chunk: a saída antecipada `if (uEclipseAtivo < 0.5) return
+vec3(1.0);` (`src/lib/atlas/eclipse.ts`) faz com que, **fora de
+eclipse**, o preço seja 23 comparações de um uniforme mais o `max`
+contra o piso — nenhuma das raízes, projeções e `length` do cone —, e o
+resultado é identidade bit a bit, que é o que as vistas SEM eclipse
+acima (`terra`, `terranb`, `terralua`, `lua`) provam; `eclipse-solar` e
+`eclipse-lunar` ficam bit-idênticas por outro motivo (a mancha no MEIO
+do disco, onde o ar não pesa). Com eclipse ativo, o corpo inteiro roda nas
+23 amostras, e é aí que o preço mora. **NÃO MEDIDO COM `gpu-profile`:**
+não existe número de quadro nem de ms para este trecho. A medição
+pertence ao regime do **item 99** (a dieta dos juízes); até ela
+existir, isto é uma forma de custo CONHECIDA, não um custo
+quantificado, e quem ler não deve tratar a saída antecipada como prova
+de que o preço com eclipse ativo é pequeno.
+
 **FOTOS:** `item95-limbo-antes.png` × `item95-limbo-depois.png` (crus),
-`item95-limbo-prancha.png` (o par recortado no limbo, lado a lado),
-`item95-limbo-mapa.png` (onde a luz saiu) e o par de controle
-`item95-durango-antes.png` × `item95-durango-depois.png`.
+`item95-limbo-antes-depois.png` (a prancha COM legenda: o par recortado
+1:1 no limbo, a medida e o controle) e `item95-limbo-mapa-v2.png` (onde
+a luz saiu, com legenda). A medida que as duas citam está em
+`capturas/item95-medidas.json` (`medirPar` sobre os dois crus
+inteiros). As pranchas NUAS `item95-limbo-prancha.png` e
+`item95-limbo-mapa.png` são as originais e ficam onde estão — as com
+legenda foram gravadas AO LADO, nunca por cima (AGENTS.md §7). E o par
+de controle `item95-durango-antes.png` × `item95-durango-depois.png`.
 
 **O DENTE, e o que ele pega.** O chunk do eclipse — a peça mais crítica
 de shader da casa — passou a ser medido **por valor**: `eclipse.test.ts`

@@ -281,6 +281,19 @@ void main() {
     // ndotlGeo que o chunk usa para esvair a sombra pelo terminador — e
     // ponto/altura é a normal radial dele. Fora de eclipse o chunk
     // devolve vec3(1.0) EXATO e a multiplicação é identidade bit a bit.
+    //
+    // O CUSTO, declarado: isto põe o cone de eclipse DENTRO do laço —
+    // ${ATMOSFERA.amostras} chamadas de fatorDeEclipseNoAr por fragmento do anel de
+    // ar, não uma por fragmento. A mitigação é real e está no chunk: a
+    // saída antecipada "if (uEclipseAtivo < 0.5) return vec3(1.0);"
+    // (src/lib/atlas/eclipse.ts) faz com que, FORA de eclipse, o preço
+    // seja ${ATMOSFERA.amostras} comparações de um uniforme mais o max contra o piso —
+    // nenhuma das raízes, projeções e length do cone. Com eclipse
+    // ativo, o corpo inteiro roda nas ${ATMOSFERA.amostras} amostras, e é aí que o preço
+    // mora. NÃO MEDIDO COM gpu-profile: não há número de quadro ou de
+    // ms para este trecho — a medição pertence ao regime do item 99, e
+    // até ela existir esta é uma forma de custo conhecida, não um custo
+    // quantificado.
     vec3 sombraDoAr = fatorDeEclipseNoAr(ponto, ponto / altura, angLuz);
     acumulada += (atenua * sombraDoAr) * (prof * passoEscalado);
     ponto += passoVec;
