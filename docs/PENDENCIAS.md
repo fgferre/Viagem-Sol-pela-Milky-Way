@@ -229,7 +229,10 @@ pelo contrato, e caíram medidos: o ganho de casa era 0,998953 (Terra) e
 `item93-saturno-real.png`, `item93-flanco-gigante.png`,
 `item93-mercurio-subsolar.png`, `item93-lua-cheia.png`,
 `item93-anel.png`, `item93-pontinho.png`, `item93-terra.png`,
-`item93-lanterna-e-a-sombra.png` e `item93-selo.png`.
+`item93-lanterna-e-a-sombra.png` e `item93-selo.png`. Cada uma carrega o
+número e o ARQUIVO da medida na própria legenda. **Não apagar na próxima
+limpeza de `capturas/`**, pela mesma razão dos itens 70 e 79: elas ainda
+não serviram.
 
 **O QUE O A/B MEDIU** (árvore limpa dos dois lados, `21cb669` × a obra,
 1100×900, dpr 1, bytes de tela): Saturno de perto 34,4 → 38,5 (×1,12,

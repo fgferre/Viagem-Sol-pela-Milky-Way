@@ -58,9 +58,10 @@
 //   a. SOL = 1 em `assistida` — {@link ganhoDoGlobo};
 //   b. LANTERNA DE LEITURA de 15 % na câmera — {@link LANTERNA_DE_LEITURA},
 //      o `toggleCameraLight(true, Color(0.15,0.15,0.15))` do default
-//      deles. Ela não sofre eclipse nem sombra de anel (no Eyes o raio
-//      da luz de câmera é −1), e a soma satura em 1: a lanterna lê a
-//      NOITE e não clareia o subsolar;
+//      deles. A soma satura em 1: a lanterna lê a NOITE e não clareia o
+//      subsolar. Aqui ela RESPEITA as sombras do Sol, e é a única
+//      divergência da casa — a razão está medida em
+//      {@link GLSL_LUZ_DA_VISITA};
 //   c. TERMINADOR LOGÍSTICO s = 3 — {@link S_DO_TERMINADOR} e
 //      {@link EXPR_TERMINADOR}, o `MaterialUtilsPhong` deles. Flanco a
 //      N·L = 0,5 sobe de 0,50 para 0,72 (+43 %).
@@ -111,10 +112,12 @@ import type { PoliticaDeLuz } from './luz';
  * legível de qualquer ângulo sem um piso de ambiente chapado — o piso
  * 0,02 deles a casa recusa por doutrina (anti-padrões 3 e 9).
  *
- * NÃO SOFRE ECLIPSE NEM SOMBRA DE ANEL, como no Eyes (a luz de câmera
- * tem raio −1 lá, isto é, fica fora da lista de oclusores). Uma lanterna
- * que a sombra de Titã apagasse não seria lanterna: seria uma terceira
- * fonte de luz na cena, e a casa tem UMA.
+ * NO EYES ELA NÃO SOFRE OCLUSÃO NENHUMA (a luz de câmera tem raio −1
+ * lá). **A casa diverge**, e a razão está medida no cabeçalho de
+ * {@link GLSL_LUZ_DA_VISITA}: ao pé da letra a lanterna INVERTE a umbra
+ * de um eclipse total. Ela respeita as duas sombras do Sol e não perde
+ * nada com isso — as duas valem 1 no lado noturno, que é onde ela
+ * trabalha.
  */
 export const LANTERNA_DE_LEITURA = 0.15;
 
