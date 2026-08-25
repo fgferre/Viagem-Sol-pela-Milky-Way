@@ -701,6 +701,39 @@ export function fontesDoQuadro(y, W, H, { limiar = LIMIAR_FONTE, max = MAX_FONTE
 }
 
 /**
+ * QUANTAS VEZES o lado do núcleo pode passar de `√nMeia` e a componente ainda
+ * ser uma MANCHA. Um disco de n pixels tem lado 2·√(n/π) = 1,13·√n; três é
+ * folga de 2,7× sobre o disco perfeito, e o vão medido é enorme: platô do Sol
+ * 1,6 · estrela do campo ≤ 1,7 · **traço de órbita 17,2**.
+ */
+export const LADO_POR_RAIZ_DO_NUCLEO = 3;
+
+/**
+ * UM TRAÇO NÃO TEM CENTROIDE QUE SE POSSA COBRAR — e desde 23/08 o quadro tem
+ * traços. As linhas de órbita nasceram em `141b483` e engordaram para 1,25 px
+ * CSS em `8be508f`; antes disso não havia nada no céu com esta forma.
+ *
+ * MEDIDO na família `fronteiraTerra` (o eclipse de 2024-04-08, a Lua sobre o
+ * eixo Sol–Terra): a linha da órbita da Lua atravessa o quadro inteiro e é UMA
+ * componente conexa — n=1602 num quadro de 613 px, n=2863 num de 1080 —, com o
+ * núcleo numa caixa de 522×365 e 918×643. O `√nMeia` que alarga o raio de
+ * reconhecimento (escrito para um PLATÔ SATURADO, onde o pico pode estar longe
+ * do meio) vira ali 40 e 53 px, e a âncora `moon` reclamava o TRAÇO em vez da
+ * Lua — a 2,7 px, porque no eclipse a Lua está quase no centro da própria
+ * elipse. No passo seguinte a linha esmaece e se parte (n=90 + n=11), e o
+ * centroide do bloco anda 4,63 px: a fusão se desfazendo, não a Lua andando.
+ *
+ * É a MESMA doutrina do bloco fundido que já está aqui ("dois corpos na mesma
+ * mancha não têm identidade separada"), aplicada à forma: o que sai é a
+ * IDENTIDADE. O resíduo por pixel e a banda alta continuam medindo o traço —
+ * se ele cintilar, quem acusa é a §5.17, que não depende de centroide.
+ */
+export function nucleoCompacto(f) {
+  const lado = Math.max(f.x1 - f.x0, f.y1 - f.y0) + 1;
+  return lado <= LADO_POR_RAIZ_DO_NUCLEO * Math.sqrt(Math.max(f.nMeia, 1));
+}
+
+/**
  * CASA as fontes de dois quadros consecutivos, com a predição vinda da
  * reprojeção. `ancoras` são as fontes de profundidade CONHECIDA (o Sol, a
  * Terra, a estrela-alvo): para elas a predição é a projeção exata do ponto 3D,
@@ -733,6 +766,9 @@ export function casarFontes({
   //    sobre aquela prova; para um clarão saturado ela cresce com o NÚCLEO
   //    (√nMeia), porque o "pico" de um platô de milhares de pixels é o
   //    primeiro máximo que o alagamento encontrou e pode estar longe do meio.
+  //    E O ALARGAMENTO SÓ VALE PARA MANCHA — ver `nucleoCompacto`: num TRAÇO
+  //    o √nMeia não descreve extensão nenhuma, e a âncora herdava a linha de
+  //    órbita que passa por cima dela.
   const daAncora = new Map();
   const ambiguas = new Set();
   for (const k of ancoras) {
@@ -741,7 +777,10 @@ export function casarFontes({
     let dist = Infinity;
     for (const a of fontesA) {
       const d = Math.hypot(k.emA.x - a.cx, k.emA.y - a.cy);
-      if (d < dist && d <= Math.max(RECONHECE_ANCORA_PX, Math.sqrt(a.nMeia))) {
+      const raio = nucleoCompacto(a)
+        ? Math.max(RECONHECE_ANCORA_PX, Math.sqrt(a.nMeia))
+        : RECONHECE_ANCORA_PX;
+      if (d < dist && d <= raio) {
         dist = d;
         melhor = a;
       }
@@ -762,6 +801,9 @@ export function casarFontes({
   const previstos = [];
   for (const a of fontesA) {
     if (a.pico < julgada || a.naBorda || ambiguas.has(a.id)) continue;
+    // e um TRAÇO não entra: o centroide de uma linha que atravessa o quadro
+    // não é posição de coisa nenhuma (`nucleoCompacto`)
+    if (!nucleoCompacto(a)) continue;
     const ancora = daAncora.get(a.id);
     let prev;
     if (ancora && Number.isFinite(ancora.emB?.x)) {

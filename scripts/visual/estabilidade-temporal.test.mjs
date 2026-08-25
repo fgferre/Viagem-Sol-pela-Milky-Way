@@ -34,6 +34,7 @@ import {
   passaAlta,
   amostrar,
   fontesDoQuadro,
+  nucleoCompacto,
   casarFontes,
   residuoDoPar,
   mascaraDoClarao,
@@ -455,6 +456,45 @@ describe('quem NÃO entra no veredito de identidade, e por quê', () => {
     // que impede o juiz de cobrar identidade de quem a grade sozinha apaga
     expect(com(soleiraJulgada(613)).casados).toEqual([]);
     expect(com(soleiraJulgada(613)).sumidos).toEqual([]);
+  });
+
+  it('um TRAÇO não tem centroide que se possa cobrar — nem para a âncora', () => {
+    // a linha de órbita do quadro real, reproduzida: uma diagonal de 1 px que
+    // atravessa a cena inteira. No quadro B ela esmaece nas pontas e sobra o
+    // meio — que foi o que a família `fronteiraTerra` fotografou (n=1602 → 90)
+    const linha = (de, ate) => {
+      const y = new Float32Array(W * H).fill(0.02);
+      for (let i = de; i <= ate; i++) {
+        const j = Math.round((i * (H - 20)) / W) + 6;
+        if (j >= 0 && j < H) y[j * W + i] = 0.8;
+      }
+      return y;
+    };
+    const cam = camera([0, 0, 0], [0, 0, -1]);
+    const fA = fontesDoQuadro(linha(4, W - 5), W, H);
+    const fB = fontesDoQuadro(linha(60, W - 5), W, H);
+    const traco = fA.find((f) => f.nMeia > 50);
+    expect(traco).toBeDefined();
+    expect(nucleoCompacto(traco)).toBe(false);
+    // uma MANCHA do mesmo tamanho de núcleo passa: é o platô do Sol
+    expect(nucleoCompacto({ x0: 0, x1: 12, y0: 0, y1: 12, nMeia: traco.nMeia })).toBe(true);
+    // a âncora fica em cima do traço, como a Lua fica em cima da própria órbita
+    const ancora = {
+      nome: 'moon',
+      emA: { x: traco.cx, y: traco.cy, atras: false },
+      emB: { x: traco.cx, y: traco.cy, atras: false },
+    };
+    const r = casarFontes({ fontesA: fA, fontesB: fB, camA: cam, camB: cam, ancoras: [ancora] });
+    // o traço se partiu e o centroide dele andou muito — e mesmo assim
+    // ninguém é acusado, porque não há posição a cobrar de uma linha
+    const centroideAndou = Math.hypot(
+      traco.cx - fB.find((f) => f.nMeia > 50).cx,
+      traco.cy - fB.find((f) => f.nMeia > 50).cy
+    );
+    expect(centroideAndou).toBeGreaterThan(TOLERANCIA_SALTO_PX * 10);
+    expect(r.casados.some((c) => c.via.startsWith('ancora:'))).toBe(false);
+    expect(r.casados).toEqual([]);
+    expect(r.sumidos).toEqual([]);
   });
 
   it('o veredito DECLARA a soleira quando ela não é a de calibração', () => {
