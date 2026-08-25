@@ -258,10 +258,17 @@ export const PONTOS_POR_ORBITA = 256;
  *
  * 1,25 é o número do NASA Eyes, e ele foi medido por DOIS métodos
  * independentes que fecharam (`docs/reference/estudo-orbitas-eyes-observacao.md`):
- * o perfil de cobertura sub-pixel lido do pixel da tela deles — níveis em
- * 0,25/0,50/0,75/1,00 sobre ~2,5 px de dispositivo a DPR 2 — e a leitura
- * da API do motor. A nossa tinha 1 px de DISPOSITIVO, que num Retina é
- * 0,5 px CSS: a deles era 2,5× mais grossa.
+ * a COBERTURA lida do pixel da tela deles — níveis em 0,25/0,50/0,75/1,00
+ * sobre ~2,5 px de dispositivo a DPR 2 — e a leitura da API do motor. A
+ * nossa tinha 1 px de DISPOSITIVO, que num Retina é 0,5 px CSS: a deles
+ * era 2,5× mais grossa.
+ *
+ * AQUELES QUARTOS NÃO SÃO PERFIL, e a primeira redação disto errava: a
+ * faixa deles é CHAPADA (`glowWidth = 0` devolve `edgeGlow() = 1`), e os
+ * níveis em quartos exatos são MSAA (`antialias: true`) sobre borda
+ * DURA. A nossa borda também é dura; quem a suaviza é o downsample do
+ * supersampling, no fim da cadeia. O que nos separa é o AA da borda, não
+ * um perfil na largura.
  *
  * NÃO CONFUNDIR COM RAIO: no shader do `LineMaterial` o `linewidth` é a
  * largura CHEIA (o offset do quad é metade dele para cada lado).

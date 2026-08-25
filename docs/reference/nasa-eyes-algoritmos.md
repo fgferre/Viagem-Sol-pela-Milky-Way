@@ -374,9 +374,14 @@ onde a classe e a distância se leem com folga.
 isso, o corte 1 limpa a abertura e o close-up continua adesivo.
 
 **Corte 3 — órbita como fita. PAGO EM 24/08 (item 83, L2), menos dois
-pedaços.** `LineLoop` 1 px virou faixa de **1,25 px CSS** com junta, e a
+pedaços.** `LineLoop` 1 px virou faixa de **1,25 px CSS**, e a
 cônica, o fade angular e o pai da lua não se tocaram, como previsto.
-**O que NÃO veio junto:** o `resolutionFactor` na janela (a nossa
+**A JUNTA NÃO VEIO** — e é o pedaço mais visível dos que faltam: o
+`LineSegments2` põe calota redonda nas duas pontas de cada segmento, a
+calota de um cobre o corpo do seguinte, e em aditivo isso vira o **colar
+de contas** (medido em 24/08; é o **L2.5** do item 83). O miter do
+`LineMesh` deles continua sendo o que não temos.
+**O que também NÃO veio:** o `resolutionFactor` na janela (a nossa
 largura é fixa; a do Eyes escala com `min(janela)/800`) e o hover de
 2 px (é o L5, que segue aberto). Ver `orbitas-eyes-releitura.md` para a
 dívida de COBERTURA que sobrou. Este corte é o volume que o

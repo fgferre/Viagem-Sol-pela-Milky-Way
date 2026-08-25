@@ -2123,7 +2123,10 @@ portado para three.js por terceiros. Ele é espacial (não usa vetores de
 movimento nem histórico), então cabe num passe de pós: **renderizar a
 ~70–80% da resolução, ampliar com EASU e afiar com RCAS**. Ganho típico
 esperado: **30–50% do tempo de GPU devolvido** — e isso importa porque o
-app **é GPU-bound**: 36–42 fps no M1 em `cinema`/`pixelRatio` 2,0.
+app **é GPU-bound**: **36–42 fps** no M1 em `cinema`/`pixelRatio` 2,0 —
+medido em **24/08 com `scripts/visual/gpu-profile.mjs`**, janela
+1200×900. (O mesmo instrumento, na vista das galileanas, deu 22,8 fps:
+a faixa depende da vista, e quem citar o número tem de citar qual.)
 
 **A RESSALVA, escrita antes de alguém se animar:** a nossa cena é o
 **pior caso** para upscaling espacial — céu de estrelas sub-pixel e

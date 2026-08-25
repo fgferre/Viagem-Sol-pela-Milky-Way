@@ -165,8 +165,11 @@ documentação mais confiável que se pode ter sem o código:
 
 > **Cor POR VÉRTICE, largura POR VÉRTICE, tracejado e GLOW.** Não é `gl.LINES`: é uma malha.
 > A nossa `LineLoop` não tinha nenhuma das quatro. Desde 24/08 (item 83 · L2) a casa é
-> `LineSegments2`, que também não tem as quatro: ele resolve LARGURA e JUNTA, não cor nem
-> largura por vértice — o alfa por vértice segue sendo a receita reservada ao L4 (D1, abaixo).
+> `LineSegments2`, que também não tem as quatro: ele resolve a LARGURA, e **só ela** — não cor nem
+> largura por vértice, **e não resolve a JUNTA**: cada segmento traz calota redonda nas
+> duas pontas, e em aditivo a calota de um cobre o corpo do seguinte. É o **colar de
+> contas**, medido em 24/08 e registrado como **L2.5** no item 83 do `PENDENCIAS.md`. O
+> alfa por vértice segue sendo a receita reservada ao L4 (D1, abaixo).
 
 **`TrailComponent`** — o rastro, e aqui está o modelo inteiro do "tempo na linha":
 `setAlphaFade` · `setStartTime`/`setEndTime` · `setRelativeStartTime`/`setRelativeEndTime` ·

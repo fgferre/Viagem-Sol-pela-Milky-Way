@@ -191,12 +191,17 @@ describe('prioridade — quem ganha a vaga', () => {
   });
 
   it('O BÔNUS NÃO INVERTE NENHUM PAR DA TABELA — a trava, degrau a degrau', () => {
-    // A SEGURANÇA "estrela nunca rouba a vaga de lua" tinha margem
-    // EXATAMENTE ZERO e NENHUM juiz a guardava: `lua` 6 contra
-    // `estrelaPropria` 5 × 1,2 = 6,0. Bastava o bônus virar 1,25, ou
-    // `estrelaPropria` virar 6, para a hierarquia inverter com a suíte
-    // inteira verde. Este teste é essa trava, e ela é sobre a TABELA
-    // INTEIRA, não sobre o par que alguém lembrou de escrever.
+    // A SEGURANÇA "estrela nunca rouba a vaga de lua" tem margem
+    // EXATAMENTE ZERO: `lua` 6 contra `estrelaPropria` 5 × 1,2 = 6,0.
+    //
+    // O QUE ESTE TESTE ACRESCENTA, dito sem inflar (medido em 24/08, e a
+    // primeira redação desta nota exagerava): as sabotagens ÓBVIAS desse
+    // par — bônus 1,25, ou `estrelaPropria` 6 — JÁ REPROVAVAM em pinos
+    // que existiam antes dele. O buraco real era OUTRO, e este teste é
+    // que o achou: `sol` 90 × 1,2 = 108 passava `foco` 100, e NENHUM
+    // juiz guardava esse par. É por isso que a trava é sobre a TABELA
+    // INTEIRA, e não sobre o par que alguém lembrou de escrever: o par
+    // esquecido nunca é o que se está olhando.
     //
     // A LEI: para dois degraus vizinhos, o de BAIXO com bônus não pode
     // PASSAR o de cima sem bônus. Empatar é permitido — o desempate por

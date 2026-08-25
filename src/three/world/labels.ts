@@ -93,7 +93,9 @@ export interface StarLabel {
  *    peso de quem já estava na tela, e `sol` 90 × 1,2 = **108 > 100** —
  *    um Sol já desenhado passava à frente de um alvo recém-escolhido que
  *    ainda não tivesse aparecido, que é exatamente o que esta linha jura
- *    que não acontece. 120 é o menor degrau redondo acima de 108;
+ *    que não acontece. 120 dá **folga** sobre os 108 — não é o menor
+ *    valor que serviria (110 já passaria a trava): é o degrau redondo
+ *    que deixa margem para a tabela crescer sem raspar no limite;
  *  · `sol` 90 — a estrela da casa é o centro do frame e a referência de
  *    escala de toda vista do Atlas;
  *  · `planeta` 10, `anao` 8, `lua` 6 — a hierarquia do próprio objeto;
@@ -120,9 +122,10 @@ export const PRIORIDADE_DO_ROTULO = {
  * `labels.test.ts` guarda par a par: para todo degrau vizinho, o de
  * baixo COM bônus não passa o de cima sem bônus. A folga mais apertada é
  * `lua` 6 contra `estrelaPropria` 5 × 1,2 = **6,0** — empate exato, que
- * o desempate por distância resolve. Subir este fator para 1,25 já
+ * o desempate por distância resolve. Subir este fator para 1,25
  * inverteria esse par (6,25 > 6) e uma estrela roubaria a vaga de uma
- * lua; foi assim que a trava nasceu.
+ * lua — mas ESSE caso já tinha pino antes da trava; quem a fez nascer
+ * foi o par `sol`/`foco`, que não tinha juiz nenhum (ver a tabela).
  */
 export const BONUS_DE_HISTERESE = 1.2;
 
