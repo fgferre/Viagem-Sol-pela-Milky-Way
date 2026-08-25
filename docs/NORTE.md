@@ -622,6 +622,17 @@ Não reabrir sem que a condição listada mude.
   não fórmulas; hot path sem alocação; gate só vê o próprio escopo;
   unidades explícitas na fronteira) e L37–L42. Jurisprudência herdada
   do atlas, ainda válida.
+- **O globo visitado não herda o 1/d² do ponto.** Item **91** (aberto
+  em 24/08): Saturno no Atlas some mesmo com `assistida` porque a
+  malha multiplica `ganhoFundido` (E^0,35 ≈ 0,21 a 9,5 UA) e o ACES
+  come o resto. O NASA Eyes, no globo, manda o Sol branco (ganho 1),
+  lanterna de leitura 15 % na câmera, logística no terminador — e
+  deixa o 1/d² para o **ponto** no céu. A casa já acerta o ponto
+  (MH18). O globo é fotografia de quem chegou, não ISO da Terra.
+  Contrato e números:
+  `docs/reference/nasa-eyes-iluminacao-planetas.md`. Auto-exposição
+  pelo que está em quadro continua recusada; piso de ambiente no
+  BRDF também. O que muda é **qual lei escreve o escalar da malha**.
 
 ---
 
@@ -675,6 +686,8 @@ A lista completa das hipóteses de espiral está em
 - `q2<7` no raymarch segue fora.
 - Baseline do gate indexada pela GPU, fora do TMPDIR — ainda não
   existe; o ritual acima é manual.
+- Item **91**: a luz dos globos (Saturno palha, não carvão). O
+  relatório está escrito; a obra ainda não.
 
 ---
 

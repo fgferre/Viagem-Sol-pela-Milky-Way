@@ -147,7 +147,11 @@ gaveta), não a decoração.
 ## 4. Riscos que ainda valem
 
 - Primeira superfície iluminada: 9.400:1 num display de ~25:1. Recalibrar
-  contra ACES; não mergear sem selo `?luz=`.
+  contra ACES; não mergear sem selo `?luz=`. **O diagnóstico fechou em
+  24/08 (item 91):** o globo herdou `ganhoFundido` e some (Saturno a
+  0,21 × ACES ≈ carvão). A recalibração não é outro σ — é o globo
+  deixar de usar 1/d². Ver
+  `docs/reference/nasa-eyes-iluminacao-planetas.md`.
 - Alocação irreversível pelo tier — o amostrador da Fase B é o instrumento.
 - Persistência contra a honestidade dos gates: tom/exposição/camadas fora
   do envelope. A cascata `URL > storage > detecção` valia para o TIER e

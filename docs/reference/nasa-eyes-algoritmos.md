@@ -4,6 +4,9 @@ O que o Eyes realmente faz, lido no JavaScript público
 (`https://eyes.nasa.gov/apps/solar-system/app.js`, pacote de 2026-08-05,
 1,7 MiB). Não é os `atlas-estudo-*.md` (pesquisa de IA sem fonte
 primária). Não é cópia do fonte: são as **regras** que o desenho obedece.
+A **iluminação dos globos** (por que Saturno lá é palha e aqui some)
+mora no irmão `nasa-eyes-iluminacao-planetas.md` — outro assunto,
+outro arquivo.
 
 Peças da casa citadas pelo nome: `LabelCanvas`, `projectCorpos`,
 `pesoDoRotulo`, `esmaecerLuasColadasNoPai`, `orbitas.ts`,

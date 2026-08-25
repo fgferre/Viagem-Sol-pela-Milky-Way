@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 91.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 92.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -74,7 +74,8 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > (FEITO em 24/08) → ~~**tarjas do celular**~~ (FEITO em 24/08) →
 > ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08; o **véu do
 > fim** encurtou junto em 24/08, quando ele nomeou a sobra) →
-> **83 (L1 + L2: FEITOS)** → **81** → **70** → **75**, com o resto do
+> **83 (L1 + L2: FEITOS)** → **91 (Saturno escuro — a luz dos
+> planetas)** → **81** → **70** → **75**, com o resto do
 > **83** (G1, L3, L4, L5) na fila da mesma família.
 
 **O PINO FOI SOLTO PELO DONO, em 24/08.** Ele conferiu a galeria e
@@ -1858,6 +1859,21 @@ TEXTO é que se apaga. O céu fica limpo e continua navegável.
 render falha **em silêncio** (verificado no fonte do three) — se a
 implementação passar a usar geometria em vez da lista de rótulos, a
 primeira leva de cliques some sem erro nenhum.
+
+**91. Saturno, mesmo com brilho assistido, quase escuro — e Saturno
+é um objeto claro no céu, mesmo a olho nu.**
+Palavras do dono, 2026-08-24: *"acho que estamos com algortimos de
+iluminacao q nao estao funcionando bem... saturno, mesmo com brilho
+assistido, quase escuro e saturno é um objeto claro no ceu... mesmo a
+olho nu."*
+
+A textura NÃO é a culpada (mapa SSS, luma sRGB média 0,76 — é palha
+clara). O globo some porque a malha herda `ganhoFundido` = E^0,35 da
+distância ao Sol: em Saturno (~9,5 UA) isso vale **0,21**, Lambert
+ainda corta o disco, o ACES esmaga o que sobrou (~0,08 linear → ~0,09
+na tela). O NASA Eyes **não aplica 1/d² no globo** — o Sol chega
+branco, o dia é a textura, e uma lanterna na câmera a 15 % lê a noite.
+Relatório para implementar: `docs/reference/nasa-eyes-iluminacao-planetas.md`.
 
 ---
 
