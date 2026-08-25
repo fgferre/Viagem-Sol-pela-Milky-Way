@@ -58,6 +58,7 @@ import {
   realceDoFoco,
   RAIO_DA_CESSAO_PX,
   BORDA_DA_CESSAO_PX,
+  type QuadroEmPx,
 } from './orbitas';
 
 // A MESMA carga do `efemerides.test.ts` — o motor de verdade, sobre o
@@ -73,6 +74,16 @@ const motor = new MotorEfemerides(
     meta
   )
 );
+
+/**
+ * O QUADRO dos testes que só querem a ALTURA — quadrado, sem Retina. É o
+ * que a camada recebia antes de as três medidas andarem juntas; os testes
+ * da cessão montam o `QuadroEmPx` à mão, porque para eles a largura e o
+ * `pixelRatio` são o assunto.
+ */
+function quadroDe(alturaPx: number): QuadroEmPx {
+  return { larguraPx: alturaPx, alturaPx, pixelRatio: 1 };
+}
 
 describe('a cônica osculadora — o laço passa pelo ponto', () => {
   // nove anos depois da época: mais de um período de Júpiter, um terço
@@ -284,7 +295,7 @@ describe('a camada no quadro', () => {
     // linhas se ela estivesse aberta — senão o teste passaria por falta
     // de assunto em vez de por causa da porta
     orbitas.ligado = false;
-    orbitas.update(cameraDoTeto(), 1800, TAN_35, 0);
+    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null);
     expect(orbitas.group.visible).toBe(false);
     expect(orbitas.acesas).toBe(0);
     // o QUADRO é caminho puro: quem fala com o motor é `escreverInstante`,
@@ -295,7 +306,7 @@ describe('a camada no quadro', () => {
     // veredito acima mede a porta, e não um enquadramento vazio
     orbitas.ligado = true;
     orbitas.escreverInstante(EPOCA_JD_TDB, fonte);
-    orbitas.update(cameraDoTeto(), 1800, TAN_35, 0);
+    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null);
     expect(orbitas.acesas).toBeGreaterThan(0);
     expect(fonte.contagem()).toBeGreaterThan(0);
     orbitas.dispose();
@@ -309,7 +320,7 @@ describe('a camada no quadro', () => {
     // com ou sem motor. Sem ESTE update o teste passaria mesmo que o
     // quadro acendesse linha a partir do retrato congelado, que é
     // exatamente o defeito que o §6 proíbe.
-    orbitas.update(cameraDoTeto(), 1800, TAN_35, 0);
+    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null);
     expect(orbitas.acesas).toBe(0);
     expect(orbitas.dbg()).toContain('0 acesas');
     // e a geometria continua VAZIA: nada foi escrito de lugar nenhum
@@ -349,7 +360,7 @@ describe('a camada no quadro', () => {
       // duas camadas (`director.ts`)
       pontos.escreverInstante(jd, motor);
       orbitas.escreverInstante(jd, motor);
-      orbitas.update(camera, 1800, tanHalfFov, 0);
+      orbitas.update(camera, quadroDe(1800), tanHalfFov, 0, null);
     };
     for (const jd of [EPOCA_JD_TDB, EPOCA_JD_TDB + 3653]) {
       // DOIS quadros, e o segundo é o contrato: uma linha que estava
@@ -414,7 +425,7 @@ describe('a camada no quadro', () => {
     camera.position.set(0, 0, distancia);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld(true);
-    orbitas.update(camera, 900, Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360), 0);
+    orbitas.update(camera, quadroDe(900), Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360), 0, null);
 
     const alfaDe = (id: string) => {
       const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
@@ -525,7 +536,7 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     const tan = Math.tan((35 * Math.PI) / 360);
     const quadro = (jd: number) => {
       orbitas.escreverInstante(jd, motor);
-      orbitas.update(cam, 1800, tan, 0);
+      orbitas.update(cam, quadroDe(1800), tan, 0, null);
     };
 
     quadro(EPOCA_JD_TDB);
@@ -628,7 +639,7 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     // meio. A rampa tem teste próprio, abaixo.
     const quadro = () => {
       orbitas.escreverInstante(EPOCA_JD_TDB, motor);
-      orbitas.update(cam, 900, TAN_ATLAS, 0);
+      orbitas.update(cam, quadroDe(900), TAN_ATLAS, 0, null);
     };
     return { orbitas, quadro };
   }
@@ -770,11 +781,11 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     // SEM FOCO A CAMADA NUNCA SEGURA O OBTURADOR — é o que mantém as 52
     // vistas antigas capturando no tempo de antes. Um `animando` que
     // ficasse verdadeiro aqui somaria segundos a TODA a leva.
-    orbitas.update(cam, 900, TAN_ATLAS, passo);
+    orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null);
     expect(orbitas.animando).toBe(false);
 
     orbitas.foco = 'jupiter';
-    orbitas.update(cam, 900, TAN_ATLAS, passo);
+    orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null);
     expect(orbitas.animando, 'a troca de alvo tem de ATRAVESSAR').toBe(true);
 
     // E ATRAVESSA MONOTONICAMENTE: subir e descer no caminho é o pisca
@@ -786,7 +797,7 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     let anterior = 0;
     let assentouEm = -1;
     for (let k = 0; k < 90; k++) {
-      orbitas.update(cam, 900, TAN_ATLAS, passo);
+      orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null);
       expect(linha.material.opacity, `quadro ${k}`).toBeGreaterThanOrEqual(anterior);
       anterior = linha.material.opacity;
       if (assentouEm < 0 && !orbitas.animando) assentouEm = k;
@@ -801,15 +812,21 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
 });
 
 // ============================================================
-// A CESSÃO AO NÚCLEO (decisão do dono, 25/08) — e a RÉGUA dela.
+// A CESSÃO AO NÚCLEO (decisão do dono, 25/08) — a régua E o fio.
 //
-// A GUARDA DE ANTES ERA DE TEXTO e não media espaço nenhum: procurava
-// `uniform vec4 uNucleo;` no arquivo e dava por bom. O disco pousava a MEIO
-// CAMINHO entre a origem do quadro e o planeta em qualquer tela Retina, e a
-// varredura seguia verde — porque o texto continuava lá. Estes medem o
-// `Vector4` que a GPU recebe, nas duas telas.
+// O QUE ESTAS PEGAM, e cada uma nasceu de uma sabotagem que passava:
+//  1. O DISCO NO LUGAR ERRADO em Retina — a mistura de espaços de pixel
+//     (centro em px de CSS contra um `gl_FragCoord` que é de buffer). Em
+//     1× os dois erros se cancelam, então o MB1 nunca ia ver.
+//  2. O FIO CORTADO. Enquanto o disco era escrito por uma chamada do
+//     director, apagá-la matava a cessão com a suíte inteira verde:
+//     nenhum teste de Node abre o `director.ts`. Hoje o quadro da camada
+//     escreve o disco, e é por ele que estes testes entram.
+//  3. O RAIO REPROVADO. `RAIO_DA_CESSAO_PX = 0,5` foi medido e reprovou
+//     (Vênus seguia saltando 1,75 px), e passava por aqui sem ninguém
+//     notar, porque a guarda só cobrava "maior que zero".
 // ============================================================
-describe('o disco de cessão chega ao shader na régua do `gl_FragCoord`', () => {
+describe('a linha cede ao núcleo do corpo que ela desenha', () => {
   // A POSE É DE LABORATÓRIO, para o NDC ser conta e não sorteio: câmera em
   // (0,0,D) olhando a origem, então um ponto do plano z=0 tem coordenada de
   // vista (x, y, −D) e NDC (x / (D·t·aspecto), y / (D·t)), com
@@ -821,8 +838,8 @@ describe('o disco de cessão chega ao shader na régua do `gl_FragCoord`', () =>
   const I_VENUS = IDS_FOTOMETRIA.indexOf('venus');
 
   /** um palco com Vênus no NDC pedido, e mais nada aceso */
-  function palco(ndcX: number, ndcY: number, larguraPx: number, alturaPx: number, pr: number) {
-    const aspecto = larguraPx / alturaPx;
+  function palco(ndcX: number, ndcY: number, quadro: QuadroEmPx) {
+    const aspecto = quadro.larguraPx / quadro.alturaPx;
     const camera = new THREE.PerspectiveCamera(FOV, aspecto, 1e-9, 1e6);
     camera.position.set(0, 0, D);
     camera.lookAt(0, 0, 0);
@@ -831,13 +848,67 @@ describe('o disco de cessão chega ao shader na régua do `gl_FragCoord`', () =>
     posicoes[I_VENUS * 3] = ndcX * D * T * aspecto;
     posicoes[I_VENUS * 3 + 1] = ndcY * D * T;
     const orbitas = new Orbitas();
+    orbitas.ligado = true;
     orbitas.escreverInstante(EPOCA_JD_TDB, motor);
-    orbitas.escreverNucleos(camera, posicoes, larguraPx, alturaPx, pr);
+    orbitas.update(camera, quadro, T, 0, posicoes);
     return { orbitas, camera, posicoes };
   }
 
-  it('em tela comum o disco pousa no planeta, com o raio pedido', () => {
-    const { orbitas } = palco(0.25, 0.5, 1600, 900, 1);
+  /**
+   * QUANTO DO BRILHO DA LINHA SOBREVIVE dentro do núcleo do planeta — a
+   * média do `smoothstep` do shader sobre o disco do núcleo, ponderada por
+   * área (o peso é `2πd·dd`). É a grandeza que o defeito mede: a luz que a
+   * linha ainda deposita em cima do corpo é a que funde as duas fontes numa
+   * componente só e faz o centroide passear.
+   *
+   * O `smoothstep` daqui não é uma CÓPIA do shader: é a mesma cúbica do
+   * GLSL, aplicada aos MESMOS dois números que o uniform carrega. O que a
+   * casa controla são o raio e a borda; a curva entre eles é do GLSL.
+   */
+  function sobrevivenciaNoNucleo(raioPx: number, bordaPx: number, raioNucleoPx: number) {
+    const N = 4000;
+    let luz = 0;
+    let area = 0;
+    for (let k = 0; k < N; k++) {
+      const d = ((k + 0.5) / N) * raioNucleoPx;
+      luz += THREE.MathUtils.smoothstep(d, raioPx, bordaPx) * d;
+      area += d;
+    }
+    return luz / area;
+  }
+
+  // O NÚCLEO MEDIDO de Vênus no MB1: `nMeia = 22` px acima da meia altura,
+  // que é um disco de raio √(22/π) — os "~2,6 px" do cabeçalho da constante.
+  const RAIO_DO_NUCLEO_PX = Math.sqrt(22 / Math.PI);
+  // A SOLEIRA, e ela é DECLARADA: a cessão tem de deixar no núcleo menos de
+  // um vigésimo do brilho da linha. Não é o corte exato do defeito — esse
+  // ninguém mediu; o que se mediu foram DOIS pontos, e a soleira mora entre
+  // eles: 0,5 px (reprovado no MB1) deixa 22,1%, e 2 px (aprovado) deixa
+  // 1,9%. Sobra 4,4× de folga do lado que reprova e 2,6× do lado que passa.
+  // Se um dia a margem apodrecer, apodrece no número, à vista.
+  const SOBRA_MAXIMA = 0.05;
+
+  it('o raio medido apaga a linha no núcleo; o que a medição REPROVOU não apaga', () => {
+    // 0,5 px foi medido e reprovou — a âncora de Vênus seguia saltando
+    // 1,75 px contra um teto de 1,02. 2 px foi medido e passou.
+    expect(
+      sobrevivenciaNoNucleo(0.5, BORDA_DA_CESSAO_PX, RAIO_DO_NUCLEO_PX),
+      'o raio reprovado tem de continuar reprovando'
+    ).toBeGreaterThan(SOBRA_MAXIMA);
+    expect(
+      sobrevivenciaNoNucleo(RAIO_DA_CESSAO_PX, BORDA_DA_CESSAO_PX, RAIO_DO_NUCLEO_PX),
+      'o raio de hoje tem de apagar a linha no núcleo'
+    ).toBeLessThan(SOBRA_MAXIMA);
+    // e o disco tem de ter borda: sem ela o corte é degrau, e degrau o MB1
+    // lê como fervura
+    expect(BORDA_DA_CESSAO_PX).toBeGreaterThan(RAIO_DA_CESSAO_PX);
+  });
+
+  it('o quadro ESCREVE o disco, e ele chega ao uniform com a conta certa', () => {
+    // A SABOTAGEM QUE ISTO PEGA: apagar a escrita do disco. Antes ela morava
+    // fora da camada e podia sumir com a suíte inteira verde.
+    const quadro = { larguraPx: 1600, alturaPx: 900, pixelRatio: 1 };
+    const { orbitas } = palco(0.25, 0.5, quadro);
     const disco = orbitas.nucleoDe('venus');
     expect(disco, 'Vênus tem linha, e linha tem disco').not.toBeNull();
     expect(disco!.x).toBeCloseTo(0.625 * 1600, 3);
@@ -847,38 +918,49 @@ describe('o disco de cessão chega ao shader na régua do `gl_FragCoord`', () =>
     orbitas.dispose();
   });
 
-  it('em RETINA ele pousa NO MESMO LUGAR da tela, e não a meio caminho', () => {
-    // O DEFEITO EXATO, achado por auditoria em 25/08: o centro saía contra
-    // `resolution`, que é px de CSS, e o `gl_FragCoord` é de BUFFER. Em 1× os
-    // dois erros se cancelavam — e o MB1 captura a 1×, então não via nada. Em
-    // 2× o disco pousava na METADE do caminho entre a origem do quadro e o
-    // planeta, com METADE do raio: o buraco caía no vazio e a linha seguia
-    // por cima do corpo, que é o defeito que a cessão veio matar.
-    const { orbitas } = palco(0.25, 0.5, 1600, 900, 2);
+  it('em RETINA o disco pousa no planeta, e não a meio caminho dele', () => {
+    // O DEFEITO EXATO, achado por auditoria em 25/08: o centro saía em px de
+    // CSS e o `gl_FragCoord` é de BUFFER. Em 1× os dois erros se cancelavam
+    // — e o MB1 captura a 1×, então não via nada. Em 2× o disco pousava na
+    // METADE do caminho entre a origem do quadro e o planeta, com METADE do
+    // raio: o buraco caía no vazio e a linha seguia por cima do corpo.
+    const quadro = { larguraPx: 1600, alturaPx: 900, pixelRatio: 2 };
+    const { orbitas } = palco(0.25, 0.5, quadro);
     const disco = orbitas.nucleoDe('venus')!;
+    // o mesmo lugar da tela do teste anterior, agora em px de buffer
     expect(disco.x).toBeCloseTo(0.625 * 1600, 3);
     expect(disco.y).toBeCloseTo(0.75 * 900, 3);
     // e o buraco com o MESMO tamanho APARENTE: px de CSS vezes o pixelRatio
     expect(disco.z).toBeCloseTo(RAIO_DA_CESSAO_PX * 2, 6);
     expect(disco.w).toBeCloseTo(BORDA_DA_CESSAO_PX * 2, 6);
+    // e o que importa: em px de CSS o buraco é o MESMO nas duas telas, que é
+    // a invariância que a casa exige de tudo que tem tamanho de tela
+    expect(
+      sobrevivenciaNoNucleo(disco.z / 2, disco.w / 2, RAIO_DO_NUCLEO_PX)
+    ).toBeLessThan(SOBRA_MAXIMA);
     orbitas.dispose();
   });
 
   it('corpo ATRÁS da câmera não deita disco — buraco fantasma não existe', () => {
     // `project` devolveria a posição espelhada, e o buraco comeria a linha
     // do lado errado do céu.
-    const { orbitas, camera, posicoes } = palco(0.25, 0.5, 1600, 900, 1);
+    const quadro = { larguraPx: 1600, alturaPx: 900, pixelRatio: 1 };
+    const { orbitas, camera, posicoes } = palco(0.25, 0.5, quadro);
     expect(orbitas.nucleoDe('venus')!.w).toBeGreaterThan(0);
+    // atrás do olho, no MESMO eixo em que a câmera está
     posicoes[I_VENUS * 3 + 2] = D * 2;
-    orbitas.escreverNucleos(camera, posicoes, 1600, 900, 1);
+    orbitas.update(camera, quadro, T, 0, posicoes);
     expect(orbitas.nucleoDe('venus')!.w).toBe(0);
     orbitas.dispose();
   });
 
   it('sem os corpos no palco a linha volta INTEIRA', () => {
-    const { orbitas, camera } = palco(0.25, 0.5, 1600, 900, 1);
+    const quadro = { larguraPx: 1600, alturaPx: 900, pixelRatio: 1 };
+    const { orbitas, camera } = palco(0.25, 0.5, quadro);
     expect(orbitas.nucleoDe('venus')!.w).toBeGreaterThan(0);
-    orbitas.escreverNucleos(camera, null, 1600, 900, 1);
+    // camada dos corpos apagada: o director entrega `null`, e a linha
+    // volta inteira no MESMO quadro
+    orbitas.update(camera, quadro, T, 0, null);
     expect(orbitas.nucleoDe('venus')!.w).toBe(0);
     orbitas.dispose();
   });

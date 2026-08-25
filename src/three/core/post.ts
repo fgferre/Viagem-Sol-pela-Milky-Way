@@ -293,68 +293,21 @@ export const MARGEM_DO_CAMPO = 128;
 const LIMIAR_DO_CAMPO = 0;
 
 /**
- * O PASSE DO CAMPO — o segundo cobertor, SEM segunda máquina.
+ * A SOMA COM RECORTE — o blend aditivo do passe de addons mais a janela: o
+ * composite cobre o rascunho INTEIRO (quadro + faixa de guarda) e o quadro é
+ * o retângulo do meio dele. `uEscala`/`uDeslocamento` são essa janela em UV,
+ * e são a única diferença para o `CopyShader` que o `blendMaterial` do
+ * `UnrealBloomPass` usava (`opacity` valia 1 — identidade).
  *
- * O desenho da R2 pedia "modo só-brilho no vendorizado"; a leitura do
- * vendorizado mostrou um caminho mais barato que a flag: o
- * `UnrealBloomPass` já deposita o clarão puro numa textura própria
- * (`renderTargetsHorizontal[0]`) ANTES do blend aditivo final. Então o
- * passe (1) desenha só o campo — catálogo, cascas, heroes, via
- * `CAMADA_DO_CAMPO` — no buffer OCIOSO do composer (o writeBuffer: o
- * bloom principal não troca buffers, e knee/OutputPass reescrevem cada
- * pixel dele depois — rascunho de graça, zero alvo novo na VRAM);
- * (2) roda a MESMA máquina do bloom vestida de filme em cima do
- * rascunho — o blend interno do vendorizado cai no próprio rascunho e
- * morre ali; (3) soma SÓ o clarão ao quadro principal, com o mesmo
- * blend aditivo do vendorizado. As estrelas não contam duas vezes: a
- * imagem direta delas só existe no render principal.
- *
- * LIMITE DECLARADO (v1): o rascunho do campo não tem os ocultadores
- * (Sol e planetas vivem na camada 0), então estrela ATRÁS de um disco
- * resolvido ainda deposita clarão por cima dele — de frente para um
- * corpo próximo, um brilho fantasma fraco pode vazar no lado noturno.
- * Se a tela cobrar, o conserto conhecido é desenhar os ocultadores no
- * rascunho só com profundidade (colorWrite falso) — nunca voltar ao
- * cobertor único.
- *
- * O QUE MUDOU NO ITEM 70 (a faixa de guarda, `MARGEM_DO_CAMPO`). O
- * "SEM segunda máquina" acima era verdade enquanto o rascunho tinha o
- * TAMANHO DO QUADRO: dava para pegar o buffer ocioso do composer
- * emprestado e vestir a máquina da lei de filme por um passe. Com a
- * faixa de guarda o rascunho é MAIOR que o quadro, e nenhum buffer do
- * composer tem esse tamanho — nem a pirâmide da lei, que vive no
- * tamanho do quadro e teria de ser realocada DUAS VEZES POR QUADRO para
- * ser emprestada (o `setSize` do passe de addons dispara `dispose()` em 11
- * alvos quando a medida muda). Então agora são duas máquinas de
- * verdade, cada uma no seu tamanho, e o preço — VRAM e tempo de GPU —
- * está declarado no cabeçalho de `MARGEM_DO_CAMPO`. Em troca some a
- * dança de vestir e despir a máquina da lei a cada quadro: esta nasce
- * de filme e morre de filme.
+ * NASCE NUMA FÁBRICA, e isso é guarda, não estilo: material do three é objeto
+ * de CPU pura, então o gate consegue AFERIR o objeto que o passe usa em vez
+ * de procurar a palavra no arquivo. A varredura de texto que guardava isto
+ * até 25/08 aceitava `premultipliedAlpha: false // outrora
+ * premultipliedAlpha: true` — a sabotagem passava porque a palavra continuava
+ * escrita, num comentário.
  */
-class ClaraoDoCampo extends Pass {
-  private readonly quad = new FullScreenQuad();
-  private readonly corDeLimpezaVelha = new THREE.Color();
-  private readonly bloom: UnrealBloomPass;
-  private readonly cena: THREE.Scene;
-  private readonly camera: THREE.Camera;
-  /** o rascunho COM a faixa de guarda — quadro + 2·MARGEM em cada eixo */
-  private rascunho: THREE.WebGLRenderTarget;
-  /** o quadro em px de CSS, para a conta da janela dentro do rascunho */
-  private larguraCss = 1;
-  private alturaCss = 1;
-  /** o traje dos ocultadores: geometria verdadeira, zero cor — só depth */
-  private readonly fantasma = new THREE.MeshBasicMaterial({ colorWrite: false });
-  /** a câmera de lente larga do rascunho — cópia, para a do app não ser
-   *  tocada por este passe (ver a cicatriz em `render`) */
-  private readonly cameraLarga = new THREE.PerspectiveCamera();
-  /**
-   * A SOMA COM RECORTE — o blend aditivo do passe de addons mais a janela: o
-   * composite agora cobre o rascunho INTEIRO (quadro + faixa de guarda) e
-   * o quadro é o retângulo do meio dele. `uEscala`/`uDeslocamento` são
-   * essa janela em UV, e são a única diferença para o `CopyShader` que o
-   * `blendMaterial` do `UnrealBloomPass` usava (`opacity` valia 1 — identidade).
-   */
-  private readonly somaComRecorte = new THREE.ShaderMaterial({
+export function criarSomaComRecorte(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
     uniforms: {
       tDiffuse: { value: null as THREE.Texture | null },
       uEscala: { value: new THREE.Vector2(1, 1) },
@@ -394,6 +347,65 @@ class ClaraoDoCampo extends Pass {
     // se sabe que a faixa de guarda é a ÚNICA coisa que esta obra mudou.
     premultipliedAlpha: true,
   });
+}
+
+/**
+ * O PASSE DO CAMPO — o segundo cobertor, SEM segunda máquina.
+ *
+ * O desenho da R2 pedia "modo só-brilho no vendorizado"; a leitura do
+ * vendorizado mostrou um caminho mais barato que a flag: o
+ * `UnrealBloomPass` já deposita o clarão puro numa textura própria
+ * (`renderTargetsHorizontal[0]`) ANTES do blend aditivo final. Então o
+ * passe (1) desenha só o campo — catálogo, cascas, heroes, via
+ * `CAMADA_DO_CAMPO` — no buffer OCIOSO do composer (o writeBuffer: o
+ * bloom principal não troca buffers, e knee/OutputPass reescrevem cada
+ * pixel dele depois — rascunho de graça, zero alvo novo na VRAM);
+ * (2) roda a MESMA máquina do bloom vestida de filme em cima do
+ * rascunho — o blend interno do vendorizado cai no próprio rascunho e
+ * morre ali; (3) soma SÓ o clarão ao quadro principal, com o mesmo
+ * blend aditivo do vendorizado. As estrelas não contam duas vezes: a
+ * imagem direta delas só existe no render principal.
+ *
+ * LIMITE DECLARADO (v1): o rascunho do campo não tem os ocultadores
+ * (Sol e planetas vivem na camada 0), então estrela ATRÁS de um disco
+ * resolvido ainda deposita clarão por cima dele — de frente para um
+ * corpo próximo, um brilho fantasma fraco pode vazar no lado noturno.
+ * Se a tela cobrar, o conserto conhecido é desenhar os ocultadores no
+ * rascunho só com profundidade (colorWrite falso) — nunca voltar ao
+ * cobertor único.
+ *
+ * O QUE MUDOU NO ITEM 70 (a faixa de guarda, `MARGEM_DO_CAMPO`). O
+ * "SEM segunda máquina" acima era verdade enquanto o rascunho tinha o
+ * TAMANHO DO QUADRO: dava para pegar o buffer ocioso do composer
+ * emprestado e vestir a máquina da lei de filme por um passe. Com a
+ * faixa de guarda o rascunho é MAIOR que o quadro, e nenhum buffer do
+ * composer tem esse tamanho — nem a pirâmide da lei, que vive no
+ * tamanho do quadro e teria de ser realocada DUAS VEZES POR QUADRO para
+ * ser emprestada (o `setSize` do passe de addons dispara `dispose()` em 11
+ * alvos quando a medida muda). Então agora são duas máquinas de
+ * verdade, cada uma no seu tamanho, e o preço — VRAM e tempo de GPU —
+ * está declarado no cabeçalho de `MARGEM_DO_CAMPO`. Em troca some a
+ * dança de vestir e despir a máquina da lei a cada quadro: esta nasce
+ * de filme e morre de filme.
+ */
+
+class ClaraoDoCampo extends Pass {
+  private readonly quad = new FullScreenQuad();
+  private readonly corDeLimpezaVelha = new THREE.Color();
+  private readonly bloom: UnrealBloomPass;
+  private readonly cena: THREE.Scene;
+  private readonly camera: THREE.Camera;
+  /** o rascunho COM a faixa de guarda — quadro + 2·MARGEM em cada eixo */
+  private rascunho: THREE.WebGLRenderTarget;
+  /** o quadro em px de CSS, para a conta da janela dentro do rascunho */
+  private larguraCss = 1;
+  private alturaCss = 1;
+  /** o traje dos ocultadores: geometria verdadeira, zero cor — só depth */
+  private readonly fantasma = new THREE.MeshBasicMaterial({ colorWrite: false });
+  /** a câmera de lente larga do rascunho — cópia, para a do app não ser
+   *  tocada por este passe (ver a cicatriz em `render`) */
+  private readonly cameraLarga = new THREE.PerspectiveCamera();
+  private readonly somaComRecorte = criarSomaComRecorte();
 
   constructor(
     cena: THREE.Scene,

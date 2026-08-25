@@ -16,7 +16,8 @@
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { MARGEM_DO_CAMPO } from './post';
+import * as THREE from 'three';
+import { MARGEM_DO_CAMPO, criarSomaComRecorte } from './post';
 
 const post = readFileSync(new URL('./post.ts', import.meta.url), 'utf8');
 const director = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
@@ -61,6 +62,14 @@ describe('a faixa de guarda do cobertor do campo (item 70)', () => {
 });
 
 describe('a soma com recorte (a armadilha do premultiplied)', () => {
+  // AQUI NÃO SE VARRE TEXTO, e a razão é uma auditoria: a guarda anterior
+  // era `expect(post).toMatch(/premultipliedAlpha: true/)`, e a sabotagem
+  // `premultipliedAlpha: false // outrora premultipliedAlpha: true` PASSAVA
+  // — a palavra seguia no arquivo, dentro de um comentário. Material do
+  // three é objeto de CPU pura: dá para fabricar o MESMO que o passe usa e
+  // perguntar a ele.
+  const soma = criarSomaComRecorte();
+
   it('é PREMULTIPLICADA — sem isso o céu sai 28% mais escuro', () => {
     // A REVERSÃO EXATA: sem a flag o aditivo do three vira
     // `blendFunc(SRC_ALPHA, ONE)` e a cor entra MULTIPLICADA pelo alpha do
@@ -68,8 +77,18 @@ describe('a soma com recorte (a armadilha do premultiplied)', () => {
     // luz média do quadro 10,17 contra 14,10 bytes. E o MB1 APLAUDIA — um
     // cobertor mais fraco também tem menos pedestal para perder na borda —,
     // que é a lição mais cara desta etapa: **céu mais escuro parece
-    // melhoria para um juiz de estabilidade**. Esta linha é a guarda.
-    expect(post).toMatch(/premultipliedAlpha: true/);
+    // melhoria para um juiz de estabilidade**. Esta é a guarda.
+    expect(soma.premultipliedAlpha).toBe(true);
+  });
+
+  it('e o resto do blend é o do `blendMaterial` que ela substituiu', () => {
+    // a flag sozinha não diz nada: `premultipliedAlpha` só muda o
+    // `blendFunc` de um material ADITIVO e TRANSPARENTE. Trocar o blending
+    // apagaria a soma inteira com a flag intacta.
+    expect(soma.blending).toBe(THREE.AdditiveBlending);
+    expect(soma.transparent).toBe(true);
+    expect(soma.depthTest).toBe(false);
+    expect(soma.depthWrite).toBe(false);
   });
 });
 

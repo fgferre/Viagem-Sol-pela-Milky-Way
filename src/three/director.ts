@@ -37,7 +37,7 @@ import { LuaResolvida } from './world/corpos/lua';
 import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
-import { Orbitas } from './world/orbitas';
+import { Orbitas, type QuadroEmPx } from './world/orbitas';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
@@ -260,6 +260,13 @@ export class Director {
    *  escala do doador. Só desenha com efeméride viva (ver `orbitas.ts`,
    *  §6): a curva sai do estado do instante, nunca do retrato. */
   private orbitas: Orbitas | null = null;
+  /** as três medidas do quadro que a camada das órbitas lê, num objeto só e
+   *  REUSADO — o tick não aloca (ver `QuadroEmPx`, em `world/orbitas.ts`) */
+  private readonly quadroDasOrbitas: QuadroEmPx = {
+    larguraPx: 0,
+    alturaPx: 0,
+    pixelRatio: 1,
+  };
   /** O PALCO LOCAL (Onda 6, F0 — D1): o grupo dos corpos resolvidos,
    *  vazio nesta fase. Irmão do `sun.group` e do `planetas.points`; a
    *  superfície mais próxima dele entra no `updateClip` a cada tick.
@@ -2541,20 +2548,23 @@ export class Director {
       // Float32Array vivo do atributo), e não um segundo cadastro: uma
       // cópia aqui seria a fonte que a máquina do tempo desmentiria no
       // primeiro salto de data. Camada apagada ⇒ nenhum núcleo, e a
-      // linha volta a ser inteira.
+      // linha volta a ser inteira. Quem PROJETA é a camada, no próprio
+      // `update` — aqui só se entrega a fonte.
       //
       // AS TRÊS MEDIDAS SÃO DO BUFFER, e é o que o shader espera: largura e
       // altura do canvas mais o `pixelRatio` vivo. `hPx` já era buffer (vem
       // de `domElement.height`); o que faltava era a largura e a escala, e
       // era dessa falta que o disco de cessão nascia torto em Retina.
-      this.orbitas.escreverNucleos(
+      this.quadroDasOrbitas.larguraPx = this.engine.renderer.domElement.width;
+      this.quadroDasOrbitas.alturaPx = hPx;
+      this.quadroDasOrbitas.pixelRatio = this.engine.renderer.getPixelRatio();
+      this.orbitas.update(
         this.engine.camera,
-        this.planetas?.ligado ? this.planetas.posicoes : null,
-        this.engine.renderer.domElement.width,
-        hPx,
-        this.engine.renderer.getPixelRatio()
+        this.quadroDasOrbitas,
+        tanHalfFov,
+        dt,
+        this.planetas?.ligado ? this.planetas.posicoes : null
       );
-      this.orbitas.update(this.engine.camera, hPx, tanHalfFov, dt);
     }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);

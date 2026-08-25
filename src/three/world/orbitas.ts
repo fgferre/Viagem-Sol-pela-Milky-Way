@@ -744,6 +744,20 @@ interface LinhaDeOrbita {
   readonly nucleo: { value: THREE.Vector4 };
 }
 
+/**
+ * O QUADRO EM PIXEL, as três medidas juntas porque separá-las foi o erro:
+ * a cessão nasceu lendo a ALTURA de buffer e devolvendo contra a largura de
+ * CSS, e em 1× ninguém viu. Aqui as três andam num nome só, e o nome diz o
+ * espaço: `larguraPx` e `alturaPx` são px de BUFFER (`renderer.domElement`,
+ * o mesmo tamanho dos alvos do composer e do `gl_FragCoord`), e
+ * `pixelRatio` é o que converte px de CSS em px de buffer.
+ */
+export interface QuadroEmPx {
+  larguraPx: number;
+  alturaPx: number;
+  pixelRatio: number;
+}
+
 export class Orbitas {
   readonly group = new THREE.Group();
 
@@ -878,22 +892,20 @@ export class Orbitas {
    * ninguém — e nem precisa: o defeito é o corpo sobre a PRÓPRIA elipse.
    *
    * TUDO SAI EM PIXEL DE BUFFER, que é o espaço do `gl_FragCoord` e o único
-   * que o shader conhece: `larguraPx` e `alturaPx` são as do canvas
+   * que o shader conhece: a largura e a altura são as do canvas
    * (`renderer.domElement`), e o raio de CSS vira buffer multiplicando pelo
    * `pixelRatio` — é o que mantém o buraco do MESMO tamanho aparente em 1×
    * e em 2×. Aritmética pura de CPU, de propósito: é o que deixa a conta
    * ser aferida sem navegador, por `nucleoDe`.
    */
-  escreverNucleos(
+  private escreverNucleos(
     camera: THREE.PerspectiveCamera,
-    posicoes: Float32Array | null,
-    larguraPx: number,
-    alturaPx: number,
-    pixelRatio: number
+    quadro: QuadroEmPx,
+    posicoes: Float32Array | null
   ) {
-    const raio = RAIO_DA_CESSAO_PX * pixelRatio;
-    const borda = BORDA_DA_CESSAO_PX * pixelRatio;
-    const podeCeder = larguraPx > 0 && alturaPx > 0 && borda > raio;
+    const raio = RAIO_DA_CESSAO_PX * quadro.pixelRatio;
+    const borda = BORDA_DA_CESSAO_PX * quadro.pixelRatio;
+    const podeCeder = quadro.larguraPx > 0 && quadro.alturaPx > 0 && borda > raio;
     for (const linha of this.linhas) {
       const alvo = linha.nucleo.value;
       const i = IDS_FOTOMETRIA.indexOf(linha.corpo.id as (typeof IDS_FOTOMETRIA)[number]);
@@ -909,8 +921,8 @@ export class Orbitas {
         continue;
       }
       alvo.set(
-        (this.rascunhoNdc.x * 0.5 + 0.5) * larguraPx,
-        (this.rascunhoNdc.y * 0.5 + 0.5) * alturaPx,
+        (this.rascunhoNdc.x * 0.5 + 0.5) * quadro.larguraPx,
+        (this.rascunhoNdc.y * 0.5 + 0.5) * quadro.alturaPx,
         raio,
         borda
       );
@@ -1057,21 +1069,39 @@ export class Orbitas {
   }
 
   /**
-   * O QUADRO: a porta, o fade por tamanho angular e o pai enquadrado.
-   * Sem alocação e sem tocar em geometria — o que muda aqui é opacidade
-   * e visibilidade, uma por linha.
+   * O QUADRO: a porta, o fade por tamanho angular, o pai enquadrado e os
+   * discos de cessão. Sem alocação e sem tocar em geometria — o que muda
+   * aqui é opacidade, visibilidade e quatro números por linha.
    *
    * `tanHalfFov` é o mesmo que o tick já calcula para as outras camadas.
    * `dtS` é o dt do tick, e serve só ao realce do foco (§5b).
    *
+   * A CESSÃO É PASSO DESTE QUADRO, e não um segundo telefonema do
+   * director — foi assim que ela nasceu, e a auditoria de 25/08 mostrou o
+   * preço: apagando a chamada lá fora o disco ficava zerado para sempre, a
+   * linha voltava a atravessar o planeta e a suíte inteira seguia verde,
+   * porque nenhum teste de Node abre o `director.ts` para ver se ele ainda
+   * disca. Dentro do `update` não há fio a cortar: quem apagar a escrita
+   * derruba o teste da cessão, e quem apagar o `update` derruba a camada
+   * toda.
+   *
+   * `corpos` é PARÂMETRO, e obrigatório, pela mesma razão: é o Float32Array
+   * VIVO de `Planetas.posicoes` (ordem de `IDS_FOTOMETRIA`), a mesma fonte
+   * que os rótulos do Atlas leem — nunca uma cópia, que a máquina do tempo
+   * desmentiria no primeiro salto de data. Como campo, apagar a linha que o
+   * escrevia matava a cessão em silêncio; como parâmetro, apagá-la não
+   * compila. `null` — camada dos corpos apagada — devolve a linha inteira,
+   * e É uma declaração, não um esquecimento.
    */
   update(
     camera: THREE.PerspectiveCamera,
-    hPx: number,
+    quadro: QuadroEmPx,
     tanHalfFov: number,
-    dtS: number
+    dtS: number,
+    corpos: Float32Array | null
   ) {
     this.group.visible = this.ligado;
+    this.escreverNucleos(camera, quadro, corpos);
     if (!this.ligado) {
       // CAMADA FECHADA: o realce ENCOSTA no alvo em vez de perseguir no
       // escuro. Sem isto, abrir a gaveta depois de um `?foco=` mostraria
@@ -1083,7 +1113,7 @@ export class Orbitas {
       }
       return;
     }
-    const meiaAltura = hPx / 2;
+    const meiaAltura = quadro.alturaPx / 2;
     const camPos = camera.position;
     for (const linha of this.linhas) {
       linha.realce = this.perseguirRealce(linha, dtS);
