@@ -108,6 +108,15 @@ hash: **1–4, 6, 8–11, 14, 16, 20, 21, 29–33, 35, 41, 42, 44, 47, 48, 50,
 51, 55–58, 60, 62, 63, 65–68, 71, 73, 74, 76**. O **19** NÃO saiu — fechou
 a metade da confissão e ficou a das texturas.
 
+**E o 72 entra aqui agora, achado pela conferência dos números de 25/08** —
+a mesma varredura que já pegara o 76 e os sete créditos de 22/08: ele era o
+único número que não estava nem vivo nem aposentado. **72** (a porta
+`?nobloom=1` que só apagava METADE do bloom) **fechou em 25/08**, dentro da
+rodada da faixa de guarda, e a história dele mora no ARQUIVO — não numa
+seção própria, mas dentro do **item 70**, que é onde a obra aconteceu. A
+foto é `capturas/item72-nobloom-antes-depois.png`, e ela está na lista das
+que esperam o olho dele.
+
 ---
 
 ## ALTA — o dono vê e incomoda
