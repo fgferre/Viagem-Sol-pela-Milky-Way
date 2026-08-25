@@ -1,10 +1,55 @@
 # Releitura — por que a órbita do Eyes parece um tubo e a nossa não
 
+**VEREDITO 24/08 (depois da contestação):** o sintoma do colar de contas
+estava certo. O mecanismo “tubo `sqrt(1−u²)`” e quase toda a receita
+estavam errados. O que segue no corpo do arquivo fica como leitura do
+JS; **não executar os quatro passos da ordem de obra antiga.** A
+correção está nesta caixa. Detalhe e réplica: a mensagem ao Claude
+nesta sessão.
+
+- **Sintoma certo.** `LineMaterial` no caminho de pixels (não
+  `WORLD_UNITS`) **estende calota** em cada ponta do segmento
+  (`offset += ±dir` quando `position.y` sai de `[0,1]`). Em aditivo a
+  junta pinta o disco duas vezes. Isso é o colar.
+- **Não é tubo.** O `LineShader` do Eyes, com `glowWidth = 0`, devolve
+  `edgeGlow() = 1` — faixa **chapada**. O renderer deles nasce com
+  `antialias: true` (MSAA). Os quartos 0,25/0,50/0,75/1,00 são
+  cobertura de 4 amostras numa borda dura, não um perfil contínuo. O
+  pico cheio da paleta no miolo é exatamente o que MSAA de retângulo
+  faz; um tubo também teria pico 1 no centro (`sqrt(1−0)=1`) — essa
+  frase da contestação é que não se sustenta. A quantização em quartos
+  e o `antialias: true` bastam para enterrar o tubo.
+- **`Line2` não muda um pixel.** `Line2 extends LineSegments2` e usa o
+  mesmo `LineMaterial`. Calotas iguais.
+- **Hover no código, não na linha.** `TrailManager.onHoverChange` está
+  ligado a `hoverchange` do `LabelManager` (o `div` do nome). Engrossa
+  o anel 1,2→2 px. Passar o rato na **elipse vazia** não dispara.
+- **0,32 vs 0,75 é erro de unidade.** São uniforms, não pixel. Comparar
+  com a tela (116–170 deles) é outra conta — e a nossa fita, depois do
+  L2, já pode ser mais forte. Não subir alfa para 0,75 por causa dessa
+  frase.
+- **Conserto do colar, na peça oficial.** Com `dashed = true` o
+  fragmento faz `if (vUv.y < -1.0 || vUv.y > 1.0) discard` — as calotas
+  caem. `gapSize = 0` faz
+  `mod(d, dashSize+0) > dashSize` nunca verdadeiro (o resto vive em
+  `[0, dashSize)`). Sem lacuna. É preciso **existir**
+  `instanceDistanceStart/End` (`computeLineDistances()` uma vez; com
+  gap 0 a distância não pinta). No caminho de pixels as calotas ainda
+  **nascem** no vértice e morrem no fragmento — visualmente some o
+  disco em dobro.
+
+Paleta categórica: lei da casa é fotometria no corpo. Não copiar a
+tinta violeta/âmbar. `resolutionFactor` (`min(janela)/800`) continua
+no JS deles; é barato e independente do tubo.
+
+---
+
 Para o agente que for mexer em `world/orbitas.ts`. Não copiar JavaScript
 da NASA. Não refazer `conicaOsculadora`, `escreverLaco`, o fade angular
 (`alfaDa`), o pai da lua, nem o `realce` do foco. A álgebra da elipse
-já é a deles (`setFromPositionAndVelocity`). O buraco é **como a fita
-é um pixel**.
+já é a deles (`setFromPositionAndVelocity`). O buraco que restou da fita
+é **junta (calota) e, se o dono quiser, o AA da borda** — não um shader
+de tubo.
 
 Irmãos: `estudo-orbitas-eyes-observacao.md` (número da tela) e
 `nasa-eyes-algoritmos.md` (peças do JS). Este arquivo é só a órbita de
@@ -13,6 +58,47 @@ rastro de sonda.
 
 Lido de novo no `app.js` público (2026-08-05) e no `LineMaterial.js` que
 a casa passou a usar em `8be508f`.
+
+---
+
+> ⚠️ **CONFERIDO EM 24/08 CONTRA O PIXEL, e a premissa central NÃO se
+> sustenta. O arquivo fica inteiro** (a casa não apaga documento; marca),
+> mas leia-o com estas seis correções na mão:
+>
+> 1. **O "tubo" é refutado pelos DADOS DO PRÓPRIO AUTOR.** As bordas que
+>    ele cita estão quantizadas em QUARTOS (0,25 / 0,50 / 0,75 / 1,00) —
+>    a assinatura de **cobertura por 4 amostras**, não de um perfil
+>    analítico contínuo. E os 8 picos medidos batem no valor **CHEIO** da
+>    paleta: com um perfil de tubo isso seria impossível, porque nenhum
+>    pixel chegaria ao topo. O Eyes tem AA de borda, não volume.
+> 2. **"`Line2` é contínuo" é falso.** `Line2` ESTENDE `LineSegments2`:
+>    mesmos quads, mesmas calotas redondas. Trocar um pelo outro não
+>    resolveria junta nenhuma — e, medido, é justamente a calota que
+>    produz o **colar de contas** (ver **L2.5** no item 83 do
+>    `PENDENCIAS.md`, com o número das colunas).
+> 3. **`depthWrite` e `depthTest` estão trocados** no texto. São coisas
+>    diferentes, e a casa usa `depthWrite: false` COM `depthTest: true`
+>    de propósito — é o que faz a linha sumir atrás de um globo resolvido.
+> 4. **O hover que ele descreve como vivo NÃO EXISTE na tela.** A medição
+>    §7 do `estudo-orbitas-eyes-observacao.md` pôs o ponteiro sobre a
+>    órbita de Marte por leitura de pixel: nem tooltip, nem realce, nem
+>    cursor. No Eyes a linha é matéria morta.
+> 5. **O alfa 0,75 é erro de UNIDADE.** É valor pós-codificação sobre
+>    preto; o nosso 0,32 é linear e PRÉ-ACES. Comparados na tela, a
+>    NOSSA fita é a mais forte: **200–230 contra 116–170** deles. A
+>    tabela abaixo dá a impressão contrária.
+> 6. **A paleta como TINTA choca com o item 77.** Ela serve como
+>    referência de SEPARAÇÃO de matiz (é o L3); adotá-la como cor é
+>    pintar Mercúrio de violeta, que é a desonestidade que a fotometria
+>    da casa existe para não cometer.
+>
+> **E O QUE ELE ACERTOU, que também se registra:** a **reconciliação do
+> "aditivo"** entre os dois estudos anteriores da casa, que se
+> contradiziam — ponto dele; e a **paleta lida do `TrailManager`**,
+> confirmada por 8 cruzamentos independentes a ±0,5. O diagnóstico de que
+> "a nossa ainda parece arame" também está CERTO — só que a causa não é
+> o tubo: são a calota dobrada (L2.5) e a borda dura (a dívida de
+> cobertura), as duas registradas no item 83.
 
 ---
 
@@ -230,18 +316,20 @@ API.
 
 ---
 
-## Ordem de obra (uma foto por passo)
+## Ordem de obra (corrigida 24/08)
 
-1. **Perfil de tubo no fragmento** + AA por `fwidth`. É o “sombreado”.
-   Prova: uma coluna de pixels com degrau 25/50/75/100, não um tijolo.
-2. **Faixa contínua com miter**, fora do `LineSegments2`. Prova: periastro
-   sem contas.
-3. **Tinta da linha** (paleta ou saturação) e alfa efetivo ~0,75.
-   Prova: Mercúrio violeta ≠ Vênus âmbar, Terra ciano, picos na casa
-   110–170 como a tabela.
-4. **`resolutionFactor`** na janela. Prova: a 1200 px a fita é mais cheia
-   que a 800.
+A ordem antiga (tubo → Line2 → paleta × 0,75) **está morta**.
 
-Rastro de sonda (janela de tempo, `indexU`, `widthMin→widthMax`) é
-outra peça (`TrailComponent`). Não entra neste corte. Sem catálogo de
-missões não há tela para ele mudar.
+1. Olho do dono nas fotos do L1/L2 (já na fila).
+2. **Mata-contas:** `dashed = true`, `gapSize = 0`, `dashSize` grande,
+   `computeLineDistances()` para nascer o atributo. Calota some no
+   fragmento. Não sair da peça do three.
+3. **`resolutionFactor`** se ainda faltar corpo em janela larga
+   (`max(1, min(lado)/800)`).
+4. Matiz da linha, se o dono quiser — **sem** paleta categórica no
+   lugar da fotometria.
+5. AA analítico (`fwidth`) por último: é gosto, e tira luz da fita.
+   Não é o que o Eyes faz (eles têm `antialias: true` no renderer;
+   a casa tem `false` de propósito).
+
+Rastro de sonda (`TrailComponent`) não entra neste corte.
