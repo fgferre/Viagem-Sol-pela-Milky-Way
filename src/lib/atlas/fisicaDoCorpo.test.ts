@@ -131,7 +131,7 @@ describe('razaoTerra', () => {
 describe('GM_CORPOS × MU_PARENT — a checagem independente, sem risco de pixel', () => {
   /**
    * `MU_PARENT` (`elementosOrbitais.ts`) É O PROPAGADOR e não se toca nesta
-   * obra: trocar os sete valores de lá moveria satélites e mudaria as 52
+   * obra: trocar os sete valores de lá moveria satélites e mudaria as 54
    * vistas oficiais. `GM_CORPOS` nasce ao lado, para consumidor de TEXTO, e
    * esta prova é o que impede as duas tabelas de divergirem em silêncio.
    *

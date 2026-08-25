@@ -24,6 +24,14 @@
 > e não repete o que ele já diz (MeshLine, origem flutuante, depth log). Em dois pontos ele é
 > **corrigido**, e os dois estão marcados com ⚠️ — porque a correção veio de medida, e o
 > texto herdado veio de survey.
+>
+> ⚠️ **RETRATO DE ANTES, no que diz da NOSSA linha (24/08).** Este estudo foi escrito com a
+> casa ainda em `LineLoop` + `LineBasicMaterial`, 1 px de dispositivo. O degrau **D1** virou o
+> item **83 · L2** e POUSOU em 24/08 (`8be508f`): hoje a casa é `LineSegments2` +
+> `LineMaterial` a **1,25 px CSS**. Toda coluna "nós" que disser `LineLoop` ou "1 px" descreve
+> o que HAVIA. O que o Eyes faz, medido, continua valendo — e o que ainda nos separa dele
+> (cobertura sub-pixel na largura, junta miter, largura que escala com a janela) está em
+> `orbitas-eyes-releitura.md`.
 
 ---
 
@@ -96,7 +104,7 @@ Os níveis de cobertura caem em **0,25 / 0,50 / 0,75 / 1,00** — a assinatura d
 cobertura por pixel**. A linha do Eyes tem cerca de **2,5 px de dispositivo (≈1,25 px CSS)**
 e bordas resolvidas em sub-pixel.
 
-**A nossa tem 1 pixel de dispositivo e borda dura.** `THREE.LineBasicMaterial.linewidth` é
+**A nossa TINHA 1 pixel de dispositivo e borda dura** (até 24/08 — item 83 · L2). `THREE.LineBasicMaterial.linewidth` é
 ignorado em WebGL — sempre 1 —, e num Retina isso é **meio pixel CSS**. Medido contra medido:
 o Eyes desenha uma linha **2,5× mais grossa** que a nossa, e com borda suave. Este é o maior
 buraco isolado entre as duas casas, e é puramente de renderização — não de dado.
@@ -156,7 +164,9 @@ documentação mais confiável que se pode ter sem o código:
 `setPositions` · `setColors` · `setWidths` · `setDashLength` · `setGlowWidth` · `setScale`
 
 > **Cor POR VÉRTICE, largura POR VÉRTICE, tracejado e GLOW.** Não é `gl.LINES`: é uma malha.
-> A nossa `LineLoop` não tem nenhuma das quatro.
+> A nossa `LineLoop` não tinha nenhuma das quatro. Desde 24/08 (item 83 · L2) a casa é
+> `LineSegments2`, que também não tem as quatro: ele resolve LARGURA e JUNTA, não cor nem
+> largura por vértice — o alfa por vértice segue sendo a receita reservada ao L4 (D1, abaixo).
 
 **`TrailComponent`** — o rastro, e aqui está o modelo inteiro do "tempo na linha":
 `setAlphaFade` · `setStartTime`/`setEndTime` · `setRelativeStartTime`/`setRelativeEndTime` ·
@@ -359,7 +369,7 @@ este estudo para dizer "estamos à frente do NASA Eyes" está usando-o errado.
 
 | | Eyes | nós |
 |---|---|---|
-| corpo da linha | malha ~2,5 px disp., AA sub-pixel, glow, tracejado, cor/largura **por vértice** | `LineLoop` **1 px** de dispositivo, borda dura, cor única |
+| corpo da linha | malha ~2,5 px disp., AA sub-pixel, glow, tracejado, cor/largura **por vértice** | ~~`LineLoop` **1 px** de dispositivo, borda dura~~ → **fita de 1,25 px CSS** (item 83 · L2, 24/08); borda ainda DURA e cor única |
 | rastro no tempo | camada `Trails` própria, janela relativa, `alphaFade` | **não existe** |
 | alfa por lua | 10 alfas distintos numa vista | temos fade angular (parcial) |
 | decluttering de nomes | **quadtree** + opacidade + classe | **nada** (e ainda puxamos traço) |
@@ -375,7 +385,7 @@ implementação, não risco.
 
 ---
 
-**D1 · A linha ganha corpo.** *Prioridade máxima. Custo: médio-baixo.*
+**D1 · A linha ganha corpo. FEITO em 24/08** — virou o item **83 · L2** (`8be508f`), a 1,25 px CSS. *Prioridade máxima. Custo: médio-baixo.*
 Trocar `LineLoop` + `LineBasicMaterial` por **`LineSegments2` + `LineMaterial`** (o caminho
 `Line2` dos exemplos do three, MIT, mantido e vivo em r185 — **`MeshLine` não é aposta
 segura**, os repositórios estão parados). Largura em **pixels CSS** (desde r165 o
@@ -396,6 +406,14 @@ no *near plane*, juntas, `resolution` e `raycast` — e mantê-los a cada releas
 
 *Ganho de brinde:* dá para juntar **dezenas de órbitas num único `LineSegments2`** — 1 draw
 call para a camada inteira, contra os 30 de hoje. 256 pontos ≈ 6 KB (12 KB com cor).
+
+⚠️ **ESTE "brinde" FOI MEDIDO E RECUSADO em 24/08 (item 83 · L2).** Concatenar mataria a
+origem flutuante (os vértices são relativos ao centro VIVO do pai, que anda todo quadro; a
+órbita de Io é 1e-8 pc ao lado de um centro a 5,2 UA, que float32 não resolve) e exigiria
+alfa por vértice, que o fade angular e o realce do foco tornam obrigatório — a receita do
+⚠️ acima, reservada ao L4. E não havia o que ganhar: medido com `gpu-profile`, a camada
+custa **4 draw calls** na vista das galileanas, os MESMOS 4 do `LineLoop` (só as linhas
+acesas E dentro do frustum desenham). A camada ficou com **30 objetos**, de propósito.
 
 ---
 
@@ -487,9 +505,11 @@ Quatro armadilhas, três delas já verificadas no fonte do three:
 - **Nunca `setPositions()` por quadro.** Ele **aloca buffer de GPU novo e recomputa a
   bounding sphere**. O certo é mutar `instanceStart.data.array` e marcar `needsUpdate` no
   `InterleavedBuffer`, com `addUpdateRange`/`clearUpdateRanges` (r159+) e `DynamicDrawUsage`.
-  A camada 77 já usa o padrão bom no `LineLoop` (muta `attr.array` + `needsUpdate`); ao migrar
-  para `Line2` é preciso **manter essa disciplina no buffer interleaved**, não voltar ao
-  `setPositions`. E atenção: **`setDrawRange` NÃO corta instâncias** — quem corta é
+  A camada 77 já usava o padrão bom no `LineLoop` (muta `attr.array` + `needsUpdate`), e a
+  migração de 24/08 (item 83 · L2) **manteve a disciplina**: o `InstancedInterleavedBuffer`
+  nasce à mão no construtor e o quadro só muta o array dele, com `needsUpdate` no buffer (não
+  no atributo — os dois atributos são janelas do MESMO array). Há dente que segura a
+  IDENTIDADE do buffer e a do array em três saltos de data. E atenção: **`setDrawRange` NÃO corta instâncias** — quem corta é
   `instanceCount` (isso importa para D3, onde o rastro cresce e encolhe).
 - **`raycast` antes do primeiro render falha em silêncio**, e o limiar em px vs mundo tem
   issue aberta (#30623) — a anotar para o degrau D8, não para D1.

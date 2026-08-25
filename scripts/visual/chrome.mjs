@@ -97,8 +97,8 @@ const apagarPerfil = (perfil) => {
  * primeira sessão e nunca mais.
  *
  * POR QUE UMA VEZ SÓ, e não um `process.on` por sessão: `capturarCDP` roda em
- * laço (52 vistas na leva do `ab-identidade`), e um tratador por chamada
- * empilharia 52 ouvintes no mesmo sinal — `MaxListenersExceededWarning` e
+ * laço (54 vistas na leva do `ab-identidade`), e um tratador por chamada
+ * empilharia 54 ouvintes no mesmo sinal — `MaxListenersExceededWarning` e
  * vazamento, trocando um defeito por outro.
  *
  * POR QUE `process.exit` NO FIM DO SINAL: registrar `SIGINT` DESLIGA a saída

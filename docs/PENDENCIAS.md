@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 89.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 91.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -74,14 +74,19 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > (FEITO em 24/08) → ~~**tarjas do celular**~~ (FEITO em 24/08) →
 > ~~**"Explorar" e o arrasto da folha**~~ (FEITO em 24/08; o **véu do
 > fim** encurtou junto em 24/08, quando ele nomeou a sobra) →
-> ⟨**CONFERÊNCIA DO DONO**: itens **61** e **77**, com as fotos⟩ →
-> **83 (L1 + L2: a linha)** → **81** → **70** → **75**.
+> **83 (L1 + L2: FEITOS)** → **81** → **70** → **75**, com o resto do
+> **83** (G1, L3, L4, L5) na fila da mesma família.
 
-**A FILA CHEGOU AO PINO (24/08).** Tudo o que estava ANTES da conferência
-está feito. O próximo passo não é código: é o **olho dele** nos itens
-**61** e **77**, com as fotos na mão. Mexer na LINHA (item **83**) antes
-disso invalidaria as fotos que estão à espera — a razão está escrita logo
-abaixo, e ela não mudou.
+**O PINO FOI SOLTO PELO DONO, em 24/08.** Ele conferiu a galeria e
+liberou: *"pode dar push e seguir em frente orquestrando"*. Só por isso
+a LINHA andou — o pino não foi ignorado, foi **retirado por quem o
+tinha posto**, que é a única forma de ele sair. O texto abaixo fica
+como está, sem correção, porque a razão dele continua válida para a
+PRÓXIMA vez que houver foto à espera: é doutrina, não um estado.
+
+O que a conferência ainda não cobriu são as fotos do próprio **83**
+(`capturas/item83-*`): elas nasceram DEPOIS da liberação e esperam o
+olho dele.
 
 **POR QUE OS NOMES SOBEM PARA O SEGUNDO LUGAR:** a **poluição visual é a
 dor declarada mais recente** dele — reafirmada na noite de 23/08, depois
@@ -89,11 +94,13 @@ de a vista de abertura já ter melhorado. Tarjas e retoques são acabamento
 de coisas que ele já aprovou; o nó de nomes é queixa aberta, e queixa
 aberta anda primeiro.
 
-**E A RAZÃO DO PINO, escrita para não se perder:** mexer na LINHA antes
-da conferência **invalidaria as fotos** que estão à espera dele
+**E A RAZÃO DO PINO, escrita para não se perder** (doutrina, e o caso de
+24/08 já passou — ver o topo): mexer na LINHA antes da conferência
+**invalidaria as fotos** que estão à espera dele
 (`capturas/item77-*` e `capturas/vista-padrao-*`) e a base medida de
 **41 de 52 vistas bit-idênticas** do item 77 — ele julgaria uma coisa e
-veria outra. Os nomes (82) não têm esse problema: mexem numa camada que
+veria outra. (Aquele "52" é o gate COMO ERA em 23/08; desde o item 83
+são **54** — ver a régua no `NORTE.md`.) Os nomes (82) não têm esse problema: mexem numa camada que
 aquelas fotos não julgam. As órbitas AAA (83) esperam do outro lado do
 pino, e não é atraso: é a única ordem em que a conferência dele
 significa alguma coisa.
@@ -1062,6 +1069,30 @@ fotos na mão:**
   de commits foram lidos como efeito do clarão. A lição é a da casa:
   **JSON de datas diferentes não é A/B.**
 
+  **E A COLUNA FOI EXPLICADA ATÉ O FIM no mesmo 24/08, pelo item 83
+  (L2).** Faltava o PORQUÊ: por que uma camada de trinta linhas finas
+  produziria MIL faíscas? Porque a linha era `LineLoop` de **1 pixel de
+  DISPOSITIVO**, serrilhada — e um fio serrilhado É um rastro de pixels
+  isolados acesos, que é exatamente o que o detector de faísca conta.
+  Trocada pela FITA contínua de 1,25 px CSS, no A/B honesto (mesmo dia,
+  mesma máquina, só a primitiva trocando):
+
+  | UA | faíscas antes | depois | |
+  |---|---|---|---|
+  | 3,6 | 1.369 | **211** | −84,6% |
+  | 7,2 | 925 | **228** | −75,4% |
+  | 20 | 1.041 | **178** | −82,9% |
+  | 40 | 1.057 | **186** | −82,4% |
+  | 150 | 1.578 | **318** | −79,8% |
+
+  **−81,2% somando os cinco degraus** (5.970 → 1.121). E a luz somada
+  SUBIU no mesmo passo: +9,8% a +13,0% de 3,6 a 150 UA, e **+3,05% a
+  1 UA** — o degrau que o texto de 23/08 pulava, e onde só UMA linha
+  acende (a 0,067 UA, sem linha nenhuma, o delta é ZERO, que é a
+  testemunha de que a conta é da camada). A linha ficou mais forte e
+  menos pontilhada ao mesmo tempo: aquelas faíscas não eram luz nova,
+  eram o serrilhado sendo contado.
+
   *(Registro do que a obra de 23/08 tinha feito, para a história ficar
   inteira.)* O teto virou UM só; morreram o 0,07 por fase, o campo
   `tetoDeOcupacao` que o director mandava por quadro e o ternário que
@@ -1088,7 +1119,8 @@ fotos na mão:**
   frase que vinha aqui — "as faíscas crescem mais a 150 UA (11→1577), de
   1 UA para fora o quadro inteiro ganha estrelas acesas" — está
   DESMENTIDA pela medida de 24/08: aquela coluna era das linhas de
-  órbita, não do teto. Ver a correção de fato, acima.)* O
+  órbita, não do teto — e, mais exatamente, era o SERRILHADO delas, que
+  a fita do item 83 apagou em −81,2%. Ver a correção de fato, acima.)* O
   `ab-identidade` cheio deu **51 de 52 bit-idênticas** (só a vista do
   Atlas mudou, e é a única do gate que roda naquela fase), `atlas-smoke`
   e `a11y` verdes, 2.054 testes verdes. As fotos daquele passo foram
@@ -1544,6 +1576,104 @@ As três vistas do gate que passam pelo rig do Atlas (`atlas`,
      Pela mesma conferência: o `logdepthbuf` que o `LineMaterial` traz
      fica inerte, porque a casa não usa profundidade logarítmica.
 
+  **A DÍVIDA QUE FICA ABERTA, e ela não é a escolha acima — é o que a
+  escolha não compra: CASAMOS A LARGURA, NÃO O ANTI-ALIASING DA BORDA.**
+  A fita dos DOIS é chapada — isto ficou estabelecido em 24/08, depois de
+  uma contestação e da retratação do autor: o `LineShader` do Eyes com
+  `glowWidth = 0` devolve `edgeGlow() = 1`, ou seja **faixa lisa, sem
+  perfil nenhum**. A diferença está em QUEM resolve a borda: o renderer
+  deles nasce com `antialias: true` (**MSAA**), e é isso que produz os
+  níveis de cobertura em quartos exatos (0,25 / 0,50 / 0,75 / 1,00) que a
+  medição de tela leu — quantização de 4 amostras sobre borda DURA, não
+  gradiente. A casa não tem MSAA, e quem suaviza a nossa é o
+  **downsample** do supersampling, no fim da cadeia.
+
+  **NÃO SE CARREGUE O ARGUMENTO ERRADO:** "com um perfil de tubo o pico
+  cheio seria impossível" **não se sustenta** (o miolo de um tubo também
+  é cheio). O que enterra a hipótese do tubo são os quartos exatos mais o
+  `antialias: true`, e mais nada.
+
+  Some-se a isso a largura, que lá escala com a janela
+  (`1,2 px × max(1, min(janela)/800)`) e aqui é fixa — é o **L2.5-b**
+  abaixo. **O levantamento, com os shaders lidos e já corrigido pelo
+  próprio autor, está em `docs/reference/orbitas-eyes-releitura.md`**: a
+  caixa do topo dele é o veredito válido, e o corpo abaixo dela é leitura
+  do JS que **não se executa** como ordem de obra.
+
+**L2.5 — O COLAR DE CONTAS, e ele é DEFEITO MEDIDO, não gosto.** (Achado
+em 24/08 por medição de pixel na foto do zoom 5× deste próprio item.) A
+fita do L2 tem **contas de luz nas juntas**: no recorte medido, **54 de
+340 colunas** têm pico ≥ 215 com espaçamento **rigorosamente constante de
+14 px** — ~25 juntas, compatível com os 256 segmentos por volta. O
+espaçamento constante é o que separa o defeito do serrilhado da curva,
+cujo passo é variável.
+
+**A CAUSA, lida no shader** (`LineMaterial` r0.185.1, o ramo do fragmento
+que trata `abs(vUv.y) > 1.0`): cada quad tem **calota redonda ALÉM das
+extremidades**, e a calota do segmento *k* cobre o corpo do segmento
+*k+1*. Um disco de diâmetro `linewidth` é pintado **DUAS vezes por
+junta** — e em aditivo isso soma: **204 → 230**, ~+28% linear, em 2 px a
+cada 14. A 1× o efeito é sutil; no Retina do dono, é o colar.
+
+**POR QUE O DENTE DE CONTINUIDADE NÃO PEGOU, dito para ninguém o acusar
+de frouxo:** ele cobra o BUFFER (o fim de cada segmento é o começo do
+próximo, bit a bit) e isso continua verdadeiro. O defeito nasce depois
+dele, na **expansão do quad** dentro do shader. Buffer certo, desenho
+duplo.
+
+**O PLANO DO 83, fundido e em ordem — e ele começa pelo OLHO, não por
+código:**
+
+- **Passo 0 — o veredito do dono sobre o L1/L2**, agora com a medida das
+  contas na mão. **Nada de segunda onda de linha antes disso.** Uma
+  segunda obra por cima de fotos ainda não julgadas repete exatamente o
+  erro que o pino do topo existe para impedir.
+- **L2.5-a — matar a conta SEM sair do three** (~5 linhas). O
+  `LineMaterial` **descarta as calotas quando `USE_DASH` está definido**:
+  com `dashed: true` o fragmento faz `if (vUv.y < -1.0 || vUv.y > 1.0)
+  discard` e a dupla cobertura acaba; com `gapSize: 0` a condição
+  `mod(d, dashSize+0) > dashSize` **nunca** é verdadeira (o resto vive em
+  `[0, dashSize)`), então não se traceja nada. A "falha" que sobra na
+  dobra externa vale `w·tan(θ/2) ≈ 0,015 px` — invisível.
+
+  **O DETALHE QUE SALVA O CONSERTO DE QUEBRAR, e ele não é opcional:** com
+  `USE_DASH` o material passa a EXIGIR os atributos
+  `instanceDistanceStart/End`. É **obrigatório chamar
+  `computeLineDistances()`** na geometria (uma vez). Com `gapSize: 0` a
+  distância nunca pinta lacuna — mas SEM o atributo o `USE_DASH` quebra.
+  E a mecânica exata, para ninguém esperar o que não vem: no caminho de
+  pixels as calotas ainda **nascem** no vértice; elas morrem no
+  fragmento. O que some é o disco em dobro, visualmente — a geometria
+  continua a mesma.
+
+  Pede dente de IMAGEM (a conta é um pico periódico: mede-se contando
+  colunas de pico com espaçamento constante) e **re-baseline das 13
+  vistas com linha**.
+- **L2.5-b — a largura que escala com a janela** (~6 linhas):
+  `resolutionFactor = max(1, min(janela CSS)/800)` no `Orbitas.update`.
+  **ARMADILHA DUPLA, escrita antes de alguém cair nela:** (i) o `hPx` que
+  a camada recebe é de DISPOSITIVO — dividir pelo pixelRatio antes de
+  comparar com 800; (ii) escolher **UMA** linhagem para a base — ou 1,2
+  (o número do JS deles) **vezes** o fator, ou 1,25 (o nosso, medido na
+  tela, que **já contém** o fator daquela janela) **sem** fator.
+  Multiplicar 1,25 pelo fator conta a mesma coisa duas vezes. O dente que
+  hoje crava `linewidth === 1,25` muda de promessa junto, e a mudança se
+  declara.
+- **L3 — matiz que separa sem mentir**, como já está registrado abaixo. A
+  paleta do Eyes entra como **referência de SEPARAÇÃO, nunca como
+  tinta**: pintar Mercúrio de violeta é o que o item 77 proíbe.
+- **O perfil analítico na largura** (`sqrt(1−u²)` com `fwidth`) — o que
+  fecharia a dívida de COBERTURA de cima. É **gosto com preço**, e o
+  preço tem número: o integral do perfil é π/4, então a fita **perde
+  21,5% de luz** e o `BRILHO_DA_LINHA` de 0,32 teria de ser recalibrado,
+  com régua de luz e declaração. Cabe em **~8 linhas** via
+  `onBeforeCompile` — **a estimativa de "~200 linhas" que corre nos
+  estudos era para um `ShaderMaterial` PRÓPRIO, e não se aplica aqui.**
+  Só depois do passo 0.
+- **Strip próprio com miter — ÚLTIMO recurso**, só se o L2.5-a falhar E o
+  dono reclamar. Custa o corte no *near plane*, o `resolution` automático
+  e o `raycast` de que o L5 depende — três coisas que hoje vêm de graça.
+
   Os cuidados (a)–(e) do estudo foram todos respeitados; o (c) — **nunca
   `setPositions()` por quadro** — virou DENTE: o buffer interleaved nasce
   à mão no construtor e o teste segura a IDENTIDADE dele e a do array em
@@ -1579,9 +1709,20 @@ move **83.238 px (1,93%)**, delta máx 235. Na abertura, onde não há foco
 e portanto só a fita age: **24.663 px (0,571%)**, delta máx 223.
 
 **E A PROVA DE QUE O DELTA É DA CAMADA E DE MAIS NADA**, o mesmo controle
-do item 77: com `?noorbitas=1`, `mergulho` e `titan` saem **bit-idênticos
-nos dois binários** (md5 `b54c78c9…` e `2f5777fb…` dos dois lados). Nada
-mudou de carona.
+do item 77, rodado CHEIO em 24/08: a leva inteira com `EXTRA='&noorbitas=1'`
+nos dois binários devolve **as 54 vistas BIT-IDÊNTICAS, 0 diferindo**.
+Com a camada desligada, trocar `LineLoop` por `LineSegments2` não move um
+pixel em vista nenhuma — nada mudou de carona.
+
+**O RASTRO FICA EM DISCO, com carimbo**, porque prova sem lastro não é
+prova: `capturas/item83-controle-noorbitas/` guarda os dois JSONs de md5,
+os dois carimbos de código (`aa71130300be-a09f81c9` no lado da base,
+`aa71130300be-e51da913` no lado da fita — mesmo commit, árvores sujas
+diferentes, que é exatamente o que um A/B de UM arquivo tem de mostrar) e
+o veredito impresso. O A/B isolou `world/orbitas.ts` e só ele: o
+`director.ts` ficou o mesmo dos dois lados, porque as duas linhas que o
+L1 escreveu nele são inertes contra a classe antiga (`foco` vira
+propriedade sem dono e `animando` vira `undefined ?? false`).
 
 **A RÉGUA DE LUZ DEU O ACHADO DA OBRA.** `PERNA=atlas luz-do-quadro`
 passou (`capturas/luz-do-quadro-atlas.json`, versionado). A luz somada
@@ -1603,10 +1744,14 @@ salto de faíscas de 23/08 "era das linhas de órbita nascidas entre as
 duas medições" — verdade, e agora se sabe POR QUÊ: uma linha de 1 pixel
 de DISPOSITIVO, serrilhada, é literalmente um rastro de pixels isolados
 acesos, e é assim que o detector de faísca a lê. A fita contínua de
-1,25 px CSS não é um campo de faíscas: **~85% delas eram o serrilhado**,
-e sumiram sem que a linha sumisse — ela ficou MAIS forte (a luz subiu) e
-MENOS pontilhada ao mesmo tempo. É a confirmação do diagnóstico "fio de
-teia" por um instrumento que não estava olhando para isso.
+1,25 px CSS não é um campo de faíscas: **−84,6% no melhor degrau (3,6 UA)
+e −81,2% somando os cinco** (5.970 → 1.121), e elas sumiram sem que a
+linha sumisse — ela ficou MAIS forte (a luz subiu) e MENOS pontilhada ao
+mesmo tempo. É a confirmação do diagnóstico "fio de teia" por um
+instrumento que não estava olhando para isso. O degrau de **1 UA**, que o
+texto de 23/08 pulava, ganha número junto: **+3,05%** de luz, com as
+faíscas paradas em 12 — lá só uma linha acende. E a 0,067 UA, sem linha
+nenhuma, o delta é **ZERO**: é a testemunha de que a conta é da camada.
 
 **Fotos** — `capturas/item83-fita-zoom-antes-depois.png` é a que decide:
 5×, o mesmo trecho de linha, o degrau em escada de 1 px contra a fita.
@@ -1638,6 +1783,15 @@ Atrás desses dois, na mesma família — **os quatro que FICAM**:
   identificar; clicar e enquadrar o corpo. **No Eyes a linha é matéria
   morta** — medido, com o ponteiro posto em cima da órbita de Marte por
   leitura de pixel: nem tooltip, nem realce, nem cursor. É vaga aberta.
+
+  **O REGISTRO FINO, para quem executar não concluir demais** (24/08, do
+  JS deles): o `TrailManager.onHoverChange` **existe** e está ligado ao
+  `hoverchange` do `LabelManager` — e engrossa o anel de 1,2 para 2 px.
+  Só que o evento é do **`div` do NOME**, não da elipse: passar o rato na
+  linha vazia não dispara nada, e foi isso que a medição de tela viu. A
+  frase certa é **"a linha é morta; o NOME engrossa o anel"** — o que
+  eles têm é hover de rótulo, não de geometria. A vaga do L5 continua
+  aberta, e continua sendo nossa.
   Cuidado: `raycast` antes do primeiro render falha **em silêncio**.
 
 **O QUE NÃO SE REFAZ — verificado com TRÊS testemunhas independentes
@@ -1678,6 +1832,32 @@ deixar o véu rolar —, e composição é dele. Quem tem fonte grande é
 justamente quem mais precisa ler o rodapé, então "cortar e ignorar" não
 serve de resposta. Foto: `capturas/abertura-botoes.png`, painel da
 direita.
+
+**89. Desligar os nomes deixa o céu INCLICÁVEL — o ícone tem de sobreviver
+ao texto.** (Aberto em 24/08, medido ao fechar o item **83**. Não é queixa
+dele: é buraco de produto achado com a régua na mão.) A camada dos nomes
+(item **82**) é uma chave só, e ela cala a TELA INTEIRA: sem rótulo
+desenhado não há o que clicar, porque **não existe raycast** nesta casa —
+o hit-test do Atlas roda sobre a LISTA de rótulos desenhados
+(`rotulos.ts`), não sobre a geometria. Quem desliga os nomes para limpar o
+céu perde junto o **clicar-para-visitar**, e isso é lei declarada e
+testada ("o que não está escrito não se clica", a mesma da pendência 30).
+Hoje isso é coerente; deixa de ser no dia em que o visitante quiser um céu
+limpo E navegável, que é exatamente o que o dono pediu quando reclamou da
+poluição visual.
+
+**A RESPOSTA JÁ ESTÁ MEDIDA, e é do Eyes** (degrau D5 de
+`docs/reference/estudo-orbitas-eyes-observacao.md`, promovido a item aqui
+porque proposta de estudo não tem dono e item tem): lá o **ícone é uma
+camada separada do texto** — `Labels` e `Icons` são chaves DISTINTAS —, e
+o ícone continua clicável com os nomes desligados. É a separação que falta:
+o ponto/ícone do corpo vira alvo próprio, com chave própria na gaveta, e o
+TEXTO é que se apaga. O céu fica limpo e continua navegável.
+
+**Cuidado herdado, para quem executar:** `raycast` antes do primeiro
+render falha **em silêncio** (verificado no fonte do three) — se a
+implementação passar a usar geometria em vez da lista de rótulos, a
+primeira leva de cliques some sem erro nenhum.
 
 ---
 
@@ -1923,6 +2103,41 @@ do relógio. Consertar os dois é uma linha em cada — mas MUDA O QUE SE VÊ
 nunca olhou. **É obra de olhar, não de conserto**: quem a fizer cria a
 vista que a cobre (uma lua de outro pai, tipo Titã ou Io) e volta com a
 foto do antes e depois.
+
+**90. Upscaling espacial como feature experimental (beta).** (Decisão do
+dono em 24/08, em resposta ao levantamento de desempenho. **Fila futura,
+prioridade BAIXA — atrás de tudo que está aberto.**) Palavras dele:
+*"vamos colocar isso numa fila futura, baixa prioridade nesse momento, mas
+definitivamente um ganho interessante para testar como feature
+experimental (podemos colocar um flag de beta independente do modo para
+ser acionado como um DLSS faz)"*.
+
+**DLSS NÃO EXISTE NO NAVEGADOR, e isso é fato verificado, não pessimismo:**
+ele está preso a hardware NVIDIA mais driver nativo, sem qualquer porta
+para a web — e a máquina do dono é um **M1**, que nem NVIDIA tem. O
+equivalente da Apple (**MetalFX**) é igualmente só nativo. Quem promete
+"DLSS no browser" está vendendo outra coisa.
+
+**O CAMINHO VIÁVEL É O FSR 1 da AMD:** shader **aberto (MIT)**, já
+portado para three.js por terceiros. Ele é espacial (não usa vetores de
+movimento nem histórico), então cabe num passe de pós: **renderizar a
+~70–80% da resolução, ampliar com EASU e afiar com RCAS**. Ganho típico
+esperado: **30–50% do tempo de GPU devolvido** — e isso importa porque o
+app **é GPU-bound**: 36–42 fps no M1 em `cinema`/`pixelRatio` 2,0.
+
+**A RESSALVA, escrita antes de alguém se animar:** a nossa cena é o
+**pior caso** para upscaling espacial — céu de estrelas sub-pixel e
+linhas finas, que é exatamente o que EASU borra e RCAS depois exagera. A
+fita de 1,25 px do item **83** ajuda (linha com corpo reamostra melhor
+que fio de teia), mas não isenta. **Por isso o veredito não é a régua: é
+FOTO A/B lado a lado mais fps medido, e o olho do dono.** Se o céu
+"chapinhar", não entra — nem como beta.
+
+**A FORMA, decidida por ele:** flag de **beta INDEPENDENTE do modo e do
+tier**, acionável como se aciona um DLSS. Não é um quarto degrau de
+qualidade. A casa do assunto é a dos tiers (`core/engine.ts`, e o `Auto`
+que mede e sugere), porque é lá que já mora quem decide resolução — mas a
+chave é própria, e nasce desligada.
 
 ---
 

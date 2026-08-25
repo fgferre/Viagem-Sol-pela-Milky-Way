@@ -142,7 +142,7 @@ for d in dimensoes {
     p += "- TrailComponent.setRelativeToEntity, resetPoints, setStartTime, createTrajectory(start,end,color).\n";
     p += "- Camadas layerTrails e layerOrbits; TrajectoryManager e goToTrajectoryView isolam uma missão.\n";
     p += "- ThreeJsHelper aparece junto do TrailComponent (o motor é Three.js customizado, não Cesium).\n\n";
-    p += "Devolva no máximo 4 afirmações {titulo, como, evidencia, licao}. evidencia CITA o símbolo ou o uniform que você leu. licao é o que o nosso app (orbitas.ts: LineLoop + fade angular + cônica osculadora) poderia APRENDER como ideia — nunca colar código da NASA. Lista vazia só depois de varrer app.js de verdade.";
+    p += "Devolva no máximo 4 afirmações {titulo, como, evidencia, licao}. evidencia CITA o símbolo ou o uniform que você leu. licao é o que o nosso app (orbitas.ts: LineSegments2/LineMaterial a 1,25 px CSS + fade angular + cônica osculadora + realce do foco) poderia APRENDER como ideia — nunca colar código da NASA. Lista vazia só depois de varrer app.js de verdade.";
     jobs.push(#{
         prompt: p,
         label: "ler:" + d.id,
@@ -248,7 +248,7 @@ p_rel += conf_json;
 p_rel += "\n\nEstrutura do relatório:\n";
 p_rel += "1) O que o olho vê (sem jargão).\n";
 p_rel += "2) Os truques (faixa na tela vs linha 3D, cor, brilho, afinamento, janela de tempo, referencial, camada Trails vs Orbits, vista de uma missão).\n";
-p_rel += "3) O que o NOSSO app já faz diferente (orbitas.ts: elipse fechada, fade por tamanho na tela, sem volume de faixa, sem janela de tempo da sonda).\n";
+p_rel += "3) O que o NOSSO app já faz diferente (orbitas.ts: elipse fechada, fade por tamanho na tela, faixa de 1,25 px CSS SEM cobertura sub-pixel na largura nem junta miter, sem janela de tempo da sonda).\n";
 p_rel += "4) O que dá para APRENDER — ideias, não copiar código da NASA. Máximo 5 ideias, cada uma numa frase.\n";
 p_rel += "5) O que o JS minificado NÃO deixou claro.\n\n";
 p_rel += "Cite peças pelo NOME (TrailShader, TrailComponent), nunca por número de linha. Sem colar GLSL longo. titulo curto.";

@@ -23,7 +23,7 @@
 //
 // `MU_PARENT` NÃO SE TOCA. Ela é a mesma grandeza noutra unidade (UA³/dia²,
 // via k²) e alimenta o PROPAGADOR: trocar os sete valores de lá moveria
-// satélites e mudaria as 52 vistas oficiais. Esta tabela nasce ao lado, para
+// satélites e mudaria as 54 vistas oficiais. Esta tabela nasce ao lado, para
 // consumidor de TEXTO, e `fisicaDoCorpo.test.ts` cobra que as duas concordem
 // a 1,5e-6 relativo — a checagem independente sem o risco de pixel.
 //

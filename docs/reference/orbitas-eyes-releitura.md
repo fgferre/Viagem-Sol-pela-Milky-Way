@@ -61,47 +61,6 @@ a casa passou a usar em `8be508f`.
 
 ---
 
-> ⚠️ **CONFERIDO EM 24/08 CONTRA O PIXEL, e a premissa central NÃO se
-> sustenta. O arquivo fica inteiro** (a casa não apaga documento; marca),
-> mas leia-o com estas seis correções na mão:
->
-> 1. **O "tubo" é refutado pelos DADOS DO PRÓPRIO AUTOR.** As bordas que
->    ele cita estão quantizadas em QUARTOS (0,25 / 0,50 / 0,75 / 1,00) —
->    a assinatura de **cobertura por 4 amostras**, não de um perfil
->    analítico contínuo. E os 8 picos medidos batem no valor **CHEIO** da
->    paleta: com um perfil de tubo isso seria impossível, porque nenhum
->    pixel chegaria ao topo. O Eyes tem AA de borda, não volume.
-> 2. **"`Line2` é contínuo" é falso.** `Line2` ESTENDE `LineSegments2`:
->    mesmos quads, mesmas calotas redondas. Trocar um pelo outro não
->    resolveria junta nenhuma — e, medido, é justamente a calota que
->    produz o **colar de contas** (ver **L2.5** no item 83 do
->    `PENDENCIAS.md`, com o número das colunas).
-> 3. **`depthWrite` e `depthTest` estão trocados** no texto. São coisas
->    diferentes, e a casa usa `depthWrite: false` COM `depthTest: true`
->    de propósito — é o que faz a linha sumir atrás de um globo resolvido.
-> 4. **O hover que ele descreve como vivo NÃO EXISTE na tela.** A medição
->    §7 do `estudo-orbitas-eyes-observacao.md` pôs o ponteiro sobre a
->    órbita de Marte por leitura de pixel: nem tooltip, nem realce, nem
->    cursor. No Eyes a linha é matéria morta.
-> 5. **O alfa 0,75 é erro de UNIDADE.** É valor pós-codificação sobre
->    preto; o nosso 0,32 é linear e PRÉ-ACES. Comparados na tela, a
->    NOSSA fita é a mais forte: **200–230 contra 116–170** deles. A
->    tabela abaixo dá a impressão contrária.
-> 6. **A paleta como TINTA choca com o item 77.** Ela serve como
->    referência de SEPARAÇÃO de matiz (é o L3); adotá-la como cor é
->    pintar Mercúrio de violeta, que é a desonestidade que a fotometria
->    da casa existe para não cometer.
->
-> **E O QUE ELE ACERTOU, que também se registra:** a **reconciliação do
-> "aditivo"** entre os dois estudos anteriores da casa, que se
-> contradiziam — ponto dele; e a **paleta lida do `TrailManager`**,
-> confirmada por 8 cruzamentos independentes a ±0,5. O diagnóstico de que
-> "a nossa ainda parece arame" também está CERTO — só que a causa não é
-> o tubo: são a calota dobrada (L2.5) e a borda dura (a dívida de
-> cobertura), as duas registradas no item 83.
-
----
-
 ## O que o olho está comparando
 
 O Eyes parece **3D, volumétrico, quase sombreado**. A nossa, depois da

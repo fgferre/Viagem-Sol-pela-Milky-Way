@@ -117,10 +117,12 @@ protege adiciona risco sem ganho.
   era um nó de dez nomes sobre linhas de um pixel. **METADE DA DÍVIDA
   ESTÁ PAGA:** o item **82** (N1) pousou em 24/08 e o nó morreu — no teto
   do zoom, que é a vista larga, sobraram TRÊS nomes (o Sol, Netuno e
-  Plutão) contra os 27 de antes. Falta o **83** (L2, a fita) para as
-  linhas de um pixel; quando ele pousar, a vista larga vira contexto
-  viável e **a pergunta da abertura se RE-JULGA**, com fotos lado a lado
-  e decisão dele. O detalhe está no `PENDENCIAS.md`, na fila. A esfera enquadrada deixou de ser
+  Plutão) contra os 27 de antes. **A OUTRA METADE FOI PAGA EM 24/08:** o
+  **83** (L2) trocou a linha de um pixel pela FITA de 1,25 px CSS, e as
+  faíscas do serrilhado caíram ~85%. Com as duas pagas, a vista larga
+  vira contexto viável e **a pergunta da abertura se RE-JULGA**, com
+  fotos lado a lado e decisão dele — é a conferência que agora espera
+  (`capturas/item83-*`). O detalhe está no `PENDENCIAS.md`, na fila. A esfera enquadrada deixou de ser
   a órbita mais externa e passou a ser a **borda do sistema interno**
   (`BORDA_DO_SISTEMA_INTERNO`, a órbita de Marte): a câmera nasce a **~9,1
   UA** em vez de 226,84, e o item 77 acende ali as QUATRO linhas de dentro
@@ -182,7 +184,7 @@ A prova tem de tocar o que a mudança tocou. As vistas oficiais rodam com
 Três cegueiras declaradas:
 
 - **Movimento — ENCOLHEU em 22/08, e o que sobra está nomeado.** `?shot=`
-  congela o relógio, e as 52 vistas oficiais são todas paradas. Quem
+  congela o relógio, e as 54 vistas oficiais são todas paradas. Quem
   enxerga movimento agora é `estabilidade-temporal.mjs` (MB1): sessão
   viva, relógio andando, HUD apagado por CSS em vez de `?shot=`, e o
   quadro comparado com o ANTERIOR REPROJETADO pela câmera conhecida.

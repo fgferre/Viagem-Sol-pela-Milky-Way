@@ -26,9 +26,13 @@ O Eyes tem uma lei só, e ela vale para nome e para linha:
 
 O Atlas FAZIA o contrário nos nomes — o item 73 dava sete lugares e um
 traço de até 102 px para salvar o texto — e segue o parente pobre nas
-órbitas (`LineLoop` de 1 px, some no zoom). A metade dos nomes está
-paga: em 24/08 o item 82 (N1) matou os sete lugares e o traço, e pôs a
-régua de relevância na frente da geometria. O que este documento diz dos
+órbitas (`LineLoop` de 1 px, some no zoom). **AS DUAS METADES ESTÃO
+PAGAS, e as duas em 24/08:** o item 82 (N1) matou os sete lugares e o
+traço, e pôs a régua de relevância na frente da geometria; o item 83
+(L2) trocou o `LineLoop` de 1 px pela FITA de 1,25 px CSS
+(`LineSegments2` + `LineMaterial`), e o "some no zoom" morreu com ele.
+Onde este documento disser `LineLoop` ou "1 px" daqui para baixo, é o
+retrato de ANTES. O que este documento diz dos
 nomes, daqui para baixo, é o retrato de ANTES — vale como diagnóstico e
 como origem da obra, não como descrição do que está na tela.
 
@@ -49,7 +53,7 @@ ainda não desenha sonda.
 | 5 | Perto do corpo, o nome **cede** (o globo é o nome) | `VisibleInterval.DefaultVisibleFar` (some quando o raio passa ~1,1°) | Lua some colada no pai; planeta **nunca** some por tamanho | Close-up limpo |
 | 6 | Texto ao lado, ícone no ponto, pixel inteiro | `DivComponent` alignment `(0, 0,5)`, `round`/`floor` | Âncora + deslocamento vertical + detalhe largo | Leveza; “está colado no mundo” |
 | 7 | Billboard de tamanho constante em pixels, no ponto 3D | `LabelComponent` shader: offset × distância | Canvas HUD, tamanho de fonte fixo mas fora da cena | Opcional se 1–6 já bastarem |
-| 8 | Órbita como **fita em pixels** (1,2 px, junta miter) | `LineShader` / `TrailShader` | `LineLoop` 1 px | A órbita sobrevive ao zoom |
+| 8 | Órbita como **fita em pixels** (1,2 px, junta miter) | `LineShader` / `TrailShader` | ~~`LineLoop` 1 px~~ → **fita de 1,25 px CSS** (item 83, 24/08) | A órbita sobrevive ao zoom |
 | 9 | Hover engrossa (1,2→2) e acende o alfa | `TrailManager.onHoverChange` | Clique escolhe; passar por cima não faz nada no traço | Apontar revela, sem rotular tudo |
 | 10 | Anel fechado ≠ rastro de tempo | `setUpTrail` troca `TrailComponent` por `OrbitLineComponent` nos planetas | Só anel (`conicaOsculadora`) | Só quando houver sonda |
 | 11 | Rastro: janela de **tempo**, afina no passado | `TrailComponent` + `indexU` no shader | Não há | Missão, depois |
@@ -223,10 +227,13 @@ Números de fábrica:
 | alfa | 0,75 nos nomeados | 0,35 o resto |
 | hover | 1,0 | 1,0 |
 
-A casa: `LineLoop` 1 px, `BRILHO_DA_LINHA = 0,32`, aditivo, testa
-profundidade (some atrás do globo — isso o Eyes da fita **não** faz,
-porque não grava profundidade; o fade de tamanho faz o serviço). No
-zoom, o fio de 1 px some. A fita de 1,2 px **não**.
+A casa (**retrato de ANTES do item 83**): `LineLoop` 1 px,
+`BRILHO_DA_LINHA = 0,32`, aditivo, testa profundidade (some atrás do
+globo — isso o Eyes da fita **não** faz, porque não grava profundidade;
+o fade de tamanho faz o serviço). No zoom, o fio de 1 px some. A fita de
+1,2 px **não**. **Desde 24/08 a casa também é fita** (1,25 px CSS), e o
+que sobrevive deste parágrafo é só o teste de profundidade, que é nosso
+e continua.
 
 ### H. Dois desenhos, uma pergunta de classe
 
@@ -366,9 +373,13 @@ onde a classe e a distância se leem com folga.
 “atrás da câmera some”. Fade quando o globo passa de ~1° na tela. Sem
 isso, o corte 1 limpa a abertura e o close-up continua adesivo.
 
-**Corte 3 — órbita como fita.** `LineLoop` 1 px vira faixa de ~1,2 px
-com junta, `resolutionFactor` na janela, hover 2 px. A cônica, o fade
-angular e o pai da lua **não se tocam**. Este corte é o volume que o
+**Corte 3 — órbita como fita. PAGO EM 24/08 (item 83, L2), menos dois
+pedaços.** `LineLoop` 1 px virou faixa de **1,25 px CSS** com junta, e a
+cônica, o fade angular e o pai da lua não se tocaram, como previsto.
+**O que NÃO veio junto:** o `resolutionFactor` na janela (a nossa
+largura é fixa; a do Eyes escala com `min(janela)/800`) e o hover de
+2 px (é o L5, que segue aberto). Ver `orbitas-eyes-releitura.md` para a
+dívida de COBERTURA que sobrou. Este corte é o volume que o
 olho pede nas linhas; é independente dos nomes.
 
 Sonda, janela de tempo, amostragem por curvatura, modo missão: depois.

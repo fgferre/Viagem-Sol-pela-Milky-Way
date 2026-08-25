@@ -399,6 +399,19 @@ constantes e 51 vistas bit-idênticas de prova. A varredura invertida vigia em
   comparação de 23/08 pôs oito horas e uma dúzia de commits dentro de uma
   coluna e leu tudo como efeito do clarão. Fica registrado como a lição
   que a casa já conhece: **JSON de datas diferentes não é A/B.**
+
+  **E EM 24/08 A COLUNA FOI EXPLICADA ATÉ O FIM** (item **83**, L2). Já
+  se sabia que as faíscas eram das linhas de órbita; faltava o PORQUÊ. A
+  linha era `LineLoop` de **1 pixel de DISPOSITIVO**, serrilhada — que é
+  literalmente um rastro de pixels isolados acesos, exatamente o que o
+  detector de faísca conta. Trocada pela FITA contínua de 1,25 px CSS,
+  no A/B honesto (mesmo dia, mesma máquina, só a primitiva trocando):
+  **1.369 → 211** faíscas a 3,6 UA (**−84,6%**, o melhor degrau) e
+  **1.578 → 318** a 150 UA, com **−81,2% somando os cinco degraus**. E a
+  luz somada SUBIU no mesmo passo (+9,8% a +13,0% de 3,6 a 150 UA; +3,05%
+  a 1 UA, onde só uma linha acende). A linha ficou mais forte e menos
+  pontilhada ao mesmo tempo — prova de que aquelas faíscas não eram luz
+  nova, eram o serrilhado sendo contado.
   **VOLTAR A DISTINGUIR POR MODO SEGUE FORA**, e a guarda tem QUATRO
   dentes, cada um cobrindo o que cobre de fato: (1) o **pino do número**
   em `clarao.test.ts`, que se recalibra com declaração, como agora;
@@ -552,7 +565,7 @@ proibidos com o commit que matou cada um; (iii) atualiza `CADASTRO_DE_REPRESENTA
 e o `fatorDeBrilho` correspondente; (iv) **mata a porta `?b*`** que protegia aquela
 representação — o lado A vira captura + teste numérico, nunca ramo de runtime;
 (v) declara o delta aceito **ANTES** nas réguas que já existem (`luz-do-quadro.mjs`,
-as 52 vistas A/B — e `voo-ida-e-volta.mjs` só quando a migração mexer em transição ou
+as 54 vistas A/B — e `voo-ida-e-volta.mjs` só quando a migração mexer em transição ou
 histerese: desde 21/08 ele não é obrigatório, é instrumento) e traz o número **medido**
 no commit;
 (vi) a lei devolve valor já comprimido (ou expõe β) — a compressão não é passo, é
@@ -628,7 +641,7 @@ mandou a peça de 30/07 voltar. **Paga também o desvio (b) do M4:** `solNoQuadr
 ainda monta o `Instrumento` do Sol com `stars?.expoM0 ?? EXPO_M0` em vez da
 `CALIBRACAO_DA_CASA` — o mesmo detour que o M4 matou nos dez corpos —, e unificá-lo
 é gesto deste passo, porque é aqui que o gate do ponto-zero move o campo.
-**Régua:** as 52 vistas A/B.
+**Régua:** as 54 vistas A/B.
 
 ### M6 — A galáxia (partículas + lâminas)
 **Entra:** `aAlpha` deixa de ser artístico e vira fluxo na unidade da casa; a cessão
