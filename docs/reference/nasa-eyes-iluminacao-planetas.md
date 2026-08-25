@@ -44,11 +44,12 @@
 > dizer qual é qual faz a prova nascer ambígua — foi o que quase
 > aconteceu.
 >
-> **O que NÃO foi implementado, e não por esquecimento:** a lanterna de
-> leitura de 15 % (§11.3), a logística s=3 no terminador dos gigantes
-> (§11.2) e o véu de atmosfera no limbo de Saturno (§11.5). Depois que
-> o dia voltou a ser dia, nenhuma delas era necessária para o defeito
-> que o dono viu. Continuam disponíveis como segunda leva.
+> **O que NÃO foi implementado no 91, e não por esquecimento:** a
+> lanterna de leitura de 15 % (§11.3), a logística s=3 no terminador
+> dos gigantes (§11.2) e o véu de atmosfera no limbo de Saturno
+> (§11.5). Em 25/08 o dono pediu essa receita no brilho assistido
+> (item **93**). A especificação viva dessa obra é
+> `nasa-eyes-brilho-assistido-contrato.md` — não este arquivo.
 
 O que o Eyes realmente faz com a luz dos globos, lido no JavaScript
 público (`https://eyes.nasa.gov/apps/solar-system/app.js`, 1.740.345

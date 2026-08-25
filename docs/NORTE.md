@@ -677,10 +677,15 @@ Não reabrir sem que a condição listada mude.
 
   Contrato e números do Eyes:
   `docs/reference/nasa-eyes-iluminacao-planetas.md` (com os avisos do
-  25/08). O que ficou para uma segunda leva, e **não** entrou: a
+  25/08). O que ficou para uma segunda leva, e **não** entrou no 91: a
   lanterna de leitura de 15 % na câmera, a logística s=3 no terminador
-  dos gigantes e o véu de atmosfera no limbo de Saturno. Nenhuma delas
-  era necessária depois que o dia voltou a ser dia.
+  dos gigantes e o véu de atmosfera no limbo de Saturno.
+
+  **Item 93 (aberto 25/08): essa segunda leva virou pedido.** O dono
+  quer o brilho **assistido** igual ao **algoritmo** do Eyes (Shadow),
+  não só o dia claro. Contrato vivo:
+  `docs/reference/nasa-eyes-brilho-assistido-contrato.md`. O `real` e
+  o pontinho não se reabrem.
 
 ---
 

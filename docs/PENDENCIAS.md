@@ -13,7 +13,7 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 93.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 94.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
@@ -80,7 +80,8 @@ degraus L1 e L2). A ordem que vale, e ela tem um pino no meio:
 > (FEITO em 25/08: o vermelho do MB1 era do
 > próprio juiz, que media numa janela em que a régua dele não valia — o
 > que sobrou dos 18 defeitos são 2 a 4, flutuando entre corridas, e todos
-> são o item 70) → **70** →
+> são o item 70) → **93 (brilho assistido = algoritmo do Eyes)** →
+> **70** →
 > **75**, com o resto do **83** (G1, L3, L4, L5) na fila da mesma
 > família.
 
@@ -439,6 +440,19 @@ perguntas que só ele responde: (a) Saturno está no ponto ou passou do
 ponto? (b) Mercúrio ficou melhor domado ou ficou apagado? (c) o modo
 real, com Saturno quase preto, é a honestidade que ele quer ver ou é
 escuro demais para servir de modo?
+
+**93. O brilho assistido tem de ser o mesmo algoritmo do NASA Eyes.**
+Palavras do dono, 2026-08-25: *"estou perguntado do brilho assistido...
+quero que o nosso conserte isso para ficar igual ao algortimo usado no
+nasa eyes"*.
+
+O item **91** pagou o **dia** (Saturno palha). A receita ainda não é
+a deles: ainda sobra um resto de 1/d² no globo, não há a lanterna da
+câmera, o corte dia/noite continua duro. O Eyes, no modo padrão
+(Shadow), é Sol cheio + lanterna fraca + corte suave. Contrato para
+implementar:
+`docs/reference/nasa-eyes-brilho-assistido-contrato.md`.
+O modo `real` e o pontinho no céu **não entram**.
 
 **5. O Sol do Atlas estava congelado no máximo solar — agora ele obedece
 ao calendário; falta ele ver.**
