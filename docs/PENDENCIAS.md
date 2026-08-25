@@ -1874,6 +1874,10 @@ ainda corta o disco, o ACES esmaga o que sobrou (~0,08 linear → ~0,09
 na tela). O NASA Eyes **não aplica 1/d² no globo** — o Sol chega
 branco, o dia é a textura, e uma lanterna na câmera a 15 % lê a noite.
 Relatório para implementar: `docs/reference/nasa-eyes-iluminacao-planetas.md`.
+Em 25/08 ele cravou o diagnóstico: *o app colou a regra de uma
+coisa na outra* — a conta do pontinho no céu, no globo visitado.
+O Eyes tem modo Natural; isso só apaga a lanterna, **não** o dia
+de Saturno.
 
 ---
 

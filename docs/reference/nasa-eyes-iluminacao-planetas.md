@@ -40,6 +40,43 @@ uma exposição travada na Terra.
 
 ---
 
+## A mistura — duas coisas, uma regra colada na outra
+
+Cravado com o dono em 24–25/08, nas palavras da conversa. Não é
+hipótese: é o diagnóstico que a implementação tem de honrar.
+
+Existem **duas coisas diferentes**. O app colou a regra de uma na
+outra.
+
+**1. O pontinho no céu** — Saturno visto de longe, como estrela.
+A regra certa é: quanto mais longe do Sol (e de você), mais fraco.
+Vênus brilha, Netuno some. Isso é o céu de verdade. A casa **já faz
+bem** (`fatorDeFaseMh18`, `H = −8,914`, a PSF da Lei da Estrela).
+
+**2. O globo quando você chegou** — Saturno enchendo a tela, como
+nas fotos da Cassini. A regra certa é outra: o Sol ilumina aquele
+mundo **ali**, e a imagem se ajusta a isso. O dia é palha. A noite
+é noite. A distância se lê pelo **tamanho** do planeta, não pelo
+quão preto ele ficou.
+
+O erro: pegaram a regra do pontinho (`ganhoFundido` = 1/d²
+comprimido) e aplicaram no globo (`uLuzGanho` da malha). Por isso
+Saturno, mesmo com brilho assistido, parece carvão — uma conta de
+“visto da Terra” colada numa visita.
+
+**Não é que a física do Sol fraco lá fora seja mentira.** Saturno
+de fato recebe ~1/90 da luz que a Terra recebe. É que **ninguém
+fotografa Saturno com o ISO da Terra**. Olho, Cassini e NASA Eyes
+expõem para o mundo em que estão. O 1/d² no globo visitado não é
+realismo: é a regra certa no endereço errado.
+
+O Eyes tem modo **Natural Lighting** (lanterna desligada). Isso
+**não** apaga o dia de Saturno. Natural = noite preta, dia ainda
+palha. O nosso defeito é o dia fraco, não a ausência de um
+interruptor “realista”.
+
+---
+
 ## 1. O que o dono vê
 
 Palavras dele, 2026-08-24 (item **91**): Saturno, mesmo com brilho
@@ -117,6 +154,17 @@ comprime 1/d² e **não** põe lanterna.
 O default do Eyes **não é** o natural. O default é “Sol de verdade +
 noite legível”. É assistência **declarada** (três botões, ícone no
 HUD), não um piso escondido no BRDF.
+
+**O que o Natural faz, e o que a dúvida do dono precisava cravar.**
+O Natural **só** desliga a lanterna da câmera
+(`toggleCameraLight(false)`). O Sol continua branco, **sem** 1/d²,
+o `saturate` do dia continua em 1, a textura no subsolar continua
+a textura. O lado da noite fica escuro (sobra o ambiente 2 %). O
+lado do dia de Saturno **não escurece**. “Modo realista” no Eyes
+quer dizer “eu vejo a noite como noite” — **não** “Saturno virou
+carvão porque está a 9,5 UA”. Copiar o Natural da casa sem antes
+tirar o `ganhoFundido` da malha reproduz o carvão e chama isso de
+honesto. Não é.
 
 ---
 
@@ -687,16 +735,28 @@ próprio Eyes não usa.
 
 ---
 
-## 14. A frase para o próximo agente
+## 14. Recado para o Claude (item 91)
 
-O ponto de Saturno já é uma estrela. O globo de Saturno é uma
-fotografia. `ganhoFundido` no uniforme da malha trata a fotografia
-como se fosse vista da Terra com o ISO travado — e a assistida
-0,35 não chega para pagar os 90× de 1/d² mais o ACES. O Eyes não
-paga essa conta: no globo, o Sol vale 1, a noite tem lanterna
-declarada, o flanco tem logística. Copiar **isto**. Não copiar
-piso de ambiente, não copiar flood, não copiar ganho 1 no ponto,
-não desligar o ACES.
+Lê este arquivo inteiro. A obra é o globo, não o ponto. O ponto
+(MH18, PSF, `planetas.ts`) **não se mexe**.
 
-Item **91**. A vista que prova é Saturno de perto, lado do Sol,
-depois do ACES, palha — não carvão.
+O diagnóstico que o dono cravou: o app colou a regra do pontinho
+no céu (`ganhoFundido` / 1/d²) no globo visitado. Duas coisas,
+uma regra no endereço errado. Saturno recebe mesmo ~1/90 da luz
+da Terra — isso não é mentira. Mentira é fotografar a visita com
+o ISO da Terra. Cassini não fez isso. O Eyes, **mesmo no modo
+Natural**, não faz isso: desliga a lanterna, a noite fica preta,
+o dia continua palha.
+
+Contrato, em uma linha: `ganhoFundido` **sai** de `uLuzGanho` da
+malha (Terra, Lua, rochoso, gigante, anel). No globo o Sol vale
+**1**. `?luz=real` no globo = sem lanterna, noite preta, **dia
+ainda na textura**. `?luz=assistida` no globo = lanterna de
+leitura 15 %, a do Eyes *shadow*. Logística s=3 nos gigantes,
+não na Lua. Sem piso de ambiente no BRDF. Sem flood de default.
+Sem ganho 1 no ponto. Sem desligar o ACES. Sem auto-exposição
+pelo quadro.
+
+A prova tem de mostrar o que mudou: Saturno de perto, lado do
+Sol, depois do ACES, palha — não carvão. Vista nova, não as 18
+do filme. Detalhe do contrato: §11. Selo honesto: §11.6.
