@@ -56,6 +56,8 @@ import {
   muDoPar,
   muEmUaDia,
   realceDoFoco,
+  RAIO_DA_CESSAO_PX,
+  BORDA_DA_CESSAO_PX,
 } from './orbitas';
 
 // A MESMA carga do `efemerides.test.ts` — o motor de verdade, sobre o
@@ -795,5 +797,36 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     expect(assentouEm * passo).toBeLessThan(1.0);
     expect(orbitas.animando).toBe(false);
     orbitas.dispose();
+  });
+});
+
+// ============================================================
+// A CESSÃO AO NÚCLEO (decisão do dono, 25/08) — a guarda que faltava.
+// A reversão exata que ela pega: pôr o raio de volta em 0, ou apagar a
+// cirurgia do fragment. Nos dois casos a linha volta a atravessar o
+// planeta, as duas luzes voltam a ser UMA componente para o MB1 e a
+// âncora de Vênus volta a saltar 1,74 px contra um teto de 1,02.
+// ============================================================
+describe('a linha cede ao núcleo do corpo que ela desenha', () => {
+  const fonte = readFileSync(
+    join(fileURLToPath(new URL('.', import.meta.url)), 'orbitas.ts'),
+    'utf8'
+  );
+
+  it('o raio da cessão é MAIOR QUE ZERO — em zero o defeito volta', () => {
+    // 0,5 px não bastava (Vênus seguia saltando 1,75 px); 2 px basta.
+    expect(RAIO_DA_CESSAO_PX).toBeGreaterThan(0);
+    expect(BORDA_DA_CESSAO_PX).toBeGreaterThan(RAIO_DA_CESSAO_PX);
+  });
+
+  it('a cirurgia do fragment está no lugar, com transição suave', () => {
+    expect(fonte).toMatch(/uniform vec4 uNucleo;/);
+    expect(fonte).toMatch(/alpha \*= smoothstep\(/);
+  });
+
+  it('o disco é do DONO da linha, e não um por corpo do palco', () => {
+    // dez discos por fita cortam cada elipse em vários arcos: o pior
+    // resíduo de `zoomDeRoda` subia de 0,65 para 1,35 degraus.
+    expect(fonte).toMatch(/IDS_FOTOMETRIA\.indexOf\(linha\.corpo\.id/);
   });
 });
