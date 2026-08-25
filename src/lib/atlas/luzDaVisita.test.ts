@@ -25,18 +25,26 @@ import { ROCHOSOS } from '../../three/world/corpos/rochoso';
 import { GIGANTES } from '../../three/world/corpos/gigante';
 import { LIMIAR_DO_GATE_PX, cessaoAlvo } from '../../three/world/corpos/terra';
 import { diametroAparentePx } from '../../three/world/corpos/corpos';
+import { BODY_AXES } from './iauOrientation';
 import { ganhoFundido, irradianciaRelativa } from './luz';
 import type { PoliticaDeLuz } from './luz';
 import {
+  COR_DO_VEU,
   GLSL_LUZ_DA_VISITA,
+  GLSL_VEU_DE_SATURNO,
   LANTERNA_DE_LEITURA,
   S_DO_TERMINADOR,
+  VEU_DE_SATURNO,
+  colunaVerticalDoVeu,
+  densidadeDoVeu,
   escreverLuzDaVisita,
+  espessuraDoVeu,
   ganhoDoGlobo,
   lanternaDaVisita,
   sDoTerminador,
   stopsDaVisita,
   uniformsDaLuzDaVisita,
+  uniformsDoVeu,
 } from './luzDaVisita';
 
 /** OS 38 RESOLVIDOS, derivados das listas vivas — nunca redigitados. */
@@ -64,39 +72,68 @@ const D_TERRA = 0.98332668220797514;
 //
 // ELE RECUSA O QUE NÃO ENTENDE. Todo identificador que sobra na tradução
 // tem de ser um parâmetro, um uniforme, um local declarado ali mesmo, um
-// embutido da lista ou uma palavra de JS — qualquer outro faz o juiz
-// LANÇAR, isto é, reprovar. É de propósito: juiz que não consegue medir
-// reprova, não avisa. Quem levar uma construção nova para o chunk ensina
-// o tradutor no mesmo commit.
+// embutido da lista, uma OUTRA PEÇA do chunk ou uma palavra de JS —
+// qualquer outro faz o juiz LANÇAR, isto é, reprovar. É de propósito:
+// juiz que não consegue medir reprova, não avisa. Quem levar uma
+// construção nova para o chunk ensina o tradutor no mesmo commit.
+//
+// O QUE O VÉU (§4.4) ENSINOU A ELE, em 2026-08-25: `sqrt` e `mix`, e
+// CHAMADA ENTRE PEÇAS — `globoComVeu` chama o `luzDoGlobo` da receita, e
+// sem isso o juiz não conseguiria executar a última linha do fragmento,
+// que é justamente onde mora a ordem "o véu DEPOIS da superfície".
 // ============================================================
 
+/**
+ * O TEXTO QUE O `GIGANTE_LAMBERT_FRAG` COMPILA: a receita e, colada
+ * nela, o véu. É a mesma concatenação que o shader de Saturno monta —
+ * medir uma metade seria medir um programa que não existe.
+ */
+const CHUNK = `${GLSL_LUZ_DA_VISITA}\n${GLSL_VEU_DE_SATURNO}`;
+
 /** os embutidos do GLSL que este chunk usa, em JS. `dot` é o de VERDADE,
- *  sobre três componentes — a lanterna depende dele. */
+ *  sobre três componentes — a lanterna depende dele; `mix` é o do
+ *  spec, `x·(1−a) + y·a`, e é ele que mistura o véu no limbo. */
 const EMBUTIDOS = {
   max: (a: number, b: number) => Math.max(a, b),
   min: (a: number, b: number) => Math.min(a, b),
   clamp: (x: number, a: number, b: number) => Math.min(Math.max(x, a), b),
   exp: (x: number) => Math.exp(x),
+  sqrt: (x: number) => Math.sqrt(x),
+  mix: (x: number, y: number, a: number) => x * (1 - a) + y * a,
   dot: (a: readonly number[], b: readonly number[]) =>
     a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!,
 };
 
-/** os uniformes do chunk, sempre injetados — o corpo usa o que precisar */
-const UNIFORMES = ['uTerminadorS', 'uLanternaLeitura'] as const;
+/** os uniformes do chunk, sempre injetados — o corpo usa o que precisar.
+ *  `uVeuCor` entra como UM CANAL, como todo `vec3` deste tradutor. */
+const UNIFORMES = [
+  'uTerminadorS',
+  'uLanternaLeitura',
+  'uVeuColuna',
+  'uVeuEspessura',
+  'uVeuCor',
+] as const;
+
+type Ligados = Partial<Record<(typeof UNIFORMES)[number], number>>;
 
 const PALAVRAS_DE_JS = new Set(['if', 'else', 'return', 'const', 'true', 'false']);
 
+/** os nomes que o PRÓPRIO chunk declara — uma peça pode chamar a outra,
+ *  e é por esta lista que o tradutor sabe que `luzDoGlobo` existe. */
+function nomesDoChunk(): string[] {
+  return [...CHUNK.matchAll(/\b(?:float|vec3)\s+(\w+)\s*\(/g)].map((m) => m[1]!);
+}
+
 /** o corpo CRU de uma função do chunk, achado por contagem de chaves */
 function corpoNoChunk(nome: string): { params: string[]; corpo: string } {
-  const decl = new RegExp(`(?:float|vec3)\\s+${nome}\\s*\\(([^)]*)\\)\\s*\\{`)
-    .exec(GLSL_LUZ_DA_VISITA);
+  const decl = new RegExp(`(?:float|vec3)\\s+${nome}\\s*\\(([^)]*)\\)\\s*\\{`).exec(CHUNK);
   if (!decl) throw new Error(`o chunk não declara \`${nome}\``);
   const abre = decl.index + decl[0].length;
   let nivel = 1;
   let i = abre;
-  for (; i < GLSL_LUZ_DA_VISITA.length && nivel > 0; i++) {
-    if (GLSL_LUZ_DA_VISITA[i] === '{') nivel++;
-    else if (GLSL_LUZ_DA_VISITA[i] === '}') nivel--;
+  for (; i < CHUNK.length && nivel > 0; i++) {
+    if (CHUNK[i] === '{') nivel++;
+    else if (CHUNK[i] === '}') nivel--;
   }
   if (nivel !== 0) throw new Error(`chave que não fecha em \`${nome}\``);
   const lista = decl[1]!.trim();
@@ -105,7 +142,7 @@ function corpoNoChunk(nome: string): { params: string[]; corpo: string } {
     if (!m) throw new Error(`parâmetro que o tradutor não entende em \`${nome}\`: "${p.trim()}"`);
     return m[1]!;
   });
-  return { params, corpo: GLSL_LUZ_DA_VISITA.slice(abre, i - 1) };
+  return { params, corpo: CHUNK.slice(abre, i - 1) };
 }
 
 /**
@@ -141,7 +178,8 @@ function traduzirGlsl(corpo: string, params: readonly string[], nome: string): s
     .replace(/\b(?:float|vec3)\s+(\w+)\s*=/g, 'const $1 =');
   const locais = [...js.matchAll(/\bconst\s+(\w+)/g)].map((m) => m[1]!);
   const conhecidos = new Set<string>([
-    ...params, ...locais, ...UNIFORMES, ...Object.keys(EMBUTIDOS), ...PALAVRAS_DE_JS,
+    ...params, ...locais, ...UNIFORMES, ...Object.keys(EMBUTIDOS),
+    ...nomesDoChunk(), ...PALAVRAS_DE_JS,
   ]);
   const semNumeros = js.replace(/\b\d+\.?\d*(?:[eE][+-]?\d+)?/g, ' ');
   for (const [ident] of semNumeros.matchAll(/[A-Za-z_]\w*/g)) {
@@ -154,14 +192,26 @@ function traduzirGlsl(corpo: string, params: readonly string[], nome: string): s
   return js;
 }
 
-/** a função do chunk, pronta para rodar: `(argumentos, uniformes) => número` */
+/**
+ * A função do chunk, pronta para rodar: `(argumentos, uniformes) => número`.
+ *
+ * As IRMÃS entram como argumentos, amarradas aos MESMOS uniformes desta
+ * chamada — é assim que `globoComVeu` consegue chamar `luzDoGlobo` sem
+ * que exista uma segunda cópia da conta em lugar nenhum.
+ */
 function funcaoDoChunk(nome: string) {
   const { params, corpo } = corpoNoChunk(nome);
   const js = traduzirGlsl(corpo, params, nome);
-  const assinatura = [...params, ...UNIFORMES, ...Object.keys(EMBUTIDOS)];
+  const irmas = nomesDoChunk().filter((n) => n !== nome);
+  const assinatura = [...params, ...UNIFORMES, ...Object.keys(EMBUTIDOS), ...irmas];
   const fn = new Function(...assinatura, js) as (...a: unknown[]) => number;
-  return (args: readonly unknown[], u: { s?: number; lanterna?: number } = {}): number =>
-    fn(...args, u.s ?? 0, u.lanterna ?? 0, ...Object.values(EMBUTIDOS));
+  return (args: readonly unknown[], u: Ligados = {}): number =>
+    fn(
+      ...args,
+      ...UNIFORMES.map((chave) => u[chave] ?? 0),
+      ...Object.values(EMBUTIDOS),
+      ...irmas.map((irma) => (...a: unknown[]) => doChunk(irma)(a, u))
+    );
 }
 
 /**
@@ -179,7 +229,7 @@ const doChunk = (nome: string) => {
 
 /** `terminadorSuave(x)` do shader, com o `s` que a política acende */
 const terminadorSuave = (x: number, s = S_DO_TERMINADOR): number =>
-  doChunk('terminadorSuave')([x], { s });
+  doChunk('terminadorSuave')([x], { uTerminadorS: s });
 
 /**
  * `lanternaDeLeitura(n, dirCam, sombras)` do shader, num canal.
@@ -190,12 +240,48 @@ const terminadorSuave = (x: number, s = S_DO_TERMINADOR): number =>
  */
 const lanterna = (ndotv: number, sombras: number, acesa = LANTERNA_DE_LEITURA): number => {
   const seno = Math.sqrt(Math.max(0, 1 - ndotv * ndotv));
-  return doChunk('lanternaDeLeitura')([[ndotv, seno, 0], [1, 0, 0], sombras], { lanterna: acesa });
+  return doChunk('lanternaDeLeitura')(
+    [[ndotv, seno, 0], [1, 0, 0], sombras],
+    { uLanternaLeitura: acesa }
+  );
 };
 
 /** `luzDoGlobo(luzSol, fill)` do shader, num canal */
 const somaComTeto = (luzSol: number, fill: number): number =>
   doChunk('luzDoGlobo')([luzSol, fill]);
+
+/** os dois uniformes de FORMA do véu, resolvidos pelo módulo para um corpo */
+const veuDe = (id: string): Ligados => ({
+  uVeuColuna: colunaVerticalDoVeu(id),
+  uVeuEspessura: espessuraDoVeu(id),
+});
+
+/** `opacidadeDoVeu(μ)` do shader, com a forma do véu daquele corpo */
+const opacidadeDoVeu = (mu: number, id = 'saturn'): number =>
+  doChunk('opacidadeDoVeu')([mu], veuDe(id));
+
+/**
+ * `globoComVeu(albedo, luzSol, fill, aVeu)` do shader, NUM CANAL — o
+ * `canal` escolhe qual componente da palha entra (0 = R, 2 = B), que é
+ * como este juiz lê uma cor de três componentes com um tradutor de um.
+ */
+const globoComVeu = (
+  albedo: number,
+  luzSol: number,
+  fill: number,
+  aVeu: number,
+  canal = 0
+): number =>
+  doChunk('globoComVeu')([albedo, luzSol, fill, aVeu], { uVeuCor: COR_DO_VEU[canal]! });
+
+/**
+ * A MASSA DE AR que o chunk EXECUTOU, lida de volta da opacidade —
+ * `a = 1 − e^(−coluna·massa)` invertido. É assim que os dois extremos do
+ * modelo (1 no subsolar, Chapman no limbo) se conferem sem uma segunda
+ * cópia da fórmula em JS.
+ */
+const massaDeArDoVeu = (mu: number, id = 'saturn'): number =>
+  -Math.log(1 - opacidadeDoVeu(mu, id)) / colunaVerticalDoVeu(id);
 
 describe('1. peça (a) — o Sol do globo vale 1 em `assistida`', () => {
   it.each(RESOLVIDOS)('%s: 1 LITERAL, em qualquer distância', (id) => {
@@ -307,6 +393,29 @@ describe('3. peça (c) — o terminador logístico s = 3', () => {
   });
 
   /**
+   * ONDE HÁ VÉU O TERMINADOR AMACIA MAIS — `sharpness /= 1 + 700·density`
+   * do Eyes. Saturno é o único corpo desta casa com densidade, e o efeito
+   * é pequeno de propósito: 5e−5 × 700 = 3,5 %.
+   */
+  it('o véu de Saturno divide o `s`: 2,8986 lá, 3 EXATO em todo o resto', () => {
+    expect(sDoTerminador('assistida', densidadeDoVeu('saturn'))).toBeCloseTo(2.898551, 6);
+    for (const id of ['jupiter', 'uranus', 'neptune', 'earth', 'moon', 'mercury']) {
+      expect(Object.is(sDoTerminador('assistida', densidadeDoVeu(id)), 3), id).toBe(true);
+    }
+    // e a política manda mais alto que a atmosfera: em `real` é 0 com véu ou sem
+    expect(sDoTerminador('real', densidadeDoVeu('saturn'))).toBe(0);
+  });
+
+  it('o que o `s` de Saturno faz na curva: vaza mais no terminador, cede 1 % no flanco', () => {
+    const s = sDoTerminador('assistida', densidadeDoVeu('saturn'));
+    // o vazamento em N·L = 0 sobe de 4,98 % para 5,51 %
+    expect(terminadorSuave(0)).toBeCloseTo(0.049787, 6);
+    expect(terminadorSuave(0, s)).toBeCloseTo(0.055103, 6);
+    // e o flanco cede 1 %: 0,7165 → 0,7091
+    expect(terminadorSuave(0.5, s) / terminadorSuave(0.5)).toBeCloseTo(0.9895, 4);
+  });
+
+  /**
    * O ORÁCULO VEM DE FORA: é a tabela do §1.2 do contrato, lida no fonte
    * do NASA Eyes em 24/08. Quem a responde é o CORPO de `terminadorSuave`
    * tal como está no chunk, executado — trocar a curva por `max(x, 0)` ou
@@ -369,11 +478,28 @@ describe('3. peça (c) — o terminador logístico s = 3', () => {
  * engolir o que não entende, os blocos de cima viram teatro sem avisar.
  */
 describe('3b. o instrumento — o tradutor que executa o chunk', () => {
-  it('as três peças da receita moram no chunk, e é o corpo delas que roda', () => {
-    for (const nome of ['terminadorSuave', 'lanternaDeLeitura', 'luzDoGlobo']) {
-      expect(GLSL_LUZ_DA_VISITA, nome).toContain(`${nome}(`);
+  it('as QUATRO peças da receita moram no chunk, e é o corpo delas que roda', () => {
+    for (const nome of [
+      'terminadorSuave', 'lanternaDeLeitura', 'luzDoGlobo',
+      'opacidadeDoVeu', 'globoComVeu',
+    ]) {
+      expect(CHUNK, nome).toContain(`${nome}(`);
       expect(() => funcaoDoChunk(nome)).not.toThrow();
     }
+  });
+
+  /**
+   * A CHAMADA ENTRE PEÇAS é execução de verdade, não um `luzDoGlobo`
+   * paralelo escrito em JS: `globoComVeu` recebe a IRMÃ compilada do
+   * mesmo texto, com os mesmos uniformes. Se o teto da soma mudar lá, a
+   * conta do véu muda aqui na mesma execução.
+   */
+  it('uma peça chama a outra, e é a peça de VERDADE que responde', () => {
+    expect(nomesDoChunk()).toContain('luzDoGlobo');
+    // sem véu, `globoComVeu` É `albedo × luzDoGlobo(luzSol, fill)` — e o
+    // teto da soma aparece: 0,5 + 0,15 passa, 1 + 0,15 não
+    expect(globoComVeu(0.4, 0.5, 0.15, 0)).toBeCloseTo(0.4 * 0.65, 12);
+    expect(globoComVeu(0.4, 1, 0.15, 0)).toBeCloseTo(0.4, 12);
   });
 
   it('função que não existe no chunk REPROVA — não devolve um zero educado', () => {
@@ -381,13 +507,227 @@ describe('3b. o instrumento — o tradutor que executa o chunk', () => {
   });
 
   it('construção que o tradutor não conhece REPROVA — quem não mede, reprova', () => {
-    expect(() => traduzirGlsl('return mix(x, 0.0, 0.5);', ['x'], 'inventada'))
-      .toThrow(/mix/);
+    // `mix` e `sqrt` ATRAVESSAM desde o véu (§4.4); `smoothstep` não, e
+    // é ela que ocupa o lugar de exemplo que o `mix` tinha até 25/08
+    expect(() => traduzirGlsl('return smoothstep(0.0, 0.05, x);', ['x'], 'inventada'))
+      .toThrow(/smoothstep/);
     expect(() => traduzirGlsl('return texture2D(uMapa, vUv).r;', [], 'inventada'))
       .toThrow(/texture2D/);
     // e o que ele CONHECE atravessa: declaração com tipo, vec3 de um canal
     expect(traduzirGlsl('vec3 t = vec3(1.0);\nreturn max(x, t);', ['x'], 'ok'))
       .toContain('const t =');
+  });
+});
+
+/**
+ * A PEÇA (d) — O VÉU PALHA DE SATURNO, o §4.4 do contrato, a última a
+ * pousar. Aqui não há pino de texto: cada número sai do CORPO de
+ * `opacidadeDoVeu` e de `globoComVeu` tal como o shader os compila.
+ */
+describe('3c. peça (d) — o véu palha de Saturno', () => {
+  it('os números do Eyes chegaram inteiros: 200 km, 5e−5 e a palha de três bytes', () => {
+    expect(VEU_DE_SATURNO.escalaDeAlturaKm).toBe(200);
+    expect(VEU_DE_SATURNO.densidadePorKm).toBe(5e-5);
+    expect(VEU_DE_SATURNO.corEmBytesSRgb).toEqual([234, 202, 151]);
+  });
+
+  it('SÓ Saturno tem véu — os outros 37 resolvidos saem com ZERO', () => {
+    expect(densidadeDoVeu('saturn')).toBe(5e-5);
+    for (const id of RESOLVIDOS.filter((r) => r !== 'saturn')) {
+      expect(densidadeDoVeu(id), id).toBe(0);
+      expect(colunaVerticalDoVeu(id), id).toBe(0);
+      expect(espessuraDoVeu(id), id).toBe(0);
+    }
+  });
+
+  /**
+   * A COLUNA VERTICAL é a única leitura das duas grandezas do Eyes que
+   * fecha em unidades: `density` em 1/km vezes `scaleHeight` em km é a
+   * integral `∫ρ₀e^(−z/H)dz`, adimensional. Dá 0,01 — e é essa dose que
+   * o véu inteiro escala.
+   */
+  it('a coluna vertical é ρ₀·H = 0,01, e é ela que dá a dose', () => {
+    expect(colunaVerticalDoVeu('saturn')).toBeCloseTo(0.01, 15);
+    expect(colunaVerticalDoVeu('saturn')).toBe(
+      VEU_DE_SATURNO.densidadePorKm * VEU_DE_SATURNO.escalaDeAlturaKm
+    );
+  });
+
+  /**
+   * OS DOIS EXTREMOS DO MODELO, EXECUTADOS. A casca equivalente de
+   * `4H/π` existe para acertar os dois: 1 no subsolar (a coluna vertical
+   * é a coluna vertical) e a Chapman rasante no limbo. Os números saem
+   * do chunk pela opacidade, invertida — não há segunda fórmula em JS.
+   */
+  it('a massa de ar bate nos DOIS extremos: 1 no subsolar, Chapman no limbo', () => {
+    expect(massaDeArDoVeu(1)).toBeCloseTo(1, 9);
+    const chapman = Math.sqrt(
+      (Math.PI * BODY_AXES.saturn![0]) / (2 * VEU_DE_SATURNO.escalaDeAlturaKm)
+    );
+    expect(chapman).toBeCloseTo(21.7565, 4);
+    // a casca fica 0,1 % acima da Chapman — a sobra do `t²` da raiz
+    expect(massaDeArDoVeu(0) / chapman - 1).toBeLessThan(0.002);
+    expect(massaDeArDoVeu(0)).toBeGreaterThan(chapman);
+    // e a espessura é a que faz isso acontecer: 4H/πR
+    expect(espessuraDoVeu('saturn')).toBeCloseTo(0.00422526, 8);
+  });
+
+  it('o perfil do véu abraça a BORDA: 1 % no centro do disco, 19,6 % no limbo', () => {
+    expect(opacidadeDoVeu(1)).toBeCloseTo(0.009950, 6);
+    expect(opacidadeDoVeu(0.5)).toBeCloseTo(0.019679, 6);
+    expect(opacidadeDoVeu(0.2)).toBeCloseTo(0.046582, 6);
+    expect(opacidadeDoVeu(0.1)).toBeCloseTo(0.081452, 6);
+    expect(opacidadeDoVeu(0)).toBeCloseTo(0.195709, 6);
+  });
+
+  it('é monótona e nunca passa de 1 — véu não é tinta por cima do planeta', () => {
+    let anterior = 1;
+    for (let mu = 0; mu <= 1.0001; mu += 0.02) {
+      const a = opacidadeDoVeu(mu);
+      expect(a, `μ=${mu.toFixed(2)}`).toBeLessThanOrEqual(anterior);
+      expect(a).toBeGreaterThan(0);
+      expect(a).toBeLessThan(1);
+      anterior = a;
+    }
+    // fora do domínio o clamp segura: costas para a câmera não inventam véu
+    expect(opacidadeDoVeu(-0.5)).toBe(opacidadeDoVeu(0));
+  });
+
+  /**
+   * O CORPO SEM VÉU NÃO PAGA NADA. Júpiter, Urano e Netuno compilam o
+   * MESMO fragmento de Saturno e passam por `opacidadeDoVeu` e
+   * `globoComVeu` em todo pixel — a garantia é que saem BIT A BIT como
+   * antes desta obra, e ela vale pela guarda `uVeuColuna <= 0`.
+   */
+  it('coluna 0 = corpo sem véu: opacidade ZERO e mistura IDÊNTICA, bit a bit', () => {
+    for (const id of ['jupiter', 'uranus', 'neptune']) {
+      for (const mu of [0, 0.2, 0.5, 1]) {
+        expect(opacidadeDoVeu(mu, id), `${id} μ=${mu}`).toBe(0);
+      }
+    }
+    for (const [albedo, luzSol, fill] of [
+      [0.5, 1, 0.15], [0.5, 0, 0.15], [0.42, 0.5, 0.15], [0.7, 0.011037, 0],
+    ]) {
+      const semVeu = somaComTeto(luzSol!, fill!) * albedo!;
+      expect(Object.is(globoComVeu(albedo!, luzSol!, fill!, 0), semVeu)).toBe(true);
+    }
+  });
+
+  /**
+   * A COR SAI EM LINEAR, e isto é o oposto de um detalhe. A palha do
+   * Eyes está escrita em BYTES DE TELA; o albedo que ela se mistura já
+   * chega decodificado (o sampler de `texturas.ts`), e o quadro sai por
+   * ACES. Passar o byte cru pintaria um véu claro e lavado — a mesma
+   * classe de erro de um normal map em sRGB, e igualmente silenciosa.
+   */
+  it('a palha atravessa em LINEAR — 0,823/0,591/0,309, não o byte cru', () => {
+    expect(COR_DO_VEU[0]).toBeCloseTo(0.822786, 6);
+    expect(COR_DO_VEU[1]).toBeCloseTo(0.590619, 6);
+    expect(COR_DO_VEU[2]).toBeCloseTo(0.309469, 6);
+    // e NÃO é o byte de tela: cada canal está abaixo dele, como a curva manda
+    for (let c = 0; c < 3; c++) {
+      const byte = VEU_DE_SATURNO.corEmBytesSRgb[c]! / 255;
+      expect(COR_DO_VEU[c]!, `canal ${c}`).toBeLessThan(byte);
+      // e volta ao byte pela codificação inversa — a conta é reversível
+      expect(1.055 * COR_DO_VEU[c]! ** (1 / 2.4) - 0.055).toBeCloseTo(byte, 12);
+    }
+  });
+
+  /**
+   * A LANTERNA NÃO ENTRA NO VÉU — a sabotagem que este bloco existe para
+   * pegar. No Eyes a atmosfera percorre as luzes com
+   * `length(lightPositions[i]) > 0` e pula a luz de câmera, que está na
+   * origem. Aqui isso é `globoComVeu` acender a palha com `luzSol`, não
+   * com a soma. Trocar o argumento pela soma acenderia palha na noite.
+   */
+  it('a noite não ganha auréola: com o Sol em 0, o véu ACRESCENTA zero', () => {
+    const a = opacidadeDoVeu(0);
+    const albedo = 0.5;
+    const soLanterna = globoComVeu(albedo, 0, LANTERNA_DE_LEITURA, a);
+    // o que sobra é a lanterna EXTINGUIDA pela palha apagada — e nada mais
+    expect(soLanterna).toBeCloseTo(albedo * LANTERNA_DE_LEITURA * (1 - a), 12);
+    // o que a sabotagem produziria (a palha acesa pela soma), por extenso
+    const comLanternaNoVeu =
+      albedo * LANTERNA_DE_LEITURA * (1 - a) + COR_DO_VEU[0]! * LANTERNA_DE_LEITURA * a;
+    expect(soLanterna).toBeLessThan(comLanternaNoVeu);
+    expect(comLanternaNoVeu / soLanterna).toBeGreaterThan(1.3);
+    // e sem Sol E sem lanterna a noite é PRETA — emissividade 0, literal
+    expect(globoComVeu(albedo, 0, 0, a)).toBe(0);
+  });
+
+  /**
+   * O CASO GERAL da mesma lei, e ele pega a sabotagem em qualquer ponto
+   * do terminador, não só na noite fechada: o que o véu acende é o termo
+   * do SOL, então o resultado tem de bater com `luzSol` sozinho — e NÃO
+   * com a soma que a superfície usa. No subsolar as duas contas
+   * coincidem (o teto), e é por isso que o pino vive no meio da curva.
+   */
+  it('no MEIO da curva o véu ainda lê só o Sol — 0,5, não 0,65', () => {
+    const a = opacidadeDoVeu(0.1); // um limbo de verdade, nem borda nem centro
+    const albedo = 0.45;
+    const luzSol = 0.5;
+    const fill = LANTERNA_DE_LEITURA;
+    const certo = albedo * (luzSol + fill) * (1 - a) + COR_DO_VEU[0]! * luzSol * a;
+    const comLanternaNoVeu =
+      albedo * (luzSol + fill) * (1 - a) + COR_DO_VEU[0]! * (luzSol + fill) * a;
+    expect(globoComVeu(albedo, luzSol, fill, a)).toBeCloseTo(certo, 12);
+    expect(globoComVeu(albedo, luzSol, fill, a)).not.toBeCloseTo(comLanternaNoVeu, 6);
+  });
+
+  it('o véu ACENDE do lado do Sol: no limbo iluminado a palha entra de verdade', () => {
+    const a = opacidadeDoVeu(0);
+    const albedo = 0.45; // o tom do mapa SSS de Saturno, ordem de grandeza
+    const semVeu = globoComVeu(albedo, 1, LANTERNA_DE_LEITURA, 0);
+    const comVeu = globoComVeu(albedo, 1, LANTERNA_DE_LEITURA, a);
+    expect(comVeu).toBeGreaterThan(semVeu);
+    expect(comVeu / semVeu).toBeCloseTo(1 + a * (COR_DO_VEU[0]! / albedo - 1), 12);
+  });
+
+  /**
+   * `sunsetIntensity` 0 — a palha NÃO muda de cor com o Sol. O véu
+   * multiplica a cor por um escalar, então a razão entre canais do termo
+   * dele é constante. Um poente (o 1,2 da Terra deles) faria esta razão
+   * andar com o ângulo, e é isso que Saturno não tem.
+   */
+  it('a croma do véu não anda: R/B parado, só a intensidade muda', () => {
+    const a = opacidadeDoVeu(0);
+    const razoes = [1, 0.5, 0.05, 0.011037].map((luzSol) => {
+      const r = globoComVeu(0, luzSol, 0, a, 0);
+      const b = globoComVeu(0, luzSol, 0, a, 2);
+      return r / b;
+    });
+    for (const razao of razoes) {
+      expect(razao).toBeCloseTo(COR_DO_VEU[0]! / COR_DO_VEU[2]!, 12);
+    }
+  });
+
+  /**
+   * `?luz=real` NÃO GANHA BRILHO INDEVIDO. O véu não tem luz própria: o
+   * que ele acende é o `luzSol` do quadro, que em `real` já traz E(d).
+   * Então a palha de Saturno em `real` é EXATAMENTE E(d) vezes a de
+   * `assistida` — a penumbra física do dono continua de pé, escalada,
+   * não desfeita.
+   */
+  it('em `real` o véu vale E(d) vezes o de `assistida` — a decisão 2 intacta', () => {
+    const a = opacidadeDoVeu(0);
+    const E = ganhoDoGlobo(D_SATURNO, 'real');
+    // o TERMO do véu sozinho (albedo 0 isola a palha)
+    const assistida = globoComVeu(0, ganhoDoGlobo(D_SATURNO, 'assistida'), 0, a);
+    const real = globoComVeu(0, E, 0, a);
+    expect(real / assistida).toBeCloseTo(E, 12);
+    expect(real / assistida).toBeLessThan(1 / 90);
+  });
+
+  it('os uniformes do véu nascem por CORPO, e só Saturno os traz acesos', () => {
+    const saturno = uniformsDoVeu('saturn');
+    expect(saturno.uVeuColuna!.value).toBe(colunaVerticalDoVeu('saturn'));
+    expect(saturno.uVeuEspessura!.value).toBe(espessuraDoVeu('saturn'));
+    expect(saturno.uVeuCor!.value).toEqual([...COR_DO_VEU]);
+    for (const id of ['jupiter', 'uranus', 'neptune']) {
+      const u = uniformsDoVeu(id);
+      expect(u.uVeuColuna!.value, id).toBe(0);
+      expect(u.uVeuEspessura!.value, id).toBe(0);
+    }
   });
 });
 

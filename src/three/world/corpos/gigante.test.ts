@@ -30,9 +30,14 @@ import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import {
+  COR_DO_VEU,
+  GLSL_VEU_DE_SATURNO,
   LANTERNA_DE_LEITURA,
-  S_DO_TERMINADOR,
+  colunaVerticalDoVeu,
+  densidadeDoVeu,
+  espessuraDoVeu,
   ganhoDoGlobo,
+  sDoTerminador,
 } from '../../../lib/atlas/luzDaVisita';
 import {
   ANEIS_CITADOS,
@@ -117,12 +122,30 @@ describe('2. o needle dos GLSL montados', () => {
       'vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;'
     );
     // a LANTERNA leva as MESMAS sombras — a divergencia declarada do 93
+    expect(GIGANTE_LAMBERT_FRAG).toContain('vec3 view = normSeguro(uCamLocal - pElip);');
+    expect(GIGANTE_LAMBERT_FRAG).toContain('lanternaDeLeitura(n, view, sombras)');
+    // §4.4: o VÉU é a ÚLTIMA coisa, e quem o acende é `luzSol` — nunca a
+    // soma com a lanterna. Este pino é o que segura a exclusão da luz de
+    // câmera do véu no lugar onde ela se decide: o argumento.
     expect(GIGANTE_LAMBERT_FRAG).toContain(
-      'lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras)'
+      'vec4(globoComVeu(albedo, luzSol, fill, opacidadeDoVeu(dot(n, view))), 1.0)'
     );
-    expect(GIGANTE_LAMBERT_FRAG).toContain(
-      'gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);'
-    );
+    expect(GIGANTE_LAMBERT_FRAG).not.toContain('globoComVeu(albedo, luzDoGlobo');
+  });
+
+  /**
+   * O VÉU PALHA (§4.4) MORA EM `luzDaVisita.ts`, e o fragmento só o
+   * INCLUI. Um número do Eyes redigitado aqui seria a segunda cópia que
+   * o contrato §4.5 existe para impedir.
+   */
+  it('o véu vem do chunk único: nem 5e−5, nem 200, nem a palha nascem aqui', () => {
+    expect(GIGANTE_LAMBERT_FRAG).toContain('uniform float uVeuColuna;');
+    expect(GIGANTE_LAMBERT_FRAG).toContain('float opacidadeDoVeu(float mu)');
+    expect(GIGANTE_LAMBERT_FRAG).toContain(GLSL_VEU_DE_SATURNO);
+    for (const literal of ['5e-5', '0.00005', '234, 202, 151', '700']) {
+      expect(FONTE, literal).not.toContain(literal);
+      expect(GIGANTE_LAMBERT_FRAG, literal).not.toContain(literal);
+    }
   });
 
   it('a sombra planeta→anel é elipsoide: squash no eixo POLAR do anel', () => {
@@ -710,9 +733,22 @@ describe('5. a classe — gate, carga, cessão, anel', () => {
     // modelo do anel é camada de partículas com função de fase, e um
     // fill de câmera por cima quebraria o I/F ancorado na Cassini.
     expect(globo.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
-    expect(globo.uniforms.uTerminadorS.value).toBe(S_DO_TERMINADOR);
+    // O `s` DE SATURNO NÃO É 3: ele tem véu, e o Eyes amacia o terminador
+    // onde há atmosfera (`sharpness /= 1 + 700·density`). 2,8986.
+    expect(globo.uniforms.uTerminadorS.value)
+      .toBe(sDoTerminador('assistida', densidadeDoVeu('saturn')));
+    expect(globo.uniforms.uTerminadorS.value).toBeCloseTo(2.898551, 6);
     expect(anel.uniforms.uLanternaLeitura).toBeUndefined();
     expect(anel.uniforms.uTerminadorS).toBeUndefined();
+
+    // O VÉU (§4.4) chega ao GLOBO com a forma do CORPO, e NÃO chega ao
+    // anel: o modelo dele é camada de partículas, e uma palha por cima
+    // quebraria o I/F ancorado na Cassini.
+    expect(globo.uniforms.uVeuColuna.value).toBe(colunaVerticalDoVeu('saturn'));
+    expect(globo.uniforms.uVeuColuna.value).toBeCloseTo(0.01, 15);
+    expect(globo.uniforms.uVeuEspessura.value).toBe(espessuraDoVeu('saturn'));
+    expect(globo.uniforms.uVeuCor.value).toEqual([...COR_DO_VEU]);
+    expect(anel.uniforms.uVeuColuna).toBeUndefined();
 
     // EM `real` AS TRÊS PEÇAS APAGAM JUNTAS: o ganho volta a ser E(d) na
     // rUA viva, e os dois uniformes zeram. É a decisão 2 do dono.
@@ -723,6 +759,28 @@ describe('5. a classe — gate, carga, cessão, anel', () => {
     expect(globo.uniforms.uTerminadorS.value).toBe(0);
     corpo.dispose();
   });
+
+  /**
+   * PINO 93 §4.4, O OUTRO LADO: os três gigantes SEM véu compilam o mesmo
+   * fragmento de Saturno e têm de sair dele intocados. Sem este pino,
+   * espalhar o véu para os quatro — um `densidadeDoVeu` que devolvesse a
+   * densidade a todo gigante, por exemplo — passaria calado, e Júpiter
+   * ganharia um limbo palha que nem o Eyes nem a física lhe dão.
+   */
+  it.each(['jupiter', 'uranus', 'neptune'])(
+    'PINO 93: %s NÃO tem véu — coluna 0 e o `s` de volta ao 3 exato',
+    async (id) => {
+      const { corpo } = giganteDeTeste(id);
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      corpo.atualizar(quadro(id, 4));
+      const globo = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
+      expect(globo.uniforms.uVeuColuna.value).toBe(0);
+      expect(globo.uniforms.uVeuEspessura.value).toBe(0);
+      expect(Object.is(globo.uniforms.uTerminadorS.value, 3)).toBe(true);
+      corpo.dispose();
+    }
+  );
 });
 
 describe('6. texto-fonte (as leis do cabeçalho, pinadas)', () => {

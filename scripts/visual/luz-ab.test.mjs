@@ -25,6 +25,7 @@ import {
   cinzaDoPng,
   lerPng,
   medirAneis,
+  medirCroma,
   medirFaixas,
   medirPar,
   medirUmbra,
@@ -323,6 +324,66 @@ describe('medirAneis — o disco em dez anéis, e o quão chato ele é', () => {
   it('sem disco acima do limiar, REPROVA em vez de devolver um centro inventado', () => {
     const escuro = new Float32Array(300 * 300);
     expect(() => medirAneis(escuro, escuro, 300, 300)).toThrow(/nenhum disco/);
+  });
+});
+
+describe('medirCroma — a COR do que mudou, separada pelo sinal', () => {
+  /**
+   * O QUADRO DE PROVA, 4×1 = 4 pixels, contado à mão:
+   *
+   *   px 0: 100,100,100 → 100,100,100   parado
+   *   px 1:  50, 50, 50 →  70, 60, 52   ACENDE com tinta palha (Δ 20/10/2)
+   *   px 2:  50, 50, 50 →  90, 70, 54   ACENDE com a MESMA tinta, o dobro
+   *   px 3: 100,100,100 →  90, 90, 90   APAGA achatado (Δ −10 nos três)
+   *
+   *   acendeu: n=2, médias 30/15/3 → cor 1 : 0,5 : 0,1
+   *   apagou:  n=1, médias −10/−10/−10 → cor 1 : 1 : 1
+   */
+  const png = (trincas) => ({
+    largura: trincas.length,
+    altura: 1,
+    canais: 3,
+    dados: Uint8Array.from(trincas.flat()),
+  });
+  const antes = png([[100, 100, 100], [50, 50, 50], [50, 50, 50], [100, 100, 100]]);
+  const depois = png([[100, 100, 100], [70, 60, 52], [90, 70, 54], [90, 90, 90]]);
+  const c = medirCroma(antes, depois);
+
+  it('separa quem acendeu de quem apagou pelo sinal da LUMINÂNCIA', () => {
+    expect(c.pixels).toBe(4);
+    expect(c.acendeu.n).toBe(2);
+    expect(c.apagou.n).toBe(1);
+  });
+
+  it('a média do delta sai canal a canal, e a COR é a razão normalizada em R', () => {
+    expect(c.acendeu.dR).toBe(30);
+    expect(c.acendeu.dG).toBe(15);
+    expect(c.acendeu.dB).toBe(3);
+    expect(c.acendeu.corRGB).toEqual([1, 0.5, 0.1]);
+  });
+
+  /**
+   * O BALDE `apagou` TEM OS TRÊS DELTAS NEGATIVOS, e é aí que uma
+   * normalização ingênua explode: dividir por `max(ΣdR, 1e-9)` devolveria
+   * 1e13 em vez de 1. A cor é do MÓDULO, e mudança achatada sai 1:1:1 —
+   * que é exatamente como se lê "mexeu na dose, não na tinta".
+   */
+  it('mudança de DOSE sai achatada (1:1:1) — e o balde negativo não explode', () => {
+    expect(c.apagou.dR).toBe(-10);
+    expect(c.apagou.corRGB).toEqual([1, 1, 1]);
+  });
+
+  it('o pico é o pixel de maior ΔR, com as duas trincas inteiras', () => {
+    expect(c.pico.x).toBe(2);
+    expect(c.pico.y).toBe(0);
+    expect(c.pico.dR).toBe(40);
+    expect(c.pico.antes).toEqual([50, 50, 50]);
+    expect(c.pico.depois).toEqual([90, 70, 54]);
+  });
+
+  it('quadro sem cor ou de outro tamanho REPROVA — não devolve croma inventada', () => {
+    expect(() => medirCroma(antes, png([[1, 1, 1]]))).toThrow(/tamanhos diferentes/);
+    expect(() => medirCroma({ ...antes, canais: 1 }, depois)).toThrow(/sem cor/);
   });
 });
 

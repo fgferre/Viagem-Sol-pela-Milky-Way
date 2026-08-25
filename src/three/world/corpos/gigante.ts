@@ -56,9 +56,12 @@ import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
 import {
   GLSL_LUZ_DA_VISITA,
+  GLSL_VEU_DE_SATURNO,
+  densidadeDoVeu,
   escreverLuzDaVisita,
   ganhoDoGlobo,
   uniformsDaLuzDaVisita,
+  uniformsDoVeu,
 } from '../../../lib/atlas/luzDaVisita';
 import {
   CORPOS_COM_ANEL,
@@ -205,6 +208,14 @@ float sombraDoAnel(vec3 p, float ndotl) {
  * respeita as duas sombras, porque acender uma sombra é apagar um fato
  * medido.
  *
+ * O VÉU PALHA (§4.4) É A QUARTA PEÇA, e ela só existe em SATURNO: os
+ * outros três entram no mesmo `globoComVeu` com coluna 0 e saem por ele
+ * bit a bit. O véu é a ÚLTIMA coisa que acontece — mistura no limbo,
+ * depois da superfície —, e o que o acende é `luzSol`, **não** a soma com
+ * a lanterna: no Eyes a luz de câmera está na origem e a atmosfera a
+ * pula. Trocar esse argumento pela soma seria acender palha na noite de
+ * Saturno e no modo `real`.
+ *
  * O `ndotlGeo` CRU continua sendo quem manda no eclipse e no fade da
  * sombra do anel: os dois são geometria, não luz — passar a curva macia
  * ali acenderia a sombra meio pixel antes do terminador de verdade.
@@ -225,17 +236,20 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
+${GLSL_VEU_DE_SATURNO}
 ${GLSL_SOMBRA_ANEL_NO_PLANETA}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  vec3 view = normSeguro(uCamLocal - pElip);
   vec3 sombras =
     fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
-  vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
-  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
+  vec3 fill = lanternaDeLeitura(n, view, sombras);
+  gl_FragColor =
+    vec4(globoComVeu(albedo, luzSol, fill, opacidadeDoVeu(dot(n, view))), 1.0);
 }
 `;
 
@@ -787,7 +801,9 @@ export class GiganteResolvido {
     // a lanterna de leitura e o `s` do terminador (item 93) — a MESMA
     // política, escrita pelo único escritor da casa. O ANEL fica de
     // fora: o modelo dele é camada de partículas com função de fase.
-    escreverLuzDaVisita(u, q.politica);
+    // A densidade do véu entra porque o Eyes amacia o terminador onde há
+    // atmosfera: em Saturno o s cai a 2,8986; nos outros, 3 exato.
+    escreverLuzDaVisita(u, q.politica, densidadeDoVeu(this.idCorpo));
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 
     if (this.anel && this.matAnel) {
@@ -847,6 +863,10 @@ export class GiganteResolvido {
           ),
         },
         ...uniformsDaLuzDaVisita(),
+        // o véu do §4.4 é do CORPO, não do quadro: coluna, espessura e a
+        // palha nascem aqui e não se mexem mais. Quem não tem véu recebe
+        // coluna 0, e o chunk devolve a identidade.
+        ...uniformsDoVeu(this.idCorpo),
         ...uniformsDeEclipseNeutros(),
       },
       depthWrite: true,

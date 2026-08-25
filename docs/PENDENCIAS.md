@@ -54,8 +54,9 @@ fila. O que sobra à espera dele agora é a IMAGEM, não a prioridade.
 > escuro — a luz dos planetas)**~~ (25/08) → ~~**81**~~ (25/08; o vermelho
 > que sobrava era do **70**, e ele também fechou em 25/08 — **o MB1 fecha
 > em ZERO, e o zero repete**) → ~~**93 (brilho assistido = algoritmo do
-> Eyes)**~~ (25/08 — a receita pousou; falta o véu de Saturno e o olho
-> dele) → **99 (a dieta dos juízes)** → **70** (a causa 2, o ponto que
+> Eyes)**~~ (25/08 — a receita pousou INTEIRA, véu palha de Saturno
+> incluído; falta só o olho dele) → **99 (a dieta dos juízes)** → **70**
+> (a causa 2, o ponto que
 > morre na borda) → **75**, com o resto do **83** (L2.5, G1, L3, L4, L5)
 > na fila da mesma família.
 
@@ -67,14 +68,17 @@ delas já serviram; o **modo real do 91** volta à prancheta com palavra dele
 (*"escuro demais, repensar"*); **86**, **87** e o novo **100** nasceram
 decididos; e a fita do **83** ficou com uma queixa pela metade, à espera das
 palavras dele. **A fila decidida, que se ACRESCENTA à de cima e não a
-substitui:** **véu palha do 93** (em obra) → **88 → 92 → 95** (a ordem é
+substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
+esperam o olho dele) → **88 → 92 → 95** (a ordem é
 DELE, e cada um volta com foto) → **gate do filme (77)** → **rolagem do véu
 (87)** → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
 de abertura (**61**) → **70**, a causa 2 → **99** → **75**.
 
 **O QUE ESPERA O OLHO DELE — e a dívida ENCOLHEU em 25/08.** Sobra **UM
-item**: o **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, e a
-divergência da lanterna), e nele moram também as perguntas **Q9–Q11**, que
+item**: o **93** (a receita do Eyes — Saturno, o flanco, Mercúrio, a
+divergência da lanterna e agora o **véu palha**, que pousou no fim do
+dia com três pranchas próprias), e nele moram também as perguntas
+**Q9–Q11**, que
 herdaram o **(a)** e o **(b)** do item **91** porque a receita do 93 mexeu
 nos dois depois das fotos de lá. **E há uma pendência que não é de olho, é
 de PALAVRAS DELE:** a fita do item **83** — ele *"estranhou algo (explico no
@@ -208,8 +212,9 @@ obra pousou em 25/08, e falta ELE VER.** Palavras do dono, 2026-08-25:
 isso para ficar igual ao algortimo usado no nasa eyes"*.
 
 O item **91** pagou o **dia** (Saturno palha); faltava a **receita**.
-Ela pousou em três peças que acendem por um interruptor só, todas
-nascidas em `luzDaVisita.ts` — número e GLSL no mesmo arquivo:
+Ela pousou em quatro peças, todas nascidas em `luzDaVisita.ts` — número
+e GLSL no mesmo arquivo. As três primeiras acendem por um interruptor
+só; a quarta é o véu, que é do CORPO e não do modo:
 
 - **o Sol do globo vale 1 LITERAL** em `assistida`, como no Eyes. O
   resto de 1/d² que ainda torcia o globo morreu, e com ele saiu a
@@ -219,15 +224,29 @@ nascidas em `luzDaVisita.ts` — número e GLSL no mesmo arquivo:
   Sol, com a soma saturando em 1: a noite voltada para quem olha deixou
   de ser buraco, e o dia não estoura;
 - **o terminador logístico s = 3** nos Lambert (gigantes, rochosos
-  Lambert e a direta da Terra). O corte seco virou borda macia.
+  Lambert e a direta da Terra). O corte seco virou borda macia;
+- **o VÉU PALHA DE SATURNO**, a última a pousar (§4.4 do contrato): uma
+  mistura de atmosfera no LIMBO, depois da superfície, com os números do
+  Eyes — `density` 5e−5 por km, `scaleHeight` 200 km e a cor palha
+  (234, 202, 151)/255. **Só Saturno tem véu nesta casa** (a Terra tem
+  Nishita, que é melhor); os outros três gigantes passam pelo MESMO
+  fragmento e saem dele bit a bit.
 
-**Em `?luz=real` as três peças APAGAM** e o globo volta ao Lambert cru
-com E(d) — a decisão 2 dele, intacta. **A Lua e os rochosos de regolito
-não ganham a logística**: o disco chato de Lommel-Seeliger é o fato que
-se confere contra uma fotografia, e ali o Eyes (que usa Phong até na
-Lua) é pior que a casa.
+**Em `?luz=real` as três primeiras peças APAGAM** e o globo volta ao
+Lambert cru com E(d) — a decisão 2 dele, intacta. **A Lua e os rochosos
+de regolito não ganham a logística**: o disco chato de Lommel-Seeliger é
+o fato que se confere contra uma fotografia, e ali o Eyes (que usa Phong
+até na Lua) é pior que a casa.
 
-**O QUE FALTA É A CONFERÊNCIA DELE**, e são três perguntas:
+**O VÉU NÃO APAGA em `real` — ele ENCOLHE, e isso é de propósito.** Ele
+não tem luz própria (`emissivity` 0 no Eyes): o que o acende é o MESMO
+termo do Sol que a superfície usa, e em `real` esse termo já traz
+E(d) = 0,0106. Então a palha de Saturno em `real` vale **exatamente
+E(d) vezes** a de `assistida` — escalada, não desfeita. Medido: 3.757 px
+de 990.000 (0,38 % do quadro), **Δmáx 4,3 de 255**, média do quadro
+8,770 → 8,771. A penumbra física continua a que ele decidiu.
+
+**O QUE FALTA É A CONFERÊNCIA DELE**, e são quatro perguntas:
 
 - **(a)** Saturno assistido está no ponto? A foto que decide é
   `capturas/item93-saturno-assistida.png` — o dia continua palha e a
@@ -236,6 +255,14 @@ Lua) é pior que a casa.
   (`item93-flanco-gigante.png` — na faixa N·L ≈ 0,5 o pixel sobe ×1,41.)
 - **(c)** Mercúrio, que o item 91 domava com ganho 0,883, volta a 1.
   Ficou melhor ou voltou a incomodar? (`item93-mercurio-subsolar.png`.)
+- **(d)** O véu palha está na dose? Ele é DISCRETO por construção — a
+  atmosfera de Saturno tem 200 km numa bola de 60.268, e a conta do
+  Eyes dá 1 % de opacidade no meio do disco contra 19,6 % na borda. Nas
+  fotos `capturas/item93-veu-saturno-assistida.png` (a vista oficial) e
+  `item93-veu-limbo.png` (o limbo em close) a terceira coluna é a
+  DIFERENÇA, ampliada 20× e 12× — é nela que se vê ONDE a palha entrou,
+  porque a olho nu ela é 1 ou 2 níveis sobre quase todo o disco. Ele
+  quer mais véu do que o Eyes manda, ou está bom assim?
 
 **A CASA DIVERGIU DO CONTRATO EM UM PONTO, e a foto é a razão.** O
 contrato manda a lanterna entrar SEM eclipse e SEM sombra de anel (no
@@ -250,13 +277,26 @@ sombras junto, e não perde nada com isso: as duas valem 1 no lado
 noturno, que é onde ela trabalha. Foto:
 `capturas/item93-lanterna-e-a-sombra.png`.
 
-**O QUE NÃO POUSOU, e por isso o item não fecha nem com a conferência
-dele:** o **véu palha de Saturno** (§4.4 do contrato) — a casca de
-atmosfera com `density 5e−5`, `scaleHeight 200 km` e a cor palha
-(234,202,151)/255 misturada no limbo. O contrato o autoriza a ficar
-para uma segunda leva se a prova de 4.1–4.3 já mostrar palha + noite
-legível, e ela mostrou; mas ele **faz parte do algoritmo** e o item só
-fecha com ele.
+**COMO O VÉU FOI FEITO, em uma frase:** a atmosfera exponencial virou
+uma **casca equivalente de espessura `4H/π`** (254,6 km), escolhida para
+acertar os DOIS extremos da de verdade — a coluna vertical `ρ₀H` = 0,01
+no subsolar e a função de Chapman rasante `√(πR/2H)` = 21,76 no limbo.
+Com isso o caminho da luz cabe numa raiz quadrada, sem os cinco passos
+de integração do Eyes e sem `erfc`. A cor atravessa em **linear**
+(0,8228; 0,5906; 0,3095) porque esta casa é gerenciada por cor e aqueles
+234/202/151 são bytes de TELA. E o véu levou junto o que o Eyes manda
+levar: com atmosfera, o `s` do terminador de Saturno cai de 3 para
+**2,8986** (`sharpness /= 1 + 700·density`).
+
+**O QUE O VÉU SOZINHO FEZ NA TELA** (véu apagado × véu aceso, com o
+MESMO `s` dos dois lados — a única forma de separá-lo da peça que mexe
+na dose): 11.883 px de 990.000 (1,2 % do quadro), **Δmáx 47,8**, média
+do quadro 21,622 → 21,623 — ele **não** clareia o disco, troca a cor da
+borda. A luz que ENTROU é palha: R:G:B = 1 : 1,09 : **0,33**. O ruído do
+instrumento nessa vista, medido, é 405 px. Números em
+`capturas/item93-veu-sozinho.json` e `item93-veu-ruido.json`; o modo
+`croma` de `scripts/visual/luz-ab.mjs` é quem os produz, e ele nasceu
+para isto: o cinza não separa "mudou a dose" de "entrou tinta".
 
 **Os pinos bit-idênticos de Terra e Lua do item 91 CAÍRAM**, autorizados
 pelo contrato, e caíram medidos: o ganho de casa era 0,998953 (Terra) e
@@ -276,6 +316,18 @@ lado delas: `capturas/item93-medidas.json` (o A/B das nove vistas),
 `item93-ruido-do-instrumento.json`. **Não apagar na próxima limpeza de
 `capturas/`**, pela mesma razão dos itens 70 e 79: elas ainda não
 serviram.
+
+**AS FOTOS DO VÉU (§4.4), três pranchas de três colunas** — véu apagado,
+véu aceso e a DIFERENÇA ampliada, com a lupa das três no mesmo recorte:
+`capturas/item93-veu-saturno-assistida.png` (a vista oficial da casa, 6
+raios — a que ele julga; diferença ×20), `item93-veu-limbo.png` (câmera
+a 2,2 raios, fase 60°, sem bloom; ×12) e `item93-veu-real.png`
+(`?luz=real`, ×**24**, porque a olho nu ela não existe). Os números
+delas moram em `capturas/item93-veu-medidas.json` (o A/B das oito
+vistas), `item93-veu-sozinho.json` (o véu ISOLADO, mesmo `s` dos dois
+lados) e `item93-veu-ruido.json` (o ruído do instrumento e os dois pares
+nulos). Os quadros crus estão em `capturas/item93-veu-cru/` — é deles
+que as pranchas se recompõem, e **não apagar** junto com o resto.
 
 **E AGORA DÁ PARA CONFERIR TODOS ELES.** O medidor de 25/08 era de
 bancada e vivia fora do projeto; virou `scripts/visual/luz-ab.mjs`, com
@@ -297,7 +349,17 @@ de 255) — contra os 37 px que o MESMO binário move contra ele mesmo
 (`item93-ruido-do-instrumento.json`). **O pontinho
 MH18 sai byte a byte igual** a 150 UA e a 40 UA.
 
-Contrato vivo, com o que pousou e o que não pousou:
+**E O QUE O A/B DO VÉU MEDIU** (árvore limpa dos dois lados, `89d37e3` ×
+a obra, 1100×900, dpr 1): **o que podia mover moveu, e só ele.** Saturno
+na vista oficial, 18.111 px (1,83 % do quadro, Δmáx 41,9); Saturno no
+limbo em close, 233.285 px (23,6 %, Δmáx 43,0) — a maior parte disso é o
+`s` de 2,8986, que amacia o terminador do disco inteiro. **Júpiter,
+a Terra, a Lua e o pontinho a 150 UA saem com ZERO pixel diferente**, os
+quatro. Em `?luz=real` Saturno move 3.757 px com Δmáx 4,3, e com o véu
+apagado volta aos 87 px do par nulo (ruído 71). Tudo em
+`capturas/item93-veu-medidas.json` e `item93-veu-ruido.json`.
+
+Contrato vivo, com as quatro peças pousadas:
 `docs/reference/nasa-eyes-brilho-assistido-contrato.md`.
 
 **5.** O Sol do Atlas estava congelado no máximo solar e passou a obedecer

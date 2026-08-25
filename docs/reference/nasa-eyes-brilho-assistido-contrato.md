@@ -6,18 +6,52 @@ só “o dia ficou claro”.
 
 ---
 
-## ⚠️ O QUE POUSOU EM 25/08, E O QUE NÃO POUSOU
+## ⚠️ O CONTRATO POUSOU INTEIRO EM 25/08
 
-**Pousaram 4.1, 4.2, 4.3 e 4.5.** O Sol vale 1 literal em `assistida`
-(e a compensação por corpo do item 91 saiu do código inteira); a
-lanterna de leitura de 15 % entra depois do Sol com a soma saturada em
-1; o terminador logístico s = 3 entra nos Lambert e não entra na Lua nem
-nos rochosos LS; e as três peças nascem em `luzDaVisita.ts` — número e
-GLSL no mesmo arquivo, com **um** escritor de uniformes.
+**Pousaram 4.1, 4.2, 4.3 e 4.5** na primeira leva. O Sol vale 1 literal
+em `assistida` (e a compensação por corpo do item 91 saiu do código
+inteira); a lanterna de leitura de 15 % entra depois do Sol com a soma
+saturada em 1; o terminador logístico s = 3 entra nos Lambert e não
+entra na Lua nem nos rochosos LS; e as peças nascem em `luzDaVisita.ts` —
+número e GLSL no mesmo arquivo, com **um** escritor de uniformes.
 
-**NÃO pousou o 4.4, o véu palha de Saturno.** O item **não fecha** por
-isso, e a prova o declara — é o que este contrato manda fazer quando o
-véu atrasa.
+**E POUSOU O 4.4, o véu palha de Saturno**, na segunda leva do mesmo
+dia. É a `mix(globo, atmosphereColor, a)` deles, na mesma posição: a
+superfície acende primeiro e a palha se mistura por cima, no limbo.
+
+- **A dose vem dos dois números do Eyes, e só deles.** `density` 5e−5
+  por km vezes `scaleHeight` 200 km é a coluna vertical `ρ₀H` = **0,01**
+  — a única leitura das duas grandezas que fecha em unidades.
+- **A forma é uma CASCA EQUIVALENTE de `4H/π`**, no lugar dos cinco
+  passos de integração deles. A espessura não é gosto: é o valor que faz
+  a casca acertar os DOIS extremos da atmosfera exponencial — coluna
+  vertical `ρ₀H` no subsolar e a Chapman rasante `√(πR/2H)` = 21,76 no
+  limbo. O caminho fica numa raiz quadrada, sem laço e sem `erfc`. A
+  opacidade sai **0,00995** no centro do disco, 0,047 a μ = 0,2 e
+  **0,1957** na borda: um véu que abraça os 2 % externos do raio.
+- **A cor atravessa em LINEAR.** (234, 202, 151)/255 são bytes de TELA;
+  esta casa é gerenciada por cor, e o que entra no shader é
+  (0,8228; 0,5906; 0,3095). Passar o byte cru pintaria um véu lavado.
+- **`sunBrightness` 1, `sunsetIntensity` 0 e `emissivity` 0 não viram
+  código, e é assim que se cumprem**: o véu é aceso pelo MESMO `luzSol`
+  da superfície (nada acima dele), multiplica a palha por um escalar
+  (croma parada) e não tem termo próprio (sem Sol, não acrescenta nada).
+- **A lanterna fica FORA**, como no Eyes (`length(lightPositions[i]) > 0`
+  pula a luz de câmera, que está na origem). `globoComVeu` recebe
+  `luzSol`, não a soma.
+- **E o `s` de Saturno cai para 2,8986**, o `sharpness /= 1 + 700·density`
+  deles — o vazamento no terminador sobe de 4,98 % para 5,51 % e o
+  flanco cede 1 %. Nenhum outro corpo desta casa tem véu, e todos
+  continuam em 3 exato.
+
+**COMO O VÉU RESPONDE AO E(d), declarado:** em `?luz=real` ele é
+**exatamente E(d) vezes** o de `assistida`, porque o que ele acende é o
+`luzSol` do quadro e ali esse termo já traz E(d) = 0,0106 e o Lambert
+cru. A decisão 2 do dono não é desfeita por uma casca que brilha
+sozinha — esta não brilha: ela só sabe repetir a luz que o globo
+recebeu. Medido na mesma vista: 3.757 px de 990.000 (0,38 %), **Δmáx
+4,3 de 255**, média do quadro 8,770 → 8,771. Com o véu apagado, `real`
+volta ao ruído do instrumento (87 px contra 71 px do par nulo).
 
 **UMA DIVERGÊNCIA DECLARADA, do §4.2: a lanterna RESPEITA as sombras.**
 O contrato manda-a entrar sem eclipse e sem sombra de anel, porque no
@@ -267,14 +301,21 @@ usado em:
 Em Saturno, se a atmosfera do §4.4 existir, `s /= 1 + 700 * density`
 como o Eyes. Sem atmosfera, `s = 3`.
 
-### 4.4 Véu palha de Saturno
+### 4.4 Véu palha de Saturno — POUSOU
 
-Casca ou mistura no limbo com os números do §1.4. Só Saturno. Só o
-Sol ilumina o véu (lanterna fora). Segunda na ordem **depois** do
-globo acender com 4.1–4.3, se a prova de 4.1–4.3 já mostrar palha +
-noite legível; não bloquear 4.1–4.3 se o véu atrasar. O dono pediu o
-algoritmo: o véu **faz parte**. Entregar na mesma obra se couber;
-se não couber, a prova declara a falta e o item não fecha.
+Mistura no limbo com os números do §1.4. Só Saturno. Só o Sol ilumina
+o véu (lanterna fora). Segunda na ordem, **depois** do globo acender
+com 4.1–4.3.
+
+O que ficou no código, em `luzDaVisita.ts` e em lugar nenhum mais:
+`VEU_DE_SATURNO` (os três números do Eyes que viram conta),
+`COR_DO_VEU` (a palha decodificada para linear), `densidadeDoVeu`,
+`colunaVerticalDoVeu`, `espessuraDoVeu`, `uniformsDoVeu` e o chunk
+`GLSL_VEU_DE_SATURNO` com `opacidadeDoVeu` e `globoComVeu`. O
+`GIGANTE_LAMBERT_FRAG` só o INCLUI, e os quatro gigantes passam pelo
+mesmo fragmento: Júpiter, Urano e Netuno entram com coluna 0 e saem
+bit a bit. Ver o ⚠️ no topo para a casca equivalente `4H/π`, a coluna
+`ρ₀H` e a resposta do véu ao E(d).
 
 ### 4.5 Uma fonte só
 
@@ -308,6 +349,14 @@ Mínimo:
 7. Anel de Saturno, mesma vista do (1): acompanha o globo (Sol = 1),
    não volta a carvão.
 8. Selo: assistida declara lanterna; real não declara.
+9. **Véu (§4.4): a palha tem de ENTRAR no limbo, e só nele.** A prova
+   não pode ser o cinza: a peça que muda a DOSE (o `s`) escurece 1 % o
+   disco inteiro e tem cem vezes mais pixels que a que acende a borda.
+   Mede-se com o modo `croma` de `scripts/visual/luz-ab.mjs` (a cor do
+   que ENTROU, canal a canal) e com o véu ISOLADO — mesmo `s`, véu
+   apagado contra véu aceso. Medido: 11.883 px, Δmáx 47,8, luz que
+   entrou em R:G:B = 1 : 1,09 : **0,33** contra os 405 px de ruído do
+   instrumento. Fotos: `capturas/item93-veu-*.png`.
 
 A prova (1) é a que o dono julga. Lado a lado com o Eyes em Shadow,
 mesmo corpo, é o juízo — não um número inventado de “igualdade”.
@@ -322,9 +371,10 @@ Lê `docs/PENDENCIAS.md` (item **93**) e este arquivo inteiro. A obra
 O item **91** pagou o dia (Saturno palha). Não desfazê-lo. Não reabrir
 o `real`. Não mexer no ponto.
 
-Três peças que o 91 deixou de fora **de propósito** e que agora o dono
-pediu: Sol = 1 literal (sem resíduo de 1/d²), lanterna 15 %, logística
-s=3. Véu palha de Saturno junto, se couber.
+Três peças que o 91 deixou de fora **de propósito** e que o dono pediu:
+Sol = 1 literal (sem resíduo de 1/d²), lanterna 15 %, logística s=3. E a
+quarta, o véu palha de Saturno, que veio na segunda leva do mesmo dia.
+As quatro estão de pé; o que falta é o OLHO DELE.
 
 Não copiar ambiente 0,02. Não copiar flood. Não desligar ACES. Não
 trocar Lommel-Seeliger da Lua. Não chamar “igual” a um produto que

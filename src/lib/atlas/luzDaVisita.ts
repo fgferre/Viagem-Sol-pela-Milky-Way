@@ -66,6 +66,10 @@
 //      `terminadorSuave` de {@link GLSL_LUZ_DA_VISITA}, o
 //      `MaterialUtilsPhong` deles. Flanco a N·L = 0,5 sobe de 0,50 para
 //      0,72 (+43 %).
+//   d. O VÉU PALHA DE SATURNO — {@link VEU_DE_SATURNO} e o
+//      {@link GLSL_VEU_DE_SATURNO}, o `AtmosphereComponent` deles. É a
+//      quarta peça, o §4.4 do contrato, e a última a pousar: uma mistura
+//      no LIMBO, depois da superfície, que só o SOL acende.
 //
 // O QUE NÃO ATRAVESSOU, e por quê (o contrato §3): o ambiente 0,02 de
 // cena (anti-padrões 3 e 9 — a lanterna já lê a noite), o flood branco
@@ -100,6 +104,7 @@
 //    contrato manda mexer no `ndotl` da direta de `TERRA_FRAG` e diz,
 //    com todas as letras, que "as cidades e o Nishita ficam".
 // ============================================================
+import { BODY_AXES } from './iauOrientation';
 import { ganhoFundido, irradianciaRelativa } from './luz';
 import type { PoliticaDeLuz } from './luz';
 
@@ -130,12 +135,135 @@ export const LANTERNA_DE_LEITURA = 0.15;
  * 0,50 → 0,72; 0,20 → 0,36; 0,00 → 0,05; negativo → 0. É o que dá o
  * flanco +43 % e a borda macia que a casa não tinha.
  *
- * O Eyes divide este s por `1 + 700·densidade` onde há atmosfera; em
- * Saturno (densidade 5e−5) isso o levaria a 2,899. O véu de Saturno é o
- * §4.4 do contrato e NÃO pousou nesta rodada — quando pousar, é aqui que
- * a divisão entra, e o uniforme já é por material.
+ * O Eyes divide este s por `1 + 700·densidade` onde há atmosfera. Com o
+ * §4.4 pousado, Saturno passa a ter densidade e a divisão ACONTECE: o s
+ * dele cai para 2,8986 ({@link sDoTerminador}), o vazamento no terminador
+ * sobe de 4,98 % para 5,51 % e o flanco cede 1 %. Os outros três gigantes,
+ * os rochosos, a Terra e a Lua continuam em 3 — nenhum deles tem véu
+ * nesta casa, e o uniforme é por material.
  */
 export const S_DO_TERMINADOR = 3;
+
+/**
+ * O `700` do `sharpness /= 1 + 700 * atmosphereDensity` do Eyes — um
+ * literal do `MaterialUtilsPhong` deles, não uma razão R/H desta casa.
+ * Fica nomeado porque é ele quem transforma a densidade do véu em borda
+ * mais macia, e um número solto no meio de uma divisão é como uma
+ * constante mágica se instala.
+ */
+export const FATOR_DA_ATMOSFERA_NO_TERMINADOR = 700;
+
+/**
+ * O VÉU PALHA DE SATURNO — o `postCreateFunction` do Saturno no NASA
+ * Eyes, §1.4 do contrato, lido no fonte deles em 24/08.
+ *
+ * SÃO SEIS NÚMEROS LÁ, e três deles não viram código AQUI, de propósito:
+ *
+ *  - `sunBrightness` **1**: é o multiplicador do Sol sobre o véu, e 1 é a
+ *    identidade. Escrever `× 1` no shader seria enfeite; o que o número
+ *    diz é que o véu NÃO ganha um brilho próprio acima da luz que o
+ *    globo recebe naquele ponto — e é isso que {@link GLSL_VEU_DE_SATURNO}
+ *    faz ao acendê-lo com o MESMO `luzSol` da superfície.
+ *  - `sunsetIntensity` **0**: o Eyes avermelha a atmosfera da TERRA no
+ *    poente (1,2 lá). Em Saturno é zero — a palha não muda de cor no
+ *    terminador, só de intensidade. Um termo de poente multiplicado por
+ *    zero seria código morto; o que existe é a AUSÊNCIA dele, e o juiz
+ *    cobra a ausência medindo que a croma do véu não se mexe com o Sol.
+ *  - `emissivity` **0**: o véu não brilha sozinho. É o número que protege
+ *    a decisão 2 do dono — em `?luz=real` a palha continua multiplicada
+ *    por E(d) e por `terminadorSuave` cru, então a noite do véu é PRETA e
+ *    o dia dele é 1/90. Uma casca com emissividade acenderia Saturno por
+ *    fora da física, e é exatamente o que este 0 proíbe.
+ *
+ * OS TRÊS QUE VIRAM CÓDIGO são a densidade, a escala de altura e a cor.
+ * A cor entra em BYTES sRGB porque é assim que ela está escrita lá; esta
+ * casa é gerenciada por cor (as texturas decodificam de sRGB e o quadro
+ * sai por ACES), então quem atravessa para o shader é
+ * {@link COR_DO_VEU}, a mesma palha em LINEAR.
+ */
+export const VEU_DE_SATURNO = {
+  /** km — `scaleHeight` do Eyes */
+  escalaDeAlturaKm: 200,
+  /** por km — `density` do Eyes, a densidade ao nível de referência */
+  densidadePorKm: 5e-5,
+  /** bytes sRGB — `color` do Eyes, (234, 202, 151)/255 */
+  corEmBytesSRgb: [234, 202, 151] as const,
+} as const;
+
+/** sRGB → linear, a curva da IEC 61966-2-1. A casa não tinha esta peça
+ *  porque nunca precisou trazer uma cor de FORA em bytes de tela. */
+function deSRgbParaLinear(c: number): number {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+/**
+ * A PALHA DO EYES EM LINEAR — (234, 202, 151)/255 decodificada, que dá
+ * (0,8228; 0,5906; 0,3095).
+ *
+ * Por que decodificar: no Eyes a cor entra num caminho que não gerencia
+ * espaço, isto é, ela É o que se vê na tela. Aqui o albedo do mapa já
+ * chega em linear (o sampler decodifica, `texturas.ts`) e o quadro sai
+ * por ACES + sRGB. Misturar bytes de tela com um albedo linear pintaria
+ * um véu claro demais e lavado — a mesma classe de erro que pôr um
+ * normal map em sRGB, e igualmente silenciosa.
+ */
+export const COR_DO_VEU: readonly [number, number, number] = [
+  deSRgbParaLinear(VEU_DE_SATURNO.corEmBytesSRgb[0] / 255),
+  deSRgbParaLinear(VEU_DE_SATURNO.corEmBytesSRgb[1] / 255),
+  deSRgbParaLinear(VEU_DE_SATURNO.corEmBytesSRgb[2] / 255),
+];
+
+/**
+ * QUEM TEM VÉU NESTA CASA: só Saturno, e o contrato diz por quê. A Terra
+ * do Eyes também declara atmosfera (densidade 0,0015), mas aqui ela tem
+ * NISHITA — física de espalhamento de verdade, melhor que o glow deles —,
+ * e o §4.4 escreve "Só Saturno" com todas as letras. Corpo sem véu devolve
+ * 0, e 0 é a convenção de "sem atmosfera": o `s` fica em 3 exato e a
+ * mistura no limbo é a identidade.
+ */
+export function densidadeDoVeu(id: string): number {
+  return id === 'saturn' ? VEU_DE_SATURNO.densidadePorKm : 0;
+}
+
+/**
+ * A COLUNA VERTICAL do véu, adimensional — a profundidade óptica de quem
+ * olha o subsolar de cima: `∫₀^∞ ρ₀·e^(−z/H) dz = ρ₀·H`. Em Saturno,
+ * 5e−5 × 200 km = **0,01**. É a única leitura das duas grandezas do Eyes
+ * que fecha em unidades, e é ela que dá a dose do véu.
+ */
+export function colunaVerticalDoVeu(id: string): number {
+  const densidade = densidadeDoVeu(id);
+  return densidade === 0 ? 0 : densidade * VEU_DE_SATURNO.escalaDeAlturaKm;
+}
+
+/**
+ * A ESPESSURA DA CASCA EQUIVALENTE, em unidades do raio EQUATORIAL — o
+ * modelo que este véu usa no lugar de integrar a exponencial em cinco
+ * passos como o Eyes.
+ *
+ * A IDEIA: trocar a atmosfera exponencial por uma casca UNIFORME de
+ * espessura T, dentro da qual a coluna vertical vale exatamente a mesma
+ * `ρ₀H`. O caminho de um raio até a superfície tem forma fechada — é uma
+ * raiz quadrada, sem laço e sem `erfc` —, e T sai de uma exigência, não
+ * de gosto: que a coluna RASANTE também bata com a da atmosfera de
+ * verdade. A coluna rasante exponencial é a função de Chapman no limite,
+ * `√(πR/2H)`; a da casca é `√(2R/T)`; igualar as duas dá
+ *
+ *     T = 4H/π  (≈ 1,273 H — 254,6 km em Saturno)
+ *
+ * e com ela o modelo acerta os DOIS extremos por construção: 1 no
+ * subsolar e 21,76 no limbo. Entre eles ele interpola por baixo da
+ * secante — que é o sentido certo do erro, porque a esfericidade sempre
+ * reduz o caminho em relação a `1/μ`. A APROXIMAÇÃO DECLARADA é usar o
+ * raio EQUATORIAL num corpo achatado: nos polos de Saturno o véu fica
+ * ~5 % mais espesso do que este modelo pinta, num efeito que já é de
+ * poucos pixels.
+ */
+export function espessuraDoVeu(id: string): number {
+  const raioEquatorialKm = BODY_AXES[id]?.[0];
+  if (!raioEquatorialKm || densidadeDoVeu(id) === 0) return 0;
+  return (4 / Math.PI) * (VEU_DE_SATURNO.escalaDeAlturaKm / raioEquatorialKm);
+}
 
 /**
  * O ESCALAR ÚNICO que o material de um corpo RESOLVIDO multiplica na sua
@@ -169,9 +297,15 @@ export function lanternaDaVisita(politica: PoliticaDeLuz): number {
  * convenção declarada de "sem suavização": o shader devolve
  * `max(N·L, 0)`, o Lambert cru de antes desta obra, sem um bit de
  * diferença.
+ *
+ * E O VÉU MEXE NELE. Onde há atmosfera o Eyes amacia mais o terminador —
+ * `sharpness /= 1 + 700·density` —, e com o §4.4 pousado Saturno passa a
+ * entrar por aqui com `densidade` 5e−5: o s dele vira 2,8986. Densidade 0
+ * (todo o resto da casa) devolve `S/(1+0)`, isto é, 3 **exato**.
  */
-export function sDoTerminador(politica: PoliticaDeLuz): number {
-  return politica === 'real' ? 0 : S_DO_TERMINADOR;
+export function sDoTerminador(politica: PoliticaDeLuz, densidade = 0): number {
+  if (politica === 'real') return 0;
+  return S_DO_TERMINADOR / (1 + FATOR_DA_ATMOSFERA_NO_TERMINADOR * densidade);
 }
 
 /** O molde estrutural de um `uniforms` de `THREE.ShaderMaterial` — sem
@@ -196,10 +330,36 @@ export function uniformsDaLuzDaVisita(): Uniformes {
  * nem 3. O anel fica de fora de propósito: ele bebe o `uLuzGanho` do
  * globo e nada mais (ver "O QUE ESTA LEI NÃO GOVERNA", acima). É o que
  * impede a receita de virar quatro cópias (contrato §4.5).
+ *
+ * `densidade` é a do véu do corpo ({@link densidadeDoVeu}) e só Saturno a
+ * traz diferente de zero; quem não passa nada fica com o s = 3 de sempre.
  */
-export function escreverLuzDaVisita(u: Uniformes, politica: PoliticaDeLuz): void {
+export function escreverLuzDaVisita(
+  u: Uniformes,
+  politica: PoliticaDeLuz,
+  densidade = 0
+): void {
   u.uLanternaLeitura!.value = lanternaDaVisita(politica);
-  u.uTerminadorS!.value = sDoTerminador(politica);
+  u.uTerminadorS!.value = sDoTerminador(politica, densidade);
+}
+
+/**
+ * OS TRÊS UNIFORMES DO VÉU, resolvidos POR CORPO na hora em que o
+ * material nasce — e escritos uma vez só, porque nenhum deles muda com o
+ * quadro: a coluna é do corpo, a espessura é do corpo, e a cor é a palha
+ * do Eyes. Quem manda o véu acender e apagar com a luz da visita não é
+ * este bloco: é o `luzSol` que {@link GLSL_VEU_DE_SATURNO} recebe, o
+ * MESMO que a superfície usa — com o ganho, o terminador e as sombras
+ * daquele quadro já dentro.
+ *
+ * Corpo sem véu recebe coluna 0, e o chunk devolve a identidade.
+ */
+export function uniformsDoVeu(id: string): Uniformes {
+  return {
+    uVeuColuna: { value: colunaVerticalDoVeu(id) },
+    uVeuEspessura: { value: espessuraDoVeu(id) },
+    uVeuCor: { value: [...COR_DO_VEU] },
+  };
 }
 
 /**
@@ -285,6 +445,83 @@ vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 sombras) {
 vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
   vec3 teto = vec3(1.0);
   return max(luzSol, min(luzSol + fill, teto));
+}
+`;
+
+/**
+ * O VÉU PALHA DE SATURNO EM GLSL — a quarta peça da receita, o §4.4 do
+ * contrato. Só o `GIGANTE_LAMBERT_FRAG` inclui este chunk, e ele vem
+ * DEPOIS de {@link GLSL_LUZ_DA_VISITA}: `globoComVeu` chama o
+ * `luzDoGlobo` de lá.
+ *
+ * ------------------------------------------------------------
+ * `opacidadeDoVeu` — quanta palha há NA FRENTE da superfície
+ * ------------------------------------------------------------
+ * O Eyes integra a exponencial em cinco passos. Aqui a atmosfera é a
+ * CASCA EQUIVALENTE de {@link espessuraDoVeu} — mesma coluna vertical,
+ * mesma coluna rasante —, e o caminho até a superfície tem forma
+ * fechada: entrando por uma casca de espessura `t` (em raios) num ponto
+ * de cosseno de visada `μ`, o raio anda
+ *
+ *     caminho = √((1+t)² − (1−μ²)) − μ
+ *
+ * e a MASSA DE AR é isso dividido por `t`. Ela vale 1 EXATO no subsolar
+ * e 21,78 no limbo de Saturno — 0,1 % acima da função de Chapman rasante
+ * √(πR/2H) = 21,76, que é a sobra do termo `t²` da raiz. A opacidade é
+ * `1 − e^(−coluna·massa)`: **0,00995** no centro do disco, 0,0466 a
+ * μ = 0,2 e **0,1957** no limbo. É um véu que abraça a borda — os 2 %
+ * externos do raio —, e não uma névoa por cima do planeta.
+ *
+ * `uVeuColuna <= 0` é a convenção de "corpo sem véu": Júpiter, Urano e
+ * Netuno passam por este mesmo fragmento e saem por aqui com ZERO, sem
+ * um bit de diferença.
+ *
+ * ------------------------------------------------------------
+ * `globoComVeu` — a ORDEM, e quem tem o direito de acender a palha
+ * ------------------------------------------------------------
+ * A superfície acende primeiro (albedo × a luz do globo, lanterna
+ * incluída) e o véu se MISTURA por cima — é o
+ * `mix(globo, atmosphereColor, a)` do `main` deles, na mesma posição.
+ *
+ * **A LANTERNA NÃO ENTRA NO VÉU.** No Eyes a atmosfera percorre as luzes
+ * com `if (length(lightPositions[i]) > 0)`, e a luz de câmera está na
+ * ORIGEM do espaço de câmera: ela é pulada por construção. Aqui isso é
+ * literal — `globoComVeu` acende a palha com `luzSol`, o termo do Sol
+ * sozinho (terminador × ganho × sombras), e não com a soma que a
+ * superfície usa. As duas consequências são as que o contrato pede:
+ *
+ *  - `emissivity` 0 VIVE AQUI: onde o Sol não bate, `luzSol` é 0 e o véu
+ *    não acrescenta nada — a noite de Saturno não ganha uma auréola. O
+ *    que ele ainda faz no lado escuro é EXTINGUIR: a palha apagada come
+ *    até 19,6 % do que a lanterna acendia no fio do limbo, que é o que
+ *    uma camada de gás faz com a luz que a atravessa.
+ *  - `sunsetIntensity` 0 TAMBÉM: o véu multiplica a palha por um ESCALAR
+ *    de três canais iguais, então a croma dele nunca anda. O poente da
+ *    Terra do Eyes avermelha; o de Saturno não existe, e o que prova a
+ *    ausência é a razão R/B do termo do véu ficar parada.
+ *  - `?luz=real` NÃO GANHA BRILHO INDEVIDO: ali `luzSol` já traz E(d) =
+ *    1/90 e o Lambert cru, então o véu é 1/90 de si mesmo. A decisão 2
+ *    do dono não pode ser desfeita por uma casca que brilha sozinha, e
+ *    esta não brilha: ela só sabe repetir a luz que o globo recebeu.
+ */
+export const GLSL_VEU_DE_SATURNO = /* glsl */ `
+uniform float uVeuColuna;    // ρ₀H do corpo; 0 = corpo sem véu
+uniform float uVeuEspessura; // espessura da casca equivalente, em raios
+uniform vec3 uVeuCor;        // a palha do Eyes, já em LINEAR
+
+float opacidadeDoVeu(float mu) {
+  if (uVeuColuna <= 0.0) return 0.0;
+  float m = clamp(mu, 0.0, 1.0);
+  float t = max(uVeuEspessura, 1.0e-9);
+  float raio = 1.0 + t;
+  float caminho = (sqrt(max(raio * raio - (1.0 - m * m), 0.0)) - m) / t;
+  return 1.0 - exp(-uVeuColuna * caminho);
+}
+
+vec3 globoComVeu(vec3 albedo, vec3 luzSol, vec3 fill, float aVeu) {
+  vec3 superficie = albedo * luzDoGlobo(luzSol, fill);
+  if (aVeu <= 0.0) return superficie;
+  return mix(superficie, uVeuCor * luzSol, aVeu);
 }
 `;
 

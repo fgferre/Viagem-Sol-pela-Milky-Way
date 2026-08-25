@@ -7,6 +7,7 @@
 //   node scripts/visual/luz-ab.mjs faixas antes.png depois.png
 //   node scripts/visual/luz-ab.mjs aneis  antes.png depois.png [limiar]
 //   node scripts/visual/luz-ab.mjs umbra  antes.png depois.png [ref.png]
+//   node scripts/visual/luz-ab.mjs croma  antes.png depois.png
 //
 // Imprime JSON no formato dos `capturas/item93-*.json`. Sem navegador e
 // sem dependência: o PNG é decodificado aqui (zlib do próprio Node), e a
@@ -82,6 +83,14 @@
 //    o último décimo é meio anel, porque o limbo é onde a máscara mente.
 //    `chato` = anel 0,8–0,9 sobre anel 0,0–0,1 — 1 é o disco chato de
 //    Lommel-Seeliger, e quanto menor, mais o limbo cai.
+//  · CROMA (25/08, o véu do §4.4): reparte o quadro pelo SINAL da
+//    mudança de luminância — `acendeu` (Δ ≥ +0,5) e `apagou` (Δ ≤ −0,5) —
+//    e dá a média do delta CANAL A CANAL em cada balde, mais a razão
+//    R:G:B normalizada em R. Existe porque o cinza não separa mudança de
+//    DOSE (todo canal na mesma proporção) de TINTA acrescentada: num
+//    quadro em que as duas acontecem, a peça que escurece 1 % o disco
+//    inteiro tem cem vezes mais pixels que a que acende a borda. Cor
+//    achatada (1 : ~1 : ~1) é dose; cor inclinada é tinta.
 //  · UMBRA: o próprio script ACHA o ponto mais escuro do lado de
 //    referência dentro do disco (varredura de 2 em 2 px, média de 5×5
 //    amostras), e mede janelas de 17×17 ali e a 220 px ao lado.
@@ -338,6 +347,80 @@ export function medirAneis(antes, depois, largura, altura, limiar = LIMIAR_DO_DI
 }
 
 // ------------------------------------------------------------
+// A COR DO QUE MUDOU — o formato de `item93-veu-croma.json`
+// ------------------------------------------------------------
+/**
+ * O QUE ESTE MODO EXISTE PARA SEPARAR, e por que o cinza não separa.
+ *
+ * Uma obra de luz pode mudar um quadro de dois jeitos que a luminância
+ * confunde: mexendo na DOSE (todo canal na mesma proporção — trocar o
+ * `s` do terminador, por exemplo) ou acrescentando uma COR (um véu de
+ * atmosfera, uma tinta de gelo). O véu palha de Saturno é o segundo
+ * caso, e num quadro em que a dose também mudou ele desaparece na média:
+ * a peça que escurece 1 % o disco inteiro tem cem vezes mais pixels que
+ * a que acende a borda.
+ *
+ * A SEPARAÇÃO É PELO SINAL. `acendeu` são os pixels cuja LUMINÂNCIA
+ * subiu meio nível ou mais; `apagou`, os que caíram. Para cada conjunto
+ * sai a média do delta canal a canal e a razão R:G:B normalizada em R —
+ * que é a COR do que entrou (ou saiu). Cor achatada (1 : ~1 : ~1) é
+ * mudança de dose; cor inclinada é tinta, e a inclinação diz qual.
+ *
+ * `pico` é o pixel de maior ΔR, com as duas trincas inteiras: é onde se
+ * confere a olho que o número não veio de um canto do quadro.
+ */
+export function medirCroma(antes, depois, limiar = LIMIAR_DE_MUDANCA) {
+  if (antes.largura !== depois.largura || antes.altura !== depois.altura) {
+    throw new Error('quadros de tamanhos diferentes');
+  }
+  if (antes.canais < 3 || depois.canais < 3) throw new Error('quadro sem cor: croma pede RGB');
+  const balde = () => ({ n: 0, dR: 0, dG: 0, dB: 0 });
+  const acendeu = balde();
+  const apagou = balde();
+  let pico = null;
+  const total = antes.largura * antes.altura;
+  for (let i = 0; i < total; i++) {
+    const ja = i * antes.canais;
+    const jb = i * depois.canais;
+    const dR = depois.dados[jb] - antes.dados[ja];
+    const dG = depois.dados[jb + 1] - antes.dados[ja + 1];
+    const dB = depois.dados[jb + 2] - antes.dados[ja + 2];
+    const dLum = 0.2126 * dR + 0.7152 * dG + 0.0722 * dB;
+    const alvo = dLum >= limiar ? acendeu : dLum <= -limiar ? apagou : null;
+    if (alvo) {
+      alvo.n++;
+      alvo.dR += dR;
+      alvo.dG += dG;
+      alvo.dB += dB;
+    }
+    if (!pico || dR > pico.dR) {
+      pico = {
+        x: i % antes.largura,
+        y: (i / antes.largura) | 0,
+        dR,
+        antes: [antes.dados[ja], antes.dados[ja + 1], antes.dados[ja + 2]],
+        depois: [depois.dados[jb], depois.dados[jb + 1], depois.dados[jb + 2]],
+      };
+    }
+  }
+  const fecha = (b) => {
+    // a normalização é pelo MÓDULO do R: no balde `apagou` os três deltas
+    // são negativos, e dividir por um R negativo devolveria uma cor de
+    // sinal trocado — pior, um `Math.max(dR, 1e-9)` devolveria 1e14
+    const escala = Math.max(Math.abs(b.dR), 1e-9);
+    return {
+      n: b.n,
+      dR: arred(b.dR / Math.max(b.n, 1), 3),
+      dG: arred(b.dG / Math.max(b.n, 1), 3),
+      dB: arred(b.dB / Math.max(b.n, 1), 3),
+      // a COR do que entrou (ou saiu), normalizada no R
+      corRGB: [1, arred(Math.abs(b.dG) / escala, 3), arred(Math.abs(b.dB) / escala, 3)],
+    };
+  };
+  return { pixels: total, acendeu: fecha(acendeu), apagou: fecha(apagou), pico };
+}
+
+// ------------------------------------------------------------
 // A UMBRA E O CHÃO AO LADO — o formato de `item93-umbra.json`
 // ------------------------------------------------------------
 /** o ponto mais escuro do disco em `ref`, por varredura de 2 em 2 px */
@@ -399,11 +482,16 @@ export function medirUmbra(antes, depois, largura, altura, ref = antes, dx = 220
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const [modo, alvo, arqB, extra] = process.argv.slice(2);
   if (!modo || !alvo) {
-    throw new Error('uso: luz-ab.mjs <par|faixas|aneis|umbra> <pasta | antes.png depois.png>');
+    throw new Error(
+      'uso: luz-ab.mjs <par|faixas|aneis|umbra|croma> <pasta | antes.png depois.png>'
+    );
   }
   let saida;
   if (modo === 'par' && !arqB) saida = medirPasta(alvo);
-  else {
+  else if (modo === 'croma') {
+    if (!arqB) throw new Error('o modo `croma` precisa de DOIS arquivos');
+    saida = medirCroma(lerPng(readFileSync(alvo)), lerPng(readFileSync(arqB)));
+  } else {
     if (!arqB) throw new Error(`o modo \`${modo}\` precisa de DOIS arquivos`);
     const A = cinzaDoArquivo(alvo);
     const B = cinzaDoArquivo(arqB);
