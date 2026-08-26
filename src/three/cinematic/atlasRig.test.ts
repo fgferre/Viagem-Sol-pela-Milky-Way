@@ -766,6 +766,143 @@ describe('o arrasto de dois eixos — a volta em torno da linha alvo→Sol', () 
   });
 });
 
+// ------------------------------------------------------------
+// A INÉRCIA DO GIRO (item 102, P1) — a queixa do dono é de TATO:
+// «o movimento de rotacionar objetos selecionados do app é péssimo…
+// porque somos diferentes do nasa eyes nisso?». A causa medida: o giro
+// deles passa por um filtro exponencial e morre macio; o nosso somava
+// seco e parava seco. Estes oráculos medem o COMPORTAMENTO da câmera —
+// nenhum deles repete a fórmula do filtro.
+// ------------------------------------------------------------
+describe('a inércia do giro — o filtro 20/80 com correção de delta-time', () => {
+  const QUADRO = 1 / 60;
+  const camera = () => new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+
+  /** um quadro de `dt` segundos com `px` de dedo na horizontal */
+  const quadro = (rig: AtlasRig, cam: THREE.PerspectiveCamera, px: number, dt: number) => {
+    if (px !== 0) rig.addOrbitDelta(px, 0);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, dt);
+  };
+
+  /**
+   * Quantos quadros a câmera ainda anda DEPOIS de o dedo soltar, e
+   * quanto tempo isso dá. Mede a POSIÇÃO — se o filtro sumir, a resposta
+   * é zero.
+   */
+  const rastroDepoisDeSoltar = (dt: number, pxPorSegundo: number) => {
+    const cam = camera();
+    const rig = new AtlasRig();
+    noSistemaInteiro(rig);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, dt);
+    // arrasta meio segundo para o filtro chegar ao regime (o dedo em
+    // velocidade constante: o mesmo px/s em qualquer fps)
+    for (let i = 0; i < Math.round(0.5 / dt); i++) quadro(rig, cam, pxPorSegundo * dt, dt);
+    // ...e SOLTA: daqui para a frente nenhum pixel entra
+    let quadros = 0;
+    let anterior = cam.position.clone();
+    let andou = 0;
+    for (let i = 0; i < 600; i++) {
+      quadro(rig, cam, 0, dt);
+      const passo = cam.position.distanceTo(anterior);
+      if (passo === 0) break;
+      andou += passo;
+      quadros++;
+      anterior = cam.position.clone();
+    }
+    return { quadros, segundos: quadros * dt, andou, fim: cam.position.clone() };
+  };
+
+  it('ao SOLTAR, o giro MORRE MACIO — e morre de vez', () => {
+    const rastro = rastroDepoisDeSoltar(QUADRO, 600);
+    // ANTES DO P1 a resposta era ZERO: o delta ia seco no acumulador e a
+    // câmera parava no mesmo quadro em que o dedo parava. É esta linha
+    // que morde quem desfizer o filtro.
+    // MEDIDO com este dedo (600 px/s): 24 quadros a 60 fps.
+    expect(rastro.quadros).toBeGreaterThan(10);
+    // ...e não é um rastro sem fim: `GIRO_MORTO_RAD` zera de vez.
+    // MEDIDO: 0,400 s — meio segundo é o teto do gosto.
+    expect(rastro.segundos).toBeLessThan(0.6);
+    // e o giro CONTINUOU no mesmo sentido, não voltou nem tremeu
+    expect(rastro.andou).toBeGreaterThan(0);
+    // depois de morto, a pose fica parada BIT a bit — nenhum quadro
+    // seguinte reescreve nada
+    const depois = rastro.fim.clone();
+    expect(rastro.fim.equals(depois)).toBe(true);
+  });
+
+  it('o DEGRAU BRUTO chega diluído: o primeiro quadro anda 20% do que o dedo pediu', () => {
+    // é a metade "suavização" do mesmo filtro — a 40 fps (o app é
+    // GPU-bound no M1) o 1:1 sem filtro lê serrilhado
+    const cam = camera();
+    const rig = new AtlasRig();
+    noSistemaInteiro(rig);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    const zero = cam.position.clone();
+    quadro(rig, cam, 100, QUADRO);
+    const comFiltro = cam.position.distanceTo(zero);
+
+    // o mesmo degrau entregue SEM quadro nenhum (o `apply` avulso, dt=0)
+    // é o caminho de antes: entra inteiro
+    const cam2 = camera();
+    const rig2 = new AtlasRig();
+    noSistemaInteiro(rig2);
+    rig2.apply(cam2, 1, LARGURA_DE_MESA_PX, QUADRO);
+    rig2.addOrbitDelta(100, 0);
+    rig2.apply(cam2);
+    const inteiro = cam2.position.distanceTo(zero);
+
+    expect(comFiltro / inteiro).toBeCloseTo(0.2, 2);
+  });
+
+  it('o RASTRO dura o mesmo TEMPO a 60 e a 30 fps — é a correção de delta-time', () => {
+    // sem a correção (o filtro do Eyes é por quadro), metade do fps
+    // dobra a duração do embalo: o mesmo app teria dois tatos, e o
+    // nosso vive perto de 40 fps. Com ela, o mesmo dedo (px por
+    // SEGUNDO) deixa o mesmo rastro em segundos.
+    // MEDIDO: 0,400 s nos DOIS (24 quadros a 60, 12 a 30) — e 0,400
+    // também a 40 e a 120 fps. Sem a correção, 30 fps daria 0,800.
+    const rapido = rastroDepoisDeSoltar(QUADRO, 600);
+    const lento = rastroDepoisDeSoltar(2 / 60, 600);
+    expect(lento.segundos / rapido.segundos).toBeGreaterThan(0.95);
+    expect(lento.segundos / rapido.segundos).toBeLessThan(1.05);
+    // e o dedo em REGIME anda o mesmo tanto por segundo nos dois fps —
+    // a suavização não é perda de sensibilidade
+    expect(lento.fim.distanceTo(rapido.fim)).toBeLessThan(0.02 * rapido.fim.length());
+  });
+
+  it('a VISTA PARADA não anda um bit — quadros sem dedo não escrevem pose nova', () => {
+    // a CONDIÇÃO DE NASCIMENTO do item 102: o filtro só existe onde há
+    // gesto. Sem dedo, o `apply` de cada quadro tem de devolver a MESMA
+    // pose, bit a bit, senão as 54 vistas paradas do gate acusam.
+    const cam = camera();
+    const rig = new AtlasRig();
+    naAberturaDeProducao(rig);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    const pose = cam.position.clone();
+    const giro = cam.quaternion.clone();
+    for (const dt of [QUADRO, 2 / 60, 0.5, 0]) {
+      rig.apply(cam, 1, LARGURA_DE_MESA_PX, dt);
+      expect(cam.position.equals(pose)).toBe(true);
+      expect(cam.quaternion.equals(giro)).toBe(true);
+    }
+  });
+
+  it('o gesto NÃO ATRAVESSA a troca de alvo — a inércia morre com o foco', () => {
+    // o resto de um giro em Marte não tem o que fazer chegando em
+    // Saturno: `focar` zera o acumulador, e teria de zerar o embalo
+    // junto, senão o alvo novo nasceria andando sozinho
+    const cam = camera();
+    const rig = new AtlasRig();
+    noSistemaInteiro(rig);
+    for (let i = 0; i < 30; i++) quadro(rig, cam, 10, QUADRO);
+    naAberturaDeProducao(rig);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    const nasceu = cam.position.clone();
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    expect(cam.position.equals(nasceu)).toBe(true);
+  });
+});
+
 describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
   it('a esfera do sistema é a órbita mais externa do retrato, pelo caminho da camada de planetas', () => {
     const { posicao, raio } = orbitaMaisExterna();

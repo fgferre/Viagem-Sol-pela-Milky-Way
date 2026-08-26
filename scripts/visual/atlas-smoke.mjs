@@ -1810,6 +1810,89 @@ try {
     );
   }
 
+  // ---- 21: A INÉRCIA DO GIRO — solta o arrasto e ele morre macio ----
+  //
+  // (item 102, P1. Palavras do dono: *"o movimento de rotacionar objetos
+  // selecionados do app é péssimo… porque somos diferentes do nasa eyes
+  // nisso?"*. A causa, medida dos dois lados: lá TODO delta de arrasto
+  // passa por um filtro exponencial e o giro morre macio ao soltar; aqui
+  // ele ia seco no acumulador e a câmera parava no MESMO quadro em que o
+  // dedo parava.)
+  //
+  // O ARRASTO É DE MOUSE E FEITO À MÃO: o `clicar` da casa não anda —
+  // press e release no mesmo ponto. O `pointerdown` é do CANVAS e o
+  // `pointermove`/`pointerup` são da JANELA (`director/gestos.ts`), e o
+  // `Input.dispatchMouseEvent` serve os dois de uma vez.
+  //
+  // A MEDIDA É AMOSTRADA POR QUADRO DENTRO DA PÁGINA, e os dois motivos
+  // são de instrumento: um `sessao.js` por quadro custa 200–500 ms de
+  // round-trip e mediria o CDP em vez do filtro; e quem marca o instante
+  // de SOLTAR é a própria página, ouvindo o `pointerup` — uma marca
+  // vinda daqui chegaria dezenas de quadros atrasada e comeria o rastro
+  // que a prova existe para medir.
+  {
+    await sessao.ir(`atlas=1&foco=saturno&jd=EPOCA&${PIN}`);
+    await sessao.assentar();
+
+    await sessao.js(`(() => {
+      window.__giro = [];
+      window.__soltouEm = -1;
+      window.addEventListener('pointerup', () => {
+        window.__soltouEm = window.__giro.length;
+      }, { once: true });
+      const passo = () => {
+        window.__giro.push(window.__director.atlas.orbita.volta);
+        window.__giroRaf = requestAnimationFrame(passo);
+      };
+      passo();
+    })()`);
+
+    const meio = JSON.parse(await sessao.js(`(() => {
+      const r = document.querySelector('canvas').getBoundingClientRect();
+      return JSON.stringify([Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)]);
+    })()`));
+    const mouse = (type, x, buttons) => sessao.send('Input.dispatchMouseEvent', {
+      type, x, y: meio[1], button: 'left', buttons, clickCount: 1, pointerType: 'mouse',
+    });
+    // 15 passos de 12 px, um por quadro: atravessa o limiar do clique
+    // curto logo no primeiro e dá tempo de o filtro chegar ao regime
+    // antes de o dedo soltar. Sem o `dorme` os 15 caem no mesmo quadro e
+    // o que se mediria seria um piparote, não um arrasto.
+    await mouse('mousePressed', meio[0], 1);
+    for (let i = 1; i <= 15; i++) {
+      await mouse('mouseMoved', meio[0] + i * 12, 1);
+      await dorme(16);
+    }
+    await mouse('mouseReleased', meio[0] + 15 * 12, 0);
+    await dorme(1500);
+
+    const { giro, soltouEm } = JSON.parse(await sessao.js(`(() => {
+      cancelAnimationFrame(window.__giroRaf);
+      return JSON.stringify({ giro: window.__giro, soltouEm: window.__soltouEm });
+    })()`));
+    // o último quadro em que a órbita ainda ANDOU
+    let ultimo = -1;
+    for (let i = 1; i < giro.length; i++) if (giro[i] !== giro[i - 1]) ultimo = i;
+    const rastro = soltouEm >= 0 && ultimo >= soltouEm ? ultimo - soltouEm + 1 : 0;
+    const girou = soltouEm > 0 ? Math.abs(giro[soltouEm - 1] - giro[0]) : 0;
+
+    conferir(
+      girou > 0.05,
+      `o arrasto de 180 px girou o Atlas: ${girou.toFixed(3)} rad até soltar`
+    );
+    conferir(
+      rastro >= 5 && rastro <= 60,
+      `...e o giro NÃO para seco quando o dedo solta: ${rastro} quadros de rastro`
+        + ` (antes do filtro eram 0)`
+    );
+    // e o rastro MORRE: os quadros finais não mudam um bit
+    const parados = giro.length - 1 - ultimo;
+    conferir(
+      parados >= 10,
+      `...e o rastro morre de vez: ${parados} quadros finais sem mexer um bit`
+    );
+  }
+
   // ---- 19: OS GESTOS DE DEDO, num APARELHO (item 62, etapa 2) -------
   //
   // A prova 15 mede a roda e a pinça de TRACKPAD — as duas chegam como

@@ -1096,8 +1096,20 @@ velocidade de giro **não** é o problema; é tato, não velocidade.
 passo, cada um com a sua prova.** Os três primeiros são pequenos; o
 quarto é o que muda o tato de verdade.
 
-**P1 — Inércia do giro (o filtro 20/80).** Em `AtlasRig`
-(`cinematic/atlasRig.ts`):
+**P1 — Inércia do giro (o filtro 20/80). POUSOU em 26/08.** O delta do
+dedo deixa de somar seco no acumulador: cai na caixa de entrada do
+quadro (`entrada`) e o `consumirOGiro` do `apply` o passa pelo filtro
+`SUAVIZACAO_DO_GIRO` (0,8, com `dt`) antes de somar na órbita.
+**MEDIDO:** ao soltar, o giro ainda anda **24 quadros (0,400 s) a 60
+fps** — e 0,400 s também a 30, 40 e 120 fps, que é a correção de
+delta-time fazendo o trabalho (sem ela, 30 fps daria 0,800 s). Antes do
+filtro eram **zero quadros**: a câmera parava no mesmo quadro que o
+dedo. No navegador (prova 21 do `atlas-smoke`, arrasto de mouse de 180
+px em Saturno): 0,349 rad até soltar, **21 quadros de rastro**, decaindo
+0,8 por quadro até morrer de vez. `dt ≤ 0` (o `apply` avulso do
+`enquadrarAgora` e os oráculos sem quadro) é pass-through declarado — o
+passo entra inteiro e não deixa rastro, que é o caminho de antes, bit a
+bit. A receita original, para quem for reler o porquê:
 
 1. `addOrbitDelta` **para de somar no acumulador**: passa a guardar o
    delta bruto numa caixa de entrada do quadro (`entrada = {altura,

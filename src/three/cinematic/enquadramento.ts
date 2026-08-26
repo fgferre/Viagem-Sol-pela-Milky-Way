@@ -105,6 +105,41 @@ export const MIN_POLAR_RAD = 0.1;
 export const ARRASTO_RAD_POR_PX = 0.0022;
 
 /**
+ * A INÉRCIA DO GIRO — quanto do giro ANTERIOR sobrevive a um quadro de
+ * 60 fps. É um filtro exponencial de primeira ordem, e ele é as DUAS
+ * coisas de uma vez: a suavização enquanto o dedo anda (o degrau bruto
+ * de cada evento chega diluído) e a inércia quando ele solta (o resto
+ * decai sozinho em vez de parar seco).
+ *
+ * 0,8 É A RÉGUA DO NASA EYES, medida do bundle deles em 2026-08-25: todo
+ * delta de arrasto passa lá por `novo = 0,2·entrada + 0,8·anterior`, e é
+ * daí que vem o tato de que o dono gosta (item 102). O que NÃO se copia
+ * é a sensibilidade — a deles é ~4,5× a nossa, e velocidade de giro
+ * nunca foi a queixa.
+ *
+ * COM CORREÇÃO DE DELTA-TIME, e isto é nosso: o filtro deles é POR
+ * QUADRO e portanto muda de tato com o fps (a 30 fps o giro deles
+ * arrasta o dobro do tempo). Aqui o fator do quadro é
+ * `0,8^(dt·60)` — a 60 fps dá exatamente 0,8, e a 30 fps dá 0,64, que é
+ * 0,8 aplicado duas vezes. O tato passa a ser o mesmo em qualquer fps, e
+ * isso importa porque o app é GPU-bound no M1 e vive perto de 40.
+ */
+export const SUAVIZACAO_DO_GIRO = 0.8;
+
+/**
+ * ONDE O GIRO MORRE, em radianos por quadro de 60 fps — abaixo disto o
+ * resto é zerado DE VEZ, sem rastro. Sem este corte o exponencial nunca
+ * chega a zero e a câmera fica com um tremor de float que só some no
+ * denormal, e cada quadro reescreveria a pose por nada.
+ *
+ * 1e-4 rad são 0,0057° por quadro: um trigésimo do menor movimento que a
+ * tela consegue mostrar (0,0022 rad = 1 px de arrasto). É o mesmo corte
+ * do Eyes, na mesma unidade — também ele com a correção de delta-time,
+ * porque o limiar é de VELOCIDADE, não de posição.
+ */
+export const GIRO_MORTO_RAD = 1e-4;
+
+/**
  * O QUE O DEDO DO VISITANTE ACUMULA, em dois eixos — e por que os dois
  * cabem dentro do MESMO grampo de 70°.
  *

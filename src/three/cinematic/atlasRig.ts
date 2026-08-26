@@ -17,9 +17,11 @@ import * as THREE from 'three';
 import {
   ARRASTO_RAD_POR_PX,
   ATLAS_FOV_GRAUS,
+  GIRO_MORTO_RAD,
   GRAU,
   PHASE_OFFSET_GRAUS,
   POLO_ECLIPTICO,
+  SUAVIZACAO_DO_GIRO,
   direcaoDaLua,
   direcaoPrivilegiada,
   enquadrar,
@@ -116,6 +118,21 @@ export class AtlasRig {
   private raio = 0;
   /** o que o dedo do visitante acumulou nos dois eixos */
   private readonly orbita: OrbitaDoVisitante = { altura: 0, volta: 0 };
+  /**
+   * A CAIXA DE ENTRADA DO QUADRO, em radianos: o que o dedo pediu desde
+   * o último `apply`. Vários eventos de ponteiro cabem no mesmo quadro —
+   * o navegador entrega `pointermove` em cascata — e todos somam aqui.
+   * Esvaziada pelo `consumirOGiro`.
+   */
+  private readonly entrada: OrbitaDoVisitante = { altura: 0, volta: 0 };
+  /**
+   * O GIRO SUAVIZADO que o quadro vai aplicar — o único estado que a
+   * inércia precisa (`SUAVIZACAO_DO_GIRO`). Não é velocidade e não tem
+   * relógio próprio: é o filtro exponencial da caixa de entrada, e ele
+   * decai sozinho quando a caixa fica vazia. É isso que faz o giro
+   * MORRER MACIO ao soltar em vez de parar seco (item 102, P1).
+   */
+  private readonly suav: OrbitaDoVisitante = { altura: 0, volta: 0 };
   /**
    * De onde sai o EIXO SOLAR quando o próprio alvo não serve para
    * defini-lo. Vale o alvo em todo enquadramento comum; na vista de
@@ -272,6 +289,9 @@ export class AtlasRig {
         : null;
     this.orbita.altura = 0;
     this.orbita.volta = 0;
+    // ...e a inércia do gesto anterior não atravessa a troca de alvo: o
+    // resto de um giro em Marte não tem o que fazer chegando em Saturno
+    this.esquecerOGiro();
     // ALVO NOVO NASCE NO ENQUADRAMENTO, sem o zoom do alvo anterior: a
     // distância pinada é do alvo antigo e não tem sentido no novo (2
     // raios de Marte não são 2 raios de Saturno). É isto que faz a
@@ -333,7 +353,9 @@ export class AtlasRig {
       direcaoPrivilegiada(_dir.copy(this.eixoDe).sub(ORIGEM), this.polo, this.orbita, _dir);
     }
     _posPartida.copy(this.alvo).addScaledVector(_dir, this.distancia);
-    // 2. o referencial novo
+    // 2. o referencial novo — e o gesto que trouxe a câmera até aqui
+    //    acabou: a inércia não segue para o alvo escolhido
+    this.esquecerOGiro();
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
@@ -418,7 +440,9 @@ export class AtlasRig {
     eixoDe: THREE.Vector3,
     opcoes: { polo?: THREE.Vector3 | null; pisoRaio?: number | null } = {}
   ) {
-    // 2. o referencial novo (o passo 1 do `selecionar` é o argumento)
+    // 2. o referencial novo (o passo 1 do `selecionar` é o argumento) —
+    //    a câmera vem do FILME, e nada do Atlas anterior a acompanha
+    this.esquecerOGiro();
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
@@ -663,21 +687,87 @@ export class AtlasRig {
    * A `volta` é ENROLADA em (−π, π]: o ângulo é periódico, o alcance é
    * a volta inteira de qualquer jeito, e um acumulador que só cresce
    * seria um número sem teto guardado em estado de sessão.
+   *
+   * O DELTA NÃO ENTRA MAIS DIRETO NO ACUMULADOR (item 102, P1): ele cai
+   * na CAIXA DE ENTRADA do quadro, e quem soma na órbita é o
+   * `consumirOGiro`, com o filtro da inércia no meio. O que chega aqui
+   * já vem em radianos porque a sensibilidade é do GESTO — o filtro é do
+   * QUADRO, e misturar as duas contas faria o tato depender de quantos
+   * `pointermove` o navegador entregou.
    */
   addOrbitDelta(dx: number, dy: number) {
+    if (Number.isFinite(dx)) this.entrada.volta += dx * ARRASTO_RAD_POR_PX;
+    if (Number.isFinite(dy)) this.entrada.altura += dy * ARRASTO_RAD_POR_PX;
+  }
+
+  /**
+   * O GIRO DO QUADRO — a caixa de entrada passada pelo filtro da inércia
+   * e somada na órbita. Roda no `apply`, que é quem tem `dt`, ANTES de a
+   * pose ser escrita.
+   *
+   * O FILTRO, e ele é as duas metades do tato de uma vez
+   * (`SUAVIZACAO_DO_GIRO`): enquanto o dedo anda, o degrau bruto de cada
+   * evento chega diluído (fim do serrilhado a 40 fps); quando ele solta,
+   * a caixa fica vazia e o resto decai sozinho — o giro MORRE MACIO.
+   *
+   * SEM RELÓGIO NÃO HÁ FILTRO. `dt ≤ 0` quer dizer «nenhum tempo passou»
+   * (o `apply` avulso do `enquadrarAgora`, e todo oráculo que escreve a
+   * pose sem encenar quadros): `0,8^0 = 1` engoliria a caixa sem mover
+   * nada, e o delta do visitante sumiria. Aí o passo entra INTEIRO e não
+   * deixa rastro — que é, letra por letra, o que este método fazia antes
+   * de existir.
+   *
+   * O GRAMPO DA INCLINAÇÃO mudou de lugar, não de lei: o acumulador para
+   * EXATAMENTE onde a inclinação para, senão o dedo somaria arrasto morto
+   * e a volta custaria desfazê-lo antes de a câmera se mexer de novo (a
+   * "borracha" de todo controle mal grampeado). A faixa segue sendo a da
+   * inclinação [0°, 180°] menos o pino de fase.
+   */
+  private consumirOGiro(dt: number) {
+    const entradaAltura = this.entrada.altura;
+    const entradaVolta = this.entrada.volta;
+    this.entrada.altura = 0;
+    this.entrada.volta = 0;
+    let passoAltura: number;
+    let passoVolta: number;
+    if (dt > 0) {
+      const quadros = dt * 60;
+      const k = SUAVIZACAO_DO_GIRO ** quadros;
+      const morto = GIRO_MORTO_RAD * quadros;
+      passoAltura = entradaAltura * (1 - k) + this.suav.altura * k;
+      passoVolta = entradaVolta * (1 - k) + this.suav.volta * k;
+      // MORTO ZERA DE VEZ: sem o corte o exponencial nunca chega a zero e
+      // sobra um tremor de float reescrevendo a pose para sempre
+      if (Math.abs(passoAltura) < morto) passoAltura = 0;
+      if (Math.abs(passoVolta) < morto) passoVolta = 0;
+      this.suav.altura = passoAltura;
+      this.suav.volta = passoVolta;
+    } else {
+      passoAltura = entradaAltura + this.suav.altura;
+      passoVolta = entradaVolta + this.suav.volta;
+      this.suav.altura = 0;
+      this.suav.volta = 0;
+    }
+    // NADA A FAZER é nada a ESCREVER: a pose parada não passa nem pelo
+    // `enrolar` nem pelo grampo, e é por construção que ela fica bit a
+    // bit igual à de antes deste filtro existir (a condição de nascimento
+    // do item 102)
+    if (passoAltura === 0 && passoVolta === 0) return;
     const pino = PHASE_OFFSET_GRAUS * GRAU;
-    const passoX = Number.isFinite(dx) ? dx : 0;
-    const passoY = Number.isFinite(dy) ? dy : 0;
-    this.orbita.volta = enrolar(this.orbita.volta + passoX * ARRASTO_RAD_POR_PX);
-    // o acumulador para EXATAMENTE onde a inclinação para — sem isso o
-    // dedo somaria arrasto morto e a volta custaria desfazê-lo antes de
-    // a câmera se mexer de novo (a "borracha" de todo controle mal
-    // grampeado). A faixa é a da inclinação [0°, 180°] menos o pino.
+    this.orbita.volta = enrolar(this.orbita.volta + passoVolta);
     this.orbita.altura = THREE.MathUtils.clamp(
-      this.orbita.altura + passoY * ARRASTO_RAD_POR_PX,
+      this.orbita.altura + passoAltura,
       -pino,
       Math.PI - pino
     );
+  }
+
+  /** o dedo largou e a inércia acabou: nada mais a girar neste alvo */
+  private esquecerOGiro() {
+    this.entrada.altura = 0;
+    this.entrada.volta = 0;
+    this.suav.altura = 0;
+    this.suav.volta = 0;
   }
 
   /**
@@ -696,6 +786,11 @@ export class AtlasRig {
     larguraPx = LARGURA_DE_MESA_PX,
     dt = 0
   ) {
+    // O GIRO DO VISITANTE ENTRA AQUI, filtrado pela inércia — antes de
+    // qualquer pose ser escrita, e nos dois caminhos (com rampa e sem),
+    // porque arrastar durante uma troca de degrau é gesto como outro
+    // qualquer e o destino da rampa tem de já contá-lo.
+    this.consumirOGiro(dt);
     if (this.rampaT >= 1) {
       // o caminho de SEMPRE, intocado bit a bit quando não há pino — é o
       // que as provas de idempotência (?foco) e os md5 do atlas-smoke
