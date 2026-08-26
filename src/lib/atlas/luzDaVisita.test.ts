@@ -25,7 +25,7 @@
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import { ROCHOSOS } from '../../three/world/corpos/rochoso';
-import { GIGANTES } from '../../three/world/corpos/gigante';
+import { GIGANTE_LAMBERT_FRAG, GIGANTES } from '../../three/world/corpos/gigante';
 import { LIMIAR_DO_GATE_PX, cessaoAlvo } from '../../three/world/corpos/terra';
 import { diametroAparentePx } from '../../three/world/corpos/corpos';
 import { BODY_AXES } from './iauOrientation';
@@ -409,21 +409,27 @@ describe('2. peça (b) — a lanterna de leitura, 15 % na câmera', () => {
   });
 
   /**
-   * A DIVERGÊNCIA DECLARADA, EXECUTADA. O `* sombras` do corpo de
+   * A DIVERGÊNCIA DECLARADA, EXECUTADA. O `* eclipse` do corpo de
    * `lanternaDeLeitura` é o que impede a lanterna de acender a umbra de
    * um eclipse — sem ele o núcleo sobre Durango ia de 2,80 para 42,21 e
    * ficava MAIS CLARO que o deserto ao lado.
    *
+   * O PARÂMETRO CHAMA-SE `eclipse`, E O NOME É A OBRA: até 26/08 ele
+   * recebia o pacote `sombras` inteiro — eclipse × sombra do anel —, e o
+   * item **104 (S2)** tirou a sombra do ANEL de dentro dele. Ficou o
+   * eclipse, sozinho, pelas razões medidas que `luzDaVisita.ts` declara.
+   *
    * Este bloco roda o corpo do chunk: apagar a multiplicação lá reprova
    * aqui, na mesma execução, e não numa foto seis meses depois. (O guarda
    * de texto dos corpos — `rochoso.test.ts`, `gigante.test.ts` — prova
-   * outra coisa, e continua valendo: que o SHADER passa `sombras` para
-   * esta função. Ele nunca soube o que o corpo dela faz com o argumento.)
+   * outra coisa, e continua valendo: que o SHADER passa o fator do
+   * ECLIPSE para esta função. Ele nunca soube o que o corpo dela faz com
+   * o argumento.)
    */
-  it('a lanterna LEVA as sombras: 0 na umbra, 15 % cheios fora dela', () => {
+  it('a lanterna LEVA o eclipse: 0 na umbra, 15 % cheios fora dela', () => {
     // noite de frente para a câmera, fora de qualquer sombra: os 15 %
     expect(lanterna(1, 1)).toBeCloseTo(LANTERNA_DE_LEITURA, 12);
-    // no núcleo da umbra a lanterna é ZERO EXATO — é isto que o `* sombras` faz
+    // no núcleo da umbra a lanterna é ZERO EXATO — é isto que o `* eclipse` faz
     expect(lanterna(1, 0)).toBe(0);
     // e na penumbra ela entra pela FRAÇÃO da sombra, sem degrau
     expect(lanterna(1, 0.5)).toBeCloseTo(LANTERNA_DE_LEITURA / 2, 12);
@@ -1256,6 +1262,133 @@ describe('9. a C1 é o padrão (item 93) — assistido traduz, real não', () =>
   });
 });
 
+// ============================================================
+// O SEGUNDO ANDAR DO INSTRUMENTO — o `main` do gigante, EXECUTADO
+//
+// POR QUE ELE PRECISOU EXISTIR (26/08, achado de auditoria). Os juízes da
+// casa cobriam duas coisas e havia uma terceira no meio delas:
+//
+//   · o PINO 104 (`gigante.test.ts`) lê o TEXTO do fragmento e amarra o
+//     ARGUMENTO da chamada — que `lanternaDeLeitura` recebe o fator do
+//     eclipse, e não o pacote com a sombra do anel;
+//   · o bloco 10 daqui executa as PEÇAS do chunk e mede a lei sobre um
+//     pixel montado À MÃO, que é um modelo do `main`, não o `main`.
+//
+// Entre os dois cabe a sabotagem que a auditoria escreveu: guardar o
+// resultado da lanterna numa variável e multiplicá-lo pela sombra do anel
+// na linha SEGUINTE. O argumento continua sendo o eclipse (o pino passa) e
+// o modelo à mão continua sendo o modelo à mão (o bloco 10 passa) — e o
+// piso dentro da sombra volta aos 11,02 bytes do "antes", ao centésimo.
+//
+// ESTE EXECUTOR FECHA A BRECHA arrancando o corpo do `void main()` do
+// PRÓPRIO `GIGANTE_LAMBERT_FRAG` e rodando-o. As peças da receita são as
+// de verdade (`terminadorSuave`, `lanternaDeLeitura`, `globoComVeu`,
+// `opacidadeDoVeu`, via `doChunk`); o que entra como pino de bancada é só
+// o que este juiz não sabe simular — a geometria e as duas sombras, que
+// são ESCALARES no shader e entram como escalares aqui.
+//
+// A BANCADA, e ela é declarada: o pixel olha a câmera com `n = (1,0,0)`,
+// o Sol chega por `uDirSolLocal = (N·L, 0, 0)` e a visada por
+// `view = (N·V, 0, 0)`, de modo que os dois `dot` do `main` devolvem
+// exatamente o N·L e o N·V pedidos — com o `dot` de VERDADE, sobre três
+// componentes. O resto da geometria (`vLocal`, `uEscalaLocal`, `uCamLocal`)
+// é opaco: ninguém a lê, ela só atravessa até os pinos.
+//
+// E ELE RECUSA O QUE NÃO CONHECE, como o tradutor de cima: identificador
+// novo no `main` reprova aqui até alguém ensiná-lo, em vez de sair um
+// número que ninguém sabe de onde veio.
+// ============================================================
+
+/** o corpo do `void main()` de um fragmento, por contagem de chaves */
+function corpoDoMain(frag: string): string {
+  const i = frag.indexOf('void main()');
+  if (i < 0) throw new Error('o fragmento não declara `void main()`');
+  const abre = frag.indexOf('{', i);
+  let nivel = 1;
+  let j = abre + 1;
+  for (; j < frag.length && nivel > 0; j++) {
+    if (frag[j] === '{') nivel++;
+    else if (frag[j] === '}') nivel--;
+  }
+  if (nivel !== 0) throw new Error('chave que não fecha no `main`');
+  return frag.slice(abre + 1, j - 1);
+}
+
+/** a face voltada para quem olha: é onde a lanterna trabalha */
+const NDOTV = 0.6;
+
+/**
+ * UM PIXEL DO GIGANTE, saído do `main` que a GPU compila.
+ *
+ * `anel` é o que `sombraDoAnel` devolveria ali (`1 − a·0,9`, entre 0,1 e
+ * 1) e `eclipse` é o que `fatorDeEclipse` devolveria — os dois escalares,
+ * como no shader. `corpo` escolhe a forma do VÉU: `saturn` é Saturno de
+ * verdade e qualquer outro resolvido tem coluna 0, isto é, sai do véu pela
+ * identidade.
+ */
+function pixelDoGigante(
+  {
+    ndotl,
+    anel,
+    ndotv = NDOTV,
+    eclipse = 1,
+    albedo = 1,
+    corpo = 'saturn',
+  }: {
+    ndotl: number;
+    anel: number;
+    ndotv?: number;
+    eclipse?: number;
+    albedo?: number;
+    corpo?: string;
+  },
+  frag: string = GIGANTE_LAMBERT_FRAG
+): number {
+  const js = abrirVec3(corpoDoMain(frag).replace(/\/\/[^\n]*/g, ''), 'main')
+    .replace(/\b(?:float|vec3)\s+(\w+)\s*=/g, 'const $1 =');
+  const luz: Ligados = { ...ASSISTIDA, uLanternaLeitura: LANTERNA_DE_LEITURA };
+  const doVeu: Ligados = { ...luz, ...veuDe(corpo), uVeuCor: COR_DO_VEU[0]! };
+  const banca: Record<string, unknown> = {
+    // as PEÇAS: as de verdade, do chunk que o fragmento inclui
+    terminadorSuave: (x: number) => doChunk('terminadorSuave')([x], luz),
+    lanternaDeLeitura: (n: unknown, dirCam: unknown, sombras: number) =>
+      doChunk('lanternaDeLeitura')([n, dirCam, sombras], luz),
+    globoComVeu: (a: number, luzSol: number, fill: number, aVeu: number) =>
+      doChunk('globoComVeu')([a, luzSol, fill, aVeu], doVeu),
+    opacidadeDoVeu: (mu: number) => doChunk('opacidadeDoVeu')([mu], doVeu),
+    // os PINOS: o que este juiz não simula, e por isso declara
+    normalDoCorpo: () => [1, 0, 0],
+    normSeguro: () => [ndotv, 0, 0],
+    fatorDeEclipse: () => eclipse,
+    sombraDoAnel: () => anel,
+    texture2D: () => ({ rgb: albedo }),
+    // os uniformes e varyings. O ganho é DERIVADO, não redigitado: em
+    // `assistida` a peça (a) vale 1 para todo corpo resolvido.
+    uLuzGanho: ganhoDoGlobo(D_SATURNO, 'assistida'),
+    uDirSolLocal: [ndotl, 0, 0],
+    vLocal: 0, vUv: 0, uNormalEsc: 0, uEscalaLocal: 0, uCamLocal: 0,
+    uMapaDia: 0, uMapaAnel: 0,
+    // o destino, e os embutidos que o `main` usa
+    gl_FragColor: 0,
+    vec4: (rgb: number) => rgb,
+    dot: EMBUTIDOS.dot,
+  };
+  const locais = [...js.matchAll(/\bconst\s+(\w+)/g)].map((m) => m[1]!);
+  const conhecidos = new Set([...Object.keys(banca), ...locais, ...PALAVRAS_DE_JS]);
+  const semNumeros = js
+    .replace(/\b\d+\.?\d*(?:[eE][+-]?\d+)?/g, ' ')
+    .replace(/\.[A-Za-z_]\w*/g, ' ');
+  for (const [ident] of semNumeros.matchAll(/[A-Za-z_]\w*/g)) {
+    if (!conhecidos.has(ident)) {
+      throw new Error(`a bancada do \`main\` não conhece \`${ident}\` — ensine-a aqui`);
+    }
+  }
+  const fn = new Function(...Object.keys(banca), `${js}\nreturn gl_FragColor;`) as (
+    ...a: unknown[]
+  ) => number;
+  return fn(...Object.values(banca));
+}
+
 /**
  * A COSTURA SOMBRA → NOITE (item 104) — a quem este bloco serve.
  *
@@ -1274,16 +1407,18 @@ describe('9. a C1 é o padrão (item 93) — assistido traduz, real não', () =>
  * mão, para que a lei não seja uma frase: quem apagar a lei vê a tira
  * clara e o degrau voltarem em número, aqui, na mesma execução.
  *
- * O QUE ELE NÃO COBRA, e onde isso mora: que o `sombraDoAnel` de
- * `gigante.ts` tenha perdido o fade por N·L, e que o `main` de lá passe
- * para a lanterna o termo do ECLIPSE em vez do pacote inteiro. Isso é
- * FIAÇÃO do fragmento do gigante, e o guarda dela está em
- * `gigante.test.ts` — a mesma divisão de sempre: o corpo prova que passa o
- * argumento certo, o chunk prova o que faz com ele.
+ * O QUE ELE NÃO COBRA SOZINHO, e por que o `main` teve de descer para cá:
+ * que o `sombraDoAnel` de `gigante.ts` tenha perdido o fade por N·L é
+ * FIAÇÃO, e o guarda dela é o PINO 104 de `gigante.test.ts`. Só que o pino
+ * amarra o ARGUMENTO da chamada, não o USO do resultado — a auditoria de
+ * 26/08 mostrou a brecha com uma sabotagem de duas linhas
+ * (`vec3 piso = lanternaDeLeitura(n, view, eclipse);`
+ * `vec3 fill = piso * sombraDoAnel(pElip);`) que passa pelos 2.377 testes
+ * verdes e devolve o piso de 11,02 do "antes", ao centésimo. Por isso o
+ * bloco ganhou o {@link pixelDoGigante}: ele EXECUTA o `main` de verdade,
+ * e aí não há forma de multiplicar o fill pela sombra do anel que escape.
  */
 describe('10. a costura sombra → noite (item 104) — a lei do piso comum', () => {
-  /** a face voltada para quem olha: é onde a lanterna trabalha */
-  const NDOTV = 0.6;
   /** `1 − a·0,9` com o alpha do anel cheio — a sombra mais escura que há */
   const SOMBRA_CHEIA = 0.1;
 
@@ -1381,5 +1516,84 @@ describe('10. a costura sombra → noite (item 104) — a lei do piso comum', ()
     for (const [a, b] of [[0.01, 0.02], [0.1, 0.2], [0.5, 0.9]]) {
       expect(daTelaParaLinear(a!)).toBeLessThan(daTelaParaLinear(b!));
     }
+  });
+
+  // ------------------------------------------------------------
+  // O MESMO ITEM, AGORA NO `main` QUE A GPU COMPILA
+  //
+  // Tudo acima roda um pixel montado à mão a partir das peças. Daqui para
+  // baixo quem roda é o `void main()` do `GIGANTE_LAMBERT_FRAG`, arrancado
+  // do fonte — e é por isso que as mordidas daqui pegam formas de reverter
+  // que nenhum pino de texto alcança.
+  // ------------------------------------------------------------
+
+  /** Júpiter tem coluna de véu 0: o `globoComVeu` sai pela identidade e o
+   *  pixel do fragmento é exatamente o pixel do modelo desta bancada. */
+  const SEM_VEU = { corpo: 'jupiter' };
+
+  it('o `main` EXECUTADO é o modelo desta bancada — bit a bit, sem véu', () => {
+    for (const ndotl of [0.9, 0.4, 0.02, 0, -0.3]) {
+      for (const anel of [1, SOMBRA_CHEIA, 0.55]) {
+        expect(
+          Object.is(pixelDoGigante({ ndotl, anel, ...SEM_VEU }), luzEm(ndotl, anel)),
+          `N·L=${ndotl} anel=${anel}`
+        ).toBe(true);
+      }
+    }
+  });
+
+  /**
+   * A LEI DO ITEM 104, medida onde ela vive: o `main` de Saturno, com o
+   * véu aceso. Dentro da sombra do anel o pixel tem de ser o MESMO da
+   * noite ao lado — porque o único termo que sobrou ali é o piso, e o
+   * piso não é mordido por sombra de anel nenhuma.
+   */
+  it('no fragmento de SATURNO, a sombra do anel e a noite dão o MESMO pixel', () => {
+    for (const ndotl of [-0.05, -0.3, -1]) {
+      for (const anel of [SOMBRA_CHEIA, 0.4, 0.85]) {
+        expect(
+          Object.is(pixelDoGigante({ ndotl, anel }), pixelDoGigante({ ndotl, anel: 1 })),
+          `N·L=${ndotl} anel=${anel}`
+        ).toBe(true);
+      }
+    }
+    // e o piso não é zero: se fosse, a igualdade acima seria vazia
+    expect(pixelDoGigante({ ndotl: -0.3, anel: SOMBRA_CHEIA })).toBeGreaterThan(0);
+  });
+
+  /**
+   * AS DUAS FORMAS DE DESFAZER O S2, e as duas reprovam aqui.
+   *
+   * A primeira é a do texto — trocar o argumento da chamada —, e essa o
+   * PINO 104 já pegava. A SEGUNDA é a que a auditoria de 26/08 escreveu
+   * para provar que o pino não bastava: o argumento continua sendo o
+   * eclipse, e a sombra do anel entra na linha seguinte, no RESULTADO.
+   *
+   * A substituição é conferida antes de medir: uma mordida que não mordeu
+   * (porque alguém renomeou a variável) mediria o fragmento SÃO e passaria
+   * dizendo o contrário do que prova.
+   */
+  it.each([
+    [
+      'no ARGUMENTO da chamada',
+      'lanternaDeLeitura(n, view, eclipse)',
+      'lanternaDeLeitura(n, view, sombras)',
+    ],
+    [
+      'no RESULTADO, uma linha depois',
+      'vec3 fill = lanternaDeLeitura(n, view, eclipse);',
+      'vec3 piso = lanternaDeLeitura(n, view, eclipse);\n  vec3 fill = piso * sombraDoAnel(pElip);',
+    ],
+  ])('MORDIDA: a sombra do anel volta a morder o piso %s', (_nome, de, para) => {
+    const sabotado = GIGANTE_LAMBERT_FRAG.replace(de, para);
+    expect(sabotado, 'a mordida não mordeu — o fragmento mudou de forma').not.toBe(
+      GIGANTE_LAMBERT_FRAG
+    );
+    const noite = pixelDoGigante({ ndotl: -0.3, anel: 1 }, sabotado);
+    const naSombra = pixelDoGigante({ ndotl: -0.3, anel: SOMBRA_CHEIA }, sabotado);
+    // o piso desaba dentro da sombra — o degrau que o item 104 matou
+    expect(naSombra).toBeLessThan(noite / 8);
+    // e o fragmento de VERDADE, no mesmo ponto, não tem degrau nenhum
+    expect(Object.is(pixelDoGigante({ ndotl: -0.3, anel: SOMBRA_CHEIA }), noite)).toBe(true);
   });
 });
