@@ -958,6 +958,86 @@ vez de *nada a desfazer*, e o tier abaixo de cinema trancava a luz em
 `real` para sempre. Gesto provado nos dois sentidos em navegador (prova
 **20** do `atlas-smoke`); história no ARQUIVO.
 
+**104. A transição da sombra dos anéis para a noite está mal feita — e o
+NASA Eyes tem o algoritmo do fade.** Palavras do dono, 26/08: *"precisa
+haver um fade gradual até a sombra, de forma seamless — isso deve se
+aplicar a qualquer transição de sombra para penumbra; é especialmente
+difícil porque tem de ter match, mas o NASA Eyes deve ter algum algoritmo
+que faz isso bem"*. Tem — e a engenharia reversa dos DOIS lados está
+feita (26/08, extratos em `/tmp/nasa-eyes-ss/globe-fragment.glsl`).
+
+**A CAUSA, MEDIDA NO NOSSO SHADER** (`sombraDoAnel` em
+`GLSL_SOMBRA_ANEL_NO_PLANETA`, `gigante.ts`; o `main` é o
+`GIGANTE_LAMBERT_FRAG`). Dois degraus, nenhum gradiente:
+
+1. **O fade de 0,05 acende uma faixa clara entre a sombra e a noite.** A
+   sombra do anel é morta à força por `smoothstep(0.0, 0.05, ndotl)`, mas a
+   logística do terminador ainda vaza ~5 % de luz solar **em** N·L = 0.
+   Resultado: na fronteira, o anel não escurece (fade = 0) e o dia não
+   morreu — sobra uma tira clara entre a sombra e a noite.
+2. **A lanterna é mordida pela sombra, e a noite não.** Hoje
+   `lanternaDeLeitura(n, view, sombras)` multiplica pelas sombras: dentro
+   da sombra do anel o piso cai a ~1,5 %, enquanto a noite logo ao lado
+   fica com os 15 % cheios. A sombra sai ~10× MAIS ESCURA que a noite
+   vizinha — o contrário de um fade.
+
+**O ALGORITMO DELES** (fragment do globo, `MaterialUtilsPhong`; o define
+`shadowRings` só existe em Saturno — nem Urano nem Netuno o têm):
+
+1. `getLightColorFromShadowRings`: a MESMA geometria nossa (projeta o
+   pixel ao longo da luz até o plano do anel, mede o raio, amostra o alpha
+   da própria textura dos anéis), `shadow = 1 - alpha`, e **nenhum fade por
+   N·L** — a única validade é geométrica (`d > 0.0`, o nosso `t > 0`).
+2. A ordem é o segredo: a sombra multiplica a luz que chega
+   (`incomingLight`) **ANTES** do terminador — `diffuseLight +=
+   incomingLight * saturate(lightCosAngle)`. Sombra e crepúsculo mordem o
+   MESMO termo, então morrem juntos na fronteira. Seamless por construção,
+   sem rampa nenhuma.
+3. O piso da noite (`ambientLightColor`) é somado **DEPOIS**, fora de
+   qualquer sombra — sombra de anel e noite convergem para o MESMO piso. É
+   esse o match.
+4. Penumbra física de cone (rampa linear umbra→penumbra com o raio real
+   do Sol) existe **só para eclipses de corpos**
+   (`getLightColorFromShadowEntities`); o anel não tem — o fade dele vive
+   no alpha pintado da textura.
+
+**A LEI QUE VALE PARA TODA TRANSIÇÃO SOMBRA→PENUMBRA:** todo
+escurecimento é fator multiplicativo sobre o MESMO termo de luz, e o piso
+da noite é comum — nunca multiplicado por sombra.
+
+**A OBRA (dois passos, um commit cada, com foto):**
+
+- **S1 — Morre o fade de 0,05.** Em `sombraDoAnel`: sai o
+  `smoothstep(0.0, 0.05, ndotl)` e sai o parâmetro `ndotl`; ficam a
+  validade geométrica (`t > 0`, a janela `uAnelRaios`) e o
+  `1.0 - a * 0.9`. A sombra passa a morder também a luz vazada da
+  logística no terminador e morre com ela — exatamente a ordem deles. (O
+  comentário de 25/08 que pedia o fade lia o risco ao contrário:
+  multiplicar a sombra pela luz do terminador APAGA, não acende.)
+- **S2 — A lanterna sai debaixo da sombra do anel.** `lanternaDeLeitura`
+  deixa de receber o pacote `sombras` inteiro: multiplica **só**
+  `fatorDeEclipse` (eclipse continua apagando o chão — o item 95 fica
+  como está) e a sombra do anel não toca o fill. A sombra e a noite
+  passam a convergir para o mesmo piso de 15 % · N·V — o equivalente do
+  `ambientLightColor` deles.
+
+**Prova (as duas juntas, na mesma prancha):** foto da sombra dos anéis
+CRUZANDO o terminador, antes × depois — o perfil de brilho atravessando
+sombra→noite tem de sair monótono, sem a tira clara do S1 e sem o salto
+de piso do S2. Par nulo obrigatório: a vista `saturno-anel`/`eclipse-limbo`
+treme textura entre capturas (item 101).
+
+**NÃO SE MEXE / NÃO SE COPIA:** `terminadorSuave` (s = 3 é literalmente a
+fórmula deles, já copiada no item 93); o teto de 0,9 da sombra (o deles
+vai a 100 % via `saturate(1 − alpha)` — é dose, se ele quiser mais
+contraste é conferência, não receita); a penumbra de cone NÃO se copia
+para o anel (eles mesmos não têm — o fade do anel é da textura nos dois
+lados); a sombra globo→anel (`sombraDoPlaneta`) fica como está — lá nós
+temos penumbra física e eles são binários. Rochosos/Lua/Terra
+compartilham o padrão de luz (`luzDaVisita.ts`) mas só gigantes com anel
+têm `uAnelAtivo`; a lei do piso comum vale para qualquer corpo que um dia
+ganhe lanterna.
+
 ## MÉDIA — afeta o produto, não salta aos olhos
 
 **97. A órbita acende mais cedo no Retina do que numa tela comum.** Achado
