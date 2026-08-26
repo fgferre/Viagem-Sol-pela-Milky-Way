@@ -73,11 +73,20 @@
 //    máscara. Sem interpolação, de propósito: o que se quer é um pixel
 //    que existe, não uma média entre dois.
 //  · SATURADO: cinza ≥ 254 dentro da máscara.
-//  · FAIXAS: reparte o quadro pelo NÍVEL do lado ANTES (que num Lambert
-//    cru é o N·L), normalizado pelo `pico` = p99,9 do ANTES — o p99,9, e
+//  · FAIXAS: reparte o quadro pelo NÍVEL DE BYTE do lado ANTES,
+//    normalizado pelo `pico` = p99,9 do ANTES — o p99,9, e
 //    não o máximo, porque uma estrela do fundo é mais brilhante que o
 //    subsolar e mandaria a régua para o espaço. Dez faixas de meia-largura
 //    0,05, centradas em 0,1 … 1,0.
+//    ⚠ A FAIXA **NÃO É N·L**, e chamá-la assim foi o rótulo errado que o
+//    item 93 corrigiu em 26/08. O byte do lado ANTES já atravessou albedo,
+//    ACES e sRGB — nesta casa nada disso é identidade —, então a faixa
+//    "0,45–0,55" é N·L ≈ 0,19 de verdade (invertendo a cadeia daquele
+//    quadro: byte 106,6 de pico 213,2 → 0,130 linear contra 0,686 no
+//    subsolar), e no N·L = 0,5 VERDADEIRO a subida da logística vale
+//    ≈ ×1,1 em byte, não ×1,4 — a CURVA sobe ×1,433 e o ombro do ACES come
+//    o resto. Quem quiser repartir por N·L tem de inverter a
+//    cadeia primeiro; este modo não inverte, e por isso não promete.
 //  · ANÉIS: o disco é achado no ANTES — pixels ≥ `limiar` (25 por padrão)
 //    a mais de 60 px da borda do quadro; `centro` é o centroide deles e
 //    `raioPx` = √(área/π). Os anéis são de r/raioPx, e param em 0,98:
@@ -276,8 +285,10 @@ export function medirPasta(dir, limiar = LIMIAR_DO_PRETO) {
 }
 
 // ------------------------------------------------------------
-// AS FAIXAS DE N·L — o formato de `item93-flanco.json`
+// AS FAIXAS DE NÍVEL DE BYTE — o formato de `item93-flanco.json`
 // ------------------------------------------------------------
+/** ⚠ reparte por NÍVEL DE BYTE do lado ANTES, nunca por N·L — ver o
+ *  cabeçalho. O campo chama-se `faixa`, e não `ndotl`, de propósito. */
 export function medirFaixas(antes, depois) {
   const pico = percentil(antes, 0.999);
   const faixas = [];

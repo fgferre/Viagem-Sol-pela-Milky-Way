@@ -93,9 +93,10 @@ MESMA folha de fotos das propostas do modo real.
 
 **A FILA DA PRÓXIMA CONVERSA, e é esta que vale a partir de agora:**
 
-> **(1)** calibração da luz assistida + propostas do modo real (itens
+> ~~**(1)** calibração da luz assistida + propostas do modo real (itens
 > **93** e **91**(c) — UMA folha de opções em foto, 2 a 3 calibrações lado
-> a lado) → **(2)** a rolagem do véu da abertura (**87**) → **(3)** o A/B
+> a lado)~~ (26/08 — **a folha pousou**: quatro pranchas e a porta de
+> instrumento `?calib=`; falta só o olho dele) → **(2)** a rolagem do véu da abertura (**87**) → **(3)** o A/B
 > da lente de 58° (**86**) junto com a folha da vista de abertura (**61**),
 > na **MESMA sessão de captura** → **(4)** o **70**, causa 2 (o ponto que
 > morre na borda) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
@@ -109,9 +110,12 @@ profissionais como as do nasa eyes"*), e o **A1 POUSOU** em 25/08: a
 IMAGEM do colar morto no Retina está na mesa
 (`capturas/item83-colar-antes-depois-v2.png` — a v2 é a que ele julga)
 e **espera o olho dele**.
-Segue o **A2** (a borda macia). Fora isso, o que vai à Sala
-são **as folhas que a fila acima vai produzir** — a da calibração + modo
-real primeiro, depois a da lente com a vista de abertura.
+Segue o **A2** (a borda macia). **E a FOLHA DA CALIBRAÇÃO pousou em
+26/08** — quatro pranchas que esperam o olho dele e são a pergunta da vez:
+`capturas/item93-calib-saturno.png` (Q9, a noite), `item93-calib-jupiter.png`
+(Q10, o crescente), `item93-calib-mercurio.png` (Q11, o subsolar) e
+`item93-calib-real.png` (o (c) do 91, com Saturno e Júpiter). Fora isso, o
+que vai à Sala é a folha da lente com a vista de abertura.
 
 *(Registro de escrivão, para nada se perder: a foto
 `capturas/item77-filme-sem-orbitas.png` — a volta para casa sem as linhas
@@ -228,6 +232,20 @@ diferentes:
   e essa folha mora no item **93**. Não se faz uma sem a outra: é a mesma
   pergunta (*quanto de honestidade × quanto de leitura*) vista pelos dois
   lados da porta.
+  **AS DUAS PROPOSTAS ESTÃO NA MESA — 26/08, em
+  `capturas/item93-calib-real.png`, e NENHUMA delas é código novo:** as
+  duas saem pela porta de exposição que já existe (`lerPortaExposicao`,
+  `core/engine.ts`), e nenhuma toca o globo — o que anda é a EXPOSIÇÃO DO
+  QUADRO, sem teto de brilho e com a penumbra física intacta.
+  **R1 — "+3 passos declarados"** (`?luz=real&exp=8.16`): o mesmo número em
+  toda parte, e o selo declara. Saturno vai de 4,49 a 26,21 de média.
+  **R2 — "a exposição segue a câmera"** (`exp = d` em UA: Júpiter 5,0,
+  Saturno 9,7, Netuno 30): abre MENOS perto do Sol e MAIS longe, que é o
+  que mantém Netuno legível sem estourar Júpiter. Ela é **lícita pelo
+  NORTE** — depende de onde a câmera ESTÁ, não do que está em foco, o mesmo
+  gênero do `galaxyFade` que já vive no Director —, e **só vira obra se ele
+  escolher**. Em Saturno as duas quase coincidem; é a fileira de Júpiter da
+  prancha que as separa.
 - **(a) e (b) MUDARAM DE CASA, e não se perguntam mais aqui.** "Saturno está
   no ponto?" e "Mercúrio ficou domado ou apagado?" foram feitas sobre as
   fotos do 91 — e o item **93** mexeu nos DOIS depois delas (Saturno 34,4 →
@@ -309,8 +327,15 @@ resposta dele colada em cada uma:
   noite agora se lê.
   **A RESPOSTA DELE (Q9):** *"a noite ficou clara demais"*.
 - **(b)** O flanco dos gigantes ficou no ponto ou clareou demais?
-  (`item93-flanco-gigante.png` — na faixa N·L ≈ 0,5 o pixel sobe ×1,41.)
-  **A RESPOSTA DELE (Q10):** *"clareou demais"*.
+  (`item93-flanco-gigante.png`.) **A RESPOSTA DELE (Q10):** *"clareou
+  demais"*. ⚠ **A legenda daquela prancha traz um rótulo ERRADO** — "na
+  faixa N·L ≈ 0,5 o pixel sobe ×1,41" —, e ele foi corrigido em 26/08: o
+  modo `faixas` reparte por **nível de BYTE**, não por N·L, e o byte já
+  atravessou albedo, ACES e sRGB. A faixa "0,45–0,55" é **N·L ≈ 0,19**; no
+  N·L = 0,5 verdadeiro a subida é **≈ ×1,1 em byte** (a CURVA sobe ×1,433,
+  e o ombro do ACES come o resto). A prancha antiga fica como está — é
+  testemunha do que ele julgou —, e quem quiser o número certo lê a folha
+  nova.
 - **(c)** Mercúrio, que o item 91 domava com ganho 0,883, volta a 1.
   Ficou melhor ou voltou a incomodar? (`item93-mercurio-subsolar.png`.)
   **A RESPOSTA DELE (Q11):** *"voltou a incomodar — prefiro domado"*.
@@ -347,26 +372,91 @@ veredito:
 1. **a INTENSIDADE da lanterna de leitura** (hoje 15 %) — é ela que
    acende a noite voltada para quem olha, e é a noite que ele achou clara
    demais (Q9);
-2. **a SUAVIDADE do terminador** (hoje `s = 3`) — é a logística que
-   levanta o flanco na faixa N·L ≈ 0,5, onde o pixel sobe ×1,41 (Q10);
+2. **a SUAVIDADE do terminador** (hoje `s = 3`) — ⚠ **e este botão NÃO
+   responde a Q10**, medido em 26/08: o mínimo da família logística em
+   N·L = 0,5 é **0,657** (em s ≈ 1,76), ainda ×1,31 sobre Lambert, e baixar
+   `s` **abre** o vazamento do terminador de 5 % para 17–37 %. É botão de
+   CONTRASTE, não de dose. Quem devolve o crescente é a cadeia, não ele;
 3. **o COMPORTAMENTO DE MERCÚRIO** — ele o quer domado (Q11), e o freio
-   por corpo é o botão que faz isso. Nota para quem executar: o botão é o
-   de Mercúrio, não a tabela inteira de semieixos do item 91.
+   por corpo é o botão que faz isso. ⚠ Medido em 26/08: **a cadeia
+   consertada já o doma sozinha** — a C1 leva Mercúrio de 148,1 a 129,7
+   bytes, abaixo dos 131,5 que o freio do item 91 dava. O freio continua
+   sendo uma linha, se ele ainda quiser; deixou de ser necessário.
 
-**E ANTES DE GIRAR BOTÃO, INVESTIGAR POR QUE O MESMO ALGORITMO PARECE
-MAIS CLARO AQUI DO QUE NO EYES.** São as palavras dele — *"muitas coisas
-podem diferir o resultado final"* —, e é a ordem certa de trabalho:
-calibrar em cima de uma diferença de cadeia é calibrar duas vezes.
-Suspeitos declarados, a conferir e não a supor: a nossa cadeia de cor e o
-tonemap (ACES), o `pixelRatio` da tela dele, o bloom somado por cima, e o
-espaço em que cada número entra (o véu já ensinou isto — os
-234/202/151 do Eyes são bytes de TELA, e aqui atravessam em LINEAR). Se a
-diferença for de cadeia, ela se conserta na cadeia; só o que sobrar vira
-giro de botão.
+**A INVESTIGAÇÃO QUE ELE MANDOU FAZER ANTES DE GIRAR BOTÃO ESTÁ FEITA —
+26/08 — E A CAUSA NÃO ERA DOSE.** Palavras dele: *"muitas coisas podem
+diferir o resultado final"*. Diferiam, e o culpado é o mesmo do véu:
 
-**A ENTREGA É FOTO, NÃO NÚMERO NO PAPEL.** Nenhum agente crava a
-calibração sozinho: a obra volta com **2 a 3 CALIBRAÇÕES lado a lado**, na
-mesma vista, mesma janela e mesma data, para o olho dele escolher na Sala.
+- **os números da receita do Eyes são bytes de TELA.** Lá não há gerência
+  de cor nem tonemap no globo (estudo §2 e §5.3): o Phong deles multiplica
+  o que se vê. Aqui o `0,15` da lanterna e a saída da logística entraram no
+  fragmento em **LINEAR**, sem tradução, multiplicando um albedo que o
+  sampler já decodificou. É a lição do `COR_DO_VEU` aplicada ao termo de
+  **LUZ**;
+- **e o ACES da three carrega um `÷0,6`** (`color *= toneMappingExposure /
+  0.6` no `tonemapping_pars_fragment`): com a exposição 1,02 da casa o
+  ganho real é **1,70**, e a curva ainda levanta o meio-tom (~×1,25 em 0,25
+  linear). Os dois juntos respondem por noite **2,66×** e terminador
+  **3,26×** mais claros que no Eyes;
+- **bloom e `pixelRatio` são INOCENTES no nível do globo**, e isso foi
+  medido, não suposto: o limiar do bloom é 0,82 linear contra um pico de
+  ~0,68 no globo; o `ClaraoDoCampo` só desenha o campo (os globos entram
+  nele como fantasmas, `colorWrite: false`); e não há consumidor de
+  resolução no caminho do globo. **Não mexer neles por causa deste item.**
+- **de carona, para o modo real:** o `FILM_SHADER` (`dustShaders.ts`) põe um
+  piso de ~3 bytes em TODO o quadro (`col*0,985 + (0,012; 0,010; 0,014)`).
+  Em `?luz=real` isso é metade do Saturno de hoje — quem for medir preto ali
+  tem de descontar o piso antes de chamar de física.
+
+**A ENTREGA É FOTO, E ELA ESTÁ NA MESA — 26/08.** A folha são **quatro
+pranchas**, cada uma com a vista que ele já julgou, quatro colunas e uma
+lupa de 2,8× no ponto em que a mudança acontece:
+
+- `capturas/item93-calib-saturno.png` — **Q9**, a noite de Saturno
+  (4 raios, 67°): hoje | C1 | C2 | C3;
+- `capturas/item93-calib-jupiter.png` — **Q10**, o flanco de Júpiter
+  (4 raios, 60°), com o crescente voltando em C1 e C2 e sumindo mais em C3;
+- `capturas/item93-calib-mercurio.png` — **Q11**, Mercúrio no eixo do Sol;
+- `capturas/item93-calib-real.png` — o **(c) do item 91**, com Saturno em
+  cima e Júpiter embaixo (é com dois corpos que R1 e R2 deixam de ser a
+  mesma foto).
+
+As medidas ao lado: `item93-calib-saturno.json` (modo `par`),
+`item93-calib-jupiter.json` (`faixas`), `item93-calib-mercurio.json`
+(`aneis`), `item93-calib-real.json` (`par`), `item93-calib-noite.json` (o
+modo `janela`, novo) e `item93-calib-identidade.json` (a prova de que sem a
+porta o pixel não muda). Os quadros crus em `capturas/item93-calib-cru/` —
+**não apagar enquanto ele não escolher**; é deles que a folha se recompõe
+(`node scripts/visual/calibracao-da-luz.mjs --folha`).
+
+**AS TRÊS CANDIDATAS, e o que cada uma responde** (`CALIBRACOES`, em
+`luzDaVisita.ts`):
+
+- **C1, "o Eyes na nossa língua"** — nenhum número muda (0,15 e s = 3
+  ficam); entra a TRADUÇÃO do composto de tela para linear. Apaga a noite
+  quase por inteiro: no fundo da noite de Júpiter, 45,9 → **4,3** bytes.
+- **C2, "terminador traduzido, lanterna re-dosada"** — a mesma tradução, e
+  a lanterna passa a **0,05 em linear**, somada DEPOIS dela (o 0,05 saiu de
+  bisseção contra o byte da noite do Eyes: Saturno 0,046 / Júpiter 0,041 /
+  Mercúrio 0,061). Mantém um fio de leitura: 45,9 → **16,6**.
+- **C3, "só girar botão"** — s = 1,2 e 0,05, SEM tradução. Está na folha
+  para PERDER, e perde em foto: o terminador dela vai a **151,5** contra os
+  121,9 de hoje.
+
+**A PORTA `?calib=c1|c2|c3` É DE INSTRUMENTO E TEM DATA DE MORTE.** É da
+espécie do `?dbgorbitas`, registrada como **neutra** no selo, e o padrão
+(ausência) é o de hoje bit a bit. **Depois da escolha dele a vencedora vira
+o padrão, a porta sai do código e `scripts/visual/calibracao-da-luz.mjs`
+sai com ela.**
+
+**A PROVA DE QUE NADA MUDOU SEM A PORTA**, medida entre `6748374` (antes) e
+`aca067b` (a obra), duas árvores limpas, mesmas URLs: **Júpiter, Mercúrio,
+Terra e Lua saem bit a bit IGUAIS** — os quatro fragmentos que incluem o
+chunk. As duas vistas de Saturno diferem **dentro do tremor do item 101**:
+252 px (Δmáx 44) e 360 px (Δmáx 50) contra pares nulos de 218–482 px
+(Δmáx 42–51) no binário VELHO contra ele mesmo, com a média do quadro igual
+a três decimais. E **`?calib=` dentro de `?luz=real` move 46 px contra um
+par nulo de 21–37** — a decisão 2 dele está intacta.
 
 **O VÉU PALHA NÃO SE MEXE.** *"a dose do Eyes está boa (sutil)"* — a §4.4
 do contrato fica exatamente como está, com os números do Eyes, e mudá-la

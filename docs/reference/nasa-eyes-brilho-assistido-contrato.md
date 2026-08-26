@@ -243,7 +243,7 @@ não há o terminador do Phong deles.
 | Natural do Eyes (lanterna off, Sol ainda 1) | já é quase o `assistida` **sem** lanterna; o dono pediu a receita **com** lanterna (Shadow) | — |
 | `?luz=real` = E(d), sem lanterna | **não mexer** | Decisão 2 do item 91. |
 | MH18 no ponto | **não mexer** | — |
-| ACES / linear | **não desligar** | Com Sol = 1 o ACES já fotografa. Multiplicar em sRGB é o “look de jogo”; a casa não volta atrás. |
+| ACES / linear | **não desligar** | Com Sol = 1 o ACES já fotografa. Multiplicar em sRGB é o “look de jogo”; a casa não volta atrás. **Mas os números DELES são bytes de tela** — ver §7. |
 | Auto-exposição pelo quadro | **NÃO** | — |
 | Véu palha de Saturno | **SIM** | Está no algoritmo do globo de Saturno no Eyes. Números: §1.4. |
 | Anel ×2 mágico | **NÃO** | Sol = 1 no anel; espalhamento da casa fica. |
@@ -347,6 +347,12 @@ Mínimo:
    (**+43 %**) — é dele que sai o "+43 %" escrito em toda a casa. O
    1,44 é a mesma razão lida na tabela ARREDONDADA do §1.2
    (0,72/0,50): uma casa decimal, não outra conta.
+   ⚠ **O +43 % é da CURVA, não do PIXEL** (corrigido em 26/08). Entre a
+   curva e o byte estão o albedo, o ACES e o sRGB, e nenhum é identidade:
+   no N·L = 0,5 verdadeiro o byte sobe **≈ ×1,1**. E o "×1,41 na faixa
+   N·L ≈ 0,5" que circulou nas legendas era **rótulo errado** — o modo
+   `faixas` de `luz-ab.mjs` reparte por nível de BYTE, e aquela faixa é
+   N·L ≈ 0,19.
 4. Pontinho MH18 **bit-idêntico** (`planetas.test.ts`).
 5. Lua cheia continua chata (LS). Sem logística.
 6. Mercúrio assistido no subsolar: ganho **1**, não 0,88. Foto: não
@@ -384,3 +390,34 @@ As quatro estão de pé; o que falta é o OLHO DELE.
 Não copiar ambiente 0,02. Não copiar flood. Não desligar ACES. Não
 trocar Lommel-Seeliger da Lua. Não chamar “igual” a um produto que
 ainda tem `(dRef/d)^0,7`.
+
+---
+
+## 7. A CALIBRAÇÃO (26/08) — os números do Eyes são bytes de TELA
+
+A receita está aprovada e não se re-litiga; o que Q9, Q10 e Q11 reprovaram
+foi a DOSE. Investigado antes de girar botão, o culpado é de CADEIA, e é o
+mesmo do véu: **no Eyes o Phong multiplica bytes de tela** (§2 e §5.3 do
+estudo: lá não há gerência de cor nem tonemap no globo), e aqui o `0,15` da
+lanterna e a saída da logística atravessaram para o fragmento em **LINEAR**,
+multiplicando um albedo já decodificado. Some-se o `÷0,6` que o ACES da
+three carrega — com a exposição 1,02 o ganho real é **1,70** — e a mesma
+receita sai **2,66×** mais clara na noite e **3,26×** no terminador.
+
+**Bloom e `pixelRatio` são inocentes no nível do globo, e isso foi medido:**
+limiar do bloom 0,82 linear contra pico ~0,68; o `ClaraoDoCampo` só desenha
+o campo; nenhum consumidor de resolução no caminho do globo.
+
+**O conserto é a tradução**, e ela é a MESMA curva da IEC 61966-2-1 que
+decodificou a palha: `daTelaParaLinear`, em `GLSL_LUZ_DA_VISITA`. Três
+candidatas vivem em `CALIBRACOES` (`luzDaVisita.ts`), atrás da porta de
+instrumento `?calib=c1|c2|c3` — **neutra no selo, padrão = o de hoje bit a
+bit, e ela morre com a escolha dele**. Em `?luz=real` as chaves são 0 nas
+três: a decisão 2 do dono não se toca.
+
+E o `s` do §4.3 **não é botão de dose**: o mínimo da família logística em
+N·L = 0,5 é 0,657 (em s ≈ 1,76), ainda ×1,31 sobre Lambert, e baixar `s`
+abre o vazamento do terminador de 5 % para 17–37 %.
+
+Folha de fotos e medidas: `capturas/item93-calib-*.png` e
+`item93-calib-*.json`; item **93** do `PENDENCIAS.md`.
