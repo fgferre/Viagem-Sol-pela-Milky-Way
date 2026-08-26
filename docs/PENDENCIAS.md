@@ -951,70 +951,43 @@ do zoom — **não é o candidato (a)**, que é o sistema interno de
 NASA Eyes. L1 e L2 nasceram sem queixa; o acabamento, em 25/08, ele
 reprovou.) Estudo: `docs/reference/estudo-orbitas-eyes-observacao.md`.
 
-**O OLHO DELE VOLTOU À LINHA — 26/08, e o veredito reabre o acabamento.**
-Palavras dele: *"ainda não acho que o código está entregando a mesma
-qualidade de linha do projeto inspiração. Lá a órbita parece uma fita
-dobrada (não um tubo), mas ela certamente não é só uma linha grossa. A
-nossa, depois de todos os feedbacks, ainda parece uma linha grossa.
-Melhorou, eu até aprovei inicialmente, mas inspecionei novamente o app
-inspiração e constatei que ainda estamos muito abaixo em qualidade."* E
-as cores: *"achei as cores das linhas muito sem graça — não sei se eles
-simplesmente hardcode valores ou se tem algum algoritmo."* A conferência
-do colar (C13) continua valendo — o que ele aprovou está aprovado; isto é
-o degrau seguinte.
+**ACABAMENTO REABERTO por ele em 26/08:** *"lá a órbita parece uma fita
+dobrada, não uma linha grossa; a nossa ainda parece linha grossa"* — e as
+cores, *"muito sem graça"*. O que falta, medido no shader deles
+(`LineShader`/`TrailManager` no `app-pretty.js`), e a obra — na ordem, um
+commit e uma foto por passo:
 
-**A RESPOSTA, MEDIDA NO SHADER DELES (26/08, `app-pretty.js`):** a cor é
-**tabela hardcoded de design** — oito cores escolhidas a dedo no
-`TrailManager`, sem algoritmo nenhum: Mercúrio `#9768ac` (roxo), Vênus
-`#b07919` (âmbar), Terra `#0099cc` (ciano), Marte `#9a4e19` (ferrugem),
-Júpiter `#da8b72` (salmão), Saturno `#d5c187` (palha), Urano `#68ccda`
-(turquesa), Netuno `#708ce3` (azul), todas alpha **0,75**; quem não está
-na lista cai no branco alpha 0,35. E a fita deles difere da nossa em
-cinco pontos medidos, na ordem em que pesam no olho:
+1. **B1 — A2+A3 como receitados abaixo; ainda não pousaram.** A beira
+   lisa deles é MSAA de cartão (a nossa imita é a saia do A2); a largura
+   deles cresce com a janela (`max(1, min(viewport)/800)`, o A3) e a
+   nossa é 1,25 px sempre. Saem juntos: a largura nova é o que expõe a
+   junta.
+2. **B2 — a junta vira bissetriz (é o A4, promovido de último recurso a
+   passo).** Deles: `positionPrev`/`positionNext` por vértice e
+   `offset /= max(0.25, sqrt((1+dot(l0,l1))/2))`. A nossa junta é quad
+   sobreposto com a calota cortada: na curva abre cunha do lado de fora e
+   dobra tinta do lado de dentro. A fita contínua que VINCA é o que se lê
+   como "fita dobrada". Desenho no bloco A4. **Prova:** zoom na dobra —
+   cunha morta, sem colar.
+3. **B3 — cor e brilho na MESMA prancha, para ele julgar** (é o L3,
+   promovido da fila). A cor deles é **tabela hardcoded de design**, sem
+   algoritmo: Mercúrio `#9768ac`, Vênus `#b07919`, Terra `#0099cc`, Marte
+   `#9a4e19`, Júpiter `#da8b72`, Saturno `#d5c187`, Urano `#68ccda`,
+   Netuno `#708ce3`, todas alpha **0,75**; quem não está na lista cai no
+   branco 0,35. A nossa fotometria normalizada no canal mais forte
+   (`matizDe`) lava tudo para pastel — a causa do "sem graça". O brilho:
+   base 0,75 aditivo lá, `BRILHO_DA_LINHA` 0,32 aqui. Prancha de 3
+   colunas de cor (fotometria atual; a tabela deles; fotometria saturada
+   declarada) × 2 alphas (0,32 / 0,75) — ele escolhe por foto.
 
-1. **A junta deles é bissetriz de verdade.** O vertex shader deles tem
-   `positionPrev`/`positionNext` por vértice e aplica a fórmula do A4
-   com clamp de 4× (`offset /= max(0.25, sqrt((1+dot(l0,l1))/2))`). A
-   nossa junta é quad sobreposto com a calota cortada (A1): na curva,
-   abre cunha do lado de fora e dobra tinta do lado de dentro. A 1,25 px
-   é sutil; com a largura de tela grande (ponto 2) aparece. A fita
-   contínua que VINCA na junta é o que o olho lê como "fita dobrada".
-   **O A4 deixa de ser último recurso e entra na leva.**
-2. **A largura deles cresce com a janela** — `resolutionFactor =
-   max(1, min(viewport)/800)`, exatamente o A3 já receitado. Na tela
-   grande a fita deles passa de 1,25 px; a nossa é 1,25 sempre. O A3
-   ainda não pousou.
-3. **A beira lisa deles é 100% MSAA de cartão** — é o que o A2 (saia de
-   1 px com `fwidth`/`smoothstep`) imita só na linha. O A2 ainda não
-   pousou.
-4. **A linha deles é mais clara** — alpha base **0,75** em aditivo
-   (acende no cruzamento e sobre o limbo do planeta); a nossa base é
-   `BRILHO_DA_LINHA` 0,32. É dose, e dose é dele: prancha A/B decide.
-5. **A elipse deles tem 360 pontos; a nossa, 256** — e o vértice cravado
-   na posição viva do corpo existe nos dois. Não é o que o olho reclama;
-   não se mexe.
-
-**E o que NÃO falta — medido, para ninguém inventar:** a linha deles NÃO
-tem perfil através da largura (chapada, `glowWidth = 0` até no hover),
-NÃO tem gradiente nem fade ao longo da órbita (o `farSideAlphaFade`
-existe no código deles mas está **desligado**), NÃO escurece atrás do
-planeta (é depth buffer, que a casa já tem), NÃO tem cor de seleção (o
-hover de rótulo só sobe alpha para 1 e largura para 2). A "vida" ao longo
-da linha só existe nos trails de sonda — que não entram nesta leva.
-
-**A OBRA NOVA, na ordem, um commit e uma foto por passo:**
-
-- **B1 — A2+A3 como já receitados abaixo.** Saem juntos: a largura nova
-  é o que expõe a junta.
-- **B2 — a junta vira bissetriz (o A4 promovido).** O desenho já está
-  escrito no bloco A4: dois atributos de vizinho no MESMO buffer
-  interleaved, a conta no vertex shader em pixel, o clamp deles.
-  **Prova:** zoom na dobra — cunha morta, dobra lisa, sem colar.
-- **B3 — cor e brilho na MESMA prancha, para ele julgar.** Três colunas
-  de cor (a fotometria atual; a tabela deles verbatim acima; a fotometria
-  com saturação empurrada e declarada) × dois níveis de alpha base (0,32
-  e 0,75). Cor é gosto e dose é dele — ele escolhe por foto. **O L3 sai
-  da fila e vira isto.**
+**Não falta, medido — não inventar:** a linha deles NÃO tem perfil
+através da largura (chapada, `glowWidth = 0` até no hover), NÃO tem
+gradiente nem fade ao longo da órbita (`farSideAlphaFade` existe no
+código deles mas está **desligado**), NÃO tem cor de seleção (hover de
+rótulo só sobe alpha para 1 e largura para 2), NÃO escurece atrás do
+planeta (é depth buffer, que a casa já tem). A elipse deles tem 360
+pontos × 256 nossos — não se mexe. A "vida" ao longo da linha só existe
+nos trails de sonda — fora desta leva.
 
 **O COLAR MORTO ESTÁ CONFERIDO — C13, 26/08, pela Sala de Conferência:
 ele confirmou como bom** (junto com as confirmações C3 e C11 do mesmo
@@ -1234,10 +1207,9 @@ pelo `pixelRatio` antes de comparar com 800; (ii) UMA linhagem — 1,25
 
 ---
 
-**A4 — FITA CONTÍNUA COM MITER.** ~~ÚLTIMO recurso~~ **PROMOVIDO em
-26/08: é o B2 da leva nova** — a medida no shader deles mostrou que a
-bissetriz É o desenho da fita de referência, não remendo. A fórmula é a
-da bissetriz (SVG / Canvas / Cesium), pública, e é literalmente a deles:
+**A4 — FITA CONTÍNUA COM MITER. É o B2 da leva** — a bissetriz é o
+desenho da junta deles, medido no shader em 26/08. A fórmula é pública
+(SVG / Canvas / Cesium) e é literalmente a deles:
 
 ```
 offset = normalize(perp(l0) + perp(l1))
@@ -1254,18 +1226,14 @@ plane*, o `resolution` automático e o `raycast` de que o L5 depende
 
 ---
 
-**G1 / L3 / L4 / L5 NÃO ENTRAM NESTA LEVA** — não são o desenho da
-caneta. Ficam na fila da família:
+**G1 / L4 / L5 NÃO ENTRAM NESTA LEVA** — não são o desenho da
+caneta. Ficam na fila da família (o L3 saiu da fila em 26/08: é o B3
+acima):
 
 - **G1 — a gaveta devolve os oito** de `HELIO_SEM_PONTO` (a decisão 2 do
   item 77), como classe própria **desligada por padrão**, em vez de
   enterrados numa decisão de código. É literalmente o que o Eyes faz com as
   anãs dele.
-- **L3 — matiz que separa sem mentir.** Manter a fotometria (o Eyes pinta
-  Mercúrio de VIOLETA e Vênus de ÂMBAR, que não são as cores deles) e
-  garantir distância mínima de matiz entre linhas vizinhas, com o empurrão
-  DECLARADO no selo. A paleta deles entra como referência de SEPARAÇÃO,
-  nunca como tinta.
 - **L4 — o rastro, e só quando houver sonda no acervo.** É camada IRMÃ, não
   a mesma: no Eyes, `Trails` e `Orbits` são chaves separadas.
 - **L5 — a linha responde ao mouse.** **No Eyes a linha é matéria morta** —
@@ -1277,10 +1245,8 @@ caneta. Ficam na fila da família:
 pixel do Eyes, a API do motor deles e as fontes MIT abertas), para impedir
 que uma conversa futura "melhore" o que já está certo: a **cônica
 osculadora do estado vivo**; a **amostragem em anomalia excêntrica com 256
-pontos** (⚠ a nota antiga "mais fina que a deles" estava ERRADA — medida
-nova de 26/08 no loop do `OrbitLineComponent`: a deles tem **360**
-pontos; fica o 256 porque a contagem não é o que o olho reclama); **lua no
-frame do PAI**; **cor
+pontos** (360 na deles, medido em 26/08; fica o 256 — a contagem não é o
+que o olho reclama); **lua no frame do PAI**; **cor
 por fotometria**; e o **corte de câmera dentro do laço + o fade angular**.
 **Não copiar** o que eles fazem aqui.
 
