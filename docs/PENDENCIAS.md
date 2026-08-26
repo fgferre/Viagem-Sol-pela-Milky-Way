@@ -124,7 +124,7 @@ antes × depois, com o perfil medido na legenda), e com ela vai a mesma
 pergunta de sempre sobre a C1 no app: a noite ficou no ponto agora? Fora
 isso, o que vai à Sala é a folha da lente com a vista de abertura.
 **E entra com ela a CHAPA DO MODO REAL** —
-`capturas/item91-real-r1.png`, a R1 que ele escolheu na Q14, agora
+`capturas/item91-real-r1-v2.png`, a R1 que ele escolheu na Q14, agora
 embarcada: antes × depois, com o selo declarando os +3 passos.
 
 *(Registro de escrivão, para nada se perder: a foto
@@ -219,8 +219,12 @@ fixos, sempre os mesmos, declarados no selo"*. Em `?luz=real` o quadro
 ganha +3 passos de exposição FIXOS (o 1,02 vira 8,16), declarados no selo
 na linha BRILHO como tempo de exposição; a penumbra FÍSICA no globo e a
 proibição de teto de brilho ficam exatamente como estavam; o campo
-estelar satura mais — é o preço declarado da foto de longa exposição, e
+estelar ACENDE mais — é o preço declarado da foto de longa exposição, e
 ele escolheu com essa foto na mão (`capturas/item93-calib-real.png`).
+*(Diz-se **acende**, e não "satura", porque o instrumento mediu **zero
+pixels saturados dos dois lados**: chamar aquilo de saturação desmentiria
+o próprio JSON da prova. Achado do auditor da Q14, consertado em
+`f23c272` — no selo, no dente e aqui.)*
 
 **ONDE ELA MORA, em duas peças e nenhuma linha a mais.**
 `PASSOS_DA_EXPOSICAO_REAL = 3` e `exposicaoDoQuadro(rampa, politica)`
@@ -258,7 +262,7 @@ tempo de exposição não é fotometria ajustada, e derrubá-lo apagaria o
 único estado em que este selo pode dizer a verdade sobre si —, e a linha
 DIZ o que a chapa fez: *"tempo de exposição +3 passos: a foto do quadro é
 longa. A luz de cada mundo continua a física — o que abriu foi a chapa, e
-por isso o céu ao fundo satura mais."* Sem ela o selo diria *"nada foi
+por isso o céu ao fundo acende mais."* Sem ela o selo diria *"nada foi
 ajustado nesta vista"* com o quadro 8× mais claro, que é a lista curta
 que o cabeçalho do `selo.ts` promete não repetir. A declaração **não
 depende do veredito**: com o tier abaixo de cinema o eixo lê ASSISTIDO
@@ -376,10 +380,15 @@ diferentes:
   **Não se reabre.**
 
 **⛔ O QUE FALTA NESTE ITEM É O OLHO DELE, e só isso. A foto que decide é
-`capturas/item91-real-r1.png`** — ANTES (o `?luz=real` que ele reprovou) ×
-DEPOIS (o mesmo endereço com a chapa aberta), mais o painel do SELO
-declarando os passos na visita a Saturno. **As duas perguntas:** **(a)** a
-chapa ficou no ponto que a R1 prometia, ou o céu saturado incomoda mais do
+`capturas/item91-real-r1-v2.png`** — ANTES (o `?luz=real` que ele
+reprovou) × DEPOIS (o mesmo endereço com a chapa aberta), mais o painel do
+SELO declarando os passos na visita a Saturno. **A v2 é a que ele julga:**
+a v1 fica ao lado, como manda a casa, e a diferença entre as duas é só a
+palavra que o auditor consertou — o selo da v1 dizia *"satura"* onde o
+instrumento mede zero saturados. O quadro é **bit a bit o mesmo** nas duas
+(mesmo md5: o conserto foi de copy e não moveu pixel). **As duas
+perguntas:** **(a)** a
+chapa ficou no ponto que a R1 prometia, ou o céu aceso incomoda mais do
 que a foto da folha deixava ver? **(b)** a frase do selo diz o que
 precisava ser dito, ou é longa demais para a gaveta? Os quadros crus estão
 em `capturas/item91-real-cru/` e a prancha se recompõe com
