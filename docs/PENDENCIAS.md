@@ -33,9 +33,9 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 102.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 103.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **100** saiu em 25/08: o HUD de lente e zoom, ideia dele.)*
+  *(O **102** saiu em 25/08: o giro em volta do selecionado, queixa dele.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
