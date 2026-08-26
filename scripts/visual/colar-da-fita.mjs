@@ -410,7 +410,12 @@ async function principal() {
   // código saiu. A definição é a do `ab-identidade` — uma só.
   const fora = {
     vista: arquivo ?? VISTA,
+    // `codigo` é a árvore de onde ESTE PROCESSO saiu; `app` é quem pintou
+    // os pixels. Os dois porque não são sempre o mesmo: medir o pré-A1
+    // exige um servidor de outra árvore, e um carimbo sozinho mentiria
+    // sobre qual código produziu a imagem.
     codigo: carimboDoCodigo(),
+    app: arquivo ? null : APP,
     quandoUtc: new Date().toISOString(),
     relogio,
     ...medida,
