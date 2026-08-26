@@ -39,7 +39,7 @@ import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { Orbitas, type QuadroEmPx } from './world/orbitas';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
-import { stopsDaVisita } from '../lib/atlas/luzDaVisita';
+import { exposicaoDoQuadro, stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
 import type { VerDaEscada } from './selo';
 import { sondarGl } from '../lib/glProbe';
@@ -2594,8 +2594,21 @@ export class Director {
     // o ótimo CONJUNTO em 1,05 (edge 0,8275, face 0,0517 — os dois
     // recordes). Dentro do disco (fade 0) fica o 1,02 de sempre — a
     // vista interna não tem gate e satura fácil de branco.
+    //
+    // E DESDE A Q14 (26/08, item 91) A POLÍTICA DE LUZ COMPÕE COM A RAMPA:
+    // em `?luz=real` o quadro abre +3 passos FIXOS (`exposicaoDoQuadro`,
+    // `luzDaVisita.ts`), o que dentro do disco dá os 8,16 da coluna R1 que
+    // ele julgou. É exposição do QUADRO — a penumbra física do globo não
+    // é tocada, e o teto de brilho continua proibido. A conta vive lá e
+    // não aqui porque quem a governa é a POLÍTICA; aqui só se aplica.
+    //
+    // A LEITURA É VIVA, e é isso que faz a porta de duas vias do selo
+    // levar a exposição junto no MESMO gesto: `definirLuz` troca o campo e
+    // `perturbar()` acorda o laço — o quadro seguinte já sai com a chapa
+    // nova, sem recarga. O latch `expOverride` continua vencendo os dois:
+    // a mão do visitante é dona da exposição (ver `exposicaoDoQuadro`).
     if (!this.expOverride) {
-      this.engine.setExposure(1.02 + 0.03 * galaxyFade);
+      this.engine.setExposure(exposicaoDoQuadro(1.02 + 0.03 * galaxyFade, this.politicaDeLuz));
     }
     // ?galstat=1 — quantos dos 4,02 M pontos da galáxia estão DENTRO do
     // frustum. Roda uma vez, no primeiro quadro, e guarda em window.__galstat.

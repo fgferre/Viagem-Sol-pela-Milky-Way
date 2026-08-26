@@ -33,7 +33,7 @@ import { LIMIAR_SISTEMA_SOLAR_PC, acusacaoDaEscala } from './escala';
 import { CAMADAS } from './atlasConfig';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
-import { LANTERNA_DE_LEITURA } from '../lib/atlas/luzDaVisita';
+import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzDaVisita';
 
 // ---- a copy herdada (D1). Três pares são verbatim do i18n do doador;
 // "BRILHO ASSISTIDO" é MELHORIA declarada: o doador escreve só
@@ -174,6 +174,36 @@ export const COPY_LUZ_ASSISTIDA =
 export const COPY_LANTERNA_DE_LEITURA =
   `Lanterna de leitura ${Math.round(LANTERNA_DE_LEITURA * 100)} %: ` +
   'uma luz fraca na câmera deixa o lado noturno legível.';
+
+/**
+ * O TEMPO DE EXPOSIÇÃO DO MODO REAL, declarado na linha BRILHO — a Q14
+ * do dono, 26/08 (item 91). Palavras dele: *"R1 — +3 passos fixos,
+ * sempre os mesmos, declarados no selo"*.
+ *
+ * POR QUE ISTO NÃO DERRUBA O EIXO PARA "ASSISTIDO", e a distinção é a
+ * própria tese do selo: o eixo BRILHO responde *"o que se vê é a
+ * fotometria da casa ou uma fotometria ajustada?"*. Aqui a fotometria não
+ * foi tocada — `ganhoDoGlobo(d, 'real')` continua sendo E(d) bit a bit e
+ * a penumbra física do globo é a que sempre foi. O que mudou foi o TEMPO
+ * DE EXPOSIÇÃO da chapa, que é o gesto mais honesto que uma câmera tem, e
+ * que toda foto astronômica declara. Chamar isso de fotometria ajustada
+ * seria a mentira contrária — e apagaria o único estado em que o selo
+ * pode dizer BRILHO REAL.
+ *
+ * MAS CALAR SERIA PIOR. Sem esta linha o selo diria, em `?luz=real`,
+ * *"nada foi ajustado nesta vista"* enquanto o quadro sai 8× mais claro
+ * que a rampa — a lista curta que o cabeçalho deste arquivo promete não
+ * repetir. Então o eixo continua REAL e a linha DIZ o que a chapa fez.
+ *
+ * O NÚMERO SAI DE {@link PASSOS_DA_EXPOSICAO_REAL}, nunca redigitado: se
+ * o desenho mudar de +3 para outra coisa, a frase muda junto. E o preço
+ * fica na frase porque ele o escolheu sabendo — *o campo estelar satura
+ * mais* foi o que a coluna R1 da folha mostrou.
+ */
+export const COPY_EXPOSICAO_DO_REAL =
+  `tempo de exposição +${PASSOS_DA_EXPOSICAO_REAL} passos: a foto do quadro é longa. ` +
+  'A luz de cada mundo continua a física — o que abriu foi a chapa, e por isso ' +
+  'o céu ao fundo satura mais.';
 
 /**
  * O rótulo VIVO da linha `?luz=`: a copy leiga + o gasto do GLOBO em
@@ -666,6 +696,14 @@ export interface VereditoDoSelo {
    * mostrar quando não há nada a declarar.
    */
   culpados: readonly string[];
+  /**
+   * O TEMPO DE EXPOSIÇÃO A DECLARAR na linha BRILHO, ou `null` quando não
+   * há nada a dizer sobre a chapa. Hoje só o modo `real` põe frase aqui
+   * ({@link declaracaoDaExposicao}) — e ela NÃO é desvio: o eixo continua
+   * REAL, e é por isso que ela viaja num campo próprio em vez de entrar
+   * na lista de `desvios`.
+   */
+  exposicao: string | null;
 }
 
 /**
@@ -755,6 +793,28 @@ export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
   };
 }
 
+/**
+ * O QUE A CHAPA FEZ, em uma frase — ou `null` quando não há nada a
+ * declarar. É a linha que a Q14 do dono manda o selo dizer no modo real.
+ *
+ * AS DUAS CONDIÇÕES SÃO A LEI DA COMPOSIÇÃO, lida do outro lado. Os +3
+ * passos entram pelo caminho AUTOMÁTICO da exposição (`exposicaoDoQuadro`
+ * dentro do `if (!expOverride)` do Director), então:
+ *
+ *  - `luz === 'real'` — é o modo que os pede;
+ *  - **e a exposição NÃO pode estar na mão do visitante.** Com `?exp=` ou
+ *    com o slider fora do padrão o latch desliga o caminho automático
+ *    INTEIRO, fator incluído: o quadro sai com o número que ele digitou e
+ *    mais nada. Declarar "+3 passos" ali seria o selo prometendo uma
+ *    chapa que a tela não tem — e é justamente o caso da coluna R1 da
+ *    folha, que chegou nesse estado por `?exp=8.16`. Nesse estado quem
+ *    fala é a linha `exp` do registro ("exposição escolhida à mão"), que
+ *    já é desvio e já derruba o eixo para ASSISTIDO.
+ */
+export function declaracaoDaExposicao(e: EstadoDaVista): string | null {
+  return e.luz === 'real' && !e.exposicaoManual ? COPY_EXPOSICAO_DO_REAL : null;
+}
+
 /** O veredito completo, puro. */
 export function estadoDoSelo(e: EstadoDaVista): VereditoDoSelo {
   const desvios = REGISTRO.filter((c) => c.eixo === 'brilho' && c.desvia(e)).map(
@@ -776,5 +836,6 @@ export function estadoDoSelo(e: EstadoDaVista): VereditoDoSelo {
     // a acusação só sai com o desvio: acusar numa vista honesta seria o
     // erro simétrico ao de calar numa vista mentirosa
     culpados: escala === 'fora' ? acusacaoDaEscala() : [],
+    exposicao: declaracaoDaExposicao(e),
   };
 }

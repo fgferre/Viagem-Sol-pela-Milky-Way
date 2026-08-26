@@ -35,12 +35,18 @@ import {
 } from './selo';
 import type { EstadoDaVista } from './selo';
 import {
+  COPY_EXPOSICAO_DO_REAL,
   COPY_LANTERNA_DE_LEITURA,
   COPY_LUZ_ASSISTIDA,
+  declaracaoDaExposicao,
   lerPortaLuz,
   rotuloDaLuzAssistida,
 } from './selo';
-import { LANTERNA_DE_LEITURA, stopsDaVisita } from '../lib/atlas/luzDaVisita';
+import {
+  LANTERNA_DE_LEITURA,
+  PASSOS_DA_EXPOSICAO_REAL,
+  stopsDaVisita,
+} from '../lib/atlas/luzDaVisita';
 import { DRAMA_T1, doseDaDramaturgia } from './director/doseDoSol';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { TONE_MAPPINGS } from './core/engine';
@@ -259,6 +265,51 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91
 
   it('`real` não é desvio: a penumbra física verdadeira é a posição sem assistência', () => {
     expect(estadoDoSelo(com({ luz: 'real' })).brilho).toBe('real');
+  });
+
+  /**
+   * A Q14 DO DONO, 26/08 (item 91) — *"R1 — +3 passos fixos, sempre os
+   * mesmos, declarados no selo"*. A obra abriu a chapa do modo real, e o
+   * selo tinha uma frase que passou a mentir: em `?luz=real` ele dizia
+   * *"nada foi ajustado nesta vista"* enquanto o quadro saía 8× mais
+   * claro que a rampa. A lista curta é o defeito que o cabeçalho do
+   * `selo.ts` promete não repetir.
+   *
+   * AS DUAS METADES, e as duas são cobradas aqui: o eixo BRILHO CONTINUA
+   * REAL (a fotometria não foi tocada — tempo de exposição não é
+   * fotometria ajustada, e derrubar o eixo apagaria o único estado em que
+   * este selo pode dizer a verdade sobre si), e a linha DIZ o que a chapa
+   * fez, com o número saindo da lei e não de um literal.
+   */
+  it('a Q14: em `real` a linha BRILHO declara o tempo de exposição', () => {
+    const v = estadoDoSelo(com({ luz: 'real' }));
+    expect(v.brilho, 'o eixo continua REAL — a fotometria não foi tocada').toBe('real');
+    expect(v.exposicao).toContain(`+${PASSOS_DA_EXPOSICAO_REAL} passos`);
+    expect(v.exposicao).toContain('tempo de exposição');
+    // o preço que ele aceitou com a foto na mão, dito na frase
+    expect(v.exposicao).toContain('satura');
+    // o número acompanha a lei: mudar o desenho muda a frase junto
+    expect(COPY_EXPOSICAO_DO_REAL).toContain(`+${PASSOS_DA_EXPOSICAO_REAL}`);
+  });
+
+  it('em `assistida` não há chapa a declarar — quem fala ali é a linha `luz`', () => {
+    expect(estadoDoSelo(com({ luz: 'assistida' })).exposicao).toBeNull();
+    expect(declaracaoDaExposicao(com({ luz: 'assistida' }))).toBeNull();
+  });
+
+  /**
+   * A COMPOSIÇÃO, lida do lado do selo: os +3 passos entram pelo caminho
+   * AUTOMÁTICO da exposição, e `?exp=` (ou o slider) desliga esse caminho
+   * inteiro. Declarar "+3 passos" com o latch ligado seria o selo
+   * prometendo uma chapa que a tela não tem — e é exatamente o estado em
+   * que a coluna R1 da folha foi capturada (`?luz=real&exp=8.16`).
+   */
+  it('com a exposição na MÃO o selo cala a chapa — e declara a mão', () => {
+    const naMao = com({ luz: 'real', exposicaoManual: true });
+    expect(estadoDoSelo(naMao).exposicao).toBeNull();
+    // e quem fala ali é a linha do registro, que já é desvio
+    expect(estadoDoSelo(naMao).desvios.some((d) => d.chave === 'exp')).toBe(true);
+    expect(estadoDoSelo(naMao).brilho).toBe('assistido');
   });
 
   /**

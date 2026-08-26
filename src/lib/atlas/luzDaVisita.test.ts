@@ -14,6 +14,9 @@
 //     terminador logístico s = 3. Reverter qualquer uma reprova aqui.
 //  2. A DECISÃO 2 DO DONO, intacta: em `real` o ganho é E(d) BIT A BIT,
 //     a lanterna é 0 exato e o `s` é 0 — isto é, Lambert cru.
+//  2b. A Q14 DO DONO (26/08): em `real` o QUADRO abre +3 passos fixos —
+//     a chapa, não o globo. Quem executa a linha do Director é o
+//     `director.test.ts`; aqui mora a LEI de composição.
 //  3. O QUE A OBRA MOVEU, DECLARADO: a Terra e a Lua deixaram de ser
 //     bit-idênticas ao pré-91, e o delta está medido aqui, não escondido.
 //  4. O SELO: `stopsDaVisita` é 2·log2(d) em `assistida` e 0 em `real`.
@@ -33,12 +36,14 @@ import {
   GLSL_LUZ_DA_VISITA,
   GLSL_VEU_DE_SATURNO,
   LANTERNA_DE_LEITURA,
+  PASSOS_DA_EXPOSICAO_REAL,
   S_DO_TERMINADOR,
   VEU_DE_SATURNO,
   colunaVerticalDoVeu,
   densidadeDoVeu,
   escreverLuzDaVisita,
   espessuraDoVeu,
+  exposicaoDoQuadro,
   ganhoDoGlobo,
   lanternaDaVisita,
   sDoTerminador,
@@ -893,6 +898,83 @@ describe('4. decisão 2 do dono — `real` conserva a penumbra FÍSICA', () => {
     }).toEqual(neutro);
     expect(lanternaDaVisita('assistida')).toBeGreaterThan(0);
     expect(sDoTerminador('assistida')).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * A QUEM ESTE BLOCO SERVE: à decisão **Q14** do dono, 26/08 (item 91),
+ * dita assim — *"R1 — +3 passos fixos, sempre os mesmos, declarados no
+ * selo"*. Ele julgou a coluna R1 da folha `capturas/item93-calib-real.png`
+ * e escolheu; o que se cobra aqui é que o app embarcado dê a MESMA chapa
+ * que aquela foto, e que a física do globo não tenha ido junto.
+ *
+ * A RAMPA DO DIRECTOR entra como PARÂMETRO, não como número decorado:
+ * quem a executa de verdade é o `director.test.ts`, que arranca a LINHA
+ * do `director.ts` e a roda. Aqui se cobra a LEI de composição.
+ */
+describe('4b. a Q14 do dono — o modo `real` abre +3 passos NO QUADRO', () => {
+  /** a rampa dentro do disco, que é onde toda visita acontece */
+  const DENTRO_DO_DISCO = 1.02;
+  /** a rampa na vista externa (galaxyFade = 1) */
+  const FORA_DO_DISCO = 1.05;
+
+  it('`assistida` devolve a rampa PELA IDENTIDADE — nem um `× 1` no caminho', () => {
+    // é isto que faz as vistas do modo padrão não moverem um bit por
+    // CONSTRUÇÃO: não há operação de ponto flutuante entre entrada e
+    // saída. Um `* 1` aqui seria inofensivo em quase todo double e
+    // traiçoeiro em alguns — a identidade não tem "quase".
+    for (const rampa of [DENTRO_DO_DISCO, FORA_DO_DISCO, 1.0234567890123, 0.5, 3]) {
+      expect(Object.is(exposicaoDoQuadro(rampa, 'assistida'), rampa), String(rampa)).toBe(
+        true
+      );
+    }
+  });
+
+  it('`real` abre EXATAMENTE os passos declarados, e o fator é DERIVADO', () => {
+    // a razão é a prova: multiplicar e dividir por potência de 2 é exato
+    // em binário, então isto compara passos com passos sem folga nenhuma
+    for (const rampa of [DENTRO_DO_DISCO, FORA_DO_DISCO, 0.5, 3]) {
+      const razao = exposicaoDoQuadro(rampa, 'real') / exposicaoDoQuadro(rampa, 'assistida');
+      expect(razao, String(rampa)).toBe(2 ** PASSOS_DA_EXPOSICAO_REAL);
+      expect(Math.log2(razao), String(rampa)).toBe(PASSOS_DA_EXPOSICAO_REAL);
+    }
+  });
+
+  it('dentro do disco o número é o 8,16 da coluna R1 que ele julgou', () => {
+    // a foto R1 saiu por `?luz=real&exp=8.16`; o app embarcado tem de
+    // chegar ao mesmo lugar SEM a porta
+    expect(exposicaoDoQuadro(DENTRO_DO_DISCO, 'real')).toBeCloseTo(8.16, 12);
+    // e na vista externa a rampa continua compondo — os +3 passos são do
+    // MODO, não da vista: 1,05 × 8 = 8,40
+    expect(exposicaoDoQuadro(FORA_DO_DISCO, 'real')).toBeCloseTo(8.4, 12);
+  });
+
+  it('os passos são TRÊS e o fator é oito — e nenhum dos dois é digitado duas vezes', () => {
+    expect(PASSOS_DA_EXPOSICAO_REAL).toBe(3);
+    expect(2 ** PASSOS_DA_EXPOSICAO_REAL).toBe(8);
+  });
+
+  /**
+   * A FRONTEIRA QUE ELE PÔS, e é a razão de este bloco morar neste
+   * arquivo: os +3 passos são do QUADRO. Se algum dia alguém "otimizar"
+   * isto para dentro do globo, a decisão 2 dele cai em silêncio — o modo
+   * real deixaria de conservar a penumbra física. O bloco 4 acima cobra
+   * o outro lado; este cobra que a exposição não sabe qual corpo está em
+   * quadro, nem a que distância ele está.
+   */
+  it('a chapa NÃO é ganho no corpo: não depende de corpo nem de distância', () => {
+    expect(ganhoDoGlobo(D_SATURNO, 'real')).not.toBe(ganhoDoGlobo(D_TERRA, 'real'));
+    // a mesma rampa dá a mesma exposição, esteja a câmera em Mercúrio ou
+    // em Éris — `exposicaoDoQuadro` não tem por onde receber a distância
+    expect(exposicaoDoQuadro.length).toBe(2);
+    expect(exposicaoDoQuadro(DENTRO_DO_DISCO, 'real')).toBe(
+      exposicaoDoQuadro(DENTRO_DO_DISCO, 'real')
+    );
+    // e o `real` continua sendo E(d) bit a bit no globo — a chapa não
+    // encostou na física
+    expect(Object.is(ganhoDoGlobo(D_SATURNO, 'real'), irradianciaRelativa(D_SATURNO))).toBe(
+      true
+    );
   });
 });
 

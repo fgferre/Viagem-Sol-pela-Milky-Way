@@ -170,6 +170,37 @@ export const S_DO_TERMINADOR = 3;
 export const FATOR_DA_ATMOSFERA_NO_TERMINADOR = 700;
 
 /**
+ * OS PASSOS DE EXPOSIÇÃO QUE O MODO `real` ABRE NO QUADRO — decisão Q14
+ * do dono, 26/08, item 91. Palavras dele: *"R1 — +3 passos fixos, sempre
+ * os mesmos, declarados no selo"*.
+ *
+ * O QUE ISTO É, E O QUE NÃO É. Não é ganho colado no corpo, não é piso de
+ * ambiente e não é teto de brilho — as três coisas que o `NORTE.md` e a
+ * decisão 2 dele proíbem. É **tempo de exposição do QUADRO**: o mesmo
+ * fator, o mesmo em toda parte, multiplicando a exposição da câmera antes
+ * do tonemap. A penumbra FÍSICA do globo continua exatamente a que era —
+ * `ganhoDoGlobo(d, 'real')` segue sendo E(d) bit a bit, e a razão entre
+ * dia e noite dentro do globo não se mexe um bit. O que muda é a chapa.
+ *
+ * POR QUE ELE PRECISOU EXISTIR. O modo `real` estava *"escuro demais"*
+ * (palavras dele, 25/08, repetidas na Q2): Saturno saía com média 4,49 de
+ * 255 — metade disso era o piso do `FILM_SHADER`. Honesto e ilegível não
+ * é modo. A saída lícita era a única que sobrava depois das duas
+ * fronteiras: mexer na FOTOGRAFIA, não na física.
+ *
+ * O PREÇO É DECLARADO E ELE O ESCOLHEU COM A FOTO NA MÃO
+ * (`capturas/item93-calib-real.png`, coluna R1, capturada com
+ * `?luz=real&exp=8.16`): o campo estelar satura mais, porque exposição
+ * longa acende o fundo também. Saturno vai de 4,49 a 26,21 de média.
+ *
+ * TRÊS, e não um número redondo qualquer: passo de luz é potência de 2, e
+ * `2³ = 8` é o que leva o 1,02 da vista interna aos 8,16 da foto que ele
+ * julgou. O fator é derivado, nunca redigitado — ver
+ * {@link exposicaoDoQuadro}.
+ */
+export const PASSOS_DA_EXPOSICAO_REAL = 3;
+
+/**
  * O VÉU PALHA DE SATURNO — o `postCreateFunction` do Saturno no NASA
  * Eyes, §1.4 do contrato, lido no fonte deles em 24/08.
  *
@@ -322,6 +353,37 @@ export function lanternaDaVisita(politica: PoliticaDeLuz): number {
 export function sDoTerminador(politica: PoliticaDeLuz, densidade = 0): number {
   if (politica === 'real') return 0;
   return S_DO_TERMINADOR / (1 + FATOR_DA_ATMOSFERA_NO_TERMINADOR * densidade);
+}
+
+/**
+ * A EXPOSIÇÃO DO QUADRO que a política pede, a partir da rampa que o
+ * Director já calcula — a Q14 do dono, item 91.
+ *
+ * A REGRA DE COMPOSIÇÃO, e ela é uma frase: **passo soma com passo.** A
+ * rampa (`1,02 + 0,03·galaxyFade`, no Director) é exposição e os +3 do
+ * `real` são exposição; exposição compõe MULTIPLICANDO, que é somar em
+ * passos de luz. Dentro do disco, onde toda visita acontece, a rampa vale
+ * 1,02 e o `real` sai em **8,16** — o número exato do `?exp=8.16` da
+ * coluna R1 que ele julgou. Na vista externa (rampa 1,05) sai 8,40, e é
+ * assim que tem de ser: os +3 passos são do MODO, não da vista.
+ *
+ * QUEM MANDA QUANDO OS DOIS EXISTEM: **`?exp=` (ou o slider) VENCE, e
+ * substitui — não multiplica.** Não é preferência, são três razões que
+ * apontam para o mesmo lado. (1) É a precedência que o registro do selo
+ * já declara em letra: *o GESTO DO VISITANTE vence a gradação do modo*.
+ * (2) O latch `expOverride` do Director significa, desde a Onda 5, "a mão
+ * do visitante é dona da exposição e o caminho automático não escreve" —
+ * esta lei entra no caminho automático, então o latch a desliga junto,
+ * sem cláusula nova. (3) Se `?exp=` multiplicasse, a URL histórica
+ * `?luz=real&exp=8.16` passaria a dar 65× e a foto que ele escolheu
+ * deixaria de se reproduzir pelo próprio endereço dela.
+ *
+ * `assistida` devolve a rampa **pela identidade**, não por `× 1`: o mesmo
+ * double que entrou, sem uma operação de ponto flutuante no caminho. É o
+ * que faz as vistas do modo padrão não moverem um bit por construção.
+ */
+export function exposicaoDoQuadro(rampa: number, politica: PoliticaDeLuz): number {
+  return politica === 'real' ? rampa * 2 ** PASSOS_DA_EXPOSICAO_REAL : rampa;
 }
 
 /** O molde estrutural de um `uniforms` de `THREE.ShaderMaterial` — sem

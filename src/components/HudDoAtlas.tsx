@@ -190,7 +190,7 @@ export function Selo({
 }) {
   const [aberto, setAberto] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
-  const { escala, brilho, desvios, culpados } = estadoDoSelo(vista);
+  const { escala, brilho, desvios, culpados, exposicao } = estadoDoSelo(vista);
   const lista = desvios.map((d) => d.rotulo).join(' · ');
   const daParaVoltar = desvios.some((d) => d.volta !== 'nenhuma');
   /**
@@ -213,6 +213,30 @@ export function Selo({
   const podeReassistir = !daParaVoltar;
   const escalaReal = escala === 'real';
   const brilhoReal = brilho === 'real';
+  /**
+   * O QUE A LINHA BRILHO CONTA, numa string só — a Q14 do dono (item 91).
+   *
+   * A DECLARAÇÃO DA CHAPA NÃO PODE DEPENDER DO VEREDITO, e este era o
+   * furo da primeira versão desta linha: em `?luz=real` com o tier abaixo
+   * de cinema o eixo lê ASSISTIDO (a amostragem é desvio indesfazível),
+   * e um texto que só declarasse a exposição no ramo `brilhoReal` calaria
+   * os +3 passos exatamente onde o item 103 já mostrou que o app vive —
+   * o estado difícil. A chapa é FATO da vista: se ela está aberta, diz-se,
+   * tenha ou não outra coisa a declarar junto.
+   *
+   * A ORDEM é a da leitura: primeiro a chapa (o que mudou na foto),
+   * depois o que restou ajustado.
+   *
+   * A FRASE DE RESERVA É GUARDA DE TIPO, não um ramo vivo, e fica dito
+   * para ninguém procurá-la na tela: BRILHO REAL exige lista de desvios
+   * VAZIA, o que implica `luz === 'real'` (a `assistida` é sempre desvio)
+   * e `exposicaoManual === false` (a mão é sempre desvio) — e nesse
+   * estado `declaracaoDaExposicao` nunca devolve `null`. Desde a Q14, o
+   * selo que diz BRILHO REAL SEMPRE tem uma chapa a declarar.
+   */
+  const oQueSeVe =
+    [exposicao, brilhoReal ? null : lista].filter(Boolean).join(' · ')
+    || 'a fotometria da casa, sem ajuste';
   /** o PIOR EIXO decide a bolinha do resumo: um desvio já tinge os dois */
   const algumDesvia = !escalaReal || !brilhoReal;
 
@@ -304,9 +328,10 @@ export function Selo({
             onClick={onBrilhoReal}
             aria-label={
               brilhoReal
-                ? `${BRILHO_REAL}: nada foi ajustado nesta vista.`
+                ? `${BRILHO_REAL}: ${exposicao ?? 'nada foi ajustado nesta vista.'}`
                   + ' Clique para voltar à luz assistida.'
-                : `${BRILHO_ASSISTIDO}. Ajustado: ${lista}.`
+                : `${BRILHO_ASSISTIDO}.${exposicao ? ` ${exposicao}` : ''}`
+                  + ` Ajustado: ${lista}.`
                   + (daParaVoltar
                     ? ' Clique para voltar ao brilho real.'
                     : ' Clique para voltar à luz assistida.')
@@ -319,12 +344,19 @@ export function Selo({
                 numa linha que ainda diz ASSISTIDO só engana se o texto
                 calar o motivo. Com o tier abaixo de cinema ele lê
                 "amostragem abaixo de cinema — clique: voltar à luz
-                assistida": o que sobrou, dito, e o que o clique faz. */}
+                assistida": o que sobrou, dito, e o que o clique faz.
+
+                E EM BRILHO REAL ELA DECLARA A CHAPA (Q14 do dono, item
+                91): com `?luz=real` o quadro abre +3 passos de exposição,
+                e um selo que dissesse "sem ajuste" ali estaria calando o
+                que a tela mais mostra. Quem decide a frase é `selo.ts`
+                (`declaracaoDaExposicao`), como decide todo o resto — aqui
+                só se escolhe onde ela aparece: dentro do `oQueSeVe`, que é
+                o mesmo texto nos dois ramos do clique. */}
             <em>
               {podeReassistir
-                ? `${brilhoReal ? 'a fotometria da casa, sem ajuste' : lista}`
-                  + ' — clique: voltar à luz assistida'
-                : `clique: voltar ao real — ${lista}`}
+                ? `${oQueSeVe} — clique: voltar à luz assistida`
+                : `clique: voltar ao real — ${oQueSeVe}`}
             </em>
           </button>
 

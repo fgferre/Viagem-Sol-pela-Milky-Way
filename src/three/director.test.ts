@@ -17,8 +17,10 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   escreverLuzDaVisita,
+  exposicaoDoQuadro,
   uniformsDaLuzDaVisita,
   LANTERNA_DE_LEITURA,
+  PASSOS_DA_EXPOSICAO_REAL,
   S_DO_TERMINADOR,
 } from '../lib/atlas/luzDaVisita';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
@@ -362,5 +364,96 @@ describe('a política de luz chega ao quadro do palco, e `?calib=` morreu', () =
       expect(politicaNoQuadro(busca), busca).toBe('assistida');
       expect(uniformeDoCorpo(busca), busca).toEqual(semPorta);
     }
+  });
+});
+
+// ============================================================
+// A CHAPA DO MODO REAL — a Q14 do dono, 26/08 (item 91)
+//
+// A QUEM SERVE: à decisão dele, verbatim — *"R1 — +3 passos fixos,
+// sempre os mesmos, declarados no selo"*. Ele julgou a coluna R1 da folha
+// `capturas/item93-calib-real.png`, que foi capturada com
+// `?luz=real&exp=8.16`; o app embarcado tem de chegar à MESMA chapa sem a
+// porta, e sem que a penumbra física do globo se mexa.
+//
+// POR QUE ELE EXECUTA A LINHA EM VEZ DE PINAR O NÚMERO. Um teste que
+// afirmasse `exposicaoDoQuadro(1.02, 'real') === 8.16` seria verdade
+// mesmo que o Director tivesse parado de CHAMAR a função — e foi
+// exatamente esse gênero de furo que o item 103 pagou caro (o pino puro
+// passava verde sobre uma porta emperrada). Aqui se arranca o bloco
+// GUARDADO do `director.ts`, com o `if (!this.expOverride)` junto, e se
+// roda com um `this` de mentira e um `engine` que só anota o que recebeu
+// — o precedente é o bloco da política de luz acima.
+//
+// O QUE MORDE, e foi conferido desmontando cada peça à mão:
+//  · tirar o `exposicaoDoQuadro(...)` de volta para `1.02 + 0.03 * fade`
+//    → a razão real/assistida cai a 1 e três casos reprovam;
+//  · trocar a composição por um `8.16` digitado → a vista externa
+//    reprova (a rampa deixaria de compor);
+//  · apagar a guarda `if (!this.expOverride)` → o caso do `?exp=`
+//    reprova, porque o gesto do visitante deixaria de vencer.
+// ============================================================
+describe('a Q14 do dono — em `?luz=real` a LINHA do Director abre +3 passos', () => {
+  /** o bloco INTEIRO da auto-exposição, guarda incluída */
+  const AUTO = FONTE.match(/\n( *if \(!this\.expOverride\) \{\n[^}]*\n *\})\n/);
+
+  /**
+   * Roda o bloco real do `director.ts` com um `this` de mentira e devolve
+   * o que o `engine` recebeu — `undefined` quando a guarda barrou a
+   * escrita, que é o caso do `?exp=`.
+   */
+  const exposicaoDoTick = (
+    politica: PoliticaDeLuz,
+    galaxyFade: number,
+    expOverride = false
+  ): number | undefined => {
+    let visto: number | undefined;
+    const alvo = {
+      expOverride,
+      politicaDeLuz: politica,
+      engine: {
+        setExposure: (v: number) => {
+          visto = v;
+        },
+      },
+    };
+    new Function(
+      'exposicaoDoQuadro',
+      'galaxyFade',
+      `(function () {\n${AUTO![1]}\n}).call(this);`
+    ).call(alvo, exposicaoDoQuadro, galaxyFade);
+    return visto;
+  };
+
+  it('a varredura acha o bloco — um padrão quebrado passaria calado', () => {
+    expect(AUTO, 'o Director não tem mais a auto-exposição guardada').not.toBeNull();
+    // o cinto do cinto: o bloco tem de CHAMAR a lei, não redigitá-la
+    expect(AUTO![1]).toContain('exposicaoDoQuadro');
+    expect(AUTO![1]).toContain('this.politicaDeLuz');
+    expect(AUTO![1]).not.toContain('8.16');
+  });
+
+  it('em `assistida` a linha entrega a rampa de sempre — 1,02 dentro do disco', () => {
+    expect(exposicaoDoTick('assistida', 0)).toBe(1.02);
+    // e a vista externa continua sendo o outro assunto fotográfico
+    expect(exposicaoDoTick('assistida', 1)).toBeCloseTo(1.05, 12);
+  });
+
+  it('em `real` a MESMA linha entrega ×8 — os +3 passos, medidos na razão', () => {
+    for (const fade of [0, 0.5, 1]) {
+      const real = exposicaoDoTick('real', fade)!;
+      const assistida = exposicaoDoTick('assistida', fade)!;
+      expect(real / assistida, `fade ${fade}`).toBe(2 ** PASSOS_DA_EXPOSICAO_REAL);
+    }
+    // e o número que sai na visita é o da foto que ele escolheu
+    expect(exposicaoDoTick('real', 0)).toBeCloseTo(8.16, 12);
+  });
+
+  it('`?exp=` VENCE os dois: com o latch ligado a linha não escreve nada', () => {
+    // é a precedência declarada no registro do selo — o gesto do
+    // visitante vence a gradação do modo. Substitui, não multiplica: a
+    // URL histórica `?luz=real&exp=8.16` continua dando 8,16 e não 65.
+    expect(exposicaoDoTick('real', 0, true)).toBeUndefined();
+    expect(exposicaoDoTick('assistida', 0, true)).toBeUndefined();
   });
 });
