@@ -25,6 +25,7 @@ import { deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
   LIMIAR_DE_MUDANCA,
+  arred,
   medirJanela,
   LIMIAR_DE_SATURACAO,
   LIMIAR_DO_PRETO,
@@ -557,19 +558,58 @@ describe('medirUmbra — o buraco contra o chão ao lado', () => {
  * o ponto, e é só isso que as separa.
  */
 describe('a janela declarada — o byte que uma legenda cita', () => {
-  /** um quadro com um retângulo de valor conhecido em volta de (200, 300) */
+  /**
+   * O QUADRO DE PROVA É UMA RAMPA, e isso é o conserto de um dente que
+   * não mordia. Até 26/08 esta mancha era um retângulo CHAPADO de 81×81
+   * com a janela de 51×51 no meio dele: deslocar a leitura em 3 px, em 10
+   * ou em 15 devolvia EXATAMENTE a mesma média, e a suíte inteira — 36 de
+   * 36 — passava com o instrumento medindo o lugar errado. Só a partir de
+   * 20 px a janela encostava na beira e alguém reclamava.
+   *
+   * Agora o valor dentro da mancha é `mancha × perfil(x, y)`, com o perfil
+   * subindo 1 % por COLUNA e 0,25 % por LINHA: UM pixel de deslocamento em
+   * qualquer eixo já muda a média. Multiplicativo, e não somado, por duas
+   * razões — nenhum valor fica negativo (isto são bytes de tela), e a
+   * RAZÃO entre os dois lados continua sendo a razão dos níveis, porque o
+   * mesmo perfil cai nos dois. E o perfil é ímpar em torno de (200, 300),
+   * então a média de uma janela centrada ali continua sendo o `mancha`
+   * pedido — os números que estes casos citam não mudaram.
+   */
+  const RAMPA_X = 0.01;
+  const RAMPA_Y = 0.0025;
+  const perfil = (x, y) => 1 + (x - 200) * RAMPA_X + (y - 300) * RAMPA_Y;
   const comMancha = (fundo, mancha) => {
     const v = new Float32Array(700 * 600).fill(fundo);
-    for (let y = 260; y <= 340; y++) for (let x = 160; x <= 240; x++) v[y * 700 + x] = mancha;
+    for (let y = 260; y <= 340; y++) {
+      for (let x = 160; x <= 240; x++) v[y * 700 + x] = mancha * perfil(x, y);
+    }
     return v;
   };
 
   it('mede os DOIS lados na MESMA janela, e a razão sai deles', () => {
     const m = medirJanela(comMancha(3, 121.86), comMancha(3, 45.97), 700, 600, 200, 300, 25);
     expect(m.janela).toEqual({ x: 200, y: 300, raio: 25, lado: 51 });
-    expect(m.antes).toEqual({ media: 121.86, min: 121.86, max: 121.86, n: 2601 });
+    // a média no centro é o nível pedido; min e max são os cantos da rampa
+    // (±31,25 % do nível), e é por eles que a legenda sabe que não mediu
+    // uma chapada
+    expect(m.antes).toEqual({ media: 121.86, min: 83.78, max: 159.94, n: 2601 });
     expect(m.depois.media).toBe(45.97);
     expect(m.razao).toBe(+(45.97 / 121.86).toFixed(4));
+  });
+
+  /**
+   * O DENTE DA POSIÇÃO — o que a mancha chapada não cobrava. Se o
+   * instrumento ler 3 px ao lado do ponto que a legenda declara, a legenda
+   * mente, e nenhum outro caso deste arquivo percebe.
+   */
+  it('a janela mede ONDE lhe mandam — 1 px de deslocamento já muda o número', () => {
+    const v = comMancha(3, 100);
+    expect(medirJanela(v, v, 700, 600, 200, 300, 25).antes.media).toBe(100);
+    for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1], [3, 0], [0, 3], [-3, -3]]) {
+      const m = medirJanela(v, v, 700, 600, 200 + dx, 300 + dy, 25).antes.media;
+      expect(m, `${dx},${dy}`).not.toBe(100);
+      expect(m, `${dx},${dy}`).toBe(arred(100 * perfil(200 + dx, 300 + dy), 2));
+    }
   });
 
   /** o mínimo e o máximo existem para a legenda não vender uma média
@@ -577,9 +617,11 @@ describe('a janela declarada — o byte que uma legenda cita', () => {
   it('a janela que pega a beira DECLARA o degrau no min e no max', () => {
     const m = medirJanela(comMancha(3, 100), comMancha(3, 100), 700, 600, 230, 300, 25);
     expect(m.antes.min).toBe(3);
-    expect(m.antes.max).toBe(100);
+    // o canto mais alto da mancha que a janela alcança: (240, 325)
+    expect(m.antes.max).toBe(arred(100 * perfil(240, 325), 2));
+    expect(m.antes.max).toBe(146.25);
     expect(m.antes.media).toBeGreaterThan(3);
-    expect(m.antes.media).toBeLessThan(100);
+    expect(m.antes.media).toBeLessThan(146.25);
   });
 
   it('janela fora do quadro REPROVA em vez de recortar em silêncio', () => {
