@@ -421,6 +421,16 @@ lupa de 2,8× no ponto em que a mudança acontece:
   cima e Júpiter embaixo (é com dois corpos que R1 e R2 deixam de ser a
   mesma foto).
 
+**A HONESTIDADE DAS VISTAS, para ninguém prometer o que não é:** as três
+nascem da MESMA receita de câmera das fotos que ele julgou (Saturno 4
+raios / 67°, Júpiter 4 raios / 60°, Mercúrio no eixo do Sol), derivadas por
+conta das vistas PINADAS do `ab-identidade.mjs` — sem redigitar raio de
+corpo nenhum. **Mercúrio sai BIT A BIT igual** ao cru de 25/08 (zero pixel
+de diferença, o que de quebra prova que a luz dele não andou desde então);
+Saturno e Júpiter têm o azimute em outro lugar, e o enquadramento não
+repete pixel a pixel. As quatro colunas de cada prancha compartilham a
+vista, que é o que a comparação exige.
+
 As medidas ao lado: `item93-calib-saturno.json` (modo `par`),
 `item93-calib-jupiter.json` (`faixas`), `item93-calib-mercurio.json`
 (`aneis`), `item93-calib-real.json` (`par`), `item93-calib-noite.json` (o

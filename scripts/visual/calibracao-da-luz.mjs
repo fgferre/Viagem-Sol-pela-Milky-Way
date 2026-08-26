@@ -207,7 +207,7 @@ const PRANCHAS = [
     ],
     titulo: 'Item 93 · Q9 — a noite de Saturno, as três calibrações lado a lado',
     texto: [
-      'Câmera a 4 raios de Saturno, 67° fora do eixo Sol–Saturno, 2024-04-08 — a MESMA vista da foto que você julgou. Você disse: "a noite ficou clara demais".',
+      'Câmera a 4 raios de Saturno, 67° fora do eixo Sol–Saturno, 2024-04-08 — a MESMA receita de câmera da foto que você julgou. O azimute em volta do corpo é outro, então o enquadramento não repete pixel a pixel; a luz e a data são as mesmas. Você disse: "a noite ficou clara demais".',
       'A causa não era a dose. Os números da receita do NASA Eyes são bytes de TELA (lá a luz multiplica o que se vê); aqui eles entraram na conta em espaço LINEAR, sem tradução — e o nosso tonemap ainda multiplica por 1,70. É a mesma lição do véu palha, agora no termo de luz.',
       'C1 e C2 traduzem; C3 só gira os botões, e está aqui para mostrar que girar botão NÃO resolve — a noite dela fica mais clara que a de hoje.',
       'Medido (média do quadro / p99, bytes de tela): hoje 22,24 / 212,3 · C1 17,56 / 210,1 · C2 17,05 / 201,7 · C3 23,46 / 207,4. Arquivo: capturas/item93-calib-saturno.json.',
@@ -226,7 +226,7 @@ const PRANCHAS = [
     ],
     titulo: 'Item 93 · Q10 — o flanco de Júpiter: o crescente volta ou não',
     texto: [
-      'Câmera a 4 raios de Júpiter, 60° fora do eixo Sol–Júpiter — a MESMA vista da foto que você julgou. Você disse: "clareou demais".',
+      'Câmera a 4 raios de Júpiter, 60° fora do eixo Sol–Júpiter — a MESMA receita de câmera da foto que você julgou, com o azimute em outro lugar (o enquadramento não repete pixel a pixel). Você disse: "clareou demais".',
       'A NOITE DO GLOBO, em duas janelas DECLARADAS (bytes de tela). No TERMINADOR, 51×51 px em (442, 490): hoje 121,9 · C1 46,0 · C2 46,2 · C3 151,5. No FUNDO da noite, 31×31 px em (373, 511): hoje 45,9 · C1 <b>4,3</b> · C2 <b>16,6</b> · C3 39,7.',
       'É NO FUNDO DA NOITE QUE C1 E C2 SE SEPARAM, e essa é a escolha: a C1 apaga a noite quase por inteiro (é o Eyes ao pé da letra); a C2 mantém um fio de leitura, porque a lanterna dela foi re-dosada contra o byte que o Eyes mostra na tela. Arquivo: capturas/item93-calib-noite.json.',
       'C3 deixa o terminador MAIS claro que hoje: baixar o botão abre o vazamento de 5% para 30%. É botão de contraste, não de dose — nenhum valor dele devolve o crescente.',
@@ -246,7 +246,7 @@ const PRANCHAS = [
     ],
     titulo: 'Item 93 · Q11 — Mercúrio no subsolar: domado sem freio de corpo',
     texto: [
-      'Câmera a 4 raios de Mercúrio, no eixo do Sol (o pior caso de estouro) — a MESMA vista da foto que você julgou. Você disse: "voltou a incomodar — prefiro domado".',
+      'Câmera a 4 raios de Mercúrio, no eixo do Sol (o pior caso de estouro). Esta é, BIT A BIT, a mesma foto que você julgou — ZERO pixel de diferença contra o quadro cru de 25/08. Você disse: "voltou a incomodar — prefiro domado".',
       'Medido no anel central do disco (bytes de tela): hoje 148,1 · C1 129,7 · C2 106,2 · C3 138,8. O item 91 domava Mercúrio à mão, com um freio por corpo, e chegava a 131,5.',
       'Ou seja: C1 entrega o Mercúrio domado que você preferiu SEM freio nenhum, só por consertar a cadeia. Se ainda quiser o freio por cima, ele existe e é uma linha.',
       'Arquivo: capturas/item93-calib-mercurio.json.',
@@ -274,7 +274,7 @@ const PRANCHAS = [
     ],
     titulo: 'Item 91(c) · o modo real: honesto E legível, sem teto de brilho',
     texto: [
-      'A MESMA vista de Saturno, agora em ?luz=real — a penumbra FÍSICA que você mandou manter. Você disse: "escuro demais, repensar".',
+      'A MESMA vista de Saturno da prancha da noite, agora em ?luz=real — a penumbra FÍSICA que você mandou manter. Você disse: "escuro demais, repensar".',
       'Nenhuma das duas propostas toca o globo: as duas mexem só na EXPOSIÇÃO DO QUADRO, que é a fotografia, e nenhuma põe teto de brilho (o NORTE proíbe). A penumbra continua real — o que muda é o tempo de exposição da foto.',
       'R1 abre +3 passos, sempre, e declara isso no selo. R2 faz a exposição SEGUIR A CÂMERA: a foto fica aberta na medida da distância ao Sol (a conta é exp = d em UA — Júpiter 5,0 · Saturno 9,7 · Netuno 30). R1 é o mesmo número em toda parte; R2 é menos perto e mais longe, que é o que mantém Netuno legível sem estourar Júpiter. R2 só vira obra se você escolher.',
       'Medido em Saturno (média do quadro / p99, bytes de tela): hoje 4,49 / 20,3 · R1 26,21 / 107,1 · R2 30,29 / 118,5. Em Saturno as duas quase coincidem — a segunda fileira mostra Júpiter, onde R2 abre 5,0 contra os 8,16 fixos do R1. Repare no CÉU: a exposição também acende o fundo, e isso é parte da escolha. Arquivo: capturas/item93-calib-real.json.',
