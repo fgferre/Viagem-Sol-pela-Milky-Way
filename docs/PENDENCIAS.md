@@ -33,9 +33,9 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 103.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 104.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **102** saiu em 25/08: o giro em volta do selecionado, queixa dele.)*
+  *(O **103** saiu em 26/08: a porta do BRILHO emperrada no selo, queixa dele.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
@@ -911,6 +911,20 @@ bit-idêntico nas vistas paradas.
 **NÃO SE MEXE:** o zoom (`zoomDaRoda.ts` já tem inércia própria); o
 "olhar ao redor" do filme (`cameraRig.addLookDelta` — rotação manual
 em torno de corpo só existe no Atlas); os limiares de toque do P2.
+
+**103. A porta do BRILHO no selo parou de virar — clicar não troca mais
+de modo.** (Aberto em 26/08, queixa dele ao vivo, no app local. Palavras
+dele: *"depois que clico no selo de honestidade, na parte de brilho, nao
+consigo voltar ao modo anterior nem vice versa, clclar pelos modos."*)
+
+A porta de duas vias é decisão dele no item **91** (assistido ⇄ real ao
+vivo, URL espelhando o gesto) e estava PROVADA em foto em 25/08
+(`item91-selo-porta-de-duas-vias.png`). Suspeito primeiro, por
+cronologia: a obra da calibração (itens 93/91c) mexeu no `selo.ts` (a
+linha neutra `calib`) e no `director.ts` no mesmo dia — regressão da
+etapa se conserta DENTRO da etapa. A prova de saída: o gesto completo
+nos DOIS sentidos, com a URL acompanhando, e um dente que morda se a
+porta emperrar de novo.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
