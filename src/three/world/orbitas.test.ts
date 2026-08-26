@@ -1051,8 +1051,14 @@ describe('O FILME NÃO TEM LINHA (§7 — item 77 · decisão 3)', () => {
     orbitas.update(camera, quadroDe(1800), meiaTan, 0, null, 'atlas');
     expect(orbitas.acesas, 'no Atlas as linhas acendem').toBeGreaterThan(0);
     orbitas.update(camera, quadroDe(1800), meiaTan, 0, null, 'journey');
+    // A garantia anti-piscada é a VISIBILIDADE: com o grupo fora, nada
+    // chega à tela neste quadro. Os alfas (que o mostrador `acesas` lê)
+    // FICAM onde estavam de propósito — é o ramo declarado da camada
+    // fechada: a volta não pode nascer do neutro.
     expect(orbitas.group.visible, 'entrou no filme: grupo fora no MESMO quadro').toBe(false);
-    expect(orbitas.acesas, 'entrou no filme: nenhuma linha acesa no MESMO quadro').toBe(0);
+    orbitas.update(camera, quadroDe(1800), meiaTan, 0, null, 'atlas');
+    expect(orbitas.group.visible, 'voltou ao Atlas: grupo dentro no MESMO quadro').toBe(true);
+    expect(orbitas.acesas, 'e as linhas voltam ACESAS, sem subir do neutro').toBeGreaterThan(0);
     orbitas.dispose();
   });
 
