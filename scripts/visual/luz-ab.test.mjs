@@ -36,8 +36,10 @@ import {
   medirFaixas,
   medirPar,
   medirUmbra,
+  medirPerfil,
   nucleoMaisEscuro,
   percentil,
+  semSobrescrever,
 } from './luz-ab.mjs';
 
 const CRC = (() => {
@@ -635,5 +637,126 @@ describe('a janela declarada — o byte que uma legenda cita', () => {
     const m = medirJanela(v, v, 700, 600, 200, 300, 8);
     expect(m.antes.media).toBe(2.76);
     expect(m.razao).toBe(1);
+  });
+});
+
+describe('gravar sem matar testemunha', () => {
+  // VEIO DE `colar-da-fita.test.mjs` EM 26/08 junto com a peça: aquele
+  // arquivo importa ESTE módulo, e o `await import` de volta fechava um
+  // ciclo em cima de um top-level await — `JSON=... luz-ab.mjs` saía com
+  // "unsettled top-level await" e NÃO gravava o arquivo. Os três casos são
+  // os mesmos, sem uma letra mudada.
+  // A REGRA 7 APLICADA A ARQUIVO DE PROVA, e ela nasceu de um erro real:
+  // a re-medição de 26/08 regravou os quadros crus por cima, e os que
+  // testemunhavam os números da véspera deixaram de existir.
+  const dir = mkdtempSync(join(tmpdir(), 'colar-'));
+
+  it('devolve o caminho pedido quando não há nada lá', () => {
+    expect(semSobrescrever(join(dir, 'novo.png'))).toBe(join(dir, 'novo.png'));
+  });
+
+  it('escreve AO LADO, em -v2 e depois -v3, quando o arquivo já existe', () => {
+    const alvo = join(dir, 'antes.png');
+    writeFileSync(alvo, 'a');
+    expect(semSobrescrever(alvo)).toBe(join(dir, 'antes-v2.png'));
+    writeFileSync(join(dir, 'antes-v2.png'), 'b');
+    expect(semSobrescrever(alvo)).toBe(join(dir, 'antes-v3.png'));
+  });
+
+  it('não confunde ponto de diretório com extensão', () => {
+    const alvo = join(dir, 'sem-extensao');
+    writeFileSync(alvo, 'a');
+    expect(semSobrescrever(alvo)).toBe(join(dir, 'sem-extensao-v2'));
+  });
+});
+
+/**
+ * O PERFIL — a régua da COSTURA (item 104), e a quem ela serve.
+ *
+ * Serve à queixa dele de 26/08: *"a transicao da sombra dos aneis para
+ * regiao de penumbra/noite nao está bem feita. tinha que ser seamless"*.
+ * "Seamless" não é opinião quando vira número: andando do lado iluminado
+ * para a noite, o brilho não pode SUBIR (tira clara) nem dar um SALTO
+ * (dois pisos que não se encontram). Estes casos montam os dois defeitos
+ * à mão e cobram que o instrumento os aponte — um juiz que só soubesse
+ * dizer "mudou" não separaria uma costura de um degrau.
+ */
+describe('medirPerfil — como o brilho caminha de uma região à vizinha', () => {
+  /** um quadro em que o cinza é função só de x, dada por `f` */
+  const emX = (f, largura = 200, altura = 40) => {
+    const v = new Float32Array(largura * altura);
+    for (let y = 0; y < altura; y++) for (let x = 0; x < largura; x++) v[y * largura + x] = f(x);
+    return v;
+  };
+
+  it('descida limpa: monótona, sem subida e com degrau do tamanho do passo', () => {
+    // 100 bytes caindo 0,5 por coluna: de x=20 a x=180 são 80 bytes
+    const v = emX((x) => 100 - 0.5 * x);
+    const m = medirPerfil(v, v, 200, 40, 20, 20, 180, 20, 33, 2);
+    expect(m.segmento).toEqual({ x0: 20, y0: 20, x1: 180, y1: 20, n: 33, raio: 2, lado: 5 });
+    expect(m.antes.monotona).toBe(true);
+    expect(m.antes.maiorSubida).toBe(0);
+    expect(m.antes.ondeSubida).toBe(-1);
+    expect(m.antes.primeira).toBe(90);
+    expect(m.antes.ultima).toBe(10);
+    // 33 amostras em 160 px = 5 px por passo, e 0,5 byte por px
+    expect(m.antes.maiorDegrau).toBe(2.5);
+  });
+
+  /**
+   * A TIRA CLARA — o defeito 1 do item 104. Uma faixa que ACENDE no meio
+   * da descida é uma subida entre vizinhas, e é isso que `maiorSubida`
+   * mede; `monotona` é o veredito de uma palavra.
+   */
+  it('a tira clara aparece como SUBIDA, e o índice diz onde', () => {
+    const v = emX((x) => (x >= 96 && x < 116 ? 70 : 100 - 0.5 * x));
+    const m = medirPerfil(v, v, 200, 40, 20, 20, 180, 20, 33, 2);
+    expect(m.antes.monotona).toBe(false);
+    // a faixa vale 70 onde a descida já passou de 55: a subida é de 10,2
+    expect(m.antes.maiorSubida).toBe(10.2);
+    // e o índice aponta a amostra em que ela acontece — x = 20 + 16·5 = 100
+    expect(m.antes.ondeSubida).toBe(16);
+    expect(m.antes.serie[16]).toBe(70);
+    // e o lado LIMPO do mesmo par continua monótono: o juiz mede os dois
+    const limpo = emX((x) => 100 - 0.5 * x);
+    const par = medirPerfil(v, limpo, 200, 40, 20, 20, 180, 20, 33, 2);
+    expect(par.antes.monotona).toBe(false);
+    expect(par.depois.monotona).toBe(true);
+  });
+
+  /**
+   * O SALTO DE PISO — o defeito 2. Duas regiões que deviam convergir para
+   * o mesmo chão e não convergem: a descida continua monótona (nada
+   * acende), e quem denuncia é o `maiorDegrau`.
+   */
+  it('o salto de piso NÃO é subida — quem o denuncia é o maiorDegrau', () => {
+    const comDegrau = emX((x) => (x < 100 ? 5 : 20 + 0.2 * x));
+    const m = medirPerfil(comDegrau, comDegrau, 200, 40, 180, 20, 20, 20, 33, 2);
+    // andando do dia (x=180) para a noite (x=20): monótona, e mesmo assim
+    // com um degrau de dezenas de bytes onde os dois pisos se encontram
+    expect(m.antes.monotona).toBe(true);
+    expect(m.antes.maiorDegrau).toBeGreaterThan(20);
+    // sem o degrau, o mesmo caminho tem passo pequeno
+    const liso = emX((x) => 20 + 0.2 * x);
+    expect(medirPerfil(liso, liso, 200, 40, 180, 20, 20, 20, 33, 2).antes.maiorDegrau)
+      .toBeLessThan(2);
+  });
+
+  /** a janela é o que separa perfil de sorteio: um pixel solto de ruído
+   *  não pode virar "tira clara" */
+  it('cada amostra é uma JANELA — um pixel de ruído não vira costura', () => {
+    const v = emX((x) => 100 - 0.5 * x);
+    v[20 * 200 + 100] = 255;
+    const comRaio = medirPerfil(v, v, 200, 40, 20, 20, 180, 20, 33, 2);
+    const semRaio = medirPerfil(v, v, 200, 40, 20, 20, 180, 20, 33, 0);
+    expect(semRaio.antes.maiorSubida).toBeGreaterThan(100);
+    expect(comRaio.antes.maiorSubida).toBeLessThan(10);
+  });
+
+  it('segmento fora do quadro e n < 2 REPROVAM em vez de recortar calado', () => {
+    const v = emX((x) => 100 - 0.5 * x);
+    expect(() => medirPerfil(v, v, 200, 40, 1, 20, 180, 20, 33, 2)).toThrow(/fora do quadro/);
+    expect(() => medirPerfil(v, v, 200, 40, 20, 20, 180, 39, 33, 2)).toThrow(/fora do quadro/);
+    expect(() => medirPerfil(v, v, 200, 40, 20, 20, 180, 20, 1, 2)).toThrow(/duas amostras/);
   });
 });

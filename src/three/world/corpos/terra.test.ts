@@ -27,7 +27,6 @@ import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import {
-  CALIBRACOES,
   LANTERNA_DE_LEITURA,
   S_DO_TERMINADOR,
   ganhoDoGlobo,
@@ -581,14 +580,26 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
   });
 
   /**
-   * PINO 93, A FIAÇÃO DA PORTA `?calib=` — o mesmo dente que
-   * `gigante.test.ts` ganhou em 26/08, e a razão inteira está escrita lá:
-   * apagar o `q.calibracao` da chamada de `escreverLuzDaVisita` compilava
-   * e passava a suíte calado. `uTraduzDaTela` é a chave que denuncia,
-   * porque a C1 não mexe na lanterna nem no `s`. Aqui, como no `it` acima,
-   * quem recebe é só a SUPERFÍCIE: as duas cascas seguem de fora.
+   * PINO 93/104 — O INVARIANTE NOVO: assistido SEMPRE traduzido, real
+   * SEMPRE cru. Este dente nasceu em 26/08 cobrando a fiação da porta
+   * `?calib=`, achada por SABOTAGEM: apagar o `q.calibracao` da chamada de
+   * `escreverLuzDaVisita` compilava e atravessava os 2.360 testes calado.
+   *
+   * A porta MORREU no mesmo dia — ele escolheu a C1, ela virou o padrão —,
+   * e o dente ficou, com o alvo que sobrou. O gate da tradução passou a
+   * ser o `uTerminadorS` (a convenção "0 = Lambert cru", que é dizer
+   * `?luz=real`), então este uniforme deixou de ser só a suavidade do
+   * terminador: é ele que acende e apaga a TRADUÇÃO. Um corpo que o
+   * escrevesse sem passar a política acenderia a curva do Eyes dentro do
+   * modo que promete penumbra física — a decisão 2 do dono desfeita por
+   * dentro, e sem uma linha vermelha. O que o chunk FAZ com o uniforme é
+   * cobrado em `luzDaVisita.test.ts`, que executa o GLSL.
+   *
+   * E COBRA A MORTE DAS CHAVES: um `uTraduzDaTela` de volta no bloco de
+   * uniformes é uma segunda dose de brilho assistido entrando pela porta
+   * de trás.
    */
-  it('PINO 93: a calibração do quadro chega ao uniforme da superfície', async () => {
+  it('PINO 93/104: a superfície da Terra traduz, e as cascas seguem fora', async () => {
     const { terra } = terraDeTeste();
     const perto = centroPc(JD);
     perto.z += RAIO_EQ_TERRA_PC * 4;
@@ -598,17 +609,16 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
     const [sup, ...cascas] = terra.group.children.map(
       (m) => (m as THREE.Mesh).material as THREE.ShaderMaterial
     );
-    expect(sup!.uniforms.uTraduzDaTela.value).toBe(0);
-    expect(sup!.uniforms.uLanternaDepois.value).toBe(0);
-    terra.atualizar(quadro(perto, { calibracao: 'c1' }));
-    expect(sup!.uniforms.uTraduzDaTela.value).toBe(1);
+    expect(sup!.uniforms.uTraduzDaTela).toBeUndefined();
+    expect(sup!.uniforms.uLanternaDepois).toBeUndefined();
     expect(sup!.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
-    terra.atualizar(quadro(perto, { calibracao: 'c2' }));
-    expect(sup!.uniforms.uLanternaDepois.value).toBe(1);
-    expect(sup!.uniforms.uLanternaLeitura.value).toBe(CALIBRACOES.c2.lanterna);
-    for (const c of cascas) expect(c.uniforms.uTraduzDaTela).toBeUndefined();
+    expect(sup!.uniforms.uTerminadorS.value).toBeGreaterThan(0);
+    for (const c of cascas) expect(c.uniforms.uTerminadorS).toBeUndefined();
+    terra.atualizar(quadro(perto, { politica: 'real' }));
+    expect(Object.is(sup!.uniforms.uLanternaLeitura.value, 0)).toBe(true);
+    expect(Object.is(sup!.uniforms.uTerminadorS.value, 0)).toBe(true);
     terra.atualizar(quadro(perto));
-    expect(sup!.uniforms.uTraduzDaTela.value).toBe(0);
+    expect(sup!.uniforms.uTerminadorS.value).toBeGreaterThan(0);
     terra.dispose();
   });
 

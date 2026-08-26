@@ -56,7 +56,6 @@ import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
 import {
   GLSL_LUZ_DA_VISITA,
   escreverLuzDaVisita,
-  type CalibracaoDaLuz,
   ganhoDoGlobo,
   uniformsDaLuzDaVisita,
 } from '../../../lib/atlas/luzDaVisita';
@@ -423,10 +422,6 @@ export interface QuadroDoRochoso {
   ligado: boolean;
   atlasQuente: boolean;
   politica: PoliticaDeLuz;
-  /** `?calib=` — a calibração candidata do item 93. OPCIONAL porque a
-   *  porta é de INSTRUMENTO e morre com a escolha dele: ausente é o
-   *  `padrao`, que é o de hoje bit a bit. */
-  calibracao?: CalibracaoDaLuz;
   /** os três de PLANETA (a cessão suave, D5); luas ignoram. */
   dtS: number;
   psf: CalibracaoDaCasa;
@@ -684,7 +679,7 @@ export class RochosoResolvido {
     // escritor da casa — as três famílias de BRDF desta classe recebem
     // os MESMOS dois uniformes; quem decide o que fazer com eles é o
     // fragmento (a LS ignora o `s`).
-    escreverLuzDaVisita(u, q.politica, 0, q.calibracao);
+    escreverLuzDaVisita(u, q.politica, 0);
     // a sombra do eclipse — o mesmo fio das irmãs (sem deriva: casca única)
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 

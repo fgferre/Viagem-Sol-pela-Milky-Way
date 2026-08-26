@@ -94,11 +94,11 @@
 // volta nulo e a foto seria de cena PARADA — o juiz REPROVA em vez de
 // aprovar, pela regra da casa (juiz que não consegue medir reprova).
 // ============================================================
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { carimboDoCodigo } from './ab-identidade.mjs';
 import { capturarCDP, dorme } from './chrome.mjs';
-import { arred, cinzaDoPng, lerPng, percentil } from './luz-ab.mjs';
+import { arred, cinzaDoPng, lerPng, percentil, semSobrescrever } from './luz-ab.mjs';
 
 /**
  * A VISTA, e ela é de `?pos=` de propósito: a câmera não persegue nada,
@@ -406,35 +406,6 @@ export async function capturarAFita(porta = 9411) {
       };
     },
   });
-}
-
-/**
- * GRAVA SEM MATAR TESTEMUNHA — a regra 7 do `AGENTS.md` aplicada a todo
- * arquivo de prova, e não só à prancha: existindo `x.png`, este juiz NÃO
- * escreve por cima; escreve `x-v2.png`, depois `x-v3.png`, e devolve o
- * caminho que usou.
- *
- * ELE NASCEU DE UM ERRO MEDIDO, e o erro é meu: a re-medição de 26/08
- * regravou `capturas/item83-colar-cru/*.png` por cima, e com isso os
- * quadros que testemunhavam os números da véspera (45 contas, corpo
- * 154,4) deixaram de existir — o número virou palavra. Não há como
- * ressuscitá-los; o que dá para consertar é o COMPORTAMENTO, para que
- * nenhuma corrida futura apague a prova da anterior.
- *
- * O `-vN` é o mesmo sufixo que a casa já usa nas pranchas, e o JSON de
- * cada corrida guarda em `quadroCru` qual arquivo é o dela: sem esse
- * ponteiro, uma pasta com três versões não diria de quem é cada número.
- */
-export function semSobrescrever(caminho) {
-  if (!existsSync(caminho)) return caminho;
-  const ponto = caminho.lastIndexOf('.');
-  const corte = ponto > caminho.lastIndexOf('/') ? ponto : caminho.length;
-  const raiz = caminho.slice(0, corte);
-  const extensao = caminho.slice(corte);
-  for (let v = 2; ; v++) {
-    const tentativa = `${raiz}-v${v}${extensao}`;
-    if (!existsSync(tentativa)) return tentativa;
-  }
 }
 
 async function principal() {

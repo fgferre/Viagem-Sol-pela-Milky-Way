@@ -95,8 +95,9 @@ MESMA folha de fotos das propostas do modo real.
 
 > ~~**(1)** calibração da luz assistida + propostas do modo real (itens
 > **93** e **91**(c) — UMA folha de opções em foto, 2 a 3 calibrações lado
-> a lado)~~ (26/08 — **a folha pousou**: quatro pranchas e a porta de
-> instrumento `?calib=`; falta só o olho dele) → **(2)** a rolagem do véu da abertura (**87**) → **(3)** o A/B
+> a lado)~~ (26/08 — **ele escolheu a C1, e ela virou o PADRÃO**: a porta
+> `?calib=` morreu e o item **104** saiu na mesma leva; falta só o olho
+> dele nas fotos) → **(2)** a rolagem do véu da abertura (**87**) → **(3)** o A/B
 > da lente de 58° (**86**) junto com a folha da vista de abertura (**61**),
 > na **MESMA sessão de captura** → **(4)** o **70**, causa 2 (o ponto que
 > morre na borda) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
@@ -283,23 +284,32 @@ que ela nomeou viraram os itens **95** e **96**.
 **A história completa está no ARQUIVO, item 91.**
 
 **93. O brilho assistido tem de ser o mesmo algoritmo do NASA Eyes — a
-receita pousou em 25/08, ELE VIU E APROVOU A RECEITA, e o item NÃO fecha:
-falta CALIBRAR os botões dela.** Palavras do dono, 2026-08-25:
-*"estou perguntado do brilho assistido... quero que o nosso conserte
-isso para ficar igual ao algortimo usado no nasa eyes"*.
+receita pousou, a calibração pousou, e o que falta é O OLHO DELE na
+costura.** Palavras do dono, 2026-08-25: *"estou perguntado do brilho
+assistido... quero que o nosso conserte isso para ficar igual ao
+algortimo usado no nasa eyes"*.
 
 **A CALIBRAÇÃO FOI ESCOLHIDA — Q13, 26/08, pela Sala de Conferência: é a
 C1, "o Eyes ao pé da letra".** Palavras dele: *"C1 — o Eyes ao pé da letra
 (a noite quase apaga; Mercúrio cai sozinho a ~130, o nível domado, sem
 freio nenhum), aqui tem pontos importantes a levar em consideração. a
 transicao da sombra dos aneis para regiao de penumbra/noite nao está bem
-feita. tinha que ser seamless"*. **A obra que isso abre:** a C1 vira o
-PADRÃO do modo assistido, a porta `?calib=` morre (a promessa escrita
-neste item), a re-baseline das vistas assistidas se declara — e a ressalva
-dele é o item **104**, que anda JUNTO: a costura sombra do anel → noite
-tem de sair seamless na mesma leva, senão a C1 chega com o defeito mais
-visível que antes (a noite da C1 é mais escura, e o degrau da sombra
-salta mais).
+feita. tinha que ser seamless"*.
+
+**A OBRA POUSOU EM 26/08, e ela tem três partes.** (1) A C1 é o caminho
+ÚNICO do modo assistido: os números não mudaram — `LANTERNA_DE_LEITURA`
+segue 0,15 e `S_DO_TERMINADOR` segue 3, que são os do Eyes — e o que
+entrou foi a TRADUÇÃO do composto de tela para linear
+(`daTelaParaLinear`, `luzDaVisita.ts`). (2) A porta `?calib=` MORREU, com
+`CALIBRACOES`, `lerPortaCalibracao`, as duas chaves de chaveamento, a
+linha do selo e a fiação no Director — a promessa que este item tinha
+escrito. (3) A re-baseline das vistas assistidas está declarada abaixo.
+
+**O QUE FALTA É O OLHO DELE, e só isso:** a ressalva que ele deixou junto
+com a escolha virou o item **104** (a costura sombra do anel → noite), e
+ela saiu na MESMA leva, como ele pediu. As fotos das duas estão na mesa;
+o item fica aberto até ele dizer se a noite da C1 e a costura do 104
+estão no ponto.
 
 O item **91** pagou o **dia** (Saturno palha); faltava a **receita**.
 Ela pousou em quatro peças, todas nascidas em `luzDaVisita.ts` — número
@@ -472,10 +482,10 @@ As medidas ao lado: `item93-calib-saturno.json` (modo `par`),
 modo `janela`, novo) e `item93-calib-identidade.json` (a prova de que sem a
 porta o pixel não muda). Os quadros crus em `capturas/item93-calib-cru/` —
 **não apagar enquanto ele não escolher**; é deles que a folha se recompõe
-(`node scripts/visual/calibracao-da-luz.mjs --folha`).
+(`node scripts/visual/costura-da-sombra.mjs --folha`).
 
-**AS TRÊS CANDIDATAS, e o que cada uma responde** (`CALIBRACOES`, em
-`luzDaVisita.ts`):
+**AS TRÊS CANDIDATAS, e o que cada uma respondeu** (elas viveram em
+`CALIBRACOES`, `luzDaVisita.ts`, e saíram do código com a escolha):
 
 - **C1, "o Eyes na nossa língua"** — nenhum número muda (0,15 e s = 3
   ficam); entra a TRADUÇÃO do composto de tela para linear. Apaga a noite
@@ -511,35 +521,74 @@ corta bem mais — os 22 % de C1 e os 45 % de C2 acima. É por isso que
 Mercúrio fica domado de graça, e é isso que leva a C2 abaixo de qualquer
 coisa que ele já tenha visto.
 
-**A PORTA `?calib=c1|c2|c3` É DE INSTRUMENTO E TEM DATA DE MORTE.** É da
-espécie do `?dbgorbitas`, registrada como **neutra** no selo, e o padrão
-(ausência) é o de hoje bit a bit. **Depois da escolha dele a vencedora vira
-o padrão, a porta sai do código e `scripts/visual/calibracao-da-luz.mjs`
-sai com ela.**
+**A PORTA `?calib=c1|c2|c3` MORREU EM 26/08, como estava escrito.** Ela
+era de instrumento, da espécie do `?dbgorbitas`, e existia só para a folha
+que ele julgou. Saíram juntas: a porta, `CALIBRACOES`,
+`lerPortaCalibracao`, os uniformes `uTraduzDaTela` e `uLanternaDepois`, o
+campo `calibracao` do quadro do palco e das quatro famílias de corpo, e a
+linha neutra do selo. **O interruptor da tradução passou a ser o MESMO das
+outras peças** — `uTerminadorS <= 0` é a convenção declarada de "Lambert
+cru", isto é, `?luz=real` —, e o invariante que substitui a promessa
+antiga ("sem a porta nada muda") é mais forte e mais fácil de morder:
+**assistido SEMPRE traduzido, real SEMPRE cru**. Os cinco dentes da
+fiação da porta (o do `director.test.ts` e um por família de corpo) não
+foram apagados: foram TRANSFORMADOS nesse invariante, e o do Director
+ainda cobra que `?calib=c1` numa URL velha não mova um bit.
 
-**E O SELO NÃO MOSTRA ESSA PORTA — de propósito, e é conferível.** No
-registro ela é uma linha NEUTRA (`neutra('calib', …)`: eixo `nenhum`,
-`desvia: () => false`), e `estadoDoSelo` só junta desvios de eixo
-`brilho` — com `?calib=c1` na URL o selo diz exatamente o que dizia sem
-ela. A razão é que o eixo BRILHO responde *"o que se vê é a fotometria da
-casa ou uma ajustada?"*, e as quatro calibrações são a MESMA resposta:
-`assistida` já declara *assistido*, e do outro lado da porta ela nem
-existe (`escreverLuzDaVisita` zera as duas chaves em `?luz=real`).
-Declará-la desvio contaria duas vezes o mesmo desvio, e a segunda vez
-seria falsa. **Isso vale ENQUANTO ela for porta de instrumento e morrer
-com a escolha dele. Se sobreviver por qualquer razão — virar preferência,
-ficar para um segundo julgamento, esperar mais do que esta rodada —, ela
-deixa de ser neutra e ganha RÓTULO VISÍVEL: quem olha uma foto tem
-direito de saber qual das quatro doses está vendo.**
+**E O SCRIPT DA FOLHA SAIU COM ELA, mas a máquina dele não.** O
+`scripts/visual/calibracao-da-luz.mjs` virou
+`scripts/visual/costura-da-sombra.mjs` (`git mv`, com a história): as
+colunas de candidata morreram e no lugar entrou o eixo que o item **104**
+mede — o ESTADO DO CÓDIGO, `antes` × `depois`. Derivar a câmera das
+vistas pinadas, capturar em 1100×900 com `dpr` fixo e recompor a prancha
+com legenda medida é a mesma máquina; reescrevê-la num arquivo novo para
+apagar o original em seguida seria duplicar código por formalidade.
 
-**A PROVA DE QUE NADA MUDOU SEM A PORTA**, medida entre `6748374` (antes) e
-`aca067b` (a obra), duas árvores limpas, mesmas URLs: **Júpiter, Mercúrio,
-Terra e Lua saem bit a bit IGUAIS** — os quatro fragmentos que incluem o
-chunk. As duas vistas de Saturno diferem **dentro do tremor do item 101**:
-252 px (Δmáx 44) e 360 px (Δmáx 50) contra pares nulos de 218–482 px
-(Δmáx 42–51) no binário VELHO contra ele mesmo, com a média do quadro igual
-a três decimais. E **`?calib=` dentro de `?luz=real` move 46 px contra um
-par nulo de 21–37** — a decisão 2 dele está intacta.
+**O SELO NÃO TEM MAIS LINHA PARA ELA.** Enquanto viveu, `?calib=` era uma
+linha NEUTRA no registro (eixo `nenhum`, `desvia: () => false`) porque as
+quatro calibrações davam a MESMA resposta ao eixo BRILHO — `assistida` já
+declara *assistido*. Com a porta morta a linha saiu junto, e uma URL velha
+com `?calib=c1` cai agora na regra geral de porta não declarada: o selo
+acusa *"porta não declarada"*, que é a resposta honesta para uma chave que
+ninguém prometeu. A dose deixou de ser escolhível, então não há mais o que
+rotular.
+
+**A RE-BASELINE ESTÁ DECLARADA — 26/08, as 61 vistas do `ab-identidade`,
+árvore limpa contra árvore suja do MESMO `HEAD` (carimbos
+`221777e29edd-d41d8cd9` × `221777e29edd-7701b7e1`), N=2 por lado.** O
+veredito é exatamente o que a C1 promete, e nada além dele:
+
+- **30 IGUAIS, bit a bit** — e são TODAS as vistas sem globo em visita: as
+  seis do filme, as quatro do Sol de perto, as três do Sol real, as
+  quatro dos heroes, as oito de distância em UA, `atlas`,
+  `foco-jupiter` e `anao-eris-orbita`. O céu, a galáxia, o campo estelar e
+  o Sol não sentiram a obra.
+- **28 DIFEREM** — e são TODAS as que têm globo em visita: Terra, Lua,
+  os três eclipses, Mercúrio, Vênus, Júpiter, Titã, Europa, Plutão–Caronte,
+  Quaoar, Vesta, as de foco em lua e os dois anões `ver=corpo`. É a C1
+  fazendo o que ela é: a noite de cada globo desce, e o dia fica onde
+  estava.
+- **3 INSTÁVEIS** — `saturno-anel`, `saturno-anelnb` e `foco-titan`, as do
+  item **101**: cada LADO já dá dois hashes contra si mesmo, então o md5
+  não tem o que julgar ali. As três têm globo em visita e mudaram como as
+  outras 28; o que falta é instrumento, não conclusão.
+
+**A COINCIDÊNCIA É A PROVA:** a linha entre "mudou" e "não mudou" caiu
+exatamente sobre "tem globo visitado", vista por vista, sem uma exceção
+dos dois lados.
+
+**E `?luz=real` NÃO SENTIU NADA** — a decisão 2 do dono, medida com o
+mesmo instrumento e as MESMAS URLs nos dois estados
+(`capturas/item93-real-identidade.json`, quadros em
+`capturas/item93-real-cru/`): **Júpiter, Mercúrio, a Terra e a Lua saem
+com ZERO pixel diferente** — os quatro fragmentos que incluem o chunk da
+receita, incluindo o `GIGANTE_LAMBERT_FRAG` que Saturno compartilha.
+Saturno move 31 px de 990.000 com Δmáx **3,9**, contra um par nulo (o
+MESMO binário contra ele mesmo) de 9 px e Δmáx **4,1**
+(`item93-real-ruido.json`): é o tremor de textura do item 101, e a média
+do quadro fica em 4,791 dos dois lados. Júpiter, que compila o MESMO
+fragmento, sai em zero — o que separa a sombra do instrumento da sombra
+do código.
 
 **O VÉU PALHA NÃO SE MEXE.** *"a dose do Eyes está boa (sutil)"* — a §4.4
 do contrato fica exatamente como está, com os números do Eyes, e mudá-la

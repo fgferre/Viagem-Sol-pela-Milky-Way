@@ -9,6 +9,7 @@
 //   node scripts/visual/luz-ab.mjs umbra  antes.png depois.png [ref.png]
 //   node scripts/visual/luz-ab.mjs croma  antes.png depois.png [limiar]
 //   node scripts/visual/luz-ab.mjs janela antes.png depois.png x,y[,raio]
+//   node scripts/visual/luz-ab.mjs perfil antes.png depois.png x0,y0,x1,y1[,n[,raio]]
 //
 // Imprime JSON no formato dos `capturas/item93-*.json`. Sem navegador e
 // sem dependência: o PNG é decodificado aqui (zlib do próprio Node), e a
@@ -106,6 +107,16 @@
 //    nos dois lados. É a irmã da UMBRA que NÃO acha o ponto: quem cita um
 //    byte numa legenda ("a noite do globo lê 122") tem de dizer ONDE, e o
 //    leitor refaz a conta no mesmo lugar. Janela fora do quadro é erro.
+//  · PERFIL (26/08, a costura do item 104): o cinza ao longo de um
+//    SEGMENTO declarado, nos dois lados, com cada amostra sendo a média de
+//    uma janela de `raio` (a mesma peça da JANELA — um pixel só não é
+//    perfil, é sorteio). O segmento declara-se do lado ILUMINADO para a
+//    NOITE, e então um perfil são NUNCA SOBE: `maiorSubida` é a altura da
+//    tira clara em bytes, `monotona` é ela abaixo do meio-nível de sempre,
+//    e `maiorDegrau` (o maior |Δ| entre vizinhas) é o que denuncia dois
+//    pisos que não se encontram. É a régua que separa "escureceu" de
+//    "costurou": o `par` diz QUANTO mudou e a `janela` diz QUANTO VALE
+//    aqui; só o perfil diz COMO o brilho caminha de uma região à vizinha.
 //  · UMBRA: o próprio script ACHA o ponto mais escuro do lado de
 //    referência dentro do disco (varredura de 2 em 2 px, média de 5×5
 //    amostras), e mede janelas de 17×17 ali e a 220 px ao lado.
@@ -113,7 +124,7 @@
 //    de um eclipse se lê: o buraco contra o chão iluminado ao lado.
 // ============================================================
 import { inflateSync } from 'node:zlib';
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -516,6 +527,81 @@ export function medirJanela(antes, depois, largura, altura, x, y, raio = 25) {
   };
 }
 
+/**
+ * UM LADO do perfil: a série de cinza ao longo do segmento, e os três
+ * números que dizem se ela é uma COSTURA ou um degrau.
+ *
+ * Cada amostra é a média de uma janela quadrada de `raio` centrada no
+ * ponto — a mesma `janelaDe` da medida declarada, e pela mesma razão: um
+ * pixel só num quadro com ruído de textura não é um perfil, é um sorteio.
+ */
+function ladoDoPerfil(v, largura, altura, x0, y0, x1, y1, n, raio) {
+  const serie = [];
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0 : i / (n - 1);
+    const x = Math.round(x0 + t * (x1 - x0));
+    const y = Math.round(y0 + t * (y1 - y0));
+    serie.push(janelaDe(v, largura, altura, x, y, raio).media);
+  }
+  let maiorSubida = 0;
+  let ondeSubida = -1;
+  let maiorDegrau = 0;
+  for (let i = 1; i < serie.length; i++) {
+    const d = serie[i] - serie[i - 1];
+    if (d > maiorSubida) {
+      maiorSubida = d;
+      ondeSubida = i;
+    }
+    if (Math.abs(d) > maiorDegrau) maiorDegrau = Math.abs(d);
+  }
+  return {
+    serie: serie.map((g) => arred(g, 2)),
+    maiorSubida: arred(maiorSubida, 2),
+    ondeSubida,
+    maiorDegrau: arred(maiorDegrau, 2),
+    monotona: maiorSubida < LIMIAR_DE_MUDANCA,
+    primeira: arred(serie[0], 2),
+    ultima: arred(serie[serie.length - 1], 2),
+  };
+}
+
+/**
+ * PERFIL: o brilho ao longo de um SEGMENTO declarado, nos dois lados — a
+ * régua da COSTURA do item 104.
+ *
+ * A pergunta que ele responde não é "quanto mudou", que é a do `par`, e
+ * nem "quanto vale aqui", que é a da `janela`: é **como o brilho CAMINHA**
+ * de uma região para a vizinha. Uma transição bem feita desce sem voltar
+ * atrás; uma tira clara entre a sombra e a noite é uma SUBIDA no meio da
+ * descida, e um piso que não bate é um DEGRAU. Os dois viram número aqui:
+ *
+ *  · `maiorSubida` — a maior subida entre amostras VIZINHAS, andando o
+ *    segmento na ordem declarada. O segmento declara-se do lado ILUMINADO
+ *    para a NOITE, então um perfil são nunca sobe: `maiorSubida` é a
+ *    altura da tira clara, em bytes de tela.
+ *  · `monotona` — `maiorSubida` abaixo do limiar de mudança (0,5 de 255),
+ *    que é o mesmo meio-nível com que o resto deste arquivo separa
+ *    mudança de arredondamento.
+ *  · `maiorDegrau` — o maior |Δ| entre vizinhas, subindo ou descendo. É
+ *    ele que denuncia o salto de piso: sombra e noite que convergem para
+ *    o mesmo chão passam uma na outra sem degrau, e o número cai.
+ *
+ * O `n` é o número de amostras, e a distância entre elas é o que dá a
+ * escala do "degrau": com o segmento de ~200 px e `n` = 64, cada passo é
+ * ~3 px. Aumentar `n` sem aumentar o `raio` mede ruído de textura como se
+ * fosse costura.
+ */
+export function medirPerfil(
+  antes, depois, largura, altura, x0, y0, x1, y1, n = 64, raio = 2
+) {
+  if (n < 2) throw new Error('o perfil precisa de pelo menos duas amostras');
+  return {
+    segmento: { x0, y0, x1, y1, n, raio, lado: 2 * raio + 1 },
+    antes: ladoDoPerfil(antes, largura, altura, x0, y0, x1, y1, n, raio),
+    depois: ladoDoPerfil(depois, largura, altura, x0, y0, x1, y1, n, raio),
+  };
+}
+
 export function medirUmbra(antes, depois, largura, altura, ref = antes, dx = 220, raioDoDisco = 340) {
   const { x, y } = nucleoMaisEscuro(ref, largura, altura, raioDoDisco);
   const janela = (v, jx, jy, raio = 8) => {
@@ -537,13 +623,52 @@ export function medirUmbra(antes, depois, largura, altura, ref = antes, dx = 220
   };
 }
 
+/**
+ * GRAVA SEM MATAR TESTEMUNHA — a regra 7 do `AGENTS.md` aplicada a todo
+ * arquivo de prova, e não só à prancha: existindo `x.png`, este juiz NÃO
+ * escreve por cima; escreve `x-v2.png`, depois `x-v3.png`, e devolve o
+ * caminho que usou.
+ *
+ * ELE NASCEU DE UM ERRO MEDIDO, e o erro é meu: a re-medição de 26/08
+ * regravou `capturas/item83-colar-cru/*.png` por cima, e com isso os
+ * quadros que testemunhavam os números da véspera (45 contas, corpo
+ * 154,4) deixaram de existir — o número virou palavra. Não há como
+ * ressuscitá-los; o que dá para consertar é o COMPORTAMENTO, para que
+ * nenhuma corrida futura apague a prova da anterior.
+ *
+ * O `-vN` é o mesmo sufixo que a casa já usa nas pranchas, e o JSON de
+ * cada corrida guarda em `quadroCru` qual arquivo é o dela: sem esse
+ * ponteiro, uma pasta com três versões não diria de quem é cada número.
+
+ * VEIO DE `colar-da-fita.mjs` EM 26/08, e a mudança de casa foi um
+ * conserto: aquele arquivo IMPORTA este, então o `await import` que a
+ * gravação de JSON fazia daqui para lá fechava um CICLO em cima de um
+ * top-level await — e o Node saía com "unsettled top-level await" **sem
+ * gravar o arquivo**. Ou seja: `JSON=... luz-ab.mjs` nunca escreveu uma
+ * medida, e a falha era silenciosa (o JSON saía na tela e o arquivo não
+ * nascia). A regra não é do colar: é da casa, e mora com o medidor que
+ * todo mundo já importa.
+ */
+
+export function semSobrescrever(caminho) {
+  if (!existsSync(caminho)) return caminho;
+  const ponto = caminho.lastIndexOf('.');
+  const corte = ponto > caminho.lastIndexOf('/') ? ponto : caminho.length;
+  const raiz = caminho.slice(0, corte);
+  const extensao = caminho.slice(corte);
+  for (let v = 2; ; v++) {
+    const tentativa = `${raiz}-v${v}${extensao}`;
+    if (!existsSync(tentativa)) return tentativa;
+  }
+}
+
 /* c8 ignore start */
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const [modo, alvo, arqB, extra] = process.argv.slice(2);
   if (!modo || !alvo) {
     throw new Error(
-      'uso: luz-ab.mjs <par|faixas|aneis|umbra|croma|janela>'
-      + ' <pasta | antes.png depois.png> [limiar | x,y,raio]'
+      'uso: luz-ab.mjs <par|faixas|aneis|umbra|croma|janela|perfil>'
+      + ' <pasta | antes.png depois.png> [limiar | x,y,raio | x0,y0,x1,y1[,n[,raio]]]'
     );
   }
   let saida;
@@ -577,6 +702,17 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
           return medirJanela(
             A.cinza, B.cinza, A.largura, A.altura, x, y,
             Number.isFinite(raio) ? raio : 25
+          );
+        })()
+      : modo === 'perfil' ? (() => {
+          const [x0, y0, x1, y1, n, raio] = String(extra ?? '').split(',').map(Number);
+          if (![x0, y0, x1, y1].every(Number.isFinite)) {
+            throw new Error('o modo `perfil` precisa de `x0,y0,x1,y1[,n[,raio]]`');
+          }
+          return medirPerfil(
+            A.cinza, B.cinza, A.largura, A.altura, x0, y0, x1, y1,
+            Number.isFinite(n) ? n : 64,
+            Number.isFinite(raio) ? raio : 2
           );
         })()
       : modo === 'umbra' ? medirUmbra(
@@ -614,7 +750,6 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     // a medida é arquivo de prova como o quadro cru, e cai na MESMA regra
     // da casa: o número de ontem não morre para o de hoje nascer. O aviso
     // sai em `stderr` para não sujar um `> arquivo.json`.
-    const { semSobrescrever } = await import('./colar-da-fita.mjs');
     const destino = semSobrescrever(process.env.JSON);
     writeFileSync(destino, `${texto}\n`);
     if (destino !== process.env.JSON) {

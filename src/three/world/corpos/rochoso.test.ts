@@ -36,7 +36,6 @@ import type { ManifestDeTexturas } from './terra';
 import { ANEIS_CITADOS } from './gigante';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import {
-  CALIBRACOES,
   LANTERNA_DE_LEITURA,
   S_DO_TERMINADOR,
   ganhoDoGlobo,
@@ -464,28 +463,40 @@ describe('4. a classe — gate, carga, retrato × sem-retrato, cessão', () => {
     }
 
     /**
-     * PINO 93, A FIAÇÃO DA PORTA `?calib=` — o mesmo dente que
-     * `gigante.test.ts` ganhou em 26/08, e a razão inteira está escrita
-     * lá: apagar o `q.calibracao` da chamada de `escreverLuzDaVisita`
-     * compilava e passava a suíte calado. `uTraduzDaTela` é a chave que
-     * denuncia, porque a C1 não mexe na lanterna nem no `s`.
+     * PINO 93/104 — O INVARIANTE NOVO: assistido SEMPRE traduzido, real
+     * SEMPRE cru. Este dente nasceu em 26/08 cobrando a fiação da porta
+     * `?calib=`, achada por SABOTAGEM: apagar o `q.calibracao` da chamada de
+     * `escreverLuzDaVisita` compilava e atravessava os 2.360 testes calado.
+     *
+     * A porta MORREU no mesmo dia — ele escolheu a C1, ela virou o padrão —,
+     * e o dente ficou, com o alvo que sobrou. O gate da tradução passou a
+     * ser o `uTerminadorS` (a convenção "0 = Lambert cru", que é dizer
+     * `?luz=real`), então este uniforme deixou de ser só a suavidade do
+     * terminador: é ele que acende e apaga a TRADUÇÃO. Um corpo que o
+     * escrevesse sem passar a política acenderia a curva do Eyes dentro do
+     * modo que promete penumbra física — a decisão 2 do dono desfeita por
+     * dentro, e sem uma linha vermelha. O que o chunk FAZ com o uniforme é
+     * cobrado em `luzDaVisita.test.ts`, que executa o GLSL.
+     *
+     * E COBRA A MORTE DAS CHAVES: um `uTraduzDaTela` de volta no bloco de
+     * uniformes é uma segunda dose de brilho assistido entrando pela porta
+     * de trás.
      */
-    it('PINO 93: a calibração do quadro chega ao uniforme do rochoso', async () => {
+    it('PINO 93/104: o rochoso assistido traduz, e em `real` os dois zeram', async () => {
       const { corpo } = rochosoDeTeste('mars', 'lambert');
       corpo.atualizar(quadro('mars', 4));
       await flush();
       corpo.atualizar(quadro('mars', 4));
       const mat = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
-      expect(mat.uniforms.uTraduzDaTela.value).toBe(0);
-      expect(mat.uniforms.uLanternaDepois.value).toBe(0);
-      corpo.atualizar(quadro('mars', 4, { calibracao: 'c1' }));
-      expect(mat.uniforms.uTraduzDaTela.value).toBe(1);
+      expect(mat.uniforms.uTraduzDaTela).toBeUndefined();
+      expect(mat.uniforms.uLanternaDepois).toBeUndefined();
       expect(mat.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
-      corpo.atualizar(quadro('mars', 4, { calibracao: 'c2' }));
-      expect(mat.uniforms.uLanternaDepois.value).toBe(1);
-      expect(mat.uniforms.uLanternaLeitura.value).toBe(CALIBRACOES.c2.lanterna);
+      expect(mat.uniforms.uTerminadorS.value).toBeGreaterThan(0);
+      corpo.atualizar(quadro('mars', 4, { politica: 'real' }));
+      expect(Object.is(mat.uniforms.uLanternaLeitura.value, 0)).toBe(true);
+      expect(Object.is(mat.uniforms.uTerminadorS.value, 0)).toBe(true);
       corpo.atualizar(quadro('mars', 4));
-      expect(mat.uniforms.uTraduzDaTela.value).toBe(0);
+      expect(mat.uniforms.uTerminadorS.value).toBeGreaterThan(0);
       corpo.dispose();
     });
 

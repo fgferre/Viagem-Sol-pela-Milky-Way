@@ -30,7 +30,6 @@ import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import {
-  CALIBRACOES,
   COR_DO_VEU,
   GLSL_VEU_DE_SATURNO,
   LANTERNA_DE_LEITURA,
@@ -784,44 +783,45 @@ describe('5. a classe — gate, carga, cessão, anel', () => {
   );
 
   /**
-   * PINO 93, A FIAÇÃO DA PORTA `?calib=`: o quadro traz a calibração, e
-   * ela TEM de chegar ao uniforme do globo.
+   * PINO 93/104 — O INVARIANTE NOVO: assistido SEMPRE traduzido, real
+   * SEMPRE cru. Este dente nasceu em 26/08 cobrando a fiação da porta
+   * `?calib=`, achada por SABOTAGEM: apagar o `q.calibracao` da chamada de
+   * `escreverLuzDaVisita` (§ da classe, logo acima) compilava e
+   * atravessava os 2.360 testes calado — a porta continuava viva no
+   * Director, o selo continuava declarando, e o pixel simplesmente não
+   * mudava.
    *
-   * ACHADO POR SABOTAGEM, 26/08, e é o irmão do dente que
-   * `director.test.ts` ganhou no mesmo dia. Apagar o `q.calibracao` da
-   * chamada de `escreverLuzDaVisita` (§ da classe, logo acima) compilava e
-   * atravessava os 2.360 testes calado: a porta continuava viva no
-   * Director, o selo continuava declarando o desvio, e o pixel
-   * simplesmente não mudava. A palavra `calibracao` não aparecia em
-   * arquivo de teste nenhum. A chave irmã (`politica`) sempre teve dente;
-   * esta nasceu sem, e estes quatro `it` — um por família de corpo — são
-   * o que faltava.
+   * A porta MORREU no mesmo dia — ele escolheu a C1, ela virou o padrão —,
+   * e o dente ficou, com o alvo que sobrou. O gate da tradução passou a
+   * ser o `uTerminadorS` (a convenção "0 = Lambert cru", que é dizer
+   * `?luz=real`), então este uniforme deixou de ser só a suavidade do
+   * terminador: é ele que acende e apaga a TRADUÇÃO. Um corpo que o
+   * escrevesse sem passar a política acenderia a curva do Eyes dentro do
+   * modo que promete penumbra física — a decisão 2 do dono desfeita por
+   * dentro, e sem uma linha vermelha. O que o chunk FAZ com o uniforme é
+   * cobrado em `luzDaVisita.test.ts`, que executa o GLSL.
    *
-   * OLHA `uTraduzDaTela` DE PROPÓSITO: a C1 não mexe na lanterna nem no
-   * `s`, então essa é a ÚNICA chave que denuncia o argumento perdido.
+   * EM SATURNO O NÚMERO É O DO VÉU (2,8986, não 3), e isso é de propósito:
+   * é o corpo em que a política e a densidade chegam JUNTAS ao escritor, e
+   * o único em que trocar a ordem dos dois argumentos apareceria.
    */
-  it('PINO 93: a calibração do quadro chega ao uniforme do globo', async () => {
+  it('PINO 93/104: o gigante assistido traduz, e em `real` os dois zeram', async () => {
     const { corpo } = giganteDeTeste('saturn');
     corpo.atualizar(quadro('saturn', 4));
     await flush();
     corpo.atualizar(quadro('saturn', 4));
     const globo = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
-    // SEM porta: o quadro não traz nada, e as duas chaves ficam apagadas
-    expect(globo.uniforms.uTraduzDaTela.value).toBe(0);
-    expect(globo.uniforms.uLanternaDepois.value).toBe(0);
-    // COM `?calib=c1`: acende a tradução, sem mexer na lanterna
-    corpo.atualizar(quadro('saturn', 4, { calibracao: 'c1' }));
-    expect(globo.uniforms.uTraduzDaTela.value).toBe(1);
+    expect(globo.uniforms.uTraduzDaTela).toBeUndefined();
+    expect(globo.uniforms.uLanternaDepois).toBeUndefined();
     expect(globo.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
-    // e a C2 leva a lanterna re-dosada junto: a porta carrega a candidata
-    // INTEIRA, não uma chave dela
-    corpo.atualizar(quadro('saturn', 4, { calibracao: 'c2' }));
-    expect(globo.uniforms.uLanternaDepois.value).toBe(1);
-    expect(globo.uniforms.uLanternaLeitura.value).toBe(CALIBRACOES.c2.lanterna);
-    // e volta a apagar quando o quadro volta a não trazer nada
+    expect(globo.uniforms.uTerminadorS.value)
+      .toBe(sDoTerminador('assistida', densidadeDoVeu('saturn')));
+    expect(globo.uniforms.uTerminadorS.value).toBeGreaterThan(0);
+    corpo.atualizar(quadro('saturn', 4, { politica: 'real' }));
+    expect(Object.is(globo.uniforms.uLanternaLeitura.value, 0)).toBe(true);
+    expect(Object.is(globo.uniforms.uTerminadorS.value, 0)).toBe(true);
     corpo.atualizar(quadro('saturn', 4));
-    expect(globo.uniforms.uTraduzDaTela.value).toBe(0);
-    expect(globo.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    expect(globo.uniforms.uTerminadorS.value).toBeGreaterThan(0);
     corpo.dispose();
   });
 });

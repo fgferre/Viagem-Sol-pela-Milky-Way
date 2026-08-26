@@ -11,9 +11,6 @@
 // assim a conta esperada é aritmética exata, e não refém do
 // arredondamento do cinza de um PNG.
 // ============================================================
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   DIAS_A_ANDAR,
@@ -25,7 +22,6 @@ import {
   julgarORelogio,
   pentearOColar,
   perfilDaFita,
-  semSobrescrever,
 } from './colar-da-fita.mjs';
 
 /**
@@ -121,31 +117,6 @@ describe('o dente do relógio', () => {
     // fazia a efeméride variar com a carga (34,1 / 33,6 / 31,2 dias na
     // mesma casa, 21,4 na de um auditor) e levava o corpo da fita junto.
     expect(DIAS_A_ANDAR).toBeGreaterThan(0);
-  });
-});
-
-describe('gravar sem matar testemunha', () => {
-  // A REGRA 7 APLICADA A ARQUIVO DE PROVA, e ela nasceu de um erro real:
-  // a re-medição de 26/08 regravou os quadros crus por cima, e os que
-  // testemunhavam os números da véspera deixaram de existir.
-  const dir = mkdtempSync(join(tmpdir(), 'colar-'));
-
-  it('devolve o caminho pedido quando não há nada lá', () => {
-    expect(semSobrescrever(join(dir, 'novo.png'))).toBe(join(dir, 'novo.png'));
-  });
-
-  it('escreve AO LADO, em -v2 e depois -v3, quando o arquivo já existe', () => {
-    const alvo = join(dir, 'antes.png');
-    writeFileSync(alvo, 'a');
-    expect(semSobrescrever(alvo)).toBe(join(dir, 'antes-v2.png'));
-    writeFileSync(join(dir, 'antes-v2.png'), 'b');
-    expect(semSobrescrever(alvo)).toBe(join(dir, 'antes-v3.png'));
-  });
-
-  it('não confunde ponto de diretório com extensão', () => {
-    const alvo = join(dir, 'sem-extensao');
-    writeFileSync(alvo, 'a');
-    expect(semSobrescrever(alvo)).toBe(join(dir, 'sem-extensao-v2'));
   });
 });
 

@@ -410,10 +410,24 @@ o campo; nenhum consumidor de resolução no caminho do globo.
 
 **O conserto é a tradução**, e ela é a MESMA curva da IEC 61966-2-1 que
 decodificou a palha: `daTelaParaLinear`, em `GLSL_LUZ_DA_VISITA`. Três
-candidatas vivem em `CALIBRACOES` (`luzDaVisita.ts`), atrás da porta de
-instrumento `?calib=c1|c2|c3` — **neutra no selo, padrão = o de hoje bit a
-bit, e ela morre com a escolha dele**. Em `?luz=real` as chaves são 0 nas
-três: a decisão 2 do dono não se toca.
+candidatas viveram atrás da porta de instrumento `?calib=c1|c2|c3`, e ele
+julgou as três em foto.
+
+**A ESCOLHA — Q13, 26/08: a C1, e ela é o PADRÃO.** Palavras dele: *"C1 —
+o Eyes ao pé da letra (a noite quase apaga; Mercúrio cai sozinho a ~130, o
+nível domado, sem freio nenhum)"*. A C1 não mexe em número nenhum da
+receita: `LANTERNA_DE_LEITURA` continua 0,15 e `S_DO_TERMINADOR` continua
+3, exatamente como estão escritos no Eyes. O que entra é a TRADUÇÃO do
+composto de tela para linear, e ela é a **quinta peça** do §4 — a de
+CADEIA, não de dose.
+
+**A PORTA MORREU COM A ESCOLHA**, como estava escrito: `?calib=`,
+`CALIBRACOES`, `lerPortaCalibracao`, as duas chaves de chaveamento
+(`uTraduzDaTela`, `uLanternaDepois`) e a linha neutra do selo saíram do
+código. O interruptor da tradução passou a ser o MESMO das outras peças —
+`uTerminadorS <= 0` é a convenção de "Lambert cru" —, e o invariante que
+substitui a promessa antiga ("sem a porta nada muda") é mais forte:
+**assistido SEMPRE traduzido, real SEMPRE cru**.
 
 E o `s` do §4.3 **não é botão de dose**: o mínimo da família logística em
 N·L = 0,5 é 0,657 (em s ≈ 1,76), ainda ×1,31 sobre Lambert, e baixar `s`

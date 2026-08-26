@@ -53,7 +53,7 @@
 // e a constante por corpo. A lei continua viva onde ela é lei: em
 // `ganhoFundido` e no modo `real`.
 //
-// AS TRÊS PEÇAS DA RECEITA, e todas nascem NESTE arquivo:
+// AS PEÇAS DA RECEITA, e todas nascem NESTE arquivo:
 //
 //   a. SOL = 1 em `assistida` — {@link ganhoDoGlobo};
 //   b. LANTERNA DE LEITURA de 15 % na câmera — {@link LANTERNA_DE_LEITURA},
@@ -69,7 +69,14 @@
 //   d. O VÉU PALHA DE SATURNO — {@link VEU_DE_SATURNO} e o
 //      {@link GLSL_VEU_DE_SATURNO}, o `AtmosphereComponent` deles. É a
 //      quarta peça, o §4.4 do contrato, e a última a pousar: uma mistura
-//      no LIMBO, depois da superfície, que só o SOL acende.
+//      no LIMBO, depois da superfície, que só o SOL acende;
+//   e. A TRADUÇÃO DO COMPOSTO DE TELA — `daTelaParaLinear` em
+//      {@link GLSL_LUZ_DA_VISITA}, a **C1** que ele escolheu em 26/08
+//      (*"o Eyes ao pé da letra"*). Os números da receita do Eyes são
+//      BYTES DE TELA, e atravessavam para o nosso fragmento em LINEAR: a
+//      mesma receita saía 2,66× mais clara na noite. É a lição do
+//      {@link COR_DO_VEU} aplicada ao termo de LUZ — e nada mais mudou,
+//      porque 0,15 e s = 3 continuam os números do Eyes.
 //
 // O QUE NÃO ATRAVESSOU, e por quê (o contrato §3): o ambiente 0,02 de
 // cena (anti-padrões 3 e 9 — a lanterna já lê a noite), o flood branco
@@ -85,7 +92,9 @@
 // verdadeira*, e um terminador inventado ali seria a decisão 2 do dono
 // desfeita por dentro. Por isso `s` também é POLÍTICA — {@link sDoTerminador}
 // devolve 0 em `real`, e 0 significa "Lambert cru, `max(N·L, 0)`". As
-// três peças acendem e apagam JUNTAS, por um único interruptor.
+// peças da receita acendem e apagam JUNTAS, por um único interruptor —
+// e desde 26/08 a TRADUÇÃO (peça e) anda nele também: `uTerminadorS <= 0`
+// é a convenção de "Lambert cru", e é ela que apaga as quatro em `real`.
 //
 // ------------------------------------------------------------
 // O QUE ESTA LEI NÃO GOVERNA
@@ -152,65 +161,6 @@ export const S_DO_TERMINADOR = 3;
  * constante mágica se instala.
  */
 export const FATOR_DA_ATMOSFERA_NO_TERMINADOR = 700;
-
-/**
- * AS TRÊS CANDIDATAS DA CALIBRAÇÃO (item 93, 25/08) — e por que existem.
- *
- * Ele aprovou a RECEITA e reprovou a DOSE três vezes seguidas (Q9 a noite
- * clara demais, Q10 o flanco, Q11 Mercúrio). A investigação que precedeu
- * qualquer giro de botão achou a causa, e ela NÃO era dose: os números da
- * receita do Eyes são **bytes de TELA** (lá o Phong multiplica o que se vê,
- * sem gerência de cor e sem tonemap) e atravessaram para o nosso shader em
- * LINEAR, sem tradução. É a lição do {@link COR_DO_VEU} aplicada ao termo
- * de LUZ. Some-se o ÷0,6 que o ACES da three carrega
- * (`color *= toneMappingExposure / 0.6`, ganho real 1,70) e a mesma receita
- * sai 2,66× mais clara na noite e 3,26× no terminador do que no Eyes.
- *
- * As três não são gosto — cada uma responde a uma hipótese:
- *
- *  - **c1, "o Eyes na nossa língua"**: nenhum número muda (0,15 e s = 3
- *    ficam); o que entra é a TRADUÇÃO do composto de tela para linear.
- *  - **c2, "terminador traduzido, lanterna re-dosada"**: a mesma tradução,
- *    e a lanterna passa a ser 0,05 **em linear**, somada DEPOIS dela. O
- *    0,05 saiu de bisseção contra o byte da noite do Eyes (Saturno 0,046 /
- *    Júpiter 0,041 / Mercúrio 0,061); traduzir o 0,15 cru dá 0,0196, que
- *    erra porque o pé do ACES desce a mira.
- *  - **c3, "só girar botão, sem cadeia"**: s = 1,2 e lanterna 0,05, SEM
- *    tradução. Ela existe para a folha PROVAR em foto que botão sozinho
- *    não responde a Q10 — o terminador dela sai em ~135 bytes contra 39 do
- *    Eyes. É a candidata que se espera perder.
- *
- * O `s` da c3 é 1,2 e não outro número porque é onde a família logística
- * para de levantar o flanco de forma visível; o mínimo dela em N·L = 0,5 é
- * 0,657 (em s ≈ 1,76) e nunca desce abaixo de Lambert, então BAIXAR `s`
- * nunca foi botão de dose — é botão de CONTRASTE, e abre o vazamento do
- * terminador de 5 % para 17–37 %.
- *
- * NADA DISTO É PADRÃO. `padrao` é o de hoje, bit a bit, e é o que roda sem
- * a porta `?calib=` — ver {@link lerPortaCalibracao}.
- */
-export const CALIBRACOES = {
-  padrao: { lanterna: LANTERNA_DE_LEITURA, s: S_DO_TERMINADOR, traduz: false, depois: false },
-  c1: { lanterna: LANTERNA_DE_LEITURA, s: S_DO_TERMINADOR, traduz: true, depois: false },
-  c2: { lanterna: 0.05, s: S_DO_TERMINADOR, traduz: true, depois: true },
-  c3: { lanterna: 0.05, s: 1.2, traduz: false, depois: false },
-} as const;
-
-export type CalibracaoDaLuz = keyof typeof CALIBRACOES;
-
-/**
- * A LEI DA PORTA `?calib=` — uma PORTA DE INSTRUMENTO, da espécie do
- * `?dbgorbitas`: ela existe para a folha de fotos que o dono vai julgar e
- * **morre com a escolha dele** (a vencedora vira o padrão e a porta sai).
- *
- * `padrao` NÃO se pede pela URL, de propósito: o de hoje é a AUSÊNCIA da
- * porta, e é isso que faz "sem `?calib=` o pixel não muda" ser uma
- * afirmação verificável em vez de uma promessa. Pedido inválido cai no
- * padrão, nunca num caminho terceiro — o mesmo contrato de `lerPortaLuz`.
- */
-export function lerPortaCalibracao(bruto: string | null | undefined): CalibracaoDaLuz | null {
-  return (['c1', 'c2', 'c3'] as const).find((c) => c === bruto) ?? null;
-}
 
 /**
  * O VÉU PALHA DE SATURNO — o `postCreateFunction` do Saturno no NASA
@@ -347,11 +297,8 @@ export function ganhoDoGlobo(dUA: number, politica: PoliticaDeLuz): number {
  * `real`. Zero não é "quase nada": com ele o termo de fill some por
  * identidade algébrica e o modo real fica com o Sol e nada mais.
  */
-export function lanternaDaVisita(
-  politica: PoliticaDeLuz,
-  calib: CalibracaoDaLuz = 'padrao'
-): number {
-  return politica === 'real' ? 0 : CALIBRACOES[calib].lanterna;
+export function lanternaDaVisita(politica: PoliticaDeLuz): number {
+  return politica === 'real' ? 0 : LANTERNA_DE_LEITURA;
 }
 
 /**
@@ -365,13 +312,9 @@ export function lanternaDaVisita(
  * entrar por aqui com `densidade` 5e−5: o s dele vira 2,8986. Densidade 0
  * (todo o resto da casa) devolve `S/(1+0)`, isto é, 3 **exato**.
  */
-export function sDoTerminador(
-  politica: PoliticaDeLuz,
-  densidade = 0,
-  calib: CalibracaoDaLuz = 'padrao'
-): number {
+export function sDoTerminador(politica: PoliticaDeLuz, densidade = 0): number {
   if (politica === 'real') return 0;
-  return CALIBRACOES[calib].s / (1 + FATOR_DA_ATMOSFERA_NO_TERMINADOR * densidade);
+  return S_DO_TERMINADOR / (1 + FATOR_DA_ATMOSFERA_NO_TERMINADOR * densidade);
 }
 
 /** O molde estrutural de um `uniforms` de `THREE.ShaderMaterial` — sem
@@ -382,13 +325,18 @@ type Uniformes = Record<string, { value: unknown }>;
  * OS DOIS UNIFORMES da receita, no estado NEUTRO (a `real`): lanterna 0
  * e `s` 0. Todo material que inclui {@link GLSL_LUZ_DA_VISITA} espalha
  * este bloco, e é `escreverLuzDaVisita` quem os acende por quadro.
+ *
+ * SÃO DOIS, e voltaram a ser dois em 26/08: a calibração do item 93 abriu
+ * mais duas chaves (`uTraduzDaTela`, `uLanternaDepois`) para a porta de
+ * instrumento `?calib=` escolher entre as três candidatas. Ele escolheu a
+ * C1, ela virou o PADRÃO, e chave de escolha sem escolha a fazer é peso
+ * morto: a tradução passou a andar no MESMO interruptor das outras três
+ * peças — ver {@link GLSL_LUZ_DA_VISITA}.
  */
 export function uniformsDaLuzDaVisita(): Uniformes {
   return {
     uLanternaLeitura: { value: 0 },
     uTerminadorS: { value: 0 },
-    uTraduzDaTela: { value: 0 },
-    uLanternaDepois: { value: 0 },
   };
 }
 
@@ -401,22 +349,20 @@ export function uniformsDaLuzDaVisita(): Uniformes {
  *
  * `densidade` é a do véu do corpo ({@link densidadeDoVeu}) e só Saturno a
  * traz diferente de zero; quem não passa nada fica com o s = 3 de sempre.
+ *
+ * E `uTerminadorS` CARREGA MAIS DO QUE A SUAVIDADE desde 26/08: é ele o
+ * interruptor que o chunk lê para acender ou apagar a TRADUÇÃO da C1
+ * ({@link GLSL_LUZ_DA_VISITA}). Um corpo que o escrevesse sem passar a
+ * política acenderia a curva do Eyes dentro do `?luz=real` — a decisão 2
+ * do dono desfeita por dentro. Há dente disso nas quatro famílias.
  */
 export function escreverLuzDaVisita(
   u: Uniformes,
   politica: PoliticaDeLuz,
-  densidade = 0,
-  calib: CalibracaoDaLuz = 'padrao'
+  densidade = 0
 ): void {
-  u.uLanternaLeitura!.value = lanternaDaVisita(politica, calib);
-  u.uTerminadorS!.value = sDoTerminador(politica, densidade, calib);
-  // AS DUAS CHAVES DA CALIBRAÇÃO SÓ EXISTEM NA `assistida`. Em `real` elas
-  // são 0 pela MESMA razão que a lanterna e o `s`: um composto traduzido no
-  // modo que promete penumbra FÍSICA seria a decisão 2 do dono desfeita por
-  // dentro. `?calib=` com `?luz=real` não move um bit — e há dente disso.
-  const vivo = politica !== 'real';
-  u.uTraduzDaTela!.value = vivo && CALIBRACOES[calib].traduz ? 1 : 0;
-  u.uLanternaDepois!.value = vivo && CALIBRACOES[calib].depois ? 1 : 0;
+  u.uLanternaLeitura!.value = lanternaDaVisita(politica);
+  u.uTerminadorS!.value = sDoTerminador(politica, densidade);
 }
 
 /**
@@ -471,16 +417,27 @@ export function uniformsDoVeu(id: string): Uniformes {
  * NÃO morde. Cortar ali seria teto de brilho, e o `NORTE.md` o proíbe em
  * letra. Com a lanterna em 0 a função é a identidade, bit a bit.
  *
- * `daTelaParaLinear` — A TRADUÇÃO, e ela é a porta `?calib=` das
- * {@link CALIBRACOES}. Com `uTraduzDaTela` em 0 (o de hoje, e SEMPRE em
- * `real`) ela devolve o argumento, e as duas linhas de `luzDoGlobo` são
- * caractere por caractere o que eram antes do item 93 calibrar. Acesa, ela
- * é a MESMA curva da IEC 61966-2-1 de {@link deSRgbParaLinear} — a que
+ * `daTelaParaLinear` — A TRADUÇÃO, a QUARTA peça da receita desde 26/08, e
+ * a MESMA curva da IEC 61966-2-1 de {@link deSRgbParaLinear} — a que
  * decodificou a palha do véu —, agora aplicada ao termo de LUZ: no Eyes o
- * `diffuse` do Phong multiplica bytes de tela, aqui ele multiplicava um
- * albedo já linear. `uLanternaDepois` diz apenas ONDE a lanterna entra: na
- * soma que a tradução decodifica (c1, o Eyes ao pé da letra) ou depois
- * dela, já em linear (c2, a lanterna re-dosada).
+ * `diffuse` do Phong multiplica bytes de TELA (lá não há gerência de cor
+ * nem tonemap no globo), e aqui ele multiplicava um albedo já linear. Sem
+ * ela a MESMA receita saía 2,66× mais clara na noite e 3,26× no
+ * terminador; foi o que ele julgou em foto e o que a **C1** consertou.
+ *
+ * ELA VAI NO MESMO INTERRUPTOR DAS OUTRAS TRÊS, e não num uniforme
+ * próprio. `uTerminadorS <= 0` é a convenção declarada de "Lambert cru",
+ * que é dizer `?luz=real`; e a razão da tradução — *"os números do Eyes
+ * são bytes de tela"* — só existe onde a receita do Eyes está acesa. As
+ * quatro peças acendem e apagam JUNTAS, como o cabeçalho deste arquivo
+ * promete, e em `real` esta função é a IDENTIDADE bit a bit: a decisão 2
+ * do dono não se toca.
+ *
+ * A PORTA `?calib=` E AS SUAS DUAS CHAVES MORRERAM AQUI (26/08). Elas
+ * existiram para uma escolha — qual das três candidatas vira o padrão —, e
+ * a escolha foi feita: *"C1 — o Eyes ao pé da letra"*. Uma chave de
+ * seleção que sempre vale o mesmo é um caminho que ninguém percorre e um
+ * dente que ninguém pode morder.
  *
  * ------------------------------------------------------------
  * A DIVERGÊNCIA DECLARADA — a lanterna RESPEITA a sombra
@@ -518,8 +475,6 @@ export function uniformsDoVeu(id: string): Uniformes {
 export const GLSL_LUZ_DA_VISITA = /* glsl */ `
 uniform float uLanternaLeitura; // a dose da lanterna; 0 em real
 uniform float uTerminadorS;     // 3 em assistida; 0 = Lambert cru (real)
-uniform float uTraduzDaTela;    // 1 = o composto do Eyes é BYTE de tela
-uniform float uLanternaDepois;  // 1 = a lanterna entra DEPOIS da tradução
 
 float terminadorSuave(float x) {
   if (uTerminadorS <= 0.0) return max(x, 0.0);
@@ -532,7 +487,7 @@ vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 sombras) {
 }
 
 vec3 daTelaParaLinear(vec3 c) {
-  if (uTraduzDaTela <= 0.0) return c;
+  if (uTerminadorS <= 0.0) return c;
   vec3 baixo = c / 12.92;
   vec3 alto = pow(max(c + 0.055, 0.0) / 1.055, vec3(2.4));
   // o step vai INVERTIDO de propósito: \`step(c, joelho)\` é 1 quando
@@ -544,7 +499,6 @@ vec3 daTelaParaLinear(vec3 c) {
 
 vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
   vec3 teto = vec3(1.0);
-  if (uLanternaDepois > 0.0) return daTelaParaLinear(luzSol) + fill;
   return daTelaParaLinear(max(luzSol, min(luzSol + fill, teto)));
 }
 `;
@@ -618,17 +572,17 @@ vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
  *    a razão.
  *
  * ------------------------------------------------------------
- * A CALIBRAÇÃO NÃO MEXE NO VÉU — e é por isso que ela o TRADUZ junto
+ * A TRADUÇÃO NÃO MEXE NO VÉU — e é por isso que ela o ACENDE junto
  * ------------------------------------------------------------
  * *"a dose do Eyes está boa (sutil)"* (Q12): {@link VEU_DE_SATURNO},
  * {@link COR_DO_VEU} e a casca equivalente ficam como estão, e a opacidade
- * sai bit a bit igual nas quatro calibrações — ela é geometria (`mu`), não
- * luz. O que muda é o que ACENDE a palha, e tem de mudar junto: o véu é
- * LINEAR no `luzSol`, então deixá-lo com o `luzSol` de tela enquanto a
- * superfície passa a ser decodificada trocaria a razão véu/superfície do
- * Eyes por uma inventada aqui — o limbo palha saltaria à frente do disco.
- * `daTelaParaLinear` é identidade sem a porta, e com ela mantém a razão
- * que o Eyes tem.
+ * sai bit a bit igual dos dois lados da porta de luz — ela é geometria
+ * (`mu`), não luz. O que a C1 mudou é o que ACENDE a palha, e tinha de
+ * mudar junto: o véu é LINEAR no `luzSol`, então deixá-lo com o `luzSol` de
+ * tela enquanto a superfície passa a ser decodificada trocaria a razão
+ * véu/superfície do Eyes por uma inventada aqui — o limbo palha saltaria à
+ * frente do disco. Em `real` `daTelaParaLinear` é a identidade, e a razão
+ * volta a ser a de sempre.
  */
 export const GLSL_VEU_DE_SATURNO = /* glsl */ `
 uniform float uVeuColuna;    // ρ₀H do corpo; 0 = corpo sem véu

@@ -29,7 +29,6 @@ import { BODY_AXES } from './iauOrientation';
 import { ganhoFundido, irradianciaRelativa } from './luz';
 import type { PoliticaDeLuz } from './luz';
 import {
-  CALIBRACOES,
   COR_DO_VEU,
   GLSL_LUZ_DA_VISITA,
   GLSL_VEU_DE_SATURNO,
@@ -42,9 +41,7 @@ import {
   espessuraDoVeu,
   ganhoDoGlobo,
   lanternaDaVisita,
-  lerPortaCalibracao,
   sDoTerminador,
-  type CalibracaoDaLuz,
   stopsDaVisita,
   uniformsDaLuzDaVisita,
   uniformsDoVeu,
@@ -124,8 +121,6 @@ const UNIFORMES = [
   'uVeuColuna',
   'uVeuEspessura',
   'uVeuCor',
-  'uTraduzDaTela',
-  'uLanternaDepois',
 ] as const;
 
 type Ligados = Partial<Record<(typeof UNIFORMES)[number], number>>;
@@ -278,14 +273,19 @@ const lanterna = (ndotv: number, sombras: number, acesa = LANTERNA_DE_LEITURA): 
 const somaComTeto = (luzSol: number, fill: number, u: Ligados = {}): number =>
   doChunk('luzDoGlobo')([luzSol, fill], u);
 
-/** as duas chaves de `?calib=` como o shader as recebe (item 93) */
-const chavesDe = (calib: CalibracaoDaLuz): Ligados => ({
-  uTraduzDaTela: CALIBRACOES[calib].traduz ? 1 : 0,
-  uLanternaDepois: CALIBRACOES[calib].depois ? 1 : 0,
-});
+/**
+ * O MODO, como o shader o recebe — e é UM uniforme, não dois.
+ *
+ * `uTerminadorS` é o interruptor único da receita: > 0 é `assistida` (as
+ * peças acesas, a tradução incluída) e 0 é `real` (Lambert cru, tradução
+ * apagada). Os helpers abaixo entram com `s = 0` por omissão, isto é, no
+ * modo REAL — que é o lado bit-idêntico e o que a maioria destes casos
+ * mede; quem quer a `assistida` passa {@link ASSISTIDA}.
+ */
+const ASSISTIDA: Ligados = { uTerminadorS: S_DO_TERMINADOR };
 
-/** `daTelaParaLinear(c)` do shader, num canal */
-const daTelaParaLinear = (c: number, u: Ligados = { uTraduzDaTela: 1 }): number =>
+/** `daTelaParaLinear(c)` do shader, num canal — acesa por padrão */
+const daTelaParaLinear = (c: number, u: Ligados = ASSISTIDA): number =>
   doChunk('daTelaParaLinear')([c], u);
 
 /** os dois uniformes de FORMA do véu, resolvidos pelo módulo para um corpo */
@@ -374,9 +374,15 @@ describe('2. peça (b) — a lanterna de leitura, 15 % na câmera', () => {
    */
   it('não clareia o subsolar e É a luz da noite', () => {
     const fill = lanternaDaVisita('assistida');
+    // O COMPOSTO, antes da tradução — é ele que o Eyes monta, e é dele que
+    // se fala quando se diz "a lanterna não clareia o subsolar".
     expect(somaComTeto(1, fill)).toBe(1); // subsolar: já no teto
     expect(somaComTeto(0, fill)).toBe(0.15); // noite de frente: só ela
     expect(somaComTeto(0.5, fill)).toBeCloseTo(0.65, 12);
+    // e no modo da casa (a C1) o mesmo composto sai TRADUZIDO — o teto de 1
+    // continua sendo 1, que é o que faz o dia não se mexer
+    expect(somaComTeto(1, fill, ASSISTIDA)).toBe(1);
+    expect(somaComTeto(0, fill, ASSISTIDA)).toBeCloseTo(0.0196066, 7);
   });
 
   /**
@@ -931,8 +937,11 @@ describe('6. o pino que caiu — a Terra deixou de ser bit-idêntica, e quanto',
     // no flanco a 45° o terminador sozinho já vale +24 %
     const flanco = Math.cos(Math.PI / 4);
     expect(terminadorSuave(flanco) / flanco).toBeCloseTo(1.237, 3);
-    // e a noite voltada para a câmera passa de PRETA a 15 %
+    // e a noite voltada para a câmera passa de PRETA aos 15 % do Eyes —
+    // que, traduzidos para linear (a C1), pousam em 0,0196
     expect(somaComTeto(0, lanternaDaVisita('assistida'))).toBe(0.15);
+    expect(somaComTeto(0, lanternaDaVisita('assistida'), ASSISTIDA))
+      .toBeCloseTo(0.0196066, 7);
     expect(somaComTeto(0, lanternaDaVisita('real'))).toBe(0);
   });
 });
@@ -1020,78 +1029,68 @@ describe('8. o handoff ponto↔globo — o degrau que não existe', () => {
 });
 
 /**
- * A CALIBRAÇÃO DO ITEM 93 — a quem este bloco serve.
+ * A C1 É O PADRÃO DO ASSISTIDO (item 93, 26/08) — a quem este bloco serve.
  *
- * Serve a UMA decisão do dono que ainda não foi tomada: qual das três
- * candidatas vira o brilho assistido da casa. Enquanto ela não é tomada, o
- * que ele cobra é o contrário de uma escolha — que **sem a porta `?calib=`
- * nada mude**, e que `?luz=real` continue sem uma gota da calibração. As
- * duas coisas são afirmações de PIXEL, e aqui elas viram conta executada.
+ * Serve a uma decisão TOMADA. Ele viu as três candidatas em foto e
+ * escolheu: *"C1 — o Eyes ao pé da letra (a noite quase apaga; Mercúrio
+ * cai sozinho a ~130, o nível domado, sem freio nenhum)"*. A C1 virou o
+ * caminho ÚNICO do modo assistido e a porta `?calib=` saiu do código com
+ * as suas duas chaves — este bloco cobra o que sobrou disso:
  *
- * A CAUSA que estas linhas encapsulam (investigada antes de girar botão):
- * os números da receita do Eyes são bytes de TELA — lá o Phong multiplica
- * o que se vê, sem gerência de cor e sem tonemap — e atravessaram para o
- * nosso shader em LINEAR. É a lição do `COR_DO_VEU` aplicada ao termo de
- * LUZ. `daTelaParaLinear` é a tradução; `?calib=` é quem a acende.
+ *  1. **assistido SEMPRE traduzido, real SEMPRE cru.** É o invariante que
+ *     substitui a promessa antiga ("sem a porta nada muda"), e ele vale
+ *     para as DUAS bocas da tradução — a superfície (`luzDoGlobo`) e a
+ *     palha do véu (`globoComVeu`).
+ *  2. **`?luz=real` bit a bit.** Com `uTerminadorS` em 0 a tradução é a
+ *     IDENTIDADE (`Object.is`, não `toBeCloseTo`) e `luzDoGlobo` volta a
+ *     ser a soma com teto de antes do 93. É a decisão 2 do dono, e ela é a
+ *     mesma afirmação de pixel de sempre.
  *
- * QUANDO ESTE BLOCO MORRE: com a escolha dele. A vencedora vira o padrão,
- * a porta sai, e o que sobrevive aqui é só o que a vencedora executar.
+ * A CAUSA que estas linhas encapsulam: os números da receita do Eyes são
+ * bytes de TELA — lá o Phong multiplica o que se vê, sem gerência de cor e
+ * sem tonemap — e atravessaram para o nosso shader em LINEAR. É a lição do
+ * `COR_DO_VEU` aplicada ao termo de LUZ.
  */
-describe('9. a calibração candidata (item 93) — a porta e o que ela promete', () => {
-  const CANDIDATAS: readonly CalibracaoDaLuz[] = ['padrao', 'c1', 'c2', 'c3'];
-
+describe('9. a C1 é o padrão (item 93) — assistido traduz, real não', () => {
   /** o oráculo da IEC 61966-2-1, escrito à parte do módulo de propósito:
    *  se o chunk e o módulo divergirem, é aqui que aparece. */
   const iec = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 
-  it('a porta aceita as três e recusa o resto — `padrao` NÃO se pede', () => {
-    for (const c of ['c1', 'c2', 'c3']) expect(lerPortaCalibracao(c)).toBe(c);
-    for (const lixo of ['padrao', 'C1', '', null, undefined, 'constructor', 'c4', '1']) {
-      expect(lerPortaCalibracao(lixo), String(lixo)).toBeNull();
-    }
-  });
-
   /**
-   * O GATE DO ITEM: sem a porta, o pixel não muda. `daTelaParaLinear`
-   * apagada devolve o ARGUMENTO — `Object.is`, não `toBeCloseTo` —, e
-   * `luzDoGlobo` volta a ser caractere por caractere a soma com teto.
+   * O GATE DA DECISÃO 2: em `real` a tradução devolve o ARGUMENTO —
+   * `Object.is`, não `toBeCloseTo` — e `luzDoGlobo` é caractere por
+   * caractere a soma com teto. Um `uTerminadorS` que vazasse para o modo
+   * real acenderia a curva e moveria cada pixel do globo honesto.
    */
-  it('sem a porta, a tradução é a IDENTIDADE e a soma é a de sempre', () => {
+  it('em `real` a tradução é a IDENTIDADE e a soma é a de sempre', () => {
     for (const c of [0, 1e-9, 0.0404, 0.04045, 0.05, 0.15, 0.5, 1, 6.7]) {
-      expect(Object.is(daTelaParaLinear(c, { uTraduzDaTela: 0 }), c), String(c)).toBe(true);
+      expect(Object.is(daTelaParaLinear(c, { uTerminadorS: 0 }), c), String(c)).toBe(true);
     }
     for (const [luzSol, fill] of [[0, 0.15], [0.5, 0.15], [1, 0.15], [6.7, 0.15], [0.0498, 0]]) {
       const teto = Math.max(luzSol!, Math.min(luzSol! + fill!, 1));
-      expect(Object.is(somaComTeto(luzSol!, fill!, chavesDe('padrao')), teto)).toBe(true);
+      expect(Object.is(somaComTeto(luzSol!, fill!), teto)).toBe(true);
     }
   });
 
-  it('`?luz=real` não recebe uma gota de calibração — nem com `?calib=`', () => {
-    for (const calib of CANDIDATAS) {
-      const u = uniformsDaLuzDaVisita();
-      escreverLuzDaVisita(u, 'real', densidadeDoVeu('saturn'), calib);
-      expect({ ...u }, calib).toEqual({
-        uLanternaLeitura: { value: 0 },
-        uTerminadorS: { value: 0 },
-        uTraduzDaTela: { value: 0 },
-        uLanternaDepois: { value: 0 },
-      });
-    }
-  });
-
-  it('o escritor acende as quatro chaves conforme a candidata', () => {
-    for (const calib of CANDIDATAS) {
-      const u = uniformsDaLuzDaVisita();
-      escreverLuzDaVisita(u, 'assistida', 0, calib);
-      expect(u.uLanternaLeitura!.value, calib).toBe(CALIBRACOES[calib].lanterna);
-      expect(u.uTerminadorS!.value, calib).toBe(CALIBRACOES[calib].s);
-      expect(u.uTraduzDaTela!.value, calib).toBe(CALIBRACOES[calib].traduz ? 1 : 0);
-      expect(u.uLanternaDepois!.value, calib).toBe(CALIBRACOES[calib].depois ? 1 : 0);
-    }
-    // e a divisão do véu do Eyes continua valendo por cima da candidata
-    const u = uniformsDaLuzDaVisita();
-    escreverLuzDaVisita(u, 'assistida', densidadeDoVeu('saturn'), 'c3');
-    expect(u.uTerminadorS!.value).toBeCloseTo(1.2 / 1.035, 12);
+  it('o escritor acende as duas chaves da política — e só elas', () => {
+    const real = uniformsDaLuzDaVisita();
+    escreverLuzDaVisita(real, 'real', densidadeDoVeu('saturn'));
+    expect({ ...real }).toEqual({
+      uLanternaLeitura: { value: 0 },
+      uTerminadorS: { value: 0 },
+    });
+    const assistida = uniformsDaLuzDaVisita();
+    escreverLuzDaVisita(assistida, 'assistida', 0);
+    expect({ ...assistida }).toEqual({
+      uLanternaLeitura: { value: LANTERNA_DE_LEITURA },
+      uTerminadorS: { value: S_DO_TERMINADOR },
+    });
+    // e a divisão do véu do Eyes continua valendo por cima da política
+    const comVeu = uniformsDaLuzDaVisita();
+    escreverLuzDaVisita(comVeu, 'assistida', densidadeDoVeu('saturn'));
+    expect(comVeu.uTerminadorS!.value).toBeCloseTo(2.898551, 6);
+    // o `s` do véu continua ACESO, que é o que mantém a tradução acesa nele
+    expect(comVeu.uTerminadorS!.value).toBeGreaterThan(0);
   });
 
   it('acesa, a tradução É a curva da IEC — os dois ramos e o joelho', () => {
@@ -1106,84 +1105,199 @@ describe('9. a calibração candidata (item 93) — a porta e o que ela promete'
   });
 
   /**
-   * O QUE CADA CANDIDATA FAZ COM A NOITE — a resposta a Q9, em conta.
-   * A noite é `luzSol = 0`: só a lanterna trabalha. Os números são a LUZ
-   * (linear), antes do albedo e do ACES; o byte de tela mora na folha.
+   * O QUE A C1 FEZ COM A NOITE — a resposta a Q9, em conta. A noite é
+   * `luzSol = 0`: só a lanterna trabalha. Os números são a LUZ (linear),
+   * antes do albedo e do ACES; o byte de tela mora na folha de fotos.
    */
-  it('a noite: c1 derruba 7,6×, c2 e c3 pousam em 0,05 e o padrão fica em 0,15', () => {
-    const noite = (calib: CalibracaoDaLuz) =>
-      somaComTeto(0, lanternaDaVisita('assistida', calib), chavesDe(calib));
-    expect(noite('padrao')).toBe(0.15);
-    expect(noite('c1')).toBeCloseTo(iec(0.15), 12);
-    expect(noite('c1')).toBeCloseTo(0.0196066, 6);
-    expect(noite('c2')).toBe(0.05);
-    expect(noite('c3')).toBe(0.05);
-    // a ordem é o que a folha vai mostrar: c1 « c2 = c3 « padrão
-    expect(noite('c1')).toBeLessThan(noite('c2'));
-    expect(noite('c2')).toBeLessThan(noite('padrao'));
+  it('a noite cai 7,6×: os 15 % do Eyes são BYTE, e em linear valem 0,0196', () => {
+    const fill = lanternaDaVisita('assistida');
+    expect(fill).toBe(0.15);
+    const noite = somaComTeto(0, fill, ASSISTIDA);
+    expect(noite).toBeCloseTo(iec(0.15), 12);
+    expect(noite).toBeCloseTo(0.0196066, 7);
+    expect(0.15 / noite).toBeCloseTo(7.65, 2);
   });
 
   /**
-   * O QUE CADA CANDIDATA FAZ COM O DIA — e a prova de que o subsolar NÃO
-   * cai: no teto da tela a tradução vale 1 exato, então a c1 e a c2
-   * entregam o mesmo dia de hoje. O que elas mexem é o que está ABAIXO.
+   * O DIA NÃO SE MEXEU, e é isso que faz a C1 ser calibração e não
+   * receita nova: no teto da tela a tradução vale 1 EXATO.
    */
-  it('o subsolar não se mexe em nenhuma delas — a tradução vale 1 em 1', () => {
-    for (const calib of CANDIDATAS) {
-      const dia = somaComTeto(1, lanternaDaVisita('assistida', calib), chavesDe(calib));
-      // a c2 soma a lanterna DEPOIS do teto: 1 + 0,05 (o ACES é o ombro)
-      expect(dia, calib).toBeCloseTo(CALIBRACOES[calib].depois ? 1.05 : 1, 12);
-    }
+  it('o subsolar sai IGUAL — a tradução vale 1 em 1', () => {
+    expect(somaComTeto(1, lanternaDaVisita('assistida'), ASSISTIDA)).toBe(1);
+    expect(daTelaParaLinear(1)).toBe(1);
   });
 
   /**
-   * O TERMINADOR — a resposta a Q10, e é ela que explica por que a c3
-   * está na folha para PERDER. Baixar o `s` não devolve o crescente: no
-   * vazamento (N·L = 0) a logística de s = 1,2 deixa passar 30 % contra
-   * os 5 % de s = 3, e é isso que a foto vai mostrar como flanco lavado.
+   * O TERMINADOR — a resposta a Q10, e por que o `s` NÃO era o botão.
+   * Baixar o `s` não devolve o crescente: no vazamento (N·L = 0) a
+   * logística de s = 1,2 deixaria passar 30 % contra os 5 % de s = 3.
    */
   it('o `s` é botão de CONTRASTE, não de dose: baixá-lo ABRE o terminador', () => {
     const vazaEm = (s: number) => terminadorSuave(0, s);
     expect(vazaEm(S_DO_TERMINADOR)).toBeCloseTo(0.049787, 6);
-    expect(vazaEm(CALIBRACOES.c3.s)).toBeCloseTo(0.3011942, 6);
-    expect(vazaEm(CALIBRACOES.c3.s)).toBeGreaterThan(6 * vazaEm(S_DO_TERMINADOR));
+    expect(vazaEm(1.2)).toBeCloseTo(0.3011942, 6);
+    expect(vazaEm(1.2)).toBeGreaterThan(6 * vazaEm(S_DO_TERMINADOR));
     // e em N·L = 0,5 a família NUNCA desce abaixo de Lambert: o mínimo é
     // 0,657 (em s ≈ 1,76), ainda ×1,31 — não há `s` que devolva o flanco
     let minimo = Infinity;
     for (let s = 0.05; s <= 12; s += 0.005) minimo = Math.min(minimo, terminadorSuave(0.5, s));
     expect(minimo).toBeCloseTo(0.657, 3);
     expect(minimo / 0.5).toBeGreaterThan(1.3);
-    // a c1 responde onde o `s` não responde: no N·L = 0,5 ela CEDE
+    // a C1 responde onde o `s` não responde: no N·L = 0,5 ela CEDE
     expect(daTelaParaLinear(terminadorSuave(0.5))).toBeLessThan(terminadorSuave(0.5));
   });
 
   /**
-   * O VÉU NÃO SE MEXE (Q12). A opacidade é geometria — `mu` e a casca —,
-   * então sai BIT A BIT igual nas quatro; e o que acende a palha segue a
-   * MESMA tradução da superfície, para a razão véu/superfície do Eyes não
-   * ser trocada por uma inventada aqui.
+   * O VÉU NÃO SE MEXEU (Q12). A opacidade é geometria — `mu` e a casca —,
+   * então sai BIT A BIT igual nos dois modos; e o que acende a palha segue
+   * a MESMA tradução da superfície, para a razão véu/superfície do Eyes
+   * não ser trocada por uma inventada aqui.
    */
-  it('a opacidade do véu é bit a bit a mesma nas quatro candidatas', () => {
+  it('a opacidade do véu é bit a bit a mesma nos dois modos', () => {
     for (const mu of [1, 0.6, 0.2, 0.05, 0]) {
       const base = opacidadeDoVeu(mu);
-      for (const calib of CANDIDATAS) {
-        const comChaves = doChunk('opacidadeDoVeu')([mu], { ...veuDe('saturn'), ...chavesDe(calib) });
-        expect(Object.is(comChaves, base), `${calib} μ=${mu}`).toBe(true);
-      }
+      const naAssistida = doChunk('opacidadeDoVeu')([mu], { ...veuDe('saturn'), ...ASSISTIDA });
+      expect(Object.is(naAssistida, base), `μ=${mu}`).toBe(true);
     }
   });
 
   it('a palha do véu é acesa pela MESMA luz traduzida que a superfície', () => {
     const a = opacidadeDoVeu(0.05);
     const luzSol = terminadorSuave(0.5);
-    const comVeu = (calib: CalibracaoDaLuz) =>
-      doChunk('globoComVeu')([0, luzSol, 0, a], {
-        uVeuCor: COR_DO_VEU[0]!, ...chavesDe(calib),
-      });
+    const comVeu = (u: Ligados) =>
+      doChunk('globoComVeu')([0, luzSol, 0, a], { uVeuCor: COR_DO_VEU[0]!, ...u });
     // com albedo 0 o que resta é SÓ o termo do véu
-    expect(comVeu('padrao')).toBeCloseTo(a * COR_DO_VEU[0]! * luzSol, 12);
-    expect(comVeu('c1')).toBeCloseTo(a * COR_DO_VEU[0]! * iec(luzSol), 12);
+    expect(comVeu({})).toBeCloseTo(a * COR_DO_VEU[0]! * luzSol, 12);
+    expect(comVeu(ASSISTIDA)).toBeCloseTo(a * COR_DO_VEU[0]! * iec(luzSol), 12);
     // e é MENOS palha, não mais: o limbo não salta à frente do disco
-    expect(comVeu('c1')).toBeLessThan(comVeu('padrao'));
+    expect(comVeu(ASSISTIDA)).toBeLessThan(comVeu({}));
+  });
+});
+
+/**
+ * A COSTURA SOMBRA → NOITE (item 104) — a quem este bloco serve.
+ *
+ * Serve à queixa dele de 26/08: *"precisa haver um fade gradual até a
+ * sombra, de forma seamless — isso deve se aplicar a qualquer transição de
+ * sombra para penumbra"*. A resposta não foi uma rampa: foi a ORDEM do
+ * NASA Eyes, e ela vira uma lei de uma linha —
+ *
+ *   todo escurecimento é fator multiplicativo sobre o MESMO termo de luz,
+ *   e o piso da noite é comum, nunca multiplicado por sombra.
+ *
+ * ESTE BLOCO EXECUTA ESSA LEI sobre as peças de verdade do chunk
+ * (`terminadorSuave`, `lanternaDeLeitura`, `luzDoGlobo`), com a sombra do
+ * anel entrando como o ESCALAR que ela é no shader — `1 − a·0,9`, entre
+ * 0,1 (alpha cheio) e 1. E executa também os DOIS defeitos, reproduzidos à
+ * mão, para que a lei não seja uma frase: quem apagar a lei vê a tira
+ * clara e o degrau voltarem em número, aqui, na mesma execução.
+ *
+ * O QUE ELE NÃO COBRA, e onde isso mora: que o `sombraDoAnel` de
+ * `gigante.ts` tenha perdido o fade por N·L, e que o `main` de lá passe
+ * para a lanterna o termo do ECLIPSE em vez do pacote inteiro. Isso é
+ * FIAÇÃO do fragmento do gigante, e o guarda dela está em
+ * `gigante.test.ts` — a mesma divisão de sempre: o corpo prova que passa o
+ * argumento certo, o chunk prova o que faz com ele.
+ */
+describe('10. a costura sombra → noite (item 104) — a lei do piso comum', () => {
+  /** a face voltada para quem olha: é onde a lanterna trabalha */
+  const NDOTV = 0.6;
+  /** `1 − a·0,9` com o alpha do anel cheio — a sombra mais escura que há */
+  const SOMBRA_CHEIA = 0.1;
+
+  /**
+   * O PIXEL, como o fragmento do gigante o monta depois do S1 e do S2:
+   * a sombra do anel multiplica o termo do SOL (junto com o terminador), a
+   * lanterna entra como piso e NÃO é mordida por ela, e a tradução da C1
+   * cai UMA vez sobre o composto inteiro.
+   */
+  const luzEm = (ndotl: number, sombraAnel: number, fillMordido = false) =>
+    somaComTeto(
+      terminadorSuave(ndotl) * sombraAnel,
+      lanterna(NDOTV, fillMordido ? sombraAnel : 1),
+      ASSISTIDA
+    );
+
+  /** o `smoothstep(0.0, 0.05, ndotl)` que o S1 matou, reproduzido para a
+   *  mordida — é a única cópia dele que sobrevive, e é de propósito */
+  const comFadeDeAntes = (ndotl: number) => {
+    const t = Math.min(Math.max(ndotl / 0.05, 0), 1);
+    return luzEm(ndotl, 1 - 0.9 * (t * t * (3 - 2 * t)));
+  };
+
+  const perfil = (f: (ndotl: number) => number) => {
+    const serie: number[] = [];
+    for (let ndotl = 0.5; ndotl >= -0.3; ndotl -= 0.005) serie.push(f(ndotl));
+    let maiorSubida = 0;
+    for (let i = 1; i < serie.length; i++) {
+      maiorSubida = Math.max(maiorSubida, serie[i]! - serie[i - 1]!);
+    }
+    return { serie, maiorSubida };
+  };
+
+  it('a sombra e a noite descem para o MESMO piso — bit a bit', () => {
+    for (const ndotl of [-0.1, -0.3, -1]) {
+      const noite = luzEm(ndotl, 1);
+      const naSombra = luzEm(ndotl, SOMBRA_CHEIA);
+      expect(Object.is(naSombra, noite), `N·L=${ndotl}`).toBe(true);
+    }
+    // e o piso é o que se espera: a lanterna do Eyes, traduzida
+    expect(luzEm(-0.3, 1)).toBeCloseTo(daTelaParaLinear(0.15 * NDOTV), 12);
+  });
+
+  /**
+   * A MORDIDA DO S2. Antes do 104 a lanterna recebia o pacote `sombras`
+   * inteiro: dentro da sombra do anel o piso caía junto, e a sombra ficava
+   * ~10× mais escura que a noite logo ao lado — o contrário de um fade.
+   */
+  it('MORDIDA: com a lanterna sob a sombra do anel, o piso desaba', () => {
+    const noite = luzEm(-0.3, 1);
+    const comBug = luzEm(-0.3, SOMBRA_CHEIA, true);
+    expect(comBug).toBeLessThan(noite / 8);
+    // e o degrau some quando a lei vale
+    expect(Object.is(luzEm(-0.3, SOMBRA_CHEIA), noite)).toBe(true);
+  });
+
+  it('o perfil sombra → noite é MONÓTONO: nenhuma amostra sobe', () => {
+    expect(perfil((x) => luzEm(x, SOMBRA_CHEIA)).maiorSubida).toBeLessThanOrEqual(0);
+    // e o mesmo caminho FORA da sombra também desce sem voltar atrás
+    expect(perfil((x) => luzEm(x, 1)).maiorSubida).toBeLessThanOrEqual(0);
+  });
+
+  /**
+   * A MORDIDA DO S1. O fade de 0,05 matava a sombra na fronteira, e a
+   * logística do terminador ainda vaza ~5 % de Sol EM N·L = 0: sobrava uma
+   * tira CLARA entre a sombra e a noite. Ela é uma subida no meio da
+   * descida, e é assim que a prancha do item a mostra.
+   */
+  it('MORDIDA: o fade por N·L acende a tira clara na fronteira', () => {
+    const comFade = perfil(comFadeDeAntes);
+    expect(comFade.maiorSubida).toBeGreaterThan(0);
+    // e é uma INVERSÃO: andando para a noite, o pixel FICA MAIS CLARO —
+    // em N·L = 0,02 a sombra já morreu e o vazamento está aceso sozinho,
+    // enquanto em 0,08, mais perto do dia, a sombra ainda mordia
+    expect(comFadeDeAntes(0.02)).toBeGreaterThan(comFadeDeAntes(0.08));
+    // com a lei, o mesmo par anda no sentido certo
+    expect(luzEm(0.02, SOMBRA_CHEIA)).toBeLessThan(luzEm(0.08, SOMBRA_CHEIA));
+    // e a lei, sem o fade, não tem subida nenhuma no mesmo caminho
+    expect(perfil((x) => luzEm(x, SOMBRA_CHEIA)).maiorSubida).toBeLessThanOrEqual(0);
+  });
+
+  /**
+   * A LEI VALE DEPOIS DA TRADUÇÃO, e é por isso que a ORDEM é essa. A C1
+   * decodifica o COMPOSTO uma vez, no fim: como a curva da IEC é contínua
+   * e estritamente crescente, ela leva um perfil monótono num perfil
+   * monótono e pisos iguais em pisos iguais. Traduzir as parcelas
+   * separadas e somar depois daria outro DIA (T(a)+T(b) ≠ T(a+b)) e
+   * deixaria de ser o Eyes ao pé da letra.
+   */
+  it('a tradução preserva a costura: monótona e com o mesmo piso, nos dois espaços', () => {
+    const emTela = perfil((x) => somaComTeto(terminadorSuave(x) * SOMBRA_CHEIA, lanterna(NDOTV, 1)));
+    expect(emTela.maiorSubida).toBeLessThanOrEqual(0);
+    expect(perfil((x) => luzEm(x, SOMBRA_CHEIA)).maiorSubida).toBeLessThanOrEqual(0);
+    // e a tradução é crescente: é ela que garante a passagem de um ao outro
+    for (const [a, b] of [[0.01, 0.02], [0.1, 0.2], [0.5, 0.9]]) {
+      expect(daTelaParaLinear(a!)).toBeLessThan(daTelaParaLinear(b!));
+    }
   });
 });

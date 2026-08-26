@@ -17,10 +17,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   escreverLuzDaVisita,
-  lerPortaCalibracao,
   uniformsDaLuzDaVisita,
-  type CalibracaoDaLuz,
+  LANTERNA_DE_LEITURA,
+  S_DO_TERMINADOR,
 } from '../lib/atlas/luzDaVisita';
+import type { PoliticaDeLuz } from '../lib/atlas/luz';
+import { lerPortaLuz } from './selo';
 
 const FONTE = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 // quem tem o canvas e o laço (o listener de contexto perdido mora lá) e
@@ -273,76 +275,92 @@ describe('o gate de fase das linhas de órbita (item 77 · decisão 3)', () => {
 });
 
 // ============================================================
-// A PORTA `?calib=` CHEGA AO QUADRO DO PALCO (item 93).
+// A POLÍTICA DE LUZ CHEGA AO QUADRO DO PALCO — e a porta `?calib=` MORREU.
 //
-// ACHADO POR SABOTAGEM, 26/08: a fiação inteira desta porta não tinha
-// dente nenhum. Trocar o default do Director — `?? 'padrao'` por
-// `?? 'c1'` — fazia o app desenhar a candidata C1 para TODO visitante, e
-// os 2.360 testes e o `tsc` passavam sem uma queixa; a palavra
-// `calibracao` não aparecia em NENHUM arquivo de teste. A chave irmã
-// (`politica`) sempre teve dente, esta nasceu sem.
+// ESTE BLOCO NASCEU COM OUTRO DONO, e a história explica o que ele cobra
+// hoje. Em 26/08 uma sabotagem mostrou que a fiação da porta `?calib=` do
+// item 93 não tinha dente nenhum: trocar o default do Director — `?? 'padrao'`
+// por `?? 'c1'` — fazia o app desenhar a candidata C1 para TODO visitante,
+// e os 2.360 testes e o `tsc` passavam sem uma queixa.
 //
-// ESTE BLOCO COBRA O PRIMEIRO TRECHO da fiação — a porta virar campo e o
-// campo entrar no quadro do palco — executando as LINHAS REAIS do
-// `director.ts` com um `this` de mentira, no precedente do `porta()` logo
-// acima, e levando o que sai delas ao escritor REAL dos uniformes
-// (`escreverLuzDaVisita`). Não se cobra aqui a função pura
-// `lerPortaCalibracao`: essa já tem dente em `luzDaVisita.test.ts`, e ter
-// dente nela foi exatamente o que deixou a FIAÇÃO passar calada.
+// A porta foi julgada e MORREU: ele escolheu a C1, ela virou o padrão, e as
+// duas chaves de chaveamento saíram do código. O que sobrou no lugar é um
+// invariante mais forte, e é ele que este bloco executa agora:
+//
+//   assistido SEMPRE traduzido, real SEMPRE cru
+//
+// A chave que carrega isso é a `politica`, e a fiação dela é a MESMA que a
+// da porta morta: a URL vira campo, o campo entra no quadro do palco, o
+// quadro chega ao escritor dos uniformes. Este bloco executa as LINHAS
+// REAIS do `director.ts` com um `this` de mentira, no precedente do
+// `porta()` logo acima, e leva o que sai delas ao escritor REAL
+// (`escreverLuzDaVisita`).
+//
+// E COBRA A MORTE DA PORTA, que é uma afirmação de pixel: `?calib=c1` na
+// URL não pode mover um bit — se alguém ressuscitar a chave, o app volta a
+// ter duas doses de brilho assistido e nenhuma foto diz qual está vendo.
 //
 // O SEGUNDO TRECHO — o quadro chegar ao uniforme de cada corpo — é
-// cobrado nos quatro `world/corpos/*.test.ts`, que é onde a chave irmã
-// mora.
-//
-// MORRE COM A ESCOLHA DELE: a vencedora vira o padrão e a porta sai do
-// código; este bloco sai junto.
+// cobrado nos quatro `world/corpos/*.test.ts`, que é onde a chave mora.
 // ============================================================
-describe('a porta ?calib= chega ao quadro do palco (item 93)', () => {
-  const LEITURA = FONTE.match(/\n( *this\.calibracaoDaLuz = .*;)\n/);
-  const NO_QUADRO = FONTE.match(/\n( *q\.calibracao = .*;)\n/);
+describe('a política de luz chega ao quadro do palco, e `?calib=` morreu', () => {
+  const LEITURA = FONTE.match(/\n( *this\.politicaDeLuz = .*;)\n/);
+  const NO_QUADRO = FONTE.match(/\n( *q\.politica = .*;)\n/);
 
   /** roda as DUAS linhas reais do Director com a busca pedida e devolve o
    *  que o quadro do palco leva aos corpos */
-  const calibracaoNoQuadro = (busca: string): CalibracaoDaLuz | undefined => {
-    const alvo = { debug: new URLSearchParams(busca), calibracaoDaLuz: 'padrao' };
-    const q: { calibracao?: CalibracaoDaLuz } = {};
+  const politicaNoQuadro = (busca: string): PoliticaDeLuz | undefined => {
+    const alvo = { debug: new URLSearchParams(busca), politicaDeLuz: 'assistida' };
+    const q: { politica?: PoliticaDeLuz } = {};
     new Function(
-      'lerPortaCalibracao',
+      'lerPortaLuz',
       'q',
       `(function () {\n${LEITURA![1]}\n${NO_QUADRO![1]}\n}).call(this);`
-    ).call(alvo, lerPortaCalibracao, q);
-    return q.calibracao;
+    ).call(alvo, lerPortaLuz, q);
+    return q.politica;
   };
 
   /** o uniforme que o corpo receberia com o que o quadro leva */
   const uniformeDoCorpo = (busca: string) => {
     const u = uniformsDaLuzDaVisita();
-    escreverLuzDaVisita(u, 'assistida', 0, calibracaoNoQuadro(busca));
+    escreverLuzDaVisita(u, politicaNoQuadro(busca)!, 0);
     return u;
   };
 
   it('a varredura acha o que procura — um padrão quebrado passaria calado', () => {
     // o cinto: sem as duas linhas casadas, os casos abaixo passariam por
     // não terem o que executar
-    expect(LEITURA, 'o Director não lê mais `?calib=`').not.toBeNull();
-    expect(NO_QUADRO, 'o quadro do palco não leva mais a calibração').not.toBeNull();
-    expect(LEITURA![1]).toContain('lerPortaCalibracao');
+    expect(LEITURA, 'o Director não lê mais `?luz=`').not.toBeNull();
+    expect(NO_QUADRO, 'o quadro do palco não leva mais a política').not.toBeNull();
+    expect(LEITURA![1]).toContain('lerPortaLuz');
   });
 
-  it('SEM a porta o quadro leva `padrao` — e o uniforme do corpo fica em 0', () => {
-    for (const busca of ['', 'nobloom=1', 'luz=real', 'calib=', 'calib=c4', 'calib=C1']) {
-      expect(calibracaoNoQuadro(busca), busca || '(vazia)').toBe('padrao');
+  it('SEM porta o quadro leva `assistida` — e o corpo recebe a C1', () => {
+    for (const busca of ['', 'nobloom=1', 'luz=', 'luz=c4', 'luz=REAL']) {
+      expect(politicaNoQuadro(busca), busca || '(vazia)').toBe('assistida');
       const u = uniformeDoCorpo(busca);
-      expect(u.uTraduzDaTela!.value, busca || '(vazia)').toBe(0);
-      expect(u.uLanternaDepois!.value, busca || '(vazia)').toBe(0);
+      expect(u.uLanternaLeitura!.value, busca || '(vazia)').toBe(LANTERNA_DE_LEITURA);
+      // `uTerminadorS > 0` é o interruptor que ACENDE a tradução no chunk
+      expect(u.uTerminadorS!.value, busca || '(vazia)').toBe(S_DO_TERMINADOR);
     }
   });
 
-  it('COM `?calib=c1` o quadro leva c1 — e o uniforme do corpo ACENDE', () => {
-    expect(calibracaoNoQuadro('calib=c1')).toBe('c1');
-    expect(uniformeDoCorpo('calib=c1').uTraduzDaTela!.value).toBe(1);
-    // e cada candidata chega inteira, não só a primeira
-    expect(calibracaoNoQuadro('calib=c2&nobloom=1')).toBe('c2');
-    expect(calibracaoNoQuadro('nobloom=1&calib=c3')).toBe('c3');
+  it('COM `?luz=real` o quadro leva real — e os dois uniformes ZERAM', () => {
+    expect(politicaNoQuadro('luz=real')).toBe('real');
+    const u = uniformeDoCorpo('luz=real');
+    expect(Object.is(u.uLanternaLeitura!.value, 0)).toBe(true);
+    expect(Object.is(u.uTerminadorS!.value, 0)).toBe(true);
+    // e chega inteira de qualquer posição na busca
+    expect(politicaNoQuadro('nobloom=1&luz=real')).toBe('real');
+  });
+
+  it('A PORTA MORTA: `?calib=` não move um bit, nem sozinha nem colada', () => {
+    expect(FONTE).not.toContain('calibracaoDaLuz');
+    expect(FONTE).not.toContain('lerPortaCalibracao');
+    const semPorta = uniformeDoCorpo('');
+    for (const busca of ['calib=c1', 'calib=c2', 'calib=c3', 'calib=c1&nobloom=1']) {
+      expect(politicaNoQuadro(busca), busca).toBe('assistida');
+      expect(uniformeDoCorpo(busca), busca).toEqual(semPorta);
+    }
   });
 });
