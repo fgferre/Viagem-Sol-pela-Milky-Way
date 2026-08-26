@@ -15,6 +15,12 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import {
+  escreverLuzDaVisita,
+  lerPortaCalibracao,
+  uniformsDaLuzDaVisita,
+  type CalibracaoDaLuz,
+} from '../lib/atlas/luzDaVisita';
 
 const FONTE = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 // quem tem o canvas e o laço (o listener de contexto perdido mora lá) e
@@ -263,5 +269,80 @@ describe('o gate de fase das linhas de órbita (item 77 · decisão 3)', () => {
     expect(antes).toContain('item 77');
     expect(antes).toContain('LINHAS_DE_ORBITA_POR_FASE');
     expect(antes).toContain('tirar do filme');
+  });
+});
+
+// ============================================================
+// A PORTA `?calib=` CHEGA AO QUADRO DO PALCO (item 93).
+//
+// ACHADO POR SABOTAGEM, 26/08: a fiação inteira desta porta não tinha
+// dente nenhum. Trocar o default do Director — `?? 'padrao'` por
+// `?? 'c1'` — fazia o app desenhar a candidata C1 para TODO visitante, e
+// os 2.360 testes e o `tsc` passavam sem uma queixa; a palavra
+// `calibracao` não aparecia em NENHUM arquivo de teste. A chave irmã
+// (`politica`) sempre teve dente, esta nasceu sem.
+//
+// ESTE BLOCO COBRA O PRIMEIRO TRECHO da fiação — a porta virar campo e o
+// campo entrar no quadro do palco — executando as LINHAS REAIS do
+// `director.ts` com um `this` de mentira, no precedente do `porta()` logo
+// acima, e levando o que sai delas ao escritor REAL dos uniformes
+// (`escreverLuzDaVisita`). Não se cobra aqui a função pura
+// `lerPortaCalibracao`: essa já tem dente em `luzDaVisita.test.ts`, e ter
+// dente nela foi exatamente o que deixou a FIAÇÃO passar calada.
+//
+// O SEGUNDO TRECHO — o quadro chegar ao uniforme de cada corpo — é
+// cobrado nos quatro `world/corpos/*.test.ts`, que é onde a chave irmã
+// mora.
+//
+// MORRE COM A ESCOLHA DELE: a vencedora vira o padrão e a porta sai do
+// código; este bloco sai junto.
+// ============================================================
+describe('a porta ?calib= chega ao quadro do palco (item 93)', () => {
+  const LEITURA = FONTE.match(/\n( *this\.calibracaoDaLuz = .*;)\n/);
+  const NO_QUADRO = FONTE.match(/\n( *q\.calibracao = .*;)\n/);
+
+  /** roda as DUAS linhas reais do Director com a busca pedida e devolve o
+   *  que o quadro do palco leva aos corpos */
+  const calibracaoNoQuadro = (busca: string): CalibracaoDaLuz | undefined => {
+    const alvo = { debug: new URLSearchParams(busca), calibracaoDaLuz: 'padrao' };
+    const q: { calibracao?: CalibracaoDaLuz } = {};
+    new Function(
+      'lerPortaCalibracao',
+      'q',
+      `(function () {\n${LEITURA![1]}\n${NO_QUADRO![1]}\n}).call(this);`
+    ).call(alvo, lerPortaCalibracao, q);
+    return q.calibracao;
+  };
+
+  /** o uniforme que o corpo receberia com o que o quadro leva */
+  const uniformeDoCorpo = (busca: string) => {
+    const u = uniformsDaLuzDaVisita();
+    escreverLuzDaVisita(u, 'assistida', 0, calibracaoNoQuadro(busca));
+    return u;
+  };
+
+  it('a varredura acha o que procura — um padrão quebrado passaria calado', () => {
+    // o cinto: sem as duas linhas casadas, os casos abaixo passariam por
+    // não terem o que executar
+    expect(LEITURA, 'o Director não lê mais `?calib=`').not.toBeNull();
+    expect(NO_QUADRO, 'o quadro do palco não leva mais a calibração').not.toBeNull();
+    expect(LEITURA![1]).toContain('lerPortaCalibracao');
+  });
+
+  it('SEM a porta o quadro leva `padrao` — e o uniforme do corpo fica em 0', () => {
+    for (const busca of ['', 'nobloom=1', 'luz=real', 'calib=', 'calib=c4', 'calib=C1']) {
+      expect(calibracaoNoQuadro(busca), busca || '(vazia)').toBe('padrao');
+      const u = uniformeDoCorpo(busca);
+      expect(u.uTraduzDaTela!.value, busca || '(vazia)').toBe(0);
+      expect(u.uLanternaDepois!.value, busca || '(vazia)').toBe(0);
+    }
+  });
+
+  it('COM `?calib=c1` o quadro leva c1 — e o uniforme do corpo ACENDE', () => {
+    expect(calibracaoNoQuadro('calib=c1')).toBe('c1');
+    expect(uniformeDoCorpo('calib=c1').uTraduzDaTela!.value).toBe(1);
+    // e cada candidata chega inteira, não só a primeira
+    expect(calibracaoNoQuadro('calib=c2&nobloom=1')).toBe('c2');
+    expect(calibracaoNoQuadro('nobloom=1&calib=c3')).toBe('c3');
   });
 });

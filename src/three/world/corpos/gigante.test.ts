@@ -30,6 +30,7 @@ import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import {
+  CALIBRACOES,
   COR_DO_VEU,
   GLSL_VEU_DE_SATURNO,
   LANTERNA_DE_LEITURA,
@@ -781,6 +782,48 @@ describe('5. a classe — gate, carga, cessão, anel', () => {
       corpo.dispose();
     }
   );
+
+  /**
+   * PINO 93, A FIAÇÃO DA PORTA `?calib=`: o quadro traz a calibração, e
+   * ela TEM de chegar ao uniforme do globo.
+   *
+   * ACHADO POR SABOTAGEM, 26/08, e é o irmão do dente que
+   * `director.test.ts` ganhou no mesmo dia. Apagar o `q.calibracao` da
+   * chamada de `escreverLuzDaVisita` (§ da classe, logo acima) compilava e
+   * atravessava os 2.360 testes calado: a porta continuava viva no
+   * Director, o selo continuava declarando o desvio, e o pixel
+   * simplesmente não mudava. A palavra `calibracao` não aparecia em
+   * arquivo de teste nenhum. A chave irmã (`politica`) sempre teve dente;
+   * esta nasceu sem, e estes quatro `it` — um por família de corpo — são
+   * o que faltava.
+   *
+   * OLHA `uTraduzDaTela` DE PROPÓSITO: a C1 não mexe na lanterna nem no
+   * `s`, então essa é a ÚNICA chave que denuncia o argumento perdido.
+   */
+  it('PINO 93: a calibração do quadro chega ao uniforme do globo', async () => {
+    const { corpo } = giganteDeTeste('saturn');
+    corpo.atualizar(quadro('saturn', 4));
+    await flush();
+    corpo.atualizar(quadro('saturn', 4));
+    const globo = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
+    // SEM porta: o quadro não traz nada, e as duas chaves ficam apagadas
+    expect(globo.uniforms.uTraduzDaTela.value).toBe(0);
+    expect(globo.uniforms.uLanternaDepois.value).toBe(0);
+    // COM `?calib=c1`: acende a tradução, sem mexer na lanterna
+    corpo.atualizar(quadro('saturn', 4, { calibracao: 'c1' }));
+    expect(globo.uniforms.uTraduzDaTela.value).toBe(1);
+    expect(globo.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    // e a C2 leva a lanterna re-dosada junto: a porta carrega a candidata
+    // INTEIRA, não uma chave dela
+    corpo.atualizar(quadro('saturn', 4, { calibracao: 'c2' }));
+    expect(globo.uniforms.uLanternaDepois.value).toBe(1);
+    expect(globo.uniforms.uLanternaLeitura.value).toBe(CALIBRACOES.c2.lanterna);
+    // e volta a apagar quando o quadro volta a não trazer nada
+    corpo.atualizar(quadro('saturn', 4));
+    expect(globo.uniforms.uTraduzDaTela.value).toBe(0);
+    expect(globo.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    corpo.dispose();
+  });
 });
 
 describe('6. texto-fonte (as leis do cabeçalho, pinadas)', () => {

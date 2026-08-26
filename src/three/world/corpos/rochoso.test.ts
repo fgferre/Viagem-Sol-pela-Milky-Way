@@ -36,6 +36,7 @@ import type { ManifestDeTexturas } from './terra';
 import { ANEIS_CITADOS } from './gigante';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import {
+  CALIBRACOES,
   LANTERNA_DE_LEITURA,
   S_DO_TERMINADOR,
   ganhoDoGlobo,
@@ -461,6 +462,32 @@ describe('4. a classe — gate, carga, retrato × sem-retrato, cessão', () => {
         corpo.dispose();
       });
     }
+
+    /**
+     * PINO 93, A FIAÇÃO DA PORTA `?calib=` — o mesmo dente que
+     * `gigante.test.ts` ganhou em 26/08, e a razão inteira está escrita
+     * lá: apagar o `q.calibracao` da chamada de `escreverLuzDaVisita`
+     * compilava e passava a suíte calado. `uTraduzDaTela` é a chave que
+     * denuncia, porque a C1 não mexe na lanterna nem no `s`.
+     */
+    it('PINO 93: a calibração do quadro chega ao uniforme do rochoso', async () => {
+      const { corpo } = rochosoDeTeste('mars', 'lambert');
+      corpo.atualizar(quadro('mars', 4));
+      await flush();
+      corpo.atualizar(quadro('mars', 4));
+      const mat = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
+      expect(mat.uniforms.uTraduzDaTela.value).toBe(0);
+      expect(mat.uniforms.uLanternaDepois.value).toBe(0);
+      corpo.atualizar(quadro('mars', 4, { calibracao: 'c1' }));
+      expect(mat.uniforms.uTraduzDaTela.value).toBe(1);
+      expect(mat.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+      corpo.atualizar(quadro('mars', 4, { calibracao: 'c2' }));
+      expect(mat.uniforms.uLanternaDepois.value).toBe(1);
+      expect(mat.uniforms.uLanternaLeitura.value).toBe(CALIBRACOES.c2.lanterna);
+      corpo.atualizar(quadro('mars', 4));
+      expect(mat.uniforms.uTraduzDaTela.value).toBe(0);
+      corpo.dispose();
+    });
 
     it('Éris é o caso em que a visita mais gasta: ~24,2× sobre a lei crua', () => {
       // o número que separa este pino de um teste decorativo — sem a

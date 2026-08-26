@@ -37,6 +37,7 @@ import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { ganhoFundido, irradianciaRelativa } from '../../../lib/atlas/luz';
 import {
+  CALIBRACOES,
   LANTERNA_DE_LEITURA,
   S_DO_TERMINADOR,
   ganhoDoGlobo,
@@ -364,6 +365,34 @@ describe('3. a cadeia de luz da Lua (o oráculo Europa/Júpiter, adaptado)', () 
     const main = LUA_FRAG.slice(LUA_FRAG.indexOf('void main()'));
     expect(main).not.toContain('terminadorSuave(');
     expect(main).toContain('lanternaDeLeitura(');
+    lua.dispose();
+  });
+
+  /**
+   * PINO 93, A FIAÇÃO DA PORTA `?calib=` — o mesmo dente que
+   * `gigante.test.ts` ganhou em 26/08, e a razão inteira está escrita lá:
+   * apagar o `q.calibracao` da chamada de `escreverLuzDaVisita` compilava
+   * e passava a suíte calado. `uTraduzDaTela` é a chave que denuncia,
+   * porque a C1 não mexe na lanterna nem no `s`.
+   */
+  it('PINO 93: a calibração do quadro chega ao uniforme da Lua', async () => {
+    const { lua } = luaDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto));
+    await flush();
+    lua.atualizar(quadro(perto));
+    const mat = (lua.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial;
+    expect(mat.uniforms.uTraduzDaTela.value).toBe(0);
+    expect(mat.uniforms.uLanternaDepois.value).toBe(0);
+    lua.atualizar(quadro(perto, { calibracao: 'c1' }));
+    expect(mat.uniforms.uTraduzDaTela.value).toBe(1);
+    expect(mat.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    lua.atualizar(quadro(perto, { calibracao: 'c2' }));
+    expect(mat.uniforms.uLanternaDepois.value).toBe(1);
+    expect(mat.uniforms.uLanternaLeitura.value).toBe(CALIBRACOES.c2.lanterna);
+    lua.atualizar(quadro(perto));
+    expect(mat.uniforms.uTraduzDaTela.value).toBe(0);
     lua.dispose();
   });
 

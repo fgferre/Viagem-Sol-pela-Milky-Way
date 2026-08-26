@@ -27,6 +27,7 @@ import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import {
+  CALIBRACOES,
   LANTERNA_DE_LEITURA,
   S_DO_TERMINADOR,
   ganhoDoGlobo,
@@ -576,6 +577,38 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
     terra.atualizar(quadro(perto, { politica: 'real' }));
     expect(sup!.uniforms.uLanternaLeitura.value).toBe(0);
     expect(sup!.uniforms.uTerminadorS.value).toBe(0);
+    terra.dispose();
+  });
+
+  /**
+   * PINO 93, A FIAÇÃO DA PORTA `?calib=` — o mesmo dente que
+   * `gigante.test.ts` ganhou em 26/08, e a razão inteira está escrita lá:
+   * apagar o `q.calibracao` da chamada de `escreverLuzDaVisita` compilava
+   * e passava a suíte calado. `uTraduzDaTela` é a chave que denuncia,
+   * porque a C1 não mexe na lanterna nem no `s`. Aqui, como no `it` acima,
+   * quem recebe é só a SUPERFÍCIE: as duas cascas seguem de fora.
+   */
+  it('PINO 93: a calibração do quadro chega ao uniforme da superfície', async () => {
+    const { terra } = terraDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    terra.atualizar(quadro(perto));
+    await flush();
+    terra.atualizar(quadro(perto));
+    const [sup, ...cascas] = terra.group.children.map(
+      (m) => (m as THREE.Mesh).material as THREE.ShaderMaterial
+    );
+    expect(sup!.uniforms.uTraduzDaTela.value).toBe(0);
+    expect(sup!.uniforms.uLanternaDepois.value).toBe(0);
+    terra.atualizar(quadro(perto, { calibracao: 'c1' }));
+    expect(sup!.uniforms.uTraduzDaTela.value).toBe(1);
+    expect(sup!.uniforms.uLanternaLeitura.value).toBe(LANTERNA_DE_LEITURA);
+    terra.atualizar(quadro(perto, { calibracao: 'c2' }));
+    expect(sup!.uniforms.uLanternaDepois.value).toBe(1);
+    expect(sup!.uniforms.uLanternaLeitura.value).toBe(CALIBRACOES.c2.lanterna);
+    for (const c of cascas) expect(c.uniforms.uTraduzDaTela).toBeUndefined();
+    terra.atualizar(quadro(perto));
+    expect(sup!.uniforms.uTraduzDaTela.value).toBe(0);
     terra.dispose();
   });
 
