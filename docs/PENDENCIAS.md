@@ -1078,6 +1078,11 @@ defeito nasce depois, na expansão do quad.
    `gl_FragColor` que a cirurgia procura.
 4. `alphaToCoverage` continua `false`. `worldUnits` continua `false`.
 
+O destino deste passo é o da fita de referência: ponta cortada reta,
+**nenhuma** calota em lugar nenhum. O truque chega lá sem trocar a
+geometria nem o material de linha — não é gambiarra, é atalho para o
+mesmo desenho.
+
 **Prova:** IMAGEM do colar morto no Retina, fita em movimento (a vista
 parada sem HUD não prova isto). Dente de imagem + re-baseline das 13
 vistas com linha. Só então A2.
@@ -1087,8 +1092,10 @@ vistas com linha. Só então A2.
 **A2 — BORDA MACIA (anti-aliasing analítico). DEPOIS da prova do A1.**
 É a ideia de livro (GPU Gems, Cesium, o estudo
 `atlas-estudo-visualizacao-orbitas-ux-espacial.md`): a caneta é um
-pouco mais larga, e a saia some. O Eyes pede isso ao cartão (`antialias:
-true`). Esta casa não liga MSAA no app. Imita-se **só na linha**.
+pouco mais larga, e a saia some. A beira lisa da referência é 100%
+MSAA do cartão — duas camadas: 4× no alvo de render, mais o AA do
+canvas — e **zero** suavização no shader de linha. Esta casa não liga
+MSAA no app. Imita-se **só na linha**.
 
 **Não é tubo.** O miolo fica chapado em `BRILHO_DA_LINHA`. Só a beira
 some. A perda de 21,5% de luz era do `sqrt(1−u²)` **retratado** — não se
@@ -1099,7 +1106,8 @@ segundo callback APAGA o primeiro):
 
 1. Constante nova `SAIA_DO_AA_PX = 1` (1 px CSS a mais no total, 0,5
    para cada lado). `LARGURA_DA_FITA_PX` continua **1,25** — é a largura
-   VISÍVEL, o número do Eyes. O material nasce com
+   VISÍVEL, o número medido do pixel deles (não é o padrão declarado da
+   API deles; não se troca pelo padrão). O material nasce com
    `linewidth: LARGURA_DA_FITA_PX + SAIA_DO_AA_PX`. O teste da largura
    passa a cobrar os DOIS números, não “linewidth === 1,25”.
 2. No fragmento, **antes** da cessão ao núcleo, com `vUv` do caminho de
@@ -1142,15 +1150,20 @@ pelo `pixelRatio` antes de comparar com 800; (ii) UMA linhagem — 1,25
 
 **A4 — FITA CONTÍNUA COM MITER. ÚLTIMO recurso.** Só se A1+A2 falharem
 E o dono ainda reclamar da dobra. A fórmula é a da bissetriz (SVG /
-Canvas / Cesium), não o JS da NASA:
+Canvas / Cesium), pública:
 
 ```
 offset = normalize(perp(l0) + perp(l1))
 offset /= max(0.25, sqrt((1.0 + dot(l0, l1)) / 2.0))
 ```
 
-Custa o corte no *near plane*, o `resolution` automático e o `raycast`
-de que o L5 depende. `Line2` **não** é atalho: as calotas continuam.
+Não é fita nova nem obra distante: é a MESMA estrutura de quads por
+segmento que a casa já tem, mais dois atributos de vizinho
+(anterior/próximo) por vértice, e a junta vira uma conta no vertex
+shader, em pixel. Feito sobre a `LineSegments2`, o corte no *near
+plane*, o `resolution` automático e o `raycast` de que o L5 depende
+**sobrevivem** — porta-se a conta, não se reconstrói a fita. `Line2`
+**não** é atalho: as calotas continuam.
 
 ---
 
