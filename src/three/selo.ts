@@ -634,6 +634,21 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   neutra('dbgstar', 'depuração: projeção de Betelgeuse'),
   neutra('dbgplan', 'depuração: régua dos planetas'),
   neutra('dbgorbitas', 'depuração: fade das linhas de órbita'),
+  /**
+   * `?calib=` — A CALIBRAÇÃO CANDIDATA do brilho assistido (item 93), e é
+   * porta de INSTRUMENTO, da espécie do `?dbgorbitas`: existe para a folha
+   * de fotos que o dono vai julgar e **morre com a escolha dele**.
+   *
+   * POR QUE NEUTRA, mesmo mexendo em luz. O eixo BRILHO responde "o que se
+   * vê é a fotometria da casa ou uma fotometria ajustada?", e as quatro
+   * calibrações são a MESMA resposta: `assistida` já declara *assistido*, e
+   * nenhuma delas faz um quadro assistido passar por real. Do outro lado da
+   * porta ela não existe — `escreverLuzDaVisita` zera as duas chaves em
+   * `?luz=real`, então `?calib=` não tem como afrouxar a promessa de
+   * penumbra física. Declará-la desvio contaria duas vezes o mesmo
+   * desvio, e a segunda seria falsa.
+   */
+  neutra('calib', 'depuração: calibração candidata do brilho assistido'),
   neutra('galstat', 'depuração: contagem no frustum'),
 ];
 

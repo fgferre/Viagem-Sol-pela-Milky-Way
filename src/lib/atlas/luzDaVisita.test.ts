@@ -29,6 +29,7 @@ import { BODY_AXES } from './iauOrientation';
 import { ganhoFundido, irradianciaRelativa } from './luz';
 import type { PoliticaDeLuz } from './luz';
 import {
+  CALIBRACOES,
   COR_DO_VEU,
   GLSL_LUZ_DA_VISITA,
   GLSL_VEU_DE_SATURNO,
@@ -41,7 +42,9 @@ import {
   espessuraDoVeu,
   ganhoDoGlobo,
   lanternaDaVisita,
+  lerPortaCalibracao,
   sDoTerminador,
+  type CalibracaoDaLuz,
   stopsDaVisita,
   uniformsDaLuzDaVisita,
   uniformsDoVeu,
@@ -107,6 +110,8 @@ const EMBUTIDOS = {
   exp: (x: number) => Math.exp(x),
   sqrt: (x: number) => Math.sqrt(x),
   mix: (x: number, y: number, a: number) => x * (1 - a) + y * a,
+  pow: (x: number, y: number) => Math.pow(x, y),
+  step: (borda: number, x: number) => (x < borda ? 0 : 1),
   dot: (a: readonly number[], b: readonly number[]) =>
     a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!,
 };
@@ -119,6 +124,8 @@ const UNIFORMES = [
   'uVeuColuna',
   'uVeuEspessura',
   'uVeuCor',
+  'uTraduzDaTela',
+  'uLanternaDepois',
 ] as const;
 
 type Ligados = Partial<Record<(typeof UNIFORMES)[number], number>>;
@@ -266,9 +273,20 @@ const lanterna = (ndotv: number, sombras: number, acesa = LANTERNA_DE_LEITURA): 
   );
 };
 
-/** `luzDoGlobo(luzSol, fill)` do shader, num canal */
-const somaComTeto = (luzSol: number, fill: number): number =>
-  doChunk('luzDoGlobo')([luzSol, fill]);
+/** `luzDoGlobo(luzSol, fill)` do shader, num canal — sem calibração é a
+ *  soma que satura em 1, o de sempre. */
+const somaComTeto = (luzSol: number, fill: number, u: Ligados = {}): number =>
+  doChunk('luzDoGlobo')([luzSol, fill], u);
+
+/** as duas chaves de `?calib=` como o shader as recebe (item 93) */
+const chavesDe = (calib: CalibracaoDaLuz): Ligados => ({
+  uTraduzDaTela: CALIBRACOES[calib].traduz ? 1 : 0,
+  uLanternaDepois: CALIBRACOES[calib].depois ? 1 : 0,
+});
+
+/** `daTelaParaLinear(c)` do shader, num canal */
+const daTelaParaLinear = (c: number, u: Ligados = { uTraduzDaTela: 1 }): number =>
+  doChunk('daTelaParaLinear')([c], u);
 
 /** os dois uniformes de FORMA do véu, resolvidos pelo módulo para um corpo */
 const veuDe = (id: string): Ligados => ({
@@ -521,9 +539,9 @@ describe('3b. o instrumento — o tradutor que executa o chunk', () => {
    * cobre a que SOME — peça apagada ou renomeada sem que ninguém aqui
    * soubesse deixaria o laço de cima passeando por quatro nomes e verde.
    */
-  it('o censo fecha: as CINCO peças da receita, nem uma a mais nem a menos', () => {
+  it('o censo fecha: as SEIS peças da receita, nem uma a mais nem a menos', () => {
     expect(nomesDoChunk()).toEqual([
-      'terminadorSuave', 'lanternaDeLeitura', 'luzDoGlobo',
+      'terminadorSuave', 'lanternaDeLeitura', 'daTelaParaLinear', 'luzDoGlobo',
       'opacidadeDoVeu', 'globoComVeu',
     ]);
   });
@@ -998,5 +1016,174 @@ describe('8. o handoff ponto↔globo — o degrau que não existe', () => {
       anterior = fluxo;
     }
     expect(anterior).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * A CALIBRAÇÃO DO ITEM 93 — a quem este bloco serve.
+ *
+ * Serve a UMA decisão do dono que ainda não foi tomada: qual das três
+ * candidatas vira o brilho assistido da casa. Enquanto ela não é tomada, o
+ * que ele cobra é o contrário de uma escolha — que **sem a porta `?calib=`
+ * nada mude**, e que `?luz=real` continue sem uma gota da calibração. As
+ * duas coisas são afirmações de PIXEL, e aqui elas viram conta executada.
+ *
+ * A CAUSA que estas linhas encapsulam (investigada antes de girar botão):
+ * os números da receita do Eyes são bytes de TELA — lá o Phong multiplica
+ * o que se vê, sem gerência de cor e sem tonemap — e atravessaram para o
+ * nosso shader em LINEAR. É a lição do `COR_DO_VEU` aplicada ao termo de
+ * LUZ. `daTelaParaLinear` é a tradução; `?calib=` é quem a acende.
+ *
+ * QUANDO ESTE BLOCO MORRE: com a escolha dele. A vencedora vira o padrão,
+ * a porta sai, e o que sobrevive aqui é só o que a vencedora executar.
+ */
+describe('8. a calibração candidata (item 93) — a porta e o que ela promete', () => {
+  const CANDIDATAS: readonly CalibracaoDaLuz[] = ['padrao', 'c1', 'c2', 'c3'];
+
+  /** o oráculo da IEC 61966-2-1, escrito à parte do módulo de propósito:
+   *  se o chunk e o módulo divergirem, é aqui que aparece. */
+  const iec = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+
+  it('a porta aceita as três e recusa o resto — `padrao` NÃO se pede', () => {
+    for (const c of ['c1', 'c2', 'c3']) expect(lerPortaCalibracao(c)).toBe(c);
+    for (const lixo of ['padrao', 'C1', '', null, undefined, 'constructor', 'c4', '1']) {
+      expect(lerPortaCalibracao(lixo), String(lixo)).toBeNull();
+    }
+  });
+
+  /**
+   * O GATE DO ITEM: sem a porta, o pixel não muda. `daTelaParaLinear`
+   * apagada devolve o ARGUMENTO — `Object.is`, não `toBeCloseTo` —, e
+   * `luzDoGlobo` volta a ser caractere por caractere a soma com teto.
+   */
+  it('sem a porta, a tradução é a IDENTIDADE e a soma é a de sempre', () => {
+    for (const c of [0, 1e-9, 0.0404, 0.04045, 0.05, 0.15, 0.5, 1, 6.7]) {
+      expect(Object.is(daTelaParaLinear(c, { uTraduzDaTela: 0 }), c), String(c)).toBe(true);
+    }
+    for (const [luzSol, fill] of [[0, 0.15], [0.5, 0.15], [1, 0.15], [6.7, 0.15], [0.0498, 0]]) {
+      const teto = Math.max(luzSol!, Math.min(luzSol! + fill!, 1));
+      expect(Object.is(somaComTeto(luzSol!, fill!, chavesDe('padrao')), teto)).toBe(true);
+    }
+  });
+
+  it('`?luz=real` não recebe uma gota de calibração — nem com `?calib=`', () => {
+    for (const calib of CANDIDATAS) {
+      const u = uniformsDaLuzDaVisita();
+      escreverLuzDaVisita(u, 'real', densidadeDoVeu('saturn'), calib);
+      expect({ ...u }, calib).toEqual({
+        uLanternaLeitura: { value: 0 },
+        uTerminadorS: { value: 0 },
+        uTraduzDaTela: { value: 0 },
+        uLanternaDepois: { value: 0 },
+      });
+    }
+  });
+
+  it('o escritor acende as quatro chaves conforme a candidata', () => {
+    for (const calib of CANDIDATAS) {
+      const u = uniformsDaLuzDaVisita();
+      escreverLuzDaVisita(u, 'assistida', 0, calib);
+      expect(u.uLanternaLeitura!.value, calib).toBe(CALIBRACOES[calib].lanterna);
+      expect(u.uTerminadorS!.value, calib).toBe(CALIBRACOES[calib].s);
+      expect(u.uTraduzDaTela!.value, calib).toBe(CALIBRACOES[calib].traduz ? 1 : 0);
+      expect(u.uLanternaDepois!.value, calib).toBe(CALIBRACOES[calib].depois ? 1 : 0);
+    }
+    // e a divisão do véu do Eyes continua valendo por cima da candidata
+    const u = uniformsDaLuzDaVisita();
+    escreverLuzDaVisita(u, 'assistida', densidadeDoVeu('saturn'), 'c3');
+    expect(u.uTerminadorS!.value).toBeCloseTo(1.2 / 1.035, 12);
+  });
+
+  it('acesa, a tradução É a curva da IEC — os dois ramos e o joelho', () => {
+    for (const c of [0, 0.001, 0.02, 0.0404, 0.04045, 0.0405, 0.05, 0.15, 0.5, 1]) {
+      expect(daTelaParaLinear(c), String(c)).toBeCloseTo(iec(c), 12);
+    }
+    // e é a MESMA que decodificou a palha do véu — uma curva, duas bocas
+    expect(daTelaParaLinear(234 / 255)).toBeCloseTo(COR_DO_VEU[0], 12);
+    expect(daTelaParaLinear(151 / 255)).toBeCloseTo(COR_DO_VEU[2], 12);
+    // preto continua preto: é o que o `pow` sozinho erraria (8,3e−4)
+    expect(daTelaParaLinear(0)).toBe(0);
+  });
+
+  /**
+   * O QUE CADA CANDIDATA FAZ COM A NOITE — a resposta a Q9, em conta.
+   * A noite é `luzSol = 0`: só a lanterna trabalha. Os números são a LUZ
+   * (linear), antes do albedo e do ACES; o byte de tela mora na folha.
+   */
+  it('a noite: c1 derruba 7,6×, c2 e c3 pousam em 0,05 e o padrão fica em 0,15', () => {
+    const noite = (calib: CalibracaoDaLuz) =>
+      somaComTeto(0, lanternaDaVisita('assistida', calib), chavesDe(calib));
+    expect(noite('padrao')).toBe(0.15);
+    expect(noite('c1')).toBeCloseTo(iec(0.15), 12);
+    expect(noite('c1')).toBeCloseTo(0.0196066, 6);
+    expect(noite('c2')).toBe(0.05);
+    expect(noite('c3')).toBe(0.05);
+    // a ordem é o que a folha vai mostrar: c1 « c2 = c3 « padrão
+    expect(noite('c1')).toBeLessThan(noite('c2'));
+    expect(noite('c2')).toBeLessThan(noite('padrao'));
+  });
+
+  /**
+   * O QUE CADA CANDIDATA FAZ COM O DIA — e a prova de que o subsolar NÃO
+   * cai: no teto da tela a tradução vale 1 exato, então a c1 e a c2
+   * entregam o mesmo dia de hoje. O que elas mexem é o que está ABAIXO.
+   */
+  it('o subsolar não se mexe em nenhuma delas — a tradução vale 1 em 1', () => {
+    for (const calib of CANDIDATAS) {
+      const dia = somaComTeto(1, lanternaDaVisita('assistida', calib), chavesDe(calib));
+      // a c2 soma a lanterna DEPOIS do teto: 1 + 0,05 (o ACES é o ombro)
+      expect(dia, calib).toBeCloseTo(CALIBRACOES[calib].depois ? 1.05 : 1, 12);
+    }
+  });
+
+  /**
+   * O TERMINADOR — a resposta a Q10, e é ela que explica por que a c3
+   * está na folha para PERDER. Baixar o `s` não devolve o crescente: no
+   * vazamento (N·L = 0) a logística de s = 1,2 deixa passar 30 % contra
+   * os 5 % de s = 3, e é isso que a foto vai mostrar como flanco lavado.
+   */
+  it('o `s` é botão de CONTRASTE, não de dose: baixá-lo ABRE o terminador', () => {
+    const vazaEm = (s: number) => terminadorSuave(0, s);
+    expect(vazaEm(S_DO_TERMINADOR)).toBeCloseTo(0.049787, 6);
+    expect(vazaEm(CALIBRACOES.c3.s)).toBeCloseTo(0.3011942, 6);
+    expect(vazaEm(CALIBRACOES.c3.s)).toBeGreaterThan(6 * vazaEm(S_DO_TERMINADOR));
+    // e em N·L = 0,5 a família NUNCA desce abaixo de Lambert: o mínimo é
+    // 0,657 (em s ≈ 1,76), ainda ×1,31 — não há `s` que devolva o flanco
+    let minimo = Infinity;
+    for (let s = 0.05; s <= 12; s += 0.005) minimo = Math.min(minimo, terminadorSuave(0.5, s));
+    expect(minimo).toBeCloseTo(0.657, 3);
+    expect(minimo / 0.5).toBeGreaterThan(1.3);
+    // a c1 responde onde o `s` não responde: no N·L = 0,5 ela CEDE
+    expect(daTelaParaLinear(terminadorSuave(0.5))).toBeLessThan(terminadorSuave(0.5));
+  });
+
+  /**
+   * O VÉU NÃO SE MEXE (Q12). A opacidade é geometria — `mu` e a casca —,
+   * então sai BIT A BIT igual nas quatro; e o que acende a palha segue a
+   * MESMA tradução da superfície, para a razão véu/superfície do Eyes não
+   * ser trocada por uma inventada aqui.
+   */
+  it('a opacidade do véu é bit a bit a mesma nas quatro candidatas', () => {
+    for (const mu of [1, 0.6, 0.2, 0.05, 0]) {
+      const base = opacidadeDoVeu(mu);
+      for (const calib of CANDIDATAS) {
+        const comChaves = doChunk('opacidadeDoVeu')([mu], { ...veuDe('saturn'), ...chavesDe(calib) });
+        expect(Object.is(comChaves, base), `${calib} μ=${mu}`).toBe(true);
+      }
+    }
+  });
+
+  it('a palha do véu é acesa pela MESMA luz traduzida que a superfície', () => {
+    const a = opacidadeDoVeu(0.05);
+    const luzSol = terminadorSuave(0.5);
+    const comVeu = (calib: CalibracaoDaLuz) =>
+      doChunk('globoComVeu')([0, luzSol, 0, a], {
+        uVeuCor: COR_DO_VEU[0]!, ...chavesDe(calib),
+      });
+    // com albedo 0 o que resta é SÓ o termo do véu
+    expect(comVeu('padrao')).toBeCloseTo(a * COR_DO_VEU[0]! * luzSol, 12);
+    expect(comVeu('c1')).toBeCloseTo(a * COR_DO_VEU[0]! * iec(luzSol), 12);
+    // e é MENOS palha, não mais: o limbo não salta à frente do disco
+    expect(comVeu('c1')).toBeLessThan(comVeu('padrao'));
   });
 });

@@ -87,6 +87,7 @@ import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
 import {
   GLSL_LUZ_DA_VISITA,
   escreverLuzDaVisita,
+  type CalibracaoDaLuz,
   ganhoDoGlobo,
   uniformsDaLuzDaVisita,
 } from '../../../lib/atlas/luzDaVisita';
@@ -205,6 +206,10 @@ export interface QuadroDaLua {
   ligado: boolean;
   atlasQuente: boolean;
   politica: PoliticaDeLuz;
+  /** `?calib=` — a calibração candidata do item 93. OPCIONAL porque a
+   *  porta é de INSTRUMENTO e morre com a escolha dele: ausente é o
+   *  `padrao`, que é o de hoje bit a bit. */
+  calibracao?: CalibracaoDaLuz;
 }
 
 export interface EstadoDaLua {
@@ -390,7 +395,7 @@ export class LuaResolvida {
     (u.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     u.uLuzGanho.value = ganho;
     // a lanterna de leitura (item 93) — a Lua a recebe, a logística não
-    escreverLuzDaVisita(u, q.politica);
+    escreverLuzDaVisita(u, q.politica, 0, q.calibracao);
     // a sombra do eclipse (F2c) — o mesmo fio da Terra
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
   }

@@ -70,6 +70,7 @@ import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import type { PoliticaDeLuz } from '../../../lib/atlas/luz';
 import {
   escreverLuzDaVisita,
+  type CalibracaoDaLuz,
   ganhoDoGlobo,
   uniformsDaLuzDaVisita,
 } from '../../../lib/atlas/luzDaVisita';
@@ -272,6 +273,10 @@ export interface QuadroDaTerra {
   /** fase atlas: pré-aquece a carga de textura (gatilho 2 do contrato). */
   atlasQuente: boolean;
   politica: PoliticaDeLuz;
+  /** `?calib=` — a calibração candidata do item 93. OPCIONAL porque a
+   *  porta é de INSTRUMENTO e morre com a escolha dele: ausente é o
+   *  `padrao`, que é o de hoje bit a bit. */
+  calibracao?: CalibracaoDaLuz;
   /** dt do quadro em segundos — só a rampa temporal da cessão o consome
    *  (o clamp de picos mora em `stepRampToward`, nunca aqui). */
   dtS: number;
@@ -564,7 +569,7 @@ export class TerraResolvida {
     // a lanterna de leitura e o `s` do terminador (item 93) — SÓ na
     // superfície: as cidades, as nuvens e o Nishita ficam como estavam,
     // que é o que o contrato manda.
-    escreverLuzDaVisita(uS, q.politica);
+    escreverLuzDaVisita(uS, q.politica, 0, q.calibracao);
     // a sombra do eclipse (F2c) — resolvida no cache de jd; aqui só vira
     // uniform, no frame local pela mesma base do uDirSolLocal
     escreverSombraDeEclipse(uS, this.sombra, this.vX, this.vY, this.vZ, 0);

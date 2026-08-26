@@ -59,6 +59,7 @@ import {
   GLSL_VEU_DE_SATURNO,
   densidadeDoVeu,
   escreverLuzDaVisita,
+  type CalibracaoDaLuz,
   ganhoDoGlobo,
   uniformsDaLuzDaVisita,
   uniformsDoVeu,
@@ -566,6 +567,10 @@ export interface QuadroDoGigante {
   ligado: boolean;
   atlasQuente: boolean;
   politica: PoliticaDeLuz;
+  /** `?calib=` — a calibração candidata do item 93. OPCIONAL porque a
+   *  porta é de INSTRUMENTO e morre com a escolha dele: ausente é o
+   *  `padrao`, que é o de hoje bit a bit. */
+  calibracao?: CalibracaoDaLuz;
   dtS: number;
   psf: CalibracaoDaCasa;
   salto: boolean;
@@ -803,7 +808,7 @@ export class GiganteResolvido {
     // fora: o modelo dele é camada de partículas com função de fase.
     // A densidade do véu entra porque o Eyes amacia o terminador onde há
     // atmosfera: em Saturno o s cai a 2,8986; nos outros, 3 exato.
-    escreverLuzDaVisita(u, q.politica, densidadeDoVeu(this.idCorpo));
+    escreverLuzDaVisita(u, q.politica, densidadeDoVeu(this.idCorpo), q.calibracao);
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 
     if (this.anel && this.matAnel) {

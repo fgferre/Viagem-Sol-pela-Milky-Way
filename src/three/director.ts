@@ -39,7 +39,11 @@ import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { Orbitas, type QuadroEmPx } from './world/orbitas';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
-import { stopsDaVisita } from '../lib/atlas/luzDaVisita';
+import {
+  lerPortaCalibracao,
+  stopsDaVisita,
+  type CalibracaoDaLuz,
+} from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
 import type { VerDaEscada } from './selo';
 import { sondarGl } from '../lib/glProbe';
@@ -351,6 +355,9 @@ export class Director {
    * neutro por construção: não há superfície resolvida no filme.
    */
   private politicaDeLuz: PoliticaDeLuz = 'assistida';
+  /** `?calib=` — a calibração candidata do item 93 (porta de instrumento,
+   *  neutra; morre com a escolha dele). Ausente = o de hoje. */
+  private calibracaoDaLuz: CalibracaoDaLuz = 'padrao';
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
   private wrappedStars!: WrappedStars;
@@ -699,6 +706,9 @@ export class Director {
     // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
     // no default do Atlas, nunca num caminho terceiro.
     this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
+    // ?calib= — a calibração CANDIDATA do brilho assistido (item 93), pela
+    // mesma lei de porta: pedido inválido cai no padrão, que é o de hoje.
+    this.calibracaoDaLuz = lerPortaCalibracao(this.debug.get('calib')) ?? 'padrao';
     // (a porta `?bcede=` morreu no M1: a cessão do Sol-ponto é
     // `wResolvido` da repartição única — regra iv do §4 da Lei.)
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
@@ -2323,6 +2333,7 @@ export class Director {
       q.fovDeg = cam.fov;
       q.ligado = this.palco.ligado;
       q.politica = this.politicaDeLuz;
+      q.calibracao = this.calibracaoDaLuz;
       q.dtS = dt;
       q.psf = CALIBRACAO_DA_CASA;
       q.salto = this.saltoDeCamera;
