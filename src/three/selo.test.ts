@@ -286,8 +286,10 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91
     expect(v.brilho, 'o eixo continua REAL — a fotometria não foi tocada').toBe('real');
     expect(v.exposicao).toContain(`+${PASSOS_DA_EXPOSICAO_REAL} passos`);
     expect(v.exposicao).toContain('tempo de exposição');
-    // o preço que ele aceitou com a foto na mão, dito na frase
-    expect(v.exposicao).toContain('satura');
+    // o preço que ele aceitou com a foto na mão, dito na frase — "acende",
+    // não "satura": o instrumento mediu zero pixels saturados (achado do
+    // auditor da Q14; dizer "satura" desmentia o JSON da prova)
+    expect(v.exposicao).toContain('o céu ao fundo acende mais');
     // o número acompanha a lei: mudar o desenho muda a frase junto
     expect(COPY_EXPOSICAO_DO_REAL).toContain(`+${PASSOS_DA_EXPOSICAO_REAL}`);
   });

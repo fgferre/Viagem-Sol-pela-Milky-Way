@@ -197,13 +197,14 @@ export const COPY_LANTERNA_DE_LEITURA =
  *
  * O NÚMERO SAI DE {@link PASSOS_DA_EXPOSICAO_REAL}, nunca redigitado: se
  * o desenho mudar de +3 para outra coisa, a frase muda junto. E o preço
- * fica na frase porque ele o escolheu sabendo — *o campo estelar satura
- * mais* foi o que a coluna R1 da folha mostrou.
+ * fica na frase porque ele o escolheu sabendo — o campo estelar ACENDE
+ * mais (o instrumento mediu zero pixels saturados dos dois lados; dizer
+ * "satura" aqui desmentiria o próprio JSON da prova — achado do auditor).
  */
 export const COPY_EXPOSICAO_DO_REAL =
   `tempo de exposição +${PASSOS_DA_EXPOSICAO_REAL} passos: a foto do quadro é longa. ` +
   'A luz de cada mundo continua a física — o que abriu foi a chapa, e por isso ' +
-  'o céu ao fundo satura mais.';
+  'o céu ao fundo acende mais.';
 
 /**
  * O rótulo VIVO da linha `?luz=`: a copy leiga + o gasto do GLOBO em
