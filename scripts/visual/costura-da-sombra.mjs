@@ -248,11 +248,11 @@ function naFaseDaAncora({ centro, raio, L, P }, faseGraus, raiosAlvo) {
 export const VISTAS = {
   costura: { ancora: true, sufixo: '' },
   'costura-real': { ancora: true, sufixo: '&luz=real' },
-  // a UMBRA DE DURANGO: a `terra` pinada é a de 2024-04-08, e o núcleo do
-  // eclipse total cai nela. É a vista que o item 93 mediu em 2,80 de 255, e
-  // a que prova que a lanterna continua sendo mordida pelo ECLIPSE depois
-  // do S2 (que só tira dela a sombra do ANEL).
-  'terra-umbra': { url: comoPinada('terra') },
+  // O CORPO SEM ANEL: a `terra` pinada, no brilho assistido. Ela é a
+  // TESTEMUNHA do S1/S2 — a obra do item 104 mora inteira no fragmento do
+  // gigante, então um corpo sem anel tem de sair bit a bit igual dos dois
+  // lados. Se esta vista se mexer, a obra vazou para fora do lugar dela.
+  'terra-sem-anel': { url: comoPinada('terra') },
   'saturno-real': { url: `${query(camaraNaFase('saturno-anel', 67, 4, 'deitado'))}&luz=real` },
   'jupiter-real': { url: `${query(camaraNaFase('jupiter', 60))}&luz=real` },
   'mercurio-real': { url: `${query(camaraNaFase('mercurio', 0))}&luz=real` },
@@ -274,8 +274,8 @@ const PRANCHAS = [
   {
     arquivo: 'item104-costura',
     vista: 'costura',
-    lupa: { x: 470, y: 500 },
-    corte: { cx: 550, cy: 450, lado: 760 },
+    lupa: { x: 628, y: 468 },
+    corte: { cx: 545, cy: 450, lado: 760 },
     colunas: [
       ['antes', 'ANTES — a tira clara e o degrau de piso'],
       ['depois', 'DEPOIS — a sombra morre com o dia, no mesmo piso'],
@@ -285,7 +285,9 @@ const PRANCHAS = [
       'Câmera a 4 raios de Saturno, 60° fora do eixo Sol–Saturno, numa data em que o anel está bem aberto — a sombra dele cai no hemisfério OPOSTO ao Sol, e só numa data assim ela é larga o bastante para se medir (em 2026 o Sol está a 3° do plano e a sombra é um fio). Os dois lados têm o MESMO brilho assistido, a C1 que virou o padrão: o que muda entre eles é só a costura.',
       'Você disse: "precisa haver um fade gradual até a sombra, de forma seamless". O NASA Eyes faz isso sem rampa nenhuma — a sombra multiplica a luz que CHEGA, antes do terminador, então sombra e crepúsculo morrem juntos; e o piso da noite é somado fora de qualquer sombra, então a sombra e a noite descem para o MESMO chão.',
       'ANTES a casa fazia o contrário nos dois pontos: um fade por N·L matava a sombra na fronteira (e a luz vazada do terminador ficava acesa sozinha: a tira clara), e a lanterna de leitura era mordida pela sombra do anel (a sombra ficava ~10× mais escura que a noite ao lado: o degrau).',
-      'PERFIL MEDIDO (o número entra aqui depois da medição): capturas/item104-perfil.json.',
+      'O PERFIL MEDIDO, atravessando a sombra para a noite na linha y = 470, de x = 600 a x = 700 (41 amostras, janela 5×5, bytes de tela): ANTES o brilho desce a <b>5,03</b> e depois SOBE de novo até <b>14,91</b> — a tira clara, quase três vezes o fundo da sombra ao lado dela, com uma subida de 4,04 bytes entre amostras vizinhas. DEPOIS a mesma linha desce 36,52 → 6,03 sem voltar atrás uma única vez (maior subida 0,25, abaixo do meio-nível que o instrumento chama de mudança). Arquivo: capturas/item104-perfil.json.',
+      'O PISO VOLTOU PARA DENTRO DA SOMBRA: numa janela declarada de 25×25 em (540, 470), no meio da sombra do anel, o pixel vai de <b>11,02</b> para <b>33,15</b> (×3,0) — é a lanterna de leitura que a sombra comia. E a noite FORA da sombra não se mexe: em (660, 470), 8,22 → 8,08. As duas séries do perfil ficam idênticas byte a byte a partir de x = 655, onde a sombra do anel acaba. Arquivos: capturas/item104-piso.json e item104-noite-fora.json.',
+      'PAR NULO (a vista treme entre capturas, item 101): duas capturas do MESMO código devolvem a MESMA série no segmento medido, ao bit — o tremor está no quadro (618 px, Δmáx 99,5) e não na linha que decide. Arquivo: capturas/item104-ruido.json. E um corpo SEM anel (a Terra pinada) sai com o mesmo md5 dos dois lados: a obra não vazou do fragmento do gigante.',
     ],
   },
 ];
@@ -374,7 +376,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
  *  `diff-pixel.mjs` usa para contar com o decodificador de PNG dele */
 async function comporFolha(dirCru, dirSaida) {
   const { abrirSessao } = await import('./chrome.mjs');
-  const { semSobrescrever } = await import('./colar-da-fita.mjs');
+  const { semSobrescrever } = await import('./luz-ab.mjs');
   const { mkdtempSync, rmSync } = await import('node:fs');
   const { tmpdir } = await import('node:os');
   const larguraDaFolha = 1920;

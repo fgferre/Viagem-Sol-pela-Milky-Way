@@ -273,10 +273,10 @@ void main() {
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
   vec3 view = normSeguro(uCamLocal - pElip);
-  vec3 sombras =
-    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip);
+  vec3 eclipse = fatorDeEclipse(pElip, n, ndotlGeo);
+  vec3 sombras = eclipse * sombraDoAnel(pElip);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
-  vec3 fill = lanternaDeLeitura(n, view, sombras);
+  vec3 fill = lanternaDeLeitura(n, view, eclipse);
   gl_FragColor =
     vec4(globoComVeu(albedo, luzSol, fill, opacidadeDoVeu(dot(n, view))), 1.0);
 }

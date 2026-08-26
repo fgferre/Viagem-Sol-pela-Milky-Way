@@ -59,9 +59,10 @@
 //   b. LANTERNA DE LEITURA de 15 % na câmera — {@link LANTERNA_DE_LEITURA},
 //      o `toggleCameraLight(true, Color(0.15,0.15,0.15))` do default
 //      deles. A soma satura em 1: a lanterna lê a NOITE e não clareia o
-//      subsolar. Aqui ela RESPEITA as sombras do Sol, e é a única
-//      divergência da casa — a razão está medida em
-//      {@link GLSL_LUZ_DA_VISITA};
+//      subsolar. Aqui ela RESPEITA o eclipse, e é a única divergência da
+//      casa — a razão está medida em {@link GLSL_LUZ_DA_VISITA}. A sombra
+//      do ANEL saiu de dentro dela em 26/08 (item 104): piso de noite
+//      mordido por sombra não é piso, é degrau;
 //   c. TERMINADOR LOGÍSTICO s = 3 — {@link S_DO_TERMINADOR} e o
 //      `terminadorSuave` de {@link GLSL_LUZ_DA_VISITA}, o
 //      `MaterialUtilsPhong` deles. Flanco a N·L = 0,5 sobe de 0,50 para
@@ -128,11 +129,17 @@ import type { PoliticaDeLuz } from './luz';
  * 0,02 deles a casa recusa por doutrina (anti-padrões 3 e 9).
  *
  * NO EYES ELA NÃO SOFRE OCLUSÃO NENHUMA (a luz de câmera tem raio −1
- * lá). **A casa diverge**, e a razão está medida no cabeçalho de
- * {@link GLSL_LUZ_DA_VISITA}: ao pé da letra a lanterna INVERTE a umbra
- * de um eclipse total. Ela respeita as duas sombras do Sol e não perde
- * nada com isso — as duas valem 1 no lado noturno, que é onde ela
- * trabalha.
+ * lá). **A casa diverge em UM ponto, e só nele: o ECLIPSE**, e a razão
+ * está medida no cabeçalho de {@link GLSL_LUZ_DA_VISITA} — ao pé da letra
+ * a lanterna INVERTE a umbra de um eclipse total. Ela não perde nada com
+ * isso: o eclipse vale 1 no lado noturno, que é onde ela trabalha.
+ *
+ * A SOMBRA DO ANEL SAIU DE DENTRO DELA EM 26/08 (item 104, S2), e aí a
+ * casa VOLTOU para o contrato. Enquanto a sombra do anel mordia o fill, a
+ * sombra ficava ~10× mais escura que a noite logo ao lado: este termo é o
+ * PISO da noite — o equivalente do `ambientLightColor` deles —, e piso
+ * mordido por sombra deixa de ser piso comum. É a lei do 104: todo
+ * escurecimento é fator sobre o MESMO termo de luz, e o piso é comum.
  */
 export const LANTERNA_DE_LEITURA = 0.15;
 
@@ -408,8 +415,9 @@ export function uniformsDoVeu(id: string): Uniformes {
  * convenção de "Lambert cru" (o modo real), e o ramo devolve
  * `max(x, 0.0)`: o MESMO valor que o shader calculava antes desta obra.
  *
- * `lanternaDeLeitura` — o fill da câmera, JÁ multiplicado pelas sombras
- * do quadro. Ver a divergência declarada logo abaixo.
+ * `lanternaDeLeitura` — o fill da câmera, JÁ multiplicado pelo fator de
+ * ECLIPSE do quadro. Ver a divergência declarada logo abaixo — e o item
+ * 104, que em 26/08 tirou a sombra do ANEL de dentro dele.
  *
  * `luzDoGlobo` — a soma que satura em 1. O teto vale só para o que a
  * LANTERNA acrescenta: onde o Sol sozinho já passa de 1 — o modo `real`
@@ -440,13 +448,15 @@ export function uniformsDoVeu(id: string): Uniformes {
  * dente que ninguém pode morder.
  *
  * ------------------------------------------------------------
- * A DIVERGÊNCIA DECLARADA — a lanterna RESPEITA a sombra
+ * A DIVERGÊNCIA DECLARADA — a lanterna respeita o ECLIPSE, e só ele
  * ------------------------------------------------------------
  * O §4.2 do contrato manda a lanterna entrar "SEM eclipse e SEM sombra
  * de anel", porque no Eyes a luz de câmera tem raio −1 e nenhum oclusor
- * a alcança. **A casa diverge, e a foto é a razão.** Implementada ao pé
- * da letra, a lanterna não escurece a umbra: ela a INVERTE. Medido em
- * 25/08, no mesmo binário, com os dois caminhos:
+ * a alcança. **A casa divergia nos DOIS; em 26/08 (item 104, S2) a
+ * sombra do ANEL voltou para o contrato, e sobrou o eclipse.** A razão de
+ * ele ficar é a foto: implementada ao pé da letra, a lanterna não
+ * escurece a umbra — ela a INVERTE. Medido em 25/08, no mesmo binário,
+ * com os dois caminhos:
  *
  *   eclipse solar 08/04/2024, núcleo da umbra sobre Durango, de 255:
  *     item 91 . . . . . . . . . 2,76  contra 24,4 do vizinho  (8,8×)
@@ -466,11 +476,17 @@ export function uniformsDoVeu(id: string): Uniformes {
  * que o contrato recusa em quatro outras linhas (o ambiente 0,02, o
  * flood, o ×2 do anel, o Phong na Lua).
  *
- * O CONSERTO NÃO CUSTA NADA À LANTERNA. As duas sombras valem **1 no
- * lado noturno** por construção (a de eclipse tem o portão do lado
- * próximo e o fade pelo terminador; a do anel só existe com N·L > 0), e
- * a noite é justamente onde a lanterna trabalha. Ela perde exatamente o
- * que não devia ter: o direito de acender uma sombra.
+ * O CONSERTO NÃO CUSTA NADA À LANTERNA. O fator de eclipse vale **1 no
+ * lado noturno** por construção (portão do lado próximo mais o fade pelo
+ * terminador), e a noite é justamente onde a lanterna trabalha. Ela perde
+ * exatamente o que não devia ter: o direito de acender uma umbra.
+ *
+ * E POR QUE A SOMBRA DO ANEL NÃO SEGUE A MESMA REGRA: porque ela NÃO
+ * vale 1 na noite. A validade dela é geométrica (o raio até o plano do
+ * anel indo para o lado do Sol), e isso continua verdadeiro atravessando
+ * o terminador — então mordê-la aqui rebaixava o PISO de uma faixa da
+ * noite e criava o degrau do item 104. O eclipse não faz isso; o anel
+ * fazia. Não é gosto: é o que cada fator vale onde a lanterna trabalha.
  */
 export const GLSL_LUZ_DA_VISITA = /* glsl */ `
 uniform float uLanternaLeitura; // a dose da lanterna; 0 em real
@@ -482,8 +498,8 @@ float terminadorSuave(float x) {
   return clamp(2.0 * (1.0 + exp(-s)) / (1.0 + exp(-s * x)) - 1.0, 0.0, 1.0);
 }
 
-vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 sombras) {
-  return (uLanternaLeitura * clamp(dot(n, dirCam), 0.0, 1.0)) * sombras;
+vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 eclipse) {
+  return (uLanternaLeitura * clamp(dot(n, dirCam), 0.0, 1.0)) * eclipse;
 }
 
 vec3 daTelaParaLinear(vec3 c) {

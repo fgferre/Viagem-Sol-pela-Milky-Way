@@ -1029,13 +1029,34 @@ vez de *nada a desfazer*, e o tier abaixo de cinema trancava a luz em
 `real` para sempre. Gesto provado nos dois sentidos em navegador (prova
 **20** do `atlas-smoke`); história no ARQUIVO.
 
-**104. A transição da sombra dos anéis para a noite está mal feita — e o
-NASA Eyes tem o algoritmo do fade.** Palavras do dono, 26/08: *"precisa
-haver um fade gradual até a sombra, de forma seamless — isso deve se
-aplicar a qualquer transição de sombra para penumbra; é especialmente
-difícil porque tem de ter match, mas o NASA Eyes deve ter algum algoritmo
-que faz isso bem"*. Tem — e a engenharia reversa dos DOIS lados está
-feita (26/08, extratos em `/tmp/nasa-eyes-ss/globe-fragment.glsl`).
+**104. A transição da sombra dos anéis para a noite está mal feita — A
+OBRA POUSOU em 26/08, e o que falta é o olho dele.** Palavras do dono,
+26/08: *"precisa haver um fade gradual até a sombra, de forma seamless —
+isso deve se aplicar a qualquer transição de sombra para penumbra; é
+especialmente difícil porque tem de ter match, mas o NASA Eyes deve ter
+algum algoritmo que faz isso bem"*. Tem — e a engenharia reversa dos DOIS
+lados está feita.
+
+**AS DUAS ALEGAÇÕES DESTE ITEM FORAM CONFERIDAS NO NOSSO SHADER ANTES DE
+QUALQUER OBRA, e as duas se confirmaram:** o `smoothstep(0.0, 0.05,
+ndotl)` estava lá em `sombraDoAnel`, e a `lanternaDeLeitura` recebia o
+pacote `sombras` INTEIRO (eclipse × anel). O extrato do Eyes também foi
+relido linha a linha: a ordem deles é `incomingLight` mordido pelas
+sombras ANTES de `saturate(lightCosAngle)`, e o `ambientLightColor` entra
+como valor INICIAL de `diffuseLight`, isto é, fora de qualquer sombra —
+somar antes ou depois é a mesma soma, e o que importa é que ele não é
+multiplicado por sombra nenhuma. **OS EXTRATOS DE `/tmp/nasa-eyes-ss/`
+JÁ PODEM SER DESCARTADOS** (eles morrem no reboot de qualquer jeito): o
+que se precisava saber está destilado neste item e no contrato
+`docs/reference/nasa-eyes-brilho-assistido-contrato.md`.
+
+⚠ **UMA HONESTIDADE SOBRE A CÓPIA:** no Eyes o `shadowRings` é aplicado a
+TODAS as luzes do laço, inclusive a de câmera — lá quem garante o piso
+comum é o `ambientLightColor` chapado, que esta casa recusa por doutrina
+(anti-padrões 3 e 9). Aqui a lanterna FAZ o papel do piso, então tirar a
+sombra do anel de dentro dela é o que reproduz o resultado deles, não a
+letra. É adaptação declarada, e é a mesma família da divergência do
+eclipse que o item 93 já registra.
 
 **A CAUSA, MEDIDA NO NOSSO SHADER** (`sombraDoAnel` em
 `GLSL_SOMBRA_ANEL_NO_PLANETA`, `gigante.ts`; o `main` é o
@@ -1076,7 +1097,7 @@ feita (26/08, extratos em `/tmp/nasa-eyes-ss/globe-fragment.glsl`).
 escurecimento é fator multiplicativo sobre o MESMO termo de luz, e o piso
 da noite é comum — nunca multiplicado por sombra.
 
-**A OBRA (dois passos, um commit cada, com foto):**
+**A OBRA (dois passos, um commit cada, POUSADOS em 26/08):**
 
 - **S1 — Morre o fade de 0,05.** Em `sombraDoAnel`: sai o
   `smoothstep(0.0, 0.05, ndotl)` e sai o parâmetro `ndotl`; ficam a
@@ -1092,11 +1113,72 @@ da noite é comum — nunca multiplicado por sombra.
   passam a convergir para o mesmo piso de 15 % · N·V — o equivalente do
   `ambientLightColor` deles.
 
-**Prova (as duas juntas, na mesma prancha):** foto da sombra dos anéis
-CRUZANDO o terminador, antes × depois — o perfil de brilho atravessando
-sombra→noite tem de sair monótono, sem a tira clara do S1 e sem o salto
-de piso do S2. Par nulo obrigatório: a vista `saturno-anel`/`eclipse-limbo`
-treme textura entre capturas (item 101).
+**A ORDEM ESCOLHIDA NO GLSL, e por que a lei sobrevive à C1.** Com a C1 no
+padrão o piso da noite não é mais 15 % · N·V: é esse valor **TRADUZIDO**
+(0,0196 em linear). A ordem que o fragmento executa é, nesta sequência:
+
+> 1. as sombras multiplicam o termo do SOL — `eclipse × sombraDoAnel`;
+> 2. o terminador multiplica **o mesmo termo** (`terminadorSuave × ganho`);
+> 3. o PISO é somado, mordido só pelo eclipse (`lanternaDeLeitura`);
+> 4. a soma satura em 1;
+> 5. **a tradução cai UMA vez, no fim, sobre o composto inteiro.**
+
+O passo 5 é o que faz a lei valer depois dela: `daTelaParaLinear` é
+contínua e estritamente crescente, então leva um perfil monótono num
+perfil monótono e pisos iguais em pisos iguais — a costura provada em
+espaço de tela sobrevive intacta em linear. Traduzir as parcelas SEPARADAS
+e somar depois também casaria os pisos, mas daria outro DIA
+(T(a)+T(b) ≠ T(a+b)) e deixaria de ser *"o Eyes ao pé da letra"* que ele
+escolheu. Há dente disso em `luzDaVisita.test.ts` (bloco 10), que executa
+o chunk e mede a lei nos dois espaços.
+
+**A PROVA ESTÁ NA MESA — `capturas/item104-costura.png`.** As duas colunas
+têm o MESMO brilho assistido (a C1, que virou o padrão no mesmo dia): o
+que muda entre elas é só a costura. A vista é Saturno a 4 raios, 60° fora
+do eixo Sol–Saturno, numa data de anel bem aberto — e essa escolha de data
+tem razão medida: a sombra do anel cai sempre no hemisfério OPOSTO ao Sol,
+e nas vistas pinadas de 2024 ela simplesmente não aparece no globo (o
+terminador de lá sai num degradê liso, sem banda escura). Em 2026 o Sol
+está a ~3° do plano do anel e a sombra é um fio. A lei do item 91
+(*"sempre a data real"*) governa a VISITA que o app abre, não uma foto de
+diagnóstico. A câmera não saiu de número digitado à mão: para essa data
+não há vista pinada, então a âncora é MEDIDA no próprio app (`ancoraDoApp`
+em `scripts/visual/costura-da-sombra.mjs`, duas leituras de `?foco=` a 4 e
+a 8 raios resolvem o centro por álgebra — e o raio que sai delas bate com
+o cadastro de Saturno em seis casas).
+
+**OS NÚMEROS, todos em bytes de tela, todos com carimbo de código:**
+
+- **A TIRA CLARA (S1).** Perfil atravessando sombra→noite na linha
+  y = 470, de x = 600 a 700 (41 amostras, janela 5×5): **ANTES** o brilho
+  desce a **5,03** e SOBE de volta a **14,91** — quase três vezes o fundo
+  da sombra ao lado, com uma subida de 4,04 bytes entre amostras vizinhas.
+  **DEPOIS** a mesma linha desce 36,52 → 6,03 **sem voltar atrás uma única
+  vez** (maior subida 0,25, abaixo do meio-nível que o instrumento chama
+  de mudança). `capturas/item104-perfil.json`.
+- **O PISO (S2).** Janela declarada de 25×25 em (540, 470), no meio da
+  sombra do anel: **11,02 → 33,15** (×3,0) — é a lanterna de leitura que a
+  sombra comia. E a noite FORA da sombra não se mexe: em (660, 470),
+  8,22 → 8,08. As duas séries do perfil ficam **idênticas byte a byte a
+  partir de x = 655**, onde a sombra do anel acaba: a mudança está
+  confinada exatamente onde ela deve estar.
+  `item104-piso.json` e `item104-noite-fora.json`.
+- **PAR NULO** (a vista treme entre capturas, item **101**): duas capturas
+  do MESMO código devolvem a MESMA série no segmento medido, ao bit. O
+  tremor existe no quadro (618 px, Δmáx 99,5, média igual a três decimais)
+  e **não** na linha que decide. `item104-ruido.json`.
+- **A TESTEMUNHA DE FORA:** um corpo SEM anel — a `terra` pinada, no
+  brilho assistido — sai com o **mesmo md5** dos dois lados. A obra mora
+  inteira no fragmento do gigante e não vazou dele. É também o que
+  garante a umbra de Durango parada: o S2 só tirou da lanterna a sombra do
+  ANEL, e o `fatorDeEclipse` continua mordendo-a (decisão do item **95**).
+
+**A RÉGUA É NOVA E TEM JUIZ:** `luz-ab.mjs` ganhou o modo `perfil` — o
+cinza ao longo de um segmento declarado, com `maiorSubida` (a altura da
+tira clara), `monotona` e `maiorDegrau` —, com os três defeitos montados à
+mão em `luz-ab.test.mjs`. Um `par` diz QUANTO mudou e uma `janela` diz
+QUANTO VALE aqui; só o perfil diz COMO o brilho caminha de uma região à
+vizinha, que é a pergunta que ele fez.
 
 **NÃO SE MEXE / NÃO SE COPIA:** `terminadorSuave` (s = 3 é literalmente a
 fórmula deles, já copiada no item 93); o teto de 0,9 da sombra (o deles
@@ -1108,6 +1190,26 @@ temos penumbra física e eles são binários. Rochosos/Lua/Terra
 compartilham o padrão de luz (`luzDaVisita.ts`) mas só gigantes com anel
 têm `uAnelAtivo`; a lei do piso comum vale para qualquer corpo que um dia
 ganhe lanterna.
+
+**O QUE FALTA NESTE ITEM É O OLHO DELE.** A costura está costurada e
+medida; o que nenhum número decide é se a foto ficou como ele queria. As
+duas perguntas para a prancha `capturas/item104-costura.png`: **(a)** a
+passagem da sombra do anel para a noite está seamless agora? **(b)** com o
+piso de volta dentro da sombra, o desenho do anel projetado no globo — as
+faixas que a placa alpha escreve — está no ponto, ou ficou visível demais?
+
+**GUARDA-COSTAS:** o `PINO 104` de `gigante.test.ts` reprova se o
+`smoothstep` voltar ao `sombraDoAnel` (ele lê o CORPO da função, não o
+fragmento — o chunk do eclipse usa `smoothstep` de propósito) ou se a
+lanterna voltar a receber o pacote com a sombra do anel (ele amarra o
+ARGUMENTO da chamada à variável que veio do `fatorDeEclipse`). O bloco 10
+de `luzDaVisita.test.ts` executa a LEI no chunk e traz as duas reversões
+montadas à mão, para que "seamless" seja conta e não frase. **De carona,
+o 104 denunciou um guarda frouxo:** o de `rochoso.test.ts` que dizia
+cobrar `lanternaDeLeitura(..., sombras)` casava, na verdade, com a
+DECLARAÇÃO da função no chunk — as chamadas de lá têm um `)` no meio e
+nunca casaram. Renomear um parâmetro o derrubou sem que uma linha de
+shader mudasse; ele agora lê o `main` e amarra o argumento.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 

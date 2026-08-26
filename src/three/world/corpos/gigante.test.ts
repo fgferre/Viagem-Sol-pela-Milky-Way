@@ -115,15 +115,20 @@ describe('2. o needle dos GLSL montados', () => {
     expect(GIGANTE_LAMBERT_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
     expect(GIGANTE_LAMBERT_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
     expect(GIGANTE_LAMBERT_FRAG).toContain(
-      'vec3 sombras =\n    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip);'
+      'vec3 eclipse = fatorDeEclipse(pElip, n, ndotlGeo);'
+    );
+    expect(GIGANTE_LAMBERT_FRAG).toContain(
+      'vec3 sombras = eclipse * sombraDoAnel(pElip);'
     );
     // ITEM 93: a luz do Sol passa pela logística e SÓ DEPOIS a lanterna soma-se
     expect(GIGANTE_LAMBERT_FRAG).toContain(
       'vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;'
     );
-    // a LANTERNA leva as MESMAS sombras — a divergencia declarada do 93
+    // a LANTERNA leva o ECLIPSE, e SÓ ele (item 104, S2): a sombra do
+    // anel morde o termo do Sol e não o piso da noite
     expect(GIGANTE_LAMBERT_FRAG).toContain('vec3 view = normSeguro(uCamLocal - pElip);');
-    expect(GIGANTE_LAMBERT_FRAG).toContain('lanternaDeLeitura(n, view, sombras)');
+    expect(GIGANTE_LAMBERT_FRAG).toContain('lanternaDeLeitura(n, view, eclipse);');
+    expect(GIGANTE_LAMBERT_FRAG).not.toContain('lanternaDeLeitura(n, view, sombras)');
     // §4.4: o VÉU é a ÚLTIMA coisa, e quem o acende é `luzSol` — nunca a
     // soma com a lanterna. Este pino é o que segura a exclusão da luz de
     // câmera do véu no lugar onde ela se decide: o argumento.
@@ -144,16 +149,19 @@ describe('2. o needle dos GLSL montados', () => {
    * piso da noite é somado FORA de qualquer sombra.
    *
    * ESTE DENTE GUARDA A FIAÇÃO, que é o que se pode perder sem ninguém
-   * ver: `sombraDoAnel` não pode voltar a receber N·L — o
+   * ver: (1) `sombraDoAnel` não pode voltar a receber N·L — o
    * `smoothstep(0.0, 0.05, ndotl)` que morreu aqui matava a sombra na
    * fronteira e deixava o vazamento de 5 % do terminador ACESO sozinho,
-   * uma tira clara medida no perfil da prancha. A reversão é de UMA
-   * linha e não muda um tipo: sem este dente, ela compila.
+   * uma tira clara medida em ~65 bytes contra os ~8 da sombra ao lado; e
+   * (2) a lanterna não pode voltar a receber o pacote `sombras` — com a
+   * sombra do anel dentro dela o piso caía ~10× e a sombra ficava mais
+   * escura que a noite vizinha. As duas reversões são de UMA linha, e
+   * nenhuma delas muda um tipo: sem este dente, as duas compilam.
    *
    * O QUE ELE NÃO COBRA: o que o chunk FAZ com esses argumentos. Isso é
    * `luzDaVisita.test.ts`, que executa o GLSL e mede a lei do piso comum.
    */
-  it('PINO 104 (S1): a sombra do anel é só geométrica, sem fade por N·L', () => {
+  it('PINO 104: a sombra do anel é só geométrica, e a lanterna leva o eclipse', () => {
     // (1) a assinatura perdeu o N·L, e o CORPO da função não tem fade
     // nenhum. O recorte é a função, não o fragmento: o chunk do eclipse
     // usa `smoothstep` de propósito (o fade de terminador DELE, que é
@@ -172,6 +180,18 @@ describe('2. o needle dos GLSL montados', () => {
     expect(corpo).toContain('if (t <= 0.0) return 1.0;');
     expect(corpo).toContain('if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;');
 
+    // (2) o argumento da lanterna NÃO é o pacote que leva a sombra do anel
+    const main = GIGANTE_LAMBERT_FRAG.slice(GIGANTE_LAMBERT_FRAG.indexOf('void main()'));
+    const comAnel = /vec3 (\w+) = [^;]*sombraDoAnel\(/.exec(main);
+    expect(comAnel, 'ninguém multiplica a sombra do anel no `main`').not.toBeNull();
+    const daLanterna = /lanternaDeLeitura\(\s*\w+,\s*\w+,\s*(\w+)\s*\)/.exec(main);
+    expect(daLanterna, 'o `main` não chama mais a lanterna').not.toBeNull();
+    expect(daLanterna![1], 'a lanterna voltou a receber a sombra do anel')
+      .not.toBe(comAnel![1]);
+    // e o que ela recebe é o fator do eclipse, sozinho
+    expect(new RegExp(`vec3 ${daLanterna![1]} = fatorDeEclipse\\(`).test(main)).toBe(true);
+    // o termo do SOL, esse leva as duas: é sobre ele que os fatores caem
+    expect(main).toContain(`* uLuzGanho * ${comAnel![1]};`);
   });
 
   /**

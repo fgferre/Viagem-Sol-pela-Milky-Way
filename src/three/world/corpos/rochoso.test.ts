@@ -120,11 +120,23 @@ describe('2. o needle dos GLSL montados', () => {
         'vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;'
       );
     }
-    // A DIVERGENCIA DECLARADA do item 93: a lanterna leva as MESMAS
-    // sombras. Sem isso ela acenderia a umbra de um eclipse.
+    // A DIVERGENCIA DECLARADA do item 93: a lanterna leva o fator do
+    // ECLIPSE. Sem isso ela acenderia a umbra de um eclipse total.
+    //
+    // ⚠ ESTE GUARDA ESTAVA FROUXO ATÉ 26/08, e o item 104 o denunciou por
+    // acidente: o padrão era `/lanternaDeLeitura\([^)]*sombras\)/` sobre o
+    // fragmento INTEIRO, e quem o satisfazia era a DECLARAÇÃO da função no
+    // chunk (`vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 sombras)`),
+    // não a chamada — as chamadas daqui têm um `)` no meio
+    // (`normSeguro(...)`) e nunca casaram. Renomear o parâmetro do chunk
+    // fez o guarda cair sem que uma linha de shader tivesse mudado. Agora
+    // ele lê o `main` e amarra o ARGUMENTO à variável que veio do eclipse.
     for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_PROC_LS_FRAG,
       ROCHOSO_LAMBERT_FRAG, ROCHOSO_PROC_FRAG]) {
-      expect(frag).toMatch(/lanternaDeLeitura\([^)]*sombras\)/);
+      const corpo = frag.slice(frag.indexOf('void main()'));
+      const chamada = /lanternaDeLeitura\(\s*\w+,[^,]*,\s*(\w+)\s*\)/.exec(corpo);
+      expect(chamada, 'o `main` não chama a lanterna').not.toBeNull();
+      expect(new RegExp(`vec3 ${chamada![1]} = fatorDeEclipse\\(`).test(corpo)).toBe(true);
     }
   });
 
