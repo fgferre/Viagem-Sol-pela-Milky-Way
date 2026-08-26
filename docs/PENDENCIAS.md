@@ -33,7 +33,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 105.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 106.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **104** saiu em 26/08: a costura sombra do anel → noite, queixa dele.)*
 
@@ -463,6 +463,21 @@ mira. 61 vistas bit-idênticas, `atlas-smoke` com 171 vereditos, a11y
 verde. **O que sobra é o olho dele, no app, com o dedo e sem vídeo** — o
 que se julga aqui é TATO, e tato não se julga em gravação; se o que ele
 sentir não for o que a frase pedia, é item NOVO. História no ARQUIVO.
+
+**105.** A prova 19 do `atlas-smoke` (o toque duplo, no aparelho) falha de
+vez em quando, e não é do produto: é do INSTRUMENTO. Ela toca um ponto e
+usa o corpo mais próximo do toque; medido em 26/08, quatro corridas
+seguidas do mesmo binário deram três vezes *"Marte (vizinho a 39 px)"* e o
+toque duplo desceu ao degrau `corpo`, e uma vez *"Terra (vizinho a 76 px)"*
+com a câmera parada no `orbita` — o toque caiu longe demais do rótulo e
+não pegou ninguém. A falhada foi a PRIMEIRA depois de reiniciar o servidor
+de desenvolvimento (grafo de módulos frio, primeira carga mais lenta), o
+que casa com a teoria: o que muda é onde os rótulos assentam no instante
+do toque, não o gesto. A prova navega com URL e data pinadas e põe as
+próprias métricas, então nada da prova anterior vaza para ela. **O
+conserto é fazer a prova MIRAR um corpo em vez de tocar um ponto e aceitar
+quem estiver perto** — juiz que escolhe o próprio alvo mede coisas
+diferentes em corridas diferentes. Entra na dieta dos juízes (item 99).
 
 **103.** A porta do BRILHO no selo parou de virar — **FECHADO em 26/08**
 (`4ce0169`). **A calibração era inocente** (medido: o defeito reproduz
