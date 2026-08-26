@@ -589,10 +589,23 @@ com ZERO pixel diferente** — os quatro fragmentos que incluem o chunk da
 receita, incluindo o `GIGANTE_LAMBERT_FRAG` que Saturno compartilha.
 Saturno move 31 px de 990.000 com Δmáx **3,9**, contra um par nulo (o
 MESMO binário contra ele mesmo) de 9 px e Δmáx **4,1**
-(`item93-real-ruido.json`): é o tremor de textura do item 101, e a média
-do quadro fica em 4,791 dos dois lados. Júpiter, que compila o MESMO
-fragmento, sai em zero — o que separa a sombra do instrumento da sombra
-do código.
+(`item93-real-ruido.json`), e a média do quadro fica em 4,791 dos dois
+lados. Júpiter, que compila o MESMO fragmento, sai em zero — o que separa
+a sombra do instrumento da sombra do código.
+
+⚠ **A LEITURA HONESTA DESSES 31 px, corrigida em 26/08 por auditoria.**
+Até aqui esta linha dizia *"é o tremor de textura do item 101"*, e isso
+some com metade do fato. Os dois números dizem coisas diferentes: a
+**amplitude** está dentro da faixa do tremor (Δmáx 3,9 contra 4,1 do par
+nulo), mas a **contagem** está **3,4× acima** dela (31 contra 9). Um
+tremor não explica três vezes mais pixels; ele explica o tamanho de cada
+um. O que se pode afirmar é isso — mudança pequena em amplitude,
+espalhada por mais pixels do que o instrumento treme —, e não que a
+diferença seja ruído. A mesma forma reapareceu no item **104**
+(`costura-real`: 145 px contra um par nulo de 73, Δmáx 5,4 contra 5,9), e
+lá parte do tremor tinha CAUSA, não sorte: era o mip da placa do anel
+lido sob fluxo divergente. Consertado aquilo, o par nulo daquela vista é
+ZERO.
 
 **O VÉU PALHA NÃO SE MEXE.** *"a dose do Eyes está boa (sutil)"* — a §4.4
 do contrato fica exatamente como está, com os números do Eyes, e mudá-la
@@ -1116,6 +1129,27 @@ da noite é comum — nunca multiplicado por sombra.
   como está) e a sombra do anel não toca o fill. A sombra e a noite
   passam a convergir para o mesmo piso de 15 % · N·V — o equivalente do
   `ambientLightColor` deles.
+- **S3 — A BUSCA NA PLACA SAI DEBAIXO DOS `return`** (26/08 à tarde,
+  achado da auditoria independente com cinco medidas na mesa). Não é da
+  receita do Eyes: é um erro de GPU que estava ali dentro e que o S1
+  destapou. **O que ele fazia:** os dois `return 1.0` geométricos ficavam
+  ANTES do `texture2D(uMapaAnel, ...)`, e uma busca sem LOD escolhe o nível
+  da textura pela DERIVADA da coordenada — derivada que a placa de vídeo
+  mede no quadrado de 2×2 pixels que ela sombreia junto. Com metade do
+  quadrado já fora da função, a derivada é lixo: o nível escolhido é o topo
+  da pirâmide, isto é, a placa INTEIRA de uma vez (alpha médio 0,5957), e a
+  função devolve `1 − 0,5957·0,9 = 0,464` num pixel de pleno dia. **O que
+  se via:** um ARCO DE PONTINHOS no lado do dia, no nível 0,464 medido. **E
+  o que era pior que feio:** como o valor lido vem de um registrador que
+  ninguém escreveu, ele muda a cada execução — o quadro deixou de ser
+  repetível (ver o PAR NULO, abaixo). **O conserto** é a ORDEM, e é o
+  padrão que o próprio `gigante.ts` já usa no `ANEL_FRAG`: `hit`, `r`, `u`
+  e a busca calculam-se INCONDICIONALMENTE, com `clamp(u, 0, 1)`, e as duas
+  recusas geométricas caem DEPOIS. Os dois `if` que ficam antes da busca
+  são de UNIFORME (`uAnelAtivo`, `uDirSolLocal.y`), iguais para o quadrado
+  inteiro, e não partem nada. **O que o conserto mudou no quadro:** 688 px
+  de 990.000, e **683 deles GANHARAM luz** (só 5 perderam) — os pontinhos
+  escuros sendo apagados, Δmáx 99,7. `item104-conserto-v2.json`.
 
 **A ORDEM ESCOLHIDA NO GLSL, e por que a lei sobrevive à C1.** Com a C1 no
 padrão o piso da noite não é mais 15 % · N·V: é esse valor **TRADUZIDO**
@@ -1136,7 +1170,14 @@ e somar depois também casaria os pisos, mas daria outro DIA
 escolheu. Há dente disso em `luzDaVisita.test.ts` (bloco 10), que executa
 o chunk e mede a lei nos dois espaços.
 
-**A PROVA ESTÁ NA MESA — `capturas/item104-costura.png`.** As duas colunas
+**A PROVA ESTÁ NA MESA — `capturas/item104-costura-v2.png`, E É ELA QUE
+VALE.** A primeira prancha (`item104-costura.png`, 26/08 de manhã) ficou em
+disco como testemunha, mas foi capturada com o defeito da placa descrito
+logo abaixo ainda vivo; a `-v2` é do binário consertado, e é a que o olho
+dele julga. Os JSON da medida seguem a mesma regra: os `-v2`
+(`item104-perfil-v2`, `-piso-v2`, `-noite-fora-v2`, `-parnulo-v2`,
+`-parnulo-antes-v2`, `-conserto-v2`, `-real-v2`) são os que valem; os sem
+sufixo são a medida anterior, guardada. As duas colunas
 têm o MESMO brilho assistido (a C1, que virou o padrão no mesmo dia): o
 que muda entre elas é só a costura. A vista é Saturno a 4 raios, 60° fora
 do eixo Sol–Saturno, numa data de anel bem aberto — e essa escolha de data
@@ -1159,18 +1200,34 @@ o cadastro de Saturno em seis casas).
   da sombra ao lado, com uma subida de 4,04 bytes entre amostras vizinhas.
   **DEPOIS** a mesma linha desce 36,52 → 6,03 **sem voltar atrás uma única
   vez** (maior subida 0,25, abaixo do meio-nível que o instrumento chama
-  de mudança). `capturas/item104-perfil.json`.
+  de mudança). `capturas/item104-perfil-v2.json` — e o perfil do DEPOIS
+  saiu **campo por campo igual** ao da medida da manhã, isto é, o conserto
+  da placa não tocou a costura.
 - **O PISO (S2).** Janela declarada de 25×25 em (540, 470), no meio da
   sombra do anel: **11,02 → 33,15** (×3,0) — é a lanterna de leitura que a
   sombra comia. E a noite FORA da sombra não se mexe: em (660, 470),
   8,22 → 8,08. As duas séries do perfil ficam **idênticas byte a byte a
   partir de x = 655**, onde a sombra do anel acaba: a mudança está
   confinada exatamente onde ela deve estar.
-  `item104-piso.json` e `item104-noite-fora.json`.
-- **PAR NULO** (a vista treme entre capturas, item **101**): duas capturas
-  do MESMO código devolvem a MESMA série no segmento medido, ao bit. O
-  tremor existe no quadro (618 px, Δmáx 99,5, média igual a três decimais)
-  e **não** na linha que decide. `item104-ruido.json`.
+  `item104-piso-v2.json` e `item104-noite-fora-v2.json` (os dois campo por
+  campo iguais aos da manhã).
+- **PAR NULO — e a atribuição dele foi CORRIGIDA em 26/08.** A leitura da
+  manhã dizia "618 px, Δmáx 99,5, é o tremor da vista (item 101)". Metade
+  disso era outra coisa. Medido agora, mesmo instrumento, mesma câmera:
+  o lado **ANTES** da obra já dava **292 px** (Δmáx 104,9,
+  `item104-parnulo-antes-v2.json`); o lado DEPOIS, com o defeito da placa
+  solto, deu os **618 px**; e com a busca consertada o par nulo é
+  **ZERO — o mesmo md5, pixel por pixel** (`item104-parnulo-v2.json`). O
+  tremor tinha CAUSA, e a causa era código. O que restar do item **101**
+  depois disto é o que aquele item continua guardando.
+- **O `?luz=real`, dito com os DOIS números.** `costura-real`, antes ×
+  depois: **145 px** de 990.000, Δmáx **5,4**, média do quadro igual aos
+  três decimais (11,918 dos dois lados). O par nulo do lado ANTES é de
+  **73 px**, Δmáx **5,9**. Isto é: em **amplitude** a mudança está dentro
+  da faixa do tremor daquele lado, e em **contagem** está **2,0× acima**
+  dela. As duas frases são necessárias; dizer só a primeira seria chamar a
+  obra de ruído, e só a segunda seria chamá-la de mudança visível.
+  `item104-real-v2.json`.
 - **AS DUAS TESTEMUNHAS, e elas dizem coisas diferentes.** A `terra`
   pinada (outro fragmento) e **Júpiter** (o MESMO
   `GIGANTE_LAMBERT_FRAG` de Saturno, só que sem anel aceso) saem as duas
@@ -1202,7 +1259,7 @@ ganhe lanterna.
 
 **O QUE FALTA NESTE ITEM É O OLHO DELE.** A costura está costurada e
 medida; o que nenhum número decide é se a foto ficou como ele queria. As
-duas perguntas para a prancha `capturas/item104-costura.png`: **(a)** a
+duas perguntas para a prancha `capturas/item104-costura-v2.png`: **(a)** a
 passagem da sombra do anel para a noite está seamless agora? **(b)** com o
 piso de volta dentro da sombra, o desenho do anel projetado no globo — as
 faixas que a placa alpha escreve — está no ponto, ou ficou visível demais?
@@ -1211,9 +1268,30 @@ faixas que a placa alpha escreve — está no ponto, ou ficou visível demais?
 `smoothstep` voltar ao `sombraDoAnel` (ele lê o CORPO da função, não o
 fragmento — o chunk do eclipse usa `smoothstep` de propósito) ou se a
 lanterna voltar a receber o pacote com a sombra do anel (ele amarra o
-ARGUMENTO da chamada à variável que veio do `fatorDeEclipse`). O bloco 10
+ARGUMENTO da chamada à variável que veio do `fatorDeEclipse`), e desde
+26/08 também se a busca na placa voltar para DEPOIS das recusas
+geométricas — o defeito do S3, que nenhum outro dente enxergava. O bloco 10
 de `luzDaVisita.test.ts` executa a LEI no chunk e traz as duas reversões
-montadas à mão, para que "seamless" seja conta e não frase. **De carona,
+montadas à mão, para que "seamless" seja conta e não frase.
+
+⚠ **O PINO SOZINHO NÃO FECHAVA O S2, e a auditoria provou como.** Ele
+amarra o ARGUMENTO da chamada, não o USO do resultado: a sabotagem
+
+> `vec3 piso = lanternaDeLeitura(n, view, eclipse);`
+> `vec3 fill = piso * sombraDoAnel(pElip);`
+
+passa pelos 2.377 testes verdes e devolve o piso de 11,02 dentro da
+sombra — o "antes" do item, ao centésimo. O buraco fechou com um SEGUNDO
+ANDAR do instrumento: `pixelDoGigante`, em `luzDaVisita.test.ts`, arranca o
+corpo do `void main()` do próprio `GIGANTE_LAMBERT_FRAG` e o EXECUTA, com
+as peças de verdade do chunk e com a geometria e as duas sombras entrando
+como os escalares que são. Sobre ele estão a lei (dentro da sombra o pixel
+é o MESMO da noite ao lado, bit a bit, com o véu de Saturno aceso) e as
+DUAS formas de desfazer o S2 — no argumento e no resultado —, cada uma
+conferida antes de medir para que uma mordida que não mordeu não passe por
+prova. Medido nos dois casos aplicando a sabotagem ao `gigante.ts` de
+verdade: a do argumento reprova 6 testes, a do resultado reprova 4, e sem
+o andar novo esta última reprovava ZERO. **De carona,
 o 104 denunciou um guarda frouxo:** o de `rochoso.test.ts` que dizia
 cobrar `lanternaDeLeitura(..., sombras)` casava, na verdade, com a
 DECLARAÇÃO da função no chunk — as chamadas de lá têm um `)` no meio e
@@ -2325,6 +2403,26 @@ está fora de suspeita (pose bit a bit igual nas duas navegações); o
 suspeito de sempre é textura chegando em estados diferentes. Enquanto
 viver, um A/B pode acusar essas vistas em falso — a prova de inocência é
 o par nulo (o mesmo lado contra ele mesmo), que já pegou este.
+
+**PARTE DISTO TINHA CAUSA, E A CAUSA CAIU EM 26/08 (item 104, S3).** O
+`sombraDoAnel` de `gigante.ts` lia a placa do anel com a busca DEPOIS dos
+`return` geométricos, e uma busca sem LOD sob quadrado partido escolhe o
+nível da textura por uma derivada de lixo — valor que muda **a cada
+execução**. Isso é exatamente "a mesma vista, o mesmo código, dois
+quadros diferentes", e caía "na caixa sobre a linha do anel e a sombra
+dela no globo", que é onde este item sempre apontou. Consertada a ordem,
+o par nulo da vista da costura foi de 618 px a **ZERO**, e as quatro
+vistas desta lista deram **0 px** numa medição de duas capturas cada
+(`capturas/item104-parnulo-vistas101-v2.json`).
+
+⚠ **ISSO NÃO FECHA O ITEM, e a razão é o controle.** A `eclipse-limbo`
+também deu zero — e ela não tem anel nenhum, logo o conserto do S3 não
+pode explicá-la. Somado ao que o próprio item já diz (o número é
+estocástico: a `foco-titan` deu 605 numa medição e 262 noutra), duas
+capturas por vista não enterram o fenômeno. O que ficou PROVADO é que a
+família de Saturno carregava, além do tremor, um defeito de código; o que
+sobrar do tremor continua vivendo aqui, e a régua continua sendo o par
+nulo.
 
 ---
 

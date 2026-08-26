@@ -203,7 +203,12 @@ const FASE_DA_COSTURA = 60;
  */
 async function ancoraDoApp(app, id, jd) {
   const { abrirSessao, esperarAssentar } = await import('./chrome.mjs');
-  const sessao = await abrirSessao({ janela: `${LARGURA}x${ALTURA}`, prefixo: 'ancora' });
+  // O `app` DA LINHA DE COMANDO VALE TAMBÉM AQUI. Até 26/08 este argumento
+  // era recebido e largado, e a âncora saía sempre do dev server padrão —
+  // isto é, de OUTRO binário que não o que a leva estava fotografando. Numa
+  // árvore compartilhada (dois editores, obras diferentes em curso) isso é
+  // medir a câmera num código e o quadro noutro.
+  const sessao = await abrirSessao({ janela: `${LARGURA}x${ALTURA}`, app, prefixo: 'ancora' });
   try {
     const camEm = async (d) => {
       await sessao.ir(`foco=${id}&ver=corpo&d=${d}&jd=${jd}&corpos=1&shot=2`);
@@ -292,7 +297,9 @@ const PRANCHAS = [
       'ANTES a casa fazia o contrário nos dois pontos: um fade por N·L matava a sombra na fronteira (e a luz vazada do terminador ficava acesa sozinha: a tira clara), e a lanterna de leitura era mordida pela sombra do anel (a sombra ficava ~10× mais escura que a noite ao lado: o degrau).',
       'O PERFIL MEDIDO, atravessando a sombra para a noite na linha y = 470, de x = 600 a x = 700 (41 amostras, janela 5×5, bytes de tela): ANTES o brilho desce a <b>5,03</b> e depois SOBE de novo até <b>14,91</b> — a tira clara, quase três vezes o fundo da sombra ao lado dela, com uma subida de 4,04 bytes entre amostras vizinhas. DEPOIS a mesma linha desce 36,52 → 6,03 sem voltar atrás uma única vez (maior subida 0,25, abaixo do meio-nível que o instrumento chama de mudança). Arquivo: capturas/item104-perfil.json.',
       'O PISO VOLTOU PARA DENTRO DA SOMBRA: numa janela declarada de 25×25 em (540, 470), no meio da sombra do anel, o pixel vai de <b>11,02</b> para <b>33,15</b> (×3,0) — é a lanterna de leitura que a sombra comia. E a noite FORA da sombra não se mexe: em (660, 470), 8,22 → 8,08. As duas séries do perfil ficam idênticas byte a byte a partir de x = 655, onde a sombra do anel acaba. Arquivos: capturas/item104-piso.json e item104-noite-fora.json.',
-      'PAR NULO (a vista treme entre capturas, item 101): duas capturas do MESMO código devolvem a MESMA série no segmento medido, ao bit — o tremor está no quadro (618 px, Δmáx 99,5) e não na linha que decide. Arquivo: capturas/item104-ruido.json. E um corpo SEM anel (a Terra pinada) sai com o mesmo md5 dos dois lados: a obra não vazou do fragmento do gigante.',
+      'UM DEFEITO A MAIS, ACHADO PELA AUDITORIA E CONSERTADO NO MESMO DIA: a busca da placa do anel (<b>texture2D</b>) ficava DEPOIS dos <b>return</b> que recusam o pixel, e uma busca sem LOD escolhe o nível da textura pela derivada medida no quadrado de 2×2 pixels que a placa de vídeo sombreia junto. Com metade do quadrado já fora da função, essa derivada é lixo — e saía um ARCO DE PONTINHOS no lado do dia, num nível fixo de 0,464. Pior: o valor lido muda a cada execução, então o quadro deixou de ser repetível. Agora a busca vem primeiro e as recusas depois.',
+      'PAR NULO — duas capturas do MESMO binário, que é como se separa mudança de tremor. ANTES da obra o par nulo já dava <b>292 px</b> (Δmáx 104,9); com o fade removido e o defeito da placa solto ele foi a <b>618 px</b> (Δmáx 99,5); com a busca consertada ele é <b>ZERO — o mesmo md5, pixel por pixel</b>. Arquivos: capturas/item104-parnulo-v2.json e item104-parnulo-antes-v2.json. Isto muda a conta do "antes": parte do que se lia como tremor da vista era este defeito, e o que sobrar dele é o que o item 101 continua guardando.',
+      'E A OBRA NÃO VAZOU: Júpiter compila o MESMO fragmento sem anel aceso, e a Terra é outro fragmento — as duas saem com o md5 idêntico ao do código anterior, zero pixel.',
     ],
   },
 ];
@@ -337,8 +344,8 @@ function paginaDaPrancha(p, dirCru, largura) {
   <div class="cols">${fileira(p.vista, p.colunas, p.corte, true)}</div>
   <div class="lupa">${segunda.rotulo}</div>
   <div class="cols">${segunda.html}</div>
-  <footer>Quadros crus em capturas/item104-cru/ · recompõe-se com
-    <b>node scripts/visual/costura-da-sombra.mjs --folha</b> · o perfil mede-se com
+  <footer>Quadros crus em ${dirCru} · recompõe-se com
+    <b>node scripts/visual/costura-da-sombra.mjs --folha ${dirCru}</b> · o perfil mede-se com
     <b>luz-ab.mjs perfil</b></footer>`;
 }
 
