@@ -1082,6 +1082,12 @@ commit e uma foto por passo:
    a mesma expressão pinada no GLSL. Sobrevivem, conferidos um a um: o
    `discard` do USE_DASH, o corte no near plane, o `resolution`
    automático e o `raycast` do L5.
+   **CUIDADO AO LER O JSON:** `capturas/item83-b2-{antes,depois}.json`
+   guardam a medida que CADA lado fez nas pontas que ELE achou, e a ponta
+   anda um ou dois pixels entre os dois — lidos ingenuamente, eles
+   desmentem o parágrafo abaixo. **O veredito é o da passada
+   `--prancha`**, que mede os DOIS lados nos endereços do ANTES; é ele
+   que está na foto, e são esses os números daqui.
    **A FOTO:** `capturas/item83-b2-dobra.png` — zoom 6×, vista de
    PERFIL (40 UA no equinócio vernal), estrelas e Sol removidos por
    subtração de um quadro com `&noorbitas=1`. Nas três pontas de fuso
@@ -1098,17 +1104,23 @@ commit e uma foto por passo:
    B3) ou algo que ainda não foi medido, e volta com foto.
    Instrumento novo: `scripts/visual/dobra-da-fita.mjs`.
 3. **B3 — A PRANCHA ESTÁ PRONTA E ESPERA O OLHO DELE:**
-   `capturas/item83-b3-cores.png`, 3 colunas de cor × 2 linhas de alpha
+   `capturas/item83-b3-cores-v2.png` (a v1 fica ao lado, sem as amostras
+   de cor nem o achado), 3 colunas de cor × 2 linhas de alpha
    (0,32 / 0,75), na ABERTURA DO ATLAS. **Nada disto virou código** — a
    escolhida vira, em commit próprio.
    **A causa do "sem graça", medida:** a fotometria normaliza no canal
    mais forte, então TODAS as nove saem com um canal em 1,000, e o que o
    olho recebe (em sRGB, que é a régua certa para uma queixa de cor) é
    creme quase branco: Mercúrio `#ffddbc`, Vênus `#ffede3`, Marte
-   `#ffbe89`, Júpiter `#fff9df`, Saturno `#ffe3ba`, Plutão `#ffe6cf` — e
+   `#ffbe8a`, Júpiter `#fff9df`, Saturno `#ffe3ba`, Plutão `#ffe6cf` — e
    a **Terra sai quase branca**, `#fef3ff`, com saturação **0,10**.
    Só Urano `#b0f6ff` e Netuno `#a8ebff` escapam do creme, e escapam
-   para o mesmo azul claro.
+   para o mesmo azul claro. **Os nove saem do conversor do three em
+   precisão CHEIA**, e isso importou por um byte: arredondar o triplo
+   linear a três casas ANTES de converter dá `#ffbe89` em Marte, e só
+   nele. A prancha entregue traz esse `#ffbe89` na etiqueta de Marte —
+   um byte de arredondamento numa legenda, que não muda a amostra nem a
+   escolha; o número certo é o de cima.
    As três colunas: **(i)** a fotometria de hoje; **(ii)** a tabela de
    design deles VERBATIM — Mercúrio `#9768ac`, Vênus `#b07919`, Terra
    `#0099cc`, Marte `#9a4e19`, Júpiter `#da8b72`, Saturno `#d5c187`,
@@ -1186,7 +1198,13 @@ que o olho lê é **junta limpa + borda macia**. `sqrt(1−u²)` está
 **proibido** — era a leitura errada de 24/08. `Line2` **não** troca um
 pixel: é o mesmo `LineMaterial` com as mesmas calotas.
 
-**Já feito, NÃO SE TOCA:** `conicaOsculadora`, `escreverLaco` (256 em
+**Já feito, NÃO SE TOCA — e isto congela COMPORTAMENTO, não FONTE.** A
+lista abaixo protege o que essas peças FAZEM: quem as reescrever tem de
+devolver o mesmo desenho e os mesmos números. Estender o corpo de uma
+delas para servir a um passo novo — como `espelharNaFita` passou a
+escrever os dois vizinhos no B2, sem mexer no que já escrevia — não é
+violação; trocar a álgebra, a contagem de pontos ou o frame, é.
+`conicaOsculadora`, `escreverLaco` (256 em
 anomalia excêntrica), lua no frame do pai, cor por fotometria,
 `alfaDa` (fade angular + corte com a câmera dentro do laço), L1
 (`realce` do foco), L2 (`LARGURA_DA_FITA_PX = 1,25` CSS, o número
