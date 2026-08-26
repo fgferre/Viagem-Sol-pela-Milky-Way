@@ -680,9 +680,18 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
  * (`planeta-pixel.mjs`) ler o bloco do `?dbgplan` DO MESMO carregamento que
  * produziu o PNG: previsto e medido têm de vir do mesmo quadro, senão a
  * comparação de 0,5 px compara duas cenas.
+ *
+ * `aoAssentar` é o gancho ENTRE o assentamento e o obturador — recebe
+ * `{ send }` e o que devolver volta no campo `mexeu`. Existe porque há
+ * defeito que SÓ aparece com a cena em movimento (o colar da fita, item
+ * 83 · A1), e a prontidão do app é justamente "parou de mudar": sem um
+ * ponto depois dela, a única foto possível seria a da cena parada, que a
+ * regra 7 do `AGENTS.md` proíbe usar como prova de coisa que se move.
+ * Ausente (o padrão), a captura é a de sempre, byte a byte.
  */
 export async function capturarCDP({
   url, largura, altura, porta, quadros = 700, teto = 300000, coletar = null, dpr = null,
+  aoAssentar = null,
 }) {
   const perfil = resolve(tmpdir(), `cdp-${process.pid}-${porta}`);
   const { encerrar } = lancarChrome({
@@ -753,10 +762,13 @@ export async function capturarCDP({
       + (capa.estado === 'ausente' ? '' : ` (+${(capa.ms / 1000).toFixed(1)}s)`)
       + '\n'
     );
+    // O GANCHO, e ele vem DEPOIS da capa de propósito: o que ele mexe é
+    // a cena que já assentou, e não a tela de carga por cima dela.
+    const mexeu = aoAssentar ? await aoAssentar({ send }) : null;
     const shot = await send('Page.captureScreenshot', { format: 'png' });
     const buf = Buffer.from(shot.data, 'base64');
     if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
-    return { png: buf, via: assentou.via, ms: assentou.ms, fase: assentou.fase, capa, linhas };
+    return { png: buf, via: assentou.via, ms: assentou.ms, fase: assentou.fase, capa, linhas, mexeu };
   } finally {
     socket?.fechar();
     await encerrar({ carencia: 400 });
