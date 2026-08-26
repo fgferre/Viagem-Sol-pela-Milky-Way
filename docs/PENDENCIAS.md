@@ -214,9 +214,24 @@ que ele escolheu na Q14) e o **93** (o brilho assistido pelo algoritmo do
 Eyes), que fecha porque **nada mais restava dentro dele**: receita aprovada
 por ele em 25/08, calibração escolhida na Q13, padrão embarcado com a porta
 `?calib=` morta, e a ressalva conferida no 104. A história dos quatro está
-no ARQUIVO, verbatim e com o número intacto. **Total aposentado em 26/08:
-QUATRO números** (91, 93, 103, 104) — e o **próximo número livre continua
-105**, porque nenhum destes fechos abriu obra nova.
+no ARQUIVO, verbatim e com o número intacto.
+
+**E O QUINTO FECHOU À TARDE, POR DECISÃO DELE NO CHAT: o 102** (o giro em
+volta do objeto focado). Ele não escolheu nenhum dos dois lados que o
+vídeo A/B ia filmar — mandou um terceiro caminho, e a frase é a lei:
+*"quero que seja navegação livre e sem travas para qualquer dos lados sem
+nenhum limitador de angulo ou coisa parecida"*, mais *"podemos colocar um
+botao de zerar orientacao, assim como o google maps tem um botao de
+norte"*. O dedo virou QUATERNION em torno dos eixos da TELA, a porta
+`?giro=` morreu com os DOIS ramos antigos, e nasceu a bússola. **O vídeo
+A/B do P4 não vai ser gravado** — ele decidiu antes, e o instrumento que
+existia para filmá-lo saiu junto. **O que sobra é o dedo dele no app, sem
+vídeo:** o que se julga é TATO, e tato não se julga em gravação; se o que
+ele sentir não for o que a frase pedia, é item NOVO.
+
+**Total aposentado em 26/08: CINCO números** (91, 93, 102, 103, 104) — e o
+**próximo número livre continua 105**, porque nenhum destes fechos abriu
+obra nova.
 
 ---
 
@@ -436,282 +451,18 @@ de filmes é rodada longa, e emagrecer os portões antes dela paga a obra em uma
 semana. A prova de saída: o preço da rodada padrão medido antes/depois, e o
 censo publicado com cada morte justificada (nenhum juiz morre em silêncio).
 
-**102. Girar em volta do objeto selecionado é péssimo — e o NASA Eyes faz
-melhor.** (Aberto em 25/08, queixa dele com o Eyes como régua. Palavras
-dele: *"o movimento de rotacionar objetos selecionados do app é
-péssimo... porque somos diferentes do nasa eyes nisso?"*.)
-
-**ONDE ESTÁ: OS QUATRO PASSOS POUSARAM em 26/08** (um commit cada, com a
-medida dentro). **O QUE FALTA É SÓ O OLHO DELE, e é sobre o P4.** O P4
-(a volta no polo do corpo) pousou ATRÁS DE UMA PORTA de instrumento,
-`?giro=polo`, com o DEFAULT continuando a ser a lei de sempre — porque
-ele COBRA UM PREÇO: girar a `lon` gira a sombra junto, e a iluminação
-deixa de ser fixa na vista, que era o que a `volta` antiga protegia. É
-decisão de desenho, e a receita já dizia como se decide: vídeo A/B do
-mesmo arrasto nos dois lados, e ele escolhe. **A PROMESSA:** escolhido o
-polo, a porta morre e o polo vira o único caminho (o ramo `sol` sai
-junto); recusado, o ramo `polo` sai inteiro. Porta de instrumento não
-envelhece em produção — a jurisprudência é o `?calib=`. **Os quatro não
-mudam um pixel de vista parada** — as 61 vistas do `ab-identidade`
-saíram BIT-IDÊNTICAS entre o `45843ca` e o `899ac94` (P1–P3) e de novo
-no P4, em DOIS pareamentos: sem a porta e com `?giro=polo` LIGADO nas 61.
-O `atlas-smoke` fechou verde com 164 vereditos (a prova 21, do gesto
-vivo, é nova).
-
-**A CAUSA, medida dos dois lados no mesmo dia** (engenharia reversa do
-bundle deles, leitura do nosso caminho). O giro deles é gostoso por
-quatro peças que aqui faltam ou são diferentes:
-
-1. **Inércia. A deles existe; a nossa, não.** Lá, TODO delta de arrasto
-   passa por um filtro exponencial por quadro (`novo = 0,2·entrada +
-   0,8·anterior`, morto abaixo de 1e-4): o mesmo filtro é a suavização
-   e a inércia — ao soltar o dedo, o giro morre macio. Aqui
-   `addOrbitDelta` (`cinematic/atlasRig.ts`) soma seco no acumulador:
-   a câmera segue o dedo 1:1 e **para seca**. E a ~40 fps (o app é
-   GPU-bound no M1), 1:1 sem filtro lê serrilhado. Detalhe que dói: o
-   nosso ZOOM já tem inércia completa (`zoomDaRoda.ts`); o giro, não —
-   dois gestos do mesmo modo com tatos opostos.
-2. **O eixo do giro.** Lá é lat/lon na esfera em torno do corpo, com a
-   volta em volta do **polo do corpo** (turntable) e a subida travada a
-   ±(90°−1e-4): o polo nunca se cruza, o horizonte nunca faz flip.
-   Aqui a `volta` gira em torno da **linha alvo→Sol**
-   (`OrbitaDoVisitante`, `cinematic/enquadramento.ts`): na pose de
-   repouso (30° da linha) lê-se quase um roll; o efeito escala com
-   sen(φ) e o arrasto horizontal fica **literalmente morto** perto da
-   fase cheia e da nova; e ao passar perto do polo a cedência do `up`
-   (`upDoAtlas`) gira o roll da tela no meio do gesto. A escolha foi
-   deliberada — preserva o ângulo de iluminação, diz o docstring —,
-   mas cobra esse preço. Trocar de eixo mexe na iluminação da vista;
-   **é decisão de desenho, registrar aqui quando tomada.**
-3. **Perto do solo, devagar.** Lá o giro desacelera ao raspar a
-   superfície (fator altura/raio). Aqui o ganho é fixo
-   (`ARRASTO_RAD_POR_PX`) a qualquer distância.
-4. **Janela de toque.** Lá, enquanto o gesto cabe em 5 px e 0,5 s o
-   delta de arrasto é **zero à força** — um toque nunca dá tranco.
-   Aqui a zona morta é descartada e o resto entra com ganho, e um
-   arrasto "fracassado" ainda pode virar clique que re-mira a câmera
-   (`gestos.ts`).
-
-**O QUE SE COPIA — a mecânica, não o código:** o filtro 0,8 no caminho
-do giro (um estado por eixo, cortado em 1e-4, **com correção de
-delta-time** — o deles é por quadro e depende do fps; o nosso não
-pode); a volta no polo do corpo com a subida travada (ver a decisão de
-iluminação acima); a desaceleração perto do solo; a janela de toque
-com delta zero. **O QUE NÃO SE COPIA:** a sensibilidade — a deles
-(0,01 rad/px) é ~4,5× a nossa (`ARRASTO_RAD_POR_PX`), ou seja,
-velocidade de giro **não** é o problema; é tato, não velocidade.
-
-**A OBRA — quatro passos independentes, nesta ordem, um commit por
-passo, cada um com a sua prova.** Os três primeiros são pequenos; o
-quarto é o que muda o tato de verdade.
-
-**P1 — Inércia do giro (o filtro 20/80). POUSOU em 26/08.** O delta do
-dedo deixa de somar seco no acumulador: cai na caixa de entrada do
-quadro (`entrada`) e o `consumirOGiro` do `apply` o passa pelo filtro
-`SUAVIZACAO_DO_GIRO` (0,8, com `dt`) antes de somar na órbita.
-**MEDIDO:** ao soltar, o giro ainda anda **24 quadros (0,400 s) a 60
-fps** — e 0,400 s também a 30, 40 e 120 fps, que é a correção de
-delta-time fazendo o trabalho (sem ela, 30 fps daria 0,800 s). Antes do
-filtro eram **zero quadros**: a câmera parava no mesmo quadro que o
-dedo. No navegador (prova 21 do `atlas-smoke`, arrasto de mouse de 180
-px em Saturno): 0,349 rad até soltar, **21 quadros de rastro**, decaindo
-0,8 por quadro até morrer de vez — *números DESTA corrida: gesto vivo
-varia com o tempo de quadro (outras corridas deram 13 e 17 quadros), e o
-juiz cobra FAIXAS, nunca estes literais*. `dt ≤ 0` (o `apply` avulso do
-`enquadrarAgora` e os oráculos sem quadro) é pass-through declarado — o
-passo entra inteiro e não deixa rastro, que é o caminho de antes, bit a
-bit. A receita original, para quem for reler o porquê:
-
-1. `addOrbitDelta` **para de somar no acumulador**: passa a guardar o
-   delta bruto numa caixa de entrada do quadro (`entrada = {altura,
-   volta}`; vários eventos no mesmo quadro somam na caixa).
-2. No `apply`, que tem `dt`, antes de `escreverPose`, por eixo:
-   `k = 0.8 ** (dt * 60)`; `suav = entrada * (1 - k) + suav * k`;
-   morto quando `|suav| < 1e-4 * dt * 60` (zera de vez, sem rastro);
-   `orbita += suav`; zera `entrada`.
-3. Estado novo: só `suav = {altura: 0, volta: 0}`. Sem física de
-   velocidade, sem relógio extra. O `0.8` é constante nomeada junto de
-   `ARRASTO_RAD_POR_PX` (`enquadramento.ts`).
-
-**Prova:** gesto sintético do `atlas-smoke` — ao soltar, o giro morre
-macio em vez de parar seco; as vistas paradas do gate ficam
-bit-idênticas (a pose de repouso não anda).
-
-**P2 — Janela de toque sem despejo. POUSOU em 26/08.** `mover` e
-`soltar` passaram a fazer a MESMA pergunta, e ela tem nome
-(`aindaEhToque`): o gesto que ainda pode virar clique não move a cena.
-A `zonaMortaDoArrasto` (16 px só de dedo) morreu nela — dois números
-para a mesma decisão abriam a faixa em que o gesto movia a cena E ainda
-virava clique. **O QUE MUDA DE VERDADE:** o MOUSE ganhou a janela que
-só o dedo tinha (6 px/400 ms), e os dois ganharam a metade TEMPO —
-passada a janela, o gesto move a cena por menos de um pixel, que é o
-"segurar para girar devagar". No navegador (prova 21 do `atlas-smoke`):
-um arrasto de mouse de **4 px gira 1e-16 rad** — o resíduo de float da
-re-seleção — contra os **8,8e-3 rad** que ele giraria entregue, e o
-gesto continua virando seleção. **A JANELA É DA CASA INTEIRA, e isto se
-declara:** `ArrastoDePonteiro` é o dono ÚNICO do gesto, então TRÊS
-consumidores fora do Atlas ganharam a mesma janela — o olhar do voo
-livre, o arrasto que fecha a folha do telefone (só a metade TEMPO: os
-16 px de dedo já valiam lá) e o **pausar-e-olhar do FILME**
-(`gestos.ts` → `addLookDelta` — a FUNÇÃO do NÃO SE MEXE abaixo ficou
-intocada; o que mudou foi o portão que a alimenta, e um arrasto de 4 px
-com o filme pausado não move mais a câmera). É a lei do arquivo (um
-dono, não dois); se o tato de qualquer um dos três incomodar, é item
-novo, não exceção escondida. *(A cláusula do filme é achado do auditor
-da leva — a declaração original nomeava só dois.)* A receita original:
-
-Em `ArrastoDePonteiro.mover`
-(`arrastoDePonteiro.ts`): enquanto o gesto estiver dentro do limiar
-(6 px/400 ms mouse, 16 px/500 ms dedo — os números **ficam**), o delta
-entregue é **zero**; ao cruzar o limiar, a referência passa a ser a
-posição atual — o acumulado da zona morta **não é despejado** de uma
-vez. **Prova:** o arrasto curto que hoje dá arranco sai liso desde o
-primeiro pixel; o toque que vira seleção continua virando.
-
-**P3 — Freio perto do solo. POUSOU em 26/08.** O `consumirOGiro`
-multiplica os dois eixos por `freioDoSolo`. **MEDIDO:** o mesmo arrasto
-de 10 px varre **0,333338 do ângulo** no piso (2 raios) contra o que
-varre a 10 raios — o terço prometido, com 4e-6 de sobra que são a
-curvatura da parametrização, não o freio; a 4 raios o freio já saiu do
-caminho (fator 1,000000). **A RÉGUA, declarada:** o `raios` do freio é
-medido contra a MESMA régua do piso do zoom (`reguaDoSolo` — o raio
-FÍSICO do corpo quando quem focou o conhece), e não contra a régua da
-porta `?d=` (`distanciaEmRaios`, sempre de ENQUADRAMENTO). É isso que
-faz "no piso, um terço" ser verdade por construção; num degrau de corpo
-as duas réguas diferem por ordens de grandeza, e o freio tem de falar a
-língua do solo. `FREIO_DO_SOLO_RAIOS = 3` e `FREIO_MINIMO_DO_SOLO =
-1/3` são números de GOSTO, à espera da conferência dele. A receita
-original:
-
-No consumo do delta (o `apply` do P1):
-multiplicar os dois eixos por `u = clamp((distEmRaios - 1) / 3, 1/3,
-1)` — no piso (`K_MIN_RAIOS = 2`) o giro anda a um terço; de 4 raios
-para cima anda pleno. Constante nomeada `FREIO_DO_SOLO_RAIOS = 3`,
-ajustável na conferência dele. **Prova:** o mesmo arrasto em pixels a
-2 raios × a 10 raios — perto anda menos.
-
-**P4 — A volta no polo (turntable). POUSOU em 26/08, ATRÁS DE UMA
-PORTA.** O eixo novo existe e funciona; o DEFAULT continua sendo a lei
-de sempre, e a porta é `?giro=polo` — espécie do `?dbgorbitas`, `neutra`
-no selo. **ELA MORRE NA ESCOLHA DELE**, e isto é promessa: ficando com o
-polo, `polo` vira o único caminho e o ramo `sol` sai junto com a porta;
-recusado, o ramo `polo` sai inteiro.
-
-**O JUIZ ESTÁ GRAVADO — TRÊS gestos**, o MESMO arrasto (a mesma sequência
-de eventos de ponteiro, calculada uma vez e repetida) nos dois lados,
-lado a lado, com rótulo queimado no quadro; mais uma prancha de três
-momentos por lado para a Sala (`capturas/item102-p4-*-prancha.png`):
-
- · `item102-p4-horizontal.mp4` — **o PREÇO**: o anel tomba até ficar de
-   perfil no lado de hoje; no polo ele guarda a inclinação e o que muda
-   é a LUZ, com o terminador andando no quadro.
- · `item102-p4-vertical.mp4` — **o gesto que morre**: subindo rumo à
-   fase cheia, hoje a câmera para no piso e os dois últimos quadros são
-   quase o mesmo; no polo o mesmo dedo segue até o outro hemisfério.
- · `item102-p4-polo.mp4` — **o roll**: descendo rumo ao polo do corpo,
-   hoje a câmera ATRAVESSA o polo e sai no lado escuro, girando a tela
-   no meio da passagem; no polo ela encosta na trava e para.
-
-**A CONDIÇÃO DE NASCIMENTO, MEDIDA:** as 61 vistas do `ab-identidade`
-saíram bit-idênticas em DOIS pareamentos — sem a porta (o default não se
-moveu) e **com `?giro=polo` ligado nas 61** (nenhuma vista parada anda ao
-ligar o instrumento). No navegador, Saturno no degrau do corpo dá o
-MESMO md5 nos dois lados com o dedo parado, e md5 diferente depois do
-mesmo arrasto. A pose de repouso é bit-idêntica **por construção**: o
-eixo novo NASCE da direção que a lei antiga escreve com o dedo parado, e
-com o dedo parado nenhuma das duas rotações roda.
-
-**O QUE A PORTA COMPRA, medido na bancada** — e nenhum destes é gosto:
-são defeitos da lei antiga em geometria que a casa alcança.
-
- · Com o polo do corpo a um pino de fase da linha do Sol (ψ = 30°, a
-   pose de repouso DENTRO da calota de `MIN_POLAR_RAD`) o arrasto
-   VERTICAL de hoje vale **2,2e-15 rad para uma entrada de 1e-4** — o
-   dedo está literalmente morto.
- · Na MESMA geometria o horizontal **AMPLIFICA ~1.400×**: o grampo
-   preserva o azimute, e colado no polo um passo linear minúsculo é um
-   azimute enorme. É o tranco no meio do gesto.
- · Num corpo deitado (ψ ≈ 8°, a pose de repouso do outro lado do polo) o
-   vertical sai **33° torto** do eixo da tela, porque a cedência do `up`
-   já inclinou o horizonte.
- · **O ROLL, que é a queixa com todas as letras:** subindo rumo ao polo,
-   a lei antiga gira a tela **14,58° num ÚNICO quadro**, a 26,2° do polo
-   — quase **10× mais** do que a mira andou nesse mesmo quadro. Roll com
-   o alvo parado é o que o olho lê como "a imagem girou sozinha". No
-   eixo `polo`: **0,000°**, e por construção (o `up` é a componente do
-   polo perpendicular à mira, então o horizonte é o equador do corpo em
-   todo quadro).
- · No eixo `polo` os três somem: o dedo bate **1,0000** com os dois eixos
-   da tela em TODA geometria da bancada, o ganho nunca amplifica, e o
-   `direita` da tela fica perpendicular ao polo em todo o gesto — é
-   isso, e nada além disso, que quer dizer "o horizonte nunca vira".
-
-**O PREÇO, com número:** numa volta inteira a fase da vista varre **mais
-de 40°** no eixo `polo` e **zero (1e-12)** no eixo `sol`. É o terminador
-andando no quadro.
-
-**O DEFEITO ANTIGO CONTINUA SENDO O PADRÃO ATÉ ELE DECIDIR:** em fase
-cheia o arrasto horizontal segue morto sem a porta (`sen(φ)`), e há
-dente cobrando isso. Consertá-lo por fora seria decidir por ele.
-
-A receita original, para quem for reler o porquê. Em `OrbitaDoVisitante`
-(`cinematic/enquadramento.ts`) e `AtlasRig`:
-
-1. Frame novo por alvo: Z = polo do corpo; X = componente da direção
-   alvo→Sol perpendicular ao polo, normalizada (o meridiano do Sol);
-   Y = Z × X.
-2. A parametrização vira **lat/lon**: `lat = asin(dot(dir, polo))`,
-   `lon = atan2(dot(dir, Y), dot(dir, X))`. O arrasto vertical soma em
-   `lat`, travado em ±(π/2 − 1e-4) — substitui o grampo
-   `MIN_POLAR_RAD` e a faixa de `altura`. O horizontal soma em `lon`,
-   livre e enrolado — substitui a `volta` na linha alvo→Sol.
-3. `up = normalize(polo − dir · dot(polo, dir))` — nunca degenera,
-   porque `lat` nunca chega a ±90°. A cedência do `upDoAtlas` nos
-   degraus sistema/órbita fica como está.
-4. `orbitaQueProduz` (o selecionar que preserva a pose) ganha a
-   inversa nova: dir/dist → lat/lon no frame do passo 1.
-5. **Condição de nascimento:** a pose de repouso (30° da linha Sol,
-   `PHASE_OFFSET_GRAUS`) e as vistas `?pos=` não mudam **um pixel** —
-   lat0/lon0 derivam da pose atual. Se o gate acusar diferença em
-   vista parada, a parametrização nasceu errada.
-6. **O preço, declarado:** girar a `lon` gira a sombra junto — a
-   iluminação deixa de ser fixa na vista, que era o que a `volta`
-   antiga protegia. Ele confere o vídeo A/B e decide.
-
-**Prova do P4:** vídeo A/B do mesmo arrasto nos dois lados + gate
-bit-idêntico nas vistas paradas.
-
-**O QUE SAIU DIFERENTE DA RECEITA, e por quê — três desvios, todos de
-COMO e nenhum de O QUÊ:**
-
- · **A conta gira `d₀` em vez de reconstruir a esfera.** Escrever
-   `sen θ (cos λ X + sen λ Y) + cos θ Z` dá a mesma direção na
-   matemática e um punhado de ULPs de diferença na pose de repouso — e o
-   gate mede md5, não matemática. Girando a direção que a lei antiga já
-   escreveu, com o dedo parado nenhuma rotação roda e a vista fica
-   bit-idêntica por construção, não por sorte.
- · **A âncora `θ₀` sai do `d₀` real, e não da forma fechada `|ψ − pino|`.**
-   As duas concordam onde a lei antiga não grampeia; quando a pose de
-   repouso cai dentro da calota de `MIN_POLAR_RAD` (corpo com o polo a
-   30° da linha do Sol) é o `d₀` GRAMPEADO que está na tela, e uma
-   âncora que discordasse dele daria um degrau ao primeiro toque. A
-   forma fechada virou dente, não código.
- · **O `up` do modo só entra DENTRO da faixa da cedência**
-   (`|dir·polo| > cos 30°`); fora dela o caminho é o de sempre, letra
-   por letra. Ele descreve a MESMA base de câmera que o polo bruto (o
-   `lookAt` faz `direita = up × z`, e a parte de `up` paralela a `z` não
-   contribui), então trocar fora da faixa custaria bits e não compraria
-   nada — e é dentro dela que a cedência dava o roll que o P4 vem matar.
-
-E uma peça mudou de casa: `enrolar` desceu do `atlasRig.ts` para o
-`enquadramento.ts` e virou exportada, porque a inversa do eixo `polo`
-passou a precisar dela (a longitude sai de uma DIFERENÇA de dois
-`atan2`). Duas cópias seriam a segunda fonte de verdade que a regra 4
-proíbe.
-
-**NÃO SE MEXE:** o zoom (`zoomDaRoda.ts` já tem inércia própria); o
-"olhar ao redor" do filme (`cameraRig.addLookDelta` — rotação manual
-em torno de corpo só existe no Atlas); os limiares de toque do P2.
+**102.** Girar em volta do objeto selecionado era péssimo — **FECHADO em
+26/08**. Ele decidiu o desenho no chat, e a frase é a lei: *"quero que
+seja navegação livre e sem travas para qualquer dos lados sem nenhum
+limitador de angulo ou coisa parecida"* — mais *"podemos colocar um botao
+de zerar orientacao, assim como o google maps tem um botao de norte"*. O
+dedo passou a somar num QUATERNION em torno dos eixos da TELA, sem grampo
+nenhum; a porta `?giro=` morreu com os DOIS ramos antigos; e nasceu a
+bússola, que só aparece com o horizonte torto e o endireita sem mover a
+mira. 61 vistas bit-idênticas, `atlas-smoke` com 171 vereditos, a11y
+verde. **O que sobra é o olho dele, no app, com o dedo e sem vídeo** — o
+que se julga aqui é TATO, e tato não se julga em gravação; se o que ele
+sentir não for o que a frase pedia, é item NOVO. História no ARQUIVO.
 
 **103.** A porta do BRILHO no selo parou de virar — **FECHADO em 26/08**
 (`4ce0169`). **A calibração era inocente** (medido: o defeito reproduz
