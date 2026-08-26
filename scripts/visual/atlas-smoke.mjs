@@ -1982,7 +1982,8 @@ try {
           r.y + r.height / 2 > window.innerHeight * 0.25
           && r.y + r.height / 2 < window.innerHeight * 0.75,
         // e NÃO encosta em nenhuma outra peça permanente do HUD
-        encosta: ['.controls-bar', '.atlas-selo', '.atlas-tempo', '.free-hint']
+        encosta: ['.controls-bar', '.atlas-selo', '.atlas-tempo', '.free-hint',
+          '.atlas-alcas']
           .map((sel) => document.querySelector(sel))
           .filter(Boolean)
           .map((o) => o.getBoundingClientRect())
@@ -2050,6 +2051,28 @@ try {
         + ` (${acesa.encosta} sobreposições), com rótulo para quem ouve:`
         + ` "${acesa.rotulo}"`
     );
+
+    // ...E NO TELEFONE, que é onde a borda direita é a ÚNICA saída: no
+    // aparelho a barra de controles toma o alto de ponta a ponta e a
+    // fileira de alças toma o pé, então uma peça presa em qualquer das
+    // duas faixas encostaria em alguma coisa. Aqui só se trocam as
+    // MÉTRICAS (reversível); a emulação de TOQUE não entra — ela é de
+    // mão única nesta sessão, e a prova 19 declara isso.
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: false,
+    });
+    await dorme(600);
+    const noTelefone = await bussola();
+    conferir(
+      noTelefone.acesa && noTelefone.temCaixa && noTelefone.dentroDaTela
+        && noTelefone.naBordaDireita && noTelefone.naFaixaDoMeio
+        && noTelefone.encosta === 0,
+      `...e a 390×844 ela continua inteira em (${noTelefone.x},`
+        + ` ${noTelefone.y}), sem encostar na barra nem nas alças`
+        + ` (${noTelefone.encosta} sobreposições)`
+    );
+    await sessao.send('Emulation.clearDeviceMetricsOverride');
+    await dorme(600);
 
     // A MIRA NÃO PODE ANDAR no clique — é a lei do botão de norte. A
     // régua é a DIREÇÃO alvo→câmera e não a posição: o alvo é vivo e
