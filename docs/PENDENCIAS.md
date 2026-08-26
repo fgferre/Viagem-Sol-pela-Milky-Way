@@ -1064,7 +1064,10 @@ obturador; recorte de 340 colunas sobre o alto do laço de Saturno a 40
 UA): **45 contas em 19 grupos, vão de 18 px, 100% regulares → ZERO
 contas, zero grupos.** O corpo da fita não se mexeu (154,4 → 152,8 de
 255), o que prova que o que morreu foi o disco em dobro, e não a linha.
-Prancha em `capturas/item83-colar-antes-depois.png`.
+Prancha em `capturas/item83-colar-antes-depois.png`; a medida crua nos
+três `capturas/item83-colar-{antes,depois,sabotagem}.json`, e os quadros
+que a produziram em `capturas/item83-colar-cru/` — **não apagar enquanto
+ele não julgar a foto**.
 
 **O dente de imagem existe e MORDE:** o juiz declara no cabeçalho a quem
 serve (a frase dele, "lindas e profissionais como as do NASA Eyes"), e a
