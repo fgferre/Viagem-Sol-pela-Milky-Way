@@ -11,6 +11,9 @@
 // assim a conta esperada é aritmética exata, e não refém do
 // arredondamento do cinza de um PNG.
 // ============================================================
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   DIAS_A_ANDAR,
@@ -22,6 +25,7 @@ import {
   julgarORelogio,
   pentearOColar,
   perfilDaFita,
+  semSobrescrever,
 } from './colar-da-fita.mjs';
 
 /**
@@ -88,21 +92,60 @@ describe('o dente do relógio', () => {
   });
 
   it('REPROVA quando o relógio não saiu do lugar', () => {
-    expect(julgarORelogio({ diasAndados: 0 }).ok).toBe(false);
-    expect(julgarORelogio({ diasAndados: -3 }).ok).toBe(false);
+    expect(julgarORelogio({ diasAndados: 0, quadrosNaAndada: 137 }).ok).toBe(false);
+    expect(julgarORelogio({ diasAndados: -3, quadrosNaAndada: 137 }).ok).toBe(false);
   });
 
-  it('APROVA quando andou', () => {
-    expect(julgarORelogio({ diasAndados: DIAS_A_ANDAR }).ok).toBe(true);
-    expect(julgarORelogio({ diasAndados: 0.001 }).ok).toBe(true);
+  it('REPROVA quando o relógio andou mas NADA foi desenhado', () => {
+    // o eco do mesmo defeito por outra porta: `quadrosNaAndada` sai de
+    // `window.__f`, e um `|| 0` calado o devolveria zerado se o contador
+    // sumisse — o `jd` teria andado na CPU sem nenhuma tela pintada com
+    // ele, que é de novo a foto de cena parada.
+    const v = julgarORelogio({ diasAndados: DIAS_A_ANDAR, quadrosNaAndada: 0 });
+    expect(v.ok).toBe(false);
+    expect(v.motivo).toMatch(/nada foi desenhado/);
+    expect(julgarORelogio({ diasAndados: DIAS_A_ANDAR }).ok).toBe(false);
+  });
+
+  it('APROVA quando andou E desenhou', () => {
+    expect(julgarORelogio({ diasAndados: DIAS_A_ANDAR, quadrosNaAndada: 137 }).ok).toBe(true);
+    expect(julgarORelogio({ diasAndados: 0.001, quadrosNaAndada: 1 }).ok).toBe(true);
   });
 
   it('a andada é contada em DIAS DE EFEMÉRIDE, não em segundos dormidos', () => {
-    // pino de configuração da reprodutibilidade: dormir relógio de parede
-    // fazia a efeméride andada variar com a carga da máquina (34,1 / 33,6 /
-    // 31,2 dias na mesma casa), e com ela o corpo da fita no primeiro
-    // decimal. O resíduo do pouso é medido e gravado em cada JSON.
+    // PINO DE CONFIGURAÇÃO, e o que ele prende é a UNIDADE da andada. Quem
+    // mede a reprodutibilidade de verdade não é este `expect`: são DUAS
+    // CORRIDAS SEGUIDAS do juiz devolvendo corpo, piso, limiar, contas,
+    // grupos e vão IGUAIS — feito em 26/08, com o resíduo do pouso (0,0046
+    // contra 0,0022 dia) como única diferença. Dormir relógio de parede
+    // fazia a efeméride variar com a carga (34,1 / 33,6 / 31,2 dias na
+    // mesma casa, 21,4 na de um auditor) e levava o corpo da fita junto.
     expect(DIAS_A_ANDAR).toBeGreaterThan(0);
+  });
+});
+
+describe('gravar sem matar testemunha', () => {
+  // A REGRA 7 APLICADA A ARQUIVO DE PROVA, e ela nasceu de um erro real:
+  // a re-medição de 26/08 regravou os quadros crus por cima, e os que
+  // testemunhavam os números da véspera deixaram de existir.
+  const dir = mkdtempSync(join(tmpdir(), 'colar-'));
+
+  it('devolve o caminho pedido quando não há nada lá', () => {
+    expect(semSobrescrever(join(dir, 'novo.png'))).toBe(join(dir, 'novo.png'));
+  });
+
+  it('escreve AO LADO, em -v2 e depois -v3, quando o arquivo já existe', () => {
+    const alvo = join(dir, 'antes.png');
+    writeFileSync(alvo, 'a');
+    expect(semSobrescrever(alvo)).toBe(join(dir, 'antes-v2.png'));
+    writeFileSync(join(dir, 'antes-v2.png'), 'b');
+    expect(semSobrescrever(alvo)).toBe(join(dir, 'antes-v3.png'));
+  });
+
+  it('não confunde ponto de diretório com extensão', () => {
+    const alvo = join(dir, 'sem-extensao');
+    writeFileSync(alvo, 'a');
+    expect(semSobrescrever(alvo)).toBe(join(dir, 'sem-extensao-v2'));
   });
 });
 

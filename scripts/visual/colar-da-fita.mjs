@@ -8,6 +8,10 @@
 //   JSON=capturas/x.json   guarda a medida
 //   FAIXA=x,y,w,h          sobrescreve o recorte (varredura ad hoc)
 //
+// `SAIDA` e `JSON` RECUSAM sobrescrever: existindo o arquivo, grava-se
+// `-v2`, `-v3` ao lado (regra 7 do AGENTS.md — prova não se apaga para
+// prova nascer), e o JSON diz em `quadroCru` qual quadro é o dele.
+//
 // ------------------------------------------------------------
 // A QUEM ELE SERVE
 // ------------------------------------------------------------
@@ -90,7 +94,7 @@
 // volta nulo e a foto seria de cena PARADA — o juiz REPROVA em vez de
 // aprovar, pela regra da casa (juiz que não consegue medir reprova).
 // ============================================================
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { carimboDoCodigo } from './ab-identidade.mjs';
 import { capturarCDP, dorme } from './chrome.mjs';
@@ -140,10 +144,15 @@ export const FAIXA = { x: 1190, y: 155, w: 340, h: 45 };
  * final repetível no terceiro decimal.
  *
  * O relógio PARA antes do obturador, e isso não desfaz a prova: os
- * milhares de quadros em que `escreverInstante` reescreveu os 30 laços
- * já aconteceram, e é essa reescrita — com a distância de traço parada
- * no zero do construtor — que a foto tinha de julgar. Sem parar, a
- * latência do próprio `captureScreenshot` voltaria a mover o `jd`.
+ * quadros em que `escreverInstante` reescreveu os 30 laços já
+ * aconteceram, e é essa reescrita — com a distância de traço parada no
+ * zero do construtor — que a foto tinha de julgar. Sem parar, a latência
+ * do próprio `captureScreenshot` voltaria a mover o `jd`.
+ *
+ * QUANTOS QUADROS, MEDIDO e não estimado: 137 nas duas corridas do
+ * pré-A1, 136 na do A1 — o instrumento os conta (`quadrosNaAndada`, do
+ * contador de rAF que o harness instala) e o dente do relógio cobra que
+ * sejam mais que zero.
  */
 export const DEGRAU_DEPRESSA = 6;
 export const DEGRAU_DEVAGAR = 4;
@@ -303,6 +312,12 @@ export function medirPng(bytes, faixa = FAIXA) {
  * deixar de disparar — apagado, renomeado, um `capturarCDP` que pare de
  * chamá-lo —, `mexeu` volta `null`, a foto sai da cena PARADA e o
  * veredito do pente seguia dando 0. Fita parada não julga o A1.
+ *
+ * SÃO TRÊS TERMOS, e o terceiro é o eco do primeiro: `quadrosNaAndada`
+ * sai de `window.__f`, o contador de rAF que o harness instala, e um
+ * `|| 0` calado o devolveria zerado se esse contador sumisse. Zero
+ * quadro desenhado é o MESMO defeito por outra porta — o `jd` andou na
+ * CPU e nenhuma tela foi pintada com ele —, então ele reprova junto.
  */
 export function julgarORelogio(relogio) {
   if (!relogio) {
@@ -310,6 +325,12 @@ export function julgarORelogio(relogio) {
   }
   if (!(relogio.diasAndados > 0)) {
     return { ok: false, motivo: `o relógio não andou: ${relogio.diasAndados} dias` };
+  }
+  if (!(relogio.quadrosNaAndada > 0)) {
+    return {
+      ok: false,
+      motivo: `o relógio andou mas nada foi desenhado: ${relogio.quadrosNaAndada} quadros`,
+    };
   }
   return { ok: true, motivo: '' };
 }
@@ -387,6 +408,35 @@ export async function capturarAFita(porta = 9411) {
   });
 }
 
+/**
+ * GRAVA SEM MATAR TESTEMUNHA — a regra 7 do `AGENTS.md` aplicada a todo
+ * arquivo de prova, e não só à prancha: existindo `x.png`, este juiz NÃO
+ * escreve por cima; escreve `x-v2.png`, depois `x-v3.png`, e devolve o
+ * caminho que usou.
+ *
+ * ELE NASCEU DE UM ERRO MEDIDO, e o erro é meu: a re-medição de 26/08
+ * regravou `capturas/item83-colar-cru/*.png` por cima, e com isso os
+ * quadros que testemunhavam os números da véspera (45 contas, corpo
+ * 154,4) deixaram de existir — o número virou palavra. Não há como
+ * ressuscitá-los; o que dá para consertar é o COMPORTAMENTO, para que
+ * nenhuma corrida futura apague a prova da anterior.
+ *
+ * O `-vN` é o mesmo sufixo que a casa já usa nas pranchas, e o JSON de
+ * cada corrida guarda em `quadroCru` qual arquivo é o dela: sem esse
+ * ponteiro, uma pasta com três versões não diria de quem é cada número.
+ */
+export function semSobrescrever(caminho) {
+  if (!existsSync(caminho)) return caminho;
+  const ponto = caminho.lastIndexOf('.');
+  const corte = ponto > caminho.lastIndexOf('/') ? ponto : caminho.length;
+  const raiz = caminho.slice(0, corte);
+  const extensao = caminho.slice(corte);
+  for (let v = 2; ; v++) {
+    const tentativa = `${raiz}-v${v}${extensao}`;
+    if (!existsSync(tentativa)) return tentativa;
+  }
+}
+
 async function principal() {
   const arquivo = process.argv[2];
   const faixa = process.env.FAIXA
@@ -395,13 +445,20 @@ async function principal() {
 
   let bytes;
   let relogio = null;
+  let quadroCru = arquivo ?? null;
   if (arquivo) {
     bytes = readFileSync(arquivo);
   } else {
     const r = await capturarAFita(Number(process.env.PORTA || 9411));
     bytes = r.png;
     relogio = r.mexeu;
-    if (process.env.SAIDA) writeFileSync(process.env.SAIDA, bytes);
+    if (process.env.SAIDA) {
+      quadroCru = semSobrescrever(process.env.SAIDA);
+      writeFileSync(quadroCru, bytes);
+      if (quadroCru !== process.env.SAIDA) {
+        console.log(`  o cru pedido já existia — gravado ao lado em ${quadroCru}`);
+      }
+    }
   }
 
   const medida = medirPng(bytes, faixa);
@@ -417,6 +474,9 @@ async function principal() {
     codigo: carimboDoCodigo(),
     app: arquivo ? null : APP,
     quandoUtc: new Date().toISOString(),
+    // QUAL quadro produziu estes números — sem ele, uma pasta com `antes`,
+    // `antes-v2` e `antes-v3` não diz de quem é cada medida
+    quadroCru,
     relogio,
     ...medida,
   };
@@ -431,7 +491,15 @@ async function principal() {
   }
   const texto = JSON.stringify(fora, null, 1);
   console.log(texto);
-  if (process.env.JSON) writeFileSync(process.env.JSON, texto + '\n');
+  if (process.env.JSON) {
+    // o JSON é arquivo de prova como o cru, e cai na MESMA regra: o
+    // número de ontem não morre para o de hoje nascer
+    const destino = semSobrescrever(process.env.JSON);
+    writeFileSync(destino, texto + '\n');
+    if (destino !== process.env.JSON) {
+      console.log(`  a medida pedida já existia — gravada ao lado em ${destino}`);
+    }
+  }
   console.log(
     fora.aprovado
       ? `>>> SEM COLAR — ${fora.contas} contas em ${fora.grupos} grupos`
