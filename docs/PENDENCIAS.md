@@ -1126,7 +1126,24 @@ bit. A receita original, para quem for reler o porquê:
 macio em vez de parar seco; as vistas paradas do gate ficam
 bit-idênticas (a pose de repouso não anda).
 
-**P2 — Janela de toque sem despejo.** Em `ArrastoDePonteiro.mover`
+**P2 — Janela de toque sem despejo. POUSOU em 26/08.** `mover` e
+`soltar` passaram a fazer a MESMA pergunta, e ela tem nome
+(`aindaEhToque`): o gesto que ainda pode virar clique não move a cena.
+A `zonaMortaDoArrasto` (16 px só de dedo) morreu nela — dois números
+para a mesma decisão abriam a faixa em que o gesto movia a cena E ainda
+virava clique. **O QUE MUDA DE VERDADE:** o MOUSE ganhou a janela que
+só o dedo tinha (6 px/400 ms), e os dois ganharam a metade TEMPO —
+passada a janela, o gesto move a cena por menos de um pixel, que é o
+"segurar para girar devagar". No navegador (prova 21 do `atlas-smoke`):
+um arrasto de mouse de **4 px gira 1e-16 rad** — o resíduo de float da
+re-seleção — contra os **8,8e-3 rad** que ele giraria entregue, e o
+gesto continua virando seleção. **A JANELA É DA CASA INTEIRA, e isto se
+declara:** `ArrastoDePonteiro` é o dono ÚNICO do gesto, então o olhar do
+voo livre e o arrasto que fecha a folha do telefone ganharam a mesma
+janela. É a lei do arquivo (um dono, não dois); se o tato do voo livre
+incomodar, é item novo, não exceção escondida. A receita original:
+
+Em `ArrastoDePonteiro.mover`
 (`arrastoDePonteiro.ts`): enquanto o gesto estiver dentro do limiar
 (6 px/400 ms mouse, 16 px/500 ms dedo — os números **ficam**), o delta
 entregue é **zero**; ao cruzar o limiar, a referência passa a ser a

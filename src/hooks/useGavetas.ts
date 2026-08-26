@@ -106,11 +106,11 @@ const SAIDA_DA_FOLHA_MS = 260;
  * baixo"*, e o plano do item 62 já dizia com o quê: o `ArrastoDePonteiro`
  * que a casa tem, sem mecânica nova.
  *
- * 48 px É O QUE `mover` DEVOLVE, e não o que o dedo anda: a zona morta do
- * toque (`zonaMortaDoArrasto`, 16 px) é comida antes do primeiro passo e
- * DESCARTADA, então o gesto real são 64 px — 7,6% da altura num aparelho
- * de 844. Abaixo disso um polegar que apenas encosta na folha para rolar
- * a fecharia; muito acima, o gesto vira exercício.
+ * 48 px É O QUE `mover` DEVOLVE, e não o que o dedo anda: a janela do
+ * toque (`aindaEhToque`, 16 px de dedo) é comida antes do primeiro passo
+ * e DESCARTADA, então o gesto real são 64 px — 7,6% da altura num
+ * aparelho de 844. Abaixo disso um polegar que apenas encosta na folha
+ * para rolar a fecharia; muito acima, o gesto vira exercício.
  */
 export const ARRASTO_QUE_FECHA_PX = 48;
 
@@ -350,7 +350,7 @@ export function useGavetas(
         arrasto.esquecer();
         return;
       }
-      const passo = arrasto.mover(comoPonteiro(dedo));
+      const passo = arrasto.mover(comoPonteiro(dedo), performance.now());
       if (!passo) return;
       dx += passo.dx;
       dy += passo.dy;

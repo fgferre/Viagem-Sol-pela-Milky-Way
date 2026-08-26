@@ -99,9 +99,12 @@ export const janelaDeClique = (pointerType?: string): number =>
   pointerType === 'touch' ? CLIQUE_MS_DEDO : CLIQUE_MS;
 
 /**
- * A ZONA MORTA DO GESTO — quanto ele pode andar ANTES de a cena começar
- * a se mexer. Ela é a outra metade do limiar acima, e sem ela o limiar
- * novo faz um estrago pior que o defeito que conserta.
+ * A JANELA DO TOQUE — enquanto o gesto AINDA PODE SER UM CLIQUE, a cena
+ * não anda. Um limiar só governa as duas perguntas, e é de propósito:
+ * «isto foi um toque?» (o `soltar`) e «isto move a cena?» (o `mover`)
+ * são a MESMA pergunta feita em dois instantes, e responder com dois
+ * números seria deixar uma faixa em que o gesto move a cena E ainda vira
+ * clique — que é exatamente o defeito.
  *
  * MEDIDO em 2026-08-23, a 390×844, tocando no rótulo do Sol com os 12 px
  * de tremor que um dedo tem: o toque ESCOLHIA — o limiar de dedo
@@ -111,18 +114,31 @@ export const janelaDeClique = (pointerType?: string): number =>
  * move os rótulos ~18 px na tela. O dedo pousava num nome e soltava em
  * cima de outro. Escolher o objeto errado é pior que não escolher.
  *
- * ELA VALE SÓ PARA O DEDO, e é por isso que é `0` no resto: o mouse não
- * treme sobre o botão, a caneta apoia numa ponta, e uma zona morta ali
- * seria um começo de arrasto que não responde — mudança de tato na mesa,
- * sem defeito que a peça. Com `0` a mesa continua bit-idêntica.
+ * ATÉ 26/08 ELA VALIA SÓ PARA O DEDO (a `zonaMortaDoArrasto`, 16 px), e
+ * o mouse andava desde o primeiro pixel. O item 102 mediu o outro lado:
+ * no NASA Eyes o delta é ZERO À FORÇA enquanto o gesto cabe em 5 px e
+ * 0,5 s, para QUALQUER ponteiro — um toque nunca dá tranco. Os seis
+ * pixels do mouse são a mesma tolerância de mão sobre botão que o clique
+ * curto já usava; o que muda é que agora ela também segura a cena.
  *
- * O que a zona morta come é DESCARTADO, não guardado: quando o gesto
- * vira arrasto, ele começa dali. É a mesma decisão do `touchSlop` de
- * toda plataforma — o trecho abaixo do limiar pertence ao TOQUE, não ao
- * arrasto.
+ * E O TEMPO É A OUTRA METADE. Sem ele, um gesto que ficasse para sempre
+ * abaixo do limiar nunca moveria nada — «segurar para girar devagar»
+ * deixaria de existir. Passada a janela (400 ms de mouse, 500 ms de
+ * dedo) o gesto já não é clique de ninguém, e passa a mover a cena por
+ * menos que um pixel.
+ *
+ * O QUE A JANELA COME É DESCARTADO, não guardado: a referência avança a
+ * cada evento, então quando o gesto vira arrasto ele começa DALI, sem
+ * despejar de uma vez o que se acumulou. É a mesma decisão do
+ * `touchSlop` de toda plataforma — o trecho abaixo do limiar pertence ao
+ * TOQUE, não ao arrasto.
  */
-export const zonaMortaDoArrasto = (pointerType?: string): number =>
-  pointerType === 'touch' ? CLIQUE_PX_DEDO : 0;
+export const aindaEhToque = (
+  percorrido: number,
+  desdeMs: number,
+  pointerType?: string
+): boolean =>
+  percorrido < limiarDeClique(pointerType) && desdeMs < janelaDeClique(pointerType);
 
 /**
  * O MÍNIMO de um `PointerEvent` que a decisão do arrasto lê. Um
@@ -198,19 +214,26 @@ export class ArrastoDePonteiro {
    *  1. O EVENTO NÃO É DO DONO. É a linha que impede os 25° de um evento
    *     só. A última posição só avança com o ponteiro dono, então o dedo
    *     de fora não contamina nem o próximo dx.
-   *  2. O GESTO AINDA ESTÁ NA ZONA MORTA do dedo (ver
-   *     `zonaMortaDoArrasto`). O percurso continua sendo contado — é ele
-   *     que decide se no fim isto foi toque ou arrasto —, mas a cena não
-   *     anda, para que o dedo solte em cima do nome em que pousou.
+   *  2. O GESTO AINDA PODE SER UM CLIQUE (ver `aindaEhToque`). O percurso
+   *     continua sendo contado — é ele que decide se no fim isto foi
+   *     toque ou arrasto —, mas a cena não anda, para que o dedo solte em
+   *     cima do nome em que pousou. A REFERÊNCIA AVANÇA MESMO ASSIM, e é
+   *     o que impede o despejo: ao cruzar o limiar o gesto começa da
+   *     posição atual em vez de descarregar de uma vez tudo o que a
+   *     janela comeu.
+   *
+   * `agora` é o MESMO relógio do `comecar` e do `soltar` — os três
+   * consumidores da casa leem `performance.now()`, e é dele que sai a
+   * metade TEMPO da janela.
    */
-  mover(evento: ToqueDePonteiro): PassoDeArrasto | null {
+  mover(evento: ToqueDePonteiro, agora: number): PassoDeArrasto | null {
     if (this.dono !== evento.pointerId) return null;
     const dx = evento.clientX - this.ultimoX;
     const dy = evento.clientY - this.ultimoY;
     this.andou += Math.abs(dx) + Math.abs(dy);
     this.ultimoX = evento.clientX;
     this.ultimoY = evento.clientY;
-    if (this.andou < zonaMortaDoArrasto(this.tipoDoDono)) return null;
+    if (aindaEhToque(this.andou, agora - this.desde, this.tipoDoDono)) return null;
     return { dx, dy };
   }
 
@@ -223,9 +246,10 @@ export class ArrastoDePonteiro {
    */
   soltar(evento: ToqueDePonteiro, agora: number): boolean {
     if (this.dono !== evento.pointerId) return false;
-    const curto =
-      this.andou < limiarDeClique(this.tipoDoDono)
-      && agora - this.desde < janelaDeClique(this.tipoDoDono);
+    // A MESMA pergunta do `mover`, no instante de soltar: o gesto que não
+    // moveu a cena é exatamente o que ainda vira clique. Duas contas aqui
+    // abririam a faixa em que ele faz as duas coisas.
+    const curto = aindaEhToque(this.andou, agora - this.desde, this.tipoDoDono);
     this.dono = null;
     return curto;
   }

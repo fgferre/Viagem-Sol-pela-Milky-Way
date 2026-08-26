@@ -158,10 +158,10 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     // o passo vem `null` em dois casos, e os dois querem dizer "não mexa
     // na cena": ponteiro que não é o dono do gesto — é ISSO que impede o
     // segundo dedo de girar 25° medido contra a última posição do
-    // primeiro — e gesto ainda dentro da ZONA MORTA do dedo, que é o que
-    // deixa um toque com tremor soltar em cima do nome em que pousou
-    // (ver `arrastoDePonteiro.ts`)
-    const passo = arrasto.mover(event);
+    // primeiro — e gesto que AINDA PODE SER UM CLIQUE, que é o que deixa
+    // um toque com tremor soltar em cima do nome em que pousou (ver
+    // `arrastoDePonteiro.ts`)
+    const passo = arrasto.mover(event, performance.now());
     if (!passo) return;
     if (fios.noAtlas()) {
       // OS DOIS EIXOS (Onda 7): o `dy` era calculado e jogado fora — a

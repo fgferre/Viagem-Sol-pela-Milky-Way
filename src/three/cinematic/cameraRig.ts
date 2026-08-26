@@ -732,7 +732,7 @@ export class FreeRoam {
     // `null` para qualquer ponteiro que não seja o dono do gesto: é
     // esta linha que impede o segundo dedo de girar ~25° num evento só
     // (200 px × 0,0022 rad/px), medido contra a posição do primeiro
-    const passo = this.arrasto.mover(event);
+    const passo = this.arrasto.mover(event, performance.now());
     if (!passo) return;
     if (this.visit && this.arrasto.percorrido > 8) this.cancelVisit();
     this.girar(passo.dx, passo.dy);

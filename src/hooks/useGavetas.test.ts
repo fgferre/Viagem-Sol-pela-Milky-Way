@@ -29,7 +29,7 @@ import {
 } from './useGavetas';
 // a zona morta do dedo vem da peça que o arrasto realmente usa: o gesto
 // que o dono aprovou é a SOMA dos dois números, e ela só se mede juntando
-import { zonaMortaDoArrasto } from '../three/arrastoDePonteiro';
+import { limiarDeClique } from '../three/arrastoDePonteiro';
 
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 const HOOK = readFileSync(new URL('./useGavetas.ts', import.meta.url), 'utf8');
@@ -145,7 +145,7 @@ describe('6. a QUARTA saída: arrastar a folha para baixo (item 62, 23/08)', () 
     // (zona morta do dedo) + 48 = 64 px, 7,6% da altura num aparelho de
     // 844. Sem esta conta, mexer na zona morta mudaria o gesto do dono
     // sem quebrar nada.
-    const zonaMorta = zonaMortaDoArrasto('touch');
+    const zonaMorta = limiarDeClique('touch');
     expect(zonaMorta).toBe(16);
     expect(zonaMorta + ARRASTO_QUE_FECHA_PX).toBe(64);
     // um dedo que desce 63 px NÃO fecha; 64 fecha
@@ -172,7 +172,7 @@ describe('6. a QUARTA saída: arrastar a folha para baixo (item 62, 23/08)', () 
     // e o que o dedo anda de verdade são os 48 px MAIS a zona morta do
     // toque, que a classe come antes do primeiro passo
     expect(HOOK).toContain("import { ArrastoDePonteiro } from '../three/arrastoDePonteiro'");
-    expect(HOOK).toContain('arrasto.mover(comoPonteiro(dedo))');
+    expect(HOOK).toContain('arrasto.mover(comoPonteiro(dedo), performance.now())');
     // e a decisão de desenho que o item deixou em aberto: só arma com a
     // rolagem NO TOPO, senão o mesmo gesto seria "rola" e "fecha"
     expect(HOOK).toContain('folha.scrollTop > 0');

@@ -1891,6 +1891,36 @@ try {
       parados >= 10,
       `...e o rastro morre de vez: ${parados} quadros finais sem mexer um bit`
     );
+
+    // ...e a JANELA DO TOQUE (item 102, P2): o arrasto que ainda cabe no
+    // clique curto não gira NADA — nem no MOUSE, que até 26/08 andava
+    // desde o primeiro pixel. A régua é a ÓRBITA e não a câmera: o alvo
+    // é vivo e anda com o relógio, então a posição da câmera nunca é
+    // bit-idêntica entre duas leituras separadas por meio segundo (o
+    // primeiro veredito desta prova mediu isso e reprovou por causa do
+    // instrumento, não do produto).
+    const orbitaViva = async () => JSON.parse(await sessao.js(
+      'JSON.stringify([window.__director.atlas.orbita.volta,'
+      + ' window.__director.atlas.orbita.altura])'
+    ));
+    const antesDoCurto = await orbitaViva();
+    await mouse('mousePressed', meio[0], 1);
+    await mouse('mouseMoved', meio[0] + 4, 1);
+    await mouse('mouseReleased', meio[0] + 4, 0);
+    await dorme(500);
+    const depoisDoCurto = await orbitaViva();
+    const giroCurto = Math.max(
+      Math.abs(depoisDoCurto[0] - antesDoCurto[0]),
+      Math.abs(depoisDoCurto[1] - antesDoCurto[1])
+    );
+    // 4 px entregues seriam 8,8e-3 rad; o que sobra é 1e-16, que é o
+    // resíduo de float da RE-SELEÇÃO (o gesto curto virou clique, como
+    // tem de virar — `selecionar` reescreve a órbita no referencial novo)
+    conferir(
+      giroCurto < 1e-12,
+      `...e o arrasto de 4 px não gira o Atlas: ${giroCurto.toExponential(1)} rad`
+        + ` (entregue, seriam 8,8e-3)`
+    );
   }
 
   // ---- 19: OS GESTOS DE DEDO, num APARELHO (item 62, etapa 2) -------
