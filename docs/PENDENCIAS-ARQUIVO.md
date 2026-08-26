@@ -2798,6 +2798,14 @@ com uma chave não declarada na URL, atravessando a recarga. Do lado puro,
 `selo.test.ts` ganhou o pino invertido: com o tier baixo de pé o ciclo
 fecha nos dois sentidos, e o `q` continua declarado nos três estados.
 
+**A FOTO:** `capturas/item103-porta-de-duas-vias.png` — três painéis do
+selo ABERTO, no tier `alta`, um por clique. (1) BRILHO ASSISTIDO, *"clique:
+voltar ao real"*; (2) depois do primeiro clique, a linha SEGUE VIVA e lê
+*"amostragem abaixo de cinema — clique: voltar à luz assistida"* — é
+exatamente aqui que ela ficava morta e cinza; (3) o segundo clique, e a
+assistência volta. **Os painéis 1 e 3 são iguais, e é essa igualdade que é
+a prova:** o interruptor fecha o ciclo e não deixa resíduo.
+
 **SABOTAGEM (worktree), o placar — e ele é a defesa de por que o dente
 mora em NAVEGADOR e não só no `vitest`:**
 
