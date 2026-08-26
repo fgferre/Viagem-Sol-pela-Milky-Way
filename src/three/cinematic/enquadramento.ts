@@ -480,14 +480,32 @@ function baseDaCamera(
  * 10× o que a mira andou). Rodando os dois com a mesma rotação, o alto
  * da tela só muda quando o dedo manda.
  *
- * A CONDIÇÃO DE NASCIMENTO MORA NA PRIMEIRA GUARDA, e ela cobre os DOIS
- * caminhos — a direção E o `up`. Com o giro na identidade nada roda:
- * `outDir` recebe a direção de repouso e `outUp` recebe o que
- * `upDoAtlas` sempre devolveu, sem uma multiplicação no meio. Não é
- * «a conta dá o mesmo» — é a conta NÃO ACONTECER, e por isso vale em
- * TODA geometria: dentro da faixa da cedência, fora dela, com o corpo
- * deitado ou em pé, no solstício ou no equinócio. Nenhuma vista parada
- * pode andar, e nenhum corpo é caso especial.
+ * A CONDIÇÃO DE NASCIMENTO COBRE OS DOIS CAMINHOS — a direção E o `up` —,
+ * e é protegida DUAS VEZES, o que é diferente de ser protegida uma vez e
+ * bem:
+ *
+ *  1. a GUARDA da identidade curto-circuita a conta inteira: com o dedo
+ *     parado, `outDir` recebe a direção de repouso e `outUp` recebe o que
+ *     `upDoAtlas` sempre devolveu, sem uma multiplicação no meio;
+ *  2. e a conta, quando roda, é bit-exata mesmo assim. MEDIDO por
+ *     sabotagem em 26/08: removendo a guarda, as 4.140 geometrias da
+ *     bancada continuam bit a bit idênticas, porque `B·1·B⁻¹` cai em
+ *     `(0,0,0,|B|²)` — os termos imaginários se cancelam EXATAMENTE, aos
+ *     pares dos mesmos produtos — e `|B|²` sai 1,0 exato de um
+ *     `setFromRotationMatrix`.
+ *
+ * A GUARDA FICA, e não por superstição: ela é o caminho barato do caso
+ * comum (a pose parada é a de toda vista pinada), e ela torna a promessa
+ * independente de a base continuar saindo exatamente normalizada — o dia
+ * em que alguém trocar a construção da base, o item (2) pode deixar de
+ * valer calado, e o (1) não deixa.
+ *
+ * O QUE ISSO COMPRA: vale em TODA geometria — dentro da faixa da
+ * cedência, fora dela, com o corpo deitado ou em pé, no solstício ou no
+ * equinócio. Nenhuma vista parada pode andar, e nenhum corpo é caso
+ * especial. (Foi essa a lição que o P4 pagou: lá a alegação valia para a
+ * direção e NÃO para o `up`, e o único dente usava uma geometria fora da
+ * faixa da cedência.)
  *
  * O GIRO MORA NO FRAME DA CÂMERA PARADA, não no do mundo, e a razão é o
  * relógio: o corpo ORBITA, a linha do Sol gira em volta dele, e a base
