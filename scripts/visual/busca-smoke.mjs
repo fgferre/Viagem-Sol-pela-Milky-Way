@@ -536,7 +536,7 @@ try {
       'JSON.stringify(window.__director.engine.camera.position.toArray())'
     ));
   // a câmera "parada" se mede em FRAÇÃO do raio, não por igualdade de
-  // texto: a pose atravessa a conta fechada de `orbitaQueProduz` e
+  // texto: a pose atravessa a conta fechada de `giroQueProduz` e
   // volta com os últimos bits de float trocados (medido, 1e-11 do raio
   // — micrômetros numa vista de unidades astronômicas)
   const andou = (a, b) =>

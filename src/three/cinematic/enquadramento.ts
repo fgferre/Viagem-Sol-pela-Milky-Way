@@ -323,14 +323,11 @@ export function enquadrar(pedido: PedidoDeEnquadramento): Enquadramento {
  * 30° e os 70° passam a ser medidos do lado ESCURO, e o grampo que
  * deveria garantir 67% de disco iluminado garante no máximo 33%.
  *
- * `orbita` é o que o dedo do visitante acumulou, nos DOIS eixos (ver
- * `OrbitaDoVisitante`): a `altura` soma ao pino e varre a INCLINAÇÃO de
- * 0° a 180° (a esfera inteira, item 73 — era o cone de 70°), e a `volta`
- * gira o resultado em torno da própria linha alvo→Sol.
- *
- * A ORDEM importa e é esta: inclina PRIMEIRO, gira DEPOIS. Girar antes
- * seria girar o eixo em torno de si mesmo (identidade) e o eixo novo
- * seria inerte.
+ * O DEDO DO VISITANTE NÃO ENTRA AQUI desde 26/08 (item 102): esta é a
+ * pose de REPOUSO, e quem soma o arrasto por cima dela é
+ * `poseDoVisitante`, com um quaternion e sem ângulo nenhum. Onde este
+ * bloco descrevia dois acumuladores (`altura` na inclinação, `volta` em
+ * torno da linha do Sol), hoje há só o pino de fase.
  *
  * O GRAMPO POLAR vem por último, sobre a direção FINAL: é a direção que
  * chega ao `lookAt` que precisa ficar fora da calota, e a `volta` mexe
@@ -383,12 +380,12 @@ function grampearNoPolo(dir: THREE.Vector3, polo: THREE.Vector3): THREE.Vector3 
  * pediu nada: a linha alvo→Sol inclinada do pino de `PHASE_OFFSET_GRAUS`
  * rumo ao polo, e o grampo polar por cima.
  *
- * É O MESMO TEXTO que `direcaoPrivilegiada` rodava com a órbita parada,
- * letra por letra — o que saiu foram os dois ramos que somavam o dedo
- * (`altura` na inclinação, `volta` em torno da linha do Sol). Eles não
- * mudaram de lugar: MORRERAM, e o dedo passou a somar num quaternion
- * (`GiroDoVisitante`). É por ser o mesmo texto que toda vista parada
- * continua bit a bit onde estava.
+ * É O MESMO TEXTO que a antiga direção privilegiada rodava com a órbita
+ * parada, letra por letra — o que saiu foram os dois ramos que somavam o
+ * dedo (`altura` na inclinação, `volta` em torno da linha do Sol). Eles
+ * não mudaram de lugar: MORRERAM em 26/08 com a função que os hospedava,
+ * e o dedo passou a somar num quaternion (`GiroDoVisitante`). É por ser o
+ * mesmo texto que toda vista parada continua bit a bit onde estava.
  *
  * Ela é a ÂNCORA de tudo o que vem depois: `poseDoVisitante` gira ESTA
  * direção, e o giro guardado é medido contra ELA. Por isso ela não pode

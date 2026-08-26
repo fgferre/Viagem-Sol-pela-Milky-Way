@@ -479,7 +479,7 @@ const PISO_DE_FAISCAS = 40;
  * a mesma receita do de cima — "~⅗ do mínimo observado, folga declarada
  * para cintilação e variação de vista" —, em duas DIREÇÕES: a da escada
  * oficial com `&fov=35` (14–63 faíscas) e a do próprio modo, que é o eixo
- * de `direcaoPrivilegiada` no degrau do corpo do Sol (11–29). Mínimo
+ * de `direcaoDeRepouso` no degrau do corpo do Sol (11–29). Mínimo
  * observado 11 ⇒ piso 7.
  *
  * A diferença entre as duas direções — ~20% — é ANISOTROPIA do céu, não
