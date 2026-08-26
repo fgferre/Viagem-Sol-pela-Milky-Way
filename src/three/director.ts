@@ -2562,12 +2562,21 @@ export class Director {
       this.quadroDasOrbitas.larguraPx = this.engine.renderer.domElement.width;
       this.quadroDasOrbitas.alturaPx = hPx;
       this.quadroDasOrbitas.pixelRatio = this.engine.renderer.getPixelRatio();
+      // A FASE VAI JUNTO porque o FILME NÃO TEM LINHA (item 77, decisão
+      // 3 — autorização dele de 25/08: *"tirar do filme (aceito recriar
+      // a separação entre modos só aí)"*). Quem decide é o mapa
+      // `LINHAS_DE_ORBITA_POR_FASE`, e ele é a ÚNICA regra por modo viva
+      // da casa: o item 61 matou as outras, e ninguém estende esta para
+      // brilho, lente ou nomes. A doutrina está em `fases.ts`; o gate,
+      // dentro do `update` (§7 de `orbitas.ts`), onde não há fio a
+      // cortar em silêncio.
       this.orbitas.update(
         this.engine.camera,
         this.quadroDasOrbitas,
         tanHalfFov,
         dt,
-        this.planetas?.ligado ? this.planetas.posicoes : null
+        this.planetas?.ligado ? this.planetas.posicoes : null,
+        this.phase
       );
     }
     this.dust.update(cam.position, hPx, time);

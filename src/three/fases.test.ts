@@ -6,10 +6,21 @@
 // da Onda 5 sobre 'atlas' não sejam desfeitas por descuido.
 // ============================================================
 import { describe, expect, it } from 'vitest';
-import { ESCRITOR_DE_CAMERA, HUD_POR_FASE, arrastoFazAlgo } from './fases';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  ESCRITOR_DE_CAMERA,
+  HUD_POR_FASE,
+  LINHAS_DE_ORBITA_POR_FASE,
+  arrastoFazAlgo,
+} from './fases';
 import type { Phase } from './fases';
 
 const FASES = Object.keys(HUD_POR_FASE) as Phase[];
+
+/** o nome que a varredura de estreiteza procura — ver o último bloco */
+const NOME_DO_MAPA = 'LINHAS_DE_ORBITA_POR_FASE';
 
 describe('as fases e os dois mapas', () => {
   it('são as seis de hoje — acrescentar uma é decisão, não detalhe', () => {
@@ -155,5 +166,98 @@ describe('arrastoFazAlgo — a fase promete o que o arrasto entrega', () => {
   it('com o filme CORRENDO o cursor não convida — o dono da câmera é o roteiro', () => {
     expect(arrastoFazAlgo('journey', false)).toBe(false);
     expect(arrastoFazAlgo('intro', false)).toBe(false);
+  });
+});
+
+// ------------------------------------------------------------
+// A ÚNICA REGRA POR MODO VIVA DA CASA (item 77 · decisão 3, 25/08).
+//
+// O item 61 matou as regras por modo com lápide, e `simbolosProibidos.
+// test.ts` vigia cada uma para que não ressuscite. Esta UMA está viva
+// porque ELE a autorizou pelo nome, depois de ver as linhas dentro do
+// filme: *"tirar do filme (aceito recriar a separação entre modos só
+// aí)"*. O "só aí" é o tamanho da permissão, e o que segue é o que o
+// torna cobrável em vez de prometido:
+//
+//  1. o VALOR de cada fase, exaustivo — inverter o gate reprova aqui;
+//  2. a ESTREITEZA, varrida na árvore — estender a exceção a uma segunda
+//     camada reprova aqui;
+//  3. e o COMPORTAMENTO (a camada de verdade, no quadro de verdade) mora
+//     em `world/orbitas.test.ts`, §7.
+//
+// O QUE ISTO NÃO PROMETE, na disciplina de `clarao.test.ts`: um dente de
+// unidade mede o caminho padrão, e a varredura de texto mede um NOME.
+// Quem quiser distinguir modo por outro caminho — outro nome, outro
+// canal — passa por aqui. O que a lista encarece é a extensão ÓBVIA
+// desta exceção, que é a que a conversa futura tentaria primeiro. Quem
+// vier depois: acrescente o dente, não a promessa.
+// ------------------------------------------------------------
+describe('as linhas de órbita são a ÚNICA regra por modo (item 77 · decisão 3)', () => {
+  it('o mapa responde as seis fases — o filme fora, o Atlas e o voo dentro', () => {
+    // exaustivo e digitado: fase nova sem decisão já não compila (o
+    // `satisfies Record<Phase, boolean>`), e inverter um valor cai aqui
+    const esperado: Record<Phase, boolean> = {
+      loading: false,
+      intro: false,
+      journey: false,
+      end: false,
+      free: true,
+      atlas: true,
+    };
+    expect(Object.keys(LINHAS_DE_ORBITA_POR_FASE)).toEqual(FASES);
+    for (const fase of FASES) {
+      expect(LINHAS_DE_ORBITA_POR_FASE[fase], fase).toBe(esperado[fase]);
+    }
+    // e a forma da lei, dita sem depender da tabela acima: TODA fase de
+    // filme está fora, e ela é exatamente o complemento das duas que
+    // ficam
+    const fora = FASES.filter((f) => !LINHAS_DE_ORBITA_POR_FASE[f]);
+    expect(fora).toEqual(['loading', 'intro', 'journey', 'end']);
+    expect(FASES.filter((f) => LINHAS_DE_ORBITA_POR_FASE[f])).toEqual(['free', 'atlas']);
+  });
+
+  it('a exceção não vaza: só a camada das órbitas consulta o mapa', () => {
+    const SRC = fileURLToPath(new URL('..', import.meta.url));
+    const consumidores = readdirSync(SRC, { recursive: true, encoding: 'utf8' })
+      .filter((rel) => /\.(ts|tsx)$/.test(rel))
+      .filter((rel) => readFileSync(join(SRC, rel), 'utf8').includes(NOME_DO_MAPA))
+      .map((rel) => rel.split(sep).join('/'))
+      .sort();
+    // A CASA INTEIRA, e é curta de propósito: quem DECLARA (fases.ts),
+    // quem CONSOME (a camada das órbitas), quem CITA (o `director.ts`,
+    // no comentário do ponto de chamada — a regra tem de ser legível
+    // onde a fase é entregue) e os três testes que os cobram. Uma linha
+    // a mais aqui é a exceção sendo estendida — para brilho, para lente,
+    // para nomes —, e é exatamente isso que ele NÃO autorizou.
+    expect(consumidores).toEqual([
+      'three/director.test.ts',
+      'three/director.ts',
+      'three/fases.test.ts',
+      'three/fases.ts',
+      'three/world/orbitas.ts',
+    ]);
+    // ...e o director CITA sem LER: quem decide é a camada, num lugar
+    // só. Um import aqui seria um segundo ponto de decisão.
+    const doDirector = readFileSync(join(SRC, 'three', 'director.ts'), 'utf8');
+    expect(doDirector).not.toMatch(new RegExp(`import[^;]*${NOME_DO_MAPA}`));
+  });
+
+  it('a varredura acha o que procura — um padrão quebrado passaria calado', () => {
+    // o cinto do selo: se o nome mudar e ninguém atualizar a busca, a
+    // lista acima ficaria VAZIA e o `toEqual` passaria a ser um teste de
+    // nada. Aqui se prova que o nome procurado é o nome que existe.
+    expect(Object.keys({ LINHAS_DE_ORBITA_POR_FASE })[0]).toBe(NOME_DO_MAPA);
+    const fonte = readFileSync(new URL('./fases.ts', import.meta.url), 'utf8');
+    expect(fonte).toContain(`export const ${NOME_DO_MAPA}`);
+    // e a autorização fica ESCRITA junto do mapa: quem ler a regra tem
+    // de encontrar de quem é a permissão, sem sair do arquivo. O texto
+    // corre num parágrafo de bloco `/** */`, então o `*` de margem sai
+    // antes da comparação — senão a citação só passaria por sorte de
+    // quebra de linha.
+    const corrido = fonte.replace(/\n\s*\*\s?/g, ' ');
+    expect(corrido).toContain('tirar do filme (aceito recriar a separação entre modos só aí)');
+    expect(corrido).toContain('item 77');
+    // o cinto do cinto: a normalização acha o que a crua perderia
+    expect('a *\n * b'.replace(/\n\s*\*\s?/g, ' ')).toBe('a * b');
   });
 });

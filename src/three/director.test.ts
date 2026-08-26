@@ -225,3 +225,43 @@ describe('as portas de leitura do harness', () => {
     expect(ENGINE).toContain('export const GRAMPO_DO_PASSO_S = 0.05;');
   });
 });
+
+// ============================================================
+// A FASE QUE VAI ÀS LINHAS DE ÓRBITA (item 77 · decisão 3, 25/08).
+//
+// O gate mora DENTRO de `Orbitas.update` (§7 de `world/orbitas.ts`), e a
+// fase chega lá como parâmetro OBRIGATÓRIO — apagá-lo não compila. Mas
+// há um furo que compila e que a suíte inteira atravessava calada, e ele
+// foi encontrado por SABOTAGEM: o director passar uma fase DIGITADA
+// (`'atlas'`) em vez da viva. As linhas voltavam ao filme, 2.319 testes
+// seguiam verdes, e nenhum juiz de Node abre este arquivo por conta
+// própria — este bloco é a resposta, na disciplina do resto do arquivo.
+// ============================================================
+describe('o gate de fase das linhas de órbita (item 77 · decisão 3)', () => {
+  const CHAMADA = FONTE.match(/this\.orbitas\.update\(([\s\S]*?)\n {6}\);/);
+
+  it('a varredura acha o que procura — um padrão quebrado passaria calado', () => {
+    // o cinto do selo: sem a chamada casada, os dois casos abaixo
+    // passariam por não terem o que ler
+    expect(CHAMADA, 'o director não chama mais `orbitas.update`').not.toBeNull();
+    expect(CHAMADA![1]).toContain('this.engine.camera');
+  });
+
+  it('a camada recebe a fase VIVA, nunca uma fase digitada', () => {
+    expect(CHAMADA![1]).toContain('this.phase');
+    // um literal aqui é o furo da sabotagem: compila, passa a suíte e
+    // devolve as linhas ao filme sem que nada reclame
+    expect(CHAMADA![1]).not.toMatch(/'(loading|intro|journey|end|free|atlas)'/);
+  });
+
+  it('a autorização fica LEGÍVEL no ponto de chamada, com dono e número', () => {
+    // a regra é exceção à lei do mundo único (item 61): quem ler esta
+    // linha tem de descobrir ali mesmo de quem é a permissão. Não é
+    // enfeite — é o que impede a próxima conversa de tratá-la como
+    // precedente.
+    const antes = FONTE.slice(0, FONTE.indexOf('this.orbitas.update(')).slice(-900);
+    expect(antes).toContain('item 77');
+    expect(antes).toContain('LINHAS_DE_ORBITA_POR_FASE');
+    expect(antes).toContain('tirar do filme');
+  });
+});

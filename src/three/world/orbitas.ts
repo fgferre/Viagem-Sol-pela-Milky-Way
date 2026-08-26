@@ -208,6 +208,25 @@
 // rede a máquina do tempo fica em `indisponivel`, os dez corpos ficam
 // no retrato e esta camada fica vazia junto — degradação declarada, do
 // mesmo feitio da que o HUD já anuncia ao visitante.
+//
+// ------------------------------------------------------------
+// 7. O FILME NÃO TEM LINHA — a exceção que ELE autorizou
+// ------------------------------------------------------------
+// Na coda o filme paga a efeméride, e a partir daí as linhas apareciam
+// dentro do filme — foi assim que ele as viu, na volta para casa
+// (`capturas/item77-filme-volta-para-casa.png`). A decisão 3 do item 77
+// é dele, de 25/08: *"tirar do filme (aceito recriar a separação entre
+// modos só aí)"*.
+//
+// É A ÚNICA REGRA POR MODO VIVA DA CASA, e o "só aí" é o tamanho dela: o
+// item 61 matou todas as outras com lápide, e nada aqui as ressuscita. A
+// doutrina inteira — de que lei isto é exceção, quem a autorizou e por
+// que ninguém a estende para brilho, lente, nomes ou bloom — mora em
+// `fases.ts`, no `LINHAS_DE_ORBITA_POR_FASE`. Aqui fica só o consumo.
+//
+// A GAVETA NÃO PERDE NADA: o `noorbitas` continua governando a camada no
+// Atlas e no voo livre, exatamente como antes. O gate MULTIPLICA-SE com
+// ele; não o substitui.
 // ============================================================
 import * as THREE from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
@@ -217,6 +236,12 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalact
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 import { GM_CORPOS } from '../../lib/atlas/massas';
 import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+// A EXCEÇÃO DO §7, e é o único import de FASE em toda a pasta `world/`.
+// Ele está aqui por autorização nomeada dele (item 77, decisão 3); o
+// mapa carrega a doutrina e `fases.test.ts` varre a árvore para que este
+// arquivo continue sendo o único a consumi-lo.
+import { LINHAS_DE_ORBITA_POR_FASE } from '../fases';
+import type { Phase } from '../fases';
 import { FOTOMETRIA, IDS_FOTOMETRIA } from './planetas/fotometria';
 
 /** segundos num dia — o fator da conversão de μ, escrito uma vez */
@@ -1092,21 +1117,40 @@ export class Orbitas {
    * escrevia matava a cessão em silêncio; como parâmetro, apagá-la não
    * compila. `null` — camada dos corpos apagada — devolve a linha inteira,
    * e É uma declaração, não um esquecimento.
+   *
+   * `fase` É PARÂMETRO PELA MESMÍSSIMA RAZÃO, e a razão vale o dobro aqui:
+   * um gate de modo que se pudesse cortar em silêncio devolveria as linhas
+   * ao filme sem derrubar teste nenhum, e a decisão 3 do item 77 (§7)
+   * voltaria a ser conversa. Como parâmetro obrigatório, apagá-lo não
+   * compila — nem no `director.ts`, nem nos treze quadros de teste que a
+   * passam.
    */
   update(
     camera: THREE.PerspectiveCamera,
     quadro: QuadroEmPx,
     tanHalfFov: number,
     dtS: number,
-    corpos: Float32Array | null
+    corpos: Float32Array | null,
+    fase: Phase
   ) {
-    this.group.visible = this.ligado;
+    // O GATE DE FASE, e é o ÚNICO da casa (§7 — autorização DELE de
+    // 25/08, item 77 decisão 3: *"tirar do filme (aceito recriar a
+    // separação entre modos só aí)"*). O `&&` é a lei inteira: a gaveta
+    // continua mandando onde sempre mandou, e o filme tira por cima.
+    // Ninguém estende isto a outra camada — ver o mapa em `fases.ts`.
+    const desenha = this.ligado && LINHAS_DE_ORBITA_POR_FASE[fase];
+    this.group.visible = desenha;
     this.escreverNucleos(camera, quadro, corpos);
-    if (!this.ligado) {
+    if (!desenha) {
       // CAMADA FECHADA: o realce ENCOSTA no alvo em vez de perseguir no
       // escuro. Sem isto, abrir a gaveta depois de um `?foco=` mostraria
       // as trinta linhas subindo do neutro — animação que ninguém pediu,
       // e que nasceria já atrasada.
+      //
+      // E É ESTE MESMO RAMO que paga o gate do filme: com os alfas em
+      // zero, `escreverInstante` deixa de reamostrar (a guarda por
+      // `alfa <= ALFA_INVISIVEL`), então o filme não gasta 30 laços por
+      // salto de data para desenhar nada.
       for (const linha of this.linhas) {
         linha.alfa = 0;
         linha.realce = this.realceAlvo(linha);
@@ -1220,7 +1264,11 @@ export class Orbitas {
   dbg(): string {
     const linhas = [
       `[dbgorbitas] ${this.linhas.length} órbitas · ${this.acesas} acesas · ` +
-        `camada ${this.ligado ? 'ligada' : 'desligada'} · ` +
+        `camada ${this.ligado ? 'ligada' : 'desligada'}` +
+        // GAVETA ABERTA E MESMO ASSIM SEM LINHA é o estado novo do §7, e
+        // um readout que só falasse da gaveta mandaria quem depura
+        // procurar defeito onde há decisão
+        `${this.ligado && !this.group.visible ? ' (fora: o filme não tem linha)' : ''} · ` +
         `foco=${this.foco ?? '—'}${this.animando ? ' (andando)' : ''}`,
     ];
     for (const l of this.linhas) {

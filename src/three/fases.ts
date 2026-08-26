@@ -67,6 +67,53 @@ export function arrastoFazAlgo(fase: Phase, pausada: boolean): boolean {
 }
 
 /**
+ * AS LINHAS DE ÓRBITA DESENHAM nesta fase? — A ÚNICA REGRA POR MODO VIVA
+ * DA CASA, e ela existe porque ELE a autorizou, nominalmente, uma vez.
+ *
+ * DE QUE LEI ISTO É EXCEÇÃO. O item 61 (22/08) matou as regras por modo
+ * com as palavras dele: *"o modo atlas na minha visao deveria ser o modo
+ * único, a viagem na verdade para mim é só uma ferramenta do modo
+ * atlas"*. Desde então o desenho do mundo NÃO depende do modo, e as
+ * regras que dependiam morreram com lápide — o `claraoDoAtlas` e o
+ * `PISO_DO_CLARAO` de `atlasConfig.ts`, o `setGradacao` do bloom em
+ * `core/post.ts` —, todas vigiadas por `simbolosProibidos.test.ts` para
+ * que não ressuscitem.
+ *
+ * A AUTORIZAÇÃO. É a decisão 3 do item 77, e são palavras dele de 25/08,
+ * depois de VER as linhas dentro do filme (a foto é
+ * `capturas/item77-filme-volta-para-casa.png`): *"tirar do filme (aceito
+ * recriar a separação entre modos só aí)"*. O parêntese É a permissão, e
+ * o "só aí" é o tamanho dela.
+ *
+ * O ESCOPO É ESTE MAPA E MAIS NADA: a camada `noorbitas`, e só ela.
+ * Ninguém o estende para brilho, lente, nomes, bloom ou qualquer outra
+ * camada — quem tentar está inventando permissão que ele não deu. E a
+ * estreiteza não é promessa de comentário: `fases.test.ts` varre a
+ * árvore e reprova qualquer consumidor deste mapa que não seja a camada
+ * das órbitas.
+ *
+ * A GAVETA CONTINUA MANDANDO onde sempre mandou. Este mapa não substitui
+ * o `noorbitas`: multiplica-se com ele, dentro de `Orbitas.update`. No
+ * Atlas e no voo livre a camada é o que a gaveta disser; no filme ela
+ * está fora, com a gaveta aberta ou fechada.
+ */
+export const LINHAS_DE_ORBITA_POR_FASE = {
+  // não há cena montada: nada a desenhar. Declarado em vez de herdado de
+  // um `undefined` — é o que o `satisfies` cobra de uma fase nova.
+  loading: false,
+  // AS TRÊS DO FILME, e são um produto só: a intro é a deriva do roteiro
+  // sob a tela de título, 'journey' é o filme correndo e 'end' é ele
+  // congelado no último quadro. É deste produto que as linhas saem.
+  intro: false,
+  journey: false,
+  end: false,
+  // o voo livre é pilotagem, não filme — ganhou as linhas junto com o
+  // Atlas no item 77 e fica com elas
+  free: true,
+  atlas: true,
+} satisfies Record<Phase, boolean>;
+
+/**
  * QUE PEÇAS DO HUD MONTAM em cada fase. Substitui as cadeias do
  * App.tsx que eram só presença — as que têm lógica extra (a dica do
  * pausar-e-olhar depende de `paused`, a linha de rumo depende de haver
@@ -324,4 +371,11 @@ export const HUD_POR_FASE = {
  *     deles, as DUAS ferramentas (`saidasDoAtlas`: ▶ Ver o filme e
  *     ↗ Explorar) e o ↩ Voltar ao filme, que só monta com filme
  *     guardado (item 61, 23/08). [mapa]
+ *
+ * world/orbitas.ts
+ * 29. as LINHAS DE ÓRBITA desenham? ................... DESENHAM no
+ *     Atlas — é a única decisão desta lista que toca a CENA e não o HUD,
+ *     e a única regra por modo viva da casa. Ela é exceção autorizada
+ *     por ele (item 77, decisão 3, 25/08); a doutrina inteira está no
+ *     `LINHAS_DE_ORBITA_POR_FASE`, acima. [mapa]
  */

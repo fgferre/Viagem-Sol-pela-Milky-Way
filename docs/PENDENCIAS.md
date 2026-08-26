@@ -827,8 +827,8 @@ usar zoom, virar e se mover por "algoritmos claros de movimento
 inteligente cinematográfico" — e o destinatário: o motor é ferramenta do
 agente, com instruções.
 
-**77. As linhas de órbita, ligadas por padrão — A CONFERÊNCIA DELE FECHOU
-EM 25/08, E SOBROU UMA OBRA: TIRAR AS LINHAS DO FILME.** A órbita é o DADO,
+**77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
+FALTA SÓ O OLHO DELE.** A órbita é o DADO,
 não enfeite: NASA Eyes, Celestia e SpaceEngine desenham as três. Apareceram
 **30 laços** (os nove planetas e as 21 luas), com camada `noorbitas` na
 gaveta, fade nas duas pontas, lua só com o pai enquadrado, e **sem efeméride
@@ -852,28 +852,50 @@ ficam de pé como estão e não se re-litigam:
    **UMA LINHA** (`HELIO_SEM_PONTO`, em `world/orbitas.ts`), e virou o
    degrau **G1** do item 83.
 
-**A DECISÃO 3 ELE RESPONDEU, E A RESPOSTA É OBRA. Palavras dele, 25/08:**
-*"tirar do filme (aceito recriar a separação entre modos só aí)"*.
+**A DECISÃO 3 ELE RESPONDEU, E A RESPOSTA VIROU OBRA — FEITA em 25/08.
+Palavras dele:** *"tirar do filme (aceito recriar a separação entre modos
+só aí)"*.
 
-**A OBRA, declarada e ÚNICA:** um **gate de fase só para a camada de
-órbitas** — ela continua ligada por padrão no Atlas e **não desenha nada
-durante o filme**. Isto é **EXCEÇÃO AUTORIZADA POR ELE** à lei do mundo
-único (item **61**: *"o modo atlas na minha visao deveria ser o modo
-único"*), e a autorização é **só aí, com as palavras dele**: ninguém a
-estende para brilho, lente, nomes, bloom ou qualquer outra camada, e quem
-tentar está inventando permissão que ele não deu. A vista que volta ao que
-era é a **volta para casa (t=180)**, a mesma de
-`capturas/item77-filme-volta-para-casa.png` — as outras seis vistas de filme
-do gate já saíam bit-idênticas. Quem executar escreve a exceção **no lugar
-onde o `if (fase)` nascer**, cita este item e volta com o par de fotos de
-t=180.
+**⛔ O QUE FALTA NESTE ITEM É SÓ O OLHO DELE:**
+`capturas/item77-filme-sem-orbitas.png` — a volta para casa ANTES (as
+quatro elipses sobre o Sol) × DEPOIS (o céu do filme, sem linha). Se ele
+aprovar, o item fecha e vai para o museu.
 
-**AS FOTOS:** `capturas/item77-atlas-com-orbitas.png` e
-`item77-atlas-sem-orbitas.png` (o par que decide, na vista de 226,84 UA que
-desde o item 61 é o TETO do zoom — **não é o candidato (a)**, que é o
-sistema interno de `capturas/vista-padrao-abertura.png`),
-`item77-jupiter-luas.png`, `item77-lua-fade.png` e
-`item77-filme-volta-para-casa.png`.
+**ONDE A EXCEÇÃO MORA, para quem for mexer nisso um dia.** O mapa
+`LINHAS_DE_ORBITA_POR_FASE` (`three/fases.ts`) diz, fase a fase, se a
+camada desenha: **não** no filme (`intro`, `journey`, `end`) e no
+`loading`; **sim** no Atlas e no voo livre. Quem lê o mapa é UM só — a
+camada, dentro de `Orbitas.update` (`world/orbitas.ts`, §7) —, e a fase
+chega lá como **parâmetro obrigatório**: apagá-lo não compila. A gaveta
+não perdeu nada: o `noorbitas` continua governando a camada onde sempre
+governou, e o gate se MULTIPLICA com ele.
+
+**É EXCEÇÃO AUTORIZADA POR ELE** à lei do mundo único (item **61**: *"o
+modo atlas na minha visao deveria ser o modo único"*), e a autorização é
+**só aí, com as palavras dele**: ninguém a estende para brilho, lente,
+nomes, bloom ou qualquer outra camada, e quem tentar está inventando
+permissão que ele não deu. **Isso não é promessa de comentário:**
+`fases.test.ts` varre a árvore e reprova qualquer consumidor do mapa que
+não seja a camada das órbitas.
+
+**A PROVA, em número.** `ab-identidade` nas **61 vistas**: **UMA** difere —
+`mergulho` (a volta para casa, t=180), `a6efa49a8749` → `b0c38175a512`;
+**56 IGUAIS**, e o Atlas entre elas (`atlas 45082fd1a0e5` dos dois lados,
+mais as 12 de `foco-*`/`anao-*`). As **4 INSTÁVEIS** (`eclipse-limbo`,
+`saturno-anel`, `saturno-anelnb`, `foco-titan`) já não repetiam **no lado
+ANTES**, com o código de HEAD: é tremor herdado, não desta obra. O diff de
+pixel do `mergulho`: **11.038 px de 3.083.400 (0,358%)**, e **11.027 SÓ
+PERDERAM luz** — assinatura de conteúdo que sumiu, não de ULP.
+**Sabotagem** (worktree, 77 dentes): gate removido → 2 reprovam; gate
+invertido → 10; exceção estendida a outra camada → 1; director passando
+fase digitada → 1; parâmetro apagado → **20 erros de compilação**.
+
+**AS FOTOS:** `capturas/item77-filme-sem-orbitas.png` (a que espera o olho
+dele), `item77-atlas-com-orbitas.png` e `item77-atlas-sem-orbitas.png` (o
+par que decidiu o Atlas, na vista de 226,84 UA que desde o item 61 é o TETO
+do zoom — **não é o candidato (a)**, que é o sistema interno de
+`capturas/vista-padrao-abertura.png`), `item77-jupiter-luas.png`,
+`item77-lua-fade.png` e `item77-filme-volta-para-casa.png`.
 
 **A história completa está no ARQUIVO, item 77.**
 
@@ -1467,7 +1489,12 @@ estelar. Os uniformes do campo (`STAR_VERT`/`STAR_FRAG`, escritos por
 posição e do `catFade` — que depende da DISTÂNCIA de casa, não da fase.
 As três regras por modo que já existiram (`claraoDoAtlas`, o
 `setGradacao` do bloom e a dose por fase do clarão) estão mortas, com
-lápide e com `simbolosProibidos.test.ts` guardando o túmulo. E a *dose do
+lápide e com `simbolosProibidos.test.ts` guardando o túmulo. *(Desde
+25/08 existe UMA regra por modo viva na casa, e ela não é de luz: as
+LINHAS DE ÓRBITA não desenham no filme — exceção que ELE autorizou pelo
+nome, item **77** decisão 3. Ela governa a visibilidade de uma camada de
+instrumento, não brilho, exposição, bloom nem ganho do campo, e
+`fases.test.ts` reprova qualquer tentativa de estendê-la.)* E a *dose do
 Sol por fase* de `director.ts` foi seguida até o fim do fio: alimenta só
 `cycleAmpK` em `world/sol/activity.js` (manchas e plages do CORPO do
 Sol) e não toca o campo.

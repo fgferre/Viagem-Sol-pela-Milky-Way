@@ -40,6 +40,9 @@ import { EPOCA_JD_TDB } from './planetas/retrato2026';
 import { Planetas, UA_POR_PC } from './planetas/planetas';
 import { IDS_FOTOMETRIA } from './planetas/fotometria';
 import { CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA } from '../atlasConfig';
+// só o TIPO: quem consome o MAPA de fases é a camada, e é `fases.test.ts`
+// que varre a árvore para garantir que continue sendo só ela (§7)
+import type { Phase } from '../fases';
 import {
   ATLAS_FOV_GRAUS,
   BORDA_DO_SISTEMA_INTERNO,
@@ -295,7 +298,7 @@ describe('a camada no quadro', () => {
     // linhas se ela estivesse aberta — senão o teste passaria por falta
     // de assunto em vez de por causa da porta
     orbitas.ligado = false;
-    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null);
+    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null, 'atlas');
     expect(orbitas.group.visible).toBe(false);
     expect(orbitas.acesas).toBe(0);
     // o QUADRO é caminho puro: quem fala com o motor é `escreverInstante`,
@@ -306,7 +309,7 @@ describe('a camada no quadro', () => {
     // veredito acima mede a porta, e não um enquadramento vazio
     orbitas.ligado = true;
     orbitas.escreverInstante(EPOCA_JD_TDB, fonte);
-    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null);
+    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null, 'atlas');
     expect(orbitas.acesas).toBeGreaterThan(0);
     expect(fonte.contagem()).toBeGreaterThan(0);
     orbitas.dispose();
@@ -320,7 +323,7 @@ describe('a camada no quadro', () => {
     // com ou sem motor. Sem ESTE update o teste passaria mesmo que o
     // quadro acendesse linha a partir do retrato congelado, que é
     // exatamente o defeito que o §6 proíbe.
-    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null);
+    orbitas.update(cameraDoTeto(), quadroDe(1800), TAN_35, 0, null, 'atlas');
     expect(orbitas.acesas).toBe(0);
     expect(orbitas.dbg()).toContain('0 acesas');
     // e a geometria continua VAZIA: nada foi escrito de lugar nenhum
@@ -360,7 +363,7 @@ describe('a camada no quadro', () => {
       // duas camadas (`director.ts`)
       pontos.escreverInstante(jd, motor);
       orbitas.escreverInstante(jd, motor);
-      orbitas.update(camera, quadroDe(1800), tanHalfFov, 0, null);
+      orbitas.update(camera, quadroDe(1800), tanHalfFov, 0, null, 'atlas');
     };
     for (const jd of [EPOCA_JD_TDB, EPOCA_JD_TDB + 3653]) {
       // DOIS quadros, e o segundo é o contrato: uma linha que estava
@@ -425,7 +428,8 @@ describe('a camada no quadro', () => {
     camera.position.set(0, 0, distancia);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld(true);
-    orbitas.update(camera, quadroDe(900), Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360), 0, null);
+    const tanAtlas = Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360);
+    orbitas.update(camera, quadroDe(900), tanAtlas, 0, null, 'atlas');
 
     const alfaDe = (id: string) => {
       const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
@@ -536,7 +540,7 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     const tan = Math.tan((35 * Math.PI) / 360);
     const quadro = (jd: number) => {
       orbitas.escreverInstante(jd, motor);
-      orbitas.update(cam, quadroDe(1800), tan, 0, null);
+      orbitas.update(cam, quadroDe(1800), tan, 0, null, 'atlas');
     };
 
     quadro(EPOCA_JD_TDB);
@@ -639,7 +643,7 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     // meio. A rampa tem teste próprio, abaixo.
     const quadro = () => {
       orbitas.escreverInstante(EPOCA_JD_TDB, motor);
-      orbitas.update(cam, quadroDe(900), TAN_ATLAS, 0, null);
+      orbitas.update(cam, quadroDe(900), TAN_ATLAS, 0, null, 'atlas');
     };
     return { orbitas, quadro };
   }
@@ -781,11 +785,11 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     // SEM FOCO A CAMADA NUNCA SEGURA O OBTURADOR — é o que mantém as 52
     // vistas antigas capturando no tempo de antes. Um `animando` que
     // ficasse verdadeiro aqui somaria segundos a TODA a leva.
-    orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null);
+    orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null, 'atlas');
     expect(orbitas.animando).toBe(false);
 
     orbitas.foco = 'jupiter';
-    orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null);
+    orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null, 'atlas');
     expect(orbitas.animando, 'a troca de alvo tem de ATRAVESSAR').toBe(true);
 
     // E ATRAVESSA MONOTONICAMENTE: subir e descer no caminho é o pisca
@@ -797,7 +801,7 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     let anterior = 0;
     let assentouEm = -1;
     for (let k = 0; k < 90; k++) {
-      orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null);
+      orbitas.update(cam, quadroDe(900), TAN_ATLAS, passo, null, 'atlas');
       expect(linha.material.opacity, `quadro ${k}`).toBeGreaterThanOrEqual(anterior);
       anterior = linha.material.opacity;
       if (assentouEm < 0 && !orbitas.animando) assentouEm = k;
@@ -850,7 +854,7 @@ describe('a linha cede ao núcleo do corpo que ela desenha', () => {
     const orbitas = new Orbitas();
     orbitas.ligado = true;
     orbitas.escreverInstante(EPOCA_JD_TDB, motor);
-    orbitas.update(camera, quadro, T, 0, posicoes);
+    orbitas.update(camera, quadro, T, 0, posicoes, 'atlas');
     return { orbitas, camera, posicoes };
   }
 
@@ -949,7 +953,7 @@ describe('a linha cede ao núcleo do corpo que ela desenha', () => {
     expect(orbitas.nucleoDe('venus')!.w).toBeGreaterThan(0);
     // atrás do olho, no MESMO eixo em que a câmera está
     posicoes[I_VENUS * 3 + 2] = D * 2;
-    orbitas.update(camera, quadro, T, 0, posicoes);
+    orbitas.update(camera, quadro, T, 0, posicoes, 'atlas');
     expect(orbitas.nucleoDe('venus')!.w).toBe(0);
     orbitas.dispose();
   });
@@ -960,8 +964,108 @@ describe('a linha cede ao núcleo do corpo que ela desenha', () => {
     expect(orbitas.nucleoDe('venus')!.w).toBeGreaterThan(0);
     // camada dos corpos apagada: o director entrega `null`, e a linha
     // volta inteira no MESMO quadro
-    orbitas.update(camera, quadro, T, 0, null);
+    orbitas.update(camera, quadro, T, 0, null, 'atlas');
     expect(orbitas.nucleoDe('venus')!.w).toBe(0);
+    orbitas.dispose();
+  });
+});
+
+// ------------------------------------------------------------
+// §7 — O FILME NÃO TEM LINHA. A exceção que ELE autorizou (item 77,
+// decisão 3, 25/08): *"tirar do filme (aceito recriar a separação entre
+// modos só aí)"*.
+//
+// O DENTE MEDE VALOR EXECUTADO, não fonte: a camada de verdade, a
+// efeméride de verdade, o mesmo quadro para as seis fases. É a única
+// forma de a diferença ser atribuível à FASE — se o enquadramento ou a
+// gaveta mudassem junto, o teste passaria por outro motivo.
+//
+// E O GATE NÃO SE CORTA EM SILÊNCIO: `fase` é parâmetro OBRIGATÓRIO de
+// `update`, então apagá-lo não compila — aqui, no `director.ts` e nos
+// treze quadros dos blocos acima.
+// ------------------------------------------------------------
+describe('O FILME NÃO TEM LINHA (§7 — item 77 · decisão 3)', () => {
+  /**
+   * A VOLTA PARA CASA em condição de laboratório: a câmera do TETO do
+   * Atlas (224 UA, a vista em que MAIS linhas acendem), a efeméride viva
+   * na época e a gaveta ABERTA. Tudo idêntico entre as chamadas menos a
+   * fase.
+   */
+  function quadroNaFase(fase: Phase) {
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    camera.position.set(0, 0, 224 / UA_POR_PC);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    orbitas.update(camera, quadroDe(1800), Math.tan((35 * Math.PI) / 360), 0, null, fase);
+    const visto = { visivel: orbitas.group.visible, acesas: orbitas.acesas };
+    orbitas.dispose();
+    return visto;
+  }
+
+  it('as seis fases, com a gaveta ABERTA — o filme fora, o resto dentro', () => {
+    // exaustiva de propósito, e digitada: uma fase nova sem decisão cai
+    // no `satisfies` de `fases.ts` e reprova aqui junto
+    const esperado: Record<Phase, boolean> = {
+      // sem cena montada não há o que desenhar
+      loading: false,
+      // AS TRÊS DO FILME — a intro é a deriva sob a tela de título,
+      // 'journey' é o filme correndo, 'end' é ele congelado. É desta
+      // vista, a `volta-para-casa` de t=180, que ele mandou tirar as
+      // linhas (`capturas/item77-filme-volta-para-casa.png`)
+      intro: false,
+      journey: false,
+      end: false,
+      // o voo livre é pilotagem, não filme
+      free: true,
+      // e o Atlas é a casa das linhas desde o item 77
+      atlas: true,
+    };
+    for (const fase of Object.keys(esperado) as Phase[]) {
+      const { visivel, acesas } = quadroNaFase(fase);
+      expect(visivel, `${fase}: grupo visível`).toBe(esperado[fase]);
+      if (esperado[fase]) {
+        expect(acesas, `${fase} devia acender linha`).toBeGreaterThan(0);
+      } else {
+        expect(acesas, `${fase} não devia acender linha nenhuma`).toBe(0);
+      }
+    }
+  });
+
+  it('o gate NÃO come a gaveta: no Atlas quem manda continua sendo `noorbitas`', () => {
+    // a outra metade da lei. O `&&` tem dois lados, e um gate que
+    // ignorasse a gaveta passaria o teste de cima inteirinho.
+    const orbitas = new Orbitas();
+    orbitas.ligado = false;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    camera.position.set(0, 0, 224 / UA_POR_PC);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    orbitas.update(camera, quadroDe(1800), Math.tan((35 * Math.PI) / 360), 0, null, 'atlas');
+    expect(orbitas.group.visible).toBe(false);
+    expect(orbitas.acesas).toBe(0);
+    orbitas.dispose();
+  });
+
+  it('o readout do `?dbgorbitas` não manda ninguém caçar defeito onde há decisão', () => {
+    // gaveta ABERTA e mesmo assim sem linha é o estado novo do §7 — e um
+    // readout que só falasse da gaveta diria "camada ligada · 0 acesas"
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    camera.position.set(0, 0, 224 / UA_POR_PC);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    const tan = Math.tan((35 * Math.PI) / 360);
+    orbitas.update(camera, quadroDe(1800), tan, 0, null, 'journey');
+    expect(orbitas.dbg()).toContain('o filme não tem linha');
+    // ...e no Atlas o aviso não aparece, senão ele seria decoração fixa
+    orbitas.update(camera, quadroDe(1800), tan, 0, null, 'atlas');
+    expect(orbitas.dbg()).not.toContain('o filme não tem linha');
     orbitas.dispose();
   });
 });
