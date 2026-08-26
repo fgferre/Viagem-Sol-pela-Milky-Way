@@ -68,7 +68,8 @@ delas já serviram; o **modo real do 91** volta à prancheta com palavra dele
 (*"escuro demais, repensar"*); **86**, **87** e o novo **100** nasceram
 decididos; e a fita do **83** ficou com uma queixa pela metade — as
 palavras chegaram no chat do mesmo dia (*"lindas e profissionais como as
-do nasa eyes"*; a receita da caneta está no item — A1 anda, depois A2). **A fila decidida, que se
+do nasa eyes"*; a receita da caneta está no item — **o A1 pousou em
+25/08 e o colar está morto**, agora o A2). **A fila decidida, que se
 ACRESCENTA à de cima e não a substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
 esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
 esperam o olho dele) → ~~**92**~~ (25/08 — pousou, e não era de Éris: era
@@ -104,8 +105,10 @@ MESMA folha de fotos das propostas do modo real.
 oito pranchas dos itens 88, 92 e 95 **já serviram**, e com elas morre a
 nota de "não apagar" das três. **A fita do 83 deixou de esperar palavras:**
 elas chegaram no chat (*"as linhas de órbita finalmente fiquem lindas e
-profissionais como as do nasa eyes"*), e o **A1 ANDA** (depois o A2 da borda macia) — a prova que
-volta é a IMAGEM do colar morto, no Retina. Fora isso, o que vai à Sala
+profissionais como as do nasa eyes"*), e o **A1 POUSOU** em 25/08: a
+IMAGEM do colar morto no Retina está na mesa
+(`capturas/item83-colar-antes-depois.png`) e **espera o olho dele**.
+Segue o **A2** (a borda macia). Fora isso, o que vai à Sala
 são **as folhas que a fila acima vai produzir** — a da calibração + modo
 real primeiro, depois a da lente com a vista de abertura.
 
@@ -1007,9 +1010,9 @@ Conferência, diante de `capturas/item83-fita-zoom-antes-depois.png`, ele
 tinha dito *"estranhei algo (explico no chat)"*. O chat veio: ele quer que
 **as linhas de órbita finalmente fiquem lindas e profissionais como as do
 NASA Eyes**. O que ele VÊ: a fita do L1/L2 ainda **não** está desse jeito.
-**A1 ANDA AGORA; A2 em seguida, DEPOIS da prova do colar morto.** Não se
-espera mais o Passo 0, e não se pergunta de novo o que ele estranhou —
-era isto.
+**O A1 POUSOU em 25/08 e o colar está MORTO (a prova está no bloco dele,
+abaixo); AGORA é o A2.** Não se espera mais o Passo 0, e não se pergunta
+de novo o que ele estranhou — era isto.
 
 **O ALVO É A LINHA LINDA, a mesma ideia de caneta do Eyes — não o
 arquivo deles.** Palavra dele em 25/08: isso é ideia matemática já
@@ -1031,8 +1034,9 @@ mandar chegar perto punha a **TERRA** em quadro. **O OLHO DELE VIU, e
 reprovou o acabamento:** a foto
 `capturas/item83-fita-zoom-antes-depois.png` (mais
 `item83-abertura-antes-depois.png` e `item83-foco-antes-depois.png`) não
-está linda como o Eyes. A próxima foto que decide é a do **A1** (colar
-morto); a de depois é a do **A2** (beira em rampa no zoom 5×).
+está linda como o Eyes. A foto do **A1** (colar morto) já está na mesa:
+`capturas/item83-colar-antes-depois.png`. **A próxima que decide é a do
+A2** (beira em rampa no zoom 5×).
 
 **A RECEITA DA CANETA — 25/08, e é ISTO que se implementa, nesta ordem.**
 A fita é chapada (não é tubo). O Eyes também é: `glowWidth = 0`. O “volume”
@@ -1049,10 +1053,43 @@ visível), `cederAoNucleo`, disciplina do buffer (`espelharNaFita`, nunca
 
 ---
 
-**A1 — JUNTA SEM CONTA (o colar). ANDA AGORA.** É o L2.5-a. Sem isto,
-A2 não salva: a linha continua um terço.
+**A1 — JUNTA SEM CONTA (o colar). POUSOU em 25/08 — o colar está MORTO.**
+Era o L2.5-a. A receita abaixo é o que foi feito, palavra por palavra;
+fica registrada porque é o desenho, não o diário. **O item 83 NÃO fecha:
+o A2 é o próximo.**
 
-A fita tem contas de luz nas juntas: **54 de 340 colunas** com pico ≥ 215,
+**O NÚMERO, medido no quadro vivo** (`scripts/visual/colar-da-fita.mjs`,
+Retina dpr 2, com o relógio ANDANDO e ~34 dias de efeméride sob o
+obturador; recorte de 340 colunas sobre o alto do laço de Saturno a 40
+UA): **45 contas em 19 grupos, vão de 18 px, 100% regulares → ZERO
+contas, zero grupos.** O corpo da fita não se mexeu (154,4 → 152,8 de
+255), o que prova que o que morreu foi o disco em dobro, e não a linha.
+Prancha em `capturas/item83-colar-antes-depois.png`.
+
+**O dente de imagem existe e MORDE:** o juiz declara no cabeçalho a quem
+serve (a frase dele, "lindas e profissionais como as do NASA Eyes"), e a
+mordida foi provada em worktree — revertido só o `dashed: true`, ele
+volta a acusar 44 contas em 19 grupos de vão 18 px e sai ≠ 0. O limiar
+não é os 215 absolutos de 24/08 (aquilo era a exposição DAQUELA foto):
+é o corpo da fita mais 15 de 255, e o veredito exige o PENTE — grupos
+demais, com vão de junta e vão regular —, que é o que separa a junta do
+serrilhado da curva.
+
+**A RE-BASELINE está declarada:** das 61 vistas do `ab-identidade`, **11
+mudaram de pixel** — `atlas`, `foco-jupiter`, `foco-luas`,
+`anao-eris-orbita`, `mercurio`, `mercurionb`, `venus`, `venusnb`,
+`titan`, `titannb` e `eclipse-lunar` —, mais as 3 conhecidas como
+INSTÁVEIS do item **101** (`saturno-anel`, `saturno-anelnb`,
+`foco-titan`), que dão par nulo dos DOIS lados. As outras 47 saíram
+bit-idênticas. **A inocência foi provada por medida, não por argumento:**
+a mesma leva de 61 vistas com `EXTRA='&noorbitas=1'` dos dois lados
+(pré-A1 num worktree, pós-A1 na árvore) fecha **58 IGUAL + as 3
+instáveis, ZERO DIFERE** — com a camada desligada o binário novo é o
+binário velho, então todo o delta de pixel mora na linha de órbita.
+
+O texto abaixo é a receita como foi executada.
+
+A fita tinha contas de luz nas juntas: **54 de 340 colunas** com pico ≥ 215,
 espaçamento **rigorosamente constante de 14 px**. Cada quad do
 `LineMaterial` (caminho de pixels, `worldUnits: false`) estende calota
 redonda nas pontas; a calota do segmento *k* cobre o corpo do *k+1*; em
@@ -1083,9 +1120,12 @@ O destino deste passo é o da fita de referência: ponta cortada reta,
 geometria nem o material de linha — não é gambiarra, é atalho para o
 mesmo desenho.
 
-**Prova:** IMAGEM do colar morto no Retina, fita em movimento (a vista
-parada sem HUD não prova isto). Dente de imagem + re-baseline das 13
-vistas com linha. Só então A2.
+**Prova ENTREGUE:** `capturas/item83-colar-antes-depois.png` (Retina, fita
+em movimento), o dente `scripts/visual/colar-da-fita.mjs` com 13 provas
+de unidade em `colar-da-fita.test.mjs`, duas provas novas em
+`orbitas.test.ts` (uma cobra as três chaves juntas, outra cobra que a
+distância de traço nasce no construtor e não é reposta por salto de data),
+e a re-baseline acima. **Agora o A2.**
 
 ---
 
