@@ -107,7 +107,8 @@ nota de "não apagar" das três. **A fita do 83 deixou de esperar palavras:**
 elas chegaram no chat (*"as linhas de órbita finalmente fiquem lindas e
 profissionais como as do nasa eyes"*), e o **A1 POUSOU** em 25/08: a
 IMAGEM do colar morto no Retina está na mesa
-(`capturas/item83-colar-antes-depois.png`) e **espera o olho dele**.
+(`capturas/item83-colar-antes-depois-v2.png` — a v2 é a que ele julga)
+e **espera o olho dele**.
 Segue o **A2** (a borda macia). Fora isso, o que vai à Sala
 são **as folhas que a fila acima vai produzir** — a da calibração + modo
 real primeiro, depois a da lente com a vista de abertura.
@@ -1151,8 +1152,8 @@ reprovou o acabamento:** a foto
 `capturas/item83-fita-zoom-antes-depois.png` (mais
 `item83-abertura-antes-depois.png` e `item83-foco-antes-depois.png`) não
 está linda como o Eyes. A foto do **A1** (colar morto) já está na mesa:
-`capturas/item83-colar-antes-depois.png`. **A próxima que decide é a do
-A2** (beira em rampa no zoom 5×).
+`capturas/item83-colar-antes-depois-v2.png`. **A próxima que decide é a
+do A2** (beira em rampa no zoom 5×).
 
 **A RECEITA DA CANETA — 25/08, e é ISTO que se implementa, nesta ordem.**
 A fita é chapada (não é tubo). O Eyes também é: `glowWidth = 0`. O “volume”
@@ -1175,24 +1176,49 @@ fica registrada porque é o desenho, não o diário. **O item 83 NÃO fecha:
 o A2 é o próximo.**
 
 **O NÚMERO, medido no quadro vivo** (`scripts/visual/colar-da-fita.mjs`,
-Retina dpr 2, com o relógio ANDANDO e ~34 dias de efeméride sob o
+Retina dpr 2, com o relógio ANDANDO 30 dias de efeméride antes do
 obturador; recorte de 340 colunas sobre o alto do laço de Saturno a 40
-UA): **45 contas em 19 grupos, vão de 18 px, 100% regulares → ZERO
-contas, zero grupos.** O corpo da fita não se mexeu (154,4 → 152,8 de
-255), o que prova que o que morreu foi o disco em dobro, e não a linha.
-Prancha em `capturas/item83-colar-antes-depois.png`; a medida crua nos
-três `capturas/item83-colar-{antes,depois,sabotagem}.json`, e os quadros
-que a produziram em `capturas/item83-colar-cru/` — **não apagar enquanto
-ele não julgar a foto**.
+UA): **44 contas em 19 grupos, vão de 18 px, 100% regulares → ZERO
+contas, zero grupos.** O corpo da fita quase não se mexe (154,7 → 152,8
+de 255), o que prova que o que morreu foi o disco em dobro, e não a
+linha.
 
-**O dente de imagem existe e MORDE:** o juiz declara no cabeçalho a quem
-serve (a frase dele, "lindas e profissionais como as do NASA Eyes"), e a
-mordida foi provada em worktree — revertido só o `dashed: true`, ele
-volta a acusar 44 contas em 19 grupos de vão 18 px e sai ≠ 0. O limiar
-não é os 215 absolutos de 24/08 (aquilo era a exposição DAQUELA foto):
-é o corpo da fita mais 15 de 255, e o veredito exige o PENTE — grupos
-demais, com vão de junta e vão regular —, que é o que separa a junta do
-serrilhado da curva.
+**A FOTO QUE ELE JULGA é a `capturas/item83-colar-antes-depois-v2.png`**
+— recorte de 120 colunas em zoom 15×, com as sete juntas marcadas nas
+MESMAS colunas dos dois lados e, sob cada painel, o pico de luz de cada
+coluna, que é a medida em si: no antes o perfil cruza o limiar sete
+vezes em passo regular; no depois não o encosta em lugar nenhum. A v1
+(`item83-colar-antes-depois.png`) fica ao lado, e não por cima: nela o
+colar quase não se via — foi a queixa da auditoria, e é o que a v2
+conserta. A medida crua está nos três
+`capturas/item83-colar-{antes,depois,sabotagem}.json`, cada um carimbado
+com o commit que o produziu, e os quadros em `capturas/item83-colar-cru/`
+— **não apagar enquanto ele não julgar a foto**.
+
+**O NÚMERO SE REPRODUZ, e isso custou um conserto:** a primeira versão do
+juiz dormia 3 s de relógio de parede, e a efeméride andada virava refém
+da carga da máquina (34,1 / 33,6 / 31,2 dias aqui, 21,4 na corrida do
+auditor), levando o corpo da fita junto no primeiro decimal. Agora a
+andada para por `jd` — 30 dias exatos, com resíduo de ~0,003 gravado no
+arquivo. Duas corridas seguidas devolvem corpo, piso, limiar, contas,
+grupos e vão IGUAIS, e a sabotagem numa árvore separada reproduz o
+pré-A1 **número por número**.
+
+**O dente de imagem existe e MORDE, nas DUAS pontas.** O juiz declara no
+cabeçalho a quem serve (a frase dele, "lindas e profissionais como as do
+NASA Eyes"), e as duas sabotagens foram feitas em worktree:
+
+- revertido só o `dashed: true`, ele volta a acusar **44 contas em 19
+  grupos de vão 18 px** e sai ≠ 0;
+- apagado o gancho que faz o relógio andar, a foto sai de cena PARADA e
+  o pente mede zero — e ele **reprova assim mesmo**, porque fita parada
+  não julga o A1. Sem esse termo, um gancho que deixasse de disparar
+  daria aprovação em silêncio.
+
+O limiar não é os 215 absolutos de 24/08 (aquilo era a exposição DAQUELA
+foto): é o corpo da fita mais 15 de 255, e o veredito exige o PENTE —
+grupos demais, com vão de junta e vão regular —, que é o que separa a
+junta do serrilhado da curva.
 
 **A RE-BASELINE está declarada:** das 61 vistas do `ab-identidade`, **11
 mudaram de pixel** — `atlas`, `foco-jupiter`, `foco-luas`,
@@ -1239,9 +1265,9 @@ O destino deste passo é o da fita de referência: ponta cortada reta,
 geometria nem o material de linha — não é gambiarra, é atalho para o
 mesmo desenho.
 
-**Prova ENTREGUE:** `capturas/item83-colar-antes-depois.png` (Retina, fita
-em movimento), o dente `scripts/visual/colar-da-fita.mjs` com 13 provas
-de unidade em `colar-da-fita.test.mjs`, duas provas novas em
+**Prova ENTREGUE:** `capturas/item83-colar-antes-depois-v2.png` (Retina,
+fita em movimento), o dente `scripts/visual/colar-da-fita.mjs` com 17
+provas de unidade em `colar-da-fita.test.mjs`, duas provas novas em
 `orbitas.test.ts` (uma cobra as três chaves juntas, outra cobra que a
 distância de traço nasce no construtor e não é reposta por salto de data),
 e a re-baseline acima. **Agora o A2.**
