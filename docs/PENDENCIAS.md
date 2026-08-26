@@ -682,6 +682,54 @@ de filmes é rodada longa, e emagrecer os portões antes dela paga a obra em uma
 semana. A prova de saída: o preço da rodada padrão medido antes/depois, e o
 censo publicado com cada morte justificada (nenhum juiz morre em silêncio).
 
+**102. Girar em volta do objeto selecionado é péssimo — e o NASA Eyes faz
+melhor.** (Aberto em 25/08, queixa dele com o Eyes como régua. Palavras
+dele: *"o movimento de rotacionar objetos selecionados do app é
+péssimo... porque somos diferentes do nasa eyes nisso?"*.)
+
+**A CAUSA, medida dos dois lados no mesmo dia** (engenharia reversa do
+bundle deles, leitura do nosso caminho). O giro deles é gostoso por
+quatro peças que aqui faltam ou são diferentes:
+
+1. **Inércia. A deles existe; a nossa, não.** Lá, TODO delta de arrasto
+   passa por um filtro exponencial por quadro (`novo = 0,2·entrada +
+   0,8·anterior`, morto abaixo de 1e-4): o mesmo filtro é a suavização
+   e a inércia — ao soltar o dedo, o giro morre macio. Aqui
+   `addOrbitDelta` (`cinematic/atlasRig.ts`) soma seco no acumulador:
+   a câmera segue o dedo 1:1 e **para seca**. E a ~40 fps (o app é
+   GPU-bound no M1), 1:1 sem filtro lê serrilhado. Detalhe que dói: o
+   nosso ZOOM já tem inércia completa (`zoomDaRoda.ts`); o giro, não —
+   dois gestos do mesmo modo com tatos opostos.
+2. **O eixo do giro.** Lá é lat/lon na esfera em torno do corpo, com a
+   volta em volta do **polo do corpo** (turntable) e a subida travada a
+   ±(90°−1e-4): o polo nunca se cruza, o horizonte nunca faz flip.
+   Aqui a `volta` gira em torno da **linha alvo→Sol**
+   (`OrbitaDoVisitante`, `cinematic/enquadramento.ts`): na pose de
+   repouso (30° da linha) lê-se quase um roll; o efeito escala com
+   sen(φ) e o arrasto horizontal fica **literalmente morto** perto da
+   fase cheia e da nova; e ao passar perto do polo a cedência do `up`
+   (`upDoAtlas`) gira o roll da tela no meio do gesto. A escolha foi
+   deliberada — preserva o ângulo de iluminação, diz o docstring —,
+   mas cobra esse preço. Trocar de eixo mexe na iluminação da vista;
+   **é decisão de desenho, registrar aqui quando tomada.**
+3. **Perto do solo, devagar.** Lá o giro desacelera ao raspar a
+   superfície (fator altura/raio). Aqui o ganho é fixo
+   (`ARRASTO_RAD_POR_PX`) a qualquer distância.
+4. **Janela de toque.** Lá, enquanto o gesto cabe em 5 px e 0,5 s o
+   delta de arrasto é **zero à força** — um toque nunca dá tranco.
+   Aqui a zona morta é descartada e o resto entra com ganho, e um
+   arrasto "fracassado" ainda pode virar clique que re-mira a câmera
+   (`gestos.ts`).
+
+**O QUE SE COPIA — a mecânica, não o código:** o filtro 0,8 no caminho
+do giro (um estado por eixo, cortado em 1e-4, **com correção de
+delta-time** — o deles é por quadro e depende do fps; o nosso não
+pode); a volta no polo do corpo com a subida travada (ver a decisão de
+iluminação acima); a desaceleração perto do solo; a janela de toque
+com delta zero. **O QUE NÃO SE COPIA:** a sensibilidade — a deles
+(0,01 rad/px) é ~4,5× a nossa (`ARRASTO_RAD_POR_PX`), ou seja,
+velocidade de giro **não** é o problema; é tato, não velocidade.
+
 ## MÉDIA — afeta o produto, não salta aos olhos
 
 **97. A órbita acende mais cedo no Retina do que numa tela comum.** Achado
