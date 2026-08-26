@@ -56,6 +56,8 @@ export interface FiosDoDirector {
   setEscada: (v: EstadoDaEscada) => void;
   /** o primeiro arrasto dentro do Atlas — apaga a dica dos gestos */
   girou: () => void;
+  /** a bússola do Atlas acendeu ou apagou (item 102) — só na virada */
+  orientacao: (torta: boolean) => void;
   /** o toque no céu com uma folha aberta — a terceira saída (item 62) */
   fecharGavetas: () => void;
 }
@@ -83,6 +85,7 @@ export function useDirector(fios: FiosDoDirector) {
     setTempo,
     setEscada,
     girou,
+    orientacao,
     fecharGavetas,
   } = fios;
   useEffect(() => {
@@ -119,6 +122,7 @@ export function useDirector(fios: FiosDoDirector) {
       onTempo: setTempo,
       onEscada: setEscada,
       onGirou: girou,
+      onOrientacao: orientacao,
       onFecharGavetas: fecharGavetas,
       // a falha DEPOIS do boot (contexto perdido, exceção em quadro) cai
       // no MESMO véu das três falhas de carga — o App decide a copy pela

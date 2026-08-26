@@ -392,6 +392,69 @@ export function Selo({
 }
 
 /**
+ * A BÚSSOLA — o botão de ZERAR A ORIENTAÇÃO (item 102, 26/08).
+ *
+ * ELE É SUGESTÃO DELE, aceita na mesma frase em que pediu o giro livre:
+ * *"podemos colocar um botao de zerar orientacao, assim como o google
+ * maps tem um botao de norte"*. E a régua que ele deu é a lei da peça: o
+ * botão de norte do Maps aparece quando o mapa está girado, some quando
+ * está no norte, e endireita SEM levar o mapa a outro lugar.
+ *
+ * SÓ APARECE QUANDO HÁ O QUE CONSERTAR, e é isso que o distingue de um
+ * controle: quem nunca torceu o horizonte nunca o vê, e o HUD não ganha
+ * um botão permanente para uma situação que a maioria das sessões não
+ * alcança. Quem decide é o rig, com histerese (`DESVIO_QUE_ACENDE_GRAUS`
+ * / `DESVIO_QUE_APAGA_GRAUS`) — sem ela o botão piscaria em volta do
+ * limiar a cada quadro do arrasto.
+ *
+ * FORA DO FLUXO, e não é preguiça de layout: o rodapé do Atlas é
+ * ALTURA DE CÂMERA (o retângulo útil desconta o HUD, e é por isso que a
+ * dica dos gestos apaga por OPACIDADE com a caixa no lugar). Uma peça
+ * que entra e sai do fluxo mudaria o enquadramento no meio da sessão —
+ * exatamente o pulo que a casa evita em três lugares diferentes. Presa
+ * na borda direita, na altura do meio, ela não desconta nada: não cai
+ * nem na faixa de cima nem na de baixo que o juiz de a11y mede, e é a
+ * única região livre nas DUAS telas (na mesa o alto à direita é a barra
+ * de controles e o pé é o selo; no telefone as duas faixas são tomadas
+ * de ponta a ponta pela barra e pelas alças).
+ *
+ * FILHA DIRETA de `.hud-root`, como todo overlay da casa — é o que faz
+ * o `?shot=2` apagá-la junto com o resto do HUD (a regra do
+ * `.bare-mode` só alcança filhos diretos), e é o que a mantém fora das
+ * 18 vistas oficiais do filme.
+ *
+ * O ÍCONE É A AGULHA, não a rosa inteira: a 2,2 rem uma rosa dos ventos
+ * vira borrão, e o que a peça promete é «isto volta a ficar de pé». O
+ * `aria-label` diz a frase inteira para quem ouve a tela, no mesmo
+ * padrão dos outros controles do Atlas.
+ */
+export function Bussola({ acesa, onEndireitar }: {
+  acesa: boolean;
+  onEndireitar: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`atlas-bussola${acesa ? ' acesa' : ''}`}
+      onClick={onEndireitar}
+      // ela existe no DOM sempre (a transição de opacidade precisa dos
+      // dois estados), mas para o teclado e para o leitor de tela ela só
+      // existe quando está acesa — um botão invisível na ordem de
+      // tabulação é uma armadilha, e `inert` diz isso numa palavra
+      inert={!acesa}
+      aria-hidden={!acesa}
+      tabIndex={acesa ? 0 : -1}
+      aria-label="Endireitar o horizonte"
+      title="Endireitar o horizonte"
+    >
+      <span className="atlas-bussola-agulha" aria-hidden="true">
+        ⌃
+      </span>
+    </button>
+  );
+}
+
+/**
  * A MÁQUINA DO TEMPO (F4/D2). Uma linha de leitura — o instante do céu
  * em pt-BR — e seis controles: o sentido em três botões, a velocidade
  * num que cicla a escada, o AO VIVO e a volta à época do retrato.

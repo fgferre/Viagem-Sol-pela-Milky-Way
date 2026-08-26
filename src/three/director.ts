@@ -77,7 +77,7 @@ import {
 import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
-import { AtlasRig, lerPortaGiro, retanguloUtilDoAtlas } from './cinematic/atlasRig';
+import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { ORIGEM } from './cinematic/enquadramento';
 import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
 import {
@@ -216,6 +216,15 @@ interface DirectorEvents {
    * redesenharia o HUD inteiro a 60 Hz.
    */
   onGirou: () => void;
+  /**
+   * A BÚSSOLA DO ATLAS ACENDEU OU APAGOU (item 102) — o horizonte
+   * ficou torto o bastante para valer um botão, ou voltou a estar de
+   * pé. Sai NA BORDA, nunca por quadro: o desvio anda continuamente
+   * com o dedo e do outro lado do fio há `setState` do React, então
+   * quem decide o booleano (com histerese) é o rig, e este fio só
+   * entrega a virada.
+   */
+  onOrientacao: (torta: boolean) => void;
   /**
    * O TOQUE NO CÉU FECHOU A GAVETA (item 62). Quem decide QUAL toque
    * fecha é `director/gestos.ts`; este fio só entrega o recado ao React,
@@ -414,6 +423,8 @@ export class Director {
   private gestos: ReturnType<typeof ligarGestos> | null = null;
   /** o visitante já arrastou dentro do Atlas? (item 73 — apaga a dica) */
   private jaGirouNoAtlas = false;
+  /** o último veredito da bússola que o React já ouviu (item 102) */
+  private bussolaAcesa = false;
 
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
@@ -699,13 +710,6 @@ export class Director {
     // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
     // no default do Atlas, nunca num caminho terceiro.
     this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
-    // ?giro= — O EIXO EM QUE O DEDO GIRA no Atlas (item 102, P4), pela
-    // mesma lei única de porta (`lerPortaGiro`, enquadramento.ts).
-    // INSTRUMENTO, não produto: existe para o A/B do MESMO binário dos
-    // dois lados — o vídeo que ele confere para decidir se o preço do
-    // turntable (a sombra gira junto com a câmera) vale o que ele compra.
-    // Ausente ou com lixo dentro cai no eixo de sempre.
-    this.atlas.definirEixoDoGiro(lerPortaGiro(this.debug.get('giro')));
     // (a porta `?bcede=` morreu no M1: a cessão do Sol-ponto é
     // `wResolvido` da repartição única — regra iv do §4 da Lei.)
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
@@ -1706,6 +1710,18 @@ export class Director {
   }
 
   /**
+   * ZERA A ORIENTAÇÃO do Atlas — o botão de bússola (item 102), a
+   * sugestão que ele deu e aceitou em 26/08. Endireita o horizonte SEM
+   * mover a mira, em rampa de meio segundo; quem faz a conta é o rig.
+   * `perturbar` porque a câmera vai andar, e a captura precisa saber.
+   */
+  endireitarOrientacao() {
+    if (this.phase !== 'atlas') return;
+    this.atlas.endireitar();
+    this.perturbar();
+  }
+
+  /**
    * A CÂMERA SALTOU. Entrar no Atlas, partir dele e trocar de
    * enquadramento não são voo — a câmera aparece noutro lugar. Além de
    * recomeçar a contagem de estabilidade da captura, isto derruba a
@@ -2254,6 +2270,12 @@ export class Director {
       // amortecido do shot onde o visitante pausou. O dt alimenta a
       // rampa entre degraus (F2b) — fora dela é ignorado.
       this.atlas.apply(cam, escalaDaUi(), larguraDeCss(), dt);
+      // ...e a bússola do HUD, na BORDA: o rig recalculou o veredito
+      // com histerese neste mesmo `apply`, e só a virada atravessa
+      if (this.atlas.horizonteTorto !== this.bussolaAcesa) {
+        this.bussolaAcesa = this.atlas.horizonteTorto;
+        this.events.onOrientacao(this.bussolaAcesa);
+      }
     } else {
       // intro/end: deriva lenta contemplativa
       if (this.phase === 'intro') {

@@ -654,3 +654,78 @@
   opacity: var(--warp);
 }
 
+
+/* --- A BÚSSOLA (item 102): o botão de zerar a orientação ---
+   Só aparece quando o horizonte está torto; quem decide é o rig, com
+   histerese. FORA DO FLUXO e na borda direita à meia altura — a única
+   região livre nas duas telas: na mesa o alto à direita é a
+   `.controls-bar` e o pé é o `.atlas-selo`; no telefone a barra e as
+   alças tomam as duas faixas de ponta a ponta. Presa aqui ela não
+   desconta retângulo útil nenhum (não cai na faixa de cima nem na de
+   baixo que o juiz de a11y mede), e por isso nenhum `*_FRACAO` do
+   `retanguloDoAtlas` muda — a câmera não recua um milímetro por ela
+   existir.
+   Z-INDEX 40, o do selo: abaixo dos diálogos (46) e da barra (45), que
+   é o que impede a bússola de ficar por cima de um painel aberto. */
+.atlas-bussola {
+  position: fixed;
+  right: 3vw;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(220, 230, 248, 0.35);
+  background: rgba(8, 12, 22, 0.42);
+  color: rgba(235, 240, 250, 0.92);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  /* APAGADA POR OPACIDADE, com a caixa no lugar — o precedente é a dica
+     dos gestos (`.free-hint.apagada`). `visibility` entra junto para o
+     botão não capturar o ponteiro enquanto invisível, e a transição a
+     atrasa até o fim do fade para não cortar a saída. */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    visibility 0s linear 0.35s,
+    border-color 0.35s ease,
+    background 0.35s ease;
+}
+.atlas-bussola.acesa {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 0.35s ease,
+    visibility 0s,
+    border-color 0.35s ease,
+    background 0.35s ease;
+}
+.atlas-bussola:hover {
+  background: rgba(255, 214, 150, 0.14);
+  border-color: rgba(255, 214, 150, 0.75);
+  color: #fff;
+  box-shadow: 0 0 24px rgba(255, 200, 120, 0.18);
+}
+.atlas-bussola:focus-visible {
+  outline: 1px solid rgba(255, 219, 164, 0.95);
+  outline-offset: 4px;
+}
+/* a AGULHA, não a rosa: a 2,4 rem uma rosa dos ventos vira borrão, e o
+   que a peça promete é «isto volta a ficar de pé». */
+.atlas-bussola-agulha {
+  font-size: 1.05rem;
+  line-height: 1;
+  /* o glifo `⌃` nasce alto na caixa dele; o empurrão o centra no botão */
+  transform: translateY(0.12em);
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-bussola {
+    transition: none;
+  }
+}

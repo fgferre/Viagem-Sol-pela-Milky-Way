@@ -17,21 +17,20 @@ import * as THREE from 'three';
 import {
   ARRASTO_RAD_POR_PX,
   ATLAS_FOV_GRAUS,
-  EIXO_DO_GIRO_PADRAO,
   GIRO_MORTO_RAD,
+  GRAU,
   POLO_ECLIPTICO,
   SUAVIZACAO_DO_GIRO,
+  desvioDaOrientacao,
   direcaoDaLua,
-  direcaoPrivilegiada,
+  direcaoDeRepouso,
   enquadrar,
-  enrolar,
-  faixaDaAltura,
-  orbitaQueProduz,
+  giroQueProduz,
   orbitaMaisExterna,
+  poseDoVisitante,
   upDoAtlas,
 } from './enquadramento';
 import { LARGURA_DE_MESA_PX, retanguloUtilDoAtlas } from './retanguloDoAtlas';
-import type { EixoDoGiro, OrbitaDoVisitante } from './enquadramento';
 import { ORIGEM } from './enquadramento';
 
 // A FACHADA: o retângulo útil e a matemática do enquadramento moram
@@ -117,6 +116,32 @@ export const FREIO_DO_SOLO_RAIOS = 3;
  */
 export const FREIO_MINIMO_DO_SOLO = 1 / 3;
 
+/**
+ * QUANTO DEMORA O ENDIREITAR, em segundos — a rampa do botão de
+ * bússola. Meio segundo é a mesma duração de `RAMPA_DO_DEGRAU_S`, e
+ * pelo mesmo motivo: é o tempo em que o olho segue uma troca sem
+ * precisar reencontrar a cena. Zerar de uma vez seria a imagem girando
+ * sozinha num quadro, que é a queixa do item 102 posta ao contrário.
+ */
+export const ENDIREITAR_S = 0.5;
+
+/**
+ * ONDE A BÚSSOLA ACENDE, em graus de horizonte torto. 5° é o menor
+ * desvio que se LÊ como torto numa foto — abaixo disso o olho aceita
+ * como enquadramento, e um botão oferecendo consertar o que ninguém viu
+ * torto é ruído.
+ */
+export const DESVIO_QUE_ACENDE_GRAUS = 5;
+
+/**
+ * ...e onde ela apaga. Dois graus, não cinco: com um limiar só o botão
+ * pisca em volta dele enquanto o dedo anda, e a distância entre os dois
+ * números é a histerese que impede isso. Apagar mais cedo do que acende
+ * é a direção certa — quem endireitou fica endireitado por uma faixa,
+ * não por um fio.
+ */
+export const DESVIO_QUE_APAGA_GRAUS = 2;
+
 const _dir = new THREE.Vector3();
 const _dirPai = new THREE.Vector3();
 const _posDestino = new THREE.Vector3();
@@ -127,9 +152,19 @@ const _dirA = new THREE.Vector3();
 const _dirB = new THREE.Vector3();
 const _up = new THREE.Vector3();
 const _delta = new THREE.Vector3();
+/** a pose que está na tela, guardada enquanto o referencial troca */
+const _dirAgora = new THREE.Vector3();
+const _upAgora = new THREE.Vector3();
+/** a direção de repouso do referencial NOVO, âncora do giro guardado */
+const _repouso = new THREE.Vector3();
+/** o passo de rotação do quadro, em torno dos eixos da TELA */
+const _eixoDaTela = new THREE.Vector3();
+const _passoDoGiro = new THREE.Quaternion();
+/** o eixo `z` do frame de repouso — a mira, e o eixo do roll */
+const _EIXO_DA_MIRA = new THREE.Vector3(0, 0, 1);
 
 /**
- * O rig. Estado mínimo: um alvo, um raio de enquadramento e a órbita
+ * O rig. Estado mínimo: um alvo, um raio de enquadramento e o giro
  * que o visitante somou com o ponteiro. Não anima nada — o
  * reposicionamento do Atlas acontece atrás do véu (D3: "não é
  * travessia física"), e é por isso que a prontidão de captura só
@@ -140,15 +175,24 @@ export class AtlasRig {
   readonly alvo = new THREE.Vector3();
   /** raio da esfera enquadrada, em pc */
   private raio = 0;
-  /** o que o dedo do visitante acumulou nos dois eixos */
-  private readonly orbita: OrbitaDoVisitante = { altura: 0, volta: 0 };
+  /**
+   * O QUE O DEDO DO VISITANTE ACUMULOU — uma ROTAÇÃO, guardada no frame
+   * da pose de repouso (ver `GiroDoVisitante`). A identidade é o
+   * repouso, e é dela que sai a condição de nascimento do item 102.
+   */
+  private readonly giro = new THREE.Quaternion();
   /**
    * A CAIXA DE ENTRADA DO QUADRO, em radianos: o que o dedo pediu desde
    * o último `apply`. Vários eventos de ponteiro cabem no mesmo quadro —
    * o navegador entrega `pointermove` em cascata — e todos somam aqui.
    * Esvaziada pelo `consumirOGiro`.
+   *
+   * AQUI AINDA SÃO DOIS NÚMEROS, e é o certo: o que chega do ponteiro é
+   * um par de deltas de TELA, e o par só vira rotação no consumo, onde
+   * há `dt` e onde a base da câmera é conhecida. Guardar um quaternion
+   * de entrada obrigaria a montar a base a cada `pointermove`.
    */
-  private readonly entrada: OrbitaDoVisitante = { altura: 0, volta: 0 };
+  private readonly entrada = { altura: 0, volta: 0 };
   /**
    * O GIRO SUAVIZADO que o quadro vai aplicar — o único estado que a
    * inércia precisa (`SUAVIZACAO_DO_GIRO`). Não é velocidade e não tem
@@ -156,19 +200,39 @@ export class AtlasRig {
    * decai sozinho quando a caixa fica vazia. É isso que faz o giro
    * MORRER MACIO ao soltar em vez de parar seco (item 102, P1).
    */
-  private readonly suav: OrbitaDoVisitante = { altura: 0, volta: 0 };
+  private readonly suav = { altura: 0, volta: 0 };
+  /**
+   * O ENDIREITAR EM CURSO — a bússola do HUD (item 102). `total` é o
+   * roll que o clique mandou desfazer, `t` o quanto da rampa já correu
+   * e `feito` o quanto dele já foi aplicado ao `giro`. `total = 0` quer
+   * dizer «não há nada endireitando».
+   *
+   * POR DIFERENÇA E NÃO POR DESTINO: cada quadro aplica só o pedaço que
+   * falta desde o quadro anterior, então o dedo pode arrastar POR CIMA
+   * do endireitar sem que um desfaça o outro — e um arrasto de verdade
+   * cancela a rampa, porque a vontade do visitante ganha da animação
+   * que ele interrompeu.
+   */
+  private readonly endireitando = { total: 0, t: 0, feito: 0 };
+  /**
+   * A BÚSSOLA ESTÁ ACESA? — o veredito COM histerese, recalculado a
+   * cada quadro por `atualizarBussola`. Mora no rig e não no HUD
+   * porque é estado de CÂMERA: quem sabe o quanto o horizonte está
+   * torto é quem escreve a pose.
+   */
+  private torto = false;
   /**
    * De onde sai o EIXO SOLAR quando o próprio alvo não serve para
    * defini-lo. Vale o alvo em todo enquadramento comum; na vista de
    * abertura, cujo alvo é a ORIGEM (o Sol), ele é a posição do corpo
-   * mais externo — sem isso `direcaoPrivilegiada` cairia no ramo
+   * mais externo — sem isso `direcaoDeRepouso` cairia no ramo
    * degenerado (vetor nulo) e a abertura viraria uma direção arbitrária.
    */
   private readonly eixoDe = new THREE.Vector3();
   /**
    * O PAI do alvo, quando o alvo é uma LUA (degrau "lua" da escada,
    * F2b/D7): com ele presente a direção sai de `direcaoDaLua` (a
-   * mistura `PARENT_FRAMING_BIAS`) em vez de `direcaoPrivilegiada`.
+   * mistura `PARENT_FRAMING_BIAS`) em vez de `direcaoDeRepouso`.
    * `null` em todo enquadramento comum.
    */
   private pai: THREE.Vector3 | null = null;
@@ -189,28 +253,6 @@ export class AtlasRig {
    * poses por `slerp` de quaternion, e o `up` está dentro da pose.
    */
   private readonly polo = POLO_ECLIPTICO.clone();
-  /**
-   * O EIXO EM QUE O DEDO GIRA — a porta de instrumento `?giro=` (item
-   * 102, P4). Nasce no default (`sol`, a volta na linha alvo→Sol), e é
-   * por nascer nele que um rig que nunca ouviu falar da porta escreve a
-   * câmera de sempre, bit a bit.
-   *
-   * ELE ATRAVESSA A TROCA DE ALVO, ao contrário da órbita e da distância
-   * pinada: é escolha do VISITANTE sobre como o app responde ao dedo, e
-   * não propriedade do enquadramento — zerá-lo em `focar` faria a porta
-   * morrer no primeiro clique.
-   */
-  private eixoDoGiro: EixoDoGiro = EIXO_DO_GIRO_PADRAO;
-
-  /**
-   * LIGA A PORTA — chamado uma vez, no boot, com o que `lerPortaGiro`
-   * tirou da URL. Método e não campo público porque o rig é o dono do
-   * seu estado: quem lê a URL é o Director, quem escreve a câmera é o
-   * rig, e o valor atravessa uma fronteira declarada.
-   */
-  definirEixoDoGiro(eixo: EixoDoGiro) {
-    this.eixoDoGiro = eixo;
-  }
 
   // ---- a DISTÂNCIA, e é ela a lei nova (item 73) -------------------
   // «um ALVO e uma DISTÂNCIA». Até 22/08 o Atlas tinha só o alvo: a
@@ -254,7 +296,7 @@ export class AtlasRig {
     eixoDe: new THREE.Vector3(),
     pai: new THREE.Vector3(),
     temPai: false,
-    orbita: { altura: 0, volta: 0 } as OrbitaDoVisitante,
+    giro: new THREE.Quaternion(),
     polo: POLO_ECLIPTICO.clone(),
     /** o pino de distância que a câmera MOSTRAVA no quadro da troca */
     distancia: null as number | null,
@@ -311,8 +353,7 @@ export class AtlasRig {
       this.partida.eixoDe.copy(this.eixoDe);
       this.partida.temPai = this.pai !== null;
       if (this.pai) this.partida.pai.copy(this.pai);
-      this.partida.orbita.altura = this.orbita.altura;
-      this.partida.orbita.volta = this.orbita.volta;
+      this.partida.giro.copy(this.giro);
       this.partida.polo.copy(this.polo);
       this.partida.distancia = this.distanciaPinada;
       this.rampaT = 0;
@@ -333,8 +374,7 @@ export class AtlasRig {
       opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
         ? opcoes.pisoRaio
         : null;
-    this.orbita.altura = 0;
-    this.orbita.volta = 0;
+    this.giro.identity();
     // ...e a inércia do gesto anterior não atravessa a troca de alvo: o
     // resto de um giro em Marte não tem o que fazer chegando em Saturno
     this.esquecerOGiro();
@@ -361,8 +401,8 @@ export class AtlasRig {
    *     dela, então esta conta é exata, e o rig continua sem precisar
    *     que ninguém lhe entregue uma câmera;
    *  2. o alvo, o raio, o eixo e o polo passam a ser os novos;
-   *  3. `(altura, volta)` saem de `orbitaQueProduz` contra o eixo NOVO —
-   *     a mesma pose escrita noutro referencial;
+   *  3. o GIRO sai de `giroQueProduz` contra o referencial NOVO — a
+   *     mesma pose escrita noutro referencial, roll incluído;
    *  4. a distância vira PINO, porque é isso que ela é agora: uma
    *     distância que o visitante escolheu (ficando parado) e que a roda
    *     continua de onde ela está.
@@ -386,22 +426,12 @@ export class AtlasRig {
     eixoDe: THREE.Vector3 = alvo,
     opcoes: { polo?: THREE.Vector3 | null; pisoRaio?: number | null } = {}
   ) {
-    // 1. a pose de agora, no mundo
-    if (this.pai) {
-      direcaoDaLua(
-        _dir.copy(this.eixoDe).sub(ORIGEM),
-        _dirPai.copy(this.alvo).sub(this.pai),
-        this.polo,
-        this.orbita,
-        _dir,
-        this.eixoDoGiro
-      );
-    } else {
-      direcaoPrivilegiada(
-        _dir.copy(this.eixoDe).sub(ORIGEM), this.polo, this.orbita, _dir, this.eixoDoGiro
-      );
-    }
-    _posPartida.copy(this.alvo).addScaledVector(_dir, this.distancia);
+    // 1. a pose de agora, no mundo — a direção E o alto da tela, porque
+    //    desde o giro livre a pose tem TRÊS graus de liberdade e
+    //    "não mexer na câmera" inclui não endireitar o horizonte
+    this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
+    poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
+    _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
     // 2. o referencial novo — e o gesto que trouxe a câmera até aqui
     //    acabou: a inércia não segue para o alvo escolhido
     this.esquecerOGiro();
@@ -422,18 +452,13 @@ export class AtlasRig {
     if (!(distancia > 0)) {
       // a câmera está EM CIMA do alvo novo: não há direção a preservar,
       // e o enquadramento é a única resposta honesta
-      this.orbita.altura = 0;
-      this.orbita.volta = 0;
+      this.giro.identity();
       this.distanciaPinada = null;
       return;
     }
-    orbitaQueProduz(
-      _dirB.multiplyScalar(1 / distancia),
-      _dir.copy(this.eixoDe).sub(ORIGEM),
-      this.polo,
-      this.orbita,
-      this.eixoDoGiro
-    );
+    _dirB.multiplyScalar(1 / distancia);
+    this.repousoDe(this.eixoDe, this.alvo, null, this.polo, _repouso);
+    giroQueProduz(_dirB, _upAgora, _repouso, this.polo, this.giro);
     // 4. a distância vira pino, grampeada na faixa do alvo NOVO. O teto
     //    usa o `fatorDeEnquadramento` do quadro anterior — ele é da
     //    LENTE e do HUD, não do alvo, então não envelhece na troca.
@@ -511,22 +536,24 @@ export class AtlasRig {
       // a câmera está EM CIMA do alvo: não há direção a preservar, e o
       // enquadramento é a única resposta honesta (o mesmo ramo do
       // `selecionar`)
-      this.orbita.altura = 0;
-      this.orbita.volta = 0;
+      this.giro.identity();
       this.distanciaPinada = null;
       return;
     }
-    // com o eixo nulo `direcaoPrivilegiada` cairia no ramo degenerado:
+    // com o eixo nulo `direcaoDeRepouso` cairia no ramo degenerado:
     // a própria posição da câmera serve de eixo, e aí a pose se preserva
     // por construção
     if (this.eixoDe.lengthSq() === 0) this.eixoDe.copy(posicao);
-    orbitaQueProduz(
-      _dirB.clone().multiplyScalar(1 / distancia),
-      _dir.copy(this.eixoDe).sub(ORIGEM),
-      this.polo,
-      this.orbita,
-      this.eixoDoGiro
-    );
+    _dirB.multiplyScalar(1 / distancia);
+    this.repousoDe(this.eixoDe, this.alvo, null, this.polo, _repouso);
+    // O `up` DO POUSO É O NATURAL, e é assim que era antes do giro
+    // livre: quem chega do filme entrega uma POSIÇÃO, não uma
+    // orientação, e o Atlas sempre escreveu o alto da tela pela sua
+    // própria lei. Pedir o `up` de `upDoAtlas` na direção de chegada é
+    // dizer isso com todas as letras — e é o que faz o giro nascer na
+    // identidade quando o pouso cai na pose de repouso.
+    upDoAtlas(_dirB, this.polo, _upAgora);
+    giroQueProduz(_dirB, _upAgora, _repouso, this.polo, this.giro);
     // 4. a distância vira PINO, sem grampo — ver a docstring
     this.distanciaPinada = distancia;
   }
@@ -735,49 +762,41 @@ export class AtlasRig {
   }
 
   /**
-   * ARRASTO DO PONTEIRO, os DOIS eixos — e cada um faz o que a tela
-   * promete:
+   * ARRASTO DO PONTEIRO, os DOIS eixos — e cada um gira em torno de um
+   * EIXO DA TELA, que é a lei única desde 26/08 (item 102):
    *
-   *  · HORIZONTAL (`dx`) dá a VOLTA no alvo, girando em torno da linha
-   *    alvo→Sol. Não tem grampo porque não tem o que grampear: o giro
-   *    não altera o ângulo ao Sol (a conta está em `OrbitaDoVisitante`).
-   *  · VERTICAL (`dy`) sobe e desce pela INCLINAÇÃO INTEIRA, de 0° (fase
-   *    cheia) a 180° (o lado escuro visto de trás). Era o cone de
-   *    `MAX_SOLAR_DEVIATION_GRAUS` — 70° —, e era ele a trava de que o
-   *    dono reclama no item 73: "conseguíamos… agora essa navegação está
-   *    muito confusa". O par (inclinação, volta) passa a varrer a esfera
-   *    inteira, e o único limite que sobra no caminho do dedo é o grampo
-   *    polar de `direcaoPrivilegiada` (`MIN_POLAR_RAD`), que não é
-   *    estético: é a degenerescência de `lookAt`.
+   *  · HORIZONTAL (`dx`) gira em torno do eixo VERTICAL da tela;
+   *  · VERTICAL (`dy`) gira em torno do eixo HORIZONTAL dela.
+   *
+   * NÃO HÁ GRAMPO EM NENHUM DOS DOIS, e não é descuido: é a frase dele
+   * — *"sem travas para qualquer dos lados sem nenhum limitador de
+   * angulo ou coisa parecida"*. O polo se cruza como qualquer outro
+   * ponto, a volta é infinita nos dois eixos e o mundo pode ficar de
+   * cabeça para baixo. Também não há eixo que MORRA: o par de leis
+   * anteriores tinha, cada uma, uma geometria em que o horizontal
+   * encolhia a zero (`sen φ` na linha do Sol) ou em que a subida batia
+   * numa trava; girando em torno dos eixos da TELA o dedo bate 1:1 em
+   * toda geometria, porque os eixos do giro SÃO os da tela.
    *
    * OS SINAIS SÃO OS DA SUPERFÍCIE SEGUINDO O DEDO (o "estilo Google
-   * Earth" do projeto irmão), e não são gosto: com `up = polo`, a base
-   * da câmera dá `direita = polo × dir` e `cima = dir × direita`, e a
-   * derivada da posição sai `∂P/∂volta ∝ −direita` e
-   * `∂P/∂altura ∝ +cima`. Ou seja, arrastar para a DIREITA leva a câmera
-   * para a esquerda e o alvo para a direita; arrastar para BAIXO leva a
-   * câmera para cima e o alvo para baixo. `atlasRig.test.ts` cobra os
-   * dois sinais contra a base REAL da câmera depois do `apply` — se
-   * alguém trocar um sinal aqui, o teste vê pelo eixo da matriz, não
-   * pela fórmula repetida.
+   * Earth" do projeto irmão), e são os MESMOS de antes desta obra:
+   * arrastar para a DIREITA leva a câmera para a esquerda e o alvo para
+   * a direita; arrastar para BAIXO leva a câmera para cima e o alvo
+   * para baixo. Quem os aplica é `consumirOGiro`, com os dois negativos
+   * declarados lá. `atlasRig.test.ts` cobra os dois contra a base REAL
+   * da câmera depois do `apply` — se alguém trocar um sinal, o teste vê
+   * pelo eixo da matriz, não pela fórmula repetida.
    *
-   * A `volta` é ENROLADA em (−π, π]: o ângulo é periódico, o alcance é
-   * a volta inteira de qualquer jeito, e um acumulador que só cresce
-   * seria um número sem teto guardado em estado de sessão.
+   * NÃO HÁ MAIS O QUE ENROLAR: o acumulador é um quaternion, e um
+   * quaternion é periódico por construção — não existe o número sem
+   * teto que a `volta` precisava aparar.
    *
-   * O DELTA NÃO ENTRA MAIS DIRETO NO ACUMULADOR (item 102, P1): ele cai
-   * na CAIXA DE ENTRADA do quadro, e quem soma na órbita é o
+   * O DELTA NÃO ENTRA DIRETO NO ACUMULADOR (item 102, P1): ele cai na
+   * CAIXA DE ENTRADA do quadro, e quem o vira rotação é o
    * `consumirOGiro`, com o filtro da inércia no meio. O que chega aqui
    * já vem em radianos porque a sensibilidade é do GESTO — o filtro é do
    * QUADRO, e misturar as duas contas faria o tato depender de quantos
    * `pointermove` o navegador entregou.
-   *
-   * COM A PORTA `?giro=polo` (item 102, P4) OS DOIS EIXOS TROCAM DE LEI,
-   * e nada nesta função muda: o `dx` passa a somar em LONGITUDE em torno
-   * do polo do corpo e o `dy` em COLATITUDE, com a subida travada em vez
-   * do grampo polar. Os SINAIS de tela são os mesmos — a lei nova nasce
-   * com os dois sinais negados justamente para isso, e a bancada cobra a
-   * concordância contra a matriz real da câmera nos dois eixos.
    */
   addOrbitDelta(dx: number, dy: number) {
     if (Number.isFinite(dx)) this.entrada.volta += dx * ARRASTO_RAD_POR_PX;
@@ -801,13 +820,10 @@ export class AtlasRig {
    * deixa rastro — que é, letra por letra, o que este método fazia antes
    * de existir.
    *
-   * O GRAMPO DA INCLINAÇÃO mudou de lugar, não de lei: o acumulador para
-   * EXATAMENTE onde a inclinação para, senão o dedo somaria arrasto morto
-   * e a volta custaria desfazê-lo antes de a câmera se mexer de novo (a
-   * "borracha" de todo controle mal grampeado). No default a faixa segue
-   * sendo a da inclinação [0°, 180°] menos o pino de fase; com a porta
-   * `?giro=polo` ela é a que a trava da subida deixa, e quem sabe dizer
-   * qual é a lei do eixo é `faixaDaAltura`.
+   * O GRAMPO DA INCLINAÇÃO MORREU AQUI, e com ele a "borracha" que todo
+   * controle mal grampeado tem: não há mais faixa a estourar, porque
+   * não há mais coordenada. O passo do quadro vira uma rotação e a
+   * rotação sempre cabe.
    */
   private consumirOGiro(dt: number) {
     const entradaAltura = this.entrada.altura;
@@ -834,31 +850,50 @@ export class AtlasRig {
       this.suav.altura = 0;
       this.suav.volta = 0;
     }
-    // NADA A FAZER é nada a ESCREVER: a pose parada não passa nem pelo
-    // `enrolar` nem pelo grampo, e é por construção que ela fica bit a
-    // bit igual à de antes deste filtro existir (a condição de nascimento
-    // do item 102)
+    // NADA A FAZER é nada a ESCREVER: a pose parada não toca no
+    // quaternion, e é por construção que ela fica bit a bit igual à de
+    // antes deste filtro existir (a condição de nascimento do item 102)
     if (passoAltura === 0 && passoVolta === 0) return;
+    // O ARRASTO DE VERDADE CANCELA O ENDIREITAR: a vontade do visitante
+    // ganha da animação que ele interrompeu, e deixar as duas somarem
+    // faria a bússola brigar com o dedo no mesmo quadro.
+    this.endireitando.total = 0;
     // O FREIO PERTO DO SOLO entra AQUI, no consumo, e nos DOIS eixos: o
-    // que ele muda é quanto do gesto chega à órbita, não quanto tempo a
+    // que ele muda é quanto do gesto chega ao giro, não quanto tempo a
     // inércia dura (`suav` decai pelo relógio, não pela altura).
     const freio = this.freioDoSolo;
-    // A FAIXA SAI DA LEI DO EIXO, não de um número escrito aqui: no
-    // `sol` ela é a inclinação [0°, 180°] menos o pino de fase, de
-    // sempre; no `polo` ela depende do alvo e da data (ver
-    // `faixaDaAltura`). O acumulador para EXATAMENTE onde a subida para,
-    // nos dois — é o que impede a borracha.
-    const faixa = faixaDaAltura(
-      _dir.copy(this.eixoDe).sub(ORIGEM),
-      this.polo,
-      this.eixoDoGiro
-    );
-    this.orbita.volta = enrolar(this.orbita.volta + passoVolta * freio);
-    this.orbita.altura = THREE.MathUtils.clamp(
-      this.orbita.altura + passoAltura * freio,
-      faixa.min,
-      faixa.max
-    );
+    // ---- E AQUI O PAR DE NÚMEROS VIRA UMA ROTAÇÃO ----
+    //
+    // NÃO HÁ MAIS FAIXA, NEM GRAMPO, NEM `enrolar` — e a ausência é a
+    // obra (item 102, 26/08): *"sem travas para qualquer dos lados sem
+    // nenhum limitador de angulo"*. Não sobrou coordenada a aparar.
+    //
+    // UM ÚNICO EIXO, e não dois giros em sequência: o par (vertical,
+    // horizontal) é um vetor no plano da TELA, e a rotação que ele pede
+    // é em torno do eixo perpendicular a ele — `x` da tela para o
+    // arrasto vertical, `y` para o horizontal, e a diagonal exatamente
+    // no meio. Compor duas rotações em ordem daria um resultado que
+    // depende de qual vem primeiro, e um arrasto na diagonal não tem
+    // primeiro. Assim o gesto é o mesmo em qualquer direção — que é
+    // metade da palavra "responsividade".
+    //
+    // OS SINAIS SÃO OS DE SEMPRE, a superfície seguindo o dedo: girar
+    // `+altura` em torno de `x` levaria a mira para BAIXO da tela, e o
+    // que se quer é o alvo descendo com o dedo, logo a câmera subindo —
+    // daí os dois negativos. `addOrbitDelta` documenta a lei; a bancada
+    // a cobra contra a matriz REAL da câmera, não contra esta fórmula.
+    const emX = -passoAltura * freio;
+    const emY = -passoVolta * freio;
+    const angulo = Math.hypot(emX, emY);
+    if (!(angulo > 0)) return;
+    _eixoDaTela.set(emX / angulo, emY / angulo, 0);
+    _passoDoGiro.setFromAxisAngle(_eixoDaTela, angulo);
+    // PÓS-MULTIPLICAR é o que faz o eixo ser o da tela DE AGORA: o giro
+    // mora no frame de repouso, e `Q·R(e)` gira em torno de `Q·e` — o
+    // eixo canônico transportado para a pose corrente. Pré-multiplicar
+    // giraria em torno do eixo da tela PARADA, e o dedo deixaria de
+    // bater 1:1 assim que a câmera saísse do repouso.
+    this.giro.multiply(_passoDoGiro).normalize();
   }
 
   /** o dedo largou e a inércia acabou: nada mais a girar neste alvo */
@@ -867,6 +902,144 @@ export class AtlasRig {
     this.entrada.volta = 0;
     this.suav.altura = 0;
     this.suav.volta = 0;
+    this.endireitando.total = 0;
+  }
+
+  /**
+   * A DIREÇÃO DE REPOUSO deste enquadramento — a pose que a casa daria
+   * sem dedo nenhum. Um lugar só para a pergunta, porque quatro
+   * caminhos a fazem (o `apply`, o `selecionar`, o `pousar` e a
+   * bússola) e uma segunda cópia dela seria a segunda fonte de verdade
+   * que a regra 4 proíbe.
+   *
+   * O DEGRAU "LUA" tem lei própria (`direcaoDaLua`, a mistura que põe o
+   * pai no quadro), e é só aqui que a diferença mora.
+   */
+  private repousoDe(
+    eixoDe: THREE.Vector3,
+    alvo: THREE.Vector3,
+    pai: THREE.Vector3 | null,
+    polo: THREE.Vector3,
+    out: THREE.Vector3
+  ): THREE.Vector3 {
+    if (pai) {
+      return direcaoDaLua(
+        out.copy(eixoDe).sub(ORIGEM),
+        _dirPai.copy(alvo).sub(pai),
+        polo,
+        out
+      );
+    }
+    return direcaoDeRepouso(out.copy(eixoDe).sub(ORIGEM), polo, out);
+  }
+
+  /**
+   * QUANTO O HORIZONTE ESTÁ TORTO, em radianos com sinal — o desvio
+   * entre o alto da tela de agora e o alto que a casa daria nesta mesma
+   * pose (`desvioDaOrientacao`). É o que a bússola do HUD mede.
+   *
+   * RECOMPOSTA DO ESTADO, e não lida da câmera: o rig é o dono da pose,
+   * e perguntar à câmera obrigaria a passá-la aqui — além de responder
+   * errado no meio de uma rampa de degrau, que é pose de transição e
+   * não a que o visitante escolheu.
+   */
+  get desvioDoHorizonte(): number {
+    this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
+    poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
+    return desvioDaOrientacao(_dirAgora, _upAgora, this.polo);
+  }
+
+  /** a bússola está acesa? — com histerese, ver `atualizarBussola` */
+  get horizonteTorto(): boolean {
+    return this.torto;
+  }
+
+  /**
+   * ENDIREITA O HORIZONTE — o botão de bússola, a sugestão que ele
+   * aceitou em 26/08: *"podemos colocar um botao de zerar orientacao,
+   * assim como o google maps tem um botao de norte"*.
+   *
+   * SÓ O ROLL, e é a lei do botão de norte: o Google Maps acerta a
+   * bússola sem teletransportar o mapa. Aqui é a mesma promessa — a
+   * mira não anda um milirradiano, e o que gira é o alto da tela. Quem
+   * virou o planeta de cabeça para baixo continua vendo o mesmo pedaço
+   * dele, agora de pé.
+   *
+   * EM RAMPA E NÃO EM SALTO (`ENDIREITAR_S`): a imagem girando meia
+   * volta num quadro é exatamente o "girou sozinho" que o item 102 veio
+   * matar — fazê-lo de propósito não o torna menos tonto.
+   */
+  endireitar() {
+    const desvio = this.desvioDoHorizonte;
+    if (!Number.isFinite(desvio) || desvio === 0) return;
+    // o alvo é ZERAR o desvio, então o que se aplica é o negativo dele
+    this.endireitando.total = -desvio;
+    this.endireitando.t = 0;
+    this.endireitando.feito = 0;
+  }
+
+  /**
+   * O QUADRO DO ENDIREITAR — aplica só o PEDAÇO que falta desde o
+   * quadro anterior, em torno da mira.
+   *
+   * POR DIFERENÇA, e não escrevendo a pose de destino: assim a rampa
+   * convive com tudo o mais que mexe no giro no mesmo quadro, e
+   * cancelá-la no meio (o que `consumirOGiro` faz quando o dedo anda)
+   * deixa a câmera exatamente onde a rampa a tinha levado, sem
+   * pulo para trás.
+   *
+   * O EIXO É `z` DO FRAME DE REPOUSO — a mira. Pós-multiplicar gira em
+   * torno da mira DE AGORA (`Q·e_z`), que é a mesma identidade que faz
+   * o arrasto girar em torno dos eixos da tela de agora.
+   */
+  private consumirOEndireitar(dt: number) {
+    const passo = this.endireitando;
+    if (passo.total === 0) return;
+    if (!(dt > 0)) {
+      // sem relógio não há rampa: o oráculo que escreve a pose sem
+      // encenar quadros recebe o endireitar INTEIRO e sem rastro — a
+      // mesma lei do filtro da inércia
+      _passoDoGiro.setFromAxisAngle(_EIXO_DA_MIRA, passo.total - passo.feito);
+      this.giro.multiply(_passoDoGiro).normalize();
+      passo.total = 0;
+      return;
+    }
+    passo.t = Math.min(1, passo.t + dt / ENDIREITAR_S);
+    // o mesmo smoothstep de toda rampa da casa (C¹ nas duas bordas)
+    const k = passo.t * passo.t * (3 - 2 * passo.t);
+    const alvo = passo.total * k;
+    const delta = alvo - passo.feito;
+    passo.feito = alvo;
+    if (delta !== 0) {
+      _passoDoGiro.setFromAxisAngle(_EIXO_DA_MIRA, delta);
+      this.giro.multiply(_passoDoGiro).normalize();
+    }
+    if (passo.t >= 1) passo.total = 0;
+  }
+
+  /**
+   * A BÚSSOLA ACENDE OU APAGA — com HISTERESE, e ela não é capricho: o
+   * desvio anda continuamente com o dedo, e um limiar único faria o
+   * botão piscar em volta dele a cada quadro do gesto. Acende em
+   * `DESVIO_QUE_ACENDE_GRAUS`, apaga em `DESVIO_QUE_APAGA_GRAUS`, e a
+   * distância entre os dois é a largura da histerese.
+   *
+   * ENQUANTO ELA ENDIREITA O BOTÃO FICA ACESO, qualquer que seja o
+   * desvio do quadro: ele é o alvo que o clique acabou de mirar, e
+   * vê-lo sumir no meio da própria rampa leria como se o clique tivesse
+   * falhado.
+   */
+  private atualizarBussola() {
+    if (this.endireitando.total !== 0) {
+      this.torto = true;
+      return;
+    }
+    const graus = Math.abs(this.desvioDoHorizonte) / GRAU;
+    if (this.torto) {
+      if (graus < DESVIO_QUE_APAGA_GRAUS) this.torto = false;
+    } else if (graus > DESVIO_QUE_ACENDE_GRAUS) {
+      this.torto = true;
+    }
   }
 
   /**
@@ -890,6 +1063,11 @@ export class AtlasRig {
     // porque arrastar durante uma troca de degrau é gesto como outro
     // qualquer e o destino da rampa tem de já contá-lo.
     this.consumirOGiro(dt);
+    // ...e a rampa da bússola, DEPOIS dele: um arrasto no mesmo quadro
+    // cancela o endireitar (`consumirOGiro` zera a rampa), e a ordem
+    // inversa deixaria o pedaço deste quadro passar antes do cancelamento
+    this.consumirOEndireitar(dt);
+    this.atualizarBussola();
     if (this.rampaT >= 1) {
       // o caminho de SEMPRE, intocado bit a bit quando não há pino — é o
       // que as provas de idempotência (?foco) e os md5 do atlas-smoke
@@ -897,7 +1075,7 @@ export class AtlasRig {
       this.registrarEnquadramento(
         this.escreverPose(
           camera, fatorUi, larguraPx,
-          this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo,
+          this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
           this.distanciaPinada
         )
       );
@@ -916,7 +1094,7 @@ export class AtlasRig {
     this.registrarEnquadramento(
       this.escreverPose(
         camera, fatorUi, larguraPx,
-        this.alvo, this.raio, this.eixoDe, this.pai, this.orbita, this.polo,
+        this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
         this.distanciaPinada
       )
     );
@@ -925,7 +1103,7 @@ export class AtlasRig {
     this.escreverPose(
       camera, fatorUi, larguraPx,
       this.partida.alvo, this.partida.raio, this.partida.eixoDe,
-      this.partida.temPai ? this.partida.pai : null, this.partida.orbita,
+      this.partida.temPai ? this.partida.pai : null, this.partida.giro,
       this.partida.polo, this.partida.distancia
     );
     _posPartida.copy(camera.position);
@@ -979,7 +1157,7 @@ export class AtlasRig {
     raio: number,
     eixoDe: THREE.Vector3,
     pai: THREE.Vector3 | null,
-    orbita: Readonly<OrbitaDoVisitante>,
+    giro: THREE.Quaternion,
     polo: THREE.Vector3,
     pinada: number | null = null
   ): number {
@@ -989,28 +1167,20 @@ export class AtlasRig {
       aspect: camera.aspect,
       retanguloUtil: retanguloUtilDoAtlas(fatorUi, larguraPx),
     });
-    // o MESMO polo governa a inclinação e o alto da tela: se a
+    // o MESMO polo governa a pose de repouso e o alto da tela: se a
     // inclinação subisse rumo a um polo e a tela mostrasse outro, o
     // arrasto vertical deixaria de ser vertical na tela
-    if (pai) {
-      direcaoDaLua(
-        _dir.copy(eixoDe).sub(ORIGEM),
-        _dirPai.copy(alvo).sub(pai),
-        polo,
-        orbita,
-        _dir,
-        this.eixoDoGiro
-      );
-    } else {
-      direcaoPrivilegiada(
-        _dir.copy(eixoDe).sub(ORIGEM), polo, orbita, _dir, this.eixoDoGiro
-      );
-    }
+    this.repousoDe(eixoDe, alvo, pai, polo, _dir);
+    // ...e o dedo gira a pose INTEIRA — mira e alto da tela pela mesma
+    // rotação. É o corpo rígido do item 102: o `up` não é mais
+    // recalculado depois do giro, senão a cedência o reescreveria no
+    // meio do gesto e a tela rodaria sozinha.
+    poseDoVisitante(_dir, polo, giro, _dir, _up);
     const escrita = pinada !== null && Number.isFinite(pinada) && pinada > 0
       ? pinada
       : distancia;
     camera.position.copy(alvo).addScaledVector(_dir, escrita);
-    camera.up.copy(upDoAtlas(_dir, polo, _up, this.eixoDoGiro));
+    camera.up.copy(_up);
     camera.lookAt(alvo);
     if (giroY !== 0) camera.rotateY(giroY);
     if (giroX !== 0) camera.rotateX(giroX);

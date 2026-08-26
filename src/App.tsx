@@ -17,7 +17,13 @@ import { LabelCanvas } from './components/LabelCanvas';
 import { sondarGl } from './lib/glProbe';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import { BarraOuAlcas } from './components/BarraOuAlcas';
-import { GavetaDeCamadas, GavetaDoTempo, Selo, BarraDoTempo } from './components/HudDoAtlas';
+import {
+  Bussola,
+  GavetaDeCamadas,
+  GavetaDoTempo,
+  Selo,
+  BarraDoTempo,
+} from './components/HudDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca } from './components/PaletaDeBusca';
 import { FichaDoObjeto } from './components/FichaDoObjeto';
@@ -119,6 +125,12 @@ const AREAS_RESERVADAS = [
   // quem olha — a mesma razão das tarjas. Fechada, o seletor não casa
   // com nada e não reserva nada.
   '.atlas-selo-detalhe',
+  // A BÚSSOLA (item 102): botão redondo preso na borda direita, à meia
+  // altura — bem no meio da faixa em que os rótulos de estrela vivem.
+  // Apagada ela tem `visibility: hidden` e retângulo de largura cheia,
+  // então reservaria espaço à toa; o `.acesa` é o que a faz reservar
+  // só quando está lá para ser vista.
+  '.atlas-bussola.acesa',
   '.filme-rodape',
 ].join(', ');
 
@@ -241,6 +253,15 @@ export default function App() {
   const [girouNoAtlas, setGirouNoAtlas] = useState(false);
 
   /**
+   * A BÚSSOLA DO ATLAS ESTÁ ACESA? (item 102) — o horizonte ficou torto
+   * o bastante para valer o botão de endireitar. Quem decide é o rig,
+   * com histerese, e o fio só entrega a VIRADA: o desvio anda a cada
+   * quadro do arrasto, e um `setState` por quadro redesenharia o HUD
+   * inteiro a 60 Hz.
+   */
+  const [bussolaAcesa, setBussolaAcesa] = useState(false);
+
+  /**
    * A JANELA É DE CELULAR? (item 62) — `LARGURA_DO_CELULAR_PX`, lida por
    * `matchMedia` com ouvinte. Vem antes das gavetas porque elas precisam
    * dela: no telefone a folha DESCE antes de sumir, e na mesa não há o
@@ -280,6 +301,7 @@ export default function App() {
     setTempo,
     setEscada,
     girou: () => setGirouNoAtlas(true),
+    orientacao: setBussolaAcesa,
     fecharGavetas: fecharTodas,
   });
 
@@ -888,6 +910,27 @@ export default function App() {
             />
           )}
         </div>
+      )}
+
+      {/* A BÚSSOLA (item 102) — o botão de zerar a orientação, filha
+          DIRETA de .hud-root como todo overlay da casa (a regra do
+          `.bare-mode` só alcança filhos diretos, e é ela que a apaga no
+          `?shot=2` junto com o resto do HUD).
+
+          FORA DO RODAPÉ DE PROPÓSITO: o rodapé é altura de CÂMERA — o
+          retângulo útil o desconta —, e uma peça que entra e sai do
+          fluxo mudaria o enquadramento no meio da sessão. Presa na
+          borda direita à meia altura ela não desconta nada.
+
+          MONTADA SEMPRE QUE A FASE A HOSPEDA, acesa ou não: a transição
+          de opacidade precisa dos dois estados no DOM, e é o mesmo
+          padrão da dica dos gestos, que apaga sem sair do lugar. Quem a
+          torna inerte para o teclado quando apagada é o componente. */}
+      {phase === 'atlas' && (
+        <Bussola
+          acesa={bussolaAcesa}
+          onEndireitar={() => directorRef.current?.endireitarOrientacao()}
+        />
       )}
 
       {/* A BARRA DE CONTROLES OU A FILEIRA DE ALÇAS — as duas moram em

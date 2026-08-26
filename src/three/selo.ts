@@ -665,24 +665,6 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   neutra('dbgstar', 'depuração: projeção de Betelgeuse'),
   neutra('dbgplan', 'depuração: régua dos planetas'),
   neutra('dbgorbitas', 'depuração: fade das linhas de órbita'),
-  /**
-   * `?giro=polo` — O EIXO EM QUE O DEDO GIRA no Atlas (item 102, P4).
-   * NEUTRA pela mesma razão de `?pos=` e `?foco=`: ela diz como a câmera
-   * RESPONDE AO DEDO, e não com quanta luz se vê o que está em quadro. A
-   * fotometria dos dois eixos é a mesma lei, e o eixo ESCALA continua
-   * saindo da geometria sozinho.
-   *
-   * ELA MUDA A SOMBRA NO QUADRO, e isso está declarado — girar em torno
-   * do polo gira a iluminação junto, que é o PREÇO do turntable. Mas
-   * mudar a sombra girando a CÂMERA é o que qualquer navegação faz: é
-   * geometria, não ajuste de brilho, e chamá-la de desvio seria dizer que
-   * o Sol só ilumina honestamente na pose de repouso.
-   *
-   * PORTA DE INSTRUMENTO, e com data de morte: ela existe para o A/B que
-   * ele confere, e sai da tabela junto com o ramo que ele recusar (a
-   * jurisprudência do `?calib=`).
-   */
-  neutra('giro', 'depuração: eixo do giro do Atlas'),
   neutra('galstat', 'depuração: contagem no frustum'),
 ];
 

@@ -1,6 +1,17 @@
 /* HUD, fatia 6/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 @media (max-width: 760px) {
+  /* A BÚSSOLA no telefone (item 102): mesma borda das outras peças
+     estreitas (4vw), e continua à meia altura — é a única faixa que
+     sobra, porque a barra de controles toma o alto de ponta a ponta e
+     as alças tomam o pé. O alvo de toque cresce para os 2,75 rem que
+     o juiz de a11y cobra dos controles do celular. */
+  .atlas-bussola {
+    right: 4vw;
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
   /* AS TARJAS NÃO EXISTEM NO TELEFONE (item 61, decisão do dono em
      23/08). Elas mediam 4,5vh de cada lado aqui — 9% da tela — e ficaram
      enquanto a razão foi "é o mesmo quadro do filme", que é composição.

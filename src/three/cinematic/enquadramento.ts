@@ -68,11 +68,15 @@ export const PHASE_OFFSET_GRAUS = 30;
  * `PARENT_FRAMING_BIAS` puxando a câmera para o lado oposto ao pai —, e
  * sem o grampo a mistura cai no lado noturno quando o eixo pai→lua passa
  * de ~106° do Sol (a cicatriz que o doador pagou: Japeto, Titã e a
- * própria Lua liam como "não carregou"). Consequência declarada: no
- * degrau "lua" o arrasto do visitante atravessa `direcaoPrivilegiada` e
- * volta a ser aparado por este 70°. Soltá-lo lá é obra própria — quem a
- * fizer tem de separar a mistura calculada do gesto, e isso move a pose
- * de repouso de nenhuma lua mas move a de todas as arrastadas.
+ * própria Lua liam como "não carregou").
+ *
+ * A OBRA PRÓPRIA QUE ESTA NOTA PEDIA FOI FEITA em 26/08, e de graça: até
+ * então o arrasto do visitante atravessava a direção privilegiada e o
+ * cone aparava o GESTO junto com a mistura, então no degrau "lua" o dedo
+ * batia numa parede de 70° que não existia em nenhum outro degrau. O
+ * giro livre separou as duas coisas sozinho — a mistura é a pose de
+ * REPOUSO, o dedo gira ela DEPOIS (`poseDoVisitante`) — e este número
+ * voltou a guardar só o que era dele. Nenhuma pose de repouso se moveu.
  */
 export const MAX_SOLAR_DEVIATION_GRAUS = 70;
 
@@ -140,152 +144,62 @@ export const SUAVIZACAO_DO_GIRO = 0.8;
 export const GIRO_MORTO_RAD = 1e-4;
 
 /**
- * O EIXO EM QUE O DEDO GIRA — a PORTA DE INSTRUMENTO `?giro=` (item 102,
- * P4), da espécie do `?dbgorbitas`: declarada no selo, NEUTRA no veredito
- * (não toca fotometria; diz de onde se olha), e viva só enquanto ele não
- * decide.
+ * O QUE O DEDO DO VISITANTE ACUMULA: uma ROTAÇÃO, e nada além dela.
  *
- * `sol` é a lei desta casa desde sempre: a `volta` gira em torno da linha
- * alvo→Sol, e por isso o ângulo de iluminação da vista NÃO muda com o
- * arrasto horizontal (a conta está em `OrbitaDoVisitante`). `polo` é a lei
- * do NASA Eyes: a volta é em torno do POLO DO CORPO — turntable —, o
- * horizonte nunca vira, o polo nunca se cruza e o arrasto horizontal nunca
- * morre.
+ * A LEI É DELE, ditada em 26/08 e copiada aqui palavra por palavra —
+ * *"o que queremos quanto ao movimento de objeto focado é liberdade
+ * total e responsividade... quero que seja navegação livre e sem travas
+ * para qualquer dos lados sem nenhum limitador de angulo ou coisa
+ * parecida"*. Um par de ângulos não sabe obedecer a essa frase: toda
+ * parametrização por dois números tem polos, e em cima do polo um dos
+ * dois eixos MORRE (o horizontal encolhe com `sen φ`) enquanto o outro
+ * amplifica. Era essa a queixa do item 102, e o conserto não é um
+ * grampo melhor — é não ter ângulo nenhum a grampear.
  *
- * A PORTA EXISTE PORQUE O PREÇO É DECISÃO DELE, não minha: girar a
- * longitude gira a SOMBRA junto, e a iluminação deixa de ser fixa na
- * vista. As duas leis são defensáveis e nenhuma régua de código escolhe
- * entre elas — o juiz é o vídeo A/B do MESMO arrasto nos dois lados, e só
- * um binário com os dois comportamentos filma esse vídeo.
+ * ENTÃO O ESTADO É UM QUATERNION, guardado no FRAME DA POSE DE REPOUSO
+ * (os eixos da CÂMERA parada: `x` a direita da tela, `y` o alto, `z` a
+ * direção alvo→câmera). Ele é o desvio entre a pose que a casa daria
+ * sozinha e a pose que o dedo pediu. Consequências, e as três são o que
+ * ele pediu:
  *
- * ELA MORRE NA ESCOLHA, e isto é promessa, não intenção: se ele ficar com
- * o polo, `polo` vira o único caminho e o ramo `sol` sai junto com a
- * porta; se recusar, o ramo `polo` sai inteiro. Porta de instrumento não
- * envelhece em produção — a jurisprudência é o `?calib=`, morto em 26/08
- * com tudo o que era só dele.
+ *  · NÃO HÁ TRAVA porque não há coordenada a travar. O polo se cruza
+ *    como qualquer outro ponto — do outro lado o mundo fica de cabeça
+ *    para baixo, e isso é o DESENHO, não defeito;
+ *  · NENHUM EIXO MORRE EM FASE NENHUMA: o dedo bate 1:1 com os eixos da
+ *    tela em toda geometria, porque os eixos do giro SÃO os da tela;
+ *  · o horizonte não gira sozinho no meio do gesto — a câmera inteira é
+ *    um corpo rígido, e um corpo rígido não tem roll de surpresa.
+ *
+ * O PREÇO, declarado: giro livre ACUMULA roll. Dar duas voltas por
+ * caminhos diferentes não devolve o mesmo horizonte (é a holonomia da
+ * esfera, não um bug), e por isso ele pediu, na mesma conversa, o botão
+ * que desfaz — *"podemos colocar um botao de zerar orientacao, assim
+ * como o google maps tem um botao de norte"*. Quem mede o desvio é
+ * `desvioDaOrientacao`; quem o desfaz é o rig.
+ *
+ * NO REPOUSO ELE É A IDENTIDADE, e é daí que sai a condição de
+ * nascimento do item 102: com o dedo parado NENHUMA rotação roda, e
+ * `poseDoVisitante` devolve a direção e o `up` da lei de sempre sem
+ * escrever um bit neles. Não é «bit-idêntico porque a conta dá o mesmo»
+ * — é bit-idêntico porque a conta NÃO ACONTECE.
  */
-export type EixoDoGiro = 'sol' | 'polo';
+export type GiroDoVisitante = THREE.Quaternion;
 
-/** O default é a lei de sempre — quem não pede nada não muda um bit. */
-export const EIXO_DO_GIRO_PADRAO: EixoDoGiro = 'sol';
+/** O giro de quem ainda não arrastou nada — o repouso de todo foco. */
+export const GIRO_PARADO: Readonly<THREE.Quaternion> = Object.freeze(
+  new THREE.Quaternion()
+);
 
 /**
- * Lê a porta `?giro=`: só a palavra `polo` liga o instrumento. Ausente,
- * vazia, com lixo dentro ou em caixa errada caem TODAS no default — a
- * mesma lei de `lerPortaLuz`, e pelo mesmo motivo medido: a sabotagem de
- * 26/08 trocou um `?? 'padrao'` por `?? 'c1'` e passou por 2.360 testes e
- * pelo `tsc` sem uma queixa.
+ * O giro é a identidade? — a pergunta que compra a condição de
+ * nascimento, e ela se faz por IGUALDADE EXATA de propósito: qualquer
+ * tolerância aqui deixaria uma rotação minúscula passar por «parada» e
+ * a vista de repouso sairia diferente por um fio. Ou o dedo não mexeu
+ * em nada, ou a conta roda inteira.
  */
-export function lerPortaGiro(valor: string | null | undefined): EixoDoGiro {
-  return valor === 'polo' ? 'polo' : EIXO_DO_GIRO_PADRAO;
+export function giroParado(giro: Readonly<THREE.Quaternion>): boolean {
+  return giro.x === 0 && giro.y === 0 && giro.z === 0 && giro.w === 1;
 }
-
-/**
- * A TRAVA DA SUBIDA no eixo `polo`, em radianos de COLATITUDE — o quão
- * perto do polo do corpo o dedo pode levar a mira. É a régua do NASA Eyes
- * (lá a subida trava a ±(90° − 1e-4)) e ela SUBSTITUI `MIN_POLAR_RAD` no
- * caminho do dedo: o polo não se cruza, e é por não se cruzar que o
- * horizonte nunca faz flip no meio do gesto.
- *
- * POR QUE 1e-4 PODE SER TÃO PEQUENO ONDE 0,1 ERA PRECISO, e o número diz:
- * os 0,1 rad do grampo antigo compram `|up × z| = sen(0,1) = 0,0998`
- * porque lá o `up` é o polo BRUTO e é o produto vetorial do `lookAt` que
- * encolhe — quatro ordens acima do ruído de float32. Aqui o `up` do modo
- * é a componente do polo PERPENDICULAR à mira, então `|up × z|` vale 1
- * exato e não encolhe nunca; o que encolhe é o próprio `up` ANTES de
- * normalizar (norma `sen(1e-4)` = 1e-4), e essa conta roda em float64 —
- * doze ordens acima do ruído (2e-16), não quatro.
- */
-export const COLATITUDE_MINIMA_RAD = 1e-4;
-
-/**
- * Ângulo de volta em (−π, π] — periódico, então o número não cresce.
- *
- * MORAVA NO `atlasRig.ts`, privado, e desceu para cá em 26/08 (item 102,
- * P4) porque `orbitaQueProduz` passou a precisar dele: a longitude do eixo
- * `polo` sai de uma DIFERENÇA de dois `atan2`, que cabe em (−2π, 2π), e
- * entregá-la fora da faixa ao acumulador do rig abriria um degrau de uma
- * volta inteira na primeira soma. Duas cópias da mesma conta seriam a
- * segunda fonte de verdade que a regra 4 proíbe.
- */
-export function enrolar(rad: number): number {
-  if (!Number.isFinite(rad)) return 0;
-  const volta = 2 * Math.PI;
-  const r = rad - Math.floor(rad / volta + 0.5) * volta;
-  // `floor` devolve −π quando o resto cai exatamente na borda; o
-  // intervalo fechado à direita mantém a ida e a volta simétricas
-  return r === -Math.PI ? Math.PI : r;
-}
-
-/**
- * O QUE O DEDO DO VISITANTE ACUMULA, em dois eixos — e por que os dois
- * cabem dentro do MESMO grampo de 70°.
- *
- * `altura` é o eixo VELHO: some ao pino de fase (`PHASE_OFFSET_GRAUS`) e
- * inclina a câmera na direção do polo. É ele, e só ele, que mexe no
- * ângulo câmera↔Sol — logo é ele, e só ele, que o grampo precisa
- * apertar.
- *
- * `volta` é o eixo NOVO: um giro em torno da PRÓPRIA linha alvo→Sol.
- *
- * A CONTA QUE O LIBERA (é ela que compra os 360° sem afrouxar nada):
- * seja `u` a direção iluminada (unitária) e `d` a direção da câmera
- * depois da inclinação, com `d·u = cos φ`. Uma rotação `R(u, ψ)` em
- * torno de `u` deixa `u` fixo (`R(u,ψ)u = u`) e é ortogonal, então
- *
- *     (R(u,ψ)d)·u = (R(u,ψ)d)·(R(u,ψ)u) = d·u = cos φ
- *
- * — o ângulo ao Sol é EXATAMENTE o mesmo, para qualquer ψ. A fração
- * iluminada `(1+cos φ)/2` não muda um dígito, e o grampo de 70°
- * continua valendo palavra por palavra: o visitante ganha a volta
- * inteira sem nunca ver um grau a mais de sombra. `atlasRig.test.ts`
- * varre ψ e cobra a invariância a 1e-12.
- *
- * O `altura` É GRAMPEADO EM [0°, 180°] DE INCLINAÇÃO — `angulo = pino +
- * altura`, e o intervalo é o da esfera inteira (item 73, 22/08). Era
- * [0°, 70°]: o cone de `MAX_SOLAR_DEVIATION_GRAUS`, que é o que o dono
- * chamou de trava para ver o lado escuro. Com (inclinação, volta) =
- * ([0°, 180°], 360°) o par varre a esfera INTEIRA, e é isso que "órbita
- * livre" quer dizer.
- *
- * O PISO EM 0° fica, e não tira nada: com 360° de `volta` a inclinação
- * negativa é REDUNDANTE — `(−φ, ψ)` e `(φ, ψ+180°)` são a MESMA direção,
- * porque girar meia volta em torno de `u` espelha a inclinação. E
- * atravessar φ = 0 INVERTERIA a horizontal, porque do outro lado do eixo
- * o azimute corre ao contrário.
- *
- * OS DOIS POLOS DESTA PARAMETRIZAÇÃO estão na linha alvo→Sol (φ = 0 e
- * φ = 180°), e neles o arrasto horizontal estaciona: o efeito dele
- * escala com sen(φ). É propriedade herdada — o piso em 0° sempre teve
- * essa parada —, agora com uma segunda ocorrência na fase nova. Sair
- * dela é arrastar 5° na vertical.
- *
- * O ÚNICO limite que sobrou é o polar (`MIN_POLAR_RAD`), aplicado à
- * direção FINAL e só quando ela entra na calota — dentro da faixa a
- * direção volta intocada, bit a bit. A vista de repouso (`altura = 0`,
- * `volta = 0`) segue sendo o pino de 30° de sempre, bit a bit.
- *
- * COM A PORTA `?giro=polo` OS DOIS NÚMEROS MUDAM DE SIGNIFICADO, e é só
- * isso que muda: continuam sendo «o que o dedo somou na vertical e na
- * horizontal», mas passam a ser lidos como desvios de COLATITUDE e de
- * LONGITUDE no frame do polo do corpo, em vez de inclinação e volta em
- * torno da linha do Sol (ver `EixoDoGiro` e `direcaoNoPolo`). O REPOUSO
- * é o mesmo vetor nos dois eixos, bit a bit — é a condição de nascimento
- * do item 102 —, e com ele a `volta` deixa de preservar a fase: essa
- * troca é o PREÇO declarado da porta.
- */
-export interface OrbitaDoVisitante {
-  /** arrasto VERTICAL acumulado (radianos), somado ao pino de fase. */
-  altura: number;
-  /** arrasto HORIZONTAL acumulado (radianos), em torno de alvo→Sol. */
-  volta: number;
-}
-
-/** A órbita de quem ainda não arrastou nada — o repouso de todo foco. */
-export const ORBITA_PARADA: Readonly<OrbitaDoVisitante> = Object.freeze({
-  altura: 0,
-  volta: 0,
-});
 
 /**
  * Peso da mistura "para longe do PAI" contra o enquadramento alinhado ao
@@ -423,14 +337,13 @@ export function enquadrar(pedido: PedidoDeEnquadramento): Enquadramento {
  * no ângulo ao polo (ela só preserva o ângulo ao SOL). Dentro da faixa
  * ele não toca em nada — é isso que mantém toda vista pinada bit a bit.
  */
-const _linhaDoSol = new THREE.Vector3();
 const _poloUnitario = new THREE.Vector3();
 const _perpendicular = new THREE.Vector3();
 
 /**
  * O grampo de `MIN_POLAR_RAD`: afasta `dir` do eixo `polo` até os dois
  * fazerem pelo menos esse ângulo, preservando o azimute. Pura, e usada
- * DOS DOIS LADOS do mesmo colapso — em `direcaoPrivilegiada` para a
+ * DOS DOIS LADOS do mesmo colapso — em `direcaoDeRepouso` para a
  * mira não entrar na calota do polo, e em `upDoAtlas` para o `up` não
  * encostar na mira. É o mesmo `|a × b| = sen(ângulo)` nos dois casos.
  *
@@ -465,48 +378,35 @@ function grampearNoPolo(dir: THREE.Vector3, polo: THREE.Vector3): THREE.Vector3 
     .addScaledVector(_perpendicular, Math.sin(alvo));
 }
 
-export function direcaoPrivilegiada(
-  doSolAoAlvo: THREE.Vector3,
-  polo: THREE.Vector3,
-  orbita: Readonly<OrbitaDoVisitante>,
-  out: THREE.Vector3,
-  eixo: EixoDoGiro = EIXO_DO_GIRO_PADRAO
-): THREE.Vector3 {
-  return eixo === 'polo'
-    ? direcaoNoPolo(doSolAoAlvo, polo, orbita, out)
-    : direcaoNaLinhaDoSol(doSolAoAlvo, polo, orbita, out);
-}
-
 /**
- * A LEI DE SEMPRE, intocada — o corpo que era o de `direcaoPrivilegiada`
- * antes de a porta `?giro=` existir, letra por letra. Ele continua sendo
- * o caminho do DEFAULT, e é por ser o MESMO TEXTO que o default é
- * bit-idêntico por construção em vez de por sorte.
+ * A DIREÇÃO DE REPOUSO — onde a câmera se põe quando o dedo ainda não
+ * pediu nada: a linha alvo→Sol inclinada do pino de `PHASE_OFFSET_GRAUS`
+ * rumo ao polo, e o grampo polar por cima.
  *
- * O eixo `polo` também passa por aqui, uma vez por chamada: é desta
- * função que sai a POSE DE REPOUSO de onde a parametrização nova nasce.
+ * É O MESMO TEXTO que `direcaoPrivilegiada` rodava com a órbita parada,
+ * letra por letra — o que saiu foram os dois ramos que somavam o dedo
+ * (`altura` na inclinação, `volta` em torno da linha do Sol). Eles não
+ * mudaram de lugar: MORRERAM, e o dedo passou a somar num quaternion
+ * (`GiroDoVisitante`). É por ser o mesmo texto que toda vista parada
+ * continua bit a bit onde estava.
+ *
+ * Ela é a ÂNCORA de tudo o que vem depois: `poseDoVisitante` gira ESTA
+ * direção, e o giro guardado é medido contra ELA. Por isso ela não pode
+ * depender do dedo — se dependesse, o desvio seria medido contra si
+ * mesmo e a pose de repouso andaria com o relógio.
  */
-function direcaoNaLinhaDoSol(
+export function direcaoDeRepouso(
   doSolAoAlvo: THREE.Vector3,
   polo: THREE.Vector3,
-  orbita: Readonly<OrbitaDoVisitante>,
   out: THREE.Vector3
 ): THREE.Vector3 {
   const eixoSolar = out.copy(doSolAoAlvo).negate();
   if (eixoSolar.lengthSq() < 1e-30) eixoSolar.set(0, 0, 1);
   eixoSolar.normalize();
-  // a LINHA alvo→Sol guardada ANTES da inclinação: é ela o eixo do giro
-  // de volta, e `out` deixa de ser ela na linha seguinte
-  _linhaDoSol.copy(eixoSolar);
-  const altura = Number.isFinite(orbita.altura) ? orbita.altura : 0;
-  // a inclinação: 0 é a fase cheia (câmera na linha do Sol), 180° é o
-  // lado escuro visto de trás. Ver `OrbitaDoVisitante` para por que o
-  // piso é 0 e não −180°.
-  const angulo = THREE.MathUtils.clamp(
-    PHASE_OFFSET_GRAUS * GRAU + altura,
-    0,
-    Math.PI
-  );
+  // a inclinação: o pino de fase, rumo ao polo. Sem o dedo somando, o
+  // grampo em [0, π] que existia aqui não tem o que aparar — o pino é
+  // constante e mora dentro da faixa.
+  const angulo = PHASE_OFFSET_GRAUS * GRAU;
   const eixo = new THREE.Vector3().crossVectors(eixoSolar, polo);
   // alvo alinhado com o polo: qualquer perpendicular serve
   if (eixo.lengthSq() < 1e-12) {
@@ -514,318 +414,184 @@ function direcaoNaLinhaDoSol(
     if (eixo.lengthSq() < 1e-12) eixo.set(0, 1, 0).cross(eixoSolar);
   }
   eixoSolar.applyAxisAngle(eixo.normalize(), angulo);
-  const volta = Number.isFinite(orbita.volta) ? orbita.volta : 0;
-  if (volta !== 0) eixoSolar.applyAxisAngle(_linhaDoSol, volta);
   return grampearNoPolo(eixoSolar, polo);
 }
 
 // ============================================================
-// O GIRO NO POLO DO CORPO (item 102, P4) — tudo daqui até
-// `faixaDaAltura` é INSTRUMENTO, atrás da porta `?giro=polo`. O caminho
-// do default não passa por nenhuma destas linhas.
+// O GIRO LIVRE (item 102) — a pose que o dedo compõe EM CIMA da de
+// repouso. Caminho ÚNICO desde 26/08: não há porta, não há eixo a
+// escolher e não há ângulo a grampear. A lei é a frase dele —
+// "liberdade total... sem nenhum limitador de angulo ou coisa
+// parecida" —, e ela está escrita em `GiroDoVisitante`.
 // ============================================================
 
-const _zDoPolo = new THREE.Vector3();
-const _xDoPolo = new THREE.Vector3();
-const _yDoPolo = new THREE.Vector3();
-const _solDoPolo = new THREE.Vector3();
-const _perpDoPolo = new THREE.Vector3();
-const _eixoDaSubida = new THREE.Vector3();
-const _repousoDoPolo = new THREE.Vector3();
-const _dirDoPolo = new THREE.Vector3();
+const _direitaDaTela = new THREE.Vector3();
+const _cimaDaTela = new THREE.Vector3();
+const _upDoRepouso = new THREE.Vector3();
+const _upNatural = new THREE.Vector3();
+const _perpNatural = new THREE.Vector3();
+const _perpAtual = new THREE.Vector3();
+const _cruzado = new THREE.Vector3();
+const _baseMatriz = new THREE.Matrix4();
+const _baseDoRepouso = new THREE.Quaternion();
+const _baseDeAgora = new THREE.Quaternion();
+const _giroNoMundo = new THREE.Quaternion();
 
 /**
- * A BASE DO FRAME DO POLO, escrita nos rascunhos `_zDoPolo`/`_xDoPolo`/
- * `_yDoPolo`: `Z` é o polo do corpo, `X` é o MERIDIANO DO SOL (a
- * componente da linha alvo→Sol perpendicular ao polo, normalizada) e
- * `Y = Z × X`. Devolve `ψ`, o ângulo entre a linha alvo→Sol e o polo —
- * a única grandeza que o resto da conta ainda precisa dela.
+ * A BASE DA CÂMERA, escrita em `out` como quaternion: a MESMA que o
+ * `lookAt` monta — `z` é a direção alvo→câmera, `x = normalize(up × z)`
+ * é a DIREITA da tela e `y = z × x` é o ALTO dela. `false` quando não há
+ * base a montar (mira e `up` colineares).
  *
- * O MERIDIANO DO SOL É A ÂNCORA DE LONGITUDE, e não é decoração: sem uma
- * referência presa ao SOL a longitude de repouso andaria com o relógio
- * (o corpo orbita, e a linha do Sol gira em volta do polo dele), e o
- * ALVO VIVO — que recompõe o enquadramento a cada quadro — daria uma
- * guinada por tique da máquina do tempo. Com ela, a pose de repouso mora
- * no mesmo lugar em qualquer data, por construção.
+ * POR QUE TEM DE SER EXATAMENTE A DO `lookAt`, e não uma base qualquer:
+ * é nela que o giro do visitante é guardado, e "horizontal" precisa
+ * querer dizer «o eixo horizontal DA TELA». Numa base torta o dedo
+ * empurraria na diagonal, que é metade da queixa que o item 102 veio
+ * matar.
+ *
+ * ELA NÃO DEGENERA NO CAMINHO DE REPOUSO, e quem paga por isso é
+ * `MIN_POLAR_RAD`: o `up` que sai de `upDoAtlas` já vem aparado para
+ * ficar a pelo menos esse ângulo da mira, então `|up × z|` tem piso
+ * `sen(0,1)` = 0,0998 e a normalização nunca amplifica ruído. O grampo
+ * polar deixou de ser só a guarda do `lookAt` — passou a ser também a
+ * guarda do REFERENCIAL do giro, e é por isso que ele sobreviveu à
+ * limpeza que matou todos os outros limites.
  */
-function baseDoPolo(doSolAoAlvo: THREE.Vector3, polo: THREE.Vector3): number {
-  _solDoPolo.copy(doSolAoAlvo).negate();
-  if (_solDoPolo.lengthSq() < 1e-30) _solDoPolo.set(0, 0, 1);
-  _solDoPolo.normalize();
-  _zDoPolo.copy(polo);
-  if (_zDoPolo.lengthSq() < 1e-30) _zDoPolo.copy(POLO_ECLIPTICO);
-  _zDoPolo.normalize();
-  const cos = _solDoPolo.dot(_zDoPolo);
-  _xDoPolo.copy(_solDoPolo).addScaledVector(_zDoPolo, -cos);
-  const sen = _xDoPolo.length();
-  if (sen < 1e-12) {
-    // O SOL EM CIMA DO POLO (o eixo do corpo apontado para o Sol — Urano
-    // perto do solstício): não há meridiano do Sol a apontar, e qualquer
-    // perpendicular serve. A escolha é determinística, na mesma cascata
-    // dos outros ramos degenerados desta casa.
-    _xDoPolo.set(1, 0, 0).addScaledVector(_zDoPolo, -_zDoPolo.x);
-    if (_xDoPolo.lengthSq() < 1e-24) {
-      _xDoPolo.set(0, 1, 0).addScaledVector(_zDoPolo, -_zDoPolo.y);
-    }
-  }
-  _xDoPolo.normalize();
-  _yDoPolo.crossVectors(_zDoPolo, _xDoPolo);
-  return Math.atan2(sen, cos);
-}
-
-/**
- * A COLATITUDE de `dir` no frame corrente, em [0, π] — 0 é o polo.
- *
- * Por `atan2` e NUNCA por `acos`, pelo mesmo motivo que `orbitaQueProduz`
- * já declara: perto dos dois polos o `acos` perde metade dos dígitos (o
- * erro vai com `√ε`), e é justamente ali que esta conta trabalha.
- */
-function colatitudeNoPolo(dir: THREE.Vector3): number {
-  const cos = dir.dot(_zDoPolo);
-  _perpDoPolo.copy(dir).addScaledVector(_zDoPolo, -cos);
-  return Math.atan2(_perpDoPolo.length(), cos);
-}
-
-/**
- * A DIREÇÃO NO EIXO `polo` — a volta em torno do polo do corpo
- * (turntable), a lei do NASA Eyes (item 102, P4).
- *
- * ELA NASCE DA POSE DE REPOUSO, e isso é a CONDIÇÃO DE NASCIMENTO do
- * item, não uma comodidade de implementação: a colatitude e a longitude
- * de partida saem da direção que a LEI ANTIGA escreve com o dedo parado
- * — o pino de `PHASE_OFFSET_GRAUS` de sempre, já grampeado. Com o dedo
- * parado NENHUMA das duas rotações abaixo roda, e o que volta é aquele
- * mesmo vetor, BIT A BIT: ligar a porta não move uma vista pinada.
- *
- * É POR ISSO QUE ELA GIRA `d₀` EM VEZ DE RECONSTRUIR A ESFERA. Escrever
- * `sen θ (cos λ X + sen λ Y) + cos θ Z` daria a mesma direção na
- * matemática e um punhado de ULPs de diferença no repouso — e o gate
- * mede md5, não matemática.
- *
- * A ÂNCORA `θ₀` SAI DO PRÓPRIO `d₀`, por `atan2`, e não da forma fechada
- * `|ψ − pino|`: as duas concordam onde a lei antiga não grampeia, mas
- * quando a pose de repouso cai dentro da calota de `MIN_POLAR_RAD` (o
- * polo do corpo a menos de 5,73° do pino de fase, alcançável num corpo
- * deitado) é o `d₀` grampeado que está na tela, e uma âncora que
- * discordasse dele daria um degrau ao primeiro toque.
- *
- * OS DOIS SINAIS SÃO NEGATIVOS, e é medida, não gosto:
- *
- *  · a `altura` sobe rumo ao polo, e subir é DESCER na colatitude —
- *    `θ = θ₀ − altura`. Derivando as duas leis no repouso, as duas dão
- *    `∂dir/∂altura = sen θ₀·Z − cos θ₀·X`, que é exatamente o `+cima` da
- *    base da câmera: o mesmo sinal que `addOrbitDelta` documenta e que a
- *    bancada cobra contra a matriz REAL.
- *  · a `volta` gira em `λ = λ₀ − volta`, porque a rotação em torno do
- *    polo corre ao contrário da rotação em torno da linha do Sol: a
- *    antiga dá `∂dir/∂volta = s × dir = −Y·sen(pino)`, e a nova, sem o
- *    sinal, daria `+Y·sen θ₀`. Trocar de eixo NÃO pode trocar o lado
- *    para onde o dedo empurra o planeta.
- *
- * A TRAVA (`COLATITUDE_MINIMA_RAD`) substitui `MIN_POLAR_RAD` no caminho
- * do dedo: o polo não se cruza, e é por não se cruzar que o horizonte
- * nunca faz flip no meio do gesto.
- */
-function direcaoNoPolo(
-  doSolAoAlvo: THREE.Vector3,
-  polo: THREE.Vector3,
-  orbita: Readonly<OrbitaDoVisitante>,
-  out: THREE.Vector3
-): THREE.Vector3 {
-  direcaoNaLinhaDoSol(doSolAoAlvo, polo, ORBITA_PARADA, out);
-  baseDoPolo(doSolAoAlvo, polo);
-  const theta0 = colatitudeNoPolo(out);
-  const altura = Number.isFinite(orbita.altura) ? orbita.altura : 0;
-  const volta = Number.isFinite(orbita.volta) ? orbita.volta : 0;
-  const theta = THREE.MathUtils.clamp(
-    theta0 - altura,
-    COLATITUDE_MINIMA_RAD,
-    Math.PI - COLATITUDE_MINIMA_RAD
-  );
-  const passo = theta - theta0;
-  if (passo !== 0) {
-    // o eixo da SUBIDA é a normal do meridiano corrente: girar em torno
-    // dele muda a colatitude e deixa a longitude exatamente onde está
-    _eixoDaSubida.crossVectors(_zDoPolo, out);
-    // mira EM CIMA do polo — só alcançável quando a pose de repouso já
-    // nasce lá; o meridiano de referência é o do Sol, e girar em torno
-    // de `Y` é andar dentro dele
-    if (_eixoDaSubida.lengthSq() < 1e-24) _eixoDaSubida.copy(_yDoPolo);
-    out.applyAxisAngle(_eixoDaSubida.normalize(), passo);
-  }
-  if (volta !== 0) out.applyAxisAngle(_zDoPolo, -volta);
-  return out;
-}
-
-/**
- * A FAIXA EM QUE O ACUMULADOR `altura` AINDA MOVE A CÂMERA, no eixo
- * dado. O rig grampeia o acumulador nela para o dedo não somar arrasto
- * MORTO — a "borracha" de todo controle mal grampeado, em que a volta
- * custa desfazer o que nunca moveu nada. A lei é a que `consumirOGiro`
- * já declara; o que a porta muda é só ONDE ela cai.
- *
- * No eixo `sol` a faixa é geométrica e constante: a inclinação varre
- * [0°, 180°] e o pino de fase desloca a origem. No eixo `polo` ela
- * depende DO ALVO E DA DATA — o repouso mora na colatitude `θ₀`, e o que
- * sobra até a trava é `[θ₀ − π + trava, θ₀ − trava]`.
- */
-export function faixaDaAltura(
-  doSolAoAlvo: THREE.Vector3,
-  polo: THREE.Vector3,
-  eixo: EixoDoGiro = EIXO_DO_GIRO_PADRAO
-): { min: number; max: number } {
-  const pino = PHASE_OFFSET_GRAUS * GRAU;
-  if (eixo !== 'polo') return { min: -pino, max: Math.PI - pino };
-  direcaoNaLinhaDoSol(doSolAoAlvo, polo, ORBITA_PARADA, _repousoDoPolo);
-  baseDoPolo(doSolAoAlvo, polo);
-  const theta0 = colatitudeNoPolo(_repousoDoPolo);
-  return {
-    min: theta0 - Math.PI + COLATITUDE_MINIMA_RAD,
-    max: theta0 - COLATITUDE_MINIMA_RAD,
-  };
-}
-
-const _eixoDoGrampo = new THREE.Vector3();
-const _azimute = new THREE.Vector3();
-const _componentePerp = new THREE.Vector3();
-
-/**
- * O CAMINHO DE VOLTA de `direcaoPrivilegiada`: dada uma direção
- * alvo→câmera, quais `(altura, volta)` a produzem contra ESTE eixo
- * solar e ESTE polo. Conta fechada, sem busca e sem iteração.
- *
- * PARA QUE ELA EXISTE (item 73, 22/08): o clique simples passou a
- * SELECIONAR sem mover a câmera. Trocar o alvo mantendo a câmera parada
- * é exatamente isto — a pose é a mesma no mundo, e o que muda é o
- * referencial em que ela se escreve. Sem a volta, "não mover a câmera"
- * teria de virar um segundo caminho de escrita da câmera, e aí haveria
- * duas leis para a mesma pose.
- *
- * A CONTA, e ela é a leitura da ida ao contrário:
- *
- *  · `direcaoPrivilegiada` inclina `s` (a linha alvo→Sol) por `ângulo =
- *    pino + altura` em torno de `e₀ = s × polo`, e depois gira o
- *    resultado em torno da PRÓPRIA `s` por `volta`. O segundo giro não
- *    muda o ângulo a `s`, então `ângulo = acos(dir·s)` — e daí a
- *    `altura`, que é `ângulo − pino`.
- *  · o azimute sai da base `{p₀ = e₀ × s, e₀}`, que é ortonormal e ⊥ a
- *    `s` (`s × p₀ = e₀`): a componente perpendicular de `dir` vale
- *    `sen(ângulo)·(p₀·cos volta + e₀·sen volta)`, logo
- *    `volta = atan2(dir·e₀, dir·p₀)`.
- *
- * O GRAMPO POLAR não atrapalha porque é IDEMPOTENTE: uma direção que
- * saiu de `direcaoPrivilegiada` já está fora da calota, e reaplicá-lo
- * não escreve um bit. Uma direção que entre AQUI dentro da calota volta
- * grampeada na ida — que é o comportamento certo, e a bancada o cobra.
- *
- * A `altura` sai na MESMA faixa que `addOrbitDelta` grampeia
- * (`[−pino, π − pino]`), então o arrasto seguinte continua de onde a
- * seleção parou, sem degrau escondido.
- */
-export function orbitaQueProduz(
+function baseDaCamera(
   dir: THREE.Vector3,
-  doSolAoAlvo: THREE.Vector3,
-  polo: THREE.Vector3,
-  out: OrbitaDoVisitante,
-  eixo: EixoDoGiro = EIXO_DO_GIRO_PADRAO
-): OrbitaDoVisitante {
-  return eixo === 'polo'
-    ? orbitaNoPolo(dir, doSolAoAlvo, polo, out)
-    : orbitaNaLinhaDoSol(dir, doSolAoAlvo, polo, out);
+  up: THREE.Vector3,
+  out: THREE.Quaternion
+): boolean {
+  _direitaDaTela.crossVectors(up, dir);
+  if (_direitaDaTela.lengthSq() < 1e-24) return false;
+  _direitaDaTela.normalize();
+  _cimaDaTela.crossVectors(dir, _direitaDaTela);
+  _baseMatriz.makeBasis(_direitaDaTela, _cimaDaTela, dir);
+  out.setFromRotationMatrix(_baseMatriz);
+  return true;
 }
 
 /**
- * O CAMINHO DE VOLTA no eixo `polo` — a inversa de `direcaoNoPolo`,
- * conta fechada, sem busca. É ela que faz o clique-preserva-pose
- * (`AtlasRig.selecionar`) e o portal do filme (`AtlasRig.pousar`)
- * continuarem escrevendo a MESMA pose no referencial novo com a porta
- * ligada — sem ela, ligar a porta faria a câmera saltar a cada seleção.
+ * A POSE QUE O VISITANTE ESTÁ VENDO — a direção de repouso e o `up` de
+ * repouso, os dois girados pelo MESMO quaternion. Pura.
  *
- * `altura = θ₀ − θ` e `volta = λ₀ − λ`: a ida ao contrário, com os
- * mesmos dois sinais negativos e pelos mesmos dois motivos.
+ * OS DOIS JUNTOS, E ISSO É O DESENHO: a câmera do Atlas virou um CORPO
+ * RÍGIDO. Girar só a direção e recalcular o `up` pela lei da casa era o
+ * que a parametrização velha fazia, e era exatamente de lá que vinha o
+ * roll de surpresa — a cedência do `upDoAtlas` reescrevia o alto da tela
+ * no meio do gesto (medido no item 102: 14,58° num ÚNICO quadro, quase
+ * 10× o que a mira andou). Rodando os dois com a mesma rotação, o alto
+ * da tela só muda quando o dedo manda.
  *
- * A LONGITUDE VOLTA ENROLADA em (−π, π] porque ela sai de uma DIFERENÇA
- * de dois `atan2` e cabe em (−2π, 2π); o acumulador do rig enrola por
- * lei própria, e entregar-lhe um número fora da faixa abriria um degrau
- * de uma volta inteira na primeira soma.
+ * A CONDIÇÃO DE NASCIMENTO MORA NA PRIMEIRA GUARDA, e ela cobre os DOIS
+ * caminhos — a direção E o `up`. Com o giro na identidade nada roda:
+ * `outDir` recebe a direção de repouso e `outUp` recebe o que
+ * `upDoAtlas` sempre devolveu, sem uma multiplicação no meio. Não é
+ * «a conta dá o mesmo» — é a conta NÃO ACONTECER, e por isso vale em
+ * TODA geometria: dentro da faixa da cedência, fora dela, com o corpo
+ * deitado ou em pé, no solstício ou no equinócio. Nenhuma vista parada
+ * pode andar, e nenhum corpo é caso especial.
+ *
+ * O GIRO MORA NO FRAME DA CÂMERA PARADA, não no do mundo, e a razão é o
+ * relógio: o corpo ORBITA, a linha do Sol gira em volta dele, e a base
+ * de repouso gira junto. Um giro guardado no mundo ficaria para trás —
+ * quem tivesse virado o planeta veria a pose escorregar sozinha a cada
+ * tique da máquina do tempo. Guardado no frame de repouso, o desvio
+ * ACOMPANHA o corpo, que é o que "continuar girando de onde estava"
+ * quer dizer. No mundo ele vira a CONJUGAÇÃO `B·Q·B⁻¹`.
  */
-function orbitaNoPolo(
-  dir: THREE.Vector3,
-  doSolAoAlvo: THREE.Vector3,
+export function poseDoVisitante(
+  dirRepouso: THREE.Vector3,
   polo: THREE.Vector3,
-  out: OrbitaDoVisitante
-): OrbitaDoVisitante {
-  out.altura = 0;
-  out.volta = 0;
+  giro: THREE.Quaternion,
+  outDir: THREE.Vector3,
+  outUp: THREE.Vector3
+): void {
+  // o `up` da lei de sempre, sobre a direção de repouso — o caminho
+  // intocado, e a metade da condição de nascimento que fala do `up`
+  upDoAtlas(dirRepouso, polo, outUp);
+  const parado = giroParado(giro) || !baseDaCamera(dirRepouso, outUp, _baseDoRepouso);
+  if (outDir !== dirRepouso) outDir.copy(dirRepouso);
+  if (parado) return;
+  _giroNoMundo.copy(_baseDoRepouso).multiply(giro);
+  _giroNoMundo.multiply(_baseDoRepouso.invert());
+  outDir.applyQuaternion(_giroNoMundo);
+  outUp.applyQuaternion(_giroNoMundo);
+}
+
+/**
+ * O CAMINHO DE VOLTA: dada a pose que está na tela (`dir` e `up`) e o
+ * referencial de repouso de um alvo, qual giro a produz. Conta fechada,
+ * sem busca — é a inversa exata de `poseDoVisitante`.
+ *
+ * PARA QUE ELA EXISTE (item 73, 22/08): o clique simples SELECIONA sem
+ * mover a câmera. Trocar o alvo mantendo a câmera parada é exatamente
+ * isto — a mesma pose no mundo, escrita noutro referencial. O portal do
+ * filme (`AtlasRig.pousar`) usa a mesma porta.
+ *
+ * ELA GUARDA O ROLL, e a antiga não guardava: `(altura, volta)` eram
+ * dois números e a pose da câmera tem TRÊS graus de liberdade, então o
+ * terceiro — o alto da tela — era recalculado pela lei da casa a cada
+ * seleção. Quem tivesse inclinado o horizonte e clicasse noutro corpo
+ * via a imagem endireitar sozinha, com a promessa "não mexe na câmera"
+ * escrita ao lado. Com o quaternion a promessa passa a ser verdade
+ * inteira.
+ *
+ * `Q = B_repouso⁻¹ · B_agora`, e as duas bases são a do `lookAt`.
+ */
+export function giroQueProduz(
+  dir: THREE.Vector3,
+  up: THREE.Vector3,
+  dirRepouso: THREE.Vector3,
+  polo: THREE.Vector3,
+  out: THREE.Quaternion
+): THREE.Quaternion {
+  out.identity();
   if (dir.lengthSq() < 1e-30) return out;
-  direcaoNaLinhaDoSol(doSolAoAlvo, polo, ORBITA_PARADA, _repousoDoPolo);
-  baseDoPolo(doSolAoAlvo, polo);
-  const theta0 = colatitudeNoPolo(_repousoDoPolo);
-  const lambda0 = Math.atan2(
-    _repousoDoPolo.dot(_yDoPolo),
-    _repousoDoPolo.dot(_xDoPolo)
-  );
-  _dirDoPolo.copy(dir).normalize();
-  // A TRAVA VALE NA VOLTA TAMBÉM: uma direção que entre aqui dentro da
-  // calota volta travada na ida — que é o comportamento certo, e o mesmo
-  // que a lei antiga faz com o grampo polar.
-  const theta = THREE.MathUtils.clamp(
-    colatitudeNoPolo(_dirDoPolo),
-    COLATITUDE_MINIMA_RAD,
-    Math.PI - COLATITUDE_MINIMA_RAD
-  );
-  const lambda = Math.atan2(_dirDoPolo.dot(_yDoPolo), _dirDoPolo.dot(_xDoPolo));
-  out.altura = theta0 - theta;
-  out.volta = enrolar(lambda0 - lambda);
-  if (!Number.isFinite(out.altura)) out.altura = 0;
-  if (!Number.isFinite(out.volta)) out.volta = 0;
-  return out;
+  if (!baseDaCamera(dir, up, _baseDeAgora)) return out;
+  upDoAtlas(dirRepouso, polo, _upDoRepouso);
+  if (!baseDaCamera(dirRepouso, _upDoRepouso, _baseDoRepouso)) return out;
+  return out.copy(_baseDoRepouso).invert().multiply(_baseDeAgora);
 }
 
-/** A LEI DE SEMPRE, intocada — ver `direcaoNaLinhaDoSol`. */
-function orbitaNaLinhaDoSol(
+/**
+ * O DESVIO DA ORIENTAÇÃO, em radianos com SINAL — quanto o alto da tela
+ * está torto em relação ao alto que a casa daria NESTA MESMA pose. É a
+ * grandeza que acende a bússola do HUD e a que o endireitar desfaz.
+ *
+ * A REFERÊNCIA É `upDoAtlas`, e a escolha é declarada: ela é a resposta
+ * que o próprio app dá à pergunta "o que fica no alto aqui?" — o polo
+ * do corpo nos degraus corpo/lua, o da eclíptica nos degraus sistema/
+ * órbita, com a cedência entre os dois onde a mira encosta no eixo.
+ * Pinar o polo da eclíptica em vez dela daria um "norte" que discorda
+ * do horizonte que a casa desenha em metade dos degraus; pinar o polo
+ * do corpo daria um norte que colapsa perto do eixo. A referência
+ * natural é a que já existe.
+ *
+ * SÓ O ROLL, e é ele que o botão zera: o desvio é medido NO PLANO DA
+ * TELA (a componente de cada `up` perpendicular à mira), então virar o
+ * planeta de cabeça para baixo e endireitar devolve o horizonte SEM
+ * devolver a câmera para onde ela estava. É a lei do botão de norte do
+ * Google Maps, que é a régua que ele deu: ele acerta a bússola, não
+ * teletransporta o mapa.
+ *
+ * O SINAL é o de quem gira DE natural PARA atual, em torno da mira —
+ * então endireitar é aplicar o NEGATIVO dele.
+ */
+export function desvioDaOrientacao(
   dir: THREE.Vector3,
-  doSolAoAlvo: THREE.Vector3,
-  polo: THREE.Vector3,
-  out: OrbitaDoVisitante
-): OrbitaDoVisitante {
-  out.altura = 0;
-  out.volta = 0;
-  if (dir.lengthSq() < 1e-30) return out;
-  _linhaDoSol.copy(doSolAoAlvo).negate();
-  if (_linhaDoSol.lengthSq() < 1e-30) _linhaDoSol.set(0, 0, 1);
-  _linhaDoSol.normalize();
-  // a MESMA escolha de eixo da ida, inclusive os dois desempates do
-  // caso degenerado (alvo alinhado com o polo)
-  _eixoDoGrampo.crossVectors(_linhaDoSol, polo);
-  if (_eixoDoGrampo.lengthSq() < 1e-12) {
-    _eixoDoGrampo.set(1, 0, 0).cross(_linhaDoSol);
-    if (_eixoDoGrampo.lengthSq() < 1e-12) {
-      _eixoDoGrampo.set(0, 1, 0).cross(_linhaDoSol);
-    }
-  }
-  if (_eixoDoGrampo.lengthSq() < 1e-30) return out;
-  _eixoDoGrampo.normalize();
-  _azimute.copy(_eixoDoGrampo).cross(_linhaDoSol).normalize();
-  _perpendicular.copy(dir).normalize();
-  // O ÂNGULO POR `atan2`, NUNCA POR `acos`, e o número diz por quê: perto
-  // de 0 e de 180° o `acos` perde METADE dos dígitos (o erro vai com
-  // `√ε`), e o que sobra vira deslocamento de câmera proporcional à
-  // distância — medido, 1e-6 rad na abertura são 33 mil km de câmera
-  // num gesto que promete não mover nada. `atan2(|perp|, paralelo)` tem
-  // precisão cheia nos dois extremos.
-  const cos = _perpendicular.dot(_linhaDoSol);
-  _componentePerp.copy(_perpendicular).addScaledVector(_linhaDoSol, -cos);
-  const angulo = Math.atan2(_componentePerp.length(), cos);
-  const pino = PHASE_OFFSET_GRAUS * GRAU;
-  out.altura = THREE.MathUtils.clamp(angulo - pino, -pino, Math.PI - pino);
-  out.volta = Math.atan2(
-    _componentePerp.dot(_eixoDoGrampo),
-    _componentePerp.dot(_azimute)
-  );
-  if (!Number.isFinite(out.altura)) out.altura = 0;
-  if (!Number.isFinite(out.volta)) out.volta = 0;
-  return out;
+  up: THREE.Vector3,
+  polo: THREE.Vector3
+): number {
+  upDoAtlas(dir, polo, _upNatural);
+  _perpNatural.copy(_upNatural).addScaledVector(dir, -_upNatural.dot(dir));
+  _perpAtual.copy(up).addScaledVector(dir, -up.dot(dir));
+  if (_perpNatural.lengthSq() < 1e-24 || _perpAtual.lengthSq() < 1e-24) return 0;
+  _perpNatural.normalize();
+  _perpAtual.normalize();
+  _cruzado.crossVectors(_perpNatural, _perpAtual);
+  const angulo = Math.atan2(_cruzado.dot(dir), _perpNatural.dot(_perpAtual));
+  return Number.isFinite(angulo) ? angulo : 0;
 }
 
 /**
@@ -833,8 +599,17 @@ function orbitaNaLinhaDoSol(
  * `PARENT_FRAMING_BIAS`. Pura, e a semântica é a do doador
  * (`PrivilegedPosition.calculateContextAwareDirection`), re-expressa:
  *
- *  1. parte da direção solar privilegiada (30° de Rembrandt + órbita do
- *     visitante, grampeada — `direcaoPrivilegiada`);
+ * ELA É POSE DE REPOUSO, e desde 26/08 SÓ isso: o dedo do visitante não
+ * entra mais aqui — ele gira o resultado depois, em `poseDoVisitante`.
+ * A troca APAGA uma cicatriz declarada: enquanto o arrasto atravessava
+ * esta função, o cone de `MAX_SOLAR_DEVIATION_GRAUS` aparava o GESTO
+ * junto com a mistura, e no degrau "lua" o visitante batia numa parede
+ * de 70° que não existia em nenhum outro degrau. O cone continua
+ * guardando o que sempre guardou — a mistura CALCULADA —, e o dedo
+ * passou a ser livre em todo degrau, que é a lei dele.
+ *
+ *  1. parte da direção de repouso (os 30° de Rembrandt —
+ *     `direcaoDeRepouso`);
  *  2. mistura com "para longe do PAI" (`(alvo − pai)` normalizado) com
  *     peso `PARENT_FRAMING_BIAS` no termo do pai e renormaliza — a
  *     câmera vai para o lado oposto ao pai, então olhar a lua é olhar
@@ -857,9 +632,7 @@ export function direcaoDaLua(
   doSolAoAlvo: THREE.Vector3,
   doPaiAoAlvo: THREE.Vector3,
   polo: THREE.Vector3,
-  orbita: Readonly<OrbitaDoVisitante>,
-  out: THREE.Vector3,
-  eixo: EixoDoGiro = EIXO_DO_GIRO_PADRAO
+  out: THREE.Vector3
 ): THREE.Vector3 {
   // snapshots ANTES de escrever em `out`: os chamadores da classe podem
   // passar o mesmo rascunho nos dois papéis (o padrão de `apply`)
@@ -868,7 +641,7 @@ export function direcaoDaLua(
   const temSol = _iluminada.lengthSq() >= 1e-30;
   if (temSol) _iluminada.normalize();
 
-  const solar = direcaoPrivilegiada(doSolAoAlvo, polo, orbita, out, eixo);
+  const solar = direcaoDeRepouso(doSolAoAlvo, polo, out);
   if (doPaiAoAlvo.lengthSq() < 1e-30) return solar;
   _longeDoPai.copy(doPaiAoAlvo).normalize();
   const mistura = solar.lerp(_longeDoPai, PARENT_FRAMING_BIAS);
@@ -885,7 +658,7 @@ export function direcaoDaLua(
     // componente "longe do pai" que valha preservar; volta à direção
     // solar privilegiada pura, recomposta do snapshot (o rascunho está
     // sujo da mistura).
-    return direcaoPrivilegiada(_solSnapshot, polo, orbita, out, eixo);
+    return direcaoDeRepouso(_solSnapshot, polo, out);
   }
   return out
     .copy(_iluminada)
@@ -963,38 +736,26 @@ const _upBruto = new THREE.Vector3();
  * repouso se move, e a cedência continua sendo quem decide o roll onde
  * há roll a decidir.
  *
- * NO EIXO `polo` (item 102, P4) E SÓ DENTRO DA FAIXA DA CEDÊNCIA, o `up`
- * passa a ser a componente do polo PERPENDICULAR À MIRA. Ele descreve
- * EXATAMENTE a mesma base de câmera que o polo bruto — o `lookAt` faz
- * `direita = up × z`, e a parte de `up` paralela a `z` não contribui um
- * dígito para esse produto —, escrita de um jeito que NÃO COLAPSA: com a
- * subida travada em `COLATITUDE_MINIMA_RAD` a mira nunca alcança o polo,
- * e `|up × z|` passa a valer 1 exato em vez de `sen(ângulo)`.
+ * ELA É O `up` DA POSE DE REPOUSO, e só dela, desde 26/08 (item 102).
+ * Quem escreve o alto da tela DEPOIS do dedo é `poseDoVisitante`, que
+ * gira este vetor pela mesma rotação que gira a mira — a câmera virou um
+ * corpo rígido. A consequência é que o roll de surpresa que esta função
+ * dava no meio do gesto MORREU na origem: a cedência é medida na pose de
+ * REPOUSO, que não anda com o dedo, então ela não tem mais como reescrever
+ * o horizonte enquanto o visitante arrasta. (Medido antes da troca: a
+ * 26,2° do polo a tela girava 14,58° num ÚNICO quadro, quase 10× o que a
+ * mira andava.)
  *
- * FORA DA FAIXA O CAMINHO É O DE SEMPRE, letra por letra, e isso é a
- * metade da condição de nascimento que fala do `up`: onde a cedência era
- * ZERO (`smoothstep` abaixo do piso, que é onde toda vista de repouso
- * vive), ligar a porta não reescreve um bit. DENTRO da faixa a cedência
- * já reescrevia o `up` — é o que ela existe para fazer —, e é justamente
- * ela que dava o roll no meio do gesto que o P4 vem matar: a um décimo
- * de milirradiano do polo, `cede` vale 1 e o alto da tela pulava para o
- * polo da eclíptica com o alvo parado.
+ * E É ELA A REFERÊNCIA DA BÚSSOLA: `desvioDaOrientacao` pergunta a esta
+ * função o que ficaria no alto na pose de agora, e a diferença para o
+ * alto de verdade é o que acende o botão de endireitar.
  */
 export function upDoAtlas(
   dir: THREE.Vector3,
   polo: THREE.Vector3,
-  out: THREE.Vector3,
-  eixo: EixoDoGiro = EIXO_DO_GIRO_PADRAO
+  out: THREE.Vector3
 ): THREE.Vector3 {
   const alinhamento = Math.abs(dir.dot(polo));
-  if (eixo === 'polo' && alinhamento > Math.cos(CEDER_COMECA_GRAUS * GRAU)) {
-    _upBruto.copy(polo).addScaledVector(dir, -dir.dot(polo));
-    // mira EM CIMA do polo: inalcançável pelo dedo com a trava da
-    // subida, mas o degrau "lua" chega por outro caminho (a mistura
-    // calculada de `direcaoDaLua` não passa pela trava) — e lá o caminho
-    // de sempre ainda responde
-    if (_upBruto.lengthSq() >= 1e-24) return out.copy(_upBruto).normalize();
-  }
   const cede = THREE.MathUtils.smoothstep(
     Number.isFinite(alinhamento) ? alinhamento : 1,
     Math.cos(CEDER_COMECA_GRAUS * GRAU),
@@ -1020,7 +781,7 @@ export function upDoAtlas(
  * O RAIO DE ENQUADRAMENTO DE UMA ESTRELA — a esfera de vizinhança que o
  * Atlas põe em quadro em volta dela. Função do ALVO e só dele: a
  * distância da estrela ao SOL, que é o mesmo referencial de onde
- * `direcaoPrivilegiada` tira o eixo.
+ * `direcaoDeRepouso` tira o eixo.
  *
  * POR QUE NÃO A DISTÂNCIA À CÂMERA, que era o que estava aqui: o Atlas
  * ENQUADRA (a câmera é posta, não voa), e `apply` move a câmera na mesma
