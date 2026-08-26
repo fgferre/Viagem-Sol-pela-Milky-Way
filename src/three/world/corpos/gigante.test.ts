@@ -180,6 +180,28 @@ describe('2. o needle dos GLSL montados', () => {
     expect(corpo).toContain('if (t <= 0.0) return 1.0;');
     expect(corpo).toContain('if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;');
 
+    // (1b) E A BUSCA NA PLACA VEM ANTES DAS DUAS RECUSAS. Isto não é
+    // gosto de ordem: `texture2D` sem LOD escolhe o mip pela DERIVADA de
+    // `u` no quad de 2×2 que a GPU sombreia junto, e um quad partido por
+    // `return` lê `u` de registrador não escrito — o mip vira o topo da
+    // pirâmide (a placa inteira, alpha médio 0,5957) e a função devolve
+    // 0,464 em pleno dia. Foi o ARCO DE PONTINHOS medido em 26/08, e com
+    // ele um quadro NÃO-DETERMINÍSTICO (o par nulo saltou de 446 px para
+    // 1.333). O `clamp` é o que torna a coordenada legítima em toda
+    // parte, e é por isso que ele entra junto.
+    const busca = corpo.indexOf('texture2D(uMapaAnel');
+    expect(busca, 'a busca na placa sumiu de `sombraDoAnel`').toBeGreaterThan(0);
+    expect(corpo).toContain('vec2(clamp(u, 0.0, 1.0), 0.5)');
+    for (const recusa of [
+      'if (t <= 0.0) return 1.0;',
+      'if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;',
+    ]) {
+      expect(
+        corpo.indexOf(recusa),
+        `\`${recusa}\` voltou para ANTES da busca — o quad se parte e o mip vem lixo`
+      ).toBeGreaterThan(busca);
+    }
+
     // (2) o argumento da lanterna NÃO é o pacote que leva a sombra do anel
     const main = GIGANTE_LAMBERT_FRAG.slice(GIGANTE_LAMBERT_FRAG.indexOf('void main()'));
     const comAnel = /vec3 (\w+) = [^;]*sombraDoAnel\(/.exec(main);

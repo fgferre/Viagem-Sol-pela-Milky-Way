@@ -206,18 +206,46 @@ vec3 normalDoCorpo(vec3 p, vec3 esc) { return normSeguro(p * esc); }
  * O teto de 0,9 fica: é dose da casa (o Eyes vai a 100 % com
  * `saturate(1 − alpha)`), e mexer nele é conferência com ele, não
  * receita.
+ *
+ * ------------------------------------------------------------
+ * A BUSCA NA PLACA VEM ANTES DOS `return`, E ISSO NÃO É ESTILO
+ * ------------------------------------------------------------
+ * `texture2D` sem LOD explícito escolhe o mip pela DERIVADA da
+ * coordenada, e a derivada é medida no quad de 2×2 pixels que a GPU
+ * sombreia junto. Se metade do quad saiu da função antes de calcular
+ * `u` — porque caiu fora da janela de raios, ou porque o raio ia para o
+ * lado errado —, aquela derivada é lixo: o hardware lê `u` de um
+ * registrador que ninguém escreveu. O mip que sai disso é o topo da
+ * pirâmide, isto é, a placa INTEIRA amostrada de uma vez (alpha médio
+ * 0,5957 na `ring` de Saturno), e a função devolve
+ * `1 − 0,5957·0,9 = 0,464` num pixel que devia estar em pleno dia.
+ *
+ * FOI O QUE A AUDITORIA DE 26/08 MEDIU depois do S1: um ARCO DE
+ * PONTINHOS no lado do dia, na borda em que o quad se parte, e —
+ * pior — um quadro NÃO-DETERMINÍSTICO, porque o valor do registrador
+ * não escrito muda de execução para execução. O par nulo da vista
+ * `saturno-anel` (duas capturas do MESMO binário) foi de 446 px para
+ * 1.333, e na vista da costura duas execuções do mesmo código
+ * discordaram em 1.431 px.
+ *
+ * O CONSERTO É A ORDEM: `hit`, `r`, `u` e a busca calculam-se
+ * INCONDICIONALMENTE, com `clamp(u, 0, 1)` para que a coordenada seja
+ * sempre legítima, e as duas recusas geométricas caem DEPOIS. É o mesmo
+ * padrão que o `ANEL_FRAG` desta casa já usa na própria placa, logo
+ * abaixo — lá a busca também é a primeira linha, e o `discard` vem
+ * depois dela.
  */
 const GLSL_SOMBRA_ANEL_NO_PLANETA = /* glsl */ `
 float sombraDoAnel(vec3 p) {
   if (uAnelAtivo < 0.5) return 1.0;
   if (abs(uDirSolLocal.y) < 1.0e-6) return 1.0;
   float t = -p.y / uDirSolLocal.y;
-  if (t <= 0.0) return 1.0;
   vec3 hit = p + uDirSolLocal * t;
   float r = length(hit.xz);
-  if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;
   float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
-  float a = texture2D(uMapaAnel, vec2(u, 0.5)).a;
+  float a = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5)).a;
+  if (t <= 0.0) return 1.0;
+  if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;
   return 1.0 - a * 0.9;
 }
 `;
