@@ -9,6 +9,8 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import {
   ATLAS_FOV_GRAUS,
+  FREIO_MINIMO_DO_SOLO,
+  K_MIN_RAIOS,
   AtlasRig,
   LARGURA_DE_MESA_PX,
   LARGURA_UTIL_MINIMA_PX,
@@ -885,6 +887,39 @@ describe('a inércia do giro — o filtro 20/80 com correção de delta-time', (
       expect(cam.position.equals(pose)).toBe(true);
       expect(cam.quaternion.equals(giro)).toBe(true);
     }
+  });
+
+  it('PERTO DO SOLO o giro anda menos — o mesmo arrasto a 2 raios e a 10', () => {
+    // item 102, P3: no Eyes o giro desacelera ao raspar a superfície;
+    // aqui o ganho era fixo, e o mesmo arrasto em pixels que varria 20°
+    // de céu de longe jogava a câmera para o outro lado do planeta de
+    // perto. A régua é o ÂNGULO em torno do alvo, não a distância
+    // percorrida (essa escala com o raio da órbita e não mediria nada).
+    const varreu = (raios: number) => {
+      const cam = camera();
+      const rig = new AtlasRig();
+      naAberturaDeProducao(rig); // alvo na origem, régua = raio FÍSICO do Sol
+      rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+      rig.pinarDistancia(raios * RAIO_DO_SOL_NA_CENA);
+      rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+      const antes = cam.position.clone().sub(rig.alvo).normalize();
+      // um arrasto curto (10 px), entregue e consumido até a inércia morrer:
+      // curto porque o ângulo varrido só é LINEAR na volta perto de zero,
+      // e o que se compara aqui é o ganho, não a parametrização
+      quadro(rig, cam, 10, QUADRO);
+      for (let i = 0; i < 200; i++) quadro(rig, cam, 0, QUADRO);
+      return cam.position.clone().sub(rig.alvo).normalize().angleTo(antes);
+    };
+    const noPiso = varreu(K_MIN_RAIOS); // 2 raios: um raio de altura
+    const longe = varreu(10);
+    expect(longe).toBeGreaterThan(0);
+    // MEDIDO: 0,333338 — no piso o giro anda um TERÇO do que anda longe,
+    // que é o `FREIO_MINIMO_DO_SOLO` contra o freio solto de 10 raios.
+    // Os 4e-6 que sobram são a curvatura da parametrização (o ângulo
+    // varrido não é exatamente linear na volta), não o freio.
+    expect(noPiso / longe).toBeCloseTo(FREIO_MINIMO_DO_SOLO, 4);
+    // e de 4 raios para cima (3 de altura) o freio já saiu do caminho
+    expect(varreu(4) / longe).toBeCloseTo(1, 6);
   });
 
   it('o gesto NÃO ATRAVESSA a troca de alvo — a inércia morre com o foco', () => {

@@ -1151,7 +1151,22 @@ posição atual — o acumulado da zona morta **não é despejado** de uma
 vez. **Prova:** o arrasto curto que hoje dá arranco sai liso desde o
 primeiro pixel; o toque que vira seleção continua virando.
 
-**P3 — Freio perto do solo.** No consumo do delta (o `apply` do P1):
+**P3 — Freio perto do solo. POUSOU em 26/08.** O `consumirOGiro`
+multiplica os dois eixos por `freioDoSolo`. **MEDIDO:** o mesmo arrasto
+de 10 px varre **0,333338 do ângulo** no piso (2 raios) contra o que
+varre a 10 raios — o terço prometido, com 4e-6 de sobra que são a
+curvatura da parametrização, não o freio; a 4 raios o freio já saiu do
+caminho (fator 1,000000). **A RÉGUA, declarada:** o `raios` do freio é
+medido contra a MESMA régua do piso do zoom (`reguaDoSolo` — o raio
+FÍSICO do corpo quando quem focou o conhece), e não contra a régua da
+porta `?d=` (`distanciaEmRaios`, sempre de ENQUADRAMENTO). É isso que
+faz "no piso, um terço" ser verdade por construção; num degrau de corpo
+as duas réguas diferem por ordens de grandeza, e o freio tem de falar a
+língua do solo. `FREIO_DO_SOLO_RAIOS = 3` e `FREIO_MINIMO_DO_SOLO =
+1/3` são números de GOSTO, à espera da conferência dele. A receita
+original:
+
+No consumo do delta (o `apply` do P1):
 multiplicar os dois eixos por `u = clamp((distEmRaios - 1) / 3, 1/3,
 1)` — no piso (`K_MIN_RAIOS = 2`) o giro anda a um terço; de 4 raios
 para cima anda pleno. Constante nomeada `FREIO_DO_SOLO_RAIOS = 3`,

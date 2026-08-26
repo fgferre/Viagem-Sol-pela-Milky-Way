@@ -83,6 +83,39 @@ export const RAMPA_DO_DEGRAU_S = 0.5;
  */
 export const K_MIN_RAIOS = 2.0;
 
+/**
+ * O FREIO PERTO DO SOLO, em raios do alvo — de quantos raios de ALTURA
+ * o giro precisa para andar pleno. Item 102, P3: no NASA Eyes o giro
+ * desacelera ao raspar a superfície (fator altura/raio), e aqui o ganho
+ * era fixo a qualquer distância — o mesmo arrasto em pixels varria 20°
+ * de céu de longe e jogava a câmera para o outro lado do planeta de
+ * perto, que é metade da queixa do "péssimo".
+ *
+ * A CONTA é `u = clamp((raios − 1) / 3, 1/3, 1)`, e o `− 1` é o que a
+ * torna ALTURA e não distância: a câmera a `k` raios do CENTRO vê a
+ * superfície a `k − 1` raios. No piso do zoom (`K_MIN_RAIOS` = 2 raios,
+ * um raio de altura) o giro anda a um terço; de 4 raios para cima — três
+ * raios de altura — anda pleno.
+ *
+ * A RÉGUA É A MESMA DO PISO, e é isso que faz "no piso, um terço" ser
+ * verdade por construção: o raio FÍSICO do corpo quando quem focou o
+ * conhece (`pisoRaio`), e o de enquadramento quando não. NÃO é a régua
+ * da porta `?d=` (`distanciaEmRaios`, sempre em raios de
+ * ENQUADRAMENTO): num degrau de corpo os dois diferem por ordens de
+ * grandeza, e o freio tem de falar a língua do solo.
+ *
+ * AJUSTÁVEL NA CONFERÊNCIA DELE: é número de gosto, e o item 102 o
+ * registra como tal.
+ */
+export const FREIO_DO_SOLO_RAIOS = 3;
+
+/**
+ * ...e o quanto o freio pode apertar, no máximo. Um terço é o número do
+ * P3; abaixo dele o giro perto da superfície viraria melado, e com zero
+ * a câmera ficaria presa no piso do zoom sem poder sair.
+ */
+export const FREIO_MINIMO_DO_SOLO = 1 / 3;
+
 const _dir = new THREE.Vector3();
 const _dirPai = new THREE.Vector3();
 const _posDestino = new THREE.Vector3();
@@ -575,11 +608,37 @@ export class AtlasRig {
     return this.raio;
   }
 
+  /**
+   * A RÉGUA DO SOLO, em pc — o raio FÍSICO do corpo alvo quando quem
+   * focou o conhece, e o de enquadramento quando não (ver `pisoRaio`).
+   * É dela que saem o PISO do zoom e o freio do giro, e é por isso que
+   * ela tem um lugar só: as duas leis medem a mesma altura.
+   */
+  private get reguaDoSolo(): number {
+    return this.pisoRaio !== null && this.pisoRaio > 0 ? this.pisoRaio : this.raio;
+  }
+
   /** PISO do zoom: `K_MIN_RAIOS` raios do alvo. Ver a constante. */
   get pisoDeZoom(): number {
-    const regua =
-      this.pisoRaio !== null && this.pisoRaio > 0 ? this.pisoRaio : this.raio;
-    return K_MIN_RAIOS * regua;
+    return K_MIN_RAIOS * this.reguaDoSolo;
+  }
+
+  /**
+   * QUANTO DO GIRO PASSA, perto do solo — ver `FREIO_DO_SOLO_RAIOS`.
+   * `1` (freio nenhum) enquanto não há régua: no primeiro quadro de um
+   * foco a distância do enquadramento ainda não foi registrada, e frear
+   * ali seria inventar um solo onde não se mediu nenhum.
+   */
+  private get freioDoSolo(): number {
+    const regua = this.reguaDoSolo;
+    if (!(regua > 0)) return 1;
+    const raios = this.distancia / regua;
+    if (!(raios > 0)) return 1;
+    return THREE.MathUtils.clamp(
+      (raios - 1) / FREIO_DO_SOLO_RAIOS,
+      FREIO_MINIMO_DO_SOLO,
+      1
+    );
   }
 
   /**
@@ -753,10 +812,14 @@ export class AtlasRig {
     // bit igual à de antes deste filtro existir (a condição de nascimento
     // do item 102)
     if (passoAltura === 0 && passoVolta === 0) return;
+    // O FREIO PERTO DO SOLO entra AQUI, no consumo, e nos DOIS eixos: o
+    // que ele muda é quanto do gesto chega à órbita, não quanto tempo a
+    // inércia dura (`suav` decai pelo relógio, não pela altura).
+    const freio = this.freioDoSolo;
     const pino = PHASE_OFFSET_GRAUS * GRAU;
-    this.orbita.volta = enrolar(this.orbita.volta + passoVolta);
+    this.orbita.volta = enrolar(this.orbita.volta + passoVolta * freio);
     this.orbita.altura = THREE.MathUtils.clamp(
-      this.orbita.altura + passoAltura,
+      this.orbita.altura + passoAltura * freio,
       -pino,
       Math.PI - pino
     );
