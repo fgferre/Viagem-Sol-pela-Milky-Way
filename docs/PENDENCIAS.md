@@ -1049,6 +1049,17 @@ melhor.** (Aberto em 25/08, queixa dele com o Eyes como régua. Palavras
 dele: *"o movimento de rotacionar objetos selecionados do app é
 péssimo... porque somos diferentes do nasa eyes nisso?"*.)
 
+**ONDE ESTÁ: P1, P2 e P3 POUSARAM em 26/08** (um commit cada, com a
+medida dentro). **O QUE FALTA É O P4 e o OLHO DELE.** O P4 (a volta no
+polo do corpo) não entrou de propósito: ele COBRA UM PREÇO — girar a
+`lon` gira a sombra junto, e a iluminação deixa de ser fixa na vista,
+que era o que a `volta` antiga protegia. É decisão de desenho, e a
+receita já diz como se decide: vídeo A/B do mesmo arrasto nos dois
+lados, e ele escolhe. **Os três que pousaram não mudam um pixel de vista
+parada** — as 61 vistas do `ab-identidade` saíram BIT-IDÊNTICAS entre o
+`45843ca` e o `899ac94`, e o `atlas-smoke` fechou verde com 164
+vereditos (a prova 21, do gesto vivo, é nova).
+
 **A CAUSA, medida dos dois lados no mesmo dia** (engenharia reversa do
 bundle deles, leitura do nosso caminho). O giro deles é gostoso por
 quatro peças que aqui faltam ou são diferentes:
