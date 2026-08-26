@@ -1171,11 +1171,16 @@ o cadastro de Saturno em seis casas).
   do MESMO código devolvem a MESMA série no segmento medido, ao bit. O
   tremor existe no quadro (618 px, Δmáx 99,5, média igual a três decimais)
   e **não** na linha que decide. `item104-ruido.json`.
-- **A TESTEMUNHA DE FORA:** um corpo SEM anel — a `terra` pinada, no
-  brilho assistido — sai com o **mesmo md5** dos dois lados. A obra mora
-  inteira no fragmento do gigante e não vazou dele. É também o que
-  garante a umbra de Durango parada: o S2 só tirou da lanterna a sombra do
-  ANEL, e o `fatorDeEclipse` continua mordendo-a (decisão do item **95**).
+- **AS DUAS TESTEMUNHAS, e elas dizem coisas diferentes.** A `terra`
+  pinada (outro fragmento) e **Júpiter** (o MESMO
+  `GIGANTE_LAMBERT_FRAG` de Saturno, só que sem anel aceso) saem as duas
+  com o **mesmo md5** dos dois lados — ZERO pixel, medido entre duas
+  árvores limpas, `f4fe69b` × `1788606`, servidas por dois `vite`
+  simultâneos (`item104-testemunhas.json`). A segunda é a que importa: a
+  obra não vazou para o fragmento inteiro, ficou onde a sombra do anel
+  cai. E a Terra é o que garante a umbra de Durango parada — o S2 só
+  tirou da lanterna a sombra do ANEL, e o `fatorDeEclipse` continua
+  mordendo-a (decisão do item **95**).
 
 **A RÉGUA É NOVA E TEM JUIZ:** `luz-ab.mjs` ganhou o modo `perfil` — o
 cinza ao longo de um segmento declarado, com `maiorSubida` (a altura da

@@ -248,11 +248,16 @@ function naFaseDaAncora({ centro, raio, L, P }, faseGraus, raiosAlvo) {
 export const VISTAS = {
   costura: { ancora: true, sufixo: '' },
   'costura-real': { ancora: true, sufixo: '&luz=real' },
-  // O CORPO SEM ANEL: a `terra` pinada, no brilho assistido. Ela é a
-  // TESTEMUNHA do S1/S2 — a obra do item 104 mora inteira no fragmento do
-  // gigante, então um corpo sem anel tem de sair bit a bit igual dos dois
-  // lados. Se esta vista se mexer, a obra vazou para fora do lugar dela.
+  // AS DUAS TESTEMUNHAS DO S1/S2, e elas dizem coisas diferentes.
+  // `terra-sem-anel` é um corpo de OUTRO fragmento; `jupiter-sem-anel` é
+  // um gigante que compila o MESMO `GIGANTE_LAMBERT_FRAG` de Saturno e
+  // simplesmente não tem anel aceso (`uAnelAtivo < 0.5`, e aí
+  // `sombraDoAnel` devolve 1 e `sombras` é o próprio eclipse). As duas
+  // têm de sair bit a bit iguais dos dois lados: se a segunda se mexer, a
+  // obra vazou para dentro do fragmento inteiro em vez de ficar onde a
+  // sombra do anel cai.
   'terra-sem-anel': { url: comoPinada('terra') },
+  'jupiter-sem-anel': { url: query(camaraNaFase('jupiter', 60)) },
   'saturno-real': { url: `${query(camaraNaFase('saturno-anel', 67, 4, 'deitado'))}&luz=real` },
   'jupiter-real': { url: `${query(camaraNaFase('jupiter', 60))}&luz=real` },
   'mercurio-real': { url: `${query(camaraNaFase('mercurio', 0))}&luz=real` },
