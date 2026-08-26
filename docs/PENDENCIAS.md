@@ -88,8 +88,10 @@ ARQUIVO. Respondeu também as **Q9–Q12** do item **93** e reafirmou o
 **Q2** (o modo real): a **receita do Eyes está APROVADA** — palavras dele,
 *"a calibracao nao muda a ideia central"* —, e o que ela pede é
 **CALIBRAÇÃO** dos botões de dentro (lanterna, terminador, Mercúrio), com o
-véu intacto. O **93 não fecha**: vira obra de calibração, e ela sai na
-MESMA folha de fotos das propostas do modo real.
+véu intacto. *(26/08 — a calibração POUSOU: ele escolheu a **C1** na Q13,
+ela virou o padrão, a porta `?calib=` morreu e o item **104** saiu na
+mesma leva, como ele pediu. O **93** e o **104** ficam abertos só pelo
+olho dele nas fotos.)*
 
 **A FILA DA PRÓXIMA CONVERSA, e é esta que vale a partir de agora:**
 
@@ -111,12 +113,14 @@ profissionais como as do nasa eyes"*), e o **A1 POUSOU** em 25/08: a
 IMAGEM do colar morto no Retina está na mesa
 (`capturas/item83-colar-antes-depois-v2.png` — a v2 é a que ele julga)
 e **espera o olho dele**.
-Segue o **A2** (a borda macia). **E a FOLHA DA CALIBRAÇÃO pousou em
-26/08** — quatro pranchas que esperam o olho dele e são a pergunta da vez:
-`capturas/item93-calib-saturno.png` (Q9, a noite), `item93-calib-jupiter.png`
-(Q10, o crescente), `item93-calib-mercurio.png` (Q11, o subsolar) e
-`item93-calib-real.png` (o (c) do 91, com Saturno e Júpiter). Fora isso, o
-que vai à Sala é a folha da lente com a vista de abertura.
+Segue o **A2** (a borda macia). **A FOLHA DA CALIBRAÇÃO já serviu** — ele
+escolheu a C1 por ela (Q13), e as quatro pranchas
+`capturas/item93-calib-*.png` passam a ser a REFERÊNCIA medida do "antes",
+não mais pergunta. **A pergunta da vez é a COSTURA:
+`capturas/item104-costura.png`** (a sombra do anel cruzando o terminador,
+antes × depois, com o perfil medido na legenda), e com ela vai a mesma
+pergunta de sempre sobre a C1 no app: a noite ficou no ponto agora? Fora
+isso, o que vai à Sala é a folha da lente com a vista de abertura.
 
 *(Registro de escrivão, para nada se perder: a foto
 `capturas/item77-filme-sem-orbitas.png` — a volta para casa sem as linhas
