@@ -41,8 +41,10 @@
 //     erro estava copiado aqui e no anel de Quaoar. O interior
 //     herdado de 0,22 caiu: umbra ZERO e penumbra de um Sol de
 //     raio angular MEDIDO (`uSolAngRad`).
-//   - sombra anel→planeta: interseção analítica do plano y=0
-//   - fade de terminador (smoothstep 0…0,05)
+//   - sombra anel→planeta: interseção analítica do plano y=0, com
+//     validade só GEOMÉTRICA. O fade de terminador (smoothstep 0…0,05)
+//     morreu no item 104, 26/08: ele abria uma tira clara na fronteira
+//     em vez de costurar.
 //   - Saturno NÃO é receptor de eclipse (CORPOS_COM_ANEL)
 // ============================================================
 import * as THREE from 'three';
@@ -177,12 +179,37 @@ vec3 normalDoCorpo(vec3 p, vec3 esc) { return normSeguro(p * esc); }
  * Sombra anel→planeta: interseção analítica com o plano equatorial
  * (y=0 no frame local: +Y é o polo, a convenção da SphereGeometry).
  * Densidade lida da placa alpha — não o 0,34 fixo do doador.
+ *
+ * ------------------------------------------------------------
+ * NÃO HÁ FADE POR N·L AQUI, E ISSO É O ITEM 104 (S1, 26/08)
+ * ------------------------------------------------------------
+ * Até 26/08 esta função morria à força perto do terminador
+ * (`smoothstep(0.0, 0.05, ndotl)`), e a queixa dele foi o resultado:
+ * *"a transicao da sombra dos aneis para regiao de penumbra/noite nao
+ * está bem feita. tinha que ser seamless"*. O fade não costurava —
+ * ele ABRIA UM BURACO: a sombra sumia em N·L → 0 enquanto a logística
+ * do terminador ainda vaza ~5 % de Sol EM N·L = 0, e a luz vazada
+ * ficava acesa sozinha. Medido na vista da prancha, na linha y = 440:
+ * o pixel caía a ~8 bytes dentro da sombra e SUBIA a ~65 na fronteira,
+ * antes de morrer na noite. Uma tira clara entre a sombra e o escuro.
+ *
+ * A ordem do NASA Eyes não tem rampa nenhuma
+ * (`getLightColorFromShadowRings`): a única validade é GEOMÉTRICA — o
+ * raio até o plano do anel tem de ir para o lado do Sol (`d > 0.0`, o
+ * nosso `t > 0`) e cair dentro da janela de raios —, e a sombra
+ * multiplica a luz que CHEGA, antes do terminador. Assim sombra e
+ * crepúsculo mordem o MESMO termo e morrem juntos na fronteira:
+ * seamless por construção, sem fade. O comentário que pedia o fade
+ * aqui, de 25/08, lia o risco ao contrário — multiplicar a sombra pela
+ * luz do terminador APAGA, não acende.
+ *
+ * O teto de 0,9 fica: é dose da casa (o Eyes vai a 100 % com
+ * `saturate(1 − alpha)`), e mexer nele é conferência com ele, não
+ * receita.
  */
 const GLSL_SOMBRA_ANEL_NO_PLANETA = /* glsl */ `
-float sombraDoAnel(vec3 p, float ndotl) {
+float sombraDoAnel(vec3 p) {
   if (uAnelAtivo < 0.5) return 1.0;
-  float fade = smoothstep(0.0, 0.05, ndotl);
-  if (fade <= 0.0) return 1.0;
   if (abs(uDirSolLocal.y) < 1.0e-6) return 1.0;
   float t = -p.y / uDirSolLocal.y;
   if (t <= 0.0) return 1.0;
@@ -191,7 +218,7 @@ float sombraDoAnel(vec3 p, float ndotl) {
   if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;
   float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
   float a = texture2D(uMapaAnel, vec2(u, 0.5)).a;
-  return 1.0 - a * 0.9 * fade;
+  return 1.0 - a * 0.9;
 }
 `;
 
@@ -216,9 +243,11 @@ float sombraDoAnel(vec3 p, float ndotl) {
  * pula. Trocar esse argumento pela soma seria acender palha na noite de
  * Saturno e no modo `real`.
  *
- * O `ndotlGeo` CRU continua sendo quem manda no eclipse e no fade da
- * sombra do anel: os dois são geometria, não luz — passar a curva macia
- * ali acenderia a sombra meio pixel antes do terminador de verdade.
+ * O `ndotlGeo` CRU continua sendo quem manda no ECLIPSE: ele é geometria,
+ * não luz — passar a curva macia ali acenderia a sombra meio pixel antes
+ * do terminador de verdade. A sombra do ANEL deixou de olhar N·L em 26/08
+ * (item 104, S1): a validade dela é só geométrica, e o terminador entra
+ * DEPOIS, multiplicando o mesmo termo.
  */
 export const GIGANTE_LAMBERT_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -245,7 +274,7 @@ void main() {
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
   vec3 view = normSeguro(uCamLocal - pElip);
   vec3 sombras =
-    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip, ndotlGeo);
+    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
   vec3 fill = lanternaDeLeitura(n, view, sombras);
   gl_FragColor =

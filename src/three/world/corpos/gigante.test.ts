@@ -115,7 +115,7 @@ describe('2. o needle dos GLSL montados', () => {
     expect(GIGANTE_LAMBERT_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
     expect(GIGANTE_LAMBERT_FRAG).toContain('if (uEclipseAtivo < 0.5) return vec3(1.0);');
     expect(GIGANTE_LAMBERT_FRAG).toContain(
-      'vec3 sombras =\n    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip, ndotlGeo);'
+      'vec3 sombras =\n    fatorDeEclipse(pElip, n, ndotlGeo) * sombraDoAnel(pElip);'
     );
     // ITEM 93: a luz do Sol passa pela logística e SÓ DEPOIS a lanterna soma-se
     expect(GIGANTE_LAMBERT_FRAG).toContain(
@@ -131,6 +131,47 @@ describe('2. o needle dos GLSL montados', () => {
       'vec4(globoComVeu(albedo, luzSol, fill, opacidadeDoVeu(dot(n, view))), 1.0)'
     );
     expect(GIGANTE_LAMBERT_FRAG).not.toContain('globoComVeu(albedo, luzDoGlobo');
+  });
+
+  /**
+   * PINO 104 — A COSTURA SOMBRA → NOITE, na fiação do fragmento.
+   *
+   * A QUEIXA DELE, 26/08: *"precisa haver um fade gradual até a sombra, de
+   * forma seamless — isso deve se aplicar a qualquer transição de sombra
+   * para penumbra"*. A resposta não foi uma rampa: foi a ORDEM do NASA
+   * Eyes, e ela cabe em duas frases — a sombra multiplica a luz que CHEGA
+   * (antes do terminador, para os dois morrerem juntos na fronteira), e o
+   * piso da noite é somado FORA de qualquer sombra.
+   *
+   * ESTE DENTE GUARDA A FIAÇÃO, que é o que se pode perder sem ninguém
+   * ver: `sombraDoAnel` não pode voltar a receber N·L — o
+   * `smoothstep(0.0, 0.05, ndotl)` que morreu aqui matava a sombra na
+   * fronteira e deixava o vazamento de 5 % do terminador ACESO sozinho,
+   * uma tira clara medida no perfil da prancha. A reversão é de UMA
+   * linha e não muda um tipo: sem este dente, ela compila.
+   *
+   * O QUE ELE NÃO COBRA: o que o chunk FAZ com esses argumentos. Isso é
+   * `luzDaVisita.test.ts`, que executa o GLSL e mede a lei do piso comum.
+   */
+  it('PINO 104 (S1): a sombra do anel é só geométrica, sem fade por N·L', () => {
+    // (1) a assinatura perdeu o N·L, e o CORPO da função não tem fade
+    // nenhum. O recorte é a função, não o fragmento: o chunk do eclipse
+    // usa `smoothstep` de propósito (o fade de terminador DELE, que é
+    // penumbra de cone e continua valendo).
+    const decl = 'float sombraDoAnel(vec3 p) {';
+    expect(GIGANTE_LAMBERT_FRAG).toContain(decl);
+    const corpo = GIGANTE_LAMBERT_FRAG.slice(
+      GIGANTE_LAMBERT_FRAG.indexOf(decl),
+      GIGANTE_LAMBERT_FRAG.indexOf('\n}', GIGANTE_LAMBERT_FRAG.indexOf(decl))
+    );
+    expect(corpo).not.toContain('smoothstep');
+    expect(corpo).not.toContain('ndotl');
+    expect(corpo).toContain('return 1.0 - a * 0.9;');
+    // a validade que FICA é a geométrica — o raio para o lado do Sol e a
+    // janela de raios do anel
+    expect(corpo).toContain('if (t <= 0.0) return 1.0;');
+    expect(corpo).toContain('if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;');
+
   });
 
   /**
