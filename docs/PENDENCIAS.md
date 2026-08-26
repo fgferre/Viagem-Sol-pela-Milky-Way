@@ -1722,7 +1722,11 @@ MESMO código.** A vista `saturno-anel`, na leva desde a F6, contra ela
 mesma dá **828 px** (0,027%, delta máx 47) — a auditoria reproduziu ao
 pixel; a irmã dela `saturno-anelnb` (a mesma vista sem bloom) entrou na
 lista em 25/08, pela leva do item **92**, com os dois lados instáveis
-contra si mesmos; a `foco-titan` nova dá **605 px numa medição e 262 px noutra**
+contra si mesmos; a `eclipse-limbo` entrou em 25/08, pela leva do item
+**77** (par nulo no lado antes: dois hashes com o MESMO código, e o
+depois dentro do conjunto do antes — mesma família: casca de atmosfera +
+sombra no limbo, textura chegando em estados diferentes); a `foco-titan`
+nova dá **605 px numa medição e 262 px noutra**
 (estocástico: o número muda por leva, e por isso nenhum vale como pino) —
 sempre na caixa sobre a linha do anel e a sombra dela no globo. A câmera
 está fora de suspeita (pose bit a bit igual nas duas navegações); o

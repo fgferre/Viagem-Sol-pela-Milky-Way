@@ -1122,7 +1122,7 @@ export class Orbitas {
    * um gate de modo que se pudesse cortar em silêncio devolveria as linhas
    * ao filme sem derrubar teste nenhum, e a decisão 3 do item 77 (§7)
    * voltaria a ser conversa. Como parâmetro obrigatório, apagá-lo não
-   * compila — nem no `director.ts`, nem nos treze quadros de teste que a
+   * compila — nem no `director.ts`, nem nos quadros de teste que a
    * passam.
    */
   update(

@@ -192,7 +192,7 @@ describe('arrastoFazAlgo — a fase promete o que o arrasto entrega', () => {
 // desta exceção, que é a que a conversa futura tentaria primeiro. Quem
 // vier depois: acrescente o dente, não a promessa.
 // ------------------------------------------------------------
-describe('as linhas de órbita são a ÚNICA regra por modo (item 77 · decisão 3)', () => {
+describe('as linhas de órbita são a ÚNICA regra por modo que apaga camada (item 77 · decisão 3)', () => {
   it('o mapa responde as seis fases — o filme fora, o Atlas e o voo dentro', () => {
     // exaustivo e digitado: fase nova sem decisão já não compila (o
     // `satisfies Record<Phase, boolean>`), e inverter um valor cai aqui

@@ -982,7 +982,7 @@ describe('a linha cede ao núcleo do corpo que ela desenha', () => {
 //
 // E O GATE NÃO SE CORTA EM SILÊNCIO: `fase` é parâmetro OBRIGATÓRIO de
 // `update`, então apagá-lo não compila — aqui, no `director.ts` e nos
-// treze quadros dos blocos acima.
+// quadros de teste dos blocos acima.
 // ------------------------------------------------------------
 describe('O FILME NÃO TEM LINHA (§7 — item 77 · decisão 3)', () => {
   /**
@@ -1032,6 +1032,28 @@ describe('O FILME NÃO TEM LINHA (§7 — item 77 · decisão 3)', () => {
         expect(acesas, `${fase} não devia acender linha nenhuma`).toBe(0);
       }
     }
+  });
+
+  it('a TRANSIÇÃO apaga no MESMO quadro — sem um quadro de linha ao entrar no filme', () => {
+    // A mesma instância atravessa a troca de fase, como no app de
+    // verdade. Um gate aplicado "um quadro depois" (fase passada em vez
+    // da viva) passaria no teste exaustivo acima — cada fase lá nasce
+    // numa instância nova — e deixaria a linha piscar na transição.
+    // Achado da auditoria de 25/08 (sabotagem S6).
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    camera.position.set(0, 0, 224 / UA_POR_PC);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    const meiaTan = Math.tan((35 * Math.PI) / 360);
+    orbitas.update(camera, quadroDe(1800), meiaTan, 0, null, 'atlas');
+    expect(orbitas.acesas, 'no Atlas as linhas acendem').toBeGreaterThan(0);
+    orbitas.update(camera, quadroDe(1800), meiaTan, 0, null, 'journey');
+    expect(orbitas.group.visible, 'entrou no filme: grupo fora no MESMO quadro').toBe(false);
+    expect(orbitas.acesas, 'entrou no filme: nenhuma linha acesa no MESMO quadro').toBe(0);
+    orbitas.dispose();
   });
 
   it('o gate NÃO come a gaveta: no Atlas quem manda continua sendo `noorbitas`', () => {

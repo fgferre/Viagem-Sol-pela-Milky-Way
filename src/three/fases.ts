@@ -67,8 +67,12 @@ export function arrastoFazAlgo(fase: Phase, pausada: boolean): boolean {
 }
 
 /**
- * AS LINHAS DE ÓRBITA DESENHAM nesta fase? — A ÚNICA REGRA POR MODO VIVA
- * DA CASA, e ela existe porque ELE a autorizou, nominalmente, uma vez.
+ * AS LINHAS DE ÓRBITA DESENHAM nesta fase? — A ÚNICA REGRA POR MODO QUE
+ * DECIDE SE UMA CAMADA DESENHA, e ela existe porque ELE a autorizou,
+ * nominalmente, uma vez. (A outra regra por fase viva é de outra
+ * espécie: a dose de atividade do CORPO do Sol na dramaturgia do filme —
+ * assistência declarada no selo, itens 5/86 — que não apaga camada
+ * nenhuma.)
  *
  * DE QUE LEI ISTO É EXCEÇÃO. O item 61 (22/08) matou as regras por modo
  * com as palavras dele: *"o modo atlas na minha visao deveria ser o modo
@@ -375,7 +379,7 @@ export const HUD_POR_FASE = {
  * world/orbitas.ts
  * 29. as LINHAS DE ÓRBITA desenham? ................... DESENHAM no
  *     Atlas — é a única decisão desta lista que toca a CENA e não o HUD,
- *     e a única regra por modo viva da casa. Ela é exceção autorizada
+ *     e a única regra por modo que apaga uma camada. Ela é exceção autorizada
  *     por ele (item 77, decisão 3, 25/08); a doutrina inteira está no
  *     `LINHAS_DE_ORBITA_POR_FASE`, acima. [mapa]
  */
