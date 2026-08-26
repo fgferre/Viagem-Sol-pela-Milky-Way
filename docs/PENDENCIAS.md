@@ -68,7 +68,7 @@ delas já serviram; o **modo real do 91** volta à prancheta com palavra dele
 (*"escuro demais, repensar"*); **86**, **87** e o novo **100** nasceram
 decididos; e a fita do **83** ficou com uma queixa pela metade — as
 palavras chegaram no chat do mesmo dia (*"lindas e profissionais como as
-do nasa eyes"*; o L2.5-a ANDA, ver o item). **A fila decidida, que se
+do nasa eyes"*; a receita da caneta está no item — A1 anda, depois A2). **A fila decidida, que se
 ACRESCENTA à de cima e não a substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
 esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
 esperam o olho dele) → ~~**92**~~ (25/08 — pousou, e não era de Éris: era
@@ -104,7 +104,7 @@ MESMA folha de fotos das propostas do modo real.
 oito pranchas dos itens 88, 92 e 95 **já serviram**, e com elas morre a
 nota de "não apagar" das três. **A fita do 83 deixou de esperar palavras:**
 elas chegaram no chat (*"as linhas de órbita finalmente fiquem lindas e
-profissionais como as do nasa eyes"*), e o **L2.5-a ANDA** — a prova que
+profissionais como as do nasa eyes"*), e o **A1 ANDA** (depois o A2 da borda macia) — a prova que
 volta é a IMAGEM do colar morto, no Retina. Fora isso, o que vai à Sala
 são **as folhas que a fila acima vai produzir** — a da calibração + modo
 real primeiro, depois a da lente com a vista de abertura.
@@ -1007,15 +1007,17 @@ Conferência, diante de `capturas/item83-fita-zoom-antes-depois.png`, ele
 tinha dito *"estranhei algo (explico no chat)"*. O chat veio: ele quer que
 **as linhas de órbita finalmente fiquem lindas e profissionais como as do
 NASA Eyes**. O que ele VÊ: a fita do L1/L2 ainda **não** está desse jeito.
-**L2.5-a ANDA AGORA.** Não se espera mais o Passo 0, e não se pergunta de
-novo o que ele estranhou — era isto.
+**A1 ANDA AGORA; A2 em seguida, DEPOIS da prova do colar morto.** Não se
+espera mais o Passo 0, e não se pergunta de novo o que ele estranhou —
+era isto.
 
-**"Bit identical" NÃO é o alvo da tela.** Ele usou essa barra para o
-PADRÃO (lindo, profissional, como o Eyes). Copiar o framebuffer deles é o
-que esta casa recusa: o Eyes tem `antialias: true` (MSAA); o renderer daqui
-nasce sem. Gate bit-idêntico é detector de regressão contra o NOSSO antes,
-nunca objetivo contra o deles. A obra é a fita LISA; a prova é a IMAGEM do
-colar morto. **Não copiar** o JS deles.
+**O ALVO É A LINHA LINDA, a mesma ideia de caneta do Eyes — não o
+arquivo deles.** Palavra dele em 25/08: isso é ideia matemática já
+pública (three.js MIT, SVG, Cesium), não invenção da NASA. **Não se cola
+o `app.js`.** Não se pinta planeta com a paleta violeta/âmbar. Não se liga
+`antialias: true` no renderer (a casa inteira nasceu sem MSAA). Gate
+bit-idêntico é detector de regressão contra o NOSSO antes, nunca alvo
+contra a foto deles. A receita que segue é a da caneta.
 
 **O placar, dito sem inflar:** o que a medida nos dá razão são **dois
 comportamentos estreitos da LINHA** (o corte quando a câmera está DENTRO do
@@ -1029,46 +1031,132 @@ mandar chegar perto punha a **TERRA** em quadro. **O OLHO DELE VIU, e
 reprovou o acabamento:** a foto
 `capturas/item83-fita-zoom-antes-depois.png` (mais
 `item83-abertura-antes-depois.png` e `item83-foco-antes-depois.png`) não
-está linda como o Eyes. A próxima foto que decide é a do **L2.5-a**.
+está linda como o Eyes. A próxima foto que decide é a do **A1** (colar
+morto); a de depois é a do **A2** (beira em rampa no zoom 5×).
 
-**O PLANO DO QUE FALTA, em ordem — e o Passo 0 JÁ FOI:**
+**A RECEITA DA CANETA — 25/08, e é ISTO que se implementa, nesta ordem.**
+A fita é chapada (não é tubo). O Eyes também é: `glowWidth = 0`. O “volume”
+que o olho lê é **junta limpa + borda macia**. `sqrt(1−u²)` está
+**proibido** — era a leitura errada de 24/08. `Line2` **não** troca um
+pixel: é o mesmo `LineMaterial` com as mesmas calotas.
 
-- **Passo 0 — RESPONDIDO em 25/08.** Palavras dele: as linhas têm de
-  ficar **lindas e profissionais como as do NASA Eyes**. O que ele
-  estranhou na foto do L1/L2 era exatamente isso. **L2.5-a está
-  autorizado nesta leva.** L2.5-b só depois da prova do colar morto.
-  G1/L3/L4/L5 continuam na fila desta família; não entram agora.
-- **L2.5 — O COLAR DE CONTAS, e ele é DEFEITO MEDIDO, não gosto. ESCRITO
-  AQUI, AUSENTE DO CÓDIGO — conferido em 25/08.** A fita tem contas de
-  luz nas juntas: **54 de 340 colunas** com pico ≥ 215, a espaçamento
-  **rigorosamente constante de 14 px** — é o espaçamento constante que o
-  separa do serrilhado. **A causa, lida no shader:** cada quad do
-  `LineMaterial` tem calota redonda ALÉM das extremidades, e a calota do
-  segmento *k* cobre o corpo do *k+1* — um disco pintado DUAS vezes por
-  junta, e em aditivo isso soma (204 → 230). A 1× é sutil; no Retina
-  dele, é o colar. *(O dente de continuidade não pegou porque ele cobra
-  o BUFFER, e o defeito nasce depois dele, na expansão do quad.)*
-  **O `LineMaterial` em `orbitas.ts` ainda nasce sem `dashed`, sem
-  `gapSize: 0`, e a geometria nunca chama `computeLineDistances()`.**
-  - **L2.5-a — matar a conta SEM sair do three** (~5 linhas): `dashed:
-    true` faz o fragmento descartar as calotas, e `gapSize: 0` garante que
-    nada seja tracejado. **O detalhe que salva o conserto de quebrar, e não
-    é opcional:** com `USE_DASH` o material EXIGE `computeLineDistances()`
-    na geometria, **UMA vez, no construtor**, depois dos atributos
-    `instanceStart`/`instanceEnd` existirem. **NUNCA no `reamostrar`:** a
-    função aloca `InstancedInterleavedBuffer` novo a cada chamada, e com
-    `gapSize: 0` distância velha não pinta traço. `dashSize` fica o
-    padrão (> 0); `gapSize: 0` com `dashSize: 0` vira `mod(..., 0)`. O
-    `cederAoNucleo` continua: o `USE_DASH` só acrescenta um `discard`
-    ANTES do `gl_FragColor` que a cirurgia procura. Pede dente de IMAGEM
-    (colar morto no Retina, a fita em movimento — vista parada sem HUD
-    não prova isto) e **re-baseline das 13 vistas com linha**.
-  - **L2.5-b — a largura que escala com a janela** (~6 linhas). **Só
-    depois do L2.5-a provado.** **Armadilha dupla:** (i) o `hPx` que a
-    camada recebe é de DISPOSITIVO — dividir pelo `pixelRatio` antes de
-    comparar com 800; (ii) escolher UMA linhagem para a base — 1,2 **com**
-    fator, ou 1,25 **sem**. Multiplicar 1,25 pelo fator conta a mesma
-    coisa duas vezes.
+**Já feito, NÃO SE TOCA:** `conicaOsculadora`, `escreverLaco` (256 em
+anomalia excêntrica), lua no frame do pai, cor por fotometria,
+`alfaDa` (fade angular + corte com a câmera dentro do laço), L1
+(`realce` do foco), L2 (`LARGURA_DA_FITA_PX = 1,25` CSS, o número
+visível), `cederAoNucleo`, disciplina do buffer (`espelharNaFita`, nunca
+`setPositions()` no quadro), `antialias: false` no renderer.
+
+---
+
+**A1 — JUNTA SEM CONTA (o colar). ANDA AGORA.** É o L2.5-a. Sem isto,
+A2 não salva: a linha continua um terço.
+
+A fita tem contas de luz nas juntas: **54 de 340 colunas** com pico ≥ 215,
+espaçamento **rigorosamente constante de 14 px**. Cada quad do
+`LineMaterial` (caminho de pixels, `worldUnits: false`) estende calota
+redonda nas pontas; a calota do segmento *k* cobre o corpo do *k+1*; em
+aditivo o disco pinta DUAS vezes (204 → 230). A 1× é sutil; no Retina
+dele, é o colar. O dente de continuidade não pegou: cobra o BUFFER, e o
+defeito nasce depois, na expansão do quad.
+
+**Como fazer, no construtor de `Orbitas`, depois de `instanceStart` /
+`instanceEnd` existirem e da `fita = new LineSegments2(...)`:**
+
+1. No `LineMaterial`: `dashed: true`, `gapSize: 0`, `dashSize: 1` (o
+   padrão; **nunca 0** — `mod(..., 0)` quebra). `dashed: true` liga
+   `USE_DASH`: o fragmento faz `if (vUv.y < -1.0 || vUv.y > 1.0)
+   discard` e a calota some. `gapSize: 0` faz
+   `mod(d, dashSize+0) > dashSize` nunca verdadeiro — **não fica
+   tracejada**.
+2. `fita.computeLineDistances()` **UMA vez**. Com `USE_DASH` o atributo
+   `instanceDistanceStart/End` é obrigatório. **NUNCA no `reamostrar`:**
+   a função aloca `InstancedInterleavedBuffer` novo a cada chamada, e com
+   `gapSize: 0` distância velha não pinta traço. No construtor as
+   posições ainda são zero — serve.
+3. `cederAoNucleo` continua: o `discard` do `USE_DASH` roda ANTES do
+   `gl_FragColor` que a cirurgia procura.
+4. `alphaToCoverage` continua `false`. `worldUnits` continua `false`.
+
+**Prova:** IMAGEM do colar morto no Retina, fita em movimento (a vista
+parada sem HUD não prova isto). Dente de imagem + re-baseline das 13
+vistas com linha. Só então A2.
+
+---
+
+**A2 — BORDA MACIA (anti-aliasing analítico). DEPOIS da prova do A1.**
+É a ideia de livro (GPU Gems, Cesium, o estudo
+`atlas-estudo-visualizacao-orbitas-ux-espacial.md`): a caneta é um
+pouco mais larga, e a saia some. O Eyes pede isso ao cartão (`antialias:
+true`). Esta casa não liga MSAA no app. Imita-se **só na linha**.
+
+**Não é tubo.** O miolo fica chapado em `BRILHO_DA_LINHA`. Só a beira
+some. A perda de 21,5% de luz era do `sqrt(1−u²)` **retratado** — não se
+recalibra o brilho por causa dela.
+
+**Como fazer, no MESMO `onBeforeCompile` de `cederAoNucleo`** (um
+segundo callback APAGA o primeiro):
+
+1. Constante nova `SAIA_DO_AA_PX = 1` (1 px CSS a mais no total, 0,5
+   para cada lado). `LARGURA_DA_FITA_PX` continua **1,25** — é a largura
+   VISÍVEL, o número do Eyes. O material nasce com
+   `linewidth: LARGURA_DA_FITA_PX + SAIA_DO_AA_PX`. O teste da largura
+   passa a cobrar os DOIS números, não “linewidth === 1,25”.
+2. No fragmento, **antes** da cessão ao núcleo, com `vUv` do caminho de
+   pixels (`vUv.x` vai de −1 a +1 na largura da fita **inchada**):
+
+   ```
+   float u = abs(vUv.x);
+   float pixel = fwidth(u);
+   float miolo = LARGURA_DA_FITA_PX / (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX);
+   alpha *= 1.0 - smoothstep(miolo - pixel, 1.0, u);
+   ```
+
+   Os dois números entram como literal no GLSL, iguais às constantes
+   TypeScript. O nome no shader é `miolo`, **nunca** `nucleo`: `uNucleo`
+   já é o disco de `cederAoNucleo`. `u` abaixo do miolo fica 1; a saia
+   vai a 0 na beira do quad. Sem `discard` duro na beira longitudinal.
+3. Ordem no fragmento, e é esta: (1) `USE_DASH` descarta calota — já
+   veio do three; (2) a saia acima; (3) `cederAoNucleo`; (4)
+   `gl_FragColor`. Não ligar `alphaToCoverage`. Não ligar `antialias` no
+   `engine.ts`.
+
+**Prova:** a MESMA foto de zoom 5× do L2 (`item83-fita-zoom-antes-depois`)
+redesenhada: beira em rampa, não escada. Sem colar.
+
+---
+
+**A3 — LARGURA NA JANELA (L2.5-b). Só depois de A1+A2 na tela.**
+
+```
+px = LARGURA_DA_FITA_PX * max(1, min(larguraCss, alturaCss) / 800)
+```
+
+A saia soma **depois** do fator: `linewidth = px + SAIA_DO_AA_PX`.
+**Armadilha dupla:** (i) o `hPx` da camada é de DISPOSITIVO — dividir
+pelo `pixelRatio` antes de comparar com 800; (ii) UMA linhagem — 1,25
+**com** fator. Não voltar a 1,2. Não escrever `resolution` à mão (o
+`LineSegments2.onBeforeRender` já escreve em CSS).
+
+---
+
+**A4 — FITA CONTÍNUA COM MITER. ÚLTIMO recurso.** Só se A1+A2 falharem
+E o dono ainda reclamar da dobra. A fórmula é a da bissetriz (SVG /
+Canvas / Cesium), não o JS da NASA:
+
+```
+offset = normalize(perp(l0) + perp(l1))
+offset /= max(0.25, sqrt((1.0 + dot(l0, l1)) / 2.0))
+```
+
+Custa o corte no *near plane*, o `resolution` automático e o `raycast`
+de que o L5 depende. `Line2` **não** é atalho: as calotas continuam.
+
+---
+
+**G1 / L3 / L4 / L5 NÃO ENTRAM NESTA LEVA** — não são o desenho da
+caneta. Ficam na fila da família:
+
 - **G1 — a gaveta devolve os oito** de `HELIO_SEM_PONTO` (a decisão 2 do
   item 77), como classe própria **desligada por padrão**, em vez de
   enterrados numa decisão de código. É literalmente o que o Eyes faz com as
@@ -1084,17 +1172,6 @@ está linda como o Eyes. A próxima foto que decide é a do **L2.5-a**.
   o que eles têm é hover de RÓTULO, não de geometria. É vaga aberta, e
   continua sendo nossa. Cuidado: `raycast` antes do primeiro render falha
   **em silêncio**.
-- **O perfil analítico na largura** — o que fecharia a dívida de COBERTURA
-  (casamos a largura do Eyes, não o anti-aliasing da borda: a fita dos dois
-  é chapada, e quem resolve a borda lá é **MSAA**, que esta casa não tem).
-  É **gosto COM preço**: a fita perde **21,5% de luz** e o
-  `BRILHO_DA_LINHA` teria de ser recalibrado com régua e declaração. Cabe
-  em **~8 linhas** via `onBeforeCompile` — a estimativa de "~200 linhas"
-  que corre nos estudos era para um `ShaderMaterial` próprio. Só depois do
-  L2.5-a, e só se o dono ainda achar a borda dura.
-- **Strip próprio com miter — ÚLTIMO recurso**, só se o L2.5-a falhar E o
-  dono reclamar: custa o corte no *near plane*, o `resolution` automático e
-  o `raycast` de que o L5 depende.
 
 **O QUE NÃO SE REFAZ — verificado com TRÊS testemunhas independentes** (o
 pixel do Eyes, a API do motor deles e as fontes MIT abertas), para impedir
