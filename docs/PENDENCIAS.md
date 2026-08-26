@@ -97,9 +97,11 @@ olho dele nas fotos.)*
 
 > ~~**(1)** calibração da luz assistida + propostas do modo real (itens
 > **93** e **91**(c) — UMA folha de opções em foto, 2 a 3 calibrações lado
-> a lado)~~ (26/08 — **ele escolheu a C1, e ela virou o PADRÃO**: a porta
-> `?calib=` morreu e o item **104** saiu na mesma leva; falta só o olho
-> dele nas fotos) → **(2)** a rolagem do véu da abertura (**87**) → **(3)** o A/B
+> a lado)~~ (26/08 — **as DUAS metades pousaram**: ele escolheu a **C1**
+> na Q13 e a porta `?calib=` morreu, com o item **104** saindo na mesma
+> leva; e escolheu a **R1** na Q14, com os +3 passos de exposição do modo
+> real embarcados e declarados no selo. Das três, falta só o olho dele nas
+> fotos) → **(2)** a rolagem do véu da abertura (**87**) → **(3)** o A/B
 > da lente de 58° (**86**) junto com a folha da vista de abertura (**61**),
 > na **MESMA sessão de captura** → **(4)** o **70**, causa 2 (o ponto que
 > morre na borda) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
@@ -121,6 +123,9 @@ não mais pergunta. **A pergunta da vez é a COSTURA:
 antes × depois, com o perfil medido na legenda), e com ela vai a mesma
 pergunta de sempre sobre a C1 no app: a noite ficou no ponto agora? Fora
 isso, o que vai à Sala é a folha da lente com a vista de abertura.
+**E entra com ela a CHAPA DO MODO REAL** —
+`capturas/item91-real-r1.png`, a R1 que ele escolheu na Q14, agora
+embarcada: antes × depois, com o selo declarando os +3 passos.
 
 *(Registro de escrivão, para nada se perder: a foto
 `capturas/item77-filme-sem-orbitas.png` — a volta para casa sem as linhas
@@ -202,20 +207,138 @@ da lista das que esperam o olho dele com a conferência de 25/08 (C5).
 
 ## ALTA — o dono vê e incomoda
 
-**91. Saturno estava quase escuro — a obra pousou, ele conferiu em 25/08, e
-o que sobra é UM assunto: o MODO REAL ficou escuro demais.** Palavras do dono, 2026-08-24: *"acho
+**91. Saturno estava quase escuro — a obra pousou, e o que sobra é O OLHO
+DELE na chapa do modo real.** Palavras do dono, 2026-08-24: *"acho
 que estamos com algortimos de iluminacao q nao estao funcionando bem...
 saturno, mesmo com brilho assistido, quase escuro e saturno é um objeto
 claro no ceu... mesmo a olho nu."*
 
 **O MODO REAL FOI DECIDIDO — Q14, 26/08, pela Sala de Conferência: é a
-R1.** Palavras dele: *"R1 — +3 passos fixos, sempre os mesmos, declarados
-no selo"*. **A obra:** em `?luz=real` o quadro ganha +3 passos de
-exposição fixos (o 1,02 vira ~8,16), declarados no selo na linha BRILHO
-como tempo de exposição; a penumbra FÍSICA no globo e a proibição de teto
-de brilho ficam exatamente como estavam; o campo estelar satura mais — é
-o preço declarado da foto de longa exposição, e ele escolheu com essa
-foto na mão (`capturas/item93-calib-real.png`).
+R1 — E A OBRA POUSOU NO MESMO DIA.** Palavras dele: *"R1 — +3 passos
+fixos, sempre os mesmos, declarados no selo"*. Em `?luz=real` o quadro
+ganha +3 passos de exposição FIXOS (o 1,02 vira 8,16), declarados no selo
+na linha BRILHO como tempo de exposição; a penumbra FÍSICA no globo e a
+proibição de teto de brilho ficam exatamente como estavam; o campo
+estelar satura mais — é o preço declarado da foto de longa exposição, e
+ele escolheu com essa foto na mão (`capturas/item93-calib-real.png`).
+
+**ONDE ELA MORA, em duas peças e nenhuma linha a mais.**
+`PASSOS_DA_EXPOSICAO_REAL = 3` e `exposicaoDoQuadro(rampa, politica)`
+nascem em `luzDaVisita.ts`, que já é a casa de tudo que a política de luz
+liga e desliga (`ganhoDoGlobo`, `lanternaDaVisita`, `sDoTerminador`); o
+Director só CHAMA, na mesma linha em que já escrevia a auto-exposição. O
+fator é derivado (`2 ** PASSOS`), nunca digitado: quem mudar o desenho
+muda a frase do selo e o juiz do navegador junto.
+
+**A REGRA DE COMPOSIÇÃO, e ela é uma frase: PASSO SOMA COM PASSO.** A
+rampa do Director (`1,02 + 0,03·galaxyFade` — lícita, depende de onde a
+câmera ESTÁ) e os +3 do `real` são as duas coisas EXPOSIÇÃO, e exposição
+compõe MULTIPLICANDO, que é somar em passos. Dentro do disco, onde toda
+visita acontece, dá **8,16** — o número exato do `?exp=8.16` da coluna R1
+que ele julgou. Na vista externa (rampa 1,05) dá 8,40, e é assim que tem
+de ser: os +3 passos são do MODO, não da vista.
+
+**E QUANDO OS DOIS EXISTEM, `?exp=` VENCE — e SUBSTITUI, não
+multiplica.** Não é gosto, são três razões apontando para o mesmo lado:
+(1) é a precedência que o registro do selo já declara em letra — *o gesto
+do visitante vence a gradação do modo*; (2) o latch `expOverride` do
+Director já significa, desde a Onda 5, "a mão do visitante é dona da
+exposição e o caminho automático não escreve", e esta lei entra no
+caminho automático, então o latch a desliga junto, sem cláusula nova; (3)
+se `?exp=` multiplicasse, a URL histórica `?luz=real&exp=8.16` passaria a
+dar 65× e a foto que ele escolheu deixaria de se reproduzir pelo próprio
+endereço dela. **E o selo acompanha:** com a exposição na mão ele CALA a
+chapa e declara a mão (a linha *"exposição escolhida à mão"*, que já é
+desvio). **Conferido no navegador, os quatro casos:** `?luz=real` → 8,16
+(sem mão); `?luz=real&exp=8.16` → 8,16 (com mão — a URL da folha
+reproduz-se); `?luz=real&exp=2` → **2**, não 16,32; `?exp=2` sozinho → 2.
+
+**O QUE O SELO PASSOU A DIZER.** O eixo BRILHO continua lendo **REAL** —
+tempo de exposição não é fotometria ajustada, e derrubá-lo apagaria o
+único estado em que este selo pode dizer a verdade sobre si —, e a linha
+DIZ o que a chapa fez: *"tempo de exposição +3 passos: a foto do quadro é
+longa. A luz de cada mundo continua a física — o que abriu foi a chapa, e
+por isso o céu ao fundo satura mais."* Sem ela o selo diria *"nada foi
+ajustado nesta vista"* com o quadro 8× mais claro, que é a lista curta
+que o cabeçalho do `selo.ts` promete não repetir. A declaração **não
+depende do veredito**: com o tier abaixo de cinema o eixo lê ASSISTIDO
+(a amostragem é desvio indesfazível) e a chapa continua declarada — foi
+o furo da primeira versão desta linha, achado ao escrever o dente.
+
+**A PORTA DE DUAS VIAS LEVA A CHAPA JUNTO, e isso está provado em
+navegador.** A prova **20** do `atlas-smoke` cresceu em vez de nascer
+outra: no mesmo gesto, no mesmo estado difícil que o item 103 destravou
+(`?q=alta`, o desvio indesfazível), ela agora mede a exposição VIVA do
+renderer nos dois cliques — **real 8,1600 × assistido 1,0200 = 8,000000**,
+sem recarga —, e lê o TEXTO da linha BRILHO na tela para cobrar que a
+declaração aparece no real e SOME no assistido. Os +3 saem da fonte
+(`PASSOS_DA_EXPOSICAO_REAL`, lido por regex), não de um número decorado
+no juiz — a disciplina anti-deriva do item 99.
+
+**A MORDIDA, provada em worktree e desfeita — sete sabotagens, todas
+reprovam:** o Director voltar a escrever a rampa crua (2 dentes); alguém
+digitar `8.16` no lugar da composição (2); apagar a guarda do latch (4);
+a lei devolver a rampa também em `real` (3); o selo calar a chapa (1); o
+selo declarar +3 passos com a exposição na mão (1); e a DERIVA — trocar
+os passos de 3 para 4 sem pedido dele (3). Desfeito, 200 de 200 passam.
+
+**O QUE A CHAPA FEZ, medido na vista de Saturno da folha** (1100×900, dpr
+1, bytes de tela, **árvore limpa dos DOIS lados**: `b64ae1e` num worktree
+próprio contra `b64ae1e` + a obra, dois `vite` simultâneos, as MESMAS
+URLs): a média do quadro vai de **4,49 a 26,22** e o p99 de **20,3 a
+107,1**. **Nenhum pixel saturou** (0 dos dois lados) e **nenhum perdeu
+luz** — 84.317 nasceram do preto. E o **par nulo desta leva é ZERO**: duas
+capturas seguidas do mesmo código saem bit a bit iguais, então o que se
+mede abaixo é código e não captura. `capturas/item91-real-ab.json` e
+`item91-real-ruido.json`.
+
+**E BATE COM A R1 QUE ELE ESCOLHEU — conferido, não alegado.** O quadro
+EMBARCADO (sem porta nenhuma) contra o `r1-saturno-real.png` da folha (que
+saiu por `?luz=real&exp=8.16`) dá a **MESMA média a três decimais** —
+**26,215 × 26,212** — e difere em **430 px de 990.000 (0,043 %)**.
+
+**E OS 430 px FORAM ISOLADOS, em vez de chamados de tremor e esquecidos.**
+No modo real ESCURO, esta vista comparada consigo mesma através de commits
+diferentes já dá **218 px** (a folha pré-C1 contra `5af4ea6`) e **238 px**
+(`5af4ea6` contra `b64ae1e`, o conserto do anel do item 104 que saiu nesta
+manhã) — sempre com **Δmáx de 4 a 5** de 255. Com a chapa aberta os MESMOS
+pixels ficam ~8× mais altos e mais deles cruzam o meio-nível que o
+instrumento chama de mudança: daí os 430 px com Δmáx 28,6. **O que a chapa
+move é a MÉDIA, e a média bate.** `item91-real-vs-r1.json`,
+`item91-real-c1-nao-tocou.json` (o quadro de hoje contra a folha pré-C1:
+182 px, 0,018 %, Δmáx 4,1) e `item91-real-o-que-nao-e-meu.json`.
+
+**A RE-BASELINE ESTÁ DECLARADA, e ela é NENHUMA — o modo assistido não
+move um pixel.** A razão é dupla, e as duas foram conferidas:
+
+- **NENHUMA das 61 vistas do `ab-identidade` roda com `?luz=real`** — a
+  varredura por `luz=` em `scripts/visual/` devolve só três lugares, e
+  nenhum é o gate: o `costura-da-sombra.mjs` (as seis `*-real` do item
+  104), o `a11y.mjs` (uma navegação que lê a linha FECHADA do selo, e essa
+  não mudou) e a prova 20 do `atlas-smoke`, que agora mede a chapa DE
+  PROPÓSITO. *(As três `solreal*` do gate NÃO são modo real: são as vistas
+  do Sol com raio físico, e o nome é coincidência de uma porta morta na
+  F3.)*
+- **E em `assistida` a lei devolve a rampa PELA IDENTIDADE** — `return
+  rampa`, sem um `× 1` e sem uma operação de ponto flutuante no caminho.
+  Bit-idêntico por CONSTRUÇÃO, não por sorte de arredondamento, e há dente
+  de `Object.is` cobrando exatamente isso.
+
+**A AMOSTRA MEDIDA, porque construção sem foto é argumento:** oito vistas
+do `ab-identidade` em árvore limpa (carimbo `5af4ea6dff69-d41d8cd9`, que
+era o HEAD quando a leva rodou) contra a árvore da obra, N=2 por lado,
+1800×1800 — as quatro SENTINELAS (`sol`, `soldisco`, `hero8`, `ua150`) e
+quatro com GLOBO em visita (`atlas`, `terra`, `jupiter`, `foco-jupiter`),
+que são as que a luz da visita governa. **Oito de oito IGUAIS, bit a
+bit.** *(O `b64ae1e` do item 104 entrou no `main` depois desta leva, por
+outra frente, e não toca esta lei — a foto de Saturno acima foi refeita
+com ele nos dois lados justamente para não misturar as duas obras.)*
+
+**O QUE MUDA DE PIXEL, e é só isto:** as seis vistas `*-real` do
+`costura-da-sombra.mjs` (item 104) passam a sair com a chapa aberta, como
+o app. Elas são quadros de DIAGNÓSTICO recapturados a cada corrida, não
+baseline guardada, e os números que o item 104 publicou saíram da vista
+`costura` — que é **assistida** e não se mexeu.
 
 **AS TRÊS DECISÕES DE DESENHO DELE (25/08) não se reabrem, e estão
 cumpridas:** (1) o modo assistido, que é o padrão, dá **dia claro em todos
@@ -229,37 +352,16 @@ certo — os números estão no ARQUIVO.
 que este item é.** As três perguntas que estavam de pé tiveram três destinos
 diferentes:
 
-- **(c) RESPONDIDA, e a resposta é OBRA. Palavras dele: _"escuro demais,
-  repensar"_.** O modo `?luz=real`, com Saturno quase preto, **não serve
-  como modo**: a honestidade física fica de pé, a legibilidade não. **E A
-  PRÓXIMA JOGADA É NOSSA, não dele** — quem pegar isto volta com
-  **PROPOSTAS e IMAGENS** de um real que seja honesto E legível, nunca com
-  outra pergunta. Ele já disse o que sentiu; o desenho é nosso, e a régua da
-  casa é decidir e voltar com foto. **Duas fronteiras, para não perder tempo
-  no caminho errado:** teto de brilho continua **PROIBIDO** em letra pelo
-  `NORTE.md`, e a decisão 2 acima (o real mantém a penumbra FÍSICA no globo)
-  não se revoga — o que se estuda é a **exposição do quadro**, não ganho
-  colado no corpo.
-  **REAFIRMADA na SEGUNDA LEVA de 25/08 (Q2), com as mesmas palavras —
-  _"escuro demais, repensar"_ —, e agora ela tem ENDEREÇO:** as propostas
-  do modo real saem na **MESMA folha de fotos** da calibração do assistido,
-  e essa folha mora no item **93**. Não se faz uma sem a outra: é a mesma
-  pergunta (*quanto de honestidade × quanto de leitura*) vista pelos dois
-  lados da porta.
-  **AS DUAS PROPOSTAS ESTÃO NA MESA — 26/08, em
-  `capturas/item93-calib-real.png`, e NENHUMA delas é código novo:** as
-  duas saem pela porta de exposição que já existe (`lerPortaExposicao`,
-  `core/engine.ts`), e nenhuma toca o globo — o que anda é a EXPOSIÇÃO DO
-  QUADRO, sem teto de brilho e com a penumbra física intacta.
-  **R1 — "+3 passos declarados"** (`?luz=real&exp=8.16`): o mesmo número em
-  toda parte, e o selo declara. Saturno vai de 4,49 a 26,21 de média.
-  **R2 — "a exposição segue a câmera"** (`exp = d` em UA: Júpiter 5,0,
-  Saturno 9,7, Netuno 30): abre MENOS perto do Sol e MAIS longe, que é o
-  que mantém Netuno legível sem estourar Júpiter. Ela é **lícita pelo
-  NORTE** — depende de onde a câmera ESTÁ, não do que está em foco, o mesmo
-  gênero do `galaxyFade` que já vive no Director —, e **só vira obra se ele
-  escolher**. Em Saturno as duas quase coincidem; é a fileira de Júpiter da
-  prancha que as separa.
+- **(c) FECHOU O CICLO INTEIRO em 26/08 — queixa, proposta, escolha e
+  obra.** Ele disse *"escuro demais, repensar"* (25/08, repetido na Q2);
+  a folha `capturas/item93-calib-real.png` levou duas propostas — a **R1**
+  (+3 passos fixos, declarados) e a **R2** (a exposição seguindo a câmera,
+  `exp = d` em UA) —; ele escolheu a R1 na **Q14**, e ela está embarcada.
+  A R2 **não volta sem pedido novo dele**: ela era lícita pelo NORTE e
+  perdeu na foto, não no argumento. As duas fronteiras continuam de pé e
+  foram respeitadas: teto de brilho **PROIBIDO** em letra pelo `NORTE.md`,
+  e a decisão 2 (o real mantém a penumbra FÍSICA no globo) intacta — o que
+  andou foi a **exposição do quadro**, nunca ganho colado no corpo.
 - **(a) e (b) MUDARAM DE CASA, e não se perguntam mais aqui.** "Saturno está
   no ponto?" e "Mercúrio ficou domado ou apagado?" foram feitas sobre as
   fotos do 91 — e o item **93** mexeu nos DOIS depois delas (Saturno 34,4 →
@@ -273,7 +375,18 @@ diferentes:
   bonito. Anel fino porque o Sol está quase no plano dele é o que se mostra.
   **Não se reabre.**
 
-**Fotos** (as do modo real já serviram — ele julgou por elas):
+**⛔ O QUE FALTA NESTE ITEM É O OLHO DELE, e só isso. A foto que decide é
+`capturas/item91-real-r1.png`** — ANTES (o `?luz=real` que ele reprovou) ×
+DEPOIS (o mesmo endereço com a chapa aberta), mais o painel do SELO
+declarando os passos na visita a Saturno. **As duas perguntas:** **(a)** a
+chapa ficou no ponto que a R1 prometia, ou o céu saturado incomoda mais do
+que a foto da folha deixava ver? **(b)** a frase do selo diz o que
+precisava ser dito, ou é longa demais para a gaveta? Os quadros crus estão
+em `capturas/item91-real-cru/` e a prancha se recompõe com
+`node scripts/visual/chapa-do-real.mjs --folha` — **não apagar enquanto
+ele não julgar.**
+
+**Fotos antigas** (as do modo real já serviram — ele julgou por elas):
 `capturas/item91-saturno-antes-depois.png` (a prova),
 `item91-familia-antes-depois.png`, `item91-modo-real.png`,
 `item91-selo-porta-de-duas-vias.png`, `item91-anel-antes-depois.png`,
@@ -2168,7 +2281,7 @@ teto do zoom, o close-up de uma lua), e o preço é ~6 s de captura por
 vista por lado. **Não fazer isto às cegas junto de outra obra:** cada
 vista nova pede o lado "antes" recapturado, senão nasce sem base.
 
-**85.** (Ruído de instrumento, visto UMA vez em 24/08.) **O
+**85.** (Ruído de instrumento, visto em 24/08 e **de novo em 26/08**.) **O
 `atlas-smoke` reprovou o TOQUE DUPLO sem defeito nenhum.** Numa corrida
 ele acusou *"o TOQUE DUPLO VAI: a câmera reposicionou (andou 2.63e-16 do
 raio, degrau orbita)"* — ou seja, a câmera NÃO andou. Na corrida
@@ -2178,6 +2291,15 @@ sintético, não regressão. Fica registrado porque é o mesmo gênero dos
 itens 64 e 78, e porque juiz que reprova inocente já custou uma
 investigação inteira (item 76). Se reaparecer, o passo é datar por
 repetição antes de mexer em qualquer coisa.
+
+**REAPARECEU EM 26/08, na leva da Q14 (item 91), e foi datado como este
+item manda.** A MESMA frase e o MESMO número — *"andou 2.63e-16 do
+raio"*, que é zero —, mudando só o degrau (`corpo` no lugar de `orbita`).
+A corrida ANTERIOR e a SEGUINTE, com o mesmo código, saíram **verdes as
+duas**, e nada foi tocado por causa dele: a receita deste item é
+repetição, e a repetição respondeu. **Segunda aparição; continua sem se
+reproduzir sob comando, e continua sendo o único juiz da casa que
+reprova inocente.**
 
 **86.** (Aberto em 24/08, respondendo a uma impressão dele. **DECIDIDO POR
 ELE em 25/08 — vira OBRA: abrir a lente do filme para o app inteiro.**)
