@@ -955,6 +955,25 @@ export class AtlasRig {
   }
 
   /**
+   * O QUANTO O DEDO JÁ GIROU, em radianos — a leitura de INSTRUMENTO.
+   * Quem a consome é o `atlas-smoke`, que a amostra por quadro para
+   * medir o rastro da inércia (prova 21): o acumulador é privado, e sem
+   * uma leitura declarada a prova teria de espiar campo interno pelo
+   * `window.__director` — que é o tipo de dependência que quebra calada
+   * na primeira renomeação.
+   *
+   * POR `atan2` E NUNCA POR `acos` — a mesma lei que o resto desta casa
+   * já declara duas vezes. `Quaternion.angleTo` usa `acos` e perde
+   * METADE dos dígitos perto da identidade: ele relata 3e-8 para um
+   * giro que está a 1e-16 dela, e a prova que mede "o dedo curto não
+   * girou nada" leria ruído como movimento.
+   */
+  get anguloDoGiro(): number {
+    const imaginario = Math.hypot(this.giro.x, this.giro.y, this.giro.z);
+    return 2 * Math.atan2(imaginario, Math.abs(this.giro.w));
+  }
+
+  /**
    * ENDIREITA O HORIZONTE — o botão de bússola, a sugestão que ele
    * aceitou em 26/08: *"podemos colocar um botao de zerar orientacao,
    * assim como o google maps tem um botao de norte"*.

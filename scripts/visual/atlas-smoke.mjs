@@ -1841,7 +1841,7 @@ try {
         window.__soltouEm = window.__giro.length;
       }, { once: true });
       const passo = () => {
-        window.__giro.push(window.__director.atlas.orbita.volta);
+        window.__giro.push(window.__director.atlas.anguloDoGiro);
         window.__giroRaf = requestAnimationFrame(passo);
       };
       passo();
@@ -1894,32 +1894,194 @@ try {
 
     // ...e a JANELA DO TOQUE (item 102, P2): o arrasto que ainda cabe no
     // clique curto não gira NADA — nem no MOUSE, que até 26/08 andava
-    // desde o primeiro pixel. A régua é a ÓRBITA e não a câmera: o alvo
+    // desde o primeiro pixel. A régua é o GIRO e não a câmera: o alvo
     // é vivo e anda com o relógio, então a posição da câmera nunca é
     // bit-idêntica entre duas leituras separadas por meio segundo (o
     // primeiro veredito desta prova mediu isso e reprovou por causa do
     // instrumento, não do produto).
-    const orbitaViva = async () => JSON.parse(await sessao.js(
-      'JSON.stringify([window.__director.atlas.orbita.volta,'
-      + ' window.__director.atlas.orbita.altura])'
+    const giroVivo = async () => Number(await sessao.js(
+      'window.__director.atlas.anguloDoGiro'
     ));
-    const antesDoCurto = await orbitaViva();
+    const antesDoCurto = await giroVivo();
     await mouse('mousePressed', meio[0], 1);
     await mouse('mouseMoved', meio[0] + 4, 1);
     await mouse('mouseReleased', meio[0] + 4, 0);
     await dorme(500);
-    const depoisDoCurto = await orbitaViva();
-    const giroCurto = Math.max(
-      Math.abs(depoisDoCurto[0] - antesDoCurto[0]),
-      Math.abs(depoisDoCurto[1] - antesDoCurto[1])
-    );
-    // 4 px entregues seriam 8,8e-3 rad; o que sobra é 1e-16, que é o
-    // resíduo de float da RE-SELEÇÃO (o gesto curto virou clique, como
-    // tem de virar — `selecionar` reescreve a órbita no referencial novo)
+    const giroCurto = Math.abs((await giroVivo()) - antesDoCurto);
+    // 4 px ENTREGUES seriam 8,8e-3 rad. O que sobra é o resíduo de float
+    // da RE-SELEÇÃO — o gesto curto virou clique, como tem de virar, e
+    // `selecionar` reescreve o giro no referencial novo passando por uma
+    // base de câmera e um `setFromRotationMatrix`. O teto é 1e-6 rad,
+    // que são 0,2 segundo de arco: três ordens de grandeza ABAIXO do
+    // gesto entregue e muito acima do resíduo. (Era 1e-12 com o par de
+    // ângulos, cuja volta era dois `atan2` e custava menos ULPs.)
     conferir(
-      giroCurto < 1e-12,
+      giroCurto < 1e-6,
       `...e o arrasto de 4 px não gira o Atlas: ${giroCurto.toExponential(1)} rad`
         + ` (entregue, seriam 8,8e-3)`
+    );
+  }
+
+  // ---- 22: A BÚSSOLA — ela aparece torta, endireita e some ----------
+  //
+  // (item 102, 26/08. A sugestão dele: "podemos colocar um botao de
+  // zerar orientacao, assim como o google maps tem um botao de norte".)
+  //
+  // POR QUE ESTA PROVA EXISTE NO NAVEGADOR e não só na bancada: a
+  // bancada julga a CONTA (o desvio, a histerese, a rampa), e ela já o
+  // faz. O que só aqui se pode julgar é a FIAÇÃO — o rig acender, o
+  // Director entregar a virada ao React na BORDA, o React montar o
+  // botão, o clique voltar até o rig e o botão sumir sozinho. É
+  // exatamente o tipo de caminho que passa por `tsc` e por 2.400 testes
+  // calado quando um dos fios não é ligado (a jurisprudência é o
+  // `?calib=`, em que trocar um default não reprovou nada).
+  //
+  // O GESTO É DIAGONAL de propósito: giro livre acumula roll por
+  // holonomia da esfera, e é o arrasto na diagonal que a acumula
+  // depressa. Um arrasto puro na horizontal ou na vertical em torno do
+  // repouso quase não torce o horizonte — e a prova não acenderia nada.
+  //
+  // SEM `?shot=2`, E ISSO É A PROVA E NÃO UM DETALHE: aquela porta
+  // apaga o HUD inteiro (`.bare-mode > *:not(.scene-canvas)`), e um
+  // botão de HUD medido com o HUD apagado dá retângulo (0,0,0,0) — a
+  // conferência de "cabe na tela" passaria verde sobre uma peça que
+  // ninguém vê. É a regra 7 do AGENTS com todas as letras: vista sem
+  // HUD não prova trabalho de HUD. O precedente é a prova do selo, que
+  // larga o PIN pelo mesmo motivo.
+  {
+    await sessao.ir('atlas=1&foco=saturno&jd=EPOCA&q=cinema');
+    await sessao.assentar();
+
+    const bussola = async () => JSON.parse(await sessao.js(`(() => {
+      const b = document.querySelector('.atlas-bussola');
+      if (!b) return JSON.stringify({ existe: false });
+      const r = b.getBoundingClientRect();
+      return JSON.stringify({
+        existe: true,
+        acesa: b.classList.contains('acesa'),
+        // o que o OLHO vê, não só a classe: opacidade e visibilidade
+        // computadas, que é o que o CSS realmente entregou
+        opacidade: Number(getComputedStyle(b).opacity),
+        visivel: getComputedStyle(b).visibility === 'visible',
+        rotulo: b.getAttribute('aria-label'),
+        // ...e o que o TECLADO alcança: um botão invisível na ordem de
+        // tabulação é armadilha de a11y
+        tabbable: b.tabIndex === 0,
+        // TEM TAMANHO DE VERDADE — a guarda contra medir uma peca que o
+        // bare-mode (ou um display:none qualquer) apagou: ali o
+        // retangulo e (0,0,0,0) e toda pergunta de posicao passa verde
+        temCaixa: r.width > 8 && r.height > 8,
+        dentroDaTela:
+          r.left >= 0 && r.top >= 0
+          && r.right <= window.innerWidth && r.bottom <= window.innerHeight,
+        // ...e mora na METADE DIREITA, na faixa do MEIO: é a única
+        // região livre nas duas telas, e é o que a mantém longe da
+        // barra de controles (alto) e do selo/rodapé (pé)
+        naBordaDireita: r.x + r.width / 2 > window.innerWidth * 0.5,
+        naFaixaDoMeio:
+          r.y + r.height / 2 > window.innerHeight * 0.25
+          && r.y + r.height / 2 < window.innerHeight * 0.75,
+        // e NÃO encosta em nenhuma outra peça permanente do HUD
+        encosta: ['.controls-bar', '.atlas-selo', '.atlas-tempo', '.free-hint']
+          .map((sel) => document.querySelector(sel))
+          .filter(Boolean)
+          .map((o) => o.getBoundingClientRect())
+          .filter((o) => o.width > 0 && o.height > 0)
+          .filter((o) => !(r.right <= o.left || r.left >= o.right
+            || r.bottom <= o.top || r.top >= o.bottom)).length,
+        x: Math.round(r.x), y: Math.round(r.y),
+      });
+    })()`));
+    const desvioGraus = async () => Number(await sessao.js(
+      'Math.abs(window.__director.atlas.desvioDoHorizonte) * 180 / Math.PI'
+    ));
+
+    const dormindo = await bussola();
+    conferir(
+      dormindo.existe && !dormindo.acesa && dormindo.opacidade === 0
+        && !dormindo.visivel && !dormindo.tabbable,
+      `a bússola nasce APAGADA e fora do teclado: acesa=${dormindo.acesa}`
+        + ` opacidade=${dormindo.opacidade} tabbable=${dormindo.tabbable}`
+    );
+    conferir(
+      (await desvioGraus()) === 0,
+      'e o horizonte nasce de pé: desvio 0,000° na pose de repouso'
+    );
+
+    // o arrasto DIAGONAL que torce o horizonte
+    const meioB = JSON.parse(await sessao.js(`(() => {
+      const r = document.querySelector('canvas').getBoundingClientRect();
+      return JSON.stringify([Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)]);
+    })()`));
+    const arrastar = async (passos) => {
+      await sessao.send('Input.dispatchMouseEvent', {
+        type: 'mousePressed', x: meioB[0], y: meioB[1],
+        button: 'left', buttons: 1, clickCount: 1, pointerType: 'mouse',
+      });
+      for (let i = 1; i <= passos; i++) {
+        await sessao.send('Input.dispatchMouseEvent', {
+          type: 'mouseMoved', x: meioB[0] + i * 14, y: meioB[1] + i * 14,
+          button: 'left', buttons: 1, clickCount: 1, pointerType: 'mouse',
+        });
+        await dorme(16);
+      }
+      await sessao.send('Input.dispatchMouseEvent', {
+        type: 'mouseReleased', x: meioB[0] + passos * 14, y: meioB[1] + passos * 14,
+        button: 'left', buttons: 0, clickCount: 1, pointerType: 'mouse',
+      });
+      await dorme(900);
+    };
+    await arrastar(26);
+
+    const torto = await desvioGraus();
+    const acesa = await bussola();
+    conferir(
+      torto > 5 && acesa.acesa && acesa.opacidade === 1 && acesa.visivel
+        && acesa.tabbable,
+      `o arrasto diagonal torceu o horizonte ${torto.toFixed(1)}° e a bússola`
+        + ` ACENDEU: opacidade=${acesa.opacidade} tabbable=${acesa.tabbable}`
+    );
+    conferir(
+      acesa.temCaixa && acesa.dentroDaTela && acesa.naBordaDireita
+        && acesa.naFaixaDoMeio && acesa.encosta === 0
+        && acesa.rotulo === 'Endireitar o horizonte',
+      `...e ela tem CAIXA de verdade em (${acesa.x}, ${acesa.y}), na borda`
+        + ` direita e na faixa do meio, sem encostar em nenhuma peça do HUD`
+        + ` (${acesa.encosta} sobreposições), com rótulo para quem ouve:`
+        + ` "${acesa.rotulo}"`
+    );
+
+    // A MIRA NÃO PODE ANDAR no clique — é a lei do botão de norte. A
+    // régua é a DIREÇÃO alvo→câmera e não a posição: o alvo é vivo e
+    // anda com o relógio (foi o que reprovou a primeira versão da prova
+    // 21, por instrumento e não por produto).
+    const miraViva = async () => JSON.parse(await sessao.js(`(() => {
+      const c = window.__director.engine.camera;
+      const a = window.__director.atlas.alvo;
+      const d = c.position.clone().sub(a).normalize();
+      return JSON.stringify([d.x, d.y, d.z]);
+    })()`));
+    const miraAntes = await miraViva();
+    await sessao.js("document.querySelector('.atlas-bussola').click()");
+    await dorme(1200);
+
+    const direito = await desvioGraus();
+    const apagada = await bussola();
+    conferir(
+      direito < 0.5 && !apagada.acesa && apagada.opacidade === 0,
+      `o clique ENDIREITOU (${torto.toFixed(1)}° → ${direito.toFixed(3)}°) e a`
+        + ` bússola apagou sozinha`
+    );
+    const miraDepois = await miraViva();
+    const andou = Math.hypot(
+      miraDepois[0] - miraAntes[0],
+      miraDepois[1] - miraAntes[1],
+      miraDepois[2] - miraAntes[2]
+    );
+    conferir(
+      andou < 1e-3,
+      `...e a MIRA não andou: ${andou.toExponential(1)} de corda unitária`
+        + ` (a lei do botão de norte — acerta a bússola, não move o mapa)`
     );
   }
 
