@@ -60,7 +60,23 @@
 // da captura — era defesa contra o autoQuality até a letra D dos
 // Ajustes), `?shot=2` (só a cena), e o SINAL de prontidão do próprio app
 // no lugar de espera cega.
+import { readFileSync } from 'node:fs';
 import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
+
+/**
+ * OS +3 PASSOS DA Q14 (item 91), LIDOS DA FONTE e não redigitados aqui.
+ * A prova 20 mede a razão de exposição entre os dois lados da porta do
+ * BRILHO, e um número decorado neste arquivo seria a deriva que o item 99
+ * nomeia: o dia em que o desenho fosse de +3 para outra coisa, o juiz
+ * reprovaria o app por estar certo. `luz-do-quadro.mjs` já paga esse
+ * pedágio com um teste; aqui é mais barato ler a lei direto.
+ */
+const PASSOS_DA_EXPOSICAO_REAL = Number(
+  readFileSync(new URL('../../src/lib/atlas/luzDaVisita.ts', import.meta.url), 'utf8').match(
+    /export const PASSOS_DA_EXPOSICAO_REAL = (\d+);/
+  )?.[1]
+);
+const FATOR_DA_EXPOSICAO_REAL = 2 ** PASSOS_DA_EXPOSICAO_REAL;
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const PIN = 'shot=2&q=cinema';
@@ -1564,12 +1580,21 @@ try {
       + ` (${de10.md5} vs ${outraData.md5})`
   );
 
-  // ---- 20: A PORTA DE DUAS VIAS DO BRILHO (item 103) ----------------
+  // ---- 20: A PORTA DE DUAS VIAS DO BRILHO (itens 103 e 91/Q14) ------
   //
   // A QUEM SERVE: ao DONO, e à decisão 3 dele no item 91 — a linha
   // BRILHO do selo é um INTERRUPTOR, ao vivo, com a URL espelhando o
   // gesto nos dois sentidos. Quem quebrar isso quebra o único controle
   // que o visitante tem sobre a política de luz sem editar a URL à mão.
+  //
+  // E DESDE 26/08 ELA COBRA UMA TERCEIRA COISA, pela Q14 do mesmo dono
+  // (*"R1 — +3 passos fixos, sempre os mesmos, declarados no selo"*): o
+  // gesto tem de levar a EXPOSIÇÃO junto, no mesmo clique. A porta passou
+  // a ter duas cargas — a política de luz do globo e a chapa do quadro —,
+  // e uma que ficasse para trás devolveria ao vivo o modo real *"escuro
+  // demais"* que ele reprovou. Cresceu a prova, não nasceu outra: é o
+  // MESMO gesto, no mesmo estado difícil (tier abaixo de cinema), e uma
+  // prova irmã pagaria de novo os ~20 s de subir Chrome e assentar cena.
   //
   // POR QUE ELA PRECISOU EXISTIR. A porta nasceu em 25/08 e emperrou
   // calada. Palavras dele em 26/08: *"depois que clico no selo de
@@ -1599,9 +1624,21 @@ try {
     `JSON.stringify((()=>{const e=document.querySelectorAll(${JSON.stringify(sel)})[${n}];`
     + `if(!e) return null; const r=e.getBoundingClientRect();`
     + `return {x:r.x+r.width/2,y:r.y+r.height/2,dis:!!e.disabled};})())`;
+  /**
+   * A EXPOSIÇÃO VIVA entra aqui pela Q14 do dono (26/08, item 91): em
+   * `?luz=real` o quadro abre +3 passos FIXOS, e o gesto da porta tem de
+   * levar a chapa junto NO MESMO CLIQUE — sem recarga. É a metade que
+   * faltava a esta prova: ela já sabia dizer que a POLÍTICA virava, e não
+   * sabia dizer que a FOTO virava com ela.
+   *
+   * LIDA DO RENDERER, que é o consumidor final — não do Director, não da
+   * constante. Um `exposicaoDoQuadro` que ninguém chamasse continuaria
+   * dando 8 numa prova de unidade e deixaria a tela escura aqui.
+   */
   const luzViva = () =>
     sessao.js(
       "JSON.stringify({luz: window.__director.selo.luz,"
+      + " exp: window.__director.engine.renderer.toneMappingExposure,"
       + " url: new URLSearchParams(location.search).get('luz'),"
       + " zzz: new URLSearchParams(location.search).has('zzz')})"
     );
@@ -1655,6 +1692,13 @@ try {
       await sessao.clicar(linha.x, linha.y);
       await dorme(500);
       passos[i].depois = JSON.parse(await luzViva());
+      // o TEXTO da linha depois do clique — é onde a Q14 manda o selo
+      // declarar a chapa. Lido da tela, não da fonte: o pino de grep
+      // desta mesma linha já custou uma investigação inteira (a lápide
+      // está em `selo.test.ts`, bloco 3).
+      passos[i].texto = await sessao.js(
+        "document.querySelectorAll('.atlas-selo-linha')[1].textContent"
+      );
     }
     conferir(
       passos.length === 2 && !passos[0].dis && !passos[1].dis,
@@ -1671,6 +1715,54 @@ try {
       passos[0]?.depois.url === 'real' && passos[1]?.depois.url === null,
       `e a URL espelha o gesto nas duas voltas: ?luz=${passos[0]?.depois.url}`
         + ` indo, chave ${passos[1]?.depois.url === null ? 'APAGADA' : passos[1]?.depois.url} voltando`
+    );
+    // ---- A CHAPA VAI JUNTO — a Q14 do dono, 26/08 (item 91) ---------
+    //
+    // *"R1 — +3 passos fixos, sempre os mesmos, declarados no selo"*. O
+    // gesto que vira a política tem de virar a EXPOSIÇÃO no mesmo
+    // instante: um app que trocasse a luz e deixasse a chapa para a
+    // próxima recarga daria, ao vivo, o modo real *"escuro demais"* que
+    // ele reprovou — e nenhum juiz da casa saberia dizê-lo, porque os
+    // pinos de md5 rodam por URL, com o binário já aberto no modo certo.
+    //
+    // A RAZÃO é a medida, e não o valor: multiplicar e dividir por
+    // potência de 2 é exato em binário, então isto compara PASSOS com
+    // passos. Os +3 saem de `PASSOS_DA_EXPOSICAO_REAL`
+    // (`src/lib/atlas/luzDaVisita.ts`) e são lidos da fonte, nunca
+    // redigitados aqui — a disciplina anti-deriva do item 99.
+    conferir(
+      Number.isInteger(PASSOS_DA_EXPOSICAO_REAL) && PASSOS_DA_EXPOSICAO_REAL > 0,
+      `os passos da Q14 saíram da FONTE e não deste arquivo`
+        + ` (${PASSOS_DA_EXPOSICAO_REAL}) — sem isto a razão abaixo compara com NaN`
+    );
+    const razao = passos[1]?.depois.exp
+      ? passos[0]?.depois.exp / passos[1]?.depois.exp
+      : NaN;
+    conferir(
+      Math.abs(razao - FATOR_DA_EXPOSICAO_REAL) < 1e-9,
+      `a chapa vira NO MESMO GESTO: real ${passos[0]?.depois.exp?.toFixed(4)}`
+        + ` × assistido ${passos[1]?.depois.exp?.toFixed(4)} = ${razao?.toFixed(6)}`
+        + ` (os +${PASSOS_DA_EXPOSICAO_REAL} passos da Q14, sem recarga)`
+    );
+    conferir(
+      Math.abs(passos[1]?.depois.exp - 1.02) < 1e-6,
+      `e o assistido continua na exposição de referência da casa`
+        + ` (${passos[1]?.depois.exp?.toFixed(4)}, o 1,02 da vista interna) — a Q14`
+        + ' mexeu na chapa do modo real e em mais nada'
+    );
+    // ...E O SELO DECLARA, que é a outra metade da Q14 (*"declarados no
+    // selo"*). Sem esta linha o app abriria +3 passos calado, e o selo
+    // seguiria dizendo "a fotometria da casa, sem ajuste" — a lista curta
+    // que o cabeçalho do `selo.ts` promete não repetir.
+    conferir(
+      (passos[0]?.texto || '').includes(`+${PASSOS_DA_EXPOSICAO_REAL} passos`)
+        && (passos[0]?.texto || '').includes('tempo de exposição'),
+      `e a linha BRILHO DECLARA a chapa no modo real: "${(passos[0]?.texto || '').trim()}"`
+    );
+    // e no assistido ela volta a falar de assistência, não de chapa
+    conferir(
+      !(passos[1]?.texto || '').includes('tempo de exposição'),
+      `de volta ao assistido a declaração de chapa SOME: "${(passos[1]?.texto || '').trim()}"`
     );
   }
 
