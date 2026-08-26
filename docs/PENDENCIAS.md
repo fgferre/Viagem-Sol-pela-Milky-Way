@@ -431,6 +431,19 @@ Saturno e Júpiter têm o azimute em outro lugar, e o enquadramento não
 repete pixel a pixel. As quatro colunas de cada prancha compartilham a
 vista, que é o que a comparação exige.
 
+**AS MEDIDAS GANHARAM CARIMBO DE CÓDIGO em 26/08, e O QUE VALE É O
+`-v2`.** Os cinco arquivos abaixo não diziam de que árvore tinham saído —
+só o `-identidade` nomeava commits, e na prosa. O instrumento passou a
+carimbar (`luz-ab.mjs` embrulha toda medida em `instrumento` + `linha` +
+`codigo` + `quandoUtc`, com a definição do `ab-identidade`), e os cinco
+foram refeitos AO LADO, e **são os `-v2` que valem**:
+`item93-calib-saturno-v2.json`, `item93-calib-jupiter-v2.json`,
+`item93-calib-mercurio-v2.json`, `item93-calib-real-v2.json` e
+`item93-calib-noite-v2.json`. As 19 sub-medidas foram re-executadas
+pela `linha` que cada uma já carregava e saíram IDÊNTICAS campo a campo às
+gravadas, sob o carimbo `59ca468936f2-0ef8666c`; os originais sem carimbo
+ficam onde estão, porque foi deles que as legendas das pranchas nasceram.
+
 As medidas ao lado: `item93-calib-saturno.json` (modo `par`),
 `item93-calib-jupiter.json` (`faixas`), `item93-calib-mercurio.json`
 (`aneis`), `item93-calib-real.json` (`par`), `item93-calib-noite.json` (o
@@ -466,11 +479,36 @@ só para o que veio do Eyes (Lambert + lanterna) ou para o composto inteiro.
 A folha mostra o composto inteiro, que é a leitura simples; a outra é uma
 linha, e vira item se ele reclamar da Lua ou dos rochosos de regolito.
 
+**E A ARITMÉTICA DELA, que até 26/08 só existia na mensagem do commit
+`73b0f92`:** a previsão para Mercúrio em C2 era **146** bytes e o medido
+foi **106,2** — **27 % de erro**, e a causa tem nome. A previsão supunha o
+termo de Sol valendo ~1 no subsolar, que é o que um Lambert com a
+logística dá; Mercúrio é **Lommel-Seeliger**, e ali o subsolar vale
+**~0,667**. Como a tradução é convexa, entrar nela com 0,667 em vez de 1
+corta bem mais — os 22 % de C1 e os 45 % de C2 acima. É por isso que
+Mercúrio fica domado de graça, e é isso que leva a C2 abaixo de qualquer
+coisa que ele já tenha visto.
+
 **A PORTA `?calib=c1|c2|c3` É DE INSTRUMENTO E TEM DATA DE MORTE.** É da
 espécie do `?dbgorbitas`, registrada como **neutra** no selo, e o padrão
 (ausência) é o de hoje bit a bit. **Depois da escolha dele a vencedora vira
 o padrão, a porta sai do código e `scripts/visual/calibracao-da-luz.mjs`
 sai com ela.**
+
+**E O SELO NÃO MOSTRA ESSA PORTA — de propósito, e é conferível.** No
+registro ela é uma linha NEUTRA (`neutra('calib', …)`: eixo `nenhum`,
+`desvia: () => false`), e `estadoDoSelo` só junta desvios de eixo
+`brilho` — com `?calib=c1` na URL o selo diz exatamente o que dizia sem
+ela. A razão é que o eixo BRILHO responde *"o que se vê é a fotometria da
+casa ou uma ajustada?"*, e as quatro calibrações são a MESMA resposta:
+`assistida` já declara *assistido*, e do outro lado da porta ela nem
+existe (`escreverLuzDaVisita` zera as duas chaves em `?luz=real`).
+Declará-la desvio contaria duas vezes o mesmo desvio, e a segunda vez
+seria falsa. **Isso vale ENQUANTO ela for porta de instrumento e morrer
+com a escolha dele. Se sobreviver por qualquer razão — virar preferência,
+ficar para um segundo julgamento, esperar mais do que esta rodada —, ela
+deixa de ser neutra e ganha RÓTULO VISÍVEL: quem olha uma foto tem
+direito de saber qual das quatro doses está vendo.**
 
 **A PROVA DE QUE NADA MUDOU SEM A PORTA**, medida entre `6748374` (antes) e
 `aca067b` (a obra), duas árvores limpas, mesmas URLs: **Júpiter, Mercúrio,
