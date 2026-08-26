@@ -152,9 +152,10 @@ export function GavetaDeCamadas({
  * procedência. Cada linha continua sendo o PRÓPRIO controle: clicar em
  * ESCALA enquadra o sistema e clicar em BRILHO desfaz o que é desfazível
  * — e desde 25/08 a linha BRILHO é uma PORTA DE DUAS VIAS: quando não
- * sobra mais nada a desfazer, o mesmo clique devolve a luz assistida
- * (decisão 3 do dono, item 91). Ela só fica desabilitada no estado em
- * que clicar não faria nada mesmo.
+ * sobra mais nada DESFAZÍVEL a desfazer, o mesmo clique devolve a luz
+ * assistida (decisão 3 do dono, item 91; o desvio indesfazível fica fora
+ * da conta — item 103). As metades são complementares, sempre há ação,
+ * e por isso a linha nunca é desabilitada.
  *
  * A GAVETA É `position: absolute` (fatia 4 do HUD): ela cresce PARA CIMA
  * sem mover a caixa fechada. Não é estilo — é o que mantém a área do HUD
