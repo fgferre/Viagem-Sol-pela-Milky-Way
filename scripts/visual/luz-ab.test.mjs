@@ -25,6 +25,7 @@ import { deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
   LIMIAR_DE_MUDANCA,
+  medirJanela,
   LIMIAR_DE_SATURACAO,
   LIMIAR_DO_PRETO,
   cinzaDoPng,
@@ -544,5 +545,53 @@ describe('medirUmbra — o buraco contra o chão ao lado', () => {
     // sem guia o quadro é chapado e o mínimo é o primeiro ponto varrido
     expect(nucleoMaisEscuro(chapado, 700, 600)).toEqual({ x: 120, y: 120 });
     expect(medirUmbra(chapado, chapado, 700, 600, guia).nucleo).toEqual({ x: 200, y: 300 });
+  });
+});
+
+/**
+ * A JANELA DECLARADA — a quem ela serve.
+ *
+ * Serve às LEGENDAS das pranchas do item 93: quando uma delas diz "a noite
+ * do globo lê 122 bytes e a candidata a leva a 46", esse par de números tem
+ * de ser refazível por quem abrir o PNG. A umbra ACHA o ponto; esta recebe
+ * o ponto, e é só isso que as separa.
+ */
+describe('a janela declarada — o byte que uma legenda cita', () => {
+  /** um quadro com um retângulo de valor conhecido em volta de (200, 300) */
+  const comMancha = (fundo, mancha) => {
+    const v = new Float32Array(700 * 600).fill(fundo);
+    for (let y = 260; y <= 340; y++) for (let x = 160; x <= 240; x++) v[y * 700 + x] = mancha;
+    return v;
+  };
+
+  it('mede os DOIS lados na MESMA janela, e a razão sai deles', () => {
+    const m = medirJanela(comMancha(3, 121.86), comMancha(3, 45.97), 700, 600, 200, 300, 25);
+    expect(m.janela).toEqual({ x: 200, y: 300, raio: 25, lado: 51 });
+    expect(m.antes).toEqual({ media: 121.86, min: 121.86, max: 121.86, n: 2601 });
+    expect(m.depois.media).toBe(45.97);
+    expect(m.razao).toBe(+(45.97 / 121.86).toFixed(4));
+  });
+
+  /** o mínimo e o máximo existem para a legenda não vender uma média
+   *  chapada onde há um degrau — a beira da mancha entra na janela */
+  it('a janela que pega a beira DECLARA o degrau no min e no max', () => {
+    const m = medirJanela(comMancha(3, 100), comMancha(3, 100), 700, 600, 230, 300, 25);
+    expect(m.antes.min).toBe(3);
+    expect(m.antes.max).toBe(100);
+    expect(m.antes.media).toBeGreaterThan(3);
+    expect(m.antes.media).toBeLessThan(100);
+  });
+
+  it('janela fora do quadro REPROVA em vez de recortar em silêncio', () => {
+    const v = comMancha(3, 100);
+    expect(() => medirJanela(v, v, 700, 600, 10, 300, 25)).toThrow(/fora do quadro/);
+    expect(() => medirJanela(v, v, 700, 600, 200, 590, 25)).toThrow(/fora do quadro/);
+  });
+
+  it('a umbra continua sendo a MESMA conta, agora pela peça comum', () => {
+    const v = comMancha(24, 2.76);
+    const m = medirJanela(v, v, 700, 600, 200, 300, 8);
+    expect(m.antes.media).toBe(2.76);
+    expect(m.razao).toBe(1);
   });
 });

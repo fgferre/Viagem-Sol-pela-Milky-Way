@@ -8,6 +8,7 @@
 //   node scripts/visual/luz-ab.mjs aneis  antes.png depois.png [limiar]
 //   node scripts/visual/luz-ab.mjs umbra  antes.png depois.png [ref.png]
 //   node scripts/visual/luz-ab.mjs croma  antes.png depois.png [limiar]
+//   node scripts/visual/luz-ab.mjs janela antes.png depois.png x,y[,raio]
 //
 // Imprime JSON no formato dos `capturas/item93-*.json`. Sem navegador e
 // sem dependência: o PNG é decodificado aqui (zlib do próprio Node), e a
@@ -92,6 +93,10 @@
 //    escurece 1 % o disco inteiro tem cem vezes mais pixels que a que
 //    acende a borda. Cor achatada (1 : ~1 : ~1) é dose; cor inclinada é
 //    tinta; fração NEGATIVA é um canal que andou ao contrário do R.
+//  · JANELA: a média (e o mínimo e o máximo) de um quadrado DECLARADO,
+//    nos dois lados. É a irmã da UMBRA que NÃO acha o ponto: quem cita um
+//    byte numa legenda ("a noite do globo lê 122") tem de dizer ONDE, e o
+//    leitor refaz a conta no mesmo lugar. Janela fora do quadro é erro.
 //  · UMBRA: o próprio script ACHA o ponto mais escuro do lado de
 //    referência dentro do disco (varredura de 2 em 2 px, média de 5×5
 //    amostras), e mede janelas de 17×17 ali e a 220 px ao lado.
@@ -460,22 +465,51 @@ export function nucleoMaisEscuro(ref, largura, altura, raioDoDisco = 340) {
   return { x: melhor.x, y: melhor.y };
 }
 
+/**
+ * A MÉDIA DE UMA JANELA DECLARADA — o que sustenta um número citado numa
+ * legenda de prancha.
+ *
+ * A umbra ACHA o ponto que mede; esta peça recebe o ponto de fora, e é essa
+ * a diferença que a faz existir: quando a legenda diz "a noite do globo lê
+ * 122 bytes", o leitor tem de poder abrir o PNG e refazer a conta no MESMO
+ * lugar. Janela que sai do quadro é ERRO, não recorte silencioso — juiz que
+ * não consegue medir reprova.
+ */
+export function janelaDe(v, largura, altura, jx, jy, raio = 8) {
+  let s = 0;
+  let n = 0;
+  let min = Infinity;
+  let max = -Infinity;
+  for (let b = jy - raio; b <= jy + raio; b++) {
+    for (let a = jx - raio; a <= jx + raio; a++) {
+      if (a < 0 || b < 0 || a >= largura || b >= altura) throw new Error('janela fora do quadro');
+      const g = v[b * largura + a];
+      s += g;
+      n++;
+      if (g < min) min = g;
+      if (g > max) max = g;
+    }
+  }
+  return { media: arred(s / n, 2), min: arred(min, 2), max: arred(max, 2), n };
+}
+
+/** o par medido na MESMA janela declarada — o formato de `item93-calib-noite.json` */
+export function medirJanela(antes, depois, largura, altura, x, y, raio = 25) {
+  const a = janelaDe(antes, largura, altura, x, y, raio);
+  const d = janelaDe(depois, largura, altura, x, y, raio);
+  return {
+    janela: { x, y, raio, lado: 2 * raio + 1 },
+    antes: a,
+    depois: d,
+    razao: arred(d.media / Math.max(a.media, 1e-6), 4),
+  };
+}
+
 export function medirUmbra(antes, depois, largura, altura, ref = antes, dx = 220, raioDoDisco = 340) {
   const { x, y } = nucleoMaisEscuro(ref, largura, altura, raioDoDisco);
   const janela = (v, jx, jy, raio = 8) => {
-    let s = 0;
-    let n = 0;
-    let min = Infinity;
-    for (let b = jy - raio; b <= jy + raio; b++) {
-      for (let a = jx - raio; a <= jx + raio; a++) {
-        if (a < 0 || b < 0 || a >= largura || b >= altura) throw new Error('janela fora do quadro');
-        const g = v[b * largura + a];
-        s += g;
-        n++;
-        if (g < min) min = g;
-      }
-    }
-    return { media: arred(s / n, 2), min: arred(min, 2) };
+    const { media, min } = janelaDe(v, largura, altura, jx, jy, raio);
+    return { media, min };
   };
   const a = janela(antes, x, y);
   const d = janela(depois, x, y);
@@ -497,7 +531,8 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const [modo, alvo, arqB, extra] = process.argv.slice(2);
   if (!modo || !alvo) {
     throw new Error(
-      'uso: luz-ab.mjs <par|faixas|aneis|umbra|croma> <pasta | antes.png depois.png> [limiar]'
+      'uso: luz-ab.mjs <par|faixas|aneis|umbra|croma|janela>'
+      + ' <pasta | antes.png depois.png> [limiar | x,y,raio]'
     );
   }
   let saida;
@@ -523,6 +558,16 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
           A.cinza, B.cinza, A.largura, A.altura,
           extra === undefined ? LIMIAR_DO_DISCO : Number(extra)
         )
+      : modo === 'janela' ? (() => {
+          const [x, y, raio] = String(extra ?? '').split(',').map(Number);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            throw new Error('o modo `janela` precisa de `x,y[,raio]`');
+          }
+          return medirJanela(
+            A.cinza, B.cinza, A.largura, A.altura, x, y,
+            Number.isFinite(raio) ? raio : 25
+          );
+        })()
       : modo === 'umbra' ? medirUmbra(
           A.cinza, B.cinza, A.largura, A.altura,
           extra ? cinzaDoArquivo(extra).cinza : A.cinza
