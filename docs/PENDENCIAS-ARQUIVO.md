@@ -2674,3 +2674,146 @@ que o defeito morava, com os dois lados calados.
 **SABOTAGEM (worktree), o placar:** reverter o conserto inteiro reprova
 **2**; tirar só a multiplicação do laço, deixando os uniformes, reprova
 **1**; `piso = 0` reprova **2**. No HEAD sem a obra, nenhum reprovava.
+
+**103. A porta do BRILHO no selo parou de virar — clicar não troca mais
+de modo.** (Aberto em 26/08, queixa dele ao vivo, no app local. Palavras
+dele: *"depois que clico no selo de honestidade, na parte de brilho, nao
+consigo voltar ao modo anterior nem vice versa, clclar pelos modos."*
+**FECHADO em 26/08**, no mesmo dia, em `4ce0169`.)
+
+**A SUSPEITA POR CRONOLOGIA ESTAVA ERRADA, e foi MEDIDA antes de virar
+acusação.** O item nasceu apontando para a obra da calibração
+(`aca067b`…`73b0f92`), que mexeu em `selo.ts`, `director.ts` e
+`luzDaVisita.ts` no mesmo dia — suspeita razoável e falsa. O defeito
+reproduz IGUAL no `aca067b^` (worktree próprio, vite em porta própria,
+mesmo gesto): já estava lá antes da primeira linha da calibração. **A
+calibração é inocente**, e o que a acusava era só a data.
+
+**O CULPADO é a PRÓPRIA PORTA DE DUAS VIAS: ela nasceu com o defeito
+dentro, no commit `dd2faeb`** (25/08, item **91**, decisão 3 do dono). A
+lei que ela implementa cabe numa frase — *enquanto sobrar algo a
+desfazer, o clique desfaz; quando não sobra mais nada, o clique devolve a
+assistência* —, e a guarda foi escrita lendo "não sobra mais nada" como
+**VEREDITO VAZIO** (`desvios.length === 0`, a linha lendo BRILHO REAL) em
+vez de **NADA A DESFAZER**. As duas leituras coincidem quase sempre, e
+divergem exatamente onde dói: um desvio de `volta: 'nenhuma'` **nunca sai
+da lista**. Com um deles de pé o veredito jamais esvazia, a segunda via
+jamais arma — e como também não sobra nada a desfazer, o HUD
+**DESABILITAVA** a linha. Resultado: o primeiro clique escrevia `real`, e
+a luz ficava presa em `real` **para sempre**. A porta de mão única que a
+decisão 3 existiu para acabar, de volta, dentro da obra que a aboliu.
+
+**O GATILHO REAL, na casa dele, é UM SÓ: o tier abaixo de cinema**
+(`amostragem abaixo de cinema`, `volta: 'nenhuma'`). O outro indesfazível
+— a dose do Sol no arranque — **não alcança este botão**: `doseDoSol` só
+é < 1 na fase `journey`, e o selo só existe na fase `atlas` (`fases.ts`,
+`selo: true` só ali). Quem roda em `cinema` nunca vê o defeito; quem roda
+um degrau abaixo não consegue voltar nunca.
+
+**A REPRODUÇÃO, em navegador de verdade** (`chrome.mjs`, mouse de
+verdade, `?atlas=1&foco=saturn&ver=corpo&q=alta`): o clique 1 leva a luz
+a `real` e a linha volta com `disabled=true`; os cliques 2, 3 e 4 não
+fazem nada — `luz` fica `real`, a URL fica `?luz=real`. Com `?q=cinema`
+no lugar de `?q=alta`, os mesmos quatro cliques alternam sem falha. É
+exatamente a diferença entre o app dele e todo juiz da casa.
+
+**O CONSERTO é a frase da lei, literal, nos três lugares em que o gesto
+mora** — e os três liam a mesma guarda errada:
+
+- `three/selo.ts` (`aoClicarEmBrilho`, o oráculo puro): a volta arma por
+  `chaves` vazio — o que resta a DESFAZER — e o indesfazível fica fora da
+  conta, porque clique nenhum o alcança. `chaves` vazio já implica
+  `luz === 'real'` (a `assistida` é sempre desvio, e de `volta: 'vivo'`),
+  então a segunda condição continua sem precisar existir.
+- `hooks/useEspelhoDaUrl.ts` (`voltarAoBrilhoReal`, quem executa): mesma
+  troca, e a URL segue espelhando os dois sentidos — `?luz=real` indo, a
+  chave APAGADA voltando (`assistida` é o padrão).
+- `components/HudDoAtlas.tsx` (a linha BRILHO): `podeReassistir` passou a
+  ser `!daParaVoltar`, e as duas metades são complementares — sempre há
+  ação, então **a linha não é mais desabilitada**. O `disabled` era o
+  próprio defeito vestido de estado.
+
+**O MEDO QUE JUSTIFICAVA A GUARDA ERRADA — "oferecer MAIS assistência
+numa linha que ainda diz ASSISTIDO contradiria a palavra nela" — quem
+responde é a COPY, não o botão morto.** A linha nomeia o que restou e diz
+o que o clique faz: *"amostragem abaixo de cinema — clique: voltar à luz
+assistida"*. O selo continua declarando ASSISTIDO e continua dizendo por
+quê; o que ele deixou de fazer é trancar o visitante do lado de fora.
+
+**O SEGUNDO CAMINHO, levantado pelo auditor e MEDIDO: a chave não
+declarada NÃO tranca.** `desconhecida()` (`selo.ts`) é empurrada para
+toda porta que a URL traz e o registro não conhece, com
+`desvia: () => true` — então ela também mantém o veredito cheio, e a
+hipótese era que fosse ela o gatilho. Medido com `?zzz=1`: **ela é
+`volta: 'recarregar'`, não `'nenhuma'`**, então o clique TEM o que
+desfazer — apaga a chave da URL e RECARREGA, e do outro lado a chave não
+existe mais. O ciclo fecha nos dois sentidos atravessando a recarga. O
+preço declarado é a recarga em si, e o selo nasce FECHADO nela (o
+aberto/fechado é chrome e não vai para a URL). Não é o defeito do dono, e
+por isso não virou obra — mas virou MEDIDA, na prova 20b.
+
+**POR QUE NENHUM JUIZ PEGOU, e esta é a parte que vale mais que o
+conserto.** Não foi lacuna: foram TRÊS pinos empurrando na direção
+errada.
+
+1. **Um pino do item 91 CONGELOU o defeito como lei.** Chamava-se *"a
+   volta NÃO arma enquanto a linha ainda diz ASSISTIDO por outro
+   motivo"* e cobrava `aoClicarEmBrilho({tier:'performance',
+   luz:'real'}).luz === 'real'` — quer dizer, o clique MORTO, por
+   escrito, com justificativa. Enquanto o dono não conseguia trocar de
+   modo, este pino passava verde.
+2. **Outro cobrava o HUD e o espelho por GREP DO TEXTO-FONTE:**
+   `toContain('const podeReassistir = desvios.length === 0;')` e
+   `toContain('if (veredito.desvios.length === 0) {')`. Ele pinava os
+   CARACTERES da guarda errada — e teria REPROVADO o conserto, porque o
+   conserto muda justamente essas letras. Juiz assim não protege a lei:
+   protege a redação de quem escreveu por último. Morreu, com lápide no
+   `selo.test.ts`.
+3. **E um terceiro media o clique morto sem saber:** *"o que não é
+   desfazível fica declarado"* partia do `luz: 'real'` da fixture, estado
+   em que não sobra nada a desfazer — media o clique parado achando que
+   media o tier sobrevivendo. Passou a partir de `luz: 'assistida'`, e
+   agora mede a IDA de verdade.
+
+**Do lado do navegador a cegueira era ESTRUTURAL**, e a lição vale para
+toda prova de HUD daqui em diante: todo md5 da casa é pinado em
+`?shot=2`, que **apaga o HUD** — um selo fora da tela não recebe clique
+de ninguém —, e todo harness pina `?q=cinema`, que é justamente o tier em
+que o defeito não existe. Os dois pinos que fazem as fotos serem
+comparáveis são os dois que escondiam esta porta.
+
+**O DENTE, e o que ele pega.** A prova **20** de
+`scripts/visual/atlas-smoke.mjs` — comportamento, nunca texto, e com o
+cabeçalho declarando **A QUEM SERVE** (ao dono e à decisão 3 do item 91),
+pela regra experimental dos juízes. Ela abre o Atlas **sem `?shot=2`** (o
+HUD tem de existir para receber o gesto) e **com `?q=alta`** (o
+indesfazível de pé, o estado exato em que a porta emperrava), confere que
+o tier baixo está mesmo vivo — senão a prova mediria o caso fácil e
+passaria verde sobre a porta trancada —, clica no selo e na linha BRILHO
+com mouse de verdade, e cobra as três coisas que o dono perdeu: **a linha
+aceita os DOIS cliques** (nunca `disabled`), **a luz troca nos dois
+sentidos** (`assistida → real → assistida`) e **a URL espelha as duas
+voltas** (`?luz=real` indo, chave apagada voltando). A **20b** faz o mesmo
+com uma chave não declarada na URL, atravessando a recarga. Do lado puro,
+`selo.test.ts` ganhou o pino invertido: com o tier baixo de pé o ciclo
+fecha nos dois sentidos, e o `q` continua declarado nos três estados.
+
+**SABOTAGEM (worktree), o placar — e ele é a defesa de por que o dente
+mora em NAVEGADOR e não só no `vitest`:**
+
+- **Guarda antiga nos TRÊS lugares:** `selo.test.ts` reprova **1**
+  (exit 1) e a prova **20** reprova as **3** (`atlas-smoke` exit 1). As
+  mensagens de falha são a queixa do dono, com número: *"a linha BRILHO
+  aceita os DOIS cliques (desabilitada: false, **true**)"* e *"o clique
+  troca o modo nos dois sentidos: assistida → real → **real**"*.
+- **SÓ o HUD sabotado** (guarda pura e espelho intactos): o `vitest`
+  passa **verde, 40/40** — porque teste puro não vê `disabled` de botão —
+  e o `atlas-smoke` reprova **exatamente 3**, todas da prova 20 (exit 1).
+  É por isso que este dente não podia ser só um `it()`: metade do defeito
+  morava no JSX, onde nenhum teste puro da casa chega.
+- **A 20b NÃO reprova em nenhuma das duas**, e isso é resultado, não
+  descuido: confirma que a porta não declarada segue desfazível (a
+  recarga apaga a chave) e que o caminho dela é OUTRO problema que o do
+  tier — foi assim que a hipótese do auditor pôde ser separada da causa.
+- **No HEAD com o conserto, nenhum reprova** e o `atlas-smoke` fecha
+  verde.

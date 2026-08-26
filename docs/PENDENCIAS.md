@@ -950,19 +950,13 @@ bit-idêntico nas vistas paradas.
 "olhar ao redor" do filme (`cameraRig.addLookDelta` — rotação manual
 em torno de corpo só existe no Atlas); os limiares de toque do P2.
 
-**103. A porta do BRILHO no selo parou de virar — clicar não troca mais
-de modo.** (Aberto em 26/08, queixa dele ao vivo, no app local. Palavras
-dele: *"depois que clico no selo de honestidade, na parte de brilho, nao
-consigo voltar ao modo anterior nem vice versa, clclar pelos modos."*)
-
-A porta de duas vias é decisão dele no item **91** (assistido ⇄ real ao
-vivo, URL espelhando o gesto) e estava PROVADA em foto em 25/08
-(`item91-selo-porta-de-duas-vias.png`). Suspeito primeiro, por
-cronologia: a obra da calibração (itens 93/91c) mexeu no `selo.ts` (a
-linha neutra `calib`) e no `director.ts` no mesmo dia — regressão da
-etapa se conserta DENTRO da etapa. A prova de saída: o gesto completo
-nos DOIS sentidos, com a URL acompanhando, e um dente que morda se a
-porta emperrar de novo.
+**103.** A porta do BRILHO no selo parou de virar — **FECHADO em 26/08**
+(`4ce0169`). **A calibração era inocente** (medido: o defeito reproduz
+IGUAL no `aca067b^`); o culpado é a porta de duas vias, que nasceu com ele
+dentro em `dd2faeb` (item **91**) — a volta armava por *veredito vazio* em
+vez de *nada a desfazer*, e o tier abaixo de cinema trancava a luz em
+`real` para sempre. Gesto provado nos dois sentidos em navegador (prova
+**20** do `atlas-smoke`); história no ARQUIVO.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
