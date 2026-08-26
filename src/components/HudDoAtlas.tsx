@@ -195,12 +195,21 @@ export function Selo({
   /**
    * A SEGUNDA VIA da linha BRILHO: com a luz já em `real` e nada mais a
    * desfazer, o clique devolve a assistência em vez de não fazer nada.
-   * Arma pelo VEREDITO — a linha lendo BRILHO REAL, sem desvio nenhum —,
-   * a mesma guarda do oráculo puro `aoClicarEmBrilho`. É o que transforma
-   * o selo de porta de mão única em interruptor;
-   * `useEspelhoDaUrl.voltarAoBrilhoReal` executa os dois sentidos.
+   * Arma pelo QUE RESTA A DESFAZER — a mesma guarda do oráculo puro
+   * `aoClicarEmBrilho`. É o que transforma o selo de porta de mão única
+   * em interruptor; `useEspelhoDaUrl.voltarAoBrilhoReal` executa os dois
+   * sentidos.
+   *
+   * ELA ARMAVA PELO VEREDITO até o item 103 (`desvios.length === 0`), e
+   * era o que trancava a porta: um desvio de `volta: 'nenhuma'` — o tier
+   * abaixo de cinema, a dose do arranque — nunca sai da lista, então o
+   * veredito nunca esvaziava. Depois do primeiro clique não havia mais
+   * nada a desfazer NEM segunda via, e a linha se DESABILITAVA com a luz
+   * presa em `real`. Como as duas metades são complementares, a linha
+   * nunca fica sem ação: ou sobra o que desfazer, ou se devolve a
+   * assistência — e por isso ela não é mais desabilitada.
    */
-  const podeReassistir = desvios.length === 0;
+  const podeReassistir = !daParaVoltar;
   const escalaReal = escala === 'real';
   const brilhoReal = brilho === 'real';
   /** o PIOR EIXO decide a bolinha do resumo: um desvio já tinge os dois */
@@ -282,32 +291,39 @@ export function Selo({
               clique faz a próxima coisa sensata — desfaz enquanto houver o
               que desfazer, e devolve a luz assistida quando não houver.
               Por isso a linha deixou de ser desabilitada em `real`: ali
-              existe ação, e desabilitar passou a ser a mentira. Ela só
-              adormece no estado sem saída nenhuma (desvio de volta
-              'nenhuma' com a luz já real), onde clicar não faria nada. */}
+              existe ação, e desabilitar passou a ser a mentira. E desde o
+              item 103 ela NÃO ADORMECE MAIS: o "estado sem saída" que a
+              desabilitava era o próprio defeito — com o tier abaixo de
+              cinema, o primeiro clique deixava a luz em `real` e a linha
+              morta, sem volta nenhuma. As duas metades são
+              complementares, então sempre há ação. */}
           <button
             type="button"
             className={`atlas-selo-linha ${brilhoReal ? 'real' : 'desvio'}`}
             onClick={onBrilhoReal}
-            disabled={!daParaVoltar && !podeReassistir}
             aria-label={
               brilhoReal
                 ? `${BRILHO_REAL}: nada foi ajustado nesta vista.`
-                  + (podeReassistir ? ' Clique para voltar à luz assistida.' : '')
+                  + ' Clique para voltar à luz assistida.'
                 : `${BRILHO_ASSISTIDO}. Ajustado: ${lista}.`
-                  + (daParaVoltar ? ' Clique para voltar ao brilho real.' : '')
+                  + (daParaVoltar
+                    ? ' Clique para voltar ao brilho real.'
+                    : ' Clique para voltar à luz assistida.')
             }
           >
             <span className="atlas-selo-eixo">brilho</span>
             <strong>{brilhoReal ? BRILHO_REAL : BRILHO_ASSISTIDO}</strong>
+            {/* A COPY DA VOLTA NOMEIA O QUE RESTOU, e é ela que responde
+                ao medo que armava a guarda antiga: oferecer a assistência
+                numa linha que ainda diz ASSISTIDO só engana se o texto
+                calar o motivo. Com o tier abaixo de cinema ele lê
+                "amostragem abaixo de cinema — clique: voltar à luz
+                assistida": o que sobrou, dito, e o que o clique faz. */}
             <em>
-              {daParaVoltar
-                ? `clique: voltar ao real — ${lista}`
-                : podeReassistir
-                  ? 'a fotometria da casa, sem ajuste — clique: voltar à luz assistida'
-                  : brilhoReal
-                    ? 'a fotometria da casa, sem ajuste'
-                    : lista}
+              {podeReassistir
+                ? `${brilhoReal ? 'a fotometria da casa, sem ajuste' : lista}`
+                  + ' — clique: voltar à luz assistida'
+                : `clique: voltar ao real — ${lista}`}
             </em>
           </button>
 

@@ -730,21 +730,36 @@ export function escalaDaVista(distanciaPc: number): 'real' | 'fora' {
  * vez de fingir que o clique resolveu. E é por isso que a segunda via só
  * arma com a luz JÁ em `real`: nesse estado o clique não tem o que
  * desfazer e a assistência da luz é a única coisa que ele pode devolver.
+ *
+ * O ITEM 103 CONSERTOU A SEGUNDA VIA, e o defeito era ler "não sobra
+ * mais nada" como VEREDITO VAZIO em vez de NADA A DESFAZER. A porta
+ * nasceu em 25/08 armando a volta com `desvios.length === 0` — a linha
+ * lendo BRILHO REAL. Só que um desvio de `volta: 'nenhuma'` NUNCA sai da
+ * lista: com o tier abaixo de cinema (ou no arranque do filme, pela dose
+ * do Sol) o veredito jamais esvazia. O primeiro clique escrevia `real`,
+ * a lista continuava com o indesfazível, a segunda via não armava — e
+ * como também não sobrava nada a desfazer, o HUD DESABILITAVA a linha.
+ * A luz ficava presa em `real` para sempre: a porta de mão única que a
+ * decisão 3 do dono existiu para acabar. Palavras dele em 26/08: *"nao
+ * consigo voltar ao modo anterior nem vice versa"*.
+ *
+ * A GUARDA CERTA é a própria frase da lei, literal: **o que arma a volta
+ * é não haver mais NADA A DESFAZER** — `chaves` vazio —, e não o
+ * veredito estar limpo. O indesfazível fica de fora da conta porque
+ * clique nenhum o alcança; contá-lo era deixar o tier trancar a luz.
+ * E `chaves` vazio JÁ IMPLICA `luz === 'real'` (a `assistida` é sempre
+ * desvio, e de `volta: 'vivo'`), então a segunda condição continua sem
+ * precisar existir. O medo que justificava a guarda antiga — oferecer
+ * assistência numa linha que diz ASSISTIDO — quem responde é a COPY: ela
+ * nomeia o que restou (a amostragem) e diz o que o clique faz.
  */
 export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
-  const veredito = estadoDoSelo(e);
-  // A SEGUNDA VIA arma pelo VEREDITO, não pelo que resta a desfazer: só
-  // com a linha lendo BRILHO REAL — nenhum desvio, de nenhum tipo —
-  // devolver a assistência é o gesto que faz sentido. Numa vista que
-  // ainda diz ASSISTIDO por algo indesfazível (o tier, a dose do
-  // arranque), oferecer MAIS assistência seria o contrário do que a
-  // palavra na linha promete. `desvios` vazio já implica `luz === 'real'`
-  // (a `assistida` é sempre desvio), então não há segunda condição.
-  if (veredito.desvios.length === 0) return { ...e, luz: 'assistida' };
   const chaves = new Set(
-    veredito.desvios.filter((c) => c.volta !== 'nenhuma').map((c) => c.chave)
+    estadoDoSelo(e)
+      .desvios.filter((c) => c.volta !== 'nenhuma')
+      .map((c) => c.chave)
   );
-  if (chaves.size === 0) return e;
+  if (chaves.size === 0) return { ...e, luz: 'assistida' };
   return {
     ...e,
     portas: e.portas.filter((p) => !chaves.has(p)),

@@ -393,8 +393,14 @@ describe('3. clicar volta ao real', () => {
   });
 
   it('o que não é desfazível fica declarado — sem fingir que o clique resolveu', () => {
-    const so = com({ tier: 'performance' });
+    // PARTE DA LUZ ASSISTIDA para o clique ter uma IDA a fazer, e é a ida
+    // que este pino mede: desfaz o que é desfazível e o tier CONTINUA na
+    // lista. Ele partia do `luz: 'real'` da fixture — e naquele estado não
+    // sobra nada a desfazer, então o que ele media era o clique MORTO
+    // (o defeito do item 103), não o tier sobrevivendo ao clique vivo.
+    const so = com({ tier: 'performance', luz: 'assistida' });
     const depois = aoClicarEmBrilho(so);
+    expect(depois.luz).toBe('real');
     expect(estadoDoSelo(depois).brilho).toBe('assistido');
     expect(estadoDoSelo(depois).desvios.map((d) => d.chave)).toEqual(['q']);
   });
@@ -423,14 +429,35 @@ describe('3b. e clicar de novo devolve a assistência — a porta é de duas via
     expect(devolta).toEqual(inicio);
   });
 
-  it('a volta NÃO arma enquanto a linha ainda diz ASSISTIDO por outro motivo', () => {
-    // tier abaixo de cinema é desvio de volta 'nenhuma': o selo segue
-    // dizendo ASSISTIDO. Oferecer MAIS assistência aqui contradiria a
-    // palavra na linha — o clique não pode virar o seu contrário no meio
-    // de uma vista que ainda tem o que declarar.
+  it('o indesfazível NÃO tranca a porta: com o tier baixo a volta arma igual', () => {
+    // ESTE PINO CONGELAVA O DEFEITO, e é a razão de o item 103 existir.
+    // Ele cobrava `aoClicarEmBrilho(...).luz === 'real'` — quer dizer, o
+    // clique NÃO fazendo nada — com o argumento de que oferecer mais
+    // assistência numa linha que ainda diz ASSISTIDO contradiria a
+    // palavra nela. O argumento tinha um preço que ninguém somou: um
+    // desvio de `volta: 'nenhuma'` (o tier abaixo de cinema, a dose do
+    // arranque) NUNCA sai da lista. Com ele de pé o veredito jamais
+    // esvazia, a segunda via jamais arma, e a luz fica presa em `real`
+    // para sempre — a porta de mão única que a decisão 3 do dono existiu
+    // para acabar. Palavras dele em 26/08: *"nao consigo voltar ao modo
+    // anterior nem vice versa"*.
+    //
+    // A LEI CERTA é a frase dela, literal: o que arma a volta é não
+    // haver mais NADA A DESFAZER — e o indesfazível fica fora da conta,
+    // porque clique nenhum o alcança. A honestidade da linha continua
+    // inteira: ela segue dizendo ASSISTIDO e a copy nomeia o que restou.
     const comTier = com({ tier: 'performance', luz: 'real' });
     expect(estadoDoSelo(comTier).brilho).toBe('assistido');
-    expect(aoClicarEmBrilho(comTier).luz).toBe('real');
+    expect(aoClicarEmBrilho(comTier).luz).toBe('assistida');
+    // e o ciclo FECHA nos dois sentidos com o indesfazível de pé — o que
+    // o dono não conseguia fazer: assistida → real → assistida
+    const real = aoClicarEmBrilho(com({ tier: 'performance', luz: 'assistida' }));
+    expect(real.luz).toBe('real');
+    expect(aoClicarEmBrilho(real).luz).toBe('assistida');
+    // o tier segue declarado o tempo todo: o clique não finge tê-lo curado
+    for (const e of [comTier, real, aoClicarEmBrilho(real)]) {
+      expect(estadoDoSelo(e).desvios.some((d) => d.chave === 'q')).toBe(true);
+    }
   });
 
   it('desfazer PRIMEIRO, devolver DEPOIS: dois cliques, na ordem certa', () => {
@@ -449,22 +476,27 @@ describe('3b. e clicar de novo devolve a assistência — a porta é de duas via
     expect(dois.exposicaoManual).toBe(false);
   });
 
-  it('o HUD e o espelho da URL usam a MESMA guarda do oráculo', () => {
-    // o gesto mora em dois arquivos (o botão e a escrita da URL) e a
-    // conta mora aqui; um terceiro critério escrito à mão em qualquer um
-    // deles é como o selo do doador envelheceu calado
-    const hud = readFileSync(new URL('../components/HudDoAtlas.tsx', import.meta.url), 'utf8');
-    expect(hud).toContain('const podeReassistir = desvios.length === 0;');
-    const espelho = readFileSync(
-      new URL('../hooks/useEspelhoDaUrl.ts', import.meta.url),
-      'utf8'
-    );
-    expect(espelho).toContain('if (veredito.desvios.length === 0) {');
-    expect(espelho).toContain("d.definirLuz('assistida');");
-    // a URL espelha a VOLTA apagando a chave — `assistida` é o padrão, e
-    // `?luz=assistida` seria painel em vez de espelho
-    expect(espelho).toContain("volta.searchParams.delete('luz');");
-  });
+  /*
+   * LÁPIDE DO PINO DE GREP, e ela fica escrita porque a lição é cara.
+   *
+   * Havia aqui um "o HUD e o espelho da URL usam a MESMA guarda do
+   * oráculo" que lia os DOIS arquivos como TEXTO e cobrava
+   * `toContain('const podeReassistir = desvios.length === 0;')` e
+   * `toContain('if (veredito.desvios.length === 0) {')`. Quer dizer: ele
+   * pinava os CARACTERES da guarda errada. Enquanto o dono não conseguia
+   * trocar de modo no app dele, este pino passava verde — e teria
+   * REPROVADO o conserto, porque o conserto muda justamente essas
+   * letras. Um juiz assim não protege a lei: protege a redação de quem
+   * escreveu por último.
+   *
+   * QUEM GUARDA ISTO AGORA mede COMPORTAMENTO, e mede no lugar certo: a
+   * prova 20 de `scripts/visual/atlas-smoke.mjs` abre o Atlas sem
+   * `?shot=2` (com HUD, portanto) e com `?q=alta` (o tier abaixo de
+   * cinema, o desvio indesfazível que trancava a porta), clica na linha
+   * BRILHO com mouse de verdade duas vezes e cobra a luz trocando nos
+   * dois sentidos com a URL acompanhando. Texto-fonte não entra na
+   * conta. O pino puro da guarda é o `it` logo acima, sobre o oráculo.
+   */
 });
 
 describe('4. o eixo ESCALA sai da geometria, não de porta', () => {

@@ -280,12 +280,14 @@ export function useEspelhoDaUrl(dep: {
     const d = directorRef.current;
     if (!d) return;
     const veredito = estadoDoSelo(d.selo);
-    // A SEGUNDA VIA, e ela arma pelo VEREDITO (a linha lendo BRILHO REAL),
-    // não pelo que resta a desfazer — a mesma guarda de `aoClicarEmBrilho`,
-    // que é o oráculo puro deste gesto. Numa vista que ainda diz ASSISTIDO
-    // por algo indesfazível, oferecer MAIS assistência contradiria a
-    // palavra na linha.
-    if (veredito.desvios.length === 0) {
+    const desvios = veredito.desvios.filter((c) => c.volta !== 'nenhuma');
+    // A SEGUNDA VIA arma pelo QUE RESTA A DESFAZER — a mesma guarda de
+    // `aoClicarEmBrilho`, que é o oráculo puro deste gesto. Ela lia o
+    // VEREDITO até o item 103, e por isso um desvio indesfazível (o tier
+    // abaixo de cinema, a dose do arranque) trancava a luz em `real` para
+    // sempre: o veredito nunca esvaziava, a volta nunca armava. Sem nada a
+    // desfazer, `luz` já está em `real` — a `assistida` é sempre desvio.
+    if (desvios.length === 0) {
       d.definirLuz('assistida');
       redesenhar();
       const volta = urlComMomento();
@@ -296,8 +298,6 @@ export function useEspelhoDaUrl(dep: {
       window.history.replaceState(null, '', `${volta.pathname}${volta.search}`);
       return;
     }
-    const desvios = veredito.desvios.filter((c) => c.volta !== 'nenhuma');
-    if (desvios.length === 0) return;
     const url = urlComMomento();
     for (const c of desvios) url.searchParams.delete(c.chave);
     // A LUZ (Onda 6, D2): o padrão é `assistida`,

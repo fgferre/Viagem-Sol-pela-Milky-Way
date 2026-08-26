@@ -1564,6 +1564,160 @@ try {
       + ` (${de10.md5} vs ${outraData.md5})`
   );
 
+  // ---- 20: A PORTA DE DUAS VIAS DO BRILHO (item 103) ----------------
+  //
+  // A QUEM SERVE: ao DONO, e à decisão 3 dele no item 91 — a linha
+  // BRILHO do selo é um INTERRUPTOR, ao vivo, com a URL espelhando o
+  // gesto nos dois sentidos. Quem quebrar isso quebra o único controle
+  // que o visitante tem sobre a política de luz sem editar a URL à mão.
+  //
+  // POR QUE ELA PRECISOU EXISTIR. A porta nasceu em 25/08 e emperrou
+  // calada. Palavras dele em 26/08: *"depois que clico no selo de
+  // honestidade, na parte de brilho, nao consigo voltar ao modo anterior
+  // nem vice versa"*. Nenhum juiz da casa podia dizê-lo, e por três
+  // razões que valem para toda prova de HUD daqui em diante:
+  //
+  //  1. TODO md5 desta casa é pinado em `?shot=2`, que APAGA o HUD. Um
+  //     selo que não está na tela não recebe clique de ninguém.
+  //  2. Todo harness pina `?q=cinema` — e era justamente o tier ABAIXO
+  //     de cinema que trancava a porta. O pino escondia o caso.
+  //  3. Os pinos puros do item 91 rodavam sobre um estado de tier
+  //     `cinema`, onde o defeito não existe; e um deles CONGELOU o
+  //     defeito como lei ("a volta NÃO arma..."), enquanto outro cobrava
+  //     o HUD por GREP do texto-fonte da própria linha errada.
+  //
+  // POR ISSO ESTA PROVA É DE COMPORTAMENTO E NÃO DE TEXTO: ela abre o
+  // Atlas SEM `shot=2` (o HUD tem de existir para receber o gesto) e
+  // COM `?q=alta` — o tier abaixo de cinema é um desvio de `volta:
+  // 'nenhuma'`, o que faz o veredito NUNCA esvaziar. É o estado exato
+  // em que a porta emperrava. Depois clica no selo com mouse de
+  // verdade, duas vezes na linha BRILHO, e cobra as três coisas: a luz
+  // troca nos DOIS sentidos, a URL acompanha (`?luz=real` indo, a chave
+  // APAGADA voltando — `assistida` é o padrão) e a linha nunca fica
+  // desabilitada, que era como o gesto morria.
+  const SELO = (sel, n = 0) =>
+    `JSON.stringify((()=>{const e=document.querySelectorAll(${JSON.stringify(sel)})[${n}];`
+    + `if(!e) return null; const r=e.getBoundingClientRect();`
+    + `return {x:r.x+r.width/2,y:r.y+r.height/2,dis:!!e.disabled};})())`;
+  const luzViva = () =>
+    sessao.js(
+      "JSON.stringify({luz: window.__director.selo.luz,"
+      + " url: new URLSearchParams(location.search).get('luz'),"
+      + " zzz: new URLSearchParams(location.search).has('zzz')})"
+    );
+  /**
+   * Espera o selo existir e o ABRE se estiver fechado. Sobrevive a
+   * RECARGA de propósito: um desvio de `volta: 'recarregar'` (a porta
+   * não declarada da segunda metade) troca o documento no meio do gesto,
+   * e o estado aberto/fechado do selo não vai para a URL nem para o
+   * storage — ele nasce fechado do outro lado.
+   */
+  const abrirOSelo = async (teto = 40000) => {
+    const t0 = Date.now();
+    for (;;) {
+      const temLinha = await sessao
+        .js("!!document.querySelectorAll('.atlas-selo-linha')[1]")
+        .catch(() => false);
+      if (temLinha) return true;
+      const bruto = await sessao.js(SELO('.atlas-selo-resumo')).catch(() => null);
+      const caixa = bruto ? JSON.parse(bruto) : null;
+      if (caixa) {
+        await sessao.clicar(caixa.x, caixa.y);
+        await dorme(400);
+        continue;
+      }
+      if (Date.now() - t0 > teto) return false;
+      await dorme(500);
+    }
+  };
+
+  await sessao.ir('atlas=1&foco=saturn&ver=corpo&q=alta&jd=EPOCA');
+  const resumoDoSelo = JSON.parse(await sessao.js(SELO('.atlas-selo-resumo')));
+  conferir(resumoDoSelo !== null, 'o selo está na tela para receber o gesto (sem ?shot=2)');
+  if (resumoDoSelo) {
+    await sessao.clicar(resumoDoSelo.x, resumoDoSelo.y);
+    await dorme(300);
+    // o tier abaixo de cinema TEM de estar declarado: sem ele esta prova
+    // mede o caso fácil e passa verde sobre a porta trancada
+    const indesfazivel = await sessao.js(
+      "JSON.stringify(window.__director.selo.tier)"
+    );
+    conferir(
+      indesfazivel === '"alta"',
+      `o tier abaixo de cinema está vivo (${indesfazivel}) — é o desvio`
+        + ' indesfazível que trancava a porta'
+    );
+    const passos = [];
+    for (let i = 0; i < 2; i++) {
+      const linha = JSON.parse(await sessao.js(SELO('.atlas-selo-linha', 1)));
+      if (!linha) break;
+      passos.push({ dis: linha.dis });
+      await sessao.clicar(linha.x, linha.y);
+      await dorme(500);
+      passos[i].depois = JSON.parse(await luzViva());
+    }
+    conferir(
+      passos.length === 2 && !passos[0].dis && !passos[1].dis,
+      `a linha BRILHO aceita os DOIS cliques (desabilitada:`
+        + ` ${passos.map((p) => p.dis).join(', ')}) — desabilitar no meio`
+        + ' do caminho era como a porta emperrava'
+    );
+    conferir(
+      passos[0]?.depois.luz === 'real' && passos[1]?.depois.luz === 'assistida',
+      `o clique troca o modo NOS DOIS SENTIDOS: assistida →`
+        + ` ${passos[0]?.depois.luz} → ${passos[1]?.depois.luz}`
+    );
+    conferir(
+      passos[0]?.depois.url === 'real' && passos[1]?.depois.url === null,
+      `e a URL espelha o gesto nas duas voltas: ?luz=${passos[0]?.depois.url}`
+        + ` indo, chave ${passos[1]?.depois.url === null ? 'APAGADA' : passos[1]?.depois.url} voltando`
+    );
+  }
+
+  // ---- 20b: A MESMA PORTA, COM UMA CHAVE NÃO DECLARADA NA URL -------
+  //
+  // O SEGUNDO CAMINHO que mantém o veredito cheio, e ele foi levantado
+  // pelo auditor do item 103: `desconhecida()` (`selo.ts`) é empurrada
+  // para TODA porta que a URL traz e o registro não conhece, com
+  // `desvia: () => true`. Enquanto ela estiver na URL o veredito nunca
+  // esvazia — a mesma forma do defeito do tier.
+  //
+  // MEDIDO, E O DESFECHO É OUTRO: a porta desconhecida NÃO tranca nada,
+  // porque ela é `volta: 'recarregar'` e não `'nenhuma'`. Quer dizer: o
+  // clique TEM o que desfazer, apaga a chave da URL e RECARREGA — e do
+  // outro lado da recarga a chave não existe mais, então o ciclo segue
+  // normal. O preço declarado é a recarga (e o selo nasce FECHADO nela,
+  // porque o aberto/fechado é chrome e não vai para a URL).
+  //
+  // ESTA METADE FICA porque o caminho é real e agora é medido: se alguém
+  // trocar a `volta` da porta desconhecida para `'nenhuma'` — ou se a
+  // guarda voltar a ler o veredito inteiro —, é aqui que a conta muda.
+  await sessao.ir('atlas=1&foco=saturn&q=cinema&zzz=1');
+  const abriuComChave = await abrirOSelo();
+  conferir(abriuComChave, 'com uma chave não declarada na URL o selo abre igual');
+  if (abriuComChave) {
+    const comChave = [];
+    for (let i = 0; i < 2; i++) {
+      if (!(await abrirOSelo())) break;
+      const linha = JSON.parse(await sessao.js(SELO('.atlas-selo-linha', 1)));
+      if (!linha) break;
+      await sessao.clicar(linha.x, linha.y);
+      // a primeira volta passa por RECARGA: o documento troca no meio
+      await dorme(3000);
+      comChave.push(JSON.parse(await luzViva()));
+    }
+    conferir(
+      comChave[0]?.luz === 'real' && comChave[1]?.luz === 'assistida',
+      `...e o ciclo fecha do mesmo jeito ATRAVESSANDO a recarga:`
+        + ` assistida → ${comChave[0]?.luz} → ${comChave[1]?.luz}`
+    );
+    conferir(
+      comChave[0]?.zzz === false,
+      `...e a chave não declarada é APAGADA pelo gesto (?zzz ainda na URL:`
+        + ` ${comChave[0]?.zzz}) — é o que a torna desfazível em vez de tranca`
+    );
+  }
+
   // ---- 19: OS GESTOS DE DEDO, num APARELHO (item 62, etapa 2) -------
   //
   // A prova 15 mede a roda e a pinça de TRACKPAD — as duas chegam como
