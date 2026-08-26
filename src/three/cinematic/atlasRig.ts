@@ -17,20 +17,21 @@ import * as THREE from 'three';
 import {
   ARRASTO_RAD_POR_PX,
   ATLAS_FOV_GRAUS,
+  EIXO_DO_GIRO_PADRAO,
   GIRO_MORTO_RAD,
-  GRAU,
-  PHASE_OFFSET_GRAUS,
   POLO_ECLIPTICO,
   SUAVIZACAO_DO_GIRO,
   direcaoDaLua,
   direcaoPrivilegiada,
   enquadrar,
+  enrolar,
+  faixaDaAltura,
   orbitaQueProduz,
   orbitaMaisExterna,
   upDoAtlas,
 } from './enquadramento';
 import { LARGURA_DE_MESA_PX, retanguloUtilDoAtlas } from './retanguloDoAtlas';
-import type { OrbitaDoVisitante } from './enquadramento';
+import type { EixoDoGiro, OrbitaDoVisitante } from './enquadramento';
 import { ORIGEM } from './enquadramento';
 
 // A FACHADA: o retângulo útil e a matemática do enquadramento moram
@@ -127,16 +128,6 @@ const _dirB = new THREE.Vector3();
 const _up = new THREE.Vector3();
 const _delta = new THREE.Vector3();
 
-/** Ângulo de volta em (−π, π] — periódico, então o número não cresce. */
-function enrolar(rad: number): number {
-  if (!Number.isFinite(rad)) return 0;
-  const volta = 2 * Math.PI;
-  const r = rad - Math.floor(rad / volta + 0.5) * volta;
-  // `floor` devolve −π quando o resto cai exatamente na borda; o
-  // intervalo fechado à direita mantém a ida e a volta simétricas
-  return r === -Math.PI ? Math.PI : r;
-}
-
 /**
  * O rig. Estado mínimo: um alvo, um raio de enquadramento e a órbita
  * que o visitante somou com o ponteiro. Não anima nada — o
@@ -198,6 +189,28 @@ export class AtlasRig {
    * poses por `slerp` de quaternion, e o `up` está dentro da pose.
    */
   private readonly polo = POLO_ECLIPTICO.clone();
+  /**
+   * O EIXO EM QUE O DEDO GIRA — a porta de instrumento `?giro=` (item
+   * 102, P4). Nasce no default (`sol`, a volta na linha alvo→Sol), e é
+   * por nascer nele que um rig que nunca ouviu falar da porta escreve a
+   * câmera de sempre, bit a bit.
+   *
+   * ELE ATRAVESSA A TROCA DE ALVO, ao contrário da órbita e da distância
+   * pinada: é escolha do VISITANTE sobre como o app responde ao dedo, e
+   * não propriedade do enquadramento — zerá-lo em `focar` faria a porta
+   * morrer no primeiro clique.
+   */
+  private eixoDoGiro: EixoDoGiro = EIXO_DO_GIRO_PADRAO;
+
+  /**
+   * LIGA A PORTA — chamado uma vez, no boot, com o que `lerPortaGiro`
+   * tirou da URL. Método e não campo público porque o rig é o dono do
+   * seu estado: quem lê a URL é o Director, quem escreve a câmera é o
+   * rig, e o valor atravessa uma fronteira declarada.
+   */
+  definirEixoDoGiro(eixo: EixoDoGiro) {
+    this.eixoDoGiro = eixo;
+  }
 
   // ---- a DISTÂNCIA, e é ela a lei nova (item 73) -------------------
   // «um ALVO e uma DISTÂNCIA». Até 22/08 o Atlas tinha só o alvo: a
@@ -380,10 +393,13 @@ export class AtlasRig {
         _dirPai.copy(this.alvo).sub(this.pai),
         this.polo,
         this.orbita,
-        _dir
+        _dir,
+        this.eixoDoGiro
       );
     } else {
-      direcaoPrivilegiada(_dir.copy(this.eixoDe).sub(ORIGEM), this.polo, this.orbita, _dir);
+      direcaoPrivilegiada(
+        _dir.copy(this.eixoDe).sub(ORIGEM), this.polo, this.orbita, _dir, this.eixoDoGiro
+      );
     }
     _posPartida.copy(this.alvo).addScaledVector(_dir, this.distancia);
     // 2. o referencial novo — e o gesto que trouxe a câmera até aqui
@@ -415,7 +431,8 @@ export class AtlasRig {
       _dirB.multiplyScalar(1 / distancia),
       _dir.copy(this.eixoDe).sub(ORIGEM),
       this.polo,
-      this.orbita
+      this.orbita,
+      this.eixoDoGiro
     );
     // 4. a distância vira pino, grampeada na faixa do alvo NOVO. O teto
     //    usa o `fatorDeEnquadramento` do quadro anterior — ele é da
@@ -507,7 +524,8 @@ export class AtlasRig {
       _dirB.clone().multiplyScalar(1 / distancia),
       _dir.copy(this.eixoDe).sub(ORIGEM),
       this.polo,
-      this.orbita
+      this.orbita,
+      this.eixoDoGiro
     );
     // 4. a distância vira PINO, sem grampo — ver a docstring
     this.distanciaPinada = distancia;
@@ -753,6 +771,13 @@ export class AtlasRig {
    * já vem em radianos porque a sensibilidade é do GESTO — o filtro é do
    * QUADRO, e misturar as duas contas faria o tato depender de quantos
    * `pointermove` o navegador entregou.
+   *
+   * COM A PORTA `?giro=polo` (item 102, P4) OS DOIS EIXOS TROCAM DE LEI,
+   * e nada nesta função muda: o `dx` passa a somar em LONGITUDE em torno
+   * do polo do corpo e o `dy` em COLATITUDE, com a subida travada em vez
+   * do grampo polar. Os SINAIS de tela são os mesmos — a lei nova nasce
+   * com os dois sinais negados justamente para isso, e a bancada cobra a
+   * concordância contra a matriz real da câmera nos dois eixos.
    */
   addOrbitDelta(dx: number, dy: number) {
     if (Number.isFinite(dx)) this.entrada.volta += dx * ARRASTO_RAD_POR_PX;
@@ -779,8 +804,10 @@ export class AtlasRig {
    * O GRAMPO DA INCLINAÇÃO mudou de lugar, não de lei: o acumulador para
    * EXATAMENTE onde a inclinação para, senão o dedo somaria arrasto morto
    * e a volta custaria desfazê-lo antes de a câmera se mexer de novo (a
-   * "borracha" de todo controle mal grampeado). A faixa segue sendo a da
-   * inclinação [0°, 180°] menos o pino de fase.
+   * "borracha" de todo controle mal grampeado). No default a faixa segue
+   * sendo a da inclinação [0°, 180°] menos o pino de fase; com a porta
+   * `?giro=polo` ela é a que a trava da subida deixa, e quem sabe dizer
+   * qual é a lei do eixo é `faixaDaAltura`.
    */
   private consumirOGiro(dt: number) {
     const entradaAltura = this.entrada.altura;
@@ -816,12 +843,21 @@ export class AtlasRig {
     // que ele muda é quanto do gesto chega à órbita, não quanto tempo a
     // inércia dura (`suav` decai pelo relógio, não pela altura).
     const freio = this.freioDoSolo;
-    const pino = PHASE_OFFSET_GRAUS * GRAU;
+    // A FAIXA SAI DA LEI DO EIXO, não de um número escrito aqui: no
+    // `sol` ela é a inclinação [0°, 180°] menos o pino de fase, de
+    // sempre; no `polo` ela depende do alvo e da data (ver
+    // `faixaDaAltura`). O acumulador para EXATAMENTE onde a subida para,
+    // nos dois — é o que impede a borracha.
+    const faixa = faixaDaAltura(
+      _dir.copy(this.eixoDe).sub(ORIGEM),
+      this.polo,
+      this.eixoDoGiro
+    );
     this.orbita.volta = enrolar(this.orbita.volta + passoVolta * freio);
     this.orbita.altura = THREE.MathUtils.clamp(
       this.orbita.altura + passoAltura * freio,
-      -pino,
-      Math.PI - pino
+      faixa.min,
+      faixa.max
     );
   }
 
@@ -962,16 +998,19 @@ export class AtlasRig {
         _dirPai.copy(alvo).sub(pai),
         polo,
         orbita,
-        _dir
+        _dir,
+        this.eixoDoGiro
       );
     } else {
-      direcaoPrivilegiada(_dir.copy(eixoDe).sub(ORIGEM), polo, orbita, _dir);
+      direcaoPrivilegiada(
+        _dir.copy(eixoDe).sub(ORIGEM), polo, orbita, _dir, this.eixoDoGiro
+      );
     }
     const escrita = pinada !== null && Number.isFinite(pinada) && pinada > 0
       ? pinada
       : distancia;
     camera.position.copy(alvo).addScaledVector(_dir, escrita);
-    camera.up.copy(upDoAtlas(_dir, polo, _up));
+    camera.up.copy(upDoAtlas(_dir, polo, _up, this.eixoDoGiro));
     camera.lookAt(alvo);
     if (giroY !== 0) camera.rotateY(giroY);
     if (giroX !== 0) camera.rotateX(giroX);

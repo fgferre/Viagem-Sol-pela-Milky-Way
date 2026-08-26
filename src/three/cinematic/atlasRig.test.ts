@@ -9,6 +9,8 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import {
   ATLAS_FOV_GRAUS,
+  COLATITUDE_MINIMA_RAD,
+  EIXO_DO_GIRO_PADRAO,
   FREIO_MINIMO_DO_SOLO,
   K_MIN_RAIOS,
   AtlasRig,
@@ -28,6 +30,8 @@ import {
   CEDER_COMECA_GRAUS,
   direcaoDaLua,
   direcaoPrivilegiada,
+  faixaDaAltura,
+  lerPortaGiro,
   upDoAtlas,
   enquadrar,
   orbitaMaisExterna,
@@ -35,6 +39,7 @@ import {
   raioDeEnquadramentoEstelar,
   retanguloUtilDoAtlas,
 } from './atlasRig';
+import type { EixoDoGiro } from './atlasRig';
 import { distanciaAposEstalos } from '../zoomDaRoda';
 import { LARGURA_DO_CELULAR_PX } from '../../lib/uiScale';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
@@ -2287,5 +2292,604 @@ describe('pousar — o portal leva a câmera', () => {
       ESCADA.indexOf('  private posicaoDesenhada(')
     );
     expect(vivo).toContain("if (degrau === 'ceu') return null;");
+  });
+});
+
+// ============================================================
+// O P4 DO ITEM 102 — a volta em torno do POLO DO CORPO, atrás da porta
+// de instrumento `?giro=polo`.
+//
+// O que esta bancada tem de provar são TRÊS coisas, e a ordem importa:
+//
+//  1. o DEFAULT não se move — e não só na conta pura: pela FIAÇÃO. É a
+//     lição do `?calib=`, em que trocar um default passou por 2.360
+//     testes e pelo `tsc` calado porque nenhum dente olhava o caminho
+//     real;
+//  2. a CONDIÇÃO DE NASCIMENTO: com a porta LIGADA e o dedo PARADO, a
+//     direção é a mesma, BIT A BIT — nenhuma vista pinada se move ao
+//     ligar o instrumento;
+//  3. o que a porta COMPRA (o horizonte que não vira, o polo que não se
+//     cruza, o arrasto horizontal que não morre) e o que ela CUSTA (a
+//     sombra gira junto). O preço é decisão DELE e quem julga é o vídeo
+//     A/B; aqui só se cobra que ele EXISTE e é o declarado.
+//
+// O DEFEITO ANTIGO É O COMPORTAMENTO PADRÃO ATÉ ELE DECIDIR, e há dente
+// para isso: o arrasto morto em fase cheia continua morto sem a porta.
+// Consertá-lo por fora seria decidir por ele.
+// ============================================================
+describe('a volta no POLO DO CORPO — a porta ?giro=polo (item 102, P4)', () => {
+  const PINO = PHASE_OFFSET_GRAUS * GRAU;
+  const poloDaTerraP4 = (() => {
+    const p = baseCorpoEquatorial(IAU_ORIENTATIONS.earth, EPOCA_JD_TDB).polo;
+    return new THREE.Vector3(p[0], p[1], p[2]).normalize();
+  })();
+  const EIXOS = [
+    new THREE.Vector3(1e-5, 0, 0),
+    new THREE.Vector3(-3e-6, 5e-6, 1e-6),
+    new THREE.Vector3(0, 0, 2e-5),
+    new THREE.Vector3(1e-6, -4e-6, -7e-6),
+  ];
+  const POLOS: [string, THREE.Vector3][] = [
+    ['eclíptica', POLO_ECLIPTICO],
+    ['Terra (IAU, na época)', poloDaTerraP4],
+    ['equatorial +Z', new THREE.Vector3(0, 0, 1)],
+  ];
+
+  /** ψ — o ângulo entre a linha alvo→Sol e o polo. */
+  const psiDe = (eixo: THREE.Vector3, polo: THREE.Vector3) =>
+    eixo.clone().negate().normalize().angleTo(polo.clone().normalize());
+
+  const GEOMETRIAS: { nome: string; eixo: THREE.Vector3; polo: THREE.Vector3 }[] = [];
+  for (let i = 0; i < EIXOS.length; i++) {
+    for (const [nome, polo] of POLOS) {
+      GEOMETRIAS.push({ nome: `${nome} #${i}`, eixo: EIXOS[i], polo });
+    }
+  }
+  // OS DOIS CASOS CONSTRUÍDOS, e cada um existe por um motivo medido.
+  // Com `eixo = (1e-5, 0, 0)` a linha alvo→Sol é (−1, 0, 0), então o
+  // cosseno do polo com ela é o próprio −x do polo:
+  //
+  //  · ψ ≈ 8° — o corpo DEITADO com o eixo quase apontado para o Sol (o
+  //    caso Urano perto do solstício). A pose de repouso passa DO OUTRO
+  //    LADO do polo: `ψ − pino` é negativo, e é a longitude que conta a
+  //    travessia. Uma implementação que grampeasse a colatitude em zero
+  //    moveria a vista de repouso deste corpo.
+  //  · ψ = 30° — o polo a exatamente um pino de fase da linha do Sol põe
+  //    a pose de repouso EM CIMA do polo, dentro da calota de
+  //    `MIN_POLAR_RAD`, onde a LEI ANTIGA grampeia. É este caso que
+  //    obriga a âncora `θ₀` a sair do `d₀` real e não da forma fechada
+  //    `|ψ − pino|`: as duas discordam aqui, e quem está na tela é o
+  //    `d₀` grampeado.
+  GEOMETRIAS.push({
+    nome: 'deitado, ψ≈8°',
+    eixo: EIXOS[0],
+    polo: new THREE.Vector3(-0.99, 0, 0.141).normalize(),
+  });
+  GEOMETRIAS.push({
+    nome: 'repouso na calota, ψ=30°',
+    eixo: EIXOS[0],
+    polo: new THREE.Vector3(-Math.cos(PINO), 0, Math.sin(PINO)),
+  });
+
+  it('CONDIÇÃO DE NASCIMENTO: com o dedo parado a porta não move um BIT', () => {
+    for (const { nome, eixo, polo } of GEOMETRIAS) {
+      const velha = direcaoPrivilegiada(eixo, polo, ORBITA_PARADA, new THREE.Vector3());
+      const nova = direcaoPrivilegiada(
+        eixo, polo, ORBITA_PARADA, new THREE.Vector3(), 'polo'
+      );
+      // `toBe`, não `toBeCloseTo`: o gate mede md5, e "quase o mesmo
+      // vetor" é outra imagem quando a câmera está a 30 UA do alvo
+      expect(`${nome}:${nova.x},${nova.y},${nova.z}`)
+        .toBe(`${nome}:${velha.x},${velha.y},${velha.z}`);
+    }
+  });
+
+  it('a pose de repouso mora no MERIDIANO DO SOL, à colatitude |ψ − 30°|', () => {
+    for (const { nome, eixo, polo } of GEOMETRIAS) {
+      const p = polo.clone().normalize();
+      const d0 = direcaoPrivilegiada(eixo, polo, ORBITA_PARADA, new THREE.Vector3());
+      const psi = psiDe(eixo, polo);
+      const colatitude = d0.angleTo(p);
+      // a forma fechada da docstring — e ela vale onde a lei antiga NÃO
+      // grampeia; dentro da calota é o grampo que manda, e é por isso
+      // que a âncora sai do `d₀`
+      if (Math.abs(psi - PINO) > MIN_POLAR_RAD + 1e-6) {
+        expect(`${nome}`).toBe(`${nome}`);
+        expect(colatitude).toBeCloseTo(Math.abs(psi - PINO), 9);
+      } else {
+        expect(colatitude).toBeCloseTo(MIN_POLAR_RAD, 9);
+      }
+      // ...e o repouso está no plano do polo e da linha do Sol — a
+      // componente fora dele (o `Y` do frame) é nula. É isso que faz a
+      // longitude de repouso não andar com o relógio.
+      const s = eixo.clone().negate().normalize();
+      const y = new THREE.Vector3().crossVectors(p, s);
+      if (y.lengthSq() > 1e-12) {
+        expect(Math.abs(d0.dot(y.normalize()))).toBeLessThan(1e-12);
+      }
+    }
+  });
+
+  it('a SUBIDA TRAVA no polo: o dedo não cruza, por mais que insista', () => {
+    // A VARREDURA É FINA E EM CIMA DAS DUAS TRAVAS, e tem de ser: longe
+    // delas uma trava ausente devolve um ângulo legal POR ACASO (girar
+    // 200 rad passa do polo e sai a uma colatitude qualquer, que passa
+    // por qualquer teste grosso). O passo é 1e-5 — um décimo da própria
+    // trava — porque é essa a escala em que o defeito existe.
+    for (const { nome, eixo, polo } of GEOMETRIAS) {
+      const p = polo.clone().normalize();
+      const faixa = faixaDaAltura(eixo, polo, 'polo');
+      const alturas: number[] = [-200, -20, -5, -1, 1, 5, 20, 200];
+      for (let i = -20; i <= 20; i++) {
+        alturas.push(faixa.max + i * 1e-5, faixa.min + i * 1e-5);
+      }
+      for (const altura of alturas) {
+        const dir = direcaoPrivilegiada(
+          eixo, polo, { altura, volta: 0.7 }, new THREE.Vector3(), 'polo'
+        );
+        const colatitude = dir.angleTo(p);
+        expect(`${nome} altura=${altura}`).toBe(`${nome} altura=${altura}`);
+        expect(colatitude).toBeGreaterThanOrEqual(COLATITUDE_MINIMA_RAD - 1e-9);
+        expect(colatitude).toBeLessThanOrEqual(Math.PI - COLATITUDE_MINIMA_RAD + 1e-9);
+        expect(dir.length()).toBeCloseTo(1, 12);
+      }
+    }
+  });
+
+  it('a FAIXA do acumulador cai EXATAMENTE onde a direção para de andar', () => {
+    // A LEI DA FAIXA NÃO PODE SER UM NÚMERO À PARTE: se ela for mais
+    // ESTREITA que a direção, o dedo não alcança a trava (o gesto morre
+    // antes do polo); se for mais LARGA, o acumulador guarda arrasto que
+    // não move nada e a volta custa desfazê-lo — a borracha. Este dente
+    // amarra as duas leis uma na outra.
+    for (const { nome, eixo, polo } of GEOMETRIAS) {
+      const p = polo.clone().normalize();
+      const faixa = faixaDaAltura(eixo, polo, 'polo');
+      const em = (altura: number) => direcaoPrivilegiada(
+        eixo, polo, { altura, volta: 0.4 }, new THREE.Vector3(), 'polo'
+      );
+      const noTeto = em(faixa.max);
+      const noPiso = em(faixa.min);
+      expect(nome).toBe(nome);
+      // nas bordas a colatitude é EXATAMENTE a trava, dos dois lados —
+      // é isso que faz o dedo alcançar os dois polos
+      expect(noTeto.angleTo(p)).toBeCloseTo(COLATITUDE_MINIMA_RAD, 9);
+      expect(noPiso.angleTo(p)).toBeCloseTo(Math.PI - COLATITUDE_MINIMA_RAD, 9);
+      // ...e um passo ALÉM não move mais um bit: é exatamente esse
+      // arrasto que o acumulador não pode guardar
+      expect(em(faixa.max + 0.5).distanceTo(noTeto)).toBe(0);
+      expect(em(faixa.min - 0.5).distanceTo(noPiso)).toBe(0);
+      // dentro dela ainda anda
+      expect(em(faixa.max - 1e-5).distanceTo(noTeto)).toBeGreaterThan(0);
+    }
+  });
+
+  it('O HORIZONTE NUNCA VIRA: o "direita" da tela fica ⊥ ao polo em TODO o gesto', () => {
+    // A DEFINIÇÃO DE TURNTABLE, escrita como oráculo: o `lookAt` monta
+    // `direita = up × z`, e com o `up` do modo (a componente do polo
+    // perpendicular à mira) o polo inteiro cai no plano `{up, z}` — logo
+    // `direita ⊥ polo`, sempre. É isso, e nada além disso, que quer
+    // dizer "o horizonte nunca vira".
+    const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-9, 1e6);
+    const alvo = new THREE.Vector3(1e-5, 0, 0);
+    const polo = new THREE.Vector3(0, 0.34, 0.94).normalize();
+    const medir = (giro: 'sol' | 'polo') => {
+      const rig = new AtlasRig();
+      rig.definirEixoDoGiro(giro);
+      rig.focar(alvo, 4e-9, alvo, { polo });
+      let pior = 0;
+      // um arrasto VERTICAL longo RUMO AO POLO — `dy` positivo é o dedo
+      // descendo, e é ele que sobe a inclinação (ver `addOrbitDelta`).
+      // 60 passos de 20 px = 1.200 px = 2,64 rad, mais que os 1,05 rad
+      // (60°) que separam a pose de repouso deste polo.
+      for (let i = 0; i < 60; i++) {
+        rig.addOrbitDelta(0, 20);
+        rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+        const direita = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        pior = Math.max(pior, Math.abs(direita.dot(polo)));
+      }
+      // ...e a inércia acabando, que também escreve pose
+      for (let i = 0; i < 40; i++) {
+        rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+        const direita = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        pior = Math.max(pior, Math.abs(direita.dot(polo)));
+      }
+      return pior;
+    };
+    const noPolo = medir('polo');
+    const noSol = medir('sol');
+    // no eixo `polo` o horizonte fica preso ao equador do corpo — o
+    // desvio é ruído de float, não geometria
+    expect(noPolo).toBeLessThan(1e-9);
+    // ...e a lei antiga NÃO tem essa propriedade: no MESMO gesto ela
+    // inclina o horizonte (é a cedência do `up` perseguindo a mira)
+    expect(noSol).toBeGreaterThan(1e-3);
+  });
+
+  it('O ROLL NO MEIO DO GESTO: 14,6° num quadro na lei antiga, ZERO na nova', () => {
+    // A QUEIXA TEM NOME E AGORA TEM NÚMERO. "O horizonte vira no meio do
+    // gesto" mede-se assim: a cada quadro, quanto o `direita` da tela
+    // girou EM TORNO da própria mira — descontado o transporte que a
+    // mira sofreu. Isso é ROLL puro, e roll com o alvo parado é o que o
+    // olho lê como "a imagem girou sozinha".
+    const alvo = new THREE.Vector3(1e-5, 0, 0);
+    const polo = new THREE.Vector3(0, 0.34, 0.94).normalize();
+    const medir = (giro: EixoDoGiro) => {
+      const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-9, 1e6);
+      const rig = new AtlasRig();
+      rig.definirEixoDoGiro(giro);
+      rig.focar(alvo, 4e-9, alvo, { polo });
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+      let miraAnt = camera.position.clone().sub(alvo).normalize();
+      let direitaAnt = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      let piorRoll = 0;
+      let piorRazao = 0;
+      // arrasto para BAIXO, que é o que sobe a câmera rumo ao POLO
+      for (let i = 0; i < 120; i++) {
+        rig.addOrbitDelta(0, 12);
+        rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+        const mira = camera.position.clone().sub(alvo).normalize();
+        const direita = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        const passoDaMira = mira.angleTo(miraAnt);
+        // transporta o `direita` de ontem pela rotação que a MIRA sofreu;
+        // o que sobrar de diferença é roll e mais nada
+        const transporte = new THREE.Quaternion().setFromUnitVectors(miraAnt, mira);
+        const esperado = direitaAnt.clone().applyQuaternion(transporte);
+        const roll = Math.abs(Math.atan2(
+          esperado.clone().cross(direita).dot(mira),
+          esperado.dot(direita)
+        ));
+        piorRoll = Math.max(piorRoll, roll);
+        piorRazao = Math.max(piorRazao, roll / Math.max(passoDaMira, 1e-12));
+        miraAnt = mira;
+        direitaAnt = direita;
+      }
+      return { piorRoll, piorRazao };
+    };
+    const noSol = medir('sol');
+    const noPolo = medir('polo');
+    // MEDIDO em 26/08 nesta geometria: a lei antiga gira a tela 14,58°
+    // num ÚNICO quadro, a 26,2° do polo — quase 10× mais do que a mira
+    // andou nesse mesmo quadro. É o tranco que o dono chama de péssimo.
+    expect(noSol.piorRoll / GRAU).toBeGreaterThan(10);
+    expect(noSol.piorRazao).toBeGreaterThan(5);
+    // ...e a lei nova não gira NADA: o `up` é a componente do polo
+    // perpendicular à mira, então o horizonte é o equador do corpo em
+    // todo quadro, por construção
+    expect(noPolo.piorRoll / GRAU).toBeLessThan(1e-6);
+  });
+
+  it('o `up` do modo: ⊥ à mira onde a cedência mandava, e o de SEMPRE fora dela', () => {
+    for (const { nome, eixo, polo } of GEOMETRIAS) {
+      const p = polo.clone().normalize();
+      for (const altura of [-3, -1, -0.2, 0, 0.2, 1, 3, 50]) {
+        const dir = direcaoPrivilegiada(
+          eixo, polo, { altura, volta: 0.3 }, new THREE.Vector3(), 'polo'
+        );
+        const up = upDoAtlas(dir, p, new THREE.Vector3(), 'polo');
+        const velho = upDoAtlas(dir, p, new THREE.Vector3());
+        const rotulo = `${nome} altura=${altura}`;
+        expect(rotulo).toBe(rotulo);
+        expect(up.length()).toBeCloseTo(1, 12);
+        if (Math.abs(dir.dot(p)) > Math.cos(CEDER_COMECA_GRAUS * GRAU)) {
+          // DENTRO da faixa: perpendicular à mira, e então o
+          // `direita = up × z` do `lookAt` tem norma 1 EXATA — a
+          // degenerescência deixa de ser alcançável em vez de ser aparada
+          // 1e-9 e não 1e-12: colado no polo o `up` nasce de um vetor de
+          // norma `sen(colatitude)` — a 1e-4 rad da trava isso é 1e-4, e
+          // normalizar em float64 deixa ~1e-12 de resíduo. Doze ordens
+          // acima do ruído, quatro abaixo do que a GPU perceberia.
+          expect(Math.abs(up.dot(dir))).toBeLessThan(1e-9);
+          expect(new THREE.Vector3().crossVectors(up, dir).length()).toBeCloseTo(1, 9);
+        } else {
+          // FORA dela: o caminho de sempre, bit a bit
+          expect(`${up.x},${up.y},${up.z}`).toBe(`${velho.x},${velho.y},${velho.z}`);
+        }
+      }
+    }
+  });
+
+  it('em FASE CHEIA o arrasto horizontal ANDA com a porta — e segue MORTO no default', () => {
+    // fase cheia é `altura = −pino`: a câmera na PRÓPRIA linha do Sol,
+    // que é o polo da parametrização antiga. Lá o efeito da `volta`
+    // escala com sen(φ) e some.
+    let medidas = 0;
+    for (const { nome, eixo, polo } of GEOMETRIAS) {
+      const psi = psiDe(eixo, polo);
+      // o eixo `polo` tem o polo DELE na linha do polo do corpo: perto
+      // de ψ = 0 ou 180° a lei nova também estaciona, e é honesto. As
+      // geometrias de meio-caminho são as que comparam as duas leis.
+      if (psi < 0.7 || psi > Math.PI - 0.7) continue;
+      medidas++;
+      const orb = (volta: number) => ({ altura: -PINO, volta });
+      const a = direcaoPrivilegiada(eixo, polo, orb(0), new THREE.Vector3());
+      const b = direcaoPrivilegiada(eixo, polo, orb(0.6), new THREE.Vector3());
+      // O DEFEITO ANTIGO É O COMPORTAMENTO PADRÃO até ele decidir — se
+      // alguém o "consertar" por fora da porta, é aqui que aparece
+      expect(`${nome} morto`).toBe(`${nome} morto`);
+      expect(a.angleTo(b)).toBeLessThan(1e-9);
+      const c = direcaoPrivilegiada(eixo, polo, orb(0), new THREE.Vector3(), 'polo');
+      const d = direcaoPrivilegiada(eixo, polo, orb(0.6), new THREE.Vector3(), 'polo');
+      expect(c.angleTo(d)).toBeGreaterThan(0.3);
+    }
+    expect(medidas).toBeGreaterThan(6);
+  });
+
+  it('a SUPERFÍCIE SEGUE O DEDO em TODA geometria — o que a lei antiga não faz', () => {
+    // O ORÁCULO É A BASE REAL DA CÂMERA, e não a fórmula repetida:
+    // `direita = up × z` e `cima = z × direita`, exatamente como o
+    // `lookAt` monta. A promessa de `addOrbitDelta` é «para baixo leva a
+    // câmera para CIMA, para a direita leva a câmera para a ESQUERDA» —
+    // e a nota importante é que a lei ANTIGA não é a referência aqui: ela
+    // própria falha esta prova em duas das geometrias, e é metade do que
+    // o dono chamou de "péssimo".
+    const passo = 1e-4;
+    let dedoMortoNoSol = 0;
+    let ganhoLoucoNoSol = 0;
+    let piorDesalinhoNoSol = 1;
+    for (const { nome, eixo, polo } of GEOMETRIAS) {
+      const p = polo.clone().normalize();
+      for (const giro of ['sol', 'polo'] as const) {
+        const orb = (a: number, v: number) => ({ altura: a, volta: v });
+        const dir = direcaoPrivilegiada(eixo, polo, orb(0, 0), new THREE.Vector3(), giro);
+        const up = upDoAtlas(dir, p, new THREE.Vector3(), giro);
+        const direita = new THREE.Vector3().crossVectors(up, dir);
+        if (direita.lengthSq() < 1e-18) continue;
+        direita.normalize();
+        const cima = new THREE.Vector3().crossVectors(dir, direita).normalize();
+        const dA = direcaoPrivilegiada(eixo, polo, orb(passo, 0), new THREE.Vector3(), giro)
+          .sub(dir);
+        const dV = direcaoPrivilegiada(eixo, polo, orb(0, passo), new THREE.Vector3(), giro)
+          .sub(dir);
+        const sobe = dA.dot(cima) / Math.max(dA.length(), 1e-30);
+        const esquerda = dV.dot(direita) / Math.max(dV.length(), 1e-30);
+        const rotulo = `${nome} ${giro}`;
+        expect(rotulo).toBe(rotulo);
+        if (giro === 'polo') {
+          // O DEDO BATE COM A TELA, sem folga: 1,0000 nos dois eixos, em
+          // todas as geometrias — inclusive no corpo deitado e no
+          // repouso dentro da calota
+          expect(sobe).toBeGreaterThan(0.9999);
+          expect(dA.length()).toBeCloseTo(passo, 6);
+          if (dV.length() > 1e-9) expect(esquerda).toBeLessThan(-0.9999);
+          // ...e o ganho NUNCA amplifica: `sen(colatitude) ≤ 1`
+          expect(dV.length()).toBeLessThan(passo * 1.001);
+        } else {
+          if (dA.length() < 1e-12) dedoMortoNoSol++;
+          if (dV.length() > passo * 1000) ganhoLoucoNoSol++;
+          if (dA.length() > 1e-9) piorDesalinhoNoSol = Math.min(piorDesalinhoNoSol, sobe);
+        }
+      }
+    }
+    // O QUE A PORTA COMPRA, nos números DESTA bancada (26/08):
+    //  · com o polo a um pino de fase da linha do Sol (ψ = 30°, a pose
+    //    de repouso dentro da calota de `MIN_POLAR_RAD`) o arrasto
+    //    VERTICAL da lei antiga vale 2,2e-15 para uma entrada de 1e-4 —
+    //    o dedo está literalmente morto;
+    //  · na MESMA geometria o horizontal AMPLIFICA ~1.400× (o grampo
+    //    preserva o azimute, e colado no polo um passo linear minúsculo
+    //    é um azimute enorme) — é o tranco no meio do gesto;
+    //  · e no corpo deitado (ψ ≈ 8°) o vertical sai 33° torto do eixo da
+    //    tela, porque a cedência do `up` já inclinou o horizonte.
+    // A lei nova não tem nenhum dos três.
+    expect(dedoMortoNoSol).toBeGreaterThan(0);
+    expect(ganhoLoucoNoSol).toBeGreaterThan(0);
+    expect(piorDesalinhoNoSol).toBeLessThan(0.9);
+  });
+
+  it('a SUPERFÍCIE SEGUE O DEDO com a porta ligada, medido na base da câmera', () => {
+    // o MESMO oráculo do eixo antigo, com a porta: lê os eixos da câmera
+    // JÁ escrita e pergunta para que lado ela andou
+    const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-9, 1000);
+    const rig = new AtlasRig();
+    rig.definirEixoDoGiro('polo');
+    const medir = (dx: number, dy: number) => {
+      noSistemaInteiro(rig);
+      rig.apply(camera);
+      const antes = camera.position.clone();
+      const direita = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      const cima = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+      rig.addOrbitDelta(dx, dy);
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+      const passo = camera.position.clone().sub(antes);
+      return { x: passo.dot(direita), y: passo.dot(cima) };
+    };
+    const horizontal = medir(40, 0);
+    expect(horizontal.x).toBeLessThan(0);
+    expect(Math.abs(horizontal.y)).toBeLessThan(Math.abs(horizontal.x) * 0.15);
+    const vertical = medir(0, 40);
+    expect(vertical.y).toBeGreaterThan(0);
+    expect(Math.abs(vertical.x)).toBeLessThan(Math.abs(vertical.y) * 0.15);
+  });
+
+  it('ida e volta no eixo polo: a direção que sai é a direção que entrou', () => {
+    const dir = new THREE.Vector3();
+    const devolta = new THREE.Vector3();
+    const orbita = { altura: 0, volta: 0 };
+    let pior = 0;
+    for (const { eixo, polo } of GEOMETRIAS) {
+      const faixa = faixaDaAltura(eixo, polo, 'polo');
+      for (let ia = 0; ia <= 10; ia++) {
+        for (let iv = 0; iv <= 10; iv++) {
+          // DENTRO da faixa do acumulador: fora dela a trava manda, e
+          // "não inverter" seria o comportamento errado
+          const altura = faixa.min + ((faixa.max - faixa.min) * ia) / 10;
+          const volta = -Math.PI + (iv * 2 * Math.PI) / 10;
+          direcaoPrivilegiada(eixo, polo, { altura, volta }, dir, 'polo');
+          orbitaQueProduz(dir, eixo, polo, orbita, 'polo');
+          direcaoPrivilegiada(eixo, polo, orbita, devolta, 'polo');
+          // a CORDA, não `angleTo` — o `acos` daquele não mede abaixo de
+          // ~1,5e-8 rad, que é a faixa em que a conta fechada trabalha
+          pior = Math.max(pior, dir.distanceTo(devolta));
+        }
+      }
+    }
+    expect(pior).toBeLessThan(1e-9);
+  });
+
+  it('o acumulador para ONDE A SUBIDA para: sem borracha na trava', () => {
+    // O DEFEITO QUE A FAIXA EXISTE PARA IMPEDIR: somar arrasto que não
+    // move nada e depois cobrar o mesmo tanto para voltar. Mede-se pelo
+    // COMPORTAMENTO — arrastar muito além da trava e dar UM passo de
+    // volta; a câmera tem de andar no mesmo quadro.
+    const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-9, 1e6);
+    const alvo = new THREE.Vector3(1e-5, 0, 0);
+    const polo = new THREE.Vector3(0, 0.34, 0.94).normalize();
+    for (const giro of ['sol', 'polo'] as const) {
+      const rig = new AtlasRig();
+      rig.definirEixoDoGiro(giro);
+      rig.focar(alvo, 4e-9, alvo, { polo });
+      // 40 passos de 60 px para cima: muito mais do que a esfera inteira
+      for (let i = 0; i < 40; i++) {
+        rig.addOrbitDelta(0, -60);
+        rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+      }
+      for (let i = 0; i < 60; i++) rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+      const naTrava = camera.position.clone();
+      // ...E O DEDO ALCANÇOU A TRAVA, pela fiação: o arrasto longo tem
+      // de encostar no polo. Uma faixa de acumulador mais ESTREITA que a
+      // da direção mataria o gesto antes do polo, e a prova da borracha
+      // (abaixo, que só mede a volta) não veria. Medido ANTES do passo
+      // de volta, que já sai da trava.
+      if (giro === 'polo') {
+        const mira = naTrava.clone().sub(alvo).normalize();
+        expect(mira.angleTo(polo)).toBeGreaterThan(Math.PI - 1e-3);
+      }
+      rig.addOrbitDelta(0, 12);
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+      const andou = camera.position.distanceTo(naTrava);
+      expect(`${giro}`).toBe(`${giro}`);
+      expect(andou).toBeGreaterThan(0);
+    }
+  });
+
+  it('O PREÇO, medido: no default a `volta` não mexe a fase; no polo, mexe', () => {
+    // é ISTO que faz a sombra girar junto, e é isto que ele decide no
+    // vídeo. O dente não julga o preço — cobra que ele exista e seja o
+    // declarado, para ninguém dizer depois que a troca era de graça.
+    const eixo = new THREE.Vector3(1e-5, 0, 0);
+    const polo = new THREE.Vector3(0, 0.34, 0.94).normalize();
+    const aceso = eixo.clone().negate().normalize();
+    const fase = (giro: 'sol' | 'polo', volta: number) =>
+      direcaoPrivilegiada(eixo, polo, { altura: 0, volta }, new THREE.Vector3(), giro)
+        .angleTo(aceso);
+    const faseParada = fase('sol', 0);
+    let piorSol = 0;
+    let piorPolo = 0;
+    for (let i = 1; i <= 36; i++) {
+      const volta = (i / 36) * 2 * Math.PI;
+      piorSol = Math.max(piorSol, Math.abs(fase('sol', volta) - faseParada));
+      piorPolo = Math.max(piorPolo, Math.abs(fase('polo', volta) - faseParada));
+    }
+    // a lei antiga preserva a fase a 1e-12 — é a conta de `OrbitaDoVisitante`
+    expect(piorSol).toBeLessThan(1e-12);
+    // a lei nova NÃO preserva: nesta geometria a fase varre mais de 40°
+    // ao longo de uma volta, e com ela o terminador anda no quadro
+    expect(piorPolo / GRAU).toBeGreaterThan(40);
+  });
+
+  it('a FIAÇÃO: sem a porta o rig escreve a câmera de SEMPRE, bit a bit', () => {
+    // O DENTE COBRE O CAMINHO REAL, e não a função pura — é a lição do
+    // `?calib=`: lá o default trocado passou por 2.360 testes porque
+    // ninguém olhava a fiação.
+    const gesto = (rig: AtlasRig) => {
+      const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-9, 1e6);
+      noSistemaInteiro(rig);
+      const poses: string[] = [];
+      for (let i = 0; i < 24; i++) {
+        rig.addOrbitDelta(i % 3 === 0 ? 9 : -4, i % 2 === 0 ? -6 : 3);
+        rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+        poses.push([
+          ...camera.position.toArray(), ...camera.quaternion.toArray(),
+          ...camera.up.toArray(), camera.fov,
+        ].join(','));
+      }
+      return poses.join('|');
+    };
+    const intocado = new AtlasRig();
+    const declarado = new AtlasRig();
+    declarado.definirEixoDoGiro('sol');
+    expect(gesto(declarado)).toBe(gesto(intocado));
+  });
+
+  it('a FIAÇÃO: COM a porta e o dedo PARADO a câmera é a mesma — e ANDA diferente', () => {
+    // A POSE LÊ-SE DE `position`/`quaternion`, e não de `matrixWorld`:
+    // aquele só é recomposto no render, e o `lookAt` o deixa um quadro
+    // atrasado — dois lados lidos de lá compararicam a rotação ANTERIOR
+    // de cada um, que é uma prova de nada.
+    const pose = (giro: 'sol' | 'polo', arrastos: number) => {
+      const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-9, 1e6);
+      const rig = new AtlasRig();
+      rig.definirEixoDoGiro(giro);
+      naAberturaDeProducao(rig);
+      for (let i = 0; i < arrastos; i++) {
+        rig.addOrbitDelta(14, -9);
+        rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+      }
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, arrastos === 0 ? 0 : 1 / 60);
+      return [
+        ...camera.position.toArray(), ...camera.quaternion.toArray(),
+        ...camera.up.toArray(), camera.fov,
+      ].join(',');
+    };
+    // a CONDIÇÃO DE NASCIMENTO pela fiação: vista parada, porta ligada,
+    // mesma matriz de câmera até o último bit
+    expect(pose('polo', 0)).toBe(pose('sol', 0));
+    // ...e a porta não é decorativa: com o dedo andando, ela anda noutro
+    // eixo (se este dente passar a IGUALAR, a porta parou de ligar nada)
+    expect(pose('polo', 20)).not.toBe(pose('sol', 20));
+  });
+
+  it('selecionar preserva a pose com a porta ligada — a inversa nova no lugar', () => {
+    const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-9, 1e6);
+    const rig = new AtlasRig();
+    rig.definirEixoDoGiro('polo');
+    const a = new THREE.Vector3(1e-5, 0, 0);
+    const b = new THREE.Vector3(1.02e-5, 3e-7, -2e-7);
+    const polo = new THREE.Vector3(0, 0.34, 0.94).normalize();
+    rig.focar(a, 4e-9, a, { polo });
+    for (let i = 0; i < 12; i++) {
+      rig.addOrbitDelta(17, -11);
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+    }
+    for (let i = 0; i < 40; i++) rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+    const antes = camera.position.clone();
+    rig.selecionar(b, 4e-9, b, { polo });
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, 1 / 60);
+    // a câmera NÃO sai do lugar — a mesma pose, escrita no referencial
+    // novo pela inversa do eixo `polo`
+    expect(camera.position.distanceTo(antes) / antes.length()).toBeLessThan(1e-9);
+  });
+
+  it('a porta só liga com a palavra `polo` — o resto cai no default', () => {
+    for (const lixo of [null, undefined, '', 'POLO', 'Polo', 'sol', 'polo2', '1', 'true']) {
+      expect(lerPortaGiro(lixo)).toBe(EIXO_DO_GIRO_PADRAO);
+    }
+    expect(lerPortaGiro('polo')).toBe('polo');
+    expect(EIXO_DO_GIRO_PADRAO).toBe('sol');
+  });
+
+  it('a porta chega ao rig pelo DIRECTOR, e o valor sai da URL', () => {
+    // a linha REAL do `director.ts`, executada com um `this` de mentira
+    // — o padrão do `?calib=`, e pelo mesmo motivo: um dente que só
+    // olhasse a função pura não veria o dia em que alguém trocasse o
+    // argumento por um literal.
+    const FONTE = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const LINHA = FONTE.match(/\n( *this\.atlas\.definirEixoDoGiro\(.*\);)\n/);
+    expect(LINHA).not.toBeNull();
+    const eixoDaUrl = (query: string) => {
+      let visto: EixoDoGiro | null = null;
+      const alvo = {
+        debug: new URLSearchParams(query),
+        atlas: { definirEixoDoGiro: (e: EixoDoGiro) => { visto = e; } },
+      };
+      new Function('lerPortaGiro', LINHA![1]).call(alvo, lerPortaGiro);
+      return visto;
+    };
+    expect(eixoDaUrl('giro=polo')).toBe('polo');
+    expect(eixoDaUrl('')).toBe(EIXO_DO_GIRO_PADRAO);
+    expect(eixoDaUrl('giro=')).toBe(EIXO_DO_GIRO_PADRAO);
+    expect(eixoDaUrl('giro=POLO')).toBe(EIXO_DO_GIRO_PADRAO);
+    expect(eixoDaUrl('atlas=1&foco=saturno')).toBe(EIXO_DO_GIRO_PADRAO);
   });
 });

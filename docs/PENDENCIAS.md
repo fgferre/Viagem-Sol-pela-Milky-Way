@@ -441,16 +441,22 @@ melhor.** (Aberto em 25/08, queixa dele com o Eyes como régua. Palavras
 dele: *"o movimento de rotacionar objetos selecionados do app é
 péssimo... porque somos diferentes do nasa eyes nisso?"*.)
 
-**ONDE ESTÁ: P1, P2 e P3 POUSARAM em 26/08** (um commit cada, com a
-medida dentro). **O QUE FALTA É O P4 e o OLHO DELE.** O P4 (a volta no
-polo do corpo) não entrou de propósito: ele COBRA UM PREÇO — girar a
-`lon` gira a sombra junto, e a iluminação deixa de ser fixa na vista,
-que era o que a `volta` antiga protegia. É decisão de desenho, e a
-receita já diz como se decide: vídeo A/B do mesmo arrasto nos dois
-lados, e ele escolhe. **Os três que pousaram não mudam um pixel de vista
-parada** — as 61 vistas do `ab-identidade` saíram BIT-IDÊNTICAS entre o
-`45843ca` e o `899ac94`, e o `atlas-smoke` fechou verde com 164
-vereditos (a prova 21, do gesto vivo, é nova).
+**ONDE ESTÁ: OS QUATRO PASSOS POUSARAM em 26/08** (um commit cada, com a
+medida dentro). **O QUE FALTA É SÓ O OLHO DELE, e é sobre o P4.** O P4
+(a volta no polo do corpo) pousou ATRÁS DE UMA PORTA de instrumento,
+`?giro=polo`, com o DEFAULT continuando a ser a lei de sempre — porque
+ele COBRA UM PREÇO: girar a `lon` gira a sombra junto, e a iluminação
+deixa de ser fixa na vista, que era o que a `volta` antiga protegia. É
+decisão de desenho, e a receita já dizia como se decide: vídeo A/B do
+mesmo arrasto nos dois lados, e ele escolhe. **A PROMESSA:** escolhido o
+polo, a porta morre e o polo vira o único caminho (o ramo `sol` sai
+junto); recusado, o ramo `polo` sai inteiro. Porta de instrumento não
+envelhece em produção — a jurisprudência é o `?calib=`. **Os quatro não
+mudam um pixel de vista parada** — as 61 vistas do `ab-identidade`
+saíram BIT-IDÊNTICAS entre o `45843ca` e o `899ac94` (P1–P3) e de novo
+no P4, em DOIS pareamentos: sem a porta e com `?giro=polo` LIGADO nas 61.
+O `atlas-smoke` fechou verde com 164 vereditos (a prova 21, do gesto
+vivo, é nova).
 
 **A CAUSA, medida dos dois lados no mesmo dia** (engenharia reversa do
 bundle deles, leitura do nosso caminho). O giro deles é gostoso por
@@ -584,8 +590,72 @@ para cima anda pleno. Constante nomeada `FREIO_DO_SOLO_RAIOS = 3`,
 ajustável na conferência dele. **Prova:** o mesmo arrasto em pixels a
 2 raios × a 10 raios — perto anda menos.
 
-**P4 — A volta no polo (turntable). O passo grande.** Em
-`OrbitaDoVisitante` (`cinematic/enquadramento.ts`) e `AtlasRig`:
+**P4 — A volta no polo (turntable). POUSOU em 26/08, ATRÁS DE UMA
+PORTA.** O eixo novo existe e funciona; o DEFAULT continua sendo a lei
+de sempre, e a porta é `?giro=polo` — espécie do `?dbgorbitas`, `neutra`
+no selo. **ELA MORRE NA ESCOLHA DELE**, e isto é promessa: ficando com o
+polo, `polo` vira o único caminho e o ramo `sol` sai junto com a porta;
+recusado, o ramo `polo` sai inteiro.
+
+**O JUIZ ESTÁ GRAVADO — TRÊS gestos**, o MESMO arrasto (a mesma sequência
+de eventos de ponteiro, calculada uma vez e repetida) nos dois lados,
+lado a lado, com rótulo queimado no quadro; mais uma prancha de três
+momentos por lado para a Sala (`capturas/item102-p4-*-prancha.png`):
+
+ · `item102-p4-horizontal.mp4` — **o PREÇO**: o anel tomba até ficar de
+   perfil no lado de hoje; no polo ele guarda a inclinação e o que muda
+   é a LUZ, com o terminador andando no quadro.
+ · `item102-p4-vertical.mp4` — **o gesto que morre**: subindo rumo à
+   fase cheia, hoje a câmera para no piso e os dois últimos quadros são
+   quase o mesmo; no polo o mesmo dedo segue até o outro hemisfério.
+ · `item102-p4-polo.mp4` — **o roll**: descendo rumo ao polo do corpo,
+   hoje a câmera ATRAVESSA o polo e sai no lado escuro, girando a tela
+   no meio da passagem; no polo ela encosta na trava e para.
+
+**A CONDIÇÃO DE NASCIMENTO, MEDIDA:** as 61 vistas do `ab-identidade`
+saíram bit-idênticas em DOIS pareamentos — sem a porta (o default não se
+moveu) e **com `?giro=polo` ligado nas 61** (nenhuma vista parada anda ao
+ligar o instrumento). No navegador, Saturno no degrau do corpo dá o
+MESMO md5 nos dois lados com o dedo parado, e md5 diferente depois do
+mesmo arrasto. A pose de repouso é bit-idêntica **por construção**: o
+eixo novo NASCE da direção que a lei antiga escreve com o dedo parado, e
+com o dedo parado nenhuma das duas rotações roda.
+
+**O QUE A PORTA COMPRA, medido na bancada** — e nenhum destes é gosto:
+são defeitos da lei antiga em geometria que a casa alcança.
+
+ · Com o polo do corpo a um pino de fase da linha do Sol (ψ = 30°, a
+   pose de repouso DENTRO da calota de `MIN_POLAR_RAD`) o arrasto
+   VERTICAL de hoje vale **2,2e-15 rad para uma entrada de 1e-4** — o
+   dedo está literalmente morto.
+ · Na MESMA geometria o horizontal **AMPLIFICA ~1.400×**: o grampo
+   preserva o azimute, e colado no polo um passo linear minúsculo é um
+   azimute enorme. É o tranco no meio do gesto.
+ · Num corpo deitado (ψ ≈ 8°, a pose de repouso do outro lado do polo) o
+   vertical sai **33° torto** do eixo da tela, porque a cedência do `up`
+   já inclinou o horizonte.
+ · **O ROLL, que é a queixa com todas as letras:** subindo rumo ao polo,
+   a lei antiga gira a tela **14,58° num ÚNICO quadro**, a 26,2° do polo
+   — quase **10× mais** do que a mira andou nesse mesmo quadro. Roll com
+   o alvo parado é o que o olho lê como "a imagem girou sozinha". No
+   eixo `polo`: **0,000°**, e por construção (o `up` é a componente do
+   polo perpendicular à mira, então o horizonte é o equador do corpo em
+   todo quadro).
+ · No eixo `polo` os três somem: o dedo bate **1,0000** com os dois eixos
+   da tela em TODA geometria da bancada, o ganho nunca amplifica, e o
+   `direita` da tela fica perpendicular ao polo em todo o gesto — é
+   isso, e nada além disso, que quer dizer "o horizonte nunca vira".
+
+**O PREÇO, com número:** numa volta inteira a fase da vista varre **mais
+de 40°** no eixo `polo` e **zero (1e-12)** no eixo `sol`. É o terminador
+andando no quadro.
+
+**O DEFEITO ANTIGO CONTINUA SENDO O PADRÃO ATÉ ELE DECIDIR:** em fase
+cheia o arrasto horizontal segue morto sem a porta (`sen(φ)`), e há
+dente cobrando isso. Consertá-lo por fora seria decidir por ele.
+
+A receita original, para quem for reler o porquê. Em `OrbitaDoVisitante`
+(`cinematic/enquadramento.ts`) e `AtlasRig`:
 
 1. Frame novo por alvo: Z = polo do corpo; X = componente da direção
    alvo→Sol perpendicular ao polo, normalizada (o meridiano do Sol);
@@ -610,6 +680,34 @@ ajustável na conferência dele. **Prova:** o mesmo arrasto em pixels a
 
 **Prova do P4:** vídeo A/B do mesmo arrasto nos dois lados + gate
 bit-idêntico nas vistas paradas.
+
+**O QUE SAIU DIFERENTE DA RECEITA, e por quê — três desvios, todos de
+COMO e nenhum de O QUÊ:**
+
+ · **A conta gira `d₀` em vez de reconstruir a esfera.** Escrever
+   `sen θ (cos λ X + sen λ Y) + cos θ Z` dá a mesma direção na
+   matemática e um punhado de ULPs de diferença na pose de repouso — e o
+   gate mede md5, não matemática. Girando a direção que a lei antiga já
+   escreveu, com o dedo parado nenhuma rotação roda e a vista fica
+   bit-idêntica por construção, não por sorte.
+ · **A âncora `θ₀` sai do `d₀` real, e não da forma fechada `|ψ − pino|`.**
+   As duas concordam onde a lei antiga não grampeia; quando a pose de
+   repouso cai dentro da calota de `MIN_POLAR_RAD` (corpo com o polo a
+   30° da linha do Sol) é o `d₀` GRAMPEADO que está na tela, e uma
+   âncora que discordasse dele daria um degrau ao primeiro toque. A
+   forma fechada virou dente, não código.
+ · **O `up` do modo só entra DENTRO da faixa da cedência**
+   (`|dir·polo| > cos 30°`); fora dela o caminho é o de sempre, letra
+   por letra. Ele descreve a MESMA base de câmera que o polo bruto (o
+   `lookAt` faz `direita = up × z`, e a parte de `up` paralela a `z` não
+   contribui), então trocar fora da faixa custaria bits e não compraria
+   nada — e é dentro dela que a cedência dava o roll que o P4 vem matar.
+
+E uma peça mudou de casa: `enrolar` desceu do `atlasRig.ts` para o
+`enquadramento.ts` e virou exportada, porque a inversa do eixo `polo`
+passou a precisar dela (a longitude sai de uma DIFERENÇA de dois
+`atan2`). Duas cópias seriam a segunda fonte de verdade que a regra 4
+proíbe.
 
 **NÃO SE MEXE:** o zoom (`zoomDaRoda.ts` já tem inércia própria); o
 "olhar ao redor" do filme (`cameraRig.addLookDelta` — rotação manual

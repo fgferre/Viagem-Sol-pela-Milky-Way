@@ -77,7 +77,7 @@ import {
 import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
-import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
+import { AtlasRig, lerPortaGiro, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import { ORIGEM } from './cinematic/enquadramento';
 import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
 import {
@@ -699,6 +699,13 @@ export class Director {
     // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
     // no default do Atlas, nunca num caminho terceiro.
     this.politicaDeLuz = lerPortaLuz(this.debug.get('luz')) ?? 'assistida';
+    // ?giro= — O EIXO EM QUE O DEDO GIRA no Atlas (item 102, P4), pela
+    // mesma lei única de porta (`lerPortaGiro`, enquadramento.ts).
+    // INSTRUMENTO, não produto: existe para o A/B do MESMO binário dos
+    // dois lados — o vídeo que ele confere para decidir se o preço do
+    // turntable (a sombra gira junto com a câmera) vale o que ele compra.
+    // Ausente ou com lixo dentro cai no eixo de sempre.
+    this.atlas.definirEixoDoGiro(lerPortaGiro(this.debug.get('giro')));
     // (a porta `?bcede=` morreu no M1: a cessão do Sol-ponto é
     // `wResolvido` da repartição única — regra iv do §4 da Lei.)
     // ?jd= — O INSTANTE DO CÉU (Onda 5, F4/D2), no precedente de
