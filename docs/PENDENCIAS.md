@@ -453,6 +453,19 @@ porta o pixel não muda). Os quadros crus em `capturas/item93-calib-cru/` —
   para PERDER, e perde em foto: o terminador dela vai a **151,5** contra os
   121,9 de hoje.
 
+**⚠ UMA RESSALVA HONESTA, para quem for cravar a vencedora: a tradução
+também cai em cima do LOMMEL-SELIGER.** O argumento que a justifica é "os
+números do Eyes são bytes de tela" — e isso vale para o `0,15` e para a
+logística, que são DELES. O termo do LS não é: é física da casa (o disco
+chato que o contrato §3 recusa trocar), e no subsolar ele vale ~0,667, não
+1. Traduzi-lo corta 22 % em C1 e 45 % em C2 — é exatamente por isso que
+Mercúrio fica domado de graça, e é o que faz C2 descer a 106,2, abaixo de
+qualquer coisa que ele já tenha visto. **Não é defeito e não se conserta às
+cegas:** se ele escolher C1 ou C2, a pergunta que fica é se a tradução vale
+só para o que veio do Eyes (Lambert + lanterna) ou para o composto inteiro.
+A folha mostra o composto inteiro, que é a leitura simples; a outra é uma
+linha, e vira item se ele reclamar da Lua ou dos rochosos de regolito.
+
 **A PORTA `?calib=c1|c2|c3` É DE INSTRUMENTO E TEM DATA DE MORTE.** É da
 espécie do `?dbgorbitas`, registrada como **neutra** no selo, e o padrão
 (ausência) é o de hoje bit a bit. **Depois da escolha dele a vencedora vira
