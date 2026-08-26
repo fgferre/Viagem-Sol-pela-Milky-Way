@@ -509,7 +509,9 @@ delta-time fazendo o trabalho (sem ela, 30 fps daria 0,800 s). Antes do
 filtro eram **zero quadros**: a câmera parava no mesmo quadro que o
 dedo. No navegador (prova 21 do `atlas-smoke`, arrasto de mouse de 180
 px em Saturno): 0,349 rad até soltar, **21 quadros de rastro**, decaindo
-0,8 por quadro até morrer de vez. `dt ≤ 0` (o `apply` avulso do
+0,8 por quadro até morrer de vez — *números DESTA corrida: gesto vivo
+varia com o tempo de quadro (outras corridas deram 13 e 17 quadros), e o
+juiz cobra FAIXAS, nunca estes literais*. `dt ≤ 0` (o `apply` avulso do
 `enquadrarAgora` e os oráculos sem quadro) é pass-through declarado — o
 passo entra inteiro e não deixa rastro, que é o caminho de antes, bit a
 bit. A receita original, para quem for reler o porquê:
@@ -541,10 +543,16 @@ passada a janela, o gesto move a cena por menos de um pixel, que é o
 um arrasto de mouse de **4 px gira 1e-16 rad** — o resíduo de float da
 re-seleção — contra os **8,8e-3 rad** que ele giraria entregue, e o
 gesto continua virando seleção. **A JANELA É DA CASA INTEIRA, e isto se
-declara:** `ArrastoDePonteiro` é o dono ÚNICO do gesto, então o olhar do
-voo livre e o arrasto que fecha a folha do telefone ganharam a mesma
-janela. É a lei do arquivo (um dono, não dois); se o tato do voo livre
-incomodar, é item novo, não exceção escondida. A receita original:
+declara:** `ArrastoDePonteiro` é o dono ÚNICO do gesto, então TRÊS
+consumidores fora do Atlas ganharam a mesma janela — o olhar do voo
+livre, o arrasto que fecha a folha do telefone (só a metade TEMPO: os
+16 px de dedo já valiam lá) e o **pausar-e-olhar do FILME**
+(`gestos.ts` → `addLookDelta` — a FUNÇÃO do NÃO SE MEXE abaixo ficou
+intocada; o que mudou foi o portão que a alimenta, e um arrasto de 4 px
+com o filme pausado não move mais a câmera). É a lei do arquivo (um
+dono, não dois); se o tato de qualquer um dos três incomodar, é item
+novo, não exceção escondida. *(A cláusula do filme é achado do auditor
+da leva — a declaração original nomeava só dois.)* A receita original:
 
 Em `ArrastoDePonteiro.mover`
 (`arrastoDePonteiro.ts`): enquanto o gesto estiver dentro do limiar
