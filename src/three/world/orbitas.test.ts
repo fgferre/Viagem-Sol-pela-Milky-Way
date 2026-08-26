@@ -54,6 +54,9 @@ import {
   Orbitas,
   LARGURA_DA_FITA_PX,
   SAIA_DO_AA_PX,
+  LIMITE_DA_BISSETRIZ,
+  PASSO_DA_FITA,
+  escalaDaBissetriz,
   larguraVisivelDaFitaPx,
   PONTOS_POR_ORBITA,
   conicaOsculadora,
@@ -511,14 +514,100 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
         for (let eixo = 0; eixo < 3; eixo++) {
           // fim do segmento k === início do segmento k+1, BIT A BIT: os
           // dois saíram da mesma cópia do mesmo ponto
-          expect(a[k * 6 + 3 + eixo], `${id} seg ${k} eixo ${eixo}`)
-            .toBe(a[proximo * 6 + eixo]);
+          expect(a[k * PASSO_DA_FITA + 3 + eixo], `${id} seg ${k} eixo ${eixo}`)
+            .toBe(a[proximo * PASSO_DA_FITA + eixo]);
         }
       }
       // ...e o laço FECHA: o último segmento volta ao ponto 0
       const u = PONTOS_POR_ORBITA - 1;
-      expect(a[u * 6 + 3], id).toBe(a[0]);
+      expect(a[u * PASSO_DA_FITA + 3], id).toBe(a[0]);
     }
+    orbitas.dispose();
+  });
+
+  it('cada segmento conhece os DOIS vizinhos, e o laço fecha neles (§5e · B2)', () => {
+    // A BISSETRIZ SÓ É CERTA SE OS VIZINHOS FOREM OS CERTOS, e este é o
+    // dente que a sabotagem pega: trocar `k+1` por `k`, esquecer o módulo
+    // do fechamento ou apontar o "seguinte" para o fim do próprio segmento
+    // desenha uma junta torta que nenhum teste de posição notaria — o
+    // início e o fim continuariam no lugar.
+    //
+    // A LEI, escrita como identidade e não como tolerância: o ANTERIOR do
+    // segmento k é o INÍCIO do segmento k−1, e o SEGUINTE do segmento k é
+    // o FIM do segmento k+1. Bit a bit, porque as quatro cópias saem da
+    // mesma leitura do mesmo ponto.
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    for (const id of ['earth', 'io', 'pluto']) {
+      const a = segmentosDe(orbitas, id).dados.array;
+      const n = PONTOS_POR_ORBITA;
+      for (let k = 0; k < n; k++) {
+        const anteriorDe = ((k + n - 1) % n) * PASSO_DA_FITA; // início de k−1
+        const seguinteDe = ((k + 1) % n) * PASSO_DA_FITA + 3; // fim de k+1
+        for (let eixo = 0; eixo < 3; eixo++) {
+          expect(a[k * PASSO_DA_FITA + 6 + eixo], `${id} anterior seg ${k} eixo ${eixo}`)
+            .toBe(a[anteriorDe + eixo]);
+          expect(a[k * PASSO_DA_FITA + 9 + eixo], `${id} seguinte seg ${k} eixo ${eixo}`)
+            .toBe(a[seguinteDe + eixo]);
+        }
+      }
+      // e nenhum vizinho ficou no zero de fábrica: um índice fora do laço
+      // deixaria o buffer intocado ali, e o shader dobraria contra a origem
+      let zerados = 0;
+      for (let k = 0; k < n; k++) {
+        if (a[k * PASSO_DA_FITA + 6] === 0 && a[k * PASSO_DA_FITA + 9] === 0) zerados++;
+      }
+      expect(zerados, `${id}: vizinhos nunca escritos`).toBe(0);
+    }
+    orbitas.dispose();
+  });
+
+  it('a bissetriz estica o canto e tem TETO — a conta, e a mesma no shader (§5e)', () => {
+    // A METADE NUMÉRICA. `escalaDaBissetriz` é `1/cos(θ/2)`, e o teste
+    // cobra os três regimes com valores que não saem da própria fórmula:
+    //
+    //   · RETA (θ = 0): a bissetriz É a perpendicular, e não estica nada.
+    expect(escalaDaBissetriz(1)).toBeCloseTo(1, 12);
+    //   · CANTO RETO (θ = 90°): o canto externo fica a √2 meias larguras
+    //     do vértice — geometria de quadrado, conferível sem a fórmula.
+    expect(escalaDaBissetriz(0)).toBeCloseTo(Math.SQRT2, 12);
+    //   · DOBRA DE 60°: 1/cos(30°) = 2/√3.
+    expect(escalaDaBissetriz(Math.cos(Math.PI / 3))).toBeCloseTo(2 / Math.sqrt(3), 12);
+    //   · A VOLTA DE 180°: sem teto o esporão iria ao infinito e viraria
+    //     uma agulha atravessando o quadro. O teto corta em 4×, e o 4 é
+    //     COBRADO em número: escrever o teto em função da própria
+    //     constante deixaria um `LIMITE` de 1e-6 passar — foi o que uma
+    //     sabotagem provou, e é por isso que a linha abaixo existe.
+    expect(LIMITE_DA_BISSETRIZ, 'o teto do esporão foi afrouxado').toBe(0.25);
+    expect(escalaDaBissetriz(-1), 'sem teto o esporão vira agulha').toBeLessThanOrEqual(4);
+    expect(escalaDaBissetriz(-1)).toBeCloseTo(1 / LIMITE_DA_BISSETRIZ, 12);
+    expect(escalaDaBissetriz(-0.999)).toBeLessThanOrEqual(4);
+    // NUMA ELIPSE DE 256 PONTOS o teto nunca entra, e a correção é
+    // pequena — mas não é zero, e é ela que fecha a cunha.
+    const dobra = (2 * Math.PI) / PONTOS_POR_ORBITA;
+    expect(escalaDaBissetriz(Math.cos(dobra))).toBeGreaterThan(1);
+    expect(escalaDaBissetriz(Math.cos(dobra))).toBeLessThan(1.001);
+
+    // A METADE DE TEXTO: o GLSL carrega a MESMA expressão e os MESMOS
+    // atributos. Sem este pino, apagar a cirurgia do vertex devolveria a
+    // perpendicular de sempre com a suíte inteira verde — o buffer
+    // continuaria com os vizinhos certos, e ninguém os leria.
+    const orbitas = new Orbitas();
+    const shader = compilarDeVerdade(materialDe(orbitas));
+    const v = shader.vertexShader;
+    expect(v, 'os atributos de vizinho sumiram').toContain('attribute vec3 instanceAnterior;');
+    expect(v).toContain('attribute vec3 instanceSeguinte;');
+    expect(v, 'a bissetriz sumiu do vertex').toContain('normalize( bissetriz )');
+    expect(v, 'o esticão 1/cos(θ/2) sumiu').toContain('sqrt( ( 1.0 + dot( l0, l1 ) ) / 2.0 )');
+    expect(v, 'o teto do esporão sumiu').toContain(`max( ${LIMITE_DA_BISSETRIZ.toFixed(2)},`);
+    // ...e a PERPENDICULAR continua lá como ramo de fuga: quem está atrás
+    // do olho ou tem vizinho degenerado não dobra
+    expect(v).toContain('vec2 offset = vec2( dir.y, - dir.x );');
+    expect(v, 'o ramo de fuga sumiu: NaN em gl_Position apaga o segmento').toContain('if ( ! atras )');
+    // O CORTE NO NEAR PLANE É DO THREE e tem de sair intacto — a cirurgia
+    // insere DEPOIS dele, nunca por cima
+    expect(v, 'o corte no near plane foi comido').toContain('trimSegmentAlpha( start, end )');
     orbitas.dispose();
   });
 
@@ -601,6 +690,41 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     orbitas.dispose();
   });
 
+  /** O material de uma linha, com as duas cirurgias já instaladas. */
+  type MaterialDaFita = {
+    linewidth: number;
+    vertexShader: string;
+    fragmentShader: string;
+    onBeforeCompile(s: {
+      uniforms: Record<string, { value: unknown }>;
+      fragmentShader: string;
+      vertexShader: string;
+    }): void;
+  };
+  function materialDe(orbitas: Orbitas): MaterialDaFita {
+    return (orbitas.group.children[0] as unknown as { material: MaterialDaFita }).material;
+  }
+
+  /**
+   * O `onBeforeCompile` RODADO SOBRE O SHADER DE VERDADE do three, e não
+   * sobre um fac-símile escrito à mão.
+   *
+   * Em Node não há GPU, então o que se afere é o TEXTO que a camada
+   * entrega ao compilador. Fazê-lo sobre o shader real é o que dá valor ao
+   * pino: no dia em que uma versão nova do three mudar a forma que as duas
+   * cirurgias procuram, ELAS LANÇAM — e o teste vira vermelho aqui, em vez
+   * de a fita sair torta no navegador de alguém.
+   */
+  function compilarDeVerdade(material: MaterialDaFita) {
+    const shader = {
+      uniforms: {} as Record<string, { value: unknown }>,
+      fragmentShader: material.fragmentShader,
+      vertexShader: material.vertexShader,
+    };
+    material.onBeforeCompile(shader);
+    return shader;
+  }
+
   /**
    * A LARGURA QUE O MATERIAL RECEBEU depois de um quadro naquela janela —
    * é o número que a GPU lê, não uma cópia da conta.
@@ -668,27 +792,9 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     // que o navegador compilaria.
     const orbitas = new Orbitas();
     orbitas.ligado = true;
-    const material = (orbitas.group.children[0] as unknown as {
-      material: {
-        linewidth: number;
-        onBeforeCompile(s: {
-          uniforms: Record<string, { value: unknown }>;
-          fragmentShader: string;
-        }): void;
-      };
-    }).material;
+    const material = materialDe(orbitas);
     const ALVO = 'gl_FragColor = vec4( diffuseColor.rgb, alpha );';
-    const compilar = () => {
-      const shader = {
-        uniforms: {} as Record<string, { value: unknown }>,
-        fragmentShader:
-          `varying vec2 vUv;\nvoid main() {\n\tfloat alpha = opacity;\n\t${ALVO}\n}`,
-      };
-      material.onBeforeCompile(shader);
-      return shader;
-    };
-
-    const shader = compilar();
+    const shader = compilarDeVerdade(material);
     const fonte = shader.fragmentShader;
     // A SAIA EXISTE, e o nome é `uMiolo` — `nucleo` é o disco da cessão,
     // e trocar os dois seria trocar a largura pelo buraco

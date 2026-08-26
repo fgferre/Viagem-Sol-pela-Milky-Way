@@ -119,6 +119,39 @@
 // logarítmica.
 //
 // ------------------------------------------------------------
+// 5e. A JUNTA EM BISSETRIZ (item 83 · B2, o A4)
+// ------------------------------------------------------------
+// A QUEIXA DELE, em 26/08: *"lá a órbita parece uma FITA DOBRADA, não uma
+// LINHA GROSSA; a nossa ainda parece linha grossa"*. É aqui que essa
+// diferença mora, e ela é de geometria, não de brilho.
+//
+// O `LineMaterial` desenha cada segmento como um quad e empurra as duas
+// pontas na PERPENDICULAR DAQUELE segmento. Numa reta os quads casam; numa
+// CURVA não: os dois quads que se encontram numa junta empurram em
+// direções diferentes, então por FORA da curva abre uma CUNHA e por
+// DENTRO os dois se sobrepõem e dobram tinta. O olho lê o resultado como
+// uma sucessão de retas grossas — uma linha grossa. Uma fita de verdade
+// VINCA: as duas faces encontram-se na quina, sem fenda e sem dobra.
+//
+// A CURA É A BISSETRIZ, e a fórmula é pública (SVG, Canvas, Cesium) e é
+// a mesma que a referência usa: em vez da perpendicular do segmento,
+// empurra-se na bissetriz das DUAS perpendiculares, esticada pelo inverso
+// do cosseno da metade do ângulo — `escalaDaBissetriz`. Sem o esticão a
+// fita AFINA na dobra; com ele o canto externo encosta exatamente na
+// quina.
+//
+// O QUE ISSO CUSTA são DOIS ATRIBUTOS: o ponto ANTES do início e o ponto
+// DEPOIS do fim de cada segmento. Eles moram no MESMO buffer interleaved
+// (`PASSO_DA_FITA` = 12), escritos pela MESMA passada de `espelharNaFita`
+// — a disciplina do §5 continua inteira e nada realoca no quadro.
+//
+// NÃO É FITA NOVA. A estrutura de quads por segmento é a que a casa já
+// tinha; o que muda é para onde o vertex empurra a ponta. O corte no near
+// plane, o `resolution` automático, o `discard` da calota do §5c e o
+// `raycast` sobrevivem — a conta portou-se, a fita não se reconstruiu.
+// `Line2` NÃO seria atalho: lá as calotas continuam.
+//
+// ------------------------------------------------------------
 // 5d. A SAIA DO AA E A LARGURA NA JANELA (item 83 · A2 + A3)
 // ------------------------------------------------------------
 // A BEIRA LISA DA REFERÊNCIA É MSAA DE CARTÃO — duas camadas, 4× no alvo
@@ -792,14 +825,44 @@ export function escreverLaco(
 }
 
 /**
- * O LAÇO DE PONTOS VIRA FITA DE SEGMENTOS (§5, item 83 · L2).
+ * O PASSO DO BUFFER DA FITA, em floats por segmento (§5e): início xyz,
+ * fim xyz, vizinho ANTERIOR xyz, vizinho SEGUINTE xyz.
+ *
+ * OS QUATRO MORAM NO MESMO `InstancedInterleavedBuffer`, e isso não é
+ * arrumação: dois buffers exigiriam dois `needsUpdate` e abririam o
+ * caminho para a fita ser desenhada com posições novas e vizinhos
+ * velhos — um quadro de junta torta a cada salto de data. Num buffer só,
+ * a disciplina do §5 continua valendo inteira (muta-se o array, marca-se
+ * ELE) e nada realoca no quadro.
+ */
+export const PASSO_DA_FITA = 12;
+const DESLOCAMENTO_DO_FIM = 3;
+const DESLOCAMENTO_DO_ANTERIOR = 6;
+const DESLOCAMENTO_DO_SEGUINTE = 9;
+
+/**
+ * O LAÇO DE PONTOS VIRA FITA DE SEGMENTOS (§5, item 83 · L2; §5e para os
+ * vizinhos).
  *
  * O `LineSegmentsGeometry` guarda DOIS pontos por segmento num único
- * buffer interleaved de passo 6 (início xyz, fim xyz), e cada ponto
- * interior aparece DUAS vezes — como fim do segmento anterior e como
- * início do seguinte. Esta função faz exatamente essa expansão, e o
- * segmento `n-1` FECHA o laço ligando o último ponto ao primeiro (é o
- * que o `LineLoop` fazia sozinho e o `LineSegments2` não faz).
+ * buffer interleaved, e cada ponto interior aparece DUAS vezes — como
+ * fim do segmento anterior e como início do seguinte. Esta função faz
+ * essa expansão, e o segmento `n-1` FECHA o laço ligando o último ponto
+ * ao primeiro (é o que o `LineLoop` fazia sozinho e o `LineSegments2`
+ * não faz).
+ *
+ * DESDE O B2 ELA ESCREVE MAIS DOIS: o ponto ANTES do início e o ponto
+ * DEPOIS do fim, que são o que o vertex precisa para dobrar a junta na
+ * bissetriz (§5e). O mesmo ponto aparece portanto QUATRO vezes na fita —
+ * início de `k`, fim de `k−1`, anterior de `k+1` e seguinte de `k−2` —, e
+ * as quatro cópias saem da MESMA leitura, num passo só. Sem isso, a
+ * bissetriz de uma ponta discordaria da da outra e a fita abriria fenda
+ * onde deveria dobrar.
+ *
+ * O LAÇO É FECHADO, e é por isso que os quatro índices são módulo `n`
+ * sem um único caso especial: numa elipse não existe "a primeira" nem "a
+ * última" junta. Uma polilinha ABERTA precisaria repetir as pontas, e
+ * esta camada não desenha nenhuma.
  *
  * POR QUE NÃO ESCREVER A CÔNICA DIRETO NO PASSO 6: `escreverLaco` é a
  * álgebra provada do item 77, cobrada vértice a vértice contra a
@@ -817,16 +880,67 @@ export function espelharNaFita(
     const x = pontos[k * 3];
     const y = pontos[k * 3 + 1];
     const z = pontos[k * 3 + 2];
+    // CADA PONTO APARECE QUATRO VEZES na fita, e as quatro saem da MESMA
+    // cópia dele: é isso que faz a junta ser exata em vez de quase.
     // início do segmento k
-    saida[k * 6] = x;
-    saida[k * 6 + 1] = y;
-    saida[k * 6 + 2] = z;
-    // ...e fim do segmento anterior, que para k = 0 é o do FECHAMENTO
-    const anterior = (k + n - 1) % n;
-    saida[anterior * 6 + 3] = x;
-    saida[anterior * 6 + 4] = y;
-    saida[anterior * 6 + 5] = z;
+    const inicio = k * PASSO_DA_FITA;
+    saida[inicio] = x;
+    saida[inicio + 1] = y;
+    saida[inicio + 2] = z;
+    // ...fim do segmento anterior, que para k = 0 é o do FECHAMENTO
+    const fim = ((k + n - 1) % n) * PASSO_DA_FITA + DESLOCAMENTO_DO_FIM;
+    saida[fim] = x;
+    saida[fim + 1] = y;
+    saida[fim + 2] = z;
+    // ...vizinho ANTERIOR do segmento seguinte (§5e)
+    const antes = ((k + 1) % n) * PASSO_DA_FITA + DESLOCAMENTO_DO_ANTERIOR;
+    saida[antes] = x;
+    saida[antes + 1] = y;
+    saida[antes + 2] = z;
+    // ...e vizinho SEGUINTE do segmento dois atrás
+    const depois = ((k + n - 2) % n) * PASSO_DA_FITA + DESLOCAMENTO_DO_SEGUINTE;
+    saida[depois] = x;
+    saida[depois + 1] = y;
+    saida[depois + 2] = z;
   }
+}
+
+/**
+ * O LIMITE DA BISSETRIZ (§5e, item 83 · A4) — o `max(0.25, …)` da
+ * fórmula, escrito uma vez.
+ *
+ * Numa dobra muito fechada o canto da bissetriz dispara para o infinito
+ * (`1/cos(θ/2)` com θ → 180°), e uma agulha de centenas de pixels
+ * atravessando o quadro é pior que a fenda que se veio consertar. 0,25
+ * corta o esporão em 4× a largura da fita — o mesmo teto do SVG e do
+ * Canvas, e o mesmo da referência.
+ *
+ * NUMA ELIPSE DE 256 PONTOS ELE NUNCA ENTRA: a dobra por junta é 1,4°, e
+ * a escala fica em 1,00008. Ele existe para o dia em que a amostragem
+ * mudar, e para as excentricidades altas, onde o periastro concentra
+ * vértice e a dobra local cresce.
+ */
+export const LIMITE_DA_BISSETRIZ = 0.25;
+
+/**
+ * QUANTO A BISSETRIZ ESTICA o offset de meia largura numa junta, dado o
+ * cosseno do ângulo entre as duas direções (`dot(l0, l1)`, as duas
+ * unitárias, na tela).
+ *
+ * A CONTA É A DA REFERÊNCIA, e é pública (SVG, Canvas, Cesium): o canto
+ * externo de uma junta em bissetriz fica a `meiaLargura / cos(θ/2)` do
+ * vértice, e `cos(θ/2) = sqrt((1 + cos θ)/2)` pela identidade do arco
+ * metade — que é exatamente o `sqrt((1 + dot(l0,l1))/2)` do A4. Sem esse
+ * esticão a fita AFINA na dobra, que é o defeito espelhado da fenda.
+ *
+ * ELA É PURA E EXPORTADA porque é a única metade desta obra que uma
+ * máquina sem GPU consegue julgar por NÚMERO: o GLSL carrega a mesma
+ * expressão, e o teste cobra as duas pontas — o número aqui e o texto
+ * lá.
+ */
+export function escalaDaBissetriz(cosseno: number): number {
+  const meio = Math.sqrt(Math.max(0, (1 + cosseno) / 2));
+  return 1 / Math.max(LIMITE_DA_BISSETRIZ, meio);
 }
 
 /**
@@ -959,12 +1073,26 @@ export class Orbitas {
       // a cada salto de data. O buffer é montado UMA vez, à mão, e o
       // caminho do quadro só muta o array dele.
       const segmentos = new THREE.InstancedInterleavedBuffer(
-        new Float32Array(PONTOS_POR_ORBITA * 6),
-        6,
+        new Float32Array(PONTOS_POR_ORBITA * PASSO_DA_FITA),
+        PASSO_DA_FITA,
         1
       );
       geo.setAttribute('instanceStart', new THREE.InterleavedBufferAttribute(segmentos, 3, 0));
-      geo.setAttribute('instanceEnd', new THREE.InterleavedBufferAttribute(segmentos, 3, 3));
+      geo.setAttribute(
+        'instanceEnd',
+        new THREE.InterleavedBufferAttribute(segmentos, 3, DESLOCAMENTO_DO_FIM)
+      );
+      // OS DOIS VIZINHOS (§5e) — a junta em bissetriz lê daqui. Os nomes
+      // são novos no shader: o `LineMaterial` não os conhece, e é a
+      // cirurgia do vertex que os declara.
+      geo.setAttribute(
+        'instanceAnterior',
+        new THREE.InterleavedBufferAttribute(segmentos, 3, DESLOCAMENTO_DO_ANTERIOR)
+      );
+      geo.setAttribute(
+        'instanceSeguinte',
+        new THREE.InterleavedBufferAttribute(segmentos, 3, DESLOCAMENTO_DO_SEGUINTE)
+      );
       geo.instanceCount = PONTOS_POR_ORBITA;
       // nasce com raio zero: sem cônica escrita não há nada para cortar
       geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 0);
@@ -1059,6 +1187,7 @@ export class Orbitas {
    */
   private cederAoNucleo(material: LineMaterial, nucleo: { value: THREE.Vector4 }) {
     material.onBeforeCompile = (shader) => {
+      this.dobrarNaBissetriz(shader);
       shader.uniforms.uNucleo = nucleo as unknown as THREE.IUniform;
       shader.uniforms.uMiolo = this.miolo as unknown as THREE.IUniform;
       const ALVO = 'gl_FragColor = vec4( diffuseColor.rgb, alpha );';
@@ -1109,6 +1238,94 @@ export class Orbitas {
     this.miolo.value = visivel / (visivel + SAIA_DO_AA_PX);
     const inchada = visivel + SAIA_DO_AA_PX;
     for (const linha of this.linhas) linha.material.linewidth = inchada;
+  }
+
+  /**
+   * A JUNTA VIRA BISSETRIZ (§5e, item 83 · B2 / A4) — a cirurgia do
+   * VERTEX, irmã da do fragmento e instalada pelo MESMO callback.
+   *
+   * O `LineMaterial` empurra cada ponta do quad na PERPENDICULAR DAQUELE
+   * segmento. Numa curva os dois quads que se encontram numa junta
+   * empurram em direções diferentes: por fora abre CUNHA, por dentro
+   * dobra tinta. A cura é a de livro, e é a mesma da referência: empurrar
+   * na BISSETRIZ das duas perpendiculares, esticada por `1/cos(θ/2)`
+   * para o canto externo encostar exatamente na quina.
+   *
+   * TUDO EM ESPAÇO DE TELA, como o resto do shader: os vizinhos são
+   * projetados pelo MESMO caminho de `instanceStart`/`instanceEnd` e as
+   * direções saem em NDC já corrigido pela proporção do quadro — é o
+   * único espaço em que "meia largura de pixel" quer dizer alguma coisa.
+   *
+   * O QUE SOBREVIVE INTEIRO, e cada um por uma razão escrita:
+   *   - o `discard` do `USE_DASH` (§5c) — é do FRAGMENTO, e esta cirurgia
+   *     não encosta nele. A calota continua morta e o colar não volta.
+   *   - o CORTE NO NEAR PLANE — o `trimSegmentAlpha` do three roda ANTES
+   *     desta conta, sobre `start`/`end`, e continua mandando. A
+   *     bissetriz apenas DESISTE quando o segmento ou um vizinho está
+   *     atrás do olho (`atras`, abaixo): ali ela não tem direção que
+   *     signifique alguma coisa, e a perpendicular de sempre é a resposta
+   *     certa.
+   *   - o `resolution` AUTOMÁTICO — a conta lê `aspect`, que o próprio
+   *     shader deriva dele; ninguém o escreve aqui (§5).
+   *   - o `raycast` de que o L5 vai depender — ele lê `instanceStart` e
+   *     `instanceEnd` por `fromBufferAttribute`, que é cego ao passo do
+   *     buffer. Os vizinhos são atributos NOVOS; nada do que ele lê mudou
+   *     de nome ou de lugar.
+   *
+   * A DEGENERESCÊNCIA TEM RAMO PRÓPRIO e não é paranoia: com dois pontos
+   * coincidentes a direção é `normalize(0)` = NaN, e um NaN em
+   * `gl_Position` some com o segmento inteiro sem erro nenhum. Direção
+   * curta demais ou bissetriz curta demais (a volta de 180°, em que as
+   * duas perpendiculares se cancelam) caem na perpendicular de sempre.
+   */
+  private dobrarNaBissetriz(shader: { vertexShader: string }) {
+    const ATRIBUTOS = 'attribute vec3 instanceStart;';
+    const DIRECAO = '// direction\n\t\t\tvec2 dir = ndcEnd.xy - ndcStart.xy;';
+    const PERPENDICULAR = 'vec2 offset = vec2( dir.y, - dir.x );';
+    for (const alvo of [ATRIBUTOS, DIRECAO, PERPENDICULAR]) {
+      if (!shader.vertexShader.includes(alvo)) {
+        throw new Error('dobrarNaBissetriz: o vertex do LineMaterial mudou de forma');
+      }
+    }
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        ATRIBUTOS,
+        `${ATRIBUTOS}\n\t\tattribute vec3 instanceAnterior;\n\t\tattribute vec3 instanceSeguinte;`
+      )
+      .replace(
+        DIRECAO,
+        // os dois vizinhos pelo MESMO caminho do início e do fim
+        'vec4 anterior = modelViewMatrix * vec4( instanceAnterior, 1.0 );\n'
+          + '\t\t\tvec4 seguinte = modelViewMatrix * vec4( instanceSeguinte, 1.0 );\n'
+          + '\t\t\tvec4 clipAnterior = projectionMatrix * anterior;\n'
+          + '\t\t\tvec4 clipSeguinte = projectionMatrix * seguinte;\n'
+          // ATRÁS DO OLHO a projeção espelha, e a bissetriz desiste
+          + '\t\t\tbool atras = start.z >= 0.0 || end.z >= 0.0\n'
+          + '\t\t\t\t|| anterior.z >= 0.0 || seguinte.z >= 0.0;\n'
+          + `\t\t\t${DIRECAO}`
+      )
+      .replace(
+        PERPENDICULAR,
+        `${PERPENDICULAR}\n`
+          + '\t\t\t\tif ( ! atras ) {\n'
+          + '\t\t\t\t\tvec2 dAnterior = ndcStart.xy - clipAnterior.xy / clipAnterior.w;\n'
+          + '\t\t\t\t\tvec2 dSeguinte = clipSeguinte.xy / clipSeguinte.w - ndcEnd.xy;\n'
+          + '\t\t\t\t\tdAnterior.x *= aspect;\n'
+          + '\t\t\t\t\tdSeguinte.x *= aspect;\n'
+          // direção NULA (pontos coincidentes) devolveria NaN
+          + '\t\t\t\t\tif ( length( dAnterior ) > 1e-9 && length( dSeguinte ) > 1e-9 ) {\n'
+          + '\t\t\t\t\t\tvec2 l0 = ( position.y < 0.5 ) ? normalize( dAnterior ) : dir;\n'
+          + '\t\t\t\t\t\tvec2 l1 = ( position.y < 0.5 ) ? dir : normalize( dSeguinte );\n'
+          + '\t\t\t\t\t\tvec2 bissetriz = vec2( l0.y, - l0.x ) + vec2( l1.y, - l1.x );\n'
+          // a volta de 180° cancela as duas perpendiculares
+          + '\t\t\t\t\t\tif ( length( bissetriz ) > 1e-6 ) {\n'
+          + '\t\t\t\t\t\t\toffset = normalize( bissetriz )\n'
+          + `\t\t\t\t\t\t\t\t/ max( ${LIMITE_DA_BISSETRIZ.toFixed(2)},`
+          + ' sqrt( ( 1.0 + dot( l0, l1 ) ) / 2.0 ) );\n'
+          + '\t\t\t\t\t\t}\n'
+          + '\t\t\t\t\t}\n'
+          + '\t\t\t\t}'
+      );
   }
 
   /**
