@@ -412,11 +412,16 @@ export function Selo({
  * dica dos gestos apaga por OPACIDADE com a caixa no lugar). Uma peça
  * que entra e sai do fluxo mudaria o enquadramento no meio da sessão —
  * exatamente o pulo que a casa evita em três lugares diferentes. Presa
- * na borda direita, na altura do meio, ela não desconta nada: não cai
- * nem na faixa de cima nem na de baixo que o juiz de a11y mede, e é a
- * única região livre nas DUAS telas (na mesa o alto à direita é a barra
- * de controles e o pé é o selo; no telefone as duas faixas são tomadas
- * de ponta a ponta pela barra e pelas alças).
+ * na borda ESQUERDA, na altura do meio, ela não desconta nada: não cai
+ * nem na faixa de cima nem na de baixo que o juiz de a11y mede.
+ *
+ * ESQUERDA, E O PREÇO DE DESCOBRIR ISSO FOI OLHAR A TELA: ela nasceu na
+ * direita, onde o alto é a barra de controles e o pé é o selo, e a
+ * faixa do meio parecia livre. Não é — a FICHA DO OBJETO abre ali, e
+ * como ela é diálogo (z 46) contra os z 40 da bússola, a bússola
+ * acendia POR BAIXO dela. E no pior caso possível: quem acabou de focar
+ * um corpo tem a ficha aberta, e é justamente ele quem vai querer
+ * endireitar o que girou.
  *
  * FILHA DIRETA de `.hud-root`, como todo overlay da casa — é o que faz
  * o `?shot=2` apagá-la junto com o resto do HUD (a regra do

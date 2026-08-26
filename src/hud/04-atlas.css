@@ -657,19 +657,29 @@
 
 /* --- A BÚSSOLA (item 102): o botão de zerar a orientação ---
    Só aparece quando o horizonte está torto; quem decide é o rig, com
-   histerese. FORA DO FLUXO e na borda direita à meia altura — a única
-   região livre nas duas telas: na mesa o alto à direita é a
-   `.controls-bar` e o pé é o `.atlas-selo`; no telefone a barra e as
-   alças tomam as duas faixas de ponta a ponta. Presa aqui ela não
-   desconta retângulo útil nenhum (não cai na faixa de cima nem na de
-   baixo que o juiz de a11y mede), e por isso nenhum `*_FRACAO` do
-   `retanguloDoAtlas` muda — a câmera não recua um milímetro por ela
-   existir.
-   Z-INDEX 40, o do selo: abaixo dos diálogos (46) e da barra (45), que
-   é o que impede a bússola de ficar por cima de um painel aberto. */
+   histerese. FORA DO FLUXO e na borda ESQUERDA à meia altura. Presa
+   assim ela não desconta retângulo útil nenhum (não cai na faixa de
+   cima nem na de baixo que o juiz de a11y mede), e por isso nenhum
+   `*_FRACAO` do `retanguloDoAtlas` muda — a câmera não recua um
+   milímetro por ela existir.
+
+   ESQUERDA E NÃO DIREITA, e o preço de descobrir isso foi olhar a tela:
+   ela nasceu na borda direita, onde o alto é a `.controls-bar` e o pé é
+   o `.atlas-selo`, e a faixa do meio parecia livre. Não é — a FICHA DO
+   OBJETO abre exatamente ali, e como ela é diálogo (z 46) e a bússola é
+   z 40, a bússola acendia POR BAIXO dela. E era o pior caso possível:
+   quem acabou de focar um corpo tem a ficha aberta, e é justamente ele
+   quem está girando o corpo e vai querer endireitar. Medido a 1280×720
+   com Saturno focado: bússola em (1203, 341), ficha de (886, 103) a
+   (1254, 544) — sobreposição inteira. Na esquerda, zero colisões com
+   TUDO (diálogos, barra, rodapé, selo, tempo, alças, tarjas).
+
+   Z-INDEX 40, o do selo: abaixo dos diálogos (46) e da barra (45). O
+   z-index fica como está — a lição não foi "subir por cima do painel",
+   foi "não morar debaixo dele". */
 .atlas-bussola {
   position: fixed;
-  right: 3vw;
+  left: 3vw;
   top: 50%;
   transform: translateY(-50%);
   z-index: 40;

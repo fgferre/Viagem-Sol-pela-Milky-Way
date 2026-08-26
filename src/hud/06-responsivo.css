@@ -1,13 +1,25 @@
 /* HUD, fatia 6/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 @media (max-width: 760px) {
-  /* A BÚSSOLA no telefone (item 102): mesma borda das outras peças
-     estreitas (4vw), e continua à meia altura — é a única faixa que
-     sobra, porque a barra de controles toma o alto de ponta a ponta e
-     as alças tomam o pé. O alvo de toque cresce para os 2,75 rem que
-     o juiz de a11y cobra dos controles do celular. */
+  /* A BÚSSOLA no telefone (item 102): borda esquerda como na mesa, mas
+     ENCOSTADA NA BARRA em vez de à meia altura — e o motivo é medido.
+     No telefone a ficha do objeto é uma FOLHA DE BAIXO de largura
+     inteira: a 390×844 ela vai de y=327 a y=732, e a meia altura (400)
+     cai DENTRO dela. A bússola acenderia atrás da ficha, que é o mesmo
+     defeito que a tirou da borda direita na mesa.
+
+     A ÂNCORA É `--barra-fim`, que o App MEDE da barra — e não um número
+     escrito à mão: é a mesma que os diálogos usam, e é o que mantém a
+     folga certa quando `?ui=` cresce o texto e a barra quebra em duas
+     linhas. Entre a barra e o topo da folha há banda livre, e é lá que
+     ela mora.
+
+     O alvo de toque cresce para os 2,75 rem que o juiz de a11y cobra
+     dos controles do celular. */
   .atlas-bussola {
-    right: 4vw;
+    left: 4vw;
+    top: calc(var(--barra-fim) + 0.8rem);
+    transform: none;
     width: 2.75rem;
     height: 2.75rem;
   }

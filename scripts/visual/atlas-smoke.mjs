@@ -1974,22 +1974,28 @@ try {
         dentroDaTela:
           r.left >= 0 && r.top >= 0
           && r.right <= window.innerWidth && r.bottom <= window.innerHeight,
-        // ...e mora na METADE DIREITA, na faixa do MEIO: é a única
-        // região livre nas duas telas, e é o que a mantém longe da
-        // barra de controles (alto) e do selo/rodapé (pé)
-        naBordaDireita: r.x + r.width / 2 > window.innerWidth * 0.5,
+        // ...e mora na METADE ESQUERDA, na faixa do MEIO: a direita é
+        // onde a ficha do objeto abre, e a bússola morava debaixo dela
+        naBordaEsquerda: r.x + r.width / 2 < window.innerWidth * 0.5,
         naFaixaDoMeio:
           r.y + r.height / 2 > window.innerHeight * 0.25
           && r.y + r.height / 2 < window.innerHeight * 0.75,
         // e NÃO encosta em nenhuma outra peça permanente do HUD
+        // OS DIÁLOGOS ENTRAM NA CONTA, e esta linha é a cicatriz: a
+        // bússola nasceu na borda DIREITA com esta lista sem eles, e a
+        // prova deu 0 sobreposições sobre um botão que acendia POR
+        // BAIXO da ficha do objeto (z 46 contra z 40) — no pior caso
+        // possível, que é o de quem acabou de focar um corpo. Quem
+        // mede sobreposição de HUD mede contra o HUD INTEIRO.
         encosta: ['.controls-bar', '.atlas-selo', '.atlas-tempo', '.free-hint',
-          '.atlas-alcas']
-          .map((sel) => document.querySelector(sel))
-          .filter(Boolean)
-          .map((o) => o.getBoundingClientRect())
-          .filter((o) => o.width > 0 && o.height > 0)
-          .filter((o) => !(r.right <= o.left || r.left >= o.right
-            || r.bottom <= o.top || r.top >= o.bottom)).length,
+          '.atlas-alcas', '[data-dialogo]', '.letterbox']
+          .flatMap((sel) => [...document.querySelectorAll(sel)]
+            .map((n) => ({ sel, o: n.getBoundingClientRect() })))
+          .filter((x) => x.o.width > 0 && x.o.height > 0)
+          .filter((x) => !(r.right <= x.o.left || r.left >= x.o.right
+            || r.bottom <= x.o.top || r.top >= x.o.bottom))
+          .map((x) => x.sel + ' [' + Math.round(x.o.x) + ',' + Math.round(x.o.y)
+            + ' ' + Math.round(x.o.width) + 'x' + Math.round(x.o.height) + ']'),
         x: Math.round(r.x), y: Math.round(r.y),
       });
     })()`));
@@ -2043,21 +2049,23 @@ try {
         + ` ACENDEU: opacidade=${acesa.opacidade} tabbable=${acesa.tabbable}`
     );
     conferir(
-      acesa.temCaixa && acesa.dentroDaTela && acesa.naBordaDireita
-        && acesa.naFaixaDoMeio && acesa.encosta === 0
+      acesa.temCaixa && acesa.dentroDaTela && acesa.naBordaEsquerda
+        && acesa.naFaixaDoMeio && acesa.encosta.length === 0
         && acesa.rotulo === 'Endireitar o horizonte',
       `...e ela tem CAIXA de verdade em (${acesa.x}, ${acesa.y}), na borda`
-        + ` direita e na faixa do meio, sem encostar em nenhuma peça do HUD`
-        + ` (${acesa.encosta} sobreposições), com rótulo para quem ouve:`
+        + ` esquerda e na faixa do meio, sem encostar em nenhuma peça do HUD`
+        + ` (sobreposições: ${JSON.stringify(acesa.encosta)}), com rótulo para quem ouve:`
         + ` "${acesa.rotulo}"`
     );
 
-    // ...E NO TELEFONE, que é onde a borda direita é a ÚNICA saída: no
-    // aparelho a barra de controles toma o alto de ponta a ponta e a
-    // fileira de alças toma o pé, então uma peça presa em qualquer das
-    // duas faixas encostaria em alguma coisa. Aqui só se trocam as
-    // MÉTRICAS (reversível); a emulação de TOQUE não entra — ela é de
-    // mão única nesta sessão, e a prova 19 declara isso.
+    // ...E NO TELEFONE, onde a geometria é outra e a peça se muda de
+    // lugar: lá a ficha do objeto é uma FOLHA DE BAIXO de largura
+    // inteira, e a meia altura cai dentro dela — a bússola encosta na
+    // barra (`--barra-fim`) em vez de ficar centrada. Por isso a faixa
+    // do meio NÃO é cobrada aqui: o que se cobra é o que importa nas
+    // duas telas, que é não encostar em NADA. Só se trocam as MÉTRICAS
+    // (reversível); a emulação de TOQUE não entra — ela é de mão única
+    // nesta sessão, e a prova 19 declara isso.
     await sessao.send('Emulation.setDeviceMetricsOverride', {
       width: 390, height: 844, deviceScaleFactor: 1, mobile: false,
     });
@@ -2065,11 +2073,11 @@ try {
     const noTelefone = await bussola();
     conferir(
       noTelefone.acesa && noTelefone.temCaixa && noTelefone.dentroDaTela
-        && noTelefone.naBordaDireita && noTelefone.naFaixaDoMeio
-        && noTelefone.encosta === 0,
+        && noTelefone.naBordaEsquerda
+        && noTelefone.encosta.length === 0,
       `...e a 390×844 ela continua inteira em (${noTelefone.x},`
         + ` ${noTelefone.y}), sem encostar na barra nem nas alças`
-        + ` (${noTelefone.encosta} sobreposições)`
+        + ` (sobreposições: ${JSON.stringify(noTelefone.encosta)})`
     );
     await sessao.send('Emulation.clearDeviceMetricsOverride');
     await dorme(600);
