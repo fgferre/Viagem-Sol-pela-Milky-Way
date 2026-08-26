@@ -1574,15 +1574,19 @@ rodada só virou diário — e o padrão é sempre o mesmo, já visto no
 PENDENCIAS pré-reforma e nos testes (item 99): **escrever é barato para
 quem escreve e caro para quem lê depois; acrescentar nunca dói na hora, e
 ninguém apaga**. O diagnóstico do coordenador, registrado para a decisão:
-a cura que já funcionou (vivo/museu) tratou UM arquivo; falta a regra
-GERAL, a mesma do item 99 — **teto com porteiro para todo registro vivo**:
-cada um declara no cabeçalho quantas linhas pode ter, e quem quer
-escrever acima do teto primeiro apaga ou destila (o auditor de etapa
-confere o teto como confere o contador). E a regra do bastão em
-particular: **bilhete se REESCREVE inteiro a cada passagem, nunca se
-acrescenta** — tamanho constante, só ponteiro e lições. A DECISÃO é dele;
-a obra, se aprovada, anda junto com o item **99**, que é a mesma doença
-noutro órgão.
+o coordenador propôs "teto com porteiro" para todo registro vivo — e
+**ELE RECUSOU, no mesmo fecho, com a regra mais simples que fica sendo a
+lei.** Palavras dele: *"temos que simplesmente apagar as linhas feitas e
+nao criar arquivos novos, a arquitetura é fixa. Se está crescendo muito o
+arquivo é porque temos um backlog grande a resolver mesmo... já o arquivo
+de memória nao tem problema crescer tanto, ou talvez possamos vetorizá-lo
+no futuro se isso chegar a virar um problema mesmo."* Traduzido em três
+regras: (1) **a arquitetura da documentação é FIXA — nenhum documento
+novo, nunca**; (2) **linha feita se APAGA do vivo** (o fluxo vivo→museu
+que já existe é o cumprimento disso — manter); (3) **tamanho de arquivo
+não é problema a policiar**: o vivo grande reflete backlog real, e a
+memória de coordenador pode crescer livre (vetorizar é opção futura SE
+um dia doer). Sem teto, sem porteiro, sem burocracia nova.
 
 **101.** (Ruído de instrumento, achado em 25/08 fechando o item 88 —
 irmão dos itens 49, 80 e 85.) **O anel de Saturno treme entre capturas do
