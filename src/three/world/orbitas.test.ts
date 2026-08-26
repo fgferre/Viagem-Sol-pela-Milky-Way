@@ -53,6 +53,8 @@ import {
   CORPOS_COM_ORBITA,
   Orbitas,
   LARGURA_DA_FITA_PX,
+  SAIA_DO_AA_PX,
+  larguraVisivelDaFitaPx,
   PONTOS_POR_ORBITA,
   conicaOsculadora,
   escreverLaco,
@@ -580,8 +582,14 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
         resolution: { x: number; y: number };
       };
     }).material;
-    expect(material.linewidth).toBe(LARGURA_DA_FITA_PX);
+    // OS DOIS NÚMEROS (§5d): o material leva a largura INCHADA — o traço
+    // visível MAIS a saia do AA —, e a saia é o que a beira em rampa
+    // gasta. Cobrar só `1,25` deixaria passar uma fita sem saia (beira em
+    // escada de novo) e cobrar só `2,25` deixaria passar quem engordasse
+    // o traço visível fingindo que era AA.
+    expect(material.linewidth).toBe(LARGURA_DA_FITA_PX + SAIA_DO_AA_PX);
     expect(LARGURA_DA_FITA_PX).toBe(1.25);
+    expect(SAIA_DO_AA_PX).toBe(1);
     // em unidades de MUNDO a largura deixaria de ser um pixel e passaria
     // a encolher com a distância — o oposto do que a fita é
     expect(material.worldUnits).toBe(false);
@@ -590,6 +598,134 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     expect(material.alphaToCoverage).toBe(false);
     expect(material.resolution.x, 'a camada escreveu `resolution`').toBe(0);
     expect(material.resolution.y, 'a camada escreveu `resolution`').toBe(0);
+    orbitas.dispose();
+  });
+
+  /**
+   * A LARGURA QUE O MATERIAL RECEBEU depois de um quadro naquela janela —
+   * é o número que a GPU lê, não uma cópia da conta.
+   */
+  function larguraNoQuadro(quadro: QuadroEmPx): number {
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    const cam = new THREE.PerspectiveCamera(35, 4 / 3, 1e-9, 1e6);
+    cam.updateMatrixWorld(true);
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    orbitas.update(cam, quadro, Math.tan((35 * Math.PI) / 360), 0, null, 'atlas');
+    const largura = (orbitas.group.children[0] as unknown as {
+      material: { linewidth: number };
+    }).material.linewidth;
+    orbitas.dispose();
+    return largura;
+  }
+
+  it('a fita ENGROSSA com a janela, e a régua é o pixel CSS (§5d · A3)', () => {
+    // A LEI: `1,25 · max(1, min(lado CSS)/800)`, e a saia SOMA DEPOIS.
+    //
+    // NA JANELA DE REFERÊNCIA o fator é 1 e a fita é a de sempre.
+    expect(larguraVisivelDaFitaPx({ larguraPx: 1200, alturaPx: 800, pixelRatio: 1 }))
+      .toBeCloseTo(1.25, 12);
+    // ABAIXO DELA a fita NÃO encolhe — o `max` é piso, não escala
+    expect(larguraVisivelDaFitaPx({ larguraPx: 400, alturaPx: 300, pixelRatio: 1 }))
+      .toBeCloseTo(1.25, 12);
+    // ACIMA DELA cresce na proporção do LADO MENOR: 900/800 = 1,125
+    expect(larguraVisivelDaFitaPx({ larguraPx: 1600, alturaPx: 900, pixelRatio: 1 }))
+      .toBeCloseTo(1.25 * 1.125, 12);
+
+    // A ARMADILHA (i) DO ITEM 83, e é ela que este bloco existe para
+    // pegar: o `QuadroEmPx` fala em px de DISPOSITIVO. Uma janela de
+    // 1200×900 CSS num Retina chega aqui como 2400×1800 — quem esquecer
+    // de dividir pelo `pixelRatio` mede 1800 em vez de 900 e devolve
+    // fator 2,25 no lugar de 1,125, uma fita com o DOBRO da grossura.
+    const retina = { larguraPx: 2400, alturaPx: 1800, pixelRatio: 2 };
+    expect(larguraVisivelDaFitaPx(retina), 'a fita mediu px de dispositivo')
+      .toBeCloseTo(1.25 * 1.125, 12);
+    // e a invariância que a casa exige de tudo que tem tamanho de tela: a
+    // MESMA janela em CSS dá a MESMA fita em 1×, 1,5× e 2×
+    for (const dpr of [1, 1.5, 2, 3]) {
+      expect(
+        larguraVisivelDaFitaPx({ larguraPx: 1200 * dpr, alturaPx: 900 * dpr, pixelRatio: dpr }),
+        `dpr ${dpr}`
+      ).toBeCloseTo(1.25 * 1.125, 12);
+    }
+
+    // E O QUADRO ESCREVE ISSO NO MATERIAL, com a saia por cima — os DOIS
+    // números, da mesma conta. Sem esta metade a lei viveria numa função
+    // pura que ninguém chama.
+    expect(larguraNoQuadro(retina)).toBeCloseTo(1.25 * 1.125 + SAIA_DO_AA_PX, 12);
+    expect(larguraNoQuadro({ larguraPx: 800, alturaPx: 800, pixelRatio: 1 }))
+      .toBeCloseTo(LARGURA_DA_FITA_PX + SAIA_DO_AA_PX, 12);
+    // A ARMADILHA (ii): a saia é 1 px CSS de rampa em QUALQUER janela, e
+    // não uma fração da largura. Multiplicá-la pelo fator daria 2,53125.
+    expect(larguraNoQuadro(retina) - larguraVisivelDaFitaPx(retina))
+      .toBeCloseTo(SAIA_DO_AA_PX, 12);
+  });
+
+  it('a SAIA suaviza a beira, e o miolo acompanha a largura viva (§5d · A2)', () => {
+    // O FRAGMENTO É TEXTO, e em Node não há GPU: o que se afere é a
+    // cirurgia que a camada instala, rodando o `onBeforeCompile` à mão
+    // sobre um fragment com a forma do `LineMaterial`. É o mesmo shader
+    // que o navegador compilaria.
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    const material = (orbitas.group.children[0] as unknown as {
+      material: {
+        linewidth: number;
+        onBeforeCompile(s: {
+          uniforms: Record<string, { value: unknown }>;
+          fragmentShader: string;
+        }): void;
+      };
+    }).material;
+    const ALVO = 'gl_FragColor = vec4( diffuseColor.rgb, alpha );';
+    const compilar = () => {
+      const shader = {
+        uniforms: {} as Record<string, { value: unknown }>,
+        fragmentShader:
+          `varying vec2 vUv;\nvoid main() {\n\tfloat alpha = opacity;\n\t${ALVO}\n}`,
+      };
+      material.onBeforeCompile(shader);
+      return shader;
+    };
+
+    const shader = compilar();
+    const fonte = shader.fragmentShader;
+    // A SAIA EXISTE, e o nome é `uMiolo` — `nucleo` é o disco da cessão,
+    // e trocar os dois seria trocar a largura pelo buraco
+    expect(fonte, 'a saia do AA sumiu do fragmento').toContain('uMiolo');
+    expect(fonte).toContain('float u = abs(vUv.x);');
+    expect(fonte).toContain('fwidth(u)');
+    // NÃO É TUBO: o miolo fica chapado. O `sqrt(1−u²)` foi a leitura
+    // errada de 24/08 e está PROIBIDO pelo item 83 — se voltar, volta
+    // aqui em vermelho.
+    expect(fonte, 'o perfil de tubo voltou: a fita é CHAPADA').not.toContain('sqrt');
+    // A ORDEM DO §5d: a saia resolve a largura ANTES de a cessão abrir o
+    // buraco, e as duas ANTES do `gl_FragColor`.
+    expect(fonte.indexOf('uMiolo - pixel')).toBeLessThan(fonte.indexOf('uNucleo.w > 0.0'));
+    expect(fonte.indexOf('uNucleo.w > 0.0')).toBeLessThan(fonte.indexOf(ALVO));
+
+    // O MIOLO É A FRAÇÃO CHAPADA da largura inchada, e ele ANDA COM A
+    // JANELA (§5d): com a saia fixa e a largura crescendo, uma fração
+    // literal no GLSL mentiria em toda janela grande.
+    const miolo = () => shader.uniforms.uMiolo.value as number;
+    const cam = new THREE.PerspectiveCamera(35, 4 / 3, 1e-9, 1e6);
+    cam.updateMatrixWorld(true);
+    const tan = Math.tan((35 * Math.PI) / 360);
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+
+    orbitas.update(cam, { larguraPx: 800, alturaPx: 800, pixelRatio: 1 }, tan, 0, null, 'atlas');
+    expect(miolo(), 'a janela de referência: 1,25 de 2,25')
+      .toBeCloseTo(LARGURA_DA_FITA_PX / (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX), 12);
+
+    const grande = { larguraPx: 2400, alturaPx: 1800, pixelRatio: 2 };
+    orbitas.update(cam, grande, tan, 0, null, 'atlas');
+    const visivel = larguraVisivelDaFitaPx(grande);
+    expect(miolo(), 'o miolo ficou preso na janela de referência')
+      .toBeCloseTo(visivel / (visivel + SAIA_DO_AA_PX), 12);
+    // e é o MESMO par de números que o material recebeu: a beira que o
+    // shader suaviza é a beira que a geometria desenhou
+    expect(material.linewidth).toBeCloseTo(visivel + SAIA_DO_AA_PX, 12);
+    expect(miolo() * material.linewidth).toBeCloseTo(visivel, 12);
     orbitas.dispose();
   });
 
