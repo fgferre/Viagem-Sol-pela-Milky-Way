@@ -162,10 +162,29 @@
 // do que o traço que se quer ver, e o excedente some numa rampa. O
 // material nasce com `LARGURA_DA_FITA_PX + SAIA_DO_AA_PX`; no fragmento,
 // `u = |vUv.x|` corre de 0 (eixo da fita) a 1 (beira do quad INCHADO), e
-// o alfa cai de 1 a 0 entre o `uMiolo` e essa beira. O miolo fica
-// CHAPADO em `BRILHO_DA_LINHA` — **não é tubo**, não há perfil através da
-// largura, e o `sqrt(1−u²)` que a leitura de 24/08 propôs está proibido
-// (a referência é chapada: `glowWidth = 0` devolve `edgeGlow() = 1`).
+// o alfa cai de 1 a 0 entre o `uMiolo` e essa beira. Não é tubo, e o
+// `sqrt(1−u²)` que a leitura de 24/08 propôs está proibido (a referência
+// é chapada: `glowWidth = 0` devolve `edgeGlow() = 1`).
+//
+// O MIOLO É CHAPADO QUANDO HÁ LARGURA PARA ELE, e a frase precisa desta
+// metade — dizê-la em termos absolutos era mentira, e uma auditoria a
+// pegou em 26/08. A rampa começa em `uMiolo − fwidth(u)`, e o `fwidth`
+// cresce quando a fita tem POUCOS pixels de dispositivo. O limiar tem
+// número, e são DOIS porque `fwidth` depende da inclinação: sobra platô
+// acima de **3,60 px de dispositivo** na fita inchada quando ela corre
+// alinhada aos eixos, e acima de **5,09 px** quando corre a 45°. Abaixo
+// disso a rampa toma a fita inteira e o que se garante é o CENTRO
+// PLENO, nunca menos que `BRILHO_DA_LINHA`. Em `pixelRatio` 2 e janela
+// de referência a fita inchada dá 4,5 px: tem platô no arco alinhado e
+// NÃO tem no arco a 45° — e toda elipse tem os dois. Quem garante o
+// centro é o grampo em zero (`perfilDaSaia`), e ele existe porque sem
+// ele o regime fino perdia 15,6% de brilho no eixo — perfil através da
+// largura, exatamente o que se proibiu.
+//
+// E O REGIME FINO É ALCANÇÁVEL, não hipótese: o preset `performance` do
+// `core/engine.ts` tem `pixelRatio` 1,0 — por `?q=performance`, por
+// auto-degradação abaixo de 34 fps, e em qualquer monitor não-Retina,
+// onde `min(devicePixelRatio, preset)` dá 1.
 //
 // A LARGURA CRESCE COM A JANELA, e é o único fator: `max(1, min(lado
 // CSS)/800)`, o mesmo da referência. Numa janela pequena o fator é 1 e
@@ -424,6 +443,14 @@ export const LARGURA_DA_FITA_PX = 1.25;
  * 1 px é o mínimo que cobre um pixel inteiro de rampa em qualquer tela:
  * menos que isso e a rampa não tem onde acontecer no downsample da casa;
  * mais que isso e a fita ganha um halo que a referência não tem.
+ *
+ * O QUE ELA NÃO PROMETE, e a distinção é medida (§5d): que o miolo fique
+ * CHAPADO em toda tela. A rampa começa em `uMiolo − fwidth(u)`, e o
+ * `fwidth` cresce quando a fita tem poucos pixels de DISPOSITIVO — sobra
+ * platô acima de 3,60 px na fita inchada com ela alinhada aos eixos, e
+ * acima de 5,09 px com ela a 45°; abaixo disso a rampa toma a fita
+ * inteira. O que a saia garante em QUALQUER densidade é o CENTRO PLENO,
+ * e quem o garante é o grampo em zero de `perfilDaSaia`.
  */
 export const SAIA_DO_AA_PX = 1;
 
@@ -453,6 +480,56 @@ export function larguraVisivelDaFitaPx(quadro: QuadroEmPx): number {
   const ladoMenorCss = Math.min(quadro.larguraPx, quadro.alturaPx) / ratio;
   const fator = Math.max(1, ladoMenorCss / JANELA_DE_REFERENCIA_PX);
   return LARGURA_DA_FITA_PX * fator;
+}
+
+/**
+ * O PERFIL DA SAIA ATRAVÉS DA LARGURA (§5d) — a MESMA conta que o
+ * fragmento faz, em TypeScript, para uma máquina sem GPU poder julgá-la.
+ *
+ * `u` é a distância ao eixo em frações da meia largura INCHADA (0 no
+ * eixo, 1 na beira do quad); `miolo` é onde a rampa começaria; `pixel` é
+ * o `fwidth(u)`, o tamanho de um pixel de dispositivo nessa mesma régua.
+ * Devolve o multiplicador do alfa, de 1 (fita cheia) a 0 (céu).
+ *
+ * O GRAMPO EM ZERO É O CONSERTO DE 26/08, e ele nasceu de uma medida: sem
+ * ele, quando `pixel` passa do `miolo` o começo da rampa fica NEGATIVO e
+ * o `smoothstep` já morde o EIXO da fita — em `pixelRatio` 1, com a fita
+ * inchada valendo 2,25 px de dispositivo, `fwidth` dá 0,889 contra um
+ * miolo de 0,556, o começo cai em −0,333 e o centro perde **15,6% de
+ * brilho**. Isso é exatamente o perfil através da largura que o item 83
+ * proíbe, e chegava por um caminho que ninguém tinha fotografado.
+ *
+ * E O REGIME É ALCANÇÁVEL, não teórico: o preset `performance` do
+ * `core/engine.ts` tem `pixelRatio` 1,0 — por `?q=performance`, por
+ * auto-degradação abaixo de 34 fps, e em QUALQUER monitor não-Retina,
+ * onde `min(devicePixelRatio, preset)` dá 1.
+ *
+ * O QUE O GRAMPO NÃO FAZ é devolver o platô: com 2,25 px de dispositivo
+ * não HÁ largura para um platô, e o que se ganha é o centro pleno com a
+ * rampa tomando a fita inteira — o melhor que essa densidade permite.
+ * Onde a fita é grossa o bastante, o grampo não muda nada, porque ali o
+ * começo da rampa já era positivo.
+ */
+export function perfilDaSaia(u: number, miolo: number, pixel: number): number {
+  const inicio = Math.max(miolo - pixel, 0);
+  const t = Math.min(1, Math.max(0, (Math.abs(u) - inicio) / (1 - inicio)));
+  return 1 - t * t * (3 - 2 * t);
+}
+
+/**
+ * O `fwidth(u)` que a GPU verá, dado quantos px de DISPOSITIVO a fita
+ * inchada ocupa. `u` corre 0→1 ao longo de MEIA largura, então o
+ * gradiente vale `2/largura`; e `fwidth` é `|dFdx| + |dFdy|`, que para
+ * uma fita a 45° chega a `√2` vezes o gradiente e para uma alinhada aos
+ * eixos vale exatamente ele.
+ *
+ * O PIOR CASO É O DE 45°, e é por ele que o dente cobra: uma fita de
+ * órbita cruza todas as inclinações ao longo do laço, então o regime
+ * ruim acontece em algum arco de TODA elipse desenhada.
+ */
+export function pixelDaSaia(larguraInchadaEmDispositivo: number, diagonal = false): number {
+  const gradiente = 2 / larguraInchadaEmDispositivo;
+  return diagonal ? gradiente * Math.SQRT2 : gradiente;
 }
 
 /**
@@ -1201,10 +1278,14 @@ export class Orbitas {
         )
         .replace(
           ALVO,
-          // (2) A SAIA: o miolo fica chapado, só a beira some (§5d)
+          // (2) A SAIA (§5d). O `max(…, 0.0)` é o GRAMPO do eixo: sem
+          // ele, numa fita fina de dispositivo o `fwidth` passa do
+          // miolo, o começo da rampa fica NEGATIVO e o centro da fita
+          // perde brilho — o perfil através da largura que o item 83
+          // proíbe. Ver `perfilDaSaia`, que é esta conta em TypeScript.
           'float u = abs(vUv.x);\n'
             + '\tfloat pixel = fwidth(u);\n'
-            + '\talpha *= 1.0 - smoothstep(uMiolo - pixel, 1.0, u);\n'
+            + '\talpha *= 1.0 - smoothstep(max(uMiolo - pixel, 0.0), 1.0, u);\n'
             // (3) A CESSÃO ao núcleo aceso
             + '\tif (uNucleo.w > 0.0) {\n'
             + '\t\talpha *= smoothstep(uNucleo.z, uNucleo.w,\n'
@@ -1220,7 +1301,8 @@ export class Orbitas {
    * shader de suavizar uma beira que a geometria pôs noutro lugar.
    *
    * O `linewidth` do material é a largura INCHADA (visível + saia); o
-   * `uMiolo` é a fração dela que fica chapada. Uma linha só entre os
+   * `uMiolo` é onde a rampa começaria — a fração chapada quando há
+   * largura de dispositivo para um platô (§5d). Uma linha só entre os
    * dois: não há caminho em que um seja recalculado e o outro não.
    *
    * ELA RODA ANTES DO GATE DE FASE, com a camada apagada inclusive. É

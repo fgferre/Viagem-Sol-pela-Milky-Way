@@ -58,6 +58,8 @@ import {
   PASSO_DA_FITA,
   escalaDaBissetriz,
   larguraVisivelDaFitaPx,
+  perfilDaSaia,
+  pixelDaSaia,
   PONTOS_POR_ORBITA,
   conicaOsculadora,
   escreverLaco,
@@ -832,6 +834,93 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     // shader suaviza é a beira que a geometria desenhou
     expect(material.linewidth).toBeCloseTo(visivel + SAIA_DO_AA_PX, 12);
     expect(miolo() * material.linewidth).toBeCloseTo(visivel, 12);
+    orbitas.dispose();
+  });
+
+  it('o CENTRO da fita nunca perde brilho, nem em pixelRatio 1 (§5d)', () => {
+    // O DEFEITO QUE ISTO PEGA, e ele foi MEDIDO por auditoria em 26/08:
+    // `fwidth(u)` cresce quando a fita tem poucos pixels de DISPOSITIVO.
+    // Em `pixelRatio` 1 a fita inchada vale 2,25 px, `fwidth` dá 0,889
+    // contra um miolo de 0,556, e sem o grampo o começo da rampa cai em
+    // −0,333: o `smoothstep` morde o EIXO e o centro perde 15,6% de
+    // brilho. Isso é PERFIL ATRAVÉS DA LARGURA, que o item 83 proíbe.
+    //
+    // E O REGIME É ALCANÇÁVEL: o preset `performance` do `engine.ts` tem
+    // `pixelRatio` 1,0 — por `?q=performance`, por auto-degradação
+    // abaixo de 34 fps, e em qualquer monitor não-Retina.
+    const miolo = LARGURA_DA_FITA_PX / (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX);
+
+    // A LARGURA INCHADA EM PX DE DISPOSITIVO, nos dois regimes. Em dpr 1
+    // a janela de referência dá 2,25; em dpr 2, 4,5.
+    const dpr1 = (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX) * 1;
+    const dpr2 = (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX) * 2;
+
+    // O EIXO É PLENO NOS DOIS, e nas duas inclinações. O pior caso é a
+    // fita a 45°, que TODA elipse tem em algum arco.
+    for (const [nome, largura] of [['dpr 1', dpr1], ['dpr 2', dpr2]] as const) {
+      for (const diagonal of [false, true]) {
+        const pixel = pixelDaSaia(largura, diagonal);
+        expect(
+          perfilDaSaia(0, miolo, pixel),
+          `${nome}${diagonal ? ' a 45°' : ''}: o centro da fita perdeu brilho`
+        ).toBeCloseTo(1, 12);
+      }
+    }
+
+    // ...e a BEIRA continua morrendo, senão o grampo teria matado a saia
+    for (const largura of [dpr1, dpr2]) {
+      expect(perfilDaSaia(1, miolo, pixelDaSaia(largura))).toBeCloseTo(0, 12);
+    }
+
+    // O PLATÔ EXISTE EM dpr 2 e NÃO em dpr 1, e o teste diz as duas
+    // coisas — é essa a honestidade que o item passou a carregar: o
+    // miolo é chapado QUANDO HÁ LARGURA para ele, e com 2,25 px de
+    // dispositivo não há. Em dpr 2 alinhada o começo da rampa é 0,111,
+    // então metade do caminho até ele ainda está cheio.
+    expect(
+      perfilDaSaia(0.05, miolo, pixelDaSaia(dpr2)),
+      'dpr 2: o platô do miolo sumiu'
+    ).toBeCloseTo(1, 12);
+    expect(
+      perfilDaSaia(0.05, miolo, pixelDaSaia(dpr1)),
+      'dpr 1: não HÁ platô com 2,25 px de dispositivo, e o item não promete um'
+    ).toBeLessThan(1);
+    // ...e NEM MESMO em dpr 2 o platô existe no arco a 45°, porque
+    // `fwidth` é `|dFdx| + |dFdy|` e cresce √2 vezes ali. Toda elipse
+    // tem os dois arcos, então o item não pode prometer platô em termos
+    // absolutos nem na tela dele. É esta linha que faz o fator diagonal
+    // de `pixelDaSaia` carregar peso: sem ela, apagá-lo passava verde.
+    expect(
+      perfilDaSaia(0.05, miolo, pixelDaSaia(dpr2, true)),
+      'dpr 2 a 45°: o platô não existe aqui, e o teste tem de saber disso'
+    ).toBeLessThan(1);
+    // e os DOIS limiares, em px de dispositivo, escritos como número: o
+    // platô nasce acima de 3,60 px alinhada e de 5,09 px a 45°
+    expect(2 / miolo).toBeCloseTo(3.6, 2);
+    expect((2 * Math.SQRT2) / miolo).toBeCloseTo(5.09, 2);
+
+    // O GRAMPO SÓ SOBE ALFA, nunca desce: onde o começo já era positivo
+    // ele não muda um bit, e é isso que faz o conserto ser seguro.
+    const semGrampo = (u: number, pixel: number) => {
+      const inicio = miolo - pixel;
+      const t = Math.min(1, Math.max(0, (u - inicio) / (1 - inicio)));
+      return 1 - t * t * (3 - 2 * t);
+    };
+    for (const u of [0, 0.1, 0.3, 0.6, 0.9]) {
+      const p2 = pixelDaSaia(dpr2);
+      expect(perfilDaSaia(u, miolo, p2), `dpr 2 alinhada em u=${u}`)
+        .toBeCloseTo(semGrampo(u, p2), 12);
+      const p1 = pixelDaSaia(dpr1);
+      expect(perfilDaSaia(u, miolo, p1), `dpr 1 em u=${u}: o grampo baixou o alfa`)
+        .toBeGreaterThanOrEqual(semGrampo(u, p1) - 1e-12);
+    }
+
+    // ...e o shader carrega o MESMO grampo. Sem este pino, a conta de
+    // cima viveria numa função pura que a GPU não lê.
+    const orbitas = new Orbitas();
+    const fonte = compilarDeVerdade(materialDe(orbitas)).fragmentShader;
+    expect(fonte, 'o grampo do eixo sumiu do fragmento')
+      .toContain('smoothstep(max(uMiolo - pixel, 0.0), 1.0, u)');
     orbitas.dispose();
   });
 

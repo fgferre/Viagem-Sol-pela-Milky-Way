@@ -41,7 +41,7 @@
 // quase não mexe na FWHM; o A3 mexe na FWHM e não mexe na subida.
 //
 // ------------------------------------------------------------
-// AS DUAS JANELAS, e por que a MESMA proporção
+// AS TRÊS JANELAS, e por que a MESMA proporção
 // ------------------------------------------------------------
 // A lente da casa é de FOV VERTICAL: o laço de Saturno ocupa a mesma
 // fração da ALTURA em qualquer janela. Duas janelas 4:3 — 1067×800 e
@@ -55,8 +55,16 @@
 // 1,5. Antes do B1 as duas davam a MESMA fita; depois dele a grande dá
 // uma fita 1,5× mais larga, e é esse par que prova o A3.
 //
-// DPR 2 nas duas, porque é a tela dele, e porque a rampa de 1 px CSS não
-// tem onde acontecer num quadro de dispositivo a 1×.
+// DPR 2 nessas duas, porque é a tela dele.
+//
+// E UMA TERCEIRA, de dpr 1, acrescentada em 26/08 por auditoria. Ela é o
+// regime em que a fita inchada vale 2,25 px de DISPOSITIVO: ali o
+// `fwidth(u)` do fragmento passa do `uMiolo`, a rampa toma a fita
+// inteira, e sem o grampo de `perfilDaSaia` o CENTRO perdia 15,6% de
+// brilho. O regime é alcançável — preset `performance`, auto-degradação
+// abaixo de 34 fps, monitor não-Retina —, e era o único que nunca tinha
+// sido fotografado. A perna leva `?q=performance` junto do dpr, para o
+// preset do engine casar com a emulação em vez de as duas discordarem.
 //
 // ------------------------------------------------------------
 // ONDE ELE OLHA, e como acha a fita sem número decorado
@@ -89,12 +97,21 @@ export const VISTA = '/?pos=0,0,0.00019393&look=0,0,0&jd=2460409.26395835&q=cine
 export const APP = process.env.APP_URL || 'http://127.0.0.1:5173';
 
 /**
- * AS DUAS JANELAS. Mesma proporção 4:3 para enquadrarem a mesma cena;
- * lados menores 800 e 1200 para caírem em fator 1,0 e 1,5 da lei do A3.
+ * AS TRÊS JANELAS. Mesma proporção 4:3 para enquadrarem a mesma cena;
+ * lados menores 800 e 1200 para caírem em fator 1,0 e 1,5 da lei do A3,
+ * e a terceira repetindo a de 800 com `pixelRatio` 1 para fotografar o
+ * regime fino de dispositivo.
  */
 export const JANELAS = [
   { nome: 'p800', largura: 1067, altura: 800, dpr: 2, fatorEsperado: 1 },
   { nome: 'g1200', largura: 1600, altura: 1200, dpr: 2, fatorEsperado: 1.5 },
+  // A PERNA DE dpr 1 (26/08, por auditoria) — o regime em que a fita
+  // inchada vale 2,25 px de DISPOSITIVO e a rampa toma a fita inteira. É
+  // alcançável de verdade (preset `performance`, auto-degradação abaixo
+  // de 34 fps, monitor não-Retina), e era o único que nunca tinha sido
+  // fotografado. `?q=performance` na URL casa o preset com o dpr, para a
+  // foto ser o regime e não uma emulação pela metade.
+  { nome: 'dpr1', largura: 1067, altura: 800, dpr: 1, fatorEsperado: 1, q: 'performance' },
 ];
 
 /**
@@ -273,8 +290,11 @@ export function medirPng(bytes) {
 
 /** A captura de UMA janela, com o carimbo do código que a produziu. */
 async function capturar(janela, porta) {
+  // a vista já pede `q=cinema`; a perna de dpr 1 troca o preset, para o
+  // `pixelRatio` do engine casar com o da emulação
+  const url = janela.q ? `${APP}${VISTA}`.replace('q=cinema', `q=${janela.q}`) : `${APP}${VISTA}`;
   const { png } = await capturarCDP({
-    url: `${APP}${VISTA}`,
+    url,
     largura: janela.largura,
     altura: janela.altura,
     dpr: janela.dpr,
@@ -338,7 +358,7 @@ async function comporPrancha(zoom = 5) {
     const r = j.recorte;
     const url = pathToFileURL(resolve(dir, `${lado.estado}-${janela.nome}.png`)).href;
     return `<div class="c">
-      <b>${lado.estado} · janela ${janela.largura}×${janela.altura} CSS · fator ${janela.fatorEsperado}×</b>
+      <b>${lado.estado} · janela ${janela.largura}×${janela.altura} CSS · fator ${janela.fatorEsperado}× · <u>dpr ${janela.dpr}</u>${janela.q ? ` · ?q=${janela.q}` : ''}</b>
       <div class="jan" style="width:${r.w * zoom}px;height:${r.h * zoom}px">
         <img src="${url}" style="left:${-r.x * zoom}px;top:${-r.y * zoom}px;width:${j.quadro.split('x')[0] * zoom}px">
       </div>
@@ -358,21 +378,28 @@ async function comporPrancha(zoom = 5) {
     .jan{position:relative;overflow:hidden;border:1px solid #2c3346;background:#000}
     .jan img{position:absolute;image-rendering:pixelated}
   </style>
-  <h1>Item 83 · B1 — a beira da fita (A2) e a largura na janela (A3)</h1>
+  <h1>Item 83 · B1 — a beira da fita: rampa, largura e o eixo</h1>
   <p>Zoom ${zoom}× em pixels crus (sem interpolação) no alto do laço de Saturno, corte perpendicular à fita.
-  <b>A2 — a beira sai da ESCADA e vira RAMPA:</b> em cima dá para contar os degraus; embaixo não há degrau nenhum.
-  O número é a <i>subida</i>, quanto a luz demora a ir de 10% a 90% atravessando a beira.
-  <b>A3 — a fita fica IGUAL na janela de 800 e engrossa na de 1200:</b> o número é a <i>FWHM</i>, a grossura do traço.
-  Na coluna da esquerda ela não muda (3,01 → 3,02); na da direita sobe de 3,05 para 4,23.
+  Cada LINHA é uma janela, com o mesmo recorte dos dois lados; o par de cada linha é o que se compara.
+  <br><b>Os dois números.</b> A <i>subida</i> é quanto a luz demora a ir de 10% a 90% atravessando a beira —
+  é o tamanho da RAMPA, e é o número do A2: beira dura sobe no espaço de um pixel, beira com saia sobe ao
+  longo dela. A <i>FWHM</i> é a grossura do traço a meia altura — é o número do A3, que tem de ficar igual
+  numa janela de lado 800 e crescer numa de 1200.
+  <br><b>As três janelas.</b> As duas de dpr 2 são a tela dele, em fator 1× e 1,5×.
+  A de <b>dpr 1</b> é o regime FINO de dispositivo, alcançável de verdade — preset <code>performance</code>,
+  auto-degradação abaixo de 34 fps, monitor não-Retina. Ali a fita inchada vale 2,25 px de DISPOSITIVO e o
+  <code>fwidth</code> do fragmento passa do miolo: sem o grampo <code>max(uMiolo − pixel, 0)</code> o começo
+  da rampa fica NEGATIVO e o <b>centro da fita perde 15,6% de brilho</b> — perfil através da largura, que
+  este item proíbe. Com o grampo, o eixo volta ao pleno e a rampa toma a fita inteira, que é o melhor que
+  2,25 px permitem: <b>não há platô nessa densidade, e o item não promete um</b>.
   <br><b>A franja colorida não é da fita:</b> é a aberração cromática da lente da casa (<code>uCA</code>, no
-  <code>post.ts</code>), que é mais forte longe do centro do quadro — e ela está IGUAL nos quatro painéis.
-  <br>O colar de contas continua MORTO depois desta obra: <code>colar-da-fita.mjs</code> devolve 0 contas em 0 grupos.
+  <code>post.ts</code>), mais forte longe do centro do quadro, e igual nos dois lados de cada par.
   <br>Antes: <code>${lados[0].dados.carimbo}</code> · Depois: <code>${lados[1].dados.carimbo}</code>.
   Reproduz com <code>ESTADO=antes|depois node scripts/visual/beira-da-fita.mjs</code> e <code>--prancha</code>.</p>
   <div class="g">
-    ${lados.map((l) => JANELAS.map((j) => celula(l, j)).join('')).join('')}
+    ${JANELAS.map((j) => lados.map((l) => celula(l, j)).join('')).join('')}
   </div>`;
-  const arquivo = resolve('capturas', 'item83-b1-beira.html');
+  const arquivo = resolve('capturas', `${process.env.SAIDA || 'item83-b1-beira'}.html`);
   writeFileSync(arquivo, html);
   const sessao = await abrirSessao({ janela: `${largura}x1200`, prefixo: 'folha83b1' });
   try {
@@ -397,7 +424,8 @@ async function comporPrancha(zoom = 5) {
       clip: { x: 0, y: 0, width: largura, height: altura, scale: 1 },
     });
     // AO LADO, NUNCA POR CIMA (regra 7 do AGENTS.md)
-    const saida = semSobrescrever(resolve('capturas', 'item83-b1-beira.png'));
+    const base = process.env.SAIDA || 'item83-b1-beira';
+  const saida = semSobrescrever(resolve('capturas', `${base}.png`));
     writeFileSync(saida, Buffer.from(shot.data, 'base64'));
     process.stdout.write(`[beira] ${saida} · ${largura}x${altura}\n`);
   } finally {
