@@ -592,6 +592,48 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     expect(material.resolution.y, 'a camada escreveu `resolution`').toBe(0);
     orbitas.dispose();
   });
+
+  it('a junta não tem calota, e a fita não fica tracejada (§5c)', () => {
+    // AS TRÊS CHAVES ANDAM JUNTAS, e é por isso que o teste as cobra
+    // juntas: `dashed` sozinho tracejaria a fita, `gapSize` sozinho não
+    // mata calota nenhuma, e `dashSize: 0` faria `mod(x, 0)` — indefinido
+    // em GLSL. Cada uma apagada, sozinha, quebra este teste.
+    const orbitas = new Orbitas();
+    const material = (orbitas.group.children[0] as unknown as {
+      material: { dashed: boolean; dashSize: number; gapSize: number };
+    }).material;
+    // liga o `USE_DASH`, e com ele o `discard` da calota
+    expect(material.dashed, 'a calota voltou: sem USE_DASH não há discard').toBe(true);
+    // `mod(d, dashSize + gapSize) > dashSize` nunca é verdadeiro com vão
+    // zero — o resto vive em [0, dashSize)
+    expect(material.gapSize, 'vão diferente de zero TRACEJA a órbita').toBe(0);
+    expect(material.dashSize, 'dashSize zero é mod(x, 0), indefinido').toBeGreaterThan(0);
+    orbitas.dispose();
+  });
+
+  it('a distância de traço é calculada UMA vez, no construtor (§5c)', () => {
+    // O `USE_DASH` EXIGE o atributo; sem ele o material quebra. E ele não
+    // pode nascer no `reamostrar`: `computeLineDistances` aloca um
+    // `InstancedInterleavedBuffer` NOVO por chamada, e aquela função roda
+    // a cada salto de data. Este teste cobra as duas metades: existe
+    // desde o construtor, e NÃO é reposto por instante nenhum.
+    const orbitas = new Orbitas();
+    const geo = (orbitas.group.children[0] as unknown as {
+      geometry: { attributes: Record<string, { data?: unknown } | undefined> };
+    }).geometry;
+    const inicio = geo.attributes.instanceDistanceStart;
+    expect(inicio, 'sem `instanceDistanceStart` o USE_DASH não compila').toBeTruthy();
+    expect(geo.attributes.instanceDistanceEnd).toBeTruthy();
+    const bufferOriginal = inicio!.data;
+    for (const jd of [EPOCA_JD_TDB, EPOCA_JD_TDB + 400, EPOCA_JD_TDB - 700]) {
+      orbitas.escreverInstante(jd, motor);
+      expect(
+        geo.attributes.instanceDistanceStart!.data,
+        'o `reamostrar` recalculou a distância de traço'
+      ).toBe(bufferOriginal);
+    }
+    orbitas.dispose();
+  });
 });
 
 describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {

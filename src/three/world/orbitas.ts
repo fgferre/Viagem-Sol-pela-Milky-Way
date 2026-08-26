@@ -117,6 +117,47 @@
 // cena, e o `logdepthbuf` que o `LineMaterial` traz fica inerte porque a
 // casa não usa profundidade logarítmica.
 //
+// ------------------------------------------------------------
+// 5c. A JUNTA SEM CONTA (item 83 · A1, o L2.5-a)
+// ------------------------------------------------------------
+// A FITA TINHA UM COLAR DE CONTAS, e era defeito MEDIDO: no recorte de
+// 340 colunas da foto de zoom do L2, 54 tinham pico ≥ 215, em grupos de
+// vão rigorosamente CONSTANTE. A causa está no quad: cada segmento
+// nasce com CALOTA REDONDA além das duas pontas, a calota do segmento
+// *k* cobre o corpo do *k+1*, e em aditivo o disco da junta é pintado
+// DUAS vezes (204 → 230). A 1× é sutil; num Retina, é o colar.
+//
+// O DENTE DE CONTINUIDADE NÃO PEGAVA ISTO, e não era frouxidão dele: ele
+// cobra o BUFFER (o fim de um segmento é o começo do próximo, bit a
+// bit), e isso segue verdadeiro. O defeito nasce DEPOIS, na expansão do
+// quad dentro do shader. Buffer certo, desenho duplo.
+//
+// A CURA SÃO TRÊS CHAVES DO PRÓPRIO THREE, e não um shader nosso:
+// `dashed: true` liga o `USE_DASH`, cujo fragmento começa por
+// `if (vUv.y < -1.0 || vUv.y > 1.0) discard` — a calota morre ali, antes
+// de qualquer conta. `gapSize: 0` faz a segunda linha do mesmo bloco
+// (`mod(d, dashSize + gapSize) > dashSize`) nunca ser verdadeira, porque
+// o resto de `mod` vive em `[0, dashSize)`: NÃO SE TRACEJA NADA.
+// `dashSize: 1` é o padrão, e nunca zero — `mod(x, 0)` é indefinido.
+// O que sobra na dobra externa vale `w·tan(θ/2) ≈ 0,015 px`.
+//
+// E O `USE_DASH` COBRA UM ATRIBUTO: `instanceDistanceStart/End`, que só
+// existe depois de `computeLineDistances()`. Ela é chamada UMA vez, no
+// construtor, com as posições ainda zeradas — e servem, porque com
+// `gapSize` zero a distância não decide nada. **NUNCA em `reamostrar`:**
+// aquela função roda a cada salto de data, e `computeLineDistances`
+// aloca um `InstancedInterleavedBuffer` NOVO a cada chamada — seria o
+// mesmo desperdício que a disciplina do buffer (§5) existe para evitar,
+// todo quadro com o relógio andando.
+//
+// A CESSÃO AO NÚCLEO CONTINUA INTEIRA: o `discard` do `USE_DASH` roda
+// ANTES do `gl_FragColor` que a cirurgia de `cederAoNucleo` procura, e a
+// substituição de texto não toca nele.
+//
+// QUEM MEDE ISTO É `scripts/visual/colar-da-fita.mjs`, no Retina e com o
+// relógio ANDANDO — a vista parada não prova um defeito que só existe
+// enquanto o laço é reescrito.
+//
 // TRINTA OBJETOS, E NÃO UM — o "1 draw call" que o estudo oferecia de
 // brinde foi MEDIDO CONTRA O QUE CUSTAVA, e não se paga:
 //   - a ORIGEM FLUTUANTE morreria. Os vértices são relativos ao centro e
@@ -847,10 +888,21 @@ export class Orbitas {
         depthTest: true,
         // sem MSAA nesta casa não há cobertura para escrever (§5)
         alphaToCoverage: false,
+        // A JUNTA SEM CONTA (§5c) — o trio que descarta a calota. NÃO
+        // traceja nada: `gapSize` zero deixa o resto de `mod` sempre
+        // dentro do traço.
+        dashed: true,
+        dashSize: 1,
+        gapSize: 0,
       });
       const nucleo = { value: new THREE.Vector4(0, 0, 0, 0) };
       this.cederAoNucleo(material, nucleo);
       const fita = new LineSegments2(geo, material);
+      // O ATRIBUTO QUE O `USE_DASH` EXIGE (§5c), UMA VEZ E SÓ AQUI: o
+      // vertex lê `instanceDistanceStart/End`, e sem eles o material
+      // quebra. As posições ainda são zero neste ponto — e servem, porque
+      // com `gapSize` zero a distância nunca decide nada.
+      fita.computeLineDistances();
       // slots ocupados: … 6 (marcador), 7 (pontos dos planetas)
       fita.renderOrder = 8;
       fita.visible = false;
@@ -1072,7 +1124,11 @@ export class Orbitas {
     );
     // A DISCIPLINA DO BUFFER (§5): muta-se o array do interleaved e
     // marca-se ELE — nunca `setPositions()`, que alocaria buffer de GPU
-    // novo e recomputaria as bounding volumes a cada salto de data. O
+    // novo e recomputaria as bounding volumes a cada salto de data. E
+    // nunca `computeLineDistances()` (§5c), pela MESMA razão e mais uma:
+    // além de alocar buffer novo por chamada, com `gapSize` zero a
+    // distância não pinta traço nenhum — recalculá-la aqui seria pagar
+    // por quadro para não mudar um pixel. O
     // `needsUpdate` vai no `InstancedInterleavedBuffer` porque os dois
     // atributos (`instanceStart` e `instanceEnd`) são janelas do MESMO
     // array: marcar um atributo não marcaria o outro.
