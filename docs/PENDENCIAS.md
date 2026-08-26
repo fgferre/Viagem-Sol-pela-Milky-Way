@@ -1565,6 +1565,25 @@ conferido contra o código em 25/08:
   qualquer máquina. Quem confere se o escrito é verdade é gente, com
   auditoria por onda.
 
+**A QUEIXA DELE DE 25/08, no fecho da sessão — o modelo AINDA engorda, e
+esta é a terceira vez.** Palavras dele: *"acho que temos que pensar mais
+um pouco no modelo de documentacao viva, novamente vc criou algo e já
+estava engordando o arquivo... nao sei mais o que fazer..."* O caso da
+vez foi o **bastão** (a memória de coordenador entre sessões), que numa
+rodada só virou diário — e o padrão é sempre o mesmo, já visto no
+PENDENCIAS pré-reforma e nos testes (item 99): **escrever é barato para
+quem escreve e caro para quem lê depois; acrescentar nunca dói na hora, e
+ninguém apaga**. O diagnóstico do coordenador, registrado para a decisão:
+a cura que já funcionou (vivo/museu) tratou UM arquivo; falta a regra
+GERAL, a mesma do item 99 — **teto com porteiro para todo registro vivo**:
+cada um declara no cabeçalho quantas linhas pode ter, e quem quer
+escrever acima do teto primeiro apaga ou destila (o auditor de etapa
+confere o teto como confere o contador). E a regra do bastão em
+particular: **bilhete se REESCREVE inteiro a cada passagem, nunca se
+acrescenta** — tamanho constante, só ponteiro e lições. A DECISÃO é dele;
+a obra, se aprovada, anda junto com o item **99**, que é a mesma doença
+noutro órgão.
+
 **101.** (Ruído de instrumento, achado em 25/08 fechando o item 88 —
 irmão dos itens 49, 80 e 85.) **O anel de Saturno treme entre capturas do
 MESMO código.** A vista `saturno-anel`, na leva desde a F6, contra ela
