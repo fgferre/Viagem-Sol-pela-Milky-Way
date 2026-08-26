@@ -66,9 +66,10 @@ perguntas naquele artefato, e as respostas pousaram item a item: **5, 7, 69
 e 79 FECHARAM**; **61, 70, 77 e 82** tiveram a conferência aceita e as fotos
 delas já serviram; o **modo real do 91** volta à prancheta com palavra dele
 (*"escuro demais, repensar"*); **86**, **87** e o novo **100** nasceram
-decididos; e a fita do **83** ficou com uma queixa pela metade, à espera das
-palavras dele. **A fila decidida, que se ACRESCENTA à de cima e não a
-substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
+decididos; e a fita do **83** ficou com uma queixa pela metade — as
+palavras chegaram no chat do mesmo dia (*"lindas e profissionais como as
+do nasa eyes"*; o L2.5-a ANDA, ver o item). **A fila decidida, que se
+ACRESCENTA à de cima e não a substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
 esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
 esperam o olho dele) → ~~**92**~~ (25/08 — pousou, e não era de Éris: era
 da classe dos oito; as duas pranchas esperam o olho dele) → ~~**95**~~
@@ -101,12 +102,12 @@ MESMA folha de fotos das propostas do modo real.
 
 **O QUE ESPERA O OLHO DELE — e a dívida virou quase nada em 25/08.** As
 oito pranchas dos itens 88, 92 e 95 **já serviram**, e com elas morre a
-nota de "não apagar" das três. **O que sobra é UMA pendência que nem é de
-olho, é de PALAVRAS DELE:** a fita do item **83** — ele *"estranhou algo
-(explico no chat)"* (C3), e até a explicação chegar nenhuma obra de linha
-anda ali. Fora isso, o que vai à Sala são **as folhas que a fila acima vai
-produzir** — a da calibração + modo real primeiro, depois a da lente com a
-vista de abertura.
+nota de "não apagar" das três. **A fita do 83 deixou de esperar palavras:**
+elas chegaram no chat (*"as linhas de órbita finalmente fiquem lindas e
+profissionais como as do nasa eyes"*), e o **L2.5-a ANDA** — a prova que
+volta é a IMAGEM do colar morto, no Retina. Fora isso, o que vai à Sala
+são **as folhas que a fila acima vai produzir** — a da calibração + modo
+real primeiro, depois a da lente com a vista de abertura.
 
 *(Registro de escrivão, para nada se perder: a foto
 `capturas/item77-filme-sem-orbitas.png` — a volta para casa sem as linhas
@@ -998,20 +999,23 @@ do zoom — **não é o candidato (a)**, que é o sistema interno de
 **A história completa está no ARQUIVO, item 77.**
 
 **83. Órbitas AAA — a fita e o foco.** (Aberto em 23/08, DEPOIS de medir o
-NASA Eyes. Ninguém reclamou disto: é a diferença que sobra entre a camada
-77 que pousou e a referência do ramo.) Estudo:
-`docs/reference/estudo-orbitas-eyes-observacao.md`.
+NASA Eyes. L1 e L2 nasceram sem queixa; o acabamento, em 25/08, ele
+reprovou.) Estudo: `docs/reference/estudo-orbitas-eyes-observacao.md`.
 
-**⛔ ELE ESTRANHOU ALGO NA FITA, E A EXPLICAÇÃO ESTÁ PENDENTE DELE — C3,
-25/08.** Na Sala de Conferência, diante de
-`capturas/item83-fita-zoom-antes-depois.png`, a resposta dele foi:
-*"estranhei algo (explico no chat)"* — e as palavras ainda não chegaram.
-**Isto não é aprovação nem reprovação: é uma queixa sem descrição.** Enquanto
-ela não vier, **NENHUMA obra de linha anda neste item** — o Passo 0 continua
-sendo o veredito dele, agora meio-respondido. Quem pegar o 83 primeiro
-PERGUNTA o que ele estranhou; consertar por palpite é apostar em qual dos
-degraus (L2.5, G1, L3, L4, L5) ele estava olhando, e é exatamente o erro que
-o Passo 0 existe para impedir.
+**AS PALAVRAS DELE CHEGARAM — 25/08, e elas fecham o C3.** Na Sala de
+Conferência, diante de `capturas/item83-fita-zoom-antes-depois.png`, ele
+tinha dito *"estranhei algo (explico no chat)"*. O chat veio: ele quer que
+**as linhas de órbita finalmente fiquem lindas e profissionais como as do
+NASA Eyes**. O que ele VÊ: a fita do L1/L2 ainda **não** está desse jeito.
+**L2.5-a ANDA AGORA.** Não se espera mais o Passo 0, e não se pergunta de
+novo o que ele estranhou — era isto.
+
+**"Bit identical" NÃO é o alvo da tela.** Ele usou essa barra para o
+PADRÃO (lindo, profissional, como o Eyes). Copiar o framebuffer deles é o
+que esta casa recusa: o Eyes tem `antialias: true` (MSAA); o renderer daqui
+nasce sem. Gate bit-idêntico é detector de regressão contra o NOSSO antes,
+nunca objetivo contra o deles. A obra é a fita LISA; a prova é a IMAGEM do
+colar morto. **Não copiar** o JS deles.
 
 **O placar, dito sem inflar:** o que a medida nos dá razão são **dois
 comportamentos estreitos da LINHA** (o corte quando a câmera está DENTRO do
@@ -1021,37 +1025,50 @@ mais bonitos que os nossos.**
 
 **L1 (o foco manda na cena) e L2 (a fita de 1,25 px CSS) POUSARAM em
 24/08** — e de carona caiu um defeito antigo da Onda 7: pedir Júpiter e
-mandar chegar perto punha a **TERRA** em quadro. **Falta o OLHO DO DONO:**
-`capturas/item83-fita-zoom-antes-depois.png` é a que decide, mais
-`item83-abertura-antes-depois.png` e `item83-foco-antes-depois.png`.
+mandar chegar perto punha a **TERRA** em quadro. **O OLHO DELE VIU, e
+reprovou o acabamento:** a foto
+`capturas/item83-fita-zoom-antes-depois.png` (mais
+`item83-abertura-antes-depois.png` e `item83-foco-antes-depois.png`) não
+está linda como o Eyes. A próxima foto que decide é a do **L2.5-a**.
 
-**O PLANO DO QUE FALTA, em ordem — e ele começa pelo OLHO, não por código:**
+**O PLANO DO QUE FALTA, em ordem — e o Passo 0 JÁ FOI:**
 
-- **Passo 0 — o veredito do dono sobre o L1/L2. MEIO-RESPONDIDO em 25/08**
-  (*"estranhei algo (explico no chat)"* — ver o topo deste item). **Nada de
-  segunda onda de linha antes disso.** Uma segunda obra por cima de fotos
-  ainda não julgadas repete exatamente o erro que o pino existe para
-  impedir — e uma queixa pela metade é ainda menos base que nenhuma.
-- **L2.5 — O COLAR DE CONTAS, e ele é DEFEITO MEDIDO, não gosto.** A fita
-  tem contas de luz nas juntas: **54 de 340 colunas** com pico ≥ 215, a
-  espaçamento **rigorosamente constante de 14 px** — é o espaçamento
-  constante que o separa do serrilhado. **A causa, lida no shader:** cada
-  quad do `LineMaterial` tem calota redonda ALÉM das extremidades, e a
-  calota do segmento *k* cobre o corpo do *k+1* — um disco pintado DUAS
-  vezes por junta, e em aditivo isso soma (204 → 230). A 1× é sutil; no
-  Retina dele, é o colar. *(O dente de continuidade não pegou porque ele
-  cobra o BUFFER, e o defeito nasce depois dele, na expansão do quad.)*
+- **Passo 0 — RESPONDIDO em 25/08.** Palavras dele: as linhas têm de
+  ficar **lindas e profissionais como as do NASA Eyes**. O que ele
+  estranhou na foto do L1/L2 era exatamente isso. **L2.5-a está
+  autorizado nesta leva.** L2.5-b só depois da prova do colar morto.
+  G1/L3/L4/L5 continuam na fila desta família; não entram agora.
+- **L2.5 — O COLAR DE CONTAS, e ele é DEFEITO MEDIDO, não gosto. ESCRITO
+  AQUI, AUSENTE DO CÓDIGO — conferido em 25/08.** A fita tem contas de
+  luz nas juntas: **54 de 340 colunas** com pico ≥ 215, a espaçamento
+  **rigorosamente constante de 14 px** — é o espaçamento constante que o
+  separa do serrilhado. **A causa, lida no shader:** cada quad do
+  `LineMaterial` tem calota redonda ALÉM das extremidades, e a calota do
+  segmento *k* cobre o corpo do *k+1* — um disco pintado DUAS vezes por
+  junta, e em aditivo isso soma (204 → 230). A 1× é sutil; no Retina
+  dele, é o colar. *(O dente de continuidade não pegou porque ele cobra
+  o BUFFER, e o defeito nasce depois dele, na expansão do quad.)*
+  **O `LineMaterial` em `orbitas.ts` ainda nasce sem `dashed`, sem
+  `gapSize: 0`, e a geometria nunca chama `computeLineDistances()`.**
   - **L2.5-a — matar a conta SEM sair do three** (~5 linhas): `dashed:
     true` faz o fragmento descartar as calotas, e `gapSize: 0` garante que
     nada seja tracejado. **O detalhe que salva o conserto de quebrar, e não
     é opcional:** com `USE_DASH` o material EXIGE `computeLineDistances()`
-    na geometria, uma vez. Pede dente de IMAGEM e **re-baseline das 13
-    vistas com linha**.
-  - **L2.5-b — a largura que escala com a janela** (~6 linhas). **Armadilha
-    dupla:** (i) o `hPx` que a camada recebe é de DISPOSITIVO — dividir
-    pelo `pixelRatio` antes de comparar com 800; (ii) escolher UMA linhagem
-    para a base — 1,2 **com** fator, ou 1,25 **sem**. Multiplicar 1,25 pelo
-    fator conta a mesma coisa duas vezes.
+    na geometria, **UMA vez, no construtor**, depois dos atributos
+    `instanceStart`/`instanceEnd` existirem. **NUNCA no `reamostrar`:** a
+    função aloca `InstancedInterleavedBuffer` novo a cada chamada, e com
+    `gapSize: 0` distância velha não pinta traço. `dashSize` fica o
+    padrão (> 0); `gapSize: 0` com `dashSize: 0` vira `mod(..., 0)`. O
+    `cederAoNucleo` continua: o `USE_DASH` só acrescenta um `discard`
+    ANTES do `gl_FragColor` que a cirurgia procura. Pede dente de IMAGEM
+    (colar morto no Retina, a fita em movimento — vista parada sem HUD
+    não prova isto) e **re-baseline das 13 vistas com linha**.
+  - **L2.5-b — a largura que escala com a janela** (~6 linhas). **Só
+    depois do L2.5-a provado.** **Armadilha dupla:** (i) o `hPx` que a
+    camada recebe é de DISPOSITIVO — dividir pelo `pixelRatio` antes de
+    comparar com 800; (ii) escolher UMA linhagem para a base — 1,2 **com**
+    fator, ou 1,25 **sem**. Multiplicar 1,25 pelo fator conta a mesma
+    coisa duas vezes.
 - **G1 — a gaveta devolve os oito** de `HELIO_SEM_PONTO` (a decisão 2 do
   item 77), como classe própria **desligada por padrão**, em vez de
   enterrados numa decisão de código. É literalmente o que o Eyes faz com as
@@ -1074,7 +1091,7 @@ mandar chegar perto punha a **TERRA** em quadro. **Falta o OLHO DO DONO:**
   `BRILHO_DA_LINHA` teria de ser recalibrado com régua e declaração. Cabe
   em **~8 linhas** via `onBeforeCompile` — a estimativa de "~200 linhas"
   que corre nos estudos era para um `ShaderMaterial` próprio. Só depois do
-  passo 0.
+  L2.5-a, e só se o dono ainda achar a borda dura.
 - **Strip próprio com miter — ÚLTIMO recurso**, só se o L2.5-a falhar E o
   dono reclamar: custa o corte no *near plane*, o `resolution` automático e
   o `raycast` de que o L5 depende.
