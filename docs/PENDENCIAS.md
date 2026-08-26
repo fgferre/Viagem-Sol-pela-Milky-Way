@@ -1004,10 +1004,13 @@ commit e uma foto por passo:
    (0,32 / 0,75), na ABERTURA DO ATLAS. **Nada disto virou código** — a
    escolhida vira, em commit próprio.
    **A causa do "sem graça", medida:** a fotometria normaliza no canal
-   mais forte, então TODAS as nove saem com um canal em 1,000. Cinco
-   viram o mesmo creme (Vênus `#ffd8c4`, Júpiter `#fff2bc`, Saturno
-   `#ffc37e`, Plutão `#ffc99f`, Mercúrio `#ffb880`) e a **Terra sai
-   quase branca** (`#fce4ff`, saturação 0,10).
+   mais forte, então TODAS as nove saem com um canal em 1,000, e o que o
+   olho recebe (em sRGB, que é a régua certa para uma queixa de cor) é
+   creme quase branco: Mercúrio `#ffddbc`, Vênus `#ffede3`, Marte
+   `#ffbe89`, Júpiter `#fff9df`, Saturno `#ffe3ba`, Plutão `#ffe6cf` — e
+   a **Terra sai quase branca**, `#fef3ff`, com saturação **0,10**.
+   Só Urano `#b0f6ff` e Netuno `#a8ebff` escapam do creme, e escapam
+   para o mesmo azul claro.
    As três colunas: **(i)** a fotometria de hoje; **(ii)** a tabela de
    design deles VERBATIM — Mercúrio `#9768ac`, Vênus `#b07919`, Terra
    `#0099cc`, Marte `#9a4e19`, Júpiter `#da8b72`, Saturno `#d5c187`,
@@ -1015,6 +1018,15 @@ commit e uma foto por passo:
    de sRGB para linear; **(iii)** a fotometria com a saturação
    EMPURRADA, e o empurrão é este número e mais nada: **`S′ = S^0,45`**
    sobre o triplo já normalizado, com matiz e canal mais forte parados.
+   **O QUE A PRANCHA JÁ RESPONDE, antes de ele olhar — e é achado, não
+   opinião:** em (i) as quatro elipses da abertura são praticamente a
+   MESMA cor, que é a queixa dele à vista. Em (ii) a **Terra fica AZUL**
+   e as quatro se separam na hora. Em (iii) a cor volta, mas as quatro
+   seguem todas QUENTES: o empurrão mexe na SATURAÇÃO e não no MATIZ, e
+   os matizes fotométricos de Mercúrio, Vênus, Terra e Marte são de fato
+   parecidos. **Saturar sozinho não separa as quatro de dentro** — só a
+   tabela de design dá um azul à Terra. Quem quiser a terceira via com
+   separação terá de mexer no matiz, e aí já não é mais fotometria.
    **COMO SE REPRODUZ:** as seis células saem de uma porta de
    instrumento EFÊMERA — `?paleta=foto|deles|saturada` e `?alfafita=` —
    que vive só num worktree e não pousou na main. Reabri-la é trocar a
