@@ -957,28 +957,69 @@ cores, *"muito sem graça"*. O que falta, medido no shader deles
 (`LineShader`/`TrailManager` no `app-pretty.js`), e a obra — na ordem, um
 commit e uma foto por passo:
 
-1. **B1 — A2+A3 como receitados abaixo; ainda não pousaram.** A beira
-   lisa deles é MSAA de cartão (a nossa imita é a saia do A2); a largura
-   deles cresce com a janela (`max(1, min(viewport)/800)`, o A3) e a
-   nossa é 1,25 px sempre. Saem juntos: a largura nova é o que expõe a
-   junta.
-2. **B2 — a junta vira bissetriz (é o A4, promovido de último recurso a
-   passo).** Deles: `positionPrev`/`positionNext` por vértice e
-   `offset /= max(0.25, sqrt((1+dot(l0,l1))/2))`. A nossa junta é quad
-   sobreposto com a calota cortada: na curva abre cunha do lado de fora e
-   dobra tinta do lado de dentro. A fita contínua que VINCA é o que se lê
-   como "fita dobrada". Desenho no bloco A4. **Prova:** zoom na dobra —
-   cunha morta, sem colar.
-3. **B3 — cor e brilho na MESMA prancha, para ele julgar** (é o L3,
-   promovido da fila). A cor deles é **tabela hardcoded de design**, sem
-   algoritmo: Mercúrio `#9768ac`, Vênus `#b07919`, Terra `#0099cc`, Marte
-   `#9a4e19`, Júpiter `#da8b72`, Saturno `#d5c187`, Urano `#68ccda`,
-   Netuno `#708ce3`, todas alpha **0,75**; quem não está na lista cai no
-   branco 0,35. A nossa fotometria normalizada no canal mais forte
-   (`matizDe`) lava tudo para pastel — a causa do "sem graça". O brilho:
-   base 0,75 aditivo lá, `BRILHO_DA_LINHA` 0,32 aqui. Prancha de 3
-   colunas de cor (fotometria atual; a tabela deles; fotometria saturada
-   declarada) × 2 alphas (0,32 / 0,75) — ele escolhe por foto.
+1. **B1 — A2+A3. POUSARAM em 26/08 (`85f775f`).** A saia do AA e a
+   largura que cresce com a janela saíram juntas, e tinham de sair. **Um
+   desvio da receita, com razão:** o `miolo` do A2 virou UNIFORM
+   (`uMiolo`) em vez do literal que ela pedia, porque com o fator da
+   janela em cima da largura e a saia fixa por baixo a fração
+   `visível/(visível+saia)` MUDA de janela para janela — 1,25/2,25 numa
+   tela de 800, 1,40625/2,40625 numa de 1200. Literal, ele mentiria em
+   toda janela grande e a largura visível deixaria de ser a que o §5
+   promete. `larguraVisivelDaFitaPx` é a fonte única dos dois números.
+   **A FOTO:** `capturas/item83-b1-beira-v2.png` — zoom 5× em pixels
+   crus, dpr 2, duas janelas 4:3 de lado menor 800 (fator 1) e 1200
+   (fator 1,5). A beira sai da ESCADA: a subida 10→90% atravessando a
+   fita vai de **1,113 para 1,764 px** de dispositivo na janela pequena
+   e de **1,311 para 2,111** na grande — no antes dá para CONTAR os
+   degraus, no depois não há degrau nenhum. A largura obedece à janela:
+   na de 800 a FWHM **não muda** (3,014 → 3,020), que é a "igual a hoje"
+   que ele pediu; na de 1200 sobe de **3,046 para 4,234**. A franja
+   colorida da foto é o `uCA` do `post.ts`, igual nos quatro painéis, e
+   não é da fita. Instrumento novo:
+   `scripts/visual/beira-da-fita.mjs`.
+2. **B2 — a junta vira bissetriz. POUSOU em 26/08 (`4f40f65`).** Dois
+   atributos de vizinho no MESMO buffer interleaved (`PASSO_DA_FITA` =
+   12, escritos pela mesma passada de `espelharNaFita`) e a conta em
+   pixel no vertex, com `escalaDaBissetriz` cobrada por número em Node e
+   a mesma expressão pinada no GLSL. Sobrevivem, conferidos um a um: o
+   `discard` do USE_DASH, o corte no near plane, o `resolution`
+   automático e o `raycast` do L5.
+   **A FOTO:** `capturas/item83-b2-dobra.png` — zoom 6×, vista de
+   PERFIL (40 UA no equinócio vernal), estrelas e Sol removidos por
+   subtração de um quadro com `&noorbitas=1`. Nas três pontas de fuso
+   medidas a tinta sobe (66.328 → 67.032, 18.429 → 18.937, 27.364 →
+   28.014); na ponta de cima o ANTES tem um ENTALHE PRETO no cotovelo da
+   dobra e uma ponta cortada em degrau reto, e no DEPOIS o entalhe some
+   e a ponta fecha em bico.
+   **O TAMANHO, DITO SEM INFLAR — e isto é achado, não desculpa:** o
+   ganho é LOCAL. Numa elipse vista de FRENTE a dobra por junta é 1,4° e
+   a cunha vale 0,01 px, invisível (este item já dizia isso no A1). No
+   quadro inteiro mudam ~800 pixels de 4,3 milhões. O que a bissetriz
+   conserta é a PONTA, e é lá que se olha. **Se a impressão de "linha
+   grossa" sobreviver ao B2, o que sobra não é a junta** — é a cor (o
+   B3) ou algo que ainda não foi medido, e volta com foto.
+   Instrumento novo: `scripts/visual/dobra-da-fita.mjs`.
+3. **B3 — A PRANCHA ESTÁ PRONTA E ESPERA O OLHO DELE:**
+   `capturas/item83-b3-cores.png`, 3 colunas de cor × 2 linhas de alpha
+   (0,32 / 0,75), na ABERTURA DO ATLAS. **Nada disto virou código** — a
+   escolhida vira, em commit próprio.
+   **A causa do "sem graça", medida:** a fotometria normaliza no canal
+   mais forte, então TODAS as nove saem com um canal em 1,000. Cinco
+   viram o mesmo creme (Vênus `#ffd8c4`, Júpiter `#fff2bc`, Saturno
+   `#ffc37e`, Plutão `#ffc99f`, Mercúrio `#ffb880`) e a **Terra sai
+   quase branca** (`#fce4ff`, saturação 0,10).
+   As três colunas: **(i)** a fotometria de hoje; **(ii)** a tabela de
+   design deles VERBATIM — Mercúrio `#9768ac`, Vênus `#b07919`, Terra
+   `#0099cc`, Marte `#9a4e19`, Júpiter `#da8b72`, Saturno `#d5c187`,
+   Urano `#68ccda`, Netuno `#708ce3`, fora da lista branco —, convertida
+   de sRGB para linear; **(iii)** a fotometria com a saturação
+   EMPURRADA, e o empurrão é este número e mais nada: **`S′ = S^0,45`**
+   sobre o triplo já normalizado, com matiz e canal mais forte parados.
+   **COMO SE REPRODUZ:** as seis células saem de uma porta de
+   instrumento EFÊMERA — `?paleta=foto|deles|saturada` e `?alfafita=` —
+   que vive só num worktree e não pousou na main. Reabri-la é trocar a
+   cor do material por essas três receitas e ler `BRILHO_DA_LINHA` da
+   URL; a tabela e o gama acima são tudo o que ela precisa.
 
 **Não falta, medido — não inventar:** a linha deles NÃO tem perfil
 através da largura (chapada, `glowWidth = 0` até no hover), NÃO tem
