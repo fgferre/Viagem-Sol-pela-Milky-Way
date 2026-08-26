@@ -730,6 +730,74 @@ com delta zero. **O QUE NÃO SE COPIA:** a sensibilidade — a deles
 (0,01 rad/px) é ~4,5× a nossa (`ARRASTO_RAD_POR_PX`), ou seja,
 velocidade de giro **não** é o problema; é tato, não velocidade.
 
+**A OBRA — quatro passos independentes, nesta ordem, um commit por
+passo, cada um com a sua prova.** Os três primeiros são pequenos; o
+quarto é o que muda o tato de verdade.
+
+**P1 — Inércia do giro (o filtro 20/80).** Em `AtlasRig`
+(`cinematic/atlasRig.ts`):
+
+1. `addOrbitDelta` **para de somar no acumulador**: passa a guardar o
+   delta bruto numa caixa de entrada do quadro (`entrada = {altura,
+   volta}`; vários eventos no mesmo quadro somam na caixa).
+2. No `apply`, que tem `dt`, antes de `escreverPose`, por eixo:
+   `k = 0.8 ** (dt * 60)`; `suav = entrada * (1 - k) + suav * k`;
+   morto quando `|suav| < 1e-4 * dt * 60` (zera de vez, sem rastro);
+   `orbita += suav`; zera `entrada`.
+3. Estado novo: só `suav = {altura: 0, volta: 0}`. Sem física de
+   velocidade, sem relógio extra. O `0.8` é constante nomeada junto de
+   `ARRASTO_RAD_POR_PX` (`enquadramento.ts`).
+
+**Prova:** gesto sintético do `atlas-smoke` — ao soltar, o giro morre
+macio em vez de parar seco; as vistas paradas do gate ficam
+bit-idênticas (a pose de repouso não anda).
+
+**P2 — Janela de toque sem despejo.** Em `ArrastoDePonteiro.mover`
+(`arrastoDePonteiro.ts`): enquanto o gesto estiver dentro do limiar
+(6 px/400 ms mouse, 16 px/500 ms dedo — os números **ficam**), o delta
+entregue é **zero**; ao cruzar o limiar, a referência passa a ser a
+posição atual — o acumulado da zona morta **não é despejado** de uma
+vez. **Prova:** o arrasto curto que hoje dá arranco sai liso desde o
+primeiro pixel; o toque que vira seleção continua virando.
+
+**P3 — Freio perto do solo.** No consumo do delta (o `apply` do P1):
+multiplicar os dois eixos por `u = clamp((distEmRaios - 1) / 3, 1/3,
+1)` — no piso (`K_MIN_RAIOS = 2`) o giro anda a um terço; de 4 raios
+para cima anda pleno. Constante nomeada `FREIO_DO_SOLO_RAIOS = 3`,
+ajustável na conferência dele. **Prova:** o mesmo arrasto em pixels a
+2 raios × a 10 raios — perto anda menos.
+
+**P4 — A volta no polo (turntable). O passo grande.** Em
+`OrbitaDoVisitante` (`cinematic/enquadramento.ts`) e `AtlasRig`:
+
+1. Frame novo por alvo: Z = polo do corpo; X = componente da direção
+   alvo→Sol perpendicular ao polo, normalizada (o meridiano do Sol);
+   Y = Z × X.
+2. A parametrização vira **lat/lon**: `lat = asin(dot(dir, polo))`,
+   `lon = atan2(dot(dir, Y), dot(dir, X))`. O arrasto vertical soma em
+   `lat`, travado em ±(π/2 − 1e-4) — substitui o grampo
+   `MIN_POLAR_RAD` e a faixa de `altura`. O horizontal soma em `lon`,
+   livre e enrolado — substitui a `volta` na linha alvo→Sol.
+3. `up = normalize(polo − dir · dot(polo, dir))` — nunca degenera,
+   porque `lat` nunca chega a ±90°. A cedência do `upDoAtlas` nos
+   degraus sistema/órbita fica como está.
+4. `orbitaQueProduz` (o selecionar que preserva a pose) ganha a
+   inversa nova: dir/dist → lat/lon no frame do passo 1.
+5. **Condição de nascimento:** a pose de repouso (30° da linha Sol,
+   `PHASE_OFFSET_GRAUS`) e as vistas `?pos=` não mudam **um pixel** —
+   lat0/lon0 derivam da pose atual. Se o gate acusar diferença em
+   vista parada, a parametrização nasceu errada.
+6. **O preço, declarado:** girar a `lon` gira a sombra junto — a
+   iluminação deixa de ser fixa na vista, que era o que a `volta`
+   antiga protegia. Ele confere o vídeo A/B e decide.
+
+**Prova do P4:** vídeo A/B do mesmo arrasto nos dois lados + gate
+bit-idêntico nas vistas paradas.
+
+**NÃO SE MEXE:** o zoom (`zoomDaRoda.ts` já tem inércia própria); o
+"olhar ao redor" do filme (`cameraRig.addLookDelta` — rotação manual
+em torno de corpo só existe no Atlas); os limiares de toque do P2.
+
 ## MÉDIA — afeta o produto, não salta aos olhos
 
 **97. A órbita acende mais cedo no Retina do que numa tela comum.** Achado
