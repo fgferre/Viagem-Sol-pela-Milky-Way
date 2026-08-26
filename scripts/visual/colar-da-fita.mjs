@@ -74,13 +74,27 @@
 // (`instanceDistanceStart/End`) calculado UMA vez no construtor,
 // enquanto o buffer de posições é reescrito a cada salto de data: uma
 // vista parada não julgaria o caso em que o conserto pode quebrar. Por
-// isso a captura ASSENTA com o relógio parado, ANDA no tempo por
-// `SEGUNDOS_ANDANDO`, e só então dispara o obturador — e a medida traz o
-// `jd` de antes e o de depois, que é a prova de que ele andou.
+// isso a captura ASSENTA com o relógio parado, ANDA no tempo, e só então
+// dispara o obturador.
+//
+// E ANDA UM NÚMERO FIXO DE DIAS DE EFEMÉRIDE, não um número de segundos
+// de relógio de parede. A primeira redação dormia 3 s: a efeméride
+// andada virava refém da CARGA da máquina (34,1 / 33,6 / 31,2 dias em
+// três corridas da mesma casa, 21,4 na de um auditor), e com ela o corpo
+// da fita mexia no primeiro decimal. O número de um juiz tem de voltar
+// igual amanhã. Agora a parada é por `jd`: um trecho DEPRESSA para
+// cobrir o caminho e um DEVAGAR para pousar fino, com o resíduo medido e
+// gravado no JSON.
+//
+// E O RELÓGIO TEM DENTE: se o gancho da captura não disparar, `mexeu`
+// volta nulo e a foto seria de cena PARADA — o juiz REPROVA em vez de
+// aprovar, pela regra da casa (juiz que não consegue medir reprova).
 // ============================================================
 import { readFileSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { carimboDoCodigo } from './ab-identidade.mjs';
 import { capturarCDP, dorme } from './chrome.mjs';
-import { cinzaDoPng, lerPng } from './luz-ab.mjs';
+import { arred, cinzaDoPng, lerPng, percentil } from './luz-ab.mjs';
 
 /**
  * A VISTA, e ela é de `?pos=` de propósito: a câmera não persegue nada,
@@ -115,14 +129,29 @@ export const JANELA = { largura: 1200, altura: 900, dpr: 2 };
 export const FAIXA = { x: 1190, y: 155, w: 340, h: 45 };
 
 /**
- * O degrau da escada de tempo e por quanto tempo o relógio anda antes do
- * obturador. Degrau 6 é ~11,6 dias por segundo: em 3 s a efeméride
- * caminha ~um mês, e `escreverInstante` reescreve os 30 laços em TODO
- * quadro do intervalo — que é exatamente o regime que a vista parada não
- * cobre.
+ * A ANDADA, em DIAS DE EFEMÉRIDE — e a parada é por `jd`, nunca por
+ * segundos dormidos (ver o cabeçalho).
+ *
+ * DOIS TRECHOS porque a escada de tempo é grossa: o degrau é uma taxa, e
+ * a granularidade da parada é o que o relógio anda em UM quadro. O
+ * degrau 6 (~11,6 dias/s) cobre 29,5 dias em 2,5 s mas erra o alvo em
+ * até ~0,2 dia por quadro; o degrau 4 (~0,116 dias/s) pousa o último
+ * meio dia com quantum de ~0,002 dia. Junto: ~7 s de andada e um `jd`
+ * final repetível no terceiro decimal.
+ *
+ * O relógio PARA antes do obturador, e isso não desfaz a prova: os
+ * milhares de quadros em que `escreverInstante` reescreveu os 30 laços
+ * já aconteceram, e é essa reescrita — com a distância de traço parada
+ * no zero do construtor — que a foto tinha de julgar. Sem parar, a
+ * latência do próprio `captureScreenshot` voltaria a mover o `jd`.
  */
-export const DEGRAU_DO_RELOGIO = 6;
-export const SEGUNDOS_ANDANDO = 3;
+export const DEGRAU_DEPRESSA = 6;
+export const DEGRAU_DEVAGAR = 4;
+export const DIAS_A_ANDAR = 30;
+/** o último trecho, andado devagar para o pouso ser fino */
+export const ULTIMO_TRECHO_DIAS = 0.5;
+/** acima disto o relógio não está lento: está PARADO — e o juiz reprova */
+export const TETO_DA_ANDADA_MS = 120000;
 
 /**
  * Quanto um pico tem de passar do corpo da fita para valer como CONTA,
@@ -153,8 +182,6 @@ export const TOLERANCIA_DO_VAO = 1.5;
 /** ...e essa fração dos vãos tem de ser regular para o pente existir. */
 export const MIN_DE_REGULARES = 0.7;
 
-const arred = (v, casas) => +v.toFixed(casas);
-
 /**
  * O PICO DE CADA COLUNA do recorte. O máximo sobre as linhas — e não uma
  * média — porque a fita tem 1,25 px de largura CSS sobre uma faixa de
@@ -174,12 +201,8 @@ export function perfilDaFita(cinza, largura, faixa) {
   return perfil;
 }
 
-/** A mediana de uma lista, sem interpolação — o idioma de `percentil`. */
-function mediana(v) {
-  if (!v.length) return 0;
-  const o = [...v].sort((a, b) => a - b);
-  return o[Math.floor(o.length / 2)];
-}
+/** A mediana é o `percentil` do medidor de luz — uma definição só. */
+const mediana = (v) => percentil(v, 0.5);
 
 /**
  * O PENTE de um perfil: contas, grupos, vão e regularidade. Pura, sem
@@ -273,8 +296,30 @@ export function medirPng(bytes, faixa = FAIXA) {
 }
 
 /**
- * A CAPTURA: assenta parado, anda no tempo, fotografa. O `jd` dos dois
- * lados volta junto — sem ele a foto não prova movimento nenhum.
+ * O DENTE DO RELÓGIO, puro e cobrável: a foto vale como prova de fita em
+ * movimento? Devolve `{ ok, motivo }`.
+ *
+ * ELE EXISTE PORQUE O SILÊNCIO ERA APROVAÇÃO: se o gancho `aoAssentar`
+ * deixar de disparar — apagado, renomeado, um `capturarCDP` que pare de
+ * chamá-lo —, `mexeu` volta `null`, a foto sai da cena PARADA e o
+ * veredito do pente seguia dando 0. Fita parada não julga o A1.
+ */
+export function julgarORelogio(relogio) {
+  if (!relogio) {
+    return { ok: false, motivo: 'o relógio não foi medido: a foto seria de cena PARADA' };
+  }
+  if (!(relogio.diasAndados > 0)) {
+    return { ok: false, motivo: `o relógio não andou: ${relogio.diasAndados} dias` };
+  }
+  return { ok: true, motivo: '' };
+}
+
+/**
+ * A CAPTURA: assenta parado, anda um número FIXO de dias de efeméride,
+ * para o relógio e fotografa. Volta o `jd` dos dois lados, o resíduo do
+ * pouso e quantos QUADROS foram desenhados na andada (`window.__f`, o
+ * contador que o próprio harness instala) — sem isso a foto não prova
+ * movimento nenhum.
  */
 export async function capturarAFita(porta = 9411) {
   return capturarCDP({
@@ -295,17 +340,49 @@ export async function capturarAFita(porta = 9411) {
       const temDirector = await js('typeof window.__director === "object"');
       if (!temDirector) throw new Error('sem window.__director: o relógio não pode andar');
       const jdParado = await js('window.__director.tempo.jd');
-      await js(
-        '(() => { const d = window.__director;'
-        + ` while (d.tempo.degrau !== ${DEGRAU_DO_RELOGIO}) d.ciclarDegrau();`
-        + ' d.andarNoTempo(1); })()'
-      );
-      await dorme(SEGUNDOS_ANDANDO * 1000);
-      const jdAndando = await js('window.__director.tempo.jd');
-      if (!(jdAndando > jdParado)) {
-        throw new Error(`o relógio não andou: jd ${jdParado} → ${jdAndando}`);
+      const quadrosAntes = await js('window.__f || 0');
+
+      // O degrau troca com o relógio PARADO: `ciclarDegrau` dá a volta na
+      // escada, e passar pelo degrau 7 (~116 dias/s) com o relógio andando
+      // atiraria o `jd` para longe do alvo antes do pouso.
+      const andarAte = async (degrau, alvoEmDias) => {
+        await js(
+          '(() => { const d = window.__director; d.andarNoTempo(0);'
+          + ` while (d.tempo.degrau !== ${degrau}) d.ciclarDegrau();`
+          + ' d.andarNoTempo(1); })()'
+        );
+        const prazo = Date.now() + TETO_DA_ANDADA_MS;
+        for (;;) {
+          const jd = await js('window.__director.tempo.jd');
+          if (jd - jdParado >= alvoEmDias) return;
+          if (Date.now() > prazo) {
+            await js('window.__director.andarNoTempo(0)');
+            throw new Error(
+              `o relógio não chegou a ${alvoEmDias} dias em ${TETO_DA_ANDADA_MS / 1000} s`
+              + ` (parou em ${arred(jd - jdParado, 3)}): relógio PARADO, não lento`
+            );
+          }
+          await dorme(10);
+        }
+      };
+      await andarAte(DEGRAU_DEPRESSA, DIAS_A_ANDAR - ULTIMO_TRECHO_DIAS);
+      await andarAte(DEGRAU_DEVAGAR, DIAS_A_ANDAR);
+      await js('window.__director.andarNoTempo(0)');
+
+      const jdAndado = await js('window.__director.tempo.jd');
+      const quadros = (await js('window.__f || 0')) - quadrosAntes;
+      const diasAndados = jdAndado - jdParado;
+      if (!(diasAndados > 0)) {
+        throw new Error(`o relógio não andou: jd ${jdParado} → ${jdAndado}`);
       }
-      return { jdParado, jdAndando, diasAndados: arred(jdAndando - jdParado, 3) };
+      return {
+        jdParado,
+        jdAndado,
+        diasAndados: arred(diasAndados, 4),
+        alvoEmDias: DIAS_A_ANDAR,
+        residuoEmDias: arred(diasAndados - DIAS_A_ANDAR, 4),
+        quadrosNaAndada: quadros,
+      };
     },
   });
 }
@@ -327,16 +404,43 @@ async function principal() {
     if (process.env.SAIDA) writeFileSync(process.env.SAIDA, bytes);
   }
 
-  const fora = { vista: arquivo ?? VISTA, relogio, ...medirPng(bytes, faixa) };
+  const medida = medirPng(bytes, faixa);
+  // O CARIMBO vai no arquivo, e não só na tela: dois JSON com números
+  // diferentes não têm como ser conciliados depois se nenhum diz de que
+  // código saiu. A definição é a do `ab-identidade` — uma só.
+  const fora = {
+    vista: arquivo ?? VISTA,
+    codigo: carimboDoCodigo(),
+    quandoUtc: new Date().toISOString(),
+    relogio,
+    ...medida,
+  };
+  // O DENTE DO RELÓGIO só se aplica a quem CAPTUROU: um PNG de disco não
+  // tem relógio a medir, e o modo de arquivo é diagnóstico (medir de novo
+  // um quadro já tirado). O que ele nunca pode é aprovar em silêncio uma
+  // captura que saiu com a cena parada.
+  const doRelogio = arquivo ? { ok: true, motivo: '' } : julgarORelogio(relogio);
+  if (!doRelogio.ok) {
+    fora.aprovado = false;
+    fora.motivo = doRelogio.motivo;
+  }
   const texto = JSON.stringify(fora, null, 1);
   console.log(texto);
   if (process.env.JSON) writeFileSync(process.env.JSON, texto + '\n');
   console.log(
     fora.aprovado
       ? `>>> SEM COLAR — ${fora.contas} contas em ${fora.grupos} grupos`
+        + (arquivo
+          ? ' (quadro de disco: o relógio não foi medido aqui)'
+          : ` · relógio andou ${relogio.diasAndados} dias em ${relogio.quadrosNaAndada} quadros`)
       : `>>> REPROVADO — ${fora.motivo}`
   );
   if (!fora.aprovado) process.exit(1);
 }
 
-if (process.argv[1] && process.argv[1].endsWith('colar-da-fita.mjs')) await principal();
+// O IDIOMA DA CASA (`luz-ab.mjs`): compara o caminho RESOLVIDO com o
+// próprio módulo. O `endsWith` de antes disparava uma captura inteira em
+// qualquer arquivo que por acaso terminasse com este nome.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  await principal();
+}

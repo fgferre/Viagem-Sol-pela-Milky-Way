@@ -767,8 +767,13 @@ const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}.json`);
  * rastreado. Sem git (tarball, clone raso sem `.git`) devolve `sem-git`, uma
  * constante: o carimbo nunca invalida nada e a retomada volta a ser a de
  * antes — cegueira declarada, não silenciosa.
+ *
+ * EXPORTADA porque o carimbo não é só de retomada: todo número que um juiz
+ * grava em disco precisa dizer de QUE código ele saiu, senão dois JSON com
+ * valores diferentes não têm como ser conciliados depois. `colar-da-fita.mjs`
+ * o carimba nas medidas dele, e a definição continua sendo esta — uma só.
  */
-function carimboDoCodigo() {
+export function carimboDoCodigo() {
   const git = (args) =>
     execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
   try {

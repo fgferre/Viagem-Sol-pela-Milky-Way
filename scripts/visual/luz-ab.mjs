@@ -112,7 +112,9 @@ export const LIMIAR_DE_SATURACAO = 254;
 /** cinza mínimo para um pixel entrar no disco dos anéis */
 export const LIMIAR_DO_DISCO = 25;
 
-const arred = (v, casas) => +v.toFixed(casas);
+/** o arredondamento de todo número que sai deste medidor — e dos irmãos
+ *  que o importam (`colar-da-fita.mjs`), para não haver duas casas */
+export const arred = (v, casas) => +v.toFixed(casas);
 const media = (v) => (v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0);
 
 // ------------------------------------------------------------

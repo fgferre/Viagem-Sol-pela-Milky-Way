@@ -13,11 +13,13 @@
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import {
+  DIAS_A_ANDAR,
   FAIXA,
   MARGEM_DA_CONTA,
   MIN_DE_GRUPOS,
   PASSO_MAX,
   julgarColar,
+  julgarORelogio,
   pentearOColar,
   perfilDaFita,
 } from './colar-da-fita.mjs';
@@ -66,7 +68,41 @@ describe('o perfil sai do recorte', () => {
   });
 
   it('a faixa oficial tem as 340 colunas do item 83', () => {
+    // PINO DE CONFIGURAÇÃO, e é só isso: ele congela o número que deixa a
+    // medida deste juiz comparável com a de 24/08 sem conversão. O
+    // COMPORTAMENTO — a fita estar mesmo dentro da faixa — não se afere
+    // aqui e nem tem como: quem o mede é o juiz de imagem sobre o quadro
+    // vivo, fora da suíte, e ele REPROVA quando a fita sai do recorte.
     expect(FAIXA.w).toBe(340);
+  });
+});
+
+describe('o dente do relógio', () => {
+  // Este é o único termo do veredito que não mora no pixel: ele protege a
+  // FOTO, não a fita. Sem ele, um gancho que parasse de disparar devolvia
+  // aprovação sobre cena parada.
+  it('REPROVA quando o relógio não foi medido — silêncio não é aprovação', () => {
+    expect(julgarORelogio(null).ok).toBe(false);
+    expect(julgarORelogio(undefined).ok).toBe(false);
+    expect(julgarORelogio(null).motivo).toMatch(/PARADA/);
+  });
+
+  it('REPROVA quando o relógio não saiu do lugar', () => {
+    expect(julgarORelogio({ diasAndados: 0 }).ok).toBe(false);
+    expect(julgarORelogio({ diasAndados: -3 }).ok).toBe(false);
+  });
+
+  it('APROVA quando andou', () => {
+    expect(julgarORelogio({ diasAndados: DIAS_A_ANDAR }).ok).toBe(true);
+    expect(julgarORelogio({ diasAndados: 0.001 }).ok).toBe(true);
+  });
+
+  it('a andada é contada em DIAS DE EFEMÉRIDE, não em segundos dormidos', () => {
+    // pino de configuração da reprodutibilidade: dormir relógio de parede
+    // fazia a efeméride andada variar com a carga da máquina (34,1 / 33,6 /
+    // 31,2 dias na mesma casa), e com ela o corpo da fita no primeiro
+    // decimal. O resíduo do pouso é medido e gravado em cada JSON.
+    expect(DIAS_A_ANDAR).toBeGreaterThan(0);
   });
 });
 

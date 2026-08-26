@@ -594,7 +594,13 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
   });
 
   it('a junta não tem calota, e a fita não fica tracejada (§5c)', () => {
-    // AS TRÊS CHAVES ANDAM JUNTAS, e é por isso que o teste as cobra
+    // PINO DE CONFIGURAÇÃO, e o teste não finge ser mais que isso: em Node
+    // não há GPU, então ele cobra que as TRÊS CHAVES estejam ligadas — não
+    // que a calota tenha sumido do pixel. QUEM MEDE O COMPORTAMENTO é
+    // `scripts/visual/colar-da-fita.mjs`, no quadro vivo e fora da suíte:
+    // ele conta as contas periódicas e reprova quando o colar volta.
+    //
+    // AS TRÊS CHAVES ANDAM JUNTAS, e é por isso que o pino as cobra
     // juntas: `dashed` sozinho tracejaria a fita, `gapSize` sozinho não
     // mata calota nenhuma, e `dashSize: 0` faria `mod(x, 0)` — indefinido
     // em GLSL. Cada uma apagada, sozinha, quebra este teste.
