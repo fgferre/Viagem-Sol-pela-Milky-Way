@@ -33,9 +33,9 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 104.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 105.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **103** saiu em 26/08: a porta do BRILHO emperrada no selo, queixa dele.)*
+  *(O **104** saiu em 26/08: a costura sombra do anel → noite, queixa dele.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
@@ -203,6 +203,15 @@ que estamos com algortimos de iluminacao q nao estao funcionando bem...
 saturno, mesmo com brilho assistido, quase escuro e saturno é um objeto
 claro no ceu... mesmo a olho nu."*
 
+**O MODO REAL FOI DECIDIDO — Q14, 26/08, pela Sala de Conferência: é a
+R1.** Palavras dele: *"R1 — +3 passos fixos, sempre os mesmos, declarados
+no selo"*. **A obra:** em `?luz=real` o quadro ganha +3 passos de
+exposição fixos (o 1,02 vira ~8,16), declarados no selo na linha BRILHO
+como tempo de exposição; a penumbra FÍSICA no globo e a proibição de teto
+de brilho ficam exatamente como estavam; o campo estelar satura mais — é
+o preço declarado da foto de longa exposição, e ele escolheu com essa
+foto na mão (`capturas/item93-calib-real.png`).
+
 **AS TRÊS DECISÕES DE DESENHO DELE (25/08) não se reabrem, e estão
 cumpridas:** (1) o modo assistido, que é o padrão, dá **dia claro em todos
 os corpos visitados**, como a Cassini e o Eyes; (2) **`?luz=real` mantém a
@@ -278,6 +287,19 @@ receita pousou em 25/08, ELE VIU E APROVOU A RECEITA, e o item NÃO fecha:
 falta CALIBRAR os botões dela.** Palavras do dono, 2026-08-25:
 *"estou perguntado do brilho assistido... quero que o nosso conserte
 isso para ficar igual ao algortimo usado no nasa eyes"*.
+
+**A CALIBRAÇÃO FOI ESCOLHIDA — Q13, 26/08, pela Sala de Conferência: é a
+C1, "o Eyes ao pé da letra".** Palavras dele: *"C1 — o Eyes ao pé da letra
+(a noite quase apaga; Mercúrio cai sozinho a ~130, o nível domado, sem
+freio nenhum), aqui tem pontos importantes a levar em consideração. a
+transicao da sombra dos aneis para regiao de penumbra/noite nao está bem
+feita. tinha que ser seamless"*. **A obra que isso abre:** a C1 vira o
+PADRÃO do modo assistido, a porta `?calib=` morre (a promessa escrita
+neste item), a re-baseline das vistas assistidas se declara — e a ressalva
+dele é o item **104**, que anda JUNTO: a costura sombra do anel → noite
+tem de sair seamless na mesma leva, senão a C1 chega com o defeito mais
+visível que antes (a noite da C1 é mais escura, e o degrau da sombra
+salta mais).
 
 O item **91** pagou o **dia** (Saturno palha); faltava a **receita**.
 Ela pousou em quatro peças, todas nascidas em `luzDaVisita.ts` — número
@@ -1360,6 +1382,13 @@ do zoom — **não é o candidato (a)**, que é o sistema interno de
 **83. Órbitas AAA — a fita e o foco.** (Aberto em 23/08, DEPOIS de medir o
 NASA Eyes. L1 e L2 nasceram sem queixa; o acabamento, em 25/08, ele
 reprovou.) Estudo: `docs/reference/estudo-orbitas-eyes-observacao.md`.
+
+**O COLAR MORTO ESTÁ CONFERIDO — C13, 26/08, pela Sala de Conferência:
+ele confirmou como bom** (junto com as confirmações C3 e C11 do mesmo
+dia). O A1 fecha por inteiro — obra, auditoria, re-sabotagem independente
+e agora o olho dele. A prancha
+`capturas/item83-colar-antes-depois-v2.png` **já serviu**. O próximo
+degrau é o **A2** (a borda macia), na fila desta família.
 
 **AS PALAVRAS DELE CHEGARAM — 25/08, e elas fecham o C3.** Na Sala de
 Conferência, diante de `capturas/item83-fita-zoom-antes-depois.png`, ele
