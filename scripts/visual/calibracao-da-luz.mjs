@@ -64,41 +64,54 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { APP_PADRAO, capturarCDP } from './chrome.mjs';
+import { VISTAS as VISTAS_PINADAS } from './ab-identidade.mjs';
 
 export const LARGURA = 1100;
 export const ALTURA = 900;
 
-/** as três âncoras pinadas — copiadas de `ab-identidade.mjs`, com o nome
- *  de lá, para que a origem de cada número seja rastreável a UMA casa */
-const PINADAS = {
-  'saturno-anel': {
-    raios: 6,
-    pos: [0.0000444068440660703, -0.000013639700232235952, -0.000007543925357433521],
-    look: [0.000044415067790719945, -0.000013646416397844129, -0.0000075488848424994925],
-  },
-  jupiter: {
-    raios: 4,
-    pos: [0.000014120014161765692, 0.000018255528587957974, 0.00000748112563397955],
-    look: [0.000014127656995165159, 0.000018260414310732658, 0.000007483024335340463],
-  },
-  mercurio: {
-    raios: 4,
-    pos: [-0.0000019148588355801608, -3.9725638498650736e-7, -1.3749003726820043e-8],
-    look: [-0.0000019151695742340926, -3.9722379598669784e-7, -1.3699318312906234e-8],
-  },
-  terra: {
-    raios: 4,
-    pos: [-0.0000045882235587153385, -0.0000014555632225072523, -6.307425015010789e-7],
-    look: [-0.0000045890070378484725, -0.000001455314175436054, -6.308304960541221e-7],
-  },
-  lua: {
-    raios: 4,
-    pos: [-0.000004577765217805196, -0.0000014518586579005272, -6.2925581919652e-7],
-    look: [-0.000004577990409167882, -0.000001451855297832381, -6.292543536189472e-7],
-  },
-};
-
 const CAUDA = '&jd=2460409.26395835&corpos=1&shot=2';
+const PARAMS_DA_CAUDA = new URLSearchParams(CAUDA.slice(1));
+
+/**
+ * A DISTÂNCIA de cada vista pinada, em raios do corpo. Este número NÃO
+ * está no `?pos=` — é o que o cabeçalho do `ab-identidade` declara sobre
+ * cada uma (6 raios equatoriais para o anel de Saturno, 4 para o resto) —,
+ * então continua escrito aqui, e é a lista destas chaves que diz QUAIS
+ * vistas esta folha usa.
+ */
+const RAIOS_DA_PINADA = { 'saturno-anel': 6, jupiter: 4, mercurio: 4, terra: 4, lua: 4 };
+
+/**
+ * AS ÂNCORAS SÃO LIDAS DO `ab-identidade`, não redigitadas. Até 26/08 os
+ * cinco pares `pos`/`look` viviam copiados aqui, e a cópia não tinha como
+ * saber de um re-baseline: bastava alguém repinar uma vista lá para esta
+ * folha passar a citar uma câmera que já não é a do md5 oficial, sem que
+ * nada reclamasse. É o mesmo argumento que já fez o `planeta-pixel.mjs`
+ * importar a lista em vez de copiá-la.
+ *
+ * A CAUDA TAMBÉM SE CONFERE (`jd`, `corpos`, `shot`): se a vista pinada
+ * mudar de data, isto REPROVA na hora em vez de capturar um céu de outro
+ * dia com a legenda do anterior.
+ */
+function pinada(nome) {
+  const achada = VISTAS_PINADAS.find(([n]) => n === nome);
+  if (!achada) throw new Error(`a vista pinada sumiu do ab-identidade: ${nome}`);
+  const q = new URLSearchParams(achada[1]);
+  const pos = q.get('pos');
+  const look = q.get('look');
+  if (!pos || !look) throw new Error(`a vista pinada ${nome} não é ?pos=/?look=`);
+  for (const [chave, valor] of PARAMS_DA_CAUDA) {
+    if (q.get(chave) !== valor) {
+      throw new Error(`a vista pinada ${nome} mudou de ${chave}: ${q.get(chave)} ≠ ${valor}`);
+    }
+  }
+  const numeros = (s) => s.split(',').map(Number);
+  return { raios: RAIOS_DA_PINADA[nome], pos: numeros(pos), look: numeros(look) };
+}
+
+const PINADAS = Object.fromEntries(
+  Object.keys(RAIOS_DA_PINADA).map((nome) => [nome, pinada(nome)])
+);
 
 const menos = (a, b) => a.map((v, i) => v - b[i]);
 const norma = (a) => Math.hypot(...a);

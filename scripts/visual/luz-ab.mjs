@@ -113,7 +113,7 @@
 //    de um eclipse se lê: o buraco contra o chão iluminado ao lado.
 // ============================================================
 import { inflateSync } from 'node:zlib';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -586,6 +586,40 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       : null;
   }
   if (!saida) throw new Error(`modo desconhecido: ${modo}`);
-  console.log(JSON.stringify(saida, null, 2));
+  // O CARIMBO VAI NO NÚMERO, e não só na tela. Achado em auditoria de
+  // 26/08: os cinco `capturas/item93-calib-*.json` não diziam de que
+  // árvore tinham saído — só o `-identidade` nomeava commits, e na prosa.
+  // Dois JSON com valores diferentes não se conciliam depois se nenhum
+  // carrega o código que os produziu. A definição do carimbo é a do
+  // `ab-identidade`, uma só, a mesma que o `colar-da-fita` já usa.
+  //
+  // OS DOIS MÓDULOS ENTRAM POR IMPORT DINÂMICO de propósito: o
+  // `ab-identidade` arrasta o `chrome.mjs` e roda `git` ao carregar, e
+  // `luz-ab.test.mjs` importa ESTE arquivo como módulo puro — o juiz não
+  // pode pagar o preço da linha de comando.
+  const { carimboDoCodigo } = await import('./ab-identidade.mjs');
+  const texto = JSON.stringify(
+    {
+      instrumento: `scripts/visual/luz-ab.mjs ${modo}`,
+      linha: ['node', 'scripts/visual/luz-ab.mjs', ...process.argv.slice(2)].join(' '),
+      codigo: carimboDoCodigo(),
+      quandoUtc: new Date().toISOString(),
+      ...saida,
+    },
+    null,
+    2
+  );
+  console.log(texto);
+  if (process.env.JSON) {
+    // a medida é arquivo de prova como o quadro cru, e cai na MESMA regra
+    // da casa: o número de ontem não morre para o de hoje nascer. O aviso
+    // sai em `stderr` para não sujar um `> arquivo.json`.
+    const { semSobrescrever } = await import('./colar-da-fita.mjs');
+    const destino = semSobrescrever(process.env.JSON);
+    writeFileSync(destino, `${texto}\n`);
+    if (destino !== process.env.JSON) {
+      console.error(`  a medida pedida já existia — gravada ao lado em ${destino}`);
+    }
+  }
 }
 /* c8 ignore stop */

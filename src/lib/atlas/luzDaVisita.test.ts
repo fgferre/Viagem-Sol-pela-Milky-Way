@@ -1037,7 +1037,7 @@ describe('8. o handoff ponto↔globo — o degrau que não existe', () => {
  * QUANDO ESTE BLOCO MORRE: com a escolha dele. A vencedora vira o padrão,
  * a porta sai, e o que sobrevive aqui é só o que a vencedora executar.
  */
-describe('8. a calibração candidata (item 93) — a porta e o que ela promete', () => {
+describe('9. a calibração candidata (item 93) — a porta e o que ela promete', () => {
   const CANDIDATAS: readonly CalibracaoDaLuz[] = ['padrao', 'c1', 'c2', 'c3'];
 
   /** o oráculo da IEC 61966-2-1, escrito à parte do módulo de propósito:
