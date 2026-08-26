@@ -392,6 +392,23 @@ Atlas pelo calendário, C6), **7** (a troca de qualidade sem reload, C9 —
 assim"*) e **79** (as duas telas de erro, C7). A história dos quatro mora
 neste arquivo, cada uma na sua seção, com o número intacto.
 
+**SEGUNDO ADENDO DE 25/08 (fim de sessão), e também só acrescenta.** A
+**SEGUNDA LEVA** da Sala de Conferência aposentou mais **TRÊS**: **88** (o
+polo das luas — ao enquadrar qualquer lua, o alto da tela trazia o eixo da
+NOSSA Lua; **C10**), **92** (descer ao corpo de um anão não punha o corpo na
+tela, e era a classe dos oito, não Éris; **C11**) e **95** (num eclipse o
+chão escurecia e o AR não; **C12**). Estes três, ao contrário dos quatro
+acima, TINHAM obra nova — ela pousou em 25/08 e foi ele quem a aceitou, nas
+fotos. A história dos três mora neste arquivo, cada uma na sua seção, com o
+número intacto. **Com isso, 25/08 aposentou SETE números** — 5, 7, 69, 79,
+88, 92 e 95 —, mais o **72**, resgatado pela conferência dos números e
+guardado dentro do item **70**, que é onde a obra dele aconteceu.
+
+*(O que a segunda leva NÃO aposentou, e fica dito para quem vier procurar:
+o item **93** respondeu as quatro perguntas dele e **continua vivo** — a
+receita do NASA Eyes está APROVADA, e o que sobra é calibração dos botões
+de dentro dela. Está no `PENDENCIAS.md`, não aqui.)*
+
 ---
 
 ## Item 5 — O Sol do Atlas obedece ao calendário
@@ -2163,6 +2180,74 @@ está certo:
   pelas bordas. **Não copiar** — e não confundir este achado estreito
   com superioridade de conjunto, que não existe.
 
+## Item 88 — Ao enquadrar qualquer lua, o alto da tela trazia o eixo da NOSSA Lua
+
+*(A obra pousou em 25/08 e o item ficou aberto só à espera do olho dele.
+**FECHOU em 25/08**, na SEGUNDA LEVA da Sala de Conferência: **C10 —
+confirmado como bom**. O que segue é o texto do vivo, verbatim, na véspera
+da saída.)*
+
+**88.** (Achado em 24/08, consertando o teleporte do religador do
+relógio. **AUTORIZADO POR ELE em 25/08 — Q8, e é o PRIMEIRO dos três:**
+*"vai fazendo na ordem, cada um volta com foto"*. A ordem dele é
+**88 → 92 → 95**, e "cada um volta com foto" é condição, não sugestão: o
+próximo só começa depois que o anterior voltou com a imagem.)
+**Ao enquadrar QUALQUER lua, o que fica no alto da tela é o
+eixo da nossa Lua.** É o último dos três literais da Onda 7 que sobraram
+de quando a Terra e a Lua eram os únicos corpos com malha: os outros dois
+— o corpo e a lua que o relógio ia buscar — caíram no mesmo dia, porque
+punham o corpo ERRADO em quadro. Este não põe: ele só inclina a cena.
+A lei já está decidida desde a Onda 7 — *polo do CORPO nos degraus
+"corpo" e "lua"* — e Titã, Io, Tritão e as outras dezoito estão sendo
+enquadradas com o polo da Lua.
+**POR QUE NÃO CAIU JUNTO:** ele mora em DOIS lugares que precisam
+concordar (o gesto, `focarNaLua`, e o religador, `enquadreVivo`, ambos em
+`director/escada.ts`); consertar um só giraria a câmera no primeiro tique
+do relógio. Consertar os dois é uma linha em cada — mas MUDA O QUE SE VÊ
+(o horizonte da cena roda) numa vista que nenhum juiz cobre e que ele
+nunca olhou. **É obra de olhar, não de conserto**: quem a fizer cria a
+vista que a cobre (uma lua de outro pai, tipo Titã ou Io) e volta com a
+foto do antes e depois.
+
+**A OBRA POUSOU EM 25/08 — falta SÓ o olho dele.** Os dois lugares
+caíram no MESMO commit, e cada um passou a pedir o polo do corpo em
+quadro: `focarNaLua` pelo `id` que recebeu, `enquadreVivo` pelo
+`entrada.id` da lua em foco. As 21 têm registro em `IAU_ORIENTATIONS` —
+a mesma tabela que orienta a MALHA de cada uma, que é o que faz a lei da
+Onda 7 valer (câmera e globo lendo o mesmo eixo).
+
+**O DEFEITO, MEDIDO EM NAVEGADOR ANTES DE MEXER:** `?foco=tita`,
+`?foco=caronte` e `?foco=io` devolviam o MESMO `camera.up` —
+(−0,006780, −0,373991, 0,927408), que é o polo da nossa Lua no instante.
+Três pais diferentes, um horizonte só. Depois do conserto cada uma sobe
+com o eixo dela, e o horizonte roda **26,7° em Titã, 111,5° em Caronte e
+3,5° em Io**. A prova de que as duas metades concordam é que o gesto e o
+religador devolvem a pose bit a bit igual nas três.
+
+**A VISTA QUE FALTAVA nasceu com a obra:** `foco-titan`, `foco-caronte` e
+`foco-io` entraram na leva do `ab-identidade` — nenhuma das 54 de antes
+descia ao degrau `lua` pelo enquadramento do app (as de lua da F5 cravam
+a câmera com `?pos=&look=`, que é voo livre). O A/B: **74,9%, 72,3% e
+33,9% do quadro** mudaram; as vizinhas `foco-jupiter`, `foco-luas`,
+`atlas` e `terra` saíram **bit-idênticas**. O dente de comportamento mora
+em `director/escada.test.ts` e julga o `camera.up` publicado nos dois
+escritores; reverter as duas linhas reprova 1 teste, e reverter **só uma
+delas** reprova 2 — que é a prova, em número, de por que o conserto tinha
+de ser de uma vez só.
+
+**AS FOTOS:** `capturas/item88-polo-da-lua-antes-depois.png` (as três
+luas, antes × depois) e `capturas/item88-titan-plano-do-anel.png` (o anel
+de Saturno visto de Titã — Titã orbita no plano do equador dele, então
+com o eixo dela no alto o anel TEM de sair na horizontal, e é o que
+acontece agora).
+
+**O achado de passagem desta obra — o anel que treme entre capturas —
+virou o item 101**, para não morrer no museu junto com este quando ele
+fechar. A câmera está fora de suspeita: `camera.up` e `camera.position`
+saíram bit a bit iguais em duas navegações e depois do religador.
+
+---
+
 ---
 
 ## Item 91 — Saturno quase escuro — a luz dos globos, o anel e a sombra
@@ -2369,3 +2454,223 @@ está escuro para o que ele espera das fotos da Cassini?** (b) Mercúrio
 ficou melhor domado ou ficou apagado? (c) o modo real, com Saturno quase
 preto, é a honestidade que ele quer ver ou é escuro demais para servir de
 modo?
+
+---
+
+## Item 92 — Descer ao corpo de um anão não punha o corpo na tela — e era a classe dos oito
+
+*(A obra pousou em 25/08 e o item ficou aberto só à espera do olho dele.
+**FECHOU em 25/08**, na SEGUNDA LEVA da Sala de Conferência: **C11 —
+confirmado como bom**. O que segue é o texto do vivo, verbatim, na véspera
+da saída.)*
+
+**92. Descer ao corpo de Éris não põe Éris na tela.** (Aberto em 25/08,
+achado com a régua na mão ao fotografar o item **91**. Não é queixa
+dele. **AUTORIZADO POR ELE em 25/08 — Q8, e é o SEGUNDO dos três:**
+*"vai fazendo na ordem, cada um volta com foto"*; a ordem é
+**88 → 92 → 95**.) `?foco=Éris` ACHA o alvo — a ficha abre com o nome certo —, mas
+`?foco=Éris&ver=corpo&d=6`, que é o degrau declarado dos anões
+("órbita heliocêntrica → aproximar o globo"), devolve um quadro **sem
+globo nenhum**.
+
+**A prova é indireta e é forte:** a obra do 91 multiplicou o globo de
+Éris por 6,5, e o quadro dessa URL saiu **byte a byte igual** nos dois
+binários (antes e depois do 91), enquanto TODOS os outros corpos
+mudaram. Quadro que não muda quando a luz do corpo muda é quadro sem o
+corpo. Com a câmera posta à mão sobre a efeméride (`?pos=`/`?look=`), a
+mesma Éris aparece e mede 25,5 → 165,6 de 255 — ou seja, o mesh existe
+e desenha; quem falha é o **enquadramento** do degrau.
+
+Não foi investigado além disto: sai do escopo do 91, e a foto de Éris
+que o dono vai julgar foi tirada pelo caminho manual. Suspeitos a
+conferir quando o item subir: Éris está a **93,8 UA** (a mais distante
+que a escada tenta), e o degrau pode estar mirando a órbita e não o
+corpo, ou parando antes por algum teto de distância.
+
+**A OBRA POUSOU EM 25/08 — falta SÓ o olho dele. E NÃO ERA DE ÉRIS: era
+da CLASSE INTEIRA.** Os oito heliocêntricos sem ponto (Ceres, Haumea,
+Makemake, Éris, Quaoar, Vesta, Palas e Hígia) faziam a mesma coisa.
+
+**A CAUSA, medida antes de tocar em nada, e ela era de ORDEM.** Em
+`focarNoCorpo` (`director/escada.ts`) o desvio da classe —
+`focarNoAnao` — saía **duas linhas antes** de qualquer caminho de
+descida ser consultado, e `focarNoAnao` nem recebia o argumento `ver`.
+Resultado: os dois caminhos até o globo estavam mortos para os oito, o
+do link (`?ver=corpo`) e o do gesto (clicar no anão já focado). Medido
+nos oito por URL: `?foco=X&ver=corpo&d=6` devolvia `degrau: 'orbita'` e
+um globo de **0,00003 a 0,0005 px** de diâmetro. Em Éris a câmera parava
+a **77.040.000 raios dela mesma** — o `?d=6` medindo seis raios da
+ÓRBITA (520 UA) em vez de seis do CORPO. **Marte, o controle no mesmo
+endereço, sempre parou a 6,4.** Nenhum teto de distância: o degrau
+existia e funcionava — o botão "⊕ Aproximar" punha os mesmos oito em
+quadro com 61 a 399 px. **Depois do conserto**, pela mesma URL: degrau
+`corpo`, globo de **399 px** e a câmera a **6,404 raios** do corpo, que é
+o enquadramento do degrau (o `?d=6` do link fica ABAIXO do piso do zoom e
+é grampeado nele — a mesma constante 6,4042 que o degrau do Sol usa).
+E a vizinhança fecha o círculo, medida no navegador: `⊕ Aproximar` desce,
+`Esc` volta à órbita nos MESMOS números, e clicar de novo no anão já
+focado desce outra vez.
+
+**O CONSERTO SÃO TRÊS PEÇAS, e cada uma tem dente próprio.**
+(1) O gesto da descida sobe para cima do desvio, e `focarNoAnao` passa a
+receber o `ver` — a cláusula é a mesma dos planetas, palavra por palavra.
+(2) O NOME: `aproximarDoCorpo` resolvia nome varrendo só os DEZ corpos da
+camada, então o gesto que põe Éris em quadro **apagava o "Ⓘ ÉRIS" da
+linha de contexto** (medido: `⧉ CAMADAS Ⓘ ÉRIS ▶ VER O FILME` na órbita
+virava `⧉ CAMADAS ▶ VER O FILME` no corpo; em Marte o nome sobrevive).
+Sem ela o conserto entregaria o globo com a legenda em branco. A
+varredura por LISTA virou uma leitura da tabela única
+(`nomeDoCorpo`, `atlasConfig.ts`), que é a fonte de que as três listas se
+montam — a armadilha era ter de lembrar das três.
+(3) `verDoBoot`, o gêmeo do `pinoDeBoot`: os oito estão FORA do
+`RETRATO_2026`, então no boot, quando `?foco=` roda, não há posição
+nenhuma para eles. A escada pede a fonte e volta com a órbita; quando a
+fonte chega, `reenquadrarAposEfemeride` reaplicava o degrau VIVO e o
+`corpo` do endereço morria ali. Sem esta peça o conserto passava na
+bancada e **falhava pela URL de verdade** — foi o navegador que a exigiu.
+
+**A PROVA.** Cinco dentes de comportamento novos em
+`director/escada.test.ts`, e eles julgam o que o visitante VÊ: a posição
+e a direção da câmera contra a posição do corpo (`noQuadro`), não texto.
+As duas metades são necessárias — no degrau errado o corpo também cai no
+meio da tela, e só o TAMANHO denuncia que ali não há globo. **Sabotagem
+em worktree:** reverter a peça (1) reprova **4**; só o `ver` engolido,
+**3**; a peça (2) do nome, **2**; a peça (3) do boot, **1**; as três
+juntas, **4**.
+
+**O A/B de árvore limpa (60 vistas):** as três vistas novas
+(`anao-eris-corpo`, `anao-vesta-corpo`, `anao-eris-orbita`) nasceram com
+a obra, porque nenhuma das 57 de antes descia ao degrau `corpo` de um
+anão ou asteroide. As duas do degrau consertado **MUDARAM** — 22,76% do
+quadro em Éris, 95,17% em Vesta — e a terceira, a **anti-deriva**, saiu
+**bit-idêntica**: `?foco=eris` sem `?ver=` continua na órbita, que é o
+contrato de sempre. O placar fecha em **55 IGUAL, 2 DIFERE, 3 INSTÁVEL**
+— a anti-deriva é uma das 55, e as três `INSTÁVEL` (`saturno-anel`,
+`saturno-anelnb`, `foco-titan`) são o tremor do anel do item **101**, que
+o par nulo inocenta como ele manda.
+
+**AS FOTOS:** `capturas/item92-eris-antes-depois.png` e
+`capturas/item92-vesta-antes-depois.png` (o quadro sem globo × o corpo na
+tela, a MESMA URL nos dois lados). Vesta está lá porque é a outra família
+e a outra ordem de distância (2,4 UA contra 93,5): é ela que prova que o
+conserto é da classe, não um caso especial de Éris.
+
+---
+
+## Item 95 — Num eclipse o chão escurecia e o AR não
+
+*(A obra pousou em 25/08 e o item ficou aberto só à espera do olho dele.
+**FECHOU em 25/08**, na SEGUNDA LEVA da Sala de Conferência: **C12 —
+confirmado como bom**. O que segue é o texto do vivo, verbatim, na véspera
+da saída.)*
+
+**95.** (Achado pela auditoria da direção da luz, 25/08 — a pergunta dele
+"estamos com problemas bizarros de iluminação em todo app?". **AUTORIZADO
+POR ELE em 25/08 — Q8, e é o TERCEIRO dos três:** *"vai fazendo na ordem,
+cada um volta com foto"*; a ordem é **88 → 92 → 95**.) **Num
+eclipse, o chão escurece e o AR não.** Dos três shaders da Terra,
+`TERRA_FRAG` e `NUVENS_FRAG` chamam `fatorDeEclipse`; `ATMOSFERA_FRAG`
+nem monta o `GLSL_SOMBRA_ECLIPSE`. Então a casca de atmosfera continua
+espalhando luz cheia por cima de um chão que está preto.
+
+**O tamanho medido:** no eclipse de 08/04/2024 o núcleo da umbra sai em
+2,9 de 255 contra 53 do deserto vizinho — a atmosfera quase não pesa no
+MEIO do disco, que é onde caiu essa sombra. O erro mora no LIMBO, onde a
+casca é brilhante: um eclipse rasante hoje aparece com o ar aceso por
+cima. **Não é multiplicar pelo fator e pronto**, e é por isso que fica
+como item em vez de conserto de uma linha: na totalidade de verdade o
+céu não é preto, ele é o crepúsculo de 360° — luz espalhada de FORA da
+umbra. Zerar o ar seria trocar um erro por outro.
+
+**A OBRA POUSOU EM 25/08 — falta SÓ o olho dele.**
+
+**A DOSE, e ela tem duas peças, não uma.** A primeira responde pelo
+crepúsculo e NÃO é um número escolhido: a sombra entra **amostra a
+amostra** dentro do laço de Nishita do `ATMOSFERA_FRAG`, na FONTE da luz
+que cada pedaço de ar espalha — cada uma das 23 amostras pergunta ao
+MESMO cone (`fatorDeEclipse`, o chunk único da lib) se o Sol a alcança.
+O que sobrevive é então a fração ILUMINADA do caminho, ponderada pela
+densidade, e é ela que reproduz o crepúsculo de 360° sem inventá-lo: a
+umbra tem ~200 km de largura e um raio de visada rasante atravessa
+~2.850 km de ar (2·√(2·R·h), R 6.378 km, casca 160 km), então mesmo
+passando pelo núcleo da umbra ele só fica ~7 % do caminho às escuras. A
+penumbra, essa sim, é enorme — r ≈ 3.430 km — e escurece o ar num
+gradiente por meio disco, que é o que um eclipse parcial faz com o céu
+de verdade.
+
+A segunda peça é o **piso do crepúsculo**, para o caminho que cai
+INTEIRO na sombra (o rasante, em que o cilindro de sombra se deita ao
+longo do limbo). Ele é **derivado em lux, e a conta está no código**
+(`PISO_CREPUSCULO_NO_AR`, em `eclipse.ts`):
+
+>  piso = E_totalidade / E_sol_pleno = **10 lux / 100.000 lux = 1e−4**
+
+— a iluminância no chão dentro da umbra sobre a do Sol pleno, e essa luz
+é literalmente o anel de ar iluminado de fora espalhando para dentro (a
+coroa entra com ~0,25 lux e não manda na conta). É o irmão SOLAR do
+`PISO_REFRACAO_LUNAR`, com a mesma nota de honestidade: a totalidade de
+uma data específica varre de ~1 a ~100 lux, o que é firme é a ORDEM.
+**Sem ganho de observador**: 1e−4 quantiza para ~0 na cadeia de display,
+e é de propósito — a umbra solar desta casa é escura por decisão medida
+(o 2,80 do item 93), e um ganho no ar desmancharia isso.
+
+**O QUE SE VÊ, medido com `scripts/visual/luz-ab.mjs`.** A vista nova
+`eclipse-limbo` (2026-08-12 17:48 UTC, o total RASANTE sobre Islândia e
+Espanha — gamma **0,8964** pela nossa efeméride, umbra r 53 km, câmera a
+2 raios com a mancha a 0,966 do raio do disco, dentro do anel de ar):
+**56.610 px mudaram (1,84 % do quadro) e TODOS os 56.610 perderam luz**,
+delta máximo **83,8 de 255**, média do quadro 83,63 → 83,32. O mapa da
+perda (`item95-limbo-mapa.png`) mostra um ARCO no anel de limbo, forte
+onde a sombra o cruza e esvaindo para os lados — zero em todo o resto do
+quadro, inclusive no chão embaixo dele.
+
+**E o 2,80 do item 93 NÃO se mexeu:** a vista `eclipse-solar` (Durango,
+08/04/2024) saiu **BIT-IDÊNTICA**, `7a1ca6d6f19b` dos dois lados; a régua
+da umbra lê núcleo **2,71** e vizinho **13,62** antes e depois, contraste
+5,0 nos dois. `terra`, `terranb`, `terralua`, `lua` e `eclipse-lunar`
+também bit-idênticas.
+
+**O CUSTO, declarado (e NÃO medido).** A dose amostra a amostra põe o
+cone de eclipse **dentro** do laço: são **23 chamadas de
+`fatorDeEclipseNoAr` por fragmento** do anel de ar, não uma por
+fragmento — essa é a FORMA do custo. A mitigação é real e está escrita
+no chunk: a saída antecipada `if (uEclipseAtivo < 0.5) return
+vec3(1.0);` (`src/lib/atlas/eclipse.ts`) faz com que, **fora de
+eclipse**, o preço seja 23 comparações de um uniforme mais o `max`
+contra o piso — nenhuma das raízes, projeções e `length` do cone —, e o
+resultado é identidade bit a bit, que é o que as vistas SEM eclipse
+acima (`terra`, `terranb`, `terralua`, `lua`) provam; `eclipse-solar` e
+`eclipse-lunar` ficam bit-idênticas por outro motivo (a mancha no MEIO
+do disco, onde o ar não pesa). Com eclipse ativo, o corpo inteiro roda nas
+23 amostras, e é aí que o preço mora. **NÃO MEDIDO COM `gpu-profile`:**
+não existe número de quadro nem de ms para este trecho. A medição
+pertence ao regime do **item 99** (a dieta dos juízes); até ela
+existir, isto é uma forma de custo CONHECIDA, não um custo
+quantificado, e quem ler não deve tratar a saída antecipada como prova
+de que o preço com eclipse ativo é pequeno.
+
+**FOTOS:** `item95-limbo-antes.png` × `item95-limbo-depois.png` (crus),
+`item95-limbo-antes-depois.png` (a prancha COM legenda: o par recortado
+1:1 no limbo, a medida e o controle) e `item95-limbo-mapa-v2.png` (onde
+a luz saiu, com legenda). A medida que as duas citam está em
+`capturas/item95-medidas.json` (`medirPar` sobre os dois crus
+inteiros). As pranchas NUAS `item95-limbo-prancha.png` e
+`item95-limbo-mapa.png` são as originais e ficam onde estão — as com
+legenda foram gravadas AO LADO, nunca por cima (AGENTS.md §7). E o par
+de controle `item95-durango-antes.png` × `item95-durango-depois.png`.
+
+**O DENTE, e o que ele pega.** O chunk do eclipse — a peça mais crítica
+de shader da casa — passou a ser medido **por valor**: `eclipse.test.ts`
+ganhou um tradutor GLSL → JS com vec3 de verdade (o de `luzDaVisita` mede
+um canal só e não serve aqui, porque `dot` e `length` amarram os três) e
+EXECUTA `fatorDeEclipse` e `fatorDeEclipseNoAr` sobre a geometria real de
+08/04/2024. Ele recusa o que não entende, e quem julga o juiz é a
+própria lib: a rampa que o GLSL executa cruza a meia-luz entre os raios
+de umbra e penumbra que `resolveConeDeEclipse` devolveu. Do outro lado,
+`terra.test.ts` compara, nome a nome, o que `uniformsDaAtmosfera()`
+oferece com o que o `ATMOSFERA_FRAG` MONTADO declara — a fronteira em
+que o defeito morava, com os dois lados calados.
+
+**SABOTAGEM (worktree), o placar:** reverter o conserto inteiro reprova
+**2**; tirar só a multiplicação do laço, deixando os uniformes, reprova
+**1**; `piso = 0` reprova **2**. No HEAD sem a obra, nenhum reprovava.
