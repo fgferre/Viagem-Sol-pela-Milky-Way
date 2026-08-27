@@ -85,8 +85,8 @@ esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
 esperam o olho dele) → ~~**92**~~ (25/08 — pousou, e não era de Éris: era
 da classe dos oito; as duas pranchas esperam o olho dele) → ~~**95**~~
 (25/08 — pousou; o ar no eclipse ganhou dose derivada e quatro fotos
-esperam o olho dele) → **gate do filme (77)** → **rolagem do véu
-(87)** → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
+esperam o olho dele) → **gate do filme (77)** → ~~**rolagem do véu
+(87)**~~ (27/08 — pousou, e saiu da lista) → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
 de abertura (**61**) → **70**, a causa 2 → **99** → **75**.
 
 **25/08, FIM DE SESSÃO — A SEGUNDA LEVA DA SALA DE CONFERÊNCIA CHEGOU, E
