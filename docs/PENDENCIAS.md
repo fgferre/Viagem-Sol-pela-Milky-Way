@@ -463,6 +463,13 @@ provam que mordem — os velhos nunca). **Fila: entra ANTES do item 75** — o m
 de filmes é rodada longa, e emagrecer os portões antes dela paga a obra em uma
 semana. A prova de saída: o preço da rodada padrão medido antes/depois, e o
 censo publicado com cada morte justificada (nenhum juiz morre em silêncio).
+**25/08, o dono cortou na carne antes da obra:** "vamos simplificar todo esse
+processo — as sessões estão ridiculamente longas e três dias gastaram o plano
+inteiro". As peças 2 e 3 (portões em camadas, prova proporcional, agente só
+quando paga a passagem, custo anunciado, uma auditoria sem re-auditoria)
+viraram **lei imediata** no `AGENTS.md` (§12 e §13) — não esperam esta obra.
+O que resta ao item: a peça 1 (o censo com preço e dono) e a 4 (anti-deriva
+com sabotagem amostral dos velhos), mais o teto em minutos com porteiro.
 
 **102.** Girar em volta do objeto selecionado era péssimo — **FECHADO em
 26/08**. Ele decidiu o desenho no chat, e a frase é a lei: *"quero que
