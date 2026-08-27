@@ -41,9 +41,18 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ---
 
-## O BASTÃO — onde a rodada parou (25/08)
+## O BASTÃO — onde a rodada parou (27/08)
 
-**A FILA QUE VALE, e ela é DECISÃO DELE.** Entrou aqui em 23/08 como
+**27/08 — O 87 POUSOU E SAIU DA FILA.** A abertura do telefone com a fonte
+grande passou a ROLAR, sem encolher nada (a escolha dele em 25/08, Q6); o
+juiz de acessibilidade ganhou as três provas das pontas e a sabotagem
+confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`.
+**A fila que vale agora começa no (3):** o A/B da lente de 58° (**86**)
+junto com a folha da vista de abertura (**61**), na MESMA sessão de
+captura — obra nossa de foto, escolha dele.
+
+**A FILA DE 23/08 — SUPERADA (a que vale é a da PRÓXIMA CONVERSA, mais
+abaixo); fica como história, e era DECISÃO DELE.** Entrou aqui em 23/08 como
 decisão de coordenação com a conferência pendente; em **25/08 ele mandou a
 obra do 91 andar**, e quem manda uma obra andar confirma a posição dela na
 fila. O que sobra à espera dele agora é a IMAGEM, não a prioridade.
@@ -103,8 +112,8 @@ FECHARAM.)*
 > na Q13 e a porta `?calib=` morreu, com o item **104** saindo na mesma
 > leva; e escolheu a **R1** na Q14, com os +3 passos de exposição do modo
 > real embarcados e declarados no selo. **E o olho dele veio no mesmo dia:
-> as TRÊS fecharam** — 91, 93 e 104, por C14 e C15) → **(2)** a rolagem do
-> véu da abertura (**87**) → **(3)** o A/B
+> as TRÊS fecharam** — 91, 93 e 104, por C14 e C15) → ~~**(2)** a rolagem
+> do véu da abertura (**87**)~~ (27/08 — pousou, e saiu da lista) → **(3)** o A/B
 > da lente de 58° (**86**) junto com a folha da vista de abertura (**61**),
 > na **MESMA sessão de captura** → **(4)** o **70**, causa 2 (o ponto que
 > morre na borda) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
@@ -232,6 +241,10 @@ ele sentir não for o que a frase pedia, é item NOVO.
 **Total aposentado em 26/08: CINCO números** (91, 93, 102, 103, 104) — e o
 **próximo número livre continua 105**, porque nenhum destes fechos abriu
 obra nova.
+
+**E em 27/08 saiu o 87** (a rolagem do véu da abertura), por obra, no
+caminho que ele escolheu em 25/08 — o próximo número livre segue **106**,
+porque o fecho não abriu obra nova.
 
 ---
 
@@ -1199,31 +1212,13 @@ por fotometria**; e o **corte de câmera dentro do laço + o fade angular**.
 
 **A história completa está no ARQUIVO, item 83.**
 
-**87. O véu da abertura não cabe na tela do telefone com a fonte
-grande — ELE DECIDIU EM 25/08: DEIXAR A PÁGINA ROLAR. Obra autorizada,
-pequena.** (Achado em 24/08, conferindo a queixa dos três botões — item
-**61**.) A 390×844 com `?ui=1.4` — o degrau de fonte MAIS ALTO no
-aparelho MAIS ESTREITO — o véu inteiro transborda na vertical: a tarja de
-cima (*"HYG · VIA LÁCTEA · TEMPO REAL"*) e a linha do rodapé
-(*"experiência cinematográfica · 3 min 13 s"*) saem **cortadas pela
-borda**. Os TRÊS BOTÕES estão certos e medidos (313,59×58,06 px, iguais,
-nada fora da tela na horizontal); quem não cabe é a PÁGINA.
-**Não é o que ele reportou** — a queixa dele era o botão mal formatado, e
-essa não reproduz mais. Este é vizinho, achado na mesma conferência.
-**Por que fica ABERTO e não foi consertado na hora:** o conserto é
-composição — encolher a tarja, o subtítulo ou o rodapé no telefone, ou
-deixar o véu rolar —, e composição é dele. Quem tem fonte grande é
-justamente quem mais precisa ler o rodapé, então "cortar e ignorar" não
-serve de resposta. Foto: `capturas/abertura-botoes.png`, painel da
-direita.
-
-**A COMPOSIÇÃO ERA DELE E ELE ESCOLHEU, em 25/08 (Q6). Palavras dele:**
-*"deixar a página rolar"*. Das três saídas oferecidas, a escolhida é a que
-**não encolhe nada**: nem tarja, nem subtítulo, nem rodapé — quem tem fonte
-grande rola e lê tudo, no tamanho que pediu. Encolher tipografia no telefone
-está **descartado por decisão dele**, e não volta sem pedido novo. Quem
-executar volta com a foto de 390×844 com `?ui=1.4`, mostrando o véu rolando
-até o rodapé inteiro.
+**87.** O véu da abertura não cabia na tela do telefone com a fonte
+grande — **FECHADO em 27/08**, por obra, no caminho que ELE escolheu em
+25/08 (Q6: *"deixar a página rolar"*): o véu rola e nada encolhe. As três
+provas novas do juiz de acessibilidade cobrem as duas pontas (a tarja
+inteira no início, o tempo do filme inteiro depois de rolar) e a sabotagem
+confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`;
+história no ARQUIVO.
 
 **89. Desligar os nomes deixa o céu INCLICÁVEL — o ícone tem de sobreviver
 ao texto.** (Aberto em 24/08, medido ao fechar o item **83**. Não é queixa

@@ -71,6 +71,19 @@
     line-height: 1.8;
   }
 
+  /* A ABERTURA ROLA COM TEXTO GRANDE (item 87, decisão do dono em
+     25/08). A 390×844 com `?ui=1.4`, o conteúdo é mais alto que a tela:
+     centralizá-lo escondia tanto o kicker no topo quanto o tempo do
+     filme no rodapé. `safe center` mantém a composição centralizada
+     quando ela cabe e cede para o início quando transborda; o próprio
+     véu vira então a área rolável. Nada encolhe para caber — quem pediu
+     texto grande percorre a página e lê as duas pontas no tamanho que
+     escolheu. */
+  .veil-intro {
+    overflow-y: auto;
+    justify-content: safe center;
+  }
+
   /* AS TRÊS PORTAS EMPILHAM AQUI, uma por linha — e então os 14rem que
      as igualam lado a lado só apertariam a NOTA de cada uma, que passa
      a quebrar em mais linhas e empurra a última linha da abertura para
@@ -341,4 +354,3 @@
     transition: none;
   }
 }
-

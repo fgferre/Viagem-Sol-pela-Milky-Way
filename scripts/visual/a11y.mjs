@@ -228,6 +228,9 @@ async function julgarDialogo(s, nome, onde) {
  *  3. o Tab passa nas três, na ordem em que estão na tela;
  *  4. nada sai da tela, nem com o texto no maior degrau — três botões
  *     com três linhas embaixo é o estado mais alto que a abertura tem.
+ *  5. no aparelho de 390×844 com texto em 140%, nada encolhe: o véu
+ *     transborda e ROLA, com a tarja inteira no início e o tempo inteiro
+ *     no fim (item 87, decisão do dono em 25/08).
  */
 async function julgarAbertura(s) {
   const assentou = await s.ir(PIN);
@@ -330,6 +333,59 @@ async function julgarAbertura(s) {
       `abertura com ui=${fator}: nada fora da tela` + (fora.length ? ` — ${fora.join(' · ')}` : '')
     );
   }
+
+  // O CASO EXATO QUE ABRIU O ITEM 87. `mobile: true` importa: é a página
+  // no aparelho, não só uma janela estreita. A prova cobra as duas
+  // extremidades, porque `overflow-y: auto` sozinho ainda deixaria o topo
+  // inalcançável se o flex continuasse centralizando conteúdo excedente.
+  await s.send('Emulation.setDeviceMetricsOverride', {
+    width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+  });
+  await s.ir(`ui=1.4&${PIN}`);
+  const rolagem = await s.js(`(() => {
+    const veu = document.querySelector('.veil-intro');
+    const topo = document.querySelector('.veil-intro .title-kicker');
+    const rodape = document.querySelector('.veil-intro .journey-runtime');
+    const caixa = (e) => { const r = e.getBoundingClientRect(); return {
+      topo: r.top, base: r.bottom,
+    }; };
+    const inicio = {
+      scrollTop: veu.scrollTop,
+      topo: caixa(topo),
+      rodape: caixa(rodape),
+    };
+    veu.scrollTop = veu.scrollHeight;
+    const fim = {
+      scrollTop: veu.scrollTop,
+      topo: caixa(topo),
+      rodape: caixa(rodape),
+    };
+    return {
+      altura: veu.clientHeight,
+      conteudo: veu.scrollHeight,
+      overflowY: getComputedStyle(veu).overflowY,
+      inicio,
+      fim,
+    };
+  })()`);
+  conferir(
+    rolagem.overflowY === 'auto' && rolagem.conteudo > rolagem.altura,
+    `abertura 390×844 ui=1.4: o véu não encolhe — ${rolagem.conteudo} px de conteúdo`
+      + ` em ${rolagem.altura} px, com rolagem ${rolagem.overflowY}`
+  );
+  conferir(
+    rolagem.inicio.scrollTop === 0 && rolagem.inicio.topo.topo >= -1
+      && rolagem.inicio.topo.base <= rolagem.altura + 1,
+    `abertura 390×844 ui=1.4: a tarja de cima está inteira no início`
+      + ` [${rolagem.inicio.topo.topo.toFixed(1)}, ${rolagem.inicio.topo.base.toFixed(1)}]`
+  );
+  conferir(
+    rolagem.fim.scrollTop > 0 && rolagem.fim.rodape.topo >= -1
+      && rolagem.fim.rodape.base <= rolagem.altura + 1,
+    `abertura 390×844 ui=1.4: a rolagem alcança o rodapé inteiro`
+      + ` [${rolagem.fim.rodape.topo.toFixed(1)}, ${rolagem.fim.rodape.base.toFixed(1)}]`
+  );
+  await s.send('Emulation.clearDeviceMetricsOverride');
 
   // e a porta do Atlas leva ao Atlas — o MESMO `entrarNoAtlas` do portal
   // do pausar-e-olhar (item 60). Sem esta linha, um botão que não faz

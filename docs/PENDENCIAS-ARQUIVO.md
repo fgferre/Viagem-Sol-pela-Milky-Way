@@ -4120,3 +4120,35 @@ proíbe.
 **NÃO SE MEXE:** o zoom (`zoomDaRoda.ts` já tem inércia própria); o
 "olhar ao redor" do filme (`cameraRig.addLookDelta` — rotação manual
 em torno de corpo só existe no Atlas); os limiares de toque do P2.
+
+---
+
+## Item 87 — O véu da abertura não cabia na tela do telefone com a fonte grande
+
+*(Achado em 24/08, decidido por ele em 25/08 (Q6): "deixar a página rolar". A obra pousou em 27/08: o véu vira área rolável com `overflow-y: auto` e `justify-content: safe center` no responsivo, e o juiz de acessibilidade ganhou as três provas das pontas. FECHOU em 27/08 por obra, com a sabotagem mordendo — sem o CSS, as três provas acusam FALHA. Foto: `capturas/item87-abertura-rolagem-v2.png`. O que segue é o texto do vivo, verbatim, na véspera da saída.)*
+
+**87. O véu da abertura não cabe na tela do telefone com a fonte
+grande — ELE DECIDIU EM 25/08: DEIXAR A PÁGINA ROLAR. Obra autorizada,
+pequena.** (Achado em 24/08, conferindo a queixa dos três botões — item
+**61**.) A 390×844 com `?ui=1.4` — o degrau de fonte MAIS ALTO no
+aparelho MAIS ESTREITO — o véu inteiro transborda na vertical: a tarja de
+cima (*"HYG · VIA LÁCTEA · TEMPO REAL"*) e a linha do rodapé
+(*"experiência cinematográfica · 3 min 13 s"*) saem **cortadas pela
+borda**. Os TRÊS BOTÕES estão certos e medidos (313,59×58,06 px, iguais,
+nada fora da tela na horizontal); quem não cabe é a PÁGINA.
+**Não é o que ele reportou** — a queixa dele era o botão mal formatado, e
+essa não reproduz mais. Este é vizinho, achado na mesma conferência.
+**Por que fica ABERTO e não foi consertado na hora:** o conserto é
+composição — encolher a tarja, o subtítulo ou o rodapé no telefone, ou
+deixar o véu rolar —, e composição é dele. Quem tem fonte grande é
+justamente quem mais precisa ler o rodapé, então "cortar e ignorar" não
+serve de resposta. Foto: `capturas/abertura-botoes.png`, painel da
+direita.
+
+**A COMPOSIÇÃO ERA DELE E ELE ESCOLHEU, em 25/08 (Q6). Palavras dele:**
+*"deixar a página rolar"*. Das três saídas oferecidas, a escolhida é a que
+**não encolhe nada**: nem tarja, nem subtítulo, nem rodapé — quem tem fonte
+grande rola e lê tudo, no tamanho que pediu. Encolher tipografia no telefone
+está **descartado por decisão dele**, e não volta sem pedido novo. Quem
+executar volta com a foto de 390×844 com `?ui=1.4`, mostrando o véu rolando
+até o rodapé inteiro.
