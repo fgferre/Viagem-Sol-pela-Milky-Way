@@ -903,11 +903,18 @@ commit e uma foto por passo:
    parecidos. **Saturar sozinho não separa as quatro de dentro** — só a
    tabela de design dá um azul à Terra. Quem quiser a terceira via com
    separação terá de mexer no matiz, e aí já não é mais fotometria.
-   **A QUARTA COLUNA É DIREÇÃO DELE (27/08):** a cor média da **textura**
-   de cada planeta — a linha sai da cor do globo que já se vê na tela, e
-   o azul da Terra vem de graça. A prancha ganha a coluna **(iv)** antes
+   **A QUARTA COLUNA É DIREÇÃO DELE (27/08):** a cor da **textura** de
+   cada planeta — a linha sai da cor do globo que já se vê na tela, e o
+   azul da Terra vem de graça. A prancha ganha a coluna **(iv)** antes
    da escolha; a fotometria (observação distante, MKP17) não é da
-   textura, e era exatamente essa a pergunta dele.
+   textura, e era exatamente essa a pergunta dele. **E não é a cor
+   MÉDIA — é a cor DOMINANTE DE MAIOR SATURAÇÃO (refino dele, ainda
+   27/08):** a média lava tudo (oceano azul + nuvem branca + continente
+   marrom dá cinza). Pixel quase neutro (nuvem, gelo, bruma) não vota;
+   quem vota é o pixel colorido. Receita: histograma de matiz dos pixels
+   da textura PESADO pela saturação de cada um; a cor da coluna é a do
+   pico — Terra sai o azul do oceano, Marte a ferrugem, Saturno o
+   dourado.
    **COMO SE REPRODUZ:** as seis células saem de uma porta de
    instrumento EFÊMERA — `?paleta=foto|deles|saturada` e `?alfafita=` —
    que vive só num worktree e não pousou na main. Reabri-la é trocar a
