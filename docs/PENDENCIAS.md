@@ -47,9 +47,18 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 grande passou a ROLAR, sem encolher nada (a escolha dele em 25/08, Q6); o
 juiz de acessibilidade ganhou as três provas das pontas e a sabotagem
 confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`.
-**A fila que vale agora começa no (3):** o A/B da lente de 58° (**86**)
-junto com a folha da vista de abertura (**61**), na MESMA sessão de
-captura — obra nossa de foto, escolha dele.
+
+**27/08, SEGUNDA LEVA — AS FOTOS DO (3) ESTÃO NA MESA, à espera do olho
+dele.** A sessão única de captura saiu: `capturas/item86-lente-ab.png`
+(o A/B da lente, 35° × 58°, data pinada, árvore limpa dos dois lados —
+o lado 58° era um worktree de uma linha, já removido) e
+`capturas/item61-abertura-folha.png` (os três candidatos de abertura, todos
+a 58°). **Achado da sessão, que ele precisa saber antes de julgar:** com a
+lente mais aberta o teto do zoom cai de 226,84 para ~133,7 UA e a
+abertura natural desce de ~8,9 para ~5,2 UA — está nas etiquetas das
+pranchas. Nenhuma linha de código pousou; a escolha é dele.
+**A fila que vale agora começa no (4):** o **70**, causa 2 (o ponto que
+morre na borda) → **99** → **75** → **100**.
 
 **A FILA DE 23/08 — SUPERADA (a que vale é a da PRÓXIMA CONVERSA, mais
 abaixo); fica como história, e era DECISÃO DELE.** Entrou aqui em 23/08 como
@@ -113,9 +122,11 @@ FECHARAM.)*
 > leva; e escolheu a **R1** na Q14, com os +3 passos de exposição do modo
 > real embarcados e declarados no selo. **E o olho dele veio no mesmo dia:
 > as TRÊS fecharam** — 91, 93 e 104, por C14 e C15) → ~~**(2)** a rolagem
-> do véu da abertura (**87**)~~ (27/08 — pousou, e saiu da lista) → **(3)** o A/B
+> do véu da abertura (**87**)~~ (27/08 — pousou, e saiu da lista) → ~~**(3)** o A/B
 > da lente de 58° (**86**) junto com a folha da vista de abertura (**61**),
-> na **MESMA sessão de captura** → **(4)** o **70**, causa 2 (o ponto que
+> na **MESMA sessão de captura**~~ (27/08 — **as fotos saíram e estão na
+> mesa**: `capturas/item86-lente-ab.png` e `capturas/item61-abertura-folha.png`;
+> falta o olho dele) → **(4)** o **70**, causa 2 (o ponto que
 > morre na borda) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
 > (o motor de filmes) → o item **100**.
 
@@ -651,8 +662,10 @@ exigir pedido novo dele.
   larga era "dez nomes num nó de 40 px" sobre linhas de um pixel, e descer
   para o sistema interno foi o jeito de fugir do nó, não o de dar o melhor
   contexto. **N1** (item 82) e **L2** (item 83) pousaram em 24/08, e era
-  isso que a vista larga esperava. Falta a folha de fotos lado a lado —
-  sistema inteiro no estilo Eyes × interno atual × meio-termo. **A decisão
+  isso que a vista larga esperava. **A folha de fotos SAIU em 27/08** —
+  `capturas/item61-abertura-folha.png`: sistema inteiro no estilo Eyes ×
+  interno atual × meio-termo, os três sob a lente nova de 58°, com HUD.
+  **A decisão
   é DELE, e ninguém trate a (a) como resposta final até isso acontecer.**
   **E ELA ANDA EMPARELHADA COM A LENTE (item 86), por decisão de 25/08:**
   ele mandou abrir o fov do filme para o app inteiro, e a lente é metade da
@@ -1564,6 +1577,14 @@ efeito, não bug a compensar; (ii) mudar o fov re-baseliza as vistas de Atlas
 do gate, e isso se declara; (iii) o teto do zoom e o enquadramento padrão
 mudam de tamanho aparente junto — o par de fotos tem de mostrar isso, não
 só o céu.
+
+**A FOTO SAIU em 27/08: `capturas/item86-lente-ab.png`** — 4 painéis, data
+pinada (jd 2460409,264), árvore limpa nos dois lados (o 58° era worktree de
+uma linha, removido; nada pousou). Par 1: mesma câmera (8,9 UA), 35° × 58°.
+Par 2: o enquadramento natural de cada lado. **Achado que ele precisa saber
+antes de julgar:** a 58° o teto do zoom cai de 226,84 para ~133,7 UA e a
+abertura natural desce de ~8,9 para ~5,2 UA. Espera o olho dele junto com
+a folha do item 61.
 
 **⚠ ESTA FOTO NÃO SAI SOZINHA.** Ela conversa direto com o **re-julgamento
 da vista de abertura** (item **61**): a vista larga era ilegível em parte
