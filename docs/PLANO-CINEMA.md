@@ -108,7 +108,11 @@ com a virada para Antares e contém o lançamento, as travessias de
 Sagitário e Scutum e a frenagem antes do centro, com rampas e pulsos de
 velocidade. A
 [`abertura.json`](../src/three/cinematic/roteiros/abertura.json) reúne a
-parede solar, a saída em hélice e a passagem por Sirius.
+parede solar, a saída em hélice e a passagem por Sirius. O
+[`revelacao.json`](../src/three/cinematic/roteiros/revelacao.json) reúne
+os holds de medição do Ato IV (perfil e face) e a travessia que abre o
+disco em braços, com os marcos `edge`/`face` declarados nos próprios
+planos.
 `lerSequencia` lê `{ "planos": [...] }` e `journey.ts` encaixa a lista no
 filme existente. A ordem da lista é a ordem das cenas; duração, cortes,
 legendas e marcas da barra continuam calculados pelo relógio de `Journey`.
@@ -160,13 +164,13 @@ correspondente, para usar com a porta existente `?t=…&shot=1`.
 Não há controle novo para o visitante. `CAPTURE_T` continua arredondando
 os marcos `edge` e `face` ao segundo inteiro, como os juízes antigos.
 
-O exemplo do cinturão já declara `cinturao` e `paralaxe`. Os apoios dos
-planos ainda não convertidos vêm de
+O exemplo do cinturão já declara `cinturao` e `paralaxe`; os holds do
+Ato IV declaram `edge` e `face` no `revelacao.json`. O apoio do plano
+ainda não convertido (a fuga) vem de
 [`apoiosDaViagem.json`](../src/three/cinematic/roteiros/apoiosDaViagem.json):
-Terra, Lua e efemérides no estilingue; `edge` no perfil e `face` na vista
-de frente. `lerApoiosDoPlano` lê esses mesmos campos, sem outro formato.
-Ao converter essas câmeras, os apoios passam para seus planos no JSON;
-não se mantém uma cópia paralela.
+Terra, Lua e efemérides no estilingue. `lerApoiosDoPlano` lê esses
+mesmos campos, sem outro formato. Ao converter essa câmera, o apoio
+passa para o plano no JSON; não se mantém uma cópia paralela.
 
 ### Câmera de cada plano
 

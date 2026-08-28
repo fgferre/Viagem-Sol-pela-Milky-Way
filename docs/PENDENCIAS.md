@@ -46,6 +46,19 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
+**28/08 — OS HOLDS E A TRAVESSIA DO ATO IV VIRARAM ROTEIRO.**
+`revelacao.json` reúne os quadros de medição (perfil e face) e a
+travessia que abre o disco em braços; os marcos `edge`/`face` passaram
+a ser declarados pelos próprios planos, e os pinos do `CAPTURE_T`
+seguem em **153 e 167 s**. Nenhuma peça nova de motor: fixo, curva,
+rampa e pulso bastaram. **Filme convertido: 18 de 25 cenas, 135 de
+193 segundos (cerca de 70% da duração).** **Motor: ainda parcial** —
+faltam a aproximação final e a rasante do Ato III, a fuga/subida
+(trecho de curva e combinações de efeitos), a deriva, o mergulho de
+volta e o take Lua→Terra, e a direção dos nomes em cena. O trajeto
+não costura automaticamente planos diferentes. Instruções no
+`PLANO-CINEMA.md`; provas no item. A fila segue **75** → **100**.
+
 **28/08 — O 75 JÁ LÊ ÓRION E A VIRADA DE ANTARES.** `orion.json` reúne
 a chegada e a órbita de Betelgeuse, o raspão de Rigel e a dobradiça
 CASA; a virada para Antares abre o `mergulho.json`. Nenhum movimento
@@ -1074,6 +1087,19 @@ estão em `auditoria/`.
 **Limite:** prova focal no navegador, não exibição integral nem A/B de
 cache zerado; os percentuais continuam sendo de conversão, não do motor.
 
+**Os holds e a travessia do Ato IV vieram na nona fatia (28/08):**
+`revelacao.json` reúne os holds de medição (perfil e face) e a
+travessia que abre o disco em braços. Nenhuma peça nova de motor:
+fixo, curva, rampa e pulso bastaram. Os marcos `edge`/`face` passaram
+a ser declarados pelos próprios planos — `apoiosDaViagem.json` ficou
+só com o estilingue, sem cópia paralela — e os pinos do `CAPTURE_T`
+seguem em **153 e 167 s**. A conversão chegou a **18 de 25 cenas,
+135 de 193 s**, medida por `capturas/item75-ato4/medir.mjs`.
+Faltam: a aproximação final e a rasante do Ato III, a fuga/subida
+(trecho de curva e combinações de efeitos), a deriva, o mergulho de
+volta e o take da casa — estes pedem movimentos que ainda não são
+dados.
+
 **Prova de Órion:** `capturas/item75-orion/` guarda o antes/depois do
 `prova.mjs`: posição, mira, lente, inclinação, efeito, rig contínuo e
 edição idênticos no filme inteiro (mesmo sha256 dos dois lados). A
@@ -1090,6 +1116,27 @@ ajuste de índice do teste de ligação, e a suíte única do fechamento
 terminou com 2.458 aprovados, um já desativado e nenhuma falha
 (`suite.json`). **Sem testes novos, sem sabotagem devida** — a fatia
 não criou peça de motor; o guarda é o bit a bit do filme inteiro.
+**Limite:** prova focal no navegador, não exibição integral nem A/B de
+cache zerado; percentuais de conversão, não de prontidão do motor.
+
+**Prova dos holds e da travessia:** `capturas/item75-ato4/` guarda o
+antes/depois do `prova.mjs`: posição, mira, lente, inclinação, efeito,
+rig contínuo e edição idênticos no filme inteiro (mesmo sha256 dos dois
+lados). As vistas com HUD dos dois quadros de medição (`t=153` e
+`t=167`, os pinos do `CAPTURE_T`) são iguais em RGB, canal a canal
+(`edge/imagem.json`, `face/imagem.json`; antes de worktree limpa).
+`play.json` percorre o trecho em play real de 148 a 171 s — amostrado
+de 161,6 a 171, pois o filme já corre durante o assentamento — com
+duas capturas conferidas (a travessia com OS BRAÇOS; o hold de face
+com NOSSA GALÁXIA e o marcador do Sol). Typecheck e lint passaram
+(`verificacoes.json`); os testes focados terminaram verdes e a suíte
+única do fechamento terminou com 2.458 aprovados, um já desativado e
+nenhuma falha (`suite.json`). **Sem testes novos** — a fatia não criou
+peça de motor; o guarda é o bit a bit do filme inteiro. O teste de
+ligação dos apoios passou a morder o `revelacao.json` (os marcos
+`edge`/`face` saem dele), e a sabotagem da própria mão — leitor sem
+ler `qa` — reprovou três testes, com referência verde ao reverter
+(`auditoria/`).
 **Limite:** prova focal no navegador, não exibição integral nem A/B de
 cache zerado; percentuais de conversão, não de prontidão do motor.
 

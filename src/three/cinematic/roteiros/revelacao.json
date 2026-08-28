@@ -1,0 +1,64 @@
+{
+  "planos": [
+    {
+      "qa": { "edge": 0.5 },
+      "camera": {
+        "duracao": 5,
+        "movimento": { "tipo": "fixo", "ponto": "portaoPerfil" },
+        "mira": { "tipo": "fixo", "ponto": "miraDoPortao" },
+        "lente": ["lentePerfil", "lentePerfil"],
+        "ritmo": "linear",
+        "inclinacao": { "tipo": "fixo", "valor": "inclinacaoPerfil" }
+      },
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.1,
+        "texto": "ELA NÃO É PLANA",
+        "subtexto": "cem mil anos-luz de lado, mil de espessura — as bordas ondulam",
+        "duracao": 4.4
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "curva", "de": "portaoPerfil",
+          "controle1": "controleTravessia1", "controle2": "controleTravessia2",
+          "para": "portaoFace"
+        },
+        "mira": { "tipo": "fixo", "ponto": "miraDoPortao" },
+        "lente": ["lentePerfil", "lenteFace"],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "pulso", "amplitude": 0.2 },
+        "inclinacao": {
+          "tipo": "rampa", "de": "inclinacaoPerfil", "para": "inclinacaoFace", "ritmo": "smooth"
+        }
+      },
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.22,
+        "texto": "OS BRAÇOS",
+        "subtexto": "não são braços rígidos — são ondas que comprimem o gás em espiral",
+        "duracao": 6
+      }]
+    },
+    {
+      "qa": { "face": 0.5 },
+      "camera": {
+        "duracao": 5,
+        "movimento": { "tipo": "fixo", "ponto": "portaoFace" },
+        "mira": { "tipo": "fixo", "ponto": "miraDoPortao" },
+        "lente": ["lenteFace", "lenteFace"],
+        "ritmo": "linear",
+        "inclinacao": { "tipo": "fixo", "valor": "inclinacaoFace" }
+      },
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.1,
+        "texto": "NOSSA GALÁXIA",
+        "subtexto": "espiral barrada — centenas de bilhões de estrelas a 220 km/s",
+        "duracao": 4.4
+      }]
+    }
+  ]
+}

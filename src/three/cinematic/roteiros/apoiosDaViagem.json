@@ -1,7 +1,5 @@
 {
   "estilingue": {
     "preload": { "corpos": ["earth", "moon"], "efemerides": true }
-  },
-  "perfil": { "qa": { "edge": 0.5 } },
-  "face": { "qa": { "face": 0.5 } }
+  }
 }

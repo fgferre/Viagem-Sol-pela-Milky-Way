@@ -69,6 +69,7 @@ import abertura from './roteiros/abertura.json';
 import cinturao from './roteiros/cinturao.json';
 import orion from './roteiros/orion.json';
 import mergulho from './roteiros/mergulho.json';
+import revelacao from './roteiros/revelacao.json';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
 // rodada.mjs e docs/reference/VISUAL_TARGETS.md). As posições vêm da
@@ -652,53 +653,18 @@ const SHOTS: Shot[] = [
       },
     ],
   },
-  {
-    // HOLD DE MEDIÇÃO — perfil (posição/mira/fov/roll EXATOS das
-    // rodadas 16–25; o instante deriva de STARTS — ver CAPTURE_T).
-    // Quietude curta: o quadro é a mensagem, 5 s bastam.
-    ...lerApoiosDoPlano(apoiosDaViagem.perfil),
-    dur: 5,
-    pos: still(GATE_EDGE_POS),
-    look: still(GATE_LOOK),
-    fov0: GATE_EDGE_FOV, fov1: GATE_EDGE_FOV,
-    ease: linear,
-    roll: () => GATE_EDGE_ROLL,
-    lingua: 'assunto',
-    captions: [{ at: 0.1, text: 'ELA NÃO É PLANA', sub: 'cem mil anos-luz de lado, mil de espessura — as bordas ondulam', dur: 4.4 }],
-  },
-  {
-    // a travessia: o disco de perfil ABRE em braços — esse é o evento,
-    // não um arco mudo. 9 s e uma legenda no meio do gesto.
-    dur: 9,
-    pos: bezier(GATE_EDGE_POS, TRAV_C1, TRAV_C2, GATE_FACE_POS),
-    look: still(GATE_LOOK),
-    fov0: GATE_EDGE_FOV, fov1: GATE_FACE_FOV,
-    ease: glide,
-    warp: (k) => 0.2 * Math.sin(Math.PI * k),
-    roll: (k) => THREE.MathUtils.lerp(GATE_EDGE_ROLL, GATE_FACE_ROLL, smooth(k)),
-    lingua: 'assunto',
-    captions: [
-      {
-        at: 0.22,
-        text: 'OS BRAÇOS',
-        sub: 'não são braços rígidos — são ondas que comprimem o gás em espiral',
-        dur: 6,
-      },
-    ],
-  },
-  {
-    // HOLD DE MEDIÇÃO — face-on (posição/mira/fov/roll EXATOS; o
-    // instante deriva de STARTS — ver CAPTURE_T)
-    ...lerApoiosDoPlano(apoiosDaViagem.face),
-    dur: 5,
-    pos: still(GATE_FACE_POS),
-    look: still(GATE_LOOK),
-    fov0: GATE_FACE_FOV, fov1: GATE_FACE_FOV,
-    ease: linear,
-    roll: () => GATE_FACE_ROLL,
-    lingua: 'assunto',
-    captions: [{ at: 0.1, text: 'NOSSA GALÁXIA', sub: 'espiral barrada — centenas de bilhões de estrelas a 220 km/s', dur: 4.4 }],
-  },
+  // Os holds de medição (perfil e face) e a travessia entre eles viram
+  // roteiro: posição/mira/lente/inclinação EXATAS das rodadas 16–25, com
+  // os marcos edge/face declarados nos próprios planos (ver CAPTURE_T).
+  // A quietude curta segue: o quadro é a mensagem; na travessia o disco
+  // de perfil ABRE em braços — o evento, não um arco mudo.
+  ...lerSequencia(revelacao, {
+    portaoPerfil: GATE_EDGE_POS, miraDoPortao: GATE_LOOK, portaoFace: GATE_FACE_POS,
+    controleTravessia1: TRAV_C1, controleTravessia2: TRAV_C2,
+  }, {
+    lentePerfil: GATE_EDGE_FOV, lenteFace: GATE_FACE_FOV,
+    inclinacaoPerfil: GATE_EDGE_ROLL, inclinacaoFace: GATE_FACE_ROLL,
+  }),
   {
     // deriva: NUNCA aproximar do marcador — a pequenez é a mensagem. A
     // mira desliza do centro para perto de casa; o marcador do Sol

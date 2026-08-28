@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { lerApoiosDoPlano, montarApoiosDoRoteiro } from './apoiosDoRoteiro';
 import { lerSequencia } from './lerSequencia';
-import apoiosDaViagem from './roteiros/apoiosDaViagem.json';
+import revelacao from './roteiros/revelacao.json';
 import type { Phase } from '../fases';
 
 const camera = {
@@ -71,10 +71,12 @@ describe('apoios do roteiro — item 75', () => {
     vi.resetModules();
     vi.stubGlobal('window', { location: { search: '' } });
     vi.doMock('./roteiros/apoiosDaViagem.json', () => ({ default: {
-      ...apoiosDaViagem,
       estilingue: { preload: { corpos: ['mars'], efemerides: false } },
-      perfil: { preload: { efemerides: true }, qa: { edge: 0.2 } },
-      face: { qa: { face: 0.8 } },
+    } }));
+    vi.doMock('./roteiros/revelacao.json', () => ({ default: {
+      planos: revelacao.planos.map((plano, i) => i === 0
+        ? { ...plano, preload: { efemerides: true }, qa: { edge: 0.2 } }
+        : i === 2 ? { ...plano, qa: { face: 0.8 } } : plano),
     } }));
     try {
       const { Director } = await import('../director');
@@ -112,6 +114,7 @@ describe('apoios do roteiro — item 75', () => {
       expect(d.palcoQuente).toBe(false);
     } finally {
       vi.doUnmock('./roteiros/apoiosDaViagem.json');
+      vi.doUnmock('./roteiros/revelacao.json');
       vi.unstubAllGlobals();
       vi.resetModules();
     }
