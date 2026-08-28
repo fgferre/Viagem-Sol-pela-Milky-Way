@@ -12,6 +12,7 @@ import {
 } from './common';
 import { lerBetaDaEmissao } from '../luzDaCasa';
 import { BRANQUEAMENTO_MEIA_ALTURA, FRACAO_DOS_ESPINHOS, LIMIAR_DO_CLARAO } from '../estrela';
+import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from './pontoNaBorda';
 
 /**
  * O β da compressão na emissão, resolvido UMA vez — e aqui, que é o módulo
@@ -60,12 +61,14 @@ uniform float uPr2;
 varying vec3 vColor;
 varying float vSigma;  // sigma da PSF em fração do meio-sprite
 varying float vPeak;   // pico da PSF × atenuação total — TODO o resto deriva dele
+${GLSL_PONTO_NA_BORDA_VARYINGS}
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_DENSITY_LOCAL}
 ${GLSL_STAR_COLOR}
 ${GLSL_STAR_PSF}
+${GLSL_PONTO_NA_BORDA}
 
 void main() {
   vec3 worldPos = position;
@@ -108,6 +111,7 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(worldPos, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = size;
+  prenderPontoNoClip(uScreenH);
 }
 `;
 
@@ -117,6 +121,7 @@ precision highp float;
 varying vec3 vColor;
 varying float vSigma;
 varying float vPeak;
+${GLSL_PONTO_NA_BORDA_VARYINGS}
 
 // β da compressão na emissão (F2 da luz). ZERO por nascimento, e zero é
 // IDENTIDADE EXATA — ver comprimir3 em shaders/common.ts.
@@ -128,7 +133,12 @@ uniform float uArteDaCruz;
 ${GLSL_COMPRESSAO}
 
 void main() {
-  vec2 uv = gl_PointCoord * 2.0 - 1.0;
+  // Distância ao centro VERDADEIRO, não ao vértice preso na borda
+  // (item 70, causa 2). Sem isto, prender o ponto pintaria uma
+  // estrela colada na moldura em vez do rabo da PSF que ainda
+  // entra no quadro. r² e |uv| são pares — o sinal de Y do
+  // PointCoord antigo não muda o desenho.
+  vec2 uv = (gl_FragCoord.xy - vCentroPx) / max(vMeiaPx, 1e-6);
   float r2 = dot(uv, uv);
   if (r2 > 1.0) discard;
 

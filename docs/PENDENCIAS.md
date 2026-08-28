@@ -48,6 +48,15 @@ grande passou a ROLAR, sem encolher nada (a escolha dele em 25/08, Q6); o
 juiz de acessibilidade ganhou as três provas das pontas e a sabotagem
 confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`.
 
+**27/08, TERCEIRA LEVA — A CAUSA 2 DO 70 POUSOU.** O ponto de estrela
+passa a ser preso 1 px dentro da tela e o brilho é avaliado na posição
+verdadeira (catálogo, cascas e planetas, o mesmo `STAR_FRAG`). Juiz:
+`scripts/visual/ponto-na-borda.mjs`. Medido em 1128×1080: Rigil
+Kentaurus cruza a borda e o pico da faixa cai 2,6% no passo (234 →
+228 de 255), depois desce aos poucos com o rabo da PSF; foto
+`capturas/item70-borda-depois-v3.png`. A fila que vale agora começa
+no **99** → **75** → **100**.
+
 **27/08, SEGUNDA LEVA — AS FOTOS DO (3) ESTÃO NA MESA, à espera do olho
 dele.** A sessão única de captura saiu: `capturas/item86-lente-ab.png`
 (o A/B da lente, 35° × 58°, data pinada, árvore limpa dos dois lados —
@@ -57,8 +66,8 @@ a 58°). **Achado da sessão, que ele precisa saber antes de julgar:** com a
 lente mais aberta o teto do zoom cai de 226,84 para ~133,7 UA e a
 abertura natural desce de ~8,9 para ~5,2 UA — está nas etiquetas das
 pranchas. Nenhuma linha de código pousou; a escolha é dele.
-**A fila que vale agora começa no (4):** o **70**, causa 2 (o ponto que
-morre na borda) → **99** → **75** → **100**.
+**A fila que vale agora começa no (5):** o **99** (a dieta dos juízes)
+→ **75** → **100**.
 
 **A FILA DE 23/08 — SUPERADA (a que vale é a da PRÓXIMA CONVERSA, mais
 abaixo); fica como história, e era DECISÃO DELE.** Entrou aqui em 23/08 como
@@ -74,9 +83,9 @@ fila. O que sobra à espera dele agora é a IMAGEM, não a prioridade.
 > em ZERO, e o zero repete**) → ~~**93 (brilho assistido = algoritmo do
 > Eyes)**~~ (25/08 — a receita pousou INTEIRA, véu palha de Saturno
 > incluído; **FECHADO em 26/08**, com a calibração escolhida na Q13) →
-> **99 (a dieta dos juízes)** → **70**
+> **99 (a dieta dos juízes)** → ~~**70**
 > (a causa 2, o ponto que
-> morre na borda) → **75**, com o resto do **83** (L2.5, G1, L3, L4, L5)
+> morre na borda)~~ (27/08 — pousou) → **75**, com o resto do **83** (L2.5, G1, L3, L4, L5)
 > na fila da mesma família.
 
 **25/08, FIM DO DIA — A CONFERÊNCIA CHEGOU PELA SALA DE CONFERÊNCIA, E A
@@ -96,7 +105,7 @@ da classe dos oito; as duas pranchas esperam o olho dele) → ~~**95**~~
 (25/08 — pousou; o ar no eclipse ganhou dose derivada e quatro fotos
 esperam o olho dele) → **gate do filme (77)** → ~~**rolagem do véu
 (87)**~~ (27/08 — pousou, e saiu da lista) → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
-de abertura (**61**) → **70**, a causa 2 → **99** → **75**.
+de abertura (**61**) → ~~**70**, a causa 2~~ (27/08 — pousou) → **99** → **75**.
 
 **25/08, FIM DE SESSÃO — A SEGUNDA LEVA DA SALA DE CONFERÊNCIA CHEGOU, E
 TRÊS ITENS FECHARAM.** Ele olhou as pranchas que estavam na mão dele e
@@ -126,8 +135,8 @@ FECHARAM.)*
 > da lente de 58° (**86**) junto com a folha da vista de abertura (**61**),
 > na **MESMA sessão de captura**~~ (27/08 — **as fotos saíram e estão na
 > mesa**: `capturas/item86-lente-ab.png` e `capturas/item61-abertura-folha.png`;
-> falta o olho dele) → **(4)** o **70**, causa 2 (o ponto que
-> morre na borda) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
+> falta o olho dele) → ~~**(4)** o **70**, causa 2 (o ponto que
+> morre na borda)~~ (27/08 — pousou; a foto espera o olho dele) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
 > (o motor de filmes) → o item **100**.
 
 **O QUE ESPERA O OLHO DELE — e a dívida virou quase nada em 25/08.** As
@@ -146,7 +155,7 @@ não mais pergunta. **E EM 26/08 A DÍVIDA DA LUZ ZEROU:** a costura
 (`capturas/item91-real-r1-v2.png`, a R1 da Q14 embarcada) foram à Sala e
 voltaram confirmadas — *"Confirmo como bom: C14, C15"* —, e com elas os
 itens **104**, **91** e **93** saíram da lista. O que vai à Sala agora é a
-folha da lente com a vista de abertura.
+folha da lente com a vista de abertura, e a foto da borda do item **70**.
 
 *(Registro de escrivão, para nada se perder: a foto
 `capturas/item77-filme-sem-orbitas.png` — a volta para casa sem as linhas
@@ -689,8 +698,8 @@ MB1 — `scripts/visual/estabilidade-temporal.mjs`.) Quando uma estrela muito
 brilhante sai pela borda do quadro, o brilhão dela some de uma vez e **o
 céu inteiro perde luz num único passo de câmera**. Ao voltar, acende de
 novo do mesmo jeito. Está medido três vezes com a mesma assinatura, sempre
-na mesma estrela — Rigil Kentaurus. **Conferir com ele no app antes de
-mexer:** é um giro lento com uma estrela forte perto da borda.
+na mesma estrela — Rigil Kentaurus. A causa 2 pousou em 27/08; o que
+falta é o olho dele na foto da borda.
 
 **A METADE QUE FECHOU em 25/08** (história no ARQUIVO): eram DUAS causas, e
 nenhuma delas a pupila. A **causa 1** — o segundo cobertor
@@ -700,27 +709,25 @@ joelho medido). Na mesma rodada fecharam a **cessão da linha de órbita**
 (decisão dele) e a **faixa de instrumento** do juiz. **O MB1 foi de 6
 defeitos a ZERO, sem afrouxar soleira nenhuma, e o zero repete.**
 
-**A CAUSA 2 SEGUE ABERTA, e é ela o item.** A faixa de guarda conserta o
-COBERTOR, não a **IMAGEM DIRETA do ponto** no quadro principal: ali o
-`THREE.Points` continua sendo descartado inteiro quando o vértice cruza o
-volume de clip, e a metade do sprite que ainda estava na tela some de uma
-vez. É o "culling da ponta e não da asa" — a hero, que é QUAD, sai suave
-pela mesma borda.
-
-**O desenho conhecido para consertar** (não executado, e não medido depois
-da faixa): prender o vértice DENTRO do volume de clip e avaliar a PSF pela
-distância VERDADEIRA (`gl_FragCoord` menos o centro real), como o quad das
-heroes já faz por construção — o fragmento do campo usa `uv` só em módulo,
-então a troca não vira arte nova. Custa um uniforme de viewport. **O MB1
-não cobra mais este pedaço**, então quem o pegar tem de trazer a régua
-junto — e a LEI já marca o catálogo e as cascas como território do M3.
+**A CAUSA 2 POUSOU em 27/08.** O vértice do ponto é preso 1 px dentro
+do clip e a PSF é avaliada pela distância verdadeira (`gl_FragCoord`
+menos o centro real) — o mesmo desenho da hero, agora nos três
+desenhistas do `STAR_FRAG` (catálogo, cascas, planetas). A largura do
+quadro sai da projeção, sem uniforme novo. Juiz: `scripts/visual/ponto-na-borda.mjs`.
+Medido em 1128×1080 dpr 1, Rigil Kentaurus: o pico da faixa cai **2,6%**
+no passo que cruza a borda (234 → 228 de 255) e depois desce com o rabo
+da PSF (186, 105, piso ~45). Foto:
+`capturas/item70-borda-depois-v3.png` — **espera o olho dele**.
+Neste Mac (ANGLE/Metal) o GPU já mantinha o sprite 1–2 px fora, então
+sabotar o prender não mudou a curva; o prender é o conserto portátil
+para o GPU que descarta o ponto no clip. **O MB1 não cobra este
+pedaço**; a régua nova mora no juiz acima.
 
 **O TAMANHO DO EFEITO DEPENDE DA JANELA** (medido em 25/08, item 81). Os
 números originais saíram de um quadro de 613 px, onde cada estrela é
 **3,1× mais quente** que num de 1080. No `pan` a queda do passo cai de
-−24,6% para **menos de 5%** a 1080 px; no `fov` ela **FICA** (−29,4%). **O
-defeito é real e segue de pé — o que não é fixo é a magnitude, e quem for
-consertar tem de dizer em que janela mediu.**
+−24,6% para **menos de 5%** a 1080 px; no `fov` ela **FICA** (−29,4%). A
+causa 2 mediu-se em 1128×1080, e é essa a janela do juiz.
 
 **AS TRÊS FOTOS DESTA HISTÓRIA JÁ SERVIRAM — C5, 25/08:** ele olhou
 `capturas/item70-giro-antes-depois.png`,
@@ -728,8 +735,7 @@ consertar tem de dizer em que janela mediu.**
 `capturas/item72-nobloom-antes-depois.png` pela Sala de Conferência e
 confirmou **o giro e a borda como bons**. Com isso a metade que fechou está
 ACEITA por ele, a nota de "não apagar" morre com a conferência, e **o que
-este item ainda é resume-se à CAUSA 2 acima** — a imagem direta do ponto no
-quadro principal.
+este item ainda é resume-se à foto da causa 2** — espera o olho dele.
 
 **DUAS REGRAS NASCERAM AQUI e valem para toda a casa:** *A/B se roda de
 ÁRVORE LIMPA dos dois lados — e se não der, o que sobrou de sujo entra

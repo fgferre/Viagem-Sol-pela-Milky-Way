@@ -131,6 +131,7 @@
 import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../lib/atlas/frameGalactico';
 import { GLSL_STAR_PSF } from '../../shaders/common';
+import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../../shaders/pontoNaBorda';
 import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
 import type { CalibracaoDaCasa } from '../../estrela';
 import { STAR_FRAG } from '../../shaders/starShaders';
@@ -276,8 +277,10 @@ uniform float uPr2;     // invariância de aparência — a mesma do campo
 varying vec3 vColor;
 varying float vSigma;
 varying float vPeak;
+${GLSL_PONTO_NA_BORDA_VARYINGS}
 
 ${GLSL_STAR_PSF}
+${GLSL_PONTO_NA_BORDA}
 
 void main() {
   vec3 worldPos = position;
@@ -318,6 +321,7 @@ void main() {
 
   gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPos, 1.0);
   gl_PointSize = size;
+  prenderPontoNoClip(uScreenH);
 }
 `;
 

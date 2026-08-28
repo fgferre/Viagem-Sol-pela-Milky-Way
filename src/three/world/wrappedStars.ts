@@ -38,6 +38,7 @@ import {
   GLSL_STAR_COLOR,
   GLSL_STAR_PSF,
 } from '../shaders/common';
+import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../shaders/pontoNaBorda';
 import { STAR_FRAG, BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
@@ -332,11 +333,13 @@ uniform float uCatFade;
 varying vec3 vColor;
 varying float vSigma;
 varying float vPeak;
+${GLSL_PONTO_NA_BORDA_VARYINGS}
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_STAR_COLOR}
 ${GLSL_STAR_PSF}
+${GLSL_PONTO_NA_BORDA}
 
 // canais B/A do dust map: braços (variante de GÁS uniforme + braço
 // Local, rodada 12) e warp, bakeados a 65 pc/texel
@@ -416,6 +419,8 @@ void main() {
     vPeak = 0.0;
     vSigma = 1.0;
     vColor = vec3(0.0);
+    vCentroPx = vec2(0.0);
+    vMeiaPx = 0.0;
     return;
   }
   float m = MV + 5.0 * log2(max(dist, 0.5)) * 0.30103 - 5.0 +
@@ -447,6 +452,7 @@ void main() {
   vec3 viewPos = mat3(modelViewMatrix) * rel;
   gl_Position = projectionMatrix * vec4(viewPos, 1.0);
   gl_PointSize = size;
+  prenderPontoNoClip(uScreenH);
 }
 `;
 
